@@ -43,11 +43,17 @@ def load_adj(dts: list[str]):
         if len(parts) >= 400:
             ch = pd.concat(parts, ignore_index=True); parts = []
             piv = ch.pivot_table(index="trade_date", columns="ts_code", values="adj")
-            acc = piv if "acc" not in locals() else pd.concat([acc, piv], axis=0)
+            if "acc" not in locals():
+                acc = piv
+            else:
+                acc = pd.concat([acc, piv], axis=0)
     if parts:
         ch = pd.concat(parts, ignore_index=True)
         piv = ch.pivot_table(index="trade_date", columns="ts_code", values="adj")
-        acc = piv if "acc" not in locals() else pd.concat([acc, piv], axis=0)
+        if "acc" not in locals():
+            acc = piv
+        else:
+            acc = pd.concat([acc, piv], axis=0)
     acc.index = [str(x) for x in acc.index]
     acc = acc.loc[:, ~acc.columns.duplicated()]
     return acc.sort_index().astype("float32")

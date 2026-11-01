@@ -94,6 +94,7 @@ def main() -> int:
     adj, amt = build(dts)
     sb = pq.read_table(sorted(glob.glob(str(DATA / "stock_basic" / "*.parquet")))[-1]).to_pandas().set_index("ts_code")
     names, industry = sb["name"], sb["industry"].fillna("未知")
+    list_dates_ = pd.to_datetime(sb["list_date"], format="%Y%m%d", errors="coerce")
     def listed_at(dt_):
         return listed_days(sb, dt_)
     s = pd.Series(adj.index.tolist())

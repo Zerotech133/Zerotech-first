@@ -9,7 +9,7 @@
   "discipline": "策略上架需通过数据/PIT、统计、成本容量、影子盘、人工批准五关；未过影子盘仅供研究"
  },
  "date": "20261030",
- "generated_at": "2026-11-01T09:10:55+08:00",
+ "generated_at": "2026-11-01T14:10:22+08:00",
  "strategies": [
   {
    "id": "S01_H14_quality_trap_guard",
@@ -355,7 +355,5 @@
   ],
   "note": "H18 事件研究：改善/恶化组 20 日均负收益 → 仅观察，不作买入信号"
  },
- "disclaimer": "研究输出，不构成投资建议；S02 排序因子未验证；实盘前须过影子盘+人工批准。",
- "snapshot_note": "2026-11-01 手工校正：S01 status/validation 已与 agent_platform/catalogs/strategy_registry.json 同步（WO-STRAT-DRIFT-20261101）；完整重生成见 docs/audit/2026-11-01_策略库真值偏差修复_v1.md",
- "snapshot_corrected_at": "2026-11-01T07:55:00+08:00"
+ "disclaimer": "研究输出，不构成投资建议；S02 排序因子未验证；实盘前须过影子盘+人工批准。"
 }

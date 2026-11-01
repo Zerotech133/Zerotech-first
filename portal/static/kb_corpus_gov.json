@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-30T17:56:09+08:00",
+ "generated_at": "2026-11-01T07:59:50+08:00",
  "verify": {
   "zips": 948,
   "hash_ok": 948,
@@ -21,10 +21,10 @@
   "dim": 1024
  },
  "backup": {
-  "stamp": "20261030_173913",
+  "stamp": "20261101_075915",
   "result": "OK",
-  "files": 1099,
-  "bytes": 1361046375
+  "files": 1117,
+  "bytes": 1361357994
  },
  "catalog_registered": true,
  "lineage_manifest": "agent_platform/catalogs/youtube_quant_corpus_lineage.yaml"
