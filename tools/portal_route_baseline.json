@@ -1,7 +1,7 @@
 {
- "generated_at": "2026-11-02T02:32:07",
- "source": "C:\\项目\\老田的AI助手\\portal\\portal_api.py",
- "total": 287,
+ "generated_at": "2026-11-02T03:16:45",
+ "source": "C:\\项目\\老田的AI助手\\.worktrees\\K-ORG-20261102-D1CARRY\\portal\\portal_api.py",
+ "total": 289,
  "signatures": [
   [
    "GET",
@@ -167,6 +167,11 @@
    "GET",
    "exact",
    "/api/d1/decisions"
+  ],
+  [
+   "GET",
+   "exact",
+   "/api/d1/handoffs"
   ],
   [
    "GET",
@@ -1222,6 +1227,11 @@
    "POST",
    "exact",
    "/api/d1/decision"
+  ],
+  [
+   "POST",
+   "exact",
+   "/api/d1/handoff"
   ],
   [
    "POST",
