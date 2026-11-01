@@ -6581,5 +6581,12 @@
       "contract_fail": 0
     },
     "note": "全站巡检：页面 93（OK 90 / 404 3：bt2_view/bt_view/sandbox，未路由历史页）；静态 JSON 36 个全部合法、关键契约 0 不符（卡104/样例v4 8条/daily_screening/report_panel）。"
+  },
+  "retrieval_rate_limit_300_20261102": {
+    "executed_at": "2026-11-02T00:32:20+08:00",
+    "change": "api_kb_qa.RATE_LIMIT['retrieval'] 60→300/min（single/multi 保持 6）",
+    "reason": "检索缓存优化后单请求 60-80ms，60/min 在并发下误伤（压测 151 次 429）",
+    "verification": "8091 重启后 meta.rate_limit.limit=300，retrieval 200/78ms",
+    "rollback": "改回 60 + 重启"
   }
 }
