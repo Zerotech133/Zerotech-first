@@ -1,0 +1,36 @@
+{
+ "generated_at": "2026-11-02T03:26:47+08:00",
+ "summary": {
+  "freed_mb": 76.5,
+  "archived_logs": 182,
+  "pycache_dirs": 19,
+  "repo_tmp_dirs": [
+   "daily_screening",
+   "screening_rs"
+  ],
+  "archive_zip": "C:\\项目\\work\\archive\\research2_outputs_20261102.zip",
+  "recycled": true
+ },
+ "items": [
+  {
+   "item": "research2 日志/输出（*.log/*.out/*.err/*.txt）",
+   "count": 182,
+   "action": "zip 留证于 work/archive 后移入回收站"
+  },
+  {
+   "item": "仓库 tools/portal __pycache__",
+   "count": 19,
+   "size_mb": 75.8,
+   "action": "回收站"
+  },
+  {
+   "item": "仓库 tmp/daily_screening、tmp/screening_rs",
+   "action": "回收站"
+  }
+ ],
+ "not_cleaned": [
+  "research/reports/backups（回滚证据，保留）",
+  "其他会话未跟踪文件（非本会话，不动）",
+  "废弃 prompt 文件（保留为证据，加 DEPRECATED 标记）"
+ ]
+}

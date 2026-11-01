@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# DEPRECATED（2026-11-02）：实验失败，禁止在生产路径引用；证据见 docs/plans/2026-11-02_提示词清单_活跃与废弃_v1.md
 """multi 答案质量提升：prompt v2 A/B（独立实验，不改变现有 kb_qa/kb_qa_multi 行为）。
 
 prompt v2 强化约束（相对现 multi prompt 的增量）：

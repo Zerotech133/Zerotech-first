@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# DEPRECATED（2026-11-02）：实验失败，禁止在生产路径引用；证据见 docs/plans/2026-11-02_提示词清单_活跃与废弃_v1.md
 """35b 模型 prompt v3 A/B：验证「模型能力是否 v3 失败瓶颈」。
 
 背景：wave27 修复 guard 标记解析（strict_line）后，9b + prompt v3 仍只有 10% guard 通过率
