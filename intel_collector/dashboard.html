@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>采集即服务平台 · 实时面板</title>
+<style>
+  :root{
+    --color-background-primary:#ffffff;
+    --color-background-secondary:#f1efea;
+    --color-background-tertiary:#e9e7e1;
+    --color-background-info:#e6f1fb;
+    --color-background-success:#eaf3de;
+    --color-background-danger:#fcebeb;
+    --color-text-primary:#2c2c2a;
+    --color-text-secondary:#5f5e5a;
+    --color-text-tertiary:#888780;
+    --color-text-info:#0c447c;
+    --color-text-success:#3b6d11;
+    --color-text-danger:#a32d2d;
+    --color-border-tertiary:rgba(0,0,0,0.15);
+    --color-border-secondary:rgba(0,0,0,0.3);
+    --border-radius-md:8px;
+    --border-radius-lg:12px;
+    --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  }
+  body{font-family:var(--font-sans);color:var(--color-text-primary);margin:0;padding:24px;background:#f7f6f3;}
+  h1{font-size:18px;font-weight:500;margin:0 0 4px;}
+  .lead{font-size:13px;color:var(--color-text-secondary);margin:0 0 16px;}
+  .grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px;}
+  .metric{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:1rem;}
+  .metric .label{font-size:13px;color:var(--color-text-secondary);}
+  .metric .num{font-size:24px;font-weight:500;margin-top:4px;}
+  .row{display:grid;gap:8px;font-size:13px;padding:8px 0;border-bottom:0.5px solid var(--color-border-tertiary);}
+  .row:last-child{border-bottom:none;}
+  .hdr{grid-template-columns:1.4fr 1fr 2fr 0.7fr;font-size:12px;color:var(--color-text-secondary);padding-bottom:6px;font-weight:500;}
+  .src{grid-template-columns:1.4fr 1fr 2fr 0.7fr;}
+  .run{grid-template-columns:1.3fr 1fr 0.8fr;}
+  .roll{grid-template-columns:1.2fr 2fr 0.8fr;}
+  .sched{grid-template-columns:1.4fr 1fr 0.8fr 1.2fr;}
+  .qa{grid-template-columns:1.6fr 0.9fr 1.2fr 0.9fr 0.8fr 0.8fr;}
+  .fb{grid-template-columns:1.2fr 0.9fr 2.4fr;}
+  .cron{grid-template-columns:1fr 3fr;}
+  .state-ok{color:var(--color-text-success);font-weight:500;}
+  .state-stale{color:#b5790b;font-weight:500;}
+  .state-breach{color:var(--color-text-danger);font-weight:500;}
+  .state-no_data{color:var(--color-text-tertiary);}
+  .circ-closed{color:var(--color-text-success);font-weight:500;}
+  .circ-half_open{color:#b5790b;font-weight:500;}
+  .circ-open{color:var(--color-text-danger);font-weight:500;}
+  .sub{font-size:11px;color:var(--color-text-tertiary);}
+  .pitgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:4px;}
+  .pitcol{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:0.75rem 0.9rem;}
+  .pit-asof{font-size:12px;color:var(--color-text-info);font-weight:500;margin-bottom:8px;}
+  .pit-row{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:2px 0;}
+  .pit-row span{color:var(--color-text-secondary);}
+  .pit-row b{color:var(--color-text-primary);font-weight:500;}
+  .muted{color:var(--color-text-secondary);}
+  .ok{color:var(--color-text-success);}
+  .danger{color:var(--color-text-danger);}
+  .badge{font-size:12px;padding:3px 8px;border-radius:6px;}
+  .b-on{background:var(--color-background-success);color:var(--color-text-success);}
+  .b-off{background:var(--color-background-tertiary);color:var(--color-text-tertiary);}
+  .note{font-size:12px;color:var(--color-text-secondary);margin-top:10px;}
+  .cols2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+  footer{font-size:12px;color:var(--color-text-tertiary);margin-top:24px;border-top:0.5px solid var(--color-border-tertiary);padding-top:12px;}
+</style>
+</head>
+<body>
+<h1>采集即服务平台 · 实时面板</h1>
+<p class="lead">数据来自真实 registry/sources.json 与 store/observations.db（原型态 · 不触网）。生成于 2026-11-01T15:29:44Z</p>
+
+<div class="grid4">
+<div class="metric"><div class="label">已登记源</div><div class="num">5</div></div>
+<div class="metric"><div class="label">闸门授权用途</div><div class="num">3 / 8</div></div>
+<div class="metric"><div class="label">跨源实体命名空间</div><div class="num">4</div></div>
+<div class="metric"><div class="label">测试</div><div class="num ok">78 passed</div></div>
+</div>
+
+<div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem 1.25rem;margin-bottom:16px;">
+<div style="font-size:14px;font-weight:500;margin-bottom:12px;">源注册表 · SourceRegistry</div>
+<div class="row hdr"><div>源</div><div>owner</div><div>已授权用途</div><div>状态</div></div>
+<div class="row src"><div><b>res_downloader_py</b><br><span class="sub">res-downloader-py（通用下载器）</span></div><div>intel(军情司·INTEL0)</div><div>internal_retention · cleaning · controlled_query</div><div class="ok">ok</div></div>
+<div class="row src"><div><b>xueqiu</b><br><span class="sub">雪球公开舆情（首条深度专线）</span></div><div>intel(军情司·INTEL0)</div><div>internal_retention · cleaning · controlled_query</div><div class="ok">ok</div></div>
+<div class="row src"><div><b>guba</b><br><span class="sub">股吧舆情</span></div><div>intel(军情司·INTEL0)</div><div>internal_retention · cleaning · controlled_query</div><div class="ok">ok</div></div>
+<div class="row src"><div><b>news</b><br><span class="sub">新闻聚合</span></div><div>intel(军情司·INTEL0)</div><div>internal_retention · cleaning · controlled_query</div><div class="ok">ok</div></div>
+<div class="row src"><div><b>youtube_envelope</b><br><span class="sub">YouTube 系统外元信息包（仅 envelope，不碰原包）</span></div><div>intel(军情司·INTEL0)</div><div>internal_retention · cleaning · controlled_query</div><div class="ok">ok</div></div>
+</div>
+
+<div class="cols2">
+  <div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem 1.25rem;">
+<div style="font-size:14px;font-weight:500;margin-bottom:12px;">RightsGate 闸门状态 · 默认拒绝</div>
+<div style="display:flex;flex-wrap:wrap;gap:6px;">
+<span class="badge b-on">internal_retention</span>
+<span class="badge b-on">cleaning</span>
+<span class="badge b-off">indexing · 锁定</span>
+<span class="badge b-off">candidate_labeling · 锁定</span>
+<span class="badge b-on">controlled_query</span>
+<span class="badge b-off">redistribution · 锁定</span>
+<span class="badge b-off">commercial · 锁定</span>
+<span class="badge b-off">training · 锁定</span>
+</div>
+<div class="note">training / redistribution / commercial 等高风险用途须 RightsGate 显式批准，不随入湖自动开放</div>
+</div>
+  <div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem 1.25rem;">
+<div style="font-size:14px;font-weight:500;margin-bottom:12px;">最近采集运行 · 状态分账</div>
+<div class="row hdr"><div>源</div><div>状态分布</div><div>观测数</div></div>
+<div class="row run"><div>guba</div><div class="muted">complete×2 empty×1</div><div>3</div></div>
+<div class="row run"><div>news</div><div class="muted">complete×1</div><div>1</div></div>
+<div class="row run"><div>xueqiu</div><div class="muted">complete×2</div><div>2</div></div>
+<div class="row run"><div>xueqiu_live</div><div class="muted">unavailable×1</div><div>1</div></div>
+<div class="row run"><div>youtube_envelope</div><div class="muted">complete×1</div><div>1</div></div>
+</div>
+</div>
+
+<div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem 1.25rem;">
+<div style="font-size:14px;font-weight:500;margin-bottom:12px;">跨源实体归并预览 · canonical rollup</div>
+<div class="row hdr"><div>规范实体</div><div>跨源覆盖</div><div>观测数</div></div>
+<div class="row roll"><div style="font-weight:500;color:var(--color-text-info);">astock:SH600519</div><div>guba + news + xueqiu</div><div>6</div></div>
+<div class="row roll"><div style="font-weight:500;color:var(--color-text-info);">generic:SH600519</div><div>xueqiu_live</div><div>1</div></div>
+<div class="row roll"><div style="font-weight:500;color:var(--color-text-info);">news:sina_finance</div><div>news</div><div>1</div></div>
+<div class="row roll"><div style="font-weight:500;color:var(--color-text-info);">yt:vid_quant_001</div><div>youtube_envelope</div><div>1</div></div>
+<div class="note">命名空间隔离：A 股归 astock，系统外归 yt，杜绝跨域误并。下游只认 (domain,key) 聚合键。</div>
+</div>
+
+<div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem 1.25rem;">
+<div style="font-size:14px;font-weight:500;margin-bottom:12px;">时点回溯 · PIT 时间旅行（实体 astock:SH600519）</div>
+<div class="pitgrid">
+<div class="pitcol"><div class="pit-asof">as_of 2026-10-21T23:59:59Z</div><div class="pit-row"><span>存在</span><b>True</b></div><div class="pit-row"><span>观测数</span><b>2</b></div><div class="pit-row"><span>覆盖源</span><b>2</b></div><div class="pit-row"><span>源集合</span><b>guba + news</b></div><div class="pit-row"><span>状态</span><b>complete×2</b></div><div class="pit-row"><span>时间窗</span><b>2026-10-21T09:00:00Z~2026-10-21T10:00:00Z</b></div></div>
+<div class="pitcol"><div class="pit-asof">as_of 2026-10-22T23:59:59Z</div><div class="pit-row"><span>存在</span><b>True</b></div><div class="pit-row"><span>观测数</span><b>4</b></div><div class="pit-row"><span>覆盖源</span><b>3</b></div><div class="pit-row"><span>源集合</span><b>guba + news + xueqiu</b></div><div class="pit-row"><span>状态</span><b>complete×3 empty×1</b></div><div class="pit-row"><span>时间窗</span><b>2026-10-21T09:00:00Z~2026-10-22T12:00:00Z</b></div></div>
+</div>
+<div class="note">时间旅行：给定 as_of 只可见该时点及之前已采集的观测。晚时点相对早时点<b>新增覆盖源：xueqiu</b>，观测数 2→4。这是对 obs_store.as_of（单源单实体）的升级——面向下游的「全局时点快照」。本块为合成演示数据，不触网。</div>
+</div>
+
+<div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem 1.25rem;">
+<div style="font-size:14px;font-weight:500;margin-bottom:12px;">调度与熔断 · Scheduler（tick=5 · ledger=15）</div>
+<div class="row hdr"><div>源</div><div>熔断态</div><div>连续失败</div><div>freshness/max_fail</div></div>
+<div class="row sched"><div><b>res_downloader_py</b><br><span class="sub">res-downloader-py（通用下载器）</span></div><div class="circ-closed">closed</div><div>0</div><div class="muted">1440m / 5</div></div>
+<div class="row sched"><div><b>xueqiu</b><br><span class="sub">雪球公开舆情（首条深度专线）</span></div><div class="circ-open">open</div><div>3</div><div class="muted">30m / 3</div></div>
+<div class="row sched"><div><b>guba</b><br><span class="sub">股吧舆情</span></div><div class="circ-closed">closed</div><div>0</div><div class="muted">60m / 5</div></div>
+<div class="row sched"><div><b>news</b><br><span class="sub">新闻聚合</span></div><div class="circ-closed">closed</div><div>0</div><div class="muted">30m / 5</div></div>
+<div class="row sched"><div><b>youtube_envelope</b><br><span class="sub">YouTube 系统外元信息包（仅 envelope，不碰原包）</span></div><div class="circ-closed">closed</div><div>0</div><div class="muted">4320m / 5</div></div>
+<div class="note">熔断态：closed=健康 / half_open=有过失败未达阈值 / open=已禁用或达 max_failures（连续失败指数退避，封顶基线×8）。本状态为合成调度演示，不触网。</div>
+</div>
+
+<div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem 1.25rem;">
+<div style="font-size:14px;font-weight:500;margin-bottom:12px;">质量 SLA / 合规 · 新鲜度与 PII 脱敏</div>
+<div class="row hdr"><div>源</div><div>新鲜度态</div><div>age/fresh</div><div>空观测比</div><div>熔断</div><div>PII命中</div></div>
+<div class="row qa"><div><b>res_downloader_py</b></div><div class="state-no_data">无数据</div><div class="muted">—/1440m</div><div class="muted">—</div><div class="muted">closed</div><div class="muted">0</div></div>
+<div class="row qa"><div><b>xueqiu</b></div><div class="state-breach">违约</div><div class="muted">762m/30m</div><div class="muted">0%</div><div class="muted">open</div><div class="muted">0</div></div>
+<div class="row qa"><div><b>guba</b></div><div class="state-breach">违约</div><div class="muted">762m/60m</div><div class="muted">33%</div><div class="muted">closed</div><div class="muted">0</div></div>
+<div class="row qa"><div><b>news</b></div><div class="state-breach">违约</div><div class="muted">762m/30m</div><div class="muted">0%</div><div class="muted">closed</div><div class="muted">0</div></div>
+<div class="row qa"><div><b>youtube_envelope</b></div><div class="state-breach">违约</div><div class="muted">18210m/4320m</div><div class="muted">0%</div><div class="muted">closed</div><div class="muted">0</div></div>
+<div class="note">新鲜度态：达标≤freshness / 滞后≤2×freshness / 违约&gt;2×freshness（按 sources.json 真实阈值）。PII：入湖前对 email/手机号/身份证脱敏，仅计数不落明文；本面板 PII 命中合计 0（合成数据通常 0，接真实采集后反映真实命中）。注：seed 时间戳为 2026-10-21/22，相对真实 now 已超 freshness，故多源正确显示违约——证明告警引擎有效。</div>
+</div>
+
+<div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem 1.25rem;margin-bottom:16px;">
+<div style="font-size:14px;font-weight:500;margin-bottom:12px;">分析→采集反馈环 · 闭环治理</div>
+<div class="row hdr"><div>源</div><div>反馈动作</div><div>触发原因</div></div>
+<div class="row fb"><div><b>res_downloader_py</b></div><div class="state-stale">加速补采</div><div class="muted">无观测，加速补采</div></div>
+<div class="row fb"><div><b>xueqiu</b></div><div class="state-stale">加速补采</div><div class="muted">新鲜度违约(&gt;60m)，加速补采</div></div>
+<div class="row fb"><div><b>guba</b></div><div class="state-stale">加速补采</div><div class="muted">新鲜度违约(&gt;120m)，加速补采</div></div>
+<div class="row fb"><div><b>news</b></div><div class="state-stale">加速补采</div><div class="muted">新鲜度违约(&gt;60m)，加速补采</div></div>
+<div class="row fb"><div><b>youtube_envelope</b></div><div class="state-stale">加速补采</div><div class="muted">新鲜度违约(&gt;8640m)，加速补采</div></div>
+<div class="note">闭环逻辑：质量 SLA 违约/滞后/无数据 → <b>加速补采</b>（强制下次到期=现在）；连续违约达阈值 → <b>熔断开闸</b>自动禁用 + 人工复核；PII 命中 → <b>合规降级</b>（即便曾授权也撤 training/redistribution/commercial）+ 人工复核。strike 计数等会话态由生产 CronRunner 的 FeedbackEngine 持有，本面板仅做单帧推算、不写源文件。</div>
+<div style="font-size:14px;font-weight:500;margin:14px 0 10px;">统一 cron 实体 · CronRunner</div>
+<div class="row hdr"><div>职责</div><div>实现</div></div>
+<div class="row cron"><div><b>到期派发</b></div><div class="muted">tick(now) 取 Scheduler.due_sources() → 经 CollectDispatcher 采集 → mark_collected 推进</div></div>
+<div class="row cron"><div><b>分析反馈环</b></div><div class="muted">每 tick 末跑 analyzer(SLA/PII) → FeedbackEngine.run 落反馈动作，闭环</div></div>
+<div class="row cron"><div><b>部署形态</b></div><div class="muted">run_forever(poll_interval) 真实轮询；now_provider/sleep_fn 可注入，单测用虚拟时钟</div></div>
+<div class="row cron"><div><b>收敛范围</b></div><div class="muted">替代 Orchestrator.as_scheduler 与分散 demo 循环，单一实体驱动采集</div></div>
+<div class="note">CronRunner 自身不触网；触网只在注入的 dispatcher 内，且须 RightsGate 授权。同一份代码既能单元测试（手动 tick + 注入 now），也能生产部署。</div>
+</div>
+
+<div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem 1.25rem;margin-bottom:16px;">
+<div style="font-size:14px;font-weight:500;margin-bottom:4px;">雪球收口终局 · 三层单源化（2026-11-01）</div>
+<div class="sub" style="margin-bottom:10px;">数据面（行级增量）= xq_pump；治理面（Observation/RightsGate/SLA/PII/反馈环）= intel_collector</div>
+<div class="row hdr"><div>层</div><div>单一真源</div><div>intel 侧</div><div>提交</div></div>
+<div class="row" style="grid-template-columns:1.5fr 1.8fr 2fr 0.8fr;"><div>解析（嵌套/扁平归一化）</div><div style="font-family:monospace;font-size:12px;color:var(--color-text-info);">xq_pump.extractors._parse</div><div class="muted">XqAdapter._normalize 委托</div><div class="sub">8cabea0e</div></div>
+<div class="row" style="grid-template-columns:1.5fr 1.8fr 2fr 0.8fr;"><div>传输（HTTP 栈/限速/token）</div><div style="font-family:monospace;font-size:12px;color:var(--color-text-info);">xq_pump.core.LiveSession</div><div class="muted">LiveXqFetcher 传输委托+治理壳</div><div class="sub">609294b4</div></div>
+<div class="row" style="grid-template-columns:1.5fr 1.8fr 2fr 0.8fr;"><div>调度/存储（行级+治理双写）</div><div style="font-family:monospace;font-size:12px;color:var(--color-text-info);">bridges.XqPumpDispatcher</div><div class="muted">CollectDispatcher 协议+Observation</div><div class="sub">34d816b2</div></div>
+<div style="font-size:13px;font-weight:500;margin:12px 0 6px;">归档盘点 · _archive_legacy_2026-11/（19 .py，全部带随迁测试可复验）</div>
+<div class="row hdr" style="grid-template-columns:1.4fr 2.6fr 0.9fr;"><div>批次</div><div>内容</div><div>提交</div></div>
+<div class="row" style="grid-template-columns:1.4fr 2.6fr 0.9fr;"><div>A 类·治理外壳</div><div class="muted">xq_grab_browser / xq_login / xq_token_refresh</div><div class="sub">e579d9b5</div></div>
+<div class="row" style="grid-template-columns:1.4fr 2.6fr 0.9fr;"><div>D①·归一化合一</div><div class="muted">xq_ticker_norm 单源 + tools shim + 迁移脚本×2</div><div class="sub">24b3ed92</div></div>
+<div class="row" style="grid-template-columns:1.4fr 2.6fr 0.9fr;"><div>B1-a·comments 迁移</div><div class="muted">extractors/comments.py（search.json 分页+复合 seen）</div><div class="sub">113880cc</div></div>
+<div class="row" style="grid-template-columns:1.4fr 2.6fr 0.9fr;"><div>D 组·死代码/探针</div><div class="muted">backfill_auto/seed_parallel + 时间线探针×5</div><div class="sub">728f83bc / a2617e4a</div></div>
+<div style="margin-top:12px;padding:8px 12px;border-radius:8px;background:var(--color-background-info);font-size:13px;color:var(--color-text-info);">B1-b（调度切换 xueqiu_crawl → xq_pump）执行件已就绪（start_xq_pump.ps1，BOM/语法/DRY 自测通过）；三前置闸：XQ_COOKIE 凭据 → aios 真实冒烟 → 老田五要素签字（见归档决策文档 runbook）。</div>
+</div>
+
+<footer>
+  采集即服务平台 intel_collector 原型控制台 · 数据均为 synthetic 或登记元数据，未触网、不含真实外部来源内容。
+  RightsGate 默认拒绝；training / redistribution / commercial 须显式批准。xueqiu_live 真实采集需 XQ_LIVE_ARMED + 真实 cookie 并经 RightsGate 授权。
+</footer>
+</body>
+</html>
