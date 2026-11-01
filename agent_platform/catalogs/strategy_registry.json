@@ -4591,5 +4591,572 @@
     "basis": "wave22 CH 阈值研究：通过率同为 50%，inference_heavy 误拦截 4→1；引用/支撑 100%、幻觉 0%",
     "affected": "kb_qa.ask(mode=multi) guard 默认、portal/api_kb_qa.py multi guard（重启后生效）、tests",
     "note": "已更新代码默认与文档；63 项相关测试通过。"
+  },
+  "research_hypotheses_20261101": {
+    "_note": "H37–H39 研究假设台账（untested）：只登记假设与验证计划，不产买卖信号、不改 S01–S04、不改 weights/approved/executable/live；证据文档 docs/plans/2026-11-01_H37_H39策略假设_v1.md（分支 task/WO-STRAT-HYP-20261101，commit 4c461bac1）",
+    "owner": "STRAT1（徐庶·策略研究员，假设复核）",
+    "registered_by": "plan-analyst（DSH·策略线代笔）",
+    "review_chain": [
+      "STRAT1",
+      "BACK1",
+      "ACAD1"
+    ],
+    "created_at": "2026-11-01T07:42:00+08:00",
+    "updated_at": "2026-11-01T07:42:00+08:00",
+    "evidence_doc": "docs/plans/2026-11-01_H37_H39策略假设_v1.md",
+    "total": 3,
+    "untested": 3,
+    "tested": 0,
+    "discipline": "status=untested 表示未过四关/未回测/未影子；不得进入 selection_engine、S02 排序或推送；晋升顺序=STRAT1 复核→BACK1 验证（n<30→insufficient）→ACAD1 评审→老田批准",
+    "items": [
+      {
+        "id": "H37",
+        "name": "银行政策脉冲（政策事件观察）",
+        "type": "event_watch",
+        "source": {
+          "pdf_id": "rp_AP202609301830038476",
+          "pdf_title": "《银行行业简评：财政分担融资成本，结构性工具提升投放动力》",
+          "publisher": "东海证券",
+          "pub_date": "2026-09-30",
+          "event": "2026-09-29 央行结构性货币政策工具调整（PSL 降息 25bp 至 1.50%、六张网扩围、科创技改再贷款 1.4 万亿/支持比例 100%、支农支小+5000 亿）+ 财政部等居民购房贷款贴息（10-01 起 1%×5 年、单户上限 100 万）",
+          "event_date": "2026-09-29"
+        },
+        "status": "untested",
+        "owner": "STRAT1",
+        "asset_anchor": {
+          "sector": "申万银行 L1",
+          "sector_code": "801780.SI",
+          "sector_active_members": 42,
+          "members": [
+            {
+              "code": "601658.SH",
+              "name": "邮储银行",
+              "tier": "报告点名"
+            },
+            {
+              "code": "600036.SH",
+              "name": "招商银行",
+              "tier": "报告点名"
+            },
+            {
+              "code": "601398.SH",
+              "name": "工商银行",
+              "tier": "大行"
+            },
+            {
+              "code": "601939.SH",
+              "name": "建设银行",
+              "tier": "大行"
+            },
+            {
+              "code": "601288.SH",
+              "name": "农业银行",
+              "tier": "大行"
+            },
+            {
+              "code": "601988.SH",
+              "name": "中国银行",
+              "tier": "大行"
+            },
+            {
+              "code": "601328.SH",
+              "name": "交通银行",
+              "tier": "大行"
+            },
+            {
+              "code": "601166.SH",
+              "name": "兴业银行",
+              "tier": "区域行"
+            },
+            {
+              "code": "002142.SZ",
+              "name": "宁波银行",
+              "tier": "区域行"
+            },
+            {
+              "code": "600919.SH",
+              "name": "江苏银行",
+              "tier": "区域行"
+            },
+            {
+              "code": "601838.SH",
+              "name": "成都银行",
+              "tier": "区域行"
+            },
+            {
+              "code": "600926.SH",
+              "name": "杭州银行",
+              "tier": "区域行"
+            },
+            {
+              "code": "601128.SH",
+              "name": "常熟银行",
+              "tier": "区域行"
+            }
+          ]
+        },
+        "validation_plan": {
+          "doc_section": "§2.9",
+          "data": "tushare daily+adj_factor（前复权）、daily_basic、sw_l1_member 801780.SI（PIT 成分）；板块收益=成分股合成（本地 index_daily 无申万行业指数）",
+          "window": "类比事件 T0-120~T0+60 交易日；当期事件 T0-20~T0+60；主判据 CAR[0,20]",
+          "control": "全市场等权（主基准）；非银行 SW L1 行业等权；区域行组 vs 大行组；红利高/低股息分组",
+          "sample": "历史类比政策事件 ≥8；锚池 13 只 + 板块 42 只",
+          "gate": "事件级 n<30 → insufficient 不出结论；重叠用非重叠抽样+block bootstrap"
+        },
+        "created_at": "2026-11-01T07:42:00+08:00",
+        "evidence_path": "docs/plans/2026-11-01_H37_H39策略假设_v1.md",
+        "produces_trade_signal": false
+      },
+      {
+        "id": "H38",
+        "name": "游戏政策定位重估（行业政策事件观察）",
+        "type": "event_watch",
+        "source": {
+          "pdf_id": "rp_AP202609301830023151",
+          "pdf_title": "《传媒行业跟踪报告：网络游戏首次系统写入〈出版业发展“十五五”规划〉，Meta 举办 Connect 2026 大会》",
+          "publisher": "万联证券",
+          "pub_date": "2026-09-28",
+          "event": "2026-09-21 国家新闻出版署《出版业发展“十五五”规划》：网络游戏首次系统写入，版号供给/精品遴选/国际传播/融合发展四条主线，监管基调「放量提质」",
+          "event_date": "2026-09-21"
+        },
+        "status": "untested",
+        "owner": "STRAT1",
+        "asset_anchor": {
+          "sector": "申万传媒 L1",
+          "sector_code": "801760.SI",
+          "sector_active_members": 130,
+          "members": [
+            {
+              "code": "002517.SZ",
+              "name": "恺英网络",
+              "tier": "游戏锚池"
+            },
+            {
+              "code": "002555.SZ",
+              "name": "三七互娱",
+              "tier": "游戏锚池"
+            },
+            {
+              "code": "002624.SZ",
+              "name": "完美世界",
+              "tier": "游戏锚池"
+            },
+            {
+              "code": "603444.SH",
+              "name": "吉比特",
+              "tier": "游戏锚池"
+            },
+            {
+              "code": "002558.SZ",
+              "name": "巨人网络",
+              "tier": "游戏锚池"
+            },
+            {
+              "code": "002602.SZ",
+              "name": "世纪华通",
+              "tier": "游戏锚池"
+            },
+            {
+              "code": "300418.SZ",
+              "name": "昆仑万维",
+              "tier": "游戏锚池"
+            },
+            {
+              "code": "002174.SZ",
+              "name": "游族网络",
+              "tier": "游戏锚池"
+            },
+            {
+              "code": "603258.SH",
+              "name": "电魂网络",
+              "tier": "游戏锚池"
+            },
+            {
+              "code": "300413.SZ",
+              "name": "芒果超媒",
+              "tier": "内容侧"
+            },
+            {
+              "code": "002027.SZ",
+              "name": "分众传媒",
+              "tier": "行业对照（非游戏）"
+            }
+          ]
+        },
+        "validation_plan": {
+          "doc_section": "§3.9",
+          "data": "tushare daily+adj_factor、daily_basic、sw_l1_member 801760.SI（PIT 成分）、anns_d（公告关键词 2019+）、npr（政策文本 1994+，需去重）；外部缺口=版号月发放量须人工登记",
+          "window": "类比事件 T0-120~T0+60 交易日；当期事件 T0-20~T0+60；主判据 CAR[0,20]",
+          "control": "全市场等权（主基准）；传媒内部非游戏组；负面对照事件（政策收紧类）；锚池 vs 传媒整体估值分位",
+          "sample": "历史类比政策事件 ≥6–8（含 ≥1 负面对照）；锚池 10 只 × 事件",
+          "gate": "事件级 n<30 → insufficient 不出结论；重叠用非重叠抽样+block bootstrap"
+        },
+        "created_at": "2026-11-01T07:42:00+08:00",
+        "evidence_path": "docs/plans/2026-11-01_H37_H39策略假设_v1.md",
+        "produces_trade_signal": false
+      },
+      {
+        "id": "H39",
+        "name": "AI 终端主题扩散（海外产品发布→主题映射）",
+        "type": "event_watch",
+        "source": {
+          "pdf_id": "rp_AP202609301830023151",
+          "pdf_title": "《传媒行业跟踪报告：网络游戏首次系统写入〈出版业发展“十五五”规划〉，Meta 举办 Connect 2026 大会》",
+          "publisher": "万联证券",
+          "pub_date": "2026-09-28",
+          "event": "2026-09-24 Meta Connect 2026：Ray-Ban Meta Audio（无摄像头音频 AI 眼镜，年底 100+ 款）、Meta VR Glasses（约 100g/Micro-OLED 5K/IMAX Enhanced/Disney+·YouTube·ESPN·MLB）、AI Agent Muse（Walmart/Best Buy/Expedia 合作）",
+          "event_date": "2026-09-24"
+        },
+        "status": "untested",
+        "owner": "STRAT1",
+        "asset_anchor": {
+          "sector": "申万电子 L1（主）+ 申万传媒 L1（内容侧）",
+          "sector_code": "801080.SI",
+          "sector_active_members": 493,
+          "secondary_sector_code": "801760.SI",
+          "members": [
+            {
+              "code": "002241.SZ",
+              "name": "歌尔股份",
+              "tier": "一级候选（待 DATA1 冻结）"
+            },
+            {
+              "code": "002475.SZ",
+              "name": "立讯精密",
+              "tier": "一级候选（待 DATA1 冻结）"
+            },
+            {
+              "code": "002273.SZ",
+              "name": "水晶光电",
+              "tier": "一级候选（待 DATA1 冻结）"
+            },
+            {
+              "code": "688127.SH",
+              "name": "蓝特光学",
+              "tier": "映射候选"
+            },
+            {
+              "code": "003021.SZ",
+              "name": "兆威机电",
+              "tier": "映射候选"
+            },
+            {
+              "code": "688608.SH",
+              "name": "恒玄科技",
+              "tier": "映射候选"
+            },
+            {
+              "code": "300793.SZ",
+              "name": "佳禾智能",
+              "tier": "映射候选"
+            },
+            {
+              "code": "301383.SZ",
+              "name": "天键股份",
+              "tier": "映射候选"
+            },
+            {
+              "code": "001314.SZ",
+              "name": "亿道信息",
+              "tier": "映射候选"
+            },
+            {
+              "code": "300413.SZ",
+              "name": "芒果超媒",
+              "tier": "内容侧"
+            }
+          ],
+          "hk_members_optional": [
+            {
+              "code": "02382.HK",
+              "name": "舜宇光学科技"
+            },
+            {
+              "code": "02018.HK",
+              "name": "瑞声科技"
+            },
+            {
+              "code": "02276.HK",
+              "name": "康耐特光学"
+            }
+          ]
+        },
+        "validation_plan": {
+          "doc_section": "§4.9",
+          "data": "tushare daily+adj_factor、daily_basic、sw_l1_member 801080.SI/801760.SI、anns_d（公告关键词）、research_report（仅当期）、hk_daily（可选）；外部缺口=META 行情/销量（本地 us_daily 无 META）、主题概念成分（concept_dict 无眼镜/游戏）",
+          "window": "类比事件 T0-120~T0+60 交易日；当期事件 T0-20~T0+60；主判据 CAR[0,20]",
+          "control": "全市场等权（主基准）；电子行业非锚池组；一级 vs 二级分层；港股映射（可选）；T0-20~T0 前置发酵检查",
+          "sample": "类比事件 ≥6；A 股锚池 10 只 + 港股 3 只（可选）",
+          "gate": "事件级 n<30 → insufficient 不出结论；重叠用事件聚类标准误+block bootstrap"
+        },
+        "created_at": "2026-11-01T07:42:00+08:00",
+        "evidence_path": "docs/plans/2026-11-01_H37_H39策略假设_v1.md",
+        "produces_trade_signal": false
+      }
+    ]
+  },
+  "guard_threshold_ab_20261101": {
+    "tool": "tools/kb_corpus/guard_threshold_ab.py",
+    "report": "research/reports/guard_threshold_ab_20261101.md",
+    "comparison": {
+      "threshold_0_6": {
+        "inference_max": 0.6,
+        "min_units": 2,
+        "total": 30,
+        "passed": 16,
+        "blocked": 14,
+        "pass_rate": 0.5333,
+        "fallback_rate": 0.4667,
+        "block_reasons": {
+          "insufficient_cited_units": 9,
+          "citation_missing": 7,
+          "inference_heavy": 11
+        },
+        "answerable_preserved": 16,
+        "answerable_rate_post": 0.5333,
+        "citation_resolvable_rate_post": 1.0,
+        "support_rate_post": 1.0,
+        "hallucination_rate_post": 0.0,
+        "avg_inference_density_post": 0.1439
+      },
+      "threshold_0_7": {
+        "inference_max": 0.7,
+        "min_units": 2,
+        "total": 30,
+        "passed": 17,
+        "blocked": 13,
+        "pass_rate": 0.5667,
+        "fallback_rate": 0.4333,
+        "block_reasons": {
+          "insufficient_cited_units": 9,
+          "citation_missing": 7,
+          "inference_heavy": 7
+        },
+        "answerable_preserved": 17,
+        "answerable_rate_post": 0.5667,
+        "citation_resolvable_rate_post": 1.0,
+        "support_rate_post": 1.0,
+        "hallucination_rate_post": 0.0,
+        "avg_inference_density_post": 0.1661
+      },
+      "delta": {
+        "pass_rate": 0.0334,
+        "fallback_rate": -0.0334,
+        "answerable_rate_post": 0.0334,
+        "citation_resolvable_rate_post": 0.0,
+        "support_rate_post": 0.0,
+        "hallucination_rate_post": 0
+      },
+      "inference_false_blocks": [
+        {
+          "id": "q2_1c1f28547f",
+          "inference_ratio": 0.6667,
+          "question": "大中华区零售市场趋势具体指什么，研报如何定义或描述？"
+        }
+      ],
+      "inference_false_block_count": 1,
+      "recommended_inference_max": 0.7,
+      "verdict": "维持 0.7：通过/可答率提升（或误拦截减少）且代理质量不降",
+      "reasons": [
+        "通过率：0.6 → 53%（16/30）；0.7 → 57%（17/30），Δ+3%。",
+        "fallback 率：47% → 43%；仅因 inference_heavy 的误拦截：1 条。",
+        "代理质量：可解析率 1.0 → 1.0；支撑率 1.0 → 1.0；幻觉率 0.0 → 0.0。"
+      ],
+      "risks": [
+        "被拦截行的代理质量按 fallback 后指标（可解析 100%/推断 0）估计，属保守假设，非真实答案质量。",
+        "样本受限：若 LLM 慢只跑前 N 条，结论为 effective 子集，需注明。",
+        "inference_ratio 依赖模型输出【直接事实】/【推断】标记，未标注时比率 0 可能低估计。",
+        "阈值切换属参数调整，不改 guard 代码；建议灰度并保留 0.6 回退能力。"
+      ]
+    },
+    "note": "guard 0.7 扩样（n=30，同一批答案离线 A/B）：0.6 通过 53.3% → 0.7 **56.7%**（+3.4pp）、fallback -3.4pp、inference 误拦截 1→0、引用/支撑/幻觉无下降 → **维持 0.7**。"
+  },
+  "card_revisions_20261101": {
+    "tool": "tools/kb_corpus/card_revision.py",
+    "report": "research/reports/card_revisions_20261101.md",
+    "summary": {
+      "total": 24,
+      "actions": {
+        "merge_fix": 14,
+        "drop": 10,
+        "keep_revise": 0
+      },
+      "by_source": {
+        "AE": {
+          "total": 8,
+          "merge_fix": 2,
+          "drop": 6,
+          "keep_revise": 0
+        },
+        "AV": {
+          "total": 16,
+          "merge_fix": 12,
+          "drop": 4,
+          "keep_revise": 0
+        }
+      },
+      "by_theme": [
+        {
+          "theme": "交运/物流",
+          "total": 4,
+          "merge_fix": 2,
+          "drop": 2,
+          "keep_revise": 0
+        },
+        {
+          "theme": "军工/航天",
+          "total": 3,
+          "merge_fix": 1,
+          "drop": 2,
+          "keep_revise": 0
+        },
+        {
+          "theme": "农业",
+          "total": 2,
+          "merge_fix": 2,
+          "drop": 0,
+          "keep_revise": 0
+        },
+        {
+          "theme": "医药/生物",
+          "total": 2,
+          "merge_fix": 2,
+          "drop": 0,
+          "keep_revise": 0
+        },
+        {
+          "theme": "半导体/电子",
+          "total": 1,
+          "merge_fix": 1,
+          "drop": 0,
+          "keep_revise": 0
+        },
+        {
+          "theme": "宏观/政策",
+          "total": 3,
+          "merge_fix": 1,
+          "drop": 2,
+          "keep_revise": 0
+        },
+        {
+          "theme": "有色/金属",
+          "total": 2,
+          "merge_fix": 2,
+          "drop": 0,
+          "keep_revise": 0
+        },
+        {
+          "theme": "机械/制造",
+          "total": 3,
+          "merge_fix": 1,
+          "drop": 2,
+          "keep_revise": 0
+        },
+        {
+          "theme": "消费/零售",
+          "total": 2,
+          "merge_fix": 0,
+          "drop": 2,
+          "keep_revise": 0
+        },
+        {
+          "theme": "通信/互联网",
+          "total": 1,
+          "merge_fix": 1,
+          "drop": 0,
+          "keep_revise": 0
+        },
+        {
+          "theme": "金融/地产",
+          "total": 1,
+          "merge_fix": 1,
+          "drop": 0,
+          "keep_revise": 0
+        }
+      ],
+      "fix_types": {
+        "q/a": 16,
+        "evidence": 3,
+        "source_ref": 8,
+        "a": 2
+      },
+      "drop_candidates": [
+        {
+          "revision_id": "RV-20261101-002",
+          "concept": "大中华区零售市场趋势",
+          "reason": "与现有学习卡重复（大中华区零售市场趋势）"
+        },
+        {
+          "revision_id": "RV-20261101-003",
+          "concept": "大模型商业化核心指标",
+          "reason": "与现有学习卡重复（大模型商业化核心指标）"
+        },
+        {
+          "revision_id": "RV-20261101-004",
+          "concept": "央行资产负债表保护机制",
+          "reason": "批内同 concept 重复（非主卡）"
+        },
+        {
+          "revision_id": "RV-20261101-005",
+          "concept": "四足机器人产业发展阶段",
+          "reason": "批内同 concept 重复（非主卡）"
+        },
+        {
+          "revision_id": "RV-20261101-006",
+          "concept": "国防军工行业周度表现",
+          "reason": "与现有学习卡重复（国防军工行业周度表现）"
+        },
+        {
+          "revision_id": "RV-20261101-008",
+          "concept": "跨境电子商务面临的四大挑战",
+          "reason": "与现有学习卡重复（跨境电子商务面临的四大挑战）"
+        },
+        {
+          "revision_id": "RV-20261101-010",
+          "concept": "北京零售市场现状",
+          "reason": "与现有学习卡重复（北京零售市场现状）"
+        },
+        {
+          "revision_id": "RV-20261101-011",
+          "concept": "进口产品排名",
+          "reason": "与现有学习卡重复（进口产品排名）"
+        },
+        {
+          "revision_id": "RV-20261101-013",
+          "concept": "国防军工行业周度表现",
+          "reason": "与现有学习卡重复（国防军工行业周度表现）"
+        },
+        {
+          "revision_id": "RV-20261101-015",
+          "concept": "主要快递公司业务量增速排名（1-8 月）",
+          "reason": "批内同 concept 重复（非主卡）"
+        }
+      ]
+    },
+    "note": "24 张 revise 卡修订建议：merge_fix 14 / drop 10 / keep 0（重复概念合并删除、出处规范化、长度截取）；未改 checklist/学习卡，待人工确认。"
+  },
+  "system_status_20261101": {
+    "report": "research/reports/system_status_20261101.json",
+    "deliverable": "deliverables/2026-11-01_系统总览与本轮收口_v1.md",
+    "stats": {
+      "skills": {
+        "total": 94,
+        "tools": 83
+      },
+      "knowledge": {
+        "units": 498,
+        "learning_cards": 56,
+        "qa_samples": 12,
+        "eval_sets": [
+          "eval_set_20261101_v2",
+          "eval_set_20261101_v3"
+        ]
+      },
+      "commits_today": {
+        "count": 177,
+        "head": "233c3ada0 merge task/WO-SCAN-NOTE-20261101: note误报豁免"
+      }
+    },
+    "note": "系统总览：策略库 5 策略（S01过滤/S02暂停/S03提醒/S04规划/S05关闭）、知识库 498 单元/56 学习卡/12 问答样本、评测集 v2+v3、工具 94；今日提交 170+。"
   }
 }

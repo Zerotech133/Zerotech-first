@@ -1,0 +1,2455 @@
+{
+ "schema_version": 1,
+ "date": "20261101",
+ "generated_at": "2026-11-01T13:12:21+08:00",
+ "generator": "tools/kb_corpus/card_revision.py",
+ "mode": "suggestion_only（不改 checklist/学习卡）",
+ "source": {
+  "checklist": "C:\\项目\\老田的AI助手\\research\\reports\\card_review_checklist_20261101.json",
+  "precheck": "C:\\项目\\老田的AI助手\\research\\reports\\card_precheck_20261101.json",
+  "existing_cards": "C:\\项目\\老田的AI助手\\portal\\static\\kb_learning_cards.json",
+  "existing_cards_count": 56,
+  "checklist_sha256": "2c82091d06b3e4f03cf8f9f9d215dff6d2649b3fa0534ee23f3f527feb9bd2df",
+  "precheck_sha256": "697b08e874005fb0c3a39569ed50d275645e8f2c5d9788e4d0619424a7c0fcbb",
+  "existing_cards_sha256": "80701c685882c88890c25cf543ba8fa89cfafd7b3185f752c560bcbab965fb56",
+  "checklist_sha256_after": "2c82091d06b3e4f03cf8f9f9d215dff6d2649b3fa0534ee23f3f527feb9bd2df",
+  "existing_cards_sha256_after": "80701c685882c88890c25cf543ba8fa89cfafd7b3185f752c560bcbab965fb56"
+ },
+ "policy": {
+  "target": "precheck suggested_verdict=revise 的卡片",
+  "actions": [
+   "merge_fix",
+   "drop",
+   "keep_revise"
+  ],
+  "thresholds": {
+   "min_answer_len": 40,
+   "max_answer_len": 220,
+   "align_min": 0.34
+  },
+  "status": "pending_manual_review",
+  "modifies_checklist": false,
+  "modifies_learning_cards": false
+ },
+ "summary": {
+  "total": 24,
+  "actions": {
+   "merge_fix": 14,
+   "drop": 10,
+   "keep_revise": 0
+  },
+  "by_source": {
+   "AE": {
+    "total": 8,
+    "merge_fix": 2,
+    "drop": 6,
+    "keep_revise": 0
+   },
+   "AV": {
+    "total": 16,
+    "merge_fix": 12,
+    "drop": 4,
+    "keep_revise": 0
+   }
+  },
+  "by_theme": [
+   {
+    "theme": "交运/物流",
+    "total": 4,
+    "merge_fix": 2,
+    "drop": 2,
+    "keep_revise": 0
+   },
+   {
+    "theme": "军工/航天",
+    "total": 3,
+    "merge_fix": 1,
+    "drop": 2,
+    "keep_revise": 0
+   },
+   {
+    "theme": "农业",
+    "total": 2,
+    "merge_fix": 2,
+    "drop": 0,
+    "keep_revise": 0
+   },
+   {
+    "theme": "医药/生物",
+    "total": 2,
+    "merge_fix": 2,
+    "drop": 0,
+    "keep_revise": 0
+   },
+   {
+    "theme": "半导体/电子",
+    "total": 1,
+    "merge_fix": 1,
+    "drop": 0,
+    "keep_revise": 0
+   },
+   {
+    "theme": "宏观/政策",
+    "total": 3,
+    "merge_fix": 1,
+    "drop": 2,
+    "keep_revise": 0
+   },
+   {
+    "theme": "有色/金属",
+    "total": 2,
+    "merge_fix": 2,
+    "drop": 0,
+    "keep_revise": 0
+   },
+   {
+    "theme": "机械/制造",
+    "total": 3,
+    "merge_fix": 1,
+    "drop": 2,
+    "keep_revise": 0
+   },
+   {
+    "theme": "消费/零售",
+    "total": 2,
+    "merge_fix": 0,
+    "drop": 2,
+    "keep_revise": 0
+   },
+   {
+    "theme": "通信/互联网",
+    "total": 1,
+    "merge_fix": 1,
+    "drop": 0,
+    "keep_revise": 0
+   },
+   {
+    "theme": "金融/地产",
+    "total": 1,
+    "merge_fix": 1,
+    "drop": 0,
+    "keep_revise": 0
+   }
+  ],
+  "fix_types": {
+   "q/a": 16,
+   "evidence": 3,
+   "source_ref": 8,
+   "a": 2
+  },
+  "drop_candidates": [
+   {
+    "revision_id": "RV-20261101-002",
+    "concept": "大中华区零售市场趋势",
+    "reason": "与现有学习卡重复（大中华区零售市场趋势）"
+   },
+   {
+    "revision_id": "RV-20261101-003",
+    "concept": "大模型商业化核心指标",
+    "reason": "与现有学习卡重复（大模型商业化核心指标）"
+   },
+   {
+    "revision_id": "RV-20261101-004",
+    "concept": "央行资产负债表保护机制",
+    "reason": "批内同 concept 重复（非主卡）"
+   },
+   {
+    "revision_id": "RV-20261101-005",
+    "concept": "四足机器人产业发展阶段",
+    "reason": "批内同 concept 重复（非主卡）"
+   },
+   {
+    "revision_id": "RV-20261101-006",
+    "concept": "国防军工行业周度表现",
+    "reason": "与现有学习卡重复（国防军工行业周度表现）"
+   },
+   {
+    "revision_id": "RV-20261101-008",
+    "concept": "跨境电子商务面临的四大挑战",
+    "reason": "与现有学习卡重复（跨境电子商务面临的四大挑战）"
+   },
+   {
+    "revision_id": "RV-20261101-010",
+    "concept": "北京零售市场现状",
+    "reason": "与现有学习卡重复（北京零售市场现状）"
+   },
+   {
+    "revision_id": "RV-20261101-011",
+    "concept": "进口产品排名",
+    "reason": "与现有学习卡重复（进口产品排名）"
+   },
+   {
+    "revision_id": "RV-20261101-013",
+    "concept": "国防军工行业周度表现",
+    "reason": "与现有学习卡重复（国防军工行业周度表现）"
+   },
+   {
+    "revision_id": "RV-20261101-015",
+    "concept": "主要快递公司业务量增速排名（1-8 月）",
+    "reason": "批内同 concept 重复（非主卡）"
+   }
+  ]
+ },
+ "revisions": [
+  {
+   "revision_id": "RV-20261101-001",
+   "review_id": "REV-20261101-008",
+   "source": "AE",
+   "source_card_id": "PROP-20261101-008",
+   "theme": "金融/地产",
+   "angle_cn": "—",
+   "concept": "土地出让价款缴纳政策",
+   "original": {
+    "question": "什么是「土地出让价款缴纳政策」？",
+    "answer": "北京和上海的在途项目中，已取得建设用地使用权但尚未取得建设工程规划许可证的项目，原则上按新政策执行，但在确保按时建成交付、加强预售资金监管的情况下，2027 年底前仍可按原有预售条件申请预售。",
+    "answer_summary": "北京和上海的在途项目中，已取得建设用地使用权但尚未取得建设工程规划许可证的项目，原则上按新政策执行，但在确保按时建成交付、加强预售资金监管的情况下，2027 年底前仍可按原有预售条件申请预售。",
+    "answer_len": 96,
+    "source_ref": "《rp_AP202609301830023754》 房地产行业点评报告 京沪现房销售细则落地，贴息支持需求释放 p1-2",
+    "page_start": 1,
+    "page_end": 2,
+    "unit_id": "1e145eb4e23e",
+    "evidence": "对于已取得建设用地使用权但尚未取得建设工程规划许可证的项目，原则上按新取得土地项目执行预售管理政策，但在确保按时建成交付、加强预售资金监管的情况下，2027 年底前仍可按原有预售条件申请预售。"
+   },
+   "precheck": {
+    "flags": [
+     "Q_ANSWER_MISMATCH"
+    ],
+    "reasons": [
+     "问题与答案概念覆盖低（0%）"
+    ],
+    "score": 88,
+    "confidence": "medium"
+   },
+   "analysis": {
+    "alignment": {
+     "concept": "土地出让价款缴纳政策",
+     "coverage": 0.0,
+     "needs_align": true,
+     "suggested_answer": "土地出让价款缴纳政策：北京和上海的在途项目中，已取得建设用地使用权但尚未取得建设工程规划许可证的项目，原则上按新政策执行，但在确保按时建成交付、加强预售资金监管的情况下，2027 年底前仍可按原有预售条件申请预售。",
+     "suggested_question": "「土地出让价款缴纳政策」的定义与要点是什么？"
+    },
+    "dedup": {
+     "in_existing": false,
+     "existing_concept": null,
+     "existing_source": null,
+     "evidence_sim_existing": null
+    },
+    "source": {
+     "source_ref": "《rp_AP202609301830023754》 房地产行业点评报告 京沪现房销售细则落地，贴息支持需求释放 p1-2",
+     "page_start": 1,
+     "page_end": 2,
+     "issues": [],
+     "suggested_source_ref": null
+    },
+    "length": {
+     "answer_len": 96,
+     "issues": [],
+     "suggested_answer": null
+    },
+    "batch_duplicate": false,
+    "batch_primary": true
+   },
+   "actions": [
+    {
+     "action": "merge_fix",
+     "field": "q/a",
+     "before": {
+      "q": "什么是「土地出让价款缴纳政策」？",
+      "a": "北京和上海的在途项目中，已取得建设用地使用权但尚未取得建设工程规划许可证的项目，原则上按新政策执行，但在确保按时建成交付、加强预售资金监管的情况下，2027 年底前仍可按原有预售条件申请预售。"
+     },
+     "after": {
+      "q": "「土地出让价款缴纳政策」的定义与要点是什么？",
+      "a": "土地出让价款缴纳政策：北京和上海的在途项目中，已取得建设用地使用权但尚未取得建设工程规划许可证的项目，原则上按新政策执行，但在确保按时建成交付、加强预售资金监管的情况下，2027 年底前仍可按原有预售条件申请预售。"
+     },
+     "reason": "概念-答案对齐：concept 覆盖仅 0%（<34%），建议答案加概念锚点/问题重写"
+    }
+   ],
+   "final_action": "merge_fix",
+   "reasons": [
+    "概念未在答案中体现（覆盖 0%）"
+   ],
+   "review": {
+    "checkboxes": {
+     "merge_fix": false,
+     "drop": false,
+     "keep_revise": false
+    },
+    "reviewer": "",
+    "notes": ""
+   },
+   "traceable": true
+  },
+  {
+   "revision_id": "RV-20261101-002",
+   "review_id": "REV-20261101-009",
+   "source": "AE",
+   "source_card_id": "PROP-20261101-009",
+   "theme": "消费/零售",
+   "angle_cn": "—",
+   "concept": "大中华区零售市场趋势",
+   "original": {
+    "question": "什么是「大中华区零售市场趋势」？",
+    "answer": "大中华区零售物业市场呈现以下七大发展趋势：下沉市场消费韧性强劲、体验经济重塑线下场景、演出市场热度持续、入境游与国内游双轮驱动消费增长、消费行为趋于理性保守、存量资产盘活与场景升级成为核心路径。",
+    "answer_summary": "大中华区零售物业市场呈现以下七大发展趋势：下沉市场消费韧性强劲、体验经济重塑线下场景、演出市场热度持续、入境游与国内游双轮驱动消费增长、消费行为趋于理性保守、存量资产盘活与场景升级成为核心路径。",
+    "answer_len": 97,
+    "source_ref": "《rp_AP202609301830015453》 06 p2-14",
+    "page_start": 2,
+    "page_end": 14,
+    "unit_id": "b2dee9dd9fb0",
+    "evidence": "中国零售物业市场竞争持续激烈...主要有以下发展趋势：下沉市场展现出强劲的消费韧性；体验经济重塑线下消费场景；演出市场热度持续；入境游国内游双轮驱动消费增长...受居民储蓄意愿持续偏高...消费行为更趋理性保守影响...长期来看，存量资产盘活、消费场景体验升级、品牌首店引入仍是市场提质升级核心路径。"
+   },
+   "precheck": {
+    "flags": [
+     "DUP_BATCH_CONCEPT",
+     "DUP_BATCH_EVIDENCE",
+     "THEME_OVER_QUOTA"
+    ],
+    "reasons": [
+     "批内同 concept 重复（2 张）",
+     "批内同 evidence 重复",
+     "主题候选超额（5 张 > 建议 ≤3，且本卡排名 5）"
+    ],
+    "score": 70,
+    "confidence": "medium"
+   },
+   "analysis": {
+    "alignment": {
+     "concept": "大中华区零售市场趋势",
+     "coverage": 1.0,
+     "needs_align": false,
+     "suggested_answer": null,
+     "suggested_question": null
+    },
+    "dedup": {
+     "in_existing": true,
+     "existing_concept": "大中华区零售市场趋势",
+     "existing_source": "《rp_AP202609301830015453》 06 p2-14",
+     "evidence_sim_existing": null
+    },
+    "source": {
+     "source_ref": "《rp_AP202609301830015453》 06 p2-14",
+     "page_start": 2,
+     "page_end": 14,
+     "issues": [
+      "page_span_wide"
+     ],
+     "suggested_source_ref": "《rp_AP202609301830015453》 06 p2-14"
+    },
+    "length": {
+     "answer_len": 97,
+     "issues": [],
+     "suggested_answer": null
+    },
+    "batch_duplicate": false,
+    "batch_primary": true
+   },
+   "actions": [
+    {
+     "action": "drop",
+     "field": "concept",
+     "reason": "concept 已在现有学习卡（大中华区零售市场趋势），建议不新增/合并到已有卡"
+    }
+   ],
+   "final_action": "drop",
+   "reasons": [
+    "与现有学习卡重复（大中华区零售市场趋势）"
+   ],
+   "review": {
+    "checkboxes": {
+     "merge_fix": false,
+     "drop": false,
+     "keep_revise": false
+    },
+    "reviewer": "",
+    "notes": ""
+   },
+   "traceable": true
+  },
+  {
+   "revision_id": "RV-20261101-003",
+   "review_id": "REV-20261101-011",
+   "source": "AE",
+   "source_card_id": "PROP-20261101-011",
+   "theme": "宏观/政策",
+   "angle_cn": "—",
+   "concept": "大模型商业化核心指标",
+   "original": {
+    "question": "什么是「大模型商业化核心指标」？",
+    "answer": "Token 调用量、API 定价、ARR（年度经常性收入）、企业客户数量及毛利率已成为衡量大模型厂商商业价值的关键经营指标，其重要性持续高于单纯的参数规模或排名。",
+    "answer_summary": "Token 调用量、API 定价、ARR（年度经常性收入）、企业客户数量及毛利率已成为衡量大模型厂商商业价值的关键经营指标，其重要性持续高于单纯的参数规模或排名。",
+    "answer_len": 81,
+    "source_ref": "《rp_AP202610061830167919》 与竞争格局前瞻 p1-13",
+    "page_start": 1,
+    "page_end": 13,
+    "unit_id": "4f38059eb573",
+    "evidence": "2025 年以来，Coding 付费、Agent 企业应用以及模型调用量增长，使市场对大模型公司的观察指标更加具体。除模型能力外，Token 调用量、API 价格、ARR、企业客户数量、续费情况、推理成本和毛利率的重要性持续上升。"
+   },
+   "precheck": {
+    "flags": [
+     "DUP_BATCH_CONCEPT",
+     "DUP_BATCH_EVIDENCE",
+     "THEME_OVER_QUOTA"
+    ],
+    "reasons": [
+     "批内同 concept 重复（2 张）",
+     "批内同 evidence 重复",
+     "主题候选超额（5 张 > 建议 ≤3，且本卡排名 4）"
+    ],
+    "score": 70,
+    "confidence": "medium"
+   },
+   "analysis": {
+    "alignment": {
+     "concept": "大模型商业化核心指标",
+     "coverage": 0.4,
+     "needs_align": false,
+     "suggested_answer": null,
+     "suggested_question": null
+    },
+    "dedup": {
+     "in_existing": true,
+     "existing_concept": "大模型商业化核心指标",
+     "existing_source": "《rp_AP202610061830167919》 与竞争格局前瞻 p1-13",
+     "evidence_sim_existing": null
+    },
+    "source": {
+     "source_ref": "《rp_AP202610061830167919》 与竞争格局前瞻 p1-13",
+     "page_start": 1,
+     "page_end": 13,
+     "issues": [
+      "page_span_wide"
+     ],
+     "suggested_source_ref": "《rp_AP202610061830167919》 与竞争格局前瞻 p1-13"
+    },
+    "length": {
+     "answer_len": 81,
+     "issues": [],
+     "suggested_answer": null
+    },
+    "batch_duplicate": false,
+    "batch_primary": true
+   },
+   "actions": [
+    {
+     "action": "drop",
+     "field": "concept",
+     "reason": "concept 已在现有学习卡（大模型商业化核心指标），建议不新增/合并到已有卡"
+    }
+   ],
+   "final_action": "drop",
+   "reasons": [
+    "与现有学习卡重复（大模型商业化核心指标）"
+   ],
+   "review": {
+    "checkboxes": {
+     "merge_fix": false,
+     "drop": false,
+     "keep_revise": false
+    },
+    "reviewer": "",
+    "notes": ""
+   },
+   "traceable": true
+  },
+  {
+   "revision_id": "RV-20261101-004",
+   "review_id": "REV-20261101-012",
+   "source": "AE",
+   "source_card_id": "PROP-20261101-012",
+   "theme": "宏观/政策",
+   "angle_cn": "—",
+   "concept": "央行资产负债表保护机制",
+   "original": {
+    "question": "什么是「央行资产负债表保护机制」？",
+    "answer": "美联储通过中介机构缓冲、以券换券转换风险形态及引入财政信用保护（如TARP资金或SPV股权投资）来明确极端损失的分担机制，避免直接救助单一失败机构。",
+    "answer_summary": "美联储通过中介机构缓冲、以券换券转换风险形态及引入财政信用保护（如TARP资金或SPV股权投资）来明确极端损失的分担机制，避免直接救助单一失败机构。",
+    "answer_len": 74,
+    "source_ref": "《rp_AP202610031830124602》 美联储非银流动性支持工具的实践、边界 与启示 p1-6",
+    "page_start": 1,
+    "page_end": 6,
+    "unit_id": "435306bd2a6d",
+    "evidence": "风险分担安排是美联储危机工具设计中的关键制度要素...一是 一是通过中介机构和SPV构建风险缓冲...二是 二是通过“以券换券”转换风险形态...三是 三是引入财政信用保护，明确极端损失的分担机制。《多德 - 弗兰克法案》后...不得以救助单一失败机构为目的。"
+   },
+   "precheck": {
+    "flags": [
+     "DUP_BATCH_CONCEPT",
+     "DUP_BATCH_EVIDENCE",
+     "Q_ANSWER_MISMATCH",
+     "THEME_OVER_QUOTA"
+    ],
+    "reasons": [
+     "问题与答案概念覆盖低（0%）",
+     "批内同 concept 重复（2 张）",
+     "批内同 evidence 重复",
+     "主题候选超额（5 张 > 建议 ≤3，且本卡排名 5）"
+    ],
+    "score": 58,
+    "confidence": "low"
+   },
+   "analysis": {
+    "alignment": {
+     "concept": "央行资产负债表保护机制",
+     "coverage": 0.0,
+     "needs_align": true,
+     "suggested_answer": "央行资产负债表保护机制：美联储通过中介机构缓冲、以券换券转换风险形态及引入财政信用保护（如TARP资金或SPV股权投资）来明确极端损失的分担机制，避免直接救助单一失败机构。",
+     "suggested_question": "「央行资产负债表保护机制」的定义与要点是什么？"
+    },
+    "dedup": {
+     "in_existing": false,
+     "existing_concept": null,
+     "existing_source": null,
+     "evidence_sim_existing": null
+    },
+    "source": {
+     "source_ref": "《rp_AP202610031830124602》 美联储非银流动性支持工具的实践、边界 与启示 p1-6",
+     "page_start": 1,
+     "page_end": 6,
+     "issues": [],
+     "suggested_source_ref": null
+    },
+    "length": {
+     "answer_len": 74,
+     "issues": [],
+     "suggested_answer": null
+    },
+    "batch_duplicate": true,
+    "batch_primary": false
+   },
+   "actions": [
+    {
+     "action": "drop",
+     "field": "concept",
+     "reason": "批内同 concept 重复且非主卡，建议合并到主卡"
+    },
+    {
+     "action": "merge_fix",
+     "field": "q/a",
+     "before": {
+      "q": "什么是「央行资产负债表保护机制」？",
+      "a": "美联储通过中介机构缓冲、以券换券转换风险形态及引入财政信用保护（如TARP资金或SPV股权投资）来明确极端损失的分担机制，避免直接救助单一失败机构。"
+     },
+     "after": {
+      "q": "「央行资产负债表保护机制」的定义与要点是什么？",
+      "a": "央行资产负债表保护机制：美联储通过中介机构缓冲、以券换券转换风险形态及引入财政信用保护（如TARP资金或SPV股权投资）来明确极端损失的分担机制，避免直接救助单一失败机构。"
+     },
+     "reason": "概念-答案对齐：concept 覆盖仅 0%（<34%），建议答案加概念锚点/问题重写"
+    },
+    {
+     "action": "merge_fix",
+     "field": "evidence",
+     "reason": "批内证据重复：建议保留一卡或补充差异化证据（需人工）"
+    }
+   ],
+   "final_action": "drop",
+   "reasons": [
+    "批内同 concept 重复（非主卡）",
+    "概念未在答案中体现（覆盖 0%）",
+    "批内证据重复（需差异化或合并）"
+   ],
+   "review": {
+    "checkboxes": {
+     "merge_fix": false,
+     "drop": false,
+     "keep_revise": false
+    },
+    "reviewer": "",
+    "notes": ""
+   },
+   "traceable": true
+  },
+  {
+   "revision_id": "RV-20261101-005",
+   "review_id": "REV-20261101-016",
+   "source": "AE",
+   "source_card_id": "PROP-20261101-016",
+   "theme": "机械/制造",
+   "angle_cn": "—",
+   "concept": "四足机器人产业发展阶段",
+   "original": {
+    "question": "什么是「四足机器人产业发展阶段」？",
+    "answer": "中国四足机器人产业自20世纪60年代起步，经历验证可行性（1960-1980）、系统研究（1980-2005）、工程化转化（2005-2010）及产业化应用探索（2010-2022），目前进入高动态、高负载发展的加速期。",
+    "answer_summary": "中国四足机器人产业自20世纪60年代起步，经历验证可行性（1960-1980）、系统研究（1980-2005）、工程化转化（2005-2010）及产业化应用探索（2010-2022），目前进入高动态、高负载发展的加速期。",
+    "answer_len": 110,
+    "source_ref": "《rp_AP202610021830105414》 中国四足机器人商业化研究报告 p1-13",
+    "page_start": 1,
+    "page_end": 13,
+    "unit_id": "81b7d0b41699",
+    "evidence": "自20世纪60年代起步...2005年，波士顿动力推出BigDog...推动该领域进入高动态、高负载发展新阶段。中国相关高校和科研院所开始系统研究。863计划设立“高性能四足仿生机器人”项目..."
+   },
+   "precheck": {
+    "flags": [
+     "DUP_BATCH_CONCEPT",
+     "DUP_BATCH_EVIDENCE",
+     "THEME_OVER_QUOTA"
+    ],
+    "reasons": [
+     "批内同 concept 重复（2 张）",
+     "批内同 evidence 重复",
+     "主题候选超额（5 张 > 建议 ≤3，且本卡排名 5）"
+    ],
+    "score": 70,
+    "confidence": "medium"
+   },
+   "analysis": {
+    "alignment": {
+     "concept": "四足机器人产业发展阶段",
+     "coverage": 0.6,
+     "needs_align": false,
+     "suggested_answer": null,
+     "suggested_question": null
+    },
+    "dedup": {
+     "in_existing": false,
+     "existing_concept": null,
+     "existing_source": null,
+     "evidence_sim_existing": null
+    },
+    "source": {
+     "source_ref": "《rp_AP202610021830105414》 中国四足机器人商业化研究报告 p1-13",
+     "page_start": 1,
+     "page_end": 13,
+     "issues": [
+      "page_span_wide"
+     ],
+     "suggested_source_ref": "《rp_AP202610021830105414》 中国四足机器人商业化研究报告 p1-13"
+    },
+    "length": {
+     "answer_len": 110,
+     "issues": [],
+     "suggested_answer": null
+    },
+    "batch_duplicate": true,
+    "batch_primary": false
+   },
+   "actions": [
+    {
+     "action": "drop",
+     "field": "concept",
+     "reason": "批内同 concept 重复且非主卡，建议合并到主卡"
+    },
+    {
+     "action": "merge_fix",
+     "field": "source_ref",
+     "before": "《rp_AP202610021830105414》 中国四足机器人商业化研究报告 p1-13",
+     "after": "《rp_AP202610021830105414》 中国四足机器人商业化研究报告 p1-13",
+     "reason": "出处规范化：page_span_wide"
+    },
+    {
+     "action": "merge_fix",
+     "field": "evidence",
+     "reason": "批内证据重复：建议保留一卡或补充差异化证据（需人工）"
+    }
+   ],
+   "final_action": "drop",
+   "reasons": [
+    "批内同 concept 重复（非主卡）",
+    "出处/页码需规范化（page_span_wide）",
+    "批内证据重复（需差异化或合并）"
+   ],
+   "review": {
+    "checkboxes": {
+     "merge_fix": false,
+     "drop": false,
+     "keep_revise": false
+    },
+    "reviewer": "",
+    "notes": ""
+   },
+   "traceable": true
+  },
+  {
+   "revision_id": "RV-20261101-006",
+   "review_id": "REV-20261101-017",
+   "source": "AE",
+   "source_card_id": "PROP-20261101-017",
+   "theme": "军工/航天",
+   "angle_cn": "—",
+   "concept": "国防军工行业周度表现",
+   "original": {
+    "question": "什么是「国防军工行业周度表现」？",
+    "answer": "上周（2026.9.14-2026.9.18）国防军工板块下跌 0.8%，落后沪深 300 指数 0.74 个百分点，在申万行业涨幅中排名第 22 位。",
+    "answer_summary": "上周（2026.9.14-2026.9.18）国防军工板块下跌 0.8%，落后沪深 300 指数 0.74 个百分点，在申万行业涨幅中排名第 22 位。",
+    "answer_len": 76,
+    "source_ref": "《rp_AP202610021830105332》 看好 p1-9",
+    "page_start": 1,
+    "page_end": 9,
+    "unit_id": "018138a5ae7e",
+    "evidence": "上周（2026.9.14-2026.9.18）国防军工（申万）板块下跌 0.8%，沪深 300 指数下跌 0.06%，国防军工板块落后沪深 300 指数 0.74 个百分点。和其他行业对比，国防军工行业上周排名申万行业涨幅第 22 位。"
+   },
+   "precheck": {
+    "flags": [
+     "DUP_BATCH_CONCEPT",
+     "THEME_OVER_QUOTA"
+    ],
+    "reasons": [
+     "批内同 concept 重复（3 张）",
+     "主题候选超额（5 张 > 建议 ≤3，且本卡排名 4）"
+    ],
+    "score": 78,
+    "confidence": "medium"
+   },
+   "analysis": {
+    "alignment": {
+     "concept": "国防军工行业周度表现",
+     "coverage": 0.6,
+     "needs_align": false,
+     "suggested_answer": null,
+     "suggested_question": null
+    },
+    "dedup": {
+     "in_existing": true,
+     "existing_concept": "国防军工行业周度表现",
+     "existing_source": "《rp_AP202610021830105365》 看好 p1-9",
+     "evidence_sim_existing": null
+    },
+    "source": {
+     "source_ref": "《rp_AP202610021830105332》 看好 p1-9",
+     "page_start": 1,
+     "page_end": 9,
+     "issues": [],
+     "suggested_source_ref": null
+    },
+    "length": {
+     "answer_len": 76,
+     "issues": [],
+     "suggested_answer": null
+    },
+    "batch_duplicate": true,
+    "batch_primary": true
+   },
+   "actions": [
+    {
+     "action": "drop",
+     "field": "concept",
+     "reason": "concept 已在现有学习卡（国防军工行业周度表现），建议不新增/合并到已有卡"
+    }
+   ],
+   "final_action": "drop",
+   "reasons": [
+    "与现有学习卡重复（国防军工行业周度表现）"
+   ],
+   "review": {
+    "checkboxes": {
+     "merge_fix": false,
+     "drop": false,
+     "keep_revise": false
+    },
+    "reviewer": "",
+    "notes": ""
+   },
+   "traceable": true
+  },
+  {
+   "revision_id": "RV-20261101-007",
+   "review_id": "REV-20261101-019",
+   "source": "AE",
+   "source_card_id": "PROP-20261101-019",
+   "theme": "交运/物流",
+   "angle_cn": "—",
+   "concept": "主要快递公司业务量增速排名（1-8 月）",
+   "original": {
+    "question": "什么是「主要快递公司业务量增速排名（1-8 月）」？",
+    "answer": "2026 年 1-8 月累计业务量增速排序为：申通快递 (16.6%) > 圆通速递 (10.3%) > 顺丰控股 (-1.7%) > 韵达股份 (-3.0%)。",
+    "answer_summary": "2026 年 1-8 月累计业务量增速排序为：申通快递 (16.6%) > 圆通速递 (10.3%) > 顺丰控股 (-1.7%) > 韵达股份 (-3.0%)。",
+    "answer_len": 81,
+    "source_ref": "《rp_AP202609301830034661》 8 月快递行业月度数据跟踪报告 强于大市(维持) p1-3",
+    "page_start": 1,
+    "page_end": 3,
+    "unit_id": "4593bfb38da5",
+    "evidence": "1-8 月业务量增速排序（件量/亿票，同比增速）：申通快递（194.37 亿票，16.6%）>圆通速递（220.10 亿票，10.3%）>顺丰控股（104.19 亿票，-1.7%）>韵达股份（165.30 亿票，-3.0%）。"
+   },
+   "precheck": {
+    "flags": [
+     "Q_ANSWER_MISMATCH"
+    ],
+    "reasons": [
+     "问题与答案概念覆盖低（17%）"
+    ],
+    "score": 88,
+    "confidence": "medium"
+   },
+   "analysis": {
+    "alignment": {
+     "concept": "主要快递公司业务量增速排名（1-8 月）",
+     "coverage": 0.1667,
+     "needs_align": true,
+     "suggested_answer": "主要快递公司业务量增速排名（1-8 月）：2026 年 1-8 月累计业务量增速排序为：申通快递 (16.6%) > 圆通速递 (10.3%) > 顺丰控股 (-1.7%) > 韵达股份 (-3.0%)。",
+     "suggested_question": "「主要快递公司业务量增速排名（1-8 月）」的定义与要点是什么？"
+    },
+    "dedup": {
+     "in_existing": false,
+     "existing_concept": null,
+     "existing_source": null,
+     "evidence_sim_existing": null
+    },
+    "source": {
+     "source_ref": "《rp_AP202609301830034661》 8 月快递行业月度数据跟踪报告 强于大市(维持) p1-3",
+     "page_start": 1,
+     "page_end": 3,
+     "issues": [],
+     "suggested_source_ref": null
+    },
+    "length": {
+     "answer_len": 81,
+     "issues": [],
+     "suggested_answer": null
+    },
+    "batch_duplicate": true,
+    "batch_primary": true
+   },
+   "actions": [
+    {
+     "action": "merge_fix",
+     "field": "q/a",
+     "before": {
+      "q": "什么是「主要快递公司业务量增速排名（1-8 月）」？",
+      "a": "2026 年 1-8 月累计业务量增速排序为：申通快递 (16.6%) > 圆通速递 (10.3%) > 顺丰控股 (-1.7%) > 韵达股份 (-3.0%)。"
+     },
+     "after": {
+      "q": "「主要快递公司业务量增速排名（1-8 月）」的定义与要点是什么？",
+      "a": "主要快递公司业务量增速排名（1-8 月）：2026 年 1-8 月累计业务量增速排序为：申通快递 (16.6%) > 圆通速递 (10.3%) > 顺丰控股 (-1.7%) > 韵达股份 (-3.0%)。"
+     },
+     "reason": "概念-答案对齐：concept 覆盖仅 17%（<34%），建议答案加概念锚点/问题重写"
+    }
+   ],
+   "final_action": "merge_fix",
+   "reasons": [
+    "概念未在答案中体现（覆盖 17%）"
+   ],
+   "review": {
+    "checkboxes": {
+     "merge_fix": false,
+     "drop": false,
+     "keep_revise": false
+    },
+    "reviewer": "",
+    "notes": ""
+   },
+   "traceable": true
+  },
+  {
+   "revision_id": "RV-20261101-008",
+   "review_id": "REV-20261101-020",
+   "source": "AE",
+   "source_card_id": "PROP-20261101-020",
+   "theme": "交运/物流",
+   "angle_cn": "—",
+   "concept": "跨境电子商务面临的四大挑战",
+   "original": {
+    "question": "什么是「跨境电子商务面临的四大挑战」？",
+    "answer": "东盟中小微企业在从事跨境数字贸易时面临四大主要制约：监管与市场准入要求复杂、连接生态系统困难（物流/支付）、缺乏专门技能（如数字营销）以及信息差距。",
+    "answer_summary": "东盟中小微企业在从事跨境数字贸易时面临四大主要制约：监管与市场准入要求复杂、连接生态系统困难（物流/支付）、缺乏专门技能（如数字营销）以及信息差距。",
+    "answer_len": 74,
+    "source_ref": "《rp_AP202609301830015407》 5. p5-17",
+    "page_start": 5,
+    "page_end": 17,
+    "unit_id": "d4febece27e5",
+    "evidence": "该报告确定了四大主要挑战领域。首先，企业在进入外国市场时，会遇到监管和市场准入要求方面的挑战...其次，中小微企业面临连接更广泛的电子商务生态系统的困难...第三，企业通常缺乏有效运营数字贸易环境所需的专门技能...第四，关于可用的支持工具、服务以及能够促进参与跨境电子商务的生态系统合作伙伴的信息差距仍然存在。"
+   },
+   "precheck": {
+    "flags": [
+     "DUP_BATCH_CONCEPT",
+     "DUP_BATCH_EVIDENCE",
+     "THEME_OVER_QUOTA"
+    ],
+    "reasons": [
+     "批内同 concept 重复（2 张）",
+     "批内同 evidence 重复",
+     "主题候选超额（5 张 > 建议 ≤3，且本卡排名 5）"
+    ],
+    "score": 70,
+    "confidence": "medium"
+   },
+   "analysis": {
+    "alignment": {
+     "concept": "跨境电子商务面临的四大挑战",
+     "coverage": 0.5,
+     "needs_align": false,
+     "suggested_answer": null,
+     "suggested_question": null
+    },
+    "dedup": {
+     "in_existing": true,
+     "existing_concept": "跨境电子商务面临的四大挑战",
+     "existing_source": "《rp_AP202609301830015407》 5. p5-17",
+     "evidence_sim_existing": null
+    },
+    "source": {
+     "source_ref": "《rp_AP202609301830015407》 5. p5-17",
+     "page_start": 5,
+     "page_end": 17,
+     "issues": [
+      "page_span_wide"
+     ],
+     "suggested_source_ref": "《rp_AP202609301830015407》 5. p5-17"
+    },
+    "length": {
+     "answer_len": 74,
+     "issues": [],
+     "suggested_answer": null
+    },
+    "batch_duplicate": false,
+    "batch_primary": true
+   },
+   "actions": [
+    {
+     "action": "drop",
+     "field": "concept",
+     "reason": "concept 已在现有学习卡（跨境电子商务面临的四大挑战），建议不新增/合并到已有卡"
+    }
+   ],
+   "final_action": "drop",
+   "reasons": [
+    "与现有学习卡重复（跨境电子商务面临的四大挑战）"
+   ],
+   "review": {
+    "checkboxes": {
+     "merge_fix": false,
+     "drop": false,
+     "keep_revise": false
+    },
+    "reviewer": "",
+    "notes": ""
+   },
+   "traceable": true
+  },
+  {
+   "revision_id": "RV-20261101-009",
+   "review_id": "REV-20261101-023",
+   "source": "AV",
+   "source_card_id": "CP2-20261101-003",
+   "theme": "宏观/政策",
+   "angle_cn": "影响传导",
+   "concept": "央行资产负债表保护机制",
+   "original": {
+    "question": "「央行资产负债表保护机制」的影响与传导逻辑是什么？",
+    "answer": "美联储通过中介机构缓冲、以券换券转换风险形态及引入财政信用保护（如TARP资金或SPV股权投资）来明确极端损失的分担机制，避免直接救助单一失败机构。 原文依据：风险分担安排是美联储危机工具设计中的关键制度要素...一是 一是通过中介机构和SPV构建风险缓冲...二是 二是通过“以券换券”转换风险形态...三是 三是引入财政信用保护，明确极端损失的分担机制。《多德 - 弗兰克法案》后...不得以救助单一失败机构为目的。",
+    "answer_summary": "美联储通过中介机构缓冲、以券换券转换风险形态及引入财政信用保护（如TARP资金或SPV股权投资）来明确极端损失的分担机制，避免直接救助单一失败机构。 原文依据：风险分担安排是美联储危机工具设计中的关键制度要素...一是 一是通过中介机构和SPV构建风险缓冲...二是 二是通过“以券换券”转换风险形态...三是…",
+    "answer_len": 210,
+    "source_ref": "《rp_AP202610031830124602》 美联储非银流动性支持工具的实践、边界 与启示 p1-6",
+    "page_start": 1,
+    "page_end": 6,
+    "unit_id": "f6bbd1535811",
+    "evidence": "风险分担安排是美联储危机工具设计中的关键制度要素...一是 一是通过中介机构和SPV构建风险缓冲...二是 二是通过“以券换券”转换风险形态...三是 三是引入财政信用保护，明确极端损失的分担机制。《多德 - 弗兰克法案》后...不得以救助单一失败机构为目的。"
+   },
+   "precheck": {
+    "flags": [
+     "Q_ANSWER_MISMATCH"
+    ],
+    "reasons": [
+     "问题与答案概念覆盖低（0%）"
+    ],
+    "score": 88,
+    "confidence": "medium"
+   },
+   "analysis": {
+    "alignment": {
+     "concept": "央行资产负债表保护机制",
+     "coverage": 0.0,
+     "needs_align": true,
+     "suggested_answer": "央行资产负债表保护机制：美联储通过中介机构缓冲、以券换券转换风险形态及引入财政信用保护（如TARP资金或SPV股权投资）来明确极端损失的分担机制，避免直接救助单一失败机构。 原文依据：风险分担安排是美联储危机工具设计中的关键制度要素...一是 一是通过中介机构和SPV构建风险缓冲...二是 二是通过“以券换券”转换风险形态...三是 三是引入财政信用保护，明确极端损失的分担机制。《多德 - 弗兰克法案》后...不得以救助单一失败机构为目的。",
+     "suggested_question": "「央行资产负债表保护机制」的定义与要点是什么？"
+    },
+    "dedup": {
+     "in_existing": false,
+     "existing_concept": null,
+     "existing_source": null,
+     "evidence_sim_existing": null
+    },
+    "source": {
+     "source_ref": "《rp_AP202610031830124602》 美联储非银流动性支持工具的实践、边界 与启示 p1-6",
+     "page_start": 1,
+     "page_end": 6,
+     "issues": [],
+     "suggested_source_ref": null
+    },
+    "length": {
+     "answer_len": 210,
+     "issues": [],
+     "suggested_answer": null
+    },
+    "batch_duplicate": true,
+    "batch_primary": true
+   },
+   "actions": [
+    {
+     "action": "merge_fix",
+     "field": "q/a",
+     "before": {
+      "q": "「央行资产负债表保护机制」的影响与传导逻辑是什么？",
+      "a": "美联储通过中介机构缓冲、以券换券转换风险形态及引入财政信用保护（如TARP资金或SPV股权投资）来明确极端损失的分担机制，避免直接救助单一失败机构。 原文依据：风险分担安排是美联储危机工具设计中的关键制度要素...一是 一是通过中介机构和SPV构建风险缓冲...二是 二是通过“以券换券”转换风险形态...三是 三是引入财政信用保护，明确极端损失的分担机制。《多德 - 弗兰克法案》后...不得以救助单一失败机构为目的。"
+     },
+     "after": {
+      "q": "「央行资产负债表保护机制」的定义与要点是什么？",
+      "a": "央行资产负债表保护机制：美联储通过中介机构缓冲、以券换券转换风险形态及引入财政信用保护（如TARP资金或SPV股权投资）来明确极端损失的分担机制，避免直接救助单一失败机构。 原文依据：风险分担安排是美联储危机工具设计中的关键制度要素...一是 一是通过中介机构和SPV构建风险缓冲...二是 二是通过“以券换券”转换风险形态...三是 三是引入财政信用保护，明确极端损失的分担机制。《多德 - 弗兰克法案》后...不得以救助单一失败机构为目的。"
+     },
+     "reason": "概念-答案对齐：concept 覆盖仅 0%（<34%），建议答案加概念锚点/问题重写"
+    }
+   ],
+   "final_action": "merge_fix",
+   "reasons": [
+    "概念未在答案中体现（覆盖 0%）"
+   ],
+   "review": {
+    "checkboxes": {
+     "merge_fix": false,
+     "drop": false,
+     "keep_revise": false
+    },
+    "reviewer": "",
+    "notes": ""
+   },
+   "traceable": true
+  },
+  {
+   "revision_id": "RV-20261101-010",
+   "review_id": "REV-20261101-024",
+   "source": "AV",
+   "source_card_id": "CP2-20261101-004",
+   "theme": "消费/零售",
+   "angle_cn": "概念定义",
+   "concept": "北京零售市场现状",
+   "original": {
+    "question": "什么是「北京零售市场现状」？",
+    "answer": "截至2026年上半年，北京零售市场总存量为953万平方米（其中购物中心765万平方米），优质购物中心平均租金报价为883元/月/平方米，空置率为10.4%。未来趋势为存量优化为主，新增供应为辅。",
+    "answer_summary": "截至2026年上半年，北京零售市场总存量为953万平方米（其中购物中心765万平方米），优质购物中心平均租金报价为883元/月/平方米，空置率为10.4%。未来趋势为存量优化为主，新增供应为辅。",
+    "answer_len": 97,
+    "source_ref": "《rp_AP202609301830015453》 06 p2-14",
+    "page_start": 2,
+    "page_end": 14,
+    "unit_id": "dd02cab720e0",
+    "evidence": "截至2026年上半年，北京零售市场总存量为953万平方米，其中购物中心存量765万平方米...优质购物中心平均租金报价为人民币883元每月每平方米，空置率为10.4%...未来整体市场的供应节奏将进一步放缓，项目分区域分阶段开业也将成为长期趋势。"
+   },
+   "precheck": {
+    "flags": [
+     "DUP_BATCH_ANSWER",
+     "DUP_BATCH_CONCEPT",
+     "DUP_BATCH_EVIDENCE",
+     "THEME_OVER_QUOTA"
+    ],
+    "reasons": [
+     "批内同 concept 重复（2 张）",
+     "批内同 evidence 重复",
+     "批内同答案重复",
+     "主题候选超额（5 张 > 建议 ≤3，且本卡排名 4）"
+    ],
+    "score": 52,
+    "confidence": "low"
+   },
+   "analysis": {
+    "alignment": {
+     "concept": "北京零售市场现状",
+     "coverage": 0.75,
+     "needs_align": false,
+     "suggested_answer": null,
+     "suggested_question": null
+    },
+    "dedup": {
+     "in_existing": true,
+     "existing_concept": "北京零售市场现状",
+     "existing_source": "《rp_AP202609301830015453》 06 p2-14",
+     "evidence_sim_existing": null
+    },
+    "source": {
+     "source_ref": "《rp_AP202609301830015453》 06 p2-14",
+     "page_start": 2,
+     "page_end": 14,
+     "issues": [
+      "page_span_wide"
+     ],
+     "suggested_source_ref": "《rp_AP202609301830015453》 06 p2-14"
+    },
+    "length": {
+     "answer_len": 97,
+     "issues": [],
+     "suggested_answer": null
+    },
+    "batch_duplicate": false,
+    "batch_primary": true
+   },
+   "actions": [
+    {
+     "action": "drop",
+     "field": "concept",
+     "reason": "concept 已在现有学习卡（北京零售市场现状），建议不新增/合并到已有卡"
+    }
+   ],
+   "final_action": "drop",
+   "reasons": [
+    "与现有学习卡重复（北京零售市场现状）"
+   ],
+   "review": {
+    "checkboxes": {
+     "merge_fix": false,
+     "drop": false,
+     "keep_revise": false
+    },
+    "reviewer": "",
+    "notes": ""
+   },
+   "traceable": true
+  },
+  {
+   "revision_id": "RV-20261101-011",
+   "review_id": "REV-20261101-027",
+   "source": "AV",
+   "source_card_id": "CP2-20261101-007",
+   "theme": "机械/制造",
+   "angle_cn": "概念定义",
+   "concept": "进口产品排名",
+   "original": {
+    "question": "什么是「进口产品排名」？",
+    "answer": "2026 年 8 月当月，中国工业机器人进口额前三的产品为其他多功能工业机器人（59.9 百万美元）、集成电路工厂专用的自动搬运机器人（56.2 百万美元）和喷涂机器人（14.0 百万美元）。",
+    "answer_summary": "2026 年 8 月当月，中国工业机器人进口额前三的产品为其他多功能工业机器人（59.9 百万美元）、集成电路工厂专用的自动搬运机器人（56.2 百万美元）和喷涂机器人（14.0 百万美元）。",
+    "answer_len": 96,
+    "source_ref": "《rp_AP202610061830165858》 一、贸易总体情况 p2-9",
+    "page_start": 2,
+    "page_end": 9,
+    "unit_id": "bdecc4365632",
+    "evidence": "2026 年 8 月，中国工业机器人进口额排名前三的产品为其他多功能工业机器人、集成电路工厂专用的自动搬运机器人和喷涂机器人，分别进口 59.9 百万美元、56.2 百万美元和 14.0 百万美元。"
+   },
+   "precheck": {
+    "flags": [
+     "DUP_BATCH_ANSWER",
+     "DUP_BATCH_CONCEPT",
+     "DUP_BATCH_EVIDENCE",
+     "THEME_OVER_QUOTA"
+    ],
+    "reasons": [
+     "批内同 concept 重复（2 张）",
+     "批内同 evidence 重复",
+     "批内同答案重复",
+     "主题候选超额（5 张 > 建议 ≤3，且本卡排名 4）"
+    ],
+    "score": 52,
+    "confidence": "low"
+   },
+   "analysis": {
+    "alignment": {
+     "concept": "进口产品排名",
+     "coverage": 0.6667,
+     "needs_align": false,
+     "suggested_answer": null,
+     "suggested_question": null
+    },
+    "dedup": {
+     "in_existing": true,
+     "existing_concept": "进口产品排名",
+     "existing_source": "《rp_AP202610061830165858》 一、贸易总体情况 p2-9",
+     "evidence_sim_existing": null
+    },
+    "source": {
+     "source_ref": "《rp_AP202610061830165858》 一、贸易总体情况 p2-9",
+     "page_start": 2,
+     "page_end": 9,
+     "issues": [],
+     "suggested_source_ref": null
+    },
+    "length": {
+     "answer_len": 96,
+     "issues": [],
+     "suggested_answer": null
+    },
+    "batch_duplicate": false,
+    "batch_primary": true
+   },
+   "actions": [
+    {
+     "action": "drop",
+     "field": "concept",
+     "reason": "concept 已在现有学习卡（进口产品排名），建议不新增/合并到已有卡"
+    }
+   ],
+   "final_action": "drop",
+   "reasons": [
+    "与现有学习卡重复（进口产品排名）"
+   ],
+   "review": {
+    "checkboxes": {
+     "merge_fix": false,
+     "drop": false,
+     "keep_revise": false
+    },
+    "reviewer": "",
+    "notes": ""
+   },
+   "traceable": true
+  },
+  {
+   "revision_id": "RV-20261101-012",
+   "review_id": "REV-20261101-028",
+   "source": "AV",
+   "source_card_id": "CP2-20261101-008",
+   "theme": "机械/制造",
+   "angle_cn": "关键事实",
+   "concept": "四足机器人产业发展阶段",
+   "original": {
+    "question": "「四足机器人产业发展阶段」的关键事实/数据是什么？",
+    "answer": "自20世纪60年代起步...2005年，波士顿动力推出BigDog...推动该领域进入高动态、高负载发展新阶段。中国相关高校和科研院所开始系统研究。863计划设立“高性能四足仿生机器人”项目...",
+    "answer_summary": "自20世纪60年代起步...2005年，波士顿动力推出BigDog...推动该领域进入高动态、高负载发展新阶段。中国相关高校和科研院所开始系统研究。863计划设立“高性能四足仿生机器人”项目...",
+    "answer_len": 98,
+    "source_ref": "《rp_AP202610021830105414》 中国四足机器人商业化研究报告 p1-13",
+    "page_start": 1,
+    "page_end": 13,
+    "unit_id": "bc56d8f316a3",
+    "evidence": "自20世纪60年代起步...2005年，波士顿动力推出BigDog...推动该领域进入高动态、高负载发展新阶段。中国相关高校和科研院所开始系统研究。863计划设立“高性能四足仿生机器人”项目..."
+   },
+   "precheck": {
+    "flags": [
+     "ANSWER_TRUNCATED",
+     "Q_ANSWER_MISMATCH"
+    ],
+    "reasons": [
+     "答案含截断/占位符（… 或 待补充）",
+     "问题与答案概念覆盖低（0%）"
+    ],
+    "score": 76,
+    "confidence": "medium"
+   },
+   "analysis": {
+    "alignment": {
+     "concept": "四足机器人产业发展阶段",
+     "coverage": 0.0,
+     "needs_align": true,
+     "suggested_answer": "四足机器人产业发展阶段：自20世纪60年代起步...2005年，波士顿动力推出BigDog...推动该领域进入高动态、高负载发展新阶段。中国相关高校和科研院所开始系统研究。863计划设立“高性能四足仿生机器人”项目...",
+     "suggested_question": "「四足机器人产业发展阶段」的定义与要点是什么？"
+    },
+    "dedup": {
+     "in_existing": false,
+     "existing_concept": null,
+     "existing_source": null,
+     "evidence_sim_existing": null
+    },
+    "source": {
+     "source_ref": "《rp_AP202610021830105414》 中国四足机器人商业化研究报告 p1-13",
+     "page_start": 1,
+     "page_end": 13,
+     "issues": [
+      "page_span_wide"
+     ],
+     "suggested_source_ref": "《rp_AP202610021830105414》 中国四足机器人商业化研究报告 p1-13"
+    },
+    "length": {
+     "answer_len": 98,
+     "issues": [
+      "answer_too_short_or_truncated"
+     ],
+     "suggested_answer": "自20世纪60年代起步...2005年，波士顿动力推出BigDog...推动该领域进入高动态、高负载发展新阶段。中国相关高校和科研院所开始系统研究。863计划设立“高性能四足仿生机器人”项目。自20世纪60年代起步...2005年，波士顿动力推出BigDog...推动该领域进入高动态、高负载发展新阶段。中国相关高校和科研院所开始系统研究。863计划设立“高性能四足仿生机器人”项目..."
+    },
+    "batch_duplicate": true,
+    "batch_primary": true
+   },
+   "actions": [
+    {
+     "action": "merge_fix",
+     "field": "q/a",
+     "before": {
+      "q": "「四足机器人产业发展阶段」的关键事实/数据是什么？",
+      "a": "自20世纪60年代起步...2005年，波士顿动力推出BigDog...推动该领域进入高动态、高负载发展新阶段。中国相关高校和科研院所开始系统研究。863计划设立“高性能四足仿生机器人”项目..."
+     },
+     "after": {
+      "q": "「四足机器人产业发展阶段」的定义与要点是什么？",
+      "a": "四足机器人产业发展阶段：自20世纪60年代起步...2005年，波士顿动力推出BigDog...推动该领域进入高动态、高负载发展新阶段。中国相关高校和科研院所开始系统研究。863计划设立“高性能四足仿生机器人”项目..."
+     },
+     "reason": "概念-答案对齐：concept 覆盖仅 0%（<34%），建议答案加概念锚点/问题重写"
+    },
+    {
+     "action": "merge_fix",
+     "field": "source_ref",
+     "before": "《rp_AP202610021830105414》 中国四足机器人商业化研究报告 p1-13",
+     "after": "《rp_AP202610021830105414》 中国四足机器人商业化研究报告 p1-13",
+     "reason": "出处规范化：page_span_wide"
+    },
+    {
+     "action": "merge_fix",
+     "field": "a",
+     "before": "自20世纪60年代起步...2005年，波士顿动力推出BigDog...推动该领域进入高动态、高负载发展新阶段。中国相关高校和科研院所开始系统研究。863计划设立“高性能四足仿生机器人”项目...",
+     "after": "自20世纪60年代起步...2005年，波士顿动力推出BigDog...推动该领域进入高动态、高负载发展新阶段。中国相关高校和科研院所开始系统研究。863计划设立“高性能四足仿生机器人”项目。自20世纪60年代起步...2005年，波士顿动力推出BigDog...推动该领域进入高动态、高负载发展新阶段。中国相关高校和科研院所开始系统研究。863计划设立“高性能四足仿生机器人”项目...",
+     "reason": "答案长度修订：answer_too_short_or_truncated"
+    }
+   ],
+   "final_action": "merge_fix",
+   "reasons": [
+    "概念未在答案中体现（覆盖 0%）",
+    "出处/页码需规范化（page_span_wide）",
+    "答案长度/截断需修订（answer_too_short_or_truncated）"
+   ],
+   "review": {
+    "checkboxes": {
+     "merge_fix": false,
+     "drop": false,
+     "keep_revise": false
+    },
+    "reviewer": "",
+    "notes": ""
+   },
+   "traceable": true
+  },
+  {
+   "revision_id": "RV-20261101-013",
+   "review_id": "REV-20261101-030",
+   "source": "AV",
+   "source_card_id": "CP2-20261101-010",
+   "theme": "军工/航天",
+   "angle_cn": "概念定义",
+   "concept": "国防军工行业周度表现",
+   "original": {
+    "question": "什么是「国防军工行业周度表现」？",
+    "answer": "上周（2026.9.14-2026.9.18）国防军工板块下跌 0.8%，落后沪深 300 指数 0.74 个百分点，在申万行业涨幅中排名第 22 位。",
+    "answer_summary": "上周（2026.9.14-2026.9.18）国防军工板块下跌 0.8%，落后沪深 300 指数 0.74 个百分点，在申万行业涨幅中排名第 22 位。",
+    "answer_len": 76,
+    "source_ref": "《rp_AP202610021830105332》 看好 p1-9",
+    "page_start": 1,
+    "page_end": 9,
+    "unit_id": "083bf5c69ee9",
+    "evidence": "上周（2026.9.14-2026.9.18）国防军工（申万）板块下跌 0.8%，沪深 300 指数下跌 0.06%，国防军工板块落后沪深 300 指数 0.74 个百分点。和其他行业对比，国防军工行业上周排名申万行业涨幅第 22 位。"
+   },
+   "precheck": {
+    "flags": [
+     "DUP_BATCH_ANSWER",
+     "DUP_BATCH_CONCEPT",
+     "DUP_BATCH_EVIDENCE",
+     "THEME_OVER_QUOTA"
+    ],
+    "reasons": [
+     "批内同 concept 重复（3 张）",
+     "批内同 evidence 重复",
+     "批内同答案重复",
+     "主题候选超额（5 张 > 建议 ≤3，且本卡排名 5）"
+    ],
+    "score": 52,
+    "confidence": "low"
+   },
+   "analysis": {
+    "alignment": {
+     "concept": "国防军工行业周度表现",
+     "coverage": 0.6,
+     "needs_align": false,
+     "suggested_answer": null,
+     "suggested_question": null
+    },
+    "dedup": {
+     "in_existing": true,
+     "existing_concept": "国防军工行业周度表现",
+     "existing_source": "《rp_AP202610021830105365》 看好 p1-9",
+     "evidence_sim_existing": null
+    },
+    "source": {
+     "source_ref": "《rp_AP202610021830105332》 看好 p1-9",
+     "page_start": 1,
+     "page_end": 9,
+     "issues": [],
+     "suggested_source_ref": null
+    },
+    "length": {
+     "answer_len": 76,
+     "issues": [],
+     "suggested_answer": null
+    },
+    "batch_duplicate": true,
+    "batch_primary": false
+   },
+   "actions": [
+    {
+     "action": "drop",
+     "field": "concept",
+     "reason": "concept 已在现有学习卡（国防军工行业周度表现），建议不新增/合并到已有卡"
+    },
+    {
+     "action": "drop",
+     "field": "concept",
+     "reason": "批内同 concept 重复且非主卡，建议合并到主卡"
+    }
+   ],
+   "final_action": "drop",
+   "reasons": [
+    "与现有学习卡重复（国防军工行业周度表现）",
+    "批内同 concept 重复（非主卡）"
+   ],
+   "review": {
+    "checkboxes": {
+     "merge_fix": false,
+     "drop": false,
+     "keep_revise": false
+    },
+    "reviewer": "",
+    "notes": ""
+   },
+   "traceable": true
+  },
+  {
+   "revision_id": "RV-20261101-014",
+   "review_id": "REV-20261101-031",
+   "source": "AV",
+   "source_card_id": "CP2-20261101-011",
+   "theme": "军工/航天",
+   "angle_cn": "关键事实",
+   "concept": "航空业运力与需求",
+   "original": {
+    "question": "「航空业运力与需求」的关键事实/数据是什么？",
+    "answer": "2026 年 1-8 月上市航司 RPK 和 ASK 同比分别变动+5.4% 和+3.1%，较 1-7 月分别上升 0.2pct 和 0.3pct。",
+    "answer_summary": "2026 年 1-8 月上市航司 RPK 和 ASK 同比分别变动+5.4% 和+3.1%，较 1-7 月分别上升 0.2pct 和 0.3pct。",
+    "answer_len": 74,
+    "source_ref": "《rp_AP202609301830022766》 8 月航空业月度数据跟踪报告 强于大市(维持) p1-3",
+    "page_start": 1,
+    "page_end": 3,
+    "unit_id": "a2776d0cb066",
+    "evidence": "2026 年 1-8 月上市航司 RPK 和 ASK 同比分别变动+5.4% 和+3.1%，较 1-7 月分别上升 0.2pct 和 0.3pct。"
+   },
+   "precheck": {
+    "flags": [
+     "Q_ANSWER_MISMATCH"
+    ],
+    "reasons": [
+     "问题与答案概念覆盖低（0%）"
+    ],
+    "score": 88,
+    "confidence": "medium"
+   },
+   "analysis": {
+    "alignment": {
+     "concept": "航空业运力与需求",
+     "coverage": 0.0,
+     "needs_align": true,
+     "suggested_answer": "航空业运力与需求：2026 年 1-8 月上市航司 RPK 和 ASK 同比分别变动+5.4% 和+3.1%，较 1-7 月分别上升 0.2pct 和 0.3pct。",
+     "suggested_question": "「航空业运力与需求」的定义与要点是什么？"
+    },
+    "dedup": {
+     "in_existing": false,
+     "existing_concept": null,
+     "existing_source": null,
+     "evidence_sim_existing": null
+    },
+    "source": {
+     "source_ref": "《rp_AP202609301830022766》 8 月航空业月度数据跟踪报告 强于大市(维持) p1-3",
+     "page_start": 1,
+     "page_end": 3,
+     "issues": [],
+     "suggested_source_ref": null
+    },
+    "length": {
+     "answer_len": 74,
+     "issues": [],
+     "suggested_answer": null
+    },
+    "batch_duplicate": false,
+    "batch_primary": true
+   },
+   "actions": [
+    {
+     "action": "merge_fix",
+     "field": "q/a",
+     "before": {
+      "q": "「航空业运力与需求」的关键事实/数据是什么？",
+      "a": "2026 年 1-8 月上市航司 RPK 和 ASK 同比分别变动+5.4% 和+3.1%，较 1-7 月分别上升 0.2pct 和 0.3pct。"
+     },
+     "after": {
+      "q": "「航空业运力与需求」的定义与要点是什么？",
+      "a": "航空业运力与需求：2026 年 1-8 月上市航司 RPK 和 ASK 同比分别变动+5.4% 和+3.1%，较 1-7 月分别上升 0.2pct 和 0.3pct。"
+     },
+     "reason": "概念-答案对齐：concept 覆盖仅 0%（<34%），建议答案加概念锚点/问题重写"
+    }
+   ],
+   "final_action": "merge_fix",
+   "reasons": [
+    "概念未在答案中体现（覆盖 0%）"
+   ],
+   "review": {
+    "checkboxes": {
+     "merge_fix": false,
+     "drop": false,
+     "keep_revise": false
+    },
+    "reviewer": "",
+    "notes": ""
+   },
+   "traceable": true
+  },
+  {
+   "revision_id": "RV-20261101-015",
+   "review_id": "REV-20261101-036",
+   "source": "AV",
+   "source_card_id": "CP2-20261101-016",
+   "theme": "交运/物流",
+   "angle_cn": "概念定义",
+   "concept": "主要快递公司业务量增速排名（1-8 月）",
+   "original": {
+    "question": "什么是「主要快递公司业务量增速排名（1-8 月）」？",
+    "answer": "2026 年 1-8 月累计业务量增速排序为：申通快递 (16.6%) > 圆通速递 (10.3%) > 顺丰控股 (-1.7%) > 韵达股份 (-3.0%)。",
+    "answer_summary": "2026 年 1-8 月累计业务量增速排序为：申通快递 (16.6%) > 圆通速递 (10.3%) > 顺丰控股 (-1.7%) > 韵达股份 (-3.0%)。",
+    "answer_len": 81,
+    "source_ref": "《rp_AP202609301830034661》 8 月快递行业月度数据跟踪报告 强于大市(维持) p1-3",
+    "page_start": 1,
+    "page_end": 3,
+    "unit_id": "87fdd6a08f5b",
+    "evidence": "1-8 月业务量增速排序（件量/亿票，同比增速）：申通快递（194.37 亿票，16.6%）>圆通速递（220.10 亿票，10.3%）>顺丰控股（104.19 亿票，-1.7%）>韵达股份（165.30 亿票，-3.0%）。"
+   },
+   "precheck": {
+    "flags": [
+     "DUP_BATCH_ANSWER",
+     "DUP_BATCH_CONCEPT",
+     "DUP_BATCH_EVIDENCE",
+     "Q_ANSWER_MISMATCH",
+     "THEME_OVER_QUOTA"
+    ],
+    "reasons": [
+     "问题与答案概念覆盖低（17%）",
+     "批内同 concept 重复（2 张）",
+     "批内同 evidence 重复",
+     "批内同答案重复",
+     "主题候选超额（5 张 > 建议 ≤3，且本卡排名 4）"
+    ],
+    "score": 40,
+    "confidence": "low"
+   },
+   "analysis": {
+    "alignment": {
+     "concept": "主要快递公司业务量增速排名（1-8 月）",
+     "coverage": 0.1667,
+     "needs_align": true,
+     "suggested_answer": "主要快递公司业务量增速排名（1-8 月）：2026 年 1-8 月累计业务量增速排序为：申通快递 (16.6%) > 圆通速递 (10.3%) > 顺丰控股 (-1.7%) > 韵达股份 (-3.0%)。",
+     "suggested_question": "「主要快递公司业务量增速排名（1-8 月）」的定义与要点是什么？"
+    },
+    "dedup": {
+     "in_existing": false,
+     "existing_concept": null,
+     "existing_source": null,
+     "evidence_sim_existing": null
+    },
+    "source": {
+     "source_ref": "《rp_AP202609301830034661》 8 月快递行业月度数据跟踪报告 强于大市(维持) p1-3",
+     "page_start": 1,
+     "page_end": 3,
+     "issues": [],
+     "suggested_source_ref": null
+    },
+    "length": {
+     "answer_len": 81,
+     "issues": [],
+     "suggested_answer": null
+    },
+    "batch_duplicate": true,
+    "batch_primary": false
+   },
+   "actions": [
+    {
+     "action": "drop",
+     "field": "concept",
+     "reason": "批内同 concept 重复且非主卡，建议合并到主卡"
+    },
+    {
+     "action": "merge_fix",
+     "field": "q/a",
+     "before": {
+      "q": "什么是「主要快递公司业务量增速排名（1-8 月）」？",
+      "a": "2026 年 1-8 月累计业务量增速排序为：申通快递 (16.6%) > 圆通速递 (10.3%) > 顺丰控股 (-1.7%) > 韵达股份 (-3.0%)。"
+     },
+     "after": {
+      "q": "「主要快递公司业务量增速排名（1-8 月）」的定义与要点是什么？",
+      "a": "主要快递公司业务量增速排名（1-8 月）：2026 年 1-8 月累计业务量增速排序为：申通快递 (16.6%) > 圆通速递 (10.3%) > 顺丰控股 (-1.7%) > 韵达股份 (-3.0%)。"
+     },
+     "reason": "概念-答案对齐：concept 覆盖仅 17%（<34%），建议答案加概念锚点/问题重写"
+    },
+    {
+     "action": "drop",
+     "field": "answer",
+     "reason": "批内答案重复（与主卡相同），建议合并/删除"
+    },
+    {
+     "action": "merge_fix",
+     "field": "evidence",
+     "reason": "批内证据重复：建议保留一卡或补充差异化证据（需人工）"
+    }
+   ],
+   "final_action": "drop",
+   "reasons": [
+    "批内同 concept 重复（非主卡）",
+    "概念未在答案中体现（覆盖 17%）",
+    "批内答案重复",
+    "批内证据重复（需差异化或合并）"
+   ],
+   "review": {
+    "checkboxes": {
+     "merge_fix": false,
+     "drop": false,
+     "keep_revise": false
+    },
+    "reviewer": "",
+    "notes": ""
+   },
+   "traceable": true
+  },
+  {
+   "revision_id": "RV-20261101-016",
+   "review_id": "REV-20261101-037",
+   "source": "AV",
+   "source_card_id": "CP2-20261101-017",
+   "theme": "交运/物流",
+   "angle_cn": "关键事实",
+   "concept": "航运市场运价与租金数据",
+   "original": {
+    "question": "「航运市场运价与租金数据」的关键事实/数据是什么？",
+    "answer": "上周，中国出口集装箱运价综合指数为 1917.68，环比上涨 20.53 点...Fearnleys 一年期租金（油船:VLCC）为 170000 美元/天，环比上涨 10000 美元/天。",
+    "answer_summary": "上周，中国出口集装箱运价综合指数为 1917.68，环比上涨 20.53 点...Fearnleys 一年期租金（油船:VLCC）为 170000 美元/天，环比上涨 10000 美元/天。",
+    "answer_len": 95,
+    "source_ref": "《rp_AP202610021830105365》 看好 p1-9",
+    "page_start": 1,
+    "page_end": 9,
+    "unit_id": "c2c07d8549b3",
+    "evidence": "上周，中国出口集装箱运价综合指数为 1917.68，环比上涨 20.53 点...Fearnleys 一年期租金（油船:VLCC）为 170000 美元/天，环比上涨 10000 美元/天。"
+   },
+   "precheck": {
+    "flags": [
+     "Q_ANSWER_MISMATCH"
+    ],
+    "reasons": [
+     "问题与答案概念覆盖低（0%）"
+    ],
+    "score": 88,
+    "confidence": "medium"
+   },
+   "analysis": {
+    "alignment": {
+     "concept": "航运市场运价与租金数据",
+     "coverage": 0.0,
+     "needs_align": true,
+     "suggested_answer": "航运市场运价与租金数据：上周，中国出口集装箱运价综合指数为 1917.68，环比上涨 20.53 点...Fearnleys 一年期租金（油船:VLCC）为 170000 美元/天，环比上涨 10000 美元/天。",
+     "suggested_question": "「航运市场运价与租金数据」的定义与要点是什么？"
+    },
+    "dedup": {
+     "in_existing": false,
+     "existing_concept": null,
+     "existing_source": null,
+     "evidence_sim_existing": null
+    },
+    "source": {
+     "source_ref": "《rp_AP202610021830105365》 看好 p1-9",
+     "page_start": 1,
+     "page_end": 9,
+     "issues": [],
+     "suggested_source_ref": null
+    },
+    "length": {
+     "answer_len": 95,
+     "issues": [],
+     "suggested_answer": null
+    },
+    "batch_duplicate": false,
+    "batch_primary": true
+   },
+   "actions": [
+    {
+     "action": "merge_fix",
+     "field": "q/a",
+     "before": {
+      "q": "「航运市场运价与租金数据」的关键事实/数据是什么？",
+      "a": "上周，中国出口集装箱运价综合指数为 1917.68，环比上涨 20.53 点...Fearnleys 一年期租金（油船:VLCC）为 170000 美元/天，环比上涨 10000 美元/天。"
+     },
+     "after": {
+      "q": "「航运市场运价与租金数据」的定义与要点是什么？",
+      "a": "航运市场运价与租金数据：上周，中国出口集装箱运价综合指数为 1917.68，环比上涨 20.53 点...Fearnleys 一年期租金（油船:VLCC）为 170000 美元/天，环比上涨 10000 美元/天。"
+     },
+     "reason": "概念-答案对齐：concept 覆盖仅 0%（<34%），建议答案加概念锚点/问题重写"
+    }
+   ],
+   "final_action": "merge_fix",
+   "reasons": [
+    "概念未在答案中体现（覆盖 0%）"
+   ],
+   "review": {
+    "checkboxes": {
+     "merge_fix": false,
+     "drop": false,
+     "keep_revise": false
+    },
+    "reviewer": "",
+    "notes": ""
+   },
+   "traceable": true
+  },
+  {
+   "revision_id": "RV-20261101-017",
+   "review_id": "REV-20261101-039",
+   "source": "AV",
+   "source_card_id": "CP2-20261101-019",
+   "theme": "通信/互联网",
+   "angle_cn": "概念定义",
+   "concept": "第三方评测环境安全漏洞",
+   "original": {
+    "question": "什么是「第三方评测环境安全漏洞」？",
+    "answer": "模型厂商内部训练环境可控，但红队机构或云服务商等第三方合作伙伴可能接触高权限工具，供应链身份管理和临时凭证管理成为必要的安全环节。",
+    "answer_summary": "模型厂商内部训练环境可控，但红队机构或云服务商等第三方合作伙伴可能接触高权限工具，供应链身份管理和临时凭证管理成为必要的安全环节。",
+    "answer_len": 65,
+    "source_ref": "《rp_AP202610061830170460》 图表目录 p2-14",
+    "page_start": 2,
+    "page_end": 14,
+    "unit_id": "707930426c1f",
+    "evidence": "模型厂商可以对内部训练环境执行严格控制，但红队机构、评测伙伴、数据标注商和云服务商可能接触模型检查点、API 密钥、客户数据或高权限工具。供应链身份管理、临时凭证、操作审计和分级访问将成为AI 安全体系的一部分。"
+   },
+   "precheck": {
+    "flags": [
+     "Q_ANSWER_MISMATCH"
+    ],
+    "reasons": [
+     "问题与答案概念覆盖低（0%）"
+    ],
+    "score": 88,
+    "confidence": "medium"
+   },
+   "analysis": {
+    "alignment": {
+     "concept": "第三方评测环境安全漏洞",
+     "coverage": 0.0,
+     "needs_align": true,
+     "suggested_answer": "第三方评测环境安全漏洞：模型厂商内部训练环境可控，但红队机构或云服务商等第三方合作伙伴可能接触高权限工具，供应链身份管理和临时凭证管理成为必要的安全环节。",
+     "suggested_question": "「第三方评测环境安全漏洞」的定义与要点是什么？"
+    },
+    "dedup": {
+     "in_existing": false,
+     "existing_concept": null,
+     "existing_source": null,
+     "evidence_sim_existing": null
+    },
+    "source": {
+     "source_ref": "《rp_AP202610061830170460》 图表目录 p2-14",
+     "page_start": 2,
+     "page_end": 14,
+     "issues": [
+      "page_span_wide"
+     ],
+     "suggested_source_ref": "《rp_AP202610061830170460》 图表目录 p2-14"
+    },
+    "length": {
+     "answer_len": 65,
+     "issues": [],
+     "suggested_answer": null
+    },
+    "batch_duplicate": false,
+    "batch_primary": true
+   },
+   "actions": [
+    {
+     "action": "merge_fix",
+     "field": "q/a",
+     "before": {
+      "q": "什么是「第三方评测环境安全漏洞」？",
+      "a": "模型厂商内部训练环境可控，但红队机构或云服务商等第三方合作伙伴可能接触高权限工具，供应链身份管理和临时凭证管理成为必要的安全环节。"
+     },
+     "after": {
+      "q": "「第三方评测环境安全漏洞」的定义与要点是什么？",
+      "a": "第三方评测环境安全漏洞：模型厂商内部训练环境可控，但红队机构或云服务商等第三方合作伙伴可能接触高权限工具，供应链身份管理和临时凭证管理成为必要的安全环节。"
+     },
+     "reason": "概念-答案对齐：concept 覆盖仅 0%（<34%），建议答案加概念锚点/问题重写"
+    },
+    {
+     "action": "merge_fix",
+     "field": "source_ref",
+     "before": "《rp_AP202610061830170460》 图表目录 p2-14",
+     "after": "《rp_AP202610061830170460》 图表目录 p2-14",
+     "reason": "出处规范化：page_span_wide"
+    }
+   ],
+   "final_action": "merge_fix",
+   "reasons": [
+    "概念未在答案中体现（覆盖 0%）",
+    "出处/页码需规范化（page_span_wide）"
+   ],
+   "review": {
+    "checkboxes": {
+     "merge_fix": false,
+     "drop": false,
+     "keep_revise": false
+    },
+    "reviewer": "",
+    "notes": ""
+   },
+   "traceable": true
+  },
+  {
+   "revision_id": "RV-20261101-018",
+   "review_id": "REV-20261101-043",
+   "source": "AV",
+   "source_card_id": "CP2-20261101-023",
+   "theme": "农业",
+   "angle_cn": "关键事实",
+   "concept": "中国畜禽肉产品贸易结构变化",
+   "original": {
+    "question": "「中国畜禽肉产品贸易结构变化」的关键事实/数据是什么？",
+    "answer": "2026 年 1-8 月...累计进口 17191.7 百万美元...禽肉...绝对值 813.8（百万美元），份额 85.5%。",
+    "answer_summary": "2026 年 1-8 月...累计进口 17191.7 百万美元...禽肉...绝对值 813.8（百万美元），份额 85.5%。",
+    "answer_len": 65,
+    "source_ref": "《rp_AP202610061830165954》 一、贸易总体情况 p2-14",
+    "page_start": 2,
+    "page_end": 14,
+    "unit_id": "3a090c1f19a8",
+    "evidence": "2026 年 1-8 月...累计进口 17191.7 百万美元...禽肉...绝对值 813.8（百万美元），份额 85.5%。"
+   },
+   "precheck": {
+    "flags": [
+     "Q_ANSWER_MISMATCH"
+    ],
+    "reasons": [
+     "问题与答案概念覆盖低（0%）"
+    ],
+    "score": 88,
+    "confidence": "medium"
+   },
+   "analysis": {
+    "alignment": {
+     "concept": "中国畜禽肉产品贸易结构变化",
+     "coverage": 0.0,
+     "needs_align": true,
+     "suggested_answer": "中国畜禽肉产品贸易结构变化：2026 年 1-8 月...累计进口 17191.7 百万美元...禽肉...绝对值 813.8（百万美元），份额 85.5%。",
+     "suggested_question": "「中国畜禽肉产品贸易结构变化」的定义与要点是什么？"
+    },
+    "dedup": {
+     "in_existing": false,
+     "existing_concept": null,
+     "existing_source": null,
+     "evidence_sim_existing": null
+    },
+    "source": {
+     "source_ref": "《rp_AP202610061830165954》 一、贸易总体情况 p2-14",
+     "page_start": 2,
+     "page_end": 14,
+     "issues": [
+      "page_span_wide"
+     ],
+     "suggested_source_ref": "《rp_AP202610061830165954》 一、贸易总体情况 p2-14"
+    },
+    "length": {
+     "answer_len": 65,
+     "issues": [],
+     "suggested_answer": null
+    },
+    "batch_duplicate": false,
+    "batch_primary": true
+   },
+   "actions": [
+    {
+     "action": "merge_fix",
+     "field": "q/a",
+     "before": {
+      "q": "「中国畜禽肉产品贸易结构变化」的关键事实/数据是什么？",
+      "a": "2026 年 1-8 月...累计进口 17191.7 百万美元...禽肉...绝对值 813.8（百万美元），份额 85.5%。"
+     },
+     "after": {
+      "q": "「中国畜禽肉产品贸易结构变化」的定义与要点是什么？",
+      "a": "中国畜禽肉产品贸易结构变化：2026 年 1-8 月...累计进口 17191.7 百万美元...禽肉...绝对值 813.8（百万美元），份额 85.5%。"
+     },
+     "reason": "概念-答案对齐：concept 覆盖仅 0%（<34%），建议答案加概念锚点/问题重写"
+    },
+    {
+     "action": "merge_fix",
+     "field": "source_ref",
+     "before": "《rp_AP202610061830165954》 一、贸易总体情况 p2-14",
+     "after": "《rp_AP202610061830165954》 一、贸易总体情况 p2-14",
+     "reason": "出处规范化：page_span_wide"
+    }
+   ],
+   "final_action": "merge_fix",
+   "reasons": [
+    "概念未在答案中体现（覆盖 0%）",
+    "出处/页码需规范化（page_span_wide）"
+   ],
+   "review": {
+    "checkboxes": {
+     "merge_fix": false,
+     "drop": false,
+     "keep_revise": false
+    },
+    "reviewer": "",
+    "notes": ""
+   },
+   "traceable": true
+  },
+  {
+   "revision_id": "RV-20261101-019",
+   "review_id": "REV-20261101-044",
+   "source": "AV",
+   "source_card_id": "CP2-20261101-024",
+   "theme": "农业",
+   "angle_cn": "影响传导",
+   "concept": "中国畜禽肉产品贸易分类标准",
+   "original": {
+    "question": "「中国畜禽肉产品贸易分类标准」的影响与传导逻辑是什么？",
+    "answer": "本报告依据海关总署分类标准，将畜禽肉产品细分为牛肉、猪肉、羊肉、禽肉等类别，并对应具体的 HS2022 编码进行统计监测。 原文依据：1 本报告定义畜禽类肉产品对应的产品分类采用海关总署分类标准，对应的 HS2022 代码为：牛肉...猪肉...羊肉...禽肉...",
+    "answer_summary": "本报告依据海关总署分类标准，将畜禽肉产品细分为牛肉、猪肉、羊肉、禽肉等类别，并对应具体的 HS2022 编码进行统计监测。 原文依据：1 本报告定义畜禽类肉产品对应的产品分类采用海关总署分类标准，对应的 HS2022 代码为：牛肉...猪肉...羊肉...禽肉...",
+    "answer_len": 133,
+    "source_ref": "《rp_AP202610061830165954》 一、贸易总体情况 p2-14",
+    "page_start": 2,
+    "page_end": 14,
+    "unit_id": "ec1388a6d658",
+    "evidence": "1 本报告定义畜禽类肉产品对应的产品分类采用海关总署分类标准，对应的 HS2022 代码为：牛肉...猪肉...羊肉...禽肉..."
+   },
+   "precheck": {
+    "flags": [
+     "ANSWER_TRUNCATED",
+     "Q_ANSWER_MISMATCH"
+    ],
+    "reasons": [
+     "答案含截断/占位符（… 或 待补充）",
+     "问题与答案概念覆盖低（33%）"
+    ],
+    "score": 76,
+    "confidence": "medium"
+   },
+   "analysis": {
+    "alignment": {
+     "concept": "中国畜禽肉产品贸易分类标准",
+     "coverage": 0.3333,
+     "needs_align": true,
+     "suggested_answer": "中国畜禽肉产品贸易分类标准：本报告依据海关总署分类标准，将畜禽肉产品细分为牛肉、猪肉、羊肉、禽肉等类别，并对应具体的 HS2022 编码进行统计监测。 原文依据：1 本报告定义畜禽类肉产品对应的产品分类采用海关总署分类标准，对应的 HS2022 代码为：牛肉...猪肉...羊肉...禽肉...",
+     "suggested_question": "「中国畜禽肉产品贸易分类标准」的定义与要点是什么？"
+    },
+    "dedup": {
+     "in_existing": false,
+     "existing_concept": null,
+     "existing_source": null,
+     "evidence_sim_existing": null
+    },
+    "source": {
+     "source_ref": "《rp_AP202610061830165954》 一、贸易总体情况 p2-14",
+     "page_start": 2,
+     "page_end": 14,
+     "issues": [
+      "page_span_wide"
+     ],
+     "suggested_source_ref": "《rp_AP202610061830165954》 一、贸易总体情况 p2-14"
+    },
+    "length": {
+     "answer_len": 133,
+     "issues": [
+      "answer_too_short_or_truncated"
+     ],
+     "suggested_answer": "本报告依据海关总署分类标准，将畜禽肉产品细分为牛肉、猪肉、羊肉、禽肉等类别，并对应具体的 HS2022 编码进行统计监测。 原文依据：1 本报告定义畜禽类肉产品对应的产品分类采用海关总署分类标准，对应的 HS2022 代码为：牛肉...猪肉...羊肉...禽肉。1 本报告定义畜禽类肉产品对应的产品分类采用海关总署分类标准，对应的 HS2022 代码为：牛肉...猪肉...羊肉...禽肉..."
+    },
+    "batch_duplicate": false,
+    "batch_primary": true
+   },
+   "actions": [
+    {
+     "action": "merge_fix",
+     "field": "q/a",
+     "before": {
+      "q": "「中国畜禽肉产品贸易分类标准」的影响与传导逻辑是什么？",
+      "a": "本报告依据海关总署分类标准，将畜禽肉产品细分为牛肉、猪肉、羊肉、禽肉等类别，并对应具体的 HS2022 编码进行统计监测。 原文依据：1 本报告定义畜禽类肉产品对应的产品分类采用海关总署分类标准，对应的 HS2022 代码为：牛肉...猪肉...羊肉...禽肉..."
+     },
+     "after": {
+      "q": "「中国畜禽肉产品贸易分类标准」的定义与要点是什么？",
+      "a": "中国畜禽肉产品贸易分类标准：本报告依据海关总署分类标准，将畜禽肉产品细分为牛肉、猪肉、羊肉、禽肉等类别，并对应具体的 HS2022 编码进行统计监测。 原文依据：1 本报告定义畜禽类肉产品对应的产品分类采用海关总署分类标准，对应的 HS2022 代码为：牛肉...猪肉...羊肉...禽肉..."
+     },
+     "reason": "概念-答案对齐：concept 覆盖仅 33%（<34%），建议答案加概念锚点/问题重写"
+    },
+    {
+     "action": "merge_fix",
+     "field": "source_ref",
+     "before": "《rp_AP202610061830165954》 一、贸易总体情况 p2-14",
+     "after": "《rp_AP202610061830165954》 一、贸易总体情况 p2-14",
+     "reason": "出处规范化：page_span_wide"
+    },
+    {
+     "action": "merge_fix",
+     "field": "a",
+     "before": "本报告依据海关总署分类标准，将畜禽肉产品细分为牛肉、猪肉、羊肉、禽肉等类别，并对应具体的 HS2022 编码进行统计监测。 原文依据：1 本报告定义畜禽类肉产品对应的产品分类采用海关总署分类标准，…",
+     "after": "本报告依据海关总署分类标准，将畜禽肉产品细分为牛肉、猪肉、羊肉、禽肉等类别，并对应具体的 HS2022 编码进行统计监测。 原文依据：1 本报告定义畜禽类肉产品对应的产品分类采用海关总署分类标准，对应的 HS2022 代码为：牛肉...猪肉...羊肉...禽肉。1 本报告定义畜禽类肉产品对应的产品分类采用海关总署分类标准，对应的 HS2022 代码为：牛肉...猪肉...羊肉...禽肉...",
+     "reason": "答案长度修订：answer_too_short_or_truncated"
+    }
+   ],
+   "final_action": "merge_fix",
+   "reasons": [
+    "概念未在答案中体现（覆盖 33%）",
+    "出处/页码需规范化（page_span_wide）",
+    "答案长度/截断需修订（answer_too_short_or_truncated）"
+   ],
+   "review": {
+    "checkboxes": {
+     "merge_fix": false,
+     "drop": false,
+     "keep_revise": false
+    },
+    "reviewer": "",
+    "notes": ""
+   },
+   "traceable": true
+  },
+  {
+   "revision_id": "RV-20261101-020",
+   "review_id": "REV-20261101-046",
+   "source": "AV",
+   "source_card_id": "CP2-20261101-026",
+   "theme": "有色/金属",
+   "angle_cn": "关键事实",
+   "concept": "基本金属铜",
+   "original": {
+    "question": "「基本金属铜」的关键事实/数据是什么？",
+    "answer": "本周LME 铜运行区间14478–14646 美元/吨...供应端铜精矿TC 深跌至-224.5 美元/千吨，Escondida 停产、Grasberg 复产缓慢，10–11 月国内炼厂集中检修，供应偏紧短期难改；现货升水自高位回落，但非美地区库存持续下降。",
+    "answer_summary": "本周LME 铜运行区间14478–14646 美元/吨...供应端铜精矿TC 深跌至-224.5 美元/千吨，Escondida 停产、Grasberg 复产缓慢，10–11 月国内炼厂集中检修，供应偏紧短期难改；现货升水自高位回落，但非美地区库存持续下降。",
+    "answer_len": 129,
+    "source_ref": "《rp_AP202610061830164303》 有色金属行业跟踪周报 美元指数强势，金属价格震荡 p1-13",
+    "page_start": 1,
+    "page_end": 13,
+    "unit_id": "47d9c42a27fa",
+    "evidence": "本周LME 铜运行区间14478–14646 美元/吨...供应端铜精矿TC 深跌至-224.5 美元/千吨，Escondida 停产、Grasberg 复产缓慢，10–11 月国内炼厂集中检修，供应偏紧短期难改；现货升水自高位回落，但非美地区库存持续下降。"
+   },
+   "precheck": {
+    "flags": [
+     "Q_ANSWER_MISMATCH"
+    ],
+    "reasons": [
+     "问题与答案概念覆盖低（0%）"
+    ],
+    "score": 88,
+    "confidence": "medium"
+   },
+   "analysis": {
+    "alignment": {
+     "concept": "基本金属铜",
+     "coverage": 0.0,
+     "needs_align": true,
+     "suggested_answer": "基本金属铜：本周LME 铜运行区间14478–14646 美元/吨...供应端铜精矿TC 深跌至-224.5 美元/千吨，Escondida 停产、Grasberg 复产缓慢，10–11 月国内炼厂集中检修，供应偏紧短期难改；现货升水自高位回落，但非美地区库存持续下降。",
+     "suggested_question": "「基本金属铜」的定义与要点是什么？"
+    },
+    "dedup": {
+     "in_existing": false,
+     "existing_concept": null,
+     "existing_source": null,
+     "evidence_sim_existing": null
+    },
+    "source": {
+     "source_ref": "《rp_AP202610061830164303》 有色金属行业跟踪周报 美元指数强势，金属价格震荡 p1-13",
+     "page_start": 1,
+     "page_end": 13,
+     "issues": [
+      "page_span_wide"
+     ],
+     "suggested_source_ref": "《rp_AP202610061830164303》 有色金属行业跟踪周报 美元指数强势，金属价格震荡 p1-13"
+    },
+    "length": {
+     "answer_len": 129,
+     "issues": [],
+     "suggested_answer": null
+    },
+    "batch_duplicate": false,
+    "batch_primary": true
+   },
+   "actions": [
+    {
+     "action": "merge_fix",
+     "field": "q/a",
+     "before": {
+      "q": "「基本金属铜」的关键事实/数据是什么？",
+      "a": "本周LME 铜运行区间14478–14646 美元/吨...供应端铜精矿TC 深跌至-224.5 美元/千吨，Escondida 停产、Grasberg 复产缓慢，10–11 月国内炼厂集中检修，供应偏紧短期难改；现货升水自高位回落，但非美地区库存持续下降。"
+     },
+     "after": {
+      "q": "「基本金属铜」的定义与要点是什么？",
+      "a": "基本金属铜：本周LME 铜运行区间14478–14646 美元/吨...供应端铜精矿TC 深跌至-224.5 美元/千吨，Escondida 停产、Grasberg 复产缓慢，10–11 月国内炼厂集中检修，供应偏紧短期难改；现货升水自高位回落，但非美地区库存持续下降。"
+     },
+     "reason": "概念-答案对齐：concept 覆盖仅 0%（<34%），建议答案加概念锚点/问题重写"
+    },
+    {
+     "action": "merge_fix",
+     "field": "source_ref",
+     "before": "《rp_AP202610061830164303》 有色金属行业跟踪周报 美元指数强势，金属价格震荡 p1-13",
+     "after": "《rp_AP202610061830164303》 有色金属行业跟踪周报 美元指数强势，金属价格震荡 p1-13",
+     "reason": "出处规范化：page_span_wide"
+    }
+   ],
+   "final_action": "merge_fix",
+   "reasons": [
+    "概念未在答案中体现（覆盖 0%）",
+    "出处/页码需规范化（page_span_wide）"
+   ],
+   "review": {
+    "checkboxes": {
+     "merge_fix": false,
+     "drop": false,
+     "keep_revise": false
+    },
+    "reviewer": "",
+    "notes": ""
+   },
+   "traceable": true
+  },
+  {
+   "revision_id": "RV-20261101-021",
+   "review_id": "REV-20261101-047",
+   "source": "AV",
+   "source_card_id": "CP2-20261101-027",
+   "theme": "有色/金属",
+   "angle_cn": "影响传导",
+   "concept": "基本金属铝",
+   "original": {
+    "question": "「基本金属铝」的影响与传导逻辑是什么？",
+    "answer": "在开工高位维稳与节前去库背景下，外盘铝价小幅下跌，国内铝锭社会库存环比下降约 7.58%。 原文依据：本周外盘铝均价3257 美元/吨，较上周下跌0.64%...供应端开工高位维稳，暂无减产、复产；节前去库延续，国内铝锭社会库存64.58 万吨，较上周下降5.30 万吨，环比下降7.58%。",
+    "answer_summary": "在开工高位维稳与节前去库背景下，外盘铝价小幅下跌，国内铝锭社会库存环比下降约 7.58%。 原文依据：本周外盘铝均价3257 美元/吨，较上周下跌0.64%...供应端开工高位维稳，暂无减产、复产；节前去库延续，国内铝锭社会库存64.58 万吨，较上周下降5.30 万吨，环比下降7.58%。",
+    "answer_len": 146,
+    "source_ref": "《rp_AP202610061830164303》 有色金属行业跟踪周报 美元指数强势，金属价格震荡 p1-13",
+    "page_start": 1,
+    "page_end": 13,
+    "unit_id": "228d39e05a04",
+    "evidence": "本周外盘铝均价3257 美元/吨，较上周下跌0.64%...供应端开工高位维稳，暂无减产、复产；节前去库延续，国内铝锭社会库存64.58 万吨，较上周下降5.30 万吨，环比下降7.58%。"
+   },
+   "precheck": {
+    "flags": [
+     "Q_ANSWER_MISMATCH"
+    ],
+    "reasons": [
+     "问题与答案概念覆盖低（0%）"
+    ],
+    "score": 88,
+    "confidence": "medium"
+   },
+   "analysis": {
+    "alignment": {
+     "concept": "基本金属铝",
+     "coverage": 0.0,
+     "needs_align": true,
+     "suggested_answer": "基本金属铝：在开工高位维稳与节前去库背景下，外盘铝价小幅下跌，国内铝锭社会库存环比下降约 7.58%。 原文依据：本周外盘铝均价3257 美元/吨，较上周下跌0.64%...供应端开工高位维稳，暂无减产、复产；节前去库延续，国内铝锭社会库存64.58 万吨，较上周下降5.30 万吨，环比下降7.58%。",
+     "suggested_question": "「基本金属铝」的定义与要点是什么？"
+    },
+    "dedup": {
+     "in_existing": false,
+     "existing_concept": null,
+     "existing_source": null,
+     "evidence_sim_existing": null
+    },
+    "source": {
+     "source_ref": "《rp_AP202610061830164303》 有色金属行业跟踪周报 美元指数强势，金属价格震荡 p1-13",
+     "page_start": 1,
+     "page_end": 13,
+     "issues": [
+      "page_span_wide"
+     ],
+     "suggested_source_ref": "《rp_AP202610061830164303》 有色金属行业跟踪周报 美元指数强势，金属价格震荡 p1-13"
+    },
+    "length": {
+     "answer_len": 146,
+     "issues": [],
+     "suggested_answer": null
+    },
+    "batch_duplicate": false,
+    "batch_primary": true
+   },
+   "actions": [
+    {
+     "action": "merge_fix",
+     "field": "q/a",
+     "before": {
+      "q": "「基本金属铝」的影响与传导逻辑是什么？",
+      "a": "在开工高位维稳与节前去库背景下，外盘铝价小幅下跌，国内铝锭社会库存环比下降约 7.58%。 原文依据：本周外盘铝均价3257 美元/吨，较上周下跌0.64%...供应端开工高位维稳，暂无减产、复产；节前去库延续，国内铝锭社会库存64.58 万吨，较上周下降5.30 万吨，环比下降7.58%。"
+     },
+     "after": {
+      "q": "「基本金属铝」的定义与要点是什么？",
+      "a": "基本金属铝：在开工高位维稳与节前去库背景下，外盘铝价小幅下跌，国内铝锭社会库存环比下降约 7.58%。 原文依据：本周外盘铝均价3257 美元/吨，较上周下跌0.64%...供应端开工高位维稳，暂无减产、复产；节前去库延续，国内铝锭社会库存64.58 万吨，较上周下降5.30 万吨，环比下降7.58%。"
+     },
+     "reason": "概念-答案对齐：concept 覆盖仅 0%（<34%），建议答案加概念锚点/问题重写"
+    },
+    {
+     "action": "merge_fix",
+     "field": "source_ref",
+     "before": "《rp_AP202610061830164303》 有色金属行业跟踪周报 美元指数强势，金属价格震荡 p1-13",
+     "after": "《rp_AP202610061830164303》 有色金属行业跟踪周报 美元指数强势，金属价格震荡 p1-13",
+     "reason": "出处规范化：page_span_wide"
+    }
+   ],
+   "final_action": "merge_fix",
+   "reasons": [
+    "概念未在答案中体现（覆盖 0%）",
+    "出处/页码需规范化（page_span_wide）"
+   ],
+   "review": {
+    "checkboxes": {
+     "merge_fix": false,
+     "drop": false,
+     "keep_revise": false
+    },
+    "reviewer": "",
+    "notes": ""
+   },
+   "traceable": true
+  },
+  {
+   "revision_id": "RV-20261101-022",
+   "review_id": "REV-20261101-051",
+   "source": "AV",
+   "source_card_id": "CP2-20261101-031",
+   "theme": "半导体/电子",
+   "angle_cn": "概念定义",
+   "concept": "光伏产业链价格变动",
+   "original": {
+    "question": "什么是「光伏产业链价格变动」？",
+    "answer": "截至 2026 年 9 月 16 日，硅料成交价环比持平为 40 元/kg，银浆价格环比下跌 5.1% 至 15890 元/kg，而硅片、电池片和组件价格均保持环比持平。",
+    "answer_summary": "截至 2026 年 9 月 16 日，硅料成交价环比持平为 40 元/kg，银浆价格环比下跌 5.1% 至 15890 元/kg，而硅片、电池片和组件价格均保持环比持平。",
+    "answer_len": 85,
+    "source_ref": "《rp_AP202610021830105330》 市场研究部 2026 年9 月22 日 p1-9",
+    "page_start": 1,
+    "page_end": 9,
+    "unit_id": "c98b2779dcd8",
+    "evidence": "根据 datayes，9 月 16 日硅料成交价为 40 元/kg，环比持平；银浆价格为 15890 元/kg，环比 -5.1%。硅片成交价 1.05 元/片，电池成交价 0.31 元/W，组件成交价 0.73 元/W，均环比持平。"
+   },
+   "precheck": {
+    "flags": [
+     "Q_ANSWER_MISMATCH"
+    ],
+    "reasons": [
+     "问题与答案概念覆盖低（0%）"
+    ],
+    "score": 88,
+    "confidence": "medium"
+   },
+   "analysis": {
+    "alignment": {
+     "concept": "光伏产业链价格变动",
+     "coverage": 0.0,
+     "needs_align": true,
+     "suggested_answer": "光伏产业链价格变动：截至 2026 年 9 月 16 日，硅料成交价环比持平为 40 元/kg，银浆价格环比下跌 5.1% 至 15890 元/kg，而硅片、电池片和组件价格均保持环比持平。",
+     "suggested_question": "「光伏产业链价格变动」的定义与要点是什么？"
+    },
+    "dedup": {
+     "in_existing": false,
+     "existing_concept": null,
+     "existing_source": null,
+     "evidence_sim_existing": null
+    },
+    "source": {
+     "source_ref": "《rp_AP202610021830105330》 市场研究部 2026 年9 月22 日 p1-9",
+     "page_start": 1,
+     "page_end": 9,
+     "issues": [],
+     "suggested_source_ref": null
+    },
+    "length": {
+     "answer_len": 85,
+     "issues": [],
+     "suggested_answer": null
+    },
+    "batch_duplicate": false,
+    "batch_primary": true
+   },
+   "actions": [
+    {
+     "action": "merge_fix",
+     "field": "q/a",
+     "before": {
+      "q": "什么是「光伏产业链价格变动」？",
+      "a": "截至 2026 年 9 月 16 日，硅料成交价环比持平为 40 元/kg，银浆价格环比下跌 5.1% 至 15890 元/kg，而硅片、电池片和组件价格均保持环比持平。"
+     },
+     "after": {
+      "q": "「光伏产业链价格变动」的定义与要点是什么？",
+      "a": "光伏产业链价格变动：截至 2026 年 9 月 16 日，硅料成交价环比持平为 40 元/kg，银浆价格环比下跌 5.1% 至 15890 元/kg，而硅片、电池片和组件价格均保持环比持平。"
+     },
+     "reason": "概念-答案对齐：concept 覆盖仅 0%（<34%），建议答案加概念锚点/问题重写"
+    }
+   ],
+   "final_action": "merge_fix",
+   "reasons": [
+    "概念未在答案中体现（覆盖 0%）"
+   ],
+   "review": {
+    "checkboxes": {
+     "merge_fix": false,
+     "drop": false,
+     "keep_revise": false
+    },
+    "reviewer": "",
+    "notes": ""
+   },
+   "traceable": true
+  },
+  {
+   "revision_id": "RV-20261101-023",
+   "review_id": "REV-20261101-055",
+   "source": "AV",
+   "source_card_id": "CP2-20261101-035",
+   "theme": "医药/生物",
+   "angle_cn": "关键事实",
+   "concept": "NRPS 合成生物学重编程",
+   "original": {
+    "question": "「NRPS 合成生物学重编程」的关键事实/数据是什么？",
+    "answer": "Nature Communications 研究显示：团队将 AI 设计的 T 结构域装入 NRPS 系统，最佳设计变体在完整体系中的产量超过天然 T 结构域，达到天然体系的近 3 倍，且表现出更高的可溶性表达和复性能力。",
+    "answer_summary": "Nature Communications 研究显示：团队将 AI 设计的 T 结构域装入 NRPS 系统，最佳设计变体在完整体系中的产量超过天然 T 结构域，达到天然体系的近 3 倍，且表现出更高的可溶性表达和复性能力。",
+    "answer_len": 111,
+    "source_ref": "《rp_AP202610031830126598》 替代方案 p1-13",
+    "page_start": 1,
+    "page_end": 13,
+    "unit_id": "45d9d0719373",
+    "evidence": "Nature Communications 研究显示：团队将 AI 设计的 T 结构域装入 NRPS 系统，最佳设计变体在完整体系中的产量超过天然 T 结构域，达到天然体系的近 3 倍，且表现出更高的可溶性表达和复性能力。"
+   },
+   "precheck": {
+    "flags": [
+     "Q_ANSWER_MISMATCH"
+    ],
+    "reasons": [
+     "问题与答案概念覆盖低（20%）"
+    ],
+    "score": 88,
+    "confidence": "medium"
+   },
+   "analysis": {
+    "alignment": {
+     "concept": "NRPS 合成生物学重编程",
+     "coverage": 0.2,
+     "needs_align": true,
+     "suggested_answer": "NRPS 合成生物学重编程：Nature Communications 研究显示：团队将 AI 设计的 T 结构域装入 NRPS 系统，最佳设计变体在完整体系中的产量超过天然 T 结构域，达到天然体系的近 3 倍，且表现出更高的可溶性表达和复性能力。",
+     "suggested_question": "「NRPS 合成生物学重编程」的定义与要点是什么？"
+    },
+    "dedup": {
+     "in_existing": false,
+     "existing_concept": null,
+     "existing_source": null,
+     "evidence_sim_existing": null
+    },
+    "source": {
+     "source_ref": "《rp_AP202610031830126598》 替代方案 p1-13",
+     "page_start": 1,
+     "page_end": 13,
+     "issues": [
+      "page_span_wide"
+     ],
+     "suggested_source_ref": "《rp_AP202610031830126598》 替代方案 p1-13"
+    },
+    "length": {
+     "answer_len": 111,
+     "issues": [],
+     "suggested_answer": null
+    },
+    "batch_duplicate": false,
+    "batch_primary": true
+   },
+   "actions": [
+    {
+     "action": "merge_fix",
+     "field": "q/a",
+     "before": {
+      "q": "「NRPS 合成生物学重编程」的关键事实/数据是什么？",
+      "a": "Nature Communications 研究显示：团队将 AI 设计的 T 结构域装入 NRPS 系统，最佳设计变体在完整体系中的产量超过天然 T 结构域，达到天然体系的近 3 倍，且表现出更高的可溶性表达和复性能力。"
+     },
+     "after": {
+      "q": "「NRPS 合成生物学重编程」的定义与要点是什么？",
+      "a": "NRPS 合成生物学重编程：Nature Communications 研究显示：团队将 AI 设计的 T 结构域装入 NRPS 系统，最佳设计变体在完整体系中的产量超过天然 T 结构域，达到天然体系的近 3 倍，且表现出更高的可溶性表达和复性能力。"
+     },
+     "reason": "概念-答案对齐：concept 覆盖仅 20%（<34%），建议答案加概念锚点/问题重写"
+    },
+    {
+     "action": "merge_fix",
+     "field": "source_ref",
+     "before": "《rp_AP202610031830126598》 替代方案 p1-13",
+     "after": "《rp_AP202610031830126598》 替代方案 p1-13",
+     "reason": "出处规范化：page_span_wide"
+    }
+   ],
+   "final_action": "merge_fix",
+   "reasons": [
+    "概念未在答案中体现（覆盖 20%）",
+    "出处/页码需规范化（page_span_wide）"
+   ],
+   "review": {
+    "checkboxes": {
+     "merge_fix": false,
+     "drop": false,
+     "keep_revise": false
+    },
+    "reviewer": "",
+    "notes": ""
+   },
+   "traceable": true
+  },
+  {
+   "revision_id": "RV-20261101-024",
+   "review_id": "REV-20261101-056",
+   "source": "AV",
+   "source_card_id": "CP2-20261101-036",
+   "theme": "医药/生物",
+   "angle_cn": "影响传导",
+   "concept": "数据要素市场化配置",
+   "original": {
+    "question": "「数据要素市场化配置」的影响与传导逻辑是什么？",
+    "answer": "我国首批数据产权登记凭证已陆续发放，涵盖医疗、交通、科研等 10 余个行业领域，探索构建促进数字经济发展的体制机制。 原文依据：9 月 21 日，我国首批数据产权登记凭证陆续发放。56 家企业和机构拿到相关数据有效证明。首批获发主体包括国有企业、事业单位和民营企业，涵盖医疗、交通、科研等 10 余个行业领域。",
+    "answer_summary": "我国首批数据产权登记凭证已陆续发放，涵盖医疗、交通、科研等 10 余个行业领域，探索构建促进数字经济发展的体制机制。 原文依据：9 月 21 日，我国首批数据产权登记凭证陆续发放。56 家企业和机构拿到相关数据有效证明。首批获发主体包括国有企业、事业单位和民营企业，涵盖医疗、交通、科研等 10 余个行业领域。",
+    "answer_len": 155,
+    "source_ref": "《rp_AP202609301830016191》 目录 p2-10",
+    "page_start": 2,
+    "page_end": 10,
+    "unit_id": "b541e7467e86",
+    "evidence": "9 月 21 日，我国首批数据产权登记凭证陆续发放。56 家企业和机构拿到相关数据有效证明。首批获发主体包括国有企业、事业单位和民营企业，涵盖医疗、交通、科研等 10 余个行业领域。"
+   },
+   "precheck": {
+    "flags": [
+     "Q_ANSWER_MISMATCH"
+    ],
+    "reasons": [
+     "问题与答案概念覆盖低（25%）"
+    ],
+    "score": 88,
+    "confidence": "medium"
+   },
+   "analysis": {
+    "alignment": {
+     "concept": "数据要素市场化配置",
+     "coverage": 0.25,
+     "needs_align": true,
+     "suggested_answer": "数据要素市场化配置：我国首批数据产权登记凭证已陆续发放，涵盖医疗、交通、科研等 10 余个行业领域，探索构建促进数字经济发展的体制机制。 原文依据：9 月 21 日，我国首批数据产权登记凭证陆续发放。56 家企业和机构拿到相关数据有效证明。首批获发主体包括国有企业、事业单位和民营企业，涵盖医疗、交通、科研等 10 余个行业领域。",
+     "suggested_question": "「数据要素市场化配置」的定义与要点是什么？"
+    },
+    "dedup": {
+     "in_existing": false,
+     "existing_concept": null,
+     "existing_source": null,
+     "evidence_sim_existing": null
+    },
+    "source": {
+     "source_ref": "《rp_AP202609301830016191》 目录 p2-10",
+     "page_start": 2,
+     "page_end": 10,
+     "issues": [],
+     "suggested_source_ref": null
+    },
+    "length": {
+     "answer_len": 155,
+     "issues": [],
+     "suggested_answer": null
+    },
+    "batch_duplicate": false,
+    "batch_primary": true
+   },
+   "actions": [
+    {
+     "action": "merge_fix",
+     "field": "q/a",
+     "before": {
+      "q": "「数据要素市场化配置」的影响与传导逻辑是什么？",
+      "a": "我国首批数据产权登记凭证已陆续发放，涵盖医疗、交通、科研等 10 余个行业领域，探索构建促进数字经济发展的体制机制。 原文依据：9 月 21 日，我国首批数据产权登记凭证陆续发放。56 家企业和机构拿到相关数据有效证明。首批获发主体包括国有企业、事业单位和民营企业，涵盖医疗、交通、科研等 10 余个行业领域。"
+     },
+     "after": {
+      "q": "「数据要素市场化配置」的定义与要点是什么？",
+      "a": "数据要素市场化配置：我国首批数据产权登记凭证已陆续发放，涵盖医疗、交通、科研等 10 余个行业领域，探索构建促进数字经济发展的体制机制。 原文依据：9 月 21 日，我国首批数据产权登记凭证陆续发放。56 家企业和机构拿到相关数据有效证明。首批获发主体包括国有企业、事业单位和民营企业，涵盖医疗、交通、科研等 10 余个行业领域。"
+     },
+     "reason": "概念-答案对齐：concept 覆盖仅 25%（<34%），建议答案加概念锚点/问题重写"
+    }
+   ],
+   "final_action": "merge_fix",
+   "reasons": [
+    "概念未在答案中体现（覆盖 25%）"
+   ],
+   "review": {
+    "checkboxes": {
+     "merge_fix": false,
+     "drop": false,
+     "keep_revise": false
+    },
+    "reviewer": "",
+    "notes": ""
+   },
+   "traceable": true
+  }
+ ],
+ "instructions": [
+  "逐卡核对 original → 建议修订（actions 的 before/after）→ 选择 ☐采纳修订(merge_fix) / ☐合并删除(drop) / ☐保留待人工(keep_revise) 并写备注。",
+  "drop 多为「concept 已在现有学习卡（含已合并 pass 36）」或批内重复，建议合并保留主卡。",
+  "merge_fix 为规则可修：概念对齐/出处规范化/答案截断或补全，采纳前请人工确认语义不变。",
+  "本稿不修改 checklist/学习卡；人工确认后走 card_review.py decide 或后续合并流程。"
+ ],
+ "disclaimer": "修订建议为规则化辅助稿，仅建议不执行；最终由人工确认后走 decide/apply；不构成投资建议。",
+ "source_unchanged": true
+}

@@ -666,6 +666,20 @@
       "title": "guard 阈值敏感性研究",
       "ref": "tools/kb_corpus/guard_threshold_study.py",
       "enabled": true
+    },
+    {
+      "id": "guard_threshold_ab",
+      "kind": "tool",
+      "title": "guard 阈值扩样 A/B",
+      "ref": "tools/kb_corpus/guard_threshold_ab.py",
+      "enabled": true
+    },
+    {
+      "id": "card_revision",
+      "kind": "tool",
+      "title": "学习卡 revise 修订建议",
+      "ref": "tools/kb_corpus/card_revision.py",
+      "enabled": true
     }
   ]
 }
