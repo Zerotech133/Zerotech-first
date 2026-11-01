@@ -1,7 +1,7 @@
 {
- "generated_at": "2026-11-01T22:44:40",
- "source": "C:\\项目\\老田的AI助手\\.worktrees\\WO-D1-MEETING-20261101\\portal\\portal_api.py",
- "total": 285,
+ "generated_at": "2026-11-01T23:49:00",
+ "source": "C:\\项目\\老田的AI助手\\portal\\portal_api.py",
+ "total": 286,
  "signatures": [
   [
    "GET",
@@ -302,6 +302,11 @@
    "GET",
    "exact",
    "/api/jev-stack"
+  ],
+  [
+   "GET",
+   "exact",
+   "/api/kb/qa"
   ],
   [
    "GET",
