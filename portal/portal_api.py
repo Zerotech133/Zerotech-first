@@ -1622,6 +1622,11 @@ color:#fff;font-size:13.5px;cursor:pointer}
             import api_kb_corpus
             api_kb_corpus.handle_get(self, path, qs)
             return
+        if path.startswith('/api/dw/'):
+            # 数据仓统一取数（WP-I3，独立文件 api_dw_registry.py，2026-11-02）
+            import api_dw_registry
+            api_dw_registry.handle_get(self, path, qs)
+            return
         if path == '/api/kb/qa':
             # 知识库问答 HTTP（L2 批准 2026-11-01；独立文件 api_kb_qa.py，预接线已测试）
             import api_kb_qa
