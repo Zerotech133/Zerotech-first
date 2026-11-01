@@ -21,6 +21,9 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{border-bottom:1px
 .muted{color:var(--dim);font-size:12px}.foot{margin-top:14px;color:var(--dim);font-size:12px}
 code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-size:12px}
 .reason{color:#9aa4b2;font-size:12px}
+.rp-tabs{display:flex;gap:8px;margin-top:10px}
+.rp-tab{background:var(--panel2);color:var(--dim);border:1px solid var(--bd);border-radius:6px;padding:4px 12px;cursor:pointer;font-size:12px}
+.rp-tab.active{color:var(--fg);border-color:var(--acc)}
 </style>
 <script src="/static/nav.js" defer></script></head>
 <body>
@@ -47,6 +50,24 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-siz
 
 <div class="panel"><b>今日候选（S01 过滤 + S02 复合排序）</b>
 <table><thead><tr><th>#</th><th>代码</th><th>名称</th><th>行业</th><th>PE</th><th>ROE</th><th>20日</th><th>5日</th><th>分数</th><th>入选理由</th></tr></thead><tbody id="pick-body"></tbody></table>
+</div>
+
+<div class="panel" id="report-panel"><b>研报候选（多智能体）</b>
+<span class="muted" id="rp-sub">加载中…</span>
+<div class="cards" style="margin-top:8px">
+  <div class="card"><div class="k">评审研报</div><div class="v" id="rp-reports">—</div></div>
+  <div class="card"><div class="k">进候选池</div><div class="v" id="rp-cands">—</div></div>
+  <div class="card"><div class="k">被拦截</div><div class="v" id="rp-rej">—</div></div>
+  <div class="card"><div class="k">页码越界</div><div class="v" id="rp-page">—</div></div>
+  <div class="card"><div class="k">人工复核勾选位</div><div class="v" id="rp-check">—</div></div>
+</div>
+<div class="rp-tabs">
+  <button class="rp-tab active" data-rp-tab="cand">候选</button>
+  <button class="rp-tab" data-rp-tab="rej">被拦截</button>
+  <button class="rp-tab" data-rp-tab="review">复核提示</button>
+</div>
+<div id="rp-body" class="muted" style="margin-top:8px">加载中…</div>
+<div class="muted" id="rp-note" style="margin-top:8px">仅供研究，不构成投资建议。</div>
 </div>
 
 <div class="panel"><b>H18 预告修订观察（近 90 日，仅观察不作买入信号）</b>
@@ -153,5 +174,67 @@ const BADGE={"validated":'<span class="badge b-ok">validated</span>',"mvp_unvali
   }catch(e){}
 })();
 
+</script>
+
+<script>
+/* 研报候选（多智能体）· 数据源 /static/report_panel.json（tools/research/panel_export.py 导出）
+   失败时降级为文本提示，不影响本页其他区块。 */
+(async function loadReportPanel(){
+  const $id=id=>document.getElementById(id);
+  const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const body=$id('rp-body'), note=$id('rp-note');
+  const pct=v=>(v==null?'—':(Number(v)*100).toFixed(0)+'%');
+  let data={cand:[],rej:[],review:[],issues:[]};
+  function renderTab(kind){
+    if(!body) return;
+    body.className='';
+    if(kind==='cand'){
+      const rows=data.cand.map((c,i)=>`<tr><td>${i+1}</td><td><code>${esc(c.report_id)}</code></td><td>${esc(c.title||'')}</td>
+        <td>${esc(c.date||'—')}</td><td>${c.pages==null?'—':c.pages}</td>
+        <td>${esc((c.pass_models||[]).join(' + ')||'—')}</td><td>${c.primary_pass_roles==null?'—':c.primary_pass_roles+'/3'}</td>
+        <td>${pct(c.role_agreement_rate)}</td><td>${c.page_issue_count==null?'—':c.page_issue_count}</td></tr>`).join('');
+      body.innerHTML=`<table><thead><tr><th>#</th><th>研报ID</th><th>标题</th><th>日期</th><th>页数</th><th>pass 模型</th><th>主模型 pass 角色</th><th>一致率</th><th>页码越界</th></tr></thead><tbody>${rows||'<tr><td colspan="9" class="muted">本期无研报同时满足「双模型 pass + ≥2 角色 pass + 页码校验通过」</td></tr>'}</tbody></table>`;
+    } else if(kind==='rej'){
+      const rows=data.rej.map((c,i)=>`<tr><td>${i+1}</td><td><code>${esc(c.report_id)}</code></td><td>${esc(c.title||'')}</td>
+        <td class="reason">${esc((c.reasons||[]).join('；')||'—')}</td><td>${c.page_issue_count==null?'—':c.page_issue_count}</td></tr>`).join('');
+      body.innerHTML=`<table><thead><tr><th>#</th><th>研报ID</th><th>标题</th><th>未进候选原因（页码/模型/角色三条件）</th><th>页码越界</th></tr></thead><tbody>${rows||'<tr><td colspan="5" class="muted">无被拦截研报</td></tr>'}</tbody></table>`;
+    } else {
+      const rows=data.review.map(r=>`<tr><td><code>${esc(r.report_id)}</code></td><td>${esc(r.title||'')}</td>
+        <td>${r.is_candidate?'<span class="badge b-ok">候选</span>':'<span class="badge b-warn">被拦截</span>'}</td>
+        <td>${r.facts_invalid||0}/${r.facts_total||0}</td><td>${r.opinions_total||0}</td><td>${r.open_checkboxes||0}</td></tr>`).join('');
+      const issues=data.issues.map(x=>`<tr><td><code>${esc(x.report_id)}</code></td><td>${esc(x.model||'')}</td>
+        <td>${esc(x.role||'')}</td><td class="reason">${esc(x.fact||'')}</td><td>p.${esc(x.page)}</td>
+        <td>${esc((x.allowed_pages||[]).join(','))}</td></tr>`).join('');
+      body.innerHTML=`<table><thead><tr><th>研报ID</th><th>标题</th><th>状态</th><th>越界/事实</th><th>角色意见</th><th>待勾选</th></tr></thead><tbody>${rows||'<tr><td colspan="6" class="muted">无复核项</td></tr>'}</tbody></table>`
+        + `<div class="muted" style="margin-top:6px">复核清单：${esc((note&&note.dataset&&note.dataset.reviewFile)||'research/reports/report_panel_v3_review.md')}（☐ 勾选确认后方可进入下游）</div>`
+        + (issues?`<table style="margin-top:8px"><thead><tr><th>研报ID</th><th>模型</th><th>角色</th><th>事实</th><th>页码</th><th>允许页码</th></tr></thead><tbody>${issues}</tbody></table>`:'');
+    }
+  }
+  try{
+    const r=await fetch('/static/report_panel.json?ts='+Date.now());
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d=await r.json();
+    data.cand=d.candidates||[]; data.rej=d.rejected||[];
+    data.review=(d.review&&d.review.items)||[]; data.issues=d.page_issues||[];
+    const s=d.summary||{};
+    if($id('rp-sub')) $id('rp-sub').textContent='生成 '+(d.generated_at||'—')+' · 模型 '+
+      ((d.models&&d.models.primary)||'—')+' / '+((d.models&&d.models.cross)||'—')+
+      ' · 结论 '+((s.conclusion&&s.conclusion.verdict)||'—');
+    if($id('rp-reports')) $id('rp-reports').textContent=(s.reports==null?'—':s.reports);
+    if($id('rp-cands')) $id('rp-cands').textContent=(s.candidates==null?'—':s.candidates);
+    if($id('rp-rej')) $id('rp-rej').textContent=(s.rejected==null?'—':s.rejected);
+    if($id('rp-page')) $id('rp-page').textContent=(s.page_invalid_facts==null?'—':s.page_invalid_facts);
+    if($id('rp-check')) $id('rp-check').textContent=(d.review&&d.review.open_checkboxes==null?'—':(d.review?d.review.open_checkboxes:'—'));
+    if(note){ note.dataset.reviewFile=(d.review&&d.review.file)||''; note.textContent=((d.disclaimer||'仅供研究，不构成投资建议'))+' · 完整复核清单：'+((d.review&&d.review.file)||'research/reports/report_panel_v3_review.md'); }
+    renderTab('cand');
+    document.querySelectorAll('[data-rp-tab]').forEach(btn=>btn.addEventListener('click',()=>{
+      document.querySelectorAll('[data-rp-tab]').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active'); renderTab(btn.dataset.rpTab||'cand');
+    }));
+  }catch(e){
+    if($id('rp-sub')) $id('rp-sub').textContent='研报面板数据暂不可用（降级显示）';
+    if(body){ body.className='muted'; body.textContent='研报面板暂不可用：'+((e&&e.message)||'加载失败')+'。请离线查看 research/reports/report_panel_v3_20261101.json；仅供研究，不构成投资建议。'; }
+  }
+})();
 </script>
 </body></html>

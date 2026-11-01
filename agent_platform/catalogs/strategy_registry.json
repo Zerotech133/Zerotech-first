@@ -85,14 +85,15 @@
       "type": "filter_avoid",
       "owner": "司马微",
       "source_hypothesis": "LX20（book_backlog）",
-      "status": "candidate_validation",
+      "status": "research_only_overlay_fail",
       "executable": false,
       "rule": "每日等权池剔除/降配过去 N=5 日触发 LX20 信号（倍量不穿/高量不破/跳空不补）的股票；参数与容量见 rule_spec",
       "validation": {
         "stats": "wave4 K：T+1 收盘执行 毛+6.15%/净+1.00%/t=6.21；T 日收盘（乐观上界）净+2.03%；T+1 开盘执行净-1.32%（不可用）",
         "shadow": "无（需先做 S05 规则与现有组合叠加/影子盘）",
         "cost": "30bp 单边；成本年化约 5%；容量 187 亿@10% 参与率；覆盖 24.5%",
-        "caveat": "超额主要来自隔夜跳空；只能作组合风控边际改进，不是正向 alpha；上线前补 T+1 成交价/一字板/冲击成本标定"
+        "caveat": "仅适用于等权全市场/中小市值场景的线索；与 S01 大市值组合叠加反向。",
+        "overlay": "S05×S01 叠加 FAIL（w=0.5 -2.48%/t=-3.18；越深越负；机制=截面冲突）→ 不进影子盘"
       },
       "approved": false,
       "effective_from": "待验证（candidate）"
@@ -835,5 +836,32 @@
     },
     "verdict": "达到",
     "note": "num_predict 1600/deadline 900 修复截断与超时；精确页码校验抓到 1 条越界（v2 宽口径漏掉）；候选 2→1，配人工复核清单。"
+  },
+  "lowturn_residual_20261101": {
+    "report": "research/reports/lowturn_residual_20261101.md",
+    "decision": "STOP",
+    "conclusion": "剥离 市值+波动率+行业 后残差 OOS 毛超额 +0.86%(t=0.29)/+2.96%(t=0.90)，IC 归零（0.008）→ 低换手因子为纯风格代理（大市值+低波防御），不是独立 alpha；且 IS 毛超额显著为负。停止「低换手中性化组合」方向，最多作防御 beta 工具。",
+    "residual": {
+      "oos_gross_weekly": 0.86,
+      "oos_gross_t_weekly": 0.29,
+      "oos_gross_hold60": 2.96,
+      "oos_gross_t_hold60": 0.9,
+      "ic_mean_weekly": 0.008
+    }
+  },
+  "s05_overlay_20261101": {
+    "report": "research/reports/s05_overlay_20261101.md",
+    "verdict": "NOT_PASS_OVERLAY",
+    "conclusion": "S05 叠加 S01 基线：w=0.5 超额 -2.48%/TE1.49%/t=-3.18；w=0.25 -4.01%；w=0 -5.96%；MDD 全部劣化；2026 熊市段也无防守增益 → 不建议进影子盘。",
+    "mechanism": "S05 正超额测于等权全市场（中小市值为主）；S01 只持大市值 top20，同一 LX20 信号在大市值内方向相反 → 截面冲突，不能直接叠加。",
+    "action": "S05 保持 research_only（中小市值/全市场等权场景的风控线索）；若要在 S01 使用需另立反向（超配）假设并过四关。"
+  },
+  "report_panel_portal_20261101": {
+    "portal_json": "portal/static/report_panel.json",
+    "page": "portal/selection.html#report-panel",
+    "candidates": 1,
+    "reports": 3,
+    "disclaimer": "仅供研究，不构成投资建议",
+    "note": "v3 面板接入门户（概览卡 + 候选/被拦截/复核提示三页签）；HTTP 200 已验证；仅供研究。"
   }
 }

@@ -351,6 +351,27 @@
       "title": "研报评审面板 v3（精确页码+复核清单）",
       "ref": "tools/research/report_panel_v3.py",
       "enabled": true
+    },
+    {
+      "id": "lowturn_residual",
+      "kind": "tool",
+      "title": "低换手因子双重中性化残差检验",
+      "ref": "tools/research/lowturn_residual.py",
+      "enabled": true
+    },
+    {
+      "id": "s05_overlay_test",
+      "kind": "tool",
+      "title": "S05 规避规则与组合叠加测试",
+      "ref": "tools/research/s05_overlay_test.py",
+      "enabled": true
+    },
+    {
+      "id": "panel_export",
+      "kind": "tool",
+      "title": "研报面板门户导出",
+      "ref": "tools/research/panel_export.py",
+      "enabled": true
     }
   ]
 }

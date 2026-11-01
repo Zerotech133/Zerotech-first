@@ -1,0 +1,648 @@
+{
+  "meta": {
+    "report": "s05_overlay_20261101",
+    "version": "0.1.0-wave5",
+    "generated_at": "2026-11-01T08:41:02+08:00",
+    "task": "wave5 N 支线：S05 规避规则 × S01 基线叠加测试",
+    "data": {
+      "root": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\tushare",
+      "start": "20230101",
+      "end": "20261030"
+    },
+    "panel": {
+      "dates": 965,
+      "codes": 5740,
+      "load_sec": 70.71,
+      "meta": {
+        "data_root": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\tushare",
+        "universe": "tradable",
+        "load_dates": [
+          "20221107",
+          "20261030"
+        ],
+        "load_days": 965,
+        "warmup_days": 40,
+        "horizon": 20,
+        "panel_dates": 965,
+        "codes": 5740,
+        "eligible_avg_per_day": 3530.3,
+        "eligible_share": 0.615,
+        "load_sec": 70.12
+      }
+    },
+    "eval": {
+      "baseline": "portfolio_build.build_baseline 口径（S01 过滤 + 流通市值 top20 等权）",
+      "signal": "LX20 lx20_three_absolutes（reverse_avoid_test 复用）",
+      "signal_n": 5,
+      "rebalance_every_days": 5,
+      "execution": "T 日收盘决策 → T+1 收盘执行（涨停/停牌不可买→现金）",
+      "cost_bp_oneway": 30,
+      "weights": [
+        0.0,
+        0.0,
+        0.25,
+        0.5
+      ],
+      "top": 20,
+      "bear_2026": {
+        "peak": "20260106",
+        "trough": "20260323",
+        "segment_days": 49,
+        "max_drawdown_pct": -8.007
+      }
+    },
+    "validation_build_baseline": {
+      "checked": 3,
+      "exact": 3,
+      "rows": [
+        {
+          "date": "20230103",
+          "reference_n": 20,
+          "reproduced_n": 20,
+          "overlap_n": 20,
+          "overlap_pct": 100.0,
+          "exact_order_match": true
+        },
+        {
+          "date": "20240603",
+          "reference_n": 20,
+          "reproduced_n": 20,
+          "overlap_n": 20,
+          "overlap_pct": 100.0,
+          "exact_order_match": true
+        },
+        {
+          "date": "20251030",
+          "reference_n": 20,
+          "reproduced_n": 20,
+          "overlap_n": 20,
+          "overlap_pct": 100.0,
+          "exact_order_match": true
+        }
+      ],
+      "exact_pct": 100.0
+    },
+    "runtime_sec": 135.01,
+    "notes": [
+      "S01 基线的 ST/上市日期/行业使用 stock_basic 当前静态信息（与 portfolio_build.build_baseline 同源，轻微后验）。",
+      "调仓频率仅周频（5 个交易日）；未做日频/月频敏感性。T+1 收盘执行、涨停(≥9.5%)/停牌不可买→转现金。",
+      "持有期个股停牌/退市当日收益按 0 处理（未做顺延卖出建模）；首期建仓成本按单边 30bp 计。",
+      "信号为 book_batch_test 的 LX20 简化单形态代理，非原书完整三绝口径。",
+      "容量沿用 wave4 结论（10% 参与率下 AUM 上限约 187 亿），本文件未按 AUM 重算滑点。",
+      "S05 只能降配/剔除（A 股不可做空）；空仓/现金部分收益按 0 计。",
+      "截面冲突：wave4 的 S05 正超额测于等权全市场，S01 只持大市值 top20；同一信号在大市值持仓内方向相反，故本叠加测试结论为负——这是适用截面问题，不否定 wave4 的全市场口径结论。"
+    ]
+  },
+  "variants": {
+    "BASELINE": {
+      "weight_signal_stock": 0.0,
+      "overall": {
+        "days": 923,
+        "ann_ret_pct": 13.288,
+        "vol_ann_pct": 14.323,
+        "mdd_pct": -14.697,
+        "sharpe": 0.943,
+        "win_rate": 0.5222,
+        "avg_turnover_pct": 3.405,
+        "ann_cost_pct": 1.03,
+        "avg_holdings": 19.9,
+        "avg_cash_pct": 0.378,
+        "rebalances": 185
+      },
+      "by_year": {
+        "2023": {
+          "days": 240,
+          "ann_ret_pct": 2.316,
+          "vol_ann_pct": 13.56,
+          "mdd_pct": -14.697,
+          "sharpe": 0.236,
+          "win_rate": 0.4917
+        },
+        "2024": {
+          "days": 242,
+          "ann_ret_pct": 31.35,
+          "vol_ann_pct": 17.213,
+          "mdd_pct": -9.673,
+          "sharpe": 1.671,
+          "win_rate": 0.5124
+        },
+        "2025": {
+          "days": 243,
+          "ann_ret_pct": 17.571,
+          "vol_ann_pct": 12.81,
+          "mdd_pct": -8.17,
+          "sharpe": 1.328,
+          "win_rate": 0.572
+        },
+        "2026": {
+          "days": 198,
+          "ann_ret_pct": 2.215,
+          "vol_ann_pct": 13.074,
+          "mdd_pct": -8.007,
+          "sharpe": 0.233,
+          "win_rate": 0.5101
+        }
+      },
+      "bear_2026": {
+        "days": 49,
+        "ann_ret_pct": -31.252,
+        "vol_ann_pct": 14.521,
+        "mdd_pct": -8.007,
+        "sharpe": -2.507,
+        "win_rate": 0.4694
+      }
+    },
+    "W0": {
+      "weight_signal_stock": 0.0,
+      "overall": {
+        "days": 923,
+        "ann_ret_pct": 6.75,
+        "vol_ann_pct": 14.203,
+        "mdd_pct": -16.796,
+        "sharpe": 0.531,
+        "win_rate": 0.5135,
+        "avg_turnover_pct": 15.271,
+        "ann_cost_pct": 4.618,
+        "avg_holdings": 16.6,
+        "avg_cash_pct": 0.367,
+        "rebalances": 185
+      },
+      "by_year": {
+        "2023": {
+          "days": 240,
+          "ann_ret_pct": -8.781,
+          "vol_ann_pct": 13.304,
+          "mdd_pct": -16.796,
+          "sharpe": -0.625,
+          "win_rate": 0.4708
+        },
+        "2024": {
+          "days": 242,
+          "ann_ret_pct": 27.61,
+          "vol_ann_pct": 16.897,
+          "mdd_pct": -9.616,
+          "sharpe": 1.528,
+          "win_rate": 0.5207
+        },
+        "2025": {
+          "days": 243,
+          "ann_ret_pct": 12.216,
+          "vol_ann_pct": 12.61,
+          "mdd_pct": -7.124,
+          "sharpe": 0.978,
+          "win_rate": 0.5473
+        },
+        "2026": {
+          "days": 198,
+          "ann_ret_pct": -2.328,
+          "vol_ann_pct": 13.471,
+          "mdd_pct": -8.861,
+          "sharpe": -0.108,
+          "win_rate": 0.5152
+        }
+      },
+      "excess": {
+        "days": 923,
+        "ann_excess_pct": -5.963,
+        "cum_excess_pct": -21.841,
+        "te_ann_pct": 3.756,
+        "t": -3.04,
+        "info_ratio": -1.588
+      },
+      "excess_by_year": {
+        "2023": {
+          "days": 240,
+          "ann_excess_pct": -11.511,
+          "cum_excess_pct": -10.963,
+          "te_ann_pct": 3.759,
+          "t": -2.99,
+          "info_ratio": -3.062
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": -2.943,
+          "cum_excess_pct": -2.827,
+          "te_ann_pct": 3.809,
+          "t": -0.76,
+          "info_ratio": -0.773
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": -4.69,
+          "cum_excess_pct": -4.522,
+          "te_ann_pct": 3.102,
+          "t": -1.48,
+          "info_ratio": -1.512
+        },
+        "2026": {
+          "days": 198,
+          "ann_excess_pct": -4.492,
+          "cum_excess_pct": -3.529,
+          "te_ann_pct": 4.37,
+          "t": -0.91,
+          "info_ratio": -1.028
+        }
+      },
+      "excess_bear_2026": {
+        "days": 49,
+        "ann_excess_pct": -0.458,
+        "cum_excess_pct": -0.089,
+        "te_ann_pct": 4.074,
+        "t": -0.05,
+        "info_ratio": -0.112
+      },
+      "bear_2026": {
+        "days": 49,
+        "ann_ret_pct": -31.61,
+        "vol_ann_pct": 14.951,
+        "mdd_pct": -7.904,
+        "sharpe": -2.466,
+        "win_rate": 0.4694
+      }
+    },
+    "W0.25": {
+      "weight_signal_stock": 0.25,
+      "overall": {
+        "days": 923,
+        "ann_ret_pct": 8.867,
+        "vol_ann_pct": 14.151,
+        "mdd_pct": -16.04,
+        "sharpe": 0.671,
+        "win_rate": 0.5146,
+        "avg_turnover_pct": 11.366,
+        "ann_cost_pct": 3.437,
+        "avg_holdings": 19.9,
+        "avg_cash_pct": 0.373,
+        "rebalances": 185
+      },
+      "by_year": {
+        "2023": {
+          "days": 240,
+          "ann_ret_pct": -5.532,
+          "vol_ann_pct": 13.283,
+          "mdd_pct": -16.04,
+          "sharpe": -0.362,
+          "win_rate": 0.4667
+        },
+        "2024": {
+          "days": 242,
+          "ann_ret_pct": 29.733,
+          "vol_ann_pct": 16.953,
+          "mdd_pct": -9.588,
+          "sharpe": 1.62,
+          "win_rate": 0.5248
+        },
+        "2025": {
+          "days": 243,
+          "ann_ret_pct": 13.655,
+          "vol_ann_pct": 12.598,
+          "mdd_pct": -7.459,
+          "sharpe": 1.08,
+          "win_rate": 0.5597
+        },
+        "2026": {
+          "days": 198,
+          "ann_ret_pct": -1.018,
+          "vol_ann_pct": 13.177,
+          "mdd_pct": -8.413,
+          "sharpe": -0.012,
+          "win_rate": 0.5051
+        }
+      },
+      "excess": {
+        "days": 923,
+        "ann_excess_pct": -4.007,
+        "cum_excess_pct": -14.676,
+        "te_ann_pct": 2.439,
+        "t": -3.14,
+        "info_ratio": -1.643
+      },
+      "excess_by_year": {
+        "2023": {
+          "days": 240,
+          "ann_excess_pct": -8.016,
+          "cum_excess_pct": -7.634,
+          "te_ann_pct": 2.498,
+          "t": -3.13,
+          "info_ratio": -3.209
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": -1.283,
+          "cum_excess_pct": -1.232,
+          "te_ann_pct": 2.05,
+          "t": -0.61,
+          "info_ratio": -0.626
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": -3.417,
+          "cum_excess_pct": -3.295,
+          "te_ann_pct": 2.209,
+          "t": -1.52,
+          "info_ratio": -1.547
+        },
+        "2026": {
+          "days": 198,
+          "ann_excess_pct": -3.2,
+          "cum_excess_pct": -2.514,
+          "te_ann_pct": 3.004,
+          "t": -0.94,
+          "info_ratio": -1.065
+        }
+      },
+      "excess_bear_2026": {
+        "days": 49,
+        "ann_excess_pct": -0.393,
+        "cum_excess_pct": -0.076,
+        "te_ann_pct": 2.807,
+        "t": -0.06,
+        "info_ratio": -0.14
+      },
+      "bear_2026": {
+        "days": 49,
+        "ann_ret_pct": -31.539,
+        "vol_ann_pct": 14.692,
+        "mdd_pct": -7.944,
+        "sharpe": -2.505,
+        "win_rate": 0.449
+      }
+    },
+    "W0.5": {
+      "weight_signal_stock": 0.5,
+      "overall": {
+        "days": 923,
+        "ann_ret_pct": 10.533,
+        "vol_ann_pct": 14.179,
+        "mdd_pct": -15.569,
+        "sharpe": 0.777,
+        "win_rate": 0.5211,
+        "avg_turnover_pct": 8.287,
+        "ann_cost_pct": 2.506,
+        "avg_holdings": 19.9,
+        "avg_cash_pct": 0.375,
+        "rebalances": 185
+      },
+      "by_year": {
+        "2023": {
+          "days": 240,
+          "ann_ret_pct": -2.643,
+          "vol_ann_pct": 13.346,
+          "mdd_pct": -15.569,
+          "sharpe": -0.134,
+          "win_rate": 0.4792
+        },
+        "2024": {
+          "days": 242,
+          "ann_ret_pct": 30.565,
+          "vol_ann_pct": 17.054,
+          "mdd_pct": -9.597,
+          "sharpe": 1.649,
+          "win_rate": 0.5331
+        },
+        "2025": {
+          "days": 243,
+          "ann_ret_pct": 15.023,
+          "vol_ann_pct": 12.635,
+          "mdd_pct": -7.736,
+          "sharpe": 1.171,
+          "win_rate": 0.5638
+        },
+        "2026": {
+          "days": 198,
+          "ann_ret_pct": 0.157,
+          "vol_ann_pct": 13.048,
+          "mdd_pct": -8.171,
+          "sharpe": 0.077,
+          "win_rate": 0.5051
+        }
+      },
+      "excess": {
+        "days": 923,
+        "ann_excess_pct": -2.483,
+        "cum_excess_pct": -9.096,
+        "te_ann_pct": 1.493,
+        "t": -3.18,
+        "info_ratio": -1.663
+      },
+      "excess_by_year": {
+        "2023": {
+          "days": 240,
+          "ann_excess_pct": -4.996,
+          "cum_excess_pct": -4.758,
+          "te_ann_pct": 1.512,
+          "t": -3.22,
+          "info_ratio": -3.304
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": -0.627,
+          "cum_excess_pct": -0.602,
+          "te_ann_pct": 1.196,
+          "t": -0.51,
+          "info_ratio": -0.524
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": -2.215,
+          "cum_excess_pct": -2.135,
+          "te_ann_pct": 1.404,
+          "t": -1.55,
+          "info_ratio": -1.577
+        },
+        "2026": {
+          "days": 198,
+          "ann_excess_pct": -2.037,
+          "cum_excess_pct": -1.6,
+          "te_ann_pct": 1.854,
+          "t": -0.97,
+          "info_ratio": -1.098
+        }
+      },
+      "excess_bear_2026": {
+        "days": 49,
+        "ann_excess_pct": -0.29,
+        "cum_excess_pct": -0.056,
+        "te_ann_pct": 1.732,
+        "t": -0.07,
+        "info_ratio": -0.168
+      },
+      "bear_2026": {
+        "days": 49,
+        "ann_ret_pct": -31.456,
+        "vol_ann_pct": 14.559,
+        "mdd_pct": -7.973,
+        "sharpe": -2.521,
+        "win_rate": 0.449
+      }
+    }
+  },
+  "exposure": [
+    {
+      "variant": "all",
+      "avg_baseline_holdings": 20.0,
+      "avg_triggered_in_baseline": 3.35,
+      "avg_triggered_pct": 16.757,
+      "max_triggered": 17,
+      "periods": 185
+    }
+  ],
+  "registry_entry": {
+    "strategy_id": "S05_LX20_AVOID_DEWEIGHT",
+    "library_slot": "S05",
+    "validation_stage": "overlay_with_S01",
+    "version": "0.1.0-wave5",
+    "baseline": "S01（portfolio_build.build_baseline：过滤后流通市值 top20 等权）",
+    "signal": "LX20 lx20_three_absolutes，回溯 N=5 日",
+    "rebalance": "周频（5 交易日）",
+    "execution": "T 日收盘决策 → T+1 收盘执行；涨停/停牌不可买→现金；单边 30bp",
+    "preferred_weight_signal_stock": 0.5,
+    "variant_name": "W0.5",
+    "metrics": {
+      "baseline": {
+        "days": 923,
+        "ann_ret_pct": 13.288,
+        "vol_ann_pct": 14.323,
+        "mdd_pct": -14.697,
+        "sharpe": 0.943,
+        "win_rate": 0.5222,
+        "avg_turnover_pct": 3.405,
+        "ann_cost_pct": 1.03,
+        "avg_holdings": 19.9,
+        "avg_cash_pct": 0.378,
+        "rebalances": 185
+      },
+      "overlay": {
+        "days": 923,
+        "ann_ret_pct": 10.533,
+        "vol_ann_pct": 14.179,
+        "mdd_pct": -15.569,
+        "sharpe": 0.777,
+        "win_rate": 0.5211,
+        "avg_turnover_pct": 8.287,
+        "ann_cost_pct": 2.506,
+        "avg_holdings": 19.9,
+        "avg_cash_pct": 0.375,
+        "rebalances": 185
+      },
+      "excess": {
+        "days": 923,
+        "ann_excess_pct": -2.483,
+        "cum_excess_pct": -9.096,
+        "te_ann_pct": 1.493,
+        "t": -3.18,
+        "info_ratio": -1.663
+      },
+      "improvement": {
+        "ann_ret_delta_pct": -2.755,
+        "mdd_delta_pct": -0.872,
+        "te_ann_pct": 1.493,
+        "info_ratio": -1.663
+      }
+    },
+    "validation_result": "NOT_PASS_OVERLAY",
+    "rejection_reasons": [
+      "叠加后年化超额为负（最优档 w=0.5: -2.48%）",
+      "信息比 -1.66 < 0.3、t=-3.18（显著为负）",
+      "MDD 劣化 -0.87pp（基线 -14.70%）",
+      "可作用空间仅 16.76% 的基线持仓，且被降配的信号股在 S01 大市值组合内**跑赢**其余持仓（降配越深、负超额越大）"
+    ],
+    "cross_section_note": "wave4 的 S05 正超额（净 +1.0~2.0%/年）是在**等权全市场（含大量中小市值）**上测得的规避效应；S01 基线只持有流通市值 top20 大市值股，同一 LX20 信号在大市值持仓内方向相反（信号股跑赢），因此叠加产生负超额——S05 与 S01 存在截面冲突，不能直接叠加。",
+    "shadow_portfolio_recommendation": "**不建议进入影子盘**：叠加显著恶化 S01 基线（超额为负、MDD 劣化、IR<0），应先明确 S05 的适用截面（中小市值/全市场等权），并另立验证单测试「反向（超配信号股）」假设，不得直接用于 S01。",
+    "gate_conditions": {
+      "min_ann_excess_pct": 1.0,
+      "min_info_ratio": 0.3,
+      "max_mdd_worsening_pct": 1.0,
+      "max_te_ann_pct": 4.0
+    },
+    "missing_before_shadow": [
+      "S05 适用截面界定：在中小市值/全市场等权组合上重测叠加（当前 S01 为大市值 top20，冲突）",
+      "反向假设验证（S01 内超配 LX20 信号股）需单独立项，不可直接改规则方向",
+      "日频/月频调仓敏感性与成本敏感性",
+      "S01 实盘版本对齐（当前为研究口径复刻，3/3 日期精确一致）",
+      "影子盘 3 个月跟踪：TE/换手/超额/覆盖度漂移"
+    ],
+    "notes": [
+      "S01 基线的 ST/上市日期/行业使用 stock_basic 当前静态信息（与 portfolio_build.build_baseline 同源，轻微后验）。",
+      "调仓频率仅周频（5 个交易日）；未做日频/月频敏感性。T+1 收盘执行、涨停(≥9.5%)/停牌不可买→转现金。",
+      "持有期个股停牌/退市当日收益按 0 处理（未做顺延卖出建模）；首期建仓成本按单边 30bp 计。",
+      "信号为 book_batch_test 的 LX20 简化单形态代理，非原书完整三绝口径。",
+      "容量沿用 wave4 结论（10% 参与率下 AUM 上限约 187 亿），本文件未按 AUM 重算滑点。",
+      "S05 只能降配/剔除（A 股不可做空）；空仓/现金部分收益按 0 计。",
+      "截面冲突：wave4 的 S05 正超额测于等权全市场，S01 只持大市值 top20；同一信号在大市值持仓内方向相反，故本叠加测试结论为负——这是适用截面问题，不否定 wave4 的全市场口径结论。"
+    ]
+  },
+  "conclusions": {
+    "variants": [
+      {
+        "variant": "W0",
+        "weight_signal_stock": 0.0,
+        "ann_ret_pct": 6.75,
+        "ann_excess_pct": -5.963,
+        "te_ann_pct": 3.756,
+        "info_ratio": -1.588,
+        "t": -3.04,
+        "mdd_pct": -16.796,
+        "base_mdd_pct": -14.697,
+        "ann_cost_pct": 4.618,
+        "avg_turnover_pct": 15.271
+      },
+      {
+        "variant": "W0.25",
+        "weight_signal_stock": 0.25,
+        "ann_ret_pct": 8.867,
+        "ann_excess_pct": -4.007,
+        "te_ann_pct": 2.439,
+        "info_ratio": -1.643,
+        "t": -3.14,
+        "mdd_pct": -16.04,
+        "base_mdd_pct": -14.697,
+        "ann_cost_pct": 3.437,
+        "avg_turnover_pct": 11.366
+      },
+      {
+        "variant": "W0.5",
+        "weight_signal_stock": 0.5,
+        "ann_ret_pct": 10.533,
+        "ann_excess_pct": -2.483,
+        "te_ann_pct": 1.493,
+        "info_ratio": -1.663,
+        "t": -3.18,
+        "mdd_pct": -15.569,
+        "base_mdd_pct": -14.697,
+        "ann_cost_pct": 2.506,
+        "avg_turnover_pct": 8.287
+      }
+    ],
+    "best_variant": {
+      "variant": "W0.5",
+      "weight_signal_stock": 0.5,
+      "ann_ret_pct": 10.533,
+      "ann_excess_pct": -2.483,
+      "te_ann_pct": 1.493,
+      "info_ratio": -1.663,
+      "t": -3.18,
+      "mdd_pct": -15.569,
+      "base_mdd_pct": -14.697,
+      "ann_cost_pct": 2.506,
+      "avg_turnover_pct": 8.287
+    },
+    "positive_excess_variants": [],
+    "info_ratio_ok": [],
+    "mdd_not_worse": [
+      "W0.5"
+    ],
+    "shadow_portfolio_recommendation": false,
+    "bullets": [
+      "基线（S01：过滤后市值 top20 等权，周频、T+1 收盘执行、30bp）全窗口年化 13.29%、波动 14.32%、MDD -14.70%、换手 3.40%/次、成本 1.03%/年。",
+      "叠加 S05（LX20 信号股降配）后：",
+      "- w=0：年化 6.75%（基线 13.29%），超额 -5.96%、TE 3.76%、IR -1.59、t=-3.04，MDD -16.80%（基线 -14.70%）。",
+      "- w=0.25：年化 8.87%（基线 13.29%），超额 -4.01%、TE 2.44%、IR -1.64、t=-3.14，MDD -16.04%（基线 -14.70%）。",
+      "- w=0.5：年化 10.53%（基线 13.29%），超额 -2.48%、TE 1.49%、IR -1.66、t=-3.18，MDD -15.57%（基线 -14.70%）。",
+      "结论：最优叠加档 w=0.5（年化超额 -2.48%、IR -1.66、TE 1.49%）；叠加**显著恶化**基线（超额为负、MDD 劣化、IR<0）→ **不建议进入影子盘**。",
+      "机制解释：wave4 的 S05 正超额来自**等权全市场**（含大量中小市值）的短期反转/规避效应；S01 基线只持有流通市值 top20 大市值股，同一 LX20 信号在大市值持仓内方向相反（信号股在被降配前**跑赢**其余持仓：w 越深负超额越大，w=0→-5.96%、w=0.5→-2.48%，近似线性），说明「规避」是截面相关的——**不能把 S05 直接叠加到 S01**。",
+      "处理建议：S05 在 strategy_registry 标 `NOT_PASS_OVERLAY`（research_only），保留为「中小市值/全市场等权组合的风控线索」；若要在 S01 上利用该信号，应另立验证单测试**反向（超配信号股）**假设，且需先过 PIT/OOS/成本/容量四关，不得直接改规则方向。",
+      "S05 可作用空间有限：LX20 信号在基线 top20 持仓中覆盖约 16.76% 的持仓（见 exposure 表），叠加效果主要取决于信号命中大市值持仓的频率。"
+    ]
+  }
+}

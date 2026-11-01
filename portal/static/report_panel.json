@@ -1,0 +1,559 @@
+{
+ "generated_at": "2026-11-01T08:09:36+08:00",
+ "exported_at": "2026-11-01T08:34:15+08:00",
+ "source": "C:\\项目\\老田的AI助手\\research\\reports\\report_panel_v3_20261101.json",
+ "panel_version": 3,
+ "date_tag": "20261101",
+ "models": {
+  "primary": "qwen3.5:9b",
+  "cross": "qwen3.6:35b-a3b",
+  "cross_fallback": "qwen3.5:4b"
+ },
+ "disclaimer": "仅供研究，不构成投资建议",
+ "disclaimer_full": "本面板由本地 LLM 多智能体评审（基本面分析师/量化研究员/风控官 × 双模型）自动生成，仅供研究参考，不构成任何投资建议；候选需经人工复核后方可使用。",
+ "summary": {
+  "reports": 3,
+  "candidates": 1,
+  "rejected": 2,
+  "page_invalid_facts": 1,
+  "legacy_union_invalid_facts": 0,
+  "reports_with_page_issues": 1,
+  "rule_fallback_roles": 0,
+  "role_calls_attempted": 18,
+  "retries": 0,
+  "elapsed_seconds": 317.1,
+  "conclusion": {
+   "verdict": "达到",
+   "passed": 5,
+   "total": 5,
+   "met": true
+  }
+ },
+ "candidates": [
+  {
+   "report_id": "rp_AP202610071830182729",
+   "title": "产业并购重组快速推进，电池产业十五五规划推动发展",
+   "date": "2026-10-07",
+   "pages": 21,
+   "pass_models": [
+    "qwen3.5:9b",
+    "qwen3.6:35b-a3b"
+   ],
+   "primary_pass_roles": 3,
+   "model_verdicts": {
+    "qwen3.5:9b": "pass",
+    "qwen3.6:35b-a3b": "pass"
+   },
+   "role_agreement_rate": 1.0,
+   "page_issue_count": 0
+  }
+ ],
+ "reports": [
+  {
+   "report_id": "rp_AP202610071830180005",
+   "title": "M9 材料体系",
+   "date": "2026-10-07",
+   "pages": 28,
+   "candidate": false,
+   "verdicts": [
+    {
+     "model": "qwen3.5:9b",
+     "model_role": "primary",
+     "role": "基本面分析师",
+     "verdict": "pass",
+     "source": "llm",
+     "page_valid_ratio": 1.0,
+     "downweighted": false,
+     "retried": false
+    },
+    {
+     "model": "qwen3.5:9b",
+     "model_role": "primary",
+     "role": "量化研究员",
+     "verdict": "pass",
+     "source": "llm",
+     "page_valid_ratio": 1.0,
+     "downweighted": false,
+     "retried": false
+    },
+    {
+     "model": "qwen3.5:9b",
+     "model_role": "primary",
+     "role": "风控官",
+     "verdict": "pass",
+     "source": "llm",
+     "page_valid_ratio": 1.0,
+     "downweighted": false,
+     "retried": false
+    },
+    {
+     "model": "qwen3.6:35b-a3b",
+     "model_role": "cross",
+     "role": "基本面分析师",
+     "verdict": "pass",
+     "source": "llm",
+     "page_valid_ratio": 1.0,
+     "downweighted": false,
+     "retried": false
+    },
+    {
+     "model": "qwen3.6:35b-a3b",
+     "model_role": "cross",
+     "role": "量化研究员",
+     "verdict": "pass",
+     "source": "llm",
+     "page_valid_ratio": 1.0,
+     "downweighted": false,
+     "retried": false
+    },
+    {
+     "model": "qwen3.6:35b-a3b",
+     "model_role": "cross",
+     "role": "风控官",
+     "verdict": "pass",
+     "source": "llm",
+     "page_valid_ratio": 0.667,
+     "downweighted": false,
+     "retried": false
+    }
+   ],
+   "model_verdicts": {
+    "qwen3.5:9b": "pass",
+    "qwen3.6:35b-a3b": "pass"
+   },
+   "role_agreement_rate": 1.0,
+   "verdict_agreement": true,
+   "key_facts_overlap": 0.571,
+   "page_issue_count": 1,
+   "legacy_union_issue_count": 0,
+   "conditions": {
+    "models_pass_ge_2": true,
+    "primary_pass_roles_ge_2": true,
+    "page_validation_pass": false
+   },
+   "reasons": [
+    "pass 模型 2/2（qwen3.5:9b, qwen3.6:35b-a3b）",
+    "主模型 effective pass 角色数 3/3",
+    "精确页码校验 不通过（越界 1 处，v2 宽口径 0 处）"
+   ]
+  },
+  {
+   "report_id": "rp_AP202610071830182729",
+   "title": "产业并购重组快速推进，电池产业十五五规划推动发展",
+   "date": "2026-10-07",
+   "pages": 21,
+   "candidate": true,
+   "verdicts": [
+    {
+     "model": "qwen3.5:9b",
+     "model_role": "primary",
+     "role": "基本面分析师",
+     "verdict": "pass",
+     "source": "llm",
+     "page_valid_ratio": 1.0,
+     "downweighted": false,
+     "retried": false
+    },
+    {
+     "model": "qwen3.5:9b",
+     "model_role": "primary",
+     "role": "量化研究员",
+     "verdict": "pass",
+     "source": "llm",
+     "page_valid_ratio": 1.0,
+     "downweighted": false,
+     "retried": false
+    },
+    {
+     "model": "qwen3.5:9b",
+     "model_role": "primary",
+     "role": "风控官",
+     "verdict": "pass",
+     "source": "llm",
+     "page_valid_ratio": 1.0,
+     "downweighted": false,
+     "retried": false
+    },
+    {
+     "model": "qwen3.6:35b-a3b",
+     "model_role": "cross",
+     "role": "基本面分析师",
+     "verdict": "pass",
+     "source": "llm",
+     "page_valid_ratio": 1.0,
+     "downweighted": false,
+     "retried": false
+    },
+    {
+     "model": "qwen3.6:35b-a3b",
+     "model_role": "cross",
+     "role": "量化研究员",
+     "verdict": "pass",
+     "source": "llm",
+     "page_valid_ratio": 1.0,
+     "downweighted": false,
+     "retried": false
+    },
+    {
+     "model": "qwen3.6:35b-a3b",
+     "model_role": "cross",
+     "role": "风控官",
+     "verdict": "pass",
+     "source": "llm",
+     "page_valid_ratio": 1.0,
+     "downweighted": false,
+     "retried": false
+    }
+   ],
+   "model_verdicts": {
+    "qwen3.5:9b": "pass",
+    "qwen3.6:35b-a3b": "pass"
+   },
+   "role_agreement_rate": 1.0,
+   "verdict_agreement": true,
+   "key_facts_overlap": 0.5,
+   "page_issue_count": 0,
+   "legacy_union_issue_count": 0,
+   "conditions": {
+    "models_pass_ge_2": true,
+    "primary_pass_roles_ge_2": true,
+    "page_validation_pass": true
+   },
+   "reasons": [
+    "pass 模型 2/2（qwen3.5:9b, qwen3.6:35b-a3b）",
+    "主模型 effective pass 角色数 3/3",
+    "精确页码校验 通过"
+   ]
+  },
+  {
+   "report_id": "rp_AP202610071830184407",
+   "title": "AI 应用落地趋势",
+   "date": "2026-10-07",
+   "pages": 19,
+   "candidate": false,
+   "verdicts": [
+    {
+     "model": "qwen3.5:9b",
+     "model_role": "primary",
+     "role": "基本面分析师",
+     "verdict": "pass",
+     "source": "llm",
+     "page_valid_ratio": 1.0,
+     "downweighted": false,
+     "retried": false
+    },
+    {
+     "model": "qwen3.5:9b",
+     "model_role": "primary",
+     "role": "量化研究员",
+     "verdict": "avoid",
+     "source": "llm",
+     "page_valid_ratio": 1.0,
+     "downweighted": false,
+     "retried": false
+    },
+    {
+     "model": "qwen3.5:9b",
+     "model_role": "primary",
+     "role": "风控官",
+     "verdict": "pass",
+     "source": "llm",
+     "page_valid_ratio": 1.0,
+     "downweighted": false,
+     "retried": false
+    },
+    {
+     "model": "qwen3.6:35b-a3b",
+     "model_role": "cross",
+     "role": "基本面分析师",
+     "verdict": "pass",
+     "source": "llm",
+     "page_valid_ratio": 1.0,
+     "downweighted": false,
+     "retried": false
+    },
+    {
+     "model": "qwen3.6:35b-a3b",
+     "model_role": "cross",
+     "role": "量化研究员",
+     "verdict": "avoid",
+     "source": "llm",
+     "page_valid_ratio": 1.0,
+     "downweighted": false,
+     "retried": false
+    },
+    {
+     "model": "qwen3.6:35b-a3b",
+     "model_role": "cross",
+     "role": "风控官",
+     "verdict": "neutral",
+     "source": "llm",
+     "page_valid_ratio": 1.0,
+     "downweighted": false,
+     "retried": false
+    }
+   ],
+   "model_verdicts": {
+    "qwen3.5:9b": "pass",
+    "qwen3.6:35b-a3b": "neutral"
+   },
+   "role_agreement_rate": 0.667,
+   "verdict_agreement": false,
+   "key_facts_overlap": 0.5,
+   "page_issue_count": 0,
+   "legacy_union_issue_count": 0,
+   "conditions": {
+    "models_pass_ge_2": false,
+    "primary_pass_roles_ge_2": true,
+    "page_validation_pass": true
+   },
+   "reasons": [
+    "pass 模型 1/2（qwen3.5:9b）",
+    "主模型 effective pass 角色数 2/3",
+    "精确页码校验 通过"
+   ]
+  }
+ ],
+ "rejected": [
+  {
+   "report_id": "rp_AP202610071830180005",
+   "title": "M9 材料体系",
+   "date": "2026-10-07",
+   "pages": 28,
+   "candidate": false,
+   "verdicts": [
+    {
+     "model": "qwen3.5:9b",
+     "model_role": "primary",
+     "role": "基本面分析师",
+     "verdict": "pass",
+     "source": "llm",
+     "page_valid_ratio": 1.0,
+     "downweighted": false,
+     "retried": false
+    },
+    {
+     "model": "qwen3.5:9b",
+     "model_role": "primary",
+     "role": "量化研究员",
+     "verdict": "pass",
+     "source": "llm",
+     "page_valid_ratio": 1.0,
+     "downweighted": false,
+     "retried": false
+    },
+    {
+     "model": "qwen3.5:9b",
+     "model_role": "primary",
+     "role": "风控官",
+     "verdict": "pass",
+     "source": "llm",
+     "page_valid_ratio": 1.0,
+     "downweighted": false,
+     "retried": false
+    },
+    {
+     "model": "qwen3.6:35b-a3b",
+     "model_role": "cross",
+     "role": "基本面分析师",
+     "verdict": "pass",
+     "source": "llm",
+     "page_valid_ratio": 1.0,
+     "downweighted": false,
+     "retried": false
+    },
+    {
+     "model": "qwen3.6:35b-a3b",
+     "model_role": "cross",
+     "role": "量化研究员",
+     "verdict": "pass",
+     "source": "llm",
+     "page_valid_ratio": 1.0,
+     "downweighted": false,
+     "retried": false
+    },
+    {
+     "model": "qwen3.6:35b-a3b",
+     "model_role": "cross",
+     "role": "风控官",
+     "verdict": "pass",
+     "source": "llm",
+     "page_valid_ratio": 0.667,
+     "downweighted": false,
+     "retried": false
+    }
+   ],
+   "model_verdicts": {
+    "qwen3.5:9b": "pass",
+    "qwen3.6:35b-a3b": "pass"
+   },
+   "role_agreement_rate": 1.0,
+   "verdict_agreement": true,
+   "key_facts_overlap": 0.571,
+   "page_issue_count": 1,
+   "legacy_union_issue_count": 0,
+   "conditions": {
+    "models_pass_ge_2": true,
+    "primary_pass_roles_ge_2": true,
+    "page_validation_pass": false
+   },
+   "reasons": [
+    "pass 模型 2/2（qwen3.5:9b, qwen3.6:35b-a3b）",
+    "主模型 effective pass 角色数 3/3",
+    "精确页码校验 不通过（越界 1 处，v2 宽口径 0 处）"
+   ]
+  },
+  {
+   "report_id": "rp_AP202610071830184407",
+   "title": "AI 应用落地趋势",
+   "date": "2026-10-07",
+   "pages": 19,
+   "candidate": false,
+   "verdicts": [
+    {
+     "model": "qwen3.5:9b",
+     "model_role": "primary",
+     "role": "基本面分析师",
+     "verdict": "pass",
+     "source": "llm",
+     "page_valid_ratio": 1.0,
+     "downweighted": false,
+     "retried": false
+    },
+    {
+     "model": "qwen3.5:9b",
+     "model_role": "primary",
+     "role": "量化研究员",
+     "verdict": "avoid",
+     "source": "llm",
+     "page_valid_ratio": 1.0,
+     "downweighted": false,
+     "retried": false
+    },
+    {
+     "model": "qwen3.5:9b",
+     "model_role": "primary",
+     "role": "风控官",
+     "verdict": "pass",
+     "source": "llm",
+     "page_valid_ratio": 1.0,
+     "downweighted": false,
+     "retried": false
+    },
+    {
+     "model": "qwen3.6:35b-a3b",
+     "model_role": "cross",
+     "role": "基本面分析师",
+     "verdict": "pass",
+     "source": "llm",
+     "page_valid_ratio": 1.0,
+     "downweighted": false,
+     "retried": false
+    },
+    {
+     "model": "qwen3.6:35b-a3b",
+     "model_role": "cross",
+     "role": "量化研究员",
+     "verdict": "avoid",
+     "source": "llm",
+     "page_valid_ratio": 1.0,
+     "downweighted": false,
+     "retried": false
+    },
+    {
+     "model": "qwen3.6:35b-a3b",
+     "model_role": "cross",
+     "role": "风控官",
+     "verdict": "neutral",
+     "source": "llm",
+     "page_valid_ratio": 1.0,
+     "downweighted": false,
+     "retried": false
+    }
+   ],
+   "model_verdicts": {
+    "qwen3.5:9b": "pass",
+    "qwen3.6:35b-a3b": "neutral"
+   },
+   "role_agreement_rate": 0.667,
+   "verdict_agreement": false,
+   "key_facts_overlap": 0.5,
+   "page_issue_count": 0,
+   "legacy_union_issue_count": 0,
+   "conditions": {
+    "models_pass_ge_2": false,
+    "primary_pass_roles_ge_2": true,
+    "page_validation_pass": true
+   },
+   "reasons": [
+    "pass 模型 1/2（qwen3.5:9b）",
+    "主模型 effective pass 角色数 2/3",
+    "精确页码校验 通过"
+   ]
+  }
+ ],
+ "review": {
+  "file": "C:\\项目\\老田的AI助手\\research\\reports\\report_panel_v3_review.md",
+  "note": "人工复核清单为必过环节：勾选确认页码/事实/角色意见后方可进入下游。",
+  "items": [
+   {
+    "report_id": "rp_AP202610071830180005",
+    "title": "M9 材料体系",
+    "is_candidate": false,
+    "page_issue_count": 1,
+    "facts_total": 15,
+    "facts_invalid": 1,
+    "opinions_total": 6,
+    "open_checkboxes": 25,
+    "reject_reasons": [
+     "pass 模型 2/2（qwen3.5:9b, qwen3.6:35b-a3b）",
+     "主模型 effective pass 角色数 3/3",
+     "精确页码校验 不通过（越界 1 处，v2 宽口径 0 处）"
+    ]
+   },
+   {
+    "report_id": "rp_AP202610071830182729",
+    "title": "产业并购重组快速推进，电池产业十五五规划推动发展",
+    "is_candidate": true,
+    "page_issue_count": 0,
+    "facts_total": 14,
+    "facts_invalid": 0,
+    "opinions_total": 6,
+    "open_checkboxes": 24,
+    "reject_reasons": []
+   },
+   {
+    "report_id": "rp_AP202610071830184407",
+    "title": "AI 应用落地趋势",
+    "is_candidate": false,
+    "page_issue_count": 0,
+    "facts_total": 9,
+    "facts_invalid": 0,
+    "opinions_total": 6,
+    "open_checkboxes": 19,
+    "reject_reasons": [
+     "pass 模型 1/2（qwen3.5:9b）",
+     "主模型 effective pass 角色数 2/3",
+     "精确页码校验 通过"
+    ]
+   }
+  ],
+  "facts_total": 38,
+  "facts_invalid": 1,
+  "open_checkboxes": 68
+ },
+ "page_issues": [
+  {
+   "report_id": "rp_AP202610071830180005",
+   "model": "qwen3.6:35b-a3b",
+   "role": "风控官",
+   "fact": "PTFE虽性能优于M9体系，但因热塑性导致加工难题，产业界方案为'PTFE芯层+M9半固化片’的混压结构。",
+   "page": 14,
+   "allowed_pages": [
+    1,
+    2,
+    3
+   ]
+  }
+ ]
+}
