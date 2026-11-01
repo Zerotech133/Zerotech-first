@@ -22,6 +22,7 @@ DEFAULT_KB = Path(r"C:\项目\知识库")
 REG = REPO / "agent_platform/registry/learning_projects.json"
 REPORTS = REPO / "research/reports"
 SUPPORTED = {".docx", ".pdf", ".md", ".txt"}
+SKIP_NAMES = {"README.txt", "readme.txt", "说明.txt", "00_目录与交付说明.txt"}
 
 
 class SafetyError(RuntimeError):
@@ -86,7 +87,7 @@ def scan(kb_root: Path) -> list[dict]:
     files = []
     if inbox.exists():
         for f in sorted(inbox.iterdir()):
-            if f.is_file() and f.suffix.lower() in SUPPORTED:
+            if f.is_file() and f.suffix.lower() in SUPPORTED and f.name not in SKIP_NAMES:
                 files.append({"path": str(f), "name": f.name, "size": f.stat().st_size,
                               "sha256": sha256_file(f)})
     return files
@@ -149,6 +150,7 @@ def ingest(files: list[dict], kb_root: Path, project: str | None = None,
             item["extract"] = {"deferred": "pdf→pdf_ingest OCR 流水线"}
         item["action"] = "ingested"
         # manifest
+        pdir.mkdir(parents=True, exist_ok=True)
         manifest_p = pdir / "manifest.json"
         assert_safe(manifest_p, kb_root)
         manifest = json.loads(manifest_p.read_text(encoding="utf-8")) if manifest_p.exists() else {"files": [], "project_id": pid}
@@ -180,6 +182,7 @@ def ingest(files: list[dict], kb_root: Path, project: str | None = None,
         date = datetime.now().strftime("%Y%m%d")
         rp = REPORTS / f"learning_intake_{date}.json"
         assert_safe(rp, kb_root)
+        rp.parent.mkdir(parents=True, exist_ok=True)
         rp.write_text(json.dumps(receipt, ensure_ascii=False, indent=1), encoding="utf-8")
         receipt["receipt"] = str(rp)
     return receipt

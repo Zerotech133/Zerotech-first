@@ -28,6 +28,7 @@ def test_ingest_docx(tmp_path, monkeypatch):
     _mk_docx(inbox / "示例_Word.docx")
     monkeypatch.setattr(li, "REG", tmp_path / "learning_projects.json")
     monkeypatch.setattr(li, "REPORTS", tmp_path / "reports")
+    (inbox / "README.txt").write_text("skip me", encoding="utf-8")
     files = li.scan(kb)
     assert len(files) == 1
     rep = li.ingest(files, kb, project="测试项目", write=True)
