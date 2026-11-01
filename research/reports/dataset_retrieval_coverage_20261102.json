@@ -1,0 +1,101 @@
+{
+ "generated_at": "2026-11-02T02:48:20+0800",
+ "total": 314,
+ "ok": 314,
+ "coverage_pct": 100.0,
+ "elapsed_s": 1.8,
+ "avg_ms": 5.7,
+ "by_domain": {
+  "接口数据": {
+   "total": 241,
+   "ok": 241
+  },
+  "开源情报": {
+   "total": 19,
+   "ok": 19
+  },
+  "学习派生": {
+   "total": 29,
+   "ok": 29
+  },
+  "平台运行": {
+   "total": 25,
+   "ok": 25
+  }
+ },
+ "slowest": [
+  {
+   "dataset_id": "ts_stk_mins",
+   "domain": "接口数据",
+   "kind": "dir",
+   "ok": true,
+   "ms": 176,
+   "error": null,
+   "path": "quant_backtest\\data\\tushare\\stk_mins"
+  },
+  {
+   "dataset_id": "ts_us_daily",
+   "domain": "接口数据",
+   "kind": "dir",
+   "ok": true,
+   "ms": 102,
+   "error": null,
+   "path": "quant_backtest\\data\\tushare\\us_daily"
+  },
+  {
+   "dataset_id": "ts_us_balancesheet",
+   "domain": "接口数据",
+   "kind": "dir",
+   "ok": true,
+   "ms": 72,
+   "error": null,
+   "path": "quant_backtest\\data\\tushare\\us_balancesheet"
+  },
+  {
+   "dataset_id": "ts_daily",
+   "domain": "接口数据",
+   "kind": "dir",
+   "ok": true,
+   "ms": 70,
+   "error": null,
+   "path": "quant_backtest\\data\\tushare\\daily"
+  },
+  {
+   "dataset_id": "ts_us_cashflow",
+   "domain": "接口数据",
+   "kind": "dir",
+   "ok": true,
+   "ms": 67,
+   "error": null,
+   "path": "quant_backtest\\data\\tushare\\us_cashflow"
+  },
+  {
+   "dataset_id": "ts_adj_factor",
+   "domain": "接口数据",
+   "kind": "dir",
+   "ok": true,
+   "ms": 64,
+   "error": null,
+   "path": "quant_backtest\\data\\tushare\\adj_factor"
+  },
+  {
+   "dataset_id": "ts_us_fina_indicator",
+   "domain": "接口数据",
+   "kind": "dir",
+   "ok": true,
+   "ms": 64,
+   "error": null,
+   "path": "quant_backtest\\data\\tushare\\us_fina_indicator"
+  },
+  {
+   "dataset_id": "ts_us_income",
+   "domain": "接口数据",
+   "kind": "dir",
+   "ok": true,
+   "ms": 62,
+   "error": null,
+   "path": "quant_backtest\\data\\tushare\\us_income"
+  }
+ ],
+ "failures": []
+}

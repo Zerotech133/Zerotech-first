@@ -18,6 +18,7 @@ REPO = Path(r"C:\项目\老田的AI助手")
 ALLOWED_ROOTS = [
     REPO / "quant_backtest",
     REPO / "research",
+    REPO / "knowledge_docs",
     REPO / "portal",
     REPO / "agent_platform",
     REPO / "news_collector",
@@ -45,8 +46,12 @@ def slugify(text: str) -> str:
 
 
 class DatasetRegistry:
+    MAX_JSON_BYTES = 50 * 1024 * 1024
+    MAX_DIR_SCAN = 500
+
     def __init__(self, inventory_path: Path | str | None = None,
-                 allowed_roots: list[Path] | None = None):
+                 allowed_roots: list[Path] | None = None,
+                 max_json_bytes: int | None = None):
         if inventory_path is None:
             cands = sorted((REPO / "research/reports").glob("dataset_inventory_*.json"))
             if not cands:
@@ -54,6 +59,7 @@ class DatasetRegistry:
             inventory_path = cands[-1]
         self.inventory_path = Path(inventory_path)
         self.allowed_roots = allowed_roots or ALLOWED_ROOTS
+        self.max_json_bytes = max_json_bytes or self.MAX_JSON_BYTES
         raw = json.loads(self.inventory_path.read_text(encoding="utf-8"))
         self.datasets: list[dict[str, Any]] = []
         seen: set[str] = set()
@@ -84,6 +90,7 @@ class DatasetRegistry:
                 "exposed": bool(d.get("exposed")),
                 "owner": owner,
                 "access": "read_only",
+                "unified_entry": True,
             })
         # 附加数据集级别名（去掉 domain 前缀后的短名冲突时保留 id）
         self._by_id = {d["dataset_id"]: d for d in self.datasets}
@@ -130,6 +137,30 @@ class DatasetRegistry:
             raise PermissionError(f"路径不在白名单: {rp}")
         return rp
 
+    def _latest_mtime(self, p: Path) -> str | None:
+        try:
+            if p.is_file():
+                import datetime
+                return datetime.datetime.fromtimestamp(p.stat().st_mtime).strftime("%Y-%m-%d %H:%M")
+            best = 0.0
+            scanned = 0
+            for cur, dirs, files in os.walk(p):
+                for f in files:
+                    try:
+                        m = os.path.getmtime(os.path.join(cur, f))
+                    except OSError:
+                        continue
+                    best = max(best, m)
+                    scanned += 1
+                    if scanned >= self.MAX_DIR_SCAN:
+                        break
+                if scanned >= self.MAX_DIR_SCAN:
+                    break
+            import datetime
+            return datetime.datetime.fromtimestamp(best).strftime("%Y-%m-%d %H:%M") if best else None
+        except Exception:  # noqa: BLE001
+            return None
+
     def sample(self, dataset_id: str, n: int = 3) -> dict:
         d = self.get(dataset_id)
         if not d:
@@ -154,18 +185,43 @@ class DatasetRegistry:
             t = pq.read_table(p).slice(0, n)
             return {"dataset_id": dataset_id, "kind": kind, "columns": t.column_names, "sample": t.to_pylist()}
         if p.is_file() and p.suffix in (".json", ".jsonl"):
+            if p.stat().st_size > self.max_json_bytes:
+                head = p.read_text(encoding="utf-8", errors="ignore")[:2000]
+                return {"dataset_id": dataset_id, "kind": kind, "path": str(p),
+                        "size_mb": round(p.stat().st_size / 1e6, 1),
+                        "preview_head": head, "note": "大 JSON：仅预览头部（>max_json_bytes）"}
             text = p.read_text(encoding="utf-8", errors="ignore")
             if p.suffix == ".jsonl":
                 lines = [x for x in text.splitlines() if x.strip()][:n]
                 return {"dataset_id": dataset_id, "kind": kind, "sample": [json.loads(x) if _is_json(x) else x for x in lines]}
             obj = json.loads(text)
             return {"dataset_id": dataset_id, "kind": kind, "sample": obj if not isinstance(obj, list) else obj[:n]}
-        # 目录/其他：列出最新文件与结构
-        files = [x for x in p.rglob("*") if x.is_file()] if p.is_dir() else [p]
-        files.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+        # 目录/其他：有界采样（顶层结构 + 最新文件），避免大目录全量 rglob
+        if p.is_dir():
+            tops = sorted(os.listdir(p))[:n]
+            newest = []
+            seen = 0
+            for cur, dirs, files in os.walk(p):
+                for f in files:
+                    fp = os.path.join(cur, f)
+                    try:
+                        newest.append((os.path.getmtime(fp), os.path.relpath(fp, p)))
+                    except OSError:
+                        pass
+                    seen += 1
+                    if seen >= 500 or len(newest) >= 50:
+                        break
+                if seen >= 500 or len(newest) >= 50:
+                    break
+            newest.sort(reverse=True)
+            return {"dataset_id": dataset_id, "kind": kind, "path": str(p),
+                    "freshness": self._latest_mtime(p),
+                    "top_entries": tops,
+                    "newest_files": [x[1] for x in newest[:n]],
+                    "scan_truncated": True}
         return {"dataset_id": dataset_id, "kind": kind, "path": str(p),
-                "files": [str(x.relative_to(p)) if p.is_dir() else x.name for x in files[:n]],
-                "file_count": len(files)}
+                "freshness": self._latest_mtime(p), "files": [p.name],
+                "file_count": 1}
 
     # ---------- 导出登记 YAML 草稿 ----------
     def emit_yaml(self, out_path: Path | str) -> Path:

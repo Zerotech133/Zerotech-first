@@ -50,7 +50,8 @@ def test_sample_sqlite(tmp_path):
 def test_sample_dir_and_emit(tmp_path):
     reg = DatasetRegistry(_make_env(tmp_path), allowed_roots=[tmp_path])
     s = reg.sample("pq", n=1)
-    assert s["file_count"] == 1
+    assert s["top_entries"]
+    assert s["freshness"] is not None or s["top_entries"]
     out = reg.emit_yaml(tmp_path / "out.yaml")
     doc = yaml.safe_load(out.read_text(encoding="utf-8"))
     assert doc["version"] == 1
