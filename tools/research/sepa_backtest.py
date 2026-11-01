@@ -112,7 +112,8 @@ def main(argv=None) -> int:
     ap.add_argument("--expire", type=int, default=20)
     ap.add_argument("--label", default="base")
     ap.add_argument("--fund", choices=("none", "growth", "growth_accel"), default="none")
-    ap.add_argument("--scan", choices=("weekly", "twice"), default="weekly")
+    ap.add_argument("--scan", choices=("weekly", "twice", "daily"), default="weekly")
+    ap.add_argument("--pyramid", action="store_true")
     args = ap.parse_args(argv)
     RISK_BUDGET, MAX_POS, MAX_WEIGHT = args.risk, args.max_pos, args.max_weight
     fund = None
@@ -180,8 +181,12 @@ def main(argv=None) -> int:
     mkt_idx = (1 + ret.mean(axis=1)).cumprod()
     mkt_ma200 = mkt_idx.rolling(200).mean()
     wd = pd.to_datetime(pd.Series(dates)).dt.weekday.values
-    scan_days = (4,) if args.scan == "weekly" else (0, 4)
-    scan_idx = [i for i in range(max(250, start_i), len(dates)) if wd[i] in scan_days]
+    if args.scan == "weekly":
+        scan_idx = [i for i in range(max(250, start_i), len(dates)) if wd[i] == 4]
+    elif args.scan == "twice":
+        scan_idx = [i for i in range(max(250, start_i), len(dates)) if wd[i] in (0, 4)]
+    else:  # daily
+        scan_idx = list(range(max(250, start_i), len(dates) - 1))
     print("scan days:", len(scan_idx), flush=True)
 
     # 1) 周扫 watch（设置）
@@ -248,6 +253,13 @@ def main(argv=None) -> int:
     print("breakout signals:", len(signals), flush=True)
 
     def simulate(variant: str, market_filter: bool) -> dict:
+        def spx(px_s, code, fallback):
+            v = px_s.get(code, np.nan)
+            try:
+                v = float(v)
+            except Exception:
+                return float(fallback)
+            return float(fallback) if (np.isnan(v) or v <= 0) else v
         pos, cash = {}, 1.0
         eq_hist, trades = [], []
         entry_map = {}
@@ -281,6 +293,19 @@ def main(argv=None) -> int:
                         trades.append({"ret": c / q["entry"] - 1, "hold": i - q["entry_i"]})
                         del pos[code]
                         continue
+                # 金字塔加仓（Minervini 渐进式：盈利后加仓，最多2次，每次1个风险单位）
+                if args.pyramid and gain >= 0.10 and q.get("adds", 0) < 2:
+                    risk_ps = q["entry"] - q["stop"]
+                    if risk_ps > 0:
+                        equity_now = cash + sum(q2["shares"] * spx(px_s, c2, q2["entry"]) for c2, q2 in pos.items())
+                        add_budget = min(equity_now * RISK_BUDGET / (risk_ps / q["entry"]), cash, equity_now * MAX_WEIGHT)
+                        if add_budget > equity_now * 0.01:
+                            add_sh = add_budget / c
+                            q["shares"] += add_sh
+                            q["entry"] = (q["entry"] * (q["shares"] - add_sh) + c * add_sh) / q["shares"]
+                            cash -= add_sh * c * (1 + COST)
+                            q["adds"] = q.get("adds", 0) + 1
+                            q["stop"] = max(q["stop"], q["entry"] * 0.92)
                 if variant == "C_partial":
                     if gain >= 0.20 and not q.get("partial"):
                         half = q["shares"] * 0.5
@@ -312,14 +337,15 @@ def main(argv=None) -> int:
                 risk = entry - stop
                 if risk <= 0:
                     continue
-                equity = cash + sum(q2["shares"] * float(px_s.get(c2, q2["entry"])) for c2, q2 in pos.items())
+                equity = cash + sum(q2["shares"] * spx(px_s, c2, q2["entry"]) for c2, q2 in pos.items())
                 budget = min(equity * RISK_BUDGET / (risk / entry), equity * MAX_WEIGHT, cash)
                 if budget <= equity * 0.01:
                     continue
                 shares = budget / entry
                 cash -= shares * entry * (1 + COST)
-                pos[code] = {"shares": shares, "entry": entry, "stop": stop, "entry_i": i, "partial": False}
-            mv = sum(q["shares"] * float(px_s.get(c, q["entry"])) for c, q in pos.items())
+                pos[code] = {"shares": shares, "entry": entry, "stop": stop, "entry_i": i,
+                              "partial": False, "adds": 0}
+            mv = sum(q["shares"] * spx(px_s, c, q["entry"]) for c, q in pos.items())
             eq_hist.append(cash + mv)
         eq = pd.Series(eq_hist, index=dates[start_i:])
         rets = eq.pct_change().dropna()
@@ -351,13 +377,13 @@ def main(argv=None) -> int:
     rep = {"meta": {"generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
                     "window": f"{dates[start_i]} .. {dates[-1]}", "scan": "weekly setup + daily breakout",
                     "setups": len(watch), "signals": len(signals), "risk_budget": RISK_BUDGET,
-                    "max_pos": MAX_POS, "fund": args.fund, "scan": args.scan,
+                    "max_pos": MAX_POS, "fund": args.fund, "scan": args.scan, "pyramid": bool(args.pyramid),
                     "note": "SEPA 完整体系回测（研究）；T+1 开盘入场；成本+滑点"},
            "market_cagr_pct": round(mkt_cagr * 100, 2), "market_mdd_pct": round(mkt_mdd * 100, 2),
            "market_vol_pct": round(mkt_vol * 100, 2), "results": results}
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / f"sepa_backtest_{tag}_{args.label}.json").write_text(json.dumps(rep, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
-    lines = [f"# SEPA 完整体系回测（{args.label}｜fund={args.fund}｜scan={args.scan}）· {rep['meta']['window']}", "",
+    lines = [f"# SEPA 完整体系回测（{args.label}｜fund={args.fund}｜scan={args.scan}｜pyramid={args.pyramid}）· {rep['meta']['window']}", "",
              f"- 周扫设置 {len(watch)} 个；突破信号 {len(signals)} 个；单笔风险 2%，最多 10 仓；T+1 开盘入场",
              f"- 市场等权：CAGR {rep['market_cagr_pct']}%／MDD {rep['market_mdd_pct']}%／波动 {rep['market_vol_pct']}%", "",
              "| 变体 | 市场过滤 | NAV | CAGR | MDD | 波动 | 交易数 | 胜率 | 平均盈利 | 平均亏损 | 盈亏比 | 平均持有 |",

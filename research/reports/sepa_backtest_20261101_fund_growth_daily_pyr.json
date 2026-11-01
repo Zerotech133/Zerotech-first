@@ -1,0 +1,103 @@
+{
+ "meta": {
+  "generated_at": "2026-11-01T21:47:36+08:00",
+  "window": "20190102 .. 20261030",
+  "scan": "daily",
+  "setups": 1452,
+  "signals": 151,
+  "risk_budget": 0.02,
+  "max_pos": 10,
+  "fund": "growth",
+  "pyramid": true,
+  "note": "SEPA 完整体系回测（研究）；T+1 开盘入场；成本+滑点"
+ },
+ "market_cagr_pct": 9.44,
+ "market_mdd_pct": -29.31,
+ "market_vol_pct": 19.95,
+ "results": [
+  {
+   "variant": "A_stop",
+   "market_filter": false,
+   "nav": 1.948,
+   "cagr_pct": 8.89,
+   "mdd_pct": -45.05,
+   "vol_pct": 25.86,
+   "trades": 55,
+   "win_rate_pct": 32.7,
+   "avg_win_pct": 15.28,
+   "avg_loss_pct": -7.48,
+   "profit_factor": 0.99,
+   "avg_hold_days": 27.0
+  },
+  {
+   "variant": "A_stop",
+   "market_filter": true,
+   "nav": 2.365,
+   "cagr_pct": 11.63,
+   "mdd_pct": -43.23,
+   "vol_pct": 26.57,
+   "trades": 42,
+   "win_rate_pct": 33.3,
+   "avg_win_pct": 20.81,
+   "avg_loss_pct": -7.7,
+   "profit_factor": 1.35,
+   "avg_hold_days": 23.8
+  },
+  {
+   "variant": "B_breakeven",
+   "market_filter": false,
+   "nav": 1.802,
+   "cagr_pct": 7.81,
+   "mdd_pct": -26.47,
+   "vol_pct": 17.72,
+   "trades": 70,
+   "win_rate_pct": 34.3,
+   "avg_win_pct": 24.0,
+   "avg_loss_pct": -6.07,
+   "profit_factor": 2.06,
+   "avg_hold_days": 24.8
+  },
+  {
+   "variant": "B_breakeven",
+   "market_filter": true,
+   "nav": 1.319,
+   "cagr_pct": 3.61,
+   "mdd_pct": -27.56,
+   "vol_pct": 15.86,
+   "trades": 55,
+   "win_rate_pct": 27.3,
+   "avg_win_pct": 26.82,
+   "avg_loss_pct": -6.24,
+   "profit_factor": 1.61,
+   "avg_hold_days": 20.5
+  },
+  {
+   "variant": "C_partial",
+   "market_filter": false,
+   "nav": 2.434,
+   "cagr_pct": 12.04,
+   "mdd_pct": -37.81,
+   "vol_pct": 22.48,
+   "trades": 66,
+   "win_rate_pct": 27.3,
+   "avg_win_pct": 21.83,
+   "avg_loss_pct": -7.01,
+   "profit_factor": 1.17,
+   "avg_hold_days": 25.2
+  },
+  {
+   "variant": "C_partial",
+   "market_filter": true,
+   "nav": 1.987,
+   "cagr_pct": 9.17,
+   "mdd_pct": -39.1,
+   "vol_pct": 21.46,
+   "trades": 46,
+   "win_rate_pct": 26.1,
+   "avg_win_pct": 24.3,
+   "avg_loss_pct": -7.33,
+   "profit_factor": 1.17,
+   "avg_hold_days": 23.4
+  }
+ ]
+}
