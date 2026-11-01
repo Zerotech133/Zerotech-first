@@ -52,6 +52,11 @@ FILES = [
     "tools/test_huangzhong_security_signal.py",
     # 11-04 一键执行器（2026-10-31 第八轮）
     "tools/test_huangzhong_1104_run.py",
+    # P3 收口增强（2026-11-01 并行开发轮）
+    "tools/test_huangzhong_health_alert.py",
+    "tools/test_huangzhong_1104_finalize.py",
+    "tools/test_huangzhong_blind_audit.py",
+    "tools/test_huangzhong_blocking_sim.py",
 ]
 
 
