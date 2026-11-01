@@ -1068,5 +1068,806 @@
     "static": "portal/static/kb_qa_samples.json",
     "doc": "docs/plans/2026-11-01_问答示例门户_v1.md",
     "note": "问答示例静态区块（5 样本，引用 unit_id+页码+置信；降级文案注明 HTTP 待 8091 审批）；HTTP 200 已验证。"
+  },
+  "search_v2_eval_ext2_20261101": {
+    "tool": "tools/kb_corpus/eval_search_v2_ext2.py",
+    "report": "research/reports/search_v2_eval_ext2_20261101.md",
+    "queries": 89,
+    "aggregate": {
+      "v1": {
+        "precision_at_k": 0.6831,
+        "coverage": 0.8371,
+        "hit_rate": 0.9551,
+        "ndcg_at_k": 0.7552
+      },
+      "v2": {
+        "precision_at_k": 0.7281,
+        "coverage": 0.9111,
+        "hit_rate": 1.0,
+        "ndcg_at_k": 0.8054
+      },
+      "delta": {
+        "precision_at_k": 0.045,
+        "coverage": 0.074,
+        "hit_rate": 0.0449,
+        "ndcg_at_k": 0.0502
+      }
+    },
+    "significance": {
+      "precision_at_k_paired_t": {
+        "n": 89,
+        "mean": 0.0449,
+        "sd": 0.3341,
+        "t": 1.2692,
+        "p_two_sided": 0.2044
+      },
+      "precision_at_k_bootstrap": {
+        "n": 89,
+        "n_boot": 2000,
+        "mean": 0.0449,
+        "ci_low": -0.0225,
+        "ci_high": 0.1146,
+        "significant": false
+      },
+      "ndcg_at_k_paired_t": {
+        "n": 89,
+        "mean": 0.0502,
+        "sd": 0.2925,
+        "t": 1.6188,
+        "p_two_sided": 0.1055
+      },
+      "ndcg_at_k_bootstrap": {
+        "n": 89,
+        "n_boot": 2000,
+        "mean": 0.0502,
+        "ci_low": -0.0068,
+        "ci_high": 0.1134,
+        "significant": false
+      },
+      "hit_rate_mcnemar": {
+        "b": 4,
+        "c": 0,
+        "n_discordant": 4,
+        "p_two_sided": 0.125
+      },
+      "alpha": 0.05,
+      "significant_precision": false,
+      "significant_ndcg": false
+    },
+    "note": "89 查询扩展集：v2 方向一致更好（P@5 0.683→0.728、NDCG 0.755→0.805、命中率 0.955→1.0），但 P@5 配对 t p=0.204、NDCG p=0.106、bootstrap CI 跨 0 → **未达统计显著**；wave9 的 p=0.0195 对样本/标注敏感。结论：v2 保留为默认（方向性收益）但标注「未获统计证实」，需继续扩样/标准化标注。"
+  },
+  "learning_analysis_20261101": {
+    "tool": "tools/kb_corpus/learning_analysis.py",
+    "report": "research/reports/learning_analysis_20261101.md",
+    "overview": {
+      "units": 498,
+      "source_types": {
+        "书籍": 35,
+        "研报": 463
+      },
+      "books": 90,
+      "chapters": 72,
+      "concepts_unique": 486,
+      "recurring_concepts": 10,
+      "cards": 20,
+      "covered_units": 23,
+      "unit_coverage_rate": 0.0462,
+      "covered_themes": 7,
+      "uncovered_themes": 14,
+      "theme_count": 21
+    },
+    "gaps": {
+      "high_freq_no_card_themes": [
+        {
+          "theme": "金融/地产",
+          "units": 34
+        },
+        {
+          "theme": "消费/零售",
+          "units": 27
+        },
+        {
+          "theme": "机械/制造",
+          "units": 16
+        },
+        {
+          "theme": "军工/航天",
+          "units": 15
+        },
+        {
+          "theme": "网络安全/信创",
+          "units": 8
+        },
+        {
+          "theme": "交运/物流",
+          "units": 8
+        },
+        {
+          "theme": "通信/互联网",
+          "units": 5
+        },
+        {
+          "theme": "农业",
+          "units": 5
+        }
+      ],
+      "uncovered_themes": [
+        {
+          "theme": "宏观/政策",
+          "units": 37,
+          "cards": 1
+        },
+        {
+          "theme": "消费/零售",
+          "units": 27,
+          "cards": 0
+        },
+        {
+          "theme": "机械/制造",
+          "units": 16,
+          "cards": 0
+        },
+        {
+          "theme": "军工/航天",
+          "units": 15,
+          "cards": 0
+        },
+        {
+          "theme": "网络安全/信创",
+          "units": 8,
+          "cards": 0
+        },
+        {
+          "theme": "交运/物流",
+          "units": 8,
+          "cards": 0
+        },
+        {
+          "theme": "通信/互联网",
+          "units": 5,
+          "cards": 0
+        },
+        {
+          "theme": "农业",
+          "units": 5,
+          "cards": 0
+        },
+        {
+          "theme": "有色/金属",
+          "units": 4,
+          "cards": 0
+        },
+        {
+          "theme": "建筑/建材",
+          "units": 4,
+          "cards": 0
+        },
+        {
+          "theme": "半导体/电子",
+          "units": 4,
+          "cards": 0
+        },
+        {
+          "theme": "医药/生物",
+          "units": 3,
+          "cards": 0
+        },
+        {
+          "theme": "评级/研报方法论",
+          "units": 2,
+          "cards": 0
+        },
+        {
+          "theme": "传媒/文化",
+          "units": 2,
+          "cards": 0
+        }
+      ],
+      "recurring_concept_gaps": [
+        {
+          "concept": "资本市场改革成效",
+          "units": 4
+        },
+        {
+          "concept": "量学理论",
+          "units": 2
+        },
+        {
+          "concept": "东盟中小微企业（MSME）经济地位",
+          "units": 2
+        },
+        {
+          "concept": "跨境电子商务面临的四大挑战",
+          "units": 2
+        },
+        {
+          "concept": "端侧 AI 放量",
+          "units": 2
+        },
+        {
+          "concept": "行业评级定义",
+          "units": 2
+        },
+        {
+          "concept": "国防军工行业周度表现",
+          "units": 2
+        },
+        {
+          "concept": "资本市场现存障碍",
+          "units": 2
+        }
+      ],
+      "duplicate_cards": [
+        {
+          "concept": "涨停密码",
+          "count": 2,
+          "suggestion": "合并为一张（保留质量分最高/证据最全的一张）"
+        }
+      ]
+    },
+    "note": "学习卡仅覆盖 23/498 单元（4.6%）、7/21 主题；14 主题 0 卡（金融/地产34u、消费/零售27u、机械/制造16u、军工/航天15u…）；TOP10 缺口每主题 2 张建议卡已生成（共20候选）。"
+  },
+  "kb_qa_questions_20261101": {
+    "tool": "tools/kb_corpus/kb_qa_bank.py",
+    "bank": "research/reports/kb_qa_questions_20261101.json",
+    "portal": "portal/static/kb_qa_questions.json",
+    "count": 32,
+    "themes": [
+      {
+        "theme": "AI算力/半导体",
+        "count": 5,
+        "questions": [
+          {
+            "id": "qk_f3968d07ff",
+            "question": "DeepSeek DSec 系统架构的结论在什么条件下会被证伪？",
+            "type": "风险",
+            "theme": "AI算力/半导体",
+            "source_unit_id": "4aa85d55c144",
+            "book": "rp_AP202610021830105367",
+            "chapter": "市场研究部 2026 年9 月28 日",
+            "page_start": 1,
+            "page_end": 8,
+            "concept": "DeepSeek DSec 系统架构",
+            "claim_snippet": "DeepSeek 发布的 Agent 训练基础设施 DSec 支持每秒产生 5000 个以上沙盒，通过四层后端（FnCall/Container/MicroVM/Full VM）适配不同任务环境需求。",
+            "evidence_snippet": "DeepSeek 发布新论文，公开 Agent 训练基础设施 DSec 的完整技术细节...该系统的定位是给 Agent 训练批量制造沙盒环境：每秒可产生 5000 个以上沙盒...DSec 为此准备四种后端：FnCall 处理无状态函数调…",
+            "source": "研报",
+            "rank": 1
+          },
+          {
+            "id": "qk_16b8d22f31",
+            "question": "CoWoP封装方案的技术升级路径与价值量变化如何？",
+            "type": "主题专属",
+            "theme": "AI算力/半导体",
+            "source_unit_id": "98c77086175f",
+            "book": "rp_AP202610071830180005",
+            "chapter": "图表目录",
+            "page_start": 2,
+            "page_end": 14,
+            "concept": "CoWoP封装方案",
+            "claim_snippet": "CoWoP（Chip-on-Wafer-on-PCB）方案去除了ABF封装基板与BGA焊球，由强化型PCB直接承担原本封装基板的信号完整性、电源管理及热管理功能，单颗GPU配套PCB价值量可达600美元，是传统方案的三倍。",
+            "evidence_snippet": "CoWoP（Chip-on-Wafer-on-PCB）...核心思路简洁却极具革命性：在传统CoWoS方案中，芯片需依次经过硅中介层、ABF封装基板与BGA焊球三级结构才能安装到主板上；而CoWoP方案直接去掉ABF封装基板与BGA焊球，将…",
+            "source": "研报",
+            "rank": 8
+          },
+          {
+            "id": "qk_961a10dedb",
+            "question": "M9 材料体系的技术升级路径与价值量变化如何？",
+            "type": "主题专属",
+            "theme": "AI算力/半导体",
+            "source_unit_id": "41692ee59293",
+            "book": "rp_AP202610071830180005",
+            "chapter": "图表目录",
+            "page_start": 2,
+            "page_end": 14,
+            "concept": "M9 材料体系",
+            "claim_snippet": "M9 级覆铜板通过升级增强骨架（第三代Low DK 石英布）、导电层（HVLP4/5 超低轮廓铜箔）及树脂粘结剂（碳氢或苊烯树脂），将介电损耗压低至0.0015以下，支持224Gbps超高速信号传输与78层超高密度PCB量产。",
+            "evidence_snippet": "M9级覆铜板体系的代际升级，本质上是树脂、增强材料、导电层与填料四个维度的系统性跃迁...英伟达Rubin/Rubin Ultra全面采用M9体系：增强骨架材料由传统玻纤布升级为第三代Low DK石英布（Q布），导电层铜箔升级为HVLP4/…",
+            "source": "研报",
+            "rank": 15
+          },
+          {
+            "id": "qk_78167bef8c",
+            "question": "Meta Ray-Ban Meta Audio对相关标的的业绩/估值影响如何？",
+            "type": "影响如何",
+            "theme": "AI算力/半导体",
+            "source_unit_id": "5c0ac9f37cbf",
+            "book": "rp_AP202610031830126605",
+            "chapter": "Meta 发布新款智能眼镜，关注端侧AI",
+            "page_start": 1,
+            "page_end": 3,
+            "concept": "Meta Ray-Ban Meta Audio",
+            "claim_snippet": "Meta 发布的 Ray-Ban Meta Audio 智能眼镜不带摄像头，但引入了个人智能体 Muse，用户可通过语音直接调用功能而无需拿出手机。",
+            "evidence_snippet": "当地时间9 月23 日，Meta 在Connect 大会上发布了不带摄像头的音频智能眼镜Ray-Ban Meta Audio，并推出了新一代雷朋（Ray- Ban ）眼镜Ray-Ban Meta （Gen 3）和全新VR 设备Meta VR…",
+            "source": "研报",
+            "rank": 22
+          },
+          {
+            "id": "qk_0d2e5d5fe9",
+            "question": "Muse 智能体的技术升级路径与价值量变化如何？",
+            "type": "是什么",
+            "theme": "AI算力/半导体",
+            "source_unit_id": "d22ef9aab17c",
+            "book": "rp_AP202610031830126605",
+            "chapter": "Meta 发布新款智能眼镜，关注端侧AI",
+            "page_start": 1,
+            "page_end": 3,
+            "concept": "Muse 智能体",
+            "claim_snippet": "Muse 智能体已具备全面能力，可独立拥有电子邮件地址、操作 Mac 电脑，并能在 App Store 和 Google Play 登顶免费应用榜。",
+            "evidence_snippet": "Meta 于9 月8 日推出的智能体Muse 正在成为消费级AI 市场的新亮点。Sensor Tower 数据显示，截至9 月21 日，Muse 已经登上美国苹果应用商店App Store 和谷歌应用商店Google Play 的免费应用榜…",
+            "source": "研报",
+            "rank": 29
+          }
+        ]
+      },
+      {
+        "theme": "新能源/电池",
+        "count": 5,
+        "questions": [
+          {
+            "id": "qk_426789898a",
+            "question": "钙钛矿光伏电池测试标准的关键逻辑链条是什么？",
+            "type": "是什么",
+            "theme": "新能源/电池",
+            "source_unit_id": "6e81b7133003",
+            "book": "rp_AP202610021830105330",
+            "chapter": "市场研究部 2026 年9 月22 日",
+            "page_start": 1,
+            "page_end": 9,
+            "concept": "钙钛矿光伏电池测试标准",
+            "claim_snippet": "市场监管总局发布了首个钙钛矿光伏领域国家标准（GB/T 6495.12—2026），该标准将于 2027 年正式实施，旨在解决钙钛矿器件性能波动大、测试结果不稳定及面积定义不统一的问题。",
+            "evidence_snippet": "近日，市场监管总局发布首个钙钛矿光伏领域国家标准《光伏器件 第 12 部分：钙钛矿光伏电池及组件的电流 - 电压（I-V）特性测量方法》（GB/T 6495.12—2026），将于 2027 年正式实施。该标准系统规定了测试设备、稳定化处理…",
+            "source": "研报",
+            "rank": 2
+          },
+          {
+            "id": "qk_1e9ede7285",
+            "question": "电力设备板块周度表现的产业化进度与量产时间表如何？",
+            "type": "是什么",
+            "theme": "新能源/电池",
+            "source_unit_id": "bf1ee34d6040",
+            "book": "rp_AP202610021830105330",
+            "chapter": "市场研究部 2026 年9 月22 日",
+            "page_start": 1,
+            "page_end": 9,
+            "concept": "电力设备板块周度表现",
+            "claim_snippet": "2026 年 9 月 14 日至 18 日（本周），电力设备（申万）指数上涨 0.04%，跑赢沪深 300 指数 0.11pct，其中光伏设备子行业涨幅居前，达到 3.86%。",
+            "evidence_snippet": "本周（2026/09/14-2026/09/18）沪深 300 指数 -0.06%，申万 31 个行业指数 16 个上涨，电力设备（申万）指数本周 +0.04%，排在第 16 位。本周光伏设备行业指数 +3.86%，电池、电网设备等分别呈现…",
+            "source": "研报",
+            "rank": 9
+          },
+          {
+            "id": "qk_5369bf6b66",
+            "question": "光伏产业链价格变动的规模/增速/份额等数据是多少？",
+            "type": "数据多少",
+            "theme": "新能源/电池",
+            "source_unit_id": "c98b2779dcd8",
+            "book": "rp_AP202610021830105330",
+            "chapter": "市场研究部 2026 年9 月22 日",
+            "page_start": 1,
+            "page_end": 9,
+            "concept": "光伏产业链价格变动",
+            "claim_snippet": "截至 2026 年 9 月 16 日，硅料成交价环比持平为 40 元/kg，银浆价格环比下跌 5.1% 至 15890 元/kg，而硅片、电池片和组件价格均保持环比持平。",
+            "evidence_snippet": "根据 datayes，9 月 16 日硅料成交价为 40 元/kg，环比持平；银浆价格为 15890 元/kg，环比 -5.1%。硅片成交价 1.05 元/片，电池成交价 0.31 元/W，组件成交价 0.73 元/W，均环比持平。",
+            "source": "研报",
+            "rank": 16
+          },
+          {
+            "id": "qk_dce3ffcfd9",
+            "question": "光伏成本核算新规的传导路径与受益环节是什么？",
+            "type": "影响如何",
+            "theme": "新能源/电池",
+            "source_unit_id": "51d2ba9d8d1c",
+            "book": "rp_AP202610021830111912",
+            "chapter": "太 平 洋 证 券 股 份 有 限 公 司 证 券 研 究 报 告",
+            "page_start": 1,
+            "page_end": 4,
+            "concept": "光伏成本核算新规",
+            "claim_snippet": "针对重要工业品（如光伏）的低价无序竞争，国家发改委明确成本核算原则上以经营者个别成本为基础，无法核算时参考行业平均成本并考虑下浮幅度，对产能利用率低的经营者予以适当考量。",
+            "evidence_snippet": "《关于重要工业品低价无序竞争成本核算有关事项的通知》明确：成本核算原则上以经营者生产特定产品的个别成本为基础，无法核算个别成本时参考行业平均成本并考虑一定下浮幅度；对实际产能利用率大幅低于行业平均的经营者，适当考虑产能利用率影响。",
+            "source": "研报",
+            "rank": 23
+          },
+          {
+            "id": "qk_1b3df661ff",
+            "question": "光伏产业链价格对相关标的的业绩/估值影响如何？",
+            "type": "影响如何",
+            "theme": "新能源/电池",
+            "source_unit_id": "247807a1827d",
+            "book": "rp_AP202610021830105370",
+            "chapter": "市场研究部 2026 年9 月30 日",
+            "page_start": 1,
+            "page_end": 9,
+            "concept": "光伏产业链价格",
+            "claim_snippet": "截至 2026 年 9 月 23 日，硅料、电池片及组件成交价环比持平或微涨，而光伏玻璃和银浆价格维持稳定。",
+            "evidence_snippet": "根据 datayes，9 月 23 日硅料成交价为 42 元/kg，环比 +2 元/kg；电池成交价 0.32 元/W，环比 +1 分/W；组件成交价为 0.73 元/W，环比持平。3.2mm、2mm 光伏玻璃价格分别为 17、10 元/平…",
+            "source": "研报",
+            "rank": 30
+          }
+        ]
+      },
+      {
+        "theme": "消费/医药",
+        "count": 5,
+        "questions": [
+          {
+            "id": "qk_ada54a9059",
+            "question": "网红营销与透明度要求对产业链或行业格局的影响如何？",
+            "type": "影响如何",
+            "theme": "消费/医药",
+            "source_unit_id": "08c51a31de48",
+            "book": "rp_AP202609301830015420",
+            "chapter": "引言",
+            "page_start": 4,
+            "page_end": 16,
+            "concept": "网红营销与透明度要求",
+            "claim_snippet": "所有网红营销传播活动必须能被立即识别为商业内容，需清晰披露赞助性质，且证言或背书必须是真实、可核实且相关的，不得鼓励过度消费或美化醉酒状态。",
+            "evidence_snippet": "所有网红营销传播活动...都应设计并呈现，使其能被立即识别为营销传播。如果沟通的形式和格式本身不足以让人明白其属于赞助信息，则应通过适当披露的方式，清楚表明证言或背书的赞助性质。testimonials and influencer end…",
+            "source": "研报",
+            "rank": 3
+          },
+          {
+            "id": "qk_f3db19b238",
+            "question": "大中华区零售市场趋势的景气度与需求变化如何？",
+            "type": "是什么",
+            "theme": "消费/医药",
+            "source_unit_id": "bf663d3e998a",
+            "book": "rp_AP202609301830015453",
+            "chapter": "06",
+            "page_start": 2,
+            "page_end": 14,
+            "concept": "大中华区零售市场趋势",
+            "claim_snippet": "大中华区零售物业市场呈现以下七大发展趋势：下沉市场消费韧性强劲、体验经济重塑线下场景、演出市场热度持续、入境游与国内游双轮驱动消费增长、消费行为趋于理性保守、存量资产盘活与场景升级成为核心路径。",
+            "evidence_snippet": "中国零售物业市场竞争持续激烈...主要有以下发展趋势：下沉市场展现出强劲的消费韧性；体验经济重塑线下消费场景；演出市场热度持续；入境游国内游双轮驱动消费增长...受居民储蓄意愿持续偏高...消费行为更趋理性保守影响...长期来看，存量资产盘…",
+            "source": "研报",
+            "rank": 10
+          },
+          {
+            "id": "qk_580c47818a",
+            "question": "上海零售市场动态的景气度与需求变化如何？",
+            "type": "主题专属",
+            "theme": "消费/医药",
+            "source_unit_id": "afef8065108b",
+            "book": "rp_AP202609301830015453",
+            "chapter": "06",
+            "page_start": 2,
+            "page_end": 14,
+            "concept": "上海零售市场动态",
+            "claim_snippet": "截至2026年二季度末，上海中高端购物中心总存量达271.75万平方米，空置率环比上升2.3个百分点至10.03%（核心区5.6%，新兴区10.50%）。市场正由规模扩张转向提质升级，租赁需求仍强劲。",
+            "evidence_snippet": "截至2026年二季度末，上海中高端购物中心总存量达到271,757,01平方米...全市整体空置率环比上升2.3个百分点，核心区域的空置率为5.6%，而新兴区域的空置率为10.50%...上海消费结构正由规模扩张转提质升级...因此，上海零…",
+            "source": "研报",
+            "rank": 17
+          },
+          {
+            "id": "qk_8d7ff894c2",
+            "question": "北京零售市场现状的景气度与需求变化如何？",
+            "type": "主题专属",
+            "theme": "消费/医药",
+            "source_unit_id": "dd02cab720e0",
+            "book": "rp_AP202609301830015453",
+            "chapter": "06",
+            "page_start": 2,
+            "page_end": 14,
+            "concept": "北京零售市场现状",
+            "claim_snippet": "截至2026年上半年，北京零售市场总存量为953万平方米（其中购物中心765万平方米），优质购物中心平均租金报价为883元/月/平方米，空置率为10.4%。未来趋势为存量优化为主，新增供应为辅。",
+            "evidence_snippet": "截至2026年上半年，北京零售市场总存量为953万平方米，其中购物中心存量765万平方米...优质购物中心平均租金报价为人民币883元每月每平方米，空置率为10.4%...未来整体市场的供应节奏将进一步放缓，项目分区域分阶段开业也将成为长期…",
+            "source": "研报",
+            "rank": 24
+          },
+          {
+            "id": "qk_b7575c6fea",
+            "question": "深圳零售市场特征的景气度与需求变化如何？",
+            "type": "主题专属",
+            "theme": "消费/医药",
+            "source_unit_id": "3c014ae6bcd0",
+            "book": "rp_AP202609301830015453",
+            "chapter": "06",
+            "page_start": 2,
+            "page_end": 14,
+            "concept": "深圳零售市场特征",
+            "claim_snippet": "截至2026年年中，深圳优质购物中心空置率微升至1.5%，最优层平均租金同比下降至693元/月/平方米。成熟项目租金持稳，培育期项目多选择以价换量。",
+            "evidence_snippet": "受宏观面多重不确定因素影响...多数品牌也放缓投资节奏...成熟优质购物中心得益于客流韧性，租金水平总体持稳...全市优质购物中心空置率较2025年同期微升1.5个百分点至1.5%...全市优质购物中心最优层平均租金同比下降至每月每平方米6…",
+            "source": "研报",
+            "rank": 31
+          }
+        ]
+      },
+      {
+        "theme": "金融/资本市场",
+        "count": 5,
+        "questions": [
+          {
+            "id": "qk_ab60afef9f",
+            "question": "中小行配债中枢趋势下移的政策演进与市场影响如何？",
+            "type": "风险",
+            "theme": "金融/资本市场",
+            "source_unit_id": "44852b57db0f",
+            "book": "rp_AP202609301830035477",
+            "chapter": "中小行配债走弱：成因与趋势判断",
+            "page_start": 1,
+            "page_end": 13,
+            "concept": "中小行配债中枢趋势下移",
+            "claim_snippet": "受三重约束影响，中小行无法有效增加债券配置，配债增速难回此前双位数高增，从‘交易 + 配置双轮驱动’退化为票息锁定与流动性管理的被动配置。",
+            "evidence_snippet": "负债端收缩叠加监管约束，中小行配债中枢趋势性下移。三重约束致使中小行无法有效增加债券配置：（1）负债端存款利差收窄，核心存款增长面临压力；（2）监管约束中小行债券投资的利率风险及集中度；（3）收益考核角度 FTP 年初锁价且缺乏调整。这些结…",
+            "source": "研报",
+            "rank": 4
+          },
+          {
+            "id": "qk_2eda64b590",
+            "question": "资本市场现存障碍的规模/增速/份额等数据是多少？",
+            "type": "数据多少",
+            "theme": "金融/资本市场",
+            "source_unit_id": "653a45d7f679",
+            "book": "rp_AP202610031830124601",
+            "chapter": "VOL.172 2026.09《金融市场研究》13",
+            "page_start": 13,
+            "page_end": 13,
+            "concept": "资本市场现存障碍",
+            "claim_snippet": "非国有企业目前在科技创新债券市场中代表性不足，且缺乏有效的市场稳定长效机制。",
+            "evidence_snippet": "Non-state-owned enterprises are underrepresented in the science and technology innovation bond market while long-term me…",
+            "source": "研报",
+            "rank": 11
+          },
+          {
+            "id": "qk_335b4bf908",
+            "question": "资本市场现存障碍的结论在什么条件下会被证伪？",
+            "type": "风险",
+            "theme": "金融/资本市场",
+            "source_unit_id": "918a6d233355",
+            "book": "rp_AP202610031830124601",
+            "chapter": "VOL.172 2026.09《金融市场研究》13",
+            "page_start": 13,
+            "page_end": 13,
+            "concept": "资本市场现存障碍",
+            "claim_snippet": "外国投资者在市场持仓中占比相对较小，国内证券公司参与国际市场的角色有限。",
+            "evidence_snippet": "At the same time, foreign investors account for a relatively small share of market holdings and domestic securities firm…",
+            "source": "研报",
+            "rank": 18
+          },
+          {
+            "id": "qk_7f3721cb06",
+            "question": "中小行配债增速回落的政策演进与市场影响如何？",
+            "type": "影响如何",
+            "theme": "金融/资本市场",
+            "source_unit_id": "13bd656fa984",
+            "book": "rp_AP202609301830035477",
+            "chapter": "中小行配债走弱：成因与趋势判断",
+            "page_start": 1,
+            "page_end": 13,
+            "concept": "中小行配债增速回落",
+            "claim_snippet": "2026 年 8 月末，中小银行债券配置增速降至 4.87%，与大行 18.05% 的高位形成鲜明对比，呈现‘大行放贷、小行买债’逻辑重构。",
+            "evidence_snippet": "截至 2026 年 8 月末，中小行配债增速下降至 4.87%，与大行 18.05% 的高位形成鲜明对比。关键背离在于：中小行存贷增速差 3.33%（高于大行 2.84%），逻辑上冗余流动性更多，但配债反而放缓——说明部分机构不是无钱可配，…",
+            "source": "研报",
+            "rank": 25
+          },
+          {
+            "id": "qk_38dcd85910",
+            "question": "关于中小行资产端策略调整，知识库中有哪些可验证的数据或证据？",
+            "type": "数据多少",
+            "theme": "金融/资本市场",
+            "source_unit_id": "f20a48f347ff",
+            "book": "rp_AP202609301830035477",
+            "chapter": "中小行配债走弱：成因与趋势判断",
+            "page_start": 1,
+            "page_end": 13,
+            "concept": "中小行资产端策略调整",
+            "claim_snippet": "中小行从长久期债券转向短久期同业存单（NCD）并增加融出，体现为‘卖长债、买 NCD、增融出’的防御性持仓置换。",
+            "evidence_snippet": "资产端，从长久期债券转向短久期同业存单（NCD），资金净融出规模高于往年同期；2026 年 6-9 月中小行平均对外融出资金 2000 亿元以上，NCD 持仓规模持续增加。这种行为也明显体现出对久期错配的容忍度降低，7 年以上的长利率债被减…",
+            "source": "研报",
+            "rank": 32
+          }
+        ]
+      },
+      {
+        "theme": "宏观/策略/贸易",
+        "count": 4,
+        "questions": [
+          {
+            "id": "qk_17dcb0bf7e",
+            "question": "跨境电子商务面临的四大挑战的规模/增速/份额等数据是多少？",
+            "type": "数据多少",
+            "theme": "宏观/策略/贸易",
+            "source_unit_id": "bcf6880edb59",
+            "book": "rp_AP202609301830015407",
+            "chapter": "5.",
+            "page_start": 5,
+            "page_end": 17,
+            "concept": "跨境电子商务面临的四大挑战",
+            "claim_snippet": "东盟中小微企业在从事跨境数字贸易时面临四大主要制约：监管与市场准入要求复杂、连接生态系统困难（物流/支付）、缺乏专门技能（如数字营销）以及信息差距。",
+            "evidence_snippet": "该报告确定了四大主要挑战领域。首先，企业在进入外国市场时，会遇到监管和市场准入要求方面的挑战...其次，中小微企业面临连接更广泛的电子商务生态系统的困难...第三，企业通常缺乏有效运营数字贸易环境所需的专门技能...第四，关于可用的支持工具…",
+            "source": "研报",
+            "rank": 5
+          },
+          {
+            "id": "qk_2feca0b1e3",
+            "question": "跨境电子商务面临的四大挑战的结论在什么条件下会被证伪？",
+            "type": "风险",
+            "theme": "宏观/策略/贸易",
+            "source_unit_id": "276e87e6cc33",
+            "book": "rp_AP202610021830105410",
+            "chapter": "5.",
+            "page_start": 5,
+            "page_end": 17,
+            "concept": "跨境电子商务面临的四大挑战",
+            "claim_snippet": "东盟中小微企业在从事跨境数字贸易时面临四大主要制约：监管与市场准入要求复杂、连接生态系统困难（物流/支付）、缺乏专门技能（如数字营销）以及信息差距。",
+            "evidence_snippet": "企业在进入外国市场时，会遇到监管和市场准入要求方面的挑战...其次，中小微企业面临连接更广泛的电子商务生态系统的困难，包括物流供应商、数字支付系统和在线市场。第三，企业通常缺乏有效运营数字贸易环境所需的专门技能...第四，关于可用的支持工具…",
+            "source": "研报",
+            "rank": 12
+          },
+          {
+            "id": "qk_b5e1fe51c3",
+            "question": "中国水产品贸易总体趋势的关键逻辑链条是什么？",
+            "type": "是什么",
+            "theme": "宏观/策略/贸易",
+            "source_unit_id": "c11541d03786",
+            "book": "rp_AP202610061830165866",
+            "chapter": "一、贸易总体情况",
+            "page_start": 2,
+            "page_end": 14,
+            "concept": "中国水产品贸易总体趋势",
+            "claim_snippet": "2026年8月，中国水产品进口额（19.68亿美元）显著高于出口额（16.33亿美元），呈现净进口状态；全年累计进口增速（24.8%）快于出口增速（-0.5%）。",
+            "evidence_snippet": "2026 年 8 月，中国水产品进出口 3601.6 百万美元...其中，出口 1633.3 百万美元...进口 1968.3 百万美元；2026 年 1-8 月...累计进口 15996.1 百万美元，同比变化 24.8%；累计出口 13…",
+            "source": "研报",
+            "rank": 19
+          },
+          {
+            "id": "qk_4a6c73ec65",
+            "question": "数字贸易增长预测的结论在什么条件下会被证伪？",
+            "type": "风险",
+            "theme": "宏观/策略/贸易",
+            "source_unit_id": "ffda0f7d249e",
+            "book": "rp_AP202609301830015407",
+            "chapter": "5.",
+            "page_start": 5,
+            "page_end": 17,
+            "concept": "数字贸易增长预测",
+            "claim_snippet": "若成功实施《东盟数字经济框架协定》（DEFA），预计到 2030 年，东盟数字经济规模将扩张至约 2 万亿美元，商品交易总额（GMV）预计增长 7.4 倍。",
+            "evidence_snippet": "若东盟成员国成功实施《东盟数字经济框架协定》（DEFA），预计到 2030 年，东盟数字经济规模将扩张至约 2 万亿美元...预计商品交易总额（GMV）将增长 7.4 倍，到 2025 年达到 3000 亿美元。",
+            "source": "研报",
+            "rank": 26
+          }
+        ]
+      },
+      {
+        "theme": "量化/技术分析",
+        "count": 4,
+        "questions": [
+          {
+            "id": "qk_48516af659",
+            "question": "十月怀胎一朝分娩的识别规则与实战用法是什么？",
+            "type": "主题专属",
+            "theme": "量化/技术分析",
+            "source_unit_id": "266f7161277f",
+            "book": "涨停密码(2)",
+            "chapter": "第三章",
+            "page_start": 15,
+            "page_end": 27,
+            "concept": "十月怀胎一朝分娩",
+            "claim_snippet": "主力运作股票的过程如同“十月怀胎”，一旦完成孕育并进入“一朝分娩”的前夜（基因密集呈现），无论大盘涨跌，主力都会拉出涨停板。",
+            "evidence_snippet": "在股票市场中，任何一个涨停板，任何一只牛股，都不是天上掉下来的，而是其庄家或主力精心策划、长期运作的杰作。只要其孕期健康，营养丰富，一旦时机成熟，就会诞生一个充满活力的新生命。同样，在股市运作中，主力“十月怀胎”之后，一旦需要“一朝分娩”，…",
+            "source": "书籍",
+            "rank": 6
+          },
+          {
+            "id": "qk_cf3f319c9d",
+            "question": "央行资产负债表保护机制的识别规则与实战用法是什么？",
+            "type": "主题专属",
+            "theme": "量化/技术分析",
+            "source_unit_id": "f6bbd1535811",
+            "book": "rp_AP202610031830124602",
+            "chapter": "美联储非银流动性支持工具的实践、边界 与启示",
+            "page_start": 1,
+            "page_end": 6,
+            "concept": "央行资产负债表保护机制",
+            "claim_snippet": "美联储通过中介机构缓冲、以券换券转换风险形态及引入财政信用保护（如TARP资金或SPV股权投资）来明确极端损失的分担机制，避免直接救助单一失败机构。",
+            "evidence_snippet": "风险分担安排是美联储危机工具设计中的关键制度要素...一是 一是通过中介机构和SPV构建风险缓冲...二是 二是通过“以券换券”转换风险形态...三是 三是引入财政信用保护，明确极端损失的分担机制。《多德 - 弗兰克法案》后...不得以救助…",
+            "source": "研报",
+            "rank": 13
+          },
+          {
+            "id": "qk_6946fb91e7",
+            "question": "涨停密码的结论在什么条件下会被证伪？",
+            "type": "风险",
+            "theme": "量化/技术分析",
+            "source_unit_id": "1afc73202fc6",
+            "book": "涨停密码(2)",
+            "chapter": "前言",
+            "page_start": 9,
+            "page_end": 10,
+            "concept": "涨停密码",
+            "claim_snippet": "“涨停密码”是指构成股票涨停或走牛的基本因子组合，包含单个基因（如倍量柱）和组合基因（如倍量伸缩），可用于前瞻性预测牛股走势。",
+            "evidence_snippet": "“涨停密码”特指构成股票涨停或走牛的基本因子组合。它可以是单个基因（如倍量柱），也可以是组合基因（如倍量伸缩）。从“涨停基因”入手，找到了“涨停密码”，就可以找到许多意想不到的牛股，它不但可以为我们的操作提供前瞻性预测，还可以帮助我们及时跟…",
+            "source": "书籍",
+            "rank": 20
+          },
+          {
+            "id": "qk_472e1ff0cd",
+            "question": "施工旺季需求特征的主要风险与不确定性有哪些？",
+            "type": "风险",
+            "theme": "量化/技术分析",
+            "source_unit_id": "46b94880b5e3",
+            "book": "rp_AP202609301830023858",
+            "chapter": "行业评级：看好",
+            "page_start": 1,
+            "page_end": 13,
+            "concept": "施工旺季需求特征",
+            "claim_snippet": "多项高频指标显示施工旺季实物工作量正逐步兑现，水泥价格指数与发运率回升，螺纹钢量价共振改善，但沥青开工率仍偏弱。",
+            "evidence_snippet": "8 月建筑业 PMI 为 46.9% 仍处荣枯线下方；水泥价格指数 97.89 点环比明显回升、发运率 41.51% 同步抬升...螺纹钢社会库存 439.69 万吨环比回落、表观需求环比回升，量价共振改善；沥青开工率 23.7% 小幅回落…",
+            "source": "研报",
+            "rank": 27
+          }
+        ]
+      },
+      {
+        "theme": "其他/综合",
+        "count": 4,
+        "questions": [
+          {
+            "id": "qk_4213d10ccc",
+            "question": "PTFE材料路线的传导路径与受益环节是什么？",
+            "type": "影响如何",
+            "theme": "其他/综合",
+            "source_unit_id": "a6b4696b9ece",
+            "book": "rp_AP202610071830180005",
+            "chapter": "图表目录",
+            "page_start": 2,
+            "page_end": 14,
+            "concept": "PTFE材料路线",
+            "claim_snippet": "PTFE作为低损耗材料的下一代路线，其介电常数约2.1-2.2、损耗低于0.0004，性能优于M9体系；但因其热塑性导致的加工难题（如钻孔毛刺），产业化需采用'PTFE芯层+M9半固化片’的混压结构来平衡信号完整性与工艺可行性。",
+            "evidence_snippet": "PTFE是低损耗材料潜在的下一代路线...10GHz条件下介电常数约2.1-2.2、介电损耗低于0.0004，较M9的介电常数约3.0-3.1、介电损耗约0.00046-0.00050实现代际级领先...但PTFE属热塑性材料，不发生交联固…",
+            "source": "研报",
+            "rank": 7
+          },
+          {
+            "id": "qk_4da1f2f379",
+            "question": "研报对多层级安全评估体系（ARIA）的风险提示是否充分？",
+            "type": "风险",
+            "theme": "其他/综合",
+            "source_unit_id": "ae05187cc3bc",
+            "book": "rp_AP202610061830170460",
+            "chapter": "图表目录",
+            "page_start": 2,
+            "page_end": 14,
+            "concept": "多层级安全评估体系（ARIA）",
+            "claim_snippet": "NIST 的 ARIA 计划将测试分为 Model Testing（确认能力）、Red Teaming（诱发违规）和 Field Testing（观察真实环境影响），单一分数难以替代完整证据链。",
+            "evidence_snippet": "安全评估需要回答三个不同问题...NIST 的ARIA 计划把测试分为Model Testing、Red Teaming 和Field Testing。Model Testing 用于确认模型或系统声明的能力和防护；Red Teaming…",
+            "source": "研报",
+            "rank": 14
+          },
+          {
+            "id": "qk_f7d4528e2a",
+            "question": "研报对球形硅微粉的风险提示是否充分？",
+            "type": "风险",
+            "theme": "其他/综合",
+            "source_unit_id": "49a9df63e537",
+            "book": "rp_AP202610071830180005",
+            "chapter": "图表目录",
+            "page_start": 2,
+            "page_end": 14,
+            "concept": "球形硅微粉",
+            "claim_snippet": "球形硅微粉是低损耗材料的关键卡位材料，其纯度、粒度与球形度直接决定高速基板的线性膨胀系数（CTE）、信号质量及散热性能；高端亚微米级产品目前由日本厂商垄断，国产替代空间巨大。",
+            "evidence_snippet": "在M9配方的升级中，球形硅微粉是市场长期忽视的'第四种填料'...硅微粉直接决定高速基板的三项核心性能：改善线性膨胀系数（CTE）以抑制高层板翘曲分层、以良好介电表现保障信号质量、以导热特性应对高功耗GPU散热需求...当前全球高端亚微米球…",
+            "source": "研报",
+            "rank": 21
+          },
+          {
+            "id": "qk_092c509a56",
+            "question": "景嘉微股权激励计划具体指什么，研报如何定义？",
+            "type": "是什么",
+            "theme": "其他/综合",
+            "source_unit_id": "233133a1cbf7",
+            "book": "rp_AP202610021830105365",
+            "chapter": "看好",
+            "page_start": 1,
+            "page_end": 9,
+            "concept": "景嘉微股权激励计划",
+            "claim_snippet": "景嘉微拟授予限制性股票 704.00 万股，首次授予对象为 369 人，授予价格为 26.55 元/股，考核期营业收入增长率目标分别为 2026 年 34%、2027 年 58%、2028 年 121%。",
+            "evidence_snippet": "景嘉微公布 2026 年限制性股票激励计划 (草案)...本激励计划拟授予激励对象的限制性股票数量为 704.00 万股...首次授予限制性股票的授予价格为 26.55 元/股...对应考核年度营业收入增长率，2026 年为 34%，202…",
+            "source": "研报",
+            "rank": 28
+          }
+        ]
+      }
+    ],
+    "note": "候选问题库 32 条（7 主题分组，来源 unit 可追溯）；dry-run 不调 LLM；供检索自检与后续扩样。"
   }
 }

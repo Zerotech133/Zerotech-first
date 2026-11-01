@@ -449,6 +449,27 @@
       "title": "问答示例门户区块",
       "ref": "portal/kb_reports.html",
       "enabled": true
+    },
+    {
+      "id": "eval_search_v2_ext2",
+      "kind": "tool",
+      "title": "检索 v2 扩展评测 89 查询/NDCG",
+      "ref": "tools/kb_corpus/eval_search_v2_ext2.py",
+      "enabled": true
+    },
+    {
+      "id": "learning_analysis",
+      "kind": "tool",
+      "title": "学习卡覆盖/缺口分析",
+      "ref": "tools/kb_corpus/learning_analysis.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_qa_bank",
+      "kind": "tool",
+      "title": "问答候选问题库生成",
+      "ref": "tools/kb_corpus/kb_qa_bank.py",
+      "enabled": true
     }
   ]
 }
