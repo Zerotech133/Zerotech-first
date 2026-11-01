@@ -371,7 +371,7 @@ def test_cache_key_includes_mode():
 def test_not_wired_and_route_describe():
     assert api.WIRED is True  # 2026-11-01 L2 批准后已接线
     doc = api.__doc__ or ""
-    assert "未接线" in doc and "8091" in doc
+    assert "已接线" in doc and "8091" in doc
     routes = api.describe_routes()
     assert routes["wired"] is True
     assert routes["routes"][0]["path"] == "/api/kb/qa"

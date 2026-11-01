@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """知识库问答 HTTP handler（预接线，未注册到运行中的 8091）。
 
-状态：**未接线**（WIRED=False）——接线需 8091 重启窗口（L2 审批，见
+状态：**已接线**（WIRED=True，2026-11-01 L2 批准）——路由 /api/kb/qa 已注册 8091（见
       docs/plans/2026-11-01_问答HTTP接线L2提案_v1.md）。
 仿 portal/api_kb_read.py 的预接线模式：独立 handler 文件 + 纯函数可测 + 冷启动 import 预检友好。
 
