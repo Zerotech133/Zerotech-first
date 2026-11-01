@@ -6254,5 +6254,16 @@
     "data": "portal/static/daily_screening.json",
     "nav": "api_common.py ops→数据运营「📅 每日筛选」（nav.js 105 入口）",
     "note": "每日筛选页上线：概览/S02 top10（暂停标注）/H18 top10/量学∩RS 18 只/板块 top5/免责；HTTP 200；6 tests；unify_nav/route 门禁 PASS。"
+  },
+  "citation_retry_cutover_20261101": {
+    "executed_at": "2026-11-01T23:27:55+08:00",
+    "change": "citation_retry 默认开启（CLI kb_qa.ask/CLI 参数/HTTP 预接线 citation_retry=1）",
+    "basis": "wave37 扩样 30 条：guard 90%→100%、fallback 10%→0%、质量升、耗时 1.071×；重试 4/4 改善",
+    "rollback": {
+      "env": "KB_QA_CITATION_RETRY=0",
+      "http": "citation_retry=0",
+      "cli": "--no-citation-retry"
+    },
+    "tests": "76 passed"
   }
 }

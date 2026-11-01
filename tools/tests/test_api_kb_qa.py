@@ -523,6 +523,36 @@ def test_prompt_and_guard_marker_defaults_and_switch():
     assert env["meta"]["guard_marker"] == "segment"
 
 
+def test_citation_retry_param_default_and_switch():
+    """wave38：citation_retry 默认开；=0 可回滚；非法 400。"""
+    seen = {}
+
+    def rec_multi(question, k=8, timeout=300, **kw):
+        seen.update(kw)
+        return mock_multi(question, k=k, timeout=timeout)
+
+    api.reset_cache()
+    status, env = api.handle("GET", "/api/kb/qa", qmap(q="retry 默认", mode="multi"),
+                             ask_fn=mock_ask, multi_fn=rec_multi)
+    assert status == 200
+    assert env["meta"]["citation_retry"] is True
+    assert seen.get("citation_retry") is True
+
+    seen.clear()
+    status, env = api.handle("GET", "/api/kb/qa", qmap(q="retry 默认", mode="multi"),
+                             ask_fn=mock_ask, multi_fn=rec_multi)
+    assert status == 200 and env["meta"]["cache_hit"] is True  # 同参命中缓存
+
+    status, env = api.handle("GET", "/api/kb/qa",
+                             qmap(q="retry 关闭", mode="multi", citation_retry="0"),
+                             ask_fn=mock_ask, multi_fn=rec_multi)
+    assert status == 200 and env["meta"]["citation_retry"] is False
+    status, env = api.handle("GET", "/api/kb/qa",
+                             qmap(q="retry 非法", mode="multi", citation_retry="2"),
+                             ask_fn=mock_ask, multi_fn=mock_multi)
+    assert status == 400 and env["error"]["code"] == "INVALID_ARGUMENT"
+
+
 def test_prompt_guard_marker_invalid_and_cache_key():
     for query in (qmap(q="问题", mode="multi", prompt="v9"),
                   qmap(q="问题", mode="multi", guard_marker="full")):

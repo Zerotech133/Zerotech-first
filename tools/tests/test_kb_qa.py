@@ -240,7 +240,8 @@ class FakeMultiModule:
                             "page": 3, "text": "多单元证据 B", "fused_score": 0.8}]}]
 
     def answer_multi(self, question, k=8, clusters=None, search_fn=None, chat_fn=None,
-                     model=None, timeout=None):
+                     model=None, timeout=None, prompt_version=None, citation_retry=None,
+                     retry_chat_fn=None, **kw):
         self.calls["answer"] += 1
         return {"question": question,
                 "answer": "【直接事实】多单元综合结论 [u_multi_1] p.2",
@@ -260,7 +261,7 @@ class FakeGuardPass:
     def load_kb_ids(self):
         return ({"u_multi_1", "u_multi_2"}, {"rp_a", "rp_b"})
 
-    def apply_guard(self, result, unit_ids, book_ids, on_fail="fallback"):
+    def apply_guard(self, result, unit_ids, book_ids, on_fail="fallback", marker_mode=None):
         out = dict(result)
         out.update({"guard_passed": True, "guard_action": "pass", "guard_issues": [],
                     "citation_valid": ["u_multi_1"], "citation_invalid": [],
@@ -357,7 +358,7 @@ class FakeGuardFail:
     def load_kb_ids(self):
         return ({"u_multi_1", "u_multi_2"}, {"rp_a"})
 
-    def apply_guard(self, result, unit_ids, book_ids, on_fail="fallback"):
+    def apply_guard(self, result, unit_ids, book_ids, on_fail="fallback", marker_mode=None):
         self.calls.append(on_fail)
         out = dict(result)
         out.update({"citation_valid": ["u_multi_1"], "citation_invalid": ["deadbeefcafe"],
@@ -472,9 +473,11 @@ def test_ask_payload_records_prompt_and_marker_versions():
     res = qa.ask("问题", mode="single", search_fn=empty_search)
     assert res["prompt_version"] == "v4"        # wave34：CLI 默认切 v4（灰度）
     assert res["guard_marker_mode"] == "segment"  # 默认 segment
+    assert res.get("citation_retry_enabled") is True   # wave38：retry 默认开
     res1 = qa.ask("问题", mode="single", search_fn=empty_search,
-                  prompt_version="v1", marker_mode="strict_line")
+                  prompt_version="v1", marker_mode="strict_line", citation_retry=False)
     assert res1["prompt_version"] == "v1" and res1["guard_marker_mode"] == "strict_line"
+    assert res1["citation_retry_enabled"] is False
     res4 = qa.ask("问题", mode="single", search_fn=empty_search,
                   prompt_version="v4", marker_mode="segment")
     assert res4["prompt_version"] == "v4"

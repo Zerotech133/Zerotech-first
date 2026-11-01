@@ -43,6 +43,9 @@ PROMPT_VERSIONS = ("v1", "v4")          # 聚合 prompt 版本（默认 v4 灰�
 DEFAULT_PROMPT_VERSION = os.environ.get("KB_QA_PROMPT_VERSION", "v4").strip().lower()
 MARKER_MODES = ("strict_line", "segment", "legacy")   # guard marker 模式（默认 segment 灰度；KB_QA_MARKER_MODE=strict_line 回滚）
 DEFAULT_MARKER_MODE = os.environ.get("KB_QA_MARKER_MODE", "segment").strip().lower()
+# v4 引用自检重试（默认开启灰度；KB_QA_CITATION_RETRY=0 回滚）
+DEFAULT_CITATION_RETRY = os.environ.get("KB_QA_CITATION_RETRY", "1").strip().lower() not in (
+    "0", "false", "no", "off")
 UNIT_WEIGHT = 1.0
 CHUNK_WEIGHT = 0.35      # 语料 chunk 噪声较大（含视频评论等），只作补充证据
 MIN_CHUNK_OVERLAP = 2    # chunk 至少命中 2 个问题词才入选（降噪）
@@ -392,13 +395,15 @@ def _ask_single(question: str, topk: int, model: str, timeout: float, search_fn,
 
 
 def _ask_multi(question: str, topk: int, model: str, timeout: float, search_fn, chat_fn,
-               prompt_version: str = DEFAULT_PROMPT_VERSION) -> dict:
+               prompt_version: str = DEFAULT_PROMPT_VERSION,
+               citation_retry: bool = DEFAULT_CITATION_RETRY) -> dict:
     """多单元聚合问答（默认模式）：检索 top-k → 聚类 → 聚合 prompt → 引用校验。"""
     started = time.monotonic()
     multi = _load_kb_qa_multi()
     k = max(5, min(8, int(topk or DEFAULT_TOPK)))
     clusters = multi.retrieve_clusters(question, k=k, search_fn=search_fn)
     multi_kwargs = {"k": k, "clusters": clusters, "search_fn": search_fn,
+                    "citation_retry": bool(citation_retry),
                     "chat_fn": chat_fn, "model": model, "timeout": timeout}
     if (prompt_version or DEFAULT_PROMPT_VERSION).strip().lower() != DEFAULT_PROMPT_VERSION:
         multi_kwargs["prompt_version"] = prompt_version
@@ -486,7 +491,8 @@ def ask(question: str, topk: int = DEFAULT_TOPK, model: str = DEFAULT_MODEL,
         retrieval_only: bool = False, mode: str = DEFAULT_MODE,
         guard: bool = True, on_guard_fail: str = "fallback",
         prompt_version: str = DEFAULT_PROMPT_VERSION,
-        marker_mode: str = DEFAULT_MARKER_MODE) -> dict:
+        marker_mode: str = DEFAULT_MARKER_MODE,
+        citation_retry: bool | None = None) -> dict:
     """问答主流程。
 
     mode="multi"（默认）：检索 top-k（5–8）单元 → 聚类 → 多单元聚合 prompt（允许综合推断，
@@ -508,15 +514,18 @@ def ask(question: str, topk: int = DEFAULT_TOPK, model: str = DEFAULT_MODEL,
     prompt_version = (prompt_version or DEFAULT_PROMPT_VERSION).strip().lower()
     if prompt_version not in PROMPT_VERSIONS:
         raise KbQaError(f"prompt_version 只能是 {'/'.join(PROMPT_VERSIONS)}（收到 {prompt_version!r}）")
+    citation_retry = DEFAULT_CITATION_RETRY if citation_retry is None else bool(citation_retry)
     marker_mode = (marker_mode or DEFAULT_MARKER_MODE).strip().lower()
     if marker_mode not in MARKER_MODES:
         raise KbQaError(f"marker_mode 只能是 {'/'.join(MARKER_MODES)}（收到 {marker_mode!r}）")
     if retrieval_only or mode == "single":
-        return _ask_single(question, topk, model, timeout, search_fn, chat_fn, retrieval_only,
-                           prompt_version=prompt_version, marker_mode=marker_mode)
+        result = _ask_single(question, topk, model, timeout, search_fn, chat_fn, retrieval_only,
+                             prompt_version=prompt_version, marker_mode=marker_mode)
+        result["citation_retry_enabled"] = bool(citation_retry)
+        return result
     try:
         result = _ask_multi(question, topk, model, timeout, search_fn, chat_fn,
-                            prompt_version=prompt_version)
+                            prompt_version=prompt_version, citation_retry=citation_retry)
     except Exception as exc:  # noqa: BLE001 - multi 不可用/失败 → 回退 single（灰度安全）
         fallback = _ask_single(question, topk, model, timeout, search_fn, chat_fn, False,
                                prompt_version=prompt_version, marker_mode=marker_mode)
@@ -537,6 +546,7 @@ def ask(question: str, topk: int = DEFAULT_TOPK, model: str = DEFAULT_MODEL,
                        "citation_valid": [], "citation_invalid": [],
                        "citation_resolvable_rate": None, "inference_ratio": None,
                        "inference_heavy": None, "distinct_cited_units": None})
+    result["citation_retry_enabled"] = bool(citation_retry)
     result["elapsed_seconds"] = round(time.monotonic() - started, 2)
     return result
 
@@ -631,6 +641,10 @@ def build_parser() -> argparse.ArgumentParser:
     ask_p.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT, help="LLM 超时秒数")
     ask_p.add_argument("--retrieval-only", action="store_true", help="仅检索不生成（离线冒烟）")
     ask_p.add_argument("--no-guard", action="store_true", help="multi 输出不经质量守卫（灰度对比）")
+    ask_p.add_argument("--citation-retry", dest="citation_retry", action="store_true", default=None,
+                       help="v4 引用自检重试（默认开启；--no-citation-retry 关闭）")
+    ask_p.add_argument("--no-citation-retry", dest="citation_retry", action="store_false",
+                       help="关闭 v4 引用自检重试（灰度对比/回滚）")
     ask_p.add_argument("--on-guard-fail", choices=list(GUARD_ACTIONS), default="fallback",
                        help="质量守卫不通过时策略：mark（仅标记）/ fallback（默认，回退可核验摘录）/ refuse（拒答）")
     smp = sub.add_parser("samples", help="生成静态示范样本 JSON")
@@ -676,7 +690,8 @@ def main(argv: list[str] | None = None) -> int:
             result = ask(args.question, topk=k, model=args.model, timeout=args.timeout,
                          retrieval_only=args.retrieval_only, mode=mode,
                          guard=not getattr(args, "no_guard", False),
-                         on_guard_fail=getattr(args, "on_guard_fail", "fallback"))
+                         on_guard_fail=getattr(args, "on_guard_fail", "fallback"),
+                         citation_retry=getattr(args, "citation_retry", None))
         except KbQaError as exc:
             print(f"[kb_qa] FAILED: {exc}", file=sys.stderr)
             return 1

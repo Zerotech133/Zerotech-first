@@ -54,6 +54,7 @@ VALID_PROMPTS = ("v1", "v4")          # 聚合 prompt 版本（默认 v1；v4 �
 DEFAULT_PROMPT = "v1"
 VALID_GUARD_MARKERS = ("strict", "segment")   # guard marker 模式（默认 strict）
 DEFAULT_GUARD_MARKER = "strict"
+DEFAULT_CITATION_RETRY = True  # v4 引用自检重试（灰度默认开；citation_retry=0 回滚）
 GUARD_MARKER_MODES = {"strict": "strict_line", "segment": "segment"}
 DEFAULT_MODE = "retrieval"          # HTTP 默认只读检索（控成本）
 DEFAULT_GENERATE_MODE = "multi"     # 生成模式默认 multi（与 CLI 一致）；single 需显式
@@ -301,6 +302,14 @@ def parse_request(method: str, path: str, query: dict | None, body: dict | None 
     if prompt not in VALID_PROMPTS:
         return None, (400, _env(None, _err("INVALID_ARGUMENT",
                                            f"prompt 只能是 {'/'.join(VALID_PROMPTS)}（收到 {prompt!r}）")))
+    citation_raw = (_q1(merged, "citation_retry") or "").strip().lower()
+    if citation_raw in ("", "1", "true", "yes", "on"):
+        citation_retry = True
+    elif citation_raw in ("0", "false", "no", "off"):
+        citation_retry = False
+    else:
+        return None, (400, _env(None, _err("INVALID_ARGUMENT",
+                                           f"citation_retry 只能是 1/0（收到 {citation_raw!r}）")))
     guard_marker = (_q1(merged, "guard_marker") or DEFAULT_GUARD_MARKER).strip().lower()
     if guard_marker not in VALID_GUARD_MARKERS:
         return None, (400, _env(None, _err("INVALID_ARGUMENT",
@@ -317,7 +326,8 @@ def parse_request(method: str, path: str, query: dict | None, body: dict | None 
                                            f"guard 只能是 1/0（收到 {guard_raw!r}）")))
     return {"question": question, "topk": topk, "mode": mode,
             "mode_alias": mode_alias, "no_cache": no_cache, "guard": guard,
-            "prompt": prompt, "guard_marker": guard_marker}, None
+            "prompt": prompt, "guard_marker": guard_marker,
+            "citation_retry": citation_retry}, None
 
 
 # ---------------------------------------------------------------------------
@@ -342,7 +352,7 @@ def handle(method: str, path: str, query: dict | None = None, body: dict | None 
                "multi": MULTI_TIMEOUT_SECONDS}[mode]
     # 缓存键含 mode 与 guard：不同模式/守卫开关互不串味（guard=0 灰度对比独立缓存）
     cache_key = (mode, question, topk, int(guard_enabled),
-                 params["prompt"], params["guard_marker"])
+                 params["prompt"], params["guard_marker"], int(params["citation_retry"]))
     if not params["no_cache"]:
         cached = cache_get(cache_key)
         if cached is not None:
@@ -362,7 +372,8 @@ def handle(method: str, path: str, query: dict | None = None, body: dict | None 
             multi_k = max(MULTI_MIN_K, min(MULTI_MAX_K, int(topk)))
             fn = multi_fn or multi.answer_multi
             result = fn(question, k=multi_k, timeout=timeout,
-                        prompt_version=params["prompt"])
+                        prompt_version=params["prompt"],
+                        citation_retry=params["citation_retry"])
             k_value = int(result.get("k") or multi_k)
         else:
             qa = _load_qa()
@@ -439,7 +450,9 @@ def handle(method: str, path: str, query: dict | None = None, body: dict | None 
             "elapsed_ms": round((time.monotonic() - started) * 1000, 1),
             "timeout_seconds": timeout, "rate_limit": rate_info,
             "llm_called": llm_called, "guard": guard_meta,
-            "prompt_version": params["prompt"], "guard_marker": params["guard_marker"]}
+            "prompt_version": params["prompt"], "guard_marker": params["guard_marker"],
+            "citation_retry": bool(params["citation_retry"]),
+            "citation_retry_info": result.get("citation_retry")}
     if params.get("mode_alias"):
         meta["mode_alias"] = f"{params['mode_alias']}→{mode}"
     if not params["no_cache"]:
@@ -463,7 +476,8 @@ def describe_routes() -> dict:
                                    "prompt": f"{'/'.join(VALID_PROMPTS)}"
                                              "（默认 v1；v4=可选 prompt，事实行/推断行格式）",
                                    "guard_marker": f"{'/'.join(VALID_GUARD_MARKERS)}"
-                                                   "（默认 strict=strict_line；segment=分段计数）"},
+                                                   "（默认 strict=strict_line；segment=分段计数）",
+                                   "citation_retry": "1（默认，v4 引用<2 时自检重试一次）| 0（回滚）"},
                         "meta_fields": ["mode", "k", "clusters", "llm_called", "topk",
                                         "cache_hit", "elapsed_ms", "rate_limit", "guard",
                                         "prompt_version", "guard_marker"],
