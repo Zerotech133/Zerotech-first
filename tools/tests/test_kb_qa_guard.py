@@ -190,3 +190,18 @@ class _raises:
         assert exc_type is not None and issubclass(exc_type, self.exc), \
             f"期望抛出 {self.exc}，实际 {exc_type}"
         return True
+
+# ---------------------------------------------------------------------------
+# guard segment 模式（task-95）：按事实段/推断段归属计数；默认 strict_line 不变
+# ---------------------------------------------------------------------------
+def test_segment_marker_mode_and_default_unchanged():
+    ans = "【事实摘录】\n第一条要点\n第二条要点\n\n【推断】\n综合判断一条\n"
+    assert gd.count_markers(ans, "segment") == (2, 1)
+    # 默认 strict_line：与显式 strict_line 完全一致（未被 segment 改变）
+    assert gd.DEFAULT_MARKER_MODE == "strict_line"
+    default = gd.count_markers(ans)
+    assert default == gd.count_markers(ans, "strict_line")
+    assert default != (2, 1)      # 分段计数仅 segment 模式生效
+    # 行首显式标记在 segment 下仍优先计入
+    marked = "【事实】事实A [u1] p.1\n【推断】推断B（依据 u1）"
+    assert gd.count_markers(marked, "segment") == (1, 1)

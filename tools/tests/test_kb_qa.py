@@ -461,3 +461,23 @@ def test_cli_guard_flags():
     assert proc.returncode == 0
     for flag in ("--no-guard", "--on-guard-fail", "fallback"):
         assert flag in proc.stdout, flag
+
+# ---------------------------------------------------------------------------
+# payload 记录 prompt_version / marker_mode（task-95，默认 v1/strict_line）
+# ---------------------------------------------------------------------------
+def test_ask_payload_records_prompt_and_marker_versions():
+    def empty_search(question, topk=8):
+        return []
+
+    res = qa.ask("问题", mode="single", search_fn=empty_search)
+    assert res["prompt_version"] == "v1"
+    assert res["guard_marker_mode"] == "strict_line"
+    res4 = qa.ask("问题", mode="single", search_fn=empty_search,
+                  prompt_version="v4", marker_mode="segment")
+    assert res4["prompt_version"] == "v4"
+    assert res4["guard_marker_mode"] == "segment"
+    try:
+        qa.ask("问题", mode="single", search_fn=empty_search, prompt_version="v9")
+        assert False, "非法 prompt_version 应抛 KbQaError"
+    except qa.KbQaError:
+        pass

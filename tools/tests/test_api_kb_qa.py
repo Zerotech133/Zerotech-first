@@ -480,3 +480,60 @@ def test_real_guard_module_loads():
     mod = _REAL_LOAD_GUARD()
     assert hasattr(mod, "apply_guard") and hasattr(mod, "load_kb_ids")
     assert callable(mod.apply_guard)
+
+# ---------------------------------------------------------------------------
+# prompt / guard_marker 灰度参数（task-95）：默认 v1 + strict，可切换且缓存键区分
+# ---------------------------------------------------------------------------
+def test_prompt_and_guard_marker_defaults_and_switch():
+    status, env = api.handle("GET", "/api/kb/qa",
+                             qmap(q="M9 覆铜板价值量", mode="multi"),
+                             ask_fn=mock_ask, multi_fn=mock_multi,
+                             guard_impl=_PASS_GUARD)
+    assert status == 200
+    assert env["meta"]["prompt_version"] == "v1"
+    assert env["meta"]["guard_marker"] == "strict"
+    assert env["meta"]["guard"]["marker_mode"] == "strict_line"
+
+    seen, guard_seen = {}, {}
+
+    def rec_multi(question, k=8, timeout=300, **kw):
+        seen.update(kw)
+        return mock_multi(question, k=k, timeout=timeout)
+
+    def rec_apply(result, unit_ids, book_ids, on_fail="fallback", **kw):
+        guard_seen.update(kw)
+        return _PASS_GUARD.apply_guard(result, unit_ids, book_ids, on_fail=on_fail)
+
+    class _G:
+        def load_kb_ids(self):
+            return {"u1", "u2"}, {"b1"}
+
+        def apply_guard(self, result, unit_ids, book_ids, **kw):
+            return rec_apply(result, unit_ids, book_ids, **kw)
+
+    api.reset_cache()
+    status, env = api.handle("GET", "/api/kb/qa",
+                             qmap(q="另一个问题", mode="multi", prompt="v4",
+                                  guard_marker="segment"),
+                             ask_fn=mock_ask, multi_fn=rec_multi, guard_impl=_G())
+    assert status == 200
+    assert seen.get("prompt_version") == "v4"
+    assert guard_seen.get("marker_mode") == "segment"
+    assert env["meta"]["prompt_version"] == "v4"
+    assert env["meta"]["guard_marker"] == "segment"
+
+
+def test_prompt_guard_marker_invalid_and_cache_key():
+    for query in (qmap(q="问题", mode="multi", prompt="v9"),
+                  qmap(q="问题", mode="multi", guard_marker="full")):
+        status, env = api.handle("GET", "/api/kb/qa", query,
+                                 ask_fn=mock_ask, multi_fn=mock_multi)
+        assert status == 400 and env["error"]["code"] == "INVALID_ARGUMENT"
+    # 缓存键包含 prompt/guard_marker：同问题不同灰度参数 → 不命中
+    base_q = {"q": ["M9 覆铜板价值量"], "mode": ["multi"]}
+    s1, _ = api.handle("GET", "/api/kb/qa", base_q, ask_fn=mock_ask, multi_fn=mock_multi,
+                       guard_impl=_PASS_GUARD)
+    s2, env2 = api.handle("GET", "/api/kb/qa",
+                          {"q": ["M9 覆铜板价值量"], "mode": ["multi"], "prompt": ["v4"]},
+                          ask_fn=mock_ask, multi_fn=mock_multi, guard_impl=_PASS_GUARD)
+    assert s1 == s2 == 200 and env2["meta"]["cache_hit"] is False

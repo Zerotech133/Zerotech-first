@@ -39,6 +39,8 @@ MAX_K = 8
 DEFAULT_MODEL = "qwen3.5:9b"
 DEFAULT_TIMEOUT = 300
 DEFAULT_DEADLINE = 600
+PROMPT_VERSIONS = ("v1", "v4")
+DEFAULT_PROMPT_VERSION = "v1"      # 默认 v1（v4 为可选版本，未经扩样不切默认）
 MAX_CLUSTERS = 3
 MAX_UNITS_PER_CLUSTER = 3
 MAX_ANSWER_CHARS = 400
@@ -157,8 +159,42 @@ def format_clusters(clusters: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def build_multi_prompt(question: str, clusters: list[dict]) -> str:
-    """多单元聚合 prompt：允许综合推断，但必须区分直接事实/推断并引用 [unit_id]。"""
+FULL_EXAMPLE_V4 = (
+    "【事实摘录】\n"
+    "【事实】M9 级覆铜板支持 224Gbps 与 78 层 PCB 量产（[unit_A] p.2）。\n"
+    "【事实】单颗 GPU 配套 PCB 价值量约为传统方案三倍（[unit_B] p.5）。\n"
+    "【推断】\n"
+    "【推断】综合两条材料，高速材料升级将带动单机柜 PCB 价值量提升"
+    "（依据：[unit_A] p.2、[unit_B] p.5）。"
+)
+
+
+def build_multi_prompt_v4(question: str, clusters: list[dict]) -> str:
+    """prompt v4（可选）：事实行逐行【事实】+引用、推断行【推断】≤2、附完整示例。"""
+    return (
+        "你是研报知识库问答助手。请**逐行严格遵守**以下格式（v4）：\n\n"
+        "【格式要求（必须照做）】\n"
+        "1) 先写一行标题「【事实摘录】」，随后每一条事实**单独一行、以【事实】开头**，"
+        "且**引用紧跟在该句末尾**（[unit_id] p.页码），直接摘录材料原文、不改写关键数据；\n"
+        "2) 再写一行标题「【推断】」，随后**最多 2 条**推断，每条**单独一行、以【推断】开头**，"
+        "并注明依据线索（依据：[unit_id] …）；\n"
+        "3) 事实行数必须多于推断行数（推断占比 ≤40%）；引用覆盖 **至少 2 个不同单元**；\n"
+        "4) 材料不足时只回答「知识库中没有足够依据回答该问题。」，不要编造推断；\n"
+        "5) 中文、≤400 字。\n\n"
+        f"【完整示例】\n{FULL_EXAMPLE_V4}\n\n"
+        f"【问题】{question}\n\n【检索材料（按主题/章节聚类）】\n{format_clusters(clusters)}\n\n"
+        "【回答（按【事实摘录】段 → 【推断】段的格式逐行输出）】"
+    )
+
+
+def build_multi_prompt(question: str, clusters: list[dict],
+                       prompt_version: str = DEFAULT_PROMPT_VERSION) -> str:
+    """多单元聚合 prompt（按版本）：v1 默认；v4 为可选版本（事实行/推断行分段格式）。"""
+    version = (prompt_version or DEFAULT_PROMPT_VERSION).strip().lower()
+    if version not in PROMPT_VERSIONS:
+        raise MultiError(f"prompt_version 只能是 {'/'.join(PROMPT_VERSIONS)}（收到 {prompt_version!r}）")
+    if version == "v4":
+        return build_multi_prompt_v4(question, clusters)
     return (
         "你是研报知识库问答助手。下面是按主题/章节聚类后的多条知识单元（同一簇代表相关证据）。\n"
         "必须遵守：\n"
@@ -263,8 +299,12 @@ def rule_based_multi(clusters: list[dict]) -> str:
 
 def answer_multi(question: str, k: int = DEFAULT_K, clusters: list[dict] | None = None,
                  search_fn=None, chat_fn=None, model: str = DEFAULT_MODEL,
-                 timeout: float = DEFAULT_TIMEOUT) -> dict:
-    """多单元聚合回答（单问题）：检索+聚类 → 聚合 prompt → 引用校验/置信。"""
+                 timeout: float = DEFAULT_TIMEOUT,
+                 prompt_version: str = DEFAULT_PROMPT_VERSION) -> dict:
+    """多单元聚合回答（单问题）：检索+聚类 → 聚合 prompt → 引用校验/置信。
+
+    prompt_version：v1（默认）/ v4（可选版本，事实行/推断行分段格式；未扩样前不切默认）。
+    """
     started = time.monotonic()
     question = (question or "").strip()
     if not question:
@@ -272,6 +312,7 @@ def answer_multi(question: str, k: int = DEFAULT_K, clusters: list[dict] | None 
     clusters = clusters if clusters is not None else retrieve_clusters(question, k, search_fn=search_fn)
     provided = sum(len(c.get("units") or []) for c in clusters)
     base = {"question": question, "k": max(MIN_K, min(MAX_K, int(k))),
+            "prompt_version": (prompt_version or DEFAULT_PROMPT_VERSION).strip().lower(),
             "clusters": [{"label": c.get("label"), "book": c.get("book"),
                           "chapter": c.get("chapter"), "units": len(c.get("units") or []),
                           "max_score": c.get("max_score")} for c in clusters],
@@ -284,7 +325,7 @@ def answer_multi(question: str, k: int = DEFAULT_K, clusters: list[dict] | None 
                      "inference_markers": 0})
         base["elapsed_seconds"] = round(time.monotonic() - started, 2)
         return base
-    prompt = build_multi_prompt(question, clusters)
+    prompt = build_multi_prompt(question, clusters, prompt_version=prompt_version)
     fallback = False
     error = None
     try:
@@ -559,6 +600,8 @@ def build_parser() -> argparse.ArgumentParser:
     ask_p.add_argument("--json", action="store_true", help="输出 JSON")
     ask_p.add_argument("--model", default=DEFAULT_MODEL)
     ask_p.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT)
+    ask_p.add_argument("--prompt-version", default=DEFAULT_PROMPT_VERSION, choices=PROMPT_VERSIONS,
+                       help="聚合 prompt 版本（默认 v1；v4 为可选版本）")
     ev = sub.add_parser("eval", help="对 v3 抽验问题做单单元 vs 多单元对比")
     ev.add_argument("--n", type=int, default=12, help="对比问题数（默认 12）")
     ev.add_argument("--k", type=int, default=DEFAULT_K)
@@ -576,7 +619,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "ask":
         try:
             if args.multi:
-                result = answer_multi(args.q, k=args.k, model=args.model, timeout=args.timeout)
+                result = answer_multi(args.q, k=args.k, model=args.model, timeout=args.timeout,
+                                      prompt_version=args.prompt_version)
             else:
                 result = kb_qa().ask(args.q, topk=max(MIN_K, min(MAX_K, args.k)),
                                      model=args.model, timeout=args.timeout)

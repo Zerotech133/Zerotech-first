@@ -218,3 +218,26 @@ class pytest_raises:
         assert exc_type is not None and issubclass(exc_type, self.exc), \
             f"期望抛出 {self.exc}，实际 {exc_type}"
         return True
+
+# ---------------------------------------------------------------------------
+# prompt v4 可选版本（task-95）：默认 v1 不变，v4 可显式切换
+# ---------------------------------------------------------------------------
+def test_prompt_v4_optional_and_default_v1():
+    clusters = [{"label": "c1", "book": "b", "chapter": "ch", "units": [
+        {"unit_id": "u1", "text": "M9 覆铜板提升 PCB 价值量", "concept": "覆铜板"}]}]
+    p1 = mk.build_multi_prompt("问题", clusters)
+    assert "【直接事实】" in p1 and "【事实摘录】" not in p1
+    p4 = mk.build_multi_prompt("问题", clusters, prompt_version="v4")
+    assert "【事实摘录】" in p4 and "【推断】" in p4 and "完整示例" in p4
+    assert p4 != p1
+    try:
+        mk.build_multi_prompt("问题", clusters, prompt_version="v9")
+        assert False, "非法 prompt_version 应抛 MultiError"
+    except mk.MultiError:
+        pass
+    # answer_multi 默认 v1，显式 v4 记录到 payload
+    chat = lambda prompt, **kw: "【事实】M9 覆铜板提升 PCB 价值量 [u1] p.2"
+    r1 = mk.answer_multi("问题", k=5, clusters=clusters, chat_fn=chat)
+    assert r1["prompt_version"] == "v1"
+    r4 = mk.answer_multi("问题", k=5, clusters=clusters, chat_fn=chat, prompt_version="v4")
+    assert r4["prompt_version"] == "v4"

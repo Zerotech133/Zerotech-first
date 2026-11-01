@@ -50,6 +50,11 @@ CACHE_MAX_ENTRIES = 200
 RATE_LIMIT_WINDOW_SECONDS = 60
 RATE_LIMIT = {"retrieval": 60, "single": 6, "multi": 6}   # 每窗口每通道上限
 VALID_MODES = ("retrieval", "single", "multi")
+VALID_PROMPTS = ("v1", "v4")          # 聚合 prompt 版本（默认 v1；v4 可选灰度）
+DEFAULT_PROMPT = "v1"
+VALID_GUARD_MARKERS = ("strict", "segment")   # guard marker 模式（默认 strict）
+DEFAULT_GUARD_MARKER = "strict"
+GUARD_MARKER_MODES = {"strict": "strict_line", "segment": "segment"}
 DEFAULT_MODE = "retrieval"          # HTTP 默认只读检索（控成本）
 DEFAULT_GENERATE_MODE = "multi"     # 生成模式默认 multi（与 CLI 一致）；single 需显式
 MODE_ALIASES = {"generate": "multi"}  # 兼容旧参数：generate → multi
@@ -292,6 +297,15 @@ def parse_request(method: str, path: str, query: dict | None, body: dict | None 
         return None, (400, _env(None, _err("INVALID_ARGUMENT",
                                            f"mode 只能是 {'/'.join(VALID_MODES)}"
                                            f"（收到 {mode_raw!r}）")))
+    prompt = (_q1(merged, "prompt") or DEFAULT_PROMPT).strip().lower()
+    if prompt not in VALID_PROMPTS:
+        return None, (400, _env(None, _err("INVALID_ARGUMENT",
+                                           f"prompt 只能是 {'/'.join(VALID_PROMPTS)}（收到 {prompt!r}）")))
+    guard_marker = (_q1(merged, "guard_marker") or DEFAULT_GUARD_MARKER).strip().lower()
+    if guard_marker not in VALID_GUARD_MARKERS:
+        return None, (400, _env(None, _err("INVALID_ARGUMENT",
+                                           f"guard_marker 只能是 {'/'.join(VALID_GUARD_MARKERS)}"
+                                           f"（收到 {guard_marker!r}）")))
     no_cache = (_q1(merged, "cache") or "").strip().lower() in ("0", "false", "no")
     guard_raw = (_q1(merged, "guard") or "").strip().lower()
     if guard_raw in ("", "1", "true", "yes", "on"):
@@ -302,7 +316,8 @@ def parse_request(method: str, path: str, query: dict | None, body: dict | None 
         return None, (400, _env(None, _err("INVALID_ARGUMENT",
                                            f"guard 只能是 1/0（收到 {guard_raw!r}）")))
     return {"question": question, "topk": topk, "mode": mode,
-            "mode_alias": mode_alias, "no_cache": no_cache, "guard": guard}, None
+            "mode_alias": mode_alias, "no_cache": no_cache, "guard": guard,
+            "prompt": prompt, "guard_marker": guard_marker}, None
 
 
 # ---------------------------------------------------------------------------
@@ -326,7 +341,8 @@ def handle(method: str, path: str, query: dict | None = None, body: dict | None 
                "single": GENERATE_TIMEOUT_SECONDS,
                "multi": MULTI_TIMEOUT_SECONDS}[mode]
     # 缓存键含 mode 与 guard：不同模式/守卫开关互不串味（guard=0 灰度对比独立缓存）
-    cache_key = (mode, question, topk, int(guard_enabled))
+    cache_key = (mode, question, topk, int(guard_enabled),
+                 params["prompt"], params["guard_marker"])
     if not params["no_cache"]:
         cached = cache_get(cache_key)
         if cached is not None:
@@ -345,13 +361,16 @@ def handle(method: str, path: str, query: dict | None = None, body: dict | None 
             multi = _load_multi()
             multi_k = max(MULTI_MIN_K, min(MULTI_MAX_K, int(topk)))
             fn = multi_fn or multi.answer_multi
-            result = fn(question, k=multi_k, timeout=timeout)
+            result = fn(question, k=multi_k, timeout=timeout,
+                        prompt_version=params["prompt"])
             k_value = int(result.get("k") or multi_k)
         else:
             qa = _load_qa()
             fn = ask_fn or qa.ask
             result = fn(question, topk=topk, timeout=timeout,
-                        retrieval_only=(mode == "retrieval"))
+                        retrieval_only=(mode == "retrieval"),
+                        prompt_version=params["prompt"],
+                        marker_mode=GUARD_MARKER_MODES[params["guard_marker"]])
             k_value = topk
     except QaUnavailable as exc:
         return 503, _env(None, _err("NOT_READY", str(exc)),
@@ -370,7 +389,8 @@ def handle(method: str, path: str, query: dict | None = None, body: dict | None 
                                "cache_hit": False})
     # 质量守卫（仅 multi 生成且 guard=1；默认 fallback，失败 fail-open 不阻断问答）
     guard_meta = {"enabled": guard_enabled, "applicable": mode == "multi",
-                  "applied": False, "on_fail": GUARD_ON_FAIL}
+                  "applied": False, "on_fail": GUARD_ON_FAIL,
+                  "marker_mode": GUARD_MARKER_MODES[params["guard_marker"]]}
     pre_conf = result.get("confidence") or {}
     pre_refusal = bool(result.get("refusal")) or str(pre_conf.get("level") or "") in ("none", "n/a")
     llm_called = bool(mode != "retrieval" and not result.get("fallback") and not pre_refusal)
@@ -378,8 +398,12 @@ def handle(method: str, path: str, query: dict | None = None, body: dict | None 
         try:
             guard = guard_impl or _load_guard()
             unit_ids, book_ids = _guard_ids(guard)
-            result = guard.apply_guard(result, unit_ids, book_ids, on_fail=GUARD_ON_FAIL)
+            guard_kwargs = {"on_fail": GUARD_ON_FAIL}
+            if params["guard_marker"] != DEFAULT_GUARD_MARKER:
+                guard_kwargs["marker_mode"] = GUARD_MARKER_MODES[params["guard_marker"]]
+            result = guard.apply_guard(result, unit_ids, book_ids, **guard_kwargs)
             guard_meta = _guard_meta(result)
+            guard_meta["marker_mode"] = GUARD_MARKER_MODES[params["guard_marker"]]
         except Exception as exc:  # noqa: BLE001 - 守卫异常 fail-open（meta 标注，不 503）
             guard_meta = {"enabled": True, "applicable": True, "applied": False,
                           "on_fail": GUARD_ON_FAIL,
@@ -413,7 +437,8 @@ def handle(method: str, path: str, query: dict | None = None, body: dict | None 
             "topk": topk, "cache_hit": False,
             "elapsed_ms": round((time.monotonic() - started) * 1000, 1),
             "timeout_seconds": timeout, "rate_limit": rate_info,
-            "llm_called": llm_called, "guard": guard_meta}
+            "llm_called": llm_called, "guard": guard_meta,
+            "prompt_version": params["prompt"], "guard_marker": params["guard_marker"]}
     if params.get("mode_alias"):
         meta["mode_alias"] = f"{params['mode_alias']}→{mode}"
     if not params["no_cache"]:
@@ -433,9 +458,14 @@ def describe_routes() -> dict:
                                            f"generate 为兼容别名→multi）",
                                    "cache": "0/false 跳过缓存",
                                    "guard": "1（默认，multi 生成执行 kb_qa_guard 质量守卫，"
-                                            "on_fail=fallback）| 0（灰度对比，跳过守卫）"},
+                                            "on_fail=fallback）| 0（灰度对比，跳过守卫）",
+                                   "prompt": f"{'/'.join(VALID_PROMPTS)}"
+                                             "（默认 v1；v4=可选 prompt，事实行/推断行格式）",
+                                   "guard_marker": f"{'/'.join(VALID_GUARD_MARKERS)}"
+                                                   "（默认 strict=strict_line；segment=分段计数）"},
                         "meta_fields": ["mode", "k", "clusters", "llm_called", "topk",
-                                        "cache_hit", "elapsed_ms", "rate_limit", "guard"],
+                                        "cache_hit", "elapsed_ms", "rate_limit", "guard",
+                                        "prompt_version", "guard_marker"],
                         "errors": {"INVALID_ARGUMENT": 400, "METHOD_NOT_ALLOWED": 405, "NOT_FOUND": 404,
                                    "RATE_LIMITED": 429, "NOT_READY": 503, "UPSTREAM_UNAVAILABLE": 503,
                                    "INTERNAL": 500}}],

@@ -757,6 +757,13 @@
       "title": "问答 prompt v4 + guard 分段解析",
       "ref": "tools/kb_corpus/kb_qa_prompt_v4.py",
       "enabled": true
+    },
+    {
+      "id": "kb_qa_prompt_v4_scale",
+      "kind": "tool",
+      "title": "prompt v4 扩样 A/B",
+      "ref": "tools/kb_corpus/kb_qa_prompt_v4_scale.py",
+      "enabled": true
     }
   ]
 }

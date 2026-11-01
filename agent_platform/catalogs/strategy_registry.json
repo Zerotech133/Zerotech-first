@@ -5903,5 +5903,96 @@
       "sepa_scan_daily.py"
     ],
     "note": "wave32 新增 3 脚本加固（safe_json 三件套）；审计重跑：写盘脚本 20 个全部低风险，门户静态 JSON 写入中风险清零。"
+  },
+  "kb_qa_prompt_v4_scale_20261101": {
+    "tool": "tools/kb_corpus/kb_qa_prompt_v4_scale.py",
+    "report": "research/reports/kb_qa_prompt_v4_scale_20261101.md",
+    "comparison": {
+      "v1": {
+        "total": 30,
+        "success": 22,
+        "answerable_rate": 0.7333,
+        "no_evidence": 2,
+        "fallback": 6,
+        "fallback_rate": 0.2,
+        "guard_passed": 27,
+        "guard_pass_rate": 0.9,
+        "avg_citation_resolvable_rate": 1.0,
+        "avg_support_rate": 1.0,
+        "avg_hallucination_rate": 0.0,
+        "avg_inference_ratio": 0.0889,
+        "avg_citations": 2.4667,
+        "avg_elapsed_seconds": 23.7293,
+        "errors": []
+      },
+      "v4": {
+        "total": 30,
+        "success": 25,
+        "answerable_rate": 0.8333,
+        "no_evidence": 1,
+        "fallback": 4,
+        "fallback_rate": 0.1333,
+        "guard_passed": 26,
+        "guard_pass_rate": 0.8667,
+        "avg_citation_resolvable_rate": 1.0,
+        "avg_support_rate": 1.0,
+        "avg_hallucination_rate": 0.0,
+        "avg_inference_ratio": 0.4105,
+        "avg_citations": 2.2667,
+        "avg_elapsed_seconds": 23.9153,
+        "errors": []
+      },
+      "delta": {
+        "answerable_rate": 0.1,
+        "guard_pass_rate": -0.0333,
+        "quality_drop": 0.0,
+        "latency_ratio": 1.008
+      },
+      "criteria": {
+        "min_answerable_gain": 0.1,
+        "max_quality_drop": 0.02,
+        "max_latency_ratio": 1.5
+      },
+      "meets_switch_criteria": true,
+      "wave29_consistency": {
+        "reference": {
+          "n": 12,
+          "v1_answerable_rate": 0.5,
+          "v4_answerable_rate": 0.75,
+          "delta_answerable": 0.25,
+          "v1_guard_pass_rate": 0.5,
+          "v4_guard_pass_rate": 0.75
+        },
+        "scale_delta": 0.1,
+        "consistent_direction": true
+      },
+      "decision": "switch_default",
+      "verdict": "扩样 30 条：可答率 73%→83%（+10%≥10pp）、质量不降、耗时比 1.008≤1.5 → **达到切默认标准**，建议切 v4 默认（灰度后全量）",
+      "reasons": [
+        "可答率：73%（22/30）→ 83%（25/30），Δ+10.0%（标准 ≥+10pp）。",
+        "guard 通过率：90% → 87%（Δ-3.3%）；fallback：20% → 13%；拒答：2 → 1。",
+        "质量：引用可解析率 100.0% → 100.0%；支撑率 100.0% → 100.0%；推断比例 0.0889 → 0.4105；引用数 2.4667 → 2.2667。",
+        "耗时：23.7293s → 23.9153s（比值 1.008）。"
+      ],
+      "risks": [
+        "扩样条数受 LLM 时间预算限制（本轮 30 条，可减到 25 条），仍小于全量 50 条；切换默认后需继续监控。",
+        "v1 与 v4 为串行/并行分批采样，模型负载与耗时受同时段其他任务影响。",
+        "segment 解析依赖模型输出段标题；若模型不写标题会退化为行首标记统计。",
+        "切默认为行为变更：需在 kb_qa_multi 增加 prompt 版本开关 + guard marker_mode 配置，默认 v4/segment，保留 v1 回退开关。"
+      ],
+      "rollback": "回滚方案：配置 `KB_QA_PROMPT_VERSION=v1` 或将 kb_qa_multi 默认 prompt 切回 v1、guard `marker_mode=\"legacy\"`（或 strict_line）；静态配置改动无需重启 8091 时对 CLI 即时生效，HTTP 通道需按既有流程重启/灰度验证。"
+    },
+    "note": "扩样 30 条 A/B（与 wave25/29 前 12 条不重复）：可答率 73.3%→**83.3%（+10pp，临界达标）**、guard 通过 90→86.7%、fallback 20→13.3%、引用可解析/支撑 100%→100%、耗时比 1.008 → **meets_switch_criteria=true，建议灰度切默认 v4**。"
+  },
+  "kb_qa_prompt_version_switch_20261101": {
+    "modules": [
+      "kb_qa_multi.py",
+      "kb_qa_guard.py",
+      "kb_qa.py",
+      "portal/api_kb_qa.py"
+    ],
+    "default": "v1 + strict_line（未切默认）",
+    "optional": "prompt_version=v4 / marker_mode=segment；HTTP prompt=v1|v4、guard_marker=strict|segment（默认 v1/strict）",
+    "note": "v4+segment 可选版本已合入生产（59 tests，默认行为逐位不变）；切默认需灰度观察（CLI 先切、HTTP 随 8091 审批）。"
   }
 }

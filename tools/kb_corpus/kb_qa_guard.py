@@ -122,13 +122,55 @@ def resolve_citations(cited: list[str], unit_ids: set[str], book_ids: set[str] |
 # ---------------------------------------------------------------------------
 # 标记解析（marker_mode）：strict_line（默认，排除段标题/说明/few-shot）| legacy（旧行为）
 # ---------------------------------------------------------------------------
-MARKER_MODES = ("strict_line", "legacy")
+MARKER_MODES = ("strict_line", "legacy", "segment")
 DEFAULT_MARKER_MODE = "strict_line"
+# segment 模式（可选）：按「事实段/推断段」归属计数，逻辑从 kb_qa_prompt_v4.py 抽取
+_SEG_FACT_HEAD_RE = re.compile(r"^\s*(?:#{1,6}\s*)?(?:【事实摘录】|【事实段】|事实摘录|事实段)\s*[：:如下]*\s*$")
+_SEG_INFER_HEAD_RE = re.compile(r"^\s*(?:#{1,6}\s*)?(?:【推断】\s*段?|【推断段】|推断段|##\s*推断)\s*[：:如下]*\s*$")
+_SEG_SKIP_WORDS = ("示例", "few-shot", "few shot", "规则", "输出结构", "格式说明", "如下", "说明", "要求", "注意")
 _FACT_LINE_RE = re.compile(r"^\s*(?:[-*•]\s*|\d+[.、)]\s*)?【(?:直接事实|事实)】")
 _INFER_LINE_RE = re.compile(r"^\s*(?:[-*•]\s*|\d+[.、)]\s*)?【推断】")
 _LEGACY_FACT_RE = re.compile(r"【直接事实】|【事实】|\[事实\]|直接事实")
 _LEGACY_INFER_RE = re.compile(r"【推断】|\[推断\]|推断")
 _MARKER_SKIP_WORDS = ("示例", "few-shot", "few shot", "输出结构", "格式说明", "规则", "如下", "说明", "要求", "注意")
+
+
+def segment_markers(answer: str) -> tuple[int, int]:
+    """segment 模式：事实段内无标记要点按事实计、推断段内按推断计；标题行/跳过词/代码块不计。"""
+    text = str(answer or "")
+    direct = infer = 0
+    section: str | None = None
+    in_code = False
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if line.startswith("```"):
+            in_code = not in_code
+            continue
+        if in_code or not line:
+            continue
+        low = line.lower()
+        if any(w in low for w in _SEG_SKIP_WORDS):
+            continue
+        if _SEG_FACT_HEAD_RE.match(line):
+            section = "fact"
+            continue
+        if _SEG_INFER_HEAD_RE.match(line):
+            section = "infer"
+            continue
+        if _FACT_LINE_RE.match(line):
+            direct += 1
+            continue
+        if _INFER_LINE_RE.match(line):
+            rest = _INFER_LINE_RE.sub("", line, count=1).strip()
+            if rest.startswith(("如下", "：", ":", "（示例", "(示例")):
+                continue
+            infer += 1
+            continue
+        if section == "fact":
+            direct += 1
+        elif section == "infer":
+            infer += 1
+    return direct, infer
 
 
 def count_markers(answer: str, marker_mode: str = DEFAULT_MARKER_MODE) -> tuple[int, int]:
@@ -140,6 +182,8 @@ def count_markers(answer: str, marker_mode: str = DEFAULT_MARKER_MODE) -> tuple[
     legacy：旧行为（子串匹配，会把段标题里的「推断」也计入）。
     """
     text = str(answer or "")
+    if marker_mode == "segment":
+        return segment_markers(answer)
     if marker_mode == "legacy":
         return len(_LEGACY_FACT_RE.findall(text)), len(_LEGACY_INFER_RE.findall(text))
     if marker_mode not in MARKER_MODES:  # pragma: no cover

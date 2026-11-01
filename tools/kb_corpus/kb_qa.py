@@ -38,6 +38,10 @@ DEFAULT_TOPK = 8
 DEFAULT_TIMEOUT = 300
 DEFAULT_MODE = "multi"          # 默认多单元聚合（A/B：可答率 33%→80%，回退 0）
 VALID_MODES = ("multi", "single")
+PROMPT_VERSIONS = ("v1", "v4")          # 聚合 prompt 版本（默认 v1；v4 可选灰度）
+DEFAULT_PROMPT_VERSION = "v1"
+MARKER_MODES = ("strict_line", "segment", "legacy")   # guard marker 模式（默认 strict_line）
+DEFAULT_MARKER_MODE = "strict_line"
 UNIT_WEIGHT = 1.0
 CHUNK_WEIGHT = 0.35      # 语料 chunk 噪声较大（含视频评论等），只作补充证据
 MIN_CHUNK_OVERLAP = 2    # chunk 至少命中 2 个问题词才入选（降噪）
@@ -333,7 +337,9 @@ def _load_kb_qa_multi():
 
 
 def _ask_single(question: str, topk: int, model: str, timeout: float, search_fn, chat_fn,
-                retrieval_only: bool = False) -> dict:
+                retrieval_only: bool = False,
+                prompt_version: str = DEFAULT_PROMPT_VERSION,
+                marker_mode: str = DEFAULT_MARKER_MODE) -> dict:
     """单单元标准问答（旧行为，mode="single" / retrieval-only 走这里）。"""
     started = time.monotonic()
     hits = (search_fn or search)(question, topk)
@@ -344,6 +350,8 @@ def _ask_single(question: str, topk: int, model: str, timeout: float, search_fn,
                  for h in hits]
     base = {"schema_version": 1, "question": question, "topk": topk,
             "mode": "retrieval" if retrieval_only else "single",
+            "prompt_version": (prompt_version or DEFAULT_PROMPT_VERSION).strip().lower(),
+            "guard_marker_mode": (marker_mode or DEFAULT_MARKER_MODE).strip().lower(),
             "k": topk, "clusters": [],
             "retrieved": retrieved, "llm": {"model": model, "endpoint": OLLAMA_ENDPOINT,
                                             "think": False, "timeout_seconds": timeout,
@@ -382,14 +390,18 @@ def _ask_single(question: str, topk: int, model: str, timeout: float, search_fn,
     return base
 
 
-def _ask_multi(question: str, topk: int, model: str, timeout: float, search_fn, chat_fn) -> dict:
+def _ask_multi(question: str, topk: int, model: str, timeout: float, search_fn, chat_fn,
+               prompt_version: str = DEFAULT_PROMPT_VERSION) -> dict:
     """多单元聚合问答（默认模式）：检索 top-k → 聚类 → 聚合 prompt → 引用校验。"""
     started = time.monotonic()
     multi = _load_kb_qa_multi()
     k = max(5, min(8, int(topk or DEFAULT_TOPK)))
     clusters = multi.retrieve_clusters(question, k=k, search_fn=search_fn)
-    result = multi.answer_multi(question, k=k, clusters=clusters, search_fn=search_fn,
-                                chat_fn=chat_fn, model=model, timeout=timeout)
+    multi_kwargs = {"k": k, "clusters": clusters, "search_fn": search_fn,
+                    "chat_fn": chat_fn, "model": model, "timeout": timeout}
+    if (prompt_version or DEFAULT_PROMPT_VERSION).strip().lower() != DEFAULT_PROMPT_VERSION:
+        multi_kwargs["prompt_version"] = prompt_version
+    result = multi.answer_multi(question, **multi_kwargs)
     retrieved = []
     for cluster in clusters:
         for unit in cluster.get("units") or []:
@@ -400,7 +412,7 @@ def _ask_multi(question: str, topk: int, model: str, timeout: float, search_fn, 
                               "preview": _clip(unit.get("text"), 120)})
     check = result.get("citation_check") or {}
     return {"schema_version": 1, "question": question, "topk": topk, "k": k,
-            "mode": "multi",
+            "mode": "multi", "prompt_version": (prompt_version or DEFAULT_PROMPT_VERSION).strip().lower(),
             "clusters": [{"label": c.get("label"), "book": c.get("book"),
                           "chapter": c.get("chapter"), "units": len(c.get("units") or []),
                           "max_score": c.get("max_score")} for c in clusters],
@@ -443,7 +455,8 @@ def _load_kb_qa_guard():
     return module
 
 
-def _apply_guard_payload(result: dict, on_guard_fail: str = "fallback") -> dict:
+def _apply_guard_payload(result: dict, on_guard_fail: str = "fallback",
+                         marker_mode: str = DEFAULT_MARKER_MODE) -> dict:
     """multi 出口质量守卫（引用硬门/推断比例/集中度）；guard 不可用时保持原结果并标 guard_error。"""
     global _guard_kb_ids
     try:
@@ -451,7 +464,11 @@ def _apply_guard_payload(result: dict, on_guard_fail: str = "fallback") -> dict:
         if _guard_kb_ids is None:
             _guard_kb_ids = guard.load_kb_ids()
         unit_ids, book_ids = _guard_kb_ids
-        guarded = guard.apply_guard(result, unit_ids, book_ids, on_fail=on_guard_fail)
+        guard_kwargs = {"on_fail": on_guard_fail}
+        if marker_mode and marker_mode != DEFAULT_MARKER_MODE:
+            guard_kwargs["marker_mode"] = marker_mode
+        guarded = guard.apply_guard(result, unit_ids, book_ids, **guard_kwargs)
+        guarded.setdefault("guard_marker_mode", marker_mode or DEFAULT_MARKER_MODE)
         guarded["guard_enabled"] = True
         return guarded
     except Exception as exc:  # noqa: BLE001 - 守卫失败不阻断问答，保持原答案并标注
@@ -466,7 +483,9 @@ def _apply_guard_payload(result: dict, on_guard_fail: str = "fallback") -> dict:
 def ask(question: str, topk: int = DEFAULT_TOPK, model: str = DEFAULT_MODEL,
         timeout: float = DEFAULT_TIMEOUT, search_fn=None, chat_fn=None,
         retrieval_only: bool = False, mode: str = DEFAULT_MODE,
-        guard: bool = True, on_guard_fail: str = "fallback") -> dict:
+        guard: bool = True, on_guard_fail: str = "fallback",
+        prompt_version: str = DEFAULT_PROMPT_VERSION,
+        marker_mode: str = DEFAULT_MARKER_MODE) -> dict:
     """问答主流程。
 
     mode="multi"（默认）：检索 top-k（5–8）单元 → 聚类 → 多单元聚合 prompt（允许综合推断，
@@ -485,12 +504,21 @@ def ask(question: str, topk: int = DEFAULT_TOPK, model: str = DEFAULT_MODEL,
     on_guard_fail = (on_guard_fail or "fallback").strip().lower()
     if on_guard_fail not in GUARD_ACTIONS:
         raise KbQaError(f"on_guard_fail 只能是 {'/'.join(GUARD_ACTIONS)}（收到 {on_guard_fail!r}）")
+    prompt_version = (prompt_version or DEFAULT_PROMPT_VERSION).strip().lower()
+    if prompt_version not in PROMPT_VERSIONS:
+        raise KbQaError(f"prompt_version 只能是 {'/'.join(PROMPT_VERSIONS)}（收到 {prompt_version!r}）")
+    marker_mode = (marker_mode or DEFAULT_MARKER_MODE).strip().lower()
+    if marker_mode not in MARKER_MODES:
+        raise KbQaError(f"marker_mode 只能是 {'/'.join(MARKER_MODES)}（收到 {marker_mode!r}）")
     if retrieval_only or mode == "single":
-        return _ask_single(question, topk, model, timeout, search_fn, chat_fn, retrieval_only)
+        return _ask_single(question, topk, model, timeout, search_fn, chat_fn, retrieval_only,
+                           prompt_version=prompt_version, marker_mode=marker_mode)
     try:
-        result = _ask_multi(question, topk, model, timeout, search_fn, chat_fn)
+        result = _ask_multi(question, topk, model, timeout, search_fn, chat_fn,
+                            prompt_version=prompt_version)
     except Exception as exc:  # noqa: BLE001 - multi 不可用/失败 → 回退 single（灰度安全）
-        fallback = _ask_single(question, topk, model, timeout, search_fn, chat_fn, False)
+        fallback = _ask_single(question, topk, model, timeout, search_fn, chat_fn, False,
+                               prompt_version=prompt_version, marker_mode=marker_mode)
         fallback["mode"] = "single"
         fallback["multi_fallback"] = True
         fallback["multi_fallback_error"] = _clip(f"{type(exc).__name__}: {exc}", 160)
@@ -500,7 +528,7 @@ def ask(question: str, topk: int = DEFAULT_TOPK, model: str = DEFAULT_MODEL,
         fallback["elapsed_seconds"] = round(time.monotonic() - started, 2)
         return fallback
     if guard:
-        result = _apply_guard_payload(result, on_guard_fail)
+        result = _apply_guard_payload(result, on_guard_fail, marker_mode=marker_mode)
     else:
         result = dict(result)
         result.update({"guard_enabled": False, "guard_passed": None,
