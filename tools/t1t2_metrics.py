@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """T1/T2 A/B 指标只读聚合（2026-11-01 WO-T1T2-METRICS-20261031）。
 
 背景（K 复盘 / W1 Gate G1）：T1/T2 真实 prompt A/B 此前"只有文档结论、无指标

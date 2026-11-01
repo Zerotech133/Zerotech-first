@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """tests for tools/t1t2_metrics.py（T1/T2 A/B 指标只读聚合，不造数）。"""
 from __future__ import annotations
 
