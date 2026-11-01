@@ -39,3 +39,9 @@ def test_four_zones():
 def test_no_hardcoded_hex_in_page_css():
     css = CSS.read_text(encoding="utf-8")
     assert not re.search(r"#[0-9a-fA-F]{3,8}", css), "页面 CSS 禁止自绘 hex 色"
+
+def test_nav_entry_and_v1_link():
+    nav = (ROOT / "portal" / "static" / "nav.js").read_text(encoding="utf-8")
+    assert "/dev_legion_v2.html" in nav
+    v1 = (ROOT / "portal" / "dev_legion.html").read_text(encoding="utf-8")
+    assert "/dev_legion_v2.html" in v1

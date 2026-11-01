@@ -179,7 +179,8 @@ DOMAIN_NAV_GROUPS = {
         ("📝 公众号草稿", "/gzh", "gzh"),
         ("🎞 短视频成片", "/vd", "vd"))),),
     "dev": (
-        (None, (("💻 开发者专项", "/dev", "dev"),)),
+        (None, (("💻 开发者专项", "/dev", "dev"),
+                ("🎖 研发军团", "/dev_legion_v2.html", "devlegionv2"))),
         ("🎓 零界学院", (("🎓 零界学院", "/academy", "academy"),)),
     ),
     "ops": (

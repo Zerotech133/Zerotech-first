@@ -9,7 +9,8 @@
 
   var MODERN = {
     '/': 1, '/home_v3.html': 1, '/paper.html': 1, '/paper': 1,
-    '/picks.html': 1, '/picks': 1, '/strategies': 1,
+    '/picks.html': 1, '/picks': 1,
+    '/dev_legion_v2.html': 1, '/strategies': 1,
     '/os-entry': 1, '/zero_proto.html': 1
   };
   var SHELL_ATTR = 'data-wb-shell';
