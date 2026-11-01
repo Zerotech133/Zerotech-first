@@ -26,4 +26,9 @@ __all__ = [
     # W-C2（HQORCH）
     "Orchestrator", "OrchestratorError", "PlanError", "StateError",
     "TaskNode", "normalize_plan", "validate_dag", "STATES", "TRANSITIONS",
+    # W-C3（HQCONS）
+    "consensus",
 ]
+
+# W-C3 共识/飞书定版卡/回写（K-ORG-20261101-HQCONS；纯逻辑，不发飞书）
+from . import consensus  # noqa: F401
