@@ -45,7 +45,10 @@ def main() -> int:
     csum = P["a_close"].cumsum()
     sb = pq.read_table(sorted(glob.glob(str(DATA / "stock_basic" / "*.parquet")))[-1]).to_pandas().set_index("ts_code")
     names, industry = sb["name"], sb["industry"].fillna("未知")
-    listed = (pd.Timestamp(dates[-1]) - pd.to_datetime(sb["list_date"], format="%Y%m%d", errors="coerce")).dt.days
+    list_dates = pd.to_datetime(sb["list_date"], format="%Y%m%d", errors="coerce")
+    def listed_at(dt: str) -> pd.Series:
+        """PIT：截至该交易日的上市天数（修复旧 bug：曾用最新日计算→历史月纳入次新股）"""
+        return (pd.Timestamp(dt) - list_dates).dt.days
     # turnover（2023+）
     turn = {}
     for f in sorted(glob.glob(str(DATA / "daily_basic" / "d_*.parquet"))):
@@ -65,17 +68,17 @@ def main() -> int:
     def month_idx(dt):
         return dates.index(dt)
 
-    def factor_scores(i: int) -> pd.DataFrame:
+    def factor_scores(i: int, dt: str) -> pd.DataFrame:
         c = P["a_close"].iloc[i]
         tot_ret = c / P["a_close"].iloc[i - 252] - 1
         uni = (~names.reindex(c.index).fillna("").str.contains(r"ST|\*ST|退", regex=True)) & \
-              (listed.reindex(c.index).fillna(0) >= 250) & (c >= 2) & c.notna()
+              (listed_at(dt).reindex(c.index).fillna(0) >= 250) & (c >= 2) & c.notna()
         cc = c.index[uni.fillna(False)]
         vol = -P["a_close"].iloc[i - 20:i + 1].pct_change().std().reindex(cc)          # 低波
         m20 = -(c / P["a_close"].iloc[i - 20] - 1).reindex(cc)                          # 短期反转
         m120 = -(c / P["a_close"].iloc[i - 120] - 1).reindex(cc)                        # 长期反转
         to = None
-        if mends_ts(turn_dates, dt) is not None:
+        if True:
             tds = [d for d in turn_dates if d <= dt][-20:]
             if tds:
                 to = -pd.DataFrame({d: turn[d] for d in tds}).T.mean().reindex(cc)      # 低换手
@@ -96,7 +99,7 @@ def main() -> int:
             if dt not in P["a_close"].index or nxt not in P["a_close"].index:
                 continue
             i = month_idx(dt)
-            f = factor_scores(i)
+            f = factor_scores(i, dt)
             cols = [c for c in score_cols if c in f.columns]
             if not cols:
                 continue

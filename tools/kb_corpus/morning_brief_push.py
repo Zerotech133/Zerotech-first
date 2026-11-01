@@ -31,7 +31,6 @@ CARDS = STATIC / "kb_learning_cards.json"
 WATCH = STATIC / "h18_watch.json"
 H14 = STATIC / "h14_shadow.json"
 SEPA = STATIC / "sepa_scan_daily.json"
-S10 = STATIC / "s10_shadow.json"
 BACKUP_DIR = REPO / "research" / "reports" / "backups"
 KIND = "kb_morning_brief"
 SAFE_SCHEMA = "safe_write.v1"
@@ -246,15 +245,6 @@ def build_text(cards: dict, watch: dict, n_cards: int = 5, n_watch: int = 8) -> 
                   f"- 漏斗：TT {st.get('tt_pass')} → 基本面 {st.get('fund_pass')} → VCP {st.get('vcp')} → "
                   f"突破 {st.get('funnel', {}).get('A_已突破', 0)}（严格）；宽口径 VCP-lite {len(wide.get('vcp_lite') or [])} 只",
                   f"- TT+基本面：{', '.join(x.get('code', '') + ' ' + str(x.get('name', '')) for x in (st.get('only_tt_fund') or [])[:5]) or '无'}"]
-    except Exception:  # noqa: BLE001
-        pass
-    # S10 证据基准影子摘要
-    try:
-        s10 = json.loads(S10.read_text(encoding="utf-8"))
-        tr = s10.get("tracking") or {}
-        lines += ["", f"🧪 S10 证据基准（{s10.get('signal_date', '')}，{s10.get('n', 0)} 仓，容量 {s10.get('capacity5_yi', '—')} 亿）",
-                  f"- 期收益 {tr.get('cur_ret_pct', '—')}% / 市场 {tr.get('market_pct', '—')}% / 超额 {tr.get('excess_pct', '—')}%",
-                  "- 四关全过（CAGR 35.2%/MDD -23.1%/t 3.10）；影子观察，不实盘"]
     except Exception:  # noqa: BLE001
         pass
     lines += ["", "——", "属性：学习材料/事件提醒，不构成投资建议；引用请带出处。"]

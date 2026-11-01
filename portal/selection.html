@@ -43,19 +43,6 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-siz
 })();
 
 
-(async function loadS10(){
-  const $=id=>document.getElementById(id);
-  try{
-    const d=await fetch('/static/s10_shadow.json?ts='+Date.now()).then(r=>r.json());
-    $('s10-date').textContent=d.signal_date||'—';
-    $('s10-n').textContent=d.n||'—';
-    $('s10-cap').textContent=(d.capacity5_yi??'—')+' 亿';
-    const tr=d.tracking||{};
-    $('s10-cur').textContent=(tr.cur_ret_pct??'—')+'%';
-    $('s10-ex').textContent=(tr.excess_pct??'—')+'%';
-    $('s10-hold').innerHTML=(d.holdings||[]).slice(0,15).map((h,i)=>`<tr><td>${i+1}</td><td><code>${h.ts_code}</code></td><td>${h.name}</td><td>${h.industry||''}</td><td>${h.score}</td><td>${(h.w*100).toFixed(2)}</td></tr>`).join('');
-  }catch(e){ $('s10-note').textContent='S10 数据加载失败: '+e.message; }
-})();
 
 </script><script src="/static/nav.js" defer></script></head>
 <body>
@@ -147,17 +134,6 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-siz
 </div>
 <div class="muted" id="s08-note" style="margin-top:6px"></div>
 <table style="margin-top:8px"><thead><tr><th>#</th><th>代码</th><th>名称</th><th>分数</th><th>权重%</th></tr></thead><tbody id="s08-hold"></tbody></table>
-</div>
-<div class="panel" id="s10panel"><b>S10 证据基准 · 低波+反转+低换手（行业中性，影子观察）</b>
-<div class="cards" style="margin-top:8px">
-  <div class="card"><div class="k">信号日</div><div class="v" id="s10-date" style="font-size:16px">—</div></div>
-  <div class="card"><div class="k">持仓</div><div class="v" id="s10-n">—</div></div>
-  <div class="card"><div class="k">容量(5%)</div><div class="v" id="s10-cap">—</div></div>
-  <div class="card"><div class="k">期收益</div><div class="v" id="s10-cur" style="font-size:16px">—</div></div>
-  <div class="card"><div class="k">超额</div><div class="v" id="s10-ex" style="font-size:16px">—</div></div>
-</div>
-<div class="muted" id="s10-note" style="margin-top:6px">四关全过（CAGR 35.2%/MDD -23.1%/t 3.10）；小仓位影子，不实盘</div>
-<table style="margin-top:8px"><thead><tr><th>#</th><th>代码</th><th>名称</th><th>行业</th><th>分数</th><th>权重%</th></tr></thead><tbody id="s10-hold"></tbody></table>
 </div>
 <div class="panel"><b>风险与纪律</b>
 <ul class="muted" style="margin:6px 0 0 18px;padding:0">
