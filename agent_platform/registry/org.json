@@ -1604,17 +1604,18 @@
    "name": "数据智能部",
    "lead": "DATA1",
    "status": "active",
-   "charter": "数据底层治理·实体映射·血缘运维·特征湖治理（K-ORG-018 新设，v5 B 线承接）",
+   "charter": "数据底层治理·实体映射·血缘运维·特征湖治理（K-ORG-018 新设，v5 B 线承接）；2026-11-02 起承接原 🅱数据治理部职责（冻结新增、在办迁移、11-20 终验后正式撤销）",
    "agents": [
     "DATA1",
-    "FACTOR1"
+    "FACTOR1",
+    "DATA2"
    ],
    "agent_profiles": [
     {
      "agent_id": "DATA1",
-     "role_profile": "data_engineer",
-     "charter_detail": "数据工程师：X2 实体映射/X3 血缘三表运维·incr 同步监护·X1 菜鸟接线（等凭据）·特征湖 parquet 口径守护",
-     "llm_binding": "ollama/qwen3.5:9b",
+     "role_profile": "data_team_lead",
+     "charter_detail": "兰台令（数据智能部长）：统管数据仓全域（314 数据集/256 表）治理、清洗、质量、因子挖掘；只治理不裁决业务口径。",
+     "llm_binding": "glm/glm-5.3",
      "tools": [
       "devtask",
       "events"
@@ -1631,8 +1632,8 @@
        "dept/data/observation"
       ]
      },
-     "grade": "E2",
-     "grade_note": "20年档：数据底座独立运维",
+     "grade": "E3",
+     "grade_note": "2026-11-02 老田批准升级：团队管理+314 数据集/256 表治理规模匹配 E3",
      "attributes": {
       "experience": "20 年数据工程经验：实体映射、血缘三表、增量同步监护与特征湖 parquet 口径守护；数据口径不一致是最大事故源，口径守护是第一职责。",
       "specialties": [
@@ -1647,18 +1648,27 @@
       "tools_allowed": {
        "read": [
         "data/**",
-        "k_stock/**",
+        "research/**",
         "reports/**",
         "docs/**",
         "knowledge_docs/**"
        ],
        "write": [
-        "knowledge_docs/**",
-        "docs/**"
+        "staging/**",
+        "quality_reports/**",
+        "docs/**",
+        "knowledge_docs/**"
        ],
-       "execute": [],
+       "execute": [
+        "dw_governance",
+        "dataops"
+       ],
        "danger": "deny"
-      }
+      },
+      "team": [
+       "DATA2",
+       "FACTOR1"
+      ]
      },
      "matrix_assignments": [
       {
@@ -1729,6 +1739,57 @@
         "knowledge_docs/**"
        ],
        "execute": [],
+       "danger": "deny"
+      }
+     }
+    },
+    {
+     "agent_id": "DATA2",
+     "role_profile": "data_engineer",
+     "charter_detail": "数据工程师（清洗/ETL/staging）：按 v3 计划执行清洗批次、staging 落盘、回填与回执；raw 层只读。",
+     "llm_binding": "ollama/qwen3.5:9b",
+     "tools": [
+      "devtask",
+      "events"
+     ],
+     "memory_grants": {
+      "read": [
+       "domain/*",
+       "dept/data/*",
+       "agent/DATA2/*"
+      ],
+      "write": [
+       "agent/DATA2/*",
+       "dept/data/observation",
+       "staging/**"
+      ]
+     },
+     "grade": "E1",
+     "grade_note": "新岗默认 E1 起步（K-ORG-117 §三），2 周试运行后凭 KPI 申请 E2",
+     "attributes": {
+      "experience": "数据清洗/ETL/回填执行层",
+      "specialties": [
+       "清洗规则",
+       "ETL",
+       "staging",
+       "批次回执"
+      ],
+      "knowledge": [
+       "数据仓研发计划 v3"
+      ],
+      "tools_allowed": {
+       "read": [
+        "data/**",
+        "staging/**",
+        "docs/**"
+       ],
+       "write": [
+        "staging/**",
+        "etl_logs/**"
+       ],
+       "execute": [
+        "dw_etl_dryrun"
+       ],
        "danger": "deny"
       }
      }
@@ -2226,7 +2287,7 @@
    "name": "🅱 数据治理部",
    "lead": "DATA1",
    "type": "project",
-   "status": "active",
+   "status": "frozen_pending_merge",
    "charter": "【项目部门·现役】数据底层治理：X2/X3 运维·X1 等凭据接线·特征湖口径治理；交付完归建",
    "agents": [
     "DATA1",
@@ -2234,7 +2295,7 @@
    ],
    "worktree_prefix": "proj_b_",
    "source": "K-ORG-018 老田原话「部门 B 在完成我们的数据底层的治理」",
-   "cn_title": "🅱 数据行营",
+   "cn_title": "🅱 数据行营（冻结待归建）",
    "agent_profiles": [],
    "lead_duty": "数据治理部主官：数据同步、目录登记、parquet/Neo4j/SQLite 治理，只治理不造数",
    "lead_appointed": {
@@ -2245,7 +2306,11 @@
     "cross_note": "",
     "ticket": "WO-LEGION-S42",
     "signed_by": "老田"
-   }
+   },
+   "frozen_at": "2026-11-02T03:40:00+08:00",
+   "merge_target": "data",
+   "merge_due": "2026-11-20",
+   "merge_policy": "冻结新增任务；在办事项迁入数据智能部；Sprint3 终验后正式撤销归档（老田 2026-11-02 批准）"
   },
   {
    "dept": "proj_next",

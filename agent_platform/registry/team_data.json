@@ -13,7 +13,7 @@
    "level": 1,
    "is_parallel": true,
    "wait_all_complete": false,
-   "llm_binding": "ollama/qwen3.5:9b",
+   "llm_binding": "glm/glm-5.3",
    "tools": [
     "devtask",
     "events"
@@ -30,8 +30,8 @@
      "dept/data/observation"
     ]
    },
-   "grade": "E2",
-   "grade_note": "20年档：数据底座独立运维",
+   "grade": "E3",
+   "grade_note": "2026-11-02 升级兰台令（E3）",
    "charter_detail": "数据工程师：X2 实体映射/X3 血缘三表运维·incr 同步监护·X1 菜鸟接线（等凭据）·特征湖 parquet 口径守护",
    "attributes": {
     "experience": "20 年数据工程经验：实体映射、血缘三表、增量同步监护与特征湖 parquet 口径守护；数据口径不一致是最大事故源，口径守护是第一职责。",
@@ -57,6 +57,74 @@
       "docs/**"
      ],
      "execute": [],
+     "danger": "deny"
+    }
+   },
+   "skills": [
+    {
+     "id": "devtask",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ]
+  },
+  {
+   "agent_id": "DATA2",
+   "role_profile": "data_engineer",
+   "analysis_type": "data_engineering",
+   "node_key": "data2_eng",
+   "parent_node_keys": [],
+   "level": 1,
+   "is_parallel": true,
+   "wait_all_complete": false,
+   "llm_binding": "ollama/qwen3.5:9b",
+   "tools": [
+    "devtask",
+    "events"
+   ],
+   "memory_grants": {
+    "read": [
+     "domain/*",
+     "dept/data/*",
+     "agent/DATA2/*"
+    ],
+    "write": [
+     "agent/DATA2/*",
+     "dept/data/observation",
+     "staging/**"
+    ]
+   },
+   "grade": "E1",
+   "grade_note": "新岗默认 E1；2 周试运行",
+   "charter_detail": "数据工程师（清洗/ETL/staging）：按 v3 计划执行清洗批次、staging 落盘、回填与回执；raw 只读。",
+   "attributes": {
+    "experience": "数据清洗/ETL/回填执行层",
+    "specialties": [
+     "清洗规则",
+     "ETL",
+     "staging",
+     "批次回执"
+    ],
+    "knowledge": [
+     "数据仓研发计划 v3"
+    ],
+    "tools_allowed": {
+     "read": [
+      "data/**",
+      "staging/**"
+     ],
+     "write": [
+      "staging/**",
+      "etl_logs/**"
+     ],
+     "execute": [
+      "dw_etl_dryrun"
+     ],
      "danger": "deny"
     }
    },

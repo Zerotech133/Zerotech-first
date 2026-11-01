@@ -1,0 +1,27 @@
+{
+ "agent_id": "DATA2",
+ "dept": "data",
+ "title": "数据智能部：数据工程师（清洗/ETL）",
+ "rank": "E1",
+ "rank_note": "新岗默认 E1 起步（K-ORG-117 §三），2 周试运行后凭 KPI 申请 E2",
+ "tools_allowed": {
+  "read": [
+   "data/**",
+   "staging/**",
+   "docs/**"
+  ],
+  "write": [
+   "staging/**",
+   "etl_logs/**"
+  ],
+  "execute": [
+   "dw_etl_dryrun"
+  ],
+  "danger": "deny"
+ },
+ "onboarded": "2026-11-02（老田批准新增编制，DATA1 团队）",
+ "approvals": {
+  "chief": "A0",
+  "human": "laotian"
+ }
+}

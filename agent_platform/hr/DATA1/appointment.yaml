@@ -1,16 +1,38 @@
 {
-  "agent_id": "DATA1",
-  "dept": "data",
-  "title": "数据智能部：数据工程师",
-  "rank": "E2",
-  "tools_allowed": {
-    "read": [],
-    "write": [],
-    "danger": "deny"
-  },
-  "onboarded": "2026-10-08（补办登记 2026-10-16）",
-  "approvals": {
-    "chief": "A0",
-    "human": "laotian"
-  }
+ "agent_id": "DATA1",
+ "dept": "data",
+ "title": "数据智能部：兰台令（数据智能部长）",
+ "rank": "E3",
+ "tools_allowed": {
+  "read": [
+   "data/**",
+   "research/**",
+   "reports/**",
+   "docs/**",
+   "knowledge_docs/**"
+  ],
+  "write": [
+   "staging/**",
+   "quality_reports/**",
+   "docs/**",
+   "knowledge_docs/**"
+  ],
+  "execute": [
+   "dw_governance",
+   "dataops"
+  ],
+  "danger": "deny"
+ },
+ "onboarded": "2026-10-08（补办登记 2026-10-16）",
+ "approvals": {
+  "chief": "A0",
+  "human": "laotian"
+ },
+ "promotion": {
+  "at": "2026-11-02T03:40:00+08:00",
+  "from": "E2",
+  "to": "E3",
+  "note": "老田批准：团队扩编+314 数据集/256 表治理规模",
+  "signed_by": "laotian"
+ }
 }
