@@ -1,0 +1,1773 @@
+{
+ "meta": {
+  "schema_version": "kb_qa_multi_eval.v1",
+  "generated_at": "2026-11-01T10:44:57+08:00",
+  "sources": {
+   "single": "C:\\项目\\老田的AI助手\\research\\reports\\kb_qa_bank_v3_20261101.json",
+   "multi_raw": "C:\\项目\\老田的AI助手\\research\\reports\\kb_qa_multi_20261101.json",
+   "ab": "C:\\项目\\老田的AI助手\\research\\reports\\kb_qa_multi_ab_20261101.json"
+  },
+  "n_pairs": 12,
+  "note": "不调 LLM：复用 wave15 v3 answer_validation(single) 与 kb_qa_multi comparison(multi) 原文答案；multi 无 citation 页码元数据（页码判定 n/a，仅校验 id 存在性）",
+  "effective_subset": "12 对（wave17 AW 30 条仅存统计/无原文，故采用有原文的 12 对）",
+  "reuse": "kb_qa_eval_v2.eval_sample_v2（引用/支撑/幻觉 v2）+ kb_qa_schema_v2 schema v2",
+  "ab_context": {
+   "total": 30,
+   "single": {
+    "success": 10,
+    "rate": 0.3333,
+    "no_evidence": 20,
+    "fallback": 0,
+    "avg_citations": 2.4,
+    "avg_elapsed_seconds": 8.35,
+    "reused_count": 12
+   },
+   "multi": {
+    "success": 24,
+    "rate": 0.8,
+    "no_evidence": 6,
+    "fallback": 0,
+    "avg_citations": 2.25,
+    "avg_elapsed_seconds": 8.61,
+    "avg_clusters": 3.0,
+    "direct_facts": 22,
+    "inferences": 32
+   },
+   "delta": {
+    "answerable_rate": 0.4667,
+    "avg_citations": -0.15,
+    "latency_ratio": 1.03
+   },
+   "paired": {
+    "a_both_success": 10,
+    "b_single_fail_multi_success": 14,
+    "c_single_success_multi_fail": 0,
+    "d_both_fail": 6,
+    "mcnemar_p": 0.000122
+   },
+   "by_category": [
+    {
+     "category": "风险限制",
+     "total": 4,
+     "single_success": 0,
+     "multi_success": 4,
+     "single_rate": 0.0,
+     "multi_rate": 1.0,
+     "delta": 1.0
+    },
+    {
+     "category": "如何识别",
+     "total": 5,
+     "single_success": 1,
+     "multi_success": 5,
+     "single_rate": 0.2,
+     "multi_rate": 1.0,
+     "delta": 0.8
+    },
+    {
+     "category": "影响如何",
+     "total": 4,
+     "single_success": 0,
+     "multi_success": 3,
+     "single_rate": 0.0,
+     "multi_rate": 0.75,
+     "delta": 0.75
+    },
+    {
+     "category": "关键数据",
+     "total": 4,
+     "single_success": 1,
+     "multi_success": 3,
+     "single_rate": 0.25,
+     "multi_rate": 0.75,
+     "delta": 0.5
+    },
+    {
+     "category": "驱动因素",
+     "total": 5,
+     "single_success": 2,
+     "multi_success": 3,
+     "single_rate": 0.4,
+     "multi_rate": 0.6,
+     "delta": 0.2
+    },
+    {
+     "category": "是什么",
+     "total": 4,
+     "single_success": 4,
+     "multi_success": 4,
+     "single_rate": 1.0,
+     "multi_rate": 1.0,
+     "delta": 0.0
+    },
+    {
+     "category": "竞争格局",
+     "total": 4,
+     "single_success": 2,
+     "multi_success": 2,
+     "single_rate": 0.5,
+     "multi_rate": 0.5,
+     "delta": 0.0
+    }
+   ],
+   "answer_types": {
+    "direct_fact+inference": 11,
+    "refusal": 6,
+    "inference": 7,
+    "answer": 5,
+    "direct_fact": 1
+   },
+   "improved_ids": [
+    "q2_b5a0a0e045",
+    "q2_aa49124184",
+    "q2_a593448ce5",
+    "q2_3d1abf0240",
+    "q2_ef78939178",
+    "q2_0d7db24320",
+    "q2_b74f8cebda",
+    "q2_5cb2ec9a7b",
+    "q2_960b202685",
+    "q2_9efedd1a83",
+    "q2_56b3d0673e",
+    "q2_a4026386c5",
+    "q2_764c00190b",
+    "q2_0e42bbf120"
+   ],
+   "regressed_ids": []
+  }
+ },
+ "summary": {
+  "single": {
+   "n": 12,
+   "answered": 3,
+   "answerable_rate": 0.25,
+   "avg_citations": 1.25,
+   "citation_exists_rate": 1.0,
+   "avg_supported_ratio_all": 0.1875,
+   "avg_supported_ratio_answered": 0.75,
+   "hallucination_flags_total": 6,
+   "hallucination_flag_rate": 0.5,
+   "hallucination_samples": 5,
+   "avg_inference_markers": 0.0,
+   "avg_answer_length": 203.4,
+   "answer_type_counts": {
+    "refusal": 9,
+    "fact": 3
+   }
+  },
+  "multi": {
+   "n": 12,
+   "answered": 9,
+   "answerable_rate": 0.75,
+   "avg_citations": 1.667,
+   "citation_exists_rate": 0.55,
+   "avg_supported_ratio_all": 0.1944,
+   "avg_supported_ratio_answered": 0.2593,
+   "hallucination_flags_total": 8,
+   "hallucination_flag_rate": 0.6667,
+   "hallucination_samples": 3,
+   "avg_inference_markers": 1.417,
+   "avg_answer_length": 297.1,
+   "answer_type_counts": {
+    "inference": 8,
+    "refusal": 3,
+    "fact": 1
+   }
+  },
+  "delta": {
+   "answerable_rate": 0.5,
+   "avg_citations": 0.417,
+   "citation_exists_rate": -0.45,
+   "avg_supported_ratio_all": 0.0069,
+   "avg_supported_ratio_answered": -0.4907,
+   "hallucination_flag_rate": 0.1667,
+   "avg_answer_length": 93.7
+  },
+  "paired": {
+   "n_both_answered": 3,
+   "avg_supported_ratio_single": 0.75,
+   "avg_supported_ratio_multi": 0.2667,
+   "support_delta": -0.4833,
+   "hallucination_flags_single": 0,
+   "hallucination_flags_multi": 0,
+   "avg_citations_single": 2.333,
+   "avg_citations_multi": 2.333
+  }
+ },
+ "pairs": [
+  {
+   "id": "q2_b5a0a0e045",
+   "question": "量学理论的结论在什么条件下可能不成立？",
+   "category": "风险限制",
+   "theme": null,
+   "single": {
+    "id": "q2_b5a0a0e045__single",
+    "kind": "single",
+    "question": "量学理论的结论在什么条件下可能不成立？",
+    "category": "风险限制",
+    "n_citations": 0,
+    "citations_exists": 0,
+    "citations_page_ok": 0,
+    "citation_exists_ratio": 0.0,
+    "citation_valid": false,
+    "n_sentences": 3,
+    "support_counts": {
+     "拒答": 1,
+     "无支持": 2
+    },
+    "supported_ratio": 0.0,
+    "supported_or_weak_ratio": 0.0,
+    "hallucination_flags": [],
+    "citations": [],
+    "issues": [
+     "无引用",
+     "无支持句 2/2"
+    ],
+    "hallucination_flags_v1": [
+     {
+      "type": "number",
+      "token": "7",
+      "reason": "数字未在引用单元文本中出现"
+     }
+    ],
+    "false_positives_removed": [
+     {
+      "type": "number",
+      "token": "7",
+      "reason": "数字未在引用单元文本中出现"
+     }
+    ],
+    "new_flags_added": [],
+    "expected_refusal": true,
+    "citations_required": false,
+    "answer_type": "refusal",
+    "schema_version": 2,
+    "page_available": true,
+    "inference_markers": 0,
+    "answer_length": 124,
+    "answered": false,
+    "hallucination_flags_count": 0
+   },
+   "multi": {
+    "id": "q2_b5a0a0e045__multi",
+    "kind": "multi",
+    "question": "量学理论的结论在什么条件下可能不成立？",
+    "category": "风险限制",
+    "n_citations": 3,
+    "citations_exists": 1,
+    "citations_page_ok": null,
+    "citation_exists_ratio": 0.3333,
+    "citation_valid": false,
+    "n_sentences": 6,
+    "support_counts": {
+     "无支持": 3,
+     "支持": 1,
+     "弱支持": 1,
+     "拒答": 1
+    },
+    "supported_ratio": 0.2,
+    "supported_or_weak_ratio": 0.4,
+    "hallucination_flags": [],
+    "citations": [
+     {
+      "unit_id": "5cfa2f156e5c",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     },
+     {
+      "unit_id": "51116c325854",
+      "exists": false,
+      "method": null,
+      "page_ok": null,
+      "id_known_in_map": false
+     },
+     {
+      "unit_id": "26748eb94001",
+      "exists": false,
+      "method": null,
+      "page_ok": null,
+      "id_known_in_map": false
+     }
+    ],
+    "issues": [
+     "引用无法解析到知识库: 2/3",
+     "页码超出单元区间: 1/1",
+     "无支持句 3/5"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "inference",
+    "schema_version": 2,
+    "page_available": false,
+    "inference_markers": 2,
+    "answer_length": 238,
+    "answered": true,
+    "hallucination_flags_count": 0
+   },
+   "both_answered": false
+  },
+  {
+   "id": "q2_aa49124184",
+   "question": "储气调峰能力建设中研报提供了哪些可验证的关键数据或指标？",
+   "category": "关键数据",
+   "theme": null,
+   "single": {
+    "id": "q2_aa49124184__single",
+    "kind": "single",
+    "question": "储气调峰能力建设中研报提供了哪些可验证的关键数据或指标？",
+    "category": "关键数据",
+    "n_citations": 0,
+    "citations_exists": 0,
+    "citations_page_ok": 0,
+    "citation_exists_ratio": 0.0,
+    "citation_valid": false,
+    "n_sentences": 3,
+    "support_counts": {
+     "拒答": 1,
+     "无支持": 2
+    },
+    "supported_ratio": 0.0,
+    "supported_or_weak_ratio": 0.0,
+    "hallucination_flags": [
+     {
+      "type": "number",
+      "token": "11.4%",
+      "reason": "数字未在引用单元文本中出现（非白名单小整数）",
+      "rule": "v2.number_whitelist"
+     },
+     {
+      "type": "number",
+      "token": "7%",
+      "reason": "数字未在引用单元文本中出现（非白名单小整数）",
+      "rule": "v2.number_whitelist"
+     }
+    ],
+    "citations": [],
+    "issues": [
+     "无引用",
+     "无支持句 2/2",
+     "幻觉候选 2 项（v2）"
+    ],
+    "hallucination_flags_v1": [
+     {
+      "type": "number",
+      "token": "11.4%",
+      "reason": "数字未在引用单元文本中出现"
+     },
+     {
+      "type": "number",
+      "token": "7%",
+      "reason": "数字未在引用单元文本中出现"
+     }
+    ],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": true,
+    "citations_required": false,
+    "answer_type": "refusal",
+    "schema_version": 2,
+    "page_available": true,
+    "inference_markers": 0,
+    "answer_length": 137,
+    "answered": false,
+    "hallucination_flags_count": 2
+   },
+   "multi": {
+    "id": "q2_aa49124184__multi",
+    "kind": "multi",
+    "question": "储气调峰能力建设中研报提供了哪些可验证的关键数据或指标？",
+    "category": "关键数据",
+    "n_citations": 1,
+    "citations_exists": 1,
+    "citations_page_ok": null,
+    "citation_exists_ratio": 1.0,
+    "citation_valid": true,
+    "n_sentences": 10,
+    "support_counts": {
+     "弱支持": 3,
+     "支持": 3,
+     "无支持": 4
+    },
+    "supported_ratio": 0.3,
+    "supported_or_weak_ratio": 0.6,
+    "hallucination_flags": [],
+    "citations": [
+     {
+      "unit_id": "4c6ddf0bf36f",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     }
+    ],
+    "issues": [
+     "页码超出单元区间: 1/1",
+     "无支持句 4/10"
+    ],
+    "hallucination_flags_v1": [
+     {
+      "type": "number",
+      "token": "2",
+      "reason": "数字未在引用单元文本中出现"
+     },
+     {
+      "type": "english_token",
+      "token": "X+1+X",
+      "reason": "英文专名/术语未在引用单元文本中出现"
+     }
+    ],
+    "false_positives_removed": [
+     {
+      "type": "number",
+      "token": "2",
+      "reason": "数字未在引用单元文本中出现"
+     },
+     {
+      "type": "english_token",
+      "token": "X+1+X",
+      "reason": "英文专名/术语未在引用单元文本中出现"
+     }
+    ],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "inference",
+    "schema_version": 2,
+    "page_available": false,
+    "inference_markers": 1,
+    "answer_length": 336,
+    "answered": true,
+    "hallucination_flags_count": 0
+   },
+   "both_answered": false
+  },
+  {
+   "id": "q2_bcbfd79337",
+   "question": "智能算力规模占比的核心驱动因素是什么？",
+   "category": "驱动因素",
+   "theme": null,
+   "single": {
+    "id": "q2_bcbfd79337__single",
+    "kind": "single",
+    "question": "智能算力规模占比的核心驱动因素是什么？",
+    "category": "驱动因素",
+    "n_citations": 2,
+    "citations_exists": 2,
+    "citations_page_ok": 2,
+    "citation_exists_ratio": 1.0,
+    "citation_valid": true,
+    "n_sentences": 3,
+    "support_counts": {
+     "拒答": 1,
+     "弱支持": 1,
+     "无支持": 1
+    },
+    "supported_ratio": 0.0,
+    "supported_or_weak_ratio": 0.5,
+    "hallucination_flags": [
+     {
+      "type": "english_token",
+      "token": "GPU",
+      "reason": "英文专名/术语（≥3 字母）未在引用单元文本中出现",
+      "rule": "v2.english_ge3letters"
+     }
+    ],
+    "citations": [
+     {
+      "unit_id": "776f36408a89",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": true,
+      "id_known_in_map": true
+     },
+     {
+      "unit_id": "ba18139a8f5f",
+      "exists": true,
+      "method": "text_match(1.0)",
+      "page_ok": true,
+      "id_known_in_map": false
+     }
+    ],
+    "issues": [
+     "无支持句 1/2",
+     "幻觉候选 1 项（v2）"
+    ],
+    "hallucination_flags_v1": [
+     {
+      "type": "english_token",
+      "token": "GPU",
+      "reason": "英文专名/术语未在引用单元文本中出现"
+     }
+    ],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": true,
+    "citations_required": false,
+    "answer_type": "refusal",
+    "schema_version": 2,
+    "page_available": true,
+    "inference_markers": 0,
+    "answer_length": 182,
+    "answered": false,
+    "hallucination_flags_count": 1
+   },
+   "multi": {
+    "id": "q2_bcbfd79337__multi",
+    "kind": "multi",
+    "question": "智能算力规模占比的核心驱动因素是什么？",
+    "category": "驱动因素",
+    "n_citations": 0,
+    "citations_exists": 0,
+    "citations_page_ok": null,
+    "citation_exists_ratio": 0.0,
+    "citation_valid": false,
+    "n_sentences": 6,
+    "support_counts": {
+     "无支持": 4,
+     "拒答": 2
+    },
+    "supported_ratio": 0.0,
+    "supported_or_weak_ratio": 0.0,
+    "hallucination_flags": [
+     {
+      "type": "number",
+      "token": "2024",
+      "reason": "数字未在引用单元文本中出现（非白名单小整数）",
+      "rule": "v2.number_whitelist"
+     },
+     {
+      "type": "number",
+      "token": "32%",
+      "reason": "数字未在引用单元文本中出现（非白名单小整数）",
+      "rule": "v2.number_whitelist"
+     }
+    ],
+    "citations": [],
+    "issues": [
+     "无引用",
+     "无支持句 4/4",
+     "幻觉候选 2 项（v2）"
+    ],
+    "hallucination_flags_v1": [
+     {
+      "type": "number",
+      "token": "1",
+      "reason": "数字未在引用单元文本中出现"
+     },
+     {
+      "type": "number",
+      "token": "2",
+      "reason": "数字未在引用单元文本中出现"
+     },
+     {
+      "type": "number",
+      "token": "2024",
+      "reason": "数字未在引用单元文本中出现"
+     },
+     {
+      "type": "number",
+      "token": "3",
+      "reason": "数字未在引用单元文本中出现"
+     },
+     {
+      "type": "number",
+      "token": "32%",
+      "reason": "数字未在引用单元文本中出现"
+     }
+    ],
+    "false_positives_removed": [
+     {
+      "type": "number",
+      "token": "1",
+      "reason": "数字未在引用单元文本中出现"
+     },
+     {
+      "type": "number",
+      "token": "2",
+      "reason": "数字未在引用单元文本中出现"
+     },
+     {
+      "type": "number",
+      "token": "3",
+      "reason": "数字未在引用单元文本中出现"
+     }
+    ],
+    "new_flags_added": [],
+    "expected_refusal": true,
+    "citations_required": false,
+    "answer_type": "refusal",
+    "schema_version": 2,
+    "page_available": false,
+    "inference_markers": 1,
+    "answer_length": 265,
+    "answered": false,
+    "hallucination_flags_count": 2
+   },
+   "both_answered": false
+  },
+  {
+   "id": "q2_a593448ce5",
+   "question": "北京市货物贸易净出口需要跟踪哪些指标或事件？",
+   "category": "如何识别",
+   "theme": null,
+   "single": {
+    "id": "q2_a593448ce5__single",
+    "kind": "single",
+    "question": "北京市货物贸易净出口需要跟踪哪些指标或事件？",
+    "category": "如何识别",
+    "n_citations": 5,
+    "citations_exists": 5,
+    "citations_page_ok": 5,
+    "citation_exists_ratio": 1.0,
+    "citation_valid": true,
+    "n_sentences": 3,
+    "support_counts": {
+     "拒答": 1,
+     "弱支持": 2
+    },
+    "supported_ratio": 0.0,
+    "supported_or_weak_ratio": 1.0,
+    "hallucination_flags": [],
+    "citations": [
+     {
+      "unit_id": "61bca6c6d825",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": true,
+      "id_known_in_map": true
+     },
+     {
+      "unit_id": "854f9973bb5d",
+      "exists": true,
+      "method": "text_match(1.0)",
+      "page_ok": true,
+      "id_known_in_map": false
+     },
+     {
+      "unit_id": "d549a77bff5a",
+      "exists": true,
+      "method": "text_match(1.0)",
+      "page_ok": true,
+      "id_known_in_map": false
+     },
+     {
+      "unit_id": "a580f646594c",
+      "exists": true,
+      "method": "text_match(1.0)",
+      "page_ok": true,
+      "id_known_in_map": false
+     },
+     {
+      "unit_id": "65b6749c28e6",
+      "exists": true,
+      "method": "text_match(1.0)",
+      "page_ok": true,
+      "id_known_in_map": false
+     }
+    ],
+    "issues": [],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": true,
+    "citations_required": false,
+    "answer_type": "refusal",
+    "schema_version": 2,
+    "page_available": true,
+    "inference_markers": 0,
+    "answer_length": 286,
+    "answered": false,
+    "hallucination_flags_count": 0
+   },
+   "multi": {
+    "id": "q2_a593448ce5__multi",
+    "kind": "multi",
+    "question": "北京市货物贸易净出口需要跟踪哪些指标或事件？",
+    "category": "如何识别",
+    "n_citations": 2,
+    "citations_exists": 1,
+    "citations_page_ok": null,
+    "citation_exists_ratio": 0.5,
+    "citation_valid": false,
+    "n_sentences": 6,
+    "support_counts": {
+     "弱支持": 2,
+     "无支持": 3,
+     "支持": 1
+    },
+    "supported_ratio": 0.1667,
+    "supported_or_weak_ratio": 0.5,
+    "hallucination_flags": [
+     {
+      "type": "number",
+      "token": "31.6",
+      "reason": "数字未在引用单元文本中出现（非白名单小整数）",
+      "rule": "v2.number_whitelist"
+     },
+     {
+      "type": "number",
+      "token": "36.9%",
+      "reason": "数字未在引用单元文本中出现（非白名单小整数）",
+      "rule": "v2.number_whitelist"
+     },
+     {
+      "type": "number",
+      "token": "88.6%",
+      "reason": "数字未在引用单元文本中出现（非白名单小整数）",
+      "rule": "v2.number_whitelist"
+     }
+    ],
+    "citations": [
+     {
+      "unit_id": "61bca6c6d825",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     },
+     {
+      "unit_id": "854f9973bb5d",
+      "exists": false,
+      "method": null,
+      "page_ok": null,
+      "id_known_in_map": false
+     }
+    ],
+    "issues": [
+     "引用无法解析到知识库: 1/2",
+     "页码超出单元区间: 1/1",
+     "无支持句 3/6",
+     "幻觉候选 3 项（v2）"
+    ],
+    "hallucination_flags_v1": [
+     {
+      "type": "number",
+      "token": "3",
+      "reason": "数字未在引用单元文本中出现"
+     },
+     {
+      "type": "number",
+      "token": "31.6",
+      "reason": "数字未在引用单元文本中出现"
+     },
+     {
+      "type": "number",
+      "token": "36.9%",
+      "reason": "数字未在引用单元文本中出现"
+     },
+     {
+      "type": "number",
+      "token": "88.6%",
+      "reason": "数字未在引用单元文本中出现"
+     }
+    ],
+    "false_positives_removed": [
+     {
+      "type": "number",
+      "token": "3",
+      "reason": "数字未在引用单元文本中出现"
+     }
+    ],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "inference",
+    "schema_version": 2,
+    "page_available": false,
+    "inference_markers": 1,
+    "answer_length": 332,
+    "answered": true,
+    "hallucination_flags_count": 3
+   },
+   "both_answered": false
+  },
+  {
+   "id": "q2_3d1abf0240",
+   "question": "离岛免税消费数据对相关标的基本面或估值的影响如何？",
+   "category": "影响如何",
+   "theme": null,
+   "single": {
+    "id": "q2_3d1abf0240__single",
+    "kind": "single",
+    "question": "离岛免税消费数据对相关标的基本面或估值的影响如何？",
+    "category": "影响如何",
+    "n_citations": 0,
+    "citations_exists": 0,
+    "citations_page_ok": 0,
+    "citation_exists_ratio": 0.0,
+    "citation_valid": false,
+    "n_sentences": 3,
+    "support_counts": {
+     "拒答": 1,
+     "无支持": 2
+    },
+    "supported_ratio": 0.0,
+    "supported_or_weak_ratio": 0.0,
+    "hallucination_flags": [
+     {
+      "type": "number",
+      "token": "2026",
+      "reason": "数字未在引用单元文本中出现（非白名单小整数）",
+      "rule": "v2.number_whitelist"
+     }
+    ],
+    "citations": [],
+    "issues": [
+     "无引用",
+     "无支持句 2/2",
+     "幻觉候选 1 项（v2）"
+    ],
+    "hallucination_flags_v1": [
+     {
+      "type": "number",
+      "token": "2026",
+      "reason": "数字未在引用单元文本中出现"
+     }
+    ],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": true,
+    "citations_required": false,
+    "answer_type": "refusal",
+    "schema_version": 2,
+    "page_available": true,
+    "inference_markers": 0,
+    "answer_length": 142,
+    "answered": false,
+    "hallucination_flags_count": 1
+   },
+   "multi": {
+    "id": "q2_3d1abf0240__multi",
+    "kind": "multi",
+    "question": "离岛免税消费数据对相关标的基本面或估值的影响如何？",
+    "category": "影响如何",
+    "n_citations": 2,
+    "citations_exists": 1,
+    "citations_page_ok": null,
+    "citation_exists_ratio": 0.5,
+    "citation_valid": false,
+    "n_sentences": 6,
+    "support_counts": {
+     "无支持": 4,
+     "支持": 2
+    },
+    "supported_ratio": 0.3333,
+    "supported_or_weak_ratio": 0.3333,
+    "hallucination_flags": [],
+    "citations": [
+     {
+      "unit_id": "6581eca343ac",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     },
+     {
+      "unit_id": "98118e155121",
+      "exists": false,
+      "method": null,
+      "page_ok": null,
+      "id_known_in_map": false
+     }
+    ],
+    "issues": [
+     "引用无法解析到知识库: 1/2",
+     "页码超出单元区间: 1/1",
+     "无支持句 4/6"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "inference",
+    "schema_version": 2,
+    "page_available": false,
+    "inference_markers": 1,
+    "answer_length": 351,
+    "answered": true,
+    "hallucination_flags_count": 0
+   },
+   "both_answered": false
+  },
+  {
+   "id": "q2_1e95f989df",
+   "question": "海上风电项目规划的结论由哪些证据支撑？",
+   "category": "是什么",
+   "theme": null,
+   "single": {
+    "id": "q2_1e95f989df__single",
+    "kind": "single",
+    "question": "海上风电项目规划的结论由哪些证据支撑？",
+    "category": "是什么",
+    "n_citations": 3,
+    "citations_exists": 3,
+    "citations_page_ok": 3,
+    "citation_exists_ratio": 1.0,
+    "citation_valid": true,
+    "n_sentences": 3,
+    "support_counts": {
+     "支持": 3
+    },
+    "supported_ratio": 1.0,
+    "supported_or_weak_ratio": 1.0,
+    "hallucination_flags": [],
+    "citations": [
+     {
+      "unit_id": "3d627dcc4f13",
+      "exists": true,
+      "method": "text_match(1.0)",
+      "page_ok": true,
+      "id_known_in_map": false
+     },
+     {
+      "unit_id": "4b6cf5a7158e",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": true,
+      "id_known_in_map": true
+     },
+     {
+      "unit_id": "540733583fec",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": true,
+      "id_known_in_map": true
+     }
+    ],
+    "issues": [],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "fact",
+    "schema_version": 2,
+    "page_available": true,
+    "inference_markers": 0,
+    "answer_length": 234,
+    "answered": true,
+    "hallucination_flags_count": 0
+   },
+   "multi": {
+    "id": "q2_1e95f989df__multi",
+    "kind": "multi",
+    "question": "海上风电项目规划的结论由哪些证据支撑？",
+    "category": "是什么",
+    "n_citations": 3,
+    "citations_exists": 2,
+    "citations_page_ok": null,
+    "citation_exists_ratio": 0.6667,
+    "citation_valid": false,
+    "n_sentences": 5,
+    "support_counts": {
+     "弱支持": 3,
+     "支持": 1,
+     "无支持": 1
+    },
+    "supported_ratio": 0.2,
+    "supported_or_weak_ratio": 0.8,
+    "hallucination_flags": [],
+    "citations": [
+     {
+      "unit_id": "540733583fec",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     },
+     {
+      "unit_id": "3d627dcc4f13",
+      "exists": false,
+      "method": null,
+      "page_ok": null,
+      "id_known_in_map": false
+     },
+     {
+      "unit_id": "4b6cf5a7158e",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     }
+    ],
+    "issues": [
+     "引用无法解析到知识库: 1/3",
+     "页码超出单元区间: 2/2",
+     "无支持句 1/5"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "inference",
+    "schema_version": 2,
+    "page_available": false,
+    "inference_markers": 3,
+    "answer_length": 307,
+    "answered": true,
+    "hallucination_flags_count": 0
+   },
+   "both_answered": true
+  },
+  {
+   "id": "q2_6076398cc7",
+   "question": "保险资金投资港股通 ETF的进入壁垒与差异化优势是什么？",
+   "category": "竞争格局",
+   "theme": null,
+   "single": {
+    "id": "q2_6076398cc7__single",
+    "kind": "single",
+    "question": "保险资金投资港股通 ETF的进入壁垒与差异化优势是什么？",
+    "category": "竞争格局",
+    "n_citations": 1,
+    "citations_exists": 1,
+    "citations_page_ok": 1,
+    "citation_exists_ratio": 1.0,
+    "citation_valid": true,
+    "n_sentences": 4,
+    "support_counts": {
+     "支持": 1,
+     "弱支持": 2,
+     "无支持": 1
+    },
+    "supported_ratio": 0.25,
+    "supported_or_weak_ratio": 0.75,
+    "hallucination_flags": [],
+    "citations": [
+     {
+      "unit_id": "e9548ab7c8d3",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": true,
+      "id_known_in_map": true
+     }
+    ],
+    "issues": [
+     "无支持句 1/4"
+    ],
+    "hallucination_flags_v1": [
+     {
+      "type": "number",
+      "token": "1",
+      "reason": "数字未在引用单元文本中出现"
+     }
+    ],
+    "false_positives_removed": [
+     {
+      "type": "number",
+      "token": "1",
+      "reason": "数字未在引用单元文本中出现"
+     }
+    ],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "fact",
+    "schema_version": 2,
+    "page_available": true,
+    "inference_markers": 0,
+    "answer_length": 288,
+    "answered": true,
+    "hallucination_flags_count": 0
+   },
+   "multi": {
+    "id": "q2_6076398cc7__multi",
+    "kind": "multi",
+    "question": "保险资金投资港股通 ETF的进入壁垒与差异化优势是什么？",
+    "category": "竞争格局",
+    "n_citations": 2,
+    "citations_exists": 1,
+    "citations_page_ok": null,
+    "citation_exists_ratio": 0.5,
+    "citation_valid": false,
+    "n_sentences": 5,
+    "support_counts": {
+     "支持": 1,
+     "弱支持": 1,
+     "无支持": 3
+    },
+    "supported_ratio": 0.2,
+    "supported_or_weak_ratio": 0.4,
+    "hallucination_flags": [],
+    "citations": [
+     {
+      "unit_id": "e9548ab7c8d3",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     },
+     {
+      "unit_id": "49d741ab6006",
+      "exists": false,
+      "method": null,
+      "page_ok": null,
+      "id_known_in_map": false
+     }
+    ],
+    "issues": [
+     "引用无法解析到知识库: 1/2",
+     "页码超出单元区间: 1/1",
+     "无支持句 3/5"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "inference",
+    "schema_version": 2,
+    "page_available": false,
+    "inference_markers": 2,
+    "answer_length": 275,
+    "answered": true,
+    "hallucination_flags_count": 0
+   },
+   "both_answered": true
+  },
+  {
+   "id": "q2_f93ae02b9d",
+   "question": "伏击涨停的灵魂的景气度受哪些变量影响？",
+   "category": "驱动因素",
+   "theme": null,
+   "single": {
+    "id": "q2_f93ae02b9d__single",
+    "kind": "single",
+    "question": "伏击涨停的灵魂的景气度受哪些变量影响？",
+    "category": "驱动因素",
+    "n_citations": 0,
+    "citations_exists": 0,
+    "citations_page_ok": 0,
+    "citation_exists_ratio": 0.0,
+    "citation_valid": false,
+    "n_sentences": 3,
+    "support_counts": {
+     "拒答": 1,
+     "无支持": 2
+    },
+    "supported_ratio": 0.0,
+    "supported_or_weak_ratio": 0.0,
+    "hallucination_flags": [],
+    "citations": [],
+    "issues": [
+     "无引用",
+     "无支持句 2/2"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": true,
+    "citations_required": false,
+    "answer_type": "refusal",
+    "schema_version": 2,
+    "page_available": true,
+    "inference_markers": 0,
+    "answer_length": 145,
+    "answered": false,
+    "hallucination_flags_count": 0
+   },
+   "multi": {
+    "id": "q2_f93ae02b9d__multi",
+    "kind": "multi",
+    "question": "伏击涨停的灵魂的景气度受哪些变量影响？",
+    "category": "驱动因素",
+    "n_citations": 0,
+    "citations_exists": 0,
+    "citations_page_ok": null,
+    "citation_exists_ratio": 0.0,
+    "citation_valid": false,
+    "n_sentences": 5,
+    "support_counts": {
+     "拒答": 1,
+     "无支持": 4
+    },
+    "supported_ratio": 0.0,
+    "supported_or_weak_ratio": 0.0,
+    "hallucination_flags": [],
+    "citations": [],
+    "issues": [
+     "无引用",
+     "无支持句 4/4"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": true,
+    "citations_required": false,
+    "answer_type": "refusal",
+    "schema_version": 2,
+    "page_available": false,
+    "inference_markers": 2,
+    "answer_length": 244,
+    "answered": false,
+    "hallucination_flags_count": 0
+   },
+   "both_answered": false
+  },
+  {
+   "id": "q2_ef78939178",
+   "question": "网络安全软技能需求的主要风险与不确定性有哪些？",
+   "category": "风险限制",
+   "theme": null,
+   "single": {
+    "id": "q2_ef78939178__single",
+    "kind": "single",
+    "question": "网络安全软技能需求的主要风险与不确定性有哪些？",
+    "category": "风险限制",
+    "n_citations": 0,
+    "citations_exists": 0,
+    "citations_page_ok": 0,
+    "citation_exists_ratio": 0.0,
+    "citation_valid": false,
+    "n_sentences": 3,
+    "support_counts": {
+     "拒答": 1,
+     "无支持": 2
+    },
+    "supported_ratio": 0.0,
+    "supported_or_weak_ratio": 0.0,
+    "hallucination_flags": [
+     {
+      "type": "english_token",
+      "token": "SecOps",
+      "reason": "英文专名/术语（≥3 字母）未在引用单元文本中出现",
+      "rule": "v2.english_ge3letters"
+     }
+    ],
+    "citations": [],
+    "issues": [
+     "无引用",
+     "无支持句 2/2",
+     "幻觉候选 1 项（v2）"
+    ],
+    "hallucination_flags_v1": [
+     {
+      "type": "english_token",
+      "token": "SecOps",
+      "reason": "英文专名/术语未在引用单元文本中出现"
+     }
+    ],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": true,
+    "citations_required": false,
+    "answer_type": "refusal",
+    "schema_version": 2,
+    "page_available": true,
+    "inference_markers": 0,
+    "answer_length": 191,
+    "answered": false,
+    "hallucination_flags_count": 1
+   },
+   "multi": {
+    "id": "q2_ef78939178__multi",
+    "kind": "multi",
+    "question": "网络安全软技能需求的主要风险与不确定性有哪些？",
+    "category": "风险限制",
+    "n_citations": 3,
+    "citations_exists": 1,
+    "citations_page_ok": null,
+    "citation_exists_ratio": 0.3333,
+    "citation_valid": false,
+    "n_sentences": 5,
+    "support_counts": {
+     "无支持": 4,
+     "支持": 1
+    },
+    "supported_ratio": 0.2,
+    "supported_or_weak_ratio": 0.2,
+    "hallucination_flags": [
+     {
+      "type": "number",
+      "token": "2025",
+      "reason": "数字未在引用单元文本中出现（非白名单小整数）",
+      "rule": "v2.number_whitelist"
+     },
+     {
+      "type": "number",
+      "token": "45%",
+      "reason": "数字未在引用单元文本中出现（非白名单小整数）",
+      "rule": "v2.number_whitelist"
+     },
+     {
+      "type": "english_token",
+      "token": "SecOps",
+      "reason": "英文专名/术语（≥3 字母）未在引用单元文本中出现",
+      "rule": "v2.english_ge3letters"
+     }
+    ],
+    "citations": [
+     {
+      "unit_id": "ccec1052fa9c",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     },
+     {
+      "unit_id": "71f5b2e0d077",
+      "exists": false,
+      "method": null,
+      "page_ok": null,
+      "id_known_in_map": false
+     },
+     {
+      "unit_id": "ccf7787f6c23",
+      "exists": false,
+      "method": null,
+      "page_ok": null,
+      "id_known_in_map": false
+     }
+    ],
+    "issues": [
+     "引用无法解析到知识库: 2/3",
+     "页码超出单元区间: 1/1",
+     "无支持句 4/5",
+     "幻觉候选 3 项（v2）"
+    ],
+    "hallucination_flags_v1": [
+     {
+      "type": "number",
+      "token": "1",
+      "reason": "数字未在引用单元文本中出现"
+     },
+     {
+      "type": "number",
+      "token": "2",
+      "reason": "数字未在引用单元文本中出现"
+     },
+     {
+      "type": "number",
+      "token": "2025",
+      "reason": "数字未在引用单元文本中出现"
+     },
+     {
+      "type": "number",
+      "token": "45%",
+      "reason": "数字未在引用单元文本中出现"
+     },
+     {
+      "type": "english_token",
+      "token": "SecOps",
+      "reason": "英文专名/术语未在引用单元文本中出现"
+     }
+    ],
+    "false_positives_removed": [
+     {
+      "type": "number",
+      "token": "1",
+      "reason": "数字未在引用单元文本中出现"
+     },
+     {
+      "type": "number",
+      "token": "2",
+      "reason": "数字未在引用单元文本中出现"
+     }
+    ],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "fact",
+    "schema_version": 2,
+    "page_available": false,
+    "inference_markers": 0,
+    "answer_length": 349,
+    "answered": true,
+    "hallucination_flags_count": 3
+   },
+   "both_answered": false
+  },
+  {
+   "id": "q2_87eff8d7a3",
+   "question": "品牌AI心智总得分有哪些可核验的统计口径或样本？",
+   "category": "关键数据",
+   "theme": null,
+   "single": {
+    "id": "q2_87eff8d7a3__single",
+    "kind": "single",
+    "question": "品牌AI心智总得分有哪些可核验的统计口径或样本？",
+    "category": "关键数据",
+    "n_citations": 0,
+    "citations_exists": 0,
+    "citations_page_ok": 0,
+    "citation_exists_ratio": 0.0,
+    "citation_valid": false,
+    "n_sentences": 3,
+    "support_counts": {
+     "拒答": 1,
+     "无支持": 2
+    },
+    "supported_ratio": 0.0,
+    "supported_or_weak_ratio": 0.0,
+    "hallucination_flags": [
+     {
+      "type": "english_token",
+      "token": "CR3SOV",
+      "reason": "英文专名/术语（≥3 字母）未在引用单元文本中出现",
+      "rule": "v2.english_ge3letters"
+     }
+    ],
+    "citations": [],
+    "issues": [
+     "无引用",
+     "无支持句 2/2",
+     "幻觉候选 1 项（v2）"
+    ],
+    "hallucination_flags_v1": [
+     {
+      "type": "number",
+      "token": "3",
+      "reason": "数字未在引用单元文本中出现"
+     },
+     {
+      "type": "english_token",
+      "token": "CR3SOV",
+      "reason": "英文专名/术语未在引用单元文本中出现"
+     }
+    ],
+    "false_positives_removed": [
+     {
+      "type": "number",
+      "token": "3",
+      "reason": "数字未在引用单元文本中出现"
+     }
+    ],
+    "new_flags_added": [],
+    "expected_refusal": true,
+    "citations_required": false,
+    "answer_type": "refusal",
+    "schema_version": 2,
+    "page_available": true,
+    "inference_markers": 0,
+    "answer_length": 160,
+    "answered": false,
+    "hallucination_flags_count": 1
+   },
+   "multi": {
+    "id": "q2_87eff8d7a3__multi",
+    "kind": "multi",
+    "question": "品牌AI心智总得分有哪些可核验的统计口径或样本？",
+    "category": "关键数据",
+    "n_citations": 0,
+    "citations_exists": 0,
+    "citations_page_ok": null,
+    "citation_exists_ratio": 0.0,
+    "citation_valid": false,
+    "n_sentences": 4,
+    "support_counts": {
+     "拒答": 1,
+     "无支持": 3
+    },
+    "supported_ratio": 0.0,
+    "supported_or_weak_ratio": 0.0,
+    "hallucination_flags": [],
+    "citations": [],
+    "issues": [
+     "无引用",
+     "无支持句 3/3"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": true,
+    "citations_required": false,
+    "answer_type": "refusal",
+    "schema_version": 2,
+    "page_available": false,
+    "inference_markers": 1,
+    "answer_length": 170,
+    "answered": false,
+    "hallucination_flags_count": 0
+   },
+   "both_answered": false
+  },
+  {
+   "id": "q2_0d7db24320",
+   "question": "中国畜禽肉产品主要出口市场的传导路径与受益环节是什么？",
+   "category": "影响如何",
+   "theme": null,
+   "single": {
+    "id": "q2_0d7db24320__single",
+    "kind": "single",
+    "question": "中国畜禽肉产品主要出口市场的传导路径与受益环节是什么？",
+    "category": "影响如何",
+    "n_citations": 1,
+    "citations_exists": 1,
+    "citations_page_ok": 1,
+    "citation_exists_ratio": 1.0,
+    "citation_valid": true,
+    "n_sentences": 2,
+    "support_counts": {
+     "拒答": 1,
+     "弱支持": 1
+    },
+    "supported_ratio": 0.0,
+    "supported_or_weak_ratio": 1.0,
+    "hallucination_flags": [],
+    "citations": [
+     {
+      "unit_id": "3b570c6a6239",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": true,
+      "id_known_in_map": true
+     }
+    ],
+    "issues": [],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": true,
+    "citations_required": false,
+    "answer_type": "refusal",
+    "schema_version": 2,
+    "page_available": true,
+    "inference_markers": 0,
+    "answer_length": 152,
+    "answered": false,
+    "hallucination_flags_count": 0
+   },
+   "multi": {
+    "id": "q2_0d7db24320__multi",
+    "kind": "multi",
+    "question": "中国畜禽肉产品主要出口市场的传导路径与受益环节是什么？",
+    "category": "影响如何",
+    "n_citations": 2,
+    "citations_exists": 2,
+    "citations_page_ok": null,
+    "citation_exists_ratio": 1.0,
+    "citation_valid": true,
+    "n_sentences": 6,
+    "support_counts": {
+     "支持": 2,
+     "弱支持": 3,
+     "无支持": 1
+    },
+    "supported_ratio": 0.3333,
+    "supported_or_weak_ratio": 0.8333,
+    "hallucination_flags": [],
+    "citations": [
+     {
+      "unit_id": "1a53227f2949",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     },
+     {
+      "unit_id": "3b570c6a6239",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     }
+    ],
+    "issues": [
+     "页码超出单元区间: 2/2",
+     "无支持句 1/6"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "inference",
+    "schema_version": 2,
+    "page_available": false,
+    "inference_markers": 2,
+    "answer_length": 346,
+    "answered": true,
+    "hallucination_flags_count": 0
+   },
+   "both_answered": false
+  },
+  {
+   "id": "q2_4f34cbb059",
+   "question": "优先行动：支持本土生态系统的进入壁垒与差异化优势是什么？",
+   "category": "竞争格局",
+   "theme": null,
+   "single": {
+    "id": "q2_4f34cbb059__single",
+    "kind": "single",
+    "question": "优先行动：支持本土生态系统的进入壁垒与差异化优势是什么？",
+    "category": "竞争格局",
+    "n_citations": 3,
+    "citations_exists": 3,
+    "citations_page_ok": 3,
+    "citation_exists_ratio": 1.0,
+    "citation_valid": true,
+    "n_sentences": 6,
+    "support_counts": {
+     "支持": 6
+    },
+    "supported_ratio": 1.0,
+    "supported_or_weak_ratio": 1.0,
+    "hallucination_flags": [],
+    "citations": [
+     {
+      "unit_id": "664a0d2d2756",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": true,
+      "id_known_in_map": true
+     },
+     {
+      "unit_id": "f6f270fd280d",
+      "exists": true,
+      "method": "text_match(1.0)",
+      "page_ok": true,
+      "id_known_in_map": false
+     },
+     {
+      "unit_id": "9c91ea628d11",
+      "exists": true,
+      "method": "text_match(1.0)",
+      "page_ok": true,
+      "id_known_in_map": false
+     }
+    ],
+    "issues": [],
+    "hallucination_flags_v1": [
+     {
+      "type": "number",
+      "token": "2",
+      "reason": "数字未在引用单元文本中出现"
+     },
+     {
+      "type": "number",
+      "token": "3",
+      "reason": "数字未在引用单元文本中出现"
+     }
+    ],
+    "false_positives_removed": [
+     {
+      "type": "number",
+      "token": "2",
+      "reason": "数字未在引用单元文本中出现"
+     },
+     {
+      "type": "number",
+      "token": "3",
+      "reason": "数字未在引用单元文本中出现"
+     }
+    ],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "fact",
+    "schema_version": 2,
+    "page_available": true,
+    "inference_markers": 0,
+    "answer_length": 400,
+    "answered": true,
+    "hallucination_flags_count": 0
+   },
+   "multi": {
+    "id": "q2_4f34cbb059__multi",
+    "kind": "multi",
+    "question": "优先行动：支持本土生态系统的进入壁垒与差异化优势是什么？",
+    "category": "竞争格局",
+    "n_citations": 2,
+    "citations_exists": 1,
+    "citations_page_ok": null,
+    "citation_exists_ratio": 0.5,
+    "citation_valid": false,
+    "n_sentences": 5,
+    "support_counts": {
+     "支持": 2,
+     "弱支持": 2,
+     "无支持": 1
+    },
+    "supported_ratio": 0.4,
+    "supported_or_weak_ratio": 0.8,
+    "hallucination_flags": [],
+    "citations": [
+     {
+      "unit_id": "664a0d2d2756",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     },
+     {
+      "unit_id": "f6f270fd280d",
+      "exists": false,
+      "method": null,
+      "page_ok": null,
+      "id_known_in_map": false
+     }
+    ],
+    "issues": [
+     "引用无法解析到知识库: 1/2",
+     "页码超出单元区间: 1/1",
+     "无支持句 1/5"
+    ],
+    "hallucination_flags_v1": [
+     {
+      "type": "number",
+      "token": "1",
+      "reason": "数字未在引用单元文本中出现"
+     },
+     {
+      "type": "number",
+      "token": "2",
+      "reason": "数字未在引用单元文本中出现"
+     }
+    ],
+    "false_positives_removed": [
+     {
+      "type": "number",
+      "token": "1",
+      "reason": "数字未在引用单元文本中出现"
+     },
+     {
+      "type": "number",
+      "token": "2",
+      "reason": "数字未在引用单元文本中出现"
+     }
+    ],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "inference",
+    "schema_version": 2,
+    "page_available": false,
+    "inference_markers": 1,
+    "answer_length": 352,
+    "answered": true,
+    "hallucination_flags_count": 0
+   },
+   "both_answered": true
+  }
+ ],
+ "conclusion": {
+  "verdict": "multi 以部分答案质量换可答率（支撑率下降或幻觉率上升）",
+  "stance": "multi_with_guard",
+  "answerable_gain": 0.5,
+  "support_rate_delta_all": 0.0069,
+  "hallucination_rate_delta": 0.1667,
+  "quality_loss_detected": true,
+  "paired_support_delta": -0.4833,
+  "reasons": [
+   "可答率 single 0.25 → multi 0.75（Δ=+0.5000）",
+   "支撑率（全样本）single 0.1875 → multi 0.1944（Δ=+0.0069）",
+   "幻觉 flag 率 single 0.5 → multi 0.6667（Δ=+0.1667）",
+   "引用存在率 single 1.0 → multi 0.55",
+   "双方均有答案子集（n=3）支撑率 Δ=-0.4833"
+  ],
+  "caveats": [
+   "multi 引用元数据（页码）未持久化，multi 侧页码校验 n/a，引用只验证 unit_id 存在性；",
+   "multi citation 从答案标记抽取，可能漏计未打标记的引用；",
+   "支撑度为字符 bigram 覆盖率，长答案（multi 平均更长）天然更易命中，需谨慎解读；",
+   "有效样本 12 对（AW 30 条中仅 12 条有原文可评估），结论为冒烟级；",
+   "不调 LLM、不改答案原文；评估为规则启发式。"
+  ]
+ }
+}

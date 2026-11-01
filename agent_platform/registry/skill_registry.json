@@ -610,6 +610,27 @@
       "title": "学习卡审核工作流",
       "ref": "tools/kb_corpus/card_review.py",
       "enabled": true
+    },
+    {
+      "id": "kb_qa_multi_eval",
+      "kind": "tool",
+      "title": "multi 答案质量评估",
+      "ref": "tools/kb_corpus/kb_qa_multi_eval.py",
+      "enabled": true
+    },
+    {
+      "id": "card_precheck",
+      "kind": "tool",
+      "title": "学习卡机器预审建议",
+      "ref": "tools/kb_corpus/card_precheck.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_qa_multi_ab50",
+      "kind": "tool",
+      "title": "multi 50 条 A/B 复跑",
+      "ref": "tools/kb_corpus/kb_qa_multi_ab50.py",
+      "enabled": true
     }
   ]
 }
