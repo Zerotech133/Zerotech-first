@@ -1,524 +1,538 @@
 {
-  "_note": "每日工作项目录（单一真相源）。一个席位每天干什么，写在这里，不写在文档里。每条都必须带可检查的证据，否则不收录。改动与代码同批提交。",
-  "version": 1,
-  "updated": "2026-10-27",
-  "schema_doc": {
-    "id": "事项编号，全局唯一",
-    "agent": "负责人席位（对应 org.json 的 agent_id）",
-    "dept": "部门 dept code",
-    "title": "这件事叫什么",
-    "why": "不做会怎样（一句话，防止清单变成形式主义）",
-    "freq": "daily@HH:MM | trading_day@HH:MM | weekly@1 15:35（1=周一）| every_min N",
-    "evidence.type": "file（glob + max_age）| log_regex（文件里找模式）| ledger（审计账本里的动作）| manual（暂无人自动核，标待接线）",
-    "evidence.on_miss": "没交付时该发生什么"
+ "_note": "每日工作项目录（单一真相源）。一个席位每天干什么，写在这里，不写在文档里。每条都必须带可检查的证据，否则不收录。改动与代码同批提交。",
+ "version": 2,
+ "updated": "2026-11-01",
+ "schema_doc": {
+  "id": "事项编号，全局唯一",
+  "agent": "负责人席位（对应 org.json 的 agent_id）",
+  "dept": "部门 dept code",
+  "title": "这件事叫什么",
+  "why": "不做会怎样（一句话，防止清单变成形式主义）",
+  "freq": "daily@HH:MM | trading_day@HH:MM | weekly@1 15:35（1=周一）| every_min N",
+  "evidence.type": "file（glob + max_age）| log_regex（文件里找模式）| ledger（审计账本里的动作）| manual（暂无人自动核，标待接线）",
+  "evidence.on_miss": "没交付时该发生什么"
+ },
+ "items": [
+  {
+   "id": "INV-01",
+   "agent": "D1",
+   "dept": "invest",
+   "title": "缠论全市场扫描出信号池",
+   "why": "信号池断供，三线联动与案例复盘全部无源",
+   "freq": "trading_day@05:50",
+   "evidence": {
+    "type": "file",
+    "path": "quant_backtest/data/chanlun_pool_eval_cache.json",
+    "max_age_h": 30,
+    "note": "2026-10-26 AGENTHEALTH：chanlun_pool.jsonl 仅在有新信号时追加（周末/无信号日 mtime 不动，实测 scan new=0 属正常），不能当新鲜度判据；改指每次扫描必写的评估缓存 chanlun_scan.py POOL_EVAL"
+   },
+   "on_miss": "A0 催办 D1，并附文件路径与最后更新时间"
   },
-  "items": [
-    {
-      "id": "INV-01",
-      "agent": "D1",
-      "dept": "invest",
-      "title": "缠论全市场扫描出信号池",
-      "why": "信号池断供，三线联动与案例复盘全部无源",
-      "freq": "trading_day@05:50",
-      "evidence": {
-        "type": "file",
-        "path": "quant_backtest/data/chanlun_pool_eval_cache.json",
-        "max_age_h": 30,
-        "note": "2026-10-26 AGENTHEALTH：chanlun_pool.jsonl 仅在有新信号时追加（周末/无信号日 mtime 不动，实测 scan new=0 属正常），不能当新鲜度判据；改指每次扫描必写的评估缓存 chanlun_scan.py POOL_EVAL"
-      },
-      "on_miss": "A0 催办 D1，并附文件路径与最后更新时间"
-    },
-    {
-      "id": "INV-02",
-      "agent": "D1",
-      "dept": "invest",
-      "title": "九维评分快照（≥75 警报池）",
-      "why": "没有当日评分，蓝卡与强转弱候选无法定级",
-      "freq": "trading_day@06:40",
-      "evidence": {
-        "type": "file",
-        "path": "quant_backtest/data/nine_dim_scores.json",
-        "max_age_h": 30
-      },
-      "on_miss": "A0 催办 D1"
-    },
-    {
-      "id": "INV-03",
-      "agent": "D1",
-      "dept": "invest",
-      "title": "晨报产出（07:00 档）",
-      "why": "早晨没有可读结论，等于当天从零开始",
-      "freq": "daily@07:00",
-      "evidence": {
-        "type": "log_regex",
-        "path": "C:/Temp/morning_report_task.log",
-        "pattern": "exit=0",
-        "max_age_h": 36
-      },
-      "on_miss": "A0 催办 D1 并查 MorningReport 任务"
-    },
-    {
-      "id": "INV-04",
-      "agent": "D1",
-      "dept": "invest",
-      "title": "日报产出（20:30 档）",
-      "why": "当日复盘不落纸，次日无法接续",
-      "freq": "daily@20:30",
-      "evidence": {
-        "type": "log_regex",
-        "path": "C:/Temp/daily_report_task.log",
-        "pattern": "exit=0",
-        "max_age_h": 30
-      },
-      "on_miss": "A0 催办 D1 并查 DailyReport 任务"
-    },
-    {
-      "id": "INV-05",
-      "agent": "WA1",
-      "dept": "invest",
-      "title": "弱于板块周扫（周蓝卡）",
-      "why": "周扫断供，weak 产线整条无新案",
-      "freq": "weekly@1 15:35",
-      "evidence": {
-        "type": "file",
-        "path": "reports/weak_scan_*.csv",
-        "max_age_h": 192
-      },
-      "on_miss": "A0 催办 WA1；连续两周缺则升级为产线停摆"
-    },
-    {
-      "id": "INT-01",
-      "agent": "INTEL0",
-      "dept": "intel",
-      "title": "新闻采集持续入库",
-      "why": "采集一停，JEV/情报/图谱三条线同时断源",
-      "freq": "every_min 60",
-      "evidence": {
-        "type": "file",
-        "path": "news_collector/news.db",
-        "max_age_h": 2
-      },
-      "on_miss": "A0 催办 INTEL0 并查 NewsCollect 任务"
-    },
-    {
-      "id": "INT-02",
-      "agent": "INTEL1",
-      "dept": "intel",
-      "title": "JEV 判定回填（AI 批）",
-      "why": "不判定就只有标题没有情绪与事件类型",
-      "freq": "daily@08:00",
-      "evidence": {
-        "type": "log_regex",
-        "path": "C:/Temp/news_task.log",
-        "pattern": "ai exit=0",
-        "max_age_h": 30
-      },
-      "on_miss": "A0 催办 INTEL1"
-    },
-    {
-      "id": "INT-03",
-      "agent": "XQ1",
-      "dept": "intel",
-      "title": "雪球帖文结构化（M3）",
-      "why": "结构化断供，舆情线只剩原始文本",
-      "freq": "every_min 120",
-      "evidence": {
-        "type": "file",
-        "path": "C:/Temp/k266_m3.log",
-        "max_age_h": 3
-      },
-      "on_miss": "A0 催办 XQ1，并查 k266_services 的 m3 拉起记录"
-    },
-    {
-      "id": "DAT-01",
-      "agent": "DATA1",
-      "dept": "data",
-      "title": "数据目录台账刷新",
-      "why": "台账过期，下游读到不存在的表也不知道",
-      "freq": "daily@06:30",
-      "evidence": {
-        "type": "file",
-        "path": "quant_backtest/data/catalog.json",
-        "max_age_h": 30
-      },
-      "on_miss": "A0 催办 DATA1"
-    },
-    {
-      "id": "DAT-02",
-      "agent": "DATA1",
-      "dept": "data",
-      "title": "行情日线入库（通达信源）",
-      "why": "行情不落，所有指标与回测都建在旧数据上",
-      "freq": "trading_day@17:30",
-      "evidence": {
-        "type": "file",
-        "path": "quant_backtest/data/tdx",
-        "max_age_h": 30
-      },
-      "on_miss": "A0 催办 DATA1 并查 TdxSync 任务（今日 rc 267014）"
-    },
-    {
-      "id": "OPS-01",
-      "agent": "A0A",
-      "dept": "ops_runtime",
-      "title": "每日备份落盘",
-      "why": "当天没有备份，一次盘损就是全部资产归零",
-      "freq": "daily@03:00",
-      "evidence": {
-        "type": "file",
-        "path": "backups/*",
-        "max_age_h": 30
-      },
-      "on_miss": "A0 立即升级为 P0（备份断供）"
-    },
-    {
-      "id": "OPS-02",
-      "agent": "A0A",
-      "dept": "ops_runtime",
-      "title": "异地副本推送 + 双向校验",
-      "why": "本机备份同盘，异地才是唯一活路",
-      "freq": "daily@04:30",
-      "evidence": {
-        "type": "file",
-        "path": "C:/项目/_vault/*",
-        "max_age_h": 30
-      },
-      "on_miss": "A0 升级为 P0 并点名 offsite_push_remote.ps1"
-    },
-    {
-      "id": "LEG-01",
-      "agent": "A0",
-      "dept": "chief_line",
-      "title": "军团巡检（每 30 分钟）",
-      "why": "不巡就没人知道谁停了；但巡检≠派工，不能只做巡检",
-      "freq": "every_min 30",
-      "evidence": {
-        "type": "ledger",
-        "pattern": "\"caller\": \"A0\"",
-        "max_age_h": 1
-      },
-      "on_miss": "本项自身缺失即视为军团失联，直接升级"
-    },
-    {
-      "id": "LEG-02",
-      "agent": "A0",
-      "dept": "chief_line",
-      "title": "军团日报推送（17:35）",
-      "why": "老田不在页面上，只认推送到手机的那一张卡",
-      "freq": "daily@17:35",
-      "evidence": {
-        "type": "manual",
-        "note": "当前无自动证据：AgentChiefPush 任务 rc=0 但无产物指纹，待接线"
-      },
-      "on_miss": "待接线后再定"
-    },
-    {
-      "id": "QA-01",
-      "agent": "QA1",
-      "dept": "quality",
-      "title": "周回归（PytestWeekly）",
-      "why": "没有回归闸，改动只能靠人肉判断有没有砸",
-      "freq": "weekly@1 09:00",
-      "evidence": {
-        "type": "manual",
-        "note": "当前 PytestWeekly rc=1，未接入结果指纹；待接线"
-      },
-      "on_miss": "待接线后再定"
-    },
-    {
-      "id": "RUN-01",
-      "agent": "A0A",
-      "dept": "ops_runtime",
-      "title": "门户与 API 保活（8734/8091）",
-      "why": "门户打不开，前面所有产出都没人看得见",
-      "freq": "every_min 10",
-      "evidence": {
-        "type": "port",
-        "ports": [
-          8734,
-          8091
-        ],
-        "note": "2026-10-26 AGENTHEALTH 接线：本机 socket 连 127.0.0.1 探活，不依赖外部网络"
-      },
-      "on_miss": "由门户看门狗任务兜底"
-    },
-    {
-      "id": "DEV1-01",
-      "agent": "DEV1",
-      "dept": "dev",
-      "title": "代码准入：portal 方法集零漂移",
-      "why": "portal_api 拆分后靠 Mixin 继承，方法集丢了就是线上 500（三守卫之一）",
-      "freq": "daily@09:00",
-      "evidence": {
-        "type": "command",
-        "cmd": [
-          "tools/_mixin_integrity.py",
-          "--check"
-        ],
-        "expect_rc": 0
-      },
-      "on_miss": "A0 催办 DEV1：跑 tools/_mixin_integrity.py --check 并修方法集"
-    },
-    {
-      "id": "DEV2-01",
-      "agent": "DEV2",
-      "dept": "dev",
-      "title": "模型版本登记（按需，无固定日产）",
-      "why": "新版本不登记 domain/model_registry，回滚时找不到基线",
-      "freq": "daily@09:00",
-      "evidence": {
-        "type": "on_demand",
-        "note": "模型训练按需触发，无每日产物；登记入口 domain/model_registry（触发时应登记）"
-      },
-      "on_miss": "待接线后再定"
-    },
-    {
-      "id": "DEV3-01",
-      "agent": "DEV3",
-      "dept": "dev",
-      "title": "名下策略工单有推进",
-      "why": "策略是插件式新增，没单就等于没产出",
-      "freq": "every_min 1440",
-      "evidence": {
-        "type": "order",
-        "agent": "DEV3",
-        "max_age_h": 48
-      },
-      "on_miss": "A0 催办 DEV3；若长期无单，转派工缺口上报"
-    },
-    {
-      "id": "DEV4-01",
-      "agent": "DEV4",
-      "dept": "dev",
-      "title": "名下回测工单有推进",
-      "why": "回测判据复核是 Go/No-Go 的唯一关口",
-      "freq": "every_min 1440",
-      "evidence": {
-        "type": "order",
-        "agent": "DEV4",
-        "max_age_h": 48
-      },
-      "on_miss": "A0 催办 DEV4；若长期无单，转派工缺口上报"
-    },
-    {
-      "id": "DEV5-01",
-      "agent": "DEV5",
-      "dept": "dev",
-      "title": "前端准入：导航统一过关",
-      "why": "手写导航会漂移，nav.js 注入是唯一入口（三件套之一）",
-      "freq": "daily@09:30",
-      "evidence": {
-        "type": "command",
-        "cmd": [
-          "tools/unify_nav.py",
-          "--check"
-        ],
-        "expect_rc": 0
-      },
-      "on_miss": "A0 催办 DEV5：跑 python tools/unify_nav.py --check"
-    },
-    {
-      "id": "DEV6-01",
-      "agent": "DEV6",
-      "dept": "dev",
-      "title": "名下后端工单有推进",
-      "why": "E2 档负责常规功能独立交付，没单就没产出",
-      "freq": "every_min 1440",
-      "evidence": {
-        "type": "order",
-        "agent": "DEV6",
-        "max_age_h": 48
-      },
-      "on_miss": "A0 催办 DEV6；若长期无单，转派工缺口上报"
-    },
-    {
-      "id": "DEV7-01",
-      "agent": "DEV7",
-      "dept": "dev",
-      "title": "名下执行类工单有推进",
-      "why": "E1 档承接标准执行/批量修改，产出须交 E2 复核",
-      "freq": "every_min 1440",
-      "evidence": {
-        "type": "order",
-        "agent": "DEV7",
-        "max_age_h": 48
-      },
-      "on_miss": "A0 催办 DEV7；若长期无单，转派工缺口上报"
-    },
-    {
-      "id": "DEV8-01",
-      "agent": "DEV8",
-      "dept": "dev",
-      "title": "名下前端工单有推进",
-      "why": "E2 档前端交付，tokens 纪律与 DEV5 同标准",
-      "freq": "every_min 1440",
-      "evidence": {
-        "type": "order",
-        "agent": "DEV8",
-        "max_age_h": 48
-      },
-      "on_miss": "A0 催办 DEV8；若长期无单，转派工缺口上报"
-    },
-    {
-      "id": "ARCH1-01",
-      "agent": "ARCH1",
-      "dept": "dev",
-      "title": "架构决策登记（按需）",
-      "why": "ADR 不落 docs/adr/，下次踩同一个坑没人知道为什么这么定",
-      "freq": "daily@09:00",
-      "evidence": {
-        "type": "on_demand",
-        "note": "ADR 按决策触发，无每日产物；入口 tools/adr.py（new/list/show）"
-      },
-      "on_miss": "待接线后再定"
-    },
-    {
-      "id": "OPS1-01",
-      "agent": "OPS1",
-      "dept": "dev",
-      "title": "端口注册表零漂移（无未登记私起服务）",
-      "why": "未登记端口=私起服务，是抢端口事故的起点。注意：只判「有没有未登记」，不判「在册服务是否在线」——开发机上 Docker/手动型服务本来就常关，混在一起会天天误报",
-      "freq": "daily@09:00",
-      "evidence": {
-        "type": "command_out",
-        "cmd": [
-          "tools/check_ports.py"
-        ],
-        "forbid": "⚠"
-      },
-      "on_miss": "A0 催办 OPS1：把未登记端口收编进 REGISTRY / 豁免名单，或停掉私起服务"
-    },
-    {
-      "id": "DOC1-01",
-      "agent": "DOC1",
-      "dept": "dev",
-      "title": "文档索引与扫描一致",
-      "why": "索引落后=新人按索引找不到文档，等于没有索引",
-      "freq": "daily@09:00",
-      "evidence": {
-        "type": "command",
-        "cmd": [
-          "tools/gen_docs_index.py",
-          "--check"
-        ],
-        "expect_rc": 0
-      },
-      "on_miss": "A0 催办 DOC1：跑 python -B tools/gen_docs_index.py 重建索引"
-    },
-    {
-      "id": "JEV_GATE-01",
-      "agent": "JEV_GATE",
-      "dept": "ops_runtime",
-      "title": "JEV 告警门日报（拦截/推送/降噪率）",
-      "why": "告警门不产日报就无法判断降噪是否有效，KPI 82% 无从核验",
-      "freq": "daily@07:15",
-      "evidence": {
-        "type": "file",
-        "path": "agent_platform/data/jev_roles/gate.json",
-        "max_age_h": 30
-      },
-      "on_miss": "A0 催办 JEV_GATE，并查 \\JevDriftDaily（07:10 生成）与 tools/jev_roles_daily.py"
-    },
-    {
-      "id": "JEV_REVIEW-01",
-      "agent": "JEV_REVIEW",
-      "dept": "ops_runtime",
-      "title": "JEV 复核日报（轮询轮数/信号条数/抽检清单）",
-      "why": "复核席没有抽检清单=没有在复核；信号断流也无法察觉",
-      "freq": "daily@07:15",
-      "evidence": {
-        "type": "file",
-        "path": "agent_platform/data/jev_roles/review.json",
-        "max_age_h": 30
-      },
-      "on_miss": "A0 催办 JEV_REVIEW，并查 \\JevDriftDaily 是否成功"
-    },
-    {
-      "id": "JEV_QD-01",
-      "agent": "JEV_QD",
-      "dept": "ops_runtime",
-      "title": "JEV 桥接日报（推送成功率/失败清单）",
-      "why": "桥接失败=信号到不了下游，必须每天可核",
-      "freq": "daily@07:15",
-      "evidence": {
-        "type": "file",
-        "path": "agent_platform/data/jev_roles/qd.json",
-        "max_age_h": 30
-      },
-      "on_miss": "A0 催办 JEV_QD，附 qd_failed.json 内容"
-    },
-    {
-      "id": "ARCH1-02",
-      "agent": "ARCH1",
-      "dept": "dev",
-      "title": "部门周报（触发·吞吐·归属·review·返工·审计六指标）",
-      "why": "部门周报断供，六指标无人复盘，部门治理只能退化成事后救火",
-      "freq": "weekly@1 17:40",
-      "evidence": {
-        "type": "file",
-        "path": "agent_platform/data/dev/weekly_report.md",
-        "max_age_h": 200
-      },
-      "on_miss": "归档治理席催 ARCH1 出周报"
-    },
-    {
-      "id": "DEV1-02",
-      "agent": "DEV1",
-      "dept": "dev",
-      "title": "技术副手值班日志（评审初筛/后端协调）",
-      "why": "副手不落值班轨迹，评审初筛与后端协调是否发生无从追溯",
-      "freq": "daily@09:30",
-      "evidence": {
-        "type": "file",
-        "path": "agent_platform/data/dev/deputy_log.md",
-        "max_age_h": 36
-      },
-      "on_miss": "A0 催办 DEV1：补值班日志并说明断档原因"
-    },
-    {
-      "id": "OPS1-02",
-      "agent": "OPS1",
-      "dept": "dev",
-      "title": "研发合并队列与工作树回收巡检",
-      "why": "合并队列与工作树无人巡检，积压与僵尸 worktree 会拖垮并行开发",
-      "freq": "daily@18:00",
-      "evidence": {
-        "type": "file",
-        "path": "agent_platform/data/dev/merge_queue.md",
-        "max_age_h": 36
-      },
-      "on_miss": "A0 催办 OPS1：回收僵尸工作树并报合并队列积压"
-    },
-    {
-      "id": "DOC1-02",
-      "agent": "DOC1",
-      "dept": "dev",
-      "title": "研发部产物与索引刷新",
-      "why": "产物与索引不同步，研发交付物按索引找不到，等于没有交付物",
-      "freq": "daily@09:40",
-      "evidence": {
-        "type": "command",
-        "cmd": [
-          "tools/gen_docs_index.py",
-          "--check"
-        ],
-        "expect_rc": 0
-      },
-      "on_miss": "A0 催办 DOC1：跑 python -B tools/gen_docs_index.py 重建索引"
-    },
-    {
-      "id": "ARCH1-03",
-      "agent": "ARCH1",
-      "dept": "dev",
-      "title": "架构决策与技术债巡检（周）：质量门/ADR/近期架构文档/在途 worktree",
-      "why": "ADR 断供与质量门漂移没人周度复核，架构债会以合并门红灯形式晚发现",
-      "freq": "weekly@1 09:50",
-      "evidence": {
-        "type": "file",
-        "path": "agent_platform/data/dev/arch1/*_patrol.md",
-        "max_age_h": 200
-      },
-      "on_miss": "A0 催办 ARCH1：跑 arch1_ops.py weekly 并补 ADR/质量门异常单"
-    }
-  ]
+  {
+   "id": "INV-02",
+   "agent": "D1",
+   "dept": "invest",
+   "title": "九维评分快照（≥75 警报池）",
+   "why": "没有当日评分，蓝卡与强转弱候选无法定级",
+   "freq": "trading_day@06:40",
+   "evidence": {
+    "type": "file",
+    "path": "quant_backtest/data/nine_dim_scores.json",
+    "max_age_h": 30
+   },
+   "on_miss": "A0 催办 D1"
+  },
+  {
+   "id": "INV-03",
+   "agent": "D1",
+   "dept": "invest",
+   "title": "晨报产出（07:00 档）",
+   "why": "早晨没有可读结论，等于当天从零开始",
+   "freq": "daily@07:00",
+   "evidence": {
+    "type": "log_regex",
+    "path": "C:/Temp/morning_report_task.log",
+    "pattern": "exit=0",
+    "max_age_h": 36
+   },
+   "on_miss": "A0 催办 D1 并查 MorningReport 任务"
+  },
+  {
+   "id": "INV-04",
+   "agent": "D1",
+   "dept": "invest",
+   "title": "日报产出（20:30 档）",
+   "why": "当日复盘不落纸，次日无法接续",
+   "freq": "daily@20:30",
+   "evidence": {
+    "type": "log_regex",
+    "path": "C:/Temp/daily_report_task.log",
+    "pattern": "exit=0",
+    "max_age_h": 30
+   },
+   "on_miss": "A0 催办 D1 并查 DailyReport 任务"
+  },
+  {
+   "id": "INV-05",
+   "agent": "WA1",
+   "dept": "invest",
+   "title": "弱于板块周扫（周蓝卡）",
+   "why": "周扫断供，weak 产线整条无新案",
+   "freq": "weekly@1 15:35",
+   "evidence": {
+    "type": "file",
+    "path": "reports/weak_scan_*.csv",
+    "max_age_h": 192
+   },
+   "on_miss": "A0 催办 WA1；连续两周缺则升级为产线停摆"
+  },
+  {
+   "id": "INT-01",
+   "agent": "INTEL0",
+   "dept": "intel",
+   "title": "新闻采集持续入库",
+   "why": "采集一停，JEV/情报/图谱三条线同时断源",
+   "freq": "every_min 60",
+   "evidence": {
+    "type": "file",
+    "path": "news_collector/news.db",
+    "max_age_h": 2
+   },
+   "on_miss": "A0 催办 INTEL0 并查 NewsCollect 任务"
+  },
+  {
+   "id": "INT-02",
+   "agent": "INTEL1",
+   "dept": "intel",
+   "title": "JEV 判定回填（AI 批）",
+   "why": "不判定就只有标题没有情绪与事件类型",
+   "freq": "daily@08:00",
+   "evidence": {
+    "type": "log_regex",
+    "path": "C:/Temp/news_task.log",
+    "pattern": "ai exit=0",
+    "max_age_h": 30
+   },
+   "on_miss": "A0 催办 INTEL1"
+  },
+  {
+   "id": "INT-03",
+   "agent": "XQ1",
+   "dept": "intel",
+   "title": "雪球帖文结构化（M3）",
+   "why": "结构化断供，舆情线只剩原始文本",
+   "freq": "every_min 120",
+   "evidence": {
+    "type": "file",
+    "path": "C:/Temp/k266_m3.log",
+    "max_age_h": 3
+   },
+   "on_miss": "A0 催办 XQ1，并查 k266_services 的 m3 拉起记录"
+  },
+  {
+   "id": "DAT-01",
+   "agent": "DATA1",
+   "dept": "data",
+   "title": "数据目录台账刷新",
+   "why": "台账过期，下游读到不存在的表也不知道",
+   "freq": "daily@06:30",
+   "evidence": {
+    "type": "file",
+    "path": "quant_backtest/data/catalog.json",
+    "max_age_h": 30
+   },
+   "on_miss": "A0 催办 DATA1"
+  },
+  {
+   "id": "DAT-02",
+   "agent": "DATA1",
+   "dept": "data",
+   "title": "行情日线入库（通达信源）",
+   "why": "行情不落，所有指标与回测都建在旧数据上",
+   "freq": "trading_day@17:30",
+   "evidence": {
+    "type": "file",
+    "path": "quant_backtest/data/tdx",
+    "max_age_h": 30
+   },
+   "on_miss": "A0 催办 DATA1 并查 TdxSync 任务（今日 rc 267014）"
+  },
+  {
+   "id": "OPS-01",
+   "agent": "A0A",
+   "dept": "ops_runtime",
+   "title": "每日备份落盘",
+   "why": "当天没有备份，一次盘损就是全部资产归零",
+   "freq": "daily@03:00",
+   "evidence": {
+    "type": "file",
+    "path": "backups/*",
+    "max_age_h": 30
+   },
+   "on_miss": "A0 立即升级为 P0（备份断供）"
+  },
+  {
+   "id": "OPS-02",
+   "agent": "A0A",
+   "dept": "ops_runtime",
+   "title": "异地副本推送 + 双向校验",
+   "why": "本机备份同盘，异地才是唯一活路",
+   "freq": "daily@04:30",
+   "evidence": {
+    "type": "file",
+    "path": "C:/项目/_vault/*",
+    "max_age_h": 30
+   },
+   "on_miss": "A0 升级为 P0 并点名 offsite_push_remote.ps1"
+  },
+  {
+   "id": "LEG-01",
+   "agent": "A0",
+   "dept": "chief_line",
+   "title": "军团巡检（每 30 分钟）",
+   "why": "不巡就没人知道谁停了；但巡检≠派工，不能只做巡检",
+   "freq": "every_min 30",
+   "evidence": {
+    "type": "ledger",
+    "pattern": "\"caller\": \"A0\"",
+    "max_age_h": 1
+   },
+   "on_miss": "本项自身缺失即视为军团失联，直接升级"
+  },
+  {
+   "id": "LEG-02",
+   "agent": "A0",
+   "dept": "chief_line",
+   "title": "军团日报推送（17:35）",
+   "why": "老田不在页面上，只认推送到手机的那一张卡",
+   "freq": "daily@17:35",
+   "evidence": {
+    "type": "manual",
+    "note": "当前无自动证据：AgentChiefPush 任务 rc=0 但无产物指纹，待接线"
+   },
+   "on_miss": "待接线后再定"
+  },
+  {
+   "id": "QA-01",
+   "agent": "QA1",
+   "dept": "quality",
+   "title": "周回归（PytestWeekly）",
+   "why": "没有回归闸，改动只能靠人肉判断有没有砸",
+   "freq": "weekly@1 09:00",
+   "evidence": {
+    "type": "manual",
+    "note": "当前 PytestWeekly rc=1，未接入结果指纹；待接线"
+   },
+   "on_miss": "待接线后再定"
+  },
+  {
+   "id": "RUN-01",
+   "agent": "A0A",
+   "dept": "ops_runtime",
+   "title": "门户与 API 保活（8734/8091）",
+   "why": "门户打不开，前面所有产出都没人看得见",
+   "freq": "every_min 10",
+   "evidence": {
+    "type": "port",
+    "ports": [
+     8734,
+     8091
+    ],
+    "note": "2026-10-26 AGENTHEALTH 接线：本机 socket 连 127.0.0.1 探活，不依赖外部网络"
+   },
+   "on_miss": "由门户看门狗任务兜底"
+  },
+  {
+   "id": "DEV1-01",
+   "agent": "DEV1",
+   "dept": "dev",
+   "title": "代码准入：portal 方法集零漂移",
+   "why": "portal_api 拆分后靠 Mixin 继承，方法集丢了就是线上 500（三守卫之一）",
+   "freq": "daily@09:00",
+   "evidence": {
+    "type": "command",
+    "cmd": [
+     "tools/_mixin_integrity.py",
+     "--check"
+    ],
+    "expect_rc": 0
+   },
+   "on_miss": "A0 催办 DEV1：跑 tools/_mixin_integrity.py --check 并修方法集"
+  },
+  {
+   "id": "DEV2-01",
+   "agent": "DEV2",
+   "dept": "dev",
+   "title": "模型版本登记（按需，无固定日产）",
+   "why": "新版本不登记 domain/model_registry，回滚时找不到基线",
+   "freq": "daily@09:00",
+   "evidence": {
+    "type": "on_demand",
+    "note": "模型训练按需触发，无每日产物；登记入口 domain/model_registry（触发时应登记）"
+   },
+   "on_miss": "待接线后再定"
+  },
+  {
+   "id": "DEV3-01",
+   "agent": "DEV3",
+   "dept": "dev",
+   "title": "名下策略工单有推进",
+   "why": "策略是插件式新增，没单就等于没产出",
+   "freq": "every_min 1440",
+   "evidence": {
+    "type": "order",
+    "agent": "DEV3",
+    "max_age_h": 48
+   },
+   "on_miss": "A0 催办 DEV3；若长期无单，转派工缺口上报"
+  },
+  {
+   "id": "DEV4-01",
+   "agent": "DEV4",
+   "dept": "dev",
+   "title": "名下回测工单有推进",
+   "why": "回测判据复核是 Go/No-Go 的唯一关口",
+   "freq": "every_min 1440",
+   "evidence": {
+    "type": "order",
+    "agent": "DEV4",
+    "max_age_h": 48
+   },
+   "on_miss": "A0 催办 DEV4；若长期无单，转派工缺口上报"
+  },
+  {
+   "id": "DEV5-01",
+   "agent": "DEV5",
+   "dept": "dev",
+   "title": "前端准入：导航统一过关",
+   "why": "手写导航会漂移，nav.js 注入是唯一入口（三件套之一）",
+   "freq": "daily@09:30",
+   "evidence": {
+    "type": "command",
+    "cmd": [
+     "tools/unify_nav.py",
+     "--check"
+    ],
+    "expect_rc": 0
+   },
+   "on_miss": "A0 催办 DEV5：跑 python tools/unify_nav.py --check"
+  },
+  {
+   "id": "DEV6-01",
+   "agent": "DEV6",
+   "dept": "dev",
+   "title": "名下后端工单有推进",
+   "why": "E2 档负责常规功能独立交付，没单就没产出",
+   "freq": "every_min 1440",
+   "evidence": {
+    "type": "order",
+    "agent": "DEV6",
+    "max_age_h": 48
+   },
+   "on_miss": "A0 催办 DEV6；若长期无单，转派工缺口上报"
+  },
+  {
+   "id": "DEV7-01",
+   "agent": "DEV7",
+   "dept": "dev",
+   "title": "名下执行类工单有推进",
+   "why": "E1 档承接标准执行/批量修改，产出须交 E2 复核",
+   "freq": "every_min 1440",
+   "evidence": {
+    "type": "order",
+    "agent": "DEV7",
+    "max_age_h": 48
+   },
+   "on_miss": "A0 催办 DEV7；若长期无单，转派工缺口上报"
+  },
+  {
+   "id": "DEV8-01",
+   "agent": "DEV8",
+   "dept": "dev",
+   "title": "名下前端工单有推进",
+   "why": "E2 档前端交付，tokens 纪律与 DEV5 同标准",
+   "freq": "every_min 1440",
+   "evidence": {
+    "type": "order",
+    "agent": "DEV8",
+    "max_age_h": 48
+   },
+   "on_miss": "A0 催办 DEV8；若长期无单，转派工缺口上报"
+  },
+  {
+   "id": "ARCH1-01",
+   "agent": "ARCH1",
+   "dept": "dev",
+   "title": "架构决策登记（按需）",
+   "why": "ADR 不落 docs/adr/，下次踩同一个坑没人知道为什么这么定",
+   "freq": "daily@09:00",
+   "evidence": {
+    "type": "on_demand",
+    "note": "ADR 按决策触发，无每日产物；入口 tools/adr.py（new/list/show）"
+   },
+   "on_miss": "待接线后再定"
+  },
+  {
+   "id": "OPS1-01",
+   "agent": "OPS1",
+   "dept": "dev",
+   "title": "端口注册表零漂移（无未登记私起服务）",
+   "why": "未登记端口=私起服务，是抢端口事故的起点。注意：只判「有没有未登记」，不判「在册服务是否在线」——开发机上 Docker/手动型服务本来就常关，混在一起会天天误报",
+   "freq": "daily@09:00",
+   "evidence": {
+    "type": "command_out",
+    "cmd": [
+     "tools/check_ports.py"
+    ],
+    "forbid": "⚠"
+   },
+   "on_miss": "A0 催办 OPS1：把未登记端口收编进 REGISTRY / 豁免名单，或停掉私起服务"
+  },
+  {
+   "id": "DOC1-01",
+   "agent": "DOC1",
+   "dept": "dev",
+   "title": "文档索引与扫描一致",
+   "why": "索引落后=新人按索引找不到文档，等于没有索引",
+   "freq": "daily@09:00",
+   "evidence": {
+    "type": "command",
+    "cmd": [
+     "tools/gen_docs_index.py",
+     "--check"
+    ],
+    "expect_rc": 0
+   },
+   "on_miss": "A0 催办 DOC1：跑 python -B tools/gen_docs_index.py 重建索引"
+  },
+  {
+   "id": "JEV_GATE-01",
+   "agent": "JEV_GATE",
+   "dept": "ops_runtime",
+   "title": "JEV 告警门日报（拦截/推送/降噪率）",
+   "why": "告警门不产日报就无法判断降噪是否有效，KPI 82% 无从核验",
+   "freq": "daily@07:15",
+   "evidence": {
+    "type": "file",
+    "path": "agent_platform/data/jev_roles/gate.json",
+    "max_age_h": 30
+   },
+   "on_miss": "A0 催办 JEV_GATE，并查 \\JevDriftDaily（07:10 生成）与 tools/jev_roles_daily.py"
+  },
+  {
+   "id": "JEV_REVIEW-01",
+   "agent": "JEV_REVIEW",
+   "dept": "ops_runtime",
+   "title": "JEV 复核日报（轮询轮数/信号条数/抽检清单）",
+   "why": "复核席没有抽检清单=没有在复核；信号断流也无法察觉",
+   "freq": "daily@07:15",
+   "evidence": {
+    "type": "file",
+    "path": "agent_platform/data/jev_roles/review.json",
+    "max_age_h": 30
+   },
+   "on_miss": "A0 催办 JEV_REVIEW，并查 \\JevDriftDaily 是否成功"
+  },
+  {
+   "id": "JEV_QD-01",
+   "agent": "JEV_QD",
+   "dept": "ops_runtime",
+   "title": "JEV 桥接日报（推送成功率/失败清单）",
+   "why": "桥接失败=信号到不了下游，必须每天可核",
+   "freq": "daily@07:15",
+   "evidence": {
+    "type": "file",
+    "path": "agent_platform/data/jev_roles/qd.json",
+    "max_age_h": 30
+   },
+   "on_miss": "A0 催办 JEV_QD，附 qd_failed.json 内容"
+  },
+  {
+   "id": "ARCH1-02",
+   "agent": "ARCH1",
+   "dept": "dev",
+   "title": "部门周报（触发·吞吐·归属·review·返工·审计六指标）",
+   "why": "部门周报断供，六指标无人复盘，部门治理只能退化成事后救火",
+   "freq": "weekly@1 17:40",
+   "evidence": {
+    "type": "file",
+    "path": "agent_platform/data/dev/weekly_report.md",
+    "max_age_h": 200
+   },
+   "on_miss": "归档治理席催 ARCH1 出周报"
+  },
+  {
+   "id": "DEV1-02",
+   "agent": "DEV1",
+   "dept": "dev",
+   "title": "技术副手值班日志（评审初筛/后端协调）",
+   "why": "副手不落值班轨迹，评审初筛与后端协调是否发生无从追溯",
+   "freq": "daily@09:30",
+   "evidence": {
+    "type": "file",
+    "path": "agent_platform/data/dev/deputy_log.md",
+    "max_age_h": 36
+   },
+   "on_miss": "A0 催办 DEV1：补值班日志并说明断档原因"
+  },
+  {
+   "id": "OPS1-02",
+   "agent": "OPS1",
+   "dept": "dev",
+   "title": "研发合并队列与工作树回收巡检",
+   "why": "合并队列与工作树无人巡检，积压与僵尸 worktree 会拖垮并行开发",
+   "freq": "daily@18:00",
+   "evidence": {
+    "type": "file",
+    "path": "agent_platform/data/dev/merge_queue.md",
+    "max_age_h": 36
+   },
+   "on_miss": "A0 催办 OPS1：回收僵尸工作树并报合并队列积压"
+  },
+  {
+   "id": "DOC1-02",
+   "agent": "DOC1",
+   "dept": "dev",
+   "title": "研发部产物与索引刷新",
+   "why": "产物与索引不同步，研发交付物按索引找不到，等于没有交付物",
+   "freq": "daily@09:40",
+   "evidence": {
+    "type": "command",
+    "cmd": [
+     "tools/gen_docs_index.py",
+     "--check"
+    ],
+    "expect_rc": 0
+   },
+   "on_miss": "A0 催办 DOC1：跑 python -B tools/gen_docs_index.py 重建索引"
+  },
+  {
+   "id": "ARCH1-03",
+   "agent": "ARCH1",
+   "dept": "dev",
+   "title": "架构决策与技术债巡检（周）：质量门/ADR/近期架构文档/在途 worktree",
+   "why": "ADR 断供与质量门漂移没人周度复核，架构债会以合并门红灯形式晚发现",
+   "freq": "weekly@1 09:50",
+   "evidence": {
+    "type": "file",
+    "path": "agent_platform/data/dev/arch1/*_patrol.md",
+    "max_age_h": 200
+   },
+   "on_miss": "A0 催办 ARCH1：跑 arch1_ops.py weekly 并补 ADR/质量门异常单"
+  },
+  {
+   "id": "DATA-03",
+   "agent": "FACTOR1",
+   "dept": "data",
+   "title": "每日因子挖掘与策略优化轮（IC/衰减/新候选提案）",
+   "why": "因子池不更新，策略线只能吃老本；IC 衰减/翻转无人盯，候选假设断供",
+   "freq": "daily@18:10",
+   "evidence": {
+    "type": "file",
+    "path": "research/reports/factor_daily_*.json",
+    "max_age_h": 26
+   },
+   "on_miss": "A0 催办 FACTOR1（张松团队），检查数据同步是否到点"
+  }
+ ]
 }

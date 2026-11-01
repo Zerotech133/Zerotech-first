@@ -1,0 +1,16 @@
+{
+  "agent_id": "FACTOR1",
+  "dept": "data",
+  "title": "数据智能部：因子挖掘师",
+  "rank": "E2",
+  "tools_allowed": {
+    "read": [],
+    "write": [],
+    "danger": "deny"
+  },
+  "onboarded": "2026-11-01（老田拍板新增角色）",
+  "approvals": {
+    "chief": "A0",
+    "human": "laotian"
+  }
+}
