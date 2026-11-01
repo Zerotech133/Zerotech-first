@@ -1,0 +1,7370 @@
+{
+ "generated_at": "2026-11-01T17:21:59+08:00",
+ "definition": {
+  "sector_proxy": "tushare stock_basic 行业字段 → 当日行业内等权平均涨幅（%）",
+  "entry": "T 日收盘信号 → T+1 收盘入场 → T+21 收盘卖出（持有 20 日）",
+  "modes": {
+   "A": "个股当日涨幅 ≥ 板块当日涨幅（强于板块）",
+   "B": "个股 ≥ 板块 + 1pp（显著强于）",
+   "C": "板块涨幅≥1% 且 个股涨幅≥1%（用户示例）"
+  },
+  "units": "涨幅均为百分比数值（1.0 = +1%）"
+ },
+ "sample": {
+  "start": "20230101",
+  "end": "20260930",
+  "hold_days": 20
+ },
+ "strategies": {
+  "LX01_倍量柱": {
+   "factor": "double_vol",
+   "raw": {
+    "n": 116901,
+    "mean": 0.0039,
+    "t": 7.0
+   },
+   "raw_excess_market": {
+    "n": 116901,
+    "mean": -0.0059,
+    "t": -11.64
+   },
+   "raw_excess_sector": {
+    "n": 116895,
+    "mean": -0.0041,
+    "t": -8.48
+   },
+   "modes": {
+    "A": {
+     "n": 111056,
+     "excess_sector": {
+      "n": 108781,
+      "mean": -0.0047,
+      "t": -9.44
+     },
+     "excess_market": {
+      "n": 108783,
+      "mean": -0.0061,
+      "t": -11.64
+     },
+     "abs_ret": {
+      "n": 108783,
+      "mean": 0.0022,
+      "t": 3.73
+     }
+    },
+    "B": {
+     "n": 103934,
+     "excess_sector": {
+      "n": 101746,
+      "mean": -0.0055,
+      "t": -10.74
+     },
+     "excess_market": {
+      "n": 101748,
+      "mean": -0.0067,
+      "t": -12.29
+     },
+     "abs_ret": {
+      "n": 101748,
+      "mean": 0.001,
+      "t": 1.71
+     }
+    },
+    "C": {
+     "n": 54247,
+     "excess_sector": {
+      "n": 53463,
+      "mean": -0.0005,
+      "t": -0.76
+     },
+     "excess_market": {
+      "n": 53463,
+      "mean": -0.0038,
+      "t": -4.98
+     },
+     "abs_ret": {
+      "n": 53463,
+      "mean": 0.011,
+      "t": 12.94
+     }
+    }
+   }
+  },
+  "LX02_价升量缩": {
+   "factor": "up_vol_down",
+   "raw": {
+    "n": 501775,
+    "mean": 0.0097,
+    "t": 45.58
+   },
+   "raw_excess_market": {
+    "n": 501775,
+    "mean": 0.0012,
+    "t": 6.32
+   },
+   "raw_excess_sector": {
+    "n": 501744,
+    "mean": 0.001,
+    "t": 5.75
+   },
+   "modes": {
+    "A": {
+     "n": 295693,
+     "excess_sector": {
+      "n": 289445,
+      "mean": 0.0007,
+      "t": 3.05
+     },
+     "excess_market": {
+      "n": 289448,
+      "mean": 0.0007,
+      "t": 2.69
+     },
+     "abs_ret": {
+      "n": 289448,
+      "mean": 0.0081,
+      "t": 27.84
+     }
+    },
+    "B": {
+     "n": 120700,
+     "excess_sector": {
+      "n": 117368,
+      "mean": -0.001,
+      "t": -2.22
+     },
+     "excess_market": {
+      "n": 117370,
+      "mean": -0.0014,
+      "t": -2.97
+     },
+     "abs_ret": {
+      "n": 117370,
+      "mean": 0.0068,
+      "t": 13.17
+     }
+    },
+    "C": {
+     "n": 122044,
+     "excess_sector": {
+      "n": 120371,
+      "mean": 0.0027,
+      "t": 6.81
+     },
+     "excess_market": {
+      "n": 120374,
+      "mean": 0.0028,
+      "t": 6.5
+     },
+     "abs_ret": {
+      "n": 120374,
+      "mean": 0.0203,
+      "t": 42.43
+     }
+    }
+   }
+  },
+  "LX03_极阴次阳": {
+   "factor": "yin_yang",
+   "raw": {
+    "n": 41966,
+    "mean": 0.0323,
+    "t": 31.73
+   },
+   "raw_excess_market": {
+    "n": 41966,
+    "mean": -0.0053,
+    "t": -5.94
+   },
+   "raw_excess_sector": {
+    "n": 41960,
+    "mean": -0.0058,
+    "t": -6.99
+   },
+   "modes": {
+    "A": {
+     "n": 38191,
+     "excess_sector": {
+      "n": 36684,
+      "mean": -0.0065,
+      "t": -7.16
+     },
+     "excess_market": {
+      "n": 36684,
+      "mean": -0.0064,
+      "t": -6.59
+     },
+     "abs_ret": {
+      "n": 36684,
+      "mean": 0.0288,
+      "t": 26.01
+     }
+    },
+    "B": {
+     "n": 32985,
+     "excess_sector": {
+      "n": 31627,
+      "mean": -0.0078,
+      "t": -7.72
+     },
+     "excess_market": {
+      "n": 31627,
+      "mean": -0.0076,
+      "t": -7.07
+     },
+     "abs_ret": {
+      "n": 31627,
+      "mean": 0.0265,
+      "t": 21.69
+     }
+    },
+    "C": {
+     "n": 31322,
+     "excess_sector": {
+      "n": 30370,
+      "mean": 0.0022,
+      "t": 2.32
+     },
+     "excess_market": {
+      "n": 30371,
+      "mean": 0.0035,
+      "t": 3.44
+     },
+     "abs_ret": {
+      "n": 30371,
+      "mean": 0.0504,
+      "t": 43.16
+     }
+    }
+   }
+  },
+  "LX04_兵临城下": {
+   "factor": "near_high_vol",
+   "raw": {
+    "n": 213178,
+    "mean": 0.0031,
+    "t": 7.95
+   },
+   "raw_excess_market": {
+    "n": 213178,
+    "mean": -0.0075,
+    "t": -20.85
+   },
+   "raw_excess_sector": {
+    "n": 213171,
+    "mean": -0.0053,
+    "t": -15.8
+   },
+   "modes": {
+    "A": {
+     "n": 185269,
+     "excess_sector": {
+      "n": 182302,
+      "mean": -0.0056,
+      "t": -15.04
+     },
+     "excess_market": {
+      "n": 182304,
+      "mean": -0.0073,
+      "t": -18.6
+     },
+     "abs_ret": {
+      "n": 182304,
+      "mean": 0.0003,
+      "t": 0.6
+     }
+    },
+    "B": {
+     "n": 162010,
+     "excess_sector": {
+      "n": 159266,
+      "mean": -0.0066,
+      "t": -16.24
+     },
+     "excess_market": {
+      "n": 159268,
+      "mean": -0.0082,
+      "t": -18.9
+     },
+     "abs_ret": {
+      "n": 159268,
+      "mean": -0.0017,
+      "t": -3.63
+     }
+    },
+    "C": {
+     "n": 99933,
+     "excess_sector": {
+      "n": 98834,
+      "mean": -0.0032,
+      "t": -6.26
+     },
+     "excess_market": {
+      "n": 98834,
+      "mean": -0.0062,
+      "t": -11.41
+     },
+     "abs_ret": {
+      "n": 98834,
+      "mean": 0.0116,
+      "t": 19.26
+     }
+    }
+   }
+  },
+  "LX05_黄金柱": {
+   "factor": "golden_pillar",
+   "raw": {
+    "n": 41855,
+    "mean": 0.0102,
+    "t": 13.09
+   },
+   "raw_excess_market": {
+    "n": 41855,
+    "mean": 0.0059,
+    "t": 8.56
+   },
+   "raw_excess_sector": {
+    "n": 41853,
+    "mean": 0.0046,
+    "t": 7.11
+   },
+   "modes": {
+    "A": {
+     "n": 20231,
+     "excess_sector": {
+      "n": 19883,
+      "mean": 0.004,
+      "t": 3.98
+     },
+     "excess_market": {
+      "n": 19884,
+      "mean": 0.0051,
+      "t": 4.88
+     },
+     "abs_ret": {
+      "n": 19884,
+      "mean": 0.008,
+      "t": 6.79
+     }
+    },
+    "B": {
+     "n": 9072,
+     "excess_sector": {
+      "n": 8862,
+      "mean": 0.0003,
+      "t": 0.15
+     },
+     "excess_market": {
+      "n": 8862,
+      "mean": 0.0008,
+      "t": 0.44
+     },
+     "abs_ret": {
+      "n": 8862,
+      "mean": 0.0049,
+      "t": 2.55
+     }
+    },
+    "C": {
+     "n": 5848,
+     "excess_sector": {
+      "n": 5787,
+      "mean": 0.0057,
+      "t": 2.73
+     },
+     "excess_market": {
+      "n": 5787,
+      "mean": 0.0043,
+      "t": 1.93
+     },
+     "abs_ret": {
+      "n": 5787,
+      "mean": 0.0211,
+      "t": 8.72
+     }
+    }
+   }
+  },
+  "LX06_长阴短柱": {
+   "factor": "lx06_long_yin_short",
+   "raw": {
+    "n": 9618,
+    "mean": -0.004,
+    "t": -1.84
+   },
+   "raw_excess_market": {
+    "n": 9618,
+    "mean": -0.0191,
+    "t": -9.79
+   },
+   "raw_excess_sector": {
+    "n": 9618,
+    "mean": -0.0179,
+    "t": -9.87
+   },
+   "modes": {
+    "A": {
+     "n": 9266,
+     "excess_sector": {
+      "n": 8976,
+      "mean": -0.02,
+      "t": -11.38
+     },
+     "excess_market": {
+      "n": 8976,
+      "mean": -0.0213,
+      "t": -11.3
+     },
+     "abs_ret": {
+      "n": 8976,
+      "mean": -0.008,
+      "t": -3.71
+     }
+    },
+    "B": {
+     "n": 8497,
+     "excess_sector": {
+      "n": 8216,
+      "mean": -0.022,
+      "t": -11.93
+     },
+     "excess_market": {
+      "n": 8216,
+      "mean": -0.0235,
+      "t": -11.9
+     },
+     "abs_ret": {
+      "n": 8216,
+      "mean": -0.0117,
+      "t": -5.22
+     }
+    },
+    "C": {
+     "n": 5954,
+     "excess_sector": {
+      "n": 5788,
+      "mean": -0.0117,
+      "t": -4.83
+     },
+     "excess_market": {
+      "n": 5788,
+      "mean": -0.0119,
+      "t": -4.52
+     },
+     "abs_ret": {
+      "n": 5788,
+      "mean": 0.0121,
+      "t": 4.1
+     }
+    }
+   }
+  },
+  "LX07_将军柱": {
+   "factor": "lx03_general_pillar",
+   "raw": {
+    "n": 93607,
+    "mean": 0.0019,
+    "t": 3.66
+   },
+   "raw_excess_market": {
+    "n": 93607,
+    "mean": -0.0033,
+    "t": -7.38
+   },
+   "raw_excess_sector": {
+    "n": 93601,
+    "mean": -0.0028,
+    "t": -6.74
+   },
+   "modes": {
+    "A": {
+     "n": 39037,
+     "excess_sector": {
+      "n": 37859,
+      "mean": -0.0039,
+      "t": -5.75
+     },
+     "excess_market": {
+      "n": 37859,
+      "mean": -0.0041,
+      "t": -5.7
+     },
+     "abs_ret": {
+      "n": 37859,
+      "mean": 0.0015,
+      "t": 1.78
+     }
+    },
+    "B": {
+     "n": 18075,
+     "excess_sector": {
+      "n": 17429,
+      "mean": -0.0086,
+      "t": -7.88
+     },
+     "excess_market": {
+      "n": 17429,
+      "mean": -0.0094,
+      "t": -8.19
+     },
+     "abs_ret": {
+      "n": 17429,
+      "mean": -0.003,
+      "t": -2.34
+     }
+    },
+    "C": {
+     "n": 11386,
+     "excess_sector": {
+      "n": 10992,
+      "mean": -0.0043,
+      "t": -3.15
+     },
+     "excess_market": {
+      "n": 10992,
+      "mean": -0.0081,
+      "t": -5.52
+     },
+     "abs_ret": {
+      "n": 10992,
+      "mean": 0.0036,
+      "t": 2.16
+     }
+    }
+   }
+  },
+  "LX08_元帅柱": {
+   "factor": "lx04_marshal_zero",
+   "raw": {
+    "n": 1544,
+    "mean": 0.0119,
+    "t": 2.19
+   },
+   "raw_excess_market": {
+    "n": 1544,
+    "mean": -0.0031,
+    "t": -0.61
+   },
+   "raw_excess_sector": {
+    "n": 1544,
+    "mean": -0.0016,
+    "t": -0.34
+   },
+   "modes": {
+    "A": {
+     "n": 1165,
+     "excess_sector": {
+      "n": 1156,
+      "mean": 0.0033,
+      "t": 0.53
+     },
+     "excess_market": {
+      "n": 1156,
+      "mean": 0.0028,
+      "t": 0.43
+     },
+     "abs_ret": {
+      "n": 1156,
+      "mean": 0.017,
+      "t": 2.43
+     }
+    },
+    "B": {
+     "n": 1000,
+     "excess_sector": {
+      "n": 991,
+      "mean": 0.0067,
+      "t": 0.95
+     },
+     "excess_market": {
+      "n": 991,
+      "mean": 0.0079,
+      "t": 1.06
+     },
+     "abs_ret": {
+      "n": 991,
+      "mean": 0.0218,
+      "t": 2.71
+     }
+    },
+    "C": {
+     "n": 994,
+     "excess_sector": {
+      "n": 991,
+      "mean": -0.0058,
+      "t": -1.11
+     },
+     "excess_market": {
+      "n": 991,
+      "mean": -0.0081,
+      "t": -1.46
+     },
+     "abs_ret": {
+      "n": 991,
+      "mean": 0.0084,
+      "t": 1.44
+     }
+    }
+   }
+  },
+  "LX09_黄金线": {
+   "factor": "lx05_golden_line",
+   "raw": {
+    "n": 55466,
+    "mean": 0.0098,
+    "t": 16.05
+   },
+   "raw_excess_market": {
+    "n": 55466,
+    "mean": 0.0058,
+    "t": 10.28
+   },
+   "raw_excess_sector": {
+    "n": 55459,
+    "mean": 0.0054,
+    "t": 10.24
+   },
+   "modes": {
+    "A": {
+     "n": 36067,
+     "excess_sector": {
+      "n": 35614,
+      "mean": 0.0048,
+      "t": 7.24
+     },
+     "excess_market": {
+      "n": 35616,
+      "mean": 0.0055,
+      "t": 7.83
+     },
+     "abs_ret": {
+      "n": 35616,
+      "mean": 0.008,
+      "t": 10.42
+     }
+    },
+    "B": {
+     "n": 18016,
+     "excess_sector": {
+      "n": 17705,
+      "mean": 0.0033,
+      "t": 3.15
+     },
+     "excess_market": {
+      "n": 17707,
+      "mean": 0.0035,
+      "t": 3.13
+     },
+     "abs_ret": {
+      "n": 17707,
+      "mean": 0.0055,
+      "t": 4.62
+     }
+    },
+    "C": {
+     "n": 14634,
+     "excess_sector": {
+      "n": 14531,
+      "mean": 0.0077,
+      "t": 6.71
+     },
+     "excess_market": {
+      "n": 14531,
+      "mean": 0.0071,
+      "t": 5.76
+     },
+     "abs_ret": {
+      "n": 14531,
+      "mean": 0.0153,
+      "t": 11.49
+     }
+    }
+   }
+  },
+  "LX10_缩量地量": {
+   "factor": "shrink_vol",
+   "raw": {
+    "n": 1471122,
+    "mean": 0.007,
+    "t": 55.45
+   },
+   "raw_excess_market": {
+    "n": 1471122,
+    "mean": 0.0002,
+    "t": 1.79
+   },
+   "raw_excess_sector": {
+    "n": 1471029,
+    "mean": 0.0001,
+    "t": 0.66
+   },
+   "modes": {
+    "A": {
+     "n": 519328,
+     "excess_sector": {
+      "n": 505252,
+      "mean": 0.0006,
+      "t": 3.72
+     },
+     "excess_market": {
+      "n": 505273,
+      "mean": 0.0009,
+      "t": 4.76
+     },
+     "abs_ret": {
+      "n": 505273,
+      "mean": 0.0082,
+      "t": 38.73
+     }
+    },
+    "B": {
+     "n": 166796,
+     "excess_sector": {
+      "n": 160753,
+      "mean": -0.0015,
+      "t": -4.07
+     },
+     "excess_market": {
+      "n": 160770,
+      "mean": -0.0019,
+      "t": -5.14
+     },
+     "abs_ret": {
+      "n": 160770,
+      "mean": 0.0083,
+      "t": 19.51
+     }
+    },
+    "C": {
+     "n": 122044,
+     "excess_sector": {
+      "n": 120371,
+      "mean": 0.0027,
+      "t": 6.81
+     },
+     "excess_market": {
+      "n": 120374,
+      "mean": 0.0028,
+      "t": 6.5
+     },
+     "abs_ret": {
+      "n": 120374,
+      "mean": 0.0203,
+      "t": 42.43
+     }
+    }
+   }
+  },
+  "LX11_现场直憋": {
+   "factor": "lx09_suffocation",
+   "raw": {
+    "n": 14091,
+    "mean": 0.007,
+    "t": 4.51
+   },
+   "raw_excess_market": {
+    "n": 14091,
+    "mean": -0.0053,
+    "t": -3.72
+   },
+   "raw_excess_sector": {
+    "n": 14091,
+    "mean": -0.0048,
+    "t": -3.55
+   },
+   "modes": {
+    "A": {
+     "n": 13599,
+     "excess_sector": {
+      "n": 13390,
+      "mean": -0.005,
+      "t": -3.48
+     },
+     "excess_market": {
+      "n": 13390,
+      "mean": -0.0053,
+      "t": -3.62
+     },
+     "abs_ret": {
+      "n": 13390,
+      "mean": 0.0058,
+      "t": 3.63
+     }
+    },
+    "B": {
+     "n": 12714,
+     "excess_sector": {
+      "n": 12509,
+      "mean": -0.0067,
+      "t": -5.28
+     },
+     "excess_market": {
+      "n": 12509,
+      "mean": -0.0067,
+      "t": -5.04
+     },
+     "abs_ret": {
+      "n": 12509,
+      "mean": 0.0039,
+      "t": 2.65
+     }
+    },
+    "C": {
+     "n": 7252,
+     "excess_sector": {
+      "n": 7186,
+      "mean": -0.0001,
+      "t": -0.05
+     },
+     "excess_market": {
+      "n": 7186,
+      "mean": -0.0004,
+      "t": -0.17
+     },
+     "abs_ret": {
+      "n": 7186,
+      "mean": 0.016,
+      "t": 6.54
+     }
+    }
+   }
+  },
+  "LX12_双阴出货": {
+   "factor": "lx12_double_yin_exit",
+   "raw": {
+    "n": 905147,
+    "mean": 0.0121,
+    "t": 77.79
+   },
+   "raw_excess_market": {
+    "n": 905147,
+    "mean": 0.0032,
+    "t": 25.35
+   },
+   "raw_excess_sector": {
+    "n": 905072,
+    "mean": 0.0021,
+    "t": 17.54
+   },
+   "modes": {
+    "A": {
+     "n": 252786,
+     "excess_sector": {
+      "n": 239450,
+      "mean": 0.0009,
+      "t": 4.23
+     },
+     "excess_market": {
+      "n": 239459,
+      "mean": 0.0024,
+      "t": 10.51
+     },
+     "abs_ret": {
+      "n": 239459,
+      "mean": 0.013,
+      "t": 45.64
+     }
+    },
+    "B": {
+     "n": 65456,
+     "excess_sector": {
+      "n": 60324,
+      "mean": -0.0005,
+      "t": -0.99
+     },
+     "excess_market": {
+      "n": 60329,
+      "mean": 0.0008,
+      "t": 1.52
+     },
+     "abs_ret": {
+      "n": 60329,
+      "mean": 0.0241,
+      "t": 39.27
+     }
+    },
+    "C": {
+     "n": 6456,
+     "excess_sector": {
+      "n": 6216,
+      "mean": 0.0129,
+      "t": 7.45
+     },
+     "excess_market": {
+      "n": 6217,
+      "mean": 0.0234,
+      "t": 12.46
+     },
+     "abs_ret": {
+      "n": 6217,
+      "mean": 0.0324,
+      "t": 14.31
+     }
+    }
+   }
+  },
+  "LX13_3121": {
+   "factor": "lx10_ruler3121",
+   "raw": {
+    "n": 164798,
+    "mean": 0.008,
+    "t": 20.43
+   },
+   "raw_excess_market": {
+    "n": 164798,
+    "mean": -0.0012,
+    "t": -3.4
+   },
+   "raw_excess_sector": {
+    "n": 164789,
+    "mean": -0.0015,
+    "t": -4.71
+   },
+   "modes": {
+    "A": {
+     "n": 124859,
+     "excess_sector": {
+      "n": 122219,
+      "mean": -0.0029,
+      "t": -7.64
+     },
+     "excess_market": {
+      "n": 122222,
+      "mean": -0.0026,
+      "t": -6.6
+     },
+     "abs_ret": {
+      "n": 122222,
+      "mean": 0.0046,
+      "t": 10.13
+     }
+    },
+    "B": {
+     "n": 77615,
+     "excess_sector": {
+      "n": 75659,
+      "mean": -0.005,
+      "t": -9.68
+     },
+     "excess_market": {
+      "n": 75661,
+      "mean": -0.0051,
+      "t": -9.4
+     },
+     "abs_ret": {
+      "n": 75661,
+      "mean": 0.0009,
+      "t": 1.42
+     }
+    },
+    "C": {
+     "n": 70025,
+     "excess_sector": {
+      "n": 68939,
+      "mean": 0.0004,
+      "t": 0.77
+     },
+     "excess_market": {
+      "n": 68943,
+      "mean": 0.0016,
+      "t": 2.85
+     },
+     "abs_ret": {
+      "n": 68943,
+      "mean": 0.0173,
+      "t": 26.31
+     }
+    }
+   }
+  },
+  "LX14_间谍小量": {
+   "factor": "lx11_spy_small_vol",
+   "raw": {
+    "n": 873909,
+    "mean": 0.0053,
+    "t": 34.11
+   },
+   "raw_excess_market": {
+    "n": 873909,
+    "mean": -0.0017,
+    "t": -12.1
+   },
+   "raw_excess_sector": {
+    "n": 873849,
+    "mean": -0.0015,
+    "t": -11.94
+   },
+   "modes": {
+    "A": {
+     "n": 575758,
+     "excess_sector": {
+      "n": 564595,
+      "mean": -0.0024,
+      "t": -14.67
+     },
+     "excess_market": {
+      "n": 564617,
+      "mean": -0.0024,
+      "t": -13.6
+     },
+     "abs_ret": {
+      "n": 564617,
+      "mean": 0.0034,
+      "t": 17.32
+     }
+    },
+    "B": {
+     "n": 312651,
+     "excess_sector": {
+      "n": 305125,
+      "mean": -0.0049,
+      "t": -20.09
+     },
+     "excess_market": {
+      "n": 305144,
+      "mean": -0.0054,
+      "t": -20.72
+     },
+     "abs_ret": {
+      "n": 305144,
+      "mean": -0.0,
+      "t": -0.03
+     }
+    },
+    "C": {
+     "n": 274473,
+     "excess_sector": {
+      "n": 270887,
+      "mean": -0.001,
+      "t": -4.28
+     },
+     "excess_market": {
+      "n": 270893,
+      "mean": -0.0018,
+      "t": -6.84
+     },
+     "abs_ret": {
+      "n": 270893,
+      "mean": 0.0098,
+      "t": 32.23
+     }
+    }
+   }
+  },
+  "LX15_接力双阳": {
+   "factor": "lx14_relay_double_yang",
+   "raw": {
+    "n": 131724,
+    "mean": 0.0019,
+    "t": 4.73
+   },
+   "raw_excess_market": {
+    "n": 131724,
+    "mean": -0.0033,
+    "t": -9.01
+   },
+   "raw_excess_sector": {
+    "n": 131716,
+    "mean": -0.0033,
+    "t": -9.98
+   },
+   "modes": {
+    "A": {
+     "n": 71892,
+     "excess_sector": {
+      "n": 70876,
+      "mean": -0.0039,
+      "t": -8.23
+     },
+     "excess_market": {
+      "n": 70879,
+      "mean": -0.0041,
+      "t": -8.08
+     },
+     "abs_ret": {
+      "n": 70879,
+      "mean": 0.0001,
+      "t": 0.22
+     }
+    },
+    "B": {
+     "n": 38879,
+     "excess_sector": {
+      "n": 38159,
+      "mean": -0.0071,
+      "t": -9.63
+     },
+     "excess_market": {
+      "n": 38160,
+      "mean": -0.0082,
+      "t": -10.29
+     },
+     "abs_ret": {
+      "n": 38160,
+      "mean": -0.0022,
+      "t": -2.58
+     }
+    },
+    "C": {
+     "n": 30545,
+     "excess_sector": {
+      "n": 30210,
+      "mean": -0.0052,
+      "t": -6.8
+     },
+     "excess_market": {
+      "n": 30211,
+      "mean": -0.0063,
+      "t": -7.54
+     },
+     "abs_ret": {
+      "n": 30211,
+      "mean": 0.0068,
+      "t": 7.34
+     }
+    }
+   }
+  },
+  "LX16_站稳凹峰": {
+   "factor": "lx17_concave_peak",
+   "raw": {
+    "n": 108608,
+    "mean": 0.0064,
+    "t": 15.26
+   },
+   "raw_excess_market": {
+    "n": 108608,
+    "mean": 0.0016,
+    "t": 4.18
+   },
+   "raw_excess_sector": {
+    "n": 108599,
+    "mean": 0.0016,
+    "t": 4.38
+   },
+   "modes": {
+    "A": {
+     "n": 72589,
+     "excess_sector": {
+      "n": 71845,
+      "mean": 0.001,
+      "t": 2.12
+     },
+     "excess_market": {
+      "n": 71847,
+      "mean": 0.0012,
+      "t": 2.49
+     },
+     "abs_ret": {
+      "n": 71847,
+      "mean": 0.0037,
+      "t": 6.93
+     }
+    },
+    "B": {
+     "n": 39673,
+     "excess_sector": {
+      "n": 39139,
+      "mean": -0.0015,
+      "t": -2.37
+     },
+     "excess_market": {
+      "n": 39140,
+      "mean": -0.0018,
+      "t": -2.65
+     },
+     "abs_ret": {
+      "n": 39140,
+      "mean": 0.0007,
+      "t": 0.89
+     }
+    },
+    "C": {
+     "n": 32819,
+     "excess_sector": {
+      "n": 32616,
+      "mean": 0.0014,
+      "t": 1.92
+     },
+     "excess_market": {
+      "n": 32617,
+      "mean": 0.0002,
+      "t": 0.25
+     },
+     "abs_ret": {
+      "n": 32617,
+      "mean": 0.0117,
+      "t": 13.31
+     }
+    }
+   }
+  },
+  "LX17_牛股量形": {
+   "factor": "lx19_bull_shape_launch",
+   "raw": {
+    "n": 14642,
+    "mean": 0.017,
+    "t": 12.17
+   },
+   "raw_excess_market": {
+    "n": 14642,
+    "mean": -0.0001,
+    "t": -0.09
+   },
+   "raw_excess_sector": {
+    "n": 14642,
+    "mean": -0.0002,
+    "t": -0.16
+   },
+   "modes": {
+    "A": {
+     "n": 13563,
+     "excess_sector": {
+      "n": 13348,
+      "mean": -0.0,
+      "t": -0.01
+     },
+     "excess_market": {
+      "n": 13348,
+      "mean": 0.0001,
+      "t": 0.1
+     },
+     "abs_ret": {
+      "n": 13348,
+      "mean": 0.016,
+      "t": 10.73
+     }
+    },
+    "B": {
+     "n": 12258,
+     "excess_sector": {
+      "n": 12051,
+      "mean": -0.001,
+      "t": -0.7
+     },
+     "excess_market": {
+      "n": 12051,
+      "mean": -0.0006,
+      "t": -0.43
+     },
+     "abs_ret": {
+      "n": 12051,
+      "mean": 0.015,
+      "t": 9.34
+     }
+    },
+    "C": {
+     "n": 7921,
+     "excess_sector": {
+      "n": 7836,
+      "mean": 0.0014,
+      "t": 0.88
+     },
+     "excess_market": {
+      "n": 7836,
+      "mean": 0.001,
+      "t": 0.59
+     },
+     "abs_ret": {
+      "n": 7836,
+      "mean": 0.0225,
+      "t": 12.05
+     }
+    }
+   }
+  },
+  "LX18_牛股三绝": {
+   "factor": "lx20_three_absolutes",
+   "raw": {
+    "n": 622061,
+    "mean": 0.0101,
+    "t": 42.91
+   },
+   "raw_excess_market": {
+    "n": 622061,
+    "mean": -0.0024,
+    "t": -11.43
+   },
+   "raw_excess_sector": {
+    "n": 622029,
+    "mean": -0.0015,
+    "t": -7.75
+   },
+   "modes": {
+    "A": {
+     "n": 351554,
+     "excess_sector": {
+      "n": 345449,
+      "mean": -0.0033,
+      "t": -11.83
+     },
+     "excess_market": {
+      "n": 345461,
+      "mean": -0.0041,
+      "t": -13.86
+     },
+     "abs_ret": {
+      "n": 345461,
+      "mean": 0.0065,
+      "t": 20.15
+     }
+    },
+    "B": {
+     "n": 238252,
+     "excess_sector": {
+      "n": 233481,
+      "mean": -0.0059,
+      "t": -16.39
+     },
+     "excess_market": {
+      "n": 233489,
+      "mean": -0.0069,
+      "t": -18.26
+     },
+     "abs_ret": {
+      "n": 233489,
+      "mean": 0.0029,
+      "t": 6.88
+     }
+    },
+    "C": {
+     "n": 158402,
+     "excess_sector": {
+      "n": 156602,
+      "mean": -0.0019,
+      "t": -4.4
+     },
+     "excess_market": {
+      "n": 156605,
+      "mean": -0.0043,
+      "t": -9.49
+     },
+     "abs_ret": {
+      "n": 156605,
+      "mean": 0.0171,
+      "t": 33.72
+     }
+    }
+   }
+  },
+  "LX19_凹口淘金": {
+   "factor": "aokou",
+   "raw": {
+    "n": 642053,
+    "mean": 0.0078,
+    "t": 35.52
+   },
+   "raw_excess_market": {
+    "n": 642053,
+    "mean": -0.0068,
+    "t": -36.03
+   },
+   "raw_excess_sector": {
+    "n": 642013,
+    "mean": -0.0056,
+    "t": -31.62
+   },
+   "modes": {
+    "A": {
+     "n": 524452,
+     "excess_sector": {
+      "n": 512182,
+      "mean": -0.0066,
+      "t": -32.68
+     },
+     "excess_market": {
+      "n": 512197,
+      "mean": -0.0077,
+      "t": -35.36
+     },
+     "abs_ret": {
+      "n": 512197,
+      "mean": 0.0047,
+      "t": 19.1
+     }
+    },
+    "B": {
+     "n": 394017,
+     "excess_sector": {
+      "n": 383950,
+      "mean": -0.0084,
+      "t": -34.22
+     },
+     "excess_market": {
+      "n": 383962,
+      "mean": -0.0095,
+      "t": -36.23
+     },
+     "abs_ret": {
+      "n": 383962,
+      "mean": 0.0018,
+      "t": 5.98
+     }
+    },
+    "C": {
+     "n": 322703,
+     "excess_sector": {
+      "n": 316619,
+      "mean": -0.0036,
+      "t": -14.12
+     },
+     "excess_market": {
+      "n": 316626,
+      "mean": -0.0053,
+      "t": -19.22
+     },
+     "abs_ret": {
+      "n": 316626,
+      "mean": 0.0149,
+      "t": 46.86
+     }
+    }
+   }
+  }
+ },
+ "screening_20261030": {
+  "note": "20261030（最近交易日）量学信号 ∩ 板块相对强度；研究样例",
+  "rs_counts": {
+   "A": 2689,
+   "B": 1788,
+   "C": 35
+  },
+  "top": {
+   "A": [
+    {
+     "ts_code": "688066.SH",
+     "name": "*ST航图",
+     "industry": "软件服务",
+     "stock_pct": 20.04,
+     "sector_pct": -5.49,
+     "excess": 25.53
+    },
+    {
+     "ts_code": "688045.SH",
+     "name": "必易微",
+     "industry": "半导体",
+     "stock_pct": 20.0,
+     "sector_pct": -5.33,
+     "excess": 25.33
+    },
+    {
+     "ts_code": "301132.SZ",
+     "name": "满坤科技",
+     "industry": "元器件",
+     "stock_pct": 20.01,
+     "sector_pct": -4.3,
+     "excess": 24.31
+    },
+    {
+     "ts_code": "301187.SZ",
+     "name": "欧圣电气",
+     "industry": "家用电器",
+     "stock_pct": 20.0,
+     "sector_pct": -2.55,
+     "excess": 22.55
+    },
+    {
+     "ts_code": "300030.SZ",
+     "name": "阳普医疗",
+     "industry": "医疗保健",
+     "stock_pct": 20.03,
+     "sector_pct": -1.03,
+     "excess": 21.06
+    },
+    {
+     "ts_code": "301520.SZ",
+     "name": "万邦医药",
+     "industry": "生物制药",
+     "stock_pct": 20.0,
+     "sector_pct": -0.35,
+     "excess": 20.35
+    },
+    {
+     "ts_code": "688073.SH",
+     "name": "毕得医药",
+     "industry": "化学制药",
+     "stock_pct": 19.01,
+     "sector_pct": -0.73,
+     "excess": 19.74
+    },
+    {
+     "ts_code": "688137.SH",
+     "name": "近岸蛋白",
+     "industry": "生物制药",
+     "stock_pct": 16.45,
+     "sector_pct": -0.35,
+     "excess": 16.8
+    },
+    {
+     "ts_code": "920201.BJ",
+     "name": "百瑞吉",
+     "industry": "医疗保健",
+     "stock_pct": 15.44,
+     "sector_pct": -1.03,
+     "excess": 16.47
+    },
+    {
+     "ts_code": "300739.SZ",
+     "name": "明阳电路",
+     "industry": "元器件",
+     "stock_pct": 11.5,
+     "sector_pct": -4.3,
+     "excess": 15.81
+    },
+    {
+     "ts_code": "000676.SZ",
+     "name": "智度股份",
+     "industry": "互联网",
+     "stock_pct": 9.98,
+     "sector_pct": -5.75,
+     "excess": 15.73
+    },
+    {
+     "ts_code": "600745.SH",
+     "name": "*ST闻泰",
+     "industry": "半导体",
+     "stock_pct": 10.04,
+     "sector_pct": -5.33,
+     "excess": 15.37
+    },
+    {
+     "ts_code": "301606.SZ",
+     "name": "绿联科技",
+     "industry": "元器件",
+     "stock_pct": 10.55,
+     "sector_pct": -4.3,
+     "excess": 14.85
+    },
+    {
+     "ts_code": "301015.SZ",
+     "name": "百洋医药",
+     "industry": "医药商业",
+     "stock_pct": 14.84,
+     "sector_pct": 0.14,
+     "excess": 14.7
+    },
+    {
+     "ts_code": "300829.SZ",
+     "name": "金丹科技",
+     "industry": "食品",
+     "stock_pct": 13.84,
+     "sector_pct": -0.55,
+     "excess": 14.4
+    },
+    {
+     "ts_code": "603703.SH",
+     "name": "盛洋科技",
+     "industry": "元器件",
+     "stock_pct": 10.04,
+     "sector_pct": -4.3,
+     "excess": 14.34
+    },
+    {
+     "ts_code": "605058.SH",
+     "name": "澳弘电子",
+     "industry": "元器件",
+     "stock_pct": 10.0,
+     "sector_pct": -4.3,
+     "excess": 14.31
+    },
+    {
+     "ts_code": "002636.SZ",
+     "name": "金安国纪",
+     "industry": "元器件",
+     "stock_pct": 10.0,
+     "sector_pct": -4.3,
+     "excess": 14.31
+    },
+    {
+     "ts_code": "001287.SZ",
+     "name": "中电港",
+     "industry": "元器件",
+     "stock_pct": 10.0,
+     "sector_pct": -4.3,
+     "excess": 14.3
+    },
+    {
+     "ts_code": "301210.SZ",
+     "name": "金杨精密",
+     "industry": "电气设备",
+     "stock_pct": 10.81,
+     "sector_pct": -3.34,
+     "excess": 14.14
+    },
+    {
+     "ts_code": "603131.SH",
+     "name": "上海沪工",
+     "industry": "专用机械",
+     "stock_pct": 10.03,
+     "sector_pct": -3.95,
+     "excess": 13.98
+    },
+    {
+     "ts_code": "600215.SH",
+     "name": "派斯林",
+     "industry": "专用机械",
+     "stock_pct": 10.02,
+     "sector_pct": -3.95,
+     "excess": 13.97
+    },
+    {
+     "ts_code": "603273.SH",
+     "name": "天元智能",
+     "industry": "专用机械",
+     "stock_pct": 10.01,
+     "sector_pct": -3.95,
+     "excess": 13.96
+    },
+    {
+     "ts_code": "920156.BJ",
+     "name": "海昌智能",
+     "industry": "专用机械",
+     "stock_pct": 9.76,
+     "sector_pct": -3.95,
+     "excess": 13.71
+    },
+    {
+     "ts_code": "003032.SZ",
+     "name": "传智教育",
+     "industry": "文教休闲",
+     "stock_pct": 10.06,
+     "sector_pct": -3.52,
+     "excess": 13.58
+    },
+    {
+     "ts_code": "600289.SH",
+     "name": "ST信通",
+     "industry": "软件服务",
+     "stock_pct": 7.99,
+     "sector_pct": -5.49,
+     "excess": 13.48
+    },
+    {
+     "ts_code": "000417.SZ",
+     "name": "合百集团",
+     "industry": "百货",
+     "stock_pct": 10.04,
+     "sector_pct": -3.21,
+     "excess": 13.25
+    },
+    {
+     "ts_code": "002724.SZ",
+     "name": "海洋王",
+     "industry": "元器件",
+     "stock_pct": 8.71,
+     "sector_pct": -4.3,
+     "excess": 13.02
+    },
+    {
+     "ts_code": "603200.SH",
+     "name": "上海洗霸",
+     "industry": "环境保护",
+     "stock_pct": 10.0,
+     "sector_pct": -2.8,
+     "excess": 12.79
+    },
+    {
+     "ts_code": "000410.SZ",
+     "name": "沈阳机床",
+     "industry": "机床制造",
+     "stock_pct": 10.04,
+     "sector_pct": -2.67,
+     "excess": 12.72
+    }
+   ],
+   "B": [
+    {
+     "ts_code": "688066.SH",
+     "name": "*ST航图",
+     "industry": "软件服务",
+     "stock_pct": 20.04,
+     "sector_pct": -5.49,
+     "excess": 25.53
+    },
+    {
+     "ts_code": "688045.SH",
+     "name": "必易微",
+     "industry": "半导体",
+     "stock_pct": 20.0,
+     "sector_pct": -5.33,
+     "excess": 25.33
+    },
+    {
+     "ts_code": "301132.SZ",
+     "name": "满坤科技",
+     "industry": "元器件",
+     "stock_pct": 20.01,
+     "sector_pct": -4.3,
+     "excess": 24.31
+    },
+    {
+     "ts_code": "301187.SZ",
+     "name": "欧圣电气",
+     "industry": "家用电器",
+     "stock_pct": 20.0,
+     "sector_pct": -2.55,
+     "excess": 22.55
+    },
+    {
+     "ts_code": "300030.SZ",
+     "name": "阳普医疗",
+     "industry": "医疗保健",
+     "stock_pct": 20.03,
+     "sector_pct": -1.03,
+     "excess": 21.06
+    },
+    {
+     "ts_code": "301520.SZ",
+     "name": "万邦医药",
+     "industry": "生物制药",
+     "stock_pct": 20.0,
+     "sector_pct": -0.35,
+     "excess": 20.35
+    },
+    {
+     "ts_code": "688073.SH",
+     "name": "毕得医药",
+     "industry": "化学制药",
+     "stock_pct": 19.01,
+     "sector_pct": -0.73,
+     "excess": 19.74
+    },
+    {
+     "ts_code": "688137.SH",
+     "name": "近岸蛋白",
+     "industry": "生物制药",
+     "stock_pct": 16.45,
+     "sector_pct": -0.35,
+     "excess": 16.8
+    },
+    {
+     "ts_code": "920201.BJ",
+     "name": "百瑞吉",
+     "industry": "医疗保健",
+     "stock_pct": 15.44,
+     "sector_pct": -1.03,
+     "excess": 16.47
+    },
+    {
+     "ts_code": "300739.SZ",
+     "name": "明阳电路",
+     "industry": "元器件",
+     "stock_pct": 11.5,
+     "sector_pct": -4.3,
+     "excess": 15.81
+    },
+    {
+     "ts_code": "000676.SZ",
+     "name": "智度股份",
+     "industry": "互联网",
+     "stock_pct": 9.98,
+     "sector_pct": -5.75,
+     "excess": 15.73
+    },
+    {
+     "ts_code": "600745.SH",
+     "name": "*ST闻泰",
+     "industry": "半导体",
+     "stock_pct": 10.04,
+     "sector_pct": -5.33,
+     "excess": 15.37
+    },
+    {
+     "ts_code": "301606.SZ",
+     "name": "绿联科技",
+     "industry": "元器件",
+     "stock_pct": 10.55,
+     "sector_pct": -4.3,
+     "excess": 14.85
+    },
+    {
+     "ts_code": "301015.SZ",
+     "name": "百洋医药",
+     "industry": "医药商业",
+     "stock_pct": 14.84,
+     "sector_pct": 0.14,
+     "excess": 14.7
+    },
+    {
+     "ts_code": "300829.SZ",
+     "name": "金丹科技",
+     "industry": "食品",
+     "stock_pct": 13.84,
+     "sector_pct": -0.55,
+     "excess": 14.4
+    },
+    {
+     "ts_code": "603703.SH",
+     "name": "盛洋科技",
+     "industry": "元器件",
+     "stock_pct": 10.04,
+     "sector_pct": -4.3,
+     "excess": 14.34
+    },
+    {
+     "ts_code": "605058.SH",
+     "name": "澳弘电子",
+     "industry": "元器件",
+     "stock_pct": 10.0,
+     "sector_pct": -4.3,
+     "excess": 14.31
+    },
+    {
+     "ts_code": "002636.SZ",
+     "name": "金安国纪",
+     "industry": "元器件",
+     "stock_pct": 10.0,
+     "sector_pct": -4.3,
+     "excess": 14.31
+    },
+    {
+     "ts_code": "001287.SZ",
+     "name": "中电港",
+     "industry": "元器件",
+     "stock_pct": 10.0,
+     "sector_pct": -4.3,
+     "excess": 14.3
+    },
+    {
+     "ts_code": "301210.SZ",
+     "name": "金杨精密",
+     "industry": "电气设备",
+     "stock_pct": 10.81,
+     "sector_pct": -3.34,
+     "excess": 14.14
+    },
+    {
+     "ts_code": "603131.SH",
+     "name": "上海沪工",
+     "industry": "专用机械",
+     "stock_pct": 10.03,
+     "sector_pct": -3.95,
+     "excess": 13.98
+    },
+    {
+     "ts_code": "600215.SH",
+     "name": "派斯林",
+     "industry": "专用机械",
+     "stock_pct": 10.02,
+     "sector_pct": -3.95,
+     "excess": 13.97
+    },
+    {
+     "ts_code": "603273.SH",
+     "name": "天元智能",
+     "industry": "专用机械",
+     "stock_pct": 10.01,
+     "sector_pct": -3.95,
+     "excess": 13.96
+    },
+    {
+     "ts_code": "920156.BJ",
+     "name": "海昌智能",
+     "industry": "专用机械",
+     "stock_pct": 9.76,
+     "sector_pct": -3.95,
+     "excess": 13.71
+    },
+    {
+     "ts_code": "003032.SZ",
+     "name": "传智教育",
+     "industry": "文教休闲",
+     "stock_pct": 10.06,
+     "sector_pct": -3.52,
+     "excess": 13.58
+    },
+    {
+     "ts_code": "600289.SH",
+     "name": "ST信通",
+     "industry": "软件服务",
+     "stock_pct": 7.99,
+     "sector_pct": -5.49,
+     "excess": 13.48
+    },
+    {
+     "ts_code": "000417.SZ",
+     "name": "合百集团",
+     "industry": "百货",
+     "stock_pct": 10.04,
+     "sector_pct": -3.21,
+     "excess": 13.25
+    },
+    {
+     "ts_code": "002724.SZ",
+     "name": "海洋王",
+     "industry": "元器件",
+     "stock_pct": 8.71,
+     "sector_pct": -4.3,
+     "excess": 13.02
+    },
+    {
+     "ts_code": "603200.SH",
+     "name": "上海洗霸",
+     "industry": "环境保护",
+     "stock_pct": 10.0,
+     "sector_pct": -2.8,
+     "excess": 12.79
+    },
+    {
+     "ts_code": "000410.SZ",
+     "name": "沈阳机床",
+     "industry": "机床制造",
+     "stock_pct": 10.04,
+     "sector_pct": -2.67,
+     "excess": 12.72
+    }
+   ],
+   "C": [
+    {
+     "ts_code": "601083.SH",
+     "name": "锦江航运",
+     "industry": "水运",
+     "stock_pct": 10.03,
+     "sector_pct": 1.83,
+     "excess": 8.21
+    },
+    {
+     "ts_code": "601919.SH",
+     "name": "中远海控",
+     "industry": "水运",
+     "stock_pct": 7.02,
+     "sector_pct": 1.83,
+     "excess": 5.19
+    },
+    {
+     "ts_code": "600018.SH",
+     "name": "上港集团",
+     "industry": "港口",
+     "stock_pct": 5.84,
+     "sector_pct": 1.09,
+     "excess": 4.75
+    },
+    {
+     "ts_code": "000995.SZ",
+     "name": "皇台酒业",
+     "industry": "白酒",
+     "stock_pct": 10.01,
+     "sector_pct": 5.27,
+     "excess": 4.73
+    },
+    {
+     "ts_code": "000568.SZ",
+     "name": "泸州老窖",
+     "industry": "白酒",
+     "stock_pct": 10.01,
+     "sector_pct": 5.27,
+     "excess": 4.73
+    },
+    {
+     "ts_code": "000596.SZ",
+     "name": "古井贡酒",
+     "industry": "白酒",
+     "stock_pct": 10.0,
+     "sector_pct": 5.27,
+     "excess": 4.73
+    },
+    {
+     "ts_code": "603198.SH",
+     "name": "迎驾贡酒",
+     "industry": "白酒",
+     "stock_pct": 9.99,
+     "sector_pct": 5.27,
+     "excess": 4.72
+    },
+    {
+     "ts_code": "920571.BJ",
+     "name": "国航远洋",
+     "industry": "水运",
+     "stock_pct": 4.75,
+     "sector_pct": 1.83,
+     "excess": 2.92
+    },
+    {
+     "ts_code": "001872.SZ",
+     "name": "招商港口",
+     "industry": "港口",
+     "stock_pct": 3.86,
+     "sector_pct": 1.09,
+     "excess": 2.77
+    },
+    {
+     "ts_code": "601298.SH",
+     "name": "青岛港",
+     "industry": "港口",
+     "stock_pct": 3.73,
+     "sector_pct": 1.09,
+     "excess": 2.64
+    },
+    {
+     "ts_code": "600809.SH",
+     "name": "山西汾酒",
+     "industry": "白酒",
+     "stock_pct": 7.76,
+     "sector_pct": 5.27,
+     "excess": 2.48
+    },
+    {
+     "ts_code": "000520.SZ",
+     "name": "凤凰航运",
+     "industry": "水运",
+     "stock_pct": 3.55,
+     "sector_pct": 1.83,
+     "excess": 1.72
+    },
+    {
+     "ts_code": "603369.SH",
+     "name": "今世缘",
+     "industry": "白酒",
+     "stock_pct": 6.9,
+     "sector_pct": 5.27,
+     "excess": 1.63
+    },
+    {
+     "ts_code": "000860.SZ",
+     "name": "顺鑫农业",
+     "industry": "白酒",
+     "stock_pct": 6.89,
+     "sector_pct": 5.27,
+     "excess": 1.62
+    },
+    {
+     "ts_code": "601872.SH",
+     "name": "招商轮船",
+     "industry": "水运",
+     "stock_pct": 3.02,
+     "sector_pct": 1.83,
+     "excess": 1.2
+    },
+    {
+     "ts_code": "603919.SH",
+     "name": "金徽酒",
+     "industry": "白酒",
+     "stock_pct": 6.45,
+     "sector_pct": 5.27,
+     "excess": 1.18
+    },
+    {
+     "ts_code": "600026.SH",
+     "name": "中远海能",
+     "industry": "水运",
+     "stock_pct": 2.59,
+     "sector_pct": 1.83,
+     "excess": 0.77
+    },
+    {
+     "ts_code": "600702.SH",
+     "name": "舍得酒业",
+     "industry": "白酒",
+     "stock_pct": 6.03,
+     "sector_pct": 5.27,
+     "excess": 0.76
+    },
+    {
+     "ts_code": "601000.SH",
+     "name": "唐山港",
+     "industry": "港口",
+     "stock_pct": 1.64,
+     "sector_pct": 1.09,
+     "excess": 0.55
+    },
+    {
+     "ts_code": "600017.SH",
+     "name": "日照港",
+     "industry": "港口",
+     "stock_pct": 1.5,
+     "sector_pct": 1.09,
+     "excess": 0.41
+    },
+    {
+     "ts_code": "603209.SH",
+     "name": "兴通股份",
+     "industry": "水运",
+     "stock_pct": 2.19,
+     "sector_pct": 1.83,
+     "excess": 0.36
+    },
+    {
+     "ts_code": "603162.SH",
+     "name": "海通发展",
+     "industry": "水运",
+     "stock_pct": 2.09,
+     "sector_pct": 1.83,
+     "excess": 0.26
+    },
+    {
+     "ts_code": "600717.SH",
+     "name": "天津港",
+     "industry": "港口",
+     "stock_pct": 1.18,
+     "sector_pct": 1.09,
+     "excess": 0.09
+    },
+    {
+     "ts_code": "603589.SH",
+     "name": "口子窖",
+     "industry": "白酒",
+     "stock_pct": 5.35,
+     "sector_pct": 5.27,
+     "excess": 0.07
+    },
+    {
+     "ts_code": "601022.SH",
+     "name": "宁波远洋",
+     "industry": "水运",
+     "stock_pct": 1.84,
+     "sector_pct": 1.83,
+     "excess": 0.02
+    },
+    {
+     "ts_code": "601975.SH",
+     "name": "招商南油",
+     "industry": "水运",
+     "stock_pct": 1.37,
+     "sector_pct": 1.83,
+     "excess": -0.46
+    },
+    {
+     "ts_code": "601866.SH",
+     "name": "中远海发",
+     "industry": "水运",
+     "stock_pct": 1.27,
+     "sector_pct": 1.83,
+     "excess": -0.56
+    },
+    {
+     "ts_code": "000858.SZ",
+     "name": "五粮液",
+     "industry": "白酒",
+     "stock_pct": 3.35,
+     "sector_pct": 5.27,
+     "excess": -1.93
+    },
+    {
+     "ts_code": "600779.SH",
+     "name": "水井坊",
+     "industry": "白酒",
+     "stock_pct": 3.19,
+     "sector_pct": 5.27,
+     "excess": -2.09
+    },
+    {
+     "ts_code": "000799.SZ",
+     "name": "酒鬼酒",
+     "industry": "白酒",
+     "stock_pct": 3.01,
+     "sector_pct": 5.27,
+     "excess": -2.27
+    }
+   ]
+  },
+  "pinxue_signal_count": 6048,
+  "pinxue_rs_counts": {
+   "A": 3133,
+   "B": 2208,
+   "C": 69
+  },
+  "pinxue_signals": [
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "000020.SZ",
+    "name": "深华发A",
+    "industry": "元器件",
+    "stock_pct": 2.19,
+    "sector_pct": -4.3,
+    "excess": 6.49,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "000415.SZ",
+    "name": "渤海租赁",
+    "industry": "多元金融",
+    "stock_pct": 6.03,
+    "sector_pct": -2.2,
+    "excess": 8.23,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "000525.SZ",
+    "name": "红太阳",
+    "industry": "农药化肥",
+    "stock_pct": 10.05,
+    "sector_pct": -1.94,
+    "excess": 11.99,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "000568.SZ",
+    "name": "泸州老窖",
+    "industry": "白酒",
+    "stock_pct": 10.01,
+    "sector_pct": 5.27,
+    "excess": 4.73,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": true
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "000596.SZ",
+    "name": "古井贡酒",
+    "industry": "白酒",
+    "stock_pct": 10.0,
+    "sector_pct": 5.27,
+    "excess": 4.73,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": true
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "000701.SZ",
+    "name": "厦门信达",
+    "industry": "商贸代理",
+    "stock_pct": 1.07,
+    "sector_pct": -2.04,
+    "excess": 3.11,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "000799.SZ",
+    "name": "酒鬼酒",
+    "industry": "白酒",
+    "stock_pct": 3.01,
+    "sector_pct": 5.27,
+    "excess": -2.27,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": true
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "000819.SZ",
+    "name": "岳阳兴长",
+    "industry": "石油加工",
+    "stock_pct": 1.42,
+    "sector_pct": -0.3,
+    "excess": 1.72,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "000860.SZ",
+    "name": "顺鑫农业",
+    "industry": "白酒",
+    "stock_pct": 6.89,
+    "sector_pct": 5.27,
+    "excess": 1.62,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": true
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "000900.SZ",
+    "name": "现代投资",
+    "industry": "路桥",
+    "stock_pct": 4.62,
+    "sector_pct": -0.04,
+    "excess": 4.66,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "001208.SZ",
+    "name": "华菱线缆",
+    "industry": "电气设备",
+    "stock_pct": 1.38,
+    "sector_pct": -3.34,
+    "excess": 4.72,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "001210.SZ",
+    "name": "金房能源",
+    "industry": "供气供热",
+    "stock_pct": 4.27,
+    "sector_pct": -2.13,
+    "excess": 6.4,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "001219.SZ",
+    "name": "青岛食品",
+    "industry": "食品",
+    "stock_pct": 9.98,
+    "sector_pct": -0.55,
+    "excess": 10.53,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "002024.SZ",
+    "name": "ST易购",
+    "industry": "电器连锁",
+    "stock_pct": 4.81,
+    "sector_pct": 0.88,
+    "excess": 3.92,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "002073.SZ",
+    "name": "软控股份",
+    "industry": "专用机械",
+    "stock_pct": 5.22,
+    "sector_pct": -3.95,
+    "excess": 9.17,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "002149.SZ",
+    "name": "西部材料",
+    "industry": "小金属",
+    "stock_pct": 3.9,
+    "sector_pct": -3.23,
+    "excess": 7.13,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "002275.SZ",
+    "name": "桂林三金",
+    "industry": "中成药",
+    "stock_pct": 9.99,
+    "sector_pct": -0.12,
+    "excess": 10.1,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "002324.SZ",
+    "name": "普利特",
+    "industry": "塑料",
+    "stock_pct": 3.34,
+    "sector_pct": -3.0,
+    "excess": 6.35,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "002390.SZ",
+    "name": "信邦制药",
+    "industry": "医药商业",
+    "stock_pct": 5.5,
+    "sector_pct": 0.14,
+    "excess": 5.36,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "002582.SZ",
+    "name": "好想你",
+    "industry": "食品",
+    "stock_pct": 9.97,
+    "sector_pct": -0.55,
+    "excess": 10.52,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "002737.SZ",
+    "name": "葵花药业",
+    "industry": "中成药",
+    "stock_pct": 4.5,
+    "sector_pct": -0.12,
+    "excess": 4.62,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "002949.SZ",
+    "name": "华阳国际",
+    "industry": "建筑工程",
+    "stock_pct": 3.73,
+    "sector_pct": -3.18,
+    "excess": 6.91,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "002958.SZ",
+    "name": "青农商行",
+    "industry": "银行",
+    "stock_pct": 5.57,
+    "sector_pct": 0.77,
+    "excess": 4.81,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "300030.SZ",
+    "name": "阳普医疗",
+    "industry": "医疗保健",
+    "stock_pct": 20.03,
+    "sector_pct": -1.03,
+    "excess": 21.06,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "300041.SZ",
+    "name": "回天新材",
+    "industry": "化工原料",
+    "stock_pct": 4.51,
+    "sector_pct": -3.06,
+    "excess": 7.57,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "300094.SZ",
+    "name": "国联水产",
+    "industry": "渔业",
+    "stock_pct": 1.51,
+    "sector_pct": 0.47,
+    "excess": 1.04,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "300149.SZ",
+    "name": "睿智医药",
+    "industry": "生物制药",
+    "stock_pct": 11.26,
+    "sector_pct": -0.35,
+    "excess": 11.61,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "300218.SZ",
+    "name": "安利股份",
+    "industry": "塑料",
+    "stock_pct": 4.48,
+    "sector_pct": -3.0,
+    "excess": 7.49,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "300286.SZ",
+    "name": "安科瑞",
+    "industry": "电器仪表",
+    "stock_pct": 6.39,
+    "sector_pct": -3.7,
+    "excess": 10.08,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "300289.SZ",
+    "name": "利德曼",
+    "industry": "医疗保健",
+    "stock_pct": 5.36,
+    "sector_pct": -1.03,
+    "excess": 6.39,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "300393.SZ",
+    "name": "中来股份",
+    "industry": "塑料",
+    "stock_pct": 0.2,
+    "sector_pct": -3.0,
+    "excess": 3.21,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "300667.SZ",
+    "name": "必创科技",
+    "industry": "电器仪表",
+    "stock_pct": 4.08,
+    "sector_pct": -3.7,
+    "excess": 7.77,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "300712.SZ",
+    "name": "永福股份",
+    "industry": "建筑工程",
+    "stock_pct": 5.99,
+    "sector_pct": -3.18,
+    "excess": 9.17,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "300739.SZ",
+    "name": "明阳电路",
+    "industry": "元器件",
+    "stock_pct": 11.5,
+    "sector_pct": -4.3,
+    "excess": 15.81,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "300856.SZ",
+    "name": "科思股份",
+    "industry": "日用化工",
+    "stock_pct": 5.38,
+    "sector_pct": -1.9,
+    "excess": 7.29,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "300892.SZ",
+    "name": "品渥食品",
+    "industry": "乳制品",
+    "stock_pct": 1.62,
+    "sector_pct": -0.23,
+    "excess": 1.85,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "301079.SZ",
+    "name": "邵阳液压",
+    "industry": "机械基件",
+    "stock_pct": 8.21,
+    "sector_pct": -3.98,
+    "excess": 12.19,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "301187.SZ",
+    "name": "欧圣电气",
+    "industry": "家用电器",
+    "stock_pct": 20.0,
+    "sector_pct": -2.55,
+    "excess": 22.55,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "301210.SZ",
+    "name": "金杨精密",
+    "industry": "电气设备",
+    "stock_pct": 10.81,
+    "sector_pct": -3.34,
+    "excess": 14.14,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "301363.SZ",
+    "name": "美好医疗",
+    "industry": "医疗保健",
+    "stock_pct": 7.48,
+    "sector_pct": -1.03,
+    "excess": 8.51,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "301606.SZ",
+    "name": "绿联科技",
+    "industry": "元器件",
+    "stock_pct": 10.55,
+    "sector_pct": -4.3,
+    "excess": 14.85,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "600018.SH",
+    "name": "上港集团",
+    "industry": "港口",
+    "stock_pct": 5.84,
+    "sector_pct": 1.09,
+    "excess": 4.75,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": true
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "600035.SH",
+    "name": "楚天高速",
+    "industry": "路桥",
+    "stock_pct": 7.58,
+    "sector_pct": -0.04,
+    "excess": 7.62,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "600060.SH",
+    "name": "海信视像",
+    "industry": "家用电器",
+    "stock_pct": 3.32,
+    "sector_pct": -2.55,
+    "excess": 5.87,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "600098.SH",
+    "name": "广州发展",
+    "industry": "火力发电",
+    "stock_pct": 3.4,
+    "sector_pct": -1.2,
+    "excess": 4.59,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "600118.SH",
+    "name": "中国卫星",
+    "industry": "航空",
+    "stock_pct": 0.02,
+    "sector_pct": -4.39,
+    "excess": 4.41,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "600119.SH",
+    "name": "*ST长投",
+    "industry": "仓储物流",
+    "stock_pct": 3.96,
+    "sector_pct": -2.28,
+    "excess": 6.24,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "600258.SH",
+    "name": "首旅酒店",
+    "industry": "酒店餐饮",
+    "stock_pct": 10.0,
+    "sector_pct": 0.98,
+    "excess": 9.02,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "600262.SH",
+    "name": "北方股份",
+    "industry": "专用机械",
+    "stock_pct": 3.88,
+    "sector_pct": -3.95,
+    "excess": 7.83,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "600272.SH",
+    "name": "开开实业",
+    "industry": "医药商业",
+    "stock_pct": 2.74,
+    "sector_pct": 0.14,
+    "excess": 2.6,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "600285.SH",
+    "name": "羚锐制药",
+    "industry": "中成药",
+    "stock_pct": 10.0,
+    "sector_pct": -0.12,
+    "excess": 10.12,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "600289.SH",
+    "name": "ST信通",
+    "industry": "软件服务",
+    "stock_pct": 7.99,
+    "sector_pct": -5.49,
+    "excess": 13.48,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "600428.SH",
+    "name": "中远海特",
+    "industry": "水运",
+    "stock_pct": 0.7,
+    "sector_pct": 1.83,
+    "excess": -1.12,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "600510.SH",
+    "name": "黑牡丹",
+    "industry": "全国地产",
+    "stock_pct": 10.05,
+    "sector_pct": -1.79,
+    "excess": 11.85,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "600520.SH",
+    "name": "三佳科技",
+    "industry": "半导体",
+    "stock_pct": 3.4,
+    "sector_pct": -5.33,
+    "excess": 8.73,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "600531.SH",
+    "name": "豫光金铅",
+    "industry": "铅锌",
+    "stock_pct": 2.54,
+    "sector_pct": -2.7,
+    "excess": 5.24,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "600559.SH",
+    "name": "老白干酒",
+    "industry": "白酒",
+    "stock_pct": 2.84,
+    "sector_pct": 5.27,
+    "excess": -2.44,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": true
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "600688.SH",
+    "name": "上海石化",
+    "industry": "石油加工",
+    "stock_pct": 8.93,
+    "sector_pct": -0.3,
+    "excess": 9.23,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "600702.SH",
+    "name": "舍得酒业",
+    "industry": "白酒",
+    "stock_pct": 6.03,
+    "sector_pct": 5.27,
+    "excess": 0.76,
+    "rs_A": true,
+    "rs_B": false,
+    "rs_C": true
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "600754.SH",
+    "name": "锦江酒店",
+    "industry": "酒店餐饮",
+    "stock_pct": 5.83,
+    "sector_pct": 0.98,
+    "excess": 4.85,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "600779.SH",
+    "name": "水井坊",
+    "industry": "白酒",
+    "stock_pct": 3.19,
+    "sector_pct": 5.27,
+    "excess": -2.09,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": true
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "600928.SH",
+    "name": "西安银行",
+    "industry": "银行",
+    "stock_pct": 8.64,
+    "sector_pct": 0.77,
+    "excess": 7.87,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "600997.SH",
+    "name": "开滦股份",
+    "industry": "焦炭加工",
+    "stock_pct": 0.74,
+    "sector_pct": -2.64,
+    "excess": 3.38,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "601022.SH",
+    "name": "宁波远洋",
+    "industry": "水运",
+    "stock_pct": 1.84,
+    "sector_pct": 1.83,
+    "excess": 0.02,
+    "rs_A": true,
+    "rs_B": false,
+    "rs_C": true
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "601083.SH",
+    "name": "锦江航运",
+    "industry": "水运",
+    "stock_pct": 10.03,
+    "sector_pct": 1.83,
+    "excess": 8.21,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": true
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "601117.SH",
+    "name": "中国化学",
+    "industry": "建筑工程",
+    "stock_pct": 3.04,
+    "sector_pct": -3.18,
+    "excess": 6.23,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "601717.SH",
+    "name": "中创智领",
+    "industry": "专用机械",
+    "stock_pct": 5.22,
+    "sector_pct": -3.95,
+    "excess": 9.17,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "601919.SH",
+    "name": "中远海控",
+    "industry": "水运",
+    "stock_pct": 7.02,
+    "sector_pct": 1.83,
+    "excess": 5.19,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": true
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "603002.SH",
+    "name": "宏昌电子",
+    "industry": "化工原料",
+    "stock_pct": 7.33,
+    "sector_pct": -3.06,
+    "excess": 10.39,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "603027.SH",
+    "name": "千禾味业",
+    "industry": "食品",
+    "stock_pct": 3.43,
+    "sector_pct": -0.55,
+    "excess": 3.98,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "603192.SH",
+    "name": "汇得科技",
+    "industry": "化工原料",
+    "stock_pct": 1.1,
+    "sector_pct": -3.06,
+    "excess": 4.16,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "603338.SH",
+    "name": "浙江鼎力",
+    "industry": "工程机械",
+    "stock_pct": 5.24,
+    "sector_pct": -2.95,
+    "excess": 8.19,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "603382.SH",
+    "name": "海阳科技",
+    "industry": "化纤",
+    "stock_pct": 2.82,
+    "sector_pct": -2.69,
+    "excess": 5.51,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "603587.SH",
+    "name": "地素时尚",
+    "industry": "服饰",
+    "stock_pct": 9.97,
+    "sector_pct": -2.14,
+    "excess": 12.12,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "603589.SH",
+    "name": "口子窖",
+    "industry": "白酒",
+    "stock_pct": 5.35,
+    "sector_pct": 5.27,
+    "excess": 0.07,
+    "rs_A": true,
+    "rs_B": false,
+    "rs_C": true
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "603718.SH",
+    "name": "*ST海利",
+    "industry": "医疗保健",
+    "stock_pct": 0.35,
+    "sector_pct": -1.03,
+    "excess": 1.38,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "603858.SH",
+    "name": "步长制药",
+    "industry": "中成药",
+    "stock_pct": 3.84,
+    "sector_pct": -0.12,
+    "excess": 3.96,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "603885.SH",
+    "name": "吉祥航空",
+    "industry": "空运",
+    "stock_pct": 2.95,
+    "sector_pct": 0.76,
+    "excess": 2.19,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "603899.SH",
+    "name": "晨光股份",
+    "industry": "文教休闲",
+    "stock_pct": 5.42,
+    "sector_pct": -3.52,
+    "excess": 8.94,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "605338.SH",
+    "name": "巴比食品",
+    "industry": "食品",
+    "stock_pct": 10.01,
+    "sector_pct": -0.55,
+    "excess": 10.56,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "605598.SH",
+    "name": "上海港湾",
+    "industry": "建筑工程",
+    "stock_pct": 4.98,
+    "sector_pct": -3.18,
+    "excess": 8.16,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "688073.SH",
+    "name": "毕得医药",
+    "industry": "化学制药",
+    "stock_pct": 19.01,
+    "sector_pct": -0.73,
+    "excess": 19.74,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "688113.SH",
+    "name": "联测科技",
+    "industry": "专用机械",
+    "stock_pct": 3.51,
+    "sector_pct": -3.95,
+    "excess": 7.46,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "688128.SH",
+    "name": "中国电研",
+    "industry": "专用机械",
+    "stock_pct": 6.44,
+    "sector_pct": -3.95,
+    "excess": 10.39,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "688131.SH",
+    "name": "皓元医药",
+    "industry": "化学制药",
+    "stock_pct": 10.79,
+    "sector_pct": -0.73,
+    "excess": 11.53,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "688170.SH",
+    "name": "德龙激光",
+    "industry": "专用机械",
+    "stock_pct": 1.34,
+    "sector_pct": -3.95,
+    "excess": 5.29,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "688299.SH",
+    "name": "长阳科技",
+    "industry": "元器件",
+    "stock_pct": 4.48,
+    "sector_pct": -4.3,
+    "excess": 8.78,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "688319.SH",
+    "name": "欧林生物",
+    "industry": "生物制药",
+    "stock_pct": 3.42,
+    "sector_pct": -0.35,
+    "excess": 3.77,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "688355.SH",
+    "name": "明志科技",
+    "industry": "机械基件",
+    "stock_pct": 1.21,
+    "sector_pct": -3.98,
+    "excess": 5.19,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "688411.SH",
+    "name": "海博思创",
+    "industry": "电气设备",
+    "stock_pct": 6.21,
+    "sector_pct": -3.34,
+    "excess": 9.54,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "688718.SH",
+    "name": "唯赛勃",
+    "industry": "塑料",
+    "stock_pct": 1.81,
+    "sector_pct": -3.0,
+    "excess": 4.81,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "920156.BJ",
+    "name": "海昌智能",
+    "industry": "专用机械",
+    "stock_pct": 9.76,
+    "sector_pct": -3.95,
+    "excess": 13.71,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "920571.BJ",
+    "name": "国航远洋",
+    "industry": "水运",
+    "stock_pct": 4.75,
+    "sector_pct": 1.83,
+    "excess": 2.92,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": true
+   },
+   {
+    "strategy": "LX01_倍量柱",
+    "factor": "double_vol",
+    "ts_code": "920576.BJ",
+    "name": "天力复合",
+    "industry": "小金属",
+    "stock_pct": 3.4,
+    "sector_pct": -3.23,
+    "excess": 6.63,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "000049.SZ",
+    "name": "德赛电池",
+    "industry": "电气设备",
+    "stock_pct": 0.15,
+    "sector_pct": -3.34,
+    "excess": 3.49,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "000088.SZ",
+    "name": "盐田港",
+    "industry": "港口",
+    "stock_pct": 0.22,
+    "sector_pct": 1.09,
+    "excess": -0.87,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "000403.SZ",
+    "name": "派林生物",
+    "industry": "生物制药",
+    "stock_pct": 0.21,
+    "sector_pct": -0.35,
+    "excess": 0.56,
+    "rs_A": true,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "000410.SZ",
+    "name": "沈阳机床",
+    "industry": "机床制造",
+    "stock_pct": 10.04,
+    "sector_pct": -2.67,
+    "excess": 12.72,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "000488.SZ",
+    "name": "ST晨鸣",
+    "industry": "造纸",
+    "stock_pct": 1.07,
+    "sector_pct": -2.34,
+    "excess": 3.41,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "000554.SZ",
+    "name": "泰山石油",
+    "industry": "石油贸易",
+    "stock_pct": 0.93,
+    "sector_pct": -2.43,
+    "excess": 3.36,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "000598.SZ",
+    "name": "兴蓉环境",
+    "industry": "水务",
+    "stock_pct": 0.42,
+    "sector_pct": -1.44,
+    "excess": 1.86,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "000755.SZ",
+    "name": "山西高速",
+    "industry": "路桥",
+    "stock_pct": 1.05,
+    "sector_pct": -0.04,
+    "excess": 1.08,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "002078.SZ",
+    "name": "太阳纸业",
+    "industry": "造纸",
+    "stock_pct": 1.03,
+    "sector_pct": -2.34,
+    "excess": 3.36,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "002082.SZ",
+    "name": "ST万邦",
+    "industry": "中成药",
+    "stock_pct": 0.83,
+    "sector_pct": -0.12,
+    "excess": 0.95,
+    "rs_A": true,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "002170.SZ",
+    "name": "芭田股份",
+    "industry": "农药化肥",
+    "stock_pct": 1.17,
+    "sector_pct": -1.94,
+    "excess": 3.11,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "002440.SZ",
+    "name": "闰土股份",
+    "industry": "染料涂料",
+    "stock_pct": 0.9,
+    "sector_pct": -3.17,
+    "excess": 4.07,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "002508.SZ",
+    "name": "老板电器",
+    "industry": "家用电器",
+    "stock_pct": 1.25,
+    "sector_pct": -2.55,
+    "excess": 3.8,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "002539.SZ",
+    "name": "云图控股",
+    "industry": "农药化肥",
+    "stock_pct": 0.65,
+    "sector_pct": -1.94,
+    "excess": 2.59,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "002884.SZ",
+    "name": "凌霄泵业",
+    "industry": "机械基件",
+    "stock_pct": 0.2,
+    "sector_pct": -3.98,
+    "excess": 4.18,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "003032.SZ",
+    "name": "传智教育",
+    "industry": "文教休闲",
+    "stock_pct": 10.06,
+    "sector_pct": -3.52,
+    "excess": 13.58,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "300529.SZ",
+    "name": "健帆生物",
+    "industry": "医疗保健",
+    "stock_pct": 1.67,
+    "sector_pct": -1.03,
+    "excess": 2.7,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "300896.SZ",
+    "name": "爱美客",
+    "industry": "医疗保健",
+    "stock_pct": 1.34,
+    "sector_pct": -1.03,
+    "excess": 2.37,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "301580.SZ",
+    "name": "爱迪特",
+    "industry": "医疗保健",
+    "stock_pct": 0.1,
+    "sector_pct": -1.03,
+    "excess": 1.13,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "600054.SH",
+    "name": "黄山旅游",
+    "industry": "旅游景点",
+    "stock_pct": 0.49,
+    "sector_pct": -0.67,
+    "excess": 1.16,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "600094.SH",
+    "name": "大名城",
+    "industry": "区域地产",
+    "stock_pct": 1.35,
+    "sector_pct": -1.56,
+    "excess": 2.91,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "600096.SH",
+    "name": "云天化",
+    "industry": "农药化肥",
+    "stock_pct": 1.31,
+    "sector_pct": -1.94,
+    "excess": 3.25,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "600107.SH",
+    "name": "*ST尔雅",
+    "industry": "服饰",
+    "stock_pct": 0.19,
+    "sector_pct": -2.14,
+    "excess": 2.33,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "600216.SH",
+    "name": "浙江医药",
+    "industry": "化学制药",
+    "stock_pct": 0.19,
+    "sector_pct": -0.73,
+    "excess": 0.92,
+    "rs_A": true,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "600261.SH",
+    "name": "阳光照明",
+    "industry": "家用电器",
+    "stock_pct": 9.95,
+    "sector_pct": -2.55,
+    "excess": 12.5,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "600352.SH",
+    "name": "浙江龙盛",
+    "industry": "染料涂料",
+    "stock_pct": 1.39,
+    "sector_pct": -3.17,
+    "excess": 4.56,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "600486.SH",
+    "name": "扬农化工",
+    "industry": "农药化肥",
+    "stock_pct": 0.33,
+    "sector_pct": -1.94,
+    "excess": 2.27,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "600496.SH",
+    "name": "精工钢构",
+    "industry": "钢加工",
+    "stock_pct": 0.66,
+    "sector_pct": -3.3,
+    "excess": 3.96,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "600529.SH",
+    "name": "山东药玻",
+    "industry": "医疗保健",
+    "stock_pct": 0.67,
+    "sector_pct": -1.03,
+    "excess": 1.7,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "600660.SH",
+    "name": "福耀玻璃",
+    "industry": "汽车配件",
+    "stock_pct": 0.06,
+    "sector_pct": -3.79,
+    "excess": 3.85,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "600710.SH",
+    "name": "苏美达",
+    "industry": "商贸代理",
+    "stock_pct": 0.28,
+    "sector_pct": -2.04,
+    "excess": 2.32,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "600730.SH",
+    "name": "*ST高科",
+    "industry": "文教休闲",
+    "stock_pct": 0.8,
+    "sector_pct": -3.52,
+    "excess": 4.32,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "600745.SH",
+    "name": "*ST闻泰",
+    "industry": "半导体",
+    "stock_pct": 10.04,
+    "sector_pct": -5.33,
+    "excess": 15.37,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "600789.SH",
+    "name": "鲁抗医药",
+    "industry": "化学制药",
+    "stock_pct": 1.04,
+    "sector_pct": -0.73,
+    "excess": 1.77,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "600826.SH",
+    "name": "兰生股份",
+    "industry": "文教休闲",
+    "stock_pct": 0.12,
+    "sector_pct": -3.52,
+    "excess": 3.65,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "600848.SH",
+    "name": "上海临港",
+    "industry": "园区开发",
+    "stock_pct": 0.77,
+    "sector_pct": -1.63,
+    "excess": 2.4,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "601088.SH",
+    "name": "中国神华",
+    "industry": "煤炭开采",
+    "stock_pct": 0.72,
+    "sector_pct": -0.59,
+    "excess": 1.3,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "601512.SH",
+    "name": "中新集团",
+    "industry": "园区开发",
+    "stock_pct": 0.79,
+    "sector_pct": -1.63,
+    "excess": 2.42,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "601528.SH",
+    "name": "瑞丰银行",
+    "industry": "银行",
+    "stock_pct": 0.55,
+    "sector_pct": 0.77,
+    "excess": -0.21,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "601728.SH",
+    "name": "中国电信",
+    "industry": "电信运营",
+    "stock_pct": 0.29,
+    "sector_pct": -2.03,
+    "excess": 2.31,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "601838.SH",
+    "name": "成都银行",
+    "industry": "银行",
+    "stock_pct": 0.2,
+    "sector_pct": 0.77,
+    "excess": -0.56,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "603008.SH",
+    "name": "ST喜临门",
+    "industry": "家居用品",
+    "stock_pct": 1.36,
+    "sector_pct": -3.45,
+    "excess": 4.82,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "603043.SH",
+    "name": "广州酒家",
+    "industry": "食品",
+    "stock_pct": 0.69,
+    "sector_pct": -0.55,
+    "excess": 1.25,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "603131.SH",
+    "name": "上海沪工",
+    "industry": "专用机械",
+    "stock_pct": 10.03,
+    "sector_pct": -3.95,
+    "excess": 13.98,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "603279.SH",
+    "name": "景津装备",
+    "industry": "环境保护",
+    "stock_pct": 0.96,
+    "sector_pct": -2.8,
+    "excess": 3.76,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "603365.SH",
+    "name": "水星家纺",
+    "industry": "纺织",
+    "stock_pct": 1.05,
+    "sector_pct": -2.87,
+    "excess": 3.92,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "603391.SH",
+    "name": "力聚热能",
+    "industry": "专用机械",
+    "stock_pct": 0.13,
+    "sector_pct": -3.95,
+    "excess": 4.08,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "603551.SH",
+    "name": "奥普科技",
+    "industry": "家居用品",
+    "stock_pct": 1.97,
+    "sector_pct": -3.45,
+    "excess": 5.42,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "603599.SH",
+    "name": "广信股份",
+    "industry": "农药化肥",
+    "stock_pct": 0.71,
+    "sector_pct": -1.94,
+    "excess": 2.65,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "603703.SH",
+    "name": "盛洋科技",
+    "industry": "元器件",
+    "stock_pct": 10.04,
+    "sector_pct": -4.3,
+    "excess": 14.34,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "603855.SH",
+    "name": "华荣股份",
+    "industry": "专用机械",
+    "stock_pct": 1.68,
+    "sector_pct": -3.95,
+    "excess": 5.63,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "603868.SH",
+    "name": "飞科电器",
+    "industry": "家用电器",
+    "stock_pct": 2.42,
+    "sector_pct": -2.55,
+    "excess": 4.97,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "603998.SH",
+    "name": "方盛制药",
+    "industry": "中成药",
+    "stock_pct": 2.46,
+    "sector_pct": -0.12,
+    "excess": 2.58,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "605009.SH",
+    "name": "豪悦护理",
+    "industry": "造纸",
+    "stock_pct": 0.97,
+    "sector_pct": -2.34,
+    "excess": 3.31,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "605599.SH",
+    "name": "菜百股份",
+    "industry": "服饰",
+    "stock_pct": 1.93,
+    "sector_pct": -2.14,
+    "excess": 4.07,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "688066.SH",
+    "name": "*ST航图",
+    "industry": "软件服务",
+    "stock_pct": 20.04,
+    "sector_pct": -5.49,
+    "excess": 25.53,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "688109.SH",
+    "name": "品茗科技",
+    "industry": "软件服务",
+    "stock_pct": 0.46,
+    "sector_pct": -5.49,
+    "excess": 5.95,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "688289.SH",
+    "name": "圣湘生物",
+    "industry": "医疗保健",
+    "stock_pct": 0.2,
+    "sector_pct": -1.03,
+    "excess": 1.23,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "689009.SH",
+    "name": "九号公司",
+    "industry": "摩托车",
+    "stock_pct": 1.05,
+    "sector_pct": -1.72,
+    "excess": 2.77,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "920018.BJ",
+    "name": "宏远股份",
+    "industry": "电气设备",
+    "stock_pct": 0.61,
+    "sector_pct": -3.34,
+    "excess": 3.95,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "920069.BJ",
+    "name": "普昂医疗",
+    "industry": "医疗保健",
+    "stock_pct": 0.96,
+    "sector_pct": -1.03,
+    "excess": 1.99,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "920093.BJ",
+    "name": "信胜科技",
+    "industry": "纺织机械",
+    "stock_pct": 0.17,
+    "sector_pct": -5.33,
+    "excess": 5.5,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX02_价升量缩",
+    "factor": "up_vol_down",
+    "ts_code": "920651.BJ",
+    "name": "天罡股份",
+    "industry": "电器仪表",
+    "stock_pct": 0.11,
+    "sector_pct": -3.7,
+    "excess": 3.8,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX03_极阴次阳",
+    "factor": "yin_yang",
+    "ts_code": "000823.SZ",
+    "name": "超声电子",
+    "industry": "元器件",
+    "stock_pct": 4.05,
+    "sector_pct": -4.3,
+    "excess": 8.36,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX03_极阴次阳",
+    "factor": "yin_yang",
+    "ts_code": "000995.SZ",
+    "name": "皇台酒业",
+    "industry": "白酒",
+    "stock_pct": 10.01,
+    "sector_pct": 5.27,
+    "excess": 4.73,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": true
+   },
+   {
+    "strategy": "LX03_极阴次阳",
+    "factor": "yin_yang",
+    "ts_code": "002009.SZ",
+    "name": "天奇股份",
+    "industry": "工程机械",
+    "stock_pct": 3.8,
+    "sector_pct": -2.95,
+    "excess": 6.74,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX03_极阴次阳",
+    "factor": "yin_yang",
+    "ts_code": "002031.SZ",
+    "name": "巨轮智能",
+    "industry": "汽车配件",
+    "stock_pct": 2.96,
+    "sector_pct": -3.79,
+    "excess": 6.75,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX03_极阴次阳",
+    "factor": "yin_yang",
+    "ts_code": "002747.SZ",
+    "name": "埃斯顿",
+    "industry": "机械基件",
+    "stock_pct": 2.96,
+    "sector_pct": -3.98,
+    "excess": 6.94,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX03_极阴次阳",
+    "factor": "yin_yang",
+    "ts_code": "300739.SZ",
+    "name": "明阳电路",
+    "industry": "元器件",
+    "stock_pct": 11.5,
+    "sector_pct": -4.3,
+    "excess": 15.81,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX03_极阴次阳",
+    "factor": "yin_yang",
+    "ts_code": "300806.SZ",
+    "name": "斯迪克",
+    "industry": "塑料",
+    "stock_pct": 4.35,
+    "sector_pct": -3.0,
+    "excess": 7.36,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX03_极阴次阳",
+    "factor": "yin_yang",
+    "ts_code": "300829.SZ",
+    "name": "金丹科技",
+    "industry": "食品",
+    "stock_pct": 13.84,
+    "sector_pct": -0.55,
+    "excess": 14.4,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX03_极阴次阳",
+    "factor": "yin_yang",
+    "ts_code": "300920.SZ",
+    "name": "润阳科技",
+    "industry": "塑料",
+    "stock_pct": 3.42,
+    "sector_pct": -3.0,
+    "excess": 6.43,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX03_极阴次阳",
+    "factor": "yin_yang",
+    "ts_code": "300980.SZ",
+    "name": "祥源新材",
+    "industry": "塑料",
+    "stock_pct": 7.73,
+    "sector_pct": -3.0,
+    "excess": 10.74,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX03_极阴次阳",
+    "factor": "yin_yang",
+    "ts_code": "301015.SZ",
+    "name": "百洋医药",
+    "industry": "医药商业",
+    "stock_pct": 14.84,
+    "sector_pct": 0.14,
+    "excess": 14.7,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX03_极阴次阳",
+    "factor": "yin_yang",
+    "ts_code": "301076.SZ",
+    "name": "新瀚新材",
+    "industry": "化工原料",
+    "stock_pct": 3.26,
+    "sector_pct": -3.06,
+    "excess": 6.32,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX03_极阴次阳",
+    "factor": "yin_yang",
+    "ts_code": "301132.SZ",
+    "name": "满坤科技",
+    "industry": "元器件",
+    "stock_pct": 20.01,
+    "sector_pct": -4.3,
+    "excess": 24.31,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX03_极阴次阳",
+    "factor": "yin_yang",
+    "ts_code": "301252.SZ",
+    "name": "同星科技",
+    "industry": "机械基件",
+    "stock_pct": 4.77,
+    "sector_pct": -3.98,
+    "excess": 8.75,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX03_极阴次阳",
+    "factor": "yin_yang",
+    "ts_code": "301487.SZ",
+    "name": "盟固利",
+    "industry": "化工原料",
+    "stock_pct": 3.26,
+    "sector_pct": -3.06,
+    "excess": 6.32,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX03_极阴次阳",
+    "factor": "yin_yang",
+    "ts_code": "301563.SZ",
+    "name": "云汉芯城",
+    "industry": "元器件",
+    "stock_pct": 3.96,
+    "sector_pct": -4.3,
+    "excess": 8.26,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX03_极阴次阳",
+    "factor": "yin_yang",
+    "ts_code": "301569.SZ",
+    "name": "联亚药业",
+    "industry": "化学制药",
+    "stock_pct": 2.47,
+    "sector_pct": -0.73,
+    "excess": 3.21,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX03_极阴次阳",
+    "factor": "yin_yang",
+    "ts_code": "301607.SZ",
+    "name": "富特科技",
+    "industry": "汽车配件",
+    "stock_pct": 4.29,
+    "sector_pct": -3.79,
+    "excess": 8.08,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX03_极阴次阳",
+    "factor": "yin_yang",
+    "ts_code": "600096.SH",
+    "name": "云天化",
+    "industry": "农药化肥",
+    "stock_pct": 1.31,
+    "sector_pct": -1.94,
+    "excess": 3.25,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX03_极阴次阳",
+    "factor": "yin_yang",
+    "ts_code": "600113.SH",
+    "name": "浙江东日",
+    "industry": "区域地产",
+    "stock_pct": 10.01,
+    "sector_pct": -1.56,
+    "excess": 11.57,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX03_极阴次阳",
+    "factor": "yin_yang",
+    "ts_code": "603089.SH",
+    "name": "正裕工业",
+    "industry": "汽车配件",
+    "stock_pct": 4.41,
+    "sector_pct": -3.79,
+    "excess": 8.2,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX03_极阴次阳",
+    "factor": "yin_yang",
+    "ts_code": "603273.SH",
+    "name": "天元智能",
+    "industry": "专用机械",
+    "stock_pct": 10.01,
+    "sector_pct": -3.95,
+    "excess": 13.96,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX03_极阴次阳",
+    "factor": "yin_yang",
+    "ts_code": "605058.SH",
+    "name": "澳弘电子",
+    "industry": "元器件",
+    "stock_pct": 10.0,
+    "sector_pct": -4.3,
+    "excess": 14.31,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX03_极阴次阳",
+    "factor": "yin_yang",
+    "ts_code": "688045.SH",
+    "name": "必易微",
+    "industry": "半导体",
+    "stock_pct": 20.0,
+    "sector_pct": -5.33,
+    "excess": 25.33,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX03_极阴次阳",
+    "factor": "yin_yang",
+    "ts_code": "688066.SH",
+    "name": "*ST航图",
+    "industry": "软件服务",
+    "stock_pct": 20.04,
+    "sector_pct": -5.49,
+    "excess": 25.53,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX03_极阴次阳",
+    "factor": "yin_yang",
+    "ts_code": "920146.BJ",
+    "name": "华阳变速",
+    "industry": "汽车配件",
+    "stock_pct": 5.7,
+    "sector_pct": -3.79,
+    "excess": 9.49,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX03_极阴次阳",
+    "factor": "yin_yang",
+    "ts_code": "920201.BJ",
+    "name": "百瑞吉",
+    "industry": "医疗保健",
+    "stock_pct": 15.44,
+    "sector_pct": -1.03,
+    "excess": 16.47,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX03_极阴次阳",
+    "factor": "yin_yang",
+    "ts_code": "920298.BJ",
+    "name": "腾信精密",
+    "industry": "机械基件",
+    "stock_pct": 3.8,
+    "sector_pct": -3.98,
+    "excess": 7.79,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX03_极阴次阳",
+    "factor": "yin_yang",
+    "ts_code": "920627.BJ",
+    "name": "力王股份",
+    "industry": "电气设备",
+    "stock_pct": 4.14,
+    "sector_pct": -3.34,
+    "excess": 7.47,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX03_极阴次阳",
+    "factor": "yin_yang",
+    "ts_code": "920663.BJ",
+    "name": "明阳科技",
+    "industry": "汽车配件",
+    "stock_pct": 5.58,
+    "sector_pct": -3.79,
+    "excess": 9.37,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "000415.SZ",
+    "name": "渤海租赁",
+    "industry": "多元金融",
+    "stock_pct": 6.03,
+    "sector_pct": -2.2,
+    "excess": 8.23,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "000417.SZ",
+    "name": "合百集团",
+    "industry": "百货",
+    "stock_pct": 10.04,
+    "sector_pct": -3.21,
+    "excess": 13.25,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "000568.SZ",
+    "name": "泸州老窖",
+    "industry": "白酒",
+    "stock_pct": 10.01,
+    "sector_pct": 5.27,
+    "excess": 4.73,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": true
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "000596.SZ",
+    "name": "古井贡酒",
+    "industry": "白酒",
+    "stock_pct": 10.0,
+    "sector_pct": 5.27,
+    "excess": 4.73,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": true
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "000701.SZ",
+    "name": "厦门信达",
+    "industry": "商贸代理",
+    "stock_pct": 1.07,
+    "sector_pct": -2.04,
+    "excess": 3.11,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "000860.SZ",
+    "name": "顺鑫农业",
+    "industry": "白酒",
+    "stock_pct": 6.89,
+    "sector_pct": 5.27,
+    "excess": 1.62,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": true
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "000900.SZ",
+    "name": "现代投资",
+    "industry": "路桥",
+    "stock_pct": 4.62,
+    "sector_pct": -0.04,
+    "excess": 4.66,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "001219.SZ",
+    "name": "青岛食品",
+    "industry": "食品",
+    "stock_pct": 9.98,
+    "sector_pct": -0.55,
+    "excess": 10.53,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "002073.SZ",
+    "name": "软控股份",
+    "industry": "专用机械",
+    "stock_pct": 5.22,
+    "sector_pct": -3.95,
+    "excess": 9.17,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "002149.SZ",
+    "name": "西部材料",
+    "industry": "小金属",
+    "stock_pct": 3.9,
+    "sector_pct": -3.23,
+    "excess": 7.13,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "002173.SZ",
+    "name": "创新医疗",
+    "industry": "医疗保健",
+    "stock_pct": 3.49,
+    "sector_pct": -1.03,
+    "excess": 4.52,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "002275.SZ",
+    "name": "桂林三金",
+    "industry": "中成药",
+    "stock_pct": 9.99,
+    "sector_pct": -0.12,
+    "excess": 10.1,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "002352.SZ",
+    "name": "顺丰控股",
+    "industry": "仓储物流",
+    "stock_pct": 2.08,
+    "sector_pct": -2.28,
+    "excess": 4.36,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "002390.SZ",
+    "name": "信邦制药",
+    "industry": "医药商业",
+    "stock_pct": 5.5,
+    "sector_pct": 0.14,
+    "excess": 5.36,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "002507.SZ",
+    "name": "涪陵榨菜",
+    "industry": "食品",
+    "stock_pct": 1.95,
+    "sector_pct": -0.55,
+    "excess": 2.5,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "002563.SZ",
+    "name": "森马服饰",
+    "industry": "服饰",
+    "stock_pct": 3.31,
+    "sector_pct": -2.14,
+    "excess": 5.45,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "002582.SZ",
+    "name": "好想你",
+    "industry": "食品",
+    "stock_pct": 9.97,
+    "sector_pct": -0.55,
+    "excess": 10.52,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "002601.SZ",
+    "name": "龙佰集团",
+    "industry": "化工原料",
+    "stock_pct": 2.95,
+    "sector_pct": -3.06,
+    "excess": 6.01,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "002737.SZ",
+    "name": "葵花药业",
+    "industry": "中成药",
+    "stock_pct": 4.5,
+    "sector_pct": -0.12,
+    "excess": 4.62,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "002865.SZ",
+    "name": "钧达股份",
+    "industry": "电气设备",
+    "stock_pct": 2.9,
+    "sector_pct": -3.34,
+    "excess": 6.24,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "002958.SZ",
+    "name": "青农商行",
+    "industry": "银行",
+    "stock_pct": 5.57,
+    "sector_pct": 0.77,
+    "excess": 4.81,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "002991.SZ",
+    "name": "甘源食品",
+    "industry": "食品",
+    "stock_pct": 5.13,
+    "sector_pct": -0.55,
+    "excess": 5.68,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "300015.SZ",
+    "name": "爱尔眼科",
+    "industry": "医疗保健",
+    "stock_pct": 3.65,
+    "sector_pct": -1.03,
+    "excess": 4.68,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "300030.SZ",
+    "name": "阳普医疗",
+    "industry": "医疗保健",
+    "stock_pct": 20.03,
+    "sector_pct": -1.03,
+    "excess": 21.06,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "300455.SZ",
+    "name": "航天智装",
+    "industry": "IT设备",
+    "stock_pct": -0.78,
+    "sector_pct": -4.64,
+    "excess": 3.87,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "300629.SZ",
+    "name": "新劲刚",
+    "industry": "元器件",
+    "stock_pct": 1.62,
+    "sector_pct": -4.3,
+    "excess": 5.93,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "300695.SZ",
+    "name": "兆丰股份",
+    "industry": "汽车配件",
+    "stock_pct": 5.5,
+    "sector_pct": -3.79,
+    "excess": 9.3,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "300770.SZ",
+    "name": "新媒股份",
+    "industry": "影视音像",
+    "stock_pct": 5.02,
+    "sector_pct": -6.89,
+    "excess": 11.91,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "301015.SZ",
+    "name": "百洋医药",
+    "industry": "医药商业",
+    "stock_pct": 14.84,
+    "sector_pct": 0.14,
+    "excess": 14.7,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "301079.SZ",
+    "name": "邵阳液压",
+    "industry": "机械基件",
+    "stock_pct": 8.21,
+    "sector_pct": -3.98,
+    "excess": 12.19,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "301187.SZ",
+    "name": "欧圣电气",
+    "industry": "家用电器",
+    "stock_pct": 20.0,
+    "sector_pct": -2.55,
+    "excess": 22.55,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "301210.SZ",
+    "name": "金杨精密",
+    "industry": "电气设备",
+    "stock_pct": 10.81,
+    "sector_pct": -3.34,
+    "excess": 14.14,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "301293.SZ",
+    "name": "三博脑科",
+    "industry": "医疗保健",
+    "stock_pct": 1.91,
+    "sector_pct": -1.03,
+    "excess": 2.94,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "301363.SZ",
+    "name": "美好医疗",
+    "industry": "医疗保健",
+    "stock_pct": 7.48,
+    "sector_pct": -1.03,
+    "excess": 8.51,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "600018.SH",
+    "name": "上港集团",
+    "industry": "港口",
+    "stock_pct": 5.84,
+    "sector_pct": 1.09,
+    "excess": 4.75,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": true
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "600028.SH",
+    "name": "中国石化",
+    "industry": "石油加工",
+    "stock_pct": 4.98,
+    "sector_pct": -0.3,
+    "excess": 5.28,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "600035.SH",
+    "name": "楚天高速",
+    "industry": "路桥",
+    "stock_pct": 7.58,
+    "sector_pct": -0.04,
+    "excess": 7.62,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "600085.SH",
+    "name": "同仁堂",
+    "industry": "中成药",
+    "stock_pct": 2.62,
+    "sector_pct": -0.12,
+    "excess": 2.74,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "600098.SH",
+    "name": "广州发展",
+    "industry": "火力发电",
+    "stock_pct": 3.4,
+    "sector_pct": -1.2,
+    "excess": 4.59,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "600118.SH",
+    "name": "中国卫星",
+    "industry": "航空",
+    "stock_pct": 0.02,
+    "sector_pct": -4.39,
+    "excess": 4.41,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "600215.SH",
+    "name": "派斯林",
+    "industry": "专用机械",
+    "stock_pct": 10.02,
+    "sector_pct": -3.95,
+    "excess": 13.97,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "600258.SH",
+    "name": "首旅酒店",
+    "industry": "酒店餐饮",
+    "stock_pct": 10.0,
+    "sector_pct": 0.98,
+    "excess": 9.02,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "600262.SH",
+    "name": "北方股份",
+    "industry": "专用机械",
+    "stock_pct": 3.88,
+    "sector_pct": -3.95,
+    "excess": 7.83,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "600285.SH",
+    "name": "羚锐制药",
+    "industry": "中成药",
+    "stock_pct": 10.0,
+    "sector_pct": -0.12,
+    "excess": 10.12,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "600289.SH",
+    "name": "ST信通",
+    "industry": "软件服务",
+    "stock_pct": 7.99,
+    "sector_pct": -5.49,
+    "excess": 13.48,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "600428.SH",
+    "name": "中远海特",
+    "industry": "水运",
+    "stock_pct": 0.7,
+    "sector_pct": 1.83,
+    "excess": -1.12,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "600510.SH",
+    "name": "黑牡丹",
+    "industry": "全国地产",
+    "stock_pct": 10.05,
+    "sector_pct": -1.79,
+    "excess": 11.85,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "600559.SH",
+    "name": "老白干酒",
+    "industry": "白酒",
+    "stock_pct": 2.84,
+    "sector_pct": 5.27,
+    "excess": -2.44,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": true
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "600566.SH",
+    "name": "济川药业",
+    "industry": "中成药",
+    "stock_pct": 2.64,
+    "sector_pct": -0.12,
+    "excess": 2.76,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "600688.SH",
+    "name": "上海石化",
+    "industry": "石油加工",
+    "stock_pct": 8.93,
+    "sector_pct": -0.3,
+    "excess": 9.23,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "600690.SH",
+    "name": "海尔智家",
+    "industry": "家用电器",
+    "stock_pct": 5.65,
+    "sector_pct": -2.55,
+    "excess": 8.2,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "600702.SH",
+    "name": "舍得酒业",
+    "industry": "白酒",
+    "stock_pct": 6.03,
+    "sector_pct": 5.27,
+    "excess": 0.76,
+    "rs_A": true,
+    "rs_B": false,
+    "rs_C": true
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "600754.SH",
+    "name": "锦江酒店",
+    "industry": "酒店餐饮",
+    "stock_pct": 5.83,
+    "sector_pct": 0.98,
+    "excess": 4.85,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "600763.SH",
+    "name": "通策医疗",
+    "industry": "医疗保健",
+    "stock_pct": 4.03,
+    "sector_pct": -1.03,
+    "excess": 5.07,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "600809.SH",
+    "name": "山西汾酒",
+    "industry": "白酒",
+    "stock_pct": 7.76,
+    "sector_pct": 5.27,
+    "excess": 2.48,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": true
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "600927.SH",
+    "name": "永安期货",
+    "industry": "多元金融",
+    "stock_pct": 0.16,
+    "sector_pct": -2.2,
+    "excess": 2.36,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "600928.SH",
+    "name": "西安银行",
+    "industry": "银行",
+    "stock_pct": 8.64,
+    "sector_pct": 0.77,
+    "excess": 7.87,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "600983.SH",
+    "name": "惠而浦",
+    "industry": "家用电器",
+    "stock_pct": 1.46,
+    "sector_pct": -2.55,
+    "excess": 4.01,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "600997.SH",
+    "name": "开滦股份",
+    "industry": "焦炭加工",
+    "stock_pct": 0.74,
+    "sector_pct": -2.64,
+    "excess": 3.38,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "601021.SH",
+    "name": "春秋航空",
+    "industry": "空运",
+    "stock_pct": 4.86,
+    "sector_pct": 0.76,
+    "excess": 4.1,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "601083.SH",
+    "name": "锦江航运",
+    "industry": "水运",
+    "stock_pct": 10.03,
+    "sector_pct": 1.83,
+    "excess": 8.21,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": true
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "601098.SH",
+    "name": "中南传媒",
+    "industry": "出版业",
+    "stock_pct": 1.82,
+    "sector_pct": -4.88,
+    "excess": 6.7,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "601117.SH",
+    "name": "中国化学",
+    "industry": "建筑工程",
+    "stock_pct": 3.04,
+    "sector_pct": -3.18,
+    "excess": 6.23,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "601717.SH",
+    "name": "中创智领",
+    "industry": "专用机械",
+    "stock_pct": 5.22,
+    "sector_pct": -3.95,
+    "excess": 9.17,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "601919.SH",
+    "name": "中远海控",
+    "industry": "水运",
+    "stock_pct": 7.02,
+    "sector_pct": 1.83,
+    "excess": 5.19,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": true
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "603027.SH",
+    "name": "千禾味业",
+    "industry": "食品",
+    "stock_pct": 3.43,
+    "sector_pct": -0.55,
+    "excess": 3.98,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "603213.SH",
+    "name": "镇洋发展",
+    "industry": "化工原料",
+    "stock_pct": 0.74,
+    "sector_pct": -3.06,
+    "excess": 3.8,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "603233.SH",
+    "name": "大参林",
+    "industry": "医药商业",
+    "stock_pct": 9.99,
+    "sector_pct": 0.14,
+    "excess": 9.85,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "603317.SH",
+    "name": "天味食品",
+    "industry": "食品",
+    "stock_pct": 4.19,
+    "sector_pct": -0.55,
+    "excess": 4.74,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "603338.SH",
+    "name": "浙江鼎力",
+    "industry": "工程机械",
+    "stock_pct": 5.24,
+    "sector_pct": -2.95,
+    "excess": 8.19,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "603369.SH",
+    "name": "今世缘",
+    "industry": "白酒",
+    "stock_pct": 6.9,
+    "sector_pct": 5.27,
+    "excess": 1.63,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": true
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "603382.SH",
+    "name": "海阳科技",
+    "industry": "化纤",
+    "stock_pct": 2.82,
+    "sector_pct": -2.69,
+    "excess": 5.51,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "603587.SH",
+    "name": "地素时尚",
+    "industry": "服饰",
+    "stock_pct": 9.97,
+    "sector_pct": -2.14,
+    "excess": 12.12,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "603589.SH",
+    "name": "口子窖",
+    "industry": "白酒",
+    "stock_pct": 5.35,
+    "sector_pct": 5.27,
+    "excess": 0.07,
+    "rs_A": true,
+    "rs_B": false,
+    "rs_C": true
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "603697.SH",
+    "name": "有友食品",
+    "industry": "食品",
+    "stock_pct": 3.61,
+    "sector_pct": -0.55,
+    "excess": 4.16,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "603855.SH",
+    "name": "华荣股份",
+    "industry": "专用机械",
+    "stock_pct": 1.68,
+    "sector_pct": -3.95,
+    "excess": 5.63,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "603858.SH",
+    "name": "步长制药",
+    "industry": "中成药",
+    "stock_pct": 3.84,
+    "sector_pct": -0.12,
+    "excess": 3.96,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "603868.SH",
+    "name": "飞科电器",
+    "industry": "家用电器",
+    "stock_pct": 2.42,
+    "sector_pct": -2.55,
+    "excess": 4.97,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "603899.SH",
+    "name": "晨光股份",
+    "industry": "文教休闲",
+    "stock_pct": 5.42,
+    "sector_pct": -3.52,
+    "excess": 8.94,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "603939.SH",
+    "name": "益丰药房",
+    "industry": "医药商业",
+    "stock_pct": 5.0,
+    "sector_pct": 0.14,
+    "excess": 4.86,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "605118.SH",
+    "name": "力鼎光电",
+    "industry": "元器件",
+    "stock_pct": 6.04,
+    "sector_pct": -4.3,
+    "excess": 10.34,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "605338.SH",
+    "name": "巴比食品",
+    "industry": "食品",
+    "stock_pct": 10.01,
+    "sector_pct": -0.55,
+    "excess": 10.56,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "605339.SH",
+    "name": "南侨食品",
+    "industry": "食品",
+    "stock_pct": 2.49,
+    "sector_pct": -0.55,
+    "excess": 3.05,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "605598.SH",
+    "name": "上海港湾",
+    "industry": "建筑工程",
+    "stock_pct": 4.98,
+    "sector_pct": -3.18,
+    "excess": 8.16,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "688016.SH",
+    "name": "心脉医疗",
+    "industry": "医疗保健",
+    "stock_pct": 4.21,
+    "sector_pct": -1.03,
+    "excess": 5.24,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "688128.SH",
+    "name": "中国电研",
+    "industry": "专用机械",
+    "stock_pct": 6.44,
+    "sector_pct": -3.95,
+    "excess": 10.39,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "920017.BJ",
+    "name": "星昊医药",
+    "industry": "化学制药",
+    "stock_pct": 1.82,
+    "sector_pct": -0.73,
+    "excess": 2.56,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "920156.BJ",
+    "name": "海昌智能",
+    "industry": "专用机械",
+    "stock_pct": 9.76,
+    "sector_pct": -3.95,
+    "excess": 13.71,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "920199.BJ",
+    "name": "倍益康",
+    "industry": "家用电器",
+    "stock_pct": 3.08,
+    "sector_pct": -2.55,
+    "excess": 5.63,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "920374.BJ",
+    "name": "云里物里",
+    "industry": "通信设备",
+    "stock_pct": 3.3,
+    "sector_pct": -5.64,
+    "excess": 8.93,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "920576.BJ",
+    "name": "天力复合",
+    "industry": "小金属",
+    "stock_pct": 3.4,
+    "sector_pct": -3.23,
+    "excess": 6.63,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX04_兵临城下",
+    "factor": "near_high_vol",
+    "ts_code": "920826.BJ",
+    "name": "盖世食品",
+    "industry": "食品",
+    "stock_pct": 1.99,
+    "sector_pct": -0.55,
+    "excess": 2.54,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX05_黄金柱",
+    "factor": "golden_pillar",
+    "ts_code": "002034.SZ",
+    "name": "旺能环境",
+    "industry": "环境保护",
+    "stock_pct": -1.65,
+    "sector_pct": -2.8,
+    "excess": 1.15,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX05_黄金柱",
+    "factor": "golden_pillar",
+    "ts_code": "002311.SZ",
+    "name": "海大集团",
+    "industry": "饲料",
+    "stock_pct": 2.49,
+    "sector_pct": -1.98,
+    "excess": 4.48,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX05_黄金柱",
+    "factor": "golden_pillar",
+    "ts_code": "002532.SZ",
+    "name": "天山铝业",
+    "industry": "铝",
+    "stock_pct": 0.42,
+    "sector_pct": -1.89,
+    "excess": 2.31,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX05_黄金柱",
+    "factor": "golden_pillar",
+    "ts_code": "301109.SZ",
+    "name": "军信股份",
+    "industry": "环境保护",
+    "stock_pct": 0.07,
+    "sector_pct": -2.8,
+    "excess": 2.87,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX05_黄金柱",
+    "factor": "golden_pillar",
+    "ts_code": "301587.SZ",
+    "name": "中瑞股份",
+    "industry": "电气设备",
+    "stock_pct": -2.06,
+    "sector_pct": -3.34,
+    "excess": 1.28,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX05_黄金柱",
+    "factor": "golden_pillar",
+    "ts_code": "600309.SH",
+    "name": "万华化学",
+    "industry": "化工原料",
+    "stock_pct": -0.58,
+    "sector_pct": -3.06,
+    "excess": 2.48,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX05_黄金柱",
+    "factor": "golden_pillar",
+    "ts_code": "600436.SH",
+    "name": "片仔癀",
+    "industry": "中成药",
+    "stock_pct": 0.95,
+    "sector_pct": -0.12,
+    "excess": 1.07,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX05_黄金柱",
+    "factor": "golden_pillar",
+    "ts_code": "600985.SH",
+    "name": "淮北矿业",
+    "industry": "煤炭开采",
+    "stock_pct": -0.53,
+    "sector_pct": -0.59,
+    "excess": 0.06,
+    "rs_A": true,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX05_黄金柱",
+    "factor": "golden_pillar",
+    "ts_code": "600987.SH",
+    "name": "航民股份",
+    "industry": "纺织",
+    "stock_pct": 0.0,
+    "sector_pct": -2.87,
+    "excess": 2.87,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX05_黄金柱",
+    "factor": "golden_pillar",
+    "ts_code": "601900.SH",
+    "name": "南方传媒",
+    "industry": "出版业",
+    "stock_pct": -0.61,
+    "sector_pct": -4.88,
+    "excess": 4.27,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX05_黄金柱",
+    "factor": "golden_pillar",
+    "ts_code": "603337.SH",
+    "name": "杰克科技",
+    "industry": "纺织机械",
+    "stock_pct": -9.77,
+    "sector_pct": -5.33,
+    "excess": -4.44,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX06_长阴短柱",
+    "factor": "lx06_long_yin_short",
+    "ts_code": "002009.SZ",
+    "name": "天奇股份",
+    "industry": "工程机械",
+    "stock_pct": 3.8,
+    "sector_pct": -2.95,
+    "excess": 6.74,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX06_长阴短柱",
+    "factor": "lx06_long_yin_short",
+    "ts_code": "002747.SZ",
+    "name": "埃斯顿",
+    "industry": "机械基件",
+    "stock_pct": 2.96,
+    "sector_pct": -3.98,
+    "excess": 6.94,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX06_长阴短柱",
+    "factor": "lx06_long_yin_short",
+    "ts_code": "300428.SZ",
+    "name": "立中集团",
+    "industry": "汽车配件",
+    "stock_pct": 3.66,
+    "sector_pct": -3.79,
+    "excess": 7.45,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX06_长阴短柱",
+    "factor": "lx06_long_yin_short",
+    "ts_code": "300695.SZ",
+    "name": "兆丰股份",
+    "industry": "汽车配件",
+    "stock_pct": 5.5,
+    "sector_pct": -3.79,
+    "excess": 9.3,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX06_长阴短柱",
+    "factor": "lx06_long_yin_short",
+    "ts_code": "300920.SZ",
+    "name": "润阳科技",
+    "industry": "塑料",
+    "stock_pct": 3.42,
+    "sector_pct": -3.0,
+    "excess": 6.43,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX06_长阴短柱",
+    "factor": "lx06_long_yin_short",
+    "ts_code": "301413.SZ",
+    "name": "安培龙",
+    "industry": "电器仪表",
+    "stock_pct": 7.12,
+    "sector_pct": -3.7,
+    "excess": 10.82,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX06_长阴短柱",
+    "factor": "lx06_long_yin_short",
+    "ts_code": "688160.SH",
+    "name": "步科股份",
+    "industry": "电器仪表",
+    "stock_pct": 3.99,
+    "sector_pct": -3.7,
+    "excess": 7.68,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX06_长阴短柱",
+    "factor": "lx06_long_yin_short",
+    "ts_code": "688710.SH",
+    "name": "益诺思",
+    "industry": "生物制药",
+    "stock_pct": 8.08,
+    "sector_pct": -0.35,
+    "excess": 8.43,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX06_长阴短柱",
+    "factor": "lx06_long_yin_short",
+    "ts_code": "920201.BJ",
+    "name": "百瑞吉",
+    "industry": "医疗保健",
+    "stock_pct": 15.44,
+    "sector_pct": -1.03,
+    "excess": 16.47,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX07_将军柱",
+    "factor": "lx03_general_pillar",
+    "ts_code": "000888.SZ",
+    "name": "峨眉山A",
+    "industry": "旅游景点",
+    "stock_pct": -0.72,
+    "sector_pct": -0.67,
+    "excess": -0.05,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX07_将军柱",
+    "factor": "lx03_general_pillar",
+    "ts_code": "002175.SZ",
+    "name": "*ST东智",
+    "industry": "电器仪表",
+    "stock_pct": 0.86,
+    "sector_pct": -3.7,
+    "excess": 4.56,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX07_将军柱",
+    "factor": "lx03_general_pillar",
+    "ts_code": "002293.SZ",
+    "name": "罗莱生活",
+    "industry": "纺织",
+    "stock_pct": 2.45,
+    "sector_pct": -2.87,
+    "excess": 5.32,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX07_将军柱",
+    "factor": "lx03_general_pillar",
+    "ts_code": "002532.SZ",
+    "name": "天山铝业",
+    "industry": "铝",
+    "stock_pct": 0.42,
+    "sector_pct": -1.89,
+    "excess": 2.31,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX07_将军柱",
+    "factor": "lx03_general_pillar",
+    "ts_code": "002982.SZ",
+    "name": "湘佳股份",
+    "industry": "农业综合",
+    "stock_pct": -0.96,
+    "sector_pct": -1.82,
+    "excess": 0.86,
+    "rs_A": true,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX07_将军柱",
+    "factor": "lx03_general_pillar",
+    "ts_code": "300061.SZ",
+    "name": "旗天科技",
+    "industry": "互联网",
+    "stock_pct": -2.39,
+    "sector_pct": -5.75,
+    "excess": 3.35,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX07_将军柱",
+    "factor": "lx03_general_pillar",
+    "ts_code": "300432.SZ",
+    "name": "富临精工",
+    "industry": "汽车配件",
+    "stock_pct": -3.94,
+    "sector_pct": -3.79,
+    "excess": -0.15,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX07_将军柱",
+    "factor": "lx03_general_pillar",
+    "ts_code": "300504.SZ",
+    "name": "天邑股份",
+    "industry": "通信设备",
+    "stock_pct": 0.25,
+    "sector_pct": -5.64,
+    "excess": 5.89,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX07_将军柱",
+    "factor": "lx03_general_pillar",
+    "ts_code": "300539.SZ",
+    "name": "横河精密",
+    "industry": "塑料",
+    "stock_pct": -2.06,
+    "sector_pct": -3.0,
+    "excess": 0.94,
+    "rs_A": true,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX07_将军柱",
+    "factor": "lx03_general_pillar",
+    "ts_code": "300877.SZ",
+    "name": "金春股份",
+    "industry": "纺织",
+    "stock_pct": -4.58,
+    "sector_pct": -2.87,
+    "excess": -1.71,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX07_将军柱",
+    "factor": "lx03_general_pillar",
+    "ts_code": "300961.SZ",
+    "name": "深水海纳",
+    "industry": "环境保护",
+    "stock_pct": -4.18,
+    "sector_pct": -2.8,
+    "excess": -1.38,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX07_将军柱",
+    "factor": "lx03_general_pillar",
+    "ts_code": "301361.SZ",
+    "name": "众智科技",
+    "industry": "电气设备",
+    "stock_pct": -0.83,
+    "sector_pct": -3.34,
+    "excess": 2.5,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX07_将军柱",
+    "factor": "lx03_general_pillar",
+    "ts_code": "301683.SZ",
+    "name": "慧谷新材",
+    "industry": "染料涂料",
+    "stock_pct": -1.69,
+    "sector_pct": -3.17,
+    "excess": 1.48,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX07_将军柱",
+    "factor": "lx03_general_pillar",
+    "ts_code": "600436.SH",
+    "name": "片仔癀",
+    "industry": "中成药",
+    "stock_pct": 0.95,
+    "sector_pct": -0.12,
+    "excess": 1.07,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX07_将军柱",
+    "factor": "lx03_general_pillar",
+    "ts_code": "600506.SH",
+    "name": "统一股份",
+    "industry": "石油加工",
+    "stock_pct": -0.58,
+    "sector_pct": -0.3,
+    "excess": -0.28,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX07_将军柱",
+    "factor": "lx03_general_pillar",
+    "ts_code": "600704.SH",
+    "name": "物产中大",
+    "industry": "仓储物流",
+    "stock_pct": 0.4,
+    "sector_pct": -2.28,
+    "excess": 2.68,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX07_将军柱",
+    "factor": "lx03_general_pillar",
+    "ts_code": "600827.SH",
+    "name": "百联股份",
+    "industry": "超市连锁",
+    "stock_pct": -0.38,
+    "sector_pct": -1.4,
+    "excess": 1.01,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX07_将军柱",
+    "factor": "lx03_general_pillar",
+    "ts_code": "600987.SH",
+    "name": "航民股份",
+    "industry": "纺织",
+    "stock_pct": 0.0,
+    "sector_pct": -2.87,
+    "excess": 2.87,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX07_将军柱",
+    "factor": "lx03_general_pillar",
+    "ts_code": "601825.SH",
+    "name": "沪农商行",
+    "industry": "银行",
+    "stock_pct": -0.22,
+    "sector_pct": 0.77,
+    "excess": -0.99,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX07_将军柱",
+    "factor": "lx03_general_pillar",
+    "ts_code": "603658.SH",
+    "name": "安图生物",
+    "industry": "医疗保健",
+    "stock_pct": 1.81,
+    "sector_pct": -1.03,
+    "excess": 2.85,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX07_将军柱",
+    "factor": "lx03_general_pillar",
+    "ts_code": "603716.SH",
+    "name": "塞力医疗",
+    "industry": "医药商业",
+    "stock_pct": 2.09,
+    "sector_pct": 0.14,
+    "excess": 1.95,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX07_将军柱",
+    "factor": "lx03_general_pillar",
+    "ts_code": "605333.SH",
+    "name": "沪光股份",
+    "industry": "汽车配件",
+    "stock_pct": -5.97,
+    "sector_pct": -3.79,
+    "excess": -2.18,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX07_将军柱",
+    "factor": "lx03_general_pillar",
+    "ts_code": "920012.BJ",
+    "name": "创达新材",
+    "industry": "元器件",
+    "stock_pct": 0.2,
+    "sector_pct": -4.3,
+    "excess": 4.51,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX07_将军柱",
+    "factor": "lx03_general_pillar",
+    "ts_code": "920181.BJ",
+    "name": "赛英电子",
+    "industry": "元器件",
+    "stock_pct": 0.98,
+    "sector_pct": -4.3,
+    "excess": 5.28,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX07_将军柱",
+    "factor": "lx03_general_pillar",
+    "ts_code": "920663.BJ",
+    "name": "明阳科技",
+    "industry": "汽车配件",
+    "stock_pct": 5.58,
+    "sector_pct": -3.79,
+    "excess": 9.37,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX09_黄金线",
+    "factor": "lx05_golden_line",
+    "ts_code": "000429.SZ",
+    "name": "粤高速A",
+    "industry": "路桥",
+    "stock_pct": 0.44,
+    "sector_pct": -0.04,
+    "excess": 0.47,
+    "rs_A": true,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX09_黄金线",
+    "factor": "lx05_golden_line",
+    "ts_code": "000928.SZ",
+    "name": "中钢国际",
+    "industry": "建筑工程",
+    "stock_pct": -0.18,
+    "sector_pct": -3.18,
+    "excess": 3.0,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX09_黄金线",
+    "factor": "lx05_golden_line",
+    "ts_code": "002027.SZ",
+    "name": "分众传媒",
+    "industry": "广告包装",
+    "stock_pct": 1.15,
+    "sector_pct": -4.13,
+    "excess": 5.29,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX09_黄金线",
+    "factor": "lx05_golden_line",
+    "ts_code": "002032.SZ",
+    "name": "苏泊尔",
+    "industry": "家用电器",
+    "stock_pct": 1.67,
+    "sector_pct": -2.55,
+    "excess": 4.22,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX09_黄金线",
+    "factor": "lx05_golden_line",
+    "ts_code": "002332.SZ",
+    "name": "仙琚制药",
+    "industry": "化学制药",
+    "stock_pct": 0.34,
+    "sector_pct": -0.73,
+    "excess": 1.07,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX09_黄金线",
+    "factor": "lx05_golden_line",
+    "ts_code": "002608.SZ",
+    "name": "江苏国信",
+    "industry": "火力发电",
+    "stock_pct": 1.96,
+    "sector_pct": -1.2,
+    "excess": 3.15,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX09_黄金线",
+    "factor": "lx05_golden_line",
+    "ts_code": "002991.SZ",
+    "name": "甘源食品",
+    "industry": "食品",
+    "stock_pct": 5.13,
+    "sector_pct": -0.55,
+    "excess": 5.68,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX09_黄金线",
+    "factor": "lx05_golden_line",
+    "ts_code": "300357.SZ",
+    "name": "我武生物",
+    "industry": "生物制药",
+    "stock_pct": 1.23,
+    "sector_pct": -0.35,
+    "excess": 1.58,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX09_黄金线",
+    "factor": "lx05_golden_line",
+    "ts_code": "300453.SZ",
+    "name": "三鑫医疗",
+    "industry": "医疗保健",
+    "stock_pct": 0.65,
+    "sector_pct": -1.03,
+    "excess": 1.68,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX09_黄金线",
+    "factor": "lx05_golden_line",
+    "ts_code": "300577.SZ",
+    "name": "开润股份",
+    "industry": "纺织",
+    "stock_pct": 1.94,
+    "sector_pct": -2.87,
+    "excess": 4.81,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX09_黄金线",
+    "factor": "lx05_golden_line",
+    "ts_code": "301048.SZ",
+    "name": "金鹰重工",
+    "industry": "运输设备",
+    "stock_pct": -0.32,
+    "sector_pct": -3.24,
+    "excess": 2.92,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX09_黄金线",
+    "factor": "lx05_golden_line",
+    "ts_code": "301097.SZ",
+    "name": "天益医疗",
+    "industry": "医疗保健",
+    "stock_pct": -0.75,
+    "sector_pct": -1.03,
+    "excess": 0.28,
+    "rs_A": true,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX09_黄金线",
+    "factor": "lx05_golden_line",
+    "ts_code": "301109.SZ",
+    "name": "军信股份",
+    "industry": "环境保护",
+    "stock_pct": 0.07,
+    "sector_pct": -2.8,
+    "excess": 2.87,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX09_黄金线",
+    "factor": "lx05_golden_line",
+    "ts_code": "301293.SZ",
+    "name": "三博脑科",
+    "industry": "医疗保健",
+    "stock_pct": 1.91,
+    "sector_pct": -1.03,
+    "excess": 2.94,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX09_黄金线",
+    "factor": "lx05_golden_line",
+    "ts_code": "301517.SZ",
+    "name": "陕西华达",
+    "industry": "元器件",
+    "stock_pct": -1.09,
+    "sector_pct": -4.3,
+    "excess": 3.22,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX09_黄金线",
+    "factor": "lx05_golden_line",
+    "ts_code": "600380.SH",
+    "name": "健康元",
+    "industry": "化学制药",
+    "stock_pct": 1.0,
+    "sector_pct": -0.73,
+    "excess": 1.74,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX09_黄金线",
+    "factor": "lx05_golden_line",
+    "ts_code": "600511.SH",
+    "name": "国药股份",
+    "industry": "医药商业",
+    "stock_pct": 0.43,
+    "sector_pct": 0.14,
+    "excess": 0.29,
+    "rs_A": true,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX09_黄金线",
+    "factor": "lx05_golden_line",
+    "ts_code": "600566.SH",
+    "name": "济川药业",
+    "industry": "中成药",
+    "stock_pct": 2.64,
+    "sector_pct": -0.12,
+    "excess": 2.76,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX09_黄金线",
+    "factor": "lx05_golden_line",
+    "ts_code": "600826.SH",
+    "name": "兰生股份",
+    "industry": "文教休闲",
+    "stock_pct": 0.12,
+    "sector_pct": -3.52,
+    "excess": 3.65,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX09_黄金线",
+    "factor": "lx05_golden_line",
+    "ts_code": "600985.SH",
+    "name": "淮北矿业",
+    "industry": "煤炭开采",
+    "stock_pct": -0.53,
+    "sector_pct": -0.59,
+    "excess": 0.06,
+    "rs_A": true,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX09_黄金线",
+    "factor": "lx05_golden_line",
+    "ts_code": "600998.SH",
+    "name": "九州通",
+    "industry": "医药商业",
+    "stock_pct": 1.36,
+    "sector_pct": 0.14,
+    "excess": 1.22,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX09_黄金线",
+    "factor": "lx05_golden_line",
+    "ts_code": "601800.SH",
+    "name": "中国交建",
+    "industry": "建筑工程",
+    "stock_pct": 0.82,
+    "sector_pct": -3.18,
+    "excess": 4.0,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX09_黄金线",
+    "factor": "lx05_golden_line",
+    "ts_code": "601818.SH",
+    "name": "光大银行",
+    "industry": "银行",
+    "stock_pct": 0.32,
+    "sector_pct": 0.77,
+    "excess": -0.44,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX09_黄金线",
+    "factor": "lx05_golden_line",
+    "ts_code": "601900.SH",
+    "name": "南方传媒",
+    "industry": "出版业",
+    "stock_pct": -0.61,
+    "sector_pct": -4.88,
+    "excess": 4.27,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX09_黄金线",
+    "factor": "lx05_golden_line",
+    "ts_code": "603600.SH",
+    "name": "永艺股份",
+    "industry": "家居用品",
+    "stock_pct": -0.09,
+    "sector_pct": -3.45,
+    "excess": 3.36,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX09_黄金线",
+    "factor": "lx05_golden_line",
+    "ts_code": "603885.SH",
+    "name": "吉祥航空",
+    "industry": "空运",
+    "stock_pct": 2.95,
+    "sector_pct": 0.76,
+    "excess": 2.19,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX09_黄金线",
+    "factor": "lx05_golden_line",
+    "ts_code": "605338.SH",
+    "name": "巴比食品",
+    "industry": "食品",
+    "stock_pct": 10.01,
+    "sector_pct": -0.55,
+    "excess": 10.56,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000012.SZ",
+    "name": "南玻A",
+    "industry": "玻璃",
+    "stock_pct": -1.19,
+    "sector_pct": -2.87,
+    "excess": 1.68,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000035.SZ",
+    "name": "中国天楹",
+    "industry": "环境保护",
+    "stock_pct": -2.44,
+    "sector_pct": -2.8,
+    "excess": 0.35,
+    "rs_A": true,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000049.SZ",
+    "name": "德赛电池",
+    "industry": "电气设备",
+    "stock_pct": 0.15,
+    "sector_pct": -3.34,
+    "excess": 3.49,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000058.SZ",
+    "name": "深赛格",
+    "industry": "商品城",
+    "stock_pct": -10.04,
+    "sector_pct": -3.15,
+    "excess": -6.89,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000061.SZ",
+    "name": "农产品",
+    "industry": "农业综合",
+    "stock_pct": 0.0,
+    "sector_pct": -1.82,
+    "excess": 1.82,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000088.SZ",
+    "name": "盐田港",
+    "industry": "港口",
+    "stock_pct": 0.22,
+    "sector_pct": 1.09,
+    "excess": -0.87,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000090.SZ",
+    "name": "天健集团",
+    "industry": "建筑工程",
+    "stock_pct": -0.64,
+    "sector_pct": -3.18,
+    "excess": 2.54,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000166.SZ",
+    "name": "申万宏源",
+    "industry": "证券",
+    "stock_pct": -0.94,
+    "sector_pct": -1.72,
+    "excess": 0.77,
+    "rs_A": true,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000403.SZ",
+    "name": "派林生物",
+    "industry": "生物制药",
+    "stock_pct": 0.21,
+    "sector_pct": -0.35,
+    "excess": 0.56,
+    "rs_A": true,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000410.SZ",
+    "name": "沈阳机床",
+    "industry": "机床制造",
+    "stock_pct": 10.04,
+    "sector_pct": -2.67,
+    "excess": 12.72,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000422.SZ",
+    "name": "湖北宜化",
+    "industry": "农药化肥",
+    "stock_pct": -2.08,
+    "sector_pct": -1.94,
+    "excess": -0.14,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000488.SZ",
+    "name": "ST晨鸣",
+    "industry": "造纸",
+    "stock_pct": 1.07,
+    "sector_pct": -2.34,
+    "excess": 3.41,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000543.SZ",
+    "name": "皖能电力",
+    "industry": "火力发电",
+    "stock_pct": -0.55,
+    "sector_pct": -1.2,
+    "excess": 0.65,
+    "rs_A": true,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000551.SZ",
+    "name": "创元科技",
+    "industry": "专用机械",
+    "stock_pct": -4.14,
+    "sector_pct": -3.95,
+    "excess": -0.19,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000554.SZ",
+    "name": "泰山石油",
+    "industry": "石油贸易",
+    "stock_pct": 0.93,
+    "sector_pct": -2.43,
+    "excess": 3.36,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000559.SZ",
+    "name": "万向钱潮",
+    "industry": "汽车配件",
+    "stock_pct": -3.23,
+    "sector_pct": -3.79,
+    "excess": 0.57,
+    "rs_A": true,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000570.SZ",
+    "name": "苏常柴A",
+    "industry": "农用机械",
+    "stock_pct": -3.02,
+    "sector_pct": -0.65,
+    "excess": -2.38,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000581.SZ",
+    "name": "威孚高科",
+    "industry": "汽车配件",
+    "stock_pct": 0.0,
+    "sector_pct": -3.79,
+    "excess": 3.79,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000582.SZ",
+    "name": "北部湾港",
+    "industry": "港口",
+    "stock_pct": 0.0,
+    "sector_pct": 1.09,
+    "excess": -1.09,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000598.SZ",
+    "name": "兴蓉环境",
+    "industry": "水务",
+    "stock_pct": 0.42,
+    "sector_pct": -1.44,
+    "excess": 1.86,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000639.SZ",
+    "name": "ST西王",
+    "industry": "食品",
+    "stock_pct": -3.95,
+    "sector_pct": -0.55,
+    "excess": -3.4,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000670.SZ",
+    "name": "盈方微",
+    "industry": "元器件",
+    "stock_pct": -8.9,
+    "sector_pct": -4.3,
+    "excess": -4.59,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000672.SZ",
+    "name": "上峰材料",
+    "industry": "水泥",
+    "stock_pct": -1.46,
+    "sector_pct": -2.45,
+    "excess": 0.99,
+    "rs_A": true,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000677.SZ",
+    "name": "ST海龙",
+    "industry": "化纤",
+    "stock_pct": -1.23,
+    "sector_pct": -2.69,
+    "excess": 1.46,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000690.SZ",
+    "name": "宝新能源",
+    "industry": "火力发电",
+    "stock_pct": -0.37,
+    "sector_pct": -1.2,
+    "excess": 0.83,
+    "rs_A": true,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000737.SZ",
+    "name": "北方铜业",
+    "industry": "铜",
+    "stock_pct": -3.69,
+    "sector_pct": -3.25,
+    "excess": -0.44,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000752.SZ",
+    "name": "*ST西发",
+    "industry": "啤酒",
+    "stock_pct": -0.13,
+    "sector_pct": 0.21,
+    "excess": -0.34,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000755.SZ",
+    "name": "山西高速",
+    "industry": "路桥",
+    "stock_pct": 1.05,
+    "sector_pct": -0.04,
+    "excess": 1.08,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000778.SZ",
+    "name": "新兴铸管",
+    "industry": "钢加工",
+    "stock_pct": -0.89,
+    "sector_pct": -3.3,
+    "excess": 2.41,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000810.SZ",
+    "name": "创维数字",
+    "industry": "家用电器",
+    "stock_pct": -5.48,
+    "sector_pct": -2.55,
+    "excess": -2.93,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000812.SZ",
+    "name": "陕西金叶",
+    "industry": "广告包装",
+    "stock_pct": -4.26,
+    "sector_pct": -4.13,
+    "excess": -0.13,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000875.SZ",
+    "name": "电投绿能",
+    "industry": "火力发电",
+    "stock_pct": -1.45,
+    "sector_pct": -1.2,
+    "excess": -0.25,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000885.SZ",
+    "name": "城发环境",
+    "industry": "环境保护",
+    "stock_pct": -0.76,
+    "sector_pct": -2.8,
+    "excess": 2.04,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000893.SZ",
+    "name": "亚钾国际",
+    "industry": "农药化肥",
+    "stock_pct": -4.9,
+    "sector_pct": -1.94,
+    "excess": -2.97,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000899.SZ",
+    "name": "赣能股份",
+    "industry": "火力发电",
+    "stock_pct": -1.2,
+    "sector_pct": -1.2,
+    "excess": -0.0,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000902.SZ",
+    "name": "新洋丰",
+    "industry": "农药化肥",
+    "stock_pct": -0.84,
+    "sector_pct": -1.94,
+    "excess": 1.1,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000906.SZ",
+    "name": "浙商中拓",
+    "industry": "仓储物流",
+    "stock_pct": -1.54,
+    "sector_pct": -2.28,
+    "excess": 0.74,
+    "rs_A": true,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000951.SZ",
+    "name": "中国重汽",
+    "industry": "汽车整车",
+    "stock_pct": -0.63,
+    "sector_pct": -2.33,
+    "excess": 1.7,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000966.SZ",
+    "name": "长源电力",
+    "industry": "火力发电",
+    "stock_pct": -0.82,
+    "sector_pct": -1.2,
+    "excess": 0.38,
+    "rs_A": true,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000977.SZ",
+    "name": "浪潮信息",
+    "industry": "IT设备",
+    "stock_pct": -3.56,
+    "sector_pct": -4.64,
+    "excess": 1.08,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "000983.SZ",
+    "name": "山西焦煤",
+    "industry": "煤炭开采",
+    "stock_pct": 0.0,
+    "sector_pct": -0.59,
+    "excess": 0.59,
+    "rs_A": true,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "001233.SZ",
+    "name": "海安集团",
+    "industry": "汽车配件",
+    "stock_pct": -1.0,
+    "sector_pct": -3.79,
+    "excess": 2.8,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "001279.SZ",
+    "name": "强邦新材",
+    "industry": "广告包装",
+    "stock_pct": -2.61,
+    "sector_pct": -4.13,
+    "excess": 1.53,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "001286.SZ",
+    "name": "陕西能源",
+    "industry": "火力发电",
+    "stock_pct": -0.68,
+    "sector_pct": -1.2,
+    "excess": 0.51,
+    "rs_A": true,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "001288.SZ",
+    "name": "运机集团",
+    "industry": "专用机械",
+    "stock_pct": -3.13,
+    "sector_pct": -3.95,
+    "excess": 0.82,
+    "rs_A": true,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "001296.SZ",
+    "name": "长江材料",
+    "industry": "其他建材",
+    "stock_pct": -2.17,
+    "sector_pct": -1.96,
+    "excess": -0.22,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "001298.SZ",
+    "name": "好上好",
+    "industry": "元器件",
+    "stock_pct": -2.84,
+    "sector_pct": -4.3,
+    "excess": 1.47,
+    "rs_A": true,
+    "rs_B": true,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "001311.SZ",
+    "name": "多利科技",
+    "industry": "汽车配件",
+    "stock_pct": -5.33,
+    "sector_pct": -3.79,
+    "excess": -1.54,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": false
+   },
+   {
+    "strategy": "LX10_缩量地量",
+    "factor": "shrink_vol",
+    "ts_code": "001313.SZ",
+    "name": "粤海饲料",
+    "industry": "饲料",
+    "stock_pct": -1.98,
+    "sector_pct": -1.98,
+    "excess": -0.0,
+    "rs_A": false,
+    "rs_B": false,
+    "rs_C": false
+   }
+  ]
+ }
+}
