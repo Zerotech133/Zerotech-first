@@ -1,0 +1,939 @@
+{
+ "date": "20261030",
+ "generated_at": "2026-11-01T16:21:02+08:00",
+ "disclaimer": "研究输出，不构成投资建议；11-01 周末无行情，采用最近交易日 20261030 数据",
+ "universe": {
+  "input": 5571,
+  "eligible_after_S01": 2583,
+  "filters_dropped": {
+   "st": 195,
+   "new": 116,
+   "price": 95,
+   "liquidity": 1376,
+   "limitup": 60,
+   "missing": 1718,
+   "loss": 1478,
+   "extreme": 7,
+   "h14_trap_excluded": 185,
+   "eligible_after_h14": 2583
+  }
+ },
+ "S02_ranking_research_only": {
+  "note": "S02 复合排序已因影子盘 -9.6% 熔断暂停；以下仅研究参考，不作实盘依据",
+  "picks": [
+   {
+    "rank": 1,
+    "ts_code": "600825.SH",
+    "name": "新华传媒",
+    "industry": "出版业",
+    "score": 2.82,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +71.9%；5d -12.0%；换手 0.9%；高估值"
+   },
+   {
+    "rank": 2,
+    "ts_code": "688018.SH",
+    "name": "乐鑫科技",
+    "industry": "半导体",
+    "score": 1.1202,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +10.9%；5d -14.7%；换手 3.7%；中估值"
+   },
+   {
+    "rank": 3,
+    "ts_code": "300832.SZ",
+    "name": "新产业",
+    "industry": "医疗保健",
+    "score": 1.1126,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +29.6%；5d +9.2%；换手 1.3%；中估值"
+   },
+   {
+    "rank": 4,
+    "ts_code": "688787.SH",
+    "name": "海天瑞声",
+    "industry": "软件服务",
+    "score": 1.0633,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +36.7%；5d -12.9%；换手 13.2%；高估值"
+   },
+   {
+    "rank": 5,
+    "ts_code": "920982.BJ",
+    "name": "锦波生物",
+    "industry": "医疗保健",
+    "score": 1.0264,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +9.7%；5d -11.1%；换手 3.1%；中估值"
+   },
+   {
+    "rank": 6,
+    "ts_code": "003021.SZ",
+    "name": "兆威机电",
+    "industry": "元器件",
+    "score": 1.0263,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +29.4%；5d -1.4%；换手 5.8%；高估值"
+   },
+   {
+    "rank": 7,
+    "ts_code": "300760.SZ",
+    "name": "迈瑞医疗",
+    "industry": "医疗保健",
+    "score": 0.9882,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +18.1%；5d +2.5%；换手 1.0%；中估值"
+   },
+   {
+    "rank": 8,
+    "ts_code": "601857.SH",
+    "name": "中国石油",
+    "industry": "石油开采",
+    "score": 0.9786,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +26.4%；5d +8.5%；换手 0.1%；低估值"
+   },
+   {
+    "rank": 9,
+    "ts_code": "600329.SH",
+    "name": "达仁堂",
+    "industry": "中成药",
+    "score": 0.9679,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +14.7%；5d -1.9%；换手 1.0%；中估值"
+   },
+   {
+    "rank": 10,
+    "ts_code": "600573.SH",
+    "name": "惠泉啤酒",
+    "industry": "啤酒",
+    "score": 0.9643,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +18.6%；5d -5.9%；换手 4.7%；中估值"
+   },
+   {
+    "rank": 11,
+    "ts_code": "600267.SH",
+    "name": "海正药业",
+    "industry": "化学制药",
+    "score": 0.9478,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +13.3%；5d -8.2%；换手 3.6%；低估值"
+   },
+   {
+    "rank": 12,
+    "ts_code": "603939.SH",
+    "name": "益丰药房",
+    "industry": "医药商业",
+    "score": 0.9123,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +21.4%；5d +4.3%；换手 1.5%；低估值"
+   },
+   {
+    "rank": 13,
+    "ts_code": "688213.SH",
+    "name": "思特威",
+    "industry": "半导体",
+    "score": 0.8864,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +2.5%；5d -13.1%；换手 2.3%；中估值"
+   },
+   {
+    "rank": 14,
+    "ts_code": "301101.SZ",
+    "name": "明月镜片",
+    "industry": "文教休闲",
+    "score": 0.8472,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +9.8%；5d -6.6%；换手 2.9%；中估值"
+   },
+   {
+    "rank": 15,
+    "ts_code": "002043.SZ",
+    "name": "兔宝宝",
+    "industry": "其他建材",
+    "score": 0.8379,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +10.4%；5d -2.0%；换手 1.0%；低估值"
+   },
+   {
+    "rank": 16,
+    "ts_code": "002027.SZ",
+    "name": "分众传媒",
+    "industry": "广告包装",
+    "score": 0.8277,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +12.9%；5d +1.9%；换手 1.5%；中估值"
+   },
+   {
+    "rank": 17,
+    "ts_code": "601595.SH",
+    "name": "上海电影",
+    "industry": "影视音像",
+    "score": 0.8267,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +19.8%；5d -3.1%；换手 2.7%；高估值"
+   },
+   {
+    "rank": 18,
+    "ts_code": "600312.SH",
+    "name": "平高电气",
+    "industry": "电气设备",
+    "score": 0.8081,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +9.8%；5d -4.5%；换手 1.5%；低估值"
+   },
+   {
+    "rank": 19,
+    "ts_code": "302132.SZ",
+    "name": "中航成飞",
+    "industry": "航空",
+    "score": 0.808,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +8.2%；5d -5.5%；换手 1.5%；高估值"
+   },
+   {
+    "rank": 20,
+    "ts_code": "688360.SH",
+    "name": "德马科技",
+    "industry": "机械基件",
+    "score": 0.8041,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +30.1%；5d +6.4%；换手 7.2%；高估值"
+   },
+   {
+    "rank": 21,
+    "ts_code": "603369.SH",
+    "name": "今世缘",
+    "industry": "白酒",
+    "score": 0.8015,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +24.8%；5d +11.6%；换手 1.6%；低估值"
+   },
+   {
+    "rank": 22,
+    "ts_code": "688111.SH",
+    "name": "金山办公",
+    "industry": "软件服务",
+    "score": 0.7926,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d -5.8%；5d -16.0%；换手 1.5%；中估值"
+   },
+   {
+    "rank": 23,
+    "ts_code": "920418.BJ",
+    "name": "苏轴股份",
+    "industry": "汽车配件",
+    "score": 0.7767,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +4.3%；5d -8.4%；换手 2.2%；中估值"
+   },
+   {
+    "rank": 24,
+    "ts_code": "600519.SH",
+    "name": "贵州茅台",
+    "industry": "白酒",
+    "score": 0.7685,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +12.5%；5d +4.3%；换手 0.5%；低估值"
+   },
+   {
+    "rank": 25,
+    "ts_code": "001283.SZ",
+    "name": "豪鹏科技",
+    "industry": "电气设备",
+    "score": 0.7627,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +4.6%；5d -15.5%；换手 4.9%；中估值"
+   },
+   {
+    "rank": 26,
+    "ts_code": "600066.SH",
+    "name": "宇通客车",
+    "industry": "汽车整车",
+    "score": 0.7563,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +12.0%；5d +3.9%；换手 0.8%；低估值"
+   },
+   {
+    "rank": 27,
+    "ts_code": "600295.SH",
+    "name": "鄂尔多斯",
+    "industry": "特种钢",
+    "score": 0.7528,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +17.6%；5d +6.4%；换手 0.6%；低估值"
+   },
+   {
+    "rank": 28,
+    "ts_code": "600562.SH",
+    "name": "国睿科技",
+    "industry": "通信设备",
+    "score": 0.7517,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +0.3%；5d -9.5%；换手 0.5%；高估值"
+   },
+   {
+    "rank": 29,
+    "ts_code": "002032.SZ",
+    "name": "苏泊尔",
+    "industry": "家用电器",
+    "score": 0.74,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +8.8%；5d +2.2%；换手 0.3%；低估值"
+   },
+   {
+    "rank": 30,
+    "ts_code": "603728.SH",
+    "name": "鸣志电器",
+    "industry": "电气设备",
+    "score": 0.7394,
+    "reason": "H14规避通过（非高PE高ROE陷阱）；动量20d +13.2%；5d -3.4%；换手 3.7%；高估值"
+   }
+  ]
+ },
+ "S03_H18_watch": {
+  "rule": "同 code+报告期 二次公告净利润区间中值变化；近 90 日",
+  "count": 20,
+  "items": [
+   {
+    "ts_code": "000096.SZ",
+    "end_date": "20260630",
+    "ann_date": "20260812",
+    "type": "预增",
+    "prev_mid": 186.01,
+    "latest_mid": 619.13,
+    "delta_pp": 433.12,
+    "direction": "改善",
+    "summary": "预计2026年1-6月归属于上市公司股东的净利润盈利:6,555.96万元至6,856.42万元,同比上年增长:603.02%至635.24%。"
+   },
+   {
+    "ts_code": "002933.SZ",
+    "end_date": "20260630",
+    "ann_date": "20260805",
+    "type": "续盈",
+    "prev_mid": -51.12,
+    "latest_mid": -0.97,
+    "delta_pp": 50.16,
+    "direction": "改善",
+    "summary": "预计2026年1-6月归属于上市公司股东的净利润盈利:1,300万元至1,800万元,同比上年变动:-16.94%至15.01%。"
+   },
+   {
+    "ts_code": "600187.SH",
+    "end_date": "20260630",
+    "ann_date": "20260819",
+    "type": "扭亏",
+    "prev_mid": 138.21,
+    "latest_mid": 115.83,
+    "delta_pp": -22.38,
+    "direction": "恶化",
+    "summary": "预计2026年1-6月归属于上市公司股东的净利润盈利:265万元至315万元。"
+   },
+   {
+    "ts_code": "688836.SH",
+    "end_date": "20260630",
+    "ann_date": "20260814",
+    "type": "扭亏",
+    "prev_mid": 980.55,
+    "latest_mid": 980.58,
+    "delta_pp": 0.03,
+    "direction": "改善",
+    "summary": "预计2026年1-6月归属于上市公司股东的净利润盈利:25,800万元至30,600万元。"
+   },
+   {
+    "ts_code": "301655.SZ",
+    "end_date": "20260630",
+    "ann_date": "20260814",
+    "type": "预增",
+    "prev_mid": 99.13,
+    "latest_mid": 99.13,
+    "delta_pp": 0.0,
+    "direction": "持平",
+    "summary": "预计2026年1-6月归属于上市公司股东的净利润盈利:12,066.4万元至15,132.67万元,同比上年增长:76.68%至121.58%。"
+   },
+   {
+    "ts_code": "301688.SZ",
+    "end_date": "20260930",
+    "ann_date": "20260826",
+    "type": "略增",
+    "prev_mid": 6.22,
+    "latest_mid": 6.22,
+    "delta_pp": 0.0,
+    "direction": "持平",
+    "summary": "预计2026年1-9月归属于上市公司股东的净利润盈利:14,479.11万元至15,984.95万元,同比上年增长:0.97%至11.47%。"
+   },
+   {
+    "ts_code": "301689.SZ",
+    "end_date": "20260930",
+    "ann_date": "20260903",
+    "type": "续盈",
+    "prev_mid": 1.95,
+    "latest_mid": 1.95,
+    "delta_pp": 0.0,
+    "direction": "持平",
+    "summary": "预计2026年1-9月净利润盈利:24,500万元至26,500万元,同比上年变动:-2.05%至5.95%。"
+   },
+   {
+    "ts_code": "301697.SZ",
+    "end_date": "20260930",
+    "ann_date": "20260825",
+    "type": "预增",
+    "prev_mid": 40.95,
+    "latest_mid": 40.95,
+    "delta_pp": 0.0,
+    "direction": "持平",
+    "summary": "预计2026年1-9月归属于上市公司股东的净利润盈利:10,500万元至12,000万元,同比上年增长:31.56%至50.35%。"
+   },
+   {
+    "ts_code": "301697.SZ",
+    "end_date": "20261231",
+    "ann_date": "20260831",
+    "type": "略增",
+    "prev_mid": 2.63,
+    "latest_mid": 2.63,
+    "delta_pp": 0.0,
+    "direction": "持平",
+    "summary": "预计2026年1-12月归属于上市公司股东的净利润盈利:11,910.63万元,同比上年增长:2.63%。"
+   },
+   {
+    "ts_code": "301699.SZ",
+    "end_date": "20260930",
+    "ann_date": "20260901",
+    "type": "略增",
+    "prev_mid": 9.86,
+    "latest_mid": 9.86,
+    "delta_pp": 0.0,
+    "direction": "持平",
+    "summary": "预计2026年1-9月归属于上市公司股东的净利润盈利:45,000万元至47,000万元,同比上年增长:7.47%至12.25%。"
+   },
+   {
+    "ts_code": "301717.SZ",
+    "end_date": "20260630",
+    "ann_date": "20260806",
+    "type": "预增",
+    "prev_mid": 73.98,
+    "latest_mid": 73.98,
+    "delta_pp": 0.0,
+    "direction": "持平",
+    "summary": "预计2026年1-6月归属于上市公司股东的净利润盈利:10,325万元至11,085万元,同比上年增长:67.81%至80.16%。"
+   },
+   {
+    "ts_code": "600889.SH",
+    "end_date": "20260630",
+    "ann_date": "20260801",
+    "type": "扭亏",
+    "prev_mid": 149.48,
+    "latest_mid": 149.48,
+    "delta_pp": 0.0,
+    "direction": "持平",
+    "summary": "预计2026年1-6月归属于上市公司股东的净利润盈利:4,000万元至4,800万元。"
+   },
+   {
+    "ts_code": "601123.SH",
+    "end_date": "20260930",
+    "ann_date": "20260831",
+    "type": "略增",
+    "prev_mid": 13.0,
+    "latest_mid": 13.0,
+    "delta_pp": 0.0,
+    "direction": "持平",
+    "summary": "预计2026年1-9月归属于上市公司股东的净利润盈利:53,164万元至58,087万元,同比上年增长:8%至18%。"
+   },
+   {
+    "ts_code": "603448.SH",
+    "end_date": "20260930",
+    "ann_date": "20260904",
+    "type": "略减",
+    "prev_mid": -12.45,
+    "latest_mid": -12.45,
+    "delta_pp": 0.0,
+    "direction": "持平",
+    "summary": "预计2026年1-9月归属于上市公司股东的净利润盈利:21,800万元至24,900万元,同比上年下降:6.64%至18.26%。"
+   },
+   {
+    "ts_code": "688801.SH",
+    "end_date": "20260930",
+    "ann_date": "20260910",
+    "type": "减亏",
+    "prev_mid": 12.14,
+    "latest_mid": 12.14,
+    "delta_pp": 0.0,
+    "direction": "持平",
+    "summary": "预计2026年1-9月归属于上市公司股东的净利润亏损:70,000万元至86,000万元,同比上年增长:3.13%至21.15%。"
+   },
+   {
+    "ts_code": "688826.SH",
+    "end_date": "20260630",
+    "ann_date": "20260817",
+    "type": "略增",
+    "prev_mid": 37.5,
+    "latest_mid": 37.5,
+    "delta_pp": 0.0,
+    "direction": "持平",
+    "summary": "预计2026年1-6月归属于上市公司股东的净利润盈利:9,000万元至10,500万元,同比上年增长:26.93%至48.08%。"
+   },
+   {
+    "ts_code": "688828.SH",
+    "end_date": "20260630",
+    "ann_date": "20260806",
+    "type": "续亏",
+    "prev_mid": 7.69,
+    "latest_mid": 7.69,
+    "delta_pp": 0.0,
+    "direction": "持平",
+    "summary": "预计2026年1-6月归属于上市公司股东的净利润亏损:5,900万元至7,500万元,同比上年变动:-3.34%至18.71%。"
+   },
+   {
+    "ts_code": "688835.SH",
+    "end_date": "20260930",
+    "ann_date": "20260824",
+    "type": "略增",
+    "prev_mid": 28.46,
+    "latest_mid": 28.46,
+    "delta_pp": 0.0,
+    "direction": "持平",
+    "summary": "预计2026年1-9月归属于上市公司股东的净利润盈利:13,000万元至15,000万元,同比上年增长:19.28%至37.63%。"
+   },
+   {
+    "ts_code": "688837.SH",
+    "end_date": "20260930",
+    "ann_date": "20260915",
+    "type": "首亏",
+    "prev_mid": -202.14,
+    "latest_mid": -202.14,
+    "delta_pp": 0.0,
+    "direction": "持平",
+    "summary": "预计2026年1-9月归属于上市公司股东的净利润亏损:34,900万元至38,600万元,同比上年下降:197%至207.28%。"
+   },
+   {
+    "ts_code": "920107.BJ",
+    "end_date": "20260930",
+    "ann_date": "20260804",
+    "type": "略增",
+    "prev_mid": 3.06,
+    "latest_mid": 3.06,
+    "delta_pp": 0.0,
+    "direction": "持平",
+    "summary": "预计:净利润8300-8700"
+   }
+  ]
+ },
+ "pinxue_reverse_signals_research": {
+  "note": "量学反向/规避线索（S05 已关闭：仅等权全市场/中小市值场景研究；A股不能做空，规避=降配/不买）",
+  "factors": {
+   "LX20_牛股三绝": {
+    "factor": "lx20_three_absolutes",
+    "signal_count": 225,
+    "coverage_pct": 4.05,
+    "sample": [
+     {
+      "ts_code": "000410.SZ",
+      "name": "沈阳机床",
+      "industry": "机床制造",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000525.SZ",
+      "name": "红太阳",
+      "industry": "农药化肥",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000559.SZ",
+      "name": "万向钱潮",
+      "industry": "汽车配件",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000596.SZ",
+      "name": "古井贡酒",
+      "industry": "白酒",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000683.SZ",
+      "name": "博源化工",
+      "industry": "化工原料",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000700.SZ",
+      "name": "模塑科技",
+      "industry": "汽车配件",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000701.SZ",
+      "name": "厦门信达",
+      "industry": "商贸代理",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000755.SZ",
+      "name": "山西高速",
+      "industry": "路桥",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000858.SZ",
+      "name": "五粮液",
+      "industry": "白酒",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000860.SZ",
+      "name": "顺鑫农业",
+      "industry": "白酒",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000902.SZ",
+      "name": "新洋丰",
+      "industry": "农药化肥",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "001219.SZ",
+      "name": "青岛食品",
+      "industry": "食品",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "001301.SZ",
+      "name": "尚太科技",
+      "industry": "电气设备",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "001328.SZ",
+      "name": "登康口腔",
+      "industry": "日用化工",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "001386.SZ",
+      "name": "马可波罗",
+      "industry": "家居用品",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "001388.SZ",
+      "name": "信通电子",
+      "industry": "电气设备",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "001400.SZ",
+      "name": "江顺科技",
+      "industry": "专用机械",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "002009.SZ",
+      "name": "天奇股份",
+      "industry": "工程机械",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "002078.SZ",
+      "name": "太阳纸业",
+      "industry": "造纸",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "002149.SZ",
+      "name": "西部材料",
+      "industry": "小金属",
+      "signal": 1.0
+     }
+    ]
+   },
+   "LX06_长阴短柱": {
+    "factor": "lx06_long_yin_short",
+    "signal_count": 9,
+    "coverage_pct": 0.16,
+    "sample": [
+     {
+      "ts_code": "002009.SZ",
+      "name": "天奇股份",
+      "industry": "工程机械",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "002747.SZ",
+      "name": "埃斯顿",
+      "industry": "机械基件",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "300428.SZ",
+      "name": "立中集团",
+      "industry": "汽车配件",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "300695.SZ",
+      "name": "兆丰股份",
+      "industry": "汽车配件",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "300920.SZ",
+      "name": "润阳科技",
+      "industry": "塑料",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "301413.SZ",
+      "name": "安培龙",
+      "industry": "电器仪表",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "688160.SH",
+      "name": "步科股份",
+      "industry": "电器仪表",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "688710.SH",
+      "name": "益诺思",
+      "industry": "生物制药",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "920201.BJ",
+      "name": "百瑞吉",
+      "industry": "医疗保健",
+      "signal": 1.0
+     }
+    ]
+   },
+   "LX12_双阴出货": {
+    "factor": "lx12_double_yin_exit",
+    "signal_count": 3993,
+    "coverage_pct": 71.93,
+    "sample": [
+     {
+      "ts_code": "000006.SZ",
+      "name": "深振业A",
+      "industry": "区域地产",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000007.SZ",
+      "name": "全新好",
+      "industry": "其他商业",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000008.SZ",
+      "name": "神州高铁",
+      "industry": "运输设备",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000010.SZ",
+      "name": "*ST美丽",
+      "industry": "建筑工程",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000012.SZ",
+      "name": "南玻A",
+      "industry": "玻璃",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000014.SZ",
+      "name": "沙河股份",
+      "industry": "全国地产",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000017.SZ",
+      "name": "深中华A",
+      "industry": "服饰",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000019.SZ",
+      "name": "深粮控股",
+      "industry": "农业综合",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000021.SZ",
+      "name": "深科技",
+      "industry": "元器件",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000026.SZ",
+      "name": "飞亚达",
+      "industry": "服饰",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000030.SZ",
+      "name": "富奥股份",
+      "industry": "汽车配件",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000031.SZ",
+      "name": "大悦城",
+      "industry": "全国地产",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000032.SZ",
+      "name": "深桑达A",
+      "industry": "建筑工程",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000034.SZ",
+      "name": "神州数码",
+      "industry": "软件服务",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000035.SZ",
+      "name": "中国天楹",
+      "industry": "环境保护",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000036.SZ",
+      "name": "华联控股",
+      "industry": "全国地产",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000037.SZ",
+      "name": "深南电A",
+      "industry": "火力发电",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000042.SZ",
+      "name": "中洲控股",
+      "industry": "全国地产",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000045.SZ",
+      "name": "深纺织A",
+      "industry": "元器件",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000048.SZ",
+      "name": "京基智农",
+      "industry": "农业综合",
+      "signal": 1.0
+     }
+    ]
+   },
+   "LX22_凹口淘金": {
+    "factor": "aokou",
+    "signal_count": 296,
+    "coverage_pct": 5.32,
+    "sample": [
+     {
+      "ts_code": "000020.SZ",
+      "name": "深华发A",
+      "industry": "元器件",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000025.SZ",
+      "name": "特力A",
+      "industry": "综合类",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000039.SZ",
+      "name": "中集集团",
+      "industry": "运输设备",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000100.SZ",
+      "name": "TCL科技",
+      "industry": "元器件",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000410.SZ",
+      "name": "沈阳机床",
+      "industry": "机床制造",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000415.SZ",
+      "name": "渤海租赁",
+      "industry": "多元金融",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000417.SZ",
+      "name": "合百集团",
+      "industry": "百货",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000498.SZ",
+      "name": "山东路桥",
+      "industry": "建筑工程",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000513.SZ",
+      "name": "丽珠集团",
+      "industry": "化学制药",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000520.SZ",
+      "name": "凤凰航运",
+      "industry": "水运",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000525.SZ",
+      "name": "红太阳",
+      "industry": "农药化肥",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000545.SZ",
+      "name": "金浦钛业",
+      "industry": "化工原料",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000591.SZ",
+      "name": "太阳能",
+      "industry": "新型电力",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000596.SZ",
+      "name": "古井贡酒",
+      "industry": "白酒",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000610.SZ",
+      "name": "*ST西旅",
+      "industry": "旅游服务",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000651.SZ",
+      "name": "格力电器",
+      "industry": "家用电器",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000676.SZ",
+      "name": "智度股份",
+      "industry": "互联网",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000683.SZ",
+      "name": "博源化工",
+      "industry": "化工原料",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000716.SZ",
+      "name": "黑芝麻",
+      "industry": "食品",
+      "signal": 1.0
+     },
+     {
+      "ts_code": "000799.SZ",
+      "name": "酒鬼酒",
+      "industry": "白酒",
+      "signal": 1.0
+     }
+    ]
+   }
+  }
+ }
+}
