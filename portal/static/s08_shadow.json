@@ -6,7 +6,7 @@
  "n": 50,
  "weight_per": 0.02,
  "rule": "月频 top50 等权（多头）；成本 0.15%单边×换手；宇宙=非ST/上市≥250日/价≥2",
- "next_rebalance": "2026-11-30（月末）",
+ "next_rebalance": "下一个月末（每月 1 日 08:40 检查）",
  "holdings": [
   {
    "ts_code": "920227.BJ",
@@ -379,6 +379,22 @@
   "2025": 50.5,
   "2026": -10.8
  },
- "status": "shadow_small_position",
- "disclaimer": "研究/影子，不构成投资建议"
+ "status": "shadow_observing_weak",
+ "disclaimer": "研究/影子，不构成投资建议",
+ "ledger": [
+  {
+   "date": "20261030",
+   "from": "20261030",
+   "ret": 0.0,
+   "market": 0.0,
+   "excess": 0.0,
+   "n": 50
+  }
+ ],
+ "tracking": {
+  "since": "20261030",
+  "cur_ret_pct": 0.0,
+  "market_pct": 0.0,
+  "excess_pct": 0.0
+ }
 }
