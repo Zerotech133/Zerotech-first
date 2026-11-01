@@ -17,7 +17,7 @@ from datetime import datetime
 from pathlib import Path
 
 REPO = Path(r"C:\项目\老田的AI助手")
-INGESTS = [Path(r"C:/项目/PDF/_ingest"), Path(r"C:/项目/PDF/_ingest_reports")]
+INGESTS = [Path(r"C:/项目/PDF/_ingest"), Path(r"C:/项目/PDF/_ingest_reports"), Path(r"C:/项目/PDF/_ingest_notes")]
 CARDS_DIR = Path(r"C:/项目/知识库/60_学习卡")
 OUT_JSON = REPO / "portal" / "static" / "kb_learning_cards.json"
 
@@ -48,6 +48,7 @@ def load_units() -> list[dict]:
 
 
 TOPIC_RULES = [
+    ("交易体系", ("米勒维尼", "趋势模板", "VCP", "Power Play", "SEPA", "枢轴", "止损", "仓位", "复盘", "回调收缩")),
     ("量学/涨停", ("涨停", "量柱", "量线", "停密码", "庄", "倍量", "缩量")),
     ("策略/因子", ("策略", "因子", "选股", "回测", "质量", "估值", "组合", "规避", "超额")),
     ("新能源/电力", ("煤电", "钠电", "光伏", "储能", "电气化", "电力", "新能源", "充电")),

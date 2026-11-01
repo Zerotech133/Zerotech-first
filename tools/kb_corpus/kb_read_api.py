@@ -30,7 +30,8 @@ from datetime import datetime
 from pathlib import Path
 
 REPO = Path(r"C:\项目\老田的AI助手")
-ROOTS = [(Path(r"C:/项目/PDF/_ingest"), "书籍"), (Path(r"C:/项目/PDF/_ingest_reports"), "研报")]
+ROOTS = [(Path(r"C:/项目/PDF/_ingest"), "书籍"), (Path(r"C:/项目/PDF/_ingest_reports"), "研报"),
+         (Path(r"C:/项目/PDF/_ingest_notes"), "策略经典")]
 STATIC = REPO / "portal" / "static"
 CORPUS_RAG = Path(r"C:/项目/知识库/50_RAG/rag_index_corpus.json")
 API_VERSION = "1.0"
