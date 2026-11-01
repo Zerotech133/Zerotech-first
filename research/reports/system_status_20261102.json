@@ -1,14 +1,14 @@
 {
  "schema_version": "system_status.v1",
- "generated_at": "2026-11-02T00:20:18+08:00",
- "learning_cards": 104,
+ "generated_at": "2026-11-02T00:38:01+08:00",
+ "learning_cards": 124,
  "kb_units": 516,
- "tools_py": 1078,
- "research_scripts": 71,
+ "tools_py": 1085,
+ "research_scripts": 72,
  "portal_pages": 93,
  "commits": {
-  "count": 7284,
-  "latest": "61a9f65a0 数据仓全链路审计：修dataops断链；刷新dw快照(11-02T00:18,v18/256)；雪球断流/漂移哨兵/展示缺口(78/256)报告；任务T-20261102-121"
+  "count": 7296,
+  "latest": "8c2850768 K-ORG-20261102-PLANSTATUS2 投研板块复盘计划补STATUS并纳入版本控制；plan lint 0未标"
  },
  "daily_screening": {
   "date": "20261030",

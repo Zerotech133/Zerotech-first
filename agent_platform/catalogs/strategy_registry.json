@@ -6588,5 +6588,31 @@
     "reason": "检索缓存优化后单请求 60-80ms，60/min 在并发下误伤（压测 151 次 429）",
     "verification": "8091 重启后 meta.rate_limit.limit=300，retrieval 200/78ms",
     "rollback": "改回 60 + 重启"
+  },
+  "card_round2rev_apply_20261102": {
+    "executed": true,
+    "result": {
+      "cards_before": 104,
+      "added": 20,
+      "cards_after": 124,
+      "drop_deletions": 0
+    },
+    "backup": "research/reports/backups/kb_learning_cards.20261102_003714.pre_round2rev.bak.json",
+    "note": "学习卡第二轮 revise 已落地：merge_fix 20 新增（CP3 修订版），drop 25 为既有概念重复 no-op（不删卡）；104→**124**；无重复 concept、前 104 张逐张不变、digest 刷新、HTTP 200。"
+  },
+  "legacy_pages_cleanup_20261102": {
+    "report": "research/reports/legacy_pages_cleanup_20261102.md",
+    "finding": "3 个「404 页」均为活跃页（仅无扩展名路由提供：/btview /bt2view /sandbox），非历史页",
+    "note": "未归档/未删除（归档会打断 live 路由）；portal_health 增加别名路由检查与卡数契约 ≥100，巡检 93/93 OK、0 失败。"
+  },
+  "qa_http_recheck_20261102": {
+    "report": "research/reports/qa_http_recheck_20261102.md",
+    "verdict": "验收复跑通过（8/8 200、3/3 400、multi v4+segment+retry 生效、retrieval 热缓存 P95 <0.2s、限流 limit=300）→ 维持 go，可灰度放量",
+    "metrics": {
+      "retrieval_p95_s": 0.12,
+      "rate_limit": 300,
+      "multi": "v4+segment+retry"
+    },
+    "note": "8091 验收复跑（限流/性能优化后）：8/8 200、3/3 400、multi v4+segment+retry、retrieval 热缓存 P95 **0.12s**、limit=300 → **维持 go，可灰度放量**。"
   }
 }

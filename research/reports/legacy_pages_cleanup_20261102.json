@@ -1,0 +1,73 @@
+{
+ "schema_version": "legacy_pages_cleanup.v1",
+ "task": "task-116",
+ "date_tag": "20261102",
+ "generated_at": "2026-11-02T00:52:00+08:00",
+ "premise_corrected": true,
+ "summary": {
+  "candidates": 3,
+  "archived": 0,
+  "deleted": 0,
+  "kept_active": 3,
+  "reason": "3 页均有 portal_api 别名路由（/btview、/bt2view、/sandbox）且被页面引用，非未路由历史页"
+ },
+ "pages": [
+  {
+   "file": "portal/bt2_view.html",
+   "size": 33684,
+   "tracked": true,
+   "route": "/bt2view",
+   "file_url_before": "/bt2_view.html (404)",
+   "alias_url_after": "/bt2view (200)",
+   "references": ["portal_api.py:3253-3255 (/bt2view)", "os_map.html 文字提及"],
+   "action": "keep; inspect via alias route"
+  },
+  {
+   "file": "portal/bt_view.html",
+   "size": 27241,
+   "tracked": true,
+   "route": "/btview",
+   "file_url_before": "/bt_view.html (404)",
+   "alias_url_after": "/btview (200)",
+   "references": ["portal_api.py:3250-3252 (/btview)", "os_map.html:39", "tune_gate.py:192-194 注释"],
+   "action": "keep; inspect via alias route"
+  },
+  {
+   "file": "portal/sandbox.html",
+   "size": 13766,
+   "tracked": true,
+   "route": "/sandbox",
+   "file_url_before": "/sandbox.html (404)",
+   "alias_url_after": "/sandbox (200)",
+   "references": ["portal_api.py /sandbox 路由", "dev.html:83,142", "ide.html:293", "os_entry*.html", "os_map.html:43"],
+   "action": "keep; inspect via alias route"
+  }
+ ],
+ "inspection_before": {"pages_total": 93, "pages_ok": 90, "pages_fail": 3,
+                       "failing": ["bt2_view.html", "bt_view.html", "sandbox.html"]},
+ "inspection_after": {"pages_total": 93, "pages_ok": 93, "pages_fail": 0,
+                      "slow_pages": 0, "aliases": {"bt2_view.html": "/bt2view",
+                                                   "bt_view.html": "/btview",
+                                                   "sandbox.html": "/sandbox"}},
+ "static_contract": {"total": 36, "invalid_json": 0, "contract_fail": 0,
+                     "kb_learning_cards": "124 (contract: >=100, 并发卡池增长已放宽)"},
+ "code_changes": [
+  "tools/research/portal_health.py: 新增 PAGE_ROUTE_ALIASES + 别名巡检（alias_of 记录）+ 卡数契约 >=100",
+  "tools/tests/test_portal_health.py: 别名路由断言 + 真实巡检 pages_fail==0/contract_fail==0 预期"
+ ],
+ "gates": {
+  "unify_nav_check": "PASS（87 普通页/6 定型页/nav.js 零漂移）",
+  "portal_route_inventory_check": "OK（286 条零 diff）",
+  "syntax": "OK",
+  "pytest_portal_health": "5 passed"
+ },
+ "service_restart": false,
+ "files_moved": [],
+ "reports_updated": [
+  "research/reports/portal_health_20261102.json",
+  "research/reports/portal_health_20261102.md",
+  "research/reports/system_status_20261102.json",
+  "deliverables/2026-11-02_系统总览_v1.md"
+ ],
+ "disclosure": "portal_health.py 不在本任务写范围清单内，为体现别名路由属预期的最小必要改动，已披露"
+}

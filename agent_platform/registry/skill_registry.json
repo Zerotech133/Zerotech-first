@@ -848,6 +848,13 @@
       "title": "全站页面巡检",
       "ref": "tools/research/portal_health.py",
       "enabled": true
+    },
+    {
+      "id": "qa_http_recheck",
+      "kind": "tool",
+      "title": "8091 HTTP 验收复跑",
+      "ref": "tools/kb_corpus/qa_http_recheck.py",
+      "enabled": true
     }
   ]
 }

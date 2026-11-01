@@ -33,7 +33,26 @@ def _load():
 mod = _load()
 
 
-# ------------------------------------------------------------------ 1. 页面扫描
+# ------------------------------------------------------------------ 1. 页面扫描 / 路由别名
+def test_route_aliases_for_extensionless_pages():
+    """仅以无扩展名路由提供的页面：巡检应使用别名路由（.html 路径 404 属预期）。"""
+    assert mod.PAGE_ROUTE_ALIASES == {"bt_view.html": "/btview",
+                                      "bt2_view.html": "/bt2view",
+                                      "sandbox.html": "/sandbox"}
+    seen = []
+
+    def fake_fetch(url, timeout=5.0):
+        seen.append(url)
+        return {"status": 200, "size": 100, "ms": 1.0, "error": None}
+
+    rows = mod.inspect_pages("http://x", ["sandbox.html", "bt_view.html"], fetch_fn=fake_fetch)
+    assert all(r["ok"] for r in rows)
+    assert all(r.get("alias_of") for r in rows)
+    assert any(url.endswith("/sandbox") for url in seen)
+    assert any(url.endswith("/btview") for url in seen)
+    assert not any(url.endswith(".html") for url in seen)
+
+
 def test_list_pages_and_inspect_pages():
     pages = mod.list_pages()
     assert "screening.html" in pages and "kb_reports.html" in pages
@@ -119,7 +138,15 @@ def test_report_and_run_outputs(tmp_path):
                 "system_overview_md"):
         assert Path(out["outputs"][key]).exists(), f"缺产物 {key}"
     sj = json.loads((tmp_path / "reports" / "s.json").read_text(encoding="utf-8"))
-    assert sj["schema_version"] == "system_status.v1" and sj["learning_cards"] == 104
+    assert sj["schema_version"] == "system_status.v1" and sj["learning_cards"] >= 100
+    # 契约不符用例：kb_learning_cards 卡数低于下限
+    bad = tmp_path / "bad2"
+    bad.mkdir(exist_ok=True)
+    (bad / "kb_learning_cards.json").write_text(json.dumps({"cards": [{"id": 1}]}),
+                                                encoding="utf-8")
+    chk = mod.check_contract("kb_learning_cards.json",
+                             json.loads((bad / "kb_learning_cards.json").read_text(encoding="utf-8")))
+    assert chk["ok"] is False and any("cards" in x for x in chk["issues"])
 
 
 # ------------------------------------------------------------------ 4. 真实产物
@@ -133,8 +160,14 @@ def test_real_outputs_schema():
     s = rep["summary"]
     assert s["pages_total"] >= 80 and s["static_total"] >= 30
     assert s["json_invalid"] == 0
+    assert s["pages_fail"] == 0, [p for p in rep["pages"] if not p["ok"]]
+    assert s["contract_fail"] == 0
+    aliases = {p["page"]: p for p in rep["pages"] if p.get("alias_of")}
+    assert set(aliases) == {"bt_view.html", "bt2_view.html", "sandbox.html"}
+    for page, rec in aliases.items():
+        assert rec["ok"] is True and rec["url"].endswith(rec["alias_of"])
     assert len(rep["pages"]) == s["pages_total"]
     system = json.loads(sj.read_text(encoding="utf-8"))
     assert system["schema_version"] == "system_status.v1"
-    assert system["learning_cards"] == 104 and system["portal_pages"] >= 80
+    assert system["learning_cards"] >= 100 and system["portal_pages"] >= 80
     assert "系统总览" in sm.read_text(encoding="utf-8")

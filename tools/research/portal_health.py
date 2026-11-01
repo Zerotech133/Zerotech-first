@@ -33,9 +33,17 @@ BASE_URL = "http://127.0.0.1:8734"
 SCHEMA_VERSION = "portal_health.v1"
 DATE_TAG = "20261102"
 
+# 仅以「无扩展名路由」提供的页面：巡检用别名路由而不是 .html 文件路径（task-116）
+# 依据 portal_api.py：/btview→bt_view.html、/bt2view→bt2_view.html、/sandbox→sandbox.html
+PAGE_ROUTE_ALIASES = {
+    "bt_view.html": "/btview",
+    "bt2_view.html": "/bt2view",
+    "sandbox.html": "/sandbox",
+}
+
 # 关键静态契约（期望值；不符则 contract_ok=False 并记录实际值）
 CONTRACTS = {
-    "kb_learning_cards.json": {"cards": 104},
+    "kb_learning_cards.json": {"cards_min": 100},
     "kb_qa_samples.json": {"schema_version": 2, "prompt_version": "v4", "samples": 8},
     "daily_screening.json": {"schema_version": "daily_screening_portal.v1",
                              "date": "20261030", "rs_intersection": 18},
@@ -73,12 +81,17 @@ def inspect_pages(base_url: str = BASE_URL, pages: list[str] | None = None,
     pages = pages if pages is not None else list_pages()
     out = []
     for name in pages:
-        url = f"{base_url.rstrip('/')}/{name}"
+        route = PAGE_ROUTE_ALIASES.get(name)
+        path = route if route else f"/{name}"
+        url = f"{base_url.rstrip('/')}{path}"
         r = fetch(url, timeout) if fetch_fn is None else fetch(url, timeout=timeout)
-        out.append({"page": name, "url": url, "status": r.get("status"),
-                    "size": r.get("size"), "ms": r.get("ms"),
-                    "ok": bool(r.get("status") == 200 and r.get("size", 0) > 0),
-                    "error": r.get("error")})
+        rec = {"page": name, "url": url, "status": r.get("status"),
+               "size": r.get("size"), "ms": r.get("ms"),
+               "ok": bool(r.get("status") == 200 and r.get("size", 0) > 0),
+               "error": r.get("error")}
+        if route:
+            rec["alias_of"] = route      # 页面以别名路由提供（.html 路径 404 属预期）
+        out.append(rec)
     return out
 
 
@@ -104,6 +117,11 @@ def check_contract(name: str, data) -> dict:
             raw = data.get(key)
             if key == "cards":
                 actual[key] = len(raw or [])
+            elif key == "cards_min":
+                actual["cards"] = len(data.get("cards") or [])
+                if actual["cards"] < int(expected):
+                    issues.append(f"cards: 期望 ≥{expected}，实际 {actual['cards']}")
+                continue
             elif key == "samples":
                 actual[key] = len(raw or [])
             elif key == "rs_intersection":

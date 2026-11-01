@@ -1,0 +1,542 @@
+{
+ "schema_version": 1,
+ "date": "20261102",
+ "generated_at": "2026-11-02T00:37:14+08:00",
+ "task": "task-115 执行第二轮 revise 落地（用户已授权）",
+ "applied": true,
+ "mode": {
+  "dry_run": "card_revision_apply.build_plan（不写）",
+  "apply": "merge_fix 20 新增 + drop 25 no-op"
+ },
+ "sources": {
+  "revisions": {
+   "path": "C:\\项目\\老田的AI助手\\research\\reports\\card_revisions_round2_20261101.json",
+   "sha256": "d413cf31aff9e1e1608b150f1e43cd9d1effc53791d9928196d1e7a5bade9a18",
+   "summary": {
+    "total": 45,
+    "actions": {
+     "merge_fix": 20,
+     "drop": 25,
+     "keep_revise": 0
+    },
+    "by_source": {
+     "AE": {
+      "total": 8,
+      "merge_fix": 0,
+      "drop": 8,
+      "keep_revise": 0
+     },
+     "AV": {
+      "total": 16,
+      "merge_fix": 0,
+      "drop": 16,
+      "keep_revise": 0
+     },
+     "CP3": {
+      "total": 21,
+      "merge_fix": 20,
+      "drop": 1,
+      "keep_revise": 0
+     }
+    },
+    "by_theme": [
+     {
+      "theme": "交运/物流",
+      "total": 7,
+      "merge_fix": 3,
+      "drop": 4,
+      "keep_revise": 0
+     },
+     {
+      "theme": "其他",
+      "total": 1,
+      "merge_fix": 0,
+      "drop": 1,
+      "keep_revise": 0
+     },
+     {
+      "theme": "军工/航天",
+      "total": 5,
+      "merge_fix": 2,
+      "drop": 3,
+      "keep_revise": 0
+     },
+     {
+      "theme": "农业",
+      "total": 4,
+      "merge_fix": 2,
+      "drop": 2,
+      "keep_revise": 0
+     },
+     {
+      "theme": "化工/材料",
+      "total": 1,
+      "merge_fix": 1,
+      "drop": 0,
+      "keep_revise": 0
+     },
+     {
+      "theme": "医药/生物",
+      "total": 2,
+      "merge_fix": 0,
+      "drop": 2,
+      "keep_revise": 0
+     },
+     {
+      "theme": "半导体/电子",
+      "total": 3,
+      "merge_fix": 2,
+      "drop": 1,
+      "keep_revise": 0
+     },
+     {
+      "theme": "宏观/政策",
+      "total": 3,
+      "merge_fix": 0,
+      "drop": 3,
+      "keep_revise": 0
+     },
+     {
+      "theme": "有色/金属",
+      "total": 4,
+      "merge_fix": 2,
+      "drop": 2,
+      "keep_revise": 0
+     },
+     {
+      "theme": "机械/制造",
+      "total": 4,
+      "merge_fix": 1,
+      "drop": 3,
+      "keep_revise": 0
+     },
+     {
+      "theme": "汽车/智驾",
+      "total": 1,
+      "merge_fix": 1,
+      "drop": 0,
+      "keep_revise": 0
+     },
+     {
+      "theme": "消费/零售",
+      "total": 5,
+      "merge_fix": 3,
+      "drop": 2,
+      "keep_revise": 0
+     },
+     {
+      "theme": "网络安全/信创",
+      "total": 2,
+      "merge_fix": 2,
+      "drop": 0,
+      "keep_revise": 0
+     },
+     {
+      "theme": "通信/互联网",
+      "total": 1,
+      "merge_fix": 0,
+      "drop": 1,
+      "keep_revise": 0
+     },
+     {
+      "theme": "金融/地产",
+      "total": 2,
+      "merge_fix": 1,
+      "drop": 1,
+      "keep_revise": 0
+     }
+    ],
+    "fix_types": {
+     "q/a": 15,
+     "a": 5,
+     "source_ref": 11
+    }
+   }
+  },
+  "cards_before": {
+   "sha256": "2817a0a4827c41fc3c6a585ff593d962b12b5b7b89e953bdd126cadaf0403499",
+   "count": 104
+  }
+ },
+ "dry_run": {
+  "pre_validation_errors": [],
+  "stats": {
+   "before": 104,
+   "after": 124,
+   "added": 20,
+   "replaced": 0,
+   "drop_merge_existing": 25,
+   "drop_skip_absent": 0,
+   "delta": 20
+  },
+  "ops_total": 45
+ },
+ "operations": {
+  "add": [
+   {
+    "revision_id": "RV2-20261101-025",
+    "concept": "主要原材料价格波动",
+    "theme": "化工/材料",
+    "index": 104
+   },
+   {
+    "revision_id": "RV2-20261101-026",
+    "concept": "四足机器人商业化挑战",
+    "theme": "汽车/智驾",
+    "index": 105
+   },
+   {
+    "revision_id": "RV2-20261101-027",
+    "concept": "资本市场改革成效",
+    "theme": "金融/资本市场",
+    "index": 106
+   },
+   {
+    "revision_id": "RV2-20261101-028",
+    "concept": "网红营销与透明度要求",
+    "theme": "消费/零售",
+    "index": 107
+   },
+   {
+    "revision_id": "RV2-20261101-029",
+    "concept": "广州零售市场策略",
+    "theme": "消费/零售",
+    "index": 108
+   },
+   {
+    "revision_id": "RV2-20261101-030",
+    "concept": "深圳零售市场特征",
+    "theme": "消费/零售",
+    "index": 109
+   },
+   {
+    "revision_id": "RV2-20261101-031",
+    "concept": "个股涨跌幅排名",
+    "theme": "军工/航天",
+    "index": 110
+   },
+   {
+    "revision_id": "RV2-20261101-032",
+    "concept": "客座率水平",
+    "theme": "军工/航天",
+    "index": 111
+   },
+   {
+    "revision_id": "RV2-20261101-033",
+    "concept": "出口区域分布",
+    "theme": "制造/宏观",
+    "index": 112
+   },
+   {
+    "revision_id": "RV2-20261101-034",
+    "concept": "航运市场运价与租金",
+    "theme": "交运/物流",
+    "index": 113
+   },
+   {
+    "revision_id": "RV2-20261101-035",
+    "concept": "主要快递公司单票收入增速排名（1-8 月）",
+    "theme": "交运/物流",
+    "index": 114
+   },
+   {
+    "revision_id": "RV2-20261101-036",
+    "concept": "铁路客流预测",
+    "theme": "交运/物流",
+    "index": 115
+   },
+   {
+    "revision_id": "RV2-20261101-037",
+    "concept": "监管原则",
+    "theme": "网络安全/信创",
+    "index": 116
+   },
+   {
+    "revision_id": "RV2-20261101-038",
+    "concept": "网络安全职位招聘周期",
+    "theme": "网络安全/信创",
+    "index": 117
+   },
+   {
+    "revision_id": "RV2-20261101-039",
+    "concept": "贵金属板块领涨",
+    "theme": "有色/金属",
+    "index": 118
+   },
+   {
+    "revision_id": "RV2-20261101-040",
+    "concept": "小金属价格波动",
+    "theme": "有色/金属",
+    "index": 119
+   },
+   {
+    "revision_id": "RV2-20261101-041",
+    "concept": "中国畜禽肉产品主要出口市场",
+    "theme": "农业",
+    "index": 120
+   },
+   {
+    "revision_id": "RV2-20261101-042",
+    "concept": "中国畜禽肉产品主要进口来源国",
+    "theme": "农业",
+    "index": 121
+   },
+   {
+    "revision_id": "RV2-20261101-043",
+    "concept": "高端 ABF 载板产能瓶颈",
+    "theme": "AI/科技",
+    "index": 122
+   },
+   {
+    "revision_id": "RV2-20261101-044",
+    "concept": "高景气细分赛道",
+    "theme": "AI/科技",
+    "index": 123
+   }
+  ],
+  "drop_noop": [
+   {
+    "revision_id": "RV2-20261101-001",
+    "concept": "土地出让价款缴纳政策",
+    "op": "drop_merge_existing",
+    "note": "概念已存在于学习卡，按「不删他卡」保留已有卡，不新增本候选"
+   },
+   {
+    "revision_id": "RV2-20261101-002",
+    "concept": "大中华区零售市场趋势",
+    "op": "drop_merge_existing",
+    "note": "概念已存在于学习卡，按「不删他卡」保留已有卡，不新增本候选"
+   },
+   {
+    "revision_id": "RV2-20261101-003",
+    "concept": "大模型商业化核心指标",
+    "op": "drop_merge_existing",
+    "note": "概念已存在于学习卡，按「不删他卡」保留已有卡，不新增本候选"
+   },
+   {
+    "revision_id": "RV2-20261101-004",
+    "concept": "央行资产负债表保护机制",
+    "op": "drop_merge_existing",
+    "note": "概念已存在于学习卡，按「不删他卡」保留已有卡，不新增本候选"
+   },
+   {
+    "revision_id": "RV2-20261101-005",
+    "concept": "四足机器人产业发展阶段",
+    "op": "drop_merge_existing",
+    "note": "概念已存在于学习卡，按「不删他卡」保留已有卡，不新增本候选"
+   },
+   {
+    "revision_id": "RV2-20261101-006",
+    "concept": "国防军工行业周度表现",
+    "op": "drop_merge_existing",
+    "note": "概念已存在于学习卡，按「不删他卡」保留已有卡，不新增本候选"
+   },
+   {
+    "revision_id": "RV2-20261101-007",
+    "concept": "主要快递公司业务量增速排名（1-8 月）",
+    "op": "drop_merge_existing",
+    "note": "概念已存在于学习卡，按「不删他卡」保留已有卡，不新增本候选"
+   },
+   {
+    "revision_id": "RV2-20261101-008",
+    "concept": "跨境电子商务面临的四大挑战",
+    "op": "drop_merge_existing",
+    "note": "概念已存在于学习卡，按「不删他卡」保留已有卡，不新增本候选"
+   },
+   {
+    "revision_id": "RV2-20261101-009",
+    "concept": "央行资产负债表保护机制",
+    "op": "drop_merge_existing",
+    "note": "概念已存在于学习卡，按「不删他卡」保留已有卡，不新增本候选"
+   },
+   {
+    "revision_id": "RV2-20261101-010",
+    "concept": "北京零售市场现状",
+    "op": "drop_merge_existing",
+    "note": "概念已存在于学习卡，按「不删他卡」保留已有卡，不新增本候选"
+   },
+   {
+    "revision_id": "RV2-20261101-011",
+    "concept": "进口产品排名",
+    "op": "drop_merge_existing",
+    "note": "概念已存在于学习卡，按「不删他卡」保留已有卡，不新增本候选"
+   },
+   {
+    "revision_id": "RV2-20261101-012",
+    "concept": "四足机器人产业发展阶段",
+    "op": "drop_merge_existing",
+    "note": "概念已存在于学习卡，按「不删他卡」保留已有卡，不新增本候选"
+   },
+   {
+    "revision_id": "RV2-20261101-013",
+    "concept": "国防军工行业周度表现",
+    "op": "drop_merge_existing",
+    "note": "概念已存在于学习卡，按「不删他卡」保留已有卡，不新增本候选"
+   },
+   {
+    "revision_id": "RV2-20261101-014",
+    "concept": "航空业运力与需求",
+    "op": "drop_merge_existing",
+    "note": "概念已存在于学习卡，按「不删他卡」保留已有卡，不新增本候选"
+   },
+   {
+    "revision_id": "RV2-20261101-015",
+    "concept": "主要快递公司业务量增速排名（1-8 月）",
+    "op": "drop_merge_existing",
+    "note": "概念已存在于学习卡，按「不删他卡」保留已有卡，不新增本候选"
+   },
+   {
+    "revision_id": "RV2-20261101-016",
+    "concept": "航运市场运价与租金数据",
+    "op": "drop_merge_existing",
+    "note": "概念已存在于学习卡，按「不删他卡」保留已有卡，不新增本候选"
+   },
+   {
+    "revision_id": "RV2-20261101-017",
+    "concept": "第三方评测环境安全漏洞",
+    "op": "drop_merge_existing",
+    "note": "概念已存在于学习卡，按「不删他卡」保留已有卡，不新增本候选"
+   },
+   {
+    "revision_id": "RV2-20261101-018",
+    "concept": "中国畜禽肉产品贸易结构变化",
+    "op": "drop_merge_existing",
+    "note": "概念已存在于学习卡，按「不删他卡」保留已有卡，不新增本候选"
+   },
+   {
+    "revision_id": "RV2-20261101-019",
+    "concept": "中国畜禽肉产品贸易分类标准",
+    "op": "drop_merge_existing",
+    "note": "概念已存在于学习卡，按「不删他卡」保留已有卡，不新增本候选"
+   },
+   {
+    "revision_id": "RV2-20261101-020",
+    "concept": "基本金属铜",
+    "op": "drop_merge_existing",
+    "note": "概念已存在于学习卡，按「不删他卡」保留已有卡，不新增本候选"
+   },
+   {
+    "revision_id": "RV2-20261101-021",
+    "concept": "基本金属铝",
+    "op": "drop_merge_existing",
+    "note": "概念已存在于学习卡，按「不删他卡」保留已有卡，不新增本候选"
+   },
+   {
+    "revision_id": "RV2-20261101-022",
+    "concept": "光伏产业链价格变动",
+    "op": "drop_merge_existing",
+    "note": "概念已存在于学习卡，按「不删他卡」保留已有卡，不新增本候选"
+   },
+   {
+    "revision_id": "RV2-20261101-023",
+    "concept": "NRPS 合成生物学重编程",
+    "op": "drop_merge_existing",
+    "note": "概念已存在于学习卡，按「不删他卡」保留已有卡，不新增本候选"
+   },
+   {
+    "revision_id": "RV2-20261101-024",
+    "concept": "数据要素市场化配置",
+    "op": "drop_merge_existing",
+    "note": "概念已存在于学习卡，按「不删他卡」保留已有卡，不新增本候选"
+   },
+   {
+    "revision_id": "RV2-20261101-045",
+    "concept": "多层级安全评估体系（ARIA）",
+    "op": "drop_merge_existing",
+    "note": "概念已存在于学习卡，按「不删他卡」保留已有卡，不新增本候选"
+   }
+  ]
+ },
+ "before": {
+  "cards": 104,
+  "dup_concepts": []
+ },
+ "after": {
+  "cards": 124,
+  "added_concepts": [
+   "主要原材料价格波动",
+   "四足机器人商业化挑战",
+   "资本市场改革成效",
+   "网红营销与透明度要求",
+   "广州零售市场策略",
+   "深圳零售市场特征",
+   "个股涨跌幅排名",
+   "客座率水平",
+   "出口区域分布",
+   "航运市场运价与租金",
+   "主要快递公司单票收入增速排名（1-8 月）",
+   "铁路客流预测",
+   "监管原则",
+   "网络安全职位招聘周期",
+   "贵金属板块领涨",
+   "小金属价格波动",
+   "中国畜禽肉产品主要出口市场",
+   "中国畜禽肉产品主要进口来源国",
+   "高端 ABF 载板产能瓶颈",
+   "高景气细分赛道"
+  ],
+  "dup_concepts": [],
+  "sha256": "b5b9a8704788cca7bfc43bff1f50d4172a9319c68aaa126d0e159668550a9c63"
+ },
+ "validation": {
+  "ok": true,
+  "count_before": 104,
+  "count_after": 124,
+  "errors": [],
+  "dup_concepts": [],
+  "schema_errors": [],
+  "others_unchanged": true,
+  "added_cards": 20,
+  "atomic_write": {
+   "ok": true,
+   "atomic": true,
+   "tmp_removed": true,
+   "validated": true
+  },
+  "cards_sha_before": "2817a0a4827c41fc3c6a585ff593d962b12b5b7b89e953bdd126cadaf0403499",
+  "cards_sha_after": "b5b9a8704788cca7bfc43bff1f50d4172a9319c68aaa126d0e159668550a9c63"
+ },
+ "backups": {
+  "pre_apply": {
+   "path": "C:\\项目\\老田的AI助手\\research\\reports\\backups\\kb_learning_cards.20261102_003714.pre_round2rev.bak.json",
+   "sha256": "2817a0a4827c41fc3c6a585ff593d962b12b5b7b89e953bdd126cadaf0403499",
+   "cards": 104
+  }
+ },
+ "digest": {
+  "rc": 0,
+  "output_tail": "生成成功：C:\\项目\\老田的AI助手\\portal\\static\\kb_learning_digest.json | date=20261102 | cards=5 | highlights=5 | points=10\n",
+  "sha256": "434c449e840a33114238930d6ca0ef07e7abd27a4911768fe96463fdb36bb472"
+ },
+ "http": {
+  "kb_learning_cards": {
+   "status": 200,
+   "bytes": 100514
+  },
+  "kb_learning_digest": {
+   "status": 200,
+   "bytes": 10624
+  },
+  "kb_reports_page": {
+   "status": 200,
+   "bytes": 33828
+  }
+ },
+ "rollback": {
+  "cards": "copy /Y \"C:\\项目\\老田的AI助手\\research\\reports\\backups\\kb_learning_cards.20261102_003714.pre_round2rev.bak.json\" \"C:\\项目\\老田的AI助手\\portal\\static\\kb_learning_cards.json\" 然后重跑 learning_digest.py run",
+  "note": "恢复 104 张（第二轮 20 张新增卡被移除；无现有卡被删除）"
+ },
+ "safety": {
+  "real_drop_deletions": 0,
+  "drop_merge_existing": 25,
+  "drop_skip_absent": 0,
+  "note": "25 张 drop 均为「concept 已在现有 104 卡中」→ 保留已有卡、不删任何卡"
+ },
+ "actual_numbers": {
+  "before": 104,
+  "added": 20,
+  "after": 124,
+  "drop_noop": 25
+ },
+ "disclaimer": "本次为用户授权执行的学习卡第二轮 revise 落地；回滚路径见 rollback；不构成投资建议。"
+}
