@@ -694,6 +694,20 @@
       "title": "问答链路端到端验收",
       "ref": "tools/kb_corpus/qa_acceptance.py",
       "enabled": true
+    },
+    {
+      "id": "kb_qa_prompt_v2",
+      "kind": "tool",
+      "title": "问答 prompt v2 A/B 实验",
+      "ref": "tools/kb_corpus/kb_qa_prompt_v2.py",
+      "enabled": true
+    },
+    {
+      "id": "card_proposal_v3",
+      "kind": "tool",
+      "title": "学习卡第二轮扩卡",
+      "ref": "tools/kb_corpus/card_proposal_v3.py",
+      "enabled": true
     }
   ]
 }

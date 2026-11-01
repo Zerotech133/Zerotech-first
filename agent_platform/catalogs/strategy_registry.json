@@ -5185,5 +5185,42 @@
       ]
     },
     "note": "问答链路三段验收：CLI 10 条（success5/fallback5/guard 正常）、HTTP 预接线 5/5 用例（含 guard=0/非法400，WIRED=False）、门户 2/2 HTTP200 → **go**（可进入 8091 L2 审批）。"
+  },
+  "kb_qa_prompt_v2_20261101": {
+    "tool": "tools/kb_corpus/kb_qa_prompt_v2.py",
+    "report": "research/reports/kb_qa_prompt_v2_20261101.md",
+    "comparison": {
+      "merge_recommendation": "keep",
+      "verdict": "v2 未优于 v1，不建议合入；保留现有 prompt 继续调优",
+      "reasons": [
+        "可答率：v1 50%（6/12）→ v2 0%（0/12），Δ-50%。",
+        "guard 通过率：v1 50% → v2 8%，Δ-42%；fallback 率：50% → 92%。",
+        "平均引用：2.33 → 2.58；平均推断比例：0.4639 → 0.9167（Δ+0.45）；平均耗时：14.62s → 7.77s（Δ-6.8s）。"
+      ],
+      "risks": [
+        "样本受限（LLM 慢时先 12 条），结论为 effective 子集，需扩样 30–50 条复核。",
+        "v2 prompt 更长，耗时可能上升；本 A/B 的 v1 部分结果复用 wave24，时间点不同。",
+        "guard 后处理对两条 arm 相同，质量差异主要来自 prompt；推断标记依赖模型遵守指令。",
+        "若合入，需在 kb_qa_multi 中新增 prompt 版本开关并灰度，保留 v1 回退。"
+      ],
+      "delta": {
+        "success_rate": -0.5,
+        "guard_pass_rate": -0.4167,
+        "avg_inference_ratio": 0.4528,
+        "avg_elapsed_seconds": -6.85
+      }
+    },
+    "note": "prompt v2 A/B（12 条）：可答率 50%→0%、guard 通过 50%→8%、推断比例 0.46→0.92 → **v2 未优于 v1，不合入**；保留现有 prompt，结论为 effective 子集需扩样。"
+  },
+  "card_proposals_v3_20261101": {
+    "tool": "tools/kb_corpus/card_proposal_v3.py",
+    "review": "research/reports/card_proposals_v3_20261101.md",
+    "portal": "portal/static/card_proposals_v3.json",
+    "note": "学习卡第二轮扩卡：40 候选（17 薄弱主题、三角度、可追溯 100%）；深度覆盖 71%→81%、单元覆盖 13.9%→21.9%；pending_review 待人工审核。"
+  },
+  "learning_cards_overwrite_fix_20261101": {
+    "fix": "tools/kb_corpus/learning_cards.py 抽出 merge_cards：现有卡全量保留+仅追加新 concept",
+    "test": "tools/tests/test_learning_cards_preserve.py（4 tests）",
+    "incident": "并发会话 14:10 运行 learning_cards.py 将 70 张覆盖为 20 张；已从 HEAD 恢复并加回归测试防再发。"
   }
 }
