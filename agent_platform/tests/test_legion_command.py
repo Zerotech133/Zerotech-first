@@ -871,7 +871,7 @@ def _org_sha():
 _ORG_PRE = dict(
     dept="dev",
     agent_id="DEV9",
-    cn_name="蒋琬",
+    cn_name="蒋琬测试",
     role_profile="日志工程师",
     duty="负责全链路运行日志治理与异常归因，维护日志规范与轮转策略",
     binding="ollama/qwen3.5:9b",
@@ -887,7 +887,7 @@ def test_preview_enroll_ok_and_no_write(server):
     assert env["ok"] is True
     pl = env["plan"]
     assert pl["agent"]["agent_id"] == "DEV9"
-    assert pl["cn_name"] == "蒋琬"
+    assert pl["cn_name"] == "蒋琬测试"
     assert pl["dept_name"]
     assert "未写入任何字节" in env["note"]
     assert _org_sha() == before, "预览端点绝不能写真实 org.json"
