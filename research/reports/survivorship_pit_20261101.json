@@ -1,0 +1,38 @@
+{
+ "meta": {
+  "generated_at": "2026-11-01T23:44:08+08:00",
+  "window": "20190131 .. 20260930",
+  "strategy": "mom_120 top20 等权 月频",
+  "data": "bak_basic 历史名称/list_date（PIT）+ daily/adj"
+ },
+ "counts": {
+  "bak_codes": 5569,
+  "current_codes": 5577
+ },
+ "results": [
+  {
+   "mode": "cur",
+   "months": 93,
+   "cagr_pct": 25.89,
+   "mdd_pct": -42.04,
+   "excess_monthly_pct": 1.27,
+   "excess_t": 1.84
+  },
+  {
+   "mode": "pit",
+   "months": 93,
+   "cagr_pct": 11.18,
+   "mdd_pct": -42.55,
+   "excess_monthly_pct": 0.238,
+   "excess_t": 0.39
+  },
+  {
+   "mode": "delist",
+   "months": 0,
+   "cagr_pct": null,
+   "mdd_pct": null,
+   "excess_monthly_pct": null,
+   "excess_t": null
+  }
+ ]
+}
