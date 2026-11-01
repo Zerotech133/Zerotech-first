@@ -659,6 +659,13 @@
       "title": "评测基线 v3 回归",
       "ref": "tools/kb_corpus/eval_v3_baseline.py",
       "enabled": true
+    },
+    {
+      "id": "guard_threshold_study",
+      "kind": "tool",
+      "title": "guard 阈值敏感性研究",
+      "ref": "tools/kb_corpus/guard_threshold_study.py",
+      "enabled": true
     }
   ]
 }

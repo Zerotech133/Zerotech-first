@@ -4467,5 +4467,111 @@
       ]
     },
     "note": "v3 102 查询基线：v2 P@5 0.702→0.800（+9.8pp，p<0.001，CI[0.0549,0.1432]）、NDCG +8.8pp（CI[0.0487,0.1311]）→ v2 vs v1 结论在 v3 仍显著；89 子集与 wave12 逐位一致（无漂移）。"
+  },
+  "card_review_adopt_prefill_20261101": {
+    "page": "portal/card_review.html",
+    "note": "审核页一键采用机器预审建议：pass36→通过、revise24→需修改（仅预填未决、已决不覆盖、确认弹窗）；预填统计行；导出 schema 不变；6 tests + node check + HTTP 200。"
+  },
+  "guard_threshold_study_20261101": {
+    "tool": "tools/kb_corpus/guard_threshold_study.py",
+    "report": "research/reports/guard_threshold_study_20261101.md",
+    "recommendation": {
+      "recommended": {
+        "inference_max": 0.7,
+        "min_units": 2
+      },
+      "recommended_metrics": {
+        "inference_max": 0.7,
+        "min_units": 2,
+        "total": 12,
+        "passed": 6,
+        "blocked": 6,
+        "pass_rate": 0.5,
+        "block_rate": 0.5,
+        "block_reasons": {
+          "insufficient_cited_units": 6,
+          "citation_missing": 4,
+          "inference_heavy": 1
+        },
+        "answerable_preserved": 6,
+        "answerable_rate_post": 0.5,
+        "fallback_rate": 0.5,
+        "citation_resolvable_rate_post": 1.0,
+        "support_rate_post": 1.0,
+        "hallucination_rate_post": 0.0,
+        "avg_inference_density_post": 0.4375,
+        "cited_units_avg_post": 1.33
+      },
+      "current_default": {
+        "inference_max": 0.6,
+        "min_units": 2,
+        "metrics": {
+          "inference_max": 0.6,
+          "min_units": 2,
+          "total": 12,
+          "passed": 6,
+          "blocked": 6,
+          "pass_rate": 0.5,
+          "block_rate": 0.5,
+          "block_reasons": {
+            "insufficient_cited_units": 6,
+            "citation_missing": 4,
+            "inference_heavy": 4
+          },
+          "answerable_preserved": 6,
+          "answerable_rate_post": 0.5,
+          "fallback_rate": 0.5,
+          "citation_resolvable_rate_post": 1.0,
+          "support_rate_post": 1.0,
+          "hallucination_rate_post": 0.0,
+          "avg_inference_density_post": 0.4375,
+          "cited_units_avg_post": 1.33
+        }
+      },
+      "reasons": [
+        "推荐阈值通过率与默认相同（50%），但更宽松（inference≤0.7/units≥2），对未见数据更稳健。",
+        "代理质量：引用可解析率 1.0、支撑率 1.0、幻觉率 0.0、推断密度 0.4375。",
+        "最小被引单元维持 2 个：提高单元数并未带来质量增益，反而增加 fallback。"
+      ],
+      "risks": [
+        "样本量 n=12 偏小，阈值差异可能来自样本偶然性；建议扩样到 30–50 条复核。",
+        "inference_ratio 依赖模型输出【直接事实】/【推断】标记；未标注时比率为 0，可能低估计。",
+        "被拦截行的代理质量使用 guard fallback 后指标（fallback 仅保留可解析引用），属于保守估计。",
+        "数据集来自 wave15 v3 前 12 条（偏难答），不代表全量 50 条问题分布。",
+        "仅参数建议，不修改 guard 代码；实际切换需通过 CLI 参数/配置灰度并复跑评估。"
+      ],
+      "alternatives": [
+        {
+          "inference_max": 0.5,
+          "min_units": 2,
+          "pass_rate": 0.5,
+          "blocked": 6,
+          "quality_note": "可解析率 1.0 / 推断密度 0.4375"
+        },
+        {
+          "inference_max": 0.5,
+          "min_units": 3,
+          "pass_rate": 0.4167,
+          "blocked": 7,
+          "quality_note": "可解析率 1.0 / 推断密度 0.4375"
+        },
+        {
+          "inference_max": 0.6,
+          "min_units": 2,
+          "pass_rate": 0.5,
+          "blocked": 6,
+          "quality_note": "可解析率 1.0 / 推断密度 0.4375"
+        },
+        {
+          "inference_max": 0.6,
+          "min_units": 3,
+          "pass_rate": 0.4167,
+          "blocked": 7,
+          "quality_note": "可解析率 1.0 / 推断密度 0.4375"
+        }
+      ],
+      "conclusion": "建议默认 inference_ratio 阈值=0.7、最小被引单元=2（不修改 guard 代码，仅调参）"
+    },
+    "note": "guard 阈值敏感性：当前默认 inference_max=0.6/min_units=2；推荐 inference_max=0.7/min_units=2（12 条中通过 6/12，引用可解析/支撑 100%、幻觉 0%）；仅参数建议，未改 guard 代码。"
   }
 }

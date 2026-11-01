@@ -148,3 +148,28 @@ def test_http_served():
         assert len(payload["items"]) == 60
     except (urllib.error.URLError, ConnectionError, TimeoutError) as exc:  # noqa: F821
         pytest.skip(f"8734 门户服务不在线: {exc}")
+
+# ---------------------------------------------------------------------------
+# 6) 一键预填机器预审建议（wave22 CG）
+# ---------------------------------------------------------------------------
+def test_adopt_precheck_controls_and_logic():
+    html = PAGE.read_text(encoding="utf-8")
+    # 按钮与统计挂载点
+    for mount in ('id="btn-adopt"', 'id="btn-reset"', 'id="adopt-stats"'):
+        assert mount in html, mount
+    for text in ("一键采用机器预审建议", "一键清空", "仅预填未决", "与预审建议一致"):
+        assert text in html, text
+    # JS：预填函数、建议映射、仅未决不覆盖、本地保存、预填统计
+    for fn in ("function adoptPrecheck", "function mappedVerdict", "function consistency",
+               "function updateAdoptStats"):
+        assert fn in html, fn
+    assert "suggested_verdict" in html
+    assert "verdictOf(it.review_id)==='pending'" in html, "仅预填未决卡"
+    assert "已决不覆盖" in html or "已决卡不覆盖" in html
+    assert "localStorage.setItem" in html
+    assert "已选" in html and "与预审建议一致" in html
+    # 导出 schema 保持不变（仍用 buildDecisionsPayload + {review_id:{verdict,notes}}）
+    assert "buildDecisionsPayload" in html and "JSON.stringify" in html
+    assert "'pass':'pass'" in html or "pass'?'pass'" in html
+    # 一键清空带确认、不清真实数据
+    assert "一键清空本地审核草稿" in html

@@ -72,9 +72,11 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-siz
     <label>状态 <select id="f-status"><option value="all">全部</option><option value="pending">未决</option><option value="done">已处理</option></select></label>
     <label>搜索 <input type="text" id="f-q" placeholder="问题/概念/关键词" style="min-width:180px"></label>
     <button class="btn ok" id="btn-export">⬇ 导出 decisions JSON</button>
-    <button class="btn" id="btn-reset">重置</button>
+    <button class="btn primary" id="btn-adopt">⚡ 一键采用机器预审建议</button>
+    <button class="btn" id="btn-reset">🧹 一键清空</button>
     <span class="count" id="save-state">本地草稿未保存</span>
   </div>
+  <div class="count" id="adopt-stats">预填统计：—（可一键采用机器预审建议，仅预填未决卡）</div>
   <div class="stats" id="stats"></div>
   <div class="bar"><i id="progress"></i></div>
   <div class="count" id="progress-text">—</div>
@@ -121,6 +123,7 @@ function renderStats(){
   ].map(([k,v])=>`<div class="stat"><b>${v}</b><span>${k}</span></div>`).join('');
   $('progress').style.width=(total?done/total*100:0)+'%';
   $('progress-text').textContent=`已处理 ${done}/${total}（${total?Math.round(done/total*100):0}%）· 本地草稿自动保存`;
+  updateAdoptStats();
 }
 
 function fillThemeFilter(){
@@ -213,11 +216,47 @@ function bindEvents(){
   });
   ['f-source','f-theme','f-precheck','f-status'].forEach(id=>$(id).addEventListener('change',renderList));
   $('f-q').addEventListener('input',()=>{ if(saveTimer)clearTimeout(saveTimer); saveTimer=setTimeout(renderList,200); });
+  $('btn-adopt').addEventListener('click',adoptPrecheck);
   $('btn-reset').addEventListener('click',()=>{
-    if(!confirm('清空本地审核草稿（不会影响已导出文件）？'))return;
+    if(!confirm('一键清空本地审核草稿（不会影响已导出文件/真实数据）？'))return;
     STATE={}; scheduleSave(); renderStats(); renderList();
   });
   $('btn-export').addEventListener('click',exportDecisions);
+}
+
+function suggestedOf(it){ return ((it&&it.precheck)||{}).suggested_verdict||''; }
+function mappedVerdict(sugg){ return sugg==='pass'?'pass':sugg==='revise'?'revise':sugg==='reject'?'reject':''; }
+function consistency(){
+  let done=0, matched=0, suggested=0;
+  (DATA?DATA.items:[]).forEach(it=>{
+    const v=verdictOf(it.review_id);
+    if(v!=='pending')done++;
+    const m=mappedVerdict(suggestedOf(it));
+    if(m){ suggested++; if(v===m)matched++; }
+  });
+  return {done,total:(DATA?DATA.items.length:0),matched,suggested};
+}
+function updateAdoptStats(extra){
+  const c=consistency();
+  const base=`已选 ${c.done}/${c.total} · 与预审建议一致 ${c.matched}/${c.suggested}（有建议卡）`;
+  $('adopt-stats').textContent = (extra?extra+' · ':'')+base;
+}
+function adoptPrecheck(){
+  if(!DATA) return;
+  const pending=DATA.items.filter(it=>verdictOf(it.review_id)==='pending'&&mappedVerdict(suggestedOf(it)));
+  if(!pending.length){ updateAdoptStats('无需预填：所有有建议的卡均已处理'); return; }
+  if(!confirm(`将按机器预审建议预填 ${pending.length} 张未决卡（pass→通过 / revise→需修改），已决卡不覆盖。继续？`)) return;
+  let nPass=0,nRevise=0,nReject=0;
+  pending.forEach(it=>{
+    const m=mappedVerdict(suggestedOf(it));
+    STATE[it.review_id]=STATE[it.review_id]||{verdict:'pending',notes:''};
+    STATE[it.review_id].verdict=m;
+    if(m==='pass')nPass++; else if(m==='revise')nRevise++; else nReject++;
+    try{ localStorage.setItem(lsKey, JSON.stringify(STATE)); }catch(e){}
+  });
+  if(saveTimer)clearTimeout(saveTimer);
+  saveLocal(); renderStats(); renderList();
+  updateAdoptStats(`一键预填 ${pending.length} 张（通过 ${nPass} / 需修改 ${nRevise} / 驳回 ${nReject}；仅未决，已决不覆盖）`);
 }
 
 function buildDecisionsPayload(){
