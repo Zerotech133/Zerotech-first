@@ -17,7 +17,7 @@ def _setup(tmp_path, monkeypatch):
     d.mkdir(parents=True)
     (d / "a.md").write_text("# 第一章\n\n创业要找到真实痛点。\n\n创业要找到真实痛点。\n\n表格行\n", encoding="utf-8")
     regp = tmp_path / "lp.json"
-    regp.write_text(json.dumps({"projects": [{"project_id": pid, "status": "intake_pending"}]}), encoding="utf-8")
+    regp.write_text(json.dumps({"projects": [{"project_id": pid, "status": "cleaning"}]}), encoding="utf-8")
     monkeypatch.setattr(lo, "REG", regp)
     monkeypatch.setattr(lo, "REPORTS", tmp_path / "reports")
     (kb / "05_学习源件" / pid).mkdir(parents=True)

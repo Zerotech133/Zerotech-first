@@ -71,7 +71,7 @@ def draft_units(pid: str, clean_files: list[Path], out_jsonl: Path) -> int:
     for f in clean_files:
         for i, line in enumerate(f.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
             s = line.strip()
-            if len(s) < 12 or s.startswith("#") or s.startswith("|"):
+            if len(s) < 8 or s.startswith("#") or s.startswith("|"):
                 continue
             n += 1
             units.append({"unit_id": f"learn_{pid}_{n:04d}", "project_id": pid,
