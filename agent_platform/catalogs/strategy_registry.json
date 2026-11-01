@@ -6371,5 +6371,187 @@
     "change": "portal/api_kb_qa.py：DEFAULT_PROMPT v1→v4、DEFAULT_GUARD_MARKER strict→segment；重启 8091 生效",
     "verification": "meta prompt_version=v4 / guard_marker=segment / citation_retry=True；HTTP 验收 go",
     "rollback": "query prompt=v1 / guard_marker=strict，或改常量重启"
+  },
+  "qa_http_loadtest_20261101": {
+    "report": "research/reports/qa_http_loadtest_20261101.md",
+    "summary": null,
+    "conclusion": {
+      "stability_ok": true,
+      "concurrency_ok": true,
+      "multi_ok": true,
+      "limit_verified": false,
+      "can_go_live": "conditional",
+      "verdict": "稳定性/并发/multi 通过，但限流行为需复核（未观察到预期 429）→ 调参后灰度",
+      "fixes_needed": [
+        "单线程 62 次未触发 429：限流未按预期生效（或检索过快未达窗口），需核对限流实现/参数。"
+      ],
+      "tuning_items": [],
+      "risks": [
+        "并发 retrieval 成功请求 P95 延迟 27.312s 偏高，建议检查 KB 检索/DB 连接池。",
+        "retrieval 使用 cache=0 强制真实检索，延迟包含 KB 检索开销；未压测 single 通道（控 LLM 成本）。",
+        "限流状态为进程内窗口计数，多进程/多实例部署时需确认限流一致性。"
+      ]
+    },
+    "note": "8091 压测：稳定性 50/50 无 5xx、multi 6/6；**conditional**：单线程 62 次未触发 429（检索 2.3-3.5s/次，实际速率<60/分）→ 限流不可达；retrieval 10 并发 P95 27.3s、1 例超时 → 仅建议内部小流量（并发≤2-3），需优化检索并发延迟后再放量。"
+  },
+  "card_revisions_round2_20261101": {
+    "tool": "tools/kb_corpus/card_revision_round2.py",
+    "report": "research/reports/card_revisions_round2_20261101.md",
+    "summary": {
+      "total": 45,
+      "actions": {
+        "merge_fix": 20,
+        "drop": 25,
+        "keep_revise": 0
+      },
+      "by_source": {
+        "AE": {
+          "total": 8,
+          "merge_fix": 0,
+          "drop": 8,
+          "keep_revise": 0
+        },
+        "AV": {
+          "total": 16,
+          "merge_fix": 0,
+          "drop": 16,
+          "keep_revise": 0
+        },
+        "CP3": {
+          "total": 21,
+          "merge_fix": 20,
+          "drop": 1,
+          "keep_revise": 0
+        }
+      },
+      "by_theme": [
+        {
+          "theme": "交运/物流",
+          "total": 7,
+          "merge_fix": 3,
+          "drop": 4,
+          "keep_revise": 0
+        },
+        {
+          "theme": "其他",
+          "total": 1,
+          "merge_fix": 0,
+          "drop": 1,
+          "keep_revise": 0
+        },
+        {
+          "theme": "军工/航天",
+          "total": 5,
+          "merge_fix": 2,
+          "drop": 3,
+          "keep_revise": 0
+        },
+        {
+          "theme": "农业",
+          "total": 4,
+          "merge_fix": 2,
+          "drop": 2,
+          "keep_revise": 0
+        },
+        {
+          "theme": "化工/材料",
+          "total": 1,
+          "merge_fix": 1,
+          "drop": 0,
+          "keep_revise": 0
+        },
+        {
+          "theme": "医药/生物",
+          "total": 2,
+          "merge_fix": 0,
+          "drop": 2,
+          "keep_revise": 0
+        },
+        {
+          "theme": "半导体/电子",
+          "total": 3,
+          "merge_fix": 2,
+          "drop": 1,
+          "keep_revise": 0
+        },
+        {
+          "theme": "宏观/政策",
+          "total": 3,
+          "merge_fix": 0,
+          "drop": 3,
+          "keep_revise": 0
+        },
+        {
+          "theme": "有色/金属",
+          "total": 4,
+          "merge_fix": 2,
+          "drop": 2,
+          "keep_revise": 0
+        },
+        {
+          "theme": "机械/制造",
+          "total": 4,
+          "merge_fix": 1,
+          "drop": 3,
+          "keep_revise": 0
+        },
+        {
+          "theme": "汽车/智驾",
+          "total": 1,
+          "merge_fix": 1,
+          "drop": 0,
+          "keep_revise": 0
+        },
+        {
+          "theme": "消费/零售",
+          "total": 5,
+          "merge_fix": 3,
+          "drop": 2,
+          "keep_revise": 0
+        },
+        {
+          "theme": "网络安全/信创",
+          "total": 2,
+          "merge_fix": 2,
+          "drop": 0,
+          "keep_revise": 0
+        },
+        {
+          "theme": "通信/互联网",
+          "total": 1,
+          "merge_fix": 0,
+          "drop": 1,
+          "keep_revise": 0
+        },
+        {
+          "theme": "金融/地产",
+          "total": 2,
+          "merge_fix": 1,
+          "drop": 1,
+          "keep_revise": 0
+        }
+      ],
+      "fix_types": {
+        "q/a": 15,
+        "a": 5,
+        "source_ref": 11
+      }
+    },
+    "note": "45 张 revise 修订建议：merge_fix 20 / drop 25 / keep 0；dry-run 若采纳 20 张 → 104→124 张（未执行，待人工确认）。"
+  },
+  "kb_qa_samples_v4_20261101": {
+    "report": "research/reports/kb_qa_samples_v4_20261101.md",
+    "data": "portal/static/kb_qa_samples.json（schema2，n=8，prompt v4/segment/retry）",
+    "summary": {
+      "total": 8,
+      "success": 8,
+      "fallback": 0,
+      "refusal": 0,
+      "total_citations": 19,
+      "avg_citations": 2.38,
+      "avg_elapsed_seconds": 15.05,
+      "guard_pass_rate": 1.0
+    },
+    "note": "门户问答样例刷新：8/8 success、guard 100%、均引用 2.38、均耗时 15.05s；页面兼容未改。"
   }
 }

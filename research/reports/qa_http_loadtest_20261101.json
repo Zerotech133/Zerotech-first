@@ -1,0 +1,4599 @@
+{
+ "schema_version": 1,
+ "kind": "qa_http_loadtest",
+ "generated_at": "2026-11-02T00:16:05+08:00",
+ "config": {
+  "base_url": "http://127.0.0.1:8091",
+  "window_seconds": 61,
+  "retrieval_concurrency": 10,
+  "concurrent_total": 200,
+  "serial_limit_n": 62,
+  "stability_n": 50,
+  "multi_total": 6,
+  "multi_workers": 2,
+  "rate_limit_config": {
+   "retrieval": 60,
+   "single": 6,
+   "multi": 6
+  },
+  "wait_between_phases": true,
+  "cache": "0（强制真实检索）"
+ },
+ "phases": {
+  "stability_50": {
+   "name": "retrieval_serial_50",
+   "total": 50,
+   "http_200": 50,
+   "errors": 0,
+   "error_rate": 0.0,
+   "status_counts": {
+    "200": 50
+   },
+   "rate_limited_429": 0,
+   "server_5xx": 0,
+   "latency_success": {
+    "p50": 2.821,
+    "p95": 3.274,
+    "p99": 3.525,
+    "avg": 2.838,
+    "max": 3.578
+   },
+   "latency_all": {
+    "p50": 2.821,
+    "p95": 3.274,
+    "p99": 3.525
+   },
+   "results": [
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.75,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 1,
+      "remaining": 59,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 3.015,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 2,
+      "remaining": 58,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.954,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 3,
+      "remaining": 57,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.765,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 4,
+      "remaining": 56,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 3.578,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 5,
+      "remaining": 55,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 3.032,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 6,
+      "remaining": 54,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 3.187,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 7,
+      "remaining": 53,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 3.281,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 8,
+      "remaining": 52,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.797,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 9,
+      "remaining": 51,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 3.172,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 10,
+      "remaining": 50,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 3.469,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 11,
+      "remaining": 49,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 3.265,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 12,
+      "remaining": 48,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.563,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 13,
+      "remaining": 47,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.766,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 14,
+      "remaining": 46,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 3.156,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 15,
+      "remaining": 45,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.844,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 16,
+      "remaining": 44,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.468,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 17,
+      "remaining": 43,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.703,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 18,
+      "remaining": 42,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.907,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 19,
+      "remaining": 41,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.875,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 20,
+      "remaining": 40,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.781,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 21,
+      "remaining": 39,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.609,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 21,
+      "remaining": 39,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.688,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 21,
+      "remaining": 39,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.781,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 21,
+      "remaining": 39,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.891,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 21,
+      "remaining": 39,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 3.015,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 21,
+      "remaining": 39,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.938,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 21,
+      "remaining": 39,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.734,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 21,
+      "remaining": 39,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.813,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 21,
+      "remaining": 39,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.687,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 21,
+      "remaining": 39,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.656,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 21,
+      "remaining": 39,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.829,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 22,
+      "remaining": 38,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.906,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 22,
+      "remaining": 38,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.859,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 22,
+      "remaining": 38,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.688,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 22,
+      "remaining": 38,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.672,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 22,
+      "remaining": 38,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.656,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 22,
+      "remaining": 38,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.703,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 22,
+      "remaining": 38,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.828,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 22,
+      "remaining": 38,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.422,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 22,
+      "remaining": 38,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.578,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 22,
+      "remaining": 38,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.609,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 22,
+      "remaining": 38,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 3.125,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 22,
+      "remaining": 38,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.953,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 22,
+      "remaining": 38,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.938,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 22,
+      "remaining": 38,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 3.031,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 22,
+      "remaining": 38,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.75,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 22,
+      "remaining": 38,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.906,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 22,
+      "remaining": 38,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.172,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 22,
+      "remaining": 38,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.141,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 22,
+      "remaining": 38,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    }
+   ],
+   "phase_elapsed_seconds": 141.92
+  },
+  "retrieval_serial_62": {
+   "name": "retrieval_serial_62",
+   "total": 62,
+   "http_200": 62,
+   "errors": 0,
+   "error_rate": 0.0,
+   "status_counts": {
+    "200": 62
+   },
+   "rate_limited_429": 0,
+   "server_5xx": 0,
+   "latency_success": {
+    "p50": 2.274,
+    "p95": 2.839,
+    "p99": 3.022,
+    "avg": 2.289,
+    "max": 3.203
+   },
+   "latency_all": {
+    "p50": 2.274,
+    "p95": 2.839,
+    "p99": 3.022
+   },
+   "results": [
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.187,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 23,
+      "remaining": 37,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.219,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 23,
+      "remaining": 37,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.172,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 23,
+      "remaining": 37,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.359,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 23,
+      "remaining": 37,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.266,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 23,
+      "remaining": 37,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.203,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 23,
+      "remaining": 37,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.25,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 24,
+      "remaining": 36,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.344,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 24,
+      "remaining": 36,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.297,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 24,
+      "remaining": 36,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.406,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 24,
+      "remaining": 36,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.14,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 24,
+      "remaining": 36,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.079,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 24,
+      "remaining": 36,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 1.625,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 25,
+      "remaining": 35,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.312,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 25,
+      "remaining": 35,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.438,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 25,
+      "remaining": 35,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.437,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 25,
+      "remaining": 35,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.094,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 25,
+      "remaining": 35,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.344,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 26,
+      "remaining": 34,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.437,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 26,
+      "remaining": 34,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.219,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 26,
+      "remaining": 34,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.156,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 26,
+      "remaining": 34,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.328,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 26,
+      "remaining": 34,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.453,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 27,
+      "remaining": 33,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.438,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 27,
+      "remaining": 33,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.406,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 27,
+      "remaining": 33,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.25,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 27,
+      "remaining": 33,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.5,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 27,
+      "remaining": 33,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.312,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 27,
+      "remaining": 33,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.688,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 27,
+      "remaining": 33,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.297,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 27,
+      "remaining": 33,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.281,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 27,
+      "remaining": 33,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.578,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 27,
+      "remaining": 33,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.297,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 26,
+      "remaining": 34,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.265,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 26,
+      "remaining": 34,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.063,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 26,
+      "remaining": 34,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.375,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 27,
+      "remaining": 33,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.906,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 27,
+      "remaining": 33,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.672,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 26,
+      "remaining": 34,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.328,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 26,
+      "remaining": 34,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.391,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 26,
+      "remaining": 34,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.203,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 26,
+      "remaining": 34,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.172,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 26,
+      "remaining": 34,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.265,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 26,
+      "remaining": 34,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.188,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 26,
+      "remaining": 34,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.172,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 26,
+      "remaining": 34,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.015,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 26,
+      "remaining": 34,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 1.782,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 26,
+      "remaining": 34,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.047,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 26,
+      "remaining": 34,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 1.89,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 26,
+      "remaining": 34,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 1.75,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 27,
+      "remaining": 33,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.485,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 27,
+      "remaining": 33,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.734,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 27,
+      "remaining": 33,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.75,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 27,
+      "remaining": 33,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.844,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 27,
+      "remaining": 33,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.89,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 26,
+      "remaining": 34,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 3.203,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 26,
+      "remaining": 34,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.125,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 26,
+      "remaining": 34,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 2.219,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 26,
+      "remaining": 34,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 1.875,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 26,
+      "remaining": 34,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 1.781,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 26,
+      "remaining": 34,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 1.719,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 26,
+      "remaining": 34,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 1.985,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 27,
+      "remaining": 33,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    }
+   ],
+   "phase_elapsed_seconds": 141.92
+  },
+  "retrieval_concurrent": {
+   "name": "retrieval_concurrent_10x20",
+   "total": 200,
+   "http_200": 199,
+   "errors": 1,
+   "error_rate": 0.005,
+   "status_counts": {
+    "200": 199,
+    "0": 1
+   },
+   "rate_limited_429": 0,
+   "server_5xx": 0,
+   "latency_success": {
+    "p50": 18.203,
+    "p95": 27.312,
+    "p99": 29.688,
+    "avg": 19.341,
+    "max": 29.954
+   },
+   "latency_all": {
+    "p50": 18.258,
+    "p95": 27.329,
+    "p99": 29.691
+   },
+   "results": [
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 14.625,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 1,
+      "remaining": 59,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 11.578,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 2,
+      "remaining": 58,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 9.14,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 4,
+      "remaining": 56,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 10.609,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 3,
+      "remaining": 57,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 14.625,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 6,
+      "remaining": 54,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 9.39,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 5,
+      "remaining": 55,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 11.562,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 7,
+      "remaining": 53,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 26.25,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 9,
+      "remaining": 51,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 27.015,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 10,
+      "remaining": 50,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 14.625,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 8,
+      "remaining": 52,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 25.688,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 11,
+      "remaining": 49,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 16.735,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 12,
+      "remaining": 48,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 23.797,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 13,
+      "remaining": 47,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 27.656,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 14,
+      "remaining": 46,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 25.422,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 15,
+      "remaining": 45,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 22.39,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 16,
+      "remaining": 44,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 20.203,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 17,
+      "remaining": 43,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 24.593,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 18,
+      "remaining": 42,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 25.14,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 19,
+      "remaining": 41,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 24.406,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 20,
+      "remaining": 40,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 27.672,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 21,
+      "remaining": 39,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 16.015,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 22,
+      "remaining": 38,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 18.547,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 24,
+      "remaining": 36,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 17.953,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 23,
+      "remaining": 37,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 22.125,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 25,
+      "remaining": 35,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 17.656,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 26,
+      "remaining": 34,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 19.907,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 27,
+      "remaining": 33,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 22.532,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 28,
+      "remaining": 32,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 20.438,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 29,
+      "remaining": 31,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 22.719,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 30,
+      "remaining": 30,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 19.625,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 31,
+      "remaining": 29,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 17.984,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 33,
+      "remaining": 27,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 25.828,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 32,
+      "remaining": 28,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 18.875,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 34,
+      "remaining": 26,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 24.594,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 35,
+      "remaining": 25,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 20.156,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 36,
+      "remaining": 24,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 22.046,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 37,
+      "remaining": 23,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 21.015,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 30,
+      "remaining": 30,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 19.063,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 28,
+      "remaining": 32,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 19.094,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 27,
+      "remaining": 33,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 19.031,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 28,
+      "remaining": 32,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 16.578,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 29,
+      "remaining": 31,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 21.516,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 25,
+      "remaining": 35,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 15.859,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 26,
+      "remaining": 34,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 15.781,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 27,
+      "remaining": 33,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 17.703,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 28,
+      "remaining": 32,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 17.766,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 29,
+      "remaining": 31,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 18.063,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 30,
+      "remaining": 30,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 18.203,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 31,
+      "remaining": 29,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 19.782,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 32,
+      "remaining": 28,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 18.078,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 33,
+      "remaining": 27,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 18.078,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 34,
+      "remaining": 26,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 18.031,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 34,
+      "remaining": 26,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 12.969,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 32,
+      "remaining": 28,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 16.047,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 33,
+      "remaining": 27,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 18.031,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 35,
+      "remaining": 25,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 17.688,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 33,
+      "remaining": 27,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 19.109,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 30,
+      "remaining": 30,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 13.609,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 31,
+      "remaining": 29,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 13.625,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 32,
+      "remaining": 28,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 20.187,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 34,
+      "remaining": 26,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 20.234,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 33,
+      "remaining": 27,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 18.562,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 35,
+      "remaining": 25,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 17.156,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 35,
+      "remaining": 25,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 18.578,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 34,
+      "remaining": 26,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 16.656,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 31,
+      "remaining": 29,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 18.359,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 32,
+      "remaining": 28,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 20.25,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 31,
+      "remaining": 29,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 18.735,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 32,
+      "remaining": 28,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 13.328,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 33,
+      "remaining": 27,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 12.157,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 33,
+      "remaining": 27,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 17.266,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 35,
+      "remaining": 25,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 17.266,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 34,
+      "remaining": 26,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 17.266,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 36,
+      "remaining": 24,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 16.813,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 36,
+      "remaining": 24,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 16.813,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 37,
+      "remaining": 23,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 28.312,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 35,
+      "remaining": 25,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 23.75,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 36,
+      "remaining": 24,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 23.031,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 33,
+      "remaining": 27,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 23.078,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 33,
+      "remaining": 27,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 20.343,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 33,
+      "remaining": 27,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 23.89,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 34,
+      "remaining": 26,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 17.922,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 35,
+      "remaining": 25,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 23.89,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 36,
+      "remaining": 24,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 27.312,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 37,
+      "remaining": 23,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 27.312,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 38,
+      "remaining": 22,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 28.797,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 30,
+      "remaining": 30,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 26.813,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 30,
+      "remaining": 30,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 0,
+     "ok": false,
+     "error_code": null,
+     "elapsed_seconds": 30.0,
+     "rate_limit": {},
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 29.954,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 32,
+      "remaining": 28,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 24.125,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 34,
+      "remaining": 26,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 24.078,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 33,
+      "remaining": 27,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 29.688,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 31,
+      "remaining": 29,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 29.688,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 32,
+      "remaining": 28,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 29.157,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 29,
+      "remaining": 31,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 29.219,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 30,
+      "remaining": 30,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 24.234,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 27,
+      "remaining": 33,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 24.234,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 28,
+      "remaining": 32,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 24.25,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 29,
+      "remaining": 31,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 24.187,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 30,
+      "remaining": 30,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 21.969,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 25,
+      "remaining": 35,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 21.953,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 26,
+      "remaining": 34,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 19.25,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 25,
+      "remaining": 35,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 19.25,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 26,
+      "remaining": 34,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 16.984,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 25,
+      "remaining": 35,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 16.922,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 26,
+      "remaining": 34,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 16.61,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 21,
+      "remaining": 39,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 16.656,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 22,
+      "remaining": 38,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 16.656,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 23,
+      "remaining": 37,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 16.64,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 24,
+      "remaining": 36,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 17.047,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 25,
+      "remaining": 35,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 17.047,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 26,
+      "remaining": 34,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 17.297,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 28,
+      "remaining": 32,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 17.297,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 27,
+      "remaining": 33,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 17.266,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 28,
+      "remaining": 32,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 17.172,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 29,
+      "remaining": 31,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 15.812,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 25,
+      "remaining": 35,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 15.766,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 26,
+      "remaining": 34,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 15.766,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 27,
+      "remaining": 33,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 20.969,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 28,
+      "remaining": 32,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 17.156,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 27,
+      "remaining": 33,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 17.125,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 28,
+      "remaining": 32,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 17.078,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 30,
+      "remaining": 30,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 15.5,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 29,
+      "remaining": 31,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 16.828,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 29,
+      "remaining": 31,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 16.75,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 30,
+      "remaining": 30,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 16.688,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 32,
+      "remaining": 28,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 16.672,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 31,
+      "remaining": 29,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 16.672,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 33,
+      "remaining": 27,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 16.828,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 32,
+      "remaining": 28,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 16.828,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 31,
+      "remaining": 29,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 16.828,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 30,
+      "remaining": 30,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 19.39,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 33,
+      "remaining": 27,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 18.922,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 34,
+      "remaining": 26,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 17.468,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 33,
+      "remaining": 27,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 15.703,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 34,
+      "remaining": 26,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 15.891,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 34,
+      "remaining": 26,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 15.891,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 33,
+      "remaining": 27,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 20.703,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 35,
+      "remaining": 25,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 15.407,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 34,
+      "remaining": 26,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 15.407,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 36,
+      "remaining": 24,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 17.047,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 35,
+      "remaining": 25,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 18.313,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 37,
+      "remaining": 23,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 17.328,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 38,
+      "remaining": 22,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 17.312,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 39,
+      "remaining": 21,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 20.016,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 36,
+      "remaining": 24,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 16.703,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 35,
+      "remaining": 25,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 16.687,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 36,
+      "remaining": 24,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 17.547,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 35,
+      "remaining": 25,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 17.5,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 36,
+      "remaining": 24,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 17.5,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 37,
+      "remaining": 23,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 20.344,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 36,
+      "remaining": 24,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 14.75,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 33,
+      "remaining": 27,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 17.469,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 34,
+      "remaining": 26,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 17.453,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 35,
+      "remaining": 25,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 18.063,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 36,
+      "remaining": 24,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 18.063,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 34,
+      "remaining": 26,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 18.015,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 35,
+      "remaining": 25,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 18.078,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 35,
+      "remaining": 25,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 18.0,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 36,
+      "remaining": 24,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 18.078,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 37,
+      "remaining": 23,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 20.031,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 33,
+      "remaining": 27,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 20.031,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 34,
+      "remaining": 26,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 17.203,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 35,
+      "remaining": 25,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 17.172,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 36,
+      "remaining": 24,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 15.422,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 34,
+      "remaining": 26,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 19.093,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 36,
+      "remaining": 24,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 15.39,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 35,
+      "remaining": 25,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 13.5,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 33,
+      "remaining": 27,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 15.578,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 34,
+      "remaining": 26,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 17.906,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 35,
+      "remaining": 25,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 19.328,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 33,
+      "remaining": 27,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 19.297,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 34,
+      "remaining": 26,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 19.297,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 35,
+      "remaining": 25,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 14.172,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 36,
+      "remaining": 24,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 20.094,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 34,
+      "remaining": 26,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 20.094,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 35,
+      "remaining": 25,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 20.328,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 36,
+      "remaining": 24,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 20.312,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 37,
+      "remaining": 23,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 22.922,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 35,
+      "remaining": 25,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 20.578,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 35,
+      "remaining": 25,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 22.406,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 34,
+      "remaining": 26,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 17.281,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 32,
+      "remaining": 28,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 21.938,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 34,
+      "remaining": 26,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 21.938,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 33,
+      "remaining": 27,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 22.016,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 34,
+      "remaining": 26,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 22.094,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 35,
+      "remaining": 25,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 23.063,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 33,
+      "remaining": 27,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 23.063,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 34,
+      "remaining": 26,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 22.422,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 33,
+      "remaining": 27,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 22.5,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 32,
+      "remaining": 28,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 21.86,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 31,
+      "remaining": 29,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 21.86,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 32,
+      "remaining": 28,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 21.125,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 34,
+      "remaining": 26,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 21.0,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 33,
+      "remaining": 27,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 21.031,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 31,
+      "remaining": 29,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 20.953,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 32,
+      "remaining": 28,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 18.094,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 30,
+      "remaining": 30,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 22.25,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 31,
+      "remaining": 29,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 18.125,
+     "rate_limit": {
+      "kind": "retrieval",
+      "limit": 60,
+      "used": 29,
+      "remaining": 31,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    }
+   ],
+   "phase_elapsed_seconds": 396.25
+  },
+  "multi_concurrent": {
+   "name": "multi_concurrent_2x3",
+   "total": 6,
+   "http_200": 6,
+   "errors": 0,
+   "error_rate": 0.0,
+   "status_counts": {
+    "200": 6
+   },
+   "rate_limited_429": 0,
+   "server_5xx": 0,
+   "latency_success": {
+    "p50": 17.797,
+    "p95": 28.77,
+    "p99": 29.229,
+    "avg": 20.573,
+    "max": 29.344
+   },
+   "latency_all": {
+    "p50": 17.797,
+    "p95": 28.77,
+    "p99": 29.229
+   },
+   "results": [
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 19.031,
+     "rate_limit": {
+      "kind": "multi",
+      "limit": 6,
+      "used": 2,
+      "remaining": 4,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 27.046,
+     "rate_limit": {
+      "kind": "multi",
+      "limit": 6,
+      "used": 1,
+      "remaining": 5,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 16.562,
+     "rate_limit": {
+      "kind": "multi",
+      "limit": 6,
+      "used": 3,
+      "remaining": 3,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 16.547,
+     "rate_limit": {
+      "kind": "multi",
+      "limit": 6,
+      "used": 4,
+      "remaining": 2,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 14.907,
+     "rate_limit": {
+      "kind": "multi",
+      "limit": 6,
+      "used": 6,
+      "remaining": 0,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    },
+    {
+     "status": 200,
+     "ok": true,
+     "error_code": null,
+     "elapsed_seconds": 29.344,
+     "rate_limit": {
+      "kind": "multi",
+      "limit": 6,
+      "used": 5,
+      "remaining": 1,
+      "window_seconds": 60
+     },
+     "cache_hit": false
+    }
+   ],
+   "llm_calls": 6,
+   "phase_elapsed_seconds": 64.94
+  }
+ },
+ "conclusion": {
+  "stability_ok": true,
+  "concurrency_ok": true,
+  "multi_ok": true,
+  "limit_verified": false,
+  "can_go_live": "conditional",
+  "verdict": "稳定性/并发/multi 通过，但限流行为需复核（未观察到预期 429）→ 调参后灰度",
+  "fixes_needed": [
+   "单线程 62 次未触发 429：限流未按预期生效（或检索过快未达窗口），需核对限流实现/参数。"
+  ],
+  "tuning_items": [],
+  "risks": [
+   "并发 retrieval 成功请求 P95 延迟 27.312s 偏高，建议检查 KB 检索/DB 连接池。",
+   "retrieval 使用 cache=0 强制真实检索，延迟包含 KB 检索开销；未压测 single 通道（控 LLM 成本）。",
+   "限流状态为进程内窗口计数，多进程/多实例部署时需确认限流一致性。"
+  ]
+ },
+ "elapsed_seconds": 867.03,
+ "disclaimer": "HTTP 压测结果仅供上线评审参考，不构成投资建议。"
+}

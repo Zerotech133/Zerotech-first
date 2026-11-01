@@ -1,0 +1,758 @@
+{
+ "schema_version": 2,
+ "kind": "kb_qa_samples",
+ "mode": "multi",
+ "guard": {
+  "enabled": true,
+  "on_fail": "fallback",
+  "rules": [
+   "引用可解析硬门",
+   "推断比例≤0.6",
+   "被引单元≥2"
+  ]
+ },
+ "generated_at": "2026-11-01T11:51:24+0800",
+ "model": "qwen3.5:9b",
+ "endpoint": "http://127.0.0.1:11434/api/chat",
+ "topk": 8,
+ "source": "research/reports/kb_qa_bank_v3_20261101.json（v3 问题库前 12 条）",
+ "disclaimer": "仅供研究，不构成投资建议；multi+guard 答案由本地 LLM 生成，引用/事实需人工复核。",
+ "kb": {
+  "units": 498
+ },
+ "stats": {
+  "total": 12,
+  "success": 3,
+  "no_evidence": 1,
+  "fallback": 8,
+  "guard_passed": 4,
+  "guard_failed": 8,
+  "avg_citations": 2.25,
+  "avg_inference_ratio": 0.5,
+  "elapsed_seconds": 120.9,
+  "by_theme": {
+   "量化/技术分析": 2,
+   "其他/综合": 2,
+   "AI算力/半导体": 2,
+   "宏观/策略/贸易": 2,
+   "消费/医药": 2,
+   "新能源/电池": 1,
+   "金融/资本市场": 1
+  }
+ },
+ "samples": [
+  {
+   "id": "q2_b5a0a0e045",
+   "question": "量学理论的结论在什么条件下可能不成立？",
+   "category": "风险限制",
+   "theme": "量化/技术分析",
+   "source_unit_id": "5cfa2f156e5c",
+   "mode": "multi",
+   "k": 8,
+   "answer": "基于提供的检索材料，无法得出量学理论结论不成立的具体条件。\n\n材料仅阐述了量学理论的核心定义、构成体系及其宣称的优势，未提及任何限制条件或失效场景：\n1. 【直接事实】材料指出该理论构建了“不管指标、消息和行情均可预测股市”的独立科学体系 [5cfa2f156e5c]。\n2. 【直接事实】材料强调其通过量化研究总结，形成了以量柱为基础的“四维立体看盘法”，旨在实现比传统‘价学’更高效的操盘效果 [51116c325854]。\n3. 【直接事实】材料确认《量柱擒涨停》等四本书构成了完整的理论体系和实战交易系统 [26748eb94001]。\n\n由于材料完全未涉及该理论在何种市场环境下会失效或结论不成立，依据规则 3，无法编造材料之外的信息。因此，知识库中没有足够依据回答该问题。",
+   "citations": [
+    {
+     "unit_id": "5cfa2f156e5c",
+     "book": "伏击涨停(2)",
+     "chapter": "序言1",
+     "page": 5,
+     "text": "量学理论构建了‘量柱选股、量线选价、量波选时’的三维互动看盘操盘系统，实现了不管指标、消息和行情均可预测股市的效果。 2009 年“量学”问世，它摆脱了“以价论价”的“价学”桔，在“以量论价”动态平衡规律，构建了“量柱选股、量线选价、量波选时”的“三维互动”看盘操 盘系统，形成了一个独立的科学体系。"
+    },
+    {
+     "unit_id": "51116c325854",
+     "book": "伏击涨停(2)",
+     "chapter": "序言1量学理论的七大贡献",
+     "page": 7,
+     "text": "量学理论通过以量柱为基础，结合量价阴阳真假虚实八个要素，实现了比传统‘价学’更高效的四维立体看盘。 王子老师的“量学”理论，创造了以量柱为基础，以“量价阴阳真假虚实”八个要素互渗互动的“四维立体看盘法”。"
+    },
+    {
+     "unit_id": "26748eb94001",
+     "book": "伏击涨停(2)",
+     "chapter": "序言1",
+     "page": 5,
+     "text": "《量柱擒涨停》《量线捉涨停》《伏击涨停》和《涨停密码》四本书构成了完整的量学理论体系和实战交易系统。 被市场知名人士誉为“股市四大名著”的《量柱擒涨停》《量线捉涨停》《伏 击涨停》和《涨停密码》，构成了一套完整的量学理论体系和实战交易系统。"
+    }
+   ],
+   "confidence": {
+    "level": "none",
+    "reasons": [
+     "模型判断材料不足以回答（拒答）"
+    ]
+   },
+   "fallback": false,
+   "refusal": true,
+   "status": "no_evidence",
+   "guard_enabled": true,
+   "guard_passed": true,
+   "guard_action": "pass",
+   "guard_issues": [],
+   "citation_valid": [
+    "5cfa2f156e5c",
+    "51116c325854",
+    "26748eb94001"
+   ],
+   "citation_invalid": [],
+   "citation_resolvable_rate": 1.0,
+   "inference_ratio": 0.0,
+   "inference_heavy": false,
+   "distinct_cited_units": 3,
+   "direct_fact_markers": 3,
+   "inference_markers": 0,
+   "clusters": 3,
+   "elapsed_seconds": 9.72,
+   "error": null
+  },
+  {
+   "id": "q2_aa49124184",
+   "question": "储气调峰能力建设中研报提供了哪些可验证的关键数据或指标？",
+   "category": "关键数据",
+   "theme": "其他/综合",
+   "source_unit_id": "4c6ddf0bf36f",
+   "mode": "multi",
+   "k": 8,
+   "answer": "研报中关于储气调峰能力建设可验证的关键数据及指标如下：\n\n1. **全球与中国储气库工作气量占比**：全球平均约为 11.4%，我国目前维持在 7% 左右。\n   - 【直接事实】依据 [4c6ddf0bf36f] p.1。\n\n2. **行业转型方向指标**：需推动天然气行业从“单一气源供应”转向“电力系统调节与兜底保供并重”。\n   - 【直接事实】依据 [4c6ddf0bf36f] p.1。\n\n3. **市场体系建设关键路径**：重点在于推进省级管网“运销分离与并入整合”，以释放资源配置效率。\n   - 【直接事实】依据 [cfa085455968] p.1。\n\n注：簇 2 内容涉及 AI 算力及迈威尔科技，与储气调峰主题无关，未纳入分析。",
+   "citations": [
+    {
+     "unit_id": "4c6ddf0bf36f",
+     "book": "rp_AP202610021830105529",
+     "chapter": "摘要：",
+     "page": 1,
+     "text": "我国需加快储气库建设以弥补调峰能力不足，推动天然气行业从单一气源供应转向电力系统调节与兜底保供并重。 全球储气库工作气量在消费总量中的平均占比约为11.4%，而我国目前仅维持在7%左右...加快储气调峰能力建设，推动天然气行业从单一气源供应转向电力系统调节与兜底保供并重。"
+    },
+    {
+     "unit_id": "cfa085455968",
+     "book": "rp_AP202610021830105529",
+     "chapter": "摘要：",
+     "page": 1,
+     "text": "需推进'X+1+X'市场体系建设，重点在于省级管网运销分离与并入整合，以释放资源配置效率和商业模式创新空间。 推进'X+1+X'市场体系建设，以上游勘探开发引入多元竞争主体，中游管网保持自然垄断并公平开放，下游销售充分竞争...行业需重点突破省级管网运销分离与并入整合，以市场化改革释放资源配置效率和商业模式创新空间。"
+    }
+   ],
+   "confidence": {
+    "level": "high",
+    "reasons": [
+     "2 条可核验引用、3 个聚类",
+     "直接事实标记 3、推断标记 0"
+    ]
+   },
+   "fallback": false,
+   "refusal": false,
+   "status": "success",
+   "guard_enabled": true,
+   "guard_passed": true,
+   "guard_action": "pass",
+   "guard_issues": [],
+   "citation_valid": [
+    "4c6ddf0bf36f",
+    "cfa085455968"
+   ],
+   "citation_invalid": [],
+   "citation_resolvable_rate": 1.0,
+   "inference_ratio": 0.0,
+   "inference_heavy": false,
+   "distinct_cited_units": 2,
+   "direct_fact_markers": 3,
+   "inference_markers": 0,
+   "clusters": 3,
+   "elapsed_seconds": 9.29,
+   "error": null
+  },
+  {
+   "id": "q2_bcbfd79337",
+   "question": "智能算力规模占比的核心驱动因素是什么？",
+   "category": "驱动因素",
+   "theme": "AI算力/半导体",
+   "source_unit_id": "776f36408a89",
+   "mode": "multi",
+   "k": 8,
+   "answer": "（质量守卫回退：多单元答案引用/集中度/推断比例未达标，摘录可核验知识单元）\n- [776f36408a89] p.1 2024 年智能算力规模占全国算力总规模的 32%，带动用电需求加深增长。 2024 年，全国算力总规模达到 280 EFLOPS，其中八大国家枢纽节点算力规模达到 175 EFLOPS；智能算力规模占全国算力总规模的 32%。\n- [9ab889268ce2] p.1 智谱已完成与多家国产算力平台的深度适配，实现 10 万级国产芯片规模化推理，单位 Token 推理成本较年初下降 80%。 智谱已兼容 40 多款主流芯片，并完成与多家国产算力平台的深度适配，实现 10 万级国产芯片规模化推理，单位 Tok…",
+   "citations": [
+    {
+     "rank": 1,
+     "unit_id": "776f36408a89",
+     "kind": "units",
+     "book": "rp_AP202610031830126544",
+     "chapter": "太 平 洋 证 券 股 份 有 限 公 司 证 券 研 究 报 告",
+     "page": 1,
+     "page_end": null,
+     "fused_score": 1.1,
+     "preview": "2024 年智能算力规模占全国算力总规模的 32%，带动用电需求加深增长。 2024 年，全国算力总规模达到 280 EFLOPS，其中八大国家枢纽节点算力规模达到 175 EFLOPS；智能算力规模占全国算力总规模的 32%。"
+    },
+    {
+     "rank": 2,
+     "unit_id": "9ab889268ce2",
+     "kind": "units",
+     "book": "rp_AP202610021830112214",
+     "chapter": "大模型系列深度（一）：国产大模型竞争重心转向效",
+     "page": 1,
+     "page_end": null,
+     "fused_score": 0.5051,
+     "preview": "智谱已完成与多家国产算力平台的深度适配，实现 10 万级国产芯片规模化推理，单位 Token 推理成本较年初下降 80%。 智谱已兼容 40 多款主流芯片，并完成与多家国产算力平台的深度适配，实现 10 万级国产芯片规模化推理，单位 Tok…"
+    }
+   ],
+   "confidence": {
+    "level": "low",
+    "reasons": [
+     "质量守卫回退：citation_missing、insufficient_cited_units、inference_heavy"
+    ]
+   },
+   "fallback": true,
+   "refusal": false,
+   "status": "fallback",
+   "guard_enabled": true,
+   "guard_passed": false,
+   "guard_action": "fallback",
+   "guard_issues": [
+    "citation_missing",
+    "insufficient_cited_units",
+    "inference_heavy"
+   ],
+   "citation_valid": [],
+   "citation_invalid": [],
+   "citation_resolvable_rate": 0.0,
+   "inference_ratio": 0.6667,
+   "inference_heavy": true,
+   "distinct_cited_units": 0,
+   "direct_fact_markers": 1,
+   "inference_markers": 2,
+   "clusters": 3,
+   "elapsed_seconds": 8.03,
+   "error": null
+  },
+  {
+   "id": "q2_a593448ce5",
+   "question": "北京市货物贸易净出口需要跟踪哪些指标或事件？",
+   "category": "如何识别",
+   "theme": "宏观/策略/贸易",
+   "source_unit_id": "61bca6c6d825",
+   "mode": "multi",
+   "k": 8,
+   "answer": "（质量守卫回退：多单元答案引用/集中度/推断比例未达标，摘录可核验知识单元）\n- [61bca6c6d825] p.2 2025 年 8 月北京市货物贸易净出口额为 -258.6 亿美元，较上年同期下降 1.9%。 注：2. 净出口额同比变化为绝对额数据，即 2026 年 8 月（或 1-8 月）的净出口额减去 2025 年 8 月（或 1-8 月）的净出口额。\n- [854f9973bb5d] p.2 2025 年 8 月当月，北京市矿产品出口额为 31.6 亿美元，同比大幅增长 88.6%。 文本表格显示：8 月当月 矿产品 出口额 31.6 贸易份额（%）36.9 同比变化（%）88.6\n- [dd02cab720e0] p.2 截至2026年上半年，北京零售市场总存量为953万平方米（其中购物中心765万平方米），优质购物中心平均租金报价为883元/月/平方米，空置率为10.4%。未来趋势为存量优化为主，新增供应为辅。 截至2026年上半年，北京零售市场总存量为953万平方米，其中购物中心存量765万平方米...优质购物中心平均租金报价为人民",
+   "citations": [
+    {
+     "unit_id": "61bca6c6d825",
+     "book": "rp_AP202610061830165957",
+     "chapter": "一、贸易总体情况",
+     "page": 2,
+     "text": "2025 年 8 月北京市货物贸易净出口额为 -258.6 亿美元，较上年同期下降 1.9%。 注：2. 净出口额同比变化为绝对额数据，即 2026 年 8 月（或 1-8 月）的净出口额减去 2025 年 8 月（或 1-8 月）的净出口额。"
+    },
+    {
+     "unit_id": "854f9973bb5d",
+     "book": "rp_AP202610061830165957",
+     "chapter": "一、贸易总体情况",
+     "page": 2,
+     "text": "2025 年 8 月当月，北京市矿产品出口额为 31.6 亿美元，同比大幅增长 88.6%。 文本表格显示：8 月当月 矿产品 出口额 31.6 贸易份额（%）36.9 同比变化（%）88.6"
+    },
+    {
+     "unit_id": "dd02cab720e0",
+     "book": "rp_AP202609301830015453",
+     "chapter": "06",
+     "page": 2,
+     "text": "截至2026年上半年，北京零售市场总存量为953万平方米（其中购物中心765万平方米），优质购物中心平均租金报价为883元/月/平方米，空置率为10.4%。未来趋势为存量优化为主，新增供应为辅。 截至2026年上半年，北京零售市场总存量为953万平方米，其中购物中心存量765万平方米...优质购物中心平均租金报价为人民币883元每月每平方米，空置率为10.4%...未来整体市场的供应节奏将进一步放缓，项目分区域分阶段开业也将成为长期趋势…"
+    }
+   ],
+   "confidence": {
+    "level": "low",
+    "reasons": [
+     "质量守卫回退：inference_heavy"
+    ]
+   },
+   "fallback": true,
+   "refusal": false,
+   "status": "fallback",
+   "guard_enabled": true,
+   "guard_passed": false,
+   "guard_action": "fallback",
+   "guard_issues": [
+    "inference_heavy"
+   ],
+   "citation_valid": [
+    "61bca6c6d825",
+    "854f9973bb5d",
+    "dd02cab720e0"
+   ],
+   "citation_invalid": [],
+   "citation_resolvable_rate": 1.0,
+   "inference_ratio": 1.0,
+   "inference_heavy": true,
+   "distinct_cited_units": 3,
+   "direct_fact_markers": 0,
+   "inference_markers": 1,
+   "clusters": 3,
+   "elapsed_seconds": 12.55,
+   "error": null
+  },
+  {
+   "id": "q2_3d1abf0240",
+   "question": "离岛免税消费数据对相关标的基本面或估值的影响如何？",
+   "category": "影响如何",
+   "theme": "消费/医药",
+   "source_unit_id": "6581eca343ac",
+   "mode": "multi",
+   "k": 8,
+   "answer": "（质量守卫回退：多单元答案引用/集中度/推断比例未达标，摘录可核验知识单元）\n- [6581eca343ac] p.1 2026年中秋假期海南离岛免税购物金额达2.31亿元，购物人数3.86万人次，购物件数17.9万件。 海口海关统计显示，今年中秋假期海南离岛免税购物市场迎来消费高峰。9月25日至9月27日，海口海关共监管离岛免税购物金额2.31亿元，购物人数3.86万人次，购物件数17.9万件。\n- [98118e155121] p.1 未来房屋价值变化主要由均衡实际利率、通货膨胀率、住房服务相对价格（含生产率差异、消费偏好、供给弹性）和风险溢价四个因素决定。 第二节“房地产内在价值的决定因素”指出：基于模型，决定未来房屋价值变化的主要是四个因素：一是均衡实际利率；二是通货膨胀率；三是房屋的相对价格（涉及巴拉萨 - 萨缪尔森效应、消费偏好、供给弹性）；\n- [80539ff2119a] p.1 2026年8月挖掘机和装载机内销同比增速放缓，主要受去年同期高基数及季节性因素影响。 2026年8月内销同比增速维持放缓态势，主要系去年同期高基数及季节等因素影响。8月工程机械主要产品月平均工作时长和月开工率环比回暖。",
+   "citations": [
+    {
+     "unit_id": "6581eca343ac",
+     "book": "rp_AP202609301830037744",
+     "chapter": "社会服务行业双周报 双节出行热度提升，长线及跨境需求延续释放",
+     "page": 1,
+     "text": "2026年中秋假期海南离岛免税购物金额达2.31亿元，购物人数3.86万人次，购物件数17.9万件。 海口海关统计显示，今年中秋假期海南离岛免税购物市场迎来消费高峰。9月25日至9月27日，海口海关共监管离岛免税购物金额2.31亿元，购物人数3.86万人次，购物件数17.9万件。"
+    },
+    {
+     "unit_id": "98118e155121",
+     "book": "rp_AP202610021830114811",
+     "chapter": "——基于住房资产估值框架的分析",
+     "page": 1,
+     "text": "未来房屋价值变化主要由均衡实际利率、通货膨胀率、住房服务相对价格（含生产率差异、消费偏好、供给弹性）和风险溢价四个因素决定。 第二节“房地产内在价值的决定因素”指出：基于模型，决定未来房屋价值变化的主要是四个因素：一是均衡实际利率；二是通货膨胀率；三是房屋的相对价格（涉及巴拉萨 - 萨缪尔森效应、消费偏好、供给弹性）；四是风险溢价。"
+    },
+    {
+     "unit_id": "80539ff2119a",
+     "book": "rp_AP202609301830038557",
+     "chapter": "点评：",
+     "page": 1,
+     "text": "2026年8月挖掘机和装载机内销同比增速放缓，主要受去年同期高基数及季节性因素影响。 2026年8月内销同比增速维持放缓态势，主要系去年同期高基数及季节等因素影响。8月工程机械主要产品月平均工作时长和月开工率环比回暖。"
+    }
+   ],
+   "confidence": {
+    "level": "low",
+    "reasons": [
+     "质量守卫回退：inference_heavy"
+    ]
+   },
+   "fallback": true,
+   "refusal": false,
+   "status": "fallback",
+   "guard_enabled": true,
+   "guard_passed": false,
+   "guard_action": "fallback",
+   "guard_issues": [
+    "inference_heavy"
+   ],
+   "citation_valid": [
+    "6581eca343ac",
+    "98118e155121",
+    "80539ff2119a"
+   ],
+   "citation_invalid": [],
+   "citation_resolvable_rate": 1.0,
+   "inference_ratio": 0.6667,
+   "inference_heavy": true,
+   "distinct_cited_units": 3,
+   "direct_fact_markers": 1,
+   "inference_markers": 2,
+   "clusters": 3,
+   "elapsed_seconds": 10.4,
+   "error": null
+  },
+  {
+   "id": "q2_1e95f989df",
+   "question": "海上风电项目规划的结论由哪些证据支撑？",
+   "category": "是什么",
+   "theme": "新能源/电池",
+   "source_unit_id": "540733583fec",
+   "mode": "multi",
+   "k": 8,
+   "answer": "海上风电项目规划的结论主要基于以下证据支撑：\n\n1. **具体项目规划**：国华投资拟在山东半岛南海域开展海上风电项目前期研究，规划总装机容量为 400 万千瓦，旨在推进规范开发 [540733583fec] p.1【直接事实】。\n2. **技术路线与政策导向**：国家支持开发近海抗台型、深远海漂浮式风电机组及海上能源岛建设，并推进运维母港布局；同时发展柔性组网输电等关键技术 [3d627dcc4f13] p.1【直接事实】。\n3. **市场趋势推断**：鉴于 2025 年全球风电新增装机大幅增长且亚太地区占据主导，预计 2026-2030 年海上风电将加速发展，这为上述项目规划提供了宏观市场依据 [4b6cf5a7158e] p.3【推断】。\n\n综上，项目规划既包含具体的场址与容量事实，也融合了国家政策导向及全球市场增长趋势的综合判断。",
+   "citations": [
+    {
+     "unit_id": "540733583fec",
+     "book": "rp_AP202610021830105372",
+     "chapter": "市场研究部 2026 年9 月30 日",
+     "page": 1,
+     "text": "国华投资拟在山东半岛南海域开展海上风电项目前期研究，规划总装机容量为 400 万千瓦，旨在推进海上风电规范开发。 显示，为推进海上风电项目规范开发，做好潜在场址调查与前期研究策划，拟开展国华投资山东分公司半岛南某海域海上风电项目前期专题研究工作，采用公开招标方式采购技术咨询服务，项目位于山东省南部海域，规划总装机容量共计 400 万千瓦。"
+    },
+    {
+     "unit_id": "3d627dcc4f13",
+     "book": "rp_AP202610021830105333",
+     "chapter": "市场研究部 2026 年9 月22 日",
+     "page": 1,
+     "text": "国家支持开发近海抗台型、深远海漂浮式风电机组，并推进海上能源岛建设及沿海地区海上风电运维母港布局。 海洋新能源产业。发展柔性组网输电等关键技术，开发近海抗台型、深远海漂浮式风电机组以及海上漂浮式结构等关键模块。支持沿海三市统筹推进海上风电场改造升级、融合开发和退役管理，合理布局建设海上风电运维母港。"
+    },
+    {
+     "unit_id": "4b6cf5a7158e",
+     "book": "rp_AP202609301830015458",
+     "chapter": "前 ⾔",
+     "page": 3,
+     "text": "2025年全球风电新增装机达165GW（同比增长40%），亚太地区占据80%市场份额，预计2026-2030年海上风电将加速发展。 2025年，全球风⼒发电新增了165GW的并⽹容量，同⽐增长达到40%，亚太地区持续保持全球第⼀风电市场的领先地位，占据了全球80%的市场份额...海上风电在经历了⼀段调整期后，即将加速发展。"
+    }
+   ],
+   "confidence": {
+    "level": "high",
+    "reasons": [
+     "3 条可核验引用、3 个聚类",
+     "直接事实标记 2、推断标记 2"
+    ]
+   },
+   "fallback": false,
+   "refusal": false,
+   "status": "success",
+   "guard_enabled": true,
+   "guard_passed": true,
+   "guard_action": "pass",
+   "guard_issues": [],
+   "citation_valid": [
+    "540733583fec",
+    "3d627dcc4f13",
+    "4b6cf5a7158e"
+   ],
+   "citation_invalid": [],
+   "citation_resolvable_rate": 1.0,
+   "inference_ratio": 0.5,
+   "inference_heavy": false,
+   "distinct_cited_units": 3,
+   "direct_fact_markers": 2,
+   "inference_markers": 2,
+   "clusters": 3,
+   "elapsed_seconds": 9.7,
+   "error": null
+  },
+  {
+   "id": "q2_6076398cc7",
+   "question": "保险资金投资港股通 ETF的进入壁垒与差异化优势是什么？",
+   "category": "竞争格局",
+   "theme": "金融/资本市场",
+   "source_unit_id": "e9548ab7c8d3",
+   "mode": "multi",
+   "k": 8,
+   "answer": "保险资金投资港股通 ETF 的核心优势在于其作为“新工具”能丰富险资跨境权益配置，且明确不占用 QDII 额度 [e9548ab7c8d3]。在壁垒方面，材料仅提及需满足“持有港股通股票”的监管前提并参照相关规则执行，未披露具体资金门槛或技术障碍 [e9548ab7c8d3]。\n\n关于差异化优势，材料指出该机制有助于稳定市场预期和修复信心，这与险资作为中长期资金的属性相契合 [49d741ab6006]。同时，监管明确允许此类投资，意味着政策层面已打通了险资通过 ETF 间接配置港股的通道，降低了直接投资的合规复杂度 [e9548ab7c8d3]。\n\n综合来看，主要壁垒在于需先具备港股通股票投资资格；差异化优势则体现为在规避 QDII 额度限制的同时，利用政策红利参与市场稳定机制，实现跨境资产配置与长期价值投资的结合 [e9548ab7c8d3, 49d741ab6006]。",
+   "citations": [
+    {
+     "unit_id": "e9548ab7c8d3",
+     "book": "rp_AP202610071830185864",
+     "chapter": "2026 年10 月07 日",
+     "page": 1,
+     "text": "监管新规允许持有港股通股票的保险机构投资港股通 ETF，丰富了险资跨境权益投资工具且不占用 QDII 额度。 9 月 29 日，多家保险机构收到金融监管总局办公厅下发的《关于明确保险资金投资港股通 ETF 监管口径的函》，当中明确，按照监管规定可投资港股通股票的保险机构可以投资港股通 ETF，并参照港股通股票监管规则执行。"
+    },
+    {
+     "unit_id": "49d741ab6006",
+     "book": "rp_AP202610031830124601",
+     "chapter": "金融图强：中国资本市场改革的成效与展望",
+     "page": 1,
+     "text": "通过创设货币工具、引入类“平准基金”及量化指标引导中长期资金入市，有效稳定了市场预期并修复投资者信心。 2024 年 9 月创设股票回购增持再贷款和证券、基金、保险公司互换便利。中央汇金公司增持 ETF 发挥类“平准基金”作用。公募基金持有 A 股市值三年每年至少增长 10%，大型国有保险公司新增保费的 30% 用于投资 A 股。"
+    }
+   ],
+   "confidence": {
+    "level": "high",
+    "reasons": [
+     "2 条可核验引用、3 个聚类",
+     "直接事实标记 0、推断标记 0"
+    ]
+   },
+   "fallback": false,
+   "refusal": false,
+   "status": "success",
+   "guard_enabled": true,
+   "guard_passed": true,
+   "guard_action": "pass",
+   "guard_issues": [],
+   "citation_valid": [
+    "e9548ab7c8d3",
+    "49d741ab6006"
+   ],
+   "citation_invalid": [],
+   "citation_resolvable_rate": 1.0,
+   "inference_ratio": 0.0,
+   "inference_heavy": false,
+   "distinct_cited_units": 2,
+   "direct_fact_markers": 0,
+   "inference_markers": 0,
+   "clusters": 3,
+   "elapsed_seconds": 10.5,
+   "error": null
+  },
+  {
+   "id": "q2_f93ae02b9d",
+   "question": "伏击涨停的灵魂的景气度受哪些变量影响？",
+   "category": "驱动因素",
+   "theme": "量化/技术分析",
+   "source_unit_id": "538860c3cb35",
+   "mode": "multi",
+   "k": 8,
+   "answer": "（质量守卫回退：多单元答案引用/集中度/推断比例未达标，摘录可核验知识单元）\n- [538860c3cb35] p.11 伏击涨停的核心在于追求投资乐趣而非单纯赚钱，旨在在提心吊胆的股票市场中为投资者找到一片‘乐土’。 “伏击涨停”不是为了“赚钱”，而是为了找“乐趣”，是在人人提心吊胆的股票市场找到一片属于你的“乐土”。这就是伏击涨停的“灵魂”。\n- [41a06a212777] p.11 伏击涨停是一个开放性的实践体系，鼓励投资者广泛参与、交流经验教训，形成良性循环以深化方法。 这是一个开放性的论坛，该论坛提出网友们参与“伏击涨停的浪潮”，众多同道者和伏击涨停特训班的学员们积极参加，交流成功经验和失败教训。",
+   "citations": [
+    {
+     "rank": 1,
+     "unit_id": "538860c3cb35",
+     "kind": "units",
+     "book": "伏击涨停(2)",
+     "chapter": "序言2",
+     "page": 11,
+     "page_end": null,
+     "fused_score": 1.1,
+     "preview": "伏击涨停的核心在于追求投资乐趣而非单纯赚钱，旨在在提心吊胆的股票市场中为投资者找到一片‘乐土’。 “伏击涨停”不是为了“赚钱”，而是为了找“乐趣”，是在人人提心吊胆的股票市场找到一片属于你的“乐土”。这就是伏击涨停的“灵魂”。"
+    },
+    {
+     "rank": 2,
+     "unit_id": "41a06a212777",
+     "kind": "units",
+     "book": "伏击涨停(2)",
+     "chapter": "序言2",
+     "page": 11,
+     "page_end": null,
+     "fused_score": 0.8871,
+     "preview": "伏击涨停是一个开放性的实践体系，鼓励投资者广泛参与、交流经验教训，形成良性循环以深化方法。 这是一个开放性的论坛，该论坛提出网友们参与“伏击涨停的浪潮”，众多同道者和伏击涨停特训班的学员们积极参加，交流成功经验和失败教训。"
+    }
+   ],
+   "confidence": {
+    "level": "low",
+    "reasons": [
+     "质量守卫回退：citation_missing、insufficient_cited_units、inference_heavy"
+    ]
+   },
+   "fallback": true,
+   "refusal": false,
+   "status": "fallback",
+   "guard_enabled": true,
+   "guard_passed": false,
+   "guard_action": "fallback",
+   "guard_issues": [
+    "citation_missing",
+    "insufficient_cited_units",
+    "inference_heavy"
+   ],
+   "citation_valid": [],
+   "citation_invalid": [],
+   "citation_resolvable_rate": 0.0,
+   "inference_ratio": 1.0,
+   "inference_heavy": true,
+   "distinct_cited_units": 0,
+   "direct_fact_markers": 0,
+   "inference_markers": 1,
+   "clusters": 3,
+   "elapsed_seconds": 6.36,
+   "error": null
+  },
+  {
+   "id": "q2_ef78939178",
+   "question": "网络安全软技能需求的主要风险与不确定性有哪些？",
+   "category": "风险限制",
+   "theme": "其他/综合",
+   "source_unit_id": "ccec1052fa9c",
+   "mode": "multi",
+   "k": 8,
+   "answer": "（质量守卫回退：多单元答案引用/集中度/推断比例未达标，摘录可核验知识单元）\n- [ccec1052fa9c] p.1 批判性思维、沟通能力和问题解决能力是网络安全专业人员最重要的三项软技能，分别占比59%、57%和53%。 受访者指出的安全专业人员最重要的软技能与去年一致，排名前五的分别是：批判性思维（59%）、沟通能力（57%）、问题解决能力（53%）。\n- [ccf7787f6c23] p.2 网络安全合规正从“制度有没有、产品买没买”转向“风险能否发现、过程能否留痕、效果能否验证、责任能否追溯”，推动需求由一次性建设转向持续审计与闭环整改。 网络安全合规正在从“制度有没有、产品买没买”转向“风险能否发现、过程能否留痕、效果能否验…",
+   "citations": [
+    {
+     "rank": 1,
+     "unit_id": "ccec1052fa9c",
+     "kind": "units",
+     "book": "rp_AP202609301830015404",
+     "chapter": "全球劳动力、资源与网络安全运营更新报告",
+     "page": 1,
+     "page_end": null,
+     "fused_score": 1.1,
+     "preview": "批判性思维、沟通能力和问题解决能力是网络安全专业人员最重要的三项软技能，分别占比59%、57%和53%。 受访者指出的安全专业人员最重要的软技能与去年一致，排名前五的分别是：批判性思维（59%）、沟通能力（57%）、问题解决能力（53%）。"
+    },
+    {
+     "rank": 2,
+     "unit_id": "ccf7787f6c23",
+     "kind": "units",
+     "book": "rp_AP202609301830015419",
+     "chapter": "目录",
+     "page": 2,
+     "page_end": null,
+     "fused_score": 0.6147,
+     "preview": "网络安全合规正从“制度有没有、产品买没买”转向“风险能否发现、过程能否留痕、效果能否验证、责任能否追溯”，推动需求由一次性建设转向持续审计与闭环整改。 网络安全合规正在从“制度有没有、产品买没买”转向“风险能否发现、过程能否留痕、效果能否验…"
+    }
+   ],
+   "confidence": {
+    "level": "low",
+    "reasons": [
+     "质量守卫回退：citation_missing、insufficient_cited_units"
+    ]
+   },
+   "fallback": true,
+   "refusal": false,
+   "status": "fallback",
+   "guard_enabled": true,
+   "guard_passed": false,
+   "guard_action": "fallback",
+   "guard_issues": [
+    "citation_missing",
+    "insufficient_cited_units"
+   ],
+   "citation_valid": [],
+   "citation_invalid": [],
+   "citation_resolvable_rate": 0.0,
+   "inference_ratio": 0.0,
+   "inference_heavy": false,
+   "distinct_cited_units": 0,
+   "direct_fact_markers": 3,
+   "inference_markers": 0,
+   "clusters": 3,
+   "elapsed_seconds": 14.22,
+   "error": null
+  },
+  {
+   "id": "q2_87eff8d7a3",
+   "question": "品牌AI心智总得分有哪些可核验的统计口径或样本？",
+   "category": "关键数据",
+   "theme": "AI算力/半导体",
+   "source_unit_id": "fd49b3da595b",
+   "mode": "multi",
+   "k": 8,
+   "answer": "（质量守卫回退：多单元答案引用/集中度/推断比例未达标，摘录可核验知识单元）\n- [fd49b3da595b] p.2 品牌AI心智总得分由五维指标加权得出，用于衡量品牌在全体AI用户中的综合口碑与推荐表现，理论最高分为180分。 总得分=100×(10−平均排名)/10+45×提及率+15×首位率+15×前三率+15×正面率。系数合计190，总得分为加权累…\n- [ae43fb5b59e8] p.2 品牌的用户基础（触达指数）与AI推荐表现（心智得分）并不必然一致，如苹果呈现高触达低心智，小米呈现高心智低触达的错位现象。 多数头部品牌两者同步领先；但苹果与小米呈现明显错位，说明品牌的用户基础与AI推荐表现并不必然一致。苹果触达指数173…",
+   "citations": [
+    {
+     "rank": 1,
+     "unit_id": "fd49b3da595b",
+     "kind": "units",
+     "book": "rp_AP202610021830110823",
+     "chapter": "目录",
+     "page": 2,
+     "page_end": null,
+     "fused_score": 1.1,
+     "preview": "品牌AI心智总得分由五维指标加权得出，用于衡量品牌在全体AI用户中的综合口碑与推荐表现，理论最高分为180分。 总得分=100×(10−平均排名)/10+45×提及率+15×首位率+15×前三率+15×正面率。系数合计190，总得分为加权累…"
+    },
+    {
+     "rank": 2,
+     "unit_id": "ae43fb5b59e8",
+     "kind": "units",
+     "book": "rp_AP202610021830110823",
+     "chapter": "目录",
+     "page": 2,
+     "page_end": null,
+     "fused_score": 0.5593,
+     "preview": "品牌的用户基础（触达指数）与AI推荐表现（心智得分）并不必然一致，如苹果呈现高触达低心智，小米呈现高心智低触达的错位现象。 多数头部品牌两者同步领先；但苹果与小米呈现明显错位，说明品牌的用户基础与AI推荐表现并不必然一致。苹果触达指数173…"
+    }
+   ],
+   "confidence": {
+    "level": "low",
+    "reasons": [
+     "质量守卫回退：citation_missing、insufficient_cited_units、inference_heavy"
+    ]
+   },
+   "fallback": true,
+   "refusal": false,
+   "status": "fallback",
+   "guard_enabled": true,
+   "guard_passed": false,
+   "guard_action": "fallback",
+   "guard_issues": [
+    "citation_missing",
+    "insufficient_cited_units",
+    "inference_heavy"
+   ],
+   "citation_valid": [],
+   "citation_invalid": [],
+   "citation_resolvable_rate": 0.0,
+   "inference_ratio": 1.0,
+   "inference_heavy": true,
+   "distinct_cited_units": 0,
+   "direct_fact_markers": 0,
+   "inference_markers": 1,
+   "clusters": 3,
+   "elapsed_seconds": 6.34,
+   "error": null
+  },
+  {
+   "id": "q2_0d7db24320",
+   "question": "中国畜禽肉产品主要出口市场的传导路径与受益环节是什么？",
+   "category": "影响如何",
+   "theme": "宏观/策略/贸易",
+   "source_unit_id": "1a53227f2949",
+   "mode": "multi",
+   "k": 8,
+   "answer": "（质量守卫回退：多单元答案引用/集中度/推断比例未达标，摘录可核验知识单元）\n- [1a53227f2949] p.2 东盟是中国畜禽肉产品最重要的出口目的地，2026 年 8 月当月其进口额占中国总出口额的比重超过 11%，且同比大幅增长。 重点区域...东盟 33.7（百万美元），份额 11.5%；同比变化 120.8%。",
+   "citations": [
+    {
+     "unit_id": "1a53227f2949",
+     "book": "rp_AP202610061830165954",
+     "chapter": "一、贸易总体情况",
+     "page": 2,
+     "text": "东盟是中国畜禽肉产品最重要的出口目的地，2026 年 8 月当月其进口额占中国总出口额的比重超过 11%，且同比大幅增长。 重点区域...东盟 33.7（百万美元），份额 11.5%；同比变化 120.8%。"
+    }
+   ],
+   "confidence": {
+    "level": "low",
+    "reasons": [
+     "质量守卫回退：insufficient_cited_units"
+    ]
+   },
+   "fallback": true,
+   "refusal": false,
+   "status": "fallback",
+   "guard_enabled": true,
+   "guard_passed": false,
+   "guard_action": "fallback",
+   "guard_issues": [
+    "insufficient_cited_units"
+   ],
+   "citation_valid": [
+    "1a53227f2949"
+   ],
+   "citation_invalid": [],
+   "citation_resolvable_rate": 1.0,
+   "inference_ratio": 0.5,
+   "inference_heavy": false,
+   "distinct_cited_units": 1,
+   "direct_fact_markers": 1,
+   "inference_markers": 1,
+   "clusters": 3,
+   "elapsed_seconds": 12.65,
+   "error": null
+  },
+  {
+   "id": "q2_4f34cbb059",
+   "question": "优先行动：支持本土生态系统的进入壁垒与差异化优势是什么？",
+   "category": "竞争格局",
+   "theme": "消费/医药",
+   "source_unit_id": "664a0d2d2756",
+   "mode": "multi",
+   "k": 8,
+   "answer": "（质量守卫回退：多单元答案引用/集中度/推断比例未达标，摘录可核验知识单元）\n- [664a0d2d2756] p.5 应聚焦本土解决方案，强化东盟电子商务生态系统，包括支持零售科技、金融科技和物流领域的初创企业，并评估其区域规模化面临的监管或运营瓶颈。 优先行动 4：支持本土市场、科技、物流和支付供应商。聚焦本土解决方案，强化东盟电子商务生态系统，包括支持…\n- [f6f270fd280d] p.5 应支持本土电商平台、科技、物流和支付服务提供商，通过试点项目评估障碍并识别监管瓶颈，以强化东盟电子商务生态系统。 优先行动 4：支持本土市场、科技、物流和支付供应商。聚焦本土解决方案，强化东盟电子商务生态系统，包括支持零售科技、金融科技和物…",
+   "citations": [
+    {
+     "rank": 1,
+     "unit_id": "664a0d2d2756",
+     "kind": "units",
+     "book": "rp_AP202610021830105410",
+     "chapter": "5.",
+     "page": 5,
+     "page_end": null,
+     "fused_score": 1.1,
+     "preview": "应聚焦本土解决方案，强化东盟电子商务生态系统，包括支持零售科技、金融科技和物流领域的初创企业，并评估其区域规模化面临的监管或运营瓶颈。 优先行动 4：支持本土市场、科技、物流和支付供应商。聚焦本土解决方案，强化东盟电子商务生态系统，包括支持…"
+    },
+    {
+     "rank": 2,
+     "unit_id": "f6f270fd280d",
+     "kind": "units",
+     "book": "rp_AP202609301830015407",
+     "chapter": "5.",
+     "page": 5,
+     "page_end": null,
+     "fused_score": 1.0172,
+     "preview": "应支持本土电商平台、科技、物流和支付服务提供商，通过试点项目评估障碍并识别监管瓶颈，以强化东盟电子商务生态系统。 优先行动 4：支持本土市场、科技、物流和支付供应商。聚焦本土解决方案，强化东盟电子商务生态系统，包括支持零售科技、金融科技和物…"
+    }
+   ],
+   "confidence": {
+    "level": "low",
+    "reasons": [
+     "质量守卫回退：citation_missing、insufficient_cited_units、inference_heavy"
+    ]
+   },
+   "fallback": true,
+   "refusal": false,
+   "status": "fallback",
+   "guard_enabled": true,
+   "guard_passed": false,
+   "guard_action": "fallback",
+   "guard_issues": [
+    "citation_missing",
+    "insufficient_cited_units",
+    "inference_heavy"
+   ],
+   "citation_valid": [],
+   "citation_invalid": [],
+   "citation_resolvable_rate": 0.0,
+   "inference_ratio": 0.6667,
+   "inference_heavy": true,
+   "distinct_cited_units": 0,
+   "direct_fact_markers": 1,
+   "inference_markers": 2,
+   "clusters": 3,
+   "elapsed_seconds": 11.12,
+   "error": null
+  }
+ ]
+}

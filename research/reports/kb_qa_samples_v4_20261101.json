@@ -1,0 +1,690 @@
+{
+ "schema_version": 2,
+ "kind": "kb_qa_samples",
+ "mode": "multi",
+ "prompt_version": "v4",
+ "guard_marker_mode": "segment",
+ "citation_retry": true,
+ "guard": true,
+ "generated_at": "2026-11-02T00:01:42+08:00",
+ "model": "qwen3.5:9b",
+ "endpoint": "http://127.0.0.1:11434/api/chat",
+ "topk": 8,
+ "source": "v3 问题库（research/reports/kb_qa_bank_v3_20261101.json）；kb_qa.ask(mode=multi) 真实 LLM",
+ "disclaimer": "问答样例由本地 LLM 基于知识库检索生成，仅供研究参考，不构成投资建议；引用页码以知识单元 page_start 为准。",
+ "kb": {
+  "units": null
+ },
+ "stats": {
+  "total": 8,
+  "success": 8,
+  "fallback": 0,
+  "refusal": 0,
+  "total_citations": 19,
+  "avg_citations": 2.38,
+  "avg_elapsed_seconds": 15.05,
+  "guard_pass_rate": 1.0
+ },
+ "samples": [
+  {
+   "id": "q2_b5a0a0e045",
+   "question": "量学理论的结论在什么条件下可能不成立？",
+   "category": "风险限制",
+   "theme": "量化/技术分析",
+   "source_unit_id": "5cfa2f156e5c",
+   "mode": "multi",
+   "k": 8,
+   "prompt_version": "v4",
+   "citation_retry_enabled": true,
+   "guard_marker_mode": "segment",
+   "answer": "【事实摘录】\n【事实】量学理论构建了‘量柱选股、量线选价、量波选时’的三维互动看盘操盘系统，实现了不管指标、消息和行情均可预测股市的效果（[5cfa2f156e5c] p.5）。\n【事实】《量柱擒涨停》《量线捉涨停》《伏击涨停》和《涨停密码》四本书构成了完整的量学理论体系和实战交易系统（[26748eb94001] p.5）。\n【事实】量学理论通过以量柱为基础，结合量价阴阳真假虚实八个要素，实现了比传统‘价学’更高效的四维立体看盘（[51116c325854] p.7）。\n【推断】\n【推断】该理论宣称“不管指标、消息和行情均可预测股市”，若市场出现极端非理性波动或系统性黑天鹅事件导致量价关系暂时失效，其结论可能不成立（依据：[5cfa2f156e5c] p.5）。\n【推断】该体系依赖“量柱、价柱、量线”等量化要素互渗互动，若市场结构发生根本性变化导致这些历史数据规律不再适用，其预测效果将受限（依据：[51116c325854] p.7）。",
+   "citations": [
+    {
+     "unit_id": "5cfa2f156e5c",
+     "book": "伏击涨停(2)",
+     "chapter": "序言1",
+     "page": 5,
+     "text": "量学理论构建了‘量柱选股、量线选价、量波选时’的三维互动看盘操盘系统，实现了不管指标、消息和行情均可预测股市的效果。 2009 年“量学”问世，它摆脱了“以价论价”的“价学”桔，在“以量论价”动态平衡规律，构建了“量柱选股、量线选价、量波选时”的“三维互动”看盘操 盘系统，形成了一个独立的科学体系。"
+    },
+    {
+     "unit_id": "26748eb94001",
+     "book": "伏击涨停(2)",
+     "chapter": "序言1",
+     "page": 5,
+     "text": "《量柱擒涨停》《量线捉涨停》《伏击涨停》和《涨停密码》四本书构成了完整的量学理论体系和实战交易系统。 被市场知名人士誉为“股市四大名著”的《量柱擒涨停》《量线捉涨停》《伏 击涨停》和《涨停密码》，构成了一套完整的量学理论体系和实战交易系统。"
+    },
+    {
+     "unit_id": "51116c325854",
+     "book": "伏击涨停(2)",
+     "chapter": "序言1量学理论的七大贡献",
+     "page": 7,
+     "text": "量学理论通过以量柱为基础，结合量价阴阳真假虚实八个要素，实现了比传统‘价学’更高效的四维立体看盘。 王子老师的“量学”理论，创造了以量柱为基础，以“量价阴阳真假虚实”八个要素互渗互动的“四维立体看盘法”。"
+    }
+   ],
+   "confidence": {
+    "level": "high",
+    "reasons": [
+     "3 条可核验引用、3 个聚类",
+     "直接事实标记 0、推断标记 3"
+    ]
+   },
+   "fallback": false,
+   "refusal": false,
+   "status": "success",
+   "guard_enabled": true,
+   "guard_passed": true,
+   "guard_action": "pass",
+   "guard_issues": [],
+   "citation_valid": [
+    "5cfa2f156e5c",
+    "26748eb94001",
+    "51116c325854"
+   ],
+   "citation_invalid": [],
+   "citation_resolvable_rate": 1.0,
+   "inference_ratio": 0.5,
+   "inference_heavy": false,
+   "distinct_cited_units": 3,
+   "direct_fact_markers": 3,
+   "inference_markers": 3,
+   "clusters": [
+    {
+     "label": "量学理论",
+     "book": "伏击涨停(2)",
+     "chapter": "序言1",
+     "units": 2,
+     "max_score": 1.1
+    },
+    {
+     "label": "量学四大名著",
+     "book": "伏击涨停(2)",
+     "chapter": "序言1",
+     "units": 1,
+     "max_score": 0.6523
+    },
+    {
+     "label": "立体看盘法",
+     "book": "伏击涨停(2)",
+     "chapter": "序言1量学理论的七大贡献",
+     "units": 1,
+     "max_score": 0.5253
+    }
+   ],
+   "elapsed_seconds": 18.5,
+   "error": null
+  },
+  {
+   "id": "q2_aa49124184",
+   "question": "储气调峰能力建设中研报提供了哪些可验证的关键数据或指标？",
+   "category": "关键数据",
+   "theme": "其他/综合",
+   "source_unit_id": "4c6ddf0bf36f",
+   "mode": "multi",
+   "k": 8,
+   "prompt_version": "v4",
+   "citation_retry_enabled": true,
+   "guard_marker_mode": "segment",
+   "answer": "【事实摘录】\n【事实】我国储气库工作气量在消费总量中的平均占比约为 7%，而全球平均水平约为 11.4%（[4c6ddf0bf36f] p.1）。\n【事实】需加快储气库建设以弥补调峰能力不足，推动天然气行业从单一气源供应转向电力系统调节与兜底保供并重（[4c6ddf0bf36f] p.1）。\n【事实】市场体系建设重点在于推进省级管网运销分离与并入整合，以释放资源配置效率和商业模式创新空间（[cfa085455968] p.1）。\n\n【推断】\n【推断】当前我国储气调峰能力显著低于全球平均水平，亟需通过加快储气库建设来缩小差距（依据：[4c6ddf0bf36f] p.1）。\n【推断】推进\"X+1+X\"市场体系中的管网运销分离改革，是提升储气调峰资源配置效率的关键路径（依据：[cfa085455968] p.1）。",
+   "citations": [
+    {
+     "unit_id": "4c6ddf0bf36f",
+     "book": "rp_AP202610021830105529",
+     "chapter": "摘要：",
+     "page": 1,
+     "text": "我国需加快储气库建设以弥补调峰能力不足，推动天然气行业从单一气源供应转向电力系统调节与兜底保供并重。 全球储气库工作气量在消费总量中的平均占比约为11.4%，而我国目前仅维持在7%左右...加快储气调峰能力建设，推动天然气行业从单一气源供应转向电力系统调节与兜底保供并重。"
+    },
+    {
+     "unit_id": "cfa085455968",
+     "book": "rp_AP202610021830105529",
+     "chapter": "摘要：",
+     "page": 1,
+     "text": "需推进'X+1+X'市场体系建设，重点在于省级管网运销分离与并入整合，以释放资源配置效率和商业模式创新空间。 推进'X+1+X'市场体系建设，以上游勘探开发引入多元竞争主体，中游管网保持自然垄断并公平开放，下游销售充分竞争...行业需重点突破省级管网运销分离与并入整合，以市场化改革释放资源配置效率和商业模式创新空间。"
+    }
+   ],
+   "confidence": {
+    "level": "high",
+    "reasons": [
+     "2 条可核验引用、3 个聚类",
+     "直接事实标记 0、推断标记 3"
+    ]
+   },
+   "fallback": false,
+   "refusal": false,
+   "status": "success",
+   "guard_enabled": true,
+   "guard_passed": true,
+   "guard_action": "pass",
+   "guard_issues": [],
+   "citation_valid": [
+    "4c6ddf0bf36f",
+    "cfa085455968"
+   ],
+   "citation_invalid": [],
+   "citation_resolvable_rate": 1.0,
+   "inference_ratio": 0.5,
+   "inference_heavy": false,
+   "distinct_cited_units": 2,
+   "direct_fact_markers": 3,
+   "inference_markers": 3,
+   "clusters": [
+    {
+     "label": "储气调峰能力建设",
+     "book": "rp_AP202610021830105529",
+     "chapter": "摘要：",
+     "units": 1,
+     "max_score": 1.1
+    },
+    {
+     "label": "AI 算力建设对迈威尔数据中心业务的影响",
+     "book": "rp_AP202609301830015836",
+     "chapter": "太 平 洋 证 券 股 份 有 限 公 司 证 券 研 究 报 告",
+     "units": 1,
+     "max_score": 0.4713
+    },
+    {
+     "label": "市场体系建设方向",
+     "book": "rp_AP202610021830105529",
+     "chapter": "摘要：",
+     "units": 1,
+     "max_score": 0.3021
+    }
+   ],
+   "elapsed_seconds": 25.75,
+   "error": null
+  },
+  {
+   "id": "q2_bcbfd79337",
+   "question": "智能算力规模占比的核心驱动因素是什么？",
+   "category": "驱动因素",
+   "theme": "AI算力/半导体",
+   "source_unit_id": "776f36408a89",
+   "mode": "multi",
+   "k": 8,
+   "prompt_version": "v4",
+   "citation_retry_enabled": true,
+   "guard_marker_mode": "segment",
+   "answer": "【事实摘录】\n【事实】2024 年智能算力规模占全国算力总规模的 32%（[776f36408a89] p.1）。\n【事实】智谱已完成与多家国产算力平台的深度适配，实现 10 万级国产芯片规模化推理（[9ab889268ce2] p.1）。\n【事实】海光信息发布首款面向端侧智能的算力芯片 1000 系列，标志着公司算力版图从云侧延伸到边缘和端侧（[0a3ddb232a72] p.2）。\n【推断】\n【推断】国产算力的规模化适配与成本下降是提升智能算力规模占比的关键驱动因素之一（依据：[9ab889268ce2] p.1）。\n【推断】算力架构从云侧向端侧延伸拓展了智能算力的应用场景，有助于扩大整体规模（依据：[0a3ddb232a72] p.2）。",
+   "citations": [
+    {
+     "unit_id": "776f36408a89",
+     "book": "rp_AP202610031830126544",
+     "chapter": "太 平 洋 证 券 股 份 有 限 公 司 证 券 研 究 报 告",
+     "page": 1,
+     "text": "2024 年智能算力规模占全国算力总规模的 32%，带动用电需求加深增长。 2024 年，全国算力总规模达到 280 EFLOPS，其中八大国家枢纽节点算力规模达到 175 EFLOPS；智能算力规模占全国算力总规模的 32%。"
+    },
+    {
+     "unit_id": "9ab889268ce2",
+     "book": "rp_AP202610021830112214",
+     "chapter": "大模型系列深度（一）：国产大模型竞争重心转向效",
+     "page": 1,
+     "text": "智谱已完成与多家国产算力平台的深度适配，实现 10 万级国产芯片规模化推理，单位 Token 推理成本较年初下降 80%。 智谱已兼容 40 多款主流芯片，并完成与多家国产算力平台的深度适配，实现 10 万级国产芯片规模化推理，单位 Token 推理成本较年初下降 80%。"
+    },
+    {
+     "unit_id": "0a3ddb232a72",
+     "book": "rp_AP202609301830016191",
+     "chapter": "目录",
+     "page": 2,
+     "text": "海光信息发布首款面向端侧智能的算力芯片 1000 系列，标志着公司算力版图从云侧延伸到边缘和端侧。 9 月 22 日，海光信息算力芯片 CPU 1000 系列正式发布，该产品是面向低功耗、嵌入式和端侧算力需求，采用 C86 架构打造的轻量级 CPU。海光信息总裁沙超群表示，1000 系列是海光首款面向端侧智能的算力芯片。"
+    }
+   ],
+   "confidence": {
+    "level": "high",
+    "reasons": [
+     "3 条可核验引用、3 个聚类",
+     "直接事实标记 0、推断标记 3"
+    ]
+   },
+   "fallback": false,
+   "refusal": false,
+   "status": "success",
+   "guard_enabled": true,
+   "guard_passed": true,
+   "guard_action": "pass",
+   "guard_issues": [],
+   "citation_valid": [
+    "776f36408a89",
+    "9ab889268ce2",
+    "0a3ddb232a72"
+   ],
+   "citation_invalid": [],
+   "citation_resolvable_rate": 1.0,
+   "inference_ratio": 0.5,
+   "inference_heavy": false,
+   "distinct_cited_units": 3,
+   "direct_fact_markers": 3,
+   "inference_markers": 3,
+   "clusters": [
+    {
+     "label": "智能算力规模占比",
+     "book": "rp_AP202610031830126544",
+     "chapter": "太 平 洋 证 券 股 份 有 限 公 司 证 券 研 究 报 告",
+     "units": 1,
+     "max_score": 1.1
+    },
+    {
+     "label": "国产算力适配与成本优势",
+     "book": "rp_AP202610021830112214",
+     "chapter": "大模型系列深度（一）：国产大模型竞争重心转向效",
+     "units": 1,
+     "max_score": 0.5055
+    },
+    {
+     "label": "端侧算力芯片发展",
+     "book": "rp_AP202609301830016191",
+     "chapter": "目录",
+     "units": 1,
+     "max_score": 0.4947
+    }
+   ],
+   "elapsed_seconds": 13.16,
+   "error": null
+  },
+  {
+   "id": "q2_a593448ce5",
+   "question": "北京市货物贸易净出口需要跟踪哪些指标或事件？",
+   "category": "如何识别",
+   "theme": "宏观/策略/贸易",
+   "source_unit_id": "61bca6c6d825",
+   "mode": "multi",
+   "k": 8,
+   "prompt_version": "v4",
+   "citation_retry_enabled": true,
+   "guard_marker_mode": "segment",
+   "answer": "【事实摘录】\n【事实】2025 年 8 月北京市货物贸易净出口额为 -258.6 亿美元，较上年同期下降 1.9%（[61bca6c6d825] p.2）。\n【事实】2025 年 8 月当月，北京市矿产品出口额为 31.6 亿美元，同比大幅增长 88.6%（[854f9973bb5d] p.2）。\n【推断】\n【推断】矿产品出口的强劲增长是抵消整体贸易逆差的关键变量（依据：[61bca6c6d825] p.2、[854f9973bb5d] p.2）。\n【推断】需重点跟踪矿产品出口额及同比变化率以预判净出口波动（依据：[854f9973bb5d] p.2）。",
+   "citations": [
+    {
+     "unit_id": "61bca6c6d825",
+     "book": "rp_AP202610061830165957",
+     "chapter": "一、贸易总体情况",
+     "page": 2,
+     "text": "2025 年 8 月北京市货物贸易净出口额为 -258.6 亿美元，较上年同期下降 1.9%。 注：2. 净出口额同比变化为绝对额数据，即 2026 年 8 月（或 1-8 月）的净出口额减去 2025 年 8 月（或 1-8 月）的净出口额。"
+    },
+    {
+     "unit_id": "854f9973bb5d",
+     "book": "rp_AP202610061830165957",
+     "chapter": "一、贸易总体情况",
+     "page": 2,
+     "text": "2025 年 8 月当月，北京市矿产品出口额为 31.6 亿美元，同比大幅增长 88.6%。 文本表格显示：8 月当月 矿产品 出口额 31.6 贸易份额（%）36.9 同比变化（%）88.6"
+    }
+   ],
+   "confidence": {
+    "level": "high",
+    "reasons": [
+     "2 条可核验引用、3 个聚类",
+     "直接事实标记 0、推断标记 3"
+    ]
+   },
+   "fallback": false,
+   "refusal": false,
+   "status": "success",
+   "guard_enabled": true,
+   "guard_passed": true,
+   "guard_action": "pass",
+   "guard_issues": [],
+   "citation_valid": [
+    "61bca6c6d825",
+    "854f9973bb5d"
+   ],
+   "citation_invalid": [],
+   "citation_resolvable_rate": 1.0,
+   "inference_ratio": 0.6,
+   "inference_heavy": false,
+   "distinct_cited_units": 2,
+   "direct_fact_markers": 2,
+   "inference_markers": 3,
+   "clusters": [
+    {
+     "label": "北京市货物贸易净出口",
+     "book": "rp_AP202610061830165957",
+     "chapter": "一、贸易总体情况",
+     "units": 1,
+     "max_score": 1.1
+    },
+    {
+     "label": "北京市矿产品贸易",
+     "book": "rp_AP202610061830165957",
+     "chapter": "一、贸易总体情况",
+     "units": 1,
+     "max_score": 0.4387
+    },
+    {
+     "label": "北京零售市场现状",
+     "book": "rp_AP202609301830015453",
+     "chapter": "06",
+     "units": 1,
+     "max_score": 0.4037
+    }
+   ],
+   "elapsed_seconds": 12.05,
+   "error": null
+  },
+  {
+   "id": "q2_3d1abf0240",
+   "question": "离岛免税消费数据对相关标的基本面或估值的影响如何？",
+   "category": "影响如何",
+   "theme": "消费/医药",
+   "source_unit_id": "6581eca343ac",
+   "mode": "multi",
+   "k": 8,
+   "prompt_version": "v4",
+   "citation_retry_enabled": true,
+   "guard_marker_mode": "segment",
+   "answer": "【事实摘录】\n【事实】2026 年中秋假期海南离岛免税购物金额达 2.31 亿元，购物人数 3.86 万人次（[6581eca343ac] p.1）。\n【事实】未来房屋价值变化主要由均衡实际利率、通货膨胀率、住房服务相对价格和风险溢价四个因素决定（[98118e155121] p.1）。\n\n【推断】\n【推断】离岛免税消费数据主要反映短期社会服务行业热度，无法直接推导对房地产估值框架中四大核心因子的影响（依据：[6581eca343ac] p.1、[98118e155121] p.1）。\n【推断】当前材料未提供离岛免税消费数据与相关标的（如免税股或地产股）基本面或估值的具体关联模型，故无法量化其影响程度（依据：[6581eca343ac] p.1、[98118e155121] p.1）。",
+   "citations": [
+    {
+     "unit_id": "6581eca343ac",
+     "book": "rp_AP202609301830037744",
+     "chapter": "社会服务行业双周报 双节出行热度提升，长线及跨境需求延续释放",
+     "page": 1,
+     "text": "2026年中秋假期海南离岛免税购物金额达2.31亿元，购物人数3.86万人次，购物件数17.9万件。 海口海关统计显示，今年中秋假期海南离岛免税购物市场迎来消费高峰。9月25日至9月27日，海口海关共监管离岛免税购物金额2.31亿元，购物人数3.86万人次，购物件数17.9万件。"
+    },
+    {
+     "unit_id": "98118e155121",
+     "book": "rp_AP202610021830114811",
+     "chapter": "——基于住房资产估值框架的分析",
+     "page": 1,
+     "text": "未来房屋价值变化主要由均衡实际利率、通货膨胀率、住房服务相对价格（含生产率差异、消费偏好、供给弹性）和风险溢价四个因素决定。 第二节“房地产内在价值的决定因素”指出：基于模型，决定未来房屋价值变化的主要是四个因素：一是均衡实际利率；二是通货膨胀率；三是房屋的相对价格（涉及巴拉萨 - 萨缪尔森效应、消费偏好、供给弹性）；四是风险溢价。"
+    }
+   ],
+   "confidence": {
+    "level": "high",
+    "reasons": [
+     "2 条可核验引用、3 个聚类",
+     "直接事实标记 0、推断标记 3"
+    ]
+   },
+   "fallback": false,
+   "refusal": false,
+   "status": "success",
+   "guard_enabled": true,
+   "guard_passed": true,
+   "guard_action": "pass",
+   "guard_issues": [],
+   "citation_valid": [
+    "6581eca343ac",
+    "98118e155121"
+   ],
+   "citation_invalid": [],
+   "citation_resolvable_rate": 1.0,
+   "inference_ratio": 0.6,
+   "inference_heavy": false,
+   "distinct_cited_units": 2,
+   "direct_fact_markers": 2,
+   "inference_markers": 3,
+   "clusters": [
+    {
+     "label": "离岛免税消费数据",
+     "book": "rp_AP202609301830037744",
+     "chapter": "社会服务行业双周报 双节出行热度提升，长线及跨境需求延续释放",
+     "units": 1,
+     "max_score": 1.1
+    },
+    {
+     "label": "房地产内在价值的决定因素",
+     "book": "rp_AP202610021830114811",
+     "chapter": "——基于住房资产估值框架的分析",
+     "units": 1,
+     "max_score": 0.5126
+    },
+    {
+     "label": "内销市场影响因素",
+     "book": "rp_AP202609301830038557",
+     "chapter": "点评：",
+     "units": 1,
+     "max_score": 0.3588
+    }
+   ],
+   "elapsed_seconds": 12.97,
+   "error": null
+  },
+  {
+   "id": "q2_1e95f989df",
+   "question": "海上风电项目规划的结论由哪些证据支撑？",
+   "category": "是什么",
+   "theme": "新能源/电池",
+   "source_unit_id": "540733583fec",
+   "mode": "multi",
+   "k": 8,
+   "prompt_version": "v4",
+   "citation_retry_enabled": true,
+   "guard_marker_mode": "segment",
+   "answer": "【事实摘录】\n【事实】国华投资拟在山东半岛南海域开展海上风电项目前期研究，规划总装机容量为 400 万千瓦（[540733583fec] p.1）。\n【事实】国家支持开发近海抗台型、深远海漂浮式风电机组，并推进海上能源岛建设及沿海地区海上风电运维母港布局（[3d627dcc4f13] p.1）。\n【事实】预计 2026-2030 年海上风电将加速发展，亚太地区占据全球 80% 市场份额（[4b6cf5a7158e] p.3）。\n【推断】\n【推断】项目规划结合国家支持深远海漂浮式机组及运维母港布局的政策导向，旨在推进海上风电规范开发（依据：[540733583fec] p.1、[3d627dcc4f13] p.1）。\n【推断】在亚太地区主导全球市场且预计加速发展的背景下，山东半岛南海域 400 万千瓦项目符合区域扩张趋势（依据：[4b6cf5a7158e] p.3、[540733583fec] p.1）。",
+   "citations": [
+    {
+     "unit_id": "540733583fec",
+     "book": "rp_AP202610021830105372",
+     "chapter": "市场研究部 2026 年9 月30 日",
+     "page": 1,
+     "text": "国华投资拟在山东半岛南海域开展海上风电项目前期研究，规划总装机容量为 400 万千瓦，旨在推进海上风电规范开发。 显示，为推进海上风电项目规范开发，做好潜在场址调查与前期研究策划，拟开展国华投资山东分公司半岛南某海域海上风电项目前期专题研究工作，采用公开招标方式采购技术咨询服务，项目位于山东省南部海域，规划总装机容量共计 400 万千瓦。"
+    },
+    {
+     "unit_id": "3d627dcc4f13",
+     "book": "rp_AP202610021830105333",
+     "chapter": "市场研究部 2026 年9 月22 日",
+     "page": 1,
+     "text": "国家支持开发近海抗台型、深远海漂浮式风电机组，并推进海上能源岛建设及沿海地区海上风电运维母港布局。 海洋新能源产业。发展柔性组网输电等关键技术，开发近海抗台型、深远海漂浮式风电机组以及海上漂浮式结构等关键模块。支持沿海三市统筹推进海上风电场改造升级、融合开发和退役管理，合理布局建设海上风电运维母港。"
+    },
+    {
+     "unit_id": "4b6cf5a7158e",
+     "book": "rp_AP202609301830015458",
+     "chapter": "前 ⾔",
+     "page": 3,
+     "text": "2025年全球风电新增装机达165GW（同比增长40%），亚太地区占据80%市场份额，预计2026-2030年海上风电将加速发展。 2025年，全球风⼒发电新增了165GW的并⽹容量，同⽐增长达到40%，亚太地区持续保持全球第⼀风电市场的领先地位，占据了全球80%的市场份额...海上风电在经历了⼀段调整期后，即将加速发展。"
+    }
+   ],
+   "confidence": {
+    "level": "high",
+    "reasons": [
+     "3 条可核验引用、3 个聚类",
+     "直接事实标记 0、推断标记 3"
+    ]
+   },
+   "fallback": false,
+   "refusal": false,
+   "status": "success",
+   "guard_enabled": true,
+   "guard_passed": true,
+   "guard_action": "pass",
+   "guard_issues": [],
+   "citation_valid": [
+    "540733583fec",
+    "3d627dcc4f13",
+    "4b6cf5a7158e"
+   ],
+   "citation_invalid": [],
+   "citation_resolvable_rate": 1.0,
+   "inference_ratio": 0.5,
+   "inference_heavy": false,
+   "distinct_cited_units": 3,
+   "direct_fact_markers": 3,
+   "inference_markers": 3,
+   "clusters": [
+    {
+     "label": "海上风电项目规划",
+     "book": "rp_AP202610021830105372",
+     "chapter": "市场研究部 2026 年9 月30 日",
+     "units": 1,
+     "max_score": 1.1
+    },
+    {
+     "label": "政策导向：海上风电与海洋能",
+     "book": "rp_AP202610021830105333",
+     "chapter": "市场研究部 2026 年9 月22 日",
+     "units": 1,
+     "max_score": 0.7558
+    },
+    {
+     "label": "全球风电市场趋势",
+     "book": "rp_AP202609301830015458",
+     "chapter": "前 ⾔",
+     "units": 1,
+     "max_score": 0.4173
+    }
+   ],
+   "elapsed_seconds": 13.42,
+   "error": null
+  },
+  {
+   "id": "q2_6076398cc7",
+   "question": "保险资金投资港股通 ETF的进入壁垒与差异化优势是什么？",
+   "category": "竞争格局",
+   "theme": "金融/资本市场",
+   "source_unit_id": "e9548ab7c8d3",
+   "mode": "multi",
+   "k": 8,
+   "prompt_version": "v4",
+   "citation_retry_enabled": true,
+   "guard_marker_mode": "segment",
+   "answer": "【事实摘录】\n【事实】监管新规允许持有港股通股票的保险机构投资港股通 ETF，且不占用 QDII 额度（[e9548ab7c8d3] p.1）。\n【事实】大型国有保险公司新增保费的 30% 用于投资 A 股，中央汇金公司增持 ETF 发挥类“平准基金”作用（[49d741ab6006] p.1）。\n【推断】\n【推断】保险资金可通过港股通 ETF 实现跨境权益配置，同时利用国内险资入市机制获得政策引导的稳定性支持（依据：[e9548ab7c8d3] p.1、[49d741ab6006] p.1）。\n【推断】该模式打破了传统 QDII 额度限制，为险资提供了新的跨境投资工具（依据：[e9548ab7c8d3] p.1）。",
+   "citations": [
+    {
+     "unit_id": "e9548ab7c8d3",
+     "book": "rp_AP202610071830185864",
+     "chapter": "2026 年10 月07 日",
+     "page": 1,
+     "text": "监管新规允许持有港股通股票的保险机构投资港股通 ETF，丰富了险资跨境权益投资工具且不占用 QDII 额度。 9 月 29 日，多家保险机构收到金融监管总局办公厅下发的《关于明确保险资金投资港股通 ETF 监管口径的函》，当中明确，按照监管规定可投资港股通股票的保险机构可以投资港股通 ETF，并参照港股通股票监管规则执行。"
+    },
+    {
+     "unit_id": "49d741ab6006",
+     "book": "rp_AP202610031830124601",
+     "chapter": "金融图强：中国资本市场改革的成效与展望",
+     "page": 1,
+     "text": "通过创设货币工具、引入类“平准基金”及量化指标引导中长期资金入市，有效稳定了市场预期并修复投资者信心。 2024 年 9 月创设股票回购增持再贷款和证券、基金、保险公司互换便利。中央汇金公司增持 ETF 发挥类“平准基金”作用。公募基金持有 A 股市值三年每年至少增长 10%，大型国有保险公司新增保费的 30% 用于投资 A 股。"
+    }
+   ],
+   "confidence": {
+    "level": "high",
+    "reasons": [
+     "2 条可核验引用、3 个聚类",
+     "直接事实标记 0、推断标记 3"
+    ]
+   },
+   "fallback": false,
+   "refusal": false,
+   "status": "success",
+   "guard_enabled": true,
+   "guard_passed": true,
+   "guard_action": "pass",
+   "guard_issues": [],
+   "citation_valid": [
+    "e9548ab7c8d3",
+    "49d741ab6006"
+   ],
+   "citation_invalid": [],
+   "citation_resolvable_rate": 1.0,
+   "inference_ratio": 0.6,
+   "inference_heavy": false,
+   "distinct_cited_units": 2,
+   "direct_fact_markers": 2,
+   "inference_markers": 3,
+   "clusters": [
+    {
+     "label": "保险资金投资港股通 ETF",
+     "book": "rp_AP202610071830185864",
+     "chapter": "2026 年10 月07 日",
+     "units": 1,
+     "max_score": 1.1
+    },
+    {
+     "label": "2W7iIifTVDE",
+     "book": "2W7iIifTVDE",
+     "chapter": "",
+     "units": 1,
+     "max_score": 0.4333
+    },
+    {
+     "label": "中国特色稳市机制",
+     "book": "rp_AP202610031830124601",
+     "chapter": "金融图强：中国资本市场改革的成效与展望",
+     "units": 1,
+     "max_score": 0.3103
+    }
+   ],
+   "elapsed_seconds": 11.89,
+   "error": null
+  },
+  {
+   "id": "q2_f93ae02b9d",
+   "question": "伏击涨停的灵魂的景气度受哪些变量影响？",
+   "category": "驱动因素",
+   "theme": "量化/技术分析",
+   "source_unit_id": "538860c3cb35",
+   "mode": "multi",
+   "k": 8,
+   "prompt_version": "v4",
+   "citation_retry_enabled": true,
+   "guard_marker_mode": "segment",
+   "answer": "【事实摘录】\n【事实】伏击涨停的灵魂在于追求投资乐趣而非单纯赚钱（[538860c3cb35] p.11）。\n【事实】伏击涨停是一种比传统‘追击涨停’更具前瞻性的投资战法，强调提前介入和守候涨停（[28f88a6c87e9] p.11）。\n【推断】\n【推断】该策略的景气度受投资者对“乐趣”与“提心吊胆”市场心态变化的影响（依据：[538860c3cb35] p.11）。\n【推断】其有效性依赖于能否成功执行“提前介入、守候涨停”的前瞻性战术（依据：[28f88a6c87e9] p.11）。",
+   "citations": [
+    {
+     "unit_id": "538860c3cb35",
+     "book": "伏击涨停(2)",
+     "chapter": "序言2",
+     "page": 11,
+     "text": "伏击涨停的核心在于追求投资乐趣而非单纯赚钱，旨在在提心吊胆的股票市场中为投资者找到一片‘乐土’。 “伏击涨停”不是为了“赚钱”，而是为了找“乐趣”，是在人人提心吊胆的股票市场找到一片属于你的“乐土”。这就是伏击涨停的“灵魂”。"
+    },
+    {
+     "unit_id": "28f88a6c87e9",
+     "book": "伏击涨停(2)",
+     "chapter": "序言2",
+     "page": 11,
+     "text": "伏击涨停是一种比传统‘追击涨停’更具前瞻性的投资战法，强调提前介入和守候涨停，属于‘涨停特战队’的战术。 “追击涨停是 A 股市场中‘涨停敢死队’通用的手法，但更有前瞻性地伏击涨停，提前介入，守候涨停，则是‘涨停特战队’的战法。”"
+    }
+   ],
+   "confidence": {
+    "level": "high",
+    "reasons": [
+     "2 条可核验引用、3 个聚类",
+     "直接事实标记 0、推断标记 3"
+    ]
+   },
+   "fallback": false,
+   "refusal": false,
+   "status": "success",
+   "guard_enabled": true,
+   "guard_passed": true,
+   "guard_action": "pass",
+   "guard_issues": [],
+   "citation_valid": [
+    "538860c3cb35",
+    "28f88a6c87e9"
+   ],
+   "citation_invalid": [],
+   "citation_resolvable_rate": 1.0,
+   "inference_ratio": 0.6,
+   "inference_heavy": false,
+   "distinct_cited_units": 2,
+   "direct_fact_markers": 2,
+   "inference_markers": 3,
+   "clusters": [
+    {
+     "label": "伏击涨停的灵魂",
+     "book": "伏击涨停(2)",
+     "chapter": "序言2",
+     "units": 1,
+     "max_score": 1.1
+    },
+    {
+     "label": "伏击涨停的参与模式",
+     "book": "伏击涨停(2)",
+     "chapter": "序言2",
+     "units": 1,
+     "max_score": 0.8881
+    },
+    {
+     "label": "伏击涨停",
+     "book": "伏击涨停(2)",
+     "chapter": "序言2",
+     "units": 1,
+     "max_score": 0.8554
+    }
+   ],
+   "elapsed_seconds": 12.7,
+   "error": null
+  }
+ ],
+ "backup": {
+  "path": "C:\\项目\\老田的AI助手\\research\\reports\\kb_qa_samples_backup4_20261101.json",
+  "sha_source": "fa7722ae60b733010435f962f92c62c871293248a69e63a3d55f7da692f607a3"
+ }
+}

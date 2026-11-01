@@ -813,6 +813,27 @@
       "title": "每日任务健康监控",
       "ref": "tools/research/daily_tasks_health.py",
       "enabled": true
+    },
+    {
+      "id": "qa_http_loadtest",
+      "kind": "tool",
+      "title": "8091 问答限流/并发压测",
+      "ref": "tools/kb_corpus/qa_http_loadtest.py",
+      "enabled": true
+    },
+    {
+      "id": "card_revision_round2",
+      "kind": "tool",
+      "title": "学习卡 revise 二轮修订建议",
+      "ref": "tools/kb_corpus/card_revision_round2.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_qa_samples_refresh",
+      "kind": "tool",
+      "title": "门户问答样例刷新（v4）",
+      "ref": "tools/kb_corpus/kb_qa_samples_refresh.py",
+      "enabled": true
     }
   ]
 }
