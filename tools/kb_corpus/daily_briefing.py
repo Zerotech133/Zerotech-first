@@ -15,6 +15,9 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from safe_json import backup_then_atomic_write  # noqa: E402
+
 REPO = Path(r"C:\项目\老田的AI助手")
 REPORTS = Path(r"C:/项目/PDF/_ingest_reports")
 OUT_DIR = Path(r"C:/项目/知识库/70_简报")
@@ -65,7 +68,7 @@ def main(argv=None) -> int:
     payload = {"generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
                "date": stamp, "docs": docs[: args.top], "file": str(p),
                "feishu_ready": True, "note": "由推送任务/人工读取本 JSON 发送，脚本不直发"}
-    OUT_JSON.write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
+    backup_then_atomic_write(OUT_JSON, payload)  # 备份+原子写+写后 JSON 校验
     print(f"简报 {p} | docs={len(docs)}", flush=True)
     return 0
 

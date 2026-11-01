@@ -32,6 +32,9 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "kb_corpus"))
+from safe_json import SafeJsonError, backup_then_atomic_write  # noqa: E402
+
 REPO = Path(__file__).resolve().parents[2]
 DEFAULT_SOURCE = REPO / "research" / "reports" / "report_panel_v3_20261101.json"
 DEFAULT_PORTAL = REPO / "portal" / "static" / "report_panel.json"
@@ -101,10 +104,7 @@ def append_status(entry: dict, status_path: Path | str = DEFAULT_STATUS,
     runs.append(entry)
     runs = runs[-max(1, int(max_runs)):]
     data.update({"schema_version": 1, "updated_at": now_iso(), "runs": runs, "latest": runs[-1]})
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(path.name + ".tmp")
-    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
-    os.replace(tmp, path)
+    backup_then_atomic_write(path, data)  # 备份+原子写+写后 JSON 校验
     return data
 
 
@@ -229,16 +229,16 @@ def run_daily(source_path: Path | str = DEFAULT_SOURCE, portal_path: Path | str 
         if errors:
             raise PanelDailyError("构建后校验失败：" + "；".join(errors))
         if not dry_run:
-            # 原子发布：先写临时文件再替换，校验失败不覆盖旧门户 JSON
-            tmp_portal = portal_path.with_name(portal_path.name + ".tmp")
-            tmp_portal.parent.mkdir(parents=True, exist_ok=True)
-            tmp_portal.write_text(json.dumps(payload, ensure_ascii=False, indent=1) + "\n",
-                                  encoding="utf-8")
-            check_errors = pe.validate_portal_payload(json.loads(tmp_portal.read_text(encoding="utf-8")))
-            if check_errors:
-                tmp_portal.unlink(missing_ok=True)
-                raise PanelDailyError("发布前校验失败：" + "；".join(check_errors))
-            os.replace(tmp_portal, portal_path)
+            # 备份+原子发布：校验失败不覆盖旧门户 JSON
+            def _portal_validator(parsed):
+                errs = pe.validate_portal_payload(parsed)
+                if errs:
+                    raise ValueError("；".join(errs))
+                return None
+            try:
+                backup_then_atomic_write(portal_path, payload, validator=_portal_validator)
+            except SafeJsonError as exc:
+                raise PanelDailyError("发布校验失败：" + str(exc)) from exc
     except (pe.PanelExportError, PanelDailyError) as exc:
         errors = errors or [str(exc)]
         entry.update({"ok": False, "errors": errors,

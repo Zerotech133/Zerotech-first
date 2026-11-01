@@ -1,0 +1,751 @@
+{
+ "schema_version": 1,
+ "kind": "kb_qa_prompt_v3_35b_ab",
+ "generated_at": "2026-11-01T15:36:15+08:00",
+ "config": {
+  "n_requested": 8,
+  "n_actual": 8,
+  "skipped": 0,
+  "k": 8,
+  "model_35b": "qwen3.6:35b-a3b",
+  "timeout_seconds": 240.0,
+  "deadline_seconds": 480.0,
+  "guard_marker_mode": "strict_line",
+  "models": {
+   "9b_v1": "qwen3.5:9b",
+   "9b_v3": "qwen3.5:9b",
+   "35b_v3": "qwen3.6:35b-a3b"
+  }
+ },
+ "sources": {
+  "v3_bank": "C:\\项目\\老田的AI助手\\research\\reports\\kb_qa_bank_v3_20261101.json",
+  "v1_baseline": "C:\\项目\\老田的AI助手\\research\\reports\\kb_qa_prompt_v2_20261101.json",
+  "v3_9b_baseline": "C:\\项目\\老田的AI助手\\research\\reports\\guard_marker_fix_20261101.json"
+ },
+ "note": "35b+v3 现场生成（同聚类材料+同 guard strict_line）；9b+v1 / 9b+v3 复用已有结果；35b 冷加载可能较慢，超时/预算用尽时余下跳过并注明",
+ "arms": {
+  "9b_v1": {
+   "summary": {
+    "total": 8,
+    "success": 4,
+    "no_evidence": 0,
+    "fallback": 4,
+    "answerable_rate": 0.5,
+    "fallback_rate": 0.5,
+    "guard_passed": 4,
+    "guard_failed": 4,
+    "guard_pass_rate": 0.5,
+    "avg_citations": 2.38,
+    "avg_inference_ratio": 0.4792,
+    "avg_elapsed_seconds": 15.73,
+    "errors": []
+   },
+   "rows": [
+    {
+     "status": "success",
+     "success": true,
+     "no_evidence": false,
+     "fallback": false,
+     "guard_passed": true,
+     "citations": 4,
+     "inference_ratio": 0.0,
+     "elapsed_seconds": 15.8,
+     "error": null,
+     "id": "q2_b5a0a0e045",
+     "question": "量学理论的结论在什么条件下可能不成立？",
+     "category": "风险限制"
+    },
+    {
+     "status": "success",
+     "success": true,
+     "no_evidence": false,
+     "fallback": false,
+     "guard_passed": true,
+     "citations": 2,
+     "inference_ratio": 0.0,
+     "elapsed_seconds": 18.03,
+     "error": null,
+     "id": "q2_aa49124184",
+     "question": "储气调峰能力建设中研报提供了哪些可验证的关键数据或指标？",
+     "category": "关键数据"
+    },
+    {
+     "status": "fallback",
+     "success": false,
+     "no_evidence": false,
+     "fallback": true,
+     "guard_passed": false,
+     "citations": 2,
+     "inference_ratio": 0.5,
+     "elapsed_seconds": 14.47,
+     "error": null,
+     "id": "q2_bcbfd79337",
+     "question": "智能算力规模占比的核心驱动因素是什么？",
+     "category": "驱动因素"
+    },
+    {
+     "status": "success",
+     "success": true,
+     "no_evidence": false,
+     "fallback": false,
+     "guard_passed": true,
+     "citations": 3,
+     "inference_ratio": 0.3333,
+     "elapsed_seconds": 17.69,
+     "error": null,
+     "id": "q2_a593448ce5",
+     "question": "北京市货物贸易净出口需要跟踪哪些指标或事件？",
+     "category": "如何识别"
+    },
+    {
+     "status": "fallback",
+     "success": false,
+     "no_evidence": false,
+     "fallback": true,
+     "guard_passed": false,
+     "citations": 1,
+     "inference_ratio": 0.5,
+     "elapsed_seconds": 13.92,
+     "error": null,
+     "id": "q2_3d1abf0240",
+     "question": "离岛免税消费数据对相关标的基本面或估值的影响如何？",
+     "category": "影响如何"
+    },
+    {
+     "status": "success",
+     "success": true,
+     "no_evidence": false,
+     "fallback": false,
+     "guard_passed": true,
+     "citations": 3,
+     "inference_ratio": 0.5,
+     "elapsed_seconds": 16.52,
+     "error": null,
+     "id": "q2_1e95f989df",
+     "question": "海上风电项目规划的结论由哪些证据支撑？",
+     "category": "是什么"
+    },
+    {
+     "status": "fallback",
+     "success": false,
+     "no_evidence": false,
+     "fallback": true,
+     "guard_passed": false,
+     "citations": 2,
+     "inference_ratio": 1.0,
+     "elapsed_seconds": 18.11,
+     "error": null,
+     "id": "q2_6076398cc7",
+     "question": "保险资金投资港股通 ETF的进入壁垒与差异化优势是什么？",
+     "category": "竞争格局"
+    },
+    {
+     "status": "fallback",
+     "success": false,
+     "no_evidence": false,
+     "fallback": true,
+     "guard_passed": false,
+     "citations": 2,
+     "inference_ratio": 1.0,
+     "elapsed_seconds": 11.3,
+     "error": null,
+     "id": "q2_f93ae02b9d",
+     "question": "伏击涨停的灵魂的景气度受哪些变量影响？",
+     "category": "驱动因素"
+    }
+   ]
+  },
+  "9b_v3": {
+   "summary": {
+    "total": 8,
+    "success": 0,
+    "no_evidence": 0,
+    "fallback": 8,
+    "answerable_rate": 0.0,
+    "fallback_rate": 1.0,
+    "guard_passed": 0,
+    "guard_failed": 8,
+    "guard_pass_rate": 0.0,
+    "avg_citations": 2.38,
+    "avg_inference_ratio": 0.875,
+    "avg_elapsed_seconds": 7.7,
+    "errors": []
+   },
+   "rows": [
+    {
+     "status": "fallback",
+     "success": false,
+     "no_evidence": false,
+     "fallback": true,
+     "guard_passed": false,
+     "citations": 2,
+     "inference_ratio": 0.0,
+     "elapsed_seconds": 5.64,
+     "error": null,
+     "id": "q2_b5a0a0e045",
+     "question": "量学理论的结论在什么条件下可能不成立？",
+     "category": "风险限制"
+    },
+    {
+     "status": "fallback",
+     "success": false,
+     "no_evidence": false,
+     "fallback": true,
+     "guard_passed": false,
+     "citations": 2,
+     "inference_ratio": 1.0,
+     "elapsed_seconds": 8.04,
+     "error": null,
+     "id": "q2_aa49124184",
+     "question": "储气调峰能力建设中研报提供了哪些可验证的关键数据或指标？",
+     "category": "关键数据"
+    },
+    {
+     "status": "fallback",
+     "success": false,
+     "no_evidence": false,
+     "fallback": true,
+     "guard_passed": false,
+     "citations": 3,
+     "inference_ratio": 1.0,
+     "elapsed_seconds": 10.2,
+     "error": null,
+     "id": "q2_bcbfd79337",
+     "question": "智能算力规模占比的核心驱动因素是什么？",
+     "category": "驱动因素"
+    },
+    {
+     "status": "fallback",
+     "success": false,
+     "no_evidence": false,
+     "fallback": true,
+     "guard_passed": false,
+     "citations": 2,
+     "inference_ratio": 1.0,
+     "elapsed_seconds": 6.7,
+     "error": null,
+     "id": "q2_a593448ce5",
+     "question": "北京市货物贸易净出口需要跟踪哪些指标或事件？",
+     "category": "如何识别"
+    },
+    {
+     "status": "fallback",
+     "success": false,
+     "no_evidence": false,
+     "fallback": true,
+     "guard_passed": false,
+     "citations": 2,
+     "inference_ratio": 1.0,
+     "elapsed_seconds": 7.78,
+     "error": null,
+     "id": "q2_3d1abf0240",
+     "question": "离岛免税消费数据对相关标的基本面或估值的影响如何？",
+     "category": "影响如何"
+    },
+    {
+     "status": "fallback",
+     "success": false,
+     "no_evidence": false,
+     "fallback": true,
+     "guard_passed": false,
+     "citations": 3,
+     "inference_ratio": 1.0,
+     "elapsed_seconds": 8.04,
+     "error": null,
+     "id": "q2_1e95f989df",
+     "question": "海上风电项目规划的结论由哪些证据支撑？",
+     "category": "是什么"
+    },
+    {
+     "status": "fallback",
+     "success": false,
+     "no_evidence": false,
+     "fallback": true,
+     "guard_passed": false,
+     "citations": 2,
+     "inference_ratio": 1.0,
+     "elapsed_seconds": 8.14,
+     "error": null,
+     "id": "q2_6076398cc7",
+     "question": "保险资金投资港股通 ETF的进入壁垒与差异化优势是什么？",
+     "category": "竞争格局"
+    },
+    {
+     "status": "fallback",
+     "success": false,
+     "no_evidence": false,
+     "fallback": true,
+     "guard_passed": false,
+     "citations": 3,
+     "inference_ratio": 1.0,
+     "elapsed_seconds": 7.06,
+     "error": null,
+     "id": "q2_f93ae02b9d",
+     "question": "伏击涨停的灵魂的景气度受哪些变量影响？",
+     "category": "驱动因素"
+    }
+   ]
+  },
+  "35b_v3": {
+   "summary": {
+    "total": 8,
+    "success": 0,
+    "no_evidence": 0,
+    "fallback": 8,
+    "answerable_rate": 0.0,
+    "fallback_rate": 1.0,
+    "guard_passed": 0,
+    "guard_failed": 8,
+    "guard_pass_rate": 0.0,
+    "avg_citations": 1.88,
+    "avg_inference_ratio": 1.0,
+    "avg_elapsed_seconds": 13.02,
+    "errors": []
+   },
+   "rows": [
+    {
+     "status": "fallback",
+     "success": false,
+     "no_evidence": false,
+     "fallback": true,
+     "guard_passed": false,
+     "guard_action": "fallback",
+     "guard_issues": [
+      "inference_heavy"
+     ],
+     "citations": 2,
+     "citation_resolvable_rate": 1.0,
+     "inference_ratio": 1.0,
+     "distinct_cited_units": 2,
+     "answer_length": 334,
+     "answer_preview": "（质量守卫回退：多单元答案引用/集中度/推断比例未达标，摘录可核验知识单元）\n- [5cfa2f156e5c] p.5 量学理论构建了‘量柱选股、量线选价、量波选时’的三维互动看盘操盘系统，实现了不管指标、消息和行情均可预测股市的效果。 2009 年“量学”问世，它摆脱了“以价论价”的“价学”桔，在“以量论价”动态平衡",
+     "elapsed_seconds": 65.39,
+     "error": null,
+     "arm": "35b_v3",
+     "model": "qwen3.6:35b-a3b",
+     "raw_answer_length": 334,
+     "id": "q2_b5a0a0e045",
+     "question": "量学理论的结论在什么条件下可能不成立？",
+     "category": "风险限制"
+    },
+    {
+     "status": "fallback",
+     "success": false,
+     "no_evidence": false,
+     "fallback": true,
+     "guard_passed": false,
+     "guard_action": "fallback",
+     "guard_issues": [
+      "inference_heavy"
+     ],
+     "citations": 2,
+     "citation_resolvable_rate": 1.0,
+     "inference_ratio": 1.0,
+     "distinct_cited_units": 2,
+     "answer_length": 377,
+     "answer_preview": "（质量守卫回退：多单元答案引用/集中度/推断比例未达标，摘录可核验知识单元）\n- [4c6ddf0bf36f] p.1 我国需加快储气库建设以弥补调峰能力不足，推动天然气行业从单一气源供应转向电力系统调节与兜底保供并重。 全球储气库工作气量在消费总量中的平均占比约为11.4%，而我国目前仅维持在7%左右...加快储气调",
+     "elapsed_seconds": 4.62,
+     "error": null,
+     "arm": "35b_v3",
+     "model": "qwen3.6:35b-a3b",
+     "raw_answer_length": 377,
+     "id": "q2_aa49124184",
+     "question": "储气调峰能力建设中研报提供了哪些可验证的关键数据或指标？",
+     "category": "关键数据"
+    },
+    {
+     "status": "fallback",
+     "success": false,
+     "no_evidence": false,
+     "fallback": true,
+     "guard_passed": false,
+     "guard_action": "fallback",
+     "guard_issues": [
+      "inference_heavy"
+     ],
+     "citations": 2,
+     "citation_resolvable_rate": 1.0,
+     "inference_ratio": 1.0,
+     "distinct_cited_units": 2,
+     "answer_length": 333,
+     "answer_preview": "（质量守卫回退：多单元答案引用/集中度/推断比例未达标，摘录可核验知识单元）\n- [776f36408a89] p.1 2024 年智能算力规模占全国算力总规模的 32%，带动用电需求加深增长。 2024 年，全国算力总规模达到 280 EFLOPS，其中八大国家枢纽节点算力规模达到 175 EFLOPS；智能算力规模",
+     "elapsed_seconds": 5.33,
+     "error": null,
+     "arm": "35b_v3",
+     "model": "qwen3.6:35b-a3b",
+     "raw_answer_length": 333,
+     "id": "q2_bcbfd79337",
+     "question": "智能算力规模占比的核心驱动因素是什么？",
+     "category": "驱动因素"
+    },
+    {
+     "status": "fallback",
+     "success": false,
+     "no_evidence": false,
+     "fallback": true,
+     "guard_passed": false,
+     "guard_action": "fallback",
+     "guard_issues": [
+      "inference_heavy"
+     ],
+     "citations": 2,
+     "citation_resolvable_rate": 1.0,
+     "inference_ratio": 1.0,
+     "distinct_cited_units": 2,
+     "answer_length": 300,
+     "answer_preview": "（质量守卫回退：多单元答案引用/集中度/推断比例未达标，摘录可核验知识单元）\n- [61bca6c6d825] p.2 2025 年 8 月北京市货物贸易净出口额为 -258.6 亿美元，较上年同期下降 1.9%。 注：2. 净出口额同比变化为绝对额数据，即 2026 年 8 月（或 1-8 月）的净出口额减去 202",
+     "elapsed_seconds": 5.08,
+     "error": null,
+     "arm": "35b_v3",
+     "model": "qwen3.6:35b-a3b",
+     "raw_answer_length": 300,
+     "id": "q2_a593448ce5",
+     "question": "北京市货物贸易净出口需要跟踪哪些指标或事件？",
+     "category": "如何识别"
+    },
+    {
+     "status": "fallback",
+     "success": false,
+     "no_evidence": false,
+     "fallback": true,
+     "guard_passed": false,
+     "guard_action": "fallback",
+     "guard_issues": [
+      "insufficient_cited_units",
+      "inference_heavy"
+     ],
+     "citations": 1,
+     "citation_resolvable_rate": 1.0,
+     "inference_ratio": 1.0,
+     "distinct_cited_units": 1,
+     "answer_length": 200,
+     "answer_preview": "（质量守卫回退：多单元答案引用/集中度/推断比例未达标，摘录可核验知识单元）\n- [6581eca343ac] p.1 2026年中秋假期海南离岛免税购物金额达2.31亿元，购物人数3.86万人次，购物件数17.9万件。 海口海关统计显示，今年中秋假期海南离岛免税购物市场迎来消费高峰。9月25日至9月27日，海口海关共",
+     "elapsed_seconds": 4.14,
+     "error": null,
+     "arm": "35b_v3",
+     "model": "qwen3.6:35b-a3b",
+     "raw_answer_length": 200,
+     "id": "q2_3d1abf0240",
+     "question": "离岛免税消费数据对相关标的基本面或估值的影响如何？",
+     "category": "影响如何"
+    },
+    {
+     "status": "fallback",
+     "success": false,
+     "no_evidence": false,
+     "fallback": true,
+     "guard_passed": false,
+     "guard_action": "fallback",
+     "guard_issues": [
+      "inference_heavy"
+     ],
+     "citations": 3,
+     "citation_resolvable_rate": 1.0,
+     "inference_ratio": 1.0,
+     "distinct_cited_units": 3,
+     "answer_length": 574,
+     "answer_preview": "（质量守卫回退：多单元答案引用/集中度/推断比例未达标，摘录可核验知识单元）\n- [540733583fec] p.1 国华投资拟在山东半岛南海域开展海上风电项目前期研究，规划总装机容量为 400 万千瓦，旨在推进海上风电规范开发。 显示，为推进海上风电项目规范开发，做好潜在场址调查与前期研究策划，拟开展国华投资山东分",
+     "elapsed_seconds": 6.91,
+     "error": null,
+     "arm": "35b_v3",
+     "model": "qwen3.6:35b-a3b",
+     "raw_answer_length": 574,
+     "id": "q2_1e95f989df",
+     "question": "海上风电项目规划的结论由哪些证据支撑？",
+     "category": "是什么"
+    },
+    {
+     "status": "fallback",
+     "success": false,
+     "no_evidence": false,
+     "fallback": true,
+     "guard_passed": false,
+     "guard_action": "fallback",
+     "guard_issues": [
+      "insufficient_cited_units",
+      "inference_heavy"
+     ],
+     "citations": 1,
+     "citation_resolvable_rate": 1.0,
+     "inference_ratio": 1.0,
+     "distinct_cited_units": 1,
+     "answer_length": 220,
+     "answer_preview": "（质量守卫回退：多单元答案引用/集中度/推断比例未达标，摘录可核验知识单元）\n- [e9548ab7c8d3] p.1 监管新规允许持有港股通股票的保险机构投资港股通 ETF，丰富了险资跨境权益投资工具且不占用 QDII 额度。 9 月 29 日，多家保险机构收到金融监管总局办公厅下发的《关于明确保险资金投资港股通 E",
+     "elapsed_seconds": 5.66,
+     "error": null,
+     "arm": "35b_v3",
+     "model": "qwen3.6:35b-a3b",
+     "raw_answer_length": 220,
+     "id": "q2_6076398cc7",
+     "question": "保险资金投资港股通 ETF的进入壁垒与差异化优势是什么？",
+     "category": "竞争格局"
+    },
+    {
+     "status": "fallback",
+     "success": false,
+     "no_evidence": false,
+     "fallback": true,
+     "guard_passed": false,
+     "guard_action": "fallback",
+     "guard_issues": [
+      "inference_heavy"
+     ],
+     "citations": 2,
+     "citation_resolvable_rate": 1.0,
+     "inference_ratio": 1.0,
+     "distinct_cited_units": 2,
+     "answer_length": 312,
+     "answer_preview": "（质量守卫回退：多单元答案引用/集中度/推断比例未达标，摘录可核验知识单元）\n- [538860c3cb35] p.11 伏击涨停的核心在于追求投资乐趣而非单纯赚钱，旨在在提心吊胆的股票市场中为投资者找到一片‘乐土’。 “伏击涨停”不是为了“赚钱”，而是为了找“乐趣”，是在人人提心吊胆的股票市场找到一片属于你的“乐土”",
+     "elapsed_seconds": 7.05,
+     "error": null,
+     "arm": "35b_v3",
+     "model": "qwen3.6:35b-a3b",
+     "raw_answer_length": 312,
+     "id": "q2_f93ae02b9d",
+     "question": "伏击涨停的灵魂的景气度受哪些变量影响？",
+     "category": "驱动因素"
+    }
+   ]
+  }
+ },
+ "rows": [
+  {
+   "id": "q2_b5a0a0e045",
+   "category": "风险限制",
+   "question": "量学理论的结论在什么条件下可能不成立？",
+   "9b_v1": {
+    "status": "success",
+    "guard_passed": true,
+    "citations": 4,
+    "inference_ratio": 0.0,
+    "elapsed_seconds": 15.8
+   },
+   "9b_v3": {
+    "status": "fallback",
+    "guard_passed": false,
+    "citations": 2,
+    "inference_ratio": 0.0,
+    "elapsed_seconds": 5.64
+   },
+   "35b_v3": {
+    "status": "fallback",
+    "guard_passed": false,
+    "citations": 2,
+    "inference_ratio": 1.0,
+    "elapsed_seconds": 65.39,
+    "error": null
+   }
+  },
+  {
+   "id": "q2_aa49124184",
+   "category": "关键数据",
+   "question": "储气调峰能力建设中研报提供了哪些可验证的关键数据或指标？",
+   "9b_v1": {
+    "status": "success",
+    "guard_passed": true,
+    "citations": 2,
+    "inference_ratio": 0.0,
+    "elapsed_seconds": 18.03
+   },
+   "9b_v3": {
+    "status": "fallback",
+    "guard_passed": false,
+    "citations": 2,
+    "inference_ratio": 1.0,
+    "elapsed_seconds": 8.04
+   },
+   "35b_v3": {
+    "status": "fallback",
+    "guard_passed": false,
+    "citations": 2,
+    "inference_ratio": 1.0,
+    "elapsed_seconds": 4.62,
+    "error": null
+   }
+  },
+  {
+   "id": "q2_bcbfd79337",
+   "category": "驱动因素",
+   "question": "智能算力规模占比的核心驱动因素是什么？",
+   "9b_v1": {
+    "status": "fallback",
+    "guard_passed": false,
+    "citations": 2,
+    "inference_ratio": 0.5,
+    "elapsed_seconds": 14.47
+   },
+   "9b_v3": {
+    "status": "fallback",
+    "guard_passed": false,
+    "citations": 3,
+    "inference_ratio": 1.0,
+    "elapsed_seconds": 10.2
+   },
+   "35b_v3": {
+    "status": "fallback",
+    "guard_passed": false,
+    "citations": 2,
+    "inference_ratio": 1.0,
+    "elapsed_seconds": 5.33,
+    "error": null
+   }
+  },
+  {
+   "id": "q2_a593448ce5",
+   "category": "如何识别",
+   "question": "北京市货物贸易净出口需要跟踪哪些指标或事件？",
+   "9b_v1": {
+    "status": "success",
+    "guard_passed": true,
+    "citations": 3,
+    "inference_ratio": 0.3333,
+    "elapsed_seconds": 17.69
+   },
+   "9b_v3": {
+    "status": "fallback",
+    "guard_passed": false,
+    "citations": 2,
+    "inference_ratio": 1.0,
+    "elapsed_seconds": 6.7
+   },
+   "35b_v3": {
+    "status": "fallback",
+    "guard_passed": false,
+    "citations": 2,
+    "inference_ratio": 1.0,
+    "elapsed_seconds": 5.08,
+    "error": null
+   }
+  },
+  {
+   "id": "q2_3d1abf0240",
+   "category": "影响如何",
+   "question": "离岛免税消费数据对相关标的基本面或估值的影响如何？",
+   "9b_v1": {
+    "status": "fallback",
+    "guard_passed": false,
+    "citations": 1,
+    "inference_ratio": 0.5,
+    "elapsed_seconds": 13.92
+   },
+   "9b_v3": {
+    "status": "fallback",
+    "guard_passed": false,
+    "citations": 2,
+    "inference_ratio": 1.0,
+    "elapsed_seconds": 7.78
+   },
+   "35b_v3": {
+    "status": "fallback",
+    "guard_passed": false,
+    "citations": 1,
+    "inference_ratio": 1.0,
+    "elapsed_seconds": 4.14,
+    "error": null
+   }
+  },
+  {
+   "id": "q2_1e95f989df",
+   "category": "是什么",
+   "question": "海上风电项目规划的结论由哪些证据支撑？",
+   "9b_v1": {
+    "status": "success",
+    "guard_passed": true,
+    "citations": 3,
+    "inference_ratio": 0.5,
+    "elapsed_seconds": 16.52
+   },
+   "9b_v3": {
+    "status": "fallback",
+    "guard_passed": false,
+    "citations": 3,
+    "inference_ratio": 1.0,
+    "elapsed_seconds": 8.04
+   },
+   "35b_v3": {
+    "status": "fallback",
+    "guard_passed": false,
+    "citations": 3,
+    "inference_ratio": 1.0,
+    "elapsed_seconds": 6.91,
+    "error": null
+   }
+  },
+  {
+   "id": "q2_6076398cc7",
+   "category": "竞争格局",
+   "question": "保险资金投资港股通 ETF的进入壁垒与差异化优势是什么？",
+   "9b_v1": {
+    "status": "fallback",
+    "guard_passed": false,
+    "citations": 2,
+    "inference_ratio": 1.0,
+    "elapsed_seconds": 18.11
+   },
+   "9b_v3": {
+    "status": "fallback",
+    "guard_passed": false,
+    "citations": 2,
+    "inference_ratio": 1.0,
+    "elapsed_seconds": 8.14
+   },
+   "35b_v3": {
+    "status": "fallback",
+    "guard_passed": false,
+    "citations": 1,
+    "inference_ratio": 1.0,
+    "elapsed_seconds": 5.66,
+    "error": null
+   }
+  },
+  {
+   "id": "q2_f93ae02b9d",
+   "category": "驱动因素",
+   "question": "伏击涨停的灵魂的景气度受哪些变量影响？",
+   "9b_v1": {
+    "status": "fallback",
+    "guard_passed": false,
+    "citations": 2,
+    "inference_ratio": 1.0,
+    "elapsed_seconds": 11.3
+   },
+   "9b_v3": {
+    "status": "fallback",
+    "guard_passed": false,
+    "citations": 3,
+    "inference_ratio": 1.0,
+    "elapsed_seconds": 7.06
+   },
+   "35b_v3": {
+    "status": "fallback",
+    "guard_passed": false,
+    "citations": 2,
+    "inference_ratio": 1.0,
+    "elapsed_seconds": 7.05,
+    "error": null
+   }
+  }
+ ],
+ "comparison": {
+  "recommendation": "keep_v1",
+  "verdict": "35b 未能让 v3 可用（未见显著提升）；不建议引入 35b 作为可选模型，保留 9b+v1",
+  "reasons": [
+   "guard 通过率：9b+v3 0% → 35b+v3 0%（Δ+0%）；9b+v1 50%（Δ vs v1 -50%）。",
+   "可答率：9b+v3 0% → 35b+v3 0%；9b+v1 50%（Δ vs v1 -50%）。",
+   "平均推断比例：9b+v3 0.875 → 35b+v3 1.0；平均引用：2.38 → 1.88；平均耗时：7.7s → 13.02s。"
+  ],
+  "risks": [
+   "35b 首次加载/推理耗时远高于 9b（冷加载可达 2–3 分钟），作为默认模型成本高，需评估吞吐与并发。",
+   "样本小（默认 10 条，35b 慢时可能更少），结论需扩样 30–50 条复核。",
+   "35b 输出更长，token 成本与响应时延需真实压测（单条 300s 上限）。",
+   "本 A/B 仅换模型不换 prompt，若 35b 仍不达标说明 v3 prompt 需重写而非模型升级。"
+  ],
+  "delta": {
+   "guard_pass_vs_9b_v3": 0,
+   "guard_pass_vs_9b_v1": -0.5,
+   "answerable_vs_9b_v1": -0.5
+  }
+ },
+ "elapsed_seconds": 104.17,
+ "disclaimer": "35b A/B 结果仅供研究参考，不构成投资建议；答案需人工复核。"
+}

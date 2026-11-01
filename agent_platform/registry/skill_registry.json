@@ -736,6 +736,20 @@
       "title": "第二轮候选机器预审",
       "ref": "tools/kb_corpus/card_precheck_v3.py",
       "enabled": true
+    },
+    {
+      "id": "safe_json",
+      "kind": "tool",
+      "title": "安全 JSON 写入（备份/原子/校验）",
+      "ref": "tools/kb_corpus/safe_json.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_qa_prompt_v3_35b",
+      "kind": "tool",
+      "title": "35b 模型 prompt v3 A/B",
+      "ref": "tools/kb_corpus/kb_qa_prompt_v3_35b.py",
+      "enabled": true
     }
   ]
 }

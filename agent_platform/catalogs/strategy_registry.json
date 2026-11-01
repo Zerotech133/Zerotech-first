@@ -5306,5 +5306,63 @@
     "tool": "tools/kb_corpus/card_precheck_v3.py",
     "report": "research/reports/card_precheck_v3_20261101.md",
     "note": "第二轮 40 候选规则预审：pass17/revise21/reject2；已回写 card_review_data.json 的 CP3 precheck；审核页一键预填现覆盖 100 张（pass53/revise45/reject2）。"
+  },
+  "static_writer_audit_v2_20261101": {
+    "tool": "tools/kb_corpus/static_writer_audit.py",
+    "report": "research/reports/static_writer_audit_v2_20261101.md",
+    "summary": {
+      "n_records": 52,
+      "n_writers": 17,
+      "n_read_only": 35,
+      "high": 0,
+      "medium": 8,
+      "low": 9,
+      "helper_based_writers": 6,
+      "targets_total": 14,
+      "high_targets": [],
+      "v1_n_writers": 15,
+      "v1_high": 3,
+      "v1_medium": 9,
+      "v1_low": 3,
+      "downgraded": 7,
+      "upgraded": 0
+    },
+    "note": "审计规则升级 v2：识别 safe_write/atomic/backup 辅助函数；**高风险 3→0**（降级 7 个），中 8 / 低 9；剩余中风险（生成类）建议后续按批加固。"
+  },
+  "kb_qa_prompt_v3_35b_20261101": {
+    "tool": "tools/kb_corpus/kb_qa_prompt_v3_35b.py",
+    "report": "research/reports/kb_qa_prompt_v3_35b_20261101.md",
+    "comparison": {
+      "recommendation": "keep_v1",
+      "verdict": "35b 未能让 v3 可用（未见显著提升）；不建议引入 35b 作为可选模型，保留 9b+v1",
+      "reasons": [
+        "guard 通过率：9b+v3 0% → 35b+v3 0%（Δ+0%）；9b+v1 50%（Δ vs v1 -50%）。",
+        "可答率：9b+v3 0% → 35b+v3 0%；9b+v1 50%（Δ vs v1 -50%）。",
+        "平均推断比例：9b+v3 0.875 → 35b+v3 1.0；平均引用：2.38 → 1.88；平均耗时：7.7s → 13.02s。"
+      ],
+      "risks": [
+        "35b 首次加载/推理耗时远高于 9b（冷加载可达 2–3 分钟），作为默认模型成本高，需评估吞吐与并发。",
+        "样本小（默认 10 条，35b 慢时可能更少），结论需扩样 30–50 条复核。",
+        "35b 输出更长，token 成本与响应时延需真实压测（单条 300s 上限）。",
+        "本 A/B 仅换模型不换 prompt，若 35b 仍不达标说明 v3 prompt 需重写而非模型升级。"
+      ],
+      "delta": {
+        "guard_pass_vs_9b_v3": 0,
+        "guard_pass_vs_9b_v1": -0.5,
+        "answerable_vs_9b_v1": -0.5
+      }
+    },
+    "note": "35b 模型 + prompt v3：可答率 0%（推断比例 1.0，比 9b 更差）→ 换模型不解决；**keep_v1**（9b+现 prompt 可答 50%）；瓶颈是 prompt 与 guard 标记契约。"
+  },
+  "safe_json_20261101": {
+    "tool": "tools/kb_corpus/safe_json.py",
+    "hardened": [
+      "daily_briefing.py",
+      "kb_ingest_status.py",
+      "kb_reports_gov.py",
+      "panel_daily.py"
+    ],
+    "doc": "docs/plans/2026-11-01_静态产物安全写入_v1.md",
+    "note": "safe_json.backup_then_atomic_write（备份+原子写+写后校验+回滚）接入 4 个中风险脚本；测试 10 passed，CLI/输出不变。"
   }
 }

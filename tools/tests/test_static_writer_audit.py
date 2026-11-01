@@ -69,6 +69,28 @@ STATIC = Path(__file__).resolve().parents[1] / "portal" / "static"
 data = json.loads((STATIC / "kb_learning_cards.json").read_text(encoding="utf-8"))
 '''
 
+HELPER_WRITER = '''# -*- coding: utf-8 -*-
+import json, os, shutil
+from pathlib import Path
+PORTAL = Path(__file__).resolve().parents[1] / "portal"
+OUT = PORTAL / "static" / "kb_learning_cards.json"
+
+def safe_write_json(path, payload, merge_fn=None):
+    old = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    if path.exists():
+        shutil.copy2(path, path.with_suffix(".bak.json"))
+    tmp = path.with_suffix(".tmp")
+    merged = merge_fn(old, payload) if merge_fn else payload
+    tmp.write_text(json.dumps(merged, ensure_ascii=False), encoding="utf-8")
+    os.replace(tmp, path)
+
+def _merge_cards(old, new):
+    return dict(old, **new)
+
+def save():
+    safe_write_json(OUT, {"a": 1}, merge_fn=_merge_cards)
+'''
+
 
 def _make_workspace(tmp_path: Path) -> Path:
     root = tmp_path / "ws"
@@ -80,6 +102,7 @@ def _make_workspace(tmp_path: Path) -> Path:
     (root / "tools" / "bad_writer.py").write_text(BAD_WRITER, encoding="utf-8")
     (root / "tools" / "good_writer.py").write_text(GOOD_WRITER, encoding="utf-8")
     (root / "tools" / "alias_writer.py").write_text(ALIAS_WRITER, encoding="utf-8")
+    (root / "tools" / "helper_writer.py").write_text(HELPER_WRITER, encoding="utf-8")
     (root / "tools" / "reader.py").write_text(READER, encoding="utf-8")
     return root
 
@@ -149,3 +172,56 @@ def test_cli_writes_reports(tmp_path):
     rep = json.loads(out_json.read_text(encoding="utf-8"))
     assert rep["summary"]["n_writers"] >= 3
     assert out_md.exists() and "高风险清单" in out_md.read_text(encoding="utf-8")
+
+
+# ------------------------------------------------------------------ 5. v2 辅助函数识别
+def test_helper_writer_detection_and_downgrade(tmp_path, monkeypatch):
+    root = _make_workspace(tmp_path)
+    records = swa.scan(root, static_dir=root / "portal" / "static")
+    by = {r["script"].replace("\\", "/"): r for r in records}
+    helper = by["tools/helper_writer.py"]
+    assert helper["helper_based"] is True
+    assert "safe_write_json" in helper["helper_names"]
+    assert helper["targets"] == ["kb_learning_cards.json"]
+    assert helper["protection"] == {"backup": True, "merge_existing": True,
+                                    "atomic_write": True}
+    assert helper["risk"] == "low"
+    assert any(c["helper"] == "safe_write_json" for c in helper["helper_calls"])
+    # v1 → v2 复审：伪造 v1 报告把该脚本判为 high → 应出现 downgrade
+    fake_v1 = tmp_path / "v1.json"
+    fake_script = str(Path("tools") / "helper_writer.py")   # 与 scan 输出同平台分隔符
+    fake_v1.write_text(json.dumps({
+        "writers": [{"script": fake_script, "risk": "high"}],
+        "summary": {"n_writers": 1, "high": 1, "medium": 0, "low": 0}}, ensure_ascii=False),
+        encoding="utf-8")
+    monkeypatch.setattr(swa, "V1_JSON", fake_v1)
+    rep = swa.build_report(records, root)
+    rv = rep["review_v1_v2"]
+    assert rv["v1_available"] is True
+    assert any(c["script"] == fake_script and c["v1_risk"] == "high"
+               and c["v2_risk"] == "low" for c in rv["downgraded"])
+    md = swa.render_md(rep)
+    assert "v1 → v2 复审对比" in md and "降级确认" in md
+
+
+# ------------------------------------------------------------------ 6. 真实仓库复审
+def test_real_repo_high_risk_downgraded():
+    records = swa.scan()
+    by = {r["script"].replace("\\", "/"): r for r in records}
+    for script in ("tools/kb_corpus/morning_brief_push.py",
+                   "tools/research/panel_export.py"):
+        rec = by.get(script)
+        assert rec is not None, f"未识别 helper 写入：{script}"
+        assert rec["helper_based"] is True
+        assert rec["risk"] == "low", (script, rec["risk"], rec["risk_reasons"])
+    learn = by["tools/kb_corpus/learning_cards.py"]
+    assert learn["risk"] == "medium", learn["risk_reasons"]   # 有合并、缺备份/原子写
+    rep = swa.build_report(records)
+    assert rep["summary"]["high"] == 0
+    rv = rep["review_v1_v2"]
+    downgraded = {(c["script"].replace("\\", "/"), c["v1_risk"], c["v2_risk"])
+                  for c in rv["downgraded"]}
+    assert ("tools/kb_corpus/morning_brief_push.py", "high", "low") in downgraded
+    assert ("tools/research/panel_export.py", "high", "low") in downgraded
+    assert ("tools/kb_corpus/learning_cards.py", "high", "medium") in downgraded
+    assert rv["v2_high_scripts"] == []

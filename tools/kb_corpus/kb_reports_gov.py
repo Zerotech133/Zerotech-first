@@ -12,6 +12,9 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from safe_json import backup_then_atomic_write  # noqa: E402
+
 REPO = Path(r"C:\项目\老田的AI助手")
 REPORTS = Path(r"C:/项目/PDF/_ingest_reports")
 KB_DOCS = REPO / "knowledge_docs"
@@ -68,8 +71,7 @@ def main() -> int:
             "抽样 20 条知识单元人工对照原文",
         ],
     }
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
+    backup_then_atomic_write(OUT, payload)  # 备份+原子写+写后 JSON 校验
     print("写出", OUT, "| docs", docs, "units", units, "tables", tables, "RAG records", len(records), flush=True)
     return 0
 

@@ -12,6 +12,9 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from safe_json import backup_then_atomic_write  # noqa: E402
+
 REPO = Path(r"C:\项目\老田的AI助手")
 INGESTS = [("书籍库", Path(r"C:/项目/PDF/_ingest")), ("研报库", Path(r"C:/项目/PDF/_ingest_reports")),
            ("策略经典", Path(r"C:/项目/PDF/_ingest_notes"))]
@@ -89,8 +92,7 @@ def main() -> int:
         "thresholds": {"ocr_chars_per_page_min": 100, "page_coverage_min": 0.95,
                        "chapters_min": 5, "units_min": 10, "citation_rate_min": 1.0},
     }
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
+    backup_then_atomic_write(OUT, payload)  # 备份+原子写+写后 JSON 校验
     print("写出", OUT, "| books", len(books), "pages", total_pages, "units", total_units,
           "| verify", payload["verify"]["ok"], "| pipeline", payload["pipeline"]["ok"], flush=True)
     return 0

@@ -37,9 +37,10 @@ ROOT = Path(__file__).resolve().parents[2]
 PORTAL = ROOT / "portal"
 STATIC = PORTAL / "static"
 OUT = ROOT / "research" / "reports"
-OUT_JSON = OUT / "static_writer_audit_20261101.json"
-OUT_MD = OUT / "static_writer_audit_20261101.md"
-SCHEMA_VERSION = "static_writer_audit.v1"
+OUT_JSON = OUT / "static_writer_audit_v2_20261101.json"
+OUT_MD = OUT / "static_writer_audit_v2_20261101.md"
+V1_JSON = OUT / "static_writer_audit_20261101.json"
+SCHEMA_VERSION = "static_writer_audit.v2"
 
 # 扫描范围（相对 ROOT）
 SCAN_DIRS = ("tools", "portal")
@@ -58,6 +59,10 @@ WRITE_OP_RE = re.compile(
     r"json\.dump\(|open\([^)]*['\"][wa]['\"]|shutil\.copy|os\.replace")
 BACKUP_RE = re.compile(r"backup|\.bak|copy2|shutil\.copy|backups", re.I)
 MERGE_RE = re.compile(r"merge|existing|old_data|保留旧|合并|setdefault|update\(|json\.load", re.I)
+# v2：辅助函数写盘识别（safe_write_json / atomic_write / write_json_safe / backup_write 等）
+SAFE_HELPER_NAMES = ("safe_write", "write_safe", "safe_json", "atomic_write",
+                     "json_safe", "safe_dump", "backup_write")
+CALL_RE = re.compile(r"\b(?P<fn>[A-Za-z_]\w*)\s*\(")
 ATOMIC_RE = re.compile(r"os\.replace|\.replace\(|tempfile|NamedTemporaryFile|\.tmp|atomic", re.I)
 # 参数默认值别名（def f(base: Path | str = BASE)）与简单变量别名（portal_path = BASE）
 PARAM_ALIAS_RE = re.compile(r"(?P<arg>[A-Za-z_]\w*)\s*:\s*[^=,)\n]+=\s*(?P<src>[A-Za-z_]\w*)")
@@ -115,6 +120,17 @@ def _write_evidence(text: str, targets: set[str], limit: int = 3) -> list[dict]:
     return evidence
 
 
+def _helper_body(text: str, name: str) -> str:
+    """取辅助函数定义体（用于识别 backup/atomic/merge 保护）；外部导入返回空串。"""
+    m = re.search(rf"(?m)^\s*def\s+{re.escape(name)}\s*\(", text)
+    if not m:
+        return ""
+    tail = text[m.start():]
+    nxt = re.search(r"(?m)^\s*(?:def|class)\s+\w+", tail[1:])
+    body = tail[:nxt.start() + 1] if nxt else tail
+    return body[:6000]
+
+
 def audit_script(path: Path, static_names: list[str], statics: dict[str, list[str]],
                  root: Path | str = ROOT) -> dict | None:
     """审计单个脚本；返回记录（无写盘迹象/未引用静态文件 → None）。"""
@@ -164,6 +180,40 @@ def audit_script(path: Path, static_names: list[str], statics: dict[str, list[st
             write_targets.update(hit)
             evidence.append({"line": i, "snippet": line.strip()[:180],
                              "targets_in_line": sorted(set(hit))})
+    # v2：辅助函数写盘识别（safe_write_json(TARGET, ...) / atomic_write(PATH, ...) 等）
+    helper_calls: list[dict] = []
+    helper_names: set[str] = set()
+    helper_protection = {"backup": False, "merge": False, "atomic": False}
+    for i, line in enumerate(lines, 1):
+        for m in CALL_RE.finditer(line):
+            fn = m.group("fn")
+            if not any(k in fn.lower() for k in SAFE_HELPER_NAMES):
+                continue
+            after = line[m.end():]
+            args = after.split(",")[0].strip().rstrip(")")
+            hit: list[str] = []
+            for var in writable_vars:
+                if re.search(rf"\b{re.escape(var)}\b", args):
+                    hit.append(var_target[root_var(var)])
+            hit += [t for t in direct if t in args]
+            lit = JSON_RE.search(args)
+            if lit and lit.group(1) in static_names:
+                hit.append(lit.group(1))
+            hit = sorted(set(hit))
+            if not hit:
+                continue
+            write_targets.update(hit)
+            helper_names.add(fn)
+            body = _helper_body(text, fn)
+            lower = fn.lower()
+            prot = {"backup": bool(BACKUP_RE.search(body)) or "safe" in lower or "backup" in lower,
+                    "atomic": bool(ATOMIC_RE.search(body)) or "safe" in lower or "atomic" in lower,
+                    "merge": bool(re.search(r"merge_fn|counts_fn", line))
+                             or bool(re.search(r"def _?merge|merge_fn", body))}
+            helper_protection = {k: helper_protection[k] or prot[k] for k in prot}
+            helper_calls.append({"line": i, "helper": fn,
+                                 "snippet": line.strip()[:180],
+                                 "targets_in_line": hit})
     if not write_targets:
         # 引用了静态文件但没有可定位的写入目标 → 只读引用
         refs = sorted(direct)
@@ -171,6 +221,8 @@ def audit_script(path: Path, static_names: list[str], statics: dict[str, list[st
             return None
         return {"script": str(path.relative_to(Path(root))), "targets": refs,
                 "read_only": True, "write_evidence": [],
+                "helper_based": False, "helper_calls": [], "helper_names": [],
+                "protection": {},
                 "flags": {"backup": bool(BACKUP_RE.search(text)),
                           "merge_existing": bool(MERGE_RE.search(text)),
                           "atomic_write": bool(ATOMIC_RE.search(text)),
@@ -180,40 +232,53 @@ def audit_script(path: Path, static_names: list[str], statics: dict[str, list[st
                 "fix_suggestions": []}
     is_merge = bool(MERGE_RE.search(text)) and bool(
         re.search(r"read_text|json\.load", text))
-    flags = {"backup": bool(BACKUP_RE.search(text)),
-             "merge_existing": is_merge,
-             "atomic_write": bool(ATOMIC_RE.search(text)),
+    flags = {"backup": bool(BACKUP_RE.search(text)) or helper_protection["backup"],
+             "merge_existing": is_merge or helper_protection["merge"],
+             "atomic_write": bool(ATOMIC_RE.search(text)) or helper_protection["atomic"],
              "read_only": False}
+    helper_based = bool(helper_names)
+    protection = {k: bool(flags[k]) for k in ("backup", "merge_existing", "atomic_write")}
+    protected_all = all(protection.values())
     curated = sorted(t for t in write_targets if t in CURATED_TARGETS)
     generated = sorted(t for t in write_targets if t not in CURATED_TARGETS)
     data_kind = "curated" if curated else "generated"
+    helper_txt = ("（safe_write 辅助函数：" + "、".join(sorted(helper_names)) + "）"
+                  if helper_based else "")
     reasons: list[str] = []
     risk = "low"
-    if curated and not flags["backup"] and not flags["atomic_write"]:
-        risk = "high"
-        reasons += ["写人工/长期资产（" + "、".join(curated) + "）",
-                    "无备份迹象", "无原子写迹象 → 直接整文件覆盖风险"]
-    elif curated and (not flags["backup"] or not flags["atomic_write"]):
-        risk = "medium"
-        reasons += ["写人工资产（" + "、".join(curated) + "）",
-                    ("缺备份" if not flags["backup"] else "缺原子写")]
-    elif curated:
-        risk = "medium"
-        reasons += ["写人工资产但具备备份+原子写，仍需合并/确认保护"]
+    if curated:
+        if not flags["backup"] and not flags["atomic_write"] and not flags["merge_existing"]:
+            risk = "high"
+            reasons += ["写人工/长期资产（" + "、".join(curated) + "）",
+                        "无备份/无原子写/无合并 → 直接整文件覆盖风险"]
+        elif protected_all:
+            risk = "low"
+            reasons += ["写人工资产（" + "、".join(curated) + "）但三件套齐全" + helper_txt]
+        else:
+            risk = "medium"
+            missing = [k for k, label in (("backup", "备份"), ("atomic_write", "原子写"),
+                                          ("merge_existing", "合并旧数据"))
+                       if not flags[k]]
+            reasons += ["写人工资产（" + "、".join(curated) + "）",
+                        "缺" + "、".join(missing) + "（有部分保护）"]
+    elif protected_all:
+        risk = "low"
+        reasons += ["生成数据 + 三件套齐全" + helper_txt]
     elif not flags["backup"] and not flags["atomic_write"]:
         risk = "medium"
         reasons += ["写生成数据（可重算）但无备份/原子写"]
     else:
         risk = "low"
         reasons += ["生成数据可重算，且有备份/原子写保护"]
-    if not flags["merge_existing"]:
-        reasons.append("未发现读-合并旧数据逻辑（整文件替换语义）")
     if flags["read_only"]:
         risk = "low"
     return {"script": str(path.relative_to(Path(root))), "targets": sorted(write_targets),
             "curated_targets": curated, "generated_targets": generated,
-            "read_only": False, "write_evidence": evidence[:5], "flags": flags,
-            "data_kind": data_kind, "risk": risk, "risk_reasons": reasons,
+            "read_only": False, "write_evidence": (helper_calls + evidence)[:5],
+            "helper_based": helper_based, "helper_calls": helper_calls,
+            "helper_names": sorted(helper_names), "protection": protection,
+            "flags": flags, "data_kind": data_kind, "risk": risk,
+            "risk_reasons": reasons,
             "fix_suggestions": FIX_HIGH if risk == "high" else []}
 
 
@@ -240,6 +305,49 @@ def scan(root: Path | str = ROOT, static_dir: Path | str = STATIC,
 # --------------------------------------------------------------------------- #
 # 报告
 # --------------------------------------------------------------------------- #
+RISK_ORDER = {"high": 3, "medium": 2, "low": 1}
+
+
+def load_v1_report(path: Path | str | None = None) -> dict:
+    """读 wave26 v1 审计报告（用于 v1→v2 复审对比；缺失则返回空）。"""
+    p = Path(path) if path is not None else V1_JSON
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def review_vs_v1(writers: list[dict], v1: dict) -> dict:
+    """对比 v1/v2 风险：输出降级/升级清单与 v1/v2 汇总。"""
+    v1_risks = {w.get("script"): w.get("risk") for w in (v1.get("writers") or [])
+                if isinstance(w, dict) and w.get("script")}
+    changes: list[dict] = []
+    for w in writers:
+        old = v1_risks.get(w["script"])
+        if old is None or old == w["risk"]:
+            continue
+        direction = "downgrade" if RISK_ORDER.get(w["risk"], 0) < RISK_ORDER.get(old, 0) else "upgrade"
+        changes.append({"script": w["script"], "targets": w["targets"],
+                        "v1_risk": old, "v2_risk": w["risk"], "direction": direction,
+                        "helper_based": bool(w.get("helper_based")),
+                        "helper_names": w.get("helper_names") or [],
+                        "reasons": w.get("risk_reasons") or []})
+    changes.sort(key=lambda c: (c["direction"] != "downgrade", c["script"]))
+    v1_summary = v1.get("summary") or {}
+    return {
+        "v1_path": str(V1_JSON),
+        "v1_available": bool(v1),
+        "v1_summary": {k: v1_summary.get(k) for k in
+                       ("n_writers", "high", "medium", "low", "high_targets")},
+        "changes": changes,
+        "downgraded": [c for c in changes if c["direction"] == "downgrade"],
+        "upgraded": [c for c in changes if c["direction"] == "upgrade"],
+        "unchanged_count": len(v1_risks) - len({c["script"] for c in changes}),
+        "v2_high_scripts": sorted(w["script"] for w in writers if w["risk"] == "high"),
+    }
+
+
 def build_report(records: list[dict], root: Path | str = ROOT) -> dict:
     root = Path(root)
     static_names = static_json_names(Path(root) / "portal" / "static")
@@ -254,8 +362,7 @@ def build_report(records: list[dict], root: Path | str = ROOT) -> dict:
                                            "writers": [], "max_risk": "low",
                                            "curated": t in CURATED_TARGETS})
             entry["writers"].append(r["script"])
-            order = {"high": 3, "medium": 2, "low": 1}
-            if order[r["risk"]] > order[entry["max_risk"]]:
+            if RISK_ORDER[r["risk"]] > RISK_ORDER[entry["max_risk"]]:
                 entry["max_risk"] = r["risk"]
     high = [{"script": r["script"], "targets": r["targets"],
              "missing_controls": [k for k in ("backup", "merge_existing", "atomic_write")
@@ -264,30 +371,44 @@ def build_report(records: list[dict], root: Path | str = ROOT) -> dict:
              "minimal_fixes": r["fix_suggestions"],
              "write_evidence": r["write_evidence"][:2]}
             for r in by_risk["high"]]
+    review = review_vs_v1(writers, load_v1_report())
+    v1_summary = review.get("v1_summary") or {}
     return {
         "schema_version": SCHEMA_VERSION,
         "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
         "scope": {"dirs": list(SCAN_DIRS), "static_files": len(static_names),
                   "scanned_root": str(root)},
         "policy": {
-            "high": "人工/长期资产 + 无备份 + 无原子写（直接整文件覆盖）",
-            "medium": "生成数据可重算；或人工资产缺备份/原子写之一；或缺合并旧数据逻辑",
-            "low": "只读引用 / 生成数据且有备份+原子写",
+            "high": "人工/长期资产 + 无备份 + 无原子写 + 无合并旧数据（直接整文件覆盖）",
+            "medium": "人工资产缺备份/原子写/合并之一（部分保护）；或生成数据无备份/原子写",
+            "low": "只读引用；或生成数据+三件套；或人工资产三件套齐全（含 safe_write 辅助函数识别）",
             "curated_targets": sorted(CURATED_TARGETS),
-            "heuristic": "基于源码文本/变量赋值的启发式扫描，需人工复核（可能漏报/误报）",
+            "heuristic": "基于源码文本/变量赋值/辅助函数调用（v2）的启发式扫描，需人工复核（可能漏报/误报）",
+            "v2_new": ["识别 safe_write_json/atomic_write/write_json_safe 等辅助函数调用写盘",
+                       "识别辅助函数定义体内的备份/tmp+os.replace/merge_fn 保护",
+                       "识别 read-merge-write 模式并可据此降级（有合并但缺备份/原子写→中风险）",
+                       "v1（wave26 报告）→ v2 风险对比（降级确认清单）"],
         },
         "summary": {"n_records": len(records), "n_writers": len(writers),
                     "n_read_only": len(read_only),
                     "high": len(by_risk["high"]), "medium": len(by_risk["medium"]),
                     "low": len(by_risk["low"]),
+                    "helper_based_writers": sum(1 for r in writers if r.get("helper_based")),
                     "targets_total": len(targets),
-                    "high_targets": sorted({t for r in by_risk["high"] for t in r["targets"]})},
+                    "high_targets": sorted({t for r in by_risk["high"] for t in r["targets"]}),
+                    "v1_n_writers": v1_summary.get("n_writers"),
+                    "v1_high": v1_summary.get("high"),
+                    "v1_medium": v1_summary.get("medium"),
+                    "v1_low": v1_summary.get("low"),
+                    "downgraded": len(review.get("downgraded") or []),
+                    "upgraded": len(review.get("upgraded") or [])},
         "writers": sorted(writers, key=lambda r: ({"high": 0, "medium": 1, "low": 2}[r["risk"]],
                                                   r["script"])),
         "read_only_references": sorted(read_only, key=lambda r: r["script"]),
         "targets": sorted(targets.values(), key=lambda x: ({"high": 0, "medium": 1, "low": 2}[x["max_risk"]],
                                                            x["target"])),
         "high_risk": high,
+        "review_v1_v2": review,
     }
 
 
@@ -309,6 +430,37 @@ def render_md(rep: dict) -> str:
     L.append(f"- **中**：{rep['policy']['medium']}")
     L.append(f"- **低**：{rep['policy']['low']}")
     L.append(f"- 人工资产名单：{'、'.join(rep['policy']['curated_targets'])}")
+    L.append("")
+    rv = rep.get("review_v1_v2") or {}
+    L.append("## v1 → v2 复审对比（规则升级：辅助函数/read-merge-write 识别）")
+    L.append("")
+    if rv.get("v1_available"):
+        v1s = rv.get("v1_summary") or {}
+        L.append(f"- v1（wave26 报告）：写盘 {v1s.get('n_writers')} 个"
+                 f"（高 {v1s.get('high')} / 中 {v1s.get('medium')} / 低 {v1s.get('low')}）")
+        L.append(f"- v2（本次）：写盘 {s['n_writers']} 个（高 {s['high']} / 中 {s['medium']} / "
+                 f"低 {s['low']}）；辅助函数写入识别 {s['helper_based_writers']} 个；"
+                 f"降级 {s['downgraded']}、升级 {s['upgraded']}")
+        if rv.get("downgraded"):
+            L.append("")
+            L.append("| 脚本 | 目标 | v1 | v2 | 依据 |")
+            L.append("|---|---|---|---|---|")
+            for c in rv["downgraded"]:
+                L.append(f"| `{c['script']}` | {'、'.join(c['targets'])} | "
+                         f"{_pct_risk(c['v1_risk'])} | {_pct_risk(c['v2_risk'])} | "
+                         f"{'；'.join(c['reasons'][:2])} |")
+            L.append("")
+            L.append("**降级确认**：" + "、".join(f"`{c['script']}`" for c in rv["downgraded"]))
+        if rv.get("upgraded"):
+            L.append("")
+            L.append("**升级（v2 更严）**：" + "、".join(
+                f"`{c['script']}`（{c['v1_risk']}→{c['v2_risk']}）" for c in rv["upgraded"]))
+        if rv.get("v2_high_scripts"):
+            L.append("")
+            L.append("**剩余高风险（v2）**：" + "、".join(
+                f"`{x}`" for x in rv["v2_high_scripts"]))
+    else:
+        L.append("- v1 报告不可用，无法对比（仅输出 v2 结果）。")
     L.append("")
     L.append("## 高风险清单（优先整改）")
     L.append("")
@@ -334,14 +486,15 @@ def render_md(rep: dict) -> str:
         L.append("")
     L.append("## 全部写盘脚本清单")
     L.append("")
-    L.append("| 风险 | 脚本 | 目标 | 备份 | 合并旧数据 | 原子写 | 页面消费 |")
-    L.append("|---|---|---|---|---|---|---|")
+    L.append("| 风险 | 脚本 | 目标 | 备份 | 合并旧数据 | 原子写 | 辅助函数 | 页面消费 |")
+    L.append("|---|---|---|---|---|---|---|---|")
     for r in rep["writers"]:
         f = r["flags"]
         cons = "、".join(r.get("consumers") or []) or "—"
+        helper = "、".join(r.get("helper_names") or []) or "—"
         L.append(f"| {_pct_risk(r['risk'])} | `{r['script']}` | {'、'.join(r['targets'])} | "
                  f"{'✅' if f['backup'] else '❌'} | {'✅' if f['merge_existing'] else '❌'} | "
-                 f"{'✅' if f['atomic_write'] else '❌'} | {cons} |")
+                 f"{'✅' if f['atomic_write'] else '❌'} | {helper} | {cons} |")
     L.append("")
     if rep["read_only_references"]:
         L.append("## 只读引用（低风险，仅提示）")
