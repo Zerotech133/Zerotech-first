@@ -3470,5 +3470,89 @@
     "tests": "tools/tests/test_eval_assets.py",
     "header_tool": "tools/kb_corpus/eval_report_header.py",
     "note": "评测资产 hash 守卫：verify_all 校验 hash/manifest/规范字段、version2+n≥60、篡改/缺失清晰失败（5 tests）；报告头工具 make_header(set_version) 输出 set_id/content_hash/annotation_policy（5 tests）；建议 test_gate fast 追加一行（未改 test_gate）。"
+  },
+  "kb_qa_multi_20261101": {
+    "tool": "tools/kb_corpus/kb_qa_multi.py",
+    "report": "research/reports/kb_qa_multi_20261101.md",
+    "delta": {
+      "answerable_rate": 0.4167,
+      "avg_citations": 0.25,
+      "elapsed_seconds": -98.0,
+      "no_evidence": -5
+    },
+    "conclusion": {
+      "multi_unit_breaks_bottleneck": true,
+      "verdict": "多单元聚合显著提升可答率，建议作为问答默认模式（MVP 验证通过）",
+      "reasons": [
+        "可答率单单元 25%（3/12）→ 多单元 67%（8/12），Δ+42%。",
+        "拒答数：9 → 4；成功数：3 → 8。",
+        "多单元平均聚类 3.0 个、平均引用 1.5 条，直接事实标记 10、推断标记 14。",
+        "单单元拒答→多单元成功的样本：q2_aa49124184, q2_a593448ce5, q2_3d1abf0240, q2_ef78939178, q2_0d7db24320。"
+      ],
+      "risks": [
+        "多单元聚合 prompt 允许推断，存在「过度综合/跨单元错误拼接」风险，需人工抽查引用与事实边界。",
+        "n=12 为小样本，结论需扩到 30+ 条验证；多单元 prompt 更长，单条耗时更高（见 delta.elapsed_seconds）。",
+        "引用校验仅校验 unit_id 是否在候选池内，不校验「该引用是否支持该论点」；直接事实仍需人工复核。",
+        "若单单元与多单元都拒答，瓶颈可能是模型能力/prompt 严格度，而非材料条数——建议并行试验放宽 prompt 或 35b 模型。"
+      ],
+      "next_actions": [
+        "将多单元聚合作为 kb_qa 的可选模式（--multi），默认保持单单元；先在评测集上 A/B。",
+        "扩样到 30–50 条（v3 问题库全覆盖）重跑本 eval，观察可答率与引用质量稳定性。",
+        "对「都拒答」类问题制作小样本，单独调试 prompt（允许基于 claim 的有限外推）。"
+      ]
+    },
+    "note": "多单元聚合突破可答率瓶颈：12 题单单元 25%(3/12)→多单元 66.7%(8/12)，+41.7pp，拒答 9→4、无回退、耗时 193s→95s；建议作为可选/推荐模式（保留单单元 fallback），需扩样 30-50 条 A/B。"
+  },
+  "kb_qa_eval_20261101": {
+    "tool": "tools/kb_corpus/kb_qa_eval.py",
+    "report": "research/reports/kb_qa_eval_20261101.md",
+    "summary": {
+      "n_samples": 17,
+      "n_main": 17,
+      "n_expanded": 0,
+      "n_expanded_source": 12,
+      "n_dedup_skipped": 12,
+      "citation_valid_samples": 14,
+      "citation_valid_rate": 0.8235,
+      "total_citations": 34,
+      "citations_exists": 34,
+      "citation_exists_rate": 1.0,
+      "avg_supported_ratio": 0.6636,
+      "samples_with_hallucination_flags": 4,
+      "samples_refusal_only": 6,
+      "problems_count": 12,
+      "support_level_totals": {
+        "支持": 40,
+        "弱支持": 6,
+        "拒答": 10,
+        "无支持": 7
+      },
+      "hallucination_flag_totals": {
+        "number": 4,
+        "english_token": 1
+      }
+    },
+    "note": "答案质量评估（17 样本）：引用存在 100%(34/34)、citation_valid 82.4%（3 条无引用）、平均支撑率 66.4%、幻觉候选 4 样本/5 项（多为小数字误报需人工复核）；建议样本 schema 加 expected_refusal/citations_required。"
+  },
+  "card_proposals_v2_20261101": {
+    "tool": "tools/kb_corpus/card_proposal_v2.py",
+    "review": "research/reports/card_proposals_v2_20261101.md",
+    "summary": {
+      "target_themes": 14,
+      "themes_covered": 14,
+      "themes_with_2plus": 14,
+      "candidates": 40,
+      "avg_cards_per_theme": 2.86,
+      "by_angle": {
+        "definition": 14,
+        "key_fact": 14,
+        "impact": 12
+      },
+      "traceable_cards": 40,
+      "traceable_rate": 1.0,
+      "filtered_units": 100,
+      "shortfall_themes": []
+    },
+    "note": "零卡主题概念卡候选：14/14 主题覆盖、40 张卡（定义14/事实14/传导12）、100% 可追溯、pending_review；未覆盖既有卡与 AE 稿；待人工审核后由 card_merge 合并。"
   }
 }

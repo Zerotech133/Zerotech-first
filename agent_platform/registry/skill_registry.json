@@ -568,6 +568,27 @@
       "title": "评测报告头（set_id/hash）",
       "ref": "tools/kb_corpus/eval_report_header.py",
       "enabled": true
+    },
+    {
+      "id": "kb_qa_multi",
+      "kind": "tool",
+      "title": "多单元聚合问答（突破可答率）",
+      "ref": "tools/kb_corpus/kb_qa_multi.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_qa_eval",
+      "kind": "tool",
+      "title": "问答答案质量/幻觉评估",
+      "ref": "tools/kb_corpus/kb_qa_eval.py",
+      "enabled": true
+    },
+    {
+      "id": "card_proposal_v2",
+      "kind": "tool",
+      "title": "零卡主题概念卡候选生成",
+      "ref": "tools/kb_corpus/card_proposal_v2.py",
+      "enabled": true
     }
   ]
 }
