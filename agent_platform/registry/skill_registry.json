@@ -834,6 +834,20 @@
       "title": "门户问答样例刷新（v4）",
       "ref": "tools/kb_corpus/kb_qa_samples_refresh.py",
       "enabled": true
+    },
+    {
+      "id": "retrieval_perf",
+      "kind": "tool",
+      "title": "检索性能缓存/预热",
+      "ref": "tools/kb_corpus/kb_read_api.py",
+      "enabled": true
+    },
+    {
+      "id": "portal_health",
+      "kind": "tool",
+      "title": "全站页面巡检",
+      "ref": "tools/research/portal_health.py",
+      "enabled": true
     }
   ]
 }

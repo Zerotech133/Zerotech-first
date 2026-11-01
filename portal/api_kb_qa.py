@@ -331,6 +331,35 @@ def parse_request(method: str, path: str, query: dict | None, body: dict | None 
 
 
 # ---------------------------------------------------------------------------
+# KB 缓存预热（进程级，mtime 感知；8091 启动或首次 retrieval 请求时加载一次）
+# ---------------------------------------------------------------------------
+_kb_cache_warmed = False
+
+
+def warm_kb_cache() -> dict | None:
+    """预热 kb_read_api 的进程级缓存（units/corpus）；失败不影响问答（降级为按需加载）。"""
+    global _kb_cache_warmed
+    if _kb_cache_warmed:
+        return None
+    try:
+        # 关键：必须预热 kb_qa 实际使用的 kb_read_api 模块实例（kb_qa.kb_api() 内缓存），
+        # 否则预热的是另一个独立模块实例、检索路径仍会重复解析语料 JSON。
+        qa = _load_qa()
+        kb_api = qa.kb_api()
+        info = kb_api.warm_cache()
+        _kb_cache_warmed = True
+        return info
+    except Exception:  # noqa: BLE001 - 预热失败降级（首次请求再按需加载）
+        return None
+
+
+try:  # 模块导入即预热（8091 启动加载；冷启动 smoke 失败不影响导入）
+    _warm_info = warm_kb_cache()
+except Exception:  # noqa: BLE001
+    _warm_info = None
+
+
+# ---------------------------------------------------------------------------
 # handler
 # ---------------------------------------------------------------------------
 def handle(method: str, path: str, query: dict | None = None, body: dict | None = None,
@@ -423,8 +452,6 @@ def handle(method: str, path: str, query: dict | None = None, body: dict | None 
     elif mode == "multi" and pre_refusal:
         guard_meta["skipped"] = "refusal"   # 拒答不是生成性论断，守卫跳过
     confidence = result.get("confidence") or {}
-    conf_level = str(confidence.get("level") or "")
-    refusal = bool(result.get("refusal")) or conf_level in ("none", "n/a")
     if mode == "multi":
         clusters = result.get("clusters") or []
         clusters_value = int(result.get("cluster_count") or len(clusters))

@@ -1,0 +1,1167 @@
+{
+ "schema_version": "portal_health.v1",
+ "kind": "portal_health",
+ "date_tag": "20261102",
+ "generated_at": "2026-11-02T00:20:18+08:00",
+ "base_url": "http://127.0.0.1:8734",
+ "summary": {
+  "pages_total": 93,
+  "pages_ok": 90,
+  "pages_fail": 3,
+  "slow_pages": 0,
+  "static_total": 36,
+  "json_invalid": 0,
+  "contract_fail": 0
+ },
+ "pages": [
+  {
+   "page": "acad1_pool.html",
+   "url": "http://127.0.0.1:8734/acad1_pool.html",
+   "status": 200,
+   "size": 10222,
+   "ms": 47.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "academy.html",
+   "url": "http://127.0.0.1:8734/academy.html",
+   "status": 200,
+   "size": 67538,
+   "ms": 0.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "agent_board.html",
+   "url": "http://127.0.0.1:8734/agent_board.html",
+   "status": 200,
+   "size": 30118,
+   "ms": 16.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "approvals.html",
+   "url": "http://127.0.0.1:8734/approvals.html",
+   "status": 200,
+   "size": 7068,
+   "ms": 47.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "audit.html",
+   "url": "http://127.0.0.1:8734/audit.html",
+   "status": 200,
+   "size": 11415,
+   "ms": 15.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "bt2_view.html",
+   "url": "http://127.0.0.1:8734/bt2_view.html",
+   "status": 404,
+   "size": 0,
+   "ms": 0.0,
+   "ok": false,
+   "error": "HTTPError 404"
+  },
+  {
+   "page": "bt_view.html",
+   "url": "http://127.0.0.1:8734/bt_view.html",
+   "status": 404,
+   "size": 0,
+   "ms": 16.0,
+   "ok": false,
+   "error": "HTTPError 404"
+  },
+  {
+   "page": "capability.html",
+   "url": "http://127.0.0.1:8734/capability.html",
+   "status": 200,
+   "size": 8743,
+   "ms": 16.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "card_review.html",
+   "url": "http://127.0.0.1:8734/card_review.html",
+   "status": 200,
+   "size": 18304,
+   "ms": 15.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "cases.html",
+   "url": "http://127.0.0.1:8734/cases.html",
+   "status": 200,
+   "size": 6106,
+   "ms": 16.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "creator.html",
+   "url": "http://127.0.0.1:8734/creator.html",
+   "status": 200,
+   "size": 11095,
+   "ms": 0.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "customer.html",
+   "url": "http://127.0.0.1:8734/customer.html",
+   "status": 200,
+   "size": 10236,
+   "ms": 0.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "d1_research.html",
+   "url": "http://127.0.0.1:8734/d1_research.html",
+   "status": 200,
+   "size": 18806,
+   "ms": 15.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "d1_war_room.html",
+   "url": "http://127.0.0.1:8734/d1_war_room.html",
+   "status": 200,
+   "size": 72529,
+   "ms": 16.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "data_daily.html",
+   "url": "http://127.0.0.1:8734/data_daily.html",
+   "status": 200,
+   "size": 17269,
+   "ms": 31.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "data_guojia.html",
+   "url": "http://127.0.0.1:8734/data_guojia.html",
+   "status": 200,
+   "size": 23431,
+   "ms": 16.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "dataops.html",
+   "url": "http://127.0.0.1:8734/dataops.html",
+   "status": 200,
+   "size": 29059,
+   "ms": 16.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "dev.html",
+   "url": "http://127.0.0.1:8734/dev.html",
+   "status": 200,
+   "size": 13814,
+   "ms": 15.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "dev_legion.html",
+   "url": "http://127.0.0.1:8734/dev_legion.html",
+   "status": 200,
+   "size": 8884,
+   "ms": 0.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "dev_legion_v2.html",
+   "url": "http://127.0.0.1:8734/dev_legion_v2.html",
+   "status": 200,
+   "size": 10278,
+   "ms": 0.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "dw.html",
+   "url": "http://127.0.0.1:8734/dw.html",
+   "status": 200,
+   "size": 39027,
+   "ms": 31.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "flow.html",
+   "url": "http://127.0.0.1:8734/flow.html",
+   "status": 200,
+   "size": 18559,
+   "ms": 0.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "h14_shadow.html",
+   "url": "http://127.0.0.1:8734/h14_shadow.html",
+   "status": 200,
+   "size": 5608,
+   "ms": 32.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "home.html",
+   "url": "http://127.0.0.1:8734/home.html",
+   "status": 200,
+   "size": 14269,
+   "ms": 0.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "home_v3.html",
+   "url": "http://127.0.0.1:8734/home_v3.html",
+   "status": 200,
+   "size": 8879,
+   "ms": 31.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "ide.html",
+   "url": "http://127.0.0.1:8734/ide.html",
+   "status": 200,
+   "size": 7068,
+   "ms": 62.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "index.html",
+   "url": "http://127.0.0.1:8734/index.html",
+   "status": 200,
+   "size": 48333,
+   "ms": 0.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "intel_dossier_skeleton.html",
+   "url": "http://127.0.0.1:8734/intel_dossier_skeleton.html",
+   "status": 200,
+   "size": 12356,
+   "ms": 32.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "intel_workbench.html",
+   "url": "http://127.0.0.1:8734/intel_workbench.html",
+   "status": 200,
+   "size": 28934,
+   "ms": 15.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "kb_cards.html",
+   "url": "http://127.0.0.1:8734/kb_cards.html",
+   "status": 200,
+   "size": 8605,
+   "ms": 16.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "kb_corpus.html",
+   "url": "http://127.0.0.1:8734/kb_corpus.html",
+   "status": 200,
+   "size": 6102,
+   "ms": 16.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "kb_ingest.html",
+   "url": "http://127.0.0.1:8734/kb_ingest.html",
+   "status": 200,
+   "size": 5784,
+   "ms": 0.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "kb_reports.html",
+   "url": "http://127.0.0.1:8734/kb_reports.html",
+   "status": 200,
+   "size": 33828,
+   "ms": 0.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "landing.html",
+   "url": "http://127.0.0.1:8734/landing.html",
+   "status": 200,
+   "size": 7404,
+   "ms": 31.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "learn.html",
+   "url": "http://127.0.0.1:8734/learn.html",
+   "status": 200,
+   "size": 16501,
+   "ms": 0.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "ledger.html",
+   "url": "http://127.0.0.1:8734/ledger.html",
+   "status": 200,
+   "size": 8319,
+   "ms": 0.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "legion.html",
+   "url": "http://127.0.0.1:8734/legion.html",
+   "status": 200,
+   "size": 39518,
+   "ms": 31.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "lineage.html",
+   "url": "http://127.0.0.1:8734/lineage.html",
+   "status": 200,
+   "size": 9100,
+   "ms": 16.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "login.html",
+   "url": "http://127.0.0.1:8734/login.html",
+   "status": 200,
+   "size": 7068,
+   "ms": 15.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "market.html",
+   "url": "http://127.0.0.1:8734/market.html",
+   "status": 200,
+   "size": 6896,
+   "ms": 16.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "market_strategy.html",
+   "url": "http://127.0.0.1:8734/market_strategy.html",
+   "status": 200,
+   "size": 20154,
+   "ms": 16.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "methods.html",
+   "url": "http://127.0.0.1:8734/methods.html",
+   "status": 200,
+   "size": 25381,
+   "ms": 15.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "minervini.html",
+   "url": "http://127.0.0.1:8734/minervini.html",
+   "status": 200,
+   "size": 6604,
+   "ms": 0.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "model_admin.html",
+   "url": "http://127.0.0.1:8734/model_admin.html",
+   "status": 200,
+   "size": 7068,
+   "ms": 63.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "news_intel.html",
+   "url": "http://127.0.0.1:8734/news_intel.html",
+   "status": 200,
+   "size": 7068,
+   "ms": 31.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "notify_command.html",
+   "url": "http://127.0.0.1:8734/notify_command.html",
+   "status": 200,
+   "size": 16730,
+   "ms": 16.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "ops.html",
+   "url": "http://127.0.0.1:8734/ops.html",
+   "status": 200,
+   "size": 20042,
+   "ms": 31.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "org.html",
+   "url": "http://127.0.0.1:8734/org.html",
+   "status": 200,
+   "size": 33443,
+   "ms": 15.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "os.html",
+   "url": "http://127.0.0.1:8734/os.html",
+   "status": 200,
+   "size": 7068,
+   "ms": 172.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "os_approval.html",
+   "url": "http://127.0.0.1:8734/os_approval.html",
+   "status": 200,
+   "size": 10544,
+   "ms": 16.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "os_approval_voice.html",
+   "url": "http://127.0.0.1:8734/os_approval_voice.html",
+   "status": 200,
+   "size": 25241,
+   "ms": 16.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "os_council.html",
+   "url": "http://127.0.0.1:8734/os_council.html",
+   "status": 200,
+   "size": 28888,
+   "ms": 15.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "os_demo.html",
+   "url": "http://127.0.0.1:8734/os_demo.html",
+   "status": 200,
+   "size": 24123,
+   "ms": 16.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "os_entry.html",
+   "url": "http://127.0.0.1:8734/os_entry.html",
+   "status": 200,
+   "size": 7068,
+   "ms": 31.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "os_entry_v4.html",
+   "url": "http://127.0.0.1:8734/os_entry_v4.html",
+   "status": 200,
+   "size": 7068,
+   "ms": 63.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "os_entry_v5.html",
+   "url": "http://127.0.0.1:8734/os_entry_v5.html",
+   "status": 200,
+   "size": 7068,
+   "ms": 46.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "os_entry_v6.html",
+   "url": "http://127.0.0.1:8734/os_entry_v6.html",
+   "status": 200,
+   "size": 7068,
+   "ms": 47.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "os_entry_v7.html",
+   "url": "http://127.0.0.1:8734/os_entry_v7.html",
+   "status": 200,
+   "size": 7068,
+   "ms": 47.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "os_entry_v8.html",
+   "url": "http://127.0.0.1:8734/os_entry_v8.html",
+   "status": 200,
+   "size": 7068,
+   "ms": 47.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "os_entry_v9_prod.html",
+   "url": "http://127.0.0.1:8734/os_entry_v9_prod.html",
+   "status": 200,
+   "size": 7068,
+   "ms": 31.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "os_goal.html",
+   "url": "http://127.0.0.1:8734/os_goal.html",
+   "status": 200,
+   "size": 10102,
+   "ms": 16.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "os_integrated_demo.html",
+   "url": "http://127.0.0.1:8734/os_integrated_demo.html",
+   "status": 200,
+   "size": 28810,
+   "ms": 0.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "os_issues.html",
+   "url": "http://127.0.0.1:8734/os_issues.html",
+   "status": 200,
+   "size": 10153,
+   "ms": 31.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "os_map.html",
+   "url": "http://127.0.0.1:8734/os_map.html",
+   "status": 200,
+   "size": 16387,
+   "ms": 16.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "os_personal.html",
+   "url": "http://127.0.0.1:8734/os_personal.html",
+   "status": 200,
+   "size": 19051,
+   "ms": 15.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "os_quick.html",
+   "url": "http://127.0.0.1:8734/os_quick.html",
+   "status": 200,
+   "size": 30744,
+   "ms": 16.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "os_room_preview.html",
+   "url": "http://127.0.0.1:8734/os_room_preview.html",
+   "status": 200,
+   "size": 16213,
+   "ms": 16.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "os_software.html",
+   "url": "http://127.0.0.1:8734/os_software.html",
+   "status": 200,
+   "size": 10984,
+   "ms": 15.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "os_voice_eval.html",
+   "url": "http://127.0.0.1:8734/os_voice_eval.html",
+   "status": 200,
+   "size": 15333,
+   "ms": 16.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "paper.html",
+   "url": "http://127.0.0.1:8734/paper.html",
+   "status": 200,
+   "size": 136799,
+   "ms": 16.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "perf.html",
+   "url": "http://127.0.0.1:8734/perf.html",
+   "status": 200,
+   "size": 10447,
+   "ms": 31.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "picks.html",
+   "url": "http://127.0.0.1:8734/picks.html",
+   "status": 200,
+   "size": 65471,
+   "ms": 15.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "picks_index.html",
+   "url": "http://127.0.0.1:8734/picks_index.html",
+   "status": 200,
+   "size": 65471,
+   "ms": 16.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "quant.html",
+   "url": "http://127.0.0.1:8734/quant.html",
+   "status": 200,
+   "size": 70969,
+   "ms": 31.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "quant_drill.html",
+   "url": "http://127.0.0.1:8734/quant_drill.html",
+   "status": 200,
+   "size": 34184,
+   "ms": 16.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "quant_paper.html",
+   "url": "http://127.0.0.1:8734/quant_paper.html",
+   "status": 200,
+   "size": 8609,
+   "ms": 16.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "quant_v2_demo.html",
+   "url": "http://127.0.0.1:8734/quant_v2_demo.html",
+   "status": 200,
+   "size": 44176,
+   "ms": 15.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "radar.html",
+   "url": "http://127.0.0.1:8734/radar.html",
+   "status": 200,
+   "size": 17628,
+   "ms": 16.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "sandbox.html",
+   "url": "http://127.0.0.1:8734/sandbox.html",
+   "status": 404,
+   "size": 0,
+   "ms": 15.0,
+   "ok": false,
+   "error": "HTTPError 404"
+  },
+  {
+   "page": "screen.html",
+   "url": "http://127.0.0.1:8734/screen.html",
+   "status": 200,
+   "size": 75501,
+   "ms": 32.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "screening.html",
+   "url": "http://127.0.0.1:8734/screening.html",
+   "status": 200,
+   "size": 8269,
+   "ms": 15.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "selection.html",
+   "url": "http://127.0.0.1:8734/selection.html",
+   "status": 200,
+   "size": 21998,
+   "ms": 16.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "shadow.html",
+   "url": "http://127.0.0.1:8734/shadow.html",
+   "status": 200,
+   "size": 5345,
+   "ms": 16.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "shuijing.html",
+   "url": "http://127.0.0.1:8734/shuijing.html",
+   "status": 200,
+   "size": 10505,
+   "ms": 15.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "sim_confirm.html",
+   "url": "http://127.0.0.1:8734/sim_confirm.html",
+   "status": 200,
+   "size": 5549,
+   "ms": 0.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "stack.html",
+   "url": "http://127.0.0.1:8734/stack.html",
+   "status": 200,
+   "size": 9464,
+   "ms": 16.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "stock_analysis.html",
+   "url": "http://127.0.0.1:8734/stock_analysis.html",
+   "status": 200,
+   "size": 17407,
+   "ms": 15.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "strong.html",
+   "url": "http://127.0.0.1:8734/strong.html",
+   "status": 200,
+   "size": 14789,
+   "ms": 0.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "ui_kit.html",
+   "url": "http://127.0.0.1:8734/ui_kit.html",
+   "status": 200,
+   "size": 6107,
+   "ms": 16.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "watch_admin_page.html",
+   "url": "http://127.0.0.1:8734/watch_admin_page.html",
+   "status": 200,
+   "size": 17385,
+   "ms": 16.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "xq_intel.html",
+   "url": "http://127.0.0.1:8734/xq_intel.html",
+   "status": 200,
+   "size": 7068,
+   "ms": 31.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "zero_home.html",
+   "url": "http://127.0.0.1:8734/zero_home.html",
+   "status": 200,
+   "size": 16987,
+   "ms": 16.0,
+   "ok": true,
+   "error": null
+  },
+  {
+   "page": "zero_proto.html",
+   "url": "http://127.0.0.1:8734/zero_proto.html",
+   "status": 200,
+   "size": 69288,
+   "ms": 15.0,
+   "ok": true,
+   "error": null
+  }
+ ],
+ "slow_pages": [],
+ "static": [
+  {
+   "file": "acad1_pool_calendar_data.json",
+   "size": 6971,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "bff_score_distribution.json",
+   "size": 2680,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "card_proposals_v3.json",
+   "size": 69206,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "card_review_data.json",
+   "size": 168959,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "china_geo.json",
+   "size": 582522,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "daily_screening.json",
+   "size": 6617,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "dw_new_capabilities.json",
+   "size": 12965,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "dw_snapshot.json",
+   "size": 134817,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "factor_daily.json",
+   "size": 2432,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "h14_shadow.json",
+   "size": 5544,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "h18_watch.json",
+   "size": 7049,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "kb_corpus_gov.json",
+   "size": 599,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "kb_daily_briefing.json",
+   "size": 13369,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "kb_daily_push.json",
+   "size": 7427,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "kb_ingest.json",
+   "size": 22941,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "kb_learning_cards.json",
+   "size": 84524,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "kb_learning_digest.json",
+   "size": 10393,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "kb_qa_questions.json",
+   "size": 64565,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "kb_qa_questions_v2.json",
+   "size": 133500,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "kb_qa_questions_v3.json",
+   "size": 117038,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "kb_qa_samples.json",
+   "size": 31029,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "kb_reports_gov.json",
+   "size": 594,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "kb_units_all.json",
+   "size": 310158,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "page_shell_migration.json",
+   "size": 1225,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "report_panel.json",
+   "size": 14281,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "s08_shadow.json",
+   "size": 6926,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "s11_shadow.json",
+   "size": 3371,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "selection_daily.json",
+   "size": 13231,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "sepa_scan.json",
+   "size": 4196,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "sepa_scan_daily.json",
+   "size": 4421,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "sepa_scan_nofund.json",
+   "size": 14248,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "shadow_baseline.json",
+   "size": 3617,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "shadow_dashboard.json",
+   "size": 5277,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "shadow_monitor.json",
+   "size": 1496,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "shadow_selection.json",
+   "size": 3723,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  },
+  {
+   "file": "trend_template_latest.json",
+   "size": 17298,
+   "valid_json": true,
+   "contract_ok": true,
+   "issues": [],
+   "type": "dict"
+  }
+ ],
+ "system": {
+  "generated_at": "2026-11-02T00:20:18+08:00",
+  "learning_cards": 104,
+  "kb_units": 516,
+  "tools_py": 1078,
+  "research_scripts": 71,
+  "portal_pages": 93,
+  "commits": {
+   "count": 7284,
+   "latest": "61a9f65a0 数据仓全链路审计：修dataops断链；刷新dw快照(11-02T00:18,v18/256)；雪球断流/漂移哨兵/展示缺口(78/256)报告；任务T-20261102-121"
+  },
+  "daily_screening": {
+   "date": "20261030",
+   "rs_intersection": 18
+  },
+  "qa_samples": {
+   "schema_version": 2,
+   "prompt_version": "v4",
+   "n": 8
+  }
+ }
+}

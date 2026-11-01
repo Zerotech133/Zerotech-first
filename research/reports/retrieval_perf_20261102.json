@@ -1,0 +1,167 @@
+{
+ "schema_version": 1,
+ "kind": "retrieval_perf",
+ "generated_at": "2026-11-02T00:26:57+0800",
+ "task": "task-113 检索并发性能优化（P95 27s → 目标 ≤5s）",
+ "endpoint": "http://127.0.0.1:8091/api/kb/qa?mode=retrieval&topk=3&cache=0",
+ "diagnosis": {
+  "method": "进程内计时拆解（load_units/load_corpus 首次 vs 缓存）+ 真实 HTTP 串行/并发基准",
+  "in_process_timings": {
+   "load_units_first_seconds": 0.031,
+   "load_units_units": 516,
+   "load_corpus_first_seconds": 1.25,
+   "load_corpus_chunks": 4926,
+   "load_units_cached_seconds": 0.016,
+   "load_corpus_cached_seconds": 0.0,
+   "warm_cache_seconds": 0.0
+  },
+  "slow_points": [
+   "每次 retrieval 请求都会重新读取并解析 rag_index_corpus.json（4926 chunks，首次 ~1.25s）→ 主瓶颈",
+   "每次请求重复读取知识单元 knowledge_units.jsonl（516 units，~0.03s）",
+   "两路检索（unit+corpus）tokenize/重叠过滤/fusion（缓存命中后实测 ~0.06s/请求，非主因）",
+   "HTTP 服务进程无预热：首个请求需承担缓存加载（改造前 1.75s 首请求）"
+  ],
+  "pre_http_serial_10": {
+   "p50": 2.383,
+   "p95": 2.531,
+   "errors": 0
+  },
+  "pre_http_concurrent_10x20": {
+   "total": 200,
+   "http_200": 199,
+   "errors": 1,
+   "rate_limited_429": 0,
+   "server_5xx": 0,
+   "p50": 18.203,
+   "p95": 27.312,
+   "p99": 29.688,
+   "wall_seconds": 396.25,
+   "source": "wave40 qa_http_loadtest_20261101（同 endpoint/同 10x20 配置）"
+  }
+ },
+ "optimizations": [
+  {
+   "file": "tools/kb_corpus/kb_read_api.py",
+   "changes": [
+    "load_units：进程级缓存 + mtime_ns/size 签名失效（516 units）",
+    "load_corpus：进程级缓存 + mtime_ns/size 签名失效（4926 chunks）",
+    "新增 warm_cache() 预热与 cache_stats() 命中统计（行为不变，数据变化自动重载）"
+   ]
+  },
+  {
+   "file": "portal/api_kb_qa.py",
+   "changes": [
+    "模块导入时 warm_kb_cache() 预热（经 qa.kb_api() 预热��索实际使用的模块实例）",
+    "失败降级：预热失败不影响请求（首次请求按需加载）"
+   ]
+  }
+ ],
+ "restart": {
+  "channel": "K-RESTART（C:\\Temp\\PORTAL_API_RESTART.flag + 计划任务『AI工作站门户API』）",
+  "old_pid": 37524,
+  "new_pid": 42248,
+  "log_tail": [
+   "restart-flag: killed [27236,37524,43580] 2026-11-02T00:21:47",
+   "cold-start guard OK: portal_api import smoke passed 2026-11-02T00:22:04",
+   "starting 2026-11-02T00:22:05"
+  ]
+ },
+ "after": {
+  "http_serial_10": {
+   "statuses": [
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200
+   ],
+   "lats": [
+    0.079,
+    0.062,
+    0.063,
+    0.078,
+    0.062,
+    0.063,
+    0.062,
+    0.094,
+    0.047,
+    0.062
+   ],
+   "p50": 0.062,
+   "p95": 0.087,
+   "errors": 0
+  },
+  "http_concurrent_10x20": {
+   "total": 200,
+   "http_200": 49,
+   "rate_limited_429": 151,
+   "server_5xx": 0,
+   "errors_excluding_429": 0,
+   "wall_seconds": 3.157,
+   "p50_all": 0.016,
+   "p95_all": 0.58,
+   "p99_all": 0.61,
+   "p50_success": 0.5,
+   "p95_success": 0.61,
+   "p99_success": 0.633,
+   "max": 0.641
+  }
+ },
+ "before_after": {
+  "serial_p50_seconds": {
+   "before": 2.383,
+   "after": 0.062,
+   "improvement": "38x"
+  },
+  "serial_p95_seconds": {
+   "before": 2.531,
+   "after": 0.087
+  },
+  "concurrent_p95_seconds": {
+   "before": 27.312,
+   "after": 0.61,
+   "improvement": "44.8x"
+  },
+  "concurrent_wall_seconds": {
+   "before": 396.25,
+   "after": 3.157
+  },
+  "concurrent_200_count": {
+   "before": 199,
+   "after": 49,
+   "note": "after 由于检索变快触发 retrieval 60/分限流（151×429），429 为限流预期非故障"
+  },
+  "server_5xx": {
+   "before": 0,
+   "after": 0
+  },
+  "timeout": {
+   "before": 1,
+   "after": 0
+  }
+ },
+ "target": {
+  "goal": "10 并发 retrieval P95 ≤ 5s",
+  "achieved": true,
+  "actual_p95_seconds": 0.61,
+  "margin": "4.39s"
+ },
+ "conclusion": {
+  "verdict": "达到目标：10 并发 retrieval P95 从 27.3s 降至 0.61s（≈44.8x），串行 P50 2.38s→0.06s；0 5xx、0 超时",
+  "can_go_live": "go_with_tuning",
+  "remaining_bottlenecks": [
+   "retrieval 60/分限流：检索变快后并发 200 次在 3.2s 内触发 151 次 429 —— 灰度放量前需调高限流（如 120–300/分）或按 IP/租户分桶",
+   "首次请求冷启动仍会加载缓存（预热已在 code 中，下一次重启后启动即预热）",
+   "搜索 CPU 成本 ~60ms/请求（tokenize/fusion），当前可忽略",
+   "单进程限流计数：多实例部署需一致性方案"
+  ],
+  "rollout_notes": "缓存按 mtime 自动失效、行为不变；建议先调 retrieval 限流再放量，并观察 P95 与 429 比例"
+ },
+ "disclaimer": "性能优化基准仅供上线评审参考，不构成投资建议。",
+ "elapsed_seconds": null
+}

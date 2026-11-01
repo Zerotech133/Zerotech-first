@@ -1,0 +1,22 @@
+{
+ "schema_version": "system_status.v1",
+ "generated_at": "2026-11-02T00:20:18+08:00",
+ "learning_cards": 104,
+ "kb_units": 516,
+ "tools_py": 1078,
+ "research_scripts": 71,
+ "portal_pages": 93,
+ "commits": {
+  "count": 7284,
+  "latest": "61a9f65a0 数据仓全链路审计：修dataops断链；刷新dw快照(11-02T00:18,v18/256)；雪球断流/漂移哨兵/展示缺口(78/256)报告；任务T-20261102-121"
+ },
+ "daily_screening": {
+  "date": "20261030",
+  "rs_intersection": 18
+ },
+ "qa_samples": {
+  "schema_version": 2,
+  "prompt_version": "v4",
+  "n": 8
+ }
+}

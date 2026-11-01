@@ -25,6 +25,7 @@ import json
 import math
 import re
 import sys
+import time
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -52,7 +53,31 @@ def unit_id(u: dict) -> str:
     return hashlib.sha1(raw.encode()).hexdigest()[:12]
 
 
-def load_units() -> list[dict]:
+# ---------------------------------------------------------------------------
+# 进程级缓存（mtime 感知失效）：避免每次检索重复读取/解析 knowledge_units.jsonl
+# 与 rag_index_corpus.json。st_mtime_ns+size 组成签名，文件变化自动重新加载。
+# ---------------------------------------------------------------------------
+_UNITS_CACHE: dict = {"sig": None, "units": None, "loads": 0, "hits": 0}
+_CORPUS_CACHE: dict = {"sig": None, "corpus": None, "loads": 0, "hits": 0}
+
+
+def _units_signature() -> tuple:
+    parts = []
+    for root, _label in ROOTS:
+        if not root.exists():
+            continue
+        for d in sorted(p for p in root.glob("*") if p.is_dir()):
+            ku = d / "knowledge_units.jsonl"
+            if ku.exists():
+                try:
+                    st = ku.stat()
+                    parts.append((str(ku), st.st_mtime_ns, st.st_size))
+                except OSError:
+                    continue
+    return tuple(parts)
+
+
+def _scan_units() -> list[dict]:
     out = []
     for root, label in ROOTS:
         if not root.exists():
@@ -79,16 +104,36 @@ def load_units() -> list[dict]:
     return out
 
 
+def load_units() -> list[dict]:
+    """读取知识单元（进程级缓存 + mtime 签名失效；命中直接复用，避免重复 JSON 解析）。"""
+    sig = _units_signature()
+    if _UNITS_CACHE["sig"] == sig and _UNITS_CACHE["units"] is not None:
+        _UNITS_CACHE["hits"] += 1
+        return _UNITS_CACHE["units"]
+    units = _scan_units()
+    _UNITS_CACHE.update({"sig": sig, "units": units, "loads": _UNITS_CACHE["loads"] + 1})
+    return units
+
+
 def chunk_id(rec: dict) -> str:
     raw = f"{rec.get('source')}|{rec.get('index')}"
     return hashlib.sha1(raw.encode()).hexdigest()[:12]
 
 
-def load_corpus() -> list[dict]:
+def _corpus_signature() -> tuple:
+    if not CORPUS_RAG.exists():
+        return ("missing",)
+    try:
+        st = CORPUS_RAG.stat()
+        return (str(CORPUS_RAG), st.st_mtime_ns, st.st_size)
+    except OSError:
+        return ("missing",)
+
+
+def _scan_corpus() -> list[dict]:
     if not CORPUS_RAG.exists():
         return []
-    import json as _json
-    d = _json.loads(CORPUS_RAG.read_text(encoding="utf-8"))
+    d = json.loads(CORPUS_RAG.read_text(encoding="utf-8"))
     out = []
     for rec in d.get("records") or []:
         src = str(rec.get("source") or "")
@@ -97,6 +142,36 @@ def load_corpus() -> list[dict]:
                     "chunk_index": rec.get("index"), "document_hash": rec.get("document_hash"),
                     "text": str(rec.get("text") or "")})
     return out
+
+
+def load_corpus() -> list[dict]:
+    """语料 RAG 索引（进程级缓存 + mtime 签名失效；避免每次查询重复解析大 JSON）。"""
+    sig = _corpus_signature()
+    if _CORPUS_CACHE["sig"] == sig and _CORPUS_CACHE["corpus"] is not None:
+        _CORPUS_CACHE["hits"] += 1
+        return _CORPUS_CACHE["corpus"]
+    corpus = _scan_corpus()
+    _CORPUS_CACHE.update({"sig": sig, "corpus": corpus, "loads": _CORPUS_CACHE["loads"] + 1})
+    return corpus
+
+
+def warm_cache() -> dict:
+    """预热进程级缓存（8091 启动/首次请求时调用；返回规模与耗时）。"""
+    started = time.monotonic()
+    units = load_units()
+    corpus = load_corpus()
+    return {"units": len(units), "corpus": len(corpus),
+            "elapsed_seconds": round(time.monotonic() - started, 3),
+            "cache_stats": cache_stats()}
+
+
+def cache_stats() -> dict:
+    """缓存命中统计（供诊断/验收）。"""
+    return {"units": {"loads": _UNITS_CACHE["loads"], "hits": _UNITS_CACHE["hits"],
+                      "sig_size": len(_UNITS_CACHE["sig"] or ()),
+                      "loaded": _UNITS_CACHE["units"] is not None},
+            "corpus": {"loads": _CORPUS_CACHE["loads"], "hits": _CORPUS_CACHE["hits"],
+                       "loaded": _CORPUS_CACHE["corpus"] is not None}}
 
 
 def tokenize(s: str) -> list[str]:

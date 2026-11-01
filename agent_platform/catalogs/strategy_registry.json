@@ -6553,5 +6553,33 @@
       "guard_pass_rate": 1.0
     },
     "note": "门户问答样例刷新：8/8 success、guard 100%、均引用 2.38、均耗时 15.05s；页面兼容未改。"
+  },
+  "retrieval_perf_20261102": {
+    "report": "research/reports/retrieval_perf_20261102.md",
+    "result": {
+      "verdict": "达到目标：10 并发 retrieval P95 从 27.3s 降至 0.61s（≈44.8x），串行 P50 2.38s→0.06s；0 5xx、0 超时",
+      "can_go_live": "go_with_tuning",
+      "remaining_bottlenecks": [
+        "retrieval 60/分限流：检索变快后并发 200 次在 3.2s 内触发 151 次 429 —— 灰度放量前需调高限流（如 120–300/分）或按 IP/租户分桶",
+        "首次请求冷启动仍会加载缓存（预热已在 code 中，下一次重启后启动即预热）",
+        "搜索 CPU 成本 ~60ms/请求（tokenize/fusion），当前可忽略",
+        "单进程限流计数：多实例部署需一致性方案"
+      ],
+      "rollout_notes": "缓存按 mtime 自动失效、行为不变；建议先调 retrieval 限流再放量，并观察 P95 与 429 比例"
+    },
+    "note": "检索性能优化：进程级缓存 units/corpus（mtime 失效）+ 启动预热 → 10 并发 retrieval P95 **27.3s→0.61s（44.8x）**、串行 P50 2.38s→0.06s、0 5xx/0 超时；**目标 P95≤5s 达成**；剩余：retrieval 限流 60/分偏紧（变快后并发易 429），建议调高。"
+  },
+  "portal_health_20261102": {
+    "report": "research/reports/portal_health_20261102.md",
+    "summary": {
+      "pages_total": 93,
+      "pages_ok": 90,
+      "pages_fail": 3,
+      "slow_pages": 0,
+      "static_total": 36,
+      "json_invalid": 0,
+      "contract_fail": 0
+    },
+    "note": "全站巡检：页面 93（OK 90 / 404 3：bt2_view/bt_view/sandbox，未路由历史页）；静态 JSON 36 个全部合法、关键契约 0 不符（卡104/样例v4 8条/daily_screening/report_panel）。"
   }
 }
