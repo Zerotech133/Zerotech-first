@@ -223,6 +223,49 @@ def _default_attributes(a):
             "specialties": [], "knowledge": []}
 
 
+def disambiguate_names(agents, org):
+    """同名不同 id 显式消歧（WO-SEAT-DEDUP / 2026-11-01 K-ORG-20261101-STRAT2FIX）。
+
+    真实冲突不得静默吞掉：保留原名者只 1 席（优先 org.json 已注册席位，其次 agent_id
+    排序），其余卡改「原名（ID）」限定别名，并把 raw 冲突/别名映射返回给 stats 留档。
+    返回 ``(raw_collisions, name_aliases)``；就地改 ``agents`` 卡（cn_name/name/name_alias）。
+    """
+    by_name = {}
+    for aid, card in agents.items():
+        cn = (card or {}).get("cn_name") or ""
+        if cn:
+            by_name.setdefault(cn, []).append(aid)
+    raw = {nm: sorted(ids, key=str) for nm, ids in by_name.items() if len(ids) > 1}
+    org_registered = set()
+    for dep in (org or {}).get("departments") or []:
+        for aid in dep.get("formal_agents") or []:
+            org_registered.add(str(aid))
+        for item in dep.get("liaison_agents") or []:
+            if isinstance(item, dict) and item.get("agent_id"):
+                org_registered.add(str(item["agent_id"]))
+        profiles = dep.get("agent_profiles") or {}
+        for prof in (profiles.values() if isinstance(profiles, dict) else profiles):
+            if isinstance(prof, dict) and prof.get("agent_id"):
+                org_registered.add(str(prof["agent_id"]))
+    aliases = {}
+    for name, ids in sorted(raw.items()):
+        ranked = sorted(ids, key=lambda aid: (0 if str(aid) in org_registered else 1,
+                                             str(aid)))
+        keep = ranked[0]
+        for aid in ranked[1:]:
+            card = agents.get(aid)
+            if not isinstance(card, dict):
+                continue
+            alias = "%s（%s）" % (name, aid)
+            card["cn_name_raw"] = name
+            card["cn_name"] = alias
+            card["name"] = alias
+            card["name_alias"] = {"raw": name, "alias": alias, "kept": keep,
+                                  "policy": "WO-SEAT-DEDUP/STRAT2FIX"}
+            aliases[aid] = {"cn_name": name, "alias": alias, "kept": keep}
+    return raw, aliases
+
+
 def main(argv=None):
     # 2026-10-31 WO-QUAL-BUNDLE-20261031：支持 --out（缺省 OUT 不变），供 fresh
     # worktree 引导/测试生成到指定路径，不覆写仓内正式 bundle。
@@ -594,13 +637,11 @@ def main(argv=None):
                 "status": pr.get("status", "active"),
             })
 
-    # 名称唯一性守卫（WO-SEAT-DEDUP）：同名不同 id 必须显式消歧，避免按名字误聚合
-    _by_name = {}
-    for _aid, _card in agents.items():
-        _nm = (_card or {}).get("cn_name") or ""
-        if _nm:
-            _by_name.setdefault(_nm, []).append(_aid)
-    name_collisions = {nm: ids for nm, ids in _by_name.items() if len(ids) > 1}
+    # 名称唯一性守卫（WO-SEAT-DEDUP；2026-11-01 K-ORG-20261101-STRAT2FIX）：
+    # 同名不同 id 显式消歧；raw 冲突留档 stats.name_collisions_raw，别名留档
+    # stats.name_aliases（不静默吞掉真实冲突，见 disambiguate_names）。
+    _raw_collisions, name_aliases = disambiguate_names(agents, org)
+    name_collisions = {}  # 显式消歧后仍同名 = 契约违规；此处置空并靠 raw/aliases 留证
 
     bundle = {
         "generated": time.strftime("%Y-%m-%d %H:%M"),
@@ -613,6 +654,8 @@ def main(argv=None):
             "prompt_ok": org_agent_count - len(miss_prompt),
             "prompt_miss": miss_prompt,
             "name_collisions": name_collisions,
+            "name_collisions_raw": _raw_collisions,
+            "name_aliases": name_aliases,
             "workorders_doing": wo_stats["doing"],
             "workorders_review": wo_stats["review"],
         },
@@ -635,8 +678,10 @@ def main(argv=None):
     print("agents:", len(agents), "| prompt_ok:", bundle["stats"]["prompt_ok"],
           "| miss:", miss_prompt or "none")
     print("workorders: doing=%d review=%d" % (wo_stats["doing"], wo_stats["review"]))
-    if name_collisions:
-        print("WARN 同名冲突:", json.dumps(name_collisions, ensure_ascii=False))
+    if _raw_collisions:
+        print("WARN 同名冲突已显式消歧:",
+              json.dumps(_raw_collisions, ensure_ascii=False), "->",
+              json.dumps(name_aliases, ensure_ascii=False))
     print("code_files: %d 个 · 合计 %.1f KB" % (
         len(code_files), sum(f["size"] for f in code_files) / 1024))
 
