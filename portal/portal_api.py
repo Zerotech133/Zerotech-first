@@ -204,6 +204,7 @@ _MUTATION_POSTS = frozenset((
     "/api/sim/confirm",       # WO-BOT-CONFIRM 人工确认（approve/reject；paper-only）
     "/api/jev/review/resolve",  # P142 补登记（L-02）：低置信复核裁决（写 DB）
     "/api/jev/review/reopen",   # P142 补登记（L-02）：legacy 重新打开（写 DB）
+    "/api/d1/decision",       # WO-D1-DECISION-20261101：D1 final_decision 落账（paper-only）
 ))
 
 # 2026-11-01 P142（审计 L-01/L-02 修复）：do_POST 的"早分支"族里含变更端点
@@ -1078,6 +1079,11 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 self._json({"error": "too many requests: 写端点每分钟限 "
                             f"{_WRITE_MAX_PER_MIN} 次"}, 429)
                 return
+        # WO-D1-DECISION-20261101：D1 final_decision 写入口（token/频控之后）
+        if path == "/api/d1/decision":
+            import api_d1_decision
+            api_d1_decision.handle_post(self)
+            return
         # H3（K-ORG-20261031-APIHARDEN）：analysis 写分支移到 token 闸门+频控之后，
         # 不得再以“早分支”绕过 _MUTATION_POSTS 鉴权（审计 v2 H3）。
         if path.startswith('/api/analysis/'):
