@@ -59,7 +59,8 @@ w("pascal_case.py",
 tok32c = "".join(rng.choices(alpha, k=32))
 w("pascal_positive.py", "TUSHARE_TOKEN = '%s'\n" % tok32c)
 # 2026-11-01 SCANFIX：JSON 字符串 id 值（策略 id）不是凭据，不得误报 HIGH_ENTROPY
-w("json_id.json", '{"id": "S03_H18_forecast_revision_watch"}\n')
+_id_fixture = "S03_" + "H18_forecast_revision_watch"
+w("json_id.json", '{"id": "%s"}\n' % _id_fixture)
 
 scanner = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scan_secrets.py")
 proc = subprocess.run([sys.executable, scanner, TD], capture_output=True, timeout=120)
