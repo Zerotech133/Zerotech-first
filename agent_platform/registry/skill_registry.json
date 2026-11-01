@@ -428,6 +428,27 @@
       "title": "知识库每日自动化编排",
       "ref": "tools/kb_corpus/daily_kb.py",
       "enabled": true
+    },
+    {
+      "id": "eval_search_v2_ext",
+      "kind": "tool",
+      "title": "检索 v2 扩展评测（41 查询/显著性）",
+      "ref": "tools/kb_corpus/eval_search_v2_ext.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_daily_push",
+      "kind": "tool",
+      "title": "知识库日报飞书 payload 组装（dry-run）",
+      "ref": "tools/kb_corpus/kb_daily_push.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_qa_page",
+      "kind": "tool",
+      "title": "问答示例门户区块",
+      "ref": "portal/kb_reports.html",
+      "enabled": true
     }
   ]
 }

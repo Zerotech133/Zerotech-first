@@ -1015,5 +1015,58 @@
       }
     },
     "note": "知识库每日编排：learning_digest → panel_daily → kb_ingest_status（可选 kb_qa retrieval-only）；失败隔离+状态台账+check-only；计划任务注册需宿主审批（仅文档给命令）。"
+  },
+  "search_v2_eval_ext_20261101": {
+    "tool": "tools/kb_corpus/eval_search_v2_ext.py",
+    "report": "research/reports/search_v2_eval_ext_20261101.md",
+    "queries": 41,
+    "aggregate": {
+      "v1": {
+        "precision_at_k": 0.5854,
+        "coverage": 0.878,
+        "hit_rate": 0.9024
+      },
+      "v2": {
+        "precision_at_k": 0.7268,
+        "coverage": 0.9878,
+        "hit_rate": 1.0
+      },
+      "delta": {
+        "precision_at_k": 0.1414,
+        "coverage": 0.1098,
+        "hit_rate": 0.0976
+      }
+    },
+    "significance": {
+      "precision_at_k_paired_t": {
+        "n": 41,
+        "mean": 0.1415,
+        "sd": 0.3879,
+        "t": 2.335,
+        "p_two_sided": 0.0195
+      },
+      "hit_rate_mcnemar": {
+        "b": 4,
+        "c": 0,
+        "n_discordant": 4,
+        "p_two_sided": 0.125
+      },
+      "alpha": 0.05,
+      "significant": true
+    },
+    "note": "41 查询：P@5 v1 0.585→v2 0.727（配对 t=2.335, p=0.0195 显著）；覆盖率 0.878→0.988、命中率 0.902→1.0；但严格 concept 口径不显著（Δ+0.024, p=0.66）→ 结论对标注口径敏感；建议默认 v2+v1 回退。"
+  },
+  "kb_daily_push_20261101": {
+    "tool": "tools/kb_corpus/kb_daily_push.py",
+    "snapshot": "research/reports/kb_daily_push_20261101.json",
+    "portal": "portal/static/kb_daily_push.json",
+    "doc": "docs/plans/2026-11-01_知识库每日推送准备_v1.md",
+    "note": "飞书交互卡片 payload（Card 2.0）dry-run 组装：学习卡5张+研报候选+门户链接+免责；无任何网络调用；webhook 接线需 L2 审批（未接）。"
+  },
+  "kb_qa_page_20261101": {
+    "page": "portal/kb_reports.html#qa-sample-panel",
+    "static": "portal/static/kb_qa_samples.json",
+    "doc": "docs/plans/2026-11-01_问答示例门户_v1.md",
+    "note": "问答示例静态区块（5 样本，引用 unit_id+页码+置信；降级文案注明 HTTP 待 8091 审批）；HTTP 200 已验证。"
   }
 }
