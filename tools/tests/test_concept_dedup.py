@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """同 concept 重复单元审计（concept_dedup）回归测试。
 
 覆盖：

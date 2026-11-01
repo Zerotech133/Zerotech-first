@@ -457,7 +457,100 @@
       ],
       "reports_to": "ACAD1",
       "member_kind": "formal"
+    },
+    {
+      "agent_id": "STRAT2",
+      "role_profile": "strategy_researcher",
+      "analysis_type": "strategy_research",
+      "node_key": "strat2_market",
+      "parent_node_keys": [
+        "acad1_core"
+      ],
+      "level": 1,
+      "is_parallel": true,
+      "wait_all_complete": false,
+      "llm_binding": "ollama/qwen3.5:9b",
+      "tools": [
+        "events",
+        "datamart_read",
+        "datamart_latest",
+        "datamart_ready",
+        "market_snapshot",
+        "data_health",
+        "stock_info",
+        "recent_events",
+        "signal_precedents",
+        "pool_rows"
+      ],
+      "memory_grants": {
+        "read": [
+          "domain/*",
+          "dept/invest/*",
+          "agent/STRAT2/*"
+        ],
+        "write": [
+          "agent/STRAT2/*",
+          "dept/invest/thesis"
+        ]
+      },
+      "grade": "E2",
+      "grade_note": "2026-11-01 A0 批准新增；US/CRYPTO 4 个平台策略研究 owner",
+      "charter_detail": "市场策略研究员（US/CRYPTO）：负责 v1-us-strat-6/7、v1-crypto-strat-9/11 的研究 owner；按 ACAD1 议程提交日报、版本和评审材料；不自己研究自己验证。",
+      "skills": [
+        {
+          "id": "events",
+          "kind": "tool",
+          "enabled": true
+        },
+        {
+          "id": "datamart_read",
+          "kind": "tool",
+          "enabled": true
+        },
+        {
+          "id": "datamart_latest",
+          "kind": "tool",
+          "enabled": true
+        },
+        {
+          "id": "datamart_ready",
+          "kind": "tool",
+          "enabled": true
+        },
+        {
+          "id": "market_snapshot",
+          "kind": "tool",
+          "enabled": true
+        },
+        {
+          "id": "data_health",
+          "kind": "tool",
+          "enabled": true
+        },
+        {
+          "id": "stock_info",
+          "kind": "tool",
+          "enabled": true
+        },
+        {
+          "id": "recent_events",
+          "kind": "tool",
+          "enabled": true
+        },
+        {
+          "id": "signal_precedents",
+          "kind": "tool",
+          "enabled": true
+        },
+        {
+          "id": "pool_rows",
+          "kind": "tool",
+          "enabled": true
+        }
+      ],
+      "reports_to": "ACAD1",
+      "member_kind": "formal"
     }
   ],
-  "attribute_note": "2026-10-29 A：补齐 analysis_type/parent_node_keys/reports_to；7 席为研究院正式编制；GUANYU/HUANGZHONG 见 org liaison_agents。"
+  "attribute_note": "2026-10-29 A：补齐 analysis_type/parent_node_keys/reports_to；2026-11-01 A0 批准 A 方案新增 STRAT2（市场策略研究员·庞统，E2）→ 研究院 team 正式编制 8 席；GUANYU/HUANGZHONG 见 org liaison_agents。"
 }
