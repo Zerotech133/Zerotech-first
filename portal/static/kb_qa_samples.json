@@ -1,5 +1,5 @@
 {
- "schema_version": 1,
+ "schema_version": 2,
  "kind": "kb_qa_samples",
  "generated_at": "2026-11-01T09:55:29+08:00",
  "model": "qwen3.5:9b",
@@ -58,7 +58,11 @@
     "hallucinated_citations": [],
     "citation_missing": false
    },
-   "elapsed_seconds": 21.41
+   "elapsed_seconds": 21.41,
+   "expected_refusal": false,
+   "citations_required": true,
+   "answer_type": "fact",
+   "schema_version": 2
   },
   {
    "id": "q2",
@@ -89,7 +93,11 @@
     "hallucinated_citations": [],
     "citation_missing": false
    },
-   "elapsed_seconds": 74.48
+   "elapsed_seconds": 74.48,
+   "expected_refusal": false,
+   "citations_required": true,
+   "answer_type": "fact",
+   "schema_version": 2
   },
   {
    "id": "q3",
@@ -138,7 +146,11 @@
     "hallucinated_citations": [],
     "citation_missing": false
    },
-   "elapsed_seconds": 94.64
+   "elapsed_seconds": 94.64,
+   "expected_refusal": false,
+   "citations_required": true,
+   "answer_type": "inference",
+   "schema_version": 2
   },
   {
    "id": "q4",
@@ -159,7 +171,11 @@
     "hallucinated_citations": [],
     "citation_missing": false
    },
-   "elapsed_seconds": 0.0
+   "elapsed_seconds": 0.0,
+   "expected_refusal": true,
+   "citations_required": false,
+   "answer_type": "refusal",
+   "schema_version": 2
   },
   {
    "id": "q5",
@@ -199,7 +215,11 @@
     "hallucinated_citations": [],
     "citation_missing": false
    },
-   "elapsed_seconds": 2.01
+   "elapsed_seconds": 2.01,
+   "expected_refusal": false,
+   "citations_required": true,
+   "answer_type": "fact",
+   "schema_version": 2
   },
   {
    "id": "expanded_qk_f3968d07ff",
@@ -232,7 +252,11 @@
    "success": false,
    "model": "qwen3.5:9b",
    "elapsed_seconds": 7.3,
-   "category": "expanded"
+   "category": "expanded",
+   "expected_refusal": false,
+   "citations_required": true,
+   "answer_type": "fact",
+   "schema_version": 2
   },
   {
    "id": "expanded_qk_426789898a",
@@ -265,7 +289,11 @@
    "success": true,
    "model": "qwen3.5:9b",
    "elapsed_seconds": 5.91,
-   "category": "expanded"
+   "category": "expanded",
+   "expected_refusal": false,
+   "citations_required": true,
+   "answer_type": "fact",
+   "schema_version": 2
   },
   {
    "id": "expanded_qk_ada54a9059",
@@ -316,7 +344,11 @@
    "success": true,
    "model": "qwen3.5:9b",
    "elapsed_seconds": 10.03,
-   "category": "expanded"
+   "category": "expanded",
+   "expected_refusal": false,
+   "citations_required": true,
+   "answer_type": "fact",
+   "schema_version": 2
   },
   {
    "id": "expanded_qk_ab60afef9f",
@@ -376,7 +408,11 @@
    "success": true,
    "model": "qwen3.5:9b",
    "elapsed_seconds": 10.11,
-   "category": "expanded"
+   "category": "expanded",
+   "expected_refusal": false,
+   "citations_required": true,
+   "answer_type": "fact",
+   "schema_version": 2
   },
   {
    "id": "expanded_qk_17dcb0bf7e",
@@ -427,7 +463,11 @@
    "success": false,
    "model": "qwen3.5:9b",
    "elapsed_seconds": 7.06,
-   "category": "expanded"
+   "category": "expanded",
+   "expected_refusal": false,
+   "citations_required": true,
+   "answer_type": "fact",
+   "schema_version": 2
   },
   {
    "id": "expanded_qk_48516af659",
@@ -469,7 +509,11 @@
    "success": true,
    "model": "qwen3.5:9b",
    "elapsed_seconds": 7.41,
-   "category": "expanded"
+   "category": "expanded",
+   "expected_refusal": false,
+   "citations_required": true,
+   "answer_type": "fact",
+   "schema_version": 2
   },
   {
    "id": "expanded_qk_4213d10ccc",
@@ -502,7 +546,11 @@
    "success": true,
    "model": "qwen3.5:9b",
    "elapsed_seconds": 8.62,
-   "category": "expanded"
+   "category": "expanded",
+   "expected_refusal": false,
+   "citations_required": true,
+   "answer_type": "fact",
+   "schema_version": 2
   },
   {
    "id": "expanded_qk_16b8d22f31",
@@ -544,7 +592,11 @@
    "success": false,
    "model": "qwen3.5:9b",
    "elapsed_seconds": 9.99,
-   "category": "expanded"
+   "category": "expanded",
+   "expected_refusal": false,
+   "citations_required": true,
+   "answer_type": "fact",
+   "schema_version": 2
   },
   {
    "id": "expanded_qk_1e9ede7285",
@@ -595,7 +647,11 @@
    "success": false,
    "model": "qwen3.5:9b",
    "elapsed_seconds": 7.98,
-   "category": "expanded"
+   "category": "expanded",
+   "expected_refusal": false,
+   "citations_required": true,
+   "answer_type": "fact",
+   "schema_version": 2
   },
   {
    "id": "expanded_qk_f3db19b238",
@@ -664,7 +720,11 @@
    "success": true,
    "model": "qwen3.5:9b",
    "elapsed_seconds": 11.98,
-   "category": "expanded"
+   "category": "expanded",
+   "expected_refusal": false,
+   "citations_required": true,
+   "answer_type": "fact",
+   "schema_version": 2
   },
   {
    "id": "expanded_qk_2eda64b590",
@@ -687,7 +747,11 @@
    "success": false,
    "model": "qwen3.5:9b",
    "elapsed_seconds": 5.2,
-   "category": "expanded"
+   "category": "expanded",
+   "expected_refusal": true,
+   "citations_required": false,
+   "answer_type": "refusal",
+   "schema_version": 2
   },
   {
    "id": "expanded_qk_2feca0b1e3",
@@ -710,8 +774,25 @@
    "success": false,
    "model": "qwen3.5:9b",
    "elapsed_seconds": 5.56,
-   "category": "expanded"
+   "category": "expanded",
+   "expected_refusal": true,
+   "citations_required": false,
+   "answer_type": "refusal",
+   "schema_version": 2
   }
  ],
- "expanded_from": "2026-11-01T09:55:29+08:00"
+ "expanded_from": "2026-11-01T09:55:29+08:00",
+ "schema_migration": {
+  "from": 1,
+  "to": 2,
+  "migrated_at": "2026-11-01T10:29:12+08:00",
+  "rules": {
+   "refusal": "无 citations 且(no_evidence=True 或 category∈无证据模拟 或 拒答语义/confidence=none)",
+   "inference": "有 citations 且答案含推断措辞（预计/推断/意味着/可能/或将/有望/测算/假设/综合等）",
+   "fact": "有 citations 且不含推断措辞",
+   "citations_required": "非拒答样本=True；拒答样本=False",
+   "untouched": "answer/citations/pre-existing fields 原样保留（仅新增字段与顶层 schema_version）"
+  },
+  "backup": "C:\\项目\\老田的AI助手\\research\\reports\\kb_qa_samples_backup2_20261101.json"
+ }
 }

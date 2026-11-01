@@ -589,6 +589,27 @@
       "title": "零卡主题概念卡候选生成",
       "ref": "tools/kb_corpus/card_proposal_v2.py",
       "enabled": true
+    },
+    {
+      "id": "kb_qa_multi_ab",
+      "kind": "tool",
+      "title": "问答 single/multi A/B 判定",
+      "ref": "tools/kb_corpus/kb_qa_multi_ab.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_qa_schema_v2",
+      "kind": "tool",
+      "title": "问答样本 schema v2 迁移",
+      "ref": "tools/kb_corpus/kb_qa_schema_v2.py",
+      "enabled": true
+    },
+    {
+      "id": "card_review",
+      "kind": "tool",
+      "title": "学习卡审核工作流",
+      "ref": "tools/kb_corpus/card_review.py",
+      "enabled": true
     }
   ]
 }

@@ -3554,5 +3554,201 @@
       "shortfall_themes": []
     },
     "note": "零卡主题概念卡候选：14/14 主题覆盖、40 张卡（定义14/事实14/传导12）、100% 可追溯、pending_review；未覆盖既有卡与 AE 稿；待人工审核后由 card_merge 合并。"
+  },
+  "kb_qa_multi_ab_20261101": {
+    "tool": "tools/kb_corpus/kb_qa_multi_ab.py",
+    "report": "research/reports/kb_qa_multi_ab_20261101.md",
+    "summary": {
+      "total": 30,
+      "single": {
+        "success": 10,
+        "rate": 0.3333,
+        "no_evidence": 20,
+        "fallback": 0,
+        "avg_citations": 2.4,
+        "avg_elapsed_seconds": 8.35,
+        "reused_count": 12
+      },
+      "multi": {
+        "success": 24,
+        "rate": 0.8,
+        "no_evidence": 6,
+        "fallback": 0,
+        "avg_citations": 2.25,
+        "avg_elapsed_seconds": 8.61,
+        "avg_clusters": 3.0,
+        "direct_facts": 22,
+        "inferences": 32
+      },
+      "delta": {
+        "answerable_rate": 0.4667,
+        "avg_citations": -0.15,
+        "latency_ratio": 1.03
+      },
+      "paired": {
+        "a_both_success": 10,
+        "b_single_fail_multi_success": 14,
+        "c_single_success_multi_fail": 0,
+        "d_both_fail": 6,
+        "mcnemar_p": 0.000122
+      },
+      "by_category": [
+        {
+          "category": "风险限制",
+          "total": 4,
+          "single_success": 0,
+          "multi_success": 4,
+          "single_rate": 0.0,
+          "multi_rate": 1.0,
+          "delta": 1.0
+        },
+        {
+          "category": "如何识别",
+          "total": 5,
+          "single_success": 1,
+          "multi_success": 5,
+          "single_rate": 0.2,
+          "multi_rate": 1.0,
+          "delta": 0.8
+        },
+        {
+          "category": "影响如何",
+          "total": 4,
+          "single_success": 0,
+          "multi_success": 3,
+          "single_rate": 0.0,
+          "multi_rate": 0.75,
+          "delta": 0.75
+        },
+        {
+          "category": "关键数据",
+          "total": 4,
+          "single_success": 1,
+          "multi_success": 3,
+          "single_rate": 0.25,
+          "multi_rate": 0.75,
+          "delta": 0.5
+        },
+        {
+          "category": "驱动因素",
+          "total": 5,
+          "single_success": 2,
+          "multi_success": 3,
+          "single_rate": 0.4,
+          "multi_rate": 0.6,
+          "delta": 0.2
+        },
+        {
+          "category": "是什么",
+          "total": 4,
+          "single_success": 4,
+          "multi_success": 4,
+          "single_rate": 1.0,
+          "multi_rate": 1.0,
+          "delta": 0.0
+        },
+        {
+          "category": "竞争格局",
+          "total": 4,
+          "single_success": 2,
+          "multi_success": 2,
+          "single_rate": 0.5,
+          "multi_rate": 0.5,
+          "delta": 0.0
+        }
+      ],
+      "answer_types": {
+        "direct_fact+inference": 11,
+        "refusal": 6,
+        "inference": 7,
+        "answer": 5,
+        "direct_fact": 1
+      },
+      "improved_ids": [
+        "q2_b5a0a0e045",
+        "q2_aa49124184",
+        "q2_a593448ce5",
+        "q2_3d1abf0240",
+        "q2_ef78939178",
+        "q2_0d7db24320",
+        "q2_b74f8cebda",
+        "q2_5cb2ec9a7b",
+        "q2_960b202685",
+        "q2_9efedd1a83",
+        "q2_56b3d0673e",
+        "q2_a4026386c5",
+        "q2_764c00190b",
+        "q2_0e42bbf120"
+      ],
+      "regressed_ids": []
+    },
+    "decision": {
+      "default_multi": true,
+      "verdict": "建议将 multi 设为问答默认模式（A/B 通过）",
+      "criteria": [
+        {
+          "name": "可答率提升 ≥15%",
+          "threshold": "≥15%",
+          "actual": "+47%",
+          "pass": true
+        },
+        {
+          "name": "回退（single success→multi fail）不明显增多",
+          "threshold": "回退数 ≤ max(1, 10%·改善数)",
+          "actual": "回退 0 / 改善 14",
+          "pass": true
+        },
+        {
+          "name": "耗时可接受",
+          "threshold": "multi/single 单条耗时比 ≤2.5",
+          "actual": "1.03",
+          "pass": true
+        },
+        {
+          "name": "McNemar 配对检验显著",
+          "threshold": "p<0.05",
+          "actual": "p=0.000122",
+          "pass": true
+        },
+        {
+          "name": "样本量足够",
+          "threshold": "≥30 条（LLM 慢可减并注明）",
+          "actual": "30 条",
+          "pass": true
+        }
+      ],
+      "passed": 5,
+      "total_criteria": 5,
+      "reasons": [
+        "可答率：single 33%（10/30）→ multi 80%（24/30），Δ+47%。",
+        "配对：改善 14 条 / 回退 0 条；McNemar p=0.000122。",
+        "平均引用：2.4 → 2.25；单条平均耗时：8.35s → 8.61s（比值 1.03）。"
+      ],
+      "risks": [
+        "multi 聚合允许推断，存在跨单元过度综合/错误拼接风险；引用校验不验证语义支撑，需人工抽查。",
+        "single 基线中前 12 条复用 v3 旧结果（不同时间点），与本次 multi 存在时间差，可能影响耗时/状态可比性。",
+        "样本受 LLM 时间预算限制（LLM 慢时减条），未达 30 条时统计功效有限。",
+        "耗时受 Ollama 负载影响大（v3 single 与本次 multi 测量时点不同），latency_ratio 仅作参考。",
+        "若切换默认，建议先灰度（页面/CLI --multi 可选）+ 影子对比，再全量。"
+      ],
+      "next_actions": [
+        "若通过：在 kb_qa CLI/HTTP（未接线）增加 --multi 选项并灰度；保留 single fallback（multi 降级时自动回退）。",
+        "扩样到 50 条（全量问题库）复跑本 A/B，验证 Δ 与 McNemar 稳定性。",
+        "对 multi 的答案抽样人工复核直接事实/推断边界与引用语义支撑。"
+      ]
+    },
+    "note": "A/B n=30：single 33.3% → multi 80%（+46.7pp）；McNemar p=0.000122；回退 0；耗时比 1.03 → 5/5 达标，**建议 multi 设为问答默认**（single fallback）。"
+  },
+  "kb_qa_eval_v2_20261101": {
+    "tool": "tools/kb_corpus/kb_qa_eval_v2.py",
+    "schema_tool": "tools/kb_corpus/kb_qa_schema_v2.py",
+    "report": "research/reports/kb_qa_eval_v2_20261101.md",
+    "note": "样本 schema v2：17 条加 expected_refusal/citations_required/answer_type/schema_version（fact13/inference1/refusal3）；幻觉 v2 误报 5→2 项（-60%，消除列表序号误报）；引用存在率 100%/支撑率 66.36% 不变。"
+  },
+  "card_review_20261101": {
+    "tool": "tools/kb_corpus/card_review.py",
+    "checklist": "research/reports/card_review_checklist_20261101.md",
+    "doc": "docs/plans/2026-11-01_学习卡审核工作流.md",
+    "note": "学习卡审核工作流：AE20+AV40=60 候选统一清单（19 主题/100% 可追溯）；decide 校验→dry-run 预览→--apply/--merge（备份+校验）；当前未 apply，等人工 decisions。"
   }
 }
