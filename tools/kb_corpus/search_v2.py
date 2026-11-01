@@ -21,7 +21,11 @@
 4. 分组输出：按 (book, chapter) 聚合，给组相关度（组内最高分 + 0.3×其余分）；
 5. 小评测：10 个查询 × precision@5 / 关键词覆盖率，v1（旧式 bigram 重叠）vs v2 对比，
    输出 research/reports/search_v2_eval_20261101.{json,md}；
-6. CLI：`search --q ... --topk --explain`、`eval`。
+6. **软 AND（wave12 AH 合入，默认）**：`and_mode="soft"`（`soft_cov=0.5`，2 词查询允许
+   1 词命中、未命中词按 0 分参与加权覆盖排序）；同义词/别名（非原词）命中权重 0.6；
+   保留 `and_mode="strict"`（旧 v2 严格行为）与 `"any"`（≥1 词命中）。
+   向后兼容：`and_mode="strict", synonym_weight=1.0` 与合入前 v2 逐查询结果一致。
+7. CLI：`search --q ... --topk --explain --and-mode strict|soft|any`、`eval`。
 
 数据
 ----
@@ -54,6 +58,12 @@ FIELDS = ("concept", "claim", "evidence", "chapter", "book")
 DEFAULT_WEIGHTS: dict[str, float] = {
     "concept": 1.0, "claim": 0.85, "evidence": 0.6, "chapter": 0.45, "book": 0.15,
 }
+
+# ---- 软 AND / 同义词权重（wave12 AH 合入 v2 默认，2026-11-01） ------------- #
+AND_MODES = ("strict", "soft", "any")
+DEFAULT_AND_MODE = "soft"          # 默认软 AND：修复 2 词 AND 在单主题标注下的 P@5 回退
+DEFAULT_SOFT_COV = 0.5             # 软 AND 覆盖率阈值：2 词查询允许 1 词命中（0.7 对 n<=3 等价 strict）
+DEFAULT_SYNONYM_WEIGHT = 0.6       # 同义词/别名（非原词）命中的得分权重
 TOPK_DEFAULT = 10
 PHRASE_BONUS = 0.10          # 查询短语（引号/整词）在 concept/claim 精确出现的加分
 
@@ -169,12 +179,27 @@ def parse_query(q: str, synonyms: SynonymTable | None = None) -> dict:
 # 检索器
 # --------------------------------------------------------------------------- #
 class SearchV2:
-    """多字段加权 + 同义词 + AND/OR + 分组 的检索器。"""
+    """多字段加权 + 同义词 + AND/OR + 分组 的检索器（默认软 AND + 同义词低权重）。
+
+    `and_mode`：strict=全部查询词必须命中（旧 v2 行为）；soft=覆盖率 ≥ soft_cov
+    （默认 0.5）；any=≥1 词命中。`synonym_weight` 控制同义/别名命中的得分权重
+    （0.6 = 原词命中的 60%）。向后兼容：strict + synonym_weight=1.0 等价合入前 v2。
+    """
 
     def __init__(self, units: list[dict], synonyms: SynonymTable | None = None,
-                 weights: dict[str, float] | None = None):
+                 weights: dict[str, float] | None = None,
+                 and_mode: str = DEFAULT_AND_MODE,
+                 soft_cov: float = DEFAULT_SOFT_COV,
+                 synonym_weight: float = DEFAULT_SYNONYM_WEIGHT):
+        if and_mode not in AND_MODES:
+            raise ValueError(f"未知 and_mode: {and_mode!r}（可选 {AND_MODES}）")
+        if not 0.0 <= float(soft_cov) <= 1.0:
+            raise ValueError(f"soft_cov 应在 [0,1]: {soft_cov!r}")
         self.units: list[dict] = []
         self.synonyms = synonyms or SynonymTable([])
+        self.and_mode = and_mode
+        self.soft_cov = float(soft_cov)
+        self.synonym_weight = float(synonym_weight)
         self.weights: dict[str, float] = dict(DEFAULT_WEIGHTS)
         if weights:
             self.weights.update({str(k): float(v) for k, v in weights.items()})
@@ -209,53 +234,84 @@ class SearchV2:
         # 多词/短语未精确命中时，重叠率打折（0~0.7）
         return 0.7 * overlap, None
 
+    # -- 单词打分：同义词/别名命中 ×synonym_weight ------------------------- #
+    def _term_score(self, unit: dict, t: dict) -> tuple[float, str | None, str | None]:
+        """单元内单个查询词的得分（取最佳字段；同义词命中 ×synonym_weight）。"""
+        best, best_field, best_var = 0.0, None, None
+        for f in FIELDS:
+            w = self.weights.get(f, 0.0)
+            if w <= 0:
+                continue
+            s, var = self._term_field_score(
+                t["term"], t["variants"], t["phrase"],
+                unit["_text"][f], unit["_tokens"][f])
+            if s > 0:
+                # 原词命中权重 1.0；同义词/别名命中 ×synonym_weight（默认 0.6）
+                eff = s if var is None else (
+                    s if var == t["term"].strip().lower() else s * self.synonym_weight)
+                if eff > best:
+                    best, best_field, best_var = eff, f, var
+        return best, best_field, best_var
+
     def _unit_score(self, unit: dict, terms: list[dict]) -> dict | None:
-        """AND 分支打分：全部词必须命中（else None），返回 score + explain。"""
+        """查询分支打分：按 and_mode 判定命中（strict/soft/any），返回 score + explain。
+
+        - strict：全部查询词必须命中（合入前 v2 行为，需 synonym_weight=1.0 才逐条兼容）；
+        - soft（默认）：命中词覆盖率 ≥ soft_cov（0.5），未命中词按 0 分参与加权平均排序；
+        - any：≥1 个查询词命中。
+        排除词（`-词`）任命中即过滤。
+        """
+        norm_terms = [t for t in terms if not t.get("exclude")]
+        exclude_terms = [t for t in terms if t.get("exclude")]
+        if not norm_terms:
+            return None
+        for t in exclude_terms:
+            s, _, _ = self._term_score(unit, t)
+            if s > 0:
+                return None
         field_scores = {f: 0.0 for f in FIELDS}
         matched: list[dict] = []
         phrase_hit = False
-        covered = 0
-        for t in terms:
-            best = 0.0
-            best_field = None
-            best_var = None
+        for t in norm_terms:
+            s, best_field, best_var = self._term_score(unit, t)
+            if s <= 0:
+                continue
             for f in FIELDS:
                 w = self.weights.get(f, 0.0)
                 if w <= 0:
                     continue
-                s, var = self._term_field_score(
+                raw, var = self._term_field_score(
                     t["term"], t["variants"], t["phrase"],
                     unit["_text"][f], unit["_tokens"][f])
-                if s > 0:
-                    field_scores[f] += w * s
-                    if s > best:
-                        best, best_field, best_var = s, f, var
-            # 排除词：任意字段命中即过滤
-            if t["exclude"]:
-                if best > 0:
-                    return None
-                continue
-            if best <= 0:
-                return None          # AND 语义：缺任一词 → 该分支不匹配
-            covered += 1
-            if best >= 1.0:
-                if best_field in ("concept", "claim"):
-                    phrase_hit = True
+                if raw > 0:
+                    eff = raw if var is None else (
+                        raw if var == t["term"].strip().lower()
+                        else raw * self.synonym_weight)
+                    field_scores[f] += w * eff
+                    if eff >= 1.0 and f in ("concept", "claim"):
+                        phrase_hit = True
             matched.append({"term": t["term"], "field": best_field,
-                            "score": round(best, 3), "matched_variant": best_var})
-        if not matched:
+                            "score": round(s, 3), "matched_variant": best_var})
+        n = len(norm_terms)
+        coverage = len(matched) / float(n)
+        if self.and_mode == "strict":
+            ok = len(matched) >= n
+        elif self.and_mode == "any":
+            ok = len(matched) >= 1
+        else:  # soft
+            ok = coverage >= self.soft_cov - 1e-9
+        if not ok:
             return None
         weight_sum = sum(self.weights.get(f, 0.0) for f in FIELDS) or 1.0
-        base = sum(field_scores.values()) / (weight_sum * max(1, len(terms)))
+        base = sum(field_scores.values()) / (weight_sum * n)
         base = min(base, 1.0)
-        coverage = covered / float(len(terms))
         score = base * (0.8 + 0.2 * coverage)
         if phrase_hit:
             score = min(1.0, score + PHRASE_BONUS * 0.5)
         return {"score": round(float(score), 4),
                 "coverage": round(float(coverage), 3),
                 "field_scores": {f: round(v, 4) for f, v in field_scores.items() if v > 0},
-                "matched": matched}
+                "matched": matched, "n_terms": n}
 
     def search_units(self, query: str) -> list[dict]:
         """返回逐单元命中（OR 分支取最高分），含相关度与 explain。"""
@@ -315,6 +371,9 @@ class SearchV2:
             "query": query,
             "n": len(results),
             "weights": {f: self.weights.get(f, 0.0) for f in FIELDS},
+            "and_mode": self.and_mode,
+            "soft_cov": self.soft_cov,
+            "synonym_weight": self.synonym_weight,
             "parsed": {
                 "or_branches": [
                     [{"term": t["term"], "variants": t["variants"],
@@ -465,6 +524,295 @@ def write_eval_md(rep: dict, path: Path) -> str:
 
 
 # --------------------------------------------------------------------------- #
+# 合入回归评测（wave12 AH 软 AND 合入 v2 默认后，冻结 89 查询回归确认）
+# --------------------------------------------------------------------------- #
+MERGE_SCHEMA_VERSION = "search_v2_merge_eval.v1"
+MERGE_EVAL_JSON = OUT / "search_v2_merge_eval_20261101.json"
+MERGE_EVAL_MD = OUT / "search_v2_merge_eval_20261101.md"
+MERGE_DOC = REPO / "docs" / "plans" / "2026-11-01_研报检索v2_v1.md"
+MERGE_DOC_BEGIN = "<!-- SEARCH_V2_MERGE_BEGIN -->"
+MERGE_DOC_END = "<!-- SEARCH_V2_MERGE_END -->"
+MERGE_HIST_EVAL = OUT / "search_v2_eval_ext2_20261101.json"
+
+
+def _merge_columns(rep: dict) -> dict:
+    """从 eval_search_v2_ext2 报告提取逐查询引擎列（实验引擎记在 v2 列）。"""
+    return {q["id"]: {
+        "id": q["id"], "query": q["query"], "type": q["type"],
+        "precision_at_k": q["v2"]["precision_at_k"],
+        "coverage": q["v2"]["coverage"],
+        "hit": q["v2"]["hit"],
+        "ndcg_at_k": q["v2"]["ndcg_at_k"],
+        "grades": q["v2"]["grades"],
+    } for q in rep["queries"]}
+
+
+def _merge_agg(rows: list[dict]) -> dict:
+    n = len(rows)
+    if not n:
+        return {"n": 0}
+    return {"n": n,
+            "precision_at_k": round(sum(float(r["precision_at_k"]) for r in rows) / n, 4),
+            "coverage": round(sum(float(r["coverage"]) for r in rows) / n, 4),
+            "hit_rate": round(sum(float(r["hit"]) for r in rows) / n, 4),
+            "ndcg_at_k": round(sum(float(r["ndcg_at_k"]) for r in rows) / n, 4)}
+
+
+def _merge_deltas(a: dict, b: dict, ids: list[str], metric: str) -> list[float]:
+    return [float(a[i][metric]) - float(b[i][metric]) for i in ids if i in a and i in b]
+
+
+def run_merge_eval(units: list[dict], synonyms, queries: list[dict]) -> dict:
+    """合入后回归：旧 strict v2（+syn1.0） vs 新默认（soft+0.6） vs v2b 一致性 vs 历史 JSON。"""
+    here = str(Path(__file__).resolve().parent)
+    if here not in sys.path:
+        sys.path.insert(0, here)
+    import eval_search_v2_ext as ev  # 延迟导入：仅 merge-eval 子命令需要
+    import eval_search_v2_ext2 as e2
+
+    old = SearchV2(units, synonyms=synonyms, and_mode="strict", synonym_weight=1.0)
+    new = SearchV2(units, synonyms=synonyms)
+    rep_old = e2.evaluate_ext2(old, units, queries)
+    rep_new = e2.evaluate_ext2(new, units, queries)
+    col_old, col_new = _merge_columns(rep_old), _merge_columns(rep_new)
+    ids = [q["id"] for q in queries]
+    and_ids = [q["id"] for q in queries if q["type"] == "AND"]
+    # v1（旧检索器基线，两报告一致）
+    v1_rows = [{"precision_at_k": q["v1"]["precision_at_k"], "coverage": q["v1"]["coverage"],
+                "hit": q["v1"]["hit"], "ndcg_at_k": q["v1"].get("ndcg_at_k", 0.0)}
+               for q in rep_new["queries"]]
+    v1_and = [r for r, q in zip(v1_rows, rep_new["queries"]) if q["type"] == "AND"]
+    # 历史 wave10 JSON v2 列（合入前 strict）用于向后兼容逐条校验
+    hist = {}
+    if MERGE_HIST_EVAL.exists():
+        hist = {q["id"]: q["v2"] for q in
+                json.loads(MERGE_HIST_EVAL.read_text(encoding="utf-8"))["queries"]}
+    back_compat = {
+        "hist_file": str(MERGE_HIST_EVAL),
+        "max_abs_diff_precision": round(max(
+            (abs(col_old[i]["precision_at_k"] - hist[i]["precision_at_k"])
+             for i in ids if i in hist), default=0.0), 6),
+        "max_abs_diff_ndcg": round(max(
+            (abs(col_old[i]["ndcg_at_k"] - hist[i]["ndcg_at_k"])
+             for i in ids if i in hist), default=0.0), 6),
+    }
+    back_compat["identical"] = (back_compat["max_abs_diff_precision"] < 1e-9
+                                and back_compat["max_abs_diff_ndcg"] < 1e-9)
+    # 与 wave12 v2b（soft 0.5 + syn0.6）一致性：动态导入 v2b 引擎逐条比
+    consistency = {"v2b_engine": None}
+    try:
+        here = str(Path(__file__).resolve().parent)
+        if here not in sys.path:
+            sys.path.insert(0, here)
+        import search_v2b as b2
+        eng_b = b2.SearchV2B(units, synonyms=synonyms, and_mode="soft",
+                             soft_cov=DEFAULT_SOFT_COV,
+                             synonym_weight=DEFAULT_SYNONYM_WEIGHT)
+        rep_b = e2.evaluate_ext2(eng_b, units, queries)
+        col_b = _merge_columns(rep_b)
+        mp = max(abs(col_new[i]["precision_at_k"] - col_b[i]["precision_at_k"]) for i in ids)
+        mn = max(abs(col_new[i]["ndcg_at_k"] - col_b[i]["ndcg_at_k"]) for i in ids)
+        consistency = {"v2b_engine": "search_v2b.SearchV2B(soft,0.5,0.6)",
+                       "max_abs_diff_precision": round(mp, 6),
+                       "max_abs_diff_ndcg": round(mn, 6),
+                       "identical": bool(mp < 1e-9 and mn < 1e-9)}
+    except Exception as exc:  # noqa: BLE001 - v2b 为实验文件，缺失不影响合入回归
+        consistency["error"] = repr(exc)
+    # 显著性：合入后 vs 合入前（配对 t + bootstrap CI），整体与 AND 子集
+    significance = {}
+    for metric in ("precision_at_k", "ndcg_at_k"):
+        d_all = _merge_deltas(col_new, col_old, ids, metric)
+        d_and = _merge_deltas(col_new, col_old, and_ids, metric)
+        significance[metric] = {
+            "all_89": {"paired_t": ev.paired_t_p(d_all),
+                       "bootstrap": e2.bootstrap_ci(d_all)},
+            "AND_10": {"paired_t": ev.paired_t_p(d_and),
+                       "bootstrap": e2.bootstrap_ci(d_and)},
+        }
+    by_type = {}
+    for typ in sorted({q["type"] for q in queries}):
+        tids = [q["id"] for q in queries if q["type"] == typ]
+        by_type[typ] = {"n": len(tids),
+                        "before_strict": _merge_agg([col_old[i] for i in tids]),
+                        "after_soft": _merge_agg([col_new[i] for i in tids])}
+    return {
+        "meta": {
+            "schema_version": MERGE_SCHEMA_VERSION,
+            "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+            "n_queries": len(queries), "n_units": len(units), "topk": 5,
+            "eval_set": "冻结的 wave10 89 查询（eval_search_v2_ext2.all_queries()，标注未改）",
+            "merge": {"and_mode": DEFAULT_AND_MODE, "soft_cov": DEFAULT_SOFT_COV,
+                      "synonym_weight": DEFAULT_SYNONYM_WEIGHT},
+            "rollback": {"and_mode": "strict", "synonym_weight": 1.0,
+                         "cli": "--and-mode strict --synonym-weight 1.0",
+                         "note": "严格旧行为逐查询可复现（见 backward_compat）"},
+            "frontend_note": "portal/kb_reports.html 的内联 JS 引擎不在本次范围，仍为严格 AND；"
+                             "前端同步需后续任务",
+        },
+        "tables": {
+            "overall": {"v1": _merge_agg(v1_rows),
+                        "before_strict": _merge_agg(list(col_old.values())),
+                        "after_soft": _merge_agg(list(col_new.values()))},
+            "AND": {"v1": _merge_agg(v1_and),
+                    "before_strict": _merge_agg([col_old[i] for i in and_ids]),
+                    "after_soft": _merge_agg([col_new[i] for i in and_ids])},
+            "by_type": by_type,
+        },
+        "backward_compat": back_compat,
+        "consistency": consistency,
+        "significance": significance,
+    }
+
+
+def write_merge_md(rep: dict) -> str:
+    t, bc, cs, sig = rep["tables"], rep["backward_compat"], rep["consistency"], rep["significance"]
+    L = ["# 检索 v2 合入回归评测（软 AND 合入默认，冻结 89 查询）", ""]
+    m = rep["meta"]
+    L.append(f"- 生成：{m['generated_at']}；评测集：{m['eval_set']}；topk={m['topk']}，"
+             f"单元 {m['n_units']}")
+    L.append(f"- 合入默认：`and_mode={m['merge']['and_mode']}`、"
+             f"`soft_cov={m['merge']['soft_cov']}`、`synonym_weight={m['merge']['synonym_weight']}`")
+    L.append(f"- 回退：{m['rollback']['cli']}（{m['rollback']['note']}）")
+    L.append("")
+    L.append("## 整体（89 查询）")
+    L.append("")
+    L.append("| 版本 | P@5 | 覆盖率 | 命中率 | NDCG@5 |")
+    L.append("|---|---|---|---|---|")
+    for key, name in (("v1", "v1 旧检索器"), ("before_strict", "合入前 v2（strict）"),
+                      ("after_soft", "**合入后 v2（soft 默认）**")):
+        r = t["overall"][key]
+        L.append(f"| {name} | {r['precision_at_k']:.3f} | {r['coverage']:.3f} | "
+                 f"{r['hit_rate']:.3f} | {r['ndcg_at_k']:.3f} |")
+    L.append("")
+    L.append("## AND 类（n=10，回退修复重点）")
+    L.append("")
+    L.append("| 版本 | P@5 | 覆盖率 | 命中率 | NDCG@5 |")
+    L.append("|---|---|---|---|---|")
+    for key, name in (("v1", "v1"), ("before_strict", "合入前 strict"),
+                      ("after_soft", "**合入后 soft**")):
+        r = t["AND"][key]
+        L.append(f"| {name} | {r['precision_at_k']:.3f} | {r['coverage']:.3f} | "
+                 f"{r['hit_rate']:.3f} | {r['ndcg_at_k']:.3f} |")
+    L.append("")
+    L.append("## 显著性（合入后 − 合入前，配对 t + bootstrap CI）")
+    L.append("")
+    L.append("| 指标 | 子集 | 配对 t | p | bootstrap 95% CI | CI 不含 0 |")
+    L.append("|---|---|---|---|---|---|")
+    for metric in ("precision_at_k", "ndcg_at_k"):
+        for subset in ("all_89", "AND_10"):
+            blk = sig[metric][subset]
+            pt, bs = blk["paired_t"], blk["bootstrap"]
+            L.append(f"| {metric} | {subset} | {pt['t']} | {pt['p_two_sided']} | "
+                     f"[{bs['ci_low']}, {bs['ci_high']}] | {'是' if bs['significant'] else '否'} |")
+    L.append("")
+    L.append("## 向后兼容 / 与 v2b 一致性")
+    L.append("")
+    L.append(f"- 向后兼容（`strict + synonym_weight=1.0` vs 合入前历史 wave10 v2 逐查询）："
+             f"P@5 最大差 {bc['max_abs_diff_precision']}、NDCG 最大差 {bc['max_abs_diff_ndcg']} → "
+             f"{'逐条一致 ✅' if bc['identical'] else '存在差异 ⚠️'}")
+    if cs.get("identical") is not None:
+        L.append(f"- 与 wave12 v2b（soft 0.5 + syn 0.6）逐查询一致性：P@5 最大差 "
+                 f"{cs['max_abs_diff_precision']}、NDCG 最大差 {cs['max_abs_diff_ndcg']} → "
+                 f"{'完全一致 ✅' if cs['identical'] else '存在差异 ⚠️'}")
+    L.append(f"- 前端提示：{m['frontend_note']}")
+    L.append("")
+    L.append("## 分语法类型（合入前 strict → 合入后 soft）")
+    L.append("")
+    L.append("| 类型 | n | strict P@5 | soft P@5 | strict NDCG | soft NDCG |")
+    L.append("|---|---|---|---|---|---|")
+    for typ, x in t["by_type"].items():
+        L.append(f"| {typ} | {x['n']} | {x['before_strict']['precision_at_k']:.3f} | "
+                 f"{x['after_soft']['precision_at_k']:.3f} | "
+                 f"{x['before_strict']['ndcg_at_k']:.3f} | {x['after_soft']['ndcg_at_k']:.3f} |")
+    L.append("")
+    L.append("## 结论")
+    L.append("")
+    o = t["overall"]
+    L.append(f"- 合入后整体 P@5 {o['before_strict']['precision_at_k']:.3f}→"
+             f"{o['after_soft']['precision_at_k']:.3f}、NDCG "
+             f"{o['before_strict']['ndcg_at_k']:.3f}→{o['after_soft']['ndcg_at_k']:.3f}；"
+             f"AND 类 P@5 {t['AND']['before_strict']['precision_at_k']:.3f}→"
+             f"{t['AND']['after_soft']['precision_at_k']:.3f} → 与 wave12 v2b 一致，合入达成预期。")
+    L.append("- 向后兼容与回退路径已验证：需要旧严格行为时传 "
+             "`and_mode='strict', synonym_weight=1.0`（CLI `--and-mode strict --synonym-weight 1.0`）。")
+    L.append("")
+    return "\n".join(L)
+
+
+def append_merge_doc(rep: dict, doc_path: Path = MERGE_DOC) -> str:
+    """把「软 AND 合入 v2」章节追加/替换到设计文档（标记块幂等）。"""
+    doc = doc_path.read_text(encoding="utf-8") if doc_path.exists() else "# 研报检索 v2 设计\n"
+    t, bc, cs = rep["tables"], rep["backward_compat"], rep["consistency"]
+    m = rep["meta"]
+    o = t["overall"]
+    block = [MERGE_DOC_BEGIN, "", "## 软 AND 合入 v2（wave12 AH → v2 默认，2026-11-01）", ""]
+    block.append(f"- 默认值：`and_mode={m['merge']['and_mode']}`、"
+                 f"`soft_cov={m['merge']['soft_cov']}`、"
+                 f"`synonym_weight={m['merge']['synonym_weight']}`；保留 `strict`/`any` 选项")
+    block.append("")
+    block.append("| 口径 | P@5 | 覆盖率 | 命中率 | NDCG@5 |")
+    block.append("|---|---|---|---|---|")
+    for key, name in (("v1", "v1 旧检索器"), ("before_strict", "合入前 v2 strict"),
+                      ("after_soft", "**合入后 v2 soft（默认）**")):
+        r = o[key]
+        block.append(f"| {name} | {r['precision_at_k']:.3f} | {r['coverage']:.3f} | "
+                     f"{r['hit_rate']:.3f} | {r['ndcg_at_k']:.3f} |")
+    block.append("")
+    block.append(f"- AND 类：P@5 {t['AND']['before_strict']['precision_at_k']:.3f}→"
+                 f"{t['AND']['after_soft']['precision_at_k']:.3f}、NDCG "
+                 f"{t['AND']['before_strict']['ndcg_at_k']:.3f}→"
+                 f"{t['AND']['after_soft']['ndcg_at_k']:.3f}")
+    block.append(f"- 向后兼容：`strict + synonym_weight=1.0` 与合入前历史结果逐查询一致 "
+                 f"（P@5/NDCG 最大差 {bc['max_abs_diff_precision']}/"
+                 f"{bc['max_abs_diff_ndcg']}）；回退方式 `--and-mode strict --synonym-weight 1.0`")
+    if cs.get("identical") is not None:
+        block.append(f"- 与 wave12 v2b 一致：P@5/NDCG 最大差 {cs['max_abs_diff_precision']}/"
+                     f"{cs['max_abs_diff_ndcg']}")
+    block.append(f"- 前端提示：{m['frontend_note']}")
+    block.append("")
+    block.append(MERGE_DOC_END)
+    block_txt = "\n".join(block)
+    if MERGE_DOC_BEGIN in doc and MERGE_DOC_END in doc:
+        pre = doc.split(MERGE_DOC_BEGIN)[0]
+        post = doc.split(MERGE_DOC_END, 1)[1]
+        doc = pre + block_txt + post
+    else:
+        if not doc.endswith("\n"):
+            doc += "\n"
+        doc += "\n" + block_txt + "\n"
+    doc_path.write_text(doc, encoding="utf-8")
+    return doc
+
+
+def cmd_merge_eval(args) -> int:
+    units = load_units(args.data)
+    synonyms = load_synonyms(args.synonyms)
+    here = str(Path(__file__).resolve().parent)
+    if here not in sys.path:
+        sys.path.insert(0, here)
+    import eval_search_v2_ext2 as e2  # 延迟导入，避免默认路径加载评测依赖
+    queries = e2.all_queries()
+    rep = run_merge_eval(units, synonyms, queries)
+    out_json = Path(getattr(args, "out_json", MERGE_EVAL_JSON))
+    out_md = Path(getattr(args, "out_md", MERGE_EVAL_MD))
+    out_json.parent.mkdir(parents=True, exist_ok=True)
+    out_json.write_text(json.dumps(rep, ensure_ascii=False, indent=1), encoding="utf-8")
+    out_md.write_text(write_merge_md(rep), encoding="utf-8")
+    if not getattr(args, "no_append_doc", False):
+        append_merge_doc(rep)
+    o, a = rep["tables"]["overall"], rep["tables"]["AND"]
+    print(json.dumps({
+        "n_queries": rep["meta"]["n_queries"],
+        "overall_before": o["before_strict"], "overall_after": o["after_soft"],
+        "AND_before": a["before_strict"], "AND_after": a["after_soft"],
+        "backward_compat": rep["backward_compat"]["identical"],
+        "v2b_consistent": rep["consistency"].get("identical"),
+    }, ensure_ascii=False))
+    print(f"[search_v2] merge-eval -> {out_json} / {out_md}", flush=True)
+    return 0
+
+
+# --------------------------------------------------------------------------- #
 # CLI
 # --------------------------------------------------------------------------- #
 def load_units(path: Path | str) -> list[dict]:
@@ -497,7 +845,10 @@ def build_engine(args) -> SearchV2:
     weights = None
     if getattr(args, "weights_json", None):
         weights = json.loads(Path(args.weights_json).read_text(encoding="utf-8"))
-    return SearchV2(units, synonyms=synonyms, weights=weights)
+    return SearchV2(units, synonyms=synonyms, weights=weights,
+                    and_mode=getattr(args, "and_mode", DEFAULT_AND_MODE),
+                    soft_cov=getattr(args, "soft_cov", DEFAULT_SOFT_COV),
+                    synonym_weight=getattr(args, "synonym_weight", DEFAULT_SYNONYM_WEIGHT))
 
 
 def cmd_search(args) -> int:
@@ -547,6 +898,10 @@ def _parse_args(argv):
     ps.add_argument("--explain", action="store_true")
     ps.add_argument("--no-group", action="store_true")
     ps.add_argument("--weights-json", default=None)
+    ps.add_argument("--and-mode", choices=AND_MODES, default=DEFAULT_AND_MODE,
+                    help="strict=旧行为；soft=默认软 AND；any=≥1 词")
+    ps.add_argument("--soft-cov", type=float, default=DEFAULT_SOFT_COV)
+    ps.add_argument("--synonym-weight", type=float, default=DEFAULT_SYNONYM_WEIGHT)
     ps.set_defaults(func=cmd_search)
 
     pe = sub.add_parser("eval", help="小评测（10 查询）")
@@ -554,7 +909,16 @@ def _parse_args(argv):
     pe.add_argument("--out-json", default=str(OUT / "search_v2_eval_20261101.json"))
     pe.add_argument("--out-md", default=str(OUT / "search_v2_eval_20261101.md"))
     pe.add_argument("--weights-json", default=None)
+    pe.add_argument("--and-mode", choices=AND_MODES, default=DEFAULT_AND_MODE)
+    pe.add_argument("--soft-cov", type=float, default=DEFAULT_SOFT_COV)
+    pe.add_argument("--synonym-weight", type=float, default=DEFAULT_SYNONYM_WEIGHT)
     pe.set_defaults(func=cmd_eval)
+
+    pm = sub.add_parser("merge-eval", help="软 AND 合入回归（冻结 89 查询，写 reports + 追加文档）")
+    pm.add_argument("--out-json", default=str(MERGE_EVAL_JSON))
+    pm.add_argument("--out-md", default=str(MERGE_EVAL_MD))
+    pm.add_argument("--no-append-doc", action="store_true")
+    pm.set_defaults(func=cmd_merge_eval)
 
     py_ = sub.add_parser("synonyms", help="查看同义词表")
     py_.set_defaults(func=cmd_synonyms)

@@ -100,7 +100,8 @@ def test_synonym_weighting():
 def test_strict_mode_matches_v2():
     units = _units()
     syn = sv.SynonymTable([["快递", "物流"]])
-    base = sv.SearchV2(units, synonyms=syn)
+    # v2 默认已合入 soft+0.6；与 v2b strict 对照时需显式恢复旧严格基线
+    base = sv.SearchV2(units, synonyms=syn, and_mode="strict", synonym_weight=1.0)
     mine = v2b.SearchV2B(units, synonyms=syn, and_mode="strict", synonym_weight=1.0)
     for q in ("快递 盈利", "快递|盈利", "无关"):
         a = [(r["concept"], r["score"]) for r in base.search_units(q)]

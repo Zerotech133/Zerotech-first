@@ -7,7 +7,9 @@
   3. 短语 / 多词 AND / OR / 排除词：查询语法解析与检索语义正确；
   4. 分组输出：按 (book, chapter) 聚合、组相关度排序、top_units 结构；
   5. 小评测 schema：precision@5/覆盖率计算、v1 vs v2 对比字段、md 渲染；
-  6. 数据加载与 CLI：JSON / jsonl 目录加载、synonyms JSON 加载、`search --explain` 输出结构。
+  6. 数据加载与 CLI：JSON / jsonl 目录加载、synonyms JSON 加载、`search --explain` 输出结构；
+  7. 软 AND 合入（wave12 AH）：默认 and_mode=soft/soft_cov=0.5/synonym_weight=0.6，
+     2 词 AND 默认放宽；显式 strict+synonym_weight=1.0 保持旧 v2 逐查询行为（向后兼容）。
 
 运行：C:\\项目\\py312\\python.exe -X utf8 -m pytest -q tools/tests/test_search_v2.py
 """
@@ -43,12 +45,16 @@ def _units(**overrides):
     return base
 
 
-def _engine(units=None, groups=None, weights=None):
+def _engine(units=None, groups=None, weights=None, **kwargs):
+    """测试用引擎：默认 **显式 strict + synonym_weight=1.0**（合入前 v2 行为），
+    以便历史用例断言旧语义；新默认（soft + 0.6）由 test_default_soft_and_synonym 覆盖。"""
     syn = sv.SynonymTable(groups if groups is not None else
                           [["光伏", "太阳能"], ["钠电池", "钠离子电池"],
                            ["大模型", "AI"], ["数据中心", "IDC", "算力"]])
+    params = {"and_mode": "strict", "synonym_weight": 1.0}
+    params.update(kwargs)
     return sv.SearchV2(units if units is not None else _units(), synonyms=syn,
-                       weights=weights)
+                       weights=weights, **params)
 
 
 # ------------------------------------------------------------------ 1. 多字段加权
@@ -160,6 +166,61 @@ def test_eval_schema(tmp_path):
     assert rep["aggregate"]["v2"]["precision_at_k"] >= rep["aggregate"]["v1"]["precision_at_k"] - 1e-9
     md = sv.write_eval_md(rep, tmp_path / "eval.md")
     assert "precision@5" in md and "v2" in md
+
+
+# ------------------------------------------------------------------ 7. 软 AND 合入默认
+def test_soft_and_is_default_and_backward_compatible():
+    # 默认常量
+    assert sv.DEFAULT_AND_MODE == "soft"
+    assert sv.DEFAULT_SOFT_COV == 0.5
+    assert sv.DEFAULT_SYNONYM_WEIGHT == 0.6
+    assert set(sv.AND_MODES) == {"strict", "soft", "any"}
+    units = [
+        {"book": "b", "chapter": "c", "concept": "快递行业", "claim": "快递单量", "evidence": "x"},
+        {"book": "b", "chapter": "c", "concept": "企业盈利", "claim": "盈利提升", "evidence": "x"},
+        {"book": "b", "chapter": "c", "concept": "快递盈利双主题", "claim": "快递盈利改善",
+         "evidence": "x"},
+    ]
+    default_eng = sv.SearchV2(units, synonyms=sv.SynonymTable([]))
+    assert default_eng.and_mode == "soft" and default_eng.soft_cov == 0.5
+    # 默认 soft：2 词查询允许 1 词命中，且全词命中排最前
+    res = default_eng.search_units("快递 盈利")
+    concepts = [r["concept"] for r in res]
+    assert concepts[0] == "快递盈利双主题"
+    assert "快递行业" in concepts and "企业盈利" in concepts
+    # 显式 strict：只返回全词命中（旧语义）
+    strict_eng = sv.SearchV2(units, synonyms=sv.SynonymTable([]),
+                             and_mode="strict", synonym_weight=1.0)
+    assert [r["concept"] for r in strict_eng.search_units("快递 盈利")] == ["快递盈利双主题"]
+    # any：最宽
+    any_eng = sv.SearchV2(units, synonyms=sv.SynonymTable([]), and_mode="any")
+    assert len(any_eng.search_units("快递 盈利")) >= len(res)
+    # 非法参数报错
+    with pytest.raises(ValueError):
+        sv.SearchV2(units, and_mode="bogus")
+    with pytest.raises(ValueError):
+        sv.SearchV2(units, soft_cov=1.5)
+
+
+def test_default_synonym_weight():
+    units = [
+        {"book": "b", "chapter": "c", "concept": "光伏行业", "claim": "光伏装机",
+         "evidence": "x"},
+        {"book": "b", "chapter": "c", "concept": "太阳能装机", "claim": "太阳能利用",
+         "evidence": "x"},
+    ]
+    syn = sv.SynonymTable([["光伏", "太阳能"]])
+    default_eng = sv.SearchV2(units, synonyms=syn)   # 默认 synonym_weight=0.6
+    scores = {r["concept"]: r["score"] for r in default_eng.search_units("光伏")}
+    assert scores["光伏行业"] > scores["太阳能装机"]   # 原词命中 > 同义词命中
+    # 兼容模式（synonym_weight=1.0）两者同分
+    compat = sv.SearchV2(units, synonyms=syn, and_mode="strict", synonym_weight=1.0)
+    cs = {r["concept"]: r["score"] for r in compat.search_units("光伏")}
+    assert cs["太阳能装机"] == pytest.approx(cs["光伏行业"], abs=1e-9)
+    # payload 暴露默认参数，便于前端/调用方感知
+    payload = default_eng.search("光伏", topk=2, group=False)
+    assert payload["and_mode"] == "soft" and payload["soft_cov"] == 0.5
+    assert payload["synonym_weight"] == 0.6
 
 
 # ------------------------------------------------------------------ 6. 数据加载与 CLI

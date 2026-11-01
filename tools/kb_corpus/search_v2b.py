@@ -188,7 +188,10 @@ def compare_engines(units: list[dict], synonyms, queries: list[dict]) -> dict:
         "v2b_strict": "v2b 严格 AND（应复现 v2）",
     }
     engines = {
-        "v2": sv.SearchV2(units, synonyms=synonyms),
+        # v2 默认已在 wave12 AH 合入 soft+0.6；本对照表沿用「旧 v2 严格基线」
+        # （strict + synonym_weight=1.0），保证与 wave12 历史结果可比。
+        "v2": sv.SearchV2(units, synonyms=synonyms, and_mode="strict",
+                          synonym_weight=1.0),
         "v2b_soft": SearchV2B(units, synonyms=synonyms, and_mode="soft",
                               soft_cov=DEFAULT_SOFT_COV),
         "v2b_soft07": SearchV2B(units, synonyms=synonyms, and_mode="soft", soft_cov=0.7),
