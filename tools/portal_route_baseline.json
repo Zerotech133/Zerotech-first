@@ -1,7 +1,7 @@
 {
- "generated_at": "2026-11-01T17:19:03",
- "source": "C:\\项目\\老田的AI助手\\.worktrees\\WO-D1-UI-20261101\\portal\\portal_api.py",
- "total": 283,
+ "generated_at": "2026-11-01T22:44:40",
+ "source": "C:\\项目\\老田的AI助手\\.worktrees\\WO-D1-MEETING-20261101\\portal\\portal_api.py",
+ "total": 285,
  "signatures": [
   [
    "GET",
@@ -167,6 +167,11 @@
    "GET",
    "exact",
    "/api/d1/decisions"
+  ],
+  [
+   "GET",
+   "exact",
+   "/api/d1/meeting"
   ],
   [
    "GET",
@@ -1207,6 +1212,11 @@
    "POST",
    "exact",
    "/api/d1/decision"
+  ],
+  [
+   "POST",
+   "exact",
+   "/api/d1/meeting"
   ],
   [
    "POST",

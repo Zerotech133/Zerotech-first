@@ -205,6 +205,7 @@ _MUTATION_POSTS = frozenset((
     "/api/jev/review/resolve",  # P142 补登记（L-02）：低置信复核裁决（写 DB）
     "/api/jev/review/reopen",   # P142 补登记（L-02）：legacy 重新打开（写 DB）
     "/api/d1/decision",       # WO-D1-DECISION-20261101：D1 final_decision 落账（paper-only）
+    "/api/d1/meeting",        # WO-D1-MEETING-20261101：D1 投研会 create/vote/finalize
 ))
 
 # 2026-11-01 P142（审计 L-01/L-02 修复）：do_POST 的"早分支"族里含变更端点
@@ -1083,6 +1084,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
         if path == "/api/d1/decision":
             import api_d1_decision
             api_d1_decision.handle_post(self)
+            return
+        if path == "/api/d1/meeting":
+            import api_d1_meeting
+            api_d1_meeting.handle_post(self)
             return
         # H3（K-ORG-20261031-APIHARDEN）：analysis 写分支移到 token 闸门+频控之后，
         # 不得再以“早分支”绕过 _MUTATION_POSTS 鉴权（审计 v2 H3）。
@@ -3335,6 +3340,11 @@ color:#fff;font-size:13.5px;cursor:pointer}
             import api_d1_decision
             api_d1_decision.handle_get(self, self.path.split("?", 1)[1]
                                        if "?" in self.path else "")
+        elif path == "/api/d1/meeting":
+            # WO-D1-MEETING-20261101：D1 投研会读取（无 id 时 summary+list）
+            import api_d1_meeting
+            api_d1_meeting.handle_get(self, self.path.split("?", 1)[1]
+                                      if "?" in self.path else "")
         elif path in ("/d1/research", "/d1_research.html"):
             self._html_file(os.path.join(
                 os.path.dirname(os.path.abspath(__file__)), "d1_research.html"))
