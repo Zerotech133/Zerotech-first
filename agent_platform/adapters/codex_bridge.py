@@ -426,6 +426,20 @@ _G["__builtins__"]["__import__"] = _safe_import
 _G["__name__"] = "codex_plugin"
 
 
+def _runtime_guard(event, args):
+    # H6 第二层增量：跨进程 runner 内运行时拒绝（非 AppContainer）。
+    # 阻断插件通过已加载/间接路径发起网络、子进程、ctypes 动态加载；
+    # 文件系统仍由 AST/allowlist/Job 兜底，不是完整 OS 边界。
+    if event in (
+        "socket.connect", "socket.bind", "socket.getaddrinfo",
+        "subprocess.Popen", "os.system", "ctypes.dlopen",
+    ):
+        raise PermissionError("codex sandbox blocked runtime event: %s" % event)
+
+
+sys.addaudithook(_runtime_guard)
+
+
 def _emit(payload):
     # 2026-10-23 修：必须写 UTF-8 **字节**，不能走 sys.stdout.write。
     # Windows 上子进程 stdout 被重定向时默认编码是 cp936，而父进程
@@ -510,6 +524,22 @@ def _close_sandbox_job(job) -> None:
         pass
 
 
+# 子进程只继承启动所需的最小系统环境；绝不继承宿主 API key/token/密码。
+_SANDBOX_ENV_KEYS = (
+    "SYSTEMROOT", "WINDIR", "TEMP", "TMP", "PATH", "PATHEXT", "COMSPEC",
+)
+
+
+def _sandbox_child_env(engine_dir, platform_dir, repo_root):
+    env = {k: os.environ[k] for k in _SANDBOX_ENV_KEYS if k in os.environ}
+    env["PYTHONPATH"] = os.pathsep.join([engine_dir, platform_dir, repo_root])
+    env["PYTHONIOENCODING"] = "utf-8"
+    env["PYTHONUTF8"] = "1"
+    env["PYTHONNOUSERSITE"] = "1"
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    return env
+
+
 def sandbox_trial(source, context=None, timeout_s=10.0):
     """M3：静态过关后在一次性子进程内受限试跑 propose。
 
@@ -527,10 +557,7 @@ def sandbox_trial(source, context=None, timeout_s=10.0):
     engine_dir = str(Path(__file__).resolve().parent.parent / "engine")
     platform_dir = str(Path(__file__).resolve().parent.parent)
     repo_root = str(Path(__file__).resolve().parents[2])
-    env = dict(os.environ)
-    env["PYTHONPATH"] = os.pathsep.join(
-        [engine_dir, platform_dir, repo_root, env.get("PYTHONPATH", "")]
-    ).rstrip(os.pathsep)
+    env = _sandbox_child_env(engine_dir, platform_dir, repo_root)
     # 宿主环境可能启用 PYTHONSAFEPATH=1（PYTHONPATH 被忽略），
     # 因此把导入路径直接注入子进程代码，双保险。
     runner_code = (
