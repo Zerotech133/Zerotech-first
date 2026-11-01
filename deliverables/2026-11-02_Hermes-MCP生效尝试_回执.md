@@ -1,3 +1,5 @@
+> **2026-11-02 03:42 更新：已解决** — 8787 已为 v2 webui，通过 `/api/commands/exec` 执行 `/reload-mcp` 成功（7 servers/77 tools，dw-governance 已生效）。详见 `2026-11-02_Hermes-MCP重载成功_回执.md`。
+
 # Hermes MCP 生效尝试 · 回执（阻塞点与手动步骤）
 
 > 2026-11-02 03:40 ｜ 执行：DSH-Lead ｜ 目标：让 `dw-governance` 5 个只读工具出现在 Hermes 工具列表
