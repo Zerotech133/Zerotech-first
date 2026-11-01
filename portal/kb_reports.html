@@ -53,6 +53,24 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-siz
   </div>
 </div>
 
+<div class="panel">
+  <b>📰 今日研报简报</b>
+  <div class="muted" id="brief-meta" style="margin:4px 0">加载中…</div>
+  <div id="brief-body"></div>
+</div>
+
+<div class="panel">
+  <b>🃏 学习卡（每日知识）</b>
+  <div class="muted" id="card-meta" style="margin:4px 0">加载中…</div>
+  <div id="card-body"></div>
+</div>
+
+<div class="panel">
+  <b>📡 H18 业绩预告修订观察</b>
+  <div class="muted" id="h18-meta" style="margin:4px 0">加载中…</div>
+  <table><thead><tr><th>代码</th><th>报告期</th><th>类型</th><th>方向</th><th>Δ中值(pp)</th></tr></thead><tbody id="h18-body"></tbody></table>
+</div>
+
 <div class="foot">数据源：<code>C:/项目/PDF/_ingest*</code> · 治理卡：<code>/dw.html</code> · 状态：<code>/kb_ingest.html</code></div>
 
 <script>
@@ -103,6 +121,33 @@ $('go').onclick=()=>{LASTQ=$('q').value;render();};
 $('q').addEventListener('keydown',e=>{if(e.key==='Enter'){LASTQ=$('q').value;render();}});
 document.querySelectorAll('button[data-f]').forEach(b=>b.onclick=()=>{FILTER=b.dataset.f;render();});
 load();
+
+(async function loadKbExtras(){
+  const $=id=>document.getElementById(id);
+  try{
+    const b=await fetch('/static/kb_daily_briefing.json?ts='+Date.now()).then(r=>r.json());
+    $('brief-meta').textContent='生成 '+b.generated_at+' · 研报 '+ (b.docs||[]).length +' 篇';
+    $('brief-body').innerHTML=(b.docs||[]).slice(0,5).map(d=>`<div style="margin:8px 0"><b>${d.doc}</b>（${d.pages}页）
+      <div class="muted">${(d.chapters||[]).join(' / ')}</div>
+      ${(d.units||[]).map(u=>`<div style="font-size:12px;color:#9aa4b2">· ${u.concept||''}：${(u.claim||'').slice(0,80)}（p${u.page_start}-${u.page_end}）</div>`).join('')}
+      </div>`).join('');
+  }catch(e){ $('brief-meta').textContent='简报加载失败'; }
+  try{
+    const c=await fetch('/static/kb_learning_cards.json?ts='+Date.now()).then(r=>r.json());
+    $('card-meta').textContent='知识单元池 '+c.total_units+' 条 · 展示 '+(c.cards||[]).length+' 张';
+    $('card-body').innerHTML=(c.cards||[]).slice(0,6).map(x=>`<div style="margin:8px 0">
+      <b>Q：${x.q}</b><div style="color:#9aa4b2;font-size:12px">A：${x.a}</div>
+      <div class="muted" style="font-size:11px">出处：${x.source}</div></div>`).join('');
+  }catch(e){ $('card-meta').textContent='学习卡加载失败'; }
+  try{
+    const h=await fetch('/static/h18_watch.json?ts='+Date.now()).then(r=>r.json());
+    $('h18-meta').textContent='数据日 '+(h.date||'')+' · '+(h.items||[]).length+' 条（只观察不交易）';
+    $('h18-body').innerHTML=(h.items||[]).slice(0,10).map(w=>`<tr><td><code>${w.ts_code}</code></td><td>${w.end_date}</td>
+      <td>${w.type||''}</td><td>${w.direction||''}</td><td>${w.delta_pp}</td></tr>`).join('')
+      || '<tr><td colspan="5" class="muted">今日无修订事件</td></tr>';
+  }catch(e){ $('h18-meta').textContent='H18 数据加载失败'; }
+})();
+
 </script>
 </body>
 </html>
