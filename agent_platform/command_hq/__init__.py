@@ -30,5 +30,11 @@ __all__ = [
     "consensus",
 ]
 
+# W-C4 执行门（K-ORG-20261101-HQEXEC；只判定不执行）
+from . import execution_gate  # noqa: F401
+
 # W-C3 共识/飞书定版卡/回写（K-ORG-20261101-HQCONS；纯逻辑，不发飞书）
 from . import consensus  # noqa: F401
+
+# W-C4 执行门导出
+__all__.append("execution_gate")
