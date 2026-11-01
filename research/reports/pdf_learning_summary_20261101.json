@@ -1,0 +1,121 @@
+{
+ "generated_at": "2026-11-01T16:08:10+08:00",
+ "book_backlog": {
+  "total": 24,
+  "tested": 6,
+  "untested": 17
+ },
+ "batch": {
+  "grades": {
+   "A": 0,
+   "B": 0,
+   "C": 2,
+   "D": 11,
+   "F": 4
+  },
+  "tested": 17
+ },
+ "reverse": [
+  {
+   "spec_id": "LX20_BULL_STOCK_THREE_ABSOLUTES",
+   "name": "牛股三绝（倍量不穿/高量不破/跳空不补）",
+   "factor": "lx20_three_absolutes",
+   "coverage_pct": 24.615,
+   "excluded_count": 871.5,
+   "gross_ann_pct": 7.205,
+   "gross_t": 7.35,
+   "gross_p": 0.0,
+   "net_ann_pct": 2.749,
+   "cost_ann_pct": 4.456,
+   "beyond_comp_ann_pct": 34.61,
+   "beyond_comp_t": 9.76,
+   "bear2026_ann_pct": 6.826,
+   "excluded_amount_yi": 2.2665,
+   "tradable_avoidance": true,
+   "risk_rule_candidate": true,
+   "verdict": "可交易规避（毛/净超额均为正且显著）；市值×行业层内同向有效（非单纯小市值/高波动暴露）"
+  },
+  {
+   "spec_id": "LX22_CONCAVE_NOTCH_GOLD",
+   "name": "凹口淘金",
+   "factor": "aokou",
+   "coverage_pct": 42.104,
+   "excluded_count": 1471.4,
+   "gross_ann_pct": 4.917,
+   "gross_t": 2.03,
+   "gross_p": 0.01,
+   "net_ann_pct": -6.568,
+   "cost_ann_pct": 11.485,
+   "beyond_comp_ann_pct": 16.955,
+   "beyond_comp_t": 5.33,
+   "bear2026_ann_pct": -5.695,
+   "excluded_amount_yi": 1.8858,
+   "tradable_avoidance": false,
+   "risk_rule_candidate": false,
+   "verdict": "毛超额显著为正但被换手成本吃掉（净超额≤0）；市值×行业层内同向有效（非单纯小市值/高波动暴露）"
+  },
+  {
+   "spec_id": "LX06_YIN_LINE_TACTICS",
+   "name": "大盘阴线战法 / 长阴短柱",
+   "factor": "lx06_long_yin_short",
+   "coverage_pct": 1.152,
+   "excluded_count": 41.1,
+   "gross_ann_pct": 0.703,
+   "gross_t": 6.2,
+   "gross_p": 0.0,
+   "net_ann_pct": 0.359,
+   "cost_ann_pct": 0.345,
+   "beyond_comp_ann_pct": 62.838,
+   "beyond_comp_t": 7.52,
+   "bear2026_ann_pct": 0.684,
+   "excluded_amount_yi": 3.537,
+   "tradable_avoidance": true,
+   "risk_rule_candidate": true,
+   "verdict": "可交易规避（毛/净超额均为正且显著）；市值×行业层内同向有效（非单纯小市值/高波动暴露）"
+  },
+  {
+   "spec_id": "LX12_DOUBLE_YIN_EXIT",
+   "name": "双阴出货战法",
+   "factor": "lx12_double_yin_exit",
+   "coverage_pct": 45.247,
+   "excluded_count": 1542.0,
+   "gross_ann_pct": -12.843,
+   "gross_t": -3.27,
+   "gross_p": 0.9967,
+   "net_ann_pct": -24.601,
+   "cost_ann_pct": 11.758,
+   "beyond_comp_ann_pct": -26.504,
+   "beyond_comp_t": -5.69,
+   "bear2026_ann_pct": -14.233,
+   "excluded_amount_yi": 1.4369,
+   "tradable_avoidance": false,
+   "risk_rule_candidate": false,
+   "verdict": "规避无正超额（原信号反向不成立或已被市场消化）"
+  }
+ ],
+ "factor_lib_book_features": [
+  "aokou",
+  "double_vol",
+  "golden_pillar",
+  "near_high_vol",
+  "shrink_vol",
+  "up_vol_down",
+  "vol_ratio5",
+  "yin_yang",
+  "zero_vol"
+ ],
+ "book_units": 0,
+ "book_cards": 7,
+ "reports": {
+  "H24-26_liangxue_features_20261031.json": 12546,
+  "H24-26_liangxue_features_20261031.md": 2246,
+  "H29_liangxue_refined_20261031.json": 5941,
+  "H29_liangxue_refined_20261031.md": 1438
+ },
+ "s05": [
+  {
+   "id": "S05_LX20_AVOID_DEWEIGHT",
+   "status": "closed_both_directions_fail"
+  }
+ ]
+}
