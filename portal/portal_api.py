@@ -3330,6 +3330,11 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # WO-D1-RESEARCH：D1 投研工作台只读数据口（池内研究，不管理策略）
             import d1_data
             self._json(d1_data.d1_snapshot())
+        elif path == "/api/d1/decisions":
+            # WO-D1-UI-20261101：D1 正式裁决只读列表（页面展示/回填）
+            import api_d1_decision
+            api_d1_decision.handle_get(self, self.path.split("?", 1)[1]
+                                       if "?" in self.path else "")
         elif path in ("/d1/research", "/d1_research.html"):
             self._html_file(os.path.join(
                 os.path.dirname(os.path.abspath(__file__)), "d1_research.html"))

@@ -73,3 +73,17 @@ def test_api_wrong_path_404():
     h = FakeHandler(_body(), path="/api/d1/other")
     A.handle_post(h)
     assert h.status == 404
+
+
+def test_api_get_decisions(tmp_path, monkeypatch):
+    monkeypatch.setattr(D, "DEFAULT_LEDGER", tmp_path / "d1.jsonl")
+    h = FakeHandler(_body(), path="/api/d1/decision")
+    A.handle_post(h)
+    assert h.status == 200
+    g = FakeHandler(b"", path="/api/d1/decisions")
+    A.handle_get(g, "")
+    assert g.status == 200 and g.payload["ok"] is True
+    assert "002445.SZ" in g.payload["latest_by_code"]
+    g2 = FakeHandler(b"", path="/api/d1/decisions")
+    A.handle_get(g2, "code=002445.SZ")
+    assert g2.status == 200 and g2.payload["latest"]["tier"] == "BUY"

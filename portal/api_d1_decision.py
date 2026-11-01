@@ -56,3 +56,34 @@ def handle_post(handler):
         } else 500
         _json(handler, {"ok": False, "error": code,
                         "message": str(exc)[:300]}, status)
+
+
+def handle_get(handler, qs):
+    """GET /api/d1/decisions?code=...：只读列裁决（latest/summary/list）。"""
+    path = handler.path.split("?", 1)[0]
+    if path != "/api/d1/decisions":
+        _json(handler, {"ok": False, "error": "not_found"}, 404)
+        return
+    from urllib.parse import parse_qs
+    q = parse_qs(qs or "")
+    code = (q.get("code") or [""])[0].strip()
+    try:
+        from agent_platform import d1_decision as D
+        rows = D.read_decisions()
+        if code:
+            latest = D.latest_for(code)
+            _json(handler, {"ok": True, "code": code, "latest": latest,
+                            "summary": D.summary(), "readonly": True}, 200)
+            return
+        latest = {}
+        for r in rows:
+            c = str(r.get("code") or "")
+            if c:
+                latest[c] = r
+        _json(handler, {"ok": True, "summary": D.summary(),
+                        "latest_by_code": latest,
+                        "decisions": rows[-100:],
+                        "readonly": True}, 200)
+    except Exception as exc:  # noqa: BLE001
+        _json(handler, {"ok": False, "error": "decision_read_failed",
+                        "message": str(exc)[:300]}, 500)
