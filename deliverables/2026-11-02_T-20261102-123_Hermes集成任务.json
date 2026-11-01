@@ -1,0 +1,20 @@
+{
+ "task_id": "T-20261102-123",
+ "opened_by": "A0",
+ "assigned_dept": "dev",
+ "assigned_agent": null,
+ "title": "Hermes×数据仓：补齐治理 MCP + 口径切换（WP-H）",
+ "body": "【核实结论】2026-11-02 · Hermes×数据仓「部分实现」：\n已实现：Hermes 8787 → MCP stock-data（28 工具）→ 8791 旧KG仪表盘 + dataops_query→8091 三视图（summary/map/entity）；\n未实现：数据仓治理工具（catalog_snapshot/freshness/quality/manifest/backup/lineage/run_all）未接入 MCP；warehouse_catalog 仍是旧 8791（210 表口径），非新 registry 256 表；数据仓日检/快照不在 Hermes 调度；om-metadata MCP 401。\n要求（WP-H，Sprint2）：①新建 agent_platform/tools/dw_governance_mcp.py（只读 8 工具）②新增 dw_registry 256 表口径、warehouse_catalog 标 legacy ③日检摘要接入 Hermes ④E2E 4 问 ⑤注册 config（/reload-mcp 或重启 8787 需 L2）。\n报告：deliverables/2026-11-02_数据仓与Hermes结合现状核实_报告.md；方案：docs/plans/2026-11-02_数据仓研发方案_v1.md §十。",
+ "severity": "P1",
+ "status": "open",
+ "created_at": "2026-11-02T00:32:12",
+ "due": "2026-11-13",
+ "closure_note": null,
+ "history": [
+  {
+   "at": "2026-11-02T00:32:12",
+   "by": "A0",
+   "action": "open"
+  }
+ ]
+}
