@@ -1,0 +1,223 @@
+{
+ "schema_version": 1,
+ "kind": "qa_quality_daily",
+ "generated_at": "2026-11-02T02:49:30+08:00",
+ "date": "2026-11-02",
+ "config": {
+  "base_url": "http://127.0.0.1:8091",
+  "n": 2,
+  "llm_calls": 2,
+  "history_path": "C:\\项目\\老田的AI助手\\research\\reports\\qa_quality_history.json",
+  "thresholds": {
+   "answerable_min": 0.8,
+   "guard_min": 0.8,
+   "fallback_max": 0.2,
+   "trend_drop_max": 0.15
+  },
+  "rolling_window": 7,
+  "send_requested": true
+ },
+ "day": {
+  "n": 2,
+  "http_200": 2,
+  "success": 2,
+  "fallback": 0,
+  "answerable_rate": 1.0,
+  "guard_pass_rate": 1.0,
+  "fallback_rate": 0.0,
+  "avg_citations": 2.5,
+  "avg_citation_resolvable_rate": 1.0,
+  "avg_inference_ratio": 0.45,
+  "avg_elapsed_seconds": 12.06,
+  "avg_completeness_score": 5.0
+ },
+ "alerts": [],
+ "alert_text": "【问答质量日报 2026-11-02】正常：可答率 100%、guard 100%、fallback 0%",
+ "rolling_7d": {
+  "n_days": 1,
+  "answerable_rate": 1.0,
+  "guard_pass_rate": 1.0,
+  "fallback_rate": 0.0,
+  "avg_citations": 2.5,
+  "avg_elapsed_seconds": 12.06,
+  "window": 7,
+  "date_from": "2026-11-02",
+  "date_to": "2026-11-02"
+ },
+ "history_entries": 1,
+ "samples": [
+  {
+   "id": "q2_b5a0a0e045",
+   "category": "风险限制",
+   "theme": "量化/技术分析",
+   "question": "量学理论的结论在什么条件下可能不成立？",
+   "http_status": 200,
+   "elapsed_seconds": 9.7,
+   "meta": {
+    "mode": "multi",
+    "k": 8,
+    "clusters": 3,
+    "topk": 8,
+    "llm_called": true,
+    "prompt_version": "v4",
+    "guard_marker": "segment",
+    "citation_retry": true,
+    "citation_retry_info": {
+     "used": false,
+     "first_units": 3,
+     "second_units": null,
+     "improved": false,
+     "error": null
+    },
+    "cache_hit": false
+   },
+   "guard_meta": {
+    "enabled": true,
+    "applicable": true,
+    "applied": true,
+    "on_fail": "fallback",
+    "guard_passed": true,
+    "guard_action": "pass",
+    "guard_issues": [],
+    "citation_valid": [
+     "5cfa2f156e5c",
+     "26748eb94001",
+     "51116c325854"
+    ],
+    "citation_invalid": [],
+    "citation_total": 3,
+    "citation_valid_count": 3,
+    "citation_invalid_count": 0,
+    "support_rate": 1.0,
+    "inference_ratio": 0.4,
+    "distinct_cited_units": 3,
+    "marker_mode": "segment"
+   },
+   "answer": "【事实摘录】\n【事实】量学理论构建了‘量柱选股、量线选价、量波选时’的三维互动看盘操盘系统，实现了不管指标、消息和行情均可预测股市的效果（[5cfa2f156e5c] p.5）。\n【事实】《量柱擒涨停》《量线捉涨停》《伏击涨停》和《涨停密码》四本书构成了完整的量学理论体系和实战交易系统（[26748eb94001] p.5）。\n【事实】量学理论通过以量柱为基础，结合量价阴阳真假虚实八个要素，实现了比传统‘价学’更高效的四维立体看盘（[51116c325854] p.7）。\n【推断】\n【推断】该理论宣称“不管指标、消息和行情均可预测股市”，若市场出现极端非理性波动或系统性黑天鹅事件导致量价关系暂时失效，其结论可能不成立（依据：[5cfa2f156e5c] p.5）。\n【推断】该体系依赖“量柱、价柱、量线”等特定量化要素互渗互动，若市场结构发生根本性变化导致这些要素失去统计规律性，理论有效性将受限（依据：[51116c325854] p.7）。",
+   "answer_length": 426,
+   "citations": [
+    {
+     "unit_id": "5cfa2f156e5c",
+     "book": "伏击涨停(2)",
+     "chapter": "序言1",
+     "page": 5,
+     "text": "量学理论构建了‘量柱选股、量线选价、量波选时’的三维互动看盘操盘系统，实现了不管指标、消息和行情均可预测股市的效果。 2009 年“量学”问世，它摆脱了“以价论价”的“价学”桔，在“以量论价”动态平衡规律，构建了“量柱选股、量线选价、量波选时”的“三维互动”看盘操 盘系统，形成了一个独立的科学体系。"
+    },
+    {
+     "unit_id": "26748eb94001",
+     "book": "伏击涨停(2)",
+     "chapter": "序言1",
+     "page": 5,
+     "text": "《量柱擒涨停》《量线捉涨停》《伏击涨停》和《涨停密码》四本书构成了完整的量学理论体系和实战交易系统。 被市场知名人士誉为“股市四大名著”的《量柱擒涨停》《量线捉涨停》《伏 击涨停》和《涨停密码》，构成了一套完整的量学理论体系和实战交易系统。"
+    },
+    {
+     "unit_id": "51116c325854",
+     "book": "伏击涨停(2)",
+     "chapter": "序言1量学理论的七大贡献",
+     "page": 7,
+     "text": "量学理论通过以量柱为基础，结合量价阴阳真假虚实八个要素，实现了比传统‘价学’更高效的四维立体看盘。 王子老师的“量学”理论，创造了以量柱为基础，以“量价阴阳真假虚实”八个要素互渗互动的“四维立体看盘法”。"
+    }
+   ],
+   "citation_count": 3,
+   "citation_resolvable_rate": 1.0,
+   "distinct_cited_units": 3,
+   "support_rate": 1.0,
+   "inference_ratio": 0.4,
+   "guard_passed_recomputed": true,
+   "guard_issues": [],
+   "fallback": false,
+   "refusal": false,
+   "status": "success",
+   "completeness_score": 5,
+   "human_score": null,
+   "verdict": "☐通过 ☐需修改"
+  },
+  {
+   "id": "q2_aa49124184",
+   "category": "关键数据",
+   "theme": "其他/综合",
+   "question": "储气调峰能力建设中研报提供了哪些可验证的关键数据或指标？",
+   "http_status": 200,
+   "elapsed_seconds": 14.42,
+   "meta": {
+    "mode": "multi",
+    "k": 8,
+    "clusters": 3,
+    "topk": 8,
+    "llm_called": true,
+    "prompt_version": "v4",
+    "guard_marker": "segment",
+    "citation_retry": true,
+    "citation_retry_info": {
+     "used": true,
+     "first_units": 1,
+     "second_units": 2,
+     "improved": true,
+     "error": null
+    },
+    "cache_hit": false
+   },
+   "guard_meta": {
+    "enabled": true,
+    "applicable": true,
+    "applied": true,
+    "on_fail": "fallback",
+    "guard_passed": true,
+    "guard_action": "pass",
+    "guard_issues": [],
+    "citation_valid": [
+     "4c6ddf0bf36f",
+     "cfa085455968"
+    ],
+    "citation_invalid": [],
+    "citation_total": 2,
+    "citation_valid_count": 2,
+    "citation_invalid_count": 0,
+    "support_rate": 1.0,
+    "inference_ratio": 0.5,
+    "distinct_cited_units": 2,
+    "marker_mode": "segment"
+   },
+   "answer": "【事实摘录】\n【事实】我国储气库工作气量在消费总量中的平均占比约为 7%，而全球平均水平约为 11.4%（[4c6ddf0bf36f] p.1）。\n【事实】需推进'X+1+X'市场体系建设，重点在于省级管网运销分离与并入整合（[cfa085455968] p.1）。\n【推断】\n【推断】当前我国储气调峰能力显著低于全球平均水平，亟需通过加快储气库建设来弥补不足（依据：[4c6ddf0bf36f] p.1）。\n【推断】市场体系改革中的省级管网运销分离将有助于释放资源配置效率以支持调峰能力建设（依据：[cfa085455968] p.1）。",
+   "answer_length": 270,
+   "citations": [
+    {
+     "unit_id": "4c6ddf0bf36f",
+     "book": "rp_AP202610021830105529",
+     "chapter": "摘要：",
+     "page": 1,
+     "text": "我国需加快储气库建设以弥补调峰能力不足，推动天然气行业从单一气源供应转向电力系统调节与兜底保供并重。 全球储气库工作气量在消费总量中的平均占比约为11.4%，而我国目前仅维持在7%左右...加快储气调峰能力建设，推动天然气行业从单一气源供应转向电力系统调节与兜底保供并重。"
+    },
+    {
+     "unit_id": "cfa085455968",
+     "book": "rp_AP202610021830105529",
+     "chapter": "摘要：",
+     "page": 1,
+     "text": "需推进'X+1+X'市场体系建设，重点在于省级管网运销分离与并入整合，以释放资源配置效率和商业模式创新空间。 推进'X+1+X'市场体系建设，以上游勘探开发引入多元竞争主体，中游管网保持自然垄断并公平开放，下游销售充分竞争...行业需重点突破省级管网运销分离与并入整合，以市场化改革释放资源配置效率和商业模式创新空间。"
+    }
+   ],
+   "citation_count": 2,
+   "citation_resolvable_rate": 1.0,
+   "distinct_cited_units": 2,
+   "support_rate": 1.0,
+   "inference_ratio": 0.5,
+   "guard_passed_recomputed": true,
+   "guard_issues": [],
+   "fallback": false,
+   "refusal": false,
+   "status": "success",
+   "completeness_score": 5,
+   "human_score": null,
+   "verdict": "☐通过 ☐需修改"
+  }
+ ],
+ "history_date": "C:\\项目\\老田的AI助手\\research\\reports\\qa_quality_history.json",
+ "send": {
+  "sent": false,
+  "error": null,
+  "attempted": false
+ },
+ "out_json_expected": "C:\\项目\\老田的AI助手\\research\\reports\\qa_quality_20261102.json",
+ "elapsed_seconds": 24.19,
+ "disclaimer": "每日质量抽检仅供运维监控参考，不构成投资建议。"
+}

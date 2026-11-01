@@ -1,0 +1,994 @@
+{
+ "schema_version": 1,
+ "date": "20261102",
+ "generated_at": "2026-11-02T02:48:53+08:00",
+ "generator": "tools/kb_corpus/card_proposal_v4.py（第三轮扩卡候选，仅建议）",
+ "status": "pending_review",
+ "mode": "suggestion_only（不修改学习卡）",
+ "sources": {
+  "cards": {
+   "path": "C:\\项目\\老田的AI助手\\portal\\static\\kb_learning_cards.json",
+   "sha256": "a9eb57002a5ec4fc878cd3be7bca45e1e628fc8432effd84e9dab6764189cae9",
+   "count": 124
+  },
+  "units": {
+   "path": "C:\\项目\\老田的AI助手\\portal\\static\\kb_units_all.json",
+   "sha256": "5de0ac84bdef5caa75a8753bec3d3422193658b17fa8d9efa9153a7f8d9387a4",
+   "count": 516
+  }
+ },
+ "policy": {
+  "gap_rule": "主题卡数 <3 视为缺口（按单元数排序）",
+  "candidate_range": [
+   20,
+   30
+  ],
+  "max_per_theme": 3,
+  "angles": [
+   "definition",
+   "key_fact",
+   "impact"
+  ],
+  "dedupe": "与现有 124 卡 concept 归一化去重 + 批内去重"
+ },
+ "summary": {
+  "cards_total": 124,
+  "units_total": 516,
+  "themes_total": 21,
+  "gap_themes_count": 4,
+  "gap_themes": [
+   "评级/研报方法论",
+   "传媒/文化",
+   "医药/生物",
+   "汽车/智驾"
+  ],
+  "supplemented_themes": [
+   "有色/金属",
+   "宏观/政策",
+   "机械/制造",
+   "网络安全/信创",
+   "军工/航天",
+   "化工/材料",
+   "交运/物流",
+   "消费/零售",
+   "量学/交易"
+  ],
+  "gap_themes_unfilled": [
+   "传媒/文化",
+   "医药/生物",
+   "汽车/智驾"
+  ],
+  "themes_depth_ok": 17,
+  "candidates": 24,
+  "by_theme": {
+   "评级/研报方法论": 2,
+   "有色/金属": 1,
+   "宏观/政策": 3,
+   "机械/制造": 3,
+   "网络安全/信创": 2,
+   "军工/航天": 3,
+   "化工/材料": 3,
+   "交运/物流": 1,
+   "消费/零售": 3,
+   "量学/交易": 3
+  },
+  "angles": {
+   "概念定义": 8,
+   "关键事实": 8,
+   "影响传导": 8
+  },
+  "traceable": 24
+ },
+ "preview": {
+  "mode": "dry-run（未执行、未改学习卡）",
+  "base_cards": 124,
+  "candidates": 24,
+  "resulting_cards_if_all_merged": 148,
+  "gap_themes": [
+   "评级/研报方法论",
+   "传媒/文化",
+   "医药/生物",
+   "汽车/智驾"
+  ],
+  "gap_themes_filled": [
+   "评级/研报方法论"
+  ],
+  "supplemented_themes": [
+   "有色/金属",
+   "宏观/政策",
+   "机械/制造",
+   "网络安全/信创",
+   "军工/航天",
+   "化工/材料",
+   "交运/物流",
+   "消费/零售",
+   "量学/交易"
+  ]
+ },
+ "theme_depth": [
+  {
+   "theme": "评级/研报方法论",
+   "units": 5,
+   "cards": 1,
+   "depth_ok": false
+  },
+  {
+   "theme": "传媒/文化",
+   "units": 2,
+   "cards": 1,
+   "depth_ok": false
+  },
+  {
+   "theme": "医药/生物",
+   "units": 3,
+   "cards": 2,
+   "depth_ok": false
+  },
+  {
+   "theme": "汽车/智驾",
+   "units": 2,
+   "cards": 2,
+   "depth_ok": false
+  },
+  {
+   "theme": "有色/金属",
+   "units": 7,
+   "cards": 3,
+   "depth_ok": true
+  },
+  {
+   "theme": "半导体/电子",
+   "units": 5,
+   "cards": 4,
+   "depth_ok": true
+  },
+  {
+   "theme": "建筑/建材",
+   "units": 4,
+   "cards": 4,
+   "depth_ok": true
+  },
+  {
+   "theme": "宏观/政策",
+   "units": 42,
+   "cards": 5,
+   "depth_ok": true
+  },
+  {
+   "theme": "机械/制造",
+   "units": 17,
+   "cards": 5,
+   "depth_ok": true
+  },
+  {
+   "theme": "网络安全/信创",
+   "units": 8,
+   "cards": 5,
+   "depth_ok": true
+  },
+  {
+   "theme": "农业",
+   "units": 5,
+   "cards": 5,
+   "depth_ok": true
+  },
+  {
+   "theme": "通信/互联网",
+   "units": 4,
+   "cards": 5,
+   "depth_ok": true
+  },
+  {
+   "theme": "军工/航天",
+   "units": 16,
+   "cards": 6,
+   "depth_ok": true
+  },
+  {
+   "theme": "化工/材料",
+   "units": 9,
+   "cards": 6,
+   "depth_ok": true
+  },
+  {
+   "theme": "交运/物流",
+   "units": 8,
+   "cards": 6,
+   "depth_ok": true
+  },
+  {
+   "theme": "消费/零售",
+   "units": 27,
+   "cards": 7,
+   "depth_ok": true
+  },
+  {
+   "theme": "量学/交易",
+   "units": 34,
+   "cards": 8,
+   "depth_ok": true
+  },
+  {
+   "theme": "金融/地产",
+   "units": 25,
+   "cards": 8,
+   "depth_ok": true
+  },
+  {
+   "theme": "新能源/电力",
+   "units": 71,
+   "cards": 10,
+   "depth_ok": true
+  },
+  {
+   "theme": "其他",
+   "units": 114,
+   "cards": 12,
+   "depth_ok": true
+  },
+  {
+   "theme": "AI算力/硬件",
+   "units": 108,
+   "cards": 19,
+   "depth_ok": true
+  }
+ ],
+ "candidates": [
+  {
+   "card_id": "CP4-20261102-001",
+   "status": "pending_review",
+   "round": "third",
+   "theme": "评级/研报方法论",
+   "angle": "definition",
+   "angle_cn": "概念定义",
+   "q": "什么是「趋势模板」？",
+   "a": "先筛领涨股再找买点：股价站上 50/150/200 日均线且 50>150>200；200 日线至少上升一个月；股价高于 52 周低点≥30%、距 52 周高点≤25%；相对强度评级≥70（最好≥90）。八条缺一放弃。",
+   "concept": "趋势模板",
+   "source_ref": "《米勒维尼_趋势交易体系》 一、趋势模板（00:00–00:26） p1-1",
+   "book": "米勒维尼_趋势交易体系",
+   "chapter": "一、趋势模板（00:00–00:26）",
+   "page_start": 1,
+   "page_end": 1,
+   "claim": "先筛领涨股再找买点：股价站上 50/150/200 日均线且 50>150>200；200 日线至少上升一个月；股价高于 52 周低点≥30%、距 52 周高点≤25%；相对强度评级≥70（最好≥90）。八条缺一放弃。",
+   "evidence": "米勒维尼用一张清单筛股，称之为趋势模板；八条：50/150/200 均线上方且多头排列；200 日线上升≥1 个月；52 周低点+30%以上；52 周高点-25%以内；相对强度≥70（最好90+）。先筛出领涨股，再找买点。",
+   "source_tag": "策略经典",
+   "unit_id": "u4-001",
+   "quality_score": 70.8,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CP4-20261102-002",
+   "status": "pending_review",
+   "round": "third",
+   "theme": "评级/研报方法论",
+   "angle": "key_fact",
+   "angle_cn": "关键事实",
+   "q": "「RS 评级口径」有哪些关键事实或数据？",
+   "a": "来源：https://www.oneilglobaladvisors.com/documents/FG/oneil/research/605570_OCM_Relative_Strength_Rating-OGA.pdf（✅已抓取核实）",
+   "concept": "RS 评级口径",
+   "source_ref": "《米勒维尼_趋势交易体系》 十二、资源：O'Neil RS Rating 方法 p13-13",
+   "book": "米勒维尼_趋势交易体系",
+   "chapter": "十二、资源：O'Neil RS Rating 方法",
+   "page_start": 13,
+   "page_end": 13,
+   "claim": "RS Rating=1–99 横截面百分位，基于 12 个月相对表现、最近一季加权；为 IBD 专有数据，RSI/价格比/12月收益不可替代；缺数据只能记 Unknown。",
+   "evidence": "来源：https://www.oneilglobaladvisors.com/documents/FG/oneil/research/605570_OCM_Relative_Strength_Rating-OGA.pdf（✅已抓取核实）",
+   "source_tag": "策略经典",
+   "unit_id": "u4-002",
+   "quality_score": 66.2,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CP4-20261102-003",
+   "status": "pending_review",
+   "round": "third",
+   "theme": "有色/金属",
+   "angle": "impact",
+   "angle_cn": "影响传导",
+   "q": "「黄金线」的影响与传导是什么？",
+   "a": "利用‘黄金线’作为标杆，可以量化标准地筛选出有实力、会赚钱的庄家，从而指导投资者进行安全的跟庄操作。 依据：对各种庄的分类标准就是王子老师首创的“黄金线”。他用黄金线作为标杆，将庄家回踩黄金线的位置精细地切割...",
+   "concept": "黄金线",
+   "source_ref": "《伏击涨停(2)》 序言1量学理论的七大贡献 p7-10",
+   "book": "伏击涨停(2)",
+   "chapter": "序言1量学理论的七大贡献",
+   "page_start": 7,
+   "page_end": 10,
+   "claim": "利用‘黄金线’作为标杆，可以量化标准地筛选出有实力、会赚钱的庄家，从而指导投资者进行安全的跟庄操作。",
+   "evidence": "对各种庄的分类标准就是王子老师首创的“黄金线”。他用黄金线作为标杆，将庄家回踩黄金线的位置精细地切割...",
+   "source_tag": "书籍",
+   "unit_id": "u4-003",
+   "quality_score": 46.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CP4-20261102-004",
+   "status": "pending_review",
+   "round": "third",
+   "theme": "宏观/政策",
+   "angle": "definition",
+   "angle_cn": "概念定义",
+   "q": "什么是「中小行负债端收缩成因」？",
+   "a": "中小行负债端收缩主要受存款定价优势消失、监管约束久期与集中度、FTP 考核倒挂及利率低位下‘落袋为安’诉求等多重因素驱动。",
+   "concept": "中小行负债端收缩成因",
+   "source_ref": "《rp_AP202609301830035477》 中小行配债走弱：成因与趋势判断 p1-13",
+   "book": "rp_AP202609301830035477",
+   "chapter": "中小行配债走弱：成因与趋势判断",
+   "page_start": 1,
+   "page_end": 13,
+   "claim": "中小行负债端收缩主要受存款定价优势消失、监管约束久期与集中度、FTP 考核倒挂及利率低位下‘落袋为安’诉求等多重因素驱动。",
+   "evidence": "这其中既有主动收缩长端的防御成分，也叠加了核心存款流失的被动缩表压力。背后是存款定价优势消退、监管约束久期与集中度、FTP 考核倒挂、以及利率低位下‘落袋为安’式盈利兑现等多重因素共同作用。负债端，大行与中小行存款利差经多轮下调后收窄至 35—45BP，传统高息揽存优势消失。",
+   "source_tag": "研报",
+   "unit_id": "u4-004",
+   "quality_score": 63.2,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CP4-20261102-005",
+   "status": "pending_review",
+   "round": "third",
+   "theme": "宏观/政策",
+   "angle": "key_fact",
+   "angle_cn": "关键事实",
+   "q": "「财富来源审查转型」有哪些关键事实或数据？",
+   "a": "目标运营模式将财富来源审查从文件核对工作转变为以合理性为主导的情报能力。机构仍应收集并保留财富来源声明的证据，但核心问题应转变为：在综合考虑所有权结构、经济逻辑、交易行为、时间节点及现有外部证据的情况下，客户的财富轨迹是否连贯一致。",
+   "concept": "财富来源审查转型",
+   "source_ref": "《rp_AP202609301830015454》 通过人工智能采 纳实现财富来源转型 p1-13",
+   "book": "rp_AP202609301830015454",
+   "chapter": "通过人工智能采 纳实现财富来源转型",
+   "page_start": 1,
+   "page_end": 13,
+   "claim": "财富来源审查应从静态的文件核对工作转变为以合理性为主导的情报能力，核心在于评估财富轨迹在经济逻辑、所有权结构和交易行为上是否连贯一致。",
+   "evidence": "目标运营模式将财富来源审查从文件核对工作转变为以合理性为主导的情报能力。机构仍应收集并保留财富来源声明的证据，但核心问题应转变为：在综合考虑所有权结构、经济逻辑、交易行为、时间节点及现有外部证据的情况下，客户的财富轨迹是否连贯一致。",
+   "source_tag": "研报",
+   "unit_id": "u4-005",
+   "quality_score": 61.1,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CP4-20261102-006",
+   "status": "pending_review",
+   "round": "third",
+   "theme": "宏观/政策",
+   "angle": "impact",
+   "angle_cn": "影响传导",
+   "q": "「IT 交付模式变革」的影响与传导是什么？",
+   "a": "面对复杂客户需求，定制化重的 IT 交付需采用端到端方案与 FDE（Full-Stack Development & Engineering）模式，软件公司需同步进行组织改革。 依据：Accenture 财报验证了 IT 服务需求增长；国内拓尔思、软通动力推进 FDE 模式，表明复杂项目需要端到端交付能力，且软件厂商需同步重塑管理与组织架构。",
+   "concept": "IT 交付模式变革",
+   "source_ref": "《rp_AP202610071830184407》 图表目录 p2-14",
+   "book": "rp_AP202610071830184407",
+   "chapter": "图表目录",
+   "page_start": 2,
+   "page_end": 14,
+   "claim": "面对复杂客户需求，定制化重的 IT 交付需采用端到端方案与 FDE（Full-Stack Development & Engineering）模式，软件公司需同步进行组织改革。",
+   "evidence": "Accenture 财报验证了 IT 服务需求增长；国内拓尔思、软通动力推进 FDE 模式，表明复杂项目需要端到端交付能力，且软件厂商需同步重塑管理与组织架构。",
+   "source_tag": "研报",
+   "unit_id": "u4-006",
+   "quality_score": 60.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CP4-20261102-007",
+   "status": "pending_review",
+   "round": "third",
+   "theme": "机械/制造",
+   "angle": "definition",
+   "angle_cn": "概念定义",
+   "q": "什么是「开源 Trend Template 实现」？",
+   "a": "每日扫描 3800+ 股票：Stage 2 上升趋势 + 8 条严格条件；智能缓存（少74% API 调用）、市场 regime 过滤、自动止损、GitHub Actions 自动化。可复用于工程结构/regime/缓存。",
+   "concept": "开源 Trend Template 实现",
+   "source_ref": "《米勒维尼_趋势交易体系》 十二、资源：开源实现 RyanJHamby/stock-screener p16-16",
+   "book": "米勒维尼_趋势交易体系",
+   "chapter": "十二、资源：开源实现 RyanJHamby/stock-screener",
+   "page_start": 16,
+   "page_end": 16,
+   "claim": "每日扫描 3800+ 股票：Stage 2 上升趋势 + 8 条严格条件；智能缓存（少74% API 调用）、市场 regime 过滤、自动止损、GitHub Actions 自动化。可复用于工程结构/regime/缓存。",
+   "evidence": "来源：https://github.com/RyanJHamby/stock-screener（🔶仓库摘要，正文抓取截断）",
+   "source_tag": "策略经典",
+   "unit_id": "u4-007",
+   "quality_score": 62.9,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CP4-20261102-008",
+   "status": "pending_review",
+   "round": "third",
+   "theme": "机械/制造",
+   "angle": "key_fact",
+   "angle_cn": "关键事实",
+   "q": "「EMB+SBW 技术架构」有哪些关键事实或数据？",
+   "a": "伯特利以'XYZ+智驾辅助’智能底盘全系解决方案为核心，率先实现 EMB 大批量商业化交付，推动全干式纯电控制动方案从技术探索走向规模化应用，也为一体化底盘提供了更高精度的制动执行能力。",
+   "concept": "EMB+SBW 技术架构",
+   "source_ref": "《rp_AP202610021830111904》 从特斯拉Cybercab看EMB+SBW p1-13",
+   "book": "rp_AP202610021830111904",
+   "chapter": "从特斯拉Cybercab看EMB+SBW",
+   "page_start": 1,
+   "page_end": 13,
+   "claim": "EMB（电子机械制动）与 SBW（线控转向）结合是 L3 级自动驾驶的终极底盘方案，能够直接兼容 L4 级自动驾驶需求。",
+   "evidence": "伯特利以'XYZ+智驾辅助’智能底盘全系解决方案为核心，率先实现 EMB 大批量商业化交付，推动全干式纯电控制动方案从技术探索走向规模化应用，也为一体化底盘提供了更高精度的制动执行能力。",
+   "source_tag": "研报",
+   "unit_id": "u4-008",
+   "quality_score": 55.5,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CP4-20261102-009",
+   "status": "pending_review",
+   "round": "third",
+   "theme": "机械/制造",
+   "angle": "impact",
+   "angle_cn": "影响传导",
+   "q": "「工业领域电气化转型」的影响与传导是什么？",
+   "a": "2025年中国工业领域电气化率约28.0%，其中高技术及装备制造行业合计电气化率达68.0%，传统四大高载能行业合计为18.2%。 依据：2025年，中国工业领域电气化率约28.0%...从典型行业看，传统四大高载能行业合计电气化率约18.2%...高技术及装备制造合计电气化率约68.0%...",
+   "concept": "工业领域电气化转型",
+   "source_ref": "《rp_AP202609301830015411》 前言 p2-14",
+   "book": "rp_AP202609301830015411",
+   "chapter": "前言",
+   "page_start": 2,
+   "page_end": 14,
+   "claim": "2025年中国工业领域电气化率约28.0%，其中高技术及装备制造行业合计电气化率达68.0%，传统四大高载能行业合计为18.2%。",
+   "evidence": "2025年，中国工业领域电气化率约28.0%...从典型行业看，传统四大高载能行业合计电气化率约18.2%...高技术及装备制造合计电气化率约68.0%...",
+   "source_tag": "研报",
+   "unit_id": "u4-009",
+   "quality_score": 54.4,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CP4-20261102-010",
+   "status": "pending_review",
+   "round": "third",
+   "theme": "网络安全/信创",
+   "angle": "definition",
+   "angle_cn": "概念定义",
+   "q": "什么是「网络安全技能缺口」？",
+   "a": "SecOps（安全运营）已成为全球网络安全领域第二大技能缺口，占比达45%，而云计算已跌出前五名。",
+   "concept": "网络安全技能缺口",
+   "source_ref": "《rp_AP202609301830015404》 全球劳动力、资源与网络安全运营更新报告 p1-13",
+   "book": "rp_AP202609301830015404",
+   "chapter": "全球劳动力、资源与网络安全运营更新报告",
+   "page_start": 1,
+   "page_end": 13,
+   "claim": "SecOps（安全运营）已成为全球网络安全领域第二大技能缺口，占比达45%，而云计算已跌出前五名。",
+   "evidence": "ISACA全球网络安全状况调查结果显示，SecOps已成为第二大技能缺口（45%），较2025年位居首位，而云计算跌出前五，取而代之的是事件响应。",
+   "source_tag": "研报",
+   "unit_id": "u4-010",
+   "quality_score": 49.4,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CP4-20261102-011",
+   "status": "pending_review",
+   "round": "third",
+   "theme": "网络安全/信创",
+   "angle": "key_fact",
+   "angle_cn": "关键事实",
+   "q": "「网络安全软技能需求」有哪些关键事实或数据？",
+   "a": "受访者指出的安全专业人员最重要的软技能与去年一致，排名前五的分别是：批判性思维（59%）、沟通能力（57%）、问题解决能力（53%）。",
+   "concept": "网络安全软技能需求",
+   "source_ref": "《rp_AP202609301830015404》 全球劳动力、资源与网络安全运营更新报告 p1-13",
+   "book": "rp_AP202609301830015404",
+   "chapter": "全球劳动力、资源与网络安全运营更新报告",
+   "page_start": 1,
+   "page_end": 13,
+   "claim": "批判性思维、沟通能力和问题解决能力是网络安全专业人员最重要的三项软技能，分别占比59%、57%和53%。",
+   "evidence": "受访者指出的安全专业人员最重要的软技能与去年一致，排名前五的分别是：批判性思维（59%）、沟通能力（57%）、问题解决能力（53%）。",
+   "source_tag": "研报",
+   "unit_id": "u4-011",
+   "quality_score": 49.2,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CP4-20261102-012",
+   "status": "pending_review",
+   "round": "third",
+   "theme": "军工/航天",
+   "angle": "impact",
+   "angle_cn": "影响传导",
+   "q": "「进口产品结构」的影响与传导是什么？",
+   "a": "2026 年 1-8 月，中国无人驾驶航空器进口额中，“仅使用遥控飞行”类产品占比高达 98.6%，显示出极高的市场集中度。 依据：2026 年 1-8 月，中国无人驾驶航空器进口额排名前二的产品为仅使用遥控飞行的无人驾驶航空器和其他...分别占无人驾驶航空器贸易进口总额的 98.6%和 1.4%。",
+   "concept": "进口产品结构",
+   "source_ref": "《rp_AP202610061830165864》 一、贸易总体情况 p2-12",
+   "book": "rp_AP202610061830165864",
+   "chapter": "一、贸易总体情况",
+   "page_start": 2,
+   "page_end": 12,
+   "claim": "2026 年 1-8 月，中国无人驾驶航空器进口额中，“仅使用遥控飞行”类产品占比高达 98.6%，显示出极高的市场集中度。",
+   "evidence": "2026 年 1-8 月，中国无人驾驶航空器进口额排名前二的产品为仅使用遥控飞行的无人驾驶航空器和其他...分别占无人驾驶航空器贸易进口总额的 98.6%和 1.4%。",
+   "source_tag": "研报",
+   "unit_id": "u4-012",
+   "quality_score": 54.5,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CP4-20261102-013",
+   "status": "pending_review",
+   "round": "third",
+   "theme": "军工/航天",
+   "angle": "definition",
+   "angle_cn": "概念定义",
+   "q": "什么是「主要出口市场」？",
+   "a": "2026 年 1-8 月，中国无人驾驶航空器前三大出口贸易伙伴为中国香港、德国和尼日利亚，合计占出口总额的约 31.5%。",
+   "concept": "主要出口市场",
+   "source_ref": "《rp_AP202610061830165864》 一、贸易总体情况 p2-12",
+   "book": "rp_AP202610061830165864",
+   "chapter": "一、贸易总体情况",
+   "page_start": 2,
+   "page_end": 12,
+   "claim": "2026 年 1-8 月，中国无人驾驶航空器前三大出口贸易伙伴为中国香港、德国和尼日利亚，合计占出口总额的约 31.5%。",
+   "evidence": "2026 年 1-8 月，中国无人驾驶航空器前三大出口贸易伙伴为中国香港、德国和尼日利亚...分别占无人驾驶航空器贸易出口总额的 14.5%、10.4%和 6.6%。",
+   "source_tag": "研报",
+   "unit_id": "u4-013",
+   "quality_score": 54.1,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CP4-20261102-014",
+   "status": "pending_review",
+   "round": "third",
+   "theme": "军工/航天",
+   "angle": "key_fact",
+   "angle_cn": "关键事实",
+   "q": "「航空煤油价格风险」有哪些关键事实或数据？",
+   "a": "9 月 1 日中国航空煤油（出厂价 (含税)）为 8170.00 元/吨，较 8 月 1 日上涨 7.8%。由于近期油价持续震荡盘升，预计 10 月航空煤油价格进一步抬升。",
+   "concept": "航空煤油价格风险",
+   "source_ref": "《rp_AP202609301830022766》 8 月航空业月度数据跟踪报告 强于大市(维持) p1-3",
+   "book": "rp_AP202609301830022766",
+   "chapter": "8 月航空业月度数据跟踪报告 强于大市(维持)",
+   "page_start": 1,
+   "page_end": 3,
+   "claim": "受原油价格震荡攀升影响，预计 2026 年 10 月航空煤油价格将进一步上行，推升航空运输成本，对板块形成短期压制。",
+   "evidence": "9 月 1 日中国航空煤油（出厂价 (含税)）为 8170.00 元/吨，较 8 月 1 日上涨 7.8%。由于近期油价持续震荡盘升，预计 10 月航空煤油价格进一步抬升。",
+   "source_tag": "研报",
+   "unit_id": "u4-014",
+   "quality_score": 53.8,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CP4-20261102-015",
+   "status": "pending_review",
+   "round": "third",
+   "theme": "化工/材料",
+   "angle": "impact",
+   "angle_cn": "影响传导",
+   "q": "「原材料价格变动」的影响与传导是什么？",
+   "a": "截至 2026 年 9 月 18 日，铁矿石期货价格为 715.5 元/吨，环比下降；铜、铝现货价格分别上涨 2.0% 和 0.3%。 依据：本周铁矿石期货收盘价 715.5 元/吨，环比 -2.5 元/吨；铸造生铁价格 3110 元/吨，环比持平；中厚板价格 3512 元/吨，环比 -14 元/吨；铜、铝现货价格分别为 14529、3285 美元/吨，单价分别+290.5、+11 美元/吨。",
+   "concept": "原材料价格变动",
+   "source_ref": "《rp_AP202610021830105333》 市场研究部 2026 年9 月22 日 p1-10",
+   "book": "rp_AP202610021830105333",
+   "chapter": "市场研究部 2026 年9 月22 日",
+   "page_start": 1,
+   "page_end": 10,
+   "claim": "截至 2026 年 9 月 18 日，铁矿石期货价格为 715.5 元/吨，环比下降；铜、铝现货价格分别上涨 2.0% 和 0.3%。",
+   "evidence": "本周铁矿石期货收盘价 715.5 元/吨，环比 -2.5 元/吨；铸造生铁价格 3110 元/吨，环比持平；中厚板价格 3512 元/吨，环比 -14 元/吨；铜、铝现货价格分别为 14529、3285 美元/吨，单价分别+290.5、+11 美元/吨。",
+   "source_tag": "研报",
+   "unit_id": "u4-015",
+   "quality_score": 62.9,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CP4-20261102-016",
+   "status": "pending_review",
+   "round": "third",
+   "theme": "化工/材料",
+   "angle": "definition",
+   "angle_cn": "概念定义",
+   "q": "什么是「化工行业产业链议价能力」？",
+   "a": "化工行业中游制造环节受上下游双重挤压，利润空间有限；仅具备技术壁垒的高端精细化学品或寡头垄断品类（如 MDI）拥有较强议价权，通用大宗品缺乏定价权。",
+   "concept": "化工行业产业链议价能力",
+   "source_ref": "《rp_AP202610021830105528》 摘要： p1-12",
+   "book": "rp_AP202610021830105528",
+   "chapter": "摘要：",
+   "page_start": 1,
+   "page_end": 12,
+   "claim": "化工行业中游制造环节受上下游双重挤压，利润空间有限；仅具备技术壁垒的高端精细化学品或寡头垄断品类（如 MDI）拥有较强议价权，通用大宗品缺乏定价权。",
+   "evidence": "上游资源端凭借禀赋拥有强议价权，下游对通用产品有强议价能力。中游大宗品因产能过剩普遍缺乏定价权，但二苯基甲烷二异氰酸酯（MDI）等寡头垄断品类基本可完全转嫁成本，高端领域可凭技术壁垒构筑优势。",
+   "source_tag": "研报",
+   "unit_id": "u4-016",
+   "quality_score": 59.5,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CP4-20261102-017",
+   "status": "pending_review",
+   "round": "third",
+   "theme": "化工/材料",
+   "angle": "key_fact",
+   "angle_cn": "关键事实",
+   "q": "「化工行业信用风险格局」有哪些关键事实或数据？",
+   "a": "微观财务数据显示，多数企业维持正向现金流，但盈利修复缓慢；头部企业凭规模与融资优势率先修复，尾部企业在现金成本以下持续亏损。预计 2026 年下半年，尾部企业信用事件进入高发区间。",
+   "concept": "化工行业信用风险格局",
+   "source_ref": "《rp_AP202610021830105528》 摘要： p1-12",
+   "book": "rp_AP202610021830105528",
+   "chapter": "摘要：",
+   "page_start": 1,
+   "page_end": 12,
+   "claim": "化工行业信用风险呈现“头部稳健、中部分化、尾部承压”的格局，预计下半年尾部企业信用事件将进入高发区间，因其在现金成本以下持续亏损且融资优势丧失。",
+   "evidence": "微观财务数据显示，多数企业维持正向现金流，但盈利修复缓慢；头部企业凭规模与融资优势率先修复，尾部企业在现金成本以下持续亏损。预计 2026 年下半年，尾部企业信用事件进入高发区间。",
+   "source_tag": "研报",
+   "unit_id": "u4-017",
+   "quality_score": 58.0,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CP4-20261102-018",
+   "status": "pending_review",
+   "round": "third",
+   "theme": "交运/物流",
+   "angle": "impact",
+   "angle_cn": "影响传导",
+   "q": "「快递行业量价走势」的影响与传导是什么？",
+   "a": "淡季下快递业务量环比回落，但单件均价保持稳健回升态势。 依据：8 月淡季短期快递量环比仍有所下滑，但件均价保持稳健；1-8 月单件均价为 7.68 元/件，同比 +2.7%。",
+   "concept": "快递行业量价走势",
+   "source_ref": "《rp_AP202609301830034661》 8 月快递行业月度数据跟踪报告 强于大市(维持) p1-3",
+   "book": "rp_AP202609301830034661",
+   "chapter": "8 月快递行业月度数据跟踪报告 强于大市(维持)",
+   "page_start": 1,
+   "page_end": 3,
+   "claim": "淡季下快递业务量环比回落，但单件均价保持稳健回升态势。",
+   "evidence": "8 月淡季短期快递量环比仍有所下滑，但件均价保持稳健；1-8 月单件均价为 7.68 元/件，同比 +2.7%。",
+   "source_tag": "研报",
+   "unit_id": "u4-018",
+   "quality_score": 41.1,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CP4-20261102-019",
+   "status": "pending_review",
+   "round": "third",
+   "theme": "消费/零售",
+   "angle": "definition",
+   "angle_cn": "概念定义",
+   "q": "什么是「四足机器人商业模式」？",
+   "a": "四足机器人主要采用三种商业模式：针对消费级市场的“产品售卖”（标准硬件、高毛利）、针对大型国央企的“解决方案”（软硬一体+定制、客单价高）以及针对临时场景的“租赁与运营（RaaS）”。",
+   "concept": "四足机器人商业模式",
+   "source_ref": "《rp_AP202610021830105414》 中国四足机器人商业化研究报告 p1-13",
+   "book": "rp_AP202610021830105414",
+   "chapter": "中国四足机器人商业化研究报告",
+   "page_start": 1,
+   "page_end": 13,
+   "claim": "四足机器人主要采用三种商业模式：针对消费级市场的“产品售卖”（标准硬件、高毛利）、针对大型国央企的“解决方案”（软硬一体+定制、客单价高）以及针对临时场景的“租赁与运营（RaaS）”。",
+   "evidence": "产品售卖...适用于产品标准化程度高可批量交付的场景...毛利率高；解决方案...客户群体：大型国央企...客单价高（30万+）；租赁与运营（RaaS）...适用于不愿承担设备折旧风险客户...",
+   "source_tag": "研报",
+   "unit_id": "u4-019",
+   "quality_score": 64.2,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CP4-20261102-020",
+   "status": "pending_review",
+   "round": "third",
+   "theme": "消费/零售",
+   "angle": "key_fact",
+   "angle_cn": "关键事实",
+   "q": "「海外监管与关税政策风险」有哪些关键事实或数据？",
+   "a": "表2显示：欧盟2026年7月取消150欧元以下小额包裹免关税；美国2026年8月实施新一轮301关税；法国自2026年9月起实施反超快时尚法征收生态罚金。企业应对措施包括调整定价、设立海外仓及转型品牌化。",
+   "concept": "海外监管与关税政策风险",
+   "source_ref": "《rp_AP202610021830111804》 行业研究 · 行业专题 p1-13",
+   "book": "rp_AP202610021830111804",
+   "chapter": "行业研究 · 行业专题",
+   "page_start": 1,
+   "page_end": 13,
+   "claim": "欧美多国在2026年加码监管与关税，如欧盟取消150欧元以下免关税、美国实施新一轮301关税及高额罚金，企业需调整定价、布局海外仓或转型高客单品牌以应对。",
+   "evidence": "表2显示：欧盟2026年7月取消150欧元以下小额包裹免关税；美国2026年8月实施新一轮301关税；法国自2026年9月起实施反超快时尚法征收生态罚金。企业应对措施包括调整定价、设立海外仓及转型品牌化。",
+   "source_tag": "研报",
+   "unit_id": "u4-020",
+   "quality_score": 61.2,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CP4-20261102-021",
+   "status": "pending_review",
+   "round": "third",
+   "theme": "消费/零售",
+   "angle": "impact",
+   "angle_cn": "影响传导",
+   "q": "「房地产投资建议」的影响与传导是什么？",
+   "a": "建议关注在存量市场中有竞争力的商业和二手房交易平台，以及融资渠道多元、核心城市布局较优的企业，如华润置地、招商蛇口、贝壳-W 等。 依据：建议关注在存量市场中有竞争力的商业和二手房交易平台，以及融资渠道多元、核心城市布局较优、产品及运营能力突出的企业：1）房地产开发：推荐华润置地，招商蛇口；2）商业及物业管理：推荐华润万象生活，绿城服务；3）房地产经纪：推荐贝壳-W。",
+   "concept": "房地产投资建议",
+   "source_ref": "《rp_AP202609301830023754》 房地产行业点评报告 京沪现房销售细则落地，贴息支持需求释放 p1-2",
+   "book": "rp_AP202609301830023754",
+   "chapter": "房地产行业点评报告 京沪现房销售细则落地，贴息支持需求释放",
+   "page_start": 1,
+   "page_end": 2,
+   "claim": "建议关注在存量市场中有竞争力的商业和二手房交易平台，以及融资渠道多元、核心城市布局较优的企业，如华润置地、招商蛇口、贝壳-W 等。",
+   "evidence": "建议关注在存量市场中有竞争力的商业和二手房交易平台，以及融资渠道多元、核心城市布局较优、产品及运营能力突出的企业：1）房地产开发：推荐华润置地，招商蛇口；2）商业及物业管理：推荐华润万象生活，绿城服务；3）房地产经纪：推荐贝壳-W。",
+   "source_tag": "研报",
+   "unit_id": "u4-021",
+   "quality_score": 60.6,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CP4-20261102-022",
+   "status": "pending_review",
+   "round": "third",
+   "theme": "量学/交易",
+   "angle": "definition",
+   "angle_cn": "概念定义",
+   "q": "什么是「伏击涨停第三定律」？",
+   "a": "庄家或主力在拉涨停时会有惯用的手法（踪迹），这些手法构成了可识别的规律，发现非常规动作即可伏击。",
+   "concept": "伏击涨停第三定律",
+   "source_ref": "《伏击涨停(2)》 第一节 p13-25",
+   "book": "伏击涨停(2)",
+   "chapter": "第一节",
+   "page_start": 13,
+   "page_end": 25,
+   "claim": "庄家或主力在拉涨停时会有惯用的手法（踪迹），这些手法构成了可识别的规律，发现非常规动作即可伏击。",
+   "evidence": "第三节第三定律：凡是有踪迹，必然有规律。只要你有动作，就肯定会留下动作的痕迹。那些想拉涨停板的庄家或主力，也有其各自不同的拉涨停的方法，也就是“惯用手法”。我们只要善于观察或研究，一定可以找到其“惯用手法”。",
+   "source_tag": "书籍",
+   "unit_id": "u4-022",
+   "quality_score": 54.3,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CP4-20261102-023",
+   "status": "pending_review",
+   "round": "third",
+   "theme": "量学/交易",
+   "angle": "key_fact",
+   "angle_cn": "关键事实",
+   "q": "「量学核心逻辑」有哪些关键事实或数据？",
+   "a": "第二节中提到，G柱的突然暴跌和次日跳空低开收长下引线是“下跌已到位”的标志，且是故意打压的假动作。结合长期下跌后的异动，分析出“小偷”要“偷东西”了，从而在E柱介入擒获涨停板。这就是量学“伏击涨停”的核心。",
+   "concept": "量学核心逻辑",
+   "source_ref": "《伏击涨停(2)》 第一节 p13-25",
+   "book": "伏击涨停(2)",
+   "chapter": "第一节",
+   "page_start": 13,
+   "page_end": 25,
+   "claim": "通过识别人为操纵留下的踪迹（如顶底互换、长阴加长腿等），可以推导出主力的操盘规律并提前伏击涨停。",
+   "evidence": "第二节中提到，G柱的突然暴跌和次日跳空低开收长下引线是“下跌已到位”的标志，且是故意打压的假动作。结合长期下跌后的异动，分析出“小偷”要“偷东西”了，从而在E柱介入擒获涨停板。这就是量学“伏击涨停”的核心。",
+   "source_tag": "书籍",
+   "unit_id": "u4-023",
+   "quality_score": 54.2,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "CP4-20261102-024",
+   "status": "pending_review",
+   "round": "third",
+   "theme": "量学/交易",
+   "angle": "impact",
+   "angle_cn": "影响传导",
+   "q": "「百日低量群」的影响与传导是什么？",
+   "a": "股票出现重复的长时间“百日低量群”（价柱波浪滔天而量柱风平浪静），表明该股可能已进入“十月怀胎”的孕育过程，值得重点关注。 依据：一只股票一旦出现（或重复出现）长时间的“百日低量群”，即可能进入“十月怀胎”的过程。特别是那些“价柱波浪滔天”而“量柱风平浪静”的量价建构值得重点关注。",
+   "concept": "百日低量群",
+   "source_ref": "《涨停密码(2)》 第三章 p15-27",
+   "book": "涨停密码(2)",
+   "chapter": "第三章",
+   "page_start": 15,
+   "page_end": 27,
+   "claim": "股票出现重复的长时间“百日低量群”（价柱波浪滔天而量柱风平浪静），表明该股可能已进入“十月怀胎”的孕育过程，值得重点关注。",
+   "evidence": "一只股票一旦出现（或重复出现）长时间的“百日低量群”，即可能进入“十月怀胎”的过程。特别是那些“价柱波浪滔天”而“量柱风平浪静”的量价建构值得重点关注。",
+   "source_tag": "书籍",
+   "unit_id": "u4-024",
+   "quality_score": 52.9,
+   "traceable": true,
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "modify": false,
+     "reject": false
+    },
+    "reviewer": "",
+    "notes": ""
+   }
+  }
+ ],
+ "known_notes": [
+  "4 个 <3 卡缺口主题中，未生成候选的主题：传媒/文化、医药/生物、汽车/智驾（单元数少或概念已被现有卡覆盖，人工可另议）。",
+  "因纯缺口主题可生成量不足 20 张，候选按「深度+单元密度」补充了非缺口主题（见 supplemented_themes），确保 20-30 张候选区间。",
+  "候选为 claim/evidence 模板化改写、pending_review；本报告不修改学习卡。"
+ ],
+ "instructions": [
+  "逐卡核对：主题缺口合理性 → 候选 Q/A/出处/证据 → 勾选 ☐通过/☐修改/☐驳回。",
+  "候选为 claim/evidence 模板化改写，需人工审核；通过后另走 decisions/merge 流程。",
+  "本报告为 dry-run 预览，未修改学习卡。"
+ ],
+ "disclaimer": "第三轮扩卡候选为规则化辅助建议，仅辅助人工审核；不构成投资建议。",
+ "source_unchanged": true
+}

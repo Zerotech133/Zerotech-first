@@ -1,0 +1,36 @@
+{
+ "schema_version": 1,
+ "kind": "qa_quality_history",
+ "entries": [
+  {
+   "date": "2026-11-02",
+   "n": 2,
+   "answerable_rate": 1.0,
+   "guard_pass_rate": 1.0,
+   "fallback_rate": 0.0,
+   "avg_citations": 2.5,
+   "avg_citation_resolvable_rate": 1.0,
+   "avg_inference_ratio": 0.45,
+   "avg_elapsed_seconds": 12.06,
+   "avg_completeness_score": 5.0,
+   "guard_pass_count": 2,
+   "sample_ids": [
+    "q2_b5a0a0e045",
+    "q2_aa49124184"
+   ],
+   "alerts": []
+  }
+ ],
+ "rolling_7d": {
+  "n_days": 1,
+  "answerable_rate": 1.0,
+  "guard_pass_rate": 1.0,
+  "fallback_rate": 0.0,
+  "avg_citations": 2.5,
+  "avg_elapsed_seconds": 12.06,
+  "window": 7,
+  "date_from": "2026-11-02",
+  "date_to": "2026-11-02"
+ },
+ "updated_at": "2026-11-02T02:49:47+08:00"
+}

@@ -876,6 +876,27 @@
       "title": "线上 multi 质量抽检",
       "ref": "tools/kb_corpus/qa_live_quality_review.py",
       "enabled": true
+    },
+    {
+      "id": "qa_quality_daily",
+      "kind": "tool",
+      "title": "问答质量每日抽检",
+      "ref": "tools/kb_corpus/qa_quality_daily.py",
+      "enabled": true
+    },
+    {
+      "id": "weekly_eval_regression",
+      "kind": "tool",
+      "title": "每周评测回归",
+      "ref": "tools/kb_corpus/weekly_eval_regression.py",
+      "enabled": true
+    },
+    {
+      "id": "card_proposal_v4",
+      "kind": "tool",
+      "title": "学习卡第三轮扩卡候选",
+      "ref": "tools/kb_corpus/card_proposal_v4.py",
+      "enabled": true
     }
   ]
 }

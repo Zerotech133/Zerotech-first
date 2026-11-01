@@ -1,0 +1,56 @@
+{
+ "schema_version": "weekly_eval.v1",
+ "kind": "weekly_eval_regression",
+ "date_tag": "20261102",
+ "generated_at": "2026-11-02T02:49:06+08:00",
+ "eval_set": {
+  "set_id": "eval_set_20261101_v3",
+  "content_hash": "6b778e2c4c66d4b3b8c37a5184dd1741b8aa0015c1575c8d54618a4584f89787",
+  "n_queries": 102
+ },
+ "engine": "search_v2 默认（and_mode=soft, soft_cov=0.5, synonym_weight=0.6）",
+ "current": {
+  "precision_at_k": 0.802,
+  "ndcg_at_k": 0.8549,
+  "coverage": 0.8931
+ },
+ "baseline_frozen": {
+  "precision_at_k": 0.8,
+  "ndcg_at_k": 0.857,
+  "coverage": 0.893
+ },
+ "deltas": {
+  "precision_at_k": 0.002,
+  "ndcg_at_k": -0.0021,
+  "coverage": 0.0001
+ },
+ "status": {
+  "precision_at_k": "ok",
+  "ndcg_at_k": "ok",
+  "coverage": "ok"
+ },
+ "tolerance": 0.02,
+ "alerts": [],
+ "ok": true,
+ "v1_metrics": {
+  "precision_at_k": 0.702,
+  "coverage": 0.8534,
+  "hit": 0.9608,
+  "ndcg_at_k": 0.7664
+ },
+ "subset": {
+  "89": {
+   "precision_at_k": 0.7843,
+   "coverage": 0.8933,
+   "hit": 1.0,
+   "ndcg_at_k": 0.8461
+  },
+  "13": {
+   "precision_at_k": 0.9231,
+   "coverage": 0.8923,
+   "hit": 1.0,
+   "ndcg_at_k": 0.9151
+  }
+ },
+ "disclaimer": "研究/回归监控输出；指标为冻结评测集上的确定性计算，不调用 LLM。"
+}

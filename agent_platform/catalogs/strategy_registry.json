@@ -6844,5 +6844,34 @@
     "report": "research/reports/qa_live_quality_20261102.md",
     "verdict": "线上 multi 质量可接受（与离线 v4 基线方向一致，抽样 n=3）",
     "note": "8091 线上 multi 抽检 3 条：可答率 100%、guard 100%、fallback 0%、均引用 3.0、推断 0.35、均耗时 10.83s、完整度 5/5 → 线上质量可接受（不劣于离线 v4 基线）；人工评分位已留。"
+  },
+  "qa_quality_daily_20261102": {
+    "tool": "tools/kb_corpus/qa_quality_daily.py",
+    "first_day": {
+      "n": 2,
+      "http_200": 2,
+      "success": 2,
+      "fallback": 0,
+      "answerable_rate": 1.0,
+      "guard_pass_rate": 1.0,
+      "fallback_rate": 0.0,
+      "avg_citations": 2.5,
+      "avg_citation_resolvable_rate": 1.0,
+      "avg_inference_ratio": 0.45,
+      "avg_elapsed_seconds": 12.06,
+      "avg_completeness_score": 5.0
+    },
+    "note": "问答质量每日抽检上线：首日 2 条可答 100%/guard 100%/fallback 0%/引用 2.5/耗时 12.06s；历史 rolling 7d 已建；漂移告警（默认打印，--send 飞书）；已注册 ZeroBound_DailyQAQuality 每日 18:20 试跑 rc=0。"
+  },
+  "weekly_eval_20261102": {
+    "tool": "tools/kb_corpus/weekly_eval_regression.py",
+    "result": null,
+    "note": "每周评测回归：v3 102 查询当前 P@5 0.802/NDCG 0.8549/覆盖率 0.8931，偏差 +0.0020/-0.0021/+0.0001 全部在 ±0.02 内 → 通过 0 告警；已注册 ZeroBound_WeeklyEval 每周一 09:00 试跑 rc=0；历史追加保留 52 次。"
+  },
+  "card_proposals_v4_20261102": {
+    "tool": "tools/kb_corpus/card_proposal_v4.py",
+    "review": "research/reports/card_proposals_v4_20261102.md",
+    "portal": "portal/static/card_proposals_v4.json",
+    "note": "学习卡第三轮扩卡：21 主题 17/21 深度达标、缺口 4（评级/传媒/医药/汽车）；候选 24 张（可追溯 24/24、零重复、pending_review）；dry-run 124→148（未执行，待人工审核）。"
   }
 }
