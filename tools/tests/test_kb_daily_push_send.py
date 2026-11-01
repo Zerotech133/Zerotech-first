@@ -30,12 +30,14 @@ def test_send_calls_channel_and_writes_result(tmp_path, monkeypatch):
 
 
 def test_empty_payload_refused(monkeypatch):
+    monkeypatch.setattr(kp, "SEND_RESULT_DIR", __import__("pathlib").Path(__import__("tempfile").gettempdir()))
     monkeypatch.setattr(kp, "validate_payload", lambda payload: [])
     out = kp.send_payload(_payload(cards=0, candidates=0), send_fn=lambda *a, **k: True)
     assert out["ok"] is False and out["sent"] is False and "empty_payload" in out["reason"]
 
 
 def test_validate_error_refused(monkeypatch):
+    monkeypatch.setattr(kp, "SEND_RESULT_DIR", __import__("pathlib").Path(__import__("tempfile").gettempdir()))
     monkeypatch.setattr(kp, "validate_payload", lambda payload: ["缺少 card"])
     broken = _payload()
     broken["feishu_payload"] = {"msg_type": "text"}  # 缺 card
@@ -44,6 +46,7 @@ def test_validate_error_refused(monkeypatch):
 
 
 def test_send_exception_contained(monkeypatch):
+    monkeypatch.setattr(kp, "SEND_RESULT_DIR", __import__("pathlib").Path(__import__("tempfile").gettempdir()))
     monkeypatch.setattr(kp, "validate_payload", lambda payload: [])
 
     def boom(*a, **k):
