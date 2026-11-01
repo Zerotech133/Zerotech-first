@@ -1,23 +1,56 @@
 {
- "schema_version": 1,
+ "schema_version": 2,
  "date": "20261101",
- "generated_at": "2026-11-01T11:49:59+08:00",
- "generator": "wave21 CD 学习卡审核页数据导出（一次性生成）",
+ "generated_at": "2026-11-01T14:21:42+08:00",
+ "generator": "wave26 CP 审核页数据合并（第一轮 60 + 第二轮 40）",
  "source": {
-  "checklist": "research/reports/card_review_checklist_20261101.json",
-  "checklist_sha256": "8ebce2ad15e8ec95c049a1c3f08758e8d1f6c81c0dfd577facbd85d42f09f506",
-  "precheck": "research/reports/card_precheck_20261101.json",
-  "precheck_sha256": "697b08e874005fb0c3a39569ed50d275645e8f2c5d9788e4d0619424a7c0fcbb"
+  "round1": "portal/static/card_review_data.json（原 60 条，来源清单+预审）",
+  "round1_sha256": "a5ebe51152c55877e0e066338981c9199c8696a4c6d209c99a2bc6f29a2edd8b",
+  "round2": "portal/static/card_proposals_v3.json（40 条 pending_review）",
+  "round2_sha256": "4d3ffbcda9c36410064146b3d19ab3ff964c87965b15dd805e6d3ad720d575c9"
  },
  "stats": {
-  "total": 60,
+  "total": 100,
+  "by_round": {
+   "first": 60,
+   "second": 40
+  },
   "by_source": {
    "AE": 20,
-   "AV": 40
+   "AV": 40,
+   "CP3": 40
   },
   "by_theme": [
    {
     "theme": "消费/零售",
+    "count": 8
+   },
+   {
+    "theme": "机械/制造",
+    "count": 8
+   },
+   {
+    "theme": "军工/航天",
+    "count": 8
+   },
+   {
+    "theme": "交运/物流",
+    "count": 8
+   },
+   {
+    "theme": "网络安全/信创",
+    "count": 6
+   },
+   {
+    "theme": "有色/金属",
+    "count": 6
+   },
+   {
+    "theme": "新能源/电力",
+    "count": 5
+   },
+   {
+    "theme": "金融/地产",
     "count": 5
    },
    {
@@ -25,43 +58,39 @@
     "count": 5
    },
    {
-    "theme": "机械/制造",
+    "theme": "量学/交易",
     "count": 5
-   },
-   {
-    "theme": "军工/航天",
-    "count": 5
-   },
-   {
-    "theme": "交运/物流",
-    "count": 5
-   },
-   {
-    "theme": "网络安全/信创",
-    "count": 3
-   },
-   {
-    "theme": "通信/互联网",
-    "count": 3
    },
    {
     "theme": "农业",
-    "count": 3
-   },
-   {
-    "theme": "有色/金属",
-    "count": 3
-   },
-   {
-    "theme": "建筑/建材",
-    "count": 3
+    "count": 5
    },
    {
     "theme": "半导体/电子",
-    "count": 3
+    "count": 5
+   },
+   {
+    "theme": "其他",
+    "count": 4
+   },
+   {
+    "theme": "通信/互联网",
+    "count": 4
+   },
+   {
+    "theme": "建筑/建材",
+    "count": 4
    },
    {
     "theme": "医药/生物",
+    "count": 3
+   },
+   {
+    "theme": "评级/研报方法论",
+    "count": 3
+   },
+   {
+    "theme": "化工/材料",
     "count": 3
    },
    {
@@ -69,37 +98,36 @@
     "count": 2
    },
    {
-    "theme": "其他",
-    "count": 2
-   },
-   {
-    "theme": "新能源/电力",
-    "count": 2
-   },
-   {
-    "theme": "金融/地产",
-    "count": 2
-   },
-   {
-    "theme": "量学/交易",
-    "count": 2
-   },
-   {
-    "theme": "评级/研报方法论",
-    "count": 2
-   },
-   {
     "theme": "传媒/文化",
     "count": 2
+   },
+   {
+    "theme": "汽车/智驾",
+    "count": 1
    }
   ],
   "precheck": {
    "pass": 36,
    "revise": 24,
-   "reject": 0
+   "reject": 0,
+   "none": 40
   }
  },
  "options": {
+  "rounds": [
+   {
+    "key": "all",
+    "label": "全部"
+   },
+   {
+    "key": "first",
+    "label": "第一轮（60）"
+   },
+   {
+    "key": "second",
+    "label": "第二轮（40）"
+   }
+  ],
   "verdicts": [
    {
     "key": "pass",
@@ -147,7 +175,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-002",
@@ -174,7 +204,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-003",
@@ -201,7 +233,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-004",
@@ -228,7 +262,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-005",
@@ -255,7 +291,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-006",
@@ -282,7 +320,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-007",
@@ -309,7 +349,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-008",
@@ -336,7 +378,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-009",
@@ -364,7 +408,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-010",
@@ -391,7 +437,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-011",
@@ -419,7 +467,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-012",
@@ -447,7 +497,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-013",
@@ -474,7 +526,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-014",
@@ -501,7 +555,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-015",
@@ -528,7 +584,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-016",
@@ -556,7 +614,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-017",
@@ -584,7 +644,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-018",
@@ -611,7 +673,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-019",
@@ -638,7 +702,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-020",
@@ -666,7 +732,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-021",
@@ -693,7 +761,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-022",
@@ -720,7 +790,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-023",
@@ -747,7 +819,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-024",
@@ -775,7 +849,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-025",
@@ -802,7 +878,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-026",
@@ -829,7 +907,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-027",
@@ -857,7 +937,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-028",
@@ -885,7 +967,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-029",
@@ -912,7 +996,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-030",
@@ -940,7 +1026,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-031",
@@ -967,7 +1055,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-032",
@@ -994,7 +1084,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-033",
@@ -1021,7 +1113,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-034",
@@ -1048,7 +1142,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-035",
@@ -1075,7 +1171,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-036",
@@ -1103,7 +1201,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-037",
@@ -1130,7 +1230,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-038",
@@ -1157,7 +1259,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-039",
@@ -1184,7 +1288,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-040",
@@ -1211,7 +1317,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-041",
@@ -1238,7 +1346,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-042",
@@ -1265,7 +1375,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-043",
@@ -1292,7 +1404,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-044",
@@ -1320,7 +1434,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-045",
@@ -1347,7 +1463,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-046",
@@ -1374,7 +1492,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-047",
@@ -1401,7 +1521,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-048",
@@ -1428,7 +1550,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-049",
@@ -1455,7 +1579,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-050",
@@ -1482,7 +1608,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-051",
@@ -1509,7 +1637,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-052",
@@ -1536,7 +1666,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-053",
@@ -1563,7 +1695,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-054",
@@ -1590,7 +1724,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-055",
@@ -1617,7 +1753,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-056",
@@ -1644,7 +1782,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-057",
@@ -1671,7 +1811,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-058",
@@ -1698,7 +1840,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-059",
@@ -1725,7 +1869,9 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
   },
   {
    "review_id": "REV-20261101-060",
@@ -1752,8 +1898,1290 @@
     "modify": false,
     "reject": false
    },
-   "notes": ""
+   "notes": "",
+   "round": "first",
+   "round_cn": "第一轮"
+  },
+  {
+   "review_id": "CP3-20261101-001",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-001",
+   "theme": "化工/材料",
+   "angle": "definition",
+   "angle_cn": "概念定义",
+   "question": "什么是「PTFE材料路线」？",
+   "answer_summary": "PTFE作为低损耗材料的下一代路线，其介电常数约2.1-2.2、损耗低于0.0004，性能优于M9体系；但因其热塑性导致的加工难题（如钻孔毛刺），产业化需采用'PTFE芯层+M9半固化片’的混压结构来平衡信号完整性与工艺可行性。",
+   "answer": "PTFE作为低损耗材料的下一代路线，其介电常数约2.1-2.2、损耗低于0.0004，性能优于M9体系；但因其热塑性导致的加工难题（如钻孔毛刺），产业化需采用'PTFE芯层+M9半固化片’的混压结构来平衡信号完整性与工艺可行性。",
+   "source_ref": "《rp_AP202610071830180005》 图表目录 p2-14",
+   "evidence_summary": "PTFE是低损耗材料潜在的下一代路线...10GHz条件下介电常数约2.1-2.2、介电损耗低于0.0004，较M9的介电常数约3.0-3.1、介电损耗约0.00046-0.00050实现代际级领先...但PTFE属热塑性材料，不发生交联固化反应，存在压合稳定性差、钻孔易产生毛刺等难题；产业界当前讨…",
+   "unit_id": "rp_AP202610071830180005#p2-14",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 86.3,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 86.3,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-002",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-002",
+   "theme": "化工/材料",
+   "angle": "key_fact",
+   "angle_cn": "关键事实",
+   "question": "「球形硅微粉」有哪些关键事实或数据？",
+   "answer_summary": "在M9配方的升级中，球形硅微粉是市场长期忽视的'第四种填料'...硅微粉直接决定高速基板的三项核心性能：改善线性膨胀系数（CTE）以抑制高层板翘曲分层、以良好介电表现保障信号质量、以导热特性应对高功耗GPU散热需求...当前全球高端亚微米球形硅微粉由日本Admatechs、Denka、Resonac…",
+   "answer": "在M9配方的升级中，球形硅微粉是市场长期忽视的'第四种填料'...硅微粉直接决定高速基板的三项核心性能：改善线性膨胀系数（CTE）以抑制高层板翘曲分层、以良好介电表现保障信号质量、以导热特性应对高功耗GPU散热需求...当前全球高端亚微米球形硅微粉由日本Admatechs、Denka、Resonac垄断，合计占据六成以上市场份额。",
+   "source_ref": "《rp_AP202610071830180005》 图表目录 p2-14",
+   "evidence_summary": "在M9配方的升级中，球形硅微粉是市场长期忽视的'第四种填料'...硅微粉直接决定高速基板的三项核心性能：改善线性膨胀系数（CTE）以抑制高层板翘曲分层、以良好介电表现保障信号质量、以导热特性应对高功耗GPU散热需求...当前全球高端亚微米球形硅微粉由日本Admatechs、Denka、Resonac…",
+   "unit_id": "rp_AP202610071830180005#p2-14",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 74.4,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 74.4,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-003",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-003",
+   "theme": "化工/材料",
+   "angle": "impact",
+   "angle_cn": "影响传导",
+   "question": "「主要原材料价格波动」的影响与传导是什么？",
+   "answer_summary": "2026 年 9 月第一周，铁矿石期货价格小幅下跌，铜价上涨约 1.5%，铝价下跌约 0.9%，环氧树脂价格持平。 依据：本周铁矿石期货收盘价 713.5 元/吨，环比 -2 元/吨；铸造生铁价格 3110 元/吨，环比持平；中厚板价格 3499 元/吨，环比 -13 元/吨；铜、铝现货价格分别为…",
+   "answer": "2026 年 9 月第一周，铁矿石期货价格小幅下跌，铜价上涨约 1.5%，铝价下跌约 0.9%，环氧树脂价格持平。 依据：本周铁矿石期货收盘价 713.5 元/吨，环比 -2 元/吨；铸造生铁价格 3110 元/吨，环比持平；中厚板价格 3499 元/吨，环比 -13 元/吨；铜、铝现货价格分别为 14740、3254 美元/吨，单价分别 +211、-31 美元/吨，环比 +1.5%、-0.9%。环氧树脂价格为 15650 元/吨，环比持平。",
+   "source_ref": "《rp_AP202610021830105372》 市场研究部 2026 年9 月30 日 p1-9",
+   "evidence_summary": "本周铁矿石期货收盘价 713.5 元/吨，环比 -2 元/吨；铸造生铁价格 3110 元/吨，环比持平；中厚板价格 3499 元/吨，环比 -13 元/吨；铜、铝现货价格分别为 14740、3254 美元/吨，单价分别 +211、-31 美元/吨，环比 +1.5%、-0.9%。环氧树脂价格为 156…",
+   "unit_id": "rp_AP202610021830105372#p1-9",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 66.2,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 66.2,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-004",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-004",
+   "theme": "评级/研报方法论",
+   "angle": "definition",
+   "angle_cn": "概念定义",
+   "question": "什么是「恒生科技指数估值」？",
+   "answer_summary": "截至2026年9月27日，恒生科技指数PE-TTM为22.93x，处于成立以来34.27%分位点，显示估值较上月有所下降。",
+   "answer": "截至2026年9月27日，恒生科技指数PE-TTM为22.93x，处于成立以来34.27%分位点，显示估值较上月有所下降。",
+   "source_ref": "《rp_AP202610021830111802》 优于大市 互联网行业2026 年10 月投资策略 p1-13",
+   "evidence_summary": "从市盈率看，恒生科技指数估值较上月下降：截至2026 年9 月27 日，恒生科技指数PE-TTM 为22.93x，处于恒生科技指数成立以来34.27%分位点。",
+   "unit_id": "rp_AP202610021830111802#p1-13",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 53.4,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 53.4,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-005",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-005",
+   "theme": "汽车/智驾",
+   "angle": "key_fact",
+   "angle_cn": "关键事实",
+   "question": "「四足机器人商业化挑战」有哪些关键事实或数据？",
+   "answer_summary": "工业场景下...面对动态、未知、干扰较多的真实复杂环境时泛化能力不足；高强度作业下续航与负载不满足实际需求；核心零部件仍带有小批量、半自动化生产和半定制化特征...",
+   "answer": "工业场景下...面对动态、未知、干扰较多的真实复杂环境时泛化能力不足；高强度作业下续航与负载不满足实际需求；核心零部件仍带有小批量、半自动化生产和半定制化特征...",
+   "source_ref": "《rp_AP202610021830105414》 中国四足机器人商业化研究报告 p1-13",
+   "evidence_summary": "工业场景下...面对动态、未知、干扰较多的真实复杂环境时泛化能力不足；高强度作业下续航与负载不满足实际需求；核心零部件仍带有小批量、半自动化生产和半定制化特征...",
+   "unit_id": "rp_AP202610021830105414#p1-13",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 56.7,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 56.7,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-006",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-006",
+   "theme": "金融/地产",
+   "angle": "impact",
+   "angle_cn": "影响传导",
+   "question": "「资本市场改革成效」的影响与传导是什么？",
+   "answer_summary": "在“十五五”期间，中国资本市场将在支持技术创新、促进居民财富配置和提升金融部门国际竞争力方面发挥关键作用。 依据：Abstract: During the 15th Five-Year Plan period, China's capital market will play a crucial r…",
+   "answer": "在“十五五”期间，中国资本市场将在支持技术创新、促进居民财富配置和提升金融部门国际竞争力方面发挥关键作用。 依据：Abstract: During the 15th Five-Year Plan period, China's capital market will play a crucial role in supporting technological innovation, facilitating household wealth allocation, and enhancing the financial sector's international competitivene…",
+   "source_ref": "《rp_AP202610031830124601》 VOL.172 2026.09《金融市场研究》13 p13-13",
+   "evidence_summary": "Abstract: During the 15th Five-Year Plan period, China's capital market will play a crucial role in supporting technological innovation, facilitating…",
+   "unit_id": "rp_AP202610031830124601#p13-13",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 78.2,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 78.2,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-007",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-007",
+   "theme": "金融/地产",
+   "angle": "definition",
+   "angle_cn": "概念定义",
+   "question": "什么是「中小行配债增速回落」？",
+   "answer_summary": "2026 年 8 月末，中小银行债券配置增速降至 4.87%，与大行 18.05% 的高位形成鲜明对比，呈现‘大行放贷、小行买债’逻辑重构。",
+   "answer": "2026 年 8 月末，中小银行债券配置增速降至 4.87%，与大行 18.05% 的高位形成鲜明对比，呈现‘大行放贷、小行买债’逻辑重构。",
+   "source_ref": "《rp_AP202609301830035477》 中小行配债走弱：成因与趋势判断 p1-13",
+   "evidence_summary": "截至 2026 年 8 月末，中小行配债增速下降至 4.87%，与大行 18.05% 的高位形成鲜明对比。关键背离在于：中小行存贷增速差 3.33%（高于大行 2.84%），逻辑上冗余流动性更多，但配债反而放缓——说明部分机构不是无钱可配，而是有钱也不买债。",
+   "unit_id": "rp_AP202609301830035477#p1-13",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 64.0,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 64.0,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-008",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-008",
+   "theme": "金融/地产",
+   "angle": "key_fact",
+   "angle_cn": "关键事实",
+   "question": "「房地产行业板块表现」有哪些关键事实或数据？",
+   "answer_summary": "上周（2026.9.21-2026.9.24）房地产（申万）板块上涨 2.28%，沪深 300 指数下跌 1.51%，房地产板块领先沪深 300 指数 3.79 个百分点。和其他行业对比，房地产行业涨幅位列申万行业第 1 位。",
+   "answer": "上周（2026.9.21-2026.9.24）房地产（申万）板块上涨 2.28%，沪深 300 指数下跌 1.51%，房地产板块领先沪深 300 指数 3.79 个百分点。和其他行业对比，房地产行业涨幅位列申万行业第 1 位。",
+   "source_ref": "《rp_AP202609301830054738》 中性 p1-12",
+   "evidence_summary": "上周（2026.9.21-2026.9.24）房地产（申万）板块上涨 2.28%，沪深 300 指数下跌 1.51%，房地产板块领先沪深 300 指数 3.79 个百分点。和其他行业对比，房地产行业涨幅位列申万行业第 1 位。",
+   "unit_id": "rp_AP202609301830054738#p1-12",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 63.1,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 63.1,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-009",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-009",
+   "theme": "消费/零售",
+   "angle": "impact",
+   "angle_cn": "影响传导",
+   "question": "「网红营销与透明度要求」的影响与传导是什么？",
+   "answer_summary": "所有网红营销传播活动必须能被立即识别为商业内容，需清晰披露赞助性质，且证言或背书必须是真实、可核实且相关的，不得鼓励过度消费或美化醉酒状态。 依据：所有网红营销传播活动...都应设计并呈现，使其能被立即识别为营销传播。如果沟通的形式和格式本身不足以让人明白其属于赞助信息，则应通过适当披露的方式，清楚…",
+   "answer": "所有网红营销传播活动必须能被立即识别为商业内容，需清晰披露赞助性质，且证言或背书必须是真实、可核实且相关的，不得鼓励过度消费或美化醉酒状态。 依据：所有网红营销传播活动...都应设计并呈现，使其能被立即识别为营销传播。如果沟通的形式和格式本身不足以让人明白其属于赞助信息，则应通过适当披露的方式，清楚表明证言或背书的赞助性质。testimonials and influencer endorsements shall not encourage excessive consumption, glamorize intoxication...",
+   "source_ref": "《rp_AP202609301830015420》 引言 p4-16",
+   "evidence_summary": "所有网红营销传播活动...都应设计并呈现，使其能被立即识别为营销传播。如果沟通的形式和格式本身不足以让人明白其属于赞助信息，则应通过适当披露的方式，清楚表明证言或背书的赞助性质。testimonials and influencer endorsements shall not encourage…",
+   "unit_id": "rp_AP202609301830015420#p4-16",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 75.5,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 75.5,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-010",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-010",
+   "theme": "消费/零售",
+   "angle": "definition",
+   "angle_cn": "概念定义",
+   "question": "什么是「广州零售市场策略」？",
+   "answer_summary": "截至2026年年中，广州优质购物中心空置率微升至1.8%，最优层平均租金降至622元/月/平方米。业主方普遍推行租金转扣点、长免租期等让利措施以应对供应放量压力。",
+   "answer": "截至2026年年中，广州优质购物中心空置率微升至1.8%，最优层平均租金降至622元/月/平方米。业主方普遍推行租金转扣点、长免租期等让利措施以应对供应放量压力。",
+   "source_ref": "《rp_AP202609301830015453》 06 p2-14",
+   "evidence_summary": "全市优质购物中心空置率保持平稳...较2025年同期仅微升1.8个百分点至1.8%...业主方为保持竞争优势，提供了更优惠的出租策略，包括租金转扣点、长免租期...让利措施的普遍推行给租金带来下行压力，录得每月每平方米622元。",
+   "unit_id": "rp_AP202609301830015453#p2-14",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 64.2,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 64.2,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-011",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-011",
+   "theme": "消费/零售",
+   "angle": "key_fact",
+   "angle_cn": "关键事实",
+   "question": "「深圳零售市场特征」有哪些关键事实或数据？",
+   "answer_summary": "受宏观面多重不确定因素影响...多数品牌也放缓投资节奏...成熟优质购物中心得益于客流韧性，租金水平总体持稳...全市优质购物中心空置率较2025年同期微升1.5个百分点至1.5%...全市优质购物中心最优层平均租金同比下降至每月每平方米693元。",
+   "answer": "受宏观面多重不确定因素影响...多数品牌也放缓投资节奏...成熟优质购物中心得益于客流韧性，租金水平总体持稳...全市优质购物中心空置率较2025年同期微升1.5个百分点至1.5%...全市优质购物中心最优层平均租金同比下降至每月每平方米693元。",
+   "source_ref": "《rp_AP202609301830015453》 06 p2-14",
+   "evidence_summary": "受宏观面多重不确定因素影响...多数品牌也放缓投资节奏...成熟优质购物中心得益于客流韧性，租金水平总体持稳...全市优质购物中心空置率较2025年同期微升1.5个百分点至1.5%...全市优质购物中心最优层平均租金同比下降至每月每平方米693元。",
+   "unit_id": "rp_AP202609301830015453#p2-14",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 64.2,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 64.2,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-012",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-012",
+   "theme": "军工/航天",
+   "angle": "impact",
+   "angle_cn": "影响传导",
+   "question": "「个股涨跌幅排名」的影响与传导是什么？",
+   "answer_summary": "上周国防军工行业 138 家上市公司中，51 家上涨、87 家下跌；涨幅前三名为航发科技、合众思壮和火炬电子，跌幅前三名为纵横股份、ST 亚光和兴图新科。 依据：国防军工行业 138 家上市公司中，上周 51 家公司上涨，87 家公司下跌，涨幅前 3 名分别为航发科技、合众思壮和火炬电子，跌幅前 3…",
+   "answer": "上周国防军工行业 138 家上市公司中，51 家上涨、87 家下跌；涨幅前三名为航发科技、合众思壮和火炬电子，跌幅前三名为纵横股份、ST 亚光和兴图新科。 依据：国防军工行业 138 家上市公司中，上周 51 家公司上涨，87 家公司下跌，涨幅前 3 名分别为航发科技、合众思壮和火炬电子，跌幅前 3 名分别为纵横股份、ST 亚光和兴图新科。",
+   "source_ref": "《rp_AP202610021830105332》 看好 p1-9",
+   "evidence_summary": "国防军工行业 138 家上市公司中，上周 51 家公司上涨，87 家公司下跌，涨幅前 3 名分别为航发科技、合众思壮和火炬电子，跌幅前 3 名分别为纵横股份、ST 亚光和兴图新科。",
+   "unit_id": "rp_AP202610021830105332#p1-9",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 59.2,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 59.2,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-013",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-013",
+   "theme": "军工/航天",
+   "angle": "definition",
+   "angle_cn": "概念定义",
+   "question": "什么是「无人驾驶航空器贸易分类」？",
+   "answer_summary": "报告将无人驾驶航空器分为三类：设计用于旅客运输、仅使用遥控飞行、以及其他类别，其中“仅使用遥控飞行”是贸易额占比最高的类别。",
+   "answer": "报告将无人驾驶航空器分为三类：设计用于旅客运输、仅使用遥控飞行、以及其他类别，其中“仅使用遥控飞行”是贸易额占比最高的类别。",
+   "source_ref": "《rp_AP202610061830165864》 一、贸易总体情况 p2-12",
+   "evidence_summary": "1 本报告定义的无人驾驶航空器对应的产品分类及 HS2024 代码为：无人驾驶航空器（88.06），其中包括设计用于旅客运 输的无人驾驶航空器、仅使用遥控飞行的无人驾驶航空器、其他。",
+   "unit_id": "rp_AP202610061830165864#p2-12",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 55.7,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 55.7,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-014",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-014",
+   "theme": "军工/航天",
+   "angle": "key_fact",
+   "angle_cn": "关键事实",
+   "question": "「客座率水平」有哪些关键事实或数据？",
+   "answer_summary": "1-8 月我国民航客座率为 86.30%，同比提升 1.6pct，较 1-7 月上升 0.5pct。六家上市航空公司 1-8 月整体客座率水平为 86.19%。",
+   "answer": "1-8 月我国民航客座率为 86.30%，同比提升 1.6pct，较 1-7 月上升 0.5pct。六家上市航空公司 1-8 月整体客座率水平为 86.19%。",
+   "source_ref": "《rp_AP202609301830022766》 8 月航空业月度数据跟踪报告 强于大市(维持) p1-3",
+   "evidence_summary": "1-8 月我国民航客座率为 86.30%，同比提升 1.6pct，较 1-7 月上升 0.5pct。六家上市航空公司 1-8 月整体客座率水平为 86.19%。",
+   "unit_id": "rp_AP202609301830022766#p1-3",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 55.3,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 55.3,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-015",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-015",
+   "theme": "机械/制造",
+   "angle": "impact",
+   "angle_cn": "影响传导",
+   "question": "「工业机器人产品分类」的影响与传导是什么？",
+   "answer_summary": "根据 GB/T 39405-2020 标准，工业机器人分为普通工业机器人、未列名工业机器人（含其他多功能、协作机器人等）及其他专用机器人。 依据：参考《GB∕T 39405-2020 机器人分类》及对应的海关 HS2023 代码，本报告工业机器人具体界定包括普通工业机器人、未列名工业机器人及其他专用…",
+   "answer": "根据 GB/T 39405-2020 标准，工业机器人分为普通工业机器人、未列名工业机器人（含其他多功能、协作机器人等）及其他专用机器人。 依据：参考《GB∕T 39405-2020 机器人分类》及对应的海关 HS2023 代码，本报告工业机器人具体界定包括普通工业机器人、未列名工业机器人及其他专用机器人如焊接、喷涂等。",
+   "source_ref": "《rp_AP202610061830165858》 一、贸易总体情况 p2-9",
+   "evidence_summary": "参考《GB∕T 39405-2020 机器人分类》及对应的海关 HS2023 代码，本报告工业机器人具体界定包括普通工业机器人、未列名工业机器人及其他专用机器人如焊接、喷涂等。",
+   "unit_id": "rp_AP202610061830165858#p2-9",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 56.9,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 56.9,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-016",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-016",
+   "theme": "机械/制造",
+   "angle": "definition",
+   "angle_cn": "概念定义",
+   "question": "什么是「中国工业机器人贸易总额」？",
+   "answer_summary": "2026 年 8 月当月，中国工业机器人进出口总额为 326.8 百万美元，同比增长 21.1%；1-8 月累计进出口总额为 2302.6 百万美元，同比增长 15.3%。",
+   "answer": "2026 年 8 月当月，中国工业机器人进出口总额为 326.8 百万美元，同比增长 21.1%；1-8 月累计进出口总额为 2302.6 百万美元，同比增长 15.3%。",
+   "source_ref": "《rp_AP202610061830165858》 一、贸易总体情况 p2-9",
+   "evidence_summary": "8 月当月进出口总额 326.8（同比变化 21.1），1 至 8 月累计进出口总额 2302.6（同比变化 15.3）。",
+   "unit_id": "rp_AP202610061830165858#p2-9",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 56.7,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 56.7,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-017",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-017",
+   "theme": "机械/制造",
+   "angle": "key_fact",
+   "angle_cn": "关键事实",
+   "question": "「出口区域分布」有哪些关键事实或数据？",
+   "answer_summary": "8 月当月重点区域中，东盟出口 31.4（份额 17.0）；排名前 10 地区中，美国出口 16.8。",
+   "answer": "8 月当月重点区域中，东盟出口 31.4（份额 17.0）；排名前 10 地区中，美国出口 16.8。",
+   "source_ref": "《rp_AP202610061830165858》 一、贸易总体情况 p2-9",
+   "evidence_summary": "8 月当月重点区域中，东盟出口 31.4（份额 17.0）；排名前 10 地区中，美国出口 16.8。",
+   "unit_id": "rp_AP202610061830165858#p2-9",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 56.5,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 56.5,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-018",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-018",
+   "theme": "交运/物流",
+   "angle": "impact",
+   "angle_cn": "影响传导",
+   "question": "「航运市场运价与租金」的影响与传导是什么？",
+   "answer_summary": "上周中国出口集装箱运价指数环比上涨 34.97 点，Fearnleys 一年期油船（VLCC）租金为 16 万美元/天，环比上涨 1.5 万美元/天。 依据：上上周，中国出口集装箱运价综合指数为 1897.15，环比上涨 34.97 点...Fearnleys 一年期租金（油船:VLCC）为 160…",
+   "answer": "上周中国出口集装箱运价指数环比上涨 34.97 点，Fearnleys 一年期油船（VLCC）租金为 16 万美元/天，环比上涨 1.5 万美元/天。 依据：上上周，中国出口集装箱运价综合指数为 1897.15，环比上涨 34.97 点...Fearnleys 一年期租金（油船:VLCC）为 160000 美元/天，环比上涨 15000 美元/天。",
+   "source_ref": "《rp_AP202610021830105332》 看好 p1-9",
+   "evidence_summary": "上上周，中国出口集装箱运价综合指数为 1897.15，环比上涨 34.97 点...Fearnleys 一年期租金（油船:VLCC）为 160000 美元/天，环比上涨 15000 美元/天。",
+   "unit_id": "rp_AP202610021830105332#p1-9",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 59.8,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 59.8,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-019",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-019",
+   "theme": "交运/物流",
+   "angle": "definition",
+   "angle_cn": "概念定义",
+   "question": "什么是「主要快递公司单票收入增速排名（1-8 月）」？",
+   "answer_summary": "2026 年 1-8 月累计单票收入同比增速排序为：申通快递 (10.02%) > 韵达股份 (10.00%) > 顺丰控股 (4.3%) > 圆通速递 (-1.4%)。",
+   "answer": "2026 年 1-8 月累计单票收入同比增速排序为：申通快递 (10.02%) > 韵达股份 (10.00%) > 顺丰控股 (4.3%) > 圆通速递 (-1.4%)。",
+   "source_ref": "《rp_AP202609301830034661》 8 月快递行业月度数据跟踪报告 强于大市(维持) p1-3",
+   "evidence_summary": "1-8 月单票收入同比增速排序：申通快递（10.02%）>韵达股份（10.00%）>顺丰控股（4.3%）>圆通速递（-1.4%）。",
+   "unit_id": "rp_AP202609301830034661#p1-3",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 57.1,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 57.1,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-020",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-020",
+   "theme": "交运/物流",
+   "angle": "key_fact",
+   "angle_cn": "关键事实",
+   "question": "「铁路客流预测」有哪些关键事实或数据？",
+   "answer_summary": "国新办9月24日发布会信息显示，铁路方面，中秋国庆假期运输自9月23日启动至10月8日结束，为期16天，全国铁路预计发送旅客2.84亿人次，日均计划开行旅客列车约1.3万列。",
+   "answer": "国新办9月24日发布会信息显示，铁路方面，中秋国庆假期运输自9月23日启动至10月8日结束，为期16天，全国铁路预计发送旅客2.84亿人次，日均计划开行旅客列车约1.3万列。",
+   "source_ref": "《rp_AP202609301830037744》 社会服务行业双周报 双节出行热度提升，长线及跨境需求延续释放 p1-12",
+   "evidence_summary": "国新办9月24日发布会信息显示，铁路方面，中秋国庆假期运输自9月23日启动至10月8日结束，为期16天，全国铁路预计发送旅客2.84亿人次，日均计划开行旅客列车约1.3万列。",
+   "unit_id": "rp_AP202609301830037744#p1-12",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 49.8,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 49.8,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-021",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-021",
+   "theme": "网络安全/信创",
+   "angle": "impact",
+   "angle_cn": "影响传导",
+   "question": "「监管原则」的影响与传导是什么？",
+   "answer_summary": "在保留必要安全保障（如频谱、安全、网络安全）的同时，应尽量减少不必要的监管摩擦，避免过早锁定僵化的技术要求。 依据：这些建议反映了一个普遍原则：在保留必要的安全保障以进行安全实验的同时，尽量减少不必要的监管摩擦...目标并非补贴轨道数据中心使其出现...而是要确保监管框架避免对测试造成不必要的障碍.…",
+   "answer": "在保留必要安全保障（如频谱、安全、网络安全）的同时，应尽量减少不必要的监管摩擦，避免过早锁定僵化的技术要求。 依据：这些建议反映了一个普遍原则：在保留必要的安全保障以进行安全实验的同时，尽量减少不必要的监管摩擦...目标并非补贴轨道数据中心使其出现...而是要确保监管框架避免对测试造成不必要的障碍...",
+   "source_ref": "《rp_AP202609301830015406》 供应链风险管理。现有的联邦网络安全框架可以为管理和控制空间和地面段的风险提供一个起点 。 p6-12",
+   "evidence_summary": "这些建议反映了一个普遍原则：在保留必要的安全保障以进行安全实验的同时，尽量减少不必要的监管摩擦...目标并非补贴轨道数据中心使其出现...而是要确保监管框架避免对测试造成不必要的障碍...",
+   "unit_id": "rp_AP202609301830015406#p6-12",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 54.2,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 54.2,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-022",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-022",
+   "theme": "网络安全/信创",
+   "angle": "definition",
+   "angle_cn": "概念定义",
+   "question": "什么是「网络安全职位招聘周期」？",
+   "answer_summary": "填补初级网络安全职位空缺通常需要三至六个月，而填补非初级职位空缺则需要更长时间（约40%需三至六个月，24%需六个月以上）。",
+   "answer": "填补初级网络安全职位空缺通常需要三至六个月，而填补非初级职位空缺则需要更长时间（约40%需三至六个月，24%需六个月以上）。",
+   "source_ref": "《rp_AP202609301830015404》 全球劳动力、资源与网络安全运营更新报告 p1-13",
+   "evidence_summary": "对于初级职位，38%的受访者表示，通常需要三至六个月才能招聘到合格人才；12%的受访者表示，招聘过程平均需要六个月以上。非初级职位的招聘周期略长。",
+   "unit_id": "rp_AP202609301830015404#p1-13",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 52.7,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 52.7,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-023",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-023",
+   "theme": "网络安全/信创",
+   "angle": "key_fact",
+   "angle_cn": "关键事实",
+   "question": "「网络安全人员工作压力」有哪些关键事实或数据？",
+   "answer_summary": "网络安全人才队伍的工作压力依然居高不下。68%的调查受访者表示，过去五年来，其工作压力有所增加。将其列为压力来源的受访者比例从2025年的63%上升至2026年的71%。",
+   "answer": "网络安全人才队伍的工作压力依然居高不下。68%的调查受访者表示，过去五年来，其工作压力有所增加。将其列为压力来源的受访者比例从2025年的63%上升至2026年的71%。",
+   "source_ref": "《rp_AP202609301830015404》 全球劳动力、资源与网络安全运营更新报告 p1-13",
+   "evidence_summary": "网络安全人才队伍的工作压力依然居高不下。68%的调查受访者表示，过去五年来，其工作压力有所增加。将其列为压力来源的受访者比例从2025年的63%上升至2026年的71%。",
+   "unit_id": "rp_AP202609301830015404#p1-13",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 51.7,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 51.7,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-024",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-024",
+   "theme": "有色/金属",
+   "angle": "impact",
+   "angle_cn": "影响传导",
+   "question": "「稀土价格分化」的影响与传导是什么？",
+   "answer_summary": "2026年9月下旬，轻稀土（镨钕、氧化镧）价格相对坚挺并上涨，而中重稀土（氧化镝、氧化铽）报价偏弱下跌，市场呈现品种间行情分化特征。 依据：截至9月27日，中国稀土价格指数263.50。镨钕氧化物均价738,000元/吨，近两周上涨0.96%；氧化镧均价5,750元/吨，近两周上涨4.55%。相反，…",
+   "answer": "2026年9月下旬，轻稀土（镨钕、氧化镧）价格相对坚挺并上涨，而中重稀土（氧化镝、氧化铽）报价偏弱下跌，市场呈现品种间行情分化特征。 依据：截至9月27日，中国稀土价格指数263.50。镨钕氧化物均价738,000元/吨，近两周上涨0.96%；氧化镧均价5,750元/吨，近两周上涨4.55%。相反，氧化镝均价1,435元/千克，近两周下跌0.69%；氧化铽均价6,575元/千克，近两周下跌1.50%。",
+   "source_ref": "《rp_AP202610021830112399》 材料Ⅱ行业双周报 2026 年09 月30 日 p1-13",
+   "evidence_summary": "截至9月27日，中国稀土价格指数263.50。镨钕氧化物均价738,000元/吨，近两周上涨0.96%；氧化镧均价5,750元/吨，近两周上涨4.55%。相反，氧化镝均价1,435元/千克，近两周下跌0.69%；氧化铽均价6,575元/千克，近两周下跌1.50%。",
+   "unit_id": "rp_AP202610021830112399#p1-13",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 63.5,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 63.5,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-025",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-025",
+   "theme": "有色/金属",
+   "angle": "definition",
+   "angle_cn": "概念定义",
+   "question": "什么是「贵金属板块领涨」？",
+   "answer_summary": "2026年9月下旬，贵金属板块表现强势，COMEX黄金和白银价格虽短期回调但年初至今仍保持上涨态势。",
+   "answer": "2026年9月下旬，贵金属板块表现强势，COMEX黄金和白银价格虽短期回调但年初至今仍保持上涨态势。",
+   "source_ref": "《rp_AP202610021830112399》 材料Ⅱ行业双周报 2026 年09 月30 日 p1-13",
+   "evidence_summary": "COMEX黄金价格为4,320.50美元/盎司，年初至今上涨0.27%；COMEX银价格为64.71美元/盎司，年初至今下跌8.83%。尽管近两周金、银价格分别下跌1.58%和0.48%，但整体趋势相对工业金属更为稳健。",
+   "unit_id": "rp_AP202610021830112399#p1-13",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 55.8,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 55.8,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-026",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-026",
+   "theme": "有色/金属",
+   "angle": "key_fact",
+   "angle_cn": "关键事实",
+   "question": "「小金属价格波动」有哪些关键事实或数据？",
+   "answer_summary": "中国平均价：锗锭(50Ω·cm)价格为27,250元/千克，近两周上涨2.83%，年初至今大涨101.85%。相比之下，黑钨精矿(≥65%)价格下跌3.86%，锑锭(99.65%,国产)价格持平（近两周涨跌幅0.00%）。",
+   "answer": "中国平均价：锗锭(50Ω·cm)价格为27,250元/千克，近两周上涨2.83%，年初至今大涨101.85%。相比之下，黑钨精矿(≥65%)价格下跌3.86%，锑锭(99.65%,国产)价格持平（近两周涨跌幅0.00%）。",
+   "source_ref": "《rp_AP202610021830112399》 材料Ⅱ行业双周报 2026 年09 月30 日 p1-13",
+   "evidence_summary": "中国平均价：锗锭(50Ω·cm)价格为27,250元/千克，近两周上涨2.83%，年初至今大涨101.85%。相比之下，黑钨精矿(≥65%)价格下跌3.86%，锑锭(99.65%,国产)价格持平（近两周涨跌幅0.00%）。",
+   "unit_id": "rp_AP202610021830112399#p1-13",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 53.0,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 53.0,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-027",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-027",
+   "theme": "农业",
+   "angle": "impact",
+   "angle_cn": "影响传导",
+   "question": "「中国畜禽肉产品主要出口市场」的影响与传导是什么？",
+   "answer_summary": "东盟是中国畜禽肉产品最重要的出口目的地，2026 年 8 月当月其进口额占中国总出口额的比重超过 11%，且同比大幅增长。 依据：重点区域...东盟 33.7（百万美元），份额 11.5%；同比变化 120.8%。",
+   "answer": "东盟是中国畜禽肉产品最重要的出口目的地，2026 年 8 月当月其进口额占中国总出口额的比重超过 11%，且同比大幅增长。 依据：重点区域...东盟 33.7（百万美元），份额 11.5%；同比变化 120.8%。",
+   "source_ref": "《rp_AP202610061830165954》 一、贸易总体情况 p2-14",
+   "evidence_summary": "重点区域...东盟 33.7（百万美元），份额 11.5%；同比变化 120.8%。",
+   "unit_id": "rp_AP202610061830165954#p2-14",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 47.2,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 47.2,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-028",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-028",
+   "theme": "农业",
+   "angle": "definition",
+   "angle_cn": "概念定义",
+   "question": "什么是「中国畜禽肉产品主要进口来源国」？",
+   "answer_summary": "巴西是中国禽肉产品的最大供应国，2026 年 8 月当月其向中国出口额占中国总进口额的比重接近 55%。",
+   "answer": "巴西是中国禽肉产品的最大供应国，2026 年 8 月当月其向中国出口额占中国总进口额的比重接近 55%。",
+   "source_ref": "《rp_AP202610061830165954》 一、贸易总体情况 p2-14",
+   "evidence_summary": "区域...巴西 1073.3（百万美元），份额 54.5%；注：排名前 10 地区按照进口额大小由上向下排列。",
+   "unit_id": "rp_AP202610061830165954#p2-14",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 47.2,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 47.2,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-029",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-029",
+   "theme": "半导体/电子",
+   "angle": "key_fact",
+   "angle_cn": "关键事实",
+   "question": "「高端 ABF 载板产能瓶颈」有哪些关键事实或数据？",
+   "answer_summary": "真正决定基板需求的是单颗芯片对应的基板面积、叠层层数以及制造良率。CPU 侧下一代平台基板尺寸明显扩大；Rubin 叠层层数较 Blackwell 进一步增加；采用 EMIB 类先进封装的产品基板尺寸达 120×120 毫米量级且叠层达 24 层。多层核心结构制造良率呈台阶式下降，任一核心层缺陷可能…",
+   "answer": "真正决定基板需求的是单颗芯片对应的基板面积、叠层层数以及制造良率。CPU 侧下一代平台基板尺寸明显扩大；Rubin 叠层层数较 Blackwell 进一步增加；采用 EMIB 类先进封装的产品基板尺寸达 120×120 毫米量级且叠层达 24 层。多层核心结构制造良率呈台阶式下降，任一核心层缺陷可能导致全部报废。",
+   "source_ref": "《rp_AP202610071830188839》 电子行业跟踪周报 海外算力周跟踪：AI 硬件产业链持续高景 气，看好Q4 业绩高增 p1-3",
+   "evidence_summary": "真正决定基板需求的是单颗芯片对应的基板面积、叠层层数以及制造良率。CPU 侧下一代平台基板尺寸明显扩大；Rubin 叠层层数较 Blackwell 进一步增加；采用 EMIB 类先进封装的产品基板尺寸达 120×120 毫米量级且叠层达 24 层。多层核心结构制造良率呈台阶式下降，任一核心层缺陷可能…",
+   "unit_id": "rp_AP202610071830188839#p1-3",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 65.9,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 65.9,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-030",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-030",
+   "theme": "半导体/电子",
+   "angle": "impact",
+   "angle_cn": "影响传导",
+   "question": "「高景气细分赛道」的影响与传导是什么？",
+   "answer_summary": "建议关注装配式建筑、城市更新、洁净室、钢结构等高景气方向，其中半导体洁净室与城市更新是重点布局方向。 依据：政策引导下行业正从规模扩张转向存量提质增效与效率驱动，装配式建筑、城市更新、洁净室、钢结构等高景气方向加速兑现...建议聚焦洁净室工程、城市更新业务布局充分的优质标的。",
+   "answer": "建议关注装配式建筑、城市更新、洁净室、钢结构等高景气方向，其中半导体洁净室与城市更新是重点布局方向。 依据：政策引导下行业正从规模扩张转向存量提质增效与效率驱动，装配式建筑、城市更新、洁净室、钢结构等高景气方向加速兑现...建议聚焦洁净室工程、城市更新业务布局充分的优质标的。",
+   "source_ref": "《rp_AP202609301830023858》 行业评级：看好 p1-13",
+   "evidence_summary": "政策引导下行业正从规模扩张转向存量提质增效与效率驱动，装配式建筑、城市更新、洁净室、钢结构等高景气方向加速兑现...建议聚焦洁净室工程、城市更新业务布局充分的优质标的。",
+   "unit_id": "rp_AP202609301830023858#p1-13",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 51.5,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 51.5,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-031",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-031",
+   "theme": "建筑/建材",
+   "angle": "definition",
+   "angle_cn": "概念定义",
+   "question": "什么是「建筑领域电气化与低碳转型」？",
+   "answer_summary": "2025年中国建筑领域电气化率约58.0%，低碳电气化率达30.3%，清洁供暖、全电厨炊等改造取得进展。",
+   "answer": "2025年中国建筑领域电气化率约58.0%，低碳电气化率达30.3%，清洁供暖、全电厨炊等改造取得进展。",
+   "source_ref": "《rp_AP202609301830015411》 前言 p2-14",
+   "evidence_summary": "2025年，中国建筑领域电气化率约58.0%...全年建筑领域用电量同比增长7.7%...清洁供暖、全电厨炊、冷热双蓄、地源热泵、建筑光伏一体化等热点领域电气化设备更新改造取得积极进展。",
+   "unit_id": "rp_AP202609301830015411#p2-14",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 53.5,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 53.5,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-032",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-032",
+   "theme": "通信/互联网",
+   "angle": "key_fact",
+   "angle_cn": "关键事实",
+   "question": "「国防军工行业投资建议」有哪些关键事实或数据？",
+   "answer_summary": "全球军费投入持续扩张...十五五规划为我国国防和军队现代化的高质量推进做出了总部署...建议重点关注航空航天、卫星互联网产业链公司，包括主机、航空发动机和军工电子信息化领域的龙头企业。",
+   "answer": "全球军费投入持续扩张...十五五规划为我国国防和军队现代化的高质量推进做出了总部署...建议重点关注航空航天、卫星互联网产业链公司，包括主机、航空发动机和军工电子信息化领域的龙头企业。",
+   "source_ref": "《rp_AP202610021830105332》 看好 p1-9",
+   "evidence_summary": "全球军费投入持续扩张...十五五规划为我国国防和军队现代化的高质量推进做出了总部署...建议重点关注航空航天、卫星互联网产业链公司，包括主机、航空发动机和军工电子信息化领域的龙头企业。",
+   "unit_id": "rp_AP202610021830105332#p1-9",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 56.6,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 56.6,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-033",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-033",
+   "theme": "量学/交易",
+   "angle": "impact",
+   "angle_cn": "影响传导",
+   "question": "「精准线伏击」的影响与传导是什么？",
+   "answer_summary": "通过识别主力绘制的8条精准线（虚实双重精准线）及三次精准回踩形成的平衡点，可判断主力控盘稳健且即将发动攻击，适合进行伏击操作。 依据：图中0点右侧的每一个回落的低点，都自然切合了左边的关键点位，形成了底部逐级抬高的8条精准线。主力的操盘完全由这8条“虚实线”来调控。凡是“假象”都是“异动”，“假动作…",
+   "answer": "通过识别主力绘制的8条精准线（虚实双重精准线）及三次精准回踩形成的平衡点，可判断主力控盘稳健且即将发动攻击，适合进行伏击操作。 依据：图中0点右侧的每一个回落的低点，都自然切合了左边的关键点位，形成了底部逐级抬高的8条精准线。主力的操盘完全由这8条“虚实线”来调控。凡是“假象”都是“异动”，“假动作”后面必有“真意图”。",
+   "source_ref": "《涨停密码(2)》 第三章 p15-27",
+   "evidence_summary": "图中0点右侧的每一个回落的低点，都自然切合了左边的关键点位，形成了底部逐级抬高的8条精准线。主力的操盘完全由这8条“虚实线”来调控。凡是“假象”都是“异动”，“假动作”后面必有“真意图”。",
+   "unit_id": "涨停密码(2)#p15-27",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 56.4,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 56.4,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-034",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-034",
+   "theme": "量学/交易",
+   "angle": "definition",
+   "angle_cn": "概念定义",
+   "question": "什么是「量柱完全分类」？",
+   "answer_summary": "王子老师对量柱进行了“完全分类”，将形状万千的量柱归纳为“高低平倍梯缩金”七种形态，为量柱结构研究指明了方向。",
+   "answer": "王子老师对量柱进行了“完全分类”，将形状万千的量柱归纳为“高低平倍梯缩金”七种形态，为量柱结构研究指明了方向。",
+   "source_ref": "《伏击涨停(2)》 序言1 p5-6",
+   "evidence_summary": "只有王子老师对量柱进行了“完全 分类”，将形状万千的量柱归纳为“高低平倍梯缩金”七种形态，这可称之为重大 发现！熟悉数学原理的股友们应该知道“完全分类”的意义，事实上对量柱的分 类为量柱结构的研究指明了方向。",
+   "unit_id": "伏击涨停(2)#p5-6",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 56.1,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 56.1,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-035",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-035",
+   "theme": "量学/交易",
+   "angle": "key_fact",
+   "angle_cn": "关键事实",
+   "question": "「量学理论」有哪些关键事实或数据？",
+   "answer_summary": "2009 年“量学”问世，它摆脱了“以价论价”的“价学”桔，在“以量论价”动态平衡规律，构建了“量柱选股、量线选价、量波选时”的“三维互动”看盘操 盘系统，形成了一个独立的科学体系。",
+   "answer": "2009 年“量学”问世，它摆脱了“以价论价”的“价学”桔，在“以量论价”动态平衡规律，构建了“量柱选股、量线选价、量波选时”的“三维互动”看盘操 盘系统，形成了一个独立的科学体系。",
+   "source_ref": "《伏击涨停(2)》 序言1 p5-6",
+   "evidence_summary": "2009 年“量学”问世，它摆脱了“以价论价”的“价学”桔，在“以量论价”动态平衡规律，构建了“量柱选股、量线选价、量波选时”的“三维互动”看盘操 盘系统，形成了一个独立的科学体系。",
+   "unit_id": "伏击涨停(2)#p5-6",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 54.7,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 54.7,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-036",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-036",
+   "theme": "新能源/电力",
+   "angle": "impact",
+   "angle_cn": "影响传导",
+   "question": "「光伏成本核算新规」的影响与传导是什么？",
+   "answer_summary": "针对重要工业品（如光伏）的低价无序竞争，国家发改委明确成本核算原则上以经营者个别成本为基础，无法核算时参考行业平均成本并考虑下浮幅度，对产能利用率低的经营者予以适当考量。 依据：《关于重要工业品低价无序竞争成本核算有关事项的通知》明确：成本核算原则上以经营者生产特定产品的个别成本为基础，无法核算个别…",
+   "answer": "针对重要工业品（如光伏）的低价无序竞争，国家发改委明确成本核算原则上以经营者个别成本为基础，无法核算时参考行业平均成本并考虑下浮幅度，对产能利用率低的经营者予以适当考量。 依据：《关于重要工业品低价无序竞争成本核算有关事项的通知》明确：成本核算原则上以经营者生产特定产品的个别成本为基础，无法核算个别成本时参考行业平均成本并考虑一定下浮幅度；对实际产能利用率大幅低于行业平均的经营者，适当考虑产能利用率影响。",
+   "source_ref": "《rp_AP202610021830111912》 太 平 洋 证 券 股 份 有 限 公 司 证 券 研 究 报 告 p1-4",
+   "evidence_summary": "《关于重要工业品低价无序竞争成本核算有关事项的通知》明确：成本核算原则上以经营者生产特定产品的个别成本为基础，无法核算个别成本时参考行业平均成本并考虑一定下浮幅度；对实际产能利用率大幅低于行业平均的经营者，适当考虑产能利用率影响。",
+   "unit_id": "rp_AP202610021830111912#p1-4",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 65.4,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 65.4,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-037",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-037",
+   "theme": "新能源/电力",
+   "angle": "definition",
+   "angle_cn": "概念定义",
+   "question": "什么是「亿纬锂能与 Fluence 战略合作」？",
+   "answer_summary": "亿纬锂能与全球储能系统集成商 Fluence 签署协议，约定在 2027 年至 2031 年围绕 206GWh 电池开展合作，其中 2027 年承诺交付 16GWh。",
+   "answer": "亿纬锂能与全球储能系统集成商 Fluence 签署协议，约定在 2027 年至 2031 年围绕 206GWh 电池开展合作，其中 2027 年承诺交付 16GWh。",
+   "source_ref": "《rp_AP202610021830111958》 太 平 洋 证 券 股 份 有 限 公 司 证 券 研 究 报 告 p1-4",
+   "evidence_summary": "亿纬锂能子公司湖北亿纬动力与 Fluence 签署供货框架协议，约定 2027 年至 2031 年双方围绕 206GWh 电池开展合作，其中 2027 年承诺交付 16GWh，2028 年至 2031 年预留容量合计 190GWh。",
+   "unit_id": "rp_AP202610021830111958#p1-4",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 65.1,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 65.1,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-038",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-038",
+   "theme": "新能源/电力",
+   "angle": "key_fact",
+   "angle_cn": "关键事实",
+   "question": "「光伏行业供给出清」有哪些关键事实或数据？",
+   "answer_summary": "按新版能耗标准（6.3kgce/kg）测算，行业留存产能约170-180 万吨，考虑技改潜力也难以超过200 万吨，约50%产能面临淘汰或技改压力。自2027 年起强制实施的能耗强标将起到加速落后产能出清、行业集中度提升的作用。",
+   "answer": "按新版能耗标准（6.3kgce/kg）测算，行业留存产能约170-180 万吨，考虑技改潜力也难以超过200 万吨，约50%产能面临淘汰或技改压力。自2027 年起强制实施的能耗强标将起到加速落后产能出清、行业集中度提升的作用。",
+   "source_ref": "《rp_AP202610021830111912》 太 平 洋 证 券 股 份 有 限 公 司 证 券 研 究 报 告 p1-4",
+   "evidence_summary": "按新版能耗标准（6.3kgce/kg）测算，行业留存产能约170-180 万吨，考虑技改潜力也难以超过200 万吨，约50%产能面临淘汰或技改压力。自2027 年起强制实施的能耗强标将起到加速落后产能出清、行业集中度提升的作用。",
+   "unit_id": "rp_AP202610021830111912#p1-4",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 63.0,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 63.0,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-039",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-039",
+   "theme": "其他",
+   "angle": "impact",
+   "angle_cn": "影响传导",
+   "question": "「多层级安全评估体系（ARIA）」的影响与传导是什么？",
+   "answer_summary": "NIST 的 ARIA 计划将测试分为 Model Testing（确认能力）、Red Teaming（诱发违规）和 Field Testing（观察真实环境影响），单一分数难以替代完整证据链。 依据：安全评估需要回答三个不同问题...NIST 的ARIA 计划把测试分为Model Testing、…",
+   "answer": "NIST 的 ARIA 计划将测试分为 Model Testing（确认能力）、Red Teaming（诱发违规）和 Field Testing（观察真实环境影响），单一分数难以替代完整证据链。 依据：安全评估需要回答三个不同问题...NIST 的ARIA 计划把测试分为Model Testing、Red Teaming 和Field Testing。Model Testing 用于确认模型或系统声明的能力和防护；Red Teaming 尝试诱发违规结果并识别风险发生条件；Field Testing 观察用户在常规使用环境中接触何种信息...",
+   "source_ref": "《rp_AP202610061830170460》 图表目录 p2-14",
+   "evidence_summary": "安全评估需要回答三个不同问题...NIST 的ARIA 计划把测试分为Model Testing、Red Teaming 和Field Testing。Model Testing 用于确认模型或系统声明的能力和防护；Red Teaming 尝试诱发违规结果并识别风险发生条件；Field Testin…",
+   "unit_id": "rp_AP202610061830170460#p2-14",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 78.1,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 78.1,
+   "traceable": true
+  },
+  {
+   "review_id": "CP3-20261101-040",
+   "round": "second",
+   "round_cn": "第二轮",
+   "source": "CP3",
+   "source_card_id": "CP3-20261101-040",
+   "theme": "其他",
+   "angle": "definition",
+   "angle_cn": "概念定义",
+   "question": "什么是「中小行配债中枢趋势下移」？",
+   "answer_summary": "受三重约束影响，中小行无法有效增加债券配置，配债增速难回此前双位数高增，从‘交易 + 配置双轮驱动’退化为票息锁定与流动性管理的被动配置。",
+   "answer": "受三重约束影响，中小行无法有效增加债券配置，配债增速难回此前双位数高增，从‘交易 + 配置双轮驱动’退化为票息锁定与流动性管理的被动配置。",
+   "source_ref": "《rp_AP202609301830035477》 中小行配债走弱：成因与趋势判断 p1-13",
+   "evidence_summary": "负债端收缩叠加监管约束，中小行配债中枢趋势性下移。三重约束致使中小行无法有效增加债券配置：（1）负债端存款利差收窄，核心存款增长面临压力；（2）监管约束中小行债券投资的利率风险及集中度；（3）收益考核角度 FTP 年初锁价且缺乏调整。这些结构性因素将决定中小行配债增速难回此前双位数高增，从‘交易 +…",
+   "unit_id": "rp_AP202609301830035477#p1-13",
+   "precheck": {
+    "suggested_verdict": null,
+    "confidence": null,
+    "score": 73.2,
+    "reasons": [
+     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
+    ]
+   },
+   "checkboxes": {
+    "pass": false,
+    "modify": false,
+    "reject": false
+   },
+   "notes": "",
+   "quality_score": 73.2,
+   "traceable": true
   }
  ],
- "disclaimer": "审核页数据来自清单/机器预审，仅供人工审核；不构成投资建议。"
+ "disclaimer": "审核页数据来自清单/机器预审与第二轮扩卡候选，仅供人工审核；不构成投资建议。"
 }

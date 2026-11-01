@@ -708,6 +708,20 @@
       "title": "学习卡第二轮扩卡",
       "ref": "tools/kb_corpus/card_proposal_v3.py",
       "enabled": true
+    },
+    {
+      "id": "kb_qa_prompt_v3",
+      "kind": "tool",
+      "title": "问答 prompt v3 A/B 实验",
+      "ref": "tools/kb_corpus/kb_qa_prompt_v3.py",
+      "enabled": true
+    },
+    {
+      "id": "static_writer_audit",
+      "kind": "tool",
+      "title": "静态产物写入脚本审计",
+      "ref": "tools/kb_corpus/static_writer_audit.py",
+      "enabled": true
     }
   ]
 }

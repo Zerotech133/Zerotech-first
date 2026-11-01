@@ -5222,5 +5222,56 @@
     "fix": "tools/kb_corpus/learning_cards.py 抽出 merge_cards：现有卡全量保留+仅追加新 concept",
     "test": "tools/tests/test_learning_cards_preserve.py（4 tests）",
     "incident": "并发会话 14:10 运行 learning_cards.py 将 70 张覆盖为 20 张；已从 HEAD 恢复并加回归测试防再发。"
+  },
+  "card_review_page_v2_20261101": {
+    "page": "portal/card_review.html",
+    "data": "portal/static/card_review_data.json（100 条：第一轮 60 + 第二轮 40）",
+    "note": "审核页 v2：轮次/来源筛选、统计 100 张、一键预填仅对有建议的 60 张（36 通过/24 需修改），第二轮 40 保持未决；导出兼容；HTTP 200；6 tests。"
+  },
+  "kb_qa_prompt_v3_20261101": {
+    "tool": "tools/kb_corpus/kb_qa_prompt_v3.py",
+    "report": "research/reports/kb_qa_prompt_v3_20261101.md",
+    "comparison": {
+      "merge_recommendation": "keep",
+      "verdict": "v3 仍未能产出可答样本（推断标记问题未解决），不可用，继续调优",
+      "reasons": [
+        "可答率：v1 50%（6/12）→ v3 0%（0/12），Δ-50%。",
+        "guard 通过率：v1 50% → v3 0%，Δ-50%；fallback 率：50% → 100%。",
+        "平均推断比例：0.4639 → 1.0（Δ+0.54）；平均引用：2.33 → 2.33；平均耗时：14.62s → 8.55s。"
+      ],
+      "risks": [
+        "样本 12 条（LLM 慢时更少），为 effective 子集，结论需扩样 30–50 条复核。",
+        "v1 结果复用 wave25（不同时间点），耗时/波动存在时间差。",
+        "few-shot 示例为结构示范（未用真实 unit_id），9b 模型可能模仿结构但引用质量仍需人工抽查。",
+        "若合入：在 kb_qa_multi 增加 prompt 版本开关 v1/v3，灰度并保留回退。"
+      ],
+      "delta": {
+        "success_rate": -0.5,
+        "guard_pass_rate": -0.5,
+        "avg_inference_ratio": 0.5361,
+        "avg_elapsed_seconds": -6.07
+      }
+    },
+    "note": "prompt v3（先事实后推断+few-shot）仍失败：可答率 0%、guard 通过 0%；根因=9b 未逐条标【事实】+ guard 标记正则把段标题计入推断 → 双重问题；v1 保持。下一轮需同时修 guard 解析口径。"
+  },
+  "static_writer_audit_20261101": {
+    "tool": "tools/kb_corpus/static_writer_audit.py",
+    "report": "research/reports/static_writer_audit_20261101.md",
+    "summary": {
+      "n_records": 49,
+      "n_writers": 15,
+      "n_read_only": 34,
+      "high": 3,
+      "medium": 9,
+      "low": 3,
+      "targets_total": 13,
+      "high_targets": [
+        "h18_watch.json",
+        "kb_learning_cards.json",
+        "report_panel.json",
+        "selection_daily.json"
+      ]
+    },
+    "note": "写 static JSON 脚本审计：15 写盘脚本（高 3：learning_cards/morning_brief_push/panel_export；中 9；低 3）；建议三件套（备份/原子写/读-合并-写）；learning_cards 已修，其余 2 高风险待修。"
   }
 }

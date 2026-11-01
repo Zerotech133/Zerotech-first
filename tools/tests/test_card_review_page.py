@@ -36,31 +36,42 @@ def load_data() -> dict:
 # ---------------------------------------------------------------------------
 def test_data_json_schema():
     data = load_data()
-    assert data["schema_version"] == 1
+    assert data["schema_version"] == 2
     assert data["date"] == "20261101"
     items = data["items"]
-    assert len(items) == 60
+    assert len(items) == 100, "第一轮 60 + 第二轮 40"
     ids = [it["review_id"] for it in items]
-    assert len(set(ids)) == 60 and ids[0].startswith("REV-20261101-")
+    assert len(set(ids)) == 100
+    assert ids[0].startswith("REV-20261101-")
+    assert any(rid.startswith("CP3-20261101-") for rid in ids)
     for it in items:
         for key in ("review_id", "source", "theme", "question", "answer_summary", "answer",
                     "source_ref", "evidence_summary", "unit_id", "precheck", "checkboxes", "notes"):
             assert key in it, f"{it.get('review_id')} 缺 {key}"
-        assert it["source"] in ("AE", "AV")
+        assert it["source"] in ("AE", "AV", "CP3")
         assert it["question"] and it["answer_summary"] and it["evidence_summary"] and it["source_ref"]
         assert it["checkboxes"] == {"pass": False, "modify": False, "reject": False}
-        assert (it["precheck"] or {}).get("suggested_verdict") in ("pass", "revise", "reject")
+        assert it.get("round") in ("first", "second")
+        assert "precheck" in it
+        if it["round"] == "first":
+            assert (it["precheck"] or {}).get("suggested_verdict") in ("pass", "revise", "reject")
+            assert it["review_id"].startswith("REV-")
+        else:
+            assert it["review_id"].startswith("CP3-")
+            assert (it["precheck"] or {}).get("suggested_verdict") is None, "第二轮无预审建议"
     stats = data["stats"]
-    assert stats["total"] == 60
-    assert stats["by_source"] == {"AE": 20, "AV": 40}
-    assert stats["precheck"] == {"pass": 36, "revise": 24, "reject": 0}
+    assert stats["total"] == 100
+    assert stats["by_round"] == {"first": 60, "second": 40}
+    assert stats["by_source"] == {"AE": 20, "AV": 40, "CP3": 40}
+    assert stats["precheck"] == {"pass": 36, "revise": 24, "reject": 0, "none": 40}
     opts = data["options"]
     assert [v["label"] for v in opts["verdicts"]] == ["通过", "需修改", "驳回", "未决"]
     assert opts["localStorage_key"] == "card_review_decisions_20261101"
     assert opts["export_filename"] == "card_review_decisions_20261101.json"
     # 源数据 sha 记录（可追溯）
-    assert len(data["source"]["checklist_sha256"]) == 64
-    assert len(data["source"]["precheck_sha256"]) == 64
+    assert len(data["source"]["round1_sha256"]) == 64
+    assert len(data["source"]["round2_sha256"]) == 64
+    assert len(opts.get("rounds") or []) == 3
 
 
 # ---------------------------------------------------------------------------
@@ -70,7 +81,7 @@ def test_page_mounts_data_source_and_controls():
     html = PAGE.read_text(encoding="utf-8")
     assert "/static/card_review_data.json" in html, "缺少数据源 fetch 路径"
     assert "fetch(" in html and "r.json()" in html
-    for mount in ('id="list"', 'id="stats"', 'id="f-source"', 'id="f-theme"',
+    for mount in ('id="list"', 'id="stats"', 'id="f-round"', 'id="f-source"', 'id="f-theme"',
                   'id="f-precheck"', 'id="f-status"', 'id="f-q"',
                   'id="btn-export"', 'id="btn-reset"', 'id="progress"'):
         assert mount in html, f"缺少挂载点 {mount}"
@@ -85,8 +96,9 @@ def test_page_mounts_data_source_and_controls():
     assert "card_review_decisions_20261101.json" in html or "export_filename" in html
     assert "JSON.stringify" in html and "Blob" in html
     # 四态单选
-    for label in ("通过", "需修改", "驳回", "未决"):
+    for label in ("通过", "需修改", "驳回", "未决", "第二轮（40）"):
         assert label in html
+    assert "100 候选" in html and "第二轮" in html
     # 筛选与统计/进度
     assert "renderStats" in html and "filtered" in html and "progress" in html
     # 降级文案
@@ -145,7 +157,8 @@ def test_http_served():
         r2 = urllib.request.urlopen(f"{BASE_URL}/static/card_review_data.json", timeout=5)
         assert r2.status == 200
         payload = json.loads(r2.read().decode("utf-8"))
-        assert len(payload["items"]) == 60
+        assert len(payload["items"]) == 100
+        assert payload["stats"]["by_round"] == {"first": 60, "second": 40}
     except (urllib.error.URLError, ConnectionError, TimeoutError) as exc:  # noqa: F821
         pytest.skip(f"8734 门户服务不在线: {exc}")
 
@@ -168,6 +181,8 @@ def test_adopt_precheck_controls_and_logic():
     assert "已决不覆盖" in html or "已决卡不覆盖" in html
     assert "localStorage.setItem" in html
     assert "已选" in html and "与预审建议一致" in html
+    assert "第二轮" in html and "无预审建议" in html and "保持未决" in html
+    assert "f-round" in html
     # 导出 schema 保持不变（仍用 buildDecisionsPayload + {review_id:{verdict,notes}}）
     assert "buildDecisionsPayload" in html and "JSON.stringify" in html
     assert "'pass':'pass'" in html or "pass'?'pass'" in html

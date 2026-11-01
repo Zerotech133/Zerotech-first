@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>🧾 学习卡审核 · 零界</title>
+<title>🧾 学习卡审核（100 候选）· 零界</title>
 <link rel="stylesheet" href="/static/tokens.css">
 <script src="/static/nav.js" defer></script>
 <style>
@@ -61,12 +61,13 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-siz
 </style>
 </head>
 <body>
-<h1>🧾 学习卡审核 <small>60 候选 · 点选 → 导出 decisions → card_review.py decide</small></h1>
+<h1>🧾 学习卡审核 <small>100 候选（第一轮 60 + 第二轮 40）· 点选 → 导出 decisions → card_review.py decide</small></h1>
 <div class="sub" id="sub">加载中…</div>
 
 <div class="panel">
   <div class="row">
-    <label>来源 <select id="f-source"><option value="all">全部</option><option value="AE">AE</option><option value="AV">AV</option></select></label>
+    <label>轮次 <select id="f-round"><option value="all">全部</option><option value="first">第一轮（60）</option><option value="second">第二轮（40）</option></select></label>
+    <label>来源 <select id="f-source"><option value="all">全部</option><option value="AE">AE</option><option value="AV">AV</option><option value="CP3">CP3（第二轮）</option></select></label>
     <label>主题 <select id="f-theme"><option value="all">全部</option></select></label>
     <label>预审建议 <select id="f-precheck"><option value="all">全部</option><option value="pass">pass</option><option value="revise">revise</option><option value="reject">reject</option></select></label>
     <label>状态 <select id="f-status"><option value="all">全部</option><option value="pending">未决</option><option value="done">已处理</option></select></label>
@@ -87,7 +88,7 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-siz
 <div class="foot">
   数据源：<code>/static/card_review_data.json</code> · 审核决定本地暂存在浏览器 localStorage，导出后续用
   <code>python tools/kb_corpus/card_review.py decide --decisions &lt;导出文件&gt; --apply</code>（先 dry-run 预览）。
-  页面不改清单/学习卡数据。
+  页面不改清单/学习卡数据。第一轮 = 60 清单候选（含预审建议）；第二轮 = 40 扩卡候选（无预审建议，默认未决）。
 </div>
 
 <script>
@@ -122,7 +123,9 @@ function renderStats(){
     ['总数',total,''],['通过',cnt.pass,'ok'],['需修改',cnt.revise,'warn'],['驳回',cnt.reject,'bad'],['未决',cnt.pending,''],['进度',(total?Math.round(done/total*100):0)+'%','']
   ].map(([k,v])=>`<div class="stat"><b>${v}</b><span>${k}</span></div>`).join('');
   $('progress').style.width=(total?done/total*100:0)+'%';
-  $('progress-text').textContent=`已处理 ${done}/${total}（${total?Math.round(done/total*100):0}%）· 本地草稿自动保存`;
+  const first=items.filter(it=>(it.round||'first')==='first').length;
+  const second=items.filter(it=>(it.round||'first')==='second').length;
+  $('progress-text').textContent=`已处理 ${done}/${total}（${total?Math.round(done/total*100):0}%）· 第一轮 ${first} / 第二轮 ${second} · 本地草稿自动保存`;
   updateAdoptStats();
 }
 
@@ -133,9 +136,10 @@ function fillThemeFilter(){
 }
 
 function filtered(){
-  const src=$('f-source').value, theme=$('f-theme').value, pre=$('f-precheck').value,
-        st=$('f-status').value, q=$('f-q').value.trim().toLowerCase();
+  const round=$('f-round').value, src=$('f-source').value, theme=$('f-theme').value,
+        pre=$('f-precheck').value, st=$('f-status').value, q=$('f-q').value.trim().toLowerCase();
   return DATA.items.filter(it=>{
+    if(round!=='all'&&(it.round||'first')!==round)return false;
     if(src!=='all'&&it.source!==src)return false;
     if(theme!=='all'&&it.theme!==theme)return false;
     if(pre!=='all'&&((it.precheck||{}).suggested_verdict||'')!==pre)return false;
@@ -159,7 +163,7 @@ function cardHTML(it){
   const srcCls=it.source==='AE'?'ae':'av';
   return `<div class="card ${v!=='pending'?'done':''}" data-rid="${esc(rid)}">
     <div class="head">
-      <div><span class="badge ${srcCls}">${esc(it.source)}</span><span class="badge">${esc(it.theme||'—')}</span><span class="badge">${esc(it.angle_cn||'—')}</span>${precheckBadge(it)}</div>
+      <div><span class="badge">${esc(it.round_cn||'第一轮')}</span><span class="badge ${srcCls}">${esc(it.source)}</span><span class="badge">${esc(it.theme||'—')}</span><span class="badge">${esc(it.angle_cn||'—')}</span>${precheckBadge(it)}</div>
       <div class="meta">${esc(rid)} · ${esc(it.source_card_id||'')}</div>
     </div>
     <div class="q">${esc(it.question)}</div>
@@ -183,7 +187,7 @@ function cardHTML(it){
 
 function renderList(){
   const list=filtered();
-  $('sub').textContent=`数据：${DATA.stats.total} 候选（AE ${DATA.stats.by_source.AE} / AV ${DATA.stats.by_source.AV}）· 当前筛选 ${list.length} 条 · 生成于 ${DATA.generated_at}`;
+  $('sub').textContent=`数据：${DATA.stats.total} 候选（第一轮 ${(DATA.stats.by_round||{}).first||0} + 第二轮 ${(DATA.stats.by_round||{}).second||0}）· 当前筛选 ${list.length} 条 · 生成于 ${DATA.generated_at}`;
   const box=$('list');
   if(!list.length){ box.innerHTML='<div class="empty">没有符合条件的候选</div>'; return; }
   box.innerHTML=list.map(cardHTML).join('');
@@ -214,7 +218,7 @@ function bindEvents(){
       scheduleSave();
     }
   });
-  ['f-source','f-theme','f-precheck','f-status'].forEach(id=>$(id).addEventListener('change',renderList));
+  ['f-round','f-source','f-theme','f-precheck','f-status'].forEach(id=>$(id).addEventListener('change',renderList));
   $('f-q').addEventListener('input',()=>{ if(saveTimer)clearTimeout(saveTimer); saveTimer=setTimeout(renderList,200); });
   $('btn-adopt').addEventListener('click',adoptPrecheck);
   $('btn-reset').addEventListener('click',()=>{
@@ -238,14 +242,16 @@ function consistency(){
 }
 function updateAdoptStats(extra){
   const c=consistency();
-  const base=`已选 ${c.done}/${c.total} · 与预审建议一致 ${c.matched}/${c.suggested}（有建议卡）`;
+  const noSugg=(DATA?DATA.items:[]).filter(it=>!mappedVerdict(suggestedOf(it))).length;
+  const base=`已选 ${c.done}/${c.total} · 与预审建议一致 ${c.matched}/${c.suggested}（有建议卡；无建议 ${noSugg} 张保持未决）`;
   $('adopt-stats').textContent = (extra?extra+' · ':'')+base;
 }
 function adoptPrecheck(){
   if(!DATA) return;
   const pending=DATA.items.filter(it=>verdictOf(it.review_id)==='pending'&&mappedVerdict(suggestedOf(it)));
   if(!pending.length){ updateAdoptStats('无需预填：所有有建议的卡均已处理'); return; }
-  if(!confirm(`将按机器预审建议预填 ${pending.length} 张未决卡（pass→通过 / revise→需修改），已决卡不覆盖。继续？`)) return;
+  if(!confirm(`将按机器预审建议预填 ${pending.length} 张未决卡（pass→通过 / revise→需修改），已决卡不覆盖。另 ${noSugg} 张第二轮扩卡候选无预审建议，保持未决。继续？`)) return;
+  const noSugg=DATA.items.filter(it=>!mappedVerdict(suggestedOf(it))&&verdictOf(it.review_id)==='pending').length;
   let nPass=0,nRevise=0,nReject=0;
   pending.forEach(it=>{
     const m=mappedVerdict(suggestedOf(it));
@@ -256,7 +262,7 @@ function adoptPrecheck(){
   });
   if(saveTimer)clearTimeout(saveTimer);
   saveLocal(); renderStats(); renderList();
-  updateAdoptStats(`一键预填 ${pending.length} 张（通过 ${nPass} / 需修改 ${nRevise} / 驳回 ${nReject}；仅未决，已决不覆盖）`);
+  updateAdoptStats(`一键预填 ${pending.length} 张（通过 ${nPass} / 需修改 ${nRevise} / 驳回 ${nReject}；仅未决，已决不覆盖）；第二轮 ${noSugg} 张无预审建议保持未决`);
 }
 
 function buildDecisionsPayload(){
