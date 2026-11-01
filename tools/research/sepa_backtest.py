@@ -378,7 +378,7 @@ def main(argv=None) -> int:
     mkt_vol = float(mkt.pct_change().std() * np.sqrt(252))
     tag = datetime.now().strftime("%Y%m%d")
     rep = {"meta": {"generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
-                    "window": f"{dates[start_i]} .. {dates[-1]}", "scan": "weekly setup + daily breakout",
+                    "window": f"{dates[start_i]} .. {dates[-1]}",
                     "setups": len(watch), "signals": len(signals), "risk_budget": RISK_BUDGET,
                     "max_pos": MAX_POS, "fund": args.fund, "scan": args.scan, "pyramid": bool(args.pyramid),
                     "note": "SEPA 完整体系回测（研究）；T+1 开盘入场；成本+滑点"},

@@ -63,14 +63,26 @@ def build_panels(dts: list[str]):
             amt = chunk.pivot_table(index="trade_date", columns="ts_code", values="amount")
             if "A" not in dir():
                 pass
-            adj_acc = adj if "adj_acc" not in locals() else pd.concat([adj_acc, adj], axis=0)
-            amt_acc = amt if "amt_acc" not in locals() else pd.concat([amt_acc, amt], axis=0)
+            if "adj_acc" not in locals():
+                adj_acc = adj
+            else:
+                adj_acc = pd.concat([adj_acc, adj], axis=0)
+            if "amt_acc" not in locals():
+                amt_acc = amt
+            else:
+                amt_acc = pd.concat([amt_acc, amt], axis=0)
     if parts:
         chunk = pd.concat(parts, ignore_index=True)
         adj = chunk.pivot_table(index="trade_date", columns="ts_code", values="adj")
         amt = chunk.pivot_table(index="trade_date", columns="ts_code", values="amount")
-        adj_acc = adj if "adj_acc" not in locals() else pd.concat([adj_acc, adj], axis=0)
-        amt_acc = amt if "amt_acc" not in locals() else pd.concat([amt_acc, amt], axis=0)
+        if "adj_acc" not in locals():
+            adj_acc = adj
+        else:
+            adj_acc = pd.concat([adj_acc, adj], axis=0)
+        if "amt_acc" not in locals():
+            amt_acc = amt
+        else:
+            amt_acc = pd.concat([amt_acc, amt], axis=0)
     adj_acc.index = [str(x) for x in adj_acc.index]
     amt_acc.index = [str(x) for x in amt_acc.index]
     return adj_acc.sort_index(), amt_acc.sort_index()

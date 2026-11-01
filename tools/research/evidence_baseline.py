@@ -149,7 +149,6 @@ def main() -> int:
                 "positive_years": f"{int(pos_years*len(yr))}/{len(yr)}", "yearly": yr,
                 "gates": {"G1": bool(pos_years >= 0.70 and tstat >= 2.0),
                           "G2": bool(nav[-1] > 1 and ex.mean() > 0),
-                          "G3": None,
                           "G3": bool(cap_med >= 0.5),
                           "G4": bool(len(up) > 6 and len(dn) > 6 and up.mean() > 0 and dn.mean() > 0)},
                 "capacity_median_yi": round(cap_med, 2),

@@ -26,7 +26,7 @@ CONFIGS = {
 }
 
 
-def run(cfg: dict, adj, amt, dates, names, industry, listed, mends) -> dict:
+def run(cfg: dict, adj, amt, dates, names, industry, list_dates, mends) -> dict:
     prev = set()
     rows = []
     for j in range(len(mends) - 1):
@@ -37,7 +37,7 @@ def run(cfg: dict, adj, amt, dates, names, industry, listed, mends) -> dict:
         px = hist.iloc[-1]
         ret120 = px / hist.iloc[-121] - 1
         uni = (~names.reindex(px.index).fillna("").str.contains(r"ST|\*ST|退", regex=True)) & \
-              (listed_at(dt).reindex(px.index).fillna(0) >= 250) & (px >= 2) & px.notna()
+              (((pd.Timestamp(dt) - list_dates).dt.days).reindex(px.index).fillna(0) >= 250) & (px >= 2) & px.notna()
         cc = px.index[uni.fillna(False)]
         score = (-ret120).reindex(cc).dropna()
         if cfg["neutral"] == "ind":
@@ -98,7 +98,7 @@ def main() -> int:
     mends = [g.iloc[-1] for _, g in s.groupby(s.str[:6]) if g.iloc[-1] >= "20190101"]
     out = {}
     for name, cfg in CONFIGS.items():
-        out[name] = run(cfg, adj, amt, adj.index.tolist(), names, industry, listed, mends)
+        out[name] = run(cfg, adj, amt, adj.index.tolist(), names, industry, list_dates_, mends)
         print(name, out[name]["cagr_pct"], out[name]["mdd_pct"], out[name]["excess_t"], out[name]["gates"], flush=True)
     tag = datetime.now().strftime("%Y%m%d")
     rep = {"meta": {"generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
