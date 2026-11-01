@@ -1,463 +1,554 @@
 {
-  "_note": "研究院岗位注册表（K-ORG-125）：研究院 Agent 的唯一职能部投影。",
-  "team": "academy",
-  "dept": "academy",
-  "description": "研究院：策略、数据智能、情报、商业化与组织方法论研究",
-  "agents": [
+ "_note": "研究院岗位注册表（K-ORG-125）：研究院 Agent 的唯一职能部投影。",
+ "team": "academy",
+ "dept": "academy",
+ "description": "研究院：策略、数据智能、情报、商业化与组织方法论研究",
+ "agents": [
+  {
+   "agent_id": "ACAD1",
+   "role_profile": "academy_director",
+   "analysis_type": "academy_intake",
+   "node_key": "acad1_core",
+   "parent_node_keys": [],
+   "level": 1,
+   "is_parallel": true,
+   "wait_all_complete": false,
+   "llm_binding": "glm/glm-5.3",
+   "tools": [
+    "events",
+    "datamart_read",
+    "datamart_latest",
+    "datamart_ready",
+    "market_snapshot",
+    "data_health",
+    "stock_info",
+    "recent_events",
+    "signal_precedents",
+    "pool_rows",
+    "paper_positions"
+   ],
+   "memory_grants": {
+    "read": [
+     "domain/*",
+     "dept/*",
+     "agent/ACAD1/*"
+    ],
+    "write": [
+     "agent/ACAD1/*",
+     "agent_platform/data/academy/**",
+     "knowledge_docs/**",
+     "docs/**"
+    ]
+   },
+   "grade": "E3",
+   "grade_note": "研究院院长：审题立项与评审统筹",
+   "charter_detail": "研究院总负责人：审题、立项、组织评审、协调跨部门研究并向田丰汇报。",
+   "binding_note": "auto_assign 10-18：按分工定案自动适配（原 ollama/qwen3.5:9b）",
+   "skills": [
     {
-      "agent_id": "ACAD1",
-      "role_profile": "academy_director",
-      "analysis_type": "academy_intake",
-      "node_key": "acad1_core",
-      "parent_node_keys": [],
-      "level": 1,
-      "is_parallel": true,
-      "wait_all_complete": false,
-      "llm_binding": "glm/glm-5.3",
-      "tools": [
-        "events",
-        "datamart_read",
-        "datamart_latest",
-        "datamart_ready",
-        "market_snapshot",
-        "data_health",
-        "stock_info",
-        "recent_events",
-        "signal_precedents",
-        "pool_rows",
-        "paper_positions"
-      ],
-      "memory_grants": {
-        "read": [
-          "domain/*",
-          "dept/*",
-          "agent/ACAD1/*"
-        ],
-        "write": [
-          "agent/ACAD1/*",
-          "agent_platform/data/academy/**",
-          "knowledge_docs/**",
-          "docs/**"
-        ]
-      },
-      "grade": "E3",
-      "grade_note": "研究院院长：审题立项与评审统筹",
-      "charter_detail": "研究院总负责人：审题、立项、组织评审、协调跨部门研究并向田丰汇报。",
-      "binding_note": "auto_assign 10-18：按分工定案自动适配（原 ollama/qwen3.5:9b）",
-      "skills": [
-        {
-          "id": "events",
-          "kind": "tool",
-          "enabled": true
-        },
-        {
-          "id": "datamart_read",
-          "kind": "tool",
-          "enabled": true
-        },
-        {
-          "id": "datamart_latest",
-          "kind": "tool",
-          "enabled": true
-        },
-        {
-          "id": "datamart_ready",
-          "kind": "tool",
-          "enabled": true
-        },
-        {
-          "id": "market_snapshot",
-          "kind": "tool",
-          "enabled": true
-        },
-        {
-          "id": "data_health",
-          "kind": "tool",
-          "enabled": true
-        },
-        {
-          "id": "stock_info",
-          "kind": "tool",
-          "enabled": true
-        },
-        {
-          "id": "recent_events",
-          "kind": "tool",
-          "enabled": true
-        },
-        {
-          "id": "signal_precedents",
-          "kind": "tool",
-          "enabled": true
-        },
-        {
-          "id": "pool_rows",
-          "kind": "tool",
-          "enabled": true
-        },
-        {
-          "id": "paper_positions",
-          "kind": "tool",
-          "enabled": true
-        }
-      ],
-      "reports_to": "A0",
-      "member_kind": "formal"
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
     },
     {
-      "agent_id": "STRAT1",
-      "role_profile": "strategy_researcher",
-      "analysis_type": "strategy_research",
-      "node_key": "strat1_core",
-      "parent_node_keys": [
-        "acad1_core"
-      ],
-      "level": 1,
-      "is_parallel": true,
-      "wait_all_complete": false,
-      "llm_binding": "ollama/qwen3.5:9b",
-      "tools": [
-        "events",
-        "datamart_read",
-        "datamart_latest",
-        "datamart_ready",
-        "market_snapshot",
-        "data_health",
-        "stock_info",
-        "recent_events",
-        "signal_precedents",
-        "pool_rows"
-      ],
-      "memory_grants": {
-        "read": [
-          "domain/*",
-          "dept/invest/*",
-          "agent/STRAT1/*"
-        ],
-        "write": [
-          "agent/STRAT1/*",
-          "agent_platform/data/academy/**"
-        ]
-      },
-      "grade": "E2",
-      "grade_note": "策略研究：可证伪假设与 LCS-1 图形推演",
-      "charter_detail": "把市场问题转成可验证策略假设，维护策略研究台账并交由 BACK1 回测。",
-      "skills": [
-        {
-          "id": "events",
-          "kind": "tool",
-          "enabled": true
-        },
-        {
-          "id": "datamart_read",
-          "kind": "tool",
-          "enabled": true
-        },
-        {
-          "id": "datamart_latest",
-          "kind": "tool",
-          "enabled": true
-        },
-        {
-          "id": "datamart_ready",
-          "kind": "tool",
-          "enabled": true
-        },
-        {
-          "id": "market_snapshot",
-          "kind": "tool",
-          "enabled": true
-        },
-        {
-          "id": "data_health",
-          "kind": "tool",
-          "enabled": true
-        },
-        {
-          "id": "stock_info",
-          "kind": "tool",
-          "enabled": true
-        },
-        {
-          "id": "recent_events",
-          "kind": "tool",
-          "enabled": true
-        },
-        {
-          "id": "signal_precedents",
-          "kind": "tool",
-          "enabled": true
-        },
-        {
-          "id": "pool_rows",
-          "kind": "tool",
-          "enabled": true
-        }
-      ],
-      "reports_to": "ACAD1",
-      "member_kind": "formal"
+     "id": "datamart_read",
+     "kind": "tool",
+     "enabled": true
     },
     {
-      "agent_id": "BACK1",
-      "role_profile": "backtest_researcher",
-      "analysis_type": "backtest_validation",
-      "node_key": "back1_core",
-      "parent_node_keys": [
-        "acad1_core"
-      ],
-      "level": 1,
-      "is_parallel": true,
-      "wait_all_complete": false,
-      "llm_binding": "ollama/qwen3.5:9b",
-      "tools": [
-        "events",
-        "datamart_read",
-        "datamart_latest",
-        "datamart_ready",
-        "data_health",
-        "market_snapshot",
-        "stock_info",
-        "pool_rows"
-      ],
-      "memory_grants": {
-        "read": [
-          "domain/*",
-          "agent/BACK1/*",
-          "agent_platform/data/academy/**"
-        ],
-        "write": [
-          "agent/BACK1/*",
-          "agent_platform/data/academy/**"
-        ]
-      },
-      "grade": "E2",
-      "grade_note": "回测研究：复现、样本外与成本压力测试",
-      "charter_detail": "按冻结口径执行回测、样本外检验和成本压力测试，输出可追溯证据。",
-      "skills": [
-        {
-          "id": "events",
-          "kind": "tool",
-          "enabled": true
-        },
-        {
-          "id": "datamart_read",
-          "kind": "tool",
-          "enabled": true
-        },
-        {
-          "id": "datamart_latest",
-          "kind": "tool",
-          "enabled": true
-        },
-        {
-          "id": "datamart_ready",
-          "kind": "tool",
-          "enabled": true
-        },
-        {
-          "id": "data_health",
-          "kind": "tool",
-          "enabled": true
-        },
-        {
-          "id": "market_snapshot",
-          "kind": "tool",
-          "enabled": true
-        },
-        {
-          "id": "stock_info",
-          "kind": "tool",
-          "enabled": true
-        },
-        {
-          "id": "pool_rows",
-          "kind": "tool",
-          "enabled": true
-        }
-      ],
-      "reports_to": "ACAD1",
-      "member_kind": "formal"
+     "id": "datamart_latest",
+     "kind": "tool",
+     "enabled": true
     },
     {
-      "agent_id": "COMM1",
-      "role_profile": "commercialization_researcher",
-      "analysis_type": "commercialization_research",
-      "node_key": "comm1_core",
-      "parent_node_keys": [
-        "acad1_core"
-      ],
-      "level": 1,
-      "is_parallel": true,
-      "wait_all_complete": false,
-      "llm_binding": "ollama/qwen3.5:9b",
-      "tools": [
-        "events",
-        "datamart_read",
-        "datamart_latest",
-        "market_snapshot",
-        "data_health",
-        "stock_info",
-        "recent_events"
-      ],
-      "memory_grants": {
-        "read": [
-          "domain/*",
-          "dept/product/*",
-          "agent/COMM1/*"
-        ],
-        "write": [
-          "agent/COMM1/*",
-          "agent_platform/data/academy/**"
-        ]
-      },
-      "grade": "E2",
-      "grade_note": "商业化研究：客户、交付与策略市场",
-      "charter_detail": "研究算法商品、策略市场和对外服务，形成客户画像、交付边界与试点方案。",
-      "skills": [
-        {
-          "id": "events",
-          "kind": "tool",
-          "enabled": true
-        }
-      ],
-      "reports_to": "ACAD1",
-      "member_kind": "formal"
+     "id": "datamart_ready",
+     "kind": "tool",
+     "enabled": true
     },
     {
-      "agent_id": "INTEL1",
-      "role_profile": "competitive_intelligence_researcher",
-      "analysis_type": "competitive_intelligence",
-      "node_key": "intel1_core",
-      "parent_node_keys": [
-        "acad1_core"
-      ],
-      "level": 1,
-      "is_parallel": true,
-      "wait_all_complete": false,
-      "llm_binding": "ollama/qwen3.5:9b",
-      "tools": [
-        "events",
-        "market_snapshot",
-        "data_health",
-        "stock_info",
-        "recent_events",
-        "signal_precedents",
-        "pool_rows"
-      ],
-      "memory_grants": {
-        "read": [
-          "domain/*",
-          "agent/INTEL1/*"
-        ],
-        "write": [
-          "agent/INTEL1/*",
-          "agent_platform/data/academy/**"
-        ]
-      },
-      "grade": "E2",
-      "grade_note": "竞争情报：行业、竞品与外部证据分级",
-      "charter_detail": "跟踪开源社区、同类产品和行业变化，为策略和商业化立项提供外部证据。",
-      "skills": [
-        {
-          "id": "events",
-          "kind": "tool",
-          "enabled": true
-        }
-      ],
-      "reports_to": "ACAD1",
-      "member_kind": "formal"
+     "id": "market_snapshot",
+     "kind": "tool",
+     "enabled": true
     },
     {
-      "agent_id": "AI1",
-      "role_profile": "ai_methodology_researcher",
-      "analysis_type": "ai_methodology_research",
-      "node_key": "ai1_core",
-      "parent_node_keys": [
-        "acad1_core"
-      ],
-      "level": 1,
-      "is_parallel": true,
-      "wait_all_complete": false,
-      "llm_binding": "openai/gpt-6.0",
-      "binding_note": "【2026-10-26 B 案对齐】AI1=诸葛亮按 2026-10-21 10:51 老田异族编制裁决绑定 openai/gpt-6.0（OpenClaw 载体）；engine/router.py 已加异族固定路由/auto_assign 特例、engine/llm.py 已加 OpenAILLM（key 缺失抛错不降档）、legion_command/serve.py 已放行 openai 前缀；通道待 OPENAI_API_KEY。10-18 glm-5.3 为历史档（旧绑 9b 判死）。",
-      "tools": [
-        "events",
-        "datamart_read",
-        "datamart_latest",
-        "datamart_ready",
-        "data_health",
-        "recent_events",
-        "signal_precedents"
-      ],
-      "memory_grants": {
-        "read": [
-          "domain/*",
-          "dept/*",
-          "agent/AI1/*"
-        ],
-        "write": [
-          "agent/AI1/*",
-          "agent_platform/data/academy/**"
-        ]
-      },
-      "grade": "E3",
-      "grade_note": "AI 方法论：Agent 能力、评测与知识反哺",
-      "charter_detail": "把成功研究提炼为标准、能力、评测和知识条目，推动 Prompt 与路由升级。",
-      "skills": [
-        {
-          "id": "events",
-          "kind": "tool",
-          "enabled": true
-        }
-      ],
-      "reports_to": "ACAD1",
-      "member_kind": "formal"
+     "id": "data_health",
+     "kind": "tool",
+     "enabled": true
     },
     {
-      "agent_id": "PROD1",
-      "role_profile": "product_manager",
-      "analysis_type": "strategy_productization",
-      "node_key": "prod1_core",
-      "parent_node_keys": [
-        "acad1_core"
-      ],
-      "level": 1,
-      "is_parallel": true,
-      "wait_all_complete": false,
-      "llm_binding": "ollama/qwen3.5:9b",
-      "tools": [
-        "events",
-        "market_snapshot",
-        "data_health",
-        "stock_info",
-        "pool_rows",
-        "paper_positions",
-        "recent_events"
-      ],
-      "memory_grants": {
-        "read": [
-          "domain/*",
-          "dept/product/*",
-          "agent/PROD1/*"
-        ],
-        "write": [
-          "agent/PROD1/*",
-          "agent_platform/data/academy/**"
-        ]
-      },
-      "grade": "E2",
-      "grade_note": "策略产品化：验收、试点与交付",
-      "charter_detail": "将通过评审的策略或 AI 方法转成产品需求、验收指标和试点计划。",
-      "skills": [
-        {
-          "id": "events",
-          "kind": "tool",
-          "enabled": true
-        }
-      ],
-      "reports_to": "ACAD1",
-      "member_kind": "formal"
+     "id": "stock_info",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "recent_events",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "signal_precedents",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "pool_rows",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "paper_positions",
+     "kind": "tool",
+     "enabled": true
     }
-  ],
-  "attribute_note": "2026-10-29 A：补齐 analysis_type/parent_node_keys/reports_to；7 席为研究院正式编制；GUANYU/HUANGZHONG 见 org liaison_agents。"
+   ],
+   "reports_to": "A0",
+   "member_kind": "formal"
+  },
+  {
+   "agent_id": "STRAT1",
+   "role_profile": "strategy_researcher",
+   "analysis_type": "strategy_research",
+   "node_key": "strat1_core",
+   "parent_node_keys": [
+    "acad1_core"
+   ],
+   "level": 1,
+   "is_parallel": true,
+   "wait_all_complete": false,
+   "llm_binding": "ollama/qwen3.5:9b",
+   "tools": [
+    "events",
+    "datamart_read",
+    "datamart_latest",
+    "datamart_ready",
+    "market_snapshot",
+    "data_health",
+    "stock_info",
+    "recent_events",
+    "signal_precedents",
+    "pool_rows"
+   ],
+   "memory_grants": {
+    "read": [
+     "domain/*",
+     "dept/invest/*",
+     "agent/STRAT1/*"
+    ],
+    "write": [
+     "agent/STRAT1/*",
+     "agent_platform/data/academy/**"
+    ]
+   },
+   "grade": "E2",
+   "grade_note": "策略研究：可证伪假设与 LCS-1 图形推演",
+   "charter_detail": "把市场问题转成可验证策略假设，维护策略研究台账并交由 BACK1 回测。",
+   "skills": [
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "datamart_read",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "datamart_latest",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "datamart_ready",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "market_snapshot",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "data_health",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "stock_info",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "recent_events",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "signal_precedents",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "pool_rows",
+     "kind": "tool",
+     "enabled": true
+    }
+   ],
+   "reports_to": "ACAD1",
+   "member_kind": "formal"
+  },
+  {
+   "agent_id": "BACK1",
+   "role_profile": "backtest_researcher",
+   "analysis_type": "backtest_validation",
+   "node_key": "back1_core",
+   "parent_node_keys": [
+    "acad1_core"
+   ],
+   "level": 1,
+   "is_parallel": true,
+   "wait_all_complete": false,
+   "llm_binding": "ollama/qwen3.5:9b",
+   "tools": [
+    "events",
+    "datamart_read",
+    "datamart_latest",
+    "datamart_ready",
+    "data_health",
+    "market_snapshot",
+    "stock_info",
+    "pool_rows"
+   ],
+   "memory_grants": {
+    "read": [
+     "domain/*",
+     "agent/BACK1/*",
+     "agent_platform/data/academy/**"
+    ],
+    "write": [
+     "agent/BACK1/*",
+     "agent_platform/data/academy/**"
+    ]
+   },
+   "grade": "E2",
+   "grade_note": "回测研究：复现、样本外与成本压力测试",
+   "charter_detail": "按冻结口径执行回测、样本外检验和成本压力测试，输出可追溯证据。",
+   "skills": [
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "datamart_read",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "datamart_latest",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "datamart_ready",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "data_health",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "market_snapshot",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "stock_info",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "pool_rows",
+     "kind": "tool",
+     "enabled": true
+    }
+   ],
+   "reports_to": "ACAD1",
+   "member_kind": "formal"
+  },
+  {
+   "agent_id": "COMM1",
+   "role_profile": "commercialization_researcher",
+   "analysis_type": "commercialization_research",
+   "node_key": "comm1_core",
+   "parent_node_keys": [
+    "acad1_core"
+   ],
+   "level": 1,
+   "is_parallel": true,
+   "wait_all_complete": false,
+   "llm_binding": "ollama/qwen3.5:9b",
+   "tools": [
+    "events",
+    "datamart_read",
+    "datamart_latest",
+    "market_snapshot",
+    "data_health",
+    "stock_info",
+    "recent_events"
+   ],
+   "memory_grants": {
+    "read": [
+     "domain/*",
+     "dept/product/*",
+     "agent/COMM1/*"
+    ],
+    "write": [
+     "agent/COMM1/*",
+     "agent_platform/data/academy/**"
+    ]
+   },
+   "grade": "E2",
+   "grade_note": "商业化研究：客户、交付与策略市场",
+   "charter_detail": "研究算法商品、策略市场和对外服务，形成客户画像、交付边界与试点方案。",
+   "skills": [
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ],
+   "reports_to": "ACAD1",
+   "member_kind": "formal"
+  },
+  {
+   "agent_id": "INTEL1",
+   "role_profile": "competitive_intelligence_researcher",
+   "analysis_type": "competitive_intelligence",
+   "node_key": "intel1_core",
+   "parent_node_keys": [
+    "acad1_core"
+   ],
+   "level": 1,
+   "is_parallel": true,
+   "wait_all_complete": false,
+   "llm_binding": "ollama/qwen3.5:9b",
+   "tools": [
+    "events",
+    "market_snapshot",
+    "data_health",
+    "stock_info",
+    "recent_events",
+    "signal_precedents",
+    "pool_rows"
+   ],
+   "memory_grants": {
+    "read": [
+     "domain/*",
+     "agent/INTEL1/*"
+    ],
+    "write": [
+     "agent/INTEL1/*",
+     "agent_platform/data/academy/**"
+    ]
+   },
+   "grade": "E2",
+   "grade_note": "竞争情报：行业、竞品与外部证据分级",
+   "charter_detail": "跟踪开源社区、同类产品和行业变化，为策略和商业化立项提供外部证据。",
+   "skills": [
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ],
+   "reports_to": "ACAD1",
+   "member_kind": "formal"
+  },
+  {
+   "agent_id": "AI1",
+   "role_profile": "ai_methodology_researcher",
+   "analysis_type": "ai_methodology_research",
+   "node_key": "ai1_core",
+   "parent_node_keys": [
+    "acad1_core"
+   ],
+   "level": 1,
+   "is_parallel": true,
+   "wait_all_complete": false,
+   "llm_binding": "openai/gpt-6.0",
+   "binding_note": "【2026-10-26 B 案对齐】AI1=诸葛亮按 2026-10-21 10:51 老田异族编制裁决绑定 openai/gpt-6.0（OpenClaw 载体）；engine/router.py 已加异族固定路由/auto_assign 特例、engine/llm.py 已加 OpenAILLM（key 缺失抛错不降档）、legion_command/serve.py 已放行 openai 前缀；通道待 OPENAI_API_KEY。10-18 glm-5.3 为历史档（旧绑 9b 判死）。",
+   "tools": [
+    "events",
+    "datamart_read",
+    "datamart_latest",
+    "datamart_ready",
+    "data_health",
+    "recent_events",
+    "signal_precedents"
+   ],
+   "memory_grants": {
+    "read": [
+     "domain/*",
+     "dept/*",
+     "agent/AI1/*"
+    ],
+    "write": [
+     "agent/AI1/*",
+     "agent_platform/data/academy/**"
+    ]
+   },
+   "grade": "E3",
+   "grade_note": "AI 方法论：Agent 能力、评测与知识反哺",
+   "charter_detail": "把成功研究提炼为标准、能力、评测和知识条目，推动 Prompt 与路由升级。",
+   "skills": [
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ],
+   "reports_to": "ACAD1",
+   "member_kind": "formal"
+  },
+  {
+   "agent_id": "PROD1",
+   "role_profile": "product_manager",
+   "analysis_type": "strategy_productization",
+   "node_key": "prod1_core",
+   "parent_node_keys": [
+    "acad1_core"
+   ],
+   "level": 1,
+   "is_parallel": true,
+   "wait_all_complete": false,
+   "llm_binding": "ollama/qwen3.5:9b",
+   "tools": [
+    "events",
+    "market_snapshot",
+    "data_health",
+    "stock_info",
+    "pool_rows",
+    "paper_positions",
+    "recent_events"
+   ],
+   "memory_grants": {
+    "read": [
+     "domain/*",
+     "dept/product/*",
+     "agent/PROD1/*"
+    ],
+    "write": [
+     "agent/PROD1/*",
+     "agent_platform/data/academy/**"
+    ]
+   },
+   "grade": "E2",
+   "grade_note": "策略产品化：验收、试点与交付",
+   "charter_detail": "将通过评审的策略或 AI 方法转成产品需求、验收指标和试点计划。",
+   "skills": [
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ],
+   "reports_to": "ACAD1",
+   "member_kind": "formal"
+  },
+  {
+   "agent_id": "STRAT2",
+   "role_profile": "strategy_researcher",
+   "analysis_type": "strategy_research",
+   "node_key": "strat2_market",
+   "parent_node_keys": [],
+   "level": 1,
+   "is_parallel": true,
+   "wait_all_complete": false,
+   "llm_binding": "ollama/qwen3.5:9b",
+   "tools": [
+    "events",
+    "datamart_read",
+    "datamart_latest",
+    "datamart_ready",
+    "market_snapshot",
+    "data_health",
+    "stock_info",
+    "recent_events",
+    "signal_precedents",
+    "pool_rows"
+   ],
+   "memory_grants": {
+    "read": [
+     "domain/*",
+     "dept/invest/*",
+     "agent/STRAT2/*"
+    ],
+    "write": [
+     "agent/STRAT2/*",
+     "dept/invest/thesis"
+    ]
+   },
+   "grade": "E2",
+   "grade_note": "2026-11-01 A0 批准新增；US/CRYPTO 4 个平台策略研究 owner",
+   "charter_detail": "市场策略研究员（US/CRYPTO）：负责 v1-us-strat-6/7、v1-crypto-strat-9/11 的研究 owner；按 ACAD1 议程提交日报、版本和评审材料；不自己研究自己验证。",
+   "skills": [
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "datamart_read",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "datamart_latest",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "datamart_ready",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "market_snapshot",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "data_health",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "stock_info",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "recent_events",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "signal_precedents",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "pool_rows",
+     "kind": "tool",
+     "enabled": true
+    }
+   ],
+   "reports_to": "ACAD1",
+   "member_kind": "formal"
+  }
+ ],
+ "attribute_note": "2026-10-29 A：补齐 analysis_type/parent_node_keys/reports_to；7 席为研究院正式编制；GUANYU/HUANGZHONG 见 org liaison_agents。"
 }
