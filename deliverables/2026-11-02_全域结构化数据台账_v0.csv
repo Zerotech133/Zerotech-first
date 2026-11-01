@@ -300,3 +300,16 @@
 平台运行,yt_review（复核）,corpus_layer,C:/项目/知识库/80_复核,0.1,,,False,False,yt_review
 学习派生,yt_reports（报告）,corpus_layer,C:/项目/知识库/90_报告,0.4,,,False,False,yt_reports
 学习派生,yt_learning.db（星型模型 9 表，统一取数入口）,corpus_layer,C:/项目/知识库/00_数据仓,580.7,,,False,True,yt_learning.db
+学习派生,yt_learning_db.dim_channel,sqlite_table,C:/项目/知识库/00_数据仓/yt_learning.db,,100,,False,False,yt_dim_channel
+学习派生,yt_learning_db.dim_topic,sqlite_table,C:/项目/知识库/00_数据仓/yt_learning.db,,32,,False,False,yt_dim_topic
+学习派生,yt_learning_db.dim_video,sqlite_table,C:/项目/知识库/00_数据仓/yt_learning.db,,45827,,False,False,yt_dim_video
+学习派生,yt_learning_db.bridge_video_topic,sqlite_table,C:/项目/知识库/00_数据仓/yt_learning.db,,40798,,False,False,yt_bridge_video_topic
+学习派生,yt_learning_db.fact_comment,sqlite_table,C:/项目/知识库/00_数据仓/yt_learning.db,,1321892,,False,False,yt_fact_comment
+学习派生,yt_learning_db.fact_knowledge_unit,sqlite_table,C:/项目/知识库/00_数据仓/yt_learning.db,,26244,,False,False,yt_fact_knowledge_unit
+学习派生,yt_learning_db.fact_transcript,sqlite_table,C:/项目/知识库/00_数据仓/yt_learning.db,,38,,False,False,yt_fact_transcript
+学习派生,yt_learning_db.fact_faq_semantic,sqlite_table,C:/项目/知识库/00_数据仓/yt_learning.db,,133,,False,False,yt_fact_faq_semantic
+学习派生,yt_learning_db.bridge_faq_comment,sqlite_table,C:/项目/知识库/00_数据仓/yt_learning.db,,532,,False,False,yt_bridge_faq_comment
+学习派生,yt_learning_db.meta_faq_build,sqlite_table,C:/项目/知识库/00_数据仓/yt_learning.db,,8,,False,False,yt_meta_faq_build
+学习派生,yt_learning_db.fact_transcript_seg,sqlite_table,C:/项目/知识库/00_数据仓/yt_learning.db,,1837,,False,False,yt_fact_transcript_seg
+学习派生,yt_learning_db.meta_etl,sqlite_table,C:/项目/知识库/00_数据仓/yt_learning.db,,2,,False,False,yt_meta_etl
+学习派生,yt_learning_db.fact_transcript_signal,sqlite_table,C:/项目/知识库/00_数据仓/yt_learning.db,,1156,,False,False,yt_fact_transcript_signal

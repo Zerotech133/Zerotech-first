@@ -1,7 +1,7 @@
 {
  "summary": {
-  "datasets": 301,
-  "valid": 301,
+  "datasets": 314,
+  "valid": 314,
   "registered": 265,
   "exposed": 72,
   "by_domain": {
@@ -18,7 +18,7 @@
     "mb": 5997.8
    },
    "学习派生": {
-    "datasets": 16,
+    "datasets": 29,
     "registered": 5,
     "exposed": 7,
     "mb": 1749.2
@@ -3614,6 +3614,136 @@
    "exposed": true,
    "suggested_id": "yt_learning.db",
    "layer": "warehouse"
+  },
+  {
+   "domain": "学习派生",
+   "label": "yt_learning_db.dim_channel",
+   "kind": "sqlite_table",
+   "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+   "rows": 100,
+   "registered": false,
+   "exposed": false,
+   "suggested_id": "yt_dim_channel"
+  },
+  {
+   "domain": "学习派生",
+   "label": "yt_learning_db.dim_topic",
+   "kind": "sqlite_table",
+   "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+   "rows": 32,
+   "registered": false,
+   "exposed": false,
+   "suggested_id": "yt_dim_topic"
+  },
+  {
+   "domain": "学习派生",
+   "label": "yt_learning_db.dim_video",
+   "kind": "sqlite_table",
+   "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+   "rows": 45827,
+   "registered": false,
+   "exposed": false,
+   "suggested_id": "yt_dim_video"
+  },
+  {
+   "domain": "学习派生",
+   "label": "yt_learning_db.bridge_video_topic",
+   "kind": "sqlite_table",
+   "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+   "rows": 40798,
+   "registered": false,
+   "exposed": false,
+   "suggested_id": "yt_bridge_video_topic"
+  },
+  {
+   "domain": "学习派生",
+   "label": "yt_learning_db.fact_comment",
+   "kind": "sqlite_table",
+   "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+   "rows": 1321892,
+   "registered": false,
+   "exposed": false,
+   "suggested_id": "yt_fact_comment"
+  },
+  {
+   "domain": "学习派生",
+   "label": "yt_learning_db.fact_knowledge_unit",
+   "kind": "sqlite_table",
+   "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+   "rows": 26244,
+   "registered": false,
+   "exposed": false,
+   "suggested_id": "yt_fact_knowledge_unit"
+  },
+  {
+   "domain": "学习派生",
+   "label": "yt_learning_db.fact_transcript",
+   "kind": "sqlite_table",
+   "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+   "rows": 38,
+   "registered": false,
+   "exposed": false,
+   "suggested_id": "yt_fact_transcript"
+  },
+  {
+   "domain": "学习派生",
+   "label": "yt_learning_db.fact_faq_semantic",
+   "kind": "sqlite_table",
+   "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+   "rows": 133,
+   "registered": false,
+   "exposed": false,
+   "suggested_id": "yt_fact_faq_semantic"
+  },
+  {
+   "domain": "学习派生",
+   "label": "yt_learning_db.bridge_faq_comment",
+   "kind": "sqlite_table",
+   "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+   "rows": 532,
+   "registered": false,
+   "exposed": false,
+   "suggested_id": "yt_bridge_faq_comment"
+  },
+  {
+   "domain": "学习派生",
+   "label": "yt_learning_db.meta_faq_build",
+   "kind": "sqlite_table",
+   "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+   "rows": 8,
+   "registered": false,
+   "exposed": false,
+   "suggested_id": "yt_meta_faq_build"
+  },
+  {
+   "domain": "学习派生",
+   "label": "yt_learning_db.fact_transcript_seg",
+   "kind": "sqlite_table",
+   "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+   "rows": 1837,
+   "registered": false,
+   "exposed": false,
+   "suggested_id": "yt_fact_transcript_seg"
+  },
+  {
+   "domain": "学习派生",
+   "label": "yt_learning_db.meta_etl",
+   "kind": "sqlite_table",
+   "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+   "rows": 2,
+   "registered": false,
+   "exposed": false,
+   "suggested_id": "yt_meta_etl"
+  },
+  {
+   "domain": "学习派生",
+   "label": "yt_learning_db.fact_transcript_signal",
+   "kind": "sqlite_table",
+   "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+   "rows": 1156,
+   "registered": false,
+   "exposed": false,
+   "suggested_id": "yt_fact_transcript_signal"
   }
  ],
  "unregistered": [
