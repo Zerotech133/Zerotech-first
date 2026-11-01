@@ -18,6 +18,9 @@ REPO = Path(r"C:\项目\老田的AI助手")
 REPORTS = REPO / "research" / "reports"
 OUT = REPO / "portal" / "static" / "trend_template_latest.json"
 
+sys.path.insert(0, str(REPO / "tools" / "kb_corpus"))
+from safe_json import SafeJsonError, backup_then_atomic_write  # noqa: E402
+
 COND_SPEC = [
     {"id": "C1", "rule": "P > S150 且 P > S200", "note": "等号不通过"},
     {"id": "C2", "rule": "S150 > S200", "note": ""},
@@ -45,6 +48,15 @@ def _load_v11() -> dict | None:
                           "流动性/规模过滤在 TT 候选上不 binding（三档结果相同）",
                           "最佳组合 CAGR 14.1% vs 市场 13.4%，MDD -48.7% → 风险调整后不通过"],
             "report": "research/reports/" + Path(fs[-1]).name}
+
+
+def export_payload(payload: dict, out_path: Path | str = OUT) -> dict:
+    """校验 + 写前备份 + 原子写 + 写后校验（safe_json 三件套）；schema/CLI 不变。
+
+    返回 safe_json 报告（schema/ok/path/backup/sha_before/sha_after/...）。
+    已存在的 latest 文件会先备份到 research/reports/backups/ 再原子替换。
+    """
+    return backup_then_atomic_write(Path(out_path), payload)
 
 
 def main() -> int:
@@ -103,7 +115,7 @@ def main() -> int:
         "disclaimer": "仅供研究学习，不构成投资建议；历史与规则不保证未来收益。",
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
+    export_payload(payload, OUT)              # 备份+原子写+写后校验（safe_json）
     print(json.dumps({"trade_date": payload["trade_date"], "pass_all": payload["results"]["pass_all"],
                       "candidates": len(cands), "near_miss": len(near), "out": str(OUT)}, ensure_ascii=False), flush=True)
     return 0

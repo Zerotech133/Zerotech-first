@@ -5836,5 +5836,25 @@
     },
     "conclusion": "C 模式（板块≥1%且个股≥1%）的改善来自板块 beta + 样本重叠：控制规模/波动/换手/板块未来收益后 M2 残差大幅缩水，日频聚合 t 多为负；19 个量学战法无一通过严苛关卡。**RS 不可作为入场条件**，只可作事后归因/风险说明。",
     "verdict": "no_alpha_reject_as_entry"
+  },
+  "industry_rs_factor_20261101": {
+    "tool": "tools/research/industry_rs_factor.py",
+    "report": "research/reports/industry_rs_factor_20261101.md",
+    "verdict": "有效信息因子（方向=反转）但接近可交易=False",
+    "evidence": {
+      "ic_20": -0.0589,
+      "monthly_t": -2.727,
+      "placebo_p": 0.002,
+      "fdr_q": 0.0276,
+      "long_short_gross_ann_pct": -16.29,
+      "long_short_net30_ann_pct": 14.67,
+      "long_short_monthly_t": 0.704,
+      "decile_monotonic": 0.806
+    },
+    "note": "RS_20=个股−同行业(LOO)20日收益：IC 负（反转）且双窗稳定、安慰剂/FDR 通过；但多空月度 t=0.70<2、收益集中在不可做空的空头端、纯多头无 alpha、小市值集中 → 不可作为买入信号。"
+  },
+  "trend_template_export_hardened_20261101": {
+    "script": "tools/research/trend_template_export.py",
+    "note": "最后一个历史中风险写入脚本加 safe_json（备份+原子写+校验）；audit 复审：该脚本中→低；历史已知中风险清零；新增 3 脚本（factor_daily/s08_rebalance/sepa_scan_daily，其他小组）待另批加固。"
   }
 }

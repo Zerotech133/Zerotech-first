@@ -1,0 +1,2708 @@
+{
+ "meta": {
+  "lib": "industry_rs_factor",
+  "version": "1.0.0",
+  "generated_at": "2026-11-01T21:49:31+08:00",
+  "python": "3.12.10",
+  "pandas": "3.0.5",
+  "numpy": "2.5.2",
+  "start": "20230101",
+  "end": "20261030",
+  "horizon": 20,
+  "windows": [
+   5,
+   10,
+   20
+  ],
+  "n_deciles": 10,
+  "costs_bp": [
+   30.0,
+   50.0,
+   80.0
+  ],
+  "seed": 42,
+  "n_placebo": 1000,
+  "block": 20,
+  "definitions": {
+   "factor": "RS_k = 个股 k 日收益 − 同行业其他成员 k 日收益等权均值（leave-one-out）",
+   "industry": "tushare stock_basic.industry（静态分类，与 task-88 板块代理同口径）",
+   "label": "T 日收盘因子 → T+1 收盘入场 → T+21 收盘卖出；个股复权收益 − 等权市场同期复利收益",
+   "ic": "逐日横截面 Spearman IC；t_monthly 用每 20 个观测取 1 的非重叠抽样（重叠修正）",
+   "cost": "净年化 = 毛年化 − 成本(bp)×年化换手×2（多空两腿）；换手按 20 日重叠持有口径折算"
+  },
+  "data": {
+   "data_root": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\tushare",
+   "universe": "tradable",
+   "load_dates": [
+    "20221107",
+    "20261030"
+   ],
+   "load_days": 965,
+   "warmup_days": 40,
+   "horizon": 20,
+   "panel_dates": 965,
+   "codes": 5740,
+   "eligible_avg_per_day": 3530.3,
+   "eligible_share": 0.615,
+   "load_sec": 37.05
+  },
+  "effective": {
+   "start": "20230103",
+   "end": "20260923",
+   "signal_days": 904,
+   "panel_dates": 965,
+   "codes": 5740,
+   "panel_first": "20221107",
+   "panel_last": "20261030",
+   "requested_start": "20230101",
+   "requested_end": "20261030"
+  },
+  "industry_count": 111,
+  "runtime_sec": 43.51
+ },
+ "factors": {
+  "RS_5": {
+   "name": "RS_5",
+   "origin": "个股5日收益 − 行业5日收益（leave-one-out）",
+   "direction": {
+    "sign": -1,
+    "source": "2023-2024 观察窗 IC 符号（无观察窗时默认 +1）"
+   },
+   "ic": {
+    "n_days": 904,
+    "mean": -0.038053,
+    "std": 0.091982,
+    "t": -12.439,
+    "positive_rate": 0.3429,
+    "ir": -0.4137,
+    "t_monthly": -3.478,
+    "n_monthly": 46,
+    "bootstrap": {
+     "n_boot": 300,
+     "mean_pct": -3.749,
+     "p_le_0": 1.0
+    }
+   },
+   "deciles": {
+    "groups": {
+     "D1": {
+      "n_days": 904,
+      "mean_car_pct": -2.1857,
+      "std_car_pct": 2.6396,
+      "t": -24.896,
+      "positive_rate": 0.1394,
+      "ann_pct": -27.54,
+      "n_obs": 320240
+     },
+     "D2": {
+      "n_days": 904,
+      "mean_car_pct": -1.8434,
+      "std_car_pct": 1.7931,
+      "t": -30.91,
+      "positive_rate": 0.1117,
+      "ann_pct": -23.23,
+      "n_obs": 320696
+     },
+     "D3": {
+      "n_days": 904,
+      "mean_car_pct": -1.8704,
+      "std_car_pct": 1.5344,
+      "t": -36.651,
+      "positive_rate": 0.083,
+      "ann_pct": -23.57,
+      "n_obs": 320594
+     },
+     "D4": {
+      "n_days": 904,
+      "mean_car_pct": -1.8045,
+      "std_car_pct": 1.5952,
+      "t": -34.012,
+      "positive_rate": 0.0918,
+      "ann_pct": -22.74,
+      "n_obs": 320709
+     },
+     "D5": {
+      "n_days": 904,
+      "mean_car_pct": -1.834,
+      "std_car_pct": 1.7304,
+      "t": -31.867,
+      "positive_rate": 0.0863,
+      "ann_pct": -23.11,
+      "n_obs": 320789
+     },
+     "D6": {
+      "n_days": 904,
+      "mean_car_pct": -1.8846,
+      "std_car_pct": 1.8418,
+      "t": -30.765,
+      "positive_rate": 0.0929,
+      "ann_pct": -23.75,
+      "n_obs": 320515
+     },
+     "D7": {
+      "n_days": 904,
+      "mean_car_pct": -1.9253,
+      "std_car_pct": 1.8167,
+      "t": -31.863,
+      "positive_rate": 0.0874,
+      "ann_pct": -24.26,
+      "n_obs": 320631
+     },
+     "D8": {
+      "n_days": 904,
+      "mean_car_pct": -2.0492,
+      "std_car_pct": 1.7139,
+      "t": -35.948,
+      "positive_rate": 0.0686,
+      "ann_pct": -25.82,
+      "n_obs": 320672
+     },
+     "D9": {
+      "n_days": 904,
+      "mean_car_pct": -2.3616,
+      "std_car_pct": 2.0832,
+      "t": -34.085,
+      "positive_rate": 0.0985,
+      "ann_pct": -29.76,
+      "n_obs": 320618
+     },
+     "D10": {
+      "n_days": 904,
+      "mean_car_pct": -3.3041,
+      "std_car_pct": 3.7729,
+      "t": -26.33,
+      "positive_rate": 0.1515,
+      "ann_pct": -41.63,
+      "n_obs": 321063
+     }
+    },
+    "monotonicity": -0.564,
+    "long_short": {
+     "mean_20d_pct": -1.1184,
+     "ann_pct": -14.09,
+     "t_daily": -7.517,
+     "t_monthly": -2.332,
+     "bootstrap": {
+      "n_boot": 300,
+      "mean_pct": -1.096,
+      "p_le_0": 1.0
+     },
+     "n_days": 904,
+     "direction_adjusted": {
+      "direction_sign": -1,
+      "ann_pct": 14.09,
+      "t_monthly": 2.332,
+      "bootstrap_p_le_0": 0.0
+     }
+    },
+    "n_obs": 3206527,
+    "n_days": 904
+   },
+   "turnover": {
+    "top_decile": {
+     "avg_one_way_turnover": 0.3785,
+     "n_transitions": 903,
+     "ann_turnover_daily_rebalance": 95.4,
+     "ann_turnover_overlapping": 4.77
+    },
+    "bottom_decile": {
+     "avg_one_way_turnover": 0.4425,
+     "n_transitions": 903,
+     "ann_turnover_daily_rebalance": 111.5,
+     "ann_turnover_overlapping": 5.58
+    }
+   },
+   "cost_sensitivity": {
+    "30bp": {
+     "net_ann_pct": -16.95,
+     "cost_drag_ann_pct": 2.86
+    },
+    "50bp": {
+     "net_ann_pct": -18.86,
+     "cost_drag_ann_pct": 4.77
+    },
+    "80bp": {
+     "net_ann_pct": -21.72,
+     "cost_drag_ann_pct": 7.63
+    }
+   },
+   "walk_forward": {
+    "2023-2024": {
+     "ic": {
+      "n_days": 484,
+      "mean": -0.039021,
+      "std": 0.096275,
+      "t": -8.917,
+      "positive_rate": 0.3182
+     },
+     "ic_monthly_t": -3.129,
+     "long_short_mean_20d_pct": -1.3989,
+     "long_short_ann_pct": -17.63,
+     "long_short_t_daily": -6.984,
+     "long_short_t_monthly": -2.567,
+     "bootstrap_p": 1.0
+    },
+    "2025-2026": {
+     "ic": {
+      "n_days": 420,
+      "mean": -0.036938,
+      "std": 0.086872,
+      "t": -8.714,
+      "positive_rate": 0.3714
+     },
+     "ic_monthly_t": -2.075,
+     "long_short_mean_20d_pct": -0.7952,
+     "long_short_ann_pct": -10.02,
+     "long_short_t_daily": -3.595,
+     "long_short_t_monthly": -1.04,
+     "bootstrap_p": 0.8467
+    }
+   },
+   "placebo": {
+    "n_perm": 1000,
+    "n_cohorts": 46,
+    "cohort_step": 20,
+    "actual_mean_ic": -0.0405,
+    "p_value": 0.002,
+    "p_one_sided_high": 1.0,
+    "p_one_sided_low": 0.001,
+    "percentile_rank": 0.0,
+    "null": {
+     "mean": -7.4e-05,
+     "std": 0.00254,
+     "p05": -0.004119,
+     "p50": -0.000148,
+     "p95": 0.004239
+    }
+   },
+   "cap_stratified": {
+    "小市值": {
+     "ic_mean": -0.055773,
+     "ic_t": -19.584,
+     "n_days": 904,
+     "n_obs": 1068542
+    },
+    "中市值": {
+     "ic_mean": -0.039798,
+     "ic_t": -14.78,
+     "n_days": 904,
+     "n_obs": 1068839
+    },
+    "大市值": {
+     "ic_mean": -0.01558,
+     "ic_t": -4.322,
+     "n_days": 904,
+     "n_obs": 1069146
+    }
+   },
+   "industry_stratified": {
+    "n_industries": 87,
+    "median_ic": -0.041317,
+    "mean_ic": -0.044007,
+    "q25_ic": -0.057722,
+    "q75_ic": -0.024584,
+    "share_positive": 0.0345,
+    "industries": [
+     {
+      "industry": "IT设备",
+      "codes": 81,
+      "n_days": 904,
+      "ic_mean": -0.051149,
+      "ic_t": -8.055
+     },
+     {
+      "industry": "专用机械",
+      "codes": 296,
+      "n_days": 904,
+      "ic_mean": -0.051681,
+      "ic_t": -9.04
+     },
+     {
+      "industry": "中成药",
+      "codes": 68,
+      "n_days": 904,
+      "ic_mean": -0.039052,
+      "ic_t": -5.053
+     },
+     {
+      "industry": "乳制品",
+      "codes": 22,
+      "n_days": 619,
+      "ic_mean": -0.062951,
+      "ic_t": -4.751
+     },
+     {
+      "industry": "互联网",
+      "codes": 81,
+      "n_days": 904,
+      "ic_mean": -0.057991,
+      "ic_t": -8.991
+     },
+     {
+      "industry": "仓储物流",
+      "codes": 47,
+      "n_days": 904,
+      "ic_mean": -0.038734,
+      "ic_t": -4.671
+     },
+     {
+      "industry": "供气供热",
+      "codes": 44,
+      "n_days": 782,
+      "ic_mean": -0.064362,
+      "ic_t": -5.923
+     },
+     {
+      "industry": "元器件",
+      "codes": 312,
+      "n_days": 904,
+      "ic_mean": -0.041279,
+      "ic_t": -7.766
+     },
+     {
+      "industry": "全国地产",
+      "codes": 26,
+      "n_days": 837,
+      "ic_mean": -0.030118,
+      "ic_t": -2.856
+     },
+     {
+      "industry": "其他商业",
+      "codes": 12,
+      "n_days": 270,
+      "ic_mean": -0.103697,
+      "ic_t": -5.107
+     },
+     {
+      "industry": "其他建材",
+      "codes": 31,
+      "n_days": 786,
+      "ic_mean": -0.02281,
+      "ic_t": -2.084
+     },
+     {
+      "industry": "农业综合",
+      "codes": 40,
+      "n_days": 900,
+      "ic_mean": -0.070305,
+      "ic_t": -7.77
+     },
+     {
+      "industry": "农用机械",
+      "codes": 13,
+      "n_days": 128,
+      "ic_mean": -0.007675,
+      "ic_t": -0.227
+     },
+     {
+      "industry": "农药化肥",
+      "codes": 58,
+      "n_days": 904,
+      "ic_mean": -0.041053,
+      "ic_t": -5.305
+     },
+     {
+      "industry": "出版业",
+      "codes": 29,
+      "n_days": 894,
+      "ic_mean": -0.03942,
+      "ic_t": -3.608
+     },
+     {
+      "industry": "化学制药",
+      "codes": 149,
+      "n_days": 904,
+      "ic_mean": -0.036037,
+      "ic_t": -6.208
+     },
+     {
+      "industry": "化工原料",
+      "codes": 262,
+      "n_days": 904,
+      "ic_mean": -0.055586,
+      "ic_t": -9.393
+     },
+     {
+      "industry": "化工机械",
+      "codes": 13,
+      "n_days": 357,
+      "ic_mean": -0.100828,
+      "ic_t": -5.136
+     },
+     {
+      "industry": "化纤",
+      "codes": 33,
+      "n_days": 900,
+      "ic_mean": -0.037241,
+      "ic_t": -3.914
+     },
+     {
+      "industry": "区域地产",
+      "codes": 43,
+      "n_days": 894,
+      "ic_mean": -0.037165,
+      "ic_t": -4.379
+     },
+     {
+      "industry": "医疗保健",
+      "codes": 186,
+      "n_days": 904,
+      "ic_mean": -0.037075,
+      "ic_t": -6.319
+     },
+     {
+      "industry": "医药商业",
+      "codes": 37,
+      "n_days": 904,
+      "ic_mean": -0.024815,
+      "ic_t": -2.371
+     },
+     {
+      "industry": "半导体",
+      "codes": 200,
+      "n_days": 904,
+      "ic_mean": -0.05087,
+      "ic_t": -9.928
+     },
+     {
+      "industry": "商贸代理",
+      "codes": 16,
+      "n_days": 424,
+      "ic_mean": -0.127188,
+      "ic_t": -7.028
+     },
+     {
+      "industry": "园区开发",
+      "codes": 14,
+      "n_days": 346,
+      "ic_mean": -0.10621,
+      "ic_t": -5.552
+     },
+     {
+      "industry": "塑料",
+      "codes": 81,
+      "n_days": 904,
+      "ic_mean": -0.041054,
+      "ic_t": -5.003
+     },
+     {
+      "industry": "多元金融",
+      "codes": 23,
+      "n_days": 899,
+      "ic_mean": -0.036486,
+      "ic_t": -3.727
+     },
+     {
+      "industry": "家居用品",
+      "codes": 71,
+      "n_days": 849,
+      "ic_mean": -0.050738,
+      "ic_t": -5.499
+     },
+     {
+      "industry": "家用电器",
+      "codes": 93,
+      "n_days": 904,
+      "ic_mean": -0.059405,
+      "ic_t": -9.009
+     },
+     {
+      "industry": "小金属",
+      "codes": 69,
+      "n_days": 904,
+      "ic_mean": -0.034737,
+      "ic_t": -4.349
+     },
+     {
+      "industry": "工程机械",
+      "codes": 38,
+      "n_days": 904,
+      "ic_mean": -0.061402,
+      "ic_t": -6.765
+     },
+     {
+      "industry": "广告包装",
+      "codes": 54,
+      "n_days": 903,
+      "ic_mean": -0.051945,
+      "ic_t": -6.324
+     },
+     {
+      "industry": "建筑工程",
+      "codes": 128,
+      "n_days": 904,
+      "ic_mean": -0.05504,
+      "ic_t": -7.951
+     },
+     {
+      "industry": "影视音像",
+      "codes": 35,
+      "n_days": 904,
+      "ic_mean": -0.058534,
+      "ic_t": -6.747
+     },
+     {
+      "industry": "房产服务",
+      "codes": 13,
+      "n_days": 165,
+      "ic_mean": -0.063913,
+      "ic_t": -2.112
+     },
+     {
+      "industry": "摩托车",
+      "codes": 14,
+      "n_days": 418,
+      "ic_mean": -0.05444,
+      "ic_t": -3.135
+     },
+     {
+      "industry": "文教休闲",
+      "codes": 51,
+      "n_days": 904,
+      "ic_mean": -0.073548,
+      "ic_t": -9.013
+     },
+     {
+      "industry": "新型电力",
+      "codes": 32,
+      "n_days": 901,
+      "ic_mean": -0.015251,
+      "ic_t": -1.598
+     },
+     {
+      "industry": "旅游景点",
+      "codes": 18,
+      "n_days": 787,
+      "ic_mean": -0.032846,
+      "ic_t": -2.829
+     },
+     {
+      "industry": "日用化工",
+      "codes": 21,
+      "n_days": 529,
+      "ic_mean": -0.057454,
+      "ic_t": -4.386
+     },
+     {
+      "industry": "普钢",
+      "codes": 27,
+      "n_days": 788,
+      "ic_mean": 0.004517,
+      "ic_t": 0.415
+     },
+     {
+      "industry": "服饰",
+      "codes": 65,
+      "n_days": 904,
+      "ic_mean": -0.026182,
+      "ic_t": -3.298
+     },
+     {
+      "industry": "机床制造",
+      "codes": 24,
+      "n_days": 834,
+      "ic_mean": -0.032006,
+      "ic_t": -3.174
+     },
+     {
+      "industry": "机械基件",
+      "codes": 142,
+      "n_days": 904,
+      "ic_mean": -0.054782,
+      "ic_t": -8.383
+     },
+     {
+      "industry": "染料涂料",
+      "codes": 37,
+      "n_days": 776,
+      "ic_mean": -0.031607,
+      "ic_t": -2.953
+     },
+     {
+      "industry": "橡胶",
+      "codes": 18,
+      "n_days": 312,
+      "ic_mean": -0.078063,
+      "ic_t": -4.177
+     },
+     {
+      "industry": "水力发电",
+      "codes": 22,
+      "n_days": 864,
+      "ic_mean": -0.024066,
+      "ic_t": -2.037
+     },
+     {
+      "industry": "水务",
+      "codes": 15,
+      "n_days": 276,
+      "ic_mean": -0.111508,
+      "ic_t": -5.023
+     },
+     {
+      "industry": "水泥",
+      "codes": 22,
+      "n_days": 761,
+      "ic_mean": -0.020982,
+      "ic_t": -1.798
+     },
+     {
+      "industry": "水运",
+      "codes": 19,
+      "n_days": 717,
+      "ic_mean": -0.01336,
+      "ic_t": -1.095
+     },
+     {
+      "industry": "汽车整车",
+      "codes": 22,
+      "n_days": 904,
+      "ic_mean": -0.023107,
+      "ic_t": -2.324
+     },
+     {
+      "industry": "汽车配件",
+      "codes": 273,
+      "n_days": 904,
+      "ic_mean": -0.059869,
+      "ic_t": -11.553
+     },
+     {
+      "industry": "港口",
+      "codes": 16,
+      "n_days": 661,
+      "ic_mean": -0.041317,
+      "ic_t": -2.917
+     },
+     {
+      "industry": "火力发电",
+      "codes": 31,
+      "n_days": 904,
+      "ic_mean": -0.020706,
+      "ic_t": -2.096
+     },
+     {
+      "industry": "煤炭开采",
+      "codes": 25,
+      "n_days": 904,
+      "ic_mean": -0.014406,
+      "ic_t": -1.542
+     },
+     {
+      "industry": "特种钢",
+      "codes": 10,
+      "n_days": 205,
+      "ic_mean": -0.006593,
+      "ic_t": -0.257
+     },
+     {
+      "industry": "环境保护",
+      "codes": 119,
+      "n_days": 904,
+      "ic_mean": -0.045645,
+      "ic_t": -6.5
+     },
+     {
+      "industry": "玻璃",
+      "codes": 19,
+      "n_days": 672,
+      "ic_mean": -0.021948,
+      "ic_t": -1.58
+     },
+     {
+      "industry": "生物制药",
+      "codes": 82,
+      "n_days": 904,
+      "ic_mean": -0.03431,
+      "ic_t": -4.922
+     },
+     {
+      "industry": "电器仪表",
+      "codes": 109,
+      "n_days": 904,
+      "ic_mean": -0.062801,
+      "ic_t": -9.37
+     },
+     {
+      "industry": "电气设备",
+      "codes": 348,
+      "n_days": 904,
+      "ic_mean": -0.035243,
+      "ic_t": -6.76
+     },
+     {
+      "industry": "白酒",
+      "codes": 19,
+      "n_days": 904,
+      "ic_mean": 0.027402,
+      "ic_t": 2.622
+     },
+     {
+      "industry": "百货",
+      "codes": 35,
+      "n_days": 787,
+      "ic_mean": -0.046395,
+      "ic_t": -4.152
+     },
+     {
+      "industry": "石油加工",
+      "codes": 14,
+      "n_days": 379,
+      "ic_mean": -0.046861,
+      "ic_t": -2.52
+     },
+     {
+      "industry": "石油开采",
+      "codes": 22,
+      "n_days": 895,
+      "ic_mean": -0.020764,
+      "ic_t": -1.841
+     },
+     {
+      "industry": "矿物制品",
+      "codes": 36,
+      "n_days": 883,
+      "ic_mean": -0.049384,
+      "ic_t": -5.262
+     },
+     {
+      "industry": "种植业",
+      "codes": 19,
+      "n_days": 717,
+      "ic_mean": -0.051256,
+      "ic_t": -3.759
+     },
+     {
+      "industry": "纺织",
+      "codes": 44,
+      "n_days": 653,
+      "ic_mean": -0.078579,
+      "ic_t": -7.081
+     },
+     {
+      "industry": "纺织机械",
+      "codes": 13,
+      "n_days": 192,
+      "ic_mean": -0.019181,
+      "ic_t": -0.875
+     },
+     {
+      "industry": "综合类",
+      "codes": 20,
+      "n_days": 516,
+      "ic_mean": -0.087748,
+      "ic_t": -6.276
+     },
+     {
+      "industry": "航空",
+      "codes": 53,
+      "n_days": 904,
+      "ic_mean": -0.045731,
+      "ic_t": -5.738
+     },
+     {
+      "industry": "船舶",
+      "codes": 11,
+      "n_days": 477,
+      "ic_mean": -0.061529,
+      "ic_t": -3.447
+     },
+     {
+      "industry": "装修装饰",
+      "codes": 25,
+      "n_days": 519,
+      "ic_mean": -0.023601,
+      "ic_t": -1.67
+     },
+     {
+      "industry": "证券",
+      "codes": 50,
+      "n_days": 904,
+      "ic_mean": -0.052635,
+      "ic_t": -7.215
+     },
+     {
+      "industry": "路桥",
+      "codes": 19,
+      "n_days": 662,
+      "ic_mean": -0.020387,
+      "ic_t": -1.372
+     },
+     {
+      "industry": "软件服务",
+      "codes": 280,
+      "n_days": 904,
+      "ic_mean": -0.065825,
+      "ic_t": -13.389
+     },
+     {
+      "industry": "运输设备",
+      "codes": 49,
+      "n_days": 890,
+      "ic_mean": -0.066234,
+      "ic_t": -7.177
+     },
+     {
+      "industry": "通信设备",
+      "codes": 139,
+      "n_days": 904,
+      "ic_mean": -0.045677,
+      "ic_t": -7.159
+     },
+     {
+      "industry": "造纸",
+      "codes": 35,
+      "n_days": 757,
+      "ic_mean": -0.005265,
+      "ic_t": -0.516
+     },
+     {
+      "industry": "钢加工",
+      "codes": 24,
+      "n_days": 716,
+      "ic_mean": -0.056124,
+      "ic_t": -4.903
+     },
+     {
+      "industry": "铅锌",
+      "codes": 14,
+      "n_days": 745,
+      "ic_mean": -0.021527,
+      "ic_t": -1.613
+     },
+     {
+      "industry": "铜",
+      "codes": 18,
+      "n_days": 808,
+      "ic_mean": -0.052644,
+      "ic_t": -4.603
+     },
+     {
+      "industry": "铝",
+      "codes": 30,
+      "n_days": 904,
+      "ic_mean": -0.000784,
+      "ic_t": -0.075
+     },
+     {
+      "industry": "银行",
+      "codes": 42,
+      "n_days": 904,
+      "ic_mean": 0.00203,
+      "ic_t": 0.23
+     },
+     {
+      "industry": "食品",
+      "codes": 92,
+      "n_days": 904,
+      "ic_mean": -0.024352,
+      "ic_t": -3.526
+     },
+     {
+      "industry": "饲料",
+      "codes": 23,
+      "n_days": 776,
+      "ic_mean": -0.03266,
+      "ic_t": -2.634
+     },
+     {
+      "industry": "黄金",
+      "codes": 10,
+      "n_days": 476,
+      "ic_mean": -0.046804,
+      "ic_t": -2.533
+     }
+    ]
+   }
+  },
+  "RS_10": {
+   "name": "RS_10",
+   "origin": "个股10日收益 − 行业10日收益（leave-one-out）",
+   "direction": {
+    "sign": -1,
+    "source": "2023-2024 观察窗 IC 符号（无观察窗时默认 +1）"
+   },
+   "ic": {
+    "n_days": 904,
+    "mean": -0.04938,
+    "std": 0.098917,
+    "t": -15.009,
+    "positive_rate": 0.3252,
+    "ir": -0.4992,
+    "t_monthly": -2.983,
+    "n_monthly": 46,
+    "bootstrap": {
+     "n_boot": 300,
+     "mean_pct": -4.855,
+     "p_le_0": 1.0
+    }
+   },
+   "deciles": {
+    "groups": {
+     "D1": {
+      "n_days": 904,
+      "mean_car_pct": -2.0746,
+      "std_car_pct": 2.5104,
+      "t": -24.847,
+      "positive_rate": 0.1294,
+      "ann_pct": -26.14,
+      "n_obs": 320120
+     },
+     "D2": {
+      "n_days": 904,
+      "mean_car_pct": -1.8076,
+      "std_car_pct": 1.8066,
+      "t": -30.083,
+      "positive_rate": 0.0985,
+      "ann_pct": -22.78,
+      "n_obs": 320568
+     },
+     "D3": {
+      "n_days": 904,
+      "mean_car_pct": -1.8043,
+      "std_car_pct": 1.5932,
+      "t": -34.051,
+      "positive_rate": 0.0819,
+      "ann_pct": -22.73,
+      "n_obs": 320481
+     },
+     "D4": {
+      "n_days": 904,
+      "mean_car_pct": -1.83,
+      "std_car_pct": 1.5601,
+      "t": -35.267,
+      "positive_rate": 0.0719,
+      "ann_pct": -23.06,
+      "n_obs": 320553
+     },
+     "D5": {
+      "n_days": 904,
+      "mean_car_pct": -1.8397,
+      "std_car_pct": 1.7547,
+      "t": -31.523,
+      "positive_rate": 0.0808,
+      "ann_pct": -23.18,
+      "n_obs": 320662
+     },
+     "D6": {
+      "n_days": 904,
+      "mean_car_pct": -1.8868,
+      "std_car_pct": 1.8849,
+      "t": -30.096,
+      "positive_rate": 0.0985,
+      "ann_pct": -23.77,
+      "n_obs": 320398
+     },
+     "D7": {
+      "n_days": 904,
+      "mean_car_pct": -1.9192,
+      "std_car_pct": 1.765,
+      "t": -32.693,
+      "positive_rate": 0.0841,
+      "ann_pct": -24.18,
+      "n_obs": 320454
+     },
+     "D8": {
+      "n_days": 904,
+      "mean_car_pct": -2.1274,
+      "std_car_pct": 1.7107,
+      "t": -37.39,
+      "positive_rate": 0.0697,
+      "ann_pct": -26.81,
+      "n_obs": 320580
+     },
+     "D9": {
+      "n_days": 904,
+      "mean_car_pct": -2.4528,
+      "std_car_pct": 2.2084,
+      "t": -33.394,
+      "positive_rate": 0.1007,
+      "ann_pct": -30.9,
+      "n_obs": 320469
+     },
+     "D10": {
+      "n_days": 904,
+      "mean_car_pct": -3.3168,
+      "std_car_pct": 4.2071,
+      "t": -23.704,
+      "positive_rate": 0.1659,
+      "ann_pct": -41.79,
+      "n_obs": 320918
+     }
+    },
+    "monotonicity": -0.733,
+    "long_short": {
+     "mean_20d_pct": -1.2422,
+     "ann_pct": -15.65,
+     "t_daily": -7.474,
+     "t_monthly": -1.277,
+     "bootstrap": {
+      "n_boot": 300,
+      "mean_pct": -1.196,
+      "p_le_0": 0.9967
+     },
+     "n_days": 904,
+     "direction_adjusted": {
+      "direction_sign": -1,
+      "ann_pct": 15.65,
+      "t_monthly": 1.277,
+      "bootstrap_p_le_0": 0.0033
+     }
+    },
+    "n_obs": 3205203,
+    "n_days": 904
+   },
+   "turnover": {
+    "top_decile": {
+     "avg_one_way_turnover": 0.2819,
+     "n_transitions": 903,
+     "ann_turnover_daily_rebalance": 71.0,
+     "ann_turnover_overlapping": 3.55
+    },
+    "bottom_decile": {
+     "avg_one_way_turnover": 0.3467,
+     "n_transitions": 903,
+     "ann_turnover_daily_rebalance": 87.4,
+     "ann_turnover_overlapping": 4.37
+    }
+   },
+   "cost_sensitivity": {
+    "30bp": {
+     "net_ann_pct": -17.78,
+     "cost_drag_ann_pct": 2.13
+    },
+    "50bp": {
+     "net_ann_pct": -19.2,
+     "cost_drag_ann_pct": 3.55
+    },
+    "80bp": {
+     "net_ann_pct": -21.33,
+     "cost_drag_ann_pct": 5.68
+    }
+   },
+   "walk_forward": {
+    "2023-2024": {
+     "ic": {
+      "n_days": 484,
+      "mean": -0.050068,
+      "std": 0.100185,
+      "t": -10.995,
+      "positive_rate": 0.3079
+     },
+     "ic_monthly_t": -2.326,
+     "long_short_mean_20d_pct": -1.5946,
+     "long_short_ann_pct": -20.09,
+     "long_short_t_daily": -7.631,
+     "long_short_t_monthly": -1.792,
+     "bootstrap_p": 1.0
+    },
+    "2025-2026": {
+     "ic": {
+      "n_days": 420,
+      "mean": -0.048587,
+      "std": 0.097548,
+      "t": -10.208,
+      "positive_rate": 0.3452
+     },
+     "ic_monthly_t": -2.167,
+     "long_short_mean_20d_pct": -0.8361,
+     "long_short_ann_pct": -10.53,
+     "long_short_t_daily": -3.174,
+     "long_short_t_monthly": -1.076,
+     "bootstrap_p": 0.7867
+    }
+   },
+   "placebo": {
+    "n_perm": 1000,
+    "n_cohorts": 46,
+    "cohort_step": 20,
+    "actual_mean_ic": -0.041996,
+    "p_value": 0.002,
+    "p_one_sided_high": 1.0,
+    "p_one_sided_low": 0.001,
+    "percentile_rank": 0.0,
+    "null": {
+     "mean": -3.7e-05,
+     "std": 0.002458,
+     "p05": -0.003925,
+     "p50": -0.000133,
+     "p95": 0.004154
+    }
+   },
+   "cap_stratified": {
+    "小市值": {
+     "ic_mean": -0.067371,
+     "ic_t": -22.258,
+     "n_days": 904,
+     "n_obs": 1068089
+    },
+    "中市值": {
+     "ic_mean": -0.053855,
+     "ic_t": -18.52,
+     "n_days": 904,
+     "n_obs": 1068391
+    },
+    "大市值": {
+     "ic_mean": -0.020077,
+     "ic_t": -5.212,
+     "n_days": 904,
+     "n_obs": 1068723
+    }
+   },
+   "industry_stratified": {
+    "n_industries": 87,
+    "median_ic": -0.058747,
+    "mean_ic": -0.056472,
+    "q25_ic": -0.074568,
+    "q75_ic": -0.035974,
+    "share_positive": 0.0345,
+    "industries": [
+     {
+      "industry": "IT设备",
+      "codes": 81,
+      "n_days": 904,
+      "ic_mean": -0.062221,
+      "ic_t": -9.253
+     },
+     {
+      "industry": "专用机械",
+      "codes": 296,
+      "n_days": 904,
+      "ic_mean": -0.064399,
+      "ic_t": -11.111
+     },
+     {
+      "industry": "中成药",
+      "codes": 68,
+      "n_days": 904,
+      "ic_mean": -0.038986,
+      "ic_t": -4.903
+     },
+     {
+      "industry": "乳制品",
+      "codes": 22,
+      "n_days": 619,
+      "ic_mean": -0.078612,
+      "ic_t": -5.894
+     },
+     {
+      "industry": "互联网",
+      "codes": 81,
+      "n_days": 904,
+      "ic_mean": -0.074343,
+      "ic_t": -10.952
+     },
+     {
+      "industry": "仓储物流",
+      "codes": 47,
+      "n_days": 904,
+      "ic_mean": -0.060942,
+      "ic_t": -7.065
+     },
+     {
+      "industry": "供气供热",
+      "codes": 44,
+      "n_days": 782,
+      "ic_mean": -0.068119,
+      "ic_t": -6.219
+     },
+     {
+      "industry": "元器件",
+      "codes": 312,
+      "n_days": 904,
+      "ic_mean": -0.051798,
+      "ic_t": -8.842
+     },
+     {
+      "industry": "全国地产",
+      "codes": 26,
+      "n_days": 837,
+      "ic_mean": -0.038437,
+      "ic_t": -3.502
+     },
+     {
+      "industry": "其他商业",
+      "codes": 12,
+      "n_days": 270,
+      "ic_mean": -0.137797,
+      "ic_t": -6.853
+     },
+     {
+      "industry": "其他建材",
+      "codes": 31,
+      "n_days": 786,
+      "ic_mean": -0.02819,
+      "ic_t": -2.443
+     },
+     {
+      "industry": "农业综合",
+      "codes": 40,
+      "n_days": 900,
+      "ic_mean": -0.090003,
+      "ic_t": -10.374
+     },
+     {
+      "industry": "农用机械",
+      "codes": 13,
+      "n_days": 127,
+      "ic_mean": -0.028886,
+      "ic_t": -0.91
+     },
+     {
+      "industry": "农药化肥",
+      "codes": 58,
+      "n_days": 904,
+      "ic_mean": -0.0516,
+      "ic_t": -6.784
+     },
+     {
+      "industry": "出版业",
+      "codes": 29,
+      "n_days": 894,
+      "ic_mean": -0.059355,
+      "ic_t": -5.39
+     },
+     {
+      "industry": "化学制药",
+      "codes": 149,
+      "n_days": 904,
+      "ic_mean": -0.042415,
+      "ic_t": -6.756
+     },
+     {
+      "industry": "化工原料",
+      "codes": 262,
+      "n_days": 904,
+      "ic_mean": -0.081113,
+      "ic_t": -13.266
+     },
+     {
+      "industry": "化工机械",
+      "codes": 13,
+      "n_days": 357,
+      "ic_mean": -0.130464,
+      "ic_t": -6.716
+     },
+     {
+      "industry": "化纤",
+      "codes": 33,
+      "n_days": 900,
+      "ic_mean": -0.039275,
+      "ic_t": -4.067
+     },
+     {
+      "industry": "区域地产",
+      "codes": 43,
+      "n_days": 894,
+      "ic_mean": -0.058747,
+      "ic_t": -6.938
+     },
+     {
+      "industry": "医疗保健",
+      "codes": 186,
+      "n_days": 904,
+      "ic_mean": -0.056846,
+      "ic_t": -9.192
+     },
+     {
+      "industry": "医药商业",
+      "codes": 37,
+      "n_days": 904,
+      "ic_mean": -0.035222,
+      "ic_t": -3.378
+     },
+     {
+      "industry": "半导体",
+      "codes": 200,
+      "n_days": 904,
+      "ic_mean": -0.071512,
+      "ic_t": -13.334
+     },
+     {
+      "industry": "商贸代理",
+      "codes": 16,
+      "n_days": 422,
+      "ic_mean": -0.150696,
+      "ic_t": -8.282
+     },
+     {
+      "industry": "园区开发",
+      "codes": 14,
+      "n_days": 346,
+      "ic_mean": -0.129369,
+      "ic_t": -6.376
+     },
+     {
+      "industry": "塑料",
+      "codes": 81,
+      "n_days": 904,
+      "ic_mean": -0.060631,
+      "ic_t": -6.906
+     },
+     {
+      "industry": "多元金融",
+      "codes": 23,
+      "n_days": 899,
+      "ic_mean": -0.03403,
+      "ic_t": -3.47
+     },
+     {
+      "industry": "家居用品",
+      "codes": 71,
+      "n_days": 851,
+      "ic_mean": -0.049181,
+      "ic_t": -4.799
+     },
+     {
+      "industry": "家用电器",
+      "codes": 93,
+      "n_days": 904,
+      "ic_mean": -0.074792,
+      "ic_t": -11.53
+     },
+     {
+      "industry": "小金属",
+      "codes": 69,
+      "n_days": 904,
+      "ic_mean": -0.040174,
+      "ic_t": -5.19
+     },
+     {
+      "industry": "工程机械",
+      "codes": 38,
+      "n_days": 904,
+      "ic_mean": -0.076192,
+      "ic_t": -8.431
+     },
+     {
+      "industry": "广告包装",
+      "codes": 54,
+      "n_days": 903,
+      "ic_mean": -0.073041,
+      "ic_t": -8.884
+     },
+     {
+      "industry": "建筑工程",
+      "codes": 128,
+      "n_days": 904,
+      "ic_mean": -0.074177,
+      "ic_t": -10.317
+     },
+     {
+      "industry": "影视音像",
+      "codes": 35,
+      "n_days": 904,
+      "ic_mean": -0.064636,
+      "ic_t": -7.491
+     },
+     {
+      "industry": "房产服务",
+      "codes": 13,
+      "n_days": 165,
+      "ic_mean": -0.112429,
+      "ic_t": -3.927
+     },
+     {
+      "industry": "摩托车",
+      "codes": 14,
+      "n_days": 418,
+      "ic_mean": -0.078012,
+      "ic_t": -4.619
+     },
+     {
+      "industry": "文教休闲",
+      "codes": 51,
+      "n_days": 904,
+      "ic_mean": -0.089481,
+      "ic_t": -10.994
+     },
+     {
+      "industry": "新型电力",
+      "codes": 32,
+      "n_days": 901,
+      "ic_mean": -0.018325,
+      "ic_t": -1.97
+     },
+     {
+      "industry": "旅游景点",
+      "codes": 18,
+      "n_days": 787,
+      "ic_mean": -0.052797,
+      "ic_t": -4.4
+     },
+     {
+      "industry": "日用化工",
+      "codes": 21,
+      "n_days": 530,
+      "ic_mean": -0.070552,
+      "ic_t": -5.338
+     },
+     {
+      "industry": "普钢",
+      "codes": 27,
+      "n_days": 788,
+      "ic_mean": -0.00482,
+      "ic_t": -0.455
+     },
+     {
+      "industry": "服饰",
+      "codes": 65,
+      "n_days": 904,
+      "ic_mean": -0.031039,
+      "ic_t": -4.067
+     },
+     {
+      "industry": "机床制造",
+      "codes": 24,
+      "n_days": 833,
+      "ic_mean": -0.06097,
+      "ic_t": -6.095
+     },
+     {
+      "industry": "机械基件",
+      "codes": 142,
+      "n_days": 904,
+      "ic_mean": -0.069838,
+      "ic_t": -10.085
+     },
+     {
+      "industry": "染料涂料",
+      "codes": 37,
+      "n_days": 776,
+      "ic_mean": -0.044151,
+      "ic_t": -4.093
+     },
+     {
+      "industry": "橡胶",
+      "codes": 18,
+      "n_days": 312,
+      "ic_mean": -0.097868,
+      "ic_t": -5.424
+     },
+     {
+      "industry": "水力发电",
+      "codes": 22,
+      "n_days": 864,
+      "ic_mean": -0.036726,
+      "ic_t": -3.025
+     },
+     {
+      "industry": "水务",
+      "codes": 15,
+      "n_days": 275,
+      "ic_mean": -0.097705,
+      "ic_t": -4.549
+     },
+     {
+      "industry": "水泥",
+      "codes": 22,
+      "n_days": 761,
+      "ic_mean": -0.043706,
+      "ic_t": -3.836
+     },
+     {
+      "industry": "水运",
+      "codes": 19,
+      "n_days": 716,
+      "ic_mean": -0.007283,
+      "ic_t": -0.573
+     },
+     {
+      "industry": "汽车整车",
+      "codes": 22,
+      "n_days": 904,
+      "ic_mean": -0.041439,
+      "ic_t": -4.312
+     },
+     {
+      "industry": "汽车配件",
+      "codes": 273,
+      "n_days": 904,
+      "ic_mean": -0.077059,
+      "ic_t": -14.646
+     },
+     {
+      "industry": "港口",
+      "codes": 16,
+      "n_days": 656,
+      "ic_mean": -0.052348,
+      "ic_t": -3.686
+     },
+     {
+      "industry": "火力发电",
+      "codes": 31,
+      "n_days": 904,
+      "ic_mean": -0.03803,
+      "ic_t": -3.77
+     },
+     {
+      "industry": "煤炭开采",
+      "codes": 25,
+      "n_days": 904,
+      "ic_mean": -0.01683,
+      "ic_t": -1.706
+     },
+     {
+      "industry": "特种钢",
+      "codes": 10,
+      "n_days": 205,
+      "ic_mean": -0.01014,
+      "ic_t": -0.369
+     },
+     {
+      "industry": "环境保护",
+      "codes": 119,
+      "n_days": 904,
+      "ic_mean": -0.058569,
+      "ic_t": -7.982
+     },
+     {
+      "industry": "玻璃",
+      "codes": 19,
+      "n_days": 672,
+      "ic_mean": -0.030491,
+      "ic_t": -2.155
+     },
+     {
+      "industry": "生物制药",
+      "codes": 82,
+      "n_days": 904,
+      "ic_mean": -0.033212,
+      "ic_t": -4.789
+     },
+     {
+      "industry": "电器仪表",
+      "codes": 109,
+      "n_days": 904,
+      "ic_mean": -0.078259,
+      "ic_t": -11.507
+     },
+     {
+      "industry": "电气设备",
+      "codes": 348,
+      "n_days": 904,
+      "ic_mean": -0.043648,
+      "ic_t": -7.978
+     },
+     {
+      "industry": "白酒",
+      "codes": 19,
+      "n_days": 904,
+      "ic_mean": 0.027519,
+      "ic_t": 2.727
+     },
+     {
+      "industry": "百货",
+      "codes": 35,
+      "n_days": 788,
+      "ic_mean": -0.059373,
+      "ic_t": -5.137
+     },
+     {
+      "industry": "石油加工",
+      "codes": 14,
+      "n_days": 380,
+      "ic_mean": -0.059057,
+      "ic_t": -3.131
+     },
+     {
+      "industry": "石油开采",
+      "codes": 22,
+      "n_days": 895,
+      "ic_mean": -0.011245,
+      "ic_t": -0.98
+     },
+     {
+      "industry": "矿物制品",
+      "codes": 36,
+      "n_days": 884,
+      "ic_mean": -0.069886,
+      "ic_t": -7.142
+     },
+     {
+      "industry": "种植业",
+      "codes": 19,
+      "n_days": 717,
+      "ic_mean": -0.059252,
+      "ic_t": -4.55
+     },
+     {
+      "industry": "纺织",
+      "codes": 44,
+      "n_days": 653,
+      "ic_mean": -0.104552,
+      "ic_t": -9.097
+     },
+     {
+      "industry": "纺织机械",
+      "codes": 13,
+      "n_days": 191,
+      "ic_mean": 0.004707,
+      "ic_t": 0.205
+     },
+     {
+      "industry": "综合类",
+      "codes": 20,
+      "n_days": 515,
+      "ic_mean": -0.122582,
+      "ic_t": -9.032
+     },
+     {
+      "industry": "航空",
+      "codes": 53,
+      "n_days": 904,
+      "ic_mean": -0.067443,
+      "ic_t": -7.939
+     },
+     {
+      "industry": "船舶",
+      "codes": 11,
+      "n_days": 479,
+      "ic_mean": -0.048935,
+      "ic_t": -2.666
+     },
+     {
+      "industry": "装修装饰",
+      "codes": 25,
+      "n_days": 519,
+      "ic_mean": -0.025353,
+      "ic_t": -1.854
+     },
+     {
+      "industry": "证券",
+      "codes": 50,
+      "n_days": 904,
+      "ic_mean": -0.065258,
+      "ic_t": -8.787
+     },
+     {
+      "industry": "路桥",
+      "codes": 19,
+      "n_days": 661,
+      "ic_mean": -0.018702,
+      "ic_t": -1.24
+     },
+     {
+      "industry": "软件服务",
+      "codes": 280,
+      "n_days": 904,
+      "ic_mean": -0.086164,
+      "ic_t": -16.863
+     },
+     {
+      "industry": "运输设备",
+      "codes": 49,
+      "n_days": 890,
+      "ic_mean": -0.082638,
+      "ic_t": -8.584
+     },
+     {
+      "industry": "通信设备",
+      "codes": 139,
+      "n_days": 904,
+      "ic_mean": -0.053503,
+      "ic_t": -7.728
+     },
+     {
+      "industry": "造纸",
+      "codes": 35,
+      "n_days": 757,
+      "ic_mean": 0.011701,
+      "ic_t": 1.179
+     },
+     {
+      "industry": "钢加工",
+      "codes": 24,
+      "n_days": 716,
+      "ic_mean": -0.083387,
+      "ic_t": -7.355
+     },
+     {
+      "industry": "铅锌",
+      "codes": 14,
+      "n_days": 745,
+      "ic_mean": -0.024592,
+      "ic_t": -1.896
+     },
+     {
+      "industry": "铜",
+      "codes": 18,
+      "n_days": 807,
+      "ic_mean": -0.070446,
+      "ic_t": -5.867
+     },
+     {
+      "industry": "铝",
+      "codes": 30,
+      "n_days": 904,
+      "ic_mean": -0.011228,
+      "ic_t": -1.056
+     },
+     {
+      "industry": "银行",
+      "codes": 42,
+      "n_days": 904,
+      "ic_mean": -0.003211,
+      "ic_t": -0.371
+     },
+     {
+      "industry": "食品",
+      "codes": 92,
+      "n_days": 904,
+      "ic_mean": -0.020675,
+      "ic_t": -2.889
+     },
+     {
+      "industry": "饲料",
+      "codes": 23,
+      "n_days": 776,
+      "ic_mean": -0.04824,
+      "ic_t": -3.961
+     },
+     {
+      "industry": "黄金",
+      "codes": 10,
+      "n_days": 472,
+      "ic_mean": -0.089368,
+      "ic_t": -5.146
+     }
+    ]
+   }
+  },
+  "RS_20": {
+   "name": "RS_20",
+   "origin": "个股20日收益 − 行业20日收益（leave-one-out）",
+   "direction": {
+    "sign": -1,
+    "source": "2023-2024 观察窗 IC 符号（无观察窗时默认 +1）"
+   },
+   "ic": {
+    "n_days": 904,
+    "mean": -0.058887,
+    "std": 0.110561,
+    "t": -16.014,
+    "positive_rate": 0.3197,
+    "ir": -0.5326,
+    "t_monthly": -2.727,
+    "n_monthly": 46,
+    "bootstrap": {
+     "n_boot": 300,
+     "mean_pct": -5.772,
+     "p_le_0": 1.0
+    }
+   },
+   "deciles": {
+    "groups": {
+     "D1": {
+      "n_days": 904,
+      "mean_car_pct": -1.9725,
+      "std_car_pct": 2.3471,
+      "t": -25.267,
+      "positive_rate": 0.1228,
+      "ann_pct": -24.85,
+      "n_obs": 320124
+     },
+     "D2": {
+      "n_days": 904,
+      "mean_car_pct": -1.771,
+      "std_car_pct": 1.8309,
+      "t": -29.083,
+      "positive_rate": 0.1195,
+      "ann_pct": -22.31,
+      "n_obs": 320565
+     },
+     "D3": {
+      "n_days": 904,
+      "mean_car_pct": -1.7579,
+      "std_car_pct": 1.6821,
+      "t": -31.42,
+      "positive_rate": 0.1018,
+      "ann_pct": -22.15,
+      "n_obs": 320473
+     },
+     "D4": {
+      "n_days": 904,
+      "mean_car_pct": -1.7927,
+      "std_car_pct": 1.6117,
+      "t": -33.442,
+      "positive_rate": 0.0863,
+      "ann_pct": -22.59,
+      "n_obs": 320569
+     },
+     "D5": {
+      "n_days": 904,
+      "mean_car_pct": -1.9235,
+      "std_car_pct": 1.6993,
+      "t": -34.034,
+      "positive_rate": 0.0719,
+      "ann_pct": -24.24,
+      "n_obs": 320621
+     },
+     "D6": {
+      "n_days": 904,
+      "mean_car_pct": -1.9606,
+      "std_car_pct": 1.8786,
+      "t": -31.38,
+      "positive_rate": 0.0918,
+      "ann_pct": -24.7,
+      "n_obs": 320392
+     },
+     "D7": {
+      "n_days": 904,
+      "mean_car_pct": -1.9968,
+      "std_car_pct": 1.8196,
+      "t": -32.994,
+      "positive_rate": 0.0785,
+      "ann_pct": -25.16,
+      "n_obs": 320468
+     },
+     "D8": {
+      "n_days": 904,
+      "mean_car_pct": -2.1532,
+      "std_car_pct": 1.7776,
+      "t": -36.418,
+      "positive_rate": 0.0697,
+      "ann_pct": -27.13,
+      "n_obs": 320574
+     },
+     "D9": {
+      "n_days": 904,
+      "mean_car_pct": -2.4723,
+      "std_car_pct": 2.3423,
+      "t": -31.736,
+      "positive_rate": 0.1139,
+      "ann_pct": -31.15,
+      "n_obs": 320464
+     },
+     "D10": {
+      "n_days": 904,
+      "mean_car_pct": -3.2655,
+      "std_car_pct": 4.7399,
+      "t": -20.714,
+      "positive_rate": 0.1958,
+      "ann_pct": -41.14,
+      "n_obs": 320929
+     }
+    },
+    "monotonicity": -0.806,
+    "long_short": {
+     "mean_20d_pct": -1.293,
+     "ann_pct": -16.29,
+     "t_daily": -6.868,
+     "t_monthly": -0.704,
+     "bootstrap": {
+      "n_boot": 300,
+      "mean_pct": -1.232,
+      "p_le_0": 0.9867
+     },
+     "n_days": 904,
+     "direction_adjusted": {
+      "direction_sign": -1,
+      "ann_pct": 16.29,
+      "t_monthly": 0.704,
+      "bootstrap_p_le_0": 0.0133
+     }
+    },
+    "n_obs": 3205179,
+    "n_days": 904
+   },
+   "turnover": {
+    "top_decile": {
+     "avg_one_way_turnover": 0.2146,
+     "n_transitions": 903,
+     "ann_turnover_daily_rebalance": 54.1,
+     "ann_turnover_overlapping": 2.7
+    },
+    "bottom_decile": {
+     "avg_one_way_turnover": 0.2835,
+     "n_transitions": 903,
+     "ann_turnover_daily_rebalance": 71.4,
+     "ann_turnover_overlapping": 3.57
+    }
+   },
+   "cost_sensitivity": {
+    "30bp": {
+     "net_ann_pct": -17.91,
+     "cost_drag_ann_pct": 1.62
+    },
+    "50bp": {
+     "net_ann_pct": -18.99,
+     "cost_drag_ann_pct": 2.7
+    },
+    "80bp": {
+     "net_ann_pct": -20.61,
+     "cost_drag_ann_pct": 4.32
+    }
+   },
+   "walk_forward": {
+    "2023-2024": {
+     "ic": {
+      "n_days": 484,
+      "mean": -0.059708,
+      "std": 0.11346,
+      "t": -11.578,
+      "positive_rate": 0.3037
+     },
+     "ic_monthly_t": -1.83,
+     "long_short_mean_20d_pct": -1.8111,
+     "long_short_ann_pct": -22.82,
+     "long_short_t_daily": -7.718,
+     "long_short_t_monthly": -0.992,
+     "bootstrap_p": 1.0
+    },
+    "2025-2026": {
+     "ic": {
+      "n_days": 420,
+      "mean": -0.05794,
+      "std": 0.10725,
+      "t": -11.071,
+      "positive_rate": 0.3381
+     },
+     "ic_monthly_t": -2.604,
+     "long_short_mean_20d_pct": -0.696,
+     "long_short_ann_pct": -8.77,
+     "long_short_t_daily": -2.324,
+     "long_short_t_monthly": -1.085,
+     "bootstrap_p": 0.6867
+    }
+   },
+   "placebo": {
+    "n_perm": 1000,
+    "n_cohorts": 46,
+    "cohort_step": 20,
+    "actual_mean_ic": -0.045269,
+    "p_value": 0.002,
+    "p_one_sided_high": 1.0,
+    "p_one_sided_low": 0.001,
+    "percentile_rank": 0.0,
+    "null": {
+     "mean": -0.000101,
+     "std": 0.00255,
+     "p05": -0.004338,
+     "p50": -0.000132,
+     "p95": 0.004314
+    }
+   },
+   "cap_stratified": {
+    "小市值": {
+     "ic_mean": -0.071168,
+     "ic_t": -20.637,
+     "n_days": 904,
+     "n_obs": 1068114
+    },
+    "中市值": {
+     "ic_mean": -0.06233,
+     "ic_t": -18.617,
+     "n_days": 904,
+     "n_obs": 1068389
+    },
+    "大市值": {
+     "ic_mean": -0.027622,
+     "ic_t": -6.784,
+     "n_days": 904,
+     "n_obs": 1068676
+    }
+   },
+   "industry_stratified": {
+    "n_industries": 87,
+    "median_ic": -0.068941,
+    "mean_ic": -0.06461,
+    "q25_ic": -0.09431,
+    "q75_ic": -0.038629,
+    "share_positive": 0.0575,
+    "industries": [
+     {
+      "industry": "IT设备",
+      "codes": 81,
+      "n_days": 904,
+      "ic_mean": -0.063235,
+      "ic_t": -8.72
+     },
+     {
+      "industry": "专用机械",
+      "codes": 296,
+      "n_days": 904,
+      "ic_mean": -0.073727,
+      "ic_t": -11.516
+     },
+     {
+      "industry": "中成药",
+      "codes": 68,
+      "n_days": 904,
+      "ic_mean": -0.047005,
+      "ic_t": -5.668
+     },
+     {
+      "industry": "乳制品",
+      "codes": 22,
+      "n_days": 619,
+      "ic_mean": -0.131417,
+      "ic_t": -9.789
+     },
+     {
+      "industry": "互联网",
+      "codes": 81,
+      "n_days": 904,
+      "ic_mean": -0.097762,
+      "ic_t": -14.022
+     },
+     {
+      "industry": "仓储物流",
+      "codes": 47,
+      "n_days": 904,
+      "ic_mean": -0.080061,
+      "ic_t": -8.718
+     },
+     {
+      "industry": "供气供热",
+      "codes": 44,
+      "n_days": 781,
+      "ic_mean": -0.069473,
+      "ic_t": -6.12
+     },
+     {
+      "industry": "元器件",
+      "codes": 312,
+      "n_days": 904,
+      "ic_mean": -0.059791,
+      "ic_t": -9.208
+     },
+     {
+      "industry": "全国地产",
+      "codes": 26,
+      "n_days": 837,
+      "ic_mean": -0.049793,
+      "ic_t": -4.616
+     },
+     {
+      "industry": "其他商业",
+      "codes": 12,
+      "n_days": 270,
+      "ic_mean": -0.140222,
+      "ic_t": -7.269
+     },
+     {
+      "industry": "其他建材",
+      "codes": 31,
+      "n_days": 786,
+      "ic_mean": -0.058349,
+      "ic_t": -4.994
+     },
+     {
+      "industry": "农业综合",
+      "codes": 40,
+      "n_days": 900,
+      "ic_mean": -0.094575,
+      "ic_t": -10.068
+     },
+     {
+      "industry": "农用机械",
+      "codes": 13,
+      "n_days": 127,
+      "ic_mean": 0.068559,
+      "ic_t": 2.286
+     },
+     {
+      "industry": "农药化肥",
+      "codes": 58,
+      "n_days": 904,
+      "ic_mean": -0.054224,
+      "ic_t": -6.708
+     },
+     {
+      "industry": "出版业",
+      "codes": 29,
+      "n_days": 894,
+      "ic_mean": -0.108016,
+      "ic_t": -9.62
+     },
+     {
+      "industry": "化学制药",
+      "codes": 149,
+      "n_days": 904,
+      "ic_mean": -0.067157,
+      "ic_t": -10.917
+     },
+     {
+      "industry": "化工原料",
+      "codes": 262,
+      "n_days": 904,
+      "ic_mean": -0.095298,
+      "ic_t": -14.76
+     },
+     {
+      "industry": "化工机械",
+      "codes": 13,
+      "n_days": 355,
+      "ic_mean": -0.117638,
+      "ic_t": -5.724
+     },
+     {
+      "industry": "化纤",
+      "codes": 33,
+      "n_days": 900,
+      "ic_mean": -0.030501,
+      "ic_t": -3.236
+     },
+     {
+      "industry": "区域地产",
+      "codes": 43,
+      "n_days": 894,
+      "ic_mean": -0.078557,
+      "ic_t": -9.283
+     },
+     {
+      "industry": "医疗保健",
+      "codes": 186,
+      "n_days": 904,
+      "ic_mean": -0.073175,
+      "ic_t": -10.836
+     },
+     {
+      "industry": "医药商业",
+      "codes": 37,
+      "n_days": 904,
+      "ic_mean": -0.044081,
+      "ic_t": -4.149
+     },
+     {
+      "industry": "半导体",
+      "codes": 200,
+      "n_days": 904,
+      "ic_mean": -0.082133,
+      "ic_t": -14.285
+     },
+     {
+      "industry": "商贸代理",
+      "codes": 16,
+      "n_days": 420,
+      "ic_mean": -0.1925,
+      "ic_t": -10.513
+     },
+     {
+      "industry": "园区开发",
+      "codes": 14,
+      "n_days": 345,
+      "ic_mean": -0.149524,
+      "ic_t": -7.626
+     },
+     {
+      "industry": "塑料",
+      "codes": 81,
+      "n_days": 904,
+      "ic_mean": -0.071625,
+      "ic_t": -7.591
+     },
+     {
+      "industry": "多元金融",
+      "codes": 23,
+      "n_days": 899,
+      "ic_mean": -0.036492,
+      "ic_t": -3.697
+     },
+     {
+      "industry": "家居用品",
+      "codes": 71,
+      "n_days": 851,
+      "ic_mean": -0.03047,
+      "ic_t": -2.871
+     },
+     {
+      "industry": "家用电器",
+      "codes": 93,
+      "n_days": 904,
+      "ic_mean": -0.093686,
+      "ic_t": -13.883
+     },
+     {
+      "industry": "小金属",
+      "codes": 69,
+      "n_days": 904,
+      "ic_mean": -0.025335,
+      "ic_t": -3.202
+     },
+     {
+      "industry": "工程机械",
+      "codes": 38,
+      "n_days": 904,
+      "ic_mean": -0.069194,
+      "ic_t": -7.369
+     },
+     {
+      "industry": "广告包装",
+      "codes": 54,
+      "n_days": 903,
+      "ic_mean": -0.104804,
+      "ic_t": -11.648
+     },
+     {
+      "industry": "建筑工程",
+      "codes": 128,
+      "n_days": 904,
+      "ic_mean": -0.099171,
+      "ic_t": -13.123
+     },
+     {
+      "industry": "影视音像",
+      "codes": 35,
+      "n_days": 904,
+      "ic_mean": -0.076732,
+      "ic_t": -8.9
+     },
+     {
+      "industry": "房产服务",
+      "codes": 13,
+      "n_days": 163,
+      "ic_mean": -0.119784,
+      "ic_t": -4.203
+     },
+     {
+      "industry": "摩托车",
+      "codes": 14,
+      "n_days": 418,
+      "ic_mean": -0.096232,
+      "ic_t": -5.524
+     },
+     {
+      "industry": "文教休闲",
+      "codes": 51,
+      "n_days": 904,
+      "ic_mean": -0.094068,
+      "ic_t": -11.211
+     },
+     {
+      "industry": "新型电力",
+      "codes": 32,
+      "n_days": 901,
+      "ic_mean": -0.026033,
+      "ic_t": -2.82
+     },
+     {
+      "industry": "旅游景点",
+      "codes": 18,
+      "n_days": 787,
+      "ic_mean": -0.06132,
+      "ic_t": -4.872
+     },
+     {
+      "industry": "日用化工",
+      "codes": 21,
+      "n_days": 530,
+      "ic_mean": -0.071151,
+      "ic_t": -5.196
+     },
+     {
+      "industry": "普钢",
+      "codes": 27,
+      "n_days": 788,
+      "ic_mean": -0.003866,
+      "ic_t": -0.343
+     },
+     {
+      "industry": "服饰",
+      "codes": 65,
+      "n_days": 904,
+      "ic_mean": -0.049432,
+      "ic_t": -6.175
+     },
+     {
+      "industry": "机床制造",
+      "codes": 24,
+      "n_days": 834,
+      "ic_mean": -0.070844,
+      "ic_t": -7.064
+     },
+     {
+      "industry": "机械基件",
+      "codes": 142,
+      "n_days": 904,
+      "ic_mean": -0.093576,
+      "ic_t": -12.682
+     },
+     {
+      "industry": "染料涂料",
+      "codes": 37,
+      "n_days": 776,
+      "ic_mean": -0.0503,
+      "ic_t": -4.63
+     },
+     {
+      "industry": "橡胶",
+      "codes": 18,
+      "n_days": 314,
+      "ic_mean": -0.121746,
+      "ic_t": -6.453
+     },
+     {
+      "industry": "水力发电",
+      "codes": 22,
+      "n_days": 864,
+      "ic_mean": -0.061092,
+      "ic_t": -4.916
+     },
+     {
+      "industry": "水务",
+      "codes": 15,
+      "n_days": 274,
+      "ic_mean": -0.090087,
+      "ic_t": -3.837
+     },
+     {
+      "industry": "水泥",
+      "codes": 22,
+      "n_days": 761,
+      "ic_mean": -0.081806,
+      "ic_t": -6.548
+     },
+     {
+      "industry": "水运",
+      "codes": 19,
+      "n_days": 716,
+      "ic_mean": -0.008271,
+      "ic_t": -0.605
+     },
+     {
+      "industry": "汽车整车",
+      "codes": 22,
+      "n_days": 904,
+      "ic_mean": -0.068941,
+      "ic_t": -7.485
+     },
+     {
+      "industry": "汽车配件",
+      "codes": 273,
+      "n_days": 904,
+      "ic_mean": -0.096359,
+      "ic_t": -17.464
+     },
+     {
+      "industry": "港口",
+      "codes": 16,
+      "n_days": 661,
+      "ic_mean": -0.032405,
+      "ic_t": -2.11
+     },
+     {
+      "industry": "火力发电",
+      "codes": 31,
+      "n_days": 904,
+      "ic_mean": -0.016949,
+      "ic_t": -1.583
+     },
+     {
+      "industry": "煤炭开采",
+      "codes": 25,
+      "n_days": 904,
+      "ic_mean": -0.021149,
+      "ic_t": -2.126
+     },
+     {
+      "industry": "特种钢",
+      "codes": 10,
+      "n_days": 205,
+      "ic_mean": 0.019069,
+      "ic_t": 0.662
+     },
+     {
+      "industry": "环境保护",
+      "codes": 119,
+      "n_days": 904,
+      "ic_mean": -0.059277,
+      "ic_t": -7.574
+     },
+     {
+      "industry": "玻璃",
+      "codes": 19,
+      "n_days": 672,
+      "ic_mean": -0.04413,
+      "ic_t": -2.963
+     },
+     {
+      "industry": "生物制药",
+      "codes": 82,
+      "n_days": 904,
+      "ic_mean": -0.018164,
+      "ic_t": -2.492
+     },
+     {
+      "industry": "电器仪表",
+      "codes": 109,
+      "n_days": 904,
+      "ic_mean": -0.084433,
+      "ic_t": -11.033
+     },
+     {
+      "industry": "电气设备",
+      "codes": 348,
+      "n_days": 904,
+      "ic_mean": -0.050979,
+      "ic_t": -9.075
+     },
+     {
+      "industry": "白酒",
+      "codes": 19,
+      "n_days": 904,
+      "ic_mean": 0.022823,
+      "ic_t": 2.172
+     },
+     {
+      "industry": "百货",
+      "codes": 35,
+      "n_days": 788,
+      "ic_mean": -0.094553,
+      "ic_t": -8.403
+     },
+     {
+      "industry": "石油加工",
+      "codes": 14,
+      "n_days": 379,
+      "ic_mean": -0.059773,
+      "ic_t": -3.338
+     },
+     {
+      "industry": "石油开采",
+      "codes": 22,
+      "n_days": 895,
+      "ic_mean": -0.006797,
+      "ic_t": -0.577
+     },
+     {
+      "industry": "矿物制品",
+      "codes": 36,
+      "n_days": 884,
+      "ic_mean": -0.071753,
+      "ic_t": -7.312
+     },
+     {
+      "industry": "种植业",
+      "codes": 19,
+      "n_days": 717,
+      "ic_mean": -0.063542,
+      "ic_t": -4.594
+     },
+     {
+      "industry": "纺织",
+      "codes": 44,
+      "n_days": 653,
+      "ic_mean": -0.095401,
+      "ic_t": -8.356
+     },
+     {
+      "industry": "纺织机械",
+      "codes": 13,
+      "n_days": 191,
+      "ic_mean": -0.063875,
+      "ic_t": -2.942
+     },
+     {
+      "industry": "综合类",
+      "codes": 20,
+      "n_days": 516,
+      "ic_mean": -0.117262,
+      "ic_t": -8.984
+     },
+     {
+      "industry": "航空",
+      "codes": 53,
+      "n_days": 904,
+      "ic_mean": -0.099275,
+      "ic_t": -12.024
+     },
+     {
+      "industry": "船舶",
+      "codes": 11,
+      "n_days": 464,
+      "ic_mean": 0.010136,
+      "ic_t": 0.548
+     },
+     {
+      "industry": "装修装饰",
+      "codes": 25,
+      "n_days": 518,
+      "ic_mean": -0.040766,
+      "ic_t": -2.77
+     },
+     {
+      "industry": "证券",
+      "codes": 50,
+      "n_days": 904,
+      "ic_mean": -0.072989,
+      "ic_t": -9.351
+     },
+     {
+      "industry": "路桥",
+      "codes": 19,
+      "n_days": 662,
+      "ic_mean": -0.023163,
+      "ic_t": -1.534
+     },
+     {
+      "industry": "软件服务",
+      "codes": 280,
+      "n_days": 904,
+      "ic_mean": -0.10773,
+      "ic_t": -19.627
+     },
+     {
+      "industry": "运输设备",
+      "codes": 49,
+      "n_days": 890,
+      "ic_mean": -0.074047,
+      "ic_t": -7.538
+     },
+     {
+      "industry": "通信设备",
+      "codes": 139,
+      "n_days": 904,
+      "ic_mean": -0.060327,
+      "ic_t": -8.244
+     },
+     {
+      "industry": "造纸",
+      "codes": 35,
+      "n_days": 757,
+      "ic_mean": 0.015635,
+      "ic_t": 1.512
+     },
+     {
+      "industry": "钢加工",
+      "codes": 24,
+      "n_days": 716,
+      "ic_mean": -0.09732,
+      "ic_t": -8.66
+     },
+     {
+      "industry": "铅锌",
+      "codes": 14,
+      "n_days": 745,
+      "ic_mean": -0.028031,
+      "ic_t": -2.084
+     },
+     {
+      "industry": "铜",
+      "codes": 18,
+      "n_days": 804,
+      "ic_mean": -0.067959,
+      "ic_t": -5.409
+     },
+     {
+      "industry": "铝",
+      "codes": 30,
+      "n_days": 904,
+      "ic_mean": -0.00049,
+      "ic_t": -0.044
+     },
+     {
+      "industry": "银行",
+      "codes": 42,
+      "n_days": 904,
+      "ic_mean": -0.016831,
+      "ic_t": -1.9
+     },
+     {
+      "industry": "食品",
+      "codes": 92,
+      "n_days": 904,
+      "ic_mean": -0.023301,
+      "ic_t": -3.101
+     },
+     {
+      "industry": "饲料",
+      "codes": 23,
+      "n_days": 776,
+      "ic_mean": -0.070152,
+      "ic_t": -5.763
+     },
+     {
+      "industry": "黄金",
+      "codes": 10,
+      "n_days": 472,
+      "ic_mean": -0.143856,
+      "ic_t": -9.578
+     }
+    ]
+   }
+  }
+ },
+ "fdr": {
+  "q": [
+   0.0105,
+   0.0456,
+   0.04,
+   0.0454,
+   0.0672,
+   0.0276
+  ],
+  "n_tests": 6,
+  "q_cut": 0.1,
+  "n_reject": 6,
+  "tests": [
+   {
+    "factor": "RS_5",
+    "period": "2023-2024",
+    "t": -3.129,
+    "p": 0.0017540230830358982
+   },
+   {
+    "factor": "RS_5",
+    "period": "2025-2026",
+    "t": -2.075,
+    "p": 0.037986534771477086
+   },
+   {
+    "factor": "RS_10",
+    "period": "2023-2024",
+    "t": -2.326,
+    "p": 0.020018550681735345
+   },
+   {
+    "factor": "RS_10",
+    "period": "2025-2026",
+    "t": -2.167,
+    "p": 0.030234854121284866
+   },
+   {
+    "factor": "RS_20",
+    "period": "2023-2024",
+    "t": -1.83,
+    "p": 0.06724993883925666
+   },
+   {
+    "factor": "RS_20",
+    "period": "2025-2026",
+    "t": -2.604,
+    "p": 0.009214275678843779
+   }
+  ]
+ },
+ "verdict": {
+  "is_effective_factor": true,
+  "near_tradable": false,
+  "reasons": [
+   "RS_20（方向 -1）满足「有效因子」：全样本月度 t=2.73≥2、观察窗(2023-24) IC=0.0597>0、验证窗(2025-26) IC=0.0579>0、安慰剂 p=0.002<0.05",
+   "不构成可交易（方向 -1）：30bp 成本后多空年化 +14.67% 但多空月度非重叠 t=0.704（<2）、长腿超额 0.13%（<0.5%，纯多头无 alpha；A 股融券受限 → 空头端收益难落地）、分层单调性 0.806、验证窗月度 t=2.604、BH-FDR q=0.0276；IC 集中于小市值（小盘 -0.0712 vs 大盘 -0.0276）"
+  ],
+  "primary_factor": "RS_20",
+  "direction_sign": -1,
+  "gross_ann_pct": 16.29,
+  "net_ann_30bp_pct": 14.67,
+  "ic_mean_raw": -0.058887,
+  "ic_mean_directed": 0.058887,
+  "ic_t_monthly_raw": -2.727,
+  "ic_t_monthly_directed": 2.727,
+  "placebo_p": 0.002,
+  "monotonicity_raw": -0.806,
+  "monotonicity_directed": 0.806,
+  "wf_2023_2024_ic": -0.059708,
+  "wf_2025_2026_ic": -0.05794,
+  "fdr_q_oos": 0.0276,
+  "long_leg_excess_pct": 0.13,
+  "long_short_t_monthly_directed": 0.704,
+  "long_short_bootstrap_p_directed": 0.0133,
+  "cap_ic_small": -0.071168,
+  "cap_ic_large": -0.027622,
+  "industry_median_ic": -0.068941,
+  "industry_share_positive": 0.0575,
+  "oos_ic_t_monthly_directed": 2.604
+ }
+}
