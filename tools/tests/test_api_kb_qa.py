@@ -10,7 +10,7 @@
      旧 mode=generate 兼容映射 multi；
   5. 错误码：INVALID_ARGUMENT / UPSTREAM_UNAVAILABLE（异常/超时）/ NOT_READY（模块加载失败）；
   6. 限流：各 mode 通道独立；缓存键含 mode（不同模式互不命中）、cache=0 绕过；
-  7. 预接线约束：WIRED=False、未注册 portal_api、路由自描述。
+  7. 接线状态：WIRED=True（2026-11-01 L2 批准后已注册 portal_api）、路由自描述。
 """
 from __future__ import annotations
 
@@ -369,7 +369,7 @@ def test_cache_key_includes_mode():
 # 7. 预接线约束 + 路由自描述
 # ---------------------------------------------------------------------------
 def test_not_wired_and_route_describe():
-    assert api.WIRED is False
+    assert api.WIRED is True  # 2026-11-01 L2 批准后已接线
     doc = api.__doc__ or ""
     assert "未接线" in doc and "8091" in doc
     routes = api.describe_routes()
