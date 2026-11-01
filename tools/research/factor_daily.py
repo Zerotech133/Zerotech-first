@@ -29,6 +29,9 @@ DATA = REPO / "quant_backtest" / "data" / "tushare"
 OUT = REPO / "research" / "reports"
 LEDGER = REPO / "research" / "ledger"
 STATIC = REPO / "portal" / "static"
+
+sys.path.insert(0, str(REPO / "tools" / "kb_corpus"))
+from safe_json import SafeJsonError, backup_then_atomic_write  # noqa: E402
 # 已过四关/已证伪的已知因子（用于衰减监控）
 KNOWN = {
     "vol_20": {"verdict": "四关 PASS（LS）", "dir": "低波", "expect_ic": -0.09},
@@ -78,6 +81,12 @@ def load(dts: list[str]):
     adj_acc.index = [str(x) for x in adj_acc.index]
     amt_acc.index = [str(x) for x in amt_acc.index]
     return adj_acc.sort_index(), amt_acc.sort_index()
+
+
+def export_payload(payload: dict, static_dir: Path | str | None = None) -> dict:
+    """门户静态 JSON：写前备份 + 原子写 + 写后校验（safe_json）；返回报告。"""
+    target = Path(static_dir or STATIC) / "factor_daily.json"
+    return backup_then_atomic_write(target, payload)
 
 
 def main() -> int:
@@ -165,7 +174,7 @@ def main() -> int:
         f.write(json.dumps({"date": payload["latest_date"], "generated_at": payload["generated_at"],
                             "top": rows[:3], "decay": [r["factor"] for r in decay],
                             "proposals": [p["factor"] for p in payload["proposals"]]}, ensure_ascii=False) + "\n")
-    (STATIC / "factor_daily.json").write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
+    export_payload(payload)          # 备份+原子写+写后校验（safe_json）
     print(json.dumps({"latest": payload["latest_date"], "factors": len(rows),
                       "top3": [(r["factor"], r["ic_mean12"], r["t"]) for r in rows[:3]],
                       "decay": [r["factor"] for r in decay],

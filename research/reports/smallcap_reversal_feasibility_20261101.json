@@ -1,0 +1,432 @@
+{
+ "schema_version": "smallcap_reversal_feasibility.v1",
+ "meta": {
+  "generated_at": "2026-11-01T22:00:15+08:00",
+  "researcher": "司马微",
+  "task": "task-92「小市值反转」可行性（不写策略、不调参）",
+  "source_factor": "tools/research/industry_rs_factor.py RS_20",
+  "sample": {
+   "start": "20230101",
+   "end": "20261030",
+   "signal_days": 904,
+   "panel_days": 965,
+   "codes": 5740
+  },
+  "direction": {
+   "sign": -1,
+   "observe_ic": -0.059708,
+   "source": "2023-2024 观察窗 IC 符号（验证窗只检验不改方向）"
+  },
+  "costs_bp": [
+   30,
+   50,
+   80
+  ],
+  "hold_days": 20,
+  "runtime_sec": 52.6
+ },
+ "definition": {
+  "factor": "RS_20 = 个股20日复权收益 − 同行业其他成员20日等权收益（leave-one-out）",
+  "label": "T日收盘因子 → T+1 收盘入场 → T+21 收盘卖出；个股复权收益 − 等权市场同期复利收益（无成本）",
+  "long_leg": "方向 -1 后因子顶 10%（signed F D10）；『小市值组』= 当日流通市值底 1/3",
+  "cost": "净年化 = 毛年化 − 成本(bp)/10000 × 年化单边换手 × 1（long-only 单腿）",
+  "capacity": "AUM_cap = participation × ADTV × n_hold（20 日重叠持有、每票整仓换手）；另给剔除极端流动性（p10 ADTV）口径"
+ },
+ "long_leg": {
+  "n_obs": 107388,
+  "avg_holdings": 118.8,
+  "excess_20d_pct": 0.0031,
+  "excess_t": 0.044,
+  "excess_monthly_t": -0.629,
+  "excess_positive_rate": 0.4491,
+  "abs_car_20d_pct": -1.7477,
+  "abs_car_ann_pct": -22.02102,
+  "ann_car_pct": 0.039060000000000004,
+  "turnover": {
+   "avg_oneway_daily": 0.3526,
+   "ann_overlapping": 4.44,
+   "note": "20 日重叠持有：年化单边换手 = 日均名单变化率 × 252/20"
+  },
+  "cost": {
+   "30bp": {
+    "net_ann_pct": -1.29,
+    "cost_drag_ann_pct": 1.33
+   },
+   "50bp": {
+    "net_ann_pct": -2.18,
+    "cost_drag_ann_pct": 2.22
+   },
+   "80bp": {
+    "net_ann_pct": -3.51,
+    "cost_drag_ann_pct": 3.55
+   }
+  },
+  "capacity": {
+   "n_names": 904,
+   "adtv_median_yi": 1.3289,
+   "adtv_p10_yi": 1.0289,
+   "avg_holdings": 118.8,
+   "formula": "AUM_cap = participation × ADTV × n_hold（20 日重叠持有、每票整仓换手）",
+   "aum_cap_10pct_yi": 15.79,
+   "aum_cap_10pct_ex_lowliq_yi": 12.22,
+   "aum_cap_20pct_yi": 31.57,
+   "aum_cap_20pct_ex_lowliq_yi": 24.44
+  },
+  "walk_forward": {
+   "2023-2024": {
+    "n_days": 484,
+    "mean_20d_pct": 0.1042,
+    "t": 1.034
+   },
+   "2025-2026": {
+    "n_days": 420,
+    "mean_20d_pct": -0.1135,
+    "t": -1.201
+   }
+  },
+  "name": "小市值组反转长腿（F 顶 10%，signed）",
+  "note": "相对全分层均值超额 = 组合日 CAR 均值 − 全市场层均值；对照 wave31 的『长腿超额 0.13%』口径（全市场 D1 vs 十分位均值）"
+ },
+ "capacity": {
+  "n_names": 904,
+  "adtv_median_yi": 1.3289,
+  "adtv_p10_yi": 1.0289,
+  "avg_holdings": 118.8,
+  "formula": "AUM_cap = participation × ADTV × n_hold（20 日重叠持有、每票整仓换手）",
+  "aum_cap_10pct_yi": 15.79,
+  "aum_cap_10pct_ex_lowliq_yi": 12.22,
+  "aum_cap_20pct_yi": 31.57,
+  "aum_cap_20pct_ex_lowliq_yi": 24.44
+ },
+ "margin_constraint": {
+  "data_available": true,
+  "samples": [
+   {
+    "date": "20230301",
+    "holdings": 98,
+    "margin_covered": 49,
+    "covered_ratio": 0.5,
+    "rqye_median_wan": 131.2,
+    "rqye_sum_yi": 5.0603,
+    "market_rqye_sum_yi": 948.77,
+    "market_magin_names": 3406
+   },
+   {
+    "date": "20230306",
+    "holdings": 100,
+    "margin_covered": 50,
+    "covered_ratio": 0.5,
+    "rqye_median_wan": 143.04,
+    "rqye_sum_yi": 8.6337,
+    "market_rqye_sum_yi": 962.16,
+    "market_magin_names": 3405
+   },
+   {
+    "date": "20230309",
+    "holdings": 90,
+    "margin_covered": 47,
+    "covered_ratio": 0.5222,
+    "rqye_median_wan": 110.42,
+    "rqye_sum_yi": 6.1038,
+    "market_rqye_sum_yi": 948.6,
+    "market_magin_names": 3408
+   },
+   {
+    "date": "20230314",
+    "holdings": 98,
+    "margin_covered": 44,
+    "covered_ratio": 0.449,
+    "rqye_median_wan": 105.69,
+    "rqye_sum_yi": 5.741,
+    "market_rqye_sum_yi": 926.93,
+    "market_magin_names": 3410
+   },
+   {
+    "date": "20230317",
+    "holdings": 92,
+    "margin_covered": 43,
+    "covered_ratio": 0.4674,
+    "rqye_median_wan": 73.38,
+    "rqye_sum_yi": 4.1286,
+    "market_rqye_sum_yi": 921.87,
+    "market_magin_names": 3412
+   },
+   {
+    "date": "20230322",
+    "holdings": 95,
+    "margin_covered": 46,
+    "covered_ratio": 0.4842,
+    "rqye_median_wan": 126.54,
+    "rqye_sum_yi": 4.1554,
+    "market_rqye_sum_yi": 938.21,
+    "market_magin_names": 3417
+   },
+   {
+    "date": "20230327",
+    "holdings": 101,
+    "margin_covered": 51,
+    "covered_ratio": 0.505,
+    "rqye_median_wan": 52.83,
+    "rqye_sum_yi": 2.3625,
+    "market_rqye_sum_yi": 952.24,
+    "market_magin_names": 3420
+   },
+   {
+    "date": "20230330",
+    "holdings": 91,
+    "margin_covered": 40,
+    "covered_ratio": 0.4396,
+    "rqye_median_wan": 17.64,
+    "rqye_sum_yi": 1.9118,
+    "market_rqye_sum_yi": 935.78,
+    "market_magin_names": 3423
+   }
+  ],
+  "smallcap_long_margin_covered_ratio": 0.4834,
+  "market_rqye_median_yi": 943.4,
+  "short_side_feasible": false,
+  "reason": "小市值长腿成分的两融标的覆盖率仅 48.3%；全市场融券余额中位 943 亿（占流通市值 <1%）；券源稀缺 + 小市值券源更差 + 转融券受限 → 空头端不可规模化执行",
+  "assumptions": [
+   "rqye = 已融出市值（存量），不等于可借券源；券源可得性通常更低",
+   "A 股个人/私募难以稳定借到小市值券；转融券政策收紧后券源进一步收缩",
+   "本结论用本地 margin_detail 抽样 + 公开常识规则，未联网获取实时券源/费率"
+  ]
+ },
+ "alt_paths": {
+  "P1_long_only_all": {
+   "n_obs": 321426,
+   "avg_holdings": 355.6,
+   "excess_20d_pct": -0.2192,
+   "excess_t": -2.517,
+   "excess_monthly_t": -0.933,
+   "excess_positive_rate": 0.4281,
+   "abs_car_20d_pct": -1.9699,
+   "abs_car_ann_pct": -24.820740000000004,
+   "ann_car_pct": -2.76192,
+   "turnover": {
+    "avg_oneway_daily": 0.2832,
+    "ann_overlapping": 3.57,
+    "note": "20 日重叠持有：年化单边换手 = 日均名单变化率 × 252/20"
+   },
+   "cost": {
+    "30bp": {
+     "net_ann_pct": -3.83,
+     "cost_drag_ann_pct": 1.07
+    },
+    "50bp": {
+     "net_ann_pct": -4.55,
+     "cost_drag_ann_pct": 1.78
+    },
+    "80bp": {
+     "net_ann_pct": -5.62,
+     "cost_drag_ann_pct": 2.85
+    }
+   },
+   "capacity": {
+    "n_names": 904,
+    "adtv_median_yi": 1.9126,
+    "adtv_p10_yi": 1.3825,
+    "avg_holdings": 355.6,
+    "formula": "AUM_cap = participation × ADTV × n_hold（20 日重叠持有、每票整仓换手）",
+    "aum_cap_10pct_yi": 68.0,
+    "aum_cap_10pct_ex_lowliq_yi": 49.15,
+    "aum_cap_20pct_yi": 136.01,
+    "aum_cap_20pct_ex_lowliq_yi": 98.31
+   },
+   "walk_forward": {
+    "2023-2024": {
+     "n_days": 484,
+     "mean_20d_pct": -0.0717,
+     "t": -0.551
+    },
+    "2025-2026": {
+     "n_days": 420,
+     "mean_20d_pct": -0.3891,
+     "t": -3.479
+    }
+   }
+  },
+  "P3_smallcap_reversal_industry_neutral": {
+   "n_obs": 107388,
+   "avg_holdings": 118.8,
+   "excess_20d_pct": 0.0031,
+   "excess_t": 0.044,
+   "excess_monthly_t": -0.629,
+   "excess_positive_rate": 0.4491,
+   "abs_car_20d_pct": -1.7477,
+   "abs_car_ann_pct": -22.02102,
+   "ann_car_pct": 0.039060000000000004,
+   "turnover": {
+    "avg_oneway_daily": 0.3526,
+    "ann_overlapping": 4.44,
+    "note": "20 日重叠持有：年化单边换手 = 日均名单变化率 × 252/20"
+   },
+   "cost": {
+    "30bp": {
+     "net_ann_pct": -1.29,
+     "cost_drag_ann_pct": 1.33
+    },
+    "50bp": {
+     "net_ann_pct": -2.18,
+     "cost_drag_ann_pct": 2.22
+    },
+    "80bp": {
+     "net_ann_pct": -3.51,
+     "cost_drag_ann_pct": 3.55
+    }
+   },
+   "capacity": {
+    "n_names": 904,
+    "adtv_median_yi": 1.3289,
+    "adtv_p10_yi": 1.0289,
+    "avg_holdings": 118.8,
+    "formula": "AUM_cap = participation × ADTV × n_hold（20 日重叠持有、每票整仓换手）",
+    "aum_cap_10pct_yi": 15.79,
+    "aum_cap_10pct_ex_lowliq_yi": 12.22,
+    "aum_cap_20pct_yi": 31.57,
+    "aum_cap_20pct_ex_lowliq_yi": 24.44
+   },
+   "walk_forward": {
+    "2023-2024": {
+     "n_days": 484,
+     "mean_20d_pct": 0.1042,
+     "t": 1.034
+    },
+    "2025-2026": {
+     "n_days": 420,
+     "mean_20d_pct": -0.1135,
+     "t": -1.201
+    }
+   }
+  },
+  "P4_smallcap_reversal_lowvol": {
+   "n_obs": 36035,
+   "avg_holdings": 39.9,
+   "excess_20d_pct": 0.1968,
+   "excess_t": 2.289,
+   "excess_monthly_t": -0.754,
+   "excess_positive_rate": 0.5077,
+   "abs_car_20d_pct": -1.5539,
+   "abs_car_ann_pct": -19.579140000000002,
+   "ann_car_pct": 2.47968,
+   "turnover": {
+    "avg_oneway_daily": 0.4804,
+    "ann_overlapping": 6.05,
+    "note": "20 日重叠持有：年化单边换手 = 日均名单变化率 × 252/20"
+   },
+   "cost": {
+    "30bp": {
+     "net_ann_pct": 0.66,
+     "cost_drag_ann_pct": 1.82
+    },
+    "50bp": {
+     "net_ann_pct": -0.55,
+     "cost_drag_ann_pct": 3.03
+    },
+    "80bp": {
+     "net_ann_pct": -2.36,
+     "cost_drag_ann_pct": 4.84
+    }
+   },
+   "capacity": {
+    "n_names": 904,
+    "adtv_median_yi": 0.8698,
+    "adtv_p10_yi": 0.6744,
+    "avg_holdings": 39.9,
+    "formula": "AUM_cap = participation × ADTV × n_hold（20 日重叠持有、每票整仓换手）",
+    "aum_cap_10pct_yi": 3.47,
+    "aum_cap_10pct_ex_lowliq_yi": 2.69,
+    "aum_cap_20pct_yi": 6.93,
+    "aum_cap_20pct_ex_lowliq_yi": 5.38
+   },
+   "walk_forward": {
+    "2023-2024": {
+     "n_days": 484,
+     "mean_20d_pct": 0.1124,
+     "t": 0.904
+    },
+    "2025-2026": {
+     "n_days": 420,
+     "mean_20d_pct": 0.2942,
+     "t": 2.512
+    }
+   }
+  }
+ },
+ "reference_long_leg_all": {
+  "n_obs": 321426,
+  "avg_holdings": 355.6,
+  "excess_20d_pct": -0.2192,
+  "excess_t": -2.517,
+  "excess_monthly_t": -0.933,
+  "excess_positive_rate": 0.4281,
+  "abs_car_20d_pct": -1.9699,
+  "abs_car_ann_pct": -24.820740000000004,
+  "ann_car_pct": -2.76192,
+  "turnover": {
+   "avg_oneway_daily": 0.2832,
+   "ann_overlapping": 3.57,
+   "note": "20 日重叠持有：年化单边换手 = 日均名单变化率 × 252/20"
+  },
+  "cost": {
+   "30bp": {
+    "net_ann_pct": -3.83,
+    "cost_drag_ann_pct": 1.07
+   },
+   "50bp": {
+    "net_ann_pct": -4.55,
+    "cost_drag_ann_pct": 1.78
+   },
+   "80bp": {
+    "net_ann_pct": -5.62,
+    "cost_drag_ann_pct": 2.85
+   }
+  },
+  "capacity": {
+   "n_names": 904,
+   "adtv_median_yi": 1.9126,
+   "adtv_p10_yi": 1.3825,
+   "avg_holdings": 355.6,
+   "formula": "AUM_cap = participation × ADTV × n_hold（20 日重叠持有、每票整仓换手）",
+   "aum_cap_10pct_yi": 68.0,
+   "aum_cap_10pct_ex_lowliq_yi": 49.15,
+   "aum_cap_20pct_yi": 136.01,
+   "aum_cap_20pct_ex_lowliq_yi": 98.31
+  },
+  "walk_forward": {
+   "2023-2024": {
+    "n_days": 484,
+    "mean_20d_pct": -0.0717,
+    "t": -0.551
+   },
+   "2025-2026": {
+    "n_days": 420,
+    "mean_20d_pct": -0.3891,
+    "t": -3.479
+   }
+  }
+ },
+ "decision": {
+  "decision": "no-go",
+  "criteria_pass": {
+   "A_long_leg": false,
+   "B_capacity": true,
+   "C_alt_path": true,
+   "D_no_short_dependency": true
+  },
+  "best_alt_path": "P4_smallcap_reversal_lowvol",
+  "reasons": [
+   "A 长腿：20日超额 0.0031%（门槛 0.5%）、30bp 净年化 -1.29%（门槛 1.0%）→ 不过",
+   "B 容量：10% 参与率×剔除极端流动性后 12.22 亿（门槛 5.0 亿）→ 过",
+   "C 替代路径：至少一条可行为 P4_smallcap_reversal_lowvol",
+   "D 空头端：long-only 路径不依赖融券（空头端收益仅作研究信息，不纳入可行性）",
+   "补充：空头端不可行（小市值长腿成分的两融标的覆盖率仅 48.3%；全市场融券余额中位 943 亿（占流通市值 <1%）；券源稀缺 + 小市值券源更差 + 转融券受限 → 空头端不可规模化执行）"
+  ],
+  "thresholds": {
+   "net30_min_pct": 1.0,
+   "long_leg_excess_min_pct": 0.5,
+   "target_aum_yi": 5.0
+  }
+ },
+ "schema_check": []
+}

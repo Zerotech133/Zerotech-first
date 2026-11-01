@@ -28,6 +28,9 @@ DATA = REPO / "quant_backtest" / "data" / "tushare"
 SHADOW = REPO / "research" / "shadow" / "s08"
 STATIC = REPO / "portal" / "static"
 SID = "S08_mom120_long"
+
+sys.path.insert(0, str(REPO / "tools" / "kb_corpus"))
+from safe_json import SafeJsonError, backup_then_atomic_write  # noqa: E402
 TOPN = 50
 WINDOW = 120
 
@@ -52,6 +55,12 @@ def day_frame(dt: str, cols=("ts_code", "close", "amount")) -> pd.DataFrame:
 def is_month_last(dt: str, dts: list[str]) -> bool:
     later = [x for x in dts if x > dt and x[:6] == dt[:6]]
     return len(later) == 0
+
+
+def export_static(pub: dict, static_dir: Path | str | None = None) -> dict:
+    """门户静态 JSON：写前备份 + 原子写 + 写后校验（safe_json）；返回报告。"""
+    target = Path(static_dir or STATIC) / "s08_shadow.json"
+    return backup_then_atomic_write(target, pub)
 
 
 def main(argv=None) -> int:
@@ -138,7 +147,7 @@ def main(argv=None) -> int:
     pub["next_rebalance"] = "下一个月末（每月 1 日 08:40 检查）"
     pub["status"] = "shadow_observing_weak"
     pub["disclaimer"] = "研究/影子，不构成投资建议"
-    static.write_text(json.dumps(pub, ensure_ascii=False, indent=1), encoding="utf-8")
+    export_static(pub)               # 备份+原子写+写后校验（safe_json）
     print(json.dumps({"latest": latest, "signal": prev_sig, "tracking": pub["tracking"], "ledger_n": len(ledger)},
                      ensure_ascii=False), flush=True)
     return 0

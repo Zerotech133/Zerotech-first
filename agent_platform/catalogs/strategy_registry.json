@@ -5856,5 +5856,32 @@
   "trend_template_export_hardened_20261101": {
     "script": "tools/research/trend_template_export.py",
     "note": "最后一个历史中风险写入脚本加 safe_json（备份+原子写+校验）；audit 复审：该脚本中→低；历史已知中风险清零；新增 3 脚本（factor_daily/s08_rebalance/sepa_scan_daily，其他小组）待另批加固。"
+  },
+  "smallcap_reversal_feasibility_20261101": {
+    "tool": "tools/research/smallcap_reversal_feasibility.py",
+    "report": "research/reports/smallcap_reversal_feasibility_20261101.md",
+    "decision": "NO-GO",
+    "evidence": {
+      "long_leg_excess_20d_pct": 0.0031,
+      "net30_ann_pct": -1.29,
+      "capacity_aum_yi": 15.79,
+      "margin_feasible": false,
+      "best_alt": "P4 小市值+反转+低波动过滤：20日超额 +0.197%、30bp 净 +0.66%/年、双窗为正（幅度不足）"
+    },
+    "note": "容量不是瓶颈（AUM上限 12-16 亿），但纯多头长腿无 alpha（20日 +0.003%、30bp 净 -1.29%、WF 符号翻转）；空头端券源不可行（两融覆盖 48%、券源稀缺）→ **不立策略**；前置条件已写入报告。"
+  },
+  "static_writers_all_low_20261101": {
+    "summary": {
+      "high": 0,
+      "medium": 0,
+      "low": 20,
+      "helper_based": 17
+    },
+    "batch": [
+      "factor_daily.py",
+      "s08_rebalance.py",
+      "sepa_scan_daily.py"
+    ],
+    "note": "wave32 新增 3 脚本加固（safe_json 三件套）；审计重跑：写盘脚本 20 个全部低风险，门户静态 JSON 写入中风险清零。"
   }
 }

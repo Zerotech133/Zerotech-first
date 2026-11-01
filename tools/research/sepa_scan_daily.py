@@ -22,6 +22,15 @@ import sepa_scan  # noqa: E402
 STATIC = REPO / "portal" / "static"
 LEDGER = REPO / "research" / "ledger"
 
+sys.path.insert(0, str(REPO / "tools" / "kb_corpus"))
+from safe_json import SafeJsonError, backup_then_atomic_write  # noqa: E402
+
+
+def export_payload(payload: dict, static_dir: Path | str | None = None) -> dict:
+    """门户静态 JSON：写前备份 + 原子写 + 写后校验（safe_json）；返回报告。"""
+    target = Path(static_dir or STATIC) / "sepa_scan_daily.json"
+    return backup_then_atomic_write(target, payload)
+
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
@@ -48,7 +57,7 @@ def main(argv=None) -> int:
         "note": "严格=TT+基本面+VCP+突破；宽口径=仅TT技术面；研究扫描，不构成投资建议",
     }
     STATIC.mkdir(parents=True, exist_ok=True)
-    (STATIC / "sepa_scan_daily.json").write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
+    export_payload(payload)          # 备份+原子写+写后校验（safe_json）
     LEDGER.mkdir(parents=True, exist_ok=True)
     with (LEDGER / "sepa_scan_daily.jsonl").open("a", encoding="utf-8") as f:
         f.write(json.dumps({"date": payload["scan_date"], "generated_at": payload["generated_at"],
