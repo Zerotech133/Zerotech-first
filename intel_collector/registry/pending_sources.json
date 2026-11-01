@@ -1,0 +1,55 @@
+{
+  "_note": "待签登记预案：owner 为提案值，未实际登记。registry.register() 仍需真实 owner（非 UNOWNED）。本文件在 ② 闸口（田丰真实归口 或 老田显式越过归口）放行前绝不执行。",
+  "pending_sources": [
+    {
+      "source_id": "res_downloader_py",
+      "name": "res-downloader-py（通用下载器）",
+      "category": "interface",
+      "proposed_owner": "intel(军情司·INTEL0)",
+      "owner_status": "current=UNOWNED / 提案待归口",
+      "content_types": ["media", "meta"],
+      "rights": {"internal_retention": true, "cleaning": true, "controlled_query": true},
+      "sla": {"freshness_minutes": 1440, "max_failures": 5}
+    },
+    {
+      "source_id": "xueqiu",
+      "name": "雪球公开舆情（首条深度专线）",
+      "category": "open_source_intel",
+      "proposed_owner": "intel(军情司·INTEL0)",
+      "owner_status": "未登记 / 提案待归口",
+      "content_types": ["post", "comment"],
+      "rights": {"internal_retention": true, "cleaning": true, "controlled_query": true},
+      "sla": {"freshness_minutes": 30, "max_failures": 3}
+    },
+    {
+      "source_id": "guba",
+      "name": "股吧舆情",
+      "category": "open_source_intel",
+      "proposed_owner": "intel(军情司·INTEL0)",
+      "owner_status": "未登记 / 提案待归口",
+      "content_types": ["post", "comment"],
+      "rights": {"internal_retention": true, "cleaning": true, "controlled_query": true},
+      "sla": {"freshness_minutes": 60, "max_failures": 5}
+    },
+    {
+      "source_id": "news",
+      "name": "新闻聚合",
+      "category": "open_source_intel",
+      "proposed_owner": "intel(军情司·INTEL0)",
+      "owner_status": "未登记 / 提案待归口",
+      "content_types": ["post"],
+      "rights": {"internal_retention": true, "cleaning": true, "controlled_query": true},
+      "sla": {"freshness_minutes": 30, "max_failures": 5}
+    },
+    {
+      "source_id": "youtube_envelope",
+      "name": "YouTube 系统外元信息包（仅 envelope，不碰原包）",
+      "category": "interface",
+      "proposed_owner": "intel(军情司·INTEL0)",
+      "owner_status": "未登记 / 提案待归口",
+      "content_types": ["meta"],
+      "rights": {"internal_retention": true, "cleaning": true, "controlled_query": true},
+      "sla": {"freshness_minutes": 4320, "max_failures": 5}
+    }
+  ]
+}

@@ -1,0 +1,140 @@
+{
+  "generated_at": "2026-11-01T03:19:43Z",
+  "note": "原型态合成调度演示，不触网、不污染真实注册表",
+  "tick_count": 5,
+  "sources": [
+    {
+      "source_id": "res_downloader_py",
+      "name": "res-downloader-py（通用下载器）",
+      "enabled": true,
+      "consecutive_failures": 0,
+      "circuit": "closed",
+      "freshness_minutes": 1440,
+      "max_failures": 5,
+      "last_outcome": ""
+    },
+    {
+      "source_id": "xueqiu",
+      "name": "雪球公开舆情（首条深度专线）",
+      "enabled": false,
+      "consecutive_failures": 3,
+      "circuit": "open",
+      "freshness_minutes": 30,
+      "max_failures": 3,
+      "last_outcome": ""
+    },
+    {
+      "source_id": "guba",
+      "name": "股吧舆情",
+      "enabled": true,
+      "consecutive_failures": 0,
+      "circuit": "closed",
+      "freshness_minutes": 60,
+      "max_failures": 5,
+      "last_outcome": ""
+    },
+    {
+      "source_id": "news",
+      "name": "新闻聚合",
+      "enabled": true,
+      "consecutive_failures": 0,
+      "circuit": "closed",
+      "freshness_minutes": 30,
+      "max_failures": 5,
+      "last_outcome": "ok"
+    },
+    {
+      "source_id": "youtube_envelope",
+      "name": "YouTube 系统外元信息包（仅 envelope，不碰原包）",
+      "enabled": true,
+      "consecutive_failures": 0,
+      "circuit": "closed",
+      "freshness_minutes": 4320,
+      "max_failures": 5,
+      "last_outcome": ""
+    }
+  ],
+  "ledger_count": 15,
+  "ledger_tail": [
+    {
+      "source_id": "news",
+      "at": "2026-11-01T01:05:00+00:00",
+      "outcome": "ok",
+      "n": 2,
+      "reason": "",
+      "consecutive_failures": 0,
+      "circuit": "closed",
+      "next_due": "2026-11-01T01:35:00+00:00"
+    },
+    {
+      "source_id": "guba",
+      "at": "2026-11-01T02:10:00+00:00",
+      "outcome": "ok",
+      "n": 2,
+      "reason": "",
+      "consecutive_failures": 0,
+      "circuit": "closed",
+      "next_due": "2026-11-01T03:10:00+00:00"
+    },
+    {
+      "source_id": "news",
+      "at": "2026-11-01T02:10:00+00:00",
+      "outcome": "ok",
+      "n": 2,
+      "reason": "",
+      "consecutive_failures": 0,
+      "circuit": "closed",
+      "next_due": "2026-11-01T02:40:00+00:00"
+    },
+    {
+      "source_id": "xueqiu",
+      "at": "2026-11-01T03:15:00+00:00",
+      "outcome": "failed",
+      "n": 0,
+      "reason": "采集异常: 合成失败：演示熔断",
+      "consecutive_failures": 3,
+      "circuit": "open",
+      "next_due": "2026-11-01T07:15:00+00:00"
+    },
+    {
+      "source_id": "guba",
+      "at": "2026-11-01T03:15:00+00:00",
+      "outcome": "ok",
+      "n": 2,
+      "reason": "",
+      "consecutive_failures": 0,
+      "circuit": "closed",
+      "next_due": "2026-11-01T04:15:00+00:00"
+    },
+    {
+      "source_id": "news",
+      "at": "2026-11-01T03:15:00+00:00",
+      "outcome": "ok",
+      "n": 2,
+      "reason": "",
+      "consecutive_failures": 0,
+      "circuit": "closed",
+      "next_due": "2026-11-01T03:45:00+00:00"
+    },
+    {
+      "source_id": "guba",
+      "at": "2026-11-01T04:20:00+00:00",
+      "outcome": "ok",
+      "n": 2,
+      "reason": "",
+      "consecutive_failures": 0,
+      "circuit": "closed",
+      "next_due": "2026-11-01T05:20:00+00:00"
+    },
+    {
+      "source_id": "news",
+      "at": "2026-11-01T04:20:00+00:00",
+      "outcome": "ok",
+      "n": 2,
+      "reason": "",
+      "consecutive_failures": 0,
+      "circuit": "closed",
+      "next_due": "2026-11-01T04:50:00+00:00"
+    }
+  ]
+}

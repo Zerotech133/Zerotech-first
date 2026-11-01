@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>采集即服务平台 · 架构 / 流程 / 控制台原型</title>
+<style>
+  :root{
+    --color-background-primary:#ffffff;
+    --color-background-secondary:#f1efea;
+    --color-background-tertiary:#e9e7e1;
+    --color-background-info:#e6f1fb;
+    --color-background-success:#eaf3de;
+    --color-background-danger:#fcebeb;
+    --color-text-primary:#2c2c2a;
+    --color-text-secondary:#5f5e5a;
+    --color-text-tertiary:#888780;
+    --color-text-info:#0c447c;
+    --color-text-success:#3b6d11;
+    --color-text-danger:#a32d2d;
+    --color-border-tertiary:rgba(0,0,0,0.15);
+    --color-border-secondary:rgba(0,0,0,0.3);
+    --border-radius-md:8px;
+    --border-radius-lg:12px;
+    --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  }
+  body{font-family:var(--font-sans);color:var(--color-text-primary);margin:0;padding:24px;background:#f7f6f3;}
+  h1{font-size:18px;font-weight:500;margin:0 0 4px;}
+  h2{font-size:15px;font-weight:500;margin:32px 0 12px;color:var(--color-text-info);}
+  .lead{font-size:13px;color:var(--color-text-secondary);margin:0 0 16px;}
+  .panel{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:16px 20px;margin-bottom:16px;overflow-x:auto;}
+  .t{font-size:14px;fill:var(--color-text-primary);}
+  .ts{font-size:12px;fill:var(--color-text-secondary);}
+  .th{font-size:14px;font-weight:500;fill:var(--color-text-primary);}
+  button{font-family:var(--font-sans);font-size:13px;padding:6px 12px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-primary);cursor:pointer;}
+  .grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px;}
+  .metric{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:1rem;}
+  .metric .label{font-size:13px;color:var(--color-text-secondary);}
+  .metric .num{font-size:24px;font-weight:500;margin-top:4px;}
+  .row{display:grid;gap:8px;font-size:13px;padding:8px 0;border-bottom:0.5px solid var(--color-border-tertiary);}
+  .hdr{grid-template-columns:1.4fr 1fr 2fr 0.7fr;font-size:12px;color:var(--color-text-secondary);padding-bottom:6px;font-weight:500;}
+  .src{grid-template-columns:1.4fr 1fr 2fr 0.7fr;}
+  .run{grid-template-columns:1.3fr 1fr 0.8fr;}
+  .roll{grid-template-columns:1.2fr 2fr 0.8fr;}
+  .badge{font-size:12px;padding:3px 8px;border-radius:6px;}
+  .b-on{background:var(--color-background-success);color:var(--color-text-success);}
+  .b-off{background:var(--color-background-tertiary);color:var(--color-text-tertiary);}
+  .note{font-size:12px;color:var(--color-text-secondary);margin-top:10px;}
+  .ok{color:var(--color-text-success);}
+  .danger{color:var(--color-text-danger);}
+</style>
+</head>
+<body>
+<h1>采集即服务平台 · 架构 / 流程 / 控制台原型</h1>
+<p class="lead">intel_collector 原型可视化。数据均为合成/示意，不触网。原型代码位于 C:/项目/老田的AI助手/intel_collector/</p>
+
+<h2>一、系统架构图</h2>
+<div class="panel">
+<svg viewBox="0 0 680 530" width="100%" role="img">
+<title>采集即服务平台架构</title>
+<desc>分层展示治理中枢、采集执行、契约与归并、存储层与下游消费方，RightsGate 与 SourceRegistry 为治理闸门。</desc>
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+</defs>
+<rect x="40" y="40" width="600" height="480" rx="20" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+<text x="340" y="68" text-anchor="middle" class="th" style="font-size:14px;font-weight:500;fill:#0C447C;">采集即服务平台 · intel_collector</text>
+
+<text x="60" y="92" class="ts" style="font-size:12px;fill:#854F0B;">治理中枢</text>
+<g>
+  <rect x="70" y="100" width="240" height="58" rx="8" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/>
+  <text x="190" y="120" text-anchor="middle" style="font-size:14px;font-weight:500;fill:#412402;">SourceRegistry</text>
+  <text x="190" y="140" text-anchor="middle" style="font-size:12px;fill:#633806;">一源一档 · 硬拒 UNOWNED</text>
+</g>
+<g>
+  <rect x="370" y="100" width="240" height="58" rx="8" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/>
+  <text x="490" y="120" text-anchor="middle" style="font-size:14px;font-weight:500;fill:#412402;">RightsGate</text>
+  <text x="490" y="140" text-anchor="middle" style="font-size:12px;fill:#633806;">默认拒绝 · 高风险显式批准</text>
+</g>
+
+<text x="60" y="182" class="ts" style="font-size:12px;fill:#185FA5;">采集执行</text>
+<g>
+  <rect x="70" y="190" width="240" height="46" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+  <text x="190" y="208" text-anchor="middle" style="font-size:14px;font-weight:500;fill:#0C447C;">Orchestrator</text>
+  <text x="190" y="226" text-anchor="middle" style="font-size:12px;fill:#185FA5;">编排 · 退避 · 连续失败封禁</text>
+</g>
+<g><rect x="64" y="250" width="104" height="42" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/><text x="116" y="266" text-anchor="middle" style="font-size:13px;font-weight:500;fill:#0C447C;">xueqiu</text><text x="116" y="282" text-anchor="middle" style="font-size:11px;fill:#185FA5;">首条深度专线</text></g>
+<g><rect x="176" y="250" width="104" height="42" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/><text x="228" y="266" text-anchor="middle" style="font-size:13px;font-weight:500;fill:#0C447C;">guba</text><text x="228" y="282" text-anchor="middle" style="font-size:11px;fill:#185FA5;">股吧帖子</text></g>
+<g><rect x="288" y="250" width="104" height="42" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/><text x="340" y="266" text-anchor="middle" style="font-size:13px;font-weight:500;fill:#0C447C;">news</text><text x="340" y="282" text-anchor="middle" style="font-size:11px;fill:#185FA5;">新闻舆情</text></g>
+<g><rect x="400" y="250" width="104" height="42" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/><text x="452" y="266" text-anchor="middle" style="font-size:13px;font-weight:500;fill:#0C447C;">youtube</text><text x="452" y="282" text-anchor="middle" style="font-size:11px;fill:#185FA5;">系统外·血缘</text></g>
+<g><rect x="512" y="250" width="104" height="42" rx="8" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/><text x="564" y="266" text-anchor="middle" style="font-size:13px;font-weight:500;fill:#412402;">xueqiu_live</text><text x="564" y="282" text-anchor="middle" style="font-size:11px;fill:#633806;">真实·默认禁用</text></g>
+
+<text x="60" y="320" class="ts" style="font-size:12px;fill:#185FA5;">契约与归并</text>
+<g><rect x="70" y="328" width="240" height="46" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/><text x="190" y="346" text-anchor="middle" style="font-size:14px;font-weight:500;fill:#0C447C;">core/contracts</text><text x="190" y="364" text-anchor="middle" style="font-size:12px;fill:#185FA5;">Observation·SourceClock·UseCase·Status</text></g>
+<g><rect x="370" y="328" width="240" height="46" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/><text x="490" y="346" text-anchor="middle" style="font-size:14px;font-weight:500;fill:#0C447C;">core/canonical</text><text x="490" y="364" text-anchor="middle" style="font-size:12px;fill:#185FA5;">归一化·跨源归并·消费契约</text></g>
+
+<text x="60" y="398" class="ts" style="font-size:12px;fill:#185FA5;">存储层</text>
+<g><rect x="70" y="406" width="540" height="44" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/><text x="340" y="423" text-anchor="middle" style="font-size:14px;font-weight:500;fill:#0C447C;">store/obs_store · SQLite 幂等</text><text x="340" y="441" text-anchor="middle" style="font-size:12px;fill:#185FA5;">latest(最新失败不回退) · as_of(时点查询) · source_field/rights 保真</text></g>
+
+<rect x="70" y="466" width="540" height="40" rx="8" fill="none" stroke="#185FA5" stroke-width="0.5" stroke-dasharray="5 4"/>
+<text x="340" y="490" text-anchor="middle" style="font-size:12px;fill:#185FA5;">消费方（下游）· 情报分析 / 告警 / 投递 — 只认 rollup 聚合键</text>
+
+<line x1="340" y1="158" x2="340" y2="190" stroke="#185FA5" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="340" y1="292" x2="340" y2="328" stroke="#185FA5" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="340" y1="374" x2="340" y2="406" stroke="#185FA5" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="340" y1="450" x2="340" y2="466" stroke="#185FA5" stroke-width="1.5" marker-end="url(#arrow)"/>
+</svg>
+</div>
+
+<h2>二、单源采集端到端流程图</h2>
+<div class="panel">
+<svg viewBox="0 0 680 470" width="100%" role="img">
+<title>单源采集端到端流程</title>
+<desc>从源登记、RightsGate 授权判定、编排采集含 403 熔断、契约与跨源归并，到幂等存储与消费方聚合的完整链路。</desc>
+<defs>
+  <marker id="arrow2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+</defs>
+<g><rect x="240" y="40" width="200" height="46" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/><text x="340" y="58" text-anchor="middle" style="font-size:14px;font-weight:500;fill:#0C447C;">登记源 · SourceRegistry</text><text x="340" y="76" text-anchor="middle" style="font-size:12px;fill:#185FA5;">校验 owner ≠ UNOWNED</text></g>
+<line x1="340" y1="86" x2="340" y2="110" stroke="#185FA5" stroke-width="1.5" marker-end="url(#arrow2)"/>
+<polygon points="340,115 400,150 340,185 280,150" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/>
+<text x="340" y="144" text-anchor="middle" style="font-size:13px;font-weight:500;fill:#412402;">RightsGate</text>
+<text x="340" y="162" text-anchor="middle" style="font-size:12px;fill:#633806;">用途允许?</text>
+<line x1="400" y1="150" x2="470" y2="150" stroke="#854F0B" stroke-width="1.5" marker-end="url(#arrow2)"/>
+<g><rect x="470" y="128" width="150" height="44" rx="8" fill="#FCEBEB" stroke="#A32D2D" stroke-width="0.5"/><text x="545" y="146" text-anchor="middle" style="font-size:13px;font-weight:500;fill:#501313;">拦截 · 终止</text><text x="545" y="164" text-anchor="middle" style="font-size:11px;fill:#791F1F;">不写库 · 回执原因</text></g>
+<line x1="340" y1="185" x2="340" y2="210" stroke="#185FA5" stroke-width="1.5" marker-end="url(#arrow2)"/>
+<g><rect x="220" y="210" width="240" height="58" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/><text x="340" y="228" text-anchor="middle" style="font-size:14px;font-weight:500;fill:#0C447C;">编排 + 采集</text><text x="340" y="246" text-anchor="middle" style="font-size:12px;fill:#185FA5;">Orchestrator 绑用途 · Adapter 取数</text><text x="340" y="262" text-anchor="middle" style="font-size:11px;fill:#185FA5;">403×3 → 熔断冷却 600s</text></g>
+<line x1="340" y1="268" x2="340" y2="292" stroke="#185FA5" stroke-width="1.5" marker-end="url(#arrow2)"/>
+<g><rect x="220" y="292" width="240" height="46" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/><text x="340" y="310" text-anchor="middle" style="font-size:14px;font-weight:500;fill:#0C447C;">契约封装 + 跨源归并</text><text x="340" y="328" text-anchor="middle" style="font-size:12px;fill:#185FA5;">Observation·raw_sha256·canonical</text></g>
+<line x1="340" y1="338" x2="340" y2="362" stroke="#185FA5" stroke-width="1.5" marker-end="url(#arrow2)"/>
+<g><rect x="220" y="362" width="240" height="46" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/><text x="340" y="380" text-anchor="middle" style="font-size:14px;font-weight:500;fill:#0C447C;">存储 + rollup 消费</text><text x="340" y="398" text-anchor="middle" style="font-size:12px;fill:#185FA5;">obs_store 幂等 · 实体聚合</text></g>
+<text x="40" y="44" class="ts" style="font-size:11px;fill:#888780;">治理</text>
+<text x="40" y="214" class="ts" style="font-size:11px;fill:#888780;">执行</text>
+<text x="40" y="296" class="ts" style="font-size:11px;fill:#888780;">归并</text>
+<text x="40" y="366" class="ts" style="font-size:11px;fill:#888780;">落地</text>
+</svg>
+</div>
+
+<h2>三、控制台原型（UI mockup）</h2>
+<div class="panel">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+  <div>
+    <div style="font-size:15px;font-weight:500;color:var(--color-text-primary);">采集即服务平台 · 控制台</div>
+    <div style="font-size:12px;color:var(--color-text-secondary);margin-top:2px;">intel_collector 原型 · 合成数据 · 不触网</div>
+  </div>
+  <button>请求开通真实采集</button>
+</div>
+
+<div class="grid4">
+  <div class="metric"><div class="label">已登记源</div><div class="num">5</div></div>
+  <div class="metric"><div class="label">闸门授权用途</div><div class="num">3 / 8</div></div>
+  <div class="metric"><div class="label">跨源实体命名空间</div><div class="num">2</div></div>
+  <div class="metric"><div class="label">测试</div><div class="num" style="color:var(--color-text-success);">22 passed</div></div>
+</div>
+
+<div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem 1.25rem;margin-bottom:16px;">
+  <div style="font-size:14px;font-weight:500;margin-bottom:12px;">源注册表 · SourceRegistry</div>
+  <div class="row hdr"><div>源</div><div>owner</div><div>已授权用途</div><div>状态</div></div>
+  <div class="row src"><div>xueqiu</div><div>intel</div><div>internal_retention · cleaning · controlled_query</div><div class="ok">ok</div></div>
+  <div class="row src"><div>guba</div><div>intel</div><div>internal_retention · cleaning · controlled_query</div><div class="ok">ok</div></div>
+  <div class="row src"><div>news</div><div>intel</div><div>internal_retention · cleaning · controlled_query</div><div class="ok">ok</div></div>
+  <div class="row src"><div>youtube_envelope</div><div>intel</div><div>internal_retention · cleaning · controlled_query</div><div class="ok">ok</div></div>
+  <div class="row src"><div>res_downloader_py</div><div>intel</div><div>internal_retention · cleaning · controlled_query</div><div class="ok">ok</div></div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+  <div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem 1.25rem;">
+    <div style="font-size:14px;font-weight:500;margin-bottom:12px;">RightsGate 闸门状态</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+      <span class="badge b-on">internal_retention</span>
+      <span class="badge b-on">cleaning</span>
+      <span class="badge b-on">controlled_query</span>
+      <span class="badge b-off">training · 锁定</span>
+      <span class="badge b-off">redistribution · 锁定</span>
+      <span class="badge b-off">commercial · 锁定</span>
+      <span class="badge b-off">public_display · 锁定</span>
+      <span class="badge b-off">analytics · 锁定</span>
+    </div>
+    <div class="note">默认拒绝；training / redistribution / commercial 须显式批准</div>
+  </div>
+  <div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem 1.25rem;">
+    <div style="font-size:14px;font-weight:500;margin-bottom:12px;">最近采集运行 · 状态分账</div>
+    <div class="row run"><div>xueqiu</div><div class="ok">complete</div><div>128</div></div>
+    <div class="row run"><div>guba</div><div class="ok">complete</div><div>64</div></div>
+    <div class="row run"><div>news</div><div style="color:var(--color-text-secondary);">empty</div><div>0</div></div>
+    <div class="row run"><div>youtube_envelope</div><div class="ok">complete</div><div>948</div></div>
+    <div class="row run"><div>xueqiu_live</div><div class="danger">unavailable</div><div>0</div></div>
+  </div>
+</div>
+
+<div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem 1.25rem;">
+  <div style="font-size:14px;font-weight:500;margin-bottom:12px;">跨源实体归并预览 · canonical rollup</div>
+  <div class="row roll"><div style="font-weight:500;color:var(--color-text-info);">astock:SH600519</div><div>xueqiu + guba + news</div><div>3 源</div></div>
+  <div class="row roll"><div style="font-weight:500;color:var(--color-text-info);">astock:SZ000001</div><div>guba + news</div><div>2 源</div></div>
+  <div class="row roll"><div style="font-weight:500;color:var(--color-text-info);">yt:&lt;video_id&gt;</div><div>youtube_envelope</div><div>1 源</div></div>
+  <div class="note">命名空间隔离：A 股归 astock，系统外归 yt，杜绝跨域误并</div>
+</div>
+</div>
+
+</body>
+</html>
