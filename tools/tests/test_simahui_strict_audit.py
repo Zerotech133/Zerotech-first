@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """tools/tests/test_simahui_strict_audit.py — 司马微 G1-G8 严苛调校审计（产物级测试）。
 
 不重跑回测，独立复核审计产物（research/reports/simahui_strict_audit_20261101.json +
