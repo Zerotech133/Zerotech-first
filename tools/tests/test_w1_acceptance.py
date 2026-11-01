@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """tests for tools/w1_acceptance.py（W1 验收一条命令）。"""
 from __future__ import annotations
 
