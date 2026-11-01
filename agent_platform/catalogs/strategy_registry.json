@@ -25,7 +25,21 @@
         "cost": "仅作风险/工程过滤，不产生收益"
       },
       "approved": false,
-      "effective_from": "2026-11-01"
+      "effective_from": "2026-11-01",
+      "strict_verdict": {
+        "verdict": "close",
+        "audited_at": "2026-11-01T16:48:33+08:00",
+        "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+        "rationale": "非张松；status=validated_filter_no_alpha（仅过滤器、无 alpha）。严格复核：无正向假设通过 G1；无独立 walk-forward/安慰剂/成本敏感性证据。作为策略关闭；过滤逻辑仅可作为其他策略的辅助风控（不含 alpha 承诺）。",
+        "next_actions": [
+          "保留过滤器代码供叠加使用（需另测叠加净效应）"
+        ],
+        "evidence": [
+          "agent_platform/catalogs/strategy_registry.json",
+          "research/reports/factor_lib_demo_20261101.json"
+        ],
+        "gates": "见审计报告 strategies 明细（G1-G8）"
+      }
     },
     {
       "id": "S02_composite_mvp",
@@ -43,7 +57,19 @@
         "action": "S02 暂停（paused_shadow_breaker），等待因子重做"
       },
       "approved": false,
-      "effective_from": "2026-11-01"
+      "effective_from": "2026-11-01",
+      "strict_verdict": {
+        "verdict": "close",
+        "audited_at": "2026-11-01T16:48:33+08:00",
+        "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+        "rationale": "status=paused_shadow_breaker；影子盘 20 日 -9.6% 熔断。G1 无显著正向假设、G2 单次切分、G3 无 50bp 敏感性 → close。",
+        "next_actions": [],
+        "evidence": [
+          "agent_platform/catalogs/strategy_registry.json",
+          "research/reports/screening_20261030.json"
+        ],
+        "gates": "见审计报告 strategies 明细（G1-G8）"
+      }
     },
     {
       "id": "S03_H18_forecast_revision_watch",
@@ -60,7 +86,22 @@
         "cost": "事件型换手低，30bp 已计；容量极小（493 事件/3.8年）"
       },
       "approved": false,
-      "effective_from": "2026-11-01"
+      "effective_from": "2026-11-01",
+      "strict_verdict": {
+        "verdict": "needs-more",
+        "audited_at": "2026-11-01T16:48:33+08:00",
+        "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+        "rationale": "事件方向 ambiguous：只可观察、不可交易。G2/G4/G6 证据缺口大；需先做方向确认（预告修订分组 OOS 符号）+ 置换检验，再决定是否升级为事件策略。",
+        "next_actions": [
+          "补方向确认与安慰剂 1000 次置换",
+          "仅保留观察名单，不进入影子盘"
+        ],
+        "evidence": [
+          "research/reports/screening_20261030.json",
+          "agent_platform/catalogs/strategy_registry.json"
+        ],
+        "gates": "见审计报告 strategies 明细（G1-G8）"
+      }
     },
     {
       "id": "S04_AH_premium_pair",
@@ -77,7 +118,20 @@
         "cost": "双边成本/汇率基差待评估"
       },
       "approved": false,
-      "effective_from": "待建（phase2）"
+      "effective_from": "待建（phase2）",
+      "strict_verdict": {
+        "verdict": "needs-more",
+        "audited_at": "2026-11-01T16:48:33+08:00",
+        "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+        "rationale": "status=validated_pair_planned：规划中、未跑完整四关，无 G1-G7 证据 → needs-more。",
+        "next_actions": [
+          "补齐配对回测（T+1/成本 50bp/容量/分层）后再裁决"
+        ],
+        "evidence": [
+          "agent_platform/catalogs/strategy_registry.json"
+        ],
+        "gates": "见审计报告 strategies 明细（G1-G8）"
+      }
     },
     {
       "id": "S05_LX20_AVOID_DEWEIGHT",
@@ -98,7 +152,24 @@
         "final": "S05 关闭（仅保留 research_only 知识结论）：规避在等权全市场有效但换手成本高；在 S01 大市值内规避/超配均无效。"
       },
       "approved": false,
-      "effective_from": "待验证（candidate）"
+      "effective_from": "待验证（candidate）",
+      "strict_verdict": {
+        "verdict": "close",
+        "gates": {
+          "G1": "fail",
+          "G2": "fail",
+          "G3": "fail",
+          "G4": "fail",
+          "G5": "pass",
+          "G6": "not-met",
+          "G7": "pass",
+          "G8": "done"
+        },
+        "audited_at": "2026-11-01T16:48:33+08:00",
+        "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+        "rationale": "注册表已 closed_both_directions_fail；严格复核再次确认（G1/G2/G3 fail）。与 LX20 反向规避研究不矛盾：S05 是叠加在既有组合上的覆盖层，覆层后 OOS 为负；LX20 的独立规避口径（等权全市场前 5 日事件股剔除）才有正超额，两者口径不同。",
+        "next_actions": []
+      }
     },
     {
       "id": "S06_reversal_combo_mom20_120",
@@ -170,7 +241,18 @@
         "note": "H24 倍量柱/H25 价升量缩 → rejected（简化定义无效）",
         "strategy_spec_id": "LX01_SEVEN_VOLUME_FORMS",
         "spec_test_status": "tested_rejected",
-        "computability": "A"
+        "computability": "A",
+        "strict_verdict": {
+          "verdict": "close",
+          "audited_at": "2026-11-01T16:48:33+08:00",
+          "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+          "rationale": "已测 rejected（H24 倍量柱/H25 价升量缩 → rejected（简化定义无效））；H24-H29 全部 rejected，G1 无正向显著。",
+          "evidence": [
+            "research/reports/H24-26_liangxue_features_20261031.json",
+            "research/reports/H29_liangxue_refined_20261031.json",
+            "deliverables/2026-10-31_H29更正_PIT前视假阳性_v1.md"
+          ]
+        }
       },
       {
         "name": "黄金柱（三日不破实顶+缩量）",
@@ -179,7 +261,18 @@
         "note": "H29 严格版 → rejected（PIT 修正后前视撤回）",
         "strategy_spec_id": "LX02_GOLDEN_PILLAR",
         "spec_test_status": "tested_rejected",
-        "computability": "A"
+        "computability": "A",
+        "strict_verdict": {
+          "verdict": "close",
+          "audited_at": "2026-11-01T16:48:33+08:00",
+          "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+          "rationale": "已测 rejected（H29 严格版 → rejected（PIT 修正后前视撤回））；H24-H29 全部 rejected，G1 无正向显著。",
+          "evidence": [
+            "research/reports/H24-26_liangxue_features_20261031.json",
+            "research/reports/H29_liangxue_refined_20261031.json",
+            "deliverables/2026-10-31_H29更正_PIT前视假阳性_v1.md"
+          ]
+        }
       },
       {
         "name": "将军柱（卧底/搭梯战法）",
@@ -196,6 +289,15 @@
           "oos_excess_pct": null,
           "n_events": null,
           "action": null
+        },
+        "strict_verdict": {
+          "verdict": "close",
+          "audited_at": "2026-11-01T16:48:33+08:00",
+          "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+          "rationale": "批量四关 grade=D；无正向显著，不值得继续投入。",
+          "evidence": [
+            "research/reports/book_batch_test_20261101.json"
+          ]
         }
       },
       {
@@ -213,6 +315,15 @@
           "oos_excess_pct": null,
           "n_events": null,
           "action": null
+        },
+        "strict_verdict": {
+          "verdict": "close",
+          "audited_at": "2026-11-01T16:48:33+08:00",
+          "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+          "rationale": "批量四关 grade=D；无正向显著，不值得继续投入。",
+          "evidence": [
+            "research/reports/book_batch_test_20261101.json"
+          ]
         }
       },
       {
@@ -230,6 +341,15 @@
           "oos_excess_pct": null,
           "n_events": null,
           "action": null
+        },
+        "strict_verdict": {
+          "verdict": "needs-more",
+          "audited_at": "2026-11-01T16:48:33+08:00",
+          "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+          "rationale": "批量四关 grade=C（方向未定，OOS 不显著）；需补 walk-forward/置换/成本敏感性。",
+          "evidence": [
+            "research/reports/book_batch_test_20261101.json"
+          ]
         }
       },
       {
@@ -256,6 +376,16 @@
           "tradable_avoidance": true,
           "risk_rule_candidate": true,
           "verdict": "可交易规避（毛/净超额均为正且显著）；市值×行业层内同向有效（非单纯小市值/高波动暴露）"
+        },
+        "strict_verdict": {
+          "verdict": "needs-more",
+          "audited_at": "2026-11-01T16:48:33+08:00",
+          "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+          "rationale": "G1/G3(50bp)/G6/G7 通过，但覆盖 1.15% 过低、G4 未做 → needs-more（优先级低于 LX20）。",
+          "evidence": [
+            "research/reports/reverse_avoid_20261101.json",
+            "research/reports/lx20_avoid_rule_20261101.json"
+          ]
         }
       },
       {
@@ -273,6 +403,15 @@
           "oos_excess_pct": null,
           "n_events": null,
           "action": null
+        },
+        "strict_verdict": {
+          "verdict": "close",
+          "audited_at": "2026-11-01T16:48:33+08:00",
+          "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+          "rationale": "批量四关 grade=F；无正向显著，不值得继续投入。",
+          "evidence": [
+            "research/reports/book_batch_test_20261101.json"
+          ]
         }
       },
       {
@@ -282,7 +421,18 @@
         "note": "H29 倍量确认 → rejected",
         "strategy_spec_id": "LX08_DOUBLE_VOL_EXPAND_CONTRACT",
         "spec_test_status": "tested_rejected",
-        "computability": "A"
+        "computability": "A",
+        "strict_verdict": {
+          "verdict": "close",
+          "audited_at": "2026-11-01T16:48:33+08:00",
+          "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+          "rationale": "已测 rejected（H29 倍量确认 → rejected）；H24-H29 全部 rejected，G1 无正向显著。",
+          "evidence": [
+            "research/reports/H24-26_liangxue_features_20261031.json",
+            "research/reports/H29_liangxue_refined_20261031.json",
+            "deliverables/2026-10-31_H29更正_PIT前视假阳性_v1.md"
+          ]
+        }
       },
       {
         "name": "现场直憋战法",
@@ -299,6 +449,15 @@
           "oos_excess_pct": null,
           "n_events": null,
           "action": null
+        },
+        "strict_verdict": {
+          "verdict": "close",
+          "audited_at": "2026-11-01T16:48:33+08:00",
+          "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+          "rationale": "批量四关 grade=D；无正向显著，不值得继续投入。",
+          "evidence": [
+            "research/reports/book_batch_test_20261101.json"
+          ]
         }
       },
       {
@@ -316,6 +475,15 @@
           "oos_excess_pct": null,
           "n_events": null,
           "action": null
+        },
+        "strict_verdict": {
+          "verdict": "close",
+          "audited_at": "2026-11-01T16:48:33+08:00",
+          "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+          "rationale": "批量四关 grade=D；无正向显著，不值得继续投入。",
+          "evidence": [
+            "research/reports/book_batch_test_20261101.json"
+          ]
         }
       },
       {
@@ -333,6 +501,15 @@
           "oos_excess_pct": null,
           "n_events": null,
           "action": null
+        },
+        "strict_verdict": {
+          "verdict": "close",
+          "audited_at": "2026-11-01T16:48:33+08:00",
+          "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+          "rationale": "批量四关 grade=D；无正向显著，不值得继续投入。",
+          "evidence": [
+            "research/reports/book_batch_test_20261101.json"
+          ]
         }
       },
       {
@@ -359,6 +536,16 @@
           "tradable_avoidance": false,
           "risk_rule_candidate": false,
           "verdict": "规避无正超额（原信号反向不成立或已被市场消化）"
+        },
+        "strict_verdict": {
+          "verdict": "close",
+          "audited_at": "2026-11-01T16:48:33+08:00",
+          "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+          "rationale": "G1/G3/G5 均 fail（净 -24.6%@30bp、覆盖 71.9%）→ close。",
+          "evidence": [
+            "research/reports/reverse_avoid_20261101.json",
+            "research/reports/lx20_avoid_rule_20261101.json"
+          ]
         }
       },
       {
@@ -368,7 +555,18 @@
         "note": "H27 near_high_vol → rejected",
         "strategy_spec_id": "LX13_ARMY_AT_CITY_GATE",
         "spec_test_status": "tested_rejected",
-        "computability": "B"
+        "computability": "B",
+        "strict_verdict": {
+          "verdict": "close",
+          "audited_at": "2026-11-01T16:48:33+08:00",
+          "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+          "rationale": "已测 rejected（H27 near_high_vol → rejected）；H24-H29 全部 rejected，G1 无正向显著。",
+          "evidence": [
+            "research/reports/H24-26_liangxue_features_20261031.json",
+            "research/reports/H29_liangxue_refined_20261031.json",
+            "deliverables/2026-10-31_H29更正_PIT前视假阳性_v1.md"
+          ]
+        }
       },
       {
         "name": "接力双阳",
@@ -385,6 +583,15 @@
           "oos_excess_pct": null,
           "n_events": null,
           "action": null
+        },
+        "strict_verdict": {
+          "verdict": "close",
+          "audited_at": "2026-11-01T16:48:33+08:00",
+          "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+          "rationale": "批量四关 grade=D；无正向显著，不值得继续投入。",
+          "evidence": [
+            "research/reports/book_batch_test_20261101.json"
+          ]
         }
       },
       {
@@ -394,7 +601,18 @@
         "note": "H25 → rejected",
         "strategy_spec_id": "LX15_PRICE_UP_VOL_DOWN",
         "spec_test_status": "tested_rejected",
-        "computability": "A"
+        "computability": "A",
+        "strict_verdict": {
+          "verdict": "close",
+          "audited_at": "2026-11-01T16:48:33+08:00",
+          "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+          "rationale": "已测 rejected（H25 → rejected）；H24-H29 全部 rejected，G1 无正向显著。",
+          "evidence": [
+            "research/reports/H24-26_liangxue_features_20261031.json",
+            "research/reports/H29_liangxue_refined_20261031.json",
+            "deliverables/2026-10-31_H29更正_PIT前视假阳性_v1.md"
+          ]
+        }
       },
       {
         "name": "平斜交叉不上必下",
@@ -411,6 +629,15 @@
           "oos_excess_pct": null,
           "n_events": null,
           "action": null
+        },
+        "strict_verdict": {
+          "verdict": "close",
+          "audited_at": "2026-11-01T16:48:33+08:00",
+          "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+          "rationale": "批量四关 grade=F；无正向显著，不值得继续投入。",
+          "evidence": [
+            "research/reports/book_batch_test_20261101.json"
+          ]
         }
       },
       {
@@ -428,6 +655,15 @@
           "oos_excess_pct": null,
           "n_events": null,
           "action": null
+        },
+        "strict_verdict": {
+          "verdict": "needs-more",
+          "audited_at": "2026-11-01T16:48:33+08:00",
+          "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+          "rationale": "批量四关 grade=C（方向未定，OOS 不显著）；需补 walk-forward/置换/成本敏感性。",
+          "evidence": [
+            "research/reports/book_batch_test_20261101.json"
+          ]
         }
       },
       {
@@ -437,7 +673,18 @@
         "note": "H26 → rejected（严格版仍负）",
         "strategy_spec_id": "LX18_EXTREME_YIN_NEXT_YANG",
         "spec_test_status": "tested_rejected",
-        "computability": "A"
+        "computability": "A",
+        "strict_verdict": {
+          "verdict": "close",
+          "audited_at": "2026-11-01T16:48:33+08:00",
+          "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+          "rationale": "已测 rejected（H26 → rejected（严格版仍负））；H24-H29 全部 rejected，G1 无正向显著。",
+          "evidence": [
+            "research/reports/H24-26_liangxue_features_20261031.json",
+            "research/reports/H29_liangxue_refined_20261031.json",
+            "deliverables/2026-10-31_H29更正_PIT前视假阳性_v1.md"
+          ]
+        }
       },
       {
         "name": "牛股量形",
@@ -454,6 +701,15 @@
           "oos_excess_pct": null,
           "n_events": null,
           "action": null
+        },
+        "strict_verdict": {
+          "verdict": "close",
+          "audited_at": "2026-11-01T16:48:33+08:00",
+          "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+          "rationale": "批量四关 grade=D；无正向显著，不值得继续投入。",
+          "evidence": [
+            "research/reports/book_batch_test_20261101.json"
+          ]
         }
       },
       {
@@ -480,6 +736,16 @@
           "tradable_avoidance": true,
           "risk_rule_candidate": true,
           "verdict": "可交易规避（毛/净超额均为正且显著）；市值×行业层内同向有效（非单纯小市值/高波动暴露）"
+        },
+        "strict_verdict": {
+          "verdict": "needs-more",
+          "audited_at": "2026-11-01T16:48:33+08:00",
+          "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+          "rationale": "G1/G2/G5/G6/G7 通过，但 G3 50bp 净超额已转负（-1.28%）、G4 安慰剂未做 → 不可直接交易，按严格协议 needs-more；先做降换手与安慰剂，再谈影子盘。",
+          "evidence": [
+            "research/reports/reverse_avoid_20261101.json",
+            "research/reports/lx20_avoid_rule_20261101.json"
+          ]
         }
       },
       {
@@ -497,6 +763,15 @@
           "oos_excess_pct": null,
           "n_events": null,
           "action": null
+        },
+        "strict_verdict": {
+          "verdict": "close",
+          "audited_at": "2026-11-01T16:48:33+08:00",
+          "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+          "rationale": "批量四关 grade=F；无正向显著，不值得继续投入。",
+          "evidence": [
+            "research/reports/book_batch_test_20261101.json"
+          ]
         }
       },
       {
@@ -523,6 +798,16 @@
           "tradable_avoidance": false,
           "risk_rule_candidate": false,
           "verdict": "毛超额显著为正但被换手成本吃掉（净超额≤0）；市值×行业层内同向有效（非单纯小市值/高波动暴露）"
+        },
+        "strict_verdict": {
+          "verdict": "close",
+          "audited_at": "2026-11-01T16:48:33+08:00",
+          "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+          "rationale": "G3 30bp 已 -6.57%、G5 覆盖 42.1%>30% → close（张松已判『被成本吃光』，复核一致）。",
+          "evidence": [
+            "research/reports/reverse_avoid_20261101.json",
+            "research/reports/lx20_avoid_rule_20261101.json"
+          ]
         }
       },
       {
@@ -540,6 +825,15 @@
           "oos_excess_pct": null,
           "n_events": null,
           "action": null
+        },
+        "strict_verdict": {
+          "verdict": "close",
+          "audited_at": "2026-11-01T16:48:33+08:00",
+          "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+          "rationale": "批量四关 grade=F；无正向显著，不值得继续投入。",
+          "evidence": [
+            "research/reports/book_batch_test_20261101.json"
+          ]
         }
       },
       {
@@ -549,7 +843,16 @@
         "note": "作为特征映射框架使用",
         "strategy_spec_id": "LX24_LIMIT_UP_GENE",
         "spec_test_status": "concept",
-        "computability": "C"
+        "computability": "C",
+        "strict_verdict": {
+          "verdict": "close",
+          "audited_at": "2026-11-01T16:48:33+08:00",
+          "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+          "rationale": "概念级战法（不可程序化），无假设可测；作为特征映射框架使用，不进入策略池。",
+          "evidence": [
+            "research/reports/book_batch_test_20261101.json"
+          ]
+        }
       }
     ],
     "updated_at": "2026-11-01T05:43:42+08:00",
@@ -5469,5 +5772,28 @@
       "upgraded": 0
     },
     "note": "人工资产批次（learning_cards/kb_units_snapshot）中→低（备份+原子写+合并识别）；生成类批次 5 脚本中→低；**高风险 0、剩余中风险仅 trend_template_export**。"
+  },
+  "strict_audit_20261101": {
+    "report": "research/reports/simahui_strict_audit_20261101.json",
+    "md": "research/reports/simahui_strict_audit_20261101.md",
+    "date": "2026-11-01",
+    "auditor": "司马微",
+    "protocol": "G1-G8（多重检验/成本/安慰剂/容量/分层/PIT/决策）",
+    "decisions": {
+      "LX20_BULL_STOCK_THREE_ABSOLUTES": "needs-more",
+      "LX06_YIN_LINE_TACTICS": "needs-more",
+      "LX22_CONCAVE_NOTCH_GOLD": "close",
+      "LX12_DOUBLE_YIN_EXIT": "close",
+      "S05_LX20_AVOID_DEWEIGHT": "close"
+    },
+    "book_backlog_counts": {
+      "close": 20,
+      "needs-more": 4
+    },
+    "book_backlog_decision_key": "strict_verdict.verdict",
+    "strategy_counts": {
+      "close": 3,
+      "needs-more": 2
+    }
   }
 }

@@ -1,0 +1,1149 @@
+{
+ "schema_version": "simahui_strict_audit.v1",
+ "meta": {
+  "generated_at": "2026-11-01T16:48:33+08:00",
+  "auditor": "司马微",
+  "source": "张松交付单 v1",
+  "deliverable_ticket": "deliverables/2026-11-01_张松交付司马微_策略严苛调校单_v1.md",
+  "scope": "S01-S05 + book_backlog 24 项 + 张松 4 组研究（H24-H29 / 批量四关 / 反向规避 / 量学因子库）",
+  "protocol": "G1-G8（见 gates 定义）",
+  "not_done": [
+   "不重跑 LLM",
+   "不实盘",
+   "不改变既有事实结论（H24-H29 rejected、S05 closed）"
+  ]
+ },
+ "gates_definition": {
+  "G1": "全部已测假设 BH-FDR q≤0.10（或 Bonferroni）；报原始 p 与 q",
+  "G2": "walk-forward ≥3 folds + 5 日 embargo；逐 fold OOS 符号",
+  "G3": "30/50/80bp + 冲击成本敏感性；50bp 净超额≤0 → 不可交易",
+  "G4": "同覆盖率随机信号 ≥1000 次置换，真实信号分位 ≥90%",
+  "G5": "成交额门槛/容量 AUM/涨跌停不可执行性；覆盖>30% → 不可执行",
+  "G6": "市值×行业×波动层内同向 + bootstrap CI",
+  "G7": "PIT/除权/停牌/ST/新股逐条核对（含 code review）",
+  "G8": "逐策略 keep/close/needs-more + 注册表 + 证据路径"
+ },
+ "G1_multiple_testing": {
+  "method": "BH-FDR (q≤0.10)，p 为双侧（t 分布近似正态）；Bonferroni α=0.10/n",
+  "n_hypotheses": 27,
+  "n_tested_with_t": 27,
+  "n_q_le_0_10": 21,
+  "significant_positive_findings": [
+   {
+    "id": "LX20_BULL_STOCK_THREE_ABSOLUTES",
+    "family": "reverse_avoid_4",
+    "t": 7.35,
+    "p": 1.9820685499095184e-13,
+    "q": 8.919308474592832e-13,
+    "source": "research/reports/reverse_avoid_20261101.json"
+   },
+   {
+    "id": "LX22_CONCAVE_NOTCH_GOLD",
+    "family": "reverse_avoid_4",
+    "t": 2.03,
+    "p": 0.042356539285344566,
+    "q": 0.05718132803521516,
+    "source": "research/reports/reverse_avoid_20261101.json"
+   },
+   {
+    "id": "LX06_YIN_LINE_TACTICS",
+    "family": "reverse_avoid_4",
+    "t": 6.2,
+    "p": 5.646316074086536e-10,
+    "q": 1.8049264507181036e-09,
+    "source": "research/reports/reverse_avoid_20261101.json"
+   }
+  ],
+  "hypotheses": [
+   {
+    "id": "H24_double_vol",
+    "family": "H24-H29",
+    "metric": "daily excess/IC t（two-sided p）",
+    "t": -17.39,
+    "p": 9.82342458491815e-68,
+    "direction_ex_ante": "positive",
+    "source": "research/reports/H24-26_liangxue_features_20261031.json",
+    "note": "rejected",
+    "q": 1.3261623189639504e-66,
+    "bonferroni_alpha": 0.003703703703703704,
+    "significant_positive": false
+   },
+   {
+    "id": "H25_price_up_vol_down",
+    "family": "H24-H29",
+    "metric": "daily excess/IC t（two-sided p）",
+    "t": -11.89,
+    "p": 1.3340658519852667e-32,
+    "direction_ex_ante": "positive",
+    "source": "research/reports/H24-26_liangxue_features_20261031.json",
+    "note": "rejected",
+    "q": 1.20065926678674e-31,
+    "bonferroni_alpha": 0.003703703703703704,
+    "significant_positive": false
+   },
+   {
+    "id": "H26_yin_yang",
+    "family": "H24-H29",
+    "metric": "daily excess/IC t（two-sided p）",
+    "t": -8.91,
+    "p": 5.103256375382024e-19,
+    "direction_ex_ante": "positive",
+    "source": "research/reports/H24-26_liangxue_features_20261031.json",
+    "note": "rejected",
+    "q": 3.444698053382866e-18,
+    "bonferroni_alpha": 0.003703703703703704,
+    "significant_positive": false
+   },
+   {
+    "id": "H27_near_high_vol",
+    "family": "H24-H29",
+    "metric": "daily excess/IC t（two-sided p）",
+    "t": -20.77,
+    "p": 8.08582999961323e-96,
+    "direction_ex_ante": "positive",
+    "source": "research/reports/H24-26_liangxue_features_20261031.json",
+    "note": "rejected",
+    "q": 2.183174099895572e-94,
+    "bonferroni_alpha": 0.003703703703703704,
+    "significant_positive": false
+   },
+   {
+    "id": "H29_golden_pillar",
+    "family": "H24-H29",
+    "metric": "daily excess/IC t（two-sided p）",
+    "t": -6.19,
+    "p": 6.016421502393679e-10,
+    "direction_ex_ante": "positive",
+    "source": "research/reports/H29_liangxue_refined_20261031.json",
+    "note": "rejected",
+    "q": 1.8049264507181036e-09,
+    "bonferroni_alpha": 0.003703703703703704,
+    "significant_positive": false
+   },
+   {
+    "id": "H29_double_vol_confirm",
+    "family": "H24-H29",
+    "metric": "daily excess/IC t（two-sided p）",
+    "t": -1.69,
+    "p": 0.09102795464309965,
+    "direction_ex_ante": "positive",
+    "source": "research/reports/H29_liangxue_refined_20261031.json",
+    "note": "rejected",
+    "q": 0.1068589032766822,
+    "bonferroni_alpha": 0.003703703703703704,
+    "significant_positive": false
+   },
+   {
+    "id": "H29_yin_yang_strict",
+    "family": "H24-H29",
+    "metric": "daily excess/IC t（two-sided p）",
+    "t": -4.04,
+    "p": 5.3451201438984214e-05,
+    "direction_ex_ante": "positive",
+    "source": "research/reports/H29_liangxue_refined_20261031.json",
+    "note": "rejected",
+    "q": 0.00010308445991804098,
+    "bonferroni_alpha": 0.003703703703703704,
+    "significant_positive": false
+   },
+   {
+    "id": "H29_shrink_pullback",
+    "family": "H24-H29",
+    "metric": "daily excess/IC t（two-sided p）",
+    "t": -7.68,
+    "p": 1.590885894344306e-14,
+    "direction_ex_ante": "positive",
+    "source": "research/reports/H29_liangxue_refined_20261031.json",
+    "note": "rejected",
+    "q": 8.590783829459253e-14,
+    "bonferroni_alpha": 0.003703703703703704,
+    "significant_positive": false
+   },
+   {
+    "id": "H28_avoid",
+    "family": "H24-H29",
+    "metric": "daily excess/IC t（two-sided p）",
+    "t": -0.84,
+    "p": 0.40090838652089944,
+    "direction_ex_ante": "negative",
+    "source": "research/reports/H29_param_capacity_20261031.json",
+    "note": "规避方向，excess_t 为负表示规避无效",
+    "q": 0.4510219348360119,
+    "bonferroni_alpha": 0.003703703703703704,
+    "significant_positive": false
+   },
+   {
+    "id": "LX03_GENERAL_PILLAR",
+    "family": "book_batch_13",
+    "metric": "daily excess/IC t（two-sided p）",
+    "t": -5.894,
+    "p": 3.7695716785082735e-09,
+    "direction_ex_ante": "positive",
+    "source": "research/reports/book_batch_test_20261101.json",
+    "note": "grade=D",
+    "q": 1.0177843531972339e-08,
+    "bonferroni_alpha": 0.003703703703703704,
+    "significant_positive": false
+   },
+   {
+    "id": "LX04_MARSHAL_PILLAR_ZERO",
+    "family": "book_batch_13",
+    "metric": "daily excess/IC t（two-sided p）",
+    "t": -0.73,
+    "p": 0.4653901846017949,
+    "direction_ex_ante": "positive",
+    "source": "research/reports/book_batch_test_20261101.json",
+    "note": "grade=D",
+    "q": 0.5026213993699384,
+    "bonferroni_alpha": 0.003703703703703704,
+    "significant_positive": false
+   },
+   {
+    "id": "LX05_GOLDEN_LINE_TRILOGY",
+    "family": "book_batch_13",
+    "metric": "daily excess/IC t（two-sided p）",
+    "t": -1.902,
+    "p": 0.05717115459651273,
+    "direction_ex_ante": "positive",
+    "source": "research/reports/book_batch_test_20261101.json",
+    "note": "grade=C",
+    "q": 0.07350577019551637,
+    "bonferroni_alpha": 0.003703703703703704,
+    "significant_positive": false
+   },
+   {
+    "id": "LX06_YIN_LINE_TACTICS",
+    "family": "book_batch_13",
+    "metric": "daily excess/IC t（two-sided p）",
+    "t": -3.919,
+    "p": 8.891711465364369e-05,
+    "direction_ex_ante": "positive",
+    "source": "research/reports/book_batch_test_20261101.json",
+    "note": "grade=D",
+    "q": 0.00016005080637655864,
+    "bonferroni_alpha": 0.003703703703703704,
+    "significant_positive": false
+   },
+   {
+    "id": "LX09_LIVE_SUFFOCATION",
+    "family": "book_batch_13",
+    "metric": "daily excess/IC t（two-sided p）",
+    "t": -3.701,
+    "p": 0.00021475147630525506,
+    "direction_ex_ante": "positive",
+    "source": "research/reports/book_batch_test_20261101.json",
+    "note": "grade=D",
+    "q": 0.0003623931162651179,
+    "bonferroni_alpha": 0.003703703703703704,
+    "significant_positive": false
+   },
+   {
+    "id": "LX10_3121_RULER",
+    "family": "book_batch_13",
+    "metric": "daily excess/IC t（two-sided p）",
+    "t": -2.182,
+    "p": 0.02910953272888722,
+    "direction_ex_ante": "positive",
+    "source": "research/reports/book_batch_test_20261101.json",
+    "note": "grade=D",
+    "q": 0.04136617808841868,
+    "bonferroni_alpha": 0.003703703703703704,
+    "significant_positive": false
+   },
+   {
+    "id": "LX11_SPY_TACTICS",
+    "family": "book_batch_13",
+    "metric": "daily excess/IC t（two-sided p）",
+    "t": -3.455,
+    "p": 0.0005502928224335319,
+    "direction_ex_ante": "positive",
+    "source": "research/reports/book_batch_test_20261101.json",
+    "note": "grade=D",
+    "q": 0.0008739944826885508,
+    "bonferroni_alpha": 0.003703703703703704,
+    "significant_positive": false
+   },
+   {
+    "id": "LX12_DOUBLE_YIN_EXIT",
+    "family": "book_batch_13",
+    "metric": "daily excess/IC t（two-sided p）",
+    "t": 0.014,
+    "p": 0.988829981037238,
+    "direction_ex_ante": "positive",
+    "source": "research/reports/book_batch_test_20261101.json",
+    "note": "grade=D",
+    "q": 0.988829981037238,
+    "bonferroni_alpha": 0.003703703703703704,
+    "significant_positive": false
+   },
+   {
+    "id": "LX14_RELAY_DOUBLE_YANG",
+    "family": "book_batch_13",
+    "metric": "daily excess/IC t（two-sided p）",
+    "t": -4.893,
+    "p": 9.931040650780512e-07,
+    "direction_ex_ante": "positive",
+    "source": "research/reports/book_batch_test_20261101.json",
+    "note": "grade=D",
+    "q": 2.2344841464256152e-06,
+    "bonferroni_alpha": 0.003703703703703704,
+    "significant_positive": false
+   },
+   {
+    "id": "LX17_STAND_ON_CONCAVE_PEAK",
+    "family": "book_batch_13",
+    "metric": "daily excess/IC t（two-sided p）",
+    "t": -4.426,
+    "p": 9.599652354426225e-06,
+    "direction_ex_ante": "positive",
+    "source": "research/reports/book_batch_test_20261101.json",
+    "note": "grade=C",
+    "q": 1.9937739505346772e-05,
+    "bonferroni_alpha": 0.003703703703703704,
+    "significant_positive": false
+   },
+   {
+    "id": "LX19_BULL_STOCK_VOLUME_SHAPE",
+    "family": "book_batch_13",
+    "metric": "daily excess/IC t（two-sided p）",
+    "t": -1.724,
+    "p": 0.08470784316287541,
+    "direction_ex_ante": "positive",
+    "source": "research/reports/book_batch_test_20261101.json",
+    "note": "grade=D",
+    "q": 0.10395962569989256,
+    "bonferroni_alpha": 0.003703703703703704,
+    "significant_positive": false
+   },
+   {
+    "id": "LX20_BULL_STOCK_THREE_ABSOLUTES",
+    "family": "book_batch_13",
+    "metric": "daily excess/IC t（two-sided p）",
+    "t": -5.558,
+    "p": 2.728833855280959e-08,
+    "direction_ex_ante": "positive",
+    "source": "research/reports/book_batch_test_20261101.json",
+    "note": "grade=D",
+    "q": 6.698046735689626e-08,
+    "bonferroni_alpha": 0.003703703703703704,
+    "significant_positive": false
+   },
+   {
+    "id": "LX22_CONCAVE_NOTCH_GOLD",
+    "family": "book_batch_13",
+    "metric": "daily excess/IC t（two-sided p）",
+    "t": -6.292,
+    "p": 3.1340148391610086e-10,
+    "direction_ex_ante": "positive",
+    "source": "research/reports/book_batch_test_20261101.json",
+    "note": "grade=D",
+    "q": 1.2088342951049604e-09,
+    "bonferroni_alpha": 0.003703703703703704,
+    "significant_positive": false
+   },
+   {
+    "id": "LX20_BULL_STOCK_THREE_ABSOLUTES",
+    "family": "reverse_avoid_4",
+    "metric": "daily excess/IC t（two-sided p）",
+    "t": 7.35,
+    "p": 1.9820685499095184e-13,
+    "direction_ex_ante": "positive",
+    "source": "research/reports/reverse_avoid_20261101.json",
+    "note": "coverage=24.615%",
+    "q": 8.919308474592832e-13,
+    "bonferroni_alpha": 0.003703703703703704,
+    "significant_positive": true
+   },
+   {
+    "id": "LX22_CONCAVE_NOTCH_GOLD",
+    "family": "reverse_avoid_4",
+    "metric": "daily excess/IC t（two-sided p）",
+    "t": 2.03,
+    "p": 0.042356539285344566,
+    "direction_ex_ante": "positive",
+    "source": "research/reports/reverse_avoid_20261101.json",
+    "note": "coverage=42.104%",
+    "q": 0.05718132803521516,
+    "bonferroni_alpha": 0.003703703703703704,
+    "significant_positive": true
+   },
+   {
+    "id": "LX06_YIN_LINE_TACTICS",
+    "family": "reverse_avoid_4",
+    "metric": "daily excess/IC t（two-sided p）",
+    "t": 6.2,
+    "p": 5.646316074086536e-10,
+    "direction_ex_ante": "positive",
+    "source": "research/reports/reverse_avoid_20261101.json",
+    "note": "coverage=1.152%",
+    "q": 1.8049264507181036e-09,
+    "bonferroni_alpha": 0.003703703703703704,
+    "significant_positive": true
+   },
+   {
+    "id": "LX12_DOUBLE_YIN_EXIT",
+    "family": "reverse_avoid_4",
+    "metric": "daily excess/IC t（two-sided p）",
+    "t": -3.27,
+    "p": 0.0010754748436593903,
+    "direction_ex_ante": "positive",
+    "source": "research/reports/reverse_avoid_20261101.json",
+    "note": "coverage=45.247%",
+    "q": 0.0016132122654890855,
+    "bonferroni_alpha": 0.003703703703703704,
+    "significant_positive": false
+   },
+   {
+    "id": "S05_LX20_AVOID_DEWEIGHT",
+    "family": "strategies",
+    "metric": "daily excess/IC t（two-sided p）",
+    "t": -0.34,
+    "p": 0.7338565279279439,
+    "direction_ex_ante": "positive",
+    "source": "research/reports/s05_reverse_20261101.json",
+    "note": "S05 覆盖层 OOS t",
+    "q": 0.7620817790020956,
+    "bonferroni_alpha": 0.003703703703703704,
+    "significant_positive": false
+   }
+  ],
+  "note": "多重检验面：H24-H29（9）+ 批量四关（13 个可计算）+ 反向规避（4）+ S05（1）= 26 个已测假设；未把 81 组参数网格逐格当独立假设（报告 0/81 通过，边际校正只会更严）。"
+ },
+ "strategies": {
+  "LX20_BULL_STOCK_THREE_ABSOLUTES": {
+   "id": "LX20_BULL_STOCK_THREE_ABSOLUTES",
+   "name": "牛股三绝 · 反向规避/降配（S05 候选）",
+   "family": "reverse_avoid",
+   "strict_verdict": "needs-more",
+   "gates": [
+    {
+     "gate": "G1",
+     "status": "pass",
+     "evidence": "毛超额 t=7.35、BH-FDR q≈0（26 假设池）→ 校正后仍显著；但注意这是**事后反向解释**（原书看涨形态，OOS 长期为负才反用），方向上存在 sign-flip 选择，需 OOS 独立确认",
+     "refs": [
+      "research/reports/reverse_avoid_20261101.json",
+      "research/reports/lx20_avoid_rule_20261101.json"
+     ]
+    },
+    {
+     "gate": "G2",
+     "status": "pass",
+     "evidence": "年度 fold（2023-2026）：4/4 同向；逐年 {'2023': 6.447, '2024': 10.504, '2025': 6.475, '2026': 4.635}；日频再平衡、无重叠标签，未显式 5 日 embargo（口径已注明）",
+     "refs": [
+      "research/reports/lx20_avoid_rule_20261101.json"
+     ]
+    },
+    {
+     "gate": "G3",
+     "status": "fail",
+     "evidence": "T1_CLOSE N=5：30bp 净 2.027%；50bp 净 -1.278%；80bp 净 -6.236%（线性重算，未算冲击成本）→ **50bp 下已转负，不满足可交易标准**",
+     "refs": [
+      "research/reports/lx20_avoid_rule_20261101.json"
+     ]
+    },
+    {
+     "gate": "G4",
+     "status": "fail",
+     "evidence": "reverse_avoid 仅有 300 次日频 bootstrap p=0.0；未做「同覆盖率随机信号≥1000 次置换」，无法排除覆盖率/小市值/波动暴露代理 → 未达 G4",
+     "refs": [
+      "research/reports/reverse_avoid_20261101.json"
+     ]
+    },
+    {
+     "gate": "G5",
+     "status": "pass",
+     "evidence": "覆盖 24.35%≤30%；剔除股票日均成交额中位 2.73 亿、≥1 亿占比 81.9%；容量 AUM 上限 187.11 亿（10% 参与率）；涨停不可买 1.47%、停牌 0.15%（T+1 收盘执行）",
+     "refs": [
+      "research/reports/lx20_avoid_rule_20261101.json"
+     ]
+    },
+    {
+     "gate": "G6",
+     "status": "pass",
+     "evidence": "市值×行业层内超额 +34.61% ann（t=9.76，beyond_comp），bootstrap_p=0.0 → 非单纯小市值/行业暴露",
+     "refs": [
+      "research/reports/reverse_avoid_20261101.json"
+     ]
+    },
+    {
+     "gate": "G7",
+     "status": "pass",
+     "evidence": "PIT：factor_lib 事件因子仅用 T 日及以前数据 + T+1 执行；单测含 T 截断不变性；H29 前视判例已修正并制度化；除权用 adj_factor、停牌/涨跌停执行约束已在容量/执行可交易性中量化",
+     "refs": [
+      "deliverables/2026-10-31_H29更正_PIT前视假阳性_v1.md"
+     ]
+    },
+    {
+     "gate": "G8",
+     "status": "done",
+     "evidence": "裁决：needs-more（G3 50bp fail + G4 未做；G1/G2/G5/G6/G7 通过）",
+     "refs": []
+    }
+   ],
+   "rationale": "G1/G2/G5/G6/G7 通过，但 G3 50bp 净超额已转负（-1.28%）、G4 安慰剂未做 → 不可直接交易，按严格协议 needs-more；先做降换手与安慰剂，再谈影子盘。",
+   "next_actions": [
+    "降换手：改周频/触发后持有 N≥10 日/滞回阈值，目标 50bp 净超额>0（当前 -1.28%）",
+    "补安慰剂：同覆盖率（24% 附近）随机信号 ≥1000 次置换，报真实信号分位（要求 ≥90%）",
+    "补 5 日 embargo 的 3-fold walk-forward（现为年度切分）",
+    "执行口径限定 T+1 收盘（T 日收盘买不可行）；T+1 开盘执行已证明净超额为负，不再使用"
+   ],
+   "cost_sensitivity": {
+    "30bp": {
+     "gross_ann_pct": 6.985,
+     "cost_ann_pct": 4.958,
+     "net_ann_pct": 2.027
+    },
+    "50bp": {
+     "gross_ann_pct": 6.985,
+     "cost_ann_pct": 8.263,
+     "net_ann_pct": -1.278
+    },
+    "80bp": {
+     "gross_ann_pct": 6.985,
+     "cost_ann_pct": 13.221,
+     "net_ann_pct": -6.236
+    }
+   },
+   "placebo": {
+    "runs": 300,
+    "type": "daily_bootstrap",
+    "percentile": null,
+    "meets_g4": false,
+    "note": "bootstrap_p=0.0；非同覆盖率随机信号置换"
+   }
+  },
+  "LX06_YIN_LINE_TACTICS": {
+   "id": "LX06_YIN_LINE_TACTICS",
+   "name": "长阴短柱 · 反向规避（S05 候选）",
+   "family": "reverse_avoid",
+   "strict_verdict": "needs-more",
+   "gates": [
+    {
+     "gate": "G1",
+     "status": "pass",
+     "evidence": "BH-FDR：LX06_YIN_LINE_TACTICS 毛利 t=6.2，q=0.00016005080637655864",
+     "refs": [
+      "research/reports/reverse_avoid_20261101.json"
+     ]
+    },
+    {
+     "gate": "G2",
+     "status": "pass",
+     "evidence": "年度 fold（2023-2026）：4/4 同向；逐年 {'2023': 0.099, '2024': 0.017, '2025': 0.074, '2026': 0.057}；无 5 日 embargo（日频再平衡策略，标签无重叠，但未显式声明 embargo）",
+     "refs": [
+      "research/reports/reverse_avoid_20261101.json"
+     ]
+    },
+    {
+     "gate": "G3",
+     "status": "pass",
+     "evidence": "30bp 净 0.359%；50bp 净 0.128%；80bp 净 -0.217%（gross/cost 线性重算）",
+     "refs": [
+      "research/reports/reverse_avoid_20261101.json"
+     ]
+    },
+    {
+     "gate": "G4",
+     "status": "fail",
+     "evidence": "证据仅 bootstrap_p=0.0（n=300 日频 bootstrap，非「同覆盖率随机信号≥1000 次置换」）→ 未达 G4 标准",
+     "refs": [
+      "research/reports/reverse_avoid_20261101.json"
+     ]
+    },
+    {
+     "gate": "G5",
+     "status": "pass",
+     "evidence": "覆盖 1.152%（≤30%）；剔除股票日均成交额 3.537 亿、日均剔除 41.1 只——容量小（覆盖过低，边际信号弱）",
+     "refs": [
+      "research/reports/reverse_avoid_20261101.json"
+     ]
+    },
+    {
+     "gate": "G6",
+     "status": "pass",
+     "evidence": "beyond_comp t=7.52（+62.838% ann）",
+     "refs": [
+      "research/reports/reverse_avoid_20261101.json"
+     ]
+    },
+    {
+     "gate": "G7",
+     "status": "pass",
+     "evidence": "PIT：factor_lib 单测（无负 lag/T 截断不变性）+ 批量四关复用 PIT 因子；H29 前视判例已修正（见 PIT 更正回执）；反向规避用事件日 T 收盘信号，T+1 执行",
+     "refs": [
+      "deliverables/2026-10-31_H29更正_PIT前视假阳性_v1.md"
+     ]
+    },
+    {
+     "gate": "G8",
+     "status": "done",
+     "evidence": "见裁决（decision）",
+     "refs": []
+    }
+   ],
+   "rationale": "G1/G3(50bp)/G6/G7 通过，但覆盖 1.15% 过低、G4 未做 → needs-more（优先级低于 LX20）。",
+   "next_actions": [
+    "补同覆盖率≥1000 次置换（G4）",
+    "50bp 净仅 +0.13%，边际极薄；80bp 转负，需先证明经济意义"
+   ],
+   "cost_sensitivity": {
+    "30bp": {
+     "gross_ann_pct": 0.703,
+     "cost_ann_pct": 0.345,
+     "net_ann_pct": 0.358
+    },
+    "50bp": {
+     "gross_ann_pct": 0.703,
+     "cost_ann_pct": 0.575,
+     "net_ann_pct": 0.128
+    },
+    "80bp": {
+     "gross_ann_pct": 0.703,
+     "cost_ann_pct": 0.92,
+     "net_ann_pct": -0.217
+    }
+   },
+   "placebo": {
+    "runs": 300,
+    "type": "daily_bootstrap",
+    "percentile": null,
+    "meets_g4": false,
+    "note": "bootstrap_p=0.0；非同覆盖率随机信号置换"
+   }
+  },
+  "LX22_CONCAVE_NOTCH_GOLD": {
+   "id": "LX22_CONCAVE_NOTCH_GOLD",
+   "name": "凹口淘金 · 反向规避",
+   "family": "reverse_avoid",
+   "strict_verdict": "close",
+   "gates": [
+    {
+     "gate": "G1",
+     "status": "pass",
+     "evidence": "BH-FDR：LX22_CONCAVE_NOTCH_GOLD 毛利 t=2.03，q=1.2088342951049604e-09",
+     "refs": [
+      "research/reports/reverse_avoid_20261101.json"
+     ]
+    },
+    {
+     "gate": "G2",
+     "status": "pass",
+     "evidence": "年度 fold（2023-2026）：4/4 同向；逐年 {'2023': 2.232, '2024': 3.462, '2025': 3.515, '2026': 0.549}；无 5 日 embargo（日频再平衡策略，标签无重叠，但未显式声明 embargo）",
+     "refs": [
+      "research/reports/reverse_avoid_20261101.json"
+     ]
+    },
+    {
+     "gate": "G3",
+     "status": "fail",
+     "evidence": "30bp 净 -6.568%；50bp 净 -14.225%；80bp 净 -25.71%（gross/cost 线性重算）",
+     "refs": [
+      "research/reports/reverse_avoid_20261101.json"
+     ]
+    },
+    {
+     "gate": "G4",
+     "status": "fail",
+     "evidence": "证据仅 bootstrap_p=0.01（n=300 日频 bootstrap，非「同覆盖率随机信号≥1000 次置换」）→ 未达 G4 标准",
+     "refs": [
+      "research/reports/reverse_avoid_20261101.json"
+     ]
+    },
+    {
+     "gate": "G5",
+     "status": "fail",
+     "evidence": "覆盖 42.104% > 30% → 不可执行",
+     "refs": [
+      "research/reports/reverse_avoid_20261101.json"
+     ]
+    },
+    {
+     "gate": "G6",
+     "status": "pass",
+     "evidence": "市值×行业层内同向检验 beyond_comp t=5.33（+16.955% ann）",
+     "refs": [
+      "research/reports/reverse_avoid_20261101.json"
+     ]
+    },
+    {
+     "gate": "G7",
+     "status": "pass",
+     "evidence": "PIT：factor_lib 单测（无负 lag/T 截断不变性）+ 批量四关复用 PIT 因子；H29 前视判例已修正（见 PIT 更正回执）；反向规避用事件日 T 收盘信号，T+1 执行",
+     "refs": [
+      "deliverables/2026-10-31_H29更正_PIT前视假阳性_v1.md"
+     ]
+    },
+    {
+     "gate": "G8",
+     "status": "done",
+     "evidence": "见裁决（decision）",
+     "refs": []
+    }
+   ],
+   "rationale": "G3 30bp 已 -6.57%、G5 覆盖 42.1%>30% → close（张松已判『被成本吃光』，复核一致）。",
+   "next_actions": [],
+   "cost_sensitivity": {
+    "30bp": {
+     "gross_ann_pct": 4.917,
+     "cost_ann_pct": 11.485,
+     "net_ann_pct": -6.568
+    },
+    "50bp": {
+     "gross_ann_pct": 4.917,
+     "cost_ann_pct": 19.142,
+     "net_ann_pct": -14.225
+    },
+    "80bp": {
+     "gross_ann_pct": 4.917,
+     "cost_ann_pct": 30.627,
+     "net_ann_pct": -25.71
+    }
+   },
+   "placebo": {
+    "runs": 300,
+    "type": "daily_bootstrap",
+    "percentile": null,
+    "meets_g4": false,
+    "note": "bootstrap_p=0.01；非同覆盖率随机信号置换"
+   }
+  },
+  "LX12_DOUBLE_YIN_EXIT": {
+   "id": "LX12_DOUBLE_YIN_EXIT",
+   "name": "双阴出货 · 反向规避",
+   "family": "reverse_avoid",
+   "strict_verdict": "close",
+   "gates": [
+    {
+     "gate": "G1",
+     "status": "fail",
+     "evidence": "BH-FDR：LX12_DOUBLE_YIN_EXIT 毛利 t=-3.27，q=0.988829981037238",
+     "refs": [
+      "research/reports/reverse_avoid_20261101.json"
+     ]
+    },
+    {
+     "gate": "G2",
+     "status": "partial",
+     "evidence": "年度 fold（2023-2026）：0/4 同向；逐年 {'2023': -5.768, '2024': -2.688, '2025': -3.536, '2026': -4.06}；无 5 日 embargo（日频再平衡策略，标签无重叠，但未显式声明 embargo）",
+     "refs": [
+      "research/reports/reverse_avoid_20261101.json"
+     ]
+    },
+    {
+     "gate": "G3",
+     "status": "fail",
+     "evidence": "30bp 净 -24.601%；50bp 净 -32.44%；80bp 净 -44.198%（gross/cost 线性重算）",
+     "refs": [
+      "research/reports/reverse_avoid_20261101.json"
+     ]
+    },
+    {
+     "gate": "G4",
+     "status": "fail",
+     "evidence": "证据仅 bootstrap_p=0.9967（n=300 日频 bootstrap，非「同覆盖率随机信号≥1000 次置换」）→ 未达 G4 标准",
+     "refs": [
+      "research/reports/reverse_avoid_20261101.json"
+     ]
+    },
+    {
+     "gate": "G5",
+     "status": "fail",
+     "evidence": "覆盖 17.28%（reverse 口径）/ 71.9%（20261030 单日极端，交付单已知问题 6）>30% → 作为规避清单不可执行",
+     "refs": [
+      "research/reports/reverse_avoid_20261101.json",
+      "research/reports/book_batch_test_20261101.json"
+     ]
+    },
+    {
+     "gate": "G6",
+     "status": "fail",
+     "evidence": "市值×行业层内同向检验 beyond_comp t=-5.69（+-26.504% ann）",
+     "refs": [
+      "research/reports/reverse_avoid_20261101.json"
+     ]
+    },
+    {
+     "gate": "G7",
+     "status": "pass",
+     "evidence": "PIT：factor_lib 单测（无负 lag/T 截断不变性）+ 批量四关复用 PIT 因子；H29 前视判例已修正（见 PIT 更正回执）；反向规避用事件日 T 收盘信号，T+1 执行",
+     "refs": [
+      "deliverables/2026-10-31_H29更正_PIT前视假阳性_v1.md"
+     ]
+    },
+    {
+     "gate": "G8",
+     "status": "done",
+     "evidence": "见裁决（decision）",
+     "refs": []
+    }
+   ],
+   "rationale": "G1/G3/G5 均 fail（净 -24.6%@30bp、覆盖 71.9%）→ close。",
+   "next_actions": [],
+   "cost_sensitivity": {
+    "30bp": {
+     "gross_ann_pct": -12.843,
+     "cost_ann_pct": 11.758,
+     "net_ann_pct": -24.601
+    },
+    "50bp": {
+     "gross_ann_pct": -12.843,
+     "cost_ann_pct": 19.597,
+     "net_ann_pct": -32.44
+    },
+    "80bp": {
+     "gross_ann_pct": -12.843,
+     "cost_ann_pct": 31.355,
+     "net_ann_pct": -44.198
+    }
+   },
+   "placebo": {
+    "runs": 300,
+    "type": "daily_bootstrap",
+    "percentile": null,
+    "meets_g4": false,
+    "note": "bootstrap_p=0.9967；非同覆盖率随机信号置换"
+   }
+  },
+  "S05_LX20_AVOID_DEWEIGHT": {
+   "id": "S05_LX20_AVOID_DEWEIGHT",
+   "name": "S05 LX20 规避/降配（已注册）",
+   "family": "strategies",
+   "strict_verdict": "close",
+   "gates": [
+    {
+     "gate": "G1",
+     "status": "fail",
+     "evidence": "S05 复合/覆盖层假设 OOS t=-0.34，p≈0.73，q≫0.10 → 不显著",
+     "refs": [
+      "research/reports/s05_reverse_20261101.json"
+     ]
+    },
+    {
+     "gate": "G2",
+     "status": "fail",
+     "evidence": "YEARLY 1/4 年为正、年度符号翻转；OOS 年化 -0.628%（t=-0.34）→ 不稳定",
+     "refs": [
+      "research/reports/s05_reverse_20261101.json"
+     ]
+    },
+    {
+     "gate": "G3",
+     "status": "fail",
+     "evidence": "30bp 净 -0.573%、50bp 净 -2.043% → 50bp 不可交易",
+     "refs": [
+      "research/reports/s05_reverse_20261101.json"
+     ]
+    },
+    {
+     "gate": "G4",
+     "status": "fail",
+     "evidence": "无同覆盖率随机信号置换证据",
+     "refs": [
+      "research/reports/s05_reverse_20261101.json"
+     ]
+    },
+    {
+     "gate": "G5",
+     "status": "pass",
+     "evidence": "容量 AUM 上限 74.47 亿、p5 18.45 亿；单票日成交≤10%×ADV",
+     "refs": [
+      "research/reports/s05_reverse_20261101.json"
+     ]
+    },
+    {
+     "gate": "G6",
+     "status": "not-met",
+     "evidence": "无市值×行业×波动分层证据",
+     "refs": [
+      "research/reports/s05_reverse_20261101.json"
+     ]
+    },
+    {
+     "gate": "G7",
+     "status": "pass",
+     "evidence": "PIT gate pass：LX20 因子复用 reverse_avoid_test → book_batch_test（已过 PIT 截断不变性/无负 lag 单测）",
+     "refs": [
+      "research/reports/s05_reverse_20261101.json"
+     ]
+    },
+    {
+     "gate": "G8",
+     "status": "done",
+     "evidence": "裁决：close（两方向均失败，G1/G2/G3 fail）",
+     "refs": []
+    }
+   ],
+   "rationale": "注册表已 closed_both_directions_fail；严格复核再次确认（G1/G2/G3 fail）。与 LX20 反向规避研究不矛盾：S05 是叠加在既有组合上的覆盖层，覆层后 OOS 为负；LX20 的独立规避口径（等权全市场前 5 日事件股剔除）才有正超额，两者口径不同。",
+   "next_actions": [],
+   "note": "S05 覆盖层口径（对现有组合降配）OOS 负；LX20 独立规避口径（等权全市场剔除）毛正净薄。两者不可混用，需分别裁决。",
+   "cost_sensitivity": {
+    "rows": [
+     {
+      "cost_bp_oneway": 10,
+      "baseline_ann_pct": 14.069,
+      "variant_ann_pct": 15.027,
+      "excess_ann_pct": 0.897,
+      "te_ann_pct": 2.161,
+      "t": 0.79,
+      "info_ratio": 0.415
+     },
+     {
+      "cost_bp_oneway": 20,
+      "baseline_ann_pct": 13.678,
+      "variant_ann_pct": 13.795,
+      "excess_ann_pct": 0.162,
+      "te_ann_pct": 2.178,
+      "t": 0.14,
+      "info_ratio": 0.074
+     },
+     {
+      "cost_bp_oneway": 30,
+      "baseline_ann_pct": 13.288,
+      "variant_ann_pct": 12.575,
+      "excess_ann_pct": -0.573,
+      "te_ann_pct": 2.2,
+      "t": -0.5,
+      "info_ratio": -0.26
+     },
+     {
+      "cost_bp_oneway": 50,
+      "baseline_ann_pct": 12.513,
+      "variant_ann_pct": 10.173,
+      "excess_ann_pct": -2.043,
+      "te_ann_pct": 2.261,
+      "t": -1.73,
+      "info_ratio": -0.903
+     }
+    ],
+    "status": "fail",
+    "criterion": "50bp 净超额≤0 → 不可交易"
+   },
+   "placebo": {
+    "runs": 0,
+    "type": "none",
+    "percentile": null,
+    "meets_g4": false
+   }
+  }
+ },
+ "book_backlog": {
+  "total": 24,
+  "decision_key": "agent_platform/catalogs/strategy_registry.json:book_backlog.items[].strict_verdict",
+  "counts": {
+   "close": 20,
+   "needs-more": 4
+  },
+  "items": [
+   {
+    "strategy_spec_id": "LX01_SEVEN_VOLUME_FORMS",
+    "name": "量柱七形态（高/低/平/倍/梯/缩/金）",
+    "verdict": "close",
+    "rationale": "已测 rejected（H24 倍量柱/H25 价升量缩 → rejected（简化定义无效））；H24-H29 全部 rejected，G1 无正向显著。"
+   },
+   {
+    "strategy_spec_id": "LX02_GOLDEN_PILLAR",
+    "name": "黄金柱（三日不破实顶+缩量）",
+    "verdict": "close",
+    "rationale": "已测 rejected（H29 严格版 → rejected（PIT 修正后前视撤回））；H24-H29 全部 rejected，G1 无正向显著。"
+   },
+   {
+    "strategy_spec_id": "LX03_GENERAL_PILLAR",
+    "name": "将军柱（卧底/搭梯战法）",
+    "verdict": "close",
+    "rationale": "批量四关 grade=D；无正向显著，不值得继续投入。"
+   },
+   {
+    "strategy_spec_id": "LX04_MARSHAL_PILLAR_ZERO",
+    "name": "元帅柱·零号战法",
+    "verdict": "close",
+    "rationale": "批量四关 grade=D；无正向显著，不值得继续投入。"
+   },
+   {
+    "strategy_spec_id": "LX05_GOLDEN_LINE_TRILOGY",
+    "name": "金线战法三步曲（黄金线/黄金双线/黄金十字）",
+    "verdict": "needs-more",
+    "rationale": "批量四关 grade=C（方向未定，OOS 不显著）；需补 walk-forward/置换/成本敏感性。"
+   },
+   {
+    "strategy_spec_id": "LX06_YIN_LINE_TACTICS",
+    "name": "大盘阴线战法 / 长阴短柱",
+    "verdict": "needs-more",
+    "rationale": "G1/G3(50bp)/G6/G7 通过，但覆盖 1.15% 过低、G4 未做 → needs-more（优先级低于 LX20）。"
+   },
+   {
+    "strategy_spec_id": "LX07_ONE_SWORD_SEAL_THROAT",
+    "name": "一剑封喉战法",
+    "verdict": "close",
+    "rationale": "批量四关 grade=F；无正向显著，不值得继续投入。"
+   },
+   {
+    "strategy_spec_id": "LX08_DOUBLE_VOL_EXPAND_CONTRACT",
+    "name": "倍量伸缩战法",
+    "verdict": "close",
+    "rationale": "已测 rejected（H29 倍量确认 → rejected）；H24-H29 全部 rejected，G1 无正向显著。"
+   },
+   {
+    "strategy_spec_id": "LX09_LIVE_SUFFOCATION",
+    "name": "现场直憋战法",
+    "verdict": "close",
+    "rationale": "批量四关 grade=D；无正向显著，不值得继续投入。"
+   },
+   {
+    "strategy_spec_id": "LX10_3121_RULER",
+    "name": "3121 战法",
+    "verdict": "close",
+    "rationale": "批量四关 grade=D；无正向显著，不值得继续投入。"
+   },
+   {
+    "strategy_spec_id": "LX11_SPY_TACTICS",
+    "name": "间谍战法（量学七剑）",
+    "verdict": "close",
+    "rationale": "批量四关 grade=D；无正向显著，不值得继续投入。"
+   },
+   {
+    "strategy_spec_id": "LX12_DOUBLE_YIN_EXIT",
+    "name": "双阴出货战法",
+    "verdict": "close",
+    "rationale": "G1/G3/G5 均 fail（净 -24.6%@30bp、覆盖 71.9%）→ close。"
+   },
+   {
+    "strategy_spec_id": "LX13_ARMY_AT_CITY_GATE",
+    "name": "兵临城下（试关/攻关/冲关/守关）",
+    "verdict": "close",
+    "rationale": "已测 rejected（H27 near_high_vol → rejected）；H24-H29 全部 rejected，G1 无正向显著。"
+   },
+   {
+    "strategy_spec_id": "LX14_RELAY_DOUBLE_YANG",
+    "name": "接力双阳",
+    "verdict": "close",
+    "rationale": "批量四关 grade=D；无正向显著，不值得继续投入。"
+   },
+   {
+    "strategy_spec_id": "LX15_PRICE_UP_VOL_DOWN",
+    "name": "价升量缩择机做多",
+    "verdict": "close",
+    "rationale": "已测 rejected（H25 → rejected）；H24-H29 全部 rejected，G1 无正向显著。"
+   },
+   {
+    "strategy_spec_id": "LX16_FLAT_SLANT_CROSS",
+    "name": "平斜交叉不上必下",
+    "verdict": "close",
+    "rationale": "批量四关 grade=F；无正向显著，不值得继续投入。"
+   },
+   {
+    "strategy_spec_id": "LX17_STAND_ON_CONCAVE_PEAK",
+    "name": "站稳凹峰即将上攻",
+    "verdict": "needs-more",
+    "rationale": "批量四关 grade=C（方向未定，OOS 不显著）；需补 walk-forward/置换/成本敏感性。"
+   },
+   {
+    "strategy_spec_id": "LX18_EXTREME_YIN_NEXT_YANG",
+    "name": "极阴次阳择幅建仓",
+    "verdict": "close",
+    "rationale": "已测 rejected（H26 → rejected（严格版仍负））；H24-H29 全部 rejected，G1 无正向显著。"
+   },
+   {
+    "strategy_spec_id": "LX19_BULL_STOCK_VOLUME_SHAPE",
+    "name": "牛股量形",
+    "verdict": "close",
+    "rationale": "批量四关 grade=D；无正向显著，不值得继续投入。"
+   },
+   {
+    "strategy_spec_id": "LX20_BULL_STOCK_THREE_ABSOLUTES",
+    "name": "牛股三绝",
+    "verdict": "needs-more",
+    "rationale": "G1/G2/G5/G6/G7 通过，但 G3 50bp 净超额已转负（-1.28%）、G4 安慰剂未做 → 不可直接交易，按严格协议 needs-more；先做降换手与安慰剂，再谈影子盘。"
+   },
+   {
+    "strategy_spec_id": "LX21_TEN_MONTH_PREGNANCY",
+    "name": "十月怀胎一朝分娩",
+    "verdict": "close",
+    "rationale": "批量四关 grade=F；无正向显著，不值得继续投入。"
+   },
+   {
+    "strategy_spec_id": "LX22_CONCAVE_NOTCH_GOLD",
+    "name": "凹口淘金",
+    "verdict": "close",
+    "rationale": "G3 30bp 已 -6.57%、G5 覆盖 42.1%>30% → close（张松已判『被成本吃光』，复核一致）。"
+   },
+   {
+    "strategy_spec_id": "LX23_FUSE_TACTICS",
+    "name": "量学导火索战法",
+    "verdict": "close",
+    "rationale": "批量四关 grade=F；无正向显著，不值得继续投入。"
+   },
+   {
+    "strategy_spec_id": "LX24_LIMIT_UP_GENE",
+    "name": "涨停基因（单个/组合）",
+    "verdict": "close",
+    "rationale": "概念级战法（不可程序化），无假设可测；作为特征映射框架使用，不进入策略池。"
+   }
+  ]
+ },
+ "data_audit_G7": {
+  "status": "pass-with-caveat",
+  "evidence": [
+   {
+    "path": "deliverables/2026-10-31_H29更正_PIT前视假阳性_v1.md",
+    "claim": "H29 首版确认型形态按形态日索引导致前视 3 天；已修正为确认日索引+次日入场，修正后 66/81→0/81 通过、α 转负；判例已写入 MEETING.md/MEMORY.md"
+   },
+   {
+    "path": "tools/tests/test_factor_lib.py",
+    "claim": "PIT 单测：负 lag 仅允许在 forward_car；面板 T 截断后因子值完全一致（截断不变性）"
+   },
+   {
+    "path": "research/reports/book_batch_test_20261101.json",
+    "claim": "批量四关复用 factor_lib PIT 因子；口径 T+1 收盘入场、20 日 CAR"
+   },
+   {
+    "path": "research/reports/s05_reverse_20261101.json",
+    "claim": "S05 PIT gate pass：信号/权重仅用决策日 T 及以前信息"
+   }
+  ],
+  "residual_risks": [
+   "事件型形态的简化实现存在定义漂移（已在 specs 标注 simplification）",
+   "stock_basic 当前名单存在轻微幸存者偏差（与 factor_lib 同口径）"
+  ]
+ },
+ "verdicts_summary": {
+  "keep": [],
+  "needs-more": [
+   "LX20_BULL_STOCK_THREE_ABSOLUTES",
+   "LX06_YIN_LINE_TACTICS"
+  ],
+  "close": [
+   "LX22_CONCAVE_NOTCH_GOLD",
+   "LX12_DOUBLE_YIN_EXIT",
+   "S05_LX20_AVOID_DEWEIGHT"
+  ]
+ },
+ "feedback_to_zhangsong": {
+  "valuable": [
+   "量学形态库作为**反向风险特征**有真价值：LX20 牛股三绝独立规避口径毛超额 t=7.35、层内 t=9.76（但 50bp 成本后转负，需降换手后才能交易）",
+   "PIT 自纠判例（H29 前视假阳性）是全团队最有价值的制度产出：确认型形态必须按确认日索引",
+   "批量四关初筛 + 因子库统一接口（`fn(panel)->DataFrame` + PIT 单测）值得保留复用",
+   "『规避/风控』比『做多形态』更适合量学：事件长期负 α 可反向用作风险信号"
+  ],
+  "stop_investing": [
+   "继续挖掘量学形态的**做多**alpha：H24-H29 + 13 个批量候选全部无正向显著，H29 81 组参数 0/81；",
+   "C 级画线类战法（LX07/LX16/LX21/LX23）无法稳定程序化，停止投入；",
+   "未做多重检验/成本敏感性/安慰剂的『新假设快速上报』，建议一律先走四关再上报。"
+  ],
+  "must_fix_next": [
+   "任何策略先报：BH-FDR q、50bp 净超额、≥1000 次同覆盖率置换分位、容量 AUM",
+   "walk-forward ≥3 folds + embargo；事件策略必须用确认日索引（PIT 判例）"
+  ]
+ },
+ "evidence_paths": [
+  "agent_platform/catalogs/strategy_registry.json",
+  "deliverables/2026-10-31_H29更正_PIT前视假阳性_v1.md",
+  "research/reports/H24-26_liangxue_features_20261031.json",
+  "research/reports/H29_liangxue_refined_20261031.json",
+  "research/reports/H29_param_capacity_20261031.json",
+  "research/reports/book_batch_test_20261101.json",
+  "research/reports/lx20_avoid_rule_20261101.json",
+  "research/reports/reverse_avoid_20261101.json",
+  "research/reports/s05_reverse_20261101.json",
+  "research/reports/screening_20261030.json"
+ ]
+}
