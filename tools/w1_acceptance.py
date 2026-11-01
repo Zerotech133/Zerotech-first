@@ -105,12 +105,58 @@ def check_p1_regression():
             "detail": (r.stdout or r.stderr or "").strip().splitlines()[-1:] or [""]}
 
 
-def run(portal="http://127.0.0.1:8091", release_path=DEFAULT_RELEASE):
+def _load_t1t2_module():
+    """按路径加载 tools/t1t2_metrics.py（脚本式运行与 pytest 均可）。"""
+    import importlib.util
+    path = Path(__file__).resolve().parent / "t1t2_metrics.py"
+    spec = importlib.util.spec_from_file_location("t1t2_metrics", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def check_t1_t2_metrics(data_dir=None):
+    """2026-11-01 WO-T1T2-METRICS：T1/T2 A/B 指标接入 W1 验收。
+
+    真实可用（全部 run trace 齐且 Gate G1 判据可算）→ pass/warn；
+    trace 缺失 → 保持 unavailable 并带**具体原因**（不造数、不回填文档数字）。
+    """
+    out = {"id": "t1_t2_metrics", "status": "unavailable", "detail": ""}
+    try:
+        rep = _load_t1t2_module().aggregate(data_dir)
+    except Exception as exc:  # noqa: BLE001 工具异常不得让整个验收崩溃
+        out["detail"] = "t1t2_metrics 聚合异常: %s: %s" % (type(exc).__name__, exc)
+        return out
+    out["available"] = bool(rep.get("available"))
+    if not rep.get("available"):
+        reasons = rep.get("unavailable_reasons") or ["unknown"]
+        out["detail"] = "T1/T2 A/B 指标不可得（不造数）: " + "；".join(reasons)
+        out["unavailable_reasons"] = reasons
+        return out
+    gate = rep.get("gate") or {}
+    checks = gate.get("checks") or []
+    out["status"] = "pass" if gate.get("passed") else "warn"
+    parts = []
+    for item in checks:
+        parts.append("%s json=%.2f%s"
+                     % (item.get("arm"),
+                        (rep.get("arms", {}).get(item["arm"], {})
+                         .get("json_complete_rate") or 0.0),
+                        "" if item.get("passed") else "(%s)" % ";".join(item.get("reasons") or [])))
+    out["detail"] = "；".join(parts) or "指标可用"
+    out["gate"] = gate
+    out["arms"] = {name: {"json_complete_rate": arm.get("json_complete_rate"),
+                          "mean_latency_ms": arm.get("mean_latency_ms"),
+                          "runs_found": arm.get("runs_found")}
+                   for name, arm in (rep.get("arms") or {}).items()}
+    return out
+
+
+def run(portal="http://127.0.0.1:8091", release_path=DEFAULT_RELEASE, data_dir=None):
     checks = [check_release(portal, release_path), check_hermes_auth(),
               check_health(portal), check_unauth_matrix(portal),
               check_p1_regression()]
-    checks.append({"id": "t1_t2_metrics", "status": "unavailable",
-                   "detail": "T1/T2 A/B 指标尚未落盘（K 复盘已记：仅文档结论）；转 W2 验收脚本化第 2 条"})
+    checks.append(check_t1_t2_metrics(data_dir))
     failed = [c for c in checks if c["status"] == "fail"]
     warn = [c for c in checks if c["status"] == "warn"]
     return {"generated_at": datetime.now().isoformat(timespec="seconds"),
@@ -124,9 +170,11 @@ def main(argv=None):
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--portal", default="http://127.0.0.1:8091")
     ap.add_argument("--release", default=str(DEFAULT_RELEASE))
+    ap.add_argument("--t1t2-data-dir", default="",
+                    help="team_exec 目录（默认 repo 内路径；worktree 常缺 data/）")
     ap.add_argument("--out", default="")
     a = ap.parse_args(argv)
-    rep = run(a.portal, Path(a.release))
+    rep = run(a.portal, Path(a.release), a.t1t2_data_dir or None)
     text = json.dumps(rep, ensure_ascii=False, indent=1)
     if a.out:
         Path(a.out).write_text(text + "\n", encoding="utf-8")

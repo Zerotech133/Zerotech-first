@@ -1,0 +1,5426 @@
+{
+  "meta": {
+    "report": "lx20_avoid_rule_20261101",
+    "version": "0.1.0-wave4",
+    "generated_at": "2026-11-01T08:17:53+08:00",
+    "task": "wave4 K 支线：LX20 牛股三绝规避规则可执行性深化（参数/成交价/一字板/容量/降配/规则规格）",
+    "data": {
+      "root": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\tushare",
+      "start": "20230101",
+      "end": "20261030"
+    },
+    "panel": {
+      "dates": 965,
+      "codes": 5740,
+      "load_sec": 58.76,
+      "meta": {
+        "data_root": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\tushare",
+        "universe": "tradable",
+        "load_dates": [
+          "20221107",
+          "20261030"
+        ],
+        "load_days": 965,
+        "warmup_days": 40,
+        "horizon": 20,
+        "panel_dates": 965,
+        "codes": 5740,
+        "eligible_avg_per_day": 3530.3,
+        "eligible_share": 0.615,
+        "load_sec": 58.2
+      }
+    },
+    "eval": {
+      "signal_factor": "lx20_three_absolutes",
+      "signal_source": "reverse_avoid_test → book_batch_test.compute_factor",
+      "ns": [
+        1,
+        3,
+        5,
+        10,
+        20
+      ],
+      "executions": [
+        "T_CLOSE",
+        "T1_OPEN",
+        "T1_CLOSE"
+      ],
+      "execution_desc": {
+        "T_CLOSE": "T 日收盘买入 → T+1 收盘卖出（wave3 基线，含隔夜跳空）",
+        "T1_OPEN": "T 日收盘决策，T+1 开盘买入 → T+2 开盘卖出",
+        "T1_CLOSE": "T 日收盘决策，T+1 收盘买入 → T+2 收盘卖出"
+      },
+      "deweights": [
+        0.0,
+        0.25,
+        0.5
+      ],
+      "cost_bp_oneway": 30,
+      "basis": "decision@T close; entry/exit per execution; equal-weight daily rebalance",
+      "buy_blocked": "entry 日收盘/开盘涨停（含一字涨停）不可买",
+      "sell_blocked": "exit 日一字跌停不可卖（回测按对称剔除近似）",
+      "suspension": "entry/exit 日停牌（无数据或 vol=0）跳过",
+      "capacity_assumption": "单票单日交易额 ≤ 10%×20日日均成交额",
+      "block_bootstrap": {
+        "block": 5,
+        "n_boot": 300,
+        "seed": 42
+      },
+      "stress_segments": {
+        "bear_2026": {
+          "peak": "20260512",
+          "trough": "20261029",
+          "max_drawdown_pct": -29.737,
+          "market_cum_ret_pct": -29.737,
+          "segment_days": 116
+        },
+        "worst_20d": {
+          "start": "20240108",
+          "end": "20240202",
+          "market_ret_pct": -24.44
+        }
+      }
+    },
+    "runtime_sec": 154.7,
+    "notes": [
+      "信号为 book_batch_test 的简化单形态代理（倍量不穿+突破倍量柱实顶），非原书完整三绝口径。",
+      "一字板为日线近似（open=high=low=close 且触板），无逐笔封单/集合竞价成交概率数据。",
+      "不可卖（exit 日一字跌停/停牌）按「该股该日对称剔除」近似，未做顺延持有建模。",
+      "容量为静态 ADV 假设（10% 参与率、20 日日均成交额），未做动态冲击成本曲线。",
+      "日频等权再平衡；部分降配按信号股市值权重 w 缩放，未考虑交易整数手/停牌顺延。",
+      "「T+1 开盘买入」未建模开盘集合竞价成交概率（一字涨停已剔除，非一字高开可成交假设偏乐观）。"
+    ]
+  },
+  "sensitivity": [
+    {
+      "w": 0.0,
+      "coverage": {
+        "avg_pct": 14.145,
+        "median_pct": 13.026,
+        "p95_pct": 26.18,
+        "avg_excluded_count": 497.2,
+        "avg_holdings": 2969.7
+      },
+      "gross": {
+        "ann_excess_pct": 5.755,
+        "daily_t": 7.88,
+        "bootstrap_p": 0.0,
+        "positive_rate": 0.6224,
+        "tracking_error_ann_pct": 1.427
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 3.8542,
+        "abs_oneway_turnover_avg_pct": 14.049,
+        "exclusion_set_churn_avg_pct": 46.788,
+        "ann_cost_pct": 5.828
+      },
+      "net": {
+        "ann_excess_after_cost_pct": -0.073
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 5.188,
+          "t": 3.39,
+          "positive_rate": 0.6074
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 8.826,
+          "t": 5.04,
+          "positive_rate": 0.6653
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 5.719,
+          "t": 4.77,
+          "positive_rate": 0.6667
+        },
+        "2026": {
+          "days": 197,
+          "ann_excess_pct": 2.637,
+          "t": 1.85,
+          "positive_rate": 0.5431
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 116,
+          "ann_excess_pct": 3.375,
+          "cum_excess_pct": 1.554,
+          "t": 2.0
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": -0.339,
+          "cum_excess_pct": -0.027,
+          "t": -0.11
+        }
+      },
+      "n": 1,
+      "execution": "T_CLOSE",
+      "exec_desc": "T 日收盘买入 → T+1 收盘卖出（wave3 基线，含隔夜跳空）"
+    },
+    {
+      "w": 0.0,
+      "coverage": {
+        "avg_pct": 14.538,
+        "median_pct": 13.453,
+        "p95_pct": 26.583,
+        "avg_excluded_count": 516.8,
+        "avg_holdings": 2992.3
+      },
+      "gross": {
+        "ann_excess_pct": 3.747,
+        "daily_t": 4.38,
+        "bootstrap_p": 0.0,
+        "positive_rate": 0.5659,
+        "tracking_error_ann_pct": 1.672
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 4.2863,
+        "abs_oneway_turnover_avg_pct": 13.5438,
+        "exclusion_set_churn_avg_pct": 44.012,
+        "ann_cost_pct": 6.481
+      },
+      "net": {
+        "ann_excess_after_cost_pct": -2.734
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 2.373,
+          "t": 1.41,
+          "positive_rate": 0.5372
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 7.336,
+          "t": 3.38,
+          "positive_rate": 0.6074
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 3.934,
+          "t": 2.62,
+          "positive_rate": 0.6049
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 0.925,
+          "t": 0.63,
+          "positive_rate": 0.5306
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 1.876,
+          "cum_excess_pct": 0.856,
+          "t": 1.1
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 0.196,
+          "cum_excess_pct": 0.016,
+          "t": 0.07
+        }
+      },
+      "n": 1,
+      "execution": "T1_OPEN",
+      "exec_desc": "T 日收盘决策，T+1 开盘买入 → T+2 开盘卖出"
+    },
+    {
+      "w": 0.0,
+      "coverage": {
+        "avg_pct": 14.389,
+        "median_pct": 13.323,
+        "p95_pct": 26.556,
+        "avg_excluded_count": 506.3,
+        "avg_holdings": 2961.2
+      },
+      "gross": {
+        "ann_excess_pct": 4.665,
+        "daily_t": 6.28,
+        "bootstrap_p": 0.0,
+        "positive_rate": 0.621,
+        "tracking_error_ann_pct": 1.451
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 3.9194,
+        "abs_oneway_turnover_avg_pct": 14.0978,
+        "exclusion_set_churn_avg_pct": 46.06,
+        "ann_cost_pct": 5.926
+      },
+      "net": {
+        "ann_excess_after_cost_pct": -1.261
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 3.707,
+          "t": 2.36,
+          "positive_rate": 0.6157
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 9.001,
+          "t": 5.31,
+          "positive_rate": 0.6942
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 4.307,
+          "t": 3.47,
+          "positive_rate": 0.6173
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 1.597,
+          "t": 1.11,
+          "positive_rate": 0.5663
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 2.107,
+          "cum_excess_pct": 0.962,
+          "t": 1.17
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 1.349,
+          "cum_excess_pct": 0.107,
+          "t": 0.4
+        }
+      },
+      "n": 1,
+      "execution": "T1_CLOSE",
+      "exec_desc": "T 日收盘决策，T+1 收盘买入 → T+2 收盘卖出"
+    },
+    {
+      "w": 0.0,
+      "coverage": {
+        "avg_pct": 19.902,
+        "median_pct": 19.063,
+        "p95_pct": 33.383,
+        "avg_excluded_count": 699.0,
+        "avg_holdings": 2767.8
+      },
+      "gross": {
+        "ann_excess_pct": 6.051,
+        "daily_t": 6.91,
+        "bootstrap_p": 0.0,
+        "positive_rate": 0.612,
+        "tracking_error_ann_pct": 1.711
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 3.2072,
+        "abs_oneway_turnover_avg_pct": 13.3971,
+        "exclusion_set_churn_avg_pct": 31.867,
+        "ann_cost_pct": 4.849
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 1.202
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 5.73,
+          "t": 3.05,
+          "positive_rate": 0.6157
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 9.032,
+          "t": 4.78,
+          "positive_rate": 0.6529
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 6.073,
+          "t": 4.01,
+          "positive_rate": 0.6255
+        },
+        "2026": {
+          "days": 197,
+          "ann_excess_pct": 3.263,
+          "t": 1.8,
+          "positive_rate": 0.5635
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 116,
+          "ann_excess_pct": 4.225,
+          "cum_excess_pct": 1.945,
+          "t": 1.86
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": -1.496,
+          "cum_excess_pct": -0.119,
+          "t": -0.39
+        }
+      },
+      "n": 3,
+      "execution": "T_CLOSE",
+      "exec_desc": "T 日收盘买入 → T+1 收盘卖出（wave3 基线，含隔夜跳空）"
+    },
+    {
+      "w": 0.0,
+      "coverage": {
+        "avg_pct": 20.259,
+        "median_pct": 19.452,
+        "p95_pct": 33.638,
+        "avg_excluded_count": 719.7,
+        "avg_holdings": 2789.4
+      },
+      "gross": {
+        "ann_excess_pct": 3.528,
+        "daily_t": 3.55,
+        "bootstrap_p": 0.0,
+        "positive_rate": 0.5649,
+        "tracking_error_ann_pct": 1.944
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 3.6681,
+        "abs_oneway_turnover_avg_pct": 12.9186,
+        "exclusion_set_churn_avg_pct": 29.272,
+        "ann_cost_pct": 5.546
+      },
+      "net": {
+        "ann_excess_after_cost_pct": -2.019
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 2.771,
+          "t": 1.37,
+          "positive_rate": 0.5413
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 6.379,
+          "t": 2.77,
+          "positive_rate": 0.595
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 3.727,
+          "t": 2.02,
+          "positive_rate": 0.6091
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 1.087,
+          "t": 0.59,
+          "positive_rate": 0.5204
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 2.282,
+          "cum_excess_pct": 1.041,
+          "t": 0.99
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": -1.6,
+          "cum_excess_pct": -0.127,
+          "t": -0.46
+        }
+      },
+      "n": 3,
+      "execution": "T1_OPEN",
+      "exec_desc": "T 日收盘决策，T+1 开盘买入 → T+2 开盘卖出"
+    },
+    {
+      "w": 0.0,
+      "coverage": {
+        "avg_pct": 20.088,
+        "median_pct": 19.25,
+        "p95_pct": 33.499,
+        "avg_excluded_count": 706.0,
+        "avg_holdings": 2761.5
+      },
+      "gross": {
+        "ann_excess_pct": 5.354,
+        "daily_t": 6.04,
+        "bootstrap_p": 0.0,
+        "positive_rate": 0.5929,
+        "tracking_error_ann_pct": 1.731
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 3.3237,
+        "abs_oneway_turnover_avg_pct": 13.4958,
+        "exclusion_set_churn_avg_pct": 31.474,
+        "ann_cost_pct": 5.025
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 0.329
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 4.148,
+          "t": 2.19,
+          "positive_rate": 0.5785
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 9.606,
+          "t": 5.04,
+          "positive_rate": 0.6612
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 4.867,
+          "t": 3.17,
+          "positive_rate": 0.5926
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 2.956,
+          "t": 1.66,
+          "positive_rate": 0.5561
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 4.45,
+          "cum_excess_pct": 2.031,
+          "t": 1.87
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 1.464,
+          "cum_excess_pct": 0.116,
+          "t": 0.33
+        }
+      },
+      "n": 3,
+      "execution": "T1_CLOSE",
+      "exec_desc": "T 日收盘决策，T+1 收盘买入 → T+2 收盘卖出"
+    },
+    {
+      "w": 0.0,
+      "coverage": {
+        "avg_pct": 24.347,
+        "median_pct": 23.621,
+        "p95_pct": 38.211,
+        "avg_excluded_count": 854.6,
+        "avg_holdings": 2612.3
+      },
+      "gross": {
+        "ann_excess_pct": 6.985,
+        "daily_t": 7.2,
+        "bootstrap_p": 0.0,
+        "positive_rate": 0.5965,
+        "tracking_error_ann_pct": 1.897
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 3.2792,
+        "abs_oneway_turnover_avg_pct": 13.4638,
+        "exclusion_set_churn_avg_pct": 26.993,
+        "ann_cost_pct": 4.958
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 2.027
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 6.447,
+          "t": 3.1,
+          "positive_rate": 0.5785
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 10.504,
+          "t": 5.34,
+          "positive_rate": 0.6612
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 6.475,
+          "t": 3.69,
+          "positive_rate": 0.6008
+        },
+        "2026": {
+          "days": 197,
+          "ann_excess_pct": 4.635,
+          "t": 2.31,
+          "positive_rate": 0.5533
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 116,
+          "ann_excess_pct": 6.791,
+          "cum_excess_pct": 3.126,
+          "t": 2.57
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": -1.358,
+          "cum_excess_pct": -0.108,
+          "t": -0.29
+        }
+      },
+      "n": 5,
+      "execution": "T_CLOSE",
+      "exec_desc": "T 日收盘买入 → T+1 收盘卖出（wave3 基线，含隔夜跳空）"
+    },
+    {
+      "w": 0.0,
+      "coverage": {
+        "avg_pct": 24.688,
+        "median_pct": 24.02,
+        "p95_pct": 38.458,
+        "avg_excluded_count": 876.5,
+        "avg_holdings": 2632.6
+      },
+      "gross": {
+        "ann_excess_pct": 4.351,
+        "daily_t": 4.0,
+        "bootstrap_p": 0.0,
+        "positive_rate": 0.5732,
+        "tracking_error_ann_pct": 2.125
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 3.7539,
+        "abs_oneway_turnover_avg_pct": 12.9992,
+        "exclusion_set_churn_avg_pct": 24.604,
+        "ann_cost_pct": 5.676
+      },
+      "net": {
+        "ann_excess_after_cost_pct": -1.325
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 3.596,
+          "t": 1.65,
+          "positive_rate": 0.5372
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 7.72,
+          "t": 3.2,
+          "positive_rate": 0.6157
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 3.743,
+          "t": 1.77,
+          "positive_rate": 0.5967
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 2.443,
+          "t": 1.2,
+          "positive_rate": 0.5561
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 4.704,
+          "cum_excess_pct": 2.147,
+          "t": 1.76
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": -2.132,
+          "cum_excess_pct": -0.169,
+          "t": -0.51
+        }
+      },
+      "n": 5,
+      "execution": "T1_OPEN",
+      "exec_desc": "T 日收盘决策，T+1 开盘买入 → T+2 开盘卖出"
+    },
+    {
+      "w": 0.0,
+      "coverage": {
+        "avg_pct": 24.513,
+        "median_pct": 23.867,
+        "p95_pct": 38.367,
+        "avg_excluded_count": 860.9,
+        "avg_holdings": 2606.6
+      },
+      "gross": {
+        "ann_excess_pct": 6.153,
+        "daily_t": 6.21,
+        "bootstrap_p": 0.0,
+        "positive_rate": 0.595,
+        "tracking_error_ann_pct": 1.936
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 3.4092,
+        "abs_oneway_turnover_avg_pct": 13.5773,
+        "exclusion_set_churn_avg_pct": 26.769,
+        "ann_cost_pct": 5.155
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 0.999
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 5.199,
+          "t": 2.46,
+          "positive_rate": 0.5785
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 10.344,
+          "t": 4.95,
+          "positive_rate": 0.6612
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 5.282,
+          "t": 2.99,
+          "positive_rate": 0.5844
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 4.22,
+          "t": 2.17,
+          "positive_rate": 0.5714
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 6.693,
+          "cum_excess_pct": 3.055,
+          "t": 2.53
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 2.608,
+          "cum_excess_pct": 0.207,
+          "t": 0.53
+        }
+      },
+      "n": 5,
+      "execution": "T1_CLOSE",
+      "exec_desc": "T 日收盘决策，T+1 收盘买入 → T+2 收盘卖出"
+    },
+    {
+      "w": 0.0,
+      "coverage": {
+        "avg_pct": 33.821,
+        "median_pct": 33.716,
+        "p95_pct": 50.655,
+        "avg_excluded_count": 1186.8,
+        "avg_holdings": 2280.0
+      },
+      "gross": {
+        "ann_excess_pct": 7.763,
+        "daily_t": 6.62,
+        "bootstrap_p": 0.0,
+        "positive_rate": 0.5954,
+        "tracking_error_ann_pct": 2.291
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 3.486,
+        "abs_oneway_turnover_avg_pct": 13.6664,
+        "exclusion_set_churn_avg_pct": 21.979,
+        "ann_cost_pct": 5.271
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 2.492
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 5.663,
+          "t": 2.26,
+          "positive_rate": 0.5744
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 12.96,
+          "t": 5.73,
+          "positive_rate": 0.6529
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 6.72,
+          "t": 3.0,
+          "positive_rate": 0.6008
+        },
+        "2026": {
+          "days": 197,
+          "ann_excess_pct": 6.033,
+          "t": 2.52,
+          "positive_rate": 0.5736
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 116,
+          "ann_excess_pct": 9.956,
+          "cum_excess_pct": 4.583,
+          "t": 3.2
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 0.161,
+          "cum_excess_pct": 0.013,
+          "t": 0.03
+        }
+      },
+      "n": 10,
+      "execution": "T_CLOSE",
+      "exec_desc": "T 日收盘买入 → T+1 收盘卖出（wave3 基线，含隔夜跳空）"
+    },
+    {
+      "w": 0.0,
+      "coverage": {
+        "avg_pct": 34.139,
+        "median_pct": 34.073,
+        "p95_pct": 50.803,
+        "avg_excluded_count": 1212.1,
+        "avg_holdings": 2297.0
+      },
+      "gross": {
+        "ann_excess_pct": 4.721,
+        "daily_t": 3.67,
+        "bootstrap_p": 0.0,
+        "positive_rate": 0.5566,
+        "tracking_error_ann_pct": 2.513
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 3.9891,
+        "abs_oneway_turnover_avg_pct": 13.2305,
+        "exclusion_set_churn_avg_pct": 19.798,
+        "ann_cost_pct": 6.032
+      },
+      "net": {
+        "ann_excess_after_cost_pct": -1.31
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 2.266,
+          "t": 0.88,
+          "positive_rate": 0.5248
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 9.725,
+          "t": 3.68,
+          "positive_rate": 0.6281
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 3.699,
+          "t": 1.4,
+          "positive_rate": 0.5597
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 3.451,
+          "t": 1.38,
+          "positive_rate": 0.5306
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 7.411,
+          "cum_excess_pct": 3.382,
+          "t": 2.27
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": -0.405,
+          "cum_excess_pct": -0.032,
+          "t": -0.08
+        }
+      },
+      "n": 10,
+      "execution": "T1_OPEN",
+      "exec_desc": "T 日收盘决策，T+1 开盘买入 → T+2 开盘卖出"
+    },
+    {
+      "w": 0.0,
+      "coverage": {
+        "avg_pct": 33.962,
+        "median_pct": 33.838,
+        "p95_pct": 50.735,
+        "avg_excluded_count": 1192.2,
+        "avg_holdings": 2275.2
+      },
+      "gross": {
+        "ann_excess_pct": 7.004,
+        "daily_t": 5.81,
+        "bootstrap_p": 0.0,
+        "positive_rate": 0.5774,
+        "tracking_error_ann_pct": 2.356
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 3.6188,
+        "abs_oneway_turnover_avg_pct": 13.7811,
+        "exclusion_set_churn_avg_pct": 21.88,
+        "ann_cost_pct": 5.472
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 1.532
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 4.574,
+          "t": 1.77,
+          "positive_rate": 0.562
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 12.801,
+          "t": 5.21,
+          "positive_rate": 0.6405
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 5.634,
+          "t": 2.56,
+          "positive_rate": 0.5638
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 5.444,
+          "t": 2.24,
+          "positive_rate": 0.5714
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 9.382,
+          "cum_excess_pct": 4.281,
+          "t": 2.96
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 3.196,
+          "cum_excess_pct": 0.254,
+          "t": 0.52
+        }
+      },
+      "n": 10,
+      "execution": "T1_CLOSE",
+      "exec_desc": "T 日收盘决策，T+1 收盘买入 → T+2 收盘卖出"
+    },
+    {
+      "w": 0.0,
+      "coverage": {
+        "avg_pct": 48.809,
+        "median_pct": 49.182,
+        "p95_pct": 68.234,
+        "avg_excluded_count": 1714.3,
+        "avg_holdings": 1752.5
+      },
+      "gross": {
+        "ann_excess_pct": 8.324,
+        "daily_t": 5.22,
+        "bootstrap_p": 0.0,
+        "positive_rate": 0.5768,
+        "tracking_error_ann_pct": 3.115
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 3.8739,
+        "abs_oneway_turnover_avg_pct": 14.0481,
+        "exclusion_set_churn_avg_pct": 18.473,
+        "ann_cost_pct": 5.857
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 2.467
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 5.316,
+          "t": 1.49,
+          "positive_rate": 0.5455
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 14.729,
+          "t": 5.01,
+          "positive_rate": 0.6446
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 6.989,
+          "t": 2.32,
+          "positive_rate": 0.5679
+        },
+        "2026": {
+          "days": 197,
+          "ann_excess_pct": 5.913,
+          "t": 1.82,
+          "positive_rate": 0.5685
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 116,
+          "ann_excess_pct": 10.181,
+          "cum_excess_pct": 4.687,
+          "t": 2.46
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 13.334,
+          "cum_excess_pct": 1.058,
+          "t": 1.68
+        }
+      },
+      "n": 20,
+      "execution": "T_CLOSE",
+      "exec_desc": "T 日收盘买入 → T+1 收盘卖出（wave3 基线，含隔夜跳空）"
+    },
+    {
+      "w": 0.0,
+      "coverage": {
+        "avg_pct": 49.073,
+        "median_pct": 49.422,
+        "p95_pct": 68.366,
+        "avg_excluded_count": 1744.1,
+        "avg_holdings": 1765.0
+      },
+      "gross": {
+        "ann_excess_pct": 4.883,
+        "daily_t": 2.86,
+        "bootstrap_p": 0.0,
+        "positive_rate": 0.541,
+        "tracking_error_ann_pct": 3.333
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 4.4009,
+        "abs_oneway_turnover_avg_pct": 13.641,
+        "exclusion_set_churn_avg_pct": 16.49,
+        "ann_cost_pct": 6.654
+      },
+      "net": {
+        "ann_excess_after_cost_pct": -1.771
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 1.391,
+          "t": 0.39,
+          "positive_rate": 0.5083
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 11.235,
+          "t": 3.45,
+          "positive_rate": 0.5826
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 3.715,
+          "t": 1.07,
+          "positive_rate": 0.5432
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 2.615,
+          "t": 0.76,
+          "positive_rate": 0.5561
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 6.45,
+          "cum_excess_pct": 2.943,
+          "t": 1.42
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 12.632,
+          "cum_excess_pct": 1.003,
+          "t": 1.5
+        }
+      },
+      "n": 20,
+      "execution": "T1_OPEN",
+      "exec_desc": "T 日收盘决策，T+1 开盘买入 → T+2 开盘卖出"
+    },
+    {
+      "w": 0.0,
+      "coverage": {
+        "avg_pct": 48.915,
+        "median_pct": 49.292,
+        "p95_pct": 68.394,
+        "avg_excluded_count": 1718.5,
+        "avg_holdings": 1749.0
+      },
+      "gross": {
+        "ann_excess_pct": 7.345,
+        "daily_t": 4.57,
+        "bootstrap_p": 0.0,
+        "positive_rate": 0.5722,
+        "tracking_error_ann_pct": 3.137
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 3.9851,
+        "abs_oneway_turnover_avg_pct": 14.1439,
+        "exclusion_set_churn_avg_pct": 18.429,
+        "ann_cost_pct": 6.025
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 1.32
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 4.833,
+          "t": 1.33,
+          "positive_rate": 0.5661
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 14.412,
+          "t": 4.83,
+          "positive_rate": 0.6446
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 5.321,
+          "t": 1.78,
+          "positive_rate": 0.5432
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 5.032,
+          "t": 1.53,
+          "positive_rate": 0.5612
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 9.225,
+          "cum_excess_pct": 4.21,
+          "t": 2.18
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 17.122,
+          "cum_excess_pct": 1.359,
+          "t": 1.89
+        }
+      },
+      "n": 20,
+      "execution": "T1_CLOSE",
+      "exec_desc": "T 日收盘决策，T+1 收盘买入 → T+2 收盘卖出"
+    }
+  ],
+  "deweight": [
+    {
+      "w": 0.0,
+      "coverage": {
+        "avg_pct": 24.347,
+        "median_pct": 23.621,
+        "p95_pct": 38.211,
+        "avg_excluded_count": 854.6,
+        "avg_holdings": 2612.3
+      },
+      "gross": {
+        "ann_excess_pct": 6.985,
+        "daily_t": 7.2,
+        "bootstrap_p": 0.0,
+        "positive_rate": 0.5965,
+        "tracking_error_ann_pct": 1.897
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 3.2792,
+        "abs_oneway_turnover_avg_pct": 13.4638,
+        "exclusion_set_churn_avg_pct": 26.993,
+        "ann_cost_pct": 4.958
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 2.027
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 6.447,
+          "t": 3.1,
+          "positive_rate": 0.5785
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 10.504,
+          "t": 5.34,
+          "positive_rate": 0.6612
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 6.475,
+          "t": 3.69,
+          "positive_rate": 0.6008
+        },
+        "2026": {
+          "days": 197,
+          "ann_excess_pct": 4.635,
+          "t": 2.31,
+          "positive_rate": 0.5533
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 116,
+          "ann_excess_pct": 6.791,
+          "cum_excess_pct": 3.126,
+          "t": 2.57
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": -1.358,
+          "cum_excess_pct": -0.108,
+          "t": -0.29
+        }
+      },
+      "n": 5,
+      "execution": "T_CLOSE",
+      "exec_desc": "T 日收盘买入 → T+1 收盘卖出（wave3 基线，含隔夜跳空）"
+    },
+    {
+      "w": 0.25,
+      "coverage": {
+        "avg_pct": 24.347,
+        "median_pct": 23.621,
+        "p95_pct": 38.211,
+        "avg_excluded_count": 854.6,
+        "avg_holdings": 2825.9
+      },
+      "gross": {
+        "ann_excess_pct": 4.75,
+        "daily_t": 7.26,
+        "bootstrap_p": null,
+        "positive_rate": 0.5965,
+        "tracking_error_ann_pct": 1.279
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 2.159,
+        "abs_oneway_turnover_avg_pct": 12.3496,
+        "exclusion_set_churn_avg_pct": 26.993,
+        "ann_cost_pct": 3.264
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 1.485
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 4.425,
+          "t": 3.13,
+          "positive_rate": 0.5785
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 6.887,
+          "t": 5.48,
+          "positive_rate": 0.6612
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 4.493,
+          "t": 3.72,
+          "positive_rate": 0.6008
+        },
+        "2026": {
+          "days": 197,
+          "ann_excess_pct": 3.276,
+          "t": 2.34,
+          "positive_rate": 0.5533
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 116,
+          "ann_excess_pct": 4.851,
+          "cum_excess_pct": 2.233,
+          "t": 2.57
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": -0.973,
+          "cum_excess_pct": -0.077,
+          "t": -0.29
+        }
+      },
+      "n": 5,
+      "execution": "T_CLOSE",
+      "exec_desc": "T 日收盘买入 → T+1 收盘卖出（wave3 基线，含隔夜跳空）"
+    },
+    {
+      "w": 0.5,
+      "coverage": {
+        "avg_pct": 24.347,
+        "median_pct": 23.621,
+        "p95_pct": 38.211,
+        "avg_excluded_count": 854.6,
+        "avg_holdings": 3039.5
+      },
+      "gross": {
+        "ann_excess_pct": 2.938,
+        "daily_t": 7.31,
+        "bootstrap_p": null,
+        "positive_rate": 0.5965,
+        "tracking_error_ann_pct": 0.786
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 1.2647,
+        "abs_oneway_turnover_avg_pct": 11.4573,
+        "exclusion_set_churn_avg_pct": 26.993,
+        "ann_cost_pct": 1.912
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 1.026
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 2.722,
+          "t": 3.14,
+          "positive_rate": 0.5785
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 4.219,
+          "t": 5.53,
+          "positive_rate": 0.6612
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 2.791,
+          "t": 3.75,
+          "positive_rate": 0.6008
+        },
+        "2026": {
+          "days": 197,
+          "ann_excess_pct": 2.07,
+          "t": 2.36,
+          "positive_rate": 0.5533
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 116,
+          "ann_excess_pct": 3.087,
+          "cum_excess_pct": 1.421,
+          "t": 2.57
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": -0.621,
+          "cum_excess_pct": -0.049,
+          "t": -0.29
+        }
+      },
+      "n": 5,
+      "execution": "T_CLOSE",
+      "exec_desc": "T 日收盘买入 → T+1 收盘卖出（wave3 基线，含隔夜跳空）"
+    }
+  ],
+  "tradeability": {
+    "T日收盘买": {
+      "all": {
+        "涨停不可买_pct": 1.632,
+        "一字涨停不可买_pct": 0.08,
+        "停牌_入场_pct": 0.0,
+        "一字跌停不可卖_pct": 0.021,
+        "停牌_出场_pct": 0.152
+      },
+      "2023": {
+        "涨停不可买_pct": 1.184,
+        "一字涨停不可买_pct": 0.056,
+        "停牌_入场_pct": 0.0,
+        "一字跌停不可卖_pct": 0.009,
+        "停牌_出场_pct": 0.02
+      },
+      "2024": {
+        "涨停不可买_pct": 2.155,
+        "一字涨停不可买_pct": 0.103,
+        "停牌_入场_pct": 0.0,
+        "一字跌停不可卖_pct": 0.028,
+        "停牌_出场_pct": 0.022
+      },
+      "2025": {
+        "涨停不可买_pct": 1.498,
+        "一字涨停不可买_pct": 0.087,
+        "停牌_入场_pct": 0.0,
+        "一字跌停不可卖_pct": 0.018,
+        "停牌_出场_pct": 0.041
+      },
+      "2026": {
+        "涨停不可买_pct": 1.68,
+        "一字涨停不可买_pct": 0.074,
+        "停牌_入场_pct": 0.0,
+        "一字跌停不可卖_pct": 0.029,
+        "停牌_出场_pct": 0.528
+      }
+    },
+    "T+1收盘买": {
+      "all": {
+        "涨停不可买_pct": 1.471,
+        "一字涨停不可买_pct": 0.086,
+        "停牌_入场_pct": 0.152,
+        "一字跌停不可卖_pct": 0.023,
+        "停牌_出场_pct": 0.279
+      },
+      "2023": {
+        "涨停不可买_pct": 0.996,
+        "一字涨停不可买_pct": 0.059,
+        "停牌_入场_pct": 0.02,
+        "一字跌停不可卖_pct": 0.01,
+        "停牌_出场_pct": 0.029
+      },
+      "2024": {
+        "涨停不可买_pct": 1.895,
+        "一字涨停不可买_pct": 0.118,
+        "停牌_入场_pct": 0.022,
+        "一字跌停不可卖_pct": 0.031,
+        "停牌_出场_pct": 0.032
+      },
+      "2025": {
+        "涨停不可买_pct": 1.395,
+        "一字涨停不可买_pct": 0.091,
+        "停牌_入场_pct": 0.041,
+        "一字跌停不可卖_pct": 0.021,
+        "停牌_出场_pct": 0.067
+      },
+      "2026": {
+        "涨停不可买_pct": 1.565,
+        "一字涨停不可买_pct": 0.072,
+        "停牌_入场_pct": 0.528,
+        "一字跌停不可卖_pct": 0.032,
+        "停牌_出场_pct": 0.999
+      }
+    },
+    "T+1开盘买": {
+      "all": {
+        "涨停不可买_pct": 0.288,
+        "一字涨停不可买_pct": 0.086,
+        "停牌_入场_pct": 0.152,
+        "一字跌停不可卖_pct": 0.023,
+        "停牌_出场_pct": 0.279
+      },
+      "2023": {
+        "涨停不可买_pct": 0.144,
+        "一字涨停不可买_pct": 0.059,
+        "停牌_入场_pct": 0.02,
+        "一字跌停不可卖_pct": 0.01,
+        "停牌_出场_pct": 0.029
+      },
+      "2024": {
+        "涨停不可买_pct": 0.648,
+        "一字涨停不可买_pct": 0.118,
+        "停牌_入场_pct": 0.022,
+        "一字跌停不可卖_pct": 0.031,
+        "停牌_出场_pct": 0.032
+      },
+      "2025": {
+        "涨停不可买_pct": 0.205,
+        "一字涨停不可买_pct": 0.091,
+        "停牌_入场_pct": 0.041,
+        "一字跌停不可卖_pct": 0.021,
+        "停牌_出场_pct": 0.067
+      },
+      "2026": {
+        "涨停不可买_pct": 0.184,
+        "一字涨停不可买_pct": 0.072,
+        "停牌_入场_pct": 0.528,
+        "一字跌停不可卖_pct": 0.032,
+        "停牌_出场_pct": 0.999
+      }
+    },
+    "_excluded_conditional": {
+      "T日收盘买": {
+        "all": {
+          "n": 853537,
+          "涨停不可买_pct": 3.251,
+          "一字跌停不可卖_pct": 0.034
+        },
+        "2023": {
+          "n": 188069,
+          "涨停不可买_pct": 2.417,
+          "一字跌停不可卖_pct": 0.012
+        },
+        "2024": {
+          "n": 197741,
+          "涨停不可买_pct": 4.341,
+          "一字跌停不可卖_pct": 0.058
+        },
+        "2025": {
+          "n": 273403,
+          "涨停不可买_pct": 3.068,
+          "一字跌停不可卖_pct": 0.029
+        },
+        "2026": {
+          "n": 174047,
+          "涨停不可买_pct": 3.203,
+          "一字跌停不可卖_pct": 0.04
+        }
+      },
+      "T+1收盘买": {
+        "all": {
+          "n": 853537,
+          "涨停不可买_pct": 2.426,
+          "一字跌停不可卖_pct": 0.036
+        },
+        "2023": {
+          "n": 188069,
+          "涨停不可买_pct": 1.723,
+          "一字跌停不可卖_pct": 0.012
+        },
+        "2024": {
+          "n": 197741,
+          "涨停不可买_pct": 3.273,
+          "一字跌停不可卖_pct": 0.061
+        },
+        "2025": {
+          "n": 273403,
+          "涨停不可买_pct": 2.345,
+          "一字跌停不可卖_pct": 0.031
+        },
+        "2026": {
+          "n": 174047,
+          "涨停不可买_pct": 2.379,
+          "一字跌停不可卖_pct": 0.041
+        }
+      },
+      "T+1开盘买": {
+        "all": {
+          "n": 853537,
+          "涨停不可买_pct": 0.652,
+          "一字跌停不可卖_pct": 0.036
+        },
+        "2023": {
+          "n": 188069,
+          "涨停不可买_pct": 0.291,
+          "一字跌停不可卖_pct": 0.012
+        },
+        "2024": {
+          "n": 197741,
+          "涨停不可买_pct": 1.58,
+          "一字跌停不可卖_pct": 0.061
+        },
+        "2025": {
+          "n": 273403,
+          "涨停不可买_pct": 0.422,
+          "一字跌停不可卖_pct": 0.031
+        },
+        "2026": {
+          "n": 174047,
+          "涨停不可买_pct": 0.376,
+          "一字跌停不可卖_pct": 0.041
+        }
+      }
+    }
+  },
+  "capacity": {
+    "N1_T_CLOSE": {
+      "assumption": "单票单日交易额 ≤ 10%×20日日均成交额；AUM 上限取日频估计中位数",
+      "aum_trade_cap_yi": 296.92,
+      "aum_build_cap_yi": 187.11,
+      "aum_cap_yi": 187.11,
+      "by_cap_layer": [
+        {
+          "cap_quintile": 1,
+          "excluded_share_pct": 22.17,
+          "median_adv20_yi": 0.819,
+          "p5_adv20_yi": 0.282
+        },
+        {
+          "cap_quintile": 2,
+          "excluded_share_pct": 20.49,
+          "median_adv20_yi": 1.218,
+          "p5_adv20_yi": 0.408
+        },
+        {
+          "cap_quintile": 3,
+          "excluded_share_pct": 19.49,
+          "median_adv20_yi": 1.687,
+          "p5_adv20_yi": 0.5
+        },
+        {
+          "cap_quintile": 4,
+          "excluded_share_pct": 18.26,
+          "median_adv20_yi": 2.464,
+          "p5_adv20_yi": 0.668
+        },
+        {
+          "cap_quintile": 5,
+          "excluded_share_pct": 17.24,
+          "median_adv20_yi": 5.245,
+          "p5_adv20_yi": 1.189
+        }
+      ]
+    },
+    "N1_T1_OPEN": {
+      "assumption": "单票单日交易额 ≤ 10%×20日日均成交额；AUM 上限取日频估计中位数",
+      "aum_trade_cap_yi": 244.34,
+      "aum_build_cap_yi": 189.48,
+      "aum_cap_yi": 189.48,
+      "by_cap_layer": [
+        {
+          "cap_quintile": 1,
+          "excluded_share_pct": 22.18,
+          "median_adv20_yi": 0.82,
+          "p5_adv20_yi": 0.281
+        },
+        {
+          "cap_quintile": 2,
+          "excluded_share_pct": 20.64,
+          "median_adv20_yi": 1.23,
+          "p5_adv20_yi": 0.411
+        },
+        {
+          "cap_quintile": 3,
+          "excluded_share_pct": 19.58,
+          "median_adv20_yi": 1.72,
+          "p5_adv20_yi": 0.508
+        },
+        {
+          "cap_quintile": 4,
+          "excluded_share_pct": 18.23,
+          "median_adv20_yi": 2.522,
+          "p5_adv20_yi": 0.678
+        },
+        {
+          "cap_quintile": 5,
+          "excluded_share_pct": 17.0,
+          "median_adv20_yi": 5.331,
+          "p5_adv20_yi": 1.202
+        }
+      ]
+    },
+    "N1_T1_CLOSE": {
+      "assumption": "单票单日交易额 ≤ 10%×20日日均成交额；AUM 上限取日频估计中位数",
+      "aum_trade_cap_yi": 287.1,
+      "aum_build_cap_yi": 187.36,
+      "aum_cap_yi": 187.36,
+      "by_cap_layer": [
+        {
+          "cap_quintile": 1,
+          "excluded_share_pct": 22.14,
+          "median_adv20_yi": 0.817,
+          "p5_adv20_yi": 0.28
+        },
+        {
+          "cap_quintile": 2,
+          "excluded_share_pct": 20.57,
+          "median_adv20_yi": 1.219,
+          "p5_adv20_yi": 0.407
+        },
+        {
+          "cap_quintile": 3,
+          "excluded_share_pct": 19.54,
+          "median_adv20_yi": 1.697,
+          "p5_adv20_yi": 0.502
+        },
+        {
+          "cap_quintile": 4,
+          "excluded_share_pct": 18.27,
+          "median_adv20_yi": 2.482,
+          "p5_adv20_yi": 0.67
+        },
+        {
+          "cap_quintile": 5,
+          "excluded_share_pct": 17.13,
+          "median_adv20_yi": 5.271,
+          "p5_adv20_yi": 1.192
+        }
+      ]
+    },
+    "N3_T_CLOSE": {
+      "assumption": "单票单日交易额 ≤ 10%×20日日均成交额；AUM 上限取日频估计中位数",
+      "aum_trade_cap_yi": 286.72,
+      "aum_build_cap_yi": 187.11,
+      "aum_cap_yi": 187.11,
+      "by_cap_layer": [
+        {
+          "cap_quintile": 1,
+          "excluded_share_pct": 22.13,
+          "median_adv20_yi": 0.88,
+          "p5_adv20_yi": 0.307
+        },
+        {
+          "cap_quintile": 2,
+          "excluded_share_pct": 20.61,
+          "median_adv20_yi": 1.277,
+          "p5_adv20_yi": 0.435
+        },
+        {
+          "cap_quintile": 3,
+          "excluded_share_pct": 19.5,
+          "median_adv20_yi": 1.761,
+          "p5_adv20_yi": 0.531
+        },
+        {
+          "cap_quintile": 4,
+          "excluded_share_pct": 18.23,
+          "median_adv20_yi": 2.531,
+          "p5_adv20_yi": 0.697
+        },
+        {
+          "cap_quintile": 5,
+          "excluded_share_pct": 17.14,
+          "median_adv20_yi": 5.325,
+          "p5_adv20_yi": 1.218
+        }
+      ]
+    },
+    "N3_T1_OPEN": {
+      "assumption": "单票单日交易额 ≤ 10%×20日日均成交额；AUM 上限取日频估计中位数",
+      "aum_trade_cap_yi": 219.96,
+      "aum_build_cap_yi": 189.48,
+      "aum_cap_yi": 189.48,
+      "by_cap_layer": [
+        {
+          "cap_quintile": 1,
+          "excluded_share_pct": 22.13,
+          "median_adv20_yi": 0.879,
+          "p5_adv20_yi": 0.305
+        },
+        {
+          "cap_quintile": 2,
+          "excluded_share_pct": 20.72,
+          "median_adv20_yi": 1.285,
+          "p5_adv20_yi": 0.438
+        },
+        {
+          "cap_quintile": 3,
+          "excluded_share_pct": 19.58,
+          "median_adv20_yi": 1.787,
+          "p5_adv20_yi": 0.537
+        },
+        {
+          "cap_quintile": 4,
+          "excluded_share_pct": 18.21,
+          "median_adv20_yi": 2.575,
+          "p5_adv20_yi": 0.706
+        },
+        {
+          "cap_quintile": 5,
+          "excluded_share_pct": 16.97,
+          "median_adv20_yi": 5.396,
+          "p5_adv20_yi": 1.227
+        }
+      ]
+    },
+    "N3_T1_CLOSE": {
+      "assumption": "单票单日交易额 ≤ 10%×20日日均成交额；AUM 上限取日频估计中位数",
+      "aum_trade_cap_yi": 271.18,
+      "aum_build_cap_yi": 187.36,
+      "aum_cap_yi": 187.36,
+      "by_cap_layer": [
+        {
+          "cap_quintile": 1,
+          "excluded_share_pct": 22.08,
+          "median_adv20_yi": 0.877,
+          "p5_adv20_yi": 0.304
+        },
+        {
+          "cap_quintile": 2,
+          "excluded_share_pct": 20.65,
+          "median_adv20_yi": 1.275,
+          "p5_adv20_yi": 0.434
+        },
+        {
+          "cap_quintile": 3,
+          "excluded_share_pct": 19.53,
+          "median_adv20_yi": 1.765,
+          "p5_adv20_yi": 0.531
+        },
+        {
+          "cap_quintile": 4,
+          "excluded_share_pct": 18.25,
+          "median_adv20_yi": 2.542,
+          "p5_adv20_yi": 0.698
+        },
+        {
+          "cap_quintile": 5,
+          "excluded_share_pct": 17.09,
+          "median_adv20_yi": 5.34,
+          "p5_adv20_yi": 1.22
+        }
+      ]
+    },
+    "N5_T_CLOSE": {
+      "assumption": "单票单日交易额 ≤ 10%×20日日均成交额；AUM 上限取日频估计中位数",
+      "aum_trade_cap_yi": 279.55,
+      "aum_build_cap_yi": 187.11,
+      "aum_cap_yi": 187.11,
+      "by_cap_layer": [
+        {
+          "cap_quintile": 1,
+          "excluded_share_pct": 21.96,
+          "median_adv20_yi": 0.932,
+          "p5_adv20_yi": 0.324
+        },
+        {
+          "cap_quintile": 2,
+          "excluded_share_pct": 20.62,
+          "median_adv20_yi": 1.327,
+          "p5_adv20_yi": 0.454
+        },
+        {
+          "cap_quintile": 3,
+          "excluded_share_pct": 19.53,
+          "median_adv20_yi": 1.819,
+          "p5_adv20_yi": 0.552
+        },
+        {
+          "cap_quintile": 4,
+          "excluded_share_pct": 18.31,
+          "median_adv20_yi": 2.582,
+          "p5_adv20_yi": 0.717
+        },
+        {
+          "cap_quintile": 5,
+          "excluded_share_pct": 17.2,
+          "median_adv20_yi": 5.402,
+          "p5_adv20_yi": 1.236
+        }
+      ]
+    },
+    "N5_T1_OPEN": {
+      "assumption": "单票单日交易额 ≤ 10%×20日日均成交额；AUM 上限取日频估计中位数",
+      "aum_trade_cap_yi": 209.23,
+      "aum_build_cap_yi": 189.48,
+      "aum_cap_yi": 189.48,
+      "by_cap_layer": [
+        {
+          "cap_quintile": 1,
+          "excluded_share_pct": 21.96,
+          "median_adv20_yi": 0.93,
+          "p5_adv20_yi": 0.322
+        },
+        {
+          "cap_quintile": 2,
+          "excluded_share_pct": 20.71,
+          "median_adv20_yi": 1.332,
+          "p5_adv20_yi": 0.456
+        },
+        {
+          "cap_quintile": 3,
+          "excluded_share_pct": 19.59,
+          "median_adv20_yi": 1.842,
+          "p5_adv20_yi": 0.557
+        },
+        {
+          "cap_quintile": 4,
+          "excluded_share_pct": 18.29,
+          "median_adv20_yi": 2.625,
+          "p5_adv20_yi": 0.724
+        },
+        {
+          "cap_quintile": 5,
+          "excluded_share_pct": 17.06,
+          "median_adv20_yi": 5.463,
+          "p5_adv20_yi": 1.244
+        }
+      ]
+    },
+    "N5_T1_CLOSE": {
+      "assumption": "单票单日交易额 ≤ 10%×20日日均成交额；AUM 上限取日频估计中位数",
+      "aum_trade_cap_yi": 265.86,
+      "aum_build_cap_yi": 187.36,
+      "aum_cap_yi": 187.36,
+      "by_cap_layer": [
+        {
+          "cap_quintile": 1,
+          "excluded_share_pct": 21.93,
+          "median_adv20_yi": 0.928,
+          "p5_adv20_yi": 0.322
+        },
+        {
+          "cap_quintile": 2,
+          "excluded_share_pct": 20.65,
+          "median_adv20_yi": 1.323,
+          "p5_adv20_yi": 0.453
+        },
+        {
+          "cap_quintile": 3,
+          "excluded_share_pct": 19.55,
+          "median_adv20_yi": 1.821,
+          "p5_adv20_yi": 0.551
+        },
+        {
+          "cap_quintile": 4,
+          "excluded_share_pct": 18.33,
+          "median_adv20_yi": 2.59,
+          "p5_adv20_yi": 0.718
+        },
+        {
+          "cap_quintile": 5,
+          "excluded_share_pct": 17.17,
+          "median_adv20_yi": 5.416,
+          "p5_adv20_yi": 1.237
+        }
+      ]
+    },
+    "N10_T_CLOSE": {
+      "assumption": "单票单日交易额 ≤ 10%×20日日均成交额；AUM 上限取日频估计中位数",
+      "aum_trade_cap_yi": 280.52,
+      "aum_build_cap_yi": 187.11,
+      "aum_cap_yi": 187.11,
+      "by_cap_layer": [
+        {
+          "cap_quintile": 1,
+          "excluded_share_pct": 21.62,
+          "median_adv20_yi": 1.022,
+          "p5_adv20_yi": 0.35
+        },
+        {
+          "cap_quintile": 2,
+          "excluded_share_pct": 20.59,
+          "median_adv20_yi": 1.422,
+          "p5_adv20_yi": 0.484
+        },
+        {
+          "cap_quintile": 3,
+          "excluded_share_pct": 19.56,
+          "median_adv20_yi": 1.933,
+          "p5_adv20_yi": 0.582
+        },
+        {
+          "cap_quintile": 4,
+          "excluded_share_pct": 18.49,
+          "median_adv20_yi": 2.688,
+          "p5_adv20_yi": 0.748
+        },
+        {
+          "cap_quintile": 5,
+          "excluded_share_pct": 17.42,
+          "median_adv20_yi": 5.554,
+          "p5_adv20_yi": 1.27
+        }
+      ]
+    },
+    "N10_T1_OPEN": {
+      "assumption": "单票单日交易额 ≤ 10%×20日日均成交额；AUM 上限取日频估计中位数",
+      "aum_trade_cap_yi": 205.22,
+      "aum_build_cap_yi": 189.48,
+      "aum_cap_yi": 189.48,
+      "by_cap_layer": [
+        {
+          "cap_quintile": 1,
+          "excluded_share_pct": 21.62,
+          "median_adv20_yi": 1.019,
+          "p5_adv20_yi": 0.348
+        },
+        {
+          "cap_quintile": 2,
+          "excluded_share_pct": 20.66,
+          "median_adv20_yi": 1.426,
+          "p5_adv20_yi": 0.485
+        },
+        {
+          "cap_quintile": 3,
+          "excluded_share_pct": 19.62,
+          "median_adv20_yi": 1.951,
+          "p5_adv20_yi": 0.586
+        },
+        {
+          "cap_quintile": 4,
+          "excluded_share_pct": 18.48,
+          "median_adv20_yi": 2.725,
+          "p5_adv20_yi": 0.755
+        },
+        {
+          "cap_quintile": 5,
+          "excluded_share_pct": 17.3,
+          "median_adv20_yi": 5.615,
+          "p5_adv20_yi": 1.278
+        }
+      ]
+    },
+    "N10_T1_CLOSE": {
+      "assumption": "单票单日交易额 ≤ 10%×20日日均成交额；AUM 上限取日频估计中位数",
+      "aum_trade_cap_yi": 265.33,
+      "aum_build_cap_yi": 187.36,
+      "aum_cap_yi": 187.36,
+      "by_cap_layer": [
+        {
+          "cap_quintile": 1,
+          "excluded_share_pct": 21.58,
+          "median_adv20_yi": 1.017,
+          "p5_adv20_yi": 0.347
+        },
+        {
+          "cap_quintile": 2,
+          "excluded_share_pct": 20.6,
+          "median_adv20_yi": 1.418,
+          "p5_adv20_yi": 0.482
+        },
+        {
+          "cap_quintile": 3,
+          "excluded_share_pct": 19.58,
+          "median_adv20_yi": 1.932,
+          "p5_adv20_yi": 0.582
+        },
+        {
+          "cap_quintile": 4,
+          "excluded_share_pct": 18.51,
+          "median_adv20_yi": 2.693,
+          "p5_adv20_yi": 0.749
+        },
+        {
+          "cap_quintile": 5,
+          "excluded_share_pct": 17.4,
+          "median_adv20_yi": 5.567,
+          "p5_adv20_yi": 1.272
+        }
+      ]
+    },
+    "N20_T_CLOSE": {
+      "assumption": "单票单日交易额 ≤ 10%×20日日均成交额；AUM 上限取日频估计中位数",
+      "aum_trade_cap_yi": 294.16,
+      "aum_build_cap_yi": 187.11,
+      "aum_cap_yi": 187.11,
+      "by_cap_layer": [
+        {
+          "cap_quintile": 1,
+          "excluded_share_pct": 21.12,
+          "median_adv20_yi": 1.094,
+          "p5_adv20_yi": 0.375
+        },
+        {
+          "cap_quintile": 2,
+          "excluded_share_pct": 20.57,
+          "median_adv20_yi": 1.487,
+          "p5_adv20_yi": 0.507
+        },
+        {
+          "cap_quintile": 3,
+          "excluded_share_pct": 19.68,
+          "median_adv20_yi": 1.987,
+          "p5_adv20_yi": 0.604
+        },
+        {
+          "cap_quintile": 4,
+          "excluded_share_pct": 18.79,
+          "median_adv20_yi": 2.726,
+          "p5_adv20_yi": 0.765
+        },
+        {
+          "cap_quintile": 5,
+          "excluded_share_pct": 17.82,
+          "median_adv20_yi": 5.588,
+          "p5_adv20_yi": 1.284
+        }
+      ]
+    },
+    "N20_T1_OPEN": {
+      "assumption": "单票单日交易额 ≤ 10%×20日日均成交额；AUM 上限取日频估计中位数",
+      "aum_trade_cap_yi": 211.26,
+      "aum_build_cap_yi": 189.48,
+      "aum_cap_yi": 189.48,
+      "by_cap_layer": [
+        {
+          "cap_quintile": 1,
+          "excluded_share_pct": 21.12,
+          "median_adv20_yi": 1.091,
+          "p5_adv20_yi": 0.373
+        },
+        {
+          "cap_quintile": 2,
+          "excluded_share_pct": 20.62,
+          "median_adv20_yi": 1.489,
+          "p5_adv20_yi": 0.507
+        },
+        {
+          "cap_quintile": 3,
+          "excluded_share_pct": 19.73,
+          "median_adv20_yi": 2.001,
+          "p5_adv20_yi": 0.606
+        },
+        {
+          "cap_quintile": 4,
+          "excluded_share_pct": 18.79,
+          "median_adv20_yi": 2.756,
+          "p5_adv20_yi": 0.769
+        },
+        {
+          "cap_quintile": 5,
+          "excluded_share_pct": 17.72,
+          "median_adv20_yi": 5.638,
+          "p5_adv20_yi": 1.29
+        }
+      ]
+    },
+    "N20_T1_CLOSE": {
+      "assumption": "单票单日交易额 ≤ 10%×20日日均成交额；AUM 上限取日频估计中位数",
+      "aum_trade_cap_yi": 281.75,
+      "aum_build_cap_yi": 187.36,
+      "aum_cap_yi": 187.36,
+      "by_cap_layer": [
+        {
+          "cap_quintile": 1,
+          "excluded_share_pct": 21.1,
+          "median_adv20_yi": 1.09,
+          "p5_adv20_yi": 0.372
+        },
+        {
+          "cap_quintile": 2,
+          "excluded_share_pct": 20.57,
+          "median_adv20_yi": 1.483,
+          "p5_adv20_yi": 0.505
+        },
+        {
+          "cap_quintile": 3,
+          "excluded_share_pct": 19.69,
+          "median_adv20_yi": 1.986,
+          "p5_adv20_yi": 0.603
+        },
+        {
+          "cap_quintile": 4,
+          "excluded_share_pct": 18.81,
+          "median_adv20_yi": 2.73,
+          "p5_adv20_yi": 0.765
+        },
+        {
+          "cap_quintile": 5,
+          "excluded_share_pct": 17.81,
+          "median_adv20_yi": 5.597,
+          "p5_adv20_yi": 1.285
+        }
+      ]
+    }
+  },
+  "primary_capacity": {
+    "assumption": "单票单日交易额 ≤ 10%×20日日均成交额；AUM 上限取日频估计中位数",
+    "aum_trade_cap_yi": 279.55,
+    "aum_build_cap_yi": 187.11,
+    "aum_cap_yi": 187.11,
+    "by_cap_layer": [
+      {
+        "cap_quintile": 1,
+        "excluded_share_pct": 21.96,
+        "median_adv20_yi": 0.932,
+        "p5_adv20_yi": 0.324
+      },
+      {
+        "cap_quintile": 2,
+        "excluded_share_pct": 20.62,
+        "median_adv20_yi": 1.327,
+        "p5_adv20_yi": 0.454
+      },
+      {
+        "cap_quintile": 3,
+        "excluded_share_pct": 19.53,
+        "median_adv20_yi": 1.819,
+        "p5_adv20_yi": 0.552
+      },
+      {
+        "cap_quintile": 4,
+        "excluded_share_pct": 18.31,
+        "median_adv20_yi": 2.582,
+        "p5_adv20_yi": 0.717
+      },
+      {
+        "cap_quintile": 5,
+        "excluded_share_pct": 17.2,
+        "median_adv20_yi": 5.402,
+        "p5_adv20_yi": 1.236
+      }
+    ]
+  },
+  "grid": [
+    {
+      "w": 0.0,
+      "coverage": {
+        "avg_pct": 14.145,
+        "median_pct": 13.026,
+        "p95_pct": 26.18,
+        "avg_excluded_count": 497.2,
+        "avg_holdings": 2969.7
+      },
+      "gross": {
+        "ann_excess_pct": 5.755,
+        "daily_t": 7.88,
+        "bootstrap_p": 0.0,
+        "positive_rate": 0.6224,
+        "tracking_error_ann_pct": 1.427
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 3.8542,
+        "abs_oneway_turnover_avg_pct": 14.049,
+        "exclusion_set_churn_avg_pct": 46.788,
+        "ann_cost_pct": 5.828
+      },
+      "net": {
+        "ann_excess_after_cost_pct": -0.073
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 5.188,
+          "t": 3.39,
+          "positive_rate": 0.6074
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 8.826,
+          "t": 5.04,
+          "positive_rate": 0.6653
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 5.719,
+          "t": 4.77,
+          "positive_rate": 0.6667
+        },
+        "2026": {
+          "days": 197,
+          "ann_excess_pct": 2.637,
+          "t": 1.85,
+          "positive_rate": 0.5431
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 116,
+          "ann_excess_pct": 3.375,
+          "cum_excess_pct": 1.554,
+          "t": 2.0
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": -0.339,
+          "cum_excess_pct": -0.027,
+          "t": -0.11
+        }
+      },
+      "n": 1,
+      "execution": "T_CLOSE",
+      "exec_desc": "T 日收盘买入 → T+1 收盘卖出（wave3 基线，含隔夜跳空）"
+    },
+    {
+      "w": 0.25,
+      "coverage": {
+        "avg_pct": 14.145,
+        "median_pct": 13.026,
+        "p95_pct": 26.18,
+        "avg_excluded_count": 497.2,
+        "avg_holdings": 3094.0
+      },
+      "gross": {
+        "ann_excess_pct": 4.057,
+        "daily_t": 7.95,
+        "bootstrap_p": null,
+        "positive_rate": 0.6224,
+        "tracking_error_ann_pct": 0.997
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 2.6146,
+        "abs_oneway_turnover_avg_pct": 12.8094,
+        "exclusion_set_churn_avg_pct": 46.788,
+        "ann_cost_pct": 3.953
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 0.104
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 3.709,
+          "t": 3.41,
+          "positive_rate": 0.6074
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 6.015,
+          "t": 5.11,
+          "positive_rate": 0.6653
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 4.098,
+          "t": 4.77,
+          "positive_rate": 0.6667
+        },
+        "2026": {
+          "days": 197,
+          "ann_excess_pct": 1.939,
+          "t": 1.9,
+          "positive_rate": 0.5431
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 116,
+          "ann_excess_pct": 2.47,
+          "cum_excess_pct": 1.137,
+          "t": 2.01
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": -0.249,
+          "cum_excess_pct": -0.02,
+          "t": -0.11
+        }
+      },
+      "n": 1,
+      "execution": "T_CLOSE",
+      "exec_desc": "T 日收盘买入 → T+1 收盘卖出（wave3 基线，含隔夜跳空）"
+    },
+    {
+      "w": 0.5,
+      "coverage": {
+        "avg_pct": 14.145,
+        "median_pct": 13.026,
+        "p95_pct": 26.18,
+        "avg_excluded_count": 497.2,
+        "avg_holdings": 3218.2
+      },
+      "gross": {
+        "ann_excess_pct": 2.577,
+        "daily_t": 8.0,
+        "bootstrap_p": null,
+        "positive_rate": 0.6224,
+        "tracking_error_ann_pct": 0.63
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 1.5665,
+        "abs_oneway_turnover_avg_pct": 11.7613,
+        "exclusion_set_churn_avg_pct": 46.788,
+        "ann_cost_pct": 2.369
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 0.209
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 2.364,
+          "t": 3.42,
+          "positive_rate": 0.6074
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 3.762,
+          "t": 5.15,
+          "positive_rate": 0.6653
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 2.617,
+          "t": 4.78,
+          "positive_rate": 0.6667
+        },
+        "2026": {
+          "days": 197,
+          "ann_excess_pct": 1.267,
+          "t": 1.94,
+          "positive_rate": 0.5431
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 116,
+          "ann_excess_pct": 1.607,
+          "cum_excess_pct": 0.74,
+          "t": 2.01
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": -0.162,
+          "cum_excess_pct": -0.013,
+          "t": -0.11
+        }
+      },
+      "n": 1,
+      "execution": "T_CLOSE",
+      "exec_desc": "T 日收盘买入 → T+1 收盘卖出（wave3 基线，含隔夜跳空）"
+    },
+    {
+      "w": 0.0,
+      "coverage": {
+        "avg_pct": 14.538,
+        "median_pct": 13.453,
+        "p95_pct": 26.583,
+        "avg_excluded_count": 516.8,
+        "avg_holdings": 2992.3
+      },
+      "gross": {
+        "ann_excess_pct": 3.747,
+        "daily_t": 4.38,
+        "bootstrap_p": 0.0,
+        "positive_rate": 0.5659,
+        "tracking_error_ann_pct": 1.672
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 4.2863,
+        "abs_oneway_turnover_avg_pct": 13.5438,
+        "exclusion_set_churn_avg_pct": 44.012,
+        "ann_cost_pct": 6.481
+      },
+      "net": {
+        "ann_excess_after_cost_pct": -2.734
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 2.373,
+          "t": 1.41,
+          "positive_rate": 0.5372
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 7.336,
+          "t": 3.38,
+          "positive_rate": 0.6074
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 3.934,
+          "t": 2.62,
+          "positive_rate": 0.6049
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 0.925,
+          "t": 0.63,
+          "positive_rate": 0.5306
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 1.876,
+          "cum_excess_pct": 0.856,
+          "t": 1.1
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 0.196,
+          "cum_excess_pct": 0.016,
+          "t": 0.07
+        }
+      },
+      "n": 1,
+      "execution": "T1_OPEN",
+      "exec_desc": "T 日收盘决策，T+1 开盘买入 → T+2 开盘卖出"
+    },
+    {
+      "w": 0.25,
+      "coverage": {
+        "avg_pct": 14.538,
+        "median_pct": 13.453,
+        "p95_pct": 26.583,
+        "avg_excluded_count": 516.8,
+        "avg_holdings": 3121.5
+      },
+      "gross": {
+        "ann_excess_pct": 2.565,
+        "daily_t": 4.38,
+        "bootstrap_p": null,
+        "positive_rate": 0.5659,
+        "tracking_error_ann_pct": 1.143
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 2.9256,
+        "abs_oneway_turnover_avg_pct": 12.1843,
+        "exclusion_set_churn_avg_pct": 44.012,
+        "ann_cost_pct": 4.423
+      },
+      "net": {
+        "ann_excess_after_cost_pct": -1.859
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 1.695,
+          "t": 1.42,
+          "positive_rate": 0.5372
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 4.758,
+          "t": 3.41,
+          "positive_rate": 0.6074
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 2.813,
+          "t": 2.63,
+          "positive_rate": 0.6049
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 0.692,
+          "t": 0.66,
+          "positive_rate": 0.5306
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 1.374,
+          "cum_excess_pct": 0.627,
+          "t": 1.11
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 0.135,
+          "cum_excess_pct": 0.011,
+          "t": 0.06
+        }
+      },
+      "n": 1,
+      "execution": "T1_OPEN",
+      "exec_desc": "T 日收盘决策，T+1 开盘买入 → T+2 开盘卖出"
+    },
+    {
+      "w": 0.5,
+      "coverage": {
+        "avg_pct": 14.538,
+        "median_pct": 13.453,
+        "p95_pct": 26.583,
+        "avg_excluded_count": 516.8,
+        "avg_holdings": 3250.7
+      },
+      "gross": {
+        "ann_excess_pct": 1.605,
+        "daily_t": 4.39,
+        "bootstrap_p": null,
+        "positive_rate": 0.5659,
+        "tracking_error_ann_pct": 0.714
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 1.7644,
+        "abs_oneway_turnover_avg_pct": 11.0227,
+        "exclusion_set_churn_avg_pct": 44.012,
+        "ann_cost_pct": 2.668
+      },
+      "net": {
+        "ann_excess_after_cost_pct": -1.063
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 1.079,
+          "t": 1.43,
+          "positive_rate": 0.5372
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 2.893,
+          "t": 3.43,
+          "positive_rate": 0.6074
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 1.794,
+          "t": 2.63,
+          "positive_rate": 0.6049
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 0.459,
+          "t": 0.69,
+          "positive_rate": 0.5306
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 0.895,
+          "cum_excess_pct": 0.408,
+          "t": 1.12
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 0.083,
+          "cum_excess_pct": 0.007,
+          "t": 0.06
+        }
+      },
+      "n": 1,
+      "execution": "T1_OPEN",
+      "exec_desc": "T 日收盘决策，T+1 开盘买入 → T+2 开盘卖出"
+    },
+    {
+      "w": 0.0,
+      "coverage": {
+        "avg_pct": 14.389,
+        "median_pct": 13.323,
+        "p95_pct": 26.556,
+        "avg_excluded_count": 506.3,
+        "avg_holdings": 2961.2
+      },
+      "gross": {
+        "ann_excess_pct": 4.665,
+        "daily_t": 6.28,
+        "bootstrap_p": 0.0,
+        "positive_rate": 0.621,
+        "tracking_error_ann_pct": 1.451
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 3.9194,
+        "abs_oneway_turnover_avg_pct": 14.0978,
+        "exclusion_set_churn_avg_pct": 46.06,
+        "ann_cost_pct": 5.926
+      },
+      "net": {
+        "ann_excess_after_cost_pct": -1.261
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 3.707,
+          "t": 2.36,
+          "positive_rate": 0.6157
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 9.001,
+          "t": 5.31,
+          "positive_rate": 0.6942
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 4.307,
+          "t": 3.47,
+          "positive_rate": 0.6173
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 1.597,
+          "t": 1.11,
+          "positive_rate": 0.5663
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 2.107,
+          "cum_excess_pct": 0.962,
+          "t": 1.17
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 1.349,
+          "cum_excess_pct": 0.107,
+          "t": 0.4
+        }
+      },
+      "n": 1,
+      "execution": "T1_CLOSE",
+      "exec_desc": "T 日收盘决策，T+1 收盘买入 → T+2 收盘卖出"
+    },
+    {
+      "w": 0.25,
+      "coverage": {
+        "avg_pct": 14.389,
+        "median_pct": 13.323,
+        "p95_pct": 26.556,
+        "avg_excluded_count": 506.3,
+        "avg_holdings": 3087.8
+      },
+      "gross": {
+        "ann_excess_pct": 3.234,
+        "daily_t": 6.29,
+        "bootstrap_p": null,
+        "positive_rate": 0.621,
+        "tracking_error_ann_pct": 1.005
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 2.6506,
+        "abs_oneway_turnover_avg_pct": 12.8291,
+        "exclusion_set_churn_avg_pct": 46.06,
+        "ann_cost_pct": 4.008
+      },
+      "net": {
+        "ann_excess_after_cost_pct": -0.774
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 2.666,
+          "t": 2.38,
+          "positive_rate": 0.6157
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 5.931,
+          "t": 5.37,
+          "positive_rate": 0.6942
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 3.127,
+          "t": 3.54,
+          "positive_rate": 0.6173
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 1.181,
+          "t": 1.14,
+          "positive_rate": 0.5663
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 1.549,
+          "cum_excess_pct": 0.707,
+          "t": 1.19
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 1.007,
+          "cum_excess_pct": 0.08,
+          "t": 0.4
+        }
+      },
+      "n": 1,
+      "execution": "T1_CLOSE",
+      "exec_desc": "T 日收盘决策，T+1 收盘买入 → T+2 收盘卖出"
+    },
+    {
+      "w": 0.5,
+      "coverage": {
+        "avg_pct": 14.389,
+        "median_pct": 13.323,
+        "p95_pct": 26.556,
+        "avg_excluded_count": 506.3,
+        "avg_holdings": 3214.4
+      },
+      "gross": {
+        "ann_excess_pct": 2.039,
+        "daily_t": 6.3,
+        "bootstrap_p": null,
+        "positive_rate": 0.621,
+        "tracking_error_ann_pct": 0.632
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 1.5875,
+        "abs_oneway_turnover_avg_pct": 11.766,
+        "exclusion_set_churn_avg_pct": 46.06,
+        "ann_cost_pct": 2.4
+      },
+      "net": {
+        "ann_excess_after_cost_pct": -0.362
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 1.705,
+          "t": 2.4,
+          "positive_rate": 0.6157
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 3.634,
+          "t": 5.37,
+          "positive_rate": 0.6942
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 2.02,
+          "t": 3.6,
+          "positive_rate": 0.6173
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 0.776,
+          "t": 1.17,
+          "positive_rate": 0.5663
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 1.012,
+          "cum_excess_pct": 0.462,
+          "t": 1.2
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 0.668,
+          "cum_excess_pct": 0.053,
+          "t": 0.41
+        }
+      },
+      "n": 1,
+      "execution": "T1_CLOSE",
+      "exec_desc": "T 日收盘决策，T+1 收盘买入 → T+2 收盘卖出"
+    },
+    {
+      "w": 0.0,
+      "coverage": {
+        "avg_pct": 19.902,
+        "median_pct": 19.063,
+        "p95_pct": 33.383,
+        "avg_excluded_count": 699.0,
+        "avg_holdings": 2767.8
+      },
+      "gross": {
+        "ann_excess_pct": 6.051,
+        "daily_t": 6.91,
+        "bootstrap_p": 0.0,
+        "positive_rate": 0.612,
+        "tracking_error_ann_pct": 1.711
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 3.2072,
+        "abs_oneway_turnover_avg_pct": 13.3971,
+        "exclusion_set_churn_avg_pct": 31.867,
+        "ann_cost_pct": 4.849
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 1.202
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 5.73,
+          "t": 3.05,
+          "positive_rate": 0.6157
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 9.032,
+          "t": 4.78,
+          "positive_rate": 0.6529
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 6.073,
+          "t": 4.01,
+          "positive_rate": 0.6255
+        },
+        "2026": {
+          "days": 197,
+          "ann_excess_pct": 3.263,
+          "t": 1.8,
+          "positive_rate": 0.5635
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 116,
+          "ann_excess_pct": 4.225,
+          "cum_excess_pct": 1.945,
+          "t": 1.86
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": -1.496,
+          "cum_excess_pct": -0.119,
+          "t": -0.39
+        }
+      },
+      "n": 3,
+      "execution": "T_CLOSE",
+      "exec_desc": "T 日收盘买入 → T+1 收盘卖出（wave3 基线，含隔夜跳空）"
+    },
+    {
+      "w": 0.25,
+      "coverage": {
+        "avg_pct": 19.902,
+        "median_pct": 19.063,
+        "p95_pct": 33.383,
+        "avg_excluded_count": 699.0,
+        "avg_holdings": 2942.6
+      },
+      "gross": {
+        "ann_excess_pct": 4.205,
+        "daily_t": 6.95,
+        "bootstrap_p": null,
+        "positive_rate": 0.612,
+        "tracking_error_ann_pct": 1.183
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 2.1369,
+        "abs_oneway_turnover_avg_pct": 12.3293,
+        "exclusion_set_churn_avg_pct": 31.867,
+        "ann_cost_pct": 3.231
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 0.974
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 4.009,
+          "t": 3.07,
+          "positive_rate": 0.6157
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 6.099,
+          "t": 4.79,
+          "positive_rate": 0.6529
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 4.286,
+          "t": 4.05,
+          "positive_rate": 0.6255
+        },
+        "2026": {
+          "days": 197,
+          "ann_excess_pct": 2.345,
+          "t": 1.83,
+          "positive_rate": 0.5635
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 116,
+          "ann_excess_pct": 3.062,
+          "cum_excess_pct": 1.409,
+          "t": 1.87
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": -1.062,
+          "cum_excess_pct": -0.084,
+          "t": -0.38
+        }
+      },
+      "n": 3,
+      "execution": "T_CLOSE",
+      "exec_desc": "T 日收盘买入 → T+1 收盘卖出（wave3 基线，含隔夜跳空）"
+    },
+    {
+      "w": 0.5,
+      "coverage": {
+        "avg_pct": 19.902,
+        "median_pct": 19.063,
+        "p95_pct": 33.383,
+        "avg_excluded_count": 699.0,
+        "avg_holdings": 3117.3
+      },
+      "gross": {
+        "ann_excess_pct": 2.64,
+        "daily_t": 7.0,
+        "bootstrap_p": null,
+        "positive_rate": 0.612,
+        "tracking_error_ann_pct": 0.738
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 1.2627,
+        "abs_oneway_turnover_avg_pct": 11.4559,
+        "exclusion_set_churn_avg_pct": 31.867,
+        "ann_cost_pct": 1.909
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 0.73
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 2.505,
+          "t": 3.08,
+          "positive_rate": 0.6157
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 3.795,
+          "t": 4.83,
+          "positive_rate": 0.6529
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 2.701,
+          "t": 4.08,
+          "positive_rate": 0.6255
+        },
+        "2026": {
+          "days": 197,
+          "ann_excess_pct": 1.502,
+          "t": 1.86,
+          "positive_rate": 0.5635
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 116,
+          "ann_excess_pct": 1.975,
+          "cum_excess_pct": 0.909,
+          "t": 1.88
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": -0.672,
+          "cum_excess_pct": -0.053,
+          "t": -0.37
+        }
+      },
+      "n": 3,
+      "execution": "T_CLOSE",
+      "exec_desc": "T 日收盘买入 → T+1 收盘卖出（wave3 基线，含隔夜跳空）"
+    },
+    {
+      "w": 0.0,
+      "coverage": {
+        "avg_pct": 20.259,
+        "median_pct": 19.452,
+        "p95_pct": 33.638,
+        "avg_excluded_count": 719.7,
+        "avg_holdings": 2789.4
+      },
+      "gross": {
+        "ann_excess_pct": 3.528,
+        "daily_t": 3.55,
+        "bootstrap_p": 0.0,
+        "positive_rate": 0.5649,
+        "tracking_error_ann_pct": 1.944
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 3.6681,
+        "abs_oneway_turnover_avg_pct": 12.9186,
+        "exclusion_set_churn_avg_pct": 29.272,
+        "ann_cost_pct": 5.546
+      },
+      "net": {
+        "ann_excess_after_cost_pct": -2.019
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 2.771,
+          "t": 1.37,
+          "positive_rate": 0.5413
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 6.379,
+          "t": 2.77,
+          "positive_rate": 0.595
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 3.727,
+          "t": 2.02,
+          "positive_rate": 0.6091
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 1.087,
+          "t": 0.59,
+          "positive_rate": 0.5204
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 2.282,
+          "cum_excess_pct": 1.041,
+          "t": 0.99
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": -1.6,
+          "cum_excess_pct": -0.127,
+          "t": -0.46
+        }
+      },
+      "n": 3,
+      "execution": "T1_OPEN",
+      "exec_desc": "T 日收盘决策，T+1 开盘买入 → T+2 开盘卖出"
+    },
+    {
+      "w": 0.25,
+      "coverage": {
+        "avg_pct": 20.259,
+        "median_pct": 19.452,
+        "p95_pct": 33.638,
+        "avg_excluded_count": 719.7,
+        "avg_holdings": 2969.4
+      },
+      "gross": {
+        "ann_excess_pct": 2.4,
+        "daily_t": 3.56,
+        "bootstrap_p": null,
+        "positive_rate": 0.5649,
+        "tracking_error_ann_pct": 1.316
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 2.4659,
+        "abs_oneway_turnover_avg_pct": 11.7222,
+        "exclusion_set_churn_avg_pct": 29.272,
+        "ann_cost_pct": 3.728
+      },
+      "net": {
+        "ann_excess_after_cost_pct": -1.329
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 1.944,
+          "t": 1.39,
+          "positive_rate": 0.5413
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 4.122,
+          "t": 2.8,
+          "positive_rate": 0.595
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 2.637,
+          "t": 2.05,
+          "positive_rate": 0.6091
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 0.783,
+          "t": 0.6,
+          "positive_rate": 0.5204
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 1.658,
+          "cum_excess_pct": 0.757,
+          "t": 1.01
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": -1.152,
+          "cum_excess_pct": -0.091,
+          "t": -0.45
+        }
+      },
+      "n": 3,
+      "execution": "T1_OPEN",
+      "exec_desc": "T 日收盘决策，T+1 开盘买入 → T+2 开盘卖出"
+    },
+    {
+      "w": 0.5,
+      "coverage": {
+        "avg_pct": 20.259,
+        "median_pct": 19.452,
+        "p95_pct": 33.638,
+        "avg_excluded_count": 719.7,
+        "avg_holdings": 3149.3
+      },
+      "gross": {
+        "ann_excess_pct": 1.494,
+        "daily_t": 3.6,
+        "bootstrap_p": null,
+        "positive_rate": 0.5649,
+        "tracking_error_ann_pct": 0.811
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 1.4717,
+        "abs_oneway_turnover_avg_pct": 10.7283,
+        "exclusion_set_churn_avg_pct": 29.272,
+        "ann_cost_pct": 2.225
+      },
+      "net": {
+        "ann_excess_after_cost_pct": -0.731
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 1.216,
+          "t": 1.41,
+          "positive_rate": 0.5413
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 2.512,
+          "t": 2.85,
+          "positive_rate": 0.595
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 1.665,
+          "t": 2.07,
+          "positive_rate": 0.6091
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 0.503,
+          "t": 0.62,
+          "positive_rate": 0.5204
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 1.071,
+          "cum_excess_pct": 0.489,
+          "t": 1.01
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": -0.739,
+          "cum_excess_pct": -0.059,
+          "t": -0.45
+        }
+      },
+      "n": 3,
+      "execution": "T1_OPEN",
+      "exec_desc": "T 日收盘决策，T+1 开盘买入 → T+2 开盘卖出"
+    },
+    {
+      "w": 0.0,
+      "coverage": {
+        "avg_pct": 20.088,
+        "median_pct": 19.25,
+        "p95_pct": 33.499,
+        "avg_excluded_count": 706.0,
+        "avg_holdings": 2761.5
+      },
+      "gross": {
+        "ann_excess_pct": 5.354,
+        "daily_t": 6.04,
+        "bootstrap_p": 0.0,
+        "positive_rate": 0.5929,
+        "tracking_error_ann_pct": 1.731
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 3.3237,
+        "abs_oneway_turnover_avg_pct": 13.4958,
+        "exclusion_set_churn_avg_pct": 31.474,
+        "ann_cost_pct": 5.025
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 0.329
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 4.148,
+          "t": 2.19,
+          "positive_rate": 0.5785
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 9.606,
+          "t": 5.04,
+          "positive_rate": 0.6612
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 4.867,
+          "t": 3.17,
+          "positive_rate": 0.5926
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 2.956,
+          "t": 1.66,
+          "positive_rate": 0.5561
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 4.45,
+          "cum_excess_pct": 2.031,
+          "t": 1.87
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 1.464,
+          "cum_excess_pct": 0.116,
+          "t": 0.33
+        }
+      },
+      "n": 3,
+      "execution": "T1_CLOSE",
+      "exec_desc": "T 日收盘决策，T+1 收盘买入 → T+2 收盘卖出"
+    },
+    {
+      "w": 0.25,
+      "coverage": {
+        "avg_pct": 20.088,
+        "median_pct": 19.25,
+        "p95_pct": 33.499,
+        "avg_excluded_count": 706.0,
+        "avg_holdings": 2938.0
+      },
+      "gross": {
+        "ann_excess_pct": 3.642,
+        "daily_t": 6.06,
+        "bootstrap_p": null,
+        "positive_rate": 0.5929,
+        "tracking_error_ann_pct": 1.174
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 2.2119,
+        "abs_oneway_turnover_avg_pct": 12.388,
+        "exclusion_set_churn_avg_pct": 31.474,
+        "ann_cost_pct": 3.344
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 0.298
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 2.906,
+          "t": 2.21,
+          "positive_rate": 0.5785
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 6.201,
+          "t": 5.18,
+          "positive_rate": 0.6612
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 3.458,
+          "t": 3.23,
+          "positive_rate": 0.5926
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 2.118,
+          "t": 1.68,
+          "positive_rate": 0.5561
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 3.217,
+          "cum_excess_pct": 1.468,
+          "t": 1.88
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 1.091,
+          "cum_excess_pct": 0.087,
+          "t": 0.34
+        }
+      },
+      "n": 3,
+      "execution": "T1_CLOSE",
+      "exec_desc": "T 日收盘决策，T+1 收盘买入 → T+2 收盘卖出"
+    },
+    {
+      "w": 0.5,
+      "coverage": {
+        "avg_pct": 20.088,
+        "median_pct": 19.25,
+        "p95_pct": 33.499,
+        "avg_excluded_count": 706.0,
+        "avg_holdings": 3114.5
+      },
+      "gross": {
+        "ann_excess_pct": 2.266,
+        "daily_t": 6.09,
+        "bootstrap_p": null,
+        "positive_rate": 0.5929,
+        "tracking_error_ann_pct": 0.727
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 1.3138,
+        "abs_oneway_turnover_avg_pct": 11.4906,
+        "exclusion_set_churn_avg_pct": 31.474,
+        "ann_cost_pct": 1.986
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 0.28
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 1.817,
+          "t": 2.22,
+          "positive_rate": 0.5785
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 3.772,
+          "t": 5.23,
+          "positive_rate": 0.6612
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 2.192,
+          "t": 3.27,
+          "positive_rate": 0.5926
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 1.355,
+          "t": 1.7,
+          "positive_rate": 0.5561
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 2.07,
+          "cum_excess_pct": 0.945,
+          "t": 1.89
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 0.722,
+          "cum_excess_pct": 0.057,
+          "t": 0.34
+        }
+      },
+      "n": 3,
+      "execution": "T1_CLOSE",
+      "exec_desc": "T 日收盘决策，T+1 收盘买入 → T+2 收盘卖出"
+    },
+    {
+      "w": 0.0,
+      "coverage": {
+        "avg_pct": 24.347,
+        "median_pct": 23.621,
+        "p95_pct": 38.211,
+        "avg_excluded_count": 854.6,
+        "avg_holdings": 2612.3
+      },
+      "gross": {
+        "ann_excess_pct": 6.985,
+        "daily_t": 7.2,
+        "bootstrap_p": 0.0,
+        "positive_rate": 0.5965,
+        "tracking_error_ann_pct": 1.897
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 3.2792,
+        "abs_oneway_turnover_avg_pct": 13.4638,
+        "exclusion_set_churn_avg_pct": 26.993,
+        "ann_cost_pct": 4.958
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 2.027
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 6.447,
+          "t": 3.1,
+          "positive_rate": 0.5785
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 10.504,
+          "t": 5.34,
+          "positive_rate": 0.6612
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 6.475,
+          "t": 3.69,
+          "positive_rate": 0.6008
+        },
+        "2026": {
+          "days": 197,
+          "ann_excess_pct": 4.635,
+          "t": 2.31,
+          "positive_rate": 0.5533
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 116,
+          "ann_excess_pct": 6.791,
+          "cum_excess_pct": 3.126,
+          "t": 2.57
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": -1.358,
+          "cum_excess_pct": -0.108,
+          "t": -0.29
+        }
+      },
+      "n": 5,
+      "execution": "T_CLOSE",
+      "exec_desc": "T 日收盘买入 → T+1 收盘卖出（wave3 基线，含隔夜跳空）"
+    },
+    {
+      "w": 0.25,
+      "coverage": {
+        "avg_pct": 24.347,
+        "median_pct": 23.621,
+        "p95_pct": 38.211,
+        "avg_excluded_count": 854.6,
+        "avg_holdings": 2825.9
+      },
+      "gross": {
+        "ann_excess_pct": 4.75,
+        "daily_t": 7.26,
+        "bootstrap_p": null,
+        "positive_rate": 0.5965,
+        "tracking_error_ann_pct": 1.279
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 2.159,
+        "abs_oneway_turnover_avg_pct": 12.3496,
+        "exclusion_set_churn_avg_pct": 26.993,
+        "ann_cost_pct": 3.264
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 1.485
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 4.425,
+          "t": 3.13,
+          "positive_rate": 0.5785
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 6.887,
+          "t": 5.48,
+          "positive_rate": 0.6612
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 4.493,
+          "t": 3.72,
+          "positive_rate": 0.6008
+        },
+        "2026": {
+          "days": 197,
+          "ann_excess_pct": 3.276,
+          "t": 2.34,
+          "positive_rate": 0.5533
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 116,
+          "ann_excess_pct": 4.851,
+          "cum_excess_pct": 2.233,
+          "t": 2.57
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": -0.973,
+          "cum_excess_pct": -0.077,
+          "t": -0.29
+        }
+      },
+      "n": 5,
+      "execution": "T_CLOSE",
+      "exec_desc": "T 日收盘买入 → T+1 收盘卖出（wave3 基线，含隔夜跳空）"
+    },
+    {
+      "w": 0.5,
+      "coverage": {
+        "avg_pct": 24.347,
+        "median_pct": 23.621,
+        "p95_pct": 38.211,
+        "avg_excluded_count": 854.6,
+        "avg_holdings": 3039.5
+      },
+      "gross": {
+        "ann_excess_pct": 2.938,
+        "daily_t": 7.31,
+        "bootstrap_p": null,
+        "positive_rate": 0.5965,
+        "tracking_error_ann_pct": 0.786
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 1.2647,
+        "abs_oneway_turnover_avg_pct": 11.4573,
+        "exclusion_set_churn_avg_pct": 26.993,
+        "ann_cost_pct": 1.912
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 1.026
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 2.722,
+          "t": 3.14,
+          "positive_rate": 0.5785
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 4.219,
+          "t": 5.53,
+          "positive_rate": 0.6612
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 2.791,
+          "t": 3.75,
+          "positive_rate": 0.6008
+        },
+        "2026": {
+          "days": 197,
+          "ann_excess_pct": 2.07,
+          "t": 2.36,
+          "positive_rate": 0.5533
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 116,
+          "ann_excess_pct": 3.087,
+          "cum_excess_pct": 1.421,
+          "t": 2.57
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": -0.621,
+          "cum_excess_pct": -0.049,
+          "t": -0.29
+        }
+      },
+      "n": 5,
+      "execution": "T_CLOSE",
+      "exec_desc": "T 日收盘买入 → T+1 收盘卖出（wave3 基线，含隔夜跳空）"
+    },
+    {
+      "w": 0.0,
+      "coverage": {
+        "avg_pct": 24.688,
+        "median_pct": 24.02,
+        "p95_pct": 38.458,
+        "avg_excluded_count": 876.5,
+        "avg_holdings": 2632.6
+      },
+      "gross": {
+        "ann_excess_pct": 4.351,
+        "daily_t": 4.0,
+        "bootstrap_p": 0.0,
+        "positive_rate": 0.5732,
+        "tracking_error_ann_pct": 2.125
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 3.7539,
+        "abs_oneway_turnover_avg_pct": 12.9992,
+        "exclusion_set_churn_avg_pct": 24.604,
+        "ann_cost_pct": 5.676
+      },
+      "net": {
+        "ann_excess_after_cost_pct": -1.325
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 3.596,
+          "t": 1.65,
+          "positive_rate": 0.5372
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 7.72,
+          "t": 3.2,
+          "positive_rate": 0.6157
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 3.743,
+          "t": 1.77,
+          "positive_rate": 0.5967
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 2.443,
+          "t": 1.2,
+          "positive_rate": 0.5561
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 4.704,
+          "cum_excess_pct": 2.147,
+          "t": 1.76
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": -2.132,
+          "cum_excess_pct": -0.169,
+          "t": -0.51
+        }
+      },
+      "n": 5,
+      "execution": "T1_OPEN",
+      "exec_desc": "T 日收盘决策，T+1 开盘买入 → T+2 开盘卖出"
+    },
+    {
+      "w": 0.25,
+      "coverage": {
+        "avg_pct": 24.688,
+        "median_pct": 24.02,
+        "p95_pct": 38.458,
+        "avg_excluded_count": 876.5,
+        "avg_holdings": 2851.7
+      },
+      "gross": {
+        "ann_excess_pct": 2.893,
+        "daily_t": 4.02,
+        "bootstrap_p": null,
+        "positive_rate": 0.5732,
+        "tracking_error_ann_pct": 1.405
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 2.4931,
+        "abs_oneway_turnover_avg_pct": 11.7474,
+        "exclusion_set_churn_avg_pct": 24.604,
+        "ann_cost_pct": 3.77
+      },
+      "net": {
+        "ann_excess_after_cost_pct": -0.876
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 2.461,
+          "t": 1.67,
+          "positive_rate": 0.5372
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 4.844,
+          "t": 3.3,
+          "positive_rate": 0.6157
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 2.606,
+          "t": 1.79,
+          "positive_rate": 0.5967
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 1.72,
+          "t": 1.22,
+          "positive_rate": 0.5561
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 3.353,
+          "cum_excess_pct": 1.53,
+          "t": 1.76
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": -1.54,
+          "cum_excess_pct": -0.122,
+          "t": -0.51
+        }
+      },
+      "n": 5,
+      "execution": "T1_OPEN",
+      "exec_desc": "T 日收盘决策，T+1 开盘买入 → T+2 开盘卖出"
+    },
+    {
+      "w": 0.5,
+      "coverage": {
+        "avg_pct": 24.688,
+        "median_pct": 24.02,
+        "p95_pct": 38.458,
+        "avg_excluded_count": 876.5,
+        "avg_holdings": 3070.9
+      },
+      "gross": {
+        "ann_excess_pct": 1.776,
+        "daily_t": 4.06,
+        "bootstrap_p": null,
+        "positive_rate": 0.5732,
+        "tracking_error_ann_pct": 0.854
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 1.4724,
+        "abs_oneway_turnover_avg_pct": 10.729,
+        "exclusion_set_churn_avg_pct": 24.604,
+        "ann_cost_pct": 2.226
+      },
+      "net": {
+        "ann_excess_after_cost_pct": -0.45
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 1.51,
+          "t": 1.68,
+          "positive_rate": 0.5372
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 2.914,
+          "t": 3.38,
+          "positive_rate": 0.6157
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 1.624,
+          "t": 1.81,
+          "positive_rate": 0.5967
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 1.086,
+          "t": 1.23,
+          "positive_rate": 0.5561
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 2.129,
+          "cum_excess_pct": 0.971,
+          "t": 1.76
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": -0.99,
+          "cum_excess_pct": -0.079,
+          "t": -0.51
+        }
+      },
+      "n": 5,
+      "execution": "T1_OPEN",
+      "exec_desc": "T 日收盘决策，T+1 开盘买入 → T+2 开盘卖出"
+    },
+    {
+      "w": 0.0,
+      "coverage": {
+        "avg_pct": 24.513,
+        "median_pct": 23.867,
+        "p95_pct": 38.367,
+        "avg_excluded_count": 860.9,
+        "avg_holdings": 2606.6
+      },
+      "gross": {
+        "ann_excess_pct": 6.153,
+        "daily_t": 6.21,
+        "bootstrap_p": 0.0,
+        "positive_rate": 0.595,
+        "tracking_error_ann_pct": 1.936
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 3.4092,
+        "abs_oneway_turnover_avg_pct": 13.5773,
+        "exclusion_set_churn_avg_pct": 26.769,
+        "ann_cost_pct": 5.155
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 0.999
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 5.199,
+          "t": 2.46,
+          "positive_rate": 0.5785
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 10.344,
+          "t": 4.95,
+          "positive_rate": 0.6612
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 5.282,
+          "t": 2.99,
+          "positive_rate": 0.5844
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 4.22,
+          "t": 2.17,
+          "positive_rate": 0.5714
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 6.693,
+          "cum_excess_pct": 3.055,
+          "t": 2.53
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 2.608,
+          "cum_excess_pct": 0.207,
+          "t": 0.53
+        }
+      },
+      "n": 5,
+      "execution": "T1_CLOSE",
+      "exec_desc": "T 日收盘决策，T+1 收盘买入 → T+2 收盘卖出"
+    },
+    {
+      "w": 0.25,
+      "coverage": {
+        "avg_pct": 24.513,
+        "median_pct": 23.867,
+        "p95_pct": 38.367,
+        "avg_excluded_count": 860.9,
+        "avg_holdings": 2821.9
+      },
+      "gross": {
+        "ann_excess_pct": 4.158,
+        "daily_t": 6.3,
+        "bootstrap_p": null,
+        "positive_rate": 0.595,
+        "tracking_error_ann_pct": 1.29
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 2.2446,
+        "abs_oneway_turnover_avg_pct": 12.419,
+        "exclusion_set_churn_avg_pct": 26.769,
+        "ann_cost_pct": 3.394
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 0.764
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 3.588,
+          "t": 2.5,
+          "positive_rate": 0.5785
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 6.687,
+          "t": 5.2,
+          "positive_rate": 0.6612
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 3.668,
+          "t": 3.03,
+          "positive_rate": 0.5844
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 2.987,
+          "t": 2.19,
+          "positive_rate": 0.5714
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 4.769,
+          "cum_excess_pct": 2.177,
+          "t": 2.53
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 1.918,
+          "cum_excess_pct": 0.152,
+          "t": 0.54
+        }
+      },
+      "n": 5,
+      "execution": "T1_CLOSE",
+      "exec_desc": "T 日收盘决策，T+1 收盘买入 → T+2 收盘卖出"
+    },
+    {
+      "w": 0.5,
+      "coverage": {
+        "avg_pct": 24.513,
+        "median_pct": 23.867,
+        "p95_pct": 38.367,
+        "avg_excluded_count": 860.9,
+        "avg_holdings": 3037.1
+      },
+      "gross": {
+        "ann_excess_pct": 2.567,
+        "daily_t": 6.37,
+        "bootstrap_p": null,
+        "positive_rate": 0.595,
+        "tracking_error_ann_pct": 0.787
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 1.3215,
+        "abs_oneway_turnover_avg_pct": 11.4979,
+        "exclusion_set_churn_avg_pct": 26.769,
+        "ann_cost_pct": 1.998
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 0.569
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 2.217,
+          "t": 2.52,
+          "positive_rate": 0.5785
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 4.064,
+          "t": 5.31,
+          "positive_rate": 0.6612
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 2.281,
+          "t": 3.07,
+          "positive_rate": 0.5844
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 1.89,
+          "t": 2.21,
+          "positive_rate": 0.5714
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 3.028,
+          "cum_excess_pct": 1.382,
+          "t": 2.52
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 1.254,
+          "cum_excess_pct": 0.099,
+          "t": 0.54
+        }
+      },
+      "n": 5,
+      "execution": "T1_CLOSE",
+      "exec_desc": "T 日收盘决策，T+1 收盘买入 → T+2 收盘卖出"
+    },
+    {
+      "w": 0.0,
+      "coverage": {
+        "avg_pct": 33.821,
+        "median_pct": 33.716,
+        "p95_pct": 50.655,
+        "avg_excluded_count": 1186.8,
+        "avg_holdings": 2280.0
+      },
+      "gross": {
+        "ann_excess_pct": 7.763,
+        "daily_t": 6.62,
+        "bootstrap_p": 0.0,
+        "positive_rate": 0.5954,
+        "tracking_error_ann_pct": 2.291
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 3.486,
+        "abs_oneway_turnover_avg_pct": 13.6664,
+        "exclusion_set_churn_avg_pct": 21.979,
+        "ann_cost_pct": 5.271
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 2.492
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 5.663,
+          "t": 2.26,
+          "positive_rate": 0.5744
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 12.96,
+          "t": 5.73,
+          "positive_rate": 0.6529
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 6.72,
+          "t": 3.0,
+          "positive_rate": 0.6008
+        },
+        "2026": {
+          "days": 197,
+          "ann_excess_pct": 6.033,
+          "t": 2.52,
+          "positive_rate": 0.5736
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 116,
+          "ann_excess_pct": 9.956,
+          "cum_excess_pct": 4.583,
+          "t": 3.2
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 0.161,
+          "cum_excess_pct": 0.013,
+          "t": 0.03
+        }
+      },
+      "n": 10,
+      "execution": "T_CLOSE",
+      "exec_desc": "T 日收盘买入 → T+1 收盘卖出（wave3 基线，含隔夜跳空）"
+    },
+    {
+      "w": 0.25,
+      "coverage": {
+        "avg_pct": 33.821,
+        "median_pct": 33.716,
+        "p95_pct": 50.655,
+        "avg_excluded_count": 1186.8,
+        "avg_holdings": 2576.7
+      },
+      "gross": {
+        "ann_excess_pct": 5.113,
+        "daily_t": 6.75,
+        "bootstrap_p": null,
+        "positive_rate": 0.5954,
+        "tracking_error_ann_pct": 1.481
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 2.1953,
+        "abs_oneway_turnover_avg_pct": 12.3851,
+        "exclusion_set_churn_avg_pct": 21.979,
+        "ann_cost_pct": 3.319
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 1.793
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 3.724,
+          "t": 2.3,
+          "positive_rate": 0.5744
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 8.32,
+          "t": 5.91,
+          "positive_rate": 0.6529
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 4.443,
+          "t": 3.05,
+          "positive_rate": 0.6008
+        },
+        "2026": {
+          "days": 197,
+          "ann_excess_pct": 4.197,
+          "t": 2.59,
+          "positive_rate": 0.5736
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 116,
+          "ann_excess_pct": 6.898,
+          "cum_excess_pct": 3.175,
+          "t": 3.19
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 0.137,
+          "cum_excess_pct": 0.011,
+          "t": 0.04
+        }
+      },
+      "n": 10,
+      "execution": "T_CLOSE",
+      "exec_desc": "T 日收盘买入 → T+1 收盘卖出（wave3 基线，含隔夜跳空）"
+    },
+    {
+      "w": 0.5,
+      "coverage": {
+        "avg_pct": 33.821,
+        "median_pct": 33.716,
+        "p95_pct": 50.655,
+        "avg_excluded_count": 1186.8,
+        "avg_holdings": 2873.4
+      },
+      "gross": {
+        "ann_excess_pct": 3.073,
+        "daily_t": 6.83,
+        "bootstrap_p": null,
+        "positive_rate": 0.5954,
+        "tracking_error_ann_pct": 0.88
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 1.2429,
+        "abs_oneway_turnover_avg_pct": 11.4352,
+        "exclusion_set_churn_avg_pct": 21.979,
+        "ann_cost_pct": 1.879
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 1.193
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 2.213,
+          "t": 2.33,
+          "positive_rate": 0.5744
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 4.955,
+          "t": 5.94,
+          "positive_rate": 0.6529
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 2.657,
+          "t": 3.08,
+          "positive_rate": 0.6008
+        },
+        "2026": {
+          "days": 197,
+          "ann_excess_pct": 2.613,
+          "t": 2.65,
+          "positive_rate": 0.5736
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 116,
+          "ann_excess_pct": 4.274,
+          "cum_excess_pct": 1.968,
+          "t": 3.18
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 0.095,
+          "cum_excess_pct": 0.008,
+          "t": 0.04
+        }
+      },
+      "n": 10,
+      "execution": "T_CLOSE",
+      "exec_desc": "T 日收盘买入 → T+1 收盘卖出（wave3 基线，含隔夜跳空）"
+    },
+    {
+      "w": 0.0,
+      "coverage": {
+        "avg_pct": 34.139,
+        "median_pct": 34.073,
+        "p95_pct": 50.803,
+        "avg_excluded_count": 1212.1,
+        "avg_holdings": 2297.0
+      },
+      "gross": {
+        "ann_excess_pct": 4.721,
+        "daily_t": 3.67,
+        "bootstrap_p": 0.0,
+        "positive_rate": 0.5566,
+        "tracking_error_ann_pct": 2.513
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 3.9891,
+        "abs_oneway_turnover_avg_pct": 13.2305,
+        "exclusion_set_churn_avg_pct": 19.798,
+        "ann_cost_pct": 6.032
+      },
+      "net": {
+        "ann_excess_after_cost_pct": -1.31
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 2.266,
+          "t": 0.88,
+          "positive_rate": 0.5248
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 9.725,
+          "t": 3.68,
+          "positive_rate": 0.6281
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 3.699,
+          "t": 1.4,
+          "positive_rate": 0.5597
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 3.451,
+          "t": 1.38,
+          "positive_rate": 0.5306
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 7.411,
+          "cum_excess_pct": 3.382,
+          "t": 2.27
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": -0.405,
+          "cum_excess_pct": -0.032,
+          "t": -0.08
+        }
+      },
+      "n": 10,
+      "execution": "T1_OPEN",
+      "exec_desc": "T 日收盘决策，T+1 开盘买入 → T+2 开盘卖出"
+    },
+    {
+      "w": 0.25,
+      "coverage": {
+        "avg_pct": 34.139,
+        "median_pct": 34.073,
+        "p95_pct": 50.803,
+        "avg_excluded_count": 1212.1,
+        "avg_holdings": 2600.0
+      },
+      "gross": {
+        "ann_excess_pct": 3.084,
+        "daily_t": 3.76,
+        "bootstrap_p": null,
+        "positive_rate": 0.5566,
+        "tracking_error_ann_pct": 1.601
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 2.5319,
+        "abs_oneway_turnover_avg_pct": 11.7852,
+        "exclusion_set_churn_avg_pct": 19.798,
+        "ann_cost_pct": 3.828
+      },
+      "net": {
+        "ann_excess_after_cost_pct": -0.744
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 1.495,
+          "t": 0.91,
+          "positive_rate": 0.5248
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 6.122,
+          "t": 3.92,
+          "positive_rate": 0.6281
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 2.471,
+          "t": 1.43,
+          "positive_rate": 0.5597
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 2.425,
+          "t": 1.44,
+          "positive_rate": 0.5306
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 5.113,
+          "cum_excess_pct": 2.333,
+          "t": 2.26
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": -0.275,
+          "cum_excess_pct": -0.022,
+          "t": -0.08
+        }
+      },
+      "n": 10,
+      "execution": "T1_OPEN",
+      "exec_desc": "T 日收盘决策，T+1 开盘买入 → T+2 开盘卖出"
+    },
+    {
+      "w": 0.5,
+      "coverage": {
+        "avg_pct": 34.139,
+        "median_pct": 34.073,
+        "p95_pct": 50.803,
+        "avg_excluded_count": 1212.1,
+        "avg_holdings": 2903.1
+      },
+      "gross": {
+        "ann_excess_pct": 1.852,
+        "daily_t": 3.83,
+        "bootstrap_p": null,
+        "positive_rate": 0.5566,
+        "tracking_error_ann_pct": 0.945
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 1.4452,
+        "abs_oneway_turnover_avg_pct": 10.7013,
+        "exclusion_set_churn_avg_pct": 19.798,
+        "ann_cost_pct": 2.185
+      },
+      "net": {
+        "ann_excess_after_cost_pct": -0.333
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 0.89,
+          "t": 0.92,
+          "positive_rate": 0.5248
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 3.613,
+          "t": 4.01,
+          "positive_rate": 0.6281
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 1.49,
+          "t": 1.45,
+          "positive_rate": 0.5597
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 1.521,
+          "t": 1.49,
+          "positive_rate": 0.5306
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 3.156,
+          "cum_excess_pct": 1.44,
+          "t": 2.25
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": -0.173,
+          "cum_excess_pct": -0.014,
+          "t": -0.07
+        }
+      },
+      "n": 10,
+      "execution": "T1_OPEN",
+      "exec_desc": "T 日收盘决策，T+1 开盘买入 → T+2 开盘卖出"
+    },
+    {
+      "w": 0.0,
+      "coverage": {
+        "avg_pct": 33.962,
+        "median_pct": 33.838,
+        "p95_pct": 50.735,
+        "avg_excluded_count": 1192.2,
+        "avg_holdings": 2275.2
+      },
+      "gross": {
+        "ann_excess_pct": 7.004,
+        "daily_t": 5.81,
+        "bootstrap_p": 0.0,
+        "positive_rate": 0.5774,
+        "tracking_error_ann_pct": 2.356
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 3.6188,
+        "abs_oneway_turnover_avg_pct": 13.7811,
+        "exclusion_set_churn_avg_pct": 21.88,
+        "ann_cost_pct": 5.472
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 1.532
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 4.574,
+          "t": 1.77,
+          "positive_rate": 0.562
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 12.801,
+          "t": 5.21,
+          "positive_rate": 0.6405
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 5.634,
+          "t": 2.56,
+          "positive_rate": 0.5638
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 5.444,
+          "t": 2.24,
+          "positive_rate": 0.5714
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 9.382,
+          "cum_excess_pct": 4.281,
+          "t": 2.96
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 3.196,
+          "cum_excess_pct": 0.254,
+          "t": 0.52
+        }
+      },
+      "n": 10,
+      "execution": "T1_CLOSE",
+      "exec_desc": "T 日收盘决策，T+1 收盘买入 → T+2 收盘卖出"
+    },
+    {
+      "w": 0.25,
+      "coverage": {
+        "avg_pct": 33.962,
+        "median_pct": 33.838,
+        "p95_pct": 50.735,
+        "avg_excluded_count": 1192.2,
+        "avg_holdings": 2573.3
+      },
+      "gross": {
+        "ann_excess_pct": 4.589,
+        "daily_t": 5.95,
+        "bootstrap_p": null,
+        "positive_rate": 0.5774,
+        "tracking_error_ann_pct": 1.506
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 2.2751,
+        "abs_oneway_turnover_avg_pct": 12.4479,
+        "exclusion_set_churn_avg_pct": 21.88,
+        "ann_cost_pct": 3.44
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 1.149
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 3.016,
+          "t": 1.81,
+          "positive_rate": 0.562
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 8.116,
+          "t": 5.52,
+          "positive_rate": 0.6405
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 3.735,
+          "t": 2.61,
+          "positive_rate": 0.5638
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 3.809,
+          "t": 2.32,
+          "positive_rate": 0.5714
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 6.492,
+          "cum_excess_pct": 2.963,
+          "t": 2.95
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 2.248,
+          "cum_excess_pct": 0.178,
+          "t": 0.52
+        }
+      },
+      "n": 10,
+      "execution": "T1_CLOSE",
+      "exec_desc": "T 日收盘决策，T+1 收盘买入 → T+2 收盘卖出"
+    },
+    {
+      "w": 0.5,
+      "coverage": {
+        "avg_pct": 33.962,
+        "median_pct": 33.838,
+        "p95_pct": 50.735,
+        "avg_excluded_count": 1192.2,
+        "avg_holdings": 2871.4
+      },
+      "gross": {
+        "ann_excess_pct": 2.75,
+        "daily_t": 6.03,
+        "bootstrap_p": null,
+        "positive_rate": 0.5774,
+        "tracking_error_ann_pct": 0.891
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 1.2951,
+        "abs_oneway_turnover_avg_pct": 11.4709,
+        "exclusion_set_churn_avg_pct": 21.88,
+        "ann_cost_pct": 1.958
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 0.791
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 1.796,
+          "t": 1.83,
+          "positive_rate": 0.562
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 4.79,
+          "t": 5.59,
+          "positive_rate": 0.6405
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 2.238,
+          "t": 2.65,
+          "positive_rate": 0.5638
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 2.381,
+          "t": 2.38,
+          "positive_rate": 0.5714
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 4.019,
+          "cum_excess_pct": 1.834,
+          "t": 2.94
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 1.409,
+          "cum_excess_pct": 0.112,
+          "t": 0.51
+        }
+      },
+      "n": 10,
+      "execution": "T1_CLOSE",
+      "exec_desc": "T 日收盘决策，T+1 收盘买入 → T+2 收盘卖出"
+    },
+    {
+      "w": 0.0,
+      "coverage": {
+        "avg_pct": 48.809,
+        "median_pct": 49.182,
+        "p95_pct": 68.234,
+        "avg_excluded_count": 1714.3,
+        "avg_holdings": 1752.5
+      },
+      "gross": {
+        "ann_excess_pct": 8.324,
+        "daily_t": 5.22,
+        "bootstrap_p": 0.0,
+        "positive_rate": 0.5768,
+        "tracking_error_ann_pct": 3.115
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 3.8739,
+        "abs_oneway_turnover_avg_pct": 14.0481,
+        "exclusion_set_churn_avg_pct": 18.473,
+        "ann_cost_pct": 5.857
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 2.467
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 5.316,
+          "t": 1.49,
+          "positive_rate": 0.5455
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 14.729,
+          "t": 5.01,
+          "positive_rate": 0.6446
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 6.989,
+          "t": 2.32,
+          "positive_rate": 0.5679
+        },
+        "2026": {
+          "days": 197,
+          "ann_excess_pct": 5.913,
+          "t": 1.82,
+          "positive_rate": 0.5685
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 116,
+          "ann_excess_pct": 10.181,
+          "cum_excess_pct": 4.687,
+          "t": 2.46
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 13.334,
+          "cum_excess_pct": 1.058,
+          "t": 1.68
+        }
+      },
+      "n": 20,
+      "execution": "T_CLOSE",
+      "exec_desc": "T 日收盘买入 → T+1 收盘卖出（wave3 基线，含隔夜跳空）"
+    },
+    {
+      "w": 0.25,
+      "coverage": {
+        "avg_pct": 48.809,
+        "median_pct": 49.182,
+        "p95_pct": 68.234,
+        "avg_excluded_count": 1714.3,
+        "avg_holdings": 2181.1
+      },
+      "gross": {
+        "ann_excess_pct": 5.17,
+        "daily_t": 5.56,
+        "bootstrap_p": null,
+        "positive_rate": 0.5768,
+        "tracking_error_ann_pct": 1.819
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 2.209,
+        "abs_oneway_turnover_avg_pct": 12.3969,
+        "exclusion_set_churn_avg_pct": 18.473,
+        "ann_cost_pct": 3.34
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 1.83
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 3.249,
+          "t": 1.57,
+          "positive_rate": 0.5455
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 9.103,
+          "t": 5.51,
+          "positive_rate": 0.6446
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 4.185,
+          "t": 2.4,
+          "positive_rate": 0.5679
+        },
+        "2026": {
+          "days": 197,
+          "ann_excess_pct": 4.026,
+          "t": 2.0,
+          "positive_rate": 0.5685
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 116,
+          "ann_excess_pct": 6.93,
+          "cum_excess_pct": 3.19,
+          "t": 2.62
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 8.46,
+          "cum_excess_pct": 0.671,
+          "t": 1.62
+        }
+      },
+      "n": 20,
+      "execution": "T_CLOSE",
+      "exec_desc": "T 日收盘买入 → T+1 收盘卖出（wave3 基线，含隔夜跳空）"
+    },
+    {
+      "w": 0.5,
+      "coverage": {
+        "avg_pct": 48.809,
+        "median_pct": 49.182,
+        "p95_pct": 68.234,
+        "avg_excluded_count": 1714.3,
+        "avg_holdings": 2609.7
+      },
+      "gross": {
+        "ann_excess_pct": 2.96,
+        "daily_t": 5.71,
+        "bootstrap_p": null,
+        "positive_rate": 0.5768,
+        "tracking_error_ann_pct": 1.013
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 1.1754,
+        "abs_oneway_turnover_avg_pct": 11.367,
+        "exclusion_set_churn_avg_pct": 18.473,
+        "ann_cost_pct": 1.777
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 1.183
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 1.822,
+          "t": 1.61,
+          "positive_rate": 0.5455
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 5.208,
+          "t": 5.59,
+          "positive_rate": 0.6446
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 2.329,
+          "t": 2.44,
+          "positive_rate": 0.5679
+        },
+        "2026": {
+          "days": 197,
+          "ann_excess_pct": 2.452,
+          "t": 2.13,
+          "positive_rate": 0.5685
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 116,
+          "ann_excess_pct": 4.204,
+          "cum_excess_pct": 1.935,
+          "t": 2.72
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 4.879,
+          "cum_excess_pct": 0.387,
+          "t": 1.57
+        }
+      },
+      "n": 20,
+      "execution": "T_CLOSE",
+      "exec_desc": "T 日收盘买入 → T+1 收盘卖出（wave3 基线，含隔夜跳空）"
+    },
+    {
+      "w": 0.0,
+      "coverage": {
+        "avg_pct": 49.073,
+        "median_pct": 49.422,
+        "p95_pct": 68.366,
+        "avg_excluded_count": 1744.1,
+        "avg_holdings": 1765.0
+      },
+      "gross": {
+        "ann_excess_pct": 4.883,
+        "daily_t": 2.86,
+        "bootstrap_p": 0.0,
+        "positive_rate": 0.541,
+        "tracking_error_ann_pct": 3.333
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 4.4009,
+        "abs_oneway_turnover_avg_pct": 13.641,
+        "exclusion_set_churn_avg_pct": 16.49,
+        "ann_cost_pct": 6.654
+      },
+      "net": {
+        "ann_excess_after_cost_pct": -1.771
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 1.391,
+          "t": 0.39,
+          "positive_rate": 0.5083
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 11.235,
+          "t": 3.45,
+          "positive_rate": 0.5826
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 3.715,
+          "t": 1.07,
+          "positive_rate": 0.5432
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 2.615,
+          "t": 0.76,
+          "positive_rate": 0.5561
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 6.45,
+          "cum_excess_pct": 2.943,
+          "t": 1.42
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 12.632,
+          "cum_excess_pct": 1.003,
+          "t": 1.5
+        }
+      },
+      "n": 20,
+      "execution": "T1_OPEN",
+      "exec_desc": "T 日收盘决策，T+1 开盘买入 → T+2 开盘卖出"
+    },
+    {
+      "w": 0.25,
+      "coverage": {
+        "avg_pct": 49.073,
+        "median_pct": 49.422,
+        "p95_pct": 68.366,
+        "avg_excluded_count": 1744.1,
+        "avg_holdings": 2201.0
+      },
+      "gross": {
+        "ann_excess_pct": 3.1,
+        "daily_t": 3.14,
+        "bootstrap_p": null,
+        "positive_rate": 0.541,
+        "tracking_error_ann_pct": 1.93
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 2.5259,
+        "abs_oneway_turnover_avg_pct": 11.7791,
+        "exclusion_set_churn_avg_pct": 16.49,
+        "ann_cost_pct": 3.819
+      },
+      "net": {
+        "ann_excess_after_cost_pct": -0.719
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 0.949,
+          "t": 0.45,
+          "positive_rate": 0.5083
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 6.968,
+          "t": 3.95,
+          "positive_rate": 0.5826
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 2.271,
+          "t": 1.13,
+          "positive_rate": 0.5432
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 1.945,
+          "t": 0.91,
+          "positive_rate": 0.5561
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 4.533,
+          "cum_excess_pct": 2.068,
+          "t": 1.56
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 7.998,
+          "cum_excess_pct": 0.635,
+          "t": 1.46
+        }
+      },
+      "n": 20,
+      "execution": "T1_OPEN",
+      "exec_desc": "T 日收盘决策，T+1 开盘买入 → T+2 开盘卖出"
+    },
+    {
+      "w": 0.5,
+      "coverage": {
+        "avg_pct": 49.073,
+        "median_pct": 49.422,
+        "p95_pct": 68.366,
+        "avg_excluded_count": 1744.1,
+        "avg_holdings": 2637.1
+      },
+      "gross": {
+        "ann_excess_pct": 1.796,
+        "daily_t": 3.28,
+        "bootstrap_p": null,
+        "positive_rate": 0.541,
+        "tracking_error_ann_pct": 1.07
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 1.3549,
+        "abs_oneway_turnover_avg_pct": 10.611,
+        "exclusion_set_churn_avg_pct": 16.49,
+        "ann_cost_pct": 2.049
+      },
+      "net": {
+        "ann_excess_after_cost_pct": -0.253
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 0.559,
+          "t": 0.49,
+          "positive_rate": 0.5083
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 3.982,
+          "t": 4.07,
+          "positive_rate": 0.5826
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 1.278,
+          "t": 1.16,
+          "positive_rate": 0.5432
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 1.248,
+          "t": 1.02,
+          "positive_rate": 0.5561
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 2.8,
+          "cum_excess_pct": 1.278,
+          "t": 1.65
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 4.606,
+          "cum_excess_pct": 0.366,
+          "t": 1.42
+        }
+      },
+      "n": 20,
+      "execution": "T1_OPEN",
+      "exec_desc": "T 日收盘决策，T+1 开盘买入 → T+2 开盘卖出"
+    },
+    {
+      "w": 0.0,
+      "coverage": {
+        "avg_pct": 48.915,
+        "median_pct": 49.292,
+        "p95_pct": 68.394,
+        "avg_excluded_count": 1718.5,
+        "avg_holdings": 1749.0
+      },
+      "gross": {
+        "ann_excess_pct": 7.345,
+        "daily_t": 4.57,
+        "bootstrap_p": 0.0,
+        "positive_rate": 0.5722,
+        "tracking_error_ann_pct": 3.137
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 3.9851,
+        "abs_oneway_turnover_avg_pct": 14.1439,
+        "exclusion_set_churn_avg_pct": 18.429,
+        "ann_cost_pct": 6.025
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 1.32
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 4.833,
+          "t": 1.33,
+          "positive_rate": 0.5661
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 14.412,
+          "t": 4.83,
+          "positive_rate": 0.6446
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 5.321,
+          "t": 1.78,
+          "positive_rate": 0.5432
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 5.032,
+          "t": 1.53,
+          "positive_rate": 0.5612
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 9.225,
+          "cum_excess_pct": 4.21,
+          "t": 2.18
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 17.122,
+          "cum_excess_pct": 1.359,
+          "t": 1.89
+        }
+      },
+      "n": 20,
+      "execution": "T1_CLOSE",
+      "exec_desc": "T 日收盘决策，T+1 收盘买入 → T+2 收盘卖出"
+    },
+    {
+      "w": 0.25,
+      "coverage": {
+        "avg_pct": 48.915,
+        "median_pct": 49.292,
+        "p95_pct": 68.394,
+        "avg_excluded_count": 1718.5,
+        "avg_holdings": 2178.6
+      },
+      "gross": {
+        "ann_excess_pct": 4.555,
+        "daily_t": 4.87,
+        "bootstrap_p": null,
+        "positive_rate": 0.5722,
+        "tracking_error_ann_pct": 1.828
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 2.2722,
+        "abs_oneway_turnover_avg_pct": 12.4431,
+        "exclusion_set_churn_avg_pct": 18.429,
+        "ann_cost_pct": 3.436
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 1.119
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 2.928,
+          "t": 1.4,
+          "positive_rate": 0.5661
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 8.904,
+          "t": 5.32,
+          "positive_rate": 0.6446
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 3.169,
+          "t": 1.84,
+          "positive_rate": 0.5432
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 3.424,
+          "t": 1.68,
+          "positive_rate": 0.5612
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 6.227,
+          "cum_excess_pct": 2.842,
+          "t": 2.3
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 11.103,
+          "cum_excess_pct": 0.881,
+          "t": 1.86
+        }
+      },
+      "n": 20,
+      "execution": "T1_CLOSE",
+      "exec_desc": "T 日收盘决策，T+1 收盘买入 → T+2 收盘卖出"
+    },
+    {
+      "w": 0.5,
+      "coverage": {
+        "avg_pct": 48.915,
+        "median_pct": 49.292,
+        "p95_pct": 68.394,
+        "avg_excluded_count": 1718.5,
+        "avg_holdings": 2608.3
+      },
+      "gross": {
+        "ann_excess_pct": 2.602,
+        "daily_t": 5.0,
+        "bootstrap_p": null,
+        "positive_rate": 0.5722,
+        "tracking_error_ann_pct": 1.017
+      },
+      "turnover": {
+        "inc_oneway_turnover_avg_pct": 1.2169,
+        "abs_oneway_turnover_avg_pct": 11.392,
+        "exclusion_set_churn_avg_pct": 18.429,
+        "ann_cost_pct": 1.84
+      },
+      "net": {
+        "ann_excess_after_cost_pct": 0.762
+      },
+      "yearly": {
+        "2023": {
+          "days": 242,
+          "ann_excess_pct": 1.632,
+          "t": 1.43,
+          "positive_rate": 0.5661
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": 5.086,
+          "t": 5.4,
+          "positive_rate": 0.6446
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 1.754,
+          "t": 1.86,
+          "positive_rate": 0.5432
+        },
+        "2026": {
+          "days": 196,
+          "ann_excess_pct": 2.085,
+          "t": 1.79,
+          "positive_rate": 0.5612
+        }
+      },
+      "stress": {
+        "bear_2026": {
+          "days": 115,
+          "ann_excess_pct": 3.76,
+          "cum_excess_pct": 1.716,
+          "t": 2.38
+        },
+        "worst_20d": {
+          "days": 20,
+          "ann_excess_pct": 6.528,
+          "cum_excess_pct": 0.518,
+          "t": 1.84
+        }
+      },
+      "n": 20,
+      "execution": "T1_CLOSE",
+      "exec_desc": "T 日收盘决策，T+1 收盘买入 → T+2 收盘卖出"
+    }
+  ],
+  "rule_spec": {
+    "rule_id": "S05_LX20_AVOID_DEWEIGHT",
+    "library_slot": "S05",
+    "name": "LX20 牛股三绝 · 规避/降配风控规则（候选）",
+    "status": "candidate",
+    "version": "0.1.0-wave4",
+    "decision": "值得作为 S05 风控降配规则候选继续验证（可执行口径 T+1 收盘买入净超额为正，但幅度有限；需尾盘/收盘竞价执行能力，T+1 开盘执行不可用）",
+    "signal": {
+      "factor": "lx20_three_absolutes",
+      "source": "tools/research/book_batch_test.py（reverse_avoid_test 复用，口径未改）",
+      "trigger": "event=1（原书看涨形态，OOS 反向 → 规避解释）",
+      "direction": "规避/降配（不做空）"
+    },
+    "parameters": {
+      "lookback_n_days": 5,
+      "execution": "T1_CLOSE",
+      "execution_desc": "T 日收盘决策，T+1 收盘买入 → T+2 收盘卖出",
+      "deweight_signal_weight": 0.0,
+      "rebalance": "daily（可评估周频/事件驱动降频以省成本）",
+      "universe": "tradable：价≥2元、成交额≥5000万、上市≥250日（T 日可知）"
+    },
+    "rules": [
+      {
+        "id": "R1_avoid",
+        "when": "LX20 事件在过去 N 日内触发过（含当日）",
+        "action": "该股组合权重 = 正常权重 × w（w=0 为全剔除）"
+      },
+      {
+        "id": "R2_no_buy_limit_up",
+        "when": "入场日收盘/开盘涨停（含一字涨停）",
+        "action": "不买"
+      },
+      {
+        "id": "R3_no_sell_oneword_down",
+        "when": "出场日一字跌停",
+        "action": "不可卖（顺延，回测按对称剔除近似）"
+      },
+      {
+        "id": "R4_suspension",
+        "when": "入场/出场日停牌",
+        "action": "跳过/顺延"
+      },
+      {
+        "id": "R5_cap",
+        "when": "AUM > 容量上限",
+        "action": "按 10% 参与率降规模或分批"
+      },
+      {
+        "id": "R6_execution",
+        "when": "信号依赖 T 日收盘价",
+        "action": "只能用 T 日尾盘/收盘竞价近似执行（T_CLOSE）或 T+1 收盘执行（T1_CLOSE）；禁止 T+1 开盘执行（实测净超额转负）"
+      }
+    ],
+    "threshold": {
+      "min_coverage_pct": 1.0,
+      "max_coverage_pct": 30.0,
+      "min_net_excess_pct": 1.0,
+      "min_daily_t": 2.0
+    },
+    "coverage_pct": 24.513,
+    "capacity": {
+      "aum_cap_yi": 187.36,
+      "aum_trade_cap_yi": 265.86,
+      "aum_build_cap_yi": 187.36,
+      "assumption": "单票单日交易额 ≤ 10%×20日日均成交额；AUM 上限取日频估计中位数"
+    },
+    "risk": {
+      "tracking_error_ann_pct": 1.936,
+      "bear_2026_ann_excess_pct": 6.693,
+      "worst_20d_ann_excess_pct": 2.608,
+      "hit_rate": 0.595
+    },
+    "evidence": {
+      "gross_ann_excess_pct": 6.153,
+      "net_ann_excess_pct": 0.999,
+      "daily_t": 6.21,
+      "bootstrap_p": 0.0,
+      "cost_ann_pct": 5.155
+    },
+    "variants": {
+      "optimistic_T_CLOSE": {
+        "n": 5,
+        "execution": "T_CLOSE",
+        "coverage_pct": 24.347,
+        "gross_ann_excess_pct": 6.985,
+        "net_ann_excess_pct": 2.027,
+        "cost_ann_pct": 4.958,
+        "note": "假设可在 T 日尾盘/收盘竞价以收盘价附近成交（信号用尾盘近似），为乐观上界"
+      },
+      "aggressive_best_grid": {
+        "n": 10,
+        "execution": "T_CLOSE",
+        "coverage_pct": 33.821,
+        "gross_ann_excess_pct": 7.763,
+        "net_ann_excess_pct": 2.492,
+        "note": "全网格净超额最优；覆盖可能 >30%，仅作研究参考"
+      },
+      "deweight_conservative": {
+        "n": 5,
+        "execution": "T_CLOSE",
+        "deweight_signal_weight": 0.25,
+        "coverage_pct": 24.347,
+        "gross_ann_excess_pct": 4.75,
+        "net_ann_excess_pct": 1.485,
+        "cost_ann_pct": 3.264,
+        "note": "部分降配（信号股保留部分权重），降低跟踪误差与容量压力"
+      }
+    },
+    "executable": true,
+    "promotion_checklist": [
+      "补 T+1 开盘集合竞价成交概率与滑点（尤其非一字高开/低开）",
+      "一字涨停/一字跌停样本外（2023 前多年份）验证与回测顺延持有实现",
+      "T+1 成交口径下超额是否仍显著（本报告核心检验项）",
+      "容量：模拟盘/小资金实盘验证 10% 参与率与冲击成本",
+      "与 S05 现有规则（持仓上限/行业中性/回撤熔断）的叠加与冲突测试",
+      "覆盖度漂移监控（月度）、信号衰变监控、成本漂移监控",
+      "周频/事件驱动降频版本对比（省成本、降换手）",
+      "规则写入策略库前的评审门：OOS+成本后为正+容量+风控四关"
+    ],
+    "missing_before_go_live": [
+      "T+1 可成交价数据（开盘集合竞价/盘中 VWAP）与真实成交概率",
+      "逐笔/盘口一字板封单数据（判断可卖性，而非日线近似）",
+      "实盘容量与冲击成本标定",
+      "跨市场状态（牛/熊/震荡）分层验证与参数稳健性",
+      "与现有 S05 规则组合后的边际贡献"
+    ]
+  },
+  "conclusions": {
+    "robust_executions": [
+      "T_CLOSE",
+      "T1_CLOSE"
+    ],
+    "executable_spec": true,
+    "by_execution_n5": {
+      "T_CLOSE": {
+        "gross_ann_pct": 6.985,
+        "net_ann_pct": 2.027,
+        "daily_t": 7.2,
+        "coverage_pct": 24.347,
+        "ann_cost_pct": 4.958,
+        "bear_2026_ann_pct": 6.791,
+        "positive": true
+      },
+      "T1_OPEN": {
+        "gross_ann_pct": 4.351,
+        "net_ann_pct": -1.325,
+        "daily_t": 4.0,
+        "coverage_pct": 24.688,
+        "ann_cost_pct": 5.676,
+        "bear_2026_ann_pct": 4.704,
+        "positive": false
+      },
+      "T1_CLOSE": {
+        "gross_ann_pct": 6.153,
+        "net_ann_pct": 0.999,
+        "daily_t": 6.21,
+        "coverage_pct": 24.513,
+        "ann_cost_pct": 5.155,
+        "bear_2026_ann_pct": 6.693,
+        "positive": true
+      }
+    },
+    "worth_s05_candidate": true,
+    "bullets": [
+      "N=5 主口径（T_CLOSE）毛 6.99%/净 2.03%，覆盖 24.35%、跟踪误差 4.96% 成本。",
+      "成交口径敏感性（T 日收盘 → T+1 开盘 → T+1 收盘买入）：T_CLOSE 毛 6.99%/净 2.03%（t=7.20、覆盖 24.35%、成本 4.96%）；T1_OPEN 毛 4.35%/净 -1.32%（t=4.00、覆盖 24.69%、成本 5.68%）；T1_CLOSE 毛 6.15%/净 1.00%（t=6.21、覆盖 24.51%、成本 5.16%）。",
+      "**执行可行性（核心结论）**：信号依赖 T 日收盘价，实盘最早 T+1 才能成交。「T+1 开盘买入」净超额 -1.32%（转负）→ **禁止开盘执行**；「T+1 收盘买入」净 1.00%（正但仅约 1%/年）；「T 日收盘/尾盘近似成交」净 2.03%（乐观上界，需尾盘用近似收盘数据算信号）。→ 超额主要来自 T 日收盘→T+1 的隔夜跳空，只有在收盘前后完成调仓才能拿到。",
+      "参数敏感性：N∈[1, 3, 5, 10, 20]；可执行口径(T1_CLOSE)最优 N=10（毛 7.00%/净 1.53%、覆盖 33.96%）；全网格最优 N=10/T_CLOSE（净 2.49%、覆盖 33.82%）。N 越大覆盖与成本越高：N=1 覆盖仅 14% 但净超额≈0；N=3~10 为可执行区间（覆盖 20%~34%）。",
+      "降配 vs 全剔除（N=5/T_CLOSE，乐观口径）：w=0 持仓 2612 只/毛 6.99%/净 2.03%/成本 4.96%；w=0.25 持仓 2826 只/毛 4.75%/净 1.49%/成本 3.26%；w=0.5 持仓 3040 只/毛 2.94%/净 1.03%/成本 1.91% → 部分降配近似按比例缩放毛超额与成本，净超额率基本不变，但跟踪误差与容量压力显著下降；风控规则建议采用 w=0.25~0.5 的降配而非全剔除。",
+      "结论：**值得作为 S05 风控降配规则候选**（规格：N=5、T1_CLOSE、w=0.0，覆盖 24.51%、容量上限约 187.36 亿；证据：毛 6.15%/净 1.00%、t=6.21）。但净超额仅约 1%/年（可执行口径），**优先级应低于正向 alpha 类规则**，只作组合风控的边际改进项。",
+      "上线前还缺（P0）：T+1 可成交价（尾盘/收盘竞价）与成交概率、逐笔一字板封单数据、实盘容量/冲击成本标定、与 S05 现有规则叠加测试、覆盖度与 IC 漂移监控。"
+    ]
+  }
+}

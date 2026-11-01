@@ -1,0 +1,50 @@
+{
+ "run_id": "3521a55c2670",
+ "stock": "002712",
+ "source_log": "C:\\Temp\\run_invest_t1t2_4b_1.log",
+ "source_log_sha256": "821d7b01e0274ae31c1689b8fa802ed1ffa88554866bb59661b30f4b47f3f456",
+ "fidelity": "log_salvage",
+ "captured_at": "2026-11-01T08:15:16",
+ "nodes": [
+  {
+   "agent_id": "D1",
+   "status": "degraded",
+   "output_preview": "{\"recommendation\":\"WATCH\",\"confidence\":0.35,\"rationale\":\"T1/T2分歧：吸筹试盘vs出货恐慌；N1中性偏暖但F1亏损无反转，L4定性存疑，严禁方向性操作。\",\"l1_basis\":\"",
+   "structured": null,
+   "duration_ms": null
+  },
+  {
+   "agent_id": "F1",
+   "status": "degraded",
+   "output_preview": "### 思美传媒 (002712) 基本面土壤分析  基于实时数据，思美传媒 PE 为负且市值仅 24.4 亿，显示当前业绩处于亏损状态，缺乏传统估值支撑；PB 为 1.78 倍虽处低位，但结合 -10.02% 的日跌幅与高换手率，表明市场",
+   "structured": null,
+   "duration_ms": null
+  },
+  {
+   "agent_id": "N1",
+   "status": "degraded",
+   "output_preview": "基于 N1 情绪面分析师（LCS-1）职责，针对标的 002712 的舆情与事件耦合分析如下：  **利好/中性/利空判断**：当前情绪指标显示近 5 日跌幅较大但今日放量上涨，结合现价距 20 日高点仍有 -18.66% 的安全边际，判定",
+   "structured": null,
+   "duration_ms": null
+  },
+  {
+   "agent_id": "T1",
+   "status": "normal",
+   "output_preview": "多空辩论结论（2轮，末轮相似度0.67，达轮次上限）：多头[bull·T1]：```json {   \"overallTrend\": \"bullish\",   \"selectedIndicators\": [\"Volume Spike\", \"",
+   "structured": null,
+   "duration_ms": null
+  },
+  {
+   "agent_id": "T2",
+   "status": "normal",
+   "output_preview": "多空辩论结论（2轮，末轮相似度0.67，达轮次上限）：多头[bull·T1]：```json {   \"overallTrend\": \"bullish\",   \"selectedIndicators\": [\"Volume Spike\", \"",
+   "structured": null,
+   "duration_ms": null
+  }
+ ],
+ "degraded_fields": [
+  "structured",
+  "duration_ms"
+ ],
+ "degraded_reason": "console 日志输出被截断，完整 structured/duration 不可得；本件仅用于状态/样本级审计，不用于 JSON 完整率/延迟计算。"
+}

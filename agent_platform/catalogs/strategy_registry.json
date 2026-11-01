@@ -78,6 +78,24 @@
       },
       "approved": false,
       "effective_from": "待建（phase2）"
+    },
+    {
+      "id": "S05_LX20_AVOID_DEWEIGHT",
+      "name": "LX20 牛股三绝 · 规避/降配风控规则（候选）",
+      "type": "filter_avoid",
+      "owner": "司马微",
+      "source_hypothesis": "LX20（book_backlog）",
+      "status": "candidate_validation",
+      "executable": false,
+      "rule": "每日等权池剔除/降配过去 N=5 日触发 LX20 信号（倍量不穿/高量不破/跳空不补）的股票；参数与容量见 rule_spec",
+      "validation": {
+        "stats": "wave4 K：T+1 收盘执行 毛+6.15%/净+1.00%/t=6.21；T 日收盘（乐观上界）净+2.03%；T+1 开盘执行净-1.32%（不可用）",
+        "shadow": "无（需先做 S05 规则与现有组合叠加/影子盘）",
+        "cost": "30bp 单边；成本年化约 5%；容量 187 亿@10% 参与率；覆盖 24.5%",
+        "caveat": "超额主要来自隔夜跳空；只能作组合风控边际改进，不是正向 alpha；上线前补 T+1 成交价/一字板/冲击成本标定"
+      },
+      "approved": false,
+      "effective_from": "待验证（candidate）"
     }
   ],
   "book_backlog": {
@@ -111,7 +129,15 @@
         "note": "backlog",
         "strategy_spec_id": "LX03_GENERAL_PILLAR",
         "spec_test_status": "untested",
-        "computability": "B"
+        "computability": "B",
+        "batch_20261101": {
+          "grade": "D",
+          "track": null,
+          "oos_ic_t": null,
+          "oos_excess_pct": null,
+          "n_events": null,
+          "action": null
+        }
       },
       {
         "name": "元帅柱·零号战法",
@@ -120,7 +146,15 @@
         "note": "backlog",
         "strategy_spec_id": "LX04_MARSHAL_PILLAR_ZERO",
         "spec_test_status": "untested",
-        "computability": "B"
+        "computability": "B",
+        "batch_20261101": {
+          "grade": "D",
+          "track": null,
+          "oos_ic_t": null,
+          "oos_excess_pct": null,
+          "n_events": null,
+          "action": null
+        }
       },
       {
         "name": "金线战法三步曲（黄金线/黄金双线/黄金十字）",
@@ -129,7 +163,15 @@
         "note": "backlog",
         "strategy_spec_id": "LX05_GOLDEN_LINE_TRILOGY",
         "spec_test_status": "untested",
-        "computability": "B"
+        "computability": "B",
+        "batch_20261101": {
+          "grade": "C",
+          "track": null,
+          "oos_ic_t": null,
+          "oos_excess_pct": null,
+          "n_events": null,
+          "action": null
+        }
       },
       {
         "name": "大盘阴线战法 / 长阴短柱",
@@ -138,7 +180,24 @@
         "note": "backlog",
         "strategy_spec_id": "LX06_YIN_LINE_TACTICS",
         "spec_test_status": "untested",
-        "computability": "B"
+        "computability": "B",
+        "batch_20261101": {
+          "grade": "D",
+          "track": null,
+          "oos_ic_t": null,
+          "oos_excess_pct": null,
+          "n_events": null,
+          "action": null
+        },
+        "reverse_avoid_20261101": {
+          "gross_ann_pct": 0.703,
+          "net_ann_pct": 0.359,
+          "t": 6.2,
+          "coverage_pct": 1.152,
+          "tradable_avoidance": true,
+          "risk_rule_candidate": true,
+          "verdict": "可交易规避（毛/净超额均为正且显著）；市值×行业层内同向有效（非单纯小市值/高波动暴露）"
+        }
       },
       {
         "name": "一剑封喉战法",
@@ -147,7 +206,15 @@
         "note": "backlog",
         "strategy_spec_id": "LX07_ONE_SWORD_SEAL_THROAT",
         "spec_test_status": "untested",
-        "computability": "C"
+        "computability": "C",
+        "batch_20261101": {
+          "grade": "F",
+          "track": null,
+          "oos_ic_t": null,
+          "oos_excess_pct": null,
+          "n_events": null,
+          "action": null
+        }
       },
       {
         "name": "倍量伸缩战法",
@@ -165,7 +232,15 @@
         "note": "backlog",
         "strategy_spec_id": "LX09_LIVE_SUFFOCATION",
         "spec_test_status": "untested",
-        "computability": "B"
+        "computability": "B",
+        "batch_20261101": {
+          "grade": "D",
+          "track": null,
+          "oos_ic_t": null,
+          "oos_excess_pct": null,
+          "n_events": null,
+          "action": null
+        }
       },
       {
         "name": "3121 战法",
@@ -174,7 +249,15 @@
         "note": "backlog",
         "strategy_spec_id": "LX10_3121_RULER",
         "spec_test_status": "untested",
-        "computability": "A"
+        "computability": "A",
+        "batch_20261101": {
+          "grade": "D",
+          "track": null,
+          "oos_ic_t": null,
+          "oos_excess_pct": null,
+          "n_events": null,
+          "action": null
+        }
       },
       {
         "name": "间谍战法（量学七剑）",
@@ -183,7 +266,15 @@
         "note": "backlog",
         "strategy_spec_id": "LX11_SPY_TACTICS",
         "spec_test_status": "untested",
-        "computability": "B"
+        "computability": "B",
+        "batch_20261101": {
+          "grade": "D",
+          "track": null,
+          "oos_ic_t": null,
+          "oos_excess_pct": null,
+          "n_events": null,
+          "action": null
+        }
       },
       {
         "name": "双阴出货战法",
@@ -192,7 +283,24 @@
         "note": "backlog",
         "strategy_spec_id": "LX12_DOUBLE_YIN_EXIT",
         "spec_test_status": "untested",
-        "computability": "A"
+        "computability": "A",
+        "batch_20261101": {
+          "grade": "D",
+          "track": null,
+          "oos_ic_t": null,
+          "oos_excess_pct": null,
+          "n_events": null,
+          "action": null
+        },
+        "reverse_avoid_20261101": {
+          "gross_ann_pct": -12.843,
+          "net_ann_pct": -24.601,
+          "t": -3.27,
+          "coverage_pct": 45.247,
+          "tradable_avoidance": false,
+          "risk_rule_candidate": false,
+          "verdict": "规避无正超额（原信号反向不成立或已被市场消化）"
+        }
       },
       {
         "name": "兵临城下（试关/攻关/冲关/守关）",
@@ -210,7 +318,15 @@
         "note": "backlog",
         "strategy_spec_id": "LX14_RELAY_DOUBLE_YANG",
         "spec_test_status": "untested",
-        "computability": "A"
+        "computability": "A",
+        "batch_20261101": {
+          "grade": "D",
+          "track": null,
+          "oos_ic_t": null,
+          "oos_excess_pct": null,
+          "n_events": null,
+          "action": null
+        }
       },
       {
         "name": "价升量缩择机做多",
@@ -228,7 +344,15 @@
         "note": "backlog",
         "strategy_spec_id": "LX16_FLAT_SLANT_CROSS",
         "spec_test_status": "untested",
-        "computability": "C"
+        "computability": "C",
+        "batch_20261101": {
+          "grade": "F",
+          "track": null,
+          "oos_ic_t": null,
+          "oos_excess_pct": null,
+          "n_events": null,
+          "action": null
+        }
       },
       {
         "name": "站稳凹峰即将上攻",
@@ -237,7 +361,15 @@
         "note": "backlog",
         "strategy_spec_id": "LX17_STAND_ON_CONCAVE_PEAK",
         "spec_test_status": "untested",
-        "computability": "B"
+        "computability": "B",
+        "batch_20261101": {
+          "grade": "C",
+          "track": null,
+          "oos_ic_t": null,
+          "oos_excess_pct": null,
+          "n_events": null,
+          "action": null
+        }
       },
       {
         "name": "极阴次阳择幅建仓",
@@ -255,7 +387,15 @@
         "note": "backlog",
         "strategy_spec_id": "LX19_BULL_STOCK_VOLUME_SHAPE",
         "spec_test_status": "untested",
-        "computability": "B"
+        "computability": "B",
+        "batch_20261101": {
+          "grade": "D",
+          "track": null,
+          "oos_ic_t": null,
+          "oos_excess_pct": null,
+          "n_events": null,
+          "action": null
+        }
       },
       {
         "name": "牛股三绝",
@@ -264,7 +404,24 @@
         "note": "backlog",
         "strategy_spec_id": "LX20_BULL_STOCK_THREE_ABSOLUTES",
         "spec_test_status": "untested",
-        "computability": "A"
+        "computability": "A",
+        "batch_20261101": {
+          "grade": "D",
+          "track": null,
+          "oos_ic_t": null,
+          "oos_excess_pct": null,
+          "n_events": null,
+          "action": null
+        },
+        "reverse_avoid_20261101": {
+          "gross_ann_pct": 7.205,
+          "net_ann_pct": 2.749,
+          "t": 7.35,
+          "coverage_pct": 24.615,
+          "tradable_avoidance": true,
+          "risk_rule_candidate": true,
+          "verdict": "可交易规避（毛/净超额均为正且显著）；市值×行业层内同向有效（非单纯小市值/高波动暴露）"
+        }
       },
       {
         "name": "十月怀胎一朝分娩",
@@ -273,7 +430,15 @@
         "note": "backlog",
         "strategy_spec_id": "LX21_TEN_MONTH_PREGNANCY",
         "spec_test_status": "untested",
-        "computability": "C"
+        "computability": "C",
+        "batch_20261101": {
+          "grade": "F",
+          "track": null,
+          "oos_ic_t": null,
+          "oos_excess_pct": null,
+          "n_events": null,
+          "action": null
+        }
       },
       {
         "name": "凹口淘金",
@@ -282,7 +447,24 @@
         "note": "backlog",
         "strategy_spec_id": "LX22_CONCAVE_NOTCH_GOLD",
         "spec_test_status": "untested",
-        "computability": "B"
+        "computability": "B",
+        "batch_20261101": {
+          "grade": "D",
+          "track": null,
+          "oos_ic_t": null,
+          "oos_excess_pct": null,
+          "n_events": null,
+          "action": null
+        },
+        "reverse_avoid_20261101": {
+          "gross_ann_pct": 4.917,
+          "net_ann_pct": -6.568,
+          "t": 2.03,
+          "coverage_pct": 42.104,
+          "tradable_avoidance": false,
+          "risk_rule_candidate": false,
+          "verdict": "毛超额显著为正但被换手成本吃掉（净超额≤0）；市值×行业层内同向有效（非单纯小市值/高波动暴露）"
+        }
       },
       {
         "name": "量学导火索战法",
@@ -291,7 +473,15 @@
         "note": "backlog",
         "strategy_spec_id": "LX23_FUSE_TACTICS",
         "spec_test_status": "untested",
-        "computability": "C"
+        "computability": "C",
+        "batch_20261101": {
+          "grade": "F",
+          "track": null,
+          "oos_ic_t": null,
+          "oos_excess_pct": null,
+          "n_events": null,
+          "action": null
+        }
       },
       {
         "name": "涨停基因（单个/组合）",
@@ -307,6 +497,343 @@
     "spec_dir": "research/strategy_specs/",
     "spec_loader": "tools/research/strategy_specs.py",
     "spec_mapped": 24,
-    "spec_unmapped": []
+    "spec_unmapped": [],
+    "batch_test": {
+      "report": "research/reports/book_batch_test_20261101.md",
+      "date": "2026-11-01",
+      "tested": 17,
+      "mapped": 17,
+      "grade_counts": {
+        "A": 0,
+        "B": 0,
+        "C": 2,
+        "D": 11,
+        "F": 4
+      },
+      "note": "A=正向显著/B=方向对不显著/C=方向未定/D=反向/F=不可计算；A/B 档为 0"
+    }
+  },
+  "factor_validation_20261101": {
+    "report": "research/reports/factor_validate_20261101.md",
+    "date": "2026-11-01",
+    "factors": {
+      "low_turnover": "pass",
+      "max_ret20": "fail",
+      "vol20": "fail",
+      "rev5": "fail",
+      "mom20": "fail"
+    },
+    "net_verdicts": {
+      "low_turnover": "fail",
+      "max_ret20": "fail",
+      "vol20": "fail",
+      "rev5": "fail",
+      "mom20": "fail"
+    },
+    "note": "毛口径=剥离市值/行业后 alpha 存在性；净口径=30bp×周频成本后可交易性。low_turnover 毛 PASS/净 FAIL（成本硬约束）。"
+  },
+  "report_panel_20261101": {
+    "report": "research/reports/report_panel_20261101.md",
+    "date": "2026-11-01",
+    "reports_reviewed": 5,
+    "candidates": 5,
+    "model": "qwen3.5:9b",
+    "llm": {
+      "endpoint": "http://127.0.0.1:11434/api/chat",
+      "think": false,
+      "timeout_seconds": 150.0,
+      "deadline_seconds": 420.0,
+      "roles_total": 15,
+      "llm_ok_roles": 15,
+      "rule_fallback_roles": 0,
+      "rule_only": false
+    },
+    "note": "9b 模型偏乐观（5/5 进候选），仅作初筛候选；页码漂移需人工抽查，不得直接交易。"
+  },
+  "lowfreq_validation_20261101": {
+    "report": "research/reports/lowturn_freq_validate_20261101.md",
+    "factors": [
+      "low_turnover",
+      "max_ret20",
+      "vol20"
+    ],
+    "best_net_variant": {
+      "low_turnover": "hold60",
+      "max_ret20": "hold60",
+      "vol20": "hold60"
+    },
+    "any_pass_net": false,
+    "note": "hold60 净 OOS +6.12%(t=1.63) 但逐年仅 1/4 同向、IS 2023-24 负 → 成本已非瓶颈（累计拖累降到 5.6%），瓶颈转为逐年稳定性。"
+  },
+  "reverse_avoid_20261101": {
+    "report": "research/reports/reverse_avoid_20261101.md",
+    "tested": 4,
+    "mapped": 4,
+    "conclusion": "LX20 牛股三绝 规避可交易（毛+7.21%/净+2.75%/t=7.35，覆盖24.6%，层内+34.6%）；LX06 长阴短柱统计干净但幅度小（净+0.36%，覆盖1.1%）；LX22 凹口淘金成本吃光（净-6.57%）；LX12 双阴出货规避方向不成立（净-24.6%）。"
+  },
+  "report_panel_v2_20261101": {
+    "report": "research/reports/report_panel_v2_20261101.md",
+    "reports": 3,
+    "candidates": 2,
+    "comparison_v1": {
+      "v1_file": "C:\\项目\\老田的AI助手\\research\\reports\\report_panel_20261101.json",
+      "v1_available": true,
+      "v1_candidates_total": 5,
+      "v1_candidates_in_scope": [
+        "rp_AP202610071830180005",
+        "rp_AP202610071830182729",
+        "rp_AP202610071830184407"
+      ],
+      "v2_candidates": [
+        "rp_AP202610071830180005",
+        "rp_AP202610071830182729"
+      ],
+      "delta_in_scope": -1,
+      "note": "v1=单模型 qwen3.5:9b、pass 票≥2 即进；v2=双模型 ≥2 模型 pass + 主模型 ≥2 角色 pass + 页码校验通过，候选显著降维"
+    },
+    "page_validation_summary": {
+      "total_facts": 51,
+      "invalid_facts": 0,
+      "missing_pages": 0,
+      "reports_with_issues": 0,
+      "tolerance": 1,
+      "note": "51 条 key_facts 全部落在知识单元页区间并集内（容差 ±1 与 0 均为 0 越界）；选中研报单条单元页区间较宽，页码校验拦截力有限"
+    },
+    "note": "双模型交叉+页码校验+候选降维：候选 5→2（同范围 3 篇 v1→v2 Δ-1）；页码越界 0（本批页区间宽，拦截力有限）；14/18 角色 LLM、4 降级。"
+  },
+  "lowturn_attribution_20261101": {
+    "report": "research/reports/lowturn_attribution_20261101.md",
+    "conclusion": "因子失效=否（IS IC 仍全正 t>6）；拥挤=是（低换手≈大市值+低波防御，风格代理）；regime=是（hold60 上涨市 -6.72%/t=-2.45，下跌/熊市 +7.87%，2026熊市段 +8.83%）；不能当全天候，可作低波防御卫星/上涨降权；继续需先做低波+大市值双重中性化取残差。",
+    "regime": {
+      "hold60_up": -6.72,
+      "hold60_down": 7.87,
+      "bear2026_hold60": 8.83
+    },
+    "crowding": {
+      "corr_smallcap": -0.563,
+      "corr_lowvol": 0.663,
+      "corr_lowmax": 0.584
+    }
+  },
+  "lx20_avoid_rule_20261101": {
+    "report": "research/reports/lx20_avoid_rule_20261101.md",
+    "rule_spec": {
+      "rule_id": "S05_LX20_AVOID_DEWEIGHT",
+      "library_slot": "S05",
+      "name": "LX20 牛股三绝 · 规避/降配风控规则（候选）",
+      "status": "candidate",
+      "version": "0.1.0-wave4",
+      "decision": "值得作为 S05 风控降配规则候选继续验证（可执行口径 T+1 收盘买入净超额为正，但幅度有限；需尾盘/收盘竞价执行能力，T+1 开盘执行不可用）",
+      "signal": {
+        "factor": "lx20_three_absolutes",
+        "source": "tools/research/book_batch_test.py（reverse_avoid_test 复用，口径未改）",
+        "trigger": "event=1（原书看涨形态，OOS 反向 → 规避解释）",
+        "direction": "规避/降配（不做空）"
+      },
+      "parameters": {
+        "lookback_n_days": 5,
+        "execution": "T1_CLOSE",
+        "execution_desc": "T 日收盘决策，T+1 收盘买入 → T+2 收盘卖出",
+        "deweight_signal_weight": 0.0,
+        "rebalance": "daily（可评估周频/事件驱动降频以省成本）",
+        "universe": "tradable：价≥2元、成交额≥5000万、上市≥250日（T 日可知）"
+      },
+      "rules": [
+        {
+          "id": "R1_avoid",
+          "when": "LX20 事件在过去 N 日内触发过（含当日）",
+          "action": "该股组合权重 = 正常权重 × w（w=0 为全剔除）"
+        },
+        {
+          "id": "R2_no_buy_limit_up",
+          "when": "入场日收盘/开盘涨停（含一字涨停）",
+          "action": "不买"
+        },
+        {
+          "id": "R3_no_sell_oneword_down",
+          "when": "出场日一字跌停",
+          "action": "不可卖（顺延，回测按对称剔除近似）"
+        },
+        {
+          "id": "R4_suspension",
+          "when": "入场/出场日停牌",
+          "action": "跳过/顺延"
+        },
+        {
+          "id": "R5_cap",
+          "when": "AUM > 容量上限",
+          "action": "按 10% 参与率降规模或分批"
+        },
+        {
+          "id": "R6_execution",
+          "when": "信号依赖 T 日收盘价",
+          "action": "只能用 T 日尾盘/收盘竞价近似执行（T_CLOSE）或 T+1 收盘执行（T1_CLOSE）；禁止 T+1 开盘执行（实测净超额转负）"
+        }
+      ],
+      "threshold": {
+        "min_coverage_pct": 1.0,
+        "max_coverage_pct": 30.0,
+        "min_net_excess_pct": 1.0,
+        "min_daily_t": 2.0
+      },
+      "coverage_pct": 24.513,
+      "capacity": {
+        "aum_cap_yi": 187.36,
+        "aum_trade_cap_yi": 265.86,
+        "aum_build_cap_yi": 187.36,
+        "assumption": "单票单日交易额 ≤ 10%×20日日均成交额；AUM 上限取日频估计中位数"
+      },
+      "risk": {
+        "tracking_error_ann_pct": 1.936,
+        "bear_2026_ann_excess_pct": 6.693,
+        "worst_20d_ann_excess_pct": 2.608,
+        "hit_rate": 0.595
+      },
+      "evidence": {
+        "gross_ann_excess_pct": 6.153,
+        "net_ann_excess_pct": 0.999,
+        "daily_t": 6.21,
+        "bootstrap_p": 0.0,
+        "cost_ann_pct": 5.155
+      },
+      "variants": {
+        "optimistic_T_CLOSE": {
+          "n": 5,
+          "execution": "T_CLOSE",
+          "coverage_pct": 24.347,
+          "gross_ann_excess_pct": 6.985,
+          "net_ann_excess_pct": 2.027,
+          "cost_ann_pct": 4.958,
+          "note": "假设可在 T 日尾盘/收盘竞价以收盘价附近成交（信号用尾盘近似），为乐观上界"
+        },
+        "aggressive_best_grid": {
+          "n": 10,
+          "execution": "T_CLOSE",
+          "coverage_pct": 33.821,
+          "gross_ann_excess_pct": 7.763,
+          "net_ann_excess_pct": 2.492,
+          "note": "全网格净超额最优；覆盖可能 >30%，仅作研究参考"
+        },
+        "deweight_conservative": {
+          "n": 5,
+          "execution": "T_CLOSE",
+          "deweight_signal_weight": 0.25,
+          "coverage_pct": 24.347,
+          "gross_ann_excess_pct": 4.75,
+          "net_ann_excess_pct": 1.485,
+          "cost_ann_pct": 3.264,
+          "note": "部分降配（信号股保留部分权重），降低跟踪误差与容量压力"
+        }
+      },
+      "executable": true,
+      "promotion_checklist": [
+        "补 T+1 开盘集合竞价成交概率与滑点（尤其非一字高开/低开）",
+        "一字涨停/一字跌停样本外（2023 前多年份）验证与回测顺延持有实现",
+        "T+1 成交口径下超额是否仍显著（本报告核心检验项）",
+        "容量：模拟盘/小资金实盘验证 10% 参与率与冲击成本",
+        "与 S05 现有规则（持仓上限/行业中性/回撤熔断）的叠加与冲突测试",
+        "覆盖度漂移监控（月度）、信号衰变监控、成本漂移监控",
+        "周频/事件驱动降频版本对比（省成本、降换手）",
+        "规则写入策略库前的评审门：OOS+成本后为正+容量+风控四关"
+      ],
+      "missing_before_go_live": [
+        "T+1 可成交价数据（开盘集合竞价/盘中 VWAP）与真实成交概率",
+        "逐笔/盘口一字板封单数据（判断可卖性，而非日线近似）",
+        "实盘容量与冲击成本标定",
+        "跨市场状态（牛/熊/震荡）分层验证与参数稳健性",
+        "与现有 S05 规则组合后的边际贡献"
+      ]
+    },
+    "conclusions": {
+      "robust_executions": [
+        "T_CLOSE",
+        "T1_CLOSE"
+      ],
+      "executable_spec": true,
+      "by_execution_n5": {
+        "T_CLOSE": {
+          "gross_ann_pct": 6.985,
+          "net_ann_pct": 2.027,
+          "daily_t": 7.2,
+          "coverage_pct": 24.347,
+          "ann_cost_pct": 4.958,
+          "bear_2026_ann_pct": 6.791,
+          "positive": true
+        },
+        "T1_OPEN": {
+          "gross_ann_pct": 4.351,
+          "net_ann_pct": -1.325,
+          "daily_t": 4.0,
+          "coverage_pct": 24.688,
+          "ann_cost_pct": 5.676,
+          "bear_2026_ann_pct": 4.704,
+          "positive": false
+        },
+        "T1_CLOSE": {
+          "gross_ann_pct": 6.153,
+          "net_ann_pct": 0.999,
+          "daily_t": 6.21,
+          "coverage_pct": 24.513,
+          "ann_cost_pct": 5.155,
+          "bear_2026_ann_pct": 6.693,
+          "positive": true
+        }
+      },
+      "worth_s05_candidate": true,
+      "bullets": [
+        "N=5 主口径（T_CLOSE）毛 6.99%/净 2.03%，覆盖 24.35%、跟踪误差 4.96% 成本。",
+        "成交口径敏感性（T 日收盘 → T+1 开盘 → T+1 收盘买入）：T_CLOSE 毛 6.99%/净 2.03%（t=7.20、覆盖 24.35%、成本 4.96%）；T1_OPEN 毛 4.35%/净 -1.32%（t=4.00、覆盖 24.69%、成本 5.68%）；T1_CLOSE 毛 6.15%/净 1.00%（t=6.21、覆盖 24.51%、成本 5.16%）。",
+        "**执行可行性（核心结论）**：信号依赖 T 日收盘价，实盘最早 T+1 才能成交。「T+1 开盘买入」净超额 -1.32%（转负）→ **禁止开盘执行**；「T+1 收盘买入」净 1.00%（正但仅约 1%/年）；「T 日收盘/尾盘近似成交」净 2.03%（乐观上界，需尾盘用近似收盘数据算信号）。→ 超额主要来自 T 日收盘→T+1 的隔夜跳空，只有在收盘前后完成调仓才能拿到。",
+        "参数敏感性：N∈[1, 3, 5, 10, 20]；可执行口径(T1_CLOSE)最优 N=10（毛 7.00%/净 1.53%、覆盖 33.96%）；全网格最优 N=10/T_CLOSE（净 2.49%、覆盖 33.82%）。N 越大覆盖与成本越高：N=1 覆盖仅 14% 但净超额≈0；N=3~10 为可执行区间（覆盖 20%~34%）。",
+        "降配 vs 全剔除（N=5/T_CLOSE，乐观口径）：w=0 持仓 2612 只/毛 6.99%/净 2.03%/成本 4.96%；w=0.25 持仓 2826 只/毛 4.75%/净 1.49%/成本 3.26%；w=0.5 持仓 3040 只/毛 2.94%/净 1.03%/成本 1.91% → 部分降配近似按比例缩放毛超额与成本，净超额率基本不变，但跟踪误差与容量压力显著下降；风控规则建议采用 w=0.25~0.5 的降配而非全剔除。",
+        "结论：**值得作为 S05 风控降配规则候选**（规格：N=5、T1_CLOSE、w=0.0，覆盖 24.51%、容量上限约 187.36 亿；证据：毛 6.15%/净 1.00%、t=6.21）。但净超额仅约 1%/年（可执行口径），**优先级应低于正向 alpha 类规则**，只作组合风控的边际改进项。",
+        "上线前还缺（P0）：T+1 可成交价（尾盘/收盘竞价）与成交概率、逐笔一字板封单数据、实盘容量/冲击成本标定、与 S05 现有规则叠加测试、覆盖度与 IC 漂移监控。"
+      ]
+    },
+    "note": "S05 候选：T+1 收盘执行净+1.00%/t=6.21/容量187亿/覆盖24.5%；T+1 开盘不可用；建议降配 w=0.25-0.5 而非全剔。"
+  },
+  "report_panel_v3_20261101": {
+    "report": "research/reports/report_panel_v3_20261101.md",
+    "review_checklist": "research/reports/report_panel_v3_review.md",
+    "candidates": 1,
+    "comparison_v2": {
+      "v2_file": "C:\\项目\\老田的AI助手\\research\\reports\\report_panel_v2_20261101.json",
+      "v2_available": true,
+      "scope_report_ids": [
+        "rp_AP202610071830180005",
+        "rp_AP202610071830182729",
+        "rp_AP202610071830184407"
+      ],
+      "candidates": {
+        "v2": 2,
+        "v2_scope_ids": [
+          "rp_AP202610071830180005",
+          "rp_AP202610071830182729"
+        ],
+        "v3": 1,
+        "v3_ids": [
+          "rp_AP202610071830182729"
+        ],
+        "delta": -1
+      },
+      "fallback": {
+        "v2_rule_fallback_roles": 4,
+        "v2_model_fallbacks": 0,
+        "v3_rule_fallback_roles": 0,
+        "v3_model_fallbacks": 0,
+        "v3_total": 0
+      },
+      "page_invalid": {
+        "v2": 0,
+        "v3_precise": 1,
+        "v3_legacy_union": 0
+      },
+      "elapsed_seconds": {
+        "v2": 480.0,
+        "v3": 317.1
+      }
+    },
+    "verdict": "达到",
+    "note": "num_predict 1600/deadline 900 修复截断与超时；精确页码校验抓到 1 条越界（v2 宽口径漏掉）；候选 2→1，配人工复核清单。"
   }
 }

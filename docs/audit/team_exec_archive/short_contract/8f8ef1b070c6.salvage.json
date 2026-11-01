@@ -1,0 +1,50 @@
+{
+ "run_id": "8f8ef1b070c6",
+ "stock": "002712",
+ "source_log": "C:\\Temp\\run_invest_short_2.log",
+ "source_log_sha256": "41c5550acf9f6df8910028d0db4d3a48561f51c34c49d76c8544697ef053cec8",
+ "fidelity": "log_salvage",
+ "captured_at": "2026-11-01T08:15:16",
+ "nodes": [
+  {
+   "agent_id": "D1",
+   "status": "degraded",
+   "output_preview": "{\"recommendation\":\"WATCH\",\"confidence\":0.35,\"rationale\":\"基本面亏损（PE-52）与高位出货证据链占优，PB低位仅存重组想象空间但无公告支撑，技术面空头排列确认下跌趋势，暂禁方向性操作",
+   "structured": null,
+   "duration_ms": null
+  },
+  {
+   "agent_id": "F1",
+   "status": "normal",
+   "output_preview": "### 基本面分析报告：思美传媒 (002712)  **土壤评估结论：不成立** 基于KG财报与公告节点数据，标的PE为-52.09且市值仅24.4亿，显示公司处于持续亏损状态，缺乏业绩反转的坚实土壤。在重整或重组语境下，当前基本面无法支",
+   "structured": null,
+   "duration_ms": null
+  },
+  {
+   "agent_id": "N1",
+   "status": "normal",
+   "output_preview": "### 002712 (长园集团) 情绪面分析报告  **结论：中性偏空，强度中等，时效性强。** 近期股价近5日下跌9.84%且现价距20日高点回撤超18%，显示市场情绪显著转冷，虽有放量迹象但属“缩量下跌观望”后的反弹尝试，未见明确反转",
+   "structured": null,
+   "duration_ms": null
+  },
+  {
+   "agent_id": "T1",
+   "status": "normal",
+   "output_preview": "多空辩论结论（2轮，末轮相似度0.70，达轮次上限）：多头[bull·T1]：多头论据：现价距20日高点回撤18.66%且PE为负值，显示基本面恶化风险叠加技术压制，无重组公告支撑吸筹假设，当前不具备进场条件。 风险提示：低位箱体与间歇放量",
+   "structured": null,
+   "duration_ms": null
+  },
+  {
+   "agent_id": "T2",
+   "status": "normal",
+   "output_preview": "多空辩论结论（2轮，末轮相似度0.70，达轮次上限）：多头[bull·T1]：多头论据：现价距20日高点回撤18.66%且PE为负值，显示基本面恶化风险叠加技术压制，无重组公告支撑吸筹假设，当前不具备进场条件。 风险提示：低位箱体与间歇放量",
+   "structured": null,
+   "duration_ms": null
+  }
+ ],
+ "degraded_fields": [
+  "structured",
+  "duration_ms"
+ ],
+ "degraded_reason": "console 日志输出被截断，完整 structured/duration 不可得；本件仅用于状态/样本级审计，不用于 JSON 完整率/延迟计算。"
+}

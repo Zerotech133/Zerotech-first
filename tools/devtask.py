@@ -15,7 +15,13 @@
                            --approver 记研发域验收署名（charter dev-authority-v1）；
                            --expected-output/--boundaries/--effort/--deps 为任务契约 2.0
                            可选字段（O2；落账不做强校验，供编排器/评审使用）。
-  list                     任务单总览（谁在干什么/分支/进度）
+  list [--project <pid>] [--strict]
+                           任务单总览（谁在干什么/分支/进度）；--strict 附跑
+                           audit-worktrees，有违规则 rc=1（默认行为不变）
+  audit-worktrees [--json] [--quiet] [--repo <path>]
+                           W2-3 校验：doing/review 单必须有 .worktrees/<TID> 目录
+                           （且在 git worktree list 在册）+ task/<TID> 分支；
+                           不满足 → 逐项清单 + rc=1；只读，不删/不移 worktree。
   port <服务名>            申请分配一个未注册端口（并提示写回 REGISTRY）
   merge <TID> [--l2-ack --l2-reason "五要素"] [--keep-worktree]
                                     过评审门（Mixin/导航/端口/明文凭据 + L2 危险操作门）
@@ -1404,8 +1410,10 @@ def _ahead_behind(branch):
 
 def cmd_list(*args):
     # K-ORG-057：--project <pid> 按线过滤；project 列入表
+    # 2026-11-01 WO-DEVTASK-WTCHECK：--strict 附跑 W2-3 worktree 校验（默认行为不变）
+    strict = "--strict" in args
     proj_filter = None
-    args = list(args)
+    args = [a for a in list(args) if a != "--strict"]
     if "--project" in args:
         i = args.index("--project")
         proj_filter = args[i + 1] if i + 1 < len(args) else None
@@ -1436,7 +1444,159 @@ def cmd_list(*args):
                  t.get("desc", "")[:22], ahead, behind, last))
     if not tasks:
         print("（无任务单——先 devtask.py new）")
+    if strict:
+        _viol, _active = _audit_worktrees()
+        if _viol:
+            print("STRICT FAIL：%d 张 active 单缺 worktree/分支（明细：devtask.py "
+                  "audit-worktrees）" % len(_viol))
+            return 1
+        print("STRICT PASS：%d 张 active 单 worktree/分支齐全" % _active)
     return 0
+# ===== 2026-11-01 WO-DEVTASK-WTCHECK-20261031：W2-3 worktree 校验 =====
+# 规则来源：v2 计划 W2-3「一单一 owner；新单未建 worktree 不得 doing」。
+# 校验对象：status ∈ doing/review 的 active 单（done/aborted 历史项不校验，不追溯旧账）。
+# 三条规则：R1 目录存在（worktree 字段或 .worktrees/<TID>）；R2 在 git worktree list 在册；
+#          R3 分支存在（branch 字段或 task/<TID>）。任一不满足即违规。
+# 只读：仅 `git worktree list` / `git branch` 与读 tasks.json，不创建/删除/移动任何 worktree。
+WTCHECK_ACTIVE_STATES = ("doing", "review")
+
+
+def _worktree_violations(tasks, wt_dir, registered, branches):
+    """W2-3 校验核心（纯函数，便于单测）。
+
+    :param tasks: {tid: task_dict}
+    :param wt_dir: 目标仓 .worktrees 目录
+    :param registered: 已注册 worktree 绝对路径归一集合（normcase(abspath)）
+    :param branches: 本地分支名集合
+    :return: 违规清单 [{tid,status,owner,dir,branch,checks,missing}]
+    """
+    out = []
+    for tid, t in sorted((tasks or {}).items()):
+        t = t or {}
+        st = str(t.get("status") or "")
+        if st not in WTCHECK_ACTIVE_STATES:
+            continue
+        wt = str(t.get("worktree") or "").strip() or os.path.join(wt_dir, tid)
+        br = str(t.get("branch") or "").strip() or ("task/" + tid)
+        checks = {
+            "dir": os.path.isdir(wt),
+            "registered": os.path.normcase(os.path.abspath(wt)) in registered,
+            "branch": br in branches,
+        }
+        if all(checks.values()):
+            continue
+        out.append({
+            "tid": tid, "status": st, "owner": str(t.get("owner") or "?"),
+            "dir": wt, "branch": br, "checks": checks,
+            "missing": [k for k, v in checks.items() if not v],
+        })
+    return out
+
+
+def _tasks_at(repo):
+    """读目标仓 .worktrees/tasks.json（沿用尾逗号自愈；缺失/坏 JSON → 空）。"""
+    p = os.path.join(repo, ".worktrees", "tasks.json")
+    try:
+        return _prune_load_tasks(p)
+    except (OSError, ValueError):
+        return {}
+
+
+def _resolve_main_repo(repo=None):
+    """定位主仓：在任务 worktree 内调用时回退到 git-common-dir 的父目录。
+
+    背景：devtask 的 REPO 取自脚本自身路径，在 `.worktrees/<TID>` 里跑时
+    REPO=worktree 根，`.worktrees/tasks.json` 不存在 → list/audit 会误报「无单」。
+    本函数只读 git，不改任何状态；解析失败则原样返回。
+    """
+    repo = repo or REPO
+    common = ""
+    for extra in (["--path-format=absolute"], []):
+        try:
+            r = _prune_git(repo, "rev-parse", *extra, "--git-common-dir")
+            lines = (r.stdout or "").strip().splitlines()
+            common = lines[0].strip() if lines else ""
+        except SystemExit:
+            common = ""
+        if common:
+            break
+    if common:
+        if not os.path.isabs(common):
+            common = os.path.abspath(os.path.join(repo, common))
+        if os.path.isdir(common):
+            parent = os.path.dirname(os.path.normpath(common))
+            if (os.path.isdir(os.path.join(parent, ".worktrees"))
+                    or os.path.isdir(os.path.join(parent, "portal"))):
+                return parent
+    return repo
+
+
+def _audit_worktrees(repo=None):
+    """跑一次 W2-3 校验（只读）→ (violations, active_count)。"""
+    repo = _resolve_main_repo(repo)
+    registered, branches = set(), set()
+    try:
+        for w in _prune_worktrees(repo):
+            registered.add(os.path.normcase(os.path.abspath(w["path"])))
+    except SystemExit:
+        pass
+    try:
+        out = _prune_git(repo, "branch", "--format=%(refname:short)").stdout
+        branches = {ln.strip() for ln in out.splitlines() if ln.strip()}
+    except SystemExit:
+        pass
+    tasks = _tasks_at(repo)
+    active = [t for t in tasks.values()
+              if str((t or {}).get("status") or "") in WTCHECK_ACTIVE_STATES]
+    return _worktree_violations(tasks, os.path.join(repo, ".worktrees"),
+                                registered, branches), len(active)
+
+
+def cmd_audit_worktrees(*args):
+    """audit-worktrees [--json] [--quiet] [--repo <path>]：W2-3 校验（只读、不修不删）。
+
+    rc=0 全合规；rc=1 存在违规（清单已打印，供 owner 二选一：重建 worktree / abort 收口）。
+    """
+    argv = list(args)
+    repo = REPO
+    if "--repo" in argv:
+        i = argv.index("--repo")
+        if i + 1 >= len(argv):
+            raise SystemExit("--repo 需要跟仓库路径")
+        repo = os.path.abspath(argv[i + 1])
+        argv = argv[:i] + argv[i + 2:]
+    as_json = "--json" in argv
+    quiet = "--quiet" in argv
+    for f in argv:
+        if f.startswith("--") and f not in ("--json", "--quiet"):
+            raise SystemExit("audit-worktrees 未知参数：%s（支持 --json/--quiet/--repo）" % f)
+    repo = _resolve_main_repo(repo)
+    viol, active = _audit_worktrees(repo)
+    if as_json:
+        print(json.dumps({"repo": repo, "active": active,
+                          "violations": viol, "ok": not viol,
+                          "rc": 1 if viol else 0}, ensure_ascii=False, indent=1))
+        return 1 if viol else 0
+    if not quiet:
+        print("== devtask audit-worktrees（W2-3）==")
+        print("仓库：%s" % repo)
+        print("active（doing/review）= %d；违规 = %d" % (active, len(viol)))
+        for v in viol:
+            miss = {"dir": "目录缺失", "registered": "未在 git worktree list 在册",
+                    "branch": "分支缺失"}.get
+            reasons = "、".join(miss(k, k) for k in v["missing"])
+            print("  [VIOL] %-42s status=%-6s owner=%-10s %s"
+                  % (v["tid"], v["status"], v["owner"], reasons))
+            print("         期望：%s（分支 %s）" % (v["dir"], v["branch"]))
+            print("         修法：devtask.py new %s 重建 worktree，或 devtask.py drop %s 收口"
+                  % (v["tid"], v["tid"]))
+    if viol:
+        print("汇总：FAIL —— %d 张 active 单无 worktree/分支（只读校验，未修改任何 worktree）"
+              % len(viol))
+        return 1
+    print("汇总：PASS —— active 单全部具备 worktree + 分支")
+    return 0
+
 
 
 def cmd_port(name):
@@ -2622,6 +2782,7 @@ def main():
             "merge": lambda: cmd_merge(*rest),
             "drop": lambda: cmd_drop(*rest),
             "prune": lambda: cmd_prune(*rest),
+            "audit-worktrees": lambda: cmd_audit_worktrees(*rest),
             "sandbox": lambda: cmd_sandbox(*rest),
             "board": cmd_board}[c]()
 

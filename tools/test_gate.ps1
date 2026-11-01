@@ -508,6 +508,50 @@ try {
         }
     }
 
+    # ===== 2026-11-01 WO-GATE-WTCHECK-20261031：W2-3 worktree 校验门（阻断，fast/all）=====
+    # 规则：doing/review 单必须有 .worktrees/<TID> 目录 + task/<TID> 分支。
+    # 调用 `devtask.py audit-worktrees`：只读、内置 _resolve_main_repo（在任务 worktree
+    # 内跑时自动经 git-common-dir 解析主仓并读主仓 tasks.json，不依赖调用 cwd）。
+    # rc!=0（存在无 worktree/分支的 active 单）→ newFailures++ 阻断；缺脚本/执行异常
+    # fail-closed（不假绿）。实测耗时 <0.5s。
+    if ($Suite -in @('fast', 'all')) {
+        $wtTool = Join-Path $repo 'tools\devtask.py'
+        $wlog = Join-Path $env:TEMP "test_gate_wtcheck_$ts.log"
+        if (Test-Path -LiteralPath $wtTool) {
+            $wsw = [System.Diagnostics.Stopwatch]::StartNew()
+            python -X utf8 $wtTool audit-worktrees *> $wlog
+            $wrc = $LASTEXITCODE
+            $wsw.Stop()
+            $wsecs = [math]::Round($wsw.Elapsed.TotalSeconds, 2)
+            $wpass = ($wrc -eq 0) -and (Test-Path -LiteralPath $wlog)
+            $wsum = ''
+            if (Test-Path -LiteralPath $wlog) {
+                $wline = Get-Content -LiteralPath $wlog -Encoding UTF8 | Select-String -Pattern '汇总：' | Select-Object -Last 1
+                if ($wline) { $wsum = ([string]$wline).Trim() }
+            }
+            if (-not $wpass) {
+                $newFailures++
+                Write-Host "[wtcheck] W2-3 违规/执行异常 → 判失败（rc=$wrc，日志 $wlog）" -ForegroundColor Red
+                if (Test-Path -LiteralPath $wlog) {
+                    Get-Content -LiteralPath $wlog -Encoding UTF8 | Select-Object -First 12 | ForEach-Object { Write-Host "  | $_" }
+                }
+            } else {
+                if (-not $wsum) { $wsum = 'active 单 worktree/分支齐全' }
+                Write-Host "[wtcheck] PASS：$wsum [${wsecs}s]" -ForegroundColor Green
+            }
+            $summary += [pscustomobject]@{
+                Suite = 'wtcheck'; Rc = $wrc; Failed = 0; Known = 0
+                New = $(if ($wpass) { 0 } else { 1 }); Seconds = $wsecs; Log = $wlog
+            }
+        } else {
+            $newFailures++
+            Write-Host "[wtcheck] ✗ 缺 tools/devtask.py → 判失败（fail-closed，不假绿）" -ForegroundColor Red
+            $summary += [pscustomobject]@{
+                Suite = 'wtcheck'; Rc = -1; Failed = 0; Known = 0; New = 1; Seconds = 0; Log = ''
+            }
+        }
+    }
+
     # ===== 2026-10-31 K-ORG-20261031-ORGGATEWIRE：org 模型一致性 gate（warn-only）=====
     # 当前 fail=6/warn=10/info=42 是真实配置债（等 W4 决策后再 strict），故 **warn-only**：
     # 只调用 --json、记录 fail/warn/info 到汇总/日志，绝不 newFailures++（不阻断门禁）。

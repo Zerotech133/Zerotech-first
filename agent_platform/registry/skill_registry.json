@@ -288,6 +288,69 @@
       "title": "战法规格库（24 YAML 校验/查询）",
       "ref": "tools/research/strategy_specs.py",
       "enabled": true
+    },
+    {
+      "id": "book_batch_test",
+      "kind": "tool",
+      "title": "量学战法批量四关初筛",
+      "ref": "tools/research/book_batch_test.py",
+      "enabled": true
+    },
+    {
+      "id": "factor_validate",
+      "kind": "tool",
+      "title": "因子独立验证（中性化/walk-forward/成本）",
+      "ref": "tools/research/factor_validate.py",
+      "enabled": true
+    },
+    {
+      "id": "report_panel",
+      "kind": "tool",
+      "title": "多智能体研报评审面板",
+      "ref": "tools/research/report_panel.py",
+      "enabled": true
+    },
+    {
+      "id": "lowturn_freq_validate",
+      "kind": "tool",
+      "title": "低频/成本优化因子验证",
+      "ref": "tools/research/lowturn_freq_validate.py",
+      "enabled": true
+    },
+    {
+      "id": "reverse_avoid_test",
+      "kind": "tool",
+      "title": "量学反向信号规避组合测试",
+      "ref": "tools/research/reverse_avoid_test.py",
+      "enabled": true
+    },
+    {
+      "id": "report_panel_v2",
+      "kind": "tool",
+      "title": "研报多智能体评审 v2（交叉+页码）",
+      "ref": "tools/research/report_panel_v2.py",
+      "enabled": true
+    },
+    {
+      "id": "lowturn_attribution",
+      "kind": "tool",
+      "title": "低换手因子逐年/regime 归因",
+      "ref": "tools/research/lowturn_attribution.py",
+      "enabled": true
+    },
+    {
+      "id": "lx20_avoid_rule",
+      "kind": "tool",
+      "title": "LX20 规避规则可执行性验证",
+      "ref": "tools/research/lx20_avoid_rule.py",
+      "enabled": true
+    },
+    {
+      "id": "report_panel_v3",
+      "kind": "tool",
+      "title": "研报评审面板 v3（精确页码+复核清单）",
+      "ref": "tools/research/report_panel_v3.py",
+      "enabled": true
     }
   ]
 }
