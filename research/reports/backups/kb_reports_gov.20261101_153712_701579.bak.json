@@ -1,0 +1,19 @@
+{
+ "generated_at": "2026-11-01T15:37:12+08:00",
+ "path": "C:\\Users\\t\\AppData\\Local\\Temp\\pytest-of-t\\pytest-13398\\test_regression_kb_reports_gov0\\no_reports",
+ "docs": 0,
+ "pages": 0,
+ "units": 0,
+ "tables": 0,
+ "spotcheck": {},
+ "rag": {
+  "docs": 112,
+  "records": 0,
+  "version": null
+ },
+ "next_steps": [
+  "研报知识单元接入 Agent 工具（kb_reports_search）",
+  "每日学习卡（learning_cards）从知识单元生成",
+  "抽样 20 条知识单元人工对照原文"
+ ]
+}

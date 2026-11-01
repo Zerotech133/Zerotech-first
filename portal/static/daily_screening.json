@@ -1,0 +1,329 @@
+{
+ "schema_version": "daily_screening_portal.v1",
+ "kind": "daily_screening",
+ "date": "20261030",
+ "generated_at": "2026-11-01T22:43:32+08:00",
+ "summary": {
+  "input": 5571,
+  "eligible_after_S01": 2583,
+  "s02_top": 30,
+  "h18_events": 20,
+  "pinxue_union": 4437,
+  "rs_mode": "C",
+  "rs_pass": 35,
+  "rs_intersection": 18
+ },
+ "s02_top": [
+  {
+   "ts_code": "600825.SH",
+   "name": "新华传媒",
+   "industry": "出版业",
+   "score": 2.82
+  },
+  {
+   "ts_code": "688018.SH",
+   "name": "乐鑫科技",
+   "industry": "半导体",
+   "score": 1.1202
+  },
+  {
+   "ts_code": "300832.SZ",
+   "name": "新产业",
+   "industry": "医疗保健",
+   "score": 1.1126
+  },
+  {
+   "ts_code": "688787.SH",
+   "name": "海天瑞声",
+   "industry": "软件服务",
+   "score": 1.0633
+  },
+  {
+   "ts_code": "920982.BJ",
+   "name": "锦波生物",
+   "industry": "医疗保健",
+   "score": 1.0264
+  },
+  {
+   "ts_code": "003021.SZ",
+   "name": "兆威机电",
+   "industry": "元器件",
+   "score": 1.0263
+  },
+  {
+   "ts_code": "300760.SZ",
+   "name": "迈瑞医疗",
+   "industry": "医疗保健",
+   "score": 0.9882
+  },
+  {
+   "ts_code": "601857.SH",
+   "name": "中国石油",
+   "industry": "石油开采",
+   "score": 0.9786
+  },
+  {
+   "ts_code": "600329.SH",
+   "name": "达仁堂",
+   "industry": "中成药",
+   "score": 0.9679
+  },
+  {
+   "ts_code": "600573.SH",
+   "name": "惠泉啤酒",
+   "industry": "啤酒",
+   "score": 0.9643
+  }
+ ],
+ "rs_intersection": [
+  {
+   "ts_code": "601083.SH",
+   "name": "锦江航运",
+   "industry": "水运",
+   "pct_chg": 10.0316,
+   "board_pct_chg": 1.8261,
+   "excess_pp": 8.2055,
+   "rs_flag": "C",
+   "signals": [
+    "LX22_凹口淘金"
+   ]
+  },
+  {
+   "ts_code": "601919.SH",
+   "name": "中远海控",
+   "industry": "水运",
+   "pct_chg": 7.0186,
+   "board_pct_chg": 1.8261,
+   "excess_pp": 5.1925,
+   "rs_flag": "C",
+   "signals": [
+    "LX22_凹口淘金"
+   ]
+  },
+  {
+   "ts_code": "000995.SZ",
+   "name": "皇台酒业",
+   "industry": "白酒",
+   "pct_chg": 10.0078,
+   "board_pct_chg": 5.2748,
+   "excess_pp": 4.733,
+   "rs_flag": "C",
+   "signals": [
+    "LX22_凹口淘金"
+   ]
+  },
+  {
+   "ts_code": "000596.SZ",
+   "name": "古井贡酒",
+   "industry": "白酒",
+   "pct_chg": 10.0,
+   "board_pct_chg": 5.2748,
+   "excess_pp": 4.7252,
+   "rs_flag": "C",
+   "signals": [
+    "LX20_牛股三绝",
+    "LX22_凹口淘金"
+   ]
+  },
+  {
+   "ts_code": "920571.BJ",
+   "name": "国航远洋",
+   "industry": "水运",
+   "pct_chg": 4.7503,
+   "board_pct_chg": 1.8261,
+   "excess_pp": 2.9242,
+   "rs_flag": "C",
+   "signals": [
+    "LX22_凹口淘金"
+   ]
+  },
+  {
+   "ts_code": "001872.SZ",
+   "name": "招商港口",
+   "industry": "港口",
+   "pct_chg": 3.8604,
+   "board_pct_chg": 1.0902,
+   "excess_pp": 2.7702,
+   "rs_flag": "C",
+   "signals": [
+    "LX22_凹口淘金"
+   ]
+  },
+  {
+   "ts_code": "600809.SH",
+   "name": "山西汾酒",
+   "industry": "白酒",
+   "pct_chg": 7.7573,
+   "board_pct_chg": 5.2748,
+   "excess_pp": 2.4825,
+   "rs_flag": "C",
+   "signals": [
+    "LX22_凹口淘金"
+   ]
+  },
+  {
+   "ts_code": "000520.SZ",
+   "name": "凤凰航运",
+   "industry": "水运",
+   "pct_chg": 3.5503,
+   "board_pct_chg": 1.8261,
+   "excess_pp": 1.7242,
+   "rs_flag": "C",
+   "signals": [
+    "LX22_凹口淘金"
+   ]
+  },
+  {
+   "ts_code": "000860.SZ",
+   "name": "顺鑫农业",
+   "industry": "白酒",
+   "pct_chg": 6.8934,
+   "board_pct_chg": 5.2748,
+   "excess_pp": 1.6186,
+   "rs_flag": "C",
+   "signals": [
+    "LX20_牛股三绝"
+   ]
+  },
+  {
+   "ts_code": "601872.SH",
+   "name": "招商轮船",
+   "industry": "水运",
+   "pct_chg": 3.025,
+   "board_pct_chg": 1.8261,
+   "excess_pp": 1.1989,
+   "rs_flag": "C",
+   "signals": [
+    "LX22_凹口淘金"
+   ]
+  },
+  {
+   "ts_code": "603919.SH",
+   "name": "金徽酒",
+   "industry": "白酒",
+   "pct_chg": 6.4537,
+   "board_pct_chg": 5.2748,
+   "excess_pp": 1.1789,
+   "rs_flag": "C",
+   "signals": [
+    "LX22_凹口淘金"
+   ]
+  },
+  {
+   "ts_code": "600702.SH",
+   "name": "舍得酒业",
+   "industry": "白酒",
+   "pct_chg": 6.0323,
+   "board_pct_chg": 5.2748,
+   "excess_pp": 0.7575,
+   "rs_flag": "C",
+   "signals": [
+    "LX22_凹口淘金"
+   ]
+  },
+  {
+   "ts_code": "603209.SH",
+   "name": "兴通股份",
+   "industry": "水运",
+   "pct_chg": 2.1862,
+   "board_pct_chg": 1.8261,
+   "excess_pp": 0.3601,
+   "rs_flag": "C",
+   "signals": [
+    "LX22_凹口淘金"
+   ]
+  },
+  {
+   "ts_code": "603162.SH",
+   "name": "海通发展",
+   "industry": "水运",
+   "pct_chg": 2.0873,
+   "board_pct_chg": 1.8261,
+   "excess_pp": 0.2612,
+   "rs_flag": "C",
+   "signals": [
+    "LX22_凹口淘金"
+   ]
+  },
+  {
+   "ts_code": "601022.SH",
+   "name": "宁波远洋",
+   "industry": "水运",
+   "pct_chg": 1.845,
+   "board_pct_chg": 1.8261,
+   "excess_pp": 0.0189,
+   "rs_flag": "C",
+   "signals": [
+    "LX22_凹口淘金"
+   ]
+  },
+  {
+   "ts_code": "000858.SZ",
+   "name": "五粮液",
+   "industry": "白酒",
+   "pct_chg": 3.3481,
+   "board_pct_chg": 5.2748,
+   "excess_pp": -1.9267,
+   "rs_flag": "C",
+   "signals": [
+    "LX20_牛股三绝"
+   ]
+  },
+  {
+   "ts_code": "600779.SH",
+   "name": "水井坊",
+   "industry": "白酒",
+   "pct_chg": 3.1893,
+   "board_pct_chg": 5.2748,
+   "excess_pp": -2.0855,
+   "rs_flag": "C",
+   "signals": [
+    "LX22_凹口淘金"
+   ]
+  },
+  {
+   "ts_code": "000799.SZ",
+   "name": "酒鬼酒",
+   "industry": "白酒",
+   "pct_chg": 3.0095,
+   "board_pct_chg": 5.2748,
+   "excess_pp": -2.2653,
+   "rs_flag": "C",
+   "signals": [
+    "LX22_凹口淘金"
+   ]
+  }
+ ],
+ "boards_top": [
+  {
+   "industry": "白酒",
+   "pct_chg": 5.2748,
+   "n": 19
+  },
+  {
+   "industry": "水运",
+   "pct_chg": 1.8261,
+   "n": 19
+  },
+  {
+   "industry": "港口",
+   "pct_chg": 1.0902,
+   "n": 15
+  },
+  {
+   "industry": "酒店餐饮",
+   "pct_chg": 0.9794,
+   "n": 9
+  },
+  {
+   "industry": "电器连锁",
+   "pct_chg": 0.8827,
+   "n": 2
+  }
+ ],
+ "boundary_notes": [
+  "S02 已暂停、S05 已关闭；量学信号为反向/规避研究线索，不可直接用于 S01 大市值组合。",
+  "RS overlay：板块=行业等权当日涨幅（pct_chg 百分比数值）；A/B/C 口径见文档。"
+ ],
+ "disclaimer": "研究输出，不构成投资建议；S02/S05 已暂停/关闭，RS 仅为当日相对强度。"
+}

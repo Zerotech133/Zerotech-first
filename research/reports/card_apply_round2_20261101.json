@@ -1,0 +1,284 @@
+{
+ "schema_version": 1,
+ "date": "20261101",
+ "generated_at": "2026-11-01T22:43:32+08:00",
+ "task": "task-99 执行 100 卡 apply+merge（用户已授权）",
+ "applied": true,
+ "mode": {
+  "dry_run": "decide --checklist v2（不写）",
+  "apply": "更新 v2 清单",
+  "merge": "合并 approved 53 到学习卡"
+ },
+ "code_change": {
+  "path": "tools/kb_corpus/card_review.py",
+  "sha_before": "18df33731f5c3a46d71cf4db1e693c44551de4bf3590d020679eee9222a739e7",
+  "sha_after": "18df33731f5c3a46d71cf4db1e693c44551de4bf3590d020679eee9222a739e7",
+  "changed_now": false,
+  "change": "validate_checklist source 允许 (\"AE\",\"AV\",\"CP3\")（仅扩展，旧路径 AE/AV 不变）"
+ },
+ "checklist": {
+  "v1": {
+   "path": "C:\\项目\\老田的AI助手\\research\\reports\\card_review_checklist_20261101.json",
+   "entries": 60,
+   "sha256_before": "2c82091d06b3e4f03cf8f9f9d215dff6d2649b3fa0534ee23f3f527feb9bd2df",
+   "sha256_after": "2c82091d06b3e4f03cf8f9f9d215dff6d2649b3fa0534ee23f3f527feb9bd2df",
+   "unchanged": true
+  },
+  "v2": {
+   "path": "C:\\项目\\老田的AI助手\\research\\reports\\card_review_checklist_20261101_v2.json",
+   "entries": 100,
+   "by_source": {
+    "AE": 20,
+    "AV": 40,
+    "CP3": 40
+   },
+   "sha256": "2a2789650560d2776e6f76c5892d3b027440c4d7fce1f5231064d3d83d158b0d",
+   "decision_stats": {
+    "total": 100,
+    "pass": 53,
+    "revise": 45,
+    "reject": 2,
+    "pending": 0,
+    "decided": 100,
+    "decided_at": "2026-11-01T22:43:32+08:00"
+   }
+  }
+ },
+ "decisions": {
+  "path": "C:\\项目\\老田的AI助手\\research\\reports\\card_review_decisions_suggested_round2_20261101.json",
+  "sha256": "2fe07b688f252669e5d0c64be8735db77a3343847136bd44af14bb1f62bd3c22",
+  "summary": {
+   "total": 100,
+   "pass": 53,
+   "revise": 45,
+   "reject": 2
+  }
+ },
+ "dry_run": {
+  "ok": true,
+  "decisions_count": 100,
+  "decision_stats": {
+   "total": 100,
+   "pass": 53,
+   "revise": 45,
+   "reject": 2,
+   "pending": 0,
+   "decided": 100,
+   "decided_at": "2026-11-01T22:43:32+08:00"
+  },
+  "approved_cards": 53,
+  "base_cards": 88,
+  "plan_stats": {
+   "base_cards": 88,
+   "proposal_cards": 53,
+   "approved": 53,
+   "would_add": 17,
+   "skipped_total": 36,
+   "skipped_not_reviewed": 0,
+   "skipped_rejected": 0,
+   "skipped_needs_revision": 0,
+   "skipped_concept_exists": 36,
+   "skipped_duplicate_in_batch": 0,
+   "resulting_cards": 105
+  },
+  "validation": {
+   "ok": true,
+   "errors": []
+  },
+  "no_write_during_dry_run": true
+ },
+ "apply": {
+  "ok": true,
+  "checklist_out": "C:\\项目\\老田的AI助手\\research\\reports\\card_review_checklist_20261101_v2.json",
+  "decision_stats": {
+   "total": 100,
+   "pass": 53,
+   "revise": 45,
+   "reject": 2,
+   "pending": 0,
+   "decided": 100,
+   "decided_at": "2026-11-01T22:43:32+08:00"
+  }
+ },
+ "merge": {
+  "ok": true,
+  "approved": 53,
+  "base_cards_before": 88,
+  "cards_after": 105,
+  "added": 17,
+  "plan_stats": {
+   "base_cards": 88,
+   "proposal_cards": 53,
+   "approved": 53,
+   "would_add": 17,
+   "skipped_total": 36,
+   "skipped_not_reviewed": 0,
+   "skipped_rejected": 0,
+   "skipped_needs_revision": 0,
+   "skipped_concept_exists": 36,
+   "skipped_duplicate_in_batch": 0,
+   "resulting_cards": 105
+  },
+  "inserted": [
+   {
+    "review_id": "CP3-20261101-001",
+    "theme": "化工/材料",
+    "concept": "PTFE材料路线"
+   },
+   {
+    "review_id": "CP3-20261101-002",
+    "theme": "化工/材料",
+    "concept": "球形硅微粉"
+   },
+   {
+    "review_id": "CP3-20261101-004",
+    "theme": "评级/研报方法论",
+    "concept": "恒生科技指数估值"
+   },
+   {
+    "review_id": "CP3-20261101-007",
+    "theme": "金融/地产",
+    "concept": "中小行配债增速回落"
+   },
+   {
+    "review_id": "CP3-20261101-008",
+    "theme": "金融/地产",
+    "concept": "房地产行业板块表现"
+   },
+   {
+    "review_id": "CP3-20261101-013",
+    "theme": "军工/航天",
+    "concept": "无人驾驶航空器贸易分类"
+   },
+   {
+    "review_id": "CP3-20261101-015",
+    "theme": "机械/制造",
+    "concept": "工业机器人产品分类"
+   },
+   {
+    "review_id": "CP3-20261101-023",
+    "theme": "网络安全/信创",
+    "concept": "网络安全人员工作压力"
+   },
+   {
+    "review_id": "CP3-20261101-024",
+    "theme": "有色/金属",
+    "concept": "稀土价格分化"
+   },
+   {
+    "review_id": "CP3-20261101-031",
+    "theme": "建筑/建材",
+    "concept": "建筑领域电气化与低碳转型"
+   },
+   {
+    "review_id": "CP3-20261101-032",
+    "theme": "通信/互联网",
+    "concept": "国防军工行业投资建议"
+   },
+   {
+    "review_id": "CP3-20261101-033",
+    "theme": "量学/交易",
+    "concept": "精准线伏击"
+   },
+   {
+    "review_id": "CP3-20261101-035",
+    "theme": "量学/交易",
+    "concept": "量学理论"
+   },
+   {
+    "review_id": "CP3-20261101-036",
+    "theme": "新能源/电力",
+    "concept": "光伏成本核算新规"
+   },
+   {
+    "review_id": "CP3-20261101-037",
+    "theme": "新能源/电力",
+    "concept": "亿纬锂能与 Fluence 战略合作"
+   },
+   {
+    "review_id": "CP3-20261101-038",
+    "theme": "新能源/电力",
+    "concept": "光伏行业供给出清"
+   },
+   {
+    "review_id": "CP3-20261101-040",
+    "theme": "其他",
+    "concept": "中小行配债中枢趋势下移"
+   }
+  ],
+  "skipped_existing": 36,
+  "post_write_validation": {
+   "ok": true,
+   "errors": []
+  },
+  "merged_out": "C:\\项目\\老田的AI助手\\portal\\static\\kb_learning_cards.json",
+  "backup": "C:\\项目\\老田的AI助手\\research\\reports\\backups\\kb_learning_cards.20261101_224332.bak.json"
+ },
+ "validation": {
+  "cards_total": 105,
+  "dup_concepts_before": [
+   [
+    "涨停密码",
+    2
+   ]
+  ],
+  "dup_concepts_after": [
+   [
+    "涨停密码",
+    2
+   ]
+  ],
+  "new_duplicates": [],
+  "no_new_duplicates": true,
+  "cards_sha_after": "3217902118282e231d77ea03e5bb7724fa2169bb125749d137c2499f6c24a2b6"
+ },
+ "backups": {
+  "cards_pre": {
+   "path": "C:\\项目\\老田的AI助手\\research\\reports\\backups\\kb_learning_cards.20261101_224332.pre_round2.bak.json",
+   "sha256": "01a3a954927ad7253a6ca8db7256684624cac6321c243dfb0bfed2c822f9092d",
+   "cards": 88
+  },
+  "checklist_v1": {
+   "path": "C:\\项目\\老田的AI助手\\research\\reports\\backups\\card_review_checklist_20261101_v1.20261101_224332.bak.json",
+   "sha256": "2c82091d06b3e4f03cf8f9f9d215dff6d2649b3fa0534ee23f3f527feb9bd2df",
+   "entries": 60
+  },
+  "merge_backup": {
+   "path": "C:\\项目\\老田的AI助手\\research\\reports\\backups\\kb_learning_cards.20261101_224332.bak.json",
+   "sha256": "01a3a954927ad7253a6ca8db7256684624cac6321c243dfb0bfed2c822f9092d"
+  }
+ },
+ "digest": {
+  "rc": 0,
+  "output_tail": "生成成功：C:\\项目\\老田的AI助手\\portal\\static\\kb_learning_digest.json | date=20261101 | cards=5 | highlights=5 | points=10\n",
+  "path": "C:\\项目\\老田的AI助手\\portal\\static\\kb_learning_digest.json",
+  "sha256": "aa7c4d318ec6b100ea7023b99e73ed61f3dfded6cf40ae0a49ed29653cd57017"
+ },
+ "http": {
+  "kb_learning_cards": {
+   "status": 200,
+   "bytes": 84658
+  },
+  "kb_learning_digest": {
+   "status": 200,
+   "bytes": 10393
+  },
+  "kb_reports_page": {
+   "status": 200,
+   "bytes": 33828
+  }
+ },
+ "rollback": {
+  "cards": "copy /Y \"C:\\项目\\老田的AI助手\\research\\reports\\backups\\kb_learning_cards.20261101_224332.pre_round2.bak.json\" \"C:\\项目\\老田的AI助手\\portal\\static\\kb_learning_cards.json\" 然后重跑 learning_digest.py run",
+  "checklist_v1": "copy /Y \"C:\\项目\\老田的AI助手\\research\\reports\\backups\\card_review_checklist_20261101_v1.20261101_224332.bak.json\" \"C:\\项目\\老田的AI助手\\research\\reports\\card_review_checklist_20261101.json\"",
+  "code": "git checkout -- tools/kb_corpus/card_review.py（小改为 CP3 source 白名单；按仓库纪律审批）"
+ },
+ "actual_numbers": {
+  "decisions": 100,
+  "approved": 53,
+  "base_cards_before": 88,
+  "cards_after": 105,
+  "added": 17
+ },
+ "disclaimer": "本次为用户授权执行的学习卡合并操作；回滚路径见 backups/rollback；不构成投资建议。"
+}

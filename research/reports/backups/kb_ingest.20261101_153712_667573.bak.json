@@ -1,0 +1,36 @@
+{
+ "generated_at": "2026-11-01T15:37:12+08:00",
+ "classics": {
+  "docs": 0,
+  "units": 0
+ },
+ "ingest_dirs": [],
+ "books": [],
+ "totals": {
+  "books": 0,
+  "pages": 0,
+  "chapters": 0,
+  "units": 0
+ },
+ "verify": {
+  "ok": true,
+  "books": {}
+ },
+ "pipeline": {
+  "ok": false,
+  "next_steps": []
+ },
+ "rag": {
+  "docs": 0,
+  "records": 0,
+  "version": null,
+  "updated_at": null
+ },
+ "thresholds": {
+  "ocr_chars_per_page_min": 100,
+  "page_coverage_min": 0.95,
+  "chapters_min": 5,
+  "units_min": 10,
+  "citation_rate_min": 1.0
+ }
+}

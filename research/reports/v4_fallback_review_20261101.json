@@ -1,0 +1,227 @@
+{
+ "schema_version": 1,
+ "kind": "v4_fallback_review",
+ "generated_at": "2026-11-01T22:43:23+0800",
+ "source": {
+  "recheck_json": "research/reports/kb_qa_v4_default_recheck_20261101.json",
+  "history_json": "research/reports/kb_qa_multi_ab50_20261101.json",
+  "bank_json": "research/reports/kb_qa_bank_v3_20261101.json"
+ },
+ "note": "不调 LLM、不改代码；基于已持久化指标与历史对照做人工可审清单（原答案原文未持久化，已如实标注）",
+ "summary": {
+  "total_fallback": 3,
+  "fallback_ratio_of_recheck": 0.15,
+  "guard_issues_breakdown": {
+   "insufficient_cited_units": 3
+  },
+  "all_single_cited_unit": true,
+  "all_resolvable": true,
+  "inference_ratios": [
+   0.5,
+   0.5,
+   0.6
+  ],
+  "verdict_counts": {
+   "acceptable": 1,
+   "fix_prompt": 2,
+   "fix_guard": 0
+  },
+  "recommendation": [
+   "2/3 条（q2_1595bd5290、q2_b74f8cebda）历史 v1 multi 已能给出 ≥3 引用，说明材料可支撑多单元；v4 只引 1 单元 → 在 prompt v4 增加「答案完成后自检：引用单元是否 ≥2，不足则补引/重试」或接入引用自检重试。",
+   "1/3 条（q2_a4f5637316）历史 v1 亦拒答，问题近似单源材料；建议对「无多单元证据」的类别放宽 guard（MIN_DISTINCT_UNITS 或允许单源+披露），否则该类问题必然 fallback。",
+   "所有 3 条 fallback 的引用均可解析（resolvable=1.0）、支撑率 1.0、推断比例 ≤0.6，说明 fallback 本身安全（无幻觉扩散），不构成回退 v4 的理由。"
+  ]
+ },
+ "samples": [
+  {
+   "id": "q2_1595bd5290",
+   "question": "区域收入分化的核心结论与主要依据是什么？",
+   "category": "是什么",
+   "theme": "金融/资本市场",
+   "question_context": {
+    "claim_snippet": "耐克 FY2027Q1 各地区收入表现分化，北美同比增长 2%，而大中华区收入大幅下降 22%（不变汇率口径下降 26%），成为主要拖累。",
+    "claim_coverage": 0.8333,
+    "source_unit_id": "06025df5facb",
+    "book": "rp_AP202610071830182733",
+    "chapter": "耐克FY2027Q1 收入下降4%，仓储及物流成本下降带动毛利率改善",
+    "pages": [
+     1,
+     7
+    ],
+    "difficulty_proxy": "medium"
+   },
+   "v4_raw": {
+    "status": "fallback",
+    "answer_length": 193,
+    "answerable": true,
+    "citations": 1,
+    "distinct_cited_units": 1,
+    "citation_resolvable_rate": 1.0,
+    "support_rate": 1.0,
+    "inference_ratio": 0.5,
+    "guard_issues": [
+     "insufficient_cited_units"
+    ],
+    "guard_action": "fallback",
+    "elapsed_seconds": 30.14,
+    "prompt_version": "v4",
+    "guard_marker_mode": "segment"
+   },
+   "history_v1_multi": {
+    "source": "kb_qa_multi_ab50_20261101.json(multi 臂)",
+    "status": "success",
+    "success": true,
+    "citations": 3,
+    "answer_length": 492,
+    "answer_type": "answer",
+    "refusal": false
+   },
+   "review_checklist": {
+    "original_multi_answer": "原文未持久化（仅 answer_length=193）；历史 v1 multi：success/引用 3/长度 492，作对照参考",
+    "guard_fallback_excerpt": "原文未持久化；按 guard fallback 规则 = 「（质量守卫回退：…）」前缀 + 可解析引用摘录（本样本 1 条可解析引用，resolvable=1.0）",
+    "citation_support": "引用 1 条 / 去重单元 1 个，可解析率 1.0、支撑率 1.0；低于「≥2 单元」要求 → 拦截合理",
+    "inference_ratio_assessment": "推断比例 0.5 ≤ guard 阈值 0.7，未触发 inference_heavy；不通过主因是引用单元数",
+    "info_loss": "高：原答案 193-220 字被替换为单条摘录；对比历史 v1 multi 492 字/引用 3，信息密度明显下降",
+    "info_loss_level": "high"
+   },
+   "verdict": {
+    "acceptable": false,
+    "fix_prompt": true,
+    "fix_guard": false,
+    "primary": "fix_prompt",
+    "reason": "历史 v1 multi 曾成功（≥3 引用/465-492 字），证明材料可支撑多单元；v4 本次只引 1 个单元 → prompt 的「≥2 单元」约束未被模型落实，需强化 prompt/加自检重试",
+    "checkbox": "☐可接受（fallback 合理）/☑需改 prompt/☐需改 guard"
+   }
+  },
+  {
+   "id": "q2_b74f8cebda",
+   "question": "计算机行业板块表现的验证方式与观测窗口是什么？",
+   "category": "如何识别",
+   "theme": "其他/综合",
+   "question_context": {
+    "claim_snippet": "上周（9.21-9.24）计算机（申万）板块下跌 0.51%，跑赢沪深 300 指数 1.01 个百分点，涨幅排名申万其他行业第 11 位。",
+    "claim_coverage": 0.7778,
+    "source_unit_id": "4e5135f9a479",
+    "book": "rp_AP202610021830105367",
+    "chapter": "市场研究部 2026 年9 月28 日",
+    "pages": [
+     1,
+     8
+    ],
+    "difficulty_proxy": "hard"
+   },
+   "v4_raw": {
+    "status": "fallback",
+    "answer_length": 220,
+    "answerable": true,
+    "citations": 1,
+    "distinct_cited_units": 1,
+    "citation_resolvable_rate": 1.0,
+    "support_rate": 1.0,
+    "inference_ratio": 0.5,
+    "guard_issues": [
+     "insufficient_cited_units"
+    ],
+    "guard_action": "fallback",
+    "elapsed_seconds": 36.83,
+    "prompt_version": "v4",
+    "guard_marker_mode": "segment"
+   },
+   "history_v1_multi": {
+    "source": "kb_qa_multi_ab50_20261101.json(multi 臂)",
+    "status": "success",
+    "success": true,
+    "citations": 3,
+    "answer_length": 465,
+    "answer_type": "direct_fact",
+    "refusal": false
+   },
+   "review_checklist": {
+    "original_multi_answer": "原文未持久化（仅 answer_length=220）；历史 v1 multi：success/引用 3/长度 465，作对照参考",
+    "guard_fallback_excerpt": "原文未持久化；按 guard fallback 规则 = 「（质量守卫回退：…）」前缀 + 可解析引用摘录（本样本 1 条可解析引用，resolvable=1.0）",
+    "citation_support": "引用 1 条 / 去重单元 1 个，可解析率 1.0、支撑率 1.0；低于「≥2 单元」要求 → 拦截合理",
+    "inference_ratio_assessment": "推断比例 0.5 ≤ guard 阈值 0.7，未触发 inference_heavy；不通过主因是引用单元数",
+    "info_loss": "高：原答案 193-220 字被替换为单条摘录；对比历史 v1 multi 465 字/引用 3，信息密度明显下降",
+    "info_loss_level": "high"
+   },
+   "verdict": {
+    "acceptable": false,
+    "fix_prompt": true,
+    "fix_guard": false,
+    "primary": "fix_prompt",
+    "reason": "历史 v1 multi 曾成功（≥3 引用/465-492 字），证明材料可支撑多单元；v4 本次只引 1 个单元 → prompt 的「≥2 单元」约束未被模型落实，需强化 prompt/加自检重试",
+    "checkbox": "☐可接受（fallback 合理）/☑需改 prompt/☐需改 guard"
+   }
+  },
+  {
+   "id": "q2_a4f5637316",
+   "question": "宁夏新能源发展目标的竞争格局与主要参与者有哪些？",
+   "category": "竞争格局",
+   "theme": "新能源/电池",
+   "question_context": {
+    "claim_snippet": "根据宁夏回族自治区印发的《美丽宁夏建设“十五五”规划》，力争到“十五五”期末新能源装机规模突破 1 亿千瓦，并大力发展分布式光伏及氢能等可再生能源。",
+    "claim_coverage": 0.7778,
+    "source_unit_id": "6ee3bdfa28fe",
+    "book": "rp_AP202610021830105330",
+    "chapter": "市场研究部 2026 年9 月22 日",
+    "pages": [
+     1,
+     9
+    ],
+    "difficulty_proxy": "hard"
+   },
+   "v4_raw": {
+    "status": "fallback",
+    "answer_length": 220,
+    "answerable": true,
+    "citations": 1,
+    "distinct_cited_units": 1,
+    "citation_resolvable_rate": 1.0,
+    "support_rate": 1.0,
+    "inference_ratio": 0.6,
+    "guard_issues": [
+     "insufficient_cited_units"
+    ],
+    "guard_action": "fallback",
+    "elapsed_seconds": 32.5,
+    "prompt_version": "v4",
+    "guard_marker_mode": "segment"
+   },
+   "history_v1_multi": {
+    "source": "kb_qa_multi_ab50_20261101.json(multi 臂)",
+    "status": "no_evidence",
+    "success": false,
+    "citations": 0,
+    "answer_length": 172,
+    "answer_type": "refusal",
+    "refusal": true
+   },
+   "review_checklist": {
+    "original_multi_answer": "原文未持久化（仅 answer_length=220）；历史 v1 multi：no_evidence/引用 0/长度 172，作对照参考",
+    "guard_fallback_excerpt": "原文未持久化；按 guard fallback 规则 = 「（质量守卫回退：…）」前缀 + 可解析引用摘录（本样本 1 条可解析引用，resolvable=1.0）",
+    "citation_support": "引用 1 条 / 去重单元 1 个，可解析率 1.0、支撑率 1.0；低于「≥2 单元」要求 → 拦截合理",
+    "inference_ratio_assessment": "推断比例 0.6 ≤ guard 阈值 0.7，未触发 inference_heavy；不通过主因是引用单元数",
+    "info_loss": "高：原答案 193-220 字被替换为单条摘录；对比历史 v1 multi 172 字/引用 0，信息密度明显下降",
+    "info_loss_level": "medium"
+   },
+   "verdict": {
+    "acceptable": true,
+    "fix_prompt": false,
+    "fix_guard": false,
+    "primary": "acceptable",
+    "reason": "历史 v1 multi 同为拒答/无多单元证据，本问题材料近似单源；v4 用 1 个可核验单元作答后被单元数门拦下，fallback 摘录可核验，属合理保守降级",
+    "checkbox": "☑可接受（fallback 合理）/☐需改 prompt/☐需改 guard"
+   }
+  }
+ ],
+ "default_impact": {
+  "verdict": "不影响 v4 默认稳定性（维持 v4）",
+  "rationale": "20 条复评中 fallback 仅 3 条（15%），全部为 insufficient_cited_units 单引用不足，引用可解析/支撑均为 1.0，无幻觉；其余 17 条（85%）可答且 guard 通过；3 条中 2 条可由 prompt 侧修复、1 条为单源问题。",
+  "action_items": [
+   "prompt v4 增加多单元自检/重试（2 条可修复）",
+   "评估单源问题的 guard 放宽策略（1 条）",
+   "后续复评持久化原答案文本（本次只能按长度/指标审）"
+  ]
+ },
+ "disclaimer": "人工可审清单仅供质量评审参考，不构成投资建议。"
+}

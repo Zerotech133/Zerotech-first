@@ -232,7 +232,7 @@ def validate_checklist(payload, *, expected_total: int | None = TOTAL_EXPECTED) 
         if sid in seen_source_ids:
             errors.append(f"entries[{i}] 源卡片重复: {sid}")
         seen_source_ids.add(sid)
-        if e.get("source") not in ("AE", "AV"):
+        if e.get("source") not in ("AE", "AV", "CP3"):
             errors.append(f"entries[{i}] source 非法: {e.get('source')!r}")
         if not str(e.get("unit_id") or ""):
             errors.append(f"entries[{i}] 缺 unit_id（不可追溯）")
