@@ -194,6 +194,7 @@ DOMAIN_NAV_GROUPS = {
             ("🃏 学习卡", "/kb_cards.html", "kbcards"),
             ("🧾 学习卡审核", "/card_review.html", "cardreview"),
             ("🛡 H14影子盘", "/h14_shadow.html", "h14shadow"),
+            ("🪞 影子盘总览", "/shadow.html", "shadow"),
             ("📅 每日筛选", "/screening.html", "screening"),
             ("📈 趋势模板选股", "/minervini.html", "minervini"),)),
         ("🪖 军团", (

@@ -1,0 +1,241 @@
+{
+ "generated_at": "2026-11-01T23:25:55+08:00",
+ "shadows": [
+  {
+   "id": "S08_mom120_long",
+   "status": "shadow_small_position",
+   "signal_date": "20261030",
+   "n": 50,
+   "capacity5_yi": null,
+   "tracking": {},
+   "next_rebalance": "2026-11-30（月末）",
+   "regime": null,
+   "holdings": [
+    {
+     "ts_code": "920227.BJ",
+     "name": "美登科技",
+     "score": 0.9992,
+     "w": 0.02,
+     "close": 50.19
+    },
+    {
+     "ts_code": "920047.BJ",
+     "name": "诺思兰德",
+     "score": 0.9989,
+     "w": 0.02,
+     "close": 12.76
+    },
+    {
+     "ts_code": "920427.BJ",
+     "name": "华维设计",
+     "score": 0.9939,
+     "w": 0.02,
+     "close": 11.69
+    },
+    {
+     "ts_code": "920957.BJ",
+     "name": "汉维科技",
+     "score": 0.9623,
+     "w": 0.02,
+     "close": 9.19
+    },
+    {
+     "ts_code": "920751.BJ",
+     "name": "惠同新材",
+     "score": 0.9592,
+     "w": 0.02,
+     "close": 13.91
+    },
+    {
+     "ts_code": "920892.BJ",
+     "name": "广咨国际",
+     "score": 0.9335,
+     "w": 0.02,
+     "close": 29.46
+    },
+    {
+     "ts_code": "920145.BJ",
+     "name": "恒合股份",
+     "score": 0.9268,
+     "w": 0.02,
+     "close": 8.62
+    },
+    {
+     "ts_code": "920656.BJ",
+     "name": "海昇药业",
+     "score": 0.9132,
+     "w": 0.02,
+     "close": 18.53
+    },
+    {
+     "ts_code": "920339.BJ",
+     "name": "恒太照明",
+     "score": 0.8446,
+     "w": 0.02,
+     "close": 10.32
+    },
+    {
+     "ts_code": "920242.BJ",
+     "name": "建邦科技",
+     "score": 0.8317,
+     "w": 0.02,
+     "close": 32.47
+    }
+   ],
+   "ledger": [],
+   "kind": "shadow",
+   "capacity_cap_yi": null
+  },
+  {
+   "id": "S11_mom120_regime",
+   "status": "shadow_observing_small",
+   "signal_date": "20261030",
+   "n": 20,
+   "capacity5_yi": 5.52,
+   "tracking": {
+    "since": "20261030",
+    "cur_ret_pct": 0.0,
+    "market_pct": 0.0,
+    "excess_pct": 0.0
+   },
+   "next_rebalance": "下一个月末（每月 1 日 08:30 检查 regime）",
+   "regime": {
+    "lookback": 60,
+    "threshold_pct": -2.0,
+    "market_ret_pct": -6.76,
+    "active": true
+   },
+   "holdings": [
+    {
+     "ts_code": "603778.SH",
+     "name": "国晟科技",
+     "score": 0.7574,
+     "w": 0.0952,
+     "close": 42.74
+    },
+    {
+     "ts_code": "688717.SH",
+     "name": "艾罗能源",
+     "score": 0.7222,
+     "w": 0.0905,
+     "close": 34.6
+    },
+    {
+     "ts_code": "300390.SZ",
+     "name": "天华新能",
+     "score": 0.7067,
+     "w": 0.0857,
+     "close": 310.35
+    },
+    {
+     "ts_code": "002240.SZ",
+     "name": "盛新锂能",
+     "score": 0.7033,
+     "w": 0.081,
+     "close": 30.87
+    },
+    {
+     "ts_code": "600773.SH",
+     "name": "西藏城投",
+     "score": 0.6904,
+     "w": 0.0762,
+     "close": 53.25
+    },
+    {
+     "ts_code": "688275.SH",
+     "name": "万润新能",
+     "score": 0.6847,
+     "w": 0.0714,
+     "close": 76.61
+    },
+    {
+     "ts_code": "001203.SZ",
+     "name": "大中矿业",
+     "score": 0.6736,
+     "w": 0.0667,
+     "close": 18.87
+    },
+    {
+     "ts_code": "002796.SZ",
+     "name": "世嘉科技",
+     "score": 0.6723,
+     "w": 0.0619,
+     "close": 41.06
+    },
+    {
+     "ts_code": "301042.SZ",
+     "name": "安联锐视",
+     "score": 0.6723,
+     "w": 0.0571,
+     "close": 40.78
+    },
+    {
+     "ts_code": "300870.SZ",
+     "name": "欧陆通",
+     "score": 0.6665,
+     "w": 0.0524,
+     "close": 139.51
+    }
+   ],
+   "ledger": [
+    {
+     "date": "20261030",
+     "from": "20261030",
+     "ret": 0.0,
+     "market": 0.0,
+     "excess": 0.0,
+     "active": true,
+     "n": 20
+    }
+   ],
+   "kind": "shadow_small",
+   "capacity_cap_yi": 1.5
+  },
+  {
+   "id": "H14_quality_trap",
+   "kind": "monthly_shadow",
+   "period": "202611",
+   "signal_date": "20261030",
+   "n": 762,
+   "trap_weight_pct": 5.0,
+   "trap_cap_pct": 5.0,
+   "health": {
+    "trap_within_cap": true,
+    "n_reasonable": true
+   },
+   "next_check": "2026-12-01 08:40（第二期验证）",
+   "status": "monthly_track"
+  }
+ ],
+ "selection": {
+  "date": "20261030",
+  "s02_paused": true,
+  "picks": 0
+ },
+ "pending_reviews": [
+  {
+   "task_id": "T-20261101-116",
+   "topic": "S11 敏感性通过+小仓位影子"
+  },
+  {
+   "task_id": "T-20261101-115",
+   "topic": "S11 mom_120 下行 regime 候选复核"
+  },
+  {
+   "task_id": "T-20261101-114",
+   "topic": "PIT bug 更正通知"
+  },
+  {
+   "task_id": "T-20261101-113",
+   "topic": "S10 复核（已取消）"
+  }
+ ],
+ "nodes": {
+  "2026-12-01": [
+   "08:30 S11 检查",
+   "08:40 H14 第二期验证",
+   "08:50 S08 检查"
+  ]
+ },
+ "note": "影子盘统一看板；研究/影子，不构成投资建议；容量为 5% 参与率粗估"
+}
