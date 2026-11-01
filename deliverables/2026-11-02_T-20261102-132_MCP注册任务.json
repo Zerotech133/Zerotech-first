@@ -1,0 +1,20 @@
+{
+ "task_id": "T-20261102-132",
+ "opened_by": "A0",
+ "assigned_dept": "dev",
+ "assigned_agent": null,
+ "title": "L2：注册 4 个只读 MCP 到 Hermes（dw-quality/dw-catalog/factor-tools/kb-corpus）",
+ "body": "按 docs/plans/2026-11-02_4个只读MCP注册Hermes_L2申请单.md 执行：备份 config → 追加 4 服务器（py312）→ /reload-mcp → 验证 20 工具；回滚=恢复备份+reload。",
+ "severity": "P1",
+ "status": "open",
+ "created_at": "2026-11-02T04:12:20",
+ "due": "2026-11-05",
+ "closure_note": null,
+ "history": [
+  {
+   "at": "2026-11-02T04:12:20",
+   "by": "A0",
+   "action": "open"
+  }
+ ]
+}
