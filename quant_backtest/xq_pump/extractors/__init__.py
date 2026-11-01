@@ -4,6 +4,7 @@ from .hot import collect_hot
 from .quotes import collect_quotes
 from .kline import collect_kline
 from .timeline import collect_timeline
+from .comments import collect_comments
 
 __all__ = [
     "collect_posts",
@@ -11,4 +12,5 @@ __all__ = [
     "collect_quotes",
     "collect_kline",
     "collect_timeline",
+    "collect_comments",
 ]

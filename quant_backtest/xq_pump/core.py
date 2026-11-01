@@ -26,6 +26,7 @@ if PARENT not in sys.path:
 URL_TIMELINE = "https://xueqiu.com/v4/statuses/public_timeline_by_category.json"
 URL_HOT = "https://xueqiu.com/statuses/hot/listV2.json"
 URL_TIMELINE_USER = "https://xueqiu.com/statuses/user_timeline.json"
+URL_SEARCH = "https://xueqiu.com/v4/statuses/search.json"  # 个股讨论帖（comments 模式）
 
 # ── 常量 ─────────────────────────────────────────────────────
 THROTTLE_BASE = 2.0          # 秒/请求（与 xueqiu_common 对齐）

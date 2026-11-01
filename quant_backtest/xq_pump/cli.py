@@ -26,6 +26,7 @@ from .extractors import hot as ex_hot
 from .extractors import quotes as ex_quotes
 from .extractors import kline as ex_kline
 from .extractors import timeline as ex_timeline
+from .extractors import comments as ex_comments
 
 
 def _build_session(live, cookie, proxy):
@@ -56,6 +57,10 @@ def _run_one(etype, session, store, cursor, args):
             return {"new": 0, "requests": 0}
         return ex_timeline.collect_timeline(session, store, cursor,
                                             user_id=args.user_id, max_new=args.max_new)
+    if etype == "comments":
+        syms = [s.strip() for s in (args.symbols or "").split(",") if s.strip()] or ["SH600519"]
+        return ex_comments.collect_comments(session, store, cursor, symbols=syms,
+                                            max_pages=args.max_pages, max_new=args.max_new)
     raise ValueError("未知类型: %s" % etype)
 
 
@@ -66,7 +71,7 @@ def main(argv=None):
 
     r = sub.add_parser("run", help="运行一次增量抽取")
     r.add_argument("--type", required=True,
-                   choices=["posts", "hot", "quotes", "kline", "timeline", "all"])
+                   choices=["posts", "hot", "quotes", "kline", "timeline", "comments", "all"])
     r.add_argument("--category", help="类目 ID 列表，逗号分隔（默认 102,104,105,111）")
     r.add_argument("--symbols", help="行情/K线 标的，逗号分隔（默认 SH600519）")
     r.add_argument("--user-id", help="用户时间线 user_id")
