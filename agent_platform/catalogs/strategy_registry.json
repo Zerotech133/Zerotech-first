@@ -203,7 +203,8 @@
       "validation": {
         "stats": "2019-2026/93月：CAGR 10.54%，MDD -31.42%，月均超额 -0.01%（t=-0.02），月换手 0.97，容量 5.71 亿",
         "caveat": "top50 集中后超额消失（top-decile 多头薄利不可移植）；换手 97%/月成本吞噬；不启动影子",
-        "final": "rejected：long-only top50 无超额（t≈0），仅保留 LS 四关证据"
+        "final": "rejected：long-only top50 无超额（t≈0），仅保留 LS 四关证据",
+        "pit_note": "历史回测含同类 PIT bug，结论待复核"
       },
       "approved": false,
       "effective_from": "2026-11-01（未启用）"
@@ -214,7 +215,7 @@
       "type": "ranking",
       "owner": "司马微",
       "source_hypothesis": "H39",
-      "status": "shadow_observing_weak",
+      "status": "shadow_observing_pending_pit_recheck",
       "executable": false,
       "rule": "月频取 -ret120 分数 top50 等权（多头）；宇宙=非ST/上市≥250日/价≥2",
       "validation": {
@@ -222,7 +223,8 @@
         "shadow": "2026-10-30 初始持仓已生成（50 只等权），逐月跟踪",
         "cost": "0.15%单边×换手已计；换手 62%/月",
         "caveat": "t=1.4 未达显著；MDD -37%；收益集中于少数年份；小仓位观察，不实盘",
-        "final": "shadow_observing_weak：小仓位影子验证，3 个月后复核"
+        "final": "shadow_observing_weak：小仓位影子验证，3 个月后复核",
+        "pit_note": "历史回测含「上市天数用最新日」bug（次新股前视）；历史指标待重算；当前持仓按 2026-10-30 实算不受影响"
       },
       "approved": false,
       "effective_from": "2026-11-01（影子观察）"
