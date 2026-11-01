@@ -1,0 +1,456 @@
+{
+ "generated_at": "2026-11-01T16:43:27+08:00",
+ "from": "张松（量学/选股研究）",
+ "to": "司马微（策略负责人）",
+ "deliverables": {
+  "specs": 24,
+  "batch_tested": 17,
+  "batch_grades": {
+   "A": 0,
+   "B": 0,
+   "C": 2,
+   "D": 11,
+   "F": 4
+  },
+  "reverse_rules": 4,
+  "book_features": 9,
+  "registered_strategies": [
+   "S01_H14_quality_trap_guard",
+   "S02_composite_mvp",
+   "S03_H18_forecast_revision_watch",
+   "S04_AH_premium_pair",
+   "S05_LX20_AVOID_DEWEIGHT",
+   "S06_reversal_combo_mom20_120",
+   "S07_mom20_long_only",
+   "S08_mom120_long_only"
+  ],
+  "book_backlog": {
+   "note": "两本量学 PDF 中抽取的命名战法；未测项作为策略库 backlog（负责人：司马微），启用前须过四关",
+   "total": 24,
+   "tested": 6,
+   "untested": 17,
+   "items": [
+    {
+     "name": "量柱七形态（高/低/平/倍/梯/缩/金）",
+     "source": "伏击涨停·序言",
+     "status": "部分已测",
+     "note": "H24 倍量柱/H25 价升量缩 → rejected（简化定义无效）",
+     "strategy_spec_id": "LX01_SEVEN_VOLUME_FORMS",
+     "spec_test_status": "tested_rejected",
+     "computability": "A"
+    },
+    {
+     "name": "黄金柱（三日不破实顶+缩量）",
+     "source": "伏击涨停·第8章",
+     "status": "已测",
+     "note": "H29 严格版 → rejected（PIT 修正后前视撤回）",
+     "strategy_spec_id": "LX02_GOLDEN_PILLAR",
+     "spec_test_status": "tested_rejected",
+     "computability": "A"
+    },
+    {
+     "name": "将军柱（卧底/搭梯战法）",
+     "source": "伏击涨停·第8章",
+     "status": "未测",
+     "note": "backlog",
+     "strategy_spec_id": "LX03_GENERAL_PILLAR",
+     "spec_test_status": "untested",
+     "computability": "B",
+     "batch_20261101": {
+      "grade": "D",
+      "track": null,
+      "oos_ic_t": null,
+      "oos_excess_pct": null,
+      "n_events": null,
+      "action": null
+     }
+    },
+    {
+     "name": "元帅柱·零号战法",
+     "source": "伏击涨停·第9章",
+     "status": "未测",
+     "note": "backlog",
+     "strategy_spec_id": "LX04_MARSHAL_PILLAR_ZERO",
+     "spec_test_status": "untested",
+     "computability": "B",
+     "batch_20261101": {
+      "grade": "D",
+      "track": null,
+      "oos_ic_t": null,
+      "oos_excess_pct": null,
+      "n_events": null,
+      "action": null
+     }
+    },
+    {
+     "name": "金线战法三步曲（黄金线/黄金双线/黄金十字）",
+     "source": "伏击涨停·第11章",
+     "status": "未测",
+     "note": "backlog",
+     "strategy_spec_id": "LX05_GOLDEN_LINE_TRILOGY",
+     "spec_test_status": "untested",
+     "computability": "B",
+     "batch_20261101": {
+      "grade": "C",
+      "track": null,
+      "oos_ic_t": null,
+      "oos_excess_pct": null,
+      "n_events": null,
+      "action": null
+     }
+    },
+    {
+     "name": "大盘阴线战法 / 长阴短柱",
+     "source": "伏击涨停·第14章",
+     "status": "未测",
+     "note": "backlog",
+     "strategy_spec_id": "LX06_YIN_LINE_TACTICS",
+     "spec_test_status": "untested",
+     "computability": "B",
+     "batch_20261101": {
+      "grade": "D",
+      "track": null,
+      "oos_ic_t": null,
+      "oos_excess_pct": null,
+      "n_events": null,
+      "action": null
+     },
+     "reverse_avoid_20261101": {
+      "gross_ann_pct": 0.703,
+      "net_ann_pct": 0.359,
+      "t": 6.2,
+      "coverage_pct": 1.152,
+      "tradable_avoidance": true,
+      "risk_rule_candidate": true,
+      "verdict": "可交易规避（毛/净超额均为正且显著）；市值×行业层内同向有效（非单纯小市值/高波动暴露）"
+     }
+    },
+    {
+     "name": "一剑封喉战法",
+     "source": "伏击涨停·第15章",
+     "status": "未测",
+     "note": "backlog",
+     "strategy_spec_id": "LX07_ONE_SWORD_SEAL_THROAT",
+     "spec_test_status": "untested",
+     "computability": "C",
+     "batch_20261101": {
+      "grade": "F",
+      "track": null,
+      "oos_ic_t": null,
+      "oos_excess_pct": null,
+      "n_events": null,
+      "action": null
+     }
+    },
+    {
+     "name": "倍量伸缩战法",
+     "source": "伏击涨停",
+     "status": "部分已测",
+     "note": "H29 倍量确认 → rejected",
+     "strategy_spec_id": "LX08_DOUBLE_VOL_EXPAND_CONTRACT",
+     "spec_test_status": "tested_rejected",
+     "computability": "A"
+    },
+    {
+     "name": "现场直憋战法",
+     "source": "伏击涨停",
+     "status": "未测",
+     "note": "backlog",
+     "strategy_spec_id": "LX09_LIVE_SUFFOCATION",
+     "spec_test_status": "untested",
+     "computability": "B",
+     "batch_20261101": {
+      "grade": "D",
+      "track": null,
+      "oos_ic_t": null,
+      "oos_excess_pct": null,
+      "n_events": null,
+      "action": null
+     }
+    },
+    {
+     "name": "3121 战法",
+     "source": "伏击涨停",
+     "status": "未测",
+     "note": "backlog",
+     "strategy_spec_id": "LX10_3121_RULER",
+     "spec_test_status": "untested",
+     "computability": "A",
+     "batch_20261101": {
+      "grade": "D",
+      "track": null,
+      "oos_ic_t": null,
+      "oos_excess_pct": null,
+      "n_events": null,
+      "action": null
+     }
+    },
+    {
+     "name": "间谍战法（量学七剑）",
+     "source": "伏击涨停",
+     "status": "未测",
+     "note": "backlog",
+     "strategy_spec_id": "LX11_SPY_TACTICS",
+     "spec_test_status": "untested",
+     "computability": "B",
+     "batch_20261101": {
+      "grade": "D",
+      "track": null,
+      "oos_ic_t": null,
+      "oos_excess_pct": null,
+      "n_events": null,
+      "action": null
+     }
+    },
+    {
+     "name": "双阴出货战法",
+     "source": "涨停密码·附",
+     "status": "未测",
+     "note": "backlog",
+     "strategy_spec_id": "LX12_DOUBLE_YIN_EXIT",
+     "spec_test_status": "untested",
+     "computability": "A",
+     "batch_20261101": {
+      "grade": "D",
+      "track": null,
+      "oos_ic_t": null,
+      "oos_excess_pct": null,
+      "n_events": null,
+      "action": null
+     },
+     "reverse_avoid_20261101": {
+      "gross_ann_pct": -12.843,
+      "net_ann_pct": -24.601,
+      "t": -3.27,
+      "coverage_pct": 45.247,
+      "tradable_avoidance": false,
+      "risk_rule_candidate": false,
+      "verdict": "规避无正超额（原信号反向不成立或已被市场消化）"
+     }
+    },
+    {
+     "name": "兵临城下（试关/攻关/冲关/守关）",
+     "source": "涨停密码·第4章",
+     "status": "已测",
+     "note": "H27 near_high_vol → rejected",
+     "strategy_spec_id": "LX13_ARMY_AT_CITY_GATE",
+     "spec_test_status": "tested_rejected",
+     "computability": "B"
+    },
+    {
+     "name": "接力双阳",
+     "source": "涨停密码·第5章",
+     "status": "未测",
+     "note": "backlog",
+     "strategy_spec_id": "LX14_RELAY_DOUBLE_YANG",
+     "spec_test_status": "untested",
+     "computability": "A",
+     "batch_20261101": {
+      "grade": "D",
+      "track": null,
+      "oos_ic_t": null,
+      "oos_excess_pct": null,
+      "n_events": null,
+      "action": null
+     }
+    },
+    {
+     "name": "价升量缩择机做多",
+     "source": "涨停密码·第12章",
+     "status": "已测",
+     "note": "H25 → rejected",
+     "strategy_spec_id": "LX15_PRICE_UP_VOL_DOWN",
+     "spec_test_status": "tested_rejected",
+     "computability": "A"
+    },
+    {
+     "name": "平斜交叉不上必下",
+     "source": "涨停密码·第13章",
+     "status": "未测",
+     "note": "backlog",
+     "strategy_spec_id": "LX16_FLAT_SLANT_CROSS",
+     "spec_test_status": "untested",
+     "computability": "C",
+     "batch_20261101": {
+      "grade": "F",
+      "track": null,
+      "oos_ic_t": null,
+      "oos_excess_pct": null,
+      "n_events": null,
+      "action": null
+     }
+    },
+    {
+     "name": "站稳凹峰即将上攻",
+     "source": "涨停密码·第14章",
+     "status": "未测",
+     "note": "backlog",
+     "strategy_spec_id": "LX17_STAND_ON_CONCAVE_PEAK",
+     "spec_test_status": "untested",
+     "computability": "B",
+     "batch_20261101": {
+      "grade": "C",
+      "track": null,
+      "oos_ic_t": null,
+      "oos_excess_pct": null,
+      "n_events": null,
+      "action": null
+     }
+    },
+    {
+     "name": "极阴次阳择幅建仓",
+     "source": "涨停密码·第15章",
+     "status": "已测",
+     "note": "H26 → rejected（严格版仍负）",
+     "strategy_spec_id": "LX18_EXTREME_YIN_NEXT_YANG",
+     "spec_test_status": "tested_rejected",
+     "computability": "A"
+    },
+    {
+     "name": "牛股量形",
+     "source": "涨停密码·第16章",
+     "status": "未测",
+     "note": "backlog",
+     "strategy_spec_id": "LX19_BULL_STOCK_VOLUME_SHAPE",
+     "spec_test_status": "untested",
+     "computability": "B",
+     "batch_20261101": {
+      "grade": "D",
+      "track": null,
+      "oos_ic_t": null,
+      "oos_excess_pct": null,
+      "n_events": null,
+      "action": null
+     }
+    },
+    {
+     "name": "牛股三绝",
+     "source": "涨停密码·第17章",
+     "status": "未测",
+     "note": "backlog",
+     "strategy_spec_id": "LX20_BULL_STOCK_THREE_ABSOLUTES",
+     "spec_test_status": "untested",
+     "computability": "A",
+     "batch_20261101": {
+      "grade": "D",
+      "track": null,
+      "oos_ic_t": null,
+      "oos_excess_pct": null,
+      "n_events": null,
+      "action": null
+     },
+     "reverse_avoid_20261101": {
+      "gross_ann_pct": 7.205,
+      "net_ann_pct": 2.749,
+      "t": 7.35,
+      "coverage_pct": 24.615,
+      "tradable_avoidance": true,
+      "risk_rule_candidate": true,
+      "verdict": "可交易规避（毛/净超额均为正且显著）；市值×行业层内同向有效（非单纯小市值/高波动暴露）"
+     }
+    },
+    {
+     "name": "十月怀胎一朝分娩",
+     "source": "涨停密码·第1章",
+     "status": "未测",
+     "note": "backlog",
+     "strategy_spec_id": "LX21_TEN_MONTH_PREGNANCY",
+     "spec_test_status": "untested",
+     "computability": "C",
+     "batch_20261101": {
+      "grade": "F",
+      "track": null,
+      "oos_ic_t": null,
+      "oos_excess_pct": null,
+      "n_events": null,
+      "action": null
+     }
+    },
+    {
+     "name": "凹口淘金",
+     "source": "涨停密码·第2章",
+     "status": "未测",
+     "note": "backlog",
+     "strategy_spec_id": "LX22_CONCAVE_NOTCH_GOLD",
+     "spec_test_status": "untested",
+     "computability": "B",
+     "batch_20261101": {
+      "grade": "D",
+      "track": null,
+      "oos_ic_t": null,
+      "oos_excess_pct": null,
+      "n_events": null,
+      "action": null
+     },
+     "reverse_avoid_20261101": {
+      "gross_ann_pct": 4.917,
+      "net_ann_pct": -6.568,
+      "t": 2.03,
+      "coverage_pct": 42.104,
+      "tradable_avoidance": false,
+      "risk_rule_candidate": false,
+      "verdict": "毛超额显著为正但被换手成本吃掉（净超额≤0）；市值×行业层内同向有效（非单纯小市值/高波动暴露）"
+     }
+    },
+    {
+     "name": "量学导火索战法",
+     "source": "涨停密码",
+     "status": "未测",
+     "note": "backlog",
+     "strategy_spec_id": "LX23_FUSE_TACTICS",
+     "spec_test_status": "untested",
+     "computability": "C",
+     "batch_20261101": {
+      "grade": "F",
+      "track": null,
+      "oos_ic_t": null,
+      "oos_excess_pct": null,
+      "n_events": null,
+      "action": null
+     }
+    },
+    {
+     "name": "涨停基因（单个/组合）",
+     "source": "涨停密码·前言",
+     "status": "概念",
+     "note": "作为特征映射框架使用",
+     "strategy_spec_id": "LX24_LIMIT_UP_GENE",
+     "spec_test_status": "concept",
+     "computability": "C"
+    }
+   ],
+   "updated_at": "2026-11-01T05:43:42+08:00",
+   "spec_dir": "research/strategy_specs/",
+   "spec_loader": "tools/research/strategy_specs.py",
+   "spec_mapped": 24,
+   "spec_unmapped": [],
+   "batch_test": {
+    "report": "research/reports/book_batch_test_20261101.md",
+    "date": "2026-11-01",
+    "tested": 17,
+    "mapped": 17,
+    "grade_counts": {
+     "A": 0,
+     "B": 0,
+     "C": 2,
+     "D": 11,
+     "F": 4
+    },
+    "note": "A=正向显著/B=方向对不显著/C=方向未定/D=反向/F=不可计算；A/B 档为 0"
+   }
+  }
+ },
+ "known_issues": 9,
+ "gates": [
+  "G1 多重检验",
+  "G2 walk-forward",
+  "G3 成本敏感性",
+  "G4 安慰剂",
+  "G5 容量/覆盖",
+  "G6 分层稳健",
+  "G7 数据审计",
+  "G8 决策"
+ ],
+ "strict_audit_protocol": "research/reports/simahui_strict_audit_20261101.*（待司马微产出）",
+ "file": "C:\\项目\\老田的AI助手\\deliverables\\2026-11-01_张松交付司马微_策略严苛调校单_v1.md"
+}
