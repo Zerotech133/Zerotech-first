@@ -1,0 +1,757 @@
+{
+ "generated_at": "2026-11-02T03:41:42+08:00",
+ "projects": [
+  {
+   "name": "学习PDF · 量学两本书（伏击涨停 / 涨停密码）",
+   "status": "已结项（策略研究收口；知识资产已入库；未建统一归档包）",
+   "sources": [
+    {
+     "path": "C:\\项目\\PDF\\伏击涨停(2).pdf",
+     "size_mb": 86.9
+    },
+    {
+     "path": "C:\\项目\\PDF\\涨停密码(2).pdf",
+     "size_mb": 74.0
+    },
+    {
+     "dirs": [
+      "C:\\项目\\PDF\\_ocr",
+      "C:\\项目\\PDF\\_ingest",
+      "C:\\项目\\PDF\\_ingest_reports",
+      "C:\\项目\\PDF\\_ingest_notes"
+     ]
+    }
+   ],
+   "specs": {
+    "dir": "research/strategy_specs",
+    "count": 24,
+    "files": [
+     "001_量柱七形态.yaml",
+     "002_黄金柱.yaml",
+     "003_将军柱卧底搭梯.yaml",
+     "004_元帅柱零号.yaml",
+     "005_金线战法三步曲.yaml",
+     "006_大盘阴线长阴短柱.yaml",
+     "007_一剑封喉.yaml",
+     "008_倍量伸缩.yaml",
+     "009_现场直憋.yaml",
+     "010_3121战法.yaml",
+     "011_间谍战法量学七剑.yaml",
+     "012_双阴出货.yaml",
+     "013_兵临城下.yaml",
+     "014_接力双阳.yaml",
+     "015_价升量缩.yaml",
+     "016_平斜交叉.yaml",
+     "017_站稳凹峰.yaml",
+     "018_极阴次阳.yaml",
+     "019_牛股量形.yaml",
+     "020_牛股三绝.yaml",
+     "021_十月怀胎.yaml",
+     "022_凹口淘金.yaml",
+     "023_量学导火索.yaml",
+     "024_涨停基因.yaml"
+    ]
+   },
+   "book_backlog": {
+    "note": "两本量学 PDF 中抽取的命名战法；未测项作为策略库 backlog（负责人：司马微），启用前须过四关",
+    "total": 24,
+    "tested": 6,
+    "untested": 17,
+    "items": [
+     {
+      "name": "量柱七形态（高/低/平/倍/梯/缩/金）",
+      "source": "伏击涨停·序言",
+      "status": "部分已测",
+      "note": "H24 倍量柱/H25 价升量缩 → rejected（简化定义无效）",
+      "strategy_spec_id": "LX01_SEVEN_VOLUME_FORMS",
+      "spec_test_status": "tested_rejected",
+      "computability": "A",
+      "strict_verdict": {
+       "verdict": "close",
+       "audited_at": "2026-11-01T16:48:33+08:00",
+       "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+       "rationale": "已测 rejected（H24 倍量柱/H25 价升量缩 → rejected（简化定义无效））；H24-H29 全部 rejected，G1 无正向显著。",
+       "evidence": [
+        "research/reports/H24-26_liangxue_features_20261031.json",
+        "research/reports/H29_liangxue_refined_20261031.json",
+        "deliverables/2026-10-31_H29更正_PIT前视假阳性_v1.md"
+       ]
+      }
+     },
+     {
+      "name": "黄金柱（三日不破实顶+缩量）",
+      "source": "伏击涨停·第8章",
+      "status": "已测",
+      "note": "H29 严格版 → rejected（PIT 修正后前视撤回）",
+      "strategy_spec_id": "LX02_GOLDEN_PILLAR",
+      "spec_test_status": "tested_rejected",
+      "computability": "A",
+      "strict_verdict": {
+       "verdict": "close",
+       "audited_at": "2026-11-01T16:48:33+08:00",
+       "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+       "rationale": "已测 rejected（H29 严格版 → rejected（PIT 修正后前视撤回））；H24-H29 全部 rejected，G1 无正向显著。",
+       "evidence": [
+        "research/reports/H24-26_liangxue_features_20261031.json",
+        "research/reports/H29_liangxue_refined_20261031.json",
+        "deliverables/2026-10-31_H29更正_PIT前视假阳性_v1.md"
+       ]
+      }
+     },
+     {
+      "name": "将军柱（卧底/搭梯战法）",
+      "source": "伏击涨停·第8章",
+      "status": "未测",
+      "note": "backlog",
+      "strategy_spec_id": "LX03_GENERAL_PILLAR",
+      "spec_test_status": "untested",
+      "computability": "B",
+      "batch_20261101": {
+       "grade": "D",
+       "track": null,
+       "oos_ic_t": null,
+       "oos_excess_pct": null,
+       "n_events": null,
+       "action": null
+      },
+      "strict_verdict": {
+       "verdict": "close",
+       "audited_at": "2026-11-01T16:48:33+08:00",
+       "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+       "rationale": "批量四关 grade=D；无正向显著，不值得继续投入。",
+       "evidence": [
+        "research/reports/book_batch_test_20261101.json"
+       ]
+      }
+     },
+     {
+      "name": "元帅柱·零号战法",
+      "source": "伏击涨停·第9章",
+      "status": "未测",
+      "note": "backlog",
+      "strategy_spec_id": "LX04_MARSHAL_PILLAR_ZERO",
+      "spec_test_status": "untested",
+      "computability": "B",
+      "batch_20261101": {
+       "grade": "D",
+       "track": null,
+       "oos_ic_t": null,
+       "oos_excess_pct": null,
+       "n_events": null,
+       "action": null
+      },
+      "strict_verdict": {
+       "verdict": "close",
+       "audited_at": "2026-11-01T16:48:33+08:00",
+       "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+       "rationale": "批量四关 grade=D；无正向显著，不值得继续投入。",
+       "evidence": [
+        "research/reports/book_batch_test_20261101.json"
+       ]
+      }
+     },
+     {
+      "name": "金线战法三步曲（黄金线/黄金双线/黄金十字）",
+      "source": "伏击涨停·第11章",
+      "status": "未测",
+      "note": "backlog",
+      "strategy_spec_id": "LX05_GOLDEN_LINE_TRILOGY",
+      "spec_test_status": "untested",
+      "computability": "B",
+      "batch_20261101": {
+       "grade": "C",
+       "track": null,
+       "oos_ic_t": null,
+       "oos_excess_pct": null,
+       "n_events": null,
+       "action": null
+      },
+      "strict_verdict": {
+       "verdict": "needs-more",
+       "audited_at": "2026-11-01T16:48:33+08:00",
+       "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+       "rationale": "批量四关 grade=C（方向未定，OOS 不显著）；需补 walk-forward/置换/成本敏感性。",
+       "evidence": [
+        "research/reports/book_batch_test_20261101.json"
+       ]
+      }
+     },
+     {
+      "name": "大盘阴线战法 / 长阴短柱",
+      "source": "伏击涨停·第14章",
+      "status": "未测",
+      "note": "backlog",
+      "strategy_spec_id": "LX06_YIN_LINE_TACTICS",
+      "spec_test_status": "untested",
+      "computability": "B",
+      "batch_20261101": {
+       "grade": "D",
+       "track": null,
+       "oos_ic_t": null,
+       "oos_excess_pct": null,
+       "n_events": null,
+       "action": null
+      },
+      "reverse_avoid_20261101": {
+       "gross_ann_pct": 0.703,
+       "net_ann_pct": 0.359,
+       "t": 6.2,
+       "coverage_pct": 1.152,
+       "tradable_avoidance": true,
+       "risk_rule_candidate": true,
+       "verdict": "可交易规避（毛/净超额均为正且显著）；市值×行业层内同向有效（非单纯小市值/高波动暴露）"
+      },
+      "strict_verdict": {
+       "verdict": "needs-more",
+       "audited_at": "2026-11-01T16:48:33+08:00",
+       "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+       "rationale": "G1/G3(50bp)/G6/G7 通过，但覆盖 1.15% 过低、G4 未做 → needs-more（优先级低于 LX20）。",
+       "evidence": [
+        "research/reports/reverse_avoid_20261101.json",
+        "research/reports/lx20_avoid_rule_20261101.json"
+       ]
+      }
+     },
+     {
+      "name": "一剑封喉战法",
+      "source": "伏击涨停·第15章",
+      "status": "未测",
+      "note": "backlog",
+      "strategy_spec_id": "LX07_ONE_SWORD_SEAL_THROAT",
+      "spec_test_status": "untested",
+      "computability": "C",
+      "batch_20261101": {
+       "grade": "F",
+       "track": null,
+       "oos_ic_t": null,
+       "oos_excess_pct": null,
+       "n_events": null,
+       "action": null
+      },
+      "strict_verdict": {
+       "verdict": "close",
+       "audited_at": "2026-11-01T16:48:33+08:00",
+       "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+       "rationale": "批量四关 grade=F；无正向显著，不值得继续投入。",
+       "evidence": [
+        "research/reports/book_batch_test_20261101.json"
+       ]
+      }
+     },
+     {
+      "name": "倍量伸缩战法",
+      "source": "伏击涨停",
+      "status": "部分已测",
+      "note": "H29 倍量确认 → rejected",
+      "strategy_spec_id": "LX08_DOUBLE_VOL_EXPAND_CONTRACT",
+      "spec_test_status": "tested_rejected",
+      "computability": "A",
+      "strict_verdict": {
+       "verdict": "close",
+       "audited_at": "2026-11-01T16:48:33+08:00",
+       "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+       "rationale": "已测 rejected（H29 倍量确认 → rejected）；H24-H29 全部 rejected，G1 无正向显著。",
+       "evidence": [
+        "research/reports/H24-26_liangxue_features_20261031.json",
+        "research/reports/H29_liangxue_refined_20261031.json",
+        "deliverables/2026-10-31_H29更正_PIT前视假阳性_v1.md"
+       ]
+      }
+     },
+     {
+      "name": "现场直憋战法",
+      "source": "伏击涨停",
+      "status": "未测",
+      "note": "backlog",
+      "strategy_spec_id": "LX09_LIVE_SUFFOCATION",
+      "spec_test_status": "untested",
+      "computability": "B",
+      "batch_20261101": {
+       "grade": "D",
+       "track": null,
+       "oos_ic_t": null,
+       "oos_excess_pct": null,
+       "n_events": null,
+       "action": null
+      },
+      "strict_verdict": {
+       "verdict": "close",
+       "audited_at": "2026-11-01T16:48:33+08:00",
+       "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+       "rationale": "批量四关 grade=D；无正向显著，不值得继续投入。",
+       "evidence": [
+        "research/reports/book_batch_test_20261101.json"
+       ]
+      }
+     },
+     {
+      "name": "3121 战法",
+      "source": "伏击涨停",
+      "status": "未测",
+      "note": "backlog",
+      "strategy_spec_id": "LX10_3121_RULER",
+      "spec_test_status": "untested",
+      "computability": "A",
+      "batch_20261101": {
+       "grade": "D",
+       "track": null,
+       "oos_ic_t": null,
+       "oos_excess_pct": null,
+       "n_events": null,
+       "action": null
+      },
+      "strict_verdict": {
+       "verdict": "close",
+       "audited_at": "2026-11-01T16:48:33+08:00",
+       "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+       "rationale": "批量四关 grade=D；无正向显著，不值得继续投入。",
+       "evidence": [
+        "research/reports/book_batch_test_20261101.json"
+       ]
+      }
+     },
+     {
+      "name": "间谍战法（量学七剑）",
+      "source": "伏击涨停",
+      "status": "未测",
+      "note": "backlog",
+      "strategy_spec_id": "LX11_SPY_TACTICS",
+      "spec_test_status": "untested",
+      "computability": "B",
+      "batch_20261101": {
+       "grade": "D",
+       "track": null,
+       "oos_ic_t": null,
+       "oos_excess_pct": null,
+       "n_events": null,
+       "action": null
+      },
+      "strict_verdict": {
+       "verdict": "close",
+       "audited_at": "2026-11-01T16:48:33+08:00",
+       "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+       "rationale": "批量四关 grade=D；无正向显著，不值得继续投入。",
+       "evidence": [
+        "research/reports/book_batch_test_20261101.json"
+       ]
+      }
+     },
+     {
+      "name": "双阴出货战法",
+      "source": "涨停密码·附",
+      "status": "未测",
+      "note": "backlog",
+      "strategy_spec_id": "LX12_DOUBLE_YIN_EXIT",
+      "spec_test_status": "untested",
+      "computability": "A",
+      "batch_20261101": {
+       "grade": "D",
+       "track": null,
+       "oos_ic_t": null,
+       "oos_excess_pct": null,
+       "n_events": null,
+       "action": null
+      },
+      "reverse_avoid_20261101": {
+       "gross_ann_pct": -12.843,
+       "net_ann_pct": -24.601,
+       "t": -3.27,
+       "coverage_pct": 45.247,
+       "tradable_avoidance": false,
+       "risk_rule_candidate": false,
+       "verdict": "规避无正超额（原信号反向不成立或已被市场消化）"
+      },
+      "strict_verdict": {
+       "verdict": "close",
+       "audited_at": "2026-11-01T16:48:33+08:00",
+       "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+       "rationale": "G1/G3/G5 均 fail（净 -24.6%@30bp、覆盖 71.9%）→ close。",
+       "evidence": [
+        "research/reports/reverse_avoid_20261101.json",
+        "research/reports/lx20_avoid_rule_20261101.json"
+       ]
+      }
+     },
+     {
+      "name": "兵临城下（试关/攻关/冲关/守关）",
+      "source": "涨停密码·第4章",
+      "status": "已测",
+      "note": "H27 near_high_vol → rejected",
+      "strategy_spec_id": "LX13_ARMY_AT_CITY_GATE",
+      "spec_test_status": "tested_rejected",
+      "computability": "B",
+      "strict_verdict": {
+       "verdict": "close",
+       "audited_at": "2026-11-01T16:48:33+08:00",
+       "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+       "rationale": "已测 rejected（H27 near_high_vol → rejected）；H24-H29 全部 rejected，G1 无正向显著。",
+       "evidence": [
+        "research/reports/H24-26_liangxue_features_20261031.json",
+        "research/reports/H29_liangxue_refined_20261031.json",
+        "deliverables/2026-10-31_H29更正_PIT前视假阳性_v1.md"
+       ]
+      }
+     },
+     {
+      "name": "接力双阳",
+      "source": "涨停密码·第5章",
+      "status": "未测",
+      "note": "backlog",
+      "strategy_spec_id": "LX14_RELAY_DOUBLE_YANG",
+      "spec_test_status": "untested",
+      "computability": "A",
+      "batch_20261101": {
+       "grade": "D",
+       "track": null,
+       "oos_ic_t": null,
+       "oos_excess_pct": null,
+       "n_events": null,
+       "action": null
+      },
+      "strict_verdict": {
+       "verdict": "close",
+       "audited_at": "2026-11-01T16:48:33+08:00",
+       "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+       "rationale": "批量四关 grade=D；无正向显著，不值得继续投入。",
+       "evidence": [
+        "research/reports/book_batch_test_20261101.json"
+       ]
+      }
+     },
+     {
+      "name": "价升量缩择机做多",
+      "source": "涨停密码·第12章",
+      "status": "已测",
+      "note": "H25 → rejected",
+      "strategy_spec_id": "LX15_PRICE_UP_VOL_DOWN",
+      "spec_test_status": "tested_rejected",
+      "computability": "A",
+      "strict_verdict": {
+       "verdict": "close",
+       "audited_at": "2026-11-01T16:48:33+08:00",
+       "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+       "rationale": "已测 rejected（H25 → rejected）；H24-H29 全部 rejected，G1 无正向显著。",
+       "evidence": [
+        "research/reports/H24-26_liangxue_features_20261031.json",
+        "research/reports/H29_liangxue_refined_20261031.json",
+        "deliverables/2026-10-31_H29更正_PIT前视假阳性_v1.md"
+       ]
+      }
+     },
+     {
+      "name": "平斜交叉不上必下",
+      "source": "涨停密码·第13章",
+      "status": "未测",
+      "note": "backlog",
+      "strategy_spec_id": "LX16_FLAT_SLANT_CROSS",
+      "spec_test_status": "untested",
+      "computability": "C",
+      "batch_20261101": {
+       "grade": "F",
+       "track": null,
+       "oos_ic_t": null,
+       "oos_excess_pct": null,
+       "n_events": null,
+       "action": null
+      },
+      "strict_verdict": {
+       "verdict": "close",
+       "audited_at": "2026-11-01T16:48:33+08:00",
+       "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+       "rationale": "批量四关 grade=F；无正向显著，不值得继续投入。",
+       "evidence": [
+        "research/reports/book_batch_test_20261101.json"
+       ]
+      }
+     },
+     {
+      "name": "站稳凹峰即将上攻",
+      "source": "涨停密码·第14章",
+      "status": "未测",
+      "note": "backlog",
+      "strategy_spec_id": "LX17_STAND_ON_CONCAVE_PEAK",
+      "spec_test_status": "untested",
+      "computability": "B",
+      "batch_20261101": {
+       "grade": "C",
+       "track": null,
+       "oos_ic_t": null,
+       "oos_excess_pct": null,
+       "n_events": null,
+       "action": null
+      },
+      "strict_verdict": {
+       "verdict": "needs-more",
+       "audited_at": "2026-11-01T16:48:33+08:00",
+       "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+       "rationale": "批量四关 grade=C（方向未定，OOS 不显著）；需补 walk-forward/置换/成本敏感性。",
+       "evidence": [
+        "research/reports/book_batch_test_20261101.json"
+       ]
+      }
+     },
+     {
+      "name": "极阴次阳择幅建仓",
+      "source": "涨停密码·第15章",
+      "status": "已测",
+      "note": "H26 → rejected（严格版仍负）",
+      "strategy_spec_id": "LX18_EXTREME_YIN_NEXT_YANG",
+      "spec_test_status": "tested_rejected",
+      "computability": "A",
+      "strict_verdict": {
+       "verdict": "close",
+       "audited_at": "2026-11-01T16:48:33+08:00",
+       "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+       "rationale": "已测 rejected（H26 → rejected（严格版仍负））；H24-H29 全部 rejected，G1 无正向显著。",
+       "evidence": [
+        "research/reports/H24-26_liangxue_features_20261031.json",
+        "research/reports/H29_liangxue_refined_20261031.json",
+        "deliverables/2026-10-31_H29更正_PIT前视假阳性_v1.md"
+       ]
+      }
+     },
+     {
+      "name": "牛股量形",
+      "source": "涨停密码·第16章",
+      "status": "未测",
+      "note": "backlog",
+      "strategy_spec_id": "LX19_BULL_STOCK_VOLUME_SHAPE",
+      "spec_test_status": "untested",
+      "computability": "B",
+      "batch_20261101": {
+       "grade": "D",
+       "track": null,
+       "oos_ic_t": null,
+       "oos_excess_pct": null,
+       "n_events": null,
+       "action": null
+      },
+      "strict_verdict": {
+       "verdict": "close",
+       "audited_at": "2026-11-01T16:48:33+08:00",
+       "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+       "rationale": "批量四关 grade=D；无正向显著，不值得继续投入。",
+       "evidence": [
+        "research/reports/book_batch_test_20261101.json"
+       ]
+      }
+     },
+     {
+      "name": "牛股三绝",
+      "source": "涨停密码·第17章",
+      "status": "未测",
+      "note": "backlog",
+      "strategy_spec_id": "LX20_BULL_STOCK_THREE_ABSOLUTES",
+      "spec_test_status": "untested",
+      "computability": "A",
+      "batch_20261101": {
+       "grade": "D",
+       "track": null,
+       "oos_ic_t": null,
+       "oos_excess_pct": null,
+       "n_events": null,
+       "action": null
+      },
+      "reverse_avoid_20261101": {
+       "gross_ann_pct": 7.205,
+       "net_ann_pct": 2.749,
+       "t": 7.35,
+       "coverage_pct": 24.615,
+       "tradable_avoidance": true,
+       "risk_rule_candidate": true,
+       "verdict": "可交易规避（毛/净超额均为正且显著）；市值×行业层内同向有效（非单纯小市值/高波动暴露）"
+      },
+      "strict_verdict": {
+       "verdict": "needs-more",
+       "audited_at": "2026-11-01T16:48:33+08:00",
+       "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+       "rationale": "G1/G2/G5/G6/G7 通过，但 G3 50bp 净超额已转负（-1.28%）、G4 安慰剂未做 → 不可直接交易，按严格协议 needs-more；先做降换手与安慰剂，再谈影子盘。",
+       "evidence": [
+        "research/reports/reverse_avoid_20261101.json",
+        "research/reports/lx20_avoid_rule_20261101.json"
+       ]
+      }
+     },
+     {
+      "name": "十月怀胎一朝分娩",
+      "source": "涨停密码·第1章",
+      "status": "未测",
+      "note": "backlog",
+      "strategy_spec_id": "LX21_TEN_MONTH_PREGNANCY",
+      "spec_test_status": "untested",
+      "computability": "C",
+      "batch_20261101": {
+       "grade": "F",
+       "track": null,
+       "oos_ic_t": null,
+       "oos_excess_pct": null,
+       "n_events": null,
+       "action": null
+      },
+      "strict_verdict": {
+       "verdict": "close",
+       "audited_at": "2026-11-01T16:48:33+08:00",
+       "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+       "rationale": "批量四关 grade=F；无正向显著，不值得继续投入。",
+       "evidence": [
+        "research/reports/book_batch_test_20261101.json"
+       ]
+      }
+     },
+     {
+      "name": "凹口淘金",
+      "source": "涨停密码·第2章",
+      "status": "未测",
+      "note": "backlog",
+      "strategy_spec_id": "LX22_CONCAVE_NOTCH_GOLD",
+      "spec_test_status": "untested",
+      "computability": "B",
+      "batch_20261101": {
+       "grade": "D",
+       "track": null,
+       "oos_ic_t": null,
+       "oos_excess_pct": null,
+       "n_events": null,
+       "action": null
+      },
+      "reverse_avoid_20261101": {
+       "gross_ann_pct": 4.917,
+       "net_ann_pct": -6.568,
+       "t": 2.03,
+       "coverage_pct": 42.104,
+       "tradable_avoidance": false,
+       "risk_rule_candidate": false,
+       "verdict": "毛超额显著为正但被换手成本吃掉（净超额≤0）；市值×行业层内同向有效（非单纯小市值/高波动暴露）"
+      },
+      "strict_verdict": {
+       "verdict": "close",
+       "audited_at": "2026-11-01T16:48:33+08:00",
+       "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+       "rationale": "G3 30bp 已 -6.57%、G5 覆盖 42.1%>30% → close（张松已判『被成本吃光』，复核一致）。",
+       "evidence": [
+        "research/reports/reverse_avoid_20261101.json",
+        "research/reports/lx20_avoid_rule_20261101.json"
+       ]
+      }
+     },
+     {
+      "name": "量学导火索战法",
+      "source": "涨停密码",
+      "status": "未测",
+      "note": "backlog",
+      "strategy_spec_id": "LX23_FUSE_TACTICS",
+      "spec_test_status": "untested",
+      "computability": "C",
+      "batch_20261101": {
+       "grade": "F",
+       "track": null,
+       "oos_ic_t": null,
+       "oos_excess_pct": null,
+       "n_events": null,
+       "action": null
+      },
+      "strict_verdict": {
+       "verdict": "close",
+       "audited_at": "2026-11-01T16:48:33+08:00",
+       "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+       "rationale": "批量四关 grade=F；无正向显著，不值得继续投入。",
+       "evidence": [
+        "research/reports/book_batch_test_20261101.json"
+       ]
+      }
+     },
+     {
+      "name": "涨停基因（单个/组合）",
+      "source": "涨停密码·前言",
+      "status": "概念",
+      "note": "作为特征映射框架使用",
+      "strategy_spec_id": "LX24_LIMIT_UP_GENE",
+      "spec_test_status": "concept",
+      "computability": "C",
+      "strict_verdict": {
+       "verdict": "close",
+       "audited_at": "2026-11-01T16:48:33+08:00",
+       "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+       "rationale": "概念级战法（不可程序化），无假设可测；作为特征映射框架使用，不进入策略池。",
+       "evidence": [
+        "research/reports/book_batch_test_20261101.json"
+       ]
+      }
+     }
+    ],
+    "updated_at": "2026-11-01T05:43:42+08:00",
+    "spec_dir": "research/strategy_specs/",
+    "spec_loader": "tools/research/strategy_specs.py",
+    "spec_mapped": 24,
+    "spec_unmapped": [],
+    "batch_test": {
+     "report": "research/reports/book_batch_test_20261101.md",
+     "date": "2026-11-01",
+     "tested": 17,
+     "mapped": 17,
+     "grade_counts": {
+      "A": 0,
+      "B": 0,
+      "C": 2,
+      "D": 11,
+      "F": 4
+     },
+     "note": "A=正向显著/B=方向对不显著/C=方向未定/D=反向/F=不可计算；A/B 档为 0"
+    }
+   },
+   "reports": {
+    "dir": "research/reports",
+    "files": [
+     "H24-26_liangxue_features_20261031.json",
+     "H24-26_liangxue_features_20261031.md",
+     "H29_liangxue_refined_20261031.json",
+     "H29_liangxue_refined_20261031.md",
+     "H29_param_capacity_20261031.json",
+     "H29_param_capacity_20261031.md",
+     "book_batch_test_20261101.json",
+     "book_batch_test_20261101.md",
+     "lx20_avoid_rule_20261101.json",
+     "lx20_avoid_rule_20261101.md",
+     "pdf_learning_summary_20261101.json",
+     "reverse_avoid_20261101.json",
+     "reverse_avoid_20261101.md"
+    ]
+   },
+   "knowledge": {
+    "book_units": 35,
+    "book_cards": 9
+   },
+   "deliverables": [
+    "deliverables/2026-11-01_两本量学PDF学习与选股逻辑总结_v1.md",
+    "deliverables/2026-11-01_开源对标与两本PDF战法盘点_策略库v2.md",
+    "deliverables/2026-10-31_项目PDF读取与量学战法OCR_v1.md",
+    "deliverables/2026-10-31_量学特征策略反推_H24-H28_回执_v1.md",
+    "deliverables/2026-10-31_严格版量学特征_H29_回执_v1.md",
+    "deliverables/2026-11-01_量学选股叠加板块相对强度_数据日20261030.md"
+   ],
+   "conclusions": [
+    "24 战法机器可读规格化；6 已测全部 rejected；13 可计算批量四关无正向显著；反向规避仅 LX20 有线索但未过成本；",
+    "S05（LX20 规避）关闭：S01 内两方向无效；S02 暂停；策略线无上线；",
+    "量学形态作为特征库（9 因子）/风险线索保留，不作买入信号。"
+   ],
+   "archive_action": "已出归档台账（本文件）；建议后续将 specs/reports/知识资产建统一 manifest（当前分散但可追溯）"
+  },
+  {
+   "name": "老木创业笔记",
+   "status": "未找到源文件（全盘检索无结果）→ 未入库、未研究、未归档",
+   "searched": [
+    "C:\\项目（深度3，文件名含 老木/创业）",
+    "C:\\项目\\知识库（深度3 + 30/35/60/70/90 目录内容）",
+    "C:\\Users\\t（深度2）",
+    "C:\\baidunetdiskdownload",
+    "git 全历史（--grep 老木/创业笔记 + 文件历史）"
+   ],
+   "finding": "0 文件 / 0 引用 / 0 提交记录",
+   "next": [
+    "请把源文件（PDF/MD/图片）放到 C:\\项目\\PDF\\ 或告知实际路径；",
+    "我按 PDF 入库标准（OCR→知识单元→索引→学习卡）处理，并建立与学习PDF 同级归档台账；",
+    "若只是笔记（无 PDF），放 C:\\项目\\知识库\\ 下指定目录，我走文本入库通道。"
+   ]
+  }
+ ]
+}
