@@ -1,6 +1,6 @@
 # 老木创业笔记 — 入库占位（待源文件）
 
-> 建档时间：2026-11-02T03:45:48+08:00｜状态：**intake_pending（未找到源文件）**｜负责 AI：**A0 田丰**｜向老田负责
+> 建档时间：2026-11-02T03:45:48+08:00｜状态：**intake_pending（未找到源文件）**｜流程 Owner：**DATA1 张松（兰台令）**；执行 DATA2 刘巴；A0 仅仲裁
 
 ## 一、现状
 全盘检索 0 文件/0 引用/0 git 记录（范围见 `research/reports/project_archive_20261102.json`）：
@@ -21,5 +21,5 @@
 - 选题/内容类结论不构成投资建议。
 
 ## 四、负责与升级
-- 负责 AI：A0（田丰，参谋长，组织枢纽）；执行：按需派研究/数据线；审批：老田；
+- 流程 Owner：DATA1 张松；执行：DATA2 刘沙/清洗线→DATA5 结构化→DATA3 质检→DATA4 标准化；A0 仅仲裁；审批：老田；
 - 项目线登记（可选）：`agent_platform/registry/projects.json` 新增 `laomu-notes`（intake_pending）。

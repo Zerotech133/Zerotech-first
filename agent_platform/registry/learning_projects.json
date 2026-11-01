@@ -1,0 +1,69 @@
+{
+ "schema_version": "learning_projects.v1",
+ "generated_at": "2026-11-02T03:50:25+08:00",
+ "process_owner": {
+  "agent_id": "DATA1",
+  "cn": "张松",
+  "title": "兰台令（数据智能部长）",
+  "reports_to": "A0"
+ },
+ "executors": {
+  "DATA2": "刘巴·清洗/ETL",
+  "DATA3": "陈群·质量与标准",
+  "DATA4": "杨仪·元数据与资质",
+  "DATA5": "谯周·语料与情报结构化",
+  "FACTOR1": "蒋琬·因子挖掘（研究类按需）"
+ },
+ "escalation": {
+  "A0": "跨部门仲裁/资源/风险",
+  "human": "老田：立项/结项/不可逆审批"
+ },
+ "stages": [
+  "intake_pending",
+  "registered",
+  "ingesting",
+  "cleaning",
+  "extracting",
+  "governing",
+  "distilling",
+  "standardizing",
+  "published",
+  "archived",
+  "blocked"
+ ],
+ "projects": [
+  {
+   "project_id": "learnpdf_liangxue",
+   "name": "学习PDF·量学两本书",
+   "type": "book",
+   "status": "archived",
+   "owner": "DATA1",
+   "source": [
+    "C:\\项目\\PDF\\伏击涨停(2).pdf",
+    "C:\\项目\\PDF\\涨停密码(2).pdf"
+   ],
+   "archive": "_archive/2026-11-02_学习PDF_量学/",
+   "artifacts": {
+    "specs": 24,
+    "reports": 13,
+    "deliverables": 6,
+    "book_units": 35,
+    "book_cards": 9
+   },
+   "sop": "docs/standards/2026-11-02_学习项目标准化流程_v1.md",
+   "note": "已归档只读；结论=无正向alpha；禁止再投入做多/反向策略"
+  },
+  {
+   "project_id": "laomu_notes",
+   "name": "老木创业笔记",
+   "type": "notes",
+   "status": "intake_pending",
+   "owner": "DATA1",
+   "source": [],
+   "archive": "_archive/2026-11-02_老木创业笔记/",
+   "next_action": "待老田提供源文件（放 C:\\项目\\PDF\\ 或知识库）→ DATA2 入库 → S2 起流水线",
+   "note": "全盘0文件；不得归档为已完成"
+  }
+ ],
+ "sop": "docs/standards/2026-11-02_学习项目标准化流程_v1.md"
+}
