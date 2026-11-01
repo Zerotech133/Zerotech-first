@@ -58,12 +58,13 @@ def test_data_json_schema():
             assert it["review_id"].startswith("REV-")
         else:
             assert it["review_id"].startswith("CP3-")
-            assert (it["precheck"] or {}).get("suggested_verdict") is None, "第二轮无预审建议"
+            # wave27 CU：第二轮已补机器预审建议
+            assert (it["precheck"] or {}).get("suggested_verdict") in ("pass", "revise", "reject")
     stats = data["stats"]
     assert stats["total"] == 100
     assert stats["by_round"] == {"first": 60, "second": 40}
     assert stats["by_source"] == {"AE": 20, "AV": 40, "CP3": 40}
-    assert stats["precheck"] == {"pass": 36, "revise": 24, "reject": 0, "none": 40}
+    assert stats["precheck"] == {"pass": 53, "revise": 45, "reject": 2, "none": 0}
     opts = data["options"]
     assert [v["label"] for v in opts["verdicts"]] == ["通过", "需修改", "驳回", "未决"]
     assert opts["localStorage_key"] == "card_review_decisions_20261101"

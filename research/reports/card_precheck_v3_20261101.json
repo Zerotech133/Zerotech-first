@@ -1,0 +1,1402 @@
+{
+ "schema_version": 1,
+ "date": "20261101",
+ "generated_at": "2026-11-01T15:18:52+08:00",
+ "generator": "tools/kb_corpus/card_precheck_v3.py",
+ "mode": "rule_based_precheck（仅辅助，不 apply）",
+ "source": {
+  "proposals": "C:\\项目\\老田的AI助手\\portal\\static\\card_proposals_v3.json",
+  "proposals_sha256_before": "4d3ffbcda9c36410064146b3d19ab3ff964c87965b15dd805e6d3ad720d575c9",
+  "learning_cards": "C:\\项目\\老田的AI助手\\portal\\static\\kb_learning_cards.json",
+  "learning_cards_sha256_before": "01a3a954927ad7253a6ca8db7256684624cac6321c243dfb0bfed2c822f9092d",
+  "checklist": "C:\\项目\\老田的AI助手\\research\\reports\\card_review_checklist_20261101.json",
+  "checklist_sha256_before": "2c82091d06b3e4f03cf8f9f9d215dff6d2649b3fa0534ee23f3f527feb9bd2df",
+  "review_data": "C:\\项目\\老田的AI助手\\portal\\static\\card_review_data.json",
+  "review_data_sha256_before": "e2793cd5b4049bb6414da30b14eeb12fe374af8cbecf05c9585010713aca6915"
+ },
+ "policy": {
+  "reused_rules": "tools/kb_corpus/card_precheck.py",
+  "target": "card_proposals_v3.json 40 张 CP3-* 候选",
+  "outputs": "suggested_verdict(pass/revise/reject) + reasons + confidence + score",
+  "writes": "仅回写 card_review_data.json 的 CP3 precheck 与 precheck 统计；不改 proposals/学习卡/清单"
+ },
+ "summary": {
+  "total": 40,
+  "pass": 17,
+  "revise": 21,
+  "reject": 2,
+  "confidence": {
+   "high": 19,
+   "medium": 20,
+   "low": 1
+  },
+  "by_theme": [
+   {
+    "theme": "交运/物流",
+    "total": 3,
+    "pass": 0,
+    "revise": 3,
+    "reject": 0
+   },
+   {
+    "theme": "其他",
+    "total": 2,
+    "pass": 1,
+    "revise": 1,
+    "reject": 0
+   },
+   {
+    "theme": "军工/航天",
+    "total": 3,
+    "pass": 1,
+    "revise": 2,
+    "reject": 0
+   },
+   {
+    "theme": "农业",
+    "total": 2,
+    "pass": 0,
+    "revise": 2,
+    "reject": 0
+   },
+   {
+    "theme": "化工/材料",
+    "total": 3,
+    "pass": 2,
+    "revise": 1,
+    "reject": 0
+   },
+   {
+    "theme": "半导体/电子",
+    "total": 2,
+    "pass": 0,
+    "revise": 2,
+    "reject": 0
+   },
+   {
+    "theme": "建筑/建材",
+    "total": 1,
+    "pass": 1,
+    "revise": 0,
+    "reject": 0
+   },
+   {
+    "theme": "新能源/电力",
+    "total": 3,
+    "pass": 3,
+    "revise": 0,
+    "reject": 0
+   },
+   {
+    "theme": "有色/金属",
+    "total": 3,
+    "pass": 1,
+    "revise": 2,
+    "reject": 0
+   },
+   {
+    "theme": "机械/制造",
+    "total": 3,
+    "pass": 1,
+    "revise": 1,
+    "reject": 1
+   },
+   {
+    "theme": "汽车/智驾",
+    "total": 1,
+    "pass": 0,
+    "revise": 1,
+    "reject": 0
+   },
+   {
+    "theme": "消费/零售",
+    "total": 3,
+    "pass": 0,
+    "revise": 3,
+    "reject": 0
+   },
+   {
+    "theme": "网络安全/信创",
+    "total": 3,
+    "pass": 1,
+    "revise": 2,
+    "reject": 0
+   },
+   {
+    "theme": "评级/研报方法论",
+    "total": 1,
+    "pass": 1,
+    "revise": 0,
+    "reject": 0
+   },
+   {
+    "theme": "通信/互联网",
+    "total": 1,
+    "pass": 1,
+    "revise": 0,
+    "reject": 0
+   },
+   {
+    "theme": "量学/交易",
+    "total": 3,
+    "pass": 2,
+    "revise": 0,
+    "reject": 1
+   },
+   {
+    "theme": "金融/地产",
+    "total": 3,
+    "pass": 2,
+    "revise": 1,
+    "reject": 0
+   }
+  ],
+  "by_angle": [
+   {
+    "angle_cn": "关键事实",
+    "total": 13,
+    "pass": 6,
+    "revise": 7,
+    "reject": 0
+   },
+   {
+    "angle_cn": "影响传导",
+    "total": 13,
+    "pass": 4,
+    "revise": 9,
+    "reject": 0
+   },
+   {
+    "angle_cn": "概念定义",
+    "total": 14,
+    "pass": 7,
+    "revise": 5,
+    "reject": 2
+   }
+  ],
+  "flag_counts": {
+   "Q_ANSWER_MISMATCH": 16,
+   "ANSWER_TRUNCATED": 5,
+   "DUP_EXISTING_CONCEPT": 3,
+   "ANGLE_INCOHERENT": 3,
+   "DUP_EXISTING_ANSWER": 2,
+   "EVIDENCE_WEAK_OVERLAP": 2
+  },
+  "priority_review": [
+   {
+    "review_id": "CP3-20261101-016",
+    "score": 45,
+    "suggested_verdict": "reject",
+    "reasons": [
+     "与现有学习卡概念重复（中国工业机器人贸易总额）",
+     "与现有学习卡答案近重复（相似度 1.0）"
+    ]
+   },
+   {
+    "review_id": "CP3-20261101-034",
+    "score": 45,
+    "suggested_verdict": "reject",
+    "reasons": [
+     "与现有学习卡概念重复（量柱完全分类）",
+     "与现有学习卡答案近重复（相似度 1.0）"
+    ]
+   },
+   {
+    "review_id": "CP3-20261101-039",
+    "score": 51,
+    "suggested_verdict": "revise",
+    "reasons": [
+     "答案含截断/占位符（… 或 待补充）",
+     "问题与答案概念覆盖低（20%）"
+    ]
+   },
+   {
+    "review_id": "CP3-20261101-028",
+    "score": 63,
+    "suggested_verdict": "revise",
+    "reasons": [
+     "问题与答案概念覆盖低（14%）",
+     "角度一致性低（0.1）"
+    ]
+   },
+   {
+    "review_id": "CP3-20261101-025",
+    "score": 75,
+    "suggested_verdict": "revise",
+    "reasons": [
+     "角度一致性低（0.2105）",
+     "答案与原文重叠偏低（21%）"
+    ]
+   },
+   {
+    "review_id": "CP3-20261101-005",
+    "score": 76,
+    "suggested_verdict": "revise",
+    "reasons": [
+     "答案含截断/占位符（… 或 待补充）",
+     "问题与答案概念覆盖低（0%）"
+    ]
+   },
+   {
+    "review_id": "CP3-20261101-022",
+    "score": 85,
+    "suggested_verdict": "revise",
+    "reasons": [
+     "角度一致性低（0.2727）"
+    ]
+   },
+   {
+    "review_id": "CP3-20261101-003",
+    "score": 88,
+    "suggested_verdict": "revise",
+    "reasons": [
+     "问题与答案概念覆盖低（0%）"
+    ]
+   },
+   {
+    "review_id": "CP3-20261101-006",
+    "score": 88,
+    "suggested_verdict": "revise",
+    "reasons": [
+     "答案含截断/占位符（… 或 待补充）"
+    ]
+   },
+   {
+    "review_id": "CP3-20261101-009",
+    "score": 88,
+    "suggested_verdict": "revise",
+    "reasons": [
+     "答案含截断/占位符（… 或 待补充）"
+    ]
+   }
+  ]
+ },
+ "results": [
+  {
+   "review_id": "CP3-20261101-001",
+   "source": "CP3",
+   "theme": "化工/材料",
+   "angle_cn": "概念定义",
+   "concept": "PTFE材料路线",
+   "suggested_verdict": "pass",
+   "confidence": "high",
+   "score": 100,
+   "reasons": [
+    "规则预审未发现明显问题"
+   ],
+   "flags": [],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 114,
+    "evidence_len": 197,
+    "grounding": 0.35,
+    "q_coverage": 1.0,
+    "angle_coherence": 0.35,
+    "theme_rank": 3,
+    "theme_count": 3
+   }
+  },
+  {
+   "review_id": "CP3-20261101-002",
+   "source": "CP3",
+   "theme": "化工/材料",
+   "angle_cn": "关键事实",
+   "concept": "球形硅微粉",
+   "suggested_verdict": "pass",
+   "confidence": "high",
+   "score": 100,
+   "reasons": [
+    "规则预审未发现明显问题"
+   ],
+   "flags": [],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 166,
+    "evidence_len": 166,
+    "grounding": 1.0,
+    "q_coverage": 1.0,
+    "angle_coherence": 1.0,
+    "theme_rank": 1,
+    "theme_count": 3
+   }
+  },
+  {
+   "review_id": "CP3-20261101-003",
+   "source": "CP3",
+   "theme": "化工/材料",
+   "angle_cn": "影响传导",
+   "concept": "主要原材料价格波动",
+   "suggested_verdict": "revise",
+   "confidence": "medium",
+   "score": 88,
+   "reasons": [
+    "问题与答案概念覆盖低（0%）"
+   ],
+   "flags": [
+    "Q_ANSWER_MISMATCH"
+   ],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 223,
+    "evidence_len": 162,
+    "grounding": 0.75,
+    "q_coverage": 0.0,
+    "angle_coherence": 0.75,
+    "theme_rank": 2,
+    "theme_count": 3
+   }
+  },
+  {
+   "review_id": "CP3-20261101-004",
+   "source": "CP3",
+   "theme": "评级/研报方法论",
+   "angle_cn": "概念定义",
+   "concept": "恒生科技指数估值",
+   "suggested_verdict": "pass",
+   "confidence": "high",
+   "score": 100,
+   "reasons": [
+    "规则预审未发现明显问题"
+   ],
+   "flags": [],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 61,
+    "evidence_len": 79,
+    "grounding": 0.85,
+    "q_coverage": 1.0,
+    "angle_coherence": 0.85,
+    "theme_rank": 1,
+    "theme_count": 1
+   }
+  },
+  {
+   "review_id": "CP3-20261101-005",
+   "source": "CP3",
+   "theme": "汽车/智驾",
+   "angle_cn": "关键事实",
+   "concept": "四足机器人商业化挑战",
+   "suggested_verdict": "revise",
+   "confidence": "medium",
+   "score": 76,
+   "reasons": [
+    "答案含截断/占位符（… 或 待补充）",
+    "问题与答案概念覆盖低（0%）"
+   ],
+   "flags": [
+    "ANSWER_TRUNCATED",
+    "Q_ANSWER_MISMATCH"
+   ],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 82,
+    "evidence_len": 82,
+    "grounding": 1.0,
+    "q_coverage": 0.0,
+    "angle_coherence": 1.0,
+    "theme_rank": 1,
+    "theme_count": 1
+   }
+  },
+  {
+   "review_id": "CP3-20261101-006",
+   "source": "CP3",
+   "theme": "金融/地产",
+   "angle_cn": "影响传导",
+   "concept": "资本市场改革成效",
+   "suggested_verdict": "revise",
+   "confidence": "medium",
+   "score": 88,
+   "reasons": [
+    "答案含截断/占位符（… 或 待补充）"
+   ],
+   "flags": [
+    "ANSWER_TRUNCATED"
+   ],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 301,
+    "evidence_len": 246,
+    "grounding": 0.5283,
+    "q_coverage": 0.5,
+    "angle_coherence": 0.5283,
+    "theme_rank": 1,
+    "theme_count": 3
+   }
+  },
+  {
+   "review_id": "CP3-20261101-007",
+   "source": "CP3",
+   "theme": "金融/地产",
+   "angle_cn": "概念定义",
+   "concept": "中小行配债增速回落",
+   "suggested_verdict": "pass",
+   "confidence": "high",
+   "score": 100,
+   "reasons": [
+    "规则预审未发现明显问题"
+   ],
+   "flags": [],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 70,
+    "evidence_len": 129,
+    "grounding": 0.6522,
+    "q_coverage": 0.75,
+    "angle_coherence": 0.6522,
+    "theme_rank": 3,
+    "theme_count": 3
+   }
+  },
+  {
+   "review_id": "CP3-20261101-008",
+   "source": "CP3",
+   "theme": "金融/地产",
+   "angle_cn": "关键事实",
+   "concept": "房地产行业板块表现",
+   "suggested_verdict": "pass",
+   "confidence": "high",
+   "score": 100,
+   "reasons": [
+    "规则预审未发现明显问题"
+   ],
+   "flags": [],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 113,
+    "evidence_len": 113,
+    "grounding": 1.0,
+    "q_coverage": 0.5,
+    "angle_coherence": 1.0,
+    "theme_rank": 2,
+    "theme_count": 3
+   }
+  },
+  {
+   "review_id": "CP3-20261101-009",
+   "source": "CP3",
+   "theme": "消费/零售",
+   "angle_cn": "影响传导",
+   "concept": "网红营销与透明度要求",
+   "suggested_verdict": "revise",
+   "confidence": "medium",
+   "score": 88,
+   "reasons": [
+    "答案含截断/占位符（… 或 待补充）"
+   ],
+   "flags": [
+    "ANSWER_TRUNCATED"
+   ],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 272,
+    "evidence_len": 198,
+    "grounding": 0.6901,
+    "q_coverage": 0.4,
+    "angle_coherence": 0.6901,
+    "theme_rank": 1,
+    "theme_count": 3
+   }
+  },
+  {
+   "review_id": "CP3-20261101-010",
+   "source": "CP3",
+   "theme": "消费/零售",
+   "angle_cn": "概念定义",
+   "concept": "广州零售市场策略",
+   "suggested_verdict": "revise",
+   "confidence": "medium",
+   "score": 88,
+   "reasons": [
+    "问题与答案概念覆盖低（25%）"
+   ],
+   "flags": [
+    "Q_ANSWER_MISMATCH"
+   ],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 81,
+    "evidence_len": 114,
+    "grounding": 0.3226,
+    "q_coverage": 0.25,
+    "angle_coherence": 0.3226,
+    "theme_rank": 3,
+    "theme_count": 3
+   }
+  },
+  {
+   "review_id": "CP3-20261101-011",
+   "source": "CP3",
+   "theme": "消费/零售",
+   "angle_cn": "关键事实",
+   "concept": "深圳零售市场特征",
+   "suggested_verdict": "revise",
+   "confidence": "medium",
+   "score": 88,
+   "reasons": [
+    "问题与答案概念覆盖低（0%）"
+   ],
+   "flags": [
+    "Q_ANSWER_MISMATCH"
+   ],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 124,
+    "evidence_len": 124,
+    "grounding": 1.0,
+    "q_coverage": 0.0,
+    "angle_coherence": 1.0,
+    "theme_rank": 2,
+    "theme_count": 3
+   }
+  },
+  {
+   "review_id": "CP3-20261101-012",
+   "source": "CP3",
+   "theme": "军工/航天",
+   "angle_cn": "影响传导",
+   "concept": "个股涨跌幅排名",
+   "suggested_verdict": "revise",
+   "confidence": "medium",
+   "score": 88,
+   "reasons": [
+    "问题与答案概念覆盖低（0%）"
+   ],
+   "flags": [
+    "Q_ANSWER_MISMATCH"
+   ],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 171,
+    "evidence_len": 90,
+    "grounding": 0.8788,
+    "q_coverage": 0.0,
+    "angle_coherence": 0.8788,
+    "theme_rank": 1,
+    "theme_count": 3
+   }
+  },
+  {
+   "review_id": "CP3-20261101-013",
+   "source": "CP3",
+   "theme": "军工/航天",
+   "angle_cn": "概念定义",
+   "concept": "无人驾驶航空器贸易分类",
+   "suggested_verdict": "pass",
+   "confidence": "high",
+   "score": 100,
+   "reasons": [
+    "规则预审未发现明显问题"
+   ],
+   "flags": [],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 62,
+    "evidence_len": 91,
+    "grounding": 0.3478,
+    "q_coverage": 0.6,
+    "angle_coherence": 0.3478,
+    "theme_rank": 3,
+    "theme_count": 3
+   }
+  },
+  {
+   "review_id": "CP3-20261101-014",
+   "source": "CP3",
+   "theme": "军工/航天",
+   "angle_cn": "关键事实",
+   "concept": "客座率水平",
+   "suggested_verdict": "revise",
+   "confidence": "medium",
+   "score": 88,
+   "reasons": [
+    "问题与答案概念覆盖低（0%）"
+   ],
+   "flags": [
+    "Q_ANSWER_MISMATCH"
+   ],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 80,
+    "evidence_len": 80,
+    "grounding": 1.0,
+    "q_coverage": 0.0,
+    "angle_coherence": 1.0,
+    "theme_rank": 2,
+    "theme_count": 3
+   }
+  },
+  {
+   "review_id": "CP3-20261101-015",
+   "source": "CP3",
+   "theme": "机械/制造",
+   "angle_cn": "影响传导",
+   "concept": "工业机器人产品分类",
+   "suggested_verdict": "pass",
+   "confidence": "high",
+   "score": 100,
+   "reasons": [
+    "规则预审未发现明显问题"
+   ],
+   "flags": [],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 161,
+    "evidence_len": 88,
+    "grounding": 0.7297,
+    "q_coverage": 0.5,
+    "angle_coherence": 0.7297,
+    "theme_rank": 1,
+    "theme_count": 3
+   }
+  },
+  {
+   "review_id": "CP3-20261101-016",
+   "source": "CP3",
+   "theme": "机械/制造",
+   "angle_cn": "概念定义",
+   "concept": "中国工业机器人贸易总额",
+   "suggested_verdict": "reject",
+   "confidence": "high",
+   "score": 45,
+   "reasons": [
+    "与现有学习卡概念重复（中国工业机器人贸易总额）",
+    "与现有学习卡答案近重复（相似度 1.0）"
+   ],
+   "flags": [
+    "DUP_EXISTING_ANSWER",
+    "DUP_EXISTING_CONCEPT"
+   ],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 86,
+    "evidence_len": 61,
+    "grounding": 0.5556,
+    "q_coverage": 0.6,
+    "angle_coherence": 0.5556,
+    "theme_rank": 3,
+    "theme_count": 3
+   }
+  },
+  {
+   "review_id": "CP3-20261101-017",
+   "source": "CP3",
+   "theme": "机械/制造",
+   "angle_cn": "关键事实",
+   "concept": "出口区域分布",
+   "suggested_verdict": "revise",
+   "confidence": "medium",
+   "score": 88,
+   "reasons": [
+    "问题与答案概念覆盖低（33%）"
+   ],
+   "flags": [
+    "Q_ANSWER_MISMATCH"
+   ],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 51,
+    "evidence_len": 51,
+    "grounding": 1.0,
+    "q_coverage": 0.3333,
+    "angle_coherence": 1.0,
+    "theme_rank": 2,
+    "theme_count": 3
+   }
+  },
+  {
+   "review_id": "CP3-20261101-018",
+   "source": "CP3",
+   "theme": "交运/物流",
+   "angle_cn": "影响传导",
+   "concept": "航运市场运价与租金",
+   "suggested_verdict": "revise",
+   "confidence": "medium",
+   "score": 88,
+   "reasons": [
+    "问题与答案概念覆盖低（0%）"
+   ],
+   "flags": [
+    "Q_ANSWER_MISMATCH"
+   ],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 175,
+    "evidence_len": 96,
+    "grounding": 0.7097,
+    "q_coverage": 0.0,
+    "angle_coherence": 0.7097,
+    "theme_rank": 1,
+    "theme_count": 3
+   }
+  },
+  {
+   "review_id": "CP3-20261101-019",
+   "source": "CP3",
+   "theme": "交运/物流",
+   "angle_cn": "概念定义",
+   "concept": "主要快递公司单票收入增速排名（1-8 月）",
+   "suggested_verdict": "revise",
+   "confidence": "medium",
+   "score": 88,
+   "reasons": [
+    "问题与答案概念覆盖低（14%）"
+   ],
+   "flags": [
+    "Q_ANSWER_MISMATCH"
+   ],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 85,
+    "evidence_len": 65,
+    "grounding": 0.7895,
+    "q_coverage": 0.1429,
+    "angle_coherence": 0.7895,
+    "theme_rank": 3,
+    "theme_count": 3
+   }
+  },
+  {
+   "review_id": "CP3-20261101-020",
+   "source": "CP3",
+   "theme": "交运/物流",
+   "angle_cn": "关键事实",
+   "concept": "铁路客流预测",
+   "suggested_verdict": "revise",
+   "confidence": "medium",
+   "score": 88,
+   "reasons": [
+    "问题与答案概念覆盖低（33%）"
+   ],
+   "flags": [
+    "Q_ANSWER_MISMATCH"
+   ],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 87,
+    "evidence_len": 87,
+    "grounding": 1.0,
+    "q_coverage": 0.3333,
+    "angle_coherence": 1.0,
+    "theme_rank": 2,
+    "theme_count": 3
+   }
+  },
+  {
+   "review_id": "CP3-20261101-021",
+   "source": "CP3",
+   "theme": "网络安全/信创",
+   "angle_cn": "影响传导",
+   "concept": "监管原则",
+   "suggested_verdict": "revise",
+   "confidence": "medium",
+   "score": 88,
+   "reasons": [
+    "答案含截断/占位符（… 或 待补充）"
+   ],
+   "flags": [
+    "ANSWER_TRUNCATED"
+   ],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 152,
+    "evidence_len": 94,
+    "grounding": 0.6786,
+    "q_coverage": 0.5,
+    "angle_coherence": 0.6786,
+    "theme_rank": 2,
+    "theme_count": 3
+   }
+  },
+  {
+   "review_id": "CP3-20261101-022",
+   "source": "CP3",
+   "theme": "网络安全/信创",
+   "angle_cn": "概念定义",
+   "concept": "网络安全职位招聘周期",
+   "suggested_verdict": "revise",
+   "confidence": "medium",
+   "score": 85,
+   "reasons": [
+    "角度一致性低（0.2727）"
+   ],
+   "flags": [
+    "ANGLE_INCOHERENT"
+   ],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 62,
+    "evidence_len": 73,
+    "grounding": 0.2727,
+    "q_coverage": 1.0,
+    "angle_coherence": 0.2727,
+    "theme_rank": 3,
+    "theme_count": 3
+   }
+  },
+  {
+   "review_id": "CP3-20261101-023",
+   "source": "CP3",
+   "theme": "网络安全/信创",
+   "angle_cn": "关键事实",
+   "concept": "网络安全人员工作压力",
+   "suggested_verdict": "pass",
+   "confidence": "high",
+   "score": 100,
+   "reasons": [
+    "规则预审未发现明显问题"
+   ],
+   "flags": [],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 85,
+    "evidence_len": 85,
+    "grounding": 1.0,
+    "q_coverage": 0.6,
+    "angle_coherence": 1.0,
+    "theme_rank": 1,
+    "theme_count": 3
+   }
+  },
+  {
+   "review_id": "CP3-20261101-024",
+   "source": "CP3",
+   "theme": "有色/金属",
+   "angle_cn": "影响传导",
+   "concept": "稀土价格分化",
+   "suggested_verdict": "pass",
+   "confidence": "high",
+   "score": 100,
+   "reasons": [
+    "规则预审未发现明显问题"
+   ],
+   "flags": [],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 202,
+    "evidence_len": 132,
+    "grounding": 0.6,
+    "q_coverage": 0.6667,
+    "angle_coherence": 0.6,
+    "theme_rank": 2,
+    "theme_count": 3
+   }
+  },
+  {
+   "review_id": "CP3-20261101-025",
+   "source": "CP3",
+   "theme": "有色/金属",
+   "angle_cn": "概念定义",
+   "concept": "贵金属板块领涨",
+   "suggested_verdict": "revise",
+   "confidence": "medium",
+   "score": 75,
+   "reasons": [
+    "角度一致性低（0.2105）",
+    "答案与原文重叠偏低（21%）"
+   ],
+   "flags": [
+    "ANGLE_INCOHERENT",
+    "EVIDENCE_WEAK_OVERLAP"
+   ],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 50,
+    "evidence_len": 110,
+    "grounding": 0.2105,
+    "q_coverage": 0.6667,
+    "angle_coherence": 0.2105,
+    "theme_rank": 3,
+    "theme_count": 3
+   }
+  },
+  {
+   "review_id": "CP3-20261101-026",
+   "source": "CP3",
+   "theme": "有色/金属",
+   "angle_cn": "关键事实",
+   "concept": "小金属价格波动",
+   "suggested_verdict": "revise",
+   "confidence": "medium",
+   "score": 88,
+   "reasons": [
+    "问题与答案概念覆盖低（0%）"
+   ],
+   "flags": [
+    "Q_ANSWER_MISMATCH"
+   ],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 111,
+    "evidence_len": 111,
+    "grounding": 1.0,
+    "q_coverage": 0.0,
+    "angle_coherence": 1.0,
+    "theme_rank": 1,
+    "theme_count": 3
+   }
+  },
+  {
+   "review_id": "CP3-20261101-027",
+   "source": "CP3",
+   "theme": "农业",
+   "angle_cn": "影响传导",
+   "concept": "中国畜禽肉产品主要出口市场",
+   "suggested_verdict": "revise",
+   "confidence": "medium",
+   "score": 88,
+   "reasons": [
+    "问题与答案概念覆盖低（17%）"
+   ],
+   "flags": [
+    "Q_ANSWER_MISMATCH"
+   ],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 107,
+    "evidence_len": 42,
+    "grounding": 0.3333,
+    "q_coverage": 0.1667,
+    "angle_coherence": 0.3333,
+    "theme_rank": 1,
+    "theme_count": 2
+   }
+  },
+  {
+   "review_id": "CP3-20261101-028",
+   "source": "CP3",
+   "theme": "农业",
+   "angle_cn": "概念定义",
+   "concept": "中国畜禽肉产品主要进口来源国",
+   "suggested_verdict": "revise",
+   "confidence": "medium",
+   "score": 63,
+   "reasons": [
+    "问题与答案概念覆盖低（14%）",
+    "角度一致性低（0.1）",
+    "答案与原文重叠偏低（10%）"
+   ],
+   "flags": [
+    "ANGLE_INCOHERENT",
+    "EVIDENCE_WEAK_OVERLAP",
+    "Q_ANSWER_MISMATCH"
+   ],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 52,
+    "evidence_len": 55,
+    "grounding": 0.1,
+    "q_coverage": 0.1429,
+    "angle_coherence": 0.1,
+    "theme_rank": 2,
+    "theme_count": 2
+   }
+  },
+  {
+   "review_id": "CP3-20261101-029",
+   "source": "CP3",
+   "theme": "半导体/电子",
+   "angle_cn": "关键事实",
+   "concept": "高端 ABF 载板产能瓶颈",
+   "suggested_verdict": "revise",
+   "confidence": "medium",
+   "score": 88,
+   "reasons": [
+    "问题与答案概念覆盖低（0%）"
+   ],
+   "flags": [
+    "Q_ANSWER_MISMATCH"
+   ],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 157,
+    "evidence_len": 157,
+    "grounding": 1.0,
+    "q_coverage": 0.0,
+    "angle_coherence": 1.0,
+    "theme_rank": 1,
+    "theme_count": 2
+   }
+  },
+  {
+   "review_id": "CP3-20261101-030",
+   "source": "CP3",
+   "theme": "半导体/电子",
+   "angle_cn": "影响传导",
+   "concept": "高景气细分赛道",
+   "suggested_verdict": "revise",
+   "confidence": "medium",
+   "score": 88,
+   "reasons": [
+    "问题与答案概念覆盖低（33%）"
+   ],
+   "flags": [
+    "Q_ANSWER_MISMATCH"
+   ],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 138,
+    "evidence_len": 84,
+    "grounding": 0.7442,
+    "q_coverage": 0.3333,
+    "angle_coherence": 0.7442,
+    "theme_rank": 2,
+    "theme_count": 2
+   }
+  },
+  {
+   "review_id": "CP3-20261101-031",
+   "source": "CP3",
+   "theme": "建筑/建材",
+   "angle_cn": "概念定义",
+   "concept": "建筑领域电气化与低碳转型",
+   "suggested_verdict": "pass",
+   "confidence": "high",
+   "score": 100,
+   "reasons": [
+    "规则预审未发现明显问题"
+   ],
+   "flags": [],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 52,
+    "evidence_len": 93,
+    "grounding": 0.4737,
+    "q_coverage": 0.6667,
+    "angle_coherence": 0.4737,
+    "theme_rank": 1,
+    "theme_count": 1
+   }
+  },
+  {
+   "review_id": "CP3-20261101-032",
+   "source": "CP3",
+   "theme": "通信/互联网",
+   "angle_cn": "关键事实",
+   "concept": "国防军工行业投资建议",
+   "suggested_verdict": "pass",
+   "confidence": "high",
+   "score": 100,
+   "reasons": [
+    "规则预审未发现明显问题"
+   ],
+   "flags": [],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 92,
+    "evidence_len": 92,
+    "grounding": 1.0,
+    "q_coverage": 0.6,
+    "angle_coherence": 1.0,
+    "theme_rank": 1,
+    "theme_count": 1
+   }
+  },
+  {
+   "review_id": "CP3-20261101-033",
+   "source": "CP3",
+   "theme": "量学/交易",
+   "angle_cn": "影响传导",
+   "concept": "精准线伏击",
+   "suggested_verdict": "pass",
+   "confidence": "high",
+   "score": 100,
+   "reasons": [
+    "规则预审未发现明显问题"
+   ],
+   "flags": [],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 161,
+    "evidence_len": 94,
+    "grounding": 0.5862,
+    "q_coverage": 0.5,
+    "angle_coherence": 0.5862,
+    "theme_rank": 2,
+    "theme_count": 3
+   }
+  },
+  {
+   "review_id": "CP3-20261101-034",
+   "source": "CP3",
+   "theme": "量学/交易",
+   "angle_cn": "概念定义",
+   "concept": "量柱完全分类",
+   "suggested_verdict": "reject",
+   "confidence": "high",
+   "score": 45,
+   "reasons": [
+    "与现有学习卡概念重复（量柱完全分类）",
+    "与现有学习卡答案近重复（相似度 1.0）"
+   ],
+   "flags": [
+    "DUP_EXISTING_ANSWER",
+    "DUP_EXISTING_CONCEPT"
+   ],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 55,
+    "evidence_len": 104,
+    "grounding": 0.8696,
+    "q_coverage": 1.0,
+    "angle_coherence": 0.8696,
+    "theme_rank": 3,
+    "theme_count": 3
+   }
+  },
+  {
+   "review_id": "CP3-20261101-035",
+   "source": "CP3",
+   "theme": "量学/交易",
+   "angle_cn": "关键事实",
+   "concept": "量学理论",
+   "suggested_verdict": "pass",
+   "confidence": "high",
+   "score": 100,
+   "reasons": [
+    "规则预审未发现明显问题"
+   ],
+   "flags": [],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 91,
+    "evidence_len": 91,
+    "grounding": 1.0,
+    "q_coverage": 0.5,
+    "angle_coherence": 1.0,
+    "theme_rank": 1,
+    "theme_count": 3
+   }
+  },
+  {
+   "review_id": "CP3-20261101-036",
+   "source": "CP3",
+   "theme": "新能源/电力",
+   "angle_cn": "影响传导",
+   "concept": "光伏成本核算新规",
+   "suggested_verdict": "pass",
+   "confidence": "high",
+   "score": 100,
+   "reasons": [
+    "规则预审未发现明显问题"
+   ],
+   "flags": [],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 204,
+    "evidence_len": 115,
+    "grounding": 0.75,
+    "q_coverage": 0.5,
+    "angle_coherence": 0.75,
+    "theme_rank": 1,
+    "theme_count": 3
+   }
+  },
+  {
+   "review_id": "CP3-20261101-037",
+   "source": "CP3",
+   "theme": "新能源/电力",
+   "angle_cn": "概念定义",
+   "concept": "亿纬锂能与 Fluence 战略合作",
+   "suggested_verdict": "pass",
+   "confidence": "high",
+   "score": 100,
+   "reasons": [
+    "规则预审未发现明显问题"
+   ],
+   "flags": [],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 83,
+    "evidence_len": 116,
+    "grounding": 0.7391,
+    "q_coverage": 0.8,
+    "angle_coherence": 0.7391,
+    "theme_rank": 3,
+    "theme_count": 3
+   }
+  },
+  {
+   "review_id": "CP3-20261101-038",
+   "source": "CP3",
+   "theme": "新能源/电力",
+   "angle_cn": "关键事实",
+   "concept": "光伏行业供给出清",
+   "suggested_verdict": "pass",
+   "confidence": "high",
+   "score": 100,
+   "reasons": [
+    "规则预审未发现明显问题"
+   ],
+   "flags": [],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 114,
+    "evidence_len": 114,
+    "grounding": 1.0,
+    "q_coverage": 0.5,
+    "angle_coherence": 1.0,
+    "theme_rank": 2,
+    "theme_count": 3
+   }
+  },
+  {
+   "review_id": "CP3-20261101-039",
+   "source": "CP3",
+   "theme": "其他",
+   "angle_cn": "影响传导",
+   "concept": "多层级安全评估体系（ARIA）",
+   "suggested_verdict": "revise",
+   "confidence": "low",
+   "score": 51,
+   "reasons": [
+    "答案含截断/占位符（… 或 待补充）",
+    "问题与答案概念覆盖低（20%）",
+    "与现有学习卡概念重复（多层级安全评估体系（ARIA））"
+   ],
+   "flags": [
+    "ANSWER_TRUNCATED",
+    "DUP_EXISTING_CONCEPT",
+    "Q_ANSWER_MISMATCH"
+   ],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 274,
+    "evidence_len": 173,
+    "grounding": 0.7925,
+    "q_coverage": 0.2,
+    "angle_coherence": 0.7925,
+    "theme_rank": 1,
+    "theme_count": 2
+   }
+  },
+  {
+   "review_id": "CP3-20261101-040",
+   "source": "CP3",
+   "theme": "其他",
+   "angle_cn": "概念定义",
+   "concept": "中小行配债中枢趋势下移",
+   "suggested_verdict": "pass",
+   "confidence": "high",
+   "score": 100,
+   "reasons": [
+    "规则预审未发现明显问题"
+   ],
+   "flags": [],
+   "metrics": {
+    "trace_completeness": 1.0,
+    "trace_missing": [],
+    "citation_ok": true,
+    "answer_len": 69,
+    "evidence_len": 186,
+    "grounding": 0.6667,
+    "q_coverage": 0.8,
+    "angle_coherence": 0.6667,
+    "theme_rank": 2,
+    "theme_count": 2
+   }
+  }
+ ],
+ "data_update": {
+  "updated_cp3": 40,
+  "round1_unchanged": true,
+  "stats_before": {
+   "pass": 53,
+   "revise": 45,
+   "reject": 2,
+   "none": 0
+  },
+  "stats_after": {
+   "pass": 53,
+   "revise": 45,
+   "reject": 2,
+   "none": 0
+  },
+  "path": "C:\\项目\\老田的AI助手\\portal\\static\\card_review_data.json",
+  "sha256_after": "8883135a5bf78d7fbfb42a69cd1f2b0ef0e10aebb330f960fbb2d9c468b012b7"
+ },
+ "disclaimer": "第二轮机器预审为规则化辅助建议，仅加速人工审核，不构成最终审核结论与投资建议。",
+ "_outputs": {
+  "json": "C:\\项目\\老田的AI助手\\research\\reports\\card_precheck_v3_20261101.json",
+  "md": "C:\\项目\\老田的AI助手\\research\\reports\\card_precheck_v3_20261101.md"
+ },
+ "source_unchanged": true
+}

@@ -2,12 +2,16 @@
  "schema_version": 2,
  "date": "20261101",
  "generated_at": "2026-11-01T14:21:42+08:00",
- "generator": "wave26 CP 审核页数据合并（第一轮 60 + 第二轮 40）",
+ "generator": "wave26 CP 审核页数据合并（第一轮 60 + 第二轮 40） + tools/kb_corpus/card_precheck_v3.py + tools/kb_corpus/card_precheck_v3.py",
  "source": {
   "round1": "portal/static/card_review_data.json（原 60 条，来源清单+预审）",
   "round1_sha256": "a5ebe51152c55877e0e066338981c9199c8696a4c6d209c99a2bc6f29a2edd8b",
   "round2": "portal/static/card_proposals_v3.json（40 条 pending_review）",
-  "round2_sha256": "4d3ffbcda9c36410064146b3d19ab3ff964c87965b15dd805e6d3ad720d575c9"
+  "round2_sha256": "4d3ffbcda9c36410064146b3d19ab3ff964c87965b15dd805e6d3ad720d575c9",
+  "precheck_v3": {
+   "path": "research/reports/card_precheck_v3_20261101.json",
+   "generated_at": "2026-11-01T15:18:52+08:00"
+  }
  },
  "stats": {
   "total": 100,
@@ -107,10 +111,10 @@
    }
   ],
   "precheck": {
-   "pass": 36,
-   "revise": 24,
-   "reject": 0,
-   "none": 40
+   "pass": 53,
+   "revise": 45,
+   "reject": 2,
+   "none": 0
   }
  },
  "options": {
@@ -1918,12 +1922,14 @@
    "evidence_summary": "PTFE是低损耗材料潜在的下一代路线...10GHz条件下介电常数约2.1-2.2、介电损耗低于0.0004，较M9的介电常数约3.0-3.1、介电损耗约0.00046-0.00050实现代际级领先...但PTFE属热塑性材料，不发生交联固化反应，存在压合稳定性差、钻孔易产生毛刺等难题；产业界当前讨…",
    "unit_id": "rp_AP202610071830180005#p2-14",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 86.3,
+    "suggested_verdict": "pass",
+    "confidence": "high",
+    "score": 100,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "规则预审未发现明显问题"
+    ],
+    "flags": [],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -1950,12 +1956,14 @@
    "evidence_summary": "在M9配方的升级中，球形硅微粉是市场长期忽视的'第四种填料'...硅微粉直接决定高速基板的三项核心性能：改善线性膨胀系数（CTE）以抑制高层板翘曲分层、以良好介电表现保障信号质量、以导热特性应对高功耗GPU散热需求...当前全球高端亚微米球形硅微粉由日本Admatechs、Denka、Resonac…",
    "unit_id": "rp_AP202610071830180005#p2-14",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 74.4,
+    "suggested_verdict": "pass",
+    "confidence": "high",
+    "score": 100,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "规则预审未发现明显问题"
+    ],
+    "flags": [],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -1982,12 +1990,16 @@
    "evidence_summary": "本周铁矿石期货收盘价 713.5 元/吨，环比 -2 元/吨；铸造生铁价格 3110 元/吨，环比持平；中厚板价格 3499 元/吨，环比 -13 元/吨；铜、铝现货价格分别为 14740、3254 美元/吨，单价分别 +211、-31 美元/吨，环比 +1.5%、-0.9%。环氧树脂价格为 156…",
    "unit_id": "rp_AP202610021830105372#p1-9",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 66.2,
+    "suggested_verdict": "revise",
+    "confidence": "medium",
+    "score": 88,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "问题与答案概念覆盖低（0%）"
+    ],
+    "flags": [
+     "Q_ANSWER_MISMATCH"
+    ],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -2014,12 +2026,14 @@
    "evidence_summary": "从市盈率看，恒生科技指数估值较上月下降：截至2026 年9 月27 日，恒生科技指数PE-TTM 为22.93x，处于恒生科技指数成立以来34.27%分位点。",
    "unit_id": "rp_AP202610021830111802#p1-13",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 53.4,
+    "suggested_verdict": "pass",
+    "confidence": "high",
+    "score": 100,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "规则预审未发现明显问题"
+    ],
+    "flags": [],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -2046,12 +2060,18 @@
    "evidence_summary": "工业场景下...面对动态、未知、干扰较多的真实复杂环境时泛化能力不足；高强度作业下续航与负载不满足实际需求；核心零部件仍带有小批量、半自动化生产和半定制化特征...",
    "unit_id": "rp_AP202610021830105414#p1-13",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 56.7,
+    "suggested_verdict": "revise",
+    "confidence": "medium",
+    "score": 76,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "答案含截断/占位符（… 或 待补充）",
+     "问题与答案概念覆盖低（0%）"
+    ],
+    "flags": [
+     "ANSWER_TRUNCATED",
+     "Q_ANSWER_MISMATCH"
+    ],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -2078,12 +2098,16 @@
    "evidence_summary": "Abstract: During the 15th Five-Year Plan period, China's capital market will play a crucial role in supporting technological innovation, facilitating…",
    "unit_id": "rp_AP202610031830124601#p13-13",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 78.2,
+    "suggested_verdict": "revise",
+    "confidence": "medium",
+    "score": 88,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "答案含截断/占位符（… 或 待补充）"
+    ],
+    "flags": [
+     "ANSWER_TRUNCATED"
+    ],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -2110,12 +2134,14 @@
    "evidence_summary": "截至 2026 年 8 月末，中小行配债增速下降至 4.87%，与大行 18.05% 的高位形成鲜明对比。关键背离在于：中小行存贷增速差 3.33%（高于大行 2.84%），逻辑上冗余流动性更多，但配债反而放缓——说明部分机构不是无钱可配，而是有钱也不买债。",
    "unit_id": "rp_AP202609301830035477#p1-13",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 64.0,
+    "suggested_verdict": "pass",
+    "confidence": "high",
+    "score": 100,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "规则预审未发现明显问题"
+    ],
+    "flags": [],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -2142,12 +2168,14 @@
    "evidence_summary": "上周（2026.9.21-2026.9.24）房地产（申万）板块上涨 2.28%，沪深 300 指数下跌 1.51%，房地产板块领先沪深 300 指数 3.79 个百分点。和其他行业对比，房地产行业涨幅位列申万行业第 1 位。",
    "unit_id": "rp_AP202609301830054738#p1-12",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 63.1,
+    "suggested_verdict": "pass",
+    "confidence": "high",
+    "score": 100,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "规则预审未发现明显问题"
+    ],
+    "flags": [],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -2174,12 +2202,16 @@
    "evidence_summary": "所有网红营销传播活动...都应设计并呈现，使其能被立即识别为营销传播。如果沟通的形式和格式本身不足以让人明白其属于赞助信息，则应通过适当披露的方式，清楚表明证言或背书的赞助性质。testimonials and influencer endorsements shall not encourage…",
    "unit_id": "rp_AP202609301830015420#p4-16",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 75.5,
+    "suggested_verdict": "revise",
+    "confidence": "medium",
+    "score": 88,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "答案含截断/占位符（… 或 待补充）"
+    ],
+    "flags": [
+     "ANSWER_TRUNCATED"
+    ],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -2206,12 +2238,16 @@
    "evidence_summary": "全市优质购物中心空置率保持平稳...较2025年同期仅微升1.8个百分点至1.8%...业主方为保持竞争优势，提供了更优惠的出租策略，包括租金转扣点、长免租期...让利措施的普遍推行给租金带来下行压力，录得每月每平方米622元。",
    "unit_id": "rp_AP202609301830015453#p2-14",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 64.2,
+    "suggested_verdict": "revise",
+    "confidence": "medium",
+    "score": 88,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "问题与答案概念覆盖低（25%）"
+    ],
+    "flags": [
+     "Q_ANSWER_MISMATCH"
+    ],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -2238,12 +2274,16 @@
    "evidence_summary": "受宏观面多重不确定因素影响...多数品牌也放缓投资节奏...成熟优质购物中心得益于客流韧性，租金水平总体持稳...全市优质购物中心空置率较2025年同期微升1.5个百分点至1.5%...全市优质购物中心最优层平均租金同比下降至每月每平方米693元。",
    "unit_id": "rp_AP202609301830015453#p2-14",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 64.2,
+    "suggested_verdict": "revise",
+    "confidence": "medium",
+    "score": 88,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "问题与答案概念覆盖低（0%）"
+    ],
+    "flags": [
+     "Q_ANSWER_MISMATCH"
+    ],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -2270,12 +2310,16 @@
    "evidence_summary": "国防军工行业 138 家上市公司中，上周 51 家公司上涨，87 家公司下跌，涨幅前 3 名分别为航发科技、合众思壮和火炬电子，跌幅前 3 名分别为纵横股份、ST 亚光和兴图新科。",
    "unit_id": "rp_AP202610021830105332#p1-9",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 59.2,
+    "suggested_verdict": "revise",
+    "confidence": "medium",
+    "score": 88,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "问题与答案概念覆盖低（0%）"
+    ],
+    "flags": [
+     "Q_ANSWER_MISMATCH"
+    ],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -2302,12 +2346,14 @@
    "evidence_summary": "1 本报告定义的无人驾驶航空器对应的产品分类及 HS2024 代码为：无人驾驶航空器（88.06），其中包括设计用于旅客运 输的无人驾驶航空器、仅使用遥控飞行的无人驾驶航空器、其他。",
    "unit_id": "rp_AP202610061830165864#p2-12",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 55.7,
+    "suggested_verdict": "pass",
+    "confidence": "high",
+    "score": 100,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "规则预审未发现明显问题"
+    ],
+    "flags": [],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -2334,12 +2380,16 @@
    "evidence_summary": "1-8 月我国民航客座率为 86.30%，同比提升 1.6pct，较 1-7 月上升 0.5pct。六家上市航空公司 1-8 月整体客座率水平为 86.19%。",
    "unit_id": "rp_AP202609301830022766#p1-3",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 55.3,
+    "suggested_verdict": "revise",
+    "confidence": "medium",
+    "score": 88,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "问题与答案概念覆盖低（0%）"
+    ],
+    "flags": [
+     "Q_ANSWER_MISMATCH"
+    ],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -2366,12 +2416,14 @@
    "evidence_summary": "参考《GB∕T 39405-2020 机器人分类》及对应的海关 HS2023 代码，本报告工业机器人具体界定包括普通工业机器人、未列名工业机器人及其他专用机器人如焊接、喷涂等。",
    "unit_id": "rp_AP202610061830165858#p2-9",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 56.9,
+    "suggested_verdict": "pass",
+    "confidence": "high",
+    "score": 100,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "规则预审未发现明显问题"
+    ],
+    "flags": [],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -2398,12 +2450,18 @@
    "evidence_summary": "8 月当月进出口总额 326.8（同比变化 21.1），1 至 8 月累计进出口总额 2302.6（同比变化 15.3）。",
    "unit_id": "rp_AP202610061830165858#p2-9",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 56.7,
+    "suggested_verdict": "reject",
+    "confidence": "high",
+    "score": 45,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "与现有学习卡概念重复（中国工业机器人贸易总额）",
+     "与现有学习卡答案近重复（相似度 1.0）"
+    ],
+    "flags": [
+     "DUP_EXISTING_ANSWER",
+     "DUP_EXISTING_CONCEPT"
+    ],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -2430,12 +2488,16 @@
    "evidence_summary": "8 月当月重点区域中，东盟出口 31.4（份额 17.0）；排名前 10 地区中，美国出口 16.8。",
    "unit_id": "rp_AP202610061830165858#p2-9",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 56.5,
+    "suggested_verdict": "revise",
+    "confidence": "medium",
+    "score": 88,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "问题与答案概念覆盖低（33%）"
+    ],
+    "flags": [
+     "Q_ANSWER_MISMATCH"
+    ],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -2462,12 +2524,16 @@
    "evidence_summary": "上上周，中国出口集装箱运价综合指数为 1897.15，环比上涨 34.97 点...Fearnleys 一年期租金（油船:VLCC）为 160000 美元/天，环比上涨 15000 美元/天。",
    "unit_id": "rp_AP202610021830105332#p1-9",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 59.8,
+    "suggested_verdict": "revise",
+    "confidence": "medium",
+    "score": 88,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "问题与答案概念覆盖低（0%）"
+    ],
+    "flags": [
+     "Q_ANSWER_MISMATCH"
+    ],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -2494,12 +2560,16 @@
    "evidence_summary": "1-8 月单票收入同比增速排序：申通快递（10.02%）>韵达股份（10.00%）>顺丰控股（4.3%）>圆通速递（-1.4%）。",
    "unit_id": "rp_AP202609301830034661#p1-3",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 57.1,
+    "suggested_verdict": "revise",
+    "confidence": "medium",
+    "score": 88,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "问题与答案概念覆盖低（14%）"
+    ],
+    "flags": [
+     "Q_ANSWER_MISMATCH"
+    ],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -2526,12 +2596,16 @@
    "evidence_summary": "国新办9月24日发布会信息显示，铁路方面，中秋国庆假期运输自9月23日启动至10月8日结束，为期16天，全国铁路预计发送旅客2.84亿人次，日均计划开行旅客列车约1.3万列。",
    "unit_id": "rp_AP202609301830037744#p1-12",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 49.8,
+    "suggested_verdict": "revise",
+    "confidence": "medium",
+    "score": 88,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "问题与答案概念覆盖低（33%）"
+    ],
+    "flags": [
+     "Q_ANSWER_MISMATCH"
+    ],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -2558,12 +2632,16 @@
    "evidence_summary": "这些建议反映了一个普遍原则：在保留必要的安全保障以进行安全实验的同时，尽量减少不必要的监管摩擦...目标并非补贴轨道数据中心使其出现...而是要确保监管框架避免对测试造成不必要的障碍...",
    "unit_id": "rp_AP202609301830015406#p6-12",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 54.2,
+    "suggested_verdict": "revise",
+    "confidence": "medium",
+    "score": 88,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "答案含截断/占位符（… 或 待补充）"
+    ],
+    "flags": [
+     "ANSWER_TRUNCATED"
+    ],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -2590,12 +2668,16 @@
    "evidence_summary": "对于初级职位，38%的受访者表示，通常需要三至六个月才能招聘到合格人才；12%的受访者表示，招聘过程平均需要六个月以上。非初级职位的招聘周期略长。",
    "unit_id": "rp_AP202609301830015404#p1-13",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 52.7,
+    "suggested_verdict": "revise",
+    "confidence": "medium",
+    "score": 85,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "角度一致性低（0.2727）"
+    ],
+    "flags": [
+     "ANGLE_INCOHERENT"
+    ],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -2622,12 +2704,14 @@
    "evidence_summary": "网络安全人才队伍的工作压力依然居高不下。68%的调查受访者表示，过去五年来，其工作压力有所增加。将其列为压力来源的受访者比例从2025年的63%上升至2026年的71%。",
    "unit_id": "rp_AP202609301830015404#p1-13",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 51.7,
+    "suggested_verdict": "pass",
+    "confidence": "high",
+    "score": 100,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "规则预审未发现明显问题"
+    ],
+    "flags": [],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -2654,12 +2738,14 @@
    "evidence_summary": "截至9月27日，中国稀土价格指数263.50。镨钕氧化物均价738,000元/吨，近两周上涨0.96%；氧化镧均价5,750元/吨，近两周上涨4.55%。相反，氧化镝均价1,435元/千克，近两周下跌0.69%；氧化铽均价6,575元/千克，近两周下跌1.50%。",
    "unit_id": "rp_AP202610021830112399#p1-13",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 63.5,
+    "suggested_verdict": "pass",
+    "confidence": "high",
+    "score": 100,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "规则预审未发现明显问题"
+    ],
+    "flags": [],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -2686,12 +2772,18 @@
    "evidence_summary": "COMEX黄金价格为4,320.50美元/盎司，年初至今上涨0.27%；COMEX银价格为64.71美元/盎司，年初至今下跌8.83%。尽管近两周金、银价格分别下跌1.58%和0.48%，但整体趋势相对工业金属更为稳健。",
    "unit_id": "rp_AP202610021830112399#p1-13",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 55.8,
+    "suggested_verdict": "revise",
+    "confidence": "medium",
+    "score": 75,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "角度一致性低（0.2105）",
+     "答案与原文重叠偏低（21%）"
+    ],
+    "flags": [
+     "ANGLE_INCOHERENT",
+     "EVIDENCE_WEAK_OVERLAP"
+    ],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -2718,12 +2810,16 @@
    "evidence_summary": "中国平均价：锗锭(50Ω·cm)价格为27,250元/千克，近两周上涨2.83%，年初至今大涨101.85%。相比之下，黑钨精矿(≥65%)价格下跌3.86%，锑锭(99.65%,国产)价格持平（近两周涨跌幅0.00%）。",
    "unit_id": "rp_AP202610021830112399#p1-13",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 53.0,
+    "suggested_verdict": "revise",
+    "confidence": "medium",
+    "score": 88,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "问题与答案概念覆盖低（0%）"
+    ],
+    "flags": [
+     "Q_ANSWER_MISMATCH"
+    ],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -2750,12 +2846,16 @@
    "evidence_summary": "重点区域...东盟 33.7（百万美元），份额 11.5%；同比变化 120.8%。",
    "unit_id": "rp_AP202610061830165954#p2-14",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 47.2,
+    "suggested_verdict": "revise",
+    "confidence": "medium",
+    "score": 88,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "问题与答案概念覆盖低（17%）"
+    ],
+    "flags": [
+     "Q_ANSWER_MISMATCH"
+    ],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -2782,12 +2882,20 @@
    "evidence_summary": "区域...巴西 1073.3（百万美元），份额 54.5%；注：排名前 10 地区按照进口额大小由上向下排列。",
    "unit_id": "rp_AP202610061830165954#p2-14",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 47.2,
+    "suggested_verdict": "revise",
+    "confidence": "medium",
+    "score": 63,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "问题与答案概念覆盖低（14%）",
+     "角度一致性低（0.1）",
+     "答案与原文重叠偏低（10%）"
+    ],
+    "flags": [
+     "ANGLE_INCOHERENT",
+     "EVIDENCE_WEAK_OVERLAP",
+     "Q_ANSWER_MISMATCH"
+    ],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -2814,12 +2922,16 @@
    "evidence_summary": "真正决定基板需求的是单颗芯片对应的基板面积、叠层层数以及制造良率。CPU 侧下一代平台基板尺寸明显扩大；Rubin 叠层层数较 Blackwell 进一步增加；采用 EMIB 类先进封装的产品基板尺寸达 120×120 毫米量级且叠层达 24 层。多层核心结构制造良率呈台阶式下降，任一核心层缺陷可能…",
    "unit_id": "rp_AP202610071830188839#p1-3",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 65.9,
+    "suggested_verdict": "revise",
+    "confidence": "medium",
+    "score": 88,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "问题与答案概念覆盖低（0%）"
+    ],
+    "flags": [
+     "Q_ANSWER_MISMATCH"
+    ],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -2846,12 +2958,16 @@
    "evidence_summary": "政策引导下行业正从规模扩张转向存量提质增效与效率驱动，装配式建筑、城市更新、洁净室、钢结构等高景气方向加速兑现...建议聚焦洁净室工程、城市更新业务布局充分的优质标的。",
    "unit_id": "rp_AP202609301830023858#p1-13",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 51.5,
+    "suggested_verdict": "revise",
+    "confidence": "medium",
+    "score": 88,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "问题与答案概念覆盖低（33%）"
+    ],
+    "flags": [
+     "Q_ANSWER_MISMATCH"
+    ],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -2878,12 +2994,14 @@
    "evidence_summary": "2025年，中国建筑领域电气化率约58.0%...全年建筑领域用电量同比增长7.7%...清洁供暖、全电厨炊、冷热双蓄、地源热泵、建筑光伏一体化等热点领域电气化设备更新改造取得积极进展。",
    "unit_id": "rp_AP202609301830015411#p2-14",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 53.5,
+    "suggested_verdict": "pass",
+    "confidence": "high",
+    "score": 100,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "规则预审未发现明显问题"
+    ],
+    "flags": [],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -2910,12 +3028,14 @@
    "evidence_summary": "全球军费投入持续扩张...十五五规划为我国国防和军队现代化的高质量推进做出了总部署...建议重点关注航空航天、卫星互联网产业链公司，包括主机、航空发动机和军工电子信息化领域的龙头企业。",
    "unit_id": "rp_AP202610021830105332#p1-9",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 56.6,
+    "suggested_verdict": "pass",
+    "confidence": "high",
+    "score": 100,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "规则预审未发现明显问题"
+    ],
+    "flags": [],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -2942,12 +3062,14 @@
    "evidence_summary": "图中0点右侧的每一个回落的低点，都自然切合了左边的关键点位，形成了底部逐级抬高的8条精准线。主力的操盘完全由这8条“虚实线”来调控。凡是“假象”都是“异动”，“假动作”后面必有“真意图”。",
    "unit_id": "涨停密码(2)#p15-27",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 56.4,
+    "suggested_verdict": "pass",
+    "confidence": "high",
+    "score": 100,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "规则预审未发现明显问题"
+    ],
+    "flags": [],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -2974,12 +3096,18 @@
    "evidence_summary": "只有王子老师对量柱进行了“完全 分类”，将形状万千的量柱归纳为“高低平倍梯缩金”七种形态，这可称之为重大 发现！熟悉数学原理的股友们应该知道“完全分类”的意义，事实上对量柱的分 类为量柱结构的研究指明了方向。",
    "unit_id": "伏击涨停(2)#p5-6",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 56.1,
+    "suggested_verdict": "reject",
+    "confidence": "high",
+    "score": 45,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "与现有学习卡概念重复（量柱完全分类）",
+     "与现有学习卡答案近重复（相似度 1.0）"
+    ],
+    "flags": [
+     "DUP_EXISTING_ANSWER",
+     "DUP_EXISTING_CONCEPT"
+    ],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -3006,12 +3134,14 @@
    "evidence_summary": "2009 年“量学”问世，它摆脱了“以价论价”的“价学”桔，在“以量论价”动态平衡规律，构建了“量柱选股、量线选价、量波选时”的“三维互动”看盘操 盘系统，形成了一个独立的科学体系。",
    "unit_id": "伏击涨停(2)#p5-6",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 54.7,
+    "suggested_verdict": "pass",
+    "confidence": "high",
+    "score": 100,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "规则预审未发现明显问题"
+    ],
+    "flags": [],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -3038,12 +3168,14 @@
    "evidence_summary": "《关于重要工业品低价无序竞争成本核算有关事项的通知》明确：成本核算原则上以经营者生产特定产品的个别成本为基础，无法核算个别成本时参考行业平均成本并考虑一定下浮幅度；对实际产能利用率大幅低于行业平均的经营者，适当考虑产能利用率影响。",
    "unit_id": "rp_AP202610021830111912#p1-4",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 65.4,
+    "suggested_verdict": "pass",
+    "confidence": "high",
+    "score": 100,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "规则预审未发现明显问题"
+    ],
+    "flags": [],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -3070,12 +3202,14 @@
    "evidence_summary": "亿纬锂能子公司湖北亿纬动力与 Fluence 签署供货框架协议，约定 2027 年至 2031 年双方围绕 206GWh 电池开展合作，其中 2027 年承诺交付 16GWh，2028 年至 2031 年预留容量合计 190GWh。",
    "unit_id": "rp_AP202610021830111958#p1-4",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 65.1,
+    "suggested_verdict": "pass",
+    "confidence": "high",
+    "score": 100,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "规则预审未发现明显问题"
+    ],
+    "flags": [],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -3102,12 +3236,14 @@
    "evidence_summary": "按新版能耗标准（6.3kgce/kg）测算，行业留存产能约170-180 万吨，考虑技改潜力也难以超过200 万吨，约50%产能面临淘汰或技改压力。自2027 年起强制实施的能耗强标将起到加速落后产能出清、行业集中度提升的作用。",
    "unit_id": "rp_AP202610021830111912#p1-4",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 63.0,
+    "suggested_verdict": "pass",
+    "confidence": "high",
+    "score": 100,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "规则预审未发现明显问题"
+    ],
+    "flags": [],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -3134,12 +3270,20 @@
    "evidence_summary": "安全评估需要回答三个不同问题...NIST 的ARIA 计划把测试分为Model Testing、Red Teaming 和Field Testing。Model Testing 用于确认模型或系统声明的能力和防护；Red Teaming 尝试诱发违规结果并识别风险发生条件；Field Testin…",
    "unit_id": "rp_AP202610061830170460#p2-14",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 78.1,
+    "suggested_verdict": "revise",
+    "confidence": "low",
+    "score": 51,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "答案含截断/占位符（… 或 待补充）",
+     "问题与答案概念覆盖低（20%）",
+     "与现有学习卡概念重复（多层级安全评估体系（ARIA））"
+    ],
+    "flags": [
+     "ANSWER_TRUNCATED",
+     "DUP_EXISTING_CONCEPT",
+     "Q_ANSWER_MISMATCH"
+    ],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,
@@ -3166,12 +3310,14 @@
    "evidence_summary": "负债端收缩叠加监管约束，中小行配债中枢趋势性下移。三重约束致使中小行无法有效增加债券配置：（1）负债端存款利差收窄，核心存款增长面临压力；（2）监管约束中小行债券投资的利率风险及集中度；（3）收益考核角度 FTP 年初锁价且缺乏调整。这些结构性因素将决定中小行配债增速难回此前双位数高增，从‘交易 +…",
    "unit_id": "rp_AP202609301830035477#p1-13",
    "precheck": {
-    "suggested_verdict": null,
-    "confidence": null,
-    "score": 73.2,
+    "suggested_verdict": "pass",
+    "confidence": "high",
+    "score": 100,
     "reasons": [
-     "第二轮扩卡候选：无机器预审建议，保持未决（人工审核）"
-    ]
+     "规则预审未发现明显问题"
+    ],
+    "flags": [],
+    "generated_by": "tools/kb_corpus/card_precheck_v3.py"
    },
    "checkboxes": {
     "pass": false,

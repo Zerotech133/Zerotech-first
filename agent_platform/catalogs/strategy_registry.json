@@ -5273,5 +5273,38 @@
       ]
     },
     "note": "写 static JSON 脚本审计：15 写盘脚本（高 3：learning_cards/morning_brief_push/panel_export；中 9；低 3）；建议三件套（备份/原子写/读-合并-写）；learning_cards 已修，其余 2 高风险待修。"
+  },
+  "guard_marker_fix_20261101": {
+    "tool": "tools/kb_corpus/kb_qa_guard.py",
+    "report": "research/reports/guard_marker_fix_20261101.md",
+    "conclusion": {
+      "v3_worth_reeval": false,
+      "verdict": "标记解析修复未显著改善 v3 通过率 → v3 prompt 不值得合入，保留 v1",
+      "reasons": [
+        "guard 通过率：legacy 0%（0/10）→ strict_line 10%（1/10）。",
+        "可答率（guard 后 success）：0% → 10%；fallback 率：100% → 90%。",
+        "平均推断比例：1.0 → 0.8；平均引用：2.5 → 2.5。"
+      ],
+      "risks": [
+        "wave25/26 仅持久化了 v3 答案的 160 字 guard 回退后 preview（原文未存），无法完全离线重算；本报告额外重新采集 10 条 v3 原始答案（同一 prompt/模型，约 1-2 分钟）再做离线对比，已注明偏差。",
+        "n=10 为小样本；如需决策需扩样 30–50 条。",
+        "strict_line 仅统计行首/明确标注，模型若把标记写在句子中间会漏计（可能存在低估计）；legacy 会过计。",
+        "guard 通过率提升仍可能被引用/集中度问题限制（见逐条 citation_* 字段）。"
+      ]
+    },
+    "note": "guard 标记解析修复（strict_line 默认，排除段标题/说明/few-shot）：v3 答案 inference_ratio 1.0→0.8、guard 通过 0%→10%，但 8/10 仍被拦截 → **v3 prompt 仍不合入**（根因转为 9b 输出行为+证据不足）。"
+  },
+  "static_writers_safe_20261101": {
+    "scripts": [
+      "tools/kb_corpus/morning_brief_push.py",
+      "tools/research/panel_export.py"
+    ],
+    "doc": "docs/plans/2026-11-01_静态产物安全写入_v1.md",
+    "note": "2 个高风险写入脚本加三件套（写前备份/读-合并-写/原子写+sha+条数校验）；CLI 不变；7 tests；wave26 审计规则需升级识别辅助函数调用。"
+  },
+  "card_precheck_v3_20261101": {
+    "tool": "tools/kb_corpus/card_precheck_v3.py",
+    "report": "research/reports/card_precheck_v3_20261101.md",
+    "note": "第二轮 40 候选规则预审：pass17/revise21/reject2；已回写 card_review_data.json 的 CP3 precheck；审核页一键预填现覆盖 100 张（pass53/revise45/reject2）。"
   }
 }

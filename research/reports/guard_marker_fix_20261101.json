@@ -1,0 +1,395 @@
+{
+ "schema_version": 1,
+ "kind": "guard_marker_fix",
+ "generated_at": "2026-11-01T15:22:13+0800",
+ "config": {
+  "n": 10,
+  "model": "qwen3.5:9b",
+  "k": 8,
+  "timeout_seconds": 240,
+  "marker_modes": [
+   "strict_line",
+   "legacy"
+  ],
+  "default_marker_mode": "strict_line"
+ },
+ "note": "原始 v3 答案未持久化（只有 guard 回退后 160 字 preview）；为做修复前后离线对比，重新采集 10 条 v3 原始答案后离线重算 legacy vs strict_line（不改变已存结果）",
+ "source": {
+  "v3_bank": "C:\\项目\\老田的AI助手\\research\\reports\\kb_qa_bank_v3_20261101.json",
+  "v3_ab_result": "C:\\项目\\老田的AI助手\\research\\reports\\kb_qa_prompt_v3_20261101.json"
+ },
+ "stored_preview_check": {
+  "note": "已存 v3 rows 的 answer_preview 为 guard fallback 文案（不含原始标记），无法用于完整重算",
+  "sample_preview": "（质量守卫回退：...）"
+ },
+ "before_legacy": {
+  "total": 10,
+  "guard_passed": 0,
+  "guard_pass_rate": 0.0,
+  "success": 0,
+  "no_evidence": 0,
+  "fallback": 10,
+  "answerable_rate": 0.0,
+  "fallback_rate": 1.0,
+  "avg_inference_ratio": 1.0,
+  "avg_citations": 2.5
+ },
+ "after_strict_line": {
+  "total": 10,
+  "guard_passed": 1,
+  "guard_pass_rate": 0.1,
+  "success": 1,
+  "no_evidence": 0,
+  "fallback": 9,
+  "answerable_rate": 0.1,
+  "fallback_rate": 0.9,
+  "avg_inference_ratio": 0.8,
+  "avg_citations": 2.5
+ },
+ "delta": {
+  "guard_pass_rate": 0.1,
+  "answerable_rate": 0.1,
+  "fallback_rate": -0.1,
+  "avg_inference_ratio": -0.2,
+  "avg_citations": 0.0
+ },
+ "rows": [
+  {
+   "id": "q2_b5a0a0e045",
+   "question": "量学理论的结论在什么条件下可能不成立？",
+   "category": "风险限制",
+   "raw_answer": "知识库中没有足够依据回答该问题。\n\n材料仅阐述了量学理论的定义、构成体系（如“四大名著”）、核心要素（量柱、价柱、量线）及其宣称的预测效果（“不管指标、消息和行情均可预测股市”），但并未包含任何关于该理论结论失效条件、局限性或适用边界的具体描述。因此，无法从现有材料中摘录事实或进行合规推断。",
+   "error": null,
+   "legacy": {
+    "inference_ratio": 1.0,
+    "inference_markers": 1,
+    "direct_fact_markers": 0,
+    "guard_passed": false,
+    "citation_total": 0,
+    "citation_resolvable_rate": 0.0,
+    "distinct_cited_units": 0,
+    "status_after": "fallback",
+    "fallback_after": true,
+    "citations_after": 2
+   },
+   "strict_line": {
+    "inference_ratio": 0.0,
+    "inference_markers": 0,
+    "direct_fact_markers": 0,
+    "guard_passed": false,
+    "citation_total": 0,
+    "citation_resolvable_rate": 0.0,
+    "distinct_cited_units": 0,
+    "status_after": "fallback",
+    "fallback_after": true,
+    "citations_after": 2
+   },
+   "elapsed_seconds": 5.64
+  },
+  {
+   "id": "q2_aa49124184",
+   "question": "储气调峰能力建设中研报提供了哪些可验证的关键数据或指标？",
+   "category": "关键数据",
+   "raw_answer": "【事实摘录】我国目前储气库工作气量在消费总量中的占比约为 7%（[4c6ddf0bf36f] p.1）。全球储气库工作气量在消费总量中的平均占比约为 11.4%，而我国目前仅维持在 7% 左右（[4c6ddf0bf36f] p.1）。行业需重点突破省级管网运销分离与并入整合，以市场化改革释放资源配置效率（[cfa085455968] p.1）。\n\n【推断】对比全球平均占比与国内现状可知，我国储气调峰能力仍有较大提升空间（依据：[4c6ddf0bf36f] p.1）。推进\"X+1+X\"市场体系建设有助于通过管网运销分离优化资源配置，间接支撑调峰能力建设（依据：[cfa085455968] p.1）。",
+   "error": null,
+   "legacy": {
+    "inference_ratio": 1.0,
+    "inference_markers": 1,
+    "direct_fact_markers": 0,
+    "guard_passed": false,
+    "citation_total": 2,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 2,
+    "status_after": "fallback",
+    "fallback_after": true,
+    "citations_after": 2
+   },
+   "strict_line": {
+    "inference_ratio": 1.0,
+    "inference_markers": 1,
+    "direct_fact_markers": 0,
+    "guard_passed": false,
+    "citation_total": 2,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 2,
+    "status_after": "fallback",
+    "fallback_after": true,
+    "citations_after": 2
+   },
+   "elapsed_seconds": 8.04
+  },
+  {
+   "id": "q2_bcbfd79337",
+   "question": "智能算力规模占比的核心驱动因素是什么？",
+   "category": "驱动因素",
+   "raw_answer": "【事实摘录】2024 年智能算力规模占全国算力总规模的 32%（[776f36408a89] p.1）。智谱已完成与多家国产算力平台的深度适配，实现 10 万级国产芯片规模化推理，单位 Token 推理成本较年初下降 80%（[9ab889268ce2] p.1）。海光信息发布首款面向端侧智能的算力芯片 1000 系列，标志着公司算力版图从云侧延伸到边缘和端侧（[0a3ddb232a72] p.2）。\n\n【推断】国产算力通过规模化适配与成本下降（如智谱单位 Token 推理成本降 80%），显著提升了智能算力的供给效率与经济可行性，成为其规模占比提升的核心驱动因素之一（依据：[9ab889268ce2] p.1）。端侧及边缘算力的拓展（如海光 1000 系列发布）进一步丰富了算力应用场景，推动了智能算力从云侧向全域延伸，支撑了整体规模的扩张（依据：[0a3ddb232a72] p.2）。",
+   "error": null,
+   "legacy": {
+    "inference_ratio": 1.0,
+    "inference_markers": 1,
+    "direct_fact_markers": 0,
+    "guard_passed": false,
+    "citation_total": 3,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 3,
+    "status_after": "fallback",
+    "fallback_after": true,
+    "citations_after": 3
+   },
+   "strict_line": {
+    "inference_ratio": 1.0,
+    "inference_markers": 1,
+    "direct_fact_markers": 0,
+    "guard_passed": false,
+    "citation_total": 3,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 3,
+    "status_after": "fallback",
+    "fallback_after": true,
+    "citations_after": 3
+   },
+   "elapsed_seconds": 10.2
+  },
+  {
+   "id": "q2_a593448ce5",
+   "question": "北京市货物贸易净出口需要跟踪哪些指标或事件？",
+   "category": "如何识别",
+   "raw_answer": "【事实摘录】2025 年 8 月北京市货物贸易净出口额为 -258.6 亿美元，较上年同期下降 1.9%（[61bca6c6d825] p.2）。2025 年 8 月当月，北京市矿产品出口额为 31.6 亿美元，同比大幅增长 88.6%（[854f9973bb5d] p.2）。\n\n【推断】监测矿产品出口额及其同比变化率，可识别特定品类对净出口波动的贡献度（依据：[61bca6c6d825] p.2、[854f9973bb5d] p.2）。",
+   "error": null,
+   "legacy": {
+    "inference_ratio": 1.0,
+    "inference_markers": 1,
+    "direct_fact_markers": 0,
+    "guard_passed": false,
+    "citation_total": 2,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 2,
+    "status_after": "fallback",
+    "fallback_after": true,
+    "citations_after": 2
+   },
+   "strict_line": {
+    "inference_ratio": 1.0,
+    "inference_markers": 1,
+    "direct_fact_markers": 0,
+    "guard_passed": false,
+    "citation_total": 2,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 2,
+    "status_after": "fallback",
+    "fallback_after": true,
+    "citations_after": 2
+   },
+   "elapsed_seconds": 6.7
+  },
+  {
+   "id": "q2_3d1abf0240",
+   "question": "离岛免税消费数据对相关标的基本面或估值的影响如何？",
+   "category": "影响如何",
+   "raw_answer": "【事实摘录】2026 年中秋假期海南离岛免税购物金额达 2.31 亿元，购物人数 3.86 万人次，购物件数 17.9 万件（[6581eca343ac] p.1）。未来房屋价值变化主要由均衡实际利率、通货膨胀率、住房服务相对价格及风险溢价四个因素决定（[98118e155121] p.1）。\n\n【推断】材料中提供的离岛免税消费数据仅反映短期节日热度，未包含对相关标的长期基本面或估值的具体影响分析；同时，房地产价值决定因素与离岛免税业务无直接关联。因此，基于现有知识库无法得出离岛免税消费数据对相关标的基本面或估值的具体影响结论（依据：[6581eca343ac] p.1、[98118e155121] p.1）。",
+   "error": null,
+   "legacy": {
+    "inference_ratio": 1.0,
+    "inference_markers": 1,
+    "direct_fact_markers": 0,
+    "guard_passed": false,
+    "citation_total": 2,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 2,
+    "status_after": "fallback",
+    "fallback_after": true,
+    "citations_after": 2
+   },
+   "strict_line": {
+    "inference_ratio": 1.0,
+    "inference_markers": 1,
+    "direct_fact_markers": 0,
+    "guard_passed": false,
+    "citation_total": 2,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 2,
+    "status_after": "fallback",
+    "fallback_after": true,
+    "citations_after": 2
+   },
+   "elapsed_seconds": 7.78
+  },
+  {
+   "id": "q2_1e95f989df",
+   "question": "海上风电项目规划的结论由哪些证据支撑？",
+   "category": "是什么",
+   "raw_answer": "【事实摘录】国华投资拟在山东半岛南海域开展海上风电项目前期研究，规划总装机容量为 400 万千瓦（[540733583fec] p.1）。国家支持开发近海抗台型、深远海漂浮式风电机组，并推进海上能源岛建设及沿海地区海上风电运维母港布局（[3d627dcc4f13] p.1）。2025 年全球风电新增装机达 165GW，亚太地区占据 80% 市场份额，预计 2026-2030 年海上风电将加速发展（[4b6cf5a7158e] p.3）。\n\n【推断】结合全球市场加速趋势与国内政策支持，山东半岛南海域 400 万千瓦项目符合行业向深远海、抗台风及柔性组网转型的战略方向。",
+   "error": null,
+   "legacy": {
+    "inference_ratio": 1.0,
+    "inference_markers": 1,
+    "direct_fact_markers": 0,
+    "guard_passed": false,
+    "citation_total": 3,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 3,
+    "status_after": "fallback",
+    "fallback_after": true,
+    "citations_after": 3
+   },
+   "strict_line": {
+    "inference_ratio": 1.0,
+    "inference_markers": 1,
+    "direct_fact_markers": 0,
+    "guard_passed": false,
+    "citation_total": 3,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 3,
+    "status_after": "fallback",
+    "fallback_after": true,
+    "citations_after": 3
+   },
+   "elapsed_seconds": 8.04
+  },
+  {
+   "id": "q2_6076398cc7",
+   "question": "保险资金投资港股通 ETF的进入壁垒与差异化优势是什么？",
+   "category": "竞争格局",
+   "raw_answer": "【事实摘录】监管新规允许持有港股通股票的保险机构投资港股通 ETF，丰富了险资跨境权益投资工具且不占用 QDII 额度（[e9548ab7c8d3] p.1）。按照监管规定可投资港股通股票的保险机构可以投资港股通 ETF，并参照港股通股票监管规则执行（[e9548ab7c8d3] p.1）。通过创设货币工具、引入类“平准基金”及量化指标引导中长期资金入市，有效稳定了市场预期并修复投资者信心（[49d741ab6006] p.1）。\n\n【推断】保险资金投资港股通 ETF 的差异化优势在于其作为中长期资金能发挥类“平准基金”作用，且不占用 QDII 额度（依据：[e9548ab7c8d3] p.1、[49d741ab6006] p.1）。",
+   "error": null,
+   "legacy": {
+    "inference_ratio": 1.0,
+    "inference_markers": 1,
+    "direct_fact_markers": 0,
+    "guard_passed": false,
+    "citation_total": 2,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 2,
+    "status_after": "fallback",
+    "fallback_after": true,
+    "citations_after": 2
+   },
+   "strict_line": {
+    "inference_ratio": 1.0,
+    "inference_markers": 1,
+    "direct_fact_markers": 0,
+    "guard_passed": false,
+    "citation_total": 2,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 2,
+    "status_after": "fallback",
+    "fallback_after": true,
+    "citations_after": 2
+   },
+   "elapsed_seconds": 8.14
+  },
+  {
+   "id": "q2_f93ae02b9d",
+   "question": "伏击涨停的灵魂的景气度受哪些变量影响？",
+   "category": "驱动因素",
+   "raw_answer": "【事实摘录】伏击涨停的核心在于追求投资乐趣而非单纯赚钱，旨在在提心吊胆的股票市场中为投资者找到一片‘乐土’（[538860c3cb35] p.11）。伏击涨停是一种比传统‘追击涨停’更具前瞻性的投资战法，强调提前介入和守候涨停（[28f88a6c87e9] p.11）。\n\n【推断】该策略的“景气度”或成功概率主要受投资者心态变量（追求乐趣而非单纯逐利）及市场情绪变量（人人提心吊胆的环境）影响，同时依赖于参与者广泛交流经验教训形成的良性循环（依据：[538860c3cb35] p.11、[41a06a212777] p.11）。",
+   "error": null,
+   "legacy": {
+    "inference_ratio": 1.0,
+    "inference_markers": 1,
+    "direct_fact_markers": 0,
+    "guard_passed": false,
+    "citation_total": 3,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 3,
+    "status_after": "fallback",
+    "fallback_after": true,
+    "citations_after": 3
+   },
+   "strict_line": {
+    "inference_ratio": 1.0,
+    "inference_markers": 1,
+    "direct_fact_markers": 0,
+    "guard_passed": false,
+    "citation_total": 3,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 3,
+    "status_after": "fallback",
+    "fallback_after": true,
+    "citations_after": 3
+   },
+   "elapsed_seconds": 7.06
+  },
+  {
+   "id": "q2_ef78939178",
+   "question": "网络安全软技能需求的主要风险与不确定性有哪些？",
+   "category": "风险限制",
+   "raw_answer": "【事实摘录】批判性思维、沟通能力和问题解决能力是网络安全专业人员最重要的三项软技能，分别占比 59%、57% 和 53%（[ccec1052fa9c] p.1）。网络安全合规正从“制度有没有、产品买没买”转向“风险能否发现、过程能否留痕、效果能否验证、责任能否追溯”（[ccf7787f6c23] p.2）。SecOps 已成为全球网络安全领域第二大技能缺口，占比达 45%，而云计算已跌出前五名（[71f5b2e0d077] p.1）。\n\n【推断】软技能需求的不确定性在于人才供给滞后于合规转型要求，导致 SecOps 等关键岗位出现显著缺口（依据：[ccec1052fa9c] p.1、[ccf7787f6c23] p.2、[71f5b2e0d077] p.1）。",
+   "error": null,
+   "legacy": {
+    "inference_ratio": 1.0,
+    "inference_markers": 1,
+    "direct_fact_markers": 0,
+    "guard_passed": false,
+    "citation_total": 3,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 3,
+    "status_after": "fallback",
+    "fallback_after": true,
+    "citations_after": 3
+   },
+   "strict_line": {
+    "inference_ratio": 0.0,
+    "inference_markers": 0,
+    "direct_fact_markers": 0,
+    "guard_passed": true,
+    "citation_total": 3,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 3,
+    "status_after": "success",
+    "fallback_after": false,
+    "citations_after": 3
+   },
+   "elapsed_seconds": 8.65
+  },
+  {
+   "id": "q2_87eff8d7a3",
+   "question": "品牌AI心智总得分有哪些可核验的统计口径或样本？",
+   "category": "关键数据",
+   "raw_answer": "【事实摘录】\n1. 品牌 AI 心智总得分由五维指标加权得出，理论最高分为 180 分，计算公式为：总得分=100×(10−平均排名)/10+45×提及率+15×首位率+15×前三率+15×正面率（[fd49b3da595b] p.2）。\n2. 苹果触达指数 1731.3 高于均值，但品牌 AI 心智总得分 81.1 低于均值，显示用户基础与 AI 推荐表现存在错位（[ae43fb5b59e8] p.2）。\n3. 手机行业头部品牌心智份额高度集中，CR3SOV（前三品牌声量份额合计）超过 25% 即判定为高度集中（[78b15c29b532] p.2）。\n\n【推断】\n综合材料可知，该得分体系基于提及率、首位率等可量化指标计算，且不同品牌在触达指数与心智得分上存在显著差异（依据：[fd49b3da595b] p.2、[ae43fb5b59e8] p.2）。",
+   "error": null,
+   "legacy": {
+    "inference_ratio": 1.0,
+    "inference_markers": 1,
+    "direct_fact_markers": 0,
+    "guard_passed": false,
+    "citation_total": 3,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 3,
+    "status_after": "fallback",
+    "fallback_after": true,
+    "citations_after": 3
+   },
+   "strict_line": {
+    "inference_ratio": 1.0,
+    "inference_markers": 1,
+    "direct_fact_markers": 0,
+    "guard_passed": false,
+    "citation_total": 3,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 3,
+    "status_after": "fallback",
+    "fallback_after": true,
+    "citations_after": 3
+   },
+   "elapsed_seconds": 10.46
+  }
+ ],
+ "conclusion": {
+  "v3_worth_reeval": false,
+  "verdict": "标记解析修复未显著改善 v3 通过率 → v3 prompt 不值得合入，保留 v1",
+  "reasons": [
+   "guard 通过率：legacy 0%（0/10）→ strict_line 10%（1/10）。",
+   "可答率（guard 后 success）：0% → 10%；fallback 率：100% → 90%。",
+   "平均推断比例：1.0 → 0.8；平均引用：2.5 → 2.5。"
+  ],
+  "risks": [
+   "wave25/26 仅持久化了 v3 答案的 160 字 guard 回退后 preview（原文未存），无法完全离线重算；本报告额外重新采集 10 条 v3 原始答案（同一 prompt/模型，约 1-2 分钟）再做离线对比，已注明偏差。",
+   "n=10 为小样本；如需决策需扩样 30–50 条。",
+   "strict_line 仅统计行首/明确标注，模型若把标记写在句子中间会漏计（可能存在低估计）；legacy 会过计。",
+   "guard 通过率提升仍可能被引用/集中度问题限制（见逐条 citation_* 字段）。"
+  ]
+ },
+ "elapsed_seconds": 80.7,
+ "disclaimer": "标记解析修复评估仅供研究参考，不构成投资建议。"
+}

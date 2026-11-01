@@ -120,9 +120,65 @@ def resolve_citations(cited: list[str], unit_ids: set[str], book_ids: set[str] |
 
 
 # ---------------------------------------------------------------------------
+# 标记解析（marker_mode）：strict_line（默认，排除段标题/说明/few-shot）| legacy（旧行为）
+# ---------------------------------------------------------------------------
+MARKER_MODES = ("strict_line", "legacy")
+DEFAULT_MARKER_MODE = "strict_line"
+_FACT_LINE_RE = re.compile(r"^\s*(?:[-*•]\s*|\d+[.、)]\s*)?【(?:直接事实|事实)】")
+_INFER_LINE_RE = re.compile(r"^\s*(?:[-*•]\s*|\d+[.、)]\s*)?【推断】")
+_LEGACY_FACT_RE = re.compile(r"【直接事实】|【事实】|\[事实\]|直接事实")
+_LEGACY_INFER_RE = re.compile(r"【推断】|\[推断\]|推断")
+_MARKER_SKIP_WORDS = ("示例", "few-shot", "few shot", "输出结构", "格式说明", "规则", "如下", "说明", "要求", "注意")
+
+
+def count_markers(answer: str, marker_mode: str = DEFAULT_MARKER_MODE) -> tuple[int, int]:
+    """统计答案中的事实/推断标记数量，返回 (direct, inference)。
+
+    strict_line（默认）：只统计**行首/句首明确标注**的 【事实】/【推断】（含「事实：」「推断：」前缀），
+      排除：markdown 标题（如 `## 推断`）、以「如下/规则/说明」等结尾的段标题行、
+      说明文字、few-shot/示例段（含 ``` 代码块与含「示例/few-shot」的行）；
+    legacy：旧行为（子串匹配，会把段标题里的「推断」也计入）。
+    """
+    text = str(answer or "")
+    if marker_mode == "legacy":
+        return len(_LEGACY_FACT_RE.findall(text)), len(_LEGACY_INFER_RE.findall(text))
+    if marker_mode not in MARKER_MODES:  # pragma: no cover
+        raise GuardError(f"marker_mode 只能是 {'/'.join(MARKER_MODES)}（收到 {marker_mode!r}）")
+    direct = infer = 0
+    in_code = False
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if line.startswith("```"):
+            in_code = not in_code
+            continue
+        if in_code or not line:
+            continue
+        low = line.lower()
+        if any(w in low for w in _MARKER_SKIP_WORDS):
+            continue
+        if _FACT_LINE_RE.match(line):
+            direct += 1
+            continue
+        if _INFER_LINE_RE.match(line):
+            rest = _INFER_LINE_RE.sub("", line, count=1).strip()
+            if rest.startswith(("如下", "：", ":", "（示例", "(示例")):
+                continue
+            infer += 1
+            continue
+        if line.startswith(("事实：", "事实:")):
+            direct += 1
+            continue
+        if line.startswith(("推断：", "推断:")):
+            infer += 1
+            continue
+    return direct, infer
+
+
+# ---------------------------------------------------------------------------
 # b) 推断比例 / c) 集中度 / d) payload
 # ---------------------------------------------------------------------------
-def compute_guard_metrics(result: dict, unit_ids: set[str], book_ids: set[str] | None = None) -> dict:
+def compute_guard_metrics(result: dict, unit_ids: set[str], book_ids: set[str] | None = None,
+                          marker_mode: str = DEFAULT_MARKER_MODE) -> dict:
     """计算质量指标（不修改 result）：引用解析、推断比例、被引单元集中度。"""
     answer = str(result.get("answer") or "")
     provided_citations = [str(c.get("unit_id")).lower() for c in (result.get("citations") or [])
@@ -130,8 +186,11 @@ def compute_guard_metrics(result: dict, unit_ids: set[str], book_ids: set[str] |
     parsed = parse_answer_citations(answer)
     cited = list(dict.fromkeys(parsed + provided_citations))
     resolved = resolve_citations(cited, unit_ids, book_ids)
-    direct = int(result.get("direct_fact_markers") or 0)
-    infer = int(result.get("inference_markers") or 0)
+    if marker_mode == "legacy" and ("direct_fact_markers" in result or "inference_markers" in result):
+        direct = int(result.get("direct_fact_markers") or 0)
+        infer = int(result.get("inference_markers") or 0)
+    else:
+        direct, infer = count_markers(answer, marker_mode)
     total_marks = direct + infer
     inference_ratio = round(infer / total_marks, 4) if total_marks else 0.0
     inference_heavy = inference_ratio > INFERENCE_RATIO_MAX
@@ -162,14 +221,16 @@ def compute_guard_metrics(result: dict, unit_ids: set[str], book_ids: set[str] |
         "support_rate": support_rate, "hallucination_rate": hallucination_rate,
         "direct_fact_markers": direct, "inference_markers": infer,
         "inference_ratio": inference_ratio, "inference_heavy": inference_heavy,
+        "marker_mode": marker_mode,
         "distinct_cited_units": distinct_units, "guard_issues": issues,
         "guard_passed": not issues,
     }
 
 
-def _guard_fallback_answer(result: dict, unit_ids: set[str], book_ids: set[str] | None = None) -> tuple[str, list[dict]]:
+def _guard_fallback_answer(result: dict, unit_ids: set[str], book_ids: set[str] | None = None,
+                           marker_mode: str = DEFAULT_MARKER_MODE) -> tuple[str, list[dict]]:
     """回退：只保留可解析引用并摘录其原文；无有效引用时用检索材料前 2 条。"""
-    metrics = compute_guard_metrics(result, unit_ids, book_ids)
+    metrics = compute_guard_metrics(result, unit_ids, book_ids, marker_mode=marker_mode)
     citations = [c for c in (result.get("citations") or [])
                  if isinstance(c, dict) and str(c.get("unit_id")).lower() in
                  {str(x).lower() for x in metrics["citation_valid"]}]
@@ -186,12 +247,15 @@ def _guard_fallback_answer(result: dict, unit_ids: set[str], book_ids: set[str] 
 
 
 def apply_guard(result: dict, unit_ids: set[str], book_ids: set[str] | None = None,
-                on_fail: str = "fallback") -> dict:
-    """对 multi 结果执行质量守卫；返回新 result（不修改入参），payload 增加 guard 字段。"""
+                on_fail: str = "fallback", marker_mode: str = DEFAULT_MARKER_MODE) -> dict:
+    """对 multi 结果执行质量守卫；返回新 result（不修改入参），payload 增加 guard 字段。
+
+    marker_mode: strict_line（默认，排除段标题/说明/few-shot）| legacy（旧解析，兼容/对比用）。
+    """
     on_fail = (on_fail or "fallback").strip().lower()
     if on_fail not in ACTIONS:
         raise GuardError(f"on_fail 只能是 {'/'.join(ACTIONS)}（收到 {on_fail!r}）")
-    metrics = compute_guard_metrics(result, unit_ids, book_ids)
+    metrics = compute_guard_metrics(result, unit_ids, book_ids, marker_mode=marker_mode)
     guarded = dict(result)
     guarded.update(metrics)
     guarded["guard_action"] = "pass" if metrics["guard_passed"] else on_fail
@@ -204,7 +268,8 @@ def apply_guard(result: dict, unit_ids: set[str], book_ids: set[str] | None = No
                         "reasons": ["质量守卫拒答：" + "、".join(metrics["guard_issues"])]},
                         "fallback": False, "refusal": True, "guarded": True})
         return guarded
-    fallback_answer, fallback_citations = _guard_fallback_answer(result, unit_ids, book_ids)
+    fallback_answer, fallback_citations = _guard_fallback_answer(result, unit_ids, book_ids,
+                                                                marker_mode=marker_mode)
     guarded.update({"answer": fallback_answer, "citations": fallback_citations,
                     "confidence": {"level": "low",
                                    "reasons": ["质量守卫回退：" + "、".join(metrics["guard_issues"])]},

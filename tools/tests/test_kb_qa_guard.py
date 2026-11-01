@@ -72,7 +72,10 @@ def test_guard_metrics_thresholds():
     m = gd.compute_guard_metrics(clean, UNIT_IDS, BOOK_IDS)
     assert m["citation_valid_count"] == 2 and m["citation_invalid"] == []
     assert m["citation_resolvable_rate"] == 1.0
-    assert m["inference_ratio"] == 0.5 and m["inference_heavy"] is False
+    # 默认 strict_line：同行内「。【推断】」不在行首 → 不计推断；用 legacy 模式验证旧行为兼容
+    assert m["inference_ratio"] == 0.0 and m["inference_heavy"] is False
+    m_legacy = gd.compute_guard_metrics(clean, UNIT_IDS, BOOK_IDS, marker_mode="legacy")
+    assert m_legacy["inference_ratio"] == 0.5 and m_legacy["inference_heavy"] is False
     assert m["distinct_cited_units"] == 2 and m["guard_passed"] is True and m["answerable"] is True
 
     # 幻觉引用 → citation_invalid
@@ -86,7 +89,9 @@ def test_guard_metrics_thresholds():
     heavy = raw_result("【推断】x [aaaa1111bbbb] [cccc2222dddd]",
                        ["aaaa1111bbbb", "cccc2222dddd"], direct=1, infer=3)
     mh = gd.compute_guard_metrics(heavy, UNIT_IDS, BOOK_IDS)
-    assert mh["inference_ratio"] == 0.75 and mh["inference_heavy"] is True
+    assert mh["inference_ratio"] == 1.0 and mh["inference_heavy"] is True  # strict_line：仅行首【推断】计 1
+    mh_legacy = gd.compute_guard_metrics(heavy, UNIT_IDS, BOOK_IDS, marker_mode="legacy")
+    assert mh_legacy["inference_ratio"] == 0.75 and mh_legacy["inference_heavy"] is True
     assert "inference_heavy" in mh["guard_issues"]
 
     # 集中度不足（只引 1 个单元）→ insufficient_cited_units

@@ -26,7 +26,10 @@ CLI：
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import os
+import shutil
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -35,6 +38,8 @@ REPO = Path(__file__).resolve().parents[2]
 DEFAULT_INPUT = REPO / "research" / "reports" / "report_panel_v3_20261101.json"
 DEFAULT_OUT = REPO / "portal" / "static" / "report_panel.json"
 REVIEW_FILE = REPO / "research" / "reports" / "report_panel_v3_review.md"
+BACKUP_DIR = REPO / "research" / "reports" / "backups"
+SAFE_SCHEMA = "safe_write.v1"
 DISCLAIMER = "仅供研究，不构成投资建议"
 DISCLAIMER_FULL = ("本面板由本地 LLM 多智能体评审（基本面分析师/量化研究员/风控官 × 双模型）"
                    "自动生成，仅供研究参考，不构成任何投资建议；候选需经人工复核后方可使用。")
@@ -47,6 +52,156 @@ REQUIRED_TOP = ("generated_at", "exported_at", "source", "panel_version", "discl
 
 class PanelExportError(RuntimeError):
     """导出流程异常（输入缺失/结构不合法等）。"""
+
+
+class SafeWriteError(RuntimeError):
+    """安全写入失败（不覆盖目标文件）。"""
+
+
+# ---------------------------------------------------------------------------
+# 安全写入三件套（备份 / 读-合并-写 / 原子写 + sha/条数校验）
+# ---------------------------------------------------------------------------
+def _now_tag() -> str:
+    return datetime.now().astimezone().strftime("%Y%m%d_%H%M%S_%f")
+
+
+def _sha256_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def _sha256_file(path: Path | str) -> str | None:
+    try:
+        return _sha256_bytes(Path(path).read_bytes())
+    except OSError:
+        return None
+
+
+def _read_json_tolerant(path: Path | str) -> tuple[dict | None, list[str]]:
+    p = Path(path)
+    if not p.exists():
+        return None, []
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return None, [f"旧文件读取/解析失败：{exc}"]
+    if not isinstance(data, dict):
+        return None, ["旧文件顶层不是 JSON 对象"]
+    return data, []
+
+
+def _row_key(item: dict) -> tuple:
+    """合并主键：report_id（缺失时退化到 id/title/date）。"""
+    return (str(item.get("report_id") or item.get("id") or item.get("title") or ""),
+            str(item.get("date") or ""))
+
+
+def _merge_by_key(old_rows, new_rows, key_fn=_row_key) -> list[dict]:
+    """新数据优先顺序；旧独有行追加保留（不丢历史研报）。"""
+    new = [r for r in (new_rows or []) if isinstance(r, dict)]
+    old = [r for r in (old_rows or []) if isinstance(r, dict)]
+    out = list(new)
+    seen = {key_fn(r) for r in new}
+    for row in old:
+        k = key_fn(row)
+        if k not in seen:
+            seen.add(k)
+            out.append(row)
+    return out
+
+
+def merge_panel_payload(old: dict | None, new: dict) -> dict:
+    """report_panel.json：按 report_id 合并 reports/candidates/rejected/page_issues/review.items。
+
+    规则：新数据优先并保留其顺序；旧独有行（历史研报/被拒记录/复核项）追加保留；
+    顶层未知字段保留（旧 dict → 新 dict 覆盖已知字段）；summary 计数按合并后重算。
+    """
+    old = old if isinstance(old, dict) else {}
+    new = dict(new or {})
+    merged = dict(old)                      # 保留旧顶层未知字段
+    merged.update(new)                      # 已知字段以新为准
+    for key in ("reports", "candidates", "rejected", "page_issues"):
+        merged[key] = _merge_by_key(old.get(key), new.get(key))
+    old_review = old.get("review") if isinstance(old.get("review"), dict) else {}
+    new_review = new.get("review") if isinstance(new.get("review"), dict) else {}
+    review = dict(old_review)
+    review.update(new_review)
+    review["items"] = _merge_by_key(old_review.get("items"), new_review.get("items"))
+    merged["review"] = review
+    summary = dict(old.get("summary") or {})
+    summary.update(new.get("summary") or {})
+    summary["reports"] = len(merged["reports"])
+    summary["candidates"] = len(merged["candidates"])
+    summary["rejected"] = len(merged["rejected"])
+    merged["summary"] = summary
+    return merged
+
+
+def _panel_counts(payload: dict | None) -> dict:
+    p = payload if isinstance(payload, dict) else {}
+    return {"reports": len(p.get("reports") or []),
+            "candidates": len(p.get("candidates") or []),
+            "rejected": len(p.get("rejected") or []),
+            "page_issues": len(p.get("page_issues") or [])}
+
+
+def safe_write_json(path: Path | str, payload: dict, *, merge_fn, validator=None,
+                    counts_fn=None, backup_dir: Path | str | None = None) -> dict:
+    """安全写 JSON：备份 → 合并 → 原子写 → sha/条数校验；失败不覆盖目标。"""
+    path = Path(path)
+    backup_dir = Path(backup_dir) if backup_dir is not None else BACKUP_DIR
+    old, read_errors = _read_json_tolerant(path)
+    merged = merge_fn(old, payload)
+    if validator is not None:
+        errors = validator(merged)
+        if errors:
+            raise SafeWriteError("合并后校验失败：" + "；".join(errors))
+    expected_counts = counts_fn(merged) if counts_fn else None
+    before_counts = counts_fn(old) if counts_fn else None
+    data = (json.dumps(merged, ensure_ascii=False, indent=1) + "\n").encode("utf-8")
+    sha_expected = _sha256_bytes(data)
+    sha_before = _sha256_file(path)
+    pk_key = "reports" if "reports" in merged else "items"
+    merged_added = len(merged.get(pk_key) or []) - len((old or {}).get(pk_key) or [])
+    merged_kept = len(merged.get(pk_key) or []) - len(payload.get(pk_key) or [])
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    backup_path: Path | None = None
+    try:
+        with open(tmp, "wb") as f:
+            f.write(data)
+            f.flush()
+            os.fsync(f.fileno())
+        if _sha256_file(tmp) != sha_expected:
+            raise SafeWriteError("临时文件 sha 校验失败")
+        json.loads(tmp.read_text(encoding="utf-8"))
+        if path.exists():
+            backup_dir.mkdir(parents=True, exist_ok=True)
+            backup_path = backup_dir / f"{path.name}.{_now_tag()}.bak.json"
+            shutil.copy2(path, backup_path)
+            if _sha256_file(backup_path) != sha_before:
+                raise SafeWriteError("备份 sha 校验失败，已中止写入")
+        os.replace(tmp, path)
+        if _sha256_file(path) != sha_expected:
+            if backup_path is not None and backup_path.exists():
+                shutil.copy2(backup_path, path)
+            raise SafeWriteError("落盘后 sha 校验失败，已回滚备份")
+        final = json.loads(path.read_text(encoding="utf-8"))
+        if counts_fn is not None:
+            final_counts = counts_fn(final)
+            if final_counts != expected_counts:
+                if backup_path is not None and backup_path.exists():
+                    shutil.copy2(backup_path, path)
+                raise SafeWriteError(f"落盘后条数校验失败：{final_counts} != {expected_counts}")
+        return {"schema": SAFE_SCHEMA, "path": str(path),
+                "backup": str(backup_path) if backup_path else None,
+                "sha_before": sha_before, "sha_after": _sha256_file(path),
+                "counts_before": before_counts, "counts_after": expected_counts,
+                "merged_added": merged_added, "merged_kept": merged_kept,
+                "read_errors": read_errors, "atomic": True,
+                "tmp_removed": not tmp.exists()}
+    except Exception:
+        tmp.unlink(missing_ok=True)
+        raise
 
 
 # ---------------------------------------------------------------------------
@@ -227,20 +382,24 @@ def load_json(path: Path | str) -> dict:
 
 def export_panel(input_path: Path | str = DEFAULT_INPUT, out_path: Path | str = DEFAULT_OUT,
                  check: bool = False) -> dict:
-    """读 v3 面板 JSON → 写门户静态 JSON；check=True 时写后校验。"""
+    """读 v3 面板 JSON → 安全写门户静态 JSON（备份/合并/原子写/校验）；check=True 时写后校验。"""
     input_path, out_path = Path(input_path), Path(out_path)
     v3 = load_json(input_path)
     payload = build_portal_payload(v3, source_path=input_path)
     errors = validate_portal_payload(payload)
     if errors:
         raise PanelExportError("门户 payload 校验失败：" + "；".join(errors))
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    try:
+        safe_write_json(out_path, payload, merge_fn=merge_panel_payload,
+                        validator=validate_portal_payload, counts_fn=_panel_counts)
+    except SafeWriteError as exc:
+        raise PanelExportError(f"安全写入失败：{exc}") from exc
+    merged = load_json(out_path)
     if check:
-        errors = validate_portal_payload(load_json(out_path))
+        errors = validate_portal_payload(merged)
         if errors:
             raise PanelExportError("落盘后校验失败：" + "；".join(errors))
-    return payload
+    return merged
 
 
 def check_portal_json(out_path: Path | str = DEFAULT_OUT) -> list[str]:

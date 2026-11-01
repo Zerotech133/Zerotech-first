@@ -268,7 +268,13 @@
       "ref": "tools/research/selection_daily.py",
       "enabled": true
     },
-    { "id": "trend_template", "kind": "tool", "title": "Minervini 趋势模板 8 条筛选器", "ref": "tools/research/trend_template.py", "enabled": true },
+    {
+      "id": "trend_template",
+      "kind": "tool",
+      "title": "Minervini 趋势模板 8 条筛选器",
+      "ref": "tools/research/trend_template.py",
+      "enabled": true
+    },
     {
       "id": "factor_lib",
       "kind": "tool",
@@ -722,6 +728,13 @@
       "kind": "tool",
       "title": "静态产物写入脚本审计",
       "ref": "tools/kb_corpus/static_writer_audit.py",
+      "enabled": true
+    },
+    {
+      "id": "card_precheck_v3",
+      "kind": "tool",
+      "title": "第二轮候选机器预审",
+      "ref": "tools/kb_corpus/card_precheck_v3.py",
       "enabled": true
     }
   ]
