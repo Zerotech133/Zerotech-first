@@ -53,7 +53,12 @@
 - ADR-012 L2 五要素；ADR-013 单机范围与文档纪律；
 - [ADR-014 Agent 运行契约 v1（run/event/conversation，Proposed）](docs/adr/ADR-014-agent-run-contract.md)；
 - [ADR-015 平台内核契约与组合模型 v1（Proposed）](docs/adr/ADR-015-platform-kernel-composition-model.md)；
-- [ADR-016 唯一宿主整合（Accepted；supersedes 2026-10-30 联邦方案）](docs/adr/ADR-016-single-host-integration.md)。
+- [ADR-016 唯一宿主整合（Accepted；supersedes 2026-10-30 联邦方案）](docs/adr/ADR-016-single-host-integration.md)；
+- [ADR-017 唯一开发框架与黄金路径（ZBF v1，Proposed）](docs/adr/ADR-017-framework-golden-path.md)。
+
+> **平台唯一框架（ZBF v1，2026-11-02）**：[docs/architecture/PLATFORM_FRAMEWORK_v1.md](docs/architecture/PLATFORM_FRAMEWORK_v1.md)
+> （整体复盘 + 社区对标 + 一套宿主/一层内核/一个组合模型/一条黄金路径/一道门禁 + Q1–Q4 质量分级）。
+> 未来所有开发只允许三种形态：组合变更、实现替换、内核变更（ADR）；禁止第二入口/认证/DB/调度与临时脚本交付。
 
 > **唯一宿主（ADR-016，2026-11-02 老田批准）**：人类唯一入口与平台宿主 = 零界（8734）；
 > 智策不再是独立系统/独立入口/独立认证，收敛为量化域资产（内部 API + 页面包 + PG + 日管线 + 身份映射），
