@@ -1,0 +1,266 @@
+{
+ "generated_at": "2026-11-01T14:19:18+08:00",
+ "period": "202611",
+ "scheme": "H14-A: 质量Q5等权 + 陷阱组权重上限5%",
+ "signal_date": "20261030",
+ "n_holdings": 762,
+ "trap_cap_pct": 5.0,
+ "trap_weight_unconstrained_pct": 9.71,
+ "trap_weight_constrained_pct": 5.0,
+ "trap_count": 74,
+ "top_holdings": [
+  {
+   "ts_code": "920982.BJ",
+   "name": "锦波生物",
+   "roe": 17.672,
+   "pe_ttm": 35.59,
+   "w_unconstrained": 0.00131,
+   "w_constrained": 0.00138,
+   "trap": false,
+   "quality_roe_q": 5,
+   "pe_t": 2
+  },
+  {
+   "ts_code": "000301.SZ",
+   "name": "东方盛虹",
+   "roe": 12.72,
+   "pe_ttm": 15.04,
+   "w_unconstrained": 0.00131,
+   "w_constrained": 0.00138,
+   "trap": false,
+   "quality_roe_q": 5,
+   "pe_t": 1
+  },
+  {
+   "ts_code": "000333.SZ",
+   "name": "美的集团",
+   "roe": 18.531,
+   "pe_ttm": 14.34,
+   "w_unconstrained": 0.00131,
+   "w_constrained": 0.00138,
+   "trap": false,
+   "quality_roe_q": 5,
+   "pe_t": 1
+  },
+  {
+   "ts_code": "000338.SZ",
+   "name": "潍柴动力",
+   "roe": 11.387,
+   "pe_ttm": 13.72,
+   "w_unconstrained": 0.00131,
+   "w_constrained": 0.00138,
+   "trap": false,
+   "quality_roe_q": 5,
+   "pe_t": 1
+  },
+  {
+   "ts_code": "000408.SZ",
+   "name": "藏格矿业",
+   "roe": 35.593,
+   "pe_ttm": 14.81,
+   "w_unconstrained": 0.00131,
+   "w_constrained": 0.00138,
+   "trap": false,
+   "quality_roe_q": 5,
+   "pe_t": 1
+  },
+  {
+   "ts_code": "000415.SZ",
+   "name": "渤海租赁",
+   "roe": 14.548,
+   "pe_ttm": 5.18,
+   "w_unconstrained": 0.00131,
+   "w_constrained": 0.00138,
+   "trap": false,
+   "quality_roe_q": 5,
+   "pe_t": 1
+  },
+  {
+   "ts_code": "000423.SZ",
+   "name": "东阿阿胶",
+   "roe": 13.227,
+   "pe_ttm": 17.09,
+   "w_unconstrained": 0.00131,
+   "w_constrained": 0.00138,
+   "trap": false,
+   "quality_roe_q": 5,
+   "pe_t": 1
+  },
+  {
+   "ts_code": "000426.SZ",
+   "name": "兴业银锡",
+   "roe": 23.937,
+   "pe_ttm": 14.26,
+   "w_unconstrained": 0.00131,
+   "w_constrained": 0.00138,
+   "trap": false,
+   "quality_roe_q": 5,
+   "pe_t": 1
+  },
+  {
+   "ts_code": "000429.SZ",
+   "name": "粤高速A",
+   "roe": 11.762,
+   "pe_ttm": 18.44,
+   "w_unconstrained": 0.00131,
+   "w_constrained": 0.00138,
+   "trap": false,
+   "quality_roe_q": 5,
+   "pe_t": 1
+  },
+  {
+   "ts_code": "000506.SZ",
+   "name": "招金黄金",
+   "roe": 29.389,
+   "pe_ttm": 37.3,
+   "w_unconstrained": 0.00131,
+   "w_constrained": 0.00138,
+   "trap": false,
+   "quality_roe_q": 5,
+   "pe_t": 2
+  },
+  {
+   "ts_code": "920455.BJ",
+   "name": "汇隆活塞",
+   "roe": 9.963,
+   "pe_ttm": 27.37,
+   "w_unconstrained": 0.00131,
+   "w_constrained": 0.00138,
+   "trap": false,
+   "quality_roe_q": 5,
+   "pe_t": 2
+  },
+  {
+   "ts_code": "920425.BJ",
+   "name": "乐创技术",
+   "roe": 17.734,
+   "pe_ttm": 22.5,
+   "w_unconstrained": 0.00131,
+   "w_constrained": 0.00138,
+   "trap": false,
+   "quality_roe_q": 5,
+   "pe_t": 1
+  },
+  {
+   "ts_code": "920418.BJ",
+   "name": "苏轴股份",
+   "roe": 9.748,
+   "pe_ttm": 24.6,
+   "w_unconstrained": 0.00131,
+   "w_constrained": 0.00138,
+   "trap": false,
+   "quality_roe_q": 5,
+   "pe_t": 2
+  },
+  {
+   "ts_code": "920357.BJ",
+   "name": "雅葆轩",
+   "roe": 11.846,
+   "pe_ttm": 20.16,
+   "w_unconstrained": 0.00131,
+   "w_constrained": 0.00138,
+   "trap": false,
+   "quality_roe_q": 5,
+   "pe_t": 1
+  },
+  {
+   "ts_code": "920262.BJ",
+   "name": "太湖雪",
+   "roe": 11.447,
+   "pe_ttm": 20.75,
+   "w_unconstrained": 0.00131,
+   "w_constrained": 0.00138,
+   "trap": false,
+   "quality_roe_q": 5,
+   "pe_t": 1
+  },
+  {
+   "ts_code": "920261.BJ",
+   "name": "一诺威",
+   "roe": 9.981,
+   "pe_ttm": 18.12,
+   "w_unconstrained": 0.00131,
+   "w_constrained": 0.00138,
+   "trap": false,
+   "quality_roe_q": 5,
+   "pe_t": 1
+  },
+  {
+   "ts_code": "920258.BJ",
+   "name": "聚仁新材",
+   "roe": 14.168,
+   "pe_ttm": 19.59,
+   "w_unconstrained": 0.00131,
+   "w_constrained": 0.00138,
+   "trap": false,
+   "quality_roe_q": 5,
+   "pe_t": 1
+  },
+  {
+   "ts_code": "920249.BJ",
+   "name": "利尔达",
+   "roe": 10.716,
+   "pe_ttm": 31.18,
+   "w_unconstrained": 0.00131,
+   "w_constrained": 0.00138,
+   "trap": false,
+   "quality_roe_q": 5,
+   "pe_t": 2
+  },
+  {
+   "ts_code": "920239.BJ",
+   "name": "长虹能源",
+   "roe": 11.769,
+   "pe_ttm": 17.18,
+   "w_unconstrained": 0.00131,
+   "w_constrained": 0.00138,
+   "trap": false,
+   "quality_roe_q": 5,
+   "pe_t": 1
+  },
+  {
+   "ts_code": "920238.BJ",
+   "name": "长鹰硬科",
+   "roe": 40.783,
+   "pe_ttm": 8.62,
+   "w_unconstrained": 0.00131,
+   "w_constrained": 0.00138,
+   "trap": false,
+   "quality_roe_q": 5,
+   "pe_t": 1
+  }
+ ],
+ "cmp": {
+  "unconstrained": {
+   "months": 46,
+   "total_return_pct": -23.6,
+   "ann_return_pct": -6.78,
+   "vol_pct": 22.01,
+   "max_drawdown_pct": -38.37,
+   "sharpe": -0.31
+  },
+  "constrained": {
+   "months": 46,
+   "total_return_pct": -19.67,
+   "ann_return_pct": -5.55,
+   "vol_pct": 21.52,
+   "max_drawdown_pct": -36.85,
+   "sharpe": -0.26
+  }
+ },
+ "periods": [
+  {
+   "file": "shadow_202611.json",
+   "period": "202611",
+   "signal_date": "20261030",
+   "n": 762,
+   "trap_w": 5.0
+  }
+ ],
+ "health": {
+  "trap_within_cap": true,
+  "n_reasonable": true
+ },
+ "next_check": "2026-12-01 08:40（第二期验证）",
+ "note": "H14 影子盘研究跟踪；不构成投资建议"
+}

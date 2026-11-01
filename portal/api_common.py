@@ -191,7 +191,8 @@ DOMAIN_NAV_GROUPS = {
             ("📑 研报知识库", "/kb_reports.html", "kbreports"),
             ("📊 策略库·选股", "/selection.html", "selection"),
             ("🃏 学习卡", "/kb_cards.html", "kbcards"),
-            ("🧾 学习卡审核", "/card_review.html", "cardreview"),)),
+            ("🧾 学习卡审核", "/card_review.html", "cardreview"),
+            ("🛡 H14影子盘", "/h14_shadow.html", "h14shadow"),)),
         ("🪖 军团", (
             ("🏛 组织架构 🚧", "/org", "org"),
             ("✅ 审批注册表", "/approvals", "approvals"),

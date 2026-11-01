@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>H14 影子盘 · 零界</title>
+<link rel="stylesheet" href="/static/nav.css">
+<style>
+:root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2333;--bd:#2d333b;--fg:#e6edf3;--dim:#8b949e;--acc:#58a6ff;--ok:#3fb950;--warn:#d29922;--bad:#f85149}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.6 "Microsoft YaHei",system-ui,sans-serif;padding:24px;max-width:1100px;margin:0 auto}
+h1{font-size:22px;margin:0 0 4px}h1 small{color:var(--dim);font-size:13px;font-weight:normal}
+.sub{color:var(--dim);font-size:12px;margin-bottom:16px}
+.panel{background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:16px;margin-bottom:14px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.card{background:var(--panel2);border:1px solid var(--bd);border-radius:8px;padding:12px}
+.card .k{color:var(--dim);font-size:12px}.card .v{font-size:20px;font-weight:700;color:var(--acc)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{border-bottom:1px solid var(--bd);padding:7px 8px;text-align:left}
+th{color:var(--dim);font-weight:600}
+.badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:700}
+.b-ok{background:#12301c;color:var(--ok)}.b-warn{background:#2b2410;color:var(--warn)}.b-bad{background:#2a1512;color:var(--bad)}.b-info{background:#122642;color:#79c0ff}
+.muted{color:var(--dim);font-size:12px}
+code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-size:12px}
+@media(max-width:760px){body{padding:14px}table{display:block;overflow-x:auto;white-space:nowrap}}
+</style>
+<script src="/static/nav.js" defer></script></head>
+<body>
+<div id="nav"></div>
+<h1>🛡 H14 影子盘 <small>质量陷阱规避 · 月度跟踪</small></h1>
+<div class="sub" id="sub">加载中…</div>
+
+<div class="panel"><div class="cards">
+  <div class="card"><div class="k">当前期</div><div class="v" id="c-period" style="font-size:18px">—</div></div>
+  <div class="card"><div class="k">信号日</div><div class="v" id="c-signal" style="font-size:16px">—</div></div>
+  <div class="card"><div class="k">持仓数</div><div class="v" id="c-n">—</div></div>
+  <div class="card"><div class="k">陷阱组权重</div><div class="v" id="c-trap">—</div></div>
+  <div class="card"><div class="k">约束前/上限</div><div class="v" id="c-trapu" style="font-size:16px">—</div></div>
+</div>
+<div class="muted" id="health" style="margin-top:10px"></div></div>
+
+<div class="panel"><b>持仓 Top 20（约束后权重）</b>
+<table><thead><tr><th>#</th><th>代码</th><th>名称</th><th>ROE</th><th>PE</th><th>权重%</th><th>陷阱</th></tr></thead><tbody id="body"></tbody></table></div>
+
+<div class="panel"><b>回测对比（H14 方案）</b>
+<table><thead><tr><th>方案</th><th>月数</th><th>总收益%</th><th>年化%</th><th>波动%</th><th>最大回撤%</th><th>Sharpe</th></tr></thead><tbody id="cmp"></tbody></table>
+<div class="muted" id="periods" style="margin-top:8px"></div></div>
+
+<div class="panel"><b>说明</b><div class="muted">
+scheme：质量 Q5 等权 + 陷阱组权重上限；月度任务每月 1 日 08:30 生成新一期；验证节点 2026-12-01 08:40。
+<p>影子盘仅供研究跟踪，不构成投资建议。</p></div></div>
+
+<div class="foot muted">数据：<code>portal/static/h14_shadow.json</code> · 生成：<code>tools/research/h14_shadow_status.py</code></div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  fetch('/static/h14_shadow.json?ts='+Date.now()).then(r=>r.json()).then(function(d){
+    $('sub').textContent='生成 '+d.generated_at+' · '+ (d.scheme||'');
+    $('c-period').textContent=d.period; $('c-signal').textContent=d.signal_date;
+    $('c-n').textContent=d.n_holdings;
+    $('c-trap').textContent=d.trap_weight_constrained_pct+'%';
+    $('c-trapu').textContent=d.trap_weight_unconstrained_pct+'% / 上限 '+d.trap_cap_pct+'%';
+    const h=d.health||{};
+    $('health').innerHTML='<span class="badge '+(h.trap_within_cap?'b-ok':'b-bad')+'">陷阱权重'+(h.trap_within_cap?'达标':'超限')+'</span> '
+      +'<span class="badge '+(h.n_reasonable?'b-ok':'b-warn')+'">持仓数'+(h.n_reasonable?'合理':'异常')+'</span> '
+      +'<span class="badge b-info">陷阱 '+d.trap_count+' 只</span> '
+      +'<span class="muted">下次验证：'+(d.next_check||'')+'</span>';
+    $('body').innerHTML=(d.top_holdings||[]).map(function(x,i){
+      return '<tr><td>'+(i+1)+'</td><td><code>'+x.ts_code+'</code></td><td>'+x.name+'</td><td>'+(x.roe??'—')+'</td>'
+        +'<td>'+(x.pe_ttm??'—')+'</td><td>'+(x.w_constrained*100).toFixed(3)+'</td>'
+        +'<td>'+(x.trap?'<span class="badge b-warn">是</span>':'否')+'</td></tr>';
+    }).join('');
+    const cmp=d.cmp||{};
+    $('cmp').innerHTML=Object.keys(cmp).map(function(k){
+      const m=cmp[k]; return '<tr><td>'+k+'</td><td>'+m.months+'</td><td>'+m.total_return_pct+'</td><td>'+m.ann_return_pct+'</td>'
+        +'<td>'+m.vol_pct+'</td><td>'+m.max_drawdown_pct+'</td><td>'+m.sharpe+'</td></tr>';
+    }).join('') || '<tr><td colspan="7" class="muted">暂无回测对比</td></tr>';
+    $('periods').textContent='历史期：'+ (d.periods||[]).map(function(p){return p.period+'('+p.n+'只/陷阱'+p.trap_w+'%)';}).join(' · ');
+  }).catch(function(e){ $('sub').textContent='加载失败：'+e.message; });
+})();
+</script>
+</body>
+</html>
