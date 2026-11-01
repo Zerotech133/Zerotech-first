@@ -85,7 +85,7 @@
       "type": "filter_avoid",
       "owner": "司马微",
       "source_hypothesis": "LX20（book_backlog）",
-      "status": "research_only_overlay_fail",
+      "status": "closed_both_directions_fail",
       "executable": false,
       "rule": "每日等权池剔除/降配过去 N=5 日触发 LX20 信号（倍量不穿/高量不破/跳空不补）的股票；参数与容量见 rule_spec",
       "validation": {
@@ -93,7 +93,9 @@
         "shadow": "无（需先做 S05 规则与现有组合叠加/影子盘）",
         "cost": "30bp 单边；成本年化约 5%；容量 187 亿@10% 参与率；覆盖 24.5%",
         "caveat": "仅适用于等权全市场/中小市值场景的线索；与 S01 大市值组合叠加反向。",
-        "overlay": "S05×S01 叠加 FAIL（w=0.5 -2.48%/t=-3.18；越深越负；机制=截面冲突）→ 不进影子盘"
+        "overlay": "S05×S01 叠加 FAIL（w=0.5 -2.48%/t=-3.18；越深越负；机制=截面冲突）→ 不进影子盘",
+        "reverse": "超配反向假设 FAIL（M2 净-0.57%/t=-0.50；OOS -0.63%；逐年1/4）→ 两个方向均不适用 S01",
+        "final": "S05 关闭（仅保留 research_only 知识结论）：规避在等权全市场有效但换手成本高；在 S01 大市值内规避/超配均无效。"
       },
       "approved": false,
       "effective_from": "待验证（candidate）"
@@ -863,5 +865,79 @@
     "reports": 3,
     "disclaimer": "仅供研究，不构成投资建议",
     "note": "v3 面板接入门户（概览卡 + 候选/被拦截/复核提示三页签）；HTTP 200 已验证；仅供研究。"
+  },
+  "s05_reverse_hypothesis_20261101": {
+    "report": "research/reports/s05_reverse_20261101.md",
+    "verdict": "REVERSE_HYPOTHESIS_NOT_PASS",
+    "conclusion": "在 S01 大市值组合内超配 LX20 信号股：M2 毛 +1.63%（随乘子上升）但换手/成本抬升 → 净超额 -0.57%(t=-0.50)、OOS -0.63%、逐年 1/4；K50 毛 +5.91% 但 IS -6.92%、OOS 不显著 → 反向假设不成立。",
+    "mechanism": "wave5 降配负超额主要来自换手成本+组合再分配，不是「大市值内信号股显著跑赢」；规避与超配两方向均不适用于 S01。"
+  },
+  "report_panel_daily_20261101": {
+    "runner": "tools/research/panel_daily.py",
+    "status_file": "research/reports/report_panel_daily_status.json",
+    "latest": {
+      "run_at": "2026-11-01T08:50:07+08:00",
+      "mode": "check_only",
+      "ok": true,
+      "errors": [],
+      "source": "C:\\项目\\老田的AI助手\\research\\reports\\report_panel_v3_20261101.json",
+      "source_meta": {
+        "path": "C:\\项目\\老田的AI助手\\research\\reports\\report_panel_v3_20261101.json",
+        "exists": true,
+        "mtime": "2026-11-01T08:09:36+08:00",
+        "mtime_epoch": 1793491776.693,
+        "size": 90207
+      },
+      "portal": "C:\\项目\\老田的AI助手\\portal\\static\\report_panel.json",
+      "portal_meta": {
+        "path": "C:\\项目\\老田的AI助手\\portal\\static\\report_panel.json",
+        "exists": true,
+        "mtime": "2026-11-01T08:50:07+08:00",
+        "mtime_epoch": 1793494207.653,
+        "size": 14281
+      },
+      "elapsed_seconds": 0.0,
+      "candidates": 1,
+      "candidate_ids": [
+        "rp_AP202610071830182729"
+      ],
+      "rejected": 2,
+      "reports": 3,
+      "page_invalid_facts": 1,
+      "legacy_union_invalid_facts": 0,
+      "review_checkboxes": 68,
+      "disclaimer_ok": true,
+      "source_generated_at": "2026-11-01T08:09:36+08:00",
+      "stale": false,
+      "stale_note": null,
+      "validation": {
+        "ok": true,
+        "errors": [],
+        "checked_at": "2026-11-01T08:50:07+08:00"
+      },
+      "change": {
+        "has_prev": true,
+        "prev_run_at": "2026-11-01T08:50:07+08:00",
+        "candidates": {
+          "prev": 1,
+          "cur": 1,
+          "delta": 0,
+          "added": [],
+          "removed": []
+        },
+        "page_invalid_facts": {
+          "prev": 1,
+          "cur": 1,
+          "delta": 0
+        },
+        "rejected": {
+          "prev": 2,
+          "cur": 2,
+          "delta": 0
+        },
+        "source_generated_at_changed": false
+      }
+    },
+    "note": "一条命令刷新门户+校验+状态台账+变更摘要；原子发布（坏数据不覆盖）；静态页无需重启 8091。"
   }
 }

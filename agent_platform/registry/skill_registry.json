@@ -372,6 +372,20 @@
       "title": "研报面板门户导出",
       "ref": "tools/research/panel_export.py",
       "enabled": true
+    },
+    {
+      "id": "s05_reverse_hypothesis",
+      "kind": "tool",
+      "title": "S05 反向超配假设验证",
+      "ref": "tools/research/s05_reverse_hypothesis.py",
+      "enabled": true
+    },
+    {
+      "id": "panel_daily",
+      "kind": "tool",
+      "title": "研报面板日常运行器",
+      "ref": "tools/research/panel_daily.py",
+      "enabled": true
     }
   ]
 }
