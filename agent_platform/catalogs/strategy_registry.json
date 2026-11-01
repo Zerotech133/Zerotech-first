@@ -3774,5 +3774,430 @@
     },
     "evidence": "wave17 AW A/B：single 33.3%→multi 80%（+46.7pp，McNemar p=0.000122，回退0，耗时1.03×）",
     "note": "multi 已设为 kb_qa CLI 默认；HTTP 预接线支持 multi 灰度但 WIRED=False、8091 未注册未重启（8091 GET /api/kb/qa 实测 404）。"
+  },
+  "kb_qa_multi_eval_20261101": {
+    "tool": "tools/kb_corpus/kb_qa_multi_eval.py",
+    "report": "research/reports/kb_qa_multi_eval_20261101.md",
+    "summary": {
+      "single": {
+        "n": 12,
+        "answered": 3,
+        "answerable_rate": 0.25,
+        "avg_citations": 1.25,
+        "citation_exists_rate": 1.0,
+        "avg_supported_ratio_all": 0.1875,
+        "avg_supported_ratio_answered": 0.75,
+        "hallucination_flags_total": 6,
+        "hallucination_flag_rate": 0.5,
+        "hallucination_samples": 5,
+        "avg_inference_markers": 0.0,
+        "avg_answer_length": 203.4,
+        "answer_type_counts": {
+          "refusal": 9,
+          "fact": 3
+        }
+      },
+      "multi": {
+        "n": 12,
+        "answered": 9,
+        "answerable_rate": 0.75,
+        "avg_citations": 1.667,
+        "citation_exists_rate": 0.55,
+        "avg_supported_ratio_all": 0.1944,
+        "avg_supported_ratio_answered": 0.2593,
+        "hallucination_flags_total": 8,
+        "hallucination_flag_rate": 0.6667,
+        "hallucination_samples": 3,
+        "avg_inference_markers": 1.417,
+        "avg_answer_length": 297.1,
+        "answer_type_counts": {
+          "inference": 8,
+          "refusal": 3,
+          "fact": 1
+        }
+      },
+      "delta": {
+        "answerable_rate": 0.5,
+        "avg_citations": 0.417,
+        "citation_exists_rate": -0.45,
+        "avg_supported_ratio_all": 0.0069,
+        "avg_supported_ratio_answered": -0.4907,
+        "hallucination_flag_rate": 0.1667,
+        "avg_answer_length": 93.7
+      },
+      "paired": {
+        "n_both_answered": 3,
+        "avg_supported_ratio_single": 0.75,
+        "avg_supported_ratio_multi": 0.2667,
+        "support_delta": -0.4833,
+        "hallucination_flags_single": 0,
+        "hallucination_flags_multi": 0,
+        "avg_citations_single": 2.333,
+        "avg_citations_multi": 2.333
+      }
+    },
+    "conclusion": {
+      "verdict": "multi 以部分答案质量换可答率（支撑率下降或幻觉率上升）",
+      "stance": "multi_with_guard",
+      "answerable_gain": 0.5,
+      "support_rate_delta_all": 0.0069,
+      "hallucination_rate_delta": 0.1667,
+      "quality_loss_detected": true,
+      "paired_support_delta": -0.4833,
+      "reasons": [
+        "可答率 single 0.25 → multi 0.75（Δ=+0.5000）",
+        "支撑率（全样本）single 0.1875 → multi 0.1944（Δ=+0.0069）",
+        "幻觉 flag 率 single 0.5 → multi 0.6667（Δ=+0.1667）",
+        "引用存在率 single 1.0 → multi 0.55",
+        "双方均有答案子集（n=3）支撑率 Δ=-0.4833"
+      ],
+      "caveats": [
+        "multi 引用元数据（页码）未持久化，multi 侧页码校验 n/a，引用只验证 unit_id 存在性；",
+        "multi citation 从答案标记抽取，可能漏计未打标记的引用；",
+        "支撑度为字符 bigram 覆盖率，长答案（multi 平均更长）天然更易命中，需谨慎解读；",
+        "有效样本 12 对（AW 30 条中仅 12 条有原文可评估），结论为冒烟级；",
+        "不调 LLM、不改答案原文；评估为规则启发式。"
+      ]
+    },
+    "note": "multi 质量评估（12 对）：可答率 25%→75% 但引用可解析率 100%→55%、有答案子集支撑率 75%→25.9%、幻觉率 0.50→0.67 → **multi_with_guard**：上线需引用可解析硬门/推断比例限制/人工抽查。"
+  },
+  "card_precheck_20261101": {
+    "tool": "tools/kb_corpus/card_precheck.py",
+    "report": "research/reports/card_precheck_20261101.md",
+    "summary": {
+      "total": 60,
+      "pass": 36,
+      "revise": 24,
+      "reject": 0,
+      "by_source": {
+        "AE": {
+          "total": 20,
+          "pass": 12,
+          "revise": 8,
+          "reject": 0
+        },
+        "AV": {
+          "total": 40,
+          "pass": 24,
+          "revise": 16,
+          "reject": 0
+        }
+      },
+      "by_theme": [
+        {
+          "theme": "消费/零售",
+          "total": 5,
+          "over_quota": true,
+          "pass": 3,
+          "revise": 2,
+          "reject": 0
+        },
+        {
+          "theme": "宏观/政策",
+          "total": 5,
+          "over_quota": true,
+          "pass": 2,
+          "revise": 3,
+          "reject": 0
+        },
+        {
+          "theme": "机械/制造",
+          "total": 5,
+          "over_quota": true,
+          "pass": 2,
+          "revise": 3,
+          "reject": 0
+        },
+        {
+          "theme": "军工/航天",
+          "total": 5,
+          "over_quota": true,
+          "pass": 2,
+          "revise": 3,
+          "reject": 0
+        },
+        {
+          "theme": "交运/物流",
+          "total": 5,
+          "over_quota": true,
+          "pass": 1,
+          "revise": 4,
+          "reject": 0
+        },
+        {
+          "theme": "网络安全/信创",
+          "total": 3,
+          "over_quota": false,
+          "pass": 3,
+          "revise": 0,
+          "reject": 0
+        },
+        {
+          "theme": "通信/互联网",
+          "total": 3,
+          "over_quota": false,
+          "pass": 2,
+          "revise": 1,
+          "reject": 0
+        },
+        {
+          "theme": "农业",
+          "total": 3,
+          "over_quota": false,
+          "pass": 1,
+          "revise": 2,
+          "reject": 0
+        },
+        {
+          "theme": "有色/金属",
+          "total": 3,
+          "over_quota": false,
+          "pass": 1,
+          "revise": 2,
+          "reject": 0
+        },
+        {
+          "theme": "建筑/建材",
+          "total": 3,
+          "over_quota": false,
+          "pass": 3,
+          "revise": 0,
+          "reject": 0
+        },
+        {
+          "theme": "半导体/电子",
+          "total": 3,
+          "over_quota": false,
+          "pass": 2,
+          "revise": 1,
+          "reject": 0
+        },
+        {
+          "theme": "医药/生物",
+          "total": 3,
+          "over_quota": false,
+          "pass": 1,
+          "revise": 2,
+          "reject": 0
+        },
+        {
+          "theme": "AI算力/硬件",
+          "total": 2,
+          "over_quota": false,
+          "pass": 2,
+          "revise": 0,
+          "reject": 0
+        },
+        {
+          "theme": "其他",
+          "total": 2,
+          "over_quota": false,
+          "pass": 2,
+          "revise": 0,
+          "reject": 0
+        },
+        {
+          "theme": "新能源/电力",
+          "total": 2,
+          "over_quota": false,
+          "pass": 2,
+          "revise": 0,
+          "reject": 0
+        },
+        {
+          "theme": "金融/地产",
+          "total": 2,
+          "over_quota": false,
+          "pass": 1,
+          "revise": 1,
+          "reject": 0
+        },
+        {
+          "theme": "量学/交易",
+          "total": 2,
+          "over_quota": false,
+          "pass": 2,
+          "revise": 0,
+          "reject": 0
+        },
+        {
+          "theme": "评级/研报方法论",
+          "total": 2,
+          "over_quota": false,
+          "pass": 2,
+          "revise": 0,
+          "reject": 0
+        },
+        {
+          "theme": "传媒/文化",
+          "total": 2,
+          "over_quota": false,
+          "pass": 2,
+          "revise": 0,
+          "reject": 0
+        }
+      ],
+      "confidence": {
+        "high": 36,
+        "medium": 19,
+        "low": 5
+      },
+      "flag_counts": {
+        "Q_ANSWER_MISMATCH": 16,
+        "DUP_BATCH_CONCEPT": 10,
+        "THEME_OVER_QUOTA": 10,
+        "DUP_BATCH_EVIDENCE": 9,
+        "DUP_BATCH_ANSWER": 4,
+        "ANSWER_TRUNCATED": 2
+      },
+      "themes": 19,
+      "theme_over_quota": [
+        "消费/零售",
+        "宏观/政策",
+        "机械/制造",
+        "军工/航天",
+        "交运/物流"
+      ]
+    },
+    "note": "60 候选机器预审：pass 36 / revise 24 / reject 0；高频 flag=Q_ANSWER_MISMATCH16/重复10/主题超额10；5 主题超配额；仅辅助不改清单（SHA256 不变），人工最终确认。"
+  },
+  "kb_qa_multi_ab50_20261101": {
+    "tool": "tools/kb_corpus/kb_qa_multi_ab50.py",
+    "report": "research/reports/kb_qa_multi_ab50_20261101.md",
+    "summary": {
+      "total": 50,
+      "single": {
+        "success": 19,
+        "rate": 0.38,
+        "no_evidence": 31,
+        "fallback": 0,
+        "avg_citations": 2.47,
+        "avg_elapsed_seconds": 8.63,
+        "reused_count": 30
+      },
+      "multi": {
+        "success": 40,
+        "rate": 0.8,
+        "no_evidence": 10,
+        "fallback": 0,
+        "avg_citations": 2.4,
+        "avg_elapsed_seconds": 8.77,
+        "avg_clusters": 1.8,
+        "direct_facts": 44,
+        "inferences": 55
+      },
+      "delta": {
+        "answerable_rate": 0.42,
+        "avg_citations": -0.07,
+        "latency_ratio": 1.02
+      },
+      "paired": {
+        "a_both_success": 18,
+        "b_single_fail_multi_success": 22,
+        "c_single_success_multi_fail": 1,
+        "d_both_fail": 9,
+        "mcnemar_p": 6e-06
+      },
+      "by_category": [
+        {
+          "category": "风险限制",
+          "total": 8,
+          "single_success": 2,
+          "multi_success": 8,
+          "single_rate": 0.25,
+          "multi_rate": 1.0,
+          "delta": 0.75
+        },
+        {
+          "category": "如何识别",
+          "total": 7,
+          "single_success": 2,
+          "multi_success": 7,
+          "single_rate": 0.2857,
+          "multi_rate": 1.0,
+          "delta": 0.7143
+        },
+        {
+          "category": "影响如何",
+          "total": 7,
+          "single_success": 0,
+          "multi_success": 5,
+          "single_rate": 0.0,
+          "multi_rate": 0.7143,
+          "delta": 0.7143
+        },
+        {
+          "category": "驱动因素",
+          "total": 7,
+          "single_success": 3,
+          "multi_success": 5,
+          "single_rate": 0.4286,
+          "multi_rate": 0.7143,
+          "delta": 0.2857
+        },
+        {
+          "category": "关键数据",
+          "total": 7,
+          "single_success": 3,
+          "multi_success": 4,
+          "single_rate": 0.4286,
+          "multi_rate": 0.5714,
+          "delta": 0.1429
+        },
+        {
+          "category": "是什么",
+          "total": 7,
+          "single_success": 6,
+          "multi_success": 7,
+          "single_rate": 0.8571,
+          "multi_rate": 1.0,
+          "delta": 0.1429
+        },
+        {
+          "category": "竞争格局",
+          "total": 7,
+          "single_success": 3,
+          "multi_success": 4,
+          "single_rate": 0.4286,
+          "multi_rate": 0.5714,
+          "delta": 0.1429
+        }
+      ],
+      "answer_types": {
+        "direct_fact+inference": 20,
+        "refusal": 10,
+        "inference": 10,
+        "answer": 7,
+        "direct_fact": 3
+      },
+      "improved_ids": [
+        "q2_b5a0a0e045",
+        "q2_aa49124184",
+        "q2_a593448ce5",
+        "q2_3d1abf0240",
+        "q2_ef78939178",
+        "q2_0d7db24320",
+        "q2_b74f8cebda",
+        "q2_5cb2ec9a7b",
+        "q2_960b202685",
+        "q2_9efedd1a83",
+        "q2_56b3d0673e",
+        "q2_a4026386c5",
+        "q2_764c00190b",
+        "q2_0e42bbf120",
+        "q2_405d9854bb",
+        "q2_94eb09aab0",
+        "q2_1a841a0468",
+        "q2_d30589a9ff",
+        "q2_3e2a634cb9",
+        "q2_e5b5ca331f",
+        "q2_7db03b524a",
+        "q2_b51ca4e6fb"
+      ],
+      "regressed_ids": [
+        "q2_6e4e551ef4"
+      ]
+    },
+    "note": "v3 全 50 条复跑：single 38%→multi 80%（+42pp）、McNemar p=6e-06、回退 1 条（可控）、耗时比 1.02 → **复现 n=30 结论，维持 multi 默认**。"
   }
 }
