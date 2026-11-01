@@ -1,0 +1,50 @@
+{
+ "run_id": "e7cd83417dc5",
+ "stock": "002712",
+ "source_log": "C:\\Temp\\run_invest_short_1.log",
+ "source_log_sha256": "96ac17f1e36355a2bc2897e301dbb16638197d9492c10dc9647a5bb788a4d2fb",
+ "fidelity": "log_salvage",
+ "captured_at": "2026-11-01T08:15:16",
+ "nodes": [
+  {
+   "agent_id": "D1",
+   "status": "degraded",
+   "output_preview": "{\"recommendation\":\"WATCH\",\"confidence\":0.3,\"rationale\":\"基本面PE为负亏损且市值小，技术面空头排列确认下跌趋势；情绪面虽有反弹但属被动承接，攻防结论一致看空，故禁止给方向，仅观察。\",",
+   "structured": null,
+   "duration_ms": null
+  },
+  {
+   "agent_id": "F1",
+   "status": "normal",
+   "output_preview": "土壤不成立：PE 为负且市值仅 24.4 亿，显示业绩亏损严重，缺乏支撑“有人愿意运作”的盈利基本面基础。 数据佐证：现价 4.49 元对应 PE=-52.09，PB=1.78，表明资产价值与盈利能力未形成良性循环。 结论：重整或重组语境下",
+   "structured": null,
+   "duration_ms": null
+  },
+  {
+   "agent_id": "N1",
+   "status": "degraded",
+   "output_preview": "### N1 情绪面分析报告 (LCS-1 佐证席)  **标的：002712 (长园集团)**   **分析类型：news_event / 情绪耦合验证**  **结论摘要：** 当前盘面呈现“放量上涨偏暖”特征，但需警惕高位（距20日高",
+   "structured": null,
+   "duration_ms": null
+  },
+  {
+   "agent_id": "T1",
+   "status": "normal",
+   "output_preview": "多空辩论结论（2轮，末轮相似度0.76，达轮次上限）：多头[bull·T1]：多头证据弱 + 风险提示：PE 为负且股价距20日高点回撤18.66%显示趋势未反转，需警惕基本面风险与上方抛压。当前盘面呈现“高位天量长阴”特征，10月23日4",
+   "structured": null,
+   "duration_ms": null
+  },
+  {
+   "agent_id": "T2",
+   "status": "normal",
+   "output_preview": "多空辩论结论（2轮，末轮相似度0.76，达轮次上限）：多头[bull·T1]：多头证据弱 + 风险提示：PE 为负且股价距20日高点回撤18.66%显示趋势未反转，需警惕基本面风险与上方抛压。当前盘面呈现“高位天量长阴”特征，10月23日4",
+   "structured": null,
+   "duration_ms": null
+  }
+ ],
+ "degraded_fields": [
+  "structured",
+  "duration_ms"
+ ],
+ "degraded_reason": "console 日志输出被截断，完整 structured/duration 不可得；本件仅用于状态/样本级审计，不用于 JSON 完整率/延迟计算。"
+}

@@ -1,0 +1,1202 @@
+{
+ "schema_version": 1,
+ "date": "20261101",
+ "generated_at": "2026-11-01T09:54:27+08:00",
+ "generator": "tools/kb_corpus/concept_dedup.py",
+ "source": {
+  "path": "C:\\项目\\老田的AI助手\\portal\\static\\kb_units_all.json",
+  "exists": true,
+  "mtime": "2026-11-01T00:23:35+08:00",
+  "size": 298330,
+  "sha1": "0a2c0aa9e9325fb3203c161a7fef9c02181d3e05",
+  "total_declared": 498,
+  "generated_at": "2026-11-01T00:23:35+08:00"
+ },
+ "policy": {
+  "normalization": "去空白/大小写/标点/括号后小写",
+  "true_duplicate_claim_sim": 0.95,
+  "near_duplicate_claim_sim": 0.6,
+  "different_book": "真重复候选",
+  "same_book_different_chapter": "可能合理（重复论述）→ 仅标注",
+  "primary_selection": "evidence/claim 长度 + 页码完整度 + 章节信息（completeness 最高者）",
+  "alias_format": "CD-<组号3位>-<序号2位>",
+  "modifies_unit_data": false
+ },
+ "stats": {
+  "units": 498,
+  "unique_concepts": 485,
+  "duplicate_groups": 11,
+  "units_in_duplicate_groups": 24,
+  "extra_units_beyond_first": 13,
+  "true_duplicate_groups": 2,
+  "near_duplicate_groups": 2,
+  "cross_source_reuse_groups": 1,
+  "repeated_discussion_groups": 4,
+  "concept_too_coarse_groups": 2,
+  "merge_groups": 2,
+  "annotate_groups": 9,
+  "mergeable_units": 2
+ },
+ "groups": [
+  {
+   "group_id": "CG-001",
+   "concept_norm": "量学理论",
+   "concept_forms": [
+    "量学理论"
+   ],
+   "count": 2,
+   "books": [
+    "伏击涨停(2)"
+   ],
+   "same_book": true,
+   "same_chapter": false,
+   "verdict": "repeated_discussion",
+   "action": "annotate",
+   "reason": "同书不同章节（2 个）重复论述，可能合理，仅标注 alias 便于去重检索",
+   "primary_unit_id": "d0bfeac56b9f",
+   "alias_ids": [
+    "CD-001-01",
+    "CD-001-02"
+   ],
+   "similarity": {
+    "claim": {
+     "min": 0.1237,
+     "max": 0.1237,
+     "mean": 0.1237
+    },
+    "evidence": {
+     "min": 0.1176,
+     "max": 0.1176,
+     "mean": 0.1176
+    },
+    "pairwise": [
+     {
+      "a": "d0bfeac56b9f",
+      "b": "320f2eaff734",
+      "claim_sim": 0.1237,
+      "evidence_sim": 0.1176
+     }
+    ]
+   },
+   "units": [
+    {
+     "unit_id": "d0bfeac56b9f",
+     "concept": "量学理论",
+     "book": "伏击涨停(2)",
+     "chapter": "序言1",
+     "page_start": 5,
+     "page_end": 6,
+     "claim": "量学理论构建了‘量柱选股、量线选价、量波选时’的三维互动看盘操盘系统，实现了不管指标、消息和行情均可预测股市的效果。",
+     "claim_len": 58,
+     "evidence_len": 91,
+     "evidence": "2009 年“量学”问世，它摆脱了“以价论价”的“价学”桔，在“以量论价”动态平衡规律，构建了“量柱选股、量线选价、量波选时”的“三维互动”看盘操 盘系统，形成了一个独立的科学体系。",
+     "completeness": 98.7,
+     "is_primary": true,
+     "alias_id": "CD-001-01",
+     "alias_of": null
+    },
+    {
+     "unit_id": "320f2eaff734",
+     "concept": "量学理论",
+     "book": "伏击涨停(2)",
+     "chapter": "序言2",
+     "page_start": 11,
+     "page_end": 12,
+     "claim": "量柱、价柱、量线理论是黑马王子独创的投资理论，通过量化研究总结，为投资者提供研究股票和牛股的新思路。",
+     "claim_len": 50,
+     "evidence_len": 75,
+     "evidence": "他独创的量柱、价柱、量线理论独树一帜...像黑马王子这样能够把量柱、价柱、量线提高到新的理论层面，并特别对量柱进行量化研究总结并饱有心得者却屈指可数。",
+     "completeness": 90.8,
+     "is_primary": false,
+     "alias_id": "CD-001-02",
+     "alias_of": "d0bfeac56b9f"
+    }
+   ]
+  },
+  {
+   "group_id": "CG-002",
+   "concept_norm": "涨停密码",
+   "concept_forms": [
+    "涨停密码"
+   ],
+   "count": 2,
+   "books": [
+    "涨停密码(2)"
+   ],
+   "same_book": true,
+   "same_chapter": true,
+   "verdict": "concept_too_coarse",
+   "action": "annotate",
+   "reason": "同书同章节内 2 条不同事实共用 concept（相似度 0.15），建议细化 concept 而非合并",
+   "primary_unit_id": "275c2382796c",
+   "alias_ids": [
+    "CD-002-01",
+    "CD-002-02"
+   ],
+   "similarity": {
+    "claim": {
+     "min": 0.1505,
+     "max": 0.1505,
+     "mean": 0.1505
+    },
+    "evidence": {
+     "min": 0.1775,
+     "max": 0.1775,
+     "mean": 0.1775
+    },
+    "pairwise": [
+     {
+      "a": "64cc42e44f36",
+      "b": "275c2382796c",
+      "claim_sim": 0.1505,
+      "evidence_sim": 0.1775
+     }
+    ]
+   },
+   "units": [
+    {
+     "unit_id": "64cc42e44f36",
+     "concept": "涨停密码",
+     "book": "涨停密码(2)",
+     "chapter": "前言",
+     "page_start": 9,
+     "page_end": 10,
+     "claim": "当几个‘助涨基因’组合起来形成一定的‘涨停密码’时，不仅能促使涨停，还可能实现连续涨停。",
+     "claim_len": 44,
+     "evidence_len": 65,
+     "evidence": "如果几个“助涨基因”组合起来形成了一定的“涨停密码”，那就是另一番景象了，它们的组合密码不但可以“促使涨停”，还可能涨停接着涨停。",
+     "completeness": 81.8,
+     "is_primary": false,
+     "alias_id": "CD-002-01",
+     "alias_of": "275c2382796c"
+    },
+    {
+     "unit_id": "275c2382796c",
+     "concept": "涨停密码",
+     "book": "涨停密码(2)",
+     "chapter": "前言",
+     "page_start": 9,
+     "page_end": 10,
+     "claim": "“涨停密码”是指构成股票涨停或走牛的基本因子组合，包含单个基因（如倍量柱）和组合基因（如倍量伸缩），可用于前瞻性预测牛股走势。",
+     "claim_len": 63,
+     "evidence_len": 132,
+     "evidence": "“涨停密码”特指构成股票涨停或走牛的基本因子组合。它可以是单个基因（如倍量柱），也可以是组合基因（如倍量伸缩）。从“涨停基因”入手，找到了“涨停密码”，就可以找到许多意想不到的牛股，它不但可以为我们的操作提供前瞻性预测，还可以帮助我们及时跟上即将涨停或拉升的股票。",
+     "completeness": 100.0,
+     "is_primary": true,
+     "alias_id": "CD-002-02",
+     "alias_of": null
+    }
+   ]
+  },
+  {
+   "group_id": "CG-003",
+   "concept_norm": "东盟中小微企业msme经济地位",
+   "concept_forms": [
+    "东盟中小微企业（MSME）经济地位"
+   ],
+   "count": 2,
+   "books": [
+    "rp_AP202609301830015407",
+    "rp_AP202610021830105410"
+   ],
+   "same_book": false,
+   "same_chapter": true,
+   "verdict": "true_duplicate",
+   "action": "merge",
+   "reason": "不同来源（2 本）但 claim 相似度 1.00≥0.95，信息重复，可合并保留主单元",
+   "primary_unit_id": "828edf428bd9",
+   "alias_ids": [
+    "CD-003-01",
+    "CD-003-02"
+   ],
+   "similarity": {
+    "claim": {
+     "min": 1.0,
+     "max": 1.0,
+     "mean": 1.0
+    },
+    "evidence": {
+     "min": 1.0,
+     "max": 1.0,
+     "mean": 1.0
+    },
+    "pairwise": [
+     {
+      "a": "fdd5dc6864a8",
+      "b": "828edf428bd9",
+      "claim_sim": 1.0,
+      "evidence_sim": 1.0
+     }
+    ]
+   },
+   "units": [
+    {
+     "unit_id": "fdd5dc6864a8",
+     "concept": "东盟中小微企业（MSME）经济地位",
+     "book": "rp_AP202609301830015407",
+     "chapter": "5.",
+     "page_start": 5,
+     "page_end": 17,
+     "claim": "微、小和中型企业是东盟私营部门的中坚力量，占所有企业的 97% 至 99%，雇佣了该地区约 85% 的劳动力，并贡献了约 44.8% 的国内生产总值。",
+     "claim_len": 75,
+     "evidence_len": 83,
+     "evidence": "微、小和中型企业（MSME）是东盟私营部门的中坚力量，占所有企业的 97% 至 99%，雇佣了该地区约 85% 的劳动力，并为东盟的国内生产总值贡献了约 44.8%。",
+     "completeness": 100.0,
+     "is_primary": false,
+     "alias_id": "CD-003-01",
+     "alias_of": "828edf428bd9"
+    },
+    {
+     "unit_id": "828edf428bd9",
+     "concept": "东盟中小微企业（MSME）经济地位",
+     "book": "rp_AP202610021830105410",
+     "chapter": "5.",
+     "page_start": 5,
+     "page_end": 17,
+     "claim": "微、小和中型企业是东盟私营部门的中坚力量，占所有企业的 97% 至 99%，雇佣了该地区约 85% 的劳动力，并贡献了约 44.8% 的国内生产总值。",
+     "claim_len": 75,
+     "evidence_len": 83,
+     "evidence": "微、小和中型企业（MSME）是东盟私营部门的中坚力量，占所有企业的 97% 至 99%，雇佣了该地区约 85% 的劳动力，并为东盟的国内生产总值贡献了约 44.8%。",
+     "completeness": 100.0,
+     "is_primary": true,
+     "alias_id": "CD-003-02",
+     "alias_of": null
+    }
+   ]
+  },
+  {
+   "group_id": "CG-004",
+   "concept_norm": "跨境电子商务面临的四大挑战",
+   "concept_forms": [
+    "跨境电子商务面临的四大挑战"
+   ],
+   "count": 2,
+   "books": [
+    "rp_AP202609301830015407",
+    "rp_AP202610021830105410"
+   ],
+   "same_book": false,
+   "same_chapter": true,
+   "verdict": "true_duplicate",
+   "action": "merge",
+   "reason": "不同来源（2 本）但 claim 相似度 1.00≥0.95，信息重复，可合并保留主单元",
+   "primary_unit_id": "7de7f0318345",
+   "alias_ids": [
+    "CD-004-01",
+    "CD-004-02"
+   ],
+   "similarity": {
+    "claim": {
+     "min": 1.0,
+     "max": 1.0,
+     "mean": 1.0
+    },
+    "evidence": {
+     "min": 0.8786,
+     "max": 0.8786,
+     "mean": 0.8786
+    },
+    "pairwise": [
+     {
+      "a": "d4febece27e5",
+      "b": "7de7f0318345",
+      "claim_sim": 1.0,
+      "evidence_sim": 0.8786
+     }
+    ]
+   },
+   "units": [
+    {
+     "unit_id": "d4febece27e5",
+     "concept": "跨境电子商务面临的四大挑战",
+     "book": "rp_AP202609301830015407",
+     "chapter": "5.",
+     "page_start": 5,
+     "page_end": 17,
+     "claim": "东盟中小微企业在从事跨境数字贸易时面临四大主要制约：监管与市场准入要求复杂、连接生态系统困难（物流/支付）、缺乏专门技能（如数字营销）以及信息差距。",
+     "claim_len": 74,
+     "evidence_len": 156,
+     "evidence": "该报告确定了四大主要挑战领域。首先，企业在进入外国市场时，会遇到监管和市场准入要求方面的挑战...其次，中小微企业面临连接更广泛的电子商务生态系统的困难...第三，企业通常缺乏有效运营数字贸易环境所需的专门技能...第四，关于可用的支持工具、服务以及能够促进参与跨境电子商务的生态系统合作伙伴的信息差距仍然存在。",
+     "completeness": 100.0,
+     "is_primary": false,
+     "alias_id": "CD-004-01",
+     "alias_of": "7de7f0318345"
+    },
+    {
+     "unit_id": "7de7f0318345",
+     "concept": "跨境电子商务面临的四大挑战",
+     "book": "rp_AP202610021830105410",
+     "chapter": "5.",
+     "page_start": 5,
+     "page_end": 17,
+     "claim": "东盟中小微企业在从事跨境数字贸易时面临四大主要制约：监管与市场准入要求复杂、连接生态系统困难（物流/支付）、缺乏专门技能（如数字营销）以及信息差距。",
+     "claim_len": 74,
+     "evidence_len": 156,
+     "evidence": "企业在进入外国市场时，会遇到监管和市场准入要求方面的挑战...其次，中小微企业面临连接更广泛的电子商务生态系统的困难，包括物流供应商、数字支付系统和在线市场。第三，企业通常缺乏有效运营数字贸易环境所需的专门技能...第四，关于可用的支持工具、服务以及能够促进参与跨境电子商务的生态系统合作伙伴的信息差距仍然存在。",
+     "completeness": 100.0,
+     "is_primary": true,
+     "alias_id": "CD-004-02",
+     "alias_of": null
+    }
+   ]
+  },
+  {
+   "group_id": "CG-005",
+   "concept_norm": "端侧ai放量",
+   "concept_forms": [
+    "端侧 AI 放量"
+   ],
+   "count": 2,
+   "books": [
+    "rp_AP202609301830016191"
+   ],
+   "same_book": true,
+   "same_chapter": false,
+   "verdict": "repeated_discussion",
+   "action": "annotate",
+   "reason": "同书不同章节（2 个）重复论述，可能合理，仅标注 alias 便于去重检索",
+   "primary_unit_id": "cf1b1e69fa7b",
+   "alias_ids": [
+    "CD-005-01",
+    "CD-005-02"
+   ],
+   "similarity": {
+    "claim": {
+     "min": 0.5517,
+     "max": 0.5517,
+     "mean": 0.5517
+    },
+    "evidence": {
+     "min": 0.9298,
+     "max": 0.9298,
+     "mean": 0.9298
+    },
+    "pairwise": [
+     {
+      "a": "8b6d4968d82e",
+      "b": "cf1b1e69fa7b",
+      "claim_sim": 0.5517,
+      "evidence_sim": 0.9298
+     }
+    ]
+   },
+   "units": [
+    {
+     "unit_id": "8b6d4968d82e",
+     "concept": "端侧 AI 放量",
+     "book": "rp_AP202609301830016191",
+     "chapter": "强于大市",
+     "page_start": 1,
+     "page_end": 1,
+     "claim": "大模型降价摊薄了终端智能化的边际成本，显著降低了端侧应用的普及门槛，使其进入放量通道。",
+     "claim_len": 43,
+     "evidence_len": 145,
+     "evidence": "近期海外大模型公司同步上新降价：Anthropic 发布 Claude Opus 5.5，运行成本比 Opus 5 低 40%；OpenAI 推出 GPT-6 Sol 与 GPT-6 Luna，API 价格较上代接近砍半。模型降价直接摊薄了终端智能化的边际成本，端侧应用的普及门槛显著降低。",
+     "completeness": 83.7,
+     "is_primary": false,
+     "alias_id": "CD-005-01",
+     "alias_of": "cf1b1e69fa7b"
+    },
+    {
+     "unit_id": "cf1b1e69fa7b",
+     "concept": "端侧 AI 放量",
+     "book": "rp_AP202609301830016191",
+     "chapter": "目录",
+     "page_start": 2,
+     "page_end": 10,
+     "claim": "大模型降价显著降低了终端智能化的边际成本，使端侧应用普及门槛降低，推动端侧芯片迎来密集新品发布周期。",
+     "claim_len": 50,
+     "evidence_len": 128,
+     "evidence": "近期海外大模型公司同步上新降价：Anthropic 发布 Claude Opus 5.5，运行成本下降 40%；OpenAI 推出 GPT-6 Sol 与 Luna，API 价格接近砍半。模型降价直接摊薄了终端智能化的边际成本，端侧应用的普及门槛显著降低。",
+     "completeness": 93.3,
+     "is_primary": true,
+     "alias_id": "CD-005-02",
+     "alias_of": null
+    }
+   ]
+  },
+  {
+   "group_id": "CG-006",
+   "concept_norm": "ai产业投资传导链条",
+   "concept_forms": [
+    "AI 产业投资传导链条"
+   ],
+   "count": 2,
+   "books": [
+    "rp_AP202609301830016191"
+   ],
+   "same_book": true,
+   "same_chapter": false,
+   "verdict": "repeated_discussion",
+   "action": "annotate",
+   "reason": "同书不同章节（2 个）重复论述，可能合理，仅标注 alias 便于去重检索",
+   "primary_unit_id": "0dd573ec5699",
+   "alias_ids": [
+    "CD-006-01",
+    "CD-006-02"
+   ],
+   "similarity": {
+    "claim": {
+     "min": 0.8889,
+     "max": 0.8889,
+     "mean": 0.8889
+    },
+    "evidence": {
+     "min": 1.0,
+     "max": 1.0,
+     "mean": 1.0
+    },
+    "pairwise": [
+     {
+      "a": "f44ab7e5b819",
+      "b": "0dd573ec5699",
+      "claim_sim": 0.8889,
+      "evidence_sim": 1.0
+     }
+    ]
+   },
+   "units": [
+    {
+     "unit_id": "f44ab7e5b819",
+     "concept": "AI 产业投资传导链条",
+     "book": "rp_AP202609301830016191",
+     "chapter": "强于大市",
+     "page_start": 1,
+     "page_end": 1,
+     "claim": "当前 AI 产业的投资线索正沿着“模型降价→应用放量→芯片需求→制造扩产”的链条自上而下传导。",
+     "claim_len": 47,
+     "evidence_len": 112,
+     "evidence": "我们认为，当前 AI 产业的投资线索正沿着“模型降价→应用放量→芯片需求→制造扩产”的链条自上而下传导，景气验证不断下沉：模型端价格战降低应用门槛，端侧与 AIoT 场景加速打开；芯片端新品周期临近，渗透率与单机价值量双升。",
+     "completeness": 86.3,
+     "is_primary": false,
+     "alias_id": "CD-006-01",
+     "alias_of": "0dd573ec5699"
+    },
+    {
+     "unit_id": "0dd573ec5699",
+     "concept": "AI 产业投资传导链条",
+     "book": "rp_AP202609301830016191",
+     "chapter": "目录",
+     "page_start": 2,
+     "page_end": 10,
+     "claim": "当前 AI 产业投资线索正沿“模型降价→应用放量→芯片需求→制造扩产”的链条自上而下传导，景气验证不断下沉。",
+     "claim_len": 54,
+     "evidence_len": 112,
+     "evidence": "我们认为，当前 AI 产业的投资线索正沿着“模型降价→应用放量→芯片需求→制造扩产”的链条自上而下传导，景气验证不断下沉：模型端价格战降低应用门槛，端侧与 AIoT 场景加速打开；芯片端新品周期临近，渗透率与单机价值量双升。",
+     "completeness": 96.0,
+     "is_primary": true,
+     "alias_id": "CD-006-02",
+     "alias_of": null
+    }
+   ]
+  },
+  {
+   "group_id": "CG-007",
+   "concept_norm": "snposcaleupnpo",
+   "concept_forms": [
+    "SNPO (Scale-Up NPO)",
+    "SNPO (ScaleUp NPO)"
+   ],
+   "count": 2,
+   "books": [
+    "rp_AP202609301830022983",
+    "rp_AP202609301830034656"
+   ],
+   "same_book": false,
+   "same_chapter": false,
+   "verdict": "cross_source_reuse",
+   "action": "annotate",
+   "reason": "不同来源（2 本）但 claim 相似度仅 0.44，为不同事实共用同一 concept，建议保留并细化 concept",
+   "primary_unit_id": "1ef58bf3dbf0",
+   "alias_ids": [
+    "CD-007-01",
+    "CD-007-02"
+   ],
+   "similarity": {
+    "claim": {
+     "min": 0.4444,
+     "max": 0.4444,
+     "mean": 0.4444
+    },
+    "evidence": {
+     "min": 0.7668,
+     "max": 0.7668,
+     "mean": 0.7668
+    },
+    "pairwise": [
+     {
+      "a": "1ef58bf3dbf0",
+      "b": "54c60de8b87b",
+      "claim_sim": 0.4444,
+      "evidence_sim": 0.7668
+     }
+    ]
+   },
+   "units": [
+    {
+     "unit_id": "1ef58bf3dbf0",
+     "concept": "SNPO (Scale-Up NPO)",
+     "book": "rp_AP202609301830022983",
+     "chapter": "阿里发布SNPO 光互连超节点，CPO、NPO 系",
+     "page_start": 1,
+     "page_end": 8,
+     "claim": "阿里云发布的磐久 AL64 超节点是全球首款实现 SNPO（Scale-Up 专用近封装光学）技术落地的服务器，旨在解决 GPU 服务器 Scale-Up 域互连受限于铜传输距离的问题。",
+     "claim_len": 93,
+     "evidence_len": 111,
+     "evidence": "阿里云发布磐久AL64分布式SNPO光互连超节点...这是全球首款实现SNPO（Scale-Up NPO，Scale-Up专用近封装光学）光互连技术落地的超节点服务器，标志着近封装光互连从原型概念走向AI云的真实工程部署。",
+     "completeness": 100.0,
+     "is_primary": true,
+     "alias_id": "CD-007-01",
+     "alias_of": null
+    },
+    {
+     "unit_id": "54c60de8b87b",
+     "concept": "SNPO (ScaleUp NPO)",
+     "book": "rp_AP202609301830034656",
+     "chapter": "阿里发布SNPO 光互连超节点，开放生态",
+     "page_start": 1,
+     "page_end": 3,
+     "claim": "SNPO 是全球首款实现光互连技术落地的超节点服务器方案，专为 GPU 服务器 Scale-Up 互连设计，支持从原型概念走向 AI 云的真实工程部署。",
+     "claim_len": 76,
+     "evidence_len": 110,
+     "evidence": "阿里云正式发布新一代 AI Native 超节点服务器——磐久 AL64 分布式 SNPO 光互连超节点。这是全球首款实现 SNPO（ScaleUp NPO，ScaleUp 专用近封装光学）光互连技术落地的超节点服务器。",
+     "completeness": 100.0,
+     "is_primary": false,
+     "alias_id": "CD-007-02",
+     "alias_of": "1ef58bf3dbf0"
+    }
+   ]
+  },
+  {
+   "group_id": "CG-008",
+   "concept_norm": "行业评级定义",
+   "concept_forms": [
+    "行业评级定义"
+   ],
+   "count": 2,
+   "books": [
+    "rp_AP202609301830023858",
+    "rp_AP202609301830053954"
+   ],
+   "same_book": false,
+   "same_chapter": true,
+   "verdict": "near_duplicate",
+   "action": "annotate",
+   "reason": "不同来源（2 本），claim 相似度 0.79，疑似同义内容，建议标注 alias 后人工复核",
+   "primary_unit_id": "68b7819b62ae",
+   "alias_ids": [
+    "CD-008-01",
+    "CD-008-02"
+   ],
+   "similarity": {
+    "claim": {
+     "min": 0.7907,
+     "max": 0.7907,
+     "mean": 0.7907
+    },
+    "evidence": {
+     "min": 0.6078,
+     "max": 0.6078,
+     "mean": 0.6078
+    },
+    "pairwise": [
+     {
+      "a": "e1fb7862f026",
+      "b": "68b7819b62ae",
+      "claim_sim": 0.7907,
+      "evidence_sim": 0.6078
+     }
+    ]
+   },
+   "units": [
+    {
+     "unit_id": "e1fb7862f026",
+     "concept": "行业评级定义",
+     "book": "rp_AP202609301830023858",
+     "chapter": "行业评级：看好",
+     "page_start": 1,
+     "page_end": 13,
+     "claim": "“看好”评级意味着预计未来 6~12 个月内，行业指数表现强于市场基准指数（沪深 300）。",
+     "claim_len": 46,
+     "evidence_len": 54,
+     "evidence": "证券投资评级的类别、级别定义：行业评级 - 看好：预计未来 6~12 个月内，行业指数表现强于市场基准指数。",
+     "completeness": 77.7,
+     "is_primary": false,
+     "alias_id": "CD-008-01",
+     "alias_of": "68b7819b62ae"
+    },
+    {
+     "unit_id": "68b7819b62ae",
+     "concept": "行业评级定义",
+     "book": "rp_AP202609301830053954",
+     "chapter": "行业评级：看好",
+     "page_start": 1,
+     "page_end": 13,
+     "claim": "大同证券对有色金属行业的“看好”评级定义为：预计未来6~12个月内，行业指数表现强于市场基准指数（沪深300）。",
+     "claim_len": 56,
+     "evidence_len": 67,
+     "evidence": "行业评级：看好 预计未来6~12 个月内，行业指数表现强于市场基准指数；中性 预计未来6~12 个月内，行业指数表现跟随市场基准指数。",
+     "completeness": 90.8,
+     "is_primary": true,
+     "alias_id": "CD-008-02",
+     "alias_of": null
+    }
+   ]
+  },
+  {
+   "group_id": "CG-009",
+   "concept_norm": "国防军工行业周度表现",
+   "concept_forms": [
+    "国防军工行业周度表现"
+   ],
+   "count": 2,
+   "books": [
+    "rp_AP202610021830105332",
+    "rp_AP202610021830105365"
+   ],
+   "same_book": false,
+   "same_chapter": true,
+   "verdict": "near_duplicate",
+   "action": "annotate",
+   "reason": "不同来源（2 本），claim 相似度 0.83，疑似同义内容，建议标注 alias 后人工复核",
+   "primary_unit_id": "018138a5ae7e",
+   "alias_ids": [
+    "CD-009-01",
+    "CD-009-02"
+   ],
+   "similarity": {
+    "claim": {
+     "min": 0.8319,
+     "max": 0.8319,
+     "mean": 0.8319
+    },
+    "evidence": {
+     "min": 0.8743,
+     "max": 0.8743,
+     "mean": 0.8743
+    },
+    "pairwise": [
+     {
+      "a": "018138a5ae7e",
+      "b": "a3e8d83d5823",
+      "claim_sim": 0.8319,
+      "evidence_sim": 0.8743
+     }
+    ]
+   },
+   "units": [
+    {
+     "unit_id": "018138a5ae7e",
+     "concept": "国防军工行业周度表现",
+     "book": "rp_AP202610021830105332",
+     "chapter": "看好",
+     "page_start": 1,
+     "page_end": 9,
+     "claim": "上周（2026.9.14-2026.9.18）国防军工板块下跌 0.8%，落后沪深 300 指数 0.74 个百分点，在申万行业涨幅中排名第 22 位。",
+     "claim_len": 76,
+     "evidence_len": 118,
+     "evidence": "上周（2026.9.14-2026.9.18）国防军工（申万）板块下跌 0.8%，沪深 300 指数下跌 0.06%，国防军工板块落后沪深 300 指数 0.74 个百分点。和其他行业对比，国防军工行业上周排名申万行业涨幅第 22 位。",
+     "completeness": 100.0,
+     "is_primary": true,
+     "alias_id": "CD-009-01",
+     "alias_of": null
+    },
+    {
+     "unit_id": "a3e8d83d5823",
+     "concept": "国防军工行业周度表现",
+     "book": "rp_AP202610021830105365",
+     "chapter": "看好",
+     "page_start": 1,
+     "page_end": 9,
+     "claim": "上周（2026.9.21-2026.9.24）国防军工板块下跌 1.79%，落后沪深 300 指数 0.28 个百分点，在申万行业中排名第 27 位。",
+     "claim_len": 75,
+     "evidence_len": 119,
+     "evidence": "上周（2026.9.21-2026.9.24）国防军工（申万）板块下跌 1.79%，沪深 300 指数下跌 1.51%，国防军工板块落后沪深 300 指数 0.28 个百分点。和其他行业对比，国防军工行业上周排名申万行业涨幅第 27 位。",
+     "completeness": 100.0,
+     "is_primary": false,
+     "alias_id": "CD-009-02",
+     "alias_of": "018138a5ae7e"
+    }
+   ]
+  },
+  {
+   "group_id": "CG-010",
+   "concept_norm": "资本市场改革成效",
+   "concept_forms": [
+    "资本市场改革成效"
+   ],
+   "count": 4,
+   "books": [
+    "rp_AP202610031830124601"
+   ],
+   "same_book": true,
+   "same_chapter": false,
+   "verdict": "repeated_discussion",
+   "action": "annotate",
+   "reason": "同书不同章节（2 个）重复论述，可能合理，仅标注 alias 便于去重检索",
+   "primary_unit_id": "5fc455695e4a",
+   "alias_ids": [
+    "CD-010-01",
+    "CD-010-02",
+    "CD-010-03",
+    "CD-010-04"
+   ],
+   "similarity": {
+    "claim": {
+     "min": 0.029,
+     "max": 0.3371,
+     "mean": 0.1483
+    },
+    "evidence": {
+     "min": 0.0,
+     "max": 0.2781,
+     "mean": 0.1022
+    },
+    "pairwise": [
+     {
+      "a": "5fc455695e4a",
+      "b": "d0b446278ceb",
+      "claim_sim": 0.2737,
+      "evidence_sim": 0.0
+     },
+     {
+      "a": "5fc455695e4a",
+      "b": "ac8bbf12e881",
+      "claim_sim": 0.3371,
+      "evidence_sim": 0.0061
+     },
+     {
+      "a": "5fc455695e4a",
+      "b": "724e859e30a3",
+      "claim_sim": 0.0882,
+      "evidence_sim": 0.0182
+     },
+     {
+      "a": "d0b446278ceb",
+      "b": "ac8bbf12e881",
+      "claim_sim": 0.0667,
+      "evidence_sim": 0.0714
+     },
+     {
+      "a": "d0b446278ceb",
+      "b": "724e859e30a3",
+      "claim_sim": 0.029,
+      "evidence_sim": 0.2781
+     },
+     {
+      "a": "ac8bbf12e881",
+      "b": "724e859e30a3",
+      "claim_sim": 0.0952,
+      "evidence_sim": 0.2391
+     }
+    ]
+   },
+   "units": [
+    {
+     "unit_id": "5fc455695e4a",
+     "concept": "资本市场改革成效",
+     "book": "rp_AP202610031830124601",
+     "chapter": "金融图强：中国资本市场改革的成效与展望",
+     "page_start": 1,
+     "page_end": 12,
+     "claim": "“十五五”时期资本市场通过发行上市和债券融资制度改革，显著增强了对科技企业的包容性，支持新质生产力发展。",
+     "claim_len": 52,
+     "evidence_len": 103,
+     "evidence": "2024 年 9 月新“国九条”提出提升对新产业新业态新技术的包容性。随后科创板重启未盈利企业第五套上市标准，创业板启用第三套标准。IPO 金额前三行业为半导体、硬件设备和电气设备，高新技术企业占比超九成。",
+     "completeness": 94.7,
+     "is_primary": true,
+     "alias_id": "CD-010-01",
+     "alias_of": null
+    },
+    {
+     "unit_id": "d0b446278ceb",
+     "concept": "资本市场改革成效",
+     "book": "rp_AP202610031830124601",
+     "chapter": "VOL.172 2026.09《金融市场研究》13",
+     "page_start": 13,
+     "page_end": 13,
+     "claim": "在“十五五”期间，中国资本市场将在支持技术创新、促进居民财富配置和提升金融部门国际竞争力方面发挥关键作用。",
+     "claim_len": 53,
+     "evidence_len": 246,
+     "evidence": "Abstract: During the 15th Five-Year Plan period, China's capital market will play a crucial role in supporting technological innovation, facilitating household wealth allocation, and enhancing the financial sector's international competitiveness.",
+     "completeness": 90.3,
+     "is_primary": false,
+     "alias_id": "CD-010-02",
+     "alias_of": "5fc455695e4a"
+    },
+    {
+     "unit_id": "ac8bbf12e881",
+     "concept": "资本市场改革成效",
+     "book": "rp_AP202610031830124601",
+     "chapter": "VOL.172 2026.09《金融市场研究》13",
+     "page_start": 13,
+     "page_end": 13,
+     "claim": "近期改革已为股权发行、上市及债券融资制度向科技企业倾斜奠定了基础，并完善了退市与分红安排。",
+     "claim_len": 45,
+     "evidence_len": 281,
+     "evidence": "Equity issuance, listing, and bond financing regimes have become more accommodating to technology enterprises. Measures to attract medium- and long-term capital, together with improvements in delisting and dividend distribution arrangements, have strengthened the market ecosystem.",
+     "completeness": 85.0,
+     "is_primary": false,
+     "alias_id": "CD-010-03",
+     "alias_of": "5fc455695e4a"
+    },
+    {
+     "unit_id": "724e859e30a3",
+     "concept": "资本市场改革成效",
+     "book": "rp_AP202610031830124601",
+     "chapter": "VOL.172 2026.09《金融市场研究》13",
+     "page_start": 13,
+     "page_end": 13,
+     "claim": "证券违规处罚显著趋严，跨境投融资渠道逐步扩大。",
+     "claim_len": 23,
+     "evidence_len": 153,
+     "evidence": "Penalties for securities violations have also become markedly more stringent. ... cross-border investment and financing channels have gradually expanded.",
+     "completeness": 70.3,
+     "is_primary": false,
+     "alias_id": "CD-010-04",
+     "alias_of": "5fc455695e4a"
+    }
+   ]
+  },
+  {
+   "group_id": "CG-011",
+   "concept_norm": "资本市场现存障碍",
+   "concept_forms": [
+    "资本市场现存障碍"
+   ],
+   "count": 2,
+   "books": [
+    "rp_AP202610031830124601"
+   ],
+   "same_book": true,
+   "same_chapter": true,
+   "verdict": "concept_too_coarse",
+   "action": "annotate",
+   "reason": "同书同章节内 2 条不同事实共用 concept（相似度 0.20），建议细化 concept 而非合并",
+   "primary_unit_id": "0def20d0567b",
+   "alias_ids": [
+    "CD-011-01",
+    "CD-011-02"
+   ],
+   "similarity": {
+    "claim": {
+     "min": 0.2,
+     "max": 0.2,
+     "mean": 0.2
+    },
+    "evidence": {
+     "min": 0.2797,
+     "max": 0.2797,
+     "mean": 0.2797
+    },
+    "pairwise": [
+     {
+      "a": "0def20d0567b",
+      "b": "8ab94acfb68a",
+      "claim_sim": 0.2,
+      "evidence_sim": 0.2797
+     }
+    ]
+   },
+   "units": [
+    {
+     "unit_id": "0def20d0567b",
+     "concept": "资本市场现存障碍",
+     "book": "rp_AP202610031830124601",
+     "chapter": "VOL.172 2026.09《金融市场研究》13",
+     "page_start": 13,
+     "page_end": 13,
+     "claim": "非国有企业目前在科技创新债券市场中代表性不足，且缺乏有效的市场稳定长效机制。",
+     "claim_len": 38,
+     "evidence_len": 169,
+     "evidence": "Non-state-owned enterprises are underrepresented in the science and technology innovation bond market while long-term mechanisms for market stabilization are inadequate.",
+     "completeness": 80.3,
+     "is_primary": true,
+     "alias_id": "CD-011-01",
+     "alias_of": null
+    },
+    {
+     "unit_id": "8ab94acfb68a",
+     "concept": "资本市场现存障碍",
+     "book": "rp_AP202610031830124601",
+     "chapter": "VOL.172 2026.09《金融市场研究》13",
+     "page_start": 13,
+     "page_end": 13,
+     "claim": "外国投资者在市场持仓中占比相对较小，国内证券公司参与国际市场的角色有限。",
+     "claim_len": 36,
+     "evidence_len": 167,
+     "evidence": "At the same time, foreign investors account for a relatively small share of market holdings and domestic securities firms have a limited role in international markets.",
+     "completeness": 79.0,
+     "is_primary": false,
+     "alias_id": "CD-011-02",
+     "alias_of": "0def20d0567b"
+    }
+   ]
+  }
+ ],
+ "alias_map": {
+  "CD-001-02": {
+   "alias_of": "d0bfeac56b9f",
+   "group_id": "CG-001",
+   "concept": "量学理论",
+   "unit_id": "320f2eaff734",
+   "book": "伏击涨停(2)",
+   "chapter": "序言2",
+   "page_start": 11,
+   "page_end": 12,
+   "action": "annotate"
+  },
+  "CD-002-01": {
+   "alias_of": "275c2382796c",
+   "group_id": "CG-002",
+   "concept": "涨停密码",
+   "unit_id": "64cc42e44f36",
+   "book": "涨停密码(2)",
+   "chapter": "前言",
+   "page_start": 9,
+   "page_end": 10,
+   "action": "annotate"
+  },
+  "CD-003-01": {
+   "alias_of": "828edf428bd9",
+   "group_id": "CG-003",
+   "concept": "东盟中小微企业（MSME）经济地位",
+   "unit_id": "fdd5dc6864a8",
+   "book": "rp_AP202609301830015407",
+   "chapter": "5.",
+   "page_start": 5,
+   "page_end": 17,
+   "action": "merge"
+  },
+  "CD-004-01": {
+   "alias_of": "7de7f0318345",
+   "group_id": "CG-004",
+   "concept": "跨境电子商务面临的四大挑战",
+   "unit_id": "d4febece27e5",
+   "book": "rp_AP202609301830015407",
+   "chapter": "5.",
+   "page_start": 5,
+   "page_end": 17,
+   "action": "merge"
+  },
+  "CD-005-01": {
+   "alias_of": "cf1b1e69fa7b",
+   "group_id": "CG-005",
+   "concept": "端侧 AI 放量",
+   "unit_id": "8b6d4968d82e",
+   "book": "rp_AP202609301830016191",
+   "chapter": "强于大市",
+   "page_start": 1,
+   "page_end": 1,
+   "action": "annotate"
+  },
+  "CD-006-01": {
+   "alias_of": "0dd573ec5699",
+   "group_id": "CG-006",
+   "concept": "AI 产业投资传导链条",
+   "unit_id": "f44ab7e5b819",
+   "book": "rp_AP202609301830016191",
+   "chapter": "强于大市",
+   "page_start": 1,
+   "page_end": 1,
+   "action": "annotate"
+  },
+  "CD-007-02": {
+   "alias_of": "1ef58bf3dbf0",
+   "group_id": "CG-007",
+   "concept": "SNPO (ScaleUp NPO)",
+   "unit_id": "54c60de8b87b",
+   "book": "rp_AP202609301830034656",
+   "chapter": "阿里发布SNPO 光互连超节点，开放生态",
+   "page_start": 1,
+   "page_end": 3,
+   "action": "annotate"
+  },
+  "CD-008-01": {
+   "alias_of": "68b7819b62ae",
+   "group_id": "CG-008",
+   "concept": "行业评级定义",
+   "unit_id": "e1fb7862f026",
+   "book": "rp_AP202609301830023858",
+   "chapter": "行业评级：看好",
+   "page_start": 1,
+   "page_end": 13,
+   "action": "annotate"
+  },
+  "CD-009-02": {
+   "alias_of": "018138a5ae7e",
+   "group_id": "CG-009",
+   "concept": "国防军工行业周度表现",
+   "unit_id": "a3e8d83d5823",
+   "book": "rp_AP202610021830105365",
+   "chapter": "看好",
+   "page_start": 1,
+   "page_end": 9,
+   "action": "annotate"
+  },
+  "CD-010-02": {
+   "alias_of": "5fc455695e4a",
+   "group_id": "CG-010",
+   "concept": "资本市场改革成效",
+   "unit_id": "d0b446278ceb",
+   "book": "rp_AP202610031830124601",
+   "chapter": "VOL.172 2026.09《金融市场研究》13",
+   "page_start": 13,
+   "page_end": 13,
+   "action": "annotate"
+  },
+  "CD-010-03": {
+   "alias_of": "5fc455695e4a",
+   "group_id": "CG-010",
+   "concept": "资本市场改革成效",
+   "unit_id": "ac8bbf12e881",
+   "book": "rp_AP202610031830124601",
+   "chapter": "VOL.172 2026.09《金融市场研究》13",
+   "page_start": 13,
+   "page_end": 13,
+   "action": "annotate"
+  },
+  "CD-010-04": {
+   "alias_of": "5fc455695e4a",
+   "group_id": "CG-010",
+   "concept": "资本市场改革成效",
+   "unit_id": "724e859e30a3",
+   "book": "rp_AP202610031830124601",
+   "chapter": "VOL.172 2026.09《金融市场研究》13",
+   "page_start": 13,
+   "page_end": 13,
+   "action": "annotate"
+  },
+  "CD-011-02": {
+   "alias_of": "0def20d0567b",
+   "group_id": "CG-011",
+   "concept": "资本市场现存障碍",
+   "unit_id": "8ab94acfb68a",
+   "book": "rp_AP202610031830124601",
+   "chapter": "VOL.172 2026.09《金融市场研究》13",
+   "page_start": 13,
+   "page_end": 13,
+   "action": "annotate"
+  }
+ },
+ "recommendations": {
+  "summary": "498 个知识单元中 485 个唯一 concept；发现 11 个重复组（24 个单元），其中可合并 2 组（去重后可减少 2 个单元），仅标注 9 组。",
+  "merge_candidates": [
+   {
+    "group_id": "CG-003",
+    "concept_forms": [
+     "东盟中小微企业（MSME）经济地位"
+    ],
+    "action": "merge",
+    "verdict": "true_duplicate",
+    "count": 2,
+    "reason": "不同来源（2 本）但 claim 相似度 1.00≥0.95，信息重复，可合并保留主单元"
+   },
+   {
+    "group_id": "CG-004",
+    "concept_forms": [
+     "跨境电子商务面临的四大挑战"
+    ],
+    "action": "merge",
+    "verdict": "true_duplicate",
+    "count": 2,
+    "reason": "不同来源（2 本）但 claim 相似度 1.00≥0.95，信息重复，可合并保留主单元"
+   }
+  ],
+  "annotate_candidates": [
+   {
+    "group_id": "CG-010",
+    "concept_forms": [
+     "资本市场改革成效"
+    ],
+    "action": "annotate",
+    "verdict": "repeated_discussion",
+    "count": 4,
+    "reason": "同书不同章节（2 个）重复论述，可能合理，仅标注 alias 便于去重检索"
+   },
+   {
+    "group_id": "CG-001",
+    "concept_forms": [
+     "量学理论"
+    ],
+    "action": "annotate",
+    "verdict": "repeated_discussion",
+    "count": 2,
+    "reason": "同书不同章节（2 个）重复论述，可能合理，仅标注 alias 便于去重检索"
+   },
+   {
+    "group_id": "CG-002",
+    "concept_forms": [
+     "涨停密码"
+    ],
+    "action": "annotate",
+    "verdict": "concept_too_coarse",
+    "count": 2,
+    "reason": "同书同章节内 2 条不同事实共用 concept（相似度 0.15），建议细化 concept 而非合并"
+   },
+   {
+    "group_id": "CG-005",
+    "concept_forms": [
+     "端侧 AI 放量"
+    ],
+    "action": "annotate",
+    "verdict": "repeated_discussion",
+    "count": 2,
+    "reason": "同书不同章节（2 个）重复论述，可能合理，仅标注 alias 便于去重检索"
+   },
+   {
+    "group_id": "CG-006",
+    "concept_forms": [
+     "AI 产业投资传导链条"
+    ],
+    "action": "annotate",
+    "verdict": "repeated_discussion",
+    "count": 2,
+    "reason": "同书不同章节（2 个）重复论述，可能合理，仅标注 alias 便于去重检索"
+   },
+   {
+    "group_id": "CG-007",
+    "concept_forms": [
+     "SNPO (Scale-Up NPO)",
+     "SNPO (ScaleUp NPO)"
+    ],
+    "action": "annotate",
+    "verdict": "cross_source_reuse",
+    "count": 2,
+    "reason": "不同来源（2 本）但 claim 相似度仅 0.44，为不同事实共用同一 concept，建议保留并细化 concept"
+   },
+   {
+    "group_id": "CG-008",
+    "concept_forms": [
+     "行业评级定义"
+    ],
+    "action": "annotate",
+    "verdict": "near_duplicate",
+    "count": 2,
+    "reason": "不同来源（2 本），claim 相似度 0.79，疑似同义内容，建议标注 alias 后人工复核"
+   },
+   {
+    "group_id": "CG-009",
+    "concept_forms": [
+     "国防军工行业周度表现"
+    ],
+    "action": "annotate",
+    "verdict": "near_duplicate",
+    "count": 2,
+    "reason": "不同来源（2 本），claim 相似度 0.83，疑似同义内容，建议标注 alias 后人工复核"
+   },
+   {
+    "group_id": "CG-011",
+    "concept_forms": [
+     "资本市场现存障碍"
+    ],
+    "action": "annotate",
+    "verdict": "concept_too_coarse",
+    "count": 2,
+    "reason": "同书同章节内 2 条不同事实共用 concept（相似度 0.20），建议细化 concept 而非合并"
+   }
+  ],
+  "note": "合并/标注需人工确认；本工具不修改 kb_units_all.json。"
+ },
+ "disclaimer": "本审计仅输出重复组与去重建议，不修改知识单元数据；结论供人工复核，不构成投资建议。"
+}

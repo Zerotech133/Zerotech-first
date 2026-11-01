@@ -1,0 +1,2034 @@
+{
+ "schema_version": 1,
+ "kind": "kb_qa_selfcheck",
+ "generated_at": "2026-11-01T09:42:37+08:00",
+ "source_questions": "C:\\项目\\老田的AI助手\\research\\reports\\kb_qa_questions_20261101.json",
+ "retrieval": {
+  "mode": "retrieval_only",
+  "no_llm": true,
+  "topk": 5,
+  "engine": "kb_qa.search（units search + corpus-search 融合）"
+ },
+ "summary": {
+  "total": 32,
+  "hit_at_1": 30,
+  "hit_at_5": 32,
+  "miss_source": 0,
+  "retrieval_no_hits": 0,
+  "hit_rate_at_1": 0.9375,
+  "hit_rate_at_5": 1.0,
+  "avg_source_rank": 1.06,
+  "causes": {}
+ },
+ "by_theme": [
+  {
+   "theme": "AI算力/半导体",
+   "total": 5,
+   "hit_at_1": 5,
+   "hit_at_5": 5,
+   "miss_source": 0,
+   "hit_rate_at_1": 1.0,
+   "hit_rate_at_5": 1.0,
+   "causes": {}
+  },
+  {
+   "theme": "新能源/电池",
+   "total": 5,
+   "hit_at_1": 5,
+   "hit_at_5": 5,
+   "miss_source": 0,
+   "hit_rate_at_1": 1.0,
+   "hit_rate_at_5": 1.0,
+   "causes": {}
+  },
+  {
+   "theme": "消费/医药",
+   "total": 5,
+   "hit_at_1": 5,
+   "hit_at_5": 5,
+   "miss_source": 0,
+   "hit_rate_at_1": 1.0,
+   "hit_rate_at_5": 1.0,
+   "causes": {}
+  },
+  {
+   "theme": "金融/资本市场",
+   "total": 5,
+   "hit_at_1": 4,
+   "hit_at_5": 5,
+   "miss_source": 0,
+   "hit_rate_at_1": 0.8,
+   "hit_rate_at_5": 1.0,
+   "causes": {}
+  },
+  {
+   "theme": "其他/综合",
+   "total": 4,
+   "hit_at_1": 4,
+   "hit_at_5": 4,
+   "miss_source": 0,
+   "hit_rate_at_1": 1.0,
+   "hit_rate_at_5": 1.0,
+   "causes": {}
+  },
+  {
+   "theme": "宏观/策略/贸易",
+   "total": 4,
+   "hit_at_1": 3,
+   "hit_at_5": 4,
+   "miss_source": 0,
+   "hit_rate_at_1": 0.75,
+   "hit_rate_at_5": 1.0,
+   "causes": {}
+  },
+  {
+   "theme": "量化/技术分析",
+   "total": 4,
+   "hit_at_1": 4,
+   "hit_at_5": 4,
+   "miss_source": 0,
+   "hit_rate_at_1": 1.0,
+   "hit_rate_at_5": 1.0,
+   "causes": {}
+  }
+ ],
+ "questions": [
+  {
+   "id": "qk_f3968d07ff",
+   "question": "DeepSeek DSec 系统架构的结论在什么条件下会被证伪？",
+   "type": "风险",
+   "theme": "AI算力/半导体",
+   "source_unit_id": "4aa85d55c144",
+   "book": "rp_AP202610021830105367",
+   "concept": "DeepSeek DSec 系统架构",
+   "retrieval_hits": 5,
+   "hit_source": true,
+   "top1_is_source": true,
+   "source_rank": 1,
+   "miss": false,
+   "cause": null,
+   "top_hits": [
+    {
+     "rank": 1,
+     "unit_id": "4aa85d55c144",
+     "book": "rp_AP202610021830105367",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 1.1,
+     "is_source": true
+    },
+    {
+     "rank": 2,
+     "unit_id": "1606ce5377ce",
+     "book": "rp_AP202610021830105367",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.3923,
+     "is_source": false
+    },
+    {
+     "rank": 3,
+     "unit_id": "675bcaf42b24",
+     "book": "rp_AP202609301830034656",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.3046,
+     "is_source": false
+    },
+    {
+     "rank": 4,
+     "unit_id": "664a0d2d2756",
+     "book": "rp_AP202610021830105410",
+     "page": 5,
+     "origin": "units",
+     "fused_score": 0.2604,
+     "is_source": false
+    },
+    {
+     "rank": 5,
+     "unit_id": "430449b22853",
+     "book": "rp_AP202610031830126598",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.2549,
+     "is_source": false
+    }
+   ]
+  },
+  {
+   "id": "qk_426789898a",
+   "question": "钙钛矿光伏电池测试标准的关键逻辑链条是什么？",
+   "type": "是什么",
+   "theme": "新能源/电池",
+   "source_unit_id": "6e81b7133003",
+   "book": "rp_AP202610021830105330",
+   "concept": "钙钛矿光伏电池测试标准",
+   "retrieval_hits": 5,
+   "hit_source": true,
+   "top1_is_source": true,
+   "source_rank": 1,
+   "miss": false,
+   "cause": null,
+   "top_hits": [
+    {
+     "rank": 1,
+     "unit_id": "6e81b7133003",
+     "book": "rp_AP202610021830105330",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 1.1,
+     "is_source": true
+    },
+    {
+     "rank": 2,
+     "unit_id": "b154139df419",
+     "book": "rp_AP202610011830075767",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 0.2201,
+     "is_source": false
+    },
+    {
+     "rank": 3,
+     "unit_id": "13bd656fa984",
+     "book": "rp_AP202609301830035477",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.1891,
+     "is_source": false
+    },
+    {
+     "rank": 4,
+     "unit_id": "47f5ad80fdb7",
+     "book": "rp_AP202609301830016191",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.1671,
+     "is_source": false
+    },
+    {
+     "rank": 5,
+     "unit_id": "efa0bece0085",
+     "book": "rp_AP202609301830016191",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 0.1616,
+     "is_source": false
+    }
+   ]
+  },
+  {
+   "id": "qk_ada54a9059",
+   "question": "网红营销与透明度要求对产业链或行业格局的影响如何？",
+   "type": "影响如何",
+   "theme": "消费/医药",
+   "source_unit_id": "08c51a31de48",
+   "book": "rp_AP202609301830015420",
+   "concept": "网红营销与透明度要求",
+   "retrieval_hits": 5,
+   "hit_source": true,
+   "top1_is_source": true,
+   "source_rank": 1,
+   "miss": false,
+   "cause": null,
+   "top_hits": [
+    {
+     "rank": 1,
+     "unit_id": "08c51a31de48",
+     "book": "rp_AP202609301830015420",
+     "page": 4,
+     "origin": "units",
+     "fused_score": 1.1,
+     "is_source": true
+    },
+    {
+     "rank": 2,
+     "unit_id": "36cf43429e2b",
+     "book": "rp_AP202609301830015420",
+     "page": 4,
+     "origin": "units",
+     "fused_score": 0.407,
+     "is_source": false
+    },
+    {
+     "rank": 3,
+     "unit_id": "ae25acd0ea0a",
+     "book": "rp_AP202609301830035707",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.3512,
+     "is_source": false
+    },
+    {
+     "rank": 4,
+     "unit_id": "80539ff2119a",
+     "book": "rp_AP202609301830038557",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.2881,
+     "is_source": false
+    },
+    {
+     "rank": 5,
+     "unit_id": "a3b062104586",
+     "book": "rp_AP202609301830015406",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.2736,
+     "is_source": false
+    }
+   ]
+  },
+  {
+   "id": "qk_ab60afef9f",
+   "question": "中小行配债中枢趋势下移的政策演进与市场影响如何？",
+   "type": "风险",
+   "theme": "金融/资本市场",
+   "source_unit_id": "44852b57db0f",
+   "book": "rp_AP202609301830035477",
+   "concept": "中小行配债中枢趋势下移",
+   "retrieval_hits": 5,
+   "hit_source": true,
+   "top1_is_source": true,
+   "source_rank": 1,
+   "miss": false,
+   "cause": null,
+   "top_hits": [
+    {
+     "rank": 1,
+     "unit_id": "44852b57db0f",
+     "book": "rp_AP202609301830035477",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 1.1,
+     "is_source": true
+    },
+    {
+     "rank": 2,
+     "unit_id": "13bd656fa984",
+     "book": "rp_AP202609301830035477",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.462,
+     "is_source": false
+    },
+    {
+     "rank": 3,
+     "unit_id": "f20a48f347ff",
+     "book": "rp_AP202609301830035477",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.2121,
+     "is_source": false
+    },
+    {
+     "rank": 4,
+     "unit_id": "e4a9c8a1b095",
+     "book": "rp_AP202609301830035477",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.2057,
+     "is_source": false
+    },
+    {
+     "rank": 5,
+     "unit_id": "a3b062104586",
+     "book": "rp_AP202609301830015406",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.1963,
+     "is_source": false
+    }
+   ]
+  },
+  {
+   "id": "qk_17dcb0bf7e",
+   "question": "跨境电子商务面临的四大挑战的规模/增速/份额等数据是多少？",
+   "type": "数据多少",
+   "theme": "宏观/策略/贸易",
+   "source_unit_id": "bcf6880edb59",
+   "book": "rp_AP202609301830015407",
+   "concept": "跨境电子商务面临的四大挑战",
+   "retrieval_hits": 5,
+   "hit_source": true,
+   "top1_is_source": true,
+   "source_rank": 1,
+   "miss": false,
+   "cause": null,
+   "top_hits": [
+    {
+     "rank": 1,
+     "unit_id": "bcf6880edb59",
+     "book": "rp_AP202609301830015407",
+     "page": 5,
+     "origin": "units",
+     "fused_score": 1.1,
+     "is_source": true
+    },
+    {
+     "rank": 2,
+     "unit_id": "276e87e6cc33",
+     "book": "rp_AP202610021830105410",
+     "page": 5,
+     "origin": "units",
+     "fused_score": 1.0909,
+     "is_source": false
+    },
+    {
+     "rank": 3,
+     "unit_id": "a9bee4ea2451",
+     "book": "rp_AP202610021830111804",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.3884,
+     "is_source": false
+    },
+    {
+     "rank": 4,
+     "unit_id": "af94acfff7ef",
+     "book": "rp_AP202610071830188839",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.303,
+     "is_source": false
+    },
+    {
+     "rank": 5,
+     "unit_id": "664a0d2d2756",
+     "book": "rp_AP202610021830105410",
+     "page": 5,
+     "origin": "units",
+     "fused_score": 0.2903,
+     "is_source": false
+    }
+   ]
+  },
+  {
+   "id": "qk_48516af659",
+   "question": "十月怀胎一朝分娩的识别规则与实战用法是什么？",
+   "type": "主题专属",
+   "theme": "量化/技术分析",
+   "source_unit_id": "266f7161277f",
+   "book": "涨停密码(2)",
+   "concept": "十月怀胎一朝分娩",
+   "retrieval_hits": 3,
+   "hit_source": true,
+   "top1_is_source": true,
+   "source_rank": 1,
+   "miss": false,
+   "cause": null,
+   "top_hits": [
+    {
+     "rank": 1,
+     "unit_id": "266f7161277f",
+     "book": "涨停密码(2)",
+     "page": 15,
+     "origin": "units",
+     "fused_score": 1.1,
+     "is_source": true
+    },
+    {
+     "rank": 2,
+     "unit_id": "ead9d5eeebc6",
+     "book": "涨停密码(2)",
+     "page": 15,
+     "origin": "units",
+     "fused_score": 0.2807,
+     "is_source": false
+    },
+    {
+     "rank": 3,
+     "unit_id": "26748eb94001",
+     "book": "伏击涨停(2)",
+     "page": 5,
+     "origin": "units",
+     "fused_score": 0.1464,
+     "is_source": false
+    }
+   ]
+  },
+  {
+   "id": "qk_4213d10ccc",
+   "question": "PTFE材料路线的传导路径与受益环节是什么？",
+   "type": "影响如何",
+   "theme": "其他/综合",
+   "source_unit_id": "a6b4696b9ece",
+   "book": "rp_AP202610071830180005",
+   "concept": "PTFE材料路线",
+   "retrieval_hits": 5,
+   "hit_source": true,
+   "top1_is_source": true,
+   "source_rank": 1,
+   "miss": false,
+   "cause": null,
+   "top_hits": [
+    {
+     "rank": 1,
+     "unit_id": "a6b4696b9ece",
+     "book": "rp_AP202610071830180005",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 1.1,
+     "is_source": true
+    },
+    {
+     "rank": 2,
+     "unit_id": "41692ee59293",
+     "book": "rp_AP202610071830180005",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 0.3321,
+     "is_source": false
+    },
+    {
+     "rank": 3,
+     "unit_id": "6814f2bc152f",
+     "book": "rp_AP202610031830126544",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.2234,
+     "is_source": false
+    },
+    {
+     "rank": 4,
+     "unit_id": "cfd1d229335e",
+     "book": "rp_AP202610031830124602",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.1893,
+     "is_source": false
+    },
+    {
+     "rank": 5,
+     "unit_id": "7ad02eb9946f",
+     "book": "rp_AP202609301830022983",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.1766,
+     "is_source": false
+    }
+   ]
+  },
+  {
+   "id": "qk_16b8d22f31",
+   "question": "CoWoP封装方案的技术升级路径与价值量变化如何？",
+   "type": "主题专属",
+   "theme": "AI算力/半导体",
+   "source_unit_id": "98c77086175f",
+   "book": "rp_AP202610071830180005",
+   "concept": "CoWoP封装方案",
+   "retrieval_hits": 5,
+   "hit_source": true,
+   "top1_is_source": true,
+   "source_rank": 1,
+   "miss": false,
+   "cause": null,
+   "top_hits": [
+    {
+     "rank": 1,
+     "unit_id": "98c77086175f",
+     "book": "rp_AP202610071830180005",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 1.1,
+     "is_source": true
+    },
+    {
+     "rank": 2,
+     "unit_id": "919e9bdcd856",
+     "book": "rp_AP202609301830034656",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.3578,
+     "is_source": false
+    },
+    {
+     "rank": 3,
+     "unit_id": "2e3d51795f98",
+     "book": "rp_AP202609301830034708",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.2821,
+     "is_source": false
+    },
+    {
+     "rank": 4,
+     "unit_id": "76227f87ecd6",
+     "book": "rp_AP202609301830034708",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.2405,
+     "is_source": false
+    },
+    {
+     "rank": 5,
+     "unit_id": "28e0346286a2",
+     "book": "rp_AP202610071830188839",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.2318,
+     "is_source": false
+    }
+   ]
+  },
+  {
+   "id": "qk_1e9ede7285",
+   "question": "电力设备板块周度表现的产业化进度与量产时间表如何？",
+   "type": "是什么",
+   "theme": "新能源/电池",
+   "source_unit_id": "bf1ee34d6040",
+   "book": "rp_AP202610021830105330",
+   "concept": "电力设备板块周度表现",
+   "retrieval_hits": 5,
+   "hit_source": true,
+   "top1_is_source": true,
+   "source_rank": 1,
+   "miss": false,
+   "cause": null,
+   "top_hits": [
+    {
+     "rank": 1,
+     "unit_id": "bf1ee34d6040",
+     "book": "rp_AP202610021830105330",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 1.1,
+     "is_source": true
+    },
+    {
+     "rank": 2,
+     "unit_id": "429035b8e08d",
+     "book": "rp_AP202610021830105372",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.8804,
+     "is_source": false
+    },
+    {
+     "rank": 3,
+     "unit_id": "012acfc6e928",
+     "book": "rp_AP202610021830105333",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.7098,
+     "is_source": false
+    },
+    {
+     "rank": 4,
+     "unit_id": "d42b185454ef",
+     "book": "rp_AP202610021830105372",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.6202,
+     "is_source": false
+    },
+    {
+     "rank": 5,
+     "unit_id": "222abe610568",
+     "book": "rp_AP202610021830105333",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.5601,
+     "is_source": false
+    }
+   ]
+  },
+  {
+   "id": "qk_f3db19b238",
+   "question": "大中华区零售市场趋势的景气度与需求变化如何？",
+   "type": "是什么",
+   "theme": "消费/医药",
+   "source_unit_id": "bf663d3e998a",
+   "book": "rp_AP202609301830015453",
+   "concept": "大中华区零售市场趋势",
+   "retrieval_hits": 5,
+   "hit_source": true,
+   "top1_is_source": true,
+   "source_rank": 1,
+   "miss": false,
+   "cause": null,
+   "top_hits": [
+    {
+     "rank": 1,
+     "unit_id": "bf663d3e998a",
+     "book": "rp_AP202609301830015453",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 1.1,
+     "is_source": true
+    },
+    {
+     "rank": 2,
+     "unit_id": "dd02cab720e0",
+     "book": "rp_AP202609301830015453",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 0.5154,
+     "is_source": false
+    },
+    {
+     "rank": 3,
+     "unit_id": "afef8065108b",
+     "book": "rp_AP202609301830015453",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 0.3702,
+     "is_source": false
+    },
+    {
+     "rank": 4,
+     "unit_id": "dcb07a040c2c",
+     "book": "rp_AP202609301830016191",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.3143,
+     "is_source": false
+    },
+    {
+     "rank": 5,
+     "unit_id": "06025df5facb",
+     "book": "rp_AP202610071830182733",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.3001,
+     "is_source": false
+    }
+   ]
+  },
+  {
+   "id": "qk_2eda64b590",
+   "question": "资本市场现存障碍的规模/增速/份额等数据是多少？",
+   "type": "数据多少",
+   "theme": "金融/资本市场",
+   "source_unit_id": "653a45d7f679",
+   "book": "rp_AP202610031830124601",
+   "concept": "资本市场现存障碍",
+   "retrieval_hits": 5,
+   "hit_source": true,
+   "top1_is_source": true,
+   "source_rank": 1,
+   "miss": false,
+   "cause": null,
+   "top_hits": [
+    {
+     "rank": 1,
+     "unit_id": "653a45d7f679",
+     "book": "rp_AP202610031830124601",
+     "page": 13,
+     "origin": "units",
+     "fused_score": 1.1,
+     "is_source": true
+    },
+    {
+     "rank": 2,
+     "unit_id": "918a6d233355",
+     "book": "rp_AP202610031830124601",
+     "page": 13,
+     "origin": "units",
+     "fused_score": 1.0909,
+     "is_source": false
+    },
+    {
+     "rank": 3,
+     "unit_id": "53952f833012",
+     "book": "rp_AP202610031830124601",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.6424,
+     "is_source": false
+    },
+    {
+     "rank": 4,
+     "unit_id": "376311f05598",
+     "book": "rp_AP202610031830124601",
+     "page": 13,
+     "origin": "units",
+     "fused_score": 0.636,
+     "is_source": false
+    },
+    {
+     "rank": 5,
+     "unit_id": "33955948cf40",
+     "book": "rp_AP202609301830042321",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.5923,
+     "is_source": false
+    }
+   ]
+  },
+  {
+   "id": "qk_2feca0b1e3",
+   "question": "跨境电子商务面临的四大挑战的结论在什么条件下会被证伪？",
+   "type": "风险",
+   "theme": "宏观/策略/贸易",
+   "source_unit_id": "276e87e6cc33",
+   "book": "rp_AP202610021830105410",
+   "concept": "跨境电子商务面临的四大挑战",
+   "retrieval_hits": 5,
+   "hit_source": true,
+   "top1_is_source": false,
+   "source_rank": 2,
+   "miss": false,
+   "cause": null,
+   "top_hits": [
+    {
+     "rank": 1,
+     "unit_id": "bcf6880edb59",
+     "book": "rp_AP202609301830015407",
+     "page": 5,
+     "origin": "units",
+     "fused_score": 1.1,
+     "is_source": false
+    },
+    {
+     "rank": 2,
+     "unit_id": "276e87e6cc33",
+     "book": "rp_AP202610021830105410",
+     "page": 5,
+     "origin": "units",
+     "fused_score": 1.0909,
+     "is_source": true
+    },
+    {
+     "rank": 3,
+     "unit_id": "a9bee4ea2451",
+     "book": "rp_AP202610021830111804",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.3884,
+     "is_source": false
+    },
+    {
+     "rank": 4,
+     "unit_id": "af94acfff7ef",
+     "book": "rp_AP202610071830188839",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.303,
+     "is_source": false
+    },
+    {
+     "rank": 5,
+     "unit_id": "664a0d2d2756",
+     "book": "rp_AP202610021830105410",
+     "page": 5,
+     "origin": "units",
+     "fused_score": 0.2523,
+     "is_source": false
+    }
+   ]
+  },
+  {
+   "id": "qk_cf3f319c9d",
+   "question": "央行资产负债表保护机制的识别规则与实战用法是什么？",
+   "type": "主题专属",
+   "theme": "量化/技术分析",
+   "source_unit_id": "f6bbd1535811",
+   "book": "rp_AP202610031830124602",
+   "concept": "央行资产负债表保护机制",
+   "retrieval_hits": 5,
+   "hit_source": true,
+   "top1_is_source": true,
+   "source_rank": 1,
+   "miss": false,
+   "cause": null,
+   "top_hits": [
+    {
+     "rank": 1,
+     "unit_id": "f6bbd1535811",
+     "book": "rp_AP202610031830124602",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 1.1,
+     "is_source": true
+    },
+    {
+     "rank": 2,
+     "unit_id": "9bfcae31b185",
+     "book": "rp_AP202610031830124602",
+     "page": 7,
+     "origin": "units",
+     "fused_score": 0.3764,
+     "is_source": false
+    },
+    {
+     "rank": 3,
+     "unit_id": "2ed58b8187ee",
+     "book": "rp_AP202610031830124602",
+     "page": 7,
+     "origin": "units",
+     "fused_score": 0.2627,
+     "is_source": false
+    },
+    {
+     "rank": 4,
+     "unit_id": "6d5a445b731d",
+     "book": "rp_AP202610061830164303",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.2511,
+     "is_source": false
+    },
+    {
+     "rank": 5,
+     "unit_id": "8032d4ff1c17",
+     "book": "rp_AP202609301830015406",
+     "page": 6,
+     "origin": "units",
+     "fused_score": 0.24,
+     "is_source": false
+    }
+   ]
+  },
+  {
+   "id": "qk_4da1f2f379",
+   "question": "研报对多层级安全评估体系（ARIA）的风险提示是否充分？",
+   "type": "风险",
+   "theme": "其他/综合",
+   "source_unit_id": "ae05187cc3bc",
+   "book": "rp_AP202610061830170460",
+   "concept": "多层级安全评估体系（ARIA）",
+   "retrieval_hits": 5,
+   "hit_source": true,
+   "top1_is_source": true,
+   "source_rank": 1,
+   "miss": false,
+   "cause": null,
+   "top_hits": [
+    {
+     "rank": 1,
+     "unit_id": "ae05187cc3bc",
+     "book": "rp_AP202610061830170460",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 1.1,
+     "is_source": true
+    },
+    {
+     "rank": 2,
+     "unit_id": "60fa67feea4a",
+     "book": "rp_AP202610061830170460",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 0.6468,
+     "is_source": false
+    },
+    {
+     "rank": 3,
+     "unit_id": "ccf7787f6c23",
+     "book": "rp_AP202609301830015419",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 0.5788,
+     "is_source": false
+    },
+    {
+     "rank": 4,
+     "unit_id": "f1bd7ba053e6",
+     "book": "rp_AP202609301830015419",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 0.5562,
+     "is_source": false
+    },
+    {
+     "rank": 5,
+     "unit_id": "070380b8404a",
+     "book": "rp_AP202609301830015419",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 0.5472,
+     "is_source": false
+    }
+   ]
+  },
+  {
+   "id": "qk_961a10dedb",
+   "question": "M9 材料体系的技术升级路径与价值量变化如何？",
+   "type": "主题专属",
+   "theme": "AI算力/半导体",
+   "source_unit_id": "41692ee59293",
+   "book": "rp_AP202610071830180005",
+   "concept": "M9 材料体系",
+   "retrieval_hits": 5,
+   "hit_source": true,
+   "top1_is_source": true,
+   "source_rank": 1,
+   "miss": false,
+   "cause": null,
+   "top_hits": [
+    {
+     "rank": 1,
+     "unit_id": "41692ee59293",
+     "book": "rp_AP202610071830180005",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 1.1,
+     "is_source": true
+    },
+    {
+     "rank": 2,
+     "unit_id": "a6b4696b9ece",
+     "book": "rp_AP202610071830180005",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 0.6721,
+     "is_source": false
+    },
+    {
+     "rank": 3,
+     "unit_id": "2e3d51795f98",
+     "book": "rp_AP202609301830034708",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.3611,
+     "is_source": false
+    },
+    {
+     "rank": 4,
+     "unit_id": "cfa085455968",
+     "book": "rp_AP202610021830105529",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.3319,
+     "is_source": false
+    },
+    {
+     "rank": 5,
+     "unit_id": "28e0346286a2",
+     "book": "rp_AP202610071830188839",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.2955,
+     "is_source": false
+    }
+   ]
+  },
+  {
+   "id": "qk_5369bf6b66",
+   "question": "光伏产业链价格变动的规模/增速/份额等数据是多少？",
+   "type": "数据多少",
+   "theme": "新能源/电池",
+   "source_unit_id": "c98b2779dcd8",
+   "book": "rp_AP202610021830105330",
+   "concept": "光伏产业链价格变动",
+   "retrieval_hits": 5,
+   "hit_source": true,
+   "top1_is_source": true,
+   "source_rank": 1,
+   "miss": false,
+   "cause": null,
+   "top_hits": [
+    {
+     "rank": 1,
+     "unit_id": "c98b2779dcd8",
+     "book": "rp_AP202610021830105330",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 1.1,
+     "is_source": true
+    },
+    {
+     "rank": 2,
+     "unit_id": "247807a1827d",
+     "book": "rp_AP202610021830105370",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.9121,
+     "is_source": false
+    },
+    {
+     "rank": 3,
+     "unit_id": "8459f20f0e6f",
+     "book": "rp_AP202610011830075766",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 0.9045,
+     "is_source": false
+    },
+    {
+     "rank": 4,
+     "unit_id": "78824393df60",
+     "book": "rp_AP202610021830111912",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.5809,
+     "is_source": false
+    },
+    {
+     "rank": 5,
+     "unit_id": "89d89cd8efa6",
+     "book": "rp_AP202610021830105330",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.5323,
+     "is_source": false
+    }
+   ]
+  },
+  {
+   "id": "qk_580c47818a",
+   "question": "上海零售市场动态的景气度与需求变化如何？",
+   "type": "主题专属",
+   "theme": "消费/医药",
+   "source_unit_id": "afef8065108b",
+   "book": "rp_AP202609301830015453",
+   "concept": "上海零售市场动态",
+   "retrieval_hits": 5,
+   "hit_source": true,
+   "top1_is_source": true,
+   "source_rank": 1,
+   "miss": false,
+   "cause": null,
+   "top_hits": [
+    {
+     "rank": 1,
+     "unit_id": "afef8065108b",
+     "book": "rp_AP202609301830015453",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 1.1,
+     "is_source": true
+    },
+    {
+     "rank": 2,
+     "unit_id": "bf663d3e998a",
+     "book": "rp_AP202609301830015453",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 0.624,
+     "is_source": false
+    },
+    {
+     "rank": 3,
+     "unit_id": "dd02cab720e0",
+     "book": "rp_AP202609301830015453",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 0.564,
+     "is_source": false
+    },
+    {
+     "rank": 4,
+     "unit_id": "f65c4e3b7835",
+     "book": "rp_AP202609301830054738",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.4367,
+     "is_source": false
+    },
+    {
+     "rank": 5,
+     "unit_id": "dcb07a040c2c",
+     "book": "rp_AP202609301830016191",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.4031,
+     "is_source": false
+    }
+   ]
+  },
+  {
+   "id": "qk_335b4bf908",
+   "question": "资本市场现存障碍的结论在什么条件下会被证伪？",
+   "type": "风险",
+   "theme": "金融/资本市场",
+   "source_unit_id": "918a6d233355",
+   "book": "rp_AP202610031830124601",
+   "concept": "资本市场现存障碍",
+   "retrieval_hits": 5,
+   "hit_source": true,
+   "top1_is_source": false,
+   "source_rank": 2,
+   "miss": false,
+   "cause": null,
+   "top_hits": [
+    {
+     "rank": 1,
+     "unit_id": "653a45d7f679",
+     "book": "rp_AP202610031830124601",
+     "page": 13,
+     "origin": "units",
+     "fused_score": 1.1,
+     "is_source": false
+    },
+    {
+     "rank": 2,
+     "unit_id": "918a6d233355",
+     "book": "rp_AP202610031830124601",
+     "page": 13,
+     "origin": "units",
+     "fused_score": 1.0909,
+     "is_source": true
+    },
+    {
+     "rank": 3,
+     "unit_id": "53952f833012",
+     "book": "rp_AP202610031830124601",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.6424,
+     "is_source": false
+    },
+    {
+     "rank": 4,
+     "unit_id": "376311f05598",
+     "book": "rp_AP202610031830124601",
+     "page": 13,
+     "origin": "units",
+     "fused_score": 0.636,
+     "is_source": false
+    },
+    {
+     "rank": 5,
+     "unit_id": "fc151b2839d5",
+     "book": "rp_AP202610071830191034",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.5206,
+     "is_source": false
+    }
+   ]
+  },
+  {
+   "id": "qk_b5e1fe51c3",
+   "question": "中国水产品贸易总体趋势的关键逻辑链条是什么？",
+   "type": "是什么",
+   "theme": "宏观/策略/贸易",
+   "source_unit_id": "c11541d03786",
+   "book": "rp_AP202610061830165866",
+   "concept": "中国水产品贸易总体趋势",
+   "retrieval_hits": 5,
+   "hit_source": true,
+   "top1_is_source": true,
+   "source_rank": 1,
+   "miss": false,
+   "cause": null,
+   "top_hits": [
+    {
+     "rank": 1,
+     "unit_id": "c11541d03786",
+     "book": "rp_AP202610061830165866",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 1.1,
+     "is_source": true
+    },
+    {
+     "rank": 2,
+     "unit_id": "1773208fca0e",
+     "book": "rp_AP202610061830165866",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 0.7081,
+     "is_source": false
+    },
+    {
+     "rank": 3,
+     "unit_id": "f25b45def936",
+     "book": "rp_AP202610061830165866",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 0.6588,
+     "is_source": false
+    },
+    {
+     "rank": 4,
+     "unit_id": "3b570c6a6239",
+     "book": "rp_AP202610061830165954",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 0.5529,
+     "is_source": false
+    },
+    {
+     "rank": 5,
+     "unit_id": "7d6f98a18945",
+     "book": "rp_AP202610061830165858",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 0.3712,
+     "is_source": false
+    }
+   ]
+  },
+  {
+   "id": "qk_6946fb91e7",
+   "question": "涨停密码的结论在什么条件下会被证伪？",
+   "type": "风险",
+   "theme": "量化/技术分析",
+   "source_unit_id": "1afc73202fc6",
+   "book": "涨停密码(2)",
+   "concept": "涨停密码",
+   "retrieval_hits": 5,
+   "hit_source": true,
+   "top1_is_source": true,
+   "source_rank": 1,
+   "miss": false,
+   "cause": null,
+   "top_hits": [
+    {
+     "rank": 1,
+     "unit_id": "1afc73202fc6",
+     "book": "涨停密码(2)",
+     "page": 9,
+     "origin": "units",
+     "fused_score": 1.1,
+     "is_source": true
+    },
+    {
+     "rank": 2,
+     "unit_id": "5616abacf1fb",
+     "book": "涨停密码(2)",
+     "page": 9,
+     "origin": "units",
+     "fused_score": 0.9362,
+     "is_source": false
+    },
+    {
+     "rank": 3,
+     "unit_id": "691e5fcb3a74",
+     "book": "涨停密码(2)",
+     "page": 11,
+     "origin": "units",
+     "fused_score": 0.6993,
+     "is_source": false
+    },
+    {
+     "rank": 4,
+     "unit_id": "1697334fb062",
+     "book": "涨停密码(2)",
+     "page": 11,
+     "origin": "units",
+     "fused_score": 0.6127,
+     "is_source": false
+    },
+    {
+     "rank": 5,
+     "unit_id": "28f88a6c87e9",
+     "book": "伏击涨停(2)",
+     "page": 11,
+     "origin": "units",
+     "fused_score": 0.5856,
+     "is_source": false
+    }
+   ]
+  },
+  {
+   "id": "qk_f7d4528e2a",
+   "question": "研报对球形硅微粉的风险提示是否充分？",
+   "type": "风险",
+   "theme": "其他/综合",
+   "source_unit_id": "49a9df63e537",
+   "book": "rp_AP202610071830180005",
+   "concept": "球形硅微粉",
+   "retrieval_hits": 1,
+   "hit_source": true,
+   "top1_is_source": true,
+   "source_rank": 1,
+   "miss": false,
+   "cause": null,
+   "top_hits": [
+    {
+     "rank": 1,
+     "unit_id": "49a9df63e537",
+     "book": "rp_AP202610071830180005",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 1.1,
+     "is_source": true
+    }
+   ]
+  },
+  {
+   "id": "qk_78167bef8c",
+   "question": "Meta Ray-Ban Meta Audio对相关标的的业绩/估值影响如何？",
+   "type": "影响如何",
+   "theme": "AI算力/半导体",
+   "source_unit_id": "5c0ac9f37cbf",
+   "book": "rp_AP202610031830126605",
+   "concept": "Meta Ray-Ban Meta Audio",
+   "retrieval_hits": 5,
+   "hit_source": true,
+   "top1_is_source": true,
+   "source_rank": 1,
+   "miss": false,
+   "cause": null,
+   "top_hits": [
+    {
+     "rank": 1,
+     "unit_id": "5c0ac9f37cbf",
+     "book": "rp_AP202610031830126605",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 1.1,
+     "is_source": true
+    },
+    {
+     "rank": 2,
+     "unit_id": "02dc5b5ad13c",
+     "book": "I_DKVn8r4WQ",
+     "page": 5,
+     "origin": "corpus",
+     "fused_score": 0.45,
+     "is_source": false
+    },
+    {
+     "rank": 3,
+     "unit_id": "f6dc7f5c589c",
+     "book": "rp_AP202610021830111802",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.3916,
+     "is_source": false
+    },
+    {
+     "rank": 4,
+     "unit_id": "591b0448131a",
+     "book": "rp_AP202610021830105367",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.3583,
+     "is_source": false
+    },
+    {
+     "rank": 5,
+     "unit_id": "c47de0dbe13f",
+     "book": "rp_AP202610031830126605",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.3519,
+     "is_source": false
+    }
+   ]
+  },
+  {
+   "id": "qk_dce3ffcfd9",
+   "question": "光伏成本核算新规的传导路径与受益环节是什么？",
+   "type": "影响如何",
+   "theme": "新能源/电池",
+   "source_unit_id": "51d2ba9d8d1c",
+   "book": "rp_AP202610021830111912",
+   "concept": "光伏成本核算新规",
+   "retrieval_hits": 5,
+   "hit_source": true,
+   "top1_is_source": true,
+   "source_rank": 1,
+   "miss": false,
+   "cause": null,
+   "top_hits": [
+    {
+     "rank": 1,
+     "unit_id": "51d2ba9d8d1c",
+     "book": "rp_AP202610021830111912",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 1.1,
+     "is_source": true
+    },
+    {
+     "rank": 2,
+     "unit_id": "78824393df60",
+     "book": "rp_AP202610021830111912",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.5354,
+     "is_source": false
+    },
+    {
+     "rank": 3,
+     "unit_id": "89d89cd8efa6",
+     "book": "rp_AP202610021830105330",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.3606,
+     "is_source": false
+    },
+    {
+     "rank": 4,
+     "unit_id": "053c9d421eb8",
+     "book": "rp_AP202610021830111912",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.3542,
+     "is_source": false
+    },
+    {
+     "rank": 5,
+     "unit_id": "1164d1f81caa",
+     "book": "rp_AP202609301830023754",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.27,
+     "is_source": false
+    }
+   ]
+  },
+  {
+   "id": "qk_8d7ff894c2",
+   "question": "北京零售市场现状的景气度与需求变化如何？",
+   "type": "主题专属",
+   "theme": "消费/医药",
+   "source_unit_id": "dd02cab720e0",
+   "book": "rp_AP202609301830015453",
+   "concept": "北京零售市场现状",
+   "retrieval_hits": 5,
+   "hit_source": true,
+   "top1_is_source": true,
+   "source_rank": 1,
+   "miss": false,
+   "cause": null,
+   "top_hits": [
+    {
+     "rank": 1,
+     "unit_id": "dd02cab720e0",
+     "book": "rp_AP202609301830015453",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 1.1,
+     "is_source": true
+    },
+    {
+     "rank": 2,
+     "unit_id": "bf663d3e998a",
+     "book": "rp_AP202609301830015453",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 0.6507,
+     "is_source": false
+    },
+    {
+     "rank": 3,
+     "unit_id": "afef8065108b",
+     "book": "rp_AP202609301830015453",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 0.5043,
+     "is_source": false
+    },
+    {
+     "rank": 4,
+     "unit_id": "dcb07a040c2c",
+     "book": "rp_AP202609301830016191",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.4252,
+     "is_source": false
+    },
+    {
+     "rank": 5,
+     "unit_id": "e9c9225ec2e9",
+     "book": "rp_AP202609301830054738",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.3866,
+     "is_source": false
+    }
+   ]
+  },
+  {
+   "id": "qk_7f3721cb06",
+   "question": "中小行配债增速回落的政策演进与市场影响如何？",
+   "type": "影响如何",
+   "theme": "金融/资本市场",
+   "source_unit_id": "13bd656fa984",
+   "book": "rp_AP202609301830035477",
+   "concept": "中小行配债增速回落",
+   "retrieval_hits": 5,
+   "hit_source": true,
+   "top1_is_source": true,
+   "source_rank": 1,
+   "miss": false,
+   "cause": null,
+   "top_hits": [
+    {
+     "rank": 1,
+     "unit_id": "13bd656fa984",
+     "book": "rp_AP202609301830035477",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 1.1,
+     "is_source": true
+    },
+    {
+     "rank": 2,
+     "unit_id": "44852b57db0f",
+     "book": "rp_AP202609301830035477",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.8239,
+     "is_source": false
+    },
+    {
+     "rank": 3,
+     "unit_id": "f20a48f347ff",
+     "book": "rp_AP202609301830035477",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.2708,
+     "is_source": false
+    },
+    {
+     "rank": 4,
+     "unit_id": "e4a9c8a1b095",
+     "book": "rp_AP202609301830035477",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.2644,
+     "is_source": false
+    },
+    {
+     "rank": 5,
+     "unit_id": "a3b062104586",
+     "book": "rp_AP202609301830015406",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.2532,
+     "is_source": false
+    }
+   ]
+  },
+  {
+   "id": "qk_4a6c73ec65",
+   "question": "数字贸易增长预测的结论在什么条件下会被证伪？",
+   "type": "风险",
+   "theme": "宏观/策略/贸易",
+   "source_unit_id": "ffda0f7d249e",
+   "book": "rp_AP202609301830015407",
+   "concept": "数字贸易增长预测",
+   "retrieval_hits": 5,
+   "hit_source": true,
+   "top1_is_source": true,
+   "source_rank": 1,
+   "miss": false,
+   "cause": null,
+   "top_hits": [
+    {
+     "rank": 1,
+     "unit_id": "ffda0f7d249e",
+     "book": "rp_AP202609301830015407",
+     "page": 5,
+     "origin": "units",
+     "fused_score": 1.1,
+     "is_source": true
+    },
+    {
+     "rank": 2,
+     "unit_id": "18cbf97adf66",
+     "book": "rp_AP202610021830105301",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.5668,
+     "is_source": false
+    },
+    {
+     "rank": 3,
+     "unit_id": "0591a3f9770e",
+     "book": "rp_AP202610061830165974",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 0.4568,
+     "is_source": false
+    },
+    {
+     "rank": 4,
+     "unit_id": "eb01168c3014",
+     "book": "rp_AP202609301830015407",
+     "page": 5,
+     "origin": "units",
+     "fused_score": 0.4251,
+     "is_source": false
+    },
+    {
+     "rank": 5,
+     "unit_id": "276e87e6cc33",
+     "book": "rp_AP202610021830105410",
+     "page": 5,
+     "origin": "units",
+     "fused_score": 0.3922,
+     "is_source": false
+    }
+   ]
+  },
+  {
+   "id": "qk_472e1ff0cd",
+   "question": "施工旺季需求特征的主要风险与不确定性有哪些？",
+   "type": "风险",
+   "theme": "量化/技术分析",
+   "source_unit_id": "46b94880b5e3",
+   "book": "rp_AP202609301830023858",
+   "concept": "施工旺季需求特征",
+   "retrieval_hits": 5,
+   "hit_source": true,
+   "top1_is_source": true,
+   "source_rank": 1,
+   "miss": false,
+   "cause": null,
+   "top_hits": [
+    {
+     "rank": 1,
+     "unit_id": "46b94880b5e3",
+     "book": "rp_AP202609301830023858",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 1.1,
+     "is_source": true
+    },
+    {
+     "rank": 2,
+     "unit_id": "f488242852dc",
+     "book": "rp_AP202609301830015422",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 0.3595,
+     "is_source": false
+    },
+    {
+     "rank": 3,
+     "unit_id": "5ef22639365e",
+     "book": "rp_AP202609301830042069",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.3519,
+     "is_source": false
+    },
+    {
+     "rank": 4,
+     "unit_id": "065816285884",
+     "book": "rp_AP202610021830114811",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.3455,
+     "is_source": false
+    },
+    {
+     "rank": 5,
+     "unit_id": "3c014ae6bcd0",
+     "book": "rp_AP202609301830015453",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 0.3324,
+     "is_source": false
+    }
+   ]
+  },
+  {
+   "id": "qk_092c509a56",
+   "question": "景嘉微股权激励计划具体指什么，研报如何定义？",
+   "type": "是什么",
+   "theme": "其他/综合",
+   "source_unit_id": "233133a1cbf7",
+   "book": "rp_AP202610021830105365",
+   "concept": "景嘉微股权激励计划",
+   "retrieval_hits": 5,
+   "hit_source": true,
+   "top1_is_source": true,
+   "source_rank": 1,
+   "miss": false,
+   "cause": null,
+   "top_hits": [
+    {
+     "rank": 1,
+     "unit_id": "233133a1cbf7",
+     "book": "rp_AP202610021830105365",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 1.1,
+     "is_source": true
+    },
+    {
+     "rank": 2,
+     "unit_id": "3a4eff67a995",
+     "book": "rp_AP202609301830023858",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.2922,
+     "is_source": false
+    },
+    {
+     "rank": 3,
+     "unit_id": "de5d7e7138f5",
+     "book": "rp_AP202609301830053954",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.2847,
+     "is_source": false
+    },
+    {
+     "rank": 4,
+     "unit_id": "810ad42443fd",
+     "book": "伏击涨停(2)",
+     "page": 5,
+     "origin": "units",
+     "fused_score": 0.1958,
+     "is_source": false
+    },
+    {
+     "rank": 5,
+     "unit_id": "0591a3f9770e",
+     "book": "rp_AP202610061830165974",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 0.1903,
+     "is_source": false
+    }
+   ]
+  },
+  {
+   "id": "qk_0d2e5d5fe9",
+   "question": "Muse 智能体的技术升级路径与价值量变化如何？",
+   "type": "是什么",
+   "theme": "AI算力/半导体",
+   "source_unit_id": "d22ef9aab17c",
+   "book": "rp_AP202610031830126605",
+   "concept": "Muse 智能体",
+   "retrieval_hits": 5,
+   "hit_source": true,
+   "top1_is_source": true,
+   "source_rank": 1,
+   "miss": false,
+   "cause": null,
+   "top_hits": [
+    {
+     "rank": 1,
+     "unit_id": "d22ef9aab17c",
+     "book": "rp_AP202610031830126605",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 1.1,
+     "is_source": true
+    },
+    {
+     "rank": 2,
+     "unit_id": "3b9f7be8b958",
+     "book": "rp_AP202609301830039062",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 1.0875,
+     "is_source": false
+    },
+    {
+     "rank": 3,
+     "unit_id": "f6dc7f5c589c",
+     "book": "rp_AP202610021830111802",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 1.0245,
+     "is_source": false
+    },
+    {
+     "rank": 4,
+     "unit_id": "95b0e797621f",
+     "book": "rp_AP202610061830170460",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 0.7369,
+     "is_source": false
+    },
+    {
+     "rank": 5,
+     "unit_id": "43480ee8b628",
+     "book": "rp_AP202609301830035707",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.6646,
+     "is_source": false
+    }
+   ]
+  },
+  {
+   "id": "qk_1b3df661ff",
+   "question": "光伏产业链价格对相关标的的业绩/估值影响如何？",
+   "type": "影响如何",
+   "theme": "新能源/电池",
+   "source_unit_id": "247807a1827d",
+   "book": "rp_AP202610021830105370",
+   "concept": "光伏产业链价格",
+   "retrieval_hits": 5,
+   "hit_source": true,
+   "top1_is_source": true,
+   "source_rank": 1,
+   "miss": false,
+   "cause": null,
+   "top_hits": [
+    {
+     "rank": 1,
+     "unit_id": "247807a1827d",
+     "book": "rp_AP202610021830105370",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 1.1,
+     "is_source": true
+    },
+    {
+     "rank": 2,
+     "unit_id": "c98b2779dcd8",
+     "book": "rp_AP202610021830105330",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.9279,
+     "is_source": false
+    },
+    {
+     "rank": 3,
+     "unit_id": "8459f20f0e6f",
+     "book": "rp_AP202610011830075766",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 0.8101,
+     "is_source": false
+    },
+    {
+     "rank": 4,
+     "unit_id": "e04f334b181f",
+     "book": "rp_AP202609301830035133",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.8003,
+     "is_source": false
+    },
+    {
+     "rank": 5,
+     "unit_id": "9788baf273ca",
+     "book": "rp_AP202610071830185864",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.7125,
+     "is_source": false
+    }
+   ]
+  },
+  {
+   "id": "qk_b7575c6fea",
+   "question": "深圳零售市场特征的景气度与需求变化如何？",
+   "type": "主题专属",
+   "theme": "消费/医药",
+   "source_unit_id": "3c014ae6bcd0",
+   "book": "rp_AP202609301830015453",
+   "concept": "深圳零售市场特征",
+   "retrieval_hits": 5,
+   "hit_source": true,
+   "top1_is_source": true,
+   "source_rank": 1,
+   "miss": false,
+   "cause": null,
+   "top_hits": [
+    {
+     "rank": 1,
+     "unit_id": "3c014ae6bcd0",
+     "book": "rp_AP202609301830015453",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 1.1,
+     "is_source": true
+    },
+    {
+     "rank": 2,
+     "unit_id": "bf663d3e998a",
+     "book": "rp_AP202609301830015453",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 0.8078,
+     "is_source": false
+    },
+    {
+     "rank": 3,
+     "unit_id": "dd02cab720e0",
+     "book": "rp_AP202609301830015453",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 0.7297,
+     "is_source": false
+    },
+    {
+     "rank": 4,
+     "unit_id": "afef8065108b",
+     "book": "rp_AP202609301830015453",
+     "page": 2,
+     "origin": "units",
+     "fused_score": 0.616,
+     "is_source": false
+    },
+    {
+     "rank": 5,
+     "unit_id": "dcb07a040c2c",
+     "book": "rp_AP202609301830016191",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.5174,
+     "is_source": false
+    }
+   ]
+  },
+  {
+   "id": "qk_38dcd85910",
+   "question": "关于中小行资产端策略调整，知识库中有哪些可验证的数据或证据？",
+   "type": "数据多少",
+   "theme": "金融/资本市场",
+   "source_unit_id": "f20a48f347ff",
+   "book": "rp_AP202609301830035477",
+   "concept": "中小行资产端策略调整",
+   "retrieval_hits": 5,
+   "hit_source": true,
+   "top1_is_source": true,
+   "source_rank": 1,
+   "miss": false,
+   "cause": null,
+   "top_hits": [
+    {
+     "rank": 1,
+     "unit_id": "f20a48f347ff",
+     "book": "rp_AP202609301830035477",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 1.1,
+     "is_source": true
+    },
+    {
+     "rank": 2,
+     "unit_id": "44852b57db0f",
+     "book": "rp_AP202609301830035477",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.4793,
+     "is_source": false
+    },
+    {
+     "rank": 3,
+     "unit_id": "381811df2585",
+     "book": "rp_AP202609301830015454",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.4424,
+     "is_source": false
+    },
+    {
+     "rank": 4,
+     "unit_id": "13bd656fa984",
+     "book": "rp_AP202609301830035477",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.4089,
+     "is_source": false
+    },
+    {
+     "rank": 5,
+     "unit_id": "553e4dfe9d1d",
+     "book": "rp_AP202610071830182733",
+     "page": 1,
+     "origin": "units",
+     "fused_score": 0.3749,
+     "is_source": false
+    }
+   ]
+  }
+ ],
+ "suggestions": [
+  "整体命中率@5=100%（32/32），检索质量良好；优先关注未命中问题与 @1 排序。",
+  "@1=30 < @5=32：来源单元常被同类单元挤到第 2–5 位，可评估在融合排序中对「来源/来自同一单元」加权重，或增大 topk 后再评估。",
+  "复检命令：python tools/kb_corpus/kb_qa_selfcheck.py selfcheck（检索-only，不调 LLM）。"
+ ],
+ "disclaimer": "自检仅验证「候选问题能否召回其来源知识单元」，不代表问答答案正确性；仅供研究参考，不构成投资建议。",
+ "elapsed_seconds": 2.22
+}

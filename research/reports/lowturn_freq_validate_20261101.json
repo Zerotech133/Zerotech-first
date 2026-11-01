@@ -1,0 +1,2924 @@
+{
+ "meta": {
+  "schema_version": "lowturn_freq_validate.v1",
+  "generated_at": "2026-11-01T07:44:44+08:00",
+  "start": "20230101",
+  "end": "20261030",
+  "effective_start": "20230103",
+  "effective_end": "20261030",
+  "load_sec": 47.23,
+  "runtime_sec": 223.22,
+  "panel": {
+   "dates": 965,
+   "codes": 5740
+  },
+  "years": [
+   "2023",
+   "2024",
+   "2025",
+   "2026"
+  ],
+  "is_years": [
+   "2023",
+   "2024"
+  ],
+  "oos_years": [
+   "2025",
+   "2026"
+  ],
+  "hold_frac": 0.5,
+  "buffer_frac": 0.1,
+  "max_turnover": 0.2,
+  "main_cost_bp": 30.0,
+  "cost_grid_bp": [
+   10,
+   20,
+   30,
+   50
+  ],
+  "threshold_t": 2.0,
+  "min_positive_years": 3,
+  "universe": "factor_lib.tradable",
+  "execution": "T+1 收盘建仓；复权收益；缺价冻结估值；不做逐日涨跌停可买/可卖模拟",
+  "cost_model": "两腿换手 Σ|Δw| × bp（Σ|Δw|=1 表示买入 100% 仓位一次单边成本 bp）",
+  "total_factors": 1,
+  "effective": {
+   "factors_effective": [
+    "low_turnover",
+    "max_ret20",
+    "vol20"
+   ]
+  },
+  "variant_meta": {
+   "weekly_baseline": {
+    "label": "周频全换仓",
+    "freq_desc": "周频",
+    "buffer_frac": 0.0,
+    "max_turnover": null,
+    "desc": "wave2 基线：每周换仓，无缓冲带/换手上限"
+   },
+   "monthly": {
+    "label": "月频全换仓",
+    "freq_desc": "月频",
+    "buffer_frac": 0.0,
+    "max_turnover": null,
+    "desc": "每月末信号、T+1 建仓、持有约 20 个交易日"
+   },
+   "hold60": {
+    "label": "60日持有(分段)",
+    "freq_desc": "每60交易日",
+    "buffer_frac": 0.0,
+    "max_turnover": null,
+    "desc": "每 60 个交易日整仓换仓（季度近似）"
+   },
+   "hold60_stagger": {
+    "label": "60日持有(错开)",
+    "freq_desc": "每20日换1/3仓(持有60日)",
+    "buffer_frac": 0.0,
+    "max_turnover": null,
+    "desc": "每 20 个交易日只换 1/3 仓，3 段错开 → 每段持有 60 日、单日冲击降为 1/3"
+   },
+   "weekly_buffercap": {
+    "label": "周频+缓冲带+换手上限",
+    "freq_desc": "周频",
+    "buffer_frac": 0.1,
+    "max_turnover": 0.2,
+    "desc": "周频，但 top50% 买入 / top60% 保留（缓冲带 +10pp）+ 单次双边换手 ≤20%"
+   },
+   "monthly_buffercap": {
+    "label": "月频+缓冲带+换手上限",
+    "freq_desc": "月频",
+    "buffer_frac": 0.1,
+    "max_turnover": 0.2,
+    "desc": "月频 + 缓冲带 +10pp + 单次双边换手 ≤20%"
+   }
+  },
+  "controls_effective_subset": {
+   "factors": [
+    "max_ret20",
+    "vol20"
+   ],
+   "variants": [
+    "monthly",
+    "hold60"
+   ],
+   "note": "控制因子时间约束下只跑 monthly/hold60 两个变体（effective 子集）"
+  },
+  "runtime_note": "分 3 次运行：主跑 low_turnover 全 6 变体 223.2s（含数据加载 47.2s）、capped 变体修复后重跑 107.1s、控制因子 2 个 × 2 变体 86.1s（每次均重新加载数据，未合并计时）"
+ },
+ "variant_meta": {
+  "weekly_baseline": {
+   "label": "周频全换仓",
+   "freq_desc": "周频",
+   "buffer_frac": 0.0,
+   "max_turnover": null,
+   "desc": "wave2 基线：每周换仓，无缓冲带/换手上限"
+  },
+  "monthly": {
+   "label": "月频全换仓",
+   "freq_desc": "月频",
+   "buffer_frac": 0.0,
+   "max_turnover": null,
+   "desc": "每月末信号、T+1 建仓、持有约 20 个交易日"
+  },
+  "hold60": {
+   "label": "60日持有(分段)",
+   "freq_desc": "每60交易日",
+   "buffer_frac": 0.0,
+   "max_turnover": null,
+   "desc": "每 60 个交易日整仓换仓（季度近似）"
+  },
+  "hold60_stagger": {
+   "label": "60日持有(错开)",
+   "freq_desc": "每20日换1/3仓(持有60日)",
+   "buffer_frac": 0.0,
+   "max_turnover": null,
+   "desc": "每 20 个交易日只换 1/3 仓，3 段错开 → 每段持有 60 日、单日冲击降为 1/3"
+  },
+  "weekly_buffercap": {
+   "label": "周频+缓冲带+换手上限",
+   "freq_desc": "周频",
+   "buffer_frac": 0.1,
+   "max_turnover": 0.2,
+   "desc": "周频，但 top50% 买入 / top60% 保留（缓冲带 +10pp）+ 单次双边换手 ≤20%"
+  },
+  "monthly_buffercap": {
+   "label": "月频+缓冲带+换手上限",
+   "freq_desc": "月频",
+   "buffer_frac": 0.1,
+   "max_turnover": 0.2,
+   "desc": "月频 + 缓冲带 +10pp + 单次双边换手 ≤20%"
+  }
+ },
+ "factors": {
+  "low_turnover": {
+   "name": "low_turnover",
+   "family": "通用",
+   "direction": -1,
+   "description": "换手率（原始值；先验：低换手/低拥挤度占优，取负向）",
+   "runtime_sec": 173.5,
+   "variants": {
+    "weekly_baseline": {
+     "label": "周频全换仓",
+     "desc": "wave2 基线：每周换仓，无缓冲带/换手上限",
+     "schedule": "weekly",
+     "tranche_frac": 1.0,
+     "buffer_frac": 0.0,
+     "max_turnover": null,
+     "rebalance_count": 195,
+     "schedule_days": 195,
+     "avg_turnover": 0.9173,
+     "annual_turnover": 44.718,
+     "rebalances_per_year": 48.75,
+     "avg_holdings": 1992.0,
+     "adtv_median_yi": 1.2327,
+     "capacity_est_yi": 267.69,
+     "gross": {
+      "gross_oos_excess": 0.093955,
+      "gross_oos_t": 3.1428,
+      "gross_is_excess": -0.010543,
+      "gross_is_t": -0.2802
+     },
+     "annual_gross_excess": {
+      "2023": -0.020617,
+      "2024": 0.011158,
+      "2025": 0.072237,
+      "2026": 0.039858
+     },
+     "verdict_gross": "pass",
+     "verdict_gross_reasons": [
+      "OOS 超额 +9.40% > 0",
+      "OOS t=3.14 ≥ 2",
+      "逐年同向 3/4 ≥ 3"
+     ],
+     "at_main_cost": {
+      "cost_bp": 30.0,
+      "gross_oos_excess": 0.093955,
+      "gross_oos_t": 3.1428,
+      "net_oos_excess": -0.135863,
+      "net_oos_t": -3.5743,
+      "gross_is_excess": -0.010543,
+      "gross_is_t": -0.2802,
+      "net_is_excess": -0.318347,
+      "net_is_t": -6.7834,
+      "annual_gross_excess": {
+       "2023": -0.020617,
+       "2024": 0.011158,
+       "2025": 0.072237,
+       "2026": 0.039858
+      },
+      "annual_net_excess": {
+       "2023": -0.168111,
+       "2024": -0.142439,
+       "2025": -0.106117,
+       "2026": -0.044718
+      },
+      "annual_net_positive": 0,
+      "annual_net_n_years": 4,
+      "avg_turnover": 0.9173,
+      "annual_turnover": 44.718,
+      "rebalances_per_year": 48.75,
+      "rebalance_count": 195,
+      "avg_holdings": 1992.0,
+      "cum_cost_drag": 0.415716,
+      "capacity_est_yi": 267.69,
+      "adtv_median_yi": 1.2327,
+      "verdict_net": "fail",
+      "verdict_net_reasons": [
+       "OOS 超额 -13.59% ≤ 0",
+       "OOS t=-3.57 < 2",
+       "逐年同向 0/4 < 3"
+      ],
+      "verdict_gross": "pass",
+      "verdict_gross_reasons": [
+       "OOS 超额 +9.40% > 0",
+       "OOS t=3.14 ≥ 2",
+       "逐年同向 3/4 ≥ 3"
+      ]
+     },
+     "cost_sensitivity": {
+      "10": {
+       "cost_bp": 10.0,
+       "gross_oos_excess": 0.093955,
+       "gross_oos_t": 3.1428,
+       "net_oos_excess": 0.017349,
+       "net_oos_t": 0.5549,
+       "gross_is_excess": -0.010543,
+       "gross_is_t": -0.2802,
+       "net_is_excess": -0.113144,
+       "net_is_t": -2.9121,
+       "annual_gross_excess": {
+        "2023": -0.020617,
+        "2024": 0.011158,
+        "2025": 0.072237,
+        "2026": 0.039858
+       },
+       "annual_net_excess": {
+        "2023": -0.072222,
+        "2024": -0.042689,
+        "2025": 0.010246,
+        "2026": 0.010748
+       },
+       "annual_net_positive": 2,
+       "annual_net_n_years": 4,
+       "avg_turnover": 0.9173,
+       "annual_turnover": 44.718,
+       "rebalances_per_year": 48.75,
+       "rebalance_count": 195,
+       "avg_holdings": 1992.0,
+       "cum_cost_drag": 0.163856,
+       "capacity_est_yi": 267.69,
+       "adtv_median_yi": 1.2327,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 +1.73% > 0",
+        "OOS t=0.55 < 2",
+        "逐年同向 2/4 < 3"
+       ],
+       "verdict_gross": "pass",
+       "verdict_gross_reasons": [
+        "OOS 超额 +9.40% > 0",
+        "OOS t=3.14 ≥ 2",
+        "逐年同向 3/4 ≥ 3"
+       ]
+      },
+      "20": {
+       "cost_bp": 20.0,
+       "gross_oos_excess": 0.093955,
+       "gross_oos_t": 3.1428,
+       "net_oos_excess": -0.059257,
+       "net_oos_t": -1.7389,
+       "gross_is_excess": -0.010543,
+       "gross_is_t": -0.2802,
+       "net_is_excess": -0.215746,
+       "net_is_t": -5.1255,
+       "annual_gross_excess": {
+        "2023": -0.020617,
+        "2024": 0.011158,
+        "2025": 0.072237,
+        "2026": 0.039858
+       },
+       "annual_net_excess": {
+        "2023": -0.121348,
+        "2024": -0.093844,
+        "2025": -0.049171,
+        "2026": -0.017434
+       },
+       "annual_net_positive": 0,
+       "annual_net_n_years": 4,
+       "avg_turnover": 0.9173,
+       "annual_turnover": 44.718,
+       "rebalances_per_year": 48.75,
+       "rebalance_count": 195,
+       "avg_holdings": 1992.0,
+       "cum_cost_drag": 0.300981,
+       "capacity_est_yi": 267.69,
+       "adtv_median_yi": 1.2327,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 -5.93% ≤ 0",
+        "OOS t=-1.74 < 2",
+        "逐年同向 0/4 < 3"
+       ],
+       "verdict_gross": "pass",
+       "verdict_gross_reasons": [
+        "OOS 超额 +9.40% > 0",
+        "OOS t=3.14 ≥ 2",
+        "逐年同向 3/4 ≥ 3"
+       ]
+      },
+      "30": {
+       "cost_bp": 30.0,
+       "gross_oos_excess": 0.093955,
+       "gross_oos_t": 3.1428,
+       "net_oos_excess": -0.135863,
+       "net_oos_t": -3.5743,
+       "gross_is_excess": -0.010543,
+       "gross_is_t": -0.2802,
+       "net_is_excess": -0.318347,
+       "net_is_t": -6.7834,
+       "annual_gross_excess": {
+        "2023": -0.020617,
+        "2024": 0.011158,
+        "2025": 0.072237,
+        "2026": 0.039858
+       },
+       "annual_net_excess": {
+        "2023": -0.168111,
+        "2024": -0.142439,
+        "2025": -0.106117,
+        "2026": -0.044718
+       },
+       "annual_net_positive": 0,
+       "annual_net_n_years": 4,
+       "avg_turnover": 0.9173,
+       "annual_turnover": 44.718,
+       "rebalances_per_year": 48.75,
+       "rebalance_count": 195,
+       "avg_holdings": 1992.0,
+       "cum_cost_drag": 0.415716,
+       "capacity_est_yi": 267.69,
+       "adtv_median_yi": 1.2327,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 -13.59% ≤ 0",
+        "OOS t=-3.57 < 2",
+        "逐年同向 0/4 < 3"
+       ],
+       "verdict_gross": "pass",
+       "verdict_gross_reasons": [
+        "OOS 超额 +9.40% > 0",
+        "OOS t=3.14 ≥ 2",
+        "逐年同向 3/4 ≥ 3"
+       ]
+      },
+      "50": {
+       "cost_bp": 50.0,
+       "gross_oos_excess": 0.093955,
+       "gross_oos_t": 3.1428,
+       "net_oos_excess": -0.289075,
+       "net_oos_t": -6.0123,
+       "gross_is_excess": -0.010543,
+       "gross_is_t": -0.2802,
+       "net_is_excess": -0.523549,
+       "net_is_t": -8.7631,
+       "annual_gross_excess": {
+        "2023": -0.020617,
+        "2024": 0.011158,
+        "2025": 0.072237,
+        "2026": 0.039858
+       },
+       "annual_net_excess": {
+        "2023": -0.254991,
+        "2024": -0.232445,
+        "2025": -0.213,
+        "2026": -0.096698
+       },
+       "annual_net_positive": 0,
+       "annual_net_n_years": 4,
+       "avg_turnover": 0.9173,
+       "annual_turnover": 44.718,
+       "rebalances_per_year": 48.75,
+       "rebalance_count": 195,
+       "avg_holdings": 1992.0,
+       "cum_cost_drag": 0.591989,
+       "capacity_est_yi": 267.69,
+       "adtv_median_yi": 1.2327,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 -28.91% ≤ 0",
+        "OOS t=-6.01 < 2",
+        "逐年同向 0/4 < 3"
+       ],
+       "verdict_gross": "pass",
+       "verdict_gross_reasons": [
+        "OOS 超额 +9.40% > 0",
+        "OOS t=3.14 ≥ 2",
+        "逐年同向 3/4 ≥ 3"
+       ]
+      }
+     },
+     "net_oos_by_cost": {
+      "10": 0.017349,
+      "20": -0.059257,
+      "30": -0.135863,
+      "50": -0.289075
+     }
+    },
+    "monthly": {
+     "label": "月频全换仓",
+     "desc": "每月末信号、T+1 建仓、持有约 20 个交易日",
+     "schedule": "monthly",
+     "tranche_frac": 1.0,
+     "buffer_frac": 0.0,
+     "max_turnover": null,
+     "rebalance_count": 45,
+     "schedule_days": 45,
+     "avg_turnover": 1.0758,
+     "annual_turnover": 12.103,
+     "rebalances_per_year": 11.25,
+     "avg_holdings": 2037.7,
+     "adtv_median_yi": 1.2189,
+     "capacity_est_yi": 230.87,
+     "gross": {
+      "gross_oos_excess": 0.049431,
+      "gross_oos_t": 1.5286,
+      "gross_is_excess": -0.061973,
+      "gross_is_t": -1.4066
+     },
+     "annual_gross_excess": {
+      "2023": -0.083539,
+      "2024": 0.021857,
+      "2025": 0.024156,
+      "2026": 0.030346
+     },
+     "verdict_gross": "fail",
+     "verdict_gross_reasons": [
+      "OOS 超额 +4.94% > 0",
+      "OOS t=1.53 < 2",
+      "逐年同向 3/4 ≥ 3"
+     ],
+     "at_main_cost": {
+      "cost_bp": 30.0,
+      "gross_oos_excess": 0.049431,
+      "gross_oos_t": 1.5286,
+      "net_oos_excess": -0.016352,
+      "net_oos_t": -0.4684,
+      "gross_is_excess": -0.061973,
+      "gross_is_t": -1.4066,
+      "net_is_excess": -0.142313,
+      "net_is_t": -2.9824,
+      "annual_gross_excess": {
+       "2023": -0.083539,
+       "2024": 0.021857,
+       "2025": 0.024156,
+       "2026": 0.030346
+      },
+      "annual_net_excess": {
+       "2023": -0.121082,
+       "2024": -0.021385,
+       "2025": -0.026345,
+       "2026": 0.004971
+      },
+      "annual_net_positive": 1,
+      "annual_net_n_years": 4,
+      "avg_turnover": 1.0758,
+      "annual_turnover": 12.103,
+      "rebalances_per_year": 11.25,
+      "rebalance_count": 45,
+      "avg_holdings": 2037.7,
+      "cum_cost_drag": 0.135384,
+      "capacity_est_yi": 230.87,
+      "adtv_median_yi": 1.2189,
+      "verdict_net": "fail",
+      "verdict_net_reasons": [
+       "OOS 超额 -1.64% ≤ 0",
+       "OOS t=-0.47 < 2",
+       "逐年同向 1/4 < 3"
+      ],
+      "verdict_gross": "fail",
+      "verdict_gross_reasons": [
+       "OOS 超额 +4.94% > 0",
+       "OOS t=1.53 < 2",
+       "逐年同向 3/4 ≥ 3"
+      ]
+     },
+     "cost_sensitivity": {
+      "10": {
+       "cost_bp": 10.0,
+       "gross_oos_excess": 0.049431,
+       "gross_oos_t": 1.5286,
+       "net_oos_excess": 0.027503,
+       "net_oos_t": 0.8441,
+       "gross_is_excess": -0.061973,
+       "gross_is_t": -1.4066,
+       "net_is_excess": -0.088753,
+       "net_is_t": -1.988,
+       "annual_gross_excess": {
+        "2023": -0.083539,
+        "2024": 0.021857,
+        "2025": 0.024156,
+        "2026": 0.030346
+       },
+       "annual_net_excess": {
+        "2023": -0.0962,
+        "2024": 0.007261,
+        "2025": 0.007135,
+        "2026": 0.021814
+       },
+       "annual_net_positive": 3,
+       "annual_net_n_years": 4,
+       "avg_turnover": 1.0758,
+       "annual_turnover": 12.103,
+       "rebalances_per_year": 11.25,
+       "rebalance_count": 45,
+       "avg_holdings": 2037.7,
+       "cum_cost_drag": 0.047283,
+       "capacity_est_yi": 230.87,
+       "adtv_median_yi": 1.2189,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 +2.75% > 0",
+        "OOS t=0.84 < 2",
+        "逐年同向 3/4 ≥ 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +4.94% > 0",
+        "OOS t=1.53 < 2",
+        "逐年同向 3/4 ≥ 3"
+       ]
+      },
+      "20": {
+       "cost_bp": 20.0,
+       "gross_oos_excess": 0.049431,
+       "gross_oos_t": 1.5286,
+       "net_oos_excess": 0.005576,
+       "net_oos_t": 0.1667,
+       "gross_is_excess": -0.061973,
+       "gross_is_t": -1.4066,
+       "net_is_excess": -0.115533,
+       "net_is_t": -2.5182,
+       "annual_gross_excess": {
+        "2023": -0.083539,
+        "2024": 0.021857,
+        "2025": 0.024156,
+        "2026": 0.030346
+       },
+       "annual_net_excess": {
+        "2023": -0.108714,
+        "2024": -0.007152,
+        "2025": -0.009698,
+        "2026": 0.013356
+       },
+       "annual_net_positive": 1,
+       "annual_net_n_years": 4,
+       "avg_turnover": 1.0758,
+       "annual_turnover": 12.103,
+       "rebalances_per_year": 11.25,
+       "rebalance_count": 45,
+       "avg_holdings": 2037.7,
+       "cum_cost_drag": 0.092378,
+       "capacity_est_yi": 230.87,
+       "adtv_median_yi": 1.2189,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 +0.56% > 0",
+        "OOS t=0.17 < 2",
+        "逐年同向 1/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +4.94% > 0",
+        "OOS t=1.53 < 2",
+        "逐年同向 3/4 ≥ 3"
+       ]
+      },
+      "30": {
+       "cost_bp": 30.0,
+       "gross_oos_excess": 0.049431,
+       "gross_oos_t": 1.5286,
+       "net_oos_excess": -0.016352,
+       "net_oos_t": -0.4684,
+       "gross_is_excess": -0.061973,
+       "gross_is_t": -1.4066,
+       "net_is_excess": -0.142313,
+       "net_is_t": -2.9824,
+       "annual_gross_excess": {
+        "2023": -0.083539,
+        "2024": 0.021857,
+        "2025": 0.024156,
+        "2026": 0.030346
+       },
+       "annual_net_excess": {
+        "2023": -0.121082,
+        "2024": -0.021385,
+        "2025": -0.026345,
+        "2026": 0.004971
+       },
+       "annual_net_positive": 1,
+       "annual_net_n_years": 4,
+       "avg_turnover": 1.0758,
+       "annual_turnover": 12.103,
+       "rebalances_per_year": 11.25,
+       "rebalance_count": 45,
+       "avg_holdings": 2037.7,
+       "cum_cost_drag": 0.135384,
+       "capacity_est_yi": 230.87,
+       "adtv_median_yi": 1.2189,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 -1.64% ≤ 0",
+        "OOS t=-0.47 < 2",
+        "逐年同向 1/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +4.94% > 0",
+        "OOS t=1.53 < 2",
+        "逐年同向 3/4 ≥ 3"
+       ]
+      },
+      "50": {
+       "cost_bp": 50.0,
+       "gross_oos_excess": 0.049431,
+       "gross_oos_t": 1.5286,
+       "net_oos_excess": -0.060208,
+       "net_oos_t": -1.5326,
+       "gross_is_excess": -0.061973,
+       "gross_is_t": -1.4066,
+       "net_is_excess": -0.195874,
+       "net_is_t": -3.701,
+       "annual_gross_excess": {
+        "2023": -0.083539,
+        "2024": 0.021857,
+        "2025": 0.024156,
+        "2026": 0.030346
+       },
+       "annual_net_excess": {
+        "2023": -0.145387,
+        "2024": -0.049315,
+        "2025": -0.059091,
+        "2026": -0.011579
+       },
+       "annual_net_positive": 0,
+       "annual_net_n_years": 4,
+       "avg_turnover": 1.0758,
+       "annual_turnover": 12.103,
+       "rebalances_per_year": 11.25,
+       "rebalance_count": 45,
+       "avg_holdings": 2037.7,
+       "cum_cost_drag": 0.215505,
+       "capacity_est_yi": 230.87,
+       "adtv_median_yi": 1.2189,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 -6.02% ≤ 0",
+        "OOS t=-1.53 < 2",
+        "逐年同向 0/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +4.94% > 0",
+        "OOS t=1.53 < 2",
+        "逐年同向 3/4 ≥ 3"
+       ]
+      }
+     },
+     "net_oos_by_cost": {
+      "10": 0.027503,
+      "20": 0.005576,
+      "30": -0.016352,
+      "50": -0.060208
+     }
+    },
+    "hold60": {
+     "label": "60日持有(分段)",
+     "desc": "每 60 个交易日整仓换仓（季度近似）",
+     "schedule": "every60",
+     "tranche_frac": 1.0,
+     "buffer_frac": 0.0,
+     "max_turnover": null,
+     "rebalance_count": 16,
+     "schedule_days": 16,
+     "avg_turnover": 1.1918,
+     "annual_turnover": 4.767,
+     "rebalances_per_year": 4.0,
+     "avg_holdings": 1939.4,
+     "adtv_median_yi": 1.1928,
+     "capacity_est_yi": 194.1,
+     "gross": {
+      "gross_oos_excess": 0.084849,
+      "gross_oos_t": 2.3446,
+      "gross_is_excess": -0.08328,
+      "gross_is_t": -1.9706
+     },
+     "annual_gross_excess": {
+      "2023": -0.038864,
+      "2024": -0.046231,
+      "2025": 0.002704,
+      "2026": 0.075464
+     },
+     "verdict_gross": "fail",
+     "verdict_gross_reasons": [
+      "OOS 超额 +8.48% > 0",
+      "OOS t=2.34 ≥ 2",
+      "逐年同向 2/4 < 3"
+     ],
+     "at_main_cost": {
+      "cost_bp": 30.0,
+      "gross_oos_excess": 0.084849,
+      "gross_oos_t": 2.3446,
+      "net_oos_excess": 0.061239,
+      "net_oos_t": 1.6279,
+      "gross_is_excess": -0.08328,
+      "gross_is_t": -1.9706,
+      "net_is_excess": -0.117267,
+      "net_is_t": -2.6783,
+      "annual_gross_excess": {
+       "2023": -0.038864,
+       "2024": -0.046231,
+       "2025": 0.002704,
+       "2026": 0.075464
+      },
+      "annual_net_excess": {
+       "2023": -0.057935,
+       "2024": -0.061278,
+       "2025": -0.01594,
+       "2026": 0.066154
+      },
+      "annual_net_positive": 1,
+      "annual_net_n_years": 4,
+      "avg_turnover": 1.1918,
+      "annual_turnover": 4.767,
+      "rebalances_per_year": 4.0,
+      "rebalance_count": 16,
+      "avg_holdings": 1939.4,
+      "cum_cost_drag": 0.055697,
+      "capacity_est_yi": 194.1,
+      "adtv_median_yi": 1.1928,
+      "verdict_net": "fail",
+      "verdict_net_reasons": [
+       "OOS 超额 +6.12% > 0",
+       "OOS t=1.63 < 2",
+       "逐年同向 1/4 < 3"
+      ],
+      "verdict_gross": "fail",
+      "verdict_gross_reasons": [
+       "OOS 超额 +8.48% > 0",
+       "OOS t=2.34 ≥ 2",
+       "逐年同向 2/4 < 3"
+      ]
+     },
+     "cost_sensitivity": {
+      "10": {
+       "cost_bp": 10.0,
+       "gross_oos_excess": 0.084849,
+       "gross_oos_t": 2.3446,
+       "net_oos_excess": 0.076979,
+       "net_oos_t": 2.1129,
+       "gross_is_excess": -0.08328,
+       "gross_is_t": -1.9706,
+       "net_is_excess": -0.094609,
+       "net_is_t": -2.2291,
+       "annual_gross_excess": {
+        "2023": -0.038864,
+        "2024": -0.046231,
+        "2025": 0.002704,
+        "2026": 0.075464
+       },
+       "annual_net_excess": {
+        "2023": -0.045253,
+        "2024": -0.051266,
+        "2025": -0.003532,
+        "2026": 0.072353
+       },
+       "annual_net_positive": 1,
+       "annual_net_n_years": 4,
+       "avg_turnover": 1.1918,
+       "annual_turnover": 4.767,
+       "rebalances_per_year": 4.0,
+       "rebalance_count": 16,
+       "avg_holdings": 1939.4,
+       "cum_cost_drag": 0.018899,
+       "capacity_est_yi": 194.1,
+       "adtv_median_yi": 1.1928,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 +7.70% > 0",
+        "OOS t=2.11 ≥ 2",
+        "逐年同向 1/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +8.48% > 0",
+        "OOS t=2.34 ≥ 2",
+        "逐年同向 2/4 < 3"
+       ]
+      },
+      "20": {
+       "cost_bp": 20.0,
+       "gross_oos_excess": 0.084849,
+       "gross_oos_t": 2.3446,
+       "net_oos_excess": 0.069109,
+       "net_oos_t": 1.8723,
+       "gross_is_excess": -0.08328,
+       "gross_is_t": -1.9706,
+       "net_is_excess": -0.105938,
+       "net_is_t": -2.4663,
+       "annual_gross_excess": {
+        "2023": -0.038864,
+        "2024": -0.046231,
+        "2025": 0.002704,
+        "2026": 0.075464
+       },
+       "annual_net_excess": {
+        "2023": -0.05161,
+        "2024": -0.056282,
+        "2025": -0.009746,
+        "2026": 0.06925
+       },
+       "annual_net_positive": 1,
+       "annual_net_n_years": 4,
+       "avg_turnover": 1.1918,
+       "annual_turnover": 4.767,
+       "rebalances_per_year": 4.0,
+       "rebalance_count": 16,
+       "avg_holdings": 1939.4,
+       "cum_cost_drag": 0.037463,
+       "capacity_est_yi": 194.1,
+       "adtv_median_yi": 1.1928,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 +6.91% > 0",
+        "OOS t=1.87 < 2",
+        "逐年同向 1/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +8.48% > 0",
+        "OOS t=2.34 ≥ 2",
+        "逐年同向 2/4 < 3"
+       ]
+      },
+      "30": {
+       "cost_bp": 30.0,
+       "gross_oos_excess": 0.084849,
+       "gross_oos_t": 2.3446,
+       "net_oos_excess": 0.061239,
+       "net_oos_t": 1.6279,
+       "gross_is_excess": -0.08328,
+       "gross_is_t": -1.9706,
+       "net_is_excess": -0.117267,
+       "net_is_t": -2.6783,
+       "annual_gross_excess": {
+        "2023": -0.038864,
+        "2024": -0.046231,
+        "2025": 0.002704,
+        "2026": 0.075464
+       },
+       "annual_net_excess": {
+        "2023": -0.057935,
+        "2024": -0.061278,
+        "2025": -0.01594,
+        "2026": 0.066154
+       },
+       "annual_net_positive": 1,
+       "annual_net_n_years": 4,
+       "avg_turnover": 1.1918,
+       "annual_turnover": 4.767,
+       "rebalances_per_year": 4.0,
+       "rebalance_count": 16,
+       "avg_holdings": 1939.4,
+       "cum_cost_drag": 0.055697,
+       "capacity_est_yi": 194.1,
+       "adtv_median_yi": 1.1928,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 +6.12% > 0",
+        "OOS t=1.63 < 2",
+        "逐年同向 1/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +8.48% > 0",
+        "OOS t=2.34 ≥ 2",
+        "逐年同向 2/4 < 3"
+       ]
+      },
+      "50": {
+       "cost_bp": 50.0,
+       "gross_oos_excess": 0.084849,
+       "gross_oos_t": 2.3446,
+       "net_oos_excess": 0.045499,
+       "net_oos_t": 1.1473,
+       "gross_is_excess": -0.08328,
+       "gross_is_t": -1.9706,
+       "net_is_excess": -0.139926,
+       "net_is_t": -3.0208,
+       "annual_gross_excess": {
+        "2023": -0.038864,
+        "2024": -0.046231,
+        "2025": 0.002704,
+        "2026": 0.075464
+       },
+       "annual_net_excess": {
+        "2023": -0.070493,
+        "2024": -0.071216,
+        "2025": -0.028264,
+        "2026": 0.059982
+       },
+       "annual_net_positive": 1,
+       "annual_net_n_years": 4,
+       "avg_turnover": 1.1918,
+       "annual_turnover": 4.767,
+       "rebalances_per_year": 4.0,
+       "rebalance_count": 16,
+       "avg_holdings": 1939.4,
+       "cum_cost_drag": 0.091199,
+       "capacity_est_yi": 194.1,
+       "adtv_median_yi": 1.1928,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 +4.55% > 0",
+        "OOS t=1.15 < 2",
+        "逐年同向 1/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +8.48% > 0",
+        "OOS t=2.34 ≥ 2",
+        "逐年同向 2/4 < 3"
+       ]
+      }
+     },
+     "net_oos_by_cost": {
+      "10": 0.076979,
+      "20": 0.069109,
+      "30": 0.061239,
+      "50": 0.045499
+     }
+    },
+    "hold60_stagger": {
+     "label": "60日持有(错开)",
+     "desc": "每 20 个交易日只换 1/3 仓，3 段错开 → 每段持有 60 日、单日冲击降为 1/3",
+     "schedule": "every20",
+     "tranche_frac": 0.3333333333333333,
+     "buffer_frac": 0.0,
+     "max_turnover": null,
+     "rebalance_count": 47,
+     "schedule_days": 47,
+     "avg_turnover": 0.3728,
+     "annual_turnover": 4.381,
+     "rebalances_per_year": 11.75,
+     "avg_holdings": 4629.8,
+     "adtv_median_yi": 1.1384,
+     "capacity_est_yi": 1413.78,
+     "gross": {
+      "gross_oos_excess": 0.02614,
+      "gross_oos_t": 1.3885,
+      "gross_is_excess": -0.061176,
+      "gross_is_t": -1.7637
+     },
+     "annual_gross_excess": {
+      "2023": -0.033592,
+      "2024": -0.029962,
+      "2025": -0.001534,
+      "2026": 0.024995
+     },
+     "verdict_gross": "fail",
+     "verdict_gross_reasons": [
+      "OOS 超额 +2.61% > 0",
+      "OOS t=1.39 < 2",
+      "逐年同向 1/4 < 3"
+     ],
+     "at_main_cost": {
+      "cost_bp": 30.0,
+      "gross_oos_excess": 0.02614,
+      "gross_oos_t": 1.3885,
+      "net_oos_excess": 0.004262,
+      "net_oos_t": 0.2199,
+      "gross_is_excess": -0.061176,
+      "gross_is_t": -1.7637,
+      "net_is_excess": -0.091921,
+      "net_is_t": -2.5837,
+      "annual_gross_excess": {
+       "2023": -0.033592,
+       "2024": -0.029962,
+       "2025": -0.001534,
+       "2026": 0.024995
+      },
+      "annual_net_excess": {
+       "2023": -0.051057,
+       "2024": -0.043888,
+       "2025": -0.018106,
+       "2026": 0.016371
+      },
+      "annual_net_positive": 1,
+      "annual_net_n_years": 4,
+      "avg_turnover": 0.3728,
+      "annual_turnover": 4.381,
+      "rebalances_per_year": 11.75,
+      "rebalance_count": 47,
+      "avg_holdings": 4629.8,
+      "cum_cost_drag": 0.051243,
+      "capacity_est_yi": 1413.78,
+      "adtv_median_yi": 1.1384,
+      "verdict_net": "fail",
+      "verdict_net_reasons": [
+       "OOS 超额 +0.43% > 0",
+       "OOS t=0.22 < 2",
+       "逐年同向 1/4 < 3"
+      ],
+      "verdict_gross": "fail",
+      "verdict_gross_reasons": [
+       "OOS 超额 +2.61% > 0",
+       "OOS t=1.39 < 2",
+       "逐年同向 1/4 < 3"
+      ]
+     },
+     "cost_sensitivity": {
+      "10": {
+       "cost_bp": 10.0,
+       "gross_oos_excess": 0.02614,
+       "gross_oos_t": 1.3885,
+       "net_oos_excess": 0.018847,
+       "net_oos_t": 0.9976,
+       "gross_is_excess": -0.061176,
+       "gross_is_t": -1.7637,
+       "net_is_excess": -0.071424,
+       "net_is_t": -2.0489,
+       "annual_gross_excess": {
+        "2023": -0.033592,
+        "2024": -0.029962,
+        "2025": -0.001534,
+        "2026": 0.024995
+       },
+       "annual_net_excess": {
+        "2023": -0.039444,
+        "2024": -0.034623,
+        "2025": -0.007078,
+        "2026": 0.022112
+       },
+       "annual_net_positive": 1,
+       "annual_net_n_years": 4,
+       "avg_turnover": 0.3728,
+       "annual_turnover": 4.381,
+       "rebalances_per_year": 11.75,
+       "rebalance_count": 47,
+       "avg_holdings": 4629.8,
+       "cum_cost_drag": 0.017374,
+       "capacity_est_yi": 1413.78,
+       "adtv_median_yi": 1.1384,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 +1.88% > 0",
+        "OOS t=1.00 < 2",
+        "逐年同向 1/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +2.61% > 0",
+        "OOS t=1.39 < 2",
+        "逐年同向 1/4 < 3"
+       ]
+      },
+      "20": {
+       "cost_bp": 20.0,
+       "gross_oos_excess": 0.02614,
+       "gross_oos_t": 1.3885,
+       "net_oos_excess": 0.011555,
+       "net_oos_t": 0.6056,
+       "gross_is_excess": -0.061176,
+       "gross_is_t": -1.7637,
+       "net_is_excess": -0.081672,
+       "net_is_t": -2.323,
+       "annual_gross_excess": {
+        "2023": -0.033592,
+        "2024": -0.029962,
+        "2025": -0.001534,
+        "2026": 0.024995
+       },
+       "annual_net_excess": {
+        "2023": -0.045265,
+        "2024": -0.039265,
+        "2025": -0.012602,
+        "2026": 0.019237
+       },
+       "annual_net_positive": 1,
+       "annual_net_n_years": 4,
+       "avg_turnover": 0.3728,
+       "annual_turnover": 4.381,
+       "rebalances_per_year": 11.75,
+       "rebalance_count": 47,
+       "avg_holdings": 4629.8,
+       "cum_cost_drag": 0.034454,
+       "capacity_est_yi": 1413.78,
+       "adtv_median_yi": 1.1384,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 +1.16% > 0",
+        "OOS t=0.61 < 2",
+        "逐年同向 1/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +2.61% > 0",
+        "OOS t=1.39 < 2",
+        "逐年同向 1/4 < 3"
+       ]
+      },
+      "30": {
+       "cost_bp": 30.0,
+       "gross_oos_excess": 0.02614,
+       "gross_oos_t": 1.3885,
+       "net_oos_excess": 0.004262,
+       "net_oos_t": 0.2199,
+       "gross_is_excess": -0.061176,
+       "gross_is_t": -1.7637,
+       "net_is_excess": -0.091921,
+       "net_is_t": -2.5837,
+       "annual_gross_excess": {
+        "2023": -0.033592,
+        "2024": -0.029962,
+        "2025": -0.001534,
+        "2026": 0.024995
+       },
+       "annual_net_excess": {
+        "2023": -0.051057,
+        "2024": -0.043888,
+        "2025": -0.018106,
+        "2026": 0.016371
+       },
+       "annual_net_positive": 1,
+       "annual_net_n_years": 4,
+       "avg_turnover": 0.3728,
+       "annual_turnover": 4.381,
+       "rebalances_per_year": 11.75,
+       "rebalance_count": 47,
+       "avg_holdings": 4629.8,
+       "cum_cost_drag": 0.051243,
+       "capacity_est_yi": 1413.78,
+       "adtv_median_yi": 1.1384,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 +0.43% > 0",
+        "OOS t=0.22 < 2",
+        "逐年同向 1/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +2.61% > 0",
+        "OOS t=1.39 < 2",
+        "逐年同向 1/4 < 3"
+       ]
+      },
+      "50": {
+       "cost_bp": 50.0,
+       "gross_oos_excess": 0.02614,
+       "gross_oos_t": 1.3885,
+       "net_oos_excess": -0.010323,
+       "net_oos_t": -0.5079,
+       "gross_is_excess": -0.061176,
+       "gross_is_t": -1.7637,
+       "net_is_excess": -0.112417,
+       "net_is_t": -3.0581,
+       "annual_gross_excess": {
+        "2023": -0.033592,
+        "2024": -0.029962,
+        "2025": -0.001534,
+        "2026": 0.024995
+       },
+       "annual_net_excess": {
+        "2023": -0.062551,
+        "2024": -0.053074,
+        "2025": -0.029053,
+        "2026": 0.010664
+       },
+       "annual_net_positive": 1,
+       "annual_net_n_years": 4,
+       "avg_turnover": 0.3728,
+       "annual_turnover": 4.381,
+       "rebalances_per_year": 11.75,
+       "rebalance_count": 47,
+       "avg_holdings": 4629.8,
+       "cum_cost_drag": 0.08397,
+       "capacity_est_yi": 1413.78,
+       "adtv_median_yi": 1.1384,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 -1.03% ≤ 0",
+        "OOS t=-0.51 < 2",
+        "逐年同向 1/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +2.61% > 0",
+        "OOS t=1.39 < 2",
+        "逐年同向 1/4 < 3"
+       ]
+      }
+     },
+     "net_oos_by_cost": {
+      "10": 0.018847,
+      "20": 0.011555,
+      "30": 0.004262,
+      "50": -0.010323
+     }
+    },
+    "weekly_buffercap": {
+     "label": "周频+缓冲带+换手上限",
+     "desc": "周频，但 top50% 买入 / top60% 保留（缓冲带 +10pp）+ 单次双边换手 ≤20%",
+     "schedule": "weekly",
+     "tranche_frac": 1.0,
+     "buffer_frac": 0.1,
+     "max_turnover": 0.2,
+     "rebalance_count": 195,
+     "schedule_days": 195,
+     "avg_turnover": 0.2041,
+     "annual_turnover": 9.95,
+     "rebalances_per_year": 48.75,
+     "avg_holdings": 4885.2,
+     "adtv_median_yi": 1.1446,
+     "capacity_est_yi": 2739.64,
+     "gross": {
+      "gross_oos_excess": 0.050838,
+      "gross_oos_t": 2.214,
+      "gross_is_excess": -0.041434,
+      "gross_is_t": -1.2107
+     },
+     "annual_gross_excess": {
+      "2023": -0.042502,
+      "2024": -0.001521,
+      "2025": 0.023686,
+      "2026": 0.031653
+     },
+     "verdict_gross": "fail",
+     "verdict_gross_reasons": [
+      "OOS 超额 +5.08% > 0",
+      "OOS t=2.21 ≥ 2",
+      "逐年同向 2/4 < 3"
+     ],
+     "at_main_cost": {
+      "cost_bp": 30.0,
+      "gross_oos_excess": 0.050838,
+      "gross_oos_t": 2.214,
+      "net_oos_excess": -0.005717,
+      "net_oos_t": -0.2432,
+      "gross_is_excess": -0.041434,
+      "gross_is_t": -1.2107,
+      "net_is_excess": -0.104523,
+      "net_is_t": -3.0126,
+      "annual_gross_excess": {
+       "2023": -0.042502,
+       "2024": -0.001521,
+       "2025": 0.023686,
+       "2026": 0.031653
+      },
+      "annual_net_excess": {
+       "2023": -0.074796,
+       "2024": -0.033608,
+       "2025": -0.019827,
+       "2026": 0.009653
+      },
+      "annual_net_positive": 1,
+      "annual_net_n_years": 4,
+      "avg_turnover": 0.2041,
+      "annual_turnover": 9.95,
+      "rebalances_per_year": 48.75,
+      "rebalance_count": 195,
+      "avg_holdings": 4885.2,
+      "cum_cost_drag": 0.112582,
+      "capacity_est_yi": 2739.64,
+      "adtv_median_yi": 1.1446,
+      "verdict_net": "fail",
+      "verdict_net_reasons": [
+       "OOS 超额 -0.57% ≤ 0",
+       "OOS t=-0.24 < 2",
+       "逐年同向 1/4 < 3"
+      ],
+      "verdict_gross": "fail",
+      "verdict_gross_reasons": [
+       "OOS 超额 +5.08% > 0",
+       "OOS t=2.21 ≥ 2",
+       "逐年同向 2/4 < 3"
+      ]
+     },
+     "cost_sensitivity": {
+      "10": {
+       "cost_bp": 10.0,
+       "gross_oos_excess": 0.050838,
+       "gross_oos_t": 2.214,
+       "net_oos_excess": 0.031986,
+       "net_oos_t": 1.3898,
+       "gross_is_excess": -0.041434,
+       "gross_is_t": -1.2107,
+       "net_is_excess": -0.062464,
+       "net_is_t": -1.8231,
+       "annual_gross_excess": {
+        "2023": -0.042502,
+        "2024": -0.001521,
+        "2025": 0.023686,
+        "2026": 0.031653
+       },
+       "annual_net_excess": {
+        "2023": -0.053378,
+        "2024": -0.012326,
+        "2025": 0.009033,
+        "2026": 0.02426
+       },
+       "annual_net_positive": 2,
+       "annual_net_n_years": 4,
+       "avg_turnover": 0.2041,
+       "annual_turnover": 9.95,
+       "rebalances_per_year": 48.75,
+       "rebalance_count": 195,
+       "avg_holdings": 4885.2,
+       "cum_cost_drag": 0.039023,
+       "capacity_est_yi": 2739.64,
+       "adtv_median_yi": 1.1446,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 +3.20% > 0",
+        "OOS t=1.39 < 2",
+        "逐年同向 2/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +5.08% > 0",
+        "OOS t=2.21 ≥ 2",
+        "逐年同向 2/4 < 3"
+       ]
+      },
+      "20": {
+       "cost_bp": 20.0,
+       "gross_oos_excess": 0.050838,
+       "gross_oos_t": 2.214,
+       "net_oos_excess": 0.013135,
+       "net_oos_t": 0.5662,
+       "gross_is_excess": -0.041434,
+       "gross_is_t": -1.2107,
+       "net_is_excess": -0.083494,
+       "net_is_t": -2.4257,
+       "annual_gross_excess": {
+        "2023": -0.042502,
+        "2024": -0.001521,
+        "2025": 0.023686,
+        "2026": 0.031653
+       },
+       "annual_net_excess": {
+        "2023": -0.064142,
+        "2024": -0.023021,
+        "2025": -0.005471,
+        "2026": 0.016926
+       },
+       "annual_net_positive": 1,
+       "annual_net_n_years": 4,
+       "avg_turnover": 0.2041,
+       "annual_turnover": 9.95,
+       "rebalances_per_year": 48.75,
+       "rebalance_count": 195,
+       "avg_holdings": 4885.2,
+       "cum_cost_drag": 0.076531,
+       "capacity_est_yi": 2739.64,
+       "adtv_median_yi": 1.1446,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 +1.31% > 0",
+        "OOS t=0.57 < 2",
+        "逐年同向 1/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +5.08% > 0",
+        "OOS t=2.21 ≥ 2",
+        "逐年同向 2/4 < 3"
+       ]
+      },
+      "30": {
+       "cost_bp": 30.0,
+       "gross_oos_excess": 0.050838,
+       "gross_oos_t": 2.214,
+       "net_oos_excess": -0.005717,
+       "net_oos_t": -0.2432,
+       "gross_is_excess": -0.041434,
+       "gross_is_t": -1.2107,
+       "net_is_excess": -0.104523,
+       "net_is_t": -3.0126,
+       "annual_gross_excess": {
+        "2023": -0.042502,
+        "2024": -0.001521,
+        "2025": 0.023686,
+        "2026": 0.031653
+       },
+       "annual_net_excess": {
+        "2023": -0.074796,
+        "2024": -0.033608,
+        "2025": -0.019827,
+        "2026": 0.009653
+       },
+       "annual_net_positive": 1,
+       "annual_net_n_years": 4,
+       "avg_turnover": 0.2041,
+       "annual_turnover": 9.95,
+       "rebalances_per_year": 48.75,
+       "rebalance_count": 195,
+       "avg_holdings": 4885.2,
+       "cum_cost_drag": 0.112582,
+       "capacity_est_yi": 2739.64,
+       "adtv_median_yi": 1.1446,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 -0.57% ≤ 0",
+        "OOS t=-0.24 < 2",
+        "逐年同向 1/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +5.08% > 0",
+        "OOS t=2.21 ≥ 2",
+        "逐年同向 2/4 < 3"
+       ]
+      },
+      "50": {
+       "cost_bp": 50.0,
+       "gross_oos_excess": 0.050838,
+       "gross_oos_t": 2.214,
+       "net_oos_excess": -0.04342,
+       "net_oos_t": -1.7738,
+       "gross_is_excess": -0.041434,
+       "gross_is_t": -1.2107,
+       "net_is_excess": -0.146583,
+       "net_is_t": -4.1188,
+       "annual_gross_excess": {
+        "2023": -0.042502,
+        "2024": -0.001521,
+        "2025": 0.023686,
+        "2026": 0.031653
+       },
+       "annual_net_excess": {
+        "2023": -0.095775,
+        "2024": -0.05446,
+        "2025": -0.048105,
+        "2026": -0.004716
+       },
+       "annual_net_positive": 0,
+       "annual_net_n_years": 4,
+       "avg_turnover": 0.2041,
+       "annual_turnover": 9.95,
+       "rebalances_per_year": 48.75,
+       "rebalance_count": 195,
+       "avg_holdings": 4885.2,
+       "cum_cost_drag": 0.18054,
+       "capacity_est_yi": 2739.64,
+       "adtv_median_yi": 1.1446,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 -4.34% ≤ 0",
+        "OOS t=-1.77 < 2",
+        "逐年同向 0/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +5.08% > 0",
+        "OOS t=2.21 ≥ 2",
+        "逐年同向 2/4 < 3"
+       ]
+      }
+     },
+     "net_oos_by_cost": {
+      "10": 0.031986,
+      "20": 0.013135,
+      "30": -0.005717,
+      "50": -0.04342
+     }
+    },
+    "monthly_buffercap": {
+     "label": "月频+缓冲带+换手上限",
+     "desc": "月频 + 缓冲带 +10pp + 单次双边换手 ≤20%",
+     "schedule": "monthly",
+     "tranche_frac": 1.0,
+     "buffer_frac": 0.1,
+     "max_turnover": 0.2,
+     "rebalance_count": 45,
+     "schedule_days": 45,
+     "avg_turnover": 0.2178,
+     "annual_turnover": 2.45,
+     "rebalances_per_year": 11.25,
+     "avg_holdings": 4635.1,
+     "adtv_median_yi": 1.1752,
+     "capacity_est_yi": 2501.0,
+     "gross": {
+      "gross_oos_excess": 0.006882,
+      "gross_oos_t": 0.353,
+      "gross_is_excess": -0.129398,
+      "gross_is_t": -2.8855
+     },
+     "annual_gross_excess": {
+      "2023": -0.106555,
+      "2024": -0.024169,
+      "2025": -0.013712,
+      "2026": 0.01509
+     },
+     "verdict_gross": "fail",
+     "verdict_gross_reasons": [
+      "OOS 超额 +0.69% > 0",
+      "OOS t=0.35 < 2",
+      "逐年同向 1/4 < 3"
+     ],
+     "at_main_cost": {
+      "cost_bp": 30.0,
+      "gross_oos_excess": 0.006882,
+      "gross_oos_t": 0.353,
+      "net_oos_excess": -0.006391,
+      "net_oos_t": -0.3184,
+      "gross_is_excess": -0.129398,
+      "gross_is_t": -2.8855,
+      "net_is_excess": -0.145674,
+      "net_is_t": -3.1671,
+      "annual_gross_excess": {
+       "2023": -0.106555,
+       "2024": -0.024169,
+       "2025": -0.013712,
+       "2026": 0.01509
+      },
+      "annual_net_excess": {
+       "2023": -0.115228,
+       "2024": -0.0315,
+       "2025": -0.023606,
+       "2026": 0.009901
+      },
+      "annual_net_positive": 1,
+      "annual_net_n_years": 4,
+      "avg_turnover": 0.2178,
+      "annual_turnover": 2.45,
+      "rebalances_per_year": 11.25,
+      "rebalance_count": 45,
+      "avg_holdings": 4635.1,
+      "cum_cost_drag": 0.028984,
+      "capacity_est_yi": 2501.0,
+      "adtv_median_yi": 1.1752,
+      "verdict_net": "fail",
+      "verdict_net_reasons": [
+       "OOS 超额 -0.64% ≤ 0",
+       "OOS t=-0.32 < 2",
+       "逐年同向 1/4 < 3"
+      ],
+      "verdict_gross": "fail",
+      "verdict_gross_reasons": [
+       "OOS 超额 +0.69% > 0",
+       "OOS t=0.35 < 2",
+       "逐年同向 1/4 < 3"
+      ]
+     },
+     "cost_sensitivity": {
+      "10": {
+       "cost_bp": 10.0,
+       "gross_oos_excess": 0.006882,
+       "gross_oos_t": 0.353,
+       "net_oos_excess": 0.002458,
+       "net_oos_t": 0.1251,
+       "gross_is_excess": -0.129398,
+       "gross_is_t": -2.8855,
+       "net_is_excess": -0.134823,
+       "net_is_t": -2.9834,
+       "annual_gross_excess": {
+        "2023": -0.106555,
+        "2024": -0.024169,
+        "2025": -0.013712,
+        "2026": 0.01509
+       },
+       "annual_net_excess": {
+        "2023": -0.109453,
+        "2024": -0.026618,
+        "2025": -0.017017,
+        "2026": 0.013357
+       },
+       "annual_net_positive": 1,
+       "annual_net_n_years": 4,
+       "avg_turnover": 0.2178,
+       "annual_turnover": 2.45,
+       "rebalances_per_year": 11.25,
+       "rebalance_count": 45,
+       "avg_holdings": 4635.1,
+       "cum_cost_drag": 0.009754,
+       "capacity_est_yi": 2501.0,
+       "adtv_median_yi": 1.1752,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 +0.25% > 0",
+        "OOS t=0.13 < 2",
+        "逐年同向 1/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +0.69% > 0",
+        "OOS t=0.35 < 2",
+        "逐年同向 1/4 < 3"
+       ]
+      },
+      "20": {
+       "cost_bp": 20.0,
+       "gross_oos_excess": 0.006882,
+       "gross_oos_t": 0.353,
+       "net_oos_excess": -0.001966,
+       "net_oos_t": -0.0991,
+       "gross_is_excess": -0.129398,
+       "gross_is_t": -2.8855,
+       "net_is_excess": -0.140249,
+       "net_is_t": -3.0773,
+       "annual_gross_excess": {
+        "2023": -0.106555,
+        "2024": -0.024169,
+        "2025": -0.013712,
+        "2026": 0.01509
+       },
+       "annual_net_excess": {
+        "2023": -0.112344,
+        "2024": -0.029062,
+        "2025": -0.020315,
+        "2026": 0.011628
+       },
+       "annual_net_positive": 1,
+       "annual_net_n_years": 4,
+       "avg_turnover": 0.2178,
+       "annual_turnover": 2.45,
+       "rebalances_per_year": 11.25,
+       "rebalance_count": 45,
+       "avg_holdings": 4635.1,
+       "cum_cost_drag": 0.019415,
+       "capacity_est_yi": 2501.0,
+       "adtv_median_yi": 1.1752,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 -0.20% ≤ 0",
+        "OOS t=-0.10 < 2",
+        "逐年同向 1/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +0.69% > 0",
+        "OOS t=0.35 < 2",
+        "逐年同向 1/4 < 3"
+       ]
+      },
+      "30": {
+       "cost_bp": 30.0,
+       "gross_oos_excess": 0.006882,
+       "gross_oos_t": 0.353,
+       "net_oos_excess": -0.006391,
+       "net_oos_t": -0.3184,
+       "gross_is_excess": -0.129398,
+       "gross_is_t": -2.8855,
+       "net_is_excess": -0.145674,
+       "net_is_t": -3.1671,
+       "annual_gross_excess": {
+        "2023": -0.106555,
+        "2024": -0.024169,
+        "2025": -0.013712,
+        "2026": 0.01509
+       },
+       "annual_net_excess": {
+        "2023": -0.115228,
+        "2024": -0.0315,
+        "2025": -0.023606,
+        "2026": 0.009901
+       },
+       "annual_net_positive": 1,
+       "annual_net_n_years": 4,
+       "avg_turnover": 0.2178,
+       "annual_turnover": 2.45,
+       "rebalances_per_year": 11.25,
+       "rebalance_count": 45,
+       "avg_holdings": 4635.1,
+       "cum_cost_drag": 0.028984,
+       "capacity_est_yi": 2501.0,
+       "adtv_median_yi": 1.1752,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 -0.64% ≤ 0",
+        "OOS t=-0.32 < 2",
+        "逐年同向 1/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +0.69% > 0",
+        "OOS t=0.35 < 2",
+        "逐年同向 1/4 < 3"
+       ]
+      },
+      "50": {
+       "cost_bp": 50.0,
+       "gross_oos_excess": 0.006882,
+       "gross_oos_t": 0.353,
+       "net_oos_excess": -0.015239,
+       "net_oos_t": -0.738,
+       "gross_is_excess": -0.129398,
+       "gross_is_t": -2.8855,
+       "net_is_excess": -0.156524,
+       "net_is_t": -3.3342,
+       "annual_gross_excess": {
+        "2023": -0.106555,
+        "2024": -0.024169,
+        "2025": -0.013712,
+        "2026": 0.01509
+       },
+       "annual_net_excess": {
+        "2023": -0.120973,
+        "2024": -0.036361,
+        "2025": -0.030166,
+        "2026": 0.006457
+       },
+       "annual_net_positive": 1,
+       "annual_net_n_years": 4,
+       "avg_turnover": 0.2178,
+       "annual_turnover": 2.45,
+       "rebalances_per_year": 11.25,
+       "rebalance_count": 45,
+       "avg_holdings": 4635.1,
+       "cum_cost_drag": 0.047852,
+       "capacity_est_yi": 2501.0,
+       "adtv_median_yi": 1.1752,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 -1.52% ≤ 0",
+        "OOS t=-0.74 < 2",
+        "逐年同向 1/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +0.69% > 0",
+        "OOS t=0.35 < 2",
+        "逐年同向 1/4 < 3"
+       ]
+      }
+     },
+     "net_oos_by_cost": {
+      "10": 0.002458,
+      "20": -0.001966,
+      "30": -0.006391,
+      "50": -0.015239
+     }
+    }
+   },
+   "pass_net_variants": [],
+   "best_net_variant": "hold60"
+  },
+  "max_ret20": {
+   "name": "max_ret20",
+   "family": "通用",
+   "direction": -1,
+   "description": "近20日最大单日收益（MAX 彩票因子；先验：高 MAX 未来收益低，取负向）",
+   "runtime_sec": 20.27,
+   "variants": {
+    "monthly": {
+     "label": "月频全换仓",
+     "desc": "每月末信号、T+1 建仓、持有约 20 个交易日",
+     "schedule": "monthly",
+     "tranche_frac": 1.0,
+     "buffer_frac": 0.0,
+     "max_turnover": null,
+     "rebalance_count": 45,
+     "schedule_days": 45,
+     "avg_turnover": 1.1201,
+     "annual_turnover": 12.602,
+     "rebalances_per_year": 11.25,
+     "avg_holdings": 2036.5,
+     "adtv_median_yi": 1.3135,
+     "capacity_est_yi": 238.81,
+     "gross": {
+      "gross_oos_excess": 0.02824,
+      "gross_oos_t": 0.8938,
+      "gross_is_excess": -0.079861,
+      "gross_is_t": -1.6355
+     },
+     "annual_gross_excess": {
+      "2023": -0.100961,
+      "2024": 0.021178,
+      "2025": -0.010228,
+      "2026": 0.032701
+     },
+     "verdict_gross": "fail",
+     "verdict_gross_reasons": [
+      "OOS 超额 +2.82% > 0",
+      "OOS t=0.89 < 2",
+      "逐年同向 2/4 < 3"
+     ],
+     "at_main_cost": {
+      "cost_bp": 30.0,
+      "gross_oos_excess": 0.02824,
+      "gross_oos_t": 0.8938,
+      "net_oos_excess": -0.041786,
+      "net_oos_t": -1.2149,
+      "gross_is_excess": -0.079861,
+      "gross_is_t": -1.6355,
+      "net_is_excess": -0.162039,
+      "net_is_t": -3.1185,
+      "annual_gross_excess": {
+       "2023": -0.100961,
+       "2024": 0.021178,
+       "2025": -0.010228,
+       "2026": 0.032701
+      },
+      "annual_net_excess": {
+       "2023": -0.138696,
+       "2024": -0.022935,
+       "2025": -0.062015,
+       "2026": 0.005256
+      },
+      "annual_net_positive": 1,
+      "annual_net_n_years": 4,
+      "avg_turnover": 1.1201,
+      "annual_turnover": 12.602,
+      "rebalances_per_year": 11.25,
+      "rebalance_count": 45,
+      "avg_holdings": 2036.5,
+      "cum_cost_drag": 0.140563,
+      "capacity_est_yi": 238.81,
+      "adtv_median_yi": 1.3135,
+      "verdict_net": "fail",
+      "verdict_net_reasons": [
+       "OOS 超额 -4.18% ≤ 0",
+       "OOS t=-1.21 < 2",
+       "逐年同向 1/4 < 3"
+      ],
+      "verdict_gross": "fail",
+      "verdict_gross_reasons": [
+       "OOS 超额 +2.82% > 0",
+       "OOS t=0.89 < 2",
+       "逐年同向 2/4 < 3"
+      ]
+     },
+     "cost_sensitivity": {
+      "10": {
+       "cost_bp": 10.0,
+       "gross_oos_excess": 0.02824,
+       "gross_oos_t": 0.8938,
+       "net_oos_excess": 0.004898,
+       "net_oos_t": 0.1539,
+       "gross_is_excess": -0.079861,
+       "gross_is_t": -1.6355,
+       "net_is_excess": -0.107253,
+       "net_is_t": -2.1774,
+       "annual_gross_excess": {
+        "2023": -0.100961,
+        "2024": 0.021178,
+        "2025": -0.010228,
+        "2026": 0.032701
+       },
+       "annual_net_excess": {
+        "2023": -0.11369,
+        "2024": 0.006284,
+        "2025": -0.027692,
+        "2026": 0.023466
+       },
+       "annual_net_positive": 2,
+       "annual_net_n_years": 4,
+       "avg_turnover": 1.1201,
+       "annual_turnover": 12.602,
+       "rebalances_per_year": 11.25,
+       "rebalance_count": 45,
+       "avg_holdings": 2036.5,
+       "cum_cost_drag": 0.049184,
+       "capacity_est_yi": 238.81,
+       "adtv_median_yi": 1.3135,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 +0.49% > 0",
+        "OOS t=0.15 < 2",
+        "逐年同向 2/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +2.82% > 0",
+        "OOS t=0.89 < 2",
+        "逐年同向 2/4 < 3"
+       ]
+      },
+      "20": {
+       "cost_bp": 20.0,
+       "gross_oos_excess": 0.02824,
+       "gross_oos_t": 0.8938,
+       "net_oos_excess": -0.018444,
+       "net_oos_t": -0.5628,
+       "gross_is_excess": -0.079861,
+       "gross_is_t": -1.6355,
+       "net_is_excess": -0.134646,
+       "net_is_t": -2.6761,
+       "annual_gross_excess": {
+        "2023": -0.100961,
+        "2024": 0.021178,
+        "2025": -0.010228,
+        "2026": 0.032701
+       },
+       "annual_net_excess": {
+        "2023": -0.126268,
+        "2024": -0.00842,
+        "2025": -0.044954,
+        "2026": 0.014318
+       },
+       "annual_net_positive": 1,
+       "annual_net_n_years": 4,
+       "avg_turnover": 1.1201,
+       "annual_turnover": 12.602,
+       "rebalances_per_year": 11.25,
+       "rebalance_count": 45,
+       "avg_holdings": 2036.5,
+       "cum_cost_drag": 0.096001,
+       "capacity_est_yi": 238.81,
+       "adtv_median_yi": 1.3135,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 -1.84% ≤ 0",
+        "OOS t=-0.56 < 2",
+        "逐年同向 1/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +2.82% > 0",
+        "OOS t=0.89 < 2",
+        "逐年同向 2/4 < 3"
+       ]
+      },
+      "30": {
+       "cost_bp": 30.0,
+       "gross_oos_excess": 0.02824,
+       "gross_oos_t": 0.8938,
+       "net_oos_excess": -0.041786,
+       "net_oos_t": -1.2149,
+       "gross_is_excess": -0.079861,
+       "gross_is_t": -1.6355,
+       "net_is_excess": -0.162039,
+       "net_is_t": -3.1185,
+       "annual_gross_excess": {
+        "2023": -0.100961,
+        "2024": 0.021178,
+        "2025": -0.010228,
+        "2026": 0.032701
+       },
+       "annual_net_excess": {
+        "2023": -0.138696,
+        "2024": -0.022935,
+        "2025": -0.062015,
+        "2026": 0.005256
+       },
+       "annual_net_positive": 1,
+       "annual_net_n_years": 4,
+       "avg_turnover": 1.1201,
+       "annual_turnover": 12.602,
+       "rebalances_per_year": 11.25,
+       "rebalance_count": 45,
+       "avg_holdings": 2036.5,
+       "cum_cost_drag": 0.140563,
+       "capacity_est_yi": 238.81,
+       "adtv_median_yi": 1.3135,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 -4.18% ≤ 0",
+        "OOS t=-1.21 < 2",
+        "逐年同向 1/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +2.82% > 0",
+        "OOS t=0.89 < 2",
+        "逐年同向 2/4 < 3"
+       ]
+      },
+      "50": {
+       "cost_bp": 50.0,
+       "gross_oos_excess": 0.02824,
+       "gross_oos_t": 0.8938,
+       "net_oos_excess": -0.08847,
+       "net_oos_t": -2.2525,
+       "gross_is_excess": -0.079861,
+       "gross_is_t": -1.6355,
+       "net_is_excess": -0.216824,
+       "net_is_t": -3.8174,
+       "annual_gross_excess": {
+        "2023": -0.100961,
+        "2024": 0.021178,
+        "2025": -0.010228,
+        "2026": 0.032701
+       },
+       "annual_net_excess": {
+        "2023": -0.163108,
+        "2024": -0.051409,
+        "2025": -0.095545,
+        "2026": -0.012612
+       },
+       "annual_net_positive": 0,
+       "annual_net_n_years": 4,
+       "avg_turnover": 1.1201,
+       "annual_turnover": 12.602,
+       "rebalances_per_year": 11.25,
+       "rebalance_count": 45,
+       "avg_holdings": 2036.5,
+       "cum_cost_drag": 0.223337,
+       "capacity_est_yi": 238.81,
+       "adtv_median_yi": 1.3135,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 -8.85% ≤ 0",
+        "OOS t=-2.25 < 2",
+        "逐年同向 0/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +2.82% > 0",
+        "OOS t=0.89 < 2",
+        "逐年同向 2/4 < 3"
+       ]
+      }
+     },
+     "net_oos_by_cost": {
+      "10": 0.004898,
+      "20": -0.018444,
+      "30": -0.041786,
+      "50": -0.08847
+     }
+    },
+    "hold60": {
+     "label": "60日持有(分段)",
+     "desc": "每 60 个交易日整仓换仓（季度近似）",
+     "schedule": "every60",
+     "tranche_frac": 1.0,
+     "buffer_frac": 0.0,
+     "max_turnover": null,
+     "rebalance_count": 16,
+     "schedule_days": 16,
+     "avg_turnover": 1.2077,
+     "annual_turnover": 4.831,
+     "rebalances_per_year": 4.0,
+     "avg_holdings": 1938.1,
+     "adtv_median_yi": 1.2603,
+     "capacity_est_yi": 202.25,
+     "gross": {
+      "gross_oos_excess": 0.041355,
+      "gross_oos_t": 1.1825,
+      "gross_is_excess": -0.078365,
+      "gross_is_t": -1.7975
+     },
+     "annual_gross_excess": {
+      "2023": -0.047009,
+      "2024": -0.034777,
+      "2025": -0.031413,
+      "2026": 0.05787
+     },
+     "verdict_gross": "fail",
+     "verdict_gross_reasons": [
+      "OOS 超额 +4.14% > 0",
+      "OOS t=1.18 < 2",
+      "逐年同向 1/4 < 3"
+     ],
+     "at_main_cost": {
+      "cost_bp": 30.0,
+      "gross_oos_excess": 0.041355,
+      "gross_oos_t": 1.1825,
+      "net_oos_excess": 0.016765,
+      "net_oos_t": 0.4618,
+      "gross_is_excess": -0.078365,
+      "gross_is_t": -1.7975,
+      "net_is_excess": -0.112141,
+      "net_is_t": -2.4778,
+      "annual_gross_excess": {
+       "2023": -0.047009,
+       "2024": -0.034777,
+       "2025": -0.031413,
+       "2026": 0.05787
+      },
+      "annual_net_excess": {
+       "2023": -0.065903,
+       "2024": -0.049823,
+       "2025": -0.050031,
+       "2026": 0.048152
+      },
+      "annual_net_positive": 1,
+      "annual_net_n_years": 4,
+      "avg_turnover": 1.2077,
+      "annual_turnover": 4.831,
+      "rebalances_per_year": 4.0,
+      "rebalance_count": 16,
+      "avg_holdings": 1938.1,
+      "cum_cost_drag": 0.056423,
+      "capacity_est_yi": 202.25,
+      "adtv_median_yi": 1.2603,
+      "verdict_net": "fail",
+      "verdict_net_reasons": [
+       "OOS 超额 +1.68% > 0",
+       "OOS t=0.46 < 2",
+       "逐年同向 1/4 < 3"
+      ],
+      "verdict_gross": "fail",
+      "verdict_gross_reasons": [
+       "OOS 超额 +4.14% > 0",
+       "OOS t=1.18 < 2",
+       "逐年同向 1/4 < 3"
+      ]
+     },
+     "cost_sensitivity": {
+      "10": {
+       "cost_bp": 10.0,
+       "gross_oos_excess": 0.041355,
+       "gross_oos_t": 1.1825,
+       "net_oos_excess": 0.033158,
+       "net_oos_t": 0.9432,
+       "gross_is_excess": -0.078365,
+       "gross_is_t": -1.7975,
+       "net_is_excess": -0.089624,
+       "net_is_t": -2.0443,
+       "annual_gross_excess": {
+        "2023": -0.047009,
+        "2024": -0.034777,
+        "2025": -0.031413,
+        "2026": 0.05787
+       },
+       "annual_net_excess": {
+        "2023": -0.053338,
+        "2024": -0.039811,
+        "2025": -0.03764,
+        "2026": 0.054623
+       },
+       "annual_net_positive": 1,
+       "annual_net_n_years": 4,
+       "avg_turnover": 1.2077,
+       "annual_turnover": 4.831,
+       "rebalances_per_year": 4.0,
+       "rebalance_count": 16,
+       "avg_holdings": 1938.1,
+       "cum_cost_drag": 0.01915,
+       "capacity_est_yi": 202.25,
+       "adtv_median_yi": 1.2603,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 +3.32% > 0",
+        "OOS t=0.94 < 2",
+        "逐年同向 1/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +4.14% > 0",
+        "OOS t=1.18 < 2",
+        "逐年同向 1/4 < 3"
+       ]
+      },
+      "20": {
+       "cost_bp": 20.0,
+       "gross_oos_excess": 0.041355,
+       "gross_oos_t": 1.1825,
+       "net_oos_excess": 0.024961,
+       "net_oos_t": 0.7011,
+       "gross_is_excess": -0.078365,
+       "gross_is_t": -1.7975,
+       "net_is_excess": -0.100882,
+       "net_is_t": -2.2722,
+       "annual_gross_excess": {
+        "2023": -0.047009,
+        "2024": -0.034777,
+        "2025": -0.031413,
+        "2026": 0.05787
+       },
+       "annual_net_excess": {
+        "2023": -0.059636,
+        "2024": -0.044826,
+        "2025": -0.043846,
+        "2026": 0.051384
+       },
+       "annual_net_positive": 1,
+       "annual_net_n_years": 4,
+       "avg_turnover": 1.2077,
+       "annual_turnover": 4.831,
+       "rebalances_per_year": 4.0,
+       "rebalance_count": 16,
+       "avg_holdings": 1938.1,
+       "cum_cost_drag": 0.037956,
+       "capacity_est_yi": 202.25,
+       "adtv_median_yi": 1.2603,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 +2.50% > 0",
+        "OOS t=0.70 < 2",
+        "逐年同向 1/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +4.14% > 0",
+        "OOS t=1.18 < 2",
+        "逐年同向 1/4 < 3"
+       ]
+      },
+      "30": {
+       "cost_bp": 30.0,
+       "gross_oos_excess": 0.041355,
+       "gross_oos_t": 1.1825,
+       "net_oos_excess": 0.016765,
+       "net_oos_t": 0.4618,
+       "gross_is_excess": -0.078365,
+       "gross_is_t": -1.7975,
+       "net_is_excess": -0.112141,
+       "net_is_t": -2.4778,
+       "annual_gross_excess": {
+        "2023": -0.047009,
+        "2024": -0.034777,
+        "2025": -0.031413,
+        "2026": 0.05787
+       },
+       "annual_net_excess": {
+        "2023": -0.065903,
+        "2024": -0.049823,
+        "2025": -0.050031,
+        "2026": 0.048152
+       },
+       "annual_net_positive": 1,
+       "annual_net_n_years": 4,
+       "avg_turnover": 1.2077,
+       "annual_turnover": 4.831,
+       "rebalances_per_year": 4.0,
+       "rebalance_count": 16,
+       "avg_holdings": 1938.1,
+       "cum_cost_drag": 0.056423,
+       "capacity_est_yi": 202.25,
+       "adtv_median_yi": 1.2603,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 +1.68% > 0",
+        "OOS t=0.46 < 2",
+        "逐年同向 1/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +4.14% > 0",
+        "OOS t=1.18 < 2",
+        "逐年同向 1/4 < 3"
+       ]
+      },
+      "50": {
+       "cost_bp": 50.0,
+       "gross_oos_excess": 0.041355,
+       "gross_oos_t": 1.1825,
+       "net_oos_excess": 0.000371,
+       "net_oos_t": 0.0097,
+       "gross_is_excess": -0.078365,
+       "gross_is_t": -1.7975,
+       "net_is_excess": -0.134658,
+       "net_is_t": -2.8162,
+       "annual_gross_excess": {
+        "2023": -0.047009,
+        "2024": -0.034777,
+        "2025": -0.031413,
+        "2026": 0.05787
+       },
+       "annual_net_excess": {
+        "2023": -0.078344,
+        "2024": -0.059759,
+        "2025": -0.062337,
+        "2026": 0.041712
+       },
+       "annual_net_positive": 1,
+       "annual_net_n_years": 4,
+       "avg_turnover": 1.2077,
+       "annual_turnover": 4.831,
+       "rebalances_per_year": 4.0,
+       "rebalance_count": 16,
+       "avg_holdings": 1938.1,
+       "cum_cost_drag": 0.092365,
+       "capacity_est_yi": 202.25,
+       "adtv_median_yi": 1.2603,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 +0.04% > 0",
+        "OOS t=0.01 < 2",
+        "逐年同向 1/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +4.14% > 0",
+        "OOS t=1.18 < 2",
+        "逐年同向 1/4 < 3"
+       ]
+      }
+     },
+     "net_oos_by_cost": {
+      "10": 0.033158,
+      "20": 0.024961,
+      "30": 0.016765,
+      "50": 0.000371
+     }
+    }
+   },
+   "pass_net_variants": [],
+   "best_net_variant": "hold60"
+  },
+  "vol20": {
+   "name": "vol20",
+   "family": "通用",
+   "direction": -1,
+   "description": "20日波动率：复权日收益的 20 日标准差（先验：低波动异象，取负向）",
+   "runtime_sec": 17.39,
+   "variants": {
+    "monthly": {
+     "label": "月频全换仓",
+     "desc": "每月末信号、T+1 建仓、持有约 20 个交易日",
+     "schedule": "monthly",
+     "tranche_frac": 1.0,
+     "buffer_frac": 0.0,
+     "max_turnover": null,
+     "rebalance_count": 45,
+     "schedule_days": 45,
+     "avg_turnover": 1.0644,
+     "annual_turnover": 11.974,
+     "rebalances_per_year": 11.25,
+     "avg_holdings": 2036.5,
+     "adtv_median_yi": 1.2747,
+     "capacity_est_yi": 243.89,
+     "gross": {
+      "gross_oos_excess": 0.017139,
+      "gross_oos_t": 0.4555,
+      "gross_is_excess": -0.073149,
+      "gross_is_t": -1.5057
+     },
+     "annual_gross_excess": {
+      "2023": -0.089713,
+      "2024": 0.017983,
+      "2025": -0.010563,
+      "2026": 0.024619
+     },
+     "verdict_gross": "fail",
+     "verdict_gross_reasons": [
+      "OOS 超额 +1.71% > 0",
+      "OOS t=0.46 < 2",
+      "逐年同向 2/4 < 3"
+     ],
+     "at_main_cost": {
+      "cost_bp": 30.0,
+      "gross_oos_excess": 0.017139,
+      "gross_oos_t": 0.4555,
+      "net_oos_excess": -0.048271,
+      "net_oos_t": -1.2132,
+      "gross_is_excess": -0.073149,
+      "gross_is_t": -1.5057,
+      "net_is_excess": -0.152344,
+      "net_is_t": -2.9579,
+      "annual_gross_excess": {
+       "2023": -0.089713,
+       "2024": 0.017983,
+       "2025": -0.010563,
+       "2026": 0.024619
+      },
+      "annual_net_excess": {
+       "2023": -0.126842,
+       "2024": -0.024102,
+       "2025": -0.059385,
+       "2026": -0.000552
+      },
+      "annual_net_positive": 0,
+      "annual_net_n_years": 4,
+      "avg_turnover": 1.0644,
+      "annual_turnover": 11.974,
+      "rebalances_per_year": 11.25,
+      "rebalance_count": 45,
+      "avg_holdings": 2036.5,
+      "cum_cost_drag": 0.134046,
+      "capacity_est_yi": 243.89,
+      "adtv_median_yi": 1.2747,
+      "verdict_net": "fail",
+      "verdict_net_reasons": [
+       "OOS 超额 -4.83% ≤ 0",
+       "OOS t=-1.21 < 2",
+       "逐年同向 0/4 < 3"
+      ],
+      "verdict_gross": "fail",
+      "verdict_gross_reasons": [
+       "OOS 超额 +1.71% > 0",
+       "OOS t=0.46 < 2",
+       "逐年同向 2/4 < 3"
+      ]
+     },
+     "cost_sensitivity": {
+      "10": {
+       "cost_bp": 10.0,
+       "gross_oos_excess": 0.017139,
+       "gross_oos_t": 0.4555,
+       "net_oos_excess": -0.004664,
+       "net_oos_t": -0.1233,
+       "gross_is_excess": -0.073149,
+       "gross_is_t": -1.5057,
+       "net_is_excess": -0.099547,
+       "net_is_t": -2.0323,
+       "annual_gross_excess": {
+        "2023": -0.089713,
+        "2024": 0.017983,
+        "2025": -0.010563,
+        "2026": 0.024619
+       },
+       "annual_net_excess": {
+        "2023": -0.102234,
+        "2024": 0.003782,
+        "2025": -0.027016,
+        "2026": 0.016155
+       },
+       "annual_net_positive": 2,
+       "annual_net_n_years": 4,
+       "avg_turnover": 1.0644,
+       "annual_turnover": 11.974,
+       "rebalances_per_year": 11.25,
+       "rebalance_count": 45,
+       "avg_holdings": 2036.5,
+       "cum_cost_drag": 0.046792,
+       "capacity_est_yi": 243.89,
+       "adtv_median_yi": 1.2747,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 -0.47% ≤ 0",
+        "OOS t=-0.12 < 2",
+        "逐年同向 2/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +1.71% > 0",
+        "OOS t=0.46 < 2",
+        "逐年同向 2/4 < 3"
+       ]
+      },
+      "20": {
+       "cost_bp": 20.0,
+       "gross_oos_excess": 0.017139,
+       "gross_oos_t": 0.4555,
+       "net_oos_excess": -0.026467,
+       "net_oos_t": -0.6866,
+       "gross_is_excess": -0.073149,
+       "gross_is_t": -1.5057,
+       "net_is_excess": -0.125946,
+       "net_is_t": -2.5206,
+       "annual_gross_excess": {
+        "2023": -0.089713,
+        "2024": 0.017983,
+        "2025": -0.010563,
+        "2026": 0.024619
+       },
+       "annual_net_excess": {
+        "2023": -0.11461,
+        "2024": -0.010246,
+        "2025": -0.043289,
+        "2026": 0.007765
+       },
+       "annual_net_positive": 1,
+       "annual_net_n_years": 4,
+       "avg_turnover": 1.0644,
+       "annual_turnover": 11.974,
+       "rebalances_per_year": 11.25,
+       "rebalance_count": 45,
+       "avg_holdings": 2036.5,
+       "cum_cost_drag": 0.091442,
+       "capacity_est_yi": 243.89,
+       "adtv_median_yi": 1.2747,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 -2.65% ≤ 0",
+        "OOS t=-0.69 < 2",
+        "逐年同向 1/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +1.71% > 0",
+        "OOS t=0.46 < 2",
+        "逐年同向 2/4 < 3"
+       ]
+      },
+      "30": {
+       "cost_bp": 30.0,
+       "gross_oos_excess": 0.017139,
+       "gross_oos_t": 0.4555,
+       "net_oos_excess": -0.048271,
+       "net_oos_t": -1.2132,
+       "gross_is_excess": -0.073149,
+       "gross_is_t": -1.5057,
+       "net_is_excess": -0.152344,
+       "net_is_t": -2.9579,
+       "annual_gross_excess": {
+        "2023": -0.089713,
+        "2024": 0.017983,
+        "2025": -0.010563,
+        "2026": 0.024619
+       },
+       "annual_net_excess": {
+        "2023": -0.126842,
+        "2024": -0.024102,
+        "2025": -0.059385,
+        "2026": -0.000552
+       },
+       "annual_net_positive": 0,
+       "annual_net_n_years": 4,
+       "avg_turnover": 1.0644,
+       "annual_turnover": 11.974,
+       "rebalances_per_year": 11.25,
+       "rebalance_count": 45,
+       "avg_holdings": 2036.5,
+       "cum_cost_drag": 0.134046,
+       "capacity_est_yi": 243.89,
+       "adtv_median_yi": 1.2747,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 -4.83% ≤ 0",
+        "OOS t=-1.21 < 2",
+        "逐年同向 0/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +1.71% > 0",
+        "OOS t=0.46 < 2",
+        "逐年同向 2/4 < 3"
+       ]
+      },
+      "50": {
+       "cost_bp": 50.0,
+       "gross_oos_excess": 0.017139,
+       "gross_oos_t": 0.4555,
+       "net_oos_excess": -0.091877,
+       "net_oos_t": -2.107,
+       "gross_is_excess": -0.073149,
+       "gross_is_t": -1.5057,
+       "net_is_excess": -0.205141,
+       "net_is_t": -3.6608,
+       "annual_gross_excess": {
+        "2023": -0.089713,
+        "2024": 0.017983,
+        "2025": -0.010563,
+        "2026": 0.024619
+       },
+       "annual_net_excess": {
+        "2023": -0.150883,
+        "2024": -0.051305,
+        "2025": -0.091049,
+        "2026": -0.016969
+       },
+       "annual_net_positive": 0,
+       "annual_net_n_years": 4,
+       "avg_turnover": 1.0644,
+       "annual_turnover": 11.974,
+       "rebalances_per_year": 11.25,
+       "rebalance_count": 45,
+       "avg_holdings": 2036.5,
+       "cum_cost_drag": 0.213475,
+       "capacity_est_yi": 243.89,
+       "adtv_median_yi": 1.2747,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 -9.19% ≤ 0",
+        "OOS t=-2.11 < 2",
+        "逐年同向 0/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +1.71% > 0",
+        "OOS t=0.46 < 2",
+        "逐年同向 2/4 < 3"
+       ]
+      }
+     },
+     "net_oos_by_cost": {
+      "10": -0.004664,
+      "20": -0.026467,
+      "30": -0.048271,
+      "50": -0.091877
+     }
+    },
+    "hold60": {
+     "label": "60日持有(分段)",
+     "desc": "每 60 个交易日整仓换仓（季度近似）",
+     "schedule": "every60",
+     "tranche_frac": 1.0,
+     "buffer_frac": 0.0,
+     "max_turnover": null,
+     "rebalance_count": 16,
+     "schedule_days": 16,
+     "avg_turnover": 1.1775,
+     "annual_turnover": 4.71,
+     "rebalances_per_year": 4.0,
+     "avg_holdings": 1938.1,
+     "adtv_median_yi": 1.2022,
+     "capacity_est_yi": 197.88,
+     "gross": {
+      "gross_oos_excess": 0.028238,
+      "gross_oos_t": 0.7462,
+      "gross_is_excess": -0.067917,
+      "gross_is_t": -1.5286
+     },
+     "annual_gross_excess": {
+      "2023": -0.039848,
+      "2024": -0.029969,
+      "2025": -0.042388,
+      "2026": 0.05463
+     },
+     "verdict_gross": "fail",
+     "verdict_gross_reasons": [
+      "OOS 超额 +2.82% > 0",
+      "OOS t=0.75 < 2",
+      "逐年同向 1/4 < 3"
+     ],
+     "at_main_cost": {
+      "cost_bp": 30.0,
+      "gross_oos_excess": 0.028238,
+      "gross_oos_t": 0.7462,
+      "net_oos_excess": 0.004604,
+      "net_oos_t": 0.1184,
+      "gross_is_excess": -0.067917,
+      "gross_is_t": -1.5286,
+      "net_is_excess": -0.101198,
+      "net_is_t": -2.2017,
+      "annual_gross_excess": {
+       "2023": -0.039848,
+       "2024": -0.029969,
+       "2025": -0.042388,
+       "2026": 0.05463
+      },
+      "annual_net_excess": {
+       "2023": -0.05847,
+       "2024": -0.044987,
+       "2025": -0.0601,
+       "2026": 0.045295
+      },
+      "annual_net_positive": 1,
+      "annual_net_n_years": 4,
+      "avg_turnover": 1.1775,
+      "annual_turnover": 4.71,
+      "rebalances_per_year": 4.0,
+      "rebalance_count": 16,
+      "avg_holdings": 1938.1,
+      "cum_cost_drag": 0.055049,
+      "capacity_est_yi": 197.88,
+      "adtv_median_yi": 1.2022,
+      "verdict_net": "fail",
+      "verdict_net_reasons": [
+       "OOS 超额 +0.46% > 0",
+       "OOS t=0.12 < 2",
+       "逐年同向 1/4 < 3"
+      ],
+      "verdict_gross": "fail",
+      "verdict_gross_reasons": [
+       "OOS 超额 +2.82% > 0",
+       "OOS t=0.75 < 2",
+       "逐年同向 1/4 < 3"
+      ]
+     },
+     "cost_sensitivity": {
+      "10": {
+       "cost_bp": 10.0,
+       "gross_oos_excess": 0.028238,
+       "gross_oos_t": 0.7462,
+       "net_oos_excess": 0.02036,
+       "net_oos_t": 0.5364,
+       "gross_is_excess": -0.067917,
+       "gross_is_t": -1.5286,
+       "net_is_excess": -0.079011,
+       "net_is_t": -1.7698,
+       "annual_gross_excess": {
+        "2023": -0.039848,
+        "2024": -0.029969,
+        "2025": -0.042388,
+        "2026": 0.05463
+       },
+       "annual_net_excess": {
+        "2023": -0.046086,
+        "2024": -0.034994,
+        "2025": -0.048312,
+        "2026": 0.051511
+       },
+       "annual_net_positive": 1,
+       "annual_net_n_years": 4,
+       "avg_turnover": 1.1775,
+       "annual_turnover": 4.71,
+       "rebalances_per_year": 4.0,
+       "rebalance_count": 16,
+       "avg_holdings": 1938.1,
+       "cum_cost_drag": 0.018675,
+       "capacity_est_yi": 197.88,
+       "adtv_median_yi": 1.2022,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 +2.04% > 0",
+        "OOS t=0.54 < 2",
+        "逐年同向 1/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +2.82% > 0",
+        "OOS t=0.75 < 2",
+        "逐年同向 1/4 < 3"
+       ]
+      },
+      "20": {
+       "cost_bp": 20.0,
+       "gross_oos_excess": 0.028238,
+       "gross_oos_t": 0.7462,
+       "net_oos_excess": 0.012482,
+       "net_oos_t": 0.3258,
+       "gross_is_excess": -0.067917,
+       "gross_is_t": -1.5286,
+       "net_is_excess": -0.090104,
+       "net_is_t": -1.9952,
+       "annual_gross_excess": {
+        "2023": -0.039848,
+        "2024": -0.029969,
+        "2025": -0.042388,
+        "2026": 0.05463
+       },
+       "annual_net_excess": {
+        "2023": -0.052293,
+        "2024": -0.04,
+        "2025": -0.054216,
+        "2026": 0.0484
+       },
+       "annual_net_positive": 1,
+       "annual_net_n_years": 4,
+       "avg_turnover": 1.1775,
+       "annual_turnover": 4.71,
+       "rebalances_per_year": 4.0,
+       "rebalance_count": 16,
+       "avg_holdings": 1938.1,
+       "cum_cost_drag": 0.037023,
+       "capacity_est_yi": 197.88,
+       "adtv_median_yi": 1.2022,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 +1.25% > 0",
+        "OOS t=0.33 < 2",
+        "逐年同向 1/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +2.82% > 0",
+        "OOS t=0.75 < 2",
+        "逐年同向 1/4 < 3"
+       ]
+      },
+      "30": {
+       "cost_bp": 30.0,
+       "gross_oos_excess": 0.028238,
+       "gross_oos_t": 0.7462,
+       "net_oos_excess": 0.004604,
+       "net_oos_t": 0.1184,
+       "gross_is_excess": -0.067917,
+       "gross_is_t": -1.5286,
+       "net_is_excess": -0.101198,
+       "net_is_t": -2.2017,
+       "annual_gross_excess": {
+        "2023": -0.039848,
+        "2024": -0.029969,
+        "2025": -0.042388,
+        "2026": 0.05463
+       },
+       "annual_net_excess": {
+        "2023": -0.05847,
+        "2024": -0.044987,
+        "2025": -0.0601,
+        "2026": 0.045295
+       },
+       "annual_net_positive": 1,
+       "annual_net_n_years": 4,
+       "avg_turnover": 1.1775,
+       "annual_turnover": 4.71,
+       "rebalances_per_year": 4.0,
+       "rebalance_count": 16,
+       "avg_holdings": 1938.1,
+       "cum_cost_drag": 0.055049,
+       "capacity_est_yi": 197.88,
+       "adtv_median_yi": 1.2022,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 +0.46% > 0",
+        "OOS t=0.12 < 2",
+        "逐年同向 1/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +2.82% > 0",
+        "OOS t=0.75 < 2",
+        "逐年同向 1/4 < 3"
+       ]
+      },
+      "50": {
+       "cost_bp": 50.0,
+       "gross_oos_excess": 0.028238,
+       "gross_oos_t": 0.7462,
+       "net_oos_excess": -0.011152,
+       "net_oos_t": -0.2744,
+       "gross_is_excess": -0.067917,
+       "gross_is_t": -1.5286,
+       "net_is_excess": -0.123385,
+       "net_is_t": -2.5505,
+       "annual_gross_excess": {
+        "2023": -0.039848,
+        "2024": -0.029969,
+        "2025": -0.042388,
+        "2026": 0.05463
+       },
+       "annual_net_excess": {
+        "2023": -0.070735,
+        "2024": -0.054907,
+        "2025": -0.071811,
+        "2026": 0.039108
+       },
+       "annual_net_positive": 1,
+       "annual_net_n_years": 4,
+       "avg_turnover": 1.1775,
+       "annual_turnover": 4.71,
+       "rebalances_per_year": 4.0,
+       "rebalance_count": 16,
+       "avg_holdings": 1938.1,
+       "cum_cost_drag": 0.090157,
+       "capacity_est_yi": 197.88,
+       "adtv_median_yi": 1.2022,
+       "verdict_net": "fail",
+       "verdict_net_reasons": [
+        "OOS 超额 -1.12% ≤ 0",
+        "OOS t=-0.27 < 2",
+        "逐年同向 1/4 < 3"
+       ],
+       "verdict_gross": "fail",
+       "verdict_gross_reasons": [
+        "OOS 超额 +2.82% > 0",
+        "OOS t=0.75 < 2",
+        "逐年同向 1/4 < 3"
+       ]
+      }
+     },
+     "net_oos_by_cost": {
+      "10": 0.02036,
+      "20": 0.012482,
+      "30": 0.004604,
+      "50": -0.011152
+     }
+    }
+   },
+   "pass_net_variants": [],
+   "best_net_variant": "hold60"
+  }
+ },
+ "summary": {
+  "factors": [
+   "low_turnover",
+   "max_ret20",
+   "vol20"
+  ],
+  "pass_net_by_factor": {
+   "low_turnover": [],
+   "max_ret20": [],
+   "vol20": []
+  },
+  "best_net_variant": {
+   "low_turnover": "hold60",
+   "max_ret20": "hold60",
+   "vol20": "hold60"
+  },
+  "any_pass_net": false
+ },
+ "conclusion": {
+  "main_cost_bp": 30.0,
+  "tradeable_after_cost": false,
+  "by_factor": [
+   {
+    "factor": "low_turnover",
+    "pass_net_variants": [],
+    "best_net_variant": "hold60",
+    "best_net_oos_excess": 0.061239,
+    "best_net_oos_t": 1.6279,
+    "tradeable_after_cost": false
+   },
+   {
+    "factor": "max_ret20",
+    "pass_net_variants": [],
+    "best_net_variant": "hold60",
+    "best_net_oos_excess": 0.016765,
+    "best_net_oos_t": 0.4618,
+    "tradeable_after_cost": false
+   },
+   {
+    "factor": "vol20",
+    "pass_net_variants": [],
+    "best_net_variant": "hold60",
+    "best_net_oos_excess": 0.004604,
+    "best_net_oos_t": 0.1184,
+    "tradeable_after_cost": false
+   }
+  ],
+  "summary_text": "**成本维度已被降频解决，但因子稳定性不达标**：low_turnover 在 60 个交易日持有下，30bp 成本累计拖累从周频的 41.6% 降到 5.6%（≈1.4%/年），净 OOS 超额 +6.12%、成本敏感网格 10/20/30/50bp 全部为正（+7.70%/+6.91%/+6.12%/+4.55%）→ 「30bp 周频成本硬约束」在季度级持有下不成立。但该变体 OOS t=1.63 < 2、逐年净超额仅 2026 年为正（1/4），IS（2023-24）为 -5.79%/-6.13% → 按既定 pass_net 阈值仍不可交易；净超额高度集中在 2026 年，存在单年驱动风险。月频全换手意外偏高（1.08/次，年化 12.1 次双边换手）：低换手率因子月度排名 churn 大，月频并未起到降成本作用，毛 OOS 反而从周频 +9.40% 衰减到 +4.94%。缓冲带（+10pp）+ 单次换手上限 20% 把双边换手压到 0.20，但组合长期偏离目标、毛 OOS 降到 +5.08%（周频+缓冲带）/+0.69%（月频+缓冲带）→ 约束过度伤 alpha。控制因子 max_ret20/vol20 的 hold60 净 OOS 仅 +1.68%/+0.46%，结论一致。**结论：成本后在既定阈值下仍不可交易（无 pass_net 变体）；若继续推进，应优先解决逐年稳定性（如 2023-24 负超额的结构原因），而不是继续降成本。**"
+ },
+ "notes": [
+  "中性组合为宽口径（每个市值×行业桶都持有高分股，约 2000 只），alpha 被桶内分散稀释；其超额是「同市值/行业暴露下选股是否有效」的下界式检验，不等于可交易的 top50 组合收益。",
+  "成本由同一条毛净值路径 × 换手序列解析折算：成本不改变相对权重路径（每次调仓按 NAV 归一），故 net(d)=gross(d)×Π(1−turnover_i×bp)。10/20/30/50bp 共用一次回测，无重复模拟误差。",
+  "换手口径为两次调仓之间 Σ|w_target−w_drift|（双边）；30bp 单边 → 年化成本 ≈ 年化双边换手×30bp。首日建仓换手≈1（买入一次）计入成本但不在 OOS 内，对判定无实质影响。",
+  "60 日持有两版：`hold60` 为每 60 个交易日整仓换仓（分段近似）；`hold60_stagger` 为每 20 个交易日只换 1/3 仓（3 段错开），单日冲击更小、换手总量相同量级。",
+  "缓冲带实现：桶内 top50% 买入、已有持仓仍处 top60%（+10pp）则保留，超限部分按 α=上限/换手 比例只换一部分；桶总权重仍等于市场股票数占比，行业/市值中性不被破坏。",
+  "中性组合从简：停牌/涨跌停不做不可买/不可卖模拟（缺价冻结估值），相对 bt_harness 原始组合偏乐观；但本报告只做同一中性口径下的变体横向比较，结论不受该偏置的差分影响。",
+  "T+1 收盘建仓（信号日次一交易日），与 factor_validate/bt_harness 同口径；月频信号=每月最后一个交易日，60 日/20 日信号为交易日等距切片（非自然月）。",
+  "股票池为当前 stock_basic 名单 + 上市日期，存在轻微幸存者偏差（与 factor_lib/bt_harness 同口径）。",
+  "容量估算：单日单票成交额 ≤ ADTV 的 5%，AUM_max ≈ 5%×ADTV×持股数/(双边换手/2)；未考虑冲击成本与拥挤度非线性，30bp 费率本身也已假设自有资金/低冲击。",
+  "判定阈值沿用 wave2：OOS 超额>0 且 t≥2 且逐年同向≥3/4；本次主判定用**净口径**（回答成本后是否可交易），毛口径判定仅作诊断（回答 alpha 是否被成本吃掉）。样本内/外为简单切分（IS=2023-24，OOS=2025-26），非严格 walk-forward 参数选择。",
+  "控制因子（max_ret20/vol20）时间约束下只跑 monthly 与 hold60 两个变体（effective 子集），用于检验「降频降成本」结论是否只在 low_turnover 上成立。",
+  "框架自校验：weekly_baseline 变体复现 wave2 基线（毛 OOS +9.40%/t=3.14、净 -13.59%/t=-3.57，逐年毛 -2.06%/+1.12%/+7.22%/+3.99%），与 research/reports/factor_validate_20261101.md 完全一致 → 中性化权重法/成本折算口径一致。",
+  "容量估算对换手受限变体（`*_buffercap`、`hold60_stagger`）系统性偏高：容量公式按平均换手反推 AUM，而换手上限是人为约束（组合可长期偏离目标），实际容量还受跟踪误差/持仓漂移约束，不能直接按公式放大；仅 `weekly_baseline`/`monthly`/`hold60` 的容量数可直接横向参考。",
+  "capped 变体的换手上限只约束「再平衡交易」、不截断首次建仓（否则未投资现金不入账会让首年净值口径出现假性暴跌）；平均换手/次略高于 20% 即来自首日建仓那一次一次性买入。",
+  "本次结果为 3 次独立运行合并（主跑 low_turnover 全变体 / capped 修复重跑 / 控制因子子集），每次均独立加载数据，meta.runtime_sec 只记主跑，各次耗时见 meta.runtime_note。"
+ ]
+}

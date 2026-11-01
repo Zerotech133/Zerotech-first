@@ -149,3 +149,13 @@ def test_aggressive_vs_safe_skip_volume():
     t = "收盘：沪指涨 0.8% 报 3120 点，成交额 8500 亿元"
     assert pf.decide(t, mode="aggressive")["decision"] == "skip"
     assert pf.decide(t, mode="safe")["decision"] == "keep"
+
+
+def test_prefilter_payload_has_v2_fields():
+    """PREFILTERV2：skip 行也必须携带契约 v2 字段（horizon/prob）。"""
+    j = pf.prefilter_jev("关于召开股东大会的通知", "announcement")
+    assert j is not None
+    assert j["horizon"] == "unknown"
+    assert set(j["prob"]) == {"bull", "bear", "neutral"}
+    assert abs(sum(j["prob"].values()) - 1.0) < 0.02
+    assert j["bias_probs"] == j["prob"]

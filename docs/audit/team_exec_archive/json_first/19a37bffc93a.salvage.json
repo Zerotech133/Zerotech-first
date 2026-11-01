@@ -1,0 +1,50 @@
+{
+ "run_id": "19a37bffc93a",
+ "stock": "002712",
+ "source_log": "C:\\Temp\\run_invest_jsonfirst.log",
+ "source_log_sha256": "d201921d9e46765f68ebbb591174beb1a47a054947602de72baf2d825693b5ba",
+ "fidelity": "log_salvage",
+ "captured_at": "2026-11-01T08:15:16",
+ "nodes": [
+  {
+   "agent_id": "D1",
+   "status": "degraded",
+   "output_preview": "{\"recommendation\":\"WATCH\",\"confidence\":0.35,\"rationale\":\"T1/T2 确认高位出货与破位下行，N1/F1 佐证亏损基本面；虽有反弹迹象但缺乏右侧信号，存疑观察。\",\"l1_basis\"",
+   "structured": null,
+   "duration_ms": null
+  },
+  {
+   "agent_id": "F1",
+   "status": "normal",
+   "output_preview": "思美传媒（002712）当前 PE 为负且市值仅 24.4 亿，显示业绩处于亏损状态，基本面土壤尚未形成明确的重整或重组支撑，亦无业绩反转迹象表明“有人愿意运作”。股价单日下跌超 10% 伴随高换手，反映市场对其价值存在较大分歧与不确定性。",
+   "structured": null,
+   "duration_ms": null
+  },
+  {
+   "agent_id": "N1",
+   "status": "normal",
+   "output_preview": "**N1 情绪面分析报告 (LCS-1)**  标的 002712 近 5 日跌幅超 9% 且现价远离 20 日高点，结合量比 1.15 的温和放量特征，显示市场情绪处于“缩量下跌后的观望修复期”，暂无重大舆情发酵迹象。 L2 事件耦合层面",
+   "structured": null,
+   "duration_ms": null
+  },
+  {
+   "agent_id": "T1",
+   "status": "normal",
+   "output_preview": "多空辩论结论（2轮，末轮相似度0.71，达轮次上限）：多头[bull·T1]：```json {   \"overallTrend\": \"bearish\",   \"selectedIndicators\": [\"高位长阴出货\", \"均线空头排列",
+   "structured": null,
+   "duration_ms": null
+  },
+  {
+   "agent_id": "T2",
+   "status": "normal",
+   "output_preview": "多空辩论结论（2轮，末轮相似度0.71，达轮次上限）：多头[bull·T1]：```json {   \"overallTrend\": \"bearish\",   \"selectedIndicators\": [\"高位长阴出货\", \"均线空头排列",
+   "structured": null,
+   "duration_ms": null
+  }
+ ],
+ "degraded_fields": [
+  "structured",
+  "duration_ms"
+ ],
+ "degraded_reason": "console 日志输出被截断，完整 structured/duration 不可得；本件仅用于状态/样本级审计，不用于 JSON 完整率/延迟计算。"
+}

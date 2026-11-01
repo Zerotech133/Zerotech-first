@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>学习卡 · 零界知识库</title>
+<link rel="stylesheet" href="/static/nav.css">
+<style>
+:root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2333;--bd:#2d333b;--fg:#e6edf3;--dim:#8b949e;--acc:#58a6ff;--ok:#3fb950;--warn:#d29922}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.75 -apple-system,"Microsoft YaHei",system-ui,sans-serif;padding:16px 14px 40px;max-width:760px;margin:0 auto}
+h1{font-size:20px;margin:0 0 4px}
+.sub{color:var(--dim);font-size:12px;margin-bottom:14px}
+.tabs{display:flex;gap:8px;margin:0 0 12px;position:sticky;top:0;background:var(--bg);padding:6px 0;z-index:3}
+.tab{flex:1;text-align:center;padding:9px 8px;border:1px solid var(--bd);border-radius:9px;background:var(--panel);color:var(--dim);font-size:14px;cursor:pointer}
+.tab.on{background:#122642;color:#79c0ff;border-color:#1f6feb}
+.toolbar{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.toolbar .cnt{color:var(--dim);font-size:12px;flex:1}
+.btn{background:transparent;border:1px solid var(--bd);color:var(--fg);border-radius:9px;padding:8px 14px;font-size:14px;cursor:pointer}
+.btn.primary{background:#1f6feb;border-color:#1f6feb;color:#fff}
+.card{background:var(--panel);border:1px solid var(--bd);border-radius:14px;padding:16px;margin:12px 0}
+.card .q{font-size:17px;font-weight:700;margin:0 0 8px;line-height:1.5}
+.card .a{color:#c9d1d9;font-size:15px;margin:0 0 10px}
+.card .src{color:var(--dim);font-size:12px;border-left:2px solid #30363d;padding-left:8px}
+.card .ev{color:#9aa4b2;font-size:13px;margin-top:8px;background:var(--panel2);border-radius:8px;padding:8px 10px}
+.card .acts{display:flex;gap:8px;margin-top:12px}
+.card .acts .btn{flex:1;padding:10px}
+.badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:700;background:#122642;color:#79c0ff}
+.muted{color:var(--dim);font-size:12px}
+.empty{color:var(--dim);text-align:center;padding:30px 0}
+mark{background:#5c4d00;color:#ffd33d;border-radius:2px;padding:0 1px}
+.foot{margin-top:22px;color:var(--dim);font-size:12px;text-align:center}
+code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-size:12px}
+@media (min-width:761px){body{padding:24px}}
+
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px}
+.chip{padding:5px 11px;border-radius:16px;border:1px solid var(--bd);background:var(--panel);color:var(--dim);font-size:12px;cursor:pointer}
+.chip.on{background:#122642;color:#79c0ff;border-color:#1f6feb}
+.star{background:transparent;border:none;color:#d29922;font-size:20px;cursor:pointer;padding:0 4px;line-height:1}
+.card .head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.card .topic{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:700;background:#1f3b2a;color:#7ee787;margin-bottom:6px}
+</style>
+<script src="/static/nav.js" defer></script></head>
+<body>
+<div id="nav"></div>
+<h1>🃏 学习卡 <small style="color:var(--dim);font-size:13px;font-weight:normal">研报/书籍知识库 · 每日学习</small></h1>
+<div class="sub" id="meta">加载中…</div>
+
+<div class="tabs">
+  <div class="tab on" data-mode="daily">今日 5 张</div>
+  <div class="tab" data-mode="all">全部卡片</div>
+  <div class="tab" data-mode="fav">⭐ 收藏</div>
+</div>
+
+<div class="chips" id="topics"></div>
+
+<div class="toolbar">
+  <div class="cnt" id="cnt"></div>
+  <button class="btn" id="shuffle">换一批</button>
+</div>
+
+<div id="list"><div class="empty">加载中…</div></div>
+
+<div class="foot">
+  知识单元池：<span id="pool">—</span> 条 · 出处：<code>C:/项目/PDF/_ingest*</code><br>
+  学习材料，引用请带出处；数据由 OCR/LLM 抽取，重大结论请对照原文。
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  let ALL=[], MODE='daily', START=0, DAILY_N=5, TOPIC='全部';
+  const FAV_KEY='kb_fav_cards';
+  let FAV=[]; try{ FAV=JSON.parse(localStorage.getItem(FAV_KEY)||'[]'); }catch(e){ FAV=[]; }
+  function saveFav(){ try{ localStorage.setItem(FAV_KEY, JSON.stringify(FAV)); }catch(e){} }
+  function favKey(c){ return c.q+'|'+c.source; }
+  function isFav(c){ return FAV.indexOf(favKey(c))>=0; }
+  function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function pool(){
+    let items=ALL.slice();
+    if(TOPIC!=='全部'){ items=items.filter(function(c){ return (c.topic||'其他')===TOPIC; }); }
+    return items;
+  }
+  function renderTopics(){
+    const counts={};
+    ALL.forEach(function(c){ const k=c.topic||'其他'; counts[k]=(counts[k]||0)+1; });
+    const names=['全部'].concat(Object.keys(counts));
+    $('topics').innerHTML=names.map(function(n){
+      const num = n==='全部'?ALL.length:counts[n];
+      return '<div class="chip'+(TOPIC===n?' on':'')+'" data-t="'+esc(n)+'">'+esc(n)+' '+num+'</div>';
+    }).join('');
+    $('topics').querySelectorAll('.chip').forEach(function(ch){
+      ch.onclick=function(){ TOPIC=ch.dataset.t; START=0; renderTopics(); render(); };
+    });
+  }
+  function render(){
+    const list=$('list');
+    let items;
+    if(MODE==='daily'){ items=pool().slice(0,DAILY_N); }
+    else if(MODE==='fav'){ items=ALL.filter(isFav); }
+    else { items=pool().slice(START, START+10); }
+    if(!items.length){
+      list.innerHTML='<div class="empty">'+(MODE==='fav'?'还没有收藏：点卡片右上角 ☆ 收藏':'没有卡片')+'</div>';
+      $('cnt').textContent='';
+      return;
+    }
+    $('cnt').textContent = MODE==='daily' ? ('今日 '+items.length+' 张 · 主题：'+TOPIC) :
+      (MODE==='fav' ? ('收藏 '+items.length+' 张') : ('第 '+(START+1)+'–'+(START+items.length)+' 张 / 共 '+pool().length+' 张'));
+    list.innerHTML=items.map(function(c,i){
+      const f=isFav(c);
+      return '<div class="card">'
+        + '<div class="head"><div class="topic">'+esc(c.topic||'其他')+'</div>'
+        + '<button class="star" data-fav="'+i+'" title="收藏">'+(f?'★':'☆')+'</button></div>'
+        + '<div class="q">Q：'+esc(c.q)+'</div>'
+        + '<div class="a">A：'+esc(c.a)+'</div>'
+        + '<div class="src">出处：'+esc(c.source)+'</div>'
+        + (c.evidence?('<div class="ev">原文依据：'+esc(c.evidence)+'</div>'):'')
+        + '<div class="acts"><button class="btn" data-copy="'+i+'">复制学习卡</button>'
+        + '<button class="btn primary" data-next="'+i+'">下一篇 →</button></div>'
+        + '</div>';
+    }).join('');
+    list.querySelectorAll('[data-copy]').forEach(function(b){
+      b.onclick=function(){
+        const it=items[+b.dataset.copy];
+        const text='Q：'+it.q+'\nA：'+it.a+'\n出处：'+it.source;
+        if(navigator.clipboard){navigator.clipboard.writeText(text);}
+        b.textContent='已复制'; setTimeout(function(){b.textContent='复制学习卡';},1200);
+      };
+    });
+    list.querySelectorAll('[data-fav]').forEach(function(b){
+      b.onclick=function(){
+        const it=items[+b.dataset.fav]; const k=favKey(it); const idx=FAV.indexOf(k);
+        if(idx>=0){ FAV.splice(idx,1); b.textContent='☆'; } else { FAV.push(k); b.textContent='★'; }
+        saveFav();
+        if(MODE==='fav'){ render(); }
+      };
+    });
+    list.querySelectorAll('[data-next]').forEach(function(b){
+      b.onclick=function(){
+        if(MODE!=='all'){ MODE='all'; START=+b.dataset.next+1; syncTabs(); render(); return; }
+        START=START+10; if(START>=pool().length) START=0; render();
+      };
+    });
+  }
+  function syncTabs(){ document.querySelectorAll('.tab').forEach(function(t){
+    t.classList.toggle('on', t.dataset.mode===MODE); }); }
+  document.querySelectorAll('.tab').forEach(function(t){
+    t.onclick=function(){ MODE=t.dataset.mode; START=0; syncTabs(); render(); };
+  });
+  $('shuffle').onclick=function(){
+    const n=Math.max(1,pool().length-10);
+    MODE='all'; START=Math.floor(Math.random()*n); syncTabs(); render();
+  };
+  fetch('/static/kb_learning_cards.json?ts='+Date.now()).then(function(r){return r.json();}).then(function(d){
+    ALL=(d.cards||[]).slice();
+    $('pool').textContent=d.total_units||'—';
+    $('meta').textContent='生成 '+ (d.generated_at||'') +' · 知识单元池 '+ (d.total_units||'—') +' 条 · 收藏 '+FAV.length+' 张';
+    renderTopics(); render();
+    if(MODE==='fav'){ render(); }
+  }).catch(function(e){ $('meta').textContent='加载失败：'+e.message; });
+})();
+</script>
+</body>
+</html>

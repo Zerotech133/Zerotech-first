@@ -73,8 +73,11 @@ LOCAL_ROOTS = (WORKTREE_ROOT, Path(r"C:\legion-oh-worktrees"))
 DEFAULT_TIMEOUT = 600
 TASK_RE = re.compile(r"^[A-Za-z0-9_.\-]{3,80}$")
 SANDBOX_CONTAINER = os.environ.get("OH_SANDBOX_CONTAINER", "legion-openhands-sandbox")
+# 2026-11-01 H1 沙箱试点（WO-H1-SANDBOX-PILOT-20261101）：默认镜像钉 digest，
+# 防 :latest-python 漂移；仍可用 OH_SANDBOX_IMAGE 覆盖（升级走显式变更）。
 SANDBOX_IMAGE = os.environ.get(
-    "OH_SANDBOX_IMAGE", "ghcr.io/openhands/agent-server:latest-python"
+    "OH_SANDBOX_IMAGE",
+    "ghcr.io/openhands/agent-server@sha256:2a95c26df0c59854eae5492bf1eb42e3a23473eddb623a56af8ad4c00aad0d00"
 )
 SANDBOX_PORT = "8771"
 

@@ -1,0 +1,1226 @@
+{
+ "meta": {
+  "schema_version": "kb_qa_eval_v2.v1",
+  "generated_at": "2026-11-01T10:30:05+08:00",
+  "sources": {
+   "main": "C:\\项目\\老田的AI助手\\portal\\static\\kb_qa_samples.json",
+   "expanded": "C:\\项目\\老田的AI助手\\research\\reports\\kb_qa_samples_expanded_20261101.json",
+   "backup": "C:\\项目\\老田的AI助手\\research\\reports\\kb_qa_samples_backup2_20261101.json"
+  },
+  "n_units": 498,
+  "sample_schema_version": 2,
+  "hallucination_rules_v2": {
+   "number_whitelist": [
+    "1",
+    "10",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9"
+   ],
+   "list_marker_filtered": true,
+   "ordinal_filtered": true,
+   "min_english_letters": 3,
+   "filters": "≥7 位长数字 / rp_ 研报号 / 12 位 hex 引用 id 均忽略"
+  },
+  "v1_baseline": "wave16 kb_qa_eval.check_hallucination（无白名单/序数过滤，英文≥1）",
+  "no_llm": true
+ },
+ "schema_validation": {
+  "ok": true,
+  "errors": [],
+  "n_samples": 17,
+  "answer_type_counts": {
+   "fact": 13,
+   "inference": 1,
+   "refusal": 3
+  },
+  "expected_refusal": 3,
+  "citations_required": 14
+ },
+ "summary": {
+  "n_samples": 17,
+  "n_main": 17,
+  "n_expanded": 0,
+  "total_citations": 34,
+  "citations_exists": 34,
+  "citation_exists_rate": 1.0,
+  "citation_valid_samples": 14,
+  "avg_supported_ratio": 0.6636,
+  "hallucination_flags_v1_total": 5,
+  "hallucination_flags_v2_total": 2,
+  "hallucination_samples_v1": 4,
+  "hallucination_samples_v2": 2,
+  "false_positives_removed": 3,
+  "false_positive_reduction_rate": 0.6,
+  "samples_refusal_expected": 3,
+  "problems_count": 10
+ },
+ "samples": [
+  {
+   "id": "q1",
+   "kind": "main",
+   "question": "M9 级覆铜板对 AI 服务器 PCB 的价值量有什么影响？",
+   "category": "answerable",
+   "n_citations": 3,
+   "citations_exists": 3,
+   "citations_page_ok": 3,
+   "citation_exists_ratio": 1.0,
+   "citation_valid": true,
+   "n_sentences": 5,
+   "support_counts": {
+    "支持": 4,
+    "弱支持": 1
+   },
+   "supported_ratio": 0.8,
+   "supported_or_weak_ratio": 1.0,
+   "hallucination_flags": [],
+   "citations": [
+    {
+     "unit_id": "41692ee59293",
+     "exists": true,
+     "method": "id_map",
+     "page_ok": true,
+     "id_known_in_map": true
+    },
+    {
+     "unit_id": "28e0346286a2",
+     "exists": true,
+     "method": "text_match(1.0)",
+     "page_ok": true,
+     "id_known_in_map": false
+    },
+    {
+     "unit_id": "98c77086175f",
+     "exists": true,
+     "method": "id_map",
+     "page_ok": true,
+     "id_known_in_map": true
+    }
+   ],
+   "sentence_details": [
+    {
+     "sentence": "M9 级覆铜板通过“加层数、换材料”显著提升 AI 服务器 PCB 价值量，主要体现为单机柜价值成倍增长及单颗 GPU 配套 PCB 价值量大幅提升。",
+     "support": "支持",
+     "score": 0.585
+    },
+    {
+     "sentence": "1. **技术升级驱动价值跃升**：M9 级体系采用第三代 Low DK 石英布、HVLP4/5 超低轮廓铜箔等先进材料，支持 224Gbps 超高速传输与 7",
+     "support": "支持",
+     "score": 0.662
+    },
+    {
+     "sentence": "2. **单机柜价值成倍增长**：随着信号速率从 112G 向 224G 演进，需增加层数并更换低损耗材料以保障信号完整性，导致单机柜 PCB 价值量成倍增长 ",
+     "support": "支持",
+     "score": 0.729
+    },
+    {
+     "sentence": "3. **单颗 GPU 配套价值激增**：在 CoWoP 方案下，强化型 PCB 直接承担封装基板功能，单颗 GPU 配套 PCB 价值量可达 600 美元，是",
+     "support": "支持",
+     "score": 0.772
+    },
+    {
+     "sentence": "综上，M9 级覆铜板的应用使 AI 服务器 PCB 从单纯的材料升级转变为系统性的价值重构。",
+     "support": "弱支持",
+     "score": 0.395
+    }
+   ],
+   "issues": [],
+   "hallucination_flags_v1": [
+    {
+     "type": "number",
+     "token": "3",
+     "reason": "数字未在引用单元文本中出现"
+    }
+   ],
+   "false_positives_removed": [
+    {
+     "type": "number",
+     "token": "3",
+     "reason": "数字未在引用单元文本中出现"
+    }
+   ],
+   "new_flags_added": [],
+   "expected_refusal": false,
+   "citations_required": true,
+   "answer_type": "fact",
+   "schema_version": 2
+  },
+  {
+   "id": "q2",
+   "kind": "main",
+   "question": "高端球形硅微粉的竞争格局与国产替代空间如何？",
+   "category": "answerable",
+   "n_citations": 1,
+   "citations_exists": 1,
+   "citations_page_ok": 1,
+   "citation_exists_ratio": 1.0,
+   "citation_valid": true,
+   "n_sentences": 3,
+   "support_counts": {
+    "支持": 2,
+    "弱支持": 1
+   },
+   "supported_ratio": 0.6667,
+   "supported_or_weak_ratio": 1.0,
+   "hallucination_flags": [],
+   "citations": [
+    {
+     "unit_id": "49a9df63e537",
+     "exists": true,
+     "method": "id_map",
+     "page_ok": true,
+     "id_known_in_map": true
+    }
+   ],
+   "sentence_details": [
+    {
+     "sentence": "高端亚微米级球形硅微粉目前由日本厂商（Admatechs、Denka、Resonac）垄断，合计占据全球六成以上市场份额，属于关键卡位材料  。",
+     "support": "支持",
+     "score": 0.871
+    },
+    {
+     "sentence": "其纯度与球形度直接决定高速基板的线性膨胀系数、信号质量及散热性能，是改善高层板翘曲、保障信号传输及应对高功耗 GPU 散热的核心填料  。",
+     "support": "支持",
+     "score": 0.793
+    },
+    {
+     "sentence": "鉴于当前高端市场被日企垄断的现状，国产替代空间巨大  。",
+     "support": "弱支持",
+     "score": 0.478
+    }
+   ],
+   "issues": [],
+   "hallucination_flags_v1": [],
+   "false_positives_removed": [],
+   "new_flags_added": [],
+   "expected_refusal": false,
+   "citations_required": true,
+   "answer_type": "fact",
+   "schema_version": 2
+  },
+  {
+   "id": "q3",
+   "kind": "main",
+   "question": "固态电池的量产时间表与锂电产业链排产情况？",
+   "category": "answerable",
+   "n_citations": 3,
+   "citations_exists": 3,
+   "citations_page_ok": 3,
+   "citation_exists_ratio": 1.0,
+   "citation_valid": true,
+   "n_sentences": 3,
+   "support_counts": {
+    "支持": 3
+   },
+   "supported_ratio": 1.0,
+   "supported_or_weak_ratio": 1.0,
+   "hallucination_flags": [
+    {
+     "type": "number",
+     "token": "2030",
+     "reason": "数字未在引用单元文本中出现（非白名单小整数）",
+     "rule": "v2.number_whitelist"
+    }
+   ],
+   "citations": [
+    {
+     "unit_id": "420051375115",
+     "exists": true,
+     "method": "text_match(1.0)",
+     "page_ok": true,
+     "id_known_in_map": false
+    },
+    {
+     "unit_id": "89d89cd8efa6",
+     "exists": true,
+     "method": "text_match(1.0)",
+     "page_ok": true,
+     "id_known_in_map": false
+    },
+    {
+     "unit_id": "57cd3f75f983",
+     "exists": true,
+     "method": "text_match(1.0)",
+     "page_ok": true,
+     "id_known_in_map": false
+    }
+   ],
+   "sentence_details": [
+    {
+     "sentence": "固态电池预计 2030 年初步实现规模化应用，真正大规模落地至少还需五年时间  ；",
+     "support": "支持",
+     "score": 0.515
+    },
+    {
+     "sentence": "国家规划明确支持其在新能源汽车等场景应用  。",
+     "support": "支持",
+     "score": 0.737
+    },
+    {
+     "sentence": "锂电产业链排产方面，2026 年 9 月延续产销两旺态势：6 家电池样本企业排产 214.6GWh（同比+57%），6 家正极样本企业排产 26.1 万吨（同比",
+     "support": "支持",
+     "score": 0.903
+    }
+   ],
+   "issues": [
+    "幻觉候选 1 项（v2）"
+   ],
+   "hallucination_flags_v1": [
+    {
+     "type": "number",
+     "token": "2030",
+     "reason": "数字未在引用单元文本中出现"
+    }
+   ],
+   "false_positives_removed": [],
+   "new_flags_added": [],
+   "expected_refusal": false,
+   "citations_required": true,
+   "answer_type": "inference",
+   "schema_version": 2
+  },
+  {
+   "id": "q4",
+   "kind": "main",
+   "question": "2027 年火星殖民计划对 A 股半导体板块的影响？",
+   "category": "no_evidence_simulated",
+   "n_citations": 0,
+   "citations_exists": 0,
+   "citations_page_ok": 0,
+   "citation_exists_ratio": 0.0,
+   "citation_valid": false,
+   "n_sentences": 1,
+   "support_counts": {
+    "拒答": 1
+   },
+   "supported_ratio": null,
+   "supported_or_weak_ratio": null,
+   "hallucination_flags": [],
+   "citations": [],
+   "sentence_details": [
+    {
+     "sentence": "知识库中没有足够依据回答该问题。",
+     "support": "拒答",
+     "score": null
+    }
+   ],
+   "issues": [
+    "无引用"
+   ],
+   "hallucination_flags_v1": [],
+   "false_positives_removed": [],
+   "new_flags_added": [],
+   "expected_refusal": true,
+   "citations_required": false,
+   "answer_type": "refusal",
+   "schema_version": 2
+  },
+  {
+   "id": "q5",
+   "kind": "main",
+   "question": "研报里对白酒行业 2026 年双节动销的判断是什么？",
+   "category": "llm_failure_simulated",
+   "n_citations": 2,
+   "citations_exists": 2,
+   "citations_page_ok": 2,
+   "citation_exists_ratio": 1.0,
+   "citation_valid": true,
+   "n_sentences": 7,
+   "support_counts": {
+    "无支持": 1,
+    "支持": 6
+   },
+   "supported_ratio": 0.8571,
+   "supported_or_weak_ratio": 0.8571,
+   "hallucination_flags": [
+    {
+     "type": "english_token",
+     "token": "LLM",
+     "reason": "英文专名/术语（≥3 字母）未在引用单元文本中出现",
+     "rule": "v2.english_ge3letters"
+    }
+   ],
+   "citations": [
+    {
+     "unit_id": "6e3680e3d1aa",
+     "exists": true,
+     "method": "text_match(1.0)",
+     "page_ok": true,
+     "id_known_in_map": false
+    },
+    {
+     "unit_id": "c6dd395437e8",
+     "exists": true,
+     "method": "text_match(1.0)",
+     "page_ok": true,
+     "id_known_in_map": false
+    }
+   ],
+   "sentence_details": [
+    {
+     "sentence": "（规则降级：LLM 不可用，仅摘录知识库原文）",
+     "support": "无支持",
+     "score": 0.0
+    },
+    {
+     "sentence": "《rp_AP202610071830186073》·双节动销行情分化：白酒磨底，大众品稳健（）：当前白酒行业处于结构性磨底阶段，商务与礼赠需求收缩，但居民消费、",
+     "support": "支持",
+     "score": 0.58
+    },
+    {
+     "sentence": "当前行业处于结构性磨底阶段：商务、礼赠需求受宏观拖累持续收缩，是此轮调整的重要变量；",
+     "support": "支持",
+     "score": 1.0
+    },
+    {
+     "sentence": "居民消费、宴席与悦己型小聚构成基本盘，中秋国庆期间韧性突出，消费场景向小范围聚会及中低端特色餐饮迁移。",
+     "support": "支持",
+     "score": 1.0
+    },
+    {
+     "sentence": "《rp_AP202610071830186073》·双节动销行情分化：白酒磨底，大众品稳健（）：白酒厂家考核导向由回款转向动销配合，终端按需进货，且直营模式目前",
+     "support": "支持",
+     "score": 0.58
+    },
+    {
+     "sentence": "当前白酒渠道库存整体偏高，但终端按需进货、酒企很少大规模压货，厂家考核由回款导向转向动销配合。",
+     "support": "支持",
+     "score": 1.0
+    },
+    {
+     "sentence": "白酒直营仅头部品牌可行，多数品牌仍依赖传统经销商。",
+     "support": "支持",
+     "score": 1.0
+    }
+   ],
+   "issues": [
+    "无支持句 1/7",
+    "幻觉候选 1 项（v2）"
+   ],
+   "hallucination_flags_v1": [
+    {
+     "type": "english_token",
+     "token": "LLM",
+     "reason": "英文专名/术语未在引用单元文本中出现"
+    }
+   ],
+   "false_positives_removed": [],
+   "new_flags_added": [],
+   "expected_refusal": false,
+   "citations_required": true,
+   "answer_type": "fact",
+   "schema_version": 2
+  },
+  {
+   "id": "expanded_qk_f3968d07ff",
+   "kind": "main",
+   "question": "DeepSeek DSec 系统架构的结论在什么条件下会被证伪？",
+   "category": "expanded",
+   "n_citations": 1,
+   "citations_exists": 1,
+   "citations_page_ok": 1,
+   "citation_exists_ratio": 1.0,
+   "citation_valid": true,
+   "n_sentences": 3,
+   "support_counts": {
+    "拒答": 2,
+    "无支持": 1
+   },
+   "supported_ratio": 0.0,
+   "supported_or_weak_ratio": 0.0,
+   "hallucination_flags": [],
+   "citations": [
+    {
+     "unit_id": "4aa85d55c144",
+     "exists": true,
+     "method": "id_map",
+     "page_ok": true,
+     "id_known_in_map": true
+    }
+   ],
+   "sentence_details": [
+    {
+     "sentence": "知识库中没有足够依据回答该问题。",
+     "support": "拒答",
+     "score": null
+    },
+    {
+     "sentence": "检索材料中仅提及 DeepSeek 发布了支持每秒产生 5000 个以上沙盒的 Agent 训练基础设施 DSec，并介绍了其四层后端架构（FnCall/Con",
+     "support": "拒答",
+     "score": null
+    },
+    {
+     "sentence": "材料中其他内容涉及公司融资、东盟电商生态、光互连技术及大模型发现新蛋白系统等，与 DSec 系统架构的证伪条件无关。",
+     "support": "无支持",
+     "score": 0.16
+    }
+   ],
+   "issues": [
+    "无支持句 1/1"
+   ],
+   "hallucination_flags_v1": [],
+   "false_positives_removed": [],
+   "new_flags_added": [],
+   "expected_refusal": false,
+   "citations_required": true,
+   "answer_type": "fact",
+   "schema_version": 2
+  },
+  {
+   "id": "expanded_qk_426789898a",
+   "kind": "main",
+   "question": "钙钛矿光伏电池测试标准的关键逻辑链条是什么？",
+   "category": "expanded",
+   "n_citations": 1,
+   "citations_exists": 1,
+   "citations_page_ok": 1,
+   "citation_exists_ratio": 1.0,
+   "citation_valid": true,
+   "n_sentences": 1,
+   "support_counts": {
+    "支持": 1
+   },
+   "supported_ratio": 1.0,
+   "supported_or_weak_ratio": 1.0,
+   "hallucination_flags": [],
+   "citations": [
+    {
+     "unit_id": "6e81b7133003",
+     "exists": true,
+     "method": "id_map",
+     "page_ok": true,
+     "id_known_in_map": true
+    }
+   ],
+   "sentence_details": [
+    {
+     "sentence": "钙钛矿光伏电池测试标准的关键逻辑链条是：针对器件性能波动大、测试结果不稳定及面积定义不统一的问题，通过系统规定测试设备、稳定化处理要求及 I-V 特性测量方法，",
+     "support": "支持",
+     "score": 0.747
+    }
+   ],
+   "issues": [],
+   "hallucination_flags_v1": [],
+   "false_positives_removed": [],
+   "new_flags_added": [],
+   "expected_refusal": false,
+   "citations_required": true,
+   "answer_type": "fact",
+   "schema_version": 2
+  },
+  {
+   "id": "expanded_qk_ada54a9059",
+   "kind": "main",
+   "question": "网红营销与透明度要求对产业链或行业格局的影响如何？",
+   "category": "expanded",
+   "n_citations": 3,
+   "citations_exists": 3,
+   "citations_page_ok": 3,
+   "citation_exists_ratio": 1.0,
+   "citation_valid": true,
+   "n_sentences": 6,
+   "support_counts": {
+    "弱支持": 1,
+    "支持": 3,
+    "无支持": 2
+   },
+   "supported_ratio": 0.5,
+   "supported_or_weak_ratio": 0.6667,
+   "hallucination_flags": [],
+   "citations": [
+    {
+     "unit_id": "08c51a31de48",
+     "exists": true,
+     "method": "id_map",
+     "page_ok": true,
+     "id_known_in_map": true
+    },
+    {
+     "unit_id": "9ecb36bc3f4d",
+     "exists": true,
+     "method": "text_match(1.0)",
+     "page_ok": true,
+     "id_known_in_map": false
+    },
+    {
+     "unit_id": "e4c23fd1b887",
+     "exists": true,
+     "method": "text_match(1.0)",
+     "page_ok": true,
+     "id_known_in_map": false
+    }
+   ],
+   "sentence_details": [
+    {
+     "sentence": "网红营销与透明度要求推动行业向“真实、合规、可识别”转型。",
+     "support": "弱支持",
+     "score": 0.478
+    },
+    {
+     "sentence": "首先，所有网红营销必须立即被识别为商业内容，需清晰披露赞助性质，证言须真实可核实，不得鼓励过度消费或美化醉酒  。",
+     "support": "支持",
+     "score": 0.816
+    },
+    {
+     "sentence": "其次，营销传播严禁误导，视听材料（含 AI 生成内容）不得夸大产品特性，可持续性声明需有实证支撑  ；",
+     "support": "支持",
+     "score": 0.625
+    },
+    {
+     "sentence": "同时禁止描绘未成年人饮酒或利用吸引未成年人的元素推广  。",
+     "support": "支持",
+     "score": 0.591
+    },
+    {
+     "sentence": "这些要求促使企业加强内容审核与合规建设，提升行业透明度标准，重塑营销生态格局。",
+     "support": "无支持",
+     "score": 0.143
+    },
+    {
+     "sentence": ",  ,",
+     "support": "无支持",
+     "score": 0.0
+    }
+   ],
+   "issues": [
+    "无支持句 2/6"
+   ],
+   "hallucination_flags_v1": [],
+   "false_positives_removed": [],
+   "new_flags_added": [],
+   "expected_refusal": false,
+   "citations_required": true,
+   "answer_type": "fact",
+   "schema_version": 2
+  },
+  {
+   "id": "expanded_qk_ab60afef9f",
+   "kind": "main",
+   "question": "中小行配债中枢趋势下移的政策演进与市场影响如何？",
+   "category": "expanded",
+   "n_citations": 4,
+   "citations_exists": 4,
+   "citations_page_ok": 4,
+   "citation_exists_ratio": 1.0,
+   "citation_valid": true,
+   "n_sentences": 4,
+   "support_counts": {
+    "支持": 4
+   },
+   "supported_ratio": 1.0,
+   "supported_or_weak_ratio": 1.0,
+   "hallucination_flags": [],
+   "citations": [
+    {
+     "unit_id": "44852b57db0f",
+     "exists": true,
+     "method": "id_map",
+     "page_ok": true,
+     "id_known_in_map": true
+    },
+    {
+     "unit_id": "13bd656fa984",
+     "exists": true,
+     "method": "id_map",
+     "page_ok": true,
+     "id_known_in_map": true
+    },
+    {
+     "unit_id": "f20a48f347ff",
+     "exists": true,
+     "method": "id_map",
+     "page_ok": true,
+     "id_known_in_map": true
+    },
+    {
+     "unit_id": "e4a9c8a1b095",
+     "exists": true,
+     "method": "text_match(1.0)",
+     "page_ok": true,
+     "id_known_in_map": false
+    }
+   ],
+   "sentence_details": [
+    {
+     "sentence": "中小行配债中枢趋势下移主要受负债端收缩与监管约束驱动。",
+     "support": "支持",
+     "score": 0.8
+    },
+    {
+     "sentence": "政策演进上，存款利差收窄致揽存优势消失，叠加监管对久期及集中度的限制、FTP 考核倒挂，迫使中小行从“交易 + 配置”退化为被动配置。",
+     "support": "支持",
+     "score": 0.673
+    },
+    {
+     "sentence": "市场影响表现为：2026 年 8 月末配债增速降至 4.87%，显著低于大行的 18.05%；",
+     "support": "支持",
+     "score": 0.647
+    },
+    {
+     "sentence": "资产端呈现防御性置换，减持 7 年以上长债，增持 3 年内短端品种及同业存单，融出规模超 2000 亿元。",
+     "support": "支持",
+     "score": 0.634
+    }
+   ],
+   "issues": [],
+   "hallucination_flags_v1": [],
+   "false_positives_removed": [],
+   "new_flags_added": [],
+   "expected_refusal": false,
+   "citations_required": true,
+   "answer_type": "fact",
+   "schema_version": 2
+  },
+  {
+   "id": "expanded_qk_17dcb0bf7e",
+   "kind": "main",
+   "question": "跨境电子商务面临的四大挑战的规模/增速/份额等数据是多少？",
+   "category": "expanded",
+   "n_citations": 3,
+   "citations_exists": 3,
+   "citations_page_ok": 3,
+   "citation_exists_ratio": 1.0,
+   "citation_valid": true,
+   "n_sentences": 3,
+   "support_counts": {
+    "拒答": 1,
+    "弱支持": 2
+   },
+   "supported_ratio": 0.0,
+   "supported_or_weak_ratio": 1.0,
+   "hallucination_flags": [],
+   "citations": [
+    {
+     "unit_id": "bcf6880edb59",
+     "exists": true,
+     "method": "id_map",
+     "page_ok": true,
+     "id_known_in_map": true
+    },
+    {
+     "unit_id": "276e87e6cc33",
+     "exists": true,
+     "method": "id_map",
+     "page_ok": true,
+     "id_known_in_map": true
+    },
+    {
+     "unit_id": "a9bee4ea2451",
+     "exists": true,
+     "method": "text_match(1.0)",
+     "page_ok": true,
+     "id_known_in_map": false
+    }
+   ],
+   "sentence_details": [
+    {
+     "sentence": "知识库中没有足够依据回答该问题。",
+     "support": "拒答",
+     "score": null
+    },
+    {
+     "sentence": "检索材料仅定性描述了跨境电子商务面临的四大挑战（监管与市场准入复杂、连接生态系统困难、缺乏专门技能、信息差距），未提供关于这些挑战的具体规模、增速或市场份额等量",
+     "support": "弱支持",
+     "score": 0.493
+    },
+    {
+     "sentence": "材料中虽有跨境电商进出口总额及算力规模等宏观数据，但均不针对“四大挑战”的细分指标。",
+     "support": "弱支持",
+     "score": 0.297
+    }
+   ],
+   "issues": [],
+   "hallucination_flags_v1": [],
+   "false_positives_removed": [],
+   "new_flags_added": [],
+   "expected_refusal": false,
+   "citations_required": true,
+   "answer_type": "fact",
+   "schema_version": 2
+  },
+  {
+   "id": "expanded_qk_48516af659",
+   "kind": "main",
+   "question": "十月怀胎一朝分娩的识别规则与实战用法是什么？",
+   "category": "expanded",
+   "n_citations": 2,
+   "citations_exists": 2,
+   "citations_page_ok": 2,
+   "citation_exists_ratio": 1.0,
+   "citation_valid": true,
+   "n_sentences": 5,
+   "support_counts": {
+    "弱支持": 1,
+    "支持": 4
+   },
+   "supported_ratio": 0.8,
+   "supported_or_weak_ratio": 1.0,
+   "hallucination_flags": [],
+   "citations": [
+    {
+     "unit_id": "266f7161277f",
+     "exists": true,
+     "method": "id_map",
+     "page_ok": true,
+     "id_known_in_map": true
+    },
+    {
+     "unit_id": "ead9d5eeebc6",
+     "exists": true,
+     "method": "text_match(1.0)",
+     "page_ok": true,
+     "id_known_in_map": false
+    }
+   ],
+   "sentence_details": [
+    {
+     "sentence": "结论：“十月怀胎一朝分娩”是主力长期运作后拉升股票的识别规则与实战用法。",
+     "support": "弱支持",
+     "score": 0.419
+    },
+    {
+     "sentence": "其核心在于：当股票出现重复的长时间“百日低量群”，且呈现“价柱波浪滔天而量柱风平浪静”的量价特征时，表明进入孕育期；",
+     "support": "支持",
+     "score": 0.673
+    },
+    {
+     "sentence": "一旦时机成熟（基因密集呈现），无论大盘涨跌，主力都会拉出涨停板完成“分娩”。",
+     "support": "支持",
+     "score": 0.9
+    },
+    {
+     "sentence": "1. 主力运作过程如“十月怀胎”，完成后进入“一朝分娩”前夜即拉涨停  。",
+     "support": "支持",
+     "score": 0.654
+    },
+    {
+     "sentence": "2. 股票出现重复长时间“百日低量群”表明进入孕育过程，值得重点关注  。",
+     "support": "支持",
+     "score": 0.821
+    }
+   ],
+   "issues": [],
+   "hallucination_flags_v1": [
+    {
+     "type": "number",
+     "token": "1",
+     "reason": "数字未在引用单元文本中出现"
+    },
+    {
+     "type": "number",
+     "token": "2",
+     "reason": "数字未在引用单元文本中出现"
+    }
+   ],
+   "false_positives_removed": [
+    {
+     "type": "number",
+     "token": "1",
+     "reason": "数字未在引用单元文本中出现"
+    },
+    {
+     "type": "number",
+     "token": "2",
+     "reason": "数字未在引用单元文本中出现"
+    }
+   ],
+   "new_flags_added": [],
+   "expected_refusal": false,
+   "citations_required": true,
+   "answer_type": "fact",
+   "schema_version": 2
+  },
+  {
+   "id": "expanded_qk_4213d10ccc",
+   "kind": "main",
+   "question": "PTFE材料路线的传导路径与受益环节是什么？",
+   "category": "expanded",
+   "n_citations": 1,
+   "citations_exists": 1,
+   "citations_page_ok": 1,
+   "citation_exists_ratio": 1.0,
+   "citation_valid": true,
+   "n_sentences": 3,
+   "support_counts": {
+    "支持": 2,
+    "无支持": 1
+   },
+   "supported_ratio": 0.6667,
+   "supported_or_weak_ratio": 0.6667,
+   "hallucination_flags": [],
+   "citations": [
+    {
+     "unit_id": "a6b4696b9ece",
+     "exists": true,
+     "method": "id_map",
+     "page_ok": true,
+     "id_known_in_map": true
+    }
+   ],
+   "sentence_details": [
+    {
+     "sentence": "PTFE材料路线的传导路径是：利用其介电常数约2.1-2.2、损耗低于0.0004的性能优势，作为下一代低损耗材料替代M9体系；",
+     "support": "支持",
+     "score": 0.647
+    },
+    {
+     "sentence": "但受限于热塑性导致的加工难题（如钻孔毛刺），产业化需采用\"PTFE芯层+M9半固化片”的混压结构来平衡信号完整性与工艺可行性。",
+     "support": "支持",
+     "score": 0.929
+    },
+    {
+     "sentence": "受益环节为覆铜板制造中的核心材料供应商及具备相应混压工艺的厂商。",
+     "support": "无支持",
+     "score": 0.1
+    }
+   ],
+   "issues": [
+    "无支持句 1/3"
+   ],
+   "hallucination_flags_v1": [],
+   "false_positives_removed": [],
+   "new_flags_added": [],
+   "expected_refusal": false,
+   "citations_required": true,
+   "answer_type": "fact",
+   "schema_version": 2
+  },
+  {
+   "id": "expanded_qk_16b8d22f31",
+   "kind": "main",
+   "question": "CoWoP封装方案的技术升级路径与价值量变化如何？",
+   "category": "expanded",
+   "n_citations": 2,
+   "citations_exists": 2,
+   "citations_page_ok": 2,
+   "citation_exists_ratio": 1.0,
+   "citation_valid": true,
+   "n_sentences": 4,
+   "support_counts": {
+    "支持": 3,
+    "拒答": 1
+   },
+   "supported_ratio": 1.0,
+   "supported_or_weak_ratio": 1.0,
+   "hallucination_flags": [],
+   "citations": [
+    {
+     "unit_id": "98c77086175f",
+     "exists": true,
+     "method": "id_map",
+     "page_ok": true,
+     "id_known_in_map": true
+    },
+    {
+     "unit_id": "28e0346286a2",
+     "exists": true,
+     "method": "text_match(1.0)",
+     "page_ok": true,
+     "id_known_in_map": false
+    }
+   ],
+   "sentence_details": [
+    {
+     "sentence": "CoWoP方案通过去除ABF封装基板与BGA焊球，由强化型PCB直接承担信号、电源及热管理功能，单颗GPU配套PCB价值量可达600美元，是传统方案的三倍  。",
+     "support": "支持",
+     "score": 0.913
+    },
+    {
+     "sentence": "其技术升级路径在于将硅中介层与芯片组合直接安装在强化型基板上，替代了传统的三级结构  。",
+     "support": "支持",
+     "score": 0.564
+    },
+    {
+     "sentence": "随着单通道速率向224G演进，PCB需通过“加层数、换材料”保障信号完整性，推动单机柜价值量成倍增长  。",
+     "support": "支持",
+     "score": 0.864
+    },
+    {
+     "sentence": "知识库中没有足够依据回答该问题。",
+     "support": "拒答",
+     "score": null
+    }
+   ],
+   "issues": [],
+   "hallucination_flags_v1": [],
+   "false_positives_removed": [],
+   "new_flags_added": [],
+   "expected_refusal": false,
+   "citations_required": true,
+   "answer_type": "fact",
+   "schema_version": 2
+  },
+  {
+   "id": "expanded_qk_1e9ede7285",
+   "kind": "main",
+   "question": "电力设备板块周度表现的产业化进度与量产时间表如何？",
+   "category": "expanded",
+   "n_citations": 3,
+   "citations_exists": 3,
+   "citations_page_ok": 3,
+   "citation_exists_ratio": 1.0,
+   "citation_valid": true,
+   "n_sentences": 2,
+   "support_counts": {
+    "拒答": 2
+   },
+   "supported_ratio": null,
+   "supported_or_weak_ratio": null,
+   "hallucination_flags": [],
+   "citations": [
+    {
+     "unit_id": "bf1ee34d6040",
+     "exists": true,
+     "method": "id_map",
+     "page_ok": true,
+     "id_known_in_map": true
+    },
+    {
+     "unit_id": "429035b8e08d",
+     "exists": true,
+     "method": "text_match(1.0)",
+     "page_ok": true,
+     "id_known_in_map": false
+    },
+    {
+     "unit_id": "d42b185454ef",
+     "exists": true,
+     "method": "text_match(1.0)",
+     "page_ok": true,
+     "id_known_in_map": false
+    }
+   ],
+   "sentence_details": [
+    {
+     "sentence": "知识库中没有足够依据回答该问题。",
+     "support": "拒答",
+     "score": null
+    },
+    {
+     "sentence": "检索材料仅提供了电力设备板块在 2026 年 9 月 14 日至 25 日期间的周度涨跌幅数据（如光伏设备、电池等子行业表现）及与沪深 300 指数的对比情况，",
+     "support": "拒答",
+     "score": null
+    }
+   ],
+   "issues": [],
+   "hallucination_flags_v1": [],
+   "false_positives_removed": [],
+   "new_flags_added": [],
+   "expected_refusal": false,
+   "citations_required": true,
+   "answer_type": "fact",
+   "schema_version": 2
+  },
+  {
+   "id": "expanded_qk_f3db19b238",
+   "kind": "main",
+   "question": "大中华区零售市场趋势的景气度与需求变化如何？",
+   "category": "expanded",
+   "n_citations": 5,
+   "citations_exists": 5,
+   "citations_page_ok": 5,
+   "citation_exists_ratio": 1.0,
+   "citation_valid": true,
+   "n_sentences": 8,
+   "support_counts": {
+    "支持": 8
+   },
+   "supported_ratio": 1.0,
+   "supported_or_weak_ratio": 1.0,
+   "hallucination_flags": [],
+   "citations": [
+    {
+     "unit_id": "bf663d3e998a",
+     "exists": true,
+     "method": "id_map",
+     "page_ok": true,
+     "id_known_in_map": true
+    },
+    {
+     "unit_id": "afef8065108b",
+     "exists": true,
+     "method": "id_map",
+     "page_ok": true,
+     "id_known_in_map": true
+    },
+    {
+     "unit_id": "dd02cab720e0",
+     "exists": true,
+     "method": "id_map",
+     "page_ok": true,
+     "id_known_in_map": true
+    },
+    {
+     "unit_id": "3c014ae6bcd0",
+     "exists": true,
+     "method": "id_map",
+     "page_ok": true,
+     "id_known_in_map": true
+    },
+    {
+     "unit_id": "06025df5facb",
+     "exists": true,
+     "method": "text_match(1.0)",
+     "page_ok": true,
+     "id_known_in_map": false
+    }
+   ],
+   "sentence_details": [
+    {
+     "sentence": "大中华区零售市场景气度呈现分化，需求变化表现为消费理性化与结构性调整。",
+     "support": "支持",
+     "score": 0.5
+    },
+    {
+     "sentence": "结论：** 市场整体由规模扩张转向提质升级，租赁需求仍强劲但竞争加剧；",
+     "support": "支持",
+     "score": 0.667
+    },
+    {
+     "sentence": "消费行为趋于理性保守，下沉市场展现韧性，体验经济与入境游成为新增长点。",
+     "support": "支持",
+     "score": 0.774
+    },
+    {
+     "sentence": "1. **趋势方向**：大中华区零售物业市场呈现七大发展趋势，包括下沉市场消费韧性强劲、体验经济重塑场景、消费行为趋于理性保守等  。",
+     "support": "支持",
+     "score": 0.736
+    },
+    {
+     "sentence": "2. **供需状况**：上海中高端购物中心租赁需求仍强劲，但空置率上升；",
+     "support": "支持",
+     "score": 0.586
+    },
+    {
+     "sentence": "北京优质购物中心空置率为 10.4%；",
+     "support": "支持",
+     "score": 0.929
+    },
+    {
+     "sentence": "深圳空置率微升至 1.5%，品牌投资节奏放缓  ,  ,  。",
+     "support": "支持",
+     "score": 0.765
+    },
+    {
+     "sentence": "3. **区域差异**：耐克 FY2027Q1 数据显示，大中华区收入大幅下降 22%，成为主要拖累，而北美市场保持增长  。",
+     "support": "支持",
+     "score": 0.604
+    }
+   ],
+   "issues": [],
+   "hallucination_flags_v1": [],
+   "false_positives_removed": [],
+   "new_flags_added": [],
+   "expected_refusal": false,
+   "citations_required": true,
+   "answer_type": "fact",
+   "schema_version": 2
+  },
+  {
+   "id": "expanded_qk_2eda64b590",
+   "kind": "main",
+   "question": "资本市场现存障碍的规模/增速/份额等数据是多少？",
+   "category": "expanded",
+   "n_citations": 0,
+   "citations_exists": 0,
+   "citations_page_ok": 0,
+   "citation_exists_ratio": 0.0,
+   "citation_valid": false,
+   "n_sentences": 3,
+   "support_counts": {
+    "拒答": 1,
+    "无支持": 2
+   },
+   "supported_ratio": 0.0,
+   "supported_or_weak_ratio": 0.0,
+   "hallucination_flags": [],
+   "citations": [],
+   "sentence_details": [
+    {
+     "sentence": "知识库中没有足够依据回答该问题。",
+     "support": "拒答",
+     "score": null
+    },
+    {
+     "sentence": "检索材料中仅定性描述了资本市场存在的障碍（如非国有企业代表性不足、外国投资者占比小等），未提供关于这些障碍的具体规模、增速或份额等量化数据。",
+     "support": "无支持",
+     "score": 0.0
+    },
+    {
+     "sentence": "材料主要涉及政策成效、行业市场份额（如宁德时代）及消费趋势，缺乏针对“资本市场现存障碍”的统计数值。",
+     "support": "无支持",
+     "score": 0.0
+    }
+   ],
+   "issues": [
+    "无引用",
+    "无支持句 2/2"
+   ],
+   "hallucination_flags_v1": [],
+   "false_positives_removed": [],
+   "new_flags_added": [],
+   "expected_refusal": true,
+   "citations_required": false,
+   "answer_type": "refusal",
+   "schema_version": 2
+  },
+  {
+   "id": "expanded_qk_2feca0b1e3",
+   "kind": "main",
+   "question": "跨境电子商务面临的四大挑战的结论在什么条件下会被证伪？",
+   "category": "expanded",
+   "n_citations": 0,
+   "citations_exists": 0,
+   "citations_page_ok": 0,
+   "citation_exists_ratio": 0.0,
+   "citation_valid": false,
+   "n_sentences": 2,
+   "support_counts": {
+    "拒答": 2
+   },
+   "supported_ratio": null,
+   "supported_or_weak_ratio": null,
+   "hallucination_flags": [],
+   "citations": [],
+   "sentence_details": [
+    {
+     "sentence": "知识库中没有足够依据回答该问题。",
+     "support": "拒答",
+     "score": null
+    },
+    {
+     "sentence": "检索材料仅详细列出了跨境电子商务面临的四大挑战（监管与市场准入、连接生态系统困难、缺乏专门技能、信息差距），并提出了相应的解决建议，但并未包含关于这些结论在何种",
+     "support": "拒答",
+     "score": null
+    }
+   ],
+   "issues": [
+    "无引用"
+   ],
+   "hallucination_flags_v1": [],
+   "false_positives_removed": [],
+   "new_flags_added": [],
+   "expected_refusal": true,
+   "citations_required": false,
+   "answer_type": "refusal",
+   "schema_version": 2
+  }
+ ],
+ "problems": [
+  "q3（main）: 幻觉候选 1 项（v2）",
+  "q4（main）: 无引用",
+  "q5（main）: 无支持句 1/7",
+  "q5（main）: 幻觉候选 1 项（v2）",
+  "expanded_qk_f3968d07ff（main）: 无支持句 1/1",
+  "expanded_qk_ada54a9059（main）: 无支持句 2/6",
+  "expanded_qk_4213d10ccc（main）: 无支持句 1/3",
+  "expanded_qk_2eda64b590（main）: 无引用",
+  "expanded_qk_2eda64b590（main）: 无支持句 2/2",
+  "expanded_qk_2feca0b1e3（main）: 无引用"
+ ]
+}
