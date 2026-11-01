@@ -6885,5 +6885,25 @@
       "门禁全PASS"
     ],
     "doc": "deliverables/2026-11-02_收口验收单_v1.md"
+  },
+  "closure_accepted_20261102": {
+    "executed_at": "2026-11-02T03:06:59+08:00",
+    "verdict": "closed（知识库+问答+运维收口完成；策略线已独立结项）",
+    "final_state": {
+      "learning_cards": 130,
+      "units": 516,
+      "qa_http": "8091 v4+segment+retry",
+      "eval_v3": {
+        "p_at_5": 0.802,
+        "ndcg": 0.8549,
+        "coverage": 0.8931
+      },
+      "tasks": 6,
+      "skill_registry": 127
+    },
+    "pending_user": [
+      "飞书卡片权限（可选，文本推送已可用）"
+    ],
+    "doc": "deliverables/2026-11-02_收口验收单_v1.md"
   }
 }

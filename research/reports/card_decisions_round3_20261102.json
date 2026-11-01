@@ -1,0 +1,128 @@
+{
+ "schema_version": 1,
+ "date": "20261102",
+ "generated_at": "2026-11-02T03:06:04+08:00",
+ "generator": "task-127 第三轮候选建议 decisions",
+ "reviewer": "machine-precheck-round3（建议，待人工确认）",
+ "source": {
+  "precheck": "C:\\项目\\老田的AI助手\\research\\reports\\card_precheck_v4_20261102.json",
+  "precheck_sha256": "a118d134adbc9c21133a998a647203213d40649bed669298439c8f4ca9b76652",
+  "proposals": "C:\\项目\\老田的AI助手\\portal\\static\\card_proposals_v4.json",
+  "proposals_sha256": "cdab311d1b6eac0e204fd05a8e7eaf55ee0efcadd8ad56b711c983265b115f51"
+ },
+ "policy": {
+  "mapping": {
+   "pass": "pass",
+   "revise": "revise",
+   "reject": "reject"
+  },
+  "manual_confirmation_required": true,
+  "apply": false
+ },
+ "decisions": {
+  "CP4-20261102-001": {
+   "verdict": "revise",
+   "notes": "预审 revise（置信 medium，score 88）：问题与答案概念覆盖低（0%）"
+  },
+  "CP4-20261102-002": {
+   "verdict": "revise",
+   "notes": "预审 revise（置信 medium，score 88）：问题与答案概念覆盖低（0%）"
+  },
+  "CP4-20261102-003": {
+   "verdict": "revise",
+   "notes": "预审 revise（置信 medium，score 88）：答案含截断/占位符（… 或 待补充）"
+  },
+  "CP4-20261102-004": {
+   "verdict": "pass",
+   "notes": "预审 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "CP4-20261102-005": {
+   "verdict": "revise",
+   "notes": "预审 revise（置信 medium，score 88）：问题与答案概念覆盖低（0%）"
+  },
+  "CP4-20261102-006": {
+   "verdict": "pass",
+   "notes": "预审 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "CP4-20261102-007": {
+   "verdict": "reject",
+   "notes": "预审 reject（置信 high，score 38）：问题与答案概念覆盖低（0%）；角度一致性低（0.04）"
+  },
+  "CP4-20261102-008": {
+   "verdict": "revise",
+   "notes": "预审 revise（置信 medium，score 88）：问题与答案概念覆盖低（25%）"
+  },
+  "CP4-20261102-009": {
+   "verdict": "revise",
+   "notes": "预审 revise（置信 medium，score 88）：答案含截断/占位符（… 或 待补充）"
+  },
+  "CP4-20261102-010": {
+   "verdict": "pass",
+   "notes": "预审 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "CP4-20261102-011": {
+   "verdict": "pass",
+   "notes": "预审 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "CP4-20261102-012": {
+   "verdict": "revise",
+   "notes": "预审 revise（置信 medium，score 88）：问题与答案概念覆盖低（33%）"
+  },
+  "CP4-20261102-013": {
+   "verdict": "revise",
+   "notes": "预审 revise（置信 medium，score 88）：问题与答案概念覆盖低（33%）"
+  },
+  "CP4-20261102-014": {
+   "verdict": "revise",
+   "notes": "预审 revise（置信 medium，score 88）：问题与答案概念覆盖低（0%）"
+  },
+  "CP4-20261102-015": {
+   "verdict": "revise",
+   "notes": "预审 revise（置信 medium，score 88）：问题与答案概念覆盖低（0%）"
+  },
+  "CP4-20261102-016": {
+   "verdict": "revise",
+   "notes": "预审 revise（置信 medium，score 75）：角度一致性低（0.1875）；答案与原文重叠偏低（19%）"
+  },
+  "CP4-20261102-017": {
+   "verdict": "revise",
+   "notes": "预审 revise（置信 medium，score 88）：问题与答案概念覆盖低（20%）"
+  },
+  "CP4-20261102-018": {
+   "verdict": "revise",
+   "notes": "预审 revise（置信 medium，score 88）：问题与答案概念覆盖低（0%）"
+  },
+  "CP4-20261102-019": {
+   "verdict": "pass",
+   "notes": "预审 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "CP4-20261102-020": {
+   "verdict": "revise",
+   "notes": "预审 revise（置信 medium，score 88）：问题与答案概念覆盖低（20%）"
+  },
+  "CP4-20261102-021": {
+   "verdict": "revise",
+   "notes": "预审 revise（置信 medium，score 88）：问题与答案概念覆盖低（33%）"
+  },
+  "CP4-20261102-022": {
+   "verdict": "revise",
+   "notes": "预审 revise（置信 medium，score 85）：角度一致性低（0.25）"
+  },
+  "CP4-20261102-023": {
+   "verdict": "revise",
+   "notes": "预审 revise（置信 medium，score 88）：问题与答案概念覆盖低（0%）"
+  },
+  "CP4-20261102-024": {
+   "verdict": "pass",
+   "notes": "预审 pass（置信 high，score 100）：规则预审未发现明显问题"
+  }
+ },
+ "summary": {
+  "total": 24,
+  "pass": 6,
+  "revise": 17,
+  "reject": 1
+ },
+ "note": "第三轮候选建议 decisions；与 card_review.py decide 兼容（CP3 source 已支持）。",
+ "disclaimer": "机器预审建议仅辅助人工审核；不构成投资建议。"
+}

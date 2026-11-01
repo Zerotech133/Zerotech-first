@@ -1,0 +1,27 @@
+{
+ "generated_at": "2026-11-02T03:06:59+08:00",
+ "learning_cards": 130,
+ "round3": {
+  "candidates": 24,
+  "approved": 6,
+  "merged": 6,
+  "revise_not_merged": 17,
+  "reject": 1
+ },
+ "http": [
+  {
+   "url": "http://127.0.0.1:8091/api/health",
+   "status": 200
+  },
+  {
+   "url": "http://127.0.0.1:8091/api/kb/qa?q=M9%E8%A6%86%E9%93%9C%E6%9D%BF&topk=2",
+   "status": 200
+  },
+  {
+   "url": "http://127.0.0.1:8734/",
+   "status": 200
+  }
+ ],
+ "tasks": 6,
+ "head": "9d889c4bd Hermes数据团队组织与配置方案v1：张松匹配度/双部门问题/扩编DATA2-5/zhangsong profile+dw-governance+dw-etl MCP/权限矩阵/3周落地；任务T-20261102-127"
+}

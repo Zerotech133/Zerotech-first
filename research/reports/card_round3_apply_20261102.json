@@ -1,0 +1,208 @@
+{
+ "schema_version": 1,
+ "date": "20261102",
+ "generated_at": "2026-11-02T03:06:05+08:00",
+ "task": "task-127 第三轮 24 候选落地（预审+decisions+apply+merge，实际执行）",
+ "applied": true,
+ "precheck": {
+  "path": "C:\\项目\\老田的AI助手\\research\\reports\\card_precheck_v4_20261102.json",
+  "sha256": "a118d134adbc9c21133a998a647203213d40649bed669298439c8f4ca9b76652",
+  "summary": {
+   "total": 24,
+   "pass": 6,
+   "revise": 17,
+   "reject": 1,
+   "confidence": {
+    "medium": 17,
+    "high": 7
+   },
+   "by_theme": [
+    {
+     "theme": "交运/物流",
+     "total": 1,
+     "pass": 0,
+     "revise": 1,
+     "reject": 0
+    },
+    {
+     "theme": "军工/航天",
+     "total": 3,
+     "pass": 0,
+     "revise": 3,
+     "reject": 0
+    },
+    {
+     "theme": "化工/材料",
+     "total": 3,
+     "pass": 0,
+     "revise": 3,
+     "reject": 0
+    },
+    {
+     "theme": "宏观/政策",
+     "total": 3,
+     "pass": 2,
+     "revise": 1,
+     "reject": 0
+    },
+    {
+     "theme": "有色/金属",
+     "total": 1,
+     "pass": 0,
+     "revise": 1,
+     "reject": 0
+    },
+    {
+     "theme": "机械/制造",
+     "total": 3,
+     "pass": 0,
+     "revise": 2,
+     "reject": 1
+    },
+    {
+     "theme": "消费/零售",
+     "total": 3,
+     "pass": 1,
+     "revise": 2,
+     "reject": 0
+    },
+    {
+     "theme": "网络安全/信创",
+     "total": 2,
+     "pass": 2,
+     "revise": 0,
+     "reject": 0
+    },
+    {
+     "theme": "评级/研报方法论",
+     "total": 2,
+     "pass": 0,
+     "revise": 2,
+     "reject": 0
+    },
+    {
+     "theme": "量学/交易",
+     "total": 3,
+     "pass": 1,
+     "revise": 2,
+     "reject": 0
+    }
+   ],
+   "flag_counts": {
+    "Q_ANSWER_MISMATCH": 14,
+    "ANGLE_INCOHERENT": 3,
+    "ANSWER_TRUNCATED": 2,
+    "EVIDENCE_LOW_OVERLAP": 1,
+    "EVIDENCE_WEAK_OVERLAP": 1
+   }
+  }
+ },
+ "decisions": {
+  "path": "C:\\项目\\老田的AI助手\\research\\reports\\card_decisions_round3_20261102.json",
+  "sha256": "4fba413c090843595f7912556bf987ea8338f8c5555e0c2d4cc907ecbe4961b8",
+  "summary": {
+   "total": 24,
+   "pass": 6,
+   "revise": 17,
+   "reject": 1
+  }
+ },
+ "dry_run": {
+  "ok": true,
+  "decisions_count": 24,
+  "approved": 6,
+  "base_cards": 124,
+  "plan_stats": {
+   "base_cards": 124,
+   "proposal_cards": 6,
+   "approved": 6,
+   "would_add": 6,
+   "skipped_total": 0,
+   "skipped_not_reviewed": 0,
+   "skipped_rejected": 0,
+   "skipped_needs_revision": 0,
+   "skipped_concept_exists": 0,
+   "skipped_duplicate_in_batch": 0,
+   "resulting_cards": 130
+  },
+  "validation": {
+   "ok": true,
+   "errors": []
+  }
+ },
+ "before": {
+  "cards": 124,
+  "sha256": "a9eb57002a5ec4fc878cd3be7bca45e1e628fc8432effd84e9dab6764189cae9"
+ },
+ "after": {
+  "cards": 130,
+  "sha256": "f5f257b370827feda7f64f7ae7c349a9823b7ebf646bbfa994f546ba8b4bfe94",
+  "added_concepts": [
+   "中小行负债端收缩成因",
+   "IT 交付模式变革",
+   "网络安全技能缺口",
+   "网络安全软技能需求",
+   "四足机器人商业模式",
+   "百日低量群"
+  ]
+ },
+ "validation": {
+  "ok": true,
+  "count_before": 124,
+  "approved": 6,
+  "count_after": 130,
+  "added_cards": 6,
+  "dup_concepts": [],
+  "schema_errors": [],
+  "others_unchanged": true,
+  "post_write_validation": {
+   "ok": true,
+   "errors": []
+  },
+  "cards_sha_before": "a9eb57002a5ec4fc878cd3be7bca45e1e628fc8432effd84e9dab6764189cae9",
+  "cards_sha_after": "f5f257b370827feda7f64f7ae7c349a9823b7ebf646bbfa994f546ba8b4bfe94"
+ },
+ "backups": {
+  "pre_apply": {
+   "path": "C:\\项目\\老田的AI助手\\research\\reports\\backups\\kb_learning_cards.20261102_030605.pre_round3.bak.json",
+   "sha256": "a9eb57002a5ec4fc878cd3be7bca45e1e628fc8432effd84e9dab6764189cae9",
+   "cards": 124
+  },
+  "merge": {
+   "path": "C:\\项目\\老田的AI助手\\research\\reports\\backups\\kb_learning_cards.20261102_030605.bak.json",
+   "sha256": "a9eb57002a5ec4fc878cd3be7bca45e1e628fc8432effd84e9dab6764189cae9"
+  }
+ },
+ "digest": {
+  "rc": 0,
+  "output_tail": "生成成功：C:\\项目\\老田的AI助手\\portal\\static\\kb_learning_digest.json | date=20261102 | cards=5 | highlights=5 | points=10\n",
+  "sha256": "cc1b4ecd7753d686735347f1c63f1923e9397472f49e2ca6bae411f79bffd9a8"
+ },
+ "http": {
+  "kb_learning_cards": {
+   "status": 200,
+   "bytes": 106451
+  },
+  "kb_learning_digest": {
+   "status": 200,
+   "bytes": 10654
+  },
+  "kb_reports_page": {
+   "status": 200,
+   "bytes": 33828
+  }
+ },
+ "rollback": {
+  "cards": "copy /Y \"C:\\项目\\老田的AI助手\\research\\reports\\backups\\kb_learning_cards.20261102_030605.pre_round3.bak.json\" \"C:\\项目\\老田的AI助手\\portal\\static\\kb_learning_cards.json\" 然后重跑 learning_digest.py run",
+  "note": "恢复 124 张（移除本轮新增 approved 卡）"
+ },
+ "actual_numbers": {
+  "before": 124,
+  "approved": 6,
+  "after": 130,
+  "added": 6,
+  "revise_not_merged": 17,
+  "reject_not_merged": 1
+ },
+ "disclaimer": "本次为用户授权执行的第三轮候选落地；回滚路径见 rollback；不构成投资建议。"
+}
