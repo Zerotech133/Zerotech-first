@@ -328,6 +328,7 @@ def test_sandbox_trial_pilot_ok():
 
     r = sandbox_trial(PILOT)
     assert r["ok"] is True and r["killed"] is False and r["reason"] == ""
+    assert r.get("isolation") in ("job", "plain")
     assert r["elapsed_ms"] > 0
     v = r["verdict"]
     assert v["strategy_id"] == "codex_sma20_rsi14"

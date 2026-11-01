@@ -1,0 +1,20 @@
+{
+ "task_id": "T-20261102-122",
+ "opened_by": "A0",
+ "assigned_dept": "dev",
+ "assigned_agent": null,
+ "title": "数据仓研发方案 v1（Sprint1 立即开工）· 请 DATA1 接收",
+ "body": "【研发方案】2026-11-02 · 数据仓板块\n依据全链路审计（报告：deliverables/2026-11-02_数据仓全链路能力与数据接入审计_报告.md），制定 3 Sprint 研发方案：\nSprint1（11-02~06）止血：①雪球首跑+输出级健康+断流告警 ②drift PG DSN 修复 ③dw_snapshot 每日06:40任务（需L2）④display 补登记42表 ⑤口径映射表；\nSprint2（11-09~13）：统一入口页、display 第二批、entity 扩展、测试进 fast 门、etf registry 重建；\nSprint3（11-16~20）：资质补齐、数据补采评估、SOP v2、终验收。\n验收硬指标见方案 §四；L2 项见 §五；风险见 §六。\n请 DATA1：①确认接收并按 Sprint1 拆单执行；②确认 L2 审批项；③每日 08:20 早报加「数据仓健康」一行。\n方案：docs/plans/2026-11-02_数据仓研发方案_v1.md；任务：T-20261102-122。",
+ "severity": "P1",
+ "status": "open",
+ "created_at": "2026-11-02T00:22:32",
+ "due": "2026-11-06",
+ "closure_note": null,
+ "history": [
+  {
+   "at": "2026-11-02T00:22:32",
+   "by": "A0",
+   "action": "open"
+  }
+ ]
+}
