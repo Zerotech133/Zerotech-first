@@ -212,6 +212,15 @@ def main() -> int:
     shadow_file.write_text(json.dumps(shadow, ensure_ascii=False, indent=1), encoding="utf-8")
     print("shadow:", shadow_file, "n=", shadow["n_holdings"],
           "trap_w_c=%.1f%%" % (shadow["trap_weight_constrained"] * 100), flush=True)
+    # 自动刷新门户看板 JSON（失败不影响主流程）
+    try:
+        import subprocess as _sp
+        _r = _sp.run([sys.executable, "-X", "utf8",
+                      str(REPO / "tools" / "research" / "h14_shadow_status.py")],
+                     capture_output=True, text=True, timeout=120)
+        print("portal refresh:", (_r.stdout or _r.stderr).strip()[-160:], flush=True)
+    except Exception as _e:  # noqa: BLE001
+        print("portal refresh skipped:", type(_e).__name__, flush=True)
 
     # 滚动评估：用上一期 shadow 持仓计算已实现收益（约束 vs 无约束）
     prev_files = sorted(SHADOW_DIR.glob("shadow_*.json"))

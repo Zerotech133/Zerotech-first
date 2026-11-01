@@ -17,6 +17,7 @@ REPO = Path(r"C:\项目\老田的AI助手")
 STATIC = REPO / "portal" / "static"
 CARDS = STATIC / "kb_learning_cards.json"
 WATCH = STATIC / "h18_watch.json"
+H14 = STATIC / "h14_shadow.json"
 KIND = "kb_morning_brief"
 
 
@@ -49,6 +50,17 @@ def build_text(cards: dict, watch: dict, n_cards: int = 5, n_watch: int = 8) -> 
             lines.append(f"  … 其余 {len(items) - n_watch} 条见 /selection.html")
     else:
         lines.append("- 今日无修订事件")
+    # H14 影子盘摘要（若已生成）
+    try:
+        h = json.loads(H14.read_text(encoding="utf-8"))
+        health = h.get("health") or {}
+        lines += ["", f"🛡 H14 影子盘（{h.get('period', '')} 期，信号日 {h.get('signal_date', '')}）",
+                  f"- 持仓 {h.get('n_holdings')} 只；陷阱权重 {h.get('trap_weight_unconstrained_pct')}% → "
+                  f"{h.get('trap_weight_constrained_pct')}%（上限 {h.get('trap_cap_pct')}%，"
+                  f"{'达标' if health.get('trap_within_cap') else '超限'}）",
+                  f"- 下次验证：{h.get('next_check', '')}；看板 /h14_shadow.html"]
+    except Exception:  # noqa: BLE001
+        pass
     lines += ["", "——", "属性：学习材料/事件提醒，不构成投资建议；引用请带出处。"]
     return "\n".join(lines)
 
