@@ -16,7 +16,7 @@ REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "agent_platform" / "tools"))
 LEDGER = REPO / "research" / "ledger" / "etl_dryrun.jsonl"
 
-DATASETS = [("yt_learning_db", "staging_clean"), ("xueqiu_info_xq_status", "refresh_sample")]
+DATASETS = [("yt_learning_db", "staging_clean"), ("xq_xq_status", "refresh_sample")]
 
 
 def main(argv=None) -> int:
@@ -34,7 +34,8 @@ def main(argv=None) -> int:
                          "planned_writes": plan.get("planned_writes")})
         except Exception as e:  # noqa: BLE001
             rows.append({"ts": datetime.now().astimezone().isoformat(timespec="seconds"),
-                         "dataset_id": did, "action": action, "dry_run_only": True, "error": str(e)[:160]})
+                         "dataset_id": did, "action": action, "dry_run_only": True,
+                         "executed": False, "error": str(e)[:160]})
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     with out.open("a", encoding="utf-8") as f:
