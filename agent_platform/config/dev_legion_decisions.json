@@ -1,0 +1,24 @@
+{
+ "schema": "dev_legion_decisions/v1",
+ "readonly": true,
+ "as_of": "2026-11-01 15:35",
+ "note": "人工维护快照；v2 API 只读返回。待治理 API 后改为实时。",
+ "items": [
+  {
+   "title": "v1.1 批文 0/1",
+   "due": "11-02 12:00",
+   "owner": "ARCH1",
+   "high": true,
+   "desc": "12:00 已滑期；补签须注明实际时间，不倒签。",
+   "action": "补签/记滑期"
+  },
+  {
+   "title": "11 席回执 0/11",
+   "due": "11-03 09:30",
+   "owner": "ARCH1/G1/G2",
+   "high": false,
+   "desc": "11 席能力迭代回执仍为 0；未回=未完成。",
+   "action": "分组催办"
+  }
+ ]
+}

@@ -22,7 +22,9 @@ def test_three_piece_and_short_screen():
 def test_live_api_readonly():
     txt = HTML.read_text(encoding="utf-8")
     js = JS.read_text(encoding="utf-8")
-    assert 'fetch("/api/dev/legion"' in js
+    assert "fetch(API_V2" in js
+    assert 'const API_V2 = "/api/dev/legion"' in js
+    assert "workorder_bus" in js
     assert "no-store" in js
     assert "只读" in txt
     assert "不写" in txt or "不派单" in txt
@@ -39,6 +41,7 @@ def test_four_zones():
 def test_no_hardcoded_hex_in_page_css():
     css = CSS.read_text(encoding="utf-8")
     assert not re.search(r"#[0-9a-fA-F]{3,8}", css), "页面 CSS 禁止自绘 hex 色"
+
 
 def test_nav_entry_and_v1_link():
     nav = (ROOT / "portal" / "static" / "nav.js").read_text(encoding="utf-8")
