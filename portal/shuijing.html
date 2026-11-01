@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>司马徽研究台 · 今日决策台</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<script src="/static/nav.js" defer></script>
+<script src="/static/shortscreen.js" defer></script>
+<link rel="stylesheet" href="/static/shuijing.css">
+</head>
+<body>
+<main class="main wrap">
+  <div class="page-head">
+    <div class="crumb">零界学院 <span>/</span> 司马徽 <span>/</span> <b>今日决策台</b></div>
+    <div class="head-row">
+      <div>
+        <h1>司马徽 · 今日决策台</h1>
+        <p class="lede">候选 → 推荐池 → 复核 → 反馈，一屏看全；只读研究，不接实盘。<span class="demo-tag" id="mode-tag">只读</span></p>
+      </div>
+      <div class="head-actions">
+        <a class="btn" href="/acad1/pool">全池复盘 ↗</a>
+        <a class="btn" href="/org">军团席位</a>
+        <button class="btn btn-primary" id="btn-refresh" type="button">刷新数据</button>
+      </div>
+    </div>
+  </div>
+
+  <section class="run-banner" aria-label="运行状态">
+    <div class="run-main"><span class="pulse"></span><div><strong id="run-title">正在读取 ACAD1 推荐池…</strong><span id="run-sub">只读 · /api/acad1/pool</span></div></div>
+    <div class="run-side"><span class="micro-label">更新</span><b id="run-time">—</b><span class="audit-flag" id="fresh-tag">—</span></div>
+  </section>
+  <div class="error-banner" id="error-banner" hidden></div>
+
+  <section class="kpi-row" aria-label="关键数字">
+    <article class="kpi"><div class="kpi-top"><span>推荐池</span><i class="mini accent"></i></div><strong id="kpi-pool">—</strong><div class="kpi-foot"><span class="delta accent">设计上限 30</span><span>ACAD1</span></div></article>
+    <article class="kpi"><div class="kpi-top"><span>已复盘</span><i class="mini up"></i></div><strong id="kpi-reviewed">—</strong><div class="kpi-foot"><span class="delta up">T1/T2/N1/F1</span><span>+ D1</span></div></article>
+    <article class="kpi"><div class="kpi-top"><span>待复盘</span><i class="mini warn"></i></div><strong id="kpi-pending">—</strong><div class="kpi-foot"><span class="delta warn">未分析</span><span>not reviewed</span></div></article>
+    <article class="kpi"><div class="kpi-top"><span>WATCH / BUY</span><i class="mini flat"></i></div><strong id="kpi-actions">—</strong><div class="kpi-foot"><span class="delta">人工复核</span><span>不自动决策</span></div></article>
+    <article class="kpi"><div class="kpi-top"><span>数据状态</span><i class="mini down"></i></div><strong id="kpi-stale">—</strong><div class="kpi-foot"><span class="delta down" id="kpi-date">—</span><span>data_date</span></div></article>
+  </section>
+
+  <section class="panel flow-panel" aria-label="八段动线">
+    <div class="panel-head"><div><h2>八段动线</h2><p>有数据就显示；未接的阶段明确标“待接”，不凑数。</p></div><span class="panel-note" id="flow-context">ACAD1 · 只读</span></div>
+    <div class="flow" id="flow">
+      <div class="flow-step is-done"><span class="flow-index">01</span><strong>数据</strong><em id="flow-data">—</em><small>data_date</small></div><span class="flow-link"></span>
+      <div class="flow-step is-warn"><span class="flow-index">02</span><strong>策略</strong><em>待接</em><small>strategy API</small></div><span class="flow-link"></span>
+      <div class="flow-step is-done"><span class="flow-index">03</span><strong>候选</strong><em id="flow-candidates">—</em><small>推荐池</small></div><span class="flow-link"></span>
+      <div class="flow-step is-active"><span class="flow-index">04</span><strong>ACAD1</strong><em id="flow-pool">—</em><small>上限 30</small></div><span class="flow-link"></span>
+      <div class="flow-step is-warn"><span class="flow-index">05</span><strong>证据</strong><em id="flow-evidence">—</em><small>已复盘</small></div><span class="flow-link"></span>
+      <div class="flow-step is-warn"><span class="flow-index">06</span><strong>复核</strong><em id="flow-review">—</em><small>待复盘</small></div><span class="flow-link"></span>
+      <div class="flow-step is-warn"><span class="flow-index">07</span><strong>反馈</strong><em>待接</em><small>反馈 API</small></div><span class="flow-link"></span>
+      <div class="flow-step is-warn"><span class="flow-index">08</span><strong>督导</strong><em>待接</em><small>督导 API</small></div>
+    </div>
+  </section>
+
+  <div class="layout-grid">
+    <section class="panel pool-panel" aria-label="ACAD1 推荐池">
+      <div class="panel-head pool-head">
+        <div><h2>ACAD1 推荐池 <span class="count-pill" id="pool-count">—</span></h2><p>按 ACAD1 返回的全池；点击行看证据与风险。人工复核，不自动决策。</p></div>
+        <div class="pool-tools">
+          <label class="search"><input id="search" type="search" placeholder="代码 / 名称 / 来源" autocomplete="off"></label>
+          <select id="action-filter" class="select" aria-label="动作筛选">
+            <option value="all">全部动作</option>
+            <option value="watch">WATCH</option>
+            <option value="buy">BUY</option>
+            <option value="pending_analysis">待分析</option>
+            <option value="avoid">AVOID</option>
+          </select>
+        </div>
+      </div>
+      <div class="tabs" role="tablist" aria-label="池筛选">
+        <button class="tab is-active" data-filter="all" role="tab" aria-selected="true">全部 <b id="tab-all">—</b></button>
+        <button class="tab" data-filter="reviewed" role="tab" aria-selected="false">已复盘 <b id="tab-reviewed">—</b></button>
+        <button class="tab" data-filter="pending" role="tab" aria-selected="false">待复盘 <b id="tab-pending">—</b></button>
+      </div>
+      <div class="pool-table" role="table" aria-label="推荐池列表">
+        <div class="pool-header" role="row"><span>代码</span><span>名称</span><span>来源 / 风险</span><span>裁决</span><span>置信</span><span>价格</span><span>动作</span></div>
+        <div id="pool-rows"><div class="empty-row">读取中…</div></div>
+      </div>
+      <div class="pool-foot"><span id="pool-summary">—</span><a class="link-btn" href="/acad1/pool">打开全池复盘 →</a></div>
+    </section>
+
+    <aside class="right-rail" aria-label="运行与边界">
+      <section class="panel side-card run-card">
+        <div class="side-head"><h2>运行态</h2><span class="live-tag" id="live-tag"><i class="dot"></i>—</span></div>
+        <div class="run-line"><span>池 ID</span><b id="pool-id">—</b><em>ACAD1</em></div>
+        <div class="run-line"><span>owner</span><b id="owner">—</b><em>只读</em></div>
+        <div class="run-line"><span>生成</span><b id="gen-at">—</b><em>API</em></div>
+        <div class="run-line"><span>新鲜度</span><b id="freshness">—</b><em>天</em></div>
+        <div class="run-foot"><span id="mode-line">—</span><a class="link-btn" href="/acad1/pool">全池 →</a></div>
+      </section>
+
+      <section class="panel side-card anomaly-card">
+        <div class="side-head"><h2>风险与缺口</h2><span class="count-pill warn" id="risk-count">—</span></div>
+        <ul class="anomaly-list" id="risk-list"><li class="empty-row">读取中…</li></ul>
+        <div class="run-foot"><span>只列池内真实 risk_flags</span><span class="audit-flag">不补造</span></div>
+      </section>
+
+      <section class="panel side-card closure-card">
+        <div class="side-head"><h2>闭环</h2><span class="muted">只读</span></div>
+        <div class="closure-row"><div><span>反馈</span><b>待接</b><small>反馈 API</small></div><div class="circ">—</div></div>
+        <div class="closure-row"><div><span>督导</span><b>待接</b><small>督导 API</small></div><div class="circ">—</div></div>
+        <p class="closure-note">首版只做总览；反馈/督导录入仍走原链路，页面不写库。</p>
+        <a class="btn btn-ghost full" href="/academy">回学院</a>
+      </section>
+
+      <section class="panel side-card legion-card">
+        <div class="side-head"><h2>军团 11 席</h2><span class="muted">组织</span></div>
+        <div class="legion-grid">
+          <span class="seat is-lead">ACAD1<small>复核</small></span><span class="seat">STRAT1<small>研究</small></span><span class="seat">ST1<small>缠论</small></span><span class="seat">BACK1<small>验证</small></span><span class="seat">DATA1<small>数据</small></span><span class="seat">AI1<small>运行</small></span><span class="seat">PROD1<small>产品</small></span><span class="seat">COMM1<small>商业</small></span><span class="seat">INTEL1<small>情报</small></span><span class="seat">LUSU1<small>下游</small></span><span class="seat">A0<small>决策</small></span>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <footer class="page-foot"><span>数据源：GET /api/acad1/pool · 只读研究 · 不接实盘</span><span>边界：不自动下单 · 不自动通过/否决 · 不混市场明细</span></footer>
+</main>
+
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" aria-hidden="true" aria-labelledby="drawer-title">
+  <div class="drawer-head"><div><span class="drawer-market" id="drawer-market">ACAD1</span><h2 id="drawer-title">—</h2><p id="drawer-name">—</p></div><button class="icon-btn" id="drawer-close" type="button" aria-label="关闭">✕</button></div>
+  <div class="drawer-body">
+    <div class="drawer-meta" id="drawer-meta"></div>
+    <h3>为什么在池里</h3><div class="reason-list" id="drawer-reasons"></div>
+    <h3>证据与缺口</h3><div class="evidence" id="drawer-evidence"></div>
+    <h3>风险检查</h3><ul class="check-list" id="drawer-checks"></ul>
+    <div class="drawer-note">ACAD1 只做人工复核：通过 / 观察 / 否决都必须留理由与证据引用；本页只读，不写库。</div>
+  </div>
+  <div class="drawer-foot"><a class="btn" href="/acad1/pool">全池复盘 ↗</a><a class="btn btn-primary" href="/quant_paper.html">paper 组合 ↗</a></div>
+</aside>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="/static/shuijing.js"></script>
+</body>
+</html>
