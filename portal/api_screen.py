@@ -409,7 +409,7 @@ def build_screen():
 
         return [("门户API", http_ok("http://127.0.0.1:8091/health")),
                 ("nginx网关", http_ok("http://127.0.0.1:8080/")),
-                ("量化前端", http_ok("http://127.0.0.1:5175/")),
+                ("智策API", http_ok("http://127.0.0.1:8105/api/v1/health")),
                 ("QD桥接", tcp_ok(9103)),
                 ("卡片回调", tcp_ok(9104))]
 

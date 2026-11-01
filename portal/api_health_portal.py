@@ -63,8 +63,8 @@ class Handler:  # Mixin 壳：经基座多继承并入
         _spec = [("门户API(8091)", lambda: http_ok(
                      "http://127.0.0.1:8091/health")),
                  ("nginx(8080)", lambda: http_ok("http://127.0.0.1:8080/")),
-                 ("量化前端(5175)", lambda: http_ok(
-                     "http://127.0.0.1:5175/")),
+                 ("智策API(8105)", lambda: http_ok(
+                     "http://127.0.0.1:8105/api/v1/health")),
                  ("QD桥接(9103)", lambda: tcp_ok(9103)),
                  ("卡片回调(9104)", lambda: tcp_ok(9104))]
         with ThreadPoolExecutor(max_workers=5) as _ex:

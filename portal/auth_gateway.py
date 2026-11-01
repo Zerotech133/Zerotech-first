@@ -41,7 +41,7 @@ SESSION_TTL_SECONDS = 3600
 MAX_BODY = 64 * 1024
 MAX_LOGIN_FAILS = 5
 LOGIN_WINDOW_SECONDS = 300
-ZHICE_BASE = os.environ.get("ZHICE_BASE_URL", "http://127.0.0.1:8102").rstrip("/")
+ZHICE_BASE = os.environ.get("ZHICE_BASE_URL", "http://127.0.0.1:8105").rstrip("/")
 # 本地管理员（2026-10-30 老田要求）：凭据只存 vault 的 PBKDF2 哈希，不入库。
 ADMIN_FILE = os.environ.get("ZB_LOCAL_ADMIN_FILE", r"C:\项目\_vault\secrets\zb_admin.env")
 ADMIN_PBKDF2_ITER = 260000

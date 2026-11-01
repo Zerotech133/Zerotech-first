@@ -370,7 +370,7 @@
       <div class="sec-head"><div class="sec-title">◤ 量化工具坞 · 外部系统</div><div class="sec-note">独立部署 · 30s 探活</div></div>
       <div class="dock">
         <a class="tool" href="http://localhost:4100" target="_blank" rel="noopener" data-check="quant">📈 缠论量化 <span class="sub">NewQuant v2</span> <span class="dot unknown"></span></a>
-        <a class="tool" href="http://localhost:5175" id="zhice-link" target="_blank" rel="noopener" data-check="zhice">🤖 智策 OS v2 <span class="sub">四市场</span> <span class="dot unknown"></span></a>
+        <a class="tool" href="/quant/" id="zhice-link" target="_blank" rel="noopener" data-check="zhice">🤖 智策 OS v2 <span class="sub">四市场</span> <span class="dot unknown"></span></a>
         <a class="tool" href="http://localhost:8888" target="_blank" rel="noopener" data-check="qd">🎯 QuantDinger <span class="sub">回测·执行</span> <span class="dot unknown"></span></a>
         <a class="tool" id="dash-link" target="_blank" rel="noopener" data-check="dash">📊 量化仪表盘 <span class="sub">六环·策源·血缘</span> <span class="dot unknown"></span></a>
       </div>
@@ -378,7 +378,7 @@
   </main>
 
 <script>
-  document.getElementById('zhice-link').href = location.protocol + '//' + location.hostname + ':5175';
+  document.getElementById('zhice-link').href = '/quant/';
   document.getElementById('dash-link').href = location.protocol + '//' + location.hostname + ':8791';
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 

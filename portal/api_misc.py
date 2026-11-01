@@ -417,8 +417,8 @@ def build_os_cockpit():
 
 def build_overview():
     services = [
-        {"name": "智策前端", "port": 5175},
-        {"name": "智策 API", "port": 8102},
+        {"name": "智策页面(/quant/)", "port": 8734},
+        {"name": "智策 API", "port": 8105},
         {"name": "卡片回调", "port": 9104},
         {"name": "Ollama", "port": 11434},
     ]

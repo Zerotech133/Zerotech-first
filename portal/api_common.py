@@ -104,7 +104,7 @@ DOMAIN_NAV_GROUPS = {
             ("🚀 驾驶舱", "/bridge", "bridge"),
             ("🦸 超级助手", "/hermes/", "hermes"),
             ("🐴 CowAgent", "http://127.0.0.1:9899", "cowagent"),
-            ("🧠 智策 OS", "http://127.0.0.1:5175", "zhice"),
+            ("🧠 智策 OS", "/quant/", "zhice"),
             ("🤖 AI 市场", "/aim", "aim"),
             ("🛒 算法市场", "/algo", "algo"),
             ("🏛 组织架构 🚧", "/org", "org"))),

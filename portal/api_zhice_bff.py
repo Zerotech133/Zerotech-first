@@ -49,7 +49,7 @@ CAINIAO_PW_FILE = Path(
         r"C:\项目\_vault\secrets\cainiao\cainiao_mysql_root.pw",
     )
 )
-ZHICE_BASE = os.environ.get("ZHICE_BASE_URL", "http://127.0.0.1:8102").rstrip("/")
+ZHICE_BASE = os.environ.get("ZHICE_BASE_URL", "http://127.0.0.1:8105").rstrip("/")
 ZHICE_TOKEN = os.environ.get("ZHICE_SERVICE_TOKEN", "").strip()
 ZHICE_USERNAME = os.environ.get("ZHICE_SERVICE_USERNAME", "").strip()
 ZHICE_PASSWORD_FILE = Path(
