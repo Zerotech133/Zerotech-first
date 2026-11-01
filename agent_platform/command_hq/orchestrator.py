@@ -18,10 +18,14 @@
   同一报告（``reused=True``），不重复派单；``decide`` 同参幂等；
 - 快照/恢复：``snapshot()`` / ``from_snapshot()`` 支持断点续跑（不执行动作）。
 
-与既有模块的关系：本文件是**编排骨架**，不 import mission_planner/worker/
-approval_control（避免在 MVP 阶段误触真实 LLM/执行）；planner 注入接口兼容
-``legion_command.mission_planner.plan()`` 的 ``{"tasks":[{id,deps,...}]}`` 形状，
-后续 W-C4 执行门再接线（另单）。
+与既有模块的关系（K-ORG-20261101-HQWIRE 接线）：
+- 意见统一由 ``role_contract.normalize_opinion`` 严格校验（唯一契约源）；
+- ``run`` 末尾调用 ``consensus.build_consensus`` 产出 ``auto_ready/escalated``
+  判定 + blockers，并用 ``ensure_countersign`` 卡“无 verified 证据不算共识”；
+  W-C2 旧汇总字段保留（summary 兼容），判定状态以 consensus 引擎为准；
+- 不 import mission_planner/worker/approval_control（避免误触真实 LLM/执行）；
+  planner 注入接口兼容 ``mission_planner.plan()`` 的 ``{"tasks":[{id,deps,...}]}``；
+  后续 W-C4 执行门再接线（另单）。
 """
 from __future__ import annotations
 
@@ -48,6 +52,12 @@ except ImportError:  # 直接以目录导入（测试/脚本场景）
         RoleOpinionError,
         normalize_opinion,
     )
+
+try:
+    # W-C3 共识引擎（HQCONS）；编排器只调判定，不建卡/不发飞书
+    from .consensus import ConsensusError, build_consensus, ensure_countersign
+except ImportError:  # 直接以目录导入
+    from consensus import ConsensusError, build_consensus, ensure_countersign  # type: ignore
 
 SCHEMA = "hq_orchestrator/v1"
 REPORT_SCHEMA = "hq_orchestrator_report/v1"
@@ -355,6 +365,72 @@ class Orchestrator:
             "roles_total": len(opinions),
         }
 
+    # ---- 共识引擎（W-C3 接线） ----
+    @staticmethod
+    def _risk_level_for(nodes: List[TaskNode]) -> str:
+        """DAG 最高风险级别 → consensus 入参（任一 L2 则 L2 强制升级）。"""
+        levels = {n.risk_level for n in nodes}
+        if "L2" in levels:
+            return "L2"
+        if "L1" in levels:
+            return "L1"
+        return "L0"
+
+    def _evaluate_consensus(self, topic_id: str, nodes: List[TaskNode],
+                            opinions: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+        """调用 HQCONS 判定引擎；角色意见已过 role_contract 严格校验。
+
+        退出证据门槛 ``ensure_countersign``：无 verified 证据的“共识”降级升级。
+        引擎异常 fail-closed：返回 escalated + consensus_unavailable blocker，不崩。
+        """
+        risk = self._risk_level_for(nodes)
+        try:
+            raw = build_consensus(list(opinions.values()), topic_id=topic_id,
+                                  risk_level=risk)
+            result = ensure_countersign(raw)
+        except Exception as exc:  # noqa: BLE001 - 共识引擎失败必须 fail-closed 可见
+            return {
+                "ok": False,
+                "schema": "hq_consensus/v1",
+                "topic_id": topic_id,
+                "risk_level": risk,
+                "verdict": "escalate",
+                "auto_ready": False,
+                "escalate": True,
+                "decision_id": "",
+                "reason": "consensus_unavailable：%s: %s"
+                          % (type(exc).__name__, str(exc)[:200]),
+                "blockers": [{"code": "consensus_unavailable",
+                              "detail": "%s: %s" % (type(exc).__name__,
+                                                    str(exc)[:200])}],
+            }
+        return {"ok": True, "risk_level": risk, **result}
+
+    @staticmethod
+    def _apply_consensus(summary: Dict[str, Any],
+                         consensus_eval: Dict[str, Any]) -> Dict[str, Any]:
+        """以 consensus 判定为权威覆盖旧 summary 的 consensus/decision_state。"""
+        out = dict(summary)
+        blockers = list(consensus_eval.get("blockers") or [])
+        auto_ready = bool(consensus_eval.get("auto_ready"))
+        out["consensus"] = auto_ready
+        out["decision_state"] = "consensus" if auto_ready else "escalated"
+        out["consensus_verdict"] = consensus_eval.get("verdict") or "escalate"
+        out["consensus_blockers"] = blockers
+        out["consensus_ok"] = bool(consensus_eval.get("ok"))
+        reasons = list(out.get("escalate_reasons") or [])
+        seen = set(reasons)
+        for blocker in blockers:
+            text = "%s：%s" % (blocker.get("code"), blocker.get("detail"))
+            if text not in seen:
+                seen.add(text)
+                reasons.append(text)
+        if auto_ready:
+            reasons = [r for r in reasons if not r.startswith("consensus_unavailable")]
+        out["escalate_reasons"] = reasons
+        out["blockers"] = blockers
+        return out
+
     # ---- 主流程 ----
     def run(self, goal: str, constraints: Any = None, *,
             force_rerun: bool = False) -> Dict[str, Any]:
@@ -384,6 +460,8 @@ class Orchestrator:
             self._transition("debate", reason="goal 解析完成，进入五角色讨论")
             opinions, errors = self._dispatch(run_id, goal, nodes, cons)
             summary = self._summarize(nodes, opinions, errors)
+            consensus_eval = self._evaluate_consensus(run_id, nodes, opinions)
+            summary = self._apply_consensus(summary, consensus_eval)
             report = {
                 "schema": REPORT_SCHEMA,
                 "topic_id": run_id,
@@ -395,6 +473,8 @@ class Orchestrator:
                 "opinions": opinions,
                 "role_errors": errors,
                 "summary": summary,
+                # W-C3 共识引擎判定（只内存产出；不建飞书卡/不发送）
+                "consensus": consensus_eval,
                 "decision": None,
                 "execution": {"attempted": False, "dry_run": True,
                               "actions": [], "evidence": [],

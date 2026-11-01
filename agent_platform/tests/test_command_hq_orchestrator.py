@@ -28,13 +28,20 @@ from command_hq.orchestrator import (  # noqa: E402
 from command_hq.role_contract import ROLES, make_opinion  # noqa: E402
 
 
+_VERIFIED = [{"kind": "test", "ref": "agent_platform/tests/fake",
+              "digest": "sha256:" + "a" * 64, "verified": True}]
+
+
 def _op(role, topic, position="support", **kw):
-    """用 HQROLE 正式契约构造合法 RoleOpinion（本集成分支唯一契约源）。"""
+    """用 HQROLE 正式契约构造合法 RoleOpinion（本集成分支唯一契约源）。
+
+    默认带一条 verified 证据：W-C3 ensure_countersign 要求“无 verified 证据不算共识”。
+    """
     return make_opinion(
         role, topic,
         position=kw.pop("position", position),
         recommendation=kw.pop("recommendation", "同意"),
-        evidence=kw.pop("evidence", ()),
+        evidence=kw.pop("evidence", [dict(x) for x in _VERIFIED]),
         risks=kw.pop("risks", ()),
         conditions=kw.pop("conditions", ()),
         escalate=kw.pop("escalate", False),
@@ -331,3 +338,109 @@ def test_mid_run_conflict_rejected():
     orch.run("第一单")
     with pytest.raises(OrchestratorError, match="进行中"):
         orch.run("第二单（不同输入）")
+
+# ---- W-C3 接线（K-ORG-20261101-HQWIRE）：run 调用 consensus.build_consensus ----
+
+def test_run_attaches_consensus_engine_result():
+    orch = _orchestrator([_task("T1")])
+    report = orch.run("接线共识引擎")
+    consensus = report["consensus"]
+    assert consensus["schema"] == "hq_consensus/v1"
+    assert consensus["ok"] is True
+    assert consensus["verdict"] == "auto_ready" and consensus["auto_ready"] is True
+    assert consensus["decision_id"].startswith("HQD-")
+    assert consensus["risk_level"] == "L1"
+    assert set(consensus["latest"]) == set(ROLES)
+    # 旧 summary 字段仍在，且判定被引擎统一
+    assert report["summary"]["consensus"] is True
+    assert report["summary"]["decision_state"] == "consensus"
+    assert report["summary"]["consensus_verdict"] == "auto_ready"
+    assert report["summary"]["position_counts"]["support"] == 5
+    # 状态机与判定一致
+    assert report["state"] == "consensus" and orch.state == "consensus"
+
+
+def test_consensus_engine_reuses_contract_validated_opinions():
+    """consensus.latest 中的意见 = role_contract normalize_opinion 结果（含 schema/created_at）。"""
+    orch = _orchestrator([_task("T1")])
+    report = orch.run("复用契约")
+    for role in ROLES:
+        op = report["consensus"]["latest"][role]
+        assert op["schema"] == "hq_role_opinion/v1"
+        assert op["role"] == role and op["topic_id"] == report["topic_id"]
+        assert op["evidence"] and op["evidence"][0]["verified"] is True
+
+
+def test_no_verified_evidence_escalates_even_all_support():
+    """W-C3 证据门槛：五席全 support 但无 verified 证据 → 不冒充共识。"""
+    def bare_runner(role, topic, goal, dag, constraints):
+        return _op(role, topic, evidence=[])
+
+    orch = Orchestrator(planner=_planner([_task("T1")]),
+                        role_runners={r: bare_runner for r in ROLES})
+    report = orch.run("无证据共识")
+    consensus = report["consensus"]
+    assert consensus["verdict"] == "escalate" and consensus["auto_ready"] is False
+    codes = [b["code"] for b in consensus["blockers"]]
+    assert "no_verified_evidence" in codes
+    assert report["summary"]["consensus"] is False
+    assert report["state"] == "escalated"
+    assert any("no_verified_evidence" in r
+               for r in report["summary"]["escalate_reasons"])
+
+
+def test_consensus_engine_failure_falls_back_fail_closed(monkeypatch):
+    import command_hq.orchestrator as O
+
+    def boom(*a, **k):
+        raise O.ConsensusError("fake engine crash")
+
+    monkeypatch.setattr(O, "build_consensus", boom)
+    orch = _orchestrator([_task("T1")])
+    report = orch.run("引擎故障")
+    consensus = report["consensus"]
+    assert consensus["ok"] is False and consensus["verdict"] == "escalate"
+    assert any(b["code"] == "consensus_unavailable" for b in consensus["blockers"])
+    assert report["summary"]["consensus"] is False
+    assert report["state"] == "escalated"
+    # 旧接口仍可用：人工决议可继续
+    d = orch.decide("A", reason="引擎故障升级人工")
+    assert d["decision_id"].startswith("DEC-")
+
+
+def test_l2_blocker_comes_from_consensus_engine():
+    orch = _orchestrator([_task("T1", risk="L2")])
+    report = orch.run("L2 引擎判定")
+    codes = [b["code"] for b in report["consensus"]["blockers"]]
+    assert "l2_forced_escalate" in codes
+    assert report["summary"]["consensus_verdict"] == "escalate"
+    assert report["consensus"]["risk_level"] == "L2"
+
+
+def test_consensus_decision_id_stable_for_same_opinions():
+    orch1 = _orchestrator([_task("T1")])
+    orch2 = _orchestrator([_task("T1")])
+    r1 = orch1.run("幂等决策 id")
+    r2 = orch2.run("幂等决策 id")
+    assert r1["consensus"]["decision_id"] == r2["consensus"]["decision_id"]
+    assert r1["summary"]["consensus_verdict"] == r2["summary"]["consensus_verdict"]
+
+
+def test_legacy_report_interface_preserved():
+    """旧接口兼容：原报告键/状态机方法保留，新增 consensus 字段不破坏。"""
+    orch = _orchestrator([_task("T1")])
+    report = orch.run("接口兼容")
+    for key in ("schema", "topic_id", "run_id", "goal", "constraints", "tasks",
+                "topology", "opinions", "role_errors", "summary", "decision",
+                "execution", "state", "history", "executed", "reused", "consensus"):
+        assert key in report, key
+    for key in ("consensus", "decision_state", "position_counts", "divergences",
+                "conditions", "risks", "escalate_reasons", "l2_tasks",
+                "roles_missing", "roles_total"):
+        assert key in report["summary"], key
+    assert report["executed"] is False
+    d = orch.decide("A｜通过")
+    assert orch.state == "decided" and d["run_id"] == report["run_id"]
+    orch.begin_execution()
+    orch.mark_done()
+    assert orch.state == "done"
