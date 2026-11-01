@@ -482,7 +482,7 @@ def test_real_guard_module_loads():
     assert callable(mod.apply_guard)
 
 # ---------------------------------------------------------------------------
-# prompt / guard_marker 灰度参数（task-95）：默认 v1 + strict，可切换且缓存键区分
+# prompt / guard_marker 灰度参数：2026-11-02 起默认 v4 + segment，可切换且缓存键区分
 # ---------------------------------------------------------------------------
 def test_prompt_and_guard_marker_defaults_and_switch():
     status, env = api.handle("GET", "/api/kb/qa",
@@ -490,9 +490,9 @@ def test_prompt_and_guard_marker_defaults_and_switch():
                              ask_fn=mock_ask, multi_fn=mock_multi,
                              guard_impl=_PASS_GUARD)
     assert status == 200
-    assert env["meta"]["prompt_version"] == "v1"
-    assert env["meta"]["guard_marker"] == "strict"
-    assert env["meta"]["guard"]["marker_mode"] == "strict_line"
+    assert env["meta"]["prompt_version"] == "v4"
+    assert env["meta"]["guard_marker"] == "segment"
+    assert env["meta"]["guard"]["marker_mode"] == "segment"
 
     seen, guard_seen = {}, {}
 
@@ -563,7 +563,12 @@ def test_prompt_guard_marker_invalid_and_cache_key():
     base_q = {"q": ["M9 覆铜板价值量"], "mode": ["multi"]}
     s1, _ = api.handle("GET", "/api/kb/qa", base_q, ask_fn=mock_ask, multi_fn=mock_multi,
                        guard_impl=_PASS_GUARD)
+    # 默认 v4 已命中 base；显式 v1 属不同缓存键 → 不命中
     s2, env2 = api.handle("GET", "/api/kb/qa",
-                          {"q": ["M9 覆铜板价值量"], "mode": ["multi"], "prompt": ["v4"]},
+                          {"q": ["M9 覆铜板价值量"], "mode": ["multi"], "prompt": ["v1"]},
                           ask_fn=mock_ask, multi_fn=mock_multi, guard_impl=_PASS_GUARD)
     assert s1 == s2 == 200 and env2["meta"]["cache_hit"] is False
+    s3, env3 = api.handle("GET", "/api/kb/qa",
+                          {"q": ["M9 覆铜板价值量"], "mode": ["multi"], "prompt": ["v1"]},
+                          ask_fn=mock_ask, multi_fn=mock_multi, guard_impl=_PASS_GUARD)
+    assert s3 == 200 and env3["meta"]["cache_hit"] is True

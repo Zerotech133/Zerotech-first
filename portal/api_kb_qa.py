@@ -51,9 +51,9 @@ RATE_LIMIT_WINDOW_SECONDS = 60
 RATE_LIMIT = {"retrieval": 60, "single": 6, "multi": 6}   # 每窗口每通道上限
 VALID_MODES = ("retrieval", "single", "multi")
 VALID_PROMPTS = ("v1", "v4")          # 聚合 prompt 版本（默认 v1；v4 可选灰度）
-DEFAULT_PROMPT = "v1"
+DEFAULT_PROMPT = "v4"   # 2026-11-02 灰度切默认：与 CLI 统一走已验证 v4
 VALID_GUARD_MARKERS = ("strict", "segment")   # guard marker 模式（默认 strict）
-DEFAULT_GUARD_MARKER = "strict"
+DEFAULT_GUARD_MARKER = "segment"   # 与 prompt v4 配套（灰度）
 DEFAULT_CITATION_RETRY = True  # v4 引用自检重试（灰度默认开；citation_retry=0 回滚）
 GUARD_MARKER_MODES = {"strict": "strict_line", "segment": "segment"}
 DEFAULT_MODE = "retrieval"          # HTTP 默认只读检索（控成本）

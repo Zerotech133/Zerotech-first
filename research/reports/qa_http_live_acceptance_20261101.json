@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "kind": "qa_http_live_acceptance",
- "generated_at": "2026-11-01T23:56:02+08:00",
+ "generated_at": "2026-11-01T23:59:23+08:00",
  "config": {
   "base_url": "http://127.0.0.1:8091",
   "retrieval_n": 3,
@@ -23,7 +23,7 @@
     "status": 200,
     "ok": true,
     "error": null,
-    "elapsed_seconds": 2.0,
+    "elapsed_seconds": 2.41,
     "meta": {
      "mode": "retrieval",
      "k": 3,
@@ -31,8 +31,8 @@
      "topk": 3,
      "cache_hit": false,
      "llm_called": false,
-     "prompt_version": "v1",
-     "guard_marker": "strict",
+     "prompt_version": "v4",
+     "guard_marker": "segment",
      "citation_retry": true,
      "citation_retry_info": null
     },
@@ -41,7 +41,7 @@
      "applicable": false,
      "applied": false,
      "on_fail": "fallback",
-     "marker_mode": "strict_line"
+     "marker_mode": "segment"
     },
     "data": {
      "answer_length": 0,
@@ -62,7 +62,7 @@
     "status": 200,
     "ok": true,
     "error": null,
-    "elapsed_seconds": 2.02,
+    "elapsed_seconds": 2.34,
     "meta": {
      "mode": "retrieval",
      "k": 3,
@@ -70,8 +70,8 @@
      "topk": 3,
      "cache_hit": false,
      "llm_called": false,
-     "prompt_version": "v1",
-     "guard_marker": "strict",
+     "prompt_version": "v4",
+     "guard_marker": "segment",
      "citation_retry": true,
      "citation_retry_info": null
     },
@@ -80,7 +80,7 @@
      "applicable": false,
      "applied": false,
      "on_fail": "fallback",
-     "marker_mode": "strict_line"
+     "marker_mode": "segment"
     },
     "data": {
      "answer_length": 0,
@@ -101,7 +101,7 @@
     "status": 200,
     "ok": true,
     "error": null,
-    "elapsed_seconds": 2.17,
+    "elapsed_seconds": 2.34,
     "meta": {
      "mode": "retrieval",
      "k": 3,
@@ -109,8 +109,8 @@
      "topk": 3,
      "cache_hit": false,
      "llm_called": false,
-     "prompt_version": "v1",
-     "guard_marker": "strict",
+     "prompt_version": "v4",
+     "guard_marker": "segment",
      "citation_retry": true,
      "citation_retry_info": null
     },
@@ -119,7 +119,7 @@
      "applicable": false,
      "applied": false,
      "on_fail": "fallback",
-     "marker_mode": "strict_line"
+     "marker_mode": "segment"
     },
     "data": {
      "answer_length": 0,
@@ -140,16 +140,16 @@
     "status": 200,
     "ok": true,
     "error": null,
-    "elapsed_seconds": 11.47,
+    "elapsed_seconds": 11.06,
     "meta": {
      "mode": "single",
      "k": 5,
      "clusters": 0,
      "topk": 5,
      "cache_hit": false,
-     "llm_called": false,
-     "prompt_version": "v1",
-     "guard_marker": "strict",
+     "llm_called": true,
+     "prompt_version": "v4",
+     "guard_marker": "segment",
      "citation_retry": true,
      "citation_retry_info": null
     },
@@ -158,14 +158,14 @@
      "applicable": false,
      "applied": false,
      "on_fail": "fallback",
-     "marker_mode": "strict_line"
+     "marker_mode": "segment"
     },
     "data": {
-     "answer_length": 387,
-     "citations": 3,
+     "answer_length": 281,
+     "citations": 2,
      "refusal": false,
      "fallback": false,
-     "confidence": "none"
+     "confidence": "high"
     },
     "raw_error": null
    },
@@ -179,16 +179,16 @@
     "status": 200,
     "ok": true,
     "error": null,
-    "elapsed_seconds": 11.94,
+    "elapsed_seconds": 10.67,
     "meta": {
      "mode": "single",
      "k": 5,
      "clusters": 0,
      "topk": 5,
      "cache_hit": false,
-     "llm_called": false,
-     "prompt_version": "v1",
-     "guard_marker": "strict",
+     "llm_called": true,
+     "prompt_version": "v4",
+     "guard_marker": "segment",
      "citation_retry": true,
      "citation_retry_info": null
     },
@@ -197,14 +197,14 @@
      "applicable": false,
      "applied": false,
      "on_fail": "fallback",
-     "marker_mode": "strict_line"
+     "marker_mode": "segment"
     },
     "data": {
-     "answer_length": 411,
-     "citations": 3,
+     "answer_length": 173,
+     "citations": 2,
      "refusal": false,
      "fallback": false,
-     "confidence": "none"
+     "confidence": "high"
     },
     "raw_error": null
    },
@@ -218,7 +218,7 @@
     "status": 200,
     "ok": true,
     "error": null,
-    "elapsed_seconds": 11.19,
+    "elapsed_seconds": 8.52,
     "meta": {
      "mode": "multi",
      "k": 8,
@@ -226,8 +226,8 @@
      "topk": 8,
      "cache_hit": false,
      "llm_called": true,
-     "prompt_version": "v1",
-     "guard_marker": "strict",
+     "prompt_version": "v4",
+     "guard_marker": "segment",
      "citation_retry": true,
      "citation_retry_info": {
       "used": false,
@@ -255,12 +255,12 @@
      "citation_valid_count": 3,
      "citation_invalid_count": 0,
      "support_rate": 1.0,
-     "inference_ratio": 0.0,
+     "inference_ratio": 0.3333,
      "distinct_cited_units": 3,
-     "marker_mode": "strict_line"
+     "marker_mode": "segment"
     },
     "data": {
-     "answer_length": 360,
+     "answer_length": 242,
      "citations": 3,
      "refusal": false,
      "fallback": false,
@@ -278,7 +278,7 @@
     "status": 200,
     "ok": true,
     "error": null,
-    "elapsed_seconds": 9.48,
+    "elapsed_seconds": 9.61,
     "meta": {
      "mode": "multi",
      "k": 8,
@@ -286,8 +286,8 @@
      "topk": 8,
      "cache_hit": false,
      "llm_called": true,
-     "prompt_version": "v1",
-     "guard_marker": "strict",
+     "prompt_version": "v4",
+     "guard_marker": "segment",
      "citation_retry": true,
      "citation_retry_info": {
       "used": false,
@@ -314,12 +314,12 @@
      "citation_valid_count": 2,
      "citation_invalid_count": 0,
      "support_rate": 1.0,
-     "inference_ratio": 0.0,
+     "inference_ratio": 0.5,
      "distinct_cited_units": 2,
-     "marker_mode": "strict_line"
+     "marker_mode": "segment"
     },
     "data": {
-     "answer_length": 372,
+     "answer_length": 273,
      "citations": 2,
      "refusal": false,
      "fallback": false,
@@ -337,20 +337,20 @@
     "status": 200,
     "ok": true,
     "error": null,
-    "elapsed_seconds": 61.05,
+    "elapsed_seconds": 7.83,
     "meta": {
      "mode": "multi",
      "k": 8,
      "clusters": 3,
      "topk": 8,
      "cache_hit": false,
-     "llm_called": false,
-     "prompt_version": "v1",
-     "guard_marker": "strict",
+     "llm_called": true,
+     "prompt_version": "v4",
+     "guard_marker": "segment",
      "citation_retry": true,
      "citation_retry_info": {
       "used": false,
-      "first_units": 0,
+      "first_units": 2,
       "second_units": null,
       "improved": false,
       "error": null
@@ -359,17 +359,30 @@
     "guard": {
      "enabled": true,
      "applicable": true,
-     "applied": false,
+     "applied": true,
      "on_fail": "fallback",
-     "marker_mode": "strict_line",
-     "skipped": "refusal"
+     "guard_passed": true,
+     "guard_action": "pass",
+     "guard_issues": [],
+     "citation_valid": [
+      "538860c3cb35",
+      "28f88a6c87e9"
+     ],
+     "citation_invalid": [],
+     "citation_total": 2,
+     "citation_valid_count": 2,
+     "citation_invalid_count": 0,
+     "support_rate": 1.0,
+     "inference_ratio": 0.5,
+     "distinct_cited_units": 2,
+     "marker_mode": "segment"
     },
     "data": {
-     "answer_length": 144,
-     "citations": 0,
-     "refusal": true,
+     "answer_length": 249,
+     "citations": 2,
+     "refusal": false,
      "fallback": false,
-     "confidence": "none"
+     "confidence": "high"
     },
     "raw_error": null
    }
@@ -388,7 +401,7 @@
      "code": "INVALID_ARGUMENT",
      "message": "topk 超出范围 1..20（收到 0）"
     },
-    "elapsed_seconds": 0.0,
+    "elapsed_seconds": 0.02,
     "meta": {
      "mode": null,
      "k": null,
@@ -425,7 +438,7 @@
      "code": "INVALID_ARGUMENT",
      "message": "q 不能为空"
     },
-    "elapsed_seconds": 0.02,
+    "elapsed_seconds": 0.01,
     "meta": {
      "mode": null,
      "k": null,
@@ -463,7 +476,7 @@
      "code": "INVALID_ARGUMENT",
      "message": "mode 只能是 retrieval/single/multi（收到 'bogus'）"
     },
-    "elapsed_seconds": 0.01,
+    "elapsed_seconds": 0.02,
     "meta": {
      "mode": null,
      "k": null,
@@ -502,28 +515,28 @@
    "n": 3,
    "http_200": 3,
    "llm_called": false,
-   "avg_elapsed_seconds": 2.06
+   "avg_elapsed_seconds": 2.36
   },
   "single": {
    "n": 2,
    "http_200": 2,
-   "llm_called": 0,
-   "avg_elapsed_seconds": 11.71,
-   "avg_citations": 3.0
+   "llm_called": 2,
+   "avg_elapsed_seconds": 10.87,
+   "avg_citations": 2.0
   },
   "multi": {
    "n": 3,
    "http_200": 3,
-   "llm_called": 2,
-   "avg_elapsed_seconds": 27.24,
-   "avg_citations": 1.67,
+   "llm_called": 3,
+   "avg_elapsed_seconds": 8.65,
+   "avg_citations": 2.33,
    "guard_passed": 0,
    "fallback": 0,
    "prompt_versions": [
-    "v1"
+    "v4"
    ],
    "guard_markers": [
-    "strict"
+    "segment"
    ],
    "citation_retry_values": [
     true,
@@ -555,7 +568,7 @@
     }
    ]
   },
-  "llm_calls": 2
+  "llm_calls": 5
  },
  "conclusion": {
   "normal_pass": true,
@@ -563,17 +576,14 @@
   "single_pass": true,
   "multi_pass": true,
   "boundary_pass": true,
-  "can_go_live": "conditional",
-  "verdict": "正常路径可用，但存在需修项（边界校验/灰度字段）→ 修复后重新验收再对外",
-  "fixes_needed": [
-   "multi 通道 meta.prompt_version 未显示 v4，灰度可能未生效（需查 api 默认）。",
-   "multi 通道 meta.guard_marker 未显示 segment，守卫分段模式可能未生效。"
-  ],
+  "can_go_live": "go",
+  "verdict": "8091 /api/kb/qa 端到端验收通过（retrieval/single/multi 正常、边界 400 正确、multi 走 v4+segment+retry）→ 可对外灰度发布",
+  "fixes_needed": [],
   "risks": [
    "本次为低频串行验收（retrieval 3/single 2/multi 3），未做限流/并发/长稳压测。",
    "multi 含真实 LLM，单条耗时可受模型负载影响；本验收未触发限流。"
   ]
  },
- "elapsed_seconds": 111.36,
+ "elapsed_seconds": 54.83,
  "disclaimer": "HTTP 端到端验收记录仅供上线评审参考，不构成投资建议。"
 }
