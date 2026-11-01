@@ -1898,5 +1898,85 @@
     "standard": "docs/standards/2026-11-01_检索评测标注规范_v1.md",
     "conclusion": "wave9 41 条 P@5 +0.141/p=0.02 = 小样本+查询构成乐观偏差，不可复现、不得引用；wave10 89 条（+0.045/p=0.20, CI 含 0）为可信阶段。v2 允许表述「覆盖率/命中率提升、同义词类收益、NDCG 方向性但不显著」；禁止表述「精度显著优于 v1」。",
     "note": "已固化标注规范 v1（分级/抽样配额/显著性门槛 n≥60+bootstrap CI/禁止事后调参/标准句式）。"
+  },
+  "kb_qa_rank_eval_20261101": {
+    "tool": "tools/kb_corpus/kb_qa_rank.py",
+    "report": "research/reports/kb_qa_rank_eval_20261101.md",
+    "baseline": {
+      "total": 32,
+      "hit_at_1": 30,
+      "hit_at_5": 32,
+      "hit_rate_at_1": 0.9375,
+      "hit_rate_at_5": 1.0,
+      "avg_source_rank": 1.062,
+      "miss_source": 0
+    },
+    "rerank": {
+      "total": 32,
+      "hit_at_1": 30,
+      "hit_at_5": 32,
+      "hit_rate_at_1": 0.9375,
+      "hit_rate_at_5": 1.0,
+      "avg_source_rank": 1.062,
+      "miss_source": 0
+    },
+    "leaky_upper_bound": {
+      "total": 32,
+      "hit_at_1": 32,
+      "hit_at_5": 32,
+      "hit_rate_at_1": 1.0,
+      "hit_rate_at_5": 1.0,
+      "avg_source_rank": 1.0,
+      "miss_source": 0
+    },
+    "note": "无泄漏重排 @1 93.75%→93.75%（无收益，32 题全部排名不变）→ 暂不接入；2 条 miss 为「同 concept 不同 unit」重复单元，信息上不可区分；来源先验上界 100% 属真值泄漏不可上线。改进方向=同 concept 多单元合并/唯一标识。"
+  },
+  "search_v2b_eval_20261101": {
+    "tool": "tools/kb_corpus/search_v2b.py",
+    "report": "research/reports/search_v2b_eval_20261101.md",
+    "conclusion": {
+      "and_p5_improvement": 0.4,
+      "and_ndcg_improvement": 0.2805,
+      "overall_p5_improvement": 0.0539,
+      "overall_ndcg_improvement": 0.0425,
+      "and_ci": {
+        "n": 10,
+        "n_boot": 2000,
+        "mean": 0.4,
+        "ci_low": 0.2,
+        "ci_high": 0.64,
+        "significant": true
+      },
+      "overall_ci": {
+        "n": 89,
+        "n_boot": 2000,
+        "mean": 0.0539,
+        "ci_low": 0.0157,
+        "ci_high": 0.0989,
+        "significant": true
+      },
+      "synonym_class_p5_change": -0.075,
+      "merge_recommended": true,
+      "recommendation": "AND 类 P@5 0.460→0.860（+0.400）、NDCG 0.672→0.952（+0.281）；整体 P@5 0.728→0.782（+0.054）、NDCG 0.805→0.848（+0.043）；同义词类 P@5 变化 -0.075（synonym_weight=0.6 的代价，见分语法表）。 → **建议合入 v2**：软 AND 作为 v2 的 `and_mode` 默认 soft（soft_cov=0.5）+ 同义词权重 0.6，AND 类回退修复且整体不劣化；v2 文件保持不变，v2b 独立可灰度。"
+    },
+    "note": "软 AND + 同义词权重 0.6：AND 类 P@5 0.460→0.860(+0.400)、NDCG 0.672→0.952；整体 P@5 0.728→0.782(+0.054, bootstrap CI [0.016,0.099] 显著)、NDCG 0.805→0.848；建议合入 v2（and_mode=soft）。"
+  },
+  "card_merge_20261101": {
+    "tool": "tools/kb_corpus/card_merge.py",
+    "preview": "research/reports/card_merge_preview_20261101.md",
+    "stats": {
+      "base_cards": 20,
+      "proposal_cards": 20,
+      "approved": 0,
+      "would_add": 0,
+      "skipped_total": 20,
+      "skipped_not_reviewed": 20,
+      "skipped_rejected": 0,
+      "skipped_needs_revision": 0,
+      "skipped_concept_exists": 0,
+      "skipped_duplicate_in_batch": 0,
+      "resulting_cards": 20
+    },
+    "note": "dry-run：已勾选 pass=0 → 预计新增 0/跳过 20；原学习卡 SHA1 未变（未 apply）；人工审核勾选后重跑 dry-run 确认再 --apply（写前 .bak 备份+写后校验）。"
   }
 }

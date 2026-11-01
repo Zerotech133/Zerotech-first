@@ -491,6 +491,27 @@
       "title": "检索评测标注规范/偏差审计",
       "ref": "tools/kb_corpus/eval_audit.py",
       "enabled": true
+    },
+    {
+      "id": "kb_qa_rank",
+      "kind": "tool",
+      "title": "问答检索重排评估（暂不接入）",
+      "ref": "tools/kb_corpus/kb_qa_rank.py",
+      "enabled": true
+    },
+    {
+      "id": "search_v2b",
+      "kind": "tool",
+      "title": "检索软 AND/同义词增强",
+      "ref": "tools/kb_corpus/search_v2b.py",
+      "enabled": true
+    },
+    {
+      "id": "card_merge",
+      "kind": "tool",
+      "title": "学习卡审核合并工具（dry-run）",
+      "ref": "tools/kb_corpus/card_merge.py",
+      "enabled": true
     }
   ]
 }
