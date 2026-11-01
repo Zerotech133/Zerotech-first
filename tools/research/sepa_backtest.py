@@ -66,7 +66,7 @@ def load(dts: list[str]) -> dict:
     return panel
 
 
-def vcp_setup(c: np.ndarray, h: np.ndarray, l: np.ndarray, v: np.ndarray) -> dict | None:
+def vcp_setup(c: np.ndarray, h: np.ndarray, l: np.ndarray, v: np.ndarray, require_near: bool = True) -> dict | None:
     """VCP 设置检测：返回 pivot/last_low/收缩数等；失败 None。"""
     if len(c) < 60 or np.isnan(c[-1]):
         return None
@@ -98,7 +98,7 @@ def vcp_setup(c: np.ndarray, h: np.ndarray, l: np.ndarray, v: np.ndarray) -> dic
     last_low = float(np.min(l[-20:]))
     if last_low <= 0 or last_low >= c[-1]:
         return None
-    if not (c[-1] >= pivot * 0.95):    # 接近枢轴（5%内）才入 watch，突破另判
+    if require_near and not (c[-1] >= pivot * 0.95):    # 回测：接近枢轴（5%内）才入 watch
         return None
     return {"pivot": pivot, "last_low": last_low, "vol_dry": vol_dry, "contractions": depths}
 
