@@ -1,0 +1,33 @@
+{
+ "meta": {
+  "generated_at": "2026-11-01T23:34:32+08:00",
+  "window": "20190131 .. 20260930",
+  "strategy": "mom_120 top20 等权 月频",
+  "note": "幸存者偏差评估；U_all 无ST过滤、上市日=首日交易代理"
+ },
+ "counts": {
+  "all": 5821,
+  "current": 5577,
+  "delisted_or_absent": 244
+ },
+ "results": [
+  {
+   "universe": "cur",
+   "n_codes": 5577,
+   "cagr_pct": 25.89,
+   "mdd_pct": -42.04,
+   "excess_monthly_pct": 1.27,
+   "excess_t": 1.84,
+   "months": 93
+  },
+  {
+   "universe": "all",
+   "n_codes": 5821,
+   "cagr_pct": 0.37,
+   "mdd_pct": -51.26,
+   "excess_monthly_pct": -0.337,
+   "excess_t": -0.37,
+   "months": 85
+  }
+ ]
+}

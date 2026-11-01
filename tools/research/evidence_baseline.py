@@ -15,6 +15,9 @@ import json
 import sys
 from datetime import datetime
 from pathlib import Path
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).resolve().parent))
+from pit_utils import listed_days  # noqa: E402
 
 import numpy as np
 import pandas as pd
@@ -45,10 +48,8 @@ def main() -> int:
     csum = P["a_close"].cumsum()
     sb = pq.read_table(sorted(glob.glob(str(DATA / "stock_basic" / "*.parquet")))[-1]).to_pandas().set_index("ts_code")
     names, industry = sb["name"], sb["industry"].fillna("未知")
-    list_dates = pd.to_datetime(sb["list_date"], format="%Y%m%d", errors="coerce")
     def listed_at(dt: str) -> pd.Series:
-        """PIT：截至该交易日的上市天数（修复旧 bug：曾用最新日计算→历史月纳入次新股）"""
-        return (pd.Timestamp(dt) - list_dates).dt.days
+        return listed_days(sb, dt)
     # turnover（2023+）
     turn = {}
     for f in sorted(glob.glob(str(DATA / "daily_basic" / "d_*.parquet"))):

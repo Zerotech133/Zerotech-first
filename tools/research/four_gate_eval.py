@@ -24,6 +24,9 @@ import json
 import sys
 from datetime import datetime
 from pathlib import Path
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).resolve().parent))
+from pit_utils import listed_days  # noqa: E402
 
 import numpy as np
 import pandas as pd
@@ -95,10 +98,8 @@ def main() -> int:
     print("panels:", adj.shape, amt.shape, flush=True)
     sb = pq.read_table(sorted(glob.glob(str(DATA / "stock_basic" / "*.parquet")))[-1]).to_pandas().set_index("ts_code")
     names = sb["name"]
-    list_dates_ = pd.to_datetime(sb["list_date"], format="%Y%m%d", errors="coerce")
     def listed_at(dt_):
-        """PIT：截至信号日的上市天数（2026-11-01 修复：原用最新日→次新股前视）"""
-        return (pd.Timestamp(dt_) - list_dates_).dt.days
+        return listed_days(sb, dt_)
 
     s = pd.Series(adj.index.tolist())
     mends = [g.iloc[-1] for _, g in s.groupby(s.str[:6])]
