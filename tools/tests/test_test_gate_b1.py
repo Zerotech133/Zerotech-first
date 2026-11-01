@@ -2,7 +2,8 @@
 """W5 P1-6 落地守卫：test_gate.ps1 B1+B2 关键集 + A5 预算门（2026-10-31）。
 
 静态锁死（不执行门禁本体）：
-  · fast = portal + kstock + ide + agent_key + quant_key + tools_key；
+  · fast = portal + kstock + ide + agent_key + quant_key + tools_key + datawarehouse
+    （2026-11-02 S2-08 起；datawarehouse = tools/datawarehouse/tests 目录套件）；
   · agent_key/quant_key/tools_key = W5 报告 B1(57)+B2(31) 清单 + 黄忠聚合入口（共 89 文件），
     文件必须真实存在（B2 扩容工单 K-ORG-20261031-GATEB2；黄忠纳管 WO-HZ-GATE-20261031；W5 口径 30.9%→约 41.0%）；
   · 每次套件独立 pytest（脚本结构保证），baseline 支持 suiteKey 回退；
@@ -152,12 +153,17 @@ def test_b1_b2_files_exist_and_under_expected_dir():
 
 
 def test_fast_includes_key_suites_only():
-    assert _suite_list("fast") == ["portal", "kstock", "ide", "agent_key", "quant_key", "tools_key"]
+    assert _suite_list("fast") == ["portal", "kstock", "ide", "agent_key", "quant_key",
+                                   "tools_key", "datawarehouse"]
     # 关键集只进 fast；all 保持原样（不扩 all，避免夜间/全量时长失控）
     assert _suite_list("all") == ["portal", "kstock", "agent", "quant", "ide"]
     param_block = GATE[: GATE.find("$suites = @()")]
-    for key in ("agent_key", "quant_key", "tools_key"):
+    for key in ("agent_key", "quant_key", "tools_key", "datawarehouse"):
         assert "'%s'" % key in param_block, "ValidateSet 缺 %s" % key
+    # S2-08：datawarehouse 必须是目录套件且目录真实存在（拼错=空跑且不报错）
+    dw = re.search(r"'datawarehouse'\s*=\s*'([^']+)'", GATE)
+    assert dw and dw.group(1) == "tools/datawarehouse/tests", "S2-08 datawarehouse 套件路径缺失"
+    assert (REPO / dw.group(1)).is_dir(), "datawarehouse 目录不存在: %s" % dw.group(1)
 
 
 def test_baseline_suite_key_fallback_present():

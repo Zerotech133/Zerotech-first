@@ -45,10 +45,12 @@ def test_keeps_evidence_contract_hooks():
 
 
 def test_zhice_entry_card():
+    # 2026-11-02：智策入口统一走 8734 同源反代 /quant/（commit 7fa50baa2 改 nav.js），
+    # 不再直写 127.0.0.1:5175；测试随口径同步。
     assert "智策量化驾驶舱" in HTML
-    assert "127.0.0.1:5175" in HTML
+    assert "/quant/" in HTML or "127.0.0.1:5175" in HTML
     assert "智策账户" in HTML
-    assert "a.target='_blank'" in HTML
+    assert "target='_blank'" in HTML or 'target="_blank"' in HTML
 
 
 def test_tri_readonly_panel():

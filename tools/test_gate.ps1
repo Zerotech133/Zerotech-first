@@ -2,8 +2,8 @@
 #
 # 用法（仓库任意目录）:
 #   powershell -NoProfile -ExecutionPolicy Bypass -File tools\test_gate.ps1 -Suite fast
-# -Suite: fast(portal+k_stock+ide+agent_key+quant_key+tools_key) | portal | kstock | ide |
-#         agent_key | quant_key | tools_key | agent | quant | tools | all
+# -Suite: fast(portal+k_stock+ide+agent_key+quant_key+tools_key+datawarehouse) | portal | kstock | ide |
+#         agent_key | quant_key | tools_key | datawarehouse | agent | quant | tools | all
 # 退出码: 0=无新增失败(允许既存失败) | 1=有新增失败/收集错误 | 2=脚本错误
 # 产物:  C:\Temp\test_gate_<suite>_<ts>.log
 #
@@ -19,9 +19,12 @@
 #   · 文件列表套件的 baseline 查找支持 suiteKey（agent_platform/tests 等）回退。
 # 2026-10-31 K-ORG-20261031-ORGGATEWIRE：新增 org 模型一致性检查（fast/all，warn-only；
 #   当前 fail=6 为真实配置债，记录 fail/warn/info 到汇总但不断言失败，等 W4 决策后再 strict）。
+# 2026-11-02 S2-08（数据仓研发计划 v3）：datawarehouse 测试套件（tools/datawarehouse/tests，
+#   158 项）进 fast 门——独立目录套件（每次独立 pytest，防 sys.path 冲突），fast 6→7 套件；
+#   只进 fast 不进 all（all 保持夜间全量口径，避免时长失控）。冻结守卫同批同步。
 param(
     [ValidateSet('fast', 'portal', 'kstock', 'ide', 'agent_key', 'quant_key', 'tools_key',
-                 'agent', 'quant', 'tools', 'all')]
+                 'datawarehouse', 'agent', 'quant', 'tools', 'all')]
     [string]$Suite = 'fast',
     [int]$PytestTimeout = 120
 )
@@ -70,13 +73,15 @@ $suites = @()
 switch ($Suite) {
     # 2026-10-30 P1：LDE HTTP 契约进 fast 门（单独文件，不拖入整个 agent 套件）
     # 2026-10-31 W5 P1-6 / K-ORG-20261031-GATEB2：B1+B2 关键集三套件进 fast（88 文件）
-    'fast'    { $suites = @('portal', 'kstock', 'ide', 'agent_key', 'quant_key', 'tools_key') }
+    # 2026-11-02 S2-08：datawarehouse 目录套件（158 项）进 fast；只进 fast 不进 all。
+    'fast'    { $suites = @('portal', 'kstock', 'ide', 'agent_key', 'quant_key', 'tools_key', 'datawarehouse') }
     'portal'  { $suites = @('portal') }
     'kstock'  { $suites = @('kstock') }
     'ide'     { $suites = @('ide') }
     'agent_key' { $suites = @('agent_key') }
     'quant_key' { $suites = @('quant_key') }
     'tools_key' { $suites = @('tools_key') }
+    'datawarehouse' { $suites = @('datawarehouse') }
     'agent'   { $suites = @('agent') }
     'quant'   { $suites = @('quant') }
     'tools'   { $suites = @('tools') }
@@ -97,6 +102,8 @@ $paths = @{
     'kstock' = 'k_stock/tests'
     'agent'  = 'agent_platform/tests'; 'quant' = 'quant_backtest/tests'
     'tools'  = 'tools/tests'
+    # 2026-11-02 S2-08：数据仓工具测试（158 项，目录套件；独立 pytest 防 sys.path 冲突）
+    'datawarehouse' = 'tools/datawarehouse/tests'
     'ide'    = @(
         # W5 P1-7（WO-LEGION-W5-GATE-20261031，2026-10-31）：IDE 关键缺口补入——
         # rw_guard 锁互斥/stale 回收/审计留痕/exec 沙箱；此前是 IDE 相关测试里唯一
@@ -367,7 +374,10 @@ try {
         $failed = @()
         if ($rcBad) { $failed += "PYTEST_ABNORMAL_RC_$rc" }
         foreach ($line in $lines) {
-            if ($line -match '^(FAILED|ERROR) ') {
+            # 2026-11-02 S2-08：改 -cmatch（大小写敏感）。pytest 短摘要行固定大写 FAILED/ERROR；
+            # 原 -match 大小写不敏感，会把 OTel exporter stderr 'Failed to export spans batch...' 误判为
+            # 测试失败（datawarehouse test_otel_tracing 触发该噪声 → fast 门假红）。
+            if ($line -cmatch '^(FAILED|ERROR) ') {
                 $f = $line -replace '^(FAILED|ERROR) ', ''
                 $f = $f -replace ' - .*$', ''
                 $failed += $f.Trim()

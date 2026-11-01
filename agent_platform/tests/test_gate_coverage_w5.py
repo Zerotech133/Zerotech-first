@@ -34,6 +34,9 @@
   `test_ide_release_artifact.py`（release artifact 文件/manifest sha256 对照 +
   `/api/ide/version` all_match smoke，4 用例）也补入 ide 套件，纳入本守卫的
   IDE 关键集冻结。
+* 2026-11-02 S2-08：fast 新增第 7 套件 datawarehouse（tools/datawarehouse/tests，158 项），
+  本守卫 FAST_SUITES 与 test_test_gate_b1 / a5strict / org_gate / wtcheck_gate /
+  artifact_guard 同批同步；三清单（agent_key/quant_key/tools_key）未变。
 """
 import json
 import re
@@ -50,7 +53,8 @@ SUITE_DIRS = (
     "quant_backtest/tests",
     "tools/tests",
 )
-FAST_SUITES = ["portal", "kstock", "ide", "agent_key", "quant_key", "tools_key"]
+FAST_SUITES = ["portal", "kstock", "ide", "agent_key", "quant_key", "tools_key",
+               "datawarehouse"]
 # IDE 关键集：W5 审计结论是“ide 相关测试仅 test_legion_ide_audit.py 未入门”，
 # 本单补齐后冻结；集合只增不减（新增 IDE 测试可以直接进 ide 套件，不影响本断言）。
 IDE_KEY_FILES = {
@@ -162,7 +166,7 @@ def _coverage_metric(gate: str) -> tuple:
 def test_fast_suite_composition_frozen():
     assert _fast_suites(_gate_text()) == FAST_SUITES, (
         "fast 套件组合变了：本守卫与 tools/tests/test_test_gate_b1.py 都按 "
-        "portal+kstock+ide+agent_key+quant_key+tools_key 冻结，改动需同批更新两者")
+        "portal+kstock+ide+agent_key+quant_key+tools_key+datawarehouse 冻结，改动需同批更新两者")
 
 
 def test_gate_targets_exist():

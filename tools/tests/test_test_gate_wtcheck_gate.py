@@ -5,7 +5,7 @@
   ① 静态接线：wtcheck 段存在、由 `$Suite -in @('fast','all')` 守卫、调用
      `python -X utf8 ... devtask.py audit-worktrees`；rc!=0 → newFailures++（阻断）；
      缺 devtask.py → fail-closed；摘要打印 ≤12 行；summary 记 Suite='wtcheck'。
-  ② 不改既有 suite 清单（fast 仍 6 套件、all 仍 5 套件——与 test_test_gate_b1 冻结口径一致）。
+  ② 不改既有 suite 清单（fast 7 套件（2026-11-02 S2-08 起含 datawarehouse）、all 仍 5 套件——与 test_test_gate_b1 冻结口径一致）。
   ③ 行为：audit-worktrees rc 与输出一致（rc=0 ⇔ 无 [VIOL]）；耗时预算；`--json` 契约。
   ④ 主仓解析：在任务 worktree 内运行 audit-worktrees 时，输出中的「仓库：」仍指向主仓
      （不含 .worktrees），即 gate 在 worktree 里跑也能读到主仓 tasks.json。
@@ -70,7 +70,8 @@ def test_suite_lists_unchanged():
         m = re.search(r"'%s'\s*\{\s*\$suites = @\(([^)]*)\)" % key, GATE)
         assert m, "缺 suite 定义 %r" % key
         return re.findall(r"'([^']+)'", m.group(1))
-    assert suite_list("fast") == ["portal", "kstock", "ide", "agent_key", "quant_key", "tools_key"]
+    assert suite_list("fast") == ["portal", "kstock", "ide", "agent_key", "quant_key",
+                                  "tools_key", "datawarehouse"]
     assert suite_list("all") == ["portal", "kstock", "agent", "quant", "ide"]
 
 

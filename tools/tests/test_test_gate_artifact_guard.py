@@ -145,7 +145,7 @@ def test_b1_b2_lists_not_regressed():
                   "agent_platform/tests/test_gate_coverage_w5.py",
                   "tools/tests/test_test_gate_b1.py"):
         assert probe in text, probe                  # 清单标记在
-    assert "$suites = @('portal', 'kstock', 'ide', 'agent_key', 'quant_key', 'tools_key')" in text
+    assert "$suites = @('portal', 'kstock', 'ide', 'agent_key', 'quant_key', 'tools_key', 'datawarehouse')" in text
 
 
 def test_a5_strict_gate_not_regressed():
