@@ -939,5 +939,27 @@
       }
     },
     "note": "一条命令刷新门户+校验+状态台账+变更摘要；原子发布（坏数据不覆盖）；静态页无需重启 8091。"
+  },
+  "kb_qa_20261101": {
+    "tool": "tools/kb_corpus/kb_qa.py",
+    "samples": "research/reports/kb_qa_samples_20261101.json",
+    "portal_samples": "portal/static/kb_qa_samples.json",
+    "note": "RAG 问答（units+corpus 融合检索→qwen3.5:9b→强制引用/拒答）；5 样本中 3 真实 LLM（high/medium/high）、1 拒答、1 失败降级；HTTP 接口待 8091 接线。",
+    "known_issues": [
+      "HTTP 未接线（需 8091 重启审批）",
+      "corpus 噪声（视频评论）",
+      "知识单元页码粒度粗"
+    ]
+  },
+  "learning_digest_20261101": {
+    "tool": "tools/kb_corpus/learning_digest.py",
+    "static": "portal/static/kb_learning_digest.json",
+    "page": "portal/kb_reports.html#learning-cards,#daily-briefing",
+    "note": "学习卡（每日5张，主题去重+质量排序）+ 今日简报 + 策略结论 → digest；kb_reports 页面新增两区块（fetch digest 主源+原始 JSON 兜底+降级），HTTP 200。"
+  },
+  "search_v2_20261101": {
+    "tool": "tools/kb_corpus/search_v2.py",
+    "eval": "research/reports/search_v2_eval_20261101.json",
+    "note": "多字段加权+同义词22组+AND/OR/短语/排除+分组；10 查询小评测 precision@5 0.760→1.000、覆盖率 0.733→0.883（小样本冒烟级）。"
   }
 }

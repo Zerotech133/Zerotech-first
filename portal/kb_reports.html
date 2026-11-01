@@ -25,6 +25,17 @@ input[type=text]{flex:1;min-width:280px;background:var(--panel2);color:var(--fg)
 .empty{color:var(--dim);text-align:center;padding:24px}
 .foot{margin-top:16px;color:var(--dim);font-size:12px}
 code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-size:12px}
+/* 学习卡 / 今日简报（learning digest） */
+.digest{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px;margin-bottom:14px}
+.digest .panel{margin-bottom:0}
+.panel-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.panel-head .sub{margin:0;font-size:11px}
+.dcard{background:var(--panel2);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;margin:8px 0}
+.dcard .dq{font-size:13px;font-weight:700;margin:0 0 4px;color:#e6edf3}
+.dcard .da{font-size:13px;color:#c9d1d9;margin:0}
+.dcard .dsrc{color:var(--dim);font-size:11px;margin-top:6px;border-left:2px solid #30363d;padding-left:8px}
+.rank{display:inline-block;min-width:18px;text-align:center;padding:0 6px;border-radius:9px;font-size:11px;font-weight:700;background:#122642;color:#79c0ff;margin-right:6px}
+.rank.top{background:#1f3b2a;color:#7ee787}
 </style>
 <script src="/static/nav.js" defer></script></head>
 <body>
@@ -43,6 +54,18 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-siz
   <div class="count" id="count"></div>
 </div>
 
+<div class="digest">
+  <div class="panel" id="learning-cards">
+    <div class="panel-head"><b>📚 学习卡（每日 5 张）</b><span class="sub" id="lc-meta">加载中…</span></div>
+    <div id="learning-cards-list"><div class="empty">加载中…</div></div>
+  </div>
+  <div class="panel" id="daily-briefing">
+    <div class="panel-head"><b>📰 今日简报</b><span class="sub" id="bf-meta">加载中…</span></div>
+    <div id="daily-briefing-list"><div class="empty">加载中…</div></div>
+    <div id="strategy-note" style="display:none;margin-top:8px"></div>
+  </div>
+</div>
+
 <div id="results"><div class="empty">输入关键词开始检索</div></div>
 
 <div class="panel">
@@ -51,18 +74,6 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-siz
     每条结果都带出处（书名/章节/页码）；回答问题时请引用出处。数据由 OCR/LLM 抽取，重大结论请对照原文。
     其他 Agent 可用 <code>tools/kb_corpus/kb_reports_search.py --json</code> 调用同一知识库。
   </div>
-</div>
-
-<div class="panel">
-  <b>📰 今日研报简报</b>
-  <div class="muted" id="brief-meta" style="margin:4px 0">加载中…</div>
-  <div id="brief-body"></div>
-</div>
-
-<div class="panel">
-  <b>🃏 学习卡（每日知识）</b>
-  <div class="muted" id="card-meta" style="margin:4px 0">加载中…</div>
-  <div id="card-body"></div>
 </div>
 
 <div class="panel">
@@ -122,31 +133,86 @@ $('q').addEventListener('keydown',e=>{if(e.key==='Enter'){LASTQ=$('q').value;ren
 document.querySelectorAll('button[data-f]').forEach(b=>b.onclick=()=>{FILTER=b.dataset.f;render();});
 load();
 
-(async function loadKbExtras(){
-  const $=id=>document.getElementById(id);
+/* ===== 学习卡（每日5张）/ 今日简报：主源 learning_digest.json，兜底原始 JSON，失败降级文案 ===== */
+let DIGEST=null;
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+async function fetchJSON(u){const r=await fetch(u+(u.indexOf('?')>=0?'&':'?')+'ts='+Date.now()); if(!r.ok) throw new Error('HTTP '+r.status); return r.json();}
+function cardHTML(c){
+  const rank=Number(c.rank)||0;
+  return `<div class="dcard">
+    <div class="dq"><span class="rank${rank<=3?' top':''}">${rank||'·'}</span>${esc(c.q||('什么是「'+(c.concept||'')+'」？'))}</div>
+    <p class="da">${esc(c.a)}</p>
+    <div class="dsrc">出处：${esc(c.source||'—')}${c.quality_score!=null?' · 质量分 '+esc(c.quality_score):''}</div>
+  </div>`;
+}
+function renderCards(cards){
+  const box=$('learning-cards-list');
+  if(!Array.isArray(cards)||!cards.length){box.innerHTML='<div class="empty">今日暂无学习卡（稍后刷新）</div>';return;}
+  box.innerHTML=cards.slice(0,5).map(cardHTML).join('');
+}
+function renderBriefing(b){
+  const box=$('daily-briefing-list');
+  const hs=(b&&b.highlights)||[];
+  if(!hs.length){box.innerHTML='<div class="empty">今日暂无简报（稍后刷新）</div>';return;}
+  box.innerHTML=`<div class="count" style="margin:0 0 6px">${esc(b.headline||'')}</div>`+hs.map(h=>`
+    <div class="dcard"><div class="dq">${esc(h.concept||'要点')}</div>
+    <p class="da">${esc(h.claim||'')}</p>
+    <div class="dsrc">${esc(h.doc||'')}${h.pages?'（'+esc(h.pages)+'页）':''} · ${esc(h.chapter||'—')}</div></div>`).join('');
+}
+function renderStrategyNotes(n){
+  const box=$('strategy-note');
+  if(!box) return;
+  if(!n||!n.points||!n.points.length){box.style.display='none';return;}
+  box.style.display='';
+  box.innerHTML=`<div class="count" style="margin:0 0 4px">📌 ${esc(n.title||'策略研究结论')}：${esc(n.takeaway||'')}</div>`+
+    n.points.slice(0,3).map(p=>`<div class="dsrc" style="border-left-color:#1f6feb">· ${esc(p)}</div>`).join('');
+}
+async function loadDigest(){
+  $('lc-meta').textContent='加载中…'; $('bf-meta').textContent='加载中…';
   try{
-    const b=await fetch('/static/kb_daily_briefing.json?ts='+Date.now()).then(r=>r.json());
-    $('brief-meta').textContent='生成 '+b.generated_at+' · 研报 '+ (b.docs||[]).length +' 篇';
-    $('brief-body').innerHTML=(b.docs||[]).slice(0,5).map(d=>`<div style="margin:8px 0"><b>${d.doc}</b>（${d.pages}页）
-      <div class="muted">${(d.chapters||[]).join(' / ')}</div>
-      ${(d.units||[]).map(u=>`<div style="font-size:12px;color:#9aa4b2">· ${u.concept||''}：${(u.claim||'').slice(0,80)}（p${u.page_start}-${u.page_end}）</div>`).join('')}
-      </div>`).join('');
-  }catch(e){ $('brief-meta').textContent='简报加载失败'; }
+    const d=await fetchJSON('/static/kb_learning_digest.json');
+    DIGEST=d;
+    renderCards(d.cards||[]);
+    renderBriefing(d.briefing||{});
+    renderStrategyNotes(d.strategy_notes||{});
+    $('lc-meta').textContent=`${d.date||''} · 每日5张（主题去重+质量排序）`;
+    $('bf-meta').textContent=`${(d.briefing&&d.briefing.date)||''} · ${(d.briefing&&d.briefing.docs_count)||0} 篇研报`;
+    return;
+  }catch(e){
+    $('lc-meta').textContent='摘要暂不可用，尝试原始数据…';
+    $('bf-meta').textContent='摘要暂不可用，尝试原始数据…';
+  }
   try{
-    const c=await fetch('/static/kb_learning_cards.json?ts='+Date.now()).then(r=>r.json());
-    $('card-meta').textContent='知识单元池 '+c.total_units+' 条 · 展示 '+(c.cards||[]).length+' 张';
-    $('card-body').innerHTML=(c.cards||[]).slice(0,6).map(x=>`<div style="margin:8px 0">
-      <b>Q：${x.q}</b><div style="color:#9aa4b2;font-size:12px">A：${x.a}</div>
-      <div class="muted" style="font-size:11px">出处：${x.source}</div></div>`).join('');
-  }catch(e){ $('card-meta').textContent='学习卡加载失败'; }
+    const c=await fetchJSON('/static/kb_learning_cards.json');
+    renderCards(c.cards||[]);
+    $('lc-meta').textContent=`兜底数据 · 知识单元池 ${c.total_units||0} 条`;
+  }catch(e){
+    $('learning-cards-list').innerHTML='<div class="empty">学习卡暂时无法加载（无摘要且原始数据缺失），请稍后刷新</div>';
+    $('lc-meta').textContent='加载失败（降级）';
+  }
   try{
-    const h=await fetch('/static/h18_watch.json?ts='+Date.now()).then(r=>r.json());
-    $('h18-meta').textContent='数据日 '+(h.date||'')+' · '+(h.items||[]).length+' 条（只观察不交易）';
-    $('h18-body').innerHTML=(h.items||[]).slice(0,10).map(w=>`<tr><td><code>${w.ts_code}</code></td><td>${w.end_date}</td>
+    const b=await fetchJSON('/static/kb_daily_briefing.json');
+    const hs=[];
+    (b.docs||[]).forEach(d=>{(d.units||[]).slice(0,1).forEach(u=>hs.push({doc:d.doc,pages:d.pages,chapter:u.chapter,concept:u.concept,claim:u.claim}))});
+    renderBriefing({headline:`兜底数据 · 研报 ${(b.docs||[]).length} 篇`,highlights:hs.slice(0,5)});
+    $('bf-meta').textContent='兜底数据（原始简报）';
+  }catch(e){
+    $('daily-briefing-list').innerHTML='<div class="empty">今日简报暂时无法加载（无摘要且原始数据缺失），请稍后刷新</div>';
+    $('bf-meta').textContent='加载失败（降级）';
+  }
+}
+async function loadH18(){
+  const $m=$('h18-meta'), $b=$('h18-body');
+  try{
+    const h=await fetchJSON('/static/h18_watch.json');
+    $m.textContent='数据日 '+(h.date||'')+' · '+(h.items||[]).length+' 条（只观察不交易）';
+    $b.innerHTML=(h.items||[]).slice(0,10).map(w=>`<tr><td><code>${w.ts_code}</code></td><td>${w.end_date}</td>
       <td>${w.type||''}</td><td>${w.direction||''}</td><td>${w.delta_pp}</td></tr>`).join('')
       || '<tr><td colspan="5" class="muted">今日无修订事件</td></tr>';
-  }catch(e){ $('h18-meta').textContent='H18 数据加载失败'; }
-})();
+  }catch(e){ $m.textContent='H18 数据加载失败'; }
+}
+loadDigest();
+loadH18();
 
 </script>
 </body>

@@ -386,6 +386,27 @@
       "title": "研报面板日常运行器",
       "ref": "tools/research/panel_daily.py",
       "enabled": true
+    },
+    {
+      "id": "kb_qa",
+      "kind": "tool",
+      "title": "研报 RAG 问答（引用/拒答）",
+      "ref": "tools/kb_corpus/kb_qa.py",
+      "enabled": true
+    },
+    {
+      "id": "learning_digest",
+      "kind": "tool",
+      "title": "学习卡/简报每日摘要生成",
+      "ref": "tools/kb_corpus/learning_digest.py",
+      "enabled": true
+    },
+    {
+      "id": "search_v2",
+      "kind": "tool",
+      "title": "研报检索 v2（加权/同义词/分组）",
+      "ref": "tools/kb_corpus/search_v2.py",
+      "enabled": true
     }
   ]
 }
