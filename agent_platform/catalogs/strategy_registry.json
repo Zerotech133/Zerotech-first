@@ -5158,5 +5158,32 @@
       }
     },
     "note": "系统总览：策略库 5 策略（S01过滤/S02暂停/S03提醒/S04规划/S05关闭）、知识库 498 单元/56 学习卡/12 问答样本、评测集 v2+v3、工具 94；今日提交 170+。"
+  },
+  "card_revision_applied_20261101": {
+    "tool": "tools/kb_corpus/card_revision_apply.py",
+    "report": "research/reports/card_revision_apply_20261101.md",
+    "stats": null,
+    "backup": "research/reports/kb_learning_cards.20261101_bak2.json",
+    "note": "学习卡修订已执行 apply：56→**70**（merge_fix 新增 14；drop 7 保留已有/3 no-op）；写后校验通过；digest 已刷新；备份可回滚。"
+  },
+  "qa_acceptance_20261101": {
+    "tool": "tools/kb_corpus/qa_acceptance.py",
+    "report": "research/reports/qa_acceptance_20261101.md",
+    "conclusion": {
+      "cli_pass": true,
+      "http_pass": true,
+      "portal_pass": true,
+      "can_go_live": "go",
+      "verdict": "三段验收全部通过，可进入 8091 接线 L2 审批",
+      "fixes_needed": [],
+      "risks": [
+        "HTTP 验收为进程内 handle 调用（未启动 8091），不代表真实网关/鉴权/超时链路已就绪。",
+        "HTTP 用例中 single/multi 使用注入 mock（不真调 LLM），仅验证参数/状态码/信封契约。",
+        "CLI 验收条数受 LLM 时间预算限制（默认 10 条），结论为 effective 子集。",
+        "multi+guard 的 fallback 答案信息密度低于原答案，上线前需继续人工抽查。",
+        "WIRED=False：本轮不注册、不重启 8091；正式接线需 L2 五要素审批。"
+      ]
+    },
+    "note": "问答链路三段验收：CLI 10 条（success5/fallback5/guard 正常）、HTTP 预接线 5/5 用例（含 guard=0/非法400，WIRED=False）、门户 2/2 HTTP200 → **go**（可进入 8091 L2 审批）。"
   }
 }

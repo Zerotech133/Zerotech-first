@@ -1,0 +1,479 @@
+{
+ "schema_version": 1,
+ "kind": "qa_acceptance",
+ "generated_at": "2026-11-01T13:46:03+08:00",
+ "config": {
+  "n_requested": 10,
+  "n_actual": 10,
+  "model": "qwen3.5:9b",
+  "mode": "multi",
+  "guard": true,
+  "on_guard_fail": "fallback",
+  "timeout_seconds": 240.0,
+  "deadline_seconds": 420.0,
+  "portal": "http://127.0.0.1:8734"
+ },
+ "cli": {
+  "rows": [
+   {
+    "id": "q2_b5a0a0e045",
+    "question": "量学理论的结论在什么条件下可能不成立？",
+    "category": "风险限制",
+    "answer_length": 365,
+    "answer_preview": "基于现有知识库材料，无法得出量学理论结论不成立的具体条件。\n\n**结论**：材料仅阐述了量学理论的理想化效果与构成体系，未提及任何失效场景或限制条件。\n\n**依据**：\n1. **直接事实**：材料明确指出该理论“实现了不管指标、消息和行情均可预测股市的效果”，并构建了独立的科学体系 [5cfa2f156e5c] p.",
+    "citations": 4,
+    "mode": "multi",
+    "status": "success",
+    "guard_enabled": true,
+    "guard_passed": true,
+    "guard_action": "pass",
+    "guard_issues": [],
+    "citation_resolvable_rate": 1.0,
+    "support_rate": 1.0,
+    "inference_ratio": 0.0,
+    "distinct_cited_units": 4,
+    "fallback": false,
+    "elapsed_seconds": 15.8,
+    "error": null
+   },
+   {
+    "id": "q2_aa49124184",
+    "question": "储气调峰能力建设中研报提供了哪些可验证的关键数据或指标？",
+    "category": "关键数据",
+    "answer_length": 386,
+    "answer_preview": "研报关于储气调峰能力建设提供了以下可验证关键数据：\n\n1. **全球与中国工作气量占比对比**：全球储气库工作气量在消费总量中的平均占比约为 11.4%，而我国目前仅维持在 7% 左右。这表明我国调峰能力相对不足，需加快储气库建设以弥补差距 [4c6ddf0bf36f] p.1【直接事实】。\n\n2. **行业转型方向*",
+    "citations": 2,
+    "mode": "multi",
+    "status": "success",
+    "guard_enabled": true,
+    "guard_passed": true,
+    "guard_action": "pass",
+    "guard_issues": [],
+    "citation_resolvable_rate": 1.0,
+    "support_rate": 1.0,
+    "inference_ratio": 0.0,
+    "distinct_cited_units": 2,
+    "fallback": false,
+    "elapsed_seconds": 18.03,
+    "error": null
+   },
+   {
+    "id": "q2_bcbfd79337",
+    "question": "智能算力规模占比的核心驱动因素是什么？",
+    "category": "驱动因素",
+    "answer_length": 317,
+    "answer_preview": "（质量守卫回退：多单元答案引用/集中度/推断比例未达标，摘录可核验知识单元）\n- [776f36408a89] p.1 2024 年智能算力规模占全国算力总规模的 32%，带动用电需求加深增长。 2024 年，全国算力总规模达到 280 EFLOPS，其中八大国家枢纽节点算力规模达到 175 EFLOPS；智能算力规模",
+    "citations": 2,
+    "mode": "multi",
+    "status": "fallback",
+    "guard_enabled": true,
+    "guard_passed": false,
+    "guard_action": "fallback",
+    "guard_issues": [
+     "citation_missing",
+     "insufficient_cited_units"
+    ],
+    "citation_resolvable_rate": 0.0,
+    "support_rate": 0.0,
+    "inference_ratio": 0.5,
+    "distinct_cited_units": 0,
+    "fallback": true,
+    "elapsed_seconds": 14.47,
+    "error": null
+   },
+   {
+    "id": "q2_a593448ce5",
+    "question": "北京市货物贸易净出口需要跟踪哪些指标或事件？",
+    "category": "如何识别",
+    "answer_length": 413,
+    "answer_preview": "基于现有知识库材料，无法完整回答“北京市货物贸易净出口需要跟踪哪些指标或事件”的问题。\n\n**结论：** 材料仅提供了部分具体数据，缺乏对需跟踪的指标体系或关键事件的系统性总结。\n\n**依据：**\n1. **【直接事实】**：2025 年 8 月北京市货物贸易净出口额为 -258.6 亿美元，较上年同期下降 1.9% ",
+    "citations": 3,
+    "mode": "multi",
+    "status": "success",
+    "guard_enabled": true,
+    "guard_passed": true,
+    "guard_action": "pass",
+    "guard_issues": [],
+    "citation_resolvable_rate": 1.0,
+    "support_rate": 1.0,
+    "inference_ratio": 0.3333,
+    "distinct_cited_units": 3,
+    "fallback": false,
+    "elapsed_seconds": 17.69,
+    "error": null
+   },
+   {
+    "id": "q2_3d1abf0240",
+    "question": "离岛免税消费数据对相关标的基本面或估值的影响如何？",
+    "category": "影响如何",
+    "answer_length": 200,
+    "answer_preview": "（质量守卫回退：多单元答案引用/集中度/推断比例未达标，摘录可核验知识单元）\n- [6581eca343ac] p.1 2026年中秋假期海南离岛免税购物金额达2.31亿元，购物人数3.86万人次，购物件数17.9万件。 海口海关统计显示，今年中秋假期海南离岛免税购物市场迎来消费高峰。9月25日至9月27日，海口海关共",
+    "citations": 1,
+    "mode": "multi",
+    "status": "fallback",
+    "guard_enabled": true,
+    "guard_passed": false,
+    "guard_action": "fallback",
+    "guard_issues": [
+     "insufficient_cited_units"
+    ],
+    "citation_resolvable_rate": 1.0,
+    "support_rate": 1.0,
+    "inference_ratio": 0.5,
+    "distinct_cited_units": 1,
+    "fallback": true,
+    "elapsed_seconds": 13.92,
+    "error": null
+   },
+   {
+    "id": "q2_1e95f989df",
+    "question": "海上风电项目规划的结论由哪些证据支撑？",
+    "category": "是什么",
+    "answer_length": 372,
+    "answer_preview": "海上风电项目规划的结论主要基于以下证据支撑：\n\n1. **具体项目规划**：国华投资拟在山东半岛南海域开展海上风电项目前期研究，规划总装机容量为 400 万千瓦，旨在推进规范开发 [540733583fec] p.1【直接事实】。\n2. **技术路线与政策导向**：国家支持开发近海抗台型、深远海漂浮式风电机组及海上能源",
+    "citations": 3,
+    "mode": "multi",
+    "status": "success",
+    "guard_enabled": true,
+    "guard_passed": true,
+    "guard_action": "pass",
+    "guard_issues": [],
+    "citation_resolvable_rate": 1.0,
+    "support_rate": 1.0,
+    "inference_ratio": 0.5,
+    "distinct_cited_units": 3,
+    "fallback": false,
+    "elapsed_seconds": 16.52,
+    "error": null
+   },
+   {
+    "id": "q2_6076398cc7",
+    "question": "保险资金投资港股通 ETF的进入壁垒与差异化优势是什么？",
+    "category": "竞争格局",
+    "answer_length": 402,
+    "answer_preview": "（质量守卫回退：多单元答案引用/集中度/推断比例未达标，摘录可核验知识单元）\n- [e9548ab7c8d3] p.1 监管新规允许持有港股通股票的保险机构投资港股通 ETF，丰富了险资跨境权益投资工具且不占用 QDII 额度。 9 月 29 日，多家保险机构收到金融监管总局办公厅下发的《关于明确保险资金投资港股通 E",
+    "citations": 2,
+    "mode": "multi",
+    "status": "fallback",
+    "guard_enabled": true,
+    "guard_passed": false,
+    "guard_action": "fallback",
+    "guard_issues": [
+     "inference_heavy"
+    ],
+    "citation_resolvable_rate": 1.0,
+    "support_rate": 1.0,
+    "inference_ratio": 1.0,
+    "distinct_cited_units": 2,
+    "fallback": true,
+    "elapsed_seconds": 18.11,
+    "error": null
+   },
+   {
+    "id": "q2_f93ae02b9d",
+    "question": "伏击涨停的灵魂的景气度受哪些变量影响？",
+    "category": "驱动因素",
+    "answer_length": 308,
+    "answer_preview": "（质量守卫回退：多单元答案引用/集中度/推断比例未达标，摘录可核验知识单元）\n- [538860c3cb35] p.11 伏击涨停的核心在于追求投资乐趣而非单纯赚钱，旨在在提心吊胆的股票市场中为投资者找到一片‘乐土’。 “伏击涨停”不是为了“赚钱”，而是为了找“乐趣”，是在人人提心吊胆的股票市场找到一片属于你的“乐土”",
+    "citations": 2,
+    "mode": "multi",
+    "status": "fallback",
+    "guard_enabled": true,
+    "guard_passed": false,
+    "guard_action": "fallback",
+    "guard_issues": [
+     "citation_missing",
+     "insufficient_cited_units",
+     "inference_heavy"
+    ],
+    "citation_resolvable_rate": 0.0,
+    "support_rate": 0.0,
+    "inference_ratio": 1.0,
+    "distinct_cited_units": 0,
+    "fallback": true,
+    "elapsed_seconds": 11.3,
+    "error": null
+   },
+   {
+    "id": "q2_ef78939178",
+    "question": "网络安全软技能需求的主要风险与不确定性有哪些？",
+    "category": "风险限制",
+    "answer_length": 524,
+    "answer_preview": "网络安全软技能需求面临的主要风险与不确定性在于：人才供给结构失衡导致关键岗位长期空缺，且合规转型对软技能的依赖度显著提升，加剧了招聘难度。\n\n1. **核心软技能缺口引发运营风险**：批判性思维、沟通能力和问题解决能力是安全专业人员最重要的三项软技能（占比分别为 59%、57%、53%）【直接事实】[ccec1052f",
+    "citations": 3,
+    "mode": "multi",
+    "status": "success",
+    "guard_enabled": true,
+    "guard_passed": true,
+    "guard_action": "pass",
+    "guard_issues": [],
+    "citation_resolvable_rate": 1.0,
+    "support_rate": 1.0,
+    "inference_ratio": 0.4,
+    "distinct_cited_units": 3,
+    "fallback": false,
+    "elapsed_seconds": 20.11,
+    "error": null
+   },
+   {
+    "id": "q2_87eff8d7a3",
+    "question": "品牌AI心智总得分有哪些可核验的统计口径或样本？",
+    "category": "关键数据",
+    "answer_length": 324,
+    "answer_preview": "（质量守卫回退：多单元答案引用/集中度/推断比例未达标，摘录可核验知识单元）\n- [fd49b3da595b] p.2 品牌AI心智总得分由五维指标加权得出，用于衡量品牌在全体AI用户中的综合口碑与推荐表现，理论最高分为180分。 总得分=100×(10−平均排名)/10+45×提及率+15×首位率+15×前三率+15",
+    "citations": 2,
+    "mode": "multi",
+    "status": "fallback",
+    "guard_enabled": true,
+    "guard_passed": false,
+    "guard_action": "fallback",
+    "guard_issues": [
+     "citation_missing",
+     "insufficient_cited_units"
+    ],
+    "citation_resolvable_rate": 0.0,
+    "support_rate": 0.0,
+    "inference_ratio": 0.0,
+    "distinct_cited_units": 0,
+    "fallback": true,
+    "elapsed_seconds": 12.24,
+    "error": null
+   }
+  ],
+  "summary": {
+   "requested": 10,
+   "actual": 10,
+   "skipped": 0,
+   "success": 5,
+   "no_evidence": 0,
+   "fallback": 5,
+   "guard_passed": 5,
+   "guard_failed": 5,
+   "avg_citations": 2.4,
+   "avg_elapsed_seconds": 15.82,
+   "errors": [],
+   "elapsed_seconds": 158.17,
+   "pass": true
+  }
+ },
+ "http": {
+  "rows": [
+   {
+    "case": "retrieval",
+    "params": {
+     "mode": "retrieval"
+    },
+    "status": 200,
+    "ok": true,
+    "error": null,
+    "meta": {
+     "mode": "retrieval",
+     "k": 3,
+     "clusters": 0,
+     "llm_called": false,
+     "cache_hit": false,
+     "guard": {
+      "enabled": true,
+      "applicable": false,
+      "applied": false,
+      "on_fail": "fallback"
+     }
+    }
+   },
+   {
+    "case": "single",
+    "params": {
+     "mode": "single"
+    },
+    "status": 200,
+    "ok": true,
+    "error": null,
+    "meta": {
+     "mode": "single",
+     "k": 3,
+     "clusters": 0,
+     "llm_called": true,
+     "cache_hit": false,
+     "guard": {
+      "enabled": true,
+      "applicable": false,
+      "applied": false,
+      "on_fail": "fallback"
+     }
+    }
+   },
+   {
+    "case": "multi",
+    "params": {
+     "mode": "multi"
+    },
+    "status": 200,
+    "ok": true,
+    "error": null,
+    "meta": {
+     "mode": "multi",
+     "k": 5,
+     "clusters": 2,
+     "llm_called": true,
+     "cache_hit": false,
+     "guard": {
+      "enabled": true,
+      "applicable": true,
+      "applied": true,
+      "on_fail": "fallback",
+      "guard_passed": true,
+      "guard_action": "pass",
+      "guard_issues": [],
+      "citation_valid": [
+       "u1"
+      ],
+      "citation_invalid": [],
+      "citation_total": null,
+      "citation_valid_count": null,
+      "citation_invalid_count": null,
+      "support_rate": null,
+      "inference_ratio": 0.5,
+      "distinct_cited_units": 1
+     }
+    }
+   },
+   {
+    "case": "multi_guard0",
+    "params": {
+     "mode": "multi",
+     "guard": "0"
+    },
+    "status": 200,
+    "ok": true,
+    "error": null,
+    "meta": {
+     "mode": "multi",
+     "k": 5,
+     "clusters": 2,
+     "llm_called": true,
+     "cache_hit": false,
+     "guard": {
+      "enabled": false,
+      "applicable": true,
+      "applied": false,
+      "on_fail": "fallback"
+     }
+    }
+   },
+   {
+    "case": "guard_invalid",
+    "params": {
+     "mode": "multi",
+     "guard": "2"
+    },
+    "status": 400,
+    "ok": false,
+    "error": {
+     "code": "INVALID_ARGUMENT",
+     "message": "guard 只能是 1/0（收到 '2'）"
+    },
+    "meta": {
+     "mode": null,
+     "k": null,
+     "clusters": null,
+     "llm_called": null,
+     "cache_hit": null,
+     "guard": null
+    }
+   }
+  ],
+  "summary": {
+   "cases": 5,
+   "passed": 5,
+   "failed": 0,
+   "wired": false,
+   "checks": [
+    {
+     "case": "retrieval",
+     "status": 200,
+     "expected": 200,
+     "pass": true,
+     "error": null
+    },
+    {
+     "case": "single",
+     "status": 200,
+     "expected": 200,
+     "pass": true,
+     "error": null
+    },
+    {
+     "case": "multi",
+     "status": 200,
+     "expected": 200,
+     "pass": true,
+     "error": null
+    },
+    {
+     "case": "multi_guard0",
+     "status": 200,
+     "expected": 200,
+     "pass": true,
+     "error": null
+    },
+    {
+     "case": "guard_invalid",
+     "status": 400,
+     "expected": 400,
+     "pass": true,
+     "error": {
+      "code": "INVALID_ARGUMENT",
+      "message": "guard 只能是 1/0（收到 '2'）"
+     }
+    }
+   ],
+   "pass": true
+  }
+ },
+ "portal": {
+  "rows": [
+   {
+    "item": "kb_reports.html",
+    "url": "http://127.0.0.1:8734/kb_reports.html",
+    "status": 200,
+    "bytes": 33828,
+    "has_qa_block": true,
+    "has_guard_marker": true,
+    "pass": true
+   },
+   {
+    "item": "kb_qa_samples.json",
+    "url": "http://127.0.0.1:8734/static/kb_qa_samples.json",
+    "status": 200,
+    "bytes": 38819,
+    "schema_version": 2,
+    "mode": "multi",
+    "samples": 12,
+    "guard_enabled": true,
+    "pass": true
+   }
+  ],
+  "summary": {
+   "checks": 2,
+   "passed": 2,
+   "pass": true
+  }
+ },
+ "conclusion": {
+  "cli_pass": true,
+  "http_pass": true,
+  "portal_pass": true,
+  "can_go_live": "go",
+  "verdict": "三段验收全部通过，可进入 8091 接线 L2 审批",
+  "fixes_needed": [],
+  "risks": [
+   "HTTP 验收为进程内 handle 调用（未启动 8091），不代表真实网关/鉴权/超时链路已就绪。",
+   "HTTP 用例中 single/multi 使用注入 mock（不真调 LLM），仅验证参数/状态码/信封契约。",
+   "CLI 验收条数受 LLM 时间预算限制（默认 10 条），结论为 effective 子集。",
+   "multi+guard 的 fallback 答案信息密度低于原答案，上线前需继续人工抽查。",
+   "WIRED=False：本轮不注册、不重启 8091；正式接线需 L2 五要素审批。"
+  ]
+ },
+ "disclaimer": "验收记录仅供研究参考，不构成投资建议；HTTP 验收不启动服务。",
+ "elapsed_seconds": 162.11
+}

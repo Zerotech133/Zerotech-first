@@ -680,6 +680,20 @@
       "title": "学习卡 revise 修订建议",
       "ref": "tools/kb_corpus/card_revision.py",
       "enabled": true
+    },
+    {
+      "id": "card_revision_apply",
+      "kind": "tool",
+      "title": "学习卡修订落地（备份/校验）",
+      "ref": "tools/kb_corpus/card_revision_apply.py",
+      "enabled": true
+    },
+    {
+      "id": "qa_acceptance",
+      "kind": "tool",
+      "title": "问答链路端到端验收",
+      "ref": "tools/kb_corpus/qa_acceptance.py",
+      "enabled": true
     }
   ]
 }
