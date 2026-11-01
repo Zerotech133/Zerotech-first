@@ -1,0 +1,124 @@
+{
+ "schema_version": 1,
+ "kind": "runbook",
+ "date": "2026-11-02",
+ "version": "v1",
+ "title": "零界 · 系统运行手册 v1",
+ "paths": {
+  "runbook_md": "deliverables/2026-11-02_零界运行手册_v1.md",
+  "status_md": "STATUS.md",
+  "summary_json": "research/reports/runbook_20261102.json",
+  "summary_md": "research/reports/runbook_20261102.md"
+ },
+ "sections": [
+  "入口",
+  "问答使用（CLI + HTTP）",
+  "每日 4 任务",
+  "知识库维护",
+  "回滚手册",
+  "已知限制与注意",
+  "常见排障速查"
+ ],
+ "entry": {
+  "portal": "http://127.0.0.1:8734",
+  "api": "http://127.0.0.1:8091/api/kb/qa",
+  "pages": {
+   "kb_reports": "/kb_reports.html",
+   "screening": "/screening.html",
+   "card_review": "/card_review.html",
+   "home": "/"
+  }
+ },
+ "qa": {
+  "cli_default": "tools/kb_corpus/kb_qa.py ask --mode multi",
+  "http_default": "GET /api/kb/qa?q=...&mode=multi&topk=8",
+  "defaults": {
+   "prompt": "v4",
+   "guard_marker": "segment",
+   "citation_retry": true
+  },
+  "rate_limits": {
+   "retrieval": 300,
+   "single": 6,
+   "multi": 6,
+   "window_seconds": 60
+  },
+  "rollback_env": [
+   "KB_QA_PROMPT_VERSION=v1",
+   "KB_QA_MARKER_MODE=legacy",
+   "KB_QA_CITATION_RETRY=0"
+  ]
+ },
+ "daily_tasks": [
+  {
+   "name": "ZeroBound_DailyKB",
+   "time": "08:35",
+   "log": "C:\\\\Temp\\\\zero_daily_kb.log",
+   "trigger": "Start-ScheduledTask -TaskName ZeroBound_DailyKB",
+   "manual": "python tools/kb_corpus/daily_kb.py run"
+  },
+  {
+   "name": "ZeroBound_DailyScreening",
+   "time": "17:35",
+   "log": "C:\\\\Temp\\\\zero_daily_screening.log",
+   "trigger": "Start-ScheduledTask -TaskName ZeroBound_DailyScreening"
+  },
+  {
+   "name": "ZeroBound_DailyPush",
+   "time": "17:45",
+   "log": "C:\\\\Temp\\\\zero_daily_push.log",
+   "trigger": "Start-ScheduledTask -TaskName ZeroBound_DailyPush"
+  },
+  {
+   "name": "ZeroBound_DailyHealth",
+   "time": "18:10",
+   "log": "C:\\\\Temp\\\\zero_daily_health.log",
+   "trigger": "Start-ScheduledTask -TaskName ZeroBound_DailyHealth"
+  }
+ ],
+ "knowledge_maintenance": {
+  "units": 516,
+  "corpus_chunks": 4926,
+  "learning_cards": 124,
+  "question_bank": 50,
+  "backup_paths": [
+   "portal/static/kb_learning_cards.2026*.bak.json",
+   "research/reports/"
+  ],
+  "review_page": "/card_review.html",
+  "refresh": "python tools/kb_corpus/daily_kb.py run",
+  "cache": "进程级 units/corpus 缓存，mtime 自动失效；改库文件无需重启"
+ },
+ "rollback": {
+  "cli_env": "$env:KB_QA_PROMPT_VERSION='v1'; $env:KB_QA_MARKER_MODE='legacy'; $env:KB_QA_CITATION_RETRY='0'",
+  "http_restart": "'rollback' | Out-File C:\\\\Temp\\\\PORTAL_API_RESTART.flag; Start-ScheduledTask -TaskName 'AI工作站门户API'",
+  "rate_limit": "改 RATE_LIMIT['retrieval']=300→60 后 K-RESTART",
+  "k_restart_log": "C:\\\\Temp\\\\portal_api_task.log"
+ },
+ "limitations": [
+  "飞书卡片权限范围有限（推送前测试会话确认）",
+  "multi 容量未压测（6/分，验收仅 3 次真 LLM）",
+  "限流为进程内单实例计数（多实例需一致性方案）",
+  "8091 改代码必须 K-RESTART（冷启动 smoke 失败拒启）",
+  "35b 模型冷加载 2–3 分钟，仅观察用",
+  "v3 严格 prompt 未合入（v4 为当前默认）",
+  "答案/引用需人工复核，不构成投资建议"
+ ],
+ "status_append": {
+  "date": "2026-11-02",
+  "verified": {
+   "qa_http": "7/7 go",
+   "retrieval_p95_seconds": 0.11,
+   "units": 516,
+   "learning_cards": 124
+  },
+  "todos": [
+   "multi 容量/长稳压测",
+   "飞书卡片权限确认",
+   "限流多实例一致性",
+   "外部放量前 3–5 QPS 稳定性复跑"
+  ]
+ },
+ "generated_at": "2026-11-02T00:45:37+0800",
+ "note": "只写文档，不改代码；来源：wave1-40 交付报告与 8091 实测。"
+}

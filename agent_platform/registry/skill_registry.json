@@ -855,6 +855,13 @@
       "title": "8091 HTTP 验收复跑",
       "ref": "tools/kb_corpus/qa_http_recheck.py",
       "enabled": true
+    },
+    {
+      "id": "qa_channel_limit",
+      "kind": "tool",
+      "title": "问答通道限流复核",
+      "ref": "tools/kb_corpus/qa_channel_limit.py",
+      "enabled": true
     }
   ]
 }

@@ -1,0 +1,268 @@
+{
+ "schema_version": "qa_channel_limit.v1",
+ "kind": "qa_channel_limit_review",
+ "date_tag": "20261102",
+ "generated_at": "2026-11-02T00:50:24+08:00",
+ "base_url": "http://127.0.0.1:8091",
+ "config_snapshot": {
+  "rate_limit": {
+   "single": 6,
+   "multi": 6
+  },
+  "multi_timeout_seconds": 300,
+  "single_timeout_seconds": 120,
+  "window_seconds": 60,
+  "note": "复核只读，未修改任何配置"
+ },
+ "real_llm_budget": {
+  "max": 6,
+  "used": 6,
+  "per_channel": {
+   "single": 3,
+   "multi": 3
+  }
+ },
+ "real": {
+  "single": [
+   {
+    "mode": "single",
+    "i": 1,
+    "question": "量学理论的结论在什么条件下可能不成立？",
+    "status": 200,
+    "elapsed_seconds": 9.375,
+    "citations": 2,
+    "answer_len": 260,
+    "confidence": "high",
+    "rate_limit": {
+     "kind": "single",
+     "limit": 6,
+     "used": 1,
+     "remaining": 5,
+     "window_seconds": 60
+    },
+    "error": null
+   },
+   {
+    "mode": "single",
+    "i": 2,
+    "question": "储气调峰能力建设中研报提供了哪些可验证的关键数据或指标？",
+    "status": 200,
+    "elapsed_seconds": 15.765,
+    "citations": 2,
+    "answer_len": 270,
+    "confidence": "high",
+    "rate_limit": {
+     "kind": "single",
+     "limit": 6,
+     "used": 2,
+     "remaining": 4,
+     "window_seconds": 60
+    },
+    "error": null
+   },
+   {
+    "mode": "single",
+    "i": 3,
+    "question": "智能算力规模占比的核心驱动因素是什么？",
+    "status": 200,
+    "elapsed_seconds": 10.656,
+    "citations": 3,
+    "answer_len": 321,
+    "confidence": "high",
+    "rate_limit": {
+     "kind": "single",
+     "limit": 6,
+     "used": 3,
+     "remaining": 3,
+     "window_seconds": 60
+    },
+    "error": null
+   }
+  ],
+  "multi": [
+   {
+    "mode": "multi",
+    "i": 1,
+    "question": "储气调峰能力建设中研报提供了哪些可验证的关键数据或指标？",
+    "status": 200,
+    "elapsed_seconds": 14.438,
+    "citations": 2,
+    "answer_len": 270,
+    "confidence": "high",
+    "rate_limit": {
+     "kind": "multi",
+     "limit": 6,
+     "used": 1,
+     "remaining": 5,
+     "window_seconds": 60
+    },
+    "error": null
+   },
+   {
+    "mode": "multi",
+    "i": 2,
+    "question": "智能算力规模占比的核心驱动因素是什么？",
+    "status": 200,
+    "elapsed_seconds": 7.375,
+    "citations": 3,
+    "answer_len": 326,
+    "confidence": "high",
+    "rate_limit": {
+     "kind": "multi",
+     "limit": 6,
+     "used": 2,
+     "remaining": 4,
+     "window_seconds": 60
+    },
+    "error": null
+   },
+   {
+    "mode": "multi",
+    "i": 3,
+    "question": "北京市货物贸易净出口需要跟踪哪些指标或事件？",
+    "status": 200,
+    "elapsed_seconds": 7.906,
+    "citations": 2,
+    "answer_len": 280,
+    "confidence": "high",
+    "rate_limit": {
+     "kind": "multi",
+     "limit": 6,
+     "used": 3,
+     "remaining": 3,
+     "window_seconds": 60
+    },
+    "error": null
+   }
+  ]
+ },
+ "boundary": {
+  "single": {
+   "mode": "single",
+   "n": 7,
+   "statuses": [
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    429
+   ],
+   "expected": [
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    429
+   ],
+   "matches": true,
+   "limit": 6,
+   "window_seconds": 60
+  },
+  "multi": {
+   "mode": "multi",
+   "n": 7,
+   "statuses": [
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    429
+   ],
+   "expected": [
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    429
+   ],
+   "matches": true,
+   "limit": 6,
+   "window_seconds": 60
+  }
+ },
+ "analysis": {
+  "single": {
+   "n": 3,
+   "ok": 3,
+   "statuses": [
+    200,
+    200,
+    200
+   ],
+   "mean_seconds": 11.93,
+   "p50_seconds": 10.66,
+   "p95_seconds": 10.66,
+   "min_seconds": 9.38,
+   "max_seconds": 15.77,
+   "serial_capacity_per_min": 5.03
+  },
+  "multi": {
+   "n": 3,
+   "ok": 3,
+   "statuses": [
+    200,
+    200,
+    200
+   ],
+   "mean_seconds": 9.91,
+   "p50_seconds": 7.91,
+   "p95_seconds": 7.91,
+   "min_seconds": 7.38,
+   "max_seconds": 14.44,
+   "serial_capacity_per_min": 6.05
+  }
+ },
+ "recommendations": {
+  "single": {
+   "channel": "single",
+   "current": 6,
+   "measured_mean_seconds": 11.93,
+   "serial_capacity_per_min": 5.03,
+   "recommended": 4,
+   "rationale": "实测均值 11.93s → 串行容量 5.03 次/分 < 当前 6/分，6/分窗口在串行下不可达；**建议下调至 4/分**（或保持 6 但明确为突发上限）",
+   "config_changed": false
+  },
+  "multi": {
+   "channel": "multi",
+   "current": 6,
+   "measured_mean_seconds": 9.91,
+   "serial_capacity_per_min": 6.05,
+   "recommended": 6,
+   "rationale": "实测均值 9.91s → 串行容量 6.05 次/分 ≥ 当前 6/分，窗口可达；**建议维持 6/分**（并发仍受 Ollama 串行生成限制）",
+   "config_changed": false
+  }
+ },
+ "conclusion": {
+  "6_per_min_reachable": {
+   "single": {
+    "serial_capacity_per_min": 5.03,
+    "limit": 6,
+    "reachable": false
+   },
+   "multi": {
+    "serial_capacity_per_min": 6.05,
+    "limit": 6,
+    "reachable": true
+   }
+  },
+  "recommendations": {
+   "single": 4,
+   "multi": 6
+  },
+  "summary": "single: 实测均值 11.93s → 串行容量 5.03 次/分 < 当前 6/分，6/分窗口在串行下不可达；**建议下调至 4/分**（或保持 6 但明确为突发上限）；multi: 实测均值 9.91s → 串行容量 6.05 次/分 ≥ 当前 6/分，窗口可达；**建议维持 6/分**（并发仍受 Ollama 串行生成限制）"
+ },
+ "caveats": [
+  "真实 LLM 采样极小（single/multi 各 3 次），延迟受本机负载/模型缓存影响，仅供量级参考；",
+  "限流为滑动窗口（60s），保护的是**并发突发**；串行连续调用因单次延迟 ≥10s 往往自然落在窗口内，不一定触发 429；",
+  "Ollama 单实例串行生成，多并发会排队导致整体变慢，限流值应留安全余量；",
+  "本报告只给建议，未修改 portal/api_kb_qa.py 的 RATE_LIMIT；调整需另立任务+重启 8091。"
+ ]
+}
