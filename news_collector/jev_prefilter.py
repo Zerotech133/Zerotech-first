@@ -210,6 +210,10 @@ def prefilter_jev(title: str, source: str = "", mode: str = "aggressive") -> dic
         "src": "prefilter",
         "pref": {"reason": r["reason"], "matched": r["matched"], "source": source},
         "reason": "规则粗筛：%s（%s）" % (r["reason"], r["matched"] or "-"),
+        # 2026-11-01 PREFILTERV2：契约 v2 字段（skip 行也是最终判定，必须与主路径同 schema）
+        "horizon": "unknown",
+        "prob": {"bull": 0.25, "bear": 0.25, "neutral": 0.5},
+        "bias_probs": {"bull": 0.25, "bear": 0.25, "neutral": 0.5},
         "meter": {"ms": 0, "model": "prefilter", "src": "prefilter"},
     }
 

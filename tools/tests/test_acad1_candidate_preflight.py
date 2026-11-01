@@ -22,6 +22,11 @@ def _clean(**kw):
         "evidence_rsi_period": 14, "volume_ratio": 1.2, "daily_return": 1.5,
         "pre_close": 2.97, "score": 60.0, "score_method": "percentile",
         "corporate_action": True, "rationale": "close 3.02 > 2.67",
+        # WO-GUARD-PROVENANCE-20261101 配套：guard G3/G4 新增 provenance 事实口径，
+        # 干净卡需声明 bar_asof/bar_source/复权/RSI 方法/完整日线，否则 G3 unknown。
+        "bar_asof": "2026-10-30", "bar_source": "test",
+        "price_adjust": "none", "rsi_method": "wilder",
+        "evidence_rsi_method": "wilder", "complete_bar": True,
     }
     base.update(kw)
     return base

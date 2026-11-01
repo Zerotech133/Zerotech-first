@@ -1,0 +1,112 @@
+{
+ "schema": "t1t2_capture/v1",
+ "updated_at": "2026-11-01T08:15:16",
+ "arms": {
+  "baseline": {
+   "313b2b3ab7b3": {
+    "mode": "full_trace",
+    "fidelity": "full_trace",
+    "captured_at": "2026-11-01T08:15:16",
+    "files": [
+     {
+      "target": "C:\\项目\\老田的AI助手\\.worktrees\\WO-T1T2-CAPTURE-20261031\\docs\\audit\\team_exec_archive\\baseline\\313b2b3ab7b3.jsonl",
+      "sha256": "0ee3b93dcde136ab89e144ecfd9697e01a0935a7199406216e84b3c407a779bc",
+      "size": 36169
+     },
+     {
+      "target": "C:\\项目\\老田的AI助手\\.worktrees\\WO-T1T2-CAPTURE-20261031\\docs\\audit\\team_exec_archive\\baseline\\313b2b3ab7b3_summary.json",
+      "sha256": "6538e257308f401dfc2ad274e80dcfb88336911c337e95f27487be833101423e",
+      "size": 734
+     }
+    ],
+    "provenance": "team_exec full trace"
+   }
+  },
+  "json_first": {
+   "19a37bffc93a": {
+    "mode": "log_salvage",
+    "fidelity": "log_salvage",
+    "captured_at": "2026-11-01T08:15:16",
+    "files": [
+     {
+      "target": "C:\\项目\\老田的AI助手\\.worktrees\\WO-T1T2-CAPTURE-20261031\\docs\\audit\\team_exec_archive\\json_first\\19a37bffc93a.salvage.json",
+      "sha256": "d201921d9e46765f68ebbb591174beb1a47a054947602de72baf2d825693b5ba",
+      "size": 2464
+     }
+    ],
+    "provenance": "C:\\Temp run_invest console log（截断，salvage）"
+   }
+  },
+  "short_contract": {
+   "e7cd83417dc5": {
+    "mode": "log_salvage",
+    "fidelity": "log_salvage",
+    "captured_at": "2026-11-01T08:15:16",
+    "files": [
+     {
+      "target": "C:\\项目\\老田的AI助手\\.worktrees\\WO-T1T2-CAPTURE-20261031\\docs\\audit\\team_exec_archive\\short_contract\\e7cd83417dc5.salvage.json",
+      "sha256": "96ac17f1e36355a2bc2897e301dbb16638197d9492c10dc9647a5bb788a4d2fb",
+      "size": 2442
+     }
+    ],
+    "provenance": "C:\\Temp run_invest console log（截断，salvage）"
+   },
+   "8f8ef1b070c6": {
+    "mode": "log_salvage",
+    "fidelity": "log_salvage",
+    "captured_at": "2026-11-01T08:15:16",
+    "files": [
+     {
+      "target": "C:\\项目\\老田的AI助手\\.worktrees\\WO-T1T2-CAPTURE-20261031\\docs\\audit\\team_exec_archive\\short_contract\\8f8ef1b070c6.salvage.json",
+      "sha256": "41c5550acf9f6df8910028d0db4d3a48561f51c34c49d76c8544697ef053cec8",
+      "size": 2442
+     }
+    ],
+    "provenance": "C:\\Temp run_invest console log（截断，salvage）"
+   }
+  },
+  "t1t2_4b": {
+   "3521a55c2670": {
+    "mode": "log_salvage",
+    "fidelity": "log_salvage",
+    "captured_at": "2026-11-01T08:15:16",
+    "files": [
+     {
+      "target": "C:\\项目\\老田的AI助手\\.worktrees\\WO-T1T2-CAPTURE-20261031\\docs\\audit\\team_exec_archive\\t1t2_4b\\3521a55c2670.salvage.json",
+      "sha256": "821d7b01e0274ae31c1689b8fa802ed1ffa88554866bb59661b30f4b47f3f456",
+      "size": 2374
+     }
+    ],
+    "provenance": "C:\\Temp run_invest console log（截断，salvage）"
+   },
+   "3a5781ce7e61": {
+    "mode": "log_salvage",
+    "fidelity": "log_salvage",
+    "captured_at": "2026-11-01T08:15:16",
+    "files": [
+     {
+      "target": "C:\\项目\\老田的AI助手\\.worktrees\\WO-T1T2-CAPTURE-20261031\\docs\\audit\\team_exec_archive\\t1t2_4b\\3a5781ce7e61.salvage.json",
+      "sha256": "4948e7249662630f6b90c7b4361565344cdc2d2a19d56ad8016575ce18bc5f17",
+      "size": 2420
+     }
+    ],
+    "provenance": "C:\\Temp run_invest console log（截断，salvage）"
+   }
+  },
+  "all_4b_explore": {
+   "df0ec53e7495": {
+    "mode": "log_salvage",
+    "fidelity": "log_salvage",
+    "captured_at": "2026-11-01T08:15:16",
+    "files": [
+     {
+      "target": "C:\\项目\\老田的AI助手\\.worktrees\\WO-T1T2-CAPTURE-20261031\\docs\\audit\\team_exec_archive\\all_4b_explore\\df0ec53e7495.salvage.json",
+      "sha256": "6ce7d28ed20cd78cd99aceb2c8b6b86eced02feb6b4822360774b5771ff6a911",
+      "size": 2368
+     }
+    ],
+    "provenance": "C:\\Temp run_invest console log（截断，salvage）"
+   }
+  }
+ }
+}

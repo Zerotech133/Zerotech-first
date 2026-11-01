@@ -101,11 +101,21 @@ def test_login_redirect_target_defined():
 
 
 def test_public_whitelist_preserved():
-    """公开基线不得被整体加锁：全局 /api/（/api/health 走此）、/login、/s/ 分享短链。"""
+    """H4-B（2026-11-01）：公开面收敛为显式白名单；/api/health、/login、/s/ 仍公开。
+
+    全局 /api/ 不再是公开 passthrough，而是"白名单命中→8091，未登记→401 JSON"；
+    /api/health 必须命中 H4-B 公开白名单 regex（否则健康探活会被默认拒绝锁死）。
+    """
     s = _text()
     assert "location /api/ {" in s
     api_block = s.split("location /api/ {", 1)[1].split("}", 1)[0]
-    assert "auth_request" not in api_block, "全局 /api/ 加锁会连 /api/health 一起锁死"
+    assert "auth_request" not in api_block, "/api/ 不得整体加锁"
+    assert "return 401" in api_block and "proxy_pass" not in api_block, \
+        "全局 /api/ 必须是白名单默认拒绝，而不是公开 passthrough"
+    whitelist = re.search(r"location ~ \^/api/\((.*?)\)\(\?:/\|\$\) \{", s, re.S)
+    assert whitelist, "缺少 H4-B 公开白名单 regex"
+    assert re.search(r"(?:^|\|)health(?:\||$)", whitelist.group(1)), \
+        "/api/health 未进公开白名单（会被默认 401 锁死）"
     # /login 是单行 location（同块内含 }），不能按多行块解析：取声明行+后 3 行
     lines = s.splitlines()
     idx = next(i for i, ln in enumerate(lines)
@@ -147,12 +157,13 @@ def test_unauth_status_matrix():
 
 
 def test_api_health_public_200():
-    """健康探活 /api/health：无独立受保护 location + 全局 /api/ 无 auth → 未登录 200。"""
+    """健康探活 /api/health：无独立受保护 location，且在 H4-B 显式白名单内 → 未登录 200。"""
     s = _text()
     assert "location = /api/health" not in s, "/api/health 不应有独立受保护 location"
-    assert "location /api/ {" in s
-    api_block = s.split("location /api/ {", 1)[1].split("}", 1)[0]
-    assert "auth_request" not in api_block
+    whitelist = re.search(r"location ~ \^/api/\((.*?)\)\(\?:/\|\$\) \{", s, re.S)
+    assert whitelist, "缺少 H4-B 公开白名单 regex"
+    assert re.search(r"(?:^|\|)health(?:\||$)", whitelist.group(1)), \
+        "/api/health 必须在 H4-B 公开白名单内"
     exact = {path for kind, path in _protected_locations() if kind == "="}
     prefixes = [path for kind, path in _protected_locations() if kind == "^~"]
     assert "/api/health" not in exact

@@ -9,7 +9,7 @@
   "discipline": "策略上架需通过数据/PIT、统计、成本容量、影子盘、人工批准五关；未过影子盘仅供研究"
  },
  "date": "20261030",
- "generated_at": "2026-11-01T01:20:21+08:00",
+ "generated_at": "2026-11-01T09:10:55+08:00",
  "strategies": [
   {
    "id": "S01_H14_quality_trap_guard",
@@ -17,13 +17,13 @@
    "type": "filter",
    "owner": "司马微",
    "source_hypothesis": "H14",
-   "status": "validated",
+   "status": "validated_filter_no_alpha",
    "executable": true,
    "rule": "剔除「高估值层(PE三分位) + ROE 层内前20%」的质量陷阱；叠加 ST/次新/低价/低流动性/涨停不可买/亏损股过滤",
    "validation": {
-    "stats": "backtested（台账 H14：估值分层内质量反向 OOS 全负；高ROE+高PE 质量陷阱 OOS -0.60%）",
-    "shadow": "H14ShadowMonthly 已有影子",
-    "cost": "过滤类无独立换手成本"
+    "stats": "backtested（H14 陷阱规避）；**中性化检验 2026-11-01：剥离市值/行业后 20 日超额 +0.17% ≈ 0 → 过滤器无 alpha**",
+    "shadow": "H14ShadowMonthly + S01 中性化检验",
+    "cost": "仅作风险/工程过滤，不产生收益"
    },
    "approved": false,
    "effective_from": "2026-11-01"
@@ -79,6 +79,27 @@
    },
    "approved": false,
    "effective_from": "待建（phase2）"
+  },
+  {
+   "id": "S05_LX20_AVOID_DEWEIGHT",
+   "name": "LX20 牛股三绝 · 规避/降配风控规则（候选）",
+   "type": "filter_avoid",
+   "owner": "司马微",
+   "source_hypothesis": "LX20（book_backlog）",
+   "status": "closed_both_directions_fail",
+   "executable": false,
+   "rule": "每日等权池剔除/降配过去 N=5 日触发 LX20 信号（倍量不穿/高量不破/跳空不补）的股票；参数与容量见 rule_spec",
+   "validation": {
+    "stats": "wave4 K：T+1 收盘执行 毛+6.15%/净+1.00%/t=6.21；T 日收盘（乐观上界）净+2.03%；T+1 开盘执行净-1.32%（不可用）",
+    "shadow": "无（需先做 S05 规则与现有组合叠加/影子盘）",
+    "cost": "30bp 单边；成本年化约 5%；容量 187 亿@10% 参与率；覆盖 24.5%",
+    "caveat": "仅适用于等权全市场/中小市值场景的线索；与 S01 大市值组合叠加反向。",
+    "overlay": "S05×S01 叠加 FAIL（w=0.5 -2.48%/t=-3.18；越深越负；机制=截面冲突）→ 不进影子盘",
+    "reverse": "超配反向假设 FAIL（M2 净-0.57%/t=-0.50；OOS -0.63%；逐年1/4）→ 两个方向均不适用 S01",
+    "final": "S05 关闭（仅保留 research_only 知识结论）：规避在等权全市场有效但换手成本高；在 S01 大市值内规避/超配均无效。"
+   },
+   "approved": false,
+   "effective_from": "待验证（candidate）"
   }
  ],
  "active": {
@@ -334,5 +355,7 @@
   ],
   "note": "H18 事件研究：改善/恶化组 20 日均负收益 → 仅观察，不作买入信号"
  },
- "disclaimer": "研究输出，不构成投资建议；S02 排序因子未验证；实盘前须过影子盘+人工批准。"
+ "disclaimer": "研究输出，不构成投资建议；S02 排序因子未验证；实盘前须过影子盘+人工批准。",
+ "snapshot_note": "2026-11-01 手工校正：S01 status/validation 已与 agent_platform/catalogs/strategy_registry.json 同步（WO-STRAT-DRIFT-20261101）；完整重生成见 docs/audit/2026-11-01_策略库真值偏差修复_v1.md",
+ "snapshot_corrected_at": "2026-11-01T07:55:00+08:00"
 }

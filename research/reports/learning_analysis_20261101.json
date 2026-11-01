@@ -1,0 +1,1055 @@
+{
+ "schema_version": 1,
+ "generated_at": "2026-11-01T09:37:18+08:00",
+ "date": "20261101",
+ "sources": {
+  "units": {
+   "path": "C:\\项目\\老田的AI助手\\portal\\static\\kb_units_all.json",
+   "exists": true,
+   "mtime": "2026-11-01T00:23:35+08:00",
+   "size": 298330,
+   "total_declared": 498,
+   "error": null
+  },
+  "cards": {
+   "path": "C:\\项目\\老田的AI助手\\portal\\static\\kb_learning_cards.json",
+   "exists": true,
+   "mtime": "2026-11-01T09:11:35+08:00",
+   "size": 13240,
+   "total_declared": 20,
+   "daily": {
+    "q": "什么是「煤电的兜底调节价值」？",
+    "a": "在可调度电源占比被摊薄的背景下，煤电因其安全兜底和灵活调节的核心价值，在相当长时期内难以替代，是应对极端无风无光天气的关键。",
+    "concept": "煤电的兜底调节价值",
+    "source": "《rp_AP202610031830126542》 太 平 洋 证 券 股 份 有 限 公 司 证 券 研 究 报 告 p1-4",
+    "evidence": "面对极端无风无光天气、新能源出力骤降的突发场景，煤电仍然是电力保供的'压舱石'，其安全兜底和灵活调节的核心价值在相当长时期内难以替代。"
+   },
+   "error": null
+  }
+ },
+ "overview": {
+  "units": 498,
+  "source_types": {
+   "书籍": 35,
+   "研报": 463
+  },
+  "books": 90,
+  "chapters": 72,
+  "concepts_unique": 486,
+  "recurring_concepts": 10,
+  "cards": 20,
+  "covered_units": 23,
+  "unit_coverage_rate": 0.0462,
+  "covered_themes": 7,
+  "uncovered_themes": 14,
+  "theme_count": 21
+ },
+ "theme_distribution": [
+  {
+   "theme": "AI算力/硬件",
+   "units": 116,
+   "units_share_pct": 23.3,
+   "cards": 7,
+   "covered_units": 9,
+   "uncovered_units": 107,
+   "unit_coverage_rate": 0.0776
+  },
+  {
+   "theme": "其他",
+   "units": 89,
+   "units_share_pct": 17.9,
+   "cards": 4,
+   "covered_units": 4,
+   "uncovered_units": 85,
+   "unit_coverage_rate": 0.0449
+  },
+  {
+   "theme": "新能源/电力",
+   "units": 71,
+   "units_share_pct": 14.3,
+   "cards": 3,
+   "covered_units": 3,
+   "uncovered_units": 68,
+   "unit_coverage_rate": 0.0423
+  },
+  {
+   "theme": "宏观/政策",
+   "units": 37,
+   "units_share_pct": 7.4,
+   "cards": 1,
+   "covered_units": 0,
+   "uncovered_units": 37,
+   "unit_coverage_rate": 0.0
+  },
+  {
+   "theme": "量学/交易",
+   "units": 34,
+   "units_share_pct": 6.8,
+   "cards": 3,
+   "covered_units": 4,
+   "uncovered_units": 30,
+   "unit_coverage_rate": 0.1176
+  },
+  {
+   "theme": "金融/地产",
+   "units": 34,
+   "units_share_pct": 6.8,
+   "cards": 0,
+   "covered_units": 1,
+   "uncovered_units": 33,
+   "unit_coverage_rate": 0.0294
+  },
+  {
+   "theme": "消费/零售",
+   "units": 27,
+   "units_share_pct": 5.4,
+   "cards": 0,
+   "covered_units": 0,
+   "uncovered_units": 27,
+   "unit_coverage_rate": 0.0
+  },
+  {
+   "theme": "机械/制造",
+   "units": 16,
+   "units_share_pct": 3.2,
+   "cards": 0,
+   "covered_units": 0,
+   "uncovered_units": 16,
+   "unit_coverage_rate": 0.0
+  },
+  {
+   "theme": "军工/航天",
+   "units": 15,
+   "units_share_pct": 3.0,
+   "cards": 0,
+   "covered_units": 0,
+   "uncovered_units": 15,
+   "unit_coverage_rate": 0.0
+  },
+  {
+   "theme": "化工/材料",
+   "units": 12,
+   "units_share_pct": 2.4,
+   "cards": 1,
+   "covered_units": 1,
+   "uncovered_units": 11,
+   "unit_coverage_rate": 0.0833
+  },
+  {
+   "theme": "网络安全/信创",
+   "units": 8,
+   "units_share_pct": 1.6,
+   "cards": 0,
+   "covered_units": 0,
+   "uncovered_units": 8,
+   "unit_coverage_rate": 0.0
+  },
+  {
+   "theme": "交运/物流",
+   "units": 8,
+   "units_share_pct": 1.6,
+   "cards": 0,
+   "covered_units": 0,
+   "uncovered_units": 8,
+   "unit_coverage_rate": 0.0
+  },
+  {
+   "theme": "通信/互联网",
+   "units": 5,
+   "units_share_pct": 1.0,
+   "cards": 0,
+   "covered_units": 0,
+   "uncovered_units": 5,
+   "unit_coverage_rate": 0.0
+  },
+  {
+   "theme": "农业",
+   "units": 5,
+   "units_share_pct": 1.0,
+   "cards": 0,
+   "covered_units": 0,
+   "uncovered_units": 5,
+   "unit_coverage_rate": 0.0
+  },
+  {
+   "theme": "有色/金属",
+   "units": 4,
+   "units_share_pct": 0.8,
+   "cards": 0,
+   "covered_units": 0,
+   "uncovered_units": 4,
+   "unit_coverage_rate": 0.0
+  },
+  {
+   "theme": "建筑/建材",
+   "units": 4,
+   "units_share_pct": 0.8,
+   "cards": 0,
+   "covered_units": 0,
+   "uncovered_units": 4,
+   "unit_coverage_rate": 0.0
+  },
+  {
+   "theme": "半导体/电子",
+   "units": 4,
+   "units_share_pct": 0.8,
+   "cards": 0,
+   "covered_units": 0,
+   "uncovered_units": 4,
+   "unit_coverage_rate": 0.0
+  },
+  {
+   "theme": "医药/生物",
+   "units": 3,
+   "units_share_pct": 0.6,
+   "cards": 0,
+   "covered_units": 0,
+   "uncovered_units": 3,
+   "unit_coverage_rate": 0.0
+  },
+  {
+   "theme": "评级/研报方法论",
+   "units": 2,
+   "units_share_pct": 0.4,
+   "cards": 0,
+   "covered_units": 0,
+   "uncovered_units": 2,
+   "unit_coverage_rate": 0.0
+  },
+  {
+   "theme": "传媒/文化",
+   "units": 2,
+   "units_share_pct": 0.4,
+   "cards": 0,
+   "covered_units": 0,
+   "uncovered_units": 2,
+   "unit_coverage_rate": 0.0
+  },
+  {
+   "theme": "汽车/智驾",
+   "units": 2,
+   "units_share_pct": 0.4,
+   "cards": 1,
+   "covered_units": 1,
+   "uncovered_units": 1,
+   "unit_coverage_rate": 0.5
+  }
+ ],
+ "type_distribution": {
+  "source_types": {
+   "书籍": 35,
+   "研报": 463
+  },
+  "books_top10": [
+   {
+    "book": "伏击涨停(2)",
+    "units": 20
+   },
+   {
+    "book": "涨停密码(2)",
+    "units": 15
+   },
+   {
+    "book": "rp_AP202609301830015406",
+    "units": 10
+   },
+   {
+    "book": "rp_AP202609301830015411",
+    "units": 10
+   },
+   {
+    "book": "rp_AP202609301830016191",
+    "units": 10
+   },
+   {
+    "book": "rp_AP202610031830124601",
+    "units": 10
+   },
+   {
+    "book": "rp_AP202610031830124602",
+    "units": 10
+   },
+   {
+    "book": "rp_AP202609301830015404",
+    "units": 5
+   },
+   {
+    "book": "rp_AP202609301830015407",
+    "units": 5
+   },
+   {
+    "book": "rp_AP202609301830015410",
+    "units": 5
+   }
+  ],
+  "claim_len": {
+   "n": 498,
+   "mean": 60.7,
+   "min": 23,
+   "p25": 50,
+   "median": 60,
+   "p75": 70,
+   "max": 114
+  },
+  "evidence_len": {
+   "n": 498,
+   "mean": 95.4,
+   "min": 22,
+   "p25": 77,
+   "median": 91,
+   "p75": 112,
+   "max": 281
+  }
+ },
+ "card_coverage": {
+  "cards": 20,
+  "covered_units": 23,
+  "coverage_rate": 0.0462,
+  "cards_detail": [
+   {
+    "concept": "煤电的兜底调节价值",
+    "matched_units": 1,
+    "themes": [
+     "新能源/电力"
+    ]
+   },
+   {
+    "concept": "频谱资源与许可",
+    "matched_units": 1,
+    "themes": [
+     "AI算力/硬件"
+    ]
+   },
+   {
+    "concept": "驾驭工程的技术演进路径",
+    "matched_units": 1,
+    "themes": [
+     "其他"
+    ]
+   },
+   {
+    "concept": "台股 CCL/PCB 企业营收表现",
+    "matched_units": 1,
+    "themes": [
+     "AI算力/硬件"
+    ]
+   },
+   {
+    "concept": "钠电池核心机会环节",
+    "matched_units": 1,
+    "themes": [
+     "新能源/电力"
+    ]
+   },
+   {
+    "concept": "涨停密码",
+    "matched_units": 3,
+    "themes": [
+     "量学/交易"
+    ]
+   },
+   {
+    "concept": "中国特色稳市机制",
+    "matched_units": 1,
+    "themes": [
+     "金融/地产"
+    ]
+   },
+   {
+    "concept": "涨停密码",
+    "matched_units": 3,
+    "themes": [
+     "量学/交易"
+    ]
+   },
+   {
+    "concept": "涨停基因与涨停密码",
+    "matched_units": 4,
+    "themes": [
+     "量学/交易"
+    ]
+   },
+   {
+    "concept": "柴油发电机组配置率",
+    "matched_units": 1,
+    "themes": [
+     "AI算力/硬件"
+    ]
+   },
+   {
+    "concept": "AI 产业投资传导链条",
+    "matched_units": 2,
+    "themes": [
+     "AI算力/硬件"
+    ]
+   },
+   {
+    "concept": "SNPO (ScaleUp NPO)",
+    "matched_units": 2,
+    "themes": [
+     "AI算力/硬件"
+    ]
+   },
+   {
+    "concept": "AI 营销主线",
+    "matched_units": 1,
+    "themes": [
+     "AI算力/硬件"
+    ]
+   },
+   {
+    "concept": "交通与农村电气化发展",
+    "matched_units": 1,
+    "themes": [
+     "新能源/电力"
+    ]
+   },
+   {
+    "concept": "行业经营评价体系",
+    "matched_units": 1,
+    "themes": [
+     "其他"
+    ]
+   },
+   {
+    "concept": "多领域先进制造",
+    "matched_units": 1,
+    "themes": [
+     "化工/材料"
+    ]
+   },
+   {
+    "concept": "AI 资本开支",
+    "matched_units": 1,
+    "themes": [
+     "AI算力/硬件"
+    ]
+   },
+   {
+    "concept": "我国制造业 TFP 现状与差距",
+    "matched_units": 1,
+    "themes": [
+     "汽车/智驾"
+    ]
+   },
+   {
+    "concept": "缅甸贸易重要性",
+    "matched_units": 1,
+    "themes": [
+     "其他"
+    ]
+   },
+   {
+    "concept": "东盟地区贸易地位",
+    "matched_units": 1,
+    "themes": [
+     "其他"
+    ]
+   }
+  ],
+  "covered_themes": [
+   "AI算力/硬件",
+   "其他",
+   "化工/材料",
+   "新能源/电力",
+   "汽车/智驾",
+   "量学/交易",
+   "金融/地产"
+  ],
+  "uncovered_themes": [
+   {
+    "theme": "宏观/政策",
+    "units": 37,
+    "cards": 1
+   },
+   {
+    "theme": "消费/零售",
+    "units": 27,
+    "cards": 0
+   },
+   {
+    "theme": "机械/制造",
+    "units": 16,
+    "cards": 0
+   },
+   {
+    "theme": "军工/航天",
+    "units": 15,
+    "cards": 0
+   },
+   {
+    "theme": "网络安全/信创",
+    "units": 8,
+    "cards": 0
+   },
+   {
+    "theme": "交运/物流",
+    "units": 8,
+    "cards": 0
+   },
+   {
+    "theme": "通信/互联网",
+    "units": 5,
+    "cards": 0
+   },
+   {
+    "theme": "农业",
+    "units": 5,
+    "cards": 0
+   },
+   {
+    "theme": "有色/金属",
+    "units": 4,
+    "cards": 0
+   },
+   {
+    "theme": "建筑/建材",
+    "units": 4,
+    "cards": 0
+   },
+   {
+    "theme": "半导体/电子",
+    "units": 4,
+    "cards": 0
+   },
+   {
+    "theme": "医药/生物",
+    "units": 3,
+    "cards": 0
+   },
+   {
+    "theme": "评级/研报方法论",
+    "units": 2,
+    "cards": 0
+   },
+   {
+    "theme": "传媒/文化",
+    "units": 2,
+    "cards": 0
+   }
+  ]
+ },
+ "quality": {
+  "card_quality_avg": 71.5,
+  "cards_with_page": 20,
+  "low_quality_cards": [
+   {
+    "concept": "驾驭工程的技术演进路径",
+    "source": "《rp_AP202609301830015410》 程研究报告 p1-13",
+    "score": 48.0,
+    "reasons": [
+     "答案过短(<40字)"
+    ],
+    "a_len": 38,
+    "evidence_len": 83,
+    "has_page": true
+   },
+   {
+    "concept": "缅甸贸易重要性",
+    "source": "《rp_AP202610061830165956》 一、贸易总体情况 p2-6",
+    "score": 48.0,
+    "reasons": [
+     "答案过短(<40字)"
+    ],
+    "a_len": 32,
+    "evidence_len": 85,
+    "has_page": true
+   },
+   {
+    "concept": "东盟地区贸易地位",
+    "source": "《rp_AP202610061830165957》 一、贸易总体情况 p2-6",
+    "score": 55.0,
+    "reasons": [
+     "证据过短(<40字)"
+    ],
+    "a_len": 46,
+    "evidence_len": 24,
+    "has_page": true
+   }
+  ],
+  "duplicate_cards": [
+   {
+    "concept": "涨停密码",
+    "count": 2,
+    "suggestion": "合并为一张（保留质量分最高/证据最全的一张）"
+   }
+  ],
+  "unit_claim_len": {
+   "n": 498,
+   "mean": 60.7,
+   "min": 23,
+   "p25": 50,
+   "median": 60,
+   "p75": 70,
+   "max": 114
+  },
+  "unit_evidence_len": {
+   "n": 498,
+   "mean": 95.4,
+   "min": 22,
+   "p25": 77,
+   "median": 91,
+   "p75": 112,
+   "max": 281
+  }
+ },
+ "gaps": {
+  "high_freq_no_card_themes": [
+   {
+    "theme": "金融/地产",
+    "units": 34
+   },
+   {
+    "theme": "消费/零售",
+    "units": 27
+   },
+   {
+    "theme": "机械/制造",
+    "units": 16
+   },
+   {
+    "theme": "军工/航天",
+    "units": 15
+   },
+   {
+    "theme": "网络安全/信创",
+    "units": 8
+   },
+   {
+    "theme": "交运/物流",
+    "units": 8
+   },
+   {
+    "theme": "通信/互联网",
+    "units": 5
+   },
+   {
+    "theme": "农业",
+    "units": 5
+   }
+  ],
+  "uncovered_themes": [
+   {
+    "theme": "宏观/政策",
+    "units": 37,
+    "cards": 1
+   },
+   {
+    "theme": "消费/零售",
+    "units": 27,
+    "cards": 0
+   },
+   {
+    "theme": "机械/制造",
+    "units": 16,
+    "cards": 0
+   },
+   {
+    "theme": "军工/航天",
+    "units": 15,
+    "cards": 0
+   },
+   {
+    "theme": "网络安全/信创",
+    "units": 8,
+    "cards": 0
+   },
+   {
+    "theme": "交运/物流",
+    "units": 8,
+    "cards": 0
+   },
+   {
+    "theme": "通信/互联网",
+    "units": 5,
+    "cards": 0
+   },
+   {
+    "theme": "农业",
+    "units": 5,
+    "cards": 0
+   },
+   {
+    "theme": "有色/金属",
+    "units": 4,
+    "cards": 0
+   },
+   {
+    "theme": "建筑/建材",
+    "units": 4,
+    "cards": 0
+   },
+   {
+    "theme": "半导体/电子",
+    "units": 4,
+    "cards": 0
+   },
+   {
+    "theme": "医药/生物",
+    "units": 3,
+    "cards": 0
+   },
+   {
+    "theme": "评级/研报方法论",
+    "units": 2,
+    "cards": 0
+   },
+   {
+    "theme": "传媒/文化",
+    "units": 2,
+    "cards": 0
+   }
+  ],
+  "recurring_concept_gaps": [
+   {
+    "concept": "资本市场改革成效",
+    "units": 4
+   },
+   {
+    "concept": "量学理论",
+    "units": 2
+   },
+   {
+    "concept": "东盟中小微企业（MSME）经济地位",
+    "units": 2
+   },
+   {
+    "concept": "跨境电子商务面临的四大挑战",
+    "units": 2
+   },
+   {
+    "concept": "端侧 AI 放量",
+    "units": 2
+   },
+   {
+    "concept": "行业评级定义",
+    "units": 2
+   },
+   {
+    "concept": "国防军工行业周度表现",
+    "units": 2
+   },
+   {
+    "concept": "资本市场现存障碍",
+    "units": 2
+   }
+  ],
+  "duplicate_cards": [
+   {
+    "concept": "涨停密码",
+    "count": 2,
+    "suggestion": "合并为一张（保留质量分最高/证据最全的一张）"
+   }
+  ]
+ },
+ "top10_gap_themes": [
+  {
+   "rank": 1,
+   "theme": "AI算力/硬件",
+   "units": 116,
+   "cards": 7,
+   "covered_units": 9,
+   "uncovered_units": 107,
+   "unit_coverage_rate": 0.0776,
+   "priority_score": 160.5,
+   "high_freq_no_card": false,
+   "suggested_cards": [
+    {
+     "q": "什么是「Akamai 与 Anthropic 合作协议」？",
+     "a": "Akamai 与 Anthropic 签署为期七年、总额 116 亿美元的合同承诺，依托 Akamai Cloud 分布式 AI 基础设施满足 Anthropic CPU 工作负载需求。",
+     "source": "《rp_AP202610021830105367》 市场研究部 2026 年9 月28 日 p1-8",
+     "evidence_preview": "当地时间 9 月 24 日，Akamai Technologies,Inc.宣布扩大与 Anthropic 合作关系，双方达成一项为期七年、总额 116 亿美元的合同承诺。该多年期协议将依托 Akamai Cloud 的分布式 AI 基础设",
+     "unit_quality": 85.0,
+     "reason": "AI算力/硬件 主题有 116 个知识单元但仅 7 张卡覆盖"
+    },
+    {
+     "q": "什么是「Meta Muse 产品安全漏洞」？",
+     "a": "Meta 的 AI 产品 Muse 存在允许攻击者访问用户专属虚拟机并获取云端个人数据的安全漏洞，需用户授权点击恶意链接才会触发，Meta 已将其定级从 SEV-2 调整为 SEV-3。",
+     "source": "《rp_AP202610021830105367》 市场研究部 2026 年9 月28 日 p1-8",
+     "evidence_preview": "Meta Platforms 的 AI 产品 Muse 被发现存在安全漏洞...该漏洞允许攻击者访问用户的专属虚拟机，获取其中邮件、文档等云端个人账户数据...该漏洞实现攻击存在前置条件：需用户在 Muse 汇总信息或点击恶意网页链接后，在",
+     "unit_quality": 85.0,
+     "reason": "AI算力/硬件 主题有 116 个知识单元但仅 7 张卡覆盖"
+    }
+   ]
+  },
+  {
+   "rank": 2,
+   "theme": "其他",
+   "units": 89,
+   "cards": 4,
+   "covered_units": 4,
+   "uncovered_units": 85,
+   "unit_coverage_rate": 0.0449,
+   "priority_score": 122.8,
+   "high_freq_no_card": false,
+   "suggested_cards": [
+    {
+     "q": "什么是「景嘉微股权激励计划」？",
+     "a": "景嘉微拟授予限制性股票 704.00 万股，首次授予对象为 369 人，授予价格为 26.55 元/股，考核期营业收入增长率目标分别为 2026 年 34%、2027 年 58%、2028 年 121%。",
+     "source": "《rp_AP202610021830105365》 看好 p1-9",
+     "evidence_preview": "景嘉微公布 2026 年限制性股票激励计划 (草案)...本激励计划拟授予激励对象的限制性股票数量为 704.00 万股...首次授予限制性股票的授予价格为 26.55 元/股...对应考核年度营业收入增长率，2026 年为 34%，202",
+     "unit_quality": 85.0,
+     "reason": "其他 主题有 89 个知识单元但仅 4 张卡覆盖"
+    },
+    {
+     "q": "什么是「DeepSeek DSec 系统架构」？",
+     "a": "DeepSeek 发布的 Agent 训练基础设施 DSec 支持每秒产生 5000 个以上沙盒，通过四层后端（FnCall/Container/MicroVM/Full VM）适配不同任务环境需求。",
+     "source": "《rp_AP202610021830105367》 市场研究部 2026 年9 月28 日 p1-8",
+     "evidence_preview": "DeepSeek 发布新论文，公开 Agent 训练基础设施 DSec 的完整技术细节...该系统的定位是给 Agent 训练批量制造沙盒环境：每秒可产生 5000 个以上沙盒...DSec 为此准备四种后端：FnCall 处理无状态函数调",
+     "unit_quality": 85.0,
+     "reason": "其他 主题有 89 个知识单元但仅 4 张卡覆盖"
+    }
+   ]
+  },
+  {
+   "rank": 3,
+   "theme": "新能源/电力",
+   "units": 71,
+   "cards": 3,
+   "covered_units": 3,
+   "uncovered_units": 68,
+   "unit_coverage_rate": 0.0423,
+   "priority_score": 92.1,
+   "high_freq_no_card": false,
+   "suggested_cards": [
+    {
+     "q": "什么是「钙钛矿光伏电池测试标准」？",
+     "a": "市场监管总局发布了首个钙钛矿光伏领域国家标准（GB/T 6495.12—2026），该标准将于 2027 年正式实施，旨在解决钙钛矿器件性能波动大、测试结果不稳定及面积定义不统一的问题。",
+     "source": "《rp_AP202610021830105330》 市场研究部 2026 年9 月22 日 p1-9",
+     "evidence_preview": "近日，市场监管总局发布首个钙钛矿光伏领域国家标准《光伏器件 第 12 部分：钙钛矿光伏电池及组件的电流 - 电压（I-V）特性测量方法》（GB/T 6495.12—2026），将于 2027 年正式实施。该标准系统规定了测试设备、稳定化处理",
+     "unit_quality": 85.0,
+     "reason": "新能源/电力 主题有 71 个知识单元但仅 3 张卡覆盖"
+    },
+    {
+     "q": "什么是「电力设备板块周度表现」？",
+     "a": "2026 年 9 月 14 日至 18 日（本周），电力设备（申万）指数上涨 0.04%，跑赢沪深 300 指数 0.11pct，其中光伏设备子行业涨幅居前，达到 3.86%。",
+     "source": "《rp_AP202610021830105330》 市场研究部 2026 年9 月22 日 p1-9",
+     "evidence_preview": "本周（2026/09/14-2026/09/18）沪深 300 指数 -0.06%，申万 31 个行业指数 16 个上涨，电力设备（申万）指数本周 +0.04%，排在第 16 位。本周光伏设备行业指数 +3.86%，电池、电网设备等分别呈现",
+     "unit_quality": 84.3,
+     "reason": "新能源/电力 主题有 71 个知识单元但仅 3 张卡覆盖"
+    }
+   ]
+  },
+  {
+   "rank": 4,
+   "theme": "金融/地产",
+   "units": 34,
+   "cards": 0,
+   "covered_units": 1,
+   "uncovered_units": 33,
+   "unit_coverage_rate": 0.0294,
+   "priority_score": 77.2,
+   "high_freq_no_card": true,
+   "suggested_cards": [
+    {
+     "q": "什么是「购房贷款贴息政策」？",
+     "a": "自 2026 年 10 月 1 日起，购买首套住房且面积不超过 120 平方米、价格不超过 150 万元的居民家庭可获得贴息支持，符合条件的贷款规模最高 100 万元，财政部门按照年化 1 个百分点给予贴息。",
+     "source": "《rp_AP202609301830023754》 房地产行业点评报告 京沪现房销售细则落地，贴息支持需求释放 p1-2",
+     "evidence_preview": "明确自 2026 年 10 月 1 日起，使用新发放商业性个人住房贷款购买首套住房、所购住房建筑面积不超过 120 平方米、住房价格不超过 150 万元的居民家庭可获得贴息支持，符合条件的贷款规模最高 100 万元。",
+     "unit_quality": 82.0,
+     "reason": "金融/地产 主题有 34 个知识单元但仅 0 张卡覆盖"
+    },
+    {
+     "q": "什么是「土地出让价款缴纳政策」？",
+     "a": "北京和上海的在途项目中，已取得建设用地使用权但尚未取得建设工程规划许可证的项目，原则上按新政策执行，但在确保按时建成交付、加强预售资金监管的情况下，2027 年底前仍可按原有预售条件申请预售。",
+     "source": "《rp_AP202609301830023754》 房地产行业点评报告 京沪现房销售细则落地，贴息支持需求释放 p1-2",
+     "evidence_preview": "对于已取得建设用地使用权但尚未取得建设工程规划许可证的项目，原则上按新取得土地项目执行预售管理政策，但在确保按时建成交付、加强预售资金监管的情况下，2027 年底前仍可按原有预售条件申请预售。",
+     "unit_quality": 79.0,
+     "reason": "金融/地产 主题有 34 个知识单元但仅 0 张卡覆盖"
+    }
+   ]
+  },
+  {
+   "rank": 5,
+   "theme": "消费/零售",
+   "units": 27,
+   "cards": 0,
+   "covered_units": 0,
+   "uncovered_units": 27,
+   "unit_coverage_rate": 0.0,
+   "priority_score": 61.3,
+   "high_freq_no_card": true,
+   "suggested_cards": [
+    {
+     "q": "什么是「大中华区零售市场趋势」？",
+     "a": "大中华区零售物业市场呈现以下七大发展趋势：下沉市场消费韧性强劲、体验经济重塑线下场景、演出市场热度持续、入境游与国内游双轮驱动消费增长、消费行为趋于理性保守、存量资产盘活与场景升级成为核心路径。",
+     "source": "《rp_AP202609301830015453》 06 p2-14",
+     "evidence_preview": "中国零售物业市场竞争持续激烈...主要有以下发展趋势：下沉市场展现出强劲的消费韧性；体验经济重塑线下消费场景；演出市场热度持续；入境游国内游双轮驱动消费增长...受居民储蓄意愿持续偏高...消费行为更趋理性保守影响...长期来看，存量资产盘",
+     "unit_quality": 85.0,
+     "reason": "消费/零售 主题有 27 个知识单元但仅 0 张卡覆盖"
+    },
+    {
+     "q": "什么是「北京零售市场现状」？",
+     "a": "截至2026年上半年，北京零售市场总存量为953万平方米（其中购物中心765万平方米），优质购物中心平均租金报价为883元/月/平方米，空置率为10.4%。未来趋势为存量优化为主，新增供应为辅。",
+     "source": "《rp_AP202609301830015453》 06 p2-14",
+     "evidence_preview": "截至2026年上半年，北京零售市场总存量为953万平方米，其中购物中心存量765万平方米...优质购物中心平均租金报价为人民币883元每月每平方米，空置率为10.4%...未来整体市场的供应节奏将进一步放缓，项目分区域分阶段开业也将成为长期",
+     "unit_quality": 85.0,
+     "reason": "消费/零售 主题有 27 个知识单元但仅 0 张卡覆盖"
+    }
+   ]
+  },
+  {
+   "rank": 6,
+   "theme": "宏观/政策",
+   "units": 37,
+   "cards": 1,
+   "covered_units": 0,
+   "uncovered_units": 37,
+   "unit_coverage_rate": 0.0,
+   "priority_score": 43.8,
+   "high_freq_no_card": false,
+   "suggested_cards": [
+    {
+     "q": "什么是「大模型商业化核心指标」？",
+     "a": "Token 调用量、API 定价、ARR（年度经常性收入）、企业客户数量及毛利率已成为衡量大模型厂商商业价值的关键经营指标，其重要性持续高于单纯的参数规模或排名。",
+     "source": "《rp_AP202610061830167919》 与竞争格局前瞻 p1-13",
+     "evidence_preview": "2025 年以来，Coding 付费、Agent 企业应用以及模型调用量增长，使市场对大模型公司的观察指标更加具体。除模型能力外，Token 调用量、API 价格、ARR、企业客户数量、续费情况、推理成本和毛利率的重要性持续上升。",
+     "unit_quality": 80.8,
+     "reason": "宏观/政策 主题有 37 个知识单元但仅 1 张卡覆盖"
+    },
+    {
+     "q": "什么是「央行资产负债表保护机制」？",
+     "a": "美联储通过中介机构缓冲、以券换券转换风险形态及引入财政信用保护（如TARP资金或SPV股权投资）来明确极端损失的分担机制，避免直接救助单一失败机构。",
+     "source": "《rp_AP202610031830124602》 美联储非银流动性支持工具的实践、边界 与启示 p1-6",
+     "evidence_preview": "风险分担安排是美联储危机工具设计中的关键制度要素...一是 一是通过中介机构和SPV构建风险缓冲...二是 二是通过“以券换券”转换风险形态...三是 三是引入财政信用保护，明确极端损失的分担机制。《多德 - 弗兰克法案》后...不得以救助",
+     "unit_quality": 79.7,
+     "reason": "宏观/政策 主题有 37 个知识单元但仅 1 张卡覆盖"
+    }
+   ]
+  },
+  {
+   "rank": 7,
+   "theme": "量学/交易",
+   "units": 34,
+   "cards": 3,
+   "covered_units": 4,
+   "uncovered_units": 30,
+   "unit_coverage_rate": 0.1176,
+   "priority_score": 35.1,
+   "high_freq_no_card": false,
+   "suggested_cards": [
+    {
+     "q": "什么是「十月怀胎一朝分娩」？",
+     "a": "主力运作股票的过程如同“十月怀胎”，一旦完成孕育并进入“一朝分娩”的前夜（基因密集呈现），无论大盘涨跌，主力都会拉出涨停板。",
+     "source": "《涨停密码(2)》 第三章 p15-27",
+     "evidence_preview": "在股票市场中，任何一个涨停板，任何一只牛股，都不是天上掉下来的，而是其庄家或主力精心策划、长期运作的杰作。只要其孕期健康，营养丰富，一旦时机成熟，就会诞生一个充满活力的新生命。同样，在股市运作中，主力“十月怀胎”之后，一旦需要“一朝分娩”，",
+     "unit_quality": 75.7,
+     "reason": "量学/交易 主题有 34 个知识单元但仅 3 张卡覆盖"
+    },
+    {
+     "q": "什么是「倍量伸缩」？",
+     "a": "连续的密集“倍量伸缩”（倍量拉升后紧跟倍量收缩）是“涨停临盆的异动”，通常在随后的第2、3、5或8天出现涨停。",
+     "source": "《涨停密码(2)》 第三章 p15-27",
+     "evidence_preview": "在A、B和D、E之间，有3组“倍量伸缩”的量柱，也就是“倍量拉升”的后面紧跟着“倍量收缩”。量学原理告诉我们，连续的密集的“倍量伸缩”出现，可能就是“涨停临盆的异动”。案例中都是在“倍量伸缩”后的第二、第三、第五、第八天出现涨停。",
+     "unit_quality": 72.1,
+     "reason": "量学/交易 主题有 34 个知识单元但仅 3 张卡覆盖"
+    }
+   ]
+  },
+  {
+   "rank": 8,
+   "theme": "机械/制造",
+   "units": 16,
+   "cards": 0,
+   "covered_units": 0,
+   "uncovered_units": 16,
+   "unit_coverage_rate": 0.0,
+   "priority_score": 34.6,
+   "high_freq_no_card": true,
+   "suggested_cards": [
+    {
+     "q": "什么是「进口产品排名」？",
+     "a": "2026 年 8 月当月，中国工业机器人进口额前三的产品为其他多功能工业机器人（59.9 百万美元）、集成电路工厂专用的自动搬运机器人（56.2 百万美元）和喷涂机器人（14.0 百万美元）。",
+     "source": "《rp_AP202610061830165858》 一、贸易总体情况 p2-9",
+     "evidence_preview": "2026 年 8 月，中国工业机器人进口额排名前三的产品为其他多功能工业机器人、集成电路工厂专用的自动搬运机器人和喷涂机器人，分别进口 59.9 百万美元、56.2 百万美元和 14.0 百万美元。",
+     "unit_quality": 79.8,
+     "reason": "机械/制造 主题有 16 个知识单元但仅 0 张卡覆盖"
+    },
+    {
+     "q": "什么是「四足机器人产业发展阶段」？",
+     "a": "中国四足机器人产业自20世纪60年代起步，经历验证可行性（1960-1980）、系统研究（1980-2005）、工程化转化（2005-2010）及产业化应用探索（2010-2022），目前进入高动态、高负载发展的加速期。",
+     "source": "《rp_AP202610021830105414》 中国四足机器人商业化研究报告 p1-13",
+     "evidence_preview": "自20世纪60年代起步...2005年，波士顿动力推出BigDog...推动该领域进入高动态、高负载发展新阶段。中国相关高校和科研院所开始系统研究。863计划设立“高性能四足仿生机器人”项目...",
+     "unit_quality": 79.5,
+     "reason": "机械/制造 主题有 16 个知识单元但仅 0 张卡覆盖"
+    }
+   ]
+  },
+  {
+   "rank": 9,
+   "theme": "军工/航天",
+   "units": 15,
+   "cards": 0,
+   "covered_units": 0,
+   "uncovered_units": 15,
+   "unit_coverage_rate": 0.0,
+   "priority_score": 32.2,
+   "high_freq_no_card": true,
+   "suggested_cards": [
+    {
+     "q": "什么是「国防军工行业周度表现」？",
+     "a": "上周（2026.9.14-2026.9.18）国防军工板块下跌 0.8%，落后沪深 300 指数 0.74 个百分点，在申万行业涨幅中排名第 22 位。",
+     "source": "《rp_AP202610021830105332》 看好 p1-9",
+     "evidence_preview": "上周（2026.9.14-2026.9.18）国防军工（申万）板块下跌 0.8%，沪深 300 指数下跌 0.06%，国防军工板块落后沪深 300 指数 0.74 个百分点。和其他行业对比，国防军工行业上周排名申万行业涨幅第 22 位。",
+     "unit_quality": 79.8,
+     "reason": "军工/航天 主题有 15 个知识单元但仅 0 张卡覆盖"
+    },
+    {
+     "q": "什么是「国防军工行业周度表现」？",
+     "a": "上周（2026.9.21-2026.9.24）国防军工板块下跌 1.79%，落后沪深 300 指数 0.28 个百分点，在申万行业中排名第 27 位。",
+     "source": "《rp_AP202610021830105365》 看好 p1-9",
+     "evidence_preview": "上周（2026.9.21-2026.9.24）国防军工（申万）板块下跌 1.79%，沪深 300 指数下跌 1.51%，国防军工板块落后沪深 300 指数 0.28 个百分点。和其他行业对比，国防军工行业上周排名申万行业涨幅第 27 位。",
+     "unit_quality": 79.8,
+     "reason": "军工/航天 主题有 15 个知识单元但仅 0 张卡覆盖"
+    }
+   ]
+  },
+  {
+   "rank": 10,
+   "theme": "交运/物流",
+   "units": 8,
+   "cards": 0,
+   "covered_units": 0,
+   "uncovered_units": 8,
+   "unit_coverage_rate": 0.0,
+   "priority_score": 16.6,
+   "high_freq_no_card": true,
+   "suggested_cards": [
+    {
+     "q": "什么是「主要快递公司业务量增速排名（1-8 月）」？",
+     "a": "2026 年 1-8 月累计业务量增速排序为：申通快递 (16.6%) > 圆通速递 (10.3%) > 顺丰控股 (-1.7%) > 韵达股份 (-3.0%)。",
+     "source": "《rp_AP202609301830034661》 8 月快递行业月度数据跟踪报告 强于大市(维持) p1-3",
+     "evidence_preview": "1-8 月业务量增速排序（件量/亿票，同比增速）：申通快递（194.37 亿票，16.6%）>圆通速递（220.10 亿票，10.3%）>顺丰控股（104.19 亿票，-1.7%）>韵达股份（165.30 亿票，-3.0%）。",
+     "unit_quality": 80.2,
+     "reason": "交运/物流 主题有 8 个知识单元但仅 0 张卡覆盖"
+    },
+    {
+     "q": "什么是「跨境电子商务面临的四大挑战」？",
+     "a": "东盟中小微企业在从事跨境数字贸易时面临四大主要制约：监管与市场准入要求复杂、连接生态系统困难（物流/支付）、缺乏专门技能（如数字营销）以及信息差距。",
+     "source": "《rp_AP202609301830015407》 5. p5-17",
+     "evidence_preview": "该报告确定了四大主要挑战领域。首先，企业在进入外国市场时，会遇到监管和市场准入要求方面的挑战...其次，中小微企业面临连接更广泛的电子商务生态系统的困难...第三，企业通常缺乏有效运营数字贸易环境所需的专门技能...第四，关于可用的支持工具",
+     "unit_quality": 79.7,
+     "reason": "交运/物流 主题有 8 个知识单元但仅 0 张卡覆盖"
+    }
+   ]
+  }
+ ],
+ "digest_recommendations": {
+  "note": "以下为建议参数，供 learning_digest.select_daily_cards 后续迭代参考；本任务不修改生成器。",
+  "quality_score_adjust": {
+   "answer_len_bonus_max": 15,
+   "evidence_len_bonus_max": 12,
+   "page_bonus": 4,
+   "topic_gap_bonus_max": 12,
+   "duplicate_penalty": 25
+  },
+  "daily_selection": {
+   "max_cards_per_theme": 2,
+   "prefer_zero_card_themes": true,
+   "zero_card_theme_quota": 2,
+   "require_coverage_rotation_days": 7
+  },
+  "reason": "当前 20 张卡仅覆盖 23/498 个知识单元（4.6%），14 个主题无任何卡；建议提高主题缺口加成并限制单主题卡数。"
+ },
+ "disclaimer": "本报告为知识库内容覆盖/质量的分析输出，仅供内部研究，不构成投资建议。"
+}

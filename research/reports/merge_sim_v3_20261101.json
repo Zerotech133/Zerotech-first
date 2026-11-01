@@ -1,0 +1,782 @@
+{
+ "schema_version": "merge_sim_v3.v1",
+ "generated_at": "2026-11-01T11:00:19+08:00",
+ "generator": "tools/kb_corpus/eval_set_v3.py",
+ "mode": "in_memory_merge_simulation（复用 merge_sim_89 逻辑，不改真实数据）",
+ "eval_set": {
+  "set_id": "eval_set_20261101_v3",
+  "version": 3,
+  "n_queries": 102,
+  "content_hash": "6b778e2c4c66d4b3b8c37a5184dd1741b8aa0015c1575c8d54618a4584f89787"
+ },
+ "v3_additions": {
+  "n_new": 13,
+  "ids": [
+   "V3-01",
+   "V3-02",
+   "V3-03",
+   "V3-04",
+   "V3-05",
+   "V3-06",
+   "V3-07",
+   "V3-08",
+   "V3-09",
+   "V3-10",
+   "V3-11",
+   "V3-12",
+   "V3-13"
+  ],
+  "blind_groups_covered": [
+   "东盟中小微企业（MSME）经济地位",
+   "跨境电子商务面临的四大挑战"
+  ],
+  "note": "新增查询覆盖 wave15 AQ 发现的两组 merged-concept 盲区"
+ },
+ "real_data_unchanged": true,
+ "merge_plan": {
+  "groups": [
+   {
+    "group_id": "CG-003",
+    "concept_forms": [
+     "东盟中小微企业（MSME）经济地位"
+    ],
+    "al_primary_unit_id": "828edf428bd9",
+    "primary_unit_id": "a1ad2c883391",
+    "dropped_unit_ids": [
+     "7f5dacb982da"
+    ],
+    "count_before": 2,
+    "count_after": 1,
+    "action": "merge"
+   },
+   {
+    "group_id": "CG-004",
+    "concept_forms": [
+     "跨境电子商务面临的四大挑战"
+    ],
+    "al_primary_unit_id": "7de7f0318345",
+    "primary_unit_id": "276e87e6cc33",
+    "dropped_unit_ids": [
+     "bcf6880edb59"
+    ],
+    "count_before": 2,
+    "count_after": 1,
+    "action": "merge"
+   }
+  ],
+  "alias_remap": {
+   "7f5dacb982da": "a1ad2c883391",
+   "bcf6880edb59": "276e87e6cc33"
+  },
+  "dropped_ids": [
+   "7f5dacb982da",
+   "bcf6880edb59"
+  ],
+  "merge_groups": 2,
+  "units_before": 498,
+  "units_after": 496
+ },
+ "baseline_summary": {
+  "n": 102,
+  "precision_at_k": 0.7549,
+  "coverage": 0.8735,
+  "hit_rate": 0.9804,
+  "ndcg_at_k": 0.8171
+ },
+ "merged_summary": {
+  "n": 102,
+  "precision_at_k": 0.7451,
+  "coverage": 0.8735,
+  "hit_rate": 0.9804,
+  "ndcg_at_k": 0.8107
+ },
+ "comparison_stats": {
+  "precision_at_k": {
+   "mean_delta": -0.0098,
+   "paired_t": {
+    "n": 102,
+    "mean": -0.0098,
+    "sd": 0.0589,
+    "t": -1.6815,
+    "p_two_sided": 0.0927
+   },
+   "bootstrap": {
+    "n": 102,
+    "n_boot": 2000,
+    "mean": -0.0098,
+    "ci_low": -0.0216,
+    "ci_high": 0.0,
+    "significant": false
+   }
+  },
+  "ndcg_at_k": {
+   "mean_delta": -0.0064,
+   "paired_t": {
+    "n": 102,
+    "mean": -0.0064,
+    "sd": 0.0372,
+    "t": -1.7299,
+    "p_two_sided": 0.0836
+   },
+   "bootstrap": {
+    "n": 102,
+    "n_boot": 2000,
+    "mean": -0.0064,
+    "ci_low": -0.014,
+    "ci_high": 0.0002,
+    "significant": false
+   }
+  },
+  "hit_rate": {
+   "mcnemar": {
+    "b": 0,
+    "c": 0,
+    "n_discordant": 0,
+    "p_two_sided": 1.0
+   },
+   "improved": 0,
+   "regressed": 0
+  },
+  "n_pairs": 102
+ },
+ "affected_queries": [
+  {
+   "query_id": "V3-01",
+   "query": "东盟中小微企业（MSME）经济地位",
+   "type": "短语",
+   "before": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "after": {
+    "precision_at_k": 0.8,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.9463,
+    "grades": [
+     2,
+     2,
+     2,
+     1,
+     0
+    ]
+   },
+   "delta": {
+    "precision_at_k": -0.2,
+    "ndcg_at_k": -0.0537,
+    "hit": 0,
+    "coverage": 0.0
+   }
+  },
+  {
+   "query_id": "V3-02",
+   "query": "跨境电子商务面临的四大挑战",
+   "type": "短语",
+   "before": {
+    "precision_at_k": 0.8,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.9307,
+    "grades": [
+     2,
+     2,
+     1,
+     0,
+     1
+    ]
+   },
+   "after": {
+    "precision_at_k": 0.6,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.8208,
+    "grades": [
+     2,
+     1,
+     0,
+     1,
+     0
+    ]
+   },
+   "delta": {
+    "precision_at_k": -0.2,
+    "ndcg_at_k": -0.1099,
+    "hit": 0,
+    "coverage": 0.0
+   }
+  },
+  {
+   "query_id": "V3-04",
+   "query": "跨境电商 挑战 物流",
+   "type": "AND",
+   "before": {
+    "precision_at_k": 0.6,
+    "coverage": 0.75,
+    "hit": 1,
+    "ndcg_at_k": 0.6681,
+    "grades": [
+     2,
+     2,
+     1
+    ]
+   },
+   "after": {
+    "precision_at_k": 0.4,
+    "coverage": 0.75,
+    "hit": 1,
+    "ndcg_at_k": 0.5036,
+    "grades": [
+     2,
+     1
+    ]
+   },
+   "delta": {
+    "precision_at_k": -0.2,
+    "ndcg_at_k": -0.1645,
+    "hit": 0,
+    "coverage": 0.0
+   }
+  },
+  {
+   "query_id": "V3-06",
+   "query": "跨境电商行业增长态势",
+   "type": "主题",
+   "before": {
+    "precision_at_k": 0.6,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.8119,
+    "grades": [
+     2,
+     1,
+     0,
+     0,
+     1
+    ]
+   },
+   "after": {
+    "precision_at_k": 0.8,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.899,
+    "grades": [
+     2,
+     1,
+     0,
+     1,
+     1
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.2,
+    "ndcg_at_k": 0.0871,
+    "hit": 0,
+    "coverage": 0.0
+   }
+  },
+  {
+   "query_id": "V3-11",
+   "query": "东盟 中小微 融资",
+   "type": "AND",
+   "before": {
+    "precision_at_k": 1.0,
+    "coverage": 0.6,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "after": {
+    "precision_at_k": 0.8,
+    "coverage": 0.6,
+    "hit": 1,
+    "ndcg_at_k": 0.8688,
+    "grades": [
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": -0.2,
+    "ndcg_at_k": -0.1312,
+    "hit": 0,
+    "coverage": 0.0
+   }
+  },
+  {
+   "query_id": "V3-13",
+   "query": "东盟 MSME 技能 课程",
+   "type": "同义词",
+   "before": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "after": {
+    "precision_at_k": 0.6,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.7227,
+    "grades": [
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": -0.4,
+    "ndcg_at_k": -0.2773,
+    "hit": 0,
+    "coverage": 0.0
+   }
+  }
+ ],
+ "new_queries_subset": {
+  "before": {
+   "n": 13,
+   "precision_at_k": 0.9231,
+   "coverage": 0.8923,
+   "hit_rate": 1.0,
+   "ndcg_at_k": 0.9151
+  },
+  "after": {
+   "n": 13,
+   "precision_at_k": 0.8462,
+   "coverage": 0.8923,
+   "hit_rate": 1.0,
+   "ndcg_at_k": 0.8652
+  },
+  "changed": [
+   {
+    "id": "V3-01",
+    "query": "东盟中小微企业（MSME）经济地位",
+    "type": "短语",
+    "before": {
+     "precision_at_k": 1.0,
+     "ndcg_at_k": 1.0
+    },
+    "after": {
+     "precision_at_k": 0.8,
+     "ndcg_at_k": 0.9463
+    },
+    "delta": {
+     "precision_at_k": -0.2,
+     "ndcg_at_k": -0.0537
+    }
+   },
+   {
+    "id": "V3-02",
+    "query": "跨境电子商务面临的四大挑战",
+    "type": "短语",
+    "before": {
+     "precision_at_k": 0.8,
+     "ndcg_at_k": 0.9307
+    },
+    "after": {
+     "precision_at_k": 0.6,
+     "ndcg_at_k": 0.8208
+    },
+    "delta": {
+     "precision_at_k": -0.2,
+     "ndcg_at_k": -0.1099
+    }
+   },
+   {
+    "id": "V3-04",
+    "query": "跨境电商 挑战 物流",
+    "type": "AND",
+    "before": {
+     "precision_at_k": 0.6,
+     "ndcg_at_k": 0.6681
+    },
+    "after": {
+     "precision_at_k": 0.4,
+     "ndcg_at_k": 0.5036
+    },
+    "delta": {
+     "precision_at_k": -0.2,
+     "ndcg_at_k": -0.1645
+    }
+   },
+   {
+    "id": "V3-06",
+    "query": "跨境电商行业增长态势",
+    "type": "主题",
+    "before": {
+     "precision_at_k": 0.6,
+     "ndcg_at_k": 0.8119
+    },
+    "after": {
+     "precision_at_k": 0.8,
+     "ndcg_at_k": 0.899
+    },
+    "delta": {
+     "precision_at_k": 0.2,
+     "ndcg_at_k": 0.0871
+    }
+   },
+   {
+    "id": "V3-11",
+    "query": "东盟 中小微 融资",
+    "type": "AND",
+    "before": {
+     "precision_at_k": 1.0,
+     "ndcg_at_k": 1.0
+    },
+    "after": {
+     "precision_at_k": 0.8,
+     "ndcg_at_k": 0.8688
+    },
+    "delta": {
+     "precision_at_k": -0.2,
+     "ndcg_at_k": -0.1312
+    }
+   },
+   {
+    "id": "V3-13",
+    "query": "东盟 MSME 技能 课程",
+    "type": "同义词",
+    "before": {
+     "precision_at_k": 1.0,
+     "ndcg_at_k": 1.0
+    },
+    "after": {
+     "precision_at_k": 0.6,
+     "ndcg_at_k": 0.7227
+    },
+    "delta": {
+     "precision_at_k": -0.4,
+     "ndcg_at_k": -0.2773
+    }
+   }
+  ]
+ },
+ "affected_subset": {
+  "before": {
+   "n": 6,
+   "precision_at_k": 0.8333,
+   "coverage": 0.8917,
+   "hit_rate": 1.0,
+   "ndcg_at_k": 0.9018
+  },
+  "after": {
+   "n": 6,
+   "precision_at_k": 0.6667,
+   "coverage": 0.8917,
+   "hit_rate": 1.0,
+   "ndcg_at_k": 0.7935
+  },
+  "changed": [
+   {
+    "id": "V3-01",
+    "query": "东盟中小微企业（MSME）经济地位",
+    "type": "短语",
+    "before": {
+     "precision_at_k": 1.0,
+     "ndcg_at_k": 1.0
+    },
+    "after": {
+     "precision_at_k": 0.8,
+     "ndcg_at_k": 0.9463
+    },
+    "delta": {
+     "precision_at_k": -0.2,
+     "ndcg_at_k": -0.0537
+    }
+   },
+   {
+    "id": "V3-02",
+    "query": "跨境电子商务面临的四大挑战",
+    "type": "短语",
+    "before": {
+     "precision_at_k": 0.8,
+     "ndcg_at_k": 0.9307
+    },
+    "after": {
+     "precision_at_k": 0.6,
+     "ndcg_at_k": 0.8208
+    },
+    "delta": {
+     "precision_at_k": -0.2,
+     "ndcg_at_k": -0.1099
+    }
+   },
+   {
+    "id": "V3-04",
+    "query": "跨境电商 挑战 物流",
+    "type": "AND",
+    "before": {
+     "precision_at_k": 0.6,
+     "ndcg_at_k": 0.6681
+    },
+    "after": {
+     "precision_at_k": 0.4,
+     "ndcg_at_k": 0.5036
+    },
+    "delta": {
+     "precision_at_k": -0.2,
+     "ndcg_at_k": -0.1645
+    }
+   },
+   {
+    "id": "V3-06",
+    "query": "跨境电商行业增长态势",
+    "type": "主题",
+    "before": {
+     "precision_at_k": 0.6,
+     "ndcg_at_k": 0.8119
+    },
+    "after": {
+     "precision_at_k": 0.8,
+     "ndcg_at_k": 0.899
+    },
+    "delta": {
+     "precision_at_k": 0.2,
+     "ndcg_at_k": 0.0871
+    }
+   },
+   {
+    "id": "V3-11",
+    "query": "东盟 中小微 融资",
+    "type": "AND",
+    "before": {
+     "precision_at_k": 1.0,
+     "ndcg_at_k": 1.0
+    },
+    "after": {
+     "precision_at_k": 0.8,
+     "ndcg_at_k": 0.8688
+    },
+    "delta": {
+     "precision_at_k": -0.2,
+     "ndcg_at_k": -0.1312
+    }
+   },
+   {
+    "id": "V3-13",
+    "query": "东盟 MSME 技能 课程",
+    "type": "同义词",
+    "before": {
+     "precision_at_k": 1.0,
+     "ndcg_at_k": 1.0
+    },
+    "after": {
+     "precision_at_k": 0.6,
+     "ndcg_at_k": 0.7227
+    },
+    "delta": {
+     "precision_at_k": -0.4,
+     "ndcg_at_k": -0.2773
+    }
+   }
+  ]
+ },
+ "remap_records": [
+  {
+   "query_id": "E02",
+   "from": 51,
+   "to": 279
+  },
+  {
+   "query_id": "E10",
+   "from": 51,
+   "to": 279
+  },
+  {
+   "query_id": "E15",
+   "from": 51,
+   "to": 279
+  },
+  {
+   "query_id": "E30",
+   "from": 51,
+   "to": 279
+  },
+  {
+   "query_id": "V3-01",
+   "from": 50,
+   "to": 278
+  },
+  {
+   "query_id": "V3-01",
+   "from": 51,
+   "to": 279
+  },
+  {
+   "query_id": "V3-02",
+   "from": 51,
+   "to": 279
+  },
+  {
+   "query_id": "V3-03",
+   "from": 50,
+   "to": 278
+  },
+  {
+   "query_id": "V3-03",
+   "from": 51,
+   "to": 279
+  },
+  {
+   "query_id": "V3-04",
+   "from": 51,
+   "to": 279
+  },
+  {
+   "query_id": "V3-05",
+   "from": 51,
+   "to": 279
+  },
+  {
+   "query_id": "V3-08",
+   "from": 50,
+   "to": 278
+  },
+  {
+   "query_id": "V3-08",
+   "from": 51,
+   "to": 279
+  },
+  {
+   "query_id": "V3-09",
+   "from": 51,
+   "to": 279
+  },
+  {
+   "query_id": "V3-10",
+   "from": 51,
+   "to": 279
+  },
+  {
+   "query_id": "V3-11",
+   "from": 50,
+   "to": 278
+  },
+  {
+   "query_id": "V3-11",
+   "from": 51,
+   "to": 279
+  },
+  {
+   "query_id": "V3-12",
+   "from": 51,
+   "to": 279
+  },
+  {
+   "query_id": "V3-13",
+   "from": 50,
+   "to": 278
+  },
+  {
+   "query_id": "V3-13",
+   "from": 51,
+   "to": 279
+  }
+ ],
+ "coverage": {
+  "v2": {
+   "groups": [
+    {
+     "group_id": "CG-003",
+     "concept_forms": [
+      "东盟中小微企业（MSME）经济地位"
+     ],
+     "mentioned_by_queries": [],
+     "count": 0
+    },
+    {
+     "group_id": "CG-004",
+     "concept_forms": [
+      "跨境电子商务面临的四大挑战"
+     ],
+     "mentioned_by_queries": [],
+     "count": 0
+    }
+   ],
+   "blind_group_count": 2,
+   "note": "被合并概念未被任何 89 查询提及 → 合并对本评测集指标无影响（0 变化是预期，而非收益/风险证据）；收益验证见 wave14 32 问题自检（@1 +1）与问题库侧"
+  },
+  "v3": {
+   "groups": [
+    {
+     "group_id": "CG-003",
+     "concept_forms": [
+      "东盟中小微企业（MSME）经济地位"
+     ],
+     "mentioned_by_queries": [
+      "V3-01"
+     ],
+     "count": 1
+    },
+    {
+     "group_id": "CG-004",
+     "concept_forms": [
+      "跨境电子商务面临的四大挑战"
+     ],
+     "mentioned_by_queries": [
+      "V3-02"
+     ],
+     "count": 1
+    }
+   ],
+   "blind_group_count": 0,
+   "note": "被合并概念已被 v3 查询覆盖，合并前后变化即合并对相关查询的真实影响"
+  },
+  "blind_groups_v2": 2,
+  "blind_groups_v3": 0
+ },
+ "v2_merge_sim": {
+  "path": "C:\\项目\\老田的AI助手\\research\\reports\\merge_sim_89_20261101.json",
+  "verdict": "neutral"
+ },
+ "conclusion": {
+  "verdict": "v3 覆盖后合并对相关查询有影响但非正向（或混合）→ 需人工核对受影响查询再决定",
+  "stance": "merge_mixed",
+  "blind_groups_v2": 2,
+  "blind_groups_v3": 0,
+  "overall_delta": {
+   "precision_at_k": -0.0098,
+   "ndcg_at_k": -0.0064
+  },
+  "new_queries_delta": {
+   "precision_at_k": -0.0769,
+   "ndcg_at_k": -0.0499
+  },
+  "affected_query_count": 6,
+  "reasons": [
+   "v2 盲区 2 组 → v3 覆盖后盲区 0 组",
+   "全部 102 条：P@5 0.7549→0.7451（Δ=-0.0098）、NDCG 0.8171→0.8107（Δ=-0.0064）",
+   "新增 13 条：P@5 Δ=-0.0769、NDCG Δ=-0.0499；受影响查询 6 条"
+  ],
+  "caveats": [
+   "内存合并模拟，不改真实数据；alias 已按理想情形重映射 expected_units；",
+   "合并后单元数 498→496，被合并重复单元的检索召回变化才可能影响查询；",
+   "新增查询 graded 标注为人工挑选关键词展开，样本 13 条为冒烟级；",
+   "结论供是否执行真实合并审批参考，真实合并需备份+同步下游引用。"
+  ]
+ }
+}

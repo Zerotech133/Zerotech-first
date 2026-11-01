@@ -1,0 +1,279 @@
+{
+ "schema_version": 1,
+ "date": "20261101",
+ "generated_at": "2026-11-01T10:58:49+08:00",
+ "generator": "wave18 BC card_precheck → 建议 decisions（一次性生成）",
+ "reviewer": "machine-precheck-suggestion（待人工确认）",
+ "decided_at": null,
+ "source_precheck": {
+  "path": "research/reports/card_precheck_20261101.json",
+  "sha256": "697b08e874005fb0c3a39569ed50d275645e8f2c5d9788e4d0619424a7c0fcbb",
+  "pass": 36,
+  "revise": 24,
+  "reject": 0,
+  "confidence": {
+   "high": 36,
+   "medium": 19,
+   "low": 5
+  }
+ },
+ "policy": {
+  "mapping": {
+   "pass": "pass",
+   "revise": "revise",
+   "reject": "revise（不自动 reject）"
+  },
+  "manual_confirmation_required": true,
+  "apply": false
+ },
+ "decisions": {
+  "REV-20261101-001": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-002": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-003": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-004": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-005": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-006": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-007": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-008": {
+   "verdict": "revise",
+   "notes": "预审建议 revise（置信 medium，score 88）：问题与答案概念覆盖低（0%）"
+  },
+  "REV-20261101-009": {
+   "verdict": "revise",
+   "notes": "预审建议 revise（置信 medium，score 70）：批内同 concept 重复（2 张）；批内同 evidence 重复"
+  },
+  "REV-20261101-010": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-011": {
+   "verdict": "revise",
+   "notes": "预审建议 revise（置信 medium，score 70）：批内同 concept 重复（2 张）；批内同 evidence 重复"
+  },
+  "REV-20261101-012": {
+   "verdict": "revise",
+   "notes": "预审建议 revise（置信 low，score 58）：问题与答案概念覆盖低（0%）；批内同 concept 重复（2 张）"
+  },
+  "REV-20261101-013": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-014": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-015": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-016": {
+   "verdict": "revise",
+   "notes": "预审建议 revise（置信 medium，score 70）：批内同 concept 重复（2 张）；批内同 evidence 重复"
+  },
+  "REV-20261101-017": {
+   "verdict": "revise",
+   "notes": "预审建议 revise（置信 medium，score 78）：批内同 concept 重复（3 张）；主题候选超额（5 张 > 建议 ≤3，且本卡排名 4）"
+  },
+  "REV-20261101-018": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-019": {
+   "verdict": "revise",
+   "notes": "预审建议 revise（置信 medium，score 88）：问题与答案概念覆盖低（17%）"
+  },
+  "REV-20261101-020": {
+   "verdict": "revise",
+   "notes": "预审建议 revise（置信 medium，score 70）：批内同 concept 重复（2 张）；批内同 evidence 重复"
+  },
+  "REV-20261101-021": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-022": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-023": {
+   "verdict": "revise",
+   "notes": "预审建议 revise（置信 medium，score 88）：问题与答案概念覆盖低（0%）"
+  },
+  "REV-20261101-024": {
+   "verdict": "revise",
+   "notes": "预审建议 revise（置信 low，score 52）：批内同 concept 重复（2 张）；批内同 evidence 重复"
+  },
+  "REV-20261101-025": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-026": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-027": {
+   "verdict": "revise",
+   "notes": "预审建议 revise（置信 low，score 52）：批内同 concept 重复（2 张）；批内同 evidence 重复"
+  },
+  "REV-20261101-028": {
+   "verdict": "revise",
+   "notes": "预审建议 revise（置信 medium，score 76）：答案含截断/占位符（… 或 待补充）；问题与答案概念覆盖低（0%）"
+  },
+  "REV-20261101-029": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-030": {
+   "verdict": "revise",
+   "notes": "预审建议 revise（置信 low，score 52）：批内同 concept 重复（3 张）；批内同 evidence 重复"
+  },
+  "REV-20261101-031": {
+   "verdict": "revise",
+   "notes": "预审建议 revise（置信 medium，score 88）：问题与答案概念覆盖低（0%）"
+  },
+  "REV-20261101-032": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-033": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-034": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-035": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-036": {
+   "verdict": "revise",
+   "notes": "预审建议 revise（置信 low，score 40）：问题与答案概念覆盖低（17%）；批内同 concept 重复（2 张）"
+  },
+  "REV-20261101-037": {
+   "verdict": "revise",
+   "notes": "预审建议 revise（置信 medium，score 88）：问题与答案概念覆盖低（0%）"
+  },
+  "REV-20261101-038": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-039": {
+   "verdict": "revise",
+   "notes": "预审建议 revise（置信 medium，score 88）：问题与答案概念覆盖低（0%）"
+  },
+  "REV-20261101-040": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-041": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-042": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-043": {
+   "verdict": "revise",
+   "notes": "预审建议 revise（置信 medium，score 88）：问题与答案概念覆盖低（0%）"
+  },
+  "REV-20261101-044": {
+   "verdict": "revise",
+   "notes": "预审建议 revise（置信 medium，score 76）：答案含截断/占位符（… 或 待补充）；问题与答案概念覆盖低（33%）"
+  },
+  "REV-20261101-045": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-046": {
+   "verdict": "revise",
+   "notes": "预审建议 revise（置信 medium，score 88）：问题与答案概念覆盖低（0%）"
+  },
+  "REV-20261101-047": {
+   "verdict": "revise",
+   "notes": "预审建议 revise（置信 medium，score 88）：问题与答案概念覆盖低（0%）"
+  },
+  "REV-20261101-048": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-049": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-050": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-051": {
+   "verdict": "revise",
+   "notes": "预审建议 revise（置信 medium，score 88）：问题与答案概念覆盖低（0%）"
+  },
+  "REV-20261101-052": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-053": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-054": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-055": {
+   "verdict": "revise",
+   "notes": "预审建议 revise（置信 medium，score 88）：问题与答案概念覆盖低（20%）"
+  },
+  "REV-20261101-056": {
+   "verdict": "revise",
+   "notes": "预审建议 revise（置信 medium，score 88）：问题与答案概念覆盖低（25%）"
+  },
+  "REV-20261101-057": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-058": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-059": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  },
+  "REV-20261101-060": {
+   "verdict": "pass",
+   "notes": "预审建议 pass（置信 high，score 100）：规则预审未发现明显问题"
+  }
+ },
+ "summary": {
+  "total": 60,
+  "pass": 36,
+  "revise": 24,
+  "reject": 0
+ },
+ "note": "本文件为「建议 decisions」：机器预审映射生成，供人工一键确认/微调；直接用它执行 decide 前请人工复核。",
+ "disclaimer": "机器建议仅辅助人工审核，不构成最终审核结论与投资建议。"
+}

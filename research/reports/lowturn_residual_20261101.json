@@ -1,0 +1,475 @@
+{
+ "meta": {
+  "schema_version": "lowturn_residual.v1",
+  "generated_at": "2026-11-01T08:35:44+08:00",
+  "start": "20230101",
+  "end": "20261030",
+  "effective_start": "20230103",
+  "effective_end": "20261030",
+  "factor": "low_turnover",
+  "direction": -1,
+  "neutrality": "市值十分位 × 行业市场权重法（桶内信号 top50% 等权）",
+  "cost_bp": 30.0,
+  "cost_grid_bp": [
+   10,
+   20,
+   30,
+   50
+  ],
+  "hold_frac": 0.5,
+  "years": [
+   "2023",
+   "2024",
+   "2025",
+   "2026"
+  ],
+  "is_years": [
+   "2023",
+   "2024"
+  ],
+  "oos_years": [
+   "2025",
+   "2026"
+  ],
+  "threshold_t": 2.0,
+  "min_positive_years": 3,
+  "load_sec": 46.64,
+  "fit_sec": 5.32,
+  "runtime_sec": 157.39,
+  "freqs": [
+   "weekly",
+   "hold60"
+  ],
+  "signals": [
+   "original",
+   "residual"
+  ],
+  "panel": {
+   "dates": 965,
+   "codes": 5740
+  },
+  "orthogonalization_check": "回归后残差与 logMV/vol20 的截面相关应≈0"
+ },
+ "fit": {
+  "n_fits": 46,
+  "avg_n": 5350.0,
+  "avg_r2": 0.4081,
+  "avg_resid_share": 0.5919,
+  "stats_sample": [
+   {
+    "date": "20230131",
+    "n": 5055,
+    "r2": 0.3714
+   },
+   {
+    "date": "20230228",
+    "n": 5077,
+    "r2": 0.3143
+   },
+   {
+    "date": "20230331",
+    "n": 5114,
+    "r2": 0.4334
+   },
+   {
+    "date": "20260831",
+    "n": 5537,
+    "r2": 0.3845
+   },
+   {
+    "date": "20260930",
+    "n": 5546,
+    "r2": 0.4174
+   },
+   {
+    "date": "20261030",
+    "n": 5564,
+    "r2": 0.336
+   }
+  ]
+ },
+ "orthogonalization": {
+  "original": {
+   "vs_log_mv": {
+    "n": 46,
+    "mean": 0.5618,
+    "t": 23.32
+   },
+   "vs_vol20": {
+    "n": 46,
+    "mean": -0.66,
+    "t": -61.12
+   },
+   "vs_original": {
+    "n": 46,
+    "mean": 1.0,
+    "t": null
+   }
+  },
+  "residual": {
+   "vs_log_mv": {
+    "n": 46,
+    "mean": 0.0368,
+    "t": 4.96
+   },
+   "vs_vol20": {
+    "n": 46,
+    "mean": 0.2654,
+    "t": 24.04
+   },
+   "vs_original": {
+    "n": 46,
+    "mean": 0.3058,
+    "t": 18.33
+   }
+  }
+ },
+ "comparisons": [
+  {
+   "signal": "original",
+   "signal_label": "原始 signed low_turnover",
+   "frequency": "weekly",
+   "freq_label": "周频",
+   "verdict": {
+    "independent_alpha": false,
+    "independent_alpha_gross": true,
+    "verdict_net": "fail",
+    "verdict_gross": "pass"
+   },
+   "is": {
+    "gross_excess": -0.010543,
+    "gross_t": -0.2802,
+    "net_excess": -0.318347,
+    "net_t": -6.7834
+   },
+   "oos": {
+    "gross_excess": 0.093955,
+    "gross_t": 3.1428,
+    "net_excess": -0.135863,
+    "net_t": -3.5743
+   },
+   "annual_gross_excess": {
+    "2023": -0.020617,
+    "2024": 0.011158,
+    "2025": 0.072237,
+    "2026": 0.039858
+   },
+   "annual_net_excess": {
+    "2023": -0.168111,
+    "2024": -0.142439,
+    "2025": -0.106117,
+    "2026": -0.044718
+   },
+   "annual_net_positive": 0,
+   "annual_net_n_years": 4,
+   "ic_by_year": {
+    "2023": {
+     "n_days": 50,
+     "mean": 0.0791,
+     "t": 2.87,
+     "positive_rate": 0.72
+    },
+    "2024": {
+     "n_days": 51,
+     "mean": 0.1014,
+     "t": 2.74,
+     "positive_rate": 0.647
+    },
+    "2025": {
+     "n_days": 53,
+     "mean": 0.0642,
+     "t": 2.51,
+     "positive_rate": 0.755
+    },
+    "2026": {
+     "n_days": 36,
+     "mean": 0.1004,
+     "t": 2.42,
+     "positive_rate": 0.639
+    }
+   },
+   "avg_turnover": 0.9173,
+   "rebalances_per_year": 48.75,
+   "avg_holdings": 1992.0,
+   "capacity_est_yi": 267.69,
+   "cum_cost_drag": 0.415716,
+   "rebalance_count": 195,
+   "net_oos_by_cost": {
+    "10": 0.017349,
+    "20": -0.059257,
+    "30": -0.135863,
+    "50": -0.289075
+   }
+  },
+  {
+   "signal": "original",
+   "signal_label": "原始 signed low_turnover",
+   "frequency": "hold60",
+   "freq_label": "60日持有",
+   "verdict": {
+    "independent_alpha": false,
+    "independent_alpha_gross": false,
+    "verdict_net": "fail",
+    "verdict_gross": "fail"
+   },
+   "is": {
+    "gross_excess": -0.08328,
+    "gross_t": -1.9706,
+    "net_excess": -0.117267,
+    "net_t": -2.6783
+   },
+   "oos": {
+    "gross_excess": 0.084849,
+    "gross_t": 2.3446,
+    "net_excess": 0.061239,
+    "net_t": 1.6279
+   },
+   "annual_gross_excess": {
+    "2023": -0.038864,
+    "2024": -0.046231,
+    "2025": 0.002704,
+    "2026": 0.075464
+   },
+   "annual_net_excess": {
+    "2023": -0.057935,
+    "2024": -0.061278,
+    "2025": -0.01594,
+    "2026": 0.066154
+   },
+   "annual_net_positive": 1,
+   "annual_net_n_years": 4,
+   "ic_by_year": {
+    "2023": {
+     "n_days": 5,
+     "mean": 0.2559,
+     "t": 2.56,
+     "positive_rate": 0.8
+    },
+    "2024": {
+     "n_days": 4,
+     "mean": 0.0677,
+     "t": 0.51,
+     "positive_rate": 0.75
+    },
+    "2025": {
+     "n_days": 4,
+     "mean": 0.0929,
+     "t": 1.38,
+     "positive_rate": 0.75
+    },
+    "2026": {
+     "n_days": 3,
+     "mean": 0.3739,
+     "t": 1.85,
+     "positive_rate": 0.667
+    }
+   },
+   "avg_turnover": 1.1918,
+   "rebalances_per_year": 4.0,
+   "avg_holdings": 1939.4,
+   "capacity_est_yi": 194.1,
+   "cum_cost_drag": 0.055697,
+   "rebalance_count": 16,
+   "net_oos_by_cost": {
+    "10": 0.076979,
+    "20": 0.069109,
+    "30": 0.061239,
+    "50": 0.045499
+   }
+  },
+  {
+   "signal": "residual",
+   "signal_label": "双重中性化残差",
+   "frequency": "weekly",
+   "freq_label": "周频",
+   "verdict": {
+    "independent_alpha": false,
+    "independent_alpha_gross": false,
+    "verdict_net": "fail",
+    "verdict_gross": "fail"
+   },
+   "is": {
+    "gross_excess": -0.206765,
+    "gross_t": -3.9263,
+    "net_excess": -0.446968,
+    "net_t": -8.1164
+   },
+   "oos": {
+    "gross_excess": 0.008611,
+    "gross_t": 0.2889,
+    "net_excess": -0.167839,
+    "net_t": -4.8115
+   },
+   "annual_gross_excess": {
+    "2023": -0.122499,
+    "2024": -0.088893,
+    "2025": 0.009611,
+    "2026": -0.001766
+   },
+   "annual_net_excess": {
+    "2023": -0.223785,
+    "2024": -0.203477,
+    "2025": -0.120904,
+    "2026": -0.066012
+   },
+   "annual_net_positive": 0,
+   "annual_net_n_years": 4,
+   "ic_by_year": {
+    "2023": {
+     "n_days": 47,
+     "mean": -0.0111,
+     "t": -1.29,
+     "positive_rate": 0.362
+    },
+    "2024": {
+     "n_days": 51,
+     "mean": 0.0036,
+     "t": 0.41,
+     "positive_rate": 0.51
+    },
+    "2025": {
+     "n_days": 53,
+     "mean": 0.0376,
+     "t": 6.32,
+     "positive_rate": 0.868
+    },
+    "2026": {
+     "n_days": 36,
+     "mean": 0.0035,
+     "t": 0.5,
+     "positive_rate": 0.583
+    }
+   },
+   "avg_turnover": 0.722,
+   "rebalances_per_year": 48.0,
+   "avg_holdings": 1996.8,
+   "capacity_est_yi": 412.61,
+   "cum_cost_drag": 0.340575,
+   "rebalance_count": 192,
+   "net_oos_by_cost": {
+    "10": -0.050206,
+    "20": -0.109023,
+    "30": -0.167839,
+    "50": -0.285473
+   }
+  },
+  {
+   "signal": "residual",
+   "signal_label": "双重中性化残差",
+   "frequency": "hold60",
+   "freq_label": "60日持有",
+   "verdict": {
+    "independent_alpha": false,
+    "independent_alpha_gross": false,
+    "verdict_net": "fail",
+    "verdict_gross": "fail"
+   },
+   "is": {
+    "gross_excess": -0.211342,
+    "gross_t": -2.7131,
+    "net_excess": -0.241527,
+    "net_t": -3.0761
+   },
+   "oos": {
+    "gross_excess": 0.029579,
+    "gross_t": 0.8967,
+    "net_excess": 0.005302,
+    "net_t": 0.1526
+   },
+   "annual_gross_excess": {
+    "2023": -0.130541,
+    "2024": -0.083574,
+    "2025": -0.005475,
+    "2026": 0.025531
+   },
+   "annual_net_excess": {
+    "2023": -0.144191,
+    "2024": -0.098265,
+    "2025": -0.024301,
+    "2026": 0.016325
+   },
+   "annual_net_positive": 1,
+   "annual_net_n_years": 4,
+   "ic_by_year": {
+    "2023": {
+     "n_days": 4,
+     "mean": -0.0642,
+     "t": -1.25,
+     "positive_rate": 0.0
+    },
+    "2024": {
+     "n_days": 4,
+     "mean": 0.0088,
+     "t": 0.25,
+     "positive_rate": 0.5
+    },
+    "2025": {
+     "n_days": 4,
+     "mean": 0.0465,
+     "t": 2.0,
+     "positive_rate": 0.75
+    },
+    "2026": {
+     "n_days": 3,
+     "mean": -0.0313,
+     "t": -1.27,
+     "positive_rate": 0.333
+    }
+   },
+   "avg_turnover": 1.2017,
+   "rebalances_per_year": 3.75,
+   "avg_holdings": 1962.1,
+   "capacity_est_yi": 256.02,
+   "cum_cost_drag": 0.052732,
+   "rebalance_count": 15,
+   "net_oos_by_cost": {
+    "10": 0.021487,
+    "20": 0.013395,
+    "30": 0.005302,
+    "50": -0.010883
+   }
+  }
+ ],
+ "conclusion": {
+  "any_independent_alpha_net": false,
+  "any_independent_alpha_gross": false,
+  "recommendation": "stop",
+  "text_lines": [
+   "**总判定：残差未能通过净口径阈值 → low_turnover 主要是风格代理（停止该方向）**",
+   "",
+   "**核心对比：**",
+   "",
+   "- 原始 signed low_turnover × 周频：OOS 毛 +9.40%（t=3.14）、净 -13.59%（t=-3.57）、逐年净同向 0/4 → fail",
+   "- 原始 signed low_turnover × 60日持有：OOS 毛 +8.48%（t=2.34）、净 +6.12%（t=1.63）、逐年净同向 1/4 → fail",
+   "- 双重中性化残差 × 周频：OOS 毛 +0.86%（t=0.29）、净 -16.78%（t=-4.81）、逐年净同向 0/4 → fail",
+   "- 双重中性化残差 × 60日持有：OOS 毛 +2.96%（t=0.90）、净 +0.53%（t=0.15）、逐年净同向 1/4 → fail",
+   "",
+   "- 周频：剥风格后 OOS 毛超额 +9.40% → +0.86%（保留 0.1），平均 IC 0.086 → 0.008",
+   "- 60日持有：剥风格后 OOS 毛超额 +8.48% → +2.96%（保留 0.3），平均 IC 0.198 → -0.010",
+   "",
+   "**毛口径诊断（alpha 是否存在）：**",
+   "",
+   "- 残差 × 周频：毛 OOS +0.86%（t=0.29）、毛判定 fail",
+   "- 残差 × 60日持有：毛 OOS +2.96%（t=0.90）、毛判定 fail",
+   "",
+   "→ 即使不扣成本（毛口径），残差 OOS 超额也仅 +0.86%/+2.96%（t=0.29/0.90，不显著），**剥掉风格后连『可解释的 alpha』都不剩**，因此失败不能用交易成本解释。",
+   "",
+   "**结论：残差在净口径下未通过（无 OOS 显著正超额/逐年不稳定）→ 低换手因子的收益主要来自「大市值+低波+行业」风格暴露，剥离后 alpha 消失 = 纯风格代理。建议停止「低换手中性化组合」方向，不再投入实盘/扩参；若仍想利用该信息，只能作为风格暴露工具（防御 beta）而非独立 alpha。**",
+   ""
+  ]
+ },
+ "notes": [
+  "回归为月频横截面 OLS（PIT）：每月最后一个交易日用当日 signed 因子对 z(log 流通市值)、z(20 日波动率)、行业哑变量（剔除首类）回归，残差为该股票「超出市值/波动/行业解释」的换手率异常。",
+  "周频/hold60 调仓使用最近月末残差面板（信号最多滞后约 1 个月）→ 完全 PIT 但存在信号衰减；残差面板只覆盖回归日有 circ_mv/vol20/行业 的股票，其后新上市/缺数据股票不进组合。",
+  "组合与 G/J 支线同口径：市值十分位×行业市场权重法、桶内 top50% 等权、T+1 收盘建仓、复权收益、缺价冻结（不做逐日涨跌停可买/可卖模拟）；中性组合为宽口径（约 2000 只），超额是「同市值/行业暴露下选股是否有效」的下界式检验。",
+  "IC 为调仓信号日上的截面 Spearman(signal, 20 日 forward CAR)，CAR 未扣成本（统一平移不影响排序），与 factor_validate 的扣 30bp 口径等价；不同信号用同一批信号日 → 可比。",
+  "净口径成本 30bp 单边，由毛净值×换手序列解析折算（成本不改变相对权重路径）；成本网格 10/20/30/50bp 共用一次回测。",
+  "判定沿用 wave2/3 阈值（OOS 超额>0、t≥2、逐年同向≥3/4）；主判定用净口径（回答是否可交易），毛口径同阈值作诊断（回答 alpha 是否存在）。",
+  "回归残差方向未做任何事后翻转：残差高 = 比同市值/波动/行业股票换手更低，先验上仍应「越高越好」；若残差 IC 为负即说明剥离后方向失效，如实报告。",
+  "股票池为当前 stock_basic 名单 + 上市日期，存在轻微幸存者偏差（与 factor_lib/factor_validate 同口径）。",
+  "本检验只针对 low_turnover；残差后若仍显著，也需注意多重检验问题（同一数据已做多轮检验）。",
+  "正交化验证为秩相关（Spearman）：残差与 logMV 秩相关≈0.04（线性暴露已剥离干净），但与 vol20 仍有 +0.265 的秩相关 → 波动率与残差存在非线性/分段关系，线性 OLS 未能完全剥离；这使『残差组合』仍残留少量低波暴露，但已不足以支撑正向超额。",
+  "残差信号滞后约 1 个月（月频回归→周频/hold60 调仓）：即使残差含 alpha，也可能被衰减；但本次毛口径 OOS t≈0.3~0.9、IC≈0，滞后不足以解释全部失效。",
+  "残差组合 IS 毛超额显著为负（周频 -20.68%、hold60 -21.13%）而 OOS 接近 0：说明剥离风格后的残差在 2023-24 是**反向**的（IC 2023 为负），不是中性 alpha —— 低换手因子的全部正收益都来自风格暴露，且风格本身 regime-dependent（见 J 报告）。"
+ ]
+}

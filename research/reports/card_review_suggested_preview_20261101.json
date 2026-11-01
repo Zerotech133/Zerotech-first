@@ -1,0 +1,280 @@
+{
+ "schema_version": 1,
+ "date": "20261101",
+ "generated_at": "2026-11-01T10:58:49+08:00",
+ "mode": "dry-run",
+ "apply": false,
+ "note": "本文件仅为 dry-run 预览；人工确认 decisions 后另行执行 --apply（不自动 apply）",
+ "source_precheck": {
+  "path": "research/reports/card_precheck_20261101.json",
+  "sha256": "697b08e874005fb0c3a39569ed50d275645e8f2c5d9788e4d0619424a7c0fcbb",
+  "pass": 36,
+  "revise": 24,
+  "reject": 0,
+  "confidence": {
+   "high": 36,
+   "medium": 19,
+   "low": 5
+  }
+ },
+ "decisions_file": {
+  "path": "research/reports/card_review_decisions_suggested_20261101.json",
+  "sha256": "a188ab46c1d9da7140d9542d419ca97fe6ccd5f1440874584a35c8e820df554d"
+ },
+ "decision_stats": {
+  "total": 60,
+  "pass": 36,
+  "revise": 24,
+  "reject": 0,
+  "pending": 0,
+  "decided": 60,
+  "decided_at": "2026-11-01T10:58:49+08:00"
+ },
+ "merge_preview": {
+  "approved_cards": 36,
+  "base_cards": 20,
+  "plan_stats": {
+   "base_cards": 20,
+   "proposal_cards": 36,
+   "approved": 36,
+   "would_add": 36,
+   "skipped_total": 0,
+   "skipped_not_reviewed": 0,
+   "skipped_rejected": 0,
+   "skipped_needs_revision": 0,
+   "skipped_concept_exists": 0,
+   "skipped_duplicate_in_batch": 0,
+   "resulting_cards": 56
+  },
+  "inserted": [
+   {
+    "review_id": "REV-20261101-001",
+    "theme": "AI算力/硬件",
+    "concept": "Akamai 与 Anthropic 合作协议"
+   },
+   {
+    "review_id": "REV-20261101-002",
+    "theme": "AI算力/硬件",
+    "concept": "Meta Muse 产品安全漏洞"
+   },
+   {
+    "review_id": "REV-20261101-003",
+    "theme": "其他",
+    "concept": "景嘉微股权激励计划"
+   },
+   {
+    "review_id": "REV-20261101-004",
+    "theme": "其他",
+    "concept": "DeepSeek DSec 系统架构"
+   },
+   {
+    "review_id": "REV-20261101-005",
+    "theme": "新能源/电力",
+    "concept": "钙钛矿光伏电池测试标准"
+   },
+   {
+    "review_id": "REV-20261101-006",
+    "theme": "新能源/电力",
+    "concept": "电力设备板块周度表现"
+   },
+   {
+    "review_id": "REV-20261101-007",
+    "theme": "金融/地产",
+    "concept": "购房贷款贴息政策"
+   },
+   {
+    "review_id": "REV-20261101-010",
+    "theme": "消费/零售",
+    "concept": "北京零售市场现状"
+   },
+   {
+    "review_id": "REV-20261101-013",
+    "theme": "量学/交易",
+    "concept": "十月怀胎一朝分娩"
+   },
+   {
+    "review_id": "REV-20261101-014",
+    "theme": "量学/交易",
+    "concept": "倍量伸缩"
+   },
+   {
+    "review_id": "REV-20261101-015",
+    "theme": "机械/制造",
+    "concept": "进口产品排名"
+   },
+   {
+    "review_id": "REV-20261101-018",
+    "theme": "军工/航天",
+    "concept": "国防军工行业周度表现"
+   },
+   {
+    "review_id": "REV-20261101-021",
+    "theme": "宏观/政策",
+    "concept": "数字贸易增长预测"
+   },
+   {
+    "review_id": "REV-20261101-022",
+    "theme": "宏观/政策",
+    "concept": "大模型商业化核心指标"
+   },
+   {
+    "review_id": "REV-20261101-025",
+    "theme": "消费/零售",
+    "concept": "上海零售市场动态"
+   },
+   {
+    "review_id": "REV-20261101-026",
+    "theme": "消费/零售",
+    "concept": "大中华区零售市场趋势"
+   },
+   {
+    "review_id": "REV-20261101-029",
+    "theme": "机械/制造",
+    "concept": "劳动力技能转型"
+   },
+   {
+    "review_id": "REV-20261101-032",
+    "theme": "军工/航天",
+    "concept": "国防军工个股涨跌幅排名"
+   },
+   {
+    "review_id": "REV-20261101-033",
+    "theme": "网络安全/信创",
+    "concept": "国内大模型厂商阵营分化"
+   },
+   {
+    "review_id": "REV-20261101-034",
+    "theme": "网络安全/信创",
+    "concept": "人工智能安全能力成熟度评估"
+   },
+   {
+    "review_id": "REV-20261101-035",
+    "theme": "网络安全/信创",
+    "concept": "网络安全合规转型"
+   },
+   {
+    "review_id": "REV-20261101-038",
+    "theme": "交运/物流",
+    "concept": "跨境电子商务面临的四大挑战"
+   },
+   {
+    "review_id": "REV-20261101-040",
+    "theme": "通信/互联网",
+    "concept": "出版业发展“十五五”规划"
+   },
+   {
+    "review_id": "REV-20261101-041",
+    "theme": "通信/互联网",
+    "concept": "纳斯达克互联网指数表现"
+   },
+   {
+    "review_id": "REV-20261101-042",
+    "theme": "农业",
+    "concept": "中国畜禽肉产品贸易总体规模"
+   },
+   {
+    "review_id": "REV-20261101-045",
+    "theme": "有色/金属",
+    "concept": "NPX 铜光兼容封装"
+   },
+   {
+    "review_id": "REV-20261101-048",
+    "theme": "建筑/建材",
+    "concept": "建筑装饰行业估值水平"
+   },
+   {
+    "review_id": "REV-20261101-049",
+    "theme": "建筑/建材",
+    "concept": "土地市场成交情况"
+   },
+   {
+    "review_id": "REV-20261101-050",
+    "theme": "建筑/建材",
+    "concept": "施工旺季需求特征"
+   },
+   {
+    "review_id": "REV-20261101-052",
+    "theme": "半导体/电子",
+    "concept": "国际商会（ICC）负责任酒精营销传播框架"
+   },
+   {
+    "review_id": "REV-20261101-053",
+    "theme": "半导体/电子",
+    "concept": "化工行业需求结构"
+   },
+   {
+    "review_id": "REV-20261101-054",
+    "theme": "医药/生物",
+    "concept": "EDEN 模型与体内细胞治疗"
+   },
+   {
+    "review_id": "REV-20261101-057",
+    "theme": "评级/研报方法论",
+    "concept": "DeepSeek 融资计划"
+   },
+   {
+    "review_id": "REV-20261101-058",
+    "theme": "评级/研报方法论",
+    "concept": "行业评级定义"
+   },
+   {
+    "review_id": "REV-20261101-059",
+    "theme": "传媒/文化",
+    "concept": "微信生态 Agent 落地"
+   },
+   {
+    "review_id": "REV-20261101-060",
+    "theme": "传媒/文化",
+    "concept": "传媒主体投资并购策略"
+   }
+  ],
+  "skipped": [],
+  "conflicts": [],
+  "validation": {
+   "ok": true,
+   "errors": []
+  }
+ },
+ "by_source": {
+  "AE": {
+   "pass": 12,
+   "revise": 8
+  },
+  "AV": {
+   "pass": 24,
+   "revise": 16
+  }
+ },
+ "next_steps": [
+  "人工复核建议 decisions（重点看 24 张 revise；可直接编辑 decisions JSON 的 verdict/notes）",
+  "复核通过后执行：python tools/kb_corpus/card_review.py decide --decisions <该文件> --apply（先备份清单）",
+  "如需合并进学习卡，再追加 --merge（写前备份 kb_learning_cards.json，写后校验）",
+  "本文件与 decisions 文件均未触发任何真实写盘（checklist/proposals/学习卡 SHA256 不变）"
+ ],
+ "safety": {
+  "applied": false,
+  "hashes": {
+   "checklist": {
+    "before": "8ebce2ad15e8ec95c049a1c3f08758e8d1f6c81c0dfd577facbd85d42f09f506",
+    "after": "8ebce2ad15e8ec95c049a1c3f08758e8d1f6c81c0dfd577facbd85d42f09f506",
+    "unchanged": true
+   },
+   "existing_cards": {
+    "before": "241ceb89a508d2435b1a89192cacd57f7e1d52ae91d8e33809e549ec577ce302",
+    "after": "241ceb89a508d2435b1a89192cacd57f7e1d52ae91d8e33809e549ec577ce302",
+    "unchanged": true
+   },
+   "ae_proposals": {
+    "before": "600012c14a8915e97753f343145b53b933b2dc5e195f65f87a8bc845b18d4e35",
+    "after": "600012c14a8915e97753f343145b53b933b2dc5e195f65f87a8bc845b18d4e35",
+    "unchanged": true
+   },
+   "av_proposals": {
+    "before": "2978451157ebf41d08571741ed0bcd5ece9690617f86e2edc6ecbb46da0fff80",
+    "after": "2978451157ebf41d08571741ed0bcd5ece9690617f86e2edc6ecbb46da0fff80",
+    "unchanged": true
+   }
+  }
+ },
+ "disclaimer": "建议 decisions / 预览为机器辅助产物，最终由人工确认；不构成投资建议。"
+}

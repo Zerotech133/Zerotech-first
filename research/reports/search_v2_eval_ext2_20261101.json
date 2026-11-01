@@ -1,0 +1,4210 @@
+{
+ "meta": {
+  "schema_version": "search_v2_eval_ext2.v1",
+  "generated_at": "2026-11-01T09:37:44+08:00",
+  "n_queries": 89,
+  "n_queries_wave9": 41,
+  "n_queries_wave10": 48,
+  "n_units": 498,
+  "topk": 5,
+  "n_synonym_groups": 23,
+  "weights": {
+   "concept": 1.0,
+   "claim": 0.85,
+   "evidence": 0.6,
+   "chapter": 0.45,
+   "book": 0.15
+  },
+  "graded_relevance": "2=高度相关/1=部分相关/0=不相关；单元等级取其文本命中最高标注等级",
+  "ndcg": "DCG=Σ(2^rel−1)/log2(rank+2)；IDCG=全部期望单元等级降序的理论 topk",
+  "statistics": "配对 t（正态近似）+ bootstrap 2000 次百分位 CI（seed=42）+ McNemar 精确检验"
+ },
+ "aggregate": {
+  "v1": {
+   "precision_at_k": 0.6831,
+   "coverage": 0.8371,
+   "hit_rate": 0.9551,
+   "ndcg_at_k": 0.7552
+  },
+  "v2": {
+   "precision_at_k": 0.7281,
+   "coverage": 0.9111,
+   "hit_rate": 1.0,
+   "ndcg_at_k": 0.8054
+  },
+  "delta": {
+   "precision_at_k": 0.045,
+   "coverage": 0.074,
+   "hit_rate": 0.0449,
+   "ndcg_at_k": 0.0502
+  }
+ },
+ "significance": {
+  "precision_at_k_paired_t": {
+   "n": 89,
+   "mean": 0.0449,
+   "sd": 0.3341,
+   "t": 1.2692,
+   "p_two_sided": 0.2044
+  },
+  "precision_at_k_bootstrap": {
+   "n": 89,
+   "n_boot": 2000,
+   "mean": 0.0449,
+   "ci_low": -0.0225,
+   "ci_high": 0.1146,
+   "significant": false
+  },
+  "ndcg_at_k_paired_t": {
+   "n": 89,
+   "mean": 0.0502,
+   "sd": 0.2925,
+   "t": 1.6188,
+   "p_two_sided": 0.1055
+  },
+  "ndcg_at_k_bootstrap": {
+   "n": 89,
+   "n_boot": 2000,
+   "mean": 0.0502,
+   "ci_low": -0.0068,
+   "ci_high": 0.1134,
+   "significant": false
+  },
+  "hit_rate_mcnemar": {
+   "b": 4,
+   "c": 0,
+   "n_discordant": 4,
+   "p_two_sided": 0.125
+  },
+  "alpha": 0.05,
+  "significant_precision": false,
+  "significant_ndcg": false
+ },
+ "by_type": {
+  "主题": {
+   "n": 44,
+   "v1": {
+    "precision_at_k": 0.7,
+    "coverage": 0.8314,
+    "hit": 1.0,
+    "ndcg_at_k": 0.7594
+   },
+   "v2": {
+    "precision_at_k": 0.75,
+    "coverage": 0.8674,
+    "hit": 1.0,
+    "ndcg_at_k": 0.8094
+   }
+  },
+  "同义词": {
+   "n": 8,
+   "v1": {
+    "precision_at_k": 0.275,
+    "coverage": 0.5,
+    "hit": 0.625,
+    "ndcg_at_k": 0.3985
+   },
+   "v2": {
+    "precision_at_k": 0.85,
+    "coverage": 0.9583,
+    "hit": 1.0,
+    "ndcg_at_k": 0.9505
+   }
+  },
+  "AND": {
+   "n": 10,
+   "v1": {
+    "precision_at_k": 0.78,
+    "coverage": 0.9667,
+    "hit": 1.0,
+    "ndcg_at_k": 0.8648
+   },
+   "v2": {
+    "precision_at_k": 0.46,
+    "coverage": 1.0,
+    "hit": 1.0,
+    "ndcg_at_k": 0.6718
+   }
+  },
+  "OR": {
+   "n": 8,
+   "v1": {
+    "precision_at_k": 0.95,
+    "coverage": 0.9583,
+    "hit": 1.0,
+    "ndcg_at_k": 0.9708
+   },
+   "v2": {
+    "precision_at_k": 0.95,
+    "coverage": 0.8958,
+    "hit": 1.0,
+    "ndcg_at_k": 0.9516
+   }
+  },
+  "短语": {
+   "n": 6,
+   "v1": {
+    "precision_at_k": 0.5333,
+    "coverage": 0.9444,
+    "hit": 1.0,
+    "ndcg_at_k": 0.672
+   },
+   "v2": {
+    "precision_at_k": 0.5667,
+    "coverage": 0.9444,
+    "hit": 1.0,
+    "ndcg_at_k": 0.6765
+   }
+  },
+  "排除": {
+   "n": 5,
+   "v1": {
+    "precision_at_k": 0.8,
+    "coverage": 0.7,
+    "hit": 0.8,
+    "ndcg_at_k": 0.7825
+   },
+   "v2": {
+    "precision_at_k": 0.8,
+    "coverage": 0.9333,
+    "hit": 1.0,
+    "ndcg_at_k": 0.6972
+   }
+  },
+  "短查询": {
+   "n": 5,
+   "v1": {
+    "precision_at_k": 0.48,
+    "coverage": 1.0,
+    "hit": 1.0,
+    "ndcg_at_k": 0.7798
+   },
+   "v2": {
+    "precision_at_k": 0.52,
+    "coverage": 1.0,
+    "hit": 1.0,
+    "ndcg_at_k": 0.8237
+   }
+  },
+  "长查询": {
+   "n": 3,
+   "v1": {
+    "precision_at_k": 0.9333,
+    "coverage": 0.8056,
+    "hit": 1.0,
+    "ndcg_at_k": 0.7852
+   },
+   "v2": {
+    "precision_at_k": 0.9333,
+    "coverage": 0.9167,
+    "hit": 1.0,
+    "ndcg_at_k": 0.8229
+   }
+  }
+ },
+ "queries": [
+  {
+   "id": "Q01",
+   "query": "量柱分类",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "量柱"
+    ],
+    "1": [
+     "量学",
+     "涨停"
+    ]
+   },
+   "n_expected_units": 32,
+   "v1": {
+    "precision_at_k": 0.4,
+    "coverage": 0.3333,
+    "hit": 1,
+    "ndcg_at_k": 0.5531,
+    "grades": [
+     2,
+     2,
+     0,
+     0,
+     0
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 0.6667,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.6,
+    "ndcg_at_k": 0.4469
+   }
+  },
+  {
+   "id": "Q02",
+   "query": "量线定义",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "量线"
+    ],
+    "1": [
+     "量柱",
+     "量学"
+    ]
+   },
+   "n_expected_units": 17,
+   "v1": {
+    "precision_at_k": 0.4,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.4704,
+    "grades": [
+     2,
+     0,
+     0,
+     0,
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.6,
+    "ndcg_at_k": 0.5296
+   }
+  },
+  {
+   "id": "Q03",
+   "query": "涨停基因",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "涨停基因",
+     "涨停密码"
+    ],
+    "1": [
+     "涨停",
+     "伏击涨停"
+    ]
+   },
+   "n_expected_units": 24,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 0.75,
+    "hit": 1,
+    "ndcg_at_k": 0.9125,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     1
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.5594,
+    "grades": [
+     2,
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": -0.3531
+   }
+  },
+  {
+   "id": "Q04",
+   "query": "伏击涨停定律",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "伏击涨停第",
+     "伏击涨停"
+    ],
+    "1": [
+     "涨停",
+     "量学"
+    ]
+   },
+   "n_expected_units": 27,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "Q05",
+   "query": "钠电池应用场景",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "钠电池"
+    ],
+    "1": [
+     "钠离子",
+     "储能"
+    ]
+   },
+   "n_expected_units": 12,
+   "v1": {
+    "precision_at_k": 0.6,
+    "coverage": 0.6667,
+    "hit": 1,
+    "ndcg_at_k": 0.6164,
+    "grades": [
+     2,
+     0,
+     0,
+     2,
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.4,
+    "coverage": 0.6667,
+    "hit": 1,
+    "ndcg_at_k": 0.5087,
+    "grades": [
+     2,
+     0,
+     2,
+     0,
+     0
+    ]
+   },
+   "delta": {
+    "precision_at_k": -0.2,
+    "ndcg_at_k": -0.1077
+   }
+  },
+  {
+   "id": "Q06",
+   "query": "动力电池竞争",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "动力电池"
+    ],
+    "1": [
+     "电池",
+     "宁德时代"
+    ]
+   },
+   "n_expected_units": 36,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 0.6667,
+    "hit": 1,
+    "ndcg_at_k": 0.9125,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     1
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0875
+   }
+  },
+  {
+   "id": "Q07",
+   "query": "光伏装机",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "光伏"
+    ],
+    "1": [
+     "光伏",
+     "储能"
+    ]
+   },
+   "n_expected_units": 28,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "Q08",
+   "query": "储能市场",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "储能"
+    ],
+    "1": [
+     "储能",
+     "光伏"
+    ]
+   },
+   "n_expected_units": 28,
+   "v1": {
+    "precision_at_k": 0.2,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.3392,
+    "grades": [
+     2,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.2,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.3392,
+    "grades": [
+     2,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "Q09",
+   "query": "数据中心用电",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "数据中心"
+    ],
+    "1": [
+     "数据中心",
+     "AIDC",
+     "电力"
+    ]
+   },
+   "n_expected_units": 41,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 0.75,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 0.75,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "Q10",
+   "query": "AI 算力建设",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "算力",
+     "AI 算力"
+    ],
+    "1": [
+     "算力",
+     "数据中心",
+     "AI"
+    ]
+   },
+   "n_expected_units": 103,
+   "v1": {
+    "precision_at_k": 0.8,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.6456,
+    "grades": [
+     2,
+     2,
+     0,
+     1,
+     1
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.8869,
+    "grades": [
+     2,
+     2,
+     1,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.2,
+    "ndcg_at_k": 0.2413
+   }
+  },
+  {
+   "id": "Q11",
+   "query": "大模型商业化",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "大模型",
+     "AI 模型商业化",
+     "商业化"
+    ],
+    "1": [
+     "大模型",
+     "商业化",
+     "AI 模型"
+    ]
+   },
+   "n_expected_units": 28,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "Q12",
+   "query": "四足机器人",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "四足机器人",
+     "机器人"
+    ],
+    "1": [
+     "机器人",
+     "具身"
+    ]
+   },
+   "n_expected_units": 17,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 0.75,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 0.75,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "Q13",
+   "query": "半导体景气度",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "半导体"
+    ],
+    "1": [
+     "半导体",
+     "芯片"
+    ]
+   },
+   "n_expected_units": 19,
+   "v1": {
+    "precision_at_k": 0.8,
+    "coverage": 0.6667,
+    "hit": 1,
+    "ndcg_at_k": 0.8539,
+    "grades": [
+     2,
+     2,
+     2,
+     0,
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.8,
+    "coverage": 0.6667,
+    "hit": 1,
+    "ndcg_at_k": 0.8539,
+    "grades": [
+     2,
+     2,
+     2,
+     0,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "Q14",
+   "query": "白酒价格带",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "白酒"
+    ],
+    "1": [
+     "白酒",
+     "消费"
+    ]
+   },
+   "n_expected_units": 21,
+   "v1": {
+    "precision_at_k": 0.2,
+    "coverage": 0.6667,
+    "hit": 1,
+    "ndcg_at_k": 0.3717,
+    "grades": [
+     2,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.6,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.792,
+    "grades": [
+     2,
+     2,
+     2,
+     0,
+     0
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.4,
+    "ndcg_at_k": 0.4203
+   }
+  },
+  {
+   "id": "Q15",
+   "query": "房地产政策",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "房地产",
+     "购房"
+    ],
+    "1": [
+     "房地产",
+     "购房",
+     "政策"
+    ]
+   },
+   "n_expected_units": 41,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "Q16",
+   "query": "铁路客流",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "铁路"
+    ],
+    "1": [
+     "铁路",
+     "客流"
+    ]
+   },
+   "n_expected_units": 3,
+   "v1": {
+    "precision_at_k": 0.4,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.879,
+    "grades": [
+     2,
+     1
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.6,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     1,
+     1
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.2,
+    "ndcg_at_k": 0.121
+   }
+  },
+  {
+   "id": "Q17",
+   "query": "企业信用分化",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "企业信用"
+    ],
+    "1": [
+     "企业信用",
+     "信用"
+    ]
+   },
+   "n_expected_units": 4,
+   "v1": {
+    "precision_at_k": 0.4,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.8402,
+    "grades": [
+     2,
+     2,
+     0,
+     0,
+     0
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.4,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.8402,
+    "grades": [
+     2,
+     2,
+     0,
+     0,
+     0
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "Q18",
+   "query": "网络安全技能",
+   "type": "主题",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "网络安全"
+    ],
+    "1": [
+     "网络安全",
+     "安全"
+    ]
+   },
+   "n_expected_units": 32,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "Q19",
+   "query": "太阳能",
+   "type": "同义词",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "光伏"
+    ],
+    "1": [
+     "光伏",
+     "储能"
+    ]
+   },
+   "n_expected_units": 28,
+   "v1": {
+    "precision_at_k": 0.0,
+    "coverage": 0.0,
+    "hit": 0,
+    "ndcg_at_k": 0.0,
+    "grades": [
+     0
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 1.0,
+    "ndcg_at_k": 1.0
+   }
+  },
+  {
+   "id": "Q20",
+   "query": "钠离子电池",
+   "type": "同义词",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "钠电池"
+    ],
+    "1": [
+     "钠电池",
+     "钠离子"
+    ]
+   },
+   "n_expected_units": 6,
+   "v1": {
+    "precision_at_k": 0.4,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.327,
+    "grades": [
+     1,
+     2,
+     0,
+     0,
+     0
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.7739,
+    "grades": [
+     1,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.6,
+    "ndcg_at_k": 0.4469
+   }
+  },
+  {
+   "id": "Q21",
+   "query": "IDC",
+   "type": "同义词",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "数据中心"
+    ],
+    "1": [
+     "数据中心",
+     "算力"
+    ]
+   },
+   "n_expected_units": 36,
+   "v1": {
+    "precision_at_k": 0.0,
+    "coverage": 0.0,
+    "hit": 0,
+    "ndcg_at_k": 0.0,
+    "grades": []
+   },
+   "v2": {
+    "precision_at_k": 0.8,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.8304,
+    "grades": [
+     2,
+     2,
+     0,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.8,
+    "ndcg_at_k": 0.8304
+   }
+  },
+  {
+   "id": "Q22",
+   "query": "人工智能",
+   "type": "同义词",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "AI",
+     "大模型"
+    ],
+    "1": [
+     "AI",
+     "大模型"
+    ]
+   },
+   "n_expected_units": 88,
+   "v1": {
+    "precision_at_k": 0.4,
+    "coverage": 0.5,
+    "hit": 1,
+    "ndcg_at_k": 0.4704,
+    "grades": [
+     2,
+     0,
+     0,
+     0,
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.6,
+    "ndcg_at_k": 0.5296
+   }
+  },
+  {
+   "id": "Q23",
+   "query": "股息",
+   "type": "同义词",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "股息",
+     "分红"
+    ],
+    "1": [
+     "分红",
+     "股息"
+    ]
+   },
+   "n_expected_units": 4,
+   "v1": {
+    "precision_at_k": 0.2,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.3904,
+    "grades": [
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.8,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.6,
+    "ndcg_at_k": 0.6096
+   }
+  },
+  {
+   "id": "Q24",
+   "query": "存货",
+   "type": "同义词",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "库存"
+    ],
+    "1": [
+     "库存",
+     "存货"
+    ]
+   },
+   "n_expected_units": 12,
+   "v1": {
+    "precision_at_k": 0.0,
+    "coverage": 0.0,
+    "hit": 0,
+    "ndcg_at_k": 0.0,
+    "grades": []
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 0.6667,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 1.0,
+    "ndcg_at_k": 1.0
+   }
+  },
+  {
+   "id": "Q25",
+   "query": "芯片",
+   "type": "同义词",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "芯片",
+     "半导体"
+    ],
+    "1": [
+     "芯片",
+     "半导体"
+    ]
+   },
+   "n_expected_units": 19,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 0.5,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "Q26",
+   "query": "港股通",
+   "type": "同义词",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "港股通",
+     "港股"
+    ],
+    "1": [
+     "港股",
+     "港股通"
+    ]
+   },
+   "n_expected_units": 1,
+   "v1": {
+    "precision_at_k": 0.2,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.2,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "Q27",
+   "query": "光伏 储能",
+   "type": "AND",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "光伏",
+     "储能"
+    ],
+    "1": [
+     "光伏",
+     "储能"
+    ]
+   },
+   "n_expected_units": 28,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.6,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.7227,
+    "grades": [
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": -0.4,
+    "ndcg_at_k": -0.2773
+   }
+  },
+  {
+   "id": "Q28",
+   "query": "白酒 价格带",
+   "type": "AND",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "白酒"
+    ],
+    "1": [
+     "白酒",
+     "消费"
+    ]
+   },
+   "n_expected_units": 21,
+   "v1": {
+    "precision_at_k": 0.2,
+    "coverage": 0.6667,
+    "hit": 1,
+    "ndcg_at_k": 0.3717,
+    "grades": [
+     2,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.4,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.6062,
+    "grades": [
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.2,
+    "ndcg_at_k": 0.2345
+   }
+  },
+  {
+   "id": "Q29",
+   "query": "钠电池 竞争壁垒",
+   "type": "AND",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "钠电池"
+    ],
+    "1": [
+     "钠电池",
+     "电池"
+    ]
+   },
+   "n_expected_units": 36,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.6608,
+    "grades": [
+     1,
+     2,
+     1,
+     2,
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.589,
+    "grades": [
+     1,
+     2,
+     2,
+     1,
+     1
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": -0.0718
+   }
+  },
+  {
+   "id": "Q30",
+   "query": "AI 商业化",
+   "type": "AND",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "AI",
+     "商业化"
+    ],
+    "1": [
+     "AI",
+     "商业化"
+    ]
+   },
+   "n_expected_units": 89,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "Q31",
+   "query": "铁路 客流",
+   "type": "AND",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "铁路"
+    ],
+    "1": [
+     "铁路",
+     "客流"
+    ]
+   },
+   "n_expected_units": 3,
+   "v1": {
+    "precision_at_k": 0.4,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.879,
+    "grades": [
+     2,
+     1
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.6,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     1,
+     1
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.2,
+    "ndcg_at_k": 0.121
+   }
+  },
+  {
+   "id": "Q32",
+   "query": "光伏|钠电池",
+   "type": "OR",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "光伏",
+     "钠电池"
+    ],
+    "1": [
+     "光伏",
+     "钠电池"
+    ]
+   },
+   "n_expected_units": 24,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.8,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.6608,
+    "grades": [
+     0,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": -0.2,
+    "ndcg_at_k": -0.3392
+   }
+  },
+  {
+   "id": "Q33",
+   "query": "量柱|量线",
+   "type": "OR",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "量柱",
+     "量线"
+    ],
+    "1": [
+     "量柱",
+     "量线"
+    ]
+   },
+   "n_expected_units": 15,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "Q34",
+   "query": "AI|机器人",
+   "type": "OR",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "AI",
+     "机器人"
+    ],
+    "1": [
+     "AI",
+     "机器人"
+    ]
+   },
+   "n_expected_units": 97,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 0.5,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "Q35",
+   "query": "白酒|消费",
+   "type": "OR",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "白酒",
+     "消费"
+    ],
+    "1": [
+     "白酒",
+     "消费"
+    ]
+   },
+   "n_expected_units": 21,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "Q36",
+   "query": "\"量柱完全分类\"",
+   "type": "短语",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "量柱完全分类"
+    ],
+    "1": [
+     "量柱",
+     "量学"
+    ]
+   },
+   "n_expected_units": 17,
+   "v1": {
+    "precision_at_k": 0.4,
+    "coverage": 0.6667,
+    "hit": 1,
+    "ndcg_at_k": 0.7337,
+    "grades": [
+     2,
+     1,
+     0,
+     0,
+     0
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.4,
+    "coverage": 0.6667,
+    "hit": 1,
+    "ndcg_at_k": 0.7073,
+    "grades": [
+     2,
+     0,
+     1,
+     0,
+     0
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": -0.0264
+   }
+  },
+  {
+   "id": "Q37",
+   "query": "\"行业评级定义\"",
+   "type": "短语",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "行业评级定义"
+    ],
+    "1": [
+     "评级",
+     "行业评级"
+    ]
+   },
+   "n_expected_units": 2,
+   "v1": {
+    "precision_at_k": 0.4,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     0,
+     0,
+     0
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.4,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     0,
+     0,
+     0
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "Q38",
+   "query": "\"企业信用结构性分化\"",
+   "type": "短语",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "企业信用"
+    ],
+    "1": [
+     "企业信用",
+     "信用"
+    ]
+   },
+   "n_expected_units": 4,
+   "v1": {
+    "precision_at_k": 0.4,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.8402,
+    "grades": [
+     2,
+     2,
+     0,
+     0,
+     0
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.4,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.8402,
+    "grades": [
+     2,
+     2,
+     0,
+     0,
+     0
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "Q39",
+   "query": "量柱 -量线",
+   "type": "排除",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "量柱"
+    ],
+    "1": [
+     "量柱",
+     "量学"
+    ]
+   },
+   "n_expected_units": 17,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "Q40",
+   "query": "钠电池 -储能",
+   "type": "排除",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "钠电池"
+    ],
+    "1": [
+     "钠电池",
+     "钠离子"
+    ]
+   },
+   "n_expected_units": 6,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.9125,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     1
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.2,
+    "coverage": 0.6667,
+    "hit": 1,
+    "ndcg_at_k": 0.3392,
+    "grades": [
+     2,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "delta": {
+    "precision_at_k": -0.8,
+    "ndcg_at_k": -0.5733
+   }
+  },
+  {
+   "id": "Q41",
+   "query": "AI -网络安全",
+   "type": "排除",
+   "source": "wave9",
+   "graded": {
+    "2": [
+     "AI"
+    ],
+    "1": [
+     "AI",
+     "大模型"
+    ]
+   },
+   "n_expected_units": 88,
+   "v1": {
+    "precision_at_k": 0.0,
+    "coverage": 0.0,
+    "hit": 0,
+    "ndcg_at_k": 0.0,
+    "grades": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 1.0,
+    "ndcg_at_k": 1.0
+   }
+  },
+  {
+   "id": "E01",
+   "query": "挖掘机出口市场",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "挖掘机"
+    ],
+    "1": [
+     "出口",
+     "工程机械"
+    ]
+   },
+   "n_expected_units": 41,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 0.6667,
+    "hit": 1,
+    "ndcg_at_k": 0.7968,
+    "grades": [
+     2,
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 0.6667,
+    "hit": 1,
+    "ndcg_at_k": 0.7968,
+    "grades": [
+     2,
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "E02",
+   "query": "上市快递企业盈利修复",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "快递"
+    ],
+    "1": [
+     "盈利",
+     "物流"
+    ]
+   },
+   "n_expected_units": 20,
+   "v1": {
+    "precision_at_k": 0.8,
+    "coverage": 0.6667,
+    "hit": 1,
+    "ndcg_at_k": 0.5597,
+    "grades": [
+     2,
+     1,
+     1,
+     0,
+     1
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 0.6667,
+    "hit": 1,
+    "ndcg_at_k": 0.6131,
+    "grades": [
+     2,
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.2,
+    "ndcg_at_k": 0.0534
+   }
+  },
+  {
+   "id": "E03",
+   "query": "航空业运力与需求",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "航空"
+    ],
+    "1": [
+     "运力",
+     "客流"
+    ]
+   },
+   "n_expected_units": 13,
+   "v1": {
+    "precision_at_k": 0.4,
+    "coverage": 0.6667,
+    "hit": 1,
+    "ndcg_at_k": 0.5087,
+    "grades": [
+     2,
+     0,
+     2,
+     0,
+     0
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.4,
+    "coverage": 0.6667,
+    "hit": 1,
+    "ndcg_at_k": 0.5531,
+    "grades": [
+     2,
+     2,
+     0,
+     0,
+     0
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0444
+   }
+  },
+  {
+   "id": "E04",
+   "query": "离岛免税消费",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "免税"
+    ],
+    "1": [
+     "消费",
+     "零售"
+    ]
+   },
+   "n_expected_units": 25,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "E05",
+   "query": "头部券商",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "券商"
+    ],
+    "1": [
+     "非银金融",
+     "证券"
+    ]
+   },
+   "n_expected_units": 11,
+   "v1": {
+    "precision_at_k": 0.4,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.6786,
+    "grades": [
+     2,
+     2,
+     0,
+     0,
+     0
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.4,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.6786,
+    "grades": [
+     2,
+     2,
+     0,
+     0,
+     0
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "E06",
+   "query": "保险资金港股通",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "保险资金"
+    ],
+    "1": [
+     "港股通",
+     "保险"
+    ]
+   },
+   "n_expected_units": 2,
+   "v1": {
+    "precision_at_k": 0.2,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.8262,
+    "grades": [
+     2,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.2,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.8262,
+    "grades": [
+     2,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "E07",
+   "query": "中小行负债端收缩",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "中小行"
+    ],
+    "1": [
+     "银行",
+     "负债"
+    ]
+   },
+   "n_expected_units": 10,
+   "v1": {
+    "precision_at_k": 0.8,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.8688,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     0
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.2,
+    "ndcg_at_k": 0.1312
+   }
+  },
+  {
+   "id": "E08",
+   "query": "智能体安全治理",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "智能体"
+    ],
+    "1": [
+     "AI",
+     "安全"
+    ]
+   },
+   "n_expected_units": 119,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "E09",
+   "query": "DeepSeek DSec 系统架构",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "DeepSeek"
+    ],
+    "1": [
+     "DSec",
+     "AI"
+    ]
+   },
+   "n_expected_units": 86,
+   "v1": {
+    "precision_at_k": 0.2,
+    "coverage": 0.6667,
+    "hit": 1,
+    "ndcg_at_k": 0.3392,
+    "grades": [
+     2,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.2,
+    "coverage": 0.6667,
+    "hit": 1,
+    "ndcg_at_k": 0.3392,
+    "grades": [
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "E10",
+   "query": "MLCC 行业趋势",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "MLCC"
+    ],
+    "1": [
+     "被动元件",
+     "电子"
+    ]
+   },
+   "n_expected_units": 20,
+   "v1": {
+    "precision_at_k": 0.4,
+    "coverage": 0.3333,
+    "hit": 1,
+    "ndcg_at_k": 0.7246,
+    "grades": [
+     2,
+     0,
+     2,
+     0,
+     0
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.4,
+    "coverage": 0.3333,
+    "hit": 1,
+    "ndcg_at_k": 0.7878,
+    "grades": [
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0632
+   }
+  },
+  {
+   "id": "E11",
+   "query": "全球风电市场趋势",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "风电"
+    ],
+    "1": [
+     "新能源",
+     "光伏"
+    ]
+   },
+   "n_expected_units": 40,
+   "v1": {
+    "precision_at_k": 0.2,
+    "coverage": 0.3333,
+    "hit": 1,
+    "ndcg_at_k": 0.3392,
+    "grades": [
+     2,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.2,
+    "coverage": 0.3333,
+    "hit": 1,
+    "ndcg_at_k": 0.3392,
+    "grades": [
+     2,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "E12",
+   "query": "核电的长期战略价值",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "核电"
+    ],
+    "1": [
+     "电力",
+     "新能源"
+    ]
+   },
+   "n_expected_units": 38,
+   "v1": {
+    "precision_at_k": 0.6,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.647,
+    "grades": [
+     2,
+     1,
+     0,
+     0,
+     1
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.6,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.7716,
+    "grades": [
+     2,
+     0,
+     1,
+     2,
+     0
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.1246
+   }
+  },
+  {
+   "id": "E13",
+   "query": "轨道数据中心定位",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "轨道数据中心"
+    ],
+    "1": [
+     "数据中心",
+     "卫星"
+    ]
+   },
+   "n_expected_units": 25,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 0.6667,
+    "hit": 1,
+    "ndcg_at_k": 0.5594,
+    "grades": [
+     2,
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 0.6667,
+    "hit": 1,
+    "ndcg_at_k": 0.5594,
+    "grades": [
+     2,
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "E14",
+   "query": "二手手机市场",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "二手手机"
+    ],
+    "1": [
+     "二手",
+     "手机"
+    ]
+   },
+   "n_expected_units": 9,
+   "v1": {
+    "precision_at_k": 0.8,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.9195,
+    "grades": [
+     2,
+     2,
+     0,
+     1,
+     1
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.8,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.9195,
+    "grades": [
+     2,
+     2,
+     0,
+     1,
+     1
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "E15",
+   "query": "海外监管与关税政策风险",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "关税"
+    ],
+    "1": [
+     "海外",
+     "监管"
+    ]
+   },
+   "n_expected_units": 36,
+   "v1": {
+    "precision_at_k": 0.6,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.6652,
+    "grades": [
+     2,
+     1,
+     1,
+     0,
+     0
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.6,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.6652,
+    "grades": [
+     2,
+     1,
+     1,
+     0,
+     0
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "E16",
+   "query": "国防军工行业投资建议",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "国防军工"
+    ],
+    "1": [
+     "军工",
+     "投资建议"
+    ]
+   },
+   "n_expected_units": 12,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.9026,
+    "grades": [
+     2,
+     2,
+     2,
+     1,
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0974
+   }
+  },
+  {
+   "id": "E17",
+   "query": "端侧 AI 放量",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "端侧 AI"
+    ],
+    "1": [
+     "AI",
+     "芯片"
+    ]
+   },
+   "n_expected_units": 88,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.8613,
+    "grades": [
+     2,
+     2,
+     1,
+     1,
+     1
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.8,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.8077,
+    "grades": [
+     2,
+     2,
+     1,
+     1
+    ]
+   },
+   "delta": {
+    "precision_at_k": -0.2,
+    "ndcg_at_k": -0.0536
+   }
+  },
+  {
+   "id": "E18",
+   "query": "化工行业周期传导",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "化工"
+    ],
+    "1": [
+     "周期",
+     "原材料"
+    ]
+   },
+   "n_expected_units": 31,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 0.6667,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 0.6667,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "E19",
+   "query": "水务企业财务表现",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "水务"
+    ],
+    "1": [
+     "财务",
+     "现金流"
+    ]
+   },
+   "n_expected_units": 12,
+   "v1": {
+    "precision_at_k": 0.6,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.5118,
+    "grades": [
+     2,
+     1,
+     1,
+     0,
+     0
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.8,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.6578,
+    "grades": [
+     2,
+     1,
+     0,
+     2,
+     1
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.2,
+    "ndcg_at_k": 0.146
+   }
+  },
+  {
+   "id": "E20",
+   "query": "网络安全合规转型",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "合规"
+    ],
+    "1": [
+     "网络安全",
+     "转型"
+    ]
+   },
+   "n_expected_units": 24,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.7694,
+    "grades": [
+     2,
+     2,
+     1,
+     1,
+     1
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.7198,
+    "grades": [
+     2,
+     1,
+     1,
+     2,
+     1
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": -0.0496
+   }
+  },
+  {
+   "id": "E21",
+   "query": "传统 MNC 巨头拥抱 AI",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "MNC"
+    ],
+    "1": [
+     "AI",
+     "医药"
+    ]
+   },
+   "n_expected_units": 83,
+   "v1": {
+    "precision_at_k": 0.8,
+    "coverage": 0.6667,
+    "hit": 1,
+    "ndcg_at_k": 0.7345,
+    "grades": [
+     2,
+     1,
+     1,
+     1,
+     0
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.2,
+    "coverage": 0.6667,
+    "hit": 1,
+    "ndcg_at_k": 0.4831,
+    "grades": [
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": -0.6,
+    "ndcg_at_k": -0.2514
+   }
+  },
+  {
+   "id": "E22",
+   "query": "新能源并网模式演变",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "新能源并网"
+    ],
+    "1": [
+     "新能源",
+     "储能"
+    ]
+   },
+   "n_expected_units": 28,
+   "v1": {
+    "precision_at_k": 0.8,
+    "coverage": 0.6667,
+    "hit": 1,
+    "ndcg_at_k": 0.9218,
+    "grades": [
+     2,
+     1,
+     1,
+     1,
+     0
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 0.6667,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.2,
+    "ndcg_at_k": 0.0782
+   }
+  },
+  {
+   "id": "E23",
+   "query": "光伏成本核算新规",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "成本核算"
+    ],
+    "1": [
+     "光伏",
+     "政策"
+    ]
+   },
+   "n_expected_units": 50,
+   "v1": {
+    "precision_at_k": 0.8,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.7275,
+    "grades": [
+     2,
+     1,
+     1,
+     0,
+     1
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.8,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.9377,
+    "grades": [
+     2,
+     2,
+     1,
+     1,
+     0
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.2102
+   }
+  },
+  {
+   "id": "E24",
+   "query": "购房贷款贴息政策",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "贴息"
+    ],
+    "1": [
+     "购房",
+     "房地产"
+    ]
+   },
+   "n_expected_units": 13,
+   "v1": {
+    "precision_at_k": 0.6,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.8684,
+    "grades": [
+     2,
+     2,
+     1,
+     0,
+     0
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.8,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.9377,
+    "grades": [
+     2,
+     2,
+     1,
+     1,
+     0
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.2,
+    "ndcg_at_k": 0.0693
+   }
+  },
+  {
+   "id": "E25",
+   "query": "住房资产估值模型",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "住房资产"
+    ],
+    "1": [
+     "房地产",
+     "估值"
+    ]
+   },
+   "n_expected_units": 22,
+   "v1": {
+    "precision_at_k": 0.4,
+    "coverage": 0.6667,
+    "hit": 1,
+    "ndcg_at_k": 0.6844,
+    "grades": [
+     2,
+     0,
+     0,
+     0,
+     1
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.6,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.8348,
+    "grades": [
+     2,
+     1,
+     1,
+     0,
+     0
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.2,
+    "ndcg_at_k": 0.1504
+   }
+  },
+  {
+   "id": "E26",
+   "query": "中国新三样产业",
+   "type": "主题",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "新三样"
+    ],
+    "1": [
+     "出口",
+     "新能源"
+    ]
+   },
+   "n_expected_units": 57,
+   "v1": {
+    "precision_at_k": 0.2,
+    "coverage": 0.6667,
+    "hit": 1,
+    "ndcg_at_k": 0.6062,
+    "grades": [
+     2,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.2,
+    "coverage": 0.6667,
+    "hit": 1,
+    "ndcg_at_k": 0.6062,
+    "grades": [
+     2,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "E27",
+   "query": "免税",
+   "type": "短查询",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "免税"
+    ],
+    "1": [
+     "消费"
+    ]
+   },
+   "n_expected_units": 19,
+   "v1": {
+    "precision_at_k": 0.2,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.6062,
+    "grades": [
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.2,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.6062,
+    "grades": [
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "E28",
+   "query": "券商",
+   "type": "短查询",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "券商"
+    ],
+    "1": [
+     "非银金融"
+    ]
+   },
+   "n_expected_units": 4,
+   "v1": {
+    "precision_at_k": 0.4,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.7171,
+    "grades": [
+     2,
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.6,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.9369,
+    "grades": [
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.2,
+    "ndcg_at_k": 0.2198
+   }
+  },
+  {
+   "id": "E29",
+   "query": "风电",
+   "type": "短查询",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "风电"
+    ],
+    "1": [
+     "新能源"
+    ]
+   },
+   "n_expected_units": 26,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "E30",
+   "query": "关税",
+   "type": "短查询",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "关税"
+    ],
+    "1": [
+     "监管",
+     "海外"
+    ]
+   },
+   "n_expected_units": 36,
+   "v1": {
+    "precision_at_k": 0.4,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.7878,
+    "grades": [
+     2,
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.4,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.7878,
+    "grades": [
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "E31",
+   "query": "核电",
+   "type": "短查询",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "核电"
+    ],
+    "1": [
+     "电力",
+     "新能源"
+    ]
+   },
+   "n_expected_units": 38,
+   "v1": {
+    "precision_at_k": 0.4,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.7878,
+    "grades": [
+     2,
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.4,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.7878,
+    "grades": [
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "E32",
+   "query": "全球风电市场趋势与新能源并网模式演变",
+   "type": "长查询",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "风电",
+     "新能源并网"
+    ],
+    "1": [
+     "新能源",
+     "储能"
+    ]
+   },
+   "n_expected_units": 34,
+   "v1": {
+    "precision_at_k": 0.8,
+    "coverage": 0.75,
+    "hit": 1,
+    "ndcg_at_k": 0.6534,
+    "grades": [
+     2,
+     2,
+     1,
+     0,
+     1
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.8,
+    "coverage": 0.75,
+    "hit": 1,
+    "ndcg_at_k": 0.6534,
+    "grades": [
+     2,
+     2,
+     1,
+     0,
+     1
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "E33",
+   "query": "中小行负债端收缩与银行流动性风险",
+   "type": "长查询",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "中小行"
+    ],
+    "1": [
+     "银行",
+     "风险"
+    ]
+   },
+   "n_expected_units": 39,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 0.6667,
+    "hit": 1,
+    "ndcg_at_k": 0.7021,
+    "grades": [
+     2,
+     2,
+     1,
+     1,
+     1
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.8152,
+    "grades": [
+     2,
+     2,
+     2,
+     1,
+     1
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.1131
+   }
+  },
+  {
+   "id": "E34",
+   "query": "AI 原生安全与传统安全运营的差异",
+   "type": "长查询",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "AI 原生安全"
+    ],
+    "1": [
+     "AI",
+     "安全"
+    ]
+   },
+   "n_expected_units": 107,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "E35",
+   "query": "快递 盈利",
+   "type": "AND",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "快递"
+    ],
+    "1": [
+     "盈利"
+    ]
+   },
+   "n_expected_units": 14,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.9395,
+    "grades": [
+     2,
+     1,
+     2,
+     2,
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.2,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.3717,
+    "grades": [
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": -0.8,
+    "ndcg_at_k": -0.5678
+   }
+  },
+  {
+   "id": "E36",
+   "query": "航空 运力",
+   "type": "AND",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "航空"
+    ],
+    "1": [
+     "运力"
+    ]
+   },
+   "n_expected_units": 10,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.2,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.3392,
+    "grades": [
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": -0.8,
+    "ndcg_at_k": -0.6608
+   }
+  },
+  {
+   "id": "E37",
+   "query": "免税 消费",
+   "type": "AND",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "免税"
+    ],
+    "1": [
+     "消费"
+    ]
+   },
+   "n_expected_units": 19,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.2,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.6062,
+    "grades": [
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": -0.8,
+    "ndcg_at_k": -0.3938
+   }
+  },
+  {
+   "id": "E38",
+   "query": "保险资金 港股通",
+   "type": "AND",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "保险资金"
+    ],
+    "1": [
+     "港股通"
+    ]
+   },
+   "n_expected_units": 1,
+   "v1": {
+    "precision_at_k": 0.2,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.2,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "E39",
+   "query": "挖掘机 出口",
+   "type": "AND",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "挖掘机"
+    ],
+    "1": [
+     "出口"
+    ]
+   },
+   "n_expected_units": 39,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.7968,
+    "grades": [
+     2,
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.2,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.4831,
+    "grades": [
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": -0.8,
+    "ndcg_at_k": -0.3137
+   }
+  },
+  {
+   "id": "E40",
+   "query": "挖掘机|快递",
+   "type": "OR",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "挖掘机",
+     "快递"
+    ],
+    "1": [
+     "出口",
+     "盈利"
+    ]
+   },
+   "n_expected_units": 53,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "E41",
+   "query": "免税|白酒",
+   "type": "OR",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "免税",
+     "白酒"
+    ],
+    "1": [
+     "消费"
+    ]
+   },
+   "n_expected_units": 21,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "E42",
+   "query": "券商|保险资金",
+   "type": "OR",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "券商",
+     "保险资金"
+    ],
+    "1": [
+     "非银金融"
+    ]
+   },
+   "n_expected_units": 5,
+   "v1": {
+    "precision_at_k": 0.6,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.7662,
+    "grades": [
+     2,
+     2,
+     0,
+     2,
+     0
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.8,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.9521,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     0
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.2,
+    "ndcg_at_k": 0.1859
+   }
+  },
+  {
+   "id": "E43",
+   "query": "风电|核电",
+   "type": "OR",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "风电",
+     "核电"
+    ],
+    "1": [
+     "新能源"
+    ]
+   },
+   "n_expected_units": 26,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 0.6667,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 0.6667,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "E44",
+   "query": "\"轨道数据中心定位\"",
+   "type": "短语",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "轨道数据中心"
+    ],
+    "1": [
+     "数据中心"
+    ]
+   },
+   "n_expected_units": 22,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.5594,
+    "grades": [
+     2,
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.5594,
+    "grades": [
+     2,
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "E45",
+   "query": "\"DeepSeek DSec 系统架构\"",
+   "type": "短语",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "DeepSeek"
+    ],
+    "1": [
+     "DSec"
+    ]
+   },
+   "n_expected_units": 6,
+   "v1": {
+    "precision_at_k": 0.2,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.3392,
+    "grades": [
+     2,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.2,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.3392,
+    "grades": [
+     2,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": 0.0
+   }
+  },
+  {
+   "id": "E46",
+   "query": "\"上市快递企业盈利修复\"",
+   "type": "短语",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "快递"
+    ],
+    "1": [
+     "盈利"
+    ]
+   },
+   "n_expected_units": 14,
+   "v1": {
+    "precision_at_k": 0.8,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.5597,
+    "grades": [
+     2,
+     1,
+     1,
+     0,
+     1
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.6131,
+    "grades": [
+     2,
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.2,
+    "ndcg_at_k": 0.0534
+   }
+  },
+  {
+   "id": "E47",
+   "query": "数据中心 -轨道",
+   "type": "排除",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "数据中心"
+    ],
+    "1": [
+     "IDC"
+    ]
+   },
+   "n_expected_units": 24,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 0.5,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 0.8,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.7261,
+    "grades": [
+     2,
+     1,
+     2,
+     2,
+     0
+    ]
+   },
+   "delta": {
+    "precision_at_k": -0.2,
+    "ndcg_at_k": -0.2739
+   }
+  },
+  {
+   "id": "E48",
+   "query": "大模型 -商业化",
+   "type": "排除",
+   "source": "wave10",
+   "graded": {
+    "2": [
+     "大模型"
+    ],
+    "1": [
+     "AI"
+    ]
+   },
+   "n_expected_units": 88,
+   "v1": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 1.0,
+    "grades": [
+     2,
+     2,
+     2,
+     2,
+     2
+    ]
+   },
+   "v2": {
+    "precision_at_k": 1.0,
+    "coverage": 1.0,
+    "hit": 1,
+    "ndcg_at_k": 0.4208,
+    "grades": [
+     1,
+     1,
+     1,
+     1,
+     2
+    ]
+   },
+   "delta": {
+    "precision_at_k": 0.0,
+    "ndcg_at_k": -0.5792
+   }
+  }
+ ]
+}

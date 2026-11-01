@@ -26,7 +26,7 @@ import json
 import os
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 
 IDENTITY = {
     "name": "赵云",
@@ -366,19 +366,13 @@ def _latest_advice(platform: Path, now: float) -> dict:
     return out
 
 
-def _pid_alive(pid) -> bool:
-    """进程存活探测（只读）。
+def _default_pid_probe(pid: int) -> bool:
+    """真实进程存活探测（PID_PROBE 的默认实现，只读）。
 
     严禁 `os.kill(pid, 0)` 探活：Windows 上 os.kill 对非 Ctrl-C 信号的语义是
     **TerminateProcess**，探活可能误杀进程（本页 hotfix 教训）。Windows 用
     OpenProcess + GetExitCodeProcess(STILL_ACTIVE)；POSIX 才用 kill(pid, 0)。
     """
-    try:
-        pid = int(pid)
-    except (TypeError, ValueError):
-        return False
-    if pid <= 0:
-        return False
     if os.name == "nt":
         try:
             import ctypes
@@ -401,6 +395,28 @@ def _pid_alive(pid) -> bool:
         os.kill(pid, 0)  # POSIX：0 = 仅检查存在，不投递信号
         return True
     except OSError:
+        return False
+
+
+#: 可注入的进程探测函数：默认=真实探测；测试可 monkeypatch 本模块属性，
+#: 避免依赖真实系统 PID（2026-10-31 WO-ZHAOYUN-PIDPROBE：整包并发撞 PID 12345 致 flaky）。
+PID_PROBE: Callable[[int], bool] = _default_pid_probe
+
+
+def _pid_alive(pid) -> bool:
+    """进程存活探测（只读）：校验 pid 后委托给 `PID_PROBE`（默认真实探测，可注入）。
+
+    非法/非正 pid 直接 False 且**不调用** PID_PROBE（边界语义与旧版一致）。
+    """
+    try:
+        pid = int(pid)
+    except (TypeError, ValueError):
+        return False
+    if pid <= 0:
+        return False
+    try:
+        return bool(PID_PROBE(pid))
+    except Exception:  # noqa: BLE001
         return False
 
 

@@ -41,6 +41,9 @@ tr:hover td{background:var(--bg-raised)}
 .actions{display:flex;gap:5px;flex-wrap:wrap}
 .actions button{padding:4px 7px;font-size:11px}
 .status{font-size:12px;color:var(--text-dim);min-height:20px;margin:6px 0 0}
+.who{font-size:12px;color:var(--text-dim);padding:4px 8px;border:1px dashed var(--border);border-radius:var(--r-s);white-space:nowrap}
+.who[data-ok="1"]{color:var(--color-ok);border-color:var(--color-ok)}
+.who a{color:var(--color-warn)}
 .empty{padding:30px;text-align:center;color:var(--text-dim)}
 .pager{display:flex;gap:8px;align-items:center;margin-top:12px;font-size:12px;color:var(--text-dim)}
 .tip{margin-top:14px;border:1px solid var(--border);border-left:3px solid var(--color-warn);border-radius:var(--r-s);padding:9px 12px;font-size:12px;color:var(--text-dim);line-height:1.7}
@@ -64,7 +67,7 @@ tr:hover td{background:var(--bg-raised)}
     <label>状态 <select id="f-status"><option value="pending">pending</option><option value="resolved">resolved</option><option value="all">all</option></select></label>
     <label>方向 <select id="f-bias"><option value="">全部</option><option value="bull">bull</option><option value="bear">bear</option><option value="neutral">neutral</option></select></label>
     <label>排序 <select id="f-sort"><option value="conf_asc">conf 升序</option><option value="conf_desc">conf 降序</option><option value="queued_desc">最新入队</option></select></label>
-    <label>reviewer <input id="f-reviewer" value="老田" style="width:90px"></label>
+    <span class="who" id="who" data-ok="" title="复核人取当前门户登录会话身份，页面不再自报">复核人：加载中…</span>
     <button id="refresh" class="primary">刷新</button>
     <span class="status" id="status">加载中…</span>
   </div>
@@ -79,16 +82,34 @@ tr:hover td{background:var(--bg-raised)}
     <button id="prev">上一页</button><span id="page">0 / 0</span><button id="next">下一页</button>
     <span>每页 100 条</span>
   </div>
-  <div class="tip">裁决口径：<b>正确</b>=维持原判；<b>错误</b>=方向不可信；<b>不确定</b>=信息不足。全部写回队列，不覆盖 news.jev 原值。</div>
+  <div class="tip">裁决口径：<b>正确</b>=维持原判；<b>错误</b>=方向不可信；<b>不确定</b>=信息不足。全部写回队列，不覆盖 news.jev 原值。复核人=当前登录会话身份（服务端写入，页面不再自报）。</div>
 </div>
 <script>
 const PAGE=100;
-let offset=0, last=null;
+let offset=0, last=null, ME="";
 const $=(s)=>document.querySelector(s);
 const esc=(v)=>String(v??"").replace(/[&<>"']/g,(c)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function status(text,bad){const el=$("#status");el.textContent=text;el.style.color=bad?"var(--color-err)":"var(--text-dim)";}
 async function api(url,opt){const r=await fetch(url,Object.assign({credentials:"same-origin"},opt||{}));let d={};try{d=await r.json()}catch(e){}if(!r.ok)throw new Error(d.message||d.error||("HTTP "+r.status));return d;}
+async function loadIdentity(){
+  // M3/H4-B：复核人取门户会话身份（/api/auth/me），服务端拒绝 body 自报；
+  // 页面不再提供 reviewer 输入框，未登录时禁用裁决并给出登录入口。
+  const who=$("#who");
+  try{
+    const d=await api("/api/auth/me");
+    ME=String((d.session&&d.session.sub)||"");
+  }catch(e){ME="";}
+  if(ME){
+    who.textContent=`复核人：${ME}（会话身份）`;
+    who.dataset.ok="1";
+  }else{
+    who.innerHTML='未登录：<a href="/login?next=/static/jev_review.html">先登录 8734</a>';
+    who.dataset.ok="";
+  }
+  return ME;
+}
 async function load(){
+  if(!ME){status("未登录：请先登录 8734 后刷新",true);$("#rows").innerHTML='<tr><td colspan="5" class="empty">未登录（复核人=会话身份，登录后可见队列）</td></tr>';return;}
   status("加载中…");
   const q=new URLSearchParams({status:$("#f-status").value,bias:$("#f-bias").value,sort:$("#f-sort").value,limit:String(PAGE),offset:String(offset)});
   try{
@@ -111,7 +132,9 @@ async function load(){
       const actions=tr.querySelector(".actions");
       if(it.status==="pending"){
         [["correct","正确","primary"],["wrong","错误","bad"],["uncertain","不确定",""]].forEach(([dec,label,cls])=>{
-          const b=document.createElement("button");b.textContent=label;b.className=cls;b.onclick=()=>resolve(it,dec);actions.appendChild(b);
+          const b=document.createElement("button");b.textContent=label;b.className=cls;b.onclick=()=>resolve(it,dec);
+          if(!ME){b.disabled=true;b.title="需登录 8734 后裁决（复核人取会话身份）";}
+          actions.appendChild(b);
         });
       }else{
         actions.textContent=`${it.decision||""} · ${it.reviewer||""}`;
@@ -126,11 +149,11 @@ async function load(){
   }catch(e){status("加载失败："+e.message,true);}
 }
 async function resolve(it,decision){
-  const reviewer=($("#f-reviewer").value||"").trim();
-  if(!reviewer){status("先填 reviewer",true);return;}
+  if(!ME){status("未登录：请先登录 8734（复核人取会话身份）",true);return;}
   const note=window.prompt("备注（可空）：","")||"";
   try{
-    const r=await api("/api/jev/review/resolve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:it.id,decision,reviewer,note})});
+    // 不传 reviewer：服务端 api_jev_review 从 zb_session 取会话 sub 落库。
+    const r=await api("/api/jev/review/resolve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:it.id,decision,note})});
     if(!r.ok)throw new Error(r.error||"失败");
     status(`已裁决 ${it.id} → ${decision} · ${r.item.reviewed_at||""}`);
     await load();
@@ -140,7 +163,7 @@ $("#refresh").onclick=()=>{offset=0;load();};
 $("#prev").onclick=()=>{offset=Math.max(0,offset-PAGE);load();};
 $("#next").onclick=()=>{offset+=PAGE;load();};
 ["f-status","f-bias","f-sort"].forEach(id=>$("#"+id).onchange=()=>{offset=0;load();});
-load();
+(async()=>{await loadIdentity();await load();})();
 </script>
 </body>
 </html>

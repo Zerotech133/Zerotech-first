@@ -11,7 +11,9 @@
 本工具只做“生成层事实门”，不选票、不代签、不改 reviewed/handoff：
   G1 三买几何：触发 bar close > 中枢上沿；当前 bar 分 active/broken/reclaimed/expired
   G2 时效：signal_age_days、触发价→现价偏移
-  G3 同源：strategy_timeframe/evidence_timeframe、rule_rsi_period/evidence_rsi_period
+  G3 同源：strategy_timeframe/evidence_timeframe、rule_rsi_period/evidence_rsi_period、
+     rsi_method/evidence_rsi_method（方法口径一致）、price_adjust 复权口径声明；
+     规则/证据字段单侧缺失或 price_adjust 未声明 → unknown（不伪造 pass）
   G4 生理区间：score∈[1,99]、volume_ratio∈[0.01,100]、raw momentum score 识别
   G5 公司行动：|daily_return|>10% 必须有 corporate_action/event，否则 unknown
  池级戳：score 饱和、volume_ratio 常量、同源超跌、杠铃、CRYPTO 无效配额
@@ -75,6 +77,13 @@ def _bool(card, names):
     return None
 
 
+def _same_method(a, b):
+    """RSI 方法口径比较：大小写/空白不敏感（如 sma14 == SMA 14），其余逐字比。"""
+    def key(value):
+        return "".join(str(value or "").strip().lower().split())
+    return key(a) == key(b)
+
+
 def normalize_card(card):
     """把不同来源的卡片字段归一成门检查所需视图；缺字段保持 None。"""
     if not isinstance(card, dict):
@@ -104,6 +113,12 @@ def normalize_card(card):
         "corporate_action": _bool(card, ("corporate_action", "event_adjusted", "company_action", "除权除息")),
         "score_method": _text(card, ("score_method", "scoring_method")),
         "raw_momentum": _num(card, ("raw_momentum", "momentum_20d", "raw_score")),
+        "bar_asof": _text(card, ("bar_asof", "bar_date", "last_bar_date", "bar_ts", "current_bar_date")),
+        "bar_source": _text(card, ("bar_source", "bar_src", "quote_source", "data_source", "bar_provider")),
+        "complete_bar": _bool(card, ("complete_bar", "bar_complete", "is_complete_bar", "full_bar", "完整日线")),
+        "price_adjust": _text(card, ("price_adjust", "price_adj", "adjust", "adjust_type", "复权", "复权口径")),
+        "rsi_method": _text(card, ("rsi_method", "rsi_calc_method", "rsi_algo", "rsi_type", "RSI方法")),
+        "evidence_rsi_method": _text(card, ("evidence_rsi_method", "display_rsi_method", "rsi_method_evidence")),
         "rationale": _text(card, ("rationale", "reason", "evidence_text", "理由")),
         "evidence": card.get("evidence") if isinstance(card.get("evidence"), (dict, list)) else None,
         "raw": card,
@@ -175,25 +190,40 @@ def gate_staleness(card, asof=None):
 
 
 def gate_source(card):
-    """G3：策略周期/RSI 周期与展示证据同源。"""
+    """G3：周期/RSI 周期/RSI 方法/复权口径与展示证据同源（缺失显式 unknown）。"""
     st, et = card.get("strategy_timeframe"), card.get("evidence_timeframe")
     rp, ep = card.get("rule_rsi_period"), card.get("evidence_rsi_period")
-    issues = []
+    rm = card.get("rsi_method") or ""
+    em = card.get("evidence_rsi_method") or ""
+    adjust = card.get("price_adjust") or ""
+    issues, unknown = [], []
     if st and et and st != et:
         issues.append("timeframe %s!=%s" % (st, et))
     if rp is not None and ep is not None and abs(rp - ep) > 1e-9:
         issues.append("rsi_period %g!=%g" % (rp, ep))
+    if rm and em and not _same_method(rm, em):
+        issues.append("rsi_method %s!=%s" % (rm, em))
     if issues:
         return {"gate": "G3", "status": "fail", "reason": ";".join(issues)}
-    if (st and not et) or (rp is not None and ep is None):
-        return {"gate": "G3", "status": "unknown", "reason": "missing evidence timeframe/period"}
-    if not st and not et and rp is None and ep is None:
+    if st and not et:
+        unknown.append("missing evidence_timeframe")
+    if rp is not None and ep is None:
+        unknown.append("missing evidence_rsi_period")
+    if rm and not em:
+        unknown.append("missing evidence_rsi_method")
+    if em and not rm:
+        unknown.append("missing rsi_method")
+    if not adjust:
+        unknown.append("missing price_adjust")
+    if unknown:
+        return {"gate": "G3", "status": "unknown", "reason": ";".join(unknown)}
+    if not st and not et and rp is None and ep is None and not rm and not em:
         return {"gate": "G3", "status": "pass", "reason": "not_applicable"}
     return {"gate": "G3", "status": "pass", "reason": "same source"}
 
 
 def gate_physiology(card):
-    """G4：评分/量比生理区间与裸动量评分识别。"""
+    """G4：评分/量比生理区间、裸动量识别、半根日线×异常量比（缺失显式 unknown）。"""
     issues, unknown = [], []
     score = card.get("score")
     if score is not None:
@@ -205,8 +235,18 @@ def gate_physiology(card):
     elif card.get("signal_type") or card.get("strategy"):
         unknown.append("missing score")
     vol = card.get("volume_ratio")
-    if vol is not None and not (VOL_MIN <= vol <= VOL_MAX):
-        issues.append("volume_ratio=%.4g outside [0.01,100]" % vol)
+    vol_out_of_range = vol is not None and not (VOL_MIN <= vol <= VOL_MAX)
+    if vol_out_of_range:
+        detail = "volume_ratio=%.4g outside [0.01,100]" % vol
+        complete_bar = card.get("complete_bar")
+        if complete_bar is False:
+            issues.append(
+                "complete_bar=false(bar_asof=%s,bar_source=%s) + %s"
+                % (card.get("bar_asof") or "?", card.get("bar_source") or "?", detail))
+        elif complete_bar is None:
+            unknown.append("missing complete_bar + %s" % detail)
+        else:
+            issues.append(detail)
     if issues:
         return {"gate": "G4", "status": "fail", "reason": ";".join(issues)}
     if unknown:
@@ -247,7 +287,12 @@ def evaluate_card(card, asof=None):
             "surface_status": status, "checks": checks, "normalized": {
                 "score": c["score"], "signal_type": c["signal_type"],
                 "strategy_timeframe": c["strategy_timeframe"],
-                "volume_ratio": c["volume_ratio"], "daily_return": c["daily_return"]}}
+                "volume_ratio": c["volume_ratio"], "daily_return": c["daily_return"],
+                "bar_asof": c["bar_asof"], "bar_source": c["bar_source"],
+                "complete_bar": c["complete_bar"],
+                "price_adjust": c["price_adjust"],
+                "rsi_method": c["rsi_method"],
+                "evidence_rsi_method": c["evidence_rsi_method"]}}
 
 
 def pool_stamps(cards):
@@ -323,7 +368,10 @@ def evaluate(cards, asof=None, source=""):
         "notes": [
             "只做生成层事实门；不选票、不代签、不改 reviewed/handoff、不写账本。",
             "缺失字段显式 unknown，不伪造 pass；池级 stamp 可 fail/warn。",
-            "G1 三买几何、G2 时效、G3 同源、G4 生理区间、G5 公司行动。",
+            "G1 三买几何、G2 时效、G3 同源（含 RSI 方法/复权口径）、"
+            "G4 生理区间（含完整日线×量比）、G5 公司行动。",
+            "Provenance：bar_asof/bar_source/complete_bar/price_adjust/rsi_method；"
+            "单侧缺失 → unknown，不伪造 pass。",
         ],
     }
 

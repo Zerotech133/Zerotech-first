@@ -1,0 +1,50 @@
+{
+ "run_id": "df0ec53e7495",
+ "stock": "002712",
+ "source_log": "C:\\Temp\\run_invest_4b.log",
+ "source_log_sha256": "6ce7d28ed20cd78cd99aceb2c8b6b86eced02feb6b4822360774b5771ff6a911",
+ "fidelity": "log_salvage",
+ "captured_at": "2026-11-01T08:15:16",
+ "nodes": [
+  {
+   "agent_id": "D1",
+   "status": "normal",
+   "output_preview": "{\"recommendation\":\"WATCH\",\"confidence\":0.3,\"rationale\":\"多头因 PE 负值及高位放量长阴被证伪；空头虽指出破位结构但 L4=存疑观察，禁止硬判方向。\",\"l1_basis\":\"t2_m",
+   "structured": null,
+   "duration_ms": null
+  },
+  {
+   "agent_id": "F1",
+   "status": "normal",
+   "output_preview": "思美传媒当前 PE 为负值（-52.09），表明公司尚未盈利，缺乏业绩反转的财务基础，土壤不成立。   市值仅 24.4 亿且换手率低至 6.62%，显示市场关注度不足，无显著运作迹象佐证“有人愿意运作”。   基本面土壤不成立，需查证是否",
+   "structured": null,
+   "duration_ms": null
+  },
+  {
+   "agent_id": "N1",
+   "status": "degraded",
+   "output_preview": "# N1 投研情绪面分析报告（002712）  **核心结论：短期利空，强度中等，时效性高（近5日已现跌势）**   近期舆情对标的的“放量上涨”预期形成修正，量比与换手率虽维持活跃但伴随-9.84% 的连续下跌，显示市场情绪已从“暖”转向",
+   "structured": null,
+   "duration_ms": null
+  },
+  {
+   "agent_id": "T1",
+   "status": "normal",
+   "output_preview": "多空辩论结论（2轮，末轮相似度0.71，达轮次上限）：多头[bull·T1]：结论先行：L4=存疑观察，承认无多头参与证据，因 PE 负值与高位天量长阴证伪吸筹逻辑。 1. 低位箱体假象被 10 月 23 日巨量长阴（量 40.4 万）及连",
+   "structured": null,
+   "duration_ms": null
+  },
+  {
+   "agent_id": "T2",
+   "status": "degraded",
+   "output_preview": "多空辩论结论（2轮，末轮相似度0.71，达轮次上限）：多头[bull·T1]：结论先行：L4=存疑观察，承认无多头参与证据，因 PE 负值与高位天量长阴证伪吸筹逻辑。 1. 低位箱体假象被 10 月 23 日巨量长阴（量 40.4 万）及连",
+   "structured": null,
+   "duration_ms": null
+  }
+ ],
+ "degraded_fields": [
+  "structured",
+  "duration_ms"
+ ],
+ "degraded_reason": "console 日志输出被截断，完整 structured/duration 不可得；本件仅用于状态/样本级审计，不用于 JSON 完整率/延迟计算。"
+}

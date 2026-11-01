@@ -1,0 +1,1155 @@
+{
+  "meta": {
+    "report": "s05_reverse_20261101",
+    "version": "0.1.0-wave6",
+    "generated_at": "2026-11-01T08:54:39+08:00",
+    "task": "wave6 P 支线：S05 反向（超配）假设验证（S01 大市值组合内）",
+    "data": {
+      "root": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\tushare",
+      "start": "20230101",
+      "end": "20261030"
+    },
+    "panel": {
+      "dates": 965,
+      "codes": 5740,
+      "load_sec": 85.29,
+      "meta": {
+        "data_root": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\tushare",
+        "universe": "tradable",
+        "load_dates": [
+          "20221107",
+          "20261030"
+        ],
+        "load_days": 965,
+        "warmup_days": 40,
+        "horizon": 20,
+        "panel_dates": 965,
+        "codes": 5740,
+        "eligible_avg_per_day": 3530.3,
+        "eligible_share": 0.615,
+        "load_sec": 84.69
+      }
+    },
+    "eval": {
+      "baseline": "S01（s05_overlay_test 复刻 portfolio_build.build_baseline，wave5 已 3/3 对齐）",
+      "signal": "LX20 lx20_three_absolutes，回溯 N=5 日（reverse_avoid_test 复用）",
+      "signal_n": 5,
+      "rebalance_every_days": 5,
+      "execution": "T 日收盘决策 → T+1 收盘执行（涨停/停牌不可买→现金）",
+      "cost_bp_oneway": 30,
+      "primary_variant": "M2",
+      "multipliers": [
+        1.5,
+        2.0,
+        3.0
+      ],
+      "shares": [
+        0.3,
+        0.5
+      ],
+      "is_window": "20230101~20241231",
+      "oos_window": "20250101~20261030",
+      "bear_2026": {
+        "peak": "20260106",
+        "trough": "20260323",
+        "segment_days": 49,
+        "max_drawdown_pct": -8.007
+      }
+    },
+    "validation_build_baseline": {
+      "checked": 0
+    },
+    "runtime_sec": 127.9,
+    "notes": [
+      "反向假设来自 wave5 同一份数据（S01 内降配负超额）→ 存在**数据窥探**；IS/OOS 划分只是时间切分，OOS 2025-26 并非真正独立样本外，结论必须经影子盘只读跟踪验证。",
+      "信号为 book_batch_test 的 LX20 简化单形态代理（倍量不穿+突破倍量柱实顶），非原书完整三绝口径。",
+      "S01 基线过滤中的 ST/上市日期/行业用 stock_basic 当前静态信息（与 build_baseline 同源，轻微后验）。",
+      "周频调仓、T+1 收盘执行、涨停(≥9.5%)/停牌不可买→现金；持有期停牌/退市收益按 0；首期成本单边 30bp。",
+      "容量为静态 ADV 假设（10% 参与率），未建模动态冲击成本；AUM 上限取中位数。",
+      "A 股不可做空：反向研究只体现为「超配/低配」相对权重变化，不对应独立空头收益。"
+    ]
+  },
+  "variants": {
+    "BASELINE": {
+      "name": "BASELINE",
+      "multiplier": null,
+      "share": null,
+      "overall": {
+        "days": 923,
+        "ann_ret_pct": 13.288,
+        "vol_ann_pct": 14.323,
+        "mdd_pct": -14.697,
+        "sharpe": 0.943,
+        "win_rate": 0.5222,
+        "avg_turnover_pct": 3.405,
+        "ann_cost_pct": 1.03,
+        "avg_holdings": 19.9,
+        "avg_cash_pct": 0.378,
+        "rebalances": 185
+      },
+      "by_year": {
+        "2023": {
+          "days": 240,
+          "ann_ret_pct": 2.316,
+          "vol_ann_pct": 13.56,
+          "mdd_pct": -14.697,
+          "sharpe": 0.236,
+          "win_rate": 0.4917
+        },
+        "2024": {
+          "days": 242,
+          "ann_ret_pct": 31.35,
+          "vol_ann_pct": 17.213,
+          "mdd_pct": -9.673,
+          "sharpe": 1.671,
+          "win_rate": 0.5124
+        },
+        "2025": {
+          "days": 243,
+          "ann_ret_pct": 17.571,
+          "vol_ann_pct": 12.81,
+          "mdd_pct": -8.17,
+          "sharpe": 1.328,
+          "win_rate": 0.572
+        },
+        "2026": {
+          "days": 198,
+          "ann_ret_pct": 2.215,
+          "vol_ann_pct": 13.074,
+          "mdd_pct": -8.007,
+          "sharpe": 0.233,
+          "win_rate": 0.5101
+        }
+      },
+      "bear_2026": {
+        "days": 49,
+        "ann_ret_pct": -31.252,
+        "vol_ann_pct": 14.521,
+        "mdd_pct": -8.007,
+        "sharpe": -2.507,
+        "win_rate": 0.4694
+      }
+    },
+    "M1.5": {
+      "name": "M1.5",
+      "multiplier": 1.5,
+      "share": null,
+      "overall": {
+        "days": 923,
+        "ann_ret_pct": 12.865,
+        "vol_ann_pct": 14.511,
+        "mdd_pct": -14.627,
+        "sharpe": 0.907,
+        "win_rate": 0.52,
+        "avg_turnover_pct": 7.41,
+        "ann_cost_pct": 2.241,
+        "avg_holdings": 19.9,
+        "avg_cash_pct": 0.382,
+        "rebalances": 185
+      },
+      "by_year": {
+        "2023": {
+          "days": 240,
+          "ann_ret_pct": 3.841,
+          "vol_ann_pct": 13.82,
+          "mdd_pct": -14.627,
+          "sharpe": 0.341,
+          "win_rate": 0.4875
+        },
+        "2024": {
+          "days": 242,
+          "ann_ret_pct": 28.606,
+          "vol_ann_pct": 17.339,
+          "mdd_pct": -10.135,
+          "sharpe": 1.538,
+          "win_rate": 0.5248
+        },
+        "2025": {
+          "days": 243,
+          "ann_ret_pct": 17.411,
+          "vol_ann_pct": 13.016,
+          "mdd_pct": -8.616,
+          "sharpe": 1.299,
+          "win_rate": 0.5844
+        },
+        "2026": {
+          "days": 198,
+          "ann_ret_pct": 1.412,
+          "vol_ann_pct": 13.27,
+          "mdd_pct": -8.468,
+          "sharpe": 0.172,
+          "win_rate": 0.4747
+        }
+      },
+      "bear_2026": {
+        "days": 49,
+        "ann_ret_pct": -32.74,
+        "vol_ann_pct": 14.591,
+        "mdd_pct": -8.468,
+        "sharpe": -2.645,
+        "win_rate": 0.4082
+      },
+      "excess": {
+        "days": 923,
+        "ann_excess_pct": -0.347,
+        "cum_excess_pct": -1.272,
+        "te_ann_pct": 1.203,
+        "t": -0.55,
+        "info_ratio": -0.289
+      },
+      "excess_gross_ann_pct": 0.864,
+      "excess_by_year": {
+        "2023": {
+          "days": 240,
+          "ann_excess_pct": 1.515,
+          "cum_excess_pct": 1.443,
+          "te_ann_pct": 1.175,
+          "t": 1.26,
+          "info_ratio": 1.29
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": -2.092,
+          "cum_excess_pct": -2.009,
+          "te_ann_pct": 0.944,
+          "t": -2.17,
+          "info_ratio": -2.217
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": -0.109,
+          "cum_excess_pct": -0.106,
+          "te_ann_pct": 1.181,
+          "t": -0.09,
+          "info_ratio": -0.093
+        },
+        "2026": {
+          "days": 198,
+          "ann_excess_pct": -0.764,
+          "cum_excess_pct": -0.6,
+          "te_ann_pct": 1.506,
+          "t": -0.45,
+          "info_ratio": -0.507
+        }
+      },
+      "excess_is": {
+        "days": 482,
+        "ann_excess_pct": -0.296,
+        "cum_excess_pct": -0.566,
+        "te_ann_pct": 1.07,
+        "t": -0.38,
+        "info_ratio": -0.277
+      },
+      "excess_oos": {
+        "days": 441,
+        "ann_excess_pct": -0.403,
+        "cum_excess_pct": -0.706,
+        "te_ann_pct": 1.335,
+        "t": -0.4,
+        "info_ratio": -0.302
+      },
+      "excess_bear_2026": {
+        "days": 49,
+        "ann_excess_pct": -2.175,
+        "cum_excess_pct": -0.423,
+        "te_ann_pct": 1.485,
+        "t": -0.65,
+        "info_ratio": -1.465
+      }
+    },
+    "M2": {
+      "name": "M2",
+      "multiplier": 2.0,
+      "share": null,
+      "overall": {
+        "days": 923,
+        "ann_ret_pct": 12.575,
+        "vol_ann_pct": 14.731,
+        "mdd_pct": -14.52,
+        "sharpe": 0.878,
+        "win_rate": 0.52,
+        "avg_turnover_pct": 10.68,
+        "ann_cost_pct": 3.23,
+        "avg_holdings": 19.9,
+        "avg_cash_pct": 0.384,
+        "rebalances": 185
+      },
+      "by_year": {
+        "2023": {
+          "days": 240,
+          "ann_ret_pct": 5.21,
+          "vol_ann_pct": 14.079,
+          "mdd_pct": -14.515,
+          "sharpe": 0.431,
+          "win_rate": 0.4792
+        },
+        "2024": {
+          "days": 242,
+          "ann_ret_pct": 26.303,
+          "vol_ann_pct": 17.469,
+          "mdd_pct": -10.79,
+          "sharpe": 1.424,
+          "win_rate": 0.5165
+        },
+        "2025": {
+          "days": 243,
+          "ann_ret_pct": 17.418,
+          "vol_ann_pct": 13.271,
+          "mdd_pct": -8.958,
+          "sharpe": 1.277,
+          "win_rate": 0.5967
+        },
+        "2026": {
+          "days": 198,
+          "ann_ret_pct": 0.817,
+          "vol_ann_pct": 13.564,
+          "mdd_pct": -8.836,
+          "sharpe": 0.127,
+          "win_rate": 0.4798
+        }
+      },
+      "bear_2026": {
+        "days": 49,
+        "ann_ret_pct": -33.899,
+        "vol_ann_pct": 14.758,
+        "mdd_pct": -8.836,
+        "sharpe": -2.731,
+        "win_rate": 0.4286
+      },
+      "excess": {
+        "days": 923,
+        "ann_excess_pct": -0.573,
+        "cum_excess_pct": -2.098,
+        "te_ann_pct": 2.2,
+        "t": -0.5,
+        "info_ratio": -0.26
+      },
+      "excess_gross_ann_pct": 1.627,
+      "excess_by_year": {
+        "2023": {
+          "days": 240,
+          "ann_excess_pct": 2.861,
+          "cum_excess_pct": 2.725,
+          "te_ann_pct": 2.122,
+          "t": 1.32,
+          "info_ratio": 1.348
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": -3.878,
+          "cum_excess_pct": -3.724,
+          "te_ann_pct": 1.716,
+          "t": -2.21,
+          "info_ratio": -2.26
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": -0.07,
+          "cum_excess_pct": -0.067,
+          "te_ann_pct": 2.208,
+          "t": -0.03,
+          "info_ratio": -0.032
+        },
+        "2026": {
+          "days": 198,
+          "ann_excess_pct": -1.313,
+          "cum_excess_pct": -1.032,
+          "te_ann_pct": 2.737,
+          "t": -0.43,
+          "info_ratio": -0.48
+        }
+      },
+      "excess_is": {
+        "days": 482,
+        "ann_excess_pct": -0.523,
+        "cum_excess_pct": -1.0,
+        "te_ann_pct": 1.938,
+        "t": -0.37,
+        "info_ratio": -0.27
+      },
+      "excess_oos": {
+        "days": 441,
+        "ann_excess_pct": -0.628,
+        "cum_excess_pct": -1.099,
+        "te_ann_pct": 2.457,
+        "t": -0.34,
+        "info_ratio": -0.256
+      },
+      "excess_bear_2026": {
+        "days": 49,
+        "ann_excess_pct": -3.887,
+        "cum_excess_pct": -0.756,
+        "te_ann_pct": 2.671,
+        "t": -0.64,
+        "info_ratio": -1.455
+      }
+    },
+    "M3": {
+      "name": "M3",
+      "multiplier": 3.0,
+      "share": null,
+      "overall": {
+        "days": 923,
+        "ann_ret_pct": 12.214,
+        "vol_ann_pct": 15.2,
+        "mdd_pct": -14.78,
+        "sharpe": 0.834,
+        "win_rate": 0.5092,
+        "avg_turnover_pct": 15.789,
+        "ann_cost_pct": 4.775,
+        "avg_holdings": 19.9,
+        "avg_cash_pct": 0.388,
+        "rebalances": 185
+      },
+      "by_year": {
+        "2023": {
+          "days": 240,
+          "ann_ret_pct": 7.548,
+          "vol_ann_pct": 14.565,
+          "mdd_pct": -14.257,
+          "sharpe": 0.572,
+          "win_rate": 0.4833
+        },
+        "2024": {
+          "days": 242,
+          "ann_ret_pct": 22.565,
+          "vol_ann_pct": 17.727,
+          "mdd_pct": -11.882,
+          "sharpe": 1.236,
+          "win_rate": 0.5083
+        },
+        "2025": {
+          "days": 243,
+          "ann_ret_pct": 17.713,
+          "vol_ann_pct": 13.845,
+          "mdd_pct": -9.448,
+          "sharpe": 1.248,
+          "win_rate": 0.572
+        },
+        "2026": {
+          "days": 198,
+          "ann_ret_pct": 0.016,
+          "vol_ann_pct": 14.246,
+          "mdd_pct": -9.383,
+          "sharpe": 0.072,
+          "win_rate": 0.4646
+        }
+      },
+      "bear_2026": {
+        "days": 49,
+        "ann_ret_pct": -35.579,
+        "vol_ann_pct": 15.192,
+        "mdd_pct": -9.383,
+        "sharpe": -2.817,
+        "win_rate": 0.3878
+      },
+      "excess": {
+        "days": 923,
+        "ann_excess_pct": -0.824,
+        "cum_excess_pct": -3.018,
+        "te_ann_pct": 3.791,
+        "t": -0.42,
+        "info_ratio": -0.217
+      },
+      "excess_gross_ann_pct": 2.921,
+      "excess_by_year": {
+        "2023": {
+          "days": 240,
+          "ann_excess_pct": 5.129,
+          "cum_excess_pct": 4.885,
+          "te_ann_pct": 3.595,
+          "t": 1.39,
+          "info_ratio": 1.427
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": -6.84,
+          "cum_excess_pct": -6.568,
+          "te_ann_pct": 2.942,
+          "t": -2.28,
+          "info_ratio": -2.325
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 0.26,
+          "cum_excess_pct": 0.25,
+          "te_ann_pct": 3.921,
+          "t": 0.07,
+          "info_ratio": 0.066
+        },
+        "2026": {
+          "days": 198,
+          "ann_excess_pct": -2.017,
+          "cum_excess_pct": -1.584,
+          "te_ann_pct": 4.665,
+          "t": -0.38,
+          "info_ratio": -0.432
+        }
+      },
+      "excess_is": {
+        "days": 482,
+        "ann_excess_pct": -0.88,
+        "cum_excess_pct": -1.684,
+        "te_ann_pct": 3.301,
+        "t": -0.37,
+        "info_ratio": -0.267
+      },
+      "excess_oos": {
+        "days": 441,
+        "ann_excess_pct": -0.762,
+        "cum_excess_pct": -1.334,
+        "te_ann_pct": 4.266,
+        "t": -0.24,
+        "info_ratio": -0.179
+      },
+      "excess_bear_2026": {
+        "days": 49,
+        "ann_excess_pct": -6.394,
+        "cum_excess_pct": -1.243,
+        "te_ann_pct": 4.457,
+        "t": -0.63,
+        "info_ratio": -1.435
+      }
+    },
+    "K30": {
+      "name": "K30",
+      "multiplier": null,
+      "share": 0.3,
+      "overall": {
+        "days": 923,
+        "ann_ret_pct": 11.713,
+        "vol_ann_pct": 14.923,
+        "mdd_pct": -15.233,
+        "sharpe": 0.817,
+        "win_rate": 0.5114,
+        "avg_turnover_pct": 16.348,
+        "ann_cost_pct": 4.943,
+        "avg_holdings": 19.9,
+        "avg_cash_pct": 0.371,
+        "rebalances": 185
+      },
+      "by_year": {
+        "2023": {
+          "days": 240,
+          "ann_ret_pct": 5.132,
+          "vol_ann_pct": 13.692,
+          "mdd_pct": -13.574,
+          "sharpe": 0.434,
+          "win_rate": 0.475
+        },
+        "2024": {
+          "days": 242,
+          "ann_ret_pct": 14.93,
+          "vol_ann_pct": 17.453,
+          "mdd_pct": -13.71,
+          "sharpe": 0.884,
+          "win_rate": 0.5
+        },
+        "2025": {
+          "days": 243,
+          "ann_ret_pct": 24.037,
+          "vol_ann_pct": 13.808,
+          "mdd_pct": -8.33,
+          "sharpe": 1.63,
+          "win_rate": 0.5844
+        },
+        "2026": {
+          "days": 198,
+          "ann_ret_pct": 2.144,
+          "vol_ann_pct": 14.383,
+          "mdd_pct": -8.663,
+          "sharpe": 0.219,
+          "win_rate": 0.4798
+        }
+      },
+      "bear_2026": {
+        "days": 49,
+        "ann_ret_pct": -32.428,
+        "vol_ann_pct": 14.976,
+        "mdd_pct": -8.412,
+        "sharpe": -2.542,
+        "win_rate": 0.4082
+      },
+      "excess": {
+        "days": 923,
+        "ann_excess_pct": -1.313,
+        "cum_excess_pct": -4.81,
+        "te_ann_pct": 4.118,
+        "t": -0.61,
+        "info_ratio": -0.319
+      },
+      "excess_gross_ann_pct": 2.6,
+      "excess_by_year": {
+        "2023": {
+          "days": 240,
+          "ann_excess_pct": 2.733,
+          "cum_excess_pct": 2.603,
+          "te_ann_pct": 2.973,
+          "t": 0.9,
+          "info_ratio": 0.919
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": -13.322,
+          "cum_excess_pct": -12.793,
+          "te_ann_pct": 4.14,
+          "t": -3.15,
+          "info_ratio": -3.218
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 5.49,
+          "cum_excess_pct": 5.294,
+          "te_ann_pct": 4.625,
+          "t": 1.17,
+          "info_ratio": 1.187
+        },
+        "2026": {
+          "days": 198,
+          "ann_excess_pct": 0.109,
+          "cum_excess_pct": 0.086,
+          "te_ann_pct": 4.514,
+          "t": 0.02,
+          "info_ratio": 0.024
+        }
+      },
+      "excess_is": {
+        "days": 482,
+        "ann_excess_pct": -5.327,
+        "cum_excess_pct": -10.19,
+        "te_ann_pct": 3.638,
+        "t": -2.03,
+        "info_ratio": -1.464
+      },
+      "excess_oos": {
+        "days": 441,
+        "ann_excess_pct": 3.074,
+        "cum_excess_pct": 5.38,
+        "te_ann_pct": 4.574,
+        "t": 0.89,
+        "info_ratio": 0.672
+      },
+      "excess_bear_2026": {
+        "days": 49,
+        "ann_excess_pct": -1.657,
+        "cum_excess_pct": -0.322,
+        "te_ann_pct": 2.328,
+        "t": -0.31,
+        "info_ratio": -0.712
+      }
+    },
+    "K50": {
+      "name": "K50",
+      "multiplier": null,
+      "share": 0.5,
+      "overall": {
+        "days": 923,
+        "ann_ret_pct": 11.54,
+        "vol_ann_pct": 16.796,
+        "mdd_pct": -17.565,
+        "sharpe": 0.734,
+        "win_rate": 0.4973,
+        "avg_turnover_pct": 26.828,
+        "ann_cost_pct": 8.113,
+        "avg_holdings": 19.9,
+        "avg_cash_pct": 0.374,
+        "rebalances": 185
+      },
+      "by_year": {
+        "2023": {
+          "days": 240,
+          "ann_ret_pct": 12.045,
+          "vol_ann_pct": 15.058,
+          "mdd_pct": -12.29,
+          "sharpe": 0.83,
+          "win_rate": 0.4667
+        },
+        "2024": {
+          "days": 242,
+          "ann_ret_pct": 4.087,
+          "vol_ann_pct": 18.743,
+          "mdd_pct": -17.565,
+          "sharpe": 0.307,
+          "win_rate": 0.4876
+        },
+        "2025": {
+          "days": 243,
+          "ann_ret_pct": 28.768,
+          "vol_ann_pct": 16.352,
+          "mdd_pct": -9.252,
+          "sharpe": 1.629,
+          "win_rate": 0.5638
+        },
+        "2026": {
+          "days": 198,
+          "ann_ret_pct": 1.207,
+          "vol_ann_pct": 16.893,
+          "mdd_pct": -9.398,
+          "sharpe": 0.155,
+          "win_rate": 0.4646
+        }
+      },
+      "bear_2026": {
+        "days": 49,
+        "ann_ret_pct": -35.383,
+        "vol_ann_pct": 16.053,
+        "mdd_pct": -9.398,
+        "sharpe": -2.639,
+        "win_rate": 0.3878
+      },
+      "excess": {
+        "days": 923,
+        "ann_excess_pct": -1.172,
+        "cum_excess_pct": -4.292,
+        "te_ann_pct": 8.071,
+        "t": -0.28,
+        "info_ratio": -0.145
+      },
+      "excess_gross_ann_pct": 5.911,
+      "excess_by_year": {
+        "2023": {
+          "days": 240,
+          "ann_excess_pct": 9.297,
+          "cum_excess_pct": 8.855,
+          "te_ann_pct": 6.145,
+          "t": 1.48,
+          "info_ratio": 1.513
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": -23.002,
+          "cum_excess_pct": -22.089,
+          "te_ann_pct": 7.289,
+          "t": -3.09,
+          "info_ratio": -3.156
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": 9.619,
+          "cum_excess_pct": 9.275,
+          "te_ann_pct": 9.303,
+          "t": 1.02,
+          "info_ratio": 1.034
+        },
+        "2026": {
+          "days": 198,
+          "ann_excess_pct": -0.423,
+          "cum_excess_pct": -0.333,
+          "te_ann_pct": 9.183,
+          "t": -0.04,
+          "info_ratio": -0.046
+        }
+      },
+      "excess_is": {
+        "days": 482,
+        "ann_excess_pct": -6.919,
+        "cum_excess_pct": -13.234,
+        "te_ann_pct": 6.813,
+        "t": -1.4,
+        "info_ratio": -1.016
+      },
+      "excess_oos": {
+        "days": 441,
+        "ann_excess_pct": 5.11,
+        "cum_excess_pct": 8.943,
+        "te_ann_pct": 9.244,
+        "t": 0.73,
+        "info_ratio": 0.553
+      },
+      "excess_bear_2026": {
+        "days": 49,
+        "ann_excess_pct": -5.959,
+        "cum_excess_pct": -1.159,
+        "te_ann_pct": 5.803,
+        "t": -0.45,
+        "info_ratio": -1.027
+      }
+    }
+  },
+  "exposure": [
+    {
+      "avg_baseline_holdings": 20.0,
+      "avg_triggered_in_baseline": 3.35,
+      "avg_triggered_pct": 16.757,
+      "max_triggered": 17,
+      "periods": 185
+    }
+  ],
+  "gates": {
+    "PIT": {
+      "pass": true,
+      "negative_shifts": [],
+      "signal_pit": "LX20 因子复用 reverse_avoid_test → book_batch_test（已过 PIT 截断不变性/无负 lag 单测）",
+      "weights_pit": "权重只使用决策日 T 的 window[T]（过去 N 日触发状态）与 T 日收盘市值/过滤信息"
+    },
+    "OOS": {
+      "IS": {
+        "days": 482,
+        "ann_excess_pct": -0.523,
+        "cum_excess_pct": -1.0,
+        "te_ann_pct": 1.938,
+        "t": -0.37,
+        "info_ratio": -0.27
+      },
+      "OOS": {
+        "days": 441,
+        "ann_excess_pct": -0.628,
+        "cum_excess_pct": -1.099,
+        "te_ann_pct": 2.457,
+        "t": -0.34,
+        "info_ratio": -0.256
+      },
+      "oos_excess_positive": false,
+      "oos_t_ge_2": false,
+      "pass": false
+    },
+    "YEARLY": {
+      "positive_years": 1,
+      "n_years": 4,
+      "pass": false
+    },
+    "COST": {
+      "rows": [
+        {
+          "cost_bp_oneway": 10,
+          "baseline_ann_pct": 14.069,
+          "variant_ann_pct": 15.027,
+          "excess_ann_pct": 0.897,
+          "te_ann_pct": 2.161,
+          "t": 0.79,
+          "info_ratio": 0.415
+        },
+        {
+          "cost_bp_oneway": 20,
+          "baseline_ann_pct": 13.678,
+          "variant_ann_pct": 13.795,
+          "excess_ann_pct": 0.162,
+          "te_ann_pct": 2.178,
+          "t": 0.14,
+          "info_ratio": 0.074
+        },
+        {
+          "cost_bp_oneway": 30,
+          "baseline_ann_pct": 13.288,
+          "variant_ann_pct": 12.575,
+          "excess_ann_pct": -0.573,
+          "te_ann_pct": 2.2,
+          "t": -0.5,
+          "info_ratio": -0.26
+        },
+        {
+          "cost_bp_oneway": 50,
+          "baseline_ann_pct": 12.513,
+          "variant_ann_pct": 10.173,
+          "excess_ann_pct": -2.043,
+          "te_ann_pct": 2.261,
+          "t": -1.73,
+          "info_ratio": -0.903
+        }
+      ],
+      "cost_30bp_excess_pct": -0.573,
+      "cost_50bp_excess_pct": -2.043,
+      "pass": false
+    },
+    "CAPACITY": {
+      "participation": 0.1,
+      "aum_cap_yi": 74.47,
+      "aum_cap_p5_yi": 18.45,
+      "overweight_positions": 620,
+      "median_extra_weight_pct": 3.0,
+      "median_adv20_yi": 20.045,
+      "assumption": "单票单日交易额 ≤ 10%×20日日均成交额；AUM 上限取逐(调仓日,股票)估计中位数",
+      "min_aum_yi": 10.0,
+      "pass": true
+    },
+    "hypothesis_pass": false
+  },
+  "registry_entry": {
+    "strategy_id": "S05_LX20_OVERWEIGHT",
+    "library_slot": "S05",
+    "validation_stage": "reverse_hypothesis_with_S01",
+    "version": "0.1.0-wave6",
+    "hypothesis": "在 S01 大市值 top20 组合内，LX20 信号股不是应规避而是应超配（反向于 wave3/wave4 的全市场规避口径）",
+    "baseline": "S01（s05_overlay_test 复刻 portfolio_build.build_baseline，wave5 已 3/3 对齐）",
+    "signal": "LX20 lx20_three_absolutes，回溯 N=5 日（reverse_avoid_test 复用）",
+    "treatment": "信号股权重乘子 m=2.0（或信号股占权 k）后归一化，其余持仓等权",
+    "primary_variant": "M2",
+    "rebalance": "周频（5 交易日）",
+    "execution": "T 日收盘决策 → T+1 收盘执行（涨停/停牌不可买→现金）",
+    "metrics": {
+      "baseline": {
+        "days": 923,
+        "ann_ret_pct": 13.288,
+        "vol_ann_pct": 14.323,
+        "mdd_pct": -14.697,
+        "sharpe": 0.943,
+        "win_rate": 0.5222,
+        "avg_turnover_pct": 3.405,
+        "ann_cost_pct": 1.03,
+        "avg_holdings": 19.9,
+        "avg_cash_pct": 0.378,
+        "rebalances": 185
+      },
+      "variant": {
+        "days": 923,
+        "ann_ret_pct": 12.575,
+        "vol_ann_pct": 14.731,
+        "mdd_pct": -14.52,
+        "sharpe": 0.878,
+        "win_rate": 0.52,
+        "avg_turnover_pct": 10.68,
+        "ann_cost_pct": 3.23,
+        "avg_holdings": 19.9,
+        "avg_cash_pct": 0.384,
+        "rebalances": 185
+      },
+      "excess": {
+        "days": 923,
+        "ann_excess_pct": -0.573,
+        "cum_excess_pct": -2.098,
+        "te_ann_pct": 2.2,
+        "t": -0.5,
+        "info_ratio": -0.26
+      },
+      "excess_gross_ann_pct": 1.627,
+      "excess_is": {
+        "days": 482,
+        "ann_excess_pct": -0.523,
+        "cum_excess_pct": -1.0,
+        "te_ann_pct": 1.938,
+        "t": -0.37,
+        "info_ratio": -0.27
+      },
+      "excess_oos": {
+        "days": 441,
+        "ann_excess_pct": -0.628,
+        "cum_excess_pct": -1.099,
+        "te_ann_pct": 2.457,
+        "t": -0.34,
+        "info_ratio": -0.256
+      },
+      "excess_by_year": {
+        "2023": {
+          "days": 240,
+          "ann_excess_pct": 2.861,
+          "cum_excess_pct": 2.725,
+          "te_ann_pct": 2.122,
+          "t": 1.32,
+          "info_ratio": 1.348
+        },
+        "2024": {
+          "days": 242,
+          "ann_excess_pct": -3.878,
+          "cum_excess_pct": -3.724,
+          "te_ann_pct": 1.716,
+          "t": -2.21,
+          "info_ratio": -2.26
+        },
+        "2025": {
+          "days": 243,
+          "ann_excess_pct": -0.07,
+          "cum_excess_pct": -0.067,
+          "te_ann_pct": 2.208,
+          "t": -0.03,
+          "info_ratio": -0.032
+        },
+        "2026": {
+          "days": 198,
+          "ann_excess_pct": -1.313,
+          "cum_excess_pct": -1.032,
+          "te_ann_pct": 2.737,
+          "t": -0.43,
+          "info_ratio": -0.48
+        }
+      },
+      "bear_2026": {
+        "days": 49,
+        "ann_excess_pct": -3.887,
+        "cum_excess_pct": -0.756,
+        "te_ann_pct": 2.671,
+        "t": -0.64,
+        "info_ratio": -1.455
+      }
+    },
+    "gates": {
+      "PIT": true,
+      "OOS": false,
+      "YEARLY": "1/4",
+      "COST": false,
+      "CAPACITY": true
+    },
+    "validation_result": "REVERSE_HYPOTHESIS_NOT_PASS",
+    "aum_cap_yi": 74.47,
+    "data_snooping_warning": "反向假设发现于 wave5 同一数据 → 本验证的 OOS 不是真正样本外；即使通过，也只能「进入影子盘只读跟踪（不配资金）」，用 2026-11 之后的真实前瞻数据复核。",
+    "shadow_portfolio_recommendation": "**不建议进入影子盘**：四关未全部通过，反向假设证据不足。",
+    "missing_before_shadow": [
+      "真实样本外验证（2026-11 之后影子盘前瞻数据，至少 3~6 个月）",
+      "数据窥探校正：多重检验/持有期重叠修正（本文件已用日频 t+block bootstrap 但未做多重检验校正）",
+      "反向假设与 S02 alpha 排序的叠加（谁先谁后、是否重复暴露）",
+      "容量/滑点：当前按 10% 参与率静态 ADV 估算，需实盘标定",
+      "风控：超配集中度上限、单票上限（超配后信号股权重可能 >5% 上限）",
+      "调仓频率敏感性（周频 vs 月频 vs 事件驱动）"
+    ],
+    "notes": [
+      "反向假设来自 wave5 同一份数据（S01 内降配负超额）→ 存在**数据窥探**；IS/OOS 划分只是时间切分，OOS 2025-26 并非真正独立样本外，结论必须经影子盘只读跟踪验证。",
+      "信号为 book_batch_test 的 LX20 简化单形态代理（倍量不穿+突破倍量柱实顶），非原书完整三绝口径。",
+      "S01 基线过滤中的 ST/上市日期/行业用 stock_basic 当前静态信息（与 build_baseline 同源，轻微后验）。",
+      "周频调仓、T+1 收盘执行、涨停(≥9.5%)/停牌不可买→现金；持有期停牌/退市收益按 0；首期成本单边 30bp。",
+      "容量为静态 ADV 假设（10% 参与率），未建模动态冲击成本；AUM 上限取中位数。",
+      "A 股不可做空：反向研究只体现为「超配/低配」相对权重变化，不对应独立空头收益。"
+    ]
+  },
+  "conclusions": {
+    "variants": [
+      {
+        "name": "M1.5",
+        "multiplier": 1.5,
+        "share": null,
+        "ann_ret_pct": 12.865,
+        "ann_excess_pct": -0.347,
+        "gross_ann_excess_pct": 0.864,
+        "te_ann_pct": 1.203,
+        "t": -0.55,
+        "ir": -0.289,
+        "mdd_pct": -14.627,
+        "by_year_excess": {
+          "2023": 1.515,
+          "2024": -2.092,
+          "2025": -0.109,
+          "2026": -0.764
+        },
+        "is_excess_pct": -0.296,
+        "oos_excess_pct": -0.403,
+        "oos_t": -0.4,
+        "bear_2026_excess_pct": -2.175
+      },
+      {
+        "name": "M2",
+        "multiplier": 2.0,
+        "share": null,
+        "ann_ret_pct": 12.575,
+        "ann_excess_pct": -0.573,
+        "gross_ann_excess_pct": 1.627,
+        "te_ann_pct": 2.2,
+        "t": -0.5,
+        "ir": -0.26,
+        "mdd_pct": -14.52,
+        "by_year_excess": {
+          "2023": 2.861,
+          "2024": -3.878,
+          "2025": -0.07,
+          "2026": -1.313
+        },
+        "is_excess_pct": -0.523,
+        "oos_excess_pct": -0.628,
+        "oos_t": -0.34,
+        "bear_2026_excess_pct": -3.887
+      },
+      {
+        "name": "M3",
+        "multiplier": 3.0,
+        "share": null,
+        "ann_ret_pct": 12.214,
+        "ann_excess_pct": -0.824,
+        "gross_ann_excess_pct": 2.921,
+        "te_ann_pct": 3.791,
+        "t": -0.42,
+        "ir": -0.217,
+        "mdd_pct": -14.78,
+        "by_year_excess": {
+          "2023": 5.129,
+          "2024": -6.84,
+          "2025": 0.26,
+          "2026": -2.017
+        },
+        "is_excess_pct": -0.88,
+        "oos_excess_pct": -0.762,
+        "oos_t": -0.24,
+        "bear_2026_excess_pct": -6.394
+      },
+      {
+        "name": "K30",
+        "multiplier": null,
+        "share": 0.3,
+        "ann_ret_pct": 11.713,
+        "ann_excess_pct": -1.313,
+        "gross_ann_excess_pct": 2.6,
+        "te_ann_pct": 4.118,
+        "t": -0.61,
+        "ir": -0.319,
+        "mdd_pct": -15.233,
+        "by_year_excess": {
+          "2023": 2.733,
+          "2024": -13.322,
+          "2025": 5.49,
+          "2026": 0.109
+        },
+        "is_excess_pct": -5.327,
+        "oos_excess_pct": 3.074,
+        "oos_t": 0.89,
+        "bear_2026_excess_pct": -1.657
+      },
+      {
+        "name": "K50",
+        "multiplier": null,
+        "share": 0.5,
+        "ann_ret_pct": 11.54,
+        "ann_excess_pct": -1.172,
+        "gross_ann_excess_pct": 5.911,
+        "te_ann_pct": 8.071,
+        "t": -0.28,
+        "ir": -0.145,
+        "mdd_pct": -17.565,
+        "by_year_excess": {
+          "2023": 9.297,
+          "2024": -23.002,
+          "2025": 9.619,
+          "2026": -0.423
+        },
+        "is_excess_pct": -6.919,
+        "oos_excess_pct": 5.11,
+        "oos_t": 0.73,
+        "bear_2026_excess_pct": -5.959
+      }
+    ],
+    "best_variant": {
+      "name": "M1.5",
+      "multiplier": 1.5,
+      "share": null,
+      "ann_ret_pct": 12.865,
+      "ann_excess_pct": -0.347,
+      "gross_ann_excess_pct": 0.864,
+      "te_ann_pct": 1.203,
+      "t": -0.55,
+      "ir": -0.289,
+      "mdd_pct": -14.627,
+      "by_year_excess": {
+        "2023": 1.515,
+        "2024": -2.092,
+        "2025": -0.109,
+        "2026": -0.764
+      },
+      "is_excess_pct": -0.296,
+      "oos_excess_pct": -0.403,
+      "oos_t": -0.4,
+      "bear_2026_excess_pct": -2.175
+    },
+    "primary_variant": "M2",
+    "hypothesis_pass": false,
+    "gates_summary": {
+      "PIT": true,
+      "OOS": false,
+      "YEARLY": false,
+      "COST": false,
+      "CAPACITY": true
+    },
+    "bullets": [
+      "基线（S01 大市值 top20 等权，周频、T+1 收盘、30bp）年化 13.29%、波动 14.32%、MDD -14.70%、Sharpe 0.94、换手 3.40%/次。",
+      "反向超配假设主口径 M2（m=2.0）年化 12.57%，净超额 -0.57%、毛超额（扣成本前）1.63%、TE 2.20%、IR -0.26、t=-0.50、MDD -14.52（基线 -14.70%）；换手 10.68%/次、成本 3.23%/年（基线 1.03%/年）→ 超配提高换手，成本吃掉大部分毛超额。",
+      "全部超配档（相对基线）：M1.5(m=1.5/k=—) 净超额 -0.35%/毛超额 0.86%（OOS -0.40%/t=-0.40）；M2(m=2.0/k=—) 净超额 -0.57%/毛超额 1.63%（OOS -0.63%/t=-0.34）；M3(m=3.0/k=—) 净超额 -0.82%/毛超额 2.92%（OOS -0.76%/t=-0.24）；K30(m=—/k=0.3) 净超额 -1.31%/毛超额 2.60%（OOS 3.07%/t=0.89）；K50(m=—/k=0.5) 净超额 -1.17%/毛超额 5.91%（OOS 5.11%/t=0.73）。",
+      "四关结果：PIT=PASS；OOS超额=-0.63%/t=-0.34(FAIL)；逐年正=1/4(FAIL)；成本30bp超额=-0.57%/50bp=-2.04%(FAIL)；容量AUM上限=74.47亿(PASS)。",
+      "结论：**反向（超配）假设未成立**（四关未全部通过）→ 不进 S05 validation/影子盘。 原因：毛超额（1.63%）为正但换手成本（3.23%/年 vs 基线 1.03%/年）吃掉后净超额为负；OOS 超额 -0.63%（t=-0.34）未达 t≥2，逐年正 1/4 未达 3/4。",
+      "机制复核：wave5 的「降配负超额」主要是**换手成本 + 组合再分配**效应（降配越深成本越高、同时把权重推向当时更强的非信号持仓），并非「信号股在大市值内显著跑赢」——反向超配的毛超额仅约 +1.6%、且成本更高，净超额为负。**S05 的规避/超配两个方向均不适用于 S01。**"
+    ]
+  }
+}
