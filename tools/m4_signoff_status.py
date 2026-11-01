@@ -362,9 +362,8 @@ def main(argv=None):
                         help="approval JSONL（默认 agent_platform/data/approvals.jsonl）")
     parser.add_argument("--config", default=str(DEFAULT_CONFIG),
                         help="signer 角色映射（默认 agent_platform/config/approval_signers.json）")
-    parser.add_argument("--required", default=",".join(DEFAULT_REQUIRED),
-                        help="要求签角色（逗号分隔，默认 QA1,GUANYU,VERIFY1,ARCH1；"
-                             "A0=监督签不计入默认四签）")
+    parser.add_argument("--required", default=None,
+                        help="要求签角色（逗号分隔；默认按 approval_signers.json 的 m4_policy；旧四签=QA1,GUANYU,VERIFY1,ARCH1）")
     parser.add_argument("--evidence-root", default=None,
                         help="只在指定目录下找证据（默认先仓根再平台根）")
     parser.add_argument("--report-dir", default=str(DEFAULT_REPORT_DIR),
@@ -383,17 +382,22 @@ def main(argv=None):
         date.fromisoformat(str(run_date))
     except ValueError:
         parser.error("--date 需 YYYY-MM-DD 格式（如 2026-10-31）")
-    required = [x.strip().upper()
-                for x in str(args.required or "").replace("，", ",").split(",")
-                if x.strip()]
+    policy = AC.load_m4_policy(args.config)
+    if args.required is None:
+        required = list(policy.get("required") or DEFAULT_REQUIRED)
+    else:
+        required = [x.strip().upper()
+                    for x in str(args.required or "").replace("，", ",").split(",")
+                    if x.strip()]
     if not required:
-        parser.error("--required 不能为空（如 QA1,GUANYU,VERIFY1,ARCH1）")
+        parser.error("--required 不能为空（如 A0 或 QA1,GUANYU,VERIFY1,ARCH1）")
     roots = ([Path(args.evidence_root)]
              if args.evidence_root else default_evidence_roots())
     try:
         report = build_report(args.task.strip(), required, args.ledger,
                               args.config, roots, report_dir=args.report_dir,
                               run_date=run_date)
+        report["policy"] = dict(policy)
         # 2026-11-01 K-ORG-20261101-M4SIGNOFF：--require-complete 硬门（复用 AC 判定）；
         # 默认只出报告（hard_gate.ok 仅供参考，不阻断）。
         signoff_ok, signoff_reasons = AC.signoff_gate(
@@ -408,7 +412,8 @@ def main(argv=None):
             "signed_count": report["signed_count"],
             "required_count": len(report["required"]),
             "reasons": gate_reasons,
-            "supervisor": AC.SUPERVISOR_SIGNER,
+            "supervisor": policy.get("owner") or AC.SUPERVISOR_SIGNER,
+            "policy_mode": policy.get("mode"),
         }
         if not args.no_write:
             _write_json_atomic(report["report_path"], report)

@@ -256,3 +256,32 @@ def test_annotated_pilot_clicks_do_not_count_in_m4(tmp_path):
     assert last["signoff_state"] == "incomplete"
     assert last["approved"] is False
     assert "QA1" in last["signoff"]["missing_signers"]
+
+
+# ----------------------------------------------------------------------
+# 2026-11-01 老田拍板 B：owner_acceptance policy loader
+# ----------------------------------------------------------------------
+def test_load_m4_policy_owner_acceptance(tmp_path):
+    cfg = tmp_path / "approval_signers.json"
+    cfg.write_text(json.dumps({
+        "map": {"ou_owner": "A0"},
+        "m4_policy": {"mode": "owner_acceptance", "owner": "A0",
+                      "advisory_roles": ["TIANFENG", "ZHUGE", "ZHAOYUN", "HUANGZHONG", "GUANYU"]},
+    }, ensure_ascii=False), encoding="utf-8")
+    pol = AC.load_m4_policy(cfg)
+    assert pol["mode"] == "owner_acceptance"
+    assert pol["required"] == ["A0"]
+    assert pol["advisory_roles"] == ["TIANFENG", "ZHUGE", "ZHAOYUN", "HUANGZHONG", "GUANYU"]
+
+    rows = _rows("ou_owner")
+    r = AC.evaluate_signoff(rows, "M4", required_signers=pol["required"],
+                            role_of={"ou_owner": "A0"})
+    assert r["state"] == "complete" and r["required_signers"] == ["A0"]
+
+
+def test_load_m4_policy_bad_config_falls_back_four(tmp_path):
+    cfg = tmp_path / "bad.json"
+    cfg.write_text("{oops", encoding="utf-8")
+    pol = AC.load_m4_policy(cfg)
+    assert pol["mode"] == "four_sign"
+    assert pol["required"] == list(AC.REQUIRED_SIGNERS)

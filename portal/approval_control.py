@@ -48,6 +48,45 @@ TAGS = {"approval:approve": "approve", "approval:reject": "reject",
 REQUIRED_SIGNERS = ("QA1", "GUANYU", "VERIFY1", "ARCH1")
 # 监督签（不计入默认四签；仅用于报告/口径说明，不参与 complete 判定）。
 SUPERVISOR_SIGNER = "A0"
+# 2026-11-01 老田拍板 B：M4 验收 = owner(A0) 单签 + 五角色 AI 会诊 advisory。
+# 旧四签口径保留在 REQUIRED_SIGNERS 供历史/兼容；M4 工具按配置 m4_policy.mode 选择。
+M4_OWNER_SIGNER = "A0"
+M4_ADVISORY_ROLES = ("TIANFENG", "ZHUGE", "ZHAOYUN", "HUANGZHONG", "GUANYU")
+M4_CONFIG_PATH = ROOT / "agent_platform" / "config" / "approval_signers.json"
+
+
+def load_m4_policy(config_path=None):
+    """只读 m4_policy：返回 {mode, required, owner, advisory_roles, source}。
+
+    缺失/坏配置 → 回退旧四签（fail-safe，不把配置坏当 owner 单签）。
+    """
+    path = Path(config_path or M4_CONFIG_PATH)
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError, TypeError):
+        doc = {}
+    policy = doc.get("m4_policy") if isinstance(doc, dict) else None
+    if not isinstance(policy, dict):
+        policy = {}
+    mode = str(policy.get("mode") or "four_sign").strip().lower()
+    owner = str(policy.get("owner") or M4_OWNER_SIGNER).strip().upper() or M4_OWNER_SIGNER
+    advisory = policy.get("advisory_roles")
+    if not isinstance(advisory, list):
+        advisory = list(M4_ADVISORY_ROLES)
+    if mode == "owner_acceptance":
+        required = [owner]
+    else:
+        required = list(REQUIRED_SIGNERS)
+    return {
+        "mode": mode,
+        "required": required,
+        "owner": owner,
+        "advisory_roles": [str(x).strip().upper() for x in advisory if str(x).strip()],
+        "source": str(path),
+        "note": str(policy.get("note") or ""),
+    }
+
+
 # 兼容旧名（2026-10-31 WO-L4-M4-HARDEN 的三方灰度机制）。
 THREE_PARTY_ROLES = ("QA1", "GUANYU", "VERIFY1")
 MIN_THREE_PARTY_SIGNERS = 3

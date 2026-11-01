@@ -171,7 +171,7 @@ def test_cli_human_output(tmp_path, capsys):
 def test_default_config_is_repo_signers_file():
     assert R.DEFAULT_CONFIG == ROOT / "agent_platform" / "config" / "approval_signers.json"
     assert R.DEFAULT_CONFIG.is_file()
-    assert R.load_signers() == {}        # 仓内 pilot 配置为空 map（不伪造签字）
+    assert R.load_signers() == {"ou_50a95455c7dffec1090ade400886d0d4": "A0"}  # 2026-11-01 B：仅 owner 映射
 
 
 def test_bom_config_and_ledger_tolerated(tmp_path):
@@ -215,3 +215,18 @@ def test_require_complete_cli_gate(tmp_path, capsys):
     rc3 = R.main(["M4", "--ledger", str(ledger2), "--config", str(cfg)])
     capsys.readouterr()
     assert rc3 == 0, "默认报告模式不得误阻断"
+
+
+# 2026-11-01 老田拍板 B：owner_acceptance
+def test_owner_acceptance_policy(tmp_path):
+    cfg = _write_cfg(tmp_path, {"ou_owner": "A0"}, raw=json.dumps({
+        "map": {"ou_owner": "A0"},
+        "m4_policy": {"mode": "owner_acceptance", "owner": "A0",
+                      "advisory_roles": ["TIANFENG", "ZHUGE", "ZHAOYUN", "HUANGZHONG", "GUANYU"]},
+    }, ensure_ascii=False))
+    ledger = _write_ledger(tmp_path, _rows("ou_owner"))
+    out = R.rollup("M4", ledger=ledger, config=cfg)
+    assert out["policy"]["mode"] == "owner_acceptance"
+    assert out["required"] == ["A0"]
+    assert out["state"] == "complete" and out["complete"] is True
+    assert out["signed"] == ["A0"]

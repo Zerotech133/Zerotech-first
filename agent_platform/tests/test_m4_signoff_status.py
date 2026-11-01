@@ -421,3 +421,25 @@ def test_signoff_gate_reuse_semantics():
                 "signed_roles": ["QA1", "GUANYU", "VERIFY1", "ARCH1"],
                 "missing_signers": []}
     assert mod.AC.signoff_gate(complete) == (True, [])
+
+
+# 2026-11-01 老田拍板 B：owner_acceptance
+def test_owner_acceptance_complete(tmp_path, capsys):
+    evidence = _write_evidence(tmp_path / "evidence")
+    ledger = _write_ledger(tmp_path / "approvals.jsonl", [
+        _approval("ou_owner", "2026-11-01T10:00:00")])
+    cfg = tmp_path / "approval_signers.json"
+    cfg.write_text(json.dumps({
+        "map": {"ou_owner": "A0"},
+        "m4_policy": {"mode": "owner_acceptance", "owner": "A0",
+                      "advisory_roles": ["TIANFENG", "ZHUGE", "ZHAOYUN", "HUANGZHONG", "GUANYU"]},
+    }, ensure_ascii=False), encoding="utf-8")
+    rc = mod.main(["--ledger", str(ledger), "--config", str(cfg),
+                   "--evidence-root", str(evidence), "--task", TASK,
+                   "--report-dir", str(tmp_path / "reports"), "--json"])
+    out = capsys.readouterr().out
+    report = json.loads(out)
+    assert rc == 0
+    assert report["policy"]["mode"] == "owner_acceptance"
+    assert report["required"] == ["A0"]
+    assert report["state"] == "complete" and report["complete"] is True

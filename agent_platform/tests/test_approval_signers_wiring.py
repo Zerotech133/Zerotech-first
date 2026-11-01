@@ -98,13 +98,17 @@ def test_load_signers_cache_returns_copy(tmp_path, monkeypatch):
     assert "injected" not in WS._load_approval_signers(str(p))
 
 
-def test_real_config_exists_and_map_is_empty():
-    """真实配置存在且为**空 map**：pilot 未配置 → 谁都不认识（不伪造签字）。"""
+def test_real_config_exists_policy_b_owner_only():
+    """2026-11-01 老田拍板 B：真实配置只映射 A0 owner，m4_policy=owner_acceptance。"""
     assert REAL_CONFIG.is_file()
     doc = json.loads(REAL_CONFIG.read_text(encoding="utf-8"))
-    assert doc["map"] == {}
+    assert doc["map"] == {"ou_50a95455c7dffec1090ade400886d0d4": "A0"}
+    assert doc["m4_policy"]["mode"] == "owner_acceptance"
+    assert doc["m4_policy"]["owner"] == "A0"
+    assert "TIANFENG" in doc["m4_policy"]["advisory_roles"]
     assert str(doc.get("note") or "").strip()
-    assert WS._load_approval_signers(str(REAL_CONFIG), use_cache=False) == {}
+    assert WS._load_approval_signers(str(REAL_CONFIG), use_cache=False) == {
+        "ou_50a95455c7dffec1090ade400886d0d4": "A0"}
 
 
 # ----------------------------------------------------------------------

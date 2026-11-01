@@ -81,7 +81,9 @@ def rollup(task, ledger=None, config=None):
     ledger = str(ledger or AC.LEDGER)
     config = str(config or DEFAULT_CONFIG)
     role_of = load_signers(config)
+    policy = AC.load_m4_policy(config)
     signoff = AC.evaluate_signoff(_read_jsonl(ledger), task,
+                                  required_signers=policy.get("required"),
                                   role_of=role_of or None)
     return {
         "task": task,
@@ -96,6 +98,7 @@ def rollup(task, ledger=None, config=None):
         "required": list(signoff.get("required_signers") or []),
         "signed_count": signoff.get("distinct_signers", 0),
         "reason": signoff.get("reason") or "",
+        "policy": dict(policy),
     }
 
 
@@ -125,7 +128,7 @@ def main(argv=None):
             print("[require-complete] BLOCK：%s" % "；".join(reasons),
                   file=sys.stderr)
             return 1
-        print("[require-complete] OK：四签齐（signed=%s）"
+        print("[require-complete] OK：签字齐（signed=%s）"
               % ",".join(data["signed"]))
     return 0
 
