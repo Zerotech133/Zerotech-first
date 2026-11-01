@@ -1,10 +1,10 @@
 ﻿# zhice-os-v2 启动/停止/守护脚本（集成到 C:\项目\老田的AI助手）
 # 用法:
-#   .\zhice.ps1 start    # 数据库容器 + API(8102) + 调度器 + 前端(5175) + Jev 四件套
+#   .\zhice.ps1 start    # 数据库容器 + 调度器 + Jev 四件套（L1: 8102/5175 已退役，-Legacy 才启）
 #   .\zhice.ps1 stop     # 全部停止（先优雅后强杀）
 #   .\zhice.ps1 status   # 查看状态
 #   .\zhice.ps1 watchdog # 拉起缺失组件（配合计划任务每 5 分钟自愈，动作记录见 zhice-watchdog.log）
-param([Parameter(Position=0)][ValidateSet('start','stop','status','restart','watchdog')][string]$Action='status')
+param([Parameter(Position=0)][ValidateSet('start','stop','status','restart','watchdog')][string]$Action='status', [switch]$Legacy)
 
 $Code = 'C:\项目\zhice-os-v2-windows-20260920\code'
 $Py  = 'C:\项目\py312\python.exe'   # K-NEW2(2026-10-16)：嵌入式 3.12.10，替代失效 venv
@@ -166,14 +166,14 @@ switch ($Action) {
     $api = $procs | Where-Object { $_.CommandLine -match 'uvicorn' }
     $sch = $procs | Where-Object { $_.CommandLine -match 'scheduler' }
     $fe  = $procs | Where-Object { $_.CommandLine -match 'vite' }
-    "api     : $(if($api){"RUNNING pid=$($api.ProcessId)"}else{'STOPPED'})"
+    "api     : $(if($api){"RUNNING pid=$($api.ProcessId) (L1 违规)"}else{'RETIRED (L1)'})"
     "scheduler: $(if($sch){"RUNNING pid=$($sch.ProcessId)"}else{'STOPPED'})"
-    "frontend: $(if($fe){"RUNNING pid=$($fe.ProcessId)"}else{'STOPPED'})"
+    "frontend: $(if($fe){"RUNNING pid=$($fe.ProcessId) (L1 违规)"}else{'RETIRED (L1)'})"
     $gate  = $procs | Where-Object { $_.CommandLine -match 'jev_gate' }
     $card  = $procs | Where-Object { $_.CommandLine -match 'lark_card_handler' }
     "jev-gate: $(if($gate){"RUNNING pid=$($gate.ProcessId)"}else{'STOPPED'})"
     "card-handler: $(if($card){"RUNNING pid=$($card.ProcessId)"}else{'STOPPED'})"
-    try { "api-health: $((Invoke-WebRequest -UseBasicParsing http://localhost:8102/api/v1/health -TimeoutSec 3).StatusCode)" } catch { "api-health: N/A" }
+    if ($Legacy) { try { "api-health: $((Invoke-WebRequest -UseBasicParsing http://localhost:8102/api/v1/health -TimeoutSec 3).StatusCode)" } catch { "api-health: N/A" } } else { "api-health: N/A (8102 retired)" }
     schtasks /Query /TN "ZhiceWatchdog" *>$null
     "watchdog: $(if($LASTEXITCODE -eq 0){'计划任务已注册（每 5 分钟自愈）'}else{'未注册（schtasks 见 zhice.ps1 头注释）'})"
   }
@@ -181,10 +181,15 @@ switch ($Action) {
     if (-not (Ensure-Db)) { Write-Error 'zhice-db 未就绪'; exit 1 }
     'db      : OK (accepting connections)'
     Set-Location $Code
-    Start-Api
-    Start-Sleep 3
-    Start-Scheduler
-    Start-Frontend
+    if ($Legacy) {
+      Start-Api
+      Start-Sleep 3
+      Start-Scheduler
+      Start-Frontend
+    } else {
+      'L1 2026-11-02：8102/5175 已退役，跳过 API/前端启动（-Legacy 可恢复）'
+      Start-Scheduler
+    }
     # vite 新建配置文件偶发 EPERM（Windows 瞬锁，非残留锁）——启动后检测失败则清理重试
     Start-Sleep 10
     if (-not (Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -match 'vite' })) {
@@ -202,7 +207,7 @@ switch ($Action) {
     Start-Sleep 8
     & $PSCommandPath status
     "`n日志: $ApiLog / $SchedLog / $FeLog / $WatchdogLog"
-    "前端: http://localhost:5175"
+    if ($Legacy) { "前端: http://localhost:5175" } else { "前端: 已退役（/quant/ 经 8734）" }
   }
   'stop' {
     # 先尝试优雅关闭（WM_CLOSE，有窗口/可响应的进程能走清理逻辑），2s 后对残留强杀。
@@ -249,9 +254,13 @@ switch ($Action) {
         Add-Content $WatchdogLog "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] [degraded] scheduler 假死探测自身故障（db/psql 异常），本轮保守跳过判定"
       }
     }
-    if (-not (Get-Procs | Where-Object { $_.CommandLine -match 'uvicorn' }))  { Start-Api;        $fixed += 'api' }
+    if ($Legacy) {
+      if (-not (Get-Procs | Where-Object { $_.CommandLine -match 'uvicorn' }))  { Start-Api;        $fixed += 'api' }
+    }
     if (-not (Get-Procs | Where-Object { $_.CommandLine -match 'scheduler' })) { Start-Scheduler;  $fixed += 'scheduler' }
-    if (-not (Get-Procs | Where-Object { $_.CommandLine -match 'vite' }))      { Start-Frontend;   $fixed += 'frontend' }
+    if ($Legacy) {
+      if (-not (Get-Procs | Where-Object { $_.CommandLine -match 'vite' }))      { Start-Frontend;   $fixed += 'frontend' }
+    }
     if (Test-Path "$PSScriptRoot\jev-eval\jev-gate.env.ps1") {
       & "$PSScriptRoot\jev-eval\jev-gate.env.ps1"
       if ($env:JEV_API_KEY) {
