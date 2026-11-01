@@ -3750,5 +3750,29 @@
     "checklist": "research/reports/card_review_checklist_20261101.md",
     "doc": "docs/plans/2026-11-01_学习卡审核工作流.md",
     "note": "学习卡审核工作流：AE20+AV40=60 候选统一清单（19 主题/100% 可追溯）；decide 校验→dry-run 预览→--apply/--merge（备份+校验）；当前未 apply，等人工 decisions。"
+  },
+  "kb_qa_multi_default_20261101": {
+    "cli": {
+      "tool": "tools/kb_corpus/kb_qa.py",
+      "default_mode": "multi",
+      "fallback": "multi 失败自动回退 single（multi_fallback 标记）",
+      "params": "ask(question, topk=8, mode='multi')；CLI --mode/--k/--single；payload 暴露 mode/k/clusters/事实与推断标记"
+    },
+    "http": {
+      "module": "portal/api_kb_qa.py",
+      "wired": false,
+      "not_restarted": true,
+      "modes": [
+        "retrieval",
+        "single",
+        "multi"
+      ],
+      "http_default": "retrieval",
+      "generate_default": "multi",
+      "meta": "mode/k/clusters/llm_called；限流 retrieval60/single6/multi6；缓存键含 mode",
+      "gray": "①retrieval 只读 → ②小流量 multi（白名单）→ ③multi 生成默认；回滚 mode=single/retrieval（无需重启）"
+    },
+    "evidence": "wave17 AW A/B：single 33.3%→multi 80%（+46.7pp，McNemar p=0.000122，回退0，耗时1.03×）",
+    "note": "multi 已设为 kb_qa CLI 默认；HTTP 预接线支持 multi 灰度但 WIRED=False、8091 未注册未重启（8091 GET /api/kb/qa 实测 404）。"
   }
 }
