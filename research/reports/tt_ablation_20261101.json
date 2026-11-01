@@ -1,0 +1,182 @@
+{
+ "meta": {
+  "generated_at": "2026-11-01T21:55:23+08:00",
+  "window": "20190131 .. 20260930",
+  "top": 20,
+  "cost": "0.15%单边×换手",
+  "note": "TT 条件消融（研究）；RS=ret252 百分位；月频"
+ },
+ "full": {
+  "mode": "full",
+  "drop": "",
+  "cagr_pct": -17.04,
+  "mdd_pct": -90.15,
+  "excess_monthly_pct": -1.296,
+  "excess_t": -1.82,
+  "months": 93
+ },
+ "results": [
+  {
+   "mode": "full",
+   "drop": "",
+   "cagr_pct": -17.04,
+   "mdd_pct": -90.15,
+   "excess_monthly_pct": -1.296,
+   "excess_t": -1.82,
+   "months": 93
+  },
+  {
+   "mode": "empty",
+   "drop": "",
+   "cagr_pct": -8.53,
+   "mdd_pct": -83.29,
+   "excess_monthly_pct": -1.203,
+   "excess_t": -1.18,
+   "months": 93
+  },
+  {
+   "mode": "drop",
+   "drop": "C1_P>S150_S200",
+   "cagr_pct": -17.04,
+   "mdd_pct": -90.15,
+   "excess_monthly_pct": -1.296,
+   "excess_t": -1.82,
+   "months": 93
+  },
+  {
+   "mode": "drop",
+   "drop": "C2_S150>S200",
+   "cagr_pct": -16.14,
+   "mdd_pct": -89.31,
+   "excess_monthly_pct": -1.272,
+   "excess_t": -1.78,
+   "months": 93
+  },
+  {
+   "mode": "drop",
+   "drop": "C3_S200_rising",
+   "cagr_pct": -17.54,
+   "mdd_pct": -90.45,
+   "excess_monthly_pct": -1.344,
+   "excess_t": -1.87,
+   "months": 93
+  },
+  {
+   "mode": "drop",
+   "drop": "C4_S50>S150_S200",
+   "cagr_pct": -16.09,
+   "mdd_pct": -90.11,
+   "excess_monthly_pct": -1.202,
+   "excess_t": -1.76,
+   "months": 93
+  },
+  {
+   "mode": "drop",
+   "drop": "C5_P>S50",
+   "cagr_pct": -15.4,
+   "mdd_pct": -89.45,
+   "excess_monthly_pct": -1.259,
+   "excess_t": -1.73,
+   "months": 93
+  },
+  {
+   "mode": "drop",
+   "drop": "C6_above_low30",
+   "cagr_pct": -17.04,
+   "mdd_pct": -90.15,
+   "excess_monthly_pct": -1.335,
+   "excess_t": -1.85,
+   "months": 93
+  },
+  {
+   "mode": "drop",
+   "drop": "C7_within_high25",
+   "cagr_pct": -19.75,
+   "mdd_pct": -92.14,
+   "excess_monthly_pct": -1.509,
+   "excess_t": -2.13,
+   "months": 93
+  },
+  {
+   "mode": "drop",
+   "drop": "C8_RS70",
+   "cagr_pct": -17.04,
+   "mdd_pct": -90.15,
+   "excess_monthly_pct": -1.396,
+   "excess_t": -1.87,
+   "months": 93
+  },
+  {
+   "mode": "single",
+   "drop": "C1_P>S150_S200",
+   "cagr_pct": -12.77,
+   "mdd_pct": -88.97,
+   "excess_monthly_pct": -1.187,
+   "excess_t": -1.39,
+   "months": 93
+  },
+  {
+   "mode": "single",
+   "drop": "C2_S150>S200",
+   "cagr_pct": -9.12,
+   "mdd_pct": -84.33,
+   "excess_monthly_pct": -1.188,
+   "excess_t": -1.29,
+   "months": 93
+  },
+  {
+   "mode": "single",
+   "drop": "C3_S200_rising",
+   "cagr_pct": -8.47,
+   "mdd_pct": -82.91,
+   "excess_monthly_pct": -1.063,
+   "excess_t": -1.2,
+   "months": 93
+  },
+  {
+   "mode": "single",
+   "drop": "C4_S50>S150_S200",
+   "cagr_pct": -12.28,
+   "mdd_pct": -88.2,
+   "excess_monthly_pct": -1.394,
+   "excess_t": -1.6,
+   "months": 93
+  },
+  {
+   "mode": "single",
+   "drop": "C5_P>S50",
+   "cagr_pct": -17.42,
+   "mdd_pct": -90.29,
+   "excess_monthly_pct": -1.513,
+   "excess_t": -1.74,
+   "months": 93
+  },
+  {
+   "mode": "single",
+   "drop": "C6_above_low30",
+   "cagr_pct": -8.53,
+   "mdd_pct": -83.29,
+   "excess_monthly_pct": -1.023,
+   "excess_t": -1.22,
+   "months": 93
+  },
+  {
+   "mode": "single",
+   "drop": "C7_within_high25",
+   "cagr_pct": -14.04,
+   "mdd_pct": -88.35,
+   "excess_monthly_pct": -1.476,
+   "excess_t": -1.66,
+   "months": 93
+  },
+  {
+   "mode": "single",
+   "drop": "C8_RS70",
+   "cagr_pct": -8.53,
+   "mdd_pct": -83.29,
+   "excess_monthly_pct": -0.93,
+   "excess_t": -1.2,
+   "months": 93
+  }
+ ]
+}

@@ -1,0 +1,53 @@
+{
+ "meta": {
+  "generated_at": "2026-11-01T21:57:04+08:00",
+  "window": "20190131 .. 20260930",
+  "note": "基本面阈值证据（研究）；PIT=ann_date"
+ },
+ "factor_ic": {
+  "npy": {
+   "ic_mean": 0.0013,
+   "ic_t": 0.13,
+   "ic_pos_rate": 49.5,
+   "months": 93
+  },
+  "rev": {
+   "ic_mean": 0.0016,
+   "ic_t": 0.16,
+   "ic_pos_rate": 48.4,
+   "months": 93
+  },
+  "roe": {
+   "ic_mean": -0.0067,
+   "ic_t": -0.52,
+   "ic_pos_rate": 45.2,
+   "months": 93
+  }
+ },
+ "np_yoy_threshold_buckets": {
+  "0": {
+   "months": 93,
+   "avg_next_month_pct": 1.322
+  },
+  "10": {
+   "months": 93,
+   "avg_next_month_pct": 1.364
+  },
+  "15": {
+   "months": 93,
+   "avg_next_month_pct": 1.379
+  },
+  "20": {
+   "months": 93,
+   "avg_next_month_pct": 1.381
+  },
+  "25": {
+   "months": 93,
+   "avg_next_month_pct": 1.384
+  },
+  "30": {
+   "months": 93,
+   "avg_next_month_pct": 1.373
+  }
+ }
+}
