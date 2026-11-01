@@ -8,6 +8,7 @@
 <script src="/static/nav.js" defer></script>
 <script src="/static/shortscreen.js" defer></script>
 <link rel="stylesheet" href="/static/dev_legion_v2.css">
+<link rel="stylesheet" href="/static/os_light.css">
 </head>
 <body>
 <main class="wrap">
@@ -19,6 +20,7 @@
         <p class="lede">兵、仗、门、令：一屏看清 11 席、在制工单、质量门和需要曹操拍板的事。<span class="demo-tag">只读 · API v1</span></p>
       </div>
       <div class="head-actions">
+        <a class="btn" href="/hermes/" target="_blank" rel="noopener" title="Hermes 控制台 / 军团 IDE 扩展">Hermes 控制台 ↗</a>
         <a class="btn" href="/devops">工单总线 ↗</a>
         <a class="btn" href="/dev_legion.html">v1 作战屏</a>
         <a class="btn btn-primary" href="javascript:void(0)" id="btn-refresh">刷新数据</a>
@@ -106,7 +108,7 @@
     </aside>
   </div>
 
-  <footer class="page-foot"><span>数据源：GET /api/dev/legion（ADR-009 契约 v1）· 只读 · 不写库</span><span>边界：不自动派单 / 不自动合并 / 不绕过质量门</span></footer>
+  <footer class="page-foot"><span>数据源：GET /api/dev/legion（ADR-009 契约 v1）· 只读 · 不写库</span><span>底座：零界 + Hermes（军团 IDE 执行层）· 页面只读</span><span>边界：不自动派单 / 不自动合并 / 不绕过质量门</span></footer>
 </main>
 
 <div class="scrim" id="scrim" hidden></div>
@@ -119,7 +121,7 @@
     <h3>派工建议</h3><div class="assign-box" id="drawer-assign">—</div>
     <div class="drawer-note">派工/评审/合并必须走 devtask 与质量门；本页只读。</div>
   </div>
-  <div class="drawer-foot"><button class="btn" id="drawer-copy" type="button">复制席位卡</button><a class="btn btn-primary" href="/devops">去派工 ↗</a></div>
+  <div class="drawer-foot"><button class="btn" id="drawer-copy" type="button">复制席位卡</button><a class="btn btn-primary" href="/hermes/" target="_blank" rel="noopener" title="派工执行走 Hermes 的 legion-ide 扩展">去 Hermes 派工 ↗</a></div>
 </aside>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>

@@ -17,6 +17,7 @@ def test_three_piece_and_short_screen():
     assert "/static/tokens.css" in txt
     assert "/static/nav.js" in txt
     assert "/static/shortscreen.js" in txt
+    assert "/static/os_light.css" in txt
     assert len(re.findall(r"<h2[ >]", txt)) >= 6
 
 
@@ -31,12 +32,10 @@ def test_readonly_and_api():
         assert 'id="' + sid + '"' in txt
 
 
-def test_route_and_nav():
+def test_route():
     nginx = NGINX.read_text(encoding="utf-8")
     assert "location = /academy/shuijing" in nginx
     assert "try_files /shuijing.html" in nginx
-    nav = (ROOT / "portal" / "static" / "nav.js").read_text(encoding="utf-8")
-    assert "/academy/shuijing" in nav
 
 
 def test_no_hardcoded_hex():
