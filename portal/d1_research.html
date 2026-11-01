@@ -58,6 +58,23 @@ tr.detail td{padding:10px 12px}
 .note{color:var(--gray-5);font-size:11.5px;line-height:1.7}
 .empty{padding:26px;text-align:center;color:var(--gray-5)}
 @media(max-width:900px){.cards{grid-template-columns:repeat(3,1fr)}.cols{grid-template-columns:1fr}}
+.decbox{border-color:var(--color-warn,#d29922)}
+.dec-tier{font-weight:700}
+.dec-btn{border:1px solid var(--line);background:var(--gray-1);color:var(--ink);border-radius:7px;padding:4px 9px;font-size:11.5px;cursor:pointer;margin-top:5px}
+.dec-btn:hover{border-color:var(--link)}
+.modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:60;padding:14px}
+.modal-mask.open{display:flex}
+.modal{width:min(640px,100%);background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;max-height:90vh;overflow:auto}
+.modal h3{margin:0 0 4px;font-size:16px}
+.modal .sub2{color:var(--gray-5);font-size:11.5px;margin-bottom:10px;line-height:1.6}
+.modal label{display:block;color:var(--gray-5);font-size:11.5px;margin:9px 0 3px}
+.modal select,.modal input,.modal textarea{width:100%;box-sizing:border-box;background:var(--gray-1);border:1px solid var(--line);border-radius:7px;color:var(--ink);padding:7px 9px;font-size:12.5px}
+.modal textarea{min-height:72px;resize:vertical}
+.modal .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.modal .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.modal .actions button{border:1px solid var(--line);background:var(--gray-1);color:var(--ink);border-radius:7px;padding:7px 13px;font-size:12.5px;cursor:pointer}
+.modal .actions .primary{background:var(--color-up,#238636);border-color:var(--color-up,#238636);color:#fff}
+@media(max-width:640px){.modal .row2{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -83,11 +100,62 @@ tr.detail td{padding:10px 12px}
     <tbody id="rows"><tr><td colspan="9" class="empty">加载中…</td></tr></tbody>
   </table>
   <div class="note" style="margin-top:10px">点击行展开：T1/T2 多空、N1/F1、D1 rationale、<b>水平来源 / ATR / 支撑 / 阻力</b>、买点/止损/止盈与交棒状态。数据来自 ACAD1 池 + 当日池复盘 + D1 影子账。<br><b>水平来源口径：</b>技术推导=已研究票，止损/止盈/买点由 ATR(14)+20日支撑压力推导；旧规则=计划回退，非技术推导；未研究/待投研=pending，不展示技术推导止损止盈，避免误导。</div>
+  <div class="modal-mask" id="dec-mask">
+    <div class="modal">
+      <h3 id="dec-title">D1 正式裁决</h3>
+      <div class="sub2">五档枚举 + 置信度 + 理由；写入 d1_decisions.jsonl，仅 paper-only，不生成交易单。页面 D1 结论不等于正式裁决。</div>
+      <input type="hidden" id="dec-code"><input type="hidden" id="dec-name">
+      <div class="row2">
+        <div><label>五档裁决</label><select id="dec-tier">
+          <option value="STRONG_BUY">强烈买入</option><option value="BUY" selected>买入</option>
+          <option value="HOLD">持有/观察</option><option value="SELL">卖出</option>
+          <option value="STRONG_SELL">强烈卖出</option></select></div>
+        <div><label>置信度 0~1</label><input id="dec-conf" type="number" min="0" max="1" step="0.01" value="0.70"></div>
+      </div>
+      <label>裁决理由（≥10 字，可追溯）</label><textarea id="dec-rationale"></textarea>
+      <label>证据引用（逗号分隔）</label><input id="dec-evidence" value="">
+      <div class="actions"><button onclick="closeDec()">取消</button><button class="primary" onclick="submitDec()">写入正式裁决</button></div>
+    </div>
+  </div>
 </div>
 <script>
 const $=s=>document.querySelector(s);
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 let DATA={items:[],summary:{}};
+let DECISIONS={};
+const TIERS=[['STRONG_BUY','强烈买入'],['BUY','买入'],['HOLD','持有/观察'],['SELL','卖出'],['STRONG_SELL','强烈卖出']];
+function tierLabel(t){const m={STRONG_BUY:'强烈买入',BUY:'买入',HOLD:'持有/观察',SELL:'卖出',STRONG_SELL:'强烈卖出'};return m[t]||t||'—';}
+function openDec(code,name){
+  $('#dec-code').value=code; $('#dec-name').value=name||'';
+  $('#dec-title').textContent='D1 正式裁决 · '+code;
+  $('#dec-tier').value='BUY'; $('#dec-conf').value='0.70'; $('#dec-rationale').value='';
+  $('#dec-evidence').value='d1_research:'+code;
+  $('#dec-mask').classList.add('open');
+  $('#dec-rationale').focus();
+}
+function closeDec(){ $('#dec-mask').classList.remove('open'); }
+async function submitDec(){
+  const code=$('#dec-code').value, tier=$('#dec-tier').value;
+  const conf=Number($('#dec-conf').value); const rationale=$('#dec-rationale').value.trim();
+  const evidence=$('#dec-evidence').value.split(/[,，\n]/).map(x=>x.trim()).filter(Boolean);
+  if(!rationale || rationale.length<10){alert('裁决理由至少 10 字'); return;}
+  if(!(conf>=0&&conf<=1)){alert('置信度须在 0~1'); return;}
+  const body={code:code,name:$('#dec-name').value,market:(DATA.items.find(x=>x.code===code)||{}).market||'',
+              tier:tier,confidence:conf,rationale:rationale,evidence:evidence,
+              source:'d1_research',paper_only:true};
+  const headers={'Content-Type':'application/json'};
+  let r=await fetch('/api/d1/decision',{method:'POST',headers:headers,body:JSON.stringify(body)});
+  if(r.status===403){
+    const t=(prompt('局域网需要门户 token（PORTAL_API_TOKEN / C:/Temp/portal_api_token）')||'').trim();
+    if(!t){return;}
+    headers['X-Portal-Token']=t;
+    r=await fetch('/api/d1/decision',{method:'POST',headers:headers,body:JSON.stringify(body)});
+  }
+  const d=await r.json();
+  if(!d.ok){alert('写入失败：'+(d.error||'')+' '+(d.message||''));return;}
+  alert('已写入 D1 正式裁决：'+tierLabel(d.decision.tier)+'（'+d.decision.decision_id+'）');
+  closeDec(); await load();
+}
 function fm(v){return v==null?'—':Number(v).toFixed(2);}
 // 水平来源展示契约（WO-D1-LEVEL-UI-20261031）：技术推导水平只对已研究票可见；
 // pending/旧规则票只标注来源口径，不渲染技术推导止损/止盈/买点（防误导）。
@@ -139,6 +207,15 @@ function detail(x){
       : '<div class="note">'+esc(pend?'待投研（pending）：不展示由 ATR/支撑压力推导的止损、止盈与买点。':'旧规则回退：无 ATR/支撑压力研究数据，不展示技术推导水平。')+'</div>')+
     '<div class="mono">level_source='+esc(x.level_source||'—')+' · '+(pend?'pending':'done')+
     (x.level_note?' · '+esc(x.level_note):'')+'</div></div>';
+  const dec=DECISIONS[x.code];
+  const decHtml='<div class="box decbox" style="margin-top:8px"><b>D1 正式裁决</b>'+
+    (dec
+      ? '<div><span class="dec-tier">'+esc(tierLabel(dec.tier))+'</span> · 置信 '+esc(dec.confidence)+
+        ' · '+esc(dec.decided_at||'')+' · <span class="mono">'+esc(dec.decision_id||'')+'</span></div>'+
+        '<div class="mono">'+esc(dec.rationale||'')+'</div>'
+      : '<div class="note">未正式裁决：页面 D1 结论是研究展示，不等于正式 decision。</div>')+
+    '<button class="dec-btn" data-dec="'+esc(x.code)+'" data-name="'+esc(x.name||'')+'">'+
+    (dec?'更新正式裁决':'录入正式裁决')+'</button></div>';
   return '<div class="cols">'+
     '<div class="box bull"><b>多头（T1）</b><div>'+esc((x.bull||'—').slice(0,900))+'</div></div>'+
     '<div class="box bear"><b>空头（T2）</b><div>'+esc((x.bear||'—').slice(0,900))+'</div></div></div>'+
@@ -149,24 +226,30 @@ function detail(x){
     '<div class="mono">L1: '+esc(x.l1_basis||'—')+' · risk='+esc(x.risk_level||'—')+' · horizon='+esc(x.time_horizon||'—')+'</div></div>'+
     levelBox+
     '<div class="box" style="margin-top:8px"><b>建仓/交棒</b>'+build+
-    '<div class="mono">交棒：'+esc(h.to||'—')+' / '+esc(h.status||'—')+' '+esc(h.condition||h.note||'')+'</div></div>';
+    '<div class="mono">交棒：'+esc(h.to||'—')+' / '+esc(h.status||'—')+' '+esc(h.condition||h.note||'')+'</div></div>'+decHtml;
 }
 function render(){
   const fa=$('#f-action').value, ft=$('#f-tier').value, kw=$('#f-kw').value.trim();
   let items=(DATA.items||[]).filter(x=>(!fa||x.action===fa)&&(!ft||x.tier===ft)&&(!kw||x.code.includes(kw)||String(x.name).includes(kw)));
   $('#rows').innerHTML=items.length?items.map(row).join(''):'<tr><td colspan="9" class="empty">没有匹配的股票</td></tr>';
   document.querySelectorAll('tr.r').forEach(tr=>tr.addEventListener('click',()=>{const d=document.getElementById('d-'+tr.dataset.code); if(d) d.style.display=d.style.display==='table-row'?'none':'table-row';}));
+  document.querySelectorAll('.dec-btn').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();openDec(b.dataset.dec,b.dataset.name);}));
   const tm=DATA.team||{}; const group=(title,arr)=>'<div class="tg"><b>'+esc(title)+'</b><div class="who">'+(arr||[]).filter(Boolean).map(x=>esc(x.name||x.agent_id)+' <small>'+esc(x.agent_id)+'</small>').join('<br>')+'</div></div>';
   $('#team').innerHTML=group('D1 投研会 · 5席（主席）',[tm.chair].concat(tm.core||[]))+group('盯盘组',tm.watch||[])+group('交易组',tm.trading||[])+group('观察/接口',tm.observer||[]);
   const s=DATA.summary||{};
-  $('#cards').innerHTML=[['池内股票',s.total],['已研究',s.analyzed],['可买',s.can_buy],['盯盘触发',s.armed_watch],['回避',s.avoid],['待研究',s.pending_research]]
+  $('#cards').innerHTML=[['池内股票',s.total],['已研究',s.analyzed],['可买',s.can_buy],['盯盘触发',s.armed_watch],['回避',s.avoid],['待研究',s.pending_research],['D1 已裁决',Object.keys(DECISIONS).length]]
     .map(([k,v])=>'<div class="card"><b>'+esc(v==null?'—':v)+'</b><small>'+esc(k)+'</small></div>').join('');
   $('#msg').textContent=(DATA.date?('数据日 '+DATA.date+' · '):'')+(DATA.note||'');
 }
 async function load(){
   try{
     const r=await fetch('/api/d1/research',{cache:'no-store'}); const d=await r.json();
-    if(!d.ok) throw new Error(d.error||'读取失败'); DATA=d; render();
+    if(!d.ok) throw new Error(d.error||'读取失败');
+    try{
+      const dr=await fetch('/api/d1/decisions',{cache:'no-store'});
+      if(dr.ok){const dd=await dr.json(); DECISIONS=(dd&&dd.latest_by_code)||{};}
+    }catch(e){ DECISIONS={}; }
+    DATA=d; render();
   }catch(e){ $('#msg').textContent='加载失败：'+e.message; }
 }
 $('#refresh').addEventListener('click',load); ['#f-action','#f-tier','#f-kw'].forEach(s=>$(s).addEventListener('input',render));
