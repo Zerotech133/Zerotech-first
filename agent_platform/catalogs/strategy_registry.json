@@ -6873,5 +6873,17 @@
     "review": "research/reports/card_proposals_v4_20261102.md",
     "portal": "portal/static/card_proposals_v4.json",
     "note": "学习卡第三轮扩卡：21 主题 17/21 深度达标、缺口 4（评级/传媒/医药/汽车）；候选 24 张（可追溯 24/24、零重复、pending_review）；dry-run 124→148（未执行，待人工审核）。"
+  },
+  "closure_acceptance_20261102": {
+    "executed_at": "2026-11-02T03:01:03+08:00",
+    "verdict": "conditional_closure_accepted（知识库+问答+运维收口达成；2 项用户侧待办+3 项风险披露）",
+    "evidence": [
+      "8091 /api/kb/qa 200 v4/segment/retry",
+      "学习卡124张审计0问题",
+      "v3评测 P@5 0.802/NDCG 0.8549 在容差内",
+      "6 定时任务Ready",
+      "门禁全PASS"
+    ],
+    "doc": "deliverables/2026-11-02_收口验收单_v1.md"
   }
 }
