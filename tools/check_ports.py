@@ -336,7 +336,10 @@ WHITELIST = ("system", "svchost", "clash", "todesk", "editor_sdk",
              "deepseek",
              # 2026-10-25 K-ORG-20261025-CFWHITELIST：cloudflared.exe 隧道工具
              # 监听 20241/20242（快速隧道管理口），非我方服务；同 trae/codex 先例入豁免。
-             "cloudflared")
+             "cloudflared",
+             # 2026-11-01 第三方桌面安全软件 KuaiAnCore.exe 监听 7890；
+             # 非我方服务，登记为服务反而是错误事实；同 trae/codex/云梭先例入豁免。
+             "kuaiancore")
 # 2026-10-13 QA1-R2质检排查(K-ORG-029)：5283=SogouCloud.exe(搜狗输入法云)、
 # 8475=baidunetdiskhost.exe(百度网盘)——均为终端第三方软件，非平台栈，入豁免。
 # 2026-10-14 K-STOCK-394：17788=Trae CN.exe（IDE 自身，桌面第三方非平台栈），入豁免
