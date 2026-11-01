@@ -1,0 +1,614 @@
+{
+ "schema_version": 1,
+ "date": "20261101",
+ "generated_at": "2026-11-01T22:26:11+08:00",
+ "mode": "dry-run",
+ "apply": false,
+ "note": "本文件仅为 dry-run 预览；人工确认 decisions 后另行执行 --apply/--merge（当前未执行）",
+ "decisions_file": {
+  "path": "research/reports/card_review_decisions_suggested_round2_20261101.json",
+  "sha256": "2fe07b688f252669e5d0c64be8735db77a3343847136bd44af14bb1f62bd3c22"
+ },
+ "source": {
+  "path": "portal/static/card_review_data.json",
+  "sha256": "8883135a5bf78d7fbfb42a69cd1f2b0ef0e10aebb330f960fbb2d9c468b012b7",
+  "total": 100,
+  "precheck": {
+   "pass": 53,
+   "revise": 45,
+   "reject": 2,
+   "none": 0
+  },
+  "by_round": {
+   "first": 60,
+   "second": 40
+  }
+ },
+ "dry_run": {
+  "ok": true,
+  "errors": [],
+  "warnings": [],
+  "parse": {
+   "decoded": 100,
+   "total": 100,
+   "parse_100_100": true
+  },
+  "decision_stats": {
+   "total": 100,
+   "pass": 53,
+   "revise": 45,
+   "reject": 2,
+   "pending": 0,
+   "decided": 100,
+   "decided_at": "2026-11-01T22:26:11+08:00"
+  },
+  "merge_preview": {
+   "approved_cards": 53,
+   "base_cards": 88,
+   "plan_stats": {
+    "base_cards": 88,
+    "proposal_cards": 53,
+    "approved": 53,
+    "would_add": 17,
+    "skipped_total": 36,
+    "skipped_not_reviewed": 0,
+    "skipped_rejected": 0,
+    "skipped_needs_revision": 0,
+    "skipped_concept_exists": 36,
+    "skipped_duplicate_in_batch": 0,
+    "resulting_cards": 105
+   },
+   "inserted": [
+    {
+     "review_id": "CP3-20261101-001",
+     "theme": "化工/材料",
+     "concept": "PTFE材料路线"
+    },
+    {
+     "review_id": "CP3-20261101-002",
+     "theme": "化工/材料",
+     "concept": "球形硅微粉"
+    },
+    {
+     "review_id": "CP3-20261101-004",
+     "theme": "评级/研报方法论",
+     "concept": "恒生科技指数估值"
+    },
+    {
+     "review_id": "CP3-20261101-007",
+     "theme": "金融/地产",
+     "concept": "中小行配债增速回落"
+    },
+    {
+     "review_id": "CP3-20261101-008",
+     "theme": "金融/地产",
+     "concept": "房地产行业板块表现"
+    },
+    {
+     "review_id": "CP3-20261101-013",
+     "theme": "军工/航天",
+     "concept": "无人驾驶航空器贸易分类"
+    },
+    {
+     "review_id": "CP3-20261101-015",
+     "theme": "机械/制造",
+     "concept": "工业机器人产品分类"
+    },
+    {
+     "review_id": "CP3-20261101-023",
+     "theme": "网络安全/信创",
+     "concept": "网络安全人员工作压力"
+    },
+    {
+     "review_id": "CP3-20261101-024",
+     "theme": "有色/金属",
+     "concept": "稀土价格分化"
+    },
+    {
+     "review_id": "CP3-20261101-031",
+     "theme": "建筑/建材",
+     "concept": "建筑领域电气化与低碳转型"
+    },
+    {
+     "review_id": "CP3-20261101-032",
+     "theme": "通信/互联网",
+     "concept": "国防军工行业投资建议"
+    },
+    {
+     "review_id": "CP3-20261101-033",
+     "theme": "量学/交易",
+     "concept": "精准线伏击"
+    },
+    {
+     "review_id": "CP3-20261101-035",
+     "theme": "量学/交易",
+     "concept": "量学理论"
+    },
+    {
+     "review_id": "CP3-20261101-036",
+     "theme": "新能源/电力",
+     "concept": "光伏成本核算新规"
+    },
+    {
+     "review_id": "CP3-20261101-037",
+     "theme": "新能源/电力",
+     "concept": "亿纬锂能与 Fluence 战略合作"
+    },
+    {
+     "review_id": "CP3-20261101-038",
+     "theme": "新能源/电力",
+     "concept": "光伏行业供给出清"
+    },
+    {
+     "review_id": "CP3-20261101-040",
+     "theme": "其他",
+     "concept": "中小行配债中枢趋势下移"
+    }
+   ],
+   "skipped": [
+    {
+     "proposal_id": "REV-20261101-001",
+     "concept": "Akamai 与 Anthropic 合作协议",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-002",
+     "concept": "Meta Muse 产品安全漏洞",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-003",
+     "concept": "景嘉微股权激励计划",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-004",
+     "concept": "DeepSeek DSec 系统架构",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-005",
+     "concept": "钙钛矿光伏电池测试标准",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-006",
+     "concept": "电力设备板块周度表现",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-007",
+     "concept": "购房贷款贴息政策",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-010",
+     "concept": "北京零售市场现状",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-013",
+     "concept": "十月怀胎一朝分娩",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-014",
+     "concept": "倍量伸缩",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-015",
+     "concept": "进口产品排名",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-018",
+     "concept": "国防军工行业周度表现",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-021",
+     "concept": "数字贸易增长预测",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-022",
+     "concept": "大模型商业化核心指标",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-025",
+     "concept": "上海零售市场动态",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-026",
+     "concept": "大中华区零售市场趋势",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-029",
+     "concept": "劳动力技能转型",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-032",
+     "concept": "国防军工个股涨跌幅排名",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-033",
+     "concept": "国内大模型厂商阵营分化",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-034",
+     "concept": "人工智能安全能力成熟度评估",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-035",
+     "concept": "网络安全合规转型",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-038",
+     "concept": "跨境电子商务面临的四大挑战",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-040",
+     "concept": "出版业发展“十五五”规划",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-041",
+     "concept": "纳斯达克互联网指数表现",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-042",
+     "concept": "中国畜禽肉产品贸易总体规模",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-045",
+     "concept": "NPX 铜光兼容封装",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-048",
+     "concept": "建筑装饰行业估值水平",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-049",
+     "concept": "土地市场成交情况",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-050",
+     "concept": "施工旺季需求特征",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-052",
+     "concept": "国际商会（ICC）负责任酒精营销传播框架",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-053",
+     "concept": "化工行业需求结构",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-054",
+     "concept": "EDEN 模型与体内细胞治疗",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-057",
+     "concept": "DeepSeek 融资计划",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-058",
+     "concept": "行业评级定义",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-059",
+     "concept": "微信生态 Agent 落地",
+     "reason": "concept_exists"
+    },
+    {
+     "proposal_id": "REV-20261101-060",
+     "concept": "传媒主体投资并购策略",
+     "reason": "concept_exists"
+    }
+   ],
+   "conflicts": [
+    {
+     "proposal_id": "REV-20261101-001",
+     "concept": "Akamai 与 Anthropic 合作协议",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-002",
+     "concept": "Meta Muse 产品安全漏洞",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-003",
+     "concept": "景嘉微股权激励计划",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-004",
+     "concept": "DeepSeek DSec 系统架构",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-005",
+     "concept": "钙钛矿光伏电池测试标准",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-006",
+     "concept": "电力设备板块周度表现",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-007",
+     "concept": "购房贷款贴息政策",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-010",
+     "concept": "北京零售市场现状",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-013",
+     "concept": "十月怀胎一朝分娩",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-014",
+     "concept": "倍量伸缩",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-015",
+     "concept": "进口产品排名",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-018",
+     "concept": "国防军工行业周度表现",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-021",
+     "concept": "数字贸易增长预测",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-022",
+     "concept": "大模型商业化核心指标",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-025",
+     "concept": "上海零售市场动态",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-026",
+     "concept": "大中华区零售市场趋势",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-029",
+     "concept": "劳动力技能转型",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-032",
+     "concept": "国防军工个股涨跌幅排名",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-033",
+     "concept": "国内大模型厂商阵营分化",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-034",
+     "concept": "人工智能安全能力成熟度评估",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-035",
+     "concept": "网络安全合规转型",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-038",
+     "concept": "跨境电子商务面临的四大挑战",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-040",
+     "concept": "出版业发展“十五五”规划",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-041",
+     "concept": "纳斯达克互联网指数表现",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-042",
+     "concept": "中国畜禽肉产品贸易总体规模",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-045",
+     "concept": "NPX 铜光兼容封装",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-048",
+     "concept": "建筑装饰行业估值水平",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-049",
+     "concept": "土地市场成交情况",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-050",
+     "concept": "施工旺季需求特征",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-052",
+     "concept": "国际商会（ICC）负责任酒精营销传播框架",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-053",
+     "concept": "化工行业需求结构",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-054",
+     "concept": "EDEN 模型与体内细胞治疗",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-057",
+     "concept": "DeepSeek 融资计划",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-058",
+     "concept": "行业评级定义",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-059",
+     "concept": "微信生态 Agent 落地",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    },
+    {
+     "proposal_id": "REV-20261101-060",
+     "concept": "传媒主体投资并购策略",
+     "resolution": "existing_wins",
+     "note": "现有学习卡已有同主题，保留现有卡"
+    }
+   ],
+   "validation": {
+    "ok": true,
+    "errors": []
+   }
+  },
+  "combined_checklist": {
+   "entries": 100,
+   "first": 60,
+   "second": 40,
+   "normalization": "CP3 条目 source 归一化为 AV 以通过 decide 清单校验（真实清单未改）"
+  },
+  "combined_checklist_temp_path": "C:\\Users\\t\\AppData\\Local\\Temp\\card_review_round2_5cog6uu9\\combined_checklist_100.json"
+ },
+ "by_round": {
+  "first": {
+   "total": 60,
+   "pass": 36,
+   "revise": 24,
+   "reject": 0
+  },
+  "second": {
+   "total": 40,
+   "pass": 17,
+   "revise": 21,
+   "reject": 2
+  }
+ },
+ "reconciliation": {
+  "task_expectation": "首轮36已合并；二轮40中pass17新增；首轮revise24现为需修改",
+  "actual_cards_baseline": 88,
+  "actual_approved": 53,
+  "actual_would_add": 17,
+  "note": "当前学习卡为运行时真实快照；以 dry-run 实际数值为准（详见 merge_preview.plan_stats）。"
+ },
+ "safety": {
+  "applied": false,
+  "hashes": {
+   "checklist": {
+    "before": "2c82091d06b3e4f03cf8f9f9d215dff6d2649b3fa0534ee23f3f527feb9bd2df",
+    "after": "2c82091d06b3e4f03cf8f9f9d215dff6d2649b3fa0534ee23f3f527feb9bd2df",
+    "unchanged": true
+   },
+   "learning_cards": {
+    "before": "01a3a954927ad7253a6ca8db7256684624cac6321c243dfb0bfed2c822f9092d",
+    "after": "01a3a954927ad7253a6ca8db7256684624cac6321c243dfb0bfed2c822f9092d",
+    "unchanged": true
+   },
+   "card_review_data": {
+    "before": "8883135a5bf78d7fbfb42a69cd1f2b0ef0e10aebb330f960fbb2d9c468b012b7",
+    "after": "8883135a5bf78d7fbfb42a69cd1f2b0ef0e10aebb330f960fbb2d9c468b012b7",
+    "unchanged": true
+   },
+   "proposals_v3": {
+    "before": "4d3ffbcda9c36410064146b3d19ab3ff964c87965b15dd805e6d3ad720d575c9",
+    "after": "4d3ffbcda9c36410064146b3d19ab3ff964c87965b15dd805e6d3ad720d575c9",
+    "unchanged": true
+   }
+  }
+ },
+ "next_steps": [
+  "人工复核建议 decisions（重点：45 张 revise / 2 张 reject；二轮 CP3 条目注意轮次标注）",
+  "确认后执行 card_review.py decide --decisions <本文件> --apply（需要与 100 条兼容的清单；本轮 dry-run 使用临时合并清单，真实清单仍为 60 条未改）",
+  "如需合并进学习卡再追加 --merge（写前备份、写后校验）",
+  "本文件与 decisions 文件均未触发真实写盘（清单/学习卡 SHA256 不变）"
+ ],
+ "disclaimer": "建议 decisions / 预览为机器辅助产物，最终由人工确认；不构成投资建议。"
+}
