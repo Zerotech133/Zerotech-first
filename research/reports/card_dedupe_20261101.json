@@ -1,0 +1,135 @@
+{
+ "schema_version": 1,
+ "date": "20261101",
+ "generated_at": "2026-11-01T23:06:58+08:00",
+ "task": "task-105 合并「涨停密码」重复卡（用户已授权）",
+ "applied": true,
+ "concept": "涨停密码",
+ "candidates": [
+  {
+   "index": 5,
+   "quality": {
+    "answer_len": 63,
+    "evidence_len": 132,
+    "question_len": 10,
+    "source": "《涨停密码(2)》 前言 p9-10",
+    "topic": "量学/涨停",
+    "concept_mentioned": true,
+    "score": 195
+   },
+   "card": {
+    "q": "什么是「涨停密码」？",
+    "a": "“涨停密码”是指构成股票涨停或走牛的基本因子组合，包含单个基因（如倍量柱）和组合基因（如倍量伸缩），可用于前瞻性预测牛股走势。",
+    "source": "《涨停密码(2)》 前言 p9-10",
+    "evidence": "“涨停密码”特指构成股票涨停或走牛的基本因子组合。它可以是单个基因（如倍量柱），也可以是组合基因（如倍量伸缩）。从“涨停基因”入手，找到了“涨停密码”，就可以找到许多意想不到的牛股，它不但可以为我们的操作提供前瞻性预测，还可以帮助我们及时跟上即将涨停或拉升的股票。"
+   }
+  },
+  {
+   "index": 7,
+   "quality": {
+    "answer_len": 44,
+    "evidence_len": 65,
+    "question_len": 10,
+    "source": "《涨停密码(2)》 前言 p9-10",
+    "topic": "量学/涨停",
+    "concept_mentioned": true,
+    "score": 109
+   },
+   "card": {
+    "q": "什么是「涨停密码」？",
+    "a": "当几个‘助涨基因’组合起来形成一定的‘涨停密码’时，不仅能促使涨停，还可能实现连续涨停。",
+    "source": "《涨停密码(2)》 前言 p9-10",
+    "evidence": "如果几个“助涨基因”组合起来形成了一定的“涨停密码”，那就是另一番景象了，它们的组合密码不但可以“促使涨停”，还可能涨停接着涨停。"
+   }
+  }
+ ],
+ "decision": {
+  "keep_index": 5,
+  "drop_index": 7,
+  "keep_quality": {
+   "answer_len": 63,
+   "evidence_len": 132,
+   "question_len": 10,
+   "source": "《涨停密码(2)》 前言 p9-10",
+   "topic": "量学/涨停",
+   "concept_mentioned": true,
+   "score": 195
+  },
+  "drop_quality": {
+   "answer_len": 44,
+   "evidence_len": 65,
+   "question_len": 10,
+   "source": "《涨停密码(2)》 前言 p9-10",
+   "topic": "量学/涨停",
+   "concept_mentioned": true,
+   "score": 109
+  },
+  "rule": "信息量优先：答案+证据总字数更高者保留；并列取答案更长",
+  "reasons": [
+   "保留卡答案 63 字 / 证据 132 字，较删除卡（44 / 65）更完整",
+   "两卡同源同页（《涨停密码(2)》 前言 p9-10）、同主题，删除卡信息是保留卡的子集/更窄表述",
+   "不合并其他内容（保留卡已覆盖定义与因子组合要点）"
+  ]
+ },
+ "before": {
+  "cards": 105,
+  "dup_concept_count": 2,
+  "sha256": "3217902118282e231d77ea03e5bb7724fa2169bb125749d137c2499f6c24a2b6"
+ },
+ "after": {
+  "cards": 104,
+  "dup_concept_count": 1,
+  "sha256": "0efd9f24410f09a063cdceedf878894ddb78e0271de3b5574f92cf29a4aa3c60",
+  "daily_is_kept": false
+ },
+ "validation": {
+  "ok": true,
+  "count_before": 105,
+  "count_after": 104,
+  "dup_concepts_after": [],
+  "concept_kept_count": 1,
+  "schema_errors": [],
+  "others_unchanged": true,
+  "cards_sha_before": "3217902118282e231d77ea03e5bb7724fa2169bb125749d137c2499f6c24a2b6",
+  "cards_sha_after": "0efd9f24410f09a063cdceedf878894ddb78e0271de3b5574f92cf29a4aa3c60",
+  "atomic_write_report": {
+   "ok": true,
+   "atomic": true,
+   "tmp_removed": true,
+   "validated": true
+  }
+ },
+ "backups": {
+  "pre_dedupe": {
+   "path": "C:\\项目\\老田的AI助手\\research\\reports\\backups\\kb_learning_cards.20261101_230658.pre_dedupe.bak.json",
+   "sha256": "3217902118282e231d77ea03e5bb7724fa2169bb125749d137c2499f6c24a2b6",
+   "cards": 105
+  }
+ },
+ "digest": {
+  "rc": 0,
+  "output_tail": "生成成功：C:\\项目\\老田的AI助手\\portal\\static\\kb_learning_digest.json | date=20261101 | cards=5 | highlights=5 | points=10\n",
+  "path": "C:\\项目\\老田的AI助手\\portal\\static\\kb_learning_digest.json",
+  "sha256": "647d04e4d7396033ddfb671fb0cd941cf123a909bc266e0f45d29e071c1b4d14"
+ },
+ "http": {
+  "kb_learning_cards": {
+   "status": 200,
+   "bytes": 83622
+  },
+  "kb_learning_digest": {
+   "status": 200,
+   "bytes": 10393
+  },
+  "kb_reports_page": {
+   "status": 200,
+   "bytes": 33828
+  }
+ },
+ "rollback": {
+  "cards": "copy /Y \"C:\\项目\\老田的AI助手\\research\\reports\\backups\\kb_learning_cards.20261101_230658.pre_dedupe.bak.json\" \"C:\\项目\\老田的AI助手\\portal\\static\\kb_learning_cards.json\" 然后重跑 learning_digest.py run",
+  "instruction": "恢复 105 张（含 2 张涨停密码）；本次仅删除 1 张，无其他卡改动"
+ },
+ "note": "仅删除重复的第 2 张「涨停密码」；其他 103 张逐张不变（校验 others_unchanged=True）。",
+ "disclaimer": "本次为用户授权执行的学习卡去重操作；回滚路径见 rollback；不构成投资建议。"
+}

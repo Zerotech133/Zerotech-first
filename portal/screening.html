@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>每日筛选 · 零界</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<link rel="icon" href="data:,">
+<style>
+body{margin:0;background:var(--gray-0);color:var(--gray-7);font:14px/1.65 system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+.wrap{max-width:1280px;margin:0 auto;padding:14px 16px 60px}
+h1{font-size:22px;margin:6px 0 4px}h1 small{color:var(--gray-5);font-size:13px;font-weight:normal}
+.sub{color:var(--gray-5);font-size:12px;margin-bottom:14px}
+h2{font-size:16px;margin:0 0 10px;color:var(--gray-7)}
+.panel{background:var(--gray-1);border:1px solid var(--gray-3);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.card{background:var(--gray-0);border:1px solid var(--gray-3);border-radius:8px;padding:10px 12px}
+.card .k{color:var(--gray-5);font-size:12px}.card .v{font-size:20px;font-weight:700;color:var(--blue-600,var(--gray-7))}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{border-bottom:1px solid var(--gray-3);padding:6px 8px;text-align:left;vertical-align:top}
+th{color:var(--gray-5);font-weight:600;white-space:nowrap}
+.badge{display:inline-block;border:1px solid var(--gray-4);border-radius:6px;padding:1px 7px;font-size:11px;color:var(--gray-6)}
+.badge.warn{color:var(--color-warn,var(--ylw-500));border-color:var(--ylw-500)}
+.pos{color:var(--color-up,var(--red-500))}.neg{color:var(--color-down,var(--green-600))}
+.muted{color:var(--gray-5);font-size:12px}
+.err{padding:16px;border:1px dashed var(--color-warn,var(--ylw-500));border-radius:8px;color:var(--gray-6);background:var(--gray-1)}
+code{background:var(--gray-1);border:1px solid var(--gray-3);padding:1px 6px;border-radius:4px;font-size:12px}
+.disc{margin-top:14px;color:var(--gray-5);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div id="nav"></div>
+<h1>📅 每日筛选 <small>量学信号 × 板块相对强度（RS）· 研究输出</small></h1>
+<div class="sub" id="sub">加载中…</div>
+<div id="err" style="display:none"></div>
+
+<section class="panel"><h2>一、市场概览</h2><div class="cards" id="overview"></div></section>
+
+<section class="panel"><h2>二、S02 研究排序 Top10 <span class="badge warn">⚠️ 已暂停</span></h2>
+<div class="muted" style="margin-bottom:8px">S02 复合排序已因影子盘回撤熔断暂停；仅研究参考，不作实盘依据。</div>
+<table><thead><tr><th>#</th><th>代码</th><th>名称</th><th>行业</th><th>分数</th></tr></thead><tbody id="s02-body"></tbody></table></section>
+
+<section class="panel"><h2>三、H18 业绩预告修订事件 Top10</h2>
+<div class="muted" style="margin-bottom:8px">观察线索（预增/预减修订），不构成买卖信号。</div>
+<table><thead><tr><th>#</th><th>代码</th><th>报告期</th><th>公告日</th><th>类型</th><th>方向</th><th>Δ中值(pp)</th></tr></thead><tbody id="h18-body"></tbody></table></section>
+
+<section class="panel"><h2>四、量学信号 ∩ RS（<span id="rs-count">—</span> 只）</h2>
+<div class="muted" style="margin-bottom:8px" id="rs-criteria">RS：板块=行业等权当日涨幅；按超额降序。</div>
+<table><thead><tr><th>#</th><th>代码</th><th>名称</th><th>行业</th><th>个股涨幅</th><th>板块涨幅</th><th>超额(pp)</th><th>RS</th><th>量学信号</th></tr></thead><tbody id="rs-body"></tbody></table></section>
+
+<section class="panel"><h2>五、板块强度 Top5</h2>
+<table><thead><tr><th>#</th><th>行业</th><th>等权涨幅</th><th>成分数</th></tr></thead><tbody id="boards-body"></tbody></table></section>
+
+<section class="panel"><h2>六、边界与免责声明</h2><div id="boundary"></div><div class="disc" id="disclaimer"></div></section>
+</div>
+
+<script src="/static/nav.js" defer></script>
+<script src="/static/shortscreen.js" defer></script>
+<script>
+(function(){
+  "use strict";
+  var $=function(id){return document.getElementById(id);};
+  function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+  function num(v,dp){var n=Number(v);if(!isFinite(n))return "—";return n.toFixed(dp==null?0:dp);}
+  function pct(v){var n=Number(v);if(!isFinite(n))return "—";var s=n.toFixed(2)+"%";return (n>=0?'<span class="pos">+'+s+"</span>":'<span class="neg">'+s+"</span>");}
+  function row(cells){return "<tr>"+cells.map(function(c){return "<td>"+c+"</td>";}).join("")+"</tr>";}
+  function empty(tbody,n){$(tbody).innerHTML='<tr><td colspan="'+n+'" class="muted">暂无数据</td></tr>';}
+  function renderH18(items){
+    items=(items||[]).slice(0,10);
+    $("h18-body").innerHTML=items.map(function(x,i){return row([i+1,"<code>"+esc(x.ts_code)+"</code>",esc(x.end_date),esc(x.ann_date),esc(x.type),esc(x.direction),num(x.delta_pp,2)]);}).join("");
+    if(!items.length) $("h18-body").innerHTML='<tr><td colspan="7" class="muted">门户精简 schema 暂未含 H18 明细；完整清单见 research/reports/daily_screening_20261030.md（待后续任务扩展导出）</td></tr>';
+  }
+  function render(d){
+    var s=d.summary||{};
+    $("sub").textContent="数据日 "+(d.date||"—")+"｜生成 "+(d.generated_at||"—")+"｜RS 模式 "+(s.rs_mode||"—");
+    var cards=[
+      ["数据日",esc(d.date||"—")],
+      ["全市场输入",num(s.input)],
+      ["S01 合格",num(s.eligible_after_S01)],
+      ["S03 H18 事件",num(s.h18_events)],
+      ["量学信号并集",num(s.pinxue_union)],
+      ["RS 通过",num(s.rs_pass)],
+      ["量学 ∩ RS",num(s.rs_intersection)]
+    ];
+    $("overview").innerHTML=cards.map(function(c){return '<div class="card"><div class="k">'+c[0]+'</div><div class="v">'+c[1]+"</div></div>";}).join("");
+    var top=d.s02_top||[];
+    $("s02-body").innerHTML=top.map(function(x,i){return row([i+1,"<code>"+esc(x.ts_code)+"</code>",esc(x.name),esc(x.industry),num(x.score,3)]);}).join("");
+    if(!top.length) empty("s02-body",5);
+    var h=d.h18_top||[];
+    renderH18(h);
+    var rs=d.rs_intersection||[];
+    $("rs-count").textContent=rs.length;
+    $("rs-criteria").textContent="RS "+(s.rs_mode||"—")+"：板块=行业等权当日涨幅，按超额降序展示前 "+rs.length+" 只";
+    $("rs-body").innerHTML=rs.map(function(x,i){return row([i+1,"<code>"+esc(x.ts_code)+"</code>",esc(x.name),esc(x.industry),pct(x.pct_chg),pct(x.board_pct_chg),pct(x.excess_pp),esc(x.rs_flag),"、" + (x.signals||[]).map(esc).join("、")]);}).join("");
+    if(!rs.length) empty("rs-body",9);
+    var b=d.boards_top||[];
+    $("boards-body").innerHTML=b.map(function(x,i){return row([i+1,esc(x.industry),pct(x.pct_chg),num(x.n)]);}).join("");
+    if(!b.length) empty("boards-body",4);
+    $("boundary").innerHTML=(d.boundary_notes||[]).map(function(x){return "<div>• "+esc(x)+"</div>";}).join("")||'<div class="muted">—</div>';
+    $("disclaimer").textContent=d.disclaimer||"研究输出，不构成投资建议。";
+  }
+  function fail(e){
+    var box=$("err");box.style.display="block";
+    box.innerHTML='<div class="err"><b>数据未就绪</b>：'+esc(e&&e.message?e.message:e)+"<br>"+
+      "请先运行 <code>python tools/research/daily_screening.py --date 20261030 --rs-mode C --rs-top 30</code> "+
+      "并执行 <code>python tools/tests/test_daily_screening_report.py</code> 生成 <code>/static/daily_screening.json</code>。</div>";
+    $("sub").textContent="加载失败";
+  }
+  fetch("/static/daily_screening.json",{cache:"no-store"}).then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json();}).then(function(d){
+    render(d);
+    if(!(d.h18_top&&d.h18_top.length)){
+      // 门户精简 schema 未含 H18 明细时，尝试从正式报告补充（服务端未提供则保持说明行）
+      fetch("/research/reports/daily_screening_20261030.json",{cache:"no-store"}).then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json();}).then(function(full){
+        var items=((full.S03_H18_watch||{}).items||[]).slice(0,10);
+        if(items.length) renderH18(items);
+      }).catch(function(){});
+    }
+  }).catch(fail);
+})();
+</script>
+</body>
+</html>

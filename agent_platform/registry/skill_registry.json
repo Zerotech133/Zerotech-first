@@ -785,6 +785,20 @@
       "title": "学习卡质量复核",
       "ref": "tools/kb_corpus/card_quality_audit.py",
       "enabled": true
+    },
+    {
+      "id": "citation_retry_scale",
+      "kind": "tool",
+      "title": "citation_retry 扩样 A/B",
+      "ref": "tools/kb_corpus/citation_retry_scale.py",
+      "enabled": true
+    },
+    {
+      "id": "screening_page",
+      "kind": "tool",
+      "title": "每日筛选页",
+      "ref": "portal/screening.html",
+      "enabled": true
     }
   ]
 }

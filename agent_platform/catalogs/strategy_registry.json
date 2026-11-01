@@ -6229,5 +6229,29 @@
       "commits_today": 290
     },
     "note": "系统总览刷新：学习卡 105、知识单元 516、工具 110、今日提交 290。"
+  },
+  "citation_retry_scale_20261101": {
+    "tool": "tools/kb_corpus/citation_retry_scale.py",
+    "report": "research/reports/citation_retry_scale_20261101.md",
+    "stats": null,
+    "delta": null,
+    "verdict": "switch_default（全部达标，待透传切默认）",
+    "note": "citation_retry 扩样 30 条：guard 90%→**100%（+10pp）**、fallback 10%→0%、引用可解析/支撑 96.7%→100%、重试 4 次全部改善、耗时 1.071x → 建议切默认；需 kb_qa.ask/CLI/HTTP 透传（下一波执行）。"
+  },
+  "card_dedupe_20261101": {
+    "executed": true,
+    "result": {
+      "cards_before": 105,
+      "cards_after": 104,
+      "removed": "涨停密码 index 7（信息量子集）"
+    },
+    "backup": "research/reports/backups/kb_learning_cards.20261101_230658.pre_dedupe.bak.json",
+    "note": "「涨停密码」重复卡已合并：保留 index5（信息量 195）删除 index7（109）；105→104，其余 103 张不变、无重复 concept、digest 刷新、HTTP 200。"
+  },
+  "screening_page_20261101": {
+    "page": "portal/screening.html",
+    "data": "portal/static/daily_screening.json",
+    "nav": "api_common.py ops→数据运营「📅 每日筛选」（nav.js 105 入口）",
+    "note": "每日筛选页上线：概览/S02 top10（暂停标注）/H18 top10/量学∩RS 18 只/板块 top5/免责；HTTP 200；6 tests；unify_nav/route 门禁 PASS。"
   }
 }
