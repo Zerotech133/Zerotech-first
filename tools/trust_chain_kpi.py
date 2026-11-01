@@ -5,6 +5,7 @@
 
   python -X utf8 tools/trust_chain_kpi.py            # Markdown 摘要（默认）
   python -X utf8 tools/trust_chain_kpi.py --json     # JSON 摘要（机器可读）
+  python -X utf8 tools/trust_chain_kpi.py --require-complete   # M4 签字硬门（release/Go-No-Go）
   python -X utf8 tools/trust_chain_kpi.py --json --timeout 2 \
       --m4-since 2026-10-31T00:00:00
   # 在 worktree 内跑（账本/配置以主仓为准）：
@@ -32,11 +33,20 @@
                            （排除 ^T-、含 -SMOKE/-TEST/-E2E/-DRILL、^__ 探针）；无符合项 → fail 并说明
                          命中证据以 selected_evidence 输出 kind/task/agent/run_id/created_at
   9 m4_signoff           只读 approvals.jsonl 的 approve 计数 + dispatch accepted/done，
-                         输出 missing 四方（QA1/GUANYU/VERIFY1/A0·老田）；不代签
+                          required 四签 = QA1/GUANYU/VERIFY1/ARCH1（ARCH1 第4签终审），
+                          A0/老田 = 监督签（知情、不阻断，不计入 required）；不代签。
+                          判定统一复用 approval_control.evaluate_signoff/signoff_gate
+                          （以 ctx.repo 的 portal 真源为准，避免跨工具口径漂移）。
  10 fast_gate            最近 fast gate 日志 PASS/FAIL（advisory，不参与总体判定）
 
 总体判定：required 检查有 fail → fail；无 fail 但有 unknown → unknown；全 pass → pass。
 退出码：0=pass；1=fail；2=unknown（无 fail 但有未判定项）。
+
+M4 签字硬门（供 release / Go-No-Go 调用，**不**设为所有 merge 的全局门）：
+  - CLI：``python -X utf8 tools/trust_chain_kpi.py --require-complete``
+    仅 M4 检查：complete(四签齐+A0监督不阻断) → exit 0；否则 exit 1（默认总体判定退出码不变）。
+  - 函数：``trust_chain_kpi.m4_hard_gate(ctx)``（返回 {ok,status,detail,reasons}，
+    供 release/Go-No-Go 脚本 import 调用；也可用 ``m4_gate_from_report(report)``）。
 
 证据口径示例：
   python -X utf8 tools/trust_chain_kpi.py --json --evidence-require-prod
@@ -71,8 +81,14 @@ SCHEMA = "trust_chain_kpi/v1"
 REPO = Path(__file__).resolve().parents[1]
 DEFAULT_TIMEOUT = 3.0
 DEFAULT_M4_SINCE = "2026-10-31T00:00:00"
-M4_PARTIES = ("QA1", "GUANYU", "VERIFY1")
-A0_PARTY = "A0/老田"
+# M4 22:50 裁定（2026-11-01 K-ORG-20261101-M4WIRE 统一口径）：
+#   required 四签 = QA1/GUANYU/VERIFY1/ARCH1（第4签=ARCH1 终审）；
+#   A0/老田 = 监督签（知情/不阻断，不计入 required；只作证据展示）。
+# 真源仍为 ctx.repo 的 portal/approval_control.REQUIRED_SIGNERS（运行时加载，见
+# check_m4_signoff）；下面常量仅作 AC 不可加载时的 fallback，测试锁死两者一致。
+M4_PARTIES = ("QA1", "GUANYU", "VERIFY1", "ARCH1")
+A0_PARTY = "A0/老田"          # 监督签标签（展示用，不参与 required/missing）
+M4_REQUIRED_APPROVALS_MIN = 1  # 至少有 1 条 approve 行（dispatch 只是通知，不等于签字）
 LDE_BASE = "http://127.0.0.1:8103"
 HERMES_BASE = "http://127.0.0.1:8787"
 DEFAULT_RELEASE_ROOT_FALLBACK = Path(r"C:\项目\_vault\legion_ide\release\legion-ide")
@@ -556,8 +572,43 @@ def _load_jsonl(path: Path) -> tuple:
     return rows, ""
 
 
+def _load_approval_control(ctx: Ctx):
+    """按 ctx.repo 加载 approval_control 真源（统一 M4 口径）；失败 → (None, err)。"""
+    path = Path(ctx.repo) / "portal" / "approval_control.py"
+    if not path.is_file():
+        return None, "approval_control_missing:%s" % path
+    try:
+        return _load_module(path, "kpi_approval_control"), ""
+    except Exception as exc:  # noqa: BLE001 - 真源不可用 → fallback + 显式记录（不静默）
+        return None, "%s: %s" % (type(exc).__name__, str(exc)[:160])
+
+
+def _m4_required(ac_mod):
+    """required 四签：优先 approval_control 真源，fallback M4_PARTIES（两端一致由测试锁）。"""
+    if ac_mod is not None:
+        try:
+            roles = tuple(str(x).strip().upper() for x in ac_mod.REQUIRED_SIGNERS
+                          if str(x).strip())
+            if roles:
+                return roles
+        except Exception:  # noqa: BLE001
+            pass
+    return tuple(M4_PARTIES)
+
+
+def _m4_supervisor(ac_mod):
+    if ac_mod is not None:
+        try:
+            value = str(ac_mod.SUPERVISOR_SIGNER or "").strip().upper()
+            if value:
+                return value
+        except Exception:  # noqa: BLE001
+            pass
+    return "A0"
+
+
 def check_m4_signoff(ctx: Ctx) -> dict:
-    cid, title = "m4_signoff", "M4 四方签字（只读，不代签）"
+    cid, title = "m4_signoff", "M4 四签（ARCH1 第4签 + A0 监督；只读，不代签）"
     approvals, appr_err = _load_jsonl(Path(ctx.approvals_path))
     dispatch, disp_err = _load_jsonl(Path(ctx.dispatch_path))
     if appr_err and disp_err:
@@ -566,11 +617,16 @@ def check_m4_signoff(ctx: Ctx) -> dict:
                        {"approvals": str(ctx.approvals_path),
                         "dispatch": str(ctx.dispatch_path)},
                        category=CATEGORY_SIGNOFF)
+    ac_mod, ac_err = _load_approval_control(ctx)
+    required = list(_m4_required(ac_mod))
+    supervisor = _m4_supervisor(ac_mod)
+    supervisor_label = "A0/老田" if supervisor == "A0" else supervisor
     approves = [r for r in approvals if isinstance(r, dict)
                 and str(r.get("ts") or "") >= ctx.m4_since
                 and str(r.get("action") or "") == "approve"
                 and "m4" in str(r.get("task") or "").lower()]
-    done = set()
+    dispatch_done = set()
+    supervisor_done = False
     for row in dispatch:
         if not isinstance(row, dict):
             continue
@@ -578,24 +634,79 @@ def check_m4_signoff(ctx: Ctx) -> dict:
             continue
         if str(row.get("status") or "") not in ("accepted", "done"):
             continue
-        target = str(row.get("to") or "")
-        for party in M4_PARTIES:
-            if party.lower() in target.lower():
-                done.add(party)
-    missing = [party for party in M4_PARTIES if party not in done]
-    if not approves:
-        missing.append(A0_PARTY)
-    passed = not missing
+        target = str(row.get("to") or "").lower()
+        for party in required:
+            if party.lower() in target:
+                dispatch_done.add(party)
+        if supervisor and supervisor.lower() in target:
+            supervisor_done = True
+    signed = [party for party in required if party in dispatch_done]
+    missing = [party for party in required if party not in dispatch_done]
+    reasons = []
+    if len(approves) < M4_REQUIRED_APPROVALS_MIN:
+        reasons.append("no_approve_rows(dispatch 只是通知，不等于签字)")
+    if missing:
+        reasons.append("missing_signers:" + ",".join(missing))
+    signoff = {"state": "complete" if not reasons else "incomplete",
+               "required_signers": list(required),
+               "signed_roles": signed,
+               "missing_signers": missing}
+    gate_ok, gate_reasons = bool(not reasons), list(reasons)
+    gate_error = ""
+    if ac_mod is not None and hasattr(ac_mod, "signoff_gate"):
+        try:
+            gate_ok, gate_reasons = ac_mod.signoff_gate(signoff, require_complete=True)
+        except Exception as exc:  # noqa: BLE001 - 门异常按阻断（fail-visible）
+            gate_error = "%s: %s" % (type(exc).__name__, str(exc)[:120])
+            gate_ok, gate_reasons = False, ["signoff_gate_error:" + gate_error]
+    elif ac_err:
+        gate_reasons = list(gate_reasons) + ["approval_control_unavailable:" + ac_err]
+    passed = bool(gate_ok) and not reasons
     ev = {"since": ctx.m4_since,
+          "required": list(required),
+          "signed": signed,
+          "missing": missing,
+          "supervisor": supervisor,
+          "supervisor_label": supervisor_label,
+          "supervisor_done": bool(supervisor_done),
+          "supervisor_required": False,
           "approvals_count": len(approves),
           "operators": sorted({str(r.get("operator") or "") for r in approves}),
-          "dispatch_done": sorted(done), "missing": missing,
+          "dispatch_done": sorted(dispatch_done),
+          "signoff": signoff,
+          "signoff_gate": {"ok": bool(gate_ok), "reasons": list(gate_reasons)},
+          "approval_control": {"loaded": ac_mod is not None, "error": ac_err,
+                               "gate_error": gate_error},
           "approvals_error": appr_err, "dispatch_error": disp_err,
-          "note": "只读计数；签字须 owner 本人完成，本工具不代签"}
-    detail = "approve=%d dispatch_done=%s missing=%s" % (
-        len(approves), ",".join(sorted(done)) or "-", ",".join(missing) or "-")
+          "note": "只读计数；A0=监督签不计入 required；签字须 owner 本人完成，本工具不代签"}
+    detail = ("approve=%d required=%s signed=%s missing=%s supervisor=%s(%s)"
+              % (len(approves), ",".join(required) or "-",
+                 ",".join(signed) or "-", ",".join(missing) or "-",
+                 supervisor_label, "done" if supervisor_done else "pending"))
     return _result(cid, title, "pass" if passed else "fail", detail, ev,
                    category=CATEGORY_SIGNOFF)
+
+
+def m4_gate_from_report(report: dict) -> dict:
+    """从 KPI 报告取 M4 硬门结论（供 release/Go-No-Go 复用，不改总体判定）。"""
+    check = next((c for c in (report or {}).get("checks") or []
+                  if c.get("id") == "m4_signoff"), None)
+    if not check:
+        return {"ok": False, "status": "unknown",
+                "detail": "报告缺 m4_signoff 检查", "reasons": ["missing_check"]}
+    ev = check.get("evidence") or {}
+    gate = ev.get("signoff_gate") or {}
+    ok = bool(check.get("status") == "pass" and gate.get("ok"))
+    reasons = list(gate.get("reasons") or []) if not ok else []
+    if not ok and not reasons:
+        reasons = list(ev.get("missing") or []) or [str(check.get("detail") or "incomplete")]
+    return {"ok": ok, "status": check.get("status"),
+            "detail": check.get("detail") or "", "reasons": reasons}
+
+
+def m4_hard_gate(ctx: Ctx) -> dict:
+    """M4 签字硬门函数入口（release/Go-No-Go 可 import 调用；不代签）。"""
+    return m4_gate_from_report({"checks": [check_m4_signoff(ctx)]})
 
 
 # ---------------------------------------------------------------------------
@@ -857,6 +968,10 @@ def main(argv=None) -> int:
                         help="M4 approve 统计起点（ISO，默认 %s）" % since_default)
     parser.add_argument("--out", default="",
                         help="可选：同时把报告写入此文件（只写该文件，不写账本）")
+    parser.add_argument("--require-complete", action="store_true",
+                        help="M4 签字硬门：仅 M4 complete 时 exit 0，否则 exit 1"
+                             "（默认总体判定退出码不变；不设为 merge 全局门；"
+                             "供 release/Go-No-Go 调用）")
     args = parser.parse_args(argv)
     report = collect(
         repo=args.repo or None,
@@ -883,6 +998,13 @@ def main(argv=None) -> int:
                               encoding="utf-8")
         except OSError as exc:
             print("[warn] --out 写入失败（不影响判定）：%s" % exc, file=sys.stderr)
+    if args.require_complete:
+        gate = m4_gate_from_report(report)
+        print("[require-complete] M4 签字硬门：%s | %s%s"
+              % ("OK" if gate["ok"] else "BLOCK", gate.get("detail") or "-",
+                 "" if gate["ok"] else " | reasons=%s" % "；".join(gate["reasons"])),
+              file=sys.stderr)
+        return 0 if gate["ok"] else 1
     verdict = str(report.get("verdict") or "unknown")
     return 0 if verdict == "pass" else (1 if verdict == "fail" else 2)
 
