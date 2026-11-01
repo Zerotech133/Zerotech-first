@@ -1,0 +1,20 @@
+{
+ "task_id": "T-20261102-125",
+ "opened_by": "A0",
+ "assigned_dept": "dev",
+ "assigned_agent": null,
+ "title": "YouTube 语料纳入统一数仓（补盘）：yt_learning.db 登记+dataset级取数入口",
+ "body": "【补盘】2026-11-02 · 首版全域盘点遗漏 YouTube 课程语料（C:/项目/知识库，5.6GB）：\n存量：948 ZIP/45,827 视频/1,321,892 评论/26,244 知识单元/133 FAQ/62,401 索引/4,926 RAG chunks；\n00_数据仓/yt_learning.db（580.7MB，9 表星型模型）README 自称统一取数入口，但**不在 data_catalog/warehouse registry**，无 dataset 级 API/MCP（仅 /api/kb_corpus 问答）；lineage 仅 YAML（待并入 DB）。\n要求（并入方案 v2 WP-I）：①登记 yt_learning.db + 14 个语料层数据集（catalog v7）；②补 dataset 级取数（dw_query(dataset_id) / /api/dw/corpus）；③lineage YAML 并入 lineage DB；④验收：Hermes/门户按 id 查到 yt_learning 表结构+样本。\n方案：docs/plans/2026-11-02_数据仓研发方案_v2.md；台账：deliverables/2026-11-02_全域结构化数据台账_v0.csv（已含 YouTube 行）。",
+ "severity": "P1",
+ "status": "open",
+ "created_at": "2026-11-02T00:52:07",
+ "due": "2026-11-20",
+ "closure_note": null,
+ "history": [
+  {
+   "at": "2026-11-02T00:52:07",
+   "by": "A0",
+   "action": "open"
+  }
+ ]
+}

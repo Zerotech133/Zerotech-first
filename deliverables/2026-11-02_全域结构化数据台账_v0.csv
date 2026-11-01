@@ -286,3 +286,17 @@
 平台运行,news_db.jev_review_queue,sqlite_table,news_collector\news.db,,10525,13,False,True,news_jev_review_queue
 平台运行,automation_runs,dir,C:\aios\automation_runs,829.1,,,False,True,automation_runs
 平台运行,news_collector_data,dir,news_collector\data,25.3,,,True,True,news_collector_data
+开源情报,yt_raw_zip（948 ZIP/清单/sha256）,corpus_layer,C:/项目/知识库/01_数据分包,2903.3,,,False,False,yt_raw_zip
+开源情报,yt_normalized（videos/comments/channel_map parquet）,corpus_layer,C:/项目/知识库/10_规范化,822.7,,,False,False,yt_normalized
+开源情报,yt_cleaned_comments（清洗+PII脱敏）,corpus_layer,C:/项目/知识库/20_清洗,148.5,,,False,False,yt_cleaned_comments
+开源情报,yt_transcripts（转写）,corpus_layer,C:/项目/知识库/20_转写,2.5,,,False,False,yt_transcripts
+学习派生,yt_knowledge_units（知识单元）,corpus_layer,C:/项目/知识库/30_知识单元,0.0,,,False,False,yt_knowledge_units
+学习派生,yt_distill（知识提炼）,corpus_layer,C:/项目/知识库/35_知识提炼,19.7,,,False,False,yt_distill
+学习派生,yt_faq（FAQ 语义归并 133 条）,corpus_layer,C:/项目/知识库/37_FAQ挖掘,63.9,,,False,False,yt_faq
+学习派生,"yt_index（62,401 docs bge-m3）",corpus_layer,C:/项目/知识库/40_索引,331.9,,,False,False,yt_index
+学习派生,"yt_rag（4,926 chunks + packed 62,401）",corpus_layer,C:/项目/知识库/50_RAG,720.3,,,False,True,yt_rag
+学习派生,yt_learning_cards（学习卡）,corpus_layer,C:/项目/知识库/60_学习卡,0.0,,,False,True,yt_learning_cards
+学习派生,yt_briefs（简报）,corpus_layer,C:/项目/知识库/70_简报,0.0,,,False,False,yt_briefs
+平台运行,yt_review（复核）,corpus_layer,C:/项目/知识库/80_复核,0.1,,,False,False,yt_review
+学习派生,yt_reports（报告）,corpus_layer,C:/项目/知识库/90_报告,0.4,,,False,False,yt_reports
+学习派生,yt_learning.db（星型模型 9 表，统一取数入口）,corpus_layer,C:/项目/知识库/00_数据仓,580.7,,,False,True,yt_learning.db

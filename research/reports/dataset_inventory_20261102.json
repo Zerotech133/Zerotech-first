@@ -1,9 +1,9 @@
 {
  "summary": {
-  "datasets": 287,
-  "valid": 287,
+  "datasets": 301,
+  "valid": 301,
   "registered": 265,
-  "exposed": 69,
+  "exposed": 72,
   "by_domain": {
    "接口数据": {
     "datasets": 241,
@@ -12,22 +12,22 @@
     "mb": 48245.2
    },
    "开源情报": {
-    "datasets": 15,
+    "datasets": 19,
     "registered": 14,
     "exposed": 7,
-    "mb": 2120.8
+    "mb": 5997.8
    },
    "学习派生": {
-    "datasets": 7,
+    "datasets": 16,
     "registered": 5,
-    "exposed": 4,
-    "mb": 32.3
+    "exposed": 7,
+    "mb": 1749.2
    },
    "平台运行": {
-    "datasets": 24,
+    "datasets": 25,
     "registered": 6,
     "exposed": 20,
-    "mb": 886.6
+    "mb": 886.7
    }
   }
  },
@@ -3446,6 +3446,174 @@
    "registered": true,
    "exposed": true,
    "suggested_id": "news_collector_data"
+  },
+  {
+   "domain": "开源情报",
+   "label": "yt_raw_zip（948 ZIP/清单/sha256）",
+   "kind": "corpus_layer",
+   "path": "C:/项目/知识库/01_数据分包",
+   "files": 2844,
+   "mb": 2903.3,
+   "registered": false,
+   "exposed": false,
+   "suggested_id": "yt_raw_zip",
+   "layer": "raw"
+  },
+  {
+   "domain": "开源情报",
+   "label": "yt_normalized（videos/comments/channel_map parquet）",
+   "kind": "corpus_layer",
+   "path": "C:/项目/知识库/10_规范化",
+   "files": 12,
+   "mb": 822.7,
+   "registered": false,
+   "exposed": false,
+   "suggested_id": "yt_normalized",
+   "layer": "normalized"
+  },
+  {
+   "domain": "开源情报",
+   "label": "yt_cleaned_comments（清洗+PII脱敏）",
+   "kind": "corpus_layer",
+   "path": "C:/项目/知识库/20_清洗",
+   "files": 14,
+   "mb": 148.5,
+   "registered": false,
+   "exposed": false,
+   "suggested_id": "yt_cleaned_comments",
+   "layer": "cleaned"
+  },
+  {
+   "domain": "开源情报",
+   "label": "yt_transcripts（转写）",
+   "kind": "corpus_layer",
+   "path": "C:/项目/知识库/20_转写",
+   "files": 80,
+   "mb": 2.5,
+   "registered": false,
+   "exposed": false,
+   "suggested_id": "yt_transcripts",
+   "layer": "transcript"
+  },
+  {
+   "domain": "学习派生",
+   "label": "yt_knowledge_units（知识单元）",
+   "kind": "corpus_layer",
+   "path": "C:/项目/知识库/30_知识单元",
+   "files": 1,
+   "mb": 0.0,
+   "registered": false,
+   "exposed": false,
+   "suggested_id": "yt_knowledge_units",
+   "layer": "dws"
+  },
+  {
+   "domain": "学习派生",
+   "label": "yt_distill（知识提炼）",
+   "kind": "corpus_layer",
+   "path": "C:/项目/知识库/35_知识提炼",
+   "files": 3,
+   "mb": 19.7,
+   "registered": false,
+   "exposed": false,
+   "suggested_id": "yt_distill",
+   "layer": "dws"
+  },
+  {
+   "domain": "学习派生",
+   "label": "yt_faq（FAQ 语义归并 133 条）",
+   "kind": "corpus_layer",
+   "path": "C:/项目/知识库/37_FAQ挖掘",
+   "files": 19,
+   "mb": 63.9,
+   "registered": false,
+   "exposed": false,
+   "suggested_id": "yt_faq",
+   "layer": "ads"
+  },
+  {
+   "domain": "学习派生",
+   "label": "yt_index（62,401 docs bge-m3）",
+   "kind": "corpus_layer",
+   "path": "C:/项目/知识库/40_索引",
+   "files": 252,
+   "mb": 331.9,
+   "registered": false,
+   "exposed": false,
+   "suggested_id": "yt_index",
+   "layer": "ads"
+  },
+  {
+   "domain": "学习派生",
+   "label": "yt_rag（4,926 chunks + packed 62,401）",
+   "kind": "corpus_layer",
+   "path": "C:/项目/知识库/50_RAG",
+   "files": 808,
+   "mb": 720.3,
+   "registered": false,
+   "exposed": true,
+   "suggested_id": "yt_rag",
+   "layer": "served"
+  },
+  {
+   "domain": "学习派生",
+   "label": "yt_learning_cards（学习卡）",
+   "kind": "corpus_layer",
+   "path": "C:/项目/知识库/60_学习卡",
+   "files": 2,
+   "mb": 0.0,
+   "registered": false,
+   "exposed": true,
+   "suggested_id": "yt_learning_cards",
+   "layer": "ads"
+  },
+  {
+   "domain": "学习派生",
+   "label": "yt_briefs（简报）",
+   "kind": "corpus_layer",
+   "path": "C:/项目/知识库/70_简报",
+   "files": 2,
+   "mb": 0.0,
+   "registered": false,
+   "exposed": false,
+   "suggested_id": "yt_briefs",
+   "layer": "ads"
+  },
+  {
+   "domain": "平台运行",
+   "label": "yt_review（复核）",
+   "kind": "corpus_layer",
+   "path": "C:/项目/知识库/80_复核",
+   "files": 4,
+   "mb": 0.1,
+   "registered": false,
+   "exposed": false,
+   "suggested_id": "yt_review",
+   "layer": "ops"
+  },
+  {
+   "domain": "学习派生",
+   "label": "yt_reports（报告）",
+   "kind": "corpus_layer",
+   "path": "C:/项目/知识库/90_报告",
+   "files": 33,
+   "mb": 0.4,
+   "registered": false,
+   "exposed": false,
+   "suggested_id": "yt_reports",
+   "layer": "ads"
+  },
+  {
+   "domain": "学习派生",
+   "label": "yt_learning.db（星型模型 9 表，统一取数入口）",
+   "kind": "corpus_layer",
+   "path": "C:/项目/知识库/00_数据仓",
+   "files": 9,
+   "mb": 580.7,
+   "registered": false,
+   "exposed": true,
+   "suggested_id": "yt_learning.db",
+   "layer": "warehouse"
   }
  ],
  "unregistered": [
