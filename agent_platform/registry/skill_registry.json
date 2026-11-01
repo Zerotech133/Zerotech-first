@@ -631,6 +631,20 @@
       "title": "multi 50 条 A/B 复跑",
       "ref": "tools/kb_corpus/kb_qa_multi_ab50.py",
       "enabled": true
+    },
+    {
+      "id": "kb_qa_guard",
+      "kind": "tool",
+      "title": "multi 质量守卫（引用/推断/集中度）",
+      "ref": "tools/kb_corpus/kb_qa_guard.py",
+      "enabled": true
+    },
+    {
+      "id": "eval_set_v3",
+      "kind": "tool",
+      "title": "评测集 v3 构建/合并复评",
+      "ref": "tools/kb_corpus/eval_set_v3.py",
+      "enabled": true
     }
   ]
 }

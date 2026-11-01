@@ -4199,5 +4199,41 @@
       ]
     },
     "note": "v3 全 50 条复跑：single 38%→multi 80%（+42pp）、McNemar p=6e-06、回退 1 条（可控）、耗时比 1.02 → **复现 n=30 结论，维持 multi 默认**。"
+  },
+  "kb_qa_guard_20261101": {
+    "tool": "tools/kb_corpus/kb_qa_guard.py",
+    "report": "research/reports/kb_qa_guard_20261101.md",
+    "conclusion": {
+      "restored_quality": true,
+      "verdict": "guard 恢复了引用可解析率/压低幻觉率，代价为可答率小幅下降，建议默认 fallback",
+      "reasons": [
+        "引用可解析率：100% → 100%；幻觉率：0% → 0%；支撑率：100% → 100%。",
+        "可答率：67% → 50%（guard 拦截 6 条，action=fallback）。",
+        "拦截原因分布：{\"insufficient_cited_units\": 6, \"citation_missing\": 4, \"inference_heavy\": 4}。"
+      ],
+      "risks": [
+        "fallback 答案虽引用可解析，但信息密度低于原 multi 答案；需人工抽查回退质量。",
+        "inference_ratio 依赖模型输出【直接事实】/【推断】标记；模型不标注时比率为 0，可能漏检。",
+        "引用可解析只验证 unit_id 存在性，不验证语义支撑（支撑率按「在本次检索材料内」近似）。",
+        "n=12 为小样本，需扩样到 30–50 条复核 guard 影响。"
+      ],
+      "next_actions": [
+        "在 kb_qa.ask(mode='multi') 出口接入 apply_guard（默认 on_fail='fallback'），payload 暴露 guard 字段。",
+        "对 guard 拦截样本抽样人工评估回退答案质量，必要时改为 mark 灰度观察。",
+        "扩样重跑 30–50 条 guard 前后指标。"
+      ]
+    },
+    "note": "multi 质量守卫（引用硬门/推断比例/集中度/fallback）：12 条重跑，guard 拦截 6 条回退可核验摘录；引用可解析/支撑/幻觉保持 100%/100%/0%，代价可答率 67%→50%；建议默认 fallback 接入 kb_qa(mode=multi) 出口。"
+  },
+  "card_review_suggested_20261101": {
+    "report": "research/reports/card_review_suggested_preview_20261101.md",
+    "decisions": "research/reports/card_review_decisions_suggested_20261101.json",
+    "note": "60 卡建议 decisions（pass36/revise24/reject0）；decide dry-run：更新 60 卡、approved 36→合并新增 36（总 56）、冲突0、合并校验通过；**未 apply**，等人工确认。"
+  },
+  "eval_set_v3_20261101": {
+    "tool": "tools/kb_corpus/eval_set_v3.py",
+    "asset": "research/reports/eval_sets/eval_set_20261101_v3.json",
+    "merge_report": "research/reports/merge_sim_v3_20261101.md",
+    "note": "评测集 v3（n=102，v2 89+新增13 覆盖 merged-concept 盲区）；合并复评：全量 P@5 0.7549→0.7451（-0.0098）、新增13条 -7.7pp → **简单去重方案不建议执行**；改用内容合并/alias 检索后再评。"
   }
 }

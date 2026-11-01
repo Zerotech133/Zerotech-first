@@ -1,6 +1,6 @@
 {
  "schema_version": "eval_manifest.v1",
- "updated_at": "2026-11-01T10:00:35+08:00",
+ "updated_at": "2026-11-01T10:59:32+08:00",
  "sets": [
   {
    "version": 2,
@@ -17,6 +17,27 @@
     "OR": 8,
     "短语": 6,
     "排除": 5,
+    "短查询": 5,
+    "长查询": 3
+   },
+   "annotation_policy_ref": "docs/standards/2026-11-01_检索评测标注规范_v1.md",
+   "validation_ok": true
+  },
+  {
+   "version": 3,
+   "set_id": "eval_set_20261101_v3",
+   "file": "eval_set_20261101_v3.json",
+   "content_hash": "6b778e2c4c66d4b3b8c37a5184dd1741b8aa0015c1575c8d54618a4584f89787",
+   "created_at": "2026-11-01T10:59:32+08:00",
+   "n_queries": 102,
+   "source": "eval_set_20261101_v2 + eval_set_v3 新增查询（跨境电商/东盟/中小微/贸易）",
+   "type_distribution": {
+    "主题": 49,
+    "AND": 13,
+    "同义词": 9,
+    "OR": 9,
+    "短语": 8,
+    "排除": 6,
     "短查询": 5,
     "长查询": 3
    },
