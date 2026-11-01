@@ -1,0 +1,105 @@
+apiVersion: zerobound/v1
+kind: Composition
+metadata:
+  id: lusu-d1-flow
+  name: 鲁肃 D1 投研裁决流水线
+  version: 1.0.0
+  owner: D1
+  lifecycle: draft
+  tier: product
+  host: lingjie
+  description: ACAD1 选股池 → D1 投研/裁决/建仓计划 → 盯盘 → 人工门 → TR1 paper 执行 → 复盘
+  created: "2026-11-02"
+  updated: "2026-11-02"
+spec:
+  kernel: ">=0.9 <2.0"
+  seats:
+    - ref: agent/D1
+    - ref: agent/T1
+    - ref: agent/T2
+    - ref: agent/N1
+    - ref: agent/F1
+    - ref: agent/ST1
+    - ref: agent/QS1
+    - ref: agent/WA1
+    - ref: agent/WA2
+      note: org 声明在册；hr 目录缺（审计在案）
+    - ref: agent/WA3
+      note: 同上
+    - ref: agent/TR1
+    - ref: agent/TR2
+      note: org 声明在册；hr 目录缺（审计在案）
+    - ref: agent/TR3
+      note: 同上
+  skills:
+    - ref: skill/events
+    - ref: skill/paper_positions
+  data:
+    requires:
+      - ref: dataset/file/recommendation_pool
+      - ref: dataset/file/pool_review
+      - ref: dataset/file/team_exec
+      - ref: dataset/file/paper_ledger
+    contract: trading-bot/v1
+    sla:
+      paper_only: true
+      human_gate_external_only: true
+      kill_switch: PAPER_KILL
+      pool_scope: acad1_only
+  interfaces:
+    exposes:
+      - http: /api/d1/research
+      - http: /api/d1/decisions
+      - http: /api/d1/meeting
+      - page: /d1/research
+      - page: /d1/war-room
+    consumes:
+      - taskstore
+      - envelope/s21
+      - llm/glm-5.3
+    auth:
+      public: false
+      methods: [portal-token]
+      roles: [A0, D1, ACAD1]
+  pages:
+    - ref: page/d1/research
+    - ref: page/d1/war-room
+    - ref: page/legion
+  jobs:
+    - ref: job/legion-daily-review
+    - ref: job/d1-outcome-daily
+  channels:
+    - feishu
+    - portal
+    - trader
+  permissions:
+    default: read-only
+    write_scopes:
+      - agent/D1/*
+      - agent_platform/data/paper/**
+      - agent_platform/data/pool_review/**
+    deny:
+      - _vault
+      - quant_backtest/data
+  evidence:
+    contract: trading-bot/v1
+    ledger: agent_platform/data/paper/paper_ledger.jsonl
+  runtime:
+    service: portal-api
+    endpoint: http://127.0.0.1:8091
+    mode: internal-service
+  slo:
+    trading_permitted: false
+    real_exchange_adapter: disabled
+    watch_runtime: contract_only
+    review_cadence: daily
+  notes:
+    - "六段流水线见 agent_platform/registry/trading_bot.json；P0 影子清单。"
+    - "WA1/WATCH_TOWER/watchbot 三层盯盘仍为契约态（未接实时行情入口）。"
+    - "人工确认门仅 external_test；内部 paper 自动路径跳过但留痕。"
+    - "交易/权益写操作不经零界，仍回智策授权链（ADR-016）。"
+status:
+  phase: shadow
+  health: unknown
+  validated: false
+  source: "trading_bot.json + 2026-10-30 业务串联方案 + 实测审计"

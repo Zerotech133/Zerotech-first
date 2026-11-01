@@ -1,0 +1,122 @@
+{
+  "schema": "zerobound/composition-registry/v0.1",
+  "generated_at": "2026-11-02",
+  "status": "draft-shadow",
+  "note": "P0 影子账本：只登记、不装载、不改变运行时。P1 起由 tools/composition.py 校验与维护。",
+  "host": {
+    "id": "lingjie",
+    "name": "零界（老田的AI助手）",
+    "entry": "http://127.0.0.1:8734",
+    "status": "sole-host",
+    "decision": "ADR-016"
+  },
+  "kernel": {
+    "version": "0.9.0",
+    "status": "draft",
+    "freeze_list": "platform/kernel_v1.yaml",
+    "decision": "ADR-015"
+  },
+  "compositions": [
+    {
+      "id": "acad1-legion",
+      "name": "司马徽军团",
+      "tier": "legion",
+      "owner": "ACAD1",
+      "version": "1.0.0",
+      "lifecycle": "draft",
+      "host": "lingjie",
+      "manifest": "compositions/acad1-legion/manifest.yaml",
+      "status": {
+        "phase": "shadow",
+        "health": "unknown",
+        "validated": false,
+        "evidence": "2026-11-02 只读反推；双池/寄居/临时 JSON 三项待 P2 净化"
+      }
+    },
+    {
+      "id": "quant-domain",
+      "name": "量化域（智策收敛）",
+      "tier": "product",
+      "owner": "A0",
+      "version": "1.0.0",
+      "lifecycle": "draft",
+      "host": "lingjie",
+      "manifest": "compositions/quant-domain/manifest.yaml",
+      "status": {
+        "phase": "shadow",
+        "health": "unknown",
+        "validated": false,
+        "evidence": "ADR-016：内部服务 + 页面包 + PG + 日管线；L1 截止 2026-12-02"
+      }
+    },
+    {
+      "id": "lusu-d1-flow",
+      "name": "鲁肃 D1 投研裁决流水线",
+      "tier": "product",
+      "owner": "D1",
+      "version": "1.0.0",
+      "lifecycle": "draft",
+      "host": "lingjie",
+      "manifest": "compositions/lusu-d1-flow/manifest.yaml",
+      "status": {
+        "phase": "shadow",
+        "health": "unknown",
+        "validated": false,
+        "evidence": "agent_platform/registry/trading_bot.json 六段流水线；盯盘/执行仍为契约态"
+      }
+    },
+    {
+      "id": "quant-strategy-line",
+      "name": "量化策略线",
+      "tier": "product",
+      "owner": "STRAT1",
+      "version": "1.0.0",
+      "lifecycle": "draft",
+      "host": "lingjie",
+      "manifest": "compositions/quant-strategy-line/manifest.yaml",
+      "status": {
+        "phase": "shadow",
+        "health": "unknown",
+        "validated": false,
+        "evidence": "策略 12 条 + 影子账本 + PIT；S1–S5 收编未完成"
+      }
+    },
+    {
+      "id": "data-warehouse",
+      "name": "数据仓",
+      "tier": "data",
+      "owner": "DATA1",
+      "version": "1.0.0",
+      "lifecycle": "draft",
+      "host": "lingjie",
+      "manifest": "compositions/data-warehouse/manifest.yaml",
+      "status": {
+        "phase": "shadow",
+        "health": "unknown",
+        "validated": false,
+        "evidence": "314 数据集 / registered 265 / exposed 72；缺 pg_table 与 C:\\Temp 覆盖"
+      }
+    },
+    {
+      "id": "huangzhong-acceptance",
+      "name": "黄忠验收链",
+      "tier": "workflow",
+      "owner": "HUANGZHONG",
+      "version": "1.0.0",
+      "lifecycle": "draft",
+      "host": "lingjie",
+      "manifest": "compositions/huangzhong-acceptance/manifest.yaml",
+      "status": {
+        "phase": "shadow",
+        "health": "unknown",
+        "validated": false,
+        "evidence": "11-04 全链路彩排/复核；报告驱动、无 manifest、靠脚本与报告"
+      }
+    }
+  ],
+  "pending_decisions": [
+    "K1–K8 冻结范围（ADR-015 待拍板项 1）",
+    "kernel guard 是否进 devtask merge（ADR-015 待拍板项 2）",
+    "智策 SaaS-only 面归档逐项确认（ADR-016 + 归档清单）"
+  ]
+}

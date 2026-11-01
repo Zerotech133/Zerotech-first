@@ -1,0 +1,132 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://aios.local/schemas/composition-v0.1.json",
+  "title": "aios composition manifest v0.1",
+  "description": "组合清单（声明式，只引用不内嵌）。规则见 docs/adr/ADR-015-platform-kernel-composition-model.md 与 compositions/README.md。P0 阶段为影子清单，不参与运行时。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "zerobound/v1" },
+    "kind": { "const": "Composition" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "version", "owner", "lifecycle", "tier", "host"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]{2,63}$" },
+        "name": { "type": "string", "minLength": 2, "maxLength": 64 },
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+        "owner": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "lifecycle": { "enum": ["draft", "validated", "registered", "active", "degraded", "retired"] },
+        "tier": { "enum": ["legion", "product", "strategy", "page", "data", "workflow", "channel", "platform"] },
+        "host": { "type": "string", "pattern": "^[a-z][a-z0-9-]{2,63}$" },
+        "description": { "type": "string", "maxLength": 240 },
+        "created": { "type": "string", "format": "date" },
+        "updated": { "type": "string", "format": "date" }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kernel", "runtime", "interfaces", "permissions", "slo"],
+      "properties": {
+        "kernel": { "type": "string", "pattern": "^[<>=~^ ]*[0-9]+\\.[0-9]+(\\.[0-9]+)?[ <>=~^0-9.]*$" },
+        "extends": {
+          "type": "array",
+          "maxItems": 8,
+          "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]{2,63}$" }
+        },
+        "seats": { "type": "array", "items": { "$ref": "#/definitions/ref" } },
+        "skills": { "type": "array", "items": { "$ref": "#/definitions/ref" } },
+        "strategies": { "type": "array", "items": { "$ref": "#/definitions/ref" } },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["requires", "contract"],
+          "properties": {
+            "requires": { "type": "array", "items": { "$ref": "#/definitions/ref" } },
+            "contract": { "type": "string", "minLength": 1, "maxLength": 128 },
+            "sla": { "type": "object", "additionalProperties": true }
+          }
+        },
+        "interfaces": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["exposes", "auth"],
+          "properties": {
+            "exposes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "anyOf": [
+                  { "required": ["http"] },
+                  { "required": ["page"] },
+                  { "required": ["event"] }
+                ],
+                "properties": {
+                  "http": { "type": "string", "pattern": "^/" },
+                  "page": { "type": "string", "pattern": "^/" },
+                  "event": { "type": "string", "pattern": "^[a-z][a-z0-9_.-]+$" }
+                }
+              }
+            },
+            "consumes": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+            "auth": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["public"],
+              "properties": {
+                "public": { "type": "boolean" },
+                "methods": { "type": "array", "items": { "type": "string" } },
+                "roles": { "type": "array", "items": { "type": "string" } }
+              }
+            }
+          }
+        },
+        "pages": { "type": "array", "items": { "$ref": "#/definitions/ref" } },
+        "jobs": { "type": "array", "items": { "$ref": "#/definitions/ref" } },
+        "channels": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "permissions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["default"],
+          "properties": {
+            "default": { "enum": ["read-only"] },
+            "write_scopes": { "type": "array", "items": { "type": "string" } },
+            "deny": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "evidence": { "type": "object", "additionalProperties": true },
+        "runtime": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["service", "mode"],
+          "properties": {
+            "service": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" },
+            "endpoint": { "type": "string" },
+            "mode": { "enum": ["in-process", "internal-service", "external-service", "none"] }
+          }
+        },
+        "slo": { "type": "object", "additionalProperties": true },
+        "notes": { "type": "array", "items": { "type": "string", "maxLength": 240 }, "maxItems": 12 }
+      }
+    },
+    "status": { "type": "object", "additionalProperties": true }
+  },
+  "definitions": {
+    "ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ref"],
+      "properties": {
+        "ref": {
+          "type": "string",
+          "pattern": "^(agent|skill|strategy|dataset|page|job|ext|service|interface)/[A-Za-z0-9_./:*<>=-]+$"
+        },
+        "note": { "type": "string", "maxLength": 160 }
+      }
+    }
+  }
+}

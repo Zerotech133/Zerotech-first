@@ -51,7 +51,13 @@
 - ADR-006 worktree/devtask 隔离；ADR-007 工具矩阵单源；ADR-008 席位契约；
 - ADR-009 端口注册/127.0.0.1；ADR-010 凭据 vault/token env；ADR-011 数据根与 work 退役；
 - ADR-012 L2 五要素；ADR-013 单机范围与文档纪律；
-- [ADR-014 Agent 运行契约 v1（run/event/conversation，Proposed）](docs/adr/ADR-014-agent-run-contract.md)。
+- [ADR-014 Agent 运行契约 v1（run/event/conversation，Proposed）](docs/adr/ADR-014-agent-run-contract.md)；
+- [ADR-015 平台内核契约与组合模型 v1（Proposed）](docs/adr/ADR-015-platform-kernel-composition-model.md)；
+- [ADR-016 唯一宿主整合（Accepted；supersedes 2026-10-30 联邦方案）](docs/adr/ADR-016-single-host-integration.md)。
+
+> **唯一宿主（ADR-016，2026-11-02 老田批准）**：人类唯一入口与平台宿主 = 零界（8734）；
+> 智策不再是独立系统/独立入口/独立认证，收敛为量化域资产（内部 API + 页面包 + PG + 日管线 + 身份映射），
+> L1 截止 2026-12-02 关停 5175/8102。组合清单见 `compositions/`，内核冻结清单见 `platform/kernel_v1.yaml`。
 
 ## 六、变更规则
 

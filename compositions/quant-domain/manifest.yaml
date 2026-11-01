@@ -1,0 +1,91 @@
+apiVersion: zerobound/v1
+kind: Composition
+metadata:
+  id: quant-domain
+  name: 量化域（智策收敛）
+  version: 1.0.0
+  owner: A0
+  lifecycle: draft
+  tier: product
+  host: lingjie
+  description: 智策 OS v2 收敛为零界宿主上的量化业务域（内部 API + React 页面包 + PG + 日管线）
+  created: "2026-11-02"
+  updated: "2026-11-02"
+spec:
+  kernel: ">=0.9 <2.0"
+  seats:
+    - ref: agent/D1
+    - ref: agent/ACAD1
+    - ref: agent/DATA1
+    - ref: agent/AI1
+  skills:
+    - ref: skill/events
+    - ref: skill/datamart_read
+  data:
+    requires:
+      - ref: dataset/pg/v2_bar_daily
+      - ref: dataset/pg/v2_acad1_pool
+      - ref: dataset/pg/v2_selection_pool
+      - ref: dataset/pg/v2_stock_research
+    contract: quant-domain/v1
+    sla:
+      single_db: true
+      migrations_head_min: 35
+      l1_retire_8102_by: "2026-12-02"
+  interfaces:
+    exposes:
+      - http: /api/v1
+      - http: /quant-api/
+      - page: /quant/
+    consumes:
+      - taskstore
+      - envelope/s21
+      - llm/glm-5.3
+    auth:
+      public: false
+      methods: [portal-token, internal-key]
+      roles: [A0, ACAD1, D1, ARCH1]
+  pages:
+    - ref: page/quant/overview
+      note: 整合后由页面 manifest 纳管（当前为智策 React 路由）
+    - ref: page/quant/replay
+    - ref: page/quant/selection
+  jobs:
+    - ref: job/zhice-daily-research-ops
+    - ref: job/zhice-obs-calc
+    - ref: job/zhice-api-guard
+  channels:
+    - feishu
+    - portal
+  permissions:
+    default: read-only
+    write_scopes:
+      - agent_platform/data/paper/**
+      - agent_platform/data/academy/**
+    deny:
+      - _vault
+      - portal/data
+  evidence:
+    contract: quant-domain/v1
+    readonly_for_portal: true
+  runtime:
+    service: quant-api
+    endpoint: http://127.0.0.1:8105
+    mode: internal-service
+  slo:
+    entry: "http://127.0.0.1:8734"
+    legacy_ports: [5175, 8102]
+    legacy_deadline: "2026-12-02"
+    single_auth: true
+    single_db: true
+  notes:
+    - "ADR-016 唯一宿主：零界；智策不再是独立系统/独立入口/独立认证。"
+    - "6 资产：内部 API / React 页面包 / PG / 日管线 / 身份映射 / 安全债。"
+    - "SaaS-only 面（billing/brokers/trades/my_* 等）按 ADR-016 归档，逐项确认无在用入口。"
+    - "先修安全债再开同源反代：默认 secret/admin、autoSession、通配 CORS、hermes_bff 无鉴权。"
+    - "L2 完成后 zhice 降为 services/quant + 页面包 + v2_* schema，不再独立部署。"
+status:
+  phase: shadow
+  health: unknown
+  validated: false
+  source: "ADR-016（2026-11-02 Accepted）+ 智策实测审计"

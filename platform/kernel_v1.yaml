@@ -1,0 +1,244 @@
+# 平台内核冻结清单 v0.9（draft）
+# 规则：docs/adr/ADR-015-platform-kernel-composition-model.md
+# 状态：draft —— 待 ADR-015 待拍板项 1/2 批准后升 frozen；P1 kernel_guard 接入 devtask merge 时生成哈希
+schema: zerobound/platform-kernel/v0.1
+kernel_version: 0.9.0
+status: draft
+effective: "2026-11-02"
+owner: A0
+host:
+  id: lingjie
+  entry: "http://127.0.0.1:8734"
+  db: "postgresql://127.0.0.1:5446/zhice_os_v2"
+  data_root: "C:/项目/老田的AI助手/quant_backtest/data"
+change_policy:
+  rule: "本清单 status=frozen 后，artifacts 中 kind=contract/schema/gate 的文件改动必须带 ADR 号，否则 devtask merge 拒收（kernel_guard）"
+  hotfix: "紧急修复可先合并、24h 内补 ADR（门禁记录 emergency 标记）"
+  review: "每季度 Kernel Review：版本、组合兼容矩阵、技术替换演练、硬耦合残留"
+  deprecation: "major 变更双版本并存 + ≥90 天 deprecation（对齐 ADR-014）"
+  forbidden: "实现文件（portal_api.py、zhice routers/frontend、Hermes、脚本、模型/DB/UI 库）不属于内核，可替换"
+
+contracts:
+  K0_composition:
+    name: 组合层
+    owner: A0
+    status: draft
+    artifacts:
+      - path: compositions/_schema/composition.schema.json
+        kind: schema
+        status: existing
+        note: "Composition Manifest v0.1（本批新建）"
+      - path: compositions/registry.json
+        kind: registry
+        status: existing
+        note: "P0 影子账本"
+      - path: tools/composition.py
+        kind: gate
+        status: planned
+        note: "P1：validate/plan/status/diff/audit/retire"
+      - path: tools/kernel_guard.py
+        kind: gate
+        status: planned
+        note: "P1：内核契约文件改动必须带 ADR"
+      - path: tools/composition_audit.py
+        kind: gate
+        status: planned
+        note: "P1/P3：组合账本/孤儿审计"
+
+  K1_org_seat:
+    name: 组织/席位
+    owner: ARCH1
+    status: partial
+    artifacts:
+      - path: agent_platform/registry/org.json
+        kind: registry
+        status: existing
+        note: "67 席/17 部门；P2 收敛为 Seat 描述符的投影"
+      - path: agent_platform/registry/team_*.json
+        kind: registry
+        status: existing
+        note: "16 个执行拓扑文件（当前仅 team_invest 有执行入口）"
+      - path: agent_platform/hr/<SEAT>/resume.yaml
+        kind: registry
+        status: existing
+        note: "64 目录；appointment.yaml 当前无运行时读者"
+      - path: agent_platform/registry/skill_registry.json
+        kind: registry
+        status: existing
+        note: "127 条；与实现双向漂移待 P2 对账"
+      - path: agent_platform/registry/model_tiers.json
+        kind: registry
+        status: existing
+        note: "模型档位唯一来源目标；当前绑定 5 处来源待收敛"
+      - path: agent_platform/rules/tool_matrix.json
+        kind: contract
+        status: existing
+        note: "P2 接执行点后升 frozen"
+      - path: platform/schemas/seat.schema.json
+        kind: schema
+        status: planned
+        note: "P2：统一 Seat 描述符 schema"
+      - path: platform/schemas/model_tier.schema.json
+        kind: schema
+        status: planned
+
+  K2_task_collab:
+    name: 任务/协作
+    owner: ARCH1
+    status: partial
+    artifacts:
+      - path: agent_platform/engine/tasks.py
+        kind: contract
+        status: existing
+        note: "TaskStore 7 态 + RBAC；DEPTS 硬编码 4 个待改 org 派生"
+      - path: platform/schemas/task.schema.json
+        kind: schema
+        status: planned
+      - path: agent_platform/data/org/tasks/
+        kind: store
+        status: existing
+        note: "append-only JSONL；不是 schema，不入冻结"
+
+  K3_run_observability:
+    name: 运行/可观测
+    owner: ARCH1
+    status: partial
+    artifacts:
+      - path: docs/adr/ADR-014-agent-run-contract.md
+        kind: contract
+        status: existing
+        note: "Run/Event/Conversation；P2 已部分落地，状态行待修订"
+      - path: docs/specs/2026-10-27_Agent运行契约_P2设计稿.md
+        kind: contract
+        status: existing
+      - path: agent_platform/observability/trace.py
+        kind: impl-ref
+        status: existing
+        note: "参考实现（run_scope/spans.run_id），非冻结"
+      - path: platform/schemas/run.schema.json
+        kind: schema
+        status: planned
+
+  K4_interface_envelope:
+    name: 接口/信封
+    owner: ARCH1
+    status: partial
+    artifacts:
+      - path: agent_platform/contracts/reuse/
+        kind: schema
+        status: existing
+        note: "6 个 JSON Schema（identity/conversation/selection/session/token-ex）"
+      - path: agent_platform/contracts/objects.py
+        kind: contract
+        status: existing
+        note: "M0 六对象 + M1 WorkItem/Artifact/Approval"
+      - path: platform/schemas/envelope.schema.json
+        kind: schema
+        status: planned
+        note: "P2：S21 信封 + I5 回写信封统一 schema"
+      - path: platform/error_codes.yaml
+        kind: contract
+        status: planned
+
+  K5_data_evidence:
+    name: 数据/证据
+    owner: DATA1
+    status: partial
+    artifacts:
+      - path: tools/datawarehouse/dataset_registry.py
+        kind: contract
+        status: existing
+        note: "文件级；缺 pg_table 与 C:\\Temp 覆盖（P2）"
+      - path: docs/standards/2026-10-31_知识全链路标准_v1.yaml
+        kind: contract
+        status: existing
+      - path: platform/schemas/dataset.schema.json
+        kind: schema
+        status: planned
+        note: "P2：含 pg_table/文件/契约产物三类"
+      - path: platform/schemas/evidence_bundle.schema.json
+        kind: schema
+        status: planned
+
+  K6_presentation:
+    name: 呈现
+    owner: ARCH1
+    status: partial
+    artifacts:
+      - path: portal/static/tokens.css
+        kind: contract
+        status: existing
+      - path: portal/static/page_shell.js
+        kind: contract
+        status: existing
+      - path: portal/static/nav.js
+        kind: contract
+        status: existing
+        note: "由 api_common DOMAIN_NAV_GROUPS 生成，勿手改"
+      - path: portal/static/shortscreen.js
+        kind: contract
+        status: existing
+      - path: tools/portal_route_inventory.py
+        kind: gate
+        status: existing
+      - path: tools/portal_route_baseline.json
+        kind: baseline
+        status: existing
+      - path: platform/schemas/page.schema.json
+        kind: schema
+        status: planned
+        note: "P2：页面 manifest + 区块注册"
+
+  K7_extension:
+    name: 扩展
+    owner: ARCH1
+    status: partial
+    artifacts:
+      - path: extensions/_schema/manifest.schema.json
+        kind: schema
+        status: existing
+      - path: tools/extension_lint.py
+        kind: gate
+        status: existing
+      - path: platform/schemas/extension.schema.json
+        kind: schema
+        status: planned
+        note: "P2：扩类型 page/job/data/strategy，并与运行源对账"
+
+  K8_governance:
+    name: 治理
+    owner: ARCH1
+    status: existing
+    artifacts:
+      - path: tools/devtask.py
+        kind: gate
+        status: existing
+      - path: tools/test_gate.ps1
+        kind: gate
+        status: existing
+      - path: tools/check_ports.py
+        kind: gate
+        status: existing
+      - path: tools/check_syntax.py
+        kind: gate
+        status: existing
+      - path: tools/check_import_boundaries.py
+        kind: gate
+        status: existing
+      - path: tools/check_portal_split.py
+        kind: gate
+        status: existing
+      - path: tools/portal_route_inventory.py
+        kind: gate
+        status: existing
+      - path: docs/adr/ADR-015-platform-kernel-composition-model.md
+        kind: contract
+        status: proposed
+      - path: docs/adr/ADR-016-single-host-integration.md
+        kind: contract
+        status: accepted
+
+notes:
+  - "本清单 v0.9 为 draft：不生成哈希、不拦截合并；P1 kernel_guard 接入时统一生成 sha256 并升 frozen。"
+  - "kind 取值：schema/contract/registry/gate/baseline/store/impl-ref；impl-ref 不完全冻结，仅登记变更需回归测试。"
+  - "planned 项在对应 P2 任务落地后再补 artifact；未落地前组合清单只能引用 existing 项。"

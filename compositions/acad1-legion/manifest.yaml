@@ -1,0 +1,112 @@
+apiVersion: zerobound/v1
+kind: Composition
+metadata:
+  id: acad1-legion
+  name: 司马徽军团
+  version: 1.0.0
+  owner: ACAD1
+  lifecycle: draft
+  tier: legion
+  host: lingjie
+  description: ACAD1 选股研究治理军团（11 席 + 策略研究/验证/复核）
+  created: "2026-11-02"
+  updated: "2026-11-02"
+spec:
+  kernel: ">=0.9 <2.0"
+  seats:
+    - ref: agent/ACAD1
+      note: 军团长/研究院院长（glm/glm-5.3）
+    - ref: agent/STRAT1
+    - ref: agent/ST1
+    - ref: agent/STRAT2
+    - ref: agent/BACK1
+    - ref: agent/DATA1
+    - ref: agent/AI1
+    - ref: agent/PROD1
+    - ref: agent/COMM1
+    - ref: agent/INTEL1
+    - ref: agent/LUSU1
+      note: 下游反馈接口（协同，不归军团内部）
+  skills:
+    - ref: skill/events
+    - ref: skill/datamart_read
+    - ref: skill/stock_info
+    - ref: skill/pool_rows
+  strategies:
+    - ref: strategy/v1-cn-strat-2
+    - ref: strategy/v1-cn-strat-4
+    - ref: strategy/v1-hk-strat-7
+    - ref: strategy/v1-us-strat-6
+    - ref: strategy/v1-crypto-strat-9
+  data:
+    requires:
+      - ref: dataset/pg/v2_acad1_pool
+        note: PG 5446 zhice_os_v2（真源候选）
+      - ref: dataset/pg/v2_stock_research
+      - ref: dataset/pg/v2_selection_pool
+      - ref: dataset/file/acad1_evidence_bundle
+        note: C:\Temp 契约产物（P2 收敛为契约目录）
+    contract: acad1-pool/v1
+    sla:
+      freshness_days: 1
+      pool_max: 30
+      evidence_max_age_h: 26
+      data_date_lag_days: 1
+  interfaces:
+    exposes:
+      - http: /api/acad1/pool
+      - http: /api/v1/acad1-research
+      - page: /academy/shuijing
+    consumes:
+      - taskstore
+      - llm/glm-5.3
+      - envelope/s21
+      - job/zhice-daily-research-ops
+    auth:
+      public: false
+      methods: [portal-token, internal-key]
+      roles: [A0, ACAD1, ARCH1, D1]
+  pages:
+    - ref: page/academy/shuijing
+    - ref: page/acad1/pool
+  jobs:
+    - ref: job/zhice-daily-research-ops
+      note: 16 步日管线（Windows 计划任务 17:00 触发）
+    - ref: job/academy-intake-brief
+    - ref: job/academy-review
+    - ref: job/academy-weekly-report
+  channels:
+    - feishu
+    - portal
+  permissions:
+    default: read-only
+    write_scopes:
+      - agent/ACAD1/*
+      - agent_platform/data/academy/**
+    deny:
+      - portal/data
+      - quant_backtest/data
+      - _vault
+  evidence:
+    bundle_schema: acad1-evidence/v1
+    readonly: true
+  runtime:
+    service: quant-api
+    endpoint: http://127.0.0.1:8105
+    mode: internal-service
+  slo:
+    daily_rc: 0
+    pool_consistency: pg-vs-projection
+    review_cards_before_freeze: 13
+    human_decision_only: true
+  notes:
+    - "P0 影子清单：只读反推，不装载、不改运行时。"
+    - "双池口径未收口：门户 JSON 池 19（10-30）vs PG v2_acad1_pool（10-31，30）。"
+    - "ACAD1 相关代码寄居智策：8 router/10 表/27 脚本/6 页面/7,599 行，按 ADR-016 收敛。"
+    - "证据包与部分上游走 C:\\Temp 绝对路径，P2 换契约目录 + schema 版本。"
+    - "人工复核不自动通过/否决；11-08 冻结前 13 张 review 卡需逐张复核。"
+status:
+  phase: shadow
+  health: unknown
+  validated: false
+  source: "2026-11-02 只读反推（研究报告 v1.2 §2/§3 + 审计子任务）"
