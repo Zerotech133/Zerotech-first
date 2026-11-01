@@ -1,4 +1,5 @@
 # 零界 · 产品 ROADMAP v3（唯一战略源 + 唯一主排期 · 2026-10-26 23:55 立宪）
+> **STATUS: superseded by ROADMAP v4（2026-11-02）**
 > STATUS: superseded（见 PLAN_REGISTER_ALL_20261031）
 
 
