@@ -519,14 +519,21 @@ def test_m4_default_parties_unified_with_approval_control():
 
 
 def test_m4_uses_approval_control_signoff_gate(tmp_path):
-    """check 从 ctx.repo 的 portal 真源加载 approval_control 并调 signoff_gate。"""
+    """check 从 ctx.repo 的 portal 真源加载 approval_control；B 政策 owner 单签应 PASS。"""
     mod = _load()
     approvals = [{"ts": "2026-10-31T08:30:00", "action": "approve",
-                  "task": "M4/v1.1 正式验收签字", "operator": "ou_laotian"}]
+                  "task": "M4/v1.1 正式验收签字",
+                  "operator": "ou_50a95455c7dffec1090ade400886d0d4"}]
     _write_m4(tmp_path, approvals, _m4_dispatch())
     result = mod.check_m4_signoff(_ctx(mod, tmp_path, repo=REPO_ROOT))
-    assert result["evidence"]["approval_control"]["loaded"] is True
-    assert result["evidence"]["signoff_gate"]["ok"] is True
+    ev = result["evidence"]
+    assert ev["approval_control"]["loaded"] is True
+    assert ev["policy_mode"] == "owner_acceptance"
+    assert ev["required"] == ["A0"]
+    assert ev["signed"] == ["A0"]
+    assert ev["missing"] == []
+    assert ev["signoff_gate"]["ok"] is True
+    assert result["status"] == "pass"
 
 
 def test_m4_ledgers_missing_is_unknown(tmp_path):
