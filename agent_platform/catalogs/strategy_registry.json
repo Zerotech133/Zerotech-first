@@ -5815,5 +5815,26 @@
       "close": 3,
       "needs-more": 2
     }
+  },
+  "rs_overlay_strict_audit_20261101": {
+    "tool": "tools/research/rs_overlay_strict.py",
+    "report": "research/reports/rs_overlay_strict_audit_20261101.md",
+    "fdr": {
+      "n_hypotheses": 57,
+      "n_significant_q10": 24,
+      "q_cut": 0.1,
+      "n_significant_by_mode": {
+        "A": 11,
+        "B": 11,
+        "C": 2
+      }
+    },
+    "verdicts": {
+      "真 alpha": 0,
+      "板块 beta": 8,
+      "无增量": 11
+    },
+    "conclusion": "C 模式（板块≥1%且个股≥1%）的改善来自板块 beta + 样本重叠：控制规模/波动/换手/板块未来收益后 M2 残差大幅缩水，日频聚合 t 多为负；19 个量学战法无一通过严苛关卡。**RS 不可作为入场条件**，只可作事后归因/风险说明。",
+    "verdict": "no_alpha_reject_as_entry"
   }
 }
