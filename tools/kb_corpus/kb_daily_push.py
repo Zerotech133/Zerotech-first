@@ -42,6 +42,8 @@ SCHEMA_VERSION = 1
 GENERATOR = "tools/kb_corpus/kb_daily_push.py"
 DISCLAIMER = "本推送由本地脚本组装，仅供内部研究与学习，不构成投资建议；真实发送需经飞书 webhook 接线与人工审批。"
 ZH_TITLE_PREFIX = "零界知识库日报"
+SEND_RESULT_DIR = DEFAULT_OUT_DIR
+SEND_KIND = "daily:report"
 
 
 # ---------------------------------------------------------------------------
@@ -362,6 +364,65 @@ REQUIRED_TOP = ("schema_version", "date", "generated_at", "dry_run", "disclaimer
                 "sources", "summary", "feishu_payload", "card_text", "meta")
 
 
+def send_payload(payload: dict, *, send_fn=None, send_text_fn=None, kind: str = SEND_KIND) -> dict:
+    """真实发送（显式调用才联网）：复用 news_collector/send_feishu 既有 Feishu 出口。
+
+    安全：① validate_payload 有错 → 拒绝发送；② 0 卡片且 0 候选 → 不发送；
+    ③ send_fn 可注入（测试 mock，不联网）；④ 发送结果单独落盘，不改 payload.dry_run 语义。
+    """
+    errors = validate_payload(payload)
+    if errors:
+        return {"ok": False, "sent": False, "reason": "validate_failed", "errors": errors}
+    summary = payload.get("summary") or {}
+    if not (summary.get("cards_count") or summary.get("candidates_count")):
+        return {"ok": False, "sent": False, "reason": "empty_payload（0 卡片且 0 候选，不发送）"}
+    card = (payload.get("feishu_payload") or {}).get("card")
+    if not isinstance(card, dict) or not card:
+        return {"ok": False, "sent": False, "reason": "no_feishu_card"}
+    if send_fn is None:
+        repo = str(REPO)
+        if repo not in sys.path:
+            sys.path.insert(0, repo)
+        from news_collector import send_feishu  # noqa: PLC0415 - 延迟导入，dry-run 不联网
+        send_fn = send_feishu.send_content
+    content = json.dumps(payload["feishu_payload"], ensure_ascii=False)
+    channel = "interactive"
+    ok = False
+    try:
+        ok = bool(send_fn(content, "interactive", kind=kind))
+    except Exception as exc:  # noqa: BLE001 - 发送失败不影响主链
+        ok = False
+        last_error = f"{type(exc).__name__}: {exc}"
+    # 兜底：卡片权限/格式不可用时发送纯文本摘要（不丢当日推送）
+    if not ok:
+        text = str(payload.get("card_text") or "").strip()
+        if text:
+            try:
+                text_fn = send_text_fn
+                if text_fn is None:
+                    from news_collector import send_feishu as _sf  # noqa: PLC0415
+                    text_fn = _sf.send_text
+                ok = bool(text_fn(text, kind=kind))
+                channel = "text_fallback" if ok else "failed"
+            except Exception as exc:  # noqa: BLE001
+                channel = "failed"
+                last_error = f"{type(exc).__name__}: {exc}"
+    result = {"ok": ok, "sent": ok, "kind": kind, "channel": channel,
+              "date": payload.get("date"),
+              "sent_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+              "summary": summary}
+    if not ok:
+        result["reason"] = locals().get("last_error") or "send_failed"
+    out = Path(SEND_RESULT_DIR) / f"kb_daily_push_send_{payload.get('date') or 'unknown'}.json"
+    try:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8")
+        result["result_file"] = str(out)
+    except Exception as exc:  # noqa: BLE001
+        result["result_file_error"] = f"{type(exc).__name__}: {exc}"
+    return result
+
+
 def validate_payload(payload) -> list[str]:
     """校验推送 payload schema（含卡片字段/dry-run/免责声明），返回错误列表。"""
     errors: list[str] = []
@@ -463,10 +524,10 @@ def _ensure_utf8_stdout() -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="知识库每日推送准备（飞书卡片 payload，dry-run 不发送）")
-    parser.add_argument("command", nargs="?", default="build", choices=["build", "check"], help="build=组装（默认），check=校验现有 payload")
+    parser = argparse.ArgumentParser(description="知识库每日推送（build=准备 payload；send=真实发送，需显式指定）")
+    parser.add_argument("command", nargs="?", default="build", choices=["build", "check", "send"], help="build=组装（默认），check=校验，send=真实发送（飞书）")
     parser.add_argument("--date", default=None, help="日期 YYYYMMDD（默认取 digest.date 或当天）")
-    parser.add_argument("--dry-run", action="store_true", default=True, help="dry-run（默认且唯一模式，不发网络）")
+    parser.add_argument("--dry-run", action="store_true", default=False, help="send 命令下只组装不发送（build 恒 dry-run）")
     parser.add_argument("--digest", default=str(DEFAULT_DIGEST), help="learning_digest JSON 路径")
     parser.add_argument("--panel", default=str(DEFAULT_PANEL), help="report_panel JSON 路径")
     parser.add_argument("--briefing", default=str(DEFAULT_BRIEFING), help="kb_daily_briefing JSON 路径（兜底）")
@@ -492,6 +553,27 @@ def main(argv: list[str] | None = None) -> int:
             for err in report["errors"]:
                 print(f"  - {err}", file=sys.stderr)
         return 0 if report["ok"] else 1
+
+    if args.command == "send":
+        payload = build(
+            date=args.date, digest_path=args.digest, panel_path=args.panel,
+            briefing_path=args.briefing, base_url=args.base_url,
+            out_dir=args.out_dir, portal_out=args.portal_out, write=not args.no_write,
+        )
+        if args.dry_run:
+            print(f"DRY-RUN 未发送：date={payload['date']} cards={payload['summary']['cards_count']} "
+                  f"candidates={payload['summary']['candidates_count']}")
+            return 0
+        result = send_payload(payload)
+        if args.json:
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+        else:
+            print(("SEND_OK" if result.get("ok") else "SEND_FAIL") + " " +
+                  json.dumps({k: result.get(k) for k in ("date", "kind", "reason", "sent_at")},
+                             ensure_ascii=False))
+            if result.get("result_file"):
+                print(f"  发送结果：{result['result_file']}")
+        return 0 if result.get("ok") else 1
 
     payload = build(
         date=args.date,

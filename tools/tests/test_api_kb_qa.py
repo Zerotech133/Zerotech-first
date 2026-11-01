@@ -373,7 +373,7 @@ def test_not_wired_and_route_describe():
     doc = api.__doc__ or ""
     assert "未接线" in doc and "8091" in doc
     routes = api.describe_routes()
-    assert routes["wired"] is False
+    assert routes["wired"] is True
     assert routes["routes"][0]["path"] == "/api/kb/qa"
     assert set(routes["routes"][0]["errors"]) >= {"INVALID_ARGUMENT", "UPSTREAM_UNAVAILABLE", "NOT_READY"}
     params = routes["routes"][0]["params"]

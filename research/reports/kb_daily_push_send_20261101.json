@@ -1,0 +1,13 @@
+{
+ "ok": false,
+ "sent": false,
+ "kind": "daily:report",
+ "channel": "interactive",
+ "date": "20261101",
+ "sent_at": "2026-11-01T23:50:04+08:00",
+ "summary": {
+  "cards_count": 5,
+  "candidates_count": 3
+ },
+ "reason": "RuntimeError: network down"
+}

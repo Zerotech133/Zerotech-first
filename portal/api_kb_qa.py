@@ -37,7 +37,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 API_VERSION = "1.0"
-WIRED = False                       # 预接线标志：未注册到运行中的 8091
+WIRED = True                        # 2026-11-01 老田 L2 批准：已注册到 8091（/api/kb/qa）
 MAX_QUESTION_CHARS = 200
 DEFAULT_TOPK = 8
 MIN_TOPK = 1
@@ -458,6 +458,21 @@ def handle(method: str, path: str, query: dict | None = None, body: dict | None 
     if not params["no_cache"]:
         cache_put(cache_key, {"data": data, "meta": meta})
     return 200, _env(data, meta=meta)
+
+
+def handle_get(handler, path: str, qs: str) -> None:
+    """BaseHTTPRequestHandler 适配器：portal_api.do_GET 早分支调用（写出 JSON 信封）。"""
+    from urllib.parse import parse_qs
+
+    query = parse_qs(qs or "")
+    status, payload = handle("GET", path, query, None)
+    body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    handler.send_response(status)
+    handler.send_header("Content-Type", "application/json; charset=utf-8")
+    handler.send_header("Content-Length", str(len(body)))
+    handler.send_header("Cache-Control", "no-store")
+    handler.end_headers()
+    handler.wfile.write(body)
 
 
 def describe_routes() -> dict:
