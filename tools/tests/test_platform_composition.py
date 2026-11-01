@@ -34,7 +34,7 @@ def test_templates_schema_pass():
 def test_registry_consistent():
     reg = json.loads((ROOT / "compositions" / "registry.json").read_text(encoding="utf-8"))
     ids = {c["id"] for c in reg["compositions"]}
-    dirs = {p.name for p in (ROOT / "compositions").glob("*/manifest.yaml")}
+    dirs = {p.parent.name for p in (ROOT / "compositions").glob("*/manifest.yaml")}
     assert ids == dirs
 
 

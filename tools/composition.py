@@ -137,12 +137,13 @@ def resolve_ref(ref: str, regs: dict, errors: list, warnings: list) -> None:
         if not _dataset_exists(rest, regs):
             warnings.append(f"dataset 未在登记/路径不存在：{ref}")
     elif kind == "page":
+        variants = {rest.replace("/", "_"), rest.replace("/", "_").replace("-", "_")}
         if "/" in rest:
-            ok = rest.split("/")[-1] in regs["page"] or rest.replace("/", "_") in regs["page"]
-        else:
-            ok = rest in regs["page"]
+            parent, leaf = rest.rsplit("/", 1)
+            variants |= {leaf, f"{parent}_{leaf}", f"{parent}_{leaf}".replace("-", "_")}
+        ok = any(v in regs["page"] for v in variants)
         if not ok:
-            warnings.append(f"page 未找到对应 portal html：{ref}")
+            warnings.append(f"page 未找到对应 portal html（或为整合后/规划中页面）：{ref}")
     elif kind == "job":
         if rest in regs["job_planned"]:
             warnings.append(f"job 为 planned（未建计划任务）：{ref}")
@@ -162,13 +163,17 @@ def _dataset_exists(rest: str, regs: dict) -> bool:
     candidates = []
     if kind == "file":
         candidates += [ROOT / "agent_platform" / "data" / f"{token}.json",
+                       ROOT / "agent_platform" / "data" / token,
+                       ROOT / "agent_platform" / "data" / f"{token}.jsonl",
+                       ROOT / "research" / f"{token}.json",
+                       ROOT / "research" / f"{token}.db",
                        Path(r"C:\Temp") / f"{token}.json"]
         candidates += list((ROOT / "agent_platform" / "data").rglob(f"{token}.json"))
+        candidates += list((ROOT / "agent_platform" / "data").rglob(f"{token}.jsonl"))
     elif kind == "dir":
         candidates += [ROOT / "quant_backtest" / "data" / token,
                        Path(r"C:\项目") / "知识库" / token]
     elif kind == "pg":
-        mig = ROOT / "docs" / "specs"
         return token.startswith("v2_")  # P1 软校验：v2_* 表按命名约定通过
     elif kind == "registry":
         return token in {"dataset_registry", "catalog"}
@@ -229,7 +234,8 @@ def _manifests(target: str):
 
 def cmd_validate(args):
     regs = load_registries()
-    files = _manifests(args.target)
+    target = "--all" if (getattr(args, "all", False) or args.target in (None, "--all", "all")) else args.target
+    files = _manifests(target)
     if not files:
         print("没有找到 manifest", file=sys.stderr); return 2
     total_errors = total_warn = 0
@@ -286,6 +292,7 @@ def main(argv=None):
     sub = ap.add_subparsers(dest="cmd", required=True)
     v = sub.add_parser("validate"); v.add_argument("target", nargs="?", default="--all")
     v.add_argument("--strict", action="store_true"); v.add_argument("--json", action="store_true")
+    v.add_argument("--all", action="store_true")
     sub.add_parser("status"); sub.add_parser("audit")
     args = ap.parse_args(argv)
     if args.cmd == "validate":
