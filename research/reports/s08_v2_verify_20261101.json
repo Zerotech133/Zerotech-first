@@ -1,0 +1,94 @@
+{
+ "meta": {
+  "generated_at": "2026-11-01T17:07:14+08:00",
+  "window": "20190131 .. 20260930",
+  "months": 93,
+  "note": "S08-v2 验证（研究）；成本0.15%单边×换手；容量=Σ成交额×5%"
+ },
+ "configs": {
+  "S08_base": {
+   "cagr_pct": 20.25,
+   "mdd_pct": -37.41,
+   "vol_pct": 33.82,
+   "excess_monthly_pct": 0.736,
+   "excess_t": 1.4,
+   "avg_turnover": 0.623,
+   "capacity_median_yi": 3.94,
+   "up_excess_pct": 0.18,
+   "down_excess_pct": 1.411,
+   "positive_years": "6/8",
+   "yearly": {
+    "2019": 48.9,
+    "2020": 6.8,
+    "2021": 40.8,
+    "2022": 7.4,
+    "2023": -5.0,
+    "2024": 36.5,
+    "2025": 49.8,
+    "2026": -10.8
+   },
+   "gates": {
+    "G1": false,
+    "G2": true,
+    "G3": true,
+    "G4": true
+   }
+  },
+  "S08_v2_top": {
+   "cagr_pct": 29.99,
+   "mdd_pct": -43.23,
+   "vol_pct": 40.81,
+   "excess_monthly_pct": 1.589,
+   "excess_t": 1.94,
+   "avg_turnover": 0.661,
+   "capacity_median_yi": 1.54,
+   "up_excess_pct": 0.643,
+   "down_excess_pct": 2.739,
+   "positive_years": "6/8",
+   "yearly": {
+    "2019": 63.1,
+    "2020": -3.6,
+    "2021": 53.0,
+    "2022": 24.8,
+    "2023": -10.7,
+    "2024": 102.4,
+    "2025": 32.3,
+    "2026": 6.4
+   },
+   "gates": {
+    "G1": false,
+    "G2": true,
+    "G3": true,
+    "G4": true
+   }
+  },
+  "S08_v2_ind": {
+   "cagr_pct": 28.21,
+   "mdd_pct": -23.14,
+   "vol_pct": 34.27,
+   "excess_monthly_pct": 1.27,
+   "excess_t": 1.89,
+   "avg_turnover": 0.682,
+   "capacity_median_yi": 1.52,
+   "up_excess_pct": 0.241,
+   "down_excess_pct": 2.52,
+   "positive_years": "6/8",
+   "yearly": {
+    "2019": 55.6,
+    "2020": -1.5,
+    "2021": 41.0,
+    "2022": 31.2,
+    "2023": 0.7,
+    "2024": 100.9,
+    "2025": 32.8,
+    "2026": -10.0
+   },
+   "gates": {
+    "G1": false,
+    "G2": true,
+    "G3": true,
+    "G4": true
+   }
+  }
+ }
+}

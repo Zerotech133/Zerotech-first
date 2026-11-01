@@ -37,6 +37,7 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-siz
     $('s08-ex').textContent=(b.excess_mean_monthly_pct??'—')+'% (t='+(b.excess_t??'—')+')';
     $('s08-cap').textContent=(b.capacity5_median_yi??'—')+' 亿';
     $('s08-note').textContent='月换手 '+(b.avg_turnover??'—')+'；弱显著信号，小仓位观察；'+(d.disclaimer||'');
+    if(d.research_v2){ $('s08-note').textContent += ' ｜改进研究：行业中性 K20 CAGR '+(d.research_v2.cagr_pct)+'%、MDD '+(d.research_v2.mdd_pct)+'%（待复核）'; }
     $('s08-hold').innerHTML=(d.holdings||[]).slice(0,15).map((h,i)=>`<tr><td>${i+1}</td><td><code>${h.ts_code}</code></td><td>${h.name}</td><td>${h.score}</td><td>${(h.w*100).toFixed(2)}</td></tr>`).join('');
   }catch(e){ $('s08-note').textContent='S08 数据加载失败: '+e.message; }
 })();

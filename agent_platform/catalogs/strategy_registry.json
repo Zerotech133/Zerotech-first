@@ -226,6 +226,26 @@
       },
       "approved": false,
       "effective_from": "2026-11-01（影子观察）"
+    },
+    {
+      "id": "S09_MOM120_V2_IND_NEUTRAL",
+      "name": "S09 mom_120 多头 v2（行业中性化 K20 分数加权 月频）",
+      "type": "ranking",
+      "owner": "司马微",
+      "source_hypothesis": "H39 改进研究（S08 research）",
+      "status": "research_candidate_pending_review",
+      "executable": false,
+      "rule": "月频调仓；-ret120 在行业内 z 分数（行业中性化）；取 top20，按分数排名加权；宇宙=非ST/上市≥250日/价≥2",
+      "validation": {
+        "stats": "2019-2026/93月：CAGR 28.21%，MDD -23.14%，月均超额 1.27%（t=1.89），月换手 0.682，容量 1.52 亿；正收益年 6/8",
+        "gates": "G1 未过（t<2）｜G2/G3/G4 过；回撤显著优于基线（-23.1% vs -37.4%）",
+        "shadow": "未启动（研究候选，待复核）",
+        "cost": "0.15%单边×换手已计",
+        "caveat": "2024 年 +100.9% 驱动收益集中；容量降至 1.5 亿（K20 集中）；t=1.89 未达显著；需人工复核/更长样本",
+        "final": "research_candidate_pending_review：风险调整后明显优于 S08 基线，但未过 G1(t) 且容量小；是否替换 S08 配置或新开影子由司马微团队复核"
+      },
+      "approved": false,
+      "effective_from": "2026-11-01（研究候选）"
     }
   ],
   "book_backlog": {

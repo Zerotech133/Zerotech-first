@@ -396,5 +396,13 @@
   "cur_ret_pct": 0.0,
   "market_pct": 0.0,
   "excess_pct": 0.0
+ },
+ "research_v2": {
+  "cagr_pct": 28.21,
+  "mdd_pct": -23.14,
+  "excess_t": 1.89,
+  "capacity_median_yi": 1.52,
+  "status": "research_candidate_pending_review",
+  "note": "行业中性 K20 分数加权：回撤显著更低，待复核"
  }
 }

@@ -1,0 +1,20 @@
+{
+ "task_id": "T-20261101-111",
+ "opened_by": "A0",
+ "assigned_dept": "strategy",
+ "assigned_agent": null,
+ "title": "S08 改进研究：行业中性 v2 是否替换配置/新开影子",
+ "body": "【S08 改进研究结果】2026-11-01\n48 组合：月度/K20/分数加权优于季度/K50/等权（CAGR 边际：M 22.1% vs Q 10.0%；K20 19.0% vs K50 16.1% vs K100 13.1%；score 17.2% vs eq 14.8%）。\nv2 行业中性（M/K20/score/ind）：CAGR 28.21%、MDD -23.14%（基线 -37.4%）、月均超额 1.27%（t=1.89）、换手 0.682、容量 1.52 亿、正收益年 6/8；\nv2 raw：CAGR 29.99%、MDD -43.23%、容量 1.54 亿；基线：CAGR 20.25%、MDD -37.41%、容量 3.94 亿。\n结论：行业中性化显著降回撤但容量减半、t=1.89<2、2024 收益集中 → 研究候选（S09），未启动影子。\n请复核：①是否把 S08 影子配置切到 v2_ind（会改变正在跟踪的基线）；②或新开 S09 小仓位影子并行；③或维持现状等 2027-02 复核。\n证据：research/reports/s08_research_*.{json,md}、s08_v2_verify_*.{json,md}；registry S09；hypotheses H45；/selection.html S08 卡改进行。",
+ "severity": "P2",
+ "status": "open",
+ "created_at": "2026-11-01T17:07:57",
+ "due": "2026-11-15",
+ "closure_note": null,
+ "history": [
+  {
+   "at": "2026-11-01T17:07:57",
+   "by": "A0",
+   "action": "open"
+  }
+ ]
+}
