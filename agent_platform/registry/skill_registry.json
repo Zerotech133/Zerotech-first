@@ -309,6 +309,27 @@
       "title": "多智能体研报评审面板",
       "ref": "tools/research/report_panel.py",
       "enabled": true
+    },
+    {
+      "id": "lowturn_freq_validate",
+      "kind": "tool",
+      "title": "低频/成本优化因子验证",
+      "ref": "tools/research/lowturn_freq_validate.py",
+      "enabled": true
+    },
+    {
+      "id": "reverse_avoid_test",
+      "kind": "tool",
+      "title": "量学反向信号规避组合测试",
+      "ref": "tools/research/reverse_avoid_test.py",
+      "enabled": true
+    },
+    {
+      "id": "report_panel_v2",
+      "kind": "tool",
+      "title": "研报多智能体评审 v2（交叉+页码）",
+      "ref": "tools/research/report_panel_v2.py",
+      "enabled": true
     }
   ]
 }

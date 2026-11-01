@@ -170,6 +170,15 @@
           "oos_excess_pct": null,
           "n_events": null,
           "action": null
+        },
+        "reverse_avoid_20261101": {
+          "gross_ann_pct": 0.703,
+          "net_ann_pct": 0.359,
+          "t": 6.2,
+          "coverage_pct": 1.152,
+          "tradable_avoidance": true,
+          "risk_rule_candidate": true,
+          "verdict": "可交易规避（毛/净超额均为正且显著）；市值×行业层内同向有效（非单纯小市值/高波动暴露）"
         }
       },
       {
@@ -264,6 +273,15 @@
           "oos_excess_pct": null,
           "n_events": null,
           "action": null
+        },
+        "reverse_avoid_20261101": {
+          "gross_ann_pct": -12.843,
+          "net_ann_pct": -24.601,
+          "t": -3.27,
+          "coverage_pct": 45.247,
+          "tradable_avoidance": false,
+          "risk_rule_candidate": false,
+          "verdict": "规避无正超额（原信号反向不成立或已被市场消化）"
         }
       },
       {
@@ -376,6 +394,15 @@
           "oos_excess_pct": null,
           "n_events": null,
           "action": null
+        },
+        "reverse_avoid_20261101": {
+          "gross_ann_pct": 7.205,
+          "net_ann_pct": 2.749,
+          "t": 7.35,
+          "coverage_pct": 24.615,
+          "tradable_avoidance": true,
+          "risk_rule_candidate": true,
+          "verdict": "可交易规避（毛/净超额均为正且显著）；市值×行业层内同向有效（非单纯小市值/高波动暴露）"
         }
       },
       {
@@ -410,6 +437,15 @@
           "oos_excess_pct": null,
           "n_events": null,
           "action": null
+        },
+        "reverse_avoid_20261101": {
+          "gross_ann_pct": 4.917,
+          "net_ann_pct": -6.568,
+          "t": 2.03,
+          "coverage_pct": 42.104,
+          "tradable_avoidance": false,
+          "risk_rule_candidate": false,
+          "verdict": "毛超额显著为正但被换手成本吃掉（净超额≤0）；市值×行业层内同向有效（非单纯小市值/高波动暴露）"
         }
       },
       {
@@ -495,5 +531,56 @@
       "rule_only": false
     },
     "note": "9b 模型偏乐观（5/5 进候选），仅作初筛候选；页码漂移需人工抽查，不得直接交易。"
+  },
+  "lowfreq_validation_20261101": {
+    "report": "research/reports/lowturn_freq_validate_20261101.md",
+    "factors": [
+      "low_turnover",
+      "max_ret20",
+      "vol20"
+    ],
+    "best_net_variant": {
+      "low_turnover": "hold60",
+      "max_ret20": "hold60",
+      "vol20": "hold60"
+    },
+    "any_pass_net": false,
+    "note": "hold60 净 OOS +6.12%(t=1.63) 但逐年仅 1/4 同向、IS 2023-24 负 → 成本已非瓶颈（累计拖累降到 5.6%），瓶颈转为逐年稳定性。"
+  },
+  "reverse_avoid_20261101": {
+    "report": "research/reports/reverse_avoid_20261101.md",
+    "tested": 4,
+    "mapped": 4,
+    "conclusion": "LX20 牛股三绝 规避可交易（毛+7.21%/净+2.75%/t=7.35，覆盖24.6%，层内+34.6%）；LX06 长阴短柱统计干净但幅度小（净+0.36%，覆盖1.1%）；LX22 凹口淘金成本吃光（净-6.57%）；LX12 双阴出货规避方向不成立（净-24.6%）。"
+  },
+  "report_panel_v2_20261101": {
+    "report": "research/reports/report_panel_v2_20261101.md",
+    "reports": 3,
+    "candidates": 2,
+    "comparison_v1": {
+      "v1_file": "C:\\项目\\老田的AI助手\\research\\reports\\report_panel_20261101.json",
+      "v1_available": true,
+      "v1_candidates_total": 5,
+      "v1_candidates_in_scope": [
+        "rp_AP202610071830180005",
+        "rp_AP202610071830182729",
+        "rp_AP202610071830184407"
+      ],
+      "v2_candidates": [
+        "rp_AP202610071830180005",
+        "rp_AP202610071830182729"
+      ],
+      "delta_in_scope": -1,
+      "note": "v1=单模型 qwen3.5:9b、pass 票≥2 即进；v2=双模型 ≥2 模型 pass + 主模型 ≥2 角色 pass + 页码校验通过，候选显著降维"
+    },
+    "page_validation_summary": {
+      "total_facts": 51,
+      "invalid_facts": 0,
+      "missing_pages": 0,
+      "reports_with_issues": 0,
+      "tolerance": 1,
+      "note": "51 条 key_facts 全部落在知识单元页区间并集内（容差 ±1 与 0 均为 0 越界）；选中研报单条单元页区间较宽，页码校验拦截力有限"
+    },
+    "note": "双模型交叉+页码校验+候选降维：候选 5→2（同范围 3 篇 v1→v2 Δ-1）；页码越界 0（本批页区间宽，拦截力有限）；14/18 角色 LLM、4 降级。"
   }
 }
