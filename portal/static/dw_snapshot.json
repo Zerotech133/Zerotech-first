@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-02T00:18:27+08:00",
+ "generated_at": "2026-11-02T04:38:11+08:00",
  "today": "2026-11-02",
  "catalog": {
   "version": 18,
@@ -121,9 +121,9 @@
   "sources_mining": 37,
   "sources_pending": 0,
   "coverage_pct": 39.1,
-  "new_today": 2,
+  "new_today": 3,
   "pilot_today": 0,
-  "merged_today": 0,
+  "merged_today": 1,
   "hypotheses": 53,
   "hypotheses_by_status": {
    "rejected": 35,
@@ -134,7 +134,7 @@
    "shadow": 1
   },
   "reports_total": 40,
-  "reports_today": 18,
+  "reports_today": 40,
   "approvals_today": 0,
   "risks": [
    {
@@ -174,7 +174,7 @@
    }
   ],
   "backup_latest": "2026-11-01_0745",
-  "backup_age_hours": 24.3,
+  "backup_age_hours": 28.6,
   "supervisor_red": []
  },
  "sources": [
@@ -1024,17 +1024,17 @@
    "freshness_mode": "low_freq",
    "status": "mining",
    "note": "已入库，未用于研究",
-   "files": 142,
+   "files": 143,
    "size_mb": 1.5,
    "size_h": "2 MB",
    "rows": 112800,
    "rows_h": "11.3 万",
-   "range": "000906_201501..000906_202610",
-   "last_update": "2026-11-01",
-   "latest_date": "20261030",
+   "range": "000906_201501..000906_202611",
+   "last_update": "2026-11-02",
+   "latest_date": "",
    "report_period": "",
    "lag_days": null,
-   "today_new": 0,
+   "today_new": 2,
    "registered": true,
    "manifest": "closed",
    "date_status": "registered",
@@ -1929,7 +1929,7 @@
    "latest_date": "20261022",
    "report_period": "",
    "lag_days": null,
-   "today_new": 5896,
+   "today_new": 19769,
    "registered": true,
    "manifest": "closed",
    "date_status": "registered",
@@ -2003,13 +2003,13 @@
    "status": "in_progress",
    "note": "保留 365 天；历史不可回填（接口深度约 1 周）",
    "files": 1,
-   "size_mb": 126.21,
+   "size_mb": 126.41,
    "size_h": "126 MB",
-   "rows": 111250,
-   "rows_h": "111250",
+   "rows": 111396,
+   "rows_h": "111396",
    "range": "news.db",
    "last_update": "2026-11-02",
-   "latest_date": "2026-11-02 00:03",
+   "latest_date": "2026-11-02 04:34",
    "lag_days": 0,
    "today_new": 1,
    "registered": true,
@@ -2194,6 +2194,33 @@
  },
  "new_today_sources": [
   {
+   "name": "index_weight",
+   "label": "Tushare·指数权重",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "low_freq",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 143,
+   "size_mb": 1.5,
+   "size_h": "2 MB",
+   "rows": 112800,
+   "rows_h": "11.3 万",
+   "range": "000906_201501..000906_202611",
+   "last_update": "2026-11-02",
+   "latest_date": "",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 2,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
    "name": "us_daily",
    "label": "Tushare·美股日线",
    "method": "接口同步",
@@ -2211,7 +2238,7 @@
    "latest_date": "20261022",
    "report_period": "",
    "lag_days": null,
-   "today_new": 5896,
+   "today_new": 19769,
    "registered": true,
    "manifest": "closed",
    "date_status": "registered",
@@ -2231,13 +2258,13 @@
    "status": "in_progress",
    "note": "保留 365 天；历史不可回填（接口深度约 1 周）",
    "files": 1,
-   "size_mb": 126.21,
+   "size_mb": 126.41,
    "size_h": "126 MB",
-   "rows": 111250,
-   "rows_h": "111250",
+   "rows": 111396,
+   "rows_h": "111396",
    "range": "news.db",
    "last_update": "2026-11-02",
-   "latest_date": "2026-11-02 00:03",
+   "latest_date": "2026-11-02 04:34",
    "lag_days": 0,
    "today_new": 1,
    "registered": true,
@@ -2892,12 +2919,129 @@
  ],
  "reports": [
   {
+   "name": "catalog_registry_mapping_20261102.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 188.2,
+   "date": "2026-11-02",
+   "time": "04:36",
+   "hid": ""
+  },
+  {
+   "name": "learning_intake_20261102.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 0.5,
+   "date": "2026-11-02",
+   "time": "04:33",
+   "hid": ""
+  },
+  {
+   "name": "card_candidates_laomu_notes_20261102.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 211.9,
+   "date": "2026-11-02",
+   "time": "04:11",
+   "hid": ""
+  },
+  {
+   "name": "learning_pipeline_20261102.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 0.5,
+   "date": "2026-11-02",
+   "time": "04:11",
+   "hid": ""
+  },
+  {
+   "name": "learning_archive_20261102.md",
+   "title_zh": "研究报告",
+   "kind": "报告正文",
+   "size_kb": 0.9,
+   "date": "2026-11-02",
+   "time": "04:08",
+   "hid": ""
+  },
+  {
+   "name": "learning_archive_20261102.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 0.9,
+   "date": "2026-11-02",
+   "time": "04:08",
+   "hid": ""
+  },
+  {
+   "name": "card_candidates_20261102_流水线自检_示例_20261102.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 3.1,
+   "date": "2026-11-02",
+   "time": "04:07",
+   "hid": ""
+  },
+  {
+   "name": "learning_standardize_20261102.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 0.1,
+   "date": "2026-11-02",
+   "time": "04:02",
+   "hid": ""
+  },
+  {
+   "name": "learning_governance_20261102.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 0.4,
+   "date": "2026-11-02",
+   "time": "04:02",
+   "hid": ""
+  },
+  {
+   "name": "learning_governance_20261102.md",
+   "title_zh": "研究报告",
+   "kind": "报告正文",
+   "size_kb": 0.1,
+   "date": "2026-11-02",
+   "time": "04:02",
+   "hid": ""
+  },
+  {
+   "name": "quality_daily_20261102.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 1.5,
+   "date": "2026-11-02",
+   "time": "04:01",
+   "hid": ""
+  },
+  {
+   "name": "project_archive_20261102.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 26.6,
+   "date": "2026-11-02",
+   "time": "03:41",
+   "hid": ""
+  },
+  {
+   "name": "cleanup_20261102.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 0.9,
+   "date": "2026-11-02",
+   "time": "03:26",
+   "hid": ""
+  },
+  {
    "name": "strategy_inventory_20261101.json",
    "title_zh": "研究报告",
    "kind": "原始数据",
    "size_kb": 2.3,
    "date": "2026-11-02",
-   "time": "00:16",
+   "time": "03:25",
    "hid": ""
   },
   {
@@ -2906,7 +3050,7 @@
    "kind": "原始数据",
    "size_kb": 1.9,
    "date": "2026-11-02",
-   "time": "00:16",
+   "time": "03:25",
    "hid": ""
   },
   {
@@ -2915,7 +3059,7 @@
    "kind": "原始数据",
    "size_kb": 12.9,
    "date": "2026-11-02",
-   "time": "00:16",
+   "time": "03:25",
    "hid": ""
   },
   {
@@ -2924,34 +3068,34 @@
    "kind": "原始数据",
    "size_kb": 22.2,
    "date": "2026-11-02",
-   "time": "00:16",
+   "time": "03:25",
    "hid": ""
   },
   {
    "name": "report_panel_daily_status.json",
    "title_zh": "研究报告",
    "kind": "原始数据",
-   "size_kb": 14.1,
+   "size_kb": 10.9,
    "date": "2026-11-02",
-   "time": "00:16",
+   "time": "03:25",
    "hid": ""
   },
   {
-   "name": "kb_daily_push_20261101.json",
-   "title_zh": "研究报告",
-   "kind": "原始数据",
-   "size_kb": 7.3,
-   "date": "2026-11-02",
-   "time": "00:16",
-   "hid": ""
-  },
-  {
-   "name": "daily_screening_20261030.md",
+   "name": "qa_http_recheck_20261102.md",
    "title_zh": "研究报告",
    "kind": "报告正文",
-   "size_kb": 4.7,
+   "size_kb": 2.6,
    "date": "2026-11-02",
-   "time": "00:16",
+   "time": "03:25",
+   "hid": ""
+  },
+  {
+   "name": "qa_http_recheck_20261102.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 25.4,
+   "date": "2026-11-02",
+   "time": "03:25",
    "hid": ""
   },
   {
@@ -2960,463 +3104,263 @@
    "kind": "原始数据",
    "size_kb": 2.4,
    "date": "2026-11-02",
-   "time": "00:16",
+   "time": "03:25",
    "hid": ""
   },
   {
-   "name": "daily_kb_status.json",
+   "name": "kb_daily_push_20261101.json",
    "title_zh": "研究报告",
    "kind": "原始数据",
-   "size_kb": 5.7,
+   "size_kb": 6.8,
    "date": "2026-11-02",
-   "time": "00:16",
+   "time": "03:25",
    "hid": ""
   },
   {
    "name": "daily_screening_20261030.json",
    "title_zh": "研究报告",
    "kind": "原始数据",
-   "size_kb": 16.7,
+   "size_kb": 22.2,
    "date": "2026-11-02",
-   "time": "00:16",
+   "time": "03:25",
    "hid": ""
   },
   {
-   "name": "H14_shadow_20261030.md",
-   "title_zh": "H14 质量反向（质量陷阱规避）",
+   "name": "daily_screening_20261030.md",
+   "title_zh": "研究报告",
    "kind": "报告正文",
-   "size_kb": 1.5,
+   "size_kb": 6.5,
    "date": "2026-11-02",
-   "time": "00:16",
-   "hid": "H14"
+   "time": "03:25",
+   "hid": ""
+  },
+  {
+   "name": "daily_kb_status.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 8.4,
+   "date": "2026-11-02",
+   "time": "03:25",
+   "hid": ""
   },
   {
    "name": "H14_shadow_20261030.json",
    "title_zh": "H14 质量反向（质量陷阱规避）",
    "kind": "原始数据",
-   "size_kb": 184.5,
+   "size_kb": 184.9,
    "date": "2026-11-02",
-   "time": "00:16",
+   "time": "03:25",
    "hid": "H14"
   },
   {
-   "name": "qa_http_loadtest_20261101.md",
-   "title_zh": "研究报告",
+   "name": "H14_shadow_20261030.md",
+   "title_zh": "H14 质量反向（质量陷阱规避）",
    "kind": "报告正文",
-   "size_kb": 1.9,
+   "size_kb": 1.3,
    "date": "2026-11-02",
-   "time": "00:16",
-   "hid": ""
+   "time": "03:25",
+   "hid": "H14"
   },
   {
-   "name": "qa_http_loadtest_20261101.json",
-   "title_zh": "研究报告",
-   "kind": "原始数据",
-   "size_kb": 92.5,
-   "date": "2026-11-02",
-   "time": "00:16",
-   "hid": ""
-  },
-  {
-   "name": "kb_qa_samples_v4_20261101.md",
-   "title_zh": "研究报告",
-   "kind": "报告正文",
-   "size_kb": 1.9,
-   "date": "2026-11-02",
-   "time": "00:03",
-   "hid": ""
-  },
-  {
-   "name": "kb_qa_samples_v4_20261101.json",
-   "title_zh": "研究报告",
-   "kind": "原始数据",
-   "size_kb": 30.3,
-   "date": "2026-11-02",
-   "time": "00:03",
-   "hid": ""
-  },
-  {
-   "name": "card_revisions_round2_20261101.md",
-   "title_zh": "研究报告",
-   "kind": "报告正文",
-   "size_kb": 51.9,
-   "date": "2026-11-02",
-   "time": "00:01",
-   "hid": ""
-  },
-  {
-   "name": "card_revisions_round2_20261101.json",
-   "title_zh": "研究报告",
-   "kind": "原始数据",
-   "size_kb": 163.9,
-   "date": "2026-11-02",
-   "time": "00:01",
-   "hid": ""
-  },
-  {
-   "name": "qa_http_live_acceptance_20261101.md",
-   "title_zh": "研究报告",
-   "kind": "报告正文",
-   "size_kb": 2.7,
-   "date": "2026-11-01",
-   "time": "23:59",
-   "hid": ""
-  },
-  {
-   "name": "qa_http_live_acceptance_20261101.json",
-   "title_zh": "研究报告",
-   "kind": "原始数据",
-   "size_kb": 15.2,
-   "date": "2026-11-01",
-   "time": "23:59",
-   "hid": ""
-  },
-  {
-   "name": "s08_v2_verify_20261101.md",
-   "title_zh": "研究报告",
-   "kind": "报告正文",
-   "size_kb": 0.8,
-   "date": "2026-11-01",
-   "time": "23:57",
-   "hid": ""
-  },
-  {
-   "name": "daily_tasks_health_20261101.md",
-   "title_zh": "研究报告",
-   "kind": "报告正文",
-   "size_kb": 1.1,
-   "date": "2026-11-01",
-   "time": "23:55",
-   "hid": ""
-  },
-  {
-   "name": "daily_tasks_health_20261101.json",
-   "title_zh": "研究报告",
-   "kind": "原始数据",
-   "size_kb": 2.6,
-   "date": "2026-11-01",
-   "time": "23:55",
-   "hid": ""
-  },
-  {
-   "name": "feishu_card_channel_20261101.md",
-   "title_zh": "研究报告",
-   "kind": "报告正文",
-   "size_kb": 3.2,
-   "date": "2026-11-01",
-   "time": "23:55",
-   "hid": ""
-  },
-  {
-   "name": "feishu_card_channel_20261101.json",
-   "title_zh": "研究报告",
-   "kind": "原始数据",
-   "size_kb": 4.0,
-   "date": "2026-11-01",
-   "time": "23:55",
-   "hid": ""
-  },
-  {
-   "name": "kb_daily_push_send_20261101.json",
-   "title_zh": "研究报告",
-   "kind": "原始数据",
-   "size_kb": 0.9,
-   "date": "2026-11-01",
-   "time": "23:52",
-   "hid": ""
-  },
-  {
-   "name": "survivorship_pit_20261101.md",
-   "title_zh": "研究报告",
-   "kind": "报告正文",
-   "size_kb": 0.8,
-   "date": "2026-11-01",
-   "time": "23:44",
-   "hid": ""
-  },
-  {
-   "name": "survivorship_pit_20261101.json",
+   "name": "closure_snapshot_20261102.json",
    "title_zh": "研究报告",
    "kind": "原始数据",
    "size_kb": 0.7,
-   "date": "2026-11-01",
-   "time": "23:44",
+   "date": "2026-11-02",
+   "time": "03:07",
    "hid": ""
   },
   {
-   "name": "survivorship_20261101.json",
-   "title_zh": "研究报告",
-   "kind": "原始数据",
-   "size_kb": 0.7,
-   "date": "2026-11-01",
-   "time": "23:34",
-   "hid": ""
-  },
-  {
-   "name": "survivorship_20261101.md",
+   "name": "card_round3_apply_20261102.md",
    "title_zh": "研究报告",
    "kind": "报告正文",
-   "size_kb": 0.8,
-   "date": "2026-11-01",
-   "time": "23:34",
+   "size_kb": 1.4,
+   "date": "2026-11-02",
+   "time": "03:06",
    "hid": ""
   },
   {
-   "name": "s11_regime_sens_20261101.md",
-   "title_zh": "研究报告",
-   "kind": "报告正文",
-   "size_kb": 1.8,
-   "date": "2026-11-01",
-   "time": "23:16",
-   "hid": ""
-  },
-  {
-   "name": "s11_regime_sens_20261101.json",
-   "title_zh": "研究报告",
-   "kind": "原始数据",
-   "size_kb": 4.8,
-   "date": "2026-11-01",
-   "time": "23:16",
-   "hid": ""
-  },
-  {
-   "name": "s11_mom120_robust_20261101.md",
-   "title_zh": "研究报告",
-   "kind": "报告正文",
-   "size_kb": 1.5,
-   "date": "2026-11-01",
-   "time": "23:16",
-   "hid": ""
-  },
-  {
-   "name": "s11_mom120_robust_20261101.json",
-   "title_zh": "研究报告",
-   "kind": "原始数据",
-   "size_kb": 8.5,
-   "date": "2026-11-01",
-   "time": "23:16",
-   "hid": ""
-  },
-  {
-   "name": "citation_retry_scale_20261101.md",
-   "title_zh": "研究报告",
-   "kind": "报告正文",
-   "size_kb": 3.4,
-   "date": "2026-11-01",
-   "time": "23:15",
-   "hid": ""
-  },
-  {
-   "name": "citation_retry_scale_20261101.json",
-   "title_zh": "研究报告",
-   "kind": "原始数据",
-   "size_kb": 49.1,
-   "date": "2026-11-01",
-   "time": "23:15",
-   "hid": ""
-  },
-  {
-   "name": "card_dedupe_20261101.md",
-   "title_zh": "研究报告",
-   "kind": "报告正文",
-   "size_kb": 2.0,
-   "date": "2026-11-01",
-   "time": "23:06",
-   "hid": ""
-  },
-  {
-   "name": "card_dedupe_20261101.json",
+   "name": "card_round3_apply_20261102.json",
    "title_zh": "研究报告",
    "kind": "原始数据",
    "size_kb": 5.1,
-   "date": "2026-11-01",
-   "time": "23:06",
+   "date": "2026-11-02",
+   "time": "03:06",
    "hid": ""
   },
   {
-   "name": "citation_retry_20261101.md",
-   "title_zh": "研究报告",
-   "kind": "报告正文",
-   "size_kb": 3.8,
-   "date": "2026-11-01",
-   "time": "22:58",
-   "hid": ""
-  },
-  {
-   "name": "citation_retry_20261101.json",
+   "name": "card_decisions_round3_20261102.json",
    "title_zh": "研究报告",
    "kind": "原始数据",
-   "size_kb": 17.1,
-   "date": "2026-11-01",
-   "time": "22:58",
+   "size_kb": 4.7,
+   "date": "2026-11-02",
+   "time": "03:06",
+   "hid": ""
+  },
+  {
+   "name": "card_precheck_v4_20261102.md",
+   "title_zh": "研究报告",
+   "kind": "报告正文",
+   "size_kb": 4.0,
+   "date": "2026-11-02",
+   "time": "03:06",
+   "hid": ""
+  },
+  {
+   "name": "card_precheck_v4_20261102.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 17.4,
+   "date": "2026-11-02",
+   "time": "03:06",
+   "hid": ""
+  },
+  {
+   "name": "qa_quality_history.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 0.8,
+   "date": "2026-11-02",
+   "time": "02:49",
+   "hid": ""
+  },
+  {
+   "name": "qa_quality_20261102.md",
+   "title_zh": "研究报告",
+   "kind": "报告正文",
+   "size_kb": 1.2,
+   "date": "2026-11-02",
+   "time": "02:49",
+   "hid": ""
+  },
+  {
+   "name": "qa_quality_20261102.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 9.0,
+   "date": "2026-11-02",
+   "time": "02:49",
+   "hid": ""
+  },
+  {
+   "name": "eval_regression_history.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 1.4,
+   "date": "2026-11-02",
+   "time": "02:49",
+   "hid": ""
+  },
+  {
+   "name": "weekly_eval_20261102.md",
+   "title_zh": "研究报告",
+   "kind": "报告正文",
+   "size_kb": 1.1,
+   "date": "2026-11-02",
+   "time": "02:49",
+   "hid": ""
+  },
+  {
+   "name": "weekly_eval_20261102.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 1.3,
+   "date": "2026-11-02",
+   "time": "02:49",
+   "hid": ""
+  },
+  {
+   "name": "card_proposals_v4_20261102.md",
+   "title_zh": "研究报告",
+   "kind": "报告正文",
+   "size_kb": 12.2,
+   "date": "2026-11-02",
+   "time": "02:48",
    "hid": ""
   }
  ],
  "tasks": {
   "doing": [
    {
-    "id": "K-QUANT-20261029-T2MANUAL2",
-    "status": "doing",
-    "owner": "DSH-Lead",
-    "desc": "T2人工规则收紧：.py/.ps1/后端任务强制worker_eligible=false；测试/api/kg T2待人工"
-   },
-   {
-    "id": "WO-ACAD-BOARD-V2-20261030",
-    "status": "review",
-    "owner": "ACAD1",
-    "desc": "策阅板块重整 v2：策略发现→推荐池→鲁肃(D1)军团判断 单流程；架构/数据契约/页面；只读，不接下单。"
-   },
-   {
-    "id": "K-QUANT-20261030-OHLOOP-TEST",
-    "status": "doing",
-    "owner": "DSH-Lead",
-    "desc": "OH闭环测试：自动worktree/diff/确认提交"
-   },
-   {
-    "id": "WO-LEGION-AUDIT-LOGINLINK-20261030",
-    "status": "review",
-    "owner": "ZHAOYUN",
-    "desc": "修复登录页返回受保护页死循环"
-   },
-   {
-    "id": "WO-INTEL-COMPANIES-AUDIT-20261031",
-    "status": "review",
-    "owner": "ZHAOYUN",
-    "desc": "companies质量门"
-   },
-   {
-    "id": "WO-ACAD1-CONTRACT-20261101",
-    "status": "review",
-    "owner": "ZHAOYUN",
-    "desc": "ACAD1池数据合约v0：ODCS+agentPolicy(allowed_use/PII/freshness/PIT)+30卡校验"
-   },
-   {
-    "id": "WO-ZHICE-V2-PROBE-20261101",
-    "status": "review",
-    "owner": "pipeline-graph",
-    "desc": "张松仓 zhice v2 只读探针 CLI：新增 tools/datawarehouse/zhice_v2_probe.py（env ZHICE_V2_DSN 读取 PG DSN，缺失 exit2、不硬编码口令、只读 SELECT info"
-   },
-   {
-    "id": "WO-STRAT-LEDGER-20261101",
-    "status": "review",
-    "owner": "ZHAOYUN",
-    "desc": "H37-H39研究台账"
-   },
-   {
-    "id": "WO-STRAT-SNAPSHOT2-20261101",
-    "status": "doing",
-    "owner": "ZHAOYUN",
-    "desc": "快照与BADGE修复"
-   },
-   {
-    "id": "WO-NAV-DRIFT-20261101",
-    "status": "review",
-    "owner": "ZHAOYUN",
-    "desc": "导航生成同步"
-   },
-   {
-    "id": "WO-VAL-FACTOR-20261101",
-    "status": "review",
-    "owner": "ZHAOYUN",
-    "desc": "真实因子面板诊断"
-   },
-   {
-    "id": "WO-DEV-LEGION-V2-API-20261101",
+    "id": "K-ORG-20261102-RELGUARD",
     "status": "review",
     "owner": "DSH-Lead",
-    "desc": "曹操军团 v2 只读 API：/api/dev/legion/v2 增加 workorder_bus/decisions/events 只增字段 + 前端消费 + 测试"
-   },
-   {
-    "id": "WO-DEV-LEGION-V2-POLISH-20261101",
-    "status": "review",
-    "owner": "DSH-Lead",
-    "desc": "曹操军团页收口：动态跨席文案 + 事件流卡片 + 决策/工单计数，清掉静态 16"
-   },
-   {
-    "id": "K-ORG-20261101-H6OS",
-    "status": "review",
-    "owner": "DSH-Lead",
-    "desc": "H6 OS级隔离：exec_sandbox Job Object附加+codex sandbox_trial挂Job/内存/进程数 fail-closed"
-   },
-   {
-    "id": "WO-D1-CALIB-20261101",
-    "status": "doing",
-    "owner": "DSH-Lead",
-    "desc": "D1置信度校准P1：confidence桶+Brier+未测量态+测试"
-   },
-   {
-    "id": "WO-D1-DEBATEQ-20261101",
-    "status": "doing",
-    "owner": "DSH-Lead",
-    "desc": "D1辩论质量评估P1：T1/T2/N1/F1证据覆盖/分歧/质量分+测试"
-   },
-   {
-    "id": "WO-D1-DAILY-20261101",
-    "status": "doing",
-    "owner": "DSH-Lead",
-    "desc": "D1部门日报/催办P1：成员进度/超期工单/报A0+测试"
-   },
-   {
-    "id": "WO-D1-HANDOFF-20261101",
-    "status": "review",
-    "owner": "DSH-Lead",
-    "desc": "D1交棒回执P1：D1→WA/TR paper-only receipt+ack+测试"
+    "desc": "审计修复：release_artifact_guard expected_sha 未校验，锁写前补 sha256 一致性检查+测试"
    }
   ],
-  "doing_data": [
+  "doing_data": [],
+  "today_pilot": [
    {
-    "id": "WO-ACAD-BOARD-V2-20261030",
-    "status": "review",
-    "owner": "ACAD1",
-    "desc": "策阅板块重整 v2：策略发现→推荐池→鲁肃(D1)军团判断 单流程；架构/数据契约/页面；只读，不接下单。"
-   },
-   {
-    "id": "WO-ACAD1-CONTRACT-20261101",
-    "status": "review",
-    "owner": "ZHAOYUN",
-    "desc": "ACAD1池数据合约v0：ODCS+agentPolicy(allowed_use/PII/freshness/PIT)+30卡校验"
-   },
-   {
-    "id": "WO-ZHICE-V2-PROBE-20261101",
-    "status": "review",
-    "owner": "pipeline-graph",
-    "desc": "张松仓 zhice v2 只读探针 CLI：新增 tools/datawarehouse/zhice_v2_probe.py（env ZHICE_V2_DSN 读取 PG DSN，缺失 exit2、不硬编码口令、只读 SELECT info"
-   },
-   {
-    "id": "WO-STRAT-LEDGER-20261101",
-    "status": "review",
-    "owner": "ZHAOYUN",
-    "desc": "H37-H39研究台账"
-   },
-   {
-    "id": "WO-VAL-FACTOR-20261101",
-    "status": "review",
-    "owner": "ZHAOYUN",
-    "desc": "真实因子面板诊断"
-   },
-   {
-    "id": "K-ORG-20261101-H6OS",
+    "id": "K-ORG-20261102-RELGUARD",
     "status": "review",
     "owner": "DSH-Lead",
-    "desc": "H6 OS级隔离：exec_sandbox Job Object附加+codex sandbox_trial挂Job/内存/进程数 fail-closed"
+    "desc": "审计修复：release_artifact_guard expected_sha 未校验，锁写前补 sha256 一致性检查+测试"
    }
   ],
-  "today_pilot": [],
   "today_pilot_data": [],
   "today_merged": [
+   {
+    "id": "WO-VAL-FACTOR-20261101",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "真实因子面板诊断"
+   },
    {
     "id": "WO-ACAD1-SHUIJING-UI-20261101",
     "status": "done",
     "owner": "DSH-Lead",
     "desc": "司马徽生产页（只读总览）：/academy/shuijing 接 /api/acad1/pool + 池/复核/证据/点击详情 + nginx/nav/测试"
+   },
+   {
+    "id": "K-ORG-20261102-PLANSTATUS",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "计划账补齐：24份未标STATUS按内容补declared/pending_approval，不批量伪造"
+   },
+   {
+    "id": "K-ORG-20261102-PARKINV",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "W2 invariant支持parked：合法非在制状态，保留分支/worktree，不计违规"
+   },
+   {
+    "id": "WO-STRAT-FULL-BASE-20261102",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "全量选股PhaseA：5631只CN universe×可用策略卡只读基线+覆盖报告"
+   },
+   {
+    "id": "K-ORG-20261102-H6SEC",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "H6第二层增量：插件子进程env脱敏+运行时audit hook阻断socket/subprocess/ctypes"
+   },
+   {
+    "id": "WO-OS-LIGHT-STYLE-20261102",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "曹操/司马徽生产页统一首页浅色风格：os_light.css + Hermes 入口 + 测试"
+   },
+   {
+    "id": "K-ORG-20261102-H6FS",
+    "status": "done",
+    "owner": "DSH-Lead",
+    "desc": "H6文件系统增量：runner audit hook阻断写/追加/创建/删除事件，正常只读导入不受影响"
    }
   ],
-  "today_merged_data": [],
+  "today_merged_data": [
+   {
+    "id": "WO-VAL-FACTOR-20261101",
+    "status": "done",
+    "owner": "ZHAOYUN",
+    "desc": "真实因子面板诊断"
+   }
+  ],
   "counts": {
-   "aborted": 130,
-   "done": 1886,
-   "doing": 6,
-   "review": 12
+   "aborted": 135,
+   "done": 1900,
+   "parked": 8,
+   "review": 1
   }
  },
  "governance": [
@@ -3615,11 +3559,11 @@
     }
    ],
    "receipt": "offsite_remote_receipt.txt",
-   "age_hours": 24.3
+   "age_hours": 28.6
   },
   "supervisor": {
    "red": [],
-   "generated_at": "2026-11-02T00:18:27"
+   "generated_at": "2026-11-02T04:38:11"
   },
   "approvals": {
    "count": 4,

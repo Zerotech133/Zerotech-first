@@ -1,0 +1,8092 @@
+{
+ "generated_at": "2026-11-02T04:36:47+08:00",
+ "catalog": {
+  "path": "agent_platform\\catalogs\\data_catalog.yaml",
+  "version": 6,
+  "updated": "2026-11-01",
+  "resources": 27
+ },
+ "registry": {
+  "path": "quant_backtest\\data\\warehouse_registry.json",
+  "physical_count": 256,
+  "display_count": 92,
+  "catalog_sha256": "67b5bbdf9ebd66cb882a349a9c28b4f33435e80ff745ed0ea49d6ed7740e0aad",
+  "physical_assets": 256,
+  "display_assets": 92
+ },
+ "inventory": {
+  "path": "research\\reports\\dataset_inventory_20261102.json",
+  "datasets": 314
+ },
+ "coverage": {
+  "display_covered_physical_assets": 78,
+  "physical_assets": 256,
+  "display_coverage_pct": 30.5,
+  "dataset_resources": 22,
+  "service_resources": 5,
+  "resources_mapped": 18,
+  "resources_unmapped": [
+   "kg_dataroot",
+   "weak_state",
+   "strategy_registry",
+   "backtest_registry"
+  ],
+  "tables_with_catalog_resource": 233,
+  "tables_total": 256,
+  "tables_with_display": 78,
+  "datasets_total": 314,
+  "datasets_mapped_to_resources": 304
+ },
+ "resource_map": [
+  {
+   "resource_id": "ashare_kline",
+   "kind": "parquet",
+   "uri": "quant_backtest/data/ashare/{code}_{mkt}.parquet",
+   "owner": "DATA1",
+   "type": "dataset",
+   "roots": [
+    "quant_backtest/data/ashare"
+   ],
+   "matched_datasets": [
+    "quant_backtest\\data\\ashare"
+   ],
+   "matched_dataset_count": 1,
+   "matched_tables": [],
+   "matched_count": 0,
+   "match_method": "explicit_path_root"
+  },
+  {
+   "resource_id": "kg_graph",
+   "kind": "neo4j",
+   "uri": "bolt://127.0.0.1:7687",
+   "owner": "DATA1",
+   "type": "service",
+   "matched_datasets": [],
+   "matched_dataset_count": 0,
+   "matched_tables": [],
+   "matched_count": 0,
+   "note": "服务/库/进程型资源，按连接与表计数单独核验"
+  },
+  {
+   "resource_id": "news_db",
+   "kind": "sqlite",
+   "uri": "news_collector/news.db",
+   "owner": "N1（业务） / DATA1（登记）",
+   "type": "dataset",
+   "roots": [
+    "news_collector/news.db"
+   ],
+   "matched_datasets": [
+    "news_collector\\news.db",
+    "news_collector\\news.db",
+    "news_collector\\news.db",
+    "news_collector\\news.db",
+    "news_collector\\news.db",
+    "news_collector\\news.db"
+   ],
+   "matched_dataset_count": 6,
+   "matched_tables": [
+    "news"
+   ],
+   "matched_count": 1,
+   "match_method": "explicit_path_root"
+  },
+  {
+   "resource_id": "cainiao_legacy",
+   "kind": "mysql",
+   "uri": "127.0.0.1:3307/thunder_model",
+   "owner": "DATA1",
+   "type": "service",
+   "matched_datasets": [],
+   "matched_dataset_count": 0,
+   "matched_tables": [],
+   "matched_count": 0,
+   "note": "服务/库/进程型资源，按连接与表计数单独核验"
+  },
+  {
+   "resource_id": "kg_dataroot",
+   "kind": "parquet",
+   "uri": "C:/项目/KGDataRoot（KG_DATA_ROOT）",
+   "owner": "DATA1",
+   "type": "dataset",
+   "roots": [],
+   "matched_datasets": [],
+   "matched_dataset_count": 0,
+   "matched_tables": [],
+   "matched_count": 0,
+   "match_method": "unmapped"
+  },
+  {
+   "resource_id": "quant_data_root",
+   "kind": "directory",
+   "uri": "quant_backtest/data",
+   "owner": "DATA1",
+   "type": "dataset",
+   "roots": [
+    "quant_backtest/data"
+   ],
+   "matched_datasets": [
+    "quant_backtest\\data\\quant.db",
+    "quant_backtest\\data\\quant.db",
+    "quant_backtest\\data\\quant.db",
+    "quant_backtest\\data\\quant.db",
+    "quant_backtest\\data\\quant.db",
+    "quant_backtest\\data\\quant.db"
+   ],
+   "matched_dataset_count": 6,
+   "matched_tables": [],
+   "matched_count": 0,
+   "match_method": "explicit_path_root"
+  },
+  {
+   "resource_id": "tdx_quote",
+   "kind": "process",
+   "uri": "C:/项目/new_tdx64/TdxW.exe（14571/17709 白名单）",
+   "owner": "OPS1",
+   "type": "service",
+   "matched_datasets": [],
+   "matched_dataset_count": 0,
+   "matched_tables": [],
+   "matched_count": 0,
+   "note": "服务/库/进程型资源，按连接与表计数单独核验"
+  },
+  {
+   "resource_id": "weak_state",
+   "kind": "csv+json",
+   "uri": "quant_backtest/reports/weak_scan_*.csv + quant_backtest/reports/weak_scan_last.json",
+   "owner": "T1（业务）",
+   "type": "dataset",
+   "roots": [
+    "quant_backtest/reports/weak_scan"
+   ],
+   "matched_datasets": [],
+   "matched_dataset_count": 0,
+   "matched_tables": [],
+   "matched_count": 0,
+   "match_method": "unmapped"
+  },
+  {
+   "resource_id": "paper_db",
+   "kind": "sqlite",
+   "uri": "k_stock/data/paper.db",
+   "owner": "TR1",
+   "type": "dataset",
+   "roots": [
+    "k_stock/data/paper.db"
+   ],
+   "matched_datasets": [
+    "k_stock\\data\\paper.db",
+    "k_stock\\data\\paper.db",
+    "k_stock\\data\\paper.db",
+    "k_stock\\data\\paper.db",
+    "k_stock\\data\\paper.db",
+    "k_stock\\data\\paper.db",
+    "k_stock\\data\\paper.db"
+   ],
+   "matched_dataset_count": 7,
+   "matched_tables": [],
+   "matched_count": 0,
+   "match_method": "explicit_path_root"
+  },
+  {
+   "resource_id": "strategy_registry",
+   "kind": "json",
+   "uri": "agent_platform/data/academy/research_topics.json",
+   "owner": "ACAD1 / STRAT1",
+   "type": "dataset",
+   "roots": [
+    "agent_platform/data/academy/research_topics.json"
+   ],
+   "matched_datasets": [],
+   "matched_dataset_count": 0,
+   "matched_tables": [],
+   "matched_count": 0,
+   "match_method": "unmapped"
+  },
+  {
+   "resource_id": "backtest_registry",
+   "kind": "jsonl",
+   "uri": "agent_platform/data/academy/backtests.jsonl",
+   "owner": "BACK1 / DATA1",
+   "type": "dataset",
+   "roots": [
+    "agent_platform/data/academy/backtests.jsonl"
+   ],
+   "matched_datasets": [],
+   "matched_dataset_count": 0,
+   "matched_tables": [],
+   "matched_count": 0,
+   "match_method": "unmapped"
+  },
+  {
+   "resource_id": "tushare_raw",
+   "kind": "parquet",
+   "uri": "quant_backtest/data/tushare/",
+   "owner": "DATA1",
+   "type": "dataset",
+   "roots": [
+    "quant_backtest/data/tushare/"
+   ],
+   "matched_datasets": [
+    "quant_backtest\\data\\tushare\\.git",
+    "quant_backtest\\data\\tushare\\adj_factor",
+    "quant_backtest\\data\\tushare\\anns_d",
+    "quant_backtest\\data\\tushare\\bak_basic",
+    "quant_backtest\\data\\tushare\\balancesheet",
+    "quant_backtest\\data\\tushare\\cashflow",
+    "quant_backtest\\data\\tushare\\cb_basic",
+    "quant_backtest\\data\\tushare\\cb_daily",
+    "quant_backtest\\data\\tushare\\cyq_chips",
+    "quant_backtest\\data\\tushare\\cyq_perf",
+    "quant_backtest\\data\\tushare\\daily",
+    "quant_backtest\\data\\tushare\\daily_basic",
+    "quant_backtest\\data\\tushare\\etf_mins",
+    "quant_backtest\\data\\tushare\\express",
+    "quant_backtest\\data\\tushare\\fina_indicator",
+    "quant_backtest\\data\\tushare\\forecast",
+    "quant_backtest\\data\\tushare\\fx_daily",
+    "quant_backtest\\data\\tushare\\hk_balancesheet",
+    "quant_backtest\\data\\tushare\\hk_basic",
+    "quant_backtest\\data\\tushare\\hk_cashflow",
+    "quant_backtest\\data\\tushare\\hk_daily",
+    "quant_backtest\\data\\tushare\\hk_fina_indicator",
+    "quant_backtest\\data\\tushare\\hk_hold",
+    "quant_backtest\\data\\tushare\\hk_income",
+    "quant_backtest\\data\\tushare\\idx_mins",
+    "quant_backtest\\data\\tushare\\income",
+    "quant_backtest\\data\\tushare\\index_daily",
+    "quant_backtest\\data\\tushare\\index_global",
+    "quant_backtest\\data\\tushare\\index_member_all",
+    "quant_backtest\\data\\tushare\\index_weight",
+    "quant_backtest\\data\\tushare\\irm_qa_sh",
+    "quant_backtest\\data\\tushare\\irm_qa_sh_probe",
+    "quant_backtest\\data\\tushare\\irm_qa_sz",
+    "quant_backtest\\data\\tushare\\irm_qa_sz_probe",
+    "quant_backtest\\data\\tushare\\limit_list_d",
+    "quant_backtest\\data\\tushare\\major_news",
+    "quant_backtest\\data\\tushare\\margin_detail",
+    "quant_backtest\\data\\tushare\\moneyflow",
+    "quant_backtest\\data\\tushare\\moneyflow_hsgt",
+    "quant_backtest\\data\\tushare\\news",
+    "quant_backtest\\data\\tushare\\npr",
+    "quant_backtest\\data\\tushare\\quarantine_prod_overwrite",
+    "quant_backtest\\data\\tushare\\research_report",
+    "quant_backtest\\data\\tushare\\sf_month",
+    "quant_backtest\\data\\tushare\\shibor",
+    "quant_backtest\\data\\tushare\\shibor_lpr",
+    "quant_backtest\\data\\tushare\\stk_holdernumber",
+    "quant_backtest\\data\\tushare\\stk_managers",
+    "quant_backtest\\data\\tushare\\stk_mins",
+    "quant_backtest\\data\\tushare\\stk_pledge",
+    "quant_backtest\\data\\tushare\\stock_basic",
+    "quant_backtest\\data\\tushare\\stock_company",
+    "quant_backtest\\data\\tushare\\sw_classify_l1",
+    "quant_backtest\\data\\tushare\\sw_l1_member",
+    "quant_backtest\\data\\tushare\\sw_mins",
+    "quant_backtest\\data\\tushare\\top10_floatholders",
+    "quant_backtest\\data\\tushare\\top10_holders",
+    "quant_backtest\\data\\tushare\\top_inst",
+    "quant_backtest\\data\\tushare\\top_list",
+    "quant_backtest\\data\\tushare\\trade_cal",
+    "quant_backtest\\data\\tushare\\us_balancesheet",
+    "quant_backtest\\data\\tushare\\us_basic",
+    "quant_backtest\\data\\tushare\\us_cashflow",
+    "quant_backtest\\data\\tushare\\us_daily",
+    "quant_backtest\\data\\tushare\\us_fina_indicator",
+    "quant_backtest\\data\\tushare\\us_income",
+    "quant_backtest\\data\\tushare\\anns_d",
+    "quant_backtest\\data\\tushare\\major_news",
+    "quant_backtest\\data\\tushare\\news",
+    "quant_backtest\\data\\tushare\\irm_qa_sh",
+    "quant_backtest\\data\\tushare\\research_report"
+   ],
+   "matched_dataset_count": 71,
+   "matched_tables": [
+    "adj_factor",
+    "anns_d",
+    "bak_basic",
+    "balancesheet",
+    "cashflow",
+    "cb_basic",
+    "cb_daily",
+    "cyq_chips",
+    "cyq_perf",
+    "daily",
+    "daily_basic",
+    "etf_mins",
+    "express",
+    "fina_indicator",
+    "forecast",
+    "fx_daily",
+    "hk_balancesheet",
+    "hk_basic",
+    "hk_cashflow",
+    "hk_daily",
+    "hk_fina_indicator",
+    "hk_hold",
+    "hk_income",
+    "idx_mins",
+    "income",
+    "index_daily",
+    "index_global",
+    "index_member_all",
+    "index_weight",
+    "irm_qa_sh",
+    "irm_qa_sh_probe",
+    "irm_qa_sz",
+    "irm_qa_sz_probe",
+    "limit_list_d",
+    "major_news",
+    "margin_detail",
+    "moneyflow",
+    "moneyflow_hsgt",
+    "news",
+    "npr",
+    "quarantine_prod_overwrite",
+    "research_report",
+    "sf_month",
+    "shibor",
+    "shibor_lpr",
+    "stk_holdernumber",
+    "stk_managers",
+    "stk_mins",
+    "stk_pledge",
+    "stock_basic",
+    "stock_company",
+    "sw_classify_l1",
+    "sw_l1_member",
+    "sw_mins",
+    "top10_floatholders",
+    "top10_holders",
+    "top_inst",
+    "top_list",
+    "trade_cal",
+    "us_balancesheet",
+    "us_basic",
+    "us_cashflow",
+    "us_daily",
+    "us_fina_indicator",
+    "us_income"
+   ],
+   "matched_count": 65,
+   "match_method": "explicit_path_root"
+  },
+  {
+   "resource_id": "tdx_raw",
+   "kind": "parquet",
+   "uri": "quant_backtest/data/tdx/",
+   "owner": "DATA1",
+   "type": "dataset",
+   "roots": [
+    "quant_backtest/data/tdx/"
+   ],
+   "matched_datasets": [
+    "quant_backtest\\data\\tdx\\dknife_snap",
+    "quant_backtest\\data\\tdx\\tdx_sector_daily",
+    "quant_backtest\\data\\tdx\\tdx_sector_def",
+    "quant_backtest\\data\\tdx\\tdx_sector_member",
+    "quant_backtest\\data\\tdx\\tdx_sector_min",
+    "quant_backtest\\data\\tdx\\tdx_sector_min_tail",
+    "quant_backtest\\data\\tdx\\ts_adj_factor",
+    "quant_backtest\\data\\tdx\\ts_anns_d",
+    "quant_backtest\\data\\tdx\\ts_bak_basic",
+    "quant_backtest\\data\\tdx\\ts_balancesheet",
+    "quant_backtest\\data\\tdx\\ts_balancesheet_vip",
+    "quant_backtest\\data\\tdx\\ts_block_trade",
+    "quant_backtest\\data\\tdx\\ts_broker_recommend",
+    "quant_backtest\\data\\tdx\\ts_bse_mapping",
+    "quant_backtest\\data\\tdx\\ts_cashflow",
+    "quant_backtest\\data\\tdx\\ts_cashflow_vip",
+    "quant_backtest\\data\\tdx\\ts_cb_basic",
+    "quant_backtest\\data\\tdx\\ts_cb_call",
+    "quant_backtest\\data\\tdx\\ts_cb_daily",
+    "quant_backtest\\data\\tdx\\ts_cb_issue",
+    "quant_backtest\\data\\tdx\\ts_cb_price_chg",
+    "quant_backtest\\data\\tdx\\ts_cb_rate",
+    "quant_backtest\\data\\tdx\\ts_cb_share",
+    "quant_backtest\\data\\tdx\\ts_cctv_news",
+    "quant_backtest\\data\\tdx\\ts_cn_cpi",
+    "quant_backtest\\data\\tdx\\ts_cn_gdp",
+    "quant_backtest\\data\\tdx\\ts_cn_m",
+    "quant_backtest\\data\\tdx\\ts_cn_pmi",
+    "quant_backtest\\data\\tdx\\ts_cn_ppi",
+    "quant_backtest\\data\\tdx\\ts_cyq_perf",
+    "quant_backtest\\data\\tdx\\ts_daily",
+    "quant_backtest\\data\\tdx\\ts_daily_basic",
+    "quant_backtest\\data\\tdx\\ts_daily_info",
+    "quant_backtest\\data\\tdx\\ts_dc_daily",
+    "quant_backtest\\data\\tdx\\ts_dc_hot",
+    "quant_backtest\\data\\tdx\\ts_dc_index",
+    "quant_backtest\\data\\tdx\\ts_dc_member",
+    "quant_backtest\\data\\tdx\\ts_disclosure_date",
+    "quant_backtest\\data\\tdx\\ts_dividend",
+    "quant_backtest\\data\\tdx\\ts_dividend_vip",
+    "quant_backtest\\data\\tdx\\ts_eco_cal",
+    "quant_backtest\\data\\tdx\\ts_emotion_daily",
+    "quant_backtest\\data\\tdx\\ts_emotion_ladder",
+    "quant_backtest\\data\\tdx\\ts_etf_basic",
+    "quant_backtest\\data\\tdx\\ts_express",
+    "quant_backtest\\data\\tdx\\ts_express_vip",
+    "quant_backtest\\data\\tdx\\ts_fina_audit",
+    "quant_backtest\\data\\tdx\\ts_fina_indicator",
+    "quant_backtest\\data\\tdx\\ts_fina_indicator_vip",
+    "quant_backtest\\data\\tdx\\ts_fina_mainbz",
+    "quant_backtest\\data\\tdx\\ts_fina_mainbz_vip",
+    "quant_backtest\\data\\tdx\\ts_forecast",
+    "quant_backtest\\data\\tdx\\ts_forecast_vip",
+    "quant_backtest\\data\\tdx\\ts_fund_adj",
+    "quant_backtest\\data\\tdx\\ts_fund_basic",
+    "quant_backtest\\data\\tdx\\ts_fund_company",
+    "quant_backtest\\data\\tdx\\ts_fund_daily",
+    "quant_backtest\\data\\tdx\\ts_fund_div",
+    "quant_backtest\\data\\tdx\\ts_fund_manager",
+    "quant_backtest\\data\\tdx\\ts_fund_portfolio",
+    "quant_backtest\\data\\tdx\\ts_fund_share",
+    "quant_backtest\\data\\tdx\\ts_fut_basic",
+    "quant_backtest\\data\\tdx\\ts_fut_daily",
+    "quant_backtest\\data\\tdx\\ts_fut_holding",
+    "quant_backtest\\data\\tdx\\ts_fut_mapping",
+    "quant_backtest\\data\\tdx\\ts_fut_settle",
+    "quant_backtest\\data\\tdx\\ts_fut_weekly_detail",
+    "quant_backtest\\data\\tdx\\ts_fut_weekly_monthly",
+    "quant_backtest\\data\\tdx\\ts_fut_wsr",
+    "quant_backtest\\data\\tdx\\ts_fx_daily",
+    "quant_backtest\\data\\tdx\\ts_fx_obasic",
+    "quant_backtest\\data\\tdx\\ts_ggt_daily",
+    "quant_backtest\\data\\tdx\\ts_ggt_top10",
+    "quant_backtest\\data\\tdx\\ts_global_fut",
+    "quant_backtest\\data\\tdx\\ts_hk_basic",
+    "quant_backtest\\data\\tdx\\ts_hk_daily",
+    "quant_backtest\\data\\tdx\\ts_hk_daily_adj",
+    "quant_backtest\\data\\tdx\\ts_hk_hold",
+    "quant_backtest\\data\\tdx\\ts_hk_tradecal",
+    "quant_backtest\\data\\tdx\\ts_hm_detail",
+    "quant_backtest\\data\\tdx\\ts_hm_list",
+    "quant_backtest\\data\\tdx\\ts_hs_const",
+    "quant_backtest\\data\\tdx\\ts_hsgt_top10",
+    "quant_backtest\\data\\tdx\\ts_income",
+    "quant_backtest\\data\\tdx\\ts_income_vip",
+    "quant_backtest\\data\\tdx\\ts_index_basic",
+    "quant_backtest\\data\\tdx\\ts_index_classify",
+    "quant_backtest\\data\\tdx\\ts_index_daily",
+    "quant_backtest\\data\\tdx\\ts_index_dailybasic",
+    "quant_backtest\\data\\tdx\\ts_index_global",
+    "quant_backtest\\data\\tdx\\ts_index_member_all",
+    "quant_backtest\\data\\tdx\\ts_index_monthly",
+    "quant_backtest\\data\\tdx\\ts_index_weekly",
+    "quant_backtest\\data\\tdx\\ts_index_weight",
+    "quant_backtest\\data\\tdx\\ts_kpl_concept",
+    "quant_backtest\\data\\tdx\\ts_kpl_concept_cons",
+    "quant_backtest\\data\\tdx\\ts_kpl_list",
+    "quant_backtest\\data\\tdx\\ts_limit_cpt_list",
+    "quant_backtest\\data\\tdx\\ts_limit_list_ths",
+    "quant_backtest\\data\\tdx\\ts_limit_step",
+    "quant_backtest\\data\\tdx\\ts_major_news",
+    "quant_backtest\\data\\tdx\\ts_margin",
+    "quant_backtest\\data\\tdx\\ts_margin_detail",
+    "quant_backtest\\data\\tdx\\ts_margin_secs",
+    "quant_backtest\\data\\tdx\\ts_moneyflow",
+    "quant_backtest\\data\\tdx\\ts_moneyflow_dc",
+    "quant_backtest\\data\\tdx\\ts_moneyflow_hsgt",
+    "quant_backtest\\data\\tdx\\ts_moneyflow_ind_dc",
+    "quant_backtest\\data\\tdx\\ts_moneyflow_ind_ths",
+    "quant_backtest\\data\\tdx\\ts_moneyflow_mkt_dc",
+    "quant_backtest\\data\\tdx\\ts_moneyflow_ths",
+    "quant_backtest\\data\\tdx\\ts_monthly",
+    "quant_backtest\\data\\tdx\\ts_namechange",
+    "quant_backtest\\data\\tdx\\ts_new_share",
+    "quant_backtest\\data\\tdx\\ts_news",
+    "quant_backtest\\data\\tdx\\ts_opt_basic",
+    "quant_backtest\\data\\tdx\\ts_opt_daily",
+    "quant_backtest\\data\\tdx\\ts_pledge_detail",
+    "quant_backtest\\data\\tdx\\ts_pledge_stat",
+    "quant_backtest\\data\\tdx\\ts_repo_daily",
+    "quant_backtest\\data\\tdx\\ts_report_rc",
+    "quant_backtest\\data\\tdx\\ts_repurchase",
+    "quant_backtest\\data\\tdx\\ts_rt_min",
+    "quant_backtest\\data\\tdx\\ts_sge_basic",
+    "quant_backtest\\data\\tdx\\ts_sge_daily",
+    "quant_backtest\\data\\tdx\\ts_share_float",
+    "quant_backtest\\data\\tdx\\ts_slb_len",
+    "quant_backtest\\data\\tdx\\ts_slb_sec",
+    "quant_backtest\\data\\tdx\\ts_stk_ah_comparison",
+    "quant_backtest\\data\\tdx\\ts_stk_auction",
+    "quant_backtest\\data\\tdx\\ts_stk_auction_c",
+    "quant_backtest\\data\\tdx\\ts_stk_auction_o",
+    "quant_backtest\\data\\tdx\\ts_stk_factor",
+    "quant_backtest\\data\\tdx\\ts_stk_factor_pro",
+    "quant_backtest\\data\\tdx\\ts_stk_holdernumber",
+    "quant_backtest\\data\\tdx\\ts_stk_holdertrade",
+    "quant_backtest\\data\\tdx\\ts_stk_limit",
+    "quant_backtest\\data\\tdx\\ts_stk_managers",
+    "quant_backtest\\data\\tdx\\ts_stk_premarket",
+    "quant_backtest\\data\\tdx\\ts_stk_rewards",
+    "quant_backtest\\data\\tdx\\ts_stk_surv",
+    "quant_backtest\\data\\tdx\\ts_stk_week_month_adj",
+    "quant_backtest\\data\\tdx\\ts_stk_weekly_monthly",
+    "quant_backtest\\data\\tdx\\ts_stock_basic",
+    "quant_backtest\\data\\tdx\\ts_stock_company",
+    "quant_backtest\\data\\tdx\\ts_stock_hsgt",
+    "quant_backtest\\data\\tdx\\ts_suspend_d",
+    "quant_backtest\\data\\tdx\\ts_sz_daily_info",
+    "quant_backtest\\data\\tdx\\ts_tdx_index",
+    "quant_backtest\\data\\tdx\\ts_tdx_member",
+    "quant_backtest\\data\\tdx\\ts_ths_daily",
+    "quant_backtest\\data\\tdx\\ts_ths_hot",
+    "quant_backtest\\data\\tdx\\ts_ths_index",
+    "quant_backtest\\data\\tdx\\ts_ths_member",
+    "quant_backtest\\data\\tdx\\ts_top10_floatholders",
+    "quant_backtest\\data\\tdx\\ts_top10_holders",
+    "quant_backtest\\data\\tdx\\ts_top_inst",
+    "quant_backtest\\data\\tdx\\ts_top_list",
+    "quant_backtest\\data\\tdx\\ts_trade_cal",
+    "quant_backtest\\data\\tdx\\ts_us_basic",
+    "quant_backtest\\data\\tdx\\ts_us_daily",
+    "quant_backtest\\data\\tdx\\ts_us_tbr",
+    "quant_backtest\\data\\tdx\\ts_us_tradecal",
+    "quant_backtest\\data\\tdx\\ts_us_trycr",
+    "quant_backtest\\data\\tdx\\ts_us_tycr",
+    "quant_backtest\\data\\tdx\\ts_weekly",
+    "quant_backtest\\data\\tdx\\ts_wz_index",
+    "quant_backtest\\data\\tdx\\tdx_info.db",
+    "quant_backtest\\data\\tdx\\tdx_info.db",
+    "quant_backtest\\data\\tdx\\tdx_info.db"
+   ],
+   "matched_dataset_count": 170,
+   "matched_tables": [
+    "adj_factor",
+    "anns_d",
+    "bak_basic",
+    "balancesheet",
+    "cashflow",
+    "cb_basic",
+    "cb_daily",
+    "cyq_perf",
+    "daily",
+    "daily_basic",
+    "dknife_snap",
+    "express",
+    "fina_indicator",
+    "forecast",
+    "fx_daily",
+    "hk_basic",
+    "hk_daily",
+    "hk_hold",
+    "income",
+    "index_daily",
+    "index_global",
+    "index_member_all",
+    "index_weight",
+    "major_news",
+    "margin_detail",
+    "moneyflow",
+    "moneyflow_hsgt",
+    "news",
+    "report_rc",
+    "stk_holdernumber",
+    "stk_managers",
+    "stock_basic",
+    "stock_company",
+    "tdx_sector_daily",
+    "tdx_sector_def",
+    "tdx_sector_member",
+    "tdx_sector_min",
+    "tdx_sector_min_tail",
+    "top10_floatholders",
+    "top10_holders",
+    "top_inst",
+    "top_list",
+    "trade_cal",
+    "ts_adj_factor",
+    "ts_anns_d",
+    "ts_bak_basic",
+    "ts_balancesheet",
+    "ts_balancesheet_vip",
+    "ts_block_trade",
+    "ts_broker_recommend",
+    "ts_bse_mapping",
+    "ts_cashflow",
+    "ts_cashflow_vip",
+    "ts_cb_basic",
+    "ts_cb_call",
+    "ts_cb_daily",
+    "ts_cb_issue",
+    "ts_cb_price_chg",
+    "ts_cb_rate",
+    "ts_cb_share",
+    "ts_cctv_news",
+    "ts_cn_cpi",
+    "ts_cn_gdp",
+    "ts_cn_m",
+    "ts_cn_pmi",
+    "ts_cn_ppi",
+    "ts_cyq_perf",
+    "ts_daily",
+    "ts_daily_basic",
+    "ts_daily_info",
+    "ts_dc_daily",
+    "ts_dc_hot",
+    "ts_dc_index",
+    "ts_dc_member",
+    "ts_disclosure_date",
+    "ts_dividend",
+    "ts_dividend_vip",
+    "ts_eco_cal",
+    "ts_emotion_daily",
+    "ts_emotion_ladder",
+    "ts_etf_basic",
+    "ts_express",
+    "ts_express_vip",
+    "ts_fina_audit",
+    "ts_fina_indicator",
+    "ts_fina_indicator_vip",
+    "ts_fina_mainbz",
+    "ts_fina_mainbz_vip",
+    "ts_forecast",
+    "ts_forecast_vip",
+    "ts_fund_adj",
+    "ts_fund_basic",
+    "ts_fund_company",
+    "ts_fund_daily",
+    "ts_fund_div",
+    "ts_fund_manager",
+    "ts_fund_portfolio",
+    "ts_fund_share",
+    "ts_fut_basic",
+    "ts_fut_daily",
+    "ts_fut_holding",
+    "ts_fut_mapping",
+    "ts_fut_settle",
+    "ts_fut_weekly_detail",
+    "ts_fut_weekly_monthly",
+    "ts_fut_wsr",
+    "ts_fx_daily",
+    "ts_fx_obasic",
+    "ts_ggt_daily",
+    "ts_ggt_top10",
+    "ts_global_fut",
+    "ts_hk_basic",
+    "ts_hk_daily",
+    "ts_hk_daily_adj",
+    "ts_hk_hold",
+    "ts_hk_tradecal",
+    "ts_hm_detail",
+    "ts_hm_list",
+    "ts_hs_const",
+    "ts_hsgt_top10",
+    "ts_income",
+    "ts_income_vip",
+    "ts_index_basic",
+    "ts_index_classify",
+    "ts_index_daily",
+    "ts_index_dailybasic",
+    "ts_index_global",
+    "ts_index_member_all",
+    "ts_index_monthly",
+    "ts_index_weekly",
+    "ts_index_weight",
+    "ts_kpl_concept",
+    "ts_kpl_concept_cons",
+    "ts_kpl_list",
+    "ts_limit_cpt_list",
+    "ts_limit_list_ths",
+    "ts_limit_step",
+    "ts_major_news",
+    "ts_margin",
+    "ts_margin_detail",
+    "ts_margin_secs",
+    "ts_moneyflow",
+    "ts_moneyflow_dc",
+    "ts_moneyflow_hsgt",
+    "ts_moneyflow_ind_dc",
+    "ts_moneyflow_ind_ths",
+    "ts_moneyflow_mkt_dc",
+    "ts_moneyflow_ths",
+    "ts_monthly",
+    "ts_namechange",
+    "ts_new_share",
+    "ts_news",
+    "ts_opt_basic",
+    "ts_opt_daily",
+    "ts_pledge_detail",
+    "ts_pledge_stat",
+    "ts_repo_daily",
+    "ts_report_rc",
+    "ts_repurchase",
+    "ts_rt_min",
+    "ts_sge_basic",
+    "ts_sge_daily",
+    "ts_share_float",
+    "ts_slb_len",
+    "ts_slb_sec",
+    "ts_stk_ah_comparison",
+    "ts_stk_auction",
+    "ts_stk_auction_c",
+    "ts_stk_auction_o",
+    "ts_stk_factor",
+    "ts_stk_factor_pro",
+    "ts_stk_holdernumber",
+    "ts_stk_holdertrade",
+    "ts_stk_limit",
+    "ts_stk_managers",
+    "ts_stk_premarket",
+    "ts_stk_rewards",
+    "ts_stk_surv",
+    "ts_stk_week_month_adj",
+    "ts_stk_weekly_monthly",
+    "ts_stock_basic",
+    "ts_stock_company",
+    "ts_stock_hsgt",
+    "ts_suspend_d",
+    "ts_sz_daily_info",
+    "ts_tdx_index",
+    "ts_tdx_member",
+    "ts_ths_daily",
+    "ts_ths_hot",
+    "ts_ths_index",
+    "ts_ths_member",
+    "ts_top10_floatholders",
+    "ts_top10_holders",
+    "ts_top_inst",
+    "ts_top_list",
+    "ts_trade_cal",
+    "ts_us_basic",
+    "ts_us_daily",
+    "ts_us_tbr",
+    "ts_us_tradecal",
+    "ts_us_trycr",
+    "ts_us_tycr",
+    "ts_weekly",
+    "ts_wz_index",
+    "us_basic",
+    "us_daily"
+   ],
+   "matched_count": 206,
+   "match_method": "explicit_path_root"
+  },
+  {
+   "resource_id": "tushare_curated",
+   "kind": "parquet",
+   "uri": "quant_backtest/data/tushare_curated/",
+   "owner": "DATA1",
+   "type": "dataset",
+   "roots": [
+    "quant_backtest/data/tushare_curated"
+   ],
+   "matched_datasets": [
+    "quant_backtest\\data\\tushare_curated"
+   ],
+   "matched_dataset_count": 1,
+   "matched_tables": [],
+   "matched_count": 0,
+   "match_method": "explicit_path_root"
+  },
+  {
+   "resource_id": "strategy_classics_kb",
+   "kind": "jsonl+markdown",
+   "uri": "C:/项目/PDF/_ingest_notes/ ; knowledge_docs/米勒维尼SEPA_*.md",
+   "owner": "DSH-Lead",
+   "type": "dataset",
+   "roots": [
+    "PDF/_ingest_notes",
+    "knowledge_docs/米勒维尼"
+   ],
+   "matched_datasets": [
+    "C:\\项目\\PDF\\_ingest_notes"
+   ],
+   "matched_dataset_count": 1,
+   "matched_tables": [],
+   "matched_count": 0,
+   "match_method": "explicit_path_root"
+  },
+  {
+   "resource_id": "research_reports_kb",
+   "kind": "parquet+jsonl",
+   "uri": "C:/项目/PDF/_ingest_reports/ ; knowledge_docs/.rag_index.json",
+   "owner": "DSH-Lead",
+   "type": "dataset",
+   "roots": [
+    "PDF/_ingest_reports",
+    "knowledge_docs/.rag_index.json"
+   ],
+   "matched_datasets": [
+    "C:\\项目\\PDF\\_ingest_reports"
+   ],
+   "matched_dataset_count": 1,
+   "matched_tables": [],
+   "matched_count": 0,
+   "match_method": "explicit_path_root"
+  },
+  {
+   "resource_id": "report_rc",
+   "kind": "parquet",
+   "uri": "quant_backtest/data/tushare/report_rc/",
+   "owner": "DATA1（源） / DSH-Lead（登记）",
+   "type": "dataset",
+   "roots": [
+    "quant_backtest/data/tushare/report_rc"
+   ],
+   "matched_datasets": [
+    "quant_backtest\\data\\tushare\\report_rc"
+   ],
+   "matched_dataset_count": 1,
+   "matched_tables": [
+    "report_rc"
+   ],
+   "matched_count": 1,
+   "match_method": "explicit_path_root"
+  },
+  {
+   "resource_id": "tushare_staging",
+   "kind": "parquet",
+   "uri": "quant_backtest/data/tushare_staging/",
+   "owner": "DATA1",
+   "type": "dataset",
+   "roots": [
+    "quant_backtest/data/tushare_staging"
+   ],
+   "matched_datasets": [
+    "quant_backtest\\data\\tushare_staging"
+   ],
+   "matched_dataset_count": 1,
+   "matched_tables": [],
+   "matched_count": 0,
+   "match_method": "explicit_path_root"
+  },
+  {
+   "resource_id": "tushare_v2",
+   "kind": "parquet",
+   "uri": "quant_backtest/data/tushare_v2/",
+   "owner": "DATA1",
+   "type": "dataset",
+   "roots": [
+    "quant_backtest/data/tushare_v2"
+   ],
+   "matched_datasets": [
+    "quant_backtest\\data\\tushare_v2"
+   ],
+   "matched_dataset_count": 1,
+   "matched_tables": [],
+   "matched_count": 0,
+   "match_method": "explicit_path_root"
+  },
+  {
+   "resource_id": "xueqiu",
+   "kind": "parquet+sqlite",
+   "uri": "quant_backtest/data/xueqiu/（10 表，4 在产）+ quant_backtest/data/xueqiu/xueqiu_info.db",
+   "owner": "DATA1",
+   "type": "dataset",
+   "roots": [
+    "quant_backtest/data/xueqiu"
+   ],
+   "matched_datasets": [
+    "quant_backtest\\data\\xueqiu",
+    "quant_backtest\\data\\xueqiu\\xueqiu_info.db",
+    "quant_backtest\\data\\xueqiu\\xueqiu_info.db",
+    "quant_backtest\\data\\xueqiu\\xueqiu_info.db",
+    "quant_backtest\\data\\xueqiu\\xueqiu_info.db",
+    "quant_backtest\\data\\xueqiu\\xueqiu_info.db",
+    "quant_backtest\\data\\xueqiu\\xueqiu_info.db"
+   ],
+   "matched_dataset_count": 7,
+   "matched_tables": [],
+   "matched_count": 0,
+   "match_method": "explicit_path_root"
+  },
+  {
+   "resource_id": "anns_pdf",
+   "kind": "pdf",
+   "uri": "quant_backtest/data/anns_pdf/",
+   "owner": "DATA1",
+   "type": "dataset",
+   "roots": [
+    "quant_backtest/data/anns_pdf"
+   ],
+   "matched_datasets": [
+    "quant_backtest\\data\\anns_pdf"
+   ],
+   "matched_dataset_count": 1,
+   "matched_tables": [],
+   "matched_count": 0,
+   "match_method": "explicit_path_root"
+  },
+  {
+   "resource_id": "guba",
+   "kind": "parquet+json",
+   "uri": "quant_backtest/data/guba/",
+   "owner": "DATA1",
+   "type": "dataset",
+   "roots": [
+    "quant_backtest/data/guba"
+   ],
+   "matched_datasets": [
+    "quant_backtest\\data\\guba"
+   ],
+   "matched_dataset_count": 1,
+   "matched_tables": [],
+   "matched_count": 0,
+   "match_method": "explicit_path_root"
+  },
+  {
+   "resource_id": "cnopendata",
+   "kind": "parquet+part",
+   "uri": "quant_backtest/data/cnopendata/",
+   "owner": "DATA1",
+   "type": "dataset",
+   "roots": [
+    "quant_backtest/data/cnopendata"
+   ],
+   "matched_datasets": [
+    "quant_backtest\\data\\cnopendata"
+   ],
+   "matched_dataset_count": 1,
+   "matched_tables": [],
+   "matched_count": 0,
+   "match_method": "explicit_path_root"
+  },
+  {
+   "resource_id": "quant_meta_pg",
+   "kind": "postgresql",
+   "uri": "127.0.0.1:5442（库：quant_meta / quant_system）",
+   "owner": "DATA1",
+   "type": "service",
+   "matched_datasets": [],
+   "matched_dataset_count": 0,
+   "matched_tables": [],
+   "matched_count": 0,
+   "note": "服务/库/进程型资源，按连接与表计数单独核验"
+  },
+  {
+   "resource_id": "zhice_os_v2_pg",
+   "kind": "postgresql",
+   "uri": "127.0.0.1:5446（库：智策 OS v2，表 v2_bar_minute 等）",
+   "owner": "DATA1",
+   "type": "service",
+   "matched_datasets": [],
+   "matched_dataset_count": 0,
+   "matched_tables": [],
+   "matched_count": 0,
+   "note": "服务/库/进程型资源，按连接与表计数单独核验"
+  },
+  {
+   "resource_id": "youtube_quant_corpus_raw",
+   "kind": "corpus_bundle",
+   "uri": "C:/项目/知识库/01_数据分包",
+   "owner": "DSH-Lead（登记）；数据管护 DATA1",
+   "type": "dataset",
+   "roots": [
+    "知识库/01_数据分包"
+   ],
+   "matched_datasets": [
+    "C:/项目/知识库/01_数据分包"
+   ],
+   "matched_dataset_count": 1,
+   "matched_tables": [],
+   "matched_count": 0,
+   "match_method": "explicit_path_root"
+  },
+  {
+   "resource_id": "youtube_quant_corpus_derived",
+   "kind": "corpus_derived",
+   "uri": "C:/项目/知识库",
+   "owner": "DSH-Lead",
+   "type": "dataset",
+   "roots": [
+    "知识库/"
+   ],
+   "matched_datasets": [
+    "C:/项目/知识库/10_规范化",
+    "C:/项目/知识库/20_清洗",
+    "C:/项目/知识库/20_转写",
+    "C:/项目/知识库/30_知识单元",
+    "C:/项目/知识库/35_知识提炼",
+    "C:/项目/知识库/37_FAQ挖掘",
+    "C:/项目/知识库/40_索引",
+    "C:/项目/知识库/50_RAG",
+    "C:/项目/知识库/60_学习卡",
+    "C:/项目/知识库/70_简报",
+    "C:/项目/知识库/80_复核",
+    "C:/项目/知识库/90_报告",
+    "C:/项目/知识库/00_数据仓",
+    "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "C:/项目/知识库/00_数据仓/yt_learning.db"
+   ],
+   "matched_dataset_count": 26,
+   "matched_tables": [],
+   "matched_count": 0,
+   "match_method": "explicit_path_root"
+  }
+ ],
+ "dataset_map": [
+  {
+   "path": "quant_backtest\\data\\tushare\\.git",
+   "kind": "dir",
+   "label": "tushare..git",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": []
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\adj_factor",
+   "kind": "dir",
+   "label": "tushare.adj_factor",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "adj_factor"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\anns_d",
+   "kind": "dir",
+   "label": "tushare.anns_d",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "anns_d"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\bak_basic",
+   "kind": "dir",
+   "label": "tushare.bak_basic",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "bak_basic"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\balancesheet",
+   "kind": "dir",
+   "label": "tushare.balancesheet",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "balancesheet"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\cashflow",
+   "kind": "dir",
+   "label": "tushare.cashflow",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "cashflow"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\cb_basic",
+   "kind": "dir",
+   "label": "tushare.cb_basic",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "cb_basic"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\cb_daily",
+   "kind": "dir",
+   "label": "tushare.cb_daily",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "cb_daily",
+    "daily"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\cyq_chips",
+   "kind": "dir",
+   "label": "tushare.cyq_chips",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "cyq_chips"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\cyq_perf",
+   "kind": "dir",
+   "label": "tushare.cyq_perf",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "cyq_perf"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\daily",
+   "kind": "dir",
+   "label": "tushare.daily",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "daily"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\daily_basic",
+   "kind": "dir",
+   "label": "tushare.daily_basic",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "daily",
+    "daily_basic"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\etf_mins",
+   "kind": "dir",
+   "label": "tushare.etf_mins",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "etf_mins"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\express",
+   "kind": "dir",
+   "label": "tushare.express",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "express"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\fina_indicator",
+   "kind": "dir",
+   "label": "tushare.fina_indicator",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "fina_indicator"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\forecast",
+   "kind": "dir",
+   "label": "tushare.forecast",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "forecast"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\fx_daily",
+   "kind": "dir",
+   "label": "tushare.fx_daily",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "daily",
+    "fx_daily"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\hk_balancesheet",
+   "kind": "dir",
+   "label": "tushare.hk_balancesheet",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "balancesheet",
+    "hk_balancesheet"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\hk_basic",
+   "kind": "dir",
+   "label": "tushare.hk_basic",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "hk_basic"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\hk_cashflow",
+   "kind": "dir",
+   "label": "tushare.hk_cashflow",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "cashflow",
+    "hk_cashflow"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\hk_daily",
+   "kind": "dir",
+   "label": "tushare.hk_daily",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "daily",
+    "hk_daily"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\hk_fina_indicator",
+   "kind": "dir",
+   "label": "tushare.hk_fina_indicator",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "fina_indicator",
+    "hk_fina_indicator"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\hk_hold",
+   "kind": "dir",
+   "label": "tushare.hk_hold",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "hk_hold"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\hk_income",
+   "kind": "dir",
+   "label": "tushare.hk_income",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "hk_income",
+    "income"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\idx_mins",
+   "kind": "dir",
+   "label": "tushare.idx_mins",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "idx_mins"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\income",
+   "kind": "dir",
+   "label": "tushare.income",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "income"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\index_daily",
+   "kind": "dir",
+   "label": "tushare.index_daily",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "daily",
+    "index_daily"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\index_global",
+   "kind": "dir",
+   "label": "tushare.index_global",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "index_global"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\index_member_all",
+   "kind": "dir",
+   "label": "tushare.index_member_all",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "index_member_all"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\index_weight",
+   "kind": "dir",
+   "label": "tushare.index_weight",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "index_weight"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\irm_qa_sh",
+   "kind": "dir",
+   "label": "tushare.irm_qa_sh",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "irm_qa_sh"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\irm_qa_sh_probe",
+   "kind": "dir",
+   "label": "tushare.irm_qa_sh_probe",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "irm_qa_sh",
+    "irm_qa_sh_probe"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\irm_qa_sz",
+   "kind": "dir",
+   "label": "tushare.irm_qa_sz",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "irm_qa_sz"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\irm_qa_sz_probe",
+   "kind": "dir",
+   "label": "tushare.irm_qa_sz_probe",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "irm_qa_sz",
+    "irm_qa_sz_probe"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\limit_list_d",
+   "kind": "dir",
+   "label": "tushare.limit_list_d",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "limit_list_d"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\major_news",
+   "kind": "dir",
+   "label": "tushare.major_news",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "major_news",
+    "news"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\margin_detail",
+   "kind": "dir",
+   "label": "tushare.margin_detail",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "margin_detail"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\moneyflow",
+   "kind": "dir",
+   "label": "tushare.moneyflow",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "moneyflow"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\moneyflow_hsgt",
+   "kind": "dir",
+   "label": "tushare.moneyflow_hsgt",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "moneyflow",
+    "moneyflow_hsgt"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\news",
+   "kind": "dir",
+   "label": "tushare.news",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "news"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\npr",
+   "kind": "dir",
+   "label": "tushare.npr",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "npr"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\quarantine_prod_overwrite",
+   "kind": "dir",
+   "label": "tushare.quarantine_prod_overwrite",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "quarantine_prod_overwrite"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\report_rc",
+   "kind": "dir",
+   "label": "tushare.report_rc",
+   "catalog_resource": "report_rc",
+   "physical_assets": [
+    "report_rc"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\research_report",
+   "kind": "dir",
+   "label": "tushare.research_report",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "research_report"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\sf_month",
+   "kind": "dir",
+   "label": "tushare.sf_month",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "sf_month"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\shibor",
+   "kind": "dir",
+   "label": "tushare.shibor",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "shibor"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\shibor_lpr",
+   "kind": "dir",
+   "label": "tushare.shibor_lpr",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "shibor",
+    "shibor_lpr"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\stk_holdernumber",
+   "kind": "dir",
+   "label": "tushare.stk_holdernumber",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "stk_holdernumber"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\stk_managers",
+   "kind": "dir",
+   "label": "tushare.stk_managers",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "stk_managers"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\stk_mins",
+   "kind": "dir",
+   "label": "tushare.stk_mins",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "stk_mins"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\stk_pledge",
+   "kind": "dir",
+   "label": "tushare.stk_pledge",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "stk_pledge"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\stock_basic",
+   "kind": "dir",
+   "label": "tushare.stock_basic",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "stock_basic"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\stock_company",
+   "kind": "dir",
+   "label": "tushare.stock_company",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "stock_company"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\sw_classify_l1",
+   "kind": "dir",
+   "label": "tushare.sw_classify_l1",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "sw_classify_l1"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\sw_l1_member",
+   "kind": "dir",
+   "label": "tushare.sw_l1_member",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "sw_l1_member"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\sw_mins",
+   "kind": "dir",
+   "label": "tushare.sw_mins",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "sw_mins"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\top10_floatholders",
+   "kind": "dir",
+   "label": "tushare.top10_floatholders",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "top10_floatholders"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\top10_holders",
+   "kind": "dir",
+   "label": "tushare.top10_holders",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "top10_holders"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\top_inst",
+   "kind": "dir",
+   "label": "tushare.top_inst",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "top_inst"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\top_list",
+   "kind": "dir",
+   "label": "tushare.top_list",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "top_list"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\trade_cal",
+   "kind": "dir",
+   "label": "tushare.trade_cal",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "trade_cal"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\us_balancesheet",
+   "kind": "dir",
+   "label": "tushare.us_balancesheet",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "balancesheet",
+    "us_balancesheet"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\us_basic",
+   "kind": "dir",
+   "label": "tushare.us_basic",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "us_basic"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\us_cashflow",
+   "kind": "dir",
+   "label": "tushare.us_cashflow",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "cashflow",
+    "us_cashflow"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\us_daily",
+   "kind": "dir",
+   "label": "tushare.us_daily",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "daily",
+    "us_daily"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\us_fina_indicator",
+   "kind": "dir",
+   "label": "tushare.us_fina_indicator",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "fina_indicator",
+    "us_fina_indicator"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\us_income",
+   "kind": "dir",
+   "label": "tushare.us_income",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "income",
+    "us_income"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\dknife_snap",
+   "kind": "dir",
+   "label": "tdx.dknife_snap",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "dknife_snap"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\tdx_sector_daily",
+   "kind": "dir",
+   "label": "tdx.tdx_sector_daily",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "daily",
+    "tdx_sector_daily"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\tdx_sector_def",
+   "kind": "dir",
+   "label": "tdx.tdx_sector_def",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "tdx_sector_def"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\tdx_sector_member",
+   "kind": "dir",
+   "label": "tdx.tdx_sector_member",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "tdx_sector_member"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\tdx_sector_min",
+   "kind": "dir",
+   "label": "tdx.tdx_sector_min",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "tdx_sector_min"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\tdx_sector_min_tail",
+   "kind": "dir",
+   "label": "tdx.tdx_sector_min_tail",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "tdx_sector_min",
+    "tdx_sector_min_tail"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_adj_factor",
+   "kind": "dir",
+   "label": "tdx.ts_adj_factor",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "adj_factor",
+    "ts_adj_factor"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_anns_d",
+   "kind": "dir",
+   "label": "tdx.ts_anns_d",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "anns_d",
+    "ts_anns_d"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_bak_basic",
+   "kind": "dir",
+   "label": "tdx.ts_bak_basic",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "bak_basic",
+    "ts_bak_basic"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_balancesheet",
+   "kind": "dir",
+   "label": "tdx.ts_balancesheet",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "balancesheet",
+    "ts_balancesheet"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_balancesheet_vip",
+   "kind": "dir",
+   "label": "tdx.ts_balancesheet_vip",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "balancesheet",
+    "ts_balancesheet",
+    "ts_balancesheet_vip"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_block_trade",
+   "kind": "dir",
+   "label": "tdx.ts_block_trade",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_block_trade"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_broker_recommend",
+   "kind": "dir",
+   "label": "tdx.ts_broker_recommend",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_broker_recommend"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_bse_mapping",
+   "kind": "dir",
+   "label": "tdx.ts_bse_mapping",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_bse_mapping"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_cashflow",
+   "kind": "dir",
+   "label": "tdx.ts_cashflow",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "cashflow",
+    "ts_cashflow"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_cashflow_vip",
+   "kind": "dir",
+   "label": "tdx.ts_cashflow_vip",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "cashflow",
+    "ts_cashflow",
+    "ts_cashflow_vip"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_cb_basic",
+   "kind": "dir",
+   "label": "tdx.ts_cb_basic",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "cb_basic",
+    "ts_cb_basic"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_cb_call",
+   "kind": "dir",
+   "label": "tdx.ts_cb_call",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_cb_call"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_cb_daily",
+   "kind": "dir",
+   "label": "tdx.ts_cb_daily",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "cb_daily",
+    "daily",
+    "ts_cb_daily"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_cb_issue",
+   "kind": "dir",
+   "label": "tdx.ts_cb_issue",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_cb_issue"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_cb_price_chg",
+   "kind": "dir",
+   "label": "tdx.ts_cb_price_chg",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_cb_price_chg"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_cb_rate",
+   "kind": "dir",
+   "label": "tdx.ts_cb_rate",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_cb_rate"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_cb_share",
+   "kind": "dir",
+   "label": "tdx.ts_cb_share",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_cb_share"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_cctv_news",
+   "kind": "dir",
+   "label": "tdx.ts_cctv_news",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "news",
+    "ts_cctv_news"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_cn_cpi",
+   "kind": "dir",
+   "label": "tdx.ts_cn_cpi",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_cn_cpi"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_cn_gdp",
+   "kind": "dir",
+   "label": "tdx.ts_cn_gdp",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_cn_gdp"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_cn_m",
+   "kind": "dir",
+   "label": "tdx.ts_cn_m",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_cn_m"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_cn_pmi",
+   "kind": "dir",
+   "label": "tdx.ts_cn_pmi",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_cn_pmi"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_cn_ppi",
+   "kind": "dir",
+   "label": "tdx.ts_cn_ppi",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_cn_ppi"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_cyq_perf",
+   "kind": "dir",
+   "label": "tdx.ts_cyq_perf",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "cyq_perf",
+    "ts_cyq_perf"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_daily",
+   "kind": "dir",
+   "label": "tdx.ts_daily",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "daily",
+    "ts_daily"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_daily_basic",
+   "kind": "dir",
+   "label": "tdx.ts_daily_basic",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "daily",
+    "daily_basic",
+    "ts_daily",
+    "ts_daily_basic"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_daily_info",
+   "kind": "dir",
+   "label": "tdx.ts_daily_info",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "daily",
+    "ts_daily",
+    "ts_daily_info"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_dc_daily",
+   "kind": "dir",
+   "label": "tdx.ts_dc_daily",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "daily",
+    "ts_dc_daily"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_dc_hot",
+   "kind": "dir",
+   "label": "tdx.ts_dc_hot",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_dc_hot"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_dc_index",
+   "kind": "dir",
+   "label": "tdx.ts_dc_index",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_dc_index"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_dc_member",
+   "kind": "dir",
+   "label": "tdx.ts_dc_member",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_dc_member"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_disclosure_date",
+   "kind": "dir",
+   "label": "tdx.ts_disclosure_date",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_disclosure_date"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_dividend",
+   "kind": "dir",
+   "label": "tdx.ts_dividend",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_dividend"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_dividend_vip",
+   "kind": "dir",
+   "label": "tdx.ts_dividend_vip",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_dividend",
+    "ts_dividend_vip"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_eco_cal",
+   "kind": "dir",
+   "label": "tdx.ts_eco_cal",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_eco_cal"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_emotion_daily",
+   "kind": "dir",
+   "label": "tdx.ts_emotion_daily",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "daily",
+    "ts_emotion_daily"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_emotion_ladder",
+   "kind": "dir",
+   "label": "tdx.ts_emotion_ladder",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_emotion_ladder"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_etf_basic",
+   "kind": "dir",
+   "label": "tdx.ts_etf_basic",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_etf_basic"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_express",
+   "kind": "dir",
+   "label": "tdx.ts_express",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "express",
+    "ts_express"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_express_vip",
+   "kind": "dir",
+   "label": "tdx.ts_express_vip",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "express",
+    "ts_express",
+    "ts_express_vip"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_fina_audit",
+   "kind": "dir",
+   "label": "tdx.ts_fina_audit",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_fina_audit"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_fina_indicator",
+   "kind": "dir",
+   "label": "tdx.ts_fina_indicator",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "fina_indicator",
+    "ts_fina_indicator"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_fina_indicator_vip",
+   "kind": "dir",
+   "label": "tdx.ts_fina_indicator_vip",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "fina_indicator",
+    "ts_fina_indicator",
+    "ts_fina_indicator_vip"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_fina_mainbz",
+   "kind": "dir",
+   "label": "tdx.ts_fina_mainbz",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_fina_mainbz"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_fina_mainbz_vip",
+   "kind": "dir",
+   "label": "tdx.ts_fina_mainbz_vip",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_fina_mainbz",
+    "ts_fina_mainbz_vip"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_forecast",
+   "kind": "dir",
+   "label": "tdx.ts_forecast",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "forecast",
+    "ts_forecast"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_forecast_vip",
+   "kind": "dir",
+   "label": "tdx.ts_forecast_vip",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "forecast",
+    "ts_forecast",
+    "ts_forecast_vip"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_fund_adj",
+   "kind": "dir",
+   "label": "tdx.ts_fund_adj",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_fund_adj"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_fund_basic",
+   "kind": "dir",
+   "label": "tdx.ts_fund_basic",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_fund_basic"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_fund_company",
+   "kind": "dir",
+   "label": "tdx.ts_fund_company",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_fund_company"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_fund_daily",
+   "kind": "dir",
+   "label": "tdx.ts_fund_daily",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "daily",
+    "ts_fund_daily"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_fund_div",
+   "kind": "dir",
+   "label": "tdx.ts_fund_div",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_fund_div"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_fund_manager",
+   "kind": "dir",
+   "label": "tdx.ts_fund_manager",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_fund_manager"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_fund_portfolio",
+   "kind": "dir",
+   "label": "tdx.ts_fund_portfolio",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_fund_portfolio"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_fund_share",
+   "kind": "dir",
+   "label": "tdx.ts_fund_share",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_fund_share"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_fut_basic",
+   "kind": "dir",
+   "label": "tdx.ts_fut_basic",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_fut_basic"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_fut_daily",
+   "kind": "dir",
+   "label": "tdx.ts_fut_daily",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "daily",
+    "ts_fut_daily"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_fut_holding",
+   "kind": "dir",
+   "label": "tdx.ts_fut_holding",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_fut_holding"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_fut_mapping",
+   "kind": "dir",
+   "label": "tdx.ts_fut_mapping",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_fut_mapping"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_fut_settle",
+   "kind": "dir",
+   "label": "tdx.ts_fut_settle",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_fut_settle"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_fut_weekly_detail",
+   "kind": "dir",
+   "label": "tdx.ts_fut_weekly_detail",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_fut_weekly_detail"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_fut_weekly_monthly",
+   "kind": "dir",
+   "label": "tdx.ts_fut_weekly_monthly",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_fut_weekly_monthly"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_fut_wsr",
+   "kind": "dir",
+   "label": "tdx.ts_fut_wsr",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_fut_wsr"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_fx_daily",
+   "kind": "dir",
+   "label": "tdx.ts_fx_daily",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "daily",
+    "fx_daily",
+    "ts_fx_daily"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_fx_obasic",
+   "kind": "dir",
+   "label": "tdx.ts_fx_obasic",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_fx_obasic"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_ggt_daily",
+   "kind": "dir",
+   "label": "tdx.ts_ggt_daily",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "daily",
+    "ts_ggt_daily"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_ggt_top10",
+   "kind": "dir",
+   "label": "tdx.ts_ggt_top10",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_ggt_top10"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_global_fut",
+   "kind": "dir",
+   "label": "tdx.ts_global_fut",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_global_fut"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_hk_basic",
+   "kind": "dir",
+   "label": "tdx.ts_hk_basic",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "hk_basic",
+    "ts_hk_basic"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_hk_daily",
+   "kind": "dir",
+   "label": "tdx.ts_hk_daily",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "daily",
+    "hk_daily",
+    "ts_hk_daily"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_hk_daily_adj",
+   "kind": "dir",
+   "label": "tdx.ts_hk_daily_adj",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "daily",
+    "hk_daily",
+    "ts_hk_daily",
+    "ts_hk_daily_adj"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_hk_hold",
+   "kind": "dir",
+   "label": "tdx.ts_hk_hold",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "hk_hold",
+    "ts_hk_hold"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_hk_tradecal",
+   "kind": "dir",
+   "label": "tdx.ts_hk_tradecal",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_hk_tradecal"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_hm_detail",
+   "kind": "dir",
+   "label": "tdx.ts_hm_detail",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_hm_detail"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_hm_list",
+   "kind": "dir",
+   "label": "tdx.ts_hm_list",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_hm_list"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_hs_const",
+   "kind": "dir",
+   "label": "tdx.ts_hs_const",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_hs_const"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_hsgt_top10",
+   "kind": "dir",
+   "label": "tdx.ts_hsgt_top10",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_hsgt_top10"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_income",
+   "kind": "dir",
+   "label": "tdx.ts_income",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "income",
+    "ts_income"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_income_vip",
+   "kind": "dir",
+   "label": "tdx.ts_income_vip",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "income",
+    "ts_income",
+    "ts_income_vip"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_index_basic",
+   "kind": "dir",
+   "label": "tdx.ts_index_basic",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_index_basic"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_index_classify",
+   "kind": "dir",
+   "label": "tdx.ts_index_classify",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_index_classify"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_index_daily",
+   "kind": "dir",
+   "label": "tdx.ts_index_daily",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "daily",
+    "index_daily",
+    "ts_index_daily"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_index_dailybasic",
+   "kind": "dir",
+   "label": "tdx.ts_index_dailybasic",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "daily",
+    "index_daily",
+    "ts_index_daily",
+    "ts_index_dailybasic"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_index_global",
+   "kind": "dir",
+   "label": "tdx.ts_index_global",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "index_global",
+    "ts_index_global"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_index_member_all",
+   "kind": "dir",
+   "label": "tdx.ts_index_member_all",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "index_member_all",
+    "ts_index_member_all"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_index_monthly",
+   "kind": "dir",
+   "label": "tdx.ts_index_monthly",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_index_monthly"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_index_weekly",
+   "kind": "dir",
+   "label": "tdx.ts_index_weekly",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_index_weekly"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_index_weight",
+   "kind": "dir",
+   "label": "tdx.ts_index_weight",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "index_weight",
+    "ts_index_weight"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_kpl_concept",
+   "kind": "dir",
+   "label": "tdx.ts_kpl_concept",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_kpl_concept"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_kpl_concept_cons",
+   "kind": "dir",
+   "label": "tdx.ts_kpl_concept_cons",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_kpl_concept",
+    "ts_kpl_concept_cons"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_kpl_list",
+   "kind": "dir",
+   "label": "tdx.ts_kpl_list",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_kpl_list"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_limit_cpt_list",
+   "kind": "dir",
+   "label": "tdx.ts_limit_cpt_list",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_limit_cpt_list"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_limit_list_ths",
+   "kind": "dir",
+   "label": "tdx.ts_limit_list_ths",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_limit_list_ths"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_limit_step",
+   "kind": "dir",
+   "label": "tdx.ts_limit_step",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_limit_step"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_major_news",
+   "kind": "dir",
+   "label": "tdx.ts_major_news",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "major_news",
+    "news",
+    "ts_major_news"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_margin",
+   "kind": "dir",
+   "label": "tdx.ts_margin",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_margin"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_margin_detail",
+   "kind": "dir",
+   "label": "tdx.ts_margin_detail",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "margin_detail",
+    "ts_margin",
+    "ts_margin_detail"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_margin_secs",
+   "kind": "dir",
+   "label": "tdx.ts_margin_secs",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_margin",
+    "ts_margin_secs"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_moneyflow",
+   "kind": "dir",
+   "label": "tdx.ts_moneyflow",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "moneyflow",
+    "ts_moneyflow"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_moneyflow_dc",
+   "kind": "dir",
+   "label": "tdx.ts_moneyflow_dc",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "moneyflow",
+    "ts_moneyflow",
+    "ts_moneyflow_dc"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_moneyflow_hsgt",
+   "kind": "dir",
+   "label": "tdx.ts_moneyflow_hsgt",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "moneyflow",
+    "moneyflow_hsgt",
+    "ts_moneyflow",
+    "ts_moneyflow_hsgt"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_moneyflow_ind_dc",
+   "kind": "dir",
+   "label": "tdx.ts_moneyflow_ind_dc",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "moneyflow",
+    "ts_moneyflow",
+    "ts_moneyflow_ind_dc"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_moneyflow_ind_ths",
+   "kind": "dir",
+   "label": "tdx.ts_moneyflow_ind_ths",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "moneyflow",
+    "ts_moneyflow",
+    "ts_moneyflow_ind_ths"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_moneyflow_mkt_dc",
+   "kind": "dir",
+   "label": "tdx.ts_moneyflow_mkt_dc",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "moneyflow",
+    "ts_moneyflow",
+    "ts_moneyflow_mkt_dc"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_moneyflow_ths",
+   "kind": "dir",
+   "label": "tdx.ts_moneyflow_ths",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "moneyflow",
+    "ts_moneyflow",
+    "ts_moneyflow_ths"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_monthly",
+   "kind": "dir",
+   "label": "tdx.ts_monthly",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_monthly"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_namechange",
+   "kind": "dir",
+   "label": "tdx.ts_namechange",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_namechange"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_new_share",
+   "kind": "dir",
+   "label": "tdx.ts_new_share",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_new_share"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_news",
+   "kind": "dir",
+   "label": "tdx.ts_news",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "news",
+    "ts_news"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_opt_basic",
+   "kind": "dir",
+   "label": "tdx.ts_opt_basic",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_opt_basic"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_opt_daily",
+   "kind": "dir",
+   "label": "tdx.ts_opt_daily",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "daily",
+    "ts_opt_daily"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_pledge_detail",
+   "kind": "dir",
+   "label": "tdx.ts_pledge_detail",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_pledge_detail"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_pledge_stat",
+   "kind": "dir",
+   "label": "tdx.ts_pledge_stat",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_pledge_stat"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_repo_daily",
+   "kind": "dir",
+   "label": "tdx.ts_repo_daily",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "daily",
+    "ts_repo_daily"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_report_rc",
+   "kind": "dir",
+   "label": "tdx.ts_report_rc",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "report_rc",
+    "ts_report_rc"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_repurchase",
+   "kind": "dir",
+   "label": "tdx.ts_repurchase",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_repurchase"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_rt_min",
+   "kind": "dir",
+   "label": "tdx.ts_rt_min",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_rt_min"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_sge_basic",
+   "kind": "dir",
+   "label": "tdx.ts_sge_basic",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_sge_basic"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_sge_daily",
+   "kind": "dir",
+   "label": "tdx.ts_sge_daily",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "daily",
+    "ts_sge_daily"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_share_float",
+   "kind": "dir",
+   "label": "tdx.ts_share_float",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_share_float"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_slb_len",
+   "kind": "dir",
+   "label": "tdx.ts_slb_len",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_slb_len"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_slb_sec",
+   "kind": "dir",
+   "label": "tdx.ts_slb_sec",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_slb_sec"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_stk_ah_comparison",
+   "kind": "dir",
+   "label": "tdx.ts_stk_ah_comparison",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_stk_ah_comparison"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_stk_auction",
+   "kind": "dir",
+   "label": "tdx.ts_stk_auction",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_stk_auction"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_stk_auction_c",
+   "kind": "dir",
+   "label": "tdx.ts_stk_auction_c",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_stk_auction",
+    "ts_stk_auction_c"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_stk_auction_o",
+   "kind": "dir",
+   "label": "tdx.ts_stk_auction_o",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_stk_auction",
+    "ts_stk_auction_o"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_stk_factor",
+   "kind": "dir",
+   "label": "tdx.ts_stk_factor",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_stk_factor"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_stk_factor_pro",
+   "kind": "dir",
+   "label": "tdx.ts_stk_factor_pro",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_stk_factor",
+    "ts_stk_factor_pro"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_stk_holdernumber",
+   "kind": "dir",
+   "label": "tdx.ts_stk_holdernumber",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "stk_holdernumber",
+    "ts_stk_holdernumber"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_stk_holdertrade",
+   "kind": "dir",
+   "label": "tdx.ts_stk_holdertrade",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_stk_holdertrade"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_stk_limit",
+   "kind": "dir",
+   "label": "tdx.ts_stk_limit",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_stk_limit"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_stk_managers",
+   "kind": "dir",
+   "label": "tdx.ts_stk_managers",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "stk_managers",
+    "ts_stk_managers"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_stk_premarket",
+   "kind": "dir",
+   "label": "tdx.ts_stk_premarket",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_stk_premarket"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_stk_rewards",
+   "kind": "dir",
+   "label": "tdx.ts_stk_rewards",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_stk_rewards"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_stk_surv",
+   "kind": "dir",
+   "label": "tdx.ts_stk_surv",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_stk_surv"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_stk_week_month_adj",
+   "kind": "dir",
+   "label": "tdx.ts_stk_week_month_adj",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_stk_week_month_adj"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_stk_weekly_monthly",
+   "kind": "dir",
+   "label": "tdx.ts_stk_weekly_monthly",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_stk_weekly_monthly"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_stock_basic",
+   "kind": "dir",
+   "label": "tdx.ts_stock_basic",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "stock_basic",
+    "ts_stock_basic"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_stock_company",
+   "kind": "dir",
+   "label": "tdx.ts_stock_company",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "stock_company",
+    "ts_stock_company"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_stock_hsgt",
+   "kind": "dir",
+   "label": "tdx.ts_stock_hsgt",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_stock_hsgt"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_suspend_d",
+   "kind": "dir",
+   "label": "tdx.ts_suspend_d",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_suspend_d"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_sz_daily_info",
+   "kind": "dir",
+   "label": "tdx.ts_sz_daily_info",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "daily",
+    "ts_sz_daily_info"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_tdx_index",
+   "kind": "dir",
+   "label": "tdx.ts_tdx_index",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_tdx_index"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_tdx_member",
+   "kind": "dir",
+   "label": "tdx.ts_tdx_member",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_tdx_member"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_ths_daily",
+   "kind": "dir",
+   "label": "tdx.ts_ths_daily",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "daily",
+    "ts_ths_daily"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_ths_hot",
+   "kind": "dir",
+   "label": "tdx.ts_ths_hot",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_ths_hot"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_ths_index",
+   "kind": "dir",
+   "label": "tdx.ts_ths_index",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_ths_index"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_ths_member",
+   "kind": "dir",
+   "label": "tdx.ts_ths_member",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_ths_member"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_top10_floatholders",
+   "kind": "dir",
+   "label": "tdx.ts_top10_floatholders",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "top10_floatholders",
+    "ts_top10_floatholders"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_top10_holders",
+   "kind": "dir",
+   "label": "tdx.ts_top10_holders",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "top10_holders",
+    "ts_top10_holders"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_top_inst",
+   "kind": "dir",
+   "label": "tdx.ts_top_inst",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "top_inst",
+    "ts_top_inst"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_top_list",
+   "kind": "dir",
+   "label": "tdx.ts_top_list",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "top_list",
+    "ts_top_list"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_trade_cal",
+   "kind": "dir",
+   "label": "tdx.ts_trade_cal",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "trade_cal",
+    "ts_trade_cal"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_us_basic",
+   "kind": "dir",
+   "label": "tdx.ts_us_basic",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_us_basic",
+    "us_basic"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_us_daily",
+   "kind": "dir",
+   "label": "tdx.ts_us_daily",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "daily",
+    "ts_us_daily",
+    "us_daily"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_us_tbr",
+   "kind": "dir",
+   "label": "tdx.ts_us_tbr",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_us_tbr"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_us_tradecal",
+   "kind": "dir",
+   "label": "tdx.ts_us_tradecal",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_us_tradecal"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_us_trycr",
+   "kind": "dir",
+   "label": "tdx.ts_us_trycr",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_us_trycr"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_us_tycr",
+   "kind": "dir",
+   "label": "tdx.ts_us_tycr",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_us_tycr"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_weekly",
+   "kind": "dir",
+   "label": "tdx.ts_weekly",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_weekly"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\ts_wz_index",
+   "kind": "dir",
+   "label": "tdx.ts_wz_index",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": [
+    "ts_wz_index"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\xueqiu",
+   "kind": "dir",
+   "label": "xueqiu",
+   "catalog_resource": "xueqiu",
+   "physical_assets": []
+  },
+  {
+   "path": "quant_backtest\\data\\cnopendata",
+   "kind": "dir",
+   "label": "cnopendata",
+   "catalog_resource": "cnopendata",
+   "physical_assets": []
+  },
+  {
+   "path": "quant_backtest\\data\\guba",
+   "kind": "dir",
+   "label": "guba",
+   "catalog_resource": "guba",
+   "physical_assets": []
+  },
+  {
+   "path": "quant_backtest\\data\\ashare",
+   "kind": "dir",
+   "label": "ashare",
+   "catalog_resource": "ashare_kline",
+   "physical_assets": []
+  },
+  {
+   "path": "quant_backtest\\data\\tushare_curated",
+   "kind": "dir",
+   "label": "tushare_curated",
+   "catalog_resource": "tushare_curated",
+   "physical_assets": []
+  },
+  {
+   "path": "quant_backtest\\data\\tushare_staging",
+   "kind": "dir",
+   "label": "tushare_staging",
+   "catalog_resource": "tushare_staging",
+   "physical_assets": []
+  },
+  {
+   "path": "quant_backtest\\data\\tushare_v2",
+   "kind": "dir",
+   "label": "tushare_v2",
+   "catalog_resource": "tushare_v2",
+   "physical_assets": []
+  },
+  {
+   "path": "quant_backtest\\data\\anns_pdf",
+   "kind": "dir",
+   "label": "anns_pdf",
+   "catalog_resource": "anns_pdf",
+   "physical_assets": []
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\anns_d",
+   "kind": "dir",
+   "label": "anns_d",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "anns_d"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\major_news",
+   "kind": "dir",
+   "label": "major_news",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "major_news",
+    "news"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\news",
+   "kind": "dir",
+   "label": "news",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "news"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\irm_qa_sh",
+   "kind": "dir",
+   "label": "irm_qa",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "irm_qa_sh"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\tushare\\research_report",
+   "kind": "dir",
+   "label": "research_report",
+   "catalog_resource": "tushare_raw",
+   "physical_assets": [
+    "research_report"
+   ]
+  },
+  {
+   "path": "quant_backtest\\data\\xueqiu\\xueqiu_info.db",
+   "kind": "sqlite_table",
+   "label": "xueqiu_info.xq_status",
+   "catalog_resource": "xueqiu",
+   "physical_assets": []
+  },
+  {
+   "path": "quant_backtest\\data\\xueqiu\\xueqiu_info.db",
+   "kind": "sqlite_table",
+   "label": "xueqiu_info.xq_status_classified",
+   "catalog_resource": "xueqiu",
+   "physical_assets": []
+  },
+  {
+   "path": "quant_backtest\\data\\xueqiu\\xueqiu_info.db",
+   "kind": "sqlite_table",
+   "label": "xueqiu_info.xq_hot_post",
+   "catalog_resource": "xueqiu",
+   "physical_assets": []
+  },
+  {
+   "path": "quant_backtest\\data\\xueqiu\\xueqiu_info.db",
+   "kind": "sqlite_table",
+   "label": "xueqiu_info.xq_comment",
+   "catalog_resource": "xueqiu",
+   "physical_assets": []
+  },
+  {
+   "path": "quant_backtest\\data\\xueqiu\\xueqiu_info.db",
+   "kind": "sqlite_table",
+   "label": "xueqiu_info.xq_quote",
+   "catalog_resource": "xueqiu",
+   "physical_assets": []
+  },
+  {
+   "path": "quant_backtest\\data\\xueqiu\\xueqiu_info.db",
+   "kind": "sqlite_table",
+   "label": "xueqiu_info.xq_kline",
+   "catalog_resource": "xueqiu",
+   "physical_assets": []
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\tdx_info.db",
+   "kind": "sqlite_table",
+   "label": "tdx_info.stock_notice",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": []
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\tdx_info.db",
+   "kind": "sqlite_table",
+   "label": "tdx_info.stock_report",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": []
+  },
+  {
+   "path": "quant_backtest\\data\\tdx\\tdx_info.db",
+   "kind": "sqlite_table",
+   "label": "tdx_info.stock_news",
+   "catalog_resource": "tdx_raw",
+   "physical_assets": []
+  },
+  {
+   "path": "research\\hypotheses.db",
+   "kind": "sqlite_table",
+   "label": "hypotheses.hypotheses",
+   "catalog_resource": null,
+   "physical_assets": []
+  },
+  {
+   "path": "research\\reports",
+   "kind": "dir",
+   "label": "research_reports",
+   "catalog_resource": null,
+   "physical_assets": []
+  },
+  {
+   "path": "research\\shadow",
+   "kind": "dir",
+   "label": "research_shadow",
+   "catalog_resource": null,
+   "physical_assets": []
+  },
+  {
+   "path": "C:\\项目\\PDF\\_ingest_reports",
+   "kind": "dir",
+   "label": "PDF_ingest_reports",
+   "catalog_resource": "research_reports_kb",
+   "physical_assets": []
+  },
+  {
+   "path": "C:\\项目\\PDF\\_ingest_notes",
+   "kind": "dir",
+   "label": "PDF_ingest_notes",
+   "catalog_resource": "strategy_classics_kb",
+   "physical_assets": []
+  },
+  {
+   "path": "knowledge_docs",
+   "kind": "dir",
+   "label": "knowledge_docs",
+   "catalog_resource": null,
+   "physical_assets": []
+  },
+  {
+   "path": "agent_platform\\data\\academy",
+   "kind": "dir",
+   "label": "academy_data",
+   "catalog_resource": null,
+   "physical_assets": []
+  },
+  {
+   "path": "portal\\static",
+   "kind": "dir",
+   "label": "portal_static",
+   "catalog_resource": null,
+   "physical_assets": []
+  },
+  {
+   "path": "portal\\data",
+   "kind": "dir",
+   "label": "portal_data",
+   "catalog_resource": null,
+   "physical_assets": []
+  },
+  {
+   "path": "agent_platform\\data\\org",
+   "kind": "dir",
+   "label": "agent_tasks",
+   "catalog_resource": null,
+   "physical_assets": []
+  },
+  {
+   "path": "k_stock\\data\\paper.db",
+   "kind": "sqlite_table",
+   "label": "paper.orders",
+   "catalog_resource": "paper_db",
+   "physical_assets": []
+  },
+  {
+   "path": "k_stock\\data\\paper.db",
+   "kind": "sqlite_table",
+   "label": "paper.ledger",
+   "catalog_resource": "paper_db",
+   "physical_assets": []
+  },
+  {
+   "path": "k_stock\\data\\paper.db",
+   "kind": "sqlite_table",
+   "label": "paper.account",
+   "catalog_resource": "paper_db",
+   "physical_assets": []
+  },
+  {
+   "path": "k_stock\\data\\paper.db",
+   "kind": "sqlite_table",
+   "label": "paper.positions",
+   "catalog_resource": "paper_db",
+   "physical_assets": []
+  },
+  {
+   "path": "k_stock\\data\\paper.db",
+   "kind": "sqlite_table",
+   "label": "paper.equity_marks",
+   "catalog_resource": "paper_db",
+   "physical_assets": []
+  },
+  {
+   "path": "k_stock\\data\\paper.db",
+   "kind": "sqlite_table",
+   "label": "paper.positions_snapshot",
+   "catalog_resource": "paper_db",
+   "physical_assets": []
+  },
+  {
+   "path": "k_stock\\data\\paper.db",
+   "kind": "sqlite_table",
+   "label": "paper.decision_snapshots",
+   "catalog_resource": "paper_db",
+   "physical_assets": []
+  },
+  {
+   "path": "quant_backtest\\data\\quant.db",
+   "kind": "sqlite_table",
+   "label": "quant_db.chanlun_pool",
+   "catalog_resource": "quant_data_root",
+   "physical_assets": []
+  },
+  {
+   "path": "quant_backtest\\data\\quant.db",
+   "kind": "sqlite_table",
+   "label": "quant_db.nine_dim_rc",
+   "catalog_resource": "quant_data_root",
+   "physical_assets": []
+  },
+  {
+   "path": "quant_backtest\\data\\quant.db",
+   "kind": "sqlite_table",
+   "label": "quant_db.nine_dim_rc_meta",
+   "catalog_resource": "quant_data_root",
+   "physical_assets": []
+  },
+  {
+   "path": "quant_backtest\\data\\quant.db",
+   "kind": "sqlite_table",
+   "label": "quant_db.nine_dim_fina",
+   "catalog_resource": "quant_data_root",
+   "physical_assets": []
+  },
+  {
+   "path": "quant_backtest\\data\\quant.db",
+   "kind": "sqlite_table",
+   "label": "quant_db.nine_dim_fc",
+   "catalog_resource": "quant_data_root",
+   "physical_assets": []
+  },
+  {
+   "path": "quant_backtest\\data\\quant.db",
+   "kind": "sqlite_table",
+   "label": "quant_db.nine_dim_fc_meta",
+   "catalog_resource": "quant_data_root",
+   "physical_assets": []
+  },
+  {
+   "path": "news_collector\\news.db",
+   "kind": "sqlite_table",
+   "label": "news_db.news",
+   "catalog_resource": "news_db",
+   "physical_assets": [
+    "news"
+   ]
+  },
+  {
+   "path": "news_collector\\news.db",
+   "kind": "sqlite_table",
+   "label": "news_db.runs",
+   "catalog_resource": "news_db",
+   "physical_assets": [
+    "news"
+   ]
+  },
+  {
+   "path": "news_collector\\news.db",
+   "kind": "sqlite_table",
+   "label": "news_db.ai_briefs",
+   "catalog_resource": "news_db",
+   "physical_assets": [
+    "news"
+   ]
+  },
+  {
+   "path": "news_collector\\news.db",
+   "kind": "sqlite_table",
+   "label": "news_db.ai_reviews",
+   "catalog_resource": "news_db",
+   "physical_assets": [
+    "news"
+   ]
+  },
+  {
+   "path": "news_collector\\news.db",
+   "kind": "sqlite_table",
+   "label": "news_db.quotes",
+   "catalog_resource": "news_db",
+   "physical_assets": [
+    "news"
+   ]
+  },
+  {
+   "path": "news_collector\\news.db",
+   "kind": "sqlite_table",
+   "label": "news_db.jev_review_queue",
+   "catalog_resource": "news_db",
+   "physical_assets": [
+    "news"
+   ]
+  },
+  {
+   "path": "C:\\aios\\automation_runs",
+   "kind": "dir",
+   "label": "automation_runs",
+   "catalog_resource": null,
+   "physical_assets": []
+  },
+  {
+   "path": "news_collector\\data",
+   "kind": "dir",
+   "label": "news_collector_data",
+   "catalog_resource": null,
+   "physical_assets": [
+    "news"
+   ]
+  },
+  {
+   "path": "C:/项目/知识库/01_数据分包",
+   "kind": "corpus_layer",
+   "label": "yt_raw_zip（948 ZIP/清单/sha256）",
+   "catalog_resource": "youtube_quant_corpus_raw",
+   "physical_assets": []
+  },
+  {
+   "path": "C:/项目/知识库/10_规范化",
+   "kind": "corpus_layer",
+   "label": "yt_normalized（videos/comments/channel_map parquet）",
+   "catalog_resource": "youtube_quant_corpus_derived",
+   "physical_assets": []
+  },
+  {
+   "path": "C:/项目/知识库/20_清洗",
+   "kind": "corpus_layer",
+   "label": "yt_cleaned_comments（清洗+PII脱敏）",
+   "catalog_resource": "youtube_quant_corpus_derived",
+   "physical_assets": []
+  },
+  {
+   "path": "C:/项目/知识库/20_转写",
+   "kind": "corpus_layer",
+   "label": "yt_transcripts（转写）",
+   "catalog_resource": "youtube_quant_corpus_derived",
+   "physical_assets": []
+  },
+  {
+   "path": "C:/项目/知识库/30_知识单元",
+   "kind": "corpus_layer",
+   "label": "yt_knowledge_units（知识单元）",
+   "catalog_resource": "youtube_quant_corpus_derived",
+   "physical_assets": []
+  },
+  {
+   "path": "C:/项目/知识库/35_知识提炼",
+   "kind": "corpus_layer",
+   "label": "yt_distill（知识提炼）",
+   "catalog_resource": "youtube_quant_corpus_derived",
+   "physical_assets": []
+  },
+  {
+   "path": "C:/项目/知识库/37_FAQ挖掘",
+   "kind": "corpus_layer",
+   "label": "yt_faq（FAQ 语义归并 133 条）",
+   "catalog_resource": "youtube_quant_corpus_derived",
+   "physical_assets": []
+  },
+  {
+   "path": "C:/项目/知识库/40_索引",
+   "kind": "corpus_layer",
+   "label": "yt_index（62,401 docs bge-m3）",
+   "catalog_resource": "youtube_quant_corpus_derived",
+   "physical_assets": []
+  },
+  {
+   "path": "C:/项目/知识库/50_RAG",
+   "kind": "corpus_layer",
+   "label": "yt_rag（4,926 chunks + packed 62,401）",
+   "catalog_resource": "youtube_quant_corpus_derived",
+   "physical_assets": []
+  },
+  {
+   "path": "C:/项目/知识库/60_学习卡",
+   "kind": "corpus_layer",
+   "label": "yt_learning_cards（学习卡）",
+   "catalog_resource": "youtube_quant_corpus_derived",
+   "physical_assets": []
+  },
+  {
+   "path": "C:/项目/知识库/70_简报",
+   "kind": "corpus_layer",
+   "label": "yt_briefs（简报）",
+   "catalog_resource": "youtube_quant_corpus_derived",
+   "physical_assets": []
+  },
+  {
+   "path": "C:/项目/知识库/80_复核",
+   "kind": "corpus_layer",
+   "label": "yt_review（复核）",
+   "catalog_resource": "youtube_quant_corpus_derived",
+   "physical_assets": []
+  },
+  {
+   "path": "C:/项目/知识库/90_报告",
+   "kind": "corpus_layer",
+   "label": "yt_reports（报告）",
+   "catalog_resource": "youtube_quant_corpus_derived",
+   "physical_assets": []
+  },
+  {
+   "path": "C:/项目/知识库/00_数据仓",
+   "kind": "corpus_layer",
+   "label": "yt_learning.db（星型模型 9 表，统一取数入口）",
+   "catalog_resource": "youtube_quant_corpus_derived",
+   "physical_assets": []
+  },
+  {
+   "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+   "kind": "sqlite_table",
+   "label": "yt_learning_db.dim_channel",
+   "catalog_resource": "youtube_quant_corpus_derived",
+   "physical_assets": []
+  },
+  {
+   "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+   "kind": "sqlite_table",
+   "label": "yt_learning_db.dim_topic",
+   "catalog_resource": "youtube_quant_corpus_derived",
+   "physical_assets": []
+  },
+  {
+   "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+   "kind": "sqlite_table",
+   "label": "yt_learning_db.dim_video",
+   "catalog_resource": "youtube_quant_corpus_derived",
+   "physical_assets": []
+  },
+  {
+   "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+   "kind": "sqlite_table",
+   "label": "yt_learning_db.bridge_video_topic",
+   "catalog_resource": "youtube_quant_corpus_derived",
+   "physical_assets": []
+  },
+  {
+   "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+   "kind": "sqlite_table",
+   "label": "yt_learning_db.fact_comment",
+   "catalog_resource": "youtube_quant_corpus_derived",
+   "physical_assets": []
+  },
+  {
+   "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+   "kind": "sqlite_table",
+   "label": "yt_learning_db.fact_knowledge_unit",
+   "catalog_resource": "youtube_quant_corpus_derived",
+   "physical_assets": []
+  },
+  {
+   "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+   "kind": "sqlite_table",
+   "label": "yt_learning_db.fact_transcript",
+   "catalog_resource": "youtube_quant_corpus_derived",
+   "physical_assets": []
+  },
+  {
+   "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+   "kind": "sqlite_table",
+   "label": "yt_learning_db.fact_faq_semantic",
+   "catalog_resource": "youtube_quant_corpus_derived",
+   "physical_assets": []
+  },
+  {
+   "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+   "kind": "sqlite_table",
+   "label": "yt_learning_db.bridge_faq_comment",
+   "catalog_resource": "youtube_quant_corpus_derived",
+   "physical_assets": []
+  },
+  {
+   "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+   "kind": "sqlite_table",
+   "label": "yt_learning_db.meta_faq_build",
+   "catalog_resource": "youtube_quant_corpus_derived",
+   "physical_assets": []
+  },
+  {
+   "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+   "kind": "sqlite_table",
+   "label": "yt_learning_db.fact_transcript_seg",
+   "catalog_resource": "youtube_quant_corpus_derived",
+   "physical_assets": []
+  },
+  {
+   "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+   "kind": "sqlite_table",
+   "label": "yt_learning_db.meta_etl",
+   "catalog_resource": "youtube_quant_corpus_derived",
+   "physical_assets": []
+  },
+  {
+   "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+   "kind": "sqlite_table",
+   "label": "yt_learning_db.fact_transcript_signal",
+   "catalog_resource": "youtube_quant_corpus_derived",
+   "physical_assets": []
+  }
+ ],
+ "table_map": [
+  {
+   "asset_id": "tdx_sector_daily",
+   "tables": [
+    "tdx_sector_daily"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [
+    "tdx_sector_daily"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\tdx_sector_daily"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "tdx_sector_def",
+   "tables": [
+    "tdx_sector_def"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [
+    "tdx_sector_def"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\tdx_sector_def"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "tdx_sector_member",
+   "tables": [
+    "tdx_sector_member"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [
+    "tdx_sector_member"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\tdx_sector_member"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "tdx_sector_min",
+   "tables": [
+    "tdx_sector_min"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [
+    "tdx_sector_min"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\tdx_sector_min",
+    "quant_backtest\\data\\tdx\\tdx_sector_min_tail"
+   ],
+   "dataset_count": 2,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "tdx_sector_min_tail",
+   "tables": [
+    "tdx_sector_min_tail"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [
+    "tdx_sector_min_tail"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\tdx_sector_min_tail"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_balancesheet",
+   "tables": [
+    "ts_balancesheet"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [
+    "ts_balancesheet"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_balancesheet",
+    "quant_backtest\\data\\tdx\\ts_balancesheet_vip"
+   ],
+   "dataset_count": 2,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_cashflow",
+   "tables": [
+    "ts_cashflow"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [
+    "ts_cashflow"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_cashflow",
+    "quant_backtest\\data\\tdx\\ts_cashflow_vip"
+   ],
+   "dataset_count": 2,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_daily",
+   "tables": [
+    "ts_daily"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [
+    "ts_daily"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_daily",
+    "quant_backtest\\data\\tdx\\ts_daily_basic",
+    "quant_backtest\\data\\tdx\\ts_daily_info"
+   ],
+   "dataset_count": 3,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_daily_basic",
+   "tables": [
+    "ts_daily_basic"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [
+    "ts_daily_basic"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_daily_basic"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_etf_basic",
+   "tables": [
+    "ts_etf_basic"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [
+    "ts_etf_basic"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_etf_basic"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_fina_indicator",
+   "tables": [
+    "ts_fina_indicator"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [
+    "ts_fina_indicator"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_fina_indicator",
+    "quant_backtest\\data\\tdx\\ts_fina_indicator_vip"
+   ],
+   "dataset_count": 2,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_fund_basic",
+   "tables": [
+    "ts_fund_basic"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [
+    "ts_fund_basic"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_fund_basic"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_fund_daily",
+   "tables": [
+    "ts_fund_daily"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [
+    "ts_fund_daily"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_fund_daily"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_hk_daily",
+   "tables": [
+    "ts_hk_daily"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [
+    "ts_hk_daily"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_hk_daily",
+    "quant_backtest\\data\\tdx\\ts_hk_daily_adj"
+   ],
+   "dataset_count": 2,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_income",
+   "tables": [
+    "ts_income"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [
+    "ts_income"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_income",
+    "quant_backtest\\data\\tdx\\ts_income_vip"
+   ],
+   "dataset_count": 2,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_index_basic",
+   "tables": [
+    "ts_index_basic"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [
+    "ts_index_basic"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_index_basic"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_index_daily",
+   "tables": [
+    "ts_index_daily"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [
+    "ts_index_daily"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_index_daily",
+    "quant_backtest\\data\\tdx\\ts_index_dailybasic"
+   ],
+   "dataset_count": 2,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_index_weight",
+   "tables": [
+    "ts_index_weight"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [
+    "ts_index_weight"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_index_weight"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_margin_detail",
+   "tables": [
+    "ts_margin_detail"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [
+    "ts_margin_detail"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_margin_detail"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_moneyflow",
+   "tables": [
+    "ts_moneyflow"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [
+    "ts_moneyflow"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_moneyflow",
+    "quant_backtest\\data\\tdx\\ts_moneyflow_dc",
+    "quant_backtest\\data\\tdx\\ts_moneyflow_hsgt",
+    "quant_backtest\\data\\tdx\\ts_moneyflow_ind_dc",
+    "quant_backtest\\data\\tdx\\ts_moneyflow_ind_ths"
+   ],
+   "dataset_count": 7,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_moneyflow_hsgt",
+   "tables": [
+    "ts_moneyflow_hsgt"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [
+    "ts_moneyflow_hsgt"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_moneyflow_hsgt"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_rt_min",
+   "tables": [
+    "ts_rt_min"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [
+    "ts_rt_min"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_rt_min"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_stock_basic",
+   "tables": [
+    "ts_stock_basic"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [
+    "ts_stock_basic"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_stock_basic"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_ths_daily",
+   "tables": [
+    "ts_ths_daily"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [
+    "ts_ths_daily"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_ths_daily"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_ths_index",
+   "tables": [
+    "ts_ths_index"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [
+    "ts_ths_index"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_ths_index"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_ths_member",
+   "tables": [
+    "ts_ths_member"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [
+    "ts_ths_member"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_ths_member"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_top_inst",
+   "tables": [
+    "ts_top_inst"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [
+    "ts_top_inst"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_top_inst"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_top_list",
+   "tables": [
+    "ts_top_list"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [
+    "ts_top_list"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_top_list"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "stock_notice",
+   "tables": [
+    "stock_notice"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": null,
+   "display_assets": [],
+   "datasets": [],
+   "dataset_count": 0,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "stock_news",
+   "tables": [
+    "stock_news"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": null,
+   "display_assets": [],
+   "datasets": [],
+   "dataset_count": 0,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "stock_report",
+   "tables": [
+    "stock_report"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": null,
+   "display_assets": [],
+   "datasets": [],
+   "dataset_count": 0,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "adj_factor",
+   "tables": [
+    "adj_factor"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "adj_factor"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\adj_factor",
+    "quant_backtest\\data\\tdx\\ts_adj_factor"
+   ],
+   "dataset_count": 2,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "anns_d",
+   "tables": [
+    "anns_d"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "anns_d"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\anns_d",
+    "quant_backtest\\data\\tdx\\ts_anns_d",
+    "quant_backtest\\data\\tushare\\anns_d"
+   ],
+   "dataset_count": 3,
+   "has_display": true,
+   "qualification": "evidence_partial"
+  },
+  {
+   "asset_id": "bak_basic",
+   "tables": [
+    "bak_basic"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "bak_basic"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\bak_basic",
+    "quant_backtest\\data\\tdx\\ts_bak_basic"
+   ],
+   "dataset_count": 2,
+   "has_display": true,
+   "qualification": "evidence_partial"
+  },
+  {
+   "asset_id": "balancesheet",
+   "tables": [
+    "balancesheet"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "balancesheet"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\balancesheet",
+    "quant_backtest\\data\\tushare\\hk_balancesheet",
+    "quant_backtest\\data\\tushare\\us_balancesheet",
+    "quant_backtest\\data\\tdx\\ts_balancesheet",
+    "quant_backtest\\data\\tdx\\ts_balancesheet_vip"
+   ],
+   "dataset_count": 5,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "cashflow",
+   "tables": [
+    "cashflow"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "cashflow"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\cashflow",
+    "quant_backtest\\data\\tushare\\hk_cashflow",
+    "quant_backtest\\data\\tushare\\us_cashflow",
+    "quant_backtest\\data\\tdx\\ts_cashflow",
+    "quant_backtest\\data\\tdx\\ts_cashflow_vip"
+   ],
+   "dataset_count": 5,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "cb_basic",
+   "tables": [
+    "cb_basic"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "cb_basic"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\cb_basic",
+    "quant_backtest\\data\\tdx\\ts_cb_basic"
+   ],
+   "dataset_count": 2,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "cb_daily",
+   "tables": [
+    "cb_daily"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "cb_daily"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\cb_daily",
+    "quant_backtest\\data\\tdx\\ts_cb_daily"
+   ],
+   "dataset_count": 2,
+   "has_display": true,
+   "qualification": "evidence_partial"
+  },
+  {
+   "asset_id": "cyq_chips",
+   "tables": [
+    "cyq_chips"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "cyq_chips"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\cyq_chips"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "evidence_partial"
+  },
+  {
+   "asset_id": "cyq_perf",
+   "tables": [
+    "cyq_perf"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "cyq_perf"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\cyq_perf",
+    "quant_backtest\\data\\tdx\\ts_cyq_perf"
+   ],
+   "dataset_count": 2,
+   "has_display": true,
+   "qualification": "evidence_partial"
+  },
+  {
+   "asset_id": "daily",
+   "tables": [
+    "daily"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "daily"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\cb_daily",
+    "quant_backtest\\data\\tushare\\daily",
+    "quant_backtest\\data\\tushare\\daily_basic",
+    "quant_backtest\\data\\tushare\\fx_daily",
+    "quant_backtest\\data\\tushare\\hk_daily"
+   ],
+   "dataset_count": 28,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "etf_mins",
+   "tables": [
+    "etf_mins"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "etf_mins"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\etf_mins"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "fina_indicator",
+   "tables": [
+    "fina_indicator"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "fina_indicator"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\fina_indicator",
+    "quant_backtest\\data\\tushare\\hk_fina_indicator",
+    "quant_backtest\\data\\tushare\\us_fina_indicator",
+    "quant_backtest\\data\\tdx\\ts_fina_indicator",
+    "quant_backtest\\data\\tdx\\ts_fina_indicator_vip"
+   ],
+   "dataset_count": 5,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "hk_balancesheet",
+   "tables": [
+    "hk_balancesheet"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "hk_balancesheet"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\hk_balancesheet"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "evidence_partial"
+  },
+  {
+   "asset_id": "hk_basic",
+   "tables": [
+    "hk_basic"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "hk_basic"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\hk_basic",
+    "quant_backtest\\data\\tdx\\ts_hk_basic"
+   ],
+   "dataset_count": 2,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "hk_cashflow",
+   "tables": [
+    "hk_cashflow"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "hk_cashflow"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\hk_cashflow"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "evidence_partial"
+  },
+  {
+   "asset_id": "hk_fina_indicator",
+   "tables": [
+    "hk_fina_indicator"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "hk_fina_indicator"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\hk_fina_indicator"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "evidence_partial"
+  },
+  {
+   "asset_id": "hk_income",
+   "tables": [
+    "hk_income"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "hk_income"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\hk_income"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "evidence_partial"
+  },
+  {
+   "asset_id": "idx_mins",
+   "tables": [
+    "idx_mins"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "idx_mins"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\idx_mins"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "income",
+   "tables": [
+    "income"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "income"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\hk_income",
+    "quant_backtest\\data\\tushare\\income",
+    "quant_backtest\\data\\tushare\\us_income",
+    "quant_backtest\\data\\tdx\\ts_income",
+    "quant_backtest\\data\\tdx\\ts_income_vip"
+   ],
+   "dataset_count": 5,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "index_global",
+   "tables": [
+    "index_global"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "index_global"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\index_global",
+    "quant_backtest\\data\\tdx\\ts_index_global"
+   ],
+   "dataset_count": 2,
+   "has_display": true,
+   "qualification": "evidence_partial"
+  },
+  {
+   "asset_id": "index_weight",
+   "tables": [
+    "index_weight"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "index_weight"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\index_weight",
+    "quant_backtest\\data\\tdx\\ts_index_weight"
+   ],
+   "dataset_count": 2,
+   "has_display": true,
+   "qualification": "evidence_partial"
+  },
+  {
+   "asset_id": "irm_qa_sh",
+   "tables": [
+    "irm_qa_sh"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "irm_qa_sh"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\irm_qa_sh",
+    "quant_backtest\\data\\tushare\\irm_qa_sh_probe",
+    "quant_backtest\\data\\tushare\\irm_qa_sh"
+   ],
+   "dataset_count": 3,
+   "has_display": true,
+   "qualification": "evidence_partial"
+  },
+  {
+   "asset_id": "irm_qa_sh_probe",
+   "tables": [
+    "irm_qa_sh_probe"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "irm_qa_sh_probe"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\irm_qa_sh_probe"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "irm_qa_sz",
+   "tables": [
+    "irm_qa_sz"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "irm_qa_sz"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\irm_qa_sz",
+    "quant_backtest\\data\\tushare\\irm_qa_sz_probe"
+   ],
+   "dataset_count": 2,
+   "has_display": true,
+   "qualification": "evidence_partial"
+  },
+  {
+   "asset_id": "irm_qa_sz_probe",
+   "tables": [
+    "irm_qa_sz_probe"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "irm_qa_sz_probe"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\irm_qa_sz_probe"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "limit_list_d",
+   "tables": [
+    "limit_list_d"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "limit_list_d"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\limit_list_d"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "evidence_partial"
+  },
+  {
+   "asset_id": "major_news",
+   "tables": [
+    "major_news"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "major_news"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\major_news",
+    "quant_backtest\\data\\tdx\\ts_major_news",
+    "quant_backtest\\data\\tushare\\major_news"
+   ],
+   "dataset_count": 3,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "news",
+   "tables": [
+    "news"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "news_db",
+   "display_assets": [
+    "news"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\major_news",
+    "quant_backtest\\data\\tushare\\news",
+    "quant_backtest\\data\\tdx\\ts_cctv_news",
+    "quant_backtest\\data\\tdx\\ts_major_news",
+    "quant_backtest\\data\\tdx\\ts_news"
+   ],
+   "dataset_count": 14,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "npr",
+   "tables": [
+    "npr"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "npr"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\npr"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "research_report",
+   "tables": [
+    "research_report"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "research_report"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\research_report",
+    "quant_backtest\\data\\tushare\\research_report"
+   ],
+   "dataset_count": 2,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "sf_month",
+   "tables": [
+    "sf_month"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "sf_month"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\sf_month"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "shibor_lpr",
+   "tables": [
+    "shibor_lpr"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "shibor_lpr"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\shibor_lpr"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "stk_holdernumber",
+   "tables": [
+    "stk_holdernumber"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "stk_holdernumber"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\stk_holdernumber",
+    "quant_backtest\\data\\tdx\\ts_stk_holdernumber"
+   ],
+   "dataset_count": 2,
+   "has_display": true,
+   "qualification": "evidence_partial"
+  },
+  {
+   "asset_id": "stk_managers",
+   "tables": [
+    "stk_managers"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "stk_managers"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\stk_managers",
+    "quant_backtest\\data\\tdx\\ts_stk_managers"
+   ],
+   "dataset_count": 2,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "stk_mins",
+   "tables": [
+    "stk_mins"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "stk_mins"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\stk_mins"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "stock_basic",
+   "tables": [
+    "stock_basic"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "stock_basic"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\stock_basic",
+    "quant_backtest\\data\\tdx\\ts_stock_basic"
+   ],
+   "dataset_count": 2,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "stock_company",
+   "tables": [
+    "stock_company"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "stock_company"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\stock_company",
+    "quant_backtest\\data\\tdx\\ts_stock_company"
+   ],
+   "dataset_count": 2,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "sw_classify_l1",
+   "tables": [
+    "sw_classify_l1"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "sw_classify_l1"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\sw_classify_l1"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "sw_l1_member",
+   "tables": [
+    "sw_l1_member"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "sw_l1_member"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\sw_l1_member"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "evidence_partial"
+  },
+  {
+   "asset_id": "sw_mins",
+   "tables": [
+    "sw_mins"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "sw_mins"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\sw_mins"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "top10_floatholders",
+   "tables": [
+    "top10_floatholders"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "top10_floatholders"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\top10_floatholders",
+    "quant_backtest\\data\\tdx\\ts_top10_floatholders"
+   ],
+   "dataset_count": 2,
+   "has_display": true,
+   "qualification": "evidence_partial"
+  },
+  {
+   "asset_id": "top10_holders",
+   "tables": [
+    "top10_holders"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "top10_holders"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\top10_holders",
+    "quant_backtest\\data\\tdx\\ts_top10_holders"
+   ],
+   "dataset_count": 2,
+   "has_display": true,
+   "qualification": "evidence_partial"
+  },
+  {
+   "asset_id": "top_list",
+   "tables": [
+    "top_list"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "top_list"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\top_list",
+    "quant_backtest\\data\\tdx\\ts_top_list"
+   ],
+   "dataset_count": 2,
+   "has_display": true,
+   "qualification": "evidence_partial"
+  },
+  {
+   "asset_id": "trade_cal",
+   "tables": [
+    "trade_cal"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "trade_cal"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\trade_cal",
+    "quant_backtest\\data\\tdx\\ts_trade_cal"
+   ],
+   "dataset_count": 2,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "us_balancesheet",
+   "tables": [
+    "us_balancesheet"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "us_balancesheet"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\us_balancesheet"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "evidence_partial"
+  },
+  {
+   "asset_id": "us_basic",
+   "tables": [
+    "us_basic"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "us_basic"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\us_basic",
+    "quant_backtest\\data\\tdx\\ts_us_basic"
+   ],
+   "dataset_count": 2,
+   "has_display": true,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "us_cashflow",
+   "tables": [
+    "us_cashflow"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "us_cashflow"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\us_cashflow"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "evidence_partial"
+  },
+  {
+   "asset_id": "us_daily",
+   "tables": [
+    "us_daily"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "us_daily"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\us_daily",
+    "quant_backtest\\data\\tdx\\ts_us_daily"
+   ],
+   "dataset_count": 2,
+   "has_display": true,
+   "qualification": "evidence_partial"
+  },
+  {
+   "asset_id": "us_fina_indicator",
+   "tables": [
+    "us_fina_indicator"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "us_fina_indicator"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\us_fina_indicator"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "evidence_partial"
+  },
+  {
+   "asset_id": "us_income",
+   "tables": [
+    "us_income"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [
+    "us_income"
+   ],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\us_income"
+   ],
+   "dataset_count": 1,
+   "has_display": true,
+   "qualification": "evidence_partial"
+  },
+  {
+   "asset_id": "us_legacy",
+   "tables": [
+    "us_legacy"
+   ],
+   "channel": "legacy",
+   "catalog_resource": null,
+   "display_assets": [],
+   "datasets": [],
+   "dataset_count": 0,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "crypto_daily",
+   "tables": [
+    "crypto_daily"
+   ],
+   "channel": "crypto",
+   "catalog_resource": null,
+   "display_assets": [],
+   "datasets": [],
+   "dataset_count": 0,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "chinese-dictionary-of-financial-sentiment",
+   "tables": [
+    "chinese-dictionary-of-financial-sentiment"
+   ],
+   "channel": "cnopendata",
+   "catalog_resource": null,
+   "display_assets": [],
+   "datasets": [],
+   "dataset_count": 0,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "czyx",
+   "tables": [
+    "czyx"
+   ],
+   "channel": "cnopendata",
+   "catalog_resource": null,
+   "display_assets": [],
+   "datasets": [],
+   "dataset_count": 0,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "daily_basic",
+   "tables": [
+    "daily_basic"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\daily_basic",
+    "quant_backtest\\data\\tdx\\ts_daily_basic"
+   ],
+   "dataset_count": 2,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "dknife_snap",
+   "tables": [
+    "dknife_snap"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\dknife_snap"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "fepu",
+   "tables": [
+    "fepu"
+   ],
+   "channel": "cnopendata",
+   "catalog_resource": null,
+   "display_assets": [],
+   "datasets": [],
+   "dataset_count": 0,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "firm-level-climate-change-exposure",
+   "tables": [
+    "firm-level-climate-change-exposure"
+   ],
+   "channel": "cnopendata",
+   "catalog_resource": null,
+   "display_assets": [],
+   "datasets": [],
+   "dataset_count": 0,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "gjzfssfc",
+   "tables": [
+    "gjzfssfc"
+   ],
+   "channel": "cnopendata",
+   "catalog_resource": null,
+   "display_assets": [],
+   "datasets": [],
+   "dataset_count": 0,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "guba_posts",
+   "tables": [
+    "guba_posts"
+   ],
+   "channel": "guba",
+   "catalog_resource": null,
+   "display_assets": [],
+   "datasets": [],
+   "dataset_count": 0,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "index_daily",
+   "tables": [
+    "index_daily"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\index_daily",
+    "quant_backtest\\data\\tdx\\ts_index_daily",
+    "quant_backtest\\data\\tdx\\ts_index_dailybasic"
+   ],
+   "dataset_count": 3,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "margin_detail",
+   "tables": [
+    "margin_detail"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\margin_detail",
+    "quant_backtest\\data\\tdx\\ts_margin_detail"
+   ],
+   "dataset_count": 2,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "moneyflow",
+   "tables": [
+    "moneyflow"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\moneyflow",
+    "quant_backtest\\data\\tushare\\moneyflow_hsgt",
+    "quant_backtest\\data\\tdx\\ts_moneyflow",
+    "quant_backtest\\data\\tdx\\ts_moneyflow_dc",
+    "quant_backtest\\data\\tdx\\ts_moneyflow_hsgt"
+   ],
+   "dataset_count": 9,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "quarantine_prod_overwrite",
+   "tables": [
+    "quarantine_prod_overwrite"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\quarantine_prod_overwrite"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "deprecated"
+  },
+  {
+   "asset_id": "shibor",
+   "tables": [
+    "shibor"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\shibor",
+    "quant_backtest\\data\\tushare\\shibor_lpr"
+   ],
+   "dataset_count": 2,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "stk_pledge",
+   "tables": [
+    "stk_pledge"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\stk_pledge"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "evidence_partial"
+  },
+  {
+   "asset_id": "ts_adj_factor",
+   "tables": [
+    "ts_adj_factor"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_adj_factor"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_anns_d",
+   "tables": [
+    "ts_anns_d"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_anns_d"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_bak_basic",
+   "tables": [
+    "ts_bak_basic"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_bak_basic"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_balancesheet_vip",
+   "tables": [
+    "ts_balancesheet_vip"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_balancesheet_vip"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_block_trade",
+   "tables": [
+    "ts_block_trade"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_block_trade"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_broker_recommend",
+   "tables": [
+    "ts_broker_recommend"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_broker_recommend"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_bse_mapping",
+   "tables": [
+    "ts_bse_mapping"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_bse_mapping"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_cashflow_vip",
+   "tables": [
+    "ts_cashflow_vip"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_cashflow_vip"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_cb_basic",
+   "tables": [
+    "ts_cb_basic"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_cb_basic"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_cb_call",
+   "tables": [
+    "ts_cb_call"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_cb_call"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_cb_daily",
+   "tables": [
+    "ts_cb_daily"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_cb_daily"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_cb_issue",
+   "tables": [
+    "ts_cb_issue"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_cb_issue"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_cb_price_chg",
+   "tables": [
+    "ts_cb_price_chg"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_cb_price_chg"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_cb_rate",
+   "tables": [
+    "ts_cb_rate"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_cb_rate"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_cb_share",
+   "tables": [
+    "ts_cb_share"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_cb_share"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_cctv_news",
+   "tables": [
+    "ts_cctv_news"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_cctv_news"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_cn_cpi",
+   "tables": [
+    "ts_cn_cpi"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_cn_cpi"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_cn_gdp",
+   "tables": [
+    "ts_cn_gdp"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_cn_gdp"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_cn_m",
+   "tables": [
+    "ts_cn_m"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_cn_m"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_cn_pmi",
+   "tables": [
+    "ts_cn_pmi"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_cn_pmi"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_cn_ppi",
+   "tables": [
+    "ts_cn_ppi"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_cn_ppi"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_cyq_perf",
+   "tables": [
+    "ts_cyq_perf"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_cyq_perf"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_daily_info",
+   "tables": [
+    "ts_daily_info"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_daily_info"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_dc_daily",
+   "tables": [
+    "ts_dc_daily"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_dc_daily"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_dc_hot",
+   "tables": [
+    "ts_dc_hot"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_dc_hot"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_dc_index",
+   "tables": [
+    "ts_dc_index"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_dc_index"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_disclosure_date",
+   "tables": [
+    "ts_disclosure_date"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_disclosure_date"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_dividend",
+   "tables": [
+    "ts_dividend"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_dividend",
+    "quant_backtest\\data\\tdx\\ts_dividend_vip"
+   ],
+   "dataset_count": 2,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_dividend_vip",
+   "tables": [
+    "ts_dividend_vip"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_dividend_vip"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_eco_cal",
+   "tables": [
+    "ts_eco_cal"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_eco_cal"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_emotion_daily",
+   "tables": [
+    "ts_emotion_daily"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_emotion_daily"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_emotion_ladder",
+   "tables": [
+    "ts_emotion_ladder"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_emotion_ladder"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_express",
+   "tables": [
+    "ts_express"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_express",
+    "quant_backtest\\data\\tdx\\ts_express_vip"
+   ],
+   "dataset_count": 2,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_express_vip",
+   "tables": [
+    "ts_express_vip"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_express_vip"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_fina_audit",
+   "tables": [
+    "ts_fina_audit"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_fina_audit"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_fina_indicator_vip",
+   "tables": [
+    "ts_fina_indicator_vip"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_fina_indicator_vip"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_fina_mainbz",
+   "tables": [
+    "ts_fina_mainbz"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_fina_mainbz",
+    "quant_backtest\\data\\tdx\\ts_fina_mainbz_vip"
+   ],
+   "dataset_count": 2,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_fina_mainbz_vip",
+   "tables": [
+    "ts_fina_mainbz_vip"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_fina_mainbz_vip"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_forecast",
+   "tables": [
+    "ts_forecast"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_forecast",
+    "quant_backtest\\data\\tdx\\ts_forecast_vip"
+   ],
+   "dataset_count": 2,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_forecast_vip",
+   "tables": [
+    "ts_forecast_vip"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_forecast_vip"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_fund_adj",
+   "tables": [
+    "ts_fund_adj"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_fund_adj"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_fund_company",
+   "tables": [
+    "ts_fund_company"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_fund_company"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_fund_div",
+   "tables": [
+    "ts_fund_div"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_fund_div"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_fund_manager",
+   "tables": [
+    "ts_fund_manager"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_fund_manager"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_fund_portfolio",
+   "tables": [
+    "ts_fund_portfolio"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_fund_portfolio"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_fund_share",
+   "tables": [
+    "ts_fund_share"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_fund_share"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_fut_basic",
+   "tables": [
+    "ts_fut_basic"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_fut_basic"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_fut_daily",
+   "tables": [
+    "ts_fut_daily"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_fut_daily"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_fut_holding",
+   "tables": [
+    "ts_fut_holding"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_fut_holding"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_fut_mapping",
+   "tables": [
+    "ts_fut_mapping"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_fut_mapping"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_fut_settle",
+   "tables": [
+    "ts_fut_settle"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_fut_settle"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_fut_weekly_detail",
+   "tables": [
+    "ts_fut_weekly_detail"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_fut_weekly_detail"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_fut_weekly_monthly",
+   "tables": [
+    "ts_fut_weekly_monthly"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_fut_weekly_monthly"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_fut_wsr",
+   "tables": [
+    "ts_fut_wsr"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_fut_wsr"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_fx_daily",
+   "tables": [
+    "ts_fx_daily"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_fx_daily"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_fx_obasic",
+   "tables": [
+    "ts_fx_obasic"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_fx_obasic"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_ggt_daily",
+   "tables": [
+    "ts_ggt_daily"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_ggt_daily"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_ggt_top10",
+   "tables": [
+    "ts_ggt_top10"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_ggt_top10"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_global_fut",
+   "tables": [
+    "ts_global_fut"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_global_fut"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_hk_basic",
+   "tables": [
+    "ts_hk_basic"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_hk_basic"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_hk_daily_adj",
+   "tables": [
+    "ts_hk_daily_adj"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_hk_daily_adj"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_hk_hold",
+   "tables": [
+    "ts_hk_hold"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_hk_hold"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_hk_tradecal",
+   "tables": [
+    "ts_hk_tradecal"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_hk_tradecal"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_hm_detail",
+   "tables": [
+    "ts_hm_detail"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_hm_detail"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_hm_list",
+   "tables": [
+    "ts_hm_list"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_hm_list"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_hs_const",
+   "tables": [
+    "ts_hs_const"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_hs_const"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_hsgt_top10",
+   "tables": [
+    "ts_hsgt_top10"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_hsgt_top10"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_income_vip",
+   "tables": [
+    "ts_income_vip"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_income_vip"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_index_classify",
+   "tables": [
+    "ts_index_classify"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_index_classify"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_index_dailybasic",
+   "tables": [
+    "ts_index_dailybasic"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_index_dailybasic"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_index_global",
+   "tables": [
+    "ts_index_global"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_index_global"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_index_member_all",
+   "tables": [
+    "ts_index_member_all"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_index_member_all"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_index_monthly",
+   "tables": [
+    "ts_index_monthly"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_index_monthly"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_index_weekly",
+   "tables": [
+    "ts_index_weekly"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_index_weekly"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_kpl_concept",
+   "tables": [
+    "ts_kpl_concept"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_kpl_concept",
+    "quant_backtest\\data\\tdx\\ts_kpl_concept_cons"
+   ],
+   "dataset_count": 2,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_kpl_concept_cons",
+   "tables": [
+    "ts_kpl_concept_cons"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_kpl_concept_cons"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_kpl_list",
+   "tables": [
+    "ts_kpl_list"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_kpl_list"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_limit_cpt_list",
+   "tables": [
+    "ts_limit_cpt_list"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_limit_cpt_list"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_limit_list_ths",
+   "tables": [
+    "ts_limit_list_ths"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_limit_list_ths"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_limit_step",
+   "tables": [
+    "ts_limit_step"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_limit_step"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_major_news",
+   "tables": [
+    "ts_major_news"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_major_news"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_margin",
+   "tables": [
+    "ts_margin"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_margin",
+    "quant_backtest\\data\\tdx\\ts_margin_detail",
+    "quant_backtest\\data\\tdx\\ts_margin_secs"
+   ],
+   "dataset_count": 3,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_margin_secs",
+   "tables": [
+    "ts_margin_secs"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_margin_secs"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_moneyflow_dc",
+   "tables": [
+    "ts_moneyflow_dc"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_moneyflow_dc"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_moneyflow_ind_dc",
+   "tables": [
+    "ts_moneyflow_ind_dc"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_moneyflow_ind_dc"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_moneyflow_ind_ths",
+   "tables": [
+    "ts_moneyflow_ind_ths"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_moneyflow_ind_ths"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_moneyflow_mkt_dc",
+   "tables": [
+    "ts_moneyflow_mkt_dc"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_moneyflow_mkt_dc"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_moneyflow_ths",
+   "tables": [
+    "ts_moneyflow_ths"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_moneyflow_ths"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_monthly",
+   "tables": [
+    "ts_monthly"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_monthly"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_namechange",
+   "tables": [
+    "ts_namechange"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_namechange"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_new_share",
+   "tables": [
+    "ts_new_share"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_new_share"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_news",
+   "tables": [
+    "ts_news"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_news"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_opt_basic",
+   "tables": [
+    "ts_opt_basic"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_opt_basic"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_opt_daily",
+   "tables": [
+    "ts_opt_daily"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_opt_daily"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_pledge_detail",
+   "tables": [
+    "ts_pledge_detail"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_pledge_detail"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_pledge_stat",
+   "tables": [
+    "ts_pledge_stat"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_pledge_stat"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_repo_daily",
+   "tables": [
+    "ts_repo_daily"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_repo_daily"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_report_rc",
+   "tables": [
+    "ts_report_rc"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_report_rc"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_repurchase",
+   "tables": [
+    "ts_repurchase"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_repurchase"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_sge_basic",
+   "tables": [
+    "ts_sge_basic"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_sge_basic"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_sge_daily",
+   "tables": [
+    "ts_sge_daily"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_sge_daily"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_share_float",
+   "tables": [
+    "ts_share_float"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_share_float"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_slb_len",
+   "tables": [
+    "ts_slb_len"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_slb_len"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_slb_sec",
+   "tables": [
+    "ts_slb_sec"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_slb_sec"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_stk_ah_comparison",
+   "tables": [
+    "ts_stk_ah_comparison"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_stk_ah_comparison"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_stk_auction",
+   "tables": [
+    "ts_stk_auction"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_stk_auction",
+    "quant_backtest\\data\\tdx\\ts_stk_auction_c",
+    "quant_backtest\\data\\tdx\\ts_stk_auction_o"
+   ],
+   "dataset_count": 3,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_stk_auction_c",
+   "tables": [
+    "ts_stk_auction_c"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_stk_auction_c"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_stk_auction_o",
+   "tables": [
+    "ts_stk_auction_o"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_stk_auction_o"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_stk_factor",
+   "tables": [
+    "ts_stk_factor"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_stk_factor",
+    "quant_backtest\\data\\tdx\\ts_stk_factor_pro"
+   ],
+   "dataset_count": 2,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_stk_factor_pro",
+   "tables": [
+    "ts_stk_factor_pro"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_stk_factor_pro"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_stk_holdernumber",
+   "tables": [
+    "ts_stk_holdernumber"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_stk_holdernumber"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_stk_holdertrade",
+   "tables": [
+    "ts_stk_holdertrade"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_stk_holdertrade"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_stk_limit",
+   "tables": [
+    "ts_stk_limit"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_stk_limit"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_stk_managers",
+   "tables": [
+    "ts_stk_managers"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_stk_managers"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_stk_premarket",
+   "tables": [
+    "ts_stk_premarket"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_stk_premarket"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_stk_rewards",
+   "tables": [
+    "ts_stk_rewards"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_stk_rewards"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_stk_surv",
+   "tables": [
+    "ts_stk_surv"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_stk_surv"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_stk_week_month_adj",
+   "tables": [
+    "ts_stk_week_month_adj"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_stk_week_month_adj"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_stk_weekly_monthly",
+   "tables": [
+    "ts_stk_weekly_monthly"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_stk_weekly_monthly"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_stock_company",
+   "tables": [
+    "ts_stock_company"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_stock_company"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_stock_hsgt",
+   "tables": [
+    "ts_stock_hsgt"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_stock_hsgt"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_suspend_d",
+   "tables": [
+    "ts_suspend_d"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_suspend_d"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_sz_daily_info",
+   "tables": [
+    "ts_sz_daily_info"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_sz_daily_info"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_tdx_index",
+   "tables": [
+    "ts_tdx_index"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_tdx_index"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_ths_hot",
+   "tables": [
+    "ts_ths_hot"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_ths_hot"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_top10_floatholders",
+   "tables": [
+    "ts_top10_floatholders"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_top10_floatholders"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_top10_holders",
+   "tables": [
+    "ts_top10_holders"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_top10_holders"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_trade_cal",
+   "tables": [
+    "ts_trade_cal"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_trade_cal"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_us_basic",
+   "tables": [
+    "ts_us_basic"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_us_basic"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_us_daily",
+   "tables": [
+    "ts_us_daily"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_us_daily"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_us_tbr",
+   "tables": [
+    "ts_us_tbr"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_us_tbr"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_us_tradecal",
+   "tables": [
+    "ts_us_tradecal"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_us_tradecal"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_us_trycr",
+   "tables": [
+    "ts_us_trycr"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_us_trycr"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_us_tycr",
+   "tables": [
+    "ts_us_tycr"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_us_tycr"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_weekly",
+   "tables": [
+    "ts_weekly"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_weekly"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_wz_index",
+   "tables": [
+    "ts_wz_index"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_wz_index"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "v2_bar_daily",
+   "tables": [
+    "v2_bar_daily"
+   ],
+   "channel": "pg",
+   "catalog_resource": null,
+   "display_assets": [],
+   "datasets": [],
+   "dataset_count": 0,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "xq_capital_flow",
+   "tables": [
+    "xq_capital_flow"
+   ],
+   "channel": "xueqiu",
+   "catalog_resource": null,
+   "display_assets": [],
+   "datasets": [],
+   "dataset_count": 0,
+   "has_display": false,
+   "qualification": "planned"
+  },
+  {
+   "asset_id": "xq_comment",
+   "tables": [
+    "xq_comment"
+   ],
+   "channel": "xueqiu",
+   "catalog_resource": null,
+   "display_assets": [],
+   "datasets": [],
+   "dataset_count": 0,
+   "has_display": false,
+   "qualification": "planned"
+  },
+  {
+   "asset_id": "xq_earningforecast",
+   "tables": [
+    "xq_earningforecast"
+   ],
+   "channel": "xueqiu",
+   "catalog_resource": null,
+   "display_assets": [],
+   "datasets": [],
+   "dataset_count": 0,
+   "has_display": false,
+   "qualification": "planned"
+  },
+  {
+   "asset_id": "xq_hot_deal",
+   "tables": [
+    "xq_hot_deal"
+   ],
+   "channel": "xueqiu",
+   "catalog_resource": null,
+   "display_assets": [],
+   "datasets": [],
+   "dataset_count": 0,
+   "has_display": false,
+   "qualification": "planned"
+  },
+  {
+   "asset_id": "xq_hot_post",
+   "tables": [
+    "xq_hot_post"
+   ],
+   "channel": "xueqiu",
+   "catalog_resource": null,
+   "display_assets": [],
+   "datasets": [],
+   "dataset_count": 0,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "xq_inner_trade",
+   "tables": [
+    "xq_inner_trade"
+   ],
+   "channel": "xueqiu",
+   "catalog_resource": null,
+   "display_assets": [],
+   "datasets": [],
+   "dataset_count": 0,
+   "has_display": false,
+   "qualification": "planned"
+  },
+  {
+   "asset_id": "xq_kline_d",
+   "tables": [
+    "xq_kline_d"
+   ],
+   "channel": "xueqiu",
+   "catalog_resource": null,
+   "display_assets": [],
+   "datasets": [],
+   "dataset_count": 0,
+   "has_display": false,
+   "qualification": "planned"
+  },
+  {
+   "asset_id": "xq_northbound",
+   "tables": [
+    "xq_northbound"
+   ],
+   "channel": "xueqiu",
+   "catalog_resource": null,
+   "display_assets": [],
+   "datasets": [],
+   "dataset_count": 0,
+   "has_display": false,
+   "qualification": "planned"
+  },
+  {
+   "asset_id": "xq_quote_snap",
+   "tables": [
+    "xq_quote_snap"
+   ],
+   "channel": "xueqiu",
+   "catalog_resource": null,
+   "display_assets": [],
+   "datasets": [],
+   "dataset_count": 0,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "xq_status",
+   "tables": [
+    "xq_status"
+   ],
+   "channel": "xueqiu",
+   "catalog_resource": null,
+   "display_assets": [],
+   "datasets": [],
+   "dataset_count": 0,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "yspl",
+   "tables": [
+    "yspl"
+   ],
+   "channel": "cnopendata",
+   "catalog_resource": null,
+   "display_assets": [],
+   "datasets": [],
+   "dataset_count": 0,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_dc_member",
+   "tables": [
+    "ts_dc_member"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_dc_member"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "express",
+   "tables": [
+    "express"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\express",
+    "quant_backtest\\data\\tdx\\ts_express",
+    "quant_backtest\\data\\tdx\\ts_express_vip"
+   ],
+   "dataset_count": 3,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "forecast",
+   "tables": [
+    "forecast"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\forecast",
+    "quant_backtest\\data\\tdx\\ts_forecast",
+    "quant_backtest\\data\\tdx\\ts_forecast_vip"
+   ],
+   "dataset_count": 3,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "top_inst",
+   "tables": [
+    "top_inst"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\top_inst",
+    "quant_backtest\\data\\tdx\\ts_top_inst"
+   ],
+   "dataset_count": 2,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "ts_tdx_member",
+   "tables": [
+    "ts_tdx_member"
+   ],
+   "channel": "xtcloud",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tdx\\ts_tdx_member"
+   ],
+   "dataset_count": 1,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "index_member_all",
+   "tables": [
+    "index_member_all"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\index_member_all",
+    "quant_backtest\\data\\tdx\\ts_index_member_all"
+   ],
+   "dataset_count": 2,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "fx_daily",
+   "tables": [
+    "fx_daily"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\fx_daily",
+    "quant_backtest\\data\\tdx\\ts_fx_daily"
+   ],
+   "dataset_count": 2,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "hk_daily",
+   "tables": [
+    "hk_daily"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\hk_daily",
+    "quant_backtest\\data\\tdx\\ts_hk_daily",
+    "quant_backtest\\data\\tdx\\ts_hk_daily_adj"
+   ],
+   "dataset_count": 3,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "hk_hold",
+   "tables": [
+    "hk_hold"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\hk_hold",
+    "quant_backtest\\data\\tdx\\ts_hk_hold"
+   ],
+   "dataset_count": 2,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "moneyflow_hsgt",
+   "tables": [
+    "moneyflow_hsgt"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tushare_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\moneyflow_hsgt",
+    "quant_backtest\\data\\tdx\\ts_moneyflow_hsgt"
+   ],
+   "dataset_count": 2,
+   "has_display": false,
+   "qualification": "unknown"
+  },
+  {
+   "asset_id": "report_rc",
+   "tables": [
+    "report_rc"
+   ],
+   "channel": "tushare",
+   "catalog_resource": "tdx_raw",
+   "display_assets": [],
+   "datasets": [
+    "quant_backtest\\data\\tushare\\report_rc",
+    "quant_backtest\\data\\tdx\\ts_report_rc"
+   ],
+   "dataset_count": 2,
+   "has_display": false,
+   "qualification": "unknown"
+  }
+ ],
+ "uncovered_physical": [
+  "stock_notice",
+  "stock_news",
+  "stock_report",
+  "us_legacy",
+  "crypto_daily",
+  "chinese-dictionary-of-financial-sentiment",
+  "czyx",
+  "daily_basic",
+  "dknife_snap",
+  "fepu",
+  "firm-level-climate-change-exposure",
+  "gjzfssfc",
+  "guba_posts",
+  "index_daily",
+  "margin_detail",
+  "moneyflow",
+  "quarantine_prod_overwrite",
+  "shibor",
+  "stk_pledge",
+  "ts_adj_factor",
+  "ts_anns_d",
+  "ts_bak_basic",
+  "ts_balancesheet_vip",
+  "ts_block_trade",
+  "ts_broker_recommend",
+  "ts_bse_mapping",
+  "ts_cashflow_vip",
+  "ts_cb_basic",
+  "ts_cb_call",
+  "ts_cb_daily",
+  "ts_cb_issue",
+  "ts_cb_price_chg",
+  "ts_cb_rate",
+  "ts_cb_share",
+  "ts_cctv_news",
+  "ts_cn_cpi",
+  "ts_cn_gdp",
+  "ts_cn_m",
+  "ts_cn_pmi",
+  "ts_cn_ppi",
+  "ts_cyq_perf",
+  "ts_daily_info",
+  "ts_dc_daily",
+  "ts_dc_hot",
+  "ts_dc_index",
+  "ts_disclosure_date",
+  "ts_dividend",
+  "ts_dividend_vip",
+  "ts_eco_cal",
+  "ts_emotion_daily",
+  "ts_emotion_ladder",
+  "ts_express",
+  "ts_express_vip",
+  "ts_fina_audit",
+  "ts_fina_indicator_vip",
+  "ts_fina_mainbz",
+  "ts_fina_mainbz_vip",
+  "ts_forecast",
+  "ts_forecast_vip",
+  "ts_fund_adj",
+  "ts_fund_company",
+  "ts_fund_div",
+  "ts_fund_manager",
+  "ts_fund_portfolio",
+  "ts_fund_share",
+  "ts_fut_basic",
+  "ts_fut_daily",
+  "ts_fut_holding",
+  "ts_fut_mapping",
+  "ts_fut_settle",
+  "ts_fut_weekly_detail",
+  "ts_fut_weekly_monthly",
+  "ts_fut_wsr",
+  "ts_fx_daily",
+  "ts_fx_obasic",
+  "ts_ggt_daily",
+  "ts_ggt_top10",
+  "ts_global_fut",
+  "ts_hk_basic",
+  "ts_hk_daily_adj",
+  "ts_hk_hold",
+  "ts_hk_tradecal",
+  "ts_hm_detail",
+  "ts_hm_list",
+  "ts_hs_const",
+  "ts_hsgt_top10",
+  "ts_income_vip",
+  "ts_index_classify",
+  "ts_index_dailybasic",
+  "ts_index_global",
+  "ts_index_member_all",
+  "ts_index_monthly",
+  "ts_index_weekly",
+  "ts_kpl_concept",
+  "ts_kpl_concept_cons",
+  "ts_kpl_list",
+  "ts_limit_cpt_list",
+  "ts_limit_list_ths",
+  "ts_limit_step",
+  "ts_major_news",
+  "ts_margin",
+  "ts_margin_secs",
+  "ts_moneyflow_dc",
+  "ts_moneyflow_ind_dc",
+  "ts_moneyflow_ind_ths",
+  "ts_moneyflow_mkt_dc",
+  "ts_moneyflow_ths",
+  "ts_monthly",
+  "ts_namechange",
+  "ts_new_share",
+  "ts_news",
+  "ts_opt_basic",
+  "ts_opt_daily",
+  "ts_pledge_detail",
+  "ts_pledge_stat",
+  "ts_repo_daily",
+  "ts_report_rc",
+  "ts_repurchase",
+  "ts_sge_basic",
+  "ts_sge_daily",
+  "ts_share_float",
+  "ts_slb_len",
+  "ts_slb_sec",
+  "ts_stk_ah_comparison",
+  "ts_stk_auction",
+  "ts_stk_auction_c",
+  "ts_stk_auction_o",
+  "ts_stk_factor",
+  "ts_stk_factor_pro",
+  "ts_stk_holdernumber",
+  "ts_stk_holdertrade",
+  "ts_stk_limit",
+  "ts_stk_managers",
+  "ts_stk_premarket",
+  "ts_stk_rewards",
+  "ts_stk_surv",
+  "ts_stk_week_month_adj",
+  "ts_stk_weekly_monthly",
+  "ts_stock_company",
+  "ts_stock_hsgt",
+  "ts_suspend_d",
+  "ts_sz_daily_info",
+  "ts_tdx_index",
+  "ts_ths_hot",
+  "ts_top10_floatholders",
+  "ts_top10_holders",
+  "ts_trade_cal",
+  "ts_us_basic",
+  "ts_us_daily",
+  "ts_us_tbr",
+  "ts_us_tradecal",
+  "ts_us_trycr",
+  "ts_us_tycr",
+  "ts_weekly",
+  "ts_wz_index",
+  "v2_bar_daily",
+  "xq_capital_flow",
+  "xq_comment",
+  "xq_earningforecast",
+  "xq_hot_deal",
+  "xq_hot_post",
+  "xq_inner_trade",
+  "xq_kline_d",
+  "xq_northbound",
+  "xq_quote_snap",
+  "xq_status",
+  "yspl",
+  "ts_dc_member",
+  "express",
+  "forecast",
+  "top_inst",
+  "ts_tdx_member",
+  "index_member_all",
+  "fx_daily",
+  "hk_daily",
+  "hk_hold",
+  "moneyflow_hsgt",
+  "report_rc"
+ ],
+ "unmapped_tables": [
+  "stock_notice",
+  "stock_news",
+  "stock_report",
+  "us_legacy",
+  "crypto_daily",
+  "chinese-dictionary-of-financial-sentiment",
+  "czyx",
+  "fepu",
+  "firm-level-climate-change-exposure",
+  "gjzfssfc",
+  "guba_posts",
+  "v2_bar_daily",
+  "xq_capital_flow",
+  "xq_comment",
+  "xq_earningforecast",
+  "xq_hot_deal",
+  "xq_hot_post",
+  "xq_inner_trade",
+  "xq_kline_d",
+  "xq_northbound",
+  "xq_quote_snap",
+  "xq_status",
+  "yspl"
+ ]
+}
