@@ -547,6 +547,27 @@
       "title": "评测集资产化（冻结/hash/校验）",
       "ref": "tools/kb_corpus/eval_registry.py",
       "enabled": true
+    },
+    {
+      "id": "merge_sim_89",
+      "kind": "tool",
+      "title": "合并模拟 89 查询评测",
+      "ref": "tools/kb_corpus/merge_sim_89.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_qa_bank_v3",
+      "kind": "tool",
+      "title": "问答 claim 过滤/可答率扩验",
+      "ref": "tools/kb_corpus/kb_qa_bank_v3.py",
+      "enabled": true
+    },
+    {
+      "id": "eval_report_header",
+      "kind": "tool",
+      "title": "评测报告头（set_id/hash）",
+      "ref": "tools/kb_corpus/eval_report_header.py",
+      "enabled": true
     }
   ]
 }

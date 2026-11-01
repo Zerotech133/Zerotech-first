@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """concept 合并影响模拟（只在内存/临时副本合并，绝不写真实数据）。
 
 背景：wave13 AL 审计出 11 个重复 concept 组，其中 2 组（CG-003 东盟 MSME、CG-004 跨境电商四大挑战，
