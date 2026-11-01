@@ -254,9 +254,26 @@ class FakeMultiModule:
                 "generated_at": "2026-11-01T00:00:00+08:00", "elapsed_seconds": 3.0}
 
 
+class FakeGuardPass:
+    """pass-through 守卫：只补 guard 字段，不改答案（用于默认 multi 行为测试）。"""
+
+    def load_kb_ids(self):
+        return ({"u_multi_1", "u_multi_2"}, {"rp_a", "rp_b"})
+
+    def apply_guard(self, result, unit_ids, book_ids, on_fail="fallback"):
+        out = dict(result)
+        out.update({"guard_passed": True, "guard_action": "pass", "guard_issues": [],
+                    "citation_valid": ["u_multi_1"], "citation_invalid": [],
+                    "citation_resolvable_rate": 1.0, "inference_ratio": 0.5,
+                    "inference_heavy": False, "distinct_cited_units": 2})
+        return out
+
+
 def test_default_mode_is_multi(monkeypatch):
     fake = FakeMultiModule()
     monkeypatch.setattr(qa, "_load_kb_qa_multi", lambda: fake)
+    monkeypatch.setattr(qa, "_load_kb_qa_guard", lambda: FakeGuardPass())
+    monkeypatch.setattr(qa, "_guard_kb_ids", None, raising=False)
     result = qa.ask("M9 覆铜板对 PCB 的影响？", topk=8)
     assert result["mode"] == "multi"
     assert result["k"] == 8
@@ -272,9 +289,10 @@ def test_default_mode_is_multi(monkeypatch):
 
 def test_mode_single_backward_compatible(monkeypatch):
     def boom():
-        raise AssertionError("single 模式不应加载 multi 模块")
+        raise AssertionError("single 模式不应加载 multi/guard 模块")
 
     monkeypatch.setattr(qa, "_load_kb_qa_multi", boom)
+    monkeypatch.setattr(qa, "_load_kb_qa_guard", boom)
     result = qa.ask(QUESTION, topk=5, search_fn=fake_search, chat_fn=fake_chat_ok, mode="single")
     assert result["mode"] == "single" and result["clusters"] == []
     assert result["k"] == 5 and result["topk"] == 5
@@ -297,6 +315,7 @@ def test_multi_failure_falls_back_to_single(monkeypatch):
     assert result["multi_fallback"] is True
     assert "kb_qa_multi 不可用" in result["multi_fallback_error"]
     assert result["citations"]
+    assert result["guard_enabled"] is False and result["guard_action"] == "multi_fallback_single"
 
 
 def test_invalid_mode_raises():
@@ -324,3 +343,121 @@ def test_cli_mode_flags_and_single_alias():
                            encoding="utf-8", errors="replace")
     assert proc3.returncode == 0
     assert json.loads(proc3.stdout)["mode"] == "retrieval"
+
+
+# ---------------------------------------------------------------------------
+# 8. guard 接入 multi 出口（wave20 CA）
+# ---------------------------------------------------------------------------
+class FakeGuardFail:
+    """模拟守卫生成「不通过」并执行 mark/fallback/refuse。"""
+
+    def __init__(self):
+        self.calls = []
+
+    def load_kb_ids(self):
+        return ({"u_multi_1", "u_multi_2"}, {"rp_a"})
+
+    def apply_guard(self, result, unit_ids, book_ids, on_fail="fallback"):
+        self.calls.append(on_fail)
+        out = dict(result)
+        out.update({"citation_valid": ["u_multi_1"], "citation_invalid": ["deadbeefcafe"],
+                    "citation_resolvable_rate": 0.5, "inference_ratio": 0.5,
+                    "inference_heavy": False, "distinct_cited_units": 1,
+                    "guard_passed": False, "guard_issues": ["citation_invalid"],
+                    "guard_action": on_fail})
+        if on_fail == "fallback":
+            out.update({"answer": "（质量守卫回退：多单元答案引用/集中度未达标，摘录可核验知识单元）摘录", "fallback": True,
+                        "citations": [{"unit_id": "u_multi_1", "page": 2, "text": "摘录"}],
+                        "guarded": True})
+        elif on_fail == "refuse":
+            out.update({"answer": "知识库中没有足够依据回答该问题。", "citations": [],
+                        "refusal": True, "confidence": {"level": "none"}})
+        return out
+
+
+def _fake_multi_result():
+    return {"question": "问题", "answer": "【直接事实】x [u_multi_1] [deadbeefcafe]",
+            "citations": [{"unit_id": "u_multi_1", "page": 2, "text": "x"},
+                          {"unit_id": "deadbeefcafe", "page": 3, "text": "y"}],
+            "confidence": {"level": "high"}, "fallback": False, "refusal": False,
+            "cluster_count": 3, "direct_fact_markers": 1, "inference_markers": 1,
+            "citation_check": {"hallucinated_ids": ["deadbeefcafe"], "citation_missing": False},
+            "llm": {"model": "m", "fallback": False, "error": None},
+            "generated_at": "2026-11-01T00:00:00+08:00", "elapsed_seconds": 2.0}
+
+
+def _ask_with_fake_multi(monkeypatch, guard_action="fallback", guard_disabled=False,
+                         guard_unavailable=False, **ask_kw):
+    fake = FakeMultiModule()
+    monkeypatch.setattr(qa, "_load_kb_qa_multi", lambda: fake)
+    guard = FakeGuardFail()
+
+    def _loader():
+        if guard_unavailable:
+            raise qa.KbQaError("guard 不可用（测试注入）")
+        return guard
+
+    monkeypatch.setattr(qa, "_load_kb_qa_guard", _loader)
+    monkeypatch.setattr(qa, "_guard_kb_ids", None, raising=False)
+    result = qa.ask("问题", search_fn=fake_search, chat_fn=fake_chat_ok,
+                    on_guard_fail=guard_action, **ask_kw)
+    return result, guard
+
+
+def test_guard_default_fallback_and_payload_fields(monkeypatch):
+    result, guard = _ask_with_fake_multi(monkeypatch, guard_action="fallback")
+    # 默认 guard=True + on_guard_fail=fallback
+    assert guard.calls == ["fallback"]
+    for key in ("guard_passed", "guard_issues", "citation_valid", "citation_invalid",
+                "inference_ratio", "distinct_cited_units", "guard_action", "guard_enabled"):
+        assert key in result, key
+    assert result["guard_enabled"] is True and result["guard_passed"] is False
+    assert result["guard_action"] == "fallback"
+    assert result["guard_issues"] == ["citation_invalid"]
+    assert result["fallback"] is True and "质量守卫回退" in str(result["answer"])
+    assert [c["unit_id"] for c in result["citations"]] == ["u_multi_1"]
+
+
+def test_guard_actions_mark_and_refuse(monkeypatch):
+    marked, g1 = _ask_with_fake_multi(monkeypatch, guard_action="mark")
+    assert g1.calls == ["mark"] and marked["guard_action"] == "mark"
+    assert marked["guard_passed"] is False and "质量守卫回退" not in str(marked["answer"])
+    refused, g2 = _ask_with_fake_multi(monkeypatch, guard_action="refuse")
+    assert g2.calls == ["refuse"] and refused["guard_action"] == "refuse"
+    assert refused["refusal"] is True and refused["citations"] == []
+
+
+def test_guard_disabled_bypass(monkeypatch):
+    def boom():
+        raise AssertionError("guard=False 时不应加载 guard 模块")
+
+    monkeypatch.setattr(qa, "_load_kb_qa_multi", lambda: FakeMultiModule())
+    monkeypatch.setattr(qa, "_load_kb_qa_guard", boom)
+    result = qa.ask("问题", search_fn=fake_search, chat_fn=fake_chat_ok, guard=False)
+    assert result["guard_enabled"] is False and result["guard_action"] == "disabled"
+    assert result["guard_passed"] is None
+    assert result["guard_issues"] == []
+    assert "质量守卫回退" not in str(result["answer"])
+
+
+def test_guard_unavailable_does_not_block(monkeypatch):
+    result, _ = _ask_with_fake_multi(monkeypatch, guard_unavailable=True)
+    assert result["guard_enabled"] is False
+    assert result["guard_action"] == "guard_unavailable"
+    assert "guard 不可用" in str(result.get("guard_error"))
+    assert result["citations"]  # 原答案保留
+
+
+def test_guard_invalid_action_raises(monkeypatch):
+    monkeypatch.setattr(qa, "_load_kb_qa_multi", lambda: FakeMultiModule())
+    with pytest.raises(qa.KbQaError):
+        qa.ask("问题", search_fn=fake_search, chat_fn=fake_chat_ok, on_guard_fail="bogus")
+
+
+def test_cli_guard_flags():
+    proc = subprocess.run([sys.executable, "-X", "utf8", str(QA_PATH), "ask", "--help"],
+                          capture_output=True, text=True, timeout=60,
+                          encoding="utf-8", errors="replace")
+    assert proc.returncode == 0
+    for flag in ("--no-guard", "--on-guard-fail", "fallback"):
+        assert flag in proc.stdout, flag

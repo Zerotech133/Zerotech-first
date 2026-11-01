@@ -35,17 +35,63 @@ def _load_api():
 
 
 api = _load_api()
+_REAL_LOAD_GUARD = api._load_guard
+GUARD_CALLS: list[dict] = []
+
+
+class _FakeGuard:
+    """测试 guard：pass=True 通过标记；fail=True 抛错（fail-open 用例）；否则回退。"""
+
+    def __init__(self, pass_=True, fail=False):
+        self.pass_ = pass_
+        self.fail = fail
+
+    def load_kb_ids(self):
+        if self.fail:
+            raise RuntimeError("guard 知识库 id 加载失败（测试注入）")
+        return {"u1", "u2"}, {"b1"}
+
+    def apply_guard(self, result, unit_ids, book_ids, on_fail="fallback"):
+        if self.fail:
+            raise RuntimeError("guard 应用失败（测试注入）")
+        GUARD_CALLS.append({"on_fail": on_fail, "n_unit_ids": len(unit_ids)})
+        out = dict(result)
+        if self.pass_:
+            out.update({"guard_passed": True, "guard_issues": [], "guard_action": "pass",
+                        "citation_valid": ["u1", "u2"], "citation_invalid": [],
+                        "citation_total": 2, "citation_valid_count": 2,
+                        "citation_invalid_count": 0, "support_rate": 1.0,
+                        "inference_ratio": 0.0, "distinct_cited_units": 2})
+        else:
+            out.update({"guard_passed": False, "guard_issues": ["citation_invalid"],
+                        "guard_action": "fallback",
+                        "citation_valid": ["u1"], "citation_invalid": ["bad"],
+                        "citation_total": 2, "citation_valid_count": 1,
+                        "citation_invalid_count": 1, "support_rate": 0.5,
+                        "inference_ratio": 0.2, "distinct_cited_units": 1,
+                        "answer": "（质量守卫回退）可核验摘录", "citations": [],
+                        "fallback": True, "refusal": False})
+        return out
+
+
+_PASS_GUARD = _FakeGuard(True)
+# 默认把懒加载 guard 替换为 pass-through fake：既有 multi 用例语义不变（guard 用例显式注入）
+api._load_guard = lambda: _PASS_GUARD
 
 
 @pytest.fixture(autouse=True)
 def _reset_state():
     CALLS.clear()
+    GUARD_CALLS.clear()
     api.reset_rate_limit()
     api.reset_cache()
+    api.reset_guard_ids_cache()
     yield
     CALLS.clear()
+    GUARD_CALLS.clear()
     api.reset_rate_limit()
     api.reset_cache()
+    api.reset_guard_ids_cache()
 
 
 CALLS: list[dict] = []
@@ -350,3 +396,87 @@ def test_handle_returns_json_serializable():
     assert status == 200
     text = json.dumps(env, ensure_ascii=False)
     assert "citations" in text and "confidence" in text and "clusters" in text
+
+
+# ---------------------------------------------------------------------------
+# 8. guard 接入（wave20 CB：multi 默认 guard=1 + fallback；guard=0 灰度绕过）
+# ---------------------------------------------------------------------------
+def test_guard_default_on_multi():
+    status, env = api.handle("GET", "/api/kb/qa",
+                             qmap(q="M9 覆铜板价值量", mode="multi"),
+                             ask_fn=mock_ask, multi_fn=mock_multi,
+                             guard_impl=_PASS_GUARD)
+    assert status == 200
+    g = env["meta"]["guard"]
+    assert g["enabled"] is True and g["applicable"] is True and g["applied"] is True
+    assert g["on_fail"] == "fallback"
+    assert g["guard_passed"] is True and g["guard_action"] == "pass"
+    for key in ("guard_issues", "citation_valid", "citation_invalid",
+                "citation_total", "support_rate", "inference_ratio"):
+        assert key in g, f"meta.guard 缺字段 {key}"
+    assert GUARD_CALLS and GUARD_CALLS[-1]["on_fail"] == "fallback"
+
+
+def test_guard_zero_bypasses():
+    status, env = api.handle("GET", "/api/kb/qa",
+                             qmap(q="M9 覆铜板价值量", mode="multi", guard="0"),
+                             ask_fn=mock_ask, multi_fn=mock_multi,
+                             guard_impl=_PASS_GUARD)
+    assert status == 200
+    g = env["meta"]["guard"]
+    assert g["enabled"] is False and g["applied"] is False
+    assert GUARD_CALLS == [], "guard=0 不应调用 guard"
+
+
+def test_guard_fallback_meta_and_answer():
+    status, env = api.handle("GET", "/api/kb/qa",
+                             qmap(q="M9 覆铜板价值量", mode="multi"),
+                             ask_fn=mock_ask, multi_fn=mock_multi,
+                             guard_impl=_FakeGuard(pass_=False))
+    assert status == 200
+    g = env["meta"]["guard"]
+    assert g["guard_passed"] is False and g["guard_action"] == "fallback"
+    assert g["citation_invalid"] == ["bad"] and g["guard_issues"]
+    assert env["data"]["answer"].startswith("（质量守卫回退）")
+    assert env["meta"]["llm_called"] is True, "LLM 已调用（guard 只是返回前加工）"
+
+
+def test_guard_unavailable_fail_open():
+    status, env = api.handle("GET", "/api/kb/qa",
+                             qmap(q="M9 覆铜板价值量", mode="multi"),
+                             ask_fn=mock_ask, multi_fn=mock_multi,
+                             guard_impl=_FakeGuard(fail=True))
+    assert status == 200, "guard 异常应 fail-open，不阻断问答"
+    g = env["meta"]["guard"]
+    assert g["applied"] is False and "error" in g
+    assert env["data"]["answer"], "fail-open 时保留未守卫答案"
+
+
+def test_guard_invalid_value_400():
+    status, env = api.handle("GET", "/api/kb/qa",
+                             qmap(q="问题", mode="multi", guard="2"),
+                             ask_fn=mock_ask, multi_fn=mock_multi)
+    assert status == 400 and env["error"]["code"] == "INVALID_ARGUMENT"
+    assert "guard" in env["error"]["message"]
+
+
+def test_guard_cache_key_includes_flag():
+    base_q = {"q": ["M9 覆铜板价值量"], "mode": ["multi"]}
+    s1, _ = api.handle("GET", "/api/kb/qa", base_q, ask_fn=mock_ask,
+                       multi_fn=mock_multi, guard_impl=_PASS_GUARD)
+    s2, env2 = api.handle("GET", "/api/kb/qa", base_q, ask_fn=mock_ask,
+                          multi_fn=mock_multi, guard_impl=_PASS_GUARD)
+    assert s1 == s2 == 200 and env2["meta"]["cache_hit"] is True
+    n_calls = len(CALLS)
+    s3, env3 = api.handle("GET", "/api/kb/qa",
+                          {"q": ["M9 覆铜板价值量"], "mode": ["multi"], "guard": ["0"]},
+                          ask_fn=mock_ask, multi_fn=mock_multi, guard_impl=_PASS_GUARD)
+    assert s3 == 200 and env3["meta"]["cache_hit"] is False
+    assert len(CALLS) == n_calls + 1
+    assert env3["meta"]["guard"]["enabled"] is False
+
+
+def test_real_guard_module_loads():
+    mod = _REAL_LOAD_GUARD()
+    assert hasattr(mod, "apply_guard") and hasattr(mod, "load_kb_ids")
+    assert callable(mod.apply_guard)

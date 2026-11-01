@@ -420,13 +420,59 @@ def _ask_multi(question: str, topk: int, model: str, timeout: float, search_fn, 
             "elapsed_seconds": result.get("elapsed_seconds", round(time.monotonic() - started, 2))}
 
 
+GUARD_ACTIONS = ("mark", "fallback", "refuse")
+_guard_module = None
+_guard_kb_ids = None
+
+
+def _load_kb_qa_guard():
+    """懒加载 kb_qa_guard（multi 出口质量守卫；避免循环 import）。"""
+    global _guard_module
+    if _guard_module is not None:
+        return _guard_module
+    path = Path(__file__).with_name("kb_qa_guard.py")
+    if not path.exists():
+        raise KbQaError(f"kb_qa_guard.py 不存在：{path}")
+    spec = importlib.util.spec_from_file_location("kb_qa_guard_for_kb_qa", path)
+    if spec is None or spec.loader is None:
+        raise KbQaError(f"无法加载 kb_qa_guard.py：{path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    _guard_module = module
+    return module
+
+
+def _apply_guard_payload(result: dict, on_guard_fail: str = "fallback") -> dict:
+    """multi 出口质量守卫（引用硬门/推断比例/集中度）；guard 不可用时保持原结果并标 guard_error。"""
+    global _guard_kb_ids
+    try:
+        guard = _load_kb_qa_guard()
+        if _guard_kb_ids is None:
+            _guard_kb_ids = guard.load_kb_ids()
+        unit_ids, book_ids = _guard_kb_ids
+        guarded = guard.apply_guard(result, unit_ids, book_ids, on_fail=on_guard_fail)
+        guarded["guard_enabled"] = True
+        return guarded
+    except Exception as exc:  # noqa: BLE001 - 守卫失败不阻断问答，保持原答案并标注
+        out = dict(result)
+        out["guard_enabled"] = False
+        out["guard_passed"] = None
+        out["guard_action"] = "guard_unavailable"
+        out["guard_error"] = _clip(f"{type(exc).__name__}: {exc}", 160)
+        return out
+
+
 def ask(question: str, topk: int = DEFAULT_TOPK, model: str = DEFAULT_MODEL,
         timeout: float = DEFAULT_TIMEOUT, search_fn=None, chat_fn=None,
-        retrieval_only: bool = False, mode: str = DEFAULT_MODE) -> dict:
+        retrieval_only: bool = False, mode: str = DEFAULT_MODE,
+        guard: bool = True, on_guard_fail: str = "fallback") -> dict:
     """问答主流程。
 
     mode="multi"（默认）：检索 top-k（5–8）单元 → 聚类 → 多单元聚合 prompt（允许综合推断，
     区分直接事实/推断，引用 [unit_id]）；multi 异常时**自动回退 single**（payload 标 multi_fallback）。
+    返回前默认经质量守卫（kb_qa_guard：引用可解析硬门/推断比例/被引单元集中度），
+    on_guard_fail="fallback"（默认，另有 mark/refuse），guard=False 可绕过（灰度对比）。
     mode="single"：旧单单元行为（向后兼容）；retrieval_only=True：仅检索（与 mode 无关）。
     """
     started = time.monotonic()
@@ -436,17 +482,34 @@ def ask(question: str, topk: int = DEFAULT_TOPK, model: str = DEFAULT_MODEL,
     mode = (mode or DEFAULT_MODE).strip().lower()
     if mode not in VALID_MODES:
         raise KbQaError(f"mode 只能是 {'/'.join(VALID_MODES)}（收到 {mode!r}）")
+    on_guard_fail = (on_guard_fail or "fallback").strip().lower()
+    if on_guard_fail not in GUARD_ACTIONS:
+        raise KbQaError(f"on_guard_fail 只能是 {'/'.join(GUARD_ACTIONS)}（收到 {on_guard_fail!r}）")
     if retrieval_only or mode == "single":
         return _ask_single(question, topk, model, timeout, search_fn, chat_fn, retrieval_only)
     try:
-        return _ask_multi(question, topk, model, timeout, search_fn, chat_fn)
+        result = _ask_multi(question, topk, model, timeout, search_fn, chat_fn)
     except Exception as exc:  # noqa: BLE001 - multi 不可用/失败 → 回退 single（灰度安全）
         fallback = _ask_single(question, topk, model, timeout, search_fn, chat_fn, False)
         fallback["mode"] = "single"
         fallback["multi_fallback"] = True
         fallback["multi_fallback_error"] = _clip(f"{type(exc).__name__}: {exc}", 160)
+        fallback["guard_enabled"] = False
+        fallback["guard_passed"] = None
+        fallback["guard_action"] = "multi_fallback_single"
         fallback["elapsed_seconds"] = round(time.monotonic() - started, 2)
         return fallback
+    if guard:
+        result = _apply_guard_payload(result, on_guard_fail)
+    else:
+        result = dict(result)
+        result.update({"guard_enabled": False, "guard_passed": None,
+                       "guard_action": "disabled", "guard_issues": [],
+                       "citation_valid": [], "citation_invalid": [],
+                       "citation_resolvable_rate": None, "inference_ratio": None,
+                       "inference_heavy": None, "distinct_cited_units": None})
+    result["elapsed_seconds"] = round(time.monotonic() - started, 2)
+    return result
 
 
 
@@ -538,6 +601,9 @@ def build_parser() -> argparse.ArgumentParser:
     ask_p.add_argument("--model", default=DEFAULT_MODEL, help="Ollama 模型")
     ask_p.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT, help="LLM 超时秒数")
     ask_p.add_argument("--retrieval-only", action="store_true", help="仅检索不生成（离线冒烟）")
+    ask_p.add_argument("--no-guard", action="store_true", help="multi 输出不经质量守卫（灰度对比）")
+    ask_p.add_argument("--on-guard-fail", choices=list(GUARD_ACTIONS), default="fallback",
+                       help="质量守卫不通过时策略：mark（仅标记）/ fallback（默认，回退可核验摘录）/ refuse（拒答）")
     smp = sub.add_parser("samples", help="生成静态示范样本 JSON")
     smp.add_argument("--limit", type=int, default=5, help="样本数（默认 5）")
     smp.add_argument("--topk", type=int, default=DEFAULT_TOPK)
@@ -561,6 +627,9 @@ def _print_human(result: dict) -> None:
     print(f"置信：{(result.get('confidence') or {}).get('level')} — "
           f"{'；'.join((result.get('confidence') or {}).get('reasons') or [])}")
     print(f"检索命中：{len(result.get('retrieved') or [])} 条")
+    if mode == "multi":
+        print(f"质量守卫：passed={result.get('guard_passed')} · action={result.get('guard_action')}"
+              f" · issues={result.get('guard_issues')}")
     for c in result.get("citations") or []:
         page = c.get("page")
         print(f"  [{c.get('unit_id')}] 《{c.get('book')}》{c.get('chapter') or ''} "
@@ -576,7 +645,9 @@ def main(argv: list[str] | None = None) -> int:
             mode = "single" if getattr(args, "single", False) else args.mode
             k = args.k if getattr(args, "topk", None) is None else args.topk
             result = ask(args.question, topk=k, model=args.model, timeout=args.timeout,
-                         retrieval_only=args.retrieval_only, mode=mode)
+                         retrieval_only=args.retrieval_only, mode=mode,
+                         guard=not getattr(args, "no_guard", False),
+                         on_guard_fail=getattr(args, "on_guard_fail", "fallback"))
         except KbQaError as exc:
             print(f"[kb_qa] FAILED: {exc}", file=sys.stderr)
             return 1

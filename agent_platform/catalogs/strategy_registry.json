@@ -4235,5 +4235,116 @@
     "asset": "research/reports/eval_sets/eval_set_20261101_v3.json",
     "merge_report": "research/reports/merge_sim_v3_20261101.md",
     "note": "评测集 v3（n=102，v2 89+新增13 覆盖 merged-concept 盲区）；合并复评：全量 P@5 0.7549→0.7451（-0.0098）、新增13条 -7.7pp → **简单去重方案不建议执行**；改用内容合并/alias 检索后再评。"
+  },
+  "kb_qa_guard_cli_20261101": {
+    "tool": "tools/kb_corpus/kb_qa.py",
+    "params": "ask(mode='multi', guard=True, on_guard_fail='fallback')；--no-guard/--on-guard-fail fallback|mark|refuse",
+    "payload": "guard_enabled/guard_passed/guard_issues/guard_action/citation_valid/citation_invalid/citation_resolvable_rate/inference_ratio/inference_heavy/distinct_cited_units",
+    "note": "guard 已接入 CLI multi 出口，默认 fallback；single/retrieval 不受影响；guard 不可用不阻断问答；multi 失败仍回退 single。",
+    "tests": "test_kb_qa 22 + multi 6 + guard 5 = 33 passed"
+  },
+  "kb_qa_guard_http_20261101": {
+    "module": "portal/api_kb_qa.py",
+    "params": "guard=1|0（默认1）；缓存键含 guard；meta.guard 全字段；fail-open",
+    "wired": false,
+    "not_restarted": true,
+    "note": "HTTP 预接线 multi+guard：默认 guard=1 fallback；guard=0 灰度 A/B；guard 异常 fail-open 不 503；8091 未注册未重启（404 验证）。",
+    "tests": "test_api_kb_qa 21 passed（mock，不调真 LLM）"
+  },
+  "kb_qa_guard_review_20261101": {
+    "review": "research/reports/kb_qa_guard_review_20261101.md",
+    "summary": {
+      "total": 12,
+      "fallback": 6,
+      "pass": 6,
+      "groups": 2,
+      "issue_counts": {
+        "insufficient_cited_units": 6,
+        "citation_missing": 4,
+        "inference_heavy": 4
+      },
+      "priority_items": [
+        {
+          "review_id": "GR-20261101-008",
+          "source_id": "q2_f93ae02b9d",
+          "score": 30.0,
+          "reasons": [
+            "guard 后推断比例仍高 1.00"
+          ]
+        },
+        {
+          "review_id": "GR-20261101-002",
+          "source_id": "q2_aa49124184",
+          "score": 28.9,
+          "reasons": [
+            "fallback 信息量损失 35%（300→196 字）",
+            "guard 后有效引用仅 1 条"
+          ]
+        },
+        {
+          "review_id": "GR-20261101-005",
+          "source_id": "q2_3d1abf0240",
+          "score": 28.2,
+          "reasons": [
+            "fallback 信息量损失 33%（298→200 字）",
+            "guard 后有效引用仅 1 条"
+          ]
+        },
+        {
+          "review_id": "GR-20261101-004",
+          "source_id": "q2_a593448ce5",
+          "score": 20.1,
+          "reasons": [
+            "guard 后推断比例仍高 0.67"
+          ]
+        },
+        {
+          "review_id": "GR-20261101-003",
+          "source_id": "q2_bcbfd79337",
+          "score": 20.0,
+          "reasons": [
+            "guard 后推断比例仍高 0.67"
+          ]
+        },
+        {
+          "review_id": "GR-20261101-012",
+          "source_id": "q2_4f34cbb059",
+          "score": 20.0,
+          "reasons": [
+            "guard 后推断比例仍高 0.67"
+          ]
+        }
+      ],
+      "focus": {
+        "info_loss": {
+          "label": "fallback 信息量（guard 后答案是否明显变短/丢信息）",
+          "item_ids": [
+            "GR-20261101-002",
+            "GR-20261101-004",
+            "GR-20261101-005"
+          ],
+          "note": "信息保留率 = guarded_len / raw_len；<80% 建议重点看"
+        },
+        "citation_truth": {
+          "label": "引用真实性（有效引用数/可解析率；guard 后是否补足引用）",
+          "item_ids": [
+            "GR-20261101-002",
+            "GR-20261101-005"
+          ],
+          "note": "本批 12 条 citation_resolvable_rate 均为 100%，但需抽查引用是否支撑结论"
+        },
+        "inference_excess": {
+          "label": "推断过多（inference_ratio ≥0.6 仍被 fallback）",
+          "item_ids": [
+            "GR-20261101-003",
+            "GR-20261101-004",
+            "GR-20261101-008",
+            "GR-20261101-012"
+          ],
+          "note": "fallback 答案仍含较多推断标记的样本，优先核对是否应改为「仅摘录」"
+        }
+      }
+    },
+    "note": "12 条 guard 抽查清单（6 pass / 6 fallback）；拦截分 GG-01（4条：citation_missing+insufficient+inference_heavy）与 GG-02（2条 insufficient）；优先抽查 GR-008/002/005/004/003/012；未改任何数据。"
   }
 }
