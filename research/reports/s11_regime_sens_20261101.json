@@ -1,0 +1,219 @@
+{
+ "meta": {
+  "generated_at": "2026-11-01T23:11:31+08:00",
+  "window": "20190131 .. 20260930",
+  "config": "K20/score/月频/-ret120/PIT",
+  "note": "regime 阈值敏感性；CAGR 含空仓月（0 收益）"
+ },
+ "results": [
+  {
+   "lookback": 60,
+   "threshold_pct": null,
+   "active_months": 93,
+   "active_ratio_pct": 100.0,
+   "cagr_pct": 30.16,
+   "mdd_pct": -43.79,
+   "excess_monthly_pct": 1.607,
+   "excess_t": 1.97,
+   "capacity_median_yi": 1.55
+  },
+  {
+   "lookback": 40,
+   "threshold_pct": -0.08,
+   "active_months": 9,
+   "active_ratio_pct": 9.7,
+   "cagr_pct": 20.94,
+   "mdd_pct": -5.16,
+   "excess_monthly_pct": 1.154,
+   "excess_t": 2.09,
+   "capacity_median_yi": 1.38
+  },
+  {
+   "lookback": 40,
+   "threshold_pct": -0.05,
+   "active_months": 16,
+   "active_ratio_pct": 17.2,
+   "cagr_pct": 28.64,
+   "mdd_pct": -11.97,
+   "excess_monthly_pct": 1.466,
+   "excess_t": 2.33,
+   "capacity_median_yi": 1.39
+  },
+  {
+   "lookback": 40,
+   "threshold_pct": -0.02,
+   "active_months": 32,
+   "active_ratio_pct": 34.4,
+   "cagr_pct": 33.4,
+   "mdd_pct": -14.42,
+   "excess_monthly_pct": 1.677,
+   "excess_t": 2.43,
+   "capacity_median_yi": 1.41
+  },
+  {
+   "lookback": 40,
+   "threshold_pct": 0.0,
+   "active_months": 39,
+   "active_ratio_pct": 41.9,
+   "cagr_pct": 37.32,
+   "mdd_pct": -18.96,
+   "excess_monthly_pct": 1.757,
+   "excess_t": 2.49,
+   "capacity_median_yi": 1.48
+  },
+  {
+   "lookback": 40,
+   "threshold_pct": 0.02,
+   "active_months": 47,
+   "active_ratio_pct": 50.5,
+   "cagr_pct": 33.87,
+   "mdd_pct": -21.75,
+   "excess_monthly_pct": 1.737,
+   "excess_t": 2.44,
+   "capacity_median_yi": 1.42
+  },
+  {
+   "lookback": 40,
+   "threshold_pct": 0.05,
+   "active_months": 62,
+   "active_ratio_pct": 66.7,
+   "cagr_pct": 21.98,
+   "mdd_pct": -40.28,
+   "excess_monthly_pct": 1.383,
+   "excess_t": 1.84,
+   "capacity_median_yi": 1.44
+  },
+  {
+   "lookback": 60,
+   "threshold_pct": -0.08,
+   "active_months": 11,
+   "active_ratio_pct": 11.8,
+   "cagr_pct": 21.97,
+   "mdd_pct": -15.52,
+   "excess_monthly_pct": 1.506,
+   "excess_t": 2.56,
+   "capacity_median_yi": 1.42
+  },
+  {
+   "lookback": 60,
+   "threshold_pct": -0.05,
+   "active_months": 16,
+   "active_ratio_pct": 17.2,
+   "cagr_pct": 20.32,
+   "mdd_pct": -15.52,
+   "excess_monthly_pct": 1.403,
+   "excess_t": 2.32,
+   "capacity_median_yi": 1.41
+  },
+  {
+   "lookback": 60,
+   "threshold_pct": -0.02,
+   "active_months": 26,
+   "active_ratio_pct": 28.0,
+   "cagr_pct": 26.64,
+   "mdd_pct": -24.13,
+   "excess_monthly_pct": 1.575,
+   "excess_t": 2.35,
+   "capacity_median_yi": 1.41
+  },
+  {
+   "lookback": 60,
+   "threshold_pct": 0.0,
+   "active_months": 38,
+   "active_ratio_pct": 40.9,
+   "cagr_pct": 23.73,
+   "mdd_pct": -22.36,
+   "excess_monthly_pct": 1.471,
+   "excess_t": 2.13,
+   "capacity_median_yi": 1.39
+  },
+  {
+   "lookback": 60,
+   "threshold_pct": 0.02,
+   "active_months": 48,
+   "active_ratio_pct": 51.6,
+   "cagr_pct": 27.0,
+   "mdd_pct": -22.95,
+   "excess_monthly_pct": 1.704,
+   "excess_t": 2.39,
+   "capacity_median_yi": 1.41
+  },
+  {
+   "lookback": 60,
+   "threshold_pct": 0.05,
+   "active_months": 58,
+   "active_ratio_pct": 62.4,
+   "cagr_pct": 24.53,
+   "mdd_pct": -36.22,
+   "excess_monthly_pct": 1.554,
+   "excess_t": 2.11,
+   "capacity_median_yi": 1.47
+  },
+  {
+   "lookback": 120,
+   "threshold_pct": -0.08,
+   "active_months": 10,
+   "active_ratio_pct": 10.8,
+   "cagr_pct": 20.56,
+   "mdd_pct": -14.42,
+   "excess_monthly_pct": 1.01,
+   "excess_t": 1.88,
+   "capacity_median_yi": 1.4
+  },
+  {
+   "lookback": 120,
+   "threshold_pct": -0.05,
+   "active_months": 18,
+   "active_ratio_pct": 19.4,
+   "cagr_pct": 25.23,
+   "mdd_pct": -16.36,
+   "excess_monthly_pct": 1.51,
+   "excess_t": 2.51,
+   "capacity_median_yi": 1.39
+  },
+  {
+   "lookback": 120,
+   "threshold_pct": -0.02,
+   "active_months": 24,
+   "active_ratio_pct": 25.8,
+   "cagr_pct": 27.27,
+   "mdd_pct": -16.36,
+   "excess_monthly_pct": 1.491,
+   "excess_t": 2.44,
+   "capacity_median_yi": 1.38
+  },
+  {
+   "lookback": 120,
+   "threshold_pct": 0.0,
+   "active_months": 29,
+   "active_ratio_pct": 31.2,
+   "cagr_pct": 23.51,
+   "mdd_pct": -28.94,
+   "excess_monthly_pct": 1.55,
+   "excess_t": 2.39,
+   "capacity_median_yi": 1.41
+  },
+  {
+   "lookback": 120,
+   "threshold_pct": 0.02,
+   "active_months": 34,
+   "active_ratio_pct": 36.6,
+   "cagr_pct": 23.15,
+   "mdd_pct": -36.32,
+   "excess_monthly_pct": 1.634,
+   "excess_t": 2.45,
+   "capacity_median_yi": 1.38
+  },
+  {
+   "lookback": 120,
+   "threshold_pct": 0.05,
+   "active_months": 41,
+   "active_ratio_pct": 44.1,
+   "cagr_pct": 22.06,
+   "mdd_pct": -36.26,
+   "excess_monthly_pct": 1.596,
+   "excess_t": 2.37,
+   "capacity_median_yi": 1.41
+  }
+ ]
+}

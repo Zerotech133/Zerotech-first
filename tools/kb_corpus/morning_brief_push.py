@@ -31,6 +31,7 @@ CARDS = STATIC / "kb_learning_cards.json"
 WATCH = STATIC / "h18_watch.json"
 H14 = STATIC / "h14_shadow.json"
 SEPA = STATIC / "sepa_scan_daily.json"
+S11 = STATIC / "s11_shadow.json"
 BACKUP_DIR = REPO / "research" / "reports" / "backups"
 KIND = "kb_morning_brief"
 SAFE_SCHEMA = "safe_write.v1"
@@ -245,6 +246,16 @@ def build_text(cards: dict, watch: dict, n_cards: int = 5, n_watch: int = 8) -> 
                   f"- 漏斗：TT {st.get('tt_pass')} → 基本面 {st.get('fund_pass')} → VCP {st.get('vcp')} → "
                   f"突破 {st.get('funnel', {}).get('A_已突破', 0)}（严格）；宽口径 VCP-lite {len(wide.get('vcp_lite') or [])} 只",
                   f"- TT+基本面：{', '.join(x.get('code', '') + ' ' + str(x.get('name', '')) for x in (st.get('only_tt_fund') or [])[:5]) or '无'}"]
+    except Exception:  # noqa: BLE001
+        pass
+    # S11 影子摘要
+    try:
+        s11 = json.loads(S11.read_text(encoding="utf-8"))
+        rg = s11.get("regime") or {}
+        tr = s11.get("tracking") or {}
+        lines += ["", f"🧪 S11 mom_120 下行regime（{s11.get('signal_date', '')}｜{'活跃' if rg.get('active') else '空仓'}）",
+                  f"- 持仓 {s11.get('n', 0)}｜容量 {s11.get('capacity5_yi', '—')} 亿｜期收益 {tr.get('cur_ret_pct', '—')}% / 超额 {tr.get('excess_pct', '—')}%",
+                  "- 阈值敏感性通过（18组 t 1.84-2.56）；小仓位影子、不实盘"]
     except Exception:  # noqa: BLE001
         pass
     lines += ["", "——", "属性：学习材料/事件提醒，不构成投资建议；引用请带出处。"]

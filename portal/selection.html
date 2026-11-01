@@ -44,6 +44,22 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-siz
 
 
 
+
+(async function loadS11(){
+  const $=id=>document.getElementById(id);
+  try{
+    const d=await fetch('/static/s11_shadow.json?ts='+Date.now()).then(r=>r.json());
+    $('s11-date').textContent=d.signal_date||'—';
+    const rg=d.regime||{};
+    $('s11-reg').textContent=(rg.active?'活跃':'空仓')+'（60日'+(rg.market_ret_pct??'—')+'%）';
+    $('s11-n').textContent=d.n??'—';
+    $('s11-cap').textContent=(d.capacity5_yi??'—')+' 亿';
+    const tr=d.tracking||{};
+    $('s11-cur').textContent=(tr.cur_ret_pct??'—')+'% / '+(tr.excess_pct??'—')+'%';
+    $('s11-hold').innerHTML=(d.holdings||[]).slice(0,15).map((h,i)=>`<tr><td>${i+1}</td><td><code>${h.ts_code}</code></td><td>${h.name}</td><td>${h.score}</td><td>${(h.w*100).toFixed(2)}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">空仓等待 regime</td></tr>';
+  }catch(e){ $('s11-note').textContent='S11 数据加载失败: '+e.message; }
+})();
+
 </script><script src="/static/nav.js" defer></script></head>
 <body>
 <div id="nav"></div>
@@ -134,6 +150,17 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-siz
 </div>
 <div class="muted" id="s08-note" style="margin-top:6px"></div>
 <table style="margin-top:8px"><thead><tr><th>#</th><th>代码</th><th>名称</th><th>分数</th><th>权重%</th></tr></thead><tbody id="s08-hold"></tbody></table>
+</div>
+<div class="panel" id="s11panel"><b>S11 mom_120 · 下行 regime 多头（小仓位影子）</b>
+<div class="cards" style="margin-top:8px">
+  <div class="card"><div class="k">信号日</div><div class="v" id="s11-date" style="font-size:16px">—</div></div>
+  <div class="card"><div class="k">regime</div><div class="v" id="s11-reg" style="font-size:16px">—</div></div>
+  <div class="card"><div class="k">持仓</div><div class="v" id="s11-n">—</div></div>
+  <div class="card"><div class="k">容量(5%)</div><div class="v" id="s11-cap" style="font-size:16px">—</div></div>
+  <div class="card"><div class="k">期收益/超额</div><div class="v" id="s11-cur" style="font-size:15px">—</div></div>
+</div>
+<div class="muted" id="s11-note" style="margin-top:6px">阈值敏感性通过；小仓位（容量上限1.5亿）；非投资建议</div>
+<table style="margin-top:8px"><thead><tr><th>#</th><th>代码</th><th>名称</th><th>分数</th><th>权重%</th></tr></thead><tbody id="s11-hold"></tbody></table>
 </div>
 <div class="panel"><b>风险与纪律</b>
 <ul class="muted" style="margin:6px 0 0 18px;padding:0">

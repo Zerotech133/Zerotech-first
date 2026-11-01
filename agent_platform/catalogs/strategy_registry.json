@@ -275,7 +275,7 @@
       "type": "ranking",
       "owner": "司马微",
       "source_hypothesis": "H39 / H52",
-      "status": "research_candidate_pending_review",
+      "status": "shadow_observing_small",
       "executable": false,
       "rule": "仅在市场 60 日等权收益<0 的月份交易：-ret120 分数 top20，按分数排名加权（score）；月频；宇宙=非ST/按信号日上市≥250日/价≥2；非下行月空仓",
       "validation": {
@@ -283,7 +283,9 @@
         "variants": "行业中性版：CAGR 20.73%、MDD -17.74%、t=1.99；无 regime 过滤版：CAGR 30.16%、MDD -43.79%、t=1.97",
         "pit": "已按 PIT 修正（上市天数按信号日）",
         "caveat": "regime 规则=事后设定风险；容量仅 1.3-1.5 亿；t≈2 边际；非下行月空仓（暴露低）",
-        "final": "research_candidate_pending_review：不启动影子，待司马微团队复核 regime 规则与容量"
+        "final": "shadow_observing_small：阈值敏感性通过 + 小仓位影子观察；待司马微团队复核",
+        "sensitivity": "18 组 regime 阈值（40/60/120日 × -8~+5%）t 全部≥1.5（1.84~2.56）→ 非刀锋；选定 60日/-2%（活跃 28%、t 2.35、MDD -24.1%）",
+        "shadow": "2026-10-30 建仓（regime active，20 仓，容量 1.23 亿；容量上限 1.5 亿）；每月 1 日 08:30 检查"
       },
       "approved": false,
       "effective_from": "2026-11-01（研究候选）"

@@ -1,0 +1,20 @@
+{
+ "task_id": "T-20261101-116",
+ "opened_by": "A0",
+ "assigned_dept": "strategy",
+ "assigned_agent": null,
+ "title": "S11 敏感性通过 + 小仓位影子启动（更新 T-115）",
+ "body": "【S11 进展】2026-11-02\nregime 阈值敏感性：18 组（40/60/120日 × -8~+5%）t 全部≥1.5（1.84~2.56）→ 非刀锋；\n选定 60日/-2%：活跃月 28%、CAGR 26.64%、MDD -24.13%、t=2.35；\n2026-10-30 建 20 仓影子（regime active，容量实算 1.23 亿，上限 1.5 亿）；每月1日08:30检查。\n请复核：①敏感性结论是否接受；②容量上限 1.5 亿是否合适；③3 个月后复核去留。\n证据：research/reports/s11_regime_sens_*.{json,md}、s11_mom120_robust_*；registry S11；H52。",
+ "severity": "P2",
+ "status": "open",
+ "created_at": "2026-11-01T23:12:23",
+ "due": "2026-11-15",
+ "closure_note": null,
+ "history": [
+  {
+   "at": "2026-11-01T23:12:23",
+   "by": "A0",
+   "action": "open"
+  }
+ ]
+}
