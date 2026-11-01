@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """tools/tests/test_rs_overlay_strict.py — RS 叠加严苛复验（task-88）单元测试。
 
 覆盖（≥4）：
