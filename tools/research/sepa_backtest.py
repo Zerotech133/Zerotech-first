@@ -111,8 +111,56 @@ def main(argv=None) -> int:
     ap.add_argument("--max-weight", type=float, default=MAX_WEIGHT)
     ap.add_argument("--expire", type=int, default=20)
     ap.add_argument("--label", default="base")
+    ap.add_argument("--fund", choices=("none", "growth", "growth_accel"), default="none")
+    ap.add_argument("--scan", choices=("weekly", "twice"), default="weekly")
     args = ap.parse_args(argv)
     RISK_BUDGET, MAX_POS, MAX_WEIGHT = args.risk, args.max_pos, args.max_weight
+    fund = None
+    if args.fund != "none":
+        import time as _time
+        t0 = _time.time()
+        rows = []
+        for f in sorted(glob.glob(str(DATA / "fina_indicator" / "*.parquet"))):
+            try:
+                d = pq.read_table(f, columns=["ts_code", "ann_date", "end_date", "netprofit_yoy",
+                                              "tr_yoy", "or_yoy", "roe", "basic_eps_yoy"]).to_pandas()
+            except Exception:
+                continue
+            d = d[d["ann_date"].notna()]
+            if d.empty:
+                continue
+            rows.append(d)
+        fd = pd.concat(rows, ignore_index=True)
+        fd["ann_date"] = fd["ann_date"].astype(str)
+        fd = fd.sort_values(["ts_code", "ann_date", "end_date"])
+        fund = {}
+        for code, g in fd.groupby("ts_code"):
+            fund[code] = (g["ann_date"].values.astype(str),
+                          g["netprofit_yoy"].values.astype("float64"),
+                          g["tr_yoy"].values.astype("float64"),
+                          g["or_yoy"].values.astype("float64"),
+                          g["roe"].values.astype("float64"),
+                          g["basic_eps_yoy"].values.astype("float64"))
+        print("fund loaded:", len(fund), "codes", round(_time.time() - t0, 1), "s", flush=True)
+
+    def fund_ok(code: str, date: str, mode: str) -> bool:
+        arr = fund.get(code) if fund else None
+        if not arr:
+            return False
+        ann, npy, tryy, oryy, roe, epsy = arr
+        j = int(np.searchsorted(ann, date, side="right")) - 1
+        if j < 0 or np.isnan(npy[j]):
+            return False
+        rev = tryy[j] if not np.isnan(tryy[j]) else oryy[j]
+        if np.isnan(rev) or np.isnan(roe[j]):
+            return False
+        if not (npy[j] >= 15 and rev >= 10 and roe[j] >= 8):
+            return False
+        if mode == "growth_accel":
+            if j < 1 or np.isnan(npy[j - 1]) or not (npy[j] > npy[j - 1]):
+                return False
+        return True
+
     fs = sorted(glob.glob(str(DATA / "daily" / "d_*.parquet")))
     ds = [Path(f).stem[2:] for f in fs]
     pre = [d for d in ds if d < "20190101"][-300:]
@@ -132,7 +180,8 @@ def main(argv=None) -> int:
     mkt_idx = (1 + ret.mean(axis=1)).cumprod()
     mkt_ma200 = mkt_idx.rolling(200).mean()
     wd = pd.to_datetime(pd.Series(dates)).dt.weekday.values
-    scan_idx = [i for i in range(max(250, start_i), len(dates)) if wd[i] == 4]
+    scan_days = (4,) if args.scan == "weekly" else (0, 4)
+    scan_idx = [i for i in range(max(250, start_i), len(dates)) if wd[i] in scan_days]
     print("scan days:", len(scan_idx), flush=True)
 
     # 1) 周扫 watch（设置）
@@ -157,8 +206,10 @@ def main(argv=None) -> int:
               (listed.reindex(cser.index).fillna(0) >= 250) & (cser >= 2) & cser.notna()
         tt = (cser > s150) & (cser > s200) & (s150 > s200) & (s200 > s200p) & \
              (s50 > s150) & (s50 > s200) & (cser > s50) & (cser >= 1.30 * lo) & (cser >= 0.75 * hi)
-        cands = rs[tt & uni].sort_values(ascending=False).head(120).index
-        for code in cands:
+        cands = rs[tt & uni].sort_values(ascending=False).head(160).index
+        if args.fund != "none":
+            cands = [c for c in cands if fund_ok(c, dates[i], args.fund)]
+        for code in cands[:120]:
             ci = codes.get_loc(code)
             c = c_arr[max(0, i - 79): i + 1, ci]
             v = v_arr[max(0, i - 79): i + 1, ci]
@@ -294,17 +345,21 @@ def main(argv=None) -> int:
     mkt = mkt_idx.iloc[start_i:]
     yrs = (pd.Timestamp(dates[-1]) - pd.Timestamp(dates[start_i])).days / 365.25
     mkt_cagr = float((mkt.iloc[-1] / mkt.iloc[0]) ** (1 / yrs) - 1)
+    mkt_mdd = float((mkt / mkt.cummax() - 1).min())
+    mkt_vol = float(mkt.pct_change().std() * np.sqrt(252))
     tag = datetime.now().strftime("%Y%m%d")
     rep = {"meta": {"generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
                     "window": f"{dates[start_i]} .. {dates[-1]}", "scan": "weekly setup + daily breakout",
                     "setups": len(watch), "signals": len(signals), "risk_budget": RISK_BUDGET,
-                    "max_pos": MAX_POS, "note": "SEPA 完整体系回测（研究）；T+1 开盘入场；成本+滑点"},
-           "market_cagr_pct": round(mkt_cagr * 100, 2), "results": results}
+                    "max_pos": MAX_POS, "fund": args.fund, "scan": args.scan,
+                    "note": "SEPA 完整体系回测（研究）；T+1 开盘入场；成本+滑点"},
+           "market_cagr_pct": round(mkt_cagr * 100, 2), "market_mdd_pct": round(mkt_mdd * 100, 2),
+           "market_vol_pct": round(mkt_vol * 100, 2), "results": results}
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / f"sepa_backtest_{tag}_{args.label}.json").write_text(json.dumps(rep, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
-    lines = [f"# SEPA 完整体系回测（{args.label}）· {rep['meta']['window']}", "",
+    lines = [f"# SEPA 完整体系回测（{args.label}｜fund={args.fund}｜scan={args.scan}）· {rep['meta']['window']}", "",
              f"- 周扫设置 {len(watch)} 个；突破信号 {len(signals)} 个；单笔风险 2%，最多 10 仓；T+1 开盘入场",
-             f"- 市场等权 CAGR：{rep['market_cagr_pct']}%", "",
+             f"- 市场等权：CAGR {rep['market_cagr_pct']}%／MDD {rep['market_mdd_pct']}%／波动 {rep['market_vol_pct']}%", "",
              "| 变体 | 市场过滤 | NAV | CAGR | MDD | 波动 | 交易数 | 胜率 | 平均盈利 | 平均亏损 | 盈亏比 | 平均持有 |",
              "|---|---|---|---|---|---|---|---|---|---|---|---|"]
     for r in results:
