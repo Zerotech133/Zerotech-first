@@ -317,6 +317,16 @@ def test_done_not_checked(tmp_path):
     assert result["violations"] == []
 
 
+def test_parked_status_is_valid_not_active(tmp_path):
+    """parked=收口挂起：合法状态、不计 active/不判违规（分支/worktree 保留）。"""
+    repo = _init_repo(tmp_path / "repo")
+    result = _check(repo, {"P1": {"status": "parked", "owner": "DEV1",
+                                  "branch": "task/P1", "worktree": "missing"}})
+    assert wic.CODE_TASK_STATUS_INVALID not in _codes(result)
+    assert result["counts"]["active"] == 0
+    assert result.get("violations") == []
+
+
 def test_invalid_status_is_violation(tmp_path):
     repo = _init_repo(tmp_path / "repo")
     result = _check(repo, {"X1": {"status": "blocked", "owner": "DEV1"}})

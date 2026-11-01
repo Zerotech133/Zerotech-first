@@ -21,7 +21,9 @@
       known_debt 并如实计数，默认模式不阻断；--fail-on-abort-reason 严格模式
       下升级为违规。存量欠账只统计，**不代写**（本工具没有任何写回逻辑）。
 - done 不检查（终态已清场，历史字段噪声大）；status 缺失/非法计违规
-  （devtask 状态机只允许 doing/review/done/aborted）。
+  （允许状态：doing/review/done/aborted/parked）。
+- parked（收口挂起）：不是 active、不是终态；保留分支/worktree，可 merge/reopen，
+  不计在制/不判违规。
 
 只读保证：
 - 不修改 .worktrees/tasks.json，不新建/关闭/改派工单，不碰 git 工作区；
@@ -55,7 +57,10 @@ TOOL_NAME = "worktree_invariant_check"
 
 ACTIVE_STATUSES = ("doing", "review")
 TERMINAL_STATUSES = ("done", "aborted")
-KNOWN_STATUSES = frozenset(ACTIVE_STATUSES + TERMINAL_STATUSES)
+# parked：收口挂起（分支/worktree 保留，可 merge/reopen）；不是在制、不是终态。
+PARKED_STATUSES = ("parked",)
+KNOWN_STATUSES = frozenset(
+    ACTIVE_STATUSES + TERMINAL_STATUSES + PARKED_STATUSES)
 
 # owner 占位值：新建单时若缺 DEVTOOL_AGENT/AGENT_NAME，devtask 会落
 # unknown-agent——它不是「一个人」，在制单 owner 必须显式到人/席位。
@@ -241,7 +246,7 @@ def check(tasks: dict, *, repo, tasks_path=None, branch_refs=None,
         if status not in KNOWN_STATUSES:
             violations.append(_violation(
                 CODE_TASK_STATUS_INVALID, task=tid, status=status,
-                detail="status 缺失/非法：%r（合法值：doing/review/done/aborted）"
+                detail="status 缺失/非法：%r（合法值：doing/review/done/aborted/parked）"
                        % status))
             continue
         if status in ACTIVE_STATUSES:
