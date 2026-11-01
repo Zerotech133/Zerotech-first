@@ -58,6 +58,8 @@ w("pascal_case.py",
 # 第7轮阳性对照：随机 32 位字母数字 token 仍必须命中（防漏报回退）
 tok32c = "".join(rng.choices(alpha, k=32))
 w("pascal_positive.py", "TUSHARE_TOKEN = '%s'\n" % tok32c)
+# 2026-11-01 SCANFIX：JSON 字符串 id 值（策略 id）不是凭据，不得误报 HIGH_ENTROPY
+w("json_id.json", '{"id": "S03_H18_forecast_revision_watch"}\n')
 
 scanner = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scan_secrets.py")
 proc = subprocess.run([sys.executable, scanner, TD], capture_output=True, timeout=120)
@@ -108,6 +110,7 @@ check("第7轮:随机32位token仍命中HIGH_ENTROPY(阳性对照)",
       "pascal_positive.py:1:HIGH_ENTROPY" in out)
 check("第7轮:阳性对照token按前4后2脱敏", tok32c[:4] + "****" + tok32c[-2:] in out)
 check("第7轮:完整阳性token未回显", tok32c not in out)
+check("JSON id 值不误报 HIGH_ENTROPY", "json_id.json" not in out)
 # 脱敏形态：前4后2存在
 check("tok32 已按前4后2脱敏", tok32[:4] + "****" + tok32[-2:] in out)
 check("pwd 已脱敏", pwd[:4] + "****" in out)
