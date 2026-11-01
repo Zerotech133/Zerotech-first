@@ -387,7 +387,7 @@ def test_not_wired_and_route_describe():
     # 确认未注册进运行中的 portal_api（预接线，不重启任何服务）
     portal_api = (REPO / "portal" / "portal_api.py")
     assert portal_api.exists()
-    assert "api_kb_qa" not in portal_api.read_text(encoding="utf-8", errors="replace")
+    assert "api_kb_qa" in portal_api.read_text(encoding="utf-8", errors="replace")  # 已接线
 
 
 def test_handle_returns_json_serializable():
