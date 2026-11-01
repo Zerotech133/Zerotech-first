@@ -83,6 +83,11 @@ select#engine{background:var(--panel2);color:var(--fg);border:1px solid var(--bd
       <option value="v2" selected>引擎 v2（加权+同义词）</option>
       <option value="v1">引擎 v1（旧逻辑·回退）</option>
     </select>
+    <select id="and-mode" title="v2 AND 模式：soft=覆盖率≥0.5 即可（默认，与后端一致）；strict=全部查询词必须命中（回退）；any=至少 1 词">
+      <option value="soft" selected>AND: soft（默认·覆盖率≥0.5）</option>
+      <option value="strict">AND: strict（全部词）</option>
+      <option value="any">AND: any（≥1 词）</option>
+    </select>
     <button class="btn" id="go">搜索</button>
     <button class="btn ghost" data-f="all">全部</button>
     <button class="btn ghost" data-f="研报">仅研报</button>
@@ -110,7 +115,10 @@ select#engine{background:var(--panel2);color:var(--fg);border:1px solid var(--bd
   <div class="sub" style="margin:6px 0 0">
     每条结果都带出处（书名/章节/页码）；回答问题时请引用出处。数据由 OCR/LLM 抽取，重大结论请对照原文。<br>
     <b>检索引擎切换</b>：默认 <b>v2</b>（多字段加权 concept/claim/evidence/chapter + 同义词/别名 +
-    短语/空格 AND/<code>|</code> OR/<code>-排除词</code> + 按书·章节分组）；<b>v1</b> 为旧逻辑回退（v2 异常时也会自动回退）。
+    短语/空格 AND/<code>|</code> OR/<code>-排除词</code> + 按书·章节分组）；v1 为旧逻辑回退。<br>
+    <b>AND 模式</b>（v2 生效）：<b>soft</b> 默认（命中词覆盖率 ≥0.5 即可，2 词查询允许 1 词命中，
+    与后端 search_v2 默认一致）、<b>strict</b>（全部查询词必须命中，旧行为回退）、<b>any</b>（≥1 词）；
+    同义词/别名命中按 0.6 权重计分（原词命中优先）。
     其他 Agent 可用 <code>tools/kb_corpus/search_v2.py search --q ... --explain</code> 调用同口径检索。
   </div>
 </div>
@@ -130,7 +138,7 @@ select#engine{background:var(--panel2);color:var(--fg);border:1px solid var(--bd
 <div class="foot">数据源：<code>C:/项目/PDF/_ingest*</code> · 治理卡：<code>/dw.html</code> · 状态：<code>/kb_ingest.html</code></div>
 
 <script>
-let UNITS=[], FILTER='all', LASTQ='', ENGINE='v2';
+let UNITS=[], FILTER='all', LASTQ='', ENGINE='v2', AND_MODE=SEARCH_V2_DEFAULT_AND_MODE;
 const $=id=>document.getElementById(id);
 function tok(s){
   s=(s||'').toLowerCase();
@@ -148,10 +156,17 @@ function score(qt,u){
 
 /* ===== 检索引擎 v2（多字段加权 + 同义词 + 短语/AND/OR/-排除 + 按书章节分组）=====
    wave8 前端灰度：移植自 tools/kb_corpus/search_v2.py（wave7 支线 T）。
+   wave13 软 AND 同步：默认 and_mode=soft（覆盖率≥soft_cov=0.5 即可命中，
+   取代「全部词必须命中」）+ 同义词/别名命中权重×0.6，与后端 v2 默认一致；
+   保留 strict/any 模式与 v1 引擎回退。
    同义词表镜像 tools/kb_corpus/synonyms_v2.json（见下方 SEARCH_V2_SYNONYMS 标记块，
    tools/tests/test_kb_search_frontend.py 校验二者一致）。纯客户端，数据仍来自
    /static/kb_units_all.json，无新增网络请求。v1（旧逻辑）保留为回退。 */
 const SEARCH_V2_WEIGHTS = {concept:1.0, claim:0.85, evidence:0.6, chapter:0.45, book:0.15};
+const SEARCH_V2_AND_MODES = ['strict','soft','any'];
+const SEARCH_V2_DEFAULT_AND_MODE = 'soft';   // 与 search_v2.DEFAULT_AND_MODE 对齐
+const SEARCH_V2_SOFT_COV = 0.5;              // 与 search_v2.DEFAULT_SOFT_COV 对齐
+const SEARCH_V2_SYNONYM_WEIGHT = 0.6;        // 与 search_v2.DEFAULT_SYNONYM_WEIGHT 对齐
 /* === SEARCH_V2_SYNONYMS_BEGIN (mirror of tools/kb_corpus/synonyms_v2.json) === */
 const SYNONYMS_V2 = [
   ["涨停","涨停板","涨停基因","伏击涨停"],
@@ -236,6 +251,21 @@ function v2TermFieldScore(term,variants,textLower,tokens){
   if(overlap<=0) return [0,null];
   return [0.7*overlap,null];   // 多词/短语未精确命中时按 bigram 重叠打折
 }
+/* 单词打分：同义词/别名命中 ×SEARCH_V2_SYNONYM_WEIGHT；返回 [eff, field, var] */
+function v2TermScore(u,texts,toks,t){
+  let best=0, bestField=null, bestVar=null;
+  for(const f of V2_FIELDS){
+    const w=SEARCH_V2_WEIGHTS[f]||0;
+    if(w<=0) continue;
+    const r=v2TermFieldScore(t.term,t.variants,texts[f],toks[f]);
+    if(r[0]<=0) continue;
+    // 原词命中权重 1.0；同义词/别名命中 ×0.6（与后端 v2 默认一致）
+    const eff = (r[1]===null || r[1]===String(t.term).trim().toLowerCase())
+      ? r[0] : r[0]*SEARCH_V2_SYNONYM_WEIGHT;
+    if(eff>best){ best=eff; bestField=f; bestVar=r[1]; }
+  }
+  return [best,bestField,bestVar];
+}
 function v2UnitScore(u,terms){
   const fieldScores={}, texts={}, toks={};
   for(const f of V2_FIELDS){
@@ -243,33 +273,49 @@ function v2UnitScore(u,terms){
     texts[f]=String(u[f]||'').toLowerCase();
     toks[f]=new Set(v2Tok(u[f]));
   }
+  const normTerms=terms.filter(t=>!t.exclude);
+  const excludeTerms=terms.filter(t=>t.exclude);
+  if(!normTerms.length) return null;
+  // 排除词：命中即过滤
+  for(const t of excludeTerms){
+    const r=v2TermScore(u,texts,toks,t);
+    if(r[0]>0) return null;
+  }
   const matched=[];
-  let covered=0, phraseHit=false;
+  let phraseHit=false;
   const weightSum=V2_FIELDS.reduce((a,f)=>a+(SEARCH_V2_WEIGHTS[f]||0),0)||1;
-  for(const t of terms){
-    let best=0, bestField=null, bestVar=null;
+  for(const t of normTerms){
+    const bestArr=v2TermScore(u,texts,toks,t);
+    const best=bestArr[0];
+    if(best<=0) continue;              // 软 AND：未命中词按 0 分参与平均，不直接淘汰
     for(const f of V2_FIELDS){
       const w=SEARCH_V2_WEIGHTS[f]||0;
       if(w<=0) continue;
       const r=v2TermFieldScore(t.term,t.variants,texts[f],toks[f]);
-      const s=r[0];
-      if(s>0){ fieldScores[f]+=w*s; if(s>best){ best=s; bestField=f; bestVar=r[1]; } }
+      if(r[0]<=0) continue;
+      const eff = (r[1]===null || r[1]===String(t.term).trim().toLowerCase())
+        ? r[0] : r[0]*SEARCH_V2_SYNONYM_WEIGHT;
+      fieldScores[f]+=w*eff;
+      if(eff>=1 && (f==='concept'||f==='claim')) phraseHit=true;
     }
-    if(t.exclude){ if(best>0) return null; continue; }
-    if(best<=0) return null;               // AND：缺任一词 → 该分支不匹配
-    covered++;
-    if(best>=1 && (bestField==='concept'||bestField==='claim')) phraseHit=true;
-    matched.push({term:t.term, field:bestField, score:Math.round(best*1000)/1000, matched_variant:bestVar});
+    matched.push({term:t.term, field:bestArr[1], score:Math.round(best*1000)/1000,
+                  matched_variant:bestArr[2]});
   }
-  if(!matched.length) return null;
+  const n=normTerms.length;
+  const coverage=matched.length/n;
+  // AND 模式：strict=全部词；soft（默认）=覆盖率≥0.5；any=≥1 词
+  let ok;
+  if(AND_MODE==='strict') ok=matched.length>=n;
+  else if(AND_MODE==='any') ok=matched.length>=1;
+  else ok=coverage>=SEARCH_V2_SOFT_COV-1e-9;
+  if(!ok) return null;
   let base=0;
   for(const f of V2_FIELDS) base+=fieldScores[f];
-  base=Math.min(base/(weightSum*Math.max(1,terms.length)),1);
-  const coverage=covered/terms.length;
+  base=Math.min(base/(weightSum*n),1);
   let score=base*(0.8+0.2*coverage);
   if(phraseHit) score=Math.min(1,score+0.05);
   return {score:Math.round(score*10000)/10000, coverage:coverage,
-          field_scores:fieldScores, matched:matched};
+          field_scores:fieldScores, matched:matched, n_terms:n};
 }
 function v2SearchUnits(units,q){
   const parsed=v2Parse(q);
@@ -321,14 +367,14 @@ function renderV2(q){
   if(!q){
     box.innerHTML=list.slice(0,30).map(u=>v2UnitHTML({u:u,score:1,explain:{matched:[]}})).join('')
       || '<div class="empty">暂无数据</div>';
-    $('count').textContent='引擎 v2 · 显示前 30 条（输入查询使用 v2 检索）';
+    $('count').textContent=`引擎 v2（AND:${AND_MODE}）· 显示前 30 条（输入查询使用 v2 检索）`;
     return;
   }
   const resp=v2SearchUnits(list,q);
   const results=resp.results;
   if(!results.length){
     box.innerHTML='<div class="empty">没有命中（引擎 v2）。语法：空格=AND、<code>|</code>=OR、<code>"短语"</code>、<code>-排除词</code>；也可切换 v1 回退。</div>';
-    $('count').textContent='引擎 v2 · 命中 0 条';
+    $('count').textContent=`引擎 v2（AND:${AND_MODE}）· 命中 0 条`;
     return;
   }
   const groups=v2GroupResults(results);
@@ -339,7 +385,7 @@ function renderV2(q){
         <span class="gmeta">${g.n} 条命中</span></div>
       ${g.rows.slice(0,3).map(v2UnitHTML).join('')}
     </div>`).join('');
-  $('count').textContent=`引擎 v2 · 命中 ${results.length} 条 / ${groups.length} 个书·章节分组（显示前 ${topGroups.length} 组，每组前 3 条）`;
+  $('count').textContent=`引擎 v2（AND:${AND_MODE}）· 命中 ${results.length} 条 / ${groups.length} 个书·章节分组（显示前 ${topGroups.length} 组，每组前 3 条）`;
 }
 function render(){
   if(ENGINE==='v2'){
@@ -381,6 +427,7 @@ async function load(){
 }
 $('go').onclick=()=>{LASTQ=$('q').value;render();};
 $('engine').onchange=()=>{ENGINE=$('engine').value;LASTQ=$('q').value;render();};
+$('and-mode').onchange=()=>{AND_MODE=$('and-mode').value;LASTQ=$('q').value;if(ENGINE==='v2')render();};
 $('q').addEventListener('keydown',e=>{if(e.key==='Enter'){LASTQ=$('q').value;render();}});
 document.querySelectorAll('button[data-f]').forEach(b=>b.onclick=()=>{FILTER=b.dataset.f;render();});
 load();

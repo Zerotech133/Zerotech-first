@@ -94,6 +94,37 @@ def test_engine_switch_default_v2():
     assert "function renderV1()" in js
 
 
+# ------------------------------------------------------------------ 3b. 软 AND 同步
+def test_soft_and_sync_defaults():
+    """wave13：前端 v2 与后端一致——默认 soft（覆盖率≥0.5）+ 同义词权重 0.6 + strict 回退。"""
+    page, js = _html(), _js()
+    sys.path.insert(0, str(ROOT / "tools" / "kb_corpus"))
+    import search_v2 as sv  # noqa: E402
+    # 1) JS 常量与 Python 默认一致（前后端同源）
+    assert re.search(r"const\s+SEARCH_V2_DEFAULT_AND_MODE\s*=\s*'soft'", js)
+    assert sv.DEFAULT_AND_MODE == "soft"
+    m_cov = re.search(r"const\s+SEARCH_V2_SOFT_COV\s*=\s*([0-9.]+)", js)
+    m_syn = re.search(r"const\s+SEARCH_V2_SYNONYM_WEIGHT\s*=\s*([0-9.]+)", js)
+    assert m_cov and m_syn, "缺少前端软 AND/同义词权重常量"
+    assert float(m_cov.group(1)) == sv.DEFAULT_SOFT_COV == 0.5
+    assert float(m_syn.group(1)) == sv.DEFAULT_SYNONYM_WEIGHT == 0.6
+    # 2) 软 AND 逻辑：覆盖率阈值判定 + strict/any 分支 + 同义词命中乘权重
+    assert "coverage>=SEARCH_V2_SOFT_COV" in js
+    assert "AND_MODE==='strict'" in js and "AND_MODE==='any'" in js
+    assert "SEARCH_V2_SYNONYM_WEIGHT" in js
+    # 3) 初始状态默认 soft + 控件渲染 + 切换绑定
+    assert re.search(r"AND_MODE\s*=\s*SEARCH_V2_DEFAULT_AND_MODE", js)
+    sel = re.search(r'<select[^>]*id="and-mode".*?</select>', page, re.S)
+    assert sel, "缺少 AND 模式控件 #and-mode（strict 回退入口）"
+    block = sel.group(0)
+    for v in ("soft", "strict", "any"):
+        assert f'value="{v}"' in block
+    assert re.search(r'value="soft"\s+selected', block), "AND 模式默认不是 soft"
+    assert re.search(r"\$\('and-mode'\)\.onchange", js)
+    # 4) 结果栏暴露当前 AND 模式（可核对前后端一致）
+    assert "AND:${AND_MODE}" in js
+
+
 # ------------------------------------------------------------------ 4. 同义词一致
 def test_synonyms_parity_with_json():
     groups = _inline_synonym_groups()
@@ -154,3 +185,6 @@ def test_portal_serves_page_http_200():
         pytest.skip(f"门户 8734 未在线，跳过 HTTP 校验：{exc}")
     assert "SEARCH_V2_SYNONYMS_BEGIN" in body, "HTTP 返回的页面未包含 v2 标记（可能缓存旧文件）"
     assert 'id="engine"' in body
+    # wave13 软 AND 同步：HTTP 返回的页面也必须带软 AND 标记与控件
+    assert "SEARCH_V2_SOFT_COV" in body and "SEARCH_V2_SYNONYM_WEIGHT" in body
+    assert 'id="and-mode"' in body and 'value="soft"' in body

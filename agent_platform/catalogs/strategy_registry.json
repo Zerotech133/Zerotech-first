@@ -1978,5 +1978,48 @@
       "resulting_cards": 20
     },
     "note": "dry-run：已勾选 pass=0 → 预计新增 0/跳过 20；原学习卡 SHA1 未变（未 apply）；人工审核勾选后重跑 dry-run 确认再 --apply（写前 .bak 备份+写后校验）。"
+  },
+  "search_frontend_soft_and_20261101": {
+    "page": "portal/kb_reports.html#and-mode",
+    "note": "前端软 AND 同步：默认 soft（覆盖率≥0.5）+ 同义词权重0.6，与后端 search_v2 默认一致；#and-mode 可切 strict/any；8 tests（JS 常量==Python DEFAULT_*）+ node --check；HTTP 200（32KB）。"
+  },
+  "concept_dedup_20261101": {
+    "tool": "tools/kb_corpus/concept_dedup.py",
+    "report": "research/reports/concept_dedup_20261101.md",
+    "stats": {
+      "units": 498,
+      "unique_concepts": 485,
+      "duplicate_groups": 11,
+      "units_in_duplicate_groups": 24,
+      "extra_units_beyond_first": 13,
+      "true_duplicate_groups": 2,
+      "near_duplicate_groups": 2,
+      "cross_source_reuse_groups": 1,
+      "repeated_discussion_groups": 4,
+      "concept_too_coarse_groups": 2,
+      "merge_groups": 2,
+      "annotate_groups": 9,
+      "mergeable_units": 2
+    },
+    "note": "498单元/485唯一concept：重复组11个(24单元)；可合并2组(东盟MSME、跨境电商挑战，跨研报claim全同)、仅标注9组；alias_map 13条；未修改知识单元数据。"
+  },
+  "kb_qa_samples_expanded_20261101": {
+    "tool": "tools/kb_corpus/kb_qa_expand.py",
+    "report": "research/reports/kb_qa_samples_expanded_20261101.md",
+    "run": {
+      "serial": true,
+      "deadline_seconds": 600.0,
+      "requested": 12,
+      "success": 6,
+      "fallback": 0,
+      "no_evidence": 6,
+      "skipped": 0,
+      "answered": 12,
+      "avg_citations": 2.08,
+      "elapsed_seconds": 97.16,
+      "errors": []
+    },
+    "portal_samples": 17,
+    "note": "问答样本扩量：请求12条→成功6/降级0/无依据6（LLM按规则拒答，非检索失败），合并原5条=17条；备份已存；页面静态刷新 HTTP 200。"
   }
 }

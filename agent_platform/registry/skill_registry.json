@@ -512,6 +512,20 @@
       "title": "学习卡审核合并工具（dry-run）",
       "ref": "tools/kb_corpus/card_merge.py",
       "enabled": true
+    },
+    {
+      "id": "concept_dedup",
+      "kind": "tool",
+      "title": "同 concept 重复知识单元审计",
+      "ref": "tools/kb_corpus/concept_dedup.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_qa_expand",
+      "kind": "tool",
+      "title": "问答样本扩量生成",
+      "ref": "tools/kb_corpus/kb_qa_expand.py",
+      "enabled": true
     }
   ]
 }
