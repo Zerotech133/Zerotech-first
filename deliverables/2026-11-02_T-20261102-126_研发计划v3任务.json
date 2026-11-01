@@ -1,0 +1,20 @@
+{
+ "task_id": "T-20261102-126",
+ "opened_by": "A0",
+ "assigned_dept": "dev",
+ "assigned_agent": null,
+ "title": "数据仓研发计划 v3（执行版）：Sprint1-3 任务级计划，请 DATA1 认领",
+ "body": "【执行计划】2026-11-02 03:00 · 数据仓板块\n计划：docs/plans/2026-11-02_数据仓研发计划_v3_执行版.md（任务级：S1-01~S1-10 / S2-01~S2-10 / S3-01~S3-08）\nKPI：雪球恢复、drift 恢复、快照自动化、登记 314/314、统一入口 100%（已达成）、专用入口 ≥80%、display ≥200、资质<15%、测试入 fast、Hermes 10 问。\n依赖：L2 四项（8091 重启/8787 MCP 注册/06:40 计划任务/补采配额）；DSH-Lead 已交付 WP-I1/I3 骨架+100% 覆盖。\n请 DATA1：按 Sprint1 认领 S1-02~S1-07；每日 08:20 早报「数据仓健康」一行；周五 17:00 验收。\n报告/证据：deliverables/2026-11-02_数据仓研发计划_v3_执行版.md。",
+ "severity": "P1",
+ "status": "open",
+ "created_at": "2026-11-02T03:00:37",
+ "due": "2026-11-20",
+ "closure_note": null,
+ "history": [
+  {
+   "at": "2026-11-02T03:00:37",
+   "by": "A0",
+   "action": "open"
+  }
+ ]
+}
