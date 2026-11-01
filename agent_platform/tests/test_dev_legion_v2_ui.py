@@ -16,6 +16,7 @@ def test_three_piece_and_short_screen():
     assert "/static/tokens.css" in txt
     assert "/static/nav.js" in txt
     assert "/static/shortscreen.js" in txt
+    assert "/static/os_light.css" in txt
     assert len(re.findall(r"<h2[ >]", txt)) >= 6
 
 
@@ -28,6 +29,9 @@ def test_live_api_readonly():
     assert "no-store" in js
     assert "只读" in txt
     assert "不写" in txt or "不派单" in txt
+    assert 'href="/hermes/"' in txt
+    assert "底座：零界 + Hermes" in txt
+    assert "去 Hermes 派工" in txt
 
 
 def test_four_zones():
