@@ -1,0 +1,20 @@
+{
+ "task_id": "T-20261101-118",
+ "opened_by": "A0",
+ "assigned_dept": "strategy",
+ "assigned_agent": null,
+ "title": "策略线结项报告：请复核 PIT 结论并决定影子去留",
+ "body": "【结项报告】2026-11-02 · 致司马微团队\n详见：deliverables/2026-11-02_策略线结项报告_致司马微团队.md（平台副本 C:\\项目\\deliverables\\）\n核心数字：PIT 全池口径 mom_120 多头 CAGR 11.18%、t=0.39（当前池旧口径 25.89%/t=1.84）→ 无显著超额。\n请复核：①接受 PIT 全池为唯一有效口径；②S08/S11 影子去留（继续观察 or 停止）；③策略线继续（PIT 全池重跑）or 暂停归档。\n相关：H53 validated、注册表 S06-S11 pit_universe/expectation、T-114~T-117。",
+ "severity": "P1",
+ "status": "open",
+ "created_at": "2026-11-01T23:51:07",
+ "due": "2026-11-12",
+ "closure_note": null,
+ "history": [
+  {
+   "at": "2026-11-01T23:51:07",
+   "by": "A0",
+   "action": "open"
+  }
+ ]
+}
