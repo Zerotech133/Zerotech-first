@@ -1,0 +1,14 @@
+# DATA5 谯周（语料与情报结构化）profile 模板 — 激活时部署到 ~/.hermes/profiles/data-corpus/config.yaml
+model:
+  provider: ollama
+  base_url: http://127.0.0.1:11434
+  model: qwen3.6:35b-a3b
+deep_model:
+  provider: ollama
+  model: qwen3.6:35b-a3b
+department: 数据智能部（兰台）
+title: 语料与情报结构化（规划）
+deputy: 张松（兰台令）
+org_ref: agent_platform/registry/team_data_plan_v2.json
+mcp_tools_expected: [dw_sample, kb_corpus]
+notes: YouTube 语料层/研报/公告/雪球结构化；派生层写需 DATA1 审批，PII 脱敏必做。

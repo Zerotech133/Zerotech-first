@@ -1,0 +1,14 @@
+# FACTOR1 蒋琬（因子挖掘）profile 模板 — 激活时部署到 ~/.hermes/profiles/factor-miner/config.yaml
+model:
+  provider: ollama
+  base_url: http://127.0.0.1:11434
+  model: qwen3.5:9b
+deep_model:
+  provider: ollama
+  model: qwen3.6:35b-a3b
+department: 数据智能部（兰台）
+title: 因子挖掘师
+deputy: 张松（兰台令）
+org_ref: agent_platform/registry/team_data_plan_v2.json
+mcp_tools_expected: [factor_tools]
+notes: 只出因子证据/提案，四关前置；不直接进 strategy_registry（需司马微团队评审）。

@@ -1,0 +1,20 @@
+{
+ "task_id": "T-20261102-129",
+ "opened_by": "A0",
+ "assigned_dept": "dev",
+ "assigned_agent": null,
+ "title": "数据智能部组织架构 v1 落地：DATA3 入册 + 4 类 MCP 建设",
+ "body": "【组织架构交付】2026-11-02 · 按老田要求（AI 智能到位/三国命名/职能/技能）\n已交付：组织架构与岗位说明书 v1（6 岗位 JD+技能+AI配置+KPI+HITL）、机器可读 team_data_plan_v2.json、张松 Hermes profile（已部署校验）、其余 4 岗 profile 模板。\n组织：DATA1 张松（兰台令）、DATA2 刘巴（工程）、DATA3 陈群（质量·试运行）、DATA4 杨仪（元数据·规划）、DATA5 谯周（语料·规划）、FACTOR1 蒋琬（因子）；平台宽线马钧/刘晔；委员会田丰/赵云/于禁/马钧/司马微。\n待批：①DATA3 入册试运行（2 周质量日报转正）②平台线建 4 个只读 MCP（dw-quality/dw-catalog/kb-corpus/factor_tools）③daily_work 增巡检任务。\n文件：docs/plans/2026-11-02_数据智能部组织架构与岗位说明书_v1.md；回执：deliverables/2026-11-02_数据智能部组织架构与岗位说明_回执.md。",
+ "severity": "P2",
+ "status": "open",
+ "created_at": "2026-11-02T03:48:12",
+ "due": "2026-11-13",
+ "closure_note": null,
+ "history": [
+  {
+   "at": "2026-11-02T03:48:12",
+   "by": "A0",
+   "action": "open"
+  }
+ ]
+}

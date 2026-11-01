@@ -1,0 +1,14 @@
+# DATA4 杨仪（元数据与资质）profile 模板 — 激活时部署到 ~/.hermes/profiles/data-catalog/config.yaml
+model:
+  provider: ollama
+  base_url: http://127.0.0.1:11434
+  model: qwen3.5:9b
+deep_model:
+  provider: ollama
+  model: qwen3.6:35b-a3b
+department: 数据智能部（兰台）
+title: 元数据与资质（规划）
+deputy: 张松（兰台令）
+org_ref: agent_platform/registry/team_data_plan_v2.json
+mcp_tools_expected: [dw_stats, dw_list, dw_get, dw_catalog]
+notes: 目录/registry/资质/权限/口径映射；registry 变更需 DATA1 审批并留审计。

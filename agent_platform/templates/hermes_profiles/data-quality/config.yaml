@@ -1,0 +1,14 @@
+# DATA3 陈群（数据质量与标准）profile 模板 — 激活时部署到 ~/.hermes/profiles/data-quality/config.yaml
+model:
+  provider: ollama
+  base_url: http://127.0.0.1:11434
+  model: qwen3.5:9b
+deep_model:
+  provider: ollama
+  model: qwen3.6:35b-a3b
+department: 数据智能部（兰台）
+title: 数据质量与标准（试运行）
+deputy: 张松（兰台令）
+org_ref: agent_platform/registry/team_data_plan_v2.json
+mcp_tools_expected: [dw_stats, dw_list, dw_quality]
+notes: 只读+告警建单；质量规则/SLA/断流/drift/manifest 巡检；写操作需 DATA1 审批。

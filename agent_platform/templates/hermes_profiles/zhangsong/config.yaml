@@ -1,0 +1,26 @@
+# 张松（数据智能部长 · 兰台令）profile 配置模板
+# 部署：复制到 ~/.hermes/profiles/zhangsong/config.yaml
+# 依据：docs/plans/2026-11-02_数据智能部组织架构与岗位说明书_v1.md
+model:
+  provider: ollama
+  base_url: http://127.0.0.1:11434
+  model: qwen3.5:9b
+
+deep_model:
+  provider: ollama
+  model: qwen3.6:35b-a3b
+
+department: 数据智能部（兰台）
+title: 兰台令（数据智能部长）
+deputy: 蒋琬（因子挖掘师）
+org_ref: agent_platform/registry/team_data_plan_v2.json
+mcp_tools_expected:
+  - dw_stats
+  - dw_list
+  - dw_search
+  - dw_get
+  - dw_sample
+  - dataops_query
+notes: >
+  数据仓域负责人 AI 席位。只读工具可直接使用；任何写入/清洗/registry 变更需 DATA1 人工确认 +
+  审计留痕。日常工作：数据健康巡检、口径守护、任务派单与验收。
