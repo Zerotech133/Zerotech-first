@@ -99,6 +99,26 @@
       },
       "approved": false,
       "effective_from": "待验证（candidate）"
+    },
+    {
+      "id": "S06_reversal_combo_mom20_120",
+      "name": "S06 反转组合（mom_20 + mom_120，top20 等权月频）",
+      "type": "ranking",
+      "owner": "司马微",
+      "source_hypothesis": "H38/H39（四关候选组合）",
+      "status": "rejected_regime_dependent",
+      "executable": false,
+      "rule": "z(-ret20)+z(-ret120) 等权分数取 top20 等权；月频调仓；宇宙=非ST/上市≥250日/价≥2",
+      "validation": {
+        "stats": "2019-2026/93月：CAGR 17.6% vs 市场 13.44%，MDD -36.3%，IC 0.0761(t=4.38)",
+        "gates": "G1=True G2=True G3=True G4=False（up regime 月均超额 -0.172%，down 1.63%）",
+        "shadow": "未启动（G4 未过，按纪律不影子）",
+        "cost": "单边0.15%×换手已计；月均换手 0.911；容量中位 1.7 亿（5% 参与率）",
+        "caveat": "8 年中 5 年跑输市场；收益高度集中在 2024/2025；高换手+小容量；研究价值=验证反转因子 regime 依赖",
+        "final": "rejected_regime_dependent：不作为影子候选；单因子（H38/H39）四关 PASS 但组合多头 G4 未过 → 需 regime 过滤/成本优化后才可重提"
+      },
+      "approved": false,
+      "effective_from": "2026-11-01（未启用）"
     }
   ],
   "book_backlog": {

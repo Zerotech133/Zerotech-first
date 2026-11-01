@@ -386,5 +386,31 @@
   ],
   "report": "research/reports/four_gate_*.{json,md}",
   "note": "四关粗估（成本/容量近似）；PASS 仍需人工复核与影子盘"
+ },
+ "s06_combo": {
+  "generated_at": "2026-11-01T16:15:42+08:00",
+  "status": "rejected_regime_dependent",
+  "metrics": {
+   "nav": 3.5134,
+   "cagr_pct": 17.6,
+   "vol_pct": 37.57,
+   "mdd_pct": -36.3,
+   "market_cagr_pct": 13.44,
+   "avg_turnover": 0.911,
+   "ic_mean": 0.0761,
+   "ic_t": 4.38,
+   "capacity_median_yi": 1.7
+  },
+  "gates": {
+   "G1": true,
+   "G2": true,
+   "G3": true,
+   "G4": false
+  },
+  "regime": {
+   "up_mean_excess_pct": -0.172,
+   "down_mean_excess_pct": 1.63
+  },
+  "note": "组合未过 G4；不启动影子，仅研究价值"
  }
 }
