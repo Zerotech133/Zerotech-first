@@ -526,6 +526,27 @@
       "title": "问答样本扩量生成",
       "ref": "tools/kb_corpus/kb_qa_expand.py",
       "enabled": true
+    },
+    {
+      "id": "merge_sim",
+      "kind": "tool",
+      "title": "concept 合并影响模拟（副本）",
+      "ref": "tools/kb_corpus/merge_sim.py",
+      "enabled": true
+    },
+    {
+      "id": "kb_qa_bank_v2",
+      "kind": "tool",
+      "title": "问答问题模板 v2 生成",
+      "ref": "tools/kb_corpus/kb_qa_bank_v2.py",
+      "enabled": true
+    },
+    {
+      "id": "eval_registry",
+      "kind": "tool",
+      "title": "评测集资产化（冻结/hash/校验）",
+      "ref": "tools/kb_corpus/eval_registry.py",
+      "enabled": true
     }
   ]
 }
