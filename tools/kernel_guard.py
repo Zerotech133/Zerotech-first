@@ -8,7 +8,9 @@
 用法：
   python -X utf8 tools/kernel_guard.py --files a.py,b.md --adr ADR-015
   python -X utf8 tools/kernel_guard.py --staged --adr ADR-015
+  python -X utf8 tools/kernel_guard.py --files a.py --commit-msg "feat: xxx ADR-015"
   python -X utf8 tools/kernel_guard.py --list
+关联判定：--adr 优先；其次 --commit-msg 文本中出现 ADR-号（如 ADR-015）即视为关联。
 退出码：0 允许；1 阻断（内核改动无 ADR）；2 参数/环境错误。
 """
 from __future__ import annotations
@@ -42,6 +44,7 @@ def load_kernel_artifacts() -> list[dict]:
         return []
     data = yaml.safe_load(KERNEL.read_text(encoding="utf-8")) or {}
     out = []
+    out.append({"path": "platform/kernel_v1.yaml", "kind": "kernel-manifest", "contract": "KERNEL"})
     for k, v in (data.get("contracts") or {}).items():
         for a in v.get("artifacts", []):
             if a.get("status") in ("existing", "frozen"):
@@ -73,6 +76,8 @@ def main(argv=None):
     ap.add_argument("--files", default=None, help="逗号分隔的改动文件（缺省用 git diff）")
     ap.add_argument("--staged", action="store_true")
     ap.add_argument("--adr", default="", help="本次改动关联的 ADR 号，如 ADR-015")
+    ap.add_argument("--commit-msg", default="",
+                    help="提交信息全文；其中出现 ADR-号也视为已关联（--adr 优先）")
     ap.add_argument("--list", action="store_true", help="列出受保护的内核 artifact")
     args = ap.parse_args(argv)
 
@@ -94,13 +99,17 @@ def main(argv=None):
         print(f"[kernel_guard] OK: {len(changed)} 个改动，无内核契约命中")
         return 0
     adr = ADR_RE.search(args.adr or "")
+    src = "--adr"
+    if not adr:
+        adr = ADR_RE.search(args.commit_msg or "")
+        src = "--commit-msg"
     if not adr:
         print(f"[kernel_guard] BLOCK: {len(hits)} 个内核契约文件被改动，但未提供 ADR 号")
         for c, a in hits:
             print(f"  - {c}  ({a['contract']}/{a['kind']})")
-        print("  解决：--adr ADR-0xx（或提交信息带 ADR 号）")
+        print("  解决：--adr ADR-0xx，或 --commit-msg 传入带 ADR 号的提交信息")
         return 1
-    print(f"[kernel_guard] OK: {len(hits)} 个内核契约改动，已关联 {adr.group(0)}")
+    print(f"[kernel_guard] OK: {len(hits)} 个内核契约改动，已关联 {adr.group(0)}（来源 {src}）")
     for c, a in hits:
         print(f"  - {c}  ({a['contract']})")
     return 0
