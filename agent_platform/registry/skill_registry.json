@@ -407,6 +407,27 @@
       "title": "研报检索 v2（加权/同义词/分组）",
       "ref": "tools/kb_corpus/search_v2.py",
       "enabled": true
+    },
+    {
+      "id": "kb_search_frontend",
+      "kind": "tool",
+      "title": "研报检索 v2 前端引擎（灰度）",
+      "ref": "portal/kb_reports.html",
+      "enabled": true
+    },
+    {
+      "id": "api_kb_qa",
+      "kind": "tool",
+      "title": "问答 HTTP 预接线（待 8091）",
+      "ref": "portal/api_kb_qa.py",
+      "enabled": true
+    },
+    {
+      "id": "daily_kb",
+      "kind": "tool",
+      "title": "知识库每日自动化编排",
+      "ref": "tools/kb_corpus/daily_kb.py",
+      "enabled": true
     }
   ]
 }

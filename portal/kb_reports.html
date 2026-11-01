@@ -36,6 +36,14 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-siz
 .dcard .dsrc{color:var(--dim);font-size:11px;margin-top:6px;border-left:2px solid #30363d;padding-left:8px}
 .rank{display:inline-block;min-width:18px;text-align:center;padding:0 6px;border-radius:9px;font-size:11px;font-weight:700;background:#122642;color:#79c0ff;margin-right:6px}
 .rank.top{background:#1f3b2a;color:#7ee787}
+/* 检索引擎 v1/v2 切换 + v2 分组 */
+select#engine{background:var(--panel2);color:var(--fg);border:1px solid var(--bd);border-radius:7px;padding:8px 10px;font-size:13px}
+.grp{margin:10px 0}
+.grp-head{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px;font-weight:700;color:#c9d1d9;padding:6px 0;border-bottom:1px dashed var(--bd)}
+.grp-head .gscore{color:var(--ok);font-weight:700;font-size:12px}
+.grp-head .gmeta{color:var(--dim);font-weight:normal;font-size:11px}
+.unit .score{float:right;color:var(--acc);font-size:11px;font-weight:700}
+.unit .mt{color:var(--dim);font-size:11px;margin-top:4px}
 </style>
 <script src="/static/nav.js" defer></script></head>
 <body>
@@ -45,7 +53,11 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-siz
 
 <div class="panel">
   <div class="row">
-    <input type="text" id="q" placeholder="输入关键词，如：盈利预测上修 / 存贷双高 / 评级 / 商誉 / 行业景气">
+    <input type="text" id="q" placeholder="输入关键词，如：量柱分类 / 太阳能|光伏 / 大模型 应用 / -排除词">
+    <select id="engine" title="检索引擎：v2 为多字段加权+同义词+AND/OR（默认）；v1 为旧逻辑回退">
+      <option value="v2" selected>引擎 v2（加权+同义词）</option>
+      <option value="v1">引擎 v1（旧逻辑·回退）</option>
+    </select>
     <button class="btn" id="go">搜索</button>
     <button class="btn ghost" data-f="all">全部</button>
     <button class="btn ghost" data-f="研报">仅研报</button>
@@ -71,8 +83,10 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-siz
 <div class="panel">
   <b>使用提示</b>
   <div class="sub" style="margin:6px 0 0">
-    每条结果都带出处（书名/章节/页码）；回答问题时请引用出处。数据由 OCR/LLM 抽取，重大结论请对照原文。
-    其他 Agent 可用 <code>tools/kb_corpus/kb_reports_search.py --json</code> 调用同一知识库。
+    每条结果都带出处（书名/章节/页码）；回答问题时请引用出处。数据由 OCR/LLM 抽取，重大结论请对照原文。<br>
+    <b>检索引擎切换</b>：默认 <b>v2</b>（多字段加权 concept/claim/evidence/chapter + 同义词/别名 +
+    短语/空格 AND/<code>|</code> OR/<code>-排除词</code> + 按书·章节分组）；<b>v1</b> 为旧逻辑回退（v2 异常时也会自动回退）。
+    其他 Agent 可用 <code>tools/kb_corpus/search_v2.py search --q ... --explain</code> 调用同口径检索。
   </div>
 </div>
 
@@ -85,7 +99,7 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-siz
 <div class="foot">数据源：<code>C:/项目/PDF/_ingest*</code> · 治理卡：<code>/dw.html</code> · 状态：<code>/kb_ingest.html</code></div>
 
 <script>
-let UNITS=[], FILTER='all', LASTQ='';
+let UNITS=[], FILTER='all', LASTQ='', ENGINE='v2';
 const $=id=>document.getElementById(id);
 function tok(s){
   s=(s||'').toLowerCase();
@@ -100,7 +114,213 @@ function score(qt,u){
   for(const t of qt){ if(set.has(t)) s+= (u.concept.toLowerCase().includes(t)?2:1); }
   return s;
 }
+
+/* ===== 检索引擎 v2（多字段加权 + 同义词 + 短语/AND/OR/-排除 + 按书章节分组）=====
+   wave8 前端灰度：移植自 tools/kb_corpus/search_v2.py（wave7 支线 T）。
+   同义词表镜像 tools/kb_corpus/synonyms_v2.json（见下方 SEARCH_V2_SYNONYMS 标记块，
+   tools/tests/test_kb_search_frontend.py 校验二者一致）。纯客户端，数据仍来自
+   /static/kb_units_all.json，无新增网络请求。v1（旧逻辑）保留为回退。 */
+const SEARCH_V2_WEIGHTS = {concept:1.0, claim:0.85, evidence:0.6, chapter:0.45, book:0.15};
+/* === SEARCH_V2_SYNONYMS_BEGIN (mirror of tools/kb_corpus/synonyms_v2.json) === */
+const SYNONYMS_V2 = [
+  ["涨停","涨停板","涨停基因","伏击涨停"],
+  ["量柱","量柱分类","高低平倍梯缩金"],
+  ["量线","量线定义","斜衡线","平衡线"],
+  ["量学","量学理论","三维互动"],
+  ["大模型","人工智能","AI","LLM"],
+  ["数据中心","IDC","算力","智算中心"],
+  ["光伏","太阳能","硅料","组件","硅片"],
+  ["钠电池","钠离子电池","钠离子"],
+  ["具身智能","人形机器人","机器人","机器视觉"],
+  ["房地产","地产","楼市","商品房"],
+  ["半导体","芯片","集成电路","晶圆"],
+  ["储能","新型储能","锂电","锂电池"],
+  ["铁路","客流","铁路客流","铁路运输"],
+  ["东盟","ASEAN","东南亚","RCEP"],
+  ["企业信用","信用债","信用风险","信用利差"],
+  ["评级","投资评级","行业评级","信用评级"],
+  ["净利润","归母净利润","盈利","利润总额"],
+  ["毛利率","毛利润","盈利能力"],
+  ["现金流","经营现金流","经营性现金流","自由现金流"],
+  ["库存","存货","去库存","补库存"],
+  ["分红","股息","派息","股利"],
+  ["风险提示","风险因素","风险"],
+  ["市盈率","PE","估值","PB","市净率"]
+];
+/* === SEARCH_V2_SYNONYMS_END === */
+const V2_FIELDS = ['concept','claim','evidence','chapter','book'];
+function v2Tok(s){
+  s=(s||'').toLowerCase();
+  const out=[];
+  const runs=s.match(/[\u4e00-\u9fff]+/g)||[];
+  for(const run of runs){
+    if(run.length===1) continue;
+    for(let i=0;i<run.length-1;i++) out.push(run.slice(i,i+2));
+  }
+  return out.concat(s.match(/[a-z0-9]{2,}/g)||[]);
+}
+const V2_SYN = (()=>{
+  const m={};
+  for(const g of SYNONYMS_V2){
+    const gs=[...new Set(g.map(x=>String(x).trim().toLowerCase()).filter(Boolean))];
+    if(gs.length<2) continue;
+    for(const t of gs){ if(!m[t]) m[t]=[]; for(const x of gs){ if(!m[t].includes(x)) m[t].push(x); } }
+  }
+  return m;
+})();
+function v2Expand(term){
+  const t=String(term||'').trim().toLowerCase();
+  if(!t) return [];
+  const g=V2_SYN[t];
+  return g?[t].concat(g.filter(x=>x!==t)):[t];
+}
+function v2Parse(q){
+  const raw=String(q||'').trim();
+  const parts=raw.split(/\s*\|\s*|\s+OR\s+|\s+或\s+/i);
+  const branches=[];
+  for(const part of parts){
+    const terms=[];
+    const re=/"([^"]+)"|(\S+)/g;
+    let m;
+    while((m=re.exec(part.trim()))!==null){
+      const piece=(m[1]!==undefined?m[1]:m[2]);
+      if(!piece) continue;
+      const excl=piece.length>1&&piece.startsWith('-');
+      const term=(excl?piece.slice(1):piece).trim();
+      if(!term) continue;
+      terms.push({term:term, phrase:(m[1]!==undefined)||term.indexOf(' ')>-1,
+                  exclude:excl, variants:v2Expand(term)});
+    }
+    if(terms.length) branches.push(terms);
+  }
+  return {raw:raw, or_branches:branches};
+}
+function v2TermFieldScore(term,variants,textLower,tokens){
+  for(const v of variants){ if(v && textLower.indexOf(v)>=0) return [1.0,v]; }
+  const tt=new Set(v2Tok(term));
+  if(!tt.size) return [0,null];
+  let hit=0;
+  for(const t of tt){ if(tokens.has(t)) hit++; }
+  const overlap=hit/tt.size;
+  if(overlap<=0) return [0,null];
+  return [0.7*overlap,null];   // 多词/短语未精确命中时按 bigram 重叠打折
+}
+function v2UnitScore(u,terms){
+  const fieldScores={}, texts={}, toks={};
+  for(const f of V2_FIELDS){
+    fieldScores[f]=0;
+    texts[f]=String(u[f]||'').toLowerCase();
+    toks[f]=new Set(v2Tok(u[f]));
+  }
+  const matched=[];
+  let covered=0, phraseHit=false;
+  const weightSum=V2_FIELDS.reduce((a,f)=>a+(SEARCH_V2_WEIGHTS[f]||0),0)||1;
+  for(const t of terms){
+    let best=0, bestField=null, bestVar=null;
+    for(const f of V2_FIELDS){
+      const w=SEARCH_V2_WEIGHTS[f]||0;
+      if(w<=0) continue;
+      const r=v2TermFieldScore(t.term,t.variants,texts[f],toks[f]);
+      const s=r[0];
+      if(s>0){ fieldScores[f]+=w*s; if(s>best){ best=s; bestField=f; bestVar=r[1]; } }
+    }
+    if(t.exclude){ if(best>0) return null; continue; }
+    if(best<=0) return null;               // AND：缺任一词 → 该分支不匹配
+    covered++;
+    if(best>=1 && (bestField==='concept'||bestField==='claim')) phraseHit=true;
+    matched.push({term:t.term, field:bestField, score:Math.round(best*1000)/1000, matched_variant:bestVar});
+  }
+  if(!matched.length) return null;
+  let base=0;
+  for(const f of V2_FIELDS) base+=fieldScores[f];
+  base=Math.min(base/(weightSum*Math.max(1,terms.length)),1);
+  const coverage=covered/terms.length;
+  let score=base*(0.8+0.2*coverage);
+  if(phraseHit) score=Math.min(1,score+0.05);
+  return {score:Math.round(score*10000)/10000, coverage:coverage,
+          field_scores:fieldScores, matched:matched};
+}
+function v2SearchUnits(units,q){
+  const parsed=v2Parse(q);
+  if(!parsed.or_branches.length) return {parsed:parsed, results:[]};
+  const results=[];
+  for(const u of units){
+    let best=null;
+    for(const terms of parsed.or_branches){
+      const hit=v2UnitScore(u,terms);
+      if(hit && (best===null||hit.score>best.score)) best=hit;
+    }
+    if(best) results.push({u:u, score:best.score, explain:best});
+  }
+  results.sort((a,b)=>b.score-a.score);
+  return {parsed:parsed, results:results};
+}
+function v2GroupResults(results){
+  const map=new Map();
+  for(const r of results){
+    const key=(r.u.book||'')+'||'+(r.u.chapter||'');
+    if(!map.has(key)) map.set(key,[]);
+    map.get(key).push(r);
+  }
+  const groups=[];
+  for(const rows of map.values()){
+    rows.sort((a,b)=>b.score-a.score);
+    const best=rows[0].score;
+    const gs=best+0.3*rows.slice(1).reduce((a,r)=>a+r.score,0);
+    groups.push({book:rows[0].u.book, chapter:rows[0].u.chapter, n:rows.length,
+                 group_score:Math.round(gs*10000)/10000, rows:rows});
+  }
+  groups.sort((a,b)=>b.group_score-a.group_score);
+  return groups;
+}
+function v2Esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function v2UnitHTML(r){
+  const u=r.u;
+  const mt=(r.explain.matched||[]).map(m=>v2Esc(m.term)+(m.matched_variant&&m.matched_variant!==m.term.toLowerCase()?'→'+v2Esc(m.matched_variant):'')).join(' · ');
+  return `<div class="card unit">
+      <div class="meta"><span class="badge">${v2Esc(u.source)}</span> ${v2Esc(u.book)} · ${v2Esc(u.chapter||'—')} · p${u.p1??'?'}-${u.p2??'?'}<span class="score">相关度 ${r.score.toFixed(3)}</span></div>
+      ${u.concept?`<div class="claim"><b>${v2Esc(u.concept)}</b>：${v2Esc(u.claim)}</div>`:`<div class="claim">${v2Esc(u.claim)}</div>`}
+      ${u.evidence?`<div class="ev">原文依据：${v2Esc(u.evidence)}</div>`:''}
+      ${mt?`<div class="mt">匹配：${mt}</div>`:''}
+    </div>`;
+}
+function renderV2(q){
+  const box=$('results');
+  const list=UNITS.filter(u=>FILTER==='all'||u.source===FILTER);
+  if(!q){
+    box.innerHTML=list.slice(0,30).map(u=>v2UnitHTML({u:u,score:1,explain:{matched:[]}})).join('')
+      || '<div class="empty">暂无数据</div>';
+    $('count').textContent='引擎 v2 · 显示前 30 条（输入查询使用 v2 检索）';
+    return;
+  }
+  const resp=v2SearchUnits(list,q);
+  const results=resp.results;
+  if(!results.length){
+    box.innerHTML='<div class="empty">没有命中（引擎 v2）。语法：空格=AND、<code>|</code>=OR、<code>"短语"</code>、<code>-排除词</code>；也可切换 v1 回退。</div>';
+    $('count').textContent='引擎 v2 · 命中 0 条';
+    return;
+  }
+  const groups=v2GroupResults(results);
+  const topGroups=groups.slice(0,15);
+  box.innerHTML=topGroups.map(g=>`<div class="grp">
+      <div class="grp-head">📚 ${v2Esc(g.book||'—')} · ${v2Esc(g.chapter||'—')}
+        <span class="gscore">组相关度 ${g.group_score.toFixed(2)}</span>
+        <span class="gmeta">${g.n} 条命中</span></div>
+      ${g.rows.slice(0,3).map(v2UnitHTML).join('')}
+    </div>`).join('');
+  $('count').textContent=`引擎 v2 · 命中 ${results.length} 条 / ${groups.length} 个书·章节分组（显示前 ${topGroups.length} 组，每组前 3 条）`;
+}
 function render(){
+  if(ENGINE==='v2'){
+    try{ renderV2(LASTQ.trim()); return; }
+    catch(e){
+      console.warn('[kb_search] v2 检索异常，回退 v1：', e);
+      $('sub').textContent='v2 检索异常，已自动回退 v1：'+e.message;
+    }
+  }
+  renderV1();
+}
+function renderV1(){
   const q=LASTQ.trim();
   let list=UNITS.filter(u=>FILTER==='all'||u.source===FILTER);
   if(q){
@@ -129,6 +349,7 @@ async function load(){
   }catch(e){ $('sub').textContent='加载失败：'+e.message; }
 }
 $('go').onclick=()=>{LASTQ=$('q').value;render();};
+$('engine').onchange=()=>{ENGINE=$('engine').value;LASTQ=$('q').value;render();};
 $('q').addEventListener('keydown',e=>{if(e.key==='Enter'){LASTQ=$('q').value;render();}});
 document.querySelectorAll('button[data-f]').forEach(b=>b.onclick=()=>{FILTER=b.dataset.f;render();});
 load();

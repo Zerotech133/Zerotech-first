@@ -1,0 +1,215 @@
+{
+ "schema_version": 1,
+ "generated_at": "2026-11-01T09:21:35+08:00",
+ "mode": "run",
+ "ok": true,
+ "rc": 0,
+ "with_qa": true,
+ "steps_requested": [
+  "learning_digest",
+  "panel_daily",
+  "kb_ingest_status",
+  "kb_qa_retrieval"
+ ],
+ "duration_seconds": 2.5,
+ "steps": [
+  {
+   "name": "learning_digest",
+   "desc": "学习卡/简报/策略结论 → 每日学习摘要",
+   "script": "C:\\项目\\老田的AI助手\\tools\\kb_corpus\\learning_digest.py",
+   "args": [
+    "run"
+   ],
+   "command": [
+    "C:\\项目\\py312\\python.exe",
+    "-X",
+    "utf8",
+    "C:\\项目\\老田的AI助手\\tools\\kb_corpus\\learning_digest.py",
+    "run"
+   ],
+   "rc": 0,
+   "ok": true,
+   "elapsed_seconds": 0.11,
+   "started_at": "2026-11-01T09:21:33+08:00",
+   "outputs": [
+    {
+     "path": "C:\\项目\\老田的AI助手\\portal\\static\\kb_learning_digest.json",
+     "exists": true,
+     "mtime": "2026-11-01T09:21:33+08:00",
+     "mtime_epoch": 1793496093.306,
+     "size": 9788
+    }
+   ],
+   "stdout_tail": "生成成功：C:\\项目\\老田的AI助手\\portal\\static\\kb_learning_digest.json | date=20261101 | cards=5 | highlights=5 | points=10",
+   "stderr_tail": "",
+   "error": null
+  },
+  {
+   "name": "panel_daily",
+   "desc": "研报面板刷新门户静态 JSON 并记录状态",
+   "script": "C:\\项目\\老田的AI助手\\tools\\research\\panel_daily.py",
+   "args": [
+    "run"
+   ],
+   "command": [
+    "C:\\项目\\py312\\python.exe",
+    "-X",
+    "utf8",
+    "C:\\项目\\老田的AI助手\\tools\\research\\panel_daily.py",
+    "run"
+   ],
+   "rc": 0,
+   "ok": true,
+   "elapsed_seconds": 0.14,
+   "started_at": "2026-11-01T09:21:33+08:00",
+   "outputs": [
+    {
+     "path": "C:\\项目\\老田的AI助手\\portal\\static\\report_panel.json",
+     "exists": true,
+     "mtime": "2026-11-01T09:21:33+08:00",
+     "mtime_epoch": 1793496093.426,
+     "size": 14281
+    }
+   ],
+   "stdout_tail": "[panel_daily] mode=run status=OK elapsed=0.031s\n[panel_daily] candidates=1 rejected=2 reports=3 page_invalid=1 generated_at=2026-11-01T08:09:36+08:00\n[panel_daily] change: 候选 1→1（Δ+0）；页码越界 1→1（Δ+0）\n[panel_daily] status_file=C:\\项目\\老田的AI助手\\research\\reports\\report_panel_daily_status.json",
+   "stderr_tail": "",
+   "error": null
+  },
+  {
+   "name": "kb_ingest_status",
+   "desc": "知识入库状态 → 门户静态 JSON",
+   "script": "C:\\项目\\老田的AI助手\\tools\\kb_corpus\\kb_ingest_status.py",
+   "args": [],
+   "command": [
+    "C:\\项目\\py312\\python.exe",
+    "-X",
+    "utf8",
+    "C:\\项目\\老田的AI助手\\tools\\kb_corpus\\kb_ingest_status.py"
+   ],
+   "rc": 0,
+   "ok": true,
+   "elapsed_seconds": 0.266,
+   "started_at": "2026-11-01T09:21:33+08:00",
+   "outputs": [
+    {
+     "path": "C:\\项目\\老田的AI助手\\portal\\static\\kb_ingest.json",
+     "exists": true,
+     "mtime": "2026-11-01T09:21:33+08:00",
+     "mtime_epoch": 1793496093.704,
+     "size": 22664
+    }
+   ],
+   "stdout_tail": "写出 C:\\项目\\老田的AI助手\\portal\\static\\kb_ingest.json | books 103 pages 2491 units 498 | verify True | pipeline True",
+   "stderr_tail": "",
+   "error": null
+  },
+  {
+   "name": "kb_qa_retrieval",
+   "desc": "问答检索冒烟（--retrieval-only，不调用 LLM）",
+   "script": "C:\\项目\\老田的AI助手\\tools\\kb_corpus\\kb_qa.py",
+   "args": [
+    "ask",
+    "M9 级覆铜板对 AI 服务器 PCB 的价值量有什么影响？",
+    "--retrieval-only",
+    "--json"
+   ],
+   "command": [
+    "C:\\项目\\py312\\python.exe",
+    "-X",
+    "utf8",
+    "C:\\项目\\老田的AI助手\\tools\\kb_corpus\\kb_qa.py",
+    "ask",
+    "M9 级覆铜板对 AI 服务器 PCB 的价值量有什么影响？",
+    "--retrieval-only",
+    "--json"
+   ],
+   "rc": 0,
+   "ok": true,
+   "elapsed_seconds": 1.984,
+   "started_at": "2026-11-01T09:21:33+08:00",
+   "outputs": [],
+   "stdout_tail": "…_score\": 0.3237,\n   \"preview\": \"CoWoP（Chip-on-Wafer-on-PCB）方案去除了ABF封装基板与BGA焊球，由强化型PCB直接承担原本封装基板的信号完整性、电源管理及热管理功能，单颗GPU配套PCB价值量可达600美元，是传统方案的三倍。 CoWoP（Ch…\"\n  },\n  {\n   \"rank\": 7,\n   \"unit_id\": \"a6b4696b9ece\",\n   \"kind\": \"unit\",\n   \"book\": \"rp_AP202610071830180005\",\n   \"chapter\": \"图表目录\",\n   \"page\": 2,\n   \"page_end\": 14,\n   \"fused_score\": 0.3064,\n   \"preview\": \"PTFE作为低损耗材料的下一代路线，其介电常数约2.1-2.2、损耗低于0.0004，性能优于M9体系；但因其热塑性导致的加工难题（如钻孔毛刺），产业化需采用'PTFE芯层+M9半固化片’的混压结构来平衡信号完整性与工艺可行性。 PTFE是…\"\n  },\n  {\n   \"rank\": 8,\n   \"unit_id\": \"237133c8473d\",\n   \"kind\": \"unit\",\n   \"book\": \"rp_AP202609301830015404\",\n   \"chapter\": \"全球劳动力、资源与网络安全运营更新报告\",\n   \"page\": 1,\n   \"page_end\": 13,\n   \"fused_score\": 0.2994,\n   \"preview\": \"尽管AI应用加速，但仅有8%的企业尚未在安全运营中应用AI，且仅8%的企业定期开展AI相关事件响应演练。 AI在安全运营中的应用正在加速，但AI治理和事件响应的成熟度仍明显偏低。13%的企业尚未在安全运营中应用Al。仅8%的企业定期开展AI…\"\n  }\n ],\n \"llm\": {\n  \"model\": \"qwen3.5:9b\",\n  \"endpoint\": \"http://127.0.0.1:11434/api/chat\",\n  \"think\": false,\n  \"timeout_seconds\": 300,\n  \"fallback\": false,\n  \"error\": null\n },\n \"generated_at\": \"2026-11-01T09:21:35+08:00\",\n \"answer\": null,\n \"citations\": [],\n \"confidence\": {\n  \"level\": \"n/a\",\n  \"reasons\": [\n   \"仅检索模式\"\n  ]\n },\n \"fallback\": false,\n \"elapsed_seconds\": 1.8\n}",
+   "stderr_tail": "",
+   "error": null
+  }
+ ],
+ "latest": {
+  "learning_digest": {
+   "path": "C:\\项目\\老田的AI助手\\portal\\static\\kb_learning_digest.json",
+   "exists": true,
+   "mtime": "2026-11-01T09:21:33+08:00",
+   "mtime_epoch": 1793496093.306,
+   "size": 9788
+  },
+  "panel_daily": {
+   "path": "C:\\项目\\老田的AI助手\\portal\\static\\report_panel.json",
+   "exists": true,
+   "mtime": "2026-11-01T09:21:33+08:00",
+   "mtime_epoch": 1793496093.426,
+   "size": 14281
+  },
+  "kb_ingest_status": {
+   "path": "C:\\项目\\老田的AI助手\\portal\\static\\kb_ingest.json",
+   "exists": true,
+   "mtime": "2026-11-01T09:21:33+08:00",
+   "mtime_epoch": 1793496093.704,
+   "size": 22664
+  },
+  "panel_daily_status": {
+   "path": "C:\\项目\\老田的AI助手\\research\\reports\\report_panel_daily_status.json",
+   "exists": true,
+   "mtime": "2026-11-01T09:21:33+08:00",
+   "mtime_epoch": 1793496093.445,
+   "size": 11182
+  },
+  "kb_qa_samples": {
+   "path": "C:\\项目\\老田的AI助手\\portal\\static\\kb_qa_samples.json",
+   "exists": true,
+   "mtime": "2026-11-01T09:14:56+08:00",
+   "mtime_epoch": 1793495696.3,
+   "size": 12792
+  }
+ },
+ "portal_refresh": [
+  {
+   "path": "portal/static/kb_learning_digest.json",
+   "producer": "learning_digest",
+   "page": "/kb_reports.html",
+   "section": "📚 学习卡（每日 5 张）/ 📰 今日简报",
+   "exists": true,
+   "mtime": "2026-11-01T09:21:33+08:00",
+   "size": 9788
+  },
+  {
+   "path": "portal/static/report_panel.json",
+   "producer": "panel_daily",
+   "page": "/selection.html",
+   "section": "研报候选（多智能体）",
+   "exists": true,
+   "mtime": "2026-11-01T09:21:33+08:00",
+   "size": 14281
+  },
+  {
+   "path": "portal/static/kb_ingest.json",
+   "producer": "kb_ingest_status",
+   "page": "/kb_ingest.html",
+   "section": "知识入库状态",
+   "exists": true,
+   "mtime": "2026-11-01T09:21:33+08:00",
+   "size": 22664
+  },
+  {
+   "path": "portal/static/kb_qa_samples.json",
+   "producer": "kb_qa samples（手动/可选）",
+   "page": "（暂无页面消费，备用）",
+   "section": "问答示范样本",
+   "exists": true,
+   "mtime": "2026-11-01T09:14:56+08:00",
+   "size": 12792
+  }
+ ],
+ "errors": [],
+ "warnings": [],
+ "disclaimer": "本编排仅刷新研究/学习材料（学习卡、研报面板、入库状态、问答检索冒烟），全部为内部研究输出，不构成投资建议；单步失败已隔离记录，不影响后续步骤。",
+ "_status_path": "C:\\项目\\老田的AI助手\\research\\reports\\daily_kb_status.json"
+}
