@@ -1608,7 +1608,8 @@
    "agents": [
     "DATA1",
     "FACTOR1",
-    "DATA2"
+    "DATA2",
+    "DATA3"
    ],
    "agent_profiles": [
     {
@@ -1789,6 +1790,66 @@
        ],
        "execute": [
         "dw_etl_dryrun"
+       ],
+       "danger": "deny"
+      }
+     }
+    },
+    {
+     "agent_id": "DATA3",
+     "role_profile": "data_quality",
+     "charter_detail": "数据质量与标准（试运行）：质量规则/断言、freshness/断流、manifest/备份/血缘巡检、质量日报与告警、资质分级标准。",
+     "llm_binding": "glm/glm-5.3-flash",
+     "tools": [
+      "devtask",
+      "events"
+     ],
+     "memory_grants": {
+      "read": [
+       "domain/*",
+       "dept/data/*",
+       "dept/dev/*",
+       "agent/DATA3/*"
+      ],
+      "write": [
+       "agent/DATA3/*",
+       "dept/data/observation"
+      ]
+     },
+     "grade": "E2",
+     "grade_note": "2026-11-02 老田批准入册试运行，2 周质量日报后转正",
+     "trial": {
+      "start": "2026-11-02",
+      "end": "2026-11-16",
+      "review_metric": "连续质量日报 >=10 天且 hard_ok=true，断流/drift 告警闭环"
+     },
+     "attributes": {
+      "experience": "数据质量/标准/资质分级（九品中正式品评）",
+      "specialties": [
+       "质量规则",
+       "freshness/drift",
+       "manifest/backup",
+       "血缘",
+       "质量日报"
+      ],
+      "knowledge": [
+       "数据仓研发计划 v3",
+       "数据仓新能力清单"
+      ],
+      "tools_allowed": {
+       "read": [
+        "data/**",
+        "reports/**",
+        "docs/**",
+        "research/reports/**"
+       ],
+       "write": [
+        "research/reports/**",
+        "quality_reports/**",
+        "docs/**"
+       ],
+       "execute": [
+        "dw_quality"
        ],
        "danger": "deny"
       }

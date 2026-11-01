@@ -1,0 +1,33 @@
+{
+ "agent_id": "DATA3",
+ "dept": "data",
+ "title": "数据智能部：数据质量与标准（试运行）",
+ "rank": "E2",
+ "trial": {
+  "start": "2026-11-02",
+  "end": "2026-11-16",
+  "review": "2 周质量日报后转正"
+ },
+ "tools_allowed": {
+  "read": [
+   "data/**",
+   "reports/**",
+   "docs/**",
+   "research/reports/**"
+  ],
+  "write": [
+   "research/reports/**",
+   "quality_reports/**",
+   "docs/**"
+  ],
+  "execute": [
+   "dw_quality"
+  ],
+  "danger": "deny"
+ },
+ "onboarded": "2026-11-02（老田批准入册试运行）",
+ "approvals": {
+  "chief": "A0",
+  "human": "laotian"
+ }
+}

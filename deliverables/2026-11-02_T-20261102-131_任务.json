@@ -1,0 +1,20 @@
+{
+ "task_id": "T-20261102-131",
+ "opened_by": "A0",
+ "assigned_dept": "dev",
+ "assigned_agent": null,
+ "title": "11-16 双评审：DATA3 陈群转正 + dw-etl 写版评审",
+ "body": "【评审排期】2026-11-02\n1) DATA3 陈群试运行（11-02~11-16）：以 quality_daily_*.json 连续 ≥10 天且 hard_ok=true 为转正硬证据；\n2) dw-etl 写版：dry-run 台账 2 周 + 无事故 → 决定是否升级为 confirm+审计写 MCP；\n评审人：A0/老田、DATA1 张松、QA1 于禁；产出：转正/延期/终止结论 + 审计记录。",
+ "severity": "P1",
+ "status": "open",
+ "created_at": "2026-11-02T04:01:39",
+ "due": "2026-11-16",
+ "closure_note": null,
+ "history": [
+  {
+   "at": "2026-11-02T04:01:39",
+   "by": "A0",
+   "action": "open"
+  }
+ ]
+}

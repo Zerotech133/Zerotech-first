@@ -140,6 +140,75 @@
      "enabled": true
     }
    ]
+  },
+  {
+   "agent_id": "DATA3",
+   "role_profile": "data_quality",
+   "analysis_type": "data_quality",
+   "node_key": "data3_quality",
+   "parent_node_keys": [],
+   "level": 1,
+   "is_parallel": true,
+   "wait_all_complete": false,
+   "llm_binding": "glm/glm-5.3-flash",
+   "tools": [
+    "devtask",
+    "events"
+   ],
+   "memory_grants": {
+    "read": [
+     "domain/*",
+     "dept/data/*",
+     "agent/DATA3/*"
+    ],
+    "write": [
+     "agent/DATA3/*",
+     "dept/data/observation"
+    ]
+   },
+   "grade": "E2",
+   "grade_note": "试运行 2026-11-02~11-16",
+   "charter_detail": "数据质量与标准（试运行）：质量规则/新鲜度/断流/manifest/血缘巡检与质量日报。",
+   "attributes": {
+    "experience": "数据质量/标准/资质分级",
+    "specialties": [
+     "质量规则",
+     "freshness/drift",
+     "manifest",
+     "血缘"
+    ],
+    "knowledge": [
+     "数据仓研发计划 v3"
+    ],
+    "tools_allowed": {
+     "read": [
+      "data/**",
+      "reports/**",
+      "docs/**",
+      "research/reports/**"
+     ],
+     "write": [
+      "research/reports/**",
+      "quality_reports/**"
+     ],
+     "execute": [
+      "dw_quality"
+     ],
+     "danger": "deny"
+    }
+   },
+   "skills": [
+    {
+     "id": "devtask",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ]
   }
  ]
 }

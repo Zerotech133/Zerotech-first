@@ -1,0 +1,20 @@
+{
+ "task_id": "T-20261102-130",
+ "opened_by": "A0",
+ "assigned_dept": "dev",
+ "assigned_agent": null,
+ "title": "平台线：4 个只读 MCP 建设（dw-quality/dw-catalog/factor-tools/kb-corpus）",
+ "body": "【排期】2026-11-02 老田批准\n按《平台线只读MCP建设排期 v1》执行：\nW2 dw-quality/dw-catalog；W3 factor-tools/kb-corpus；只读/stdio/测试≥2/次；注册 Hermes 需 L2。\n验收：4 个 Hermes 4 问 E2E 真实数据；排期文档 docs/plans/2026-11-02_平台线只读MCP建设排期_v1.md。",
+ "severity": "P1",
+ "status": "open",
+ "created_at": "2026-11-02T04:01:39",
+ "due": "2026-11-20",
+ "closure_note": null,
+ "history": [
+  {
+   "at": "2026-11-02T04:01:39",
+   "by": "A0",
+   "action": "open"
+  }
+ ]
+}

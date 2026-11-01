@@ -1,95 +1,368 @@
 {
-  "_note": "数据智能部（兰台）组织架构与岗位合同 v2（机器可读；配套 docs/plans/2026-11-02_数据智能部组织架构与岗位说明书_v1.md）",
-  "version": 2,
-  "generated_at": "2026-11-02T03:50:00+08:00",
-  "chief": "A0",
-  "dept": "data",
-  "dept_name": "数据智能部（兰台）",
-  "lead": "DATA1",
-  "principle": "数据仓=一切可结构化、未来可用、能调取的数据的统一管理者",
-  "ai_ready_standard": ["agent", "llm_binding", "mcp_tools", "memory_grants", "daily_work", "kpi", "hitl"],
-  "positions": [
-    {
-      "agent_id": "DATA1", "cn_name": "张松", "zi": "子乔", "title": "兰台令（数据智能部长）",
-      "rank": "E3", "status": "active", "reports_to": "A0",
-      "groups": ["数据工程组", "数据质量与标准组", "元数据与资质组", "语料与情报结构化组", "因子挖掘组"],
-      "functions": ["数据仓架构与治理", "口径/资质/权限审批", "排产与交付验收", "团队与委员会执行"],
-      "skills": ["数据架构(ODS/DWD/DWS/ADS)", "治理框架(DAMA/DCMM/PIT/血缘)", "数据工程(Python/SQL/Parquet/SQLite)", "Agent/MCP工程", "项目管理"],
-      "llm_binding": "glm/glm-5.3",
-      "mcp_tools": ["dw_stats", "dw_list", "dw_search", "dw_get", "dw_sample", "dataops_query"],
-      "memory": {"read": ["domain/*", "dept/data/*", "dept/dev/*", "agent/DATA1/*"], "write": ["agent/DATA1/*", "dept/data/observation"]},
-      "hitl": "read_free_write_approval",
-      "kpi": ["登记率100%", "统一入口可达100%", "数据健康日报", "团队KPI达成"]
-    },
-    {
-      "agent_id": "DATA2", "cn_name": "刘巴", "zi": "子初", "title": "数据工程师（清洗/ETL）",
-      "rank": "E1", "status": "active_trial_2w", "reports_to": "DATA1",
-      "functions": ["清洗批次执行", "staging落盘/回执", "增量/回填", "raw只读纪律"],
-      "skills": ["Python/pandas/pyarrow", "SQL(SQLite/PG)", "ETL/ELT与调度", "数据建模", "分区/增量/回填幂等", "Parquet/JSONL", "质检断言"],
-      "llm_binding": "ollama/qwen3.5:9b",
-      "mcp_tools": ["dw_etl_dryrun", "dw_sample", "dw_get"],
-      "memory": {"read": ["domain/*", "dept/data/*", "agent/DATA2/*"], "write": ["agent/DATA2/*", "dept/data/observation", "staging/**"]},
-      "hitl": "write_staging_requires_DATA1_approval",
-      "kpi": ["清洗成功率>=99%", "回执100%", "staging可复跑"]
-    },
-    {
-      "agent_id": "DATA3", "cn_name": "陈群", "zi": "长文", "title": "数据质量与标准（试运行）",
-      "rank": "E2", "status": "trial_matrix", "reports_to": "DATA1",
-      "functions": ["质量规则/断言", "新鲜度/断流监测", "manifest/备份/血缘巡检", "质量日报与告警", "资质分级标准"],
-      "skills": ["数据质量体系", "freshness/drift/manifest", "统计与抽样", "血缘", "告警分级", "Python/SQL", "质量门禁CI"],
-      "llm_binding": "ollama/qwen3.5:9b",
-      "mcp_tools": ["dw_stats", "dw_list", "planned:dw_quality"],
-      "memory": {"read": ["domain/*", "dept/data/*", "agent/DATA3/*"], "write": ["agent/DATA3/*", "dept/data/observation"]},
-      "hitl": "read_only_and_create_alert_tasks",
-      "kpi": ["断流0", "drift哨兵可用", "manifest缺项0", "质量日报按时100%"]
-    },
-    {
-      "agent_id": "DATA4", "cn_name": "杨仪", "zi": "威公", "title": "元数据与资质（规划）",
-      "rank": "E2", "status": "planned_gate_sprint3", "reports_to": "DATA1",
-      "functions": ["catalog/registry维护", "数据集登记与别名", "资质证据链/生命周期", "权限申请与审计", "口径映射"],
-      "skills": ["元数据管理", "OpenMetadata/Atlas", "数据契约ODCS", "RBAC", "资质取证", "YAML/JSON Schema"],
-      "llm_binding": "glm/glm-5.3-flash",
-      "mcp_tools": ["dw_stats", "dw_list", "dw_get", "planned:dw_catalog"],
-      "memory": {"read": ["dept/data/*", "docs/*", "agent/DATA4/*"], "write": ["agent/DATA4/*", "dept/data/observation"]},
-      "hitl": "registry_change_requires_DATA1_approval",
-      "kpi": ["登记314/314", "资质unknown<15%", "口径映射唯一"]
-    },
-    {
-      "agent_id": "DATA5", "cn_name": "谯周", "zi": "允南", "title": "语料与情报结构化（规划）",
-      "rank": "E2", "status": "planned_gate_sprint3", "reports_to": "DATA1",
-      "functions": ["YouTube语料层", "研报/公告/雪球结构化", "语料登记/血缘", "标注规范与抽检"],
-      "skills": ["文本/视频语料处理", "NLP/RAG", "知识图谱/单元化", "采集与合规", "Python/JSONL/Parquet", "标注与评测"],
-      "llm_binding": "ollama/qwen3.6:35b-a3b",
-      "mcp_tools": ["dw_sample", "planned:kb_corpus"],
-      "memory": {"read": ["domain/*", "dept/data/*", "agent/DATA5/*"], "write": ["agent/DATA5/*", "dept/data/observation"]},
-      "hitl": "derived_write_requires_DATA1_approval",
-      "kpi": ["语料层登记14/14", "语料可检索", "知识单元覆盖", "RAG引用率"]
-    },
-    {
-      "agent_id": "FACTOR1", "cn_name": "蒋琬", "zi": "公琰", "title": "因子挖掘师",
-      "rank": "E2", "status": "active", "reports_to": "DATA1",
-      "functions": ["每日因子轮", "新因子候选/四关前置", "PIT全池口径", "因子日报/提案"],
-      "skills": ["量化因子构造", "IC/分层/多空", "PIT/幸存者偏差", "四关", "Python/pandas/numpy/SQL", "统计检验"],
-      "llm_binding": "ollama/qwen3.5:9b",
-      "mcp_tools": ["planned:factor_tools"],
-      "memory": {"read": ["domain/*", "dept/data/*", "dept/invest/*", "agent/FACTOR1/*"], "write": ["agent/FACTOR1/*", "dept/data/observation", "research/reports/factor_daily_*"]},
-      "hitl": "proposal_only_no_registry",
-      "kpi": ["每日因子日报", "周提案>=2", "无前视/幸存者违规"]
-    }
-  ],
-  "platform_virtual": [
-    {"agent_id": "DEV1", "cn_name": "马钧", "role": "平台集成（MCP/API/调度）", "reports_to": "DEV lead", "status": "active"},
-    {"agent_id": "DEV2", "cn_name": "刘晔", "role": "平台工程支援", "reports_to": "DEV lead", "status": "active"}
-  ],
-  "governance_committee": {
-    "chair": "A0", "executor": "DATA1",
-    "members": [{"agent_id": "ZHAOYUN", "cn_name": "赵云", "role": "审计"}, {"agent_id": "QA1", "cn_name": "于禁", "role": "验收"}, {"agent_id": "DEV1", "cn_name": "马钧", "role": "平台"}, {"agent_id": "STRAT owner", "cn_name": "司马微", "role": "需求方"}],
-    "cadence": "monthly"
+ "_note": "数据智能部（兰台）组织架构与岗位合同 v2（机器可读；配套 docs/plans/2026-11-02_数据智能部组织架构与岗位说明书_v1.md）",
+ "version": 2,
+ "generated_at": "2026-11-02T03:50:00+08:00",
+ "chief": "A0",
+ "dept": "data",
+ "dept_name": "数据智能部（兰台）",
+ "lead": "DATA1",
+ "principle": "数据仓=一切可结构化、未来可用、能调取的数据的统一管理者",
+ "ai_ready_standard": [
+  "agent",
+  "llm_binding",
+  "mcp_tools",
+  "memory_grants",
+  "daily_work",
+  "kpi",
+  "hitl"
+ ],
+ "positions": [
+  {
+   "agent_id": "DATA1",
+   "cn_name": "张松",
+   "zi": "子乔",
+   "title": "兰台令（数据智能部长）",
+   "rank": "E3",
+   "status": "active",
+   "reports_to": "A0",
+   "groups": [
+    "数据工程组",
+    "数据质量与标准组",
+    "元数据与资质组",
+    "语料与情报结构化组",
+    "因子挖掘组"
+   ],
+   "functions": [
+    "数据仓架构与治理",
+    "口径/资质/权限审批",
+    "排产与交付验收",
+    "团队与委员会执行"
+   ],
+   "skills": [
+    "数据架构(ODS/DWD/DWS/ADS)",
+    "治理框架(DAMA/DCMM/PIT/血缘)",
+    "数据工程(Python/SQL/Parquet/SQLite)",
+    "Agent/MCP工程",
+    "项目管理"
+   ],
+   "llm_binding": "glm/glm-5.3",
+   "mcp_tools": [
+    "dw_stats",
+    "dw_list",
+    "dw_search",
+    "dw_get",
+    "dw_sample",
+    "dataops_query"
+   ],
+   "memory": {
+    "read": [
+     "domain/*",
+     "dept/data/*",
+     "dept/dev/*",
+     "agent/DATA1/*"
+    ],
+    "write": [
+     "agent/DATA1/*",
+     "dept/data/observation"
+    ]
+   },
+   "hitl": "read_free_write_approval",
+   "kpi": [
+    "登记率100%",
+    "统一入口可达100%",
+    "数据健康日报",
+    "团队KPI达成"
+   ]
   },
-  "gaps_to_ai_ready": [
-    "DATA3/4/5 尚无 agent 入册与 HR 档案",
-    "dw-quality / dw-catalog / kb-corpus / factor-tools 四类 MCP 未建",
-    "dw-etl 写版未批准（仅 dry-run）",
-    "daily_work 尚无质量/清洗/语料巡检任务"
-  ]
+  {
+   "agent_id": "DATA2",
+   "cn_name": "刘巴",
+   "zi": "子初",
+   "title": "数据工程师（清洗/ETL）",
+   "rank": "E1",
+   "status": "active_trial_2w",
+   "reports_to": "DATA1",
+   "functions": [
+    "清洗批次执行",
+    "staging落盘/回执",
+    "增量/回填",
+    "raw只读纪律"
+   ],
+   "skills": [
+    "Python/pandas/pyarrow",
+    "SQL(SQLite/PG)",
+    "ETL/ELT与调度",
+    "数据建模",
+    "分区/增量/回填幂等",
+    "Parquet/JSONL",
+    "质检断言"
+   ],
+   "llm_binding": "ollama/qwen3.5:9b",
+   "mcp_tools": [
+    "dw_etl_dryrun",
+    "dw_sample",
+    "dw_get"
+   ],
+   "memory": {
+    "read": [
+     "domain/*",
+     "dept/data/*",
+     "agent/DATA2/*"
+    ],
+    "write": [
+     "agent/DATA2/*",
+     "dept/data/observation",
+     "staging/**"
+    ]
+   },
+   "hitl": "write_staging_requires_DATA1_approval",
+   "kpi": [
+    "清洗成功率>=99%",
+    "回执100%",
+    "staging可复跑"
+   ]
+  },
+  {
+   "agent_id": "DATA3",
+   "cn_name": "陈群",
+   "zi": "长文",
+   "title": "数据质量与标准（试运行）",
+   "rank": "E2",
+   "status": "trial_active",
+   "reports_to": "DATA1",
+   "functions": [
+    "质量规则/断言",
+    "新鲜度/断流监测",
+    "manifest/备份/血缘巡检",
+    "质量日报与告警",
+    "资质分级标准"
+   ],
+   "skills": [
+    "数据质量体系",
+    "freshness/drift/manifest",
+    "统计与抽样",
+    "血缘",
+    "告警分级",
+    "Python/SQL",
+    "质量门禁CI"
+   ],
+   "llm_binding": "ollama/qwen3.5:9b",
+   "mcp_tools": [
+    "dw_stats",
+    "dw_list",
+    "planned:dw_quality"
+   ],
+   "memory": {
+    "read": [
+     "domain/*",
+     "dept/data/*",
+     "agent/DATA3/*"
+    ],
+    "write": [
+     "agent/DATA3/*",
+     "dept/data/observation"
+    ]
+   },
+   "hitl": "read_only_and_create_alert_tasks",
+   "kpi": [
+    "断流0",
+    "drift哨兵可用",
+    "manifest缺项0",
+    "质量日报按时100%"
+   ],
+   "trial": {
+    "start": "2026-11-02",
+    "end": "2026-11-16"
+   }
+  },
+  {
+   "agent_id": "DATA4",
+   "cn_name": "杨仪",
+   "zi": "威公",
+   "title": "元数据与资质（规划）",
+   "rank": "E2",
+   "status": "planned_gate_sprint3",
+   "reports_to": "DATA1",
+   "functions": [
+    "catalog/registry维护",
+    "数据集登记与别名",
+    "资质证据链/生命周期",
+    "权限申请与审计",
+    "口径映射"
+   ],
+   "skills": [
+    "元数据管理",
+    "OpenMetadata/Atlas",
+    "数据契约ODCS",
+    "RBAC",
+    "资质取证",
+    "YAML/JSON Schema"
+   ],
+   "llm_binding": "glm/glm-5.3-flash",
+   "mcp_tools": [
+    "dw_stats",
+    "dw_list",
+    "dw_get",
+    "planned:dw_catalog"
+   ],
+   "memory": {
+    "read": [
+     "dept/data/*",
+     "docs/*",
+     "agent/DATA4/*"
+    ],
+    "write": [
+     "agent/DATA4/*",
+     "dept/data/observation"
+    ]
+   },
+   "hitl": "registry_change_requires_DATA1_approval",
+   "kpi": [
+    "登记314/314",
+    "资质unknown<15%",
+    "口径映射唯一"
+   ]
+  },
+  {
+   "agent_id": "DATA5",
+   "cn_name": "谯周",
+   "zi": "允南",
+   "title": "语料与情报结构化（规划）",
+   "rank": "E2",
+   "status": "planned_gate_sprint3",
+   "reports_to": "DATA1",
+   "functions": [
+    "YouTube语料层",
+    "研报/公告/雪球结构化",
+    "语料登记/血缘",
+    "标注规范与抽检"
+   ],
+   "skills": [
+    "文本/视频语料处理",
+    "NLP/RAG",
+    "知识图谱/单元化",
+    "采集与合规",
+    "Python/JSONL/Parquet",
+    "标注与评测"
+   ],
+   "llm_binding": "ollama/qwen3.6:35b-a3b",
+   "mcp_tools": [
+    "dw_sample",
+    "planned:kb_corpus"
+   ],
+   "memory": {
+    "read": [
+     "domain/*",
+     "dept/data/*",
+     "agent/DATA5/*"
+    ],
+    "write": [
+     "agent/DATA5/*",
+     "dept/data/observation"
+    ]
+   },
+   "hitl": "derived_write_requires_DATA1_approval",
+   "kpi": [
+    "语料层登记14/14",
+    "语料可检索",
+    "知识单元覆盖",
+    "RAG引用率"
+   ]
+  },
+  {
+   "agent_id": "FACTOR1",
+   "cn_name": "蒋琬",
+   "zi": "公琰",
+   "title": "因子挖掘师",
+   "rank": "E2",
+   "status": "active",
+   "reports_to": "DATA1",
+   "functions": [
+    "每日因子轮",
+    "新因子候选/四关前置",
+    "PIT全池口径",
+    "因子日报/提案"
+   ],
+   "skills": [
+    "量化因子构造",
+    "IC/分层/多空",
+    "PIT/幸存者偏差",
+    "四关",
+    "Python/pandas/numpy/SQL",
+    "统计检验"
+   ],
+   "llm_binding": "ollama/qwen3.5:9b",
+   "mcp_tools": [
+    "planned:factor_tools"
+   ],
+   "memory": {
+    "read": [
+     "domain/*",
+     "dept/data/*",
+     "dept/invest/*",
+     "agent/FACTOR1/*"
+    ],
+    "write": [
+     "agent/FACTOR1/*",
+     "dept/data/observation",
+     "research/reports/factor_daily_*"
+    ]
+   },
+   "hitl": "proposal_only_no_registry",
+   "kpi": [
+    "每日因子日报",
+    "周提案>=2",
+    "无前视/幸存者违规"
+   ]
+  }
+ ],
+ "platform_virtual": [
+  {
+   "agent_id": "DEV1",
+   "cn_name": "马钧",
+   "role": "平台集成（MCP/API/调度）",
+   "reports_to": "DEV lead",
+   "status": "active"
+  },
+  {
+   "agent_id": "DEV2",
+   "cn_name": "刘晔",
+   "role": "平台工程支援",
+   "reports_to": "DEV lead",
+   "status": "active"
+  }
+ ],
+ "governance_committee": {
+  "chair": "A0",
+  "executor": "DATA1",
+  "members": [
+   {
+    "agent_id": "ZHAOYUN",
+    "cn_name": "赵云",
+    "role": "审计"
+   },
+   {
+    "agent_id": "QA1",
+    "cn_name": "于禁",
+    "role": "验收"
+   },
+   {
+    "agent_id": "DEV1",
+    "cn_name": "马钧",
+    "role": "平台"
+   },
+   {
+    "agent_id": "STRAT owner",
+    "cn_name": "司马微",
+    "role": "需求方"
+   }
+  ],
+  "cadence": "monthly"
+ },
+ "gaps_to_ai_ready": [
+  "DATA4/5 尚未入册（Sprint3 gate）；4 类只读 MCP 未建（平台线已排期）；dw-etl 写版 2 周后评审",
+  "dw-quality / dw-catalog / kb-corpus / factor-tools 四类 MCP 未建",
+  "dw-etl 写版未批准（仅 dry-run）",
+  "daily_work 尚无质量/清洗/语料巡检任务"
+ ]
 }

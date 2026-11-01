@@ -1,0 +1,68 @@
+{
+ "generated_at": "2026-11-02T04:01:08+08:00",
+ "date": "20261102",
+ "checks": {
+  "catalog_snapshot": {
+   "rc": 1,
+   "status": "warn",
+   "ok": false,
+   "issues": [
+    "抽样中 1 张表文件数与登记差异 >1（drift_warn）"
+   ],
+   "issue_count": 1
+  },
+  "metadata_consistency": {
+   "rc": 0,
+   "status": "ok",
+   "ok": true,
+   "stdout_tail": "元数据一致性：catalog v18 / 256 表 / registry 256 物理\nresult: PASS",
+   "stderr_tail": ""
+  },
+  "freshness_report": {
+   "rc": 1,
+   "status": "warn",
+   "ok": false,
+   "issues": [
+    "daily 最新=20261030（滞后 3 天）",
+    "adj_factor 最新=20261030（滞后 3 天）",
+    "daily_basic 最新=20261030（滞后 3 天）",
+    "index_daily 最新=20261030（滞后 3 天）",
+    "moneyflow 最新=20261030（滞后 3 天）",
+    "quant.db 停摆：chanlun_pool.detect_date 滞后 3 天"
+   ],
+   "issue_count": 6
+  },
+  "manifest_check": {
+   "rc": 0,
+   "status": "ok",
+   "ok": true,
+   "issues": [],
+   "issue_count": 0
+  },
+  "quality_test": {
+   "rc": 0,
+   "status": "ok",
+   "ok": true,
+   "issues": [],
+   "issue_count": 0
+  }
+ },
+ "registry": {
+  "physical_count": 256,
+  "display_count": 92,
+  "qualification": {
+   "unknown": 223,
+   "evidence_partial": 25,
+   "deprecated": 1,
+   "planned": 7
+  },
+  "catalog_sha256_match": null
+ },
+ "summary": {
+  "checks_total": 5,
+  "checks_ok": 3,
+  "checks_warn": 2,
+  "checks_error": 0,
+  "hard_ok": true
+ }
+}

@@ -1,7 +1,7 @@
 {
  "_note": "每日工作项目录（单一真相源）。一个席位每天干什么，写在这里，不写在文档里。每条都必须带可检查的证据，否则不收录。改动与代码同批提交。",
  "version": 2,
- "updated": "2026-11-01",
+ "updated": "2026-11-02",
  "schema_doc": {
   "id": "事项编号，全局唯一",
   "agent": "负责人席位（对应 org.json 的 agent_id）",
@@ -533,6 +533,51 @@
     "max_age_h": 26
    },
    "on_miss": "A0 催办 FACTOR1（张松团队），检查数据同步是否到点"
+  },
+  {
+   "id": "DATA-04",
+   "agent": "DATA1",
+   "dept": "data",
+   "title": "数据仓健康巡检（快照/断流/drift/覆盖）",
+   "why": "驾驶舱与健康日报是一日数据状态的唯一可核证据；断流与漂移必须在早间发现",
+   "freq": "daily@06:30",
+   "evidence": {
+    "type": "file",
+    "path": "portal/static/dw_snapshot.json",
+    "max_age_h": 26,
+    "note": "dw_dashboard 生成的驾驶舱快照；W1 要求自动刷新"
+   },
+   "on_miss": "A0 催办 DATA1，并检查 dw_snapshot 生成任务/会话 cron"
+  },
+  {
+   "id": "DATA-05",
+   "agent": "DATA2",
+   "dept": "data",
+   "title": "清洗 dry-run 批次台账（不执行写）",
+   "why": "清洗执行层必须每日演练计划并留回执；dry-run 台账是 DATA2 上岗证据",
+   "freq": "daily@06:40",
+   "evidence": {
+    "type": "file",
+    "path": "research/ledger/etl_dryrun.jsonl",
+    "max_age_h": 26,
+    "note": "tools/datawarehouse/etl_dryrun_daily.py 生成；executed 必须为 false"
+   },
+   "on_miss": "A0 催办 DATA2，检查 etl_dryrun_daily.py 与 dw-etl-dryrun MCP"
+  },
+  {
+   "id": "DATA-06",
+   "agent": "DATA3",
+   "dept": "data",
+   "title": "数据仓质量日报（5 项检查+资质分布）",
+   "why": "质量日报是 DATA3 试运行转正的唯一硬证据；hard_ok=false 即告警",
+   "freq": "daily@07:00",
+   "evidence": {
+    "type": "file",
+    "path": "research/reports/quality_daily_*.json",
+    "max_age_h": 26,
+    "note": "quality_daily.py 生成；hard_ok 字段为硬判据"
+   },
+   "on_miss": "A0 催办 DATA3（陈群，试运行），连续 2 天缺则提前结束试运行评审"
   }
  ]
 }
