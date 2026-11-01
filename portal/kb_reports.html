@@ -61,6 +61,14 @@ select#engine{background:var(--panel2);color:var(--fg);border:1px solid var(--bd
 .grp-head .gmeta{color:var(--dim);font-weight:normal;font-size:11px}
 .unit .score{float:right;color:var(--acc);font-size:11px;font-weight:700}
 .unit .mt{color:var(--dim);font-size:11px;margin-top:4px}
+/* 问答示例（静态 · /static/kb_qa_samples.json） */
+.qa-card{background:var(--panel2);border:1px solid var(--bd);border-radius:8px;padding:12px;margin:8px 0}
+.qa-q{font-size:13px;font-weight:700;margin:0 0 4px;color:#e6edf3}
+.qa-a{font-size:13px;color:#c9d1d9;margin:0}
+.qa-cites{margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:11px;color:var(--dim)}
+.qa-cite{background:#0a0e14;border:1px solid #30363d;border-radius:10px;padding:1px 8px}
+.qa-conf{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:700}
+.qa-note{color:var(--dim);font-size:11px;margin-top:10px;border-top:1px dashed var(--bd);padding-top:8px}
 </style>
 <script src="/static/nav.js" defer></script></head>
 <body>
@@ -111,6 +119,12 @@ select#engine{background:var(--panel2);color:var(--fg);border:1px solid var(--bd
   <b>📡 H18 业绩预告修订观察</b>
   <div class="muted" id="h18-meta" style="margin:4px 0">加载中…</div>
   <table><thead><tr><th>代码</th><th>报告期</th><th>类型</th><th>方向</th><th>Δ中值(pp)</th></tr></thead><tbody id="h18-body"></tbody></table>
+</div>
+
+<div class="panel" id="qa-sample-panel">
+  <div class="panel-head"><b>💬 问答示例（静态）</b><span class="sub" id="qa-meta">加载中…</span></div>
+  <div id="qa-body"><div class="empty">加载中…</div></div>
+  <div class="qa-note" id="qa-note">HTTP 问答接口待 8091 审批，当前为静态示例；回答依据知识库检索材料，仅供参考，不构成投资建议。</div>
 </div>
 
 <div class="foot">数据源：<code>C:/项目/PDF/_ingest*</code> · 治理卡：<code>/dw.html</code> · 状态：<code>/kb_ingest.html</code></div>
@@ -518,6 +532,63 @@ loadH18();
     }
   });
   obs.observe(results, {childList:true, subtree:true});
+})();
+</script>
+
+<script>
+/* ===== 问答示例（静态 · /static/kb_qa_samples.json） =====
+   说明：HTTP 问答接口待 8091 审批，当前仅展示 wave7 生成的静态样本；
+   失败/无数据均降级为文案，不影响本页检索/学习卡/简报/H18 区块。 */
+(function(){
+  const qid=function(id){return document.getElementById(id);};
+  const qesc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});};
+  const body=qid('qa-body'), meta=qid('qa-meta');
+  const CONF_STYLE={high:'background:#12301c;color:#3fb950',medium:'background:#2b2410;color:#d29922',
+                    low:'background:#2a1512;color:#f85149',none:'background:#122642;color:#79c0ff'};
+  const CONF_LABEL={high:'高置信',medium:'中置信',low:'低置信',none:'拒答/无依据'};
+  function renderQA(d){
+    const samples=(d&&d.samples)||[];
+    if(!samples.length){
+      if(meta) meta.textContent='无数据（降级）';
+      if(body) body.innerHTML='<div class="empty">暂无问答示例数据（/static/kb_qa_samples.json 为空）。HTTP 问答接口待 8091 审批，当前为静态示例。</div>';
+      return;
+    }
+    if(meta) meta.textContent=(d.model||'未知模型')+' · 生成 '+(d.generated_at||'—')+' · '+samples.length+' 个示例';
+    if(body) body.innerHTML=samples.map(function(s,i){
+      const level=((s.confidence&&s.confidence.level)||'none');
+      const cites=(s.citations||[]).map(function(c){
+        return '<span class="qa-cite"><code>'+qesc(c.unit_id)+'</code> p.'+qesc(c.page)+'</span>';
+      }).join('');
+      const ans=String(s.answer||'（无答案）');
+      const short=ans.length>180?ans.slice(0,180)+'…':ans;
+      const confReason=((s.confidence&&s.confidence.reasons)||[]).slice(0,1).join('；');
+      const demo=(String(s.category||'').indexOf('simulated')>=0)
+        ? '<span class="qa-conf" style="background:#2d333b;color:#c9d1d9">演示</span>' : '';
+      const fb=s.fallback ? '<span class="qa-conf" style="background:#2a1512;color:#f85149">规则降级</span>' : '';
+      const citesHtml=cites ? ('引用：'+cites) : '<span style="color:var(--dim)">无引用</span>';
+      return '<div class="card qa-card">'
+        + '<div class="meta">#'+(i+1)+' · '+qesc(s.category||'')+demo+fb
+        + ' <span class="qa-conf" style="'+(CONF_STYLE[level]||CONF_STYLE.none)+'">'+(CONF_LABEL[level]||CONF_LABEL.none)+'</span></div>'
+        + '<div class="qa-q">'+qesc(s.question)+'</div>'
+        + '<div class="qa-a">'+qesc(short)+'</div>'
+        + '<div class="qa-cites">'+citesHtml+'</div>'
+        + (confReason?'<div style="color:var(--dim);font-size:11px;margin-top:4px">置信说明：'+qesc(confReason)+'</div>':'')
+        + '</div>';
+    }).join('');
+  }
+  async function loadQA(){
+    try{
+      const r=await fetch('/static/kb_qa_samples.json?ts='+Date.now());
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      renderQA(await r.json());
+    }catch(e){
+      if(meta) meta.textContent='加载失败（降级）';
+      if(body) body.innerHTML='<div class="empty">问答示例暂不可用：'+qesc((e&&e.message)||'加载失败')
+        +'。HTTP 问答接口待 8091 审批，当前为静态示例。</div>';
+    }
+  }
+  if(body) loadQA();
 })();
 </script>
 </body>
