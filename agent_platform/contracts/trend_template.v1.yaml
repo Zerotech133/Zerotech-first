@@ -1,0 +1,52 @@
+# 对外契约：Minervini Trend Template 筛选结果 v1
+# 通道：静态快照（同源域名可直接 GET /static/trend_template_latest.json）
+# 边界：研究输出，不构成投资建议；字段兼容性遵循 semver，破坏性变更升 major。
+api_version: "1.0"
+kind: trend_template_screen
+owner: DSH-Lead
+channel: static_snapshot
+url: /static/trend_template_latest.json
+freshness: 手动/任务运行（trade_date 为最新交易日）
+schema:
+  generated_at: {type: string, format: iso8601}
+  trade_date: {type: string, format: yyyymmdd}
+  dataset:
+    universe_all: {type: integer, desc: 全市场股票数}
+    universe_base: {type: integer, desc: 基础宇宙（非ST/上市≥250日/价≥2）}
+  conditions:
+    type: array
+    items:
+      id: {type: string, enum: [C1..C8]}
+      rule: {type: string}
+      note: {type: string}
+  results:
+    pass_all: {type: integer, desc: 八条全过股票数}
+    near_miss: {type: integer, desc: 7/8 只差一条数}
+    condition_pass_rate_pct: {type: object, desc: 各条件在基础宇宙的通过率}
+  candidates:
+    type: array
+    items:
+      code: {type: string}
+      name: {type: string}
+      close: {type: number}
+      rs_approx: {type: number, desc: 近似 RS（1-99，非 IBD 专有）}
+      s50/s150/s200: {type: number}
+      low_dist_pct: {type: number, desc: 距 52 周低点百分比}
+      high_dist_pct: {type: number, desc: 距 52 周高点百分比（负值=低于高点）}
+  near_miss_sample:
+    type: array
+    items: {code, name, rs_approx, missing}
+  method:
+    adjust: {type: string}
+    year_bars: {type: integer}
+    c3_method: {type: string}
+    rs_method: {type: string}
+  boundary_notes: {type: array, items: string}
+  sources: {type: array, items: string}
+  learning: {type: object}
+  disclaimer: {type: string}
+errors:
+  not_ready: 尚未生成（手工运行 tools/research/trend_template_export.py）
+examples:
+  curl: "curl -s http://127.0.0.1:8734/static/trend_template_latest.json"
+  cli: "python tools/research/trend_template.py --date 20261030 && python tools/research/trend_template_export.py"

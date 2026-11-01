@@ -1,0 +1,907 @@
+{
+ "api_version": "1.0",
+ "kind": "trend_template_screen",
+ "generated_at": "2026-11-01T15:25:00+08:00",
+ "trade_date": "20261030",
+ "dataset": {
+  "universe_all": 5606,
+  "universe_base": 5258
+ },
+ "conditions": [
+  {
+   "id": "C1",
+   "rule": "P > S150 且 P > S200",
+   "note": "等号不通过"
+  },
+  {
+   "id": "C2",
+   "rule": "S150 > S200",
+   "note": ""
+  },
+  {
+   "id": "C3",
+   "rule": "S200 至少上升 1 个月",
+   "note": "端点代理（S200(t)>S200(t-21)），非逐日单调"
+  },
+  {
+   "id": "C4",
+   "rule": "S50 > S150 且 S50 > S200",
+   "note": ""
+  },
+  {
+   "id": "C5",
+   "rule": "P > S50",
+   "note": ""
+  },
+  {
+   "id": "C6",
+   "rule": "P ≥ 1.30 × 近一年低点",
+   "note": "书版 30% 变体；部分社区用 25%"
+  },
+  {
+   "id": "C7",
+   "rule": "P ≥ 0.75 × 近一年高点",
+   "note": "距高点 ≤25%，等号允许"
+  },
+  {
+   "id": "C8",
+   "rule": "RS ≥ 70",
+   "note": "偏好 90+；本实现为全 A 近似，非 IBD 专有 RS"
+  }
+ ],
+ "results": {
+  "pass_all": 52,
+  "near_miss": 92,
+  "condition_pass_rate_pct": {
+   "C1_P>S150_S200": 7.07,
+   "C2_S150>S200": 21.93,
+   "C3_S200_rising_1m": 24.06,
+   "C4_S50>S150_S200": 14.24,
+   "C5_P>S50": 11.68,
+   "C6_above_52w_low_30pct": 16.43,
+   "C7_within_25pct_of_high": 10.16,
+   "C8_RS_ge_70": 29.55
+  }
+ },
+ "candidates": [
+  {
+   "code": "300006.SZ",
+   "name": "莱美药业",
+   "close": 76.16,
+   "rs_approx": 99.0,
+   "s50": 48.75,
+   "s150": 43.88,
+   "s200": 42.68,
+   "low_dist_pct": 130.9,
+   "high_dist_pct": -11.5
+  },
+  {
+   "code": "301529.SZ",
+   "name": "福赛科技",
+   "close": 235.18,
+   "rs_approx": 99.0,
+   "s50": 179.46,
+   "s150": 151.59,
+   "s200": 146.51,
+   "low_dist_pct": 315.7,
+   "high_dist_pct": -9.3
+  },
+  {
+   "code": "002242.SZ",
+   "name": "九阳股份",
+   "close": 125.64,
+   "rs_approx": 99.0,
+   "s50": 71.9,
+   "s150": 58.99,
+   "s200": 58.85,
+   "low_dist_pct": 188.3,
+   "high_dist_pct": -5.7
+  },
+  {
+   "code": "688137.SH",
+   "name": "近岸蛋白",
+   "close": 154.78,
+   "rs_approx": 99.0,
+   "s50": 104.92,
+   "s150": 63.82,
+   "s200": 59.16,
+   "low_dist_pct": 354.2,
+   "high_dist_pct": -10.3
+  },
+  {
+   "code": "300234.SZ",
+   "name": "开尔新材",
+   "close": 67.66,
+   "rs_approx": 98.0,
+   "s50": 64.48,
+   "s150": 55.05,
+   "s200": 50.51,
+   "low_dist_pct": 127.9,
+   "high_dist_pct": -11.6
+  },
+  {
+   "code": "301273.SZ",
+   "name": "瑞晨环保",
+   "close": 66.02,
+   "rs_approx": 98.0,
+   "s50": 56.92,
+   "s150": 47.13,
+   "s200": 43.03,
+   "low_dist_pct": 165.3,
+   "high_dist_pct": -8.1
+  },
+  {
+   "code": "603303.SH",
+   "name": "得邦照明",
+   "close": 71.67,
+   "rs_approx": 98.0,
+   "s50": 69.57,
+   "s150": 60.87,
+   "s200": 55.2,
+   "low_dist_pct": 117.1,
+   "high_dist_pct": -21.2
+  },
+  {
+   "code": "002708.SZ",
+   "name": "光洋股份",
+   "close": 59.72,
+   "rs_approx": 98.0,
+   "s50": 47.41,
+   "s150": 42.59,
+   "s200": 42.54,
+   "low_dist_pct": 120.9,
+   "high_dist_pct": -10.2
+  },
+  {
+   "code": "688710.SH",
+   "name": "益诺思",
+   "close": 93.99,
+   "rs_approx": 98.0,
+   "s50": 90.84,
+   "s150": 75.51,
+   "s200": 71.23,
+   "low_dist_pct": 131.5,
+   "high_dist_pct": -16.8
+  },
+  {
+   "code": "601857.SH",
+   "name": "中国石油",
+   "close": 26.19,
+   "rs_approx": 97.0,
+   "s50": 21.76,
+   "s150": 20.42,
+   "s200": 20.23,
+   "low_dist_pct": 69.9,
+   "high_dist_pct": -0.3
+  },
+  {
+   "code": "688222.SH",
+   "name": "成都先导",
+   "close": 37.47,
+   "rs_approx": 97.0,
+   "s50": 37.44,
+   "s150": 32.15,
+   "s200": 31.7,
+   "low_dist_pct": 72.1,
+   "high_dist_pct": -22.8
+  },
+  {
+   "code": "002832.SZ",
+   "name": "比音勒芬",
+   "close": 162.3,
+   "rs_approx": 96.0,
+   "s50": 155.6,
+   "s150": 132.7,
+   "s200": 122.24,
+   "low_dist_pct": 89.4,
+   "high_dist_pct": -6.8
+  },
+  {
+   "code": "603727.SH",
+   "name": "博迈科",
+   "close": 23.43,
+   "rs_approx": 96.0,
+   "s50": 20.98,
+   "s150": 20.0,
+   "s200": 19.64,
+   "low_dist_pct": 58.1,
+   "high_dist_pct": -7.7
+  },
+  {
+   "code": "603330.SH",
+   "name": "天洋新材",
+   "close": 54.46,
+   "rs_approx": 96.0,
+   "s50": 52.9,
+   "s150": 43.64,
+   "s200": 42.76,
+   "low_dist_pct": 86.0,
+   "high_dist_pct": -20.7
+  },
+  {
+   "code": "600428.SH",
+   "name": "中远海特",
+   "close": 84.29,
+   "rs_approx": 96.0,
+   "s50": 81.74,
+   "s150": 70.54,
+   "s200": 66.84,
+   "low_dist_pct": 75.7,
+   "high_dist_pct": -8.4
+  },
+  {
+   "code": "002293.SZ",
+   "name": "罗莱生活",
+   "close": 124.95,
+   "rs_approx": 95.0,
+   "s50": 115.25,
+   "s150": 107.78,
+   "s200": 105.16,
+   "low_dist_pct": 49.4,
+   "high_dist_pct": -1.2
+  },
+  {
+   "code": "600256.SH",
+   "name": "广汇能源",
+   "close": 432.84,
+   "rs_approx": 95.0,
+   "s50": 415.37,
+   "s150": 382.78,
+   "s200": 375.38,
+   "low_dist_pct": 52.9,
+   "high_dist_pct": -9.4
+  },
+  {
+   "code": "688686.SH",
+   "name": "奥普特",
+   "close": 226.77,
+   "rs_approx": 95.0,
+   "s50": 204.9,
+   "s150": 194.17,
+   "s200": 190.23,
+   "low_dist_pct": 73.5,
+   "high_dist_pct": -20.7
+  },
+  {
+   "code": "600901.SH",
+   "name": "江苏金租",
+   "close": 16.05,
+   "rs_approx": 94.0,
+   "s50": 14.72,
+   "s150": 14.04,
+   "s200": 13.82,
+   "low_dist_pct": 34.7,
+   "high_dist_pct": -1.4
+  },
+  {
+   "code": "601088.SH",
+   "name": "中国神华",
+   "close": 145.95,
+   "rs_approx": 94.0,
+   "s50": 132.69,
+   "s150": 125.6,
+   "s200": 123.09,
+   "low_dist_pct": 40.3,
+   "high_dist_pct": 0.0
+  },
+  {
+   "code": "601328.SH",
+   "name": "交通银行",
+   "close": 24.1,
+   "rs_approx": 94.0,
+   "s50": 21.28,
+   "s150": 19.57,
+   "s200": 19.31,
+   "low_dist_pct": 39.0,
+   "high_dist_pct": 0.0
+  },
+  {
+   "code": "601998.SH",
+   "name": "中信银行",
+   "close": 19.92,
+   "rs_approx": 94.0,
+   "s50": 18.65,
+   "s150": 16.98,
+   "s200": 16.56,
+   "low_dist_pct": 38.1,
+   "high_dist_pct": -0.3
+  },
+  {
+   "code": "601988.SH",
+   "name": "中国银行",
+   "close": 18.71,
+   "rs_approx": 94.0,
+   "s50": 17.47,
+   "s150": 15.94,
+   "s200": 15.45,
+   "low_dist_pct": 38.5,
+   "high_dist_pct": -2.2
+  },
+  {
+   "code": "601083.SH",
+   "name": "锦江航运",
+   "close": 15.96,
+   "rs_approx": 94.0,
+   "s50": 14.6,
+   "s150": 13.38,
+   "s200": 13.26,
+   "low_dist_pct": 43.9,
+   "high_dist_pct": -1.6
+  },
+  {
+   "code": "601919.SH",
+   "name": "中远海控",
+   "close": 45.3,
+   "rs_approx": 94.0,
+   "s50": 41.07,
+   "s150": 37.32,
+   "s200": 36.96,
+   "low_dist_pct": 40.1,
+   "high_dist_pct": -0.9
+  },
+  {
+   "code": "601225.SH",
+   "name": "陕西煤业",
+   "close": 51.1,
+   "rs_approx": 93.0,
+   "s50": 48.1,
+   "s150": 45.1,
+   "s200": 43.91,
+   "low_dist_pct": 42.3,
+   "high_dist_pct": -1.6
+  },
+  {
+   "code": "003816.SZ",
+   "name": "中国广核",
+   "close": 5.72,
+   "rs_approx": 93.0,
+   "s50": 5.15,
+   "s150": 5.09,
+   "s200": 4.97,
+   "low_dist_pct": 31.1,
+   "high_dist_pct": -2.2
+  },
+  {
+   "code": "601939.SH",
+   "name": "建设银行",
+   "close": 30.47,
+   "rs_approx": 93.0,
+   "s50": 28.09,
+   "s150": 25.92,
+   "s200": 25.01,
+   "low_dist_pct": 43.5,
+   "high_dist_pct": -1.2
+  },
+  {
+   "code": "002003.SZ",
+   "name": "伟星股份",
+   "close": 341.68,
+   "rs_approx": 93.0,
+   "s50": 313.31,
+   "s150": 275.17,
+   "s200": 274.16,
+   "low_dist_pct": 55.7,
+   "high_dist_pct": -1.8
+  },
+  {
+   "code": "001872.SZ",
+   "name": "招商港口",
+   "close": 130.98,
+   "rs_approx": 93.0,
+   "s50": 122.92,
+   "s150": 113.57,
+   "s200": 110.41,
+   "low_dist_pct": 36.8,
+   "high_dist_pct": -5.9
+  },
+  {
+   "code": "002142.SZ",
+   "name": "宁波银行",
+   "close": 89.21,
+   "rs_approx": 93.0,
+   "s50": 87.47,
+   "s150": 81.11,
+   "s200": 79.59,
+   "low_dist_pct": 34.4,
+   "high_dist_pct": -3.6
+  },
+  {
+   "code": "300434.SZ",
+   "name": "金石亚药",
+   "close": 47.23,
+   "rs_approx": 93.0,
+   "s50": 45.47,
+   "s150": 41.66,
+   "s200": 41.28,
+   "low_dist_pct": 44.6,
+   "high_dist_pct": -13.9
+  },
+  {
+   "code": "002966.SZ",
+   "name": "苏州银行",
+   "close": 14.59,
+   "rs_approx": 93.0,
+   "s50": 13.35,
+   "s150": 12.33,
+   "s200": 12.19,
+   "low_dist_pct": 43.6,
+   "high_dist_pct": -0.1
+  },
+  {
+   "code": "002948.SZ",
+   "name": "青岛银行",
+   "close": 9.2,
+   "rs_approx": 92.0,
+   "s50": 8.87,
+   "s150": 8.28,
+   "s200": 7.98,
+   "low_dist_pct": 54.3,
+   "high_dist_pct": -2.5
+  },
+  {
+   "code": "600267.SH",
+   "name": "海正药业",
+   "close": 95.08,
+   "rs_approx": 92.0,
+   "s50": 90.15,
+   "s150": 83.08,
+   "s200": 81.11,
+   "low_dist_pct": 40.7,
+   "high_dist_pct": -13.7
+  },
+  {
+   "code": "600674.SH",
+   "name": "川投能源",
+   "close": 418.25,
+   "rs_approx": 92.0,
+   "s50": 382.23,
+   "s150": 356.77,
+   "s200": 349.36,
+   "low_dist_pct": 36.4,
+   "high_dist_pct": -1.1
+  },
+  {
+   "code": "603565.SH",
+   "name": "中谷物流",
+   "close": 52.27,
+   "rs_approx": 92.0,
+   "s50": 50.17,
+   "s150": 46.02,
+   "s200": 45.15,
+   "low_dist_pct": 37.8,
+   "high_dist_pct": -8.4
+  },
+  {
+   "code": "601598.SH",
+   "name": "中国外运",
+   "close": 10.31,
+   "rs_approx": 92.0,
+   "s50": 9.42,
+   "s150": 8.63,
+   "s200": 8.5,
+   "low_dist_pct": 49.8,
+   "high_dist_pct": -2.2
+  },
+  {
+   "code": "601298.SH",
+   "name": "青岛港",
+   "close": 13.93,
+   "rs_approx": 92.0,
+   "s50": 13.05,
+   "s150": 12.18,
+   "s200": 12.15,
+   "low_dist_pct": 31.4,
+   "high_dist_pct": -1.7
+  },
+  {
+   "code": "601000.SH",
+   "name": "唐山港",
+   "close": 37.31,
+   "rs_approx": 92.0,
+   "s50": 34.9,
+   "s150": 33.92,
+   "s200": 32.97,
+   "low_dist_pct": 36.7,
+   "high_dist_pct": -1.6
+  },
+  {
+   "code": "600919.SH",
+   "name": "江苏银行",
+   "close": 22.13,
+   "rs_approx": 92.0,
+   "s50": 20.9,
+   "s150": 19.59,
+   "s200": 18.99,
+   "low_dist_pct": 37.1,
+   "high_dist_pct": -0.1
+  },
+  {
+   "code": "601398.SH",
+   "name": "工商银行",
+   "close": 22.75,
+   "rs_approx": 91.0,
+   "s50": 20.95,
+   "s150": 19.54,
+   "s200": 19.24,
+   "low_dist_pct": 33.0,
+   "high_dist_pct": -0.9
+  },
+  {
+   "code": "000333.SZ",
+   "name": "美的集团",
+   "close": 528.03,
+   "rs_approx": 91.0,
+   "s50": 502.81,
+   "s150": 475.03,
+   "s200": 466.11,
+   "low_dist_pct": 30.4,
+   "high_dist_pct": -0.4
+  },
+  {
+   "code": "000690.SZ",
+   "name": "宝新能源",
+   "close": 280.26,
+   "rs_approx": 90.0,
+   "s50": 268.28,
+   "s150": 263.15,
+   "s200": 253.82,
+   "low_dist_pct": 34.2,
+   "high_dist_pct": -15.6
+  },
+  {
+   "code": "601838.SH",
+   "name": "成都银行",
+   "close": 30.48,
+   "rs_approx": 90.0,
+   "s50": 28.92,
+   "s150": 27.15,
+   "s200": 26.16,
+   "low_dist_pct": 39.8,
+   "high_dist_pct": -0.2
+  },
+  {
+   "code": "600886.SH",
+   "name": "国投电力",
+   "close": 915.1,
+   "rs_approx": 90.0,
+   "s50": 841.45,
+   "s150": 789.79,
+   "s200": 776.28,
+   "low_dist_pct": 31.5,
+   "high_dist_pct": -1.5
+  },
+  {
+   "code": "600351.SH",
+   "name": "亚宝药业",
+   "close": 63.16,
+   "rs_approx": 90.0,
+   "s50": 60.28,
+   "s150": 56.6,
+   "s200": 56.24,
+   "low_dist_pct": 31.6,
+   "high_dist_pct": -1.8
+  },
+  {
+   "code": "600012.SH",
+   "name": "皖通高速",
+   "close": 55.63,
+   "rs_approx": 88.0,
+   "s50": 51.33,
+   "s150": 49.72,
+   "s200": 48.16,
+   "low_dist_pct": 34.7,
+   "high_dist_pct": -5.2
+  },
+  {
+   "code": "601728.SH",
+   "name": "中国电信",
+   "close": 8.85,
+   "rs_approx": 88.0,
+   "s50": 8.12,
+   "s150": 7.56,
+   "s200": 7.48,
+   "low_dist_pct": 39.7,
+   "high_dist_pct": -1.2
+  },
+  {
+   "code": "600566.SH",
+   "name": "济川药业",
+   "close": 77.33,
+   "rs_approx": 88.0,
+   "s50": 71.82,
+   "s150": 71.06,
+   "s200": 70.9,
+   "low_dist_pct": 30.6,
+   "high_dist_pct": -2.6
+  },
+  {
+   "code": "603713.SH",
+   "name": "密尔克卫",
+   "close": 69.95,
+   "rs_approx": 87.0,
+   "s50": 68.79,
+   "s150": 65.89,
+   "s200": 65.8,
+   "low_dist_pct": 35.1,
+   "high_dist_pct": -21.3
+  },
+  {
+   "code": "301015.SZ",
+   "name": "百洋医药",
+   "close": 30.34,
+   "rs_approx": 86.0,
+   "s50": 28.61,
+   "s150": 27.01,
+   "s200": 26.95,
+   "low_dist_pct": 41.7,
+   "high_dist_pct": -8.2
+  }
+ ],
+ "near_miss_sample": [
+  {
+   "code": "002724.SZ",
+   "name": "海洋王",
+   "rs_approx": 99.0,
+   "missing": [
+    "C2"
+   ]
+  },
+  {
+   "code": "002696.SZ",
+   "name": "百洋股份",
+   "rs_approx": 99.0,
+   "missing": [
+    "C2"
+   ]
+  },
+  {
+   "code": "605058.SH",
+   "name": "澳弘电子",
+   "rs_approx": 99.0,
+   "missing": [
+    "C7"
+   ]
+  },
+  {
+   "code": "301313.SZ",
+   "name": "凡拓数创",
+   "rs_approx": 99.0,
+   "missing": [
+    "C4"
+   ]
+  },
+  {
+   "code": "300829.SZ",
+   "name": "金丹科技",
+   "rs_approx": 98.0,
+   "missing": [
+    "C2"
+   ]
+  },
+  {
+   "code": "601872.SH",
+   "name": "招商轮船",
+   "rs_approx": 98.0,
+   "missing": [
+    "C5"
+   ]
+  },
+  {
+   "code": "688004.SH",
+   "name": "博汇科技",
+   "rs_approx": 98.0,
+   "missing": [
+    "C2"
+   ]
+  },
+  {
+   "code": "301132.SZ",
+   "name": "满坤科技",
+   "rs_approx": 98.0,
+   "missing": [
+    "C7"
+   ]
+  },
+  {
+   "code": "301047.SZ",
+   "name": "义翘神州",
+   "rs_approx": 98.0,
+   "missing": [
+    "C7"
+   ]
+  },
+  {
+   "code": "301081.SZ",
+   "name": "严牌股份",
+   "rs_approx": 98.0,
+   "missing": [
+    "C7"
+   ]
+  },
+  {
+   "code": "002172.SZ",
+   "name": "澳洋健康",
+   "rs_approx": 98.0,
+   "missing": [
+    "C2"
+   ]
+  },
+  {
+   "code": "300839.SZ",
+   "name": "博汇股份",
+   "rs_approx": 98.0,
+   "missing": [
+    "C4"
+   ]
+  },
+  {
+   "code": "301080.SZ",
+   "name": "百普赛斯",
+   "rs_approx": 98.0,
+   "missing": [
+    "C7"
+   ]
+  },
+  {
+   "code": "601886.SH",
+   "name": "江河集团",
+   "rs_approx": 97.0,
+   "missing": [
+    "C5"
+   ]
+  },
+  {
+   "code": "301072.SZ",
+   "name": "中捷精工",
+   "rs_approx": 97.0,
+   "missing": [
+    "C5"
+   ]
+  },
+  {
+   "code": "600295.SH",
+   "name": "鄂尔多斯",
+   "rs_approx": 96.0,
+   "missing": [
+    "C2"
+   ]
+  },
+  {
+   "code": "603976.SH",
+   "name": "正川股份",
+   "rs_approx": 96.0,
+   "missing": [
+    "C5"
+   ]
+  },
+  {
+   "code": "603391.SH",
+   "name": "力聚热能",
+   "rs_approx": 96.0,
+   "missing": [
+    "C2"
+   ]
+  },
+  {
+   "code": "688071.SH",
+   "name": "华依科技",
+   "rs_approx": 96.0,
+   "missing": [
+    "C2"
+   ]
+  },
+  {
+   "code": "688315.SH",
+   "name": "诺禾致源",
+   "rs_approx": 96.0,
+   "missing": [
+    "C2"
+   ]
+  },
+  {
+   "code": "300154.SZ",
+   "name": "瑞凌股份",
+   "rs_approx": 96.0,
+   "missing": [
+    "C5"
+   ]
+  },
+  {
+   "code": "003006.SZ",
+   "name": "百亚股份",
+   "rs_approx": 96.0,
+   "missing": [
+    "C2"
+   ]
+  },
+  {
+   "code": "300307.SZ",
+   "name": "慈星股份",
+   "rs_approx": 96.0,
+   "missing": [
+    "C2"
+   ]
+  },
+  {
+   "code": "600938.SH",
+   "name": "中国海油",
+   "rs_approx": 95.0,
+   "missing": [
+    "C2"
+   ]
+  },
+  {
+   "code": "002614.SZ",
+   "name": "奥佳华",
+   "rs_approx": 95.0,
+   "missing": [
+    "C2"
+   ]
+  },
+  {
+   "code": "300613.SZ",
+   "name": "富瀚微",
+   "rs_approx": 95.0,
+   "missing": [
+    "C5"
+   ]
+  },
+  {
+   "code": "603259.SH",
+   "name": "药明康德",
+   "rs_approx": 95.0,
+   "missing": [
+    "C5"
+   ]
+  },
+  {
+   "code": "601101.SH",
+   "name": "昊华能源",
+   "rs_approx": 95.0,
+   "missing": [
+    "C5"
+   ]
+  },
+  {
+   "code": "688105.SH",
+   "name": "诺唯赞",
+   "rs_approx": 95.0,
+   "missing": [
+    "C5"
+   ]
+  },
+  {
+   "code": "688690.SH",
+   "name": "纳微科技",
+   "rs_approx": 95.0,
+   "missing": [
+    "C5"
+   ]
+  }
+ ],
+ "method": {
+  "adjust": "前复权（close/high/low × adj_factor）",
+  "year_bars": 250,
+  "c3_method": "端点代理 S200(t)>S200(t-21)，非逐日单调",
+  "rs_method": "全A横截面近似: ret12m+ret3m 百分位(1-99)，非 IBD 专有 RS"
+ },
+ "boundary_notes": [
+  "筛选器仅实现八条入场条件，不含 VCP/买点/仓位/退出；未回测、未过四关。",
+  "股票池未做指数成分/流动性过滤；外部回测显示大盘成分内更有效、全交易所尤其小盘易失效。",
+  "C3 为端点代理；RS 为全 A 近似（非 IBD 专有）；一年窗口 250 交易日近似。",
+  "数据为研究输出，不构成任何投资建议；使用者自行承担风险。"
+ ],
+ "sources": [
+  "Pineify: Minervini Trend Template（书版 8 条基线）https://pineify.app/tradingview/screeners/minervini-trend-template",
+  "O'Neil RS Rating 方法（专有排名说明）",
+  "MarketInOut: 14 股票池回测 / TSX 25 年回测",
+  "Trade-Ideas: VCP 详解"
+ ],
+ "learning": {
+  "notes": "知识库：米勒维尼SEPA体系_学习笔记；资源库：米勒维尼SEPA_全网资源库",
+  "cards": "/kb_cards.html",
+  "search": "/kb_reports.html"
+ },
+ "owner": "老田的AI助手 / DSH-Lead",
+ "disclaimer": "仅供研究学习，不构成投资建议；历史与规则不保证未来收益。"
+}

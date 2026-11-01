@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>趋势模板选股 · 零界能力输出</title>
+<link rel="stylesheet" href="/static/nav.css">
+<style>
+:root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2333;--bd:#2d333b;--fg:#e6edf3;--dim:#8b949e;--acc:#58a6ff;--ok:#3fb950;--warn:#d29922;--bad:#f85149}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.65 "Microsoft YaHei",system-ui,sans-serif;padding:24px;max-width:1180px;margin:0 auto}
+h1{font-size:24px;margin:0 0 4px}h1 small{color:var(--dim);font-size:13px;font-weight:normal}
+.sub{color:var(--dim);font-size:12px;margin-bottom:16px}
+.panel{background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:16px;margin-bottom:14px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.card{background:var(--panel2);border:1px solid var(--bd);border-radius:8px;padding:12px}
+.card .k{color:var(--dim);font-size:12px}.card .v{font-size:20px;font-weight:700;color:var(--acc)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{border-bottom:1px solid var(--bd);padding:7px 8px;text-align:left}
+th{color:var(--dim);font-weight:600}
+.badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:700}
+.b-ok{background:#12301c;color:var(--ok)}.b-warn{background:#2b2410;color:var(--warn)}.b-info{background:#122642;color:#79c0ff}
+.muted{color:var(--dim);font-size:12px}
+.warnbox{border:1px solid #6b4b00;background:#241c08;border-radius:8px;padding:12px;color:#f0d48a;font-size:13px}
+code{background:#0a0e14;padding:1px 6px;border-radius:4px;color:#79c0ff;font-size:12px}
+ul{margin:6px 0 0 18px;padding:0}
+@media(max-width:760px){body{padding:14px}h1{font-size:20px}table{display:block;overflow-x:auto;white-space:nowrap}}
+</style>
+<script src="/static/nav.js" defer></script></head>
+<body>
+<div id="nav"></div>
+<h1>📈 趋势模板选股 <small>Minervini Trend Template · 对外能力 v1</small></h1>
+<div class="sub" id="sub">加载中…</div>
+
+<div class="panel"><div class="cards">
+  <div class="card"><div class="k">交易日</div><div class="v" id="c-date" style="font-size:17px">—</div></div>
+  <div class="card"><div class="k">八条全过</div><div class="v" id="c-pass">—</div></div>
+  <div class="card"><div class="k">7/8 近失</div><div class="v" id="c-near">—</div></div>
+  <div class="card"><div class="k">基础宇宙</div><div class="v" id="c-base" style="font-size:17px">—</div></div>
+  <div class="card"><div class="k">全市场</div><div class="v" id="c-all" style="font-size:17px">—</div></div>
+</div>
+<div class="muted" id="method" style="margin-top:10px"></div></div>
+
+<div class="panel"><b>八条口径（书版基线）</b>
+<table><thead><tr><th>#</th><th>规则</th><th>说明</th></tr></thead><tbody id="conds"></tbody></table></div>
+
+<div class="panel"><b>今日候选（八条全过，按近似 RS 降序）</b>
+<table><thead><tr><th>#</th><th>代码</th><th>名称</th><th>收盘</th><th>RS≈</th><th>距52周低点%</th><th>距52周高点%</th></tr></thead><tbody id="cands"></tbody></table>
+<div class="muted" id="cand-note" style="margin-top:6px"></div></div>
+
+<div class="panel"><b>各条件通过率（基础宇宙）</b><table><thead><tr><th>条件</th><th>通过率%</th></tr></thead><tbody id="rates"></tbody></table></div>
+
+<div class="panel"><b>对外接口 & 使用方式</b>
+<ul>
+  <li><b>静态快照（推荐给其他 Agent）</b>：<code>GET /static/trend_template_latest.json</code>（契约：<code>agent_platform/contracts/trend_template.v1.yaml</code>）</li>
+  <li><b>命令行</b>：<code>python tools/research/trend_template.py --date 20261030</code> → 报告；<code>python tools/research/trend_template_export.py</code> → 对外 JSON</li>
+  <li><b>学习资料</b>：<a href="/kb_cards.html">/kb_cards.html</a> · <a href="/kb_reports.html">/kb_reports.html</a>（知识库检索/学习卡）</li>
+</ul></div>
+
+<div class="panel"><b>边界与免责声明</b>
+<div class="warnbox" id="boundary">—</div>
+<div class="muted" id="disclaimer" style="margin-top:8px">—</div></div>
+
+<div class="panel"><b>口径来源</b><div class="muted" id="sources"></div></div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  function esc(s){return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  fetch('/static/trend_template_latest.json?ts='+Date.now()).then(r=>r.json()).then(function(d){
+    if(d.api_version) $('sub').textContent='能力 v'+d.api_version+' · 生成 '+d.generated_at+' · owner '+(d.owner||'');
+    $('c-date').textContent=d.trade_date||'—';
+    $('c-pass').textContent=(d.results||{}).pass_all??'—';
+    $('c-near').textContent=(d.results||{}).near_miss??'—';
+    $('c-base').textContent=(d.dataset||{}).universe_base??'—';
+    $('c-all').textContent=(d.dataset||{}).universe_all??'—';
+    const m=d.method||{};
+    $('method').textContent='复权：'+(m.adjust||'')+' · 一年窗口 '+(m.year_bars||'')+' 交易日 · '+(m.rs_method||'')+' · '+(m.c3_method||'');
+    $('conds').innerHTML=(d.conditions||[]).map(c=>`<tr><td><b>${esc(c.id)}</b></td><td>${esc(c.rule)}</td><td class="muted">${esc(c.note||'')}</td></tr>`).join('');
+    $('cands').innerHTML=(d.candidates||[]).map(function(x,i){
+      return `<tr><td>${i+1}</td><td><code>${esc(x.code)}</code></td><td>${esc(x.name)}</td><td>${esc(x.close)}</td>`
+        +`<td>${esc(x.rs_approx)}</td><td>${esc(x.low_dist_pct)}</td><td>${esc(x.high_dist_pct)}</td></tr>`;
+    }).join('') || '<tr><td colspan="7" class="muted">暂无候选</td></tr>';
+    $('cand-note').textContent='RS≈ 为全 A 近似百分位（非 IBD 专有）；候选仅通过入场条件，不含买点/仓位/退出。';
+    const rates=(d.results||{}).condition_pass_rate_pct||{};
+    $('rates').innerHTML=Object.keys(rates).map(k=>`<tr><td>${esc(k)}</td><td>${esc(rates[k])}</td></tr>`).join('')||'<tr><td colspan="2" class="muted">—</td></tr>';
+    $('boundary').innerHTML=(d.boundary_notes||[]).map(x=>`<div>• ${esc(x)}</div>`).join('');
+    $('disclaimer').textContent=d.disclaimer||'';
+    $('sources').innerHTML=(d.sources||[]).map(x=>`<div>• ${esc(x)}</div>`).join('');
+  }).catch(function(e){
+    $('sub').textContent='数据未就绪：'+e.message+'（先运行 trend_template.py + trend_template_export.py）';
+  });
+})();
+</script>
+</body>
+</html>
