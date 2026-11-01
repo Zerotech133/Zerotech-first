@@ -5994,5 +5994,18 @@
     "default": "v1 + strict_line（未切默认）",
     "optional": "prompt_version=v4 / marker_mode=segment；HTTP prompt=v1|v4、guard_marker=strict|segment（默认 v1/strict）",
     "note": "v4+segment 可选版本已合入生产（59 tests，默认行为逐位不变）；切默认需灰度观察（CLI 先切、HTTP 随 8091 审批）。"
+  },
+  "kb_qa_prompt_v4_cutover_20261101": {
+    "executed_at": "2026-11-01T22:21:07+08:00",
+    "change": "CLI 默认切 prompt v4 + guard marker segment（HTTP 预接线默认仍 v1/strict）",
+    "basis": "wave33 扩样 30 条：可答 73.3%→83.3%（+10pp），质量 100%/100% 不降，耗时比 1.008；wave29 12 条 +25pp 方向一致",
+    "rollback": {
+      "env": [
+        "KB_QA_PROMPT_VERSION=v1",
+        "KB_QA_MARKER_MODE=strict_line"
+      ],
+      "explicit": "prompt_version='v1', marker_mode='strict_line'"
+    },
+    "tests": "66 passed + 28 扩展回归"
   }
 }

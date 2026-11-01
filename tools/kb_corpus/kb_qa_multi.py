@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import os
 import re
 import sys
 import time
@@ -40,7 +41,7 @@ DEFAULT_MODEL = "qwen3.5:9b"
 DEFAULT_TIMEOUT = 300
 DEFAULT_DEADLINE = 600
 PROMPT_VERSIONS = ("v1", "v4")
-DEFAULT_PROMPT_VERSION = "v1"      # 默认 v1（v4 为可选版本，未经扩样不切默认）
+DEFAULT_PROMPT_VERSION = os.environ.get("KB_QA_PROMPT_VERSION", "v4").strip().lower()  # 灰度默认 v4；KB_QA_PROMPT_VERSION=v1 回滚
 MAX_CLUSTERS = 3
 MAX_UNITS_PER_CLUSTER = 3
 MAX_ANSWER_CHARS = 400

@@ -470,8 +470,11 @@ def test_ask_payload_records_prompt_and_marker_versions():
         return []
 
     res = qa.ask("问题", mode="single", search_fn=empty_search)
-    assert res["prompt_version"] == "v1"
-    assert res["guard_marker_mode"] == "strict_line"
+    assert res["prompt_version"] == "v4"        # wave34：CLI 默认切 v4（灰度）
+    assert res["guard_marker_mode"] == "segment"  # 默认 segment
+    res1 = qa.ask("问题", mode="single", search_fn=empty_search,
+                  prompt_version="v1", marker_mode="strict_line")
+    assert res1["prompt_version"] == "v1" and res1["guard_marker_mode"] == "strict_line"
     res4 = qa.ask("问题", mode="single", search_fn=empty_search,
                   prompt_version="v4", marker_mode="segment")
     assert res4["prompt_version"] == "v4"

@@ -92,7 +92,7 @@ def test_cluster_hits_priority_and_limits():
 # ---------------------------------------------------------------------------
 def test_build_multi_prompt_contains_clusters_and_rules():
     clusters = mk.cluster_hits(HITS, max_clusters=3)
-    prompt = mk.build_multi_prompt("M9 覆铜板对 PCB 价值量的影响？", clusters)
+    prompt = mk.build_multi_prompt("M9 覆铜板对 PCB 价值量的影响？", clusters, prompt_version="v1")
     assert "【直接事实】" in prompt and "【推断】" in prompt
     assert "[unit_id]" in prompt and "页码" in prompt
     assert "知识库中没有足够依据回答该问题" in prompt
@@ -225,19 +225,20 @@ class pytest_raises:
 def test_prompt_v4_optional_and_default_v1():
     clusters = [{"label": "c1", "book": "b", "chapter": "ch", "units": [
         {"unit_id": "u1", "text": "M9 覆铜板提升 PCB 价值量", "concept": "覆铜板"}]}]
-    p1 = mk.build_multi_prompt("问题", clusters)
-    assert "【直接事实】" in p1 and "【事实摘录】" not in p1
-    p4 = mk.build_multi_prompt("问题", clusters, prompt_version="v4")
+    # wave34：默认切 v4（灰度）；v1 仍可显式回退
+    p4 = mk.build_multi_prompt("问题", clusters)
     assert "【事实摘录】" in p4 and "【推断】" in p4 and "完整示例" in p4
+    p1 = mk.build_multi_prompt("问题", clusters, prompt_version="v1")
+    assert "【直接事实】" in p1 and "【事实摘录】" not in p1
     assert p4 != p1
     try:
         mk.build_multi_prompt("问题", clusters, prompt_version="v9")
         assert False, "非法 prompt_version 应抛 MultiError"
     except mk.MultiError:
         pass
-    # answer_multi 默认 v1，显式 v4 记录到 payload
+    # answer_multi 默认 v4；显式 v1 可回退并记录到 payload
     chat = lambda prompt, **kw: "【事实】M9 覆铜板提升 PCB 价值量 [u1] p.2"
-    r1 = mk.answer_multi("问题", k=5, clusters=clusters, chat_fn=chat)
-    assert r1["prompt_version"] == "v1"
-    r4 = mk.answer_multi("问题", k=5, clusters=clusters, chat_fn=chat, prompt_version="v4")
+    r4 = mk.answer_multi("问题", k=5, clusters=clusters, chat_fn=chat)
     assert r4["prompt_version"] == "v4"
+    r1 = mk.answer_multi("问题", k=5, clusters=clusters, chat_fn=chat, prompt_version="v1")
+    assert r1["prompt_version"] == "v1"

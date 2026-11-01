@@ -21,6 +21,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import os
 import re
 import sys
 import time
@@ -38,10 +39,10 @@ DEFAULT_TOPK = 8
 DEFAULT_TIMEOUT = 300
 DEFAULT_MODE = "multi"          # 默认多单元聚合（A/B：可答率 33%→80%，回退 0）
 VALID_MODES = ("multi", "single")
-PROMPT_VERSIONS = ("v1", "v4")          # 聚合 prompt 版本（默认 v1；v4 可选灰度）
-DEFAULT_PROMPT_VERSION = "v1"
-MARKER_MODES = ("strict_line", "segment", "legacy")   # guard marker 模式（默认 strict_line）
-DEFAULT_MARKER_MODE = "strict_line"
+PROMPT_VERSIONS = ("v1", "v4")          # 聚合 prompt 版本（默认 v4 灰度；KB_QA_PROMPT_VERSION=v1 回滚）
+DEFAULT_PROMPT_VERSION = os.environ.get("KB_QA_PROMPT_VERSION", "v4").strip().lower()
+MARKER_MODES = ("strict_line", "segment", "legacy")   # guard marker 模式（默认 segment 灰度；KB_QA_MARKER_MODE=strict_line 回滚）
+DEFAULT_MARKER_MODE = os.environ.get("KB_QA_MARKER_MODE", "segment").strip().lower()
 UNIT_WEIGHT = 1.0
 CHUNK_WEIGHT = 0.35      # 语料 chunk 噪声较大（含视频评论等），只作补充证据
 MIN_CHUNK_OVERLAP = 2    # chunk 至少命中 2 个问题词才入选（降噪）

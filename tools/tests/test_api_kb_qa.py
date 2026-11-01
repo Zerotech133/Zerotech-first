@@ -51,7 +51,7 @@ class _FakeGuard:
             raise RuntimeError("guard 知识库 id 加载失败（测试注入）")
         return {"u1", "u2"}, {"b1"}
 
-    def apply_guard(self, result, unit_ids, book_ids, on_fail="fallback"):
+    def apply_guard(self, result, unit_ids, book_ids, on_fail="fallback", marker_mode=None):
         if self.fail:
             raise RuntimeError("guard 应用失败（测试注入）")
         GUARD_CALLS.append({"on_fail": on_fail, "n_unit_ids": len(unit_ids)})

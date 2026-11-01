@@ -398,15 +398,16 @@ def handle(method: str, path: str, query: dict | None = None, body: dict | None 
         try:
             guard = guard_impl or _load_guard()
             unit_ids, book_ids = _guard_ids(guard)
-            guard_kwargs = {"on_fail": GUARD_ON_FAIL}
-            if params["guard_marker"] != DEFAULT_GUARD_MARKER:
-                guard_kwargs["marker_mode"] = GUARD_MARKER_MODES[params["guard_marker"]]
+            # HTTP 默认保持 strict（显式传，避免随 kb_qa 默认 segment 漂移）
+            guard_kwargs = {"on_fail": GUARD_ON_FAIL,
+                            "marker_mode": GUARD_MARKER_MODES[params["guard_marker"]]}
             result = guard.apply_guard(result, unit_ids, book_ids, **guard_kwargs)
             guard_meta = _guard_meta(result)
             guard_meta["marker_mode"] = GUARD_MARKER_MODES[params["guard_marker"]]
         except Exception as exc:  # noqa: BLE001 - 守卫异常 fail-open（meta 标注，不 503）
             guard_meta = {"enabled": True, "applicable": True, "applied": False,
                           "on_fail": GUARD_ON_FAIL,
+                          "marker_mode": GUARD_MARKER_MODES[params["guard_marker"]],
                           "error": f"{type(exc).__name__}: {exc}"}
     elif mode == "multi" and pre_refusal:
         guard_meta["skipped"] = "refusal"   # 拒答不是生成性论断，守卫跳过
