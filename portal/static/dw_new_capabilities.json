@@ -122,6 +122,11 @@
    "id": "h24_h36_rejected",
    "result": "13 个假设全拒绝；六大统计陷阱判例",
    "action": "research/MEETING.md"
+  },
+  {
+   "id": "mining_v2",
+   "result": "93 月/15 假设：低波 t-4.47、反转 t-3.78；研报因子无信号",
+   "action": "候选（vol/mom/rev）待四关"
   }
  ],
  "deep_mining_directions": [
@@ -161,5 +166,81 @@
   "中性化（市值/行业）必做（S01 教训）",
   "事件按 cohort 聚合；覆盖<18 个月禁止检验（H34）",
   "服务重启/接线需 L2 五要素批准"
- ]
+ ],
+ "mining_v2": {
+  "generated_at": "2026-11-01T15:42:57+08:00",
+  "report": "research/reports/strategy_mining_20260930.{json,md}",
+  "window": "20190131 .. 20260930",
+  "months": 93,
+  "top": [
+   {
+    "feature": "vol_20",
+    "ic_mean": -0.09374,
+    "t_stat": -4.47,
+    "months": 93,
+    "ls_ann_approx_pct": -15.0
+   },
+   {
+    "feature": "turnover_20",
+    "ic_mean": -0.09156,
+    "t_stat": -2.7,
+    "months": 45,
+    "ls_ann_approx_pct": -14.9
+   },
+   {
+    "feature": "mom_20",
+    "ic_mean": -0.06205,
+    "t_stat": -3.78,
+    "months": 93,
+    "ls_ann_approx_pct": -16.3
+   },
+   {
+    "feature": "mom_120",
+    "ic_mean": -0.05771,
+    "t_stat": -3.19,
+    "months": 93,
+    "ls_ann_approx_pct": -12.7
+   },
+   {
+    "feature": "value_ep",
+    "ic_mean": 0.05131,
+    "t_stat": 1.64,
+    "months": 45,
+    "ls_ann_approx_pct": 8.5
+   },
+   {
+    "feature": "rev_5",
+    "ic_mean": 0.04145,
+    "t_stat": 2.9,
+    "months": 93,
+    "ls_ann_approx_pct": 16.5
+   },
+   {
+    "feature": "size_neg",
+    "ic_mean": 0.0236,
+    "t_stat": 1.05,
+    "months": 45,
+    "ls_ann_approx_pct": 10.4
+   },
+   {
+    "feature": "rating_mean",
+    "ic_mean": 0.00994,
+    "t_stat": 1.41,
+    "months": 93,
+    "ls_ann_approx_pct": 5.7
+   }
+  ],
+  "finding": [
+   "vol_20 低波：IC -0.094, t=-4.47（93 月）",
+   "turnover_20 低换手：IC -0.092, t=-2.70（45 月，2023+）",
+   "mom_20/mom_120 反转：IC -0.062/-0.058, t=-3.78/-3.19（93 月）",
+   "rev_5 五日反转：IC +0.041, t=2.90（93 月）",
+   "report_rc 特征（评级均值/上调比例/覆盖/目标价/评级变化）全部 t≤1.41 → 本轮构造无信号"
+  ],
+  "caveats": [
+   "current stock_basic → ST/幸存者偏差",
+   "daily_basic 2023+ → 估值类仅 45 月",
+   "挖掘轮非验证，无四关/多重检验修正（15 假设）"
+  ]
+ }
 }
