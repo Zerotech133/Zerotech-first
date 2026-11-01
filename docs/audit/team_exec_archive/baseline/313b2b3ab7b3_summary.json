@@ -1,0 +1,20 @@
+{
+  "schema": "team_result_summary/v1",
+  "stock": "002712",
+  "generated_at": "2026-10-30 18:44:25",
+  "recommendation": "WATCH",
+  "confidence": 0.4,
+  "risk_level": "HIGH",
+  "target_price": null,
+  "time_horizon": null,
+  "rationale": "攻防达轮次上限未收敛属存疑观察，多头箱体吸筹与空头天量派发相持不下，F1/N1虽偏空但无定性成立，弃单观察",
+  "l1_basis": "主假设未采纳（T1低位吸筹/T2天量派发，2轮未决相似度0.43）；佐证态：N1 negative-medium、F1 negative-medium；L4=存疑观察，禁止方向单",
+  "node_count": 5,
+  "execution_modes": {
+    "degraded": 3,
+    "normal": 2
+  },
+  "retry_total": 0,
+  "duration_ms_total": 299921.4,
+  "degraded": true
+}

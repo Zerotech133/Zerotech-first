@@ -37,6 +37,8 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 DEFAULT_DATA_DIR = REPO / "agent_platform" / "data" / "team_exec"
+# 2026-11-01 WO-T1T2-CAPTURE：受控归档（随单提交；tools/t1t2_capture.py 写）
+DEFAULT_ARCHIVE_DIR = REPO / "docs" / "audit" / "team_exec_archive"
 SCHEMA = "t1t2_metrics/v1"
 JSON_COMPLETE_MIN = 0.90
 REQUIRED_JSON_FIELDS = (
@@ -77,9 +79,24 @@ AB_RUNS = {
 }
 
 
-def _load_trace(data_dir, run_id):
-    """读单个 run 的节点 trace；缺失返回 (None, reason)。"""
-    path = Path(data_dir) / ("%s.jsonl" % run_id)
+def find_trace(data_dir, run_id, archive_dir=None):
+    """定位 run 的完整 trace：优先 team_exec，其次受控归档；返回 (path, summary|None)。"""
+    run_id = str(run_id)
+    p = Path(data_dir) / ("%s.jsonl" % run_id)
+    if p.is_file():
+        sp = Path(data_dir) / ("%s_summary.json" % run_id)
+        return p, (sp if sp.is_file() else None)
+    if archive_dir:
+        hits = sorted(Path(archive_dir).rglob("%s.jsonl" % run_id))
+        if hits:
+            sp = hits[0].parent / ("%s_summary.json" % run_id)
+            return hits[0], (sp if sp.is_file() else None)
+    return None, None
+
+
+def _load_trace(path):
+    """读单个 trace 文件的节点记录；缺失返回 (None, reason)。"""
+    path = Path(path)
     if not path.is_file():
         return None, "trace_missing: %s" % path
     rows = []
@@ -138,16 +155,20 @@ def _node_metrics(rows):
     return out
 
 
-def _run_metrics(data_dir, run_id):
-    rows, reason = _load_trace(data_dir, run_id)
+def _run_metrics(data_dir, run_id, archive_dir=None):
+    trace_path, summary_path = find_trace(data_dir, run_id, archive_dir)
+    if trace_path is None:
+        return None, ("trace_missing: %s/%s.jsonl（team_exec 与受控归档均无）"
+                      % (data_dir, run_id))
+    rows, reason = _load_trace(trace_path)
     if rows is None:
         return None, reason
     nodes = _node_metrics(rows)
     d1_modes = [str(r.get("execution_mode") or r.get("status") or "").lower()
                 for r in rows if str(r.get("agent_id") or "") == "D1"]
     summary = None
-    sp = Path(data_dir) / ("%s_summary.json" % run_id)
-    if sp.is_file():
+    sp = summary_path
+    if sp and sp.is_file():
         try:
             summary = json.loads(sp.read_text(encoding="utf-8", errors="replace"))
         except ValueError:
@@ -172,6 +193,7 @@ def _run_metrics(data_dir, run_id):
     latencies = [n["duration_ms"] for n in nodes]
     return {
         "run_id": run_id,
+        "source": str(trace_path),
         "t1t2_node_count": t1t2_count,
         "json_complete_count": complete,
         "json_complete_rate": round(complete / t1t2_count, 4) if t1t2_count else None,
@@ -186,10 +208,10 @@ def _run_metrics(data_dir, run_id):
     }, ""
 
 
-def _arm_metrics(data_dir, arm_name, arm):
+def _arm_metrics(data_dir, arm_name, arm, archive_dir=None):
     runs, missing = [], []
     for run_id in arm.get("run_ids") or []:
-        rep, reason = _run_metrics(data_dir, run_id)
+        rep, reason = _run_metrics(data_dir, run_id, archive_dir)
         if rep is None:
             missing.append({"run_id": run_id, "reason": reason})
         else:
@@ -251,13 +273,20 @@ def _gate(arms):
     }
 
 
-def aggregate(data_dir=None, runs=None):
-    """只读聚合；返回机器可读 dict（绝不从文档表格回填数字）。"""
+def aggregate(data_dir=None, runs=None, archive_dir=None):
+    """只读聚合；返回机器可读 dict（绝不从文档表格回填数字）。
+
+    2026-11-01 WO-T1T2-CAPTURE：team_exec 缺失时回落到受控归档
+    `docs/audit/team_exec_archive/`（tools/t1t2_capture.py 采集的 full_trace）；
+    log_salvage 件（*.salvage.json）不参与数值指标，避免把截断日志当完整 trace。
+    """
     data_dir = Path(data_dir or DEFAULT_DATA_DIR)
+    if archive_dir is None and DEFAULT_ARCHIVE_DIR.is_dir():
+        archive_dir = DEFAULT_ARCHIVE_DIR
     runs = runs or AB_RUNS
     arms = {}
     for name, arm in runs.items():
-        arms[name] = _arm_metrics(data_dir, name, arm)
+        arms[name] = _arm_metrics(data_dir, name, arm, archive_dir)
     baseline = arms.get("baseline") or {}
     unavailable = []
     if not baseline.get("runs_found"):
@@ -275,6 +304,7 @@ def aggregate(data_dir=None, runs=None):
             {"field": "arms.variant", "reason": "；".join(unavailable)}
         ] if unavailable else [],
         "data_dir": str(data_dir),
+        "archive_dir": str(archive_dir or ""),
         "gate": _gate(arms) if available else {
             "rule": "W1 Gate G1: JSON完整率>=%.0f%% 且 延迟不升"
                     % (JSON_COMPLETE_MIN * 100),
@@ -295,9 +325,11 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description="T1/T2 A/B 指标只读聚合（不造数）")
     ap.add_argument("--json", action="store_true", help="输出 JSON（默认也输出 JSON）")
     ap.add_argument("--data-dir", default="", help="team_exec 目录（默认仓库内路径）")
+    ap.add_argument("--archive-dir", default="",
+                    help="受控归档目录（默认 docs/audit/team_exec_archive）")
     ap.add_argument("--out", default="", help="结果落文件（如 agent_platform/data/evals/...）")
     a = ap.parse_args(argv)
-    rep = aggregate(a.data_dir or None)
+    rep = aggregate(a.data_dir or None, archive_dir=a.archive_dir or None)
     text = json.dumps(rep, ensure_ascii=False, indent=1)
     if a.out:
         out = Path(a.out)

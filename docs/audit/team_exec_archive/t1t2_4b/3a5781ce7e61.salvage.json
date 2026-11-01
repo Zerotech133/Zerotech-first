@@ -1,0 +1,50 @@
+{
+ "run_id": "3a5781ce7e61",
+ "stock": "002712",
+ "source_log": "C:\\Temp\\run_invest_t1t2_4b_2.log",
+ "source_log_sha256": "4948e7249662630f6b90c7b4361565344cdc2d2a19d56ad8016575ce18bc5f17",
+ "fidelity": "log_salvage",
+ "captured_at": "2026-11-01T08:15:16",
+ "nodes": [
+  {
+   "agent_id": "D1",
+   "status": "degraded",
+   "output_preview": "{\"recommendation\":\"WATCH\",\"confidence\":0.35,\"rationale\":\"T1 视放量跌破为吸筹，T2 判高位出货且基本面亏损；鉴于单日大跌10%及PE为负，定性存疑，严禁开仓。\",\"l1_basis",
+   "structured": null,
+   "duration_ms": null
+  },
+  {
+   "agent_id": "F1",
+   "status": "normal",
+   "output_preview": "土壤不成立：思美传媒 PE 为负且市值仅24.4亿，显示主业持续亏损与重整预期薄弱，缺乏支撑“有人愿意运作”的基本面事实。  需查证具体重组公告或业绩反转节点以确认是否具备重整逻辑，当前数据仅呈现经营困境而非转机信号。  建议暂缓介入，待明",
+   "structured": null,
+   "duration_ms": null
+  },
+  {
+   "agent_id": "N1",
+   "status": "normal",
+   "output_preview": "### 002712 (润和软件) 情绪面分析报告  今日盘面显示近5日累计下跌9.84%，但今日量比达1.15且换手率6.62%，呈现“缩量反弹”特征，需警惕高位放量后的资金分歧风险。舆情层面未发现重大利好或利空公告，市场传闻多为对技术面",
+   "structured": null,
+   "duration_ms": null
+  },
+  {
+   "agent_id": "T1",
+   "status": "normal",
+   "output_preview": "多空辩论结论（2轮，末轮相似度0.67，达轮次上限）：多头[bull·T1]：基于 L1 漏斗报告，多头证据链显示：低位箱体（4.39-5.27）内今日放量（35.8 万手）未破箱底，量比 1.15 预示吸筹启动；抢跑信号明确，无公告背景下",
+   "structured": null,
+   "duration_ms": null
+  },
+  {
+   "agent_id": "T2",
+   "status": "normal",
+   "output_preview": "多空辩论结论（2轮，末轮相似度0.67，达轮次上限）：多头[bull·T1]：基于 L1 漏斗报告，多头证据链显示：低位箱体（4.39-5.27）内今日放量（35.8 万手）未破箱底，量比 1.15 预示吸筹启动；抢跑信号明确，无公告背景下",
+   "structured": null,
+   "duration_ms": null
+  }
+ ],
+ "degraded_fields": [
+  "structured",
+  "duration_ms"
+ ],
+ "degraded_reason": "console 日志输出被截断，完整 structured/duration 不可得；本件仅用于状态/样本级审计，不用于 JSON 完整率/延迟计算。"
+}
