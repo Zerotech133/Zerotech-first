@@ -1,0 +1,20 @@
+{
+ "task_id": "T-20261102-121",
+ "opened_by": "A0",
+ "assigned_dept": "dev",
+ "assigned_agent": null,
+ "title": "数据仓全链路接入审计：雪球断流/漂移哨兵/快照调度/展示缺口（转 DATA1）",
+ "body": "【全链路审计】2026-11-02\n能力×数据×前端全链路审计结论（报告：deliverables/2026-11-02_数据仓全链路能力与数据接入审计_报告.md）：\n1) 数据断流：雪球舆情 10-21 起今日增量 0（XueqiuCrawl 18:00 首跑待执行；xq_seed 队列 done）→ 必须执行首跑并加断流告警；\n2) 前端失效：/data_daily.html 漂移卡片 PG v2_alert 不可达（Errno 22；端口 5442 实际 open）→ 排查 jev_common DSN；\n3) 快照无调度：dw_snapshot 生成器未注册任务（KgDataDashboard disabled），已手动刷新；需接入每日 06:40；\n4) 展示缺口：display 92 资产仅覆盖 78/256 物理表（178 未展示：daily_basic/index_daily/moneyflow/report_rc/forecast/hk_* 等）；\n5) 已修：dataops.html 断链 /kg-lineage.html→/lineage.html；\n6) 死产物：dw_new_capabilities.json 无消费方；健康产物 sentiment_bt/jev_impact 346h 陈旧；口径 27/256/92 需统一。\n请 DATA1：按优先级 P1 修复 1-4，P2 处理 5-6；完成后回复执收。",
+ "severity": "P1",
+ "status": "open",
+ "created_at": "2026-11-02T00:19:54",
+ "due": "2026-11-12",
+ "closure_note": null,
+ "history": [
+  {
+   "at": "2026-11-02T00:19:54",
+   "by": "A0",
+   "action": "open"
+  }
+ ]
+}
