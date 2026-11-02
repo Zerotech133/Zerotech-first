@@ -1,20 +1,20 @@
 {
- "generated_at": "2026-11-02T04:38:11+08:00",
+ "generated_at": "2026-11-02T14:05:55+08:00",
  "today": "2026-11-02",
  "catalog": {
-  "version": 18,
+  "version": 28,
   "tables": 256,
   "registry": {
    "physical": 256,
-   "display": 92
+   "display": 224
   },
-  "contracts": 9,
+  "contracts": 10,
   "qualification_unknown": 0,
   "manifest": {
-   "closed": 240,
-   "not_applicable": 12,
-   "open": 2,
-   "missing": 2
+   "closed": 243,
+   "not_applicable": 11,
+   "open": 1,
+   "missing": 1
   }
  },
  "lagging_daily": [
@@ -121,8 +121,8 @@
   "sources_mining": 37,
   "sources_pending": 0,
   "coverage_pct": 39.1,
-  "new_today": 3,
-  "pilot_today": 0,
+  "new_today": 11,
+  "pilot_today": 1,
   "merged_today": 1,
   "hypotheses": 53,
   "hypotheses_by_status": {
@@ -173,8 +173,8 @@
     "note": "approvals.jsonl 已落；回写待接"
    }
   ],
-  "backup_latest": "2026-11-01_0745",
-  "backup_age_hours": 28.6,
+  "backup_latest": "2026-11-02_0745",
+  "backup_age_hours": 14.1,
   "supervisor_red": []
  },
  "sources": [
@@ -378,11 +378,11 @@
    "rows": 76374,
    "rows_h": "7.6 万",
    "range": "000002_SZ..688356_SH",
-   "last_update": "2026-10-31",
+   "last_update": "2026-11-02",
    "latest_date": "20260930",
    "report_period": "",
    "lag_days": null,
-   "today_new": 0,
+   "today_new": 2,
    "registered": true,
    "manifest": "closed",
    "date_status": "registered",
@@ -605,17 +605,17 @@
    "freshness_mode": "event",
    "status": "done",
    "note": "3 年 21,196 行（含预告类型/幅度）",
-   "files": 4,
-   "size_mb": 8.4,
-   "size_h": "8 MB",
-   "rows": 21196,
-   "rows_h": "2.1 万",
-   "range": "p0001..p0004",
-   "last_update": "2026-10-30",
-   "latest_date": "20261030",
+   "files": 17,
+   "size_mb": 23.1,
+   "size_h": "23 MB",
+   "rows": 110470,
+   "rows_h": "11.0 万",
+   "range": "p0001..p0017",
+   "last_update": "2026-11-02",
+   "latest_date": "20221230",
    "report_period": "",
    "lag_days": null,
-   "today_new": 0,
+   "today_new": 13,
    "registered": true,
    "manifest": "closed",
    "date_status": "registered",
@@ -1105,17 +1105,17 @@
    "freshness_mode": "daily",
    "status": "mining",
    "note": "已入库，未用于研究",
-   "files": 282,
+   "files": 283,
    "size_mb": 5.4,
    "size_h": "5 MB",
    "rows": 28859,
    "rows_h": "2.9 万",
-   "range": "20250901..20261101",
-   "last_update": "2026-11-01",
-   "latest_date": "20261101",
+   "range": "20250901..20261102",
+   "last_update": "2026-11-02",
+   "latest_date": "20261102",
    "report_period": "",
-   "lag_days": 1,
-   "today_new": 0,
+   "lag_days": 0,
+   "today_new": 1,
    "registered": true,
    "manifest": "closed",
    "date_status": "registered",
@@ -1141,8 +1141,8 @@
    "files": 38,
    "size_mb": 2.1,
    "size_h": "2 MB",
-   "rows": 800,
-   "rows_h": "800",
+   "rows": 621,
+   "rows_h": "621",
    "range": "p0000..p0037",
    "last_update": "2026-11-01",
    "latest_date": "20261101",
@@ -1309,19 +1309,19 @@
    "freshness_mode": "daily",
    "status": "done",
    "note": "已入库/已登记（资产目录）",
-   "files": 94,
-   "size_mb": 85.5,
-   "size_h": "86 MB",
-   "rows": 1729477,
-   "rows_h": "172.9 万",
-   "range": "rc_201901..rc_202610",
-   "last_update": "2026-10-31",
+   "files": 202,
+   "size_mb": 141.0,
+   "size_h": "141 MB",
+   "rows": 2910978,
+   "rows_h": "291.1 万",
+   "range": "rc_201001..rc_202610",
+   "last_update": "2026-11-02",
    "latest_date": "",
    "report_period": "",
    "lag_days": null,
-   "today_new": 0,
+   "today_new": 108,
    "registered": true,
-   "manifest": "missing",
+   "manifest": "closed",
    "date_status": "unknown",
    "contract": false,
    "hypothesis_ids": [],
@@ -1336,17 +1336,17 @@
    "freshness_mode": "low_freq",
    "status": "mining",
    "note": "已入库，未用于研究",
-   "files": 38,
-   "size_mb": 19.3,
-   "size_h": "19 MB",
-   "rows": 6000,
-   "rows_h": "6000",
-   "range": "p0000..p0037",
-   "last_update": "2026-11-01",
+   "files": 1,
+   "size_mb": 0.4,
+   "size_h": "0 MB",
+   "rows": 8402,
+   "rows_h": "8402",
+   "range": "p0000..p0000",
+   "last_update": "2026-11-02",
    "latest_date": "20261101",
    "report_period": "",
    "lag_days": null,
-   "today_new": 0,
+   "today_new": 1,
    "registered": true,
    "manifest": "closed",
    "date_status": "registered",
@@ -1397,13 +1397,13 @@
    "rows_h": "2000",
    "range": "p0000..p0002",
    "last_update": "2026-11-01",
-   "latest_date": "",
+   "latest_date": "20261030",
    "report_period": "",
    "lag_days": null,
    "today_new": 0,
    "registered": true,
    "manifest": "closed",
-   "date_status": "unknown",
+   "date_status": "registered",
    "contract": false,
    "hypothesis_ids": [],
    "gap_note": "",
@@ -1868,7 +1868,7 @@
    "files": 33,
    "size_mb": 33.1,
    "size_h": "33 MB",
-   "rows": 23691,
+   "rows": 23690,
    "rows_h": "2.4 万",
    "range": "p0000..p0032",
    "last_update": "2026-11-01",
@@ -2003,13 +2003,13 @@
    "status": "in_progress",
    "note": "保留 365 天；历史不可回填（接口深度约 1 周）",
    "files": 1,
-   "size_mb": 126.41,
-   "size_h": "126 MB",
-   "rows": 111396,
-   "rows_h": "111396",
+   "size_mb": 127.33,
+   "size_h": "127 MB",
+   "rows": 112877,
+   "rows_h": "112877",
    "range": "news.db",
    "last_update": "2026-11-02",
-   "latest_date": "2026-11-02 04:34",
+   "latest_date": "2026-11-02 14:03",
    "lag_days": 0,
    "today_new": 1,
    "registered": true,
@@ -2032,15 +2032,15 @@
    "status": "in_progress",
    "note": "2012-2026；2021+ 稀疏，已加 3 轮抓取",
    "files": 1,
-   "size_mb": 30.36,
+   "size_mb": 30.39,
    "size_h": "30 MB",
-   "rows": 33351,
-   "rows_h": "33351",
+   "rows": 33353,
+   "rows_h": "33353",
    "range": "xueqiu_info.db",
-   "last_update": "2026-11-01",
-   "latest_date": "2026-11-01 12:15:19",
+   "last_update": "2026-11-02",
+   "latest_date": "2026-11-01 20:17:19",
    "lag_days": 0,
-   "today_new": 0,
+   "today_new": 1,
    "registered": true,
    "manifest": "—",
    "date_status": "—",
@@ -2060,15 +2060,15 @@
    "status": "in_progress",
    "note": "判定账本；后验/company 覆盖不足（见缺口）",
    "files": 1,
-   "size_mb": 29.88,
+   "size_mb": 30.31,
    "size_h": "30 MB",
-   "rows": 109864,
-   "rows_h": "109864",
+   "rows": 111489,
+   "rows_h": "111489",
    "range": "jev_audit.db",
-   "last_update": "2026-11-01",
-   "latest_date": "2026-11-01 08:03",
+   "last_update": "2026-11-02",
+   "latest_date": "2026-11-02 07:04",
    "lag_days": 0,
-   "today_new": 0,
+   "today_new": 1,
    "registered": true,
    "manifest": "—",
    "date_status": "—",
@@ -2076,7 +2076,7 @@
    "hypothesis_ids": [
     "H6"
    ],
-   "gap_note": "判定 109864 条 / 有后验 21249 条（19.3%）/ companies 空 84118 条（77%）",
+   "gap_note": "判定 111489 条 / 有后验 21249 条（19.1%）/ companies 空 85524 条（77%）",
    "next_action": "判定账本；后验/company 覆盖不足（见缺口）"
   },
   {
@@ -2117,15 +2117,15 @@
    "status": "done",
    "note": "资格/取证底账",
    "files": 1,
-   "size_mb": 1.45,
-   "size_h": "1 MB",
+   "size_mb": 1.54,
+   "size_h": "2 MB",
    "rows": null,
    "rows_h": "—",
    "range": "evidence_chain.db",
-   "last_update": "2026-11-01",
+   "last_update": "2026-11-02",
    "latest_date": "",
    "lag_days": null,
-   "today_new": 0,
+   "today_new": 1,
    "registered": true,
    "manifest": "—",
    "date_status": "—",
@@ -2194,6 +2194,69 @@
  },
  "new_today_sources": [
   {
+   "name": "cyq_chips",
+   "label": "Tushare·筹码分布",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "low_freq",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 23,
+   "size_mb": 0.2,
+   "size_h": "0 MB",
+   "rows": 76374,
+   "rows_h": "7.6 万",
+   "range": "000002_SZ..688356_SH",
+   "last_update": "2026-11-02",
+   "latest_date": "20260930",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 2,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "forecast",
+   "label": "Tushare·业绩预告",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "event",
+   "status": "done",
+   "note": "3 年 21,196 行（含预告类型/幅度）",
+   "files": 17,
+   "size_mb": 23.1,
+   "size_h": "23 MB",
+   "rows": 110470,
+   "rows_h": "11.0 万",
+   "range": "p0001..p0017",
+   "last_update": "2026-11-02",
+   "latest_date": "20221230",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 13,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [
+    "H2",
+    "H11",
+    "H12"
+   ],
+   "gap_note": "",
+   "next_action": "—",
+   "audit": {
+    "source_latest": "20261024",
+    "local_latest": "20261024",
+    "verdict": "aligned"
+   }
+  },
+  {
    "name": "index_weight",
    "label": "Tushare·指数权重",
    "method": "接口同步",
@@ -2212,6 +2275,93 @@
    "report_period": "",
    "lag_days": null,
    "today_new": 2,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究"
+  },
+  {
+   "name": "limit_list_d",
+   "label": "Tushare·涨跌停列表",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 283,
+   "size_mb": 5.4,
+   "size_h": "5 MB",
+   "rows": 28859,
+   "rows_h": "2.9 万",
+   "range": "20250901..20261102",
+   "last_update": "2026-11-02",
+   "latest_date": "20261102",
+   "report_period": "",
+   "lag_days": 0,
+   "today_new": 1,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "registered",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "已入库，未用于研究",
+   "audit": {
+    "source_latest": "20261029",
+    "local_latest": "20261029",
+    "verdict": "aligned",
+    "filled": 0
+   }
+  },
+  {
+   "name": "report_rc",
+   "label": "report_rc",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "daily",
+   "status": "done",
+   "note": "已入库/已登记（资产目录）",
+   "files": 202,
+   "size_mb": 141.0,
+   "size_h": "141 MB",
+   "rows": 2910978,
+   "rows_h": "291.1 万",
+   "range": "rc_201001..rc_202610",
+   "last_update": "2026-11-02",
+   "latest_date": "",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 108,
+   "registered": true,
+   "manifest": "closed",
+   "date_status": "unknown",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "—"
+  },
+  {
+   "name": "research_report",
+   "label": "Tushare·研报数据",
+   "method": "接口同步",
+   "layer": "接口同步",
+   "freshness_mode": "low_freq",
+   "status": "mining",
+   "note": "已入库，未用于研究",
+   "files": 1,
+   "size_mb": 0.4,
+   "size_h": "0 MB",
+   "rows": 8402,
+   "rows_h": "8402",
+   "range": "p0000..p0000",
+   "last_update": "2026-11-02",
+   "latest_date": "20261101",
+   "report_period": "",
+   "lag_days": null,
+   "today_new": 1,
    "registered": true,
    "manifest": "closed",
    "date_status": "registered",
@@ -2258,13 +2408,13 @@
    "status": "in_progress",
    "note": "保留 365 天；历史不可回填（接口深度约 1 周）",
    "files": 1,
-   "size_mb": 126.41,
-   "size_h": "126 MB",
-   "rows": 111396,
-   "rows_h": "111396",
+   "size_mb": 127.33,
+   "size_h": "127 MB",
+   "rows": 112877,
+   "rows_h": "112877",
    "range": "news.db",
    "last_update": "2026-11-02",
-   "latest_date": "2026-11-02 04:34",
+   "latest_date": "2026-11-02 14:03",
    "lag_days": 0,
    "today_new": 1,
    "registered": true,
@@ -2277,6 +2427,88 @@
    ],
    "gap_note": "仅约 1 个月历史；历史无法回填",
    "next_action": "保留 365 天；历史不可回填（接口深度约 1 周）"
+  },
+  {
+   "name": "xueqiu_info.db",
+   "label": "雪球舆情·本地库(SQLite)",
+   "method": "爬虫采集",
+   "layer": "本地库",
+   "freshness_mode": "daily",
+   "status": "in_progress",
+   "note": "2012-2026；2021+ 稀疏，已加 3 轮抓取",
+   "files": 1,
+   "size_mb": 30.39,
+   "size_h": "30 MB",
+   "rows": 33353,
+   "rows_h": "33353",
+   "range": "xueqiu_info.db",
+   "last_update": "2026-11-02",
+   "latest_date": "2026-11-01 20:17:19",
+   "lag_days": 0,
+   "today_new": 1,
+   "registered": true,
+   "manifest": "—",
+   "date_status": "—",
+   "contract": false,
+   "hypothesis_ids": [
+    "H5"
+   ],
+   "gap_note": "2021+ 密度低（月均数十条）",
+   "next_action": "2012-2026；2021+ 稀疏，已加 3 轮抓取"
+  },
+  {
+   "name": "jev_audit.db",
+   "label": "JEV判定账本·本地库(SQLite)",
+   "method": "本地库",
+   "layer": "本地库",
+   "freshness_mode": "daily",
+   "status": "in_progress",
+   "note": "判定账本；后验/company 覆盖不足（见缺口）",
+   "files": 1,
+   "size_mb": 30.31,
+   "size_h": "30 MB",
+   "rows": 111489,
+   "rows_h": "111489",
+   "range": "jev_audit.db",
+   "last_update": "2026-11-02",
+   "latest_date": "2026-11-02 07:04",
+   "lag_days": 0,
+   "today_new": 1,
+   "registered": true,
+   "manifest": "—",
+   "date_status": "—",
+   "contract": false,
+   "hypothesis_ids": [
+    "H6"
+   ],
+   "gap_note": "判定 111489 条 / 有后验 21249 条（19.1%）/ companies 空 85524 条（77%）",
+   "next_action": "判定账本；后验/company 覆盖不足（见缺口）"
+  },
+  {
+   "name": "evidence_chain.db",
+   "label": "证据链·本地库(SQLite)",
+   "method": "本地库",
+   "layer": "本地库",
+   "freshness_mode": "daily",
+   "status": "done",
+   "note": "资格/取证底账",
+   "files": 1,
+   "size_mb": 1.54,
+   "size_h": "2 MB",
+   "rows": null,
+   "rows_h": "—",
+   "range": "evidence_chain.db",
+   "last_update": "2026-11-02",
+   "latest_date": "",
+   "lag_days": null,
+   "today_new": 1,
+   "registered": true,
+   "manifest": "—",
+   "date_status": "—",
+   "contract": false,
+   "hypothesis_ids": [],
+   "gap_note": "",
+   "next_action": "—"
   }
  ],
  "hypotheses": [
@@ -2919,21 +3151,120 @@
  ],
  "reports": [
   {
-   "name": "catalog_registry_mapping_20261102.json",
-   "title_zh": "研究报告",
-   "kind": "原始数据",
-   "size_kb": 188.2,
-   "date": "2026-11-02",
-   "time": "04:36",
-   "hid": ""
-  },
-  {
    "name": "learning_intake_20261102.json",
    "title_zh": "研究报告",
    "kind": "原始数据",
    "size_kb": 0.5,
    "date": "2026-11-02",
-   "time": "04:33",
+   "time": "14:03",
+   "hid": ""
+  },
+  {
+   "name": "kpi_baseline_20261102.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 2.0,
+   "date": "2026-11-02",
+   "time": "13:56",
+   "hid": ""
+  },
+  {
+   "name": "dataset_query_coverage_20261102.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 41.4,
+   "date": "2026-11-02",
+   "time": "13:20",
+   "hid": ""
+  },
+  {
+   "name": "lineage_20261102.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 0.4,
+   "date": "2026-11-02",
+   "time": "11:46",
+   "hid": ""
+  },
+  {
+   "name": "learning_standardize_20261102.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 0.2,
+   "date": "2026-11-02",
+   "time": "10:00",
+   "hid": ""
+  },
+  {
+   "name": "qualification_xtcloud_dryrun_20261102.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 190.8,
+   "date": "2026-11-02",
+   "time": "08:36",
+   "hid": ""
+  },
+  {
+   "name": "daily_kb_status.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 5.7,
+   "date": "2026-11-02",
+   "time": "08:35",
+   "hid": ""
+  },
+  {
+   "name": "report_panel_daily_status.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 12.0,
+   "date": "2026-11-02",
+   "time": "08:35",
+   "hid": ""
+  },
+  {
+   "name": "selection_daily_20261030.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 23.6,
+   "date": "2026-11-02",
+   "time": "08:30",
+   "hid": ""
+  },
+  {
+   "name": "catalog_registry_mapping_20261102.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 188.6,
+   "date": "2026-11-02",
+   "time": "07:15",
+   "hid": ""
+  },
+  {
+   "name": "qualification_evidence_20261102.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 964.0,
+   "date": "2026-11-02",
+   "time": "07:12",
+   "hid": ""
+  },
+  {
+   "name": "xueqiu_first_run_20261102.md",
+   "title_zh": "研究报告",
+   "kind": "报告正文",
+   "size_kb": 22.8,
+   "date": "2026-11-02",
+   "time": "07:11",
+   "hid": ""
+  },
+  {
+   "name": "quality_daily_20261102.json",
+   "title_zh": "研究报告",
+   "kind": "原始数据",
+   "size_kb": 1.4,
+   "date": "2026-11-02",
+   "time": "07:00",
    "hid": ""
   },
   {
@@ -2982,15 +3313,6 @@
    "hid": ""
   },
   {
-   "name": "learning_standardize_20261102.json",
-   "title_zh": "研究报告",
-   "kind": "原始数据",
-   "size_kb": 0.1,
-   "date": "2026-11-02",
-   "time": "04:02",
-   "hid": ""
-  },
-  {
    "name": "learning_governance_20261102.json",
    "title_zh": "研究报告",
    "kind": "原始数据",
@@ -3006,15 +3328,6 @@
    "size_kb": 0.1,
    "date": "2026-11-02",
    "time": "04:02",
-   "hid": ""
-  },
-  {
-   "name": "quality_daily_20261102.json",
-   "title_zh": "研究报告",
-   "kind": "原始数据",
-   "size_kb": 1.5,
-   "date": "2026-11-02",
-   "time": "04:01",
    "hid": ""
   },
   {
@@ -3054,28 +3367,10 @@
    "hid": ""
   },
   {
-   "name": "selection_daily_20261030.json",
-   "title_zh": "研究报告",
-   "kind": "原始数据",
-   "size_kb": 12.9,
-   "date": "2026-11-02",
-   "time": "03:25",
-   "hid": ""
-  },
-  {
    "name": "s06_backtest_20261101.json",
    "title_zh": "研究报告",
    "kind": "原始数据",
    "size_kb": 22.2,
-   "date": "2026-11-02",
-   "time": "03:25",
-   "hid": ""
-  },
-  {
-   "name": "report_panel_daily_status.json",
-   "title_zh": "研究报告",
-   "kind": "原始数据",
-   "size_kb": 10.9,
    "date": "2026-11-02",
    "time": "03:25",
    "hid": ""
@@ -3130,15 +3425,6 @@
    "title_zh": "研究报告",
    "kind": "报告正文",
    "size_kb": 6.5,
-   "date": "2026-11-02",
-   "time": "03:25",
-   "hid": ""
-  },
-  {
-   "name": "daily_kb_status.json",
-   "title_zh": "研究报告",
-   "kind": "原始数据",
-   "size_kb": 8.4,
    "date": "2026-11-02",
    "time": "03:25",
    "hid": ""
@@ -3223,60 +3509,6 @@
    "date": "2026-11-02",
    "time": "02:49",
    "hid": ""
-  },
-  {
-   "name": "qa_quality_20261102.md",
-   "title_zh": "研究报告",
-   "kind": "报告正文",
-   "size_kb": 1.2,
-   "date": "2026-11-02",
-   "time": "02:49",
-   "hid": ""
-  },
-  {
-   "name": "qa_quality_20261102.json",
-   "title_zh": "研究报告",
-   "kind": "原始数据",
-   "size_kb": 9.0,
-   "date": "2026-11-02",
-   "time": "02:49",
-   "hid": ""
-  },
-  {
-   "name": "eval_regression_history.json",
-   "title_zh": "研究报告",
-   "kind": "原始数据",
-   "size_kb": 1.4,
-   "date": "2026-11-02",
-   "time": "02:49",
-   "hid": ""
-  },
-  {
-   "name": "weekly_eval_20261102.md",
-   "title_zh": "研究报告",
-   "kind": "报告正文",
-   "size_kb": 1.1,
-   "date": "2026-11-02",
-   "time": "02:49",
-   "hid": ""
-  },
-  {
-   "name": "weekly_eval_20261102.json",
-   "title_zh": "研究报告",
-   "kind": "原始数据",
-   "size_kb": 1.3,
-   "date": "2026-11-02",
-   "time": "02:49",
-   "hid": ""
-  },
-  {
-   "name": "card_proposals_v4_20261102.md",
-   "title_zh": "研究报告",
-   "kind": "报告正文",
-   "size_kb": 12.2,
-   "date": "2026-11-02",
-   "time": "02:48",
-   "hid": ""
   }
  ],
  "tasks": {
@@ -3286,18 +3518,44 @@
     "status": "review",
     "owner": "DSH-Lead",
     "desc": "审计修复：release_artifact_guard expected_sha 未校验，锁写前补 sha256 一致性检查+测试"
+   },
+   {
+    "id": "K-STOCK-ANALYSIS-P2-7-20261030",
+    "status": "doing",
+    "owner": "DSH-Lead",
+    "desc": "P2.7 测试隔离修复：test_api_customer 试用/任务写入生产 commercial.db（796 个 trial 污染）+ 断言"
    }
   ],
-  "doing_data": [],
+  "doing_data": [
+   {
+    "id": "K-STOCK-ANALYSIS-P2-7-20261030",
+    "status": "doing",
+    "owner": "DSH-Lead",
+    "desc": "P2.7 测试隔离修复：test_api_customer 试用/任务写入生产 commercial.db（796 个 trial 污染）+ 断言"
+   }
+  ],
   "today_pilot": [
    {
     "id": "K-ORG-20261102-RELGUARD",
     "status": "review",
     "owner": "DSH-Lead",
     "desc": "审计修复：release_artifact_guard expected_sha 未校验，锁写前补 sha256 一致性检查+测试"
+   },
+   {
+    "id": "K-STOCK-ANALYSIS-P2-7-20261030",
+    "status": "doing",
+    "owner": "DSH-Lead",
+    "desc": "P2.7 测试隔离修复：test_api_customer 试用/任务写入生产 commercial.db（796 个 trial 污染）+ 断言"
    }
   ],
-  "today_pilot_data": [],
+  "today_pilot_data": [
+   {
+    "id": "K-STOCK-ANALYSIS-P2-7-20261030",
+    "status": "doing",
+    "owner": "DSH-Lead",
+    "desc": "P2.7 测试隔离修复：test_api_customer 试用/任务写入生产 commercial.db（796 个 trial 污染）+ 断言"
+   }
+  ],
   "today_merged": [
    {
     "id": "WO-VAL-FACTOR-20261101",
@@ -3360,7 +3618,8 @@
    "aborted": 135,
    "done": 1900,
    "parked": 8,
-   "review": 1
+   "review": 1,
+   "doing": 1
   }
  },
  "governance": [
@@ -3519,51 +3778,51 @@
  ],
  "ops": {
   "backup": {
-   "latest": "2026-11-01_0745",
+   "latest": "2026-11-02_0745",
    "products": [
     {
      "name": "jev_eval.tar.gz",
-     "mb": 3.9
+     "mb": 4.0
     },
     {
      "name": "neo4j_kg.tar.gz",
-     "mb": 467.5
+     "mb": 472.8
     },
     {
      "name": "quant_code.tar.gz",
-     "mb": 611.1
+     "mb": 604.7
     },
     {
      "name": "quant_data.tar.gz",
-     "mb": 466.1
+     "mb": 470.2
     },
     {
      "name": "jev_eval.tar.gz",
-     "mb": 3.9
+     "mb": 4.0
     },
     {
      "name": "neo4j_kg.tar.gz",
-     "mb": 467.5
+     "mb": 472.8
     },
     {
      "name": "quant_code.tar.gz",
-     "mb": 611.1
+     "mb": 604.7
     },
     {
      "name": "quant_data.tar.gz",
-     "mb": 466.1
+     "mb": 470.2
     },
     {
      "name": "zhice_db.sql.gz.enc",
-     "mb": 769.0
+     "mb": 801.4
     }
    ],
    "receipt": "offsite_remote_receipt.txt",
-   "age_hours": 28.6
+   "age_hours": 14.1
   },
   "supervisor": {
    "red": [],
-   "generated_at": "2026-11-02T04:38:11"
+   "generated_at": "2026-11-02T14:05:55"
   },
   "approvals": {
    "count": 4,
