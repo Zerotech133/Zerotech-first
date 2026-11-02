@@ -212,3 +212,13 @@ def test_a0_mainchat_direct_readonly_executable():
     assert r.returncode == 0, (r.stderr or r.stdout)[-3000:]
     assert "A0_MAINCHAT_DIRECT_READONLY_OK" in (r.stdout or "")
 
+def test_acad1_pool_public_page_route():
+    """/acad1/pool 公开只读页路由（L2 2026-11-02）；页面文件已匿名可读，不新增鉴权依赖。"""
+    s = _text()
+    m = re.search(r"location = /acad1/pool \{(.*?)\n    \}", s, re.S)
+    assert m, "/acad1/pool"
+    block = m.group(1)
+    assert "try_files /acad1_pool.html =404;" in block
+    assert "auth_request" not in block
+    assert 'Cache-Control "no-cache"' in block
+
