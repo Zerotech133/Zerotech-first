@@ -8,7 +8,7 @@ metadata:
   lifecycle: draft
   tier: data
   host: lingjie
-  description: 全域数据集登记/取数/血缘/契约（314 数据集，文件级 + PG 待补）
+  description: 全域数据集登记/取数/血缘/契约（314 数据集：registered 265/314=84.4%、exposed 72/314=22.9%；文件级 + PG/C:\Temp 待补）
   created: "2026-11-02"
   updated: "2026-11-02"
 spec:
@@ -23,15 +23,36 @@ spec:
   data:
     requires:
       - ref: dataset/registry/dataset_registry
+        note: "统一登记真源：314 数据集，registered 265（84.4%）/ exposed 72（22.9%）；文件级只读"
       - ref: dataset/registry/catalog
+        note: "资产 catalog v18：256 物理表口径；与 314 数据集口径不同，勿混用"
       - ref: dataset/dir/quant_backtest_data
+        note: "接口数据域数据根（241 数据集）；路径 quant_backtest/data，只读"
       - ref: dataset/dir/knowledge_base
+        note: "学习派生/开源情报语料根（YouTube 补盘来源，学习派生 29 数据集）；只读"
+      - ref: dataset/pg/v2_zhice_tables
+        note: "GAP：智策 83 张 v2_* 表未登记（pg_table 连接器缺）；整改期 2026-11-12，DWH-103"
+      - ref: dataset/file/temp_contract
+        note: "GAP：C:\\Temp 契约产物 0 覆盖；整改期 2026-11-12 契约目录化（schema/版本/保留期），DWH-103"
     contract: data-warehouse/v1
     sla:
-      registered_ratio: 0.95
-      covered_ratio: 1.0
+      # 目标（Sprint3 WP-I6）：登记率≥95%、取数入口覆盖率≥80%；不因基线低而下调
+      registered_ratio_target: 0.95
+      exposed_ratio_target: 0.8
       freshness_required: true
       lineage_required: true
+      # 实测基线（2026-11-02，数据集口径 314；四源对账见 DWH-104 报告）
+      baseline:
+        datasets: 314
+        registered: 265
+        registered_ratio: 0.844
+        exposed: 72
+        exposed_ratio: 0.229
+      # GAP 与整改期（DWH-102 对齐；明细见 notes 与 DWH-103）
+      gap:
+        registered_missing: 49
+        exposed_missing: 242
+        remediation_due: "2026-11-12"
   interfaces:
     exposes:
       - http: /api/dw/stats
@@ -74,16 +95,24 @@ spec:
   slo:
     datasets: 314
     registered: 265
+    registered_ratio: 0.844
     exposed: 72
+    exposed_ratio: 0.229
     pg_table_covered: false
     temp_contract_covered: false
+    verified_at: "2026-11-02T08:38:48+08:00"
+    verified_source: "dataset_inventory_20261102.json sha256:6D162E1E…B3C1A + /api/dw/stats@8091 四源对账"
   notes:
     - "P0 影子清单；dataset_registry 现为文件级只读（dir/sqlite_table/corpus_layer）。"
-    - "缺 pg_table 连接器：智策 83 张 v2_* 表全在登记外（P2 补）。"
-    - "C:\\Temp 契约产物 0 覆盖；P2 收敛为带 schema/版本/保留期的契约目录。"
+    - "缺 pg_table 连接器：智策 83 张 v2_* 表在登记外；GAP 整改期 2026-11-12（DWH-103），登记率 84.4% 的解是补 PG 后重算。"
+    - "C:\\Temp 契约产物 0 覆盖；GAP 整改期 2026-11-12 收敛为带 schema/版本/保留期的契约目录（DWH-103）。"
     - "统一数据面契约未成立前，数据仓只能当'文件级目录 + 取样'，不能宣称全域覆盖。"
+    - "DWH-102 v1.1（2026-11-02）：SLA 目标沿用 WP-I6（登记≥95%、取数入口≥80%）；基线 314/265/72（84.4%/22.9%），差 49/242，整改期 2026-11-12。"
+    - "口径真源：dataset_inventory_20261102.json（sha256 6D16…B3C1A，mtime 2026-11-02 02:15:50）+ /api/dw/stats@8091 四源对账 2026-11-02T08:38:48+08:00；catalog.json 256 物理表为另一口径。"
+    - "取数面：/api/dw/* 直连 8091 返回 200；经 8734 因 nginx H4-B 白名单未登记返回 401（L2 待批 task-11），auth.public=false 不变。"
+    - "metadata.version 保持 1.0.0：升 1.1.0 需 registry.json 同批（ARCH1 单 owner），否则 plan --strict 漂移会阻断 merge；交接 ARCH1。"
 status:
   phase: shadow
   health: unknown
   validated: false
-  source: "dataset_inventory_20261102.json + WP-I3 回执 + 实测审计"
+  source: "dataset_inventory_20261102.json + WP-I3 回执 + DWH-104 四源对账（2026-11-02）"

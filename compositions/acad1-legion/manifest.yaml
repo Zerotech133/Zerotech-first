@@ -8,7 +8,7 @@ metadata:
   lifecycle: draft
   tier: legion
   host: lingjie
-  description: ACAD1 选股研究治理军团（11 席 + 策略研究/验证/复核）
+  description: ACAD1 选股研究治理军团（11 席 + 策略研究/验证/复核；30 卡池 CN12/HK10/US6/CRYPTO2；SLA freshness 1d / pool 30 / evidence≤26h / data_date lag 1d）
   created: "2026-11-02"
   updated: "2026-11-02"
 spec:
@@ -41,13 +41,17 @@ spec:
   data:
     requires:
       - ref: dataset/pg/v2_acad1_pool
-        note: PG 5446 zhice_os_v2（真源候选）
+        note: PG 5446 zhice_os_v2；最新 30 只（10-31）；门户 JSON 池 19（10-30），双池未收口（P2 净化）
       - ref: dataset/pg/v2_stock_research
       - ref: dataset/pg/v2_selection_pool
       - ref: dataset/file/acad1_evidence_bundle
-        note: C:\Temp 契约产物（P2 收敛为契约目录）
+        note: C:\Temp\acad1_evidence_bundle.json（2026-11-02 00:39，只读；P2 收敛为契约目录）
     contract: acad1-pool/v1
     sla:
+      # ACL-102 v1.1 校准（2026-11-02）：SLA 四字段唯一落点=此处，不双写 spec.slo。
+      # 口径源：2026-10-31 老田《ACAD1 日复核 30 与数据源方案》配额 CN12/HK10/US6/CRYPTO2=30；
+      #        freshness/lag 1 天；evidence 26h = 1 天 data_date 滞后 ×24h + 2h 日管线余量。
+      # 回归：agent_platform/tests/test_academy_wiring.py::AcademyPoolSlaTests（4 例，ACL-101）。
       freshness_days: 1
       pool_max: 30
       evidence_max_age_h: 26
@@ -55,7 +59,7 @@ spec:
   interfaces:
     exposes:
       - http: /api/acad1/pool
-      - http: /api/v1/acad1-research
+      - http: /quant-api/api/v1/acad1-research   # 8734 宿主入口→8105 原生 /api/v1/acad1-research（auth_request）
       - page: /academy/shuijing
     consumes:
       - taskstore
@@ -71,10 +75,13 @@ spec:
     - ref: page/acad1/pool
   jobs:
     - ref: job/zhice-daily-research-ops
-      note: 16 步日管线（Windows 计划任务 17:00 触发）
+      note: 16 步日管线；计划任务 ZhiceAcad1Pool 每日 17:00（2026-11-02 实测 NextRun 17:00）
     - ref: job/academy-intake-brief
+      note: 计划任务 AcademyIntakeBrief；周一 09:30（实测 NextRun 2026-11-02 09:30）
     - ref: job/academy-review
+      note: 计划任务 AcademyReview；周三 15:00（实测 NextRun 2026-11-04 15:00）
     - ref: job/academy-weekly-report
+      note: 计划任务 AcademyWeeklyReport；周五 16:00（实测 NextRun 2026-11-06 16:00）
   channels:
     - feishu
     - portal
@@ -105,8 +112,13 @@ spec:
     - "ACAD1 相关代码寄居智策：8 router/10 表/27 脚本/6 页面/7,599 行，按 ADR-016 收敛。"
     - "证据包与部分上游走 C:\\Temp 绝对路径，P2 换契约目录 + schema 版本。"
     - "人工复核不自动通过/否决；11-08 冻结前 13 张 review 卡需逐张复核。"
+    - "ACL-102 v1.1 对齐（2026-11-02）：SLA 四字段唯一落 spec.data.sla（1/30/26/1），不双写 spec.slo；口径源=2026-10-31 老田 30 配额决策 + ACL-101 回归测试固化。"
+    - "metadata.version 保持 1.0.0：升 1.1.0 须 registry.json 同批（ARCH1 单 owner），否则 plan --strict 漂移被 P1.2 组合门拒收；交接 ARCH1。"
+    - "接口口径：/api/v1/acad1-research 是智策 8105 原生路径；8734 宿主入口实为 /quant-api/api/v1/acad1-research（auth_request，未登录 401）。"
+    - "页面/鉴权现状（2026-11-02 GET 实测）：/academy/shuijing=200、/api/acad1/pool=200（nginx H4-B 公开族 C，只读无 auth_request）；/acad1/pool 在 8734=404（8091=200，nginx 路由未登记）→ P2/L2 补登记。"
+    - "运行时双层：research API 走智策 8105（internal-service，经 /quant-api/ 反代）；pool API/页走 portal-api 8091（/api/acad1/pool、/academy/shuijing）；runtime.service=quant-api 为整合主服务，P2 单栈收口。"
 status:
   phase: shadow
   health: unknown
   validated: false
-  source: "2026-11-02 只读反推（研究报告 v1.2 §2/§3 + 审计子任务）"
+  source: "2026-11-02 只读反推（研究报告 v1.2 §2/§3 + 审计子任务）；2026-11-02 ACL-102 校准（SLA/接口/页面/任务 vs 实测）"
