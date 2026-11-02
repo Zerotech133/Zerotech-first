@@ -82,6 +82,8 @@ YEAR_DATE_COLS = frozenset({"year", "report_year", "fiscal_year", "ann_year"})
 ALLOWED_REGISTRY_FIELDS = {
     "qualification_status", "evidence_checked_at", "evidence_summary", "unsupported_reason",
 }
+# 写回允许的资格状态枚举（task-77：防止 None/拼写错误 verdict 落库）
+QUALIFICATION_STATUSES = frozenset({"evidence_ok", "evidence_partial", "evidence_bad"})
 _RE_DATE8 = re.compile(r"(?<!\d)((?:19|20)\d{6})(?!\d)")
 _RE_MONTH6 = re.compile(r"(?<!\d)((?:19|20)\d{2}(?:0[1-9]|1[0-2]))(?!\d)")
 
@@ -1220,6 +1222,11 @@ def validate_registry(before: dict, after: dict, tables: list,
                       catalog_sha: str, expected_physical: int | None = EXPECTED_PHYSICAL,
                       expected_display: int | None = EXPECTED_DISPLAY) -> dict:
     diff = diff_registry(before, after, tables)
+    target = set(tables)
+    status_enum_ok = all(
+        e.get("qualification_status") in QUALIFICATION_STATUSES
+        for e in (after.get("physical_tables") or [])
+        if e.get("asset_id") in target)
     checks = {
         "json_object": isinstance(after, dict),
         "physical_count_expected": (expected_physical is None or after.get("physical_count") == expected_physical),
@@ -1229,6 +1236,8 @@ def validate_registry(before: dict, after: dict, tables: list,
         "catalog_sha256_unchanged": after.get("catalog_sha256") == before.get("catalog_sha256"),
         "catalog_sha256_matches_catalog": after.get("catalog_sha256") == catalog_sha,
         "updated_count": diff["updated_count"] == len(tables),
+        # 2026-11-02 task-77：写回状态必须是资格枚举（防止 None/拼写错误的 verdict 落库）
+        "qualification_status_enum": status_enum_ok,
         "only_allowed_fields": diff["only_allowed_fields"],
         "other_entries_unchanged": diff["other_entries_unchanged"],
         "top_level_unchanged": diff["top_level_unchanged"],

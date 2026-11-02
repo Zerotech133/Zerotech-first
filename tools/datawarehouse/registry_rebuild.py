@@ -53,8 +53,8 @@ PROVENANCE_COLUMNS = {
 LIMITATIONS_V2 = [
     "v2（2026-10-27）由 catalog v12 自动重建：physical_tables 覆盖 catalog 全部表，"
     "其中新增表为自动补登、qualification_status=unknown（资格仍待逐项取证）",
-    "display_assets 沿用 2026-10-09 历史证据；2026-11-02 补登记 82 条"
-    "（当前 174 条，新增为机械映射、待新看板逐项复核），不称当前实时资产清单",
+    "display_assets 沿用 2026-10-09 历史证据 + 2026-11-02 起补登记批次"
+    "（条数以本文件 display_count 为准；新增为机械映射、待新看板逐项复核），不称当前实时资产清单",
 ]
 
 
@@ -174,22 +174,32 @@ def build_payload(catalog: dict, old: dict) -> dict:
         added.append(table)
 
     # 生命周期覆盖：planned/deprecated/archived 不计入 unknown 资格欠账
+    # 2026-11-02 task-77 修复：先解析全部覆盖再统一落状态（两阶段），lifecycle 异常不再
+    # 静默（记入 stats.lifecycle_warning），避免"部分条目已改、计数却清零"的隐藏中间态。
     life_counts: dict[str, int] = {}
+    life_assignments: dict[int, tuple] = {}
+    life_warning = ""
     try:
         import lifecycle  # noqa: WPS433
-        for e in physical:
+        for idx, e in enumerate(physical):
             names = [str(t) for t in (e.get("physical_tables") or []) if t]
             for table in names:
                 status = lifecycle.status_for(table)
                 if status in ("planned", "deprecated", "archived"):
-                    e["qualification_status"] = status
-                    e["unsupported_reason"] = lifecycle.reason_for(table) or ("资产状态：%s" % status)
-                    e["evidence_basis"] = "data_lifecycle.yaml（2026-10-28）"
-                    e["pending_fields"] = []
-                    life_counts[status] = life_counts.get(status, 0) + 1
+                    reason = lifecycle.reason_for(table) or ("资产状态：%s" % status)
+                    life_assignments[idx] = (status, reason, table)
                     break
-    except Exception:  # noqa: BLE001
-        life_counts = {}
+    except Exception as exc:  # noqa: BLE001 — 记录而非静默；不阻断重建
+        life_assignments = {}
+        life_warning = "lifecycle 覆盖解析失败（本次不套用生命周期状态，需人工复核）：%s: %s" % (
+            type(exc).__name__, str(exc)[:160])
+    for idx, (status, reason, table) in life_assignments.items():
+        e = physical[idx]
+        e["qualification_status"] = status
+        e["unsupported_reason"] = reason
+        e["evidence_basis"] = "data_lifecycle.yaml（2026-10-28）"
+        e["pending_fields"] = []
+        life_counts[status] = life_counts.get(status, 0) + 1
 
     limitations = list(old.get("limitations") or [])
     for line in LIMITATIONS_V2:
@@ -226,6 +236,7 @@ def build_payload(catalog: dict, old: dict) -> dict:
         "new_generated_at": gen_at,
         "sha_match_before": bool(old.get("catalog_sha256") and old.get("catalog_sha256") == cat_sha),
         "lifecycle_counts": life_counts,
+        "lifecycle_warning": life_warning,
     }
     return {"registry": payload, "stats": stats}
 
@@ -304,6 +315,8 @@ def _summary(stats: dict, error: str = "") -> dict:
         "catalog_path": common.rel(common.CATALOG),
         "kg_log_last_before": "",
     }
+    if stats.get("lifecycle_warning"):
+        out["warning"] = stats["lifecycle_warning"]
     if error:
         out["error"] = error
     return out
@@ -337,21 +350,35 @@ def run(apply_mode: bool, as_json: bool) -> int:
         return common.EXIT_NOT_READY
 
     ts = now_cn().strftime("%Y%m%d-%H%M%S")
+    written = False
     try:
         backup = write_backup(ts)
         payload["backup_path"] = common.rel(backup)
         atomic_write(built["registry"])
+        written = True
+        payload["written"] = True
         check = verify_written(stats)
         payload["verify"] = check
         if not check["ok"]:
             payload["code"] = common.EXIT_WARN
-            payload["error"] = "写盘后校验失败，保留备份供回滚：%s" % payload["backup_path"]
+            payload["error"] = "写盘后校验失败（registry 可能已被写），保留备份供回滚：%s" % payload["backup_path"]
             _emit(payload, as_json)
             return common.EXIT_WARN
-        payload["kg_log_appended"] = append_kg_log(stats)
+        # 2026-11-02 task-77：写盘成功后的 kg 日志补记失败单独区分（registry 已是新内容，
+        # 不再笼统报"执行失败"；标注 written=true + 需人工补记，fail-visible）。
+        try:
+            payload["kg_log_appended"] = append_kg_log(stats)
+        except OSError as exc:
+            payload["code"] = common.EXIT_WARN
+            payload["written"] = True
+            payload["error"] = ("registry 已写盘并通过校验，但 kg_sync_task.log 补记失败"
+                                "（需人工补记一行 registry_rebuild exit=0）：%s" % str(exc)[:160])
+            _emit(payload, as_json)
+            return common.EXIT_WARN
     except (OSError, ValueError) as exc:
         payload["code"] = common.EXIT_WARN
-        payload["error"] = "执行失败：%s" % exc
+        payload["written"] = written
+        payload["error"] = ("执行失败（written=%s）：%s" % (written, exc))
         _emit(payload, as_json)
         return common.EXIT_WARN
 

@@ -307,6 +307,7 @@ def test_cli_json_dry_run(tmp_path, capsys):
         "--tasks-json", str(tasks_json),
         "--state", str(tmp_path / "state.json"),
         "--log", str(tmp_path / "probe.log"),
+        "--lock", str(tmp_path / "no_such.lock"),
         "--no-state",
     ])
     assert rc == probe.EXIT_OK

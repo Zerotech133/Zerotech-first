@@ -58,19 +58,31 @@ def check(cat_path: Path | None = None, reg_path: Path | None = None, lifecycle_
     tables = cat.get("tables") or {}
     physical = reg.get("physical_tables") or []
 
-    # 1) sha/计数
+    # 1) sha/计数（task-77：数值字段损坏不再抛异常中断检查，改为 issue fail-visible）
     real_sha = sha256_file(cat_path)
     if reg.get("catalog_sha256") != real_sha:
         issues.append("registry_catalog_sha_mismatch")
-    if int(reg.get("physical_count") or 0) != len(physical):
-        issues.append("registry_physical_count_mismatch")
-    _dc = reg.get("display_count")
-    if (int(_dc) if _dc is not None else -1) != len(reg.get("display_assets") or []):
-        issues.append("registry_display_count_mismatch")
-    if int(reg.get("physical_count") or 0) != len(tables):
-        warnings.append("registry_vs_catalog_table_count_diff:%s/%s" % (reg.get("physical_count"), len(tables)))
+    pc_raw = reg.get("physical_count")
+    try:
+        pc = int(pc_raw)
+        if pc != len(physical):
+            issues.append("registry_physical_count_mismatch")
+    except (TypeError, ValueError):
+        issues.append("registry_physical_count_unparsable:%r" % (pc_raw,))
+    dc_raw = reg.get("display_count")
+    if dc_raw is None:
+        issues.append("registry_display_count_missing")
+    else:
+        try:
+            dc = int(dc_raw)
+            if dc != len(reg.get("display_assets") or []):
+                issues.append("registry_display_count_mismatch")
+        except (TypeError, ValueError):
+            issues.append("registry_display_count_unparsable:%r" % (dc_raw,))
+    if isinstance(pc_raw, (int, str)) and str(pc_raw).isdigit() and int(pc_raw) != len(tables):
+        warnings.append("registry_vs_catalog_table_count_diff:%s/%s" % (pc_raw, len(tables)))
 
-    # 2) store 存在性（lifecycle 豁免）
+    # 2) store 存在性（lifecycle 豁免；相对路径按主仓根解析，避免依赖调用 cwd）
     for name, e in tables.items():
         if not isinstance(e, dict):
             continue
@@ -80,7 +92,10 @@ def check(cat_path: Path | None = None, reg_path: Path | None = None, lifecycle_
         status = lc.status_for(name) if lc else "active"
         if status in SKIP_LIFECYCLE:
             continue
-        if not Path(store).exists():
+        sp = Path(store)
+        if not sp.is_absolute():
+            sp = Path(common.REPO) / sp
+        if not sp.exists():
             issues.append("store_missing:%s:%s" % (name, store))
 
     # 3) placeholder 必须归生命周期
@@ -101,7 +116,7 @@ def check(cat_path: Path | None = None, reg_path: Path | None = None, lifecycle_
             if not e.get("manifest") and status not in SKIP_LIFECYCLE:
                 issues.append("manifest_missing_without_concept:%s" % name)
 
-    # 5) registry 资格一致性
+    # 5) registry 资格一致性（task-77：lifecycle 表在 registry 缺失也必须报，而非静默跳过）
     by_name = {}
     for e in physical:
         for t in (e.get("physical_tables") or []):
@@ -113,7 +128,10 @@ def check(cat_path: Path | None = None, reg_path: Path | None = None, lifecycle_
         if status not in SKIP_LIFECYCLE:
             continue
         ent = by_name.get(name)
-        if ent and ent.get("qualification_status") != status:
+        if not ent:
+            issues.append("lifecycle_table_missing_in_registry:%s:%s" % (name, status))
+            continue
+        if ent.get("qualification_status") != status:
             issues.append("qualification_not_lifecycle:%s:%s!=%s" % (
                 name, ent.get("qualification_status"), status))
 

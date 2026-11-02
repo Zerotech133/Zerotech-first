@@ -356,6 +356,27 @@ def _like_contains(value: str) -> str:
     return v
 
 
+def _order_key(value):
+    """排序键：数值按数值序、文本按字符串序（修复 JSONL/文件级 '10'<'9' 字符串序 BUG）。
+
+    2026-11-02 task-78：此前 jsonl/files 排序对数值列用 str()，多位数与单位数乱序；
+    None 由 _sorted_rows 单独置末尾（desc 也不提前）。
+    """
+    if isinstance(value, bool):
+        return (0, 0.0, "")
+    if isinstance(value, (int, float)):
+        return (0, float(value), "")
+    return (0, 0.0, str(value))
+
+
+def _sorted_rows(rows, field, desc):
+    """按字段排序：有值行类型感知排序；None/缺字段行固定置末尾（升/降序一致）。"""
+    present = [r for r in rows if r.get(field) is not None]
+    missing = [r for r in rows if r.get(field) is None]
+    present.sort(key=lambda r: _order_key(r.get(field)), reverse=bool(desc))
+    return present + missing
+
+
 def _cmp_value(actual, op: str, expected) -> bool:
     """jsonl/文件级 where 比较（类型宽松、绝不抛错；None 不匹配）。"""
     def _numeric(x):
@@ -1623,8 +1644,7 @@ class DatasetRegistry:
             data = dataset.to_table(columns=select, filter=expr).to_pylist()
             scanned = len(data)
             for o in reversed(order):
-                data.sort(key=lambda r: (r.get(o["field"]) is None, r.get(o["field"])),
-                          reverse=o["desc"])
+                data = _sorted_rows(data, o["field"], o["desc"])
             window = data[offset:offset + limit + 1]
             has_more = len(window) > limit
             rows = [[_jsonable(r.get(c)) for c in select] for r in window[:limit]]
@@ -1808,11 +1828,7 @@ class DatasetRegistry:
                 break
         if order:
             for o in reversed(order):
-                order_rows.sort(
-                    key=lambda r: (r.get(o["field"]) is None,
-                                   "" if r.get(o["field"]) is None
-                                   else str(r.get(o["field"]))),
-                    reverse=o["desc"])
+                order_rows = _sorted_rows(order_rows, o["field"], o["desc"])
             page = order_rows[offset:offset + limit + 1]
             has_more = len(page) > limit
             page = page[:limit]
@@ -1875,20 +1891,7 @@ class DatasetRegistry:
         total = len(rows) if count else None
         if order:
             for o in reversed(order):
-                _fld = o["field"]
-
-                def _okey(r, _fld=_fld):
-                    v = r.get(_fld)
-                    if v is None:
-                        return (1, 0)
-                    if _fld in ("size", "depth"):
-                        try:
-                            return (0, float(v))
-                        except (TypeError, ValueError):
-                            return (0, 0)
-                    return (0, str(v))
-
-                rows.sort(key=_okey, reverse=o["desc"])
+                rows = _sorted_rows(rows, o["field"], o["desc"])
         page = rows[offset:offset + limit + 1]
         has_more = len(page) > limit
         page = page[:limit]

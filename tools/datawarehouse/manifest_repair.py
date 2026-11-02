@@ -126,43 +126,87 @@ def plan() -> list[dict]:
 
 
 def apply(rows: list[dict], kg_log: bool = True) -> dict:
-    todo = [r for r in rows if not r.get("skip") and r.get("files", 0) > 0]
+    """把可修行合并进 manifest（备份 + 原子写）。
+
+    2026-11-02 task-77 修复：
+    - `rows is None`（footer 扫描被 rows_max 截断/读取失败）**不写 done**，记 skipped_rows_unknown，
+      避免把"未知行数"写成 done=true 污染 manifest；
+    - 单个 manifest 读/写失败不再提前返回丢弃已完成结果：收集 errors 并继续处理其余 manifest，
+      返回 ok=False + changed_tables + errors（fail-visible、可回滚）；tmp 名带 pid 防并发碰撞。
+    """
+    todo: list[dict] = []
+    skipped_rows_unknown: list[dict] = []
+    for r in rows:
+        if r.get("skip") or r.get("files", 0) <= 0:
+            continue
+        if not isinstance(r.get("rows"), int) or isinstance(r.get("rows"), bool):
+            skipped_rows_unknown.append({
+                "table": r.get("table"),
+                "reason": "rows_unknown(scan_capped_or_footer_error)",
+                "rows": r.get("rows"), "files": r.get("files"),
+            })
+            continue
+        todo.append(r)
     by_mf: dict[Path, list[dict]] = {}
     for r in todo:
         by_mf.setdefault(Path(r["manifest"]), []).append(r)
     ts = datetime.now().strftime("%Y%m%d-%H%M%S")
     changed = []
+    errors: list[dict] = []
+    written_manifests: list[str] = []
     for mfp, items in by_mf.items():
         try:
             data = json.loads(mfp.read_text(encoding="utf-8"))
         except (OSError, ValueError) as exc:
-            return {"ok": False, "error": "读 manifest 失败 %s: %s" % (mfp, exc)}
+            errors.append({"manifest": str(mfp), "stage": "read", "error": str(exc)[:160]})
+            continue
         if isinstance(data.get("tables"), dict):  # cnopendata 双层壳
             inner = data["tables"]
         else:
             inner = data
-        bak = mfp.with_name(mfp.name + ".bak-" + ts)
-        if not bak.exists():
-            shutil.copy2(mfp, bak)
+        changed_here = []
         for r in items:
             ent = inner.get(r["table"]) or {}
             ent.update({"done": True, "rows": r.get("rows"), "files": r.get("files"),
                         "repaired_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
                         "repaired_by": REPAIR_TAG})
             inner[r["table"]] = ent
-            changed.append(r["table"])
-        tmp = Path(str(mfp) + ".tmp")
-        tmp.write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
-        os.replace(tmp, mfp)
+            changed_here.append(r["table"])
+        bak = mfp.with_name(mfp.name + ".bak-" + ts)
+        if not bak.exists():
+            try:
+                shutil.copy2(mfp, bak)
+            except OSError as exc:
+                errors.append({"manifest": str(mfp), "stage": "backup", "error": str(exc)[:160]})
+                continue
+        tmp = Path(str(mfp) + ".tmp-%d" % os.getpid())
+        try:
+            tmp.write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n",
+                           encoding="utf-8")
+            os.replace(tmp, mfp)
+        except OSError as exc:
+            errors.append({"manifest": str(mfp), "stage": "write", "error": str(exc)[:160]})
+            try:
+                if tmp.exists():
+                    tmp.unlink()
+            except OSError:
+                pass
+            continue
+        changed.extend(changed_here)
+        written_manifests.append(str(mfp))
     if kg_log and changed:
         try:
             with KG_LOG.open("a", encoding="utf-8") as f:
-                f.write("%s date=%s tables=%d files=%d exit=0\n" % (
+                f.write("%s date=%s tables=%d manifests=%d exit=%s\n" % (
                     REPAIR_TAG, datetime.now().astimezone().isoformat(timespec="seconds"),
-                    len(changed), len(by_mf)))
-        except OSError:
-            pass
-    return {"ok": True, "changed_tables": changed, "manifests": [str(p) for p in by_mf]}
+                    len(changed), len(written_manifests),
+                    "0" if not errors else "1"))
+        except OSError as exc:
+            errors.append({"manifest": "", "stage": "kg_log", "error": str(exc)[:160]})
+    return {"ok": not errors, "changed_tables": changed,
+            "manifests": written_manifests or [str(p) for p in by_mf],
+            "skipped_rows_unknown": skipped_rows_unknown,
+            "errors": errors}
 
 
 def main(argv: list[str] | None = None) -> int:

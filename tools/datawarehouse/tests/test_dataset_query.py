@@ -523,3 +523,40 @@ def test_files_order_size_numeric_desc():
     assert len(sizes) >= 2
     assert sizes == sorted(sizes, reverse=True)
     assert all(isinstance(s, (int, float)) for s in sizes)
+
+# ---------- 2026-11-02 task-78：排序数值语义回归（JSONL/文件级） ----------
+def _minimal_registry(tmp_path: Path, entries: list) -> DatasetRegistry:
+    inv = tmp_path / "inv_task78.json"
+    inv.write_text(json.dumps({"datasets": entries}, ensure_ascii=False), encoding="utf-8")
+    return DatasetRegistry(inv, allowed_roots=[tmp_path])
+
+
+def test_jsonl_order_numeric_not_lexicographic(tmp_path):
+    """jsonl order 对数值列必须按数值序（'10' 不能排在 '9' 前），None 置末尾。"""
+    ds = tmp_path / "jl_num"
+    ds.mkdir()
+    docs = [{"n": v} for v in (2, 10, 9, 100)] + [{"other": 1}]
+    (ds / "data.jsonl").write_text("\n".join(json.dumps(d) for d in docs), encoding="utf-8")
+    reg = _minimal_registry(tmp_path, [{
+        "domain": "测试", "label": "jl_num", "kind": "corpus_layer",
+        "path": str(ds), "registered": True, "exposed": True,
+        "suggested_id": "jl_num"}])
+    desc = reg.query("jl_num", order="n:desc", limit=10)
+    assert [r[0] for r in desc["rows"]] == [100, 10, 9, 2, None]
+    asc = reg.query("jl_num", order="n", limit=10)
+    assert [r[0] for r in asc["rows"]] == [2, 9, 10, 100, None]
+
+
+def test_files_order_size_numeric_not_lexicographic(tmp_path):
+    """文件级 order size 必须按数值序（9 字节 vs 100 字节），不能按字符串序。"""
+    ds = tmp_path / "files_num"
+    ds.mkdir()
+    (ds / "small.txt").write_bytes(b"x" * 9)
+    (ds / "big.txt").write_bytes(b"x" * 100)
+    reg = _minimal_registry(tmp_path, [{
+        "domain": "测试", "label": "files_num", "kind": "dir",
+        "path": str(ds), "registered": True, "exposed": True,
+        "suggested_id": "files_num"}])
+    out = reg.query("files_num", order="size:desc", limit=10)
+    ci = out["columns"].index("size")
+    assert [r[ci] for r in out["rows"]] == [100, 9]

@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """Hermes 使用审计：真实仓库可盘点、profile 可映射、JSON 纯。"""
 from __future__ import annotations
 import json

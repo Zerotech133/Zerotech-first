@@ -67,6 +67,56 @@ class TestManifestRepair(unittest.TestCase):
             data = json.loads(mf.read_text(encoding="utf-8"))
             self.assertIn("t1", data["tables"])
 
+    def test_apply_skips_unknown_rows(self):
+        """task-77：rows=None（footer 扫描截断/失败）不得写成 done=true。"""
+        with tempfile.TemporaryDirectory() as td:
+            mf = Path(td) / "_manifest.json"
+            mf.write_text(json.dumps({"old": {"done": True}}), encoding="utf-8")
+            rows = [
+                {"table": "ok_t", "manifest": str(mf), "files": 2, "rows": 6},
+                {"table": "unknown_t", "manifest": str(mf), "files": 2, "rows": None},
+            ]
+            res = mr.apply(rows, kg_log=False)
+            self.assertTrue(res["ok"])
+            self.assertEqual(res["changed_tables"], ["ok_t"])
+            self.assertEqual([x["table"] for x in res["skipped_rows_unknown"]],
+                             ["unknown_t"])
+            data = json.loads(mf.read_text(encoding="utf-8"))
+            self.assertIn("ok_t", data)
+            self.assertNotIn("unknown_t", data)  # 不写未知行数
+            self.assertIn("old", data)
+
+    def test_apply_partial_failure_reports_and_continues(self):
+        """task-77：某 manifest 读失败不再提前返回丢弃已完成写入；errors 可见。"""
+        with tempfile.TemporaryDirectory() as td:
+            good = Path(td) / "good_manifest.json"
+            good.write_text(json.dumps({"t1": {}}), encoding="utf-8")
+            bad = Path(td) / "bad_manifest.json"
+            bad.write_text("{not json", encoding="utf-8")
+            rows = [
+                {"table": "t1", "manifest": str(good), "files": 1, "rows": 3},
+                {"table": "t2", "manifest": str(bad), "files": 1, "rows": 4},
+            ]
+            res = mr.apply(rows, kg_log=False)
+            self.assertFalse(res["ok"])
+            self.assertIn("t1", res["changed_tables"])  # 好文件已写
+            self.assertTrue(res["errors"])
+            self.assertEqual(res["errors"][0]["stage"], "read")
+            self.assertIn("t1", json.loads(good.read_text(encoding="utf-8")))
+
+    def test_apply_write_error_fail_visible(self):
+        """task-77：os.replace 失败 → ok=False + stage=write（不抛未捕获异常）。"""
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as td:
+            mf = Path(td) / "_manifest.json"
+            mf.write_text(json.dumps({"t1": {}}), encoding="utf-8")
+            rows = [{"table": "t1", "manifest": str(mf), "files": 1, "rows": 3}]
+            with mock.patch.object(mr.os, "replace", side_effect=OSError("disk full")):
+                res = mr.apply(rows, kg_log=False)
+            self.assertFalse(res["ok"])
+            self.assertEqual(res["errors"][0]["stage"], "write")
+            self.assertIn("disk full", res["errors"][0]["error"])
+
 
 if __name__ == "__main__":
     unittest.main()

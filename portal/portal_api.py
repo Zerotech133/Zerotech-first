@@ -547,6 +547,26 @@ if _os.environ.get("PORTAL_NO_WARMUP") != "1":
 import route_table  # B4a-lite：GET 精确路由表（等价生成）
 
 
+_DW_BODY_MAX = 1024 * 1024  # /api/dw/query POST body 上限（1MB，防内存 DoS）
+
+
+def _read_dw_body(handler, max_bytes=None):
+    """读 /api/dw/* POST body（有上限）。返回 (ok, bytes, err)。
+
+    2026-11-02 Lead 审查修复：原分派对 Content-Length 无上限/无负值校验，
+    异常大请求可致内存压力；现 >1MB 或负值直接 413 fail-visible。
+    """
+    limit = _DW_BODY_MAX if max_bytes is None else int(max_bytes)
+    try:
+        ln = int(handler.headers.get("Content-Length") or 0)
+    except (TypeError, ValueError):
+        return False, b"", "invalid Content-Length"
+    if ln < 0 or ln > limit:
+        return False, b"", "body too large"
+    body = handler.rfile.read(ln) if ln > 0 else b""
+    return True, body, ""
+
+
 class Handler(api_data.Handler, api_chanlun_pages.Handler, api_pages_portal.Handler, api_health_portal.Handler, api_manager_portal.Handler, api_backtest.Handler, api_kg.Handler, api_bridge.Handler, api_portfolio.Handler, api_screen.Handler, api_misc.Handler, api_flow.Handler, api_lineage.Handler, api_intel_evidence.Handler, api_intel_bus.Handler, api_unified.Handler, api_replay.Handler, api_approvals.Handler, api_capability.Handler, api_perf.Handler, api_xq_intel.Handler, api_dataops.Handler, api_daily_data.Handler, api_guojia.Handler, api_execution.Handler, api_huangzhong.Handler, api_tickets.Handler, api_notify.Handler, api_news_intel.Handler, api_zhuge_route.Handler, api_os_goal.Handler, http.server.BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         # K82 访问日志：一行式留痕（判断「用户是否看过页面」的唯一取证
@@ -1052,8 +1072,12 @@ color:#fff;font-size:13.5px;cursor:pointer}
         if path.startswith('/api/dw/'):
             # S3-06：数据仓统一查询 POST（只读；body 由分派读取后传入模块，
             # 修复 2026-11-02 11-05 runbook 发现的 2 参/3 参不匹配 TypeError）
-            _ln = int(self.headers.get("Content-Length") or 0)
-            _raw = self.rfile.read(_ln) if _ln else b""
+            _ok, _raw, _err = _read_dw_body(self)
+            if not _ok:
+                self._json({"ok": False, "error": _err,
+                            "reason": "bad_param: POST body 超过 %d 字节上限" % _DW_BODY_MAX},
+                           413)
+                return
             import api_dw_registry
             api_dw_registry.handle_post(self, path, _raw)
             return

@@ -766,6 +766,7 @@ def collect_g6(*, date, now, tasks=None, snapshot_path: Path = SNAPSHOT,
     evidence.update({"state": rec.get("state"), "last_run": rec.get("last_run"),
                      "last_result": rec.get("last_result")})
     problems = []
+    missing = []
     last_run = _task_last_run(rec)
     if rec.get("last_result") != 0:
         problems.append("task_last_result=%s" % rec.get("last_result"))
@@ -775,7 +776,7 @@ def collect_g6(*, date, now, tasks=None, snapshot_path: Path = SNAPSHOT,
         problems.append("not_run_after_0640(last_run=%s)" % rec.get("last_run"))
     snap, snap_err = _read_json(snapshot_path)
     if snap is None:
-        problems.append("snapshot_unreadable:%s" % snap_err)
+        missing.append("snapshot_unreadable:%s" % snap_err)
     else:
         generated = _parse_dt(snap.get("generated_at"))
         evidence["snapshot_generated_at"] = snap.get("generated_at")
@@ -786,7 +787,7 @@ def collect_g6(*, date, now, tasks=None, snapshot_path: Path = SNAPSHOT,
             problems.append("snapshot_not_today(generated_at=%s)" % snap.get("generated_at"))
     log_entry, log_err = _last_dw_log(dw_log)
     if log_entry is None:
-        problems.append("dw_log_unreadable:%s" % log_err)
+        missing.append("dw_log_unreadable:%s" % log_err)
     else:
         evidence["dw_log_last"] = {key: log_entry.get(key) for key in
                                    ("tool", "finished_at", "generated_at", "ok", "rc",
@@ -799,17 +800,21 @@ def collect_g6(*, date, now, tasks=None, snapshot_path: Path = SNAPSHOT,
             problems.append("dw_log_not_today")
     catalog, cat_err = _read_json(catalog_path)
     if catalog is None:
-        problems.append("catalog_unreadable:%s" % cat_err)
+        missing.append("catalog_unreadable:%s" % cat_err)
     else:
         current_version = catalog.get("version")
         evidence["catalog_version"] = current_version
         snap_version = ((snap or {}).get("catalog") or {}).get("version")
         evidence["snapshot_catalog_version"] = snap_version
-        if snap_version is None or snap_version != current_version:
+        if snap is not None and (snap_version is None
+                                 or snap_version != current_version):
             problems.append("catalog_version_mismatch(snapshot=%s/catalog=%s)"
                             % (snap_version, current_version))
     if problems:
         return _gate("G6", "fail", evidence=evidence, reason="; ".join(problems))
+    if missing:
+        return _gate("G6", "unknown", evidence=evidence,
+                     reason="证据缺失（unknown，不硬编码判过/判败）：" + "; ".join(missing))
     return _gate("G6", "pass", evidence=evidence,
                  reason="06:40 后 rc=0 + snapshot 当日 + 日志 ok + catalog 版本一致")
 

@@ -220,3 +220,19 @@ def test_write_outputs_json_only(tmp_path):
                                 md_path=md_path, json_only=False)
     assert Path(written2["md"]).is_file()
     assert "终验收" in md_path.read_text(encoding="utf-8")
+
+def test_g6_missing_evidence_returns_unknown(tmp_path):
+    """G6：快照/日志/目录缺失属证据缺失 → unknown（fail-visible，不是 FAIL）。"""
+    snapshot, _dw_log, catalog, tasks = _g6_fixture(tmp_path)
+    gate = FA.collect_g6(date=DATE, now=NOW, tasks=tasks, snapshot_path=snapshot,
+                         dw_log=tmp_path / "missing_dw.log", catalog_path=catalog)
+    assert gate["status"] == "unknown", gate
+    assert "dw_log_unreadable" in gate["reason"]
+    empty = tmp_path / "empty_g6"
+    empty.mkdir()
+    gate2 = FA.collect_g6(date=DATE, now=NOW, tasks=tasks,
+                          snapshot_path=empty / "no_snapshot.json",
+                          dw_log=empty / "no_dw.log",
+                          catalog_path=empty / "no_catalog.json")
+    assert gate2["status"] == "unknown", gate2
+    assert "snapshot_unreadable" in gate2["reason"]

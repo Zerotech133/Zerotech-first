@@ -185,8 +185,8 @@ def _query_http(handler, get) -> None:
 def handle_post(handler, path: str, body) -> None:
     """POST /api/dw/query：body 支持 JSON 对象或 form-urlencoded；其余路径 404。
 
-    注：portal_api.do_POST 的分派接线属 L2 重启批次（本文件先提供可测入口，
-    届时在 do_POST 内 `if path == "/api/dw/query": import api_dw_registry; api_dw_registry.handle_post(...)`）。
+    接线状态（2026-11-02 起）：portal_api.do_POST 已分派 `/api/dw/` 并传入 body
+    （带 1MB 上限）；本函数只做参数解析/校验/调用 registry.query，不直接读 socket。
     """
     if path != "/api/dw/query":
         _query_fail(handler, "not found", 404,

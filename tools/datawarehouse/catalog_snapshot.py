@@ -63,6 +63,8 @@ def drift_sample(catalog: dict, limit: int = SAMPLE_TABLES) -> list:
         layout = str(e.get("layout") or "").strip().lower()
         raw_store = str(e.get("store") or "")
         store = Path(raw_store)
+        if raw_store and not store.is_absolute():
+            store = Path(common.REPO) / store  # task-77：相对 store 按主仓根解析（不依赖 cwd）
         reg = e.get("files")
         item = {"table": name, "layout": layout or None,
                 "store_exists": bool(raw_store) and store.exists(),
@@ -153,8 +155,12 @@ def collect(limit: int = SAMPLE_TABLES) -> dict:
         issues.append("抽样中 %d 张表 store 不存在" % len(missing_stores))
     if warns:
         issues.append("抽样中 %d 张表文件数与登记差异 >1（drift_warn）" % len(warns))
-    if registry.get("generated_at", "") < "2026-10-20":
-        issues.append("registry generated_at=%s（早于 10-20，需重生成）" % registry.get("generated_at"))
+    # task-77：generated_at 可能为 None/非字符串（旧 registry/坏 JSON），不能直接字符串比较
+    regen = registry.get("generated_at")
+    if not isinstance(regen, str) or not regen:
+        issues.append("registry generated_at 缺失/非字符串（%r），需重生成" % (regen,))
+    elif regen < "2026-10-20":
+        issues.append("registry generated_at=%s（早于 10-20，需重生成）" % regen)
 
     return {
         "tool": "catalog_snapshot",
