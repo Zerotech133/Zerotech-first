@@ -40,12 +40,38 @@ NEWS_DB_CAND = [
 WORK = os.path.join(ROOT, "work")
 
 
-def _zhice_pg_password() -> str:
-    """PG 凭据回落链：env → zhice 活部署 .env.local V2_DB_PASSWORD → 旧默认（仅兜底）。
+def _jev_common():
+    """S1-04 F4（2026-11-02）：懒加载 jev_common —— PG DSN 的唯一真源。
 
-    2026-10-30 R5：V2 口令轮换后未注入 env 的消费方会认证失败（gate_seen 块
-    静默降级为 None）；补文件回落链防漂移（下次 8091 重启生效）。
+    背景：本文件与 `jev_common.py` 曾各自维护一份「env → .env.local → 旧默认」
+    口令回落链与 host/port/user/db 拼装，R5 口令轮换时两处漂移。现统一委托
+    jev_common（`DB_DSN` / `dsn_provenance()` / `_resolve_pg_password()` 同源）。
+    导入失败返回 None，调用方回退旧链（fail-open，不影响 stats 主链）。
     """
+    try:
+        import sys  # noqa: WPS433
+
+        jev_dir = os.path.join(STATION, "jev-eval")
+        if jev_dir not in sys.path:
+            sys.path.insert(0, jev_dir)
+        import jev_common  # noqa: WPS433
+
+        return jev_common
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _zhice_pg_password() -> str:
+    """PG 凭据（S1-04 F4 去重后：优先 jev_common 唯一真源；不可用时回退旧链）。
+
+    旧链保留仅为 fail-open：env → zhice 活部署 .env.local V2_DB_PASSWORD → 旧默认。
+    """
+    jc = _jev_common()
+    if jc is not None:
+        try:
+            return str(jc.DB_DSN["password"])
+        except Exception:  # noqa: BLE001
+            pass
     pw = os.environ.get("ZHICE_PG_PASSWORD", "").strip()
     if pw:
         return pw
@@ -58,6 +84,54 @@ def _zhice_pg_password() -> str:
     except OSError:
         pass
     return "zhice_pass"
+
+
+def _pg_connect_kwargs(connect_timeout: int = 3) -> dict:
+    """PG 连接参数（S1-04 F4）：优先 jev_common.DB_DSN，删本地重复拼装；不可用回退旧链。"""
+    jc = _jev_common()
+    if jc is not None:
+        try:
+            kw = {
+                "host": jc.DB_DSN["host"],
+                "port": jc.DB_DSN["port"],
+                "user": jc.DB_DSN["user"],
+                "password": jc.DB_DSN["password"],
+                "dbname": jc.DB_DSN["dbname"],
+                "connect_timeout": connect_timeout,
+            }
+            return kw
+        except Exception:  # noqa: BLE001
+            pass
+    return {
+        "host": "127.0.0.1",
+        "port": int(os.environ.get("ZHICE_PG_PORT", "5446")),
+        "user": os.environ.get("ZHICE_PG_USER", "zhice"),
+        "password": _zhice_pg_password(),
+        "dbname": os.environ.get("ZHICE_PG_DB", "zhice_os_v2"),
+        "connect_timeout": connect_timeout,
+    }
+
+
+def _pg_dsn_provenance():
+    """S1-04 F4：给日志用的脱敏 DSN 来源（无口令）；不可用返回 None。"""
+    jc = _jev_common()
+    if jc is None:
+        return None
+    try:
+        prov = jc.dsn_provenance()
+    except Exception:  # noqa: BLE001
+        return None
+    if not isinstance(prov, dict):
+        return None
+    return {
+        "host": prov.get("host"),
+        "port": prov.get("port"),
+        "dbname": prov.get("dbname"),
+        "user": prov.get("user"),
+        "pw_source": prov.get("password_source", prov.get("pw_source")),
+    }
+
+
 PUSH_FLOW = os.path.join(WORK, "push_flow.jsonl")
 TUNE_REQ = os.path.join(WORK, "tune_requests.jsonl")
 
@@ -490,15 +564,10 @@ def _jev_health():
     except Exception as exc:
         logging.getLogger(__name__).warning("silent-except %s: %s", "api_flow.py", exc)
 
-    # 4) PG gate_seen（凭据与 jev_common.py 同源；3s 超时静默降级为 None）
+    # 4) PG gate_seen（S1-04 F4：DSN 单一真源=jev_common；3s 超时静默降级为 None）
     try:
         import psycopg2
-        con = psycopg2.connect(
-            host="127.0.0.1", port=int(os.environ.get("ZHICE_PG_PORT", "5446")),
-            user=os.environ.get("ZHICE_PG_USER", "zhice"),
-            password=_zhice_pg_password(),
-            dbname=os.environ.get("ZHICE_PG_DB", "zhice_os_v2"),
-            connect_timeout=3)
+        con = psycopg2.connect(**_pg_connect_kwargs(3))
         cur = con.cursor()
         cur.execute("SELECT count(*) FROM jev_gate_seen")
         n = cur.fetchone()[0]
@@ -507,7 +576,8 @@ def _jev_health():
         h["gate_seen"] = {"count": n, "last": str(mx or "")[:19]}
         con.close()
     except Exception as exc:
-        logging.getLogger(__name__).warning("silent-except %s: %s", "api_flow.py", exc)
+        logging.getLogger(__name__).warning(
+            "silent-except %s: %s dsn=%r", "api_flow.py", exc, _pg_dsn_provenance())
 
     # 5) 综合灯（阈值见 docstring）
     feed = h.get("feed") or {}

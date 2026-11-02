@@ -10,6 +10,9 @@ GET /api/daily/data   零参数
       impact 冲击力分层投影（news_collector/data/jev_impact.json）
       drift  判定漂移哨兵（PG v2_alert title LIKE 'JEV判定漂移%'；
              沿 feishu_control 懒加载 jev_common 先例，DB 不可达降级 error 键）
+             S1-04 F3（2026-11-02）：失败另返回结构化 error_detail
+             {kind, errno, stage, type, message, dsn(脱敏)}；口令绝不出现，
+             error 字符串保留（data_daily.html 兼容），exists=false 语义不变
       health 管道体检：四产物 mtime / 内嵌 generated_at / 时效小时数
 
 只读纪律（沿 api_capability 判例）：mode=ro / fail-visible（产物缺失返回
@@ -24,6 +27,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sqlite3
 import time
 from datetime import datetime, timedelta, timezone
@@ -61,6 +65,67 @@ def _read_json(p: Path):
         return json.loads(p.read_text(encoding="utf-8")), None
     except Exception as e:  # noqa: BLE001
         return None, "bad json: %r" % e
+
+
+def _mask_secrets(text) -> str:
+    """S1-04 F3：异常文本脱敏——口令/DSN 密码段一律 ***（永不外泄）。"""
+    s = str(text or "")
+    s = re.sub(r"(?i)((?:password|passwd|pwd)\s*[=:]\s*)\S+", r"\1***", s)
+    s = re.sub(r"(?i)(://[^:/@\s]+:)[^@\s]+@", r"\1***@", s)
+    s = re.sub(r"(?i)((?:ZHICE_PG_PASSWORD|PGPASSWORD)\s*=\s*)\S+", r"\1***", s)
+    return s[:200].replace("\n", " ")
+
+
+def _dsn_provenance() -> "dict | None":
+    """S1-04 F3/F4：取 jev_common 的脱敏 DSN 来源（失败返回 None，绝不抛）。
+
+    白名单投影：只给诊断需要字段；口令相关只保留来源(wp_source)/是否设置，
+    绝不包含口令值/长度以外的凭据内容。
+    """
+    try:
+        prov = _db().dsn_provenance()
+    except Exception:  # noqa: BLE001
+        return None
+    if not isinstance(prov, dict):
+        return None
+    return {
+        "host": prov.get("host"),
+        "port": prov.get("port"),
+        "dbname": prov.get("dbname"),
+        "user": prov.get("user"),
+        "pw_source": prov.get("password_source", prov.get("pw_source")),
+        "password_set": bool(prov.get("password_set")),
+        "driver": prov.get("driver"),
+    }
+
+
+def _drift_error_detail(exc, dsn) -> dict:
+    """S1-04 F3：drift 失败结构化诊断（kind/errno/stage/dsn），口令绝不出现。
+
+    kind：fallback_unavailable=docker 降级通道不可用（裸 OSError/超时/psql 失败）
+          driver_missing=psycopg2 或 jev_common 不可导入
+          connect_failed=直连失败（带 errno 或 OperationalError）
+          query_failed=其它（SQL/权限/数据异常）
+    """
+    cls = type(exc).__name__
+    stage = getattr(exc, "stage", None)
+    errno_v = getattr(exc, "errno", None)
+    if cls == "DBFallbackError" or stage in ("spawn", "timeout", "psql"):
+        kind = "fallback_unavailable"
+    elif isinstance(exc, ImportError):
+        kind = "driver_missing"
+    elif errno_v is not None or cls in ("OperationalError", "InterfaceError"):
+        kind = "connect_failed"
+    else:
+        kind = "query_failed"
+    return {
+        "kind": kind,
+        "errno": errno_v if isinstance(errno_v, int) else None,
+        "stage": stage or None,
+        "type": cls,
+        "message": _mask_secrets(exc),
+        "dsn": dsn,
+    }
 
 
 def dist_section() -> dict:
@@ -172,10 +237,17 @@ def impact_section() -> dict:
 
 
 def drift_section() -> dict:
-    """判定漂移哨兵（PG v2_alert，jev_drift 每日 07:10 幂等告警）。"""
+    """判定漂移哨兵（PG v2_alert，jev_drift 每日 07:10 幂等告警）。
+
+    S1-04 F3（2026-11-02）：失败时 `exists=False` 语义不变（fail-visible 合法观测态），
+    `error` 保留脱敏字符串供 data_daily.html 原样展示；另加结构化 `error_detail`
+    {kind, errno, stage, type, message, dsn(脱敏)} 供页面/健康卡/排障消费。
+    """
     out = {"exists": False}
+    dsn = None
     try:
         db = _db()
+        dsn = _dsn_provenance()
         rows = db.db_rows(
             "SELECT alert_id, title, coalesce(message,''), status, created_at "
             "FROM v2_alert WHERE title LIKE %s ORDER BY id DESC LIMIT 20",
@@ -190,7 +262,10 @@ def drift_section() -> dict:
                        for r in rows],
         })
     except Exception as e:  # noqa: BLE001
-        out["error"] = "v2_alert 不可达: %s" % str(e)[:80]
+        detail = _drift_error_detail(e, dsn)
+        # 兼容：error 仍是字符串（已脱敏），保持 data_daily.html 渲染不破
+        out["error"] = "v2_alert 不可达: %s" % detail["message"]
+        out["error_detail"] = detail
     return out
 
 
