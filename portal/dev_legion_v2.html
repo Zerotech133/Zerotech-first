@@ -36,8 +36,8 @@
   <!-- 首屏：决策优先。曹操 5 秒看到今天必须动什么（v1.1 批文 / 11 席回执 / 跨席回流）。 -->
   <section class="panel today-board" id="today-board" aria-label="今日必须拍板">
     <div class="panel-head">
-      <div><h2><span class="zone-kicker">令</span>今日必须拍板 <span class="count-pill warn" id="today-count">3</span></h2><p>先拍板再派工：v1.1 批文 / 11 席回执 / 跨席回流；来自 API decisions（v2），无 API 时回退人工快照并标时点。</p></div>
-      <span class="panel-note" id="today-source">API v2 · 只读</span>
+      <div><h2><span class="zone-kicker">令</span>今日必须拍板 <span class="count-pill warn" id="today-count">3</span></h2><p>先拍板再派工：v1.1 批文 / 11 席回执 / 跨席回流；来自 API decisions（v2，配置快照），无 API 时回退人工快照并标时点。</p></div>
+      <span class="panel-note" id="today-source">API v2 · decisions（配置快照）· 只读</span>
     </div>
     <div class="today-grid" id="today-list"><div class="empty-row">读取决策中…</div></div>
   </section>
@@ -96,7 +96,7 @@
     <aside class="right-rail">
       <section class="panel side-card decision-card" id="zone-ling">
         <div class="side-head"><h2><span class="zone-kicker">令</span>曹操的决策队列</h2><span class="count-pill warn" id="decision-count">3</span></div>
-        <p class="decision-help" id="decision-help">来源：API decisions（v2）；只读，不代签、不写库。</p>
+        <p class="decision-help" id="decision-help">来源：API decisions（配置快照）；只读，不代签、不写库；非实时。</p>
         <div class="decision-list" id="decision-list"></div>
       </section>
 
@@ -127,7 +127,7 @@
     </aside>
   </div>
 
-  <footer class="page-foot"><span>数据源：GET /api/dev/legion（ADR-009 契约 v1 · v2 extras：workorder_bus/decisions/events）· 只读 · 不写库</span><span>底座：零界 + Hermes（军团 IDE 执行层）· 页面只读</span><span>边界：不自动派单 / 不自动合并 / 不绕过质量门</span></footer>
+  <footer class="page-foot"><span>数据源：GET /api/dev/legion（ADR-020 契约 v1 · v2 extras：workorder_bus/decisions/events）· 只读 · 不写库</span><span>底座：零界 + Hermes（军团 IDE 执行层）· 页面只读</span><span>边界：不自动派单 / 不自动合并 / 不绕过质量门</span></footer>
 </main>
 
 <div class="scrim" id="scrim" hidden></div>

@@ -1,5 +1,5 @@
 /* 曹操军团 · 研发指挥台 v2（决策优先 · 只读）
-   数据：GET /api/dev/legion（ADR-009 契约 v1；v2 extras：workorder_bus / decisions / events）
+   数据：GET /api/dev/legion（ADR-020 契约 v1；v2 extras：workorder_bus / decisions / events）
    纪律：只读；不写库、不派单、不合并、不新增写接口。 */
 
 const $ = (id) => document.getElementById(id);
@@ -107,7 +107,7 @@ function renderToday() {
   const apiDriven = !!(DATA && Array.isArray(DATA.decisions) && DATA.decisions.length);
   $("today-count").textContent = String(items.length);
   $("today-source").textContent = apiDriven
-    ? "API v2 · decisions · 只读"
+    ? "API v2 · decisions（配置快照）· 只读"
     : "人工快照 · as_of " + DECISION_SNAPSHOT_AS_OF;
   $("today-list").innerHTML = items.map((d, i) => `
     <article class="today-item ${d.high ? "high" : ""}">
@@ -149,13 +149,13 @@ function renderDecisions() {
   const apiDriven = !!(DATA && Array.isArray(DATA.decisions) && DATA.decisions.length);
   $("decision-count").textContent = String(items.length);
   $("decision-help").textContent = apiDriven
-    ? "来源：API decisions（v2）；只读，不代签、不写库。"
+    ? "来源：API decisions（配置快照）；只读，不代签、不写库；非实时。"
     : "人工快照 · as_of " + DECISION_SNAPSHOT_AS_OF + "；待 API v2 接入后改为实时。";
   $("decision-list").innerHTML = items.map((d) => `
     <div class="decision-item ${d.high ? "high" : ""}">
       <div class="decision-top"><b>${esc(d.title)}</b><em>${esc(d.due)}</em></div>
       <p>${esc(d.desc)}</p>
-      <div class="decision-foot"><span>${esc(d.owner)}</span><span class="audit-flag">${apiDriven ? "API v2" : "人工快照 · " + esc(DECISION_SNAPSHOT_AS_OF.slice(11))}</span></div>
+      <div class="decision-foot"><span>${esc(d.owner)}</span><span class="audit-flag">${apiDriven ? "API v2 · 配置快照" : "人工快照 · " + esc(DECISION_SNAPSHOT_AS_OF.slice(11))}</span></div>
     </div>`).join("");
 }
 

@@ -130,6 +130,17 @@ def test_live_api_readonly():
     assert "去 Hermes 派工" in txt
 
 
+def test_contract_source_adr020_and_decision_snapshot():
+    """契约真源=ADR-020（ADR-009 是端口注册）；decisions 是配置快照，不得写成实时。"""
+    txt = HTML.read_text(encoding="utf-8")
+    js = JS.read_text(encoding="utf-8")
+    assert "ADR-020" in txt and "ADR-020" in js
+    assert "ADR-009" not in txt and "ADR-009" not in js
+    assert "配置快照" in txt and "配置快照" in js
+    assert "非实时" in txt and "非实时" in js
+    assert "API decisions（配置快照）" in txt or "API decisions（v2，配置快照）" in txt
+
+
 def test_four_zones():
     txt = HTML.read_text(encoding="utf-8")
     for zone in ("zone-bing", "zone-zhang-work", "zone-men", "zone-ling"):
@@ -206,12 +217,13 @@ def test_events_card():
 
 
 def test_decisions_api_v2_and_fallback():
-    """决策队列用 DATA.decisions（3 项）并标 API v2；无 API 才用静态快照+时点。"""
+    """决策队列用 DATA.decisions（配置快照）并保留 API 标识；无 API 才用静态快照+时点。"""
     txt = HTML.read_text(encoding="utf-8")
     js = JS.read_text(encoding="utf-8")
     assert 'id="decision-list"' in txt and 'id="decision-count"' in txt
     assert "DATA.decisions" in js
-    assert '"API v2"' in js
+    assert "API v2 · 配置快照" in js
+    assert "配置快照" in js
     assert "DECISION_SNAPSHOT_AS_OF" in js and "DECISION_SNAPSHOT" in js
     assert "无 API 时回退人工快照" in txt
 
