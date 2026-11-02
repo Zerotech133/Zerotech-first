@@ -13,6 +13,9 @@ CARDS = REPO / "portal/static/kb_learning_cards.json"
 PID = "视频号学习_8博主"
 DATE = datetime.now().strftime("%Y%m%d")
 import argparse  # noqa: E402
+import re  # noqa: E402
+
+COMMENTARY = re.compile(r"下周一|下周|本周|今日|明天|昨天|早盘|尾盘|盘前|盘中|收盘|A股|大盘|指数|散户|主力走势|走势剧本|变盘|涨停潮|复盘日记")
 
 
 def parse_args(argv=None):
@@ -21,6 +24,7 @@ def parse_args(argv=None):
     ap.add_argument("--pid", default=PID)
     ap.add_argument("--prefix", default=None, help="输出文件名前缀（默认同 pid）")
     ap.add_argument("--top", type=int, default=50)
+    ap.add_argument("--relaxed", action="store_true", help="LLM 候选：跳过领域词/逐字匹配硬门")
     return ap.parse_args(argv)
 
 spec = importlib.util.spec_from_file_location("cpl", REPO / "tools/kb_corpus/card_precheck_laomu.py")
@@ -60,6 +64,15 @@ def main(argv=None) -> int:
     by_blogger = {}
     for c in cards:
         ev = cpl.evaluate(c, base_concepts | batch_concepts, base_answers + batch_answers)
+        if args.relaxed:
+            drop = {"concept_no_domain_term", "concept_answer_mismatch"}
+            ev["issues"] = [i for i in ev["issues"] if i not in drop]
+            if COMMENTARY.search(str(ev.get("concept") or c.get("concept") or "")):
+                ev["issues"].append("concept_market_commentary")
+            if not ev["issues"]:
+                ev["action"] = "pass"
+            else:
+                ev["action"] = "reject"
         for i in ev["issues"]:
             stats["issues"][i] = stats["issues"].get(i, 0) + 1
         stats[ev["action"]] += 1
@@ -109,7 +122,7 @@ def main(argv=None) -> int:
     p.write_text(json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8")
     print("proposals:", p.name, "| pass", stats["pass"], "| revise", stats["revise"], "| reject", stats["reject"])
 
-    L = ["# 视频号 291 候选 · 统一预审 + Top 抽审清单", "",
+    L = [f"# 视频号 {stats['total']} 候选 · 统一预审 + Top 抽审清单", "",
          f"> 生成：{result['generated_at']}｜候选 {stats['total']}：**通过 {stats['pass']}** / 需修改 {stats['revise']} / 驳回 {stats['reject']}", "",
          "## 一、预审统计", "", "| 结果 | 数量 |", "|---|---|",
          f"| ✅ 通过 | {stats['pass']} |", f"| 🔧 需修改 | {stats['revise']} |", f"| ❌ 驳回 | {stats['reject']} |", "",
