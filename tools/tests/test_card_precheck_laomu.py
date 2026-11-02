@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """card_precheck_laomu：清洁/领域门/去重/预审统计。"""
 import importlib.util
 from pathlib import Path
