@@ -49,11 +49,34 @@ def _make_env(tmp_path: Path) -> Path:
     jl = tmp_path / "jl"
     jl.mkdir()
     (jl / "data.jsonl").write_text(
-        "\n".join(json.dumps({"a": i, "b": "x%d" % i}) for i in range(5)), encoding="utf-8")
+        "\n".join(json.dumps({"ts": "2026010%d" % (i + 1), "a": i, "b": "x%d" % i})
+                  for i in range(5)), encoding="utf-8")
+    os.utime(jl / "data.jsonl", (1577836800, 1577836800))  # 2020-01-01（file mtime 回退用）
+    (jl / "more.jsonl").write_text(
+        "\n".join(json.dumps({"ts": "2026010%d" % (i + 1), "a": i, "b": "x%d" % i})
+                  for i in range(5, 8)), encoding="utf-8")
+    jl_plain = tmp_path / "jl_plain"
+    jl_plain.mkdir()
+    (jl_plain / "old.jsonl").write_text(
+        "\n".join(json.dumps({"k": i}) for i in range(3)), encoding="utf-8")
+    os.utime(jl_plain / "old.jsonl", (1577836800, 1577836800))
+    jd = tmp_path / "json_docs"
+    jd.mkdir()
+    (jd / "docs.json").write_text(
+        json.dumps([{"id": i, "name": "d%d" % i} for i in range(3)]), encoding="utf-8")
     (tmp_path / "empty").mkdir()
     mixed = tmp_path / "mixed"
     mixed.mkdir()
     (mixed / "readme.pdf").write_bytes(b"%PDF-1.4")
+    (mixed / "notes.md").write_text("# notes", encoding="utf-8")
+    nested = tmp_path / "nested"
+    nested.mkdir()
+    (nested / "sub1").mkdir()
+    (nested / "sub1" / "x.json").write_text(
+        json.dumps([{"id": 1}, {"id": 2}]), encoding="utf-8")
+    (nested / "sub2").mkdir()
+    (nested / "sub2" / "r.pdf").write_bytes(b"%PDF-1.4")
+    (nested / "top.md").write_text("top", encoding="utf-8")
     inv = tmp_path / "inv.json"
     inv.write_text(json.dumps({"datasets": [
         {"domain": "测试", "label": "t.trades", "kind": "sqlite_table",
@@ -62,11 +85,21 @@ def _make_env(tmp_path: Path) -> Path:
          "path": str(pq_dir), "registered": True, "exposed": True, "suggested_id": "pq_ds"},
         {"domain": "测试", "label": "jl", "kind": "corpus_layer",
          "path": str(jl), "registered": True, "exposed": True, "suggested_id": "jl_ds"},
+        {"domain": "测试", "label": "jl_plain", "kind": "corpus_layer",
+         "path": str(jl_plain), "registered": True, "exposed": True,
+         "suggested_id": "jl_plain_ds"},
+        {"domain": "测试", "label": "json_docs", "kind": "dir",
+         "path": str(jd), "registered": True, "exposed": True, "suggested_id": "jd_ds"},
         {"domain": "测试", "label": "empty", "kind": "dir",
          "path": str(tmp_path / "empty"), "registered": False, "exposed": False,
          "suggested_id": "empty_ds"},
         {"domain": "测试", "label": "mixed", "kind": "dir",
          "path": str(mixed), "registered": False, "exposed": False, "suggested_id": "mixed_ds"},
+        {"domain": "测试", "label": "nested", "kind": "dir",
+         "path": str(nested), "registered": False, "exposed": False,
+         "suggested_id": "nested_ds"},
+        {"domain": "测试", "label": "pg", "kind": "pg_table",
+         "path": "pg://fake", "registered": True, "exposed": True, "suggested_id": "pg_ds"},
     ]}, ensure_ascii=False), encoding="utf-8")
     return inv
 
@@ -180,25 +213,106 @@ def test_parquet_since_and_order_small(reg):
     assert [r[0] for r in ordered["rows"]] == [24.0, 23.0, 22.0]
 
 
-# ---------- 其他载体 ----------
-def test_jsonl_basic_and_not_supported(reg):
-    out = reg.query("jl_ds", limit=2)
+# ---------- jsonl / json（P2：where/order/count/since） ----------
+def test_jsonl_rows_limit_and_count(reg):
+    out = reg.query("jl_ds", limit=2, count=True)
     assert out["carrier"] == "dir_jsonl"
-    assert out["columns"] == ["a", "b"]
-    assert len(out["rows"]) == 2
-    with pytest.raises(QueryNotSupported):
-        reg.query("jl_ds", where={"a": 1})
-    with pytest.raises(QueryNotSupported):
-        reg.query("jl_ds", count=True)
+    assert out["columns"] == ["ts", "a", "b"]
+    assert len(out["rows"]) == 2 and out["count"] == 8 and out["has_more"] is True
+    assert out["evidence"]["engine"] == "jsonl"
 
 
-def test_empty_and_mixed_and_unknown(reg):
+def test_jsonl_where_filter_and_count(reg):
+    total = reg.query("jl_ds", limit=1, count=True)["count"]
+    hit = reg.query("jl_ds", where={"b": "x1"}, limit=100, count=True)
+    assert hit["count"] == 1 and hit["rows"] and hit["rows"][0][2] == "x1"
+    assert hit["count"] < total
+    # 数值比较 + in 算子
+    gt = reg.query("jl_ds", where=[{"field": "a", "op": ">=", "value": 6}], count=True)
+    assert gt["count"] == 2
+    inn = reg.query("jl_ds", where=[{"field": "a", "op": "in", "value": [0, 7]}], count=True)
+    assert inn["count"] == 2
+
+
+def test_jsonl_order_and_pagination(reg):
+    out = reg.query("jl_ds", order="a:desc", limit=3)
+    assert [r[1] for r in out["rows"]] == [7, 6, 5]
+    p1 = reg.query("jl_ds", order="a", limit=3, offset=0)
+    p2 = reg.query("jl_ds", order="a", limit=3, offset=3)
+    assert [r[1] for r in p1["rows"]] == [0, 1, 2]
+    assert [r[1] for r in p2["rows"]] == [3, 4, 5]
+    assert p1["next_offset"] == 3
+
+
+def test_jsonl_since_row_column(reg):
+    out = reg.query("jl_ds", since="2026-01-06", count=True)
+    assert out["evidence"]["since_column"] == "ts"
+    assert out["evidence"]["since_mode"] == "row_column"
+    assert out["count"] == 3
+
+
+def test_jsonl_since_file_mtime_fallback(reg):
+    # 无行内时间字段 → 按文件 mtime；fixture 文件 mtime=2020，since 2026 应无命中
+    old = reg.query("jl_plain_ds", since="2026-01-01", count=True)
+    assert old["state"] == "no_data" and old["count"] == 0
+    assert old["evidence"]["since_mode"] == "file_mtime"
+    none = reg.query("jl_plain_ds", count=True)
+    assert none["count"] == 3
+
+
+def test_jsonl_unknown_field_and_order_cap(reg, monkeypatch):
+    with pytest.raises(QueryParamError) as ei:
+        reg.query("jl_ds", where={"nope": 1})
+    assert "allowed_fields" in ei.value.detail
+    import dataset_registry
+    monkeypatch.setattr(dataset_registry, "QUERY_JSONL_ORDER_ROWS", 2)
+    with pytest.raises(QueryNotSupported):
+        reg.query("jl_ds", order="a:desc")
+
+
+def test_json_docs_file_rows(reg):
+    out = reg.query("jd_ds", limit=5, count=True)
+    assert out["carrier"] == "dir_jsonl"
+    assert out["columns"] == ["id", "name"]
+    assert out["count"] == 3 and len(out["rows"]) == 3
+
+
+# ---------- mixed / nested 文件级（P2） ----------
+def test_mixed_files_query(reg):
+    out = reg.query("mixed_ds", limit=5, count=True)
+    assert out["carrier"] == "dir_files"
+    assert out["columns"] == ["path", "name", "ext", "size", "mtime", "depth"]
+    assert out["count"] == 2 and len(out["rows"]) == 2
+    pdf = reg.query("mixed_ds", where={"ext": ".pdf"}, count=True)
+    assert pdf["count"] == 1 and pdf["rows"][0][1] == "readme.pdf"
+    ordered = reg.query("mixed_ds", order="name:desc", limit=1)
+    assert ordered["rows"][0][1] == "readme.pdf"
+    p1 = reg.query("mixed_ds", limit=1, offset=0)
+    p2 = reg.query("mixed_ds", limit=1, offset=1)
+    assert p1["rows"] and p2["rows"] and p1["rows"] != p2["rows"]
+
+
+def test_nested_files_query(reg):
+    out = reg.query("nested_ds", limit=10, count=True)
+    assert out["carrier"] == "dir_files"
+    assert out["count"] == 3  # sub1/x.json + sub2/r.pdf + top.md
+    assert out["evidence"]["max_depth"] >= 1
+    json_only = reg.query("nested_ds", where={"ext": ".json"}, count=True)
+    assert json_only["count"] == 1
+    top = reg.query("nested_ds", where={"name": "top.md"}, count=True)
+    assert top["count"] == 1
+    with pytest.raises(QueryParamError):
+        reg.query("nested_ds", where={"nope": 1})
+
+
+def test_empty_and_unknown_and_not_supported(reg):
     empty = reg.query("empty_ds")
     assert empty["state"] == "no_data"
-    with pytest.raises(QueryNotSupported):
-        reg.query("mixed_ds")
     with pytest.raises(KeyError):
         reg.query("no_such_dataset")
+    # not_supported 边界保留：pg_table 载体 P2 仍不支持行级 query（fail-visible）
+    with pytest.raises(QueryNotSupported):
+        reg.query("pg_ds")
 
 
 # ---------- 只读/审计 ----------
@@ -250,9 +364,9 @@ def test_http_get_query(api):
     h3 = _FakeHandler()
     api.handle_get(h3, "/api/dw/query", "id=nope")
     assert h3.calls[-1][1] == 404
-    # 不支持载体 → 409
+    # 不支持载体 → 409（pg_table 仍保留 not_supported 边界）
     h4 = _FakeHandler()
-    api.handle_get(h4, "/api/dw/query", "id=mixed_ds")
+    api.handle_get(h4, "/api/dw/query", "id=pg_ds")
     assert h4.calls[-1][1] == 409
 
 
@@ -352,6 +466,16 @@ def test_coverage_judge_dims(reg):
     assert sqlite_row["carrier"] == "sqlite_table"
     pq_row = mod.judge_dataset(reg, "pq_ds")
     assert pq_row["L"] and pq_row["P"] and pq_row["F"] and pq_row["A"]
+    # P2：jsonl 行级、mixed/nested 文件级均达四维
     jl_row = mod.judge_dataset(reg, "jl_ds")
-    assert not (jl_row["L"] and jl_row["P"] and jl_row["F"] and jl_row["A"])
-    assert jl_row["reason"]
+    assert jl_row["carrier"] == "dir_jsonl"
+    assert jl_row["L"] and jl_row["P"] and jl_row["F"] and jl_row["A"]
+    mixed_row = mod.judge_dataset(reg, "mixed_ds")
+    assert mixed_row["carrier"] == "dir_files"
+    assert mixed_row["L"] and mixed_row["P"] and mixed_row["F"] and mixed_row["A"]
+    nested_row = mod.judge_dataset(reg, "nested_ds")
+    assert nested_row["carrier"] == "dir_files" and nested_row["L"]
+    empty_row = mod.judge_dataset(reg, "empty_ds")
+    assert not empty_row["ready"] and empty_row.get("excluded") is True
+    pg_row = mod.judge_dataset(reg, "pg_ds")
+    assert not pg_row["ready"] and "not_supported" in (pg_row["reason"] or "")

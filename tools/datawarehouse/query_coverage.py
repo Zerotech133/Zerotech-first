@@ -170,24 +170,23 @@ def judge_dataset(reg: DatasetRegistry, dataset_id: str, max_page: int = 5) -> d
         p = Path(str(d.get("path") or ""))
         if not p.is_absolute():
             p = REPO / p
-        if not p.exists():
+        if not p.exists() and d.get("kind") not in ("pg_table", "contract_artifact"):
             base["reason"] = "no_data: 路径不存在"
             base["excluded"] = True
         return base
     base["carrier"] = r0["result"].get("carrier")
-    if base["carrier"] in ("sqlite_table", "parquet_file", "dir_parquet"):
+    # P2（2026-11-02 task-57）：行级/文件级载体统一四维判定
+    if base["carrier"] in ("sqlite_table", "parquet_file", "dir_parquet",
+                           "jsonl_file", "dir_jsonl", "files", "dir_files"):
         judged = _judge_sqlite_or_parquet(reg, dataset_id, max_page)
         base.update(judged)
         return base
-    # 非行级载体：JSONL 基础行不算四维就绪（P2），空目录/混合目录显式 no_data/not_supported
-    res = r0["result"]
+    # 其余载体：空目录 N/A / 不支持（fail-visible，不计 ready）
     if base["carrier"] == "dir_empty":
         base["excluded"] = True
         base["reason"] = "N/A: 空目录（无数据）"
-    elif "jsonl" in str(base["carrier"]):
-        base["reason"] = "not_supported: jsonl 行级条件/计数属 P2"
     else:
-        base["reason"] = "not_supported: 载体 %s 属 P2" % base["carrier"]
+        base["reason"] = "not_supported: 载体 %s 属 P3" % base["carrier"]
     return base
 
 

@@ -12,6 +12,14 @@
     `sample()` 抛 `ContractArtifactUnavailable`（fail-visible）。
   * 兼容：`stats()` 与 `self.datasets`（文件级）保持原 314/265/72 口径不变；
     新增 `stats_v2()` 合并口径（`denominator_version=v2`）。
+- **DWH-103 wave2（ADR-019 D3，2026-11-02 task-25）**：
+  * `ZHICE_V2_DSN` 可用时，`pg_table` 条目 = **动态发现 `public.v2_%` 全量**
+    （`discover_v2_tables(conn)`，以发现结果为准，**不硬编码 83/84 等数量**）；
+    `stats_v2().pg.total`=发现数、`pg.available`=可读元数据数（`pg_class.relkind='r'`）；
+    发现/元数据查询异常 fail-visible（不吞、不假绿）。
+  * `sample()` 只接受发现集合内且符合 `^[a-z_][a-z0-9_]*$` 的标识符（只读
+    `SELECT * FROM "<schema>"."<table>" LIMIT n`，不拼接任意输入；越界/未发现表拒绝）。
+  * `ZHICE_V2_DSN` 未设置时保持 wave1 行为（固定清单 + `missing_dsn`，不报错、不假绿）。
 - 边界：只读；PG 仅只读会话 SELECT；不写业务数据/数据库/`C:\\Temp`；不递归扫描 Temp。
 """
 from __future__ import annotations
@@ -68,6 +76,21 @@ PG_WAVE1_TABLES = (
     {"table": "v2_score_component", "owner": "D1", "registered": True, "exposed": True},
 )
 
+# ---------- DWH-103 wave2（ADR-019 D3，2026-11-02 task-25）：动态发现 public.v2_% 全量 ----------
+# 口径：DSN 可用时以**发现结果为准**（不硬编码 83/84 等数量）；DSN 未设置退回 wave1 固定清单。
+# LIKE 中 `\_` 转义下划线：只匹配字面 `v2_` 前缀，`%` 才是通配符。
+PG_DISCOVER_SQL = (
+    "SELECT tablename FROM pg_tables "
+    "WHERE schemaname = 'public' AND tablename LIKE 'v2\\_%' ORDER BY 1"
+)
+PG_METADATA_SQL = (
+    "SELECT c.relname, c.relkind, c.reltuples FROM pg_class c "
+    "JOIN pg_namespace n ON n.oid = c.relnamespace "
+    "WHERE n.nspname = 'public' AND c.relname = ANY(%s)"
+)
+PG_AVAILABLE_RELKINDS = ("r",)  # 可读元数据（普通表）；视图/分区父表等不计 available
+PG_DYNAMIC_OWNER_DEFAULT = "DATA1"  # 动态发现表的 owner 占位（P7：v1.1 由 owner 逐表声明）
+
 # ---------- DWH-103 / ADR-019 D4：C:\\Temp 契约产物白名单（wave1） ----------
 TEMP_ROOT = Path(r"C:\Temp")
 # 显式受控清单：逐条登记、只允许 temp_root 直属文件、禁递归扫描、不扩 ALLOWED_ROOTS。
@@ -123,6 +146,14 @@ QUERY_MAX_JSONL_FILES = 200
 QUERY_MAX_JSONL_LINES = 5000
 QUERY_TIMEOUT_S = 10.0
 QUERY_PARQUET_ORDER_ROWS = 200_000  # parquet 内存排序扫描上限（超限 not_supported，P2 下推）
+# ---------- S3-06 P2（2026-11-02 task-57）：jsonl / mixed / nested 四维 ----------
+QUERY_JSONL_SCAN_LINES = 200_000   # jsonl 单次查询扫描行上限（超限 truncated 可见）
+QUERY_JSONL_SCAN_BYTES = 64 * 1024 * 1024
+QUERY_JSONL_SCHEMA_DOCS = 200      # 字段白名单推断样本（首批文档）
+QUERY_JSONL_ORDER_ROWS = 100_000   # jsonl 排序最大匹配行（超限 not_supported）
+QUERY_FILES_MAX = 5000             # mixed/nested 文件级载体发现上限
+QUERY_FILES_FIELDS = ("path", "name", "ext", "size", "mtime", "depth")
+QUERY_FILES_MAX_DEPTH = 4          # 文件级发现深度上限（防深递归）
 QUERY_OPS = ("=", "!=", ">", ">=", "<", "<=", "in", "like")
 QUERY_AUDIT_ENV = "DW_QUERY_AUDIT"
 QUERY_AUDIT_LOG = Path(r"C:\Temp\dw_query_audit.log")
@@ -130,7 +161,7 @@ _FIELD_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,63}$")
 _TIME_COL_HINTS = (
     "trade_date", "date", "pub_date", "ann_date", "notice_date", "created_at",
     "updated_at", "datetime", "timestamp", "trade_time", "end_date", "report_date",
-    "publish_date", "cal_date", "month", "year", "quarter", "day",
+    "publish_date", "cal_date", "month", "year", "quarter", "day", "ts",
 )
 
 
@@ -278,7 +309,7 @@ def _pick_time_column(names):
         if hint in lowered:
             return lowered[hint]
     for n in names:
-        if re.search(r"(date|_at$|time|day|month|year)", str(n), re.I):
+        if re.search(r"(date|_at$|time|day|month|year|^ts$|_ts$)", str(n), re.I):
             return str(n)
     return None
 
@@ -293,6 +324,54 @@ def _like_contains(value: str) -> str:
     if v.endswith("%"):
         return v[:-1]
     return v
+
+
+def _cmp_value(actual, op: str, expected) -> bool:
+    """jsonl/文件级 where 比较（类型宽松、绝不抛错；None 不匹配）。"""
+    def _numeric(x):
+        if isinstance(x, bool):
+            return None
+        if isinstance(x, (int, float)):
+            return float(x)
+        try:
+            return float(str(x).strip())
+        except (TypeError, ValueError):
+            return None
+
+    if op == "in":
+        return any(_cmp_value(actual, "=", v) for v in expected)
+    if op == "like":
+        if actual is None:
+            return False
+        return _like_contains(str(expected)) in str(actual)
+    if actual is None:
+        return False
+    a, b = _numeric(actual), _numeric(expected)
+    if op in (">", ">=", "<", "<=") and a is not None and b is not None:
+        return {">": a > b, ">=": a >= b, "<": a < b, "<=": a <= b}[op]
+    sa, sb = str(actual), str(expected)
+    if op == "=":
+        return sa == sb
+    if op == "!=":
+        return sa != sb
+    if op == ">":
+        return sa > sb
+    if op == ">=":
+        return sa >= sb
+    if op == "<":
+        return sa < sb
+    if op == "<=":
+        return sa <= sb
+    return False
+
+
+def _match_doc(doc: dict, where) -> bool:
+    for w in where:
+        if w["field"] not in doc:
+            return False
+        if not _cmp_value(doc.get(w["field"]), w["op"], w["value"]):
+            return False
+    return True
 
 
 def _audit_query(record: dict) -> None:
@@ -356,8 +435,8 @@ def _sha256_file(path: Path) -> str:
     return h.hexdigest()
 
 
-def _default_pg_probe(dsn: str, tables) -> dict:
-    """只读探针：pg_class/information_schema 查 wave1 表存在性 + reltuples 估算（不写库）。"""
+def _pg_connect_default(dsn: str):
+    """只读连接工厂（wave2 默认）：DSN 从 env 读取（不落盘）；异常向上抛（fail-visible）。"""
     try:
         import psycopg2 as pg
     except ImportError:
@@ -366,29 +445,72 @@ def _default_pg_probe(dsn: str, tables) -> dict:
         except ImportError as exc:  # noqa: BLE001
             raise ConnectorUnavailable("driver_missing: 未安装 psycopg2/psycopg",
                                        status="driver_missing") from exc
+    con = pg.connect(dsn, connect_timeout=PG_TIMEOUT_S)
+    try:
+        con.set_session(readonly=True, autocommit=True)
+    except Exception:  # noqa: BLE001 — psycopg3 无 set_session：退化为只读事务外查询
+        try:
+            con.autocommit = True
+        except Exception:  # noqa: BLE001
+            pass
+    return con
+
+
+def discover_v2_tables(conn) -> list[str]:
+    """只读发现 `public.v2_%` 全量（DWH-103 wave2，ADR-019 D3）。
+
+    - SQL 固定：`SELECT tablename FROM pg_tables WHERE schemaname='public'
+      AND tablename LIKE 'v2\\_%' ORDER BY 1`（`\\_` 转义下划线，% 为通配符）；
+    - 返回**排序去重**后的表名列表（以发现结果为准，不硬编码数量）；
+    - 连接/查询异常**向上抛**（fail-visible：不吞、不假绿）。
+    """
+    cur = conn.cursor()
+    try:
+        cur.execute(PG_DISCOVER_SQL)
+        rows = cur.fetchall()
+    finally:
+        try:
+            cur.close()
+        except Exception:  # noqa: BLE001
+            pass
+    return sorted({str(row[0]) for row in rows if row and row[0]})
+
+
+def discover_v2_metadata(conn, tables: list[str]) -> dict:
+    """只读元数据：`public.<table>` 的 relkind/reltuples（available 口径 relkind='r'）。"""
+    if not tables:
+        return {}
+    cur = conn.cursor()
+    try:
+        cur.execute(PG_METADATA_SQL, (list(tables),))
+        rows = cur.fetchall()
+    finally:
+        try:
+            cur.close()
+        except Exception:  # noqa: BLE001
+            pass
+    meta = {}
+    for name, relkind, estimate in rows:
+        try:
+            est = None if estimate is None or float(estimate) < 0 else int(estimate)
+        except (TypeError, ValueError):
+            est = None
+        meta[str(name)] = {"relkind": str(relkind or ""), "row_estimate": est}
+    return meta
+
+
+def _default_pg_probe(dsn: str, tables=None, connect=None) -> dict:
+    """默认探针（wave2）：动态发现 public.v2_% 全量 + 元数据（只读）。
+
+    返回 `{"schema": "public", "discovered": [...], "metadata": {table: {relkind, row_estimate}}}`；
+    兼容 wave1 注入探针的返回形状（dict{(schema,table): reltuples} 或 set），由 `_probe_pg` 分派。
+    """
     con = None
     try:
-        con = pg.connect(dsn, connect_timeout=PG_TIMEOUT_S)
-        try:
-            con.set_session(readonly=True, autocommit=True)
-        except Exception:  # noqa: BLE001 — psycopg3 无 set_session：退化为只读事务外查询
-            try:
-                con.autocommit = True
-            except Exception:  # noqa: BLE001
-                pass
-        cur = con.cursor()
-        cur.execute(
-            "SELECT n.nspname, c.relname, c.reltuples FROM pg_class c "
-            "JOIN pg_namespace n ON n.oid = c.relnamespace "
-            "WHERE n.nspname = ANY(%s) AND c.relname = ANY(%s) AND c.relkind = 'r'",
-            (list(PG_SCHEMA_WHITELIST), list(tables)),
-        )
-        out = {}
-        for schema, name, estimate in cur.fetchall():
-            out[(str(schema), str(name))] = (
-                None if estimate is None or float(estimate) < 0 else int(estimate)
-            )
-        return out
+        con = (connect or _pg_connect_default)(dsn)
+        names = discover_v2_tables(con)
+        meta = discover_v2_metadata(con, names)
+        return {"schema": PG_SCHEMA_WHITELIST[0], "discovered": names, "metadata": meta}
     finally:
         if con is not None:
             try:
@@ -412,6 +534,7 @@ class DatasetRegistry:
                  pg_dsn: str | None = None,
                  pg_tables=None,
                  pg_probe=None,
+                 pg_connect=None,
                  temp_whitelist=None,
                  temp_root: Path | str | None = None):
         if inventory_path is None:
@@ -460,6 +583,8 @@ class DatasetRegistry:
         self.pg_dsn = (os.environ.get(PG_DSN_ENV, "") if pg_dsn is None else str(pg_dsn)).strip()
         self.pg_tables = [dict(x) for x in (pg_tables if pg_tables is not None else PG_WAVE1_TABLES)]
         self._pg_probe = pg_probe
+        self._pg_connect = pg_connect
+        self.pg_discovered = None  # wave2：动态发现集合（DSN 可用时）；None=wave1/缺 DSN 口径
         self.temp_root = Path(temp_root) if temp_root is not None else TEMP_ROOT
         self.temp_whitelist = [
             dict(x) for x in (temp_whitelist if temp_whitelist is not None
@@ -600,6 +725,7 @@ class DatasetRegistry:
                 "path": PG_CONNECTOR,
                 "connector": PG_CONNECTOR,
                 "physical": {"schema": schema, "table": table},
+                "ref": "dataset/pg/%s" % table,
                 "owner": spec.get("owner") or "DATA1",
                 "registered": bool(spec.get("registered", True)),
                 "exposed": bool(spec.get("exposed", True)),
@@ -614,8 +740,49 @@ class DatasetRegistry:
         self._probe_pg(rows)
         return rows
 
+    def _owner_spec(self, table: str) -> dict:
+        """wave1 固定清单中该表的声明（owner/registered/exposed）；动态发现时用于合并声明。"""
+        for spec in self.pg_tables:
+            if str(spec.get("table") or "") == table:
+                return dict(spec)
+        return {}
+
+    def _pg_dynamic_row(self, schema: str, table: str, meta: dict) -> dict:
+        """wave2 动态发现行：发现即登记（不硬编码数量），owner 优先用 wave1 声明否则占位。"""
+        spec = self._owner_spec(table)
+        known = bool(spec)
+        return {
+            "dataset_id": "pg_%s_%s" % (schema, table),
+            "domain": spec.get("domain") or PG_DOMAIN,
+            "label": "%s.%s" % (schema, table),
+            "kind": "pg_table",
+            "path": PG_CONNECTOR,
+            "connector": PG_CONNECTOR,
+            "physical": {"schema": schema, "table": table},
+            "ref": "dataset/pg/%s" % table,
+            "owner": spec.get("owner") or PG_DYNAMIC_OWNER_DEFAULT,
+            "owner_source": "declared" if known else "dynamic_placeholder",
+            "registered": True,      # wave2：动态发现即纳登记（ADR-019 D3：83/83）
+            "exposed": bool(spec.get("exposed", False)),
+            "access": "read_only",
+            "freshness": None,       # ADR-019 D2/P7：v0 不声明（防假新鲜度）
+            "row_estimate": meta.get("row_estimate"),
+            "relkind": meta.get("relkind") or "",
+            "status": "planned",
+            "available": False,
+            "ref_aliases": [table, "dataset/pg/%s" % table],
+            "unified_entry": True,
+        }
+
     def _probe_pg(self, rows: list[dict]) -> None:
-        """连接探测：缺 DSN=missing_dsn；失败=connector_unavailable（均 fail-visible，不假绿）。"""
+        """连接探测（ADR-019 D2/D3 wave2）。
+
+        - 无 DSN → wave1 固定清单 + missing_dsn（不报错、不假绿）；
+        - 注入探针（wave1/测试）→ 以注入结果标记固定清单（保持 wave1 兼容）；
+        - 默认探针（DSN 可用）→ **动态发现 public.v2_% 全量**，行集合以发现结果为准
+          （不硬编码数量）；available = `pg_class.relkind='r'` 的可读元数据数；
+          发现/元数据异常 fail-visible（不吞）。
+        """
         if not rows:
             self.connector_status = "disabled"
             return
@@ -624,9 +791,12 @@ class DatasetRegistry:
             for row in rows:
                 row["status"] = "missing_dsn"
             return
-        probe = self._pg_probe or _default_pg_probe
+        tables = [row["physical"]["table"] for row in rows]
         try:
-            found = probe(self.pg_dsn, [row["physical"]["table"] for row in rows])
+            if self._pg_probe is not None:  # wave1 兼容：注入探针只覆盖固定清单
+                found = self._pg_probe(self.pg_dsn, tables)
+            else:                            # wave2：默认探针动态发现全量
+                found = _default_pg_probe(self.pg_dsn, tables, connect=self._pg_connect)
         except Exception as exc:  # noqa: BLE001 — fail-visible，不静默跳过
             self.connector_status = getattr(exc, "status", "connector_unavailable")
             self.connector_error = "%s: %s" % (type(exc).__name__, str(exc)[:160])
@@ -634,6 +804,23 @@ class DatasetRegistry:
                 row["status"] = self.connector_status
             return
         self.connector_status = "ok"
+        if isinstance(found, dict) and found.get("discovered") is not None:
+            # wave2：动态发现全量（发现结果即行集合，不硬编码 83/84）
+            names = [str(n) for n in found.get("discovered") or []]
+            meta_all = found.get("metadata") or {}
+            schema = str(found.get("schema") or PG_SCHEMA_WHITELIST[0])
+            dynamic = []
+            for table in names:
+                if not _TABLE_RE.fullmatch(table):
+                    continue  # 发现结果也过命名白名单（安全兜底）
+                dynamic.append(self._pg_dynamic_row(schema, table, meta_all.get(table) or {}))
+            rows[:] = dynamic
+            self.pg_discovered = set(names)
+            for row in rows:
+                row["available"] = row.get("relkind") in PG_AVAILABLE_RELKINDS
+                row["status"] = "active" if row["available"] else "metadata_unreadable"
+            return
+        # wave1/注入探针：固定清单存在性
         for row in rows:
             key = (row["physical"]["schema"], row["physical"]["table"])
             hit = key in found or row["physical"]["table"] in found
@@ -662,20 +849,13 @@ class DatasetRegistry:
         if schema not in PG_SCHEMA_WHITELIST or not _TABLE_RE.fullmatch(schema) \
                 or not _TABLE_RE.fullmatch(table):
             raise PermissionError("pg_table 不在 schema/命名白名单: %s.%s" % (schema, table))
-        try:
-            import psycopg2 as pg
-        except ImportError:
-            raise ConnectorUnavailable("driver_missing: 未安装 psycopg2", status="driver_missing")
+        discovered = getattr(self, "pg_discovered", None)
+        if discovered is not None and table not in discovered:
+            raise PermissionError(
+                "pg_table 未在发现集合（拒绝任意标识符）: %s.%s" % (schema, table))
         con = None
         try:
-            con = pg.connect(self.pg_dsn, connect_timeout=PG_TIMEOUT_S)
-            try:
-                con.set_session(readonly=True, autocommit=True)
-            except Exception:  # noqa: BLE001
-                try:
-                    con.autocommit = True
-                except Exception:  # noqa: BLE001
-                    pass
+            con = (self._pg_connect or _pg_connect_default)(self.pg_dsn)
             cur = con.cursor()
             cur.execute('SELECT * FROM "%s"."%s" LIMIT %%s' % (schema, table), (int(n),))
             cols = [c[0] for c in cur.description or []]
@@ -938,6 +1118,13 @@ class DatasetRegistry:
         cols = _norm_columns(columns)
         since_n = _norm_since(since)
         kind = d.get("kind")
+        if kind in ("pg_table", "contract_artifact"):
+            _audit_query({"ts": _now(), "dataset_id": dataset_id, "kind": kind,
+                          "carrier": kind, "error": "QueryNotSupported: %s 载体 P1/P2 不支持行级 query" % kind,
+                          "limit": limit, "offset": offset})
+            raise QueryNotSupported(
+                "%s 载体 P1/P2 不支持行级 query（契约产物走 sample；PG 走 P3）" % kind,
+                {"carrier": kind, "hint": "sample() 可用"})
         p = self._resolve(d)
         disc = self._discover(p)
         carrier = self._carrier_for(kind, p, disc)
@@ -945,10 +1132,6 @@ class DatasetRegistry:
                 "ok": True, "truncated": bool(disc.get("parquet_truncated")
                                               or disc.get("jsonl_truncated"))}
         try:
-            if kind in ("pg_table", "contract_artifact"):
-                raise QueryNotSupported(
-                    "%s 载体 P1 不支持行级 query（契约产物走 sample；PG 走 P3）" % kind,
-                    {"carrier": carrier, "hint": "sample() 可用"})
             if carrier in ("sqlite_table",):
                 out = self._query_sqlite(p, d, where_l, order_l, limit, offset, since_n, cols, count)
             elif carrier in ("parquet_file", "dir_parquet"):
@@ -956,6 +1139,9 @@ class DatasetRegistry:
                                           since_n, cols, count)
             elif carrier in ("jsonl_file", "dir_jsonl"):
                 out = self._query_jsonl(p, disc, where_l, order_l, limit, offset,
+                                        since_n, cols, count)
+            elif carrier in ("files", "dir_files"):
+                out = self._query_files(p, disc, where_l, order_l, limit, offset,
                                         since_n, cols, count)
             elif carrier == "dir_empty":
                 out = self._query_no_data("目录为空（0 文件）：P1 无行可查", disc)
@@ -1005,19 +1191,22 @@ class DatasetRegistry:
         if cached is not None:
             return cached
         out = {"parquet": [], "parquet_truncated": False, "parquet_total": 0,
-               "jsonl": [], "jsonl_truncated": False,
+               "jsonl": [], "jsonl_truncated": False, "jsonl_total": 0,
                "other_files": 0, "files_total": 0, "empty": False,
-               "dirs_scanned": 0, "dirs_truncated": False}
+               "files_meta": [], "files_truncated": False,
+               "dirs_scanned": 0, "dirs_truncated": False, "max_depth": 0}
         if p.is_file():
             out["files_total"] = 1
             out["parquet_total"] = 1 if p.name.lower().endswith(".parquet") else 0
             low = p.name.lower()
             if low.endswith(".parquet"):
                 out["parquet"] = [p]
-            elif low.endswith((".jsonl", ".ndjson")):
+            elif low.endswith((".jsonl", ".ndjson", ".json", ".jsonl.gz", ".json.gz")):
                 out["jsonl"] = [p]
+                out["jsonl_total"] = 1
             else:
                 out["other_files"] = 1
+            out["files_meta"] = [self._file_meta(p, p.parent, 0)]
             return out
         if not p.is_dir():
             return out
@@ -1028,6 +1217,11 @@ class DatasetRegistry:
             out["dirs_scanned"] += 1
             dirs.sort()
             fnames.sort()
+            depth = len(Path(cur).relative_to(p).parts) if Path(cur) != p else 0
+            out["max_depth"] = max(out["max_depth"], depth)
+            if depth > QUERY_FILES_MAX_DEPTH:
+                dirs[:] = []
+                continue
             for fn in fnames:
                 out["files_total"] += 1
                 low = fn.lower()
@@ -1037,21 +1231,43 @@ class DatasetRegistry:
                         head.append(Path(cur) / fn)
                     else:
                         tail.append(Path(cur) / fn)
-                elif low.endswith((".jsonl", ".ndjson")):
+                elif low.endswith((".jsonl", ".ndjson", ".json", ".jsonl.gz", ".json.gz")):
+                    out["jsonl_total"] += 1
                     if len(out["jsonl"]) < QUERY_MAX_JSONL_FILES:
                         out["jsonl"].append(Path(cur) / fn)
                     else:
                         out["jsonl_truncated"] = True
                 else:
                     out["other_files"] += 1
+                if len(out["files_meta"]) < QUERY_FILES_MAX:
+                    out["files_meta"].append(self._file_meta(Path(cur) / fn, p, depth))
+                else:
+                    out["files_truncated"] = True
             if out["dirs_scanned"] >= 2000:
                 out["dirs_truncated"] = True
                 break
         out["parquet"] = head + list(tail)
         out["parquet_truncated"] = out["parquet_total"] > len(out["parquet"])
+        out["jsonl_truncated"] = out["jsonl_truncated"] or (
+            out["jsonl_total"] > len(out["jsonl"]))
         out["empty"] = out["files_total"] == 0
         self._disc_cache[key] = out
         return out
+
+    @staticmethod
+    def _file_meta(fp: Path, root: Path, depth: int) -> dict:
+        """文件级元数据（相对路径/扩展名/大小/mtime，只读 stat）。"""
+        try:
+            st = fp.stat()
+        except OSError:
+            return {"path": fp.name, "name": fp.name, "ext": fp.suffix.lower(),
+                    "size": None, "mtime": None, "depth": depth}
+        try:
+            rel = str(fp.relative_to(root)).replace("\\", "/")
+        except ValueError:
+            rel = fp.name
+        return {"path": rel, "name": fp.name, "ext": fp.suffix.lower(),
+                "size": st.st_size, "mtime": st.st_mtime, "depth": depth}
 
     @staticmethod
     def _carrier_for(kind, p: Path, disc: dict) -> str:
@@ -1064,9 +1280,15 @@ class DatasetRegistry:
         if disc["parquet"]:
             return "parquet_file" if p.is_file() else "dir_parquet"
         if disc["jsonl"]:
+            # 纯 jsonl/json 目录 → 行级；json + 其他文件混布（mixed/nested）→ 文件级四维
+            if disc["other_files"] > 0 and disc.get("files_meta"):
+                return "files" if p.is_file() else "dir_files"
             return "jsonl_file" if p.is_file() else "dir_jsonl"
         if disc["empty"]:
             return "dir_empty"
+        # 2026-11-02 task-57 P2：mixed/nested/语料层 → 文件级载体（只读文件清单，L/P/F/A）
+        if disc.get("files_meta"):
+            return "files" if p.is_file() else "dir_files"
         return "unsupported"
 
     @staticmethod
@@ -1401,62 +1623,224 @@ class DatasetRegistry:
             out["reason"] = "查询命中 0 行（过滤条件/时间下界无匹配）"
         return out
 
-    # ---------- jsonl（P1 基础行，条件/排序/计数 P2，fail-visible） ----------
-    def _query_jsonl(self, p: Path, disc: dict, where, order, limit, offset,
-                     since, columns, count) -> dict:
-        files = disc.get("jsonl") or []
-        if not files:
-            return self._query_no_data("未发现 jsonl 文件", disc)
-        if where or order or count or since:
-            raise QueryNotSupported(
-                "jsonl 载体 P1 仅支持 columns 投影 + limit/offset 前 N 行；"
-                "where/order/count/since 属 P2（明确 fail-visible，不回退 sample）",
-                {"engine": "jsonl", "files": len(files)})
-        select = list(columns) if columns else None
-        rows, scanned, skipped = [], 0, 0
-        truncated = bool(disc.get("jsonl_truncated"))
-        out_columns = list(select) if select else []
-        for f in files:
-            try:
-                fh = f.open("r", encoding="utf-8", errors="replace")
-            except OSError:
-                continue
-            with fh:
-                for line in fh:
-                    if not line.strip():
-                        continue
-                    scanned += 1
-                    if scanned > QUERY_MAX_JSONL_LINES:
-                        truncated = True
-                        break
-                    if skipped < offset:
-                        skipped += 1
+    # ---------- jsonl / json（P2：where/order/count/since 流式） ----------
+    @staticmethod
+    def _iter_json_docs(f: Path):
+        """逐文档产出（jsonl/ndjson 逐行；json 整个数组/对象；gzip 嗅探；坏行跳过）。"""
+        import gzip
+        low = f.name.lower()
+        try:
+            with f.open("rb") as fh:
+                magic = fh.read(2)
+        except OSError:
+            return
+        try:
+            if magic == b"\x1f\x8b":
+                raw = gzip.open(str(f), "rt", encoding="utf-8", errors="replace")
+            else:
+                raw = f.open("r", encoding="utf-8", errors="replace")
+        except OSError:
+            return
+        with raw:
+            if low.endswith((".jsonl", ".ndjson", ".jsonl.gz")):
+                for line in raw:
+                    line = line.strip()
+                    if not line:
                         continue
                     try:
                         obj = json.loads(line)
                     except ValueError:
                         continue
-                    if not isinstance(obj, dict):
-                        raise QueryNotSupported("jsonl 行非对象，columns/行投影不支持")
-                    if not select:
-                        out_columns = list(obj.keys())
-                        select = out_columns
-                    rows.append([_jsonable(obj.get(c)) for c in select])
-                    if len(rows) > limit:
-                        break
-            if len(rows) > limit or truncated:
+                    if isinstance(obj, dict):
+                        yield obj
+                    elif isinstance(obj, list):
+                        for it in obj:
+                            if isinstance(it, dict):
+                                yield it
+                return
+            try:
+                obj = json.loads(raw.read())
+            except ValueError:
+                return
+            for it in (obj if isinstance(obj, list) else [obj]):
+                if isinstance(it, dict):
+                    yield it
+
+    @staticmethod
+    def _since_value_ok(value, since) -> bool:
+        """行内时间值是否 >= since（支持 YYYYMMDD/ISO/时间戳；非法值不匹配）。"""
+        if value is None:
+            return False
+        digits = re.sub(r"\D", "", str(value))
+        if len(digits) >= 8:
+            return digits[:8] >= since["ymd"]
+        try:
+            return _norm_since(str(value))["ymd"] >= since["ymd"]
+        except QueryParamError:
+            return str(value) >= since["ymd"]
+
+    def _query_jsonl(self, p: Path, disc: dict, where, order, limit, offset,
+                     since, columns, count) -> dict:
+        files = disc.get("jsonl") or []
+        if not files:
+            return self._query_no_data("未发现 jsonl/json 文件", disc)
+        deadline = time.monotonic() + QUERY_TIMEOUT_S
+        truncated = bool(disc.get("jsonl_truncated"))
+        since_ts = (datetime.datetime.combine(since["date"], datetime.time()).timestamp()
+                    if since else None)
+        # ① 字段白名单推断（首批文档，有界）
+        known, seen = [], set()
+        scanned = 0
+        for f in files[:20]:
+            for doc in self._iter_json_docs(f):
+                for k in doc.keys():
+                    if k not in seen:
+                        seen.add(k)
+                        known.append(k)
+                scanned += 1
+                if scanned >= QUERY_JSONL_SCHEMA_DOCS:
+                    break
+            if scanned >= QUERY_JSONL_SCHEMA_DOCS:
                 break
-        has_more = len(rows) > limit
-        rows = rows[:limit]
+        if not known:
+            return self._query_no_data("jsonl/json 文档为空或无对象记录", disc)
+        for w in where:
+            self._check_field(w["field"], known)
+        for o in order:
+            self._check_field(o["field"], known)
+        select = list(columns) if columns else list(known)
+        for c in select:
+            self._check_field(c, known)
+        since_col = _pick_time_column(known) if since else None
+        # ② 流式扫描（where 先于 offset/limit；count 需全扫到上限）
+        matched = 0
+        window = []
+        order_rows = []
+        stopped = False
+        scanned = 0
+        files_seen = 0
+        for f in files:
+            files_seen += 1
+            if since and not since_col:
+                try:
+                    if f.stat().st_mtime < since_ts:
+                        continue
+                except OSError:
+                    pass
+            for doc in self._iter_json_docs(f):
+                scanned += 1
+                if scanned > QUERY_JSONL_SCAN_LINES or time.monotonic() > deadline:
+                    truncated = True
+                    stopped = True
+                    break
+                if since_col and since and not self._since_value_ok(doc.get(since_col), since):
+                    continue
+                if where and not _match_doc(doc, where):
+                    continue
+                matched += 1
+                if order:
+                    if matched > QUERY_JSONL_ORDER_ROWS:
+                        raise QueryNotSupported(
+                            "jsonl 排序匹配行超过上限（%d），请先加 where 收窄或分页遍历"
+                            % QUERY_JSONL_ORDER_ROWS,
+                            {"engine": "jsonl", "matched": matched})
+                    order_rows.append({k: doc.get(k) for k in select})
+                elif len(window) < offset + limit + 1:
+                    window.append({k: doc.get(k) for k in select})
+                if not count and not order and len(window) >= offset + limit + 1:
+                    stopped = True
+                    break
+            if stopped:
+                break
+        if order:
+            for o in reversed(order):
+                order_rows.sort(
+                    key=lambda r: (r.get(o["field"]) is None,
+                                   "" if r.get(o["field"]) is None
+                                   else str(r.get(o["field"]))),
+                    reverse=o["desc"])
+            page = order_rows[offset:offset + limit + 1]
+            has_more = len(page) > limit
+            page = page[:limit]
+            rows = [[_jsonable(r.get(c)) for c in select] for r in page]
+            total = len(order_rows) if count else None
+        else:
+            has_more = len(window) > offset + limit
+            page = window[offset:offset + limit]
+            rows = [[_jsonable(r.get(c)) for c in select] for r in page]
+            total = matched if count else None
         state = "ok" if rows else "no_data"
-        ev = {"engine": "jsonl", "files": len(files), "scanned_lines": scanned,
-              "rows_returned": len(rows), "truncated_discovery": truncated,
-              "columns_projection": bool(columns),
-              "unsupported_params": ["where", "order", "count", "since"]}
-        out = {"state": state, "columns": out_columns, "rows": rows, "count": None,
+        ev = {"engine": "jsonl", "files": len(files), "files_scanned": files_seen,
+              "scanned_lines": scanned, "docs_matched": matched,
+              "schema_fields": len(known), "rows_returned": len(rows),
+              "where_applied": bool(where), "order_applied": bool(order),
+              "since_applied": bool(since),
+              "since_column": since_col,
+              "since_mode": ("row_column" if since_col else "file_mtime") if since else None,
+              "truncated_discovery": truncated,
+              "scan_cap_lines": QUERY_JSONL_SCAN_LINES,
+              "count_source": "stream_count" if count else None}
+        out = {"state": state, "columns": select, "rows": rows, "count": total,
                "has_more": has_more, "truncated": truncated, "evidence": ev}
         if state == "no_data":
-            out["reason"] = "jsonl 前 N 行无有效记录（文件空/格式不匹配）"
+            out["reason"] = "jsonl 扫描无匹配文档（过滤/时间下界无命中或字段缺失）"
+        return out
+
+    # ---------- mixed/nested 文件级（P2：只列已登记文件，L/P/F/A 四维） ----------
+    def _query_files(self, p: Path, disc: dict, where, order, limit, offset,
+                     since, columns, count) -> dict:
+        files = disc.get("files_meta") or []
+        if not files:
+            return self._query_no_data("目录内无已登记文件", disc)
+        fields = list(QUERY_FILES_FIELDS)
+        for w in where:
+            self._check_field(w["field"], fields)
+        for o in order:
+            self._check_field(o["field"], fields)
+        select = list(columns) if columns else list(fields)
+        for c in select:
+            self._check_field(c, fields)
+        since_ts = since["date"].timestamp() if since else None
+        rows = []
+        for meta in files:
+            mtime = meta.get("mtime")
+            try:
+                mt_iso = (datetime.datetime.fromtimestamp(mtime).strftime("%Y-%m-%d %H:%M")
+                          if mtime is not None else None)
+            except (OverflowError, OSError, ValueError):
+                mt_iso = None
+            row = {"path": meta.get("path"), "name": meta.get("name"),
+                   "ext": meta.get("ext"), "size": meta.get("size"),
+                   "mtime": mt_iso, "depth": meta.get("depth")}
+            if since_ts is not None and (mtime is None or mtime < since_ts):
+                continue
+            if where and not _match_doc(row, where):
+                continue
+            rows.append({k: row.get(k) for k in select})
+        total = len(rows) if count else None
+        if order:
+            for o in reversed(order):
+                rows.sort(key=lambda r: (r.get(o["field"]) is None,
+                                         "" if r.get(o["field"]) is None
+                                         else str(r.get(o["field"]))),
+                          reverse=o["desc"])
+        page = rows[offset:offset + limit + 1]
+        has_more = len(page) > limit
+        page = page[:limit]
+        out_rows = [[_jsonable(r.get(c)) for c in select] for r in page]
+        truncated = bool(disc.get("files_truncated") or disc.get("dirs_truncated"))
+        state = "ok" if out_rows else "no_data"
+        ev = {"engine": "files", "files_total": disc.get("files_total"),
+              "files_cataloged": len(files), "rows_returned": len(out_rows),
+              "where_applied": bool(where), "order_applied": bool(order),
+              "since_applied": bool(since),
+              "truncated_discovery": truncated,
+              "max_depth": disc.get("max_depth"),
+              "count_source": "in_memory_manifest" if count else None}
+        out = {"state": state, "columns": select, "rows": out_rows, "count": total,
+               "has_more": has_more, "truncated": truncated, "evidence": ev}
+        if state == "no_data":
+            out["reason"] = "文件清单无匹配项（过滤/时间下界无命中）"
         return out
 
     # ---------- 导出登记 YAML 草稿 ----------

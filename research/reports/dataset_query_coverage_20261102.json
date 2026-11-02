@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-02T12:19:45+08:00",
+ "generated_at": "2026-11-02T13:20:07+08:00",
  "schema": "dataset_query_coverage/v1（S3-06 P1；四维 L/P/F/A 实测，engine=DatasetRegistry.query）",
  "total_raw": 314,
  "denominator": 310,
@@ -21,60 +21,39 @@
    "reason": "N/A: .git 伪数据集"
   }
  ],
- "ready": 283,
- "coverage_raw_pct": 90.13,
- "coverage_clean_pct": 91.29,
+ "ready": 307,
+ "coverage_raw_pct": 97.77,
+ "coverage_clean_pct": 99.03,
  "by_domain": {
-  "ready:学习派生": 14,
-  "ready:平台运行": 20,
-  "ready:开源情报": 13,
-  "ready:接口数据": 236,
+  "ready:学习派生": 29,
+  "ready:平台运行": 25,
+  "ready:开源情报": 16,
+  "ready:接口数据": 237,
   "total:学习派生": 29,
   "total:平台运行": 25,
   "total:开源情报": 19,
   "total:接口数据": 241
  },
  "by_kind": {
-  "ready:corpus_layer": 2,
-  "ready:dir": 242,
+  "ready:corpus_layer": 14,
+  "ready:dir": 254,
   "ready:sqlite_table": 39,
   "total:corpus_layer": 14,
   "total:dir": 258,
   "total:sqlite_table": 42
  },
  "by_carrier": {
+  "ready:dir_files": 19,
+  "ready:dir_jsonl": 5,
   "ready:dir_parquet": 244,
   "ready:sqlite_table": 39,
   "total:dir_empty": 3,
+  "total:dir_files": 20,
+  "total:dir_jsonl": 5,
   "total:dir_parquet": 244,
-  "total:sqlite_table": 42,
-  "total:unknown": 25
+  "total:sqlite_table": 42
  },
  "failures": [
-  {
-   "dataset_id": "guba",
-   "kind": "dir",
-   "carrier": "unknown",
-   "failed_dims": [
-    "L",
-    "P",
-    "F",
-    "A"
-   ],
-   "reason": "not_supported: QueryNotSupported: jsonl 载体 P1 仅支持 columns 投影 + limit/offset 前 N 行；where/order/count/since 属 P2（明确 fail-visible，不回退 sample）"
-  },
-  {
-   "dataset_id": "intel_anns_pdf",
-   "kind": "dir",
-   "carrier": "unknown",
-   "failed_dims": [
-    "L",
-    "P",
-    "F",
-    "A"
-   ],
-   "reason": "not_supported: QueryNotSupported: jsonl 载体 P1 仅支持 columns 投影 + limit/offset 前 N 行；where/order/count/since 属 P2（明确 fail-visible，不回退 sample）"
-  },
   {
    "dataset_id": "xq_xq_comment",
    "kind": "sqlite_table",
@@ -104,274 +83,10 @@
     "P"
    ],
    "reason": "L: query 返回 0 行（state=no_data, reason=查询命中 0 行（过滤条件/时间下界无匹配））; P: 总数为 0/不可达"
-  },
-  {
-   "dataset_id": "research_reports",
-   "kind": "dir",
-   "carrier": "unknown",
-   "failed_dims": [
-    "L",
-    "P",
-    "F",
-    "A"
-   ],
-   "reason": "not_supported: QueryNotSupported: jsonl 载体 P1 仅支持 columns 投影 + limit/offset 前 N 行；where/order/count/since 属 P2（明确 fail-visible，不回退 sample）"
-  },
-  {
-   "dataset_id": "research_shadow",
-   "kind": "dir",
-   "carrier": "unknown",
-   "failed_dims": [
-    "L",
-    "P",
-    "F",
-    "A"
-   ],
-   "reason": "not_supported: QueryNotSupported: jsonl 载体 P1 仅支持 columns 投影 + limit/offset 前 N 行；where/order/count/since 属 P2（明确 fail-visible，不回退 sample）"
-  },
-  {
-   "dataset_id": "kb_reports",
-   "kind": "dir",
-   "carrier": "unknown",
-   "failed_dims": [
-    "L",
-    "P",
-    "F",
-    "A"
-   ],
-   "reason": "not_supported: QueryNotSupported: jsonl 载体 P1 仅支持 columns 投影 + limit/offset 前 N 行；where/order/count/since 属 P2（明确 fail-visible，不回退 sample）"
-  },
-  {
-   "dataset_id": "kb_notes",
-   "kind": "dir",
-   "carrier": "unknown",
-   "failed_dims": [
-    "L",
-    "P",
-    "F",
-    "A"
-   ],
-   "reason": "not_supported: QueryNotSupported: jsonl 载体 P1 仅支持 columns 投影 + limit/offset 前 N 行；where/order/count/since 属 P2（明确 fail-visible，不回退 sample）"
-  },
-  {
-   "dataset_id": "knowledge_docs",
-   "kind": "dir",
-   "carrier": "unknown",
-   "failed_dims": [
-    "L",
-    "P",
-    "F",
-    "A"
-   ],
-   "reason": "not_supported: QueryNotSupported: 载体 unsupported 的 P1 行级 query 未实现（P2 文件级/语料索引）"
-  },
-  {
-   "dataset_id": "academy",
-   "kind": "dir",
-   "carrier": "unknown",
-   "failed_dims": [
-    "L",
-    "P",
-    "F",
-    "A"
-   ],
-   "reason": "not_supported: QueryNotSupported: jsonl 载体 P1 仅支持 columns 投影 + limit/offset 前 N 行；where/order/count/since 属 P2（明确 fail-visible，不回退 sample）"
-  },
-  {
-   "dataset_id": "portal_static",
-   "kind": "dir",
-   "carrier": "unknown",
-   "failed_dims": [
-    "L",
-    "P",
-    "F",
-    "A"
-   ],
-   "reason": "not_supported: QueryNotSupported: 载体 unsupported 的 P1 行级 query 未实现（P2 文件级/语料索引）"
-  },
-  {
-   "dataset_id": "portal_data",
-   "kind": "dir",
-   "carrier": "unknown",
-   "failed_dims": [
-    "L",
-    "P",
-    "F",
-    "A"
-   ],
-   "reason": "not_supported: QueryNotSupported: jsonl 载体 P1 仅支持 columns 投影 + limit/offset 前 N 行；where/order/count/since 属 P2（明确 fail-visible，不回退 sample）"
-  },
-  {
-   "dataset_id": "agent_tasks",
-   "kind": "dir",
-   "carrier": "unknown",
-   "failed_dims": [
-    "L",
-    "P",
-    "F",
-    "A"
-   ],
-   "reason": "not_supported: QueryNotSupported: jsonl 载体 P1 仅支持 columns 投影 + limit/offset 前 N 行；where/order/count/since 属 P2（明确 fail-visible，不回退 sample）"
-  },
-  {
-   "dataset_id": "news_collector_data",
-   "kind": "dir",
-   "carrier": "unknown",
-   "failed_dims": [
-    "L",
-    "P",
-    "F",
-    "A"
-   ],
-   "reason": "not_supported: QueryNotSupported: jsonl 载体 P1 仅支持 columns 投影 + limit/offset 前 N 行；where/order/count/since 属 P2（明确 fail-visible，不回退 sample）"
-  },
-  {
-   "dataset_id": "yt_raw_zip",
-   "kind": "corpus_layer",
-   "carrier": "unknown",
-   "failed_dims": [
-    "L",
-    "P",
-    "F",
-    "A"
-   ],
-   "reason": "not_supported: QueryNotSupported: 载体 unsupported 的 P1 行级 query 未实现（P2 文件级/语料索引）"
-  },
-  {
-   "dataset_id": "yt_transcripts",
-   "kind": "corpus_layer",
-   "carrier": "unknown",
-   "failed_dims": [
-    "L",
-    "P",
-    "F",
-    "A"
-   ],
-   "reason": "not_supported: QueryNotSupported: jsonl 载体 P1 仅支持 columns 投影 + limit/offset 前 N 行；where/order/count/since 属 P2（明确 fail-visible，不回退 sample）"
-  },
-  {
-   "dataset_id": "yt_knowledge_units",
-   "kind": "corpus_layer",
-   "carrier": "unknown",
-   "failed_dims": [
-    "L",
-    "P",
-    "F",
-    "A"
-   ],
-   "reason": "not_supported: QueryNotSupported: jsonl 载体 P1 仅支持 columns 投影 + limit/offset 前 N 行；where/order/count/since 属 P2（明确 fail-visible，不回退 sample）"
-  },
-  {
-   "dataset_id": "yt_distill",
-   "kind": "corpus_layer",
-   "carrier": "unknown",
-   "failed_dims": [
-    "L",
-    "P",
-    "F",
-    "A"
-   ],
-   "reason": "not_supported: QueryNotSupported: jsonl 载体 P1 仅支持 columns 投影 + limit/offset 前 N 行；where/order/count/since 属 P2（明确 fail-visible，不回退 sample）"
-  },
-  {
-   "dataset_id": "yt_faq",
-   "kind": "corpus_layer",
-   "carrier": "unknown",
-   "failed_dims": [
-    "L",
-    "P",
-    "F",
-    "A"
-   ],
-   "reason": "not_supported: QueryNotSupported: jsonl 载体 P1 仅支持 columns 投影 + limit/offset 前 N 行；where/order/count/since 属 P2（明确 fail-visible，不回退 sample）"
-  },
-  {
-   "dataset_id": "yt_index",
-   "kind": "corpus_layer",
-   "carrier": "unknown",
-   "failed_dims": [
-    "L",
-    "P",
-    "F",
-    "A"
-   ],
-   "reason": "not_supported: QueryNotSupported: jsonl 载体 P1 仅支持 columns 投影 + limit/offset 前 N 行；where/order/count/since 属 P2（明确 fail-visible，不回退 sample）"
-  },
-  {
-   "dataset_id": "yt_rag",
-   "kind": "corpus_layer",
-   "carrier": "unknown",
-   "failed_dims": [
-    "L",
-    "P",
-    "F",
-    "A"
-   ],
-   "reason": "not_supported: QueryNotSupported: 载体 unsupported 的 P1 行级 query 未实现（P2 文件级/语料索引）"
-  },
-  {
-   "dataset_id": "yt_learning_cards",
-   "kind": "corpus_layer",
-   "carrier": "unknown",
-   "failed_dims": [
-    "L",
-    "P",
-    "F",
-    "A"
-   ],
-   "reason": "not_supported: QueryNotSupported: 载体 unsupported 的 P1 行级 query 未实现（P2 文件级/语料索引）"
-  },
-  {
-   "dataset_id": "yt_briefs",
-   "kind": "corpus_layer",
-   "carrier": "unknown",
-   "failed_dims": [
-    "L",
-    "P",
-    "F",
-    "A"
-   ],
-   "reason": "not_supported: QueryNotSupported: 载体 unsupported 的 P1 行级 query 未实现（P2 文件级/语料索引）"
-  },
-  {
-   "dataset_id": "yt_review",
-   "kind": "corpus_layer",
-   "carrier": "unknown",
-   "failed_dims": [
-    "L",
-    "P",
-    "F",
-    "A"
-   ],
-   "reason": "not_supported: QueryNotSupported: 载体 unsupported 的 P1 行级 query 未实现（P2 文件级/语料索引）"
-  },
-  {
-   "dataset_id": "yt_reports",
-   "kind": "corpus_layer",
-   "carrier": "unknown",
-   "failed_dims": [
-    "L",
-    "P",
-    "F",
-    "A"
-   ],
-   "reason": "not_supported: QueryNotSupported: 载体 unsupported 的 P1 行级 query 未实现（P2 文件级/语料索引）"
-  },
-  {
-   "dataset_id": "yt_learning_db",
-   "kind": "corpus_layer",
-   "carrier": "unknown",
-   "failed_dims": [
-    "L",
-    "P",
-    "F",
-    "A"
-   ],
-   "reason": "not_supported: QueryNotSupported: 载体 unsupported 的 P1 行级 query 未实现（P2 文件级/语料索引）"
   }
  ],
  "carriers": {
-  "ts_git": "unknown",
+  "ts_git": "dir_files",
   "ts_adj_factor": "dir_parquet",
   "ts_anns_d": "dir_parquet",
   "ts_bak_basic": "dir_parquet",
@@ -607,12 +322,12 @@
   "tdx_ts_wz_index": "dir_parquet",
   "xueqiu": "dir_parquet",
   "cnopendata": "dir_parquet",
-  "guba": "unknown",
+  "guba": "dir_jsonl",
   "ashare": "dir_parquet",
   "tushare_curated": "dir_parquet",
   "tushare_staging": "dir_parquet",
   "tushare_v2": "dir_parquet",
-  "intel_anns_pdf": "unknown",
+  "intel_anns_pdf": "dir_files",
   "intel_anns_d": "dir_parquet",
   "intel_major_news": "dir_parquet",
   "intel_news": "dir_parquet",
@@ -628,15 +343,15 @@
   "tdx_stock_report": "sqlite_table",
   "tdx_stock_news": "sqlite_table",
   "research_hypotheses": "sqlite_table",
-  "research_reports": "unknown",
-  "research_shadow": "unknown",
-  "kb_reports": "unknown",
-  "kb_notes": "unknown",
-  "knowledge_docs": "unknown",
-  "academy": "unknown",
-  "portal_static": "unknown",
-  "portal_data": "unknown",
-  "agent_tasks": "unknown",
+  "research_reports": "dir_files",
+  "research_shadow": "dir_files",
+  "kb_reports": "dir_files",
+  "kb_notes": "dir_jsonl",
+  "knowledge_docs": "dir_files",
+  "academy": "dir_files",
+  "portal_static": "dir_files",
+  "portal_data": "dir_files",
+  "agent_tasks": "dir_jsonl",
   "paper_orders": "sqlite_table",
   "paper_ledger": "sqlite_table",
   "paper_account": "sqlite_table",
@@ -657,21 +372,21 @@
   "news_quotes": "sqlite_table",
   "news_jev_review_queue": "sqlite_table",
   "automation_runs": "dir_parquet",
-  "news_collector_data": "unknown",
-  "yt_raw_zip": "unknown",
+  "news_collector_data": "dir_files",
+  "yt_raw_zip": "dir_files",
   "yt_normalized": "dir_parquet",
   "yt_cleaned_comments": "dir_parquet",
-  "yt_transcripts": "unknown",
-  "yt_knowledge_units": "unknown",
-  "yt_distill": "unknown",
-  "yt_faq": "unknown",
-  "yt_index": "unknown",
-  "yt_rag": "unknown",
-  "yt_learning_cards": "unknown",
-  "yt_briefs": "unknown",
-  "yt_review": "unknown",
-  "yt_reports": "unknown",
-  "yt_learning_db": "unknown",
+  "yt_transcripts": "dir_files",
+  "yt_knowledge_units": "dir_jsonl",
+  "yt_distill": "dir_jsonl",
+  "yt_faq": "dir_files",
+  "yt_index": "dir_files",
+  "yt_rag": "dir_files",
+  "yt_learning_cards": "dir_files",
+  "yt_briefs": "dir_files",
+  "yt_review": "dir_files",
+  "yt_reports": "dir_files",
+  "yt_learning_db": "dir_files",
   "yt_dim_channel": "sqlite_table",
   "yt_dim_topic": "sqlite_table",
   "yt_dim_video": "sqlite_table",
@@ -688,10 +403,10 @@
  },
  "dims": {
   "ts_git": {
-   "L": false,
-   "P": false,
-   "F": false,
-   "A": false
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
   },
   "ts_adj_factor": {
    "L": true,
@@ -2104,10 +1819,10 @@
    "A": true
   },
   "guba": {
-   "L": false,
-   "P": false,
-   "F": false,
-   "A": false
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
   },
   "ashare": {
    "L": true,
@@ -2134,10 +1849,10 @@
    "A": true
   },
   "intel_anns_pdf": {
-   "L": false,
-   "P": false,
-   "F": false,
-   "A": false
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
   },
   "intel_anns_d": {
    "L": true,
@@ -2230,58 +1945,58 @@
    "A": true
   },
   "research_reports": {
-   "L": false,
-   "P": false,
-   "F": false,
-   "A": false
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
   },
   "research_shadow": {
-   "L": false,
-   "P": false,
-   "F": false,
-   "A": false
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
   },
   "kb_reports": {
-   "L": false,
-   "P": false,
-   "F": false,
-   "A": false
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
   },
   "kb_notes": {
-   "L": false,
-   "P": false,
-   "F": false,
-   "A": false
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
   },
   "knowledge_docs": {
-   "L": false,
-   "P": false,
-   "F": false,
-   "A": false
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
   },
   "academy": {
-   "L": false,
-   "P": false,
-   "F": false,
-   "A": false
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
   },
   "portal_static": {
-   "L": false,
-   "P": false,
-   "F": false,
-   "A": false
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
   },
   "portal_data": {
-   "L": false,
-   "P": false,
-   "F": false,
-   "A": false
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
   },
   "agent_tasks": {
-   "L": false,
-   "P": false,
-   "F": false,
-   "A": false
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
   },
   "paper_orders": {
    "L": true,
@@ -2404,16 +2119,16 @@
    "A": true
   },
   "news_collector_data": {
-   "L": false,
-   "P": false,
-   "F": false,
-   "A": false
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
   },
   "yt_raw_zip": {
-   "L": false,
-   "P": false,
-   "F": false,
-   "A": false
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
   },
   "yt_normalized": {
    "L": true,
@@ -2428,70 +2143,70 @@
    "A": true
   },
   "yt_transcripts": {
-   "L": false,
-   "P": false,
-   "F": false,
-   "A": false
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
   },
   "yt_knowledge_units": {
-   "L": false,
-   "P": false,
-   "F": false,
-   "A": false
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
   },
   "yt_distill": {
-   "L": false,
-   "P": false,
-   "F": false,
-   "A": false
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
   },
   "yt_faq": {
-   "L": false,
-   "P": false,
-   "F": false,
-   "A": false
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
   },
   "yt_index": {
-   "L": false,
-   "P": false,
-   "F": false,
-   "A": false
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
   },
   "yt_rag": {
-   "L": false,
-   "P": false,
-   "F": false,
-   "A": false
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
   },
   "yt_learning_cards": {
-   "L": false,
-   "P": false,
-   "F": false,
-   "A": false
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
   },
   "yt_briefs": {
-   "L": false,
-   "P": false,
-   "F": false,
-   "A": false
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
   },
   "yt_review": {
-   "L": false,
-   "P": false,
-   "F": false,
-   "A": false
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
   },
   "yt_reports": {
-   "L": false,
-   "P": false,
-   "F": false,
-   "A": false
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
   },
   "yt_learning_db": {
-   "L": false,
-   "P": false,
-   "F": false,
-   "A": false
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
   },
   "yt_dim_channel": {
    "L": true,

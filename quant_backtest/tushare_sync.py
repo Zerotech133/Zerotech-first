@@ -156,6 +156,85 @@ def save_full(tbl, df, m, note=""):
     print("%-20s rows=%d %s" % (tbl, 0 if df is None else len(df), note))
 
 
+# ── G4（2026-11-02 task-56）：滚动快照表追加式去重 ──────────────────────
+# research_report 的采集方式是「recent-only 滚动 6000 行整批快照」：每次 run 都
+# 拉最近约 6000 行并 save_full 成新 part，而相邻批次内容高度重叠（实测 96.3%
+# 重复），part 数增长但有效历史不增长。改为按自然键幂等追加：只写库中尚无的键，
+# 不改/不删既有 part、schema 不变；存量重复由读侧去重（Lead 已 consolidated）。
+RESEARCH_REPORT_KEY = ("trade_date", "ts_code", "title", "report_type")
+
+
+def _key_columns(df, key_cols):
+    """返回 df 中实际存在的键列；任一键列缺失 → None（fail-open 回退全量写）。"""
+    cols = [c for c in key_cols if c in df.columns]
+    return cols if len(cols) == len(key_cols) else None
+
+
+def _key_pairs(df, cols):
+    """键列 → 归一化元组序列（NaN/NaT 统一为 None，避免 nan!=nan 导致重复判定失效）。"""
+    for row in df[list(cols)].itertuples(index=False, name=None):
+        yield tuple(None if _is_missing(v) else v for v in row)
+
+
+def _is_missing(value):
+    try:
+        return bool(pd.isna(value))
+    except (TypeError, ValueError):
+        return False
+
+
+def _existing_keys(tbl, key_cols):
+    """只读现有 part 的键列（不读整表），返回已存在自然键集合。"""
+    keys = set()
+    for p in sorted(glob.glob(os.path.join(tdir(tbl), "part_*.parquet"))):
+        try:
+            old = pd.read_parquet(p, columns=list(key_cols))
+        except Exception:
+            continue
+        keys.update(_key_pairs(old, key_cols))
+    return keys
+
+
+def save_full_dedup(tbl, df, m, key_cols, note=""):
+    """追加式去重落盘（G4 修复）：按自然键跳过库中已有行，只写新增行。
+
+    - 批次内先 drop_duplicates(keep="last")（同键保留字段最新行）；
+    - 与现有 part 的键集合比对，只追加新键行；**不改/不删既有 part**（对存量零风险）；
+    - 键列缺失 → fail-open 回退 save_full（老行为，不因上游字段变动丢数据）；
+    - 无新增行 → 不落新 part（避免滚动快照重复堆积），manifest 记 rows=0 + note；
+    - schema 完全沿用 df（列/顺序不变）。返回本次新写入行数。
+    """
+    if df is None or df.empty:
+        m[tbl] = {"done": True, "rows": 0, "note": note}
+        save_manifest(m)
+        print("%-20s rows=0 %s" % (tbl, note))
+        return 0
+    cols = _key_columns(df, key_cols)
+    if cols is None:
+        save_full(tbl, df, m, note + " dedup_fallback(缺键列)")
+        if isinstance(m.get(tbl), dict):
+            m[tbl]["note"] = note + " dedup_fallback(缺键列)"
+            save_manifest(m)
+        return len(df)
+    df = df.drop_duplicates(subset=list(cols), keep="last")
+    existing = _existing_keys(tbl, cols)
+    if existing:
+        keep = [pair not in existing for pair in _key_pairs(df, cols)]
+        df = df[keep]
+    if df.empty:
+        m[tbl] = {"done": True, "rows": 0, "note": note + " dedup 0 new"}
+        save_manifest(m)
+        print("%-20s rows=0 %s dedup 0 new" % (tbl, note))
+        return 0
+    f = part_path(tbl, next_part(tbl))
+    df.to_parquet(f, index=False)
+    m[tbl] = {"done": True, "rows": len(df), "file": os.path.basename(f),
+              "note": note + " dedup"}
+    save_manifest(m)
+    print("%-20s rows=%d %s dedup" % (tbl, len(df), note))
+    return len(df)
+
+
 def month_windows(y0, m0, y1, m1):
     out = []
     y, mo = y0, m0
@@ -293,7 +372,11 @@ def batch_shallow(m):
                           ("research_report", "research_report", 1000)]:
         try:
             df = pull_paged(api, {}, cap, max_off=6000)
-            save_full(tbl, df, m, "recent-only")
+            if tbl == "research_report":
+                # G4：滚动快照按自然键去重追加（不产生重复 part）
+                save_full_dedup(tbl, df, m, RESEARCH_REPORT_KEY, "recent-only")
+            else:
+                save_full(tbl, df, m, "recent-only")
         except Exception as e:
             print("%-20s FAIL %s" % (tbl, str(e)[:70]))
             m[tbl] = {"done": False, "error": str(e)[:120]}
@@ -769,7 +852,11 @@ def incremental(m, market="cn", dryrun=False):
             continue
         try:
             df = pull_paged(api, {}, cap, max_off=6000)
-            save_full(tbl, df, m, "incr recent")
+            if tbl == "research_report":
+                # G4：滚动快照按自然键去重追加（不产生重复 part）
+                save_full_dedup(tbl, df, m, RESEARCH_REPORT_KEY, "incr recent")
+            else:
+                save_full(tbl, df, m, "incr recent")
         except Exception as e:
             print("%-20s FAIL %s" % (tbl, str(e)[:70]))
 
