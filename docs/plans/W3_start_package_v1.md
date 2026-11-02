@@ -1,0 +1,358 @@
+# W3 解耦启动包 v1（12-03 ~ 01-15）
+
+> STATUS: declared(active: 2026-11-02 补标；W3解耦启动包，owner=原作者/待评审)
+
+- **状态**：`draft`（启动包，待 11-16 复审 + A0/ARCH1 确认后生效）
+- **日期**：2026-11-02（基线数据只读实测时点 **16:0x +08:00**，仓库 HEAD **`6c39fe64b`**；并发 WIP 27 项为他人在途，非本单）
+- **依据**：`docs/architecture/PLATFORM_FRAMEWORK_v1.md` §三/§四/§六（90 天路线）、`docs/plans/2026-11-02_技术框架统一方案_v1.md` W3 行与 UF-19~27、`docs/plans/2026-11-02_ROADMAP_v4_唯一战略与主排期.md`（W3 12-03~01-15）、ADR-015（K0–K8/T1–T5）、ADR-017（ZBF v1）、ADR-018/ADR-019（数据契约）、`deliverables/2026-11-16_W1组合纳管复审_v1.md`（W1 预演结论）
+- **性质**：**仅文档启动包**——定义 W3 的基线、5 个工作流、3 批排期与退出标准；不写实现、不改代码/配置/任务/服务，未 git 操作
+- **一句话**：**W3 把"声明"变成"可声明、可校验、被消费"**——页面有 manifest、席位有描述符、工作流有 Spec、任务有 manifest、契约有运行时强制点；出口是问题表 P0/P1 清零过半 + active 组合达 Q2 + 页面/数据/任务可声明。
+
+## 〇、一页速览
+
+| 项 | 结论 |
+|---|---|
+| 窗口 | **2026-12-03 ~ 2027-01-15**（3 批：12-03~12-11 / 12-14~12-25 / 12-28~01-15） |
+| 5 个工作流 | ①页面 manifest+分派表化 ②Seat 描述符统一 ③WorkflowSpec+wiring 基类 ④job manifest+单 runner 台账 ⑤契约运行时强制 |
+| 硬前置 | **W1 关闭（11-16：引用 73/73、Q2≥2、10 项 DOD 签字）** + **W2/L1 单栈（12-02 ADR-016 全绿）** + ADGS 复审参数确认 |
+| WIP | 同时 doing **≤6**（每批并行工作包 ≤6；单 Agent 并行写 ≤2；超限先收口） |
+| 退出标准 | 问题表 P0/P1 清零 ≥50%；active 组合 Q2 ≥2；页面/数据/任务三类声明 100%/100%/日管线 100%；契约强制门全绿（详见 §六） |
+| 当前差距 | 引用解析 **60.27%**（73 refs/29 未解析）；Q1=6/Q2=0；页面 manifest 0；seat schema 0；WorkflowSpec 0；job manifest 0；契约运行时强制点未接 |
+
+## 一、W3 定位与当前段位
+
+ZBF v1 五段路线（`PLATFORM_FRAMEWORK_v1.md:226-234`）：P0 立法（已完成）→ **P1 框架可执行（W1，当前收尾中）** → **L1 运行态单栈（W2，至 12-02）** → **P2 关键解耦（W3，12-03~01-15）** → **P3 单栈收口（W4，01-16~03-31）**。
+
+- **W1（预演结论：NOT CLOSED）**：组合 6/6 validate PASS（errors=0/warnings=29）；`plan --strict` findings=0；**引用解析率 60.27%（73 refs / 29 未解析）**；Q1=6/Q2=0；10 项试点证据包 10/10。W1 关闭路径 = 11-03~11-10 补 29 个引用 + Q2≥2 + 11-16 开会签字（`deliverables/2026-11-16_W1组合纳管复审_v1.md:62-71`）。
+- **W2（L1 单栈）**：同源反代 `/quant/`+`/quant-api/`、单认证、关 5175/8102，硬截止 **12-02**（ADR-016）。W3 启动时 L1 必须已全绿。
+- **问题表（研究 §三）**：21 处硬耦合（**P0×7 / P1×10 / P2×4**）；W3 是 P2 关键解耦段，目标"问题表 P0/P1 清零过半"（框架 §五问题表 1–10 另设 ≥5/10 口径，见 §六）。
+- **W3 结束时必须能证明**：页面/数据/任务**可声明**；声明**被代码消费**（不是又一本不生效的账）。
+
+## 二、基线盘点（2026-11-02 只读实测，均可复现）
+
+> 全部为只读命令/读文件结果；数字带时点。复现命令见 §九。
+
+### 2.1 页面（K6 呈现）
+
+| 指标 | 实测 | 说明 |
+|---|---:|---|
+| `portal/*.html`（根） | **94** | `Get-ChildItem portal -Filter *.html -File \| Measure` |
+| `portal/static/*.html` | 10 | 合计 **104** 个 HTML |
+| `portal/static/nav.js` 页面项 | **107**（6 sections / 18 groups） | 生成物：源 `api_common.py DOMAIN_NAV_GROUPS`（`tools/export_nav.py`）；文件 9,674 B |
+| 三件套覆盖率（104 HTML 中引用数） | tokens.css **97** / nav.js **111** / shortscreen.js **23** / page_shell.js **2** | nav.js 111 > 104 → **7 处双引入**（nav.js 自带幂等护栏，判例 f7170225 双顶栏缺陷）；page_shell 采用率 **1.9%** |
+| `portal/nginx.conf` `location` | **154** | 页面/接口在 nginx 的注册面 |
+| 路由基线（`tools/portal_route_baseline.json`） | total **290**（`route inventory --check` rc=0，零 diff） | 290 条路由 = 基线真值 |
+| 精确路由表（`portal/route_table.py`） | **32 / 290 = 11.0%** | 表化仅"单语句直接调 handler"的 32 条；其余仍 if/elif 链（研究 §三 #9：do_GET 137 段 elif） |
+| `portal/api_*.py` | **75** 个 | portal_api.py 3,615 行 + mixin |
+| 页面 manifest | **0**；`platform/schemas/page.schema.json` **缺失** | K6 冻结清单中 page schema = planned（`platform/kernel_v1.yaml` K6） |
+
+**双注册事实**（研究 §三 #3 原文）：页面路由 **Python + nginx 双注册**；新增 API 要 **5 处登记**（handler/基类/路由表/nginx 白名单/两本基线）；`route_table` 只覆盖 32/290≈11%；实测 `8734/acad1/pool`、`/quant/paper` 404（8091 却能通）→ **组合无法声明"我有哪些页面/接口"，漏登记即 404/401**。
+
+### 2.2 Seat（K1 组织/席位）
+
+| 指标 | 实测 | 说明 |
+|---|---:|---|
+| `agent_platform/registry/org.json` | 133,330 B；**17 部门** | 部门 `agents` 引用 **77**、去重 **69 席**（研究口径 67 席，11-02 后扩编 +2，以实测为准）；`chief` 15 键 |
+| `team_*.json` | **17** 文件（16 个 team + 1 个 plan 文件），成员合计 140 | 每部门 team 文件与 org 并存 |
+| `skill_registry.json` | 26,510 B；**130 skills / 4 kinds** | 与 org 双向漂移（研究 §三 #17） |
+| `hr/` 目录 | **66** 个席位目录（resume/appointment） | appointment 无运行时读者 |
+| prompts | 62 个 | 能力卡仍写 Python（`tools/seat_capability_inject.py` HOMES 写死） |
+| `tool_matrix.json` | `matrix` **29 席**（研究口径 29/67；38 席 default deny 但**无人执行**） | 声明层未接执行点（研究 §三 #17 最致命） |
+| seat 描述符 | `platform/schemas/seat.schema.json` **缺失**；席位登记**四处人工**（org + team + hr + tool_matrix） | 研究 §三 #19：新增席位 = 四处人工 |
+
+### 2.3 WorkflowSpec（K2/K3 工作流/运行）
+
+| 指标 | 实测 | 说明 |
+|---|---:|---|
+| `agent_platform/domains/*_wiring.py` | **11 文件 / 合计 5,303 行**（282–760 行/文件） | 每份复制 `LEGAL_TRANSITIONS/approve_transition/幂等`（研究 §三 #18：工作流无插件位） |
+| WorkflowSpec schema | **不存在**（无 `workflow.schema.json`；无 `workflow_service` 文件） | K3 契约有文档无 schema 与校验器 |
+| 现有 workflow 相关 | `portal/job_spec_registry.py`（仅"分钟执行源"描述符，非 workflow spec）；`agent_platform/registry/workflow_candidates/`（MASS 候选区，**影子不直上**，1 候选 + schema）；`compositions/_templates/template-workflow.yaml`（模板已有） | 可复用候选区/模板的"影子→冠军"纪律 |
+| TaskStore | `agent_platform/engine/tasks.py` 171 行（7 态 + RBAC） | 工作流落地可挂 TaskStore 状态机 |
+
+### 2.4 job manifest（K8 调度/任务）
+
+| 指标 | 实测 | 说明 |
+|---|---:|---|
+| Windows 计划任务（本机） | **425** 条（非 Disabled **381**） | 研究口径 412/370；数字随任务增删漂移，以实测为准 |
+| composition job refs | **17**（6 manifest 合计） | 其中 13 → 既有 Windows 任务、3 planned（`acceptance-1104-*` 空串） |
+| `compositions/_schema/job_map.yaml` | **16 条**（13 真实任务名 + 3 planned）；文件头注"**P2 由 job manifest 取代**" | 当前只是 ref→任务名映射，不是 job manifest |
+| job 解析 warnings | **3**（huangzhong-acceptance planned jobs） | validate warnings 中 job 类 |
+| job manifest | **0**（无 job manifest 文件/管线清单） | 日管线（ACAD1 16 步、DW、Metadata、Strategy、黄忠）未进统一 manifest |
+
+### 2.5 契约运行时强制（K0/K5）
+
+| 指标 | 实测 | 说明 |
+|---|---|---|
+| `composition.py validate --all` | 6/6 PASS；**errors=0 / warnings=29**，rc=0 | 命令见 §九 |
+| `composition.py validate --all --strict` | **errors=29 / warnings=0，rc=1** | strict 已可用但仍红 → W3 必须转绿 |
+| `composition.py plan --strict --json` | findings=0 / rc=0 | registry 与 manifest 无漂移 |
+| **引用解析率** | **总 refs 73 / 未解析 29 / 解析率 60.27%** | W1 复审预演口径（`deliverables/2026-11-16_W1组合纳管复审_v1.md:14,21-29`）：acad1 16/5=68.8%、data-warehouse 10/3=70%、huangzhong 6/6=0%、lusu 9/0=100%、quant-domain 10/2=80%、quant-strategy-line 22/13=40.9% |
+| 未解析构成 | strategy 15（本地口径未建）/ dataset 8（未登记/路径不存在）/ job 3（planned）/ page 3（无 html） | 即 W3 五个工作流要逐一转为可解析 |
+| 契约资产 | **10 份 ODCS**（含 `v2_acad1_pool.odcs.yaml` 11,446 B，ADR-018 已 Accepted）+ `platform/schemas/dataset.schema.json` v0.1（kind 5 枚举） | `agent_platform/catalogs/contracts/`；`platform/schemas/` 仅 1 个 schema |
+| 缺失 schema | page / seat / workflow / task / envelope schema **均缺失**（K0–K8 冻结清单里均为 planned） | 4 份 schema 是 W3 交付面 |
+| 契约运行时强制点 | **未接**：`dataset.schema.json` `$comment` 明示"运行时强制点（registry v2 / composition.py 严格解析 / ODCS lint）属后续实现单"；**ADR-018 D5**：agentPolicy 仅登记+只读校验、**不宣称强制**（执行点 W3）；**ADR-019 D5/P5**：`dataset/pg/*` 仍 `v2_*` 名称软过、`dataset/file/*` 回退探 `C:\Temp`（`tools/composition.py:222,228-229`），严格化时机=过渡 warning→wave2 后 block | 3 处启发式 = W3 契约强制工作流的核心 |
+| ODCS lint | 缺（`datacontract-cli` 未安装，属 L2 工具引入；`tools/seat_capability_inject.py:924-925` `pending_wiring`） | 可用"轻量 YAML schema 校验"先行，不阻塞 |
+| 数据登记（DWH-103 落地后） | `DatasetRegistry.stats()` 文件级 **314/265/72** 不变；`stats_v2()` = file 314 + **pg 7（wave1，connector_status=missing_dsn）** + **contract_artifacts 4（4 active）** → all **318/269/76**；PG wave2 动态发现 `public.v2_%` 需 `ZHICE_V2_DSN`（当前未配置 → missing_dsn，不假绿） | W3 需 DSN 供给 + registry v2 收口，才能"数据可声明" |
+| 内核 | `platform/kernel_v1.yaml`：**K0–K8 8 层 / 51 artifacts**（schema 12 / registry 6 / gate 14 / contract 16 / store 1 / impl-ref 1 / baseline 1）；kernel_version **0.9.0 draft** | W4 才冻 v1.0；W3 可登记新 schema（status: planned→existing） |
+| 组合 Q | **Q1=6 / Q2=0 / Q3=0 / Q4=0** | active 全达 Q2 是 W3 退出标准之一 |
+
+### 2.6 关键数字汇总（W3 出口对照用）
+
+| 口径 | 当前 | W3 出口目标 | 验收命令 |
+|---|---:|---:|---|
+| 引用解析率 | 60.27%（73/29） | **100%（73/73）** | `composition.py validate --all --strict` rc=0 |
+| 页面在册（page manifest） | 0/104 | **104/104** | page manifest lint + route inventory check |
+| 分派表化 | 32/290（11.0%） | **≥80%（≥232/290）** | route_table 计数 + 等价测试 |
+| 三件套合规 | tokens 97/104、nav 双引 7、page_shell 2/104 | **100% 无缺项、双引 0** | HTML lint 脚本 |
+| Seat 描述符 | 0（四处人工） | **1 真源 + 双写过渡；69 席全覆盖** | seat 一致性测试（org/team/hr/matrix 四源同数） |
+| WorkflowSpec | 0（11 wiring/5,303 行） | **1 schema + 1 基类；新域 <100 行；wiring 行数 −50%** | workflow validate + 等价回归 |
+| job manifest | 0（425 任务/16 映射） | **日管线 100% 入 manifest；Windows 任务仅触发器** | job manifest 覆盖检查（0 未登记日管线 job） |
+| 契约强制点 | 3 处启发式未接 | **ODCS lint + registry 严格解析 + agentPolicy 最小 deny 生效** | `--strict` rc=0 + lint rc=0 + deny 冒烟 |
+| active 组合 Q2 | 0 | **≥2**（acad1-legion、data-warehouse 至少） | Q2 评审表（引用 100%+探针+SLO+回滚+测试） |
+| 问题表 P0/P1 | P0×7/P1×10 | **清零/降级 ≥9/17（P0 ≥4/7）** | 问题表状态审计（月度） |
+
+## 三、五个工作流（W3 主体）
+
+> 每个工作流 = 一个 W3 出口面的"工作流级工作项"，工作包按 DOR/DOD 接单；车道按 ADGS v1.1 §5.1 判定（页面包=标准道；schema/契约/门禁=治理道）。
+> WIP 纪律：同时 doing ≤6（见 §四），T 恤规模 S/M/L，>L 必拆。
+
+### WF-1 页面 manifest + 分派表化（K6/UF-20/21）
+
+- **目标**：104 个 HTML 全部进入 page manifest（页面/区块/路由/三件套/owner 登记）；do_GET/do_POST 分派表化 ≥80%；三件套 100% 合规、双引 0；页面/接口路由与 nginx 单一登记，无漏登记 404/401。
+- **输入证据**：§2.1（94+10 html、nav 107 项、nginx 154 location、route baseline 290、route_table 32=11%、page_shell 2/104、7 处 nav 双引、page.schema 缺）。
+- **首批工作包（≥2）**：
+  - WP1.1 `page.schema.json` v0.1 + 页面 manifest 生成器（从 route inventory + html 扫描生成 104 页 manifest；区块注册 v0）——**治理道**（K6 schema，需 ADR+ARCH1 预审）。
+  - WP1.2 分派表化第一批：把 do_GET 137 段 elif 中高频 ≥120 条迁到表（route_table 32→≥152，约 52%），保持等价测试；`portal_route_inventory --check` 零 diff。
+  - WP1.3 三件套合规修复：10 页缺 tokens.css、7 处 nav 双引、page_shell 采用率 2/104→100%（或明确 page_shell 废弃并写 ADR，二选一）。
+- **owner**：ARCH1（主）+ DEV5（前端）+ OPS1（nginx 登记）；**依赖**：W1 关闭（引用收口）→ 页面 ref 才有解析目标；K6 page schema 需 ADR。
+- **DOR（6）**：①价值/验收一句话可述（页面 100% 在册+表化 ≥80%）；②写域声明（`portal/**`+`platform/schemas/page.schema.json`+`tools/portal_route_baseline.json`）；③依赖就绪（route baseline 290/route_table 32 已实测、page schema 缺失已确认）；④车道判定（manifest/页面包=标准道；schema=治理道，拆两单）；⑤证据方式已定（route inventory check、表等价测试、页面 lint）；⑥规模 ≤L（拆 WP1.1/1.2/1.3 三个 M）。
+- **DOD（8）**：①验收逐条通过；②命令+rc（inventory check / 等价测试 / lint）；③证据包入库（含 290→≥232 表化清单、104 页清单）；④文档/回执同批（page manifest 说明 + README）；⑤任务账本登记 + 组合 manifest pages 引用更新；⑥回滚步骤可用（旧 if/elif 分支保留 + 表开关，一提交可回退）；⑦无残留（无临时生成文件入仓，生成物可重建）；⑧owner 签字（ARCH1 + QA）。
+- **验收命令**：`python -X utf8 tools/portal_route_inventory.py --check`（rc=0、零 diff）；`python -m pytest tools/tests/test_route_table_equivalence.py -q`；页面 lint（page_shell/tokens/nav 计数脚本，0 缺项 0 双引）；`composition.py validate --all` 中 page 类 warnings=0。
+- **回滚**：manifest 生成器只读生成、可删；分派表保留旧分支 + 开关（等价测试双跑）；三件套修复按页 revert。
+
+### WF-2 Seat 描述符统一（K1/UF-23，声明接线 UF-22）
+
+- **目标**：69 席（实测）四登记（org/team/hr/tool_matrix）收为**单一 Seat 描述符真源**（生成 team/hr/matrix 视图，双写过渡）；tool_matrix 覆盖 100% 席且 default deny 在**执行入口**生效；能力卡脱离 Python（HOMES 写死→数据）；新增席位 = 2 文件自动（回归 K-ORG-001）。
+- **输入证据**：§2.2（17 部门/77 refs/69 席/team 17 文件/hr 66/skill 130/tool_matrix 29 席/seat schema 缺/四处人工）。
+- **首批工作包（≥2）**：
+  - WP2.1 `seat.schema.json` v0.1 + Seat 描述符统一账本 + 生成器（org → team/hr/tool_matrix 视图；双写过渡期 ≥2 周）——**治理道**（K1 schema + 单一真源）。
+  - WP2.2 `tool_matrix` 补齐 69/69 + `agent_policy` 接执行入口（至少拦截 1 个真实调用链：agent 工具调用前查 matrix/policy），default deny 冒烟（未登记工具被拒）——**治理道**（声明接线，UF-22）。
+  - WP2.3 能力卡脱 Python：`seat_capability_inject.py` HOMES 写死 → 数据文件/描述符字段（选 1 个部门试点）。
+- **owner**：ARCH1（主）+ A0（org 真源变更审批）；**依赖**：ADR-015 K1 冻结范围（A0 拍板项 1）；WF-5 WP5.3 执行点（同批接线）。
+- **DOR（6）**：①价值/验收一句话可述；②写域声明（`agent_platform/registry/**`、`agent_platform/schemas/*`、`tools/seat_capability_inject.py`）；③依赖就绪（org/team/hr/tool_matrix 实测、schema 缺）；④车道判定（治理道：席位数/授权口径=K1 内核）；⑤证据方式（四源同数测试、deny 冒烟、schema validate）；⑥规模 M。
+- **DOD（8）**：①验收逐条通过；②命令+rc（四源计数一致、schema validate、deny 冒烟）；③证据包入库（69 席对照表 + 迁移前后 diff）；④文档/回执同批（K1 冻结清单更新）；⑤任务账本登记；⑥回滚（双写保留旧登记，可回切真源；schema 回退）；⑦无残留（生成视图可重建，无手写双份）；⑧owner 签字（ARCH1 + A0）。
+- **验收命令**：`python -m pytest agent_platform/tests -q -k "seat or registry or org"`；四源同数脚本（org=69、team=69、hr=69、matrix=69）；default deny 冒烟 rc=1（未登记工具被拒）；`kernel_guard --list` 含 seat.schema。
+- **回滚**：双写过渡期保留四登记读路径；schema 回退删新增文件；deny 接线用开关回退（记录例外）。
+
+### WF-3 WorkflowSpec + wiring 基类（K2/K3/UF-24）
+
+- **目标**：定义 WorkflowSpec v0.1（节点/触发/超时/失败策略/幂等/审批状态机），提供 wiring 基类；11 个 `domains/*_wiring.py`（5,303 行）分批迁移/声明化，**新域 <100 行**；`LEGAL_TRANSITIONS/approve_transition/幂等` 收进基类；interpreter 的投研语义外移为 workflow 声明。
+- **输入证据**：§2.3（11 wiring/5,303 行、无 schema、模板/候选区/ TaskStore 现状）。
+- **首批工作包（≥2）**：
+  - WP3.1 `workflow.schema.json` v0.1 + WorkflowSpec 加载器/校验器 + wiring 基类（状态机/幂等/审批通用实现）——**治理道**（K2/K3 内核契约）。
+  - WP3.2 **1 个最小域迁移试点**（建议 `personal_wiring.py` 282 行或 `knowledge_wiring.py` 311 行）：迁移后行数 ≤100，等价回归（既有测试全绿），作为"新域 <100 行"证据。
+  - WP3.3 其余 10 域分批迁移/声明化（每批 2–3 域，按使用频率排序）。
+- **owner**：ARCH1（主）+ 各领域 owner（D1/DATA1/ACAD1/INTEL0）；**依赖**：WF-4 job manifest（触发面）；WF-5 契约 schema（节点 I/O 契约）；ADR（K2/K3）。
+- **DOR（6）**：①价值/验收一句话可述（新域 <100 行）；②写域声明（`platform/schemas/workflow.schema.json`、`agent_platform/domains/*`、`agent_platform/engine/*`）；③依赖就绪（模板/候选区/TaskStore 现状已核）；④车道判定（治理道）；⑤证据方式（等价回归 + 行数对比 + workflow validate）；⑥规模 M（拆 WP3.1/3.2/3.3）。
+- **DOD（8）**：①验收逐条通过；②命令+rc（迁移域测试全绿、行数 ≤100、validate rc=0）；③证据包入库（迁移前后行数/diff/回归）；④文档/回执同批（WorkflowSpec 说明书 + 迁移清单）；⑤任务账本登记 + 组合 jobs 引用更新；⑥回滚（旧 wiring 保留开关，逐域回切）；⑦无残留（重复 LEGAL_TRANSITIONS 删除有清单）；⑧owner 签字（ARCH1 + 领域 owner）。
+- **验收命令**：`python -m pytest agent_platform/tests -q -k "wiring or workflow"`；新域行数统计 ≤100；`workflow validate`（自研 loader）rc=0；wiring 总行数 5,303→≤2,650（−50%）。
+- **回滚**：逐域开关（旧 wiring 与新 Spec 并行一域）；schema 回退；不物理删除旧文件（标 legacy，W4 归档）。
+
+### WF-4 job manifest + 单 runner 台账（K8/UF-19 收口）
+
+- **目标**：job manifest v1 覆盖**日管线 100%**（ACAD1 16 步、DW/metadata、Strategy、黄忠、D1、知识库等）；Windows 计划任务降为**仅触发器**（不承载业务编排）；新增工作流**0 新增计划任务**（只加 manifest 条目）；单 runner 双跑对照后切换。
+- **输入证据**：§2.4（425 任务/381 启用、job_map 16 条、composition job refs 17、job manifest 0）；W2 UF-19 job manifest v0（台账）为基础。
+- **首批工作包（≥2）**：
+  - WP4.1 425 任务台账映射：id/触发器/脚本/owner/是否日管线/是否可降触发器（只读盘点→manifest 候选）。
+  - WP4.2 日管线 job 全部入 manifest（先 ACAD1 16 步 + DW/metadata + 黄忠三线），与 `job_map.yaml` 对账（0 未登记日管线 job）。
+  - WP4.3 单 runner 试点双跑：选 1 条管线（建议 MetadataDaily 或 DW-Daily），runner 与计划任务双跑对照 run rc/产物/时延，**不切换**（切换在 W4）。
+- **owner**：ARCH1（主）+ DATA1 + OPS1（任务/Scheduler 操作需 L2）；**依赖**：W2 UF-19；WF-3 WorkflowSpec（job=workflow 触发面）。
+- **DOR（6）**：①价值/验收一句话可述（日管线 100% 可声明）；②写域声明（`compositions/_schema/job_map.yaml`→job manifest、`docs/ops/`）；③依赖就绪（425 任务实测、v0 已有）；④车道判定（标准道：声明/台账；触计划任务=L2 单）；⑤证据方式（覆盖检查 + 双跑对照）；⑥规模 M。
+- **DOD（8）**：①验收逐条通过；②命令+rc（覆盖检查 0 缺口、双跑对照一致）；③证据包入库（425→日管线清单/覆盖率）；④文档/回执同批（job manifest 说明书 + 任务触发器化清单）；⑤任务账本登记；⑥回滚（runner 不切换、任务原样；manifest 条目可删）；⑦无残留（无新增计划任务）；⑧owner 签字（ARCH1 + OPS1）。
+- **验收命令**：job manifest 覆盖检查脚本（日管线 job 0 未登记）；`composition.py validate --all` 中 job 类 warnings=0；`Get-ScheduledTask` 新增数=0（对比基线 425）；双跑对照表 rc/产物一致。
+- **回滚**：manifest 纯声明可删；双跑不切换；计划任务不动（除 L2 单）。
+
+### WF-5 契约运行时强制（K0/K5/UF-22/25/26 + ADR-018/019 D5/P5）
+
+- **目标**：把"声明"接到执行点：①引用 73/73 可解析且 `--strict` 常绿；②`composition.py` 移除两处启发式（pg→`v2_*` 软过、file→探 `C:\Temp`），改 registry 权威解析（ADR-019 D5）；③ODCS/契约 lint 上线（轻量自研先行，L2 工具后补）；④ADR-018 D5 agentPolicy 最小执行点（未登记工具/用途 deny）；⑤dataset registry v2 收口（PG DSN 供给 + `stats_v2` 进 API/看板）。
+- **输入证据**：§2.5（73 refs/29 未解析/60.27%、strict rc=1、启发式 2 处、schema 1/5、ODCS 10 份、dataset stats_v2 318/269/76、connector missing_dsn、agentPolicy 未强制、datacontract-cli 缺）。
+- **首批工作包（≥2）**：
+  - WP5.1 **引用收口 29→0**：strategy 15（建 v2_strategy 本地口径/登记）、dataset 8（登记/路径修正，含 Temp 契约）、job 3（建任务或 planned 豁免登记）、page 3（补 html/manifest）——按 owner 分单（ACAD1/DATA1/ARCH1），每类一单。
+  - WP5.2 严格解析接线：`composition.py` 启发式移除 → registry 权威查表（过渡期 warning→block，ADR-019 P5 口径），`validate --all --strict` rc=0 进 merge gate。
+  - WP5.3 契约 lint + agentPolicy 执行点：ODCS YAML schema 校验（轻量自研，无外部依赖）进 merge gate；agentPolicy 最小 deny（allowedUse/prohibitedUse 在 agent 工具/数据取数入口断言，至少 1 条真实链路）——ADR-018 D5。
+  - WP5.4 dataset registry v2 收口：`ZHICE_V2_DSN` 只读供给（L2 凭据区）+ `stats_v2()` 接入 `/api/dw/stats` 与 DWH 看板；PG wave2 全量（动态发现）+ Temp 白名单在册；SLA 口径 v2 切换需 A0 确认（ADR-019 P3）。
+- **owner**：ARCH1（主，治理道）+ DATA1（dataset）+ ACAD1（agentPolicy 执行点）+ A0（DSN/L2 批准）；**依赖**：ADR-018/019 Accepted（已 Accepted，schema 已落）；W1 关闭（refs 收口）；WF-1/2/4 的 page/seat/job 声明面；L2 凭据（ADR-010/012）。
+- **DOR（6）**：①价值/验收一句话可述（声明被执行）；②写域声明（`tools/composition.py`、`tools/kernel_guard.py`、`agent_platform/catalogs/contracts/**`、`tools/datawarehouse/**`）；③依赖就绪（29 缺口清单、schema 已落、DSN 缺口已实测）；④车道判定（治理道：内核门禁/口径）；⑤证据方式（strict rc=0 + lint rc=0 + deny 冒烟 + stats_v2）；⑥规模 L（拆 4 个工作包 M）。
+- **DOD（8）**：①验收逐条通过；②命令+rc（strict/lint/deny/stats_v2 全绿）；③证据包入库（29→0 清单、deny 冒烟、DSN 只读证明）；④文档/回执同批（ADR-018/019 状态更新 + registry 说明）；⑤任务账本登记 + 组合 manifest refs 更新；⑥回滚（strict 退回 soft、lint warn→block 分级、启发式保留开关）；⑦无残留（无 `C:\Temp` 当契约、无未登记 Temp）；⑧owner 签字（ARCH1 + DATA1 + ACAD1 + A0）。
+- **验收命令**：`python -X utf8 tools/composition.py validate --all --strict`（rc=0、errors=0）；`plan --strict --json`（findings=0）；契约 lint（自研）rc=0；agentPolicy deny 冒烟 rc=1（未授权工具被拒）；`stats_v2` connector_status=ok 且 `pg.total≥80`；`python -X utf8 tools/kernel_guard.py --list`（新 schema 在册）。
+- **回滚**：严格解析保留 `--strict` 开关（fail-closed 可退回 fail-visible）；lint 分级 warn→block；DSN 不落盘（env），撤销即 missing_dsn 不假绿；ADR superseded 需 A0。
+
+## 四、三批排期（12-03~01-15，WIP ≤6）
+
+> 每批开工 **gate**、批内并行工作包 ≤6、批末出口检查；跨批不并行开工（前批出口未过，后批只做只读准备）。
+> 日历：**12-03（周四）**开工（W2 12-02 截止后次日）；**12-11 / 12-25（周五）**批出口（周末为缓冲）；**01-15（周五）** W3 出口 + W4 启动输入。
+
+### Batch A｜声明底座（12-03 ~ 12-11，7 工作日 + 周末缓冲）
+
+| 项 | 内容 |
+|---|---|
+| 开工 gate | W1 关闭（引用 73/73、Q2≥2、10 DOD 签字）+ W2/L1 全绿 + ADGS 复审参数确认（WIP/merge） |
+| 并行工作包（≤6） | WP1.1 page schema+manifest 生成器；WP1.2 分派表化第一批；WP2.1 seat schema+统一账本；WP4.1 425 任务台账；WP4.2 日管线入 manifest；WP5.1 引用收口启动（29 缺口分单） |
+| 批内出口 | page schema/manifest 生成器可用（104 页入 manifest 草案）；seat schema v0.1 + 双写方案；任务台账 425 条映射完成；日管线 job 清单确定；29 缺口 0 剩余"无主" |
+| owner | ARCH1 调度；OPS1/DEV5/DATA1/ACAD1 分担 |
+| 规模 | 4×M + 2×S（≤6 doing） |
+
+### Batch B｜契约与运行时（12-14 ~ 12-25，10 工作日 + 周末缓冲）
+
+| 项 | 内容 |
+|---|---|
+| 开工 gate | Batch A 出口全过；page/seat schema 预审通过（ADR） |
+| 并行工作包（≤6） | WP3.1 WorkflowSpec schema+基类；WP3.2 最小域迁移（行数 ≤100 证据）；WP5.2 严格解析接线；WP5.3 契约 lint + agentPolicy deny；WP5.4 dataset registry v2（DSN 供给 + stats_v2 上 API）；WP2.2 tool_matrix 100% + deny 冒烟 |
+| 批内出口 | WorkflowSpec schema 在册；1 域迁移等价回归绿；`validate --strict` 转绿（73/73）；lint rc=0；deny 冒烟 rc=1；`stats_v2` connector_status=ok |
+| owner | ARCH1 主 + DATA1/ACAD1 + A0（DSN/L2 批准） |
+| 规模 | 4×M + 2×S |
+
+### Batch C｜收口验收（12-28 ~ 01-15，14 工作日，含元旦 01-01 休）
+
+| 项 | 内容 |
+|---|---|
+| 开工 gate | Batch B 出口全过；W3 退出标准预演（§六）差距 ≤2 项 |
+| 并行工作包（≤6） | WP1.3 三件套 100% + page manifest 104/104；WP3.3 剩余域迁移/声明化；WP2.3 能力卡脱 Python；WF-4 WP4.3 单 runner 双跑；WF-5 收尾（SLA v2 切换审批、Temp 0 未登记）；僵尸页/旧入口归档（UF-27） |
+| 批内出口 | §六 退出标准 1–8 全绿（或仅剩 W4 移交项，书面记录）；W3 复盘 1 页；W4 启动输入（Kernel v1.0 候选清单/Q3 冲刺名单） |
+| owner | ARCH1 主 + 全体领域 owner + QA |
+| 规模 | 3×M + 3×S |
+
+**WIP 与并发纪律**：同时 doing ≤6（按批并行工作包数控制）；单 Agent 并行写 ≤2；共享文件（`portal/api_common.py`、`platform/kernel_v1.yaml`、`compositions/registry.json`、`portal/nginx.conf`）同一时段单 owner；超限即停新开（AGENTS §9.3 / ADGS §七）。merge 走 merge train（16:30–17:00 / 21:40–22:10），文档/声明随时合并。
+
+## 五、11-16 前置（W1 引用解析收口）与跨波次依赖
+
+| 前置 | 内容 | 判定 | 未满足后果 |
+|---|---|---|---|
+| G1 W1 关闭 | 引用 **73/73**（29 缺口逐项处置：strategy 15/dataset 8/job 3/page 3）+ Q2≥2 + 10 项 DOD 签字；`validate --all --strict` rc=0 | 11-16 复审会 | W3 不得开 Batch A（可做只读准备，不占 doing） |
+| G2 W2/L1 | ADR-016 L1 全绿：单入口/单认证/5175/8102 关停/`/quant/` 同源反代 | 12-02 | W3 启动日顺延，最多 3 工作日缓冲后重排 |
+| G3 ADGS 复审 | 11-16 定稿 v1.0 或修订 v1.2（WIP/merge/抽检参数）；W3 的 WIP≤6 与 merge 窗口按复审结果执行 | 11-16 | 参数不一致 → 以复审纪要为准，启动包 v1.1 修订 |
+| G4 内核登记 | page/seat/workflow schema 的 K 层登记方式（K6/K1/K2-K3）与 ADR 编号 | Batch A 前 | schema 未登记 → kernel_guard 不覆盖，W3 出口项顺延 |
+
+> W1 收口路径（`deliverables/2026-11-16_W1组合纳管复审_v1.md:66-71`）：11-03~11-10 补 29 引用（owner ACAD1/DATA1/ARCH1）→ 11-15 复跑 validate/plan → 11-16 会议出结论。W3 启动包据此设置 G1。
+
+## 六、W3 退出标准（01-15 验收，全部量化）
+
+| # | 退出项 | 目标 | 验收命令/证据 |
+|---|---|---|---|
+| E1 | **问题表 P0/P1 清零过半** | 研究 §三 21 硬耦合：**P0×7/P1×10** → 关闭/降级 **≥9/17（≥50%）**，其中 **P0 ≥4/7**；框架 §五问题表 1–10 **关闭 ≥5/10** | 问题表状态审计（逐项：已关闭/降级/未动 + 证据链接），月度复盘 |
+| E2 | **active 组合 Q2** | **≥2**（acad1-legion、data-warehouse 至少）；Q2 判据=Q1 + 引用可解析 + 健康探针 + SLO + 回滚步骤 + ≥1 测试（framework §3.2） | Q2 评审表 + 探针/SLO/回滚/测试证据；组合 registry lifecycle 升 active |
+| E3 | **页面可声明** | 104 页 **100% 在册**（page manifest）；分派表化 **≥80%（≥232/290）**；三件套 100%、双引 0；route inventory 零 diff | page manifest lint；route_table 计数 + 等价测试；HTML lint 计数 |
+| E4 | **数据可声明** | dataset registry v2：file 314 + PG（`ZHICE_V2_DSN` 到位后动态发现 `public.v2_%`，**≥80 表**）+ contract_artifact 白名单（**≥10**）在册；`stats_v2` 进 API/看板；SLA v2 口径经 A0 确认 | `stats_v2()` 输出 + `/api/dw/stats` 字段；DWH 验收证据；Temp 0 未登记 |
+| E5 | **任务可声明** | job manifest 覆盖**日管线 100%**；Windows 任务"仅触发器"审计通过；新增工作流 **0 新增计划任务** | 覆盖检查脚本（0 缺口）；`Get-ScheduledTask` 对比基线 425；双跑对照 |
+| E6 | **契约强制门全绿** | 引用 **73/73（100%）**；`validate --all --strict` rc=0；契约 lint rc=0；agentPolicy 最小 deny 冒烟 rc=1；4 份 schema（page/seat/workflow/dataset）在册 | 命令见 §九；kernel_guard `--list` 含 4 schema |
+| E7 | **门禁与治理** | 无 ADR 改内核被 kernel_guard 拒收演练通过；门禁绕过 0；例外台账齐全；doc-drift/route inventory 全绿 | 演练记录 + 周报 + 月度审计 |
+| E8 | **归档与证据** | 僵尸页/旧入口/重复运行器归档清单 + 回执；3 批 DOD 证据包齐；W3 复盘 1 页；W4 启动输入（Kernel v1.0 候选/Q3 名单） | 归档回执 + 证据索引 + 复盘 + W4 移交单 |
+
+**判定规则**：E1–E8 **全部达标** → W3 关闭、W4 按 01-16 启动；**E1/E2/E6 任一不达** → W3 延长至 01-31（只补这三项），W4 顺延；其余单项不达 → 记 W4 移交项（书面），不阻塞 W3 关闭。
+
+## 七、风险与不做的边界
+
+| # | 风险 | 概率/影响 | 缓解 |
+|---|---|---|---|
+| R1 | W1 未关闭（引用 60.27%） | 高/高（W3 全延） | 11-03~11-10 分单补 29 引用；11-16 前每日对账；G1 gate 硬卡 |
+| R2 | W2/L1 12-02 硬截止超期 | 中/高 | 12-02 周检查 + L1 回滚演练；W3 最多 3 工作日缓冲 |
+| R3 | 内核变更集中（4 schema + 解析器 + 门禁） | 中/中 | 治理道预审分批（每 schema 一 ADR）；A0 每周批一次，不攒批 |
+| R4 | 单机/单人维护带宽不足 | 高/中 | WIP≤6 硬约束；ARCH1 专职排期；每批出口不过不进下批 |
+| R5 | 并发写域冲突（api_common/kernel_v1/registry/nginx） | 中/高 | 共享文件单 owner；merge train FIFO；写域声明先行 |
+| R6 | 双注册收敛期 404/401 | 中/高 | route inventory + 等价测试 + nginx/Python 双跑对照；一提交可回退 |
+| R7 | 跨年低带宽（12-31~01-01） | 高/低 | Batch C 前半只做验证/归档；01-04 起冲刺；预算 14 工作日含缓冲 |
+| R8 | Q2 门槛严（引用 100%+探针+SLO+回滚+测试） | 中/高 | 先补引用（WP5.1）再评审；Q2 评审表模板先行；不降门槛 |
+| R9 | PG 只读 DSN 未配置（当前 missing_dsn） | 高/中 | L2 凭据单（ADR-010/012）12-15 前批；未批则 E4 降级为"wave1 7 表 + 白名单 4"并记 W4 移交 |
+| R10 | "声明被消费"审计成本高 | 中/中 | 每声明字段登记"消费点"表；无消费点即删字段（framework §3.4 #3） |
+
+**不做（边界）**：微服务/K8s/MQ/新数据库；重写 portal/zhice；插件市场/微前端；第二入口/认证/调度/DB；在 W3 切换单 runner 主备（双跑对照，切换留 W4）；不物理删除旧文件（legacy 标归档）；不在 W3 动 Kernel v1.0 冻结（W4）。
+
+## 八、治理与验收机制
+
+- **车道**：5 个工作流中 schema/契约/门禁类 = **治理道**（ADR+ARCH1 预审+A0 批准）；manifest/页面包/台账类 = **标准道**（owner 自判+ARCH1 抽检≥20%/周）；触计划任务/L2 = **L2 道**（五要素+窗口+A0）。
+- **工作包纪律**：每工作包 = 一张任务单（DOR 6 项齐才接单）+ DOD 8/8 + 证据包（ADGS §八）；`rc=0` 不等于有产出。
+- **周节奏**：每日 10min 对账；每周五波次评审（30min，W3 进度 vs 三批出口）；每月组合账本审计；01-15 出口评审 + W4 启动会。
+- **Q2 评审**：E2 由 ARCH1 主持，按 framework §3.2 五项逐条打分，A0 确认；不通过不加"部分 Q2"。
+- **ADGS 例外**：W3 如遇框架不适用 → ADR-017 例外流程（ADR+A0+临时 adapter+90 天回归），W4 季度评审回归。
+- **证据归档**：3 批 DOD 证据包 → `deliverables/`；关键命令/rc/产物进证据包；W3 复盘 1 页 → STATUS.md 摘要。
+
+## 九、只读复现命令清单（本包全部数字可核）
+
+```powershell
+# 仓库快照
+git -C C:\项目\老田的AI助手 rev-parse --short HEAD          # 本包实测 6c39fe64b
+(git -C C:\项目\老田的AI助手 status --porcelain | Measure-Object).Count
+
+# 2.1 页面
+(Get-ChildItem portal -Filter *.html -File | Measure-Object).Count                      # 94
+(Get-ChildItem portal\static -Filter *.html -File | Measure-Object).Count               # 10
+(Select-String -Path portal\nginx.conf -Pattern '^\s*location\s' | Measure-Object).Count # 154
+(Get-ChildItem portal -Filter api_*.py -File | Measure-Object).Count                    # 75
+Select-String -Path portal\*.html,portal\static\*.html -Pattern 'tokens\.css' | Measure-Object
+Select-String -Path portal\*.html,portal\static\*.html -Pattern 'page_shell\.js' | Measure-Object
+python -X utf8 tools\portal_route_inventory.py --check                                  # rc=0 290 条零 diff
+python -X utf8 -c "import sys; sys.path.insert(0,r'portal'); import route_table; print(len(list(route_table.iter_routes())))"  # 32
+
+# 2.2 Seat
+python -X utf8 -c "import json;d=json.load(open(r'agent_platform/registry/org.json',encoding='utf-8'));print(len(d['departments']))"
+(Get-ChildItem agent_platform\registry -Filter 'team_*.json').Count                      # 17
+(Get-ChildItem agent_platform\hr -Directory).Count                                      # 66
+Test-Path platform\schemas\seat.schema.json                                             # False
+
+# 2.3 WorkflowSpec
+(Get-ChildItem agent_platform\domains -Filter '*_wiring.py' | ForEach-Object { (Get-Content $_ | Measure-Object -Line).Lines } | Measure-Object -Sum).Sum  # 5303
+Test-Path platform\schemas\workflow.schema.json                                         # False
+
+# 2.4 job
+(Get-ScheduledTask | Measure-Object).Count                                              # 425
+(Select-String -Path compositions\_schema\job_map.yaml -Pattern '^\S+: ' | Measure-Object).Count  # 16
+
+# 2.5 契约运行时强制
+python -X utf8 tools\composition.py validate --all                                      # errors=0 warnings=29 rc=0
+python -X utf8 tools\composition.py validate --all --strict                             # errors=29 rc=1
+python -X utf8 tools\composition.py plan --strict --json                                # findings=0 rc=0
+python -X utf8 -c "import sys;sys.path.insert(0,r'tools\datawarehouse');import dataset_registry as d;r=d.DatasetRegistry();print(r.stats());print(r.stats_v2())"
+python -X utf8 tools\kernel_guard.py --list
+```
+
+## 十、引用与版本
+
+- 框架：`docs/architecture/PLATFORM_FRAMEWORK_v1.md`（§三 3.2 Q1–Q4:120-129、§四 黄金路径:150-193、§五 问题映射:197-220、§六 路线:224-234）
+- 技术方案：`docs/plans/2026-11-02_技术框架统一方案_v1.md`（W3 行:104；UF-19~27:131-139、UF-30:142；01-15 出口:152）
+- 战略源：`docs/plans/2026-11-02_ROADMAP_v4_唯一战略与主排期.md`（W3:42、硬节点:14、L1 截止:50）
+- W1 预演：`deliverables/2026-11-16_W1组合纳管复审_v1.md`（引用 73/29/60.27%:14,21-29；关闭路径:62-71）
+- ADR：ADR-015（K0–K8/T1–T5）、ADR-017（黄金路径/禁止清单）、ADR-018（ACAD1 契约；D5 agentPolicy 执行点）、ADR-019（K5 数据契约；D5 ref 严格解析、P5 时机）
+- DWH/契约落地证据：`deliverables/2026-11-02_DWH-103_实现证据_v1.md`、`..._DWH-103_wave2证据_v1.md`、`..._ACL-103_实现证据_v1.md`、`platform/schemas/dataset.schema.json`
+- **版本**：v1（2026-11-02 启动包草案）；修订需 ARCH1 提案 + 11-16 复审/A0 拍板；W3 启动后参数变更走 v1.1。
+- **注**：按"写域仅本文件"约束，页面/seat/job/refs 的逐项明细清单不随本包落盘；W3 开工时由各工作包任务单生成并挂证据包，本包保留可复现命令（§九）。
+
+## 十一、W1 gate 状态更新（2026-11-02 16:40）
+
+- W1 引用：**73/73 = 100% 登记**（65 active + 8 planned owner/due/acceptance）；`validate --all` **warnings=0**；
+- Q2：**acad1-legion PASS；data-warehouse 条件通过**（API 健康通过；`/dw`、`/dataops` 404 属 K6/W3 WF-1）；
+- W1 状态：**条件关闭候选**；11-16 复审材料见 `deliverables/2026-11-16_W1复审材料包_v1.md`；
+- **G1 解除条件**：11-16 会上通过 D1（data-warehouse Q2 计入）与 D3（W3 启动授权）；当前 W3 仍为只读准备，不进入 DOING；
+- data-warehouse 页面 404 列入 W3 WF-1 首批修复（12-11 前）。
+
+## 十二、W1 gate G1 条件解除（2026-11-02 16:45）
+
+- W1 已于 2026-11-02 提前签署 **条件关闭**（回执 `docs/ops/2026-11-16_W1复审签字回执_v1.md`）：refs 73/73=100%、Q2 1 PASS+1 条件、10/10 证据；
+- **G1 条件解除**：W3 可进入只读准备/任务单编制；**12-03 起按本启动包执行**；
+- 条件：data-warehouse `/dw`、`/dataops` 404 必须在 W3 WF-1（12-11 前）修复；8 planned refs 按 due 核销；
+- 11-16 会议确认本签名与数据；若 W1 回退则重开 gate。
+
+
+## W3 前置收口（2026-11-03 05:26）
+
+| 项 | 状态 |
+|---|---|
+| 6 军团 `interface/hermes-control` | ✅ 6/6 已声明；接口契约 `platform/interfaces/hermes-control.yaml` |
+| 私有 MCP Registry | ✅ `platform/mcp/registry.yaml` 13 server；`tools/mcp_registry.py --check` PASS |
+| A2A Agent Cards | ✅ `platform/a2a/agent_cards/` 6 张；`tools/a2a_cards.py --check` PASS |
+| 页面 manifest | ✅ `/hq` manifest active；5 tabs；API 9 端点 |
+| route baseline | ✅ 291 条与基线零 diff |
+| Q2/SLO | ✅ HQ 控制面 Q2 PASS（12/12，p95 606.9ms <800ms，未登录 401） |
+| 6 军团 Q2 全量 | 🟡 1 PASS + 1 条件 + 4 Q1，W3 出口补齐 |
+| 启动日期 | **2026-12-03 不变** |
+
+**W3 首批**：WF-1 页面 manifest/`/dw` `/dataops` 404；6 军团契约运行时强制；Q2 全量；A2A 路由启用。
