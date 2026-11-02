@@ -435,8 +435,21 @@ def _sha256_file(path: Path) -> str:
     return h.hexdigest()
 
 
+def _normalize_dsn(dsn: str) -> str:
+    """把 SQLAlchemy 风格 PG URL 归一为 libpq DSN；普通 DSN 原样返回。"""
+    for prefix in ("postgresql+psycopg2://", "postgresql+psycopg://", "postgres+psycopg2://"):
+        if dsn.startswith(prefix):
+            return "postgresql://" + dsn[len(prefix):]
+    return dsn
+
+
 def _pg_connect_default(dsn: str):
-    """只读连接工厂（wave2 默认）：DSN 从 env 读取（不落盘）；异常向上抛（fail-visible）。"""
+    """只读连接工厂（wave2 默认）：DSN 从 env 读取（不落盘）；异常向上抛（fail-visible）。
+
+    DSN 归一化：兼容 SQLAlchemy 风格 `postgresql+psycopg2://` / `postgresql+psycopg://`
+    → libpq `postgresql://`（运维常直接复用 .env 的 DB_MAIN_URL）。
+    """
+    dsn = _normalize_dsn(dsn)
     try:
         import psycopg2 as pg
     except ImportError:

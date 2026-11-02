@@ -4,6 +4,8 @@
 用法：
   python tools/datawarehouse/dataset_registry_cli.py stats
   python tools/datawarehouse/dataset_registry_cli.py stats-v2          # 合并口径（DWH-103；PG 未就绪 rc=2，fail-visible）
+  # DWH-103 wave2：ZHICE_V2_DSN 可用时 pg_table 动态发现 public.v2_% 全量（不硬编码数量）；
+  #                DSN 未设置退回 wave1 固定清单 + missing_dsn（rc=2）。
   python tools/datawarehouse/dataset_registry_cli.py list --domain 学习派生 --limit 20
   python tools/datawarehouse/dataset_registry_cli.py list --kind pg_table --limit 20
   python tools/datawarehouse/dataset_registry_cli.py search --q 雪球
