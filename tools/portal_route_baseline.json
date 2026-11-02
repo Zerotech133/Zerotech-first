@@ -1,7 +1,7 @@
 {
- "generated_at": "2026-11-03T15:05:23",
- "source": "C:\\项目\\老田的AI助手\\portal\\portal_api.py",
- "total": 294,
+ "generated_at": "2026-11-03T16:30:38",
+ "source": "C:\\项目\\老田的AI助手\\.worktrees\\WO-IFS-WIRE-20261103\\portal\\portal_api.py",
+ "total": 295,
  "signatures": [
   [
    "GET",
@@ -187,6 +187,11 @@
    "GET",
    "exact",
    "/api/d1/research"
+  ],
+  [
+   "GET",
+   "exact",
+   "/api/d1/watch-plans"
   ],
   [
    "GET",
