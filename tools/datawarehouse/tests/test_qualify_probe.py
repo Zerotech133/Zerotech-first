@@ -975,5 +975,159 @@ class TestCollectPerTableManifest(unittest.TestCase):
             self.assertEqual(payload["manifest"]["unreadable"], ["t_bad"])
 
 
+class TestJsonlStoreProbe(unittest.TestCase):
+    """task-54：layout=jsonl 走流式抽样探针（文件数/行数/日期列 max），不再误判 no_parquet。"""
+
+    def _write_jsonl(self, store: Path, name: str, rows, date_key: str = "ts") -> None:
+        store.mkdir(parents=True, exist_ok=True)
+        lines = [json.dumps({date_key: d, "post_id": i}, ensure_ascii=False)
+                 for i, d in enumerate(rows)]
+        (store / name).write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    def test_jsonl_rows_and_latest_ok(self):
+        with tempfile.TemporaryDirectory() as d:
+            store = Path(d) / "guba"
+            self._write_jsonl(store, "000001.jsonl",
+                              ["2026-10-23 10:00:00", "2026-10-26 11:00:00"])
+            self._write_jsonl(store, "000002.jsonl", ["2026-10-25 09:00:00"])
+            e = entry(store, date_col="ts", layout="jsonl", freq="D")
+            card = qualify_probe.probe_table("guba_posts", e, {"guba_posts"}, TODAY, CHECKED)
+            self.assertNotIn("no_parquet", card["reasons"])
+            self.assertEqual(card["verdict"], "evidence_ok")
+            self.assertEqual(card["files_on_disk"], 2)
+            self.assertEqual(card["rows_sampled"], 3)
+            self.assertEqual(card["latest_business_date"], "20261026")
+            self.assertEqual(card["latest_source"], "jsonl_max")
+            self.assertEqual(card["lag_days"], 1)
+            self.assertEqual(card["jsonl"]["date_col_used"], "ts")
+            self.assertIn("jsonl", card["unsupported_reason"])
+
+    def test_jsonl_empty_files_skipped(self):
+        """实测教训：guba 237/432 个 0 字节文件且 mtime 最新，抽样必须跳过空文件。"""
+        with tempfile.TemporaryDirectory() as d:
+            store = Path(d) / "guba"
+            store.mkdir()
+            (store / "000001.jsonl").write_text("", encoding="utf-8")
+            (store / "000002.jsonl").write_text(
+                json.dumps({"ts": "2026-10-26 10:00:00", "post_id": 1}) + "\n",
+                encoding="utf-8")
+            e = entry(store, date_col="ts", layout="jsonl", freq="D")
+            card = qualify_probe.probe_table("guba_posts", e, {"guba_posts"}, TODAY, CHECKED)
+            self.assertEqual(card["verdict"], "evidence_ok")
+            self.assertEqual(card["latest_business_date"], "20261026")
+            self.assertEqual(card["jsonl"]["empty_files"], 1)
+            self.assertEqual(card["jsonl"]["nonempty_file_count"], 1)
+            self.assertEqual(card["rows_sampled"], 1)
+
+    def test_jsonl_all_empty_fail_visible(self):
+        with tempfile.TemporaryDirectory() as d:
+            store = Path(d) / "guba"
+            store.mkdir()
+            (store / "a.jsonl").write_text("", encoding="utf-8")
+            (store / "b.jsonl").write_text("", encoding="utf-8")
+            e = entry(store, date_col="ts", layout="jsonl", freq="D")
+            card = qualify_probe.probe_table("guba_posts", e, {"guba_posts"}, TODAY, CHECKED)
+            self.assertEqual(card["verdict"], "evidence_bad")
+            self.assertIn("zero_rows_sampled", card["reasons"])
+            self.assertIn("jsonl_all_empty", card["reasons"])
+            self.assertNotIn("no_parquet", card["reasons"])
+
+    def test_jsonl_stale_is_partial_not_bad(self):
+        with tempfile.TemporaryDirectory() as d:
+            store = Path(d) / "guba"
+            self._write_jsonl(store, "000001.jsonl", ["2026-10-01 10:00:00"])
+            e = entry(store, date_col="ts", layout="jsonl", freq="D",
+                      manifest_status="not_applicable")
+            card = qualify_probe.probe_table("guba_posts", e, set(), TODAY, CHECKED,
+                                             manifest_source="not_applicable")
+            self.assertEqual(card["verdict"], "evidence_partial")
+            self.assertIn("stale_gt_7d", card["reasons"])
+            self.assertNotIn("no_parquet", card["reasons"])
+
+    def test_jsonl_empty_dir_fail_visible(self):
+        with tempfile.TemporaryDirectory() as d:
+            store = Path(d) / "guba"
+            store.mkdir()
+            e = entry(store, date_col="ts", layout="jsonl", freq="D",
+                      manifest_status="not_applicable")
+            card = qualify_probe.probe_table("guba_posts", e, set(), TODAY, CHECKED,
+                                             manifest_source="not_applicable")
+            self.assertEqual(card["verdict"], "evidence_bad")
+            self.assertIn("no_jsonl", card["reasons"])
+            self.assertNotIn("no_parquet", card["reasons"])
+            self.assertEqual(card["files_on_disk"], 0)
+
+    def test_jsonl_no_date_candidate_partial(self):
+        with tempfile.TemporaryDirectory() as d:
+            store = Path(d) / "guba"
+            store.mkdir()
+            (store / "a.jsonl").write_text('{"a": 1}\n{"b": 2}\n', encoding="utf-8")
+            e = entry(store, date_col=None, layout="jsonl", freq="D",
+                      manifest_status="not_applicable")
+            card = qualify_probe.probe_table("guba_posts", e, set(), TODAY, CHECKED,
+                                             manifest_source="not_applicable")
+            self.assertEqual(card["verdict"], "evidence_partial")
+            self.assertIn("no_date_column", card["reasons"])
+            self.assertNotIn("no_parquet", card["reasons"])
+            self.assertIsNone(card["jsonl"]["date_col_used"])
+
+    def test_jsonl_candidate_date_used(self):
+        with tempfile.TemporaryDirectory() as d:
+            store = Path(d) / "guba"
+            store.mkdir()
+            (store / "a.jsonl").write_text(
+                '{"_fetched_at": "2026-10-26 08:00:00", "x": 1}\n', encoding="utf-8")
+            e = entry(store, date_col=None, layout="jsonl", freq="D",
+                      manifest_status="not_applicable")
+            card = qualify_probe.probe_table("guba_posts", e, set(), TODAY, CHECKED,
+                                             manifest_source="not_applicable")
+            self.assertEqual(card["latest_source"], "jsonl_candidate_max")
+            self.assertEqual(card["latest_business_date"], "20261026")
+            self.assertEqual(card["verdict"], "evidence_ok")
+
+    def test_jsonl_sampling_cap(self):
+        with tempfile.TemporaryDirectory() as d:
+            store = Path(d) / "guba"
+            for i in range(12):
+                self._write_jsonl(store, "%04d.jsonl" % i, ["2026-10-25 10:00:00"] * 5)
+            e = entry(store, date_col="ts", layout="jsonl", freq="D")
+            info = qualify_probe.probe_jsonl_store(store, e, max_files=5, max_lines_per_file=3)
+            self.assertEqual(info["file_count"], 12)
+            self.assertEqual(info["files_scanned"], 5)
+            self.assertLessEqual(info["rows_sampled"], 5 * 3)
+            self.assertTrue(info["truncated"])
+            self.assertEqual(info["date_col_used"], "ts")
+
+    def test_jsonl_bad_lines_fail_visible(self):
+        with tempfile.TemporaryDirectory() as d:
+            store = Path(d) / "guba"
+            store.mkdir()
+            (store / "a.jsonl").write_text("not-json\n{oops\n", encoding="utf-8")
+            e = entry(store, date_col="ts", layout="jsonl", freq="D")
+            card = qualify_probe.probe_table("guba_posts", e, {"guba_posts"}, TODAY, CHECKED)
+            self.assertEqual(card["verdict"], "evidence_bad")
+            self.assertIn("zero_rows_sampled", card["reasons"])
+            self.assertIn("jsonl_bad_lines", card["reasons"])
+            self.assertGreater(card["jsonl"]["bad_lines"], 0)
+
+    def test_jsonl_store_path_missing(self):
+        with tempfile.TemporaryDirectory() as d:
+            e = entry(Path(d) / "nope", date_col="ts", layout="jsonl")
+            card = qualify_probe.probe_table("guba_posts", e, {"guba_posts"}, TODAY, CHECKED)
+            self.assertEqual(card["verdict"], "evidence_bad")
+            self.assertIn("store_missing", card["reasons"])
+            self.assertNotIn("no_parquet", card["reasons"])
+
+    def test_non_jsonl_empty_dir_keeps_no_parquet(self):
+        """回归：非 jsonl 空目录仍保持 no_parquet 语义（不误伤既有分支）。"""
+        with tempfile.TemporaryDirectory() as d:
+            store = Path(d) / "empty"
+            store.mkdir()
+            e = entry(store, date_col="ts", layout="by_date", freq="D")
+            card = qualify_probe.probe_table("t1", e, {"t1"}, TODAY, CHECKED)
+            self.assertEqual(card["verdict"], "evidence_bad")
+            self.assertIn("no_parquet", card["reasons"])
+
+
 if __name__ == "__main__":
     unittest.main()

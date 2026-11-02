@@ -11,8 +11,12 @@
   python tools/datawarehouse/dataset_registry_cli.py sample --id xueqiu_info_xq_status_classified --n 3
   python tools/datawarehouse/dataset_registry_cli.py resolve-ref --ref dataset/pg/v2_acad1_pool
   python tools/datawarehouse/dataset_registry_cli.py emit --out agent_platform/catalogs/dataset_registry_v1.yaml
+  # S3-06 P1 通用查询（2026-11-02 task-50）：
+  python tools/datawarehouse/dataset_registry_cli.py query --dataset ts_adj_factor --limit 10
+  python tools/datawarehouse/dataset_registry_cli.py query --dataset xq_xq_status --where "created_at>=2026-10-01" --order created_at:desc --count
+  python tools/datawarehouse/dataset_registry_cli.py query --dataset t1 --where '[{"field":"code","op":"in","value":["000001"]}]' --columns code,px --offset 0 --limit 100
 
-退出码：0 ok；1 用法/内部错；2 目标不存在或连接器/契约产物 fail-visible（不假绿）。
+退出码：0 ok；1 用法/内部错；2 目标不存在或连接器/契约产物/query 不支持（fail-visible，不假绿）。
 """
 from __future__ import annotations
 
@@ -26,6 +30,8 @@ from dataset_registry import (  # noqa: E402
     ConnectorUnavailable,
     ContractArtifactUnavailable,
     DatasetRegistry,
+    QueryNotSupported,
+    QueryParamError,
 )
 
 
@@ -53,6 +59,20 @@ def main(argv=None) -> int:
     p.add_argument("--ref", required=True)
     p = sub.add_parser("emit")
     p.add_argument("--out", default="agent_platform/catalogs/dataset_registry_v1.yaml")
+    # S3-06 P1（2026-11-02 task-50）：通用 query 子命令
+    p = sub.add_parser("query")
+    p.add_argument("--dataset", "--id", dest="dataset", required=True)
+    p.add_argument("--where", default=None,
+                   help="结构化条件：'field op value;field2 op value' 或 JSON 数组 "
+                        "[{field,op,value}]（op: = != > >= < <= in like；不接受原始 SQL）")
+    p.add_argument("--order", "--order-by", dest="order", default=None,
+                   help="排序：'field:desc,field2' 或 JSON [{field,desc}]（≤2 键）")
+    p.add_argument("--limit", type=int, default=100)
+    p.add_argument("--offset", type=int, default=0)
+    p.add_argument("--since", default=None, help="时间下界 YYYY-MM-DD/YYYYMMDD")
+    p.add_argument("--columns", default=None, help="列投影，逗号分隔")
+    p.add_argument("--count", action="store_true", help="同时返回总数")
+    p.add_argument("--json", action="store_true", default=False, help="JSON 输出")
     ap.add_argument("--json", action="store_true", default=False, help="JSON 输出")
     args = ap.parse_args(argv)
     reg = DatasetRegistry()
@@ -91,6 +111,32 @@ def main(argv=None) -> int:
     elif args.cmd == "emit":
         p = reg.emit_yaml(args.out)
         out = {"emitted": str(p)}
+    elif args.cmd == "query":
+        try:
+            out = reg.query(args.dataset, where=args.where, order=args.order,
+                            limit=args.limit, offset=args.offset, since=args.since,
+                            columns=args.columns, count=args.count)
+        except KeyError:
+            print(json.dumps({"ok": False, "state": "not_found", "fail_visible": True,
+                              "error": "dataset_id 不存在", "dataset_id": args.dataset},
+                             ensure_ascii=False, indent=1))
+            return 2
+        except QueryParamError as exc:
+            print(json.dumps({"ok": False, "state": "bad_param", "fail_visible": True,
+                              "code": exc.code, "error": str(exc)[:240],
+                              "detail": exc.detail}, ensure_ascii=False, indent=1))
+            return 2
+        except QueryNotSupported as exc:
+            print(json.dumps({"ok": False, "state": "not_supported", "fail_visible": True,
+                              "code": exc.code, "error": str(exc)[:240],
+                              "detail": exc.detail}, ensure_ascii=False, indent=1))
+            return 2
+        except PermissionError as exc:
+            print(json.dumps({"ok": False, "state": "permission_denied", "fail_visible": True,
+                              "code": 403, "error": str(exc)[:240]},
+                             ensure_ascii=False, indent=1))
+            return 2
+        rc = 0 if out.get("state") in ("ok", "no_data") else 2
     print(json.dumps(out, ensure_ascii=False, indent=1, default=str))
     return rc
 

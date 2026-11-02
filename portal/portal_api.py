@@ -1048,6 +1048,12 @@ color:#fff;font-size:13.5px;cursor:pointer}
             import auth_gateway
             auth_gateway.handle_post(self, path)
             return
+
+        if path.startswith('/api/dw/'):
+            # S3-06：数据仓统一查询 POST（api_dw_registry.handle_post；只读，参数校验在模块内）
+            import api_dw_registry
+            api_dw_registry.handle_post(self, path)
+            return
         if path.startswith('/api/os/'):
             self._os_goal_post(path)
             return

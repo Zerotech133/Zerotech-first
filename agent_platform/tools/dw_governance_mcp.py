@@ -12,6 +12,9 @@ Hermes config entry（待老田/L2 批准后加入 ~/.hermes/config.yaml）：
   dw_search          → 关键词检索
   dw_get             → 数据集元数据（dataset_id）
   dw_sample          → 数据集样本（sqlite/parquet/json/目录，n 行）
+  dw_query           → 通用查询（S3-06 P1：where/order/limit/offset/since/columns/count；
+                       sqlite 参数化 / parquet pyarrow 过滤投影；jsonl/其他载体显式 not_supported）
+                       Hermes 侧生效需 /reload-mcp（L2），CLI 立即可用。
 """
 from __future__ import annotations
 
@@ -66,6 +69,22 @@ TOOLS = [
          "id": {"type": "string"},
          "n": {"type": "integer", "minimum": 1, "maximum": 20}},
          "required": ["id"], "additionalProperties": False}},
+    {"name": "dw_query",
+     "description": "通用只读查询（S3-06 P1）：按 dataset_id 过滤/排序/分页/投影/计数。"
+                    "sqlite 走参数化 WHERE；parquet 走 pyarrow 过滤+列投影；"
+                    "jsonl/混合目录/契约产物等不支持载体返回 not_supported（fail-visible，不回退 sample）。",
+     "inputSchema": {"type": "object", "properties": {
+         "id": {"type": "string", "description": "dataset_id"},
+         "where": {"description": "结构化条件：[{field,op,value}]；op ∈ = != > >= < <= in like；"
+                                  "字段/算子白名单，不接受原始 SQL", "type": "array"},
+         "order": {"description": "排序：[{field,desc}]（≤2 键；parquet 仅小结果集支持）",
+                   "type": "array"},
+         "limit": {"type": "integer", "minimum": 1, "maximum": 1000},
+         "offset": {"type": "integer", "minimum": 0, "maximum": 100000},
+         "since": {"type": "string", "description": "时间下界 YYYY-MM-DD/YYYYMMDD"},
+         "columns": {"description": "列投影（数组或逗号串）"},
+         "count": {"type": "boolean", "description": "同时返回总数"}},
+         "required": ["id"], "additionalProperties": False}},
 ]
 
 
@@ -90,6 +109,17 @@ def call_tool(name: str, args: dict) -> dict:
         return {"dataset": d}
     if name == "dw_sample":
         return reg.sample(args.get("id"), n=int(args.get("n") or 3))
+    if name == "dw_query":
+        return reg.query(
+            args.get("id"),
+            where=args.get("where"),
+            order=args.get("order"),
+            limit=int(args.get("limit") or 100),
+            offset=int(args.get("offset") or 0),
+            since=args.get("since"),
+            columns=args.get("columns"),
+            count=bool(args.get("count")),
+        )
     raise ValueError("unknown tool: %s" % name)
 
 
@@ -100,7 +130,7 @@ def handle(msg: dict) -> dict:
         return {"jsonrpc": "2.0", "id": mid, "result": {
             "protocolVersion": PROTOCOL,
             "capabilities": {"tools": {}},
-            "serverInfo": {"name": "dw-governance", "version": "1.0.0"}}}
+            "serverInfo": {"name": "dw-governance", "version": "1.1.0"}}}
     if method == "ping":
         return {"jsonrpc": "2.0", "id": mid, "result": {}}
     if method == "tools/list":

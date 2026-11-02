@@ -6,6 +6,10 @@ GET /api/dw/list?domain=&q=&registered=0|1&exposed=0|1&limit=  → 数据集列�
 GET /api/dw/get?id=<dataset_id> → 数据集元数据
 GET /api/dw/sample?id=&n=      → 数据集样本（sqlite/parquet/json/目录；只读）
 GET /api/dw/search?q=&limit=   → 关键词检索数据集
+GET/POST /api/dw/query         → 专用查询（S3-06 P1：sqlite/parquet 过滤+分页+投影+count）
+                                 参数：id（或 dataset）/where/order/since/columns/limit/offset/count
+                                 错误码：400 参数/字段非法、403 越权、404 未登记、409 载体不支持、503 内部错
+                                 注：POST 分派入口 handle_post 已实现；portal_api.do_POST 接线属 L2 重启批次
 
 DWH-105（2026-11-02）：响应显式带数据时点与空结果三态，避免"空结果被误读为无数据/无机会"。
 - data_date：盘点数据时点（dataset_inventory 文件 mtime 的日期，YYYY-MM-DD）；
@@ -19,6 +23,7 @@ DWH-105（2026-11-02）：响应显式带数据时点与空结果三态，避免
 from __future__ import annotations
 
 import datetime
+import json
 import sys
 import urllib.parse
 from pathlib import Path
@@ -26,7 +31,11 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "tools" / "datawarehouse"))
 
-from dataset_registry import DatasetRegistry  # noqa: E402
+from dataset_registry import (  # noqa: E402
+    DatasetRegistry,
+    QueryNotSupported,
+    QueryParamError,
+)
 
 STALE_DAYS = 7  # 盘点时点超过该天数 → state=stale（可配，测试通过 monkeypatch 固定）
 _REG = None
@@ -119,6 +128,97 @@ def _empty_list_reason(q=None, domain=None, registered=None, exposed=None) -> st
     return "no_data: 无匹配数据集（%s）" % ("，".join(bits) or "无过滤条件")
 
 
+def _query_fail(handler, error: str, code: int, reason: str,
+                detail: dict | None = None, state: str = "") -> None:
+    payload, rc = _fail(error, code, reason=reason, state=state)
+    if detail:
+        payload["detail"] = detail
+    payload["code"] = code
+    handler._json(payload, rc)
+
+
+def _query_http(handler, get) -> None:
+    """GET/POST /api/dw/query 共用处理：参数校验 + 错误码映射 + 三态 envelope。"""
+    did = (get("id") or get("dataset") or "").strip()
+    if not did:
+        _query_fail(handler, "id 必填", 400, "missing_param: id 必填")
+        return
+    try:
+        obj = _reg().query(
+            did,
+            where=get("where") or None,
+            order=get("order") or get("order_by") or None,
+            limit=get("limit") or 100,
+            offset=get("offset") or 0,
+            since=get("since") or None,
+            columns=get("columns") or None,
+            count=_bool(get("count")) is True,
+        )
+    except KeyError:
+        _query_fail(handler, "dataset 不存在", 404,
+                    "not_found: dataset_id=%r 未登记或未通过盘点过滤" % did, state="not_found")
+        return
+    except QueryParamError as exc:
+        _query_fail(handler, "参数非法: %s" % str(exc)[:160], exc.code,
+                    "bad_param: %s" % str(exc)[:200], exc.detail)
+        return
+    except QueryNotSupported as exc:
+        _query_fail(handler, "载体不支持: %s" % str(exc)[:160], exc.code,
+                    "not_supported: %s" % str(exc)[:200], exc.detail,
+                    state="not_supported")
+        return
+    except PermissionError as exc:
+        _query_fail(handler, "路径越权: %s" % str(exc)[:120], 403,
+                    "permission_denied: %s" % str(exc)[:160])
+        return
+    dd = _data_date()
+    payload = dict(obj)
+    payload["query_state"] = obj.get("state")
+    env = _ok_envelope(dd)
+    if obj.get("state") == "no_data":
+        env = _envelope("no_data", obj.get("reason") or "no_data: 查询命中 0 行", dd)
+        env["query_state"] = "no_data"
+    payload.update(env)
+    handler._json(payload)
+
+
+def handle_post(handler, path: str, body) -> None:
+    """POST /api/dw/query：body 支持 JSON 对象或 form-urlencoded；其余路径 404。
+
+    注：portal_api.do_POST 的分派接线属 L2 重启批次（本文件先提供可测入口，
+    届时在 do_POST 内 `if path == "/api/dw/query": import api_dw_registry; api_dw_registry.handle_post(...)`）。
+    """
+    if path != "/api/dw/query":
+        _query_fail(handler, "not found", 404,
+                    "not_found: 未知 POST 端点 %r" % path, state="not_found")
+        return
+    raw = body.decode("utf-8", "replace") if isinstance(body, (bytes, bytearray)) else str(body or "")
+    raw = raw.strip()
+    data = None
+    if raw.startswith("{"):
+        try:
+            data = json.loads(raw)
+        except ValueError as exc:
+            _query_fail(handler, "body JSON 解析失败", 400,
+                        "bad_param: %s" % str(exc)[:160])
+            return
+    params = {}
+    if isinstance(data, dict):
+        for k, v in data.items():
+            if isinstance(v, (list, dict)):
+                params[k] = [json.dumps(v, ensure_ascii=False)]
+            elif isinstance(v, bool):
+                params[k] = ["1" if v else "0"]
+            elif v is None:
+                params[k] = [""]
+            else:
+                params[k] = [str(v)]
+    elif raw:
+        params = urllib.parse.parse_qs(raw)
+    get = lambda k, d="": (params.get(k) or [d])[0].strip()  # noqa: E731
+    _query_http(handler, get)
+
+
 def handle_get(handler, path: str, qs: str) -> None:
     params = urllib.parse.parse_qs(qs or "")
     get = lambda k, d="": (params.get(k) or [d])[0].strip()  # noqa: E731
@@ -183,6 +283,9 @@ def handle_get(handler, path: str, qs: str) -> None:
                 handler._json({"ok": True, **obj, **_envelope("no_data", empty, dd)})
                 return
             handler._json({"ok": True, **obj, **_ok_envelope(dd)})
+            return
+        if path == "/api/dw/query":
+            _query_http(handler, get)
             return
         handler._json(*_fail("not found", 404, state="not_found",
                              reason="not_found: 未知 /api/dw 端点 %r" % path))

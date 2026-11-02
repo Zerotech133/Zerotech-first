@@ -1,0 +1,2575 @@
+{
+ "generated_at": "2026-11-02T12:19:45+08:00",
+ "schema": "dataset_query_coverage/v1（S3-06 P1；四维 L/P/F/A 实测，engine=DatasetRegistry.query）",
+ "total_raw": 314,
+ "denominator": 310,
+ "excluded": [
+  {
+   "id": "tdx_ts_eco_cal",
+   "reason": "N/A: 空目录（无数据）"
+  },
+  {
+   "id": "tdx_ts_fund_company",
+   "reason": "N/A: 空目录（无数据）"
+  },
+  {
+   "id": "tdx_ts_stock_company",
+   "reason": "N/A: 空目录（无数据）"
+  },
+  {
+   "id": "ts_git",
+   "reason": "N/A: .git 伪数据集"
+  }
+ ],
+ "ready": 283,
+ "coverage_raw_pct": 90.13,
+ "coverage_clean_pct": 91.29,
+ "by_domain": {
+  "ready:学习派生": 14,
+  "ready:平台运行": 20,
+  "ready:开源情报": 13,
+  "ready:接口数据": 236,
+  "total:学习派生": 29,
+  "total:平台运行": 25,
+  "total:开源情报": 19,
+  "total:接口数据": 241
+ },
+ "by_kind": {
+  "ready:corpus_layer": 2,
+  "ready:dir": 242,
+  "ready:sqlite_table": 39,
+  "total:corpus_layer": 14,
+  "total:dir": 258,
+  "total:sqlite_table": 42
+ },
+ "by_carrier": {
+  "ready:dir_parquet": 244,
+  "ready:sqlite_table": 39,
+  "total:dir_empty": 3,
+  "total:dir_parquet": 244,
+  "total:sqlite_table": 42,
+  "total:unknown": 25
+ },
+ "failures": [
+  {
+   "dataset_id": "guba",
+   "kind": "dir",
+   "carrier": "unknown",
+   "failed_dims": [
+    "L",
+    "P",
+    "F",
+    "A"
+   ],
+   "reason": "not_supported: QueryNotSupported: jsonl 载体 P1 仅支持 columns 投影 + limit/offset 前 N 行；where/order/count/since 属 P2（明确 fail-visible，不回退 sample）"
+  },
+  {
+   "dataset_id": "intel_anns_pdf",
+   "kind": "dir",
+   "carrier": "unknown",
+   "failed_dims": [
+    "L",
+    "P",
+    "F",
+    "A"
+   ],
+   "reason": "not_supported: QueryNotSupported: jsonl 载体 P1 仅支持 columns 投影 + limit/offset 前 N 行；where/order/count/since 属 P2（明确 fail-visible，不回退 sample）"
+  },
+  {
+   "dataset_id": "xq_xq_comment",
+   "kind": "sqlite_table",
+   "carrier": "sqlite_table",
+   "failed_dims": [
+    "L",
+    "P"
+   ],
+   "reason": "L: query 返回 0 行（state=no_data, reason=查询命中 0 行（过滤条件/时间下界无匹配））; P: 总数为 0/不可达"
+  },
+  {
+   "dataset_id": "xq_xq_quote",
+   "kind": "sqlite_table",
+   "carrier": "sqlite_table",
+   "failed_dims": [
+    "L",
+    "P"
+   ],
+   "reason": "L: query 返回 0 行（state=no_data, reason=查询命中 0 行（过滤条件/时间下界无匹配））; P: 总数为 0/不可达"
+  },
+  {
+   "dataset_id": "xq_xq_kline",
+   "kind": "sqlite_table",
+   "carrier": "sqlite_table",
+   "failed_dims": [
+    "L",
+    "P"
+   ],
+   "reason": "L: query 返回 0 行（state=no_data, reason=查询命中 0 行（过滤条件/时间下界无匹配））; P: 总数为 0/不可达"
+  },
+  {
+   "dataset_id": "research_reports",
+   "kind": "dir",
+   "carrier": "unknown",
+   "failed_dims": [
+    "L",
+    "P",
+    "F",
+    "A"
+   ],
+   "reason": "not_supported: QueryNotSupported: jsonl 载体 P1 仅支持 columns 投影 + limit/offset 前 N 行；where/order/count/since 属 P2（明确 fail-visible，不回退 sample）"
+  },
+  {
+   "dataset_id": "research_shadow",
+   "kind": "dir",
+   "carrier": "unknown",
+   "failed_dims": [
+    "L",
+    "P",
+    "F",
+    "A"
+   ],
+   "reason": "not_supported: QueryNotSupported: jsonl 载体 P1 仅支持 columns 投影 + limit/offset 前 N 行；where/order/count/since 属 P2（明确 fail-visible，不回退 sample）"
+  },
+  {
+   "dataset_id": "kb_reports",
+   "kind": "dir",
+   "carrier": "unknown",
+   "failed_dims": [
+    "L",
+    "P",
+    "F",
+    "A"
+   ],
+   "reason": "not_supported: QueryNotSupported: jsonl 载体 P1 仅支持 columns 投影 + limit/offset 前 N 行；where/order/count/since 属 P2（明确 fail-visible，不回退 sample）"
+  },
+  {
+   "dataset_id": "kb_notes",
+   "kind": "dir",
+   "carrier": "unknown",
+   "failed_dims": [
+    "L",
+    "P",
+    "F",
+    "A"
+   ],
+   "reason": "not_supported: QueryNotSupported: jsonl 载体 P1 仅支持 columns 投影 + limit/offset 前 N 行；where/order/count/since 属 P2（明确 fail-visible，不回退 sample）"
+  },
+  {
+   "dataset_id": "knowledge_docs",
+   "kind": "dir",
+   "carrier": "unknown",
+   "failed_dims": [
+    "L",
+    "P",
+    "F",
+    "A"
+   ],
+   "reason": "not_supported: QueryNotSupported: 载体 unsupported 的 P1 行级 query 未实现（P2 文件级/语料索引）"
+  },
+  {
+   "dataset_id": "academy",
+   "kind": "dir",
+   "carrier": "unknown",
+   "failed_dims": [
+    "L",
+    "P",
+    "F",
+    "A"
+   ],
+   "reason": "not_supported: QueryNotSupported: jsonl 载体 P1 仅支持 columns 投影 + limit/offset 前 N 行；where/order/count/since 属 P2（明确 fail-visible，不回退 sample）"
+  },
+  {
+   "dataset_id": "portal_static",
+   "kind": "dir",
+   "carrier": "unknown",
+   "failed_dims": [
+    "L",
+    "P",
+    "F",
+    "A"
+   ],
+   "reason": "not_supported: QueryNotSupported: 载体 unsupported 的 P1 行级 query 未实现（P2 文件级/语料索引）"
+  },
+  {
+   "dataset_id": "portal_data",
+   "kind": "dir",
+   "carrier": "unknown",
+   "failed_dims": [
+    "L",
+    "P",
+    "F",
+    "A"
+   ],
+   "reason": "not_supported: QueryNotSupported: jsonl 载体 P1 仅支持 columns 投影 + limit/offset 前 N 行；where/order/count/since 属 P2（明确 fail-visible，不回退 sample）"
+  },
+  {
+   "dataset_id": "agent_tasks",
+   "kind": "dir",
+   "carrier": "unknown",
+   "failed_dims": [
+    "L",
+    "P",
+    "F",
+    "A"
+   ],
+   "reason": "not_supported: QueryNotSupported: jsonl 载体 P1 仅支持 columns 投影 + limit/offset 前 N 行；where/order/count/since 属 P2（明确 fail-visible，不回退 sample）"
+  },
+  {
+   "dataset_id": "news_collector_data",
+   "kind": "dir",
+   "carrier": "unknown",
+   "failed_dims": [
+    "L",
+    "P",
+    "F",
+    "A"
+   ],
+   "reason": "not_supported: QueryNotSupported: jsonl 载体 P1 仅支持 columns 投影 + limit/offset 前 N 行；where/order/count/since 属 P2（明确 fail-visible，不回退 sample）"
+  },
+  {
+   "dataset_id": "yt_raw_zip",
+   "kind": "corpus_layer",
+   "carrier": "unknown",
+   "failed_dims": [
+    "L",
+    "P",
+    "F",
+    "A"
+   ],
+   "reason": "not_supported: QueryNotSupported: 载体 unsupported 的 P1 行级 query 未实现（P2 文件级/语料索引）"
+  },
+  {
+   "dataset_id": "yt_transcripts",
+   "kind": "corpus_layer",
+   "carrier": "unknown",
+   "failed_dims": [
+    "L",
+    "P",
+    "F",
+    "A"
+   ],
+   "reason": "not_supported: QueryNotSupported: jsonl 载体 P1 仅支持 columns 投影 + limit/offset 前 N 行；where/order/count/since 属 P2（明确 fail-visible，不回退 sample）"
+  },
+  {
+   "dataset_id": "yt_knowledge_units",
+   "kind": "corpus_layer",
+   "carrier": "unknown",
+   "failed_dims": [
+    "L",
+    "P",
+    "F",
+    "A"
+   ],
+   "reason": "not_supported: QueryNotSupported: jsonl 载体 P1 仅支持 columns 投影 + limit/offset 前 N 行；where/order/count/since 属 P2（明确 fail-visible，不回退 sample）"
+  },
+  {
+   "dataset_id": "yt_distill",
+   "kind": "corpus_layer",
+   "carrier": "unknown",
+   "failed_dims": [
+    "L",
+    "P",
+    "F",
+    "A"
+   ],
+   "reason": "not_supported: QueryNotSupported: jsonl 载体 P1 仅支持 columns 投影 + limit/offset 前 N 行；where/order/count/since 属 P2（明确 fail-visible，不回退 sample）"
+  },
+  {
+   "dataset_id": "yt_faq",
+   "kind": "corpus_layer",
+   "carrier": "unknown",
+   "failed_dims": [
+    "L",
+    "P",
+    "F",
+    "A"
+   ],
+   "reason": "not_supported: QueryNotSupported: jsonl 载体 P1 仅支持 columns 投影 + limit/offset 前 N 行；where/order/count/since 属 P2（明确 fail-visible，不回退 sample）"
+  },
+  {
+   "dataset_id": "yt_index",
+   "kind": "corpus_layer",
+   "carrier": "unknown",
+   "failed_dims": [
+    "L",
+    "P",
+    "F",
+    "A"
+   ],
+   "reason": "not_supported: QueryNotSupported: jsonl 载体 P1 仅支持 columns 投影 + limit/offset 前 N 行；where/order/count/since 属 P2（明确 fail-visible，不回退 sample）"
+  },
+  {
+   "dataset_id": "yt_rag",
+   "kind": "corpus_layer",
+   "carrier": "unknown",
+   "failed_dims": [
+    "L",
+    "P",
+    "F",
+    "A"
+   ],
+   "reason": "not_supported: QueryNotSupported: 载体 unsupported 的 P1 行级 query 未实现（P2 文件级/语料索引）"
+  },
+  {
+   "dataset_id": "yt_learning_cards",
+   "kind": "corpus_layer",
+   "carrier": "unknown",
+   "failed_dims": [
+    "L",
+    "P",
+    "F",
+    "A"
+   ],
+   "reason": "not_supported: QueryNotSupported: 载体 unsupported 的 P1 行级 query 未实现（P2 文件级/语料索引）"
+  },
+  {
+   "dataset_id": "yt_briefs",
+   "kind": "corpus_layer",
+   "carrier": "unknown",
+   "failed_dims": [
+    "L",
+    "P",
+    "F",
+    "A"
+   ],
+   "reason": "not_supported: QueryNotSupported: 载体 unsupported 的 P1 行级 query 未实现（P2 文件级/语料索引）"
+  },
+  {
+   "dataset_id": "yt_review",
+   "kind": "corpus_layer",
+   "carrier": "unknown",
+   "failed_dims": [
+    "L",
+    "P",
+    "F",
+    "A"
+   ],
+   "reason": "not_supported: QueryNotSupported: 载体 unsupported 的 P1 行级 query 未实现（P2 文件级/语料索引）"
+  },
+  {
+   "dataset_id": "yt_reports",
+   "kind": "corpus_layer",
+   "carrier": "unknown",
+   "failed_dims": [
+    "L",
+    "P",
+    "F",
+    "A"
+   ],
+   "reason": "not_supported: QueryNotSupported: 载体 unsupported 的 P1 行级 query 未实现（P2 文件级/语料索引）"
+  },
+  {
+   "dataset_id": "yt_learning_db",
+   "kind": "corpus_layer",
+   "carrier": "unknown",
+   "failed_dims": [
+    "L",
+    "P",
+    "F",
+    "A"
+   ],
+   "reason": "not_supported: QueryNotSupported: 载体 unsupported 的 P1 行级 query 未实现（P2 文件级/语料索引）"
+  }
+ ],
+ "carriers": {
+  "ts_git": "unknown",
+  "ts_adj_factor": "dir_parquet",
+  "ts_anns_d": "dir_parquet",
+  "ts_bak_basic": "dir_parquet",
+  "ts_balancesheet": "dir_parquet",
+  "ts_cashflow": "dir_parquet",
+  "ts_cb_basic": "dir_parquet",
+  "ts_cb_daily": "dir_parquet",
+  "ts_cyq_chips": "dir_parquet",
+  "ts_cyq_perf": "dir_parquet",
+  "ts_daily": "dir_parquet",
+  "ts_daily_basic": "dir_parquet",
+  "ts_etf_mins": "dir_parquet",
+  "ts_express": "dir_parquet",
+  "ts_fina_indicator": "dir_parquet",
+  "ts_forecast": "dir_parquet",
+  "ts_fx_daily": "dir_parquet",
+  "ts_hk_balancesheet": "dir_parquet",
+  "ts_hk_basic": "dir_parquet",
+  "ts_hk_cashflow": "dir_parquet",
+  "ts_hk_daily": "dir_parquet",
+  "ts_hk_fina_indicator": "dir_parquet",
+  "ts_hk_hold": "dir_parquet",
+  "ts_hk_income": "dir_parquet",
+  "ts_idx_mins": "dir_parquet",
+  "ts_income": "dir_parquet",
+  "ts_index_daily": "dir_parquet",
+  "ts_index_global": "dir_parquet",
+  "ts_index_member_all": "dir_parquet",
+  "ts_index_weight": "dir_parquet",
+  "ts_irm_qa_sh": "dir_parquet",
+  "ts_irm_qa_sh_probe": "dir_parquet",
+  "ts_irm_qa_sz": "dir_parquet",
+  "ts_irm_qa_sz_probe": "dir_parquet",
+  "ts_limit_list_d": "dir_parquet",
+  "ts_major_news": "dir_parquet",
+  "ts_margin_detail": "dir_parquet",
+  "ts_moneyflow": "dir_parquet",
+  "ts_moneyflow_hsgt": "dir_parquet",
+  "ts_news": "dir_parquet",
+  "ts_npr": "dir_parquet",
+  "ts_quarantine_prod_overwrite": "dir_parquet",
+  "ts_report_rc": "dir_parquet",
+  "ts_research_report": "dir_parquet",
+  "ts_sf_month": "dir_parquet",
+  "ts_shibor": "dir_parquet",
+  "ts_shibor_lpr": "dir_parquet",
+  "ts_stk_holdernumber": "dir_parquet",
+  "ts_stk_managers": "dir_parquet",
+  "ts_stk_mins": "dir_parquet",
+  "ts_stk_pledge": "dir_parquet",
+  "ts_stock_basic": "dir_parquet",
+  "ts_stock_company": "dir_parquet",
+  "ts_sw_classify_l1": "dir_parquet",
+  "ts_sw_l1_member": "dir_parquet",
+  "ts_sw_mins": "dir_parquet",
+  "ts_top10_floatholders": "dir_parquet",
+  "ts_top10_holders": "dir_parquet",
+  "ts_top_inst": "dir_parquet",
+  "ts_top_list": "dir_parquet",
+  "ts_trade_cal": "dir_parquet",
+  "ts_us_balancesheet": "dir_parquet",
+  "ts_us_basic": "dir_parquet",
+  "ts_us_cashflow": "dir_parquet",
+  "ts_us_daily": "dir_parquet",
+  "ts_us_fina_indicator": "dir_parquet",
+  "ts_us_income": "dir_parquet",
+  "tdx_dknife_snap": "dir_parquet",
+  "tdx_tdx_sector_daily": "dir_parquet",
+  "tdx_tdx_sector_def": "dir_parquet",
+  "tdx_tdx_sector_member": "dir_parquet",
+  "tdx_tdx_sector_min": "dir_parquet",
+  "tdx_tdx_sector_min_tail": "dir_parquet",
+  "tdx_ts_adj_factor": "dir_parquet",
+  "tdx_ts_anns_d": "dir_parquet",
+  "tdx_ts_bak_basic": "dir_parquet",
+  "tdx_ts_balancesheet": "dir_parquet",
+  "tdx_ts_balancesheet_vip": "dir_parquet",
+  "tdx_ts_block_trade": "dir_parquet",
+  "tdx_ts_broker_recommend": "dir_parquet",
+  "tdx_ts_bse_mapping": "dir_parquet",
+  "tdx_ts_cashflow": "dir_parquet",
+  "tdx_ts_cashflow_vip": "dir_parquet",
+  "tdx_ts_cb_basic": "dir_parquet",
+  "tdx_ts_cb_call": "dir_parquet",
+  "tdx_ts_cb_daily": "dir_parquet",
+  "tdx_ts_cb_issue": "dir_parquet",
+  "tdx_ts_cb_price_chg": "dir_parquet",
+  "tdx_ts_cb_rate": "dir_parquet",
+  "tdx_ts_cb_share": "dir_parquet",
+  "tdx_ts_cctv_news": "dir_parquet",
+  "tdx_ts_cn_cpi": "dir_parquet",
+  "tdx_ts_cn_gdp": "dir_parquet",
+  "tdx_ts_cn_m": "dir_parquet",
+  "tdx_ts_cn_pmi": "dir_parquet",
+  "tdx_ts_cn_ppi": "dir_parquet",
+  "tdx_ts_cyq_perf": "dir_parquet",
+  "tdx_ts_daily": "dir_parquet",
+  "tdx_ts_daily_basic": "dir_parquet",
+  "tdx_ts_daily_info": "dir_parquet",
+  "tdx_ts_dc_daily": "dir_parquet",
+  "tdx_ts_dc_hot": "dir_parquet",
+  "tdx_ts_dc_index": "dir_parquet",
+  "tdx_ts_dc_member": "dir_parquet",
+  "tdx_ts_disclosure_date": "dir_parquet",
+  "tdx_ts_dividend": "dir_parquet",
+  "tdx_ts_dividend_vip": "dir_parquet",
+  "tdx_ts_eco_cal": "dir_empty",
+  "tdx_ts_emotion_daily": "dir_parquet",
+  "tdx_ts_emotion_ladder": "dir_parquet",
+  "tdx_ts_etf_basic": "dir_parquet",
+  "tdx_ts_express": "dir_parquet",
+  "tdx_ts_express_vip": "dir_parquet",
+  "tdx_ts_fina_audit": "dir_parquet",
+  "tdx_ts_fina_indicator": "dir_parquet",
+  "tdx_ts_fina_indicator_vip": "dir_parquet",
+  "tdx_ts_fina_mainbz": "dir_parquet",
+  "tdx_ts_fina_mainbz_vip": "dir_parquet",
+  "tdx_ts_forecast": "dir_parquet",
+  "tdx_ts_forecast_vip": "dir_parquet",
+  "tdx_ts_fund_adj": "dir_parquet",
+  "tdx_ts_fund_basic": "dir_parquet",
+  "tdx_ts_fund_company": "dir_empty",
+  "tdx_ts_fund_daily": "dir_parquet",
+  "tdx_ts_fund_div": "dir_parquet",
+  "tdx_ts_fund_manager": "dir_parquet",
+  "tdx_ts_fund_portfolio": "dir_parquet",
+  "tdx_ts_fund_share": "dir_parquet",
+  "tdx_ts_fut_basic": "dir_parquet",
+  "tdx_ts_fut_daily": "dir_parquet",
+  "tdx_ts_fut_holding": "dir_parquet",
+  "tdx_ts_fut_mapping": "dir_parquet",
+  "tdx_ts_fut_settle": "dir_parquet",
+  "tdx_ts_fut_weekly_detail": "dir_parquet",
+  "tdx_ts_fut_weekly_monthly": "dir_parquet",
+  "tdx_ts_fut_wsr": "dir_parquet",
+  "tdx_ts_fx_daily": "dir_parquet",
+  "tdx_ts_fx_obasic": "dir_parquet",
+  "tdx_ts_ggt_daily": "dir_parquet",
+  "tdx_ts_ggt_top10": "dir_parquet",
+  "tdx_ts_global_fut": "dir_parquet",
+  "tdx_ts_hk_basic": "dir_parquet",
+  "tdx_ts_hk_daily": "dir_parquet",
+  "tdx_ts_hk_daily_adj": "dir_parquet",
+  "tdx_ts_hk_hold": "dir_parquet",
+  "tdx_ts_hk_tradecal": "dir_parquet",
+  "tdx_ts_hm_detail": "dir_parquet",
+  "tdx_ts_hm_list": "dir_parquet",
+  "tdx_ts_hs_const": "dir_parquet",
+  "tdx_ts_hsgt_top10": "dir_parquet",
+  "tdx_ts_income": "dir_parquet",
+  "tdx_ts_income_vip": "dir_parquet",
+  "tdx_ts_index_basic": "dir_parquet",
+  "tdx_ts_index_classify": "dir_parquet",
+  "tdx_ts_index_daily": "dir_parquet",
+  "tdx_ts_index_dailybasic": "dir_parquet",
+  "tdx_ts_index_global": "dir_parquet",
+  "tdx_ts_index_member_all": "dir_parquet",
+  "tdx_ts_index_monthly": "dir_parquet",
+  "tdx_ts_index_weekly": "dir_parquet",
+  "tdx_ts_index_weight": "dir_parquet",
+  "tdx_ts_kpl_concept": "dir_parquet",
+  "tdx_ts_kpl_concept_cons": "dir_parquet",
+  "tdx_ts_kpl_list": "dir_parquet",
+  "tdx_ts_limit_cpt_list": "dir_parquet",
+  "tdx_ts_limit_list_ths": "dir_parquet",
+  "tdx_ts_limit_step": "dir_parquet",
+  "tdx_ts_major_news": "dir_parquet",
+  "tdx_ts_margin": "dir_parquet",
+  "tdx_ts_margin_detail": "dir_parquet",
+  "tdx_ts_margin_secs": "dir_parquet",
+  "tdx_ts_moneyflow": "dir_parquet",
+  "tdx_ts_moneyflow_dc": "dir_parquet",
+  "tdx_ts_moneyflow_hsgt": "dir_parquet",
+  "tdx_ts_moneyflow_ind_dc": "dir_parquet",
+  "tdx_ts_moneyflow_ind_ths": "dir_parquet",
+  "tdx_ts_moneyflow_mkt_dc": "dir_parquet",
+  "tdx_ts_moneyflow_ths": "dir_parquet",
+  "tdx_ts_monthly": "dir_parquet",
+  "tdx_ts_namechange": "dir_parquet",
+  "tdx_ts_new_share": "dir_parquet",
+  "tdx_ts_news": "dir_parquet",
+  "tdx_ts_opt_basic": "dir_parquet",
+  "tdx_ts_opt_daily": "dir_parquet",
+  "tdx_ts_pledge_detail": "dir_parquet",
+  "tdx_ts_pledge_stat": "dir_parquet",
+  "tdx_ts_repo_daily": "dir_parquet",
+  "tdx_ts_report_rc": "dir_parquet",
+  "tdx_ts_repurchase": "dir_parquet",
+  "tdx_ts_rt_min": "dir_parquet",
+  "tdx_ts_sge_basic": "dir_parquet",
+  "tdx_ts_sge_daily": "dir_parquet",
+  "tdx_ts_share_float": "dir_parquet",
+  "tdx_ts_slb_len": "dir_parquet",
+  "tdx_ts_slb_sec": "dir_parquet",
+  "tdx_ts_stk_ah_comparison": "dir_parquet",
+  "tdx_ts_stk_auction": "dir_parquet",
+  "tdx_ts_stk_auction_c": "dir_parquet",
+  "tdx_ts_stk_auction_o": "dir_parquet",
+  "tdx_ts_stk_factor": "dir_parquet",
+  "tdx_ts_stk_factor_pro": "dir_parquet",
+  "tdx_ts_stk_holdernumber": "dir_parquet",
+  "tdx_ts_stk_holdertrade": "dir_parquet",
+  "tdx_ts_stk_limit": "dir_parquet",
+  "tdx_ts_stk_managers": "dir_parquet",
+  "tdx_ts_stk_premarket": "dir_parquet",
+  "tdx_ts_stk_rewards": "dir_parquet",
+  "tdx_ts_stk_surv": "dir_parquet",
+  "tdx_ts_stk_week_month_adj": "dir_parquet",
+  "tdx_ts_stk_weekly_monthly": "dir_parquet",
+  "tdx_ts_stock_basic": "dir_parquet",
+  "tdx_ts_stock_company": "dir_empty",
+  "tdx_ts_stock_hsgt": "dir_parquet",
+  "tdx_ts_suspend_d": "dir_parquet",
+  "tdx_ts_sz_daily_info": "dir_parquet",
+  "tdx_ts_tdx_index": "dir_parquet",
+  "tdx_ts_tdx_member": "dir_parquet",
+  "tdx_ts_ths_daily": "dir_parquet",
+  "tdx_ts_ths_hot": "dir_parquet",
+  "tdx_ts_ths_index": "dir_parquet",
+  "tdx_ts_ths_member": "dir_parquet",
+  "tdx_ts_top10_floatholders": "dir_parquet",
+  "tdx_ts_top10_holders": "dir_parquet",
+  "tdx_ts_top_inst": "dir_parquet",
+  "tdx_ts_top_list": "dir_parquet",
+  "tdx_ts_trade_cal": "dir_parquet",
+  "tdx_ts_us_basic": "dir_parquet",
+  "tdx_ts_us_daily": "dir_parquet",
+  "tdx_ts_us_tbr": "dir_parquet",
+  "tdx_ts_us_tradecal": "dir_parquet",
+  "tdx_ts_us_trycr": "dir_parquet",
+  "tdx_ts_us_tycr": "dir_parquet",
+  "tdx_ts_weekly": "dir_parquet",
+  "tdx_ts_wz_index": "dir_parquet",
+  "xueqiu": "dir_parquet",
+  "cnopendata": "dir_parquet",
+  "guba": "unknown",
+  "ashare": "dir_parquet",
+  "tushare_curated": "dir_parquet",
+  "tushare_staging": "dir_parquet",
+  "tushare_v2": "dir_parquet",
+  "intel_anns_pdf": "unknown",
+  "intel_anns_d": "dir_parquet",
+  "intel_major_news": "dir_parquet",
+  "intel_news": "dir_parquet",
+  "intel_irm_qa": "dir_parquet",
+  "intel_research_report": "dir_parquet",
+  "xq_xq_status": "sqlite_table",
+  "xq_xq_status_classified": "sqlite_table",
+  "xq_xq_hot_post": "sqlite_table",
+  "xq_xq_comment": "sqlite_table",
+  "xq_xq_quote": "sqlite_table",
+  "xq_xq_kline": "sqlite_table",
+  "tdx_stock_notice": "sqlite_table",
+  "tdx_stock_report": "sqlite_table",
+  "tdx_stock_news": "sqlite_table",
+  "research_hypotheses": "sqlite_table",
+  "research_reports": "unknown",
+  "research_shadow": "unknown",
+  "kb_reports": "unknown",
+  "kb_notes": "unknown",
+  "knowledge_docs": "unknown",
+  "academy": "unknown",
+  "portal_static": "unknown",
+  "portal_data": "unknown",
+  "agent_tasks": "unknown",
+  "paper_orders": "sqlite_table",
+  "paper_ledger": "sqlite_table",
+  "paper_account": "sqlite_table",
+  "paper_positions": "sqlite_table",
+  "paper_equity_marks": "sqlite_table",
+  "paper_positions_snapshot": "sqlite_table",
+  "paper_decision_snapshots": "sqlite_table",
+  "quant_chanlun_pool": "sqlite_table",
+  "quant_nine_dim_rc": "sqlite_table",
+  "quant_nine_dim_rc_meta": "sqlite_table",
+  "quant_nine_dim_fina": "sqlite_table",
+  "quant_nine_dim_fc": "sqlite_table",
+  "quant_nine_dim_fc_meta": "sqlite_table",
+  "news_news": "sqlite_table",
+  "news_runs": "sqlite_table",
+  "news_ai_briefs": "sqlite_table",
+  "news_ai_reviews": "sqlite_table",
+  "news_quotes": "sqlite_table",
+  "news_jev_review_queue": "sqlite_table",
+  "automation_runs": "dir_parquet",
+  "news_collector_data": "unknown",
+  "yt_raw_zip": "unknown",
+  "yt_normalized": "dir_parquet",
+  "yt_cleaned_comments": "dir_parquet",
+  "yt_transcripts": "unknown",
+  "yt_knowledge_units": "unknown",
+  "yt_distill": "unknown",
+  "yt_faq": "unknown",
+  "yt_index": "unknown",
+  "yt_rag": "unknown",
+  "yt_learning_cards": "unknown",
+  "yt_briefs": "unknown",
+  "yt_review": "unknown",
+  "yt_reports": "unknown",
+  "yt_learning_db": "unknown",
+  "yt_dim_channel": "sqlite_table",
+  "yt_dim_topic": "sqlite_table",
+  "yt_dim_video": "sqlite_table",
+  "yt_bridge_video_topic": "sqlite_table",
+  "yt_fact_comment": "sqlite_table",
+  "yt_fact_knowledge_unit": "sqlite_table",
+  "yt_fact_transcript": "sqlite_table",
+  "yt_fact_faq_semantic": "sqlite_table",
+  "yt_bridge_faq_comment": "sqlite_table",
+  "yt_meta_faq_build": "sqlite_table",
+  "yt_fact_transcript_seg": "sqlite_table",
+  "yt_meta_etl": "sqlite_table",
+  "yt_fact_transcript_signal": "sqlite_table"
+ },
+ "dims": {
+  "ts_git": {
+   "L": false,
+   "P": false,
+   "F": false,
+   "A": false
+  },
+  "ts_adj_factor": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_anns_d": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_bak_basic": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_balancesheet": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_cashflow": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_cb_basic": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_cb_daily": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_cyq_chips": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_cyq_perf": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_daily": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_daily_basic": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_etf_mins": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_express": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_fina_indicator": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_forecast": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_fx_daily": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_hk_balancesheet": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_hk_basic": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_hk_cashflow": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_hk_daily": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_hk_fina_indicator": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_hk_hold": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_hk_income": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_idx_mins": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_income": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_index_daily": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_index_global": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_index_member_all": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_index_weight": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_irm_qa_sh": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_irm_qa_sh_probe": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_irm_qa_sz": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_irm_qa_sz_probe": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_limit_list_d": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_major_news": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_margin_detail": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_moneyflow": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_moneyflow_hsgt": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_news": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_npr": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_quarantine_prod_overwrite": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_report_rc": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_research_report": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_sf_month": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_shibor": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_shibor_lpr": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_stk_holdernumber": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_stk_managers": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_stk_mins": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_stk_pledge": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_stock_basic": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_stock_company": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_sw_classify_l1": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_sw_l1_member": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_sw_mins": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_top10_floatholders": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_top10_holders": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_top_inst": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_top_list": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_trade_cal": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_us_balancesheet": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_us_basic": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_us_cashflow": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_us_daily": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_us_fina_indicator": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "ts_us_income": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_dknife_snap": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_tdx_sector_daily": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_tdx_sector_def": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_tdx_sector_member": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_tdx_sector_min": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_tdx_sector_min_tail": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_adj_factor": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_anns_d": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_bak_basic": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_balancesheet": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_balancesheet_vip": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_block_trade": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_broker_recommend": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_bse_mapping": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_cashflow": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_cashflow_vip": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_cb_basic": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_cb_call": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_cb_daily": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_cb_issue": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_cb_price_chg": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_cb_rate": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_cb_share": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_cctv_news": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_cn_cpi": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_cn_gdp": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_cn_m": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_cn_pmi": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_cn_ppi": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_cyq_perf": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_daily": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_daily_basic": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_daily_info": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_dc_daily": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_dc_hot": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_dc_index": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_dc_member": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_disclosure_date": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_dividend": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_dividend_vip": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_eco_cal": {
+   "L": false,
+   "P": false,
+   "F": false,
+   "A": false
+  },
+  "tdx_ts_emotion_daily": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_emotion_ladder": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_etf_basic": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_express": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_express_vip": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_fina_audit": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_fina_indicator": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_fina_indicator_vip": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_fina_mainbz": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_fina_mainbz_vip": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_forecast": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_forecast_vip": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_fund_adj": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_fund_basic": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_fund_company": {
+   "L": false,
+   "P": false,
+   "F": false,
+   "A": false
+  },
+  "tdx_ts_fund_daily": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_fund_div": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_fund_manager": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_fund_portfolio": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_fund_share": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_fut_basic": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_fut_daily": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_fut_holding": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_fut_mapping": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_fut_settle": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_fut_weekly_detail": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_fut_weekly_monthly": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_fut_wsr": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_fx_daily": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_fx_obasic": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_ggt_daily": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_ggt_top10": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_global_fut": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_hk_basic": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_hk_daily": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_hk_daily_adj": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_hk_hold": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_hk_tradecal": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_hm_detail": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_hm_list": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_hs_const": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_hsgt_top10": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_income": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_income_vip": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_index_basic": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_index_classify": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_index_daily": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_index_dailybasic": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_index_global": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_index_member_all": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_index_monthly": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_index_weekly": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_index_weight": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_kpl_concept": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_kpl_concept_cons": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_kpl_list": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_limit_cpt_list": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_limit_list_ths": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_limit_step": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_major_news": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_margin": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_margin_detail": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_margin_secs": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_moneyflow": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_moneyflow_dc": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_moneyflow_hsgt": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_moneyflow_ind_dc": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_moneyflow_ind_ths": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_moneyflow_mkt_dc": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_moneyflow_ths": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_monthly": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_namechange": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_new_share": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_news": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_opt_basic": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_opt_daily": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_pledge_detail": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_pledge_stat": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_repo_daily": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_report_rc": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_repurchase": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_rt_min": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_sge_basic": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_sge_daily": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_share_float": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_slb_len": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_slb_sec": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_stk_ah_comparison": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_stk_auction": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_stk_auction_c": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_stk_auction_o": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_stk_factor": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_stk_factor_pro": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_stk_holdernumber": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_stk_holdertrade": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_stk_limit": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_stk_managers": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_stk_premarket": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_stk_rewards": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_stk_surv": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_stk_week_month_adj": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_stk_weekly_monthly": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_stock_basic": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_stock_company": {
+   "L": false,
+   "P": false,
+   "F": false,
+   "A": false
+  },
+  "tdx_ts_stock_hsgt": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_suspend_d": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_sz_daily_info": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_tdx_index": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_tdx_member": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_ths_daily": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_ths_hot": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_ths_index": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_ths_member": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_top10_floatholders": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_top10_holders": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_top_inst": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_top_list": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_trade_cal": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_us_basic": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_us_daily": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_us_tbr": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_us_tradecal": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_us_trycr": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_us_tycr": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_weekly": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_ts_wz_index": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "xueqiu": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "cnopendata": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "guba": {
+   "L": false,
+   "P": false,
+   "F": false,
+   "A": false
+  },
+  "ashare": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tushare_curated": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tushare_staging": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tushare_v2": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "intel_anns_pdf": {
+   "L": false,
+   "P": false,
+   "F": false,
+   "A": false
+  },
+  "intel_anns_d": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "intel_major_news": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "intel_news": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "intel_irm_qa": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "intel_research_report": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "xq_xq_status": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "xq_xq_status_classified": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "xq_xq_hot_post": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "xq_xq_comment": {
+   "L": false,
+   "P": false,
+   "F": false,
+   "A": true
+  },
+  "xq_xq_quote": {
+   "L": false,
+   "P": false,
+   "F": false,
+   "A": true
+  },
+  "xq_xq_kline": {
+   "L": false,
+   "P": false,
+   "F": false,
+   "A": true
+  },
+  "tdx_stock_notice": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_stock_report": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "tdx_stock_news": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "research_hypotheses": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "research_reports": {
+   "L": false,
+   "P": false,
+   "F": false,
+   "A": false
+  },
+  "research_shadow": {
+   "L": false,
+   "P": false,
+   "F": false,
+   "A": false
+  },
+  "kb_reports": {
+   "L": false,
+   "P": false,
+   "F": false,
+   "A": false
+  },
+  "kb_notes": {
+   "L": false,
+   "P": false,
+   "F": false,
+   "A": false
+  },
+  "knowledge_docs": {
+   "L": false,
+   "P": false,
+   "F": false,
+   "A": false
+  },
+  "academy": {
+   "L": false,
+   "P": false,
+   "F": false,
+   "A": false
+  },
+  "portal_static": {
+   "L": false,
+   "P": false,
+   "F": false,
+   "A": false
+  },
+  "portal_data": {
+   "L": false,
+   "P": false,
+   "F": false,
+   "A": false
+  },
+  "agent_tasks": {
+   "L": false,
+   "P": false,
+   "F": false,
+   "A": false
+  },
+  "paper_orders": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "paper_ledger": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "paper_account": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "paper_positions": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "paper_equity_marks": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "paper_positions_snapshot": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "paper_decision_snapshots": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "quant_chanlun_pool": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "quant_nine_dim_rc": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "quant_nine_dim_rc_meta": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "quant_nine_dim_fina": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "quant_nine_dim_fc": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "quant_nine_dim_fc_meta": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "news_news": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "news_runs": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "news_ai_briefs": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "news_ai_reviews": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "news_quotes": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "news_jev_review_queue": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "automation_runs": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "news_collector_data": {
+   "L": false,
+   "P": false,
+   "F": false,
+   "A": false
+  },
+  "yt_raw_zip": {
+   "L": false,
+   "P": false,
+   "F": false,
+   "A": false
+  },
+  "yt_normalized": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "yt_cleaned_comments": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "yt_transcripts": {
+   "L": false,
+   "P": false,
+   "F": false,
+   "A": false
+  },
+  "yt_knowledge_units": {
+   "L": false,
+   "P": false,
+   "F": false,
+   "A": false
+  },
+  "yt_distill": {
+   "L": false,
+   "P": false,
+   "F": false,
+   "A": false
+  },
+  "yt_faq": {
+   "L": false,
+   "P": false,
+   "F": false,
+   "A": false
+  },
+  "yt_index": {
+   "L": false,
+   "P": false,
+   "F": false,
+   "A": false
+  },
+  "yt_rag": {
+   "L": false,
+   "P": false,
+   "F": false,
+   "A": false
+  },
+  "yt_learning_cards": {
+   "L": false,
+   "P": false,
+   "F": false,
+   "A": false
+  },
+  "yt_briefs": {
+   "L": false,
+   "P": false,
+   "F": false,
+   "A": false
+  },
+  "yt_review": {
+   "L": false,
+   "P": false,
+   "F": false,
+   "A": false
+  },
+  "yt_reports": {
+   "L": false,
+   "P": false,
+   "F": false,
+   "A": false
+  },
+  "yt_learning_db": {
+   "L": false,
+   "P": false,
+   "F": false,
+   "A": false
+  },
+  "yt_dim_channel": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "yt_dim_topic": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "yt_dim_video": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "yt_bridge_video_topic": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "yt_fact_comment": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "yt_fact_knowledge_unit": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "yt_fact_transcript": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "yt_fact_faq_semantic": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "yt_bridge_faq_comment": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "yt_meta_faq_build": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "yt_fact_transcript_seg": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "yt_meta_etl": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  },
+  "yt_fact_transcript_signal": {
+   "L": true,
+   "P": true,
+   "F": true,
+   "A": true
+  }
+ }
+}

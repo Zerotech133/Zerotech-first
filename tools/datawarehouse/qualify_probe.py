@@ -3,7 +3,8 @@
 
 每张表只读四类证据：
 1) catalog 条目（store/layout/date_col/files/rows）；
-2) 磁盘实况（store、parquet 文件、抽样 footer：行数/行组/schema/最新业务日）；
+2) 磁盘实况（store、parquet 文件、抽样 footer：行数/行组/schema/最新业务日；
+   sqlite 表只读行数/日期列 max；jsonl store 流式抽样：文件数/行数/最新 mtime/日期列 max）；
 3) 表自身 manifest（**按 catalog 条目 `manifest` 字段解析**，如 tdx/_manifest.json；字段缺失或
    文件不可读时回退 tushare manifest 并 fail-visible 标 evidence_partial）；
 4) 新鲜度（最新业务日 vs 今天、lag、抽样行数是否为 0）。
@@ -70,6 +71,12 @@ MAX_PART_FOOTER_SCAN = 80
 SQLITE_SUFFIXES = (".db", ".sqlite", ".sqlite3")
 SQLITE_DATE_CANDIDATES = ("trade_date", "pub_date", "notice_date", "ann_date",
                           "created_at", "updated_at", "report_date", "end_date")
+# 2026-11-02 task-54：jsonl store 只读探针（guba_posts 等；此前只认 parquet/sqlite 会误判 no_parquet）
+JSONL_SUFFIXES = (".jsonl",)
+JSONL_DATE_CANDIDATES = ("_fetched_at", "fetched_at", "created_at", "date", "ts",
+                         "trade_date", "pub_date", "ann_date", "updated_at")
+MAX_JSONL_FILES = 40  # 抽样文件上限（按 mtime 新→旧 + 保证含最大文件）
+MAX_JSONL_LINES_PER_FILE = 2000  # 单文件流式行数上限（超限 truncated=true，不静默全量）
 # 年频日期列名（task-47）：这些列的值按"年"语义归一为年末（YYYY1231）
 YEAR_DATE_COLS = frozenset({"year", "report_year", "fiscal_year", "ann_year"})
 ALLOWED_REGISTRY_FIELDS = {
@@ -494,6 +501,148 @@ def probe_sqlite_table(store: Path, table: str, entry: dict | None) -> dict:
     return info
 
 
+def _is_jsonl_store(entry: dict | None) -> bool:
+    """catalog store 是否 jsonl（layout=jsonl 或 store 后缀 .jsonl；task-54）。"""
+    e = entry or {}
+    layout = str(e.get("layout") or "").lower()
+    store = str(e.get("store") or "").lower().split("?")[0]
+    return layout == "jsonl" or store.endswith(JSONL_SUFFIXES)
+
+
+def _iter_jsonl(store: Path) -> tuple[list[FileInfo], int, list[str]]:
+    """递归列 *.jsonl；返回 (文件, 顶层文件数, 一级子目录名)。"""
+    files: list[FileInfo] = []
+    top = 0
+    nested_dirs: set[str] = set()
+    if store.is_file() and store.suffix.lower() == ".jsonl":
+        st = store.stat()
+        return [FileInfo(store, store.name, st.st_size, st.st_mtime, None, None)], 1, []
+    if not store.is_dir():
+        return [], 0, []
+    stack = [store]
+    while stack:
+        cur = stack.pop()
+        try:
+            with os.scandir(cur) as it:
+                for ent in it:
+                    try:
+                        if ent.is_dir(follow_symlinks=False):
+                            if cur == store:
+                                nested_dirs.add(ent.name)
+                            stack.append(Path(ent.path))
+                        elif ent.name.lower().endswith(".jsonl"):
+                            st = ent.stat()
+                            rel = str(Path(ent.path).relative_to(store)).replace("\\", "/")
+                            if Path(ent.path).parent == store:
+                                top += 1
+                            files.append(FileInfo(Path(ent.path), rel, st.st_size,
+                                                  st.st_mtime, None, None))
+                    except OSError:
+                        continue
+        except OSError:
+            continue
+    return files, top, sorted(nested_dirs)
+
+
+def probe_jsonl_store(store: Path, entry: dict | None,
+                      max_files: int = MAX_JSONL_FILES,
+                      max_lines_per_file: int = MAX_JSONL_LINES_PER_FILE) -> dict:
+    """jsonl store 只读探针（task-54）：文件数/抽样行数/最新 mtime/日期列 max。
+
+    - 抽样：**跳过 0 字节空文件**后按 mtime 新→旧取前 max_files 个（并保证含最大文件）；每文件流式读到
+      max_lines_per_file 行（超限 truncated=True，不静默全量扫描）；
+    - 日期列：catalog date_col 优先；catalog 缺失或数据中不存在时依次尝试
+      JSONL_DATE_CANDIDATES（_fetched_at/created_at/date/ts...），命中则
+      date_source=jsonl_candidate_max；都没有 → no_date_column（caller 落 partial reason）；
+    - 缺失 store / 空目录 / 全部文件不可读 / 全部行不可解析 → caller 标 reason（fail-visible）。
+    """
+    e = entry or {}
+    files, top, nested = _iter_jsonl(store)
+    info = {
+        "path": str(store), "exists": store.exists(), "file_count": len(files),
+        "files_top_level": top, "nested_dirs": nested,
+        "files_sampled": [], "files_scanned": 0, "lines_sampled": 0,
+        "rows_sampled": 0, "bad_lines": 0, "empty_files": 0,
+        "nonempty_file_count": 0,
+        "latest_mtime": None, "latest": None, "latest_file": None,
+        "date_col_used": None, "date_source": None, "schema_first30": [],
+        "truncated": False, "broken_files": [], "max_files": max_files,
+        "max_lines_per_file": max_lines_per_file, "error": None,
+    }
+    if not files:
+        return info
+    # 2026-11-02 task-54 实测：guba 432 文件中 237 个为 0 字节（mtime 最新但无行）——
+    # 抽样必须跳过空文件，否则日期列 max 恒为 None/旧值（会误判 stale/no_date）。
+    info["empty_files"] = sum(1 for f in files if f.size == 0)
+    info["nonempty_file_count"] = len(files) - info["empty_files"]
+    info["latest_mtime"] = dt.datetime.fromtimestamp(
+        max(f.mtime for f in files)).strftime("%Y-%m-%d %H:%M")
+    nonempty = [f for f in files if f.size > 0]
+    ordered = sorted(nonempty, key=lambda x: (x.mtime, x.size, x.rel), reverse=True)
+    sampled = ordered[:max_files]
+    if nonempty:
+        biggest = max(nonempty, key=lambda x: (x.size, x.rel))
+        if all(x.path != biggest.path for x in sampled):
+            sampled = sampled[:max(0, max_files - 1)] + [biggest]
+    info["files_sampled"] = [f.rel for f in sampled]
+    info["files_scanned"] = len(sampled)
+    catalog_date_col = e.get("date_col") or e.get("date_column")
+    date_key = date_source = None
+    latest = None
+    for f in sampled:
+        try:
+            scanned = 0
+            parsed = 0
+            with f.path.open("r", encoding="utf-8", errors="replace") as fh:
+                for line in fh:
+                    scanned += 1
+                    if scanned > max_lines_per_file:
+                        info["truncated"] = True
+                        break
+                    text = line.strip()
+                    if not text:
+                        continue
+                    try:
+                        obj = json.loads(text)
+                    except ValueError:
+                        info["bad_lines"] += 1
+                        continue
+                    if not isinstance(obj, dict):
+                        info["bad_lines"] += 1
+                        continue
+                    parsed += 1
+                    if date_key is None:
+                        if not info["schema_first30"]:
+                            info["schema_first30"] = list(obj)[:30]
+                        if catalog_date_col and catalog_date_col in obj:
+                            date_key, date_source = catalog_date_col, "jsonl_max"
+                        else:
+                            cand = next((c for c in JSONL_DATE_CANDIDATES if c in obj), None)
+                            if cand:
+                                date_key = cand
+                                date_source = "jsonl_candidate_max"
+                    if date_key is not None:
+                        raw = obj.get(date_key)
+                        if raw is not None:
+                            val = date_parser(date_key)(raw)
+                            if val and (latest is None or val > latest):
+                                latest = val
+                                info["latest_file"] = f.rel
+            if scanned == 0:
+                info["empty_files"] += 1
+            info["lines_sampled"] += min(scanned, max_lines_per_file)
+            info["rows_sampled"] += parsed
+        except OSError as exc:
+            info["broken_files"].append({"file": f.rel, "error": str(exc)[:120]})
+            continue
+    info["latest"] = latest
+    info["date_col_used"] = date_key
+    info["date_source"] = date_source
+    if info["broken_files"] and len(info["broken_files"]) >= info["files_scanned"]:
+        info["error"] = "all_files_unreadable"
+    return info
+
+
 def manifest_keys(data) -> set:
     if not isinstance(data, dict):
         return set()
@@ -546,6 +695,21 @@ def _summary(card: dict) -> str:
             base = "sqlite 表缺失（%s）" % (sqlite_info.get("tables") or [])
         else:
             base = "sqlite 表 %s，%d 行" % (sqlite_info.get("table"), card["rows_sampled"])
+    elif card.get("jsonl") is not None:
+        ji = card["jsonl"]
+        if not ji.get("exists"):
+            base = "jsonl store 缺失"
+        elif ji.get("error"):
+            base = "jsonl 读取失败"
+        elif ji.get("file_count") == 0:
+            base = "store 在但无 jsonl"
+        elif card["rows_sampled"] == 0:
+            base = "jsonl 抽样 0 行（坏行 %d）" % int(ji.get("bad_lines") or 0)
+        else:
+            base = "jsonl store：%d 文件（顶层 %d），抽样 %d 文件 %d 行%s" % (
+                ji.get("file_count") or 0, ji.get("files_top_level") or 0,
+                card["sample_count"], card["rows_sampled"],
+                "，已截断" if ji.get("truncated") else "")
     elif not card["store_exists"]:
         base = "store 缺失"
     elif card["files_on_disk"] == 0:
@@ -584,6 +748,13 @@ def _unsupported_reason(card: dict) -> str:
             return ("资格取证批次1：sqlite 表 %s 行数=%d、最新=%s（manifest %s），待发布/覆盖核验"
                     % (si.get("table"), si.get("rows"), si.get("latest") or "无日期列",
                        card.get("manifest_state")))
+        if card.get("jsonl") is not None:
+            ji = card["jsonl"]
+            return ("资格取证批次1：jsonl %d 文件、抽样 %d 文件 %d 行、最新=%s（%s），"
+                    "待发布/覆盖核验" % (
+                        ji.get("file_count") or 0, ji.get("files_scanned") or 0,
+                        card.get("rows_sampled") or 0,
+                        card.get("latest_business_date") or "无日期列", card.get("latest_source")))
         if card.get("date_check") == STATIC_DATE_EXEMPT:
             # fail-visible：静态豁免必须显式标注来源（whitelist/catalog_static），不静默当普通 ok
             suffix = "；manifest_status=not_applicable（不参与 manifest 检查）" \
@@ -608,10 +779,18 @@ def _unsupported_reason(card: dict) -> str:
         gap = "catalog 指定 manifest 不可读（%s）" % (card.get("manifest_path") or "路径缺失")
     elif "manifest_fallback_tushare" in card["reasons"]:
         gap = "catalog 未指定 manifest，回退 tushare（%s）" % (card.get("manifest_path") or "-")
+    elif "jsonl_error" in card["reasons"]:
+        gap = "jsonl 读取失败（%s）" % ((card.get("jsonl") or {}).get("error") or "-")
+    elif "no_jsonl" in card["reasons"]:
+        gap = "store 内无 jsonl"
+    elif "jsonl_bad_lines" in card["reasons"]:
+        gap = "jsonl 全部行无法解析（bad_lines）"
+    elif "jsonl_all_empty" in card["reasons"]:
+        gap = "jsonl 全为空文件（0 行）"
     elif not card["store_exists"]:
         gap = "store 缺失"
     elif card["files_on_disk"] == 0:
-        gap = "store 内无 parquet"
+        gap = ("store 内无 jsonl" if card.get("jsonl") is not None else "store 内无 parquet")
     elif card["rows_sampled"] == 0:
         gap = "抽样文件 0 行"
     elif card["manifest_state"] == "missing":
@@ -656,6 +835,7 @@ def probe_table(table: str, entry: dict, mkeys: set, today: dt.date,
         # 2026-11-02 task-47：日历/未来期表例外（catalog future_ok=True，date_col 允许未来日期）
         "future_ok": bool(entry.get("future_ok")),
         "sqlite": None,
+        "jsonl": None,
         "part_scan": None,
         "store_exists": bool(store_raw) and store.exists(),
         "files_on_disk": 0,
@@ -723,6 +903,45 @@ def probe_table(table: str, entry: dict, mkeys: set, today: dt.date,
             card["latest_source"] = "sqlite_max"
         elif card["date_column"]:
             card["latest_source"] = "sqlite_no_date"
+        else:
+            card["latest_source"] = "no_date_column"
+    # 2026-11-02 task-54：jsonl store 只读探针（替代 parquet-only 误判 no_parquet/bad）
+    elif _is_jsonl_store(entry):
+        jsonl_info = probe_jsonl_store(store, entry)
+        card["jsonl"] = jsonl_info
+        card["sample_strategy"] = "jsonl_stream"
+        card["files_on_disk"] = int(jsonl_info.get("file_count") or 0)
+        card["files_top_level"] = int(jsonl_info.get("files_top_level") or 0)
+        card["nested_dirs"] = jsonl_info.get("nested_dirs") or []
+        card["sampled_files"] = jsonl_info.get("files_sampled") or []
+        card["sample_count"] = int(jsonl_info.get("files_scanned") or 0)
+        card["rows_sampled"] = int(jsonl_info.get("rows_sampled") or 0)
+        card["schema_first30"] = (jsonl_info.get("schema_first30") or [])[:30]
+        if not jsonl_info.get("exists"):
+            fatal = "store_missing"
+        elif jsonl_info.get("error"):
+            fatal = "jsonl_error"
+        elif card["files_on_disk"] == 0:
+            fatal = "no_jsonl"
+        elif card["rows_sampled"] == 0:
+            fatal = "zero_rows_sampled"
+        else:
+            fatal = None
+        if fatal:
+            card["reasons"] = [fatal]
+            if fatal == "zero_rows_sampled":
+                if jsonl_info.get("bad_lines"):
+                    card["reasons"].append("jsonl_bad_lines")
+                if (jsonl_info.get("file_count")
+                        and jsonl_info.get("empty_files") == jsonl_info.get("file_count")):
+                    card["reasons"].append("jsonl_all_empty")
+            card["evidence_summary"] = _summary(card)
+            card["unsupported_reason"] = _unsupported_reason(card)
+            return card
+        if jsonl_info.get("latest"):
+            card["latest_business_date"] = jsonl_info["latest"]
+            card["latest_file"] = jsonl_info.get("latest_file")
+            card["latest_source"] = jsonl_info.get("date_source") or "jsonl_max"
         else:
             card["latest_source"] = "no_date_column"
     else:
@@ -944,7 +1163,8 @@ def collect_evidence(tables, catalog: dict, manifest: dict | None, today: dt.dat
             "note": "按 catalog freq 判滞后阈值（D7/W14/M40/Q100/Y400，其余回退 7）；"
                     "静态豁免改为显式白名单（task-32，exempt_source=whitelist/catalog_static_no_date），"
                     "未声明动态表不再豁免；sqlite store 走只读表行数/日期探针；part 布局做全量 footer 扫描；"
-                    "future_ok 表允许未来日期（日历/未来期语义）；年频列（year）归一到年末",
+                    "future_ok 表允许未来日期（日历/未来期语义）；年频列（year）归一到年末；"
+                    "jsonl store 走流式抽样探针（文件数/行数/最新 mtime/日期列 max，task-54 fail-visible）",
         },
         "summary": {
             "tables": len(cards),
