@@ -21,6 +21,15 @@
     * `<img src="/logo.png">` / `/logo-icon.png` 2 处根绝对 logo → `/extensions/zhice/...`；
   全部按字节替换（UTF-8 原样），不做 PowerShell 文本读写，避免旧手工补丁引入的
   LF→CRLF 转换与漏改（WS/logo）问题；
+- **same-origin 模式（P1，/quant/ 页面包）**：`--same-origin`，或 `--api-base` 为相对路径时
+  自动启用（例：`--base-path /quant/ --api-base /quant-api/api/v1`）。补丁规则：
+    * `://${location.host}/api/v1` → `://${location.host}/quant-api/api/v1`（保留同源 host）；
+    * 裸相对 `/api/v1` → `/quant-api/api/v1`（不重复加前缀）；
+    * 根绝对 logo `/logo*.png` → `/quant/logo*.png`；
+  断言：无裸 `/api/v1`（前缀外）、无 `${location.host}/api/v1` 残留、无
+  `127.0.0.1:8105`/`5175`/`autoSession`/`zhice_auto_password`、有 `/quant-api/api/v1`；
+  VERSION.json 记录 same-origin 统计（dirty_count/autoSession/legacy_port 计数）。
+  绝对 origin 模式（默认 `http://127.0.0.1:8105/api/v1`）行为不变。
 - 不修改 Hermes 核心、不改 CSP、不重启 8787、不动 8796。
 
 退出码：0 = 构建+验证通过；1 = 构建/补丁/静态验证失败；2 = 前置条件/参数错误。
@@ -330,28 +339,76 @@ def _first_line(raw: bytes) -> str:
 # --------------------------------------------------------------------------- #
 # 补丁：把构建产物里写死的根路径/相对 API 改成扩展可用地址
 # --------------------------------------------------------------------------- #
-def _url_parts(api_base: str) -> Tuple[bytes, bytes]:
+SAME_ORIGIN_FORBIDDEN_TOKENS = ("127.0.0.1:8105", "127.0.0.1:5175",
+                                "autoSession", "zhice_auto_password")
+
+
+def resolve_same_origin(api_base: str, force: bool = False) -> bool:
+    """判定 same-origin 模式：显式 --same-origin，或 --api-base 为相对路径（以 / 开头）。"""
+    return bool(force) or str(api_base or "").startswith("/")
+
+
+def _api_parts(api_base: str,
+               same_origin: bool = False) -> Tuple[bytes, bytes, bytes]:
+    """解析 API base → (api_prefix_b, api_base_b, ws_prefix_b)。
+
+    - 绝对 origin 模式（P2-3 兼容）：api_prefix=http://host:port、ws_prefix=ws://host:port；
+    - same-origin（P1）：api_prefix=/quant-api（相对前缀）、ws_prefix=b""（不引入绝对 origin）。
+    """
     api_base = api_base.rstrip("/")
     if not api_base.endswith("/api/v1"):
         die("--api-base 必须以 /api/v1 结尾（当前 %s）" % api_base)
-    abs_prefix = api_base[: -len("/api/v1")]  # e.g. http://127.0.0.1:8105
-    netloc = abs_prefix.split("//", 1)[-1]
-    ws_prefix = "ws://" + netloc
-    return abs_prefix.encode("utf-8"), ws_prefix.encode("utf-8")
+    api_prefix = api_base[: -len("/api/v1")]
+    if same_origin:
+        if not api_prefix.startswith("/") or "//" in api_prefix:
+            die("same-origin 模式 --api-base 必须是相对路径"
+                "（例：/quant-api/api/v1），当前 %s" % api_base)
+        return api_prefix.encode("utf-8"), api_base.encode("utf-8"), b""
+    if "//" not in api_prefix:
+        die("绝对模式 --api-base 必须含 origin"
+            "（例：http://127.0.0.1:8105/api/v1），当前 %s" % api_base)
+    netloc = api_prefix.split("//", 1)[-1]
+    return (api_prefix.encode("utf-8"), api_base.encode("utf-8"),
+            ("ws://" + netloc).encode("utf-8"))
 
 
-def patch_build(out_dir: Path, api_base: str, base_path: str) -> Dict[str, Any]:
-    api_base = api_base.rstrip("/")
-    abs_prefix_b, ws_prefix_b = _url_parts(api_base)
-    api_base_b = api_base.encode("utf-8")
-    base_prefix = base_path.rstrip("/")          # /extensions/zhice
+def _url_parts(api_base: str, same_origin: bool = False) -> Tuple[bytes, bytes]:
+    """兼容旧签名：返回 (api_prefix/abs_prefix, ws_prefix)。"""
+    api_prefix_b, _api_base_b, ws_prefix_b = _api_parts(api_base, same_origin)
+    return api_prefix_b, ws_prefix_b
+
+
+def patch_build(out_dir: Path, api_base: str, base_path: str,
+                same_origin: bool = False) -> Dict[str, Any]:
+    same_origin = resolve_same_origin(api_base, same_origin)
+    api_prefix_b, api_base_b, ws_prefix_b = _api_parts(api_base, same_origin)
+    base_prefix = base_path.rstrip("/")          # /extensions/zhice 或 /quant
     base_prefix_b = base_prefix.encode("utf-8")
-    base_path_b = (base_path if base_path.endswith("/") else base_path + "/").encode("utf-8")
 
     ws_rel_b = b"://${location.host}/api/v1"
-    ws_repl_b = b"://" + abs_prefix_b.split(b"//", 1)[-1] + b"/api/v1"
-    rel_api_re = re.compile(
-        rb"(?<!" + re.escape(abs_prefix_b) + rb")(?<!" + re.escape(ws_prefix_b) + rb")/api/v1")
+    if same_origin:
+        # 同源：保留 location.host，仅补 API 前缀；裸相对 /api/v1 同样补前缀（不重复加）
+        ws_repl_b = b"://${location.host}" + api_base_b
+        rel_api_re = re.compile(
+            rb"(?<!" + re.escape(api_prefix_b) + rb")"
+            rb"(?<!" + re.escape(b"location.host") + rb")/api/v1")
+        api_repl_b = api_base_b
+        ws_rule = {"name": "location-host-to-same-origin-prefix",
+                   "from": ws_rel_b.decode("utf-8"),
+                   "to": ws_repl_b.decode("utf-8")}
+        api_rule = {"name": "relative-api-to-same-origin-prefix",
+                    "from": "/api/v1 (relative)", "to": api_base}
+    else:
+        ws_repl_b = b"://" + api_prefix_b.split(b"//", 1)[-1] + b"/api/v1"
+        rel_api_re = re.compile(
+            rb"(?<!" + re.escape(api_prefix_b) + rb")"
+            rb"(?<!" + re.escape(ws_prefix_b) + rb")/api/v1")
+        api_repl_b = api_base_b
+        ws_rule = {"name": "ws-host-to-api-host",
+                   "from": ws_rel_b.decode("utf-8"),
+                   "to": ws_repl_b.decode("utf-8")}
+        api_rule = {"name": "relative-api-to-absolute",
+                    "from": "/api/v1 (relative)", "to": api_base}
     logo_res = {
         "logo-icon.png": re.compile(rb"(?<!" + re.escape(base_prefix_b) + rb")/logo-icon\.png"),
         "logo.png": re.compile(rb"(?<!" + re.escape(base_prefix_b) + rb")/logo\.png"),
@@ -360,13 +417,11 @@ def patch_build(out_dir: Path, api_base: str, base_path: str) -> Dict[str, Any]:
     report: Dict[str, Any] = {
         "api_base": api_base,
         "base_path": base_path,
+        "same_origin": bool(same_origin),
+        "api_prefix": api_prefix_b.decode("utf-8"),
         "rules": [
-            {"name": "ws-host-to-api-host",
-             "from": ws_rel_b.decode("utf-8"),
-             "to": ws_repl_b.decode("utf-8")},
-            {"name": "relative-api-to-absolute",
-             "from": "/api/v1 (relative)",
-             "to": api_base},
+            ws_rule,
+            api_rule,
             {"name": "root-logo-to-base",
              "from": "/logo*.png (root absolute)",
              "to": base_prefix + "/logo*.png"},
@@ -380,7 +435,7 @@ def patch_build(out_dir: Path, api_base: str, base_path: str) -> Dict[str, Any]:
         ws_hits = raw.count(ws_rel_b)
         raw = raw.replace(ws_rel_b, ws_repl_b)
         api_hits = len(rel_api_re.findall(raw))
-        raw = rel_api_re.sub(api_base_b, raw)
+        raw = rel_api_re.sub(api_repl_b, raw)
         logo_hits: Dict[str, int] = {}
         for name, pattern in logo_res.items():
             repl = base_prefix_b + b"/" + name.encode("utf-8")
@@ -400,14 +455,44 @@ def patch_build(out_dir: Path, api_base: str, base_path: str) -> Dict[str, Any]:
         report["counts"]["api_replaced"] += api_hits
         report["counts"]["logo_replaced"] += sum(logo_hits.values())
 
-    report["assertions"] = assert_patched(out_dir, api_base, base_path)
+    if same_origin:
+        # same-origin：CSS 里的根绝对 logo 同样补 base 前缀（其余 CSS 断言在 assert 阶段）
+        css_files: Dict[str, Any] = {}
+        for css in sorted((out_dir / "assets").glob("*.css")):
+            raw = css.read_bytes()
+            orig_len = len(raw)
+            hits = 0
+            for name, pattern in logo_res.items():
+                repl = base_prefix_b + b"/" + name.encode("utf-8")
+                n = len(pattern.findall(raw))
+                hits += n
+                raw = pattern.sub(repl, raw)
+            if raw != css.read_bytes():
+                css.write_bytes(raw)
+            css_files[css.name] = {"bytes_before": orig_len,
+                                   "bytes_after": len(raw), "logo_replaced": hits}
+            report["counts"]["logo_replaced"] += hits
+        report["css_files"] = css_files
+
+    report["assertions"] = assert_patched(out_dir, api_base, base_path,
+                                          same_origin=same_origin)
     return report
 
 
-def assert_patched(out_dir: Path, api_base: str, base_path: str) -> Dict[str, Any]:
-    abs_prefix_b, ws_prefix_b = _url_parts(api_base)
+def assert_patched(out_dir: Path, api_base: str, base_path: str,
+                   same_origin: bool = False) -> Dict[str, Any]:
+    same_origin = resolve_same_origin(api_base, same_origin)
+    api_prefix_b, api_base_b, ws_prefix_b = _api_parts(api_base, same_origin)
     base_prefix_b = base_path.rstrip("/").encode("utf-8")
-    checks: Dict[str, Any] = {"ok": True, "details": {}}
+    ref_prefix = base_path.rstrip("/") + "/"
+    checks: Dict[str, Any] = {
+        "ok": True,
+        "same_origin": bool(same_origin),
+        "details": {},
+        "counts": {"api_prefix_hits": 0, "bare_api_remaining": 0,
+                   "forbidden_token_hits": 0, "forbidden_hits": {},
+                   "ws_relative_remaining": 0, "relative_logo_remaining": 0},
+    }
 
     def fail(name: str, detail: Any) -> None:
         checks["ok"] = False
@@ -418,14 +503,37 @@ def assert_patched(out_dir: Path, api_base: str, base_path: str) -> Dict[str, An
         text = raw.decode("utf-8", "replace")
         bad_api = []
         for m in re.finditer(rb"/api/v1", raw):
-            pre = raw[max(0, m.start() - len(abs_prefix_b)):m.start()]
-            pre_ws = raw[max(0, m.start() - len(ws_prefix_b)):m.start()]
-            if pre != abs_prefix_b and pre_ws != ws_prefix_b:
+            pre = raw[max(0, m.start() - len(api_prefix_b)):m.start()]
+            if same_origin:
+                ok_prefix = (pre == api_prefix_b)
+            else:
+                pre_ws = raw[max(0, m.start() - len(ws_prefix_b)):m.start()]
+                ok_prefix = (pre == api_prefix_b or pre_ws == ws_prefix_b)
+            if ok_prefix:
+                checks["counts"]["api_prefix_hits"] += 1
+            else:
                 bad_api.append(text[max(0, m.start() - 40):m.start() + 30])
         if bad_api:
+            checks["counts"]["bare_api_remaining"] += len(bad_api)
             fail("relative_api_remaining", {"file": js.name, "samples": bad_api[:3]})
-        if b"://${location.host}/api/v1" in raw:
-            fail("ws_relative_remaining", {"file": js.name})
+        if same_origin:
+            if (b"${location.host}/api/v1" in raw
+                    or b"location.host}/api/v1" in raw):
+                checks["counts"]["ws_relative_remaining"] += 1
+                fail("ws_relative_remaining", {"file": js.name})
+            for token in SAME_ORIGIN_FORBIDDEN_TOKENS:
+                n = raw.count(token.encode("utf-8"))
+                if n:
+                    checks["counts"]["forbidden_token_hits"] += n
+                    checks["counts"]["forbidden_hits"][token] = (
+                        checks["counts"]["forbidden_hits"].get(token, 0) + n)
+                    fail("forbidden_token", {"file": js.name, "token": token, "count": n})
+            if api_base_b not in raw:
+                fail("same_origin_api_missing",
+                     {"file": js.name, "expected": api_base})
+        else:
+            if b"://${location.host}/api/v1" in raw:
+                fail("ws_relative_remaining", {"file": js.name})
         rel_logo = []
         for name in ("logo.png", "logo-icon.png"):
             needle = b"/" + name.encode()
@@ -434,6 +542,7 @@ def assert_patched(out_dir: Path, api_base: str, base_path: str) -> Dict[str, An
                 if pre != base_prefix_b:
                     rel_logo.append(text[max(0, m.start() - 40):m.start() + 30])
         if rel_logo:
+            checks["counts"]["relative_logo_remaining"] += len(rel_logo)
             fail("relative_logo_remaining", {"file": js.name, "samples": rel_logo[:3]})
 
     index = out_dir / "index.html"
@@ -441,25 +550,38 @@ def assert_patched(out_dir: Path, api_base: str, base_path: str) -> Dict[str, An
         fail("index_missing", str(index))
         return checks
     html = index.read_text(encoding="utf-8", errors="replace")
-    if base_path not in html:
-        fail("index_base_missing", base_path)
-    refs = re.findall(r'(?:src|href)="(/extensions/zhice/[^"]+)"', html)
+    if ref_prefix not in html:
+        fail("index_base_missing", ref_prefix)
+    refs = re.findall(r'(?:src|href)="(%s[^"]+)"' % re.escape(ref_prefix), html)
     missing = []
     for ref in refs:
-        target = out_dir / ref[len("/extensions/zhice/"):]
+        target = out_dir / ref[len(ref_prefix):]
         if not target.exists():
             missing.append(ref)
     if missing:
         fail("index_refs_missing", missing)
-    if re.search(r'(?:src|href)="/(?!extensions/zhice/)', html):
-        fail("index_root_absolute_refs", re.findall(r'(?:src|href)="(/[^"]*)"', html)[:5])
+    if re.search(r'(?:src|href)="/(?!%s)' % re.escape(ref_prefix[1:]), html):
+        fail("index_root_absolute_refs",
+             re.findall(r'(?:src|href)="(/[^"]*)"', html)[:5])
     checks["details"]["index_ref_count"] = len(refs)
+    checks["details"]["ref_prefix"] = ref_prefix
     for css in sorted((out_dir / "assets").glob("*.css")):
         text = css.read_text(encoding="utf-8", errors="replace")
-        if re.search(r"url\(/(?!/extensions/zhice/)", text):
+        if re.search(r"url\(/(?!%s)" % re.escape(ref_prefix[1:]), text):
             fail("css_root_absolute_url", css.name)
-        if "/api/v1" in text or "/logo" in text:
-            fail("css_unexpected_paths", css.name)
+        if same_origin:
+            for token in SAME_ORIGIN_FORBIDDEN_TOKENS:
+                if token not in text:
+                    continue
+                checks["counts"]["forbidden_token_hits"] += 1
+                checks["counts"]["forbidden_hits"][token] = (
+                    checks["counts"]["forbidden_hits"].get(token, 0) + 1)
+                fail("css_forbidden_token", {"file": css.name, "token": token})
+            if "/api/v1" in text and api_prefix_b.decode("utf-8") not in text:
+                fail("css_unexpected_paths", css.name)
+        else:
+            if "/api/v1" in text or "/logo" in text:
+                fail("css_unexpected_paths", css.name)
     return checks
 
 
@@ -1041,6 +1163,79 @@ def write_readme(deliverables: Path, manifest: Dict[str, Any]) -> Path:
     return path
 
 
+def write_readme_same_origin(deliverables: Path, manifest: Dict[str, Any]) -> Path:
+    """same-origin（/quant/ 页面包）模式的交付 README（不套用 Hermes 扩展模板）。"""
+    build = manifest["build"]
+    source = manifest["source"]
+    out = manifest["output"]
+    sa = manifest.get("same_origin") or {}
+    clean = sa.get("clean") or {}
+    lines: List[str] = []
+    add = lines.append
+    add("# Zhice 前端 same-origin 构建包（`/quant/` 页面包）v1")
+    add("")
+    add("> 日期：%s ｜ 任务：P1 same-origin clean build（W1/UF-17 前置）"
+        % manifest.get("built_at", ""))
+    add("> 模式：**same-origin**（VITE_BASE=`%s`、VITE_API_BASE=`%s`）"
+        % (build["env"].get("VITE_BASE"), build["env"].get("VITE_API_BASE")))
+    add("> 版本：`%s` ｜ 源 commit：`%s` ｜ 源 dirty_count：%s"
+        % (manifest.get("version"), (source.get("head") or "n/a")[:12],
+           source.get("dirty_count", 0)))
+    add("")
+    add("## 1. 一条命令重建")
+    add("")
+    add("```powershell")
+    add("cd C:\\项目\\老田的AI助手")
+    add("python -X utf8 tools\\hermes_acad1_build.py --source <zhice_frontend> `")
+    add("  --base-path /quant/ --api-base /quant-api/api/v1 --same-origin `")
+    add("  --router hash --markets CN,US,HK,CRYPTO --dest <stage> --deliverables <deliv> --no-verify --json")
+    add("```")
+    add("")
+    add("## 2. 构建/断言摘要")
+    add("")
+    add("| 项 | 值 |")
+    add("|---|---|")
+    add("| typecheck | `%s` |" % build.get("typecheck"))
+    add("| vite_rc | `%s` |" % build.get("vite_rc"))
+    add("| 产物 | `%s`（%d 文件 / %s） |"
+        % (out["root"], out["file_count"], human_bytes(out["total_bytes"])))
+    add("| VERSION.json 版本 | `%s` |" % manifest.get("version"))
+    add("| same-origin 断言 | ok=`%s` |" % (sa.get("enabled")))
+    add("| dirty_count | %s（要求 0） |" % source.get("dirty_count", 0))
+    add("| autoSession 命中 | %s（要求 0） |" % clean.get("auto_session_hits", "n/a"))
+    add("| 5175/8105 残留 | %s（要求 0） |" % clean.get("legacy_port_hits", "n/a"))
+    add("| 裸 /api/v1 残留 | %s（要求 0） |" % clean.get("bare_api_remaining", "n/a"))
+    add("| /quant-api/api/v1 命中 | %s |" % clean.get("api_prefix_hits", "n/a"))
+    add("")
+    add("## 3. 同源补丁规则")
+    add("")
+    for rule in (manifest.get("patch") or {}).get("rules", []):
+        add("- `%s`：`%s` → `%s`" % (rule.get("name"), rule.get("from"), rule.get("to")))
+    add("")
+    add("## 4. 边界 / 未做")
+    add("")
+    add("- 仅构建 + 补丁 + 断言；**未发布**到 `portal/quant/`、未改 nginx、未启停服务、未 git commit。")
+    add("- `/quant/` nginx 路由属 L2 批准项（L1_待批包 §6），本包可先落盘待批。")
+    add("- 源码 `autoSession`/`zhice_auto_password` 下线属 P2 前置（本次实测未检出）。")
+    add("")
+    add("## 5. 回滚")
+    add("")
+    add("- 本包为独立构建目录（stage/deliverables），回滚=删除该目录；无生产/运行时改动。")
+    add("")
+    add("## 6. 源可重现信息")
+    add("")
+    add("- 源码仓库：`%s`（branch `%s`，HEAD `%s`）"
+        % (source.get("repo"), source.get("branch"), source.get("head")))
+    add("- 源码树摘要（src/public/构建配置）sha256：`%s`"
+        % (source.get("digest") or {}).get("digest"))
+    add("")
+    add("---")
+    add("_本文件由 `tools/hermes_acad1_build.py`（same-origin 模式）自动生成。_")
+    path = deliverables / "README.md"
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return path
+
+
 def write_json(path: Path, payload: Dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=1) + "\n",
@@ -1090,6 +1285,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--deliverables", default=str(DEFAULT_DELIVERABLES), help="交付清单目录")
     parser.add_argument("--base-path", default=DEFAULT_BASE_PATH, help="VITE_BASE（必须以 / 开头/结尾）")
     parser.add_argument("--api-base", default=DEFAULT_API_BASE, help="VITE_API_BASE（以 /api/v1 结尾）")
+    parser.add_argument("--same-origin", action="store_true",
+                        help="same-origin 模式：--api-base 用相对前缀（如 /quant-api/api/v1），"
+                             "API/WS/logo 全部同源相对，不引入绝对 origin")
     parser.add_argument("--markets", default=DEFAULT_MARKETS, help="VITE_ENABLED_MARKETS")
     parser.add_argument("--router", default=DEFAULT_ROUTER, help="VITE_ROUTER")
     parser.add_argument("--skip-typecheck", action="store_true", help="跳过 tsc -b（不推荐）")
@@ -1120,6 +1318,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         die("源码目录不是 Vite 工程（缺 package.json）：%s" % source)
     if not api_base.endswith("/api/v1"):
         die("--api-base 必须以 /api/v1 结尾：%s" % api_base)
+    same_origin = resolve_same_origin(api_base, args.same_origin)
+    _api_parts(api_base, same_origin)  # 参数/模式校验 fail-fast（die=rc2）
     deliverables.mkdir(parents=True, exist_ok=True)
     version = build_version_id(
         (source_git_info(source).get("head") or "nogit"))
@@ -1127,7 +1327,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     # --verify-only：只复核现有产物 + 清单
     if args.verify_only:
         return cmd_verify_only(args, dest, deliverables, base_path, api_base,
-                               started, source)
+                               started, source, same_origin)
 
     with BuildLock(LOCK_FILE, args.force):
         info("构建开始：version=%s" % version)
@@ -1145,6 +1345,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         build_started = now_local()
         build_info = run_build(source, out_dir, env, log_path, args.skip_typecheck)
         build_info["env"] = env_values
+        build_info["same_origin"] = bool(same_origin)
         build_info["command"] = [
             "node node_modules/vite/bin/vite.js build --outDir <tmp> --emptyOutDir",
         ]
@@ -1153,7 +1354,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         info("构建完成：%s" % build_info["assets"])
 
         patch_started = now_local()
-        patch_info = patch_build(out_dir, api_base, base_path)
+        patch_info = patch_build(out_dir, api_base, base_path, same_origin=same_origin)
         patch_info["duration_s"] = round((now_local() - patch_started).total_seconds(), 1)
         if not patch_info["assertions"]["ok"]:
             die("补丁断言失败：%s" % json.dumps(patch_info["assertions"],
@@ -1165,6 +1366,14 @@ def main(argv: Optional[List[str]] = None) -> int:
 
         # 产物清单 + VERSION.json
         out_tree = tree_files(out_dir)
+        same_origin_info: Dict[str, Any] = {
+            "enabled": bool(same_origin),
+            "base_path": base_path,
+            "api_base": api_base,
+            "api_prefix": api_base[: -len("/api/v1")] if same_origin else "",
+            "forbidden_tokens": list(SAME_ORIGIN_FORBIDDEN_TOKENS) if same_origin else [],
+            "initial_counts": patch_info["assertions"].get("counts", {}) if same_origin else {},
+        }
         manifest: Dict[str, Any] = {
             "schema": SCHEMA_VERSION,
             "version": version,
@@ -1183,6 +1392,7 @@ def main(argv: Optional[List[str]] = None) -> int:
                            "bytes": digest["bytes"]},
             },
             "build": build_info,
+            "same_origin": same_origin_info,
             "output": {"root": str(dest), "file_count": out_tree["file_count"],
                        "total_bytes": out_tree["total_bytes"],
                        "files": out_tree["files"]},
@@ -1221,11 +1431,36 @@ def main(argv: Optional[List[str]] = None) -> int:
              for k, v in out_tree["files"].items()} == dest_tree["files"])
         verify["file_count"] = dest_tree["file_count"]
         verify["total_bytes"] = dest_tree["total_bytes"]
-        verify["assert_patched"] = assert_patched(dest, api_base, base_path)
-        info("静态路径复现：用生产 Hermes handler 起本机临时端口…")
-        verify["static_path"] = static_path_check(dest.parent, dest, base_path)
-        info("静态路径复现结果：ok=%s mode=%s"
-             % (verify["static_path"]["ok"], verify["static_path"]["mode"]))
+        verify["assert_patched"] = assert_patched(dest, api_base, base_path,
+                                                  same_origin=same_origin)
+        if same_origin:
+            _sa_counts = verify["assert_patched"].get("counts", {})
+            same_origin_info["counts"] = _sa_counts
+            _fh = _sa_counts.get("forbidden_hits", {})
+            same_origin_info["clean"] = {
+                "dirty_count": manifest["source"]["dirty_count"],
+                "auto_session_hits": _fh.get("autoSession", 0),
+                "legacy_port_hits": (_fh.get("127.0.0.1:8105", 0)
+                                     + _fh.get("127.0.0.1:5175", 0)),
+                "bare_api_remaining": _sa_counts.get("bare_api_remaining", 0),
+                "api_prefix_hits": _sa_counts.get("api_prefix_hits", 0),
+            }
+            verify["static_path"] = {
+                "ok": None, "skipped": True,
+                "reason": "same-origin 模式不使用 Hermes /extensions/ 静态 handler",
+            }
+            info("same-origin 断言：dirty_count=%d autoSession=%d legacy_port=%d "
+                 "bare_api=%d api_prefix_hits=%d"
+                 % (same_origin_info["clean"]["dirty_count"],
+                    same_origin_info["clean"]["auto_session_hits"],
+                    same_origin_info["clean"]["legacy_port_hits"],
+                    same_origin_info["clean"]["bare_api_remaining"],
+                    same_origin_info["clean"]["api_prefix_hits"]))
+        else:
+            info("静态路径复现：用生产 Hermes handler 起本机临时端口…")
+            verify["static_path"] = static_path_check(dest.parent, dest, base_path)
+            info("静态路径复现结果：ok=%s mode=%s"
+                 % (verify["static_path"]["ok"], verify["static_path"]["mode"]))
         live_pub: Dict[str, Any] = {}
         rollback: Dict[str, Any] = {}
         if args.publish_live:
@@ -1297,11 +1532,14 @@ def main(argv: Optional[List[str]] = None) -> int:
         # 交付清单
         write_json(deliverables / "MANIFEST.json", manifest)
         write_json(deliverables / "VERIFY.json", verify)
-        readme_path = write_readme(deliverables, manifest)
+        if same_origin:
+            readme_path = write_readme_same_origin(deliverables, manifest)
+        else:
+            readme_path = write_readme(deliverables, manifest)
 
     # 结果回执
     exit_code = 0
-    if not manifest["verify"]["static_path"]["ok"]:
+    if manifest["verify"]["static_path"].get("ok") is False:
         exit_code = 1
     if args.publish_live and not manifest["verify"].get("live_zhice_served"):
         exit_code = 1
@@ -1333,7 +1571,8 @@ def main(argv: Optional[List[str]] = None) -> int:
 
 def cmd_verify_only(args: argparse.Namespace, dest: Path, deliverables: Path,
                     base_path: str, api_base: str, started: dt.datetime,
-                    source: Path) -> int:
+                    source: Path, same_origin: bool = False) -> int:
+    same_origin = resolve_same_origin(api_base, same_origin)
     if not dest.exists():
         die("产物目录不存在：%s" % dest)
     version_json = dest / "VERSION.json"
@@ -1349,11 +1588,15 @@ def cmd_verify_only(args: argparse.Namespace, dest: Path, deliverables: Path,
         "version": manifest.get("version"),
         "dest": str(dest),
         "file_hashes_match": tree["files"] == recorded,
-        "assert_patched": assert_patched(dest, api_base, base_path),
-        "static_path": static_path_check(dest.parent, dest, base_path) if not args.no_verify
-        else {"ok": None, "skipped": True},
+        "assert_patched": assert_patched(dest, api_base, base_path,
+                                         same_origin=same_origin),
+        "same_origin": bool(same_origin),
+        "static_path": ({"ok": None, "skipped": True,
+                         "reason": "same-origin 模式不使用 Hermes /extensions/ 静态 handler"}
+                        if (same_origin or args.no_verify)
+                        else static_path_check(dest.parent, dest, base_path)),
     }
-    if not args.no_verify:
+    if not args.no_verify and not same_origin:
         result["live_probe"] = live_probe(args.live_url, dest, base_path,
                                           args.trusted_header, args.trusted_user)
         result["live_zhice_served"] = result["live_probe"].get("zhice_served")

@@ -1,0 +1,230 @@
+{
+ "schema": "hermes-acad1-zhice-build/v1",
+ "version": "20261102_145511_f8bfac91",
+ "built_at": "2026-11-02T14:55:27+08:00",
+ "task": "P2-3 Hermes 司马徽扩展构建流水线/版本化",
+ "source": {
+  "path": "C:\\项目\\zhice-os-v2-windows-20260920\\code\\frontend",
+  "git": {
+   "git_ok": true,
+   "repo": "C:\\项目\\zhice-os-v2-windows-20260920",
+   "head": "f8bfac91c8eeca8be9271cb7b2a4a783931f67ea",
+   "branch": "master",
+   "dirty": false,
+   "dirty_count": 0,
+   "dirty_files": []
+  },
+  "head": "f8bfac91c8eeca8be9271cb7b2a4a783931f67ea",
+  "branch": "master",
+  "dirty": false,
+  "dirty_count": 0,
+  "repo": "C:\\项目\\zhice-os-v2-windows-20260920",
+  "digest": {
+   "digest": "8d8742099262a1d4e736edb705527f1852a656af3c76ceca8deb007d1976cb0e",
+   "file_count": 178,
+   "bytes": 1780850
+  }
+ },
+ "build": {
+  "out_dir": "C:\\项目\\老田的AI助手\\tmp\\hermes_acad1_build\\20261102_145511_f8bfac91\\zhice",
+  "typecheck": "pass",
+  "typecheck_rc": 0,
+  "vite_rc": 0,
+  "assets": [
+   "index-Bfo9dQYu.js",
+   "index-Dl42rMEp.css"
+  ],
+  "tools": {
+   "node": "node.EXE",
+   "node_version": "v24.20.0",
+   "vite": "8.2.1",
+   "typescript": "6.0.3"
+  },
+  "env": {
+   "VITE_BASE": "/quant/",
+   "VITE_ROUTER": "hash",
+   "VITE_ENABLED_MARKETS": "CN,US,HK,CRYPTO",
+   "VITE_API_BASE": "/quant-api/api/v1"
+  },
+  "same_origin": true,
+  "command": [
+   "node node_modules/vite/bin/vite.js build --outDir <tmp> --emptyOutDir"
+  ],
+  "built_at": "2026-11-02T14:55:27+08:00",
+  "duration_s": 15.6
+ },
+ "same_origin": {
+  "enabled": true,
+  "base_path": "/quant/",
+  "api_base": "/quant-api/api/v1",
+  "api_prefix": "/quant-api",
+  "forbidden_tokens": [
+   "127.0.0.1:8105",
+   "127.0.0.1:5175",
+   "autoSession",
+   "zhice_auto_password"
+  ],
+  "initial_counts": {
+   "api_prefix_hits": 18,
+   "bare_api_remaining": 0,
+   "forbidden_token_hits": 0,
+   "forbidden_hits": {},
+   "ws_relative_remaining": 0,
+   "relative_logo_remaining": 0
+  },
+  "counts": {
+   "api_prefix_hits": 18,
+   "bare_api_remaining": 0,
+   "forbidden_token_hits": 0,
+   "forbidden_hits": {},
+   "ws_relative_remaining": 0,
+   "relative_logo_remaining": 0
+  },
+  "clean": {
+   "dirty_count": 0,
+   "auto_session_hits": 0,
+   "legacy_port_hits": 0,
+   "bare_api_remaining": 0,
+   "api_prefix_hits": 18
+  }
+ },
+ "output": {
+  "root": "C:\\项目\\deliverables\\_tmp_quant_build_sameorigin",
+  "file_count": 8,
+  "total_bytes": 2430202,
+  "files": {
+   "apple-touch-icon.png": {
+    "sha256": "3495cab7606f62196f7bd5d7bd8c24f5f2987fd16afbf7642ea1f34ce10cd907",
+    "bytes": 24068
+   },
+   "assets/index-Bfo9dQYu.js": {
+    "sha256": "2cf6c176372c7e19b44808a742782b35a1b03228516756ccf0bbfb0455eeee1d",
+    "bytes": 1984478
+   },
+   "assets/index-Dl42rMEp.css": {
+    "sha256": "1948d2a4ae5b63a8a34443775411e612eb8f1c886db89949a2b8f98420f53a84",
+    "bytes": 16229
+   },
+   "favicon-32.png": {
+    "sha256": "bbd3795f5d8104a80ec23fc6647fd6f8b6eaf2d16009d4319dce4eb2b4b39e91",
+    "bytes": 1570
+   },
+   "index.html": {
+    "sha256": "be994d1c275b6577b92cd3039486b5e2ed7cae0225caaa8fc96734d732578a9c",
+    "bytes": 576
+   },
+   "logo-icon.png": {
+    "sha256": "8ea7de811a2f5190e3af54232c698e004a4404ee0fa62489bd683f6148480dc4",
+    "bytes": 145097
+   },
+   "logo.png": {
+    "sha256": "05ade2be5d4e85d94b0a9eb40c72cf9da7d8a0255173e79ae895d5567e73b667",
+    "bytes": 34946
+   },
+   "logo.whotalk.bak.png": {
+    "sha256": "4863b2446c51afb085a8bef1be6ce0dae99eb1ab5e80c5385151fe0dc49d9f9f",
+    "bytes": 223238
+   }
+  }
+ },
+ "patch": {
+  "api_base": "/quant-api/api/v1",
+  "base_path": "/quant/",
+  "same_origin": true,
+  "api_prefix": "/quant-api",
+  "rules": [
+   {
+    "name": "location-host-to-same-origin-prefix",
+    "from": "://${location.host}/api/v1",
+    "to": "://${location.host}/quant-api/api/v1"
+   },
+   {
+    "name": "relative-api-to-same-origin-prefix",
+    "from": "/api/v1 (relative)",
+    "to": "/quant-api/api/v1"
+   },
+   {
+    "name": "root-logo-to-base",
+    "from": "/logo*.png (root absolute)",
+    "to": "/quant/logo*.png"
+   }
+  ],
+  "files": {
+   "index-Bfo9dQYu.js": {
+    "bytes_before": 1984328,
+    "bytes_after": 1984478,
+    "ws_replaced": 1,
+    "api_replaced": 14,
+    "logo_replaced": {
+     "logo-icon.png": 0,
+     "logo.png": 0
+    },
+    "sha256": "2cf6c176372c7e19b44808a742782b35a1b03228516756ccf0bbfb0455eeee1d"
+   }
+  },
+  "counts": {
+   "ws_replaced": 1,
+   "api_replaced": 14,
+   "logo_replaced": 0
+  },
+  "css_files": {
+   "index-Dl42rMEp.css": {
+    "bytes_before": 16229,
+    "bytes_after": 16229,
+    "logo_replaced": 0
+   }
+  },
+  "assertions": {
+   "ok": true,
+   "same_origin": true,
+   "details": {
+    "index_ref_count": 4,
+    "ref_prefix": "/quant/"
+   },
+   "counts": {
+    "api_prefix_hits": 18,
+    "bare_api_remaining": 0,
+    "forbidden_token_hits": 0,
+    "forbidden_hits": {},
+    "ws_relative_remaining": 0,
+    "relative_logo_remaining": 0
+   }
+  },
+  "duration_s": 1.0
+ },
+ "boundaries": {
+  "hermes_core_changed": false,
+  "csp_changed": false,
+  "hermes_8787_restarted": false,
+  "port_8796_touched": false
+ },
+ "verify": {
+  "verified_at": "2026-11-02T14:55:28+08:00",
+  "file_hashes_match": true,
+  "file_count": 8,
+  "total_bytes": 2430202,
+  "assert_patched": {
+   "ok": true,
+   "same_origin": true,
+   "details": {
+    "index_ref_count": 4,
+    "ref_prefix": "/quant/"
+   },
+   "counts": {
+    "api_prefix_hits": 18,
+    "bare_api_remaining": 0,
+    "forbidden_token_hits": 0,
+    "forbidden_hits": {},
+    "ws_relative_remaining": 0,
+    "relative_logo_remaining": 0
+   }
+  },
+  "static_path": {
+   "ok": null,
+   "skipped": true,
+   "reason": "same-origin 模式不使用 Hermes /extensions/ 静态 handler"
+  }
+ },
+ "live_probe": {},
+ "finished_at": "2026-11-02T14:55:28+08:00"
+}
