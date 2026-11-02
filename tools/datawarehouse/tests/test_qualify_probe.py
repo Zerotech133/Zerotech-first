@@ -37,7 +37,8 @@ def write_parquet(path: Path, dates, col: str = "trade_date", stats: bool = True
 
 def entry(store: Path, date_col: str | None = "trade_date", layout: str = "by_date",
           freq: str | None = None, static_no_date: bool = False,
-          manifest_status: str | None = None, manifest: str | None = None) -> dict:
+          manifest_status: str | None = None, manifest: str | None = None,
+          future_ok: bool = False) -> dict:
     e = {"store": str(store), "layout": layout, "date_col": date_col}
     if freq is not None:
         e["freq"] = freq
@@ -47,6 +48,8 @@ def entry(store: Path, date_col: str | None = "trade_date", layout: str = "by_da
         e["manifest_status"] = manifest_status
     if manifest is not None:
         e["manifest"] = manifest
+    if future_ok:
+        e["future_ok"] = True
     return e
 
 
@@ -108,6 +111,41 @@ class TestDateHelpers(unittest.TestCase):
         for bad in ("202613", "2026-13", "2026Q0", "2026Q5", "2026-02-30",
                     "202600", "abc", "", None, True):
             self.assertIsNone(qualify_probe.norm_date(bad), bad)
+
+    def test_norm_year_date(self):
+        """task-47：年频列 YYYY → 年末 YYYY1231；非法年份 → None（fail-visible）。"""
+        self.assertEqual(qualify_probe.norm_year_date("2024"), "20241231")
+        self.assertEqual(qualify_probe.norm_year_date(2023), "20231231")
+        self.assertEqual(qualify_probe.norm_year_date("2026年"), "20261231")
+        self.assertIsNone(qualify_probe.norm_year_date("1800"))
+        self.assertIsNone(qualify_probe.norm_year_date("2101"))
+        self.assertIsNone(qualify_probe.norm_year_date("abc"))
+        self.assertIsNone(qualify_probe.norm_year_date(None))
+        # date_parser 按列语义分流：year 列 → norm_year_date，其余 → norm_date
+        self.assertIs(qualify_probe.date_parser("year"), qualify_probe.norm_year_date)
+        self.assertIs(qualify_probe.date_parser("trade_date"), qualify_probe.norm_date)
+
+    def test_probe_year_column_and_annual_threshold(self):
+        """task-47：year 列归一为年末 + freq Y 阈值（400d）→ lag 300 判 ok；超 400 判 partial。"""
+        with tempfile.TemporaryDirectory() as d:
+            store = Path(d) / "store"
+            store.mkdir()
+            write_parquet(store / "part_0000.parquet", ["2024", "2025"], col="year")
+            card = qualify_probe.probe_table(
+                "t1", entry(store, date_col="year", layout="part", freq="Y"),
+                {"t1"}, TODAY, CHECKED)
+            self.assertEqual(card["latest_business_date"], "20251231")
+            self.assertEqual(card["verdict"], "evidence_ok")
+            self.assertNotIn("stale_gt_400d", card["reasons"])
+            store2 = Path(d) / "store2"
+            store2.mkdir()
+            write_parquet(store2 / "part_0000.parquet", ["2020"], col="year")
+            card2 = qualify_probe.probe_table(
+                "t2", entry(store2, date_col="year", layout="part", freq="Y"),
+                {"t2"}, TODAY, CHECKED)
+            self.assertEqual(card2["latest_business_date"], "20201231")
+            self.assertEqual(card2["verdict"], "evidence_partial")
+            self.assertIn("stale_gt_400d", card2["reasons"])
 
     def test_probe_monthly_quarter_dates(self):
         """probe 端：月频/季频 footer 日期被解析 → 给出 latest/lag（不再 no_date_column）。"""
@@ -592,6 +630,101 @@ class TestPartSampling(unittest.TestCase):
             self.assertIsNotNone(card["part_scan"])
             self.assertGreaterEqual(card["part_scan"]["files_scanned"], 10)
             self.assertEqual(card["verdict"], "evidence_ok")
+
+
+@unittest.skipUnless(HAS_PYARROW, "pyarrow 不可用")
+class TestUnknownNonDataGovernance(unittest.TestCase):
+    """task-47：日历/未来期表例外 + build_catalog v24 字段 + 空目录 lifecycle。"""
+
+    @staticmethod
+    def _load_build_catalog():
+        import importlib.util
+        root = TOOLS.parents[1]
+        path = root / "quant_backtest" / "build_catalog.py"
+        spec = importlib.util.spec_from_file_location("build_catalog_t47", path)
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = mod
+        spec.loader.exec_module(mod)
+        return mod
+
+    def test_future_ok_table_evidence_ok(self):
+        """日历/未来期表（catalog future_ok=True）：future_date 不判 partial。"""
+        with tempfile.TemporaryDirectory() as d:
+            store = Path(d) / "store"
+            store.mkdir()
+            write_parquet(store / "d_20261120.parquet", ["20261120"])
+            write_parquet(store / "d_20261201.parquet", ["20261201"])
+            card = qualify_probe.probe_table(
+                "t1", entry(store, freq="D", future_ok=True), {"t1"}, TODAY, CHECKED)
+            self.assertEqual(card["latest_business_date"], "20261201")
+            self.assertTrue(card["future_date"])
+            self.assertTrue(card["future_ok"])
+            self.assertNotIn("future_date", card["reasons"])
+            self.assertEqual(card["verdict"], "evidence_ok")
+            self.assertIn("未来期", card["unsupported_reason"])
+
+    def test_future_date_without_exception_partial(self):
+        """无 future_ok 声明的未来日期仍判 partial（fail-visible）。"""
+        with tempfile.TemporaryDirectory() as d:
+            store = Path(d) / "store"
+            store.mkdir()
+            write_parquet(store / "d_20261201.parquet", ["20261201"])
+            card = qualify_probe.probe_table(
+                "t1", entry(store, freq="D"), {"t1"}, TODAY, CHECKED)
+            self.assertTrue(card["future_date"])
+            self.assertFalse(card["future_ok"])
+            self.assertIn("future_date", card["reasons"])
+            self.assertEqual(card["verdict"], "evidence_partial")
+
+    def test_collect_payload_future_ok_tables(self):
+        """payload date_policy 标 future_ok_tables / future_ok_applied（可见声明）。"""
+        with tempfile.TemporaryDirectory() as d:
+            s1 = Path(d) / "s1"
+            s2 = Path(d) / "s2"
+            s1.mkdir()
+            s2.mkdir()
+            write_parquet(s1 / "d_20261201.parquet", ["20261201"])
+            write_parquet(s2 / "d_20261201.parquet", ["20261201"])
+            catalog = {"version": 18, "updated": "x", "tables": {
+                "t_ok": entry(s1, freq="D", future_ok=True),
+                "t_plain": entry(s2, freq="D")}}
+            payload = qualify_probe.collect_evidence(
+                ["t_ok", "t_plain"], catalog, {"t_ok": {}, "t_plain": {}}, TODAY, CHECKED)
+            dp = payload["date_policy"]
+            self.assertEqual(dp["future_ok_tables"], ["t_ok"])
+            self.assertEqual(dp["future_ok_applied"], ["t_ok"])
+            self.assertEqual(payload["summary"],
+                             {"tables": 2, "ok": 1, "partial": 1, "bad": 0})
+
+    def test_build_catalog_v24_defs(self):
+        """build_catalog：shibor 补 date_col / ts_sge_basic 静态声明 / 日历表 future_ok。"""
+        try:
+            bc = self._load_build_catalog()
+        except Exception as exc:  # noqa: BLE001
+            self.skipTest("build_catalog 不可导入：%s" % exc)
+        defs = bc.TABLE_DEFS
+        self.assertEqual(defs["shibor"].get("date_col"), "date")
+        self.assertTrue(defs["ts_sge_basic"].get("static_no_date"))
+        self.assertIsNone(defs["ts_sge_basic"].get("date_col"))
+        for t in ("cb_basic", "ts_trade_cal", "trade_cal"):
+            self.assertTrue(defs[t].get("future_ok"), t)
+        # 年频阈值：qualify_probe 支持 Y=400
+        self.assertEqual(qualify_probe.FREQ_LAG_DAYS.get("Y"), 400)
+
+    def test_lifecycle_empty_dir_entries(self):
+        """data_lifecycle.yaml：3 张空目录表标 planned/deprecated；guba_posts 不标（有 jsonl 数据）。"""
+        try:
+            import yaml
+            root = TOOLS.parents[1]
+            lc = yaml.safe_load((root / "agent_platform" / "catalogs" / "data_lifecycle.yaml")
+                               .read_text(encoding="utf-8"))
+        except Exception as exc:  # noqa: BLE001
+            self.skipTest("lifecycle yaml 不可读：%s" % exc)
+        tables = lc.get("tables") or {}
+        self.assertEqual((tables.get("ts_eco_cal") or {}).get("lifecycle"), "planned")
+        self.assertEqual((tables.get("ts_fund_company") or {}).get("lifecycle"), "planned")
+        self.assertEqual((tables.get("ts_stock_company") or {}).get("lifecycle"), "deprecated")
+        self.assertNotIn("guba_posts", tables)
 
 
 class TestRegistry(unittest.TestCase):

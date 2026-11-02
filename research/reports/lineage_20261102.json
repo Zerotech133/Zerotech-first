@@ -1,0 +1,25 @@
+{
+ "db": "C:\\项目\\老田的AI助手\\research\\lineage.db",
+ "built_at": "2026-11-02T11:46:22+08:00",
+ "nodes": 129,
+ "edges": 78,
+ "by_kind": {
+  "hypothesis": 60,
+  "evidence": 44,
+  "strategy": 11,
+  "data_layer": 14
+ },
+ "hypotheses": {
+  "rows": 53,
+  "with_evidence": 53
+ },
+ "strategies": {
+  "strategies": 11,
+  "with_source_hypothesis": 11
+ },
+ "lineage_yaml": {
+  "files": 4,
+  "nodes": 14,
+  "edges": 11
+ }
+}

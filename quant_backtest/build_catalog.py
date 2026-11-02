@@ -480,6 +480,30 @@ _CATALOG_V21_FIELDS = {
 }
 for _v21_name, _v21_fields in _CATALOG_V21_FIELDS.items():
     TABLE_DEFS.setdefault(_v21_name, {}).update(_v21_fields)
+# ── catalog v24 字段：unknown 非数据侧治理（2026-11-02 task-47 / S3-01）──
+# 依据：deliverables/2026-11-02_unknown非数据侧治理_回执.md（逐表核查）。
+# ① 日历/未来期表：date_col 允许未来日期（交易日历/可转债上市日等）→ qualify_probe 不判 future_date，
+#    catalog 以 future_ok=True 显式声明（payload date_policy.future_ok_tables 可见）；
+# ② shibor：footer 实测日期列 `date`（值 YYYYMMDD，3 片）→ 补 date_col；
+# ③ ts_sge_basic：footer 无可用业务日期列（trade_time 为交易时段文本、list_date 为上市日静态属性）
+#    → 改登记 static_no_date=True（静态交易参数表，13 行），date_col 置 None（不再误用 trade_time）；
+# ④ firm-level-climate-change-exposure：date_col=year 保持；qualify_probe 已支持 YYYY→年末归一 +
+#    freq=Y 阈值（400d），rebuild+apply 后可判 evidence_ok。
+_CATALOG_V24_FIELDS = {
+    "shibor": {"date_col": "date", "freq": "D",
+               "desc": "Shibor 隔夜/1w/2y（tushare，按日分片，footer 日期列 date）"},
+    # ts_sge_basic：静态交易参数表（13 行），无新鲜度维度
+    "ts_sge_basic": {"date_col": None, "date_status": "not_applicable",
+                     "static_no_date": True, "freq": "D"},
+    # 日历/未来期表（date_col 可含未来日期，属正常语义）
+    "cb_basic": {"future_ok": True},
+    "trade_cal": {"future_ok": True},
+    "ts_trade_cal": {"future_ok": True},
+    "ts_hk_tradecal": {"future_ok": True},
+    "ts_us_tradecal": {"future_ok": True},
+}
+for _v24_name, _v24_fields in _CATALOG_V24_FIELDS.items():
+    TABLE_DEFS.setdefault(_v24_name, {}).update(_v24_fields)
 # ── 雪球仓（xueqiu，设计 §3.3：7 张 parquet 表）──
 TABLE_DEFS.update(
     {
@@ -1006,6 +1030,8 @@ def _scan_dir(source, root, mpath, tbl, mf, store=None):
         # WO-QT-20261021-102：静态无日期数据的显式标记（默认 False），由
         # _verify_status 消费，决定 verification_status 是否判 static_no_date
         "static_no_date": bool(d.get("static_no_date", False)),
+        # 2026-11-02 task-47：日历/未来期表显式标记（date_col 可含未来日期，qualify_probe 不判 future_date）
+        "future_ok": bool(d.get("future_ok", False)),
         "primary_key": [c for c in primary_key if c in schema],
         "freq": d.get("freq", "D"),
         "priority": d.get("priority", 1),

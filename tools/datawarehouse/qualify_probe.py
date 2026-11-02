@@ -51,7 +51,8 @@ EXPECTED_PHYSICAL = None  # 动态：运行时取 registry 当前 physical_count
 EXPECTED_DISPLAY = None
 FRESH_LAG_DAYS = 7  # 默认滞后阈值（自然日；D 频/未知频率）
 # 2026-11-02 task-24：按 catalog 条目 freq 分级滞后阈值（自然日）
-FREQ_LAG_DAYS = {"D": 7, "W": 14, "M": 40, "Q": 100}
+# 2026-11-02 task-47：补 Y=400（年频，CnOpenData 年度包等）
+FREQ_LAG_DAYS = {"D": 7, "W": 14, "M": 40, "Q": 100, "Y": 400, "A": 400}
 STATIC_DATE_EXEMPT = "skipped_static_no_date"
 # 2026-11-02 task-32：静态豁免显式白名单（不再"无 date_col 即豁免"）。
 # 组成 = 已声明 3 张（task-26 A2）+ catalog 明确静态表（date_status=not_applicable 且非动态数据源）。
@@ -69,6 +70,8 @@ MAX_PART_FOOTER_SCAN = 80
 SQLITE_SUFFIXES = (".db", ".sqlite", ".sqlite3")
 SQLITE_DATE_CANDIDATES = ("trade_date", "pub_date", "notice_date", "ann_date",
                           "created_at", "updated_at", "report_date", "end_date")
+# 年频日期列名（task-47）：这些列的值按"年"语义归一为年末（YYYY1231）
+YEAR_DATE_COLS = frozenset({"year", "report_year", "fiscal_year", "ann_year"})
 ALLOWED_REGISTRY_FIELDS = {
     "qualification_status", "evidence_checked_at", "evidence_summary", "unsupported_reason",
 }
@@ -110,6 +113,35 @@ def _norm_epoch(value) -> str | None:
         return dt.datetime.fromtimestamp(f).strftime("%Y%m%d")
     except (OverflowError, ValueError, OSError):
         return None
+
+
+def norm_year_date(value) -> str | None:
+    """年频日期归一（2026-11-02 task-47）：YYYY（如 "2024" / 2024）→ 年末 YYYY1231。
+
+    仅用于 catalog date_col ∈ YEAR_DATE_COLS 的列（如 firm-level-climate-change-exposure.year），
+    避免把普通 date32 天数（1975~1980 对应的 1900~2100 天）误当年份。非法年份返回 None（fail-visible）。
+    """
+    if value is None or isinstance(value, bool):
+        return None
+    if isinstance(value, dt.datetime):
+        return "%04d1231" % value.year
+    if isinstance(value, dt.date):
+        return "%04d1231" % value.year
+    s = str(value).strip()
+    m = re.fullmatch(r"(\d{4})(?:年)?", s)
+    if not m:
+        return None
+    y = int(m.group(1))
+    if not 1900 <= y <= 2100:
+        return None
+    return "%04d1231" % y
+
+
+def date_parser(date_col: str | None):
+    """按日期列语义选择解析器：年频列用 norm_year_date，其余用 norm_date。"""
+    if str(date_col or "").strip().lower() in YEAR_DATE_COLS:
+        return norm_year_date
+    return norm_date
 
 
 def _parse_month_quarter(raw: str) -> tuple:
@@ -358,6 +390,7 @@ def _read_footer(path: Path, date_col: str | None) -> dict:
         if not date_col or date_col not in names or md.num_row_groups == 0:
             return out
         # 优先末行组，取不到再倒序扫其余行组；只读 footer 统计，不读数据页
+        parse = date_parser(date_col)
         for gi in range(md.num_row_groups - 1, -1, -1):
             rg = md.row_group(gi)
             for ci in range(rg.num_columns):
@@ -367,7 +400,7 @@ def _read_footer(path: Path, date_col: str | None) -> dict:
                 st = col.statistics
                 if st is None or getattr(st, "has_min_max", True) is False:
                     continue
-                v = norm_date(getattr(st, "max", None))
+                v = parse(getattr(st, "max", None))
                 if v:
                     out["latest"] = v
                     return out
@@ -383,6 +416,7 @@ def _footer_max_all_groups(pq, path: Path, date_col: str) -> tuple:
     if date_col not in pf.schema_arrow.names:
         return None, 0
     best = None
+    parse = date_parser(date_col)
     for gi in range(md.num_row_groups):
         rg = md.row_group(gi)
         for ci in range(rg.num_columns):
@@ -392,7 +426,7 @@ def _footer_max_all_groups(pq, path: Path, date_col: str) -> tuple:
             st = col.statistics
             if st is None or getattr(st, "has_min_max", True) is False:
                 continue
-            v = norm_date(getattr(st, "max", None))
+            v = parse(getattr(st, "max", None))
             if v and (best is None or v > best):
                 best = v
             break
@@ -523,6 +557,8 @@ def _summary(card: dict) -> str:
             card["files_on_disk"], card["files_top_level"], card["sample_count"], card["rows_sampled"])
     if card.get("date_check") == STATIC_DATE_EXEMPT:
         date = "豁免(%s)" % card.get("exempt_reason")
+    elif card.get("future_ok") and card.get("future_date"):
+        date = "%s(未来期例外)" % (card["latest_business_date"] or "无")
     else:
         date = card["latest_business_date"] or "无"
     lag = "NA" if card["lag_days"] is None else str(card["lag_days"])
@@ -558,6 +594,10 @@ def _unsupported_reason(card: dict) -> str:
         if card.get("manifest_state") == "not_applicable":
             return ("资格取证批次1：文件/行/最新日齐备；manifest_status=not_applicable"
                     "（不参与 manifest 检查），待发布/覆盖核验")
+        if card.get("future_ok") and card.get("future_date"):
+            # 2026-11-02 task-47：日历/未来期表例外必须可见（future_ok=True 显式声明）
+            return ("资格取证批次1：证据齐备；日历/未来期表例外（future_ok=True，date_col 允许未来日期"
+                    "：%s），待发布/覆盖核验" % card.get("latest_business_date"))
         return ("资格取证批次1：证据齐备（文件/行/最新日 lag 在 %s 阈值内/manifest），"
                 "待发布/覆盖核验" % card.get("lag_limit_rule", "freq"))
     if "sqlite_error" in card["reasons"]:
@@ -613,6 +653,8 @@ def probe_table(table: str, entry: dict, mkeys: set, today: dt.date,
         "date_check": "footer",
         "exempt_reason": None,
         "exempt_source": None,
+        # 2026-11-02 task-47：日历/未来期表例外（catalog future_ok=True，date_col 允许未来日期）
+        "future_ok": bool(entry.get("future_ok")),
         "sqlite": None,
         "part_scan": None,
         "store_exists": bool(store_raw) and store.exists(),
@@ -782,7 +824,8 @@ def probe_table(table: str, entry: dict, mkeys: set, today: dt.date,
                 reasons.append("no_latest_date")
             elif card["latest_degraded"]:
                 reasons.append("filename_fallback")
-            if card["future_date"]:
+            # 2026-11-02 task-47：日历/未来期表（catalog future_ok=True）允许未来日期，不判 future_date
+            if card["future_date"] and not card.get("future_ok"):
                 reasons.append("future_date")
             limit = card["lag_limit_days"]
             if card["lag_days"] is not None and card["lag_days"] > limit:
@@ -894,9 +937,14 @@ def collect_evidence(tables, catalog: dict, manifest: dict | None, today: dt.dat
                                      if c.get("date_check") == STATIC_DATE_EXEMPT],
             "exempt_sources": {c["table"]: c.get("exempt_source") for c in cards
                                if c.get("date_check") == STATIC_DATE_EXEMPT},
-            "note": "按 catalog freq 判滞后阈值（D7/W14/M40/Q100，其余回退 7）；"
+            # 2026-11-02 task-47：日历/未来期表例外（catalog future_ok=True；date_col 允许未来日期）
+            "future_ok_tables": [c["table"] for c in cards if c.get("future_ok")],
+            "future_ok_applied": [c["table"] for c in cards
+                                  if c.get("future_ok") and c.get("future_date")],
+            "note": "按 catalog freq 判滞后阈值（D7/W14/M40/Q100/Y400，其余回退 7）；"
                     "静态豁免改为显式白名单（task-32，exempt_source=whitelist/catalog_static_no_date），"
-                    "未声明动态表不再豁免；sqlite store 走只读表行数/日期探针；part 布局做全量 footer 扫描",
+                    "未声明动态表不再豁免；sqlite store 走只读表行数/日期探针；part 布局做全量 footer 扫描；"
+                    "future_ok 表允许未来日期（日历/未来期语义）；年频列（year）归一到年末",
         },
         "summary": {
             "tables": len(cards),
