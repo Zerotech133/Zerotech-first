@@ -42,12 +42,14 @@ def main(argv=None) -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("stats")
     sub.add_parser("stats-v2")
+    sub.add_parser("declared")
     p = sub.add_parser("list")
     p.add_argument("--domain")
     p.add_argument("--q")
     p.add_argument("--registered", choices=["0", "1"])
     p.add_argument("--exposed", choices=["0", "1"])
-    p.add_argument("--kind", choices=["all", "pg_table", "contract_artifact"])
+    p.add_argument("--kind", choices=["all", "pg_table", "contract_artifact",
+                                      "file_dataset"])
     p.add_argument("--limit", type=int, default=50)
     p = sub.add_parser("search")
     p.add_argument("--q", required=True)
@@ -85,6 +87,8 @@ def main(argv=None) -> int:
         out = reg.stats_v2()
         # ADR-019 D2：连接器不可用/缺 DSN → exit 2（fail-visible，不假绿）；显式 disabled 不算失败
         rc = 0 if out.get("connector_status") in ("ok", "disabled") else 2
+    elif args.cmd == "declared":
+        out = reg.declared_summary()
     elif args.cmd == "list":
         out = reg.list(domain=args.domain, q=args.q,
                        registered=None if args.registered is None else args.registered == "1",
