@@ -105,7 +105,10 @@ def fetch(
     退避策略：轮转 KLINE_HOSTS + 指数退避（2/4/8/16/32s，上限 40s）。
     """
     last = None
-    for a in range(retry):
+    for a in range(retry, deadline=None):
+        if deadline is not None and time.monotonic() > deadline:
+            print("    [timeout] budget exhausted before attempt", flush=True)
+            return None
         host = KLINE_HOSTS[a % len(KLINE_HOSTS)]
         url = KLINE_TPL.format(host=host, secid=secid, klt=klt, beg=beg, lmt=lmt)
         try:
@@ -124,7 +127,7 @@ def fetch(
 
 
 def fetch_history(
-    secid: str, y0: int = 2010, klt: int = 101, retry: int = 3
+    secid: str, y0: int = 2010, klt: int = 101, retry: int = 3, deadline=None
 ) -> list[str]:
     """逐年分窗拉全历史（判例：大 lmt 必被断连，年份窗稳定）。
 
@@ -135,8 +138,11 @@ def fetch_history(
     collected: list[str] = []
     y1 = _dt.date.today().year + 1
     for y in range(y0, y1 + 1):
+        if deadline is not None and time.monotonic() > deadline:
+            print("    [timeout] budget exhausted at year %d; return partial" % y, flush=True)
+            break
         beg = "%d0101" % y
-        kl = fetch(secid, klt=klt, beg=beg, lmt=800, retry=retry)
+        kl = fetch(secid, klt=klt, beg=beg, lmt=800, retry=retry, deadline=deadline)
         if kl is None:
             continue
         if not kl:
@@ -238,7 +244,9 @@ def main() -> int:
     ap.add_argument("--dryrun", action="store_true")
     ap.add_argument("--y0", type=int, default=2010, help="历史起始年（分窗拉）")
     ap.add_argument("--quick", action="store_true", help="只拉最近 3 年（增量/冒烟用）")
+    ap.add_argument("--max-seconds", type=int, default=600, help="总时长预算（秒，默认 600；超时保留已成功品种）")
     args = ap.parse_args()
+    _deadline = time.monotonic() + max(30, int(args.max_seconds))
 
     targets = GLOBAL_FUT
     if args.only:
@@ -261,7 +269,7 @@ def main() -> int:
             print("  DRY %-14s %-12s → %s" % (name, secid, ts_code))
             continue
         kl = (
-            fetch_history(secid, y0=args.y0)
+            fetch_history(secid, y0=args.y0, deadline=_deadline)
             if not args.quick
             else fetch(secid, beg="%d0101" % (time.localtime().tm_year - 3), lmt=800)
         )
