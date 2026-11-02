@@ -1,0 +1,465 @@
+{
+ "schema_version": "learning_factors.v1",
+ "lib": "learning_factors",
+ "version": "1.0.0",
+ "generated_at": "2026-11-03T06:50:03+08:00",
+ "meta": {
+  "n_factors": 8,
+  "implemented": 8,
+  "n_days": 60,
+  "n_codes": 50,
+  "seed": 42,
+  "data_root": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\tushare",
+  "data_end": "20261102",
+  "window_start": "20260803",
+  "window_end": "20261102",
+  "load_dates": [
+   "20260116",
+   "20261102"
+  ],
+  "codes_sample": [
+   "000917.SZ",
+   "000953.SZ",
+   "001308.SZ",
+   "001331.SZ",
+   "001378.SZ",
+   "001391.SZ",
+   "002190.SZ",
+   "002412.SZ",
+   "002519.SZ",
+   "002627.SZ"
+  ],
+  "sources": {
+   "daily": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\tushare\\daily（窗口 20260803~20261102，50 只）",
+   "moneyflow": "9059 行（窗口内净流入字段）",
+   "limit_list_d": "36 条涨停事件（limit==U）",
+   "cyq_chips": "0 只代码 / 0 个交易日"
+  },
+  "runtime_sec": 3.46
+ },
+ "factors": {
+  "ma_convergence": {
+   "name": "ma_convergence",
+   "title": "均线粘合度",
+   "formula": "std(MA5,MA10,MA20,MA60)/MA20",
+   "data_deps": [
+    "daily.close"
+   ],
+   "pit_safe": true,
+   "direction": 0,
+   "note": "值越小=均线越粘合；粘合末端常伴变盘，方向不做先验",
+   "n_valid": 2846,
+   "n_expected": 3000,
+   "coverage_pct": 94.87,
+   "stats": {
+    "mean": 0.0372,
+    "std": 0.0362,
+    "min": 0.0009,
+    "max": 0.3152,
+    "abs_median": 0.0257
+   },
+   "examples": [
+    {
+     "trade_date": "20261102",
+     "ts_code": "688195.SH",
+     "value": 0.147134
+    },
+    {
+     "trade_date": "20261102",
+     "ts_code": "603738.SH",
+     "value": 0.122752
+    },
+    {
+     "trade_date": "20261102",
+     "ts_code": "603459.SH",
+     "value": 0.121555
+    },
+    {
+     "trade_date": "20261102",
+     "ts_code": "603026.SH",
+     "value": 0.105303
+    },
+    {
+     "trade_date": "20261102",
+     "ts_code": "001331.SZ",
+     "value": 0.092539
+    }
+   ]
+  },
+  "bull_alignment_strength": {
+   "name": "bull_alignment_strength",
+   "title": "多头排列强度",
+   "formula": "(MA5−MA60)/MA60，另给横截面分位",
+   "data_deps": [
+    "daily.close"
+   ],
+   "pit_safe": true,
+   "direction": 1,
+   "note": "正值=短期均线在长期之上；训练时用 cross_section_percentile 转分位",
+   "n_valid": 2846,
+   "n_expected": 3000,
+   "coverage_pct": 94.87,
+   "stats": {
+    "mean": -0.0194,
+    "std": 0.1012,
+    "min": -0.4856,
+    "max": 0.7846,
+    "abs_median": 0.0509
+   },
+   "examples": [
+    {
+     "trade_date": "20261102",
+     "ts_code": "688195.SH",
+     "value": -0.333149
+    },
+    {
+     "trade_date": "20261102",
+     "ts_code": "603738.SH",
+     "value": -0.26355
+    },
+    {
+     "trade_date": "20261102",
+     "ts_code": "603459.SH",
+     "value": -0.263292
+    },
+    {
+     "trade_date": "20261102",
+     "ts_code": "603026.SH",
+     "value": -0.229834
+    },
+    {
+     "trade_date": "20261102",
+     "ts_code": "300522.SZ",
+     "value": -0.190955
+    }
+   ]
+  },
+  "macd_divergence_strength": {
+   "name": "macd_divergence_strength",
+   "title": "MACD 背离强度",
+   "formula": "价格60日区间分位 − DIF(EMA12−EMA26) 60日区间分位",
+   "data_deps": [
+    "daily.close"
+   ],
+   "pit_safe": true,
+   "direction": -1,
+   "note": "正=价格创新高而 DIF 未同步（顶背离，先验偏空）；负=底背离",
+   "n_valid": 2846,
+   "n_expected": 3000,
+   "coverage_pct": 94.87,
+   "stats": {
+    "mean": -0.2434,
+    "std": 0.277,
+    "min": -0.936,
+    "max": 0.5684,
+    "abs_median": 0.2354
+   },
+   "examples": [
+    {
+     "trade_date": "20261102",
+     "ts_code": "688168.SH",
+     "value": -0.612688
+    },
+    {
+     "trade_date": "20261102",
+     "ts_code": "600877.SH",
+     "value": -0.608576
+    },
+    {
+     "trade_date": "20261102",
+     "ts_code": "600960.SH",
+     "value": 0.568351
+    },
+    {
+     "trade_date": "20261102",
+     "ts_code": "601956.SH",
+     "value": -0.526233
+    },
+    {
+     "trade_date": "20261102",
+     "ts_code": "688466.SH",
+     "value": 0.515221
+    }
+   ]
+  },
+  "volume_breakout_strength": {
+   "name": "volume_breakout_strength",
+   "title": "放量突破幅度",
+   "formula": "(vol/MA(vol,50)) × (close/前60日平台高点 − 1)",
+   "data_deps": [
+    "daily.close",
+    "daily.vol"
+   ],
+   "pit_safe": true,
+   "direction": 1,
+   "note": "平台高点用 shift(1) 只取历史（PIT）；未突破时为负",
+   "n_valid": 2845,
+   "n_expected": 3000,
+   "coverage_pct": 94.83,
+   "stats": {
+    "mean": -0.1601,
+    "std": 0.1575,
+    "min": -1.9157,
+    "max": 0.6947,
+    "abs_median": 0.1224
+   },
+   "examples": [
+    {
+     "trade_date": "20261102",
+     "ts_code": "601956.SH",
+     "value": -1.10584
+    },
+    {
+     "trade_date": "20261102",
+     "ts_code": "001331.SZ",
+     "value": -0.771241
+    },
+    {
+     "trade_date": "20261102",
+     "ts_code": "688195.SH",
+     "value": -0.433314
+    },
+    {
+     "trade_date": "20261102",
+     "ts_code": "000953.SZ",
+     "value": -0.422829
+    },
+    {
+     "trade_date": "20261102",
+     "ts_code": "300609.SZ",
+     "value": -0.411924
+    }
+   ]
+  },
+  "platform_consolidation_score": {
+   "name": "platform_consolidation_score",
+   "title": "平台整理强度",
+   "formula": "贴近MA20(|close/MA20−1|≤2%)天数占比 × (1−min(60日极差/均值/0.30,1))",
+   "data_deps": [
+    "daily.close"
+   ],
+   "pit_safe": true,
+   "direction": 1,
+   "note": "值越大=整理越久越窄；历史不足 80 日→NaN",
+   "n_valid": 2822,
+   "n_expected": 3000,
+   "coverage_pct": 94.07,
+   "stats": {
+    "mean": 0.0485,
+    "std": 0.0913,
+    "min": 0.0,
+    "max": 0.503,
+    "abs_median": 0.0
+   },
+   "examples": [
+    {
+     "trade_date": "20261102",
+     "ts_code": "600169.SH",
+     "value": 0.503033
+    },
+    {
+     "trade_date": "20261102",
+     "ts_code": "603111.SH",
+     "value": 0.487915
+    },
+    {
+     "trade_date": "20261102",
+     "ts_code": "600016.SH",
+     "value": 0.418216
+    },
+    {
+     "trade_date": "20261102",
+     "ts_code": "001308.SZ",
+     "value": 0.406221
+    },
+    {
+     "trade_date": "20261102",
+     "ts_code": "600960.SH",
+     "value": 0.346596
+    }
+   ]
+  },
+  "chip_concentration": {
+   "name": "chip_concentration",
+   "title": "筹码集中度",
+   "formula": "(90%成本上沿 − 90%成本下沿) / 中位成本（按筹码占比加权分位）",
+   "data_deps": [
+    "cyq_chips(trade_date,price,percent)"
+   ],
+   "pit_safe": true,
+   "direction": -1,
+   "note": "值越小=筹码越集中；数据仓仅 23 只代码 32 个交易日（2026-08~09），覆盖受限",
+   "n_valid": 0,
+   "n_expected": 3000,
+   "coverage_pct": 0.0,
+   "stats": null,
+   "examples": [],
+   "probe": {
+    "available_codes": 23,
+    "codes_with_window_data": 23,
+    "dates_with_data": 50,
+    "n_valid": 714,
+    "examples": [
+     {
+      "ts_code": "000002.SZ",
+      "trade_date": "20260817",
+      "value": 0.634571
+     },
+     {
+      "ts_code": "000560.SZ",
+      "trade_date": "20260817",
+      "value": 0.169292
+     },
+     {
+      "ts_code": "000993.SZ",
+      "trade_date": "20260817",
+      "value": 0.392145
+     },
+     {
+      "ts_code": "002050.SZ",
+      "trade_date": "20260817",
+      "value": 0.300459
+     },
+     {
+      "ts_code": "002594.SZ",
+      "trade_date": "20260817",
+      "value": 0.26279
+     },
+     {
+      "ts_code": "300308.SZ",
+      "trade_date": "20260908",
+      "value": 0.367837
+     },
+     {
+      "ts_code": "301047.SZ",
+      "trade_date": "20260817",
+      "value": 0.530534
+     },
+     {
+      "ts_code": "301281.SZ",
+      "trade_date": "20260817",
+      "value": 0.411979
+     }
+    ],
+    "note": "筹码因子数据仓覆盖有限（仅 cyq_chips 有文件的代码/日期）；50 只随机样本未抽中，故样本矩阵覆盖 0%，但因子本身在可用代码上可计算（见本探针）"
+   }
+  },
+  "post_limit_behavior": {
+   "name": "post_limit_behavior",
+   "title": "涨停后行为（事后描述）",
+   "formula": "涨停后 N 日累计收益 / N 日内最大回落（N=5）",
+   "data_deps": [
+    "daily.close",
+    "limit_list_d.limit==U"
+   ],
+   "pit_safe": false,
+   "direction": 0,
+   "note": "**使用未来 N 日数据，仅作学习标签/行为描述，禁止作为交易信号**（判例 H29）",
+   "n_events": 36,
+   "n_valid": 31,
+   "coverage_pct": 86.11,
+   "stats": {
+    "mean_ret_n": 0.0426,
+    "mean_max_drawdown_n": -0.0202,
+    "positive_ret_ratio": 0.4167
+   },
+   "examples": [
+    {
+     "ts_code": "001331.SZ",
+     "trade_date": "20260803",
+     "ret_n": 0.3422,
+     "max_drawdown_n": 0.1
+    },
+    {
+     "ts_code": "001331.SZ",
+     "trade_date": "20260804",
+     "ret_n": 0.1865,
+     "max_drawdown_n": 0.066
+    },
+    {
+     "ts_code": "001331.SZ",
+     "trade_date": "20261026",
+     "ret_n": -0.1136,
+     "max_drawdown_n": -0.1136
+    },
+    {
+     "ts_code": "001378.SZ",
+     "trade_date": "20260806",
+     "ret_n": 0.0934,
+     "max_drawdown_n": 0.0271
+    },
+    {
+     "ts_code": "001378.SZ",
+     "trade_date": "20260916",
+     "ret_n": 0.0412,
+     "max_drawdown_n": 0.0142
+    }
+   ]
+  },
+  "moneyflow_strength": {
+   "name": "moneyflow_strength",
+   "title": "资金流强度",
+   "formula": "net_mf_amount × 10 / 成交额5日均（万元→千元归一）",
+   "data_deps": [
+    "moneyflow.net_mf_amount",
+    "daily.amount"
+   ],
+   "pit_safe": true,
+   "direction": 1,
+   "note": "正=净流入占成交额比例高；数据仓 moneyflow 覆盖 2023-01 起",
+   "n_valid": 2885,
+   "n_expected": 3000,
+   "coverage_pct": 96.17,
+   "stats": {
+    "mean": -0.0206,
+    "std": 0.1273,
+    "min": -1.0971,
+    "max": 0.634,
+    "abs_median": 0.0624
+   },
+   "examples": [
+    {
+     "trade_date": "20261102",
+     "ts_code": "600960.SH",
+     "value": -0.52097
+    },
+    {
+     "trade_date": "20261102",
+     "ts_code": "000917.SZ",
+     "value": 0.382317
+    },
+    {
+     "trade_date": "20261102",
+     "ts_code": "600169.SH",
+     "value": 0.366977
+    },
+    {
+     "trade_date": "20261102",
+     "ts_code": "600016.SH",
+     "value": -0.336852
+    },
+    {
+     "trade_date": "20261102",
+     "ts_code": "001308.SZ",
+     "value": 0.322489
+    }
+   ]
+  }
+ },
+ "data_gaps": [
+  "ma_convergence: 覆盖率 94.87%（窗口内个股缺日线行（停牌/停牌复牌缺口）或滚动窗口历史不足；窗口内 close 缺失 108 格（2 只有缺失））",
+  "bull_alignment_strength: 覆盖率 94.87%（窗口内个股缺日线行（停牌/停牌复牌缺口）或滚动窗口历史不足；窗口内 close 缺失 108 格（2 只有缺失））",
+  "macd_divergence_strength: 覆盖率 94.87%（窗口内个股缺日线行（停牌/停牌复牌缺口）或滚动窗口历史不足；窗口内 close 缺失 108 格（2 只有缺失））",
+  "volume_breakout_strength: 覆盖率 94.83%（窗口内个股缺日线行（停牌/停牌复牌缺口）或滚动窗口历史不足；窗口内 close 缺失 108 格（2 只有缺失））",
+  "platform_consolidation_score: 覆盖率 94.07%（窗口内个股缺日线行（停牌/停牌复牌缺口）或滚动窗口历史不足；窗口内 close 缺失 108 格（2 只有缺失））",
+  "chip_concentration: 覆盖率 0.0%（cyq_chips 数据仓仅 23 只代码/50 个窗口内交易日有数据，随机 50 只样本未覆盖；可用代码上 714 个有效值（见 probe））",
+  "moneyflow_strength: 覆盖率 96.17%（窗口内个股缺日线行（停牌/停牌复牌缺口）或滚动窗口历史不足；窗口内 close 缺失 108 格（2 只有缺失））"
+ ],
+ "unimplemented": [],
+ "notes": [
+  "8 个因子全部实现为纯函数；缺口只来自数据仓覆盖（如 cyq_chips 仅 23 只/32 日）。",
+  "post_limit_behavior 使用未来 N 日数据，属事后描述/学习标签，禁止作为交易信号（判例 H29）。",
+  "均线/MACD/平台因子窗口 60 日，抽样窗口前段为 NaN 属预期（warmup 用于滚动窗口）。",
+  "moneyflow 净流入单位万元、daily.amount 单位千元，ratio 已按 unit_scale=10 归一。"
+ ]
+}
