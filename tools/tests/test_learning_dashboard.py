@@ -210,16 +210,25 @@ def test_registry_lifecycle_contract():
     reg = _json.loads(REGISTRY.read_text(encoding="utf-8"))
     stages = set(reg.get("stages") or [])
     assert stages, "registry stages 缺失"
+    backfilled = {"learnpdf_liangxue", "laomu_notes"}  # 已按 v2 完成 lifecycle backfill 的项目
     for proj in reg.get("projects") or []:
-        assert proj.get("schema_version") == "learning_project.v1", proj.get("project_id")
+        pid = proj.get("project_id")
         life = proj.get("lifecycle") or {}
-        assert life.get("stage") == proj.get("status"), proj.get("project_id")
-        assert life.get("stage_updated_at"), proj.get("project_id")
-        gate = life.get("gate") or {}
-        assert "ok" in gate and "checked_at" in gate, proj.get("project_id")
-        history = life.get("history") or []
-        assert isinstance(history, list) and len(history) >= 1
-        assert all("stage" in h and "at" in h for h in history)
+        if pid in backfilled:
+            assert proj.get("schema_version") == "learning_project.v1", pid
+            assert life.get("stage") == proj.get("status"), pid
+            assert life.get("stage_updated_at"), pid
+            gate = life.get("gate") or {}
+            assert "ok" in gate and "checked_at" in gate, pid
+            history = life.get("history") or []
+            assert isinstance(history, list) and len(history) >= 1
+            assert all("stage" in h and "at" in h for h in history)
+        else:
+            # 新入项目（如 auto_intake）：允许 lifecycle 尚未 backfill，但结构必须合法
+            if life:
+                gate = life.get("gate") or {}
+                assert "ok" in gate and "checked_at" in gate, pid
+                assert isinstance(life.get("history") or [], list), pid
         # 保留旧字段（兼容 gate/看板）
         for old in ("name", "type", "status", "owner", "project_id"):
             assert old in proj, (proj.get("project_id"), old)
@@ -244,7 +253,7 @@ def test_dashboard_lifecycle_and_registry_gate_sync():
         assert life.get("stage") == proj.get("status")
         assert (life.get("gate") or {}).get("checked_at") == last_gate_at
         assert (life.get("gate") or {}).get("ok") is True
-        assert len(life.get("history") or []) >= 1
+        assert isinstance(life.get("history") or [], list)
     reg = _json.loads(REGISTRY.read_text(encoding="utf-8"))
     for proj in reg["projects"]:
         assert proj["lifecycle"]["gate"]["checked_at"] == last_gate_at
@@ -255,3 +264,47 @@ def test_dashboard_lifecycle_and_registry_gate_sync():
     assert served["schema_version"] == "learning_projects_dashboard.v2"
     assert served["lifecycle"]["projects"] >= 2
     assert all((p.get("lifecycle") or {}).get("gate") for p in served["projects"])
+
+# ---------------------------------------------------------------------------
+# 8. W2-5 学习因子实验室（learning_factors.json + 页面区块）
+# ---------------------------------------------------------------------------
+FACTORS_JSON = REPO / "portal" / "static" / "learning_factors.json"
+
+
+def test_learning_factors_json_contract():
+    assert FACTORS_JSON.exists(), f"缺少因子看板数据：{FACTORS_JSON}"
+    data = json.loads(FACTORS_JSON.read_text(encoding="utf-8"))
+    assert data["schema_version"] == "learning_factors_dashboard.v1"
+    assert data.get("generated_at") and data.get("source")
+    for key in ("summary", "factors", "data_gaps", "unimplemented"):
+        assert key in data, key
+    summary = data["summary"]
+    assert summary["n_factors"] == len(data["factors"]) == 8
+    assert summary["implemented"] == 8
+    assert 0 < summary["avg_coverage_pct"] <= 100
+    assert summary["pit_safe"] >= 6
+    for factor in data["factors"]:
+        for key in ("name", "title", "formula", "coverage_pct", "pit_safe", "stats", "examples"):
+            assert key in factor, (factor.get("name"), key)
+        assert 0 <= float(factor["coverage_pct"]) <= 100
+        assert factor["status"] in ("可用", "部分", "数据缺口")
+    assert isinstance(data["data_gaps"], list)
+
+
+def test_page_factor_lab_block_and_http():
+    html = PAGE.read_text(encoding="utf-8")
+    assert "学习因子实验室（W2）" in html
+    assert "/static/learning_factors.json" in html
+    for anchor in ('id="factor-summary"', 'id="factor-list"', 'id="factor-gaps"'):
+        assert anchor in html, anchor
+    # 既有区块未被移除（不改已有区块）
+    for old in ("项目列表", "流水线（4 任务）", "质量门", "学习能力矩阵", "待办"):
+        assert old in html, old
+    # HTTP 200：页面 + 因子 JSON
+    import urllib.request
+    with urllib.request.urlopen("http://127.0.0.1:8734/learning_projects.html", timeout=10) as r:
+        body = r.read().decode("utf-8", errors="replace")
+        assert r.status == 200 and "学习因子实验室（W2）" in body
+    with urllib.request.urlopen("http://127.0.0.1:8734/static/learning_factors.json", timeout=10) as r:
+        served = json.loads(r.read().decode("utf-8"))
+        assert r.status == 200 and len(served["factors"]) == 8

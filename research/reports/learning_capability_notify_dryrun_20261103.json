@@ -1,0 +1,79 @@
+{
+ "schema_version": 1,
+ "date": "20261103",
+ "generated_at": "2026-11-03T07:01:22+08:00",
+ "kind": "learning:capability",
+ "mode": "dry-run",
+ "dry_run": true,
+ "sent": false,
+ "note": "仅 dry-run 实跑，未真实发送飞书；发送需老田批准后执行 --send",
+ "source": {
+  "capability": {
+   "path": "C:\\项目\\老田的AI助手\\portal\\static\\learning_capability.json",
+   "sha256": "c5f9e440d6b8709bfbfb872464d189f9cf287176564906bbe58e486f42672308",
+   "generated_at": "2026-11-03T07:01:05+08:00",
+   "project": "视频号学习_8博主",
+   "schema_version": "learning_capability.v1"
+  },
+  "notify_script": {
+   "path": "C:\\项目\\老田的AI助手\\tools\\kb_corpus\\learning_capability_notify.py",
+   "sha256": "390866d38c5ceb711a595ba5ca3c949b3ba80c865585400da4e47ee28fd695a3",
+   "mode_arg": "--text-only（dry-run 纯文本）"
+  }
+ },
+ "command": "python tools/kb_corpus/learning_capability_notify.py --text-only",
+ "returncode": 0,
+ "text": "【学习能力图谱已更新】\n数据：8 文件 / 760,826 字 / 800 知识单元\n可用：含领域词单元 258；可审候选 539；视频号学习卡 84（总卡 256）\n\n战法（可提炼）：\n· 缠论结构（笔/线段/中枢/背驰/买卖点）｜单元 209｜可计算性 A\n· 均线系统（粘合/多头排列/支撑）｜单元 88｜可计算性 A\n· MACD/KDJ/RSI 指标与背离｜单元 68｜可计算性 A\n· 量价与筹码（放量/缩量/筹码）｜单元 193｜可计算性 A\n· 平台/箱体/突破/缺口｜单元 213｜可计算性 A\n· 仓位与止损纪律｜单元 100｜可计算性 A\n· 交易纪律/心态/复盘｜单元 203｜可计算性 C\n· 量化工程（回测/因子/过拟合）｜单元 144｜可计算性 A\n\n需补齐：分钟K线（缠论结构）、Level2（盘口类不可行）；其余日线级可立即实现。\n\n因子（细化）：\n· 均线粘合度：✅ 已实现（learning_factors.py，覆盖≈95%）\n· 多头排列强度：✅ 已实现（learning_factors.py，覆盖≈95%）\n· MACD背离强度：✅ 已实现（learning_factors.py，覆盖≈95%）\n· 放量突破幅度：✅ 已实现（learning_factors.py，覆盖≈95%）\n· 平台整理天数/高度：✅ 已实现（learning_factors.py，覆盖≈95%）\n· 筹码集中度：✅ 已实现（筹码探针714值；cyq 覆盖不足）\n\n军团调用：\n· 量化交易部（司马微）：战法/因子候选 → 四关回测\n· 数据智能部（张松/DATA1）：补齐分钟K线/Level2、筹码/资金流 ETL\n· 因子挖掘（蒋琬/FACTOR1）：细化因子（均线/背离/平台/筹码）纳入每日因子轮\n· 研报/知识线（ACAD1）：学习卡/方法论卡片入 RAG 与研报问答\n· 门户/研发（ARCH1）：能力图谱页面/API 接入\n\n明细：http://127.0.0.1:8734/learning_projects.html\n（研究输出，不构成投资建议）\n\n[dry-run] 未发送；加 --send 真实推送",
+ "checks": {
+  "legion_calls": 5,
+  "tactics": 8,
+  "factors": 11,
+  "capabilities": 7,
+  "text_contains_all_legions": true,
+  "text_chars": 924
+ },
+ "legion_calls": [
+  {
+   "legion": "量化交易部（司马微）",
+   "call": "战法/因子候选 → 四关回测",
+   "input": "learning_capability.json 的 tactics/factors",
+   "gate": "四关+PIT+成本",
+   "status": "待通知"
+  },
+  {
+   "legion": "数据智能部（张松/DATA1）",
+   "call": "补齐分钟K线/Level2、筹码/资金流 ETL",
+   "input": "gap 清单",
+   "gate": "ETL质检",
+   "status": "待通知"
+  },
+  {
+   "legion": "因子挖掘（蒋琬/FACTOR1）",
+   "call": "细化因子（均线/背离/平台/筹码）纳入每日因子轮",
+   "input": "factors 清单",
+   "gate": "IC/分层/衰减",
+   "status": "待通知"
+  },
+  {
+   "legion": "研报/知识线（ACAD1）",
+   "call": "学习卡/方法论卡片入 RAG 与研报问答",
+   "input": "256 卡+8 方法论卡",
+   "gate": "引用可追溯",
+   "status": "已就绪"
+  },
+  {
+   "legion": "门户/研发（ARCH1）",
+   "call": "能力图谱页面/API 接入",
+   "input": "learning_capability.json",
+   "gate": "HTTP 200+导航",
+   "status": "页面已接入"
+  }
+ ],
+ "approval": {
+  "status": "pending_user_approval",
+  "path": "老田批准 → python tools/kb_corpus/learning_capability_notify.py --send（真实推送飞书文本）",
+  "on_send_receipt": "research/reports/learning_capability_notify_<date>.json",
+  "safety": "默认 dry-run；--send 才调用 news_collector.send_feishu.send_text；一单一议"
+ },
+ "disclaimer": "学习能力图谱通知为研究输出；不构成投资建议。"
+}

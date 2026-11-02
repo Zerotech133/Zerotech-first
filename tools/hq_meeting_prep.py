@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""HQ 五角色晨会议程准备（C2，2026-11-03）。
+r"""HQ 五角色晨会议程准备（C2，2026-11-03）。
 
 把「每日五角色晨会」的会前准备自动化成**只读草案**：
 读五角色真身份（command_hq.roles）+ Directive（hq_directives）+ 军团报告（hq_reports）

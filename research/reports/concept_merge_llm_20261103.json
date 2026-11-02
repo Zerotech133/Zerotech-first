@@ -1,0 +1,84 @@
+{
+ "meta": {
+  "report": "concept_merge_llm",
+  "version": "1.0.0",
+  "task": "W1-2c 长尾概念 LLM 语义归并",
+  "generated_at": "2026-11-03T07:07:20+08:00",
+  "read_only": true,
+  "read_only_verified": true,
+  "input": {
+   "path": "C:\\项目\\老田的AI助手\\research\\reports\\knowledge_multisource_20261103.json",
+   "sha256_before": "7b3685792cd930807374119d5ab0a3c85dacee745605c9139a956aa77ff2f927",
+   "sha256_after": "7b3685792cd930807374119d5ab0a3c85dacee745605c9139a956aa77ff2f927"
+  },
+  "ollama": {
+   "base_url": "http://127.0.0.1:11434",
+   "embed_model": "bge-m3:latest",
+   "llm_model": "qwen3.5:9b",
+   "embedding": {
+    "source": "fallback_lexical",
+    "model": null,
+    "calls": 0,
+    "sec": 0.0,
+    "errors": [
+     "OllamaError: batch: TimeoutError: timed out; single: TimeoutError: timed out",
+     "batch: TimeoutError: timed out",
+     "single: TimeoutError: timed out"
+    ]
+   },
+   "llm": {
+    "enabled": false,
+    "model": null,
+    "calls": 0,
+    "sec": 0.0,
+    "errors": [],
+    "failed": 0
+   }
+  },
+  "params": {
+   "auto_cos": 0.85,
+   "boundary_lo": 0.75,
+   "max_llm_pairs": 40,
+   "use_llm": false,
+   "force_lexical": false,
+   "merge_scope": "仅单源长尾簇（规则归并后 ≥2 源的簇不参与二次合并）"
+  },
+  "runtime_sec": 14.78,
+  "limitations": [
+   "语义合并仅在单源长尾簇内进行；多源簇不参与二次合并（避免稀释既有证据）。",
+   "bge-m3 不可用时回退字符 n-gram 向量（embedding.source=fallback_lexical），召回弱、需复核；LLM 连续失败会熔断，边界对一律不合并（保守）。",
+   "多源确认数按 concept_synonyms 口径（独立 (source_type,source_key) ≥2）重算；合并后概念本身的答案一致性/冲突未重算，置信仍为命名层面。",
+   "映射表可回滚：忽略 mapping 记录即恢复 W1-2 的 1029 簇基线。",
+   "只读输入，不改学习卡/units/治理；本次未真实调 LLM 的部分以 mock/降级路径标注。"
+  ]
+ },
+ "stats": {
+  "concepts_before": 1092,
+  "clusters_before": 1029,
+  "multi_before": 23,
+  "single_pool": 1006,
+  "merged_groups": 0,
+  "merged_members": 0,
+  "clusters_after": 1029,
+  "multi_after_confirmed": 23,
+  "new_multi_from_llm": 0,
+  "auto_pairs": 0,
+  "boundary_pairs": 3,
+  "auto_merged": 0,
+  "llm_calls": 0,
+  "llm_accept": 0,
+  "llm_reject": 0,
+  "llm_failed": 0
+ },
+ "baseline": {
+  "clusters": 1029,
+  "multi_confirmed": 23
+ },
+ "mapping": [],
+ "merged_groups": [],
+ "false_merge_risk": [],
+ "rollback": {
+  "strategy": "忽略 mapping（原概念→目标簇），即回到 W1-2 的 1029 簇基线",
+  "mapping_entries": 0
+ }
+}

@@ -48,6 +48,12 @@ ul.todos li{margin:3px 0}
 <div class="sub" id="cap-summary">加载中…</div>
 <div id="cap" class="muted">加载中…</div></div>
 
+<div class="panel"><h2>学习因子实验室（W2）</h2>
+<div class="sub" id="factor-summary">加载中…</div>
+<table><thead><tr><th>因子</th><th>公式</th><th>覆盖率</th><th>PIT</th><th>方向</th><th>样例值</th><th>状态</th></tr></thead>
+<tbody id="factor-list"></tbody></table>
+<div id="factor-gaps" class="muted" style="margin-top:8px">加载中…</div></div>
+
 <div class="panel"><h2>待办</h2><ul class="todos" id="todos"></ul></div>
 <script>
 (function(){
@@ -142,6 +148,42 @@ ul.todos li{margin:3px 0}
     if(!r.ok) throw new Error('HTTP '+r.status); return r.json();
   }).then(renderCap).catch(function(e){
     if(q('cap')) q('cap').textContent='能力矩阵加载失败：'+(e&&e.message||e);
+  });
+})();
+</script>
+
+<script>
+/* 学习因子实验室（W2）：只读 /static/learning_factors.json，独立块不改既有渲染 */
+(function(){
+  const q=function(id){return document.getElementById(id);};
+  const esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});};
+  function renderFactors(d){
+    const s=d.summary||{};
+    if(q('factor-summary')) q('factor-summary').innerHTML='因子 <b>'+(s.n_factors||0)+'</b> · 已实现 <b>'+(s.implemented||0)+'</b>'
+      +' · PIT 安全 <b>'+(s.pit_safe||0)+'</b> · 平均覆盖率 <b>'+(s.avg_coverage_pct||0)+'%</b>'
+      +' · 区间 '+(s.window_start||'—')+'~'+(s.window_end||'—')+' · 生成 '+esc(String(d.generated_at||'').replace('T',' ').slice(0,19));
+    const fs=d.factors||[];
+    const rows=fs.map(function(f){
+      const ex=(f.examples||[])[0]||{};
+      return '<tr><td><b>'+esc(f.title||f.name)+'</b><div class="muted">'+esc(f.name)+'</div></td>'
+        +'<td class="muted">'+esc(f.formula)+'</td>'
+        +'<td><b>'+(f.coverage_pct||0)+'%</b><div class="muted">'+(f.n_valid||0)+'/'+(f.n_expected||0)+'</div></td>'
+        +'<td>'+(f.pit_safe?'✅':'❌')+'</td><td>'+esc(f.direction==null?'—':f.direction)+'</td>'
+        +'<td class="muted">'+esc(ex.ts_code||'—')+' = '+esc(ex.value==null?'—':ex.value)+'</td>'
+        +'<td class="'+(f.status==='可用'?'ok':(f.status==='数据缺口'?'bad':'muted'))+'">'+esc(f.status||'—')+'</td></tr>';
+    });
+    if(q('factor-list')) q('factor-list').innerHTML=rows.length?rows.join(''):'<tr><td colspan="7" class="muted">暂无因子数据</td></tr>';
+    const gaps=d.data_gaps||[], unim=d.unimplemented||[];
+    let g='缺口 '+(gaps.length||0)+' 项';
+    if(gaps.length){ g+='：<ul class="todos">'+gaps.slice(0,8).map(function(x){return '<li class="muted">'+esc(String(x).slice(0,120))+'</li>';}).join('')+'</ul>'; }
+    if(unim.length){ g+='；未实现 '+unim.length+'：'+esc(unim.slice(0,5).join('、')); }
+    if(q('factor-gaps')) q('factor-gaps').innerHTML=g;
+  }
+  fetch('/static/learning_factors.json?ts='+Date.now()).then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status); return r.json();
+  }).then(renderFactors).catch(function(e){
+    if(q('factor-summary')) q('factor-summary').textContent='因子数据加载失败：'+(e&&e.message||e);
   });
 })();
 </script>
