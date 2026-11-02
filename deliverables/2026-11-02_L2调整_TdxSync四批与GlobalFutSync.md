@@ -32,3 +32,22 @@
 2. 数据级：`data/tdx/<table>` 最新 part mtime > 今日 17:30、manifest rows 增量 >0；
 3. 记录预期零行表（_vip×4、fina_mainbz、stock_basic/hk_basic/index_basic/classify/member_all/ths_member、trade_cal/forecast、index_weekly 等）与 D 批结果；
 4. GlobalFutSync 18:15 后 ts_global_fut 最新日=当日。
+
+## 五、并发异常裁定（2026-11-02 10:25）
+
+**事件**：wa-stores 于 10:16:49 安装 GlobalFutSync（Trigger=17:50）；Lead 在 10:17–10:20 的调整窗口将其改为 18:15（为避开 TdxSync_C 17:55 起的批次窗口）；wa-stores 按原任务规格于 10:21:18 复位 17:50 → 出现「同一任务 Trigger 被两方先后修改」的并发写。
+
+**裁定（Lead）**：**最终采用 18:15**（保留 Lead 的避让设计）。理由：TdxSync 四批 17:35–18:05 可能因网络抖动延长；GlobalFutSync 全量 4 品种实测 160s，18:15 启动不与批次抢网络/数据根；如批次提前结束也无害。
+
+**已修复的附加隐患（L2）**：wa-stores 发现本机为笔记本（有电池），5 个新/改任务默认 `DisallowStartIfOnBatteries=True` → 电池供电时静默不跑。已对 `TdxSync_A/B/C/D` 与 `GlobalFutSync` 统一改为 **允许电池启动**（`DisallowStartIfOnBatteries=False`、`StopIfGoingOnBatteries=False`）。
+
+**最终状态（10:25 复核）**：
+| 任务 | Trigger | State | LastResult | BatteryOK |
+|---|---|---|---|---|
+| TdxSync_A_高频 | 17:35 | Ready | 267011（未运行） | ✅ |
+| TdxSync_B_财务 | 17:45 | Ready | 267011 | ✅ |
+| TdxSync_C_低频 | 17:55 | Ready | 267011 | ✅ |
+| TdxSync_D_缺口 | 18:05 | Ready | 267011 | ✅ |
+| GlobalFutSync | **18:15** | Ready | **0**（10:19:54 验证通过） | ✅ |
+
+**并发教训（写入流程）**：同一 L2 对象（计划任务）同一时段只允许一个 owner 写；本次因 Lead 与 teammate 并行改同一 Trigger 造成竞态，后续 L2 任务变更前须在任务板声明 owner/时间窗，且改动后立即回读校验。
