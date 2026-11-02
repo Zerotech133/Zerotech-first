@@ -1,5 +1,5 @@
 version: 1
-status: draft_pending_DATA1_merge
+status: merged_to_data_catalog_v7（2026-11-02 S2-01）
 generated_at: '2026-11-02T02:48:20+08:00'
 source_inventory: C:\项目\老田的AI助手\research\reports\dataset_inventory_20261102.json
 note: 数据集级统一登记草稿（WP-I1）；合并进 data_catalog v7 需 DATA1 审核

@@ -14,6 +14,7 @@ K-STOCK-349 拍板（2026-10-14 老田）：彻底简化——砍系统健康/�
 import json
 import os
 import sys
+import time
 from datetime import datetime, timedelta, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -25,6 +26,12 @@ import logging
 
 STATION = os.path.dirname(HERE)
 CST = timezone(timedelta(hours=8))
+
+# S1-05 L1 止血（2026-11-02，计划 v3 方案 C）：数据实证产物的新鲜度门槛。
+# 背景：sentiment_bt/jev_impact 生成任务已缺失，产物停在 2026-10-18（诊断时 353.1h），
+# 旧逻辑会把 14 天前的回测/复评结果当"当日实证"发进飞书日报。超过本阈值即视为陈旧：
+# 对应数据行不外发，改发一行明确告警（见 _data_line / _stale_note）。
+STALE_GATE_HOURS = 48
 
 
 def _j(path):
@@ -90,26 +97,67 @@ def _sentiment_block():
     )
 
 
+def _age_hours(path):
+    """文件 mtime 距今小时数；缺失/不可 stat 返回 None（走"整块跳过"旧路径）。"""
+    try:
+        return max(0.0, (time.time() - os.path.getmtime(path)) / 3600.0)
+    except OSError:
+        return None
+
+
+def _stale_note(label, age_hours):
+    """单产物陈旧告警行（S1-05 止血）：陈旧数据行不外发，只发这一行。"""
+    return (
+        "⚠️ 数据实证：%s 数据陈旧 %.0fh（阈值 %dh），已跳过（S1-05 止血）"
+        % (label, age_hours, STALE_GATE_HOURS)
+    )
+
+
 def _data_line():
     """数据实证块（K-ORG-186 M2 新增）：回测 corr 一行 + impact 复评状态一行。
 
-    数据源 sentiment_bt_result.json / jev_impact.json（计划任务产出，缺则整块跳过）。"""
-    bt = _j(os.path.join(HERE, "data", "sentiment_bt_result.json")) or {}
-    if not bt.get("n"):
-        return None
-    lines = [
-        "📊 **数据实证**（多维数据日报）",
-        "情绪×次日回测 n=%s · corr=%s · 高置信 n=%s corr=%s · 单调=%s"
-        % (
-            bt.get("n"),
-            bt.get("corr_score_pct1"),
-            bt.get("n_high_conf"),
-            bt.get("corr_score_pct1_high_conf"),
-            {True: "是", False: "否"}.get(bt.get("conf_monotone"), "样本不足"),
-        ),
-    ]
-    im = _j(os.path.join(HERE, "data", "jev_impact.json")) or {}
-    if im.get("n") is not None:
+    数据源 sentiment_bt_result.json / jev_impact.json（计划任务产出，缺则整块跳过）。
+
+    S1-05 L1 止血（2026-11-02）：对两个产物按 mtime 计算 age（小时），
+    age > STALE_GATE_HOURS(48h) 即判陈旧——对应数据行不外发，改发明确告警；
+    两产物均陈旧则整块跳过、只记一行告警。正常（新鲜）路径输出格式与旧版逐字一致。
+    """
+    bt_path = os.path.join(HERE, "data", "sentiment_bt_result.json")
+    im_path = os.path.join(HERE, "data", "jev_impact.json")
+    bt_age = _age_hours(bt_path)
+    im_age = _age_hours(im_path)
+    bt_stale = bt_age is not None and bt_age > STALE_GATE_HOURS
+    im_stale = im_age is not None and im_age > STALE_GATE_HOURS
+
+    # 两个产物都陈旧：整块跳过，仅留一行可追溯告警（S1-05 止血，不把旧数当当日实证）
+    if bt_stale and im_stale:
+        return (
+            "⚠️ 数据实证：sentiment_bt_result.json / jev_impact.json 数据均陈旧"
+            "（最长 %.0fh > %dh），整块跳过（S1-05 止血）"
+            % (max(bt_age, im_age), STALE_GATE_HOURS)
+        )
+
+    bt = _j(bt_path) or {}
+    if bt_stale:
+        lines = [_stale_note("sentiment_bt_result.json", bt_age)]
+    elif not bt.get("n"):
+        return None  # 产物缺失/无样本：维持旧行为（整块跳过）
+    else:
+        lines = [
+            "📊 **数据实证**（多维数据日报）",
+            "情绪×次日回测 n=%s · corr=%s · 高置信 n=%s corr=%s · 单调=%s"
+            % (
+                bt.get("n"),
+                bt.get("corr_score_pct1"),
+                bt.get("n_high_conf"),
+                bt.get("corr_score_pct1_high_conf"),
+                {True: "是", False: "否"}.get(bt.get("conf_monotone"), "样本不足"),
+            ),
+        ]
+    im = _j(im_path) or {}
+    if im_stale:
+        lines.append(_stale_note("jev_impact.json", im_age))
+    elif im.get("n") is not None:
         applied = im.get("applied") or {}
         hot = [k for k in ("medium", "high") if applied.get(k)]
         lines.append(
@@ -120,6 +168,7 @@ def _data_line():
             )
         )
     return "\n".join(lines)
+
 
 
 def _sentinel_line():
