@@ -1,0 +1,13 @@
+{
+ "pid": "视频号学习_8博主",
+ "units_fingerprint": "2891817|1793653467|93c09c7519ad9def",
+ "last_run": "2026-11-03T05:46:57+08:00",
+ "last_status": "ok",
+ "stats": {
+  "candidates": 772,
+  "pass": 259,
+  "reject": 513,
+  "revise": 0
+ },
+ "candidate_file": "card_candidates_视频号学习_8博主_v2_20261103.json"
+}
