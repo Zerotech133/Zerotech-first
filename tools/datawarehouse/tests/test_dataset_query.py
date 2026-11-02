@@ -479,3 +479,47 @@ def test_coverage_judge_dims(reg):
     assert not empty_row["ready"] and empty_row.get("excluded") is True
     pg_row = mod.judge_dataset(reg, "pg_ds")
     assert not pg_row["ready"] and "not_supported" in (pg_row["reason"] or "")
+
+# ---------- 2026-11-02 历史数据验收发现的 3 个 P1 回归 ----------
+def test_sqlite_since_iso_text_matches_direct_sql():
+    """sqlite since 对 ISO 文本列不假绿：与直连 SQL 计数一致。"""
+    import sqlite3
+    from dataset_registry import DatasetRegistry
+
+    r = DatasetRegistry()
+    q = r.query("xq_xq_status", since="2026-10-01", limit=1, count=True)
+    assert q.get("state") == "ok"
+    row = [d for d in r.datasets if d.get("dataset_id") == "xq_xq_status"][0]
+    p = Path(row["path"])
+    if not p.is_absolute():
+        p = Path(__file__).resolve().parents[3] / p
+    con = sqlite3.connect("file:%s?mode=ro" % p.as_posix(), uri=True)
+    try:
+        expect = con.execute(
+            "SELECT COUNT(*) FROM xq_status WHERE created_at >= '2026-10-01'").fetchone()[0]
+    finally:
+        con.close()
+    assert q.get("count") == expect and expect > 0
+
+
+def test_files_since_works_and_counts():
+    """files 载体 since 不再 AttributeError。"""
+    from dataset_registry import DatasetRegistry
+
+    r = DatasetRegistry()
+    q = r.query("research_reports", since="2026-10-01", limit=3, count=True)
+    assert q.get("state") == "ok"
+    assert q.get("count") is not None and q["count"] > 0
+
+
+def test_files_order_size_numeric_desc():
+    """files 载体 order size 必须按数值而非字符串排序。"""
+    from dataset_registry import DatasetRegistry
+
+    r = DatasetRegistry()
+    q = r.query("research_reports", order=[{"field": "size", "desc": True}], limit=5)
+    ci = q["columns"].index("size")
+    sizes = [row[ci] for row in q.get("rows", [])]
+    assert len(sizes) >= 2
+    assert sizes == sorted(sizes, reverse=True)
+    assert all(isinstance(s, (int, float)) for s in sizes)

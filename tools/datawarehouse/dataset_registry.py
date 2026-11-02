@@ -179,6 +179,36 @@ def _jsonable(v):
         return None
 
 
+def _sqlite_since_value(con, table, col, since_n, t_type):
+    """sqlite since 下界值：按列实际存储格式选择（INT/8位数字/ISO 文本）。
+
+    2026-11-02 修复：此前所有非 INT 列一律用 YYYYMMDD 比较，
+    而 xq_status.created_at 等列为 ISO 文本 → '2026-11-02...' >= '20261001'
+    恒 false（假绿空结果）。
+    """
+    if "INT" in (t_type or "").upper():
+        return int(since_n["ymd"])
+    try:
+        q = 'SELECT "%s" FROM "%s" WHERE "%s" IS NOT NULL LIMIT 1' % (
+            col.replace('"', '""'), table.replace('"', '""'), col.replace('"', '""'))
+        row = con.execute(q).fetchone()
+        sample = row[0] if row else None
+    except Exception:  # noqa: BLE001
+        sample = None
+    if isinstance(sample, (bytes, bytearray)):
+        try:
+            sample = sample.decode("utf-8", "replace")
+        except Exception:  # noqa: BLE001
+            sample = None
+    if isinstance(sample, str):
+        s = sample.strip()
+        if "-" in s or "T" in s:
+            return since_n["date"].isoformat()
+        if len(s) == 8 and s.isdigit():
+            return since_n["ymd"]
+    return since_n["ymd"]
+
+
 def _norm_since(since):
     """since → {'date': date, 'ymd': 'YYYYMMDD'}；非法 fail-visible。"""
     if since in (None, ""):
@@ -1375,7 +1405,7 @@ class DatasetRegistry:
                     raise QueryParamError("since 不支持：该表无时间列",
                                           {"allowed_fields": names})
                 t_type = types.get(since_col, "").upper()
-                val = int(since["ymd"]) if "INT" in t_type else since["ymd"]
+                val = _sqlite_since_value(con, table, since_col, since, t_type)
                 parts.append('"%s" >= ?' % since_col.replace('"', '""'))
                 params.append(val)
             where_sql = (" WHERE " + " AND ".join(parts)) if parts else ""
@@ -1824,7 +1854,8 @@ class DatasetRegistry:
         select = list(columns) if columns else list(fields)
         for c in select:
             self._check_field(c, fields)
-        since_ts = since["date"].timestamp() if since else None
+        since_ts = (datetime.datetime.combine(since["date"], datetime.time.min)
+                    .timestamp()) if since else None
         rows = []
         for meta in files:
             mtime = meta.get("mtime")
@@ -1844,10 +1875,20 @@ class DatasetRegistry:
         total = len(rows) if count else None
         if order:
             for o in reversed(order):
-                rows.sort(key=lambda r: (r.get(o["field"]) is None,
-                                         "" if r.get(o["field"]) is None
-                                         else str(r.get(o["field"]))),
-                          reverse=o["desc"])
+                _fld = o["field"]
+
+                def _okey(r, _fld=_fld):
+                    v = r.get(_fld)
+                    if v is None:
+                        return (1, 0)
+                    if _fld in ("size", "depth"):
+                        try:
+                            return (0, float(v))
+                        except (TypeError, ValueError):
+                            return (0, 0)
+                    return (0, str(v))
+
+                rows.sort(key=_okey, reverse=o["desc"])
         page = rows[offset:offset + limit + 1]
         has_more = len(page) > limit
         page = page[:limit]

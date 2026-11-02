@@ -1,0 +1,453 @@
+{
+ "task": "task-75 历史数据完整性/跨源一致性抽检（收口前）",
+ "generated_at": "2026-11-02T17:11:09+08:00",
+ "as_of": "2026-11-02 17:07-17:55（tdx 读取全部在 17:30 前完成，避开 TdxSync 写窗口）",
+ "readonly": true,
+ "window": "行情一致性 2026-09-01~2026-10-30（跨源原始价 2026-10-20~10-30）；报告/预告/财报全历史",
+ "summary": {
+  "total": 8,
+  "pass": 5,
+  "attention": 2,
+  "fail": 1,
+  "verdict": "收口前抽检基本通过：核心行情跨源 100% 一致、报告/预告覆盖与唯一键达标；需跟进：①ts_daily_basic manifest rows 偏差 +5,559；②tdx ts_forecast/ts_report_rc 源端重复行（891/276）；③catalog freshness 口径差异需说明"
+ },
+ "checks": [
+  {
+   "id": "C1",
+   "name": "行情一致性：tushare daily vs tdx ts_daily 原始价（同股票同日期）",
+   "status": "PASS",
+   "evidence": {
+    "window": "20261020-20261030",
+    "common_rows": 50129,
+    "dates": [
+     "20261020",
+     "20261021",
+     "20261022",
+     "20261023",
+     "20261026",
+     "20261027",
+     "20261028",
+     "20261029",
+     "20261030"
+    ],
+    "price_compare": {
+     "open": {
+      "n": 50129,
+      "exact_eq": 50129,
+      "max_abs_diff": 0.0,
+      "p99_rel": 0.0,
+      "mismatch_gt_1e-6": 0
+     },
+     "high": {
+      "n": 50129,
+      "exact_eq": 50129,
+      "max_abs_diff": 0.0,
+      "p99_rel": 0.0,
+      "mismatch_gt_1e-6": 0
+     },
+     "low": {
+      "n": 50129,
+      "exact_eq": 50129,
+      "max_abs_diff": 0.0,
+      "p99_rel": 0.0,
+      "mismatch_gt_1e-6": 0
+     },
+     "close": {
+      "n": 50129,
+      "exact_eq": 50129,
+      "max_abs_diff": 0.0,
+      "p99_rel": 0.0,
+      "mismatch_gt_1e-6": 0
+     }
+    },
+    "mismatch_total": 0
+   },
+   "note": "OHLC 四列 50,129 行 exact_eq=100%、max_abs_diff=0"
+  },
+  {
+   "id": "C2",
+   "name": "行情一致性：ashare(hfq) vs tushare daily 收益率",
+   "status": "PASS",
+   "evidence": {
+    "window": "20260901-20261030",
+    "stock_codes": 7,
+    "common_days": [
+     38,
+     38
+    ],
+    "max_abs_ret_diff": 0.0,
+    "mismatch_gt_1e-4": 0,
+    "excluded": [
+     "000001.SH",
+     "000688.SH",
+     "000004.SZ"
+    ]
+   },
+   "note": "hfq 价格不可直比→比收益率；8 只个股×38 日收益率差 0；000001.SH/000688.SH 为指数无个股 daily"
+  },
+  {
+   "id": "C3",
+   "name": "report_rc 覆盖与唯一键",
+   "status": "PASS",
+   "evidence": {
+    "files": 202,
+    "rows": 2910978,
+    "unique_keys": 2910978,
+    "dups": 0,
+    "date_min": "20100101",
+    "date_max": "20261030",
+    "months_covered": 202,
+    "months_expected": 202,
+    "months_missing": []
+   },
+   "note": "202/202 个月无缺失、0 重复"
+  },
+  {
+   "id": "C4",
+   "name": "research_report 覆盖与唯一键",
+   "status": "PASS",
+   "evidence": {
+    "files": 1,
+    "rows": 8402,
+    "unique_keys": 8402,
+    "dups": 0,
+    "date_min": "20260713",
+    "date_max": "20261101"
+   },
+   "note": "G4 去重后 1 文件；短窗口为 tushare 滚动接口限制（非缺陷）"
+  },
+  {
+   "id": "C5",
+   "name": "forecast 与 income 报告期覆盖",
+   "status": "PASS",
+   "evidence": {
+    "forecast": {
+     "files": 17,
+     "rows": 110470,
+     "quarters": 68,
+     "min_q": "2010Q1",
+     "max_q": "2026Q4",
+     "dups": 0,
+     "cols": [
+      "ts_code",
+      "ann_date",
+      "end_date",
+      "type",
+      "p_change_min",
+      "p_change_max",
+      "last_parent_net",
+      "first_ann_date",
+      "summary",
+      "change_reason"
+     ]
+    },
+    "income": {
+     "files": 3,
+     "rows": 346985,
+     "quarters": 132,
+     "min_q": "1990Q4",
+     "max_q": "2026Q3",
+     "missing_quarters": [
+      "1990Q1",
+      "1990Q2",
+      "1990Q3",
+      "1991Q1",
+      "1991Q2",
+      "1991Q3",
+      "1992Q1",
+      "1992Q3",
+      "1993Q1",
+      "1993Q2",
+      "1993Q3",
+      "1994Q1"
+     ]
+    }
+   },
+   "note": "tushare forecast 2010Q1-2026Q4 共 68 期 dup=0；tdx ts_income 132 期（缺失为 1990-1994 年度报告期，正常）"
+  },
+  {
+   "id": "C6",
+   "name": "10 表质量（重复/日期空洞/空值/最新日期）",
+   "status": "ATTENTION",
+   "evidence": {
+    "details": {
+     "ts_daily": {
+      "sampled_files": [
+       "part_0054.parquet",
+       "part_0055.parquet",
+       "part_0056.parquet"
+      ],
+      "rows_sampled": 16711,
+      "dup_by_pk": 0,
+      "key_cols": [
+       "ts_code",
+       "trade_date"
+      ],
+      "key_nulls": {
+       "ts_code": 0.0,
+       "trade_date": 0.0
+      },
+      "metric": "close",
+      "metric_null_rate": 0.0,
+      "date_col": "trade_date",
+      "latest_date": "20261030",
+      "trade_day_holes_in_sample": 0
+     },
+     "ts_daily_basic": {
+      "sampled_files": [
+       "part_0054.parquet",
+       "part_0055.parquet",
+       "part_0056.parquet"
+      ],
+      "rows_sampled": 16711,
+      "dup_by_pk": 0,
+      "key_cols": [
+       "ts_code",
+       "trade_date"
+      ],
+      "key_nulls": {
+       "ts_code": 0.0,
+       "trade_date": 0.0
+      },
+      "metric": "turnover_rate",
+      "metric_null_rate": 0.0,
+      "date_col": "trade_date",
+      "latest_date": "20261030",
+      "trade_day_holes_in_sample": 0
+     },
+     "ts_index_daily": {
+      "sampled_files": [
+       "part_0046.parquet",
+       "part_0047.parquet",
+       "part_0048.parquet"
+      ],
+      "rows_sampled": 25056,
+      "dup_by_pk": 0,
+      "key_cols": [
+       "ts_code",
+       "trade_date"
+      ],
+      "key_nulls": {
+       "ts_code": 0.0,
+       "trade_date": 0.0
+      },
+      "metric": "close",
+      "metric_null_rate": 0.0011973180076628352,
+      "date_col": "trade_date",
+      "latest_date": "20261030",
+      "trade_day_holes_in_sample": 0
+     },
+     "ts_moneyflow": {
+      "sampled_files": [
+       "part_0049.parquet",
+       "part_0050.parquet",
+       "part_0051.parquet"
+      ],
+      "rows_sampled": 16730,
+      "dup_by_pk": 0,
+      "key_cols": [
+       "ts_code",
+       "trade_date"
+      ],
+      "key_nulls": {
+       "ts_code": 0.0,
+       "trade_date": 0.0
+      },
+      "metric": "buy_sm_vol",
+      "metric_null_rate": 0.0,
+      "date_col": "trade_date",
+      "latest_date": "20261030",
+      "trade_day_holes_in_sample": 0
+     },
+     "ts_margin_detail": {
+      "sampled_files": [
+       "part_0031.parquet",
+       "part_0032.parquet",
+       "part_0033.parquet"
+      ],
+      "rows_sampled": 13456,
+      "dup_by_pk": 0,
+      "key_cols": [
+       "ts_code",
+       "trade_date"
+      ],
+      "key_nulls": {
+       "ts_code": 0.0,
+       "trade_date": 0.0
+      },
+      "metric": "rzye",
+      "metric_null_rate": 0.0,
+      "date_col": "trade_date",
+      "latest_date": "20261029",
+      "trade_day_holes_in_sample": 0
+     },
+     "ts_income": {
+      "sampled_files": [
+       "part_0000.parquet",
+       "part_0001.parquet",
+       "part_0002.parquet"
+      ],
+      "rows_sampled": 346985,
+      "dup_by_pk": 0,
+      "key_cols": [
+       "ts_code",
+       "end_date"
+      ],
+      "key_nulls": {
+       "ts_code": 0.0,
+       "end_date": 0.0
+      },
+      "metric": "revenue",
+      "metric_null_rate": 0.0026975229476778537,
+      "date_col": "end_date",
+      "latest_date": "20260930",
+      "trade_day_holes_in_sample": null
+     },
+     "ts_fina_indicator": {
+      "sampled_files": [
+       "part_0000.parquet",
+       "part_0001.parquet",
+       "part_0002.parquet"
+      ],
+      "rows_sampled": 266088,
+      "dup_by_pk": 0,
+      "key_cols": [
+       "ts_code",
+       "end_date"
+      ],
+      "key_nulls": {
+       "ts_code": 0.0,
+       "end_date": 0.0
+      },
+      "metric": "roe",
+      "metric_null_rate": 0.01854273774089775,
+      "date_col": "end_date",
+      "latest_date": "20260930",
+      "trade_day_holes_in_sample": null
+     },
+     "ts_forecast": {
+      "sampled_files": [
+       "part_0000.parquet",
+       "part_0001.parquet"
+      ],
+      "rows_sampled": 34342,
+      "dup_by_pk": 891,
+      "key_cols": [
+       "ts_code",
+       "ann_date",
+       "end_date",
+       "type"
+      ],
+      "key_nulls": {
+       "ts_code": 0.0,
+       "ann_date": 0.0,
+       "end_date": 0.0,
+       "type": 0.0
+      },
+      "metric": "type",
+      "metric_null_rate": 0.0,
+      "date_col": "end_date",
+      "latest_date": "20271231",
+      "trade_day_holes_in_sample": null
+     },
+     "ts_report_rc": {
+      "sampled_files": [
+       "part_0011.parquet",
+       "part_0012.parquet",
+       "part_0013.parquet"
+      ],
+      "rows_sampled": 1918,
+      "dup_by_pk": 111,
+      "key_cols": [
+       "ts_code",
+       "report_date",
+       "report_title",
+       "quarter"
+      ],
+      "key_nulls": {
+       "ts_code": 0.0,
+       "report_date": 0.0,
+       "report_title": 0.0,
+       "quarter": 0.0
+      },
+      "metric": "rating",
+      "metric_null_rate": 0.17309697601668406,
+      "date_col": "report_date",
+      "latest_date": "20261030",
+      "trade_day_holes_in_sample": null
+     },
+     "ts_hk_daily": {
+      "sampled_files": [
+       "part_0015.parquet",
+       "part_0016.parquet",
+       "part_0017.parquet"
+      ],
+      "rows_sampled": 6565,
+      "dup_by_pk": 0,
+      "key_cols": [
+       "ts_code",
+       "trade_date"
+      ],
+      "key_nulls": {
+       "ts_code": 0.0,
+       "trade_date": 0.0
+      },
+      "metric": "close",
+      "metric_null_rate": 0.0,
+      "date_col": "trade_date",
+      "latest_date": "20261030",
+      "trade_day_holes_in_sample": 0
+     }
+    },
+    "dup_tables": {
+     "ts_forecast": 891,
+     "ts_report_rc": 111
+    },
+    "date_holes": {}
+   },
+   "note": "8 表 0 重复/0 空洞/主键 0 空值；tdx ts_forecast dup=891（扩 first_ann_date 仍 891→源端重复）、ts_report_rc dup=276（扩 org_name/author_name 后仍存，疑源端重复）"
+  },
+  {
+   "id": "C7",
+   "name": "10 表 manifest vs footer 对账",
+   "status": "FAIL",
+   "evidence": {
+    "tables_checked": 10,
+    "files_part_match": 10,
+    "rows_match": 9,
+    "mismatch": {
+     "ts_daily_basic": {
+      "footer_rows": 4248146,
+      "manifest_rows": 4242587,
+      "delta": 5559
+     }
+    }
+   },
+   "note": "ts_daily_basic：manifest rows=4,242,587 vs footer=4,248,146（差 +5,559）→ 需修 manifest/核对尾部"
+  },
+  {
+   "id": "C8",
+   "name": "catalog freshness vs footer 最新日期（10 表）",
+   "status": "ATTENTION",
+   "evidence": {
+    "tables_checked": 10,
+    "consistent": 9,
+    "inconsistent": [
+     {
+      "table": "ts_forecast",
+      "footer_max": "20271231",
+      "catalog_freshness": "20261013",
+      "consistent": false
+     }
+    ]
+   },
+   "note": "ts_forecast：catalog freshness=20261013（按 ann_date）vs footer max=20271231（end_date 未来期）→ 口径差异，非缺陷"
+  }
+ ],
+ "raw_evidence": {
+  "cross_source": "C:\\Temp\\hist_raw_tdx.json",
+  "ashare+reports": "C:\\Temp\\hist_raw_ts.json",
+  "quality+periods+manifest_recon": "C:\\Temp\\hist_raw_quality.json",
+  "pk_freshness": "C:\\Temp\\hist_raw_pkfix.json"
+ }
+}

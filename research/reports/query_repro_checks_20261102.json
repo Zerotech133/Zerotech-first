@@ -1,0 +1,559 @@
+{
+ "generated_at": "2026-11-02T17:17:14+0800",
+ "tool": "task-76 历史数据查询 + 回测可复现性验收（只读查询 / 仅重跑回测写运行态 bt2 JSON）",
+ "window": {
+  "query_since": "2026-10-01",
+  "backtest": [
+   "20260928",
+   "20261030"
+  ],
+  "tdx_query_times": [
+   "2026-11-02T17:11:08+08:00",
+   "2026-11-02T17:13:24+08:00"
+  ],
+  "tdx_safe_window": "TdxSync A 批 17:35 前完成（任务 NextRun=17:35，未启动）"
+ },
+ "query_summary": {
+  "carriers_tested": 5,
+  "cases_total": 21,
+  "pass": 16,
+  "fail": 3,
+  "p2_not_supported_or_limited": 2,
+  "note": "fail=可复现缺陷（sqlite since / files since / files size 排序）；P2=按设计不支持或截断可见（parquet order、guba 200 文件上限、yt since 无日期列静默跳过）",
+  "extra_limitation": 1
+ },
+ "query_checks": [
+  {
+   "carrier": "sqlite_table",
+   "dataset": "xq_xq_status",
+   "kind": "sqlite_table",
+   "source": "quant_backtest/data/xueqiu/xueqiu_info.db :: xq_status",
+   "cases": [
+    {
+     "case": "count",
+     "query": {
+      "limit": 1,
+      "count": true
+     },
+     "expected": 33353,
+     "actual": 33353,
+     "status": "PASS"
+    },
+    {
+     "case": "where like_count>=1000",
+     "expected": 17,
+     "actual": 17,
+     "status": "PASS"
+    },
+    {
+     "case": "order created_at:desc + limit/offset（与直连 SQL 逐 id 对比）",
+     "expected": {
+      "page1": [
+       "414982133",
+       "414967907",
+       "414951448",
+       "414941410",
+       "414938797"
+      ],
+      "page2": [
+       "414937529",
+       "414936906",
+       "414933564",
+       "414916392",
+       "414916279"
+      ]
+     },
+     "actual": {
+      "page1": [
+       "414982133",
+       "414967907",
+       "414951448",
+       "414941410",
+       "414938797"
+      ],
+      "page2": [
+       "414937529",
+       "414936906",
+       "414933564",
+       "414916392",
+       "414916279"
+      ]
+     },
+     "status": "PASS"
+    },
+    {
+     "case": "since 2026-10-01",
+     "expected": 279,
+     "actual": 0,
+     "status": "FAIL",
+     "root_cause": "engine 将 since 归一为 YYYYMMDD（20261001）与 created_at 的 ISO 字符串（'2026-11-01 20:17:19'）做字符串比较，恒 false",
+     "evidence": {
+      "engine_evidence": {
+       "engine": "sqlite",
+       "db": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\xueqiu\\xueqiu_info.db",
+       "table": "xq_status",
+       "rows_returned": 0,
+       "scanned_rows": 0,
+       "where_applied": false,
+       "order_applied": false,
+       "since_applied": true,
+       "since_column": "created_at",
+       "count_source": "count(*)",
+       "read_only": true,
+       "elapsed_ms": 30
+      },
+      "direct_max_created_at": "2026-11-01 20:17:19"
+     }
+    }
+   ]
+  },
+  {
+   "carrier": "parquet_dir",
+   "dataset": "tdx_ts_daily",
+   "kind": "dir",
+   "source": "quant_backtest/data/tdx/ts_daily/part_*.parquet（57 文件，17:11–17:13 读取，早于 TdxSync 17:35）",
+   "cases": [
+    {
+     "case": "count",
+     "expected": 4248146,
+     "actual": 4248146,
+     "status": "PASS"
+    },
+    {
+     "case": "where trade_date=20261030",
+     "expected": 5571,
+     "actual": 5571,
+     "status": "PASS"
+    },
+    {
+     "case": "where trade_date>=20261001",
+     "expected": 94626,
+     "actual": 94626,
+     "status": "PASS"
+    },
+    {
+     "case": "since 2026-10-01",
+     "expected": 94626,
+     "actual": 94626,
+     "status": "PASS",
+     "evidence": {
+      "since_column": "trade_date",
+      "count_source": "dataset.count_rows"
+     }
+    },
+    {
+     "case": "order/limit/offset（trade_date:desc）",
+     "expected": "支持排序分页",
+     "actual": "QueryNotSupported",
+     "status": "P2_not_supported",
+     "detail": "parquet 全量扫描 4,248,146 行 > QUERY_PARQUET_ORDER_ROWS=200,000，P1 按设计不支持大 parquet 内存排序（P2 下推）"
+    }
+   ]
+  },
+  {
+   "carrier": "jsonl（corpus jsonl 小样本）",
+   "dataset": "yt_knowledge_units",
+   "kind": "corpus_layer",
+   "source": "yt_knowledge_units（dir_jsonl，2 文件 388 行）",
+   "cases": [
+    {
+     "case": "count",
+     "expected": 388,
+     "actual": 388,
+     "status": "PASS"
+    },
+    {
+     "case": "where unit_id like learn_%",
+     "expected": 288,
+     "actual": 288,
+     "status": "PASS"
+    },
+    {
+     "case": "since 2026-10-01",
+     "expected": 288,
+     "actual": 288,
+     "status": "PASS"
+    },
+    {
+     "case": "limit/offset（page1/page2）",
+     "expected": 5,
+     "actual": {
+      "page1": 5,
+      "page2": 5
+     },
+     "status": "PASS"
+    }
+   ],
+   "extra": {
+    "dataset": "guba",
+    "carrier": "dir_jsonl",
+    "files": 432,
+    "direct_rows": 25835,
+    "engine_count": 15028,
+    "truncated": true,
+    "evidence": {
+     "engine": "jsonl",
+     "files": 200,
+     "files_scanned": 200,
+     "scanned_lines": 15028,
+     "docs_matched": 15028,
+     "schema_fields": 8,
+     "rows_returned": 1,
+     "where_applied": false,
+     "order_applied": false,
+     "since_applied": false,
+     "since_column": null,
+     "since_mode": null,
+     "truncated_discovery": true,
+     "scan_cap_lines": 200000,
+     "count_source": "stream_count",
+     "elapsed_ms": 94
+    },
+    "status": "P2_limited",
+    "detail": "QUERY_MAX_JSONL_FILES=200 截断（200/432 文件），count/where/since 为截断子集但 truncated=True/truncated_discovery 可见"
+   }
+  },
+  {
+   "carrier": "file_level_dir",
+   "dataset": "research_reports",
+   "kind": "dir",
+   "source": "research/reports（424 文件）",
+   "cases": [
+    {
+     "case": "count",
+     "expected": 424,
+     "actual": 424,
+     "status": "PASS"
+    },
+    {
+     "case": "where ext=.md",
+     "expected": 173,
+     "actual": 173,
+     "status": "PASS"
+    },
+    {
+     "case": "order mtime:desc",
+     "expected": "按 mtime 倒序",
+     "actual": [
+      "2026-11-02 17:11",
+      "2026-11-02 17:03",
+      "2026-11-02 17:00",
+      "2026-11-02 16:47",
+      "2026-11-02 16:22"
+     ],
+     "status": "PASS"
+    },
+    {
+     "case": "since 2026-10-01",
+     "expected": 424,
+     "actual": "AttributeError: 'datetime.date' object has no attribute 'timestamp'",
+     "status": "FAIL",
+     "root_cause": "_query_files: since_ts = since['date'].timestamp()（datetime.date 无 timestamp 方法）"
+    },
+    {
+     "case": "order size:desc",
+     "expected": "数值降序（987182 应为首）",
+     "actual": [
+      9965,
+      989,
+      987182,
+      98407,
+      980
+     ],
+     "status": "FAIL",
+     "root_cause": "_query_files 排序 key=str(value)，size 按字符串序而非数值序"
+    }
+   ]
+  },
+  {
+   "carrier": "corpus_layer(parquet)",
+   "dataset": "yt_normalized",
+   "kind": "corpus_layer",
+   "source": "yt_normalized（9 parquet 文件）",
+   "cases": [
+    {
+     "case": "count",
+     "expected": 1413509,
+     "actual": 1413509,
+     "status": "PASS"
+    },
+    {
+     "case": "limit/offset",
+     "expected": 5,
+     "actual": {
+      "page1": 5,
+      "page2": 5
+     },
+     "status": "PASS"
+    },
+    {
+     "case": "since 2026-10-01",
+     "expected": "按日期列过滤或 fail-visible",
+     "actual": "since_applied=false 静默忽略（无日期列）",
+     "status": "P2_silent_ignore",
+     "detail": "parquet 无日期列时 since 静默不生效（evidence.since_applied=false/since_column=null），建议改为显式 note/fail-visible"
+    }
+   ]
+  }
+ ],
+ "backtest_summary": {
+  "status": "PASS",
+  "dk": {
+   "summary_equal": true,
+   "meta_equal_except_job_id": true,
+   "equity_equal": true,
+   "trades_equal": true,
+   "days_equal": true,
+   "holdings_equal": true,
+   "job_id": {
+    "base": "SEP1M-DK",
+    "repro": "REPRO-DK"
+   },
+   "stats": {
+    "equity_points": 20,
+    "first_equity": 1.0,
+    "final_equity": 0.9845,
+    "max_drawdown_pct_recalc": -3.28,
+    "trades_total": 52,
+    "buys": 26,
+    "sells": 26,
+    "sell_pnl_nonnull": 26,
+    "win_rate_pct_recalc": 50.0,
+    "profit_factor_recalc": 0.69,
+    "sum_pnl": -15.83
+   },
+   "runtime_s": 181
+  },
+  "chanlun": {
+   "summary_equal": true,
+   "meta_equal_except_job_id": true,
+   "equity_equal": true,
+   "trades_equal": true,
+   "days_equal": true,
+   "holdings_equal": true,
+   "job_id": {
+    "base": "SEP1M-CHANLUN",
+    "repro": "REPRO-CHAN"
+   },
+   "stats": {
+    "equity_points": 20,
+    "first_equity": 1.0,
+    "final_equity": 0.936474,
+    "max_drawdown_pct_recalc": -6.77,
+    "trades_total": 188,
+    "buys": 95,
+    "sells": 93,
+    "sell_pnl_nonnull": 93,
+    "win_rate_pct_recalc": 40.9,
+    "profit_factor_recalc": 0.68,
+    "sum_pnl": -52.68
+   },
+   "runtime_s": 70
+  }
+ },
+ "backtest_checks": {
+  "dk": {
+   "base_file": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\bt2\\bt2_SEP1M-DK.json",
+   "repro_file": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\bt2\\bt2_REPRO-DK.json",
+   "summary_equal": true,
+   "summary_diffs": [],
+   "meta_diffs_total": 1,
+   "meta_diffs_non_jobid": [],
+   "meta_jobid": {
+    "base": "SEP1M-DK",
+    "repro": "REPRO-DK"
+   },
+   "equity_len": {
+    "base": 20,
+    "repro": 20
+   },
+   "equity_max_abs_diff": null,
+   "equity_equal": true,
+   "trades_len": {
+    "base": 52,
+    "repro": 52
+   },
+   "trades_diffs_total": 0,
+   "trades_diffs_head": [],
+   "trades_equal": true,
+   "days_len": {
+    "base": 20,
+    "repro": 20
+   },
+   "holdings_len": {
+    "base": 20,
+    "repro": 20
+   },
+   "stats_base": {
+    "n_trades": 52,
+    "n_sells": 0,
+    "n_pnl": 52,
+    "sum_pnl_pct": 0.0
+   },
+   "stats_repro": {
+    "n_trades": 52,
+    "n_sells": 0,
+    "n_pnl": 52,
+    "sum_pnl_pct": 0.0
+   }
+  },
+  "chanlun": {
+   "base_file": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\bt2\\bt2_SEP1M-CHANLUN.json",
+   "repro_file": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\bt2\\bt2_REPRO-CHAN.json",
+   "summary_equal": true,
+   "summary_diffs": [],
+   "meta_diffs_total": 1,
+   "meta_diffs_non_jobid": [],
+   "meta_jobid": {
+    "base": "SEP1M-CHANLUN",
+    "repro": "REPRO-CHAN"
+   },
+   "equity_len": {
+    "base": 20,
+    "repro": 20
+   },
+   "equity_max_abs_diff": null,
+   "equity_equal": true,
+   "trades_len": {
+    "base": 188,
+    "repro": 188
+   },
+   "trades_diffs_total": 0,
+   "trades_diffs_head": [],
+   "trades_equal": true,
+   "days_len": {
+    "base": 20,
+    "repro": 20
+   },
+   "holdings_len": {
+    "base": 20,
+    "repro": 20
+   },
+   "stats_base": {
+    "n_trades": 188,
+    "n_sells": 0,
+    "n_pnl": 188,
+    "sum_pnl_pct": 0.0
+   },
+   "stats_repro": {
+    "n_trades": 188,
+    "n_sells": 0,
+    "n_pnl": 188,
+    "sum_pnl_pct": 0.0
+   }
+  }
+ },
+ "rules": {
+  "status": "PASS",
+  "source": "deliverables/2026-11-02_近1月历史回测推演_v1.md §一 + bt2 meta",
+  "items": [
+   {
+    "rule": "成本 cost",
+    "report": "1.5‰（单边 0.15%）",
+    "meta": {
+     "DK": 0.0015,
+     "CHANLUN": 0.0015
+    },
+    "status": "PASS"
+   },
+   {
+    "rule": "T+1 制度",
+    "report": "T+1 制度",
+    "meta": {
+     "DK": {
+      "buy_timing": "T+1_open",
+      "sell_timing": "T_close_1455",
+      "min_holding_days": 1
+     },
+     "CHANLUN": {
+      "buy_timing": "T+1_open",
+      "sell_timing": "T+1_open",
+      "min_holding_days": 0
+     }
+    },
+    "status": "PASS"
+   },
+   {
+    "rule": "涨跌停可成交检查 limit_check",
+    "report": "开",
+    "meta": {
+     "DK": true,
+     "CHANLUN": true
+    },
+    "status": "PASS"
+   },
+   {
+    "rule": "历史 ST 回溯 hist_st",
+    "report": "开",
+    "meta": {
+     "DK": {
+      "on": true,
+      "n_codes": 278,
+      "n_rows_drop": 6
+     },
+     "CHANLUN": {
+      "on": true,
+      "n_codes": 278,
+      "n_events_drop": 0
+     }
+    },
+    "status": "PASS"
+   },
+   {
+    "rule": "runup_cap",
+    "report": "默认参数",
+    "meta": {
+     "DK": 0.0,
+     "CHANLUN": 0.05
+    },
+    "status": "PASS"
+   },
+   {
+    "rule": "执行时间轴",
+    "report": "缠论 T+1 开盘入/出；双刀 T 14:45 选股→T+1 开盘买→T+2 起可卖",
+    "meta": {
+     "DK": [
+      "T 14:45：选股引擎跑双刀信号（十字星2连+MACD多头+均线多头+regime非空）",
+      "T 14:55：只卖不买（信号消失/持有到期/灾难止损，收盘价离场）",
+      "T 盘中：禁止买入",
+      "T+1 开盘：买入新选出的票（slot 内 · 总仓位帽内）",
+      "T+2 起：可卖（T+1 制度），14:55 决策当日收盘执行"
+     ],
+     "CHANLUN": [
+      "T 收盘：缠论买点确认（seen-ever·hfq）",
+      "T+1 开盘：买入（runup帽>15%放弃该机会）",
+      "T 收盘：卖点确认",
+      "T+1 开盘：卖出，资金回池等下一个买点",
+      "T 收盘：三买失效检查（收盘跌破中枢上沿=三买被否定）→ T+1 开盘离场",
+      "组合层：regime 三档仓位帽（默认 80/50/30·可自定义）连续调仓（D-1 判定）+ 超帽等比减仓"
+     ]
+    },
+    "status": "PASS"
+   }
+  ]
+ },
+ "verdict": {
+  "query": "FAIL（sqlite since / files since / files size 排序 3 项可复现缺陷；P2 限制 3 项不阻断）",
+  "backtest": "PASS（DK/CHANLUN summary/equity/trades 全量逐字段一致，meta 仅 job_id 不同）",
+  "rules": "PASS",
+  "overall": "CONDITIONAL（回测复现通过与规则核对；查询能力 3 个 P1 bug 需修复后复验）"
+ },
+ "evidence_files": [
+  "C:\\Temp\\task76_queries.json",
+  "C:\\Temp\\task76_queries2.json",
+  "C:\\Temp\\task76_queries3.json",
+  "C:\\Temp\\task76_queries4.json",
+  "C:\\Temp\\task76_queries5.json",
+  "C:\\Temp\\task76_bt_compare.json",
+  "C:\\Temp\\task76_bt_stats.json",
+  "C:\\Temp\\task76_dk.log",
+  "C:\\Temp\\task76_chan.log",
+  "quant_backtest/data/bt2/bt2_REPRO-DK.json",
+  "quant_backtest/data/bt2/bt2_REPRO-CHAN.json"
+ ],
+ "boundaries": {
+  "queries": "只读（DatasetRegistry.query 只读连接/扫描；tdx 查询 17:11–17:13 完成，早于 TdxSync 17:35）",
+  "backtest": "仅写运行态 bt2 JSON（bt2_REPRO-DK/CHAN），未改数据/catalog/registry",
+  "other": "未 commit、未重启、未触发任何计划任务"
+ }
+}
