@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """UF-12：legion ops CORS 通配下线回归。"""
 from __future__ import annotations
 

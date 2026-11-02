@@ -41,7 +41,8 @@ PY312 = Path(r"C:\项目\py312\python.exe")
 SERVER_NAME = "dw-catalog"
 SERVER_VERSION = "1.0.0"
 
-QUALIFICATION_STATES = ("unknown", "evidence_partial", "planned", "deprecated")
+QUALIFICATION_STATES = ("evidence_ok", "evidence_partial", "unknown",
+                        "planned", "deprecated")  # 2026-11-02 修复：补 evidence_ok（S3-01 后大量表已升 ok）
 
 # 只读工具白名单（底层脚本名，必须真实存在；selftest 逐项核对）
 UNDERLYING = {

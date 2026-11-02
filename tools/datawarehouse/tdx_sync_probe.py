@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""TdxSync 零行/锁跳过看门狗（只读，fail-visible）。
+r"""TdxSync 零行/锁跳过看门狗（只读，fail-visible）。
 
 背景（2026-11-02 task-43 核验 + TdxSync 四批 L2 调整）：
 1. **零行假绿**：`tdx_sync.py` 增量模式无零行闸——`LastTaskResult=0` 不代表有产出；

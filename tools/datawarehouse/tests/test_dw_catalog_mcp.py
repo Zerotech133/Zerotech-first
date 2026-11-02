@@ -26,7 +26,7 @@ REGISTRY = DATA / "warehouse_registry.json"
 CATALOG = DATA / "catalog.json"
 
 TOOL_NAMES = ["catalog_snapshot", "registry_stats", "lifecycle", "table_info", "qualification"]
-STATES = ("unknown", "evidence_partial", "planned", "deprecated")
+STATES = ("evidence_ok", "unknown", "evidence_partial", "planned", "deprecated")
 
 
 # ---------------------------------------------------------------- 测试辅助

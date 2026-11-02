@@ -48,3 +48,13 @@
 2. unknown 52 → <40：DATA1 补 41 张 stale + 补 date_col（shibor/cnopendata2/ts_sge_basic）+ calendar 例外 + 4 空目录登记修正 + pg 只读探针；
 3. 11-05 窗口 8091/nginx；
 4. 明日 06:40 dw_snapshot 首日自动跑检查。
+
+## 七、勘误与跟进（2026-11-02 11:32）
+
+1. **提交口径勘误**：commit `6690bfcf8` 信息写「TdxSync看门狗(10测试)」，实际交付为 **11 个测试**（`test_tdx_sync_probe.py` 11 passed）；本条留痕，不改历史提交。
+2. **看门狗回执补提交**：`deliverables/2026-11-02_TdxSync看门狗_回执.md` 已于本批补入（含只读实跑 rc=0、19:05 演练 rc=1、基线/非交易日等 11 用例与边界）。
+3. **外部红修复（本轮处理）**：
+   - `tools/datawarehouse/tests/test_dw_catalog_mcp.py` 2 条旧口径断言：根因是 `dw_catalog_mcp.QUALIFICATION_STATES` 遗漏 `evidence_ok`（S3-01 后 147 张已升 ok，MCP 输出漏计）→ 已补 `evidence_ok` 并同步测试 STATES，**24 passed**；
+   - `portal/tests/test_legion_ops_cors.py` 首字节 BOM → 已去除（无 BOM），`check_syntax --fail-on-warning` **PASS**。
+4. **probe docstring 修复**：`tdx_sync_probe.py` raw docstring 消除 check_syntax WARN 的改动已随本批提交。
+5. **L2 提醒**：看门狗建议在今日 17:35 前注册（使基线在窗口前捕获）；今晚 19:20 首次严格判定期望 `code=0 且 rows_delta_total>0`。
