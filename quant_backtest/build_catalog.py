@@ -1566,6 +1566,21 @@ def _summarize(cat):
         print("  %-12s → %s" % (a, " > ".join(d["resolves"])))
 
 
+# ===== v22（2026-11-02 S3-01）：A4 月/季宏表 freq 修正（D→M/Q），配合 qualify_probe 月末/季末归一 =====
+_FREQ_FIX_V22 = {
+    "ts_cn_cpi": "M",
+    "ts_cn_m": "M",
+    "ts_cn_ppi": "M",
+    "ts_cn_pmi": "M",
+    "ts_cn_gdp": "Q",
+}
+for _n, _f in _FREQ_FIX_V22.items():
+    if _n in TABLE_DEFS:
+        TABLE_DEFS[_n]["freq"] = _f
+    else:
+        TABLE_DEFS.setdefault(_n, {})["freq"] = _f
+
+
 if __name__ == "__main__":
     from linreg import run_with_lineage
 
