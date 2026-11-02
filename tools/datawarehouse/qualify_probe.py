@@ -279,13 +279,17 @@ def lag_limit_for(entry: dict | None) -> tuple:
 
 
 def resolve_manifest_path(entry: dict | None, fallback: Path | None = None) -> tuple:
-    """解析表所属 manifest（2026-11-02 task-23：不再固定 tushare）。
+    """解析表所属 manifest（2026-11-02 task-23：不再固定 tushare；task-28：not_applicable 语义）。
 
+    - `manifest_status=not_applicable` → (None, "not_applicable")：**不读 manifest、不回退 tushare**，
+      probe 记 manifest_state=not_applicable，不产生 manifest_missing（verdict 由其它检查决定）；
     - catalog 条目 `manifest` 字段优先（绝对路径原样；仓库相对路径按 REPO 解析）→ ("...", "catalog")
     - 字段缺失 → 回退 fallback（默认 tushare/_manifest.json）→ ("...", "tushare_fallback")
     - 回退文件也不存在 → (None, "none")
     caller 负责读取与不可读回退；`tushare_fallback` 一律 fail-visible（probe_table 标 partial）。
     """
+    if (entry or {}).get("manifest_status") == "not_applicable":
+        return None, "not_applicable"
     raw = (entry or {}).get("manifest")
     if raw:
         p = Path(str(raw))
@@ -311,7 +315,9 @@ def _summary(card: dict) -> str:
     else:
         date = card["latest_business_date"] or "无"
     lag = "NA" if card["lag_days"] is None else str(card["lag_days"])
-    if card["manifest_state"] != "present":
+    if card["manifest_state"] == "not_applicable":
+        manifest = "manifest N/A"
+    elif card["manifest_state"] != "present":
         manifest = "manifest 缺"
     elif card.get("manifest_source") == "tushare_fallback":
         manifest = "manifest 回退ts"
@@ -328,8 +334,14 @@ def _unsupported_reason(card: dict) -> str:
     if card["verdict"] == "evidence_ok":
         if card.get("date_check") == STATIC_DATE_EXEMPT:
             # fail-visible：静态/无日期列口径豁免必须显式标注，不静默当普通 ok
-            return ("资格取证批次1：文件/行/manifest 齐备；静态/无日期列（%s）日期检查豁免"
-                    "（口径标注 visible），待发布/覆盖核验" % card.get("exempt_reason"))
+            suffix = "；manifest_status=not_applicable（不参与 manifest 检查）" \
+                if card.get("manifest_state") == "not_applicable" else "/manifest"
+            return ("资格取证批次1：文件/行齐备；静态/无日期列（%s）日期检查豁免"
+                    "（口径标注 visible）%s，待发布/覆盖核验"
+                    % (card.get("exempt_reason"), suffix))
+        if card.get("manifest_state") == "not_applicable":
+            return ("资格取证批次1：文件/行/最新日齐备；manifest_status=not_applicable"
+                    "（不参与 manifest 检查），待发布/覆盖核验")
         return ("资格取证批次1：证据齐备（文件/行/最新日 lag 在 %s 阈值内/manifest），"
                 "待发布/覆盖核验" % card.get("lag_limit_rule", "freq"))
     if "manifest_catalog_unreadable" in card["reasons"]:
@@ -342,7 +354,7 @@ def _unsupported_reason(card: dict) -> str:
         gap = "store 内无 parquet"
     elif card["rows_sampled"] == 0:
         gap = "抽样文件 0 行"
-    elif card["manifest_state"] != "present":
+    elif card["manifest_state"] == "missing":
         gap = "manifest 缺失（_manifest.json 无 %s）" % table
     elif card["latest_source"] == "no_date_column":
         gap = "静态表无日期列，无法证明最新业务日"
@@ -388,7 +400,8 @@ def probe_table(table: str, entry: dict, mkeys: set, today: dt.date,
         "rows_registered": entry.get("rows"),
         "catalog_freshness": entry.get("freshness"),
         "catalog_verification_status": entry.get("verification_status"),
-        "manifest_state": "present" if table in mkeys else "missing",
+        "manifest_state": ("not_applicable" if manifest_source == "not_applicable"
+                           else ("present" if table in mkeys else "missing")),
         "manifest_catalog_status": entry.get("manifest_status"),
         "manifest_path": common.rel(manifest_path) if manifest_path is not None else None,
         "manifest_source": manifest_source,
@@ -484,8 +497,9 @@ def probe_table(table: str, entry: dict, mkeys: set, today: dt.date,
         card["reasons"] = ["zero_rows_sampled"]
     else:
         reasons = []
-        if card["manifest_state"] != "present":
+        if card["manifest_state"] == "missing":
             reasons.append("manifest_missing")
+        # manifest_state=not_applicable：不参与 manifest 检查（task-28），不产生 missing/fallback reason
         if card["manifest_source"] == "tushare_fallback":
             reasons.append("manifest_fallback_tushare")
         if card["manifest_issue"]:
@@ -540,10 +554,18 @@ def collect_evidence(tables, catalog: dict, manifest: dict | None, today: dt.dat
         fb_path = Path(fallback_manifest) if fallback_manifest is not None else MANIFEST
         cache: dict = {}
         used, fallbacks, unreadable, missing_manifest = {}, [], [], []
+        not_applicable = []
         cards = []
         for t in tables:
             entry = entries[t] or {}
             cand, source = resolve_manifest_path(entry, fallback=fb_path)
+            if source == "not_applicable":
+                # task-28：manifest_status=not_applicable → 不读 manifest/不回退，verdict 由其它检查决定
+                not_applicable.append(t)
+                cards.append(probe_table(t, entry, set(), today, checked_at, sample_limit,
+                                         manifest_path=None,
+                                         manifest_source="not_applicable"))
+                continue
             data, issue = None, None
             if cand is not None:
                 key = str(cand)
@@ -577,6 +599,7 @@ def collect_evidence(tables, catalog: dict, manifest: dict | None, today: dt.dat
         manifest_info = {"mode": "per_table", "manifests": used,
                          "fallbacks": fallbacks, "unreadable": unreadable,
                          "missing": missing_manifest,
+                         "not_applicable": not_applicable,
                          "fallback_path": common.rel(fb_path) if fallbacks else None}
 
     counts = Counter(c["verdict"] for c in cards)

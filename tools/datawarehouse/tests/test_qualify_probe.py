@@ -34,12 +34,17 @@ def write_parquet(path: Path, dates, col: str = "trade_date", stats: bool = True
 
 
 def entry(store: Path, date_col: str | None = "trade_date", layout: str = "by_date",
-          freq: str | None = None, static_no_date: bool = False) -> dict:
+          freq: str | None = None, static_no_date: bool = False,
+          manifest_status: str | None = None, manifest: str | None = None) -> dict:
     e = {"store": str(store), "layout": layout, "date_col": date_col}
     if freq is not None:
         e["freq"] = freq
     if static_no_date:
         e["static_no_date"] = True
+    if manifest_status is not None:
+        e["manifest_status"] = manifest_status
+    if manifest is not None:
+        e["manifest"] = manifest
     return e
 
 
@@ -298,6 +303,82 @@ class TestCollect(unittest.TestCase):
             self.assertEqual(payload["summary"], {"tables": 2, "ok": 1, "partial": 1, "bad": 0})
             self.assertEqual(payload["tables"][0]["verdict"], "evidence_ok")
             self.assertEqual(payload["tables"][1]["verdict"], "evidence_partial")
+
+
+@unittest.skipUnless(HAS_PYARROW, "pyarrow 不可用")
+class TestManifestNotApplicable(unittest.TestCase):
+    """task-28：manifest_status=not_applicable → 不回退 tushare、不判 manifest_missing。"""
+
+    def _store(self, d, days_ago=1):
+        store = Path(d) / "store"
+        store.mkdir()
+        date = _dated(days_ago)
+        write_parquet(store / ("d_%s.parquet" % date), [date])
+        return store
+
+    def test_resolve_manifest_path_not_applicable(self):
+        """not_applicable 优先于显式 manifest 路径与 fallback（对照：无该状态仍走 catalog）。"""
+        with tempfile.TemporaryDirectory() as d:
+            fb = Path(d) / "fb.json"
+            fb.write_text("{}", encoding="utf-8")
+            self.assertEqual(
+                qualify_probe.resolve_manifest_path(
+                    {"manifest_status": "not_applicable", "manifest": str(fb)}, fallback=fb),
+                (None, "not_applicable"))
+            path, src = qualify_probe.resolve_manifest_path({"manifest": str(fb)}, fallback=fb)
+            self.assertEqual((path, src), (fb, "catalog"))
+
+    def test_not_applicable_no_missing_reason(self):
+        with tempfile.TemporaryDirectory() as d:
+            store = self._store(d)
+            card = qualify_probe.probe_table(
+                "t1", entry(store, freq="D", manifest_status="not_applicable"), set(),
+                TODAY, CHECKED, manifest_source="not_applicable")
+            self.assertEqual(card["manifest_state"], "not_applicable")
+            self.assertEqual(card["manifest_source"], "not_applicable")
+            self.assertEqual(card["verdict"], "evidence_ok")
+            self.assertNotIn("manifest_missing", card["reasons"])
+            self.assertNotIn("manifest_fallback_tushare", card["reasons"])
+            self.assertIn("not_applicable", card["unsupported_reason"])
+
+    def test_not_applicable_ignores_fallback(self):
+        """catalog null + not_applicable 与「显式路径」语义区分：不读 fallback、不记 fallbacks。"""
+        with tempfile.TemporaryDirectory() as d:
+            store = self._store(d)
+            fb = Path(d) / "fb.json"
+            fb.write_text(json.dumps({"t_na": {}}), encoding="utf-8")
+            catalog = {"version": 18, "updated": "x", "tables": {
+                "t_na": entry(store, freq="D", manifest_status="not_applicable")}}
+            payload = qualify_probe.collect_evidence(
+                ["t_na"], catalog, None, TODAY, CHECKED, fallback_manifest=fb)
+            card = payload["tables"][0]
+            self.assertEqual(card["manifest_state"], "not_applicable")
+            self.assertEqual(card["verdict"], "evidence_ok")
+            self.assertNotIn("manifest_missing", card["reasons"])
+            self.assertEqual(payload["manifest"]["not_applicable"], ["t_na"])
+            self.assertEqual(payload["manifest"]["fallbacks"], [])
+            self.assertEqual(payload["manifest"]["manifests"], {})
+
+    def test_not_applicable_other_checks_still_apply(self):
+        """manifest N/A 不豁免其它检查：stale 仍 partial；deprecated/空目录仍 bad。"""
+        with tempfile.TemporaryDirectory() as d:
+            store = self._store(d, days_ago=8)
+            card = qualify_probe.probe_table(
+                "t1", entry(store, freq="D", manifest_status="not_applicable"), set(),
+                TODAY, CHECKED, manifest_source="not_applicable")
+            self.assertEqual(card["verdict"], "evidence_partial")
+            self.assertIn("stale_gt_7d", card["reasons"])
+            self.assertNotIn("manifest_missing", card["reasons"])
+        with tempfile.TemporaryDirectory() as d:
+            store = Path(d) / "empty"
+            store.mkdir()
+            e = entry(store, freq="D", manifest_status="not_applicable")
+            e["deprecated"] = True  # lifecycle 口径不掩盖数据检查
+            card = qualify_probe.probe_table("t1", e, set(), TODAY, CHECKED,
+                                             manifest_source="not_applicable")
+            self.assertEqual(card["verdict"], "evidence_bad")
+            self.assertIn("no_parquet", card["reasons"])
+            self.assertNotIn("manifest_missing", card["reasons"])
 
 
 class TestRegistry(unittest.TestCase):
