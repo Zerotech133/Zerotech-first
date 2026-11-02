@@ -4,6 +4,8 @@
 
 在 git 生成 merge commit 之前运行：
   - 计算 HEAD 与 MERGE_HEAD 的改动文件；
+  - 组合门 + 内核守卫（P1.2，ADR-015）：compositions/** 改动校验计划漂移，
+    内核契约 artifact 改动必须带 ADR-号（防直连 git merge 绕过 devtask 门）；
   - 纯文档/配置变更 → 直接放行；
   - 否则跑 `tools/test_gate.ps1 -Suite fast`，新增失败 → exit 1（git 中止合并）。
 
@@ -157,6 +159,124 @@ def deps_changed(files: list[str]) -> bool:
     return False
 
 
+# ---- 组合门 + 内核守卫（P1.2，ADR-015 §2.4/§7）----
+# 第二道（hooks）：防直连 `git merge` 绕过 devtask 门；同口径只读复检。
+# 规格：docs/specs/2026-11-02_composition_gate_devtask_v1.md
+# devtask.py::_composition_kernel_gate 复用本文件 composition_kernel_check（单一内核）。
+COMPOSITION_TRIGGER_PREFIX = "compositions/"
+COMPOSITION_TOOL = "composition.py"
+KERNEL_GUARD_TOOL = "kernel_guard.py"
+
+
+def _parse_tool_json(proc):
+    """解析分支工具 --json stdout → (payload, error)。非 JSON 一律 error（fail-visible）。"""
+    raw = (proc.stdout or "").strip()
+    try:
+        return json.loads(raw), ""
+    except ValueError as exc:
+        return None, "输出非 JSON（rc=%s，%s）：%s" % (
+            getattr(proc, "returncode", "?"), type(exc).__name__, raw[:160])
+
+
+def composition_kernel_check(files, run_tool, commit_msg):
+    """组合门 + 内核守卫共用判定内核（P1.2）。返回 (ok, detail)。
+
+    files      : 改动文件列表（仓库相对路径，正/反斜杠均可）；
+    run_tool   : run_tool(tool_rel, args) -> (proc, error)，在**待合并内容**上跑
+                 tools/<tool_rel>；proc 需有 returncode/stdout；出错返回 (None, err)；
+    commit_msg : 待合入分支 tip 提交信息（kernel_guard --commit-msg）。
+    口径：compositions/** → composition plan --strict（漂移=拒）；
+          变更的 manifest → composition validate（errors=拒，warnings 只打印）；
+          内核契约 artifact → kernel_guard --files ... --commit-msg（无 ADR=拒）。
+    工具缺失/异常/输出不可解析/超时 → 拒（fail-closed，不静默放行）。
+    """
+    files = [str(f).replace("\\", "/") for f in (files or []) if str(f).strip()]
+    if not files:
+        return True, "无改动文件（跳过）"
+    detail = []
+
+    if any(f.startswith(COMPOSITION_TRIGGER_PREFIX) for f in files):
+        proc, err = run_tool(COMPOSITION_TOOL, ["plan", "--strict", "--json"])
+        if err or proc is None:
+            return False, err or "composition plan 无法执行"
+        payload, jerr = _parse_tool_json(proc)
+        if jerr:
+            return False, "composition plan --strict " + jerr
+        if not isinstance(payload, dict):
+            return False, "composition plan 输出非对象（rc=%s）" % proc.returncode
+        findings = payload.get("findings") or []
+        if proc.returncode != 0 or not payload.get("ok", False) or findings:
+            brief = "；".join("%s:%s" % (x.get("kind"), x.get("id"))
+                             for x in findings[:5])
+            return False, ("composition plan --strict 拒收（rc=%s）漂移：%s"
+                           % (proc.returncode, brief or "无 findings 但 rc/ok 异常"))
+        detail.append("composition plan ✓")
+
+        manifests = [f for f in files
+                     if f.startswith(COMPOSITION_TRIGGER_PREFIX)
+                     and f.endswith("/manifest.yaml")]
+        for rel in manifests:
+            proc, err = run_tool(COMPOSITION_TOOL, ["validate", rel, "--json"])
+            if err or proc is None:
+                return False, err or "composition validate 无法执行"
+            rows, jerr = _parse_tool_json(proc)
+            if jerr:
+                return False, "composition validate %s %s" % (rel, jerr)
+            if not isinstance(rows, list):
+                return False, "composition validate %s 输出非列表（rc=%s）" % (
+                    rel, proc.returncode)
+            bad = [r for r in rows if not r.get("ok")]
+            if proc.returncode != 0 or bad:
+                first = ((bad[0].get("errors") if bad else "") or "")
+                return False, "composition validate 拒收 %s：%s" % (rel, first)
+            for r in rows:
+                for w in (r.get("warnings") or [])[:3]:
+                    print("[merge-gate] 组合告警 %s：%s" % (rel, w))
+        detail.append("composition validate ✓（manifest %d）" % len(manifests))
+
+    proc, err = run_tool(KERNEL_GUARD_TOOL,
+                         ["--files", ",".join(files),
+                          "--commit-msg", commit_msg or ""])
+    if err or proc is None:
+        return False, err or "kernel_guard 无法执行"
+    if proc.returncode != 0:
+        return False, ("kernel guard 拒收（待合入分支 tip 提交信息需带 ADR-号）：%s"
+                       % ((proc.stdout or "").strip()[-240:]))
+    detail.append("kernel_guard ✓")
+    return True, "；".join(detail)
+
+
+def run_repo_tool(tool_rel, args, timeout=600):
+    """在仓库根跑 master/合并工作区侧工具 → (proc, error)。工具缺失/异常=error（fail-visible）。"""
+    tool = HERE / tool_rel
+    if not tool.is_file():
+        return None, "仓库缺 tools/%s" % tool_rel
+    try:
+        proc = subprocess.run([sys.executable, "-X", "utf8", str(tool), *args],
+                              cwd=str(REPO), capture_output=True, text=True,
+                              encoding="utf-8", errors="replace", timeout=timeout)
+    except Exception as exc:  # noqa: BLE001 —— 超时/环境异常按拒收
+        return None, "运行 tools/%s 异常：%r" % (tool_rel, exc)
+    return proc, ""
+
+
+def merge_head_commit_msg():
+    """待合入分支 tip 提交信息（pre-merge-commit 阶段 HEAD=目标分支，取 MERGE_HEAD 侧）。"""
+    try:
+        r = subprocess.run(["git", "-C", str(REPO), "log", "-1", "--format=%B",
+                            "MERGE_HEAD"],
+                           capture_output=True, text=True, encoding="utf-8",
+                           errors="replace", timeout=30)
+        return (r.stdout or "").strip()
+    except Exception:  # noqa: BLE001 —— 读不到=空串，由 kernel_guard 判拒
+        return ""
+
+
+def composition_kernel_preflight(files):
+    """钩子侧入口：在已合并工作区上做同口径只读复检 → (ok, detail)。"""
+    return composition_kernel_check(files, run_repo_tool, merge_head_commit_msg())
+
+
 def dep_age_hint(files: list[str], runner=None):
     """依赖文件变更时打印年龄 warn；**永不阻断合并**（warn-only）。"""
     if not deps_changed(files):
@@ -243,6 +363,17 @@ def main() -> int:
         return 2
     docs = is_docs_only(files)
     print("[merge-gate] 合并改动 %d 文件；docs_only=%s；套件=%s" % (len(files), docs, suite))
+    # P1.2（ADR-015）：组合门 + 内核守卫复检（在 docs_only 放行之前，防内核契约
+    # 文档类 artifact 走纯文档豁免被绕过；检查只读且 <2s，对所有合并都跑）。
+    try:
+        _ck_ok, _ck_detail = composition_kernel_preflight(files)
+    except Exception as exc:  # noqa: BLE001 —— 复检自身异常按拒绝处理（fail-visible）
+        print("[merge-gate] 组合/内核复检异常：%r → 拒绝合并" % exc)
+        return 2
+    if not _ck_ok:
+        print("[merge-gate] FAIL：组合/内核门未过 → 拒绝合并：%s" % _ck_detail)
+        return 1
+    print("[merge-gate] 组合/内核门 PASS：%s" % _ck_detail)
     if docs:
         print("[merge-gate] 纯文档/配置变更 → 放行（不跑测试）")
         return 0

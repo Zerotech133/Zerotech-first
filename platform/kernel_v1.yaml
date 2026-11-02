@@ -47,7 +47,7 @@ contracts:
       - path: docs/specs/2026-11-02_composition_gate_devtask_v1.md
         kind: contract
         status: existing
-        note: "组合门 + kernel_guard 接入 devtask merge 规格（待接线）"
+        note: "组合门 + kernel_guard 接入 devtask merge 规格（P1.2 已接线：devtask/merge_preflight）"
 
 
   K1_org_seat:
@@ -215,6 +215,10 @@ contracts:
     owner: ARCH1
     status: existing
     artifacts:
+      - path: tools/merge_preflight.py
+        kind: gate
+        status: existing
+        note: "P1.2：merge 钩子侧组合/内核复检（fail-closed）"
       - path: tools/devtask.py
         kind: gate
         status: existing

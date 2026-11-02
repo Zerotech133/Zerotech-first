@@ -24,7 +24,9 @@
                            不满足 → 逐项清单 + rc=1；只读，不删/不移 worktree。
   port <服务名>            申请分配一个未注册端口（并提示写回 REGISTRY）
   merge <TID> [--l2-ack --l2-reason "五要素"] [--keep-worktree]
-                                    过评审门（Mixin/导航/端口/明文凭据 + L2 危险操作门）
+                                    过评审门（Mixin/导航/端口/明文凭据 + L2 危险操作门
+                                    + 组合/内核门：compositions/** 漂移与内核契约改动
+                                    必须带 ADR-号，P1.2 ADR-015）
                                     后合并回 master；成功后**自动回收 worktree+分支**（仅当干净），
                                     --keep-worktree=跳过自动回收（保留待人工处理）；
                                     --l2-ack=人工确认豁免 L2 命中（K-STOCK-416，须带 --l2-reason）
@@ -2077,6 +2079,75 @@ def _quality_gate(tid):
     return True, "fast 门通过（%d 文件；钩子凭一次性 token 跳过重复测试）" % len(files)
 
 
+# ---- 组合门 + 内核守卫（P1.2，ADR-015 §2.4/§7）----
+# 规格：docs/specs/2026-11-02_composition_gate_devtask_v1.md
+# 条件门：仅当改动命中 compositions/**（plan/validate）或内核契约 artifact（kernel_guard）
+# 才实际动作；工具/输出异常一律拒（fail-visible，不回落到 master 跑）。
+def _branch_tip_commit_msg(tid, branch=""):
+    """任务分支 tip 提交信息（kernel_guard --commit-msg 用；读不到返回空串）。"""
+    wt = os.path.join(WT_DIR, tid)
+    ref = branch or ("task/%s" % tid)
+    try:
+        r = subprocess.run(["git", "-C", wt, "log", "-1", "--format=%B", ref],
+                           capture_output=True, text=True, encoding="utf-8",
+                           errors="replace", timeout=30)
+        return (r.stdout or "").strip()
+    except Exception:  # noqa: BLE001 —— 读不到=空串，由门统一判拒
+        return ""
+
+
+def _run_branch_tool(tid, tool_rel, args, timeout=600):
+    """在任务 worktree 内跑分支级工具 → (proc, error)。
+
+    组合/kernel 门必须校验**待合并分支**内容：composition.py / kernel_guard.py 的
+    ROOT 由 __file__ 定位，在 master 的 tools/ 跑会读 master。因此与 _quality_gate
+    的 _gate_script_for 同口径调用 <worktree>/tools/*.py；worktree/工具缺失 → error
+    （fail-visible，禁止回落到 master 假放行）。
+    """
+    wt = os.path.join(WT_DIR, tid)
+    tool = os.path.join(wt, "tools", tool_rel)
+    if not os.path.isfile(tool):
+        return None, "任务 worktree 缺 tools/%s（拒绝在 master 上跑分支级门）" % tool_rel
+    try:
+        proc = subprocess.run([sys.executable, "-X", "utf8", tool, *args],
+                              cwd=wt, capture_output=True, text=True,
+                              encoding="utf-8", errors="replace", timeout=timeout)
+    except Exception as exc:  # noqa: BLE001 —— 超时/环境异常按拒收
+        return None, "运行 tools/%s 异常：%r" % (tool_rel, exc)
+    return proc, ""
+
+
+def _composition_kernel_gate(tid, branch, changed):
+    """组合门 + 内核守卫（P1.2 条件门）：返回 (ok, detail)。只读，不写 master。
+
+    口径（ADR-015 + 规格 §一）：
+      - compositions/** 改动 → composition.py plan --strict：漂移(non-empty findings)即拒；
+      - 变更的 manifest → composition.py validate：errors 即拒，warnings 只打印；
+      - 内核契约 artifact 改动 → kernel_guard.py --files ... --commit-msg <分支 tip 信息>：
+        无 ADR-号即拒；
+      - 工具/ worktree 缺失、输出非 JSON、进程异常 → 拒（fail-closed/fail-visible）。
+    """
+    files = [str(f).replace("\\", "/") for f in (changed or []) if str(f).strip()]
+    if not files:
+        return True, "无改动文件（跳过）"
+    # 应急通道与既有质量闸同口径（规格 §三 #8）：DEVTOOL_MERGE_GATE=0 仅回滚/紧急，
+    # 回单注明"绕过质量闸+组合/内核门"，24h 内补 ADR（ADR-015 §7）。
+    if os.environ.get("DEVTOOL_MERGE_GATE") == "0":
+        return True, ("DEVTOOL_MERGE_GATE=0 → 显式跳过组合/内核门"
+                      "（仅回滚/紧急，须回单留痕 + 24h 补 ADR）")
+    tools_dir = os.path.dirname(os.path.abspath(__file__))
+    if tools_dir not in sys.path:
+        sys.path.insert(0, tools_dir)
+    try:
+        import merge_preflight as _mp
+    except Exception as exc:  # noqa: BLE001 —— 组件缺失=拒（fail-visible）
+        return False, "组合/内核门组件缺失（tools/merge_preflight.py）：%r" % exc
+    return _mp.composition_kernel_check(
+        files,
+        lambda tool_rel, cargs: _run_branch_tool(tid, tool_rel, cargs),
+        _branch_tip_commit_msg(tid, branch))
+
+
 _MERGE_TIMINGS = []
 
 
@@ -2302,6 +2373,19 @@ def cmd_merge(tid, *flags):
         t["status"] = "review"
         _save(tasks, changed=(tid,))
         _emit("guard_fail", tid, "质量闸未过：%s" % qg_detail[:120])
+        return 1
+    # P1.2（ADR-015）：组合门 + 内核守卫——分支级只读校验；失败语义与质量闸同构。
+    _ck0 = time.perf_counter()
+    ck_ok, ck_detail = _composition_kernel_gate(tid, t["branch"], _bundle_changed)
+    _MERGE_TIMINGS.append(("组合/内核门", time.perf_counter() - _ck0))
+    if ck_ok:
+        print("  %-8s ✓ %s" % ("组合/内核", ck_detail))
+    else:
+        print("  %-8s ✗ %s" % ("组合/内核", ck_detail[:200]))
+        print("门未过，拒绝合并。修完重跑。")
+        t["status"] = "review"
+        _save(tasks, changed=(tid,))
+        _emit("guard_fail", tid, "组合/内核门未过：%s" % ck_detail[:120])
         return 1
     _lk0 = time.perf_counter()
     lock = _acquire_merge_lock(tid)
@@ -2768,6 +2852,10 @@ def _git_health_autofix(repo=None):
 
 def main():
     a = sys.argv[1:]
+    # 2026-11-02 P1.2：--help/-h 只读打印用法（不触发 core.bare 自愈等写动作）。
+    if a and a[0] in ("-h", "--help", "help"):
+        print(__doc__)
+        return 0
     _git_health_autofix()
     if not a:
         print(__doc__)

@@ -275,3 +275,12 @@ def _composition_kernel_gate(tid, branch, changed):
 - `compositions/README.md`、`compositions/registry.json`、`compositions/_schema/composition.schema.json`
 - `platform/kernel_v1.yaml`（K0/K8 artifacts 冻结清单）
 - `docs/adr/ADR-015-platform-kernel-composition-model.md`、`docs/adr/ADR-016-single-host-integration.md`
+
+---
+
+## 实现注记（2026-11-02，P1.2）
+
+- 已接线：`tools/devtask.py::_composition_kernel_gate`（质量闸后/合并锁前）+ `tools/merge_preflight.py::composition_kernel_preflight`（钩子侧，共用同一判定内核 `composition_kernel_check`，单一实现防漂移）。
+- **钩子复检刻意放在 `docs_only` 放行之前**（防内核契约类 `.md` 走纯文档豁免被直连 git merge 绕过）；以此实现为准，§四原措辞按本注记解释。
+- 测试：`tools/tests/test_devtask_composition_gate.py` 19 用例；应急通道沿用 `DEVTOOL_MERGE_GATE=0`（留痕+24h 补 ADR）。
+
