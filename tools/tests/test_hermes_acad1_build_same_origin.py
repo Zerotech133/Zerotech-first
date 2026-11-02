@@ -182,3 +182,59 @@ def test_verify_only_same_origin_cli(tmp_path, capsys):
     assert result["static_path"]["skipped"] is True   # same-origin 不套 Hermes handler
     assert result["static_path"]["ok"] is None
     assert (deliverables / "VERIFY.json").exists()
+
+
+# ---------- 审计修复回归（task-30）：--no-verify 语义 ----------
+def test_no_verify_skips_static_path_check(tmp_path, monkeypatch, capsys):
+    """修复 C：--no-verify 必须跳过 static_path_check（帮助文档承诺跳过静态路径验证）。"""
+    src = tmp_path / "frontend"
+    src.mkdir()
+    (src / "package.json").write_text('{"name":"fake"}', encoding="utf-8")
+    dest = tmp_path / "out"
+    deliv = tmp_path / "deliv"
+    monkeypatch.setattr(hb, "TMP_ROOT", tmp_path / "tmp_root")
+    monkeypatch.setattr(hb, "LOCK_FILE", tmp_path / "build.lock")
+    monkeypatch.setattr(hb, "source_git_info", lambda p: {
+        "git_ok": False, "repo": str(p), "head": "", "dirty": False, "dirty_count": 0})
+    monkeypatch.setattr(hb, "source_digest",
+                        lambda p: {"digest": "d", "file_count": 0, "bytes": 0})
+
+    def fake_run_build(source, out_dir, env, log_path, skip_typecheck):
+        (out_dir / "assets").mkdir(parents=True)
+        (out_dir / "assets" / "a.js").write_text("console.log(1)", encoding="utf-8")
+        (out_dir / "assets" / "a.css").write_text("body{}", encoding="utf-8")
+        (out_dir / "index.html").write_text(
+            '<script src="/extensions/zhice/assets/a.js"></script>'
+            '<link rel="stylesheet" href="/extensions/zhice/assets/a.css">',
+            encoding="utf-8")
+        return {"out_dir": str(out_dir), "typecheck": "skipped", "typecheck_rc": None,
+                "vite_rc": 0, "assets": ["a.js", "a.css"],
+                "tools": {"node": "node", "node_version": "v24.20.0",
+                          "vite": "8.2.1", "typescript": "6.0.3"}}
+
+    def fake_patch(out_dir, api_base, base_path, same_origin=False):
+        return {"api_base": api_base, "base_path": base_path, "same_origin": False,
+                "api_prefix": "http://127.0.0.1:8105", "rules": [], "files": {},
+                "counts": {"ws_replaced": 0, "api_replaced": 0, "logo_replaced": 0},
+                "assertions": {"ok": True, "counts": {}}}
+
+    monkeypatch.setattr(hb, "run_build", fake_run_build)
+    monkeypatch.setattr(hb, "patch_build", fake_patch)
+    monkeypatch.setattr(hb, "write_readme", lambda d, m: d / "README.md")
+    calls = {"static": 0}
+
+    def boom(*a, **k):
+        calls["static"] += 1
+        raise AssertionError("--no-verify 不应调用 static_path_check")
+
+    monkeypatch.setattr(hb, "static_path_check", boom)
+    rc = hb.main(["--source", str(src), "--dest", str(dest),
+                  "--deliverables", str(deliv), "--no-verify", "--json"])
+    payload = json.loads(capsys.readouterr().out)
+    assert rc == 0, (rc, payload.get("exit_code"))
+    assert calls["static"] == 0, "--no-verify 仍调用了 static_path_check"
+    verify = payload["manifest"]["verify"]
+    assert verify["static_path"]["skipped"] is True
+    assert verify["static_path"]["ok"] is None
+    assert "--no-verify" in verify["static_path"]["reason"]
+    assert (dest / "VERSION.json").exists()

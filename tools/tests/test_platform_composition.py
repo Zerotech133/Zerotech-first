@@ -264,3 +264,27 @@ def test_new_commands_help():
         rc, out, err = _run(["tools/composition.py", cmd, "--help"])
         assert rc == 0, f"{cmd} --help rc={rc}\n{out}\n{err}"
         assert "usage" in out.lower()
+
+
+# ---------- 审计修复回归（task-30） ----------
+def test_validate_repo_external_manifest_no_crash(tmp_path):
+    """修复 A：validate 文本模式对仓外 manifest 不应崩溃（旧代码 f.relative_to(ROOT) 抛 ValueError）。"""
+    src = ROOT / "compositions" / "_templates" / "template-product.yaml"
+    dst = tmp_path / "manifest.yaml"
+    dst.write_bytes(src.read_bytes())
+    rc, out, err = _run(["tools/composition.py", "validate", str(dst)])
+    assert "Traceback" not in (out + err), (out + err)
+    assert rc == 0, f"rc={rc}\n{out}\n{err}"
+    assert "[PASS]" in out
+
+
+def test_kernel_guard_absolute_path_blocks_without_adr():
+    """修复 B：绝对路径改动不得 fail-open 绕过内核门（旧 _norm 不归一绝对路径）。"""
+    abs_path = (ROOT / "platform" / "kernel_v1.yaml").resolve()
+    rc, out, err = _run(["tools/kernel_guard.py", "--files", str(abs_path)])
+    assert rc == 1, f"绝对路径应 BLOCK，实际 rc={rc}\n{out}\n{err}"
+    assert "BLOCK" in out
+    rc2, out2, err2 = _run(["tools/kernel_guard.py", "--files", str(abs_path),
+                            "--adr", "ADR-015"])
+    assert rc2 == 0, f"带 ADR 应放行，实际 rc={rc2}\n{out2}\n{err2}"
+    assert "ADR-015" in out2

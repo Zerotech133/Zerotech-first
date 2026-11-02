@@ -528,7 +528,7 @@ def cmd_validate(args):
                     "id": (data or {}).get("metadata", {}).get("id", "?")})
         if not args.json:
             mark = "PASS" if ok else "FAIL"
-            print(f"[{mark}] {f.relative_to(ROOT)}  errors={len(errors)} warnings={len(warnings)}")
+            print(f"[{mark}] {_display(f)}  errors={len(errors)} warnings={len(warnings)}")
             for e in errors:
                 print("   ERR ", e)
             for w in warnings[:8]:

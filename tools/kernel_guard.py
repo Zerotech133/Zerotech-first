@@ -33,9 +33,20 @@ ADR_RE = re.compile(r"ADR-\d{3,}")
 
 
 def _norm(p: str) -> str:
+    """改动路径归一：反斜杠→/、去 ./；**仓内绝对路径转相对**（防绝对路径绕过门禁）。
+
+    Windows/git 的输出通常已是相对路径；但手工/包装器传绝对路径时，若不归一，
+    `match()` 对内核 artifact（相对路径）永不命中 → 内核改动被 fail-open 放行。
+    仓外绝对路径保持原样（不可能命中仓内 artifact，不影响判定）。
+    """
     p = (p or "").replace("\\", "/").strip()
     if p.startswith("./"):
         p = p[2:]
+    if p.startswith("/") or re.match(r"^[A-Za-z]:/", p):
+        try:
+            p = str(Path(p).resolve().relative_to(ROOT.resolve())).replace("\\", "/")
+        except (ValueError, OSError):
+            pass
     return p
 
 

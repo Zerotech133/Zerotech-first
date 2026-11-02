@@ -117,8 +117,12 @@ def die(msg: str, code: int = 2) -> "None":
     raise SystemExit(code)
 
 
+_JSON_MODE = False  # --json 时人类进度信息必须走 stderr，保持 stdout 纯 JSON 回执
+
+
 def info(msg: str) -> None:
-    print("[acad1] " + msg, flush=True)
+    stream = sys.stderr if _JSON_MODE else sys.stdout
+    print("[acad1] " + msg, file=stream, flush=True)
 
 
 def log_line(log_path: Optional[Path], msg: str) -> None:
@@ -1305,6 +1309,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--force", action="store_true", help="忽略并发锁")
     parser.add_argument("--json", action="store_true", help="stdout 输出 JSON 回执")
     args = parser.parse_args(argv)
+    global _JSON_MODE
+    _JSON_MODE = bool(getattr(args, "json", False))
 
     started = now_local()
     source = Path(args.source).expanduser()
@@ -1456,6 +1462,12 @@ def main(argv: Optional[List[str]] = None) -> int:
                     same_origin_info["clean"]["legacy_port_hits"],
                     same_origin_info["clean"]["bare_api_remaining"],
                     same_origin_info["clean"]["api_prefix_hits"]))
+        elif args.no_verify:
+            verify["static_path"] = {
+                "ok": None, "skipped": True,
+                "reason": "--no-verify 跳过静态路径验证（保留补丁断言/文件对账）",
+            }
+            info("--no-verify：跳过静态路径验证（生产 Hermes handler 复现）")
         else:
             info("静态路径复现：用生产 Hermes handler 起本机临时端口…")
             verify["static_path"] = static_path_check(dest.parent, dest, base_path)
