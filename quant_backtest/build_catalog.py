@@ -276,7 +276,13 @@ TABLE_DEFS = {
         "date_col": "trade_date",
         "code_col": "ts_code",
         "freq": "D",
-        "manifest": None,
+        # 2026-11-02 S3-01 B 组（task-30）：原 manifest=None → _scan_dir 置
+        # not_applicable，qualify_probe 对 not_applicable 仍回退 tushare manifest，
+        # 表不在其中即误判 manifest_missing。本表属 tdx 仓（store=data/tdx/ts_global_fut，
+        # 由 WAREHOUSES 的 xtcloud 循环扫描），故声明 tdx/_manifest.json：
+        # _scan_dir 以所属仓 mpath 为准（此值仅作非空断言/自文档）；rebuild 后
+        # manifest_status 由 not_applicable→missing，可由 manifest_repair 补表级键。
+        "manifest": os.path.join(HERE, "data", "tdx", "_manifest.json"),
         "desc": "外盘商品期货日线（GF_CL00Y/GC00Y/HG00Y 逐品种单文件，"
         "global_fut_sync 维护；2026-10-16 收编回 data/）",
     },

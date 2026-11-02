@@ -4,15 +4,17 @@
 #   - 8 个 placeholder 资产被 registry 当作 unknown 计入资格欠账；
 #   - 静态/停更/规划中表被 freshness 误报「偏旧」。
 #
-# 合法值：
+# 合法值（tools/datawarehouse/lifecycle.py::VALID_STATUSES，未知值归一 active）：
 #   planned     规划中，尚未实现采集（registry 不计 unknown；freshness 不检查）
 #   deprecated  已废弃/非数据资产（registry 标 deprecated；freshness 不检查）
+#   archived    已归档（同 planned/deprecated 参与跳过）
 #   active      正常（默认；无需显式登记）
+# 注：无 "paused/disabled" 状态；"暂停但可能恢复"用 deprecated + reason 显式注明。
 #
 # 修改本文件后：重跑 build_catalog（CATALOG_VERSION_OVERRIDE=13）→ registry_rebuild --apply。
 
-version: 1
-updated: 2026-10-28
+version: 2
+updated: 2026-11-02
 tables:
   xq_comment:
     lifecycle: planned
@@ -38,3 +40,20 @@ tables:
   quarantine_prod_overwrite:
     lifecycle: deprecated
     reason: 生产覆盖隔离目录（运维产物，非数据资产），不应计入资格台账
+  # ── 2026-11-02 S3-01 B 组诊断（task-30）：C 类 manifest 误判收口 ──
+  us_legacy:
+    lifecycle: deprecated
+    reason: >-
+      us_daily 已 verified 收口（data/tushare/us_daily 24211 文件，
+      freshness=20261030，manifest 键 done=true）；data/us 仅读兼容，
+      待下游消费方（chanlun US 扫描等）切换后停写。见
+      docs/audit/2026-11-02_manifest缺失4表诊断.md §2.4
+  crypto_daily:
+    # 语义=暂停（paused）；供给层接线完成后删除本条恢复 active
+    lifecycle: deprecated
+    reason: >-
+      WO-QT-20261021-094：crypto_sync 默认停用，数据改走 zhice-db 统一供给层
+      export_us_hk --market CRYPTO；该任务接线未完成（CryptoSync 计划任务 Disabled），
+      data/crypto 冻结于 2026-10-21（SLA #14 P0 线）。恢复需 L2 新增导出任务后重跑
+      build_catalog + registry_rebuild 并删除本条。见
+      docs/audit/2026-11-02_manifest缺失4表诊断.md §2.2
