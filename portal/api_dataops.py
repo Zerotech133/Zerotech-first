@@ -9,6 +9,10 @@ Hermes / 门户 / 其他调度系统读这一个接口即知：什么时间拔�
 自进化挂载点：新数据源在 COLLECTORS 加一行、新库表在 POOLS 加一行，
 即自动接入指挥台与下游消费（v2 可落库）。
 fail-visible：任何单源探测失败进 errors，不静默吞掉。
+
+S1-03（2026-11-02）：输出级健康字段——collectors 增 today_incr/last_output_at/lag_hours/level，
+告警改为按「今日增量 + 最近产出滞后」判红黄绿（不再仅凭 health==armed），
+summary 增 xq_today_incr/xq_last_output_at/red_alerts；只增字段、向后兼容。
 """
 import glob
 import json
@@ -46,6 +50,7 @@ POOLS = [
     ("xueqiu/xueqiu_info.db", [
         ("xq_status",          "雪球帖存量"),
         ("xq_status_classified", "舆情打标（结构化层）"),
+        ("xq_hot_post",        "雪球热帖（hot 断供盲区，S1-03 补登记）"),
     ]),
     ("tdx/tdx_info.db", [
         ("stock_notice",  "公司公告"),
@@ -60,7 +65,19 @@ POOLS = [
     ]),
 ]
 # 各表「今日入库」时间列（无则不算增量，靠库文件 mtime 近似）
-TODAY_COL = {"xq_status": "fetched_at", "stock_notice": "_fetched_at"}
+TODAY_COL = {"xq_status": "fetched_at", "stock_notice": "_fetched_at",
+             "xq_hot_post": "fetched_at"}
+
+# ── S1-03 输出级健康（2026-11-02）────────────────────────────────────────────
+# 判据从「任务在不在跑（health==armed）」升级为「今天采了多少 + 最近产出多久前」。
+# 阈值按每日采集节奏：最坏 24h 内应有新产出；>24h 黄、>48h 红；无产出 → 字段 null + 首跑提示。
+OUTPUT_LAG_YELLOW_HOURS = 24
+OUTPUT_LAG_RED_HOURS = 48
+# collector key → POOLS 输出表口径（xq_hot_post：S1-03 补的 hot 断供盲区）
+COLLECTOR_OUTPUT_TABLES = {
+    "XueqiuSync": ["xq_status"],
+    "XueqiuCrawl": ["xq_status", "xq_hot_post"],
+}
 
 # 每日采拿量回溯源（2026-10-18 老田定标准：第一标准=每天采多少，第二标准=工具在不在跑）
 # (库路径, 表, 入库时间列, 源标签)——时间列格式均为 'YYYY-MM-DD HH:MM:SS'，可 GROUP BY 日期回溯
@@ -383,6 +400,164 @@ def _ro(db_path):
     return sqlite3.connect("file:%s?mode=ro" % db_path, uri=True)
 
 
+# ── S1-03 输出级健康 helper（纯函数/可注入 now，便于单测不连真实库）──────────
+def _parse_ts(value):
+    """'YYYY-MM-DD HH:MM:SS' → epoch 秒；空/不可解析 → None（缺失保持 null，不猜）。"""
+    if not value:
+        return None
+    try:
+        return time.mktime(time.strptime(str(value)[:19], "%Y-%m-%d %H:%M:%S"))
+    except (ValueError, OverflowError):
+        return None
+
+
+def _lag_hours(last_output_at, now_ts=None):
+    """最近产出距现在的小时数（1 位小数）；无法解析 → None。now_ts 可注入（测试）。"""
+    ts = _parse_ts(last_output_at)
+    if ts is None:
+        return None
+    now = time.time() if now_ts is None else float(now_ts)
+    return round(max(0.0, now - ts) / 3600.0, 1)
+
+
+def _level_for_lag(lag_hours, yellow=OUTPUT_LAG_YELLOW_HOURS, red=OUTPUT_LAG_RED_HOURS):
+    """滞后小时 → green/yellow/red；None → None（fail-visible 由字段 null 承担）。"""
+    if lag_hours is None:
+        return None
+    if lag_hours > red:
+        return "red"
+    if lag_hours > yellow:
+        return "yellow"
+    return "green"
+
+
+def _level_for_days(lag_days):
+    """日期粒度（jsonl 日更源，如股吧）：0/1 天=green（日更窗口未到属正常）/2 天=yellow/≥3 天=red；None→None。"""
+    if lag_days is None:
+        return None
+    if lag_days >= 3:
+        return "red"
+    if lag_days >= 2:
+        return "yellow"
+    return "green"
+
+
+def _table_output_metrics(con, table, col, now_ts=None, day_start=None,
+                          yellow=OUTPUT_LAG_YELLOW_HOURS, red=OUTPUT_LAG_RED_HOURS):
+    """单表输出级健康（只读 SQL）：today_incr / last_output_at / lag_hours / level。
+
+    - 口径 = POOLS 表 + TODAY_COL 日期列（S1-03）；col 未登记 → 四项 null + output_note；
+    - 查询异常 → 四项 null + error（fail-visible，不抛错拖垮 overview 聚合）；
+    - now_ts/day_start 可注入，单测用临时 sqlite 即可覆盖 fresh/stale，不连真实库。
+    """
+    out = {"today_incr": None, "last_output_at": None, "lag_hours": None,
+           "level": None, "today_col": col}
+    if not col:
+        out["output_note"] = "TODAY_COL 未登记日期列（只统计存量）"
+        return out
+    start = day_start or (time.strftime("%Y-%m-%d") + " 00:00:00")
+    try:
+        out["today_incr"] = con.execute(
+            "SELECT COUNT(*) FROM %s WHERE %s >= ?" % (table, col), (start,)).fetchone()[0]  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
+        out["last_output_at"] = con.execute(
+            "SELECT MAX(%s) FROM %s" % (col, table)).fetchone()[0]  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
+        out["lag_hours"] = _lag_hours(out["last_output_at"], now_ts=now_ts)
+        out["level"] = _level_for_lag(out["lag_hours"], yellow=yellow, red=red)
+        if out["last_output_at"] is None:
+            out["output_note"] = "表为空（无任何产出）"
+    except Exception as e:  # noqa: BLE001 - 单表失败降级 null + error（fail-visible）
+        out.update({"today_incr": None, "last_output_at": None, "lag_hours": None,
+                    "level": None, "error": str(e)[:80]})
+    return out
+
+
+def _attach_output_health(c, pool_index, daily=None, now_day=None):
+    """给单个 collector 增输出级健康字段（只增字段；无口径 → null + output_note）。
+
+    - POOLS/TODAY_COL 有口径的 collector（COLLECTOR_OUTPUT_TABLES）：
+      主口径取第一张表（xq_status），level 取最差（hot 断供亦拉红）；
+    - 股吧（jsonl 源）：用 daily_intake 的 ts 回溯（日期粒度）；
+    - 其余：四项 null + output_note（fail-visible，不伪造）。
+    now_day 可注入（测试用，默认当日）。
+    """
+    for k in ("today_incr", "last_output_at", "lag_hours", "level"):
+        c.setdefault(k, None)
+    c.setdefault("output_metrics", {})
+    tables = COLLECTOR_OUTPUT_TABLES.get(str(c.get("key") or ""))
+    if tables:
+        rank = {"red": 3, "yellow": 2, "green": 1}
+        worst = None
+        for t in tables:
+            row = pool_index.get(t) or {}
+            if not row:
+                continue
+            metrics = {k: row.get(k) for k in ("today_incr", "last_output_at",
+                                               "lag_hours", "level")}
+            c["output_metrics"][t] = metrics
+            lv = metrics.get("level")
+            if lv and rank.get(lv, 0) > rank.get(worst, 0):
+                worst = lv
+        primary = c["output_metrics"].get(tables[0])
+        if primary:
+            for k in ("today_incr", "last_output_at", "lag_hours"):
+                c[k] = primary.get(k)
+            c["level"] = worst
+        else:
+            c["output_note"] = "POOLS 输出表不可用（fail-visible：null）"
+        return c
+    key = str(c.get("key") or "")
+    if key == "GubaCrawl" and daily:
+        series = daily.get("series") or []
+        label = "股吧帖"
+        c["today_incr"] = (series[-1].get(label) if series else None)
+        last = (daily.get("last_by_source") or {}).get(label)
+        c["last_output_at"] = last   # 日期粒度（jsonl 内容 ts 回溯，见 _daily_intake）
+        lag_days = None
+        if last:
+            try:
+                today = now_day or time.strftime("%Y-%m-%d")
+                lag_days = (time.mktime(time.strptime(today, "%Y-%m-%d"))
+                            - time.mktime(time.strptime(str(last)[:10], "%Y-%m-%d"))) / 86400.0
+            except (ValueError, OverflowError):
+                lag_days = None
+        c["lag_hours"] = round(lag_days * 24, 1) if lag_days is not None else None
+        c["level"] = _level_for_days(lag_days)
+        if last is None:
+            c["output_note"] = "jsonl 池无产出（ts 回溯为空）"
+        return c
+    c["output_note"] = "POOLS/TODAY_COL 无该源口径（明细见 daily_intake / sources）"
+    return c
+
+
+def _collector_alerts(collectors):
+    """告警改为按「今日增量/最近产出滞后」判红黄绿（S1-03），不再仅凭 health==armed。
+
+    返回 {"alerts": [str], "red_alerts": int}；首跑提示只在「完全没有产出」时出现，
+    首跑后（last_output_at 非空）不会再报「首跑待执行」。
+    """
+    alerts = []
+    red = 0
+    for c in collectors or []:
+        name = c.get("name") or c.get("key")
+        lvl = c.get("level")
+        if lvl == "red":
+            red += 1
+            alerts.append("【红】%s 产出中断：今日增量=%s 最近产出=%s 滞后=%sh"
+                          % (name, c.get("today_incr"), c.get("last_output_at"), c.get("lag_hours")))
+        elif lvl == "yellow":
+            alerts.append("【黄】%s 产出滞后：今日增量=%s 最近产出=%s 滞后=%sh"
+                          % (name, c.get("today_incr"), c.get("last_output_at"), c.get("lag_hours")))
+        hot = (c.get("output_metrics") or {}).get("xq_hot_post") or {}
+        if hot.get("level") == "red" and lvl != "red":   # hot 断供盲区单独拉红
+            red += 1
+            alerts.append("【红】xq_hot_post 热帖断供：最近产出=%s 滞后=%sh"
+                          % (hot.get("last_output_at"), hot.get("lag_hours")))
+    xq_crawl = next((c for c in collectors or [] if c.get("key") == "XueqiuCrawl"), {})
+    if xq_crawl.get("last_output_at") is None:
+        alerts.append("XueqiuCrawl 18:00 生产首跑待执行（尚无产出；首跑后自动消失）")
+    return {"alerts": alerts, "red_alerts": red}
+
+
 def _tail(path, n=3):
     try:
         with open(path, "r", encoding="utf-8", errors="replace") as f:
@@ -421,16 +596,20 @@ def _pool_stats(errors):
                 try:
                     row["rows"] = con.execute("SELECT COUNT(*) FROM %s" % t).fetchone()[0]  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
                     col = TODAY_COL.get(t)
-                    if col:
-                        try:
-                            row["today"] = con.execute(
-                                "SELECT COUNT(*) FROM %s WHERE %s >= ?" % (t, col), (time.strftime("%Y-%m-%d"),)).fetchone()[0]  # nosec B608 - 动态标识符来自内部白名单/值已参数化（已抽查）
-                        except Exception:
-                            row["today"] = None
-                    else:
-                        row["today"] = None
+                    # S1-03 输出级健康：today_incr / last_output_at / lag_hours / level
+                    # （口径=POOLS 表 + TODAY_COL 日期列；无日期列则四项 null + output_note）
+                    om = _table_output_metrics(con, t, col)
+                    row["today"] = om.get("today_incr")
+                    for k in ("today_incr", "last_output_at", "lag_hours", "level"):
+                        row[k] = om.get(k)
+                    if om.get("output_note"):
+                        row["output_note"] = om["output_note"]
+                    if om.get("error"):
+                        row["error"] = om["error"]
                 except Exception as e:
                     row["error"] = str(e)[:60]
+                    for k in ("today", "today_incr", "last_output_at", "lag_hours", "level"):
+                        row.setdefault(k, None)
                 entry["tables"].append(row)
         except Exception as e:
             errors.append("open %s: %s" % (rel, str(e)[:60]))
@@ -497,6 +676,11 @@ def overview():
                     xq_total = t.get("rows", 0)
                 elif t["name"] == "xq_status_classified":
                     xq_done = t.get("rows", 0)
+    # S1-03 输出级健康：表口径索引 + 雪球主口径（供 collectors/summary 复用，只增字段）
+    pool_index = {t.get("name"): t for p in pools for t in p.get("tables", [])}
+    xq_status_row = pool_index.get("xq_status") or {}
+    xq_today_incr = xq_status_row.get("today_incr")
+    xq_last_output_at = xq_status_row.get("last_output_at")
     # 打标模型版本分布（治理/自进化观测）
     model_dist = {}
     content_dist = {}
@@ -604,8 +788,9 @@ def overview():
             (pipes.get("classify", {}).get("log_tail") if src == "classify" else
              ["%s | %s" % ((pipes.get("seed", {}).get("last", {}) or {}).get("at", ""),
                            "added=%s" % (pipes.get("seed", {}).get("last", {}) or {}).get("added", "?"))] if src == "seed" else [])
+        _attach_output_health(c, pool_index, daily)
         collectors.append(c)
-    # 告警
+    # 告警：管道态（原有）+ 输出级健康（S1-03：按今日增量/最近产出滞后判红黄绿）
     alerts = []
     pend = pipes.get("classify", {}).get("pending") or 0
     if pend > 1000:
@@ -613,14 +798,16 @@ def overview():
     seed = pipes.get("seed", {})
     if seed.get("blocked_streak", 0) > 0:
         alerts.append("播种轮被限流 blocked_streak=%d（等恢复窗口）" % seed["blocked_streak"])
-    xq_crawl = next((c for c in collectors if c["key"] == "XueqiuCrawl"), {})
-    if xq_crawl.get("health") == "armed":
-        alerts.append("XueqiuCrawl 18:00 生产首跑待执行（首跑后本平台出现当日增量）")
+    output_alerts = _collector_alerts(collectors)
+    alerts.extend(output_alerts["alerts"])
+    red_alerts = output_alerts["red_alerts"]
     out.update({
         "summary": {"total_rows": total_rows, "ingested_today": ingested_today,
                     "structured_rate": round(xq_done / xq_total, 4) if xq_total else None,
                     "xq_total": xq_total, "xq_classified": xq_done,
-                    "active_collectors": active, "alerts": alerts},
+                    "active_collectors": active, "alerts": alerts,
+                    "xq_today_incr": xq_today_incr, "xq_last_output_at": xq_last_output_at,
+                    "red_alerts": red_alerts},
         "collectors": collectors, "pools": pools, "parquet": parquet,
         "sources": sources,
         "pipelines": pipes, "task_groups": task_groups, "catalog": catalog,
