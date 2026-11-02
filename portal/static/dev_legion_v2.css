@@ -925,3 +925,75 @@ body::before {
 #ss-bar { display: none !important; }
 /* 新页使用自有面包屑；隐藏 page_shell 对未收编页自动注入的旧版回退条。 */
 .wb-crumb, .wb-shell-head, .wb-adopted-chip { display: none !important; }
+
+
+/* ==== 2026-11-03 WO-CAOCAO-PAGE-20261103：决策优先 + 真实工单总线 + 事件流 ==== */
+/* 首屏「今日必须拍板」：3 件事（v1.1 批文 / 11 席回执 / 跨席回流），先于 KPI 与席位。 */
+.today-board { border-color: color-mix(in srgb, var(--color-warn) 32%, var(--hair)); }
+.today-board .panel-head { margin-bottom: 11px; }
+.today-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.today-item {
+  display: flex; flex-direction: column; gap: 6px; min-width: 0;
+  padding: 10px 11px;
+  border: 1px solid var(--hair); border-radius: 8px;
+  background: color-mix(in srgb, var(--bg-raised) 46%, transparent);
+}
+.today-item.high { border-color: color-mix(in srgb, var(--color-warn) 46%, var(--hair)); }
+.today-item.high .today-rank { color: var(--color-warn); }
+.today-head { display: flex; align-items: baseline; gap: 7px; min-width: 0; }
+.today-rank { color: var(--teal); font-family: var(--mono); font-size: 10px; }
+.today-head b { color: var(--text); font-size: 12.5px; letter-spacing: .01em; }
+.today-due { margin-left: auto; color: var(--color-warn); font-family: var(--mono); font-size: 9.5px; white-space: nowrap; }
+.today-desc { margin: 0; color: var(--text-dim); font-size: 10.5px; line-height: 1.5; overflow-wrap: anywhere; }
+.today-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; padding-top: 3px; }
+.today-owner { color: var(--text-dim); font-size: 9.5px; }
+.today-go { color: var(--teal); font-size: 10px; text-decoration: none; white-space: nowrap; }
+.today-go:hover { text-decoration: underline; }
+
+/* 工单筛选（复用 .tabs/.tab，全部/在制/待复核）；真实 workorder_bus 只读。 */
+.work-panel .tabs { border-bottom: 0; padding: 0 14px 9px; margin: 0; }
+.work-panel .tab { cursor: pointer; background: transparent; border: 0; }
+.work-status.other { color: var(--color-warn); }
+
+/* 事件流：API events 最近 8 条（ts/kind/agent/task）；空态明确。 */
+.event-card .event-list { margin: 0; padding: 0; }
+.event-list li.event-row {
+  display: grid; grid-template-columns: 62px 86px minmax(0, 1fr);
+  gap: 2px 7px; align-items: baseline;
+  padding: 5px 0; font-size: 10px; color: var(--text-dim);
+}
+.event-row .event-kind { color: var(--teal); font-family: var(--mono); font-size: 9px; letter-spacing: .03em; }
+.event-row .event-ts { color: var(--text-dim); font-family: var(--mono); font-size: 9px; white-space: nowrap; }
+.event-row .event-agent { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.event-row .event-task {
+  grid-column: 1 / -1; color: var(--text-dim); font-size: 9px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.event-list li.event-empty { display: block; padding: 12px 0; color: var(--text-dim); font-size: 10px; }
+
+/* 席位卡下移（HTML 顺序）+ 压缩：5 列、缩 padding、隐藏标签（能力仍在抽屉里）。 */
+.seats-panel .seat-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 0 12px 12px; }
+.seats-panel .seat-card { padding: 7px 8px; }
+.seats-panel .seat-tags { display: none; }
+.seats-panel .seat-role { font-size: 9.5px; }
+.seats-panel .seat-last { max-width: 104px; }
+
+/* 响应式：三档不横向溢出（1440 / 1180 / 390） */
+.work-task, .work-desc, .today-head b { min-width: 0; }
+.work-desc, .work-id { overflow-wrap: anywhere; }
+@media (max-width: 1180px) {
+  .today-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .seats-panel .seat-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 900px) {
+  .today-grid { grid-template-columns: minmax(0, 1fr); }
+  .seats-panel .seat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .event-list li.event-row { grid-template-columns: 56px minmax(0, 1fr) 64px; }
+}
+@media (max-width: 560px) {
+  .today-head { flex-wrap: wrap; }
+  .today-due { margin-left: 0; }
+  .event-list li.event-row { grid-template-columns: 52px minmax(0, 1fr); }
+  .seats-panel .seat-grid { grid-template-columns: minmax(0, 1fr); }
+  .today-item { padding: 9px 10px; }
+}
