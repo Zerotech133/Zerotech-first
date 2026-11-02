@@ -81,3 +81,17 @@ HQ-06 的实时 API/clean 路由在 W3（12-03 起）按 a→e 顺序实施；�
 - 测试：`portal/test_api_hq.py` + `tools/tests/test_hq_snapshot.py` **10 passed**。
 - **未生效**：变更需 8091 重启 + nginx reload（L2）；当前 `/hq.html` 200、`/hq` 404、`/api/hq/*` 401/404。
 - 激活五要素：命令=重启 8091（现有 start_portal_api 守卫）+ nginx -s reload；影响=门户全站短暂重连（秒级）；不可逆=进程切换；替代=保持静态快照；回滚=旧进程/旧配置。
+
+## 九、激活记录（2026-11-03 05:06）
+
+- **nginx reload：成功**（容器 `ai-portal`，`/etc/nginx/conf.d/default.conf` 挂载仓库配置）：
+  - `/hq` → **200**
+  - `/hq.html` → **200**
+  - `/static/hq_snapshot.json` → **200**
+- **8091 重启：未生效（安全失败）**：
+  - 使用官方 `PORTAL_API_RESTART.flag` + detached hidden PowerShell；
+  - 脚本日志显示 `restart-flag: killed [3996]`，但 3996 为提权进程，非提权 Stop-Process 被拒；
+  - 旧进程仍存活、`/health` 200，无停机；
+  - `/api/hq/*` 仍走旧 8091：未登录 401、登录后 404。
+- **结论**：HQ-06 页面/路由已激活；API 代码已就绪但**需提权重启 8091**才生效（L2）。
+- **下一步**：A0 以管理员执行 `C:\aios\portal\start_portal_api.ps1`（带 restart flag）或 W3 正常重启；重启后验证 `/api/hq/snapshot` 200。
