@@ -1,0 +1,81 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "interface_error.v1",
+  "title": "IFS Interface Error Envelope v1",
+  "description": "IFS-03 统一错误信封：ok=false + schema_version=error/v1 + request_id + error{code,message,retryable,details}。配套 docs/standards/2026-11-03_Envelope_Error_v1.md。",
+  "type": "object",
+  "required": [
+    "ok",
+    "schema_version",
+    "request_id",
+    "error"
+  ],
+  "properties": {
+    "ok": {
+      "type": "boolean",
+      "const": false
+    },
+    "schema_version": {
+      "type": "string",
+      "const": "error/v1"
+    },
+    "request_id": {
+      "type": "string",
+      "pattern": "^req-[0-9a-f]{32}$"
+    },
+    "trace_id": {
+      "type": "string"
+    },
+    "error": {
+      "type": "object",
+      "required": ["code", "message", "retryable", "details"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": [
+            "invalid_request",
+            "invalid_parameter",
+            "bad_body",
+            "execution_field_forbidden",
+            "bad_target_action",
+            "unauthorized",
+            "forbidden",
+            "not_paper",
+            "not_found",
+            "route_not_found",
+            "conflict",
+            "duplicate",
+            "idempotent_replay",
+            "unprocessable",
+            "rate_limited",
+            "internal_error",
+            "upstream_unavailable",
+            "not_ready",
+            "data_unavailable",
+            "kill_switch_active",
+            "timeout"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "details": {
+          "type": "object"
+        },
+        "param": {
+          "type": "string"
+        },
+        "retry_after_s": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
