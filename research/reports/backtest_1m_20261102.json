@@ -1,0 +1,52 @@
+{
+ "generated_at": "2026-11-02T16:22:52+08:00",
+ "window": {
+  "d0": "20260928",
+  "d1": "20261030",
+  "trading_days": 20
+ },
+ "benchmarks": {
+  "000300.SH": -10.22,
+  "000905.SH": -17.81,
+  "000852.SH": -18.61,
+  "000001.SH": -7.44
+ },
+ "strategies": {
+  "chanlun": {
+   "file": "bt2_SEP1M-CHANLUN.json",
+   "summary": {
+    "name": "缠论等机会轮动",
+    "total_return_pct": -6.35,
+    "annualized_pct": -55.25,
+    "max_drawdown_pct": -6.77,
+    "calmar": -8.16,
+    "n_trades": 93,
+    "win_rate_pct": 40.9,
+    "profit_factor": 0.68,
+    "avg_invested_pct": 34.6,
+    "n_trim": 3,
+    "n_mid_slot_days": 0
+   },
+   "n_equity_days": 20,
+   "n_trades": 188
+  },
+  "double_knife": {
+   "file": "bt2_SEP1M-DK.json",
+   "summary": {
+    "name": "量子双刀日内纪律",
+    "total_return_pct": -1.55,
+    "annualized_pct": -17.42,
+    "max_drawdown_pct": -3.28,
+    "calmar": -5.3,
+    "n_trades": 26,
+    "win_rate_pct": 50.0,
+    "profit_factor": 0.69,
+    "avg_invested_pct": 9.9,
+    "n_trim": 2,
+    "n_mid_slot_days": 0
+   },
+   "n_equity_days": 20,
+   "n_trades": 52
+  }
+ }
+}
