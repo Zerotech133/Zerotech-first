@@ -73,6 +73,10 @@ def resolve_session(cookie_file=None, cookie: str = "", explicit: bool = False) 
     if not value:
         return {"provided": False, "source": str(path), "cookie": "",
                 "error": "会话文件为空"}
+    low = value.lower()
+    if "<value>" in low or "your_cookie" in low or value.strip() in ("zb_session=", "zb_session=xxx"):
+        return {"provided": False, "source": str(path), "cookie": "",
+                "error": "会话文件仍是占位符（如 <value>），请替换为真实 zb_session"}
     return {"provided": True, "source": str(path), "cookie": value, "error": ""}
 
 

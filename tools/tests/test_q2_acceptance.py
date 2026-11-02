@@ -112,6 +112,14 @@ def test_cookie_file_parsing_and_dw_builder(tmp_path):
 
 
 # 3) Q1 状态汇总（4 军团/owner/自动证据/签署/缺口）
+def test_placeholder_cookie_rejected(tmp_path):
+    f = tmp_path / "placeholder.txt"
+    f.write_text("zb_session=<value>", encoding="utf-8")
+    sess = qa.resolve_session(cookie_file=str(f), explicit=True)
+    assert sess["provided"] is False
+    assert "占位符" in sess["error"]
+
+
 def test_q1_status_summary(tmp_path):
     mpath, q1_dir = _fixture(tmp_path, signed={"lusu-d1-flow"})
     payload = qa.build("", dw_builder=lambda c: _fake_dw(),

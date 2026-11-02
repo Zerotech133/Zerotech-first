@@ -55,3 +55,13 @@
 - 今日晨会草案：`deliverables/2026-11-03_morning_agenda_draft_v1.md`
 - 当前输出：q2_acceptance=PENDING（无 `C:\Temp\zb_session.txt`）；DW=PENDING-LOGIN；Q1 自动证据 4/4、签字 0/4。
 - 仍阻塞：管理员重启 8091（C1/S1 激活）；A0 q2 会话；A0 主持晨会。
+
+## 七、C1 激活结果（2026-11-03 07:05）
+
+- 管理员重启成功：**8091 pid=45552，created 07:04:46**；/health=200；
+- C1 API 直连 200：`/api/hq/directives`、`/api/hq/reports`；
+- snapshot 含 roles/agenda/directives/reports/commercial；真实数据：5 角色、12 Directives、9 LegionReports、商业租户 12；
+- 公共入口：`/hq`=302；`/api/hq/snapshot|roles|directives|reports|commercial` 未登录=401；
+- **L1 18/18：FAIL=0 PENDING=0**；
+- 页面/UI 测试 21 passed；
+- Q2 会话文件当前为占位符 `<value>`：工具已加占位符拒绝（9 tests），不会误报 provided；A0 替换为真实 `zb_session` 后再跑。
