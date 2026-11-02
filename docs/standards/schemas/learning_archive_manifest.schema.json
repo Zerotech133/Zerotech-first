@@ -1,0 +1,67 @@
+{
+ "$schema": "http://json-schema.org/draft-07/schema#",
+ "$id": "learning_archive_manifest.v1",
+ "title": "Learning Archive Manifest v1",
+ "type": "object",
+ "required": [
+  "schema_version",
+  "project_id",
+  "name",
+  "status",
+  "archived_at",
+  "owner_ai",
+  "artifacts"
+ ],
+ "properties": {
+  "schema_version": {
+   "type": "string",
+   "const": "learning_archive_manifest.v1"
+  },
+  "project_id": {
+   "type": "string"
+  },
+  "name": {
+   "type": "string"
+  },
+  "status": {
+   "type": "string",
+   "const": "archived"
+  },
+  "archived_at": {
+   "type": "string"
+  },
+  "owner_ai": {
+   "type": "string"
+  },
+  "conclusions": {
+   "type": "string"
+  },
+  "forbidden": {
+   "type": "array"
+  },
+  "continue_entry": {
+   "type": "string"
+  },
+  "artifacts": {
+   "type": "array",
+   "minItems": 1,
+   "items": {
+    "type": "object",
+    "required": [
+     "path"
+    ],
+    "properties": {
+     "path": {
+      "type": "string"
+     },
+     "sha256": {
+      "type": "string"
+     },
+     "size": {
+      "type": "integer"
+     }
+    }
+   }
+  }
+ }
+}

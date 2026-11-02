@@ -1,0 +1,1434 @@
+{
+ "schema_version": "learning_decisions.v1",
+ "project_id": "laomu_notes",
+ "generated_at": "2026-11-02T17:38:11+08:00",
+ "source": "card_proposals_laomu_20261102.json",
+ "decisions": [
+  {
+   "card_id": "CAND-001",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_meta_or_person;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-002",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_sentence_like"
+  },
+  {
+   "card_id": "CAND-003",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_sentence_like;concept_filler_word;concept_meta_or_person"
+  },
+  {
+   "card_id": "CAND-004",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_sentence_like;concept_filler_word;concept_meta_or_person;concept_sentence_punct"
+  },
+  {
+   "card_id": "CAND-005",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_action_phrase;concept_filler_word;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-006",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_action_phrase;concept_filler_word;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-007",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_filler_word;concept_meta_or_person;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-008",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_non_noun_ending;concept_filler_word;concept_meta_or_person"
+  },
+  {
+   "card_id": "CAND-009",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_question_like"
+  },
+  {
+   "card_id": "CAND-010",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_sentence_like;concept_filler_word;concept_meta_or_person;concept_sentence_punct"
+  },
+  {
+   "card_id": "CAND-011",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_meta_or_person"
+  },
+  {
+   "card_id": "CAND-012",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_sentence_like;concept_filler_word;concept_meta_or_person"
+  },
+  {
+   "card_id": "CAND-013",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-014",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_too_short;concept_filler_word;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-015",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_non_noun_ending;concept_filler_word"
+  },
+  {
+   "card_id": "CAND-016",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-017",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_sentence_like"
+  },
+  {
+   "card_id": "CAND-018",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_non_noun_ending;concept_filler_word"
+  },
+  {
+   "card_id": "CAND-019",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_sentence_ending"
+  },
+  {
+   "card_id": "CAND-020",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-021",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_sentence_like;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-022",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_sentence_like;concept_filler_word"
+  },
+  {
+   "card_id": "CAND-023",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_sentence_like;concept_filler_word;concept_meta_or_person;concept_no_domain_term;concept_sentence_punct;answer_too_short"
+  },
+  {
+   "card_id": "CAND-024",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_sentence_like;concept_filler_word;concept_meta_or_person;concept_sentence_punct"
+  },
+  {
+   "card_id": "CAND-025",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_filler_word;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-026",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_filler_word;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-027",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_filler_word;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-028",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_sentence_like;concept_filler_word;concept_sentence_punct"
+  },
+  {
+   "card_id": "CAND-029",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_action_phrase;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-030",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_action_phrase;concept_broken_phrase"
+  },
+  {
+   "card_id": "CAND-031",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_generic_or_header"
+  },
+  {
+   "card_id": "CAND-032",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_sentence_like;concept_filler_word"
+  },
+  {
+   "card_id": "CAND-033",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_question_like;concept_no_domain_term;concept_sentence_ending"
+  },
+  {
+   "card_id": "CAND-034",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_sentence_like;concept_filler_word;concept_meta_or_person;concept_no_domain_term;concept_sentence_punct;answer_too_short"
+  },
+  {
+   "card_id": "CAND-035",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_non_noun_ending;concept_action_phrase"
+  },
+  {
+   "card_id": "CAND-036",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_too_short;concept_filler_word;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-037",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_too_short;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-038",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_too_short;concept_filler_word;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-039",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_too_short;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-040",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_filler_word"
+  },
+  {
+   "card_id": "CAND-041",
+   "action": "pass",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": ""
+  },
+  {
+   "card_id": "CAND-042",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_sentence_like"
+  },
+  {
+   "card_id": "CAND-043",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_generic_or_header;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-044",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_generic_or_header;concept_no_domain_term;answer_too_short"
+  },
+  {
+   "card_id": "CAND-045",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_generic_or_header;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-046",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_generic_or_header;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-047",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_generic_or_header;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-048",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_generic_or_header;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-049",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_generic_or_header;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-050",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_generic_or_header;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-051",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_generic_or_header;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-052",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_generic_or_header;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-053",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_too_short;answer_too_short"
+  },
+  {
+   "card_id": "CAND-054",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_sentence_like;answer_too_short"
+  },
+  {
+   "card_id": "CAND-055",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_filler_word;concept_meta_or_person;concept_no_domain_term;concept_sentence_punct;answer_too_short"
+  },
+  {
+   "card_id": "CAND-056",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_sentence_like"
+  },
+  {
+   "card_id": "CAND-057",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term;answer_too_short"
+  },
+  {
+   "card_id": "CAND-058",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_sentence_like;concept_non_noun_ending"
+  },
+  {
+   "card_id": "CAND-059",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_filler_word"
+  },
+  {
+   "card_id": "CAND-060",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_sentence_like"
+  },
+  {
+   "card_id": "CAND-061",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_action_phrase;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-062",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_sentence_like"
+  },
+  {
+   "card_id": "CAND-063",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_sentence_like"
+  },
+  {
+   "card_id": "CAND-064",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_sentence_like;answer_too_short"
+  },
+  {
+   "card_id": "CAND-065",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-066",
+   "action": "pass",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": ""
+  },
+  {
+   "card_id": "CAND-067",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_filler_word"
+  },
+  {
+   "card_id": "CAND-068",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-069",
+   "action": "pass",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": ""
+  },
+  {
+   "card_id": "CAND-070",
+   "action": "pass",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": ""
+  },
+  {
+   "card_id": "CAND-071",
+   "action": "pass",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": ""
+  },
+  {
+   "card_id": "CAND-072",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-073",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-074",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-075",
+   "action": "pass",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": ""
+  },
+  {
+   "card_id": "CAND-076",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-077",
+   "action": "pass",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": ""
+  },
+  {
+   "card_id": "CAND-078",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-079",
+   "action": "pass",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": ""
+  },
+  {
+   "card_id": "CAND-080",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_action_phrase;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-081",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-082",
+   "action": "pass",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": ""
+  },
+  {
+   "card_id": "CAND-083",
+   "action": "pass",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": ""
+  },
+  {
+   "card_id": "CAND-084",
+   "action": "pass",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": ""
+  },
+  {
+   "card_id": "CAND-085",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-086",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-087",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-088",
+   "action": "pass",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": ""
+  },
+  {
+   "card_id": "CAND-089",
+   "action": "pass",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": ""
+  },
+  {
+   "card_id": "CAND-090",
+   "action": "pass",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": ""
+  },
+  {
+   "card_id": "CAND-091",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-092",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "duplicate_existing_concept"
+  },
+  {
+   "card_id": "CAND-093",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-094",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-095",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-096",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-097",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-098",
+   "action": "pass",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": ""
+  },
+  {
+   "card_id": "CAND-099",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_non_noun_ending"
+  },
+  {
+   "card_id": "CAND-100",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-101",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-102",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-103",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-104",
+   "action": "pass",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": ""
+  },
+  {
+   "card_id": "CAND-105",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-106",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_too_short;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-107",
+   "action": "pass",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": ""
+  },
+  {
+   "card_id": "CAND-108",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-109",
+   "action": "pass",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": ""
+  },
+  {
+   "card_id": "CAND-110",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-111",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-112",
+   "action": "pass",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": ""
+  },
+  {
+   "card_id": "CAND-113",
+   "action": "pass",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": ""
+  },
+  {
+   "card_id": "CAND-114",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-115",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-116",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_question_like"
+  },
+  {
+   "card_id": "CAND-117",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_non_noun_ending"
+  },
+  {
+   "card_id": "CAND-118",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_filler_word;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-119",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_action_phrase"
+  },
+  {
+   "card_id": "CAND-120",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_filler_word;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-121",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_too_short;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-122",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-123",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_filler_word;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-124",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-125",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_sentence_like;concept_action_phrase;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-126",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term;concept_no_cjk"
+  },
+  {
+   "card_id": "CAND-127",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term;concept_no_cjk"
+  },
+  {
+   "card_id": "CAND-128",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term;concept_no_cjk"
+  },
+  {
+   "card_id": "CAND-129",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-130",
+   "action": "pass",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": ""
+  },
+  {
+   "card_id": "CAND-131",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term;concept_no_cjk"
+  },
+  {
+   "card_id": "CAND-132",
+   "action": "pass",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": ""
+  },
+  {
+   "card_id": "CAND-133",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-134",
+   "action": "pass",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": ""
+  },
+  {
+   "card_id": "CAND-135",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_too_short;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-136",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_action_phrase;answer_too_short"
+  },
+  {
+   "card_id": "CAND-137",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_action_phrase;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-138",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_action_phrase"
+  },
+  {
+   "card_id": "CAND-139",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_action_phrase"
+  },
+  {
+   "card_id": "CAND-140",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_action_phrase"
+  },
+  {
+   "card_id": "CAND-141",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_action_phrase;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-142",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-143",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_action_phrase"
+  },
+  {
+   "card_id": "CAND-144",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-145",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_action_phrase"
+  },
+  {
+   "card_id": "CAND-146",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_action_phrase"
+  },
+  {
+   "card_id": "CAND-147",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_action_phrase"
+  },
+  {
+   "card_id": "CAND-148",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_action_phrase"
+  },
+  {
+   "card_id": "CAND-149",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_action_phrase"
+  },
+  {
+   "card_id": "CAND-150",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_action_phrase"
+  },
+  {
+   "card_id": "CAND-151",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_action_phrase"
+  },
+  {
+   "card_id": "CAND-152",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-153",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_filler_word"
+  },
+  {
+   "card_id": "CAND-154",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_action_phrase"
+  },
+  {
+   "card_id": "CAND-155",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-156",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-157",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-158",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_non_noun_ending"
+  },
+  {
+   "card_id": "CAND-159",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-160",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-161",
+   "action": "pass",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": ""
+  },
+  {
+   "card_id": "CAND-162",
+   "action": "pass",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": ""
+  },
+  {
+   "card_id": "CAND-163",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_non_noun_ending"
+  },
+  {
+   "card_id": "CAND-164",
+   "action": "pass",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": ""
+  },
+  {
+   "card_id": "CAND-165",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_filler_word"
+  },
+  {
+   "card_id": "CAND-166",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_action_phrase"
+  },
+  {
+   "card_id": "CAND-167",
+   "action": "pass",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": ""
+  },
+  {
+   "card_id": "CAND-168",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-169",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-170",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-171",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-172",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-173",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-174",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-175",
+   "action": "pass",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": ""
+  },
+  {
+   "card_id": "CAND-176",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-177",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_too_short;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-178",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_filler_word"
+  },
+  {
+   "card_id": "CAND-179",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_action_phrase"
+  },
+  {
+   "card_id": "CAND-180",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-181",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-182",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_filler_word;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-183",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-184",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_sentence_like"
+  },
+  {
+   "card_id": "CAND-185",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_too_short"
+  },
+  {
+   "card_id": "CAND-186",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_too_short"
+  },
+  {
+   "card_id": "CAND-187",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_too_short;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-188",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_too_short;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-189",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_too_short;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-190",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_action_phrase;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-191",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_action_phrase;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-192",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_question_like"
+  },
+  {
+   "card_id": "CAND-193",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_filler_word;concept_meta_or_person;concept_no_domain_term;concept_sentence_ending"
+  },
+  {
+   "card_id": "CAND-194",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_too_short;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-195",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_non_noun_ending;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-196",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_filler_word;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-197",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_too_short;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-198",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_filler_word;concept_meta_or_person;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-199",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_meta_or_person;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-200",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_too_short;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-201",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_question_like;concept_non_noun_ending;concept_filler_word;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-202",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_non_noun_ending;concept_meta_or_person;concept_no_domain_term"
+  },
+  {
+   "card_id": "CAND-203",
+   "action": "reject",
+   "reviewer": "precheck_laomu_v1",
+   "decided_at": "2026-11-02T17:32:36+08:00",
+   "note": "concept_too_short;concept_no_domain_term"
+  }
+ ],
+ "summary": {
+  "pass": 28,
+  "revise": 0,
+  "reject": 175
+ }
+}

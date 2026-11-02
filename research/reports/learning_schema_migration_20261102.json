@@ -1,0 +1,55 @@
+{
+ "generated_at": "2026-11-02T17:38:11+08:00",
+ "write": true,
+ "projects": [
+  {
+   "project_id": "learnpdf_liangxue",
+   "status": "archived",
+   "artifacts": []
+  },
+  {
+   "project_id": "laomu_notes",
+   "status": "distilling",
+   "artifacts": [
+    {
+     "artifact": "source_manifest",
+     "path": "C:\\项目\\知识库\\05_学习源件\\laomu_notes\\manifest.json",
+     "migrated": true,
+     "schema": "learning_source_manifest.v1"
+    },
+    {
+     "artifact": "units_draft",
+     "path": "C:\\项目\\知识库\\30_知识单元\\laomu_notes_units_draft.jsonl",
+     "count": 288,
+     "migrated": true,
+     "schema": "learning_unit.v1"
+    },
+    {
+     "artifact": "card_candidates",
+     "path": "C:\\项目\\老田的AI助手\\research\\reports\\card_candidates_laomu_notes_20261102.json",
+     "schema": "learning_card_candidate.v1",
+     "migrated": false
+    }
+   ],
+   "backup": "C:\\项目\\老田的AI助手\\research\\reports\\backups\\manifest.json.20261102_173811.v1bak",
+   "units_backup": "C:\\项目\\老田的AI助手\\research\\reports\\backups\\laomu_notes_units_draft.jsonl.20261102_173811.v1bak"
+  }
+ ],
+ "canonical": {
+  "laomu_decisions": {
+   "path": "C:\\项目\\老田的AI助手\\research\\reports\\card_decisions_laomu_20261102.json",
+   "summary": {
+    "pass": 28,
+    "revise": 0,
+    "reject": 175
+   },
+   "count": 203
+  },
+  "learnpdf_archive": {
+   "path": "C:\\项目\\老田的AI助手\\_archive\\2026-11-02_学习PDF_量学\\manifest.json",
+   "existing_schema": "project_archive.v1",
+   "mapped_to": "learning_archive_manifest.v1（gate 采用宽松校验：name/status/archived_at/owner_ai + ENTRY）",
+   "migrated": false
+  }
+ }
+}

@@ -1,0 +1,83 @@
+{
+ "$schema": "http://json-schema.org/draft-07/schema#",
+ "$id": "learning_card_candidate.v1",
+ "title": "Learning Card Candidate v1",
+ "type": "object",
+ "required": [
+  "schema_version",
+  "card_id",
+  "project_id",
+  "concept",
+  "q",
+  "a",
+  "source",
+  "evidence",
+  "theme",
+  "status",
+  "traceable",
+  "precheck"
+ ],
+ "properties": {
+  "schema_version": {
+   "type": "string",
+   "const": "learning_card_candidate.v1"
+  },
+  "card_id": {
+   "type": "string"
+  },
+  "project_id": {
+   "type": "string"
+  },
+  "concept": {
+   "type": "string",
+   "minLength": 2
+  },
+  "q": {
+   "type": "string"
+  },
+  "a": {
+   "type": "string"
+  },
+  "source": {
+   "type": "string"
+  },
+  "evidence": {
+   "type": "string"
+  },
+  "theme": {
+   "type": "string"
+  },
+  "status": {
+   "type": "string",
+   "enum": [
+    "pending_review",
+    "pass",
+    "revise",
+    "reject"
+   ]
+  },
+  "traceable": {
+   "type": "boolean"
+  },
+  "precheck": {
+   "type": "object",
+   "required": [
+    "action",
+    "issues"
+   ],
+   "properties": {
+    "action": {
+     "type": "string",
+     "enum": [
+      "pass",
+      "revise",
+      "reject"
+     ]
+    },
+    "issues": {
+     "type": "array"
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,66 @@
+{
+ "$schema": "http://json-schema.org/draft-07/schema#",
+ "$id": "learning_decisions.v1",
+ "title": "Learning Decisions v1",
+ "type": "object",
+ "required": [
+  "schema_version",
+  "project_id",
+  "generated_at",
+  "decisions",
+  "summary"
+ ],
+ "properties": {
+  "schema_version": {
+   "type": "string",
+   "const": "learning_decisions.v1"
+  },
+  "project_id": {
+   "type": "string"
+  },
+  "generated_at": {
+   "type": "string"
+  },
+  "decisions": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "card_id",
+     "action",
+     "decided_at"
+    ],
+    "properties": {
+     "card_id": {
+      "type": "string"
+     },
+     "action": {
+      "type": "string",
+      "enum": [
+       "pass",
+       "revise",
+       "reject"
+      ]
+     },
+     "reviewer": {
+      "type": "string"
+     },
+     "decided_at": {
+      "type": "string"
+     },
+     "note": {
+      "type": "string"
+     }
+    }
+   }
+  },
+  "summary": {
+   "type": "object",
+   "required": [
+    "pass",
+    "revise",
+    "reject"
+   ]
+  }
+ }
+}
