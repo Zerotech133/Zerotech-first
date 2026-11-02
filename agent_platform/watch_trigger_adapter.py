@@ -123,6 +123,9 @@ def trigger(signal, selection=None, evidence=None, report=None,
         confidence=payload["confidence"], reason=payload["reason"],
         source=payload["source"], source_report_id=payload["source_report_id"],
         profile=payload["profile"], audience=payload["audience"],
+        source_decision_id=str(signal.get("decision_id") or ""),
+        source_handoff_id=str(signal.get("handoff_id") or ""),
+        source_watch_plan_id=str(signal.get("watch_plan_id") or ""),
         data_dir=data_dir,
     )
 
@@ -183,6 +186,7 @@ def signal_from_watch_plan(plan):
     reason = str(conditions.get("reason") or "").strip() or (
         "D1 watch_plan %s（%s）" % (plan_id, method or "-")
     )
+    source = plan.get("source") if isinstance(plan.get("source"), dict) else {}
     return {
         "symbol": raw_symbol,
         "name": conditions.get("name") or "",
@@ -195,6 +199,9 @@ def signal_from_watch_plan(plan):
         "report_id": "D1H-%s" % plan_id,
         "source": plan.get("seat") or "WATCH_TOWER",
         "audience": "external_user",
+        "decision_id": source.get("decision_id") or "",
+        "handoff_id": source.get("receipt_id") or "",
+        "watch_plan_id": plan_id,
     }
 
 
