@@ -26,7 +26,7 @@ Register-ScheduledTask -TaskName $task -Action $action -Trigger @($t1, $t2) `
 Write-Host ("OK: installed scheduled task {0}" -f $task)
 Write-Host 'Running once now...'
 & schtasks.exe /run /tn $task | Out-Null
-Start-Sleep -Seconds 6
+Start-Sleep -Seconds 25
 foreach ($p in 5175, 8102) {
     $c = Get-NetTCPConnection -LocalPort $p -State Listen -ErrorAction SilentlyContinue
     if ($c) { Write-Host ("FAIL: {0} still listening" -f $p); exit 1 }
