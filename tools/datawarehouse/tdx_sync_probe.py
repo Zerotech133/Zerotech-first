@@ -567,7 +567,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--json", action="store_true", help="输出 JSON")
     ap.add_argument("--now", default="", help="覆盖当前时间（ISO，复核/演练用）")
     ap.add_argument("--data-root", default=str(DEFAULT_DATA_ROOT))
-    ap.add_argument("--lock", action="append", default=None, help="锁路径（可多次；默认 C:\\Temp + %TEMP%）")
+    ap.add_argument("--lock", action="append", default=None, help="锁路径（可多次；默认 C:\\Temp + %%TEMP%%）")
     ap.add_argument("--state", default=str(STATE_PATH))
     ap.add_argument("--log", default=str(LOG_PATH))
     ap.add_argument("--ready-after", default=READY_AFTER.strftime("%H:%M"))
