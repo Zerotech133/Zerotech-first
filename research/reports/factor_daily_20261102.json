@@ -1,0 +1,109 @@
+{
+ "generated_at": "2026-11-02T18:10:42+08:00",
+ "latest_date": "20261030",
+ "window": "20251031 .. 20261030",
+ "months": 12,
+ "owner": "FACTOR1/蒋琬（数据智能部·张松团队）",
+ "factors": [
+  {
+   "factor": "vol_20",
+   "ic_mean12": -0.1008,
+   "t": -1.15,
+   "ic_pos_rate": 41.7,
+   "last3_mean": -0.1224,
+   "prev3_mean": -0.1479,
+   "sign_flip": false,
+   "months": 12,
+   "type": "known",
+   "verdict": "四关 PASS（LS）"
+  },
+  {
+   "factor": "mom_20",
+   "ic_mean12": -0.0843,
+   "t": -1.2,
+   "ic_pos_rate": 41.7,
+   "last3_mean": -0.2288,
+   "prev3_mean": -0.0604,
+   "sign_flip": false,
+   "months": 12,
+   "type": "known",
+   "verdict": "四关 PASS（LS）/ long-only 弱"
+  },
+  {
+   "factor": "liq_neg",
+   "ic_mean12": 0.0755,
+   "t": 1.24,
+   "ic_pos_rate": 50.0,
+   "last3_mean": 0.1859,
+   "prev3_mean": 0.0089,
+   "sign_flip": false,
+   "months": 12,
+   "type": "candidate_new",
+   "verdict": "新候选：未过四关"
+  },
+  {
+   "factor": "rev_5",
+   "ic_mean12": 0.0587,
+   "t": 1.24,
+   "ic_pos_rate": 75.0,
+   "last3_mean": 0.0107,
+   "prev3_mean": 0.1247,
+   "sign_flip": false,
+   "months": 12,
+   "type": "known",
+   "verdict": "四关 FAIL"
+  },
+  {
+   "factor": "amihud",
+   "ic_mean12": 0.0491,
+   "t": 1.01,
+   "ic_pos_rate": 66.7,
+   "last3_mean": 0.1677,
+   "prev3_mean": -0.033,
+   "sign_flip": true,
+   "months": 12,
+   "type": "candidate_new",
+   "verdict": "新候选：未过四关"
+  },
+  {
+   "factor": "mom_120",
+   "ic_mean12": -0.0402,
+   "t": -0.62,
+   "ic_pos_rate": 58.3,
+   "last3_mean": -0.088,
+   "prev3_mean": -0.0784,
+   "sign_flip": false,
+   "months": 12,
+   "type": "known",
+   "verdict": "四关 PASS（LS）/ S08 观察"
+  }
+ ],
+ "decay_alerts": [
+  {
+   "factor": "rev_5",
+   "ic_mean12": 0.0587,
+   "t": 1.24,
+   "ic_pos_rate": 75.0,
+   "last3_mean": 0.0107,
+   "prev3_mean": 0.1247,
+   "sign_flip": false,
+   "months": 12,
+   "type": "known",
+   "verdict": "四关 FAIL"
+  },
+  {
+   "factor": "amihud",
+   "ic_mean12": 0.0491,
+   "t": 1.01,
+   "ic_pos_rate": 66.7,
+   "last3_mean": 0.1677,
+   "prev3_mean": -0.033,
+   "sign_flip": true,
+   "months": 12,
+   "type": "candidate_new",
+   "verdict": "新候选：未过四关"
+  }
+ ],
+ "proposals": [],
+ "note": "每日挖掘；只出假设/告警，不直接改策略库；候选须走四关+复核"
+}
