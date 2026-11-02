@@ -122,6 +122,19 @@ ul.todos li{margin:3px 0}
     (d.factors||[]).forEach(function(f){h+='<tr><td>'+esc(f.factor)+'</td><td class="muted">'+esc(f.formula)+'</td><td>'+esc(f.data)+'</td><td class="'+(/需补齐|不可实现|研究级/.test(f.status)?'bad':'ok')+'">'+esc(f.status)+'</td></tr>';});
     h+='</tbody></table><h3 style="margin:10px 0 6px">④ 军团调用</h3><table><thead><tr><th>军团</th><th>调用内容</th><th>门禁</th><th>状态</th></tr></thead><tbody>';
     (d.legion_calls||[]).forEach(function(g){h+='<tr><td>'+esc(g.legion)+'</td><td>'+esc(g.call)+'</td><td>'+esc(g.gate)+'</td><td class="muted">'+esc(g.status)+'</td></tr>';});
+    var gv=d.governance||{};
+    if(gv.metrics){
+      h+='<h3 style="margin:10px 0 6px">⑤ 知识治理（去重/辨真伪/偏移/结论）</h3>'
+        +'<div class="sub">证据核验 <b>'+gv.metrics.verified_pct+'%</b> · 重复率 <b>'+gv.metrics.dup_ratio_pct+'%</b>'
+        +' · 非知识行 <b>'+gv.metrics.meta_units+'</b> · 有效知识单元 <b>'+gv.metrics.knowledge_units+'</b>'
+        +' · 冲突 <b>'+gv.metrics.conflicts+'</b> · 多源概念 <b>'+gv.metrics.multi_source_concepts+'</b></div>';
+      var concl=gv.conclusions||[];
+      if(concl.length){
+        h+='<table style="margin-top:6px"><thead><tr><th>治理后结论</th><th>博主</th><th>多源</th></tr></thead><tbody>';
+        concl.slice(0,10).forEach(function(c){h+='<tr><td>'+esc(c.concept)+'：'+esc(String(c.a).slice(0,60))+'…</td><td>'+esc(c.blogger)+'</td><td>'+(c.multi_source?'✅':'单源')+'</td></tr>';});
+        h+='</tbody></table>';
+      }
+    }
     h+='</tbody></table><div class="muted" style="margin-top:8px">'+esc(d.boundary||'')+'</div>';
     if(q('cap')) q('cap').innerHTML=h;
   }
