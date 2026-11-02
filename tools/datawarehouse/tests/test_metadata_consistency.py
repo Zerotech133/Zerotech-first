@@ -89,6 +89,43 @@ class TestMetadataConsistency(unittest.TestCase):
             self.assertEqual(res["code"], 1)
             self.assertIn("registry_catalog_sha_mismatch", res["issues"])
 
+    def test_unparsable_counts_issue_not_crash(self):
+        """task-77：physical_count/display_count 为坏值 → issue 而非抛异常。"""
+        with tempfile.TemporaryDirectory() as td:
+            cp, rp, lc = self._write(td, {}, [], {})
+            reg = json.loads(rp.read_text(encoding="utf-8"))
+            reg["physical_count"] = "not-a-number"
+            reg["display_count"] = {"bad": 1}
+            rp.write_text(json.dumps(reg), encoding="utf-8")
+            res = m.check(cp, rp, lc)  # 不应抛 TypeError/ValueError
+            self.assertEqual(res["code"], 1)
+            self.assertTrue(any("physical_count_unparsable" in i for i in res["issues"]))
+            self.assertTrue(any("display_count_unparsable" in i for i in res["issues"]))
+
+    def test_relative_store_resolved_from_repo_root(self):
+        """task-77：相对 store 按主仓根解析（不依赖调用 cwd）。"""
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "store_rel").mkdir()
+            tables = {"daily": {"store": "store_rel", "manifest": "/x",
+                                "manifest_status": "closed"}}
+            cp, rp, lc = self._write(td, tables, [{"physical_tables": ["daily"]}], {})
+            from unittest import mock
+            with mock.patch.object(m.common, "REPO", root):
+                res = m.check(cp, rp, lc)
+            self.assertEqual(res["code"], 0, res["issues"])
+
+    def test_lifecycle_table_missing_in_registry_fails(self):
+        """task-77：lifecycle 表在 registry 缺失也必须报 issue（不再静默跳过）。"""
+        with tempfile.TemporaryDirectory() as td:
+            tables = {"planned_t": {"store": str(Path(td) / "nope"),
+                                    "manifest_status": "missing"}}
+            cp, rp, lc = self._write(td, tables, [], {"planned_t": "planned"})
+            res = m.check(cp, rp, lc)
+            self.assertEqual(res["code"], 1)
+            self.assertTrue(any("lifecycle_table_missing_in_registry:planned_t"
+                                in i for i in res["issues"]))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -781,6 +781,16 @@ class TestRegistry(unittest.TestCase):
         self.assertFalse(val["ok"])
         self.assertFalse(val["checks"]["catalog_sha256_unchanged"])
 
+    def test_validate_rejects_bad_qualification_enum(self):
+        """task-77：写回状态必须是资格枚举（None/拼写错误 verdict 不得落库）。"""
+        before = self._registry()
+        after = qualify_probe.update_registry_entries(before, self._cards(), CHECKED)
+        after["physical_tables"][1]["qualification_status"] = "OK"  # 非枚举
+        val = qualify_probe.validate_registry(before, after, ["a", "b"], "abc",
+                                              expected_physical=3, expected_display=1)
+        self.assertFalse(val["ok"])
+        self.assertFalse(val["checks"]["qualification_status_enum"])
+
     def test_write_registry_backup_and_json(self):
         with tempfile.TemporaryDirectory() as d:
             path = Path(d) / "registry.json"
