@@ -44,3 +44,14 @@
 - U1 未做详情抽屉/排序/分页；
 - S1 supervisor 任务改造属 P0b L2 专项；
 - 自动刷新暂停后恢复不补刷（等下一 tick）。
+
+## 六、P0 第二波（C2/S2）
+
+| 任务 | Owner | 结果 | 验证 |
+|---|---|---|---|
+| C2 晨会议程准备 | pilot-qa | `tools/hq_meeting_prep.py` + 8 tests + runbook；真实数据 3 议题/五角色提示 | 8 passed |
+| S2 Q2 验收编排 | data-pilot | `tools/q2_acceptance.py` + 8 tests + runbook；无会话 PENDING 不伪造 | 12 passed（含既有4） |
+
+- 今日晨会草案：`deliverables/2026-11-03_morning_agenda_draft_v1.md`
+- 当前输出：q2_acceptance=PENDING（无 `C:\Temp\zb_session.txt`）；DW=PENDING-LOGIN；Q1 自动证据 4/4、签字 0/4。
+- 仍阻塞：管理员重启 8091（C1/S1 激活）；A0 q2 会话；A0 主持晨会。
