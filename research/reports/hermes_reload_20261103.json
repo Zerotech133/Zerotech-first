@@ -1,0 +1,48 @@
+{
+ "ts": "2026-11-03T06:10:28+0800",
+ "event": "hermes_reload_mcp",
+ "command": "/reload-mcp via POST /api/commands/exec",
+ "before": {
+  "servers": 13,
+  "active": 0,
+  "tools": 0,
+  "reload_required": true
+ },
+ "after": {
+  "servers": 13,
+  "active": 11,
+  "tools_total": 98,
+  "source": "tool_registry",
+  "unavailable": [
+   "om-metadata",
+   "zhice-selection"
+  ],
+  "dw_servers": [
+   {
+    "name": "dw-governance",
+    "active": true,
+    "tools": 6,
+    "status": "active"
+   },
+   {
+    "name": "dw-quality",
+    "active": true,
+    "tools": 6,
+    "status": "active"
+   },
+   {
+    "name": "dw-catalog",
+    "active": true,
+    "tools": 5,
+    "status": "active"
+   },
+   {
+    "name": "factor-tools",
+    "active": true,
+    "tools": 4,
+    "status": "active"
+   }
+  ]
+ },
+ "duration_note": "热重载约 10s；新增 98 tools / 11 active servers"
+}

@@ -1,6 +1,6 @@
 {
  "meta": {
-  "generated_at": "2026-11-03T06:01:33",
+  "generated_at": "2026-11-03T06:10:42",
   "as_of": "2026-11-03",
   "catalog_version": 35,
   "catalog_updated": "2026-11-03T05:07:35",
@@ -7026,7 +7026,7 @@
  },
  "legion": {
   "available": true,
-  "as_of": "2026-11-03T06:01:33+0800",
+  "as_of": "2026-11-03T06:10:42+0800",
   "chief": {
    "agent_id": "A0",
    "binding": "glm/glm-5.3"
@@ -8439,7 +8439,7 @@
    "seats_ok": 12,
    "seats_total": 12,
    "source": "agent_platform/data/seat_heartbeat",
-   "age_hours": 20.7
+   "age_hours": 20.8
   },
   "division": [
    {
@@ -8493,33 +8493,33 @@
      "name": "stock-data",
      "transport": "stdio",
      "enabled": true,
-     "active": false,
-     "status": "configured",
-     "tool_count": 0
+     "active": true,
+     "status": "active",
+     "tool_count": 28
     },
     {
      "name": "stock-intel-readonly",
      "transport": "stdio",
      "enabled": true,
-     "active": false,
-     "status": "configured",
-     "tool_count": 0
+     "active": true,
+     "status": "active",
+     "tool_count": 2
     },
     {
      "name": "jev-news",
      "transport": "stdio",
      "enabled": true,
-     "active": false,
-     "status": "configured",
-     "tool_count": 0
+     "active": true,
+     "status": "active",
+     "tool_count": 5
     },
     {
      "name": "playwright",
      "transport": "stdio",
      "enabled": true,
-     "active": false,
-     "status": "configured",
-     "tool_count": 0
+     "active": true,
+     "status": "active",
+     "tool_count": 25
     },
     {
      "name": "om-metadata",
@@ -8533,17 +8533,17 @@
      "name": "d1-research",
      "transport": "stdio",
      "enabled": true,
-     "active": false,
-     "status": "configured",
-     "tool_count": 0
+     "active": true,
+     "status": "active",
+     "tool_count": 1
     },
     {
      "name": "huangzhong",
      "transport": "stdio",
      "enabled": true,
-     "active": false,
-     "status": "configured",
-     "tool_count": 0
+     "active": true,
+     "status": "active",
+     "tool_count": 11
     },
     {
      "name": "zhice-selection",
@@ -8557,59 +8557,48 @@
      "name": "dw-governance",
      "transport": "stdio",
      "enabled": true,
-     "active": false,
-     "status": "configured",
-     "tool_count": 0
+     "active": true,
+     "status": "active",
+     "tool_count": 6
     },
     {
      "name": "dw-quality",
      "transport": "stdio",
      "enabled": true,
-     "active": false,
-     "status": "configured",
-     "tool_count": 0
+     "active": true,
+     "status": "active",
+     "tool_count": 6
     },
     {
      "name": "dw-catalog",
      "transport": "stdio",
      "enabled": true,
-     "active": false,
-     "status": "configured",
-     "tool_count": 0
+     "active": true,
+     "status": "active",
+     "tool_count": 5
     },
     {
      "name": "factor-tools",
      "transport": "stdio",
      "enabled": true,
-     "active": false,
-     "status": "configured",
-     "tool_count": 0
+     "active": true,
+     "status": "active",
+     "tool_count": 4
     },
     {
      "name": "kb-corpus",
      "transport": "stdio",
      "enabled": true,
-     "active": false,
-     "status": "configured",
-     "tool_count": 0
+     "active": true,
+     "status": "active",
+     "tool_count": 5
     }
    ],
-   "tools_total": 0,
+   "tools_total": 98,
    "reload_required": true,
    "unavailable_servers": [
-    "stock-data",
-    "stock-intel-readonly",
-    "jev-news",
-    "playwright",
     "om-metadata",
-    "d1-research",
-    "huangzhong",
-    "zhice-selection",
-    "dw-governance",
-    "dw-quality",
-    "dw-catalog",
-    "factor-tools",
-    "kb-corpus"
+    "zhice-selection"
    ],
    "expected_tools": 98,
    "inventory_scope": "already_known_runtime_only"
@@ -8922,33 +8911,33 @@
      "name": "stock-data",
      "transport": "stdio",
      "enabled": true,
-     "active": false,
-     "status": "configured",
-     "tool_count": 0
+     "active": true,
+     "status": "active",
+     "tool_count": 28
     },
     {
      "name": "stock-intel-readonly",
      "transport": "stdio",
      "enabled": true,
-     "active": false,
-     "status": "configured",
-     "tool_count": 0
+     "active": true,
+     "status": "active",
+     "tool_count": 2
     },
     {
      "name": "jev-news",
      "transport": "stdio",
      "enabled": true,
-     "active": false,
-     "status": "configured",
-     "tool_count": 0
+     "active": true,
+     "status": "active",
+     "tool_count": 5
     },
     {
      "name": "playwright",
      "transport": "stdio",
      "enabled": true,
-     "active": false,
-     "status": "configured",
-     "tool_count": 0
+     "active": true,
+     "status": "active",
+     "tool_count": 25
     },
     {
      "name": "om-metadata",
@@ -8962,17 +8951,17 @@
      "name": "d1-research",
      "transport": "stdio",
      "enabled": true,
-     "active": false,
-     "status": "configured",
-     "tool_count": 0
+     "active": true,
+     "status": "active",
+     "tool_count": 1
     },
     {
      "name": "huangzhong",
      "transport": "stdio",
      "enabled": true,
-     "active": false,
-     "status": "configured",
-     "tool_count": 0
+     "active": true,
+     "status": "active",
+     "tool_count": 11
     },
     {
      "name": "zhice-selection",
@@ -8986,59 +8975,48 @@
      "name": "dw-governance",
      "transport": "stdio",
      "enabled": true,
-     "active": false,
-     "status": "configured",
-     "tool_count": 0
+     "active": true,
+     "status": "active",
+     "tool_count": 6
     },
     {
      "name": "dw-quality",
      "transport": "stdio",
      "enabled": true,
-     "active": false,
-     "status": "configured",
-     "tool_count": 0
+     "active": true,
+     "status": "active",
+     "tool_count": 6
     },
     {
      "name": "dw-catalog",
      "transport": "stdio",
      "enabled": true,
-     "active": false,
-     "status": "configured",
-     "tool_count": 0
+     "active": true,
+     "status": "active",
+     "tool_count": 5
     },
     {
      "name": "factor-tools",
      "transport": "stdio",
      "enabled": true,
-     "active": false,
-     "status": "configured",
-     "tool_count": 0
+     "active": true,
+     "status": "active",
+     "tool_count": 4
     },
     {
      "name": "kb-corpus",
      "transport": "stdio",
      "enabled": true,
-     "active": false,
-     "status": "configured",
-     "tool_count": 0
+     "active": true,
+     "status": "active",
+     "tool_count": 5
     }
    ],
-   "tools_total": 0,
+   "tools_total": 98,
    "reload_required": true,
    "unavailable_servers": [
-    "stock-data",
-    "stock-intel-readonly",
-    "jev-news",
-    "playwright",
     "om-metadata",
-    "d1-research",
-    "huangzhong",
-    "zhice-selection",
-    "dw-governance",
-    "dw-quality",
-    "dw-catalog",
-    "factor-tools",
-    "kb-corpus"
+    "zhice-selection"
    ],
    "expected_tools": 98,
    "inventory_scope": "already_known_runtime_only"
@@ -9048,7 +9026,7 @@
    "seats_ok": 12,
    "seats_total": 12,
    "source": "agent_platform/data/seat_heartbeat",
-   "age_hours": 20.7
+   "age_hours": 20.8
   },
   "feed": [
    {
@@ -9066,7 +9044,204 @@
     "from": "A0"
    }
   ],
-  "generated_at": "2026-11-03T06:01:36"
+  "generated_at": "2026-11-03T06:10:45"
+ },
+ "hermes_work": {
+  "available": true,
+  "probe_ts": "2026-11-03T06:07:07+08:00",
+  "probe_ok": true,
+  "servers_probed": 4,
+  "tools_total": 21,
+  "tools_by_server": {
+   "dw-governance": [
+    "dw_stats",
+    "dw_list",
+    "dw_search",
+    "dw_get",
+    "dw_sample",
+    "dw_query"
+   ],
+   "dw-quality": [
+    "quality_snapshot",
+    "freshness",
+    "quality_checks",
+    "manifest",
+    "backup",
+    "lineage_impact"
+   ],
+   "dw-catalog": [
+    "catalog_snapshot",
+    "registry_stats",
+    "lifecycle",
+    "table_info",
+    "qualification"
+   ],
+   "factor-tools": [
+    "factor_daily_latest",
+    "factor_mining_latest",
+    "factor_reports",
+    "factor_script_catalog"
+   ]
+  },
+  "servers": [
+   {
+    "name": "dw-governance",
+    "ok": true,
+    "tool_count": 6,
+    "tools": [
+     "dw_stats",
+     "dw_list",
+     "dw_search",
+     "dw_get",
+     "dw_sample",
+     "dw_query"
+    ],
+    "duration_s": 2.1,
+    "error": null
+   },
+   {
+    "name": "dw-quality",
+    "ok": true,
+    "tool_count": 6,
+    "tools": [
+     "quality_snapshot",
+     "freshness",
+     "quality_checks",
+     "manifest",
+     "backup",
+     "lineage_impact"
+    ],
+    "duration_s": 0.1,
+    "error": null
+   },
+   {
+    "name": "dw-catalog",
+    "ok": true,
+    "tool_count": 5,
+    "tools": [
+     "catalog_snapshot",
+     "registry_stats",
+     "lifecycle",
+     "table_info",
+     "qualification"
+    ],
+    "duration_s": 0.2,
+    "error": null
+   },
+   {
+    "name": "factor-tools",
+    "ok": true,
+    "tool_count": 4,
+    "tools": [
+     "factor_daily_latest",
+     "factor_mining_latest",
+     "factor_reports",
+     "factor_script_catalog"
+    ],
+    "duration_s": 0.1,
+    "error": null
+   }
+  ],
+  "exec_evidence": {
+   "tool": "dw_query",
+   "args": {
+    "id": "ts_daily",
+    "limit": 1,
+    "count": true
+   },
+   "result": "{'ok': True, 'isError': False, 'payload': {'state': 'ok', 'columns': ['ts_code', 'trade_date', 'open', 'high', 'low', 'close', 'pre_close', 'change', 'pct_chg', 'vol', 'amount'], 'rows': [['600656.SH', '19910102', 3.05, 3.05, 3.05, 3.05, 3.02, 0.03, 0.99, 20.0, 6.0]], 'count': 1376419, 'has_more': True, 'truncated': True, 'evidence': {'engine': 'parquet', 'files': 500, 'files_used': 500, 'files_total': 500, 'schema_subset': False, 'scanned_rows': 7, 'scanned_bytes': 75012030, 'where_applied': Fa"
+  },
+  "bindings": [
+   {
+    "work": "数据查询 / 取数 API",
+    "seat": "DATA1 张松 · DEV1 马钧",
+    "server": "dw-governance",
+    "tools": [
+     "dw_query",
+     "dw_list",
+     "dw_get",
+     "dw_stats",
+     "dw_search",
+     "dw_sample"
+    ],
+    "status": "ok",
+    "evidence": "dw_query(id=ts_daily,count=1) → state=ok"
+   },
+   {
+    "work": "数据质量 / 新鲜度 / 备份",
+    "seat": "DATA3 陈群",
+    "server": "dw-quality",
+    "tools": [
+     "freshness",
+     "quality_checks",
+     "quality_snapshot",
+     "manifest",
+     "backup",
+     "lineage_impact"
+    ],
+    "status": "ok",
+    "evidence": "tools/list 6 工具，可读 freshness/manifest"
+   },
+   {
+    "work": "数据目录 / 资产 / 资质",
+    "seat": "DATA2 刘巴",
+    "server": "dw-catalog",
+    "tools": [
+     "catalog_snapshot",
+     "registry_stats",
+     "lifecycle",
+     "table_info",
+     "qualification"
+    ],
+    "status": "ok",
+    "evidence": "tools/list 5 工具，覆盖 catalog/registry/资质"
+   },
+   {
+    "work": "因子挖掘 / 因子日报",
+    "seat": "FACTOR1 蒋琬",
+    "server": "factor-tools",
+    "tools": [
+     "factor_daily_latest",
+     "factor_mining_latest",
+     "factor_reports",
+     "factor_script_catalog"
+    ],
+    "status": "ok",
+    "evidence": "tools/list 4 工具，日轮/挖掘报告可读"
+   }
+  ],
+  "runtime": {
+   "servers_total": 13,
+   "active_servers": 11,
+   "tools_total": 98,
+   "reload_required": true,
+   "unavailable_servers": [
+    "om-metadata",
+    "zhice-selection"
+   ],
+   "dw_servers": [
+    {
+     "name": "dw-governance",
+     "active": true,
+     "tools": 6
+    },
+    {
+     "name": "dw-quality",
+     "active": true,
+     "tools": 6
+    },
+    {
+     "name": "dw-catalog",
+     "active": true,
+     "tools": 5
+    },
+    {
+     "name": "factor-tools",
+     "active": true,
+     "tools": 4
+    }
+   ]
+  }
  },
  "query_examples": [
   {

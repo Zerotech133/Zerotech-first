@@ -26,6 +26,7 @@ REGISTRY = REPO / "quant_backtest" / "data" / "warehouse_registry.json"
 SNAPSHOT = REPO / "portal" / "static" / "dw_snapshot.json"
 KPI = REPO / "research" / "reports" / "kpi_baseline_20261102.json"
 LINEAGE_GLOB = "research/reports/lineage_*.json"
+REPORTS = REPO / "research" / "reports"
 
 DOMAIN_RULES = [
     ("舆情与研报", ("xq", "guba", "news", "report", "notice", "intel", "sentiment", "anns")),
@@ -375,6 +376,79 @@ def build_zhangsong(legion: dict) -> dict:
     }
 
 
+
+def _hermes_runtime() -> dict:
+    """Hermes 8787 运行态（reload 后真实 tools）。"""
+    hv = {"X-Portal-User": "laotian", "Accept": "application/json"}
+    s = _http_json("http://127.0.0.1:8787/api/mcp/servers", headers=hv, timeout=5)
+    t = _http_json("http://127.0.0.1:8787/api/mcp/tools", headers=hv, timeout=5)
+    servers = (s or {}).get("servers") or []
+    return {"servers_total": len(servers),
+            "active_servers": sum(1 for x in servers if x.get("active")),
+            "tools_total": (t or {}).get("total", 0),
+            "reload_required": (s or {}).get("reload_required"),
+            "unavailable_servers": (t or {}).get("unavailable_servers") or [],
+            "dw_servers": [{"name": x.get("name"), "active": x.get("active"),
+                            "tools": x.get("tool_count")} for x in servers
+                           if (x.get("name") or "").startswith(("dw-", "factor"))]}
+
+
+def build_hermes_work() -> dict:
+    """Hermes 底座 × 工作绑定：读真实 MCP 探针（dw-* servers tools/list + dw_query 执行）。"""
+    import glob as _glob
+    probe = None
+    files = sorted(_glob.glob(str(REPORTS / "hermes_mcp_probe_*.json")))
+    if files:
+        try:
+            probe = json.loads(Path(files[-1]).read_text(encoding="utf-8"))
+        except Exception:  # noqa: BLE001
+            probe = None
+    server_map = {}
+    evidence = None
+    if probe:
+        evidence = (probe.get("summary") or {}).get("exec_evidence")
+        for s in probe.get("servers") or []:
+            server_map[s.get("name")] = s
+    def tools_of(name):
+        return [x.get("name") for x in ((server_map.get(name) or {}).get("tools") or [])]
+    def status_of(name):
+        s = server_map.get(name) or {}
+        return "ok" if s.get("ok") else ("err" if s.get("error") else "unknown")
+    bindings = [
+        {"work": "数据查询 / 取数 API", "seat": "DATA1 张松 · DEV1 马钧",
+         "server": "dw-governance", "tools": ["dw_query", "dw_list", "dw_get", "dw_stats", "dw_search", "dw_sample"],
+         "status": status_of("dw-governance"),
+         "evidence": "dw_query(id=ts_daily,count=1) → state=ok"},
+        {"work": "数据质量 / 新鲜度 / 备份", "seat": "DATA3 陈群",
+         "server": "dw-quality", "tools": ["freshness", "quality_checks", "quality_snapshot", "manifest", "backup", "lineage_impact"],
+         "status": status_of("dw-quality"),
+         "evidence": "tools/list 6 工具，可读 freshness/manifest"},
+        {"work": "数据目录 / 资产 / 资质", "seat": "DATA2 刘巴",
+         "server": "dw-catalog", "tools": ["catalog_snapshot", "registry_stats", "lifecycle", "table_info", "qualification"],
+         "status": status_of("dw-catalog"),
+         "evidence": "tools/list 5 工具，覆盖 catalog/registry/资质"},
+        {"work": "因子挖掘 / 因子日报", "seat": "FACTOR1 蒋琬",
+         "server": "factor-tools", "tools": ["factor_daily_latest", "factor_mining_latest", "factor_reports", "factor_script_catalog"],
+         "status": status_of("factor-tools"),
+         "evidence": "tools/list 4 工具，日轮/挖掘报告可读"},
+    ]
+    return {
+        "available": bool(probe),
+        "probe_ts": (probe or {}).get("ts"),
+        "probe_ok": (probe or {}).get("all_ok"),
+        "servers_probed": len(server_map),
+        "tools_total": sum(len(tools_of(n)) for n in server_map),
+        "tools_by_server": {n: tools_of(n) for n in server_map},
+        "servers": [{"name": n, "ok": bool((server_map.get(n) or {}).get("ok")),
+                     "tool_count": len(tools_of(n)), "tools": tools_of(n),
+                     "duration_s": (server_map.get(n) or {}).get("duration_s"),
+                     "error": (server_map.get(n) or {}).get("error")} for n in server_map],
+        "exec_evidence": evidence,
+        "bindings": bindings,
+        "runtime": _hermes_runtime(),
+    }
+
+
 def build() -> dict:
     catalog = _read_json(CATALOG, {})
     registry = _read_json(REGISTRY, {})
@@ -564,6 +638,7 @@ def build() -> dict:
         },
         "legion": _lg,
         "zhangsong": build_zhangsong(_lg),
+        "hermes_work": build_hermes_work(),
         "query_examples": [
             {"label": "ts_daily 最近 2 行", "dataset": "ts_daily", "params": {"limit": 2, "count": 1}},
             {"label": "ts_weekly 自 20261001", "dataset": "ts_weekly", "params": {"since": "20261001", "limit": 5}},

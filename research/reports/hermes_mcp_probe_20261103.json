@@ -1,0 +1,157 @@
+{
+ "tool": "hermes_mcp_probe",
+ "ts": "2026-11-03T06:07:07+08:00",
+ "servers": [
+  {
+   "name": "dw-governance",
+   "duty": "数据查询/治理",
+   "ok": true,
+   "tools": [
+    {
+     "name": "dw_stats",
+     "description": "数据仓数据集统计：总量、登记数、有取数入口数、按域/类型分布。只读。"
+    },
+    {
+     "name": "dw_list",
+     "description": "列出数据集（dataset_id/label/domain/kind/path/registered/exposed）。只读。"
+    },
+    {
+     "name": "dw_search",
+     "description": "按关键词检索数据集（等价 list --q）。只读。"
+    },
+    {
+     "name": "dw_get",
+     "description": "按 dataset_id 取数据集元数据。只读。"
+    },
+    {
+     "name": "dw_sample",
+     "description": "按 dataset_id 取样本（sqlite 表行/parquet 行/json 头/目录文件清单）。只读。"
+    },
+    {
+     "name": "dw_query",
+     "description": "通用只读查询（S3-06 P1）：按 dataset_id 过滤/排序/分页/投影/计数。sqlite 走参数化 WHERE；parquet 走 pyarrow 过滤+列投影；jsonl/混合目录/契约产物等不支持载体返回 not_supp"
+    }
+   ],
+   "tool_count": 6,
+   "duration_s": 2.1,
+   "error": null,
+   "exec_evidence": {
+    "tool": "dw_query",
+    "args": {
+     "id": "ts_daily",
+     "limit": 1,
+     "count": true
+    },
+    "result": "{'ok': True, 'isError': False, 'payload': {'state': 'ok', 'columns': ['ts_code', 'trade_date', 'open', 'high', 'low', 'close', 'pre_close', 'change', 'pct_chg', 'vol', 'amount'], 'rows': [['600656.SH', '19910102', 3.05, 3.05, 3.05, 3.05, 3.02, 0.03, 0.99, 20.0, 6.0]], 'count': 1376419, 'has_more': True, 'truncated': True, 'evidence': {'engine': 'parquet', 'files': 500, 'files_used': 500, 'files_total': 500, 'schema_subset': False, 'scanned_rows': 7, 'scanned_bytes': 75012030, 'where_applied': Fa"
+   }
+  },
+  {
+   "name": "dw-quality",
+   "duty": "数据质量/新鲜度",
+   "ok": true,
+   "tools": [
+    {
+     "name": "quality_snapshot",
+     "description": "数据质量快照：聚合 freshness/quality/manifest/backup/metadata 五项检查的状态与摘要。只读。"
+    },
+    {
+     "name": "freshness",
+     "description": "新鲜度：六表 prod_max（parquet footer）+ 4 库停摆；可选 table 只取单表。只读。"
+    },
+    {
+     "name": "quality_checks",
+     "description": "确定性质量检查：store 存在/空分片/分区重复/行数（可选单表）。只读。"
+    },
+    {
+     "name": "manifest",
+     "description": "4 个 _manifest.json（tdx/tushare/xueqiu/cnopendata）键数对 catalog 表名交集与基线。只读。"
+    },
+    {
+     "name": "backup",
+     "description": "备份回执核对：最新备份代、产物齐全性、offsite_remote_receipt、断档小时数。只读。"
+    },
+    {
+     "name": "lineage_impact",
+     "description": "改表影响面（静态）：catalog 表 → store → alias → 仓内消费方清单。只读。"
+    }
+   ],
+   "tool_count": 6,
+   "duration_s": 0.1,
+   "error": null,
+   "exec_evidence": null
+  },
+  {
+   "name": "dw-catalog",
+   "duty": "数据目录/资产",
+   "ok": true,
+   "tools": [
+    {
+     "name": "catalog_snapshot",
+     "description": "catalog 快照：版本/表数/sha256/登记一致性/漂移抽样（只读）。"
+    },
+    {
+     "name": "registry_stats",
+     "description": "warehouse_registry 统计：physical/display 计数、资格分布、与 catalog sha256 是否一致（只读）。"
+    },
+    {
+     "name": "lifecycle",
+     "description": "catalog lifecycle 四态（active/planned/deprecated/archived）覆盖与缺失清单（只读）。"
+    },
+    {
+     "name": "table_info",
+     "description": "按表名查登记/资质/路径：warehouse_registry 条目 + catalog 存储信息；支持 catalog 别名（只读）。"
+    },
+    {
+     "name": "qualification",
+     "description": "资格分布计数：unknown/evidence_partial/planned/deprecated（含占比）；只读。"
+    }
+   ],
+   "tool_count": 5,
+   "duration_s": 0.2,
+   "error": null,
+   "exec_evidence": null
+  },
+  {
+   "name": "factor-tools",
+   "duty": "因子工具",
+   "ok": true,
+   "tools": [
+    {
+     "name": "factor_daily_latest",
+     "description": "最新因子日报（factor_daily_<日期>.json）摘要：生成时间/最新数据日/窗口/因子数/衰减告警数/提案数/各因子 IC 明细。可选 factor 参数精确查某因子 IC。只读。"
+    },
+    {
+     "name": "factor_mining_latest",
+     "description": "最新因子挖掘榜（strategy_mining_<日期>.json）排名前 N：每行 feature/IC 均值/t 值/多空均值等。只读。"
+    },
+    {
+     "name": "factor_reports",
+     "description": "列出 research/reports 下 factor_daily / strategy_mining / neutral_effect 三类研究产物文件清单（含 json/md、大小、mtime、日期标签）。只读。"
+    },
+    {
+     "name": "factor_script_catalog",
+     "description": "因子研究脚本清单：tools/research 下 factor_*.py、strategy_miner.py、neutral_effect.py 等（名称/大小/mtime/文件首行说明）。只读，不执行。"
+    }
+   ],
+   "tool_count": 4,
+   "duration_s": 0.1,
+   "error": null,
+   "exec_evidence": null
+  }
+ ],
+ "summary": {
+  "servers": 4,
+  "ok": 4,
+  "tools_total": 21,
+  "exec_evidence": {
+   "tool": "dw_query",
+   "args": {
+    "id": "ts_daily",
+    "limit": 1,
+    "count": true
+   },
+   "result": "{'ok': True, 'isError': False, 'payload': {'state': 'ok', 'columns': ['ts_code', 'trade_date', 'open', 'high', 'low', 'close', 'pre_close', 'change', 'pct_chg', 'vol', 'amount'], 'rows': [['600656.SH', '19910102', 3.05, 3.05, 3.05, 3.05, 3.02, 0.03, 0.99, 20.0, 6.0]], 'count': 1376419, 'has_more': True, 'truncated': True, 'evidence': {'engine': 'parquet', 'files': 500, 'files_used': 500, 'files_total': 500, 'schema_subset': False, 'scanned_rows': 7, 'scanned_bytes': 75012030, 'where_applied': Fa"
+  }
+ },
+ "all_ok": true
+}

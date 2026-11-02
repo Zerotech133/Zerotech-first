@@ -394,8 +394,11 @@ footer{border-top:1px solid var(--border,#2a3342);color:var(--text-dim,#96a0af);
     <div class="tablebox"><table><thead><tr><th>数据域 / 职责</th><th>责任席位</th><th>状态</th><th>当前进度</th></tr></thead><tbody id="legion-division-body"></tbody></table></div>
     <div class="two" style="margin-top:16px">
       <div class="card"><h3>进度总览</h3><div id="legion-progress"></div></div>
-      <div class="card"><h3>Hermes MCP <span class="cnt" id="legion-hermes-count"></span></h3><div id="legion-hermes-summary"></div>
-        <div class="tablebox" style="margin-top:8px;max-height:240px"><table><thead><tr><th>Server</th><th>传输</th><th>状态</th><th>tools</th></tr></thead><tbody id="legion-hermes-servers"></tbody></table></div>
+      <div class="card"><h3>Hermes 底座 × 工作绑定 <span class="cnt" id="legion-hermes-count"></span></h3>
+        <div id="legion-hermes-summary"></div>
+        <div id="legion-hermes-evidence" class="muted" style="margin-top:6px;font-size:11.5px"></div>
+        <div class="tablebox" style="margin-top:8px;max-height:200px"><table><thead><tr><th>工作项</th><th>负责席位</th><th>Hermes 工具</th><th>状态</th></tr></thead><tbody id="legion-hermes-bindings"></tbody></table></div>
+        <div class="tablebox" style="margin-top:8px;max-height:220px"><table><thead><tr><th>MCP Server</th><th>tools</th><th>探针</th><th>耗时</th></tr></thead><tbody id="legion-hermes-servers"></tbody></table></div>
       </div>
     </div>
     <h2 style="margin-top:22px">数据相关计划任务 <span class="cnt" id="legion-sched-count"></span></h2>
@@ -801,11 +804,18 @@ const DW_DATA = __DW_DATA_JSON__;
     $("#legion-progress").innerHTML = '<div class="muted" style="line-height:2">数据仓 S3 完成度 <b>' + esc(pr.s3_pct) + '%</b> · KPI <b>' + esc(pr.kpi_ok) + '/' + esc(pr.kpi_total) + '</b> · 首夜 <b>' + esc(pr.first_night) + '</b> · 终验收 <b>' + esc(pr.acceptance) + '</b><br>' +
       '资质：ok <b>' + esc(k8.ok) + '</b> / partial <b>' + esc(k8.partial) + '</b> / unknown <b>' + esc(k8.unknown) + '</b> / deprecated <b>' + esc(k8.deprecated) + '</b><br>' +
       '数据域：' + (Z.domains || []).map(x => esc(x.name) + ' ' + x.count).join(' · ') + '</div>';
-    const H = Z.hermes || L.hermes || {};
-    $("#legion-hermes-count").textContent = (H.servers_total || 0) + " servers / " + (H.tools_total || 0) + " tools";
-    $("#legion-hermes-summary").innerHTML = '<div class="muted" style="line-height:1.9">servers <b>' + (H.servers_total || 0) + '</b> · tools <b>' + (H.tools_total || 0) + '</b>（期望约 ' + (H.expected_tools || 98) + '）<br>reload_required=<b>' + esc(String(H.reload_required)) + '</b> · unavailable ' + ((H.unavailable_servers || []).length) + ' servers<br><span class="pill warn">tools=0 → 需 /reload-mcp</span></div>';
-    $("#legion-hermes-servers").innerHTML = (H.servers || []).map(s =>
-      '<tr><td class="mono">' + esc(s.name) + '</td><td class="muted">' + esc(s.transport || "") + '</td><td><span class="pill ' + (s.active ? "ok" : (s.enabled ? "mute" : "err")) + '">' + esc(s.active ? "active" : (s.status || "configured")) + '</span></td><td class="num">' + esc(s.tool_count) + '</td></tr>').join("");
+    const HW = Z.hermes_work || {};
+    const EV = HW.exec_evidence || {};
+    $("#legion-hermes-count").textContent = (HW.servers_probed || 0) + " servers / " + (HW.tools_total || 0) + " tools（探针）";
+    $("#legion-hermes-summary").innerHTML = '<div class="muted" style="line-height:1.9">底座探针 <b>' + (HW.probe_ok ? "PASS" : "WARN") + '</b> · ' + (HW.servers_probed || 0) + ' servers / <b>' + (HW.tools_total || 0) + '</b> tools（真实 tools/list）<br>' +
+      'Hermes 运行时：<b>' + ((HW.runtime || {}).tools_total || 0) + '</b> tools / ' + ((HW.runtime || {}).active_servers || 0) + ' active servers（' + ((HW.runtime || {}).servers_total || 0) + ' 配置）<br>' +
+      '<span class="pill ok">工作已绑定：查询/质量/目录/因子 4 类职责</span></div>';
+    $("#legion-hermes-evidence").innerHTML = EV.tool ?
+      ('真实执行证据：<b>' + esc(EV.tool) + '</b>(' + esc(JSON.stringify(EV.args || {})) + ') → ' + esc(String(EV.result || "").slice(0, 160)) + '…') : "";
+    $("#legion-hermes-bindings").innerHTML = (HW.bindings || []).map(b =>
+      '<tr><td>' + esc(b.work) + '</td><td class="muted">' + esc(b.seat) + '</td><td class="mono" style="white-space:normal">' + esc((b.tools || []).join(", ")) + '</td><td><span class="pill ' + (b.status === "ok" ? "ok" : "err") + '">' + esc(b.status) + '</span></td></tr>').join("") || '<tr><td colspan="4" class="muted">无探针数据（先跑 hermes_mcp_probe.py）</td></tr>';
+    $("#legion-hermes-servers").innerHTML = (HW.servers || []).map(s =>
+      '<tr><td class="mono">' + esc(s.name) + '</td><td class="num">' + esc(s.tool_count) + '</td><td><span class="pill ' + (s.ok ? "ok" : "err") + '">' + esc(s.ok ? "ok" : "err") + '</span></td><td class="muted">' + esc(s.duration_s) + 's</td></tr>').join("");
     const st = Z.sync_tasks || [];
     $("#legion-sched-count").textContent = st.length + " 项";
     $("#legion-schedules-body").innerHTML = st.map(x =>
