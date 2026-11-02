@@ -11,7 +11,10 @@ import json
 import sys
 import tempfile
 import unittest
+from datetime import date, datetime, time
 from pathlib import Path
+
+import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -362,6 +365,127 @@ class AcademyRoundKeyTests(unittest.TestCase):
         self.assertEqual(a2.approval_id, a1.approval_id)  # 复用最新凭据
         self.assertEqual(topic["status"], "decision")  # 真源已补齐
         self.assertEqual(len(self._keys()), 1)  # 不新增轮次凭据
+
+
+# ── ACL-101：ACAD1 池 SLA 与 30 卡证据年龄口径（只读契约断言，不改实现）──
+# 口径来源：compositions/acad1-legion/manifest.yaml `spec.data.sla`；
+# 26h = data_date_lag_days(1) × 24h + 2h 日管线余量（与 ops/health_check.py
+# `_STALE_MAX_HOURS=26`「每日任务错过一个完整调度日 + 2h 余量」同判例）。
+MANIFEST_PATH = ROOT / "compositions" / "acad1-legion" / "manifest.yaml"
+POOL_CONTRACT = "acad1-pool/v1"
+POOL_MAX_30 = 30
+DAILY_CLOSE_HOUR = 15  # 日线收盘时点：证据年龄从数据日 15:00 收盘起算
+SLA_REQUIRED = ("freshness_days", "pool_max", "evidence_max_age_h", "data_date_lag_days")
+SLA_EXPECTED = {
+    "freshness_days": 1,
+    "pool_max": 30,
+    "evidence_max_age_h": 26,
+    "data_date_lag_days": 1,
+}
+
+
+def _load_manifest():
+    return yaml.safe_load(MANIFEST_PATH.read_text(encoding="utf-8"))
+
+
+def _manifest_sla():
+    return _load_manifest()["spec"]["data"]["sla"]
+
+
+def _evidence_age_hours(generated_at, data_date):
+    """证据年龄（小时）= 复核/生成时点 − 数据日收盘时点（15:00）。
+
+    data_date 缺失 → None（unknown，不伪造成 fresh）。
+    """
+    if data_date is None:
+        return None
+    close_at = datetime.combine(data_date, time(hour=DAILY_CLOSE_HOUR))
+    return (generated_at - close_at).total_seconds() / 3600.0
+
+
+def _evidence_status(age_hours, max_age_h):
+    """证据年龄三态口径：fresh / stale / unknown（缺时点不得判 fresh）。"""
+    if age_hours is None:
+        return "unknown"
+    return "fresh" if age_hours <= max_age_h else "stale"
+
+
+class AcademyPoolSlaTests(unittest.TestCase):
+    """ACL-101：manifest SLA 字段 + 30 卡证据年龄口径只读回归。"""
+
+    def test_manifest_sla_fields_declared(self):
+        manifest = _load_manifest()
+        self.assertEqual(manifest["apiVersion"], "zerobound/v1")
+        self.assertEqual(manifest["kind"], "Composition")
+        data = manifest["spec"]["data"]
+        self.assertEqual(data["contract"], POOL_CONTRACT)
+        sla = data["sla"]
+        for key in SLA_REQUIRED:
+            self.assertIn(key, sla, "manifest SLA 缺字段 %s" % key)
+        for key, expected in SLA_EXPECTED.items():
+            value = sla[key]
+            self.assertIsInstance(value, int, "%s 必须是整数（单位显式）" % key)
+            self.assertNotIsInstance(value, bool)
+            self.assertGreater(value, 0)
+            self.assertEqual(value, expected, "manifest SLA %s 漂移" % key)
+        # 接线声明：池 API/页面必须挂在 manifest 上（声明层真源，不靠页面硬编码）
+        exposes = manifest["spec"]["interfaces"]["exposes"]
+        self.assertIn({"http": "/api/acad1/pool"}, exposes)
+        page_refs = [p.get("ref") for p in manifest["spec"]["pages"]]
+        self.assertIn("page/acad1/pool", page_refs)
+
+    def test_manifest_sla_evidence_age_derivation(self):
+        sla = _manifest_sla()
+        lag = sla["data_date_lag_days"]
+        max_age = sla["evidence_max_age_h"]
+        # 26h = 1 天数据滞后（24h）+ 2h 日管线余量：必须容纳最大允许滞后
+        self.assertEqual(max_age, lag * 24 + 2)
+        self.assertGreater(max_age, lag * 24)  # 纯日历滞后之外还要留管线运行时间
+        self.assertEqual(sla["freshness_days"], lag)  # 池新鲜度与数据日滞后同口径
+        self.assertEqual(sla["pool_max"], POOL_MAX_30)  # 30 卡池上限
+        # 26h 严于黄忠验收 48h 认证门（运行门严于认证门），不得反向放宽
+        self.assertLessEqual(max_age, 48)
+
+    def test_30_cards_evidence_age_caliber(self):
+        sla = _manifest_sla()
+        max_age = sla["evidence_max_age_h"]
+        reviewed_at = datetime(2026, 11, 4, 17, 0)  # 交易日 D 17:00 日管线复核
+        cards = []
+        # 28 张当日数据：D 收盘 15:00 → D 17:00 复核 = 2h（正常节奏）
+        for idx in range(28):
+            cards.append({"candidate_id": "C%02d" % idx, "data_date": date(2026, 11, 4)})
+        # 1 张滞后 1 天：D-1 收盘 → D 17:00 = 26h（SLA 边界，仍 fresh）
+        cards.append({"candidate_id": "LAG1", "data_date": date(2026, 11, 3)})
+        # 1 张滞后 2 天：D-2 收盘 → D 17:00 = 50h（超龄 stale）
+        cards.append({"candidate_id": "LAG2", "data_date": date(2026, 11, 2)})
+        self.assertEqual(len(cards), POOL_MAX_30)  # 恰为 30 卡池上限
+        ages = [_evidence_age_hours(reviewed_at, c["data_date"]) for c in cards]
+        statuses = [_evidence_status(age, max_age) for age in ages]
+        self.assertEqual(statuses.count("fresh"), 29)
+        self.assertEqual(statuses.count("stale"), 1)
+        self.assertEqual(statuses.count("unknown"), 0)
+        by_id = dict(zip([c["candidate_id"] for c in cards], statuses))
+        self.assertEqual(by_id["LAG1"], "fresh")  # 26h 边界不误杀
+        self.assertEqual(by_id["LAG2"], "stale")  # 超龄显式失败，不假绿
+        # 年龄换算口径：lag0=2h / lag1=26h / lag2=50h
+        self.assertEqual(_evidence_age_hours(reviewed_at, date(2026, 11, 4)), 2.0)
+        self.assertEqual(_evidence_age_hours(reviewed_at, date(2026, 11, 3)), 26.0)
+        self.assertEqual(_evidence_age_hours(reviewed_at, date(2026, 11, 2)), 50.0)
+
+    def test_30_cards_evidence_age_boundary_and_unknown(self):
+        sla = _manifest_sla()
+        max_age = sla["evidence_max_age_h"]
+        reviewed_at = datetime(2026, 11, 4, 17, 0)
+        boundary = _evidence_age_hours(reviewed_at, date(2026, 11, 3))  # 26h
+        self.assertEqual(_evidence_status(boundary, max_age), "fresh")
+        over = boundary + 1.0 / 3600.0  # 26h + 1s
+        self.assertEqual(_evidence_status(over, max_age), "stale")
+        # 缺数据日/证据时点 → unknown（fail-visible，不按 fresh 计）
+        self.assertEqual(
+            _evidence_status(_evidence_age_hours(reviewed_at, None), max_age), "unknown"
+        )
+        # 卡数上限：31 卡超过 pool_max → 溢出显式可判（不静默截断）
+        self.assertGreater(POOL_MAX_30 + 1, sla["pool_max"])
 
 
 if __name__ == "__main__":
