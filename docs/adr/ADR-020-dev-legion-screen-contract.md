@@ -1,4 +1,4 @@
-# ADR-009 研发军团作战屏 v1 数据契约（只读）
+# ADR-020 研发军团作战屏 v1 数据契约（只读）
 
 - **状态**：**Accepted / M0 冻结（2026-10-28）**——老田会话授权「代确认」记录（见 docs/dev/legion_screen_target.md / milestones.md / review.md；AI 席位未单独回执，非人类签字）
 - **日期**：2026-10-28｜**决策人**：ARCH1（DSH-Lead 代起草）

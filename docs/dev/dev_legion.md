@@ -3,7 +3,7 @@
 - **页面**：`/dev_legion.html`（模块验证可先直接打开 `portal/dev_legion.html`；live 8734 需 LS-11 重启后生效）
 - **API**：`GET /api/dev/legion`（只读）
 - **契约**：`docs/dev/legion_screen_contract.json`（frozen v1.0）
-- **ADR**：`docs/adr/ADR-009-dev-legion-screen-contract.md`
+- **ADR**：`docs/adr/ADR-020-dev-legion-screen-contract.md`
 - **冒烟**：`python -X utf8 tools/dev_legion_smoke.py`
 
 ## 一、数据源

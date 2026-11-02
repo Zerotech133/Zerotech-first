@@ -1,7 +1,7 @@
 # 作战屏 v1 · 契约无异议记录（DEV1 / DEV5 / QA1）
 
 - **确认方式**：老田 2026-10-28 会话授权「代确认」记录；以下 AI 席位**未单独回执**，由老田授权代记录（非人类签字）
-- **审查对象**：`docs/adr/ADR-009-dev-legion-screen-contract.md`、`docs/dev/legion_screen_contract.json`
+- **审查对象**：`docs/adr/ADR-020-dev-legion-screen-contract.md`、`docs/dev/legion_screen_contract.json`
 
 | 席位 | 关注点 | 意见 | 记录时间 |
 |---|---|---|---|

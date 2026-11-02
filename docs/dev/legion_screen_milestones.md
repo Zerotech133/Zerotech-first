@@ -1,7 +1,7 @@
 # 作战屏 v1 · M0–M4 里程碑/依赖/交接（A0A）
 
 - **确认方式**：老田 2026-10-28 会话授权「代确认」记录；A0A 席位未单独回执
-- **关联**：`WO-LEGION-SCREEN-20261027`、`docs/dev/legion_screen_target.md`、`ADR-009`
+- **关联**：`WO-LEGION-SCREEN-20261027`、`docs/dev/legion_screen_target.md`、`ADR-020`
 
 | 里程碑 | 时间 | 内容 | 负责人 | 交接物 |
 |---|---|---|---|---|

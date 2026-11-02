@@ -1,7 +1,7 @@
 # ADR-007：工具矩阵（tool_matrix）作为工具授权单一源
 
 - **状态**：Accepted（历史回填，2026-10-27；原实现 2026-10-27 WO-LEGION-DEVEXEC3 及 tool_matrix_check）
-- **关联**：P4；`tools/tool_matrix_check.py`；`agent_platform/registry/tool_matrix.json`
+- **关联**：P4；`tools/tool_matrix_check.py`；`agent_platform/rules/tool_matrix.json`
 
 ## 背景
 

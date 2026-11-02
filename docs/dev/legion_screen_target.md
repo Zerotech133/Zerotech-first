@@ -1,7 +1,7 @@
 # 作战屏 v1 · 目标/优先级/验收窗口确认（A0）
 
 - **确认方式**：老田 2026-10-28 会话授权「代确认」记录；A0 席位未单独回执（AI 席位，非人类签字）
-- **关联**：`WO-LEGION-SCREEN-20261027` 父单、`ADR-009`、`docs/dev/legion_screen_contract.json`
+- **关联**：`WO-LEGION-SCREEN-20261027` 父单、`ADR-020`、`docs/dev/legion_screen_contract.json`
 
 ## 目标
 让老田/A0/ARCH1 一页看全研发军团：组织架构/11 席角色模型/在制任务/C6 指标/红线状态（只读）。

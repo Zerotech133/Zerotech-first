@@ -51,10 +51,11 @@
 - ADR-006 worktree/devtask 隔离；ADR-007 工具矩阵单源；ADR-008 席位契约；
 - ADR-009 端口注册/127.0.0.1；ADR-010 凭据 vault/token env；ADR-011 数据根与 work 退役；
 - ADR-012 L2 五要素；ADR-013 单机范围与文档纪律；
-- [ADR-014 Agent 运行契约 v1（run/event/conversation，Proposed）](docs/adr/ADR-014-agent-run-contract.md)；
+- [ADR-014 Agent 运行契约 v1（run/event/conversation，Accepted；P2 部分落地）](docs/adr/ADR-014-agent-run-contract.md)；
 - [ADR-015 平台内核契约与组合模型 v1（Proposed）](docs/adr/ADR-015-platform-kernel-composition-model.md)；
 - [ADR-016 唯一宿主整合（Accepted；supersedes 2026-10-30 联邦方案）](docs/adr/ADR-016-single-host-integration.md)；
-- [ADR-017 唯一开发框架与黄金路径（ZBF v1，Proposed）](docs/adr/ADR-017-framework-golden-path.md)。
+- [ADR-017 唯一开发框架与黄金路径（ZBF v1，Proposed）](docs/adr/ADR-017-framework-golden-path.md)；
+- [ADR-020 研发军团作战屏 v1 数据契约（Accepted / M0 冻结；原与端口注册重号的 ADR-009 之一，2026-11-02 重编号）](docs/adr/ADR-020-dev-legion-screen-contract.md)。
 
 > **平台唯一框架（ZBF v1，2026-11-02）**：[docs/architecture/PLATFORM_FRAMEWORK_v1.md](docs/architecture/PLATFORM_FRAMEWORK_v1.md)
 > （整体复盘 + 社区对标 + 一套宿主/一层内核/一个组合模型/一条黄金路径/一道门禁 + Q1–Q4 质量分级）。

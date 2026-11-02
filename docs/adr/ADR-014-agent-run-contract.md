@@ -1,6 +1,6 @@
 # ADR-014：Agent 运行契约 v1（run / event / conversation）
 
-- **状态**：Accepted（2026-10-27 老田按建议确认五问；P1 只读派生已实现，P2 未开始）
+- **状态**：Accepted（2026-10-27）；P2 部分落地：trace.run_scope/spans.run_id/llm.attempt（2026-11-02），P2 余项待 W3
 - **关联**：O6；`agent_platform/observability/trace.py`、`tools/events.py`、`agent_platform/legion_command/serve.py`；ADR-005（可观测）
 - **本 ADR 只定义契约，不改变任何运行时行为**。
 

@@ -33,7 +33,7 @@
 
 - 全量索引：`C:\项目\DOCS_INDEX.md`（由 `tools/gen_docs_index.py` 生成，`--check` 必须 rc=0）。
 - 命名：`YYYY-MM-DD_主题_vN.md`；历史文档不改名，新增 `superseded-by` 头注。
-- 决策类文档：一律进 `docs/adr/`，编号连续（当前 ADR-001 ~ ADR-016）。
+- 决策类文档：一律进 `docs/adr/`，编号连续（当前 ADR-001 ~ ADR-020；018/019 为 Proposed 草案）。
 - 审计/回执：交付物落 `C:\项目\deliverables/`，并在 `STATUS.md` 追加一行摘要。
 
 ## 四、写作底线
