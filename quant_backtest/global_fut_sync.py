@@ -208,10 +208,29 @@ def load_manifest() -> dict:
 
 
 def save_manifest(m: dict) -> None:
-    os.makedirs(OUT_DIR, exist_ok=True)
-    with open(MANIFEST, "w", encoding="utf-8") as f:
-        json.dump(m, f, ensure_ascii=False, indent=2)
+    """原子写 manifest（2026-11-02 修复：原直接 open("w") 中途被杀会写坏）。
 
+    先写同目录 .tmp 再 os.replace；失败不影响旧文件。
+    """
+    tmp = MANIFEST + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(m, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, MANIFEST)
+
+
+def _fail_entry(m: dict, ts_code: str, name: str, secid: str, err: str) -> None:
+    """失败时保留既有成功记录（rows/min/max/fetched_at），只标注 last_error。
+
+    2026-11-02 修复：原实现失败即覆盖成 ok=False rows=0，会把上午成功采集的
+    有效记录抹掉（今日 18:15 卡住运行即发生）。
+    """
+    prev = m.get(ts_code) or {}
+    entry = dict(prev)
+    entry.update({"name": name, "secid": secid, "last_error": err,
+                  "last_failed_at": __import__("time").strftime("%Y-%m-%d %H:%M:%S")})
+    if not prev.get("ok"):
+        entry["ok"] = False
+    m[ts_code] = entry
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="外盘商品期货日线采集（东财源）")
@@ -248,14 +267,14 @@ def main() -> int:
         )
         if kl is None:
             fail += 1
-            m[ts_code] = {"name": name, "secid": secid, "ok": False}
+            _fail_entry(m, ts_code, name, secid, "fetch_none")
             save_manifest(m)
             continue
         df = to_frame(kl, ts_code, stamp)
         if df.empty:
             print("  [miss] %-14s %-12s 空数据（secid 可能无效）" % (name, secid))
             fail += 1
-            m[ts_code] = {"name": name, "secid": secid, "ok": False, "rows": 0}
+            _fail_entry(m, ts_code, name, secid, "empty_frame")
             save_manifest(m)
             continue
         os.makedirs(OUT_DIR, exist_ok=True)
