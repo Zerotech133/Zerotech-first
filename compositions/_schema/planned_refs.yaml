@@ -1,5 +1,5 @@
 schema: zerobound/composition-planned-refs/v0.1
-updated_at: "2026-11-02"
+updated_at: "2026-11-03"
 note: "W1 引用收口：已声明但载体未就绪的 planned 引用。owner/due/acceptance 必须齐全；validate 将其视为已登记（不计 warning），11-16 复审时逐项核销或升级为 active。"
 refs:
   - ref: dataset/file/temp_contract
@@ -42,3 +42,45 @@ refs:
     due: "2026-11-04"
     reason: "验收 finalize 为工具命令，未建计划任务"
     acceptance: "11-04 执行后登记"
+  # WO-IFS-COMP-20261103：D1 数据/训练页面 ref 先按 planned 记（Lead 协调；
+  # task-27 完成 dataset_registry 登记后由 Lead 对齐并移出 planned，不伪造已登记）。
+  - ref: dataset/file/recommendation_pool
+    owner: D1
+    due: "2026-11-16"
+    reason: "文件已存在（agent_platform/data/recommendation_pool/），dataset_registry 未登记（IFS F2 / task-27）"
+    acceptance: "task-27 登记 dataset_registry 后由 Lead 移除 planned 并复跑 composition validate"
+  - ref: dataset/file/pool_review
+    owner: D1
+    due: "2026-11-16"
+    reason: "D1 池复盘目录已有，dataset_registry 未登记（IFS F2 / task-27）"
+    acceptance: "task-27 登记后由 Lead 移除 planned"
+  - ref: dataset/file/team_exec
+    owner: D1
+    due: "2026-11-16"
+    reason: "D1 投研执行产物目录已有，dataset_registry 未登记（IFS F2 / task-27）"
+    acceptance: "task-27 登记后由 Lead 移除 planned"
+  - ref: dataset/file/paper_ledger
+    owner: D1
+    due: "2026-11-16"
+    reason: "paper_ledger.jsonl 已有，dataset_registry 未登记（IFS F4 / task-27）"
+    acceptance: "task-27 登记后由 Lead 移除 planned"
+  - ref: dataset/file/shadow_ledger
+    owner: D1
+    due: "2026-11-16"
+    reason: "shadow/shadow_ledger.jsonl 已有，dataset_registry 未登记（IFS F5 / task-27）"
+    acceptance: "task-27 登记后由 Lead 移除 planned"
+  - ref: dataset/file/d1_decisions
+    owner: D1
+    due: "2026-11-16"
+    reason: "D1 裁决账待定稿；dataset_registry 未登记（IFS F1 / task-27），缺失显式 planned 不造假"
+    acceptance: "task-27 登记并补文件后由 Lead 移除 planned"
+  - ref: dataset/file/training_episode
+    owner: D1
+    due: "2026-11-16"
+    reason: "训练 episode 契约未定（IFS F5 WO-IFS-TRAIN，11/16 前）"
+    acceptance: "F5 训练契约落地并登记 dataset_registry 后移除 planned"
+  - ref: page/d1/training
+    owner: D1
+    due: "2026-11-18"
+    reason: "训练页面未建（IFS F6 WO-IFS-UI / WO-IFS-ROUTE）"
+    acceptance: "页面+route 落地后由 Lead 移除 planned 并跑 route baseline check"

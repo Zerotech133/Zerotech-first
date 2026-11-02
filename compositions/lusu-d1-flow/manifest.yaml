@@ -3,14 +3,14 @@ kind: Composition
 metadata:
   id: lusu-d1-flow
   name: 鲁肃 D1 投研裁决流水线
-  version: 1.0.0
+  version: 1.1.0
   owner: D1
   lifecycle: draft
   tier: product
   host: lingjie
-  description: ACAD1 选股池 → D1 投研/裁决/建仓计划 → 盯盘 → 人工门 → TR1 paper 执行 → 复盘
+  description: ACAD1 选股池 → D1 投研/裁决/会议/交棒 → 盯盘 → 人工门 → TR1 paper 执行 → outcome/训练（IFS v1 F6 组合登记）
   created: "2026-11-02"
-  updated: "2026-11-02"
+  updated: "2026-11-03"
 spec:
   kernel: ">=0.9 <2.0"
   seats:
@@ -37,27 +37,42 @@ spec:
   data:
     requires:
       - ref: dataset/file/recommendation_pool
+        note: "IFS F2 上游池；dataset_registry 登记由 task-27 完成（当前 planned）"
       - ref: dataset/file/pool_review
+        note: "IFS F2 池复盘；dataset_registry 登记由 task-27 完成（当前 planned）"
       - ref: dataset/file/team_exec
+        note: "IFS F2 投研执行产物；dataset_registry 登记由 task-27 完成（当前 planned）"
       - ref: dataset/file/paper_ledger
+        note: "IFS F4 paper 账；dataset_registry 登记由 task-27 完成（当前 planned）"
+      - ref: dataset/file/shadow_ledger
+        note: "IFS F5 outcome 影子账；dataset_registry 登记由 task-27 完成（当前 planned）"
+      - ref: dataset/file/d1_decisions
+        note: "IFS F1 裁决账；dataset_registry 登记由 task-27 完成（当前 planned）"
+      - ref: dataset/file/training_episode
+        note: "IFS F5 训练 episode（planned，训练契约未定）"
     contract: trading-bot/v1
     sla:
       paper_only: true
       human_gate_external_only: true
       kill_switch: PAPER_KILL
       pool_scope: acad1_only
+      interface_envelope: "IFS-03 统一 envelope/schema_version 待 task-26 落地"
   interfaces:
     exposes:
       - http: /api/d1/research
       - http: /api/d1/decisions
+      - http: /api/d1/decision
       - http: /api/d1/meeting
-      - page: /d1/research
-      - page: /d1/war-room
+      - http: /api/d1/handoffs
+      - http: /api/d1/handoff
+      - http: /api/d1/training
     consumes:
       - interface/hermes-control
       - taskstore
       - envelope/s21
       - llm/glm-5.3
+      - interface/ifs-registry-pending-task-26
+      - interface/acad1-pool-pending-task-27
     auth:
       public: false
       methods: [portal-token]
@@ -65,10 +80,17 @@ spec:
   pages:
     - ref: page/d1/research
     - ref: page/d1/war-room
-    - ref: page/legion
+    - ref: page/d1/training
+      note: planned：页面未建（IFS F6 / WO-IFS-ROUTE 待 Lead 接线）
   jobs:
-    - ref: job/legion-daily-review
+    - ref: job/zhice-daily-research-ops
+      note: ZhiceAcad1Pool 17:00 上游池（schtasks 2026-11-03 实测）
+    - ref: job/agent-shadow-daily
+      note: AgentShadowDaily 17:10（job_map 本次补登）
     - ref: job/d1-outcome-daily
+      note: D1OutcomeDaily（ZeroBound 目录）17:10
+    - ref: job/legion-daily-review
+      note: LegionDailyReview 17:40 D1 复盘
   channels:
     - feishu
     - portal
@@ -85,6 +107,7 @@ spec:
   evidence:
     contract: trading-bot/v1
     ledger: agent_platform/data/paper/paper_ledger.jsonl
+    handoff_store: agent_platform/data/d1_handoffs.jsonl
   runtime:
     service: portal-api
     endpoint: http://127.0.0.1:8091
@@ -94,13 +117,30 @@ spec:
     real_exchange_adapter: disabled
     watch_runtime: contract_only
     review_cadence: daily
+    q_level: Q1
+    health_probe: "planned（Q2 缺口）：未接 health/SLO 探针，见 docs/plans/2026-11-03_IFS-COMP_D1组合对接登记_v1.md"
+    rollback: "git revert WO-IFS-COMP-20261103 提交（6 文件声明层复原）；无运行态/数据变更"
+    test_entry: "python -m pytest tools/tests/test_candidate_generation_guard.py -q && python tools/composition.py validate --all"
   notes:
-    - "六段流水线见 agent_platform/registry/trading_bot.json；P0 影子清单。"
-    - "WA1/WATCH_TOWER/watchbot 三层盯盘仍为契约态（未接实时行情入口）。"
-    - "人工确认门仅 external_test；内部 paper 自动路径跳过但留痕。"
-    - "交易/权益写操作不经零界，仍回智策授权链（ADR-016）。"
+    - "IFS v1 F6 登记：7 API（6 active + /api/d1/training planned）、3 页面（2 active + /d1/training planned）、4 任务（schtasks 实测 ZhiceAcad1Pool/AgentShadowDaily/D1OutcomeDaily/LegionDailyReview）。"
+    - "数据 ref 按 Lead 协调先记 planned：task-27 完成 dataset_registry 登记后由 Lead 对齐并移除 planned 标记。"
+    - "接口 schema/envelope（IFS-03/09）依赖 task-26 INTERFACE_REGISTRY；handoff v2 依赖 task-28；四 ID 链依赖 task-29。"
+    - "health/SLO/rollback/测试入口四项 Q2 缺口与 Lead 接线请求见 docs/plans/2026-11-03_IFS-COMP_D1组合对接登记_v1.md。"
+    - "不改运行时：不启停服务、不写数据、不动 portal_api；六段流水线见 agent_platform/registry/trading_bot.json。"
 status:
   phase: shadow
   health: unknown
   validated: false
-  source: "trading_bot.json + 2026-10-30 业务串联方案 + 实测审计"
+  q_level: Q1
+  interfaces:
+    active: 6
+    planned: ["/api/d1/training"]
+  pages:
+    active: 2
+    planned: ["/d1/training"]
+  jobs:
+    active: 4
+    planned: []
+  data_refs: "6 planned（task-27 登记后对齐）+ training_episode planned"
+  source: "IFS v1 + portal_api 路由实测 + schtasks 2026-11-03 + compositions/W4 框架 + task-27 协调口径"
+  gaps_doc: "docs/plans/2026-11-03_IFS-COMP_D1组合对接登记_v1.md"
