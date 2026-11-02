@@ -20,6 +20,7 @@ from __future__ import annotations
 import contextlib
 import json
 import os
+import shutil
 import signal
 import subprocess
 import sys
@@ -282,24 +283,41 @@ def start_metrics(port: int) -> bool:
 
 
 # ── DB 直连（P1-7）：psycopg2 参数化，降级 docker exec psql ──
-def _zhice_pg_password() -> str:
+_PG_FALLBACK_ENV_FILE = r"C:\项目\zhice-os-v2-windows-20260920\code\.env.local"
+_PG_DEFAULT_PASSWORD = "zhice_pass"  # 仅兜底；source=default 在诊断中可见（口令不打印）
+
+
+def _resolve_pg_password() -> "tuple[str, str]":
     """凭据回落链：env → zhice 活部署 .env.local 的 V2_DB_PASSWORD → 旧默认（仅兜底）。
 
-    2026-10-30 R5：V2 口令轮换后 env 未注入时旧默认 zhice_pass 会认证失败，
-    直连被静默降级 docker psql（功能可用但持续 WARN）；补文件回落链消噪并防漂移。
+    返回 (password, source)，source ∈ {"env","file","default"}。
+    2026-10-30 R5：V2 口令轮换后 env 未注入时旧默认口令会认证失败，直连被静默降级
+    docker psql（功能可用但持续 WARN）；补文件回落链消噪并防漂移。
+    2026-11-02 S1-04 F2/F4：把 source 单独暴露给 `dsn_provenance()`，直连失败日志
+    因此能区分「凭据问题」与「通道问题」——口令值永不进入日志/返回值。
     """
     pw = os.environ.get("ZHICE_PG_PASSWORD", "").strip()
     if pw:
-        return pw
+        return pw, "env"
     try:
-        with open(r"C:\项目\zhice-os-v2-windows-20260920\code\.env.local", encoding="utf-8") as f:
+        with open(_PG_FALLBACK_ENV_FILE, encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 if line.startswith("V2_DB_PASSWORD=") and not line.startswith("#"):
-                    return line.split("=", 1)[1].strip()
+                    val = line.split("=", 1)[1].strip()
+                    if val:
+                        return val, "file"
     except OSError:
         pass
-    return "zhice_pass"
+    return _PG_DEFAULT_PASSWORD, "default"
+
+
+_PG_PASSWORD, PASSWORD_SOURCE = _resolve_pg_password()
+
+
+def _zhice_pg_password() -> str:
+    """兼容旧调用：只返回口令值（来源查 `dsn_provenance()["password_source"]`）。"""
+    return _PG_PASSWORD
 
 
 DB_DSN = {
@@ -308,10 +326,78 @@ DB_DSN = {
     # 误连报语法错）；env 仍可覆盖
     "port": int(os.environ.get("ZHICE_PG_PORT", "5446")),
     "user": os.environ.get("ZHICE_PG_USER", "zhice"),
-    "password": _zhice_pg_password(),
+    "password": _PG_PASSWORD,
     "dbname": os.environ.get("ZHICE_PG_DB", "zhice_os_v2"),
 }
 PG_CONTAINER = os.environ.get("ZHICE_PG_CONTAINER", "zhice-db")
+
+_PG_ENV_KEYS = (
+    "ZHICE_PG_HOST",
+    "ZHICE_PG_PORT",
+    "ZHICE_PG_USER",
+    "ZHICE_PG_PASSWORD",
+    "ZHICE_PG_DB",
+    "ZHICE_PG_CONTAINER",
+)
+
+
+def dsn_provenance() -> dict:
+    """DSN 脱敏来源（S1-04 F4，供 portal/api_flow 等复用去重；绝不返回口令值）。
+
+    返回 host/port/user/dbname/container/password_source(env|file|default)/
+    password_set/password_len/driver/env_overrides，可直接进日志或健康卡。
+    """
+    try:
+        import psycopg2  # noqa: PLC0415
+
+        driver = "psycopg2 %s" % getattr(psycopg2, "__version__", "?")
+    except Exception as e:  # noqa: BLE001
+        driver = "missing: %s" % type(e).__name__
+    return {
+        "host": DB_DSN["host"],
+        "port": DB_DSN["port"],
+        "user": DB_DSN["user"],
+        "dbname": DB_DSN["dbname"],
+        "container": PG_CONTAINER,
+        "password_source": PASSWORD_SOURCE,
+        "password_set": bool(DB_DSN["password"]),
+        "password_len": len(DB_DSN["password"]),
+        "driver": driver,
+        "env_overrides": sorted(k for k in _PG_ENV_KEYS if os.environ.get(k)),
+    }
+
+
+class DBFallbackError(RuntimeError):
+    """docker 降级通道失败（S1-04 F1）：带 errno/stage 的可诊断异常。
+
+    底层 OSError（如 Windows WinError 87 → errno 22 的裸 Errno22）与
+    TimeoutExpired 都被包装为本异常；消息与 psql stderr 截断中不含口令。
+    """
+
+    def __init__(
+        self, message: str, *, errno=None, stage: str = "unknown", cmd: str = ""
+    ) -> None:
+        super().__init__(message)
+        self.errno = errno
+        self.stage = stage  # spawn / timeout / psql
+        self.cmd = cmd  # 脱敏命令描述（含 user/db，不含口令）
+
+
+def _log_direct_failure(op: str, exc: BaseException) -> None:
+    """直连失败结构化日志（S1-04 F2）：补 DSN provenance，口令不打印。"""
+    log(
+        "DB 直连失败，降级 docker psql: %s" % (str(exc)[:100],),
+        level="warn",
+        op=op,
+        exc_type=type(exc).__name__,
+        errno=getattr(exc, "errno", None),
+        host=DB_DSN["host"],
+        port=DB_DSN["port"],
+        dbname=DB_DSN["dbname"],
+        user=DB_DSN["user"],
+        pw_source=PASSWORD_SOURCE,
+    )
+
 
 _conn = {"c": None, "mode": ""}  # mode: "" 未定 / "direct" / "docker"
 
@@ -337,7 +423,12 @@ def _pg_fail(labels_mod: str) -> None:
 
 def _docker_psql_rows(sql: str, params) -> list[tuple]:
     """降级通道：docker exec psql。%s 占位符转 :'pN' 变量绑定（psql 负责转义）。
-    list/tuple/set 参数转为 {a,b} 数组字面量以配合 ANY(%s)。"""
+    list/tuple/set 参数转为 {a,b} 数组字面量以配合 ANY(%s)。
+
+    S1-04 F1（2026-11-02）：capture_output/encoding/timeout 显式（不继承父进程 std
+    句柄），OSError/TimeoutExpired 一律包装为带 errno+stage 的 `DBFallbackError`，
+    不再让裸 `[Errno 22]` 之类逃逸成「v2_alert 不可达」的不可读错误。
+    """
     args: list = [
         "docker",
         "exec",
@@ -369,17 +460,39 @@ def _docker_psql_rows(sql: str, params) -> list[tuple]:
     for i, v in enumerate(params):
         sql2 += f":'p{i}'" + parts[i + 1]
         args += ["-v", f"p{i}={_fmt(v)}"]
-    out = subprocess.run(
-        args,
-        input=sql2,
-        capture_output=True,
-        text=True,
-        timeout=20,
-        encoding="utf-8",
-        errors="replace",
+    cmd_desc = "docker exec %s psql -U %s -d %s" % (
+        PG_CONTAINER,
+        DB_DSN["user"],
+        DB_DSN["dbname"],
     )
+    try:
+        out = subprocess.run(
+            args,
+            input=sql2,
+            capture_output=True,  # F1：显式捕获输出，不继承父进程 std 句柄
+            text=True,
+            timeout=20,
+            encoding="utf-8",
+            errors="replace",
+        )
+    except subprocess.TimeoutExpired as e:
+        raise DBFallbackError(
+            "docker 降级通道超时(20s)", errno=None, stage="timeout", cmd=cmd_desc
+        ) from e
+    except OSError as e:  # FileNotFoundError / WinError 87(EINVAL) 等裸 Errno22
+        raise DBFallbackError(
+            "docker 降级通道不可用(%s): %s" % (type(e).__name__, e),
+            errno=getattr(e, "errno", None),
+            stage="spawn",
+            cmd=cmd_desc,
+        ) from e
     if out.returncode != 0:
-        raise RuntimeError(f"psql 失败: {out.stderr.strip()[:200]}")
+        raise DBFallbackError(
+            "psql 失败(rc=%s): %s" % (out.returncode, (out.stderr or "").strip()[:200]),
+            errno=None,
+            stage="psql",
+            cmd=cmd_desc,
+        )
     return [tuple(l.split("\x1f")) for l in out.stdout.strip().splitlines() if l]
 
 
@@ -413,7 +526,7 @@ def db_rows(sql: str, params=None) -> list[tuple]:
         if isinstance(e, ImportError):
             pass
         else:
-            log(f"DB 直连失败，降级 docker psql: {str(e)[:100]}", level="warn")
+            _log_direct_failure("db_rows", e)
         return _docker_psql_rows(sql, params)
 
 
@@ -438,8 +551,96 @@ def db_run(sql: str, params=None) -> None:
         if isinstance(e, ImportError):
             pass
         else:
-            log(f"DB 直连失败，降级 docker psql: {str(e)[:100]}", level="warn")
-    _docker_psql_rows(sql, params)  # DDL 无结果集 → []；失败抛 RuntimeError
+            _log_direct_failure("db_run", e)
+    _docker_psql_rows(sql, params)  # DDL 无结果集 → []；失败抛 DBFallbackError
+
+
+def probe_connectivity(*, docker_probe: bool = True, timeout: int = 10) -> dict:
+    """S4U 复验探针（S1-04 F6，只读三段）：驱动 / 直连 / docker 降级。
+
+    段定义：
+      driver          psycopg2 是否可导入（记录版本）
+      direct          psycopg2 直连 + `SELECT 1`（只读）
+      docker_fallback `docker version` 探活（只读；`docker_probe=False` 只查 CLI 存在）
+
+    overall：ok=直连通 / degraded=直连不通但降级通道可用 / down=两者都不可用。
+    返回已脱敏 provenance；口令永不打印。测试全 mock，不在生产库上调用。
+    """
+    segments = {
+        "driver": {"ok": False, "version": None, "error": None},
+        "direct": {"ok": False, "errno": None, "error": None},
+        "docker_fallback": {"available": False, "bin": None, "error": None},
+    }
+    try:
+        import psycopg2  # noqa: PLC0415
+
+        segments["driver"] = {
+            "ok": True,
+            "version": getattr(psycopg2, "__version__", None),
+            "error": None,
+        }
+    except Exception as e:  # noqa: BLE001
+        segments["driver"] = {
+            "ok": False,
+            "version": None,
+            "error": "%s: %s" % (type(e).__name__, e),
+        }
+    if segments["driver"]["ok"]:
+        try:
+            with _get_conn().cursor() as cur:
+                cur.execute("SELECT 1")
+                cur.fetchone()
+            segments["direct"] = {"ok": True, "errno": None, "error": None}
+        except Exception as e:  # noqa: BLE001
+            segments["direct"] = {
+                "ok": False,
+                "errno": getattr(e, "errno", None),
+                "error": "%s: %s" % (type(e).__name__, str(e)[:200]),
+            }
+    docker_bin = shutil.which("docker")
+    segments["docker_fallback"]["bin"] = docker_bin
+    if not docker_bin:
+        segments["docker_fallback"]["error"] = "docker CLI 不在 PATH"
+    elif not docker_probe:
+        segments["docker_fallback"].update({"available": True, "error": None})
+    else:
+        out = None
+        try:
+            out = subprocess.run(
+                [docker_bin, "version", "--format", "{{.Server.Version}}"],
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                encoding="utf-8",
+                errors="replace",
+            )
+        except subprocess.TimeoutExpired:
+            segments["docker_fallback"]["error"] = "docker version 超时(%ss)" % timeout
+        except OSError as e:
+            segments["docker_fallback"]["error"] = "%s: %s (errno=%s)" % (
+                type(e).__name__,
+                e,
+                getattr(e, "errno", None),
+            )
+        if out is not None and out.returncode == 0:
+            segments["docker_fallback"]["available"] = True
+        elif out is not None:
+            segments["docker_fallback"]["error"] = "docker version rc=%s: %s" % (
+                out.returncode,
+                (out.stderr or "").strip()[:120],
+            )
+    if segments["direct"]["ok"]:
+        overall = "ok"
+    elif segments["docker_fallback"]["available"]:
+        overall = "degraded"
+    else:
+        overall = "down"
+    return {
+        "generated_at": datetime.now().isoformat(timespec="seconds"),
+        "overall": overall,
+        "provenance": dsn_provenance(),
+        "segments": segments,
+    }
 
 
 # ── lark-cli 子进程封装（统一信封判定 + 环境注入） ──────────
