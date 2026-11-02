@@ -1,0 +1,236 @@
+# ┌─────────────────────────────────────────────────────────────────────────────┐
+# │ ACAD1 池数据契约 v1.0.0（ODCS v3.0.2）· ACL-103 / ADR-018                    │
+# │ 标识映射（单一事实，勿双写）：                                                │
+# │   manifest contract 引用：compositions/acad1-legion/manifest.yaml           │
+# │                          `spec.data.contract: acad1-pool/v1`                │
+# │   ↔ 本 ODCS 契约：zerobond.selection.v2_acad1_pool@1.0.0                    │
+# │ 唯一真源：智策 PG 5446 / zhice_os_v2 / v2_acad1_pool（写/发布口径）          │
+# │           门户 JSON 池 = 只读投影（source_pool=projection，落后须显式 stale）│
+# │ SLA 唯一落点：manifest `spec.data.sla`（freshness_days=1 / pool_max=30 /     │
+# │              evidence_max_age_h=26 / data_date_lag_days=1）——本契约只引用，  │
+# │              不复制权威值（见 x-slaRef）。                                   │
+# │ 阶段口径：v1.0.0 仅「登记 + 只读校验」（契约 lint/回归测试），不宣称运行时强制；│
+# │          强制点（Agent 运行时 / MCP 网关 / API 层）列入 W3 实现单。          │
+# │ 来源：parked 分支 WO-ACAD1-CONTRACT-20261101 草案（v0.1.0 draft）按 ADR-018  │
+# │       D2/D3/D4/D5 升级；分支保留不删（ACL-103 验收 ⑥）。                     │
+# └─────────────────────────────────────────────────────────────────────────────┘
+apiVersion: v3.0.2
+kind: DataContract
+id: zerobond.selection.v2_acad1_pool
+name: v2_acad1_pool
+version: 1.0.0
+status: active
+description:
+  purpose: >
+    ACAD1 候选池/复核卡（CN/HK/US/CRYPTO 多市场），供 D1 研究裁决、候选评审、
+    黄忠验收与 Agent 只读检索；PG v2_acad1_pool 为唯一真源，门户 JSON 池为只读投影。
+  limitations: |
+    ① 仓库主区契约 v1.0.0（ADR-018 Accepted）；v0 阶段仅「登记 + 只读校验」，
+      不宣称运行时强制（执行点见 W3 实现单）。
+    ② 双池尚未收口：门户 JSON 池（2026-10-30，19 只 / ACAD1-REC-20261030）与
+      PG v2_acad1_pool（2026-10-31，30 只）并行；本契约以 source_pool 字段区分，
+      对账/归一实现属 W3，不改变本契约字段定义。
+    ③ 本契约只定义字段/质量/Agent 使用边界，不替代池生成逻辑或 D1 裁决；
+      方向性结论/候选冻结必须 evidence_ref + 人工审批，禁止自动通过/否决。
+domain: selection
+dataProduct: zerobond-selection
+team:
+  - username: data1@open-metadata.org
+    name: DATA1 张松
+    role: data steward
+  - username: acad1@zerobound.local
+    name: ACAD1
+    role: pool owner
+  - username: d1@zerobound.local
+    name: D1
+    role: research consumer
+servers:
+  - server: zhice-pg
+    type: postgresql
+    database: zhice_os_v2
+    schema: public
+    table: v2_acad1_pool
+    description: >
+      智策 PG 生产表（127.0.0.1:5446），唯一真源；契约侧只允许只读查询，
+      禁止写/DDL；数据驻留 CN（ADR-018 D1/D5）。
+schema:
+  - name: v2_acad1_pool
+    physicalName: v2_acad1_pool
+    logicalType: object
+    description: 单表契约（10 + source_pool = 11 字段，ADR-018 D4/P5-A）
+    properties:
+      - name: pool_date
+        logicalType: date
+        physicalType: date
+        required: true
+        primaryKey: true
+        description: 池数据日（业务日期，非数据日）；与 data_date 可同值，不同则必须解释
+      - name: market
+        logicalType: string
+        physicalType: text
+        required: true
+        primaryKey: true
+        enum: [CN, HK, US, CRYPTO]
+        description: 市场；与 30 卡配额 CN12/HK10/US6/CRYPTO2 一致
+      - name: code
+        logicalType: string
+        physicalType: text
+        required: true
+        primaryKey: true
+        description: 标的代码；CN 用 ts_code（如 000301.SZ），HK/US 用市场代码，CRYPTO 用交易对；候选卡 candidate_id → code 映射（合约 v0 已定）
+      - name: name
+        logicalType: string
+        physicalType: text
+        required: true
+        description: 名称；禁止"代码当名称"（ADR-018 D4 必填）
+      - name: strategy
+        logicalType: string
+        physicalType: text
+        required: false
+        description: 来源策略/策略族（v1 策略 ref 或文本，P1 后再结构化）；未知保持 null，不补造
+      - name: signal_type
+        logicalType: string
+        physicalType: text
+        required: false
+        description: 信号类型（如 BUY/AVOID/NEUTRAL）；不得单独作为方向性结论依据
+      - name: score
+        logicalType: number
+        physicalType: numeric
+        required: false
+        description: 分数；须带 score_scale 说明（禁 raw 分与归一化分混用），跨策略不直接横比
+      - name: data_date
+        logicalType: date
+        physicalType: date
+        required: true
+        description: 数据日；freshness 判定基准（≤24h、data_date_lag_days≤1）；缺失不得推进冻结/裁决
+      - name: evidence_ref
+        logicalType: string
+        physicalType: text
+        required: false
+        description: >
+          研究卡/证据包引用（路径+sha256 或证据包 id）；方向性结论/候选冻结必填（条件必填）；
+          无证据只能 WATCH；C:\Temp 路径为过渡期临时引用（P2 收敛契约目录，ADR-017 §6）
+      - name: created_at
+        logicalType: timestamp
+        physicalType: timestamptz
+        required: false
+        description: 记录落库时间（审计用，条件必填）；不得以采集时点替代数据日
+      - name: source_pool
+        logicalType: string
+        physicalType: text
+        required: true
+        enum: [pg, projection]
+        description: >
+          池来源（ADR-018 D1/P5-A 新增）：pg=唯一真源写入/发布口径；
+          projection=门户 JSON 只读投影；两池不得混用，投影落后须显式 stale
+quality:
+  - type: uniqueness
+    columns: [pool_date, market, code]
+    description: 唯一键 = (pool_date, market, code)；同池日/市场/代码唯一
+  - type: completeness
+    columns: [pool_date, market, code, name, data_date, source_pool]
+    threshold: 1.0
+    description: 核心字段完整率必须 100%；缺失即显性不合格，不静默补造
+  - type: freshness
+    column: data_date
+    maxAgeHours: 24
+    description: >
+      data_date 新鲜度 ≤24h 且 data_date_lag_days ≤1（与 manifest spec.data.sla 同口径；
+      契约不双写 SLA 权威值，见 x-slaRef）；周末/节假日按市场日历解释
+  - type: referential
+    column: evidence_ref
+    description: >
+      方向性结论（directional_decision）与候选冻结（candidate_freeze）必须有 evidence_ref；
+      缺失只能 WATCH，不得输出 BUY/SELL 或冻结结论
+  - rule: "pool_max=30：单池记录数上限 30；超限显式报错，禁止静默截断（质量门 + x-quality-pool 双声明）"
+  - rule: "quota：同一 pool_date 下发布口径 CN12/HK10/US6/CRYPTO2（超出的票进观察队列，不进复核池）"
+  - rule: "source_pool 必填：pg 为唯一真源；projection 仅只读投影；两池对账（池数/数据日/成员哈希）差异即告警，禁止静默 rc=0（ADR-018 D1/D8）"
+x-agentPolicy:
+  # 最小集（ADR-018 D5）：v1.0.0 仅登记 + 只读校验，不宣称运行时强制（见 x-enforcement）
+  allowedUse:
+    - research
+    - selection_review
+    - watchlist_monitoring
+  prohibitedUse:
+    - order_execution
+    - real_trading
+    - auto_approval
+    - personal_data_export
+  pii: none
+  residency: CN
+  evidenceRequiredFor:
+    - directional_decision
+    - candidate_freeze
+  humanApprovalRequired:
+    - directional_decision
+    - candidate_freeze
+  maxRowsPerQuery: 500
+  description: |
+    Agent 只读检索/研究可用；不得据此下单、实盘、自动审批或导出个人数据。
+    方向性结论/候选冻结需 evidence_ref + 人工审批（人工复核不自动通过/否决）。
+x-enforcement:
+  stage: registered_readonly_validation
+  runtimeEnforced: false
+  statement: |
+    ADR-018 D5 阶段口径（A0 批准）：v1.0.0 仅登记 + 只读校验（契约 lint/回归测试），
+    不宣称运行时强制；强制点（Agent 运行时 / MCP 网关 / API 层）列入 W3 实现单。
+  lintTool: datacontract-cli
+  lintStatus: not_installed
+  lintNote: datacontract-cli 未安装（属 L2 工具引入）；当前以轻量 YAML/字段/口径回归测试代偿（W3 评估安装）
+x-quality-pool:
+  poolMax: 30
+  quota:
+    CN: 12
+    HK: 10
+    US: 6
+    CRYPTO: 2
+  overflowBehavior: error_not_truncate
+  quotaDecisionRef: "2026-10-31 老田《ACAD1 日复核 30 与数据源方案》"
+x-freshness:
+  dataDateField: data_date
+  poolDateField: pool_date
+  maxAgeHours: 24
+  dataDateLagDaysMax: 1
+  evidenceMaxAgeHoursRef: "manifest spec.data.sla.evidence_max_age_h=26（ACL-101 回归：fresh/stale/unknown 三态）"
+  staleBehavior: mark_stale_not_drop
+x-pit:
+  dataDateField: data_date
+  poolDateField: pool_date
+  asOfField: null
+  note: >
+    PIT 复核以 data_date（数据日）截断，不得以采集时点替代；as_of（查询/导出时点）字段按
+    ADR-018 D6 建议列为 v1.1 增补（不阻塞 v1.0.0，10+1 字段口径不含 as_of）。
+x-manifest:
+  path: compositions/acad1-legion/manifest.yaml
+  contractRef: acad1-pool/v1
+  datasetRef: dataset/pg/v2_acad1_pool
+  mapping: "acad1-pool/v1 ↔ zerobond.selection.v2_acad1_pool@1.0.0"
+  note: manifest 只作引用点，不内嵌 schema、不双写字段（同 ACL-102 SLA 唯一落点纪律）
+x-slaRef:
+  manifest: compositions/acad1-legion/manifest.yaml
+  path: spec.data.sla
+  fields:
+    - freshness_days
+    - pool_max
+    - evidence_max_age_h
+    - data_date_lag_days
+  note: SLA 唯一落点在 manifest spec.data.sla；本契约 quality/x-quality-pool 仅表达同口径规则，不复制权威值
+x-projection:
+  server: portal-json-pool
+  endpoint: /api/acad1/pool
+  sourcePoolField: source_pool
+  role: readonly_projection
+  rule: 投影必须携带 source_pool=projection 与 data_date；落后真源须显式 stale，不得作为池真源或 enrichment 默认源（ADR-018 D1）
+x-owner:
+  primary: DATA1 张松（data steward）/ ACAD1（pool owner）
+  consumers: [ACAD1, D1, 黄忠验收, 司马徽选股中台, /academy/shuijing, /api/acad1/pool]
+  adr: docs/adr/2026-11-02_ACL-103_ACAD1池数据合约_v0.md（ADR-018 Accepted）
+  parkedBranch: WO-ACAD1-CONTRACT-20261101（续用；分支保留不删）
+x-registration:
+  mode: file_only
+  contractRegistry: none
+  note: >
+    当前仓库无 contract registry/index：既有 9 份 .odcs.yaml 仅以文件形式共存
+    （tools/datawarehouse/contract_export.py 仅生成 6 张核心表契约，不消费额外契约）。
+    因此本契约登记 = 目录内文件本身 + ACL-103 证据；K5 冻结登记（ADR-018 D7）待另单
+    （本单禁止改 platform/kernel_v1.yaml）。
