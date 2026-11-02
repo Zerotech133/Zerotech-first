@@ -1641,6 +1641,11 @@ color:#fff;font-size:13.5px;cursor:pointer}
             import api_dev_legion
             api_dev_legion.handle_get(self, path, qs)
             return
+        if path.startswith('/api/hq/'):
+            # HQ-06 只读指挥部 API（独立文件 api_hq.py，2026-11-03；8091 重启后生效）
+            import api_hq
+            api_hq.handle_get(self, path, qs)
+            return
         # P1 移动端 /m 家族（2026-10-25）：新 handler 独立文件 m_api.py，
         # 本处仅做早分支路由（portal_api 只改不扩）。
         if path.startswith('/api/m/'):

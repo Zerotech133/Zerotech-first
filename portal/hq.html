@@ -65,10 +65,16 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;',
 function card(k,v){return `<div class="card"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`}
 function table(headers,rows){return `<table><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join('')}</tr>`).join('')||'<tr><td colspan="'+headers.length+'" class="empty">无数据</td></tr>'}</tbody></table>`}
 async function main(){
-  let d;
-  try{ const r=await fetch('/static/hq_snapshot.json',{cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); d=await r.json(); }
-  catch(e){ document.getElementById('meta').innerHTML=`<div class="err">快照加载失败：${esc(e.message)}（W3 接实时 API 后自动恢复）</div>`; return; }
-  document.getElementById('meta').textContent=`快照生成：${d.generated_at||'-'} · ${d.read_only?'只读':'?'}`;
+  let d=null, source='static';
+  try{
+    const live=await fetch('/api/hq/snapshot',{cache:'no-store'});
+    if(live.ok){ const p=await live.json(); if(p && p.ok && p.data){ d=p.data; source='live'; } }
+  }catch(e){}
+  if(!d){
+    try{ const r=await fetch('/static/hq_snapshot.json',{cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); d=await r.json(); source='static'; }
+    catch(e){ document.getElementById('meta').innerHTML=`<div class="err">快照加载失败：${esc(e.message)}（W3 接实时 API 后自动恢复）</div>`; return; }
+  }
+  document.getElementById('meta').textContent=`数据源：${source==='live'?'实时 /api/hq/snapshot':'静态快照'} · 生成：${d.generated_at||'-'} · ${d.read_only?'只读':'?'}`;
   const o=d.org.summary,t=d.tasks.summary,a=d.approvals.summary,b=d.budget,bh=d.heartbeat.summary;
   document.getElementById('cards').innerHTML=[
     card('席位',o.agents),card('部门',o.departments),card('任务 WIP',t.wip),card('审批已决',a.total_decisions),card('Credit 估算',b.credits_estimate)

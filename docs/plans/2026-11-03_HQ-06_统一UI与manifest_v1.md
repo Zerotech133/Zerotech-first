@@ -1,6 +1,6 @@
 # HQ-06 解决方案：/hq 统一 UI/manifest + API/UI 接入 v1
 
-- 日期：2026-11-02｜状态：**manifest + `/hq.html` 静态预览已落；实时 API/clean `/hq` 路由待 W3**
+- 日期：2026-11-02｜状态：**manifest + `/hq.html` + `/api/hq/*` 代码已落；等待 L2 激活（8091 重启 + nginx reload）**
 - 依赖：ADR-021、HQ-01~05、`portal/config/hq_manifest.json`
 - 目标：一个 `/hq` 指挥面，5 个 tab，全部同源只读；不新增第二入口/DB/调度
 
@@ -71,3 +71,13 @@
 ## 七、下一步
 
 HQ-06 的实时 API/clean 路由在 W3（12-03 起）按 a→e 顺序实施；静态预览已可验；当前先完成 8093 诊断的 L2 修复，避免调度链带病进入 W3。
+
+## 八、API/路由接线（2026-11-03 实施）
+
+- 新增 `portal/api_hq.py`：8 个只读端点，返回 `{ok,data}`；未知 404。
+- `portal/portal_api.py`：`do_GET` 增加 `/api/hq/` 早分支（独立模块，lazy import）。
+- `portal/nginx.conf`：新增 `location = /hq { try_files /hq.html =404; }`。
+- `portal/hq.html`：优先 `/api/hq/snapshot`，失败回退 `/static/hq_snapshot.json`。
+- 测试：`portal/test_api_hq.py` + `tools/tests/test_hq_snapshot.py` **10 passed**。
+- **未生效**：变更需 8091 重启 + nginx reload（L2）；当前 `/hq.html` 200、`/hq` 404、`/api/hq/*` 401/404。
+- 激活五要素：命令=重启 8091（现有 start_portal_api 守卫）+ nginx -s reload；影响=门户全站短暂重连（秒级）；不可逆=进程切换；替代=保持静态快照；回滚=旧进程/旧配置。
