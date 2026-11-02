@@ -1,15 +1,18 @@
 """系统运维扩展 API（V1 system 对齐：数据质量/任务/审计）。"""
 from __future__ import annotations
 
+import logging
 from datetime import date, datetime, time
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import Date as SaDate
 from sqlalchemy import cast, func
 
 from zhice_os_v2.api.dependencies import deny_viewer, get_current_user
 from zhice_os_v2.infrastructure.db import models as orm
 from zhice_os_v2.infrastructure.db.session import get_session
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/system", tags=["system-ext"], dependencies=[Depends(get_current_user)])
 
@@ -49,8 +52,15 @@ def continuity(market: str = "CN", days: int = 30, symbol: str | None = None):
     end = _date.today()
     start = end - timedelta(days=days)
     syms = [symbol] if symbol else None
-    gaps = find_daily_gaps(market, start, end, symbols=syms)
-    s = summarize_gaps(gaps, top=50)
+    try:
+        gaps = find_daily_gaps(market, start, end, symbols=syms)
+        s = summarize_gaps(gaps, top=50)
+    except Exception as exc:  # noqa: BLE001 - DB/查询异常按依赖不可用返回 503，不裸 500
+        logger.exception("system/continuity 查询失败 market=%s days=%s", market, days)
+        raise HTTPException(
+            status_code=503,
+            detail={"code": "system.continuity_unavailable"},
+        ) from exc
     return {
         "market": market, "start": start.isoformat(), "end": end.isoformat(),
         "symbols_with_gaps": s["symbols_with_gaps"], "total_missing": s["total_missing"],

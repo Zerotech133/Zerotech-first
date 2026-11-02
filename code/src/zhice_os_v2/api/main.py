@@ -12,6 +12,10 @@ from fastapi.responses import JSONResponse
 from zhice_os_v2 import __version__
 from zhice_os_v2.api.dependencies import get_market_data, resolve_request_identity
 from zhice_os_v2.api.routers import (
+    acad1_research,
+    stock_panorama,
+    agent_handoff,
+    hermes_bff,
     accounts,
     accounts_ext,
     admin_billing,
@@ -35,6 +39,7 @@ from zhice_os_v2.api.routers import (
     integrations_telegram,
     integrations_wxpusher,
     knowledge,
+    lusu_research,
     market,
     mirror_accounts,
     model_ops,
@@ -58,6 +63,12 @@ from zhice_os_v2.api.routers import (
     settings,
     strategy,
     strategy_detail,
+    selection_desk,
+    selection_public,
+    selection_run,
+    sim_factor,
+    stock_research,
+    strategy_workspace,
     subscription_observation,
     system,
     system_ext,
@@ -117,6 +128,7 @@ app.add_middleware(
         # 5173/5174 已被其他项目的 Docker 容器长期占用。5173/5174 保留兼容旧环境。
         "http://localhost:5175",
         "http://127.0.0.1:5175",
+        "http://127.0.0.1:8787",
         "http://localhost:3000",
     ],
     allow_methods=["*"],
@@ -158,6 +170,7 @@ _WRITE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 _VIEWER_WRITE_ALLOW = (
     ("POST", "/api/v1/auth/login"),
     ("POST", "/api/v1/auth/register"),
+    ("POST", "/api/v1/agent-handoff"),
     ("PATCH", "/api/v1/auth/me"),
     ("PATCH", "/api/v1/auth/me/telegram"),
     ("POST", "/api/v1/auth/me/telegram/challenge"),
@@ -192,6 +205,21 @@ _USER_WRITE_ALLOW = (
     *_VIEWER_WRITE_ALLOW,
     *((method, "/api/v1/my/") for method in _WRITE_METHODS),
     ("POST", "/api/v1/billing/orders"),
+    # 本地研究台：鲁肃判断是研究记录（非交易/非账户写），允许本地 USER 写入
+    ("POST", "/api/v1/lusu-research/decision"),
+    ("POST", "/api/v1/stock-research/handoff"),
+    ("POST", "/api/v1/stock-research/review"),
+    ("POST", "/api/v1/stock-research/save"),
+    ("POST", "/api/v1/agent-handoff"),
+    ("POST", "/api/v1/selection-desk/feedback"),
+    ("POST", "/api/v1/selection-desk/supervision"),
+    ("POST", "/api/v1/sim-factor/factor/paper"),
+    ("POST", "/api/v1/sim-factor/factor/consensus"),
+    ("POST", "/api/v1/sim-factor/factor"),
+    ("POST", "/api/v1/sim-factor/order"),
+    ("POST", "/api/v1/sim-factor/account"),
+    ("POST", "/api/v1/sim-factor/auto-build"),
+    ("POST", "/api/v1/selection-desk/report"),
 )
 
 
@@ -238,6 +266,17 @@ app.include_router(system_ext.router, prefix="/api/v1")
 app.include_router(market.router, prefix="/api/v1")
 app.include_router(strategy.router, prefix="/api/v1")
 app.include_router(strategy_detail.router, prefix="/api/v1")
+app.include_router(strategy_workspace.router, prefix="/api/v1")
+app.include_router(acad1_research.router, prefix="/api/v1")
+app.include_router(stock_panorama.router, prefix="/api/v1")
+app.include_router(agent_handoff.router, prefix="/api/v1")
+app.include_router(hermes_bff.router, prefix="/api/v1")
+app.include_router(stock_research.router, prefix="/api/v1")
+app.include_router(selection_desk.router, prefix="/api/v1")
+app.include_router(selection_public.router, prefix="/api/v1")
+app.include_router(selection_run.router, prefix="/api/v1")
+app.include_router(sim_factor.router, prefix="/api/v1")
+app.include_router(lusu_research.router, prefix="/api/v1")
 app.include_router(approval.router, prefix="/api/v1")
 app.include_router(candidates.router, prefix="/api/v1")
 app.include_router(plans.router, prefix="/api/v1")

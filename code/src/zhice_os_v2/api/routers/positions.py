@@ -472,9 +472,17 @@ def list_positions(market: str | None = None, strategy: str | None = None,
 
 
 class CloseBody(BaseModel):
-    close_price: float
+    """管理端平仓请求（P0-1：禁止任意价、禁止无校验平仓）。
+
+    - close_price 已废弃：传非空值会被 400 拒绝；成交价一律取最新行情价。
+    - account_id / position_ids 可选限定范围；不限定 = 该市场全部 OPEN 持仓，
+      但逐笔过 T+1/停牌/跌停守卫，任一不可卖即整单拒绝（fail-closed，不部分平仓）。
+    """
+
     market: str
     account_id: str | None = None
+    position_ids: list[str] | None = None
+    close_price: float | None = None  # 兼容旧字段；非空即拒绝
 
 
 @router.post("/close")
@@ -483,22 +491,97 @@ def close_all_positions(
     db: PersistencePort = Depends(get_db),
     _: User = Depends(require_roles(Role.ADMIN, Role.TRADER)),
 ):
+    """管理端平仓：逐笔通过统一卖出守卫后按最新行情价平仓。
+
+    守卫复用 domain/execution/t1_guard.py（CN 当日开仓不可卖、可卖量、停牌/跌停
+    fail-closed）；任一持仓不可卖 → 409 整单拒绝、不写任何仓位/流水。
+    """
     from zhice_os_v2.application.services.workflow_service import WorkflowService
+    from zhice_os_v2.domain.execution.t1_guard import check_sell
     from zhice_os_v2.domain.ontology.objects import utc_now
+
+    positions = list(db.list_open_positions(market=body.market))
+    if body.account_id is not None:
+        positions = [
+            p for p in positions
+            if getattr(p, "account_id", None) == body.account_id
+        ]
+    if body.position_ids is not None:
+        wanted = set(body.position_ids)
+        positions = [p for p in positions if p.position_id in wanted]
+    if not positions:
+        return {"closed": [], "count": 0, "market": body.market}
+    if body.close_price is not None:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "positions.close_price_not_allowed",
+                "message": "禁止任意价平仓：close_price 已废弃，成交价一律取最新行情价",
+            },
+        )
+
+    ts_codes = sorted({p.ts_code for p in positions})
+    try:
+        prices = _get_latest_prices(ts_codes, body.market)
+        pre_closes = _get_pre_closes(ts_codes, body.market)
+    except Exception as exc:  # noqa: BLE001 - 行情不可用必须 fail-closed
+        logger.exception("positions/close 行情获取失败 market=%s", body.market)
+        raise HTTPException(
+            status_code=503,
+            detail={"code": "positions.market_data_unavailable"},
+        ) from exc
+
+    now = utc_now()
+    blocked: list[dict] = []
+    close_price_by_pos: dict[str, Decimal] = {}
+    for p in positions:
+        price = prices.get(p.ts_code)
+        decision = check_sell(
+            market=body.market,
+            ts_code=p.ts_code,
+            qty=p.open_qty,
+            lots=[p],
+            price=price,
+            pre_close=pre_closes.get(p.ts_code),
+            now=now,
+        )
+        if not decision.ok:
+            blocked.append({
+                "position_id": p.position_id,
+                "ts_code": p.ts_code,
+                "reason": decision.reason,
+                "available_qty": str(decision.available_qty),
+            })
+            continue
+        close_price_by_pos[p.position_id] = Decimal(str(price))
+    if blocked:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "positions.close_blocked",
+                "market": body.market,
+                "blocked": blocked,
+                "message": "存在不可卖持仓，已整单拒绝（未平任何仓位）",
+            },
+        )
 
     replay_service = ReplayService(db)
     learning_service = LearningService(db)
     workflow = WorkflowService(db)
-    close_price = Decimal(str(body.close_price))
     _long = {"BUY", "LONG"}
     closed = []
-    for p in db.list_open_positions(market=body.market):
+    for p in positions:
+        close_price = close_price_by_pos[p.position_id]
         p.status = PositionStatus.CLOSED
         p.close_qty = p.open_qty
         p.close_price = close_price
         p.closed_at = utc_now()
         # 已实现盈亏：按方向计算并落库（此前不写 pnl_amount，导致这些平仓 realized 静默计 0）
-        unit = (close_price - p.open_price) if p.direction in _long else (p.open_price - close_price)
+        unit = (
+            (close_price - p.open_price)
+            if p.direction in _long
+            else (p.open_price - close_price)
+        )
         p.pnl_amount = unit * p.open_qty
         db.save_position(p)
         # 平仓成交落库（Bug B 修复，603311 案：此前从不写 SELL 流水，9-02 一键
@@ -511,7 +594,7 @@ def close_all_positions(
             price=close_price,
             position=p,
             fill_time=p.closed_at,
-            sell_reason="人工平仓：管理端一键平仓",
+            sell_reason="人工平仓：管理端一键平仓（T+1守卫通过，最新行情价）",
             realized_pnl=p.pnl_amount,
             exit_kind="MANUAL",
         )
@@ -519,9 +602,12 @@ def close_all_positions(
         if replay:
             learning_service.record_from_replay(replay)
         closed.append(p.ts_code)
-    # 注意：本接口仅关闭指定市场（market）的持仓，套用同一 close_price，
-    # 仅作管理端「一键平仓」用途，不代表真实成交价；跨市场/多标的精确平仓请走 workflow 平仓链。
-    return {"closed": closed, "count": len(closed), "market": body.market}
+    return {
+        "closed": closed,
+        "count": len(closed),
+        "market": body.market,
+        "price_source": "latest_market",
+    }
 
 
 @router.get("/{position_id}")

@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import and_, func
+from sqlalchemy import and_, distinct, func
 
 from zhice_os_v2.api.dependencies import get_current_user
 
@@ -87,18 +87,56 @@ def list_pools(market: str = "CN", date: str | None = None, strategy: str | None
         session.close()  # 异常路径也关闭，避免连接泄漏
 
     names = _strategy_names()
-    return [
-        {
+    # 真实候选数以 v2_candidate_asset 去重为准；candidate_count 仅作声明值保留。
+    actual = {}
+    updated = {}
+    try:
+        session = get_session()
+        pool_ids = [p.pool_id for p in pools]
+        if pool_ids:
+            for pid, n in (
+                session.query(
+                    orm.CandidateAssetModel.pool_id,
+                    func.count(distinct(orm.CandidateAssetModel.ts_code)),
+                )
+                .filter(orm.CandidateAssetModel.pool_id.in_(pool_ids))
+                .group_by(orm.CandidateAssetModel.pool_id)
+                .all()
+            ):
+                actual[pid] = int(n or 0)
+            for pid, ts in (
+                session.query(
+                    orm.CandidateAssetModel.pool_id,
+                    func.max(orm.CandidateAssetModel.created_at),
+                )
+                .filter(orm.CandidateAssetModel.pool_id.in_(pool_ids))
+                .group_by(orm.CandidateAssetModel.pool_id)
+                .all()
+            ):
+                updated[pid] = ts
+    except Exception:
+        logger.exception("candidate actual count 查询失败")
+    finally:
+        try:
+            session.close()
+        except Exception:
+            pass
+    out = []
+    for p in pools:
+        declared = int(p.candidate_count or 0)
+        real = actual.get(p.pool_id)
+        out.append({
             "pool_id": p.pool_id,
             "strategy_version_id": p.strategy_version_id,
             "strategy_name": names.get(p.strategy_version_id, p.strategy_version_id),
             "pool_date": p.pool_date.isoformat() if p.pool_date else None,
             "pool_type": p.pool_type,
-            "candidate_count": int(p.candidate_count or 0),
+            "candidate_count": real if real is not None else declared,
+            "declared_candidate_count": declared,
+            "updated_at": (updated.get(p.pool_id) or p.created_at).isoformat() if (updated.get(p.pool_id) or p.created_at) else None,
             "status": p.status,
-        }
-        for p in pools
-    ]
+        })
+    return out
 
 
 @router.get("/pools/{pool_id}/assets")

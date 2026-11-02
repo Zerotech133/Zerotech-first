@@ -459,6 +459,18 @@ class WorkflowService:
 
     # 策略类型 → V1 版本号映射（候选池落库 strategy_version_id 用）
 
+    @staticmethod
+    def _prune_candidate_assets(session, orm, pool_id: str, keep_ids: set[str]) -> None:
+        """幂等重建：删除本池本轮未出现的旧 assets，避免重跑累积漂移。"""
+        from sqlalchemy import select as _select
+
+        assets = session.execute(
+            _select(orm.CandidateAssetModel).where(orm.CandidateAssetModel.pool_id == pool_id)
+        ).scalars().all()
+        for asset in assets:
+            if asset.candidate_id not in keep_ids:
+                session.delete(asset)
+
     def _persist_candidate_pool(
         self, market: str, trade_date: date, strategy_type: str, candidates: list[dict]
     ) -> str | None:
@@ -508,10 +520,12 @@ class WorkflowService:
                     pool.strategy_version_id = strategy_version_id
                     pool.candidate_count = len(candidates)
                     pool.status = "ACTIVE"
+                keep_ids: set[str] = set()
                 for c in candidates:
                     candidate_id = (
                         _make_candidate_id(strategy_version_id, c["ts_code"], trade_date)
                     )
+                    keep_ids.add(candidate_id)
                     asset = session.execute(
                         _select(orm.CandidateAssetModel)
                         .where(orm.CandidateAssetModel.candidate_id == candidate_id)
@@ -532,6 +546,8 @@ class WorkflowService:
                         asset.candidate_score = Decimal(str(c.get("score", 0)))
                         asset.candidate_reason = c.get("reason", "")
                         asset.status = "ACTIVE"
+                self._prune_candidate_assets(session, orm, pool_id, keep_ids)
+                pool.candidate_count = len(keep_ids)
                 session.commit()
                 return pool_id
             finally:
@@ -586,8 +602,10 @@ class WorkflowService:
                     pool.strategy_version_id = sv
                     pool.candidate_count = len(candidates)
                     pool.status = "ACTIVE"
+                keep_ids: set[str] = set()
                 for c in candidates:
                     candidate_id = _make_candidate_id(sv, c["ts_code"], trade_date)
+                    keep_ids.add(candidate_id)
                     asset = session.execute(
                         _select(orm.CandidateAssetModel)
                         .where(orm.CandidateAssetModel.candidate_id == candidate_id)
@@ -608,6 +626,8 @@ class WorkflowService:
                         asset.candidate_score = Decimal(str(c.get("score", 0)))
                         asset.candidate_reason = c.get("reason", "")
                         asset.status = "ACTIVE"
+                self._prune_candidate_assets(session, orm, pool_id, keep_ids)
+                pool.candidate_count = len(keep_ids)
                 session.commit()
                 return pool_id
             finally:

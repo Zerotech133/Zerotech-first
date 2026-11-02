@@ -6,6 +6,7 @@ import inspect
 import json
 from datetime import date
 
+from sqlalchemy import text
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
@@ -30,6 +31,7 @@ from zhice_os_v2.application.services.strategy_service import StrategyService
 from zhice_os_v2.domain.security.user import Role, User
 from zhice_os_v2.domain.strategy.spec import StrategySpec
 from zhice_os_v2.infrastructure.repositories.ports import PersistencePort
+from zhice_os_v2.infrastructure.db.session import get_session
 
 router = APIRouter(
     prefix="/strategies", tags=["strategies"], dependencies=[Depends(get_current_user)]
@@ -193,6 +195,15 @@ def list_strategies(
     versions_by_sid: dict[str, list] = {}
     for v in db.list_strategy_versions():
         versions_by_sid.setdefault(v.strategy_id, []).append(v)
+    own = {}
+    _s = get_session()
+    try:
+        for r in _s.execute(text("SELECT strategy_id, research_owner, validation_owner, "
+                                 "data_owner, ops_owner, lifecycle_status, next_review "
+                                 "FROM v2_strategy_ownership")).mappings():
+            own[r["strategy_id"]] = dict(r)
+    finally:
+        _s.close()
     out = []
     for s in db.list_strategies():
         if market and s.market != market:
@@ -228,6 +239,12 @@ def list_strategies(
                 # 前端据此隐藏编辑/删除入口（后端另有中间件+_load_owned 兜底）。
                 "editable": is_admin or is_own_private,
                 "owner_user_id": s.owner_user_id,
+                "research_owner": (own.get(s.strategy_id) or {}).get("research_owner") or s.owner_user_id,
+                "validation_owner": (own.get(s.strategy_id) or {}).get("validation_owner"),
+                "data_owner": (own.get(s.strategy_id) or {}).get("data_owner"),
+                "ops_owner": (own.get(s.strategy_id) or {}).get("ops_owner"),
+                "lifecycle_status": (own.get(s.strategy_id) or {}).get("lifecycle_status") or str(s.status),
+                "next_review": str((own.get(s.strategy_id) or {}).get("next_review") or ""),
                 "version_count": len(vs),
                 "versions": [
                     {
@@ -239,6 +256,36 @@ def list_strategies(
                 ],
             }
         )
+    session = get_session()
+    try:
+        sidecars = session.execute(text(
+            "SELECT strategy_id, display_name, status, owner, note FROM v2_strategy_sidecar "
+            "ORDER BY strategy_id")).mappings().all()
+    finally:
+        session.close()
+    for r in sidecars:
+        if market and market != "CN":
+            continue
+        out.append({
+            "strategy_id": r["strategy_id"],
+            "strategy_name": r["display_name"],
+            "description": r["note"] or "研究院研究策略（sidecar）",
+            "market": "CN",
+            "strategy_type": "SIDECAR",
+            "status": (r["status"] or "live").upper(),
+            "is_builtin": False,
+            "editable": False,
+            "owner_user_id": r["owner"],
+            "research_owner": (own.get(r["strategy_id"]) or {}).get("research_owner") or r["owner"],
+            "validation_owner": (own.get(r["strategy_id"]) or {}).get("validation_owner"),
+            "data_owner": (own.get(r["strategy_id"]) or {}).get("data_owner"),
+            "ops_owner": (own.get(r["strategy_id"]) or {}).get("ops_owner"),
+            "lifecycle_status": (own.get(r["strategy_id"]) or {}).get("lifecycle_status") or (r["status"] or "live").lower(),
+            "next_review": str((own.get(r["strategy_id"]) or {}).get("next_review") or ""),
+            "version_count": 0,
+            "versions": [],
+            "is_sidecar": True,
+        })
     out.sort(key=lambda x: (x["market"], x["strategy_id"]))
     return out
 

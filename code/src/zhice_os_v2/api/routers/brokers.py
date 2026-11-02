@@ -21,7 +21,7 @@ class LiveBody(BaseModel):
     enabled: bool
 
 
-@router.get("/live")
+@router.get("/live", deprecated=True, description="已弃用/仅诊断：实盘未启用（LiveBroker disabled）；模拟盘请用 /brokers/simulated。")
 def get_live(service: BrokerConfigService = Depends(get_broker_config)):
     return service.status()
 

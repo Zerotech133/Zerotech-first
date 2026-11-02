@@ -17,7 +17,26 @@ from zhice_os_v2.config.settings import get_settings
 
 
 def _conn():
-    return psycopg2.connect(get_settings().db_main_url)
+    """建立 libpq 连接。
+
+    配置的 db_main_url 可能是 SQLAlchemy URL（如 postgresql+psycopg2://），
+    psycopg2 不能直接解析带 driver 前缀的 URL；此处统一转成 libpq 可接受的
+    host/port/dbname/user/password（plain postgresql:// 保持原样）。
+    """
+    dsn = get_settings().db_main_url
+    driver = dsn.split("://", 1)[0] if "://" in dsn else ""
+    if "+" in driver:
+        from sqlalchemy.engine import make_url
+
+        url = make_url(dsn)
+        return psycopg2.connect(
+            host=url.host,
+            port=url.port,
+            dbname=url.database,
+            user=url.username,
+            password=url.password,
+        )
+    return psycopg2.connect(dsn)
 
 
 def _has_calendar(cur, market: str, start: date, end: date) -> bool:

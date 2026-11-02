@@ -38,7 +38,7 @@ def create_account(body: CreateAccountBody, service: AccountService = Depends(ge
     }
 
 
-@router.get("")
+@router.get("", deprecated=True, description="已弃用：进程内内存账户，不读取 v2_user_account；请用 /my/accounts 或 /accounts/stats。")
 def list_accounts(service: AccountService = Depends(get_account_service)):
     return [
         {
