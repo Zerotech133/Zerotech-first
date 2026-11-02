@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """视频号 291 候选统一预审 → proposals + Top 抽审清单（复用 laomu 预审规则）。"""
 import importlib.util
 import json
