@@ -1,0 +1,793 @@
+{
+ "generated_at": "2026-11-02T18:44:37+08:00",
+ "batches": {
+  "A_高频": [
+   {
+    "table": "ts_daily",
+    "files": 58,
+    "updated": true,
+    "latest": "20261102",
+    "last_mtime": "17:36:08",
+    "note": ""
+   },
+   {
+    "table": "ts_daily_basic",
+    "files": 58,
+    "updated": true,
+    "latest": "20261102",
+    "last_mtime": "17:35:57",
+    "note": ""
+   },
+   {
+    "table": "ts_index_daily",
+    "files": 49,
+    "updated": false,
+    "latest": "20261030",
+    "last_mtime": "17:46:14",
+    "note": ""
+   },
+   {
+    "table": "ts_daily_info",
+    "files": 12,
+    "updated": false,
+    "latest": "20261030",
+    "last_mtime": "17:32:55",
+    "note": ""
+   },
+   {
+    "table": "ts_moneyflow",
+    "files": 53,
+    "updated": true,
+    "latest": "20261102",
+    "last_mtime": "17:35:28",
+    "note": ""
+   },
+   {
+    "table": "ts_margin",
+    "files": 11,
+    "updated": false,
+    "latest": "20261029",
+    "last_mtime": "17:32:21",
+    "note": ""
+   },
+   {
+    "table": "ts_margin_detail",
+    "files": 34,
+    "updated": false,
+    "latest": "20261029",
+    "last_mtime": "17:40:03",
+    "note": ""
+   },
+   {
+    "table": "ts_limit_cpt_list",
+    "files": 12,
+    "updated": true,
+    "latest": "20261102",
+    "last_mtime": "17:35:04",
+    "note": ""
+   },
+   {
+    "table": "ts_limit_step",
+    "files": 12,
+    "updated": true,
+    "latest": "20261102",
+    "last_mtime": "17:35:03",
+    "note": ""
+   },
+   {
+    "table": "ts_stk_limit",
+    "files": 52,
+    "updated": true,
+    "latest": "20261102",
+    "last_mtime": "17:36:25",
+    "note": ""
+   },
+   {
+    "table": "ts_stk_auction_c",
+    "files": 53,
+    "updated": true,
+    "latest": "20261030",
+    "last_mtime": "17:36:44",
+    "note": ""
+   },
+   {
+    "table": "ts_cyq_perf",
+    "files": 51,
+    "updated": true,
+    "latest": "20261030",
+    "last_mtime": "17:35:45",
+    "note": ""
+   },
+   {
+    "table": "ts_hk_daily",
+    "files": 18,
+    "updated": false,
+    "latest": "20261030",
+    "last_mtime": "17:35:23",
+    "note": ""
+   },
+   {
+    "table": "ts_fx_daily",
+    "files": 11,
+    "updated": false,
+    "latest": "20261029",
+    "last_mtime": "17:33:02",
+    "note": ""
+   },
+   {
+    "table": "ts_fut_daily",
+    "files": 18,
+    "updated": false,
+    "latest": "20261030",
+    "last_mtime": "17:36:10",
+    "note": ""
+   },
+   {
+    "table": "ts_opt_daily",
+    "files": 123,
+    "updated": false,
+    "latest": "20261030",
+    "last_mtime": "17:47:01",
+    "note": ""
+   },
+   {
+    "table": "ts_repo_daily",
+    "files": 12,
+    "updated": false,
+    "latest": "20261030",
+    "last_mtime": "17:33:18",
+    "note": ""
+   },
+   {
+    "table": "ts_sge_daily",
+    "files": 12,
+    "updated": false,
+    "latest": "20261030",
+    "last_mtime": "17:33:16",
+    "note": ""
+   }
+  ],
+  "B_财务": [
+   {
+    "table": "ts_income",
+    "files": 3,
+    "updated": false,
+    "latest": "20261013",
+    "last_mtime": "18:10:26",
+    "note": ""
+   },
+   {
+    "table": "ts_income_vip",
+    "files": 1,
+    "updated": false,
+    "latest": "20261013",
+    "last_mtime": "17:54:40",
+    "note": ""
+   },
+   {
+    "table": "ts_balancesheet",
+    "files": 3,
+    "updated": false,
+    "latest": "20261013",
+    "last_mtime": "18:03:46",
+    "note": ""
+   },
+   {
+    "table": "ts_balancesheet_vip",
+    "files": 1,
+    "updated": false,
+    "latest": "20261013",
+    "last_mtime": "17:52:26",
+    "note": ""
+   },
+   {
+    "table": "ts_cashflow",
+    "files": 3,
+    "updated": false,
+    "latest": "20261013",
+    "last_mtime": "18:06:22",
+    "note": ""
+   },
+   {
+    "table": "ts_cashflow_vip",
+    "files": 1,
+    "updated": false,
+    "latest": "20261013",
+    "last_mtime": "17:53:50",
+    "note": ""
+   },
+   {
+    "table": "ts_fina_indicator",
+    "files": 3,
+    "updated": false,
+    "latest": "20261013",
+    "last_mtime": "18:00:10",
+    "note": ""
+   },
+   {
+    "table": "ts_fina_indicator_vip",
+    "files": 1,
+    "updated": false,
+    "latest": "20261013",
+    "last_mtime": "17:57:08",
+    "note": ""
+   },
+   {
+    "table": "ts_fina_mainbz",
+    "files": 5,
+    "updated": false,
+    "latest": "20110630",
+    "last_mtime": "20:04:46",
+    "note": ""
+   },
+   {
+    "table": "ts_forecast",
+    "files": 2,
+    "updated": false,
+    "latest": "20200122",
+    "last_mtime": "20:04:06",
+    "note": ""
+   },
+   {
+    "table": "ts_forecast_vip",
+    "files": 1,
+    "updated": false,
+    "latest": "20261013",
+    "last_mtime": "17:47:36",
+    "note": ""
+   },
+   {
+    "table": "ts_express",
+    "files": 6,
+    "updated": false,
+    "latest": "20200203",
+    "last_mtime": "17:32:27",
+    "note": ""
+   },
+   {
+    "table": "ts_express_vip",
+    "files": 6,
+    "updated": false,
+    "latest": "20200203",
+    "last_mtime": "17:32:27",
+    "note": ""
+   },
+   {
+    "table": "ts_dividend",
+    "files": 2,
+    "updated": false,
+    "latest": "19980706",
+    "last_mtime": "20:04:22",
+    "note": ""
+   },
+   {
+    "table": "ts_dividend_vip",
+    "files": 1,
+    "updated": false,
+    "latest": "20261013",
+    "last_mtime": "17:50:10",
+    "note": ""
+   },
+   {
+    "table": "ts_disclosure_date",
+    "files": 3,
+    "updated": false,
+    "latest": "20000529",
+    "last_mtime": "20:04:32",
+    "note": ""
+   },
+   {
+    "table": "ts_fina_audit",
+    "files": 2,
+    "updated": false,
+    "latest": "20010331",
+    "last_mtime": "20:04:14",
+    "note": ""
+   },
+   {
+    "table": "ts_stk_holdernumber",
+    "files": 14,
+    "updated": false,
+    "latest": "20250106",
+    "last_mtime": "17:34:48",
+    "note": ""
+   }
+  ],
+  "C_低频": [
+   {
+    "table": "ts_stock_basic",
+    "files": 4,
+    "updated": false,
+    "latest": "19910703",
+    "last_mtime": "17:45:32",
+    "note": ""
+   },
+   {
+    "table": "ts_hk_basic",
+    "files": 1,
+    "updated": false,
+    "latest": "20261009",
+    "last_mtime": "17:45:26",
+    "note": ""
+   },
+   {
+    "table": "ts_index_basic",
+    "files": 5,
+    "updated": false,
+    "latest": "20211213",
+    "last_mtime": "17:45:42",
+    "note": ""
+   },
+   {
+    "table": "ts_index_classify",
+    "files": 1,
+    "updated": false,
+    "latest": null,
+    "last_mtime": "17:45:16",
+    "note": ""
+   },
+   {
+    "table": "ts_index_member_all",
+    "files": 1,
+    "updated": false,
+    "latest": null,
+    "last_mtime": "17:45:34",
+    "note": ""
+   },
+   {
+    "table": "ts_index_monthly",
+    "files": 2,
+    "updated": false,
+    "latest": "20191231",
+    "last_mtime": "18:07:20",
+    "note": ""
+   },
+   {
+    "table": "ts_index_weekly",
+    "files": 7,
+    "updated": false,
+    "latest": "20121109",
+    "last_mtime": "18:43:34",
+    "note": ""
+   },
+   {
+    "table": "ts_index_weight",
+    "files": 2,
+    "updated": false,
+    "latest": "20260930",
+    "last_mtime": "17:45:52",
+    "note": ""
+   },
+   {
+    "table": "ts_kpl_concept",
+    "files": 1,
+    "updated": false,
+    "latest": "20241117",
+    "last_mtime": "17:45:30",
+    "note": ""
+   },
+   {
+    "table": "ts_ths_member",
+    "files": 7,
+    "updated": false,
+    "latest": null,
+    "last_mtime": "18:12:00",
+    "note": ""
+   },
+   {
+    "table": "ts_tdx_index",
+    "files": 1,
+    "updated": false,
+    "latest": "20250417",
+    "last_mtime": "17:45:20",
+    "note": ""
+   },
+   {
+    "table": "ts_trade_cal",
+    "files": 1,
+    "updated": false,
+    "latest": null,
+    "last_mtime": "17:46:16",
+    "note": ""
+   },
+   {
+    "table": "ts_suspend_d",
+    "files": 14,
+    "updated": true,
+    "latest": "20261102",
+    "last_mtime": "17:55:03",
+    "note": ""
+   },
+   {
+    "table": "ts_namechange",
+    "files": 9,
+    "updated": false,
+    "latest": "20261029",
+    "last_mtime": "17:32:16",
+    "note": ""
+   },
+   {
+    "table": "ts_repurchase",
+    "files": 13,
+    "updated": false,
+    "latest": "20261030",
+    "last_mtime": "17:33:17",
+    "note": ""
+   },
+   {
+    "table": "ts_stk_managers",
+    "files": 2,
+    "updated": false,
+    "latest": "20261012",
+    "last_mtime": "18:09:08",
+    "note": ""
+   },
+   {
+    "table": "ts_stk_rewards",
+    "files": 9,
+    "updated": false,
+    "latest": "20101203",
+    "last_mtime": "19:46:20",
+    "note": ""
+   },
+   {
+    "table": "ts_top10_holders",
+    "files": 8,
+    "updated": false,
+    "latest": "20201208",
+    "last_mtime": "19:03:30",
+    "note": ""
+   }
+  ],
+  "D_缺口": [
+   {
+    "table": "ts_bse_mapping",
+    "files": 1,
+    "updated": false,
+    "latest": "20240408",
+    "last_mtime": "17:45:16",
+    "note": ""
+   },
+   {
+    "table": "ts_cb_basic",
+    "files": 1,
+    "updated": false,
+    "latest": "20260929",
+    "last_mtime": "17:45:22",
+    "note": ""
+   },
+   {
+    "table": "ts_cn_cpi",
+    "files": 1,
+    "updated": false,
+    "latest": "202608",
+    "last_mtime": "17:45:12",
+    "note": ""
+   },
+   {
+    "table": "ts_cn_gdp",
+    "files": 1,
+    "updated": false,
+    "latest": "2026Q2",
+    "last_mtime": "17:45:12",
+    "note": ""
+   },
+   {
+    "table": "ts_cn_m",
+    "files": 1,
+    "updated": false,
+    "latest": "202608",
+    "last_mtime": "20:03:46",
+    "note": ""
+   },
+   {
+    "table": "ts_cn_pmi",
+    "files": 1,
+    "updated": false,
+    "latest": "202609",
+    "last_mtime": "20:03:46",
+    "note": ""
+   },
+   {
+    "table": "ts_cn_ppi",
+    "files": 1,
+    "updated": false,
+    "latest": "202608",
+    "last_mtime": "20:03:46",
+    "note": ""
+   },
+   {
+    "table": "ts_fund_basic",
+    "files": 5,
+    "updated": false,
+    "latest": "nan",
+    "last_mtime": "17:46:00",
+    "note": ""
+   },
+   {
+    "table": "ts_fut_basic",
+    "files": 1,
+    "updated": false,
+    "latest": "20261008",
+    "last_mtime": "17:45:46",
+    "note": ""
+   },
+   {
+    "table": "ts_fut_weekly_monthly",
+    "files": 1,
+    "updated": false,
+    "latest": "20261030",
+    "last_mtime": "19:29:58",
+    "note": ""
+   },
+   {
+    "table": "ts_fx_obasic",
+    "files": 1,
+    "updated": false,
+    "latest": null,
+    "last_mtime": "17:45:12",
+    "note": ""
+   },
+   {
+    "table": "ts_hm_list",
+    "files": 1,
+    "updated": false,
+    "latest": null,
+    "last_mtime": "17:45:14",
+    "note": ""
+   },
+   {
+    "table": "ts_hs_const",
+    "files": 1,
+    "updated": false,
+    "latest": null,
+    "last_mtime": "17:45:18",
+    "note": ""
+   },
+   {
+    "table": "ts_opt_basic",
+    "files": 2,
+    "updated": false,
+    "latest": "20240430",
+    "last_mtime": "17:59:38",
+    "note": ""
+   },
+   {
+    "table": "ts_pledge_detail",
+    "files": 2,
+    "updated": false,
+    "latest": "20261008",
+    "last_mtime": "20:04:14",
+    "note": ""
+   },
+   {
+    "table": "ts_sge_basic",
+    "files": 1,
+    "updated": false,
+    "latest": "20191014",
+    "last_mtime": "17:45:12",
+    "note": ""
+   },
+   {
+    "table": "ts_slb_len",
+    "files": 1,
+    "updated": false,
+    "latest": "20250725",
+    "last_mtime": "17:45:22",
+    "note": ""
+   },
+   {
+    "table": "ts_top10_floatholders",
+    "files": 7,
+    "updated": false,
+    "latest": "20210707",
+    "last_mtime": "18:56:30",
+    "note": ""
+   },
+   {
+    "table": "ts_us_basic",
+    "files": 1,
+    "updated": false,
+    "latest": "20261012",
+    "last_mtime": "17:46:24",
+    "note": ""
+   },
+   {
+    "table": "ts_etf_basic",
+    "files": 1,
+    "updated": false,
+    "latest": "20260902",
+    "last_mtime": "11:15:16",
+    "note": ""
+   },
+   {
+    "table": "ts_ths_index",
+    "files": 1,
+    "updated": false,
+    "latest": "20260731",
+    "last_mtime": "11:15:50",
+    "note": ""
+   },
+   {
+    "table": "ts_anns_d",
+    "files": 39,
+    "updated": false,
+    "latest": "20261030",
+    "last_mtime": "15:09:26",
+    "note": ""
+   },
+   {
+    "table": "ts_cb_call",
+    "files": 12,
+    "updated": false,
+    "latest": "20261030",
+    "last_mtime": "15:09:39",
+    "note": ""
+   },
+   {
+    "table": "ts_cb_issue",
+    "files": 8,
+    "updated": false,
+    "latest": "20261027",
+    "last_mtime": "15:19:26",
+    "note": ""
+   },
+   {
+    "table": "ts_cb_share",
+    "files": 13,
+    "updated": false,
+    "latest": "20261029",
+    "last_mtime": "15:19:30",
+    "note": ""
+   },
+   {
+    "table": "ts_fund_div",
+    "files": 15,
+    "updated": false,
+    "latest": "20261030",
+    "last_mtime": "15:09:40",
+    "note": ""
+   },
+   {
+    "table": "ts_fund_manager",
+    "files": 3,
+    "updated": false,
+    "latest": "20261009",
+    "last_mtime": "17:32:43",
+    "note": ""
+   },
+   {
+    "table": "ts_fund_portfolio",
+    "files": 28,
+    "updated": false,
+    "latest": "20200831",
+    "last_mtime": "06:43:06",
+    "note": ""
+   },
+   {
+    "table": "ts_pledge_stat",
+    "files": 8,
+    "updated": false,
+    "latest": "20261023",
+    "last_mtime": "15:19:35",
+    "note": ""
+   },
+   {
+    "table": "ts_share_float",
+    "files": 21,
+    "updated": false,
+    "latest": "20261027",
+    "last_mtime": "15:20:13",
+    "note": ""
+   },
+   {
+    "table": "ts_slb_sec",
+    "files": 11,
+    "updated": false,
+    "latest": "20200716",
+    "last_mtime": "19:15:12",
+    "note": ""
+   },
+   {
+    "table": "ts_stk_holdertrade",
+    "files": 15,
+    "updated": true,
+    "latest": "20261102",
+    "last_mtime": "18:05:05",
+    "note": ""
+   },
+   {
+    "table": "ts_weekly",
+    "files": 12,
+    "updated": true,
+    "latest": "20261030",
+    "last_mtime": "18:05:23",
+    "note": ""
+   }
+  ]
+ },
+ "summary": {
+  "tables": 87,
+  "updated": 11,
+  "not_updated": 76,
+  "not_updated_tables": [
+   "ts_index_daily",
+   "ts_daily_info",
+   "ts_margin",
+   "ts_margin_detail",
+   "ts_hk_daily",
+   "ts_fx_daily",
+   "ts_fut_daily",
+   "ts_opt_daily",
+   "ts_repo_daily",
+   "ts_sge_daily",
+   "ts_income",
+   "ts_income_vip",
+   "ts_balancesheet",
+   "ts_balancesheet_vip",
+   "ts_cashflow",
+   "ts_cashflow_vip",
+   "ts_fina_indicator",
+   "ts_fina_indicator_vip",
+   "ts_fina_mainbz",
+   "ts_forecast",
+   "ts_forecast_vip",
+   "ts_express",
+   "ts_express_vip",
+   "ts_dividend",
+   "ts_dividend_vip",
+   "ts_disclosure_date",
+   "ts_fina_audit",
+   "ts_stk_holdernumber",
+   "ts_stock_basic",
+   "ts_hk_basic",
+   "ts_index_basic",
+   "ts_index_classify",
+   "ts_index_member_all",
+   "ts_index_monthly",
+   "ts_index_weekly",
+   "ts_index_weight",
+   "ts_kpl_concept",
+   "ts_ths_member",
+   "ts_tdx_index",
+   "ts_trade_cal",
+   "ts_namechange",
+   "ts_repurchase",
+   "ts_stk_managers",
+   "ts_stk_rewards",
+   "ts_top10_holders",
+   "ts_bse_mapping",
+   "ts_cb_basic",
+   "ts_cn_cpi",
+   "ts_cn_gdp",
+   "ts_cn_m",
+   "ts_cn_pmi",
+   "ts_cn_ppi",
+   "ts_fund_basic",
+   "ts_fut_basic",
+   "ts_fut_weekly_monthly",
+   "ts_fx_obasic",
+   "ts_hm_list",
+   "ts_hs_const",
+   "ts_opt_basic",
+   "ts_pledge_detail",
+   "ts_sge_basic",
+   "ts_slb_len",
+   "ts_top10_floatholders",
+   "ts_us_basic",
+   "ts_etf_basic",
+   "ts_ths_index",
+   "ts_anns_d",
+   "ts_cb_call",
+   "ts_cb_issue",
+   "ts_cb_share",
+   "ts_fund_div",
+   "ts_fund_manager",
+   "ts_fund_portfolio",
+   "ts_pledge_stat",
+   "ts_share_float",
+   "ts_slb_sec"
+  ],
+  "updated_with_latest_20261102": 8
+ }
+}
