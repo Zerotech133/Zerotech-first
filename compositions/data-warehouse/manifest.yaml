@@ -110,7 +110,9 @@ spec:
     - "DWH-102 v1.1（2026-11-02）：SLA 目标沿用 WP-I6（登记≥95%、取数入口≥80%）；基线 314/265/72（84.4%/22.9%），差 49/242，整改期 2026-11-12。"
     - "口径真源：dataset_inventory_20261102.json（sha256 6D16…B3C1A，mtime 2026-11-02 02:15:50）+ /api/dw/stats@8091 四源对账 2026-11-02T08:38:48+08:00；catalog.json 256 物理表为另一口径。"
     - "取数面：/api/dw/* 直连 8091 返回 200；经 8734 因 nginx H4-B 白名单未登记返回 401（L2 待批 task-11），auth.public=false 不变。"
-    - "metadata.version 保持 1.0.0：升 1.1.0 需 registry.json 同批（ARCH1 单 owner），否则 plan --strict 漂移会阻断 merge；交接 ARCH1。"
+    - "页面口径（2026-11-02 抽检 P2-1）：page /dw、/dataops 在 8734=404（资产 dw.html/dataops.html=200）；页面路由待 P2 收口。"
+    - "口径双写（2026-11-02 抽检 P3-1）：spec.slo 与 spec.data.sla.baseline 同组数字双写；DWH-103 收口为单一真源。"
+    - "metadata.version 已同批升 1.1.0（registry+manifest，2026-11-02，ARCH1 抽检通过）；后续升版仍须 registry.json 同批。"
 status:
   phase: shadow
   health: unknown

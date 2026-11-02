@@ -113,9 +113,9 @@ spec:
     - "证据包与部分上游走 C:\\Temp 绝对路径，P2 换契约目录 + schema 版本。"
     - "人工复核不自动通过/否决；11-08 冻结前 13 张 review 卡需逐张复核。"
     - "ACL-102 v1.1 对齐（2026-11-02）：SLA 四字段唯一落 spec.data.sla（1/30/26/1），不双写 spec.slo；口径源=2026-10-31 老田 30 配额决策 + ACL-101 回归测试固化。"
-    - "metadata.version 保持 1.0.0：升 1.1.0 须 registry.json 同批（ARCH1 单 owner），否则 plan --strict 漂移被 P1.2 组合门拒收；交接 ARCH1。"
+    - "metadata.version 已同批升 1.1.0（registry+manifest，2026-11-02，ARCH1 抽检通过）；后续升版仍须 registry.json 同批，否则 plan --strict 漂移被 P1.2 组合门拒收。"
     - "接口口径：/api/v1/acad1-research 是智策 8105 原生路径；8734 宿主入口实为 /quant-api/api/v1/acad1-research（auth_request，未登录 401）。"
-    - "页面/鉴权现状（2026-11-02 GET 实测）：/academy/shuijing=200、/api/acad1/pool=200（nginx H4-B 公开族 C，只读无 auth_request）；/acad1/pool 在 8734=404（8091=200，nginx 路由未登记）→ P2/L2 补登记。"
+    - "页面/鉴权现状（2026-11-02 GET 实测）：/academy/shuijing=200、/api/acad1/pool=200（nginx H4-B 公开族 C，只读无 auth_request）；/acad1/pool 在 8734=404（8091=200，nginx 路由未登记）→ L2 待批（acad1_pool 包，11-05 窗口）。"
     - "运行时双层：research API 走智策 8105（internal-service，经 /quant-api/ 反代）；pool API/页走 portal-api 8091（/api/acad1/pool、/academy/shuijing）；runtime.service=quant-api 为整合主服务，P2 单栈收口。"
 status:
   phase: shadow
