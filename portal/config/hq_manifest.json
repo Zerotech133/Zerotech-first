@@ -1,0 +1,77 @@
+{
+  "schema": "hq/page-manifest/v1",
+  "id": "hq",
+  "title": "零界指挥部",
+  "entry": "/hq",
+  "status": "w3-pending",
+  "owner": "ARCH1",
+  "auth": "8734 OIDC（同源；不新增登录）",
+  "single_entry": true,
+  "read_only": true,
+  "tabs": [
+    {
+      "id": "org",
+      "title": "组织",
+      "api": ["/hq/org"],
+      "sources": ["agent_platform/registry/org.json", "agent_platform/registry/team_*.json", "agent_platform/hr/*/resume.yaml"],
+      "component": "hq-org"
+    },
+    {
+      "id": "tasks",
+      "title": "任务",
+      "api": ["/hq/tasks", "/hq/tasks/board"],
+      "sources": [".worktrees/tasks.json"],
+      "component": "hq-tasks"
+    },
+    {
+      "id": "approvals",
+      "title": "审批",
+      "api": ["/hq/approvals"],
+      "sources": ["agent_platform/data/approvals/approvals.db", "agent_platform/data/approvals.jsonl", "agent_platform/config/approval_signers.json"],
+      "component": "hq-approvals"
+    },
+    {
+      "id": "budget",
+      "title": "预算",
+      "api": ["/hq/budget", "/hq/budget/alerts"],
+      "sources": ["portal/data/llm_usage.jsonl", "agent_platform/data/llm_tool_audit.jsonl", "agent_platform/registry/org.json"],
+      "component": "hq-budget"
+    },
+    {
+      "id": "heartbeat",
+      "title": "心跳",
+      "api": ["/hq/heartbeat/status"],
+      "sources": ["agent_platform/data/schedules.json", ".worktrees/tasks.json"],
+      "component": "hq-heartbeat"
+    }
+  ],
+  "apis": [
+    "GET /hq/org",
+    "GET /hq/tasks",
+    "GET /hq/tasks/board",
+    "GET /hq/approvals",
+    "GET /hq/approvals/summary",
+    "GET /hq/budget",
+    "GET /hq/budget/alerts",
+    "GET /hq/heartbeat/status"
+  ],
+  "ui": {
+    "tokens": "portal/static/tokens.css",
+    "nav": "portal/static/nav.js",
+    "shortscreen": "portal/static/shortscreen.js",
+    "layout": "single shell; two-level nav; no second entry"
+  },
+  "constraints": [
+    "仅 8734 同源入口，不新增端口/域名",
+    "只读数据面；写操作仍走原审批/调度/工单通道",
+    "不建第二 DB/账本/调度器",
+    "页面必须过 tokens/nav/shortscreen 三件套"
+  ],
+  "w3_tasks": [
+    "HQ-06-a: portal/api_hq.py 只读端点（8091 同源）",
+    "HQ-06-b: portal/hq.html 页面（5 tabs）",
+    "HQ-06-c: nav 增加 /hq 与 route baseline 更新",
+    "HQ-06-d: 401/auth + Q2 健康 + 页面验收",
+    "HQ-06-e: 接 HQ-01~05 数据层并做 golden 快照"
+  ]
+}

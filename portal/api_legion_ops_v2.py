@@ -9,6 +9,7 @@ GET /api/legion/review?tid=X  复盘：工单执行是否正常（状态链/时�
 import json
 import time
 import urllib.request
+import urllib.error
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -284,6 +285,13 @@ def dispatch(payload: dict) -> dict:
                                      headers={"Content-Type": "application/json"})
         with safe_urlopen(req, timeout=30) as r:
             res = json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        try:
+            body = e.read().decode("utf-8", "replace")[:300]
+        except Exception:  # noqa: BLE001
+            body = ""
+        heartbeat("LEGION_OPS", "dispatch_fail", f"{aid} 8093 HTTP {e.code}: {body}")
+        return {"ok": False, "err": f"8093 HTTP {e.code}: {body}"}
     except Exception as e:
         heartbeat("LEGION_OPS", "dispatch_fail", f"{aid} 派工失败: {type(e).__name__}")
         return {"ok": False, "err": f"8093 不可达: {e}"}
