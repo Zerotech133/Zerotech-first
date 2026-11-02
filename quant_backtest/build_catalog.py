@@ -415,6 +415,32 @@ TABLE_DEFS["ts_rt_min"] = {
     "date_col": "time",
     "freq": "1min",
 }
+# ── freq 标签修正（2026-11-02 task-33 / S3-01 C 类）─────────────────────────
+# 依据：docs/audit/2026-11-02_xtcloud停更排查.md §6「freq 标签修正清单」。
+# 这些 xtcloud 表此前未在 TABLE_DEFS 登记 freq → `_scan_dir` 默认 freq=D（7d 阈值），
+# 财报/预测/事件类正常发布节律被判 stale（qualify_probe stale_gt_7d）。
+# 本批按真实发布节律改 Q/M/W，只改 freq，不动 date_col/layout/primary_key 等其它字段；
+# 生效需下一次 build_catalog + registry_rebuild（本单不跑，见回执）。
+_FREQ_FIX_20 = {
+    # 财报/报告期类（Q）：最新业务日=报告期 end_date/ann_date，按季披露节奏；
+    # _vip 为 xtcloud 财务 VIP 接口表，节律同主表，一并修正。
+    "ts_income": "Q", "ts_income_vip": "Q",
+    "ts_balancesheet": "Q", "ts_balancesheet_vip": "Q",
+    "ts_cashflow": "Q", "ts_cashflow_vip": "Q",
+    "ts_fina_indicator": "Q", "ts_fina_indicator_vip": "Q",
+    "ts_fina_mainbz": "Q", "ts_fina_mainbz_vip": "Q",
+    # 业绩预告/快报/分红/披露计划：事件驱动但按季窗口（Q）
+    "ts_forecast": "Q", "ts_forecast_vip": "Q",
+    "ts_express": "Q", "ts_express_vip": "Q",
+    "ts_dividend": "Q", "ts_dividend_vip": "Q",
+    "ts_disclosure_date": "Q",
+    # 股权激励/股东户数：季度披露节奏（Q）
+    "ts_stk_rewards": "Q", "ts_stk_holdernumber": "Q",
+    # 指数周线：周频（W），catalog 原标 D 属错标（审计 §3 ts_index_weekly）
+    "ts_index_weekly": "W",
+}
+for _freq_name, _freq_value in _FREQ_FIX_20.items():
+    TABLE_DEFS.setdefault(_freq_name, {})["freq"] = _freq_value
 # ── 雪球仓（xueqiu，设计 §3.3：7 张 parquet 表）──
 TABLE_DEFS.update(
     {

@@ -27,6 +27,7 @@ import json
 import os
 import re
 import shutil
+import sqlite3
 import sys
 from collections import Counter
 from dataclasses import dataclass
@@ -52,7 +53,22 @@ FRESH_LAG_DAYS = 7  # 默认滞后阈值（自然日；D 频/未知频率）
 # 2026-11-02 task-24：按 catalog 条目 freq 分级滞后阈值（自然日）
 FREQ_LAG_DAYS = {"D": 7, "W": 14, "M": 40, "Q": 100}
 STATIC_DATE_EXEMPT = "skipped_static_no_date"
+# 2026-11-02 task-32：静态豁免显式白名单（不再"无 date_col 即豁免"）。
+# 组成 = 已声明 3 张（task-26 A2）+ catalog 明确静态表（date_status=not_applicable 且非动态数据源）。
+# 24 张未声明动态表（ts_news/ts_major_news/ts_report_rc/ts_cn_*/ts_us_* 等）不在名单 → 回到 evidence_partial。
+STATIC_EXEMPT_WHITELIST = {
+    # 已声明静态豁免（task-26 A2）
+    "tdx_sector_def", "tdx_sector_member", "ts_broker_recommend",
+    # catalog date_status=not_applicable 的明确静态表
+    "stock_company", "sw_classify_l1", "sw_l1_member",
+    "chinese-dictionary-of-financial-sentiment",
+}
 SAMPLE_LIMIT = 5
+# part 布局全量 footer 扫描上限（只读 metadata，控制耗时）
+MAX_PART_FOOTER_SCAN = 80
+SQLITE_SUFFIXES = (".db", ".sqlite", ".sqlite3")
+SQLITE_DATE_CANDIDATES = ("trade_date", "pub_date", "notice_date", "ann_date",
+                          "created_at", "updated_at", "report_date", "end_date")
 ALLOWED_REGISTRY_FIELDS = {
     "qualification_status", "evidence_checked_at", "evidence_summary", "unsupported_reason",
 }
@@ -201,12 +217,33 @@ def _likely_nonempty(files: list[FileInfo]) -> list[FileInfo]:
     return likely or files
 
 
-def select_samples(files: list[FileInfo], limit: int = SAMPLE_LIMIT) -> tuple[list[FileInfo], str]:
-    """最多 limit 个样本：日期文件名取最近 4 个 + 最大 1 个；无日期取 mtime 最近 4 + 最大 1。"""
+def select_samples(files: list[FileInfo], limit: int = SAMPLE_LIMIT,
+                   layout: str | None = None) -> tuple[list[FileInfo], str]:
+    """最多 limit 个样本。
+
+    - layout=part（多 part 平铺）：**按 part 覆盖抽样**（首/末/等距 + mtime 最新 + 最大），
+      避免"mtime 最新 part 恰是旧数据"导致假 stale（task-32）；
+    - 文件名含日期：取最近 4 个 + 最大 1 个；
+    - 无日期：mtime 最近 4 个 + 最大 1 个。
+    """
     if not files:
         return [], "none"
     selected: list[FileInfo] = []
     likely = _likely_nonempty(files)
+    if str(layout or "").lower() == "part":
+        strategy = "part_spread"
+        ordered = sorted(files, key=lambda x: x.rel)
+        n = len(ordered)
+        idxs = [0, n - 1] + [(n * i) // max(1, limit) for i in range(1, limit)]
+        for i in idxs:
+            _add_unique(selected, ordered[min(max(0, i), n - 1)], limit)
+        for f in sorted(files, key=lambda x: (x.mtime, x.size, x.rel), reverse=True)[:2]:
+            _add_unique(selected, f, limit)
+        for f in sorted(files, key=lambda x: (x.size, x.rel), reverse=True):
+            _add_unique(selected, f, limit)
+            if len(selected) >= limit:
+                break
+        return selected, strategy
     dated = [f for f in likely if f.date_key] or [f for f in files if f.date_key]
     if dated:
         strategy = "date_desc4+largest1"
@@ -259,6 +296,90 @@ def _read_footer(path: Path, date_col: str | None) -> dict:
     return out
 
 
+def _footer_max_all_groups(pq, path: Path, date_col: str) -> tuple:
+    """只读 footer 统计：扫描该文件**全部 row group** 取日期列 max（task-32 part 扫描用）。"""
+    pf = pq.ParquetFile(str(path))
+    md = pf.metadata
+    if date_col not in pf.schema_arrow.names:
+        return None, 0
+    best = None
+    for gi in range(md.num_row_groups):
+        rg = md.row_group(gi)
+        for ci in range(rg.num_columns):
+            col = rg.column(ci)
+            if col.path_in_schema != date_col:
+                continue
+            st = col.statistics
+            if st is None or getattr(st, "has_min_max", True) is False:
+                continue
+            v = norm_date(getattr(st, "max", None))
+            if v and (best is None or v > best):
+                best = v
+            break
+    return best, int(md.num_row_groups)
+
+
+def part_footer_latest(files: list[FileInfo], date_col: str,
+                       max_files: int = MAX_PART_FOOTER_SCAN) -> dict:
+    """part 布局：全量（≤max_files）footer 扫描真实最大业务日，解决抽样漏最新片（只读 metadata）。"""
+    pq = _pyarrow()
+    best, best_file, scanned, groups = None, None, 0, 0
+    for f in sorted(files, key=lambda x: x.rel)[:max_files]:
+        try:
+            v, ng = _footer_max_all_groups(pq, f.path, date_col)
+        except Exception:  # noqa: BLE001
+            continue
+        scanned += 1
+        groups += ng
+        if v and (best is None or v > best):
+            best, best_file = v, f
+    return {"latest": best, "latest_file": best_file.rel if best_file else None,
+            "files_scanned": scanned, "row_groups": groups, "max_files": max_files}
+
+
+def _is_sqlite_store(entry: dict | None) -> bool:
+    """catalog store 是否 sqlite（layout=sqlite 或 store 后缀 .db/.sqlite/.sqlite3）。"""
+    e = entry or {}
+    layout = str(e.get("layout") or "").lower()
+    store = str(e.get("store") or "").lower().split("?")[0]
+    return layout == "sqlite" or store.endswith(SQLITE_SUFFIXES)
+
+
+def probe_sqlite_table(store: Path, table: str, entry: dict | None) -> dict:
+    """只读打开 sqlite store：表存在性 / 行数 / 日期列 max（task-32）。不写、不连远端。"""
+    e = entry or {}
+    info = {"path": str(store), "exists": store.is_file(), "table": None,
+            "tables": [], "rows": 0, "latest": None, "date_col_used": None,
+            "columns": [], "error": None}
+    if not info["exists"]:
+        return info
+    try:
+        con = sqlite3.connect("file:" + store.as_posix() + "?mode=ro", uri=True, timeout=3)
+        try:
+            names = [r[0] for r in con.execute(
+                "select name from sqlite_master where type='table'").fetchall()]
+            info["tables"] = names
+            target = table if table in names else next(
+                (x for x in (e.get("physical_tables") or []) if x in names), None)
+            if not target:
+                return info
+            info["table"] = target
+            info["rows"] = int(con.execute('select count(*) from "%s"' % target).fetchone()[0])
+            cols = [r[1] for r in con.execute('PRAGMA table_info("%s")' % target).fetchall()]
+            info["columns"] = cols
+            candidates = [e.get("date_col") or e.get("date_column")] + list(SQLITE_DATE_CANDIDATES)
+            dc = next((c for c in candidates if c and c in cols), None)
+            if dc:
+                v = con.execute('select max("%s") from "%s"' % (dc, target)).fetchone()[0]
+                info["latest"] = norm_date(v)
+                info["date_col_used"] = dc
+        finally:
+            con.close()
+    except Exception as exc:  # noqa: BLE001
+        info["error"] = str(exc)[:160]
+    return info
+
+
 def manifest_keys(data) -> set:
     if not isinstance(data, dict):
         return set()
@@ -301,7 +422,17 @@ def resolve_manifest_path(entry: dict | None, fallback: Path | None = None) -> t
 
 
 def _summary(card: dict) -> str:
-    if not card["store_exists"]:
+    sqlite_info = card.get("sqlite")
+    if sqlite_info is not None:
+        if not sqlite_info.get("exists"):
+            base = "sqlite store 缺失"
+        elif sqlite_info.get("error"):
+            base = "sqlite 读取失败"
+        elif not sqlite_info.get("table"):
+            base = "sqlite 表缺失（%s）" % (sqlite_info.get("tables") or [])
+        else:
+            base = "sqlite 表 %s，%d 行" % (sqlite_info.get("table"), card["rows_sampled"])
+    elif not card["store_exists"]:
         base = "store 缺失"
     elif card["files_on_disk"] == 0:
         base = "store 在但无 parquet"
@@ -332,19 +463,28 @@ def _summary(card: dict) -> str:
 def _unsupported_reason(card: dict) -> str:
     table = card["table"]
     if card["verdict"] == "evidence_ok":
+        if card.get("sqlite") is not None:
+            si = card["sqlite"]
+            return ("资格取证批次1：sqlite 表 %s 行数=%d、最新=%s（manifest %s），待发布/覆盖核验"
+                    % (si.get("table"), si.get("rows"), si.get("latest") or "无日期列",
+                       card.get("manifest_state")))
         if card.get("date_check") == STATIC_DATE_EXEMPT:
-            # fail-visible：静态/无日期列口径豁免必须显式标注，不静默当普通 ok
+            # fail-visible：静态豁免必须显式标注来源（whitelist/catalog_static），不静默当普通 ok
             suffix = "；manifest_status=not_applicable（不参与 manifest 检查）" \
                 if card.get("manifest_state") == "not_applicable" else "/manifest"
-            return ("资格取证批次1：文件/行齐备；静态/无日期列（%s）日期检查豁免"
+            return ("资格取证批次1：文件/行齐备；静态豁免（%s，exempt_source=%s）日期检查豁免"
                     "（口径标注 visible）%s，待发布/覆盖核验"
-                    % (card.get("exempt_reason"), suffix))
+                    % (card.get("exempt_reason"), card.get("exempt_source"), suffix))
         if card.get("manifest_state") == "not_applicable":
             return ("资格取证批次1：文件/行/最新日齐备；manifest_status=not_applicable"
                     "（不参与 manifest 检查），待发布/覆盖核验")
         return ("资格取证批次1：证据齐备（文件/行/最新日 lag 在 %s 阈值内/manifest），"
                 "待发布/覆盖核验" % card.get("lag_limit_rule", "freq"))
-    if "manifest_catalog_unreadable" in card["reasons"]:
+    if "sqlite_error" in card["reasons"]:
+        gap = "sqlite 读取失败（%s）" % ((card.get("sqlite") or {}).get("error") or "-")
+    elif "sqlite_table_missing" in card["reasons"]:
+        gap = "sqlite store 中无该表（%s）" % ((card.get("sqlite") or {}).get("tables") or [])
+    elif "manifest_catalog_unreadable" in card["reasons"]:
         gap = "catalog 指定 manifest 不可读（%s）" % (card.get("manifest_path") or "路径缺失")
     elif "manifest_fallback_tushare" in card["reasons"]:
         gap = "catalog 未指定 manifest，回退 tushare（%s）" % (card.get("manifest_path") or "-")
@@ -392,6 +532,9 @@ def probe_table(table: str, entry: dict, mkeys: set, today: dt.date,
         "static_no_date": bool(entry.get("static_no_date")),
         "date_check": "footer",
         "exempt_reason": None,
+        "exempt_source": None,
+        "sqlite": None,
+        "part_scan": None,
         "store_exists": bool(store_raw) and store.exists(),
         "files_on_disk": 0,
         "files_top_level": 0,
@@ -429,51 +572,98 @@ def probe_table(table: str, entry: dict, mkeys: set, today: dt.date,
         card["unsupported_reason"] = _unsupported_reason(card)
         return card
 
-    files, top, nested = _iter_parquet(store)
-    card["files_on_disk"] = len(files)
-    card["files_top_level"] = top
-    card["nested_dirs"] = nested
-    if not files:
-        card["reasons"] = ["no_parquet"]
-        card["evidence_summary"] = _summary(card)
-        card["unsupported_reason"] = _unsupported_reason(card)
-        return card
+    # 2026-11-02 task-32：sqlite store 只读探针（替代 parquet-only 误判 no_parquet/bad）
+    part_scan = None
+    if _is_sqlite_store(entry):
+        sqlite_info = probe_sqlite_table(store, table, entry)
+        card["sqlite"] = sqlite_info
+        card["sample_strategy"] = "sqlite_ro"
+        card["files_on_disk"] = 1 if sqlite_info.get("exists") else 0
+        card["files_top_level"] = card["files_on_disk"]
+        card["rows_sampled"] = int(sqlite_info.get("rows") or 0)
+        card["schema_first30"] = (sqlite_info.get("columns") or [])[:30]
+        card["sample_count"] = 1 if sqlite_info.get("table") else 0
+        if not sqlite_info.get("exists"):
+            fatal = "store_missing"
+        elif sqlite_info.get("error"):
+            fatal = "sqlite_error"
+        elif not sqlite_info.get("table"):
+            fatal = "sqlite_table_missing"
+        else:
+            fatal = None
+        if fatal:
+            card["reasons"] = [fatal]
+            card["evidence_summary"] = _summary(card)
+            card["unsupported_reason"] = _unsupported_reason(card)
+            return card
+        if sqlite_info.get("latest"):
+            card["latest_business_date"] = sqlite_info["latest"]
+            card["latest_source"] = "sqlite_max"
+        elif card["date_column"]:
+            card["latest_source"] = "sqlite_no_date"
+        else:
+            card["latest_source"] = "no_date_column"
+    else:
+        files, top, nested = _iter_parquet(store)
+        card["files_on_disk"] = len(files)
+        card["files_top_level"] = top
+        card["nested_dirs"] = nested
+        if not files:
+            card["reasons"] = ["no_parquet"]
+            card["evidence_summary"] = _summary(card)
+            card["unsupported_reason"] = _unsupported_reason(card)
+            return card
 
-    samples, strategy = select_samples(files, sample_limit)
-    card["sample_strategy"] = strategy
-    card["sample_count"] = len(samples)
-    footers = [_read_footer(f.path, date_col) for f in samples]
-    card["sampled_files"] = [f.rel for f in samples]
-    card["sample_detail"] = [
-        {"file": f.rel, "rows": fo["num_rows"], "row_groups": fo["num_row_groups"],
-         "latest": fo["latest"], "error": fo["error"]}
-        for f, fo in zip(samples, footers)
-    ]
-    card["rows_sampled"] = sum(int(fo["num_rows"]) for fo in footers)
-    card["row_groups_sampled"] = sum(int(fo["num_row_groups"]) for fo in footers)
-    card["schema_first30"] = next((fo["schema_first30"] for fo in footers
-                                   if fo["schema_first30"]), [])
+        samples, strategy = select_samples(files, sample_limit, layout=entry.get("layout"))
+        card["sample_strategy"] = strategy
+        card["sample_count"] = len(samples)
+        footers = [_read_footer(f.path, date_col) for f in samples]
+        card["sampled_files"] = [f.rel for f in samples]
+        card["sample_detail"] = [
+            {"file": f.rel, "rows": fo["num_rows"], "row_groups": fo["num_row_groups"],
+             "latest": fo["latest"], "error": fo["error"]}
+            for f, fo in zip(samples, footers)
+        ]
+        card["rows_sampled"] = sum(int(fo["num_rows"]) for fo in footers)
+        card["row_groups_sampled"] = sum(int(fo["num_row_groups"]) for fo in footers)
+        card["schema_first30"] = next((fo["schema_first30"] for fo in footers
+                                       if fo["schema_first30"]), [])
 
-    footer_dates = [(fo["latest"], f) for f, fo in zip(samples, footers) if fo["latest"]]
-    if footer_dates:
-        latest, latest_file = max(footer_dates, key=lambda x: (x[0], x[1].rel))
-        card["latest_business_date"] = latest
-        card["latest_file"] = latest_file.rel
-        card["latest_source"] = "footer_statistics"
-    elif date_col:
-        # footer 统计取不到：退化为文件名日期，并显式标 degraded
-        dated = [(f.fallback_date, f) for f in files if f.fallback_date]
-        if dated:
-            latest, latest_file = max(dated, key=lambda x: (x[0], x[1].rel))
+        footer_dates = [(fo["latest"], f) for f, fo in zip(samples, footers) if fo["latest"]]
+        if footer_dates:
+            latest, latest_file = max(footer_dates, key=lambda x: (x[0], x[1].rel))
             card["latest_business_date"] = latest
             card["latest_file"] = latest_file.rel
-            card["latest_source"] = "filename_degraded"
-            card["latest_degraded"] = True
+            card["latest_source"] = "footer_statistics"
+        elif date_col:
+            # footer 统计取不到：退化为文件名日期，并显式标 degraded
+            dated = [(f.fallback_date, f) for f in files if f.fallback_date]
+            if dated:
+                latest, latest_file = max(dated, key=lambda x: (x[0], x[1].rel))
+                card["latest_business_date"] = latest
+                card["latest_file"] = latest_file.rel
+                card["latest_source"] = "filename_degraded"
+                card["latest_degraded"] = True
+            else:
+                card["latest_source"] = "no_footer_date"
+                card["latest_degraded"] = True
         else:
-            card["latest_source"] = "no_footer_date"
-            card["latest_degraded"] = True
-    else:
-        card["latest_source"] = "no_date_column"
+            card["latest_source"] = "no_date_column"
+
+        # 2026-11-02 task-32：part 布局全量 footer 扫描（真实最大业务日，解决抽样假 stale）
+        if str(entry.get("layout") or "").lower() == "part" and date_col and len(files) > 1:
+            try:
+                part_scan = part_footer_latest(files, date_col)
+            except Exception:  # noqa: BLE001
+                part_scan = None
+            card["part_scan"] = part_scan
+            if part_scan and part_scan.get("latest"):
+                cur = card["latest_business_date"]
+                if cur is None or part_scan["latest"] > cur:
+                    card["latest_business_date"] = part_scan["latest"]
+                    card["latest_file"] = part_scan.get("latest_file")
+                    card["latest_source"] = "footer_all_parts"
+                    card["latest_degraded"] = False
 
     if card["latest_business_date"]:
         try:
@@ -484,14 +674,15 @@ def probe_table(table: str, entry: dict, mkeys: set, today: dt.date,
             card["latest_business_date"] = None
             card["latest_source"] = "invalid_date"
 
-    # 2026-11-02 task-24：静态/无日期列口径例外（fail-visible：卡片 date_check/exempt_reason 显式标注）
-    static_exempt = (bool(entry.get("static_no_date"))
-                     or not date_col
-                     or card["latest_source"] == "no_date_column")
+    # 2026-11-02 task-32：静态豁免改为显式白名单（不再"无 date_col/static 即豁免"）；
+    # 24 张未声明动态表（ts_news/ts_major_news/ts_report_rc/ts_cn_*/ts_us_* 等）回到 date 检查 → partial。
+    whitelisted = table in STATIC_EXEMPT_WHITELIST
+    catalog_static = bool(entry.get("static_no_date"))
+    static_exempt = whitelisted or catalog_static
     if static_exempt:
         card["date_check"] = STATIC_DATE_EXEMPT
-        card["exempt_reason"] = ("static_no_date" if entry.get("static_no_date")
-                                 else "no_date_column")
+        card["exempt_source"] = "whitelist" if whitelisted else "catalog_static_no_date"
+        card["exempt_reason"] = "whitelist" if whitelisted else "static_no_date"
 
     if card["rows_sampled"] == 0:
         card["reasons"] = ["zero_rows_sampled"]
@@ -618,10 +809,14 @@ def collect_evidence(tables, catalog: dict, manifest: dict | None, today: dt.dat
         "date_policy": {
             "freq_lag_days": dict(FREQ_LAG_DAYS),
             "default_lag_days": FRESH_LAG_DAYS,
+            "static_exempt_whitelist": sorted(STATIC_EXEMPT_WHITELIST),
             "static_exempt_tables": [c["table"] for c in cards
                                      if c.get("date_check") == STATIC_DATE_EXEMPT],
+            "exempt_sources": {c["table"]: c.get("exempt_source") for c in cards
+                               if c.get("date_check") == STATIC_DATE_EXEMPT},
             "note": "按 catalog freq 判滞后阈值（D7/W14/M40/Q100，其余回退 7）；"
-                    "静态/无日期列豁免日期检查，但在卡片 date_check/exempt_reason 与本段显式标注（fail-visible）",
+                    "静态豁免改为显式白名单（task-32，exempt_source=whitelist/catalog_static_no_date），"
+                    "未声明动态表不再豁免；sqlite store 走只读表行数/日期探针；part 布局做全量 footer 扫描",
         },
         "summary": {
             "tables": len(cards),

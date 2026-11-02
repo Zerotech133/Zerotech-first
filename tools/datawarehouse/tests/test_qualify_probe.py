@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import os
+import sqlite3
 import sys
 import tempfile
 import unittest
@@ -51,6 +53,18 @@ def entry(store: Path, date_col: str | None = "trade_date", layout: str = "by_da
 def _dated(days_ago: int):
     """构造距今 N 天的 YYYYMMDD（基于固定 TODAY，保证单测可重复）。"""
     return (TODAY - dt.timedelta(days=days_ago)).strftime("%Y%m%d")
+
+
+def _make_sqlite(path: Path, table: str = "t1", dates=("20261024", "20261025", "20261026")) -> None:
+    """建本地 sqlite 测试库（只用于探针单测；不写生产数据）。"""
+    con = sqlite3.connect(str(path))
+    try:
+        con.execute('create table "%s" (a integer, trade_date text)' % table)
+        con.executemany('insert into "%s" values (?, ?)' % table,
+                        [(i, d) for i, d in enumerate(dates)])
+        con.commit()
+    finally:
+        con.close()
 
 
 @unittest.skipUnless(HAS_PYARROW, "pyarrow 不可用")
@@ -164,8 +178,8 @@ class TestProbeVerdicts(unittest.TestCase):
             self.assertEqual(card["verdict"], "evidence_partial")
             self.assertIn("future_date", card["reasons"])
 
-    def test_no_date_column_static_exempt_visible(self):
-        """task-24：无日期列 → 静态口径豁免日期检查，但必须 fail-visible 标注（不静默）。"""
+    def test_no_date_column_non_whitelist_is_partial(self):
+        """task-32：无 date_col 但不在豁免白名单 → 回到 partial（no_date_column，不再静默豁免）。"""
         with tempfile.TemporaryDirectory() as d:
             store = Path(d) / "store"
             store.mkdir()
@@ -174,11 +188,26 @@ class TestProbeVerdicts(unittest.TestCase):
             card = qualify_probe.probe_table("t1", entry(store, None), {"t1"}, TODAY, CHECKED)
             self.assertIsNone(card["latest_business_date"])
             self.assertEqual(card["latest_source"], "no_date_column")
+            self.assertEqual(card["verdict"], "evidence_partial")
+            self.assertIn("no_date_column", card["reasons"])
+            self.assertNotEqual(card["date_check"], qualify_probe.STATIC_DATE_EXEMPT)
+            self.assertIsNone(card.get("exempt_source"))
+
+    def test_whitelist_static_exempt_visible(self):
+        """task-32：白名单表（tdx_sector_def）无 date_col → 豁免可见且 exempt_source=whitelist。"""
+        with tempfile.TemporaryDirectory() as d:
+            store = Path(d) / "store"
+            store.mkdir()
+            pq.write_table(pa.table({"a": pa.array([1]), "b": pa.array(["x"])}),
+                           str(store / "part_0000.parquet"))
+            card = qualify_probe.probe_table(
+                "tdx_sector_def", entry(store, None), {"tdx_sector_def"}, TODAY, CHECKED)
             self.assertEqual(card["verdict"], "evidence_ok")
             self.assertEqual(card["date_check"], qualify_probe.STATIC_DATE_EXEMPT)
-            self.assertEqual(card["exempt_reason"], "no_date_column")
+            self.assertEqual(card["exempt_source"], "whitelist")
+            self.assertEqual(card["exempt_reason"], "whitelist")
             self.assertNotIn("no_date_column", card["reasons"])
-            self.assertIn("豁免", card["unsupported_reason"])
+            self.assertIn("exempt_source=whitelist", card["unsupported_reason"])
 
     def test_sample_limit_and_latest(self):
         with tempfile.TemporaryDirectory() as d:
@@ -277,11 +306,12 @@ class TestFreqAwareLag(unittest.TestCase):
         self.assertIn("stale_gt_7d", card["reasons"])
 
     def test_static_no_date_flag_exempt_visible(self):
-        """static_no_date=True：即使日期可读也不判 stale，但需显式标注豁免。"""
+        """static_no_date=True（catalog 显式声明）：即使日期可读也不判 stale，豁免来源可见。"""
         card = self._card("D", 400, static_no_date=True)
         self.assertEqual(card["verdict"], "evidence_ok")
         self.assertEqual(card["date_check"], qualify_probe.STATIC_DATE_EXEMPT)
         self.assertEqual(card["exempt_reason"], "static_no_date")
+        self.assertEqual(card["exempt_source"], "catalog_static_no_date")
         self.assertNotIn("stale_gt_7d", card["reasons"])
         self.assertIn("豁免", card["unsupported_reason"])
 
@@ -379,6 +409,118 @@ class TestManifestNotApplicable(unittest.TestCase):
             self.assertEqual(card["verdict"], "evidence_bad")
             self.assertIn("no_parquet", card["reasons"])
             self.assertNotIn("manifest_missing", card["reasons"])
+
+
+@unittest.skipUnless(HAS_PYARROW, "pyarrow 不可用")
+class TestSqliteStoreProbe(unittest.TestCase):
+    """task-32：catalog store=sqlite 的表走只读 sqlite 探针（行数/日期列 max）。"""
+
+    def test_sqlite_rows_and_latest_ok(self):
+        with tempfile.TemporaryDirectory() as d:
+            db = Path(d) / "info.db"
+            _make_sqlite(db, "t1", ("20261024", "20261025", "20261026"))
+            e = entry(db, date_col="trade_date", layout="sqlite", freq="D")
+            card = qualify_probe.probe_table("t1", e, {"t1"}, TODAY, CHECKED)
+            self.assertEqual(card["verdict"], "evidence_ok")
+            self.assertEqual(card["rows_sampled"], 3)
+            self.assertEqual(card["latest_business_date"], "20261026")
+            self.assertEqual(card["latest_source"], "sqlite_max")
+            self.assertEqual(card["lag_days"], 1)
+            self.assertEqual(card["sqlite"]["table"], "t1")
+            self.assertIn("sqlite", card["unsupported_reason"])
+
+    def test_sqlite_stale_is_partial_not_bad(self):
+        with tempfile.TemporaryDirectory() as d:
+            db = Path(d) / "info.db"
+            _make_sqlite(db, "t1", ("20260101", "20260102"))
+            e = entry(db, date_col="trade_date", layout="sqlite", freq="D")
+            card = qualify_probe.probe_table("t1", e, {"t1"}, TODAY, CHECKED)
+            self.assertEqual(card["verdict"], "evidence_partial")
+            self.assertIn("stale_gt_7d", card["reasons"])
+            self.assertNotIn("no_parquet", card["reasons"])
+
+    def test_sqlite_table_missing_fail_visible(self):
+        with tempfile.TemporaryDirectory() as d:
+            db = Path(d) / "info.db"
+            _make_sqlite(db, "other_table", ("20261026",))
+            e = entry(db, date_col="trade_date", layout="sqlite", freq="D")
+            card = qualify_probe.probe_table("t1", e, {"t1"}, TODAY, CHECKED)
+            self.assertEqual(card["verdict"], "evidence_bad")
+            self.assertIn("sqlite_table_missing", card["reasons"])
+
+    def test_sqlite_store_path_missing(self):
+        with tempfile.TemporaryDirectory() as d:
+            e = entry(Path(d) / "nope.db", date_col="trade_date", layout="sqlite")
+            card = qualify_probe.probe_table("t1", e, {"t1"}, TODAY, CHECKED)
+            self.assertEqual(card["verdict"], "evidence_bad")
+            self.assertIn("store_missing", card["reasons"])
+
+
+@unittest.skipUnless(HAS_PYARROW, "pyarrow 不可用")
+class TestStaticWhitelist(unittest.TestCase):
+    """task-32：静态豁免显式白名单 + payload exempt_source=whitelist。"""
+
+    def test_collect_payload_whitelist_and_exempt_sources(self):
+        with tempfile.TemporaryDirectory() as d:
+            s1 = Path(d) / "s1"
+            s2 = Path(d) / "s2"
+            s1.mkdir()
+            s2.mkdir()
+            pq.write_table(pa.table({"a": pa.array([1])}), str(s1 / "part_0000.parquet"))
+            pq.write_table(pa.table({"a": pa.array([1])}), str(s2 / "part_0000.parquet"))
+            catalog = {"version": 18, "updated": "x", "tables": {
+                "tdx_sector_def": entry(s1, None),
+                "ts_news": entry(s2, None)}}
+            payload = qualify_probe.collect_evidence(
+                ["tdx_sector_def", "ts_news"], catalog,
+                {"tdx_sector_def": {}, "ts_news": {}}, TODAY, CHECKED)
+            dp = payload["date_policy"]
+            self.assertIn("tdx_sector_def", dp["static_exempt_whitelist"])
+            self.assertNotIn("ts_news", dp["static_exempt_whitelist"])
+            self.assertEqual(dp["static_exempt_tables"], ["tdx_sector_def"])
+            self.assertEqual(dp["exempt_sources"], {"tdx_sector_def": "whitelist"})
+            cards = {c["table"]: c for c in payload["tables"]}
+            self.assertEqual(cards["tdx_sector_def"]["verdict"], "evidence_ok")
+            self.assertEqual(cards["ts_news"]["verdict"], "evidence_partial")
+            self.assertIn("no_date_column", cards["ts_news"]["reasons"])
+
+
+@unittest.skipUnless(HAS_PYARROW, "pyarrow 不可用")
+class TestPartSampling(unittest.TestCase):
+    """task-32：part 布局抽样覆盖 + 全量 footer 扫描真实最大业务日。"""
+
+    def test_select_samples_part_spread_includes_first_part(self):
+        with tempfile.TemporaryDirectory() as d:
+            store = Path(d) / "store"
+            store.mkdir()
+            for i in range(6):
+                f = store / ("part_%04d.parquet" % i)
+                write_parquet(f, [_dated(1)])
+                os.utime(f, (1000 + i, 1000 + i))  # part_0000 最旧 mtime
+            files, _, _ = qualify_probe._iter_parquet(store)
+            samples, strategy = qualify_probe.select_samples(files, limit=3, layout="part")
+            self.assertEqual(strategy, "part_spread")
+            rels = [f.rel for f in samples]
+            self.assertIn("part_0000.parquet", rels)
+            self.assertLessEqual(len(samples), 3)
+
+    def test_part_full_footer_scan_finds_true_latest(self):
+        with tempfile.TemporaryDirectory() as d:
+            store = Path(d) / "store"
+            store.mkdir()
+            # 真实最新日藏在 part_0007（不在 part_spread 抽样索引内、mtime 也最旧）
+            for i in range(10):
+                f = store / ("part_%04d.parquet" % i)
+                write_parquet(f, [_dated(300 if i != 7 else 1)])
+                os.utime(f, (2000 - i, 2000 - i))
+            card = qualify_probe.probe_table(
+                "t1", entry(store, date_col="trade_date", layout="part", freq="D"),
+                {"t1"}, TODAY, CHECKED)
+            self.assertEqual(card["latest_business_date"], _dated(1))
+            self.assertEqual(card["latest_source"], "footer_all_parts")
+            self.assertIsNotNone(card["part_scan"])
+            self.assertGreaterEqual(card["part_scan"]["files_scanned"], 10)
+            self.assertEqual(card["verdict"], "evidence_ok")
 
 
 class TestRegistry(unittest.TestCase):
