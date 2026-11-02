@@ -1607,6 +1607,22 @@ for _n, _f in _FREQ_FIX_V22.items():
         TABLE_DEFS.setdefault(_n, {})["freq"] = _f
 
 
+# ===== v31（2026-11-02 S3-01 收口）：参照/基础表 static_no_date 声明 =====
+# 理由：这些表的 date_col=list_date（上市日），不是"数据新鲜度"日期；用 list_date
+# 判 stale 语义错误（新 ETF/基金/指数的 list_date 天然旧）。它们是参照字典表，
+# 无行情型增量，按 static_no_date 豁免新鲜度（仍保留 date_col 供查询）。
+_CATALOG_STATIC_V31 = {
+    "ts_etf_basic", "ts_fund_basic", "ts_index_basic", "ts_stock_basic",
+    "ts_ths_index", "ts_bse_mapping", "ts_cb_basic", "ts_fut_basic",
+    "ts_hk_basic", "ts_opt_basic", "ts_us_basic",
+}
+for _st_name in _CATALOG_STATIC_V31:
+    # v32：部分表不在 TABLE_DEFS（构建期由 scan 生成），必须 setdefault 强制写入
+    _st_def = TABLE_DEFS.setdefault(_st_name, {})
+    _st_def["static_no_date"] = True
+    _st_def["date_status"] = "not_applicable"
+
+
 if __name__ == "__main__":
     from linreg import run_with_lineage
 
