@@ -1,0 +1,44 @@
+# 六军团 Q2 证据探针配置（自动部分；人工签署不替代）
+legions:
+  acad1-legion:
+    owner: ACAD1
+    probes:
+      - {port: 8091, path: "/api/health", want: [200]}
+      - {port: 8734, path: "/academy/shuijing", want: [200, 302, 401]}
+    tests: ["agent_platform/tests/test_acad1_pool_contract.py", "agent_platform/tests/test_academy_wiring.py"]
+    manual_gate: "11-16 W1 正式确认"
+  data-warehouse:
+    owner: DATA1
+    probes:
+      - {port: 8091, path: "/api/dw/stats", want: [200]}
+      - {port: 8734, path: "/dw", want: [200, 302, 401]}
+      - {port: 8734, path: "/dataops", want: [200, 302, 401]}
+    tests: ["tools/datawarehouse/tests/", "portal/test_warehouse_dashboard.py"]
+    manual_gate: "登录后页面验收 + SLO + 回滚"
+  huangzhong-acceptance:
+    owner: HUANGZHONG
+    probes:
+      - {port: 8091, path: "/api/health", want: [200]}
+    tests: ["agent_platform/tests/test_huangzhong_mcp.py", "agent_platform/tests/test_huangzhong_hr.py"]
+    manual_gate: "11-04 黄忠验收（preflight/runner/finalize/签字）"
+  lusu-d1-flow:
+    owner: D1
+    probes:
+      - {port: 8091, path: "/api/d1/research", want: [200, 401, 403]}
+      - {port: 8091, path: "/api/d1/decisions", want: [200, 401, 403]}
+    tests: ["agent_platform/tests/test_d1_decision.py", "agent_platform/tests/test_d1_handoff.py", "agent_platform/tests/test_d1_research_mcp.py"]
+    manual_gate: "Q2 评审 + SLO/回滚证据"
+  quant-domain:
+    owner: A0
+    probes:
+      - {port: 8105, path: "/api/v1/health", want: [200]}
+      - {port: 8734, path: "/quant-drill", want: [200, 302, 401]}
+    tests: ["agent_platform/tests/test_strategy_config.py", "agent_platform/tests/test_quant_double_knife.py"]
+    manual_gate: "Q2 评审 + SLO/回滚证据"
+  quant-strategy-line:
+    owner: STRAT1
+    probes:
+      - {port: 8091, path: "/api/strategies", want: [200, 401, 403]}
+      - {port: 8734, path: "/strategies", want: [200, 302, 401]}
+    tests: ["agent_platform/tests/test_run_strategy_shadow.py", "agent_platform/tests/test_shadow_strategy_runner.py", "agent_platform/tests/test_strategy_config.py"]
+    manual_gate: "Q2 评审 + SLO/回滚证据"

@@ -1,0 +1,282 @@
+{
+ "schema": "q2/evidence-pack/v1",
+ "generated_at": "2026-11-03T05:50:52+0800",
+ "read_only": true,
+ "legions": [
+  {
+   "id": "acad1-legion",
+   "owner": "ACAD1",
+   "auto_ok": true,
+   "probes": [
+    {
+     "port": 8091,
+     "path": "/api/health",
+     "want": [
+      200
+     ],
+     "got": 200,
+     "ms": 4.4,
+     "ok": true
+    },
+    {
+     "port": 8734,
+     "path": "/academy/shuijing",
+     "want": [
+      200,
+      302,
+      401
+     ],
+     "got": 200,
+     "ms": 28.9,
+     "ok": true
+    }
+   ],
+   "tests": [
+    {
+     "path": "agent_platform/tests/test_acad1_pool_contract.py",
+     "exists": true
+    },
+    {
+     "path": "agent_platform/tests/test_academy_wiring.py",
+     "exists": true
+    }
+   ],
+   "manual_gate": "11-16 W1 正式确认",
+   "q2_status": "AUTO-EVIDENCE-COLLECTED（待 owner 验收/签署）",
+   "generated_at": "2026-11-03T05:50:52+0800",
+   "manifest": "compositions/acad1-legion/manifest.yaml"
+  },
+  {
+   "id": "data-warehouse",
+   "owner": "DATA1",
+   "auto_ok": true,
+   "probes": [
+    {
+     "port": 8091,
+     "path": "/api/dw/stats",
+     "want": [
+      200
+     ],
+     "got": 200,
+     "ms": 12.8,
+     "ok": true
+    },
+    {
+     "port": 8734,
+     "path": "/dw",
+     "want": [
+      200,
+      302,
+      401
+     ],
+     "got": 302,
+     "ms": 19.9,
+     "ok": true
+    },
+    {
+     "port": 8734,
+     "path": "/dataops",
+     "want": [
+      200,
+      302,
+      401
+     ],
+     "got": 302,
+     "ms": 4.7,
+     "ok": true
+    }
+   ],
+   "tests": [
+    {
+     "path": "tools/datawarehouse/tests/",
+     "exists": true
+    },
+    {
+     "path": "portal/test_warehouse_dashboard.py",
+     "exists": true
+    }
+   ],
+   "manual_gate": "登录后页面验收 + SLO + 回滚",
+   "q2_status": "AUTO-EVIDENCE-COLLECTED（待 owner 验收/签署）",
+   "generated_at": "2026-11-03T05:50:52+0800",
+   "manifest": "compositions/data-warehouse/manifest.yaml"
+  },
+  {
+   "id": "huangzhong-acceptance",
+   "owner": "HUANGZHONG",
+   "auto_ok": true,
+   "probes": [
+    {
+     "port": 8091,
+     "path": "/api/health",
+     "want": [
+      200
+     ],
+     "got": 200,
+     "ms": 1.8,
+     "ok": true
+    }
+   ],
+   "tests": [
+    {
+     "path": "agent_platform/tests/test_huangzhong_mcp.py",
+     "exists": true
+    },
+    {
+     "path": "agent_platform/tests/test_huangzhong_hr.py",
+     "exists": true
+    }
+   ],
+   "manual_gate": "11-04 黄忠验收（preflight/runner/finalize/签字）",
+   "q2_status": "AUTO-EVIDENCE-COLLECTED（待 owner 验收/签署）",
+   "generated_at": "2026-11-03T05:50:52+0800",
+   "manifest": "compositions/huangzhong-acceptance/manifest.yaml"
+  },
+  {
+   "id": "lusu-d1-flow",
+   "owner": "D1",
+   "auto_ok": true,
+   "probes": [
+    {
+     "port": 8091,
+     "path": "/api/d1/research",
+     "want": [
+      200,
+      401,
+      403
+     ],
+     "got": 200,
+     "ms": 8.6,
+     "ok": true
+    },
+    {
+     "port": 8091,
+     "path": "/api/d1/decisions",
+     "want": [
+      200,
+      401,
+      403
+     ],
+     "got": 200,
+     "ms": 25.6,
+     "ok": true
+    }
+   ],
+   "tests": [
+    {
+     "path": "agent_platform/tests/test_d1_decision.py",
+     "exists": true
+    },
+    {
+     "path": "agent_platform/tests/test_d1_handoff.py",
+     "exists": true
+    },
+    {
+     "path": "agent_platform/tests/test_d1_research_mcp.py",
+     "exists": true
+    }
+   ],
+   "manual_gate": "Q2 评审 + SLO/回滚证据",
+   "q2_status": "AUTO-EVIDENCE-COLLECTED（待 owner 验收/签署）",
+   "generated_at": "2026-11-03T05:50:52+0800",
+   "manifest": "compositions/lusu-d1-flow/manifest.yaml"
+  },
+  {
+   "id": "quant-domain",
+   "owner": "A0",
+   "auto_ok": true,
+   "probes": [
+    {
+     "port": 8105,
+     "path": "/api/v1/health",
+     "want": [
+      200
+     ],
+     "got": 200,
+     "ms": 5.6,
+     "ok": true
+    },
+    {
+     "port": 8734,
+     "path": "/quant-drill",
+     "want": [
+      200,
+      302,
+      401
+     ],
+     "got": 200,
+     "ms": 26.4,
+     "ok": true
+    }
+   ],
+   "tests": [
+    {
+     "path": "agent_platform/tests/test_strategy_config.py",
+     "exists": true
+    },
+    {
+     "path": "agent_platform/tests/test_quant_double_knife.py",
+     "exists": true
+    }
+   ],
+   "manual_gate": "Q2 评审 + SLO/回滚证据",
+   "q2_status": "AUTO-EVIDENCE-COLLECTED（待 owner 验收/签署）",
+   "generated_at": "2026-11-03T05:50:52+0800",
+   "manifest": "compositions/quant-domain/manifest.yaml"
+  },
+  {
+   "id": "quant-strategy-line",
+   "owner": "STRAT1",
+   "auto_ok": true,
+   "probes": [
+    {
+     "port": 8091,
+     "path": "/api/strategies",
+     "want": [
+      200,
+      401,
+      403
+     ],
+     "got": 200,
+     "ms": 12.8,
+     "ok": true
+    },
+    {
+     "port": 8734,
+     "path": "/strategies",
+     "want": [
+      200,
+      302,
+      401
+     ],
+     "got": 200,
+     "ms": 20.9,
+     "ok": true
+    }
+   ],
+   "tests": [
+    {
+     "path": "agent_platform/tests/test_run_strategy_shadow.py",
+     "exists": true
+    },
+    {
+     "path": "agent_platform/tests/test_shadow_strategy_runner.py",
+     "exists": true
+    },
+    {
+     "path": "agent_platform/tests/test_strategy_config.py",
+     "exists": true
+    }
+   ],
+   "manual_gate": "Q2 评审 + SLO/回滚证据",
+   "q2_status": "AUTO-EVIDENCE-COLLECTED（待 owner 验收/签署）",
+   "generated_at": "2026-11-03T05:50:52+0800",
+   "manifest": "compositions/quant-strategy-line/manifest.yaml"
+  }
+ ],
+ "summary": {
+  "total": 6,
+  "auto_ready": 6,
+  "partial": 0
+ }
+}
