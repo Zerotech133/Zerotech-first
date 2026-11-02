@@ -90,13 +90,12 @@ export function useMarket(): MarketContextValue {
 }
 
 /**
- * 分市场涨跌色：A股涨红跌绿，US/HK/CRYPTO 涨绿跌红。
+ * 统一中国股市语义：红涨绿跌。
+ * 保留 market 参数仅为兼容既有调用；不再按市场切换。
  */
-export function pnlColor(value: number, market: Market): string {
+export function pnlColor(value: number, _market: Market): string {
   if (value === 0) return '#8B93A7';
-  const up = value > 0;
-  if (market === 'CN') return up ? '#F0524D' : '#12A150';
-  return up ? '#12A150' : '#F0524D';
+  return value > 0 ? '#F0524D' : '#12A150';
 }
 
 /** 格式化金额，带正负号 */

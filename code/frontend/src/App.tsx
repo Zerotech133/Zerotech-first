@@ -5,8 +5,6 @@ import CommandPalette from './components/CommandPalette';
 import BigscreenLayout from './layouts/BigscreenLayout';
 import WorkspaceLayout from './layouts/WorkspaceLayout';
 import { GROUP_KEYS, LEGACY_REDIRECTS, MARKET_ROUTES } from './config/navigation';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
 import BillingPage from './pages/BillingPage';
 import HomeBigscreen from './pages/home/HomeBigscreen';
@@ -17,6 +15,11 @@ import SignalsGroup from './pages/groups/SignalsGroup';
 import RiskGroup from './pages/groups/RiskGroup';
 import TradingGroup from './pages/groups/TradingGroup';
 import ReplayGroup from './pages/groups/ReplayGroup';
+import StockPanoramaPage from './pages/StockPanoramaPage';
+import SelectedStocksPage from './pages/SelectedStocksPage';
+import BaseSignalsPage from './pages/BaseSignalsPage';
+import Acad1ComparePage from './pages/Acad1ComparePage';
+import AgentWorkbenchPage from './pages/AgentWorkbenchPage';
 import SystemGroup from './pages/groups/SystemGroup';
 
 /* ============ 路由段合法性 ============ */
@@ -28,8 +31,10 @@ function isMarketRoute(seg: string | undefined): boolean {
   return !!seg && (MARKET_ROUTES as readonly string[]).includes(seg);
 }
 
+const EXTRA_GROUP_KEYS = ['agent'];
+
 function isGroupRoute(seg: string | undefined): boolean {
-  return !!seg && (GROUP_KEYS as readonly string[]).includes(seg);
+  return !!seg && ((GROUP_KEYS as readonly string[]).includes(seg) || EXTRA_GROUP_KEYS.includes(seg));
 }
 
 /* ============ 旧路径重定向（query 透传合并） ============ */
@@ -81,6 +86,7 @@ const GROUP_COMPONENTS: Record<string, React.ComponentType> = {
   risk: RiskGroup,
   trading: TradingGroup,
   replay: ReplayGroup,
+  agent: AgentWorkbenchPage,
   system: SystemGroup,
 };
 
@@ -105,9 +111,32 @@ export default function App() {
   return (
     <>
       <Routes>
-        {/* 大屏态：全屏无侧栏底栏（需登录；未登录跳 /login，登录后回大屏） */}
-        <Route path="/" element={<ProtectedRoute><BigscreenLayout /></ProtectedRoute>}>
+        {/* 大屏态：全屏无侧栏底栏（保留在 /bigscreen） */}
+        <Route path="/bigscreen" element={<ProtectedRoute><BigscreenLayout /></ProtectedRoute>}>
           <Route index element={<HomeBigscreen />} />
+        </Route>
+
+        {/* 首页 = 选股全景动线（工作区壳），作为复盘/回测/策略逻辑/智能体的引导页 */}
+        <Route path="/" element={<ProtectedRoute><Navigate to="/cn/replay?tab=flow" replace /></ProtectedRoute>} />
+
+        {/* ACAD1 候选横向比较：/:market/acad1-compare */}
+        <Route path="/:market/acad1-compare" element={<ProtectedRoute><WorkspaceLayout /></ProtectedRoute>}>
+          <Route index element={<Acad1ComparePage />} />
+        </Route>
+
+        {/* 全市场基础信号：/:market/base-signals */}
+        <Route path="/:market/base-signals" element={<ProtectedRoute><WorkspaceLayout /></ProtectedRoute>}>
+          <Route index element={<BaseSignalsPage />} />
+        </Route>
+
+        {/* 选出来的股票多维表：/:market/selected */}
+        <Route path="/:market/selected" element={<ProtectedRoute><WorkspaceLayout /></ProtectedRoute>}>
+          <Route index element={<SelectedStocksPage />} />
+        </Route>
+
+        {/* 个股全景：/:market/stock/:code */}
+        <Route path="/:market/stock/:code" element={<ProtectedRoute><WorkspaceLayout /></ProtectedRoute>}>
+          <Route index element={<StockPanoramaPage />} />
         </Route>
 
         {/* 工作区态：/:market/:group（8 组）——非法段兜底 /cn/overview */}
@@ -124,9 +153,9 @@ export default function App() {
         </Route>
         <Route path="/:market" element={<MarketIndexRedirect />} />
 
-        {/* 登录/注册（公开，不进 ProtectedRoute） */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        {/* 不展示登录/注册页：旧地址直接回首页（本地自动会话） */}
+        <Route path="/login" element={<Navigate to="/" replace />} />
+        <Route path="/register" element={<Navigate to="/" replace />} />
         {/* 个人中心（需登录） */}
         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
         <Route path="/billing" element={<ProtectedRoute><BillingPage /></ProtectedRoute>} />

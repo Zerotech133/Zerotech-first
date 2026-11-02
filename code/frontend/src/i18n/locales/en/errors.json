@@ -114,5 +114,16 @@
     "invalid_capital": "Initial capital must be greater than 0",
     "account_exists": "A paper account already exists for this strategy",
     "account_not_found": "Paper account not found"
+  },
+  "selection_run": {
+    "disabled": "Manual selection run is disabled (enable SELECTION_RUN_ENABLED=1 on the backend).",
+    "failed": "Manual selection run failed."
+  },
+  "selection": {
+    "run_in_progress": "Another manual selection run is in progress; please retry later.",
+    "non_trading_day": "Non-trading day; manual selection run was rejected.",
+    "invalid_market": "Invalid market parameter.",
+    "invalid_trade_date": "Invalid trade_date format.",
+    "run_not_found": "Run record not found or lost after restart."
   }
 }

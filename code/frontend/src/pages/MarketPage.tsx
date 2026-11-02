@@ -119,7 +119,7 @@ export default function MarketPage() {
             ) : (
               filtered.map(q => {
                 const pct = q.pct_change;
-                const color = pct == null ? '#1E2330' : pct > 0 ? '#12A150' : pct < 0 ? '#F0524D' : '#1E2330';
+                const color = pct == null ? '#1E2330' : pct > 0 ? '#F0524D' : pct < 0 ? '#12A150' : '#1E2330';
                 return (
                   <tr
                     key={q.ts_code}

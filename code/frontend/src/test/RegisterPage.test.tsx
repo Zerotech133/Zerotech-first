@@ -51,11 +51,9 @@ describe('RegisterPage', () => {
     expect(screen.getByRole('button', { name: '注册' })).toBeInTheDocument();
   });
 
-  it('品牌区展示 WhoTalk logo 图', () => {
+  it('品牌区展示司马徽研究院', () => {
     renderRegisterPage();
-    const logo = screen.getByAltText('老田的量化决策');
-    expect(logo).toBeInTheDocument();
-    expect(logo).toHaveAttribute('src', '/logo.png');
+    expect(screen.getByText('司马徽研究院')).toBeInTheDocument();
     expect(screen.queryByText('量化交易系统')).not.toBeInTheDocument();
   });
 

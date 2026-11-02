@@ -1,0 +1,197 @@
+# 司马徽军团 · 策略 manifest v1（12 条）
+# 只描述策略身份/责任/生命周期，不保存代码、不写生产。
+version: 1
+updated_at: "2026-11-01"
+strategies:
+  - id: v1-cn-strat-2
+    name: "[V1] 均值回归v1"
+    market: CN
+    lifecycle: active
+    research_owner: STRAT1
+    validation_owner: BACK1
+    data_owner: DATA1
+    ops_owner: AI1
+    product_owner: PROD1
+    reviewer: ACAD1
+    hypothesis: "RSI14 超卖后存在均值回归；需验证成本与样本外"
+    data_deps: [v2_bar_daily, v2_strategy_daily]
+    version: "v1.0.0"
+    version_status: staging
+    kill_switch: "研究 owner 可暂停；ACAD1 可 No-Go"
+    next_review: "2026-11-08"
+  - id: v1-cn-strat-4
+    name: "[V1] 缠论v1"
+    market: CN
+    lifecycle: shadow
+    research_owner: ST1
+    validation_owner: BACK1
+    data_owner: DATA1
+    ops_owner: AI1
+    product_owner: PROD1
+    reviewer: ACAD1
+    hypothesis: "缠论三买需收盘站上中枢上沿；几何失效必须回收"
+    data_deps: [v2_bar_daily, chanlun]
+    version: "v1.0.0"
+    version_status: staging
+    kill_switch: "几何门失败即停止入池；ACAD1 可 No-Go"
+    next_review: "2026-11-08"
+  - id: v1-cn-strat-4-v7
+    name: "[V7] 缠论增强版"
+    market: CN
+    lifecycle: shadow
+    research_owner: ST1
+    validation_owner: BACK1
+    data_owner: DATA1
+    ops_owner: AI1
+    product_owner: PROD1
+    reviewer: ACAD1
+    hypothesis: "增强版需在三买几何基础上增加趋势过滤"
+    data_deps: [v2_bar_daily, chanlun]
+    version: "v7.0.0"
+    version_status: staging
+    kill_switch: "几何门失败即停止入池"
+    next_review: "2026-11-08"
+  - id: v1-hk-strat-7
+    name: "[V1] 港股趋势动量v1"
+    market: HK
+    lifecycle: active
+    research_owner: STRAT1
+    validation_owner: BACK1
+    data_owner: DATA1
+    ops_owner: AI1
+    product_owner: PROD1
+    reviewer: ACAD1
+    hypothesis: "港股趋势延续性可被均线/动量捕捉，需成本与流动性过滤"
+    data_deps: [v2_bar_daily, hk_daily]
+    version: "vHK1.0.0"
+    version_status: active
+    kill_switch: "研究 owner 可暂停；ACAD1 可 No-Go"
+    next_review: "2026-11-08"
+  - id: v1-hk-strat-8
+    name: "[V1] 港股vibeRSI反转"
+    market: HK
+    lifecycle: active
+    research_owner: STRAT1
+    validation_owner: BACK1
+    data_owner: DATA1
+    ops_owner: AI1
+    product_owner: PROD1
+    reviewer: ACAD1
+    hypothesis: "RSI<45 的港股反转需验证周期与流动性"
+    data_deps: [v2_bar_daily, hk_daily]
+    version: "vibe-demo-HK"
+    version_status: active
+    kill_switch: "ACAD1 可 No-Go"
+    next_review: "2026-11-08"
+  - id: v1-us-strat-6
+    name: "[V1] 美股趋势动量v1"
+    market: US
+    lifecycle: active
+    research_owner: STRAT2
+    validation_owner: BACK1
+    data_owner: DATA1
+    ops_owner: AI1
+    product_owner: PROD1
+    reviewer: ACAD1
+    hypothesis: "美股趋势动量需排除财报/流动性异常"
+    data_deps: [v2_bar_daily, us_daily]
+    version: "vUS1.0.1-t7verify"
+    version_status: staging
+    kill_switch: "ACAD1 可 No-Go"
+    next_review: "2026-11-08"
+  - id: v1-us-strat-7
+    name: "[V1] 美股vibe均线交叉"
+    market: US
+    lifecycle: active
+    research_owner: STRAT2
+    validation_owner: BACK1
+    data_owner: DATA1
+    ops_owner: AI1
+    product_owner: PROD1
+    reviewer: ACAD1
+    hypothesis: "均线交叉需与动量/波动过滤组合"
+    data_deps: [v2_bar_daily, us_daily]
+    version: "vibe-demo-US"
+    version_status: active
+    kill_switch: "ACAD1 可 No-Go"
+    next_review: "2026-11-08"
+  - id: v1-crypto-strat-9
+    name: "[V1] 虚拟币趋势动量v1"
+    market: CRYPTO
+    lifecycle: active
+    research_owner: STRAT2
+    validation_owner: BACK1
+    data_owner: DATA1
+    ops_owner: AI1
+    product_owner: PROD1
+    reviewer: ACAD1
+    hypothesis: "加密趋势策略必须区分 24h/日线，且需资金费率与流动性"
+    data_deps: [v2_bar_daily, crypto]
+    version: "vCRYPTO1.0.0"
+    version_status: active
+    kill_switch: "ACAD1 可 No-Go"
+    next_review: "2026-11-08"
+  - id: v1-crypto-strat-11
+    name: "[V1] 虚拟币vibe均值回归5分钟"
+    market: CRYPTO
+    lifecycle: active
+    research_owner: STRAT2
+    validation_owner: BACK1
+    data_owner: DATA1
+    ops_owner: AI1
+    product_owner: PROD1
+    reviewer: ACAD1
+    hypothesis: "5m RSI 超卖反转需用 5m 数据验证，不能用日线代替"
+    data_deps: [v2_bar_daily, crypto]
+    version: "vibe-11"
+    version_status: active
+    kill_switch: "ACAD1 可 No-Go"
+    next_review: "2026-11-08"
+  - id: qpzm
+    name: "青萍之末"
+    market: CN
+    lifecycle: live
+    research_owner: STRAT1
+    validation_owner: BACK1
+    data_owner: DATA1
+    ops_owner: AI1
+    product_owner: PROD1
+    reviewer: ACAD1
+    hypothesis: "RPS 日批选股，研究态；需与 ACAD1 池隔离"
+    data_deps: [sidecar_picks, v2_selection_pick]
+    version: "live"
+    version_status: active
+    kill_switch: "研究 owner 可停用；ACAD1 可 No-Go"
+    next_review: "2026-11-08"
+  - id: chanlun
+    name: "缠论三类买卖点"
+    market: CN
+    lifecycle: shadow
+    research_owner: ST1
+    validation_owner: BACK1
+    data_owner: DATA1
+    ops_owner: AI1
+    product_owner: PROD1
+    reviewer: ACAD1
+    hypothesis: "三类买卖点需带中枢/几何证据，且结构失效回收"
+    data_deps: [sidecar_chanlun, v2_strategy_daily]
+    version: "shadow"
+    version_status: shadow
+    kill_switch: "ST1 可停用；ACAD1 可 No-Go"
+    next_review: "2026-11-08"
+  - id: dk
+    name: "量子双刀"
+    market: CN
+    lifecycle: research
+    research_owner: STRAT1
+    validation_owner: BACK1
+    data_owner: DATA1
+    ops_owner: AI1
+    product_owner: PROD1
+    reviewer: ACAD1
+    hypothesis: "研究态，不产每日 picks"
+    data_deps: []
+    version: "research"
+    version_status: none
+    kill_switch: "研究态，不发布"
+    next_review: "2026-11-08"

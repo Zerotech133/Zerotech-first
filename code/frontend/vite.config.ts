@@ -1,9 +1,10 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-const target = process.env.VITE_PROXY_TARGET || 'http://localhost:8102';
+const target = process.env.VITE_PROXY_TARGET || 'http://127.0.0.1:8105';
 
 export default defineConfig({
+  base: process.env.VITE_BASE || '/',
   plugins: [react()],
   server: {
     // 固定 5175 且禁止漂移：5173/5174 已被本机其他项目的 Docker 容器长期占用

@@ -37,6 +37,17 @@ export default function NavSide({ market, candidateCount, approvalCount, phaseLa
 
   return (
     <aside className="ws-side">
+      <NavLink
+        to={`/${market.toLowerCase()}/agent`}
+        className={({ isActive }) => `nav-item${isActive ? ' on' : ''}`}
+        title="司马徽智能体工作台"
+        style={{ marginBottom: 6 }}
+      >
+        <span className="nav-ico">✦</span>
+        司马徽
+      </NavLink>
+      <div className="nav-sep" />
+
       {groups.map(g => {
         const badgeKey = BADGE_KEY[g.key];
         const badge = badgeKey != null ? badges[badgeKey] : null;

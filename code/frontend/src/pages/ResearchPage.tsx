@@ -27,8 +27,8 @@ interface AssistantResult {
 const MARKETS = ['CN', 'US', 'HK', 'CRYPTO'] as const;
 
 const REGIME_META: Record<string, { labelKey: string; color: string }> = {
-  BULL: { labelKey: 'research.regimeBull', color: '#12A150' },
-  BEAR: { labelKey: 'research.regimeBear', color: '#F0524D' },
+  BULL: { labelKey: 'research.regimeBull', color: '#F0524D' },
+  BEAR: { labelKey: 'research.regimeBear', color: '#12A150' },
   SIDEWAYS: { labelKey: 'research.regimeSideways', color: '#F6A609' },
   UNKNOWN: { labelKey: 'research.regimeUnknown', color: '#8B93A7' },
 };

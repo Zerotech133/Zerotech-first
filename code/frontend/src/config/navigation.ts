@@ -82,5 +82,5 @@ export const LEGACY_REDIRECTS: readonly LegacyRedirect[] = [
   { from: '/calendar', to: '/cn/system?tab=calendar' },
   { from: '/settings', to: '/cn/system?tab=settings' },
   { from: '/exports', to: '/cn/system?tab=exports' },
-  { from: '/bigscreen', to: '/' },
+  { from: '/bigscreen', to: '/bigscreen' },
 ];

@@ -30,6 +30,8 @@ interface StrategyRow {
   status: string;
   is_builtin: boolean;
   editable: boolean;
+  research_owner?: string | null;
+  lifecycle_status?: string | null;
   version_count: number;
   versions: VersionBrief[];
 }
@@ -191,6 +193,10 @@ export default function StrategiesPage() {
       ) },
     { title: t('strategies.colStatus'), dataIndex: 'status', key: 'status', width: 90, render: (v: string) => statusTag(v, t) },
     { title: t('strategies.colVersion'), dataIndex: 'version_count', key: 'version_count', width: 60 },
+    { title: t('strategies.colOwner', { defaultValue: '负责人' }), dataIndex: 'research_owner', key: 'research_owner', width: 100,
+      render: (v: string | null) => v || <Text type="secondary">—</Text> },
+    { title: t('strategies.colLifecycle', { defaultValue: '生命周期' }), dataIndex: 'lifecycle_status', key: 'lifecycle_status', width: 100,
+      render: (v: string | null) => v ? <Tag color={v === 'active' || v === 'live' ? 'green' : v === 'research' ? 'red' : 'blue'}>{v}</Tag> : <Text type="secondary">—</Text> },
     { title: t('strategies.colAction'), key: 'action', width: 180, render: (_: unknown, r) => (
       <Space size={8}>
         {canWrite && r.editable && <a onClick={() => openEdit(r)}>{t('strategies.actEdit')}</a>}

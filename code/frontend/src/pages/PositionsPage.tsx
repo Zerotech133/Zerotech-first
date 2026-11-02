@@ -139,11 +139,11 @@ function fmtTime(v?: string): string {
 
 const WEEK_KEYS = ['weekMon', 'weekTue', 'weekWed', 'weekThu', 'weekFri', 'weekSat', 'weekSun'] as const;
 
-/** 热力背景：强度 0~1 映射 alpha 0.08~0.25，A股盈红亏绿，其余市场盈绿亏红 */
+/** 热力背景：强度 0~1 映射 alpha 0.08~0.25，统一红涨绿跌 */
 function heatBg(pnl: number, maxAbs: number, market: string): string {
   const intensity = maxAbs > 0 ? Math.min(1, Math.abs(pnl) / maxAbs) : 0;
   const alpha = 0.08 + intensity * 0.17;
-  const useRed = market === 'CN' ? pnl > 0 : pnl < 0;
+  const useRed = pnl > 0;
   return useRed ? `rgba(240,82,77,${alpha.toFixed(3)})` : `rgba(18,161,80,${alpha.toFixed(3)})`;
 }
 

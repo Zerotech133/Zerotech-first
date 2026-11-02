@@ -14,6 +14,7 @@ import ModelOpsPage from '../ModelOpsPage';
 import FundamentalsPage from '../FundamentalsPage';
 import RegimePage from '../RegimePage';
 import StrategyDetailPage from '../StrategyDetailPage';
+import StrategyWorkspacePage from '../StrategyWorkspacePage';
 import { useRole } from '../../hooks/useRole';
 
 /**
@@ -55,6 +56,7 @@ export default function StrategiesGroup() {
         ]
       : []),
     { key: 'strategies', label: t('strategiesGroup.tabStrategies'), children: <StrategiesPage /> },
+    { key: 'workspace', label: '策略工作台', children: <StrategyWorkspacePage /> },
     { key: 'perf', label: t('strategiesGroup.tabPerf'), children: <StrategyPerformancePage /> },
     { key: 'ai', label: t('strategiesGroup.tabAi'), children: <ResearchPage /> },
     { key: 'backtest', label: t('strategiesGroup.tabBacktest'), children: <BacktestPage /> },

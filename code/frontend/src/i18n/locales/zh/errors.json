@@ -114,5 +114,16 @@
     "invalid_capital": "初始本金必须大于 0",
     "account_exists": "该策略已开过模拟盘",
     "account_not_found": "模拟盘账户不存在"
+  },
+  "selection_run": {
+    "disabled": "手动选股未开启（后端 SELECTION_RUN_ENABLED=1 后可用）",
+    "failed": "手动选股执行失败"
+  },
+  "selection": {
+    "run_in_progress": "已有手动选股正在执行，请稍后重试",
+    "non_trading_day": "非交易日，已拒绝手动选股",
+    "invalid_market": "市场参数错误",
+    "invalid_trade_date": "交易日格式错误",
+    "run_not_found": "运行记录不存在或已丢失"
   }
 }

@@ -17,6 +17,7 @@ import { ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { api } from '../services/api';
 import { useMarket } from '../contexts/MarketContext';
+import { useNavigate } from 'react-router-dom';
 import SymbolLink from '../components/SymbolLink';
 import { strategyLabel } from '../i18n/strategyName';
 
@@ -32,6 +33,8 @@ interface PoolItem {
   pool_date: string | null;
   pool_type: string;
   candidate_count: number;
+  declared_candidate_count?: number;
+  updated_at?: string;
   status: string;
 }
 
@@ -67,6 +70,7 @@ function fmtPrice(v: number | null): string {
 export default function CandidatesPage() {
   const { t } = useTranslation('pages');
   const { market } = useMarket();
+  const navigate = useNavigate();
 
   const statusTag = (s: string) => {
     const m = STATUS_META[s];
@@ -176,7 +180,7 @@ export default function CandidatesPage() {
       title: t('candidates.colSymbol'),
       dataIndex: 'ts_code',
       key: 'ts_code',
-      render: (v: string) => <SymbolLink code={v} />,
+      render: (v: string, row) => <SymbolLink code={v} onClick={() => setSelected(row)} />,
     },
     {
       title: t('candidates.colScore'),
@@ -195,6 +199,18 @@ export default function CandidatesPage() {
           <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{fmtScore(v)}</span>
         </Space>
       ),
+    },
+    {
+      title: '策略来源',
+      key: 'strategy_name',
+      width: 150,
+      render: (_v, row) => <Text ellipsis style={{ maxWidth: 140 }}>{strategyLabel(row._pool.strategy_name)}</Text>,
+    },
+    {
+      title: '更新时间',
+      key: 'updated_at',
+      width: 145,
+      render: (_v, row) => <Text type="secondary" style={{ fontSize: 11 }}>{(row._pool.updated_at || '').slice(0, 16).replace('T', ' ')}</Text>,
     },
     {
       title: t('candidates.colStatus'),
@@ -237,6 +253,7 @@ export default function CandidatesPage() {
           {latestDate ? t('candidates.poolDate', { date: latestDate }) : ''}
           {latestDate && pools.length ? ' · ' : ''}
           {pools.length ? t('candidates.poolSummary', { strategies: visiblePools.length, count: totalCount }) : ''}
+          {pools.length ? ` · 更新 ${String(pools[0].updated_at || '').slice(0, 16).replace('T', ' ')}` : ''}
         </Text>
       </div>
 
@@ -275,6 +292,7 @@ export default function CandidatesPage() {
         {detail && (
           <div>
             <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 16 }}>{t('candidates.basicInfo')}</div>
+            <Button size="small" type="primary" style={{ marginBottom: 12 }} onClick={() => navigate(`/${market.toLowerCase()}/stock/${encodeURIComponent(detail.ts_code)}`)}>打开个股全景</Button>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
               <div>
                 <Text type="secondary" style={{ fontSize: 12, display: 'block' }}>{t('candidates.symbolCode')}</Text>

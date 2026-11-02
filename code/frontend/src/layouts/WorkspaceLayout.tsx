@@ -10,6 +10,7 @@ import ThemeMenu from '../components/ThemeMenu';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { api } from '../services/api';
 import NavSide from './NavSide';
+import FloatingAgent from '../components/FloatingAgent';
 import StatusBar from './StatusBar';
 
 /** GET /overview?market=M 契约（同 DashboardPage，取 brief 所需字段子集） */
@@ -99,8 +100,7 @@ export default function WorkspaceLayout() {
 
       <header className="ws-top">
         <button className="ws-logo" onClick={() => navigate('/')} title={t('shell.backToBigscreen')}>
-          <img className="ws-logo-icon" src="/logo-icon.png" alt="" />
-          <span>老田的量化决策</span>
+          <span>司马徽研究院</span>
         </button>
 
         <nav className="mk-tabs">
@@ -125,7 +125,8 @@ export default function WorkspaceLayout() {
             {phaseLabel ?? t('shell.syncing')}
           </span>
           <button className="tbtn" onClick={openCommandPalette}>⌘K {t('shell.search')} <span className="mono">{MODK_HINT}</span></button>
-          <button className="tbtn" onClick={() => navigate('/')} title={t('shell.bigscreen')}>🌐 {t('shell.bigscreenShort')}</button>
+          <button className="tbtn" onClick={() => navigate(`/${market.toLowerCase()}/agent`)} title="智能体">🤖 智能体</button>
+          <button className="tbtn" onClick={() => navigate('/bigscreen')} title={t('shell.bigscreen')}>🌐 {t('shell.bigscreenShort')}</button>
           {/* 语言切换（中/英，逻辑在 LanguageMenu） */}
           <LanguageMenu />
           {/* 主题快捷切换（Task 5：Dropdown 5 选，逻辑在 ThemeMenu） */}
@@ -163,6 +164,7 @@ export default function WorkspaceLayout() {
         <Outlet />
       </main>
 
+      <FloatingAgent />
       <StatusBar
         market={market}
         phase={brief?.phase ?? null}

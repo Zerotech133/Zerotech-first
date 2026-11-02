@@ -63,16 +63,24 @@ export default function StrategyCatalogPage() {
       render: (v: string, r) => (
         <Space size={4}>
           <Text>{v}</Text>
-          {r.is_builtin
-            ? <Tag color="purple">{t('strategies.builtin')}</Tag>
-            : <Tag color="cyan">{t('strategies.external')}</Tag>}
+          {r.is_sidecar
+            ? <Tag color="geekblue">研究策略</Tag>
+            : (r.is_builtin
+              ? <Tag color="purple">{t('strategies.builtin')}</Tag>
+              : <Tag color="cyan">{t('strategies.external')}</Tag>)}
         </Space>
       ) },
     { title: t('strategies.colStatus'), dataIndex: 'status', key: 'status', width: 90,
       render: (v: string) => statusTag(v, t) },
     { title: t('strategies.colVersion'), dataIndex: 'version_count', key: 'version_count', width: 60 },
+    { title: t('strategies.colOwner', { defaultValue: '负责人' }), dataIndex: 'research_owner', key: 'research_owner', width: 100,
+      render: (v: string | null, r) => <Text>{v || r.owner_user_id || '—'}</Text> },
+    { title: t('strategies.colLifecycle', { defaultValue: '生命周期' }), dataIndex: 'lifecycle_status', key: 'lifecycle_status', width: 100,
+      render: (v: string | null) => v ? <Tag color={v === 'active' || v === 'live' ? 'green' : v === 'research' ? 'red' : 'blue'}>{v}</Tag> : <Text type="secondary">—</Text> },
     { title: t('strategies.colAction'), key: 'action', width: 120, render: (_: unknown, r) => (
-      canManageOwn ? (
+      r.is_sidecar ? (
+        <Tag>仅供研究</Tag>
+      ) : canManageOwn ? (
         <Button size="small" type="primary" onClick={() => setWizardTarget(r)}>
           {t('strategyCatalog.useBtn')}
         </Button>

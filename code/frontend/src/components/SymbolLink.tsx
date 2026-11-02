@@ -11,10 +11,12 @@ export default function SymbolLink({
   code,
   name: nameProp,
   bold = true,
+  onClick: onClickProp,
 }: {
   code: string;
   name?: string;
   bold?: boolean;
+  onClick?: () => void;
 }) {
   const { t } = useTranslation('pages');
   const navigate = useNavigate();
@@ -39,7 +41,8 @@ export default function SymbolLink({
       title={t('symbolLink.title', { code, name: name ? ` ${name}` : '' })}
       onClick={(e) => {
         e.stopPropagation();
-        navigate(`/${marketSeg}/overview?tab=kline&symbol=${encodeURIComponent(code)}`);
+        if (onClickProp) onClickProp();
+        else navigate(`/${marketSeg}/overview?tab=kline&symbol=${encodeURIComponent(code)}`);
       }}
       onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
       onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}

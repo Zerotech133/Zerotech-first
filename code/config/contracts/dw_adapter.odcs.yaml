@@ -1,0 +1,210 @@
+apiVersion: v3.0.2
+kind: DataContract
+id: zerobond.dw_adapter
+name: dw_adapter
+version: 1.0.0
+status: active
+description:
+  purpose: >-
+    张松数据仓只读适配器（scripts/dw_adapter.py，ACAD1 研究池事实源）输出文件
+    C:/Temp/dw_enrichment.json 的 ODCS 契约：定义字段、枚举、覆盖下限与缺口报告规则，
+    由 scripts/dw_contract_check.py 机器校验。
+  limitations: >-
+    本契约只覆盖数据仓适配器输出的 JSON 证据文件，不覆盖智策 PG 表；与
+    config/contracts/zhice_selection.odcs.yaml（id=zerobond.zhice_selection）分开维护、互不替代。
+    dw_adapter 当前只接 CN/HK/US 的本地日线与基础信息，不接 CRYPTO 行情源，且不保证
+    HK 全部代码都有本地记录；因此池内 30 只的可覆盖上限不是 30/30（当前实测 27/30）。
+    契约要求检查器如实报告覆盖率与逐码缺口，禁止把 27/30 报告为 30/30，也禁止用 0 条
+    冒充“已提供”的公告/新闻证据通道。
+domain: research
+dataProduct: zerobond-dw-adapter
+team:
+- username: dsh@local
+  name: DSH-Lead
+  role: data steward
+servers:
+- server: local-temp-file
+  type: file
+  path: C:/Temp/dw_enrichment.json
+  format: json
+
+schema:
+- name: dw_enrichment
+  physicalName: dw_enrichment.json
+  logicalType: object
+  properties:
+  - name: pool_date
+    logicalType: date
+    required: true
+    primaryKey: true
+    format: YYYY-MM-DD
+    description: 研究池日；期望值与 v2_acad1_pool 同池日核对（只读）
+  - name: pool
+    logicalType: integer
+    required: true
+    description: 池日标的数（当前 30）
+  - name: cn_codes
+    logicalType: integer
+    required: true
+    description: 池内 CN 标的数（当前 12）
+  - name: daily
+    logicalType: object
+    required: true
+    description: map<code, daily_quote>；code 为智策池原始代码（如 sh688004 / 00700 / CART）
+  - name: st_codes
+    logicalType: array
+    required: true
+    description: 池内 ST 代码列表；空列表=池内无 ST（合法，非缺失）
+  - name: basic
+    logicalType: object
+    required: true
+    description: map<code, basic_info>
+  quality:
+  - rule: 契约元数据完整（apiVersion v3.x、kind DataContract、id/name/version 非空）
+    check: contract_meta
+    severity: error
+  - rule: 与 config/contracts/zhice_selection.odcs.yaml（zerobond.zhice_selection）契约分离：id/dataProduct/文件均不同
+    check: contract_separation
+    severity: error
+  - rule: 顶层必填字段齐全（pool_date/pool/cn_codes/daily/st_codes/basic）
+    check: envelope_required
+    severity: error
+  - rule: pool_date 为 YYYY-MM-DD，且等于期望池日（v2_acad1_pool 对应日，只读核对）
+    check: pool_date
+    severity: error
+  - rule: pool、cn_codes 为正整数；pool 等于期望池标的数、cn_codes 等于期望 CN 数
+    check: pool_counts
+    severity: error
+  - rule: daily 与 basic 的 code 集合完全一致，且不得为空
+    check: daily_basic_consistency
+    severity: error
+
+- name: daily_quote
+  physicalName: dw_enrichment.json#/daily/{code}
+  logicalType: object
+  properties:
+  - name: trade_date
+    logicalType: date
+    required: true
+    format: YYYYMMDD
+  - name: pre_close
+    logicalType: number
+    required: true
+    minimum: 0
+  - name: close
+    logicalType: number
+    required: true
+    minimum: 0
+  - name: pct_chg
+    logicalType: number
+    required: true
+    description: 涨跌幅百分数（-7.97 表示 -7.97%）
+  quality:
+  - rule: trade_date 为 8 位 YYYYMMDD；pre_close/close 为有限正数；pct_chg 为有限数
+    check: daily_shape
+    severity: error
+  - rule: 涨跌幅自洽 |(close/pre_close-1)*100 - pct_chg| <= 0.01（数据四舍五入容差）
+    check: daily_pct_consistency
+    severity: warning
+    tolerance: 0.01
+
+- name: basic_info
+  physicalName: dw_enrichment.json#/basic/{code}
+  logicalType: object
+  properties:
+  - name: name
+    logicalType: string
+    required: true
+  - name: list_date
+    logicalType: date
+    required: false
+    format: YYYYMMDD
+  - name: industry
+    logicalType: string
+    required: false
+    description: A 股取 stock_basic.industry；HK/US 本地源无行业字段→空字符串（契约允许，报告须注明）
+  quality:
+  - rule: name 非空；list_date 若存在为 8 位 YYYYMMDD；industry 允许空字符串（HK/US 数据源限制）
+    check: basic_shape
+    severity: error
+  - rule: list_date 不得晚于 pool_date
+    check: no_future_dates
+    severity: error
+
+- name: stock_evidence
+  physicalName: dw_enrichment.json[daily,basic] JOIN v2_acad1_pool（检查器只读派生视图）
+  logicalType: object
+  properties:
+  - name: code
+    logicalType: string
+    required: true
+    primaryKey: true
+    description: 期望池代码（与 v2_acad1_pool.code 一致，含 sh688004 这类原始格式）
+  - name: market
+    logicalType: string
+    required: true
+    enum: [CN, HK, US, CRYPTO]
+    description: >-
+      由 v2_acad1_pool.market 只读派生（dw_enrichment.json 本身无该字段）；派生来源必须
+      写入报告，禁止猜测为枚举外值。
+  - name: pre_close
+    logicalType: number
+    required: true
+    description: 来自 daily[code].pre_close
+  - name: list_date
+    logicalType: date
+    required: false
+    description: 来自 basic[code].list_date；缺失必须报告缺口
+  - name: industry
+    logicalType: string
+    required: false
+    description: 来自 basic[code].industry；HK/US 允许空（数据源限制），报告注明
+  - name: announcements
+    logicalType: object
+    required: false
+    description: >-
+      公告证据通道。dw_adapter 当前未输出该通道→必须报告 unavailable（0/30），
+      禁止静默当作“0 条公告”通过，也禁止编造条数。
+  - name: news
+    logicalType: object
+    required: false
+    description: 新闻证据通道；当前未输出→必须报告 unavailable（0/30），规则同 announcements。
+  quality:
+  - rule: 每只期望标的都能派生 market 且 ∈ {CN,HK,US,CRYPTO}；market 与 code 模式/期望池一致
+    check: code_market_enum
+    severity: error
+  - rule: >-
+      覆盖率 = present/expected，契约下限 0.90（当前数据仓实测 27/30=90.00%）；低于下限 FAIL，
+      达到下限但仍 <1.0 时状态为 PASS_WITH_GAPS 并逐码报告缺口
+    check: coverage_floor
+    severity: error
+    threshold: 0.90
+  - rule: 覆盖不足必须逐码报告缺口（code/market/missing_fields/reason），禁止把 27/30 报告为 30/30
+    check: gap_reporting
+    severity: error
+  - rule: announcements/news 通道未提供时必须列为 unavailable，允许但不得静默通过
+    check: evidence_channels
+    severity: info
+
+- name: st_codes
+  physicalName: dw_enrichment.json#/st_codes
+  logicalType: array
+  properties:
+  - name: items
+    logicalType: string
+    required: false
+    pattern: '^\d{6}\.(SH|SZ|BJ)$'
+  quality:
+  - rule: st_codes 必须为数组；元素（如有）为 A 股 ts_code（6 位数字+.SH/.SZ/.BJ）；空列表合法
+    check: st_codes_valid
+    severity: error
+
+slaProperties:
+- property: frequency
+  value: D（研究池更新后重跑 dw_adapter）
+- property: freshness
+  value: 本地日线截至最近交易日；daily.trade_date 与 pool_date 的滞后在检查报告中列明
+- property: coverage
+  value: 契约下限 90%（27/30）；覆盖率与逐码缺口必须如实报告，不得虚报 30/30
+- property: contract_scope
+  value: file:C:/Temp/dw_enrichment.json（仅数据仓适配输出；与 zerobond.zhice_selection 契约分离）

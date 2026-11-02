@@ -32,10 +32,10 @@ describe('marketFromRoute', () => {
 describe('pnlColor', () => {
   it('A股盈利 → 红色', () => expect(pnlColor(100, 'CN')).toBe('#F0524D'));
   it('A股亏损 → 绿色', () => expect(pnlColor(-100, 'CN')).toBe('#12A150'));
-  it('美股盈利 → 绿色', () => expect(pnlColor(100, 'US')).toBe('#12A150'));
-  it('美股亏损 → 红色', () => expect(pnlColor(-100, 'US')).toBe('#F0524D'));
-  it('港股盈利 → 绿色', () => expect(pnlColor(50, 'HK')).toBe('#12A150'));
-  it('加密盈利 → 绿色', () => expect(pnlColor(1, 'CRYPTO')).toBe('#12A150'));
+  it('美股盈利 → 红色（统一红涨绿跌）', () => expect(pnlColor(100, 'US')).toBe('#F0524D'));
+  it('美股亏损 → 绿色（统一红涨绿跌）', () => expect(pnlColor(-100, 'US')).toBe('#12A150'));
+  it('港股盈利 → 红色（统一红涨绿跌）', () => expect(pnlColor(50, 'HK')).toBe('#F0524D'));
+  it('加密盈利 → 红色（统一红涨绿跌）', () => expect(pnlColor(1, 'CRYPTO')).toBe('#F0524D'));
   it('零值 → 灰色', () => expect(pnlColor(0, 'CN')).toBe('#8B93A7'));
   it('零值（US）→ 灰色', () => expect(pnlColor(0, 'US')).toBe('#8B93A7'));
 });

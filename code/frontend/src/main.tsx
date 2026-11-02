@@ -1,7 +1,7 @@
 import { ConfigProvider, theme } from 'antd';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, HashRouter } from 'react-router-dom';
 
 import App from './App';
 import { LanguageProvider, useLang } from './contexts/LanguageContext';
@@ -29,12 +29,20 @@ function AppShell() {
         },
       }}
     >
-      <BrowserRouter>
+      {import.meta.env.VITE_ROUTER === 'hash' ? (
+      <HashRouter>
+        <MarketProvider>
+          <App />
+        </MarketProvider>
+      </HashRouter>
+    ) : (
+    <BrowserRouter basename={(import.meta.env.BASE_URL || '/').replace(/\/$/, '') || '/'}>
         {/* MarketProvider 需在 Router 内（market 由 useParams 派生） */}
         <MarketProvider>
           <App />
         </MarketProvider>
       </BrowserRouter>
+    )}
     </ConfigProvider>
   );
 }

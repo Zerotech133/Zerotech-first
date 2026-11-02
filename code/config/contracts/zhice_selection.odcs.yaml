@@ -1,0 +1,137 @@
+apiVersion: v3.0.2
+kind: DataContract
+id: zerobond.zhice_selection
+name: zhice_selection
+version: 1.0.0
+status: active
+description:
+  purpose: 司马徽选股中台 / ACAD1 研究池核心表契约
+  limitations: 本契约只覆盖智策 PG 的选股中台表；行情/研究卡事实源不在本契约
+domain: research
+dataProduct: zerobond-zhice-selection
+team:
+- username: dsh@local
+  name: DSH-Lead
+  role: data steward
+servers:
+- server: zhice-pg
+  type: postgres
+  path: localhost:5446/zhice_os_v2
+  format: postgres
+
+schema:
+- name: selection_report
+  physicalName: v2_selection_report
+  logicalType: object
+  properties:
+  - name: report_date
+    logicalType: date
+    required: true
+    primaryKey: true
+  - name: strategy_id
+    logicalType: string
+    required: true
+    primaryKey: true
+  - name: market
+    logicalType: string
+    required: true
+    primaryKey: true
+  - name: status
+    logicalType: string
+    required: true
+  quality:
+  - rule: market 必须是 CN/HK/US/CRYPTO，禁止 MULTI
+  - rule: (report_date,strategy_id,market) 唯一
+  - rule: 最新 report_date 距今天不超过 7 天
+
+- name: selection_pick
+  physicalName: v2_selection_pick
+  logicalType: object
+  properties:
+  - name: report_id
+    logicalType: integer
+    required: true
+    primaryKey: true
+  - name: code
+    logicalType: string
+    required: true
+    primaryKey: true
+  - name: score
+    logicalType: number
+    required: false
+  quality:
+  - rule: (report_id,code) 唯一
+  - rule: code 非空
+
+- name: selection_pool
+  physicalName: v2_selection_pool
+  logicalType: object
+  properties:
+  - name: pool_date
+    logicalType: date
+    required: true
+    primaryKey: true
+  - name: code
+    logicalType: string
+    required: true
+    primaryKey: true
+  - name: market
+    logicalType: string
+    required: true
+  - name: max_score
+    logicalType: number
+    required: false
+  quality:
+  - rule: (pool_date,code) 唯一
+  - rule: market 必须是 CN/HK/US/CRYPTO
+  - rule: 最新 pool_date 有数据
+
+- name: acad1_pool
+  physicalName: v2_acad1_pool
+  logicalType: object
+  properties:
+  - name: pool_date
+    logicalType: date
+    required: true
+  - name: strategy_id
+    logicalType: string
+    required: true
+  - name: code
+    logicalType: string
+    required: true
+  - name: market
+    logicalType: string
+    required: true
+  - name: status
+    logicalType: string
+    required: true
+  quality:
+  - rule: 最新 pool_date 总行数 <= 30
+  - rule: market 必须是 CN/HK/US/CRYPTO
+
+- name: stock_research
+  physicalName: v2_stock_research
+  logicalType: object
+  properties:
+  - name: pool_date
+    logicalType: date
+    required: true
+  - name: strategy_id
+    logicalType: string
+    required: true
+  - name: code
+    logicalType: string
+    required: true
+  - name: status
+    logicalType: string
+    required: true
+  quality:
+  - rule: (pool_date,strategy_id,code) 唯一
+  - rule: 只有 ACAD1 人工可把 status 改为 reviewed/handoff
+  - rule: draft 卡的 target/stop/buy_zone 必须为空
+
+slaProperties:
+- property: frequency
+  value: D
+- property: freshness
+  value: 1d

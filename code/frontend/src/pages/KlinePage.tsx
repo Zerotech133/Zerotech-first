@@ -187,7 +187,7 @@ function CandleChart({ bars, showMA, showBoll, showMacd }: {
 
       {data.map((b, i) => {
         const up = b.close >= b.open;
-        const c = up ? '#12A150' : '#F0524D';
+        const c = up ? '#F0524D' : '#12A150';
         return (
           <g key={b.time}>
             <line x1={x(i)} y1={y(b.high)} x2={x(i)} y2={y(b.low)} stroke={c} />
@@ -205,7 +205,7 @@ function CandleChart({ bars, showMA, showBoll, showMacd }: {
         return (
           <rect key={`v${i}`} x={x(i) - bw / 2} y={volY(b.volume || 0)} width={bw}
             height={Math.max(1, volTop + volH - volY(b.volume || 0))}
-            fill={up ? '#12A150' : '#F0524D'} fillOpacity={0.5} />
+            fill={up ? '#F0524D' : '#12A150'} fillOpacity={0.5} />
         );
       })}
 
@@ -215,7 +215,7 @@ function CandleChart({ bars, showMA, showBoll, showMacd }: {
           {data.map((_, i) => {
             const h = macdData.histogram[i];
             if (h == null) return null;
-            const c = h >= 0 ? '#12A150' : '#F0524D';
+            const c = h >= 0 ? '#F0524D' : '#12A150';
             const top = h >= 0 ? my(h) : macdZero;
             return <rect key={`mh${i}`} x={x(i) - bw / 2} y={top} width={bw}
               height={Math.max(1, Math.abs(my(h) - macdZero))} fill={c} fillOpacity={0.7} />;

@@ -1,0 +1,59 @@
+# 0 元 MVP 数据源登记（不包含密钥）
+sources:
+  - id: tdx_local
+    name: 通达信本地日线
+    markets: [CN, HK, US, CRYPTO]
+    priority: primary
+    cost: free
+    kind: local
+    path: "C:/项目/老田的AI助手/quant_backtest/data"
+    fields: [open, high, low, close, volume]
+  - id: akshare
+    name: AkShare
+    markets: [CN, HK, US]
+    priority: validation
+    cost: free
+    kind: python
+    package: akshare
+    required: false
+    fields: [daily, fundamentals, announcements]
+  - id: sec_edgar
+    name: SEC EDGAR
+    markets: [US]
+    priority: events
+    cost: free
+    kind: http
+    url: https://data.sec.gov/submissions/CIK0000320193.json
+    fields: [filings, fundamentals]
+  - id: hkexnews
+    name: HKEXnews
+    markets: [HK]
+    priority: events
+    cost: free
+    kind: http
+    url: https://www1.hkexnews.hk/
+    fields: [announcements]
+  - id: gdelt
+    name: GDELT
+    markets: [CN, HK, US, CRYPTO]
+    priority: news
+    cost: free
+    kind: http
+    url: https://api.gdeltproject.org/api/v2/doc/doc?query=finance&format=json&maxrecords=1
+    fields: [news_events]
+  - id: binance_public
+    name: Binance Public API
+    markets: [CRYPTO]
+    priority: primary
+    cost: free
+    kind: http
+    url: https://api.binance.com/api/v3/ping
+    fields: [ohlcv, ticker, funding]
+  - id: okx_public
+    name: OKX Public API
+    markets: [CRYPTO]
+    priority: validation
+    cost: free
+    kind: http
+    url: https://www.okx.com/api/v5/public/time
+    fields: [ohlcv, ticker]

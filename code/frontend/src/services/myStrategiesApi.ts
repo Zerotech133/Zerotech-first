@@ -32,8 +32,15 @@ export interface CatalogStrategy {
   status: string;
   is_builtin: boolean;
   owner_user_id: string | null; // 平台策略为 null（可订阅）
+  research_owner?: string | null;
+  validation_owner?: string | null;
+  data_owner?: string | null;
+  ops_owner?: string | null;
+  lifecycle_status?: string | null;
+  next_review?: string | null;
   version_count: number;
   versions: CatalogVersion[];
+  is_sidecar?: boolean;
 }
 
 /** 我的策略项（后端 my_strategies.py _serialize；公共+本人私有）。 */

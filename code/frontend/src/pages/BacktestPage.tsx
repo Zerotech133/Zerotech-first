@@ -42,7 +42,7 @@ function EquityChart({ points }: { points: EquityPoint[] }) {
   const y = (v: number) => PAD.top + (1 - (v - minV) / spanV) * (H - PAD.top - PAD.bottom);
   const initial = points[0].value;
   const isProfit = values[values.length - 1] >= initial;
-  const color = isProfit ? '#12A150' : '#F0524D';
+  const color = isProfit ? '#F0524D' : '#12A150';
   let path = '';
   points.forEach((p, i) => { path += `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(p.value).toFixed(1)}`; });
   const labelStep = Math.ceil(points.length / 6);
@@ -99,7 +99,7 @@ export default function BacktestPage() {
 
   const fmt = (v?: number, suffix = '%', digits = 2) =>
     v == null ? '—' : `${v >= 0 ? '+' : ''}${(v * 100).toFixed(digits)}${suffix}`;
-  const pctColor = (v?: number) => v == null ? '#1E2330' : v >= 0 ? '#12A150' : '#F0524D';
+  const pctColor = (v?: number) => v == null ? '#1E2330' : v >= 0 ? '#F0524D' : '#12A150';
 
   const inp: React.CSSProperties = { padding: '6px 10px', borderRadius: 4, border: '1px solid #E8EAF0', fontSize: 13, width: 130 };
 
@@ -158,7 +158,7 @@ export default function BacktestPage() {
                           <span style={{ color: t2.action === 'BUY' ? '#12A150' : '#F0524D', fontWeight: 600 }}>{t2.action === 'BUY' ? t('backtest.buy') : t('backtest.sell')}</span>
                         </td>
                         <td style={{ padding: '8px 10px' }}>{t2.price?.toFixed(2)}</td>
-                        <td style={{ padding: '8px 10px', color: (t2.pnl ?? 0) >= 0 ? '#12A150' : '#F0524D', fontWeight: 600 }}>
+                        <td style={{ padding: '8px 10px', color: (t2.pnl ?? 0) >= 0 ? '#F0524D' : '#12A150', fontWeight: 600 }}>
                           {t2.pnl != null ? `${t2.pnl >= 0 ? '+' : ''}${t2.pnl.toFixed(2)}` : '—'}
                         </td>
                       </tr>

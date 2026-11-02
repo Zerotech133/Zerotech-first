@@ -57,7 +57,7 @@ export default function LoginPage() {
       <div className="bg-glow g3" />
 
       <section className="auth-brand">
-        <img className="auth-brand-logo" src="/logo.png" alt="老田的量化决策" width="1200" height="400" />
+        <div style={{ fontSize: 38, fontWeight: 700, letterSpacing: 4, color: '#e8c27a' }}>司马徽研究院</div>
         <div className="auth-brand-sub">
           {t('login.brandSub', { markets: MARKETS.map((m) => t('market.' + m, { ns: 'common' })).join(' · ') })}
         </div>

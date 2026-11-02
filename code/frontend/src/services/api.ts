@@ -1,7 +1,7 @@
 import { showToast } from '../components/Toast';
 import i18n from '../i18n';
 
-const BASE = '/api/v1';
+const BASE = import.meta.env.VITE_API_BASE || '/api/v1';
 
 /**
  * 401 不触发全局登出跳转的认证端点（deep-test C2）：

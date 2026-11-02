@@ -170,7 +170,7 @@ export default function HomeBigscreen() {
       {/* ── 头部：Logo + 时钟 + 扫描线 + 状态 pills ── */}
       <div className="bs-head">
         <div>
-          <div className="logo"><img src="/logo.png" alt="老田的量化决策" width={1200} height={400} /></div>
+          <div className="logo" style={{ fontSize: 34, fontWeight: 700, letterSpacing: 4, color: '#e8c27a' }}>司马徽研究院</div>
           <div className="logo-sub">{t('home.subtitle')}</div>
         </div>
         <div className="head-clock">
