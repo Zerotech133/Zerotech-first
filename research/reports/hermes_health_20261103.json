@@ -1,0 +1,611 @@
+{
+ "tool": "hermes_health",
+ "generated_at": "2026-11-03T06:46:19+08:00",
+ "config": "C:\\Users\\t\\.hermes\\config.yaml",
+ "timeout_s": 8,
+ "servers": [
+  {
+   "name": "stock-data",
+   "ok": true,
+   "tool_count": 28,
+   "tools": [
+    {
+     "name": "data_overview",
+     "description": "股票数据系统总览：Neo4j 图节点/边总量、情报件分源统计、最新情报时间。【无需参数，直接调用，不要传任何键】"
+    },
+    {
+     "name": "warehouse_catalog",
+     "description": "数仓 catalog 表清单（210 表）：表名/源/行数/最新数据日期/更新时间/status。可按源筛选。"
+    },
+    {
+     "name": "pool_overview",
+     "description": "数据池总览：子模块清单（tushare/tdx/xueqiu/xqsent/guba/xtcloud/crypto/legacy），各模块表数/完成度/失败数/采集链路状态（计划任务结果）/manif"
+    },
+    {
+     "name": "risk_overview",
+     "description": "RiskGuard 风控水位总览（影子模式）：四规则（R1 市场质量/R2 流动性冲击/R3 事件风险/R4 仓位集中度）各水位的 pass/block 计数、最后评分、市场级闸（market_gat"
+    },
+    {
+     "name": "daily_brief",
+     "description": "每日简报（四段合一，快路径首选）：链路状态（晨链/风控环/采集环/基础设施各环健康与 staleness）+ 当日组合信号 + 风控水位 + 数据池健康，markdown 文本。回答「今天整体怎么样/"
+    },
+    {
+     "name": "strategies_overview",
+     "description": "多策略编排面总览：注册表内全部策略（id/权重/启停状态）。与 07:30 StrategyDaily 编排、动线管理页同源。【无需参数，直接调用，不要传任何键】"
+    },
+    {
+     "name": "strategy_signals",
+     "description": "当日（或指定日）合成信号账：各策略产出信号经聚合去重后的权威账（trade_date/symbol/strategy/score/conf 等字段），即 07:30 编排落库的快照视图。"
+    },
+    {
+     "name": "strategy_adjust",
+     "description": "受控调整单策略（提案制）：调用即创建待确认提案，不直接生效；需用户在管理台「策略管理 → 待确认提案」卡片确认（apply）后才写回 strategy_registry.json，下轮 07:30 编"
+    },
+    {
+     "name": "table_detail",
+     "description": "单表下钻详情：元数据、Schema（含主键）、最新文件前 10 行数据样例、文件清单。"
+    },
+    {
+     "name": "latest_intel",
+     "description": "最新情报条目（标题摘要+提及标的+指针，不含正文）：可选按源过滤。"
+    },
+    {
+     "name": "sources_recon",
+     "description": "情报源对账：各源数仓条数 vs 图内条数 delta、采集水位、WARN。【无需参数，直接调用，不要传任何键】"
+    },
+    {
+     "name": "kg_query",
+     "description": "知识图谱只读查询（白名单 Cypher，禁止写语句）。例：MATCH (s:Security) RETURN s.ts_code LIMIT 5"
+    },
+    {
+     "name": "scheduled_tasks",
+     "description": "Windows 计划任务状态：15 个采集任务的上次运行/结果（success/failed/never）/下次运行。【无需参数，直接调用，不要传任何键】"
+    },
+    {
+     "name": "task_detail",
+     "description": "单个计划任务下钻：全字段 + wrapper 状态日志尾部（可直接看到失败步骤）。"
+    },
+    {
+     "name": "manual_jobs",
+     "description": "手动任务面板：可触发的白名单任务（label+key）与最近运行记录（状态/rc）。【无需参数，直接调用，不要传任何键】"
+    },
+    {
+     "name": "trigger_task",
+     "description": "受控触发手动更新任务（白名单：xueqiu_sync/xueqiu_crawl/kg_sync/guba_crawl/selftest）。返回 job_id，用 manual_jobs 轮询结果。"
+    },
+    {
+     "name": "lineage_breaks",
+     "description": "数据血缘断链亮牌：每张产出表最近一次作业状态汇总（在册表数/健康数/断链清单+历史非 ok 运行数）。回答「血缘/断链/管道健康/表多久没更新」类问题首选；断链=该表依赖的管道最近一次运行非 ok，情"
+    },
+    {
+     "name": "lineage_trace",
+     "description": "血缘溯源与影响面：查一张逻辑表的血缘边。direction=upstream 回答「这张表是谁算出来的」；direction=downstream 回答「这张表坏了影响谁」。表名用 URN（如 neo"
+    },
+    {
+     "name": "chain_alerts",
+     "description": "晨链告警面：链路体检最新结论（overall 与 fail/stale 任务明细，如 XmapSync/KgDailySync/RiskGuardShadowDaily）与近 N 次历史。"
+    },
+    {
+     "name": "dataops_query",
+     "description": "门户数据指挥台查询（只读）：view=summary 全量数据地图摘要（采集动线/数据池/管道调度/104 计划任务/233 表 catalog，含 alerts）；view=map 全局拓扑（22 "
+    },
+    {
+     "name": "leiden_community",
+     "description": "SIMILAR_K 形态族（Leiden 聚类社区）查询：传 stock 查个股所属形态族档案（行业倾斜/ST占比/HHI混杂度/族内样本/LLM中文摘要），传 community_id 查指定社区，"
+    },
+    {
+     "name": "entity_profile",
+     "description": "只读查询个股实体画像。回答按结论→指标口径→证据→数据限制组织；标明 run_id，不能混用不同 run_id 的数据。corr（相关系数）与 FastRP 分数口径不同，不可混称为同一种强度。"
+    },
+    {
+     "name": "profile_compare",
+     "description": "只读比较两个运行批次的个股或社区画像。回答按结论→指标口径→证据→数据限制组织；baseline_run_id 与 target_run_id 分开列示，不混用不同 run_id 的指标或证据。cor"
+    },
+    {
+     "name": "profile_evidence",
+     "description": "只读查询个股或社区画像的证据。回答按结论→指标口径→证据→数据限制组织；标明 run_id，不混用不同 run_id 的证据；corr（相关系数）与 FastRP 分数不可混称为同一种强度。"
+    },
+    {
+     "name": "xq_coverage",
+     "description": "雪球舆情治理总账（只读）：raw/classified/pending 总数、进度百分比、按年覆盖表。回答「雪球治理到哪了」优先用这个。【无需参数，直接调用，不要传任何键】"
+    },
+    {
+     "name": "xq_queue",
+     "description": "雪球治理队列（只读）：pending 数、最近打标速率、双实例拓扑（各 worker 日志末行进度）。【无需参数，直接调用，不要传任何键】"
+    },
+    {
+     "name": "xq_drift",
+     "description": "雪球标注口径漂移探针（只读）：label_drift verdict（STABLE/WARN/CRITICAL）与版本对拍明细。内部跑子进程较慢（可达 2 分钟），非必要不频繁调用。【无需参数，直接调"
+    },
+    {
+     "name": "xq_backlog",
+     "description": "雪球采集队列（只读）：种子号段游标与 blocked streak、近期线（2024+）回填进度。【无需参数，直接调用，不要传任何键】"
+    }
+   ],
+   "duration_s": 0.14,
+   "error": null,
+   "returncode": 0,
+   "env_keys": [],
+   "init_ok": true,
+   "timed_out": false,
+   "stderr_tail": ""
+  },
+  {
+   "name": "stock-intel-readonly",
+   "ok": true,
+   "tool_count": 2,
+   "tools": [
+    {
+     "name": "latest_intel",
+     "description": "最新情报条目（标题摘要+提及标的+指针，不含正文）：可选按源过滤。"
+    },
+    {
+     "name": "sources_recon",
+     "description": "情报源对账：各源数仓条数 vs 图内条数 delta、采集水位、WARN。【无需参数，直接调用，不要传任何键】"
+    }
+   ],
+   "duration_s": 0.13,
+   "error": null,
+   "returncode": 0,
+   "env_keys": [],
+   "init_ok": true,
+   "timed_out": false,
+   "stderr_tail": ""
+  },
+  {
+   "name": "jev-news",
+   "ok": true,
+   "tool_count": 5,
+   "tools": [
+    {
+     "name": "jev_query",
+     "description": "查询 JEV（新闻结构化判读）已判结果：可按时间窗/方向(bull,bear,neutral)/关联 A 股代码/事件类型筛选，可选联查 T+1 后验（ret/bench/excess/hit）。用于"
+    },
+    {
+     "name": "jev_calibration",
+     "description": "JEV 判读校准状态：方向准确率 vs 全判 bull 基线、neutral 带宽命中率、bull/bear 可用性判定、conf 是否入决策。用于回答『JEV 判断现在准不准、能不能用』。"
+    },
+    {
+     "name": "jev_digest",
+     "description": "JEV 一站式摘要（推荐优先使用）：一次返回 近N小时多空统计 + Top 重点/风险条目（含后验） + 校准状态 + 数据质量告警。用于回答『今天有什么值得注意的利好/利空』『JEV 当前是否可信』"
+    },
+    {
+     "name": "jev_risk",
+     "description": "JEV 风险速报：近N小时高影响利空事件 Top N（含 T+1 后验），用于盘前/盘中风险扫描。"
+    },
+    {
+     "name": "jev_feedback",
+     "description": "提交对某条 JEV 判定的存疑/纠正（写入 review 反馈集，供人工复核后回灌 JEV-Eval）。用于『这条判断我不认同/有补充证据』，不会直接改判定。"
+    }
+   ],
+   "duration_s": 0.16,
+   "error": null,
+   "returncode": 0,
+   "env_keys": [],
+   "init_ok": true,
+   "timed_out": false,
+   "stderr_tail": "[jev-mcp] start name=jev-news api=http://127.0.0.1:8091 calib=C:\\aios\\agent_platform\\data\\jev_audit\\latest.json\r\n[jev-mcp] stdin closed, exit\r\n"
+  },
+  {
+   "name": "playwright",
+   "ok": true,
+   "tool_count": 25,
+   "tools": [
+    {
+     "name": "browser_close",
+     "description": "Close the page"
+    },
+    {
+     "name": "browser_resize",
+     "description": "Resize the browser window"
+    },
+    {
+     "name": "browser_console_messages",
+     "description": "Returns all console messages"
+    },
+    {
+     "name": "browser_handle_dialog",
+     "description": "Handle a dialog"
+    },
+    {
+     "name": "browser_emulate_media",
+     "description": "Emulate CSS media features for the page, for example switch between the light and dark color scheme."
+    },
+    {
+     "name": "browser_evaluate",
+     "description": "Evaluate JavaScript expression on page or element"
+    },
+    {
+     "name": "browser_file_upload",
+     "description": "Upload one or multiple files"
+    },
+    {
+     "name": "browser_drop",
+     "description": "Drop files or MIME-typed data onto an element, as if dragged from outside the page. At least one of "
+    },
+    {
+     "name": "browser_find",
+     "description": "Search the accessibility snapshot of the current page for text or a regular expression. Returns matc"
+    },
+    {
+     "name": "browser_fill_form",
+     "description": "Fill multiple form fields"
+    },
+    {
+     "name": "browser_press_key",
+     "description": "Press a key on the keyboard"
+    },
+    {
+     "name": "browser_type",
+     "description": "Type text into editable element"
+    },
+    {
+     "name": "browser_navigate",
+     "description": "Navigate to a URL"
+    },
+    {
+     "name": "browser_navigate_back",
+     "description": "Go back to the previous page in the history"
+    },
+    {
+     "name": "browser_network_requests",
+     "description": "Returns a numbered list of network requests since loading the page. Use browser_network_request with"
+    },
+    {
+     "name": "browser_network_request",
+     "description": "Returns full details (headers and body) of a single network request, or a single part if `part` is s"
+    },
+    {
+     "name": "browser_run_code_unsafe",
+     "description": "Run a Playwright code snippet. Unsafe: executes arbitrary JavaScript in the Playwright server proces"
+    },
+    {
+     "name": "browser_take_screenshot",
+     "description": "Take a screenshot of the current page. You can't perform actions based on the screenshot, use browse"
+    },
+    {
+     "name": "browser_snapshot",
+     "description": "Capture accessibility snapshot of the current page, this is better than screenshot"
+    },
+    {
+     "name": "browser_click",
+     "description": "Perform click on a web page"
+    },
+    {
+     "name": "browser_drag",
+     "description": "Perform drag and drop between two elements"
+    },
+    {
+     "name": "browser_hover",
+     "description": "Hover over element on page"
+    },
+    {
+     "name": "browser_select_option",
+     "description": "Select an option in a dropdown"
+    },
+    {
+     "name": "browser_tabs",
+     "description": "List, create, close, or select a browser tab."
+    },
+    {
+     "name": "browser_wait_for",
+     "description": "Wait for text to appear or disappear or a specified time to pass"
+    }
+   ],
+   "duration_s": 0.53,
+   "error": null,
+   "returncode": 0,
+   "env_keys": [],
+   "init_ok": true,
+   "timed_out": false,
+   "stderr_tail": ""
+  },
+  {
+   "name": "om-metadata",
+   "ok": false,
+   "tool_count": 0,
+   "tools": [],
+   "duration_s": 0.46,
+   "error": "initialize 未返回 serverInfo；stderr=[om_mcp_bridge] -> <masked>\r\n",
+   "returncode": 0,
+   "env_keys": [
+    "OM_MCP_TOKEN",
+    "OM_MCP_URL"
+   ],
+   "init_ok": false,
+   "timed_out": false,
+   "stderr_tail": "[om_mcp_bridge] -> <masked>\r\n"
+  },
+  {
+   "name": "d1-research",
+   "ok": true,
+   "tool_count": 1,
+   "tools": [
+    {
+     "name": "d1_research",
+     "description": "D1 ³��Ͷ�п��գ����ڹ�Ʊ�����о�/����/����/pending ���ܣ��ɰ�����ɸѡ��ֻ����paper-only��"
+    }
+   ],
+   "duration_s": 0.15,
+   "error": null,
+   "returncode": 0,
+   "env_keys": [],
+   "init_ok": true,
+   "timed_out": false,
+   "stderr_tail": ""
+  },
+  {
+   "name": "huangzhong",
+   "ok": true,
+   "tool_count": 11,
+   "tools": [
+    {
+     "name": "huangzhong_status",
+     "description": "����������״�ۺϣ��������ˣ�passed/total������ status/measured�����������յ���verdict/commit����֤�����䣨��"
+    },
+    {
+     "name": "huangzhong_review_latest",
+     "description": "���һ�λ����������˱�����ϸ��generated_at/items/kpi/���ǣ���ֻ����"
+    },
+    {
+     "name": "huangzhong_evidence",
+     "description": "��������֤�����ʶȣ����� test_baseline/latest.json �����º�ӱ���� generated_at/age_hours/�Ƿ� ��48h��R3 �ţ"
+    },
+    {
+     "name": "huangzhong_acceptance_latest",
+     "description": "���һ�Ż������յ���verdict/commit/sha/ʱ��/reasons/֤��ժҪ��ֻ����"
+    },
+    {
+     "name": "huangzhong_weekly_kpi",
+     "description": "���� 7 �촰�� KPI��ֻ�����㣩��runs��merge_done�������ʡ�PASS/REJECT/OBSERVE ������"
+    },
+    {
+     "name": "huangzhong_tasks_health",
+     "description": "���������ƻ�����HuangzhongDaily / HuangzhongEvidenceRefresh���� LastRunTime/LastTaskResult/NextRunTim"
+    },
+    {
+     "name": "huangzhong_health",
+     "description": "���ҹ�����������P0��ֻ�������� tools/huangzhong_health.py --json������ status��ok/warn/fail����summary"
+    },
+    {
+     "name": "huangzhong_preflight",
+     "description": "���� 11-04 ���� preflight��P1��ֻ�������� tools/huangzhong_1104_preflight.py --json������ ready��bloc"
+    },
+    {
+     "name": "huangzhong_brief",
+     "description": "����ÿ�ռ򱨣�P1��ֻ�������� tools/huangzhong_brief.py --json������ conclusion��һ�н��ۣ���kpi��runs/merge_d"
+    },
+    {
+     "name": "huangzhong_run_review",
+     "description": "���ܿ�д��������һ�λ����������ˣ�ֻ������ + д work ���棩������ confirm=\"RUN-REVIEW\"��60s ��Ƶ������ HUANGZH"
+    },
+    {
+     "name": "huangzhong_run_acceptance",
+     "description": "���ܿ�д���Ե�ǰ HEAD ������һ�λ������գ�д acceptance �� + �ո��������� confirm=\"RUN-ACCEPT\"��60s ��Ƶ������"
+    }
+   ],
+   "duration_s": 0.21,
+   "error": null,
+   "returncode": 0,
+   "env_keys": [
+    "HUANGZHONG_MCP_WRITE"
+   ],
+   "init_ok": true,
+   "timed_out": false,
+   "stderr_tail": ""
+  },
+  {
+   "name": "zhice-selection",
+   "ok": false,
+   "tool_count": 0,
+   "tools": [],
+   "duration_s": 0.08,
+   "error": "initialize 未返回 serverInfo；stderr=C:\\Program Files\\Python311\\python.exe: can't open file 'C:\\\\��Ŀ\\\\�����AI����\\\\agent_platform\\\\tools\\\\zhice_selection_mcp.py': [Errno 2] No such file or directory\r\n",
+   "returncode": 2,
+   "env_keys": [
+    "ZHICE_API_URL",
+    "ZHICE_BFF_URL",
+    "ZHICE_HANDOFF_TOKEN"
+   ],
+   "init_ok": false,
+   "timed_out": false,
+   "stderr_tail": "C:\\Program Files\\Python311\\python.exe: can't open file 'C:\\\\��Ŀ\\\\�����AI����\\\\agent_platform\\\\tools\\\\zhice_selection_mcp.py': [Errno 2] No such file or directory\r\n"
+  },
+  {
+   "name": "dw-governance",
+   "ok": true,
+   "tool_count": 6,
+   "tools": [
+    {
+     "name": "dw_stats",
+     "description": "���ݲ����ݼ�ͳ�ƣ��������Ǽ�������ȡ�������������/���ͷֲ���ֻ����"
+    },
+    {
+     "name": "dw_list",
+     "description": "�г����ݼ���dataset_id/label/domain/kind/path/registered/exposed����ֻ����"
+    },
+    {
+     "name": "dw_search",
+     "description": "���ؼ��ʼ������ݼ����ȼ� list --q����ֻ����"
+    },
+    {
+     "name": "dw_get",
+     "description": "�� dataset_id ȡ���ݼ�Ԫ���ݡ�ֻ����"
+    },
+    {
+     "name": "dw_sample",
+     "description": "�� dataset_id ȡ������sqlite ����/parquet ��/json ͷ/Ŀ¼�ļ��嵥����ֻ����"
+    },
+    {
+     "name": "dw_query",
+     "description": "ͨ��ֻ����ѯ��S3-06 P1������ dataset_id ����/����/��ҳ/ͶӰ/������sqlite �߲����� WHERE��parquet �� pyarrow"
+    }
+   ],
+   "duration_s": 0.11,
+   "error": null,
+   "returncode": 0,
+   "env_keys": [],
+   "init_ok": true,
+   "timed_out": false,
+   "stderr_tail": ""
+  },
+  {
+   "name": "dw-quality",
+   "ok": true,
+   "tool_count": 6,
+   "tools": [
+    {
+     "name": "quality_snapshot",
+     "description": "�����������գ��ۺ� freshness/quality/manifest/backup/metadata �������״̬��ժҪ��ֻ����"
+    },
+    {
+     "name": "freshness",
+     "description": "���ʶȣ����� prod_max��parquet footer��+ 4 ��ͣ�ڣ���ѡ table ֻȡ������ֻ����"
+    },
+    {
+     "name": "quality_checks",
+     "description": "ȷ����������飺store ����/�շ�Ƭ/�����ظ�/��������ѡ��������ֻ����"
+    },
+    {
+     "name": "manifest",
+     "description": "4 �� _manifest.json��tdx/tushare/xueqiu/cnopendata�������� catalog ������������ߡ�ֻ����"
+    },
+    {
+     "name": "backup",
+     "description": "���ݻ�ִ�˶ԣ����±��ݴ���������ȫ�ԡ�offsite_remote_receipt���ϵ�Сʱ����ֻ����"
+    },
+    {
+     "name": "lineage_impact",
+     "description": "�ı�Ӱ���棨��̬����catalog �� �� store �� alias �� �������ѷ��嵥��ֻ����"
+    }
+   ],
+   "duration_s": 0.11,
+   "error": null,
+   "returncode": 0,
+   "env_keys": [],
+   "init_ok": true,
+   "timed_out": false,
+   "stderr_tail": ""
+  },
+  {
+   "name": "dw-catalog",
+   "ok": true,
+   "tool_count": 5,
+   "tools": [
+    {
+     "name": "catalog_snapshot",
+     "description": "catalog ���գ��汾/����/sha256/�Ǽ�һ����/Ư�Ƴ�����ֻ������"
+    },
+    {
+     "name": "registry_stats",
+     "description": "warehouse_registry ͳ�ƣ�physical/display �������ʸ�ֲ����� catalog sha256 �Ƿ�һ�£�ֻ������"
+    },
+    {
+     "name": "lifecycle",
+     "description": "catalog lifecycle ��̬��active/planned/deprecated/archived��������ȱʧ�嵥��ֻ������"
+    },
+    {
+     "name": "table_info",
+     "description": "��������Ǽ�/����/·����warehouse_registry ��Ŀ + catalog �洢��Ϣ��֧�� catalog ������ֻ������"
+    },
+    {
+     "name": "qualification",
+     "description": "�ʸ�ֲ�������unknown/evidence_partial/planned/deprecated����ռ�ȣ���ֻ����"
+    }
+   ],
+   "duration_s": 0.12,
+   "error": null,
+   "returncode": 0,
+   "env_keys": [],
+   "init_ok": true,
+   "timed_out": false,
+   "stderr_tail": ""
+  },
+  {
+   "name": "factor-tools",
+   "ok": true,
+   "tool_count": 4,
+   "tools": [
+    {
+     "name": "factor_daily_latest",
+     "description": "最新因子日报（factor_daily_<日期>.json）摘要：生成时间/最新数据日/窗口/因子数/衰减告警数/提案数/各因子 IC 明细。可选 factor 参数精确查某因子 IC。只读。"
+    },
+    {
+     "name": "factor_mining_latest",
+     "description": "最新因子挖掘榜（strategy_mining_<日期>.json）排名前 N：每行 feature/IC 均值/t 值/多空均值等。只读。"
+    },
+    {
+     "name": "factor_reports",
+     "description": "列出 research/reports 下 factor_daily / strategy_mining / neutral_effect 三类研究产物文件清单（含 json/md、大小、mtime、"
+    },
+    {
+     "name": "factor_script_catalog",
+     "description": "因子研究脚本清单：tools/research 下 factor_*.py、strategy_miner.py、neutral_effect.py 等（名称/大小/mtime/文件首行说明）。只读，不"
+    }
+   ],
+   "duration_s": 0.09,
+   "error": null,
+   "returncode": 0,
+   "env_keys": [],
+   "init_ok": true,
+   "timed_out": false,
+   "stderr_tail": ""
+  },
+  {
+   "name": "kb-corpus",
+   "ok": true,
+   "tool_count": 5,
+   "tools": [
+    {
+     "name": "kb_status",
+     "description": "֪ʶ��״̬���ĵ���/֪ʶ��Ԫ��/RAG ����/���Ϲ棨�� kb_read_api.py status����ֻ����"
+    },
+    {
+     "name": "kb_search",
+     "description": "֪ʶ��Ԫ����������/�½�/ҳ��/�۶�/֤�ݣ����������� kb_read_api.py search����ֻ����"
+    },
+    {
+     "name": "kb_books",
+     "description": "��Ŀ�嵥��ͳ�ƣ��鼮/�б�/���Ծ����������ҳ�����½�����֪ʶ��Ԫ������ kb_read_api.py books����ֻ����"
+    },
+    {
+     "name": "yt_tables",
+     "description": "YouTube ѧϰ���ݲ� yt_learning.db �ı�/��ͼ�嵥��������sqlite mode=ro����ֻ����"
+    },
+    {
+     "name": "yt_query",
+     "description": "YouTube ѧϰ���ݲְ�������ֻ��ȡ����SELECT * LIMIT n��n��20��Ĭ�� 5���ı��нض� 500 �֣���"
+    }
+   ],
+   "duration_s": 0.11,
+   "error": null,
+   "returncode": 0,
+   "env_keys": [],
+   "init_ok": true,
+   "timed_out": false,
+   "stderr_tail": ""
+  }
+ ],
+ "summary": {
+  "servers_total": 13,
+  "ok": 11,
+  "failed": [
+   "om-metadata",
+   "zhice-selection"
+  ],
+  "tools_total": 98,
+  "failed_env_keys": {
+   "om-metadata": [
+    "OM_MCP_TOKEN",
+    "OM_MCP_URL"
+   ],
+   "zhice-selection": [
+    "ZHICE_API_URL",
+    "ZHICE_BFF_URL",
+    "ZHICE_HANDOFF_TOKEN"
+   ]
+  }
+ },
+ "all_ok": false,
+ "readonly": true
+}

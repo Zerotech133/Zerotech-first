@@ -1,0 +1,99 @@
+{
+ "measured_at": "2026-11-03T06:47:21+08:00",
+ "date": "2026-11-03",
+ "generated_by": "tools/datawarehouse/kpi_report.py",
+ "definitions_source": "docs/plans/2026-11-02_数据仓研发计划_v3_执行版.md §三",
+ "sources": {
+  "xq_db": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\xueqiu\\xueqiu_info.db",
+  "api": "http://127.0.0.1:8091/api/daily/data",
+  "registry": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\warehouse_registry.json",
+  "catalog": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\catalog.json",
+  "data_catalog_yaml": "C:\\项目\\老田的AI助手\\agent_platform\\catalogs\\data_catalog.yaml",
+  "snapshot": "C:\\项目\\老田的AI助手\\portal\\static\\dw_snapshot.json",
+  "coverage": "C:\\项目\\老田的AI助手\\research\\reports\\dataset_query_coverage_*.json",
+  "task": "\\ZeroBound\\DataWarehouseSnapshot",
+  "test_gate": "C:\\项目\\老田的AI助手\\tools\\test_gate.ps1",
+  "hermes_config": "C:\\Users\\t\\.hermes\\config.yaml"
+ },
+ "kpis": {
+  "K1": {
+   "name": "雪球当日增量",
+   "value": 0,
+   "target": ">0 连续 3 天",
+   "status": "warn",
+   "evidence": "xq_status fetched_at 日增量 2026-11-03=0（连续 0 天 >0）；total=33377；今日增量为 0/缺失"
+  },
+  "K2": {
+   "name": "drift 哨兵 exists",
+   "value": {
+    "exists": true,
+    "open_count": 5
+   },
+   "target": "exists=true",
+   "status": "ok",
+   "evidence": "http://127.0.0.1:8091/api/daily/data exists=True open_count=5"
+  },
+  "K3": {
+   "name": "dw_snapshot 新鲜度",
+   "value": "2026-11-03T06:40:32+08:00",
+   "target": "每日自动（L2 已安装 06:40）",
+   "status": "ok",
+   "evidence": "generated_at=2026-11-03T06:40:32+08:00（今日）；任务 LastRun=2026/11/3 6:40:01 LastResult=0；自动任务今日已跑且成功（LastResult=0）"
+  },
+  "K4": {
+   "name": "数据集登记",
+   "value": "314/314",
+   "target": "314/314",
+   "status": "ok",
+   "evidence": "data_catalog.yaml v7 datasets=314 registered=true=314"
+  },
+  "K5": {
+   "name": "统一入口可达",
+   "value": "314/314",
+   "target": "314/314 保持",
+   "status": "ok",
+   "evidence": "DatasetRegistry.datasets=314（统一入口可达）"
+  },
+  "K6": {
+   "name": "专用查询入口覆盖",
+   "value": "raw 97.77% / clean 99.03%",
+   "target": "≥80%（clean）",
+   "status": "ok",
+   "evidence": "dataset_query_coverage_20261102.json ready=307 denominator=310（2026-11-02T13:20:07+08:00）"
+  },
+  "K7": {
+   "name": "display 覆盖物理表",
+   "value": "244/256（95.3%）",
+   "target": "≥200",
+   "status": "ok",
+   "evidence": "registry display_assets=258；未覆盖 12 张（多为 planned/deprecated）"
+  },
+  "K8": {
+   "name": "资质 unknown",
+   "value": 14,
+   "target": "<40（S3）",
+   "status": "ok",
+   "evidence": "distribution={\"evidence_partial\": 38, \"evidence_ok\": 187, \"deprecated\": 8, \"planned\": 9, \"unknown\": 14}"
+  },
+  "K9": {
+   "name": "datawarehouse 测试入 fast 门",
+   "value": "是",
+   "target": "是",
+   "status": "ok",
+   "evidence": "tools/test_gate.ps1 -Suite fast suites=['portal', 'kstock', 'ide', 'agent_key', 'quant_key', 'tools_key', 'datawarehouse']"
+  },
+  "K10": {
+   "name": "Hermes 数据仓工具",
+   "value": "Hermes 数据仓工具 10 问 E2E 10/10（今日）；config 含 dw-governance",
+   "target": "10 问 E2E 全过",
+   "status": "ok",
+   "evidence": "证据：C:\\项目\\老田的AI助手\\research\\reports\\k10_e2e_20261103.json；config：C:\\Users\\t\\.hermes\\config.yaml"
+  }
+ },
+ "summary": {
+  "ok": 9,
+  "warn": 1,
+  "unknown": 0,
+  "total": 10
+ }
+}

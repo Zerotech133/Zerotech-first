@@ -388,6 +388,24 @@ def collect_k10(hermes_path: Path | None = None, probe_url: str | None = None,
             config_has = "dw-governance" in hp.read_text(encoding="utf-8", errors="replace")
         except OSError:
             config_has = False
+    # 今日 K10 E2E 证据（默认真实路径时才读取；测试注入自定义 config 时不看全局证据）
+    if hermes_path is None and mcp_py is None and not probe_url:
+        try:
+            import glob as _glob
+            import datetime as _dt
+            evs = sorted(_glob.glob(str(REPORTS / "k10_e2e_*.json")))
+            if evs:
+                ev = json.loads(Path(evs[-1]).read_text(encoding="utf-8"))
+                total = int(ev.get("total") or 0)
+                passed = int(ev.get("passed") or 0)
+                gen = str(ev.get("generated_at") or "")
+                is_today = gen[:10] == _dt.date.today().isoformat()
+                if config_has and total >= 10 and passed == total and is_today:
+                    return _kpi("Hermes 数据仓工具 10 问 E2E %d/%d（今日）；config 含 dw-governance" % (passed, total),
+                                "证据：%s；config：%s" % (evs[-1], hp),
+                                "ok", DIM_TARGETS["K10"], KPI_NAMES["K10"])
+        except Exception:  # noqa: BLE001
+            pass
     probe_tools = None
     if probe_url:
         try:

@@ -1,0 +1,127 @@
+{
+ "generated_at": "2026-11-03T06:47:19+08:00",
+ "server": "C:\\项目\\老田的AI助手\\agent_platform\\tools\\dw_governance_mcp.py",
+ "transport": "stdio JSON-RPC",
+ "tools_registered": 6,
+ "answers": [
+  {
+   "q": 1,
+   "tool": "dw_stats",
+   "args": {},
+   "expected": "ok",
+   "got": "ok",
+   "passed": true,
+   "text": "{\"ok\": true, \"isError\": false, \"payload\": {\"inventory\": \"C:\\\\项目\\\\老田的AI助手\\\\research\\\\reports\\\\dataset_inventory_20261102.json\", \"total\": 314, \"registered\": 265, \"exposed\": 72, \"by_domain\": {\"接口数据\": 241, \"开源情报\": 19, \"学习派生\": 29, \"平台运行\": 25}, \"by_kind\": {\"dir\": 258, \"sqlite_table\": 42, \"corpus_layer\": 14}}, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"inventory\\\": \\\"C:\\\\\\\\项目\\\\\\\\老田的AI助手\\\\\\\\resea"
+  },
+  {
+   "q": 2,
+   "tool": "dw_list",
+   "args": {
+    "limit": 5
+   },
+   "expected": "ok",
+   "got": "ok",
+   "passed": true,
+   "text": "{\"ok\": true, \"isError\": false, \"payload\": {\"datasets\": [{\"dataset_id\": \"ts_git\", \"domain\": \"接口数据\", \"label\": \"tushare..git\", \"kind\": \"dir\", \"path\": \"quant_backtest\\\\data\\\\tushare\\\\.git\", \"mb\": 0.0, \"rows\": null, \"registered\": false, \"exposed\": true, \"owner\": \"DATA1\", \"access\": \"read_only\", \"unified_entry\": true}, {\"dataset_id\": \"ts_adj_factor\", \"domain\": \"接口数据\", \"label\": \"tushare.adj_factor\", \"kind"
+  },
+  {
+   "q": 3,
+   "tool": "dw_list",
+   "args": {
+    "domain": "接口数据",
+    "limit": 3
+   },
+   "expected": "ok",
+   "got": "ok",
+   "passed": true,
+   "text": "{\"ok\": true, \"isError\": false, \"payload\": {\"datasets\": [{\"dataset_id\": \"ts_git\", \"domain\": \"接口数据\", \"label\": \"tushare..git\", \"kind\": \"dir\", \"path\": \"quant_backtest\\\\data\\\\tushare\\\\.git\", \"mb\": 0.0, \"rows\": null, \"registered\": false, \"exposed\": true, \"owner\": \"DATA1\", \"access\": \"read_only\", \"unified_entry\": true}, {\"dataset_id\": \"ts_adj_factor\", \"domain\": \"接口数据\", \"label\": \"tushare.adj_factor\", \"kind"
+  },
+  {
+   "q": 4,
+   "tool": "dw_search",
+   "args": {
+    "q": "daily",
+    "limit": 3
+   },
+   "expected": "ok",
+   "got": "ok",
+   "passed": true,
+   "text": "{\"ok\": true, \"isError\": false, \"payload\": {\"datasets\": [{\"dataset_id\": \"ts_cb_daily\", \"domain\": \"接口数据\", \"label\": \"tushare.cb_daily\", \"kind\": \"dir\", \"path\": \"quant_backtest\\\\data\\\\tushare\\\\cb_daily\", \"mb\": 57.4, \"rows\": null, \"registered\": true, \"exposed\": true, \"owner\": \"DATA1\", \"access\": \"read_only\", \"unified_entry\": true}, {\"dataset_id\": \"ts_daily\", \"domain\": \"接口数据\", \"label\": \"tushare.daily\", \"k"
+  },
+  {
+   "q": 5,
+   "tool": "dw_get",
+   "args": {
+    "id": "ts_daily"
+   },
+   "expected": "ok",
+   "got": "ok",
+   "passed": true,
+   "text": "{\"ok\": true, \"isError\": false, \"payload\": {\"dataset\": {\"dataset_id\": \"ts_daily\", \"domain\": \"接口数据\", \"label\": \"tushare.daily\", \"kind\": \"dir\", \"path\": \"quant_backtest\\\\data\\\\tushare\\\\daily\", \"mb\": 961.4, \"rows\": null, \"registered\": true, \"exposed\": true, \"owner\": \"DATA1\", \"access\": \"read_only\", \"unified_entry\": true}}, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"dataset\\\": {\\\"dataset_id\\\": \\\""
+  },
+  {
+   "q": 6,
+   "tool": "dw_sample",
+   "args": {
+    "id": "ts_daily",
+    "n": 2
+   },
+   "expected": "ok",
+   "got": "ok",
+   "passed": true,
+   "text": "{\"ok\": true, \"isError\": false, \"payload\": {\"dataset_id\": \"ts_daily\", \"kind\": \"dir\", \"path\": \"C:\\\\项目\\\\老田的AI助手\\\\quant_backtest\\\\data\\\\tushare\\\\daily\", \"freshness\": \"2026-10-04 12:04\", \"top_entries\": [\"d_19910102.parquet\", \"d_19910103.parquet\"], \"newest_files\": [\"d_19910314.parquet\", \"d_19910313.parquet\"], \"scan_truncated\": true}, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"dataset_id\\\": \\\"ts"
+  },
+  {
+   "q": 7,
+   "tool": "dw_query",
+   "args": {
+    "id": "ts_daily",
+    "limit": 2
+   },
+   "expected": "ok",
+   "got": "ok",
+   "passed": true,
+   "text": "{\"ok\": true, \"isError\": false, \"payload\": {\"state\": \"ok\", \"columns\": [\"ts_code\", \"trade_date\", \"open\", \"high\", \"low\", \"close\", \"pre_close\", \"change\", \"pct_chg\", \"vol\", \"amount\"], \"rows\": [[\"600656.SH\", \"19910102\", 3.05, 3.05, 3.05, 3.05, 3.02, 0.03, 0.99, 20.0, 6.0], [\"600651.SH\", \"19910102\", 405.3, 405.3, 405.3, 405.3, 401.3, 4.0, 0.9968, 0.42, 17.023]], \"count\": null, \"has_more\": true, \"truncate"
+  },
+  {
+   "q": 8,
+   "tool": "dw_query",
+   "args": {
+    "id": "ts_moneyflow",
+    "limit": 2
+   },
+   "expected": "ok",
+   "got": "ok",
+   "passed": true,
+   "text": "{\"ok\": true, \"isError\": false, \"payload\": {\"state\": \"ok\", \"columns\": [\"ts_code\", \"trade_date\", \"buy_sm_vol\", \"buy_sm_amount\", \"sell_sm_vol\", \"sell_sm_amount\", \"buy_md_vol\", \"buy_md_amount\", \"sell_md_vol\", \"sell_md_amount\", \"buy_lg_vol\", \"buy_lg_amount\", \"sell_lg_vol\", \"sell_lg_amount\", \"buy_elg_vol\", \"buy_elg_amount\", \"sell_elg_vol\", \"sell_elg_amount\", \"net_mf_vol\", \"net_mf_amount\"], \"rows\": [[\"68"
+  },
+  {
+   "q": 9,
+   "tool": "dw_query",
+   "args": {
+    "id": "ts_report_rc",
+    "count": true,
+    "limit": 1
+   },
+   "expected": "ok",
+   "got": "ok",
+   "passed": true,
+   "text": "{\"ok\": true, \"isError\": false, \"payload\": {\"state\": \"ok\", \"columns\": [\"ts_code\", \"name\", \"report_date\", \"report_title\", \"report_type\", \"classify\", \"org_name\", \"author_name\", \"quarter\", \"op_rt\", \"op_pr\", \"tp\", \"np\", \"eps\", \"pe\", \"rd\", \"roe\", \"ev_ebitda\", \"rating\", \"max_price\", \"min_price\", \"_fetch_window\"], \"rows\": [[\"000799.SZ\", \"酒鬼酒\", \"20170816\", \"酒鬼酒：经营逐步改善，上调盈利预测，建议持续关注\", \"点评\", \"一般报告\", \"申万宏源证券\""
+  },
+  {
+   "q": 10,
+   "tool": "dw_query",
+   "args": {
+    "id": "ts_daily_basic",
+    "limit": 2
+   },
+   "expected": "ok",
+   "got": "ok",
+   "passed": true,
+   "text": "{\"ok\": true, \"isError\": false, \"payload\": {\"state\": \"ok\", \"columns\": [\"ts_code\", \"trade_date\", \"close\", \"turnover_rate\", \"turnover_rate_f\", \"volume_ratio\", \"pe\", \"pe_ttm\", \"pb\", \"ps\", \"ps_ttm\", \"dv_ratio\", \"dv_ttm\", \"total_share\", \"float_share\", \"free_share\", \"total_mv\", \"circ_mv\"], \"rows\": [[\"600521.SH\", \"20230103\", 21.55, 2.8012, 4.7743, 0.87, 65.5725, 46.1688, 4.6585, 4.812, 4.055, 0.4607, 0.46"
+  }
+ ],
+ "passed": 10,
+ "total": 10,
+ "note": "K10 数据仓工具 10 问 E2E（只读 MCP 调用）；Hermes 运行时工具以 /api/mcp/tools 为准"
+}
