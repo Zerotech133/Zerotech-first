@@ -1,0 +1,134 @@
+{
+ "generated_at": "2026-11-02T15:12:17+08:00",
+ "server": "C:\\项目\\老田的AI助手\\agent_platform\\tools\\dw_governance_mcp.py",
+ "transport": "stdio JSON-RPC",
+ "answers": [
+  {
+   "q": 1,
+   "tool": "dw_list",
+   "args": {
+    "limit": 5
+   },
+   "expected": "ok",
+   "got": "ok",
+   "passed": true,
+   "text": "{\"datasets\": [{\"dataset_id\": \"ts_git\", \"domain\": \"接口数据\", \"label\": \"tushare..git\", \"kind\": \"dir\", \"path\": \"quant_backtest\\\\data\\\\tushare\\\\.git\", \"mb\": "
+  },
+  {
+   "q": 2,
+   "tool": "dw_stats",
+   "args": {},
+   "expected": "ok",
+   "got": "ok",
+   "passed": true,
+   "text": "{\"inventory\": \"C:\\\\项目\\\\老田的AI助手\\\\research\\\\reports\\\\dataset_inventory_20261102.json\", \"total\": 314, \"registered\": 265, \"exposed\": 72, \"by_domain\": {\"接口"
+  },
+  {
+   "q": 3,
+   "tool": "dw_search",
+   "args": {
+    "q": "daily",
+    "limit": 3
+   },
+   "expected": "ok",
+   "got": "ok",
+   "passed": true,
+   "text": "{\"datasets\": [{\"dataset_id\": \"ts_cb_daily\", \"domain\": \"接口数据\", \"label\": \"tushare.cb_daily\", \"kind\": \"dir\", \"path\": \"quant_backtest\\\\data\\\\tushare\\\\cb_d"
+  },
+  {
+   "q": 4,
+   "tool": "dw_get",
+   "args": {
+    "id": "ts_daily"
+   },
+   "expected": "ok",
+   "got": "ok",
+   "passed": true,
+   "text": "{\"dataset\": {\"dataset_id\": \"ts_daily\", \"domain\": \"接口数据\", \"label\": \"tushare.daily\", \"kind\": \"dir\", \"path\": \"quant_backtest\\\\data\\\\tushare\\\\daily\", \"mb\""
+  },
+  {
+   "q": 5,
+   "tool": "dw_query",
+   "args": {
+    "id": "ts_daily",
+    "limit": 3
+   },
+   "expected": "ok",
+   "got": "ok",
+   "passed": true,
+   "text": "{\"state\": \"ok\", \"columns\": [\"ts_code\", \"trade_date\", \"open\", \"high\", \"low\", \"close\", \"pre_close\", \"change\", \"pct_chg\", \"vol\", \"amount\"], \"rows\": [[\"60"
+  },
+  {
+   "q": 6,
+   "tool": "dw_query",
+   "args": {
+    "id": "ts_adj_factor",
+    "limit": 2,
+    "columns": "ts_code"
+   },
+   "expected": "ok",
+   "got": "ok",
+   "passed": true,
+   "text": "{\"state\": \"ok\", \"columns\": [\"ts_code\"], \"rows\": [[\"000005.SZ\"], [\"600601.SH\"]], \"count\": null, \"has_more\": true, \"truncated\": true, \"evidence\": {\"engi"
+  },
+  {
+   "q": 7,
+   "tool": "dw_query",
+   "args": {
+    "id": "ts_daily",
+    "count": true,
+    "limit": 1
+   },
+   "expected": "ok",
+   "got": "ok",
+   "passed": true,
+   "text": "{\"state\": \"ok\", \"columns\": [\"ts_code\", \"trade_date\", \"open\", \"high\", \"low\", \"close\", \"pre_close\", \"change\", \"pct_chg\", \"vol\", \"amount\"], \"rows\": [[\"60"
+  },
+  {
+   "q": 8,
+   "tool": "dw_sample",
+   "args": {
+    "id": "ts_daily",
+    "n": 2
+   },
+   "expected": "ok",
+   "got": "ok",
+   "passed": true,
+   "text": "{\"dataset_id\": \"ts_daily\", \"kind\": \"dir\", \"path\": \"C:\\\\项目\\\\老田的AI助手\\\\quant_backtest\\\\data\\\\tushare\\\\daily\", \"freshness\": \"2026-10-04 12:04\", \"top_entri"
+  },
+  {
+   "q": 9,
+   "tool": "dw_query",
+   "args": {
+    "id": "ts_daily",
+    "where": [
+     {
+      "field": "ts_code",
+      "op": "like",
+      "value": "00000"
+     }
+    ],
+    "limit": 2
+   },
+   "expected": "ok",
+   "got": "ok",
+   "passed": true,
+   "text": "{\"state\": \"ok\", \"columns\": [\"ts_code\", \"trade_date\", \"open\", \"high\", \"low\", \"close\", \"pre_close\", \"change\", \"pct_chg\", \"vol\", \"amount\"], \"rows\": [[\"00"
+  },
+  {
+   "q": 10,
+   "tool": "dw_query",
+   "args": {
+    "id": "no_such_dataset_xyz",
+    "limit": 1
+   },
+   "expected": "error",
+   "got": "error",
+   "passed": true,
+   "text": "dw_query failed: '未知 dataset_id: no_such_dataset_xyz'"
+  }
+ ],
+ "passed": 10,
+ "total": 10,
+ "note": "经 dw_governance MCP stdio 调用（与 Hermes 注册同一 server）；Hermes 对话入口待 11-05 复测"
+}

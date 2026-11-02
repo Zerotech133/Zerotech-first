@@ -1050,9 +1050,12 @@ color:#fff;font-size:13.5px;cursor:pointer}
             return
 
         if path.startswith('/api/dw/'):
-            # S3-06：数据仓统一查询 POST（api_dw_registry.handle_post；只读，参数校验在模块内）
+            # S3-06：数据仓统一查询 POST（只读；body 由分派读取后传入模块，
+            # 修复 2026-11-02 11-05 runbook 发现的 2 参/3 参不匹配 TypeError）
+            _ln = int(self.headers.get("Content-Length") or 0)
+            _raw = self.rfile.read(_ln) if _ln else b""
             import api_dw_registry
-            api_dw_registry.handle_post(self, path)
+            api_dw_registry.handle_post(self, path, _raw)
             return
         if path.startswith('/api/os/'):
             self._os_goal_post(path)
