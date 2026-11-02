@@ -65,7 +65,7 @@ REGISTRY = {
     9899: "CowAgent console",
     11434: "Ollama",
     3307: "菜鸟MySQL(Docker)",
-    8093: "数据仓管理预览(daily_ui_preview_server.py)",
+    8093: "组织架构图注册(org_registry_server.py)",  # 2026-11-03 诊断修正：原登记数据仓预览已不实
     8096: "军团作战大屏API(api_legion_ops.py/v2)",  # 2026-10-22 TF-AUDIT 归因纠正：K-STOCK-394 原登记 km_feishu_hub 已迁 8099，现持有者=军团大屏（/api/legion/ops 实测返回 roster），legion_scheduler/academy_worker_plan 均调用此口
     8095: "picks定时发布调度(publish_schedule_server.py)",
     8097: "推送中台总览(push_admin_server.py)",

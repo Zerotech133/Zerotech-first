@@ -28,6 +28,18 @@ function Ensure($port, $script, $log, $pyExe = $py) {
     if ($up2) { Write-Output "[OK] port $port started" } else { Write-Output "[FAIL] port $port" }
 }
 
+# K-8093 (11-03): one-shot sentinel for org_registry_server port 8093.
+# The 8093 process is elevated; only this elevated task can stop it.
+$flag8093 = 'C:\Temp\LEGION_8093_RESTART.flag'
+if (Test-Path $flag8093) {
+    Remove-Item $flag8093 -Force -ErrorAction SilentlyContinue
+    ('restart-flag-8093: killing org_registry_server ' + (Get-Date -Format s)) |
+        Out-File 'C:\Temp\legion_ops_restart.log' -Append -Encoding utf8
+    $c8093 = Get-NetTCPConnection -LocalPort 8093 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($c8093) { Stop-Process -Id $c8093.OwningProcess -Force -ErrorAction SilentlyContinue }
+    Start-Sleep -Seconds 2
+}
+
 # 8796 legion_command serve.py: org sandbox + intent-card contract endpoint.
 # Pinned to the repo venv (C:\aios\CowAgent\venv): the tooling-managed venv can be
 # reclaimed (K-STOCK-413), which would make this service silently vanish.

@@ -575,7 +575,7 @@ def task_create(p):
         if p.get("agent"):
             env["AGENT_NAME"] = str(p["agent"]).strip().upper()
         r = subprocess.run(args, capture_output=True, text=True, encoding="utf-8",
-                           errors="replace", timeout=120, cwd=ROOT)
+                           errors="replace", timeout=120, cwd=ROOT, env=env)
     except subprocess.TimeoutExpired:
         return "devtask new 超时（120s）", None
     if r.returncode != 0:
