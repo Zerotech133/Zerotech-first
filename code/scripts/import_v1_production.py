@@ -9,18 +9,22 @@ Migrates: candidate_pool, candidate_asset, trade_plan, order_intent, order_reque
 Also UPDATEs: v2_position (avg_cost/pnl/stop_loss/trade_plan_id)
               v2_replay   (open/close date, qty, prices, review_status, outcome)
 """
+import os
 import psycopg2
 from psycopg2.extras import Json, RealDictCursor
 import sys
 
+from zhice_os_v2.config.settings import get_settings
+
 # ── Connection configs ────────────────────────────────────────────────────────
+# 凭据只从环境读取；不再在源码中硬编码。
 V1_DBS = {
-    'CN':     dict(host='localhost', dbname='zhice',        user='zhice', password='lmkj929292'),
-    'US':     dict(host='localhost', dbname='zhice_us',     user='zhice', password='lmkj929292'),
-    'HK':     dict(host='localhost', dbname='zhice_hk',     user='zhice', password='lmkj929292'),
-    'CRYPTO': dict(host='localhost', dbname='zhice_crypto', user='zhice', password='lmkj929292'),
+    'CN':     os.getenv('V1_DB_URL_CN') or os.getenv('V1_DB_URL'),
+    'US':     os.getenv('V1_DB_URL_US') or os.getenv('V1_DB_URL'),
+    'HK':     os.getenv('V1_DB_URL_HK') or os.getenv('V1_DB_URL'),
+    'CRYPTO': os.getenv('V1_DB_URL_CRYPTO') or os.getenv('V1_DB_URL'),
 }
-V2_DSN = dict(host='localhost', dbname='zhice_os_v2', user='zhice', password='zhice_pass')
+V2_DSN = get_settings().db_main_url
 
 # Latest strategy_version_id per market (fallback for portfolio_snapshot where V1 sv is NULL)
 LATEST_SV = {}
@@ -548,7 +552,7 @@ def update_replays(market, v1_conn, v2_conn):
 
 # ── Main ───────────────────────────────────────────────────────────────────────
 def main():
-    v2_conn = psycopg2.connect(**V2_DSN)
+    v2_conn = psycopg2.connect(V2_DSN)
 
     # Pre-load latest strategy_version per market (fallback for NULL sv_id)
     cur = v2_conn.cursor()

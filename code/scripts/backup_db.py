@@ -5,7 +5,7 @@ import os
 import subprocess
 from datetime import datetime
 
-DB_URL = os.getenv("DB_MAIN_URL", "postgresql://zhice:zhice_pass@localhost:5432/zhice_os_v2")
+DB_URL = os.getenv("DB_MAIN_URL") or __import__("zhice_os_v2.config.settings", fromlist=["get_settings"]).get_settings().db_main_url
 
 
 def main() -> None:

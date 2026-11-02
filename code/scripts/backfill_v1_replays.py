@@ -1,10 +1,13 @@
 """补建 V1 缺失的复盘：8/14（31笔）与 8/19（38笔）有平仓但 replay_case 无记录。
 从 V1 position_lot 反推生成 v2_replay，并同步 v2_position 的最终平仓态。"""
+import os
 import psycopg2, psycopg2.extras
 from datetime import datetime, timezone
 
-v1 = psycopg2.connect("host=localhost dbname=zhice user=zhice password=lmkj929292")
-v2 = psycopg2.connect("host=localhost dbname=zhice_os_v2 user=zhice password=zhice_pass")
+from zhice_os_v2.config.settings import get_settings
+
+v1 = psycopg2.connect(os.getenv("V1_DB_URL_CN") or os.getenv("V1_DB_URL") or "")
+v2 = psycopg2.connect(get_settings().db_main_url)
 vc = v1.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 wc = v2.cursor()
 

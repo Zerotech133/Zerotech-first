@@ -6,8 +6,8 @@ from datetime import datetime, timezone
 
 from sqlalchemy import create_engine, text
 
-V1_URL = os.getenv("V1_DB_URL", "postgresql://zhice:lmkj929292@localhost:5432/zhice")
-V2_URL = os.getenv("V2_DB_URL", "postgresql://zhice:zhice_pass@localhost:5432/zhice_os_v2")
+V1_URL = os.getenv("V1_DB_URL")
+V2_URL = os.getenv("V2_DB_URL") or __import__("zhice_os_v2.config.settings", fromlist=["get_settings"]).get_settings().db_main_url
 
 
 def main() -> None:

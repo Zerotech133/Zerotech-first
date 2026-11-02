@@ -1,14 +1,17 @@
 """回填成交记录数据：SELL fill 盈亏（V1 position 关联）+ 理由映射（candidate_reason）。"""
+import os
 import psycopg2, psycopg2.extras
 
-# V1 库映射：fill_record.id 前缀各库独立，v2 fill_id 格式 {mkt}_fill_{id}
+from zhice_os_v2.config.settings import get_settings
+
+# V1 库映射：凭据只从环境读取。
 V1_DBS = {
-    "cn": "host=localhost dbname=zhice user=zhice password=lmkj929292",
-    "us": "host=localhost dbname=zhice_us user=zhice password=lmkj929292",
-    "hk": "host=localhost dbname=zhice_hk user=zhice password=lmkj929292",
-    "crypto": "host=localhost dbname=zhice_crypto user=zhice password=lmkj929292",
+    "cn": os.getenv("V1_DB_URL_CN") or os.getenv("V1_DB_URL"),
+    "us": os.getenv("V1_DB_URL_US") or os.getenv("V1_DB_URL"),
+    "hk": os.getenv("V1_DB_URL_HK") or os.getenv("V1_DB_URL"),
+    "crypto": os.getenv("V1_DB_URL_CRYPTO") or os.getenv("V1_DB_URL"),
 }
-v2 = psycopg2.connect("host=localhost dbname=zhice_os_v2 user=zhice password=zhice_pass")
+v2 = psycopg2.connect(get_settings().db_main_url)
 wc = v2.cursor()
 
 total_pnl = 0

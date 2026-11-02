@@ -7,12 +7,9 @@
 """
 import psycopg2
 
-conn = psycopg2.connect(
-    host="localhost",
-    dbname="zhice_os_v2",
-    user="zhice",
-    password="zhice_pass",
-)
+from zhice_os_v2.config.settings import get_settings
+
+conn = psycopg2.connect(get_settings().db_main_url)
 cur = conn.cursor()
 
 # 注册策略主表行

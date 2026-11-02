@@ -1,6 +1,8 @@
 """回填 SELL 成交的卖出理由：从 v2_replay.exit_reason 匹配当日平仓。"""
 import psycopg2
 
+from zhice_os_v2.config.settings import get_settings
+
 EXIT_TEXT = {
     "TAKE_PROFIT": "止盈离场：达到目标涨幅，锁定利润",
     "STOP_LOSS": "止损离场：跌破止损位，执行风控纪律",
@@ -8,7 +10,7 @@ EXIT_TEXT = {
     "EXIT": "策略出场：触发策略出场规则",
 }
 
-v2 = psycopg2.connect("host=localhost dbname=zhice_os_v2 user=zhice password=zhice_pass")
+v2 = psycopg2.connect(get_settings().db_main_url)
 c = v2.cursor()
 
 # 只处理 SELL fill（通过 join 链判 side）
