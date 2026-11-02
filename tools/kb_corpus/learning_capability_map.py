@@ -29,7 +29,7 @@ DOMAIN = ("量化 AI 模型 算法 因子 回测 数据 机器学习 Python 代�
           "过拟合 未来函数 幸存者偏差 滑点 手续费 撮合 复盘").split()
 
 TACTICS = [
-    ("缠论结构（笔/线段/中枢/背驰/买卖点）", "缠论", ["缠论", "中枢", "背驰", "线段", "买卖点", "级别", "分型", "走势类型"], "B", "分钟/日线K线"),
+    ("缠论结构（笔/线段/中枢/背驰/买卖点）", "缠论", ["缠论", "中枢", "背驰", "线段", "买卖点", "级别", "分型", "走势类型"], "A", "分钟/日线K线"),
     ("均线系统（粘合/多头排列/支撑）", "均线", ["均线", "多头排列", "空头排列", "粘合", "金叉", "死叉"], "A", "日线+复权"),
     ("MACD/KDJ/RSI 指标与背离", "指标", ["MACD", "KDJ", "RSI", "DIF", "DEA", "背离"], "A", "日线"),
     ("量价与筹码（放量/缩量/筹码）", "量价", ["放量", "缩量", "量能", "筹码", "换手", "成交量"], "A", "日线+筹码"),
@@ -49,7 +49,7 @@ DATA_CAPS = [
     ("研报/评级", ["research_report", "report_rc"], "已入库"),
     ("新闻/舆情", ["news", "xueqiu"], "已入库"),
     ("指数/板块权重", ["index_weight", "index_classify"], "已入库"),
-    ("分钟级K线", ["minute", "min_bar", "stk_mins"], "**缺失（需补齐）**"),
+    ("分钟级K线（1分钟）", ["stk_mins"], "已入库（tushare.stk_mins：5,038 代码 / 202509–202611 / 1分钟）"),
     ("盘口/Level2", ["level2", "tick", "盘口"], "**缺失（需补齐）**"),
 ]
 
@@ -140,7 +140,7 @@ for name, cat, kws, comp, dep in TACTICS:
         "name": name, "category": cat, "unit_support": len(hit_units),
         "samples": samples, "computability": comp, "data_dependency": dep,
         "warehouse_support": mapped or (["日线行情"] if "日线" in dep else []),
-        "gap": "" if comp != "B" else "分钟K线缺失（缠论笔/中枢需分钟级或近似日线实现）",
+        "gap": "数据已具备（stk_mins 1分钟）；缠论笔/中枢/背驰因子待实现（W2+）" if cat == "缠论" else "",
     })
 
 # ---------- 4) 补齐与细化因子 ----------
@@ -153,7 +153,7 @@ factors = [
     {"factor": "筹码集中度", "formula": "cyq_chips 90%成本区间宽度/中位成本", "data": "筹码分布", "status": "✅ 已实现（筹码探针714值；cyq 覆盖不足）", "tactic": "量价"},
     {"factor": "涨停后行为", "formula": "limit_list_d 涨停后 N 日收益/回落", "data": "涨跌停+日线", "status": "✅ 已实现（learning_factors.py，覆盖≈95%）", "tactic": "量价"},
     {"factor": "资金流强度", "formula": "moneyflow 净流入/成交额 5日均", "data": "资金流", "status": "✅ 已实现（learning_factors.py，覆盖≈95%）", "tactic": "量价"},
-    {"factor": "缠论笔/中枢/背驰强度", "formula": "笔端点序列→中枢区间/背驰幅度", "data": "分钟K线（缺失）", "status": "**需补齐分钟数据后实现**", "tactic": "缠论"},
+    {"factor": "缠论笔/中枢/背驰强度", "formula": "笔端点序列→中枢区间/背驰幅度", "data": "分钟K线（stk_mins）", "status": "数据已具备，待实现（W2+）", "tactic": "缠论"},
     {"factor": "盘口/分时特征", "formula": "买卖盘不平衡/大单占比", "data": "Level2（缺失）", "status": "**不可实现（数据缺口）**", "tactic": "短线"},
     {"factor": "博主方法论情绪分", "formula": "文本情绪/确定性词频（需 NLP）", "data": "转写文本", "status": "需 NLP 提炼（研究级）", "tactic": "心理"},
 ]
