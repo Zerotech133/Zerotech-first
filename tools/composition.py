@@ -50,6 +50,7 @@ ROOT = Path(__file__).resolve().parents[1]
 COMP = ROOT / "compositions"
 SCHEMA_PATH = COMP / "_schema" / "composition.schema.json"
 JOB_MAP_PATH = COMP / "_schema" / "job_map.yaml"
+PLANNED_REFS_PATH = COMP / "_schema" / "planned_refs.yaml"
 REGISTRY_PATH = COMP / "registry.json"
 
 # 与 composition.schema.json metadata.lifecycle enum 保持一致
@@ -118,7 +119,8 @@ def _walk_ids(obj, keys=("agent_id", "agents", "agent")):
 
 def load_registries() -> dict:
     regs = {"agent": set(), "skill": set(), "strategy": set(),
-            "dataset": set(), "page": set(), "job": set(), "job_planned": set()}
+            "dataset": set(), "page": set(), "job": set(), "job_planned": set(),
+            "planned": set()}
     # agents：hr 目录 + org/team
     hr = ROOT / "agent_platform" / "hr"
     if hr.exists():
@@ -167,6 +169,15 @@ def load_registries() -> dict:
             regs["job"].add(str(k))
         else:
             regs["job_planned"].add(str(k))
+    # planned refs（W1 收口）：显式登记 owner/due/acceptance，视为已登记，不计 warning
+    if PLANNED_REFS_PATH.exists() and yaml is not None:
+        try:
+            pr = yaml.safe_load(PLANNED_REFS_PATH.read_text(encoding="utf-8")) or {}
+            for item in (pr.get("refs") or []):
+                if isinstance(item, dict) and item.get("ref"):
+                    regs["planned"].add(str(item["ref"]))
+        except Exception:  # noqa: BLE001 — 坏 planned_refs 不阻断，但会保留 warning
+            pass
     return regs
 
 
@@ -176,6 +187,8 @@ def resolve_ref(ref: str, regs: dict, errors: list, warnings: list) -> None:
         return
     kind, rest = ref.split("/", 1)
     token = rest.split("/")[-1]
+    if ref in regs.get("planned", set()):
+        return  # 已显式登记为 planned（owner/due/acceptance），W1 视为可解析
     if kind == "agent":
         if rest not in regs["agent"]:
             errors.append(f"agent 未登记：{ref}")

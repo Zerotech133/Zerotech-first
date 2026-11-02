@@ -1,0 +1,44 @@
+schema: zerobound/composition-planned-refs/v0.1
+updated_at: "2026-11-02"
+note: "W1 引用收口：已声明但载体未就绪的 planned 引用。owner/due/acceptance 必须齐全；validate 将其视为已登记（不计 warning），11-16 复审时逐项核销或升级为 active。"
+refs:
+  - ref: dataset/file/temp_contract
+    owner: DATA1
+    due: "2026-11-12"
+    reason: "C:\\Temp 契约产物聚合口径无单文件真实载体；单件白名单见 dataset_registry TEMP_CONTRACT_WHITELIST"
+    acceptance: "契约目录化后登记为 dataset/file/<token> 单件"
+  - ref: dataset/file/strategy_registry
+    owner: STRAT1
+    due: "2026-11-12"
+    reason: "真实载体为代码/注册表（.py/.json），file-kind 解析器未覆盖"
+    acceptance: "补 dataset/registry/strategy_registry 或 file-kind 解析规则（W3）"
+  - ref: dataset/file/acceptance_corpus
+    owner: ACAD1
+    due: "2026-11-04"
+    reason: "黄忠 11-04 验收产物（语料）尚未封板"
+    acceptance: "11-04 finalize 后登记实际 corpus 文件"
+  - ref: dataset/file/acceptance_report
+    owner: ACAD1
+    due: "2026-11-04"
+    reason: "黄忠 11-04 正式回执尚未生成"
+    acceptance: "11-04 finalize 后登记正式 report"
+  - ref: dataset/file/acceptance_evidence
+    owner: ACAD1
+    due: "2026-11-04"
+    reason: "黄忠 11-04 证据包尚未封板"
+    acceptance: "11-04 finalize 后登记 evidence bundle"
+  - ref: job/acceptance-1104-preflight
+    owner: ACAD1
+    due: "2026-11-04"
+    reason: "验收流程命令，非 Windows 计划任务；不伪造任务"
+    acceptance: "11-04 执行后登记为 job 或接口命令"
+  - ref: job/acceptance-1104-runner
+    owner: ACAD1
+    due: "2026-11-04"
+    reason: "验收 runner 为工具命令，未建计划任务"
+    acceptance: "11-04 执行后登记"
+  - ref: job/acceptance-1104-finalize
+    owner: ACAD1
+    due: "2026-11-04"
+    reason: "验收 finalize 为工具命令，未建计划任务"
+    acceptance: "11-04 执行后登记"
