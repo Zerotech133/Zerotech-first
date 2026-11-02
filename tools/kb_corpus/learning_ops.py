@@ -353,6 +353,93 @@ def _archive_target(rel: str | Path) -> Path:
     return p if p.is_absolute() else REPO / p
 
 
+ARCHIVE_CONTRACT = "learning_archive_manifest.v1"
+OWNER_AI = "DATA1"
+ARTIFACT_KEYS = ("specs", "reports", "deliverables", "files", "knowledge_assets")
+
+
+def resolve_artifact_path(path: str) -> str:
+    """工件路径解析：仓库相对 → 平台 deliverables → 绝对路径原样。"""
+    p = Path(path)
+    if p.is_absolute():
+        return str(p)
+    if (REPO / p).exists():
+        return path
+    plat = Path(r"C:\项目\deliverables") / p.name
+    if plat.exists():
+        return str(plat)
+    return path
+
+
+def artifacts_from_manifest(man: dict) -> list[dict]:
+    """旧 manifest（specs/reports/deliverables/files）→ v2 artifacts[{path,sha256,size}]。"""
+    out, seen = [], set()
+    for key in ARTIFACT_KEYS:
+        for e in man.get(key) or []:
+            if not isinstance(e, dict):
+                continue
+            path = e.get("path") or e.get("file")
+            if not path or path in seen:
+                continue
+            seen.add(path)
+            resolved = resolve_artifact_path(path)
+            out.append({"path": resolved, "sha256": e.get("sha256") or "",
+                        "size": int(e.get("size") or 0)})
+    return out
+
+
+def build_archive_manifest_v2(project: dict, artifacts: list[dict],
+                              archived_at: str | None = None) -> dict:
+    """统一归档契约 learning_archive_manifest.v1（字段见 docs/standards/schemas）。"""
+    return {
+        "schema_version": ARCHIVE_CONTRACT,
+        "project_id": project.get("project_id"),
+        "name": project.get("name") or project.get("project_id"),
+        "status": "archived",
+        "archived_at": archived_at or datetime.now().astimezone().isoformat(timespec="seconds"),
+        "owner_ai": OWNER_AI,
+        "owner_cn": project.get("owner") or "",
+        "conclusions": project.get("conclusions") or project.get("conclusion")
+        or "【结项结论占位】待 Owner 填写：是否达成目标/保留价值/停止投入判断",
+        "forbidden": ["不得基于已结项资产直接投入实盘策略（新假设须重走四关）",
+                      "不得将归档资产复制回生产目录后继续迭代"],
+        "continue_entry": "从 artifacts 取证据 → 新假设按 SOP 四关（PIT/成本/walk-forward/容量）"
+                          "重开项目线（需老田/审批）",
+        "artifacts": artifacts,
+        "legacy_note": "registry 中的旧字段（source/artifacts 计数/note）保留；本文件为统一契约 v1",
+    }
+
+
+def _archive_dir(proj: dict) -> Path:
+    rel = proj.get("archive") or f"_archive/{datetime.now().strftime('%Y-%m-%d')}_{_safe_name(proj.get('name') or proj.get('project_id'))}"
+    return _archive_target(rel)
+
+
+def adapt_v2_manifest(project: dict, write: bool = False) -> dict:
+    """为既有归档目录生成 manifest.v2.json（不覆盖/不改动旧 ENTRY.md 与 manifest.json）。"""
+    target = _archive_dir(project)
+    v2_p = target / "manifest.v2.json"
+    old_p = target / "manifest.json"
+    if v2_p.exists():
+        return {"mode": "v2_exists", "path": str(v2_p), "write": write}
+    if not old_p.exists():
+        return {"mode": "no_legacy_manifest", "path": str(v2_p), "write": write}
+    old = json.loads(old_p.read_text(encoding="utf-8"))
+    arts = artifacts_from_manifest(old)
+    if not arts:
+        arts = [{"path": a.get("path", ""), "sha256": a.get("sha256") or "",
+                 "size": int(a.get("size") or 0)} for a in old.get("source_pdfs") or []
+                if a.get("path")]
+    man = build_archive_manifest_v2(project, arts,
+                                   archived_at=old.get("archived_at"))
+    if not write:
+        return {"mode": "dry_run_adapt", "path": str(v2_p), "artifacts": len(arts),
+                "write": False}
+    target.mkdir(parents=True, exist_ok=True)
+    v2_p.write_text(json.dumps(man, ensure_ascii=False, indent=1), encoding="utf-8")
+    return {"mode": "v2_created", "path": str(v2_p), "artifacts": len(arts), "write": True}
+
+
 def archive(kb: Path, project_id: str, write: bool = False,
             date_tag: str | None = None) -> dict:
     """结项归档：生成 _archive/<日期>_<项目名>/{ENTRY.md,manifest.json}（dry-run 默认）。"""
@@ -366,14 +453,11 @@ def archive(kb: Path, project_id: str, write: bool = False,
     target = _archive_target(target_rel)
     if proj.get("status") == "archived" or (target / "manifest.json").exists():
         exists = (target / "manifest.json").exists()
-        todo = []
-        if write and not (target / "ENTRY.md").exists():
-            todo.append("ENTRY.md")
-        if write and not (target / "manifest.json").exists():
-            todo.append("manifest.json")
+        adapted = adapt_v2_manifest(proj, write=write) if write else {"mode": "skip"}
         return {"project_id": project_id, "mode": "already_archived",
-                "archive": target_rel, "exists": exists, "completed": todo,
-                "write": write, "note": "已归档（只读），不重复归档/不移动任何文件"}
+                "archive": target_rel, "exists": exists,
+                "v2": adapted, "write": write,
+                "note": "已归档（只读）；仅补 manifest.v2.json 适配文件，不改旧文件/不移动"}
     pdfs = find_project_pdfs(kb, proj)
     units = kb / "30_知识单元" / f"{project_id}_units_draft.jsonl"
     artifacts = [p for p in pdfs + ([units] if units.exists() else []) if p.exists()]
@@ -385,30 +469,35 @@ def archive(kb: Path, project_id: str, write: bool = False,
         return {"project_id": project_id, "mode": "dry_run", **plan}
     target.mkdir(parents=True, exist_ok=True)
     now = datetime.now().astimezone().isoformat(timespec="seconds")
-    man = {"schema_version": "project_archive.v1", "project_id": project_id,
-           "name": name, "status": "archived", "archived_at": now,
-           "files": plan["files"], "artifacts": proj.get("artifacts") or {},
-           "conclusion": "【结项结论占位】待 Owner 填写：是否达成目标/保留价值/停止投入判断",
-           "forbidden": ["不得基于已结项资产直接投入实盘策略（新假设须重走四关）",
-                         "不得将归档资产复制回生产目录后继续迭代"],
-           "rollback": "从本目录 manifest.json 取产物路径 → 新假设按 SOP 四关重开项目线（需老田/审批）"}
+    v2_artifacts = [{"path": f["path"], "sha256": f["sha256"], "size": f["bytes"]}
+                    for f in plan["files"]]
+    man = build_archive_manifest_v2(proj, v2_artifacts, archived_at=now)
+    v2_p = target / "manifest.v2.json"
+    safe(v2_p, kb)
+    v2_p.write_text(json.dumps(man, ensure_ascii=False, indent=1), encoding="utf-8")
+    legacy = {"schema_version": "project_archive.v1", "project_id": project_id,
+              "name": name, "status": "archived", "archived_at": now,
+              "files": plan["files"], "artifacts": proj.get("artifacts") or {},
+              "note": "legacy 兼容文件；统一契约为 manifest.v2.json（learning_archive_manifest.v1）"}
     man_p = target / "manifest.json"
     safe(man_p, kb)
-    man_p.write_text(json.dumps(man, ensure_ascii=False, indent=1), encoding="utf-8")
+    man_p.write_text(json.dumps(legacy, ensure_ascii=False, indent=1), encoding="utf-8")
     entry = [f"# {name} — 归档入口（已结项只读）", "",
-             f"> 归档时间：{now}｜项目：`{project_id}`｜状态：**archived（只读）**", "",
+             f"> 归档时间：{now}｜项目：`{project_id}`｜状态：**archived（只读）**｜"
+             f"**契约：`{ARCHIVE_CONTRACT}`（manifest.v2.json）**", "",
              "## 一、结论（先看这个）", "",
-             man["conclusion"], "",
-             "## 二、产物索引", ""]
-    for f in plan["files"]:
-        entry.append(f"- `{f['path']}`（{f['bytes']}B，sha256 `{f['sha256'][:16]}…`）")
+             man["conclusions"], "",
+             "## 二、产物索引（artifacts，含 sha256）", ""]
+    for f in v2_artifacts:
+        entry.append(f"- `{f['path']}`（{f['size']}B，sha256 `{(f['sha256'] or '')[:16]}…`）")
     entry += ["", "## 三、禁止与续做", ""] + [f"- {x}" for x in man["forbidden"]]
-    entry += ["", "## 四、回滚/解冻", "", f"- {man['rollback']}", ""]
+    entry += ["", "## 四、回滚/解冻", "", f"- {man['continue_entry']}", ""]
     (target / "ENTRY.md").write_text("\n".join(entry), encoding="utf-8")
     proj.update({"status": "archived", "archive": target_rel, "archived_at": now})
     save_reg(reg)
     return {"project_id": project_id, "mode": "archived", **plan,
-            "created": [str(target / "ENTRY.md"), str(target / "manifest.json")],
+            "manifest_v2": str(v2_p), "contract": ARCHIVE_CONTRACT,
+            "created": [str(target / "ENTRY.md"), str(v2_p), str(man_p)],
             "status_updated": "archived"}
 
 

@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+
+# DEPRECATED（2026-11-02 · v2 已统一）：历史单点工具，不再作为学习卡发布入口（仅保留历史报告复现/审计引用，行为未改）。
+# 替代链：tools/kb_corpus/card_from_units.py（生成）→ tools/kb_corpus/card_precheck_laomu.py（预审）→ tools/kb_corpus/learning_release.py（发布门）
+# 新流程禁止直接用本工具写学习卡/绕过发布门；清单见 docs/standards/2026-11-02_学习工具弃用清单_v1.md
 """学习卡第三轮扩卡候选（task-126）：124 卡 21 主题深度分析 → <3 卡主题缺口 → 20-30 候选。
 
 复用：learning_analysis.classify_theme（21 主题）、card_proposal_v3 的单元质量/模板思路。

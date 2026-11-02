@@ -1,0 +1,46 @@
+{
+ "generated_at": "2026-11-03T00:16:16+08:00",
+ "stage": "all",
+ "projects": [
+  {
+   "project_id": "learnpdf_liangxue",
+   "status": "archived",
+   "stages": {
+    "archive": {
+     "ok": true,
+     "errors": []
+    }
+   },
+   "fail": 0
+  },
+  {
+   "project_id": "laomu_notes",
+   "status": "distilling",
+   "stages": {
+    "intake": {
+     "ok": true,
+     "errors": []
+    },
+    "units": {
+     "ok": true,
+     "errors": []
+    },
+    "candidates": {
+     "ok": true,
+     "errors": []
+    },
+    "publish": {
+     "ok": true,
+     "errors": []
+    }
+   },
+   "fail": 0
+  }
+ ],
+ "summary": {
+  "projects": 2,
+  "checks": 5,
+  "fail": 0
+ },
+ "ok": true
+}

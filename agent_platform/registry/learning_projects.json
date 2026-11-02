@@ -51,7 +51,23 @@
     "book_cards": 9
    },
    "sop": "docs/standards/2026-11-02_学习项目标准化流程_v1.md",
-   "note": "已归档只读；结论=无正向alpha；禁止再投入做多/反向策略"
+   "note": "已归档只读；结论=无正向alpha；禁止再投入做多/反向策略",
+   "schema_version": "learning_project.v1",
+   "lifecycle": {
+    "stage": "archived",
+    "stage_updated_at": "2026-11-02T03:50:25+08:00",
+    "gate": {
+     "ok": true,
+     "checked_at": "2026-11-03T00:16:16+08:00"
+    },
+    "history": [
+     {
+      "stage": "archived",
+      "at": "2026-11-02T03:50:25+08:00",
+      "source": "registry_backfill"
+     }
+    ]
+   }
   },
   {
    "project_id": "laomu_notes",
@@ -67,8 +83,25 @@
    "note": "源文件已入库（md，48KB，29 条视频文案）；S2 文本抽取完成，进入流水线",
    "manifest_path": "C:\\项目\\知识库\\05_学习源件\\laomu_notes\\manifest.json",
    "updated_at": "2026-11-02T04:11:50+08:00",
-   "stage_updated_at": "2026-11-02T04:11:51+08:00"
+   "stage_updated_at": "2026-11-02T20:00:01+08:00",
+   "schema_version": "learning_project.v1",
+   "lifecycle": {
+    "stage": "distilling",
+    "stage_updated_at": "2026-11-02T18:37:49+08:00",
+    "gate": {
+     "ok": true,
+     "checked_at": "2026-11-03T00:16:16+08:00"
+    },
+    "history": [
+     {
+      "stage": "distilling",
+      "at": "2026-11-02T03:50:25+08:00",
+      "source": "registry_backfill"
+     }
+    ]
+   }
   }
  ],
- "sop": "docs/standards/2026-11-02_学习项目标准化流程_v1.md"
+ "sop": "docs/standards/2026-11-02_学习项目标准化流程_v1.md",
+ "updated_at": "2026-11-02T18:38:01+08:00"
 }

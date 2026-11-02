@@ -1,7 +1,7 @@
 {
  "schema_version": "learning_projects_dashboard.v2",
  "kind": "learning_projects_dashboard",
- "generated_at": "2026-11-02T18:25:51+08:00",
+ "generated_at": "2026-11-03T00:16:22+08:00",
  "owner": {
   "agent_id": "DATA1",
   "cn": "张松",
@@ -25,6 +25,9 @@
   "gate_passed": true,
   "gate_v2_ok": true,
   "gate_v2_fail": 0,
+  "lifecycle_projects": 2,
+  "lifecycle_gate_ok": 2,
+  "registry_gate_synced": false,
   "issues": 0,
   "high": 0,
   "kb_units": 516
@@ -34,6 +37,22 @@
    "project_id": "learnpdf_liangxue",
    "name": "学习PDF·量学两本书",
    "type": "book",
+   "schema_version": "learning_project.v1",
+   "lifecycle": {
+    "stage": "archived",
+    "stage_updated_at": "2026-11-02T03:50:25+08:00",
+    "gate": {
+     "ok": true,
+     "checked_at": "2026-11-03T00:16:16+08:00"
+    },
+    "history": [
+     {
+      "stage": "archived",
+      "at": "2026-11-02T03:50:25+08:00",
+      "source": "registry_backfill"
+     }
+    ]
+   },
    "status": "archived",
    "stage": "archived",
    "stage_label": "已归档（只读）",
@@ -56,7 +75,7 @@
      "book_cards": 9
     }
    },
-   "last_update": "2026-11-02T17:33:16+08:00",
+   "last_update": "2026-11-03T00:03:17+08:00",
    "next_action": null,
    "note": "已归档只读；结论=无正向alpha；禁止再投入做多/反向策略",
    "archive": "_archive/2026-11-02_学习PDF_量学/"
@@ -65,6 +84,22 @@
    "project_id": "laomu_notes",
    "name": "老木创业笔记（交易老木 29 条视频文案汇编）",
    "type": "notes",
+   "schema_version": "learning_project.v1",
+   "lifecycle": {
+    "stage": "distilling",
+    "stage_updated_at": "2026-11-02T18:37:49+08:00",
+    "gate": {
+     "ok": true,
+     "checked_at": "2026-11-03T00:16:16+08:00"
+    },
+    "history": [
+     {
+      "stage": "distilling",
+      "at": "2026-11-02T03:50:25+08:00",
+      "source": "registry_backfill"
+     }
+    ]
+   },
    "status": "distilling",
    "stage": "distilling",
    "stage_label": "提炼中",
@@ -75,12 +110,12 @@
     "C:\\项目\\知识库\\05_学习源件\\laomu_notes\\source"
    ],
    "drafts": {
-    "units_draft": 0,
-    "manifest": false,
+    "units_draft": 288,
+    "manifest": true,
     "pipeline_action": "pipelined",
     "artifacts": {}
    },
-   "last_update": "2026-11-02T17:33:16+08:00",
+   "last_update": "2026-11-03T00:03:17+08:00",
    "next_action": "待老田提供源文件（放 C:\\项目\\PDF\\ 或知识库）→ DATA2 入库 → S2 起流水线",
    "note": "源文件已入库（md，48KB，29 条视频文案）；S2 文本抽取完成，进入流水线",
    "archive": "_archive/2026-11-02_老木创业笔记/"
@@ -92,10 +127,10 @@
    "label": "学习入库",
    "desc": "入库巡检",
    "schedule": "04:00",
-   "next_run": "2026-11-02T18:33:14",
-   "state": "Queued",
-   "last_run": "2026-11-02T17:33:16+08:00",
-   "report": "C:\\项目\\老田的AI助手\\research\\reports\\learning_intake_20261102.json"
+   "next_run": "2026-11-03T00:33:14",
+   "state": "Ready",
+   "last_run": "2026-11-03T00:03:17+08:00",
+   "report": "C:\\项目\\老田的AI助手\\research\\reports\\learning_intake_20261103.json"
   },
   {
    "task": "ZeroBound_LearningStandardize",
@@ -103,8 +138,8 @@
    "desc": "目录/格式标准化",
    "schedule": "10:00",
    "next_run": "2026-11-09T10:00:00",
-   "state": "Queued",
-   "last_run": "2026-11-02T10:00:00+08:00",
+   "state": "Ready",
+   "last_run": "2026-11-02T18:38:01+08:00",
    "report": "C:\\项目\\老田的AI助手\\research\\reports\\learning_standardize_20261102.json"
   },
   {
@@ -112,9 +147,9 @@
    "label": "学习流水线",
    "desc": "S2-S6 流水线推进",
    "schedule": "20:00",
-   "next_run": "2026-11-02T20:00:00",
-   "state": "Queued",
-   "last_run": "2026-11-02T04:11:51+08:00",
+   "next_run": "2026-11-03T20:00:00",
+   "state": "Ready",
+   "last_run": "2026-11-02T20:00:01+08:00",
    "report": "C:\\项目\\老田的AI助手\\research\\reports\\learning_pipeline_20261102.json"
   },
   {
@@ -123,16 +158,16 @@
    "desc": "清单/质量/归档治理",
    "schedule": "02:00",
    "next_run": "2026-11-03T02:00:00",
-   "state": "Queued",
-   "last_run": "2026-11-02T04:02:55+08:00",
+   "state": "Ready",
+   "last_run": "2026-11-02T18:37:55+08:00",
    "report": "C:\\项目\\老田的AI助手\\research\\reports\\learning_governance_20261102.json"
   }
  ],
  "gate": {
   "available": true,
-  "file": "C:\\项目\\老田的AI助手\\research\\reports\\learning_gate_20261102.json",
+  "file": "C:\\项目\\老田的AI助手\\research\\reports\\learning_gate_20261103.json",
   "ok": true,
-  "generated_at": "2026-11-02T17:39:00+08:00",
+  "generated_at": "2026-11-03T00:16:16+08:00",
   "stage": "all",
   "summary": {
    "projects": 2,
@@ -182,6 +217,13 @@
   ],
   "failed_stages": []
  },
+ "lifecycle": {
+  "source": "agent_platform/registry/learning_projects.json",
+  "schema_version": "learning_project.v1",
+  "projects": 2,
+  "gate_ok": 2,
+  "registry_synced": false
+ },
  "quality": {
   "gate_passed": true,
   "issues": 0,
@@ -190,7 +232,7 @@
    {
     "name": "intake",
     "ok": true,
-    "report": "C:\\项目\\老田的AI助手\\research\\reports\\learning_intake_20261102.json"
+    "report": "C:\\项目\\老田的AI助手\\research\\reports\\learning_intake_20261103.json"
    },
    {
     "name": "standardize",

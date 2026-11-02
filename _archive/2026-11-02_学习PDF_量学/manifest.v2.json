@@ -1,0 +1,233 @@
+{
+ "schema_version": "learning_archive_manifest.v1",
+ "project_id": "learnpdf_liangxue",
+ "name": "学习PDF·量学两本书",
+ "status": "archived",
+ "archived_at": "2026-11-02T03:45:48+08:00",
+ "owner_ai": "DATA1",
+ "owner_cn": "DATA1",
+ "conclusions": "【结项结论占位】待 Owner 填写：是否达成目标/保留价值/停止投入判断",
+ "forbidden": [
+  "不得基于已结项资产直接投入实盘策略（新假设须重走四关）",
+  "不得将归档资产复制回生产目录后继续迭代"
+ ],
+ "continue_entry": "从 artifacts 取证据 → 新假设按 SOP 四关（PIT/成本/walk-forward/容量）重开项目线（需老田/审批）",
+ "artifacts": [
+  {
+   "path": "research/strategy_specs/001_量柱七形态.yaml",
+   "sha256": "0133e5aaf911b40f78b895f338cb951fcd3a625c097bfa78ffdfcb021f24cf35",
+   "size": 1968
+  },
+  {
+   "path": "research/strategy_specs/002_黄金柱.yaml",
+   "sha256": "89709a48b9a9a751af2e7d7831b4f3d0b0d87b5f79709b535243147bd261a40c",
+   "size": 1661
+  },
+  {
+   "path": "research/strategy_specs/003_将军柱卧底搭梯.yaml",
+   "sha256": "63bb1b88ed6bff259b2a60e2ba65046f9ad449e49a2d32f3a3cb16a674da1bc3",
+   "size": 1482
+  },
+  {
+   "path": "research/strategy_specs/004_元帅柱零号.yaml",
+   "sha256": "c2e178d6431ccf95fa4cbe54a5e3b91e26bd6aa1c5623e845e495b090631f2e3",
+   "size": 1483
+  },
+  {
+   "path": "research/strategy_specs/005_金线战法三步曲.yaml",
+   "sha256": "d04e6c2d01058940c826bb71955521f2655eb70fc99457a2e964421d4782cfa7",
+   "size": 1655
+  },
+  {
+   "path": "research/strategy_specs/006_大盘阴线长阴短柱.yaml",
+   "sha256": "3bf0db9575b6e99946716acde851fb03b250d73f44dfeb508525d5756473ee2f",
+   "size": 1724
+  },
+  {
+   "path": "research/strategy_specs/007_一剑封喉.yaml",
+   "sha256": "83541d6899376e4ae0dd11cbbf2f4160f9e0818401fbed32352c612f68985e31",
+   "size": 1598
+  },
+  {
+   "path": "research/strategy_specs/008_倍量伸缩.yaml",
+   "sha256": "cc1b1cffd406c32ade9ea8eed516edd6045525a622cc3e0e0929b3fa7c9ae8fe",
+   "size": 1445
+  },
+  {
+   "path": "research/strategy_specs/009_现场直憋.yaml",
+   "sha256": "6df6ff86e08dba3b6740bf98744f03d7382333498accb3b612de4105edd6c0b5",
+   "size": 1415
+  },
+  {
+   "path": "research/strategy_specs/010_3121战法.yaml",
+   "sha256": "b8f3169ee0892047250cf14cb503b2f05428a62c4f8942620c81cff86de21e44",
+   "size": 1452
+  },
+  {
+   "path": "research/strategy_specs/011_间谍战法量学七剑.yaml",
+   "sha256": "ea90581d3b78ce6a9cb1a76dab5d4390013e6bce6161803d6c1ee9398aed492b",
+   "size": 1400
+  },
+  {
+   "path": "research/strategy_specs/012_双阴出货.yaml",
+   "sha256": "8e4871fc4d4722c95d11bd495e6c6a972c4711c68c746775b91b7795112166be",
+   "size": 1469
+  },
+  {
+   "path": "research/strategy_specs/013_兵临城下.yaml",
+   "sha256": "8f39dd84b013f2fc20b2f5fb1ac08ba1b7153d7ab620a89c640d0d0278b8b630",
+   "size": 1536
+  },
+  {
+   "path": "research/strategy_specs/014_接力双阳.yaml",
+   "sha256": "b1f4d5a8313f1fb9c213891af4cd7bd66d1e01543c41f42b71ccc56bf3facd36",
+   "size": 1394
+  },
+  {
+   "path": "research/strategy_specs/015_价升量缩.yaml",
+   "sha256": "a6b9603eed07f04f8b5003168a2502412428e865a0bcd6538337d0eb348e9482",
+   "size": 1481
+  },
+  {
+   "path": "research/strategy_specs/016_平斜交叉.yaml",
+   "sha256": "a4b71063c1ab9b93ace4ac3017bd60ca9dad033c405d3d10ecf7cf0a73d17ac3",
+   "size": 1428
+  },
+  {
+   "path": "research/strategy_specs/017_站稳凹峰.yaml",
+   "sha256": "bd655a6d0ccb7abd387c21d29386b05bcf60e3343a84289e303d8a4e1990040f",
+   "size": 1387
+  },
+  {
+   "path": "research/strategy_specs/018_极阴次阳.yaml",
+   "sha256": "393b98ceaf2654c3442cea90e08e973a08282fa5d4ca7ee45d68e6d3d779a47e",
+   "size": 1451
+  },
+  {
+   "path": "research/strategy_specs/019_牛股量形.yaml",
+   "sha256": "827b0db2471fc88d647edc3a85dd84cbeb81c9ac184065f71cb614d6aaaee742",
+   "size": 1412
+  },
+  {
+   "path": "research/strategy_specs/020_牛股三绝.yaml",
+   "sha256": "a1482f43d113c36b4e8abe138518a9cbee7a0e01dadb25ba2a2e4025e88f82b0",
+   "size": 1617
+  },
+  {
+   "path": "research/strategy_specs/021_十月怀胎.yaml",
+   "sha256": "876963cab60a46e2e91f4a99c772fae7797c694d24be9630d0fdb9807cdc261e",
+   "size": 1340
+  },
+  {
+   "path": "research/strategy_specs/022_凹口淘金.yaml",
+   "sha256": "ca1dbfbed2082b95991e947293d30cbbb2b5dc27fc1b64c6d90eceedc982efc0",
+   "size": 1305
+  },
+  {
+   "path": "research/strategy_specs/023_量学导火索.yaml",
+   "sha256": "965a5888a2b36e2aa2e6905054470c6af00a3b908143535af7bd40ec08f1db28",
+   "size": 1437
+  },
+  {
+   "path": "research/strategy_specs/024_涨停基因.yaml",
+   "sha256": "3af009d6ac88989941dda048b4b430f2ccacb06f4d19f7a69b1bb28d26eb0630",
+   "size": 1509
+  },
+  {
+   "path": "research/reports/H24-26_liangxue_features_20261031.json",
+   "sha256": "6145c417f53df29e5ed6c29a31bb75a411528448d7aa00dcac0a8425a4015f18",
+   "size": 12546
+  },
+  {
+   "path": "research/reports/H24-26_liangxue_features_20261031.md",
+   "sha256": "69e0c5cf20c1a78c72860ae884b98bee460409db2784d96d5aece78dc17d98da",
+   "size": 2246
+  },
+  {
+   "path": "research/reports/H29_liangxue_refined_20261031.json",
+   "sha256": "17369d76fa207b8de61a4c35abb66a94f3f5c72ea1ce989f188f9b748d49398c",
+   "size": 5941
+  },
+  {
+   "path": "research/reports/H29_liangxue_refined_20261031.md",
+   "sha256": "036ba403adb6389caa95c252940e8600357beca92e38b9b3a6f7bc16363afc70",
+   "size": 1438
+  },
+  {
+   "path": "research/reports/H29_param_capacity_20261031.json",
+   "sha256": "f17f008629369deedb91fea6ed29ed6a6ae147429b8ada453794a5abb0eff019",
+   "size": 25093
+  },
+  {
+   "path": "research/reports/H29_param_capacity_20261031.md",
+   "sha256": "4a1607ac5f667ddcc180ecd2057d710518d1512527a69858644351f07c468290",
+   "size": 1085
+  },
+  {
+   "path": "research/reports/book_batch_test_20261101.json",
+   "sha256": "11a724a40aeb81e99923ba7f98cd8c495bac143b264d327eba4c52eea6661de7",
+   "size": 62002
+  },
+  {
+   "path": "research/reports/book_batch_test_20261101.md",
+   "sha256": "ad3e8980ec29c5ac2086387f9d6ffafd77c20792611f2c119239917f6d8fc178",
+   "size": 17694
+  },
+  {
+   "path": "research/reports/lx20_avoid_rule_20261101.json",
+   "sha256": "cb1ed2c9c46f88130b9ac2ec2dda4038a7247fa2f742056b006eb68182f1be49",
+   "size": 146762
+  },
+  {
+   "path": "research/reports/lx20_avoid_rule_20261101.md",
+   "sha256": "239878fe44db15a0dd3f1795e157ca2a9e634eb33be28da78163a7ee2ac01f13",
+   "size": 17506
+  },
+  {
+   "path": "research/reports/pdf_learning_summary_20261101.json",
+   "sha256": "44b75e88be12f99133f05d685573a02c4265a92d0949d88e11cfe8d1e52a5e58",
+   "size": 3373
+  },
+  {
+   "path": "research/reports/reverse_avoid_20261101.json",
+   "sha256": "588704c4d2326dca278a927e435792b8c0ecaa6ec4e1b4f867d1aff0ae946f31",
+   "size": 137498
+  },
+  {
+   "path": "research/reports/reverse_avoid_20261101.md",
+   "sha256": "06d3408a2ddc5921cdf57ce32307d32a8e1c113605524799a906982e4a69c9fc",
+   "size": 16760
+  },
+  {
+   "path": "deliverables/2026-11-01_两本量学PDF学习与选股逻辑总结_v1.md",
+   "sha256": "e05e041ab7bbd18861ca425ce16a8f1c27d68bdcfc8c3a69039225b52e9e6769",
+   "size": 6038
+  },
+  {
+   "path": "deliverables/2026-11-01_开源对标与两本PDF战法盘点_策略库v2.md",
+   "sha256": "db7e0229858e1c96a07abea5f6a2c9c754f05545cf6f87851534f55ec9999bd2",
+   "size": 5993
+  },
+  {
+   "path": "deliverables/2026-10-31_项目PDF读取与量学战法OCR_v1.md",
+   "sha256": "051bb946ed28d0de368e69705edaa4b4b54eb5520b22aa55188db9c398ab4e63",
+   "size": 3346
+  },
+  {
+   "path": "deliverables/2026-10-31_量学特征策略反推_H24-H28_回执_v1.md",
+   "sha256": "280f47e5f21d4c69102dd9ef2aabd1cdd7b09ea1a8a32d140e8b3cb89f966c5c",
+   "size": 2243
+  },
+  {
+   "path": "deliverables/2026-10-31_严格版量学特征_H29_回执_v1.md",
+   "sha256": "63f3acdd6403a39f43897ffbe6021b618413b7a15744e279dfa8d2151d010c55",
+   "size": 3405
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-01_量学选股叠加板块相对强度_数据日20261030.md",
+   "sha256": "",
+   "size": 0
+  }
+ ],
+ "legacy_note": "registry 中的旧字段（source/artifacts 计数/note）保留；本文件为统一契约 v1"
+}

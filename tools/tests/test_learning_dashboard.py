@@ -198,3 +198,60 @@ def test_page_gate_block():
     assert 'id="gate"' in html
     assert "gate.failed_stages" in html
     assert "❌ 失败" in html and "✅ 通过" in html
+
+# ---------------------------------------------------------------------------
+# 7. 项目注册表 lifecycle v2（阶段历史 + gate 写回）
+# ---------------------------------------------------------------------------
+REGISTRY = REPO / "agent_platform" / "registry" / "learning_projects.json"
+
+
+def test_registry_lifecycle_contract():
+    import json as _json
+    reg = _json.loads(REGISTRY.read_text(encoding="utf-8"))
+    stages = set(reg.get("stages") or [])
+    assert stages, "registry stages 缺失"
+    for proj in reg.get("projects") or []:
+        assert proj.get("schema_version") == "learning_project.v1", proj.get("project_id")
+        life = proj.get("lifecycle") or {}
+        assert life.get("stage") == proj.get("status"), proj.get("project_id")
+        assert life.get("stage_updated_at"), proj.get("project_id")
+        gate = life.get("gate") or {}
+        assert "ok" in gate and "checked_at" in gate, proj.get("project_id")
+        history = life.get("history") or []
+        assert isinstance(history, list) and len(history) >= 1
+        assert all("stage" in h and "at" in h for h in history)
+        # 保留旧字段（兼容 gate/看板）
+        for old in ("name", "type", "status", "owner", "project_id"):
+            assert old in proj, (proj.get("project_id"), old)
+    statuses = {p.get("project_id"): p.get("status") for p in reg["projects"]}
+    assert statuses.get("learnpdf_liangxue") == "archived"
+    assert statuses.get("laomu_notes") == "distilling"
+
+
+def test_dashboard_lifecycle_and_registry_gate_sync():
+    import json as _json
+    # 构建一次，registry 的 lifecycle.gate 应与最新 learning_gate 报告一致
+    payload = B.build(out_path=DASHBOARD)
+    gate_files = sorted((REPO / "research" / "reports").glob("learning_gate_*.json"))
+    assert gate_files, "缺少 learning_gate 报告"
+    gate_report = _json.loads(gate_files[-1].read_text(encoding="utf-8"))
+    last_gate_at = gate_report.get("generated_at")
+    assert payload["schema_version"] == "learning_projects_dashboard.v2"
+    assert payload["lifecycle"]["registry_synced"] in (True, False)
+    assert payload["lifecycle"]["gate_ok"] == len(payload["projects"])
+    for proj in payload["projects"]:
+        life = proj.get("lifecycle") or {}
+        assert life.get("stage") == proj.get("status")
+        assert (life.get("gate") or {}).get("checked_at") == last_gate_at
+        assert (life.get("gate") or {}).get("ok") is True
+        assert len(life.get("history") or []) >= 1
+    reg = _json.loads(REGISTRY.read_text(encoding="utf-8"))
+    for proj in reg["projects"]:
+        assert proj["lifecycle"]["gate"]["checked_at"] == last_gate_at
+    # HTTP：看板 JSON 已带 lifecycle
+    import urllib.request
+    with urllib.request.urlopen("http://127.0.0.1:8734/static/learning_projects_dashboard.json", timeout=10) as r:
+        served = _json.loads(r.read().decode("utf-8"))
+    assert served["schema_version"] == "learning_projects_dashboard.v2"
+    assert served["lifecycle"]["projects"] >= 2
+    assert all((p.get("lifecycle") or {}).get("gate") for p in served["projects"])

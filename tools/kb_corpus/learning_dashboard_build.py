@@ -96,6 +96,31 @@ def build_gate_section(f, data) -> dict:
             "projects": projects, "failed_stages": failed}
 
 
+def sync_registry_gate(reg: dict, registry_path: Path, gate: dict) -> tuple[dict, bool]:
+    """把最新 gate 结果写回 registry 的 lifecycle.gate（仅 ok/checked_at 两字段）。
+
+    不改流程状态（status/stage/history 保持不动）；无 gate 数据时原样返回。
+    """
+    if not gate.get("available"):
+        return reg, False
+    gate_by = {p.get("project_id"): p for p in gate.get("projects") or []}
+    changed = False
+    for proj in reg.get("projects") or []:
+        gp = gate_by.get(proj.get("project_id"))
+        if gp is None:
+            continue
+        life = proj.setdefault("lifecycle", {"stage": proj.get("status"),
+                                             "stage_updated_at": None, "history": []})
+        new_gate = {"ok": int(gp.get("fail") or 0) == 0, "checked_at": gate.get("generated_at")}
+        if life.get("gate") != new_gate:
+            life["gate"] = new_gate
+            changed = True
+    if changed:
+        Path(registry_path).write_text(json.dumps(reg, ensure_ascii=False, indent=1) + "\n",
+                                       encoding="utf-8")
+    return reg, changed
+
+
 def task_status() -> dict:
     """查询 ZeroBound_Learning* 计划任务状态/下次运行；失败返回静态表。"""
     names = [n for n, *_ in PIPELINE_TASKS]
@@ -149,7 +174,12 @@ def build(registry_path: Path = REGISTRY, reports_dir: Path = REPORTS,
         kb_units = len(module.load_units())
     except Exception:  # noqa: BLE001
         kb_units = 0
+    gate_file, gate_data = latest_gate(Path(reports_dir))
+    gate = build_gate_section(gate_file, gate_data)
     reg_at = str(reg.get("generated_at") or "")
+    reg, registry_synced = sync_registry_gate(reg, Path(registry_path), gate)
+    lifecycle_ok = sum(1 for p in reg.get("projects") or []
+                       if ((p.get("lifecycle") or {}).get("gate") or {}).get("ok") is True)
     projects = []
     for p in reg.get("projects") or []:
         pid = p.get("project_id")
@@ -158,8 +188,14 @@ def build(registry_path: Path = REGISTRY, reports_dir: Path = REPORTS,
         report_times = [str(r.get("data", {}).get("generated_at") or "") for r in reports.values()]
         last = max([t for t in [reg_at, str(pipe_p.get("generated_at") or ""), *report_times] if t] or [""])
         artifacts = p.get("artifacts") or {}
+        life = p.get("lifecycle") or {}
         projects.append({
             "project_id": pid, "name": p.get("name"), "type": p.get("type"),
+            "schema_version": p.get("schema_version") or "learning_project.v1",
+            "lifecycle": {"stage": life.get("stage") or p.get("status"),
+                          "stage_updated_at": life.get("stage_updated_at"),
+                          "gate": life.get("gate") or {},
+                          "history": list(life.get("history") or [])},
             "status": p.get("status"), "stage": p.get("status"),
             "stage_label": STAGE_LABELS.get(str(p.get("status")), str(p.get("status"))),
             "owner": owner_cn, "owner_agent": p.get("owner"),
@@ -175,8 +211,6 @@ def build(registry_path: Path = REGISTRY, reports_dir: Path = REPORTS,
     status_counts = {}
     for p in projects:
         status_counts[p["status"]] = status_counts.get(p["status"], 0) + 1
-    gate_file, gate_data = latest_gate(Path(reports_dir))
-    gate = build_gate_section(gate_file, gate_data)
     tasks = task_status()
     pipeline_rows = []
     for name, label, pattern, desc in PIPELINE_TASKS:
@@ -209,9 +243,15 @@ def build(registry_path: Path = REGISTRY, reports_dir: Path = REPORTS,
         "summary": {"projects": len(projects), "status_counts": status_counts,
                     "pipeline_tasks": len(pipeline_rows), "gate_passed": gate_passed,
                     "gate_v2_ok": gate.get("ok"), "gate_v2_fail": gate.get("summary", {}).get("fail"),
+                    "lifecycle_projects": len(projects), "lifecycle_gate_ok": lifecycle_ok,
+                    "registry_gate_synced": registry_synced,
                     "issues": len(issues), "high": high, "kb_units": kb_units},
         "projects": projects, "pipeline": pipeline_rows,
         "gate": gate,
+        "lifecycle": {"source": "agent_platform/registry/learning_projects.json",
+                      "schema_version": "learning_project.v1",
+                      "projects": len(projects), "gate_ok": lifecycle_ok,
+                      "registry_synced": registry_synced},
         "quality": {"gate_passed": gate_passed, "issues": len(issues), "high": high,
                     "checks": [{"name": "intake", "ok": bool(intake.get("write", True)), "report": reports.get("ZeroBound_LearningIntake", {}).get("file")},
                                {"name": "standardize", "ok": int(std_summary.get("issues") or 0) == 0, "issues": std_summary.get("issues")},

@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+
+# DEPRECATED（2026-11-02 · v2 已统一）：历史单点工具，不再作为学习卡发布入口（仅保留历史报告复现/审计引用，行为未改）。
+# 替代链：tools/kb_corpus/card_from_units.py（生成）→ tools/kb_corpus/card_precheck_laomu.py（预审）→ tools/kb_corpus/learning_release.py（发布门）
+# 新流程禁止直接用本工具写学习卡/绕过发布门；清单见 docs/standards/2026-11-02_学习工具弃用清单_v1.md
 """零卡主题概念卡候选（wave10 AB 的 14 个 0 卡主题 → pending_review 概念卡）。
 
 背景：wave10 AB 分析显示 14 个主题无任何学习卡覆盖（金融/地产 34u、消费/零售 27u…）。

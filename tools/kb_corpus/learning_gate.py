@@ -170,17 +170,53 @@ def check_publish(kb: Path, pid: str) -> list[str]:
     return errs
 
 
+ARCHIVE_V2 = "manifest.v2.json"
+
+
 def check_archive(kb: Path, proj: dict) -> list[str]:
+    """归档校验：优先 manifest.v2.json（learning_archive_manifest.v1，校验 schema+sha256），
+    无 v2 时回退旧 manifest.json（宽松，兼容既有归档）。"""
     errs = []
     arch = proj.get("archive")
     if not arch:
         return [f"archive path missing in registry for {proj.get('project_id')}"]
     p = REPO / arch if not Path(arch).is_absolute() else Path(arch)
     entry = p / "ENTRY.md"
-    man = p / "manifest.json"
+    v2_p = p / ARCHIVE_V2
+    old_p = p / "manifest.json"
     if not entry.exists():
         errs.append(f"ENTRY.md missing: {p}")
-    if not man.exists():
+    if v2_p.exists():                       # 优先统一契约 v2
+        try:
+            data = json.loads(v2_p.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            return errs + [f"manifest.v2.json unreadable: {exc}"]
+        try:
+            schema = load_schema("learning_archive_manifest.schema.json")
+            errs += validate(data, schema, "manifest.v2")
+        except OSError as exc:
+            errs.append(f"archive schema unreadable: {exc}")
+        if data.get("project_id") != proj.get("project_id"):
+            errs.append(f"manifest.v2 project_id mismatch: {data.get('project_id')}")
+        artifacts = data.get("artifacts") or []
+        if not artifacts:
+            errs.append("manifest.v2 artifacts empty")
+        for a in artifacts:
+            path, sha = a.get("path"), a.get("sha256")
+            if not path:
+                errs.append("manifest.v2 artifact missing path")
+                continue
+            if Path(path).is_absolute():
+                fp = Path(path)
+            else:
+                cands = [REPO / path, Path(r"C:\项目\deliverables") / Path(path).name]
+                fp = next((c for c in cands if c.exists()), cands[0])
+            if not fp.exists():
+                errs.append(f"manifest.v2 artifact missing: {path}")
+            elif sha and sha256(fp) != sha:
+                errs.append(f"manifest.v2 artifact sha mismatch: {path}")
+        return errs
+    if not old_p.exists():                  # 回退旧 manifest（宽松）
         errs.append(f"archive manifest missing: {p}")
     return errs
 
