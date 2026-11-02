@@ -8,7 +8,7 @@
 # 卸载：Unregister-ScheduledTask -TaskName 'L1LegacyPortGuard' -Confirm:$false
 $ErrorActionPreference = 'Stop'
 $task = 'L1LegacyPortGuard'
-$script = 'C:\项目\老田的AI助手\tools\stop_legacy_5175_8102.ps1'
+$script = Join-Path $PSScriptRoot 'stop_legacy_5175_8102.ps1'
 if (-not (Test-Path $script)) { throw "missing $script" }
 
 $action = New-ScheduledTaskAction -Execute 'powershell.exe' `
@@ -24,7 +24,7 @@ $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoi
 Register-ScheduledTask -TaskName $task -Action $action -Trigger @($t1, $t2) `
     -Principal $principal -Settings $settings -Force | Out-Null
 Write-Host ("OK: installed scheduled task {0}" -f $task)
-Write-Host '立即执行一次…'
+Write-Host 'Running once now...'
 & schtasks.exe /run /tn $task | Out-Null
 Start-Sleep -Seconds 6
 foreach ($p in 5175, 8102) {
@@ -32,5 +32,5 @@ foreach ($p in 5175, 8102) {
     if ($c) { Write-Host ("FAIL: {0} still listening" -f $p); exit 1 }
     Write-Host ("OK: {0} off" -f $p)
 }
-Write-Host 'L1 守卫已生效：5175/8102 关闭，后续每 5 分钟自动清退。'
+Write-Host 'L1 guard active: 5175/8102 off; auto-enforced every 5 minutes.'
 exit 0
