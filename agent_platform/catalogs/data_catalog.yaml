@@ -371,7 +371,7 @@ datasets:
     kind: dir
     path: quant_backtest\data\tushare\.git
     owner: DATA1
-    registered: false
+    registered: true
     exposed: true
     access: read_only
   - dataset_id: ts_adj_factor
@@ -2603,7 +2603,7 @@ datasets:
     kind: sqlite_table
     path: quant_backtest\data\xueqiu\xueqiu_info.db
     owner: DATA1
-    registered: false
+    registered: true
     exposed: true
     access: read_only
   - dataset_id: xq_xq_hot_post
@@ -2675,7 +2675,7 @@ datasets:
     kind: corpus_layer
     path: C:/项目/知识库/01_数据分包
     owner: DSH-Lead
-    registered: false
+    registered: true
     exposed: false
     access: read_only
   - dataset_id: yt_normalized
@@ -2684,7 +2684,7 @@ datasets:
     kind: corpus_layer
     path: C:/项目/知识库/10_规范化
     owner: DSH-Lead
-    registered: false
+    registered: true
     exposed: false
     access: read_only
   - dataset_id: yt_cleaned_comments
@@ -2693,7 +2693,7 @@ datasets:
     kind: corpus_layer
     path: C:/项目/知识库/20_清洗
     owner: DSH-Lead
-    registered: false
+    registered: true
     exposed: false
     access: read_only
   - dataset_id: yt_transcripts
@@ -2702,7 +2702,7 @@ datasets:
     kind: corpus_layer
     path: C:/项目/知识库/20_转写
     owner: DSH-Lead
-    registered: false
+    registered: true
     exposed: false
     access: read_only
   - dataset_id: research_hypotheses
@@ -2711,7 +2711,7 @@ datasets:
     kind: sqlite_table
     path: research\hypotheses.db
     owner: DSH-Lead
-    registered: false
+    registered: true
     exposed: false
     access: read_only
   - dataset_id: research_reports
@@ -2729,7 +2729,7 @@ datasets:
     kind: dir
     path: research\shadow
     owner: DSH-Lead
-    registered: false
+    registered: true
     exposed: true
     access: read_only
   - dataset_id: kb_reports
@@ -2774,7 +2774,7 @@ datasets:
     kind: corpus_layer
     path: C:/项目/知识库/30_知识单元
     owner: DSH-Lead
-    registered: false
+    registered: true
     exposed: false
     access: read_only
   - dataset_id: yt_distill
@@ -2783,7 +2783,7 @@ datasets:
     kind: corpus_layer
     path: C:/项目/知识库/35_知识提炼
     owner: DSH-Lead
-    registered: false
+    registered: true
     exposed: false
     access: read_only
   - dataset_id: yt_faq
@@ -2792,7 +2792,7 @@ datasets:
     kind: corpus_layer
     path: C:/项目/知识库/37_FAQ挖掘
     owner: DSH-Lead
-    registered: false
+    registered: true
     exposed: false
     access: read_only
   - dataset_id: yt_index
@@ -2801,7 +2801,7 @@ datasets:
     kind: corpus_layer
     path: C:/项目/知识库/40_索引
     owner: DSH-Lead
-    registered: false
+    registered: true
     exposed: false
     access: read_only
   - dataset_id: yt_rag
@@ -2810,7 +2810,7 @@ datasets:
     kind: corpus_layer
     path: C:/项目/知识库/50_RAG
     owner: DSH-Lead
-    registered: false
+    registered: true
     exposed: true
     access: read_only
   - dataset_id: yt_learning_cards
@@ -2819,7 +2819,7 @@ datasets:
     kind: corpus_layer
     path: C:/项目/知识库/60_学习卡
     owner: DSH-Lead
-    registered: false
+    registered: true
     exposed: true
     access: read_only
   - dataset_id: yt_briefs
@@ -2828,7 +2828,7 @@ datasets:
     kind: corpus_layer
     path: C:/项目/知识库/70_简报
     owner: DSH-Lead
-    registered: false
+    registered: true
     exposed: false
     access: read_only
   - dataset_id: yt_reports
@@ -2837,7 +2837,7 @@ datasets:
     kind: corpus_layer
     path: C:/项目/知识库/90_报告
     owner: DSH-Lead
-    registered: false
+    registered: true
     exposed: false
     access: read_only
   - dataset_id: yt_learning_db
@@ -2846,7 +2846,7 @@ datasets:
     kind: corpus_layer
     path: C:/项目/知识库/00_数据仓
     owner: DSH-Lead
-    registered: false
+    registered: true
     exposed: true
     access: read_only
   - dataset_id: yt_dim_channel
@@ -2855,7 +2855,7 @@ datasets:
     kind: sqlite_table
     path: C:/项目/知识库/00_数据仓/yt_learning.db
     owner: DSH-Lead
-    registered: false
+    registered: true
     exposed: false
     access: read_only
   - dataset_id: yt_dim_topic
@@ -2864,7 +2864,7 @@ datasets:
     kind: sqlite_table
     path: C:/项目/知识库/00_数据仓/yt_learning.db
     owner: DSH-Lead
-    registered: false
+    registered: true
     exposed: false
     access: read_only
   - dataset_id: yt_dim_video
@@ -2873,7 +2873,7 @@ datasets:
     kind: sqlite_table
     path: C:/项目/知识库/00_数据仓/yt_learning.db
     owner: DSH-Lead
-    registered: false
+    registered: true
     exposed: false
     access: read_only
   - dataset_id: yt_bridge_video_topic
@@ -2882,7 +2882,7 @@ datasets:
     kind: sqlite_table
     path: C:/项目/知识库/00_数据仓/yt_learning.db
     owner: DSH-Lead
-    registered: false
+    registered: true
     exposed: false
     access: read_only
   - dataset_id: yt_fact_comment
@@ -2891,7 +2891,7 @@ datasets:
     kind: sqlite_table
     path: C:/项目/知识库/00_数据仓/yt_learning.db
     owner: DSH-Lead
-    registered: false
+    registered: true
     exposed: false
     access: read_only
   - dataset_id: yt_fact_knowledge_unit
@@ -2900,7 +2900,7 @@ datasets:
     kind: sqlite_table
     path: C:/项目/知识库/00_数据仓/yt_learning.db
     owner: DSH-Lead
-    registered: false
+    registered: true
     exposed: false
     access: read_only
   - dataset_id: yt_fact_transcript
@@ -2909,7 +2909,7 @@ datasets:
     kind: sqlite_table
     path: C:/项目/知识库/00_数据仓/yt_learning.db
     owner: DSH-Lead
-    registered: false
+    registered: true
     exposed: false
     access: read_only
   - dataset_id: yt_fact_faq_semantic
@@ -2918,7 +2918,7 @@ datasets:
     kind: sqlite_table
     path: C:/项目/知识库/00_数据仓/yt_learning.db
     owner: DSH-Lead
-    registered: false
+    registered: true
     exposed: false
     access: read_only
   - dataset_id: yt_bridge_faq_comment
@@ -2927,7 +2927,7 @@ datasets:
     kind: sqlite_table
     path: C:/项目/知识库/00_数据仓/yt_learning.db
     owner: DSH-Lead
-    registered: false
+    registered: true
     exposed: false
     access: read_only
   - dataset_id: yt_meta_faq_build
@@ -2936,7 +2936,7 @@ datasets:
     kind: sqlite_table
     path: C:/项目/知识库/00_数据仓/yt_learning.db
     owner: DSH-Lead
-    registered: false
+    registered: true
     exposed: false
     access: read_only
   - dataset_id: yt_fact_transcript_seg
@@ -2945,7 +2945,7 @@ datasets:
     kind: sqlite_table
     path: C:/项目/知识库/00_数据仓/yt_learning.db
     owner: DSH-Lead
-    registered: false
+    registered: true
     exposed: false
     access: read_only
   - dataset_id: yt_meta_etl
@@ -2954,7 +2954,7 @@ datasets:
     kind: sqlite_table
     path: C:/项目/知识库/00_数据仓/yt_learning.db
     owner: DSH-Lead
-    registered: false
+    registered: true
     exposed: false
     access: read_only
   - dataset_id: yt_fact_transcript_signal
@@ -2963,7 +2963,7 @@ datasets:
     kind: sqlite_table
     path: C:/项目/知识库/00_数据仓/yt_learning.db
     owner: DSH-Lead
-    registered: false
+    registered: true
     exposed: false
     access: read_only
   - dataset_id: portal_static
@@ -2999,7 +2999,7 @@ datasets:
     kind: sqlite_table
     path: k_stock\data\paper.db
     owner: T1
-    registered: false
+    registered: true
     exposed: true
     access: read_only
   - dataset_id: paper_ledger
@@ -3008,7 +3008,7 @@ datasets:
     kind: sqlite_table
     path: k_stock\data\paper.db
     owner: T1
-    registered: false
+    registered: true
     exposed: true
     access: read_only
   - dataset_id: paper_account
@@ -3026,7 +3026,7 @@ datasets:
     kind: sqlite_table
     path: k_stock\data\paper.db
     owner: T1
-    registered: false
+    registered: true
     exposed: true
     access: read_only
   - dataset_id: paper_equity_marks
@@ -3035,7 +3035,7 @@ datasets:
     kind: sqlite_table
     path: k_stock\data\paper.db
     owner: T1
-    registered: false
+    registered: true
     exposed: true
     access: read_only
   - dataset_id: paper_positions_snapshot
@@ -3044,7 +3044,7 @@ datasets:
     kind: sqlite_table
     path: k_stock\data\paper.db
     owner: T1
-    registered: false
+    registered: true
     exposed: false
     access: read_only
   - dataset_id: paper_decision_snapshots
@@ -3053,7 +3053,7 @@ datasets:
     kind: sqlite_table
     path: k_stock\data\paper.db
     owner: T1
-    registered: false
+    registered: true
     exposed: false
     access: read_only
   - dataset_id: quant_chanlun_pool
@@ -3062,7 +3062,7 @@ datasets:
     kind: sqlite_table
     path: quant_backtest\data\quant.db
     owner: DATA1
-    registered: false
+    registered: true
     exposed: true
     access: read_only
   - dataset_id: quant_nine_dim_rc
@@ -3071,7 +3071,7 @@ datasets:
     kind: sqlite_table
     path: quant_backtest\data\quant.db
     owner: DATA1
-    registered: false
+    registered: true
     exposed: true
     access: read_only
   - dataset_id: quant_nine_dim_rc_meta
@@ -3080,7 +3080,7 @@ datasets:
     kind: sqlite_table
     path: quant_backtest\data\quant.db
     owner: DATA1
-    registered: false
+    registered: true
     exposed: false
     access: read_only
   - dataset_id: quant_nine_dim_fina
@@ -3089,7 +3089,7 @@ datasets:
     kind: sqlite_table
     path: quant_backtest\data\quant.db
     owner: DATA1
-    registered: false
+    registered: true
     exposed: true
     access: read_only
   - dataset_id: quant_nine_dim_fc
@@ -3098,7 +3098,7 @@ datasets:
     kind: sqlite_table
     path: quant_backtest\data\quant.db
     owner: DATA1
-    registered: false
+    registered: true
     exposed: true
     access: read_only
   - dataset_id: quant_nine_dim_fc_meta
@@ -3107,7 +3107,7 @@ datasets:
     kind: sqlite_table
     path: quant_backtest\data\quant.db
     owner: DATA1
-    registered: false
+    registered: true
     exposed: false
     access: read_only
   - dataset_id: news_news
@@ -3125,7 +3125,7 @@ datasets:
     kind: sqlite_table
     path: news_collector\news.db
     owner: INTEL0
-    registered: false
+    registered: true
     exposed: true
     access: read_only
   - dataset_id: news_ai_briefs
@@ -3134,7 +3134,7 @@ datasets:
     kind: sqlite_table
     path: news_collector\news.db
     owner: INTEL0
-    registered: false
+    registered: true
     exposed: true
     access: read_only
   - dataset_id: news_ai_reviews
@@ -3143,7 +3143,7 @@ datasets:
     kind: sqlite_table
     path: news_collector\news.db
     owner: INTEL0
-    registered: false
+    registered: true
     exposed: true
     access: read_only
   - dataset_id: news_quotes
@@ -3152,7 +3152,7 @@ datasets:
     kind: sqlite_table
     path: news_collector\news.db
     owner: INTEL0
-    registered: false
+    registered: true
     exposed: true
     access: read_only
   - dataset_id: news_jev_review_queue
@@ -3161,7 +3161,7 @@ datasets:
     kind: sqlite_table
     path: news_collector\news.db
     owner: INTEL0
-    registered: false
+    registered: true
     exposed: true
     access: read_only
   - dataset_id: automation_runs
@@ -3170,7 +3170,7 @@ datasets:
     kind: dir
     path: C:\aios\automation_runs
     owner: INTEL0
-    registered: false
+    registered: true
     exposed: true
     access: read_only
   - dataset_id: news_collector_data
@@ -3188,6 +3188,6 @@ datasets:
     kind: corpus_layer
     path: C:/项目/知识库/80_复核
     owner: DSH-Lead
-    registered: false
+    registered: true
     exposed: false
     access: read_only

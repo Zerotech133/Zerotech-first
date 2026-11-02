@@ -1,0 +1,75 @@
+{
+ "measured_at": "2026-11-02T13:14:52+08:00",
+ "kpis": {
+  "K1": {
+   "name": "雪球当日增量",
+   "value": 10,
+   "target": ">0 连续3天",
+   "evidence": "xq_status fetched_at=今日 count=10; total=33353",
+   "status": "ok"
+  },
+  "K2": {
+   "name": "drift 哨兵 exists",
+   "value": true,
+   "target": "exists=true",
+   "evidence": "8091 /api/daily/data={\"exists\": true, \"open_count\": 5, \"error\": \"None\"}",
+   "status": "ok"
+  },
+  "K3": {
+   "name": "dw_snapshot 新鲜度",
+   "value": "2026-11-02T10:08:02+08:00",
+   "target": "每日自动（L2 已安装 06:40）",
+   "evidence": "generated_at=2026-11-02T10:08:02+08:00 catalog=20",
+   "status": "ok"
+  },
+  "K4": {
+   "name": "数据集登记",
+   "value": "314/314",
+   "target": "314/314",
+   "evidence": "catalog v7 datasets",
+   "status": "ok"
+  },
+  "K5": {
+   "name": "统一入口可达",
+   "value": "314/314",
+   "target": "保持 314/314",
+   "evidence": "DatasetRegistry.datasets=314",
+   "status": "ok"
+  },
+  "K6": {
+   "name": "专用查询入口覆盖",
+   "value": "raw 90.13% / clean 91.29%",
+   "target": "≥80%",
+   "evidence": "ready=283 denominator=310",
+   "status": "ok"
+  },
+  "K7": {
+   "name": "display 覆盖物理表",
+   "value": "160/256",
+   "target": "≥200（S3）",
+   "evidence": "display_count=174",
+   "status": "warn"
+  },
+  "K8": {
+   "name": "资质 unknown",
+   "value": 44,
+   "target": "<40（S3）",
+   "evidence": "distribution={'evidence_partial': 47, 'evidence_ok': 152, 'unknown': 44, 'deprecated': 4, 'planned': 9}",
+   "status": "warn"
+  },
+  "K9": {
+   "name": "datawarehouse 测试入 fast 门",
+   "value": "是",
+   "target": "是",
+   "evidence": "tools/test_gate.ps1 含 datawarehouse=True",
+   "status": "ok"
+  },
+  "K10": {
+   "name": "Hermes 数据仓工具",
+   "value": "dw-governance 0 工具（dw_query 待 reload）",
+   "target": "10 问 E2E 全过",
+   "evidence": "Hermes MCP tools=0",
+   "status": "warn"
+  }
+ }
+}
