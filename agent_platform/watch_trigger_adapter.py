@@ -12,6 +12,7 @@ from __future__ import annotations
 import os
 import re
 import sys
+from datetime import datetime
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if REPO not in sys.path:
@@ -124,3 +125,80 @@ def trigger(signal, selection=None, evidence=None, report=None,
         profile=payload["profile"], audience=payload["audience"],
         data_dir=data_dir,
     )
+
+
+# ── IFS-HANDOFF：watch_plan.conditions → pending 人工确认（WO-IFS-HANDOFF-20261103）──
+# 只建确认、不执行；conditions 缺 symbol/action/price、带执行字段、已过期一律 fail-closed。
+WATCH_PLAN_EXECUTION_FIELDS = (
+    "order", "qty", "quantity", "broker", "execute", "trade_id", "fill", "account",
+)
+
+
+def _plan_expired(plan):
+    text = str((plan or {}).get("expires_at") or "").strip()
+    if not text:
+        return False
+    candidate = text[:-1] + "+00:00" if text.endswith("Z") else text
+    try:
+        expires = datetime.fromisoformat(candidate)
+    except ValueError:
+        return True  # 时间非法按过期处理（fail-closed，不猜）
+    if expires.tzinfo is None:
+        expires = expires.astimezone()
+    return expires <= datetime.now(expires.tzinfo)
+
+
+def signal_from_watch_plan(plan):
+    """watch_plan → trigger signal；只做字段映射与护栏，不发明数据。"""
+    if not isinstance(plan, dict):
+        raise WatchTriggerError("WATCH_PLAN_REQUIRED")
+    plan_id = str(plan.get("plan_id") or "").strip()
+    if not plan_id:
+        raise WatchTriggerError("WATCH_PLAN_ID_REQUIRED")
+    if _plan_expired(plan):
+        raise WatchTriggerError("WATCH_PLAN_EXPIRED")
+    conditions = plan.get("conditions")
+    if not isinstance(conditions, dict) or not conditions:
+        raise WatchTriggerError("WATCH_PLAN_CONDITIONS_REQUIRED")
+    for key in WATCH_PLAN_EXECUTION_FIELDS:
+        if key in conditions and conditions.get(key) not in (None, "", [], {}):
+            raise WatchTriggerError("WATCH_PLAN_EXECUTION_FIELD_FORBIDDEN")
+    raw_symbol = conditions.get("symbol") or conditions.get("code")
+    if not str(raw_symbol or "").strip():
+        raise WatchTriggerError("TRIGGER_SYMBOL_REQUIRED")
+    action = conditions.get("action") or conditions.get("side")
+    if not str(action or "").strip():
+        raise WatchTriggerError("TRIGGER_ACTION_REQUIRED")
+    price = conditions.get("price")
+    if price is None:
+        price = conditions.get("trigger_price")
+    if price is None:
+        raise WatchTriggerError("TRIGGER_PRICE_REQUIRED")
+    confidence = conditions.get("confidence")
+    try:
+        confidence = float(confidence) if confidence is not None else 0.6
+    except (TypeError, ValueError):
+        confidence = 0.6
+    method = str(plan.get("method") or "").strip()
+    reason = str(conditions.get("reason") or "").strip() or (
+        "D1 watch_plan %s（%s）" % (plan_id, method or "-")
+    )
+    return {
+        "symbol": raw_symbol,
+        "name": conditions.get("name") or "",
+        "action": action,
+        "price": price,
+        "stop": conditions.get("stop") if conditions.get("stop") is not None else conditions.get("stop_loss"),
+        "target": conditions.get("target") if conditions.get("target") is not None else conditions.get("target_price"),
+        "confidence": confidence,
+        "reason": reason,
+        "report_id": "D1H-%s" % plan_id,
+        "source": plan.get("seat") or "WATCH_TOWER",
+        "audience": "external_user",
+    }
+
+
+def trigger_watch_plan(plan, profile="balanced", data_dir=None):
+    """watch_plan → pending confirmation（不执行/不下单）；重复调用按 report_id 幂等。"""
+    signal = signal_from_watch_plan(plan)
+    return trigger(signal, profile=profile, data_dir=data_dir)
