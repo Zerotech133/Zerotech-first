@@ -7,11 +7,11 @@
 
 | 顶层目录 | Python 模块数（codebase_intel scope） |
 |---|---:|
-| `agent_platform/` | 628 |
-| `portal/` | 481 |
-| `tools/` | 1132 |
+| `agent_platform/` | 629 |
+| `portal/` | 482 |
+| `tools/` | 1141 |
 
-codebase_intel 统计：模块 **2241** / 符号 **26041**。
+codebase_intel 统计：模块 **2252** / 符号 **26290**。
 
 ## 2. 核心模块（按路径）
 
@@ -253,6 +253,7 @@ codebase_intel 统计：模块 **2241** / 符号 **26041**。
 | `agent_platform/tests/test_a0_chief_evidence_fields.py` | A0 shadow 日报字段透传测试（2026-10-31 WO-D1-B123-20261031 / B3）。 |
 | `agent_platform/tests/test_a0_evidence_judge.py` | a0_evidence_judge 单测（K-QUANT-20261026-A0EVJ）。 |
 | `agent_platform/tests/test_a_phase_group_board.py` | A 阶段组级看板生成器测试（WO-A-STAGE-BOARD）。 |
+| `agent_platform/tests/test_acad1_pool_contract.py` | ACL-103：ACAD1 池 ODCS 契约 v1.0.0 + agentPolicy 只读校验回归（ADR-018）。 |
 | `agent_platform/tests/test_academy_ops.py` | 研究院运营三件套测试（WO-LEGION-ACAD1-P0）。 |
 | `agent_platform/tests/test_academy_role_attrs.py` | 研究院角色属性一致性（2026-10-29 A，WO-ACAD-ROLE-ATTR-20261029）。 |
 | `agent_platform/tests/test_academy_wiring.py` | M1 Academy 域接线测试（离线 fixture）。 |
@@ -1060,6 +1061,7 @@ codebase_intel 统计：模块 **2241** / 符号 **26041**。
 | `portal/tests/test_jev_review_frontend_identity.py` | JEV 复核前端身份回归（K-ORG-20261101-H4HARDEN，审计 v2 M3 收尾）。 |
 | `portal/tests/test_job_spec_registry.py` | — |
 | `portal/tests/test_job_spec_registry_expiry_recovery.py` | — |
+| `portal/tests/test_legion_ops_cors.py` | UF-12：legion ops CORS 通配下线回归。 |
 | `portal/tests/test_legion_write_guard.py` | 军团写接口浏览器上下文守卫单测（2026-10-30 P0 安全加固）。 |
 | `portal/tests/test_login_ui.py` | /login UI 与 /os-entry 登录态静态测试。 |
 | `portal/tests/test_minute_router_isolated.py` | Exercise the actual portal HTTP router with an isolated minute JobSpec root. |
@@ -1211,10 +1213,11 @@ codebase_intel 统计：模块 **2241** / 符号 **26041**。
 | `tools/datawarehouse/__init__.py` | DATA1 数据仓治理工具包（只读）。 |
 | `tools/datawarehouse/ann_history_sync.py` | ann_history 增量回填（DATA1 治理 · L2-2A 批准范围）。 |
 | `tools/datawarehouse/backup_receipt_check.py` | 备份回执核对（只读）：最新备份代、产物齐全、异地 receipt、断档小时数。 |
+| `tools/datawarehouse/build_lineage_db.py` | S3-05 派生血缘入 DB：hypotheses / 策略库 / KB 四份 lineage YAML → research/lineage.db。 |
 | `tools/datawarehouse/catalog_snapshot.py` | 目录快照：catalog（当前 v12）与来源资格 registry 一致性 + 物理漂移抽样（只读）。 |
 | `tools/datawarehouse/common.py` | 数据仓治理工具公共层（只读）。 |
 | `tools/datawarehouse/contract_export.py` | 数据契约生成器：catalog v12 六核心表 → ODCS v3 契约（datacontract-cli 可 lint）。 |
-| `tools/datawarehouse/dataset_registry.py` | 数据集级统一登记/取数（WP-I1/I3 骨架）。 |
+| `tools/datawarehouse/dataset_registry.py` | 数据集级统一登记/取数（WP-I1/I3 骨架；DWH-103 wave1 增 pg_table/contract_artifact）。 |
 | `tools/datawarehouse/dataset_registry_cli.py` | 统一取数入口 CLI（WP-I3 骨架）：dataset_id 一码查/取。 |
 | `tools/datawarehouse/db_health.py` | SQLite 健康检查（A4 制度化）：给 DW 周检提供 quick_check / journal / 空间 / 索引卫生。 |
 | `tools/datawarehouse/db_instance_probe.py` | 数据库实例只读探活：TCP 端口（不连库、不用凭据）。 |
@@ -1229,13 +1232,16 @@ codebase_intel 统计：模块 **2241** / 符号 **26041**。
 | `tools/datawarehouse/qualify_probe.py` | 来源资格取证探针（批次 1：tushare 深层表 26 张）。 |
 | `tools/datawarehouse/quality_daily.py` | 数据仓质量日报（DATA-06 / DATA3 陈群 07:00 巡检证据）。 |
 | `tools/datawarehouse/quality_test.py` | 确定性质量检查（只读）：表存在/空分片/分区重复/行数/主键抽样。 |
+| `tools/datawarehouse/query_coverage.py` | S3-06 P1 专用查询覆盖率实测脚本（2026-11-02 task-50）。 |
 | `tools/datawarehouse/registry_rebuild.py` | warehouse_registry v2 重建：按 catalog v12 全量对齐物理表资格台账。 |
 | `tools/datawarehouse/run_all.py` | 数据仓日检总入口：串起各只读工具 → 汇总 → 可选写观察记忆。 |
 | `tools/datawarehouse/staging_health.py` | staging 生命周期检查增强（2026-10-28）：保留窗口 + 清单未知 + 陈旧锁。 |
+| `tools/datawarehouse/tdx_sync_probe.py` | TdxSync 零行/锁跳过看门狗（只读，fail-visible）。 |
 | `tools/datawarehouse/tests/test_ann_history_sync.py` | ann_history_sync 纯本地单测（不联网、不碰生产库）。 |
 | `tools/datawarehouse/tests/test_contracts.py` | contract_export 纯单测：类型映射/契约构建/check 语义（不读真实数据根）。 |
 | `tools/datawarehouse/tests/test_daily_ops.py` | DATA-05/06 日常证据生成器契约测试（写 tmp 不污染主仓）。 |
 | `tools/datawarehouse/tests/test_data_catalog.py` | 数据册校验（v2 契约起，当前 v6）：YAML 合法 / 条目数 / id 唯一 / 字段齐全 / 修正项落盘。 |
+| `tools/datawarehouse/tests/test_dataset_query.py` | S3-06 P1 通用 query 单测（2026-11-02 task-50）。 |
 | `tools/datawarehouse/tests/test_dataset_registry.py` | dataset_registry 契约测试：id 唯一/list/search/get/sample/emit。 |
 | `tools/datawarehouse/tests/test_db_health.py` | db_health 单测：用临时 SQLite 验证 ok/warn/fail 三态（不依赖真实业务库）。 |
 | `tools/datawarehouse/tests/test_dw_catalog_mcp.py` | dw-catalog MCP 测试：stdio JSON-RPC 真调 + 真实值对账 + 只读性。 |
@@ -1243,6 +1249,8 @@ codebase_intel 统计：模块 **2241** / 符号 **26041**。
 | `tools/datawarehouse/tests/test_dw_quality_mcp.py` | MCP-A dw-quality 测试：stdio JSON-RPC 协议 + 只读工具调用 + 错误路径。 |
 | `tools/datawarehouse/tests/test_dw_snapshot_daily.py` | S1-06 dw_snapshot 每日脚本测试：刷新成功路径 + 一致性校验失败路径 + 日志回执。 |
 | `tools/datawarehouse/tests/test_dw_wp_i3.py` | WP-I3 测试：HTTP handler（直接调用）+ MCP stdio（子进程）。 |
+| `tools/datawarehouse/tests/test_dwh103_pg_temp_registry.py` | DWH-103 wave1 定向测试：pg_table / contract_artifact / C:\Temp 白名单 / stats_v2 / CLI。 |
+| `tools/datawarehouse/tests/test_dwh103_wave2.py` | DWH-103 wave2 定向测试：pg_table 动态发现 public.v2_% 全量 + 安全取样 + CLI 契约。 |
 | `tools/datawarehouse/tests/test_factor_tools_mcp.py` | factor-tools 只读 MCP 测试：stdio JSON-RPC 协议 + 真实产物 + 失败路径（fail-visible）。 |
 | `tools/datawarehouse/tests/test_freshness_expectation.py` | freshness 期望模型（freq-aware）单测。 |
 | `tools/datawarehouse/tests/test_freshness_parse.py` | freshness_report._parse_day 单测（2026-10-28 BUG 修复回归）。 |
@@ -1250,12 +1258,14 @@ codebase_intel 统计：模块 **2241** / 符号 **26041**。
 | `tools/datawarehouse/tests/test_lifecycle.py` | lifecycle 覆盖单测。 |
 | `tools/datawarehouse/tests/test_lifecycle_archived.py` | lifecycle 四态（archived）单元测试（2026-10-30 P72）。 |
 | `tools/datawarehouse/tests/test_lifecycle_coverage.py` | lifecycle_coverage.py 回归测试（DWH-101，2026-11-02；仅测试，不改实现）。 |
+| `tools/datawarehouse/tests/test_lineage_db.py` | S3-05 lineage DB 构建测试（隔离输出，不覆盖 research/lineage.db）。 |
 | `tools/datawarehouse/tests/test_manifest_repair.py` | manifest_repair 纯函数单测：扫描/清单路径/合并写入（临时目录夹具）。 |
 | `tools/datawarehouse/tests/test_metadata_consistency.py` | metadata_consistency 单测（临时 catalog/registry/lifecycle 夹具）。 |
 | `tools/datawarehouse/tests/test_otel_tracing.py` | otel_tracing 纯单测：默认关闭 no-op / 装饰器透传 / fail-open。 |
 | `tools/datawarehouse/tests/test_qualify_probe.py` | qualify_probe 单测：纯本地 fixture，不读真实数据仓/不联网/不写 registry。 |
 | `tools/datawarehouse/tests/test_staging_health.py` | staging_health 周检单测（临时目录 + 注入体积，避免真造大文件）。 |
 | `tools/datawarehouse/tests/test_staging_retention.py` | staging_health 保留窗口/陈旧锁单测（2026-10-28 增强）。 |
+| `tools/datawarehouse/tests/test_tdx_sync_probe.py` | tdx_sync_probe 看门狗单测（全 mock/临时目录，不碰真计划任务/真数据根/真 C:\Temp）。 |
 | `tools/datawarehouse/tests/test_tools.py` | datawarehouse 工具层单测（纯本地，不依赖网络/真实数据仓/凭据）。 |
 | `tools/delivery_ledger.py` | 非研发部门交付台账（周度 CSV）：init / check / summary。 |
 | `tools/dep_age_check.py` | 依赖版本年龄检查（O8 P3b，warn-only，只读）。 |
@@ -2008,6 +2018,7 @@ codebase_intel 统计：模块 **2241** / 符号 **26041**。
 | `tools/tests/test_daily_screening_report.py` | 每日筛选正式输出：日报摘要 + 门户静态 JSON（task-101）。 |
 | `tools/tests/test_daily_tasks_health.py` | tools/tests/test_daily_tasks_health.py — 每日任务健康监控 + 告警（task-108）。 |
 | `tools/tests/test_daily_three_ledger.py` | daily_three_ledger：日终三账快照测试（全离线 mock，不碰生产/不跑三工具）。 |
+| `tools/tests/test_dataset_schema.py` | dataset schema v0.1 + K5 登记测试（ADR-018 D6/D7 / ADR-019 D6/D7，task-24）。 |
 | `tools/tests/test_devtask_branch_gate.py` | 质量闸作用域单测（2026-10-30 · 分支级闸）。 |
 | `tools/tests/test_devtask_composition_gate.py` | P1.2 测试：组合门 + kernel guard 接入 devtask.merge / merge_preflight（ADR-015）。 |
 | `tools/tests/test_devtask_gates.py` | devtask 评审门注册测试（P74：CIGATES 三道门恢复）。 |
