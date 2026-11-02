@@ -148,12 +148,43 @@ def _parquet_latest_date(tbl):
 
 
 def _date_col_of(tbl):
+    # 2026-11-02 修复：新接入表的业务日期列并非 trade_date（此前一律回退
+    # trade_date → _parquet_latest_date 返回 None → 误走"全量"且沿用旧
+    # offset，导致 HTTP200 零行假失败）。按各表 footer 实测列补齐映射。
     return {
         "ts_income": "end_date",
         "ts_balancesheet": "end_date",
         "ts_cashflow": "end_date",
         "ts_fina_indicator": "end_date",
         "ts_index_weight": "trade_date",
+        # —— 2026-11-02 D 批补漏表（footer 实测日期列）——
+        "ts_anns_d": "ann_date",
+        "ts_cb_call": "ann_date",
+        "ts_cb_issue": "ann_date",
+        "ts_cb_share": "publish_date",
+        "ts_cb_basic": "list_date",
+        "ts_fund_div": "ann_date",
+        "ts_fund_manager": "ann_date",
+        "ts_fund_portfolio": "end_date",
+        "ts_pledge_detail": "ann_date",
+        "ts_pledge_stat": "end_date",
+        "ts_share_float": "ann_date",
+        "ts_stk_holdertrade": "ann_date",
+        "ts_top10_floatholders": "ann_date",
+        "ts_etf_basic": "list_date",
+        "ts_ths_index": "list_date",
+        "ts_us_basic": "list_date",
+        "ts_fund_basic": "list_date",
+        "ts_fut_basic": "list_date",
+        "ts_opt_basic": "list_date",
+        "ts_bse_mapping": "list_date",
+        "ts_hs_const": "in_date",
+        "ts_sge_basic": "list_date",
+        "ts_cn_cpi": "month",
+        "ts_cn_m": "month",
+        "ts_cn_ppi": "month",
+        "ts_cn_pmi": "MONTH",
+        "ts_cn_gdp": "quarter",
     }.get(tbl, "trade_date")
 
 
@@ -183,6 +214,10 @@ def sync_parquet_table(tbl, meta, m, missing_keys=None):
     # 增量：已 done 的表，从本地最新日期继续
     params = {}
     latest = _parquet_latest_date(tbl) if st.get("done") else None
+    if st.get("done") and not latest:
+        print("[%s] [SKIP] done=true 但无可解析日期列（%s）；按静态/特殊日期表跳过增量"
+              % (tbl, date_col), flush=True)
+        return
     if latest:
         ld = latest.replace("-", "").split(" ")[0]
         params["start_date"] = ld  # 重叠一天由去重兜底
