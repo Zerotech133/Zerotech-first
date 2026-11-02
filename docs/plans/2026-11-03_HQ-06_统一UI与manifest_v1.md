@@ -1,6 +1,6 @@
 # HQ-06 解决方案：/hq 统一 UI/manifest + API/UI 接入 v1
 
-- 日期：2026-11-02｜状态：**manifest 已落 / 数据层 HQ-01~05 已落；API/UI 待 W3 接**
+- 日期：2026-11-02｜状态：**manifest + `/hq.html` 静态预览已落；实时 API/clean `/hq` 路由待 W3**
 - 依赖：ADR-021、HQ-01~05、`portal/config/hq_manifest.json`
 - 目标：一个 `/hq` 指挥面，5 个 tab，全部同源只读；不新增第二入口/DB/调度
 
@@ -61,10 +61,13 @@
 ## 六、当前落地
 
 - `portal/config/hq_manifest.json`：页面/API/数据源/约束/W3 任务；
+- `portal/hq.html`：5 tabs 静态预览（真实快照，只读）；实测 **`/hq.html` 200**；
+- `tools/hq_snapshot.py`：合成 HQ-01~05 快照 → `portal/static/hq_snapshot.json`；
+- `/hq` clean 路由仍 404，待 W3 nginx location + 8091 `api_hq.py`（L2）；
 - `tools/tests/test_hq_manifest.py`：**4 passed**；
 - HQ-01~05 数据层已具备（hq_org/tasks/approvals/budget/heartbeat）；
 - 未改 8091/nav/路由/前端；W3 再接。
 
 ## 七、下一步
 
-HQ-06 的 API/UI 在 W3（12-03 起）按 a→e 顺序实施；当前先完成 8093 诊断的 L2 修复，避免调度链带病进入 W3。
+HQ-06 的实时 API/clean 路由在 W3（12-03 起）按 a→e 顺序实施；静态预览已可验；当前先完成 8093 诊断的 L2 修复，避免调度链带病进入 W3。

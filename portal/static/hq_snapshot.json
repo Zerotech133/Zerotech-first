@@ -1,0 +1,573 @@
+{
+ "schema": "hq/snapshot/v1",
+ "generated_at": "2026-11-03T00:15:47+0800",
+ "read_only": true,
+ "note": "HQ-06 静态只读快照；实时 API 待 W3（/hq/*）",
+ "org": {
+  "summary": {
+   "departments": 17,
+   "agents": 77,
+   "unique_names": 69,
+   "hr_profiles": 66,
+   "team_projected": 52,
+   "leads": 16,
+   "skills": 130,
+   "models": 7,
+   "profile_seats": 1
+  },
+  "chief": {
+   "agent_id": "A0",
+   "name": "田丰"
+  },
+  "departments": [
+   {
+    "dept": "invest",
+    "name": "量化交易部",
+    "lead": "D1",
+    "n": 13
+   },
+   {
+    "dept": "dev",
+    "name": "研发部",
+    "lead": "ARCH1",
+    "n": 11
+   },
+   {
+    "dept": "trading",
+    "name": "交易部",
+    "lead": "",
+    "n": 0
+   },
+   {
+    "dept": "data",
+    "name": "数据智能部",
+    "lead": "DATA1",
+    "n": 4
+   },
+   {
+    "dept": "product",
+    "name": "产品管理部",
+    "lead": "PM1",
+    "n": 3
+   },
+   {
+    "dept": "quality",
+    "name": "质量工程部",
+    "lead": "QA1",
+    "n": 4
+   },
+   {
+    "dept": "proj_backtest",
+    "name": "🅰 回测开发部",
+    "lead": "DEV3",
+    "n": 3
+   },
+   {
+    "dept": "proj_data",
+    "name": "🅱 数据治理部",
+    "lead": "DATA1",
+    "n": 2
+   },
+   {
+    "dept": "proj_next",
+    "name": "🅲 下版本设计推理部",
+    "lead": "PM1",
+    "n": 3
+   },
+   {
+    "dept": "marketing",
+    "name": "市场部",
+    "lead": "MKT1",
+    "n": 1
+   },
+   {
+    "dept": "legal",
+    "name": "合规法务部",
+    "lead": "LEG1",
+    "n": 1
+   },
+   {
+    "dept": "ops_runtime",
+    "name": "运行体部",
+    "lead": "A0A",
+    "n": 7
+   },
+   {
+    "dept": "academy",
+    "name": "研究院",
+    "lead": "ACAD1",
+    "n": 9
+   },
+   {
+    "dept": "intel",
+    "name": "情报部",
+    "lead": "INTEL0",
+    "n": 8
+   },
+   {
+    "dept": "comm",
+    "name": "通信与客户服务部",
+    "lead": "LUSU1",
+    "n": 2
+   },
+   {
+    "dept": "chief_line",
+    "name": "直属参谋长线",
+    "lead": "A0",
+    "n": 3
+   },
+   {
+    "dept": "risk",
+    "name": "风控部",
+    "lead": "R3",
+    "n": 3
+   }
+  ],
+  "gaps": {
+   "no_hr_profile": 4,
+   "no_team_projection": 25
+  }
+ },
+ "tasks": {
+  "summary": {
+   "total": 2046,
+   "by_status": {
+    "done": 1902,
+    "aborted": 134,
+    "parked": 8,
+    "doing": 1,
+    "review": 1
+   },
+   "wip": 2,
+   "stale_active": 0,
+   "unowned_active": 0,
+   "no_branch_active": 0,
+   "no_worktree_active": 0
+  },
+  "board": {
+   "doing": [
+    {
+     "id": "K-STOCK-ANALYSIS-P2-8-20261030",
+     "status": "doing",
+     "owner": "DSH-Lead",
+     "created": "2026-11-02 15:56:25",
+     "age_days": 0.3,
+     "branch": true,
+     "worktree": true,
+     "desc": "P2.8 批处理韧性：run_id 跨日同时刻冲突修复(retry suffix)+watchlist 恢复 603667+测试"
+    }
+   ],
+   "review": [
+    {
+     "id": "K-STOCK-ANALYSIS-P2-7-20261030",
+     "status": "review",
+     "owner": "DSH-Lead",
+     "created": "2026-11-02 13:41:20",
+     "age_days": 0.4,
+     "branch": true,
+     "worktree": true,
+     "desc": "P2.7 测试隔离修复：test_api_customer 试用/任务写入生产 commercial.db（796 个 trial 污染）+ 断言"
+    }
+   ],
+   "parked": [
+    {
+     "id": "WO-ACAD1-CONTRACT-20261101",
+     "status": "parked",
+     "owner": "ZHAOYUN",
+     "created": "2026-11-01 05:34:17",
+     "age_days": 1.8,
+     "branch": true,
+     "worktree": true,
+     "desc": "ACAD1池数据合约v0：ODCS+agentPolicy(allowed_use/PII/freshness/PIT)+30卡校验"
+    },
+    {
+     "id": "WO-ZHICE-V2-PROBE-20261101",
+     "status": "parked",
+     "owner": "pipeline-graph",
+     "created": "2026-11-01 07:05:06",
+     "age_days": 1.7,
+     "branch": true,
+     "worktree": true,
+     "desc": "张松仓 zhice v2 只读探针 CLI：新增 tools/datawarehouse/zhice_v2_probe.py（env ZHICE_V2_DSN 读取 PG DSN，缺失 exit2、不"
+    },
+    {
+     "id": "WO-STRAT-LEDGER-20261101",
+     "status": "parked",
+     "owner": "ZHAOYUN",
+     "created": "2026-11-01 07:38:51",
+     "age_days": 1.7,
+     "branch": true,
+     "worktree": true,
+     "desc": "H37-H39研究台账"
+    },
+    {
+     "id": "WO-STRAT-SNAPSHOT2-20261101",
+     "status": "parked",
+     "owner": "ZHAOYUN",
+     "created": "2026-11-01 07:54:44",
+     "age_days": 1.7,
+     "branch": true,
+     "worktree": true,
+     "desc": "快照与BADGE修复"
+    },
+    {
+     "id": "WO-NAV-DRIFT-20261101",
+     "status": "parked",
+     "owner": "ZHAOYUN",
+     "created": "2026-11-01 11:51:39",
+     "age_days": 1.5,
+     "branch": true,
+     "worktree": true,
+     "desc": "导航生成同步"
+    },
+    {
+     "id": "WO-DEV-LEGION-V2-API-20261101",
+     "status": "parked",
+     "owner": "DSH-Lead",
+     "created": "2026-11-01 16:45:55",
+     "age_days": 1.3,
+     "branch": true,
+     "worktree": true,
+     "desc": "曹操军团 v2 只读 API：/api/dev/legion/v2 增加 workorder_bus/decisions/events 只增字段 + 前端消费 + 测试"
+    },
+    {
+     "id": "WO-DEV-LEGION-V2-POLISH-20261101",
+     "status": "parked",
+     "owner": "DSH-Lead",
+     "created": "2026-11-01 21:38:44",
+     "age_days": 1.1,
+     "branch": true,
+     "worktree": true,
+     "desc": "曹操军团页收口：动态跨席文案 + 事件流卡片 + 决策/工单计数，清掉静态 16"
+    },
+    {
+     "id": "WO-DEV-LEGION-HERMES-20261102",
+     "status": "parked",
+     "owner": "DSH-Lead",
+     "created": "2026-11-02 00:27:38",
+     "age_days": 1.0,
+     "branch": true,
+     "worktree": true,
+     "desc": "曹操军团页接入 Hermes：页头 Hermes 控制台入口 + 页脚底座标识 + 派工跳 Hermes legion-ide，页面仍只读"
+    }
+   ]
+  }
+ },
+ "approvals": {
+  "summary": {
+   "total_decisions": 40,
+   "first_seen": "2026-10-17T04:53:34+00:00",
+   "last_seen": "2026-10-29T19:16:52+00:00",
+   "by_decision": {
+    "approved": 40
+   },
+   "by_target_type": {
+    "workitem": 31,
+    "devtask_l2_exemption": 8,
+    "skill": 1
+   },
+   "top_deciders": [
+    [
+     "老田",
+     28
+    ],
+    [
+     "ARCH1",
+     2
+    ],
+    [
+     "ACAD1",
+     2
+    ],
+    [
+     "ZHAOYUN",
+     2
+    ],
+    [
+     "m1-acceptance-probe",
+     2
+    ],
+    [
+     "human",
+     1
+    ],
+    [
+     "laotian",
+     1
+    ],
+    [
+     "selftest-l2",
+     1
+    ],
+    [
+     "老田授权批准",
+     1
+    ]
+   ],
+   "pending": 0,
+   "pending_source": "none（当前无本地 pending 队列；不伪造待办）",
+   "feed_total": 4,
+   "feed_actions": {
+    "approve": 3,
+    "annotate": 1
+   }
+  },
+  "policy": {
+   "m4_policy": {
+    "mode": "owner_acceptance",
+    "owner": "A0",
+    "advisory_roles": [
+     "TIANFENG",
+     "ZHUGE",
+     "ZHAOYUN",
+     "HUANGZHONG",
+     "GUANYU"
+    ],
+    "note": "2026-11-01 老田拍板 B：M4 验收 = A0/老田 owner 单签 + 五角色 AI 会诊 advisory；不再声称 4/4 独立人签。"
+   },
+   "map_size": 1
+  },
+  "risks": [
+   "100% approved / 无 rejected：审批可能过于宽松或只记录通过项，需审计抽样"
+  ],
+  "latest": [
+   {
+    "approval_id": "4a93a593ec38426b85d6cae12bc3ab9e",
+    "idempotency_key": "devtask_l2:K-ORG-20261030-OFFSITECATCHUP:f3ca4948f9d3d36d1139a39bdf5195a08c930719",
+    "target_type": "devtask_l2_exemption",
+    "target_id": "K-ORG-20261030-OFFSITECATCHUP",
+    "from_status": "review",
+    "to_status": "merged",
+    "decision": "approved",
+    "decided_by": "human",
+    "reason": "命令全文: python tools/devtask.py merge K-ORG-20261030-OFFSITECATCHUP --l2-ack --l2-reason 五要素; 影响面: 新增幂等补推脚本 tools/offsite_catchup.ps1 并计划每6h运行，仅对 /home/aios-offsite 缺失日期的备份目录补推(tar集/vault)，不改服务/不删数据; 不可逆点: 无删除动作，仅新增备份日期目录; 替代方案与已尝试: 人工补推(2026-10-30 已补 1.89GB tar + 698MB vault，sha 全对)证明可行但不可持续，故需自动补推; 回滚预案: 删除计划任务 aios-offsite-catchup + git revert 该 merge，已推备份保留; 批准: 用户 2026-10-30 01:38 明确批准实施 task-9",
+    "decided_at": "2026-10-29T19:16:52+00:00",
+    "schema_version": 1,
+    "created_at": "2026-10-29T19:16:52+00:00",
+    "trace_id": "aa7228e87be44fb8be4a9bc497ab4971",
+    "content_hash": "f3ca4948f9d3d36d1139a39bdf5195a08c930719"
+   },
+   {
+    "approval_id": "ef8c71034933426e978d2bedd6aac935",
+    "idempotency_key": "academy:AC-20261017-LCS1:joint_review>decision",
+    "target_type": "workitem",
+    "target_id": "academy:AC-20261017-LCS1",
+    "from_status": "joint_review",
+    "to_status": "decision",
+    "decision": "approved",
+    "decided_by": "laotian",
+    "reason": "老田 2026-10-27 07:53 指令签字：LCS-1 结题裁决 No-Go（本轮不放行：不产品化/不试点/不入排期）+ 行动=补证（非终止）。依据=评审记录 2026-10-27_ACAD1_P0_LCS1样板流水线_评审记录_v1.md；三项缺口责任 STRAT1 策略Spec / DATA1 数据冻结 / BACK1 回测执行；补证后重走 review。",
+    "decided_at": "2026-10-27T07:53:25+08:00",
+    "schema_version": 1,
+    "created_at": "2026-10-26T23:53:25+00:00",
+    "trace_id": "149afc3026f241079242b1d061fa1bf2",
+    "content_hash": ""
+   },
+   {
+    "approval_id": "7b2feb3dc5874059a7b504aa196dffe1",
+    "idempotency_key": "devtask_l2:WO-LEGION-ARCH1-PATROL-20261027:e25fe05535cb03e4b95a47871c69c6af6d25b7d2",
+    "target_type": "devtask_l2_exemption",
+    "target_id": "WO-LEGION-ARCH1-PATROL-20261027",
+    "from_status": "review",
+    "to_status": "merged",
+    "decision": "approved",
+    "decided_by": "ARCH1",
+    "reason": "批准依据=老田2026-10-27 10:47指令把ARCH1做成5/5、装周一架构决策/技术债巡检触发任务。命令: devtask merge + C:\\aios\\tools\\install_arch1_ops.ps1注册ARCH1ArchPatrol(周一09:50 weekly), 执行体python -X utf8 arch1_ops.py weekly, 工作目录C:\\aios, 当前用户电池可跑10min IgnoreNew。影响面: 仅1个用户级计划任务+每周写agent_platform/data/dev/arch1/+append dev_events+运行两个只读质量门脚本(_mixin_integrity/unify_nav)，不改代码/不重启服务/不联网/不跑回测。不可逆点: 任务注册持久需显式卸载，无数据删除，脚本只读。替代方案: 已DryRun+测试4 passed；不装则ARCH1仍4/5。回滚: install_arch1_ops.ps1 -Uninstall + git revert合并提交。",
+    "decided_at": "2026-10-27T02:50:01+00:00",
+    "schema_version": 1,
+    "created_at": "2026-10-27T02:50:01+00:00",
+    "trace_id": "6b0d17807e544fe298ea240f01f39541",
+    "content_hash": "e25fe05535cb03e4b95a47871c69c6af6d25b7d2"
+   },
+   {
+    "approval_id": "f024b1566c5043e4b92f24541eb09251",
+    "idempotency_key": "devtask_l2:WO-LEGION-ARCH1-PATROL-20261027:fc1a0c31baf33d756d95d4d5d3ce7cc0294e3702",
+    "target_type": "devtask_l2_exemption",
+    "target_id": "WO-LEGION-ARCH1-PATROL-20261027",
+    "from_status": "review",
+    "to_status": "merged",
+    "decision": "approved",
+    "decided_by": "ARCH1",
+    "reason": "批准依据=老田2026-10-27 10:47指令把ARCH1做成5/5、装周一架构决策/技术债巡检触发任务。命令: devtask merge + C:\\aios\\tools\\install_arch1_ops.ps1注册ARCH1ArchPatrol(周一09:50 weekly), 执行体python -X utf8 arch1_ops.py weekly, 工作目录C:\\aios, 当前用户电池可跑10min IgnoreNew。影响面: 仅1个用户级计划任务+每周写agent_platform/data/dev/arch1/+append dev_events+运行两个只读质量门脚本(_mixin_integrity/unify_nav)，不改代码/不重启服务/不联网/不跑回测。不可逆点: 任务注册持久需显式卸载，无数据删除，脚本只读。替代方案: 已DryRun+测试4 passed；不装则ARCH1仍4/5。回滚: install_arch1_ops.ps1 -Uninstall + git revert合并提交。",
+    "decided_at": "2026-10-27T02:49:12+00:00",
+    "schema_version": 1,
+    "created_at": "2026-10-27T02:49:12+00:00",
+    "trace_id": "622915bf4be14e14a0b291fa6dc24e70",
+    "content_hash": "fc1a0c31baf33d756d95d4d5d3ce7cc0294e3702"
+   },
+   {
+    "approval_id": "7b86bd160d0f429495f48314527b107c",
+    "idempotency_key": "devtask_l2:WO-LEGION-ACAD1-P2-20261027:00bf1d0159889cbec372181b1914aa5c16bfbe2a",
+    "target_type": "devtask_l2_exemption",
+    "target_id": "WO-LEGION-ACAD1-P2-20261027",
+    "from_status": "review",
+    "to_status": "merged",
+    "decision": "approved",
+    "decided_by": "ACAD1",
+    "reason": "批准依据=老田2026-10-27 09:50指令本批给STRAT1/BACK1装与研究院同款触发任务。命令: devtask merge + C:\\aios\\tools\\install_research_seat_ops.ps1注册STRAT1Brief(周一09:40)/BACK1Check(周三15:10)/SeatsWeekly(周五16:10), 执行体python -X utf8 research_seat_ops.py strat1|back1|weekly, 工作目录C:\\aios, 当前用户电池可跑10min IgnoreNew。影响面: 仅3个用户级计划任务+每周写data/academy/ops/+append dev_events, 只读研究台账, 无网络/LLM/服务/端口/交易改动。不可逆点: 任务注册持久需显式卸载, 无数据删除, 脚本幂等。替代方案: 已DryRun+pytest7通过; 不装则两席仍3/5。回滚: install_research_seat_ops.ps1 -Uninstall卸载三任务 + git revert合并提交。",
+    "decided_at": "2026-10-27T01:55:18+00:00",
+    "schema_version": 1,
+    "created_at": "2026-10-27T01:55:18+00:00",
+    "trace_id": "2eb9ff05530541289b613d34953c1130",
+    "content_hash": "00bf1d0159889cbec372181b1914aa5c16bfbe2a"
+   },
+   {
+    "approval_id": "b17e383ab24b42d4a4263b9ffceca24e",
+    "idempotency_key": "devtask_l2:WO-LEGION-ACAD1-P0-20261027:ae1de182fa3615ccd5bf44b1bbb249788f68a67c",
+    "target_type": "devtask_l2_exemption",
+    "target_id": "WO-LEGION-ACAD1-P0-20261027",
+    "from_status": "review",
+    "to_status": "merged",
+    "decision": "approved",
+    "decided_by": "ACAD1",
+    "reason": "批准依据=老田2026-10-27 07:2x指令P0第3项装触发+审计三个计划任务。命令: devtask merge + C:\\aios\\tools\\install_academy_ops.ps1注册AcademyIntakeBrief(周一09:30)/AcademyReview(周三15:00)/AcademyWeeklyReport(周五16:00), 执行体python -X utf8 academy_ops.py intake|review|weekly, 工作目录C:\\aios, 当前用户电池可跑10min上限IgnoreNew。影响面: 仅3个用户级计划任务+每周写data/academy/{briefs,reviews,reports}+append dev_events, 只读登记簿, 无网络/LLM/服务重启/端口/交易改动。不可逆点: 任务注册持久需显式卸载, 无数据删除, 脚本幂等。替代方案: 已DryRun+pytest23通过; 不装则ACAD1触发维缺、仍3/5。回滚: install_academy_ops.ps1 -Uninstall卸载三任务 + git revert合并提交。",
+    "decided_at": "2026-10-26T23:48:09+00:00",
+    "schema_version": 1,
+    "created_at": "2026-10-26T23:48:09+00:00",
+    "trace_id": "4e862fdc0d0d4e4f87700332bab86b55",
+    "content_hash": "ae1de182fa3615ccd5bf44b1bbb249788f68a67c"
+   },
+   {
+    "approval_id": "e201988c873244f5af0322f2eb0a4e20",
+    "idempotency_key": "devtask_l2:WO-LEGION-GW8795-KEEPALIVE-20261027:b4a606483816df7d9027df0ec103c3b2fecd49be",
+    "target_type": "devtask_l2_exemption",
+    "target_id": "WO-LEGION-GW8795-KEEPALIVE-20261027",
+    "from_status": "review",
+    "to_status": "merged",
+    "decision": "approved",
+    "decided_by": "ZHAOYUN",
+    "reason": "五要素（同一已批任务补齐自愈）：①命令全文=ops/local_gateway/install_legion_gateway_8795.ps1 重注册 LegionGateway8795（AtLogOn + 每5分钟 keepalive 触发器；wrapper 健康探测存活即退出）；②影响面=8795 仍只绑定 127.0.0.1，周期触发器仅本机 health 探测（毫秒级），无新增任务名；③不可逆点=任务触发器变更，重启后仍在；可回滚；不改数据/系统；④替代方案=保持按需/仅失败重启（实测不触发）；⑤回滚=Unregister-ScheduledTask LegionGateway8795 或按原 AtLogOn 单触发器重注册。老田已批「8795 常驻（登录触发+失败重启）」；此为实测不触发后的等价自愈修正。",
+    "decided_at": "2026-10-26T22:20:54+00:00",
+    "schema_version": 1,
+    "created_at": "2026-10-26T22:20:54+00:00",
+    "trace_id": "107e2012ecde460da13e739906523d25",
+    "content_hash": "b4a606483816df7d9027df0ec103c3b2fecd49be"
+   },
+   {
+    "approval_id": "bf7cfd146c4f40f491d758b69b2401de",
+    "idempotency_key": "devtask_l2:WO-LEGION-GW8795-PERSIST-20261027:2da9d802fa0375e6c1dea1f452f9752605f98913",
+    "target_type": "devtask_l2_exemption",
+    "target_id": "WO-LEGION-GW8795-PERSIST-20261027",
+    "from_status": "review",
+    "to_status": "merged",
+    "decision": "approved",
+    "decided_by": "ZHAOYUN",
+    "reason": "五要素：①命令全文=ops/local_gateway/install_legion_gateway_8795.ps1 注册 LegionGateway8795（AtLogOn 当前用户，powershell -File C:\\aios\\ops\\local_gateway\\run_legion_gateway_8795.ps1，Restart 3/1min，IgnoreNew，无限时长）；②影响面=登录后 127.0.0.1:8795 常驻，仅回环、无鉴权、无公网暴露，负载极低；③不可逆点=任务保留到显式删除，重启后仍在；不改系统配置/数据；④替代方案=保持按需手动启动/HKCU Run（不推荐）；⑤回滚=Unregister-ScheduledTask -TaskName LegionGateway8795 -Confirm:$false。老田 2026-10-27 明确批准「批准 L2：8795 常驻（登录触发 + 失败重启）」。",
+    "decided_at": "2026-10-26T22:17:28+00:00",
+    "schema_version": 1,
+    "created_at": "2026-10-26T22:17:28+00:00",
+    "trace_id": "4cafc4b49af5438384297e559bcd0e70",
+    "content_hash": "2da9d802fa0375e6c1dea1f452f9752605f98913"
+   }
+  ]
+ },
+ "budget": {
+  "totals": {
+   "usage_calls": 2,
+   "in_tok": 1012,
+   "out_tok": 3,
+   "api_calls": 9422,
+   "api_fail": 4
+  },
+  "credits_estimate": 0.0,
+  "budget": {
+   "token_budget": 1000000,
+   "credit_budget": 100,
+   "token_utilization": 0.001,
+   "credit_utilization": 0.0
+  },
+  "by_domain": {
+   "academy": {
+    "calls": 1,
+    "in_tok": 0,
+    "out_tok": 0,
+    "elapsed": 44.5,
+    "chars": 1325
+   },
+   "quality": {
+    "calls": 1,
+    "in_tok": 1012,
+    "out_tok": 3,
+    "elapsed": 1.3,
+    "chars": 0
+   }
+  },
+  "risks": [
+   "API 失败 4 次（fail-visible）"
+  ]
+ },
+ "heartbeat": {
+  "summary": {
+   "agents_to_wake": 3,
+   "raw_wakes": 5,
+   "coalesced": 2,
+   "multi_schedule_agents": 1,
+   "failed_schedules": 3
+  },
+  "schedules": {
+   "total": 5,
+   "enabled": 3,
+   "by_agent": {
+    "A0A": 2,
+    "T1": 1
+   },
+   "multi_schedule_agents": [
+    "A0A"
+   ],
+   "failed_last_result": [
+    {
+     "id": "sch-1792172371",
+     "agent": "T1",
+     "result": "8093 不可达: HTTP Error 400: Bad Request"
+    },
+    {
+     "id": "sch-1792172372",
+     "agent": "A0A",
+     "result": "8093 不可达: HTTP Error 400: Bad Request"
+    },
+    {
+     "id": "sch-weekly-report-001",
+     "agent": "A0A",
+     "result": "8093 不可达: HTTP Error 400: Bad Request"
+    }
+   ]
+  },
+  "coalesced_wakes": [
+   {
+    "agent": "T1",
+    "due": "daily 09:30",
+    "reasons": [
+     "schedule"
+    ],
+    "sources": [
+     "sch-1792172371"
+    ],
+    "count": 1
+   },
+   {
+    "agent": "A0A",
+    "due": "daily 17:50",
+    "reasons": [
+     "schedule"
+    ],
+    "sources": [
+     "sch-1792172372",
+     "sch-weekly-report-001"
+    ],
+    "count": 2
+   },
+   {
+    "agent": "DSH-Lead",
+    "due": null,
+    "reasons": [
+     "assignment"
+    ],
+    "sources": [
+     "K-STOCK-ANALYSIS-P2-7-20261030",
+     "K-STOCK-ANALYSIS-P2-8-20261030"
+    ],
+    "count": 2
+   }
+  ]
+ }
+}
