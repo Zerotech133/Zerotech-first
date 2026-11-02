@@ -61,6 +61,7 @@ RETRYABLE_STATUSES = (FETCH_NO_MARKER, FETCH_EXCEPTION, FETCH_HTTP_5XX,
 MAX_ATTEMPTS = 3            # 总尝试次数上限（含首次；任务要求 ≤3）
 BACKOFF_BASE = 5.0          # 指数退避基数（秒）：attempt2=5s、attempt3=10s
 BATCH_SIZE_DEFAULT = 15     # 每轮最多处理的码数
+AUTO_ROTATE_SEED = 20261102  # 自动轮换的稳定分区种子（改日期池也保持同一分区顺序）
 FAIL_RATE_THRESHOLD = 0.20  # 失败率阈值（> 阈值 → rc≠0/告警）
 FAIL_RC = 2
 ALERT_WRAP = os.path.abspath(
@@ -323,16 +324,31 @@ def _alert_fail(rc, log_path, enabled=True):
         return False
 
 
+def _auto_batch_index(n_batches, day=None):
+    """自动轮换：按一年中的第几天取模，保证多窗口/多日覆盖整个池。"""
+    if n_batches <= 0:
+        return 0
+    import datetime as _dt
+    d = day if day is not None else _dt.date.today()
+    return d.timetuple().tm_yday % n_batches
+
+
 def _processed_codes(args):
     """按模式取本轮要处理的码：pool → 随机顺序并取第 batch-index 批（默认 ≤15）；显式清单 → 全部分批。"""
     if args.pool:
         codes = pool_codes(args.pool_days, args.limit)
         if not codes:
             return [], "pool_empty"
+        if args.batch_index is None:
+            # P0 修正：launcher 不传 batch-index 时按日期自动轮换（稳定分区，n 天内覆盖全池）
+            random.Random(AUTO_ROTATE_SEED).shuffle(codes)
+            batches = _chunk(codes, args.batch_size)
+            idx = _auto_batch_index(len(batches))
+            return batches[idx], "pool batch %d/%d（auto-rotate day_of_year）" % (idx + 1, len(batches))
         if not args.no_shuffle:
             random.shuffle(codes)
         batches = _chunk(codes, args.batch_size)
-        idx = max(0, min(int(args.batch_index or 0), len(batches) - 1))
+        idx = max(0, min(int(args.batch_index), len(batches) - 1))
         return batches[idx], "pool batch %d/%d" % (idx + 1, len(batches))
     codes = [c.strip() for c in (args.codes or "").split(",") if c.strip()]
     if not codes:
@@ -357,8 +373,8 @@ def main(argv=None):
     # P0 新增参数（均有默认值；旧 CLI 不带也兼容）
     ap.add_argument("--batch-size", type=int, default=BATCH_SIZE_DEFAULT,
                     help="每批码数上限（默认 15；pool 模式每轮只跑 1 批）")
-    ap.add_argument("--batch-index", type=int, default=0,
-                    help="pool 模式选第几批（0 起，多窗口轮换用）")
+    ap.add_argument("--batch-index", type=int, default=None,
+                    help="pool 模式选第几批（0 起；不传=按日期自动轮换，n 天覆盖全池）")
     ap.add_argument("--max-attempts", type=int, default=MAX_ATTEMPTS,
                     help="单页总尝试次数（≤3，指数退避）")
     ap.add_argument("--backoff-base", type=float, default=BACKOFF_BASE,

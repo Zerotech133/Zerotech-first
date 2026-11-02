@@ -247,3 +247,32 @@ def test_code6_and_empty_pool_rc0(tmp_path, monkeypatch):
     monkeypatch.setattr(gc, "OUT_DIR", str(tmp_path))
     monkeypatch.setattr(gc, "pool_codes", lambda *a, **k: [])
     assert gc.main(["--pool", "--no-alert"]) == 0  # 池空正常退出
+
+def test_auto_batch_index_rotates_by_day():
+    import datetime as dt
+
+    assert gc._auto_batch_index(4, dt.date(2026, 1, 1)) == 1  # yday=1 %4
+    assert gc._auto_batch_index(4, dt.date(2026, 1, 2)) == 2
+    assert gc._auto_batch_index(4, dt.date(2026, 1, 3)) == 3
+    assert gc._auto_batch_index(4, dt.date(2026, 1, 4)) == 0
+    assert gc._auto_batch_index(0, dt.date(2026, 1, 1)) == 0
+
+
+def test_pool_auto_rotation_picks_one_batch(monkeypatch):
+    import types
+
+    codes = ["%06d" % i for i in range(1000, 1060)]
+    monkeypatch.setattr(gc, "pool_codes", lambda *a, **k: list(codes))
+    args = types.SimpleNamespace(pool=True, pool_days=30, limit=60, batch_size=15,
+                                 batch_index=None, no_shuffle=False, codes=None)
+    picked, mode = gc._processed_codes(args)
+    assert len(picked) == 15
+    assert "auto-rotate" in mode
+    # 显式 batch-index + no_shuffle：4 批 * 15 = 60，稳定分区不重复
+    args.no_shuffle = True
+    seen = set()
+    for idx in range(4):
+        args.batch_index = idx
+        part, _ = gc._processed_codes(args)
+        seen.update(part)
+    assert seen == set(codes)

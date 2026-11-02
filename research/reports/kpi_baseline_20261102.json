@@ -1,5 +1,5 @@
 {
- "measured_at": "2026-11-02T13:14:52+08:00",
+ "measured_at": "2026-11-02T13:56:54+08:00",
  "kpis": {
   "K1": {
    "name": "雪球当日增量",
@@ -38,17 +38,17 @@
   },
   "K6": {
    "name": "专用查询入口覆盖",
-   "value": "raw 90.13% / clean 91.29%",
+   "value": "raw 97.77% / clean 99.03%",
    "target": "≥80%",
-   "evidence": "ready=283 denominator=310",
+   "evidence": "ready=307 denominator=310",
    "status": "ok"
   },
   "K7": {
    "name": "display 覆盖物理表",
-   "value": "160/256",
+   "value": "210/256",
    "target": "≥200（S3）",
-   "evidence": "display_count=174",
-   "status": "warn"
+   "evidence": "display_count=224",
+   "status": "ok"
   },
   "K8": {
    "name": "资质 unknown",
