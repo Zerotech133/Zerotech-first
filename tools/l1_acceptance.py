@@ -122,15 +122,40 @@ def main(argv=None) -> int:
     add("oidc", "mode=on ready=true", "PASS" if ok else "FAIL",
         f"code={code} mode={st.get('mode')} ready={st.get('ready')}")
 
-    # 6) 8091 代码生效（换血后）
-    hp_code, hp_body = http(BASE + "/health-portal")
-    if hp_code != 200:
-        hp_code, hp_body = http(BASE + "/api/health-portal")
-    live = "智策API(8105)" in hp_body and "5175" not in hp_body
-    if live:
-        add("8091", "新代码生效（8105/无5175）", "PASS", f"code={hp_code}")
+    # 6) 8091 代码生效：进程启动时间 > 关键代码 mtime（8091 换血判据）
+    pid_cmd = (
+        "$c=Get-NetTCPConnection -LocalPort 8091 -State Listen -ErrorAction SilentlyContinue;"
+        "if($c){($c|Select-Object -First 1 -ExpandProperty OwningProcess)}"
+    )
+    try:
+        r = subprocess.run(["powershell", "-NoProfile", "-Command", pid_cmd],
+                           capture_output=True, text=True, encoding="utf-8",
+                           errors="replace", timeout=20)
+        pid = int((r.stdout or "0").strip() or 0)
+    except Exception:  # noqa: BLE001
+        pid = 0
+    start_ok = False
+    detail = f"pid={pid}"
+    if pid:
+        try:
+            ps = ("$p=Get-CimInstance Win32_Process -Filter 'ProcessId=%d';"
+                  "if($p){$p.CreationDate.ToString('o')}" % pid)
+            r2 = subprocess.run(["powershell", "-NoProfile", "-Command", ps],
+                                capture_output=True, text=True, encoding="utf-8",
+                                errors="replace", timeout=20)
+            start = (r2.stdout or "").strip()
+            code_mtime = max((ROOT / "portal" / f).stat().st_mtime
+                             for f in ("auth_gateway.py", "api_health_portal.py"))
+            import datetime as _dt
+            st = _dt.datetime.fromisoformat(start.replace("Z", "+00:00"))
+            start_ok = st.timestamp() > code_mtime
+            detail = f"pid={pid} start={start} code_mtime={_dt.datetime.fromtimestamp(code_mtime).isoformat()}"
+        except Exception as e:  # noqa: BLE001
+            detail += f" start_check_err={e}"
+    if start_ok:
+        add("8091", "新代码生效（换血后进程）", "PASS", detail)
     else:
-        add("8091", "新代码生效（8105/无5175）", "PENDING", f"需 8091 换血；code={hp_code}")
+        add("8091", "新代码生效（换血后进程）", "PENDING", "需 8091 换血；" + detail)
 
     # 7) 8102 默认引用
     for rel in ("portal/auth_gateway.py", "portal/api_zhice_bff.py"):

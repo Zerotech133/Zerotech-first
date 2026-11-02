@@ -1,11 +1,16 @@
 # 关停 L1 遗留端口 5175/8102（管理员运行）
 #   powershell -ExecutionPolicy Bypass -File C:\项目\老田的AI助手\tools\stop_legacy_5175_8102.ps1
 # 机制：按监听端口动态取 PID（不写死），树杀后循环验证；不触碰 8105/8091/8734。
+param([switch]$Quiet)
 $ErrorActionPreference = 'Continue'
 $ts = Get-Date -Format 'yyyyMMdd_HHmmss'
 $log = "C:\Temp\stop_legacy_5175_8102_$ts.log"
 function Log([string]$m) { $line = "$(Get-Date -Format o) $m"; $line | Tee-Object -FilePath $log -Append | Out-Host }
 
+if ($Quiet) {
+    $any = @(5175,8102 | Where-Object { @(Get-NetTCPConnection -LocalPort $_ -State Listen -ErrorAction SilentlyContinue).Count -gt 0 })
+    if ($any.Count -eq 0) { exit 0 }
+}
 Log '== L1 遗留端口关停 =='
 $killed = @()
 foreach ($port in 5175, 8102) {
