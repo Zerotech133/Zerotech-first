@@ -44,3 +44,61 @@
 ## 后果
 - DEV1/DEV5/DEV6/DEV2/3/4/7/8 按此契约并行；QA1 做契约测试；GUANYU 审只读边界；
 - M0 冻结后 M1 才启动；字段变更走 ADR 修订，不静默改。
+
+---
+
+## 2026-11-03 修订（v1 契约不变 + live v2 extras 只增登记）
+
+> **状态**：修订记录 **draft/shadow，待 ARCH1 预审**。
+> **边界**：本节之前全文为 ADR-020 v1 原文，**保留不改**；本修订**不新建第二份契约 ADR**，契约真源仍为 `docs/dev/legion_screen_contract.json` + 本 ADR。
+> **触发**：WP1+WP3（工单 **WO-CAOCAO-FRAME-20261103**）——API `/api/dev/legion` 已在 live 返回 v2 扩展（`workorder_bus/decisions/events/v2`），但契约未登记，属"实现先行、声明落后"。本修订只补声明，不改运行时。
+
+### R1 新增登记（只增，不改 v1）
+
+| 字段 | 类型 | 来源 | 只读边界 |
+|---|---|---|---|
+| `workorder_bus` | `array<object>{id,owner,status,desc,created}` | `.worktrees/tasks.json`（`status∈{doing,review}`；`created desc`；**≤30 条**；跨席） | 只读；源缺失/坏 JSON → `[]`+`errors[]` |
+| `decisions` | `array<object>{title,due,owner,high,desc,action[,source]}` | `agent_platform/config/dev_legion_decisions.json#items`（配置项可无 `source`）+ 由 `workorder_bus` 合成 1 项（`source=workorder_bus`） | 只读；配置缺失/坏 → `[]`+`errors[]` |
+| `events` | `array<object>{ts,kind,agent,task}` | `portal/data/dev_events.jsonl`（尾 12 行解析 → 末 10 条） | 只读；文件缺失/不可读 → `[]`+`errors[]` |
+| `v2` | `object{readonly:true, extras:[workorder_bus,decisions,events]}` | 派生（非独立真源） | 恒 `readonly=true` |
+
+- **条件性 `extensions[]` 追加**：`v2_workorder_bus` / `v2_decisions` / `v2_events`（对应字段非空时追加；空则不加）。
+- `schema` 仍 **`legion_screen_contract/v1`**；v1 既有字段/语义不变；新增字段向后兼容（老客户端忽略）；**无写接口/写方法**。
+- 机器可读登记：`docs/dev/legion_screen_contract.json` → `optional_extensions.v2`（含 `readonly_boundary`）。
+
+### R2 只读与无写接口（复核口径）
+
+- 仅 `GET /api/dev/legion`；`portal/api_dev_legion.py` 只有 `handle_get`，无 post/put/delete/patch handler；
+- 返回顶层 `readonly=true`、`v2.readonly=true`；不写库/文件/事件（HTTP 访问日志承担审计）；
+- **错误态**：任一源缺失/损坏 → 对应字段 `[]` + `errors[]` 非空 + `ok=false`，HTTP 仍 **200（不 500）**。
+
+### R3 测试证据
+
+- `agent_platform/tests/test_dev_legion_api.py`：保留并新增 v2 契约断言——字段存在、只读、`v2.readonly`、无写方法、错误态 `errors[]`、字段形状/上限；
+- `agent_platform/tests/test_legion_contract.py` v1 契约 4 项保持通过（v1 schema 不变）；
+- **live 复核（2026-11-03 06:58:39，只读 8734 `/api/dev/legion`）**：`schema=v1`、`readonly=true`、`v2.readonly=true`；
+  `workorder_bus=5`、`decisions=3`（2 条配置项 + 1 条 `source=workorder_bus` 合成项）、`events=10`、`errors=[]`；
+  `extensions` 含 `v2_workorder_bus/v2_decisions/v2_events`（另有 v1.1 real 两项，属既有扩展）。字段形状与本节登记一致。
+
+### R4 诚实差异报告（不在本修订扩面，不猜）
+
+实测 live 顶层字段与 v1 `response` 声明仍有**既有差异（非本次引入）**：
+
+- live 顶层实际含：`schema/readonly/ok/errors/extensions/ai_cards/quant_cards/risk_cards/governance/workorder_bus/decisions/events/v2` 等；
+- 其中 `ai_cards`/`quant_cards`/`risk_cards`/`governance`/`extensions`（及 v1.1 `real`）**未在 v1 `response` 中声明**；
+- 处置：本修订**只登记 v2 extras**（任务范围）；上述差异建议另立契约追平单/下一修订统一处理；本修订不推断其 schema、不猜字段类型。
+
+### R5 影响与纪律
+
+- 本修订**不改运行时**（API/服务/nginx 均未动），仅契约文档 + 测试；
+- 组合影子清单 `compositions/dev-legion`（Q1/draft/shadow）引用本契约，但**不接运行时**；
+- ADR-015/017 仍 **Proposed**：本组合仅 draft/shadow，需 **ARCH1 预审**后方可升级 lifecycle；不自行合并（Lead 16:30 窗口统一处理）。
+
+### R6 复核命令（只读）
+
+```powershell
+cd C:\项目\老田的AI助手
+python -X utf8 -m pytest agent_platform/tests/test_dev_legion_api.py agent_platform/tests/test_legion_contract.py -q
+python -X utf8 tools/composition.py validate compositions/dev-legion
+python -X utf8 tools/composition.py plan --strict
+```

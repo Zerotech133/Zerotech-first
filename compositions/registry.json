@@ -112,6 +112,22 @@
         "validated": false,
         "evidence": "11-04 全链路彩排/复核；报告驱动、无 manifest、靠脚本与报告"
       }
+    },
+    {
+      "id": "dev-legion",
+      "name": "曹操军团（研发军团）",
+      "tier": "legion",
+      "owner": "ARCH1",
+      "version": "0.1.0",
+      "lifecycle": "draft",
+      "host": "lingjie",
+      "manifest": "compositions/dev-legion/manifest.yaml",
+      "status": {
+        "phase": "shadow",
+        "health": "unknown",
+        "validated": false,
+        "evidence": "2026-11-03 WP1+WP3：/api/dev/legion v2 extras 已 live；契约（ADR-020 修订 + legion_screen_contract.json optional_extensions）只读登记，待 ARCH1 预审；影子清单不接运行时"
+      }
     }
   ],
   "pending_decisions": [

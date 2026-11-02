@@ -1,0 +1,84 @@
+apiVersion: zerobound/v1
+kind: Composition
+metadata:
+  id: dev-legion
+  name: 曹操军团（研发军团）
+  version: 0.1.0
+  owner: ARCH1
+  lifecycle: draft
+  tier: legion
+  host: lingjie
+  description: ARCH1 曹操研发军团（11 席）只读作战屏契约组合：/api/dev/legion + dev_legion/dev_legion_v2 页；影子清单，不接运行时
+  created: "2026-11-03"
+  updated: "2026-11-03"
+spec:
+  kernel: ">=0.9 <2.0"
+  seats:
+    - ref: agent/ARCH1
+      note: 部门主官/架构终审（E3）
+    - ref: agent/DEV1
+      note: G1 组长/技术副手
+    - ref: agent/DEV2
+    - ref: agent/DEV3
+    - ref: agent/DEV4
+    - ref: agent/DEV5
+      note: G2 组长
+    - ref: agent/DEV6
+    - ref: agent/DEV7
+    - ref: agent/DEV8
+    - ref: agent/OPS1
+    - ref: agent/DOC1
+  skills:
+    - ref: skill/events
+  interfaces:
+    exposes:
+      - http: /api/dev/legion
+      - page: /dev_legion_v2.html
+      - page: /dev_legion.html
+    consumes:
+      - interface/hermes-control
+      - taskstore
+    auth:
+      public: false
+      methods: [portal-token]
+      roles: [A0, ARCH1, D1]
+  pages:
+    - ref: page/dev_legion_v2
+    - ref: page/dev_legion
+  channels:
+    - portal
+  permissions:
+    default: read-only
+    write_scopes: []
+    deny:
+      - _vault
+      - portal/data
+      - quant_backtest/data
+  evidence:
+    contract: docs/dev/legion_screen_contract.json
+    contract_schema: legion_screen_contract/v1
+    adapter: portal/api_dev_legion.py
+    readonly: true
+    extras: [workorder_bus, decisions, events, v2]
+  runtime:
+    service: portal-api
+    endpoint: http://127.0.0.1:8091
+    mode: internal-service
+  slo:
+    api_http_ok: 200
+    cache_ttl_s_max: 60
+    errors_no_500: true
+    readonly: true
+  notes:
+    - "P0 影子清单（Q1/draft）：只声明现状，不装载、不接运行时；不改 API/nginx/服务。"
+    - "契约真源：docs/dev/legion_screen_contract.json（schema legion_screen_contract/v1）；v2 extras 登记见 ADR-020 2026-11-03 修订。"
+    - "live extras 只读：workorder_bus/decisions/events/v2；无写接口/写方法（契约测试覆盖）。"
+    - "页面：/dev_legion.html、/dev_legion_v2.html（8734 静态）；接口：GET /api/dev/legion（portal-api 8091）。"
+    - "11 席引用 org.json/HR：ARCH1+DEV1-8+OPS1+DOC1；不复制席位内容，不新增席位。"
+    - "ADR-015/017 仍 Proposed：本组合仅 draft/shadow，需 ARCH1 预审；Lead 16:30 窗口统一合并，不自并。"
+    - "字段只增不改；v1 schema 不变；既有 live-only 字段差异（ai/quant/risk_cards 等）另立追平单，不猜。"
+status:
+  phase: shadow
+  health: unknown
+  validated: false
+  source: "2026-11-03 WP1+WP3 只读反推（API/契约/测试实读）；影子清单不接运行时"

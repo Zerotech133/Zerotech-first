@@ -93,5 +93,80 @@
   "note": "任一真源缺失/损坏时返回空态并标注，不 500"
  },
  "frozen_at": "2026-10-28",
- "approved_by": "老田（代确认 ARCH1 契约；2026-10-28 会话授权）"
+ "approved_by": "老田（代确认 ARCH1 契约；2026-10-28 会话授权）",
+ "optional_extensions": {
+  "note": "v1 契约的只增扩展登记（不修改 schema/frozen 字段）。本块只登记 live v2 extras；其余既有 live-only 字段差异见 ADR-020 2026-11-03 修订 §R4（不猜、另立追平单）。",
+  "v2": {
+   "status": "live",
+   "readonly": true,
+   "schema_impact": "none（schema 仍 legion_screen_contract/v1；旧字段/语义不变，老客户端忽略新增字段）",
+   "registered_at": "2026-11-03",
+   "adr": "ADR-020 2026-11-03 修订 §R1",
+   "fields": {
+    "workorder_bus": {
+     "type": "array<object>",
+     "items": {
+      "id": "string（工单 ID）",
+      "owner": "string（席位 ID）",
+      "status": "doing|review",
+      "desc": "string",
+      "created": "string（任务板 created 原样）"
+     },
+     "source": ".worktrees/tasks.json",
+     "filter": "status in {doing, review}（跨席，不限 dev 席位）",
+     "sort": "created desc",
+     "max_items": 30,
+     "degrade": "源缺失/坏 JSON → []（并记 errors[]）"
+    },
+    "decisions": {
+     "type": "array<object>",
+     "items": {
+      "title": "string",
+      "due": "string",
+      "owner": "string",
+      "high": "bool",
+      "desc": "string",
+      "action": "string",
+      "source": "string（可选：workorder_bus 合成项固定 \"workorder_bus\"；配置项可缺省）"
+     },
+     "source": "agent_platform/config/dev_legion_decisions.json#items + 由 workorder_bus 合成 1 项（source=workorder_bus）",
+     "degrade": "配置缺失/坏 JSON → []（并记 errors[]；合成项不生成）"
+    },
+    "events": {
+     "type": "array<object>",
+     "items": {
+      "ts": "string",
+      "kind": "string",
+      "agent": "string",
+      "task": "string"
+     },
+     "source": "portal/data/dev_events.jsonl（尾 12 行解析 → 取末 10 条）",
+     "degrade": "文件缺失/不可读 → []（并记 errors[]）"
+    },
+    "v2": {
+     "type": "object",
+     "fields": {
+      "readonly": "bool（true）",
+      "extras": "array<string> = [workorder_bus, decisions, events]"
+     },
+     "source": "派生（非独立真源）"
+    }
+   },
+   "extensions_flags": {
+    "v2_workorder_bus": "workorder_bus 非空时加入顶层 extensions[]",
+    "v2_decisions": "decisions 非空时加入顶层 extensions[]",
+    "v2_events": "events 非空时加入顶层 extensions[]"
+   },
+   "readonly_boundary": "仅 GET /api/dev/legion；无写接口/写方法；不写库/文件/事件；任一源缺失/损坏 → 对应字段 [] + errors[] + ok=false，HTTP 仍 200（不 500）"
+  }
+ },
+ "revisions": [
+  {
+   "date": "2026-11-03",
+   "adr": "ADR-020",
+   "change": "只增登记 live v2 extras（workorder_bus/decisions/events/v2）；v1 schema/字段不变；不新建第二份契约",
+   "status": "draft-shadow（待 ARCH1 预审）",
+   "evidence": "agent_platform/tests/test_dev_legion_api.py + 2026-11-03 WP1+WP3"
+  }
+ ]
 }
