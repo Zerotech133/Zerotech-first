@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-03T06:11:35+08:00",
+ "generated_at": "2026-11-03T06:41:39+08:00",
  "phase1": {
   "pass": 81,
   "revise": 0,
@@ -40,29 +40,34 @@
   "total": 772
  },
  "phase3_llm": {
-  "sample": 120,
-  "extracted": 101,
+  "sample": 32,
+  "extracted": 5,
   "precheck": {
-   "pass": 159,
+   "pass": 280,
    "revise": 0,
-   "reject": 133,
+   "reject": 205,
    "issues": {
-    "duplicate_existing_concept": 114,
+    "duplicate_existing_concept": 178,
     "duplicate_existing_answer": 25,
-    "concept_filler_word": 7,
-    "concept_market_commentary": 9,
-    "concept_action_phrase": 1,
+    "concept_filler_word": 9,
+    "concept_market_commentary": 11,
+    "concept_action_phrase": 2,
     "concept_too_short": 1,
-    "concept_non_noun_ending": 1
+    "concept_non_noun_ending": 2,
+    "concept_generic_or_header": 1,
+    "concept_sentence_like": 1
    },
-   "total": 292
+   "total": 485
   }
  },
  "by_blogger": {
-  "爱死磕-康康": 7,
+  "爱死磕-康康": 20,
   "K哥真交易": 4,
   "cash猫4415": 7,
-  "乔木缠论ROEE": 97,
-  "一修论市": 44
+  "乔木缠论ROEE": 125,
+  "一修论市": 53,
+  "AI量化工具手记": 7,
+  "数据帝-量化开发": 52,
+  "指标公式入门": 12
  }
 }

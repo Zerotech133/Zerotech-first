@@ -1,49 +1,213 @@
 {
  "schema_version": "card_proposals.v2",
  "date": "20261103",
- "generated_at": "2026-11-03T06:11:37+08:00",
+ "generated_at": "2026-11-03T06:41:42+08:00",
  "generator": "card_precheck_generic.py",
  "project_id": "视频号学习_8博主",
  "source": "card_candidates_视频号学习_8博主_llm_20261103.json",
  "summary": {
-  "pass": 159,
+  "pass": 280,
   "revise": 0,
-  "reject": 133,
+  "reject": 205,
   "issues": {
-   "duplicate_existing_concept": 114,
+   "duplicate_existing_concept": 178,
    "duplicate_existing_answer": 25,
-   "concept_filler_word": 7,
-   "concept_market_commentary": 9,
-   "concept_action_phrase": 1,
+   "concept_filler_word": 9,
+   "concept_market_commentary": 11,
+   "concept_action_phrase": 2,
    "concept_too_short": 1,
-   "concept_non_noun_ending": 1
+   "concept_non_noun_ending": 2,
+   "concept_generic_or_header": 1,
+   "concept_sentence_like": 1
   },
-  "total": 292
+  "total": 485
  },
  "by_blogger": {
   "爱死磕-康康": {
-   "pass": 7,
-   "total": 13
+   "pass": 20,
+   "total": 27
   },
   "K哥真交易": {
    "pass": 4,
-   "total": 7
+   "total": 8
   },
   "cash猫4415": {
    "pass": 7,
-   "total": 32
+   "total": 35
   },
   "乔木缠论ROEE": {
-   "pass": 97,
-   "total": 159
+   "pass": 125,
+   "total": 234
   },
   "一修论市": {
-   "pass": 44,
-   "total": 81
+   "pass": 53,
+   "total": 97
+  },
+  "AI量化工具手记": {
+   "pass": 7,
+   "total": 8
+  },
+  "数据帝-量化开发": {
+   "pass": 52,
+   "total": 62
+  },
+  "指标公式入门": {
+   "pass": 12,
+   "total": 14
   }
  },
  "top_candidates": 50,
  "cards": [
+  {
+   "card_id": "RX-0001",
+   "project_id": "视频号学习_8博主",
+   "blogger": "AI量化工具手记",
+   "concept": "五日最高量",
+   "q": "什么是「五日最高量」？",
+   "a": "今日成交量需大于前五天（不含今日）的最大单根成交量。窗口应向前挪一格取最高值而非均值，比较方向亦需准确。若将今日纳入窗口或用均量替代，选出的股票范围将完全不同。",
+   "source": "视频号学习_8博主 · 20261103_AI量化工具手记(1).md · L11",
+   "evidence": "20261103AI量化工具手记(1).md L11",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0007",
+   "project_id": "视频号学习_8博主",
+   "blogger": "AI量化工具手记",
+   "concept": "平台突破公式",
+   "q": "什么是「平台突破公式」？",
+   "a": "写平台突破公式时，不能将横盘写成固定线根数，因为行情周期不同。应让代码自动识别价格狭窄震荡区间，设定窗口读取最高最低价差。突破需收盘价站上或跌破沿且放量，缩量多为假突破。",
+   "source": "视频号学习_8博主 · 20261103_AI量化工具手记(1).md · L71",
+   "evidence": "20261103AI量化工具手记(1).md L71",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0004",
+   "project_id": "视频号学习_8博主",
+   "blogger": "AI量化工具手记",
+   "concept": "通达信5日线基础代码",
+   "q": "什么是「通达信5日线基础代码」？",
+   "a": "通达信 5 日均线本质是费尽 5 根收盘价的平均值。判断均线向上需对比今日与昨日 5 日均线数值，而非拿收盘价直接对比，且必须调取前一日数据，否则条件永远成立导致公式失效。",
+   "source": "视频号学习_8博主 · 20261103_AI量化工具手记(1).md · L41",
+   "evidence": "20261103AI量化工具手记(1).md L41",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0002",
+   "project_id": "视频号学习_8博主",
+   "blogger": "AI量化工具手记",
+   "concept": "通达信公式",
+   "q": "什么是「通达信公式」？",
+   "a": "它能将模糊想法转化为条件，生成可直接在通达信中运行的公式。主要功能是写准逻辑、查错及绘制结果，但不预测涨跌，旨在排查回测收益中的公式漏洞，属于软件技术科普。",
+   "source": "视频号学习_8博主 · 20261103_AI量化工具手记(1).md · L21",
+   "evidence": "20261103AI量化工具手记(1).md L21",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0012",
+   "project_id": "视频号学习_8博主",
+   "blogger": "AI量化工具手记",
+   "concept": "通达信公式参数",
+   "q": "什么是「通达信公式参数」？",
+   "a": "将硬编码数字提为参数定义，可避免换轴期重写出错。通过参数面板设置名称、范围及默认值，能实现滑块调节并同步更新公式，防止因遗忘回测数值导致均线失效，提升代码复用性。",
+   "source": "视频号学习_8博主 · 20261103_AI量化工具手记(1).md · L181",
+   "evidence": "20261103AI量化工具手记(1).md L181",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0010",
+   "project_id": "视频号学习_8博主",
+   "blogger": "AI量化工具手记",
+   "concept": "通达信公式报错",
+   "q": "什么是「通达信公式报错」？",
+   "a": "用户提到通达信公式不报错但选不出股票，并列举了四个常见逻辑坑：比较符号写反、REF偏移搞错导致K线窗口多算、互斥条件冲突以及误用未来函数。排查顺序建议先查符号、再查区间、检查冲突和排查未来函数。",
+   "source": "视频号学习_8博主 · 20261103_AI量化工具手记(1).md · L161",
+   "evidence": "20261103AI量化工具手记(1).md L161",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
   {
    "card_id": "RX-0064",
    "project_id": "视频号学习_8博主",
@@ -270,6 +434,31 @@
    }
   },
   {
+   "card_id": "RX-0102",
+   "project_id": "视频号学习_8博主",
+   "blogger": "一修论市",
+   "concept": "AI赛道",
+   "q": "什么是「AI赛道」？",
+   "a": "中央处理器、硬质定路板等算力硬件集体爆发，导致 AI 赛道群性混乱，午后继续走强。",
+   "source": "视频号学习_8博主 · 20261103_一修论市(1).md · L271",
+   "evidence": "20261103一修论市(1).md L271",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
    "card_id": "RX-0105",
    "project_id": "视频号学习_8博主",
    "blogger": "一修论市",
@@ -445,6 +634,31 @@
    }
   },
   {
+   "card_id": "RX-0135",
+   "project_id": "视频号学习_8博主",
+   "blogger": "一修论市",
+   "concept": "外围科技巨头",
+   "q": "什么是「外围科技巨头」？",
+   "a": "受外围消息影响，外围科技巨头处于止跌、企稳、修复阶段，情绪范围逐渐变好，带动国内大 A 股跟随上涨，成交量重回 3 万亿，显示主力进场。",
+   "source": "视频号学习_8博主 · 20261103_一修论市(1).md · L611",
+   "evidence": "20261103一修论市(1).md L611",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
    "card_id": "RX-0237",
    "project_id": "视频号学习_8博主",
    "blogger": "一修论市",
@@ -478,6 +692,31 @@
    "a": "视频指出隔夜外围上涨但 A 股走独立行情，科技昨日领涨今日回调。尽管半导体消息影响情绪，证券等板块维持盘面，大盘无大跌风险。建议借冲高紧签仓位而非追高，重点在于踏准方向节奏，一休云战法将持续看好定力方向。",
    "source": "视频号学习_8博主 · 20261103_一修论市(1).md · L371",
    "evidence": "20261103一修论市(1).md L371",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0158",
+   "project_id": "视频号学习_8博主",
+   "blogger": "一修论市",
+   "concept": "市场赚钱效应",
+   "q": "什么是「市场赚钱效应」？",
+   "a": "今天早方指数低开随后科技发力，叠加证据加入拉升队伍，指数直线翻红。个股 3600 家铺涨，成交量放大 1500 亿，说明做多情绪强烈，整体还有上涨预期。",
+   "source": "视频号学习_8博主 · 20261103_一修论市(1).md · L881",
+   "evidence": "20261103一修论市(1).md L881",
    "theme": "其他",
    "quality_score": 7,
    "precheck": {
@@ -578,6 +817,31 @@
    "a": "当前市场处于摩底注底阶段，每次回踩 60 日线就会出现拉升。指数涨多会降温，半导体站稳五日线显示强势，但光模块龙头调整压制情绪，市场多空博弈，踏不准节奏不要乱动。",
    "source": "视频号学习_8博主 · 20261103_一修论市(1).md · L461",
    "evidence": "20261103一修论市(1).md L461",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0099",
+   "project_id": "视频号学习_8博主",
+   "blogger": "一修论市",
+   "concept": "撞琴效应",
+   "q": "什么是「撞琴效应」？",
+   "a": "文中指出半导体高开低走导致个股跳水，说明市场存在板块轮动快、多数为 B 型板块的混沌局面，即所谓的“撞琴效应”仍在持续，高位科技股需警惕仓位风险。",
+   "source": "视频号学习_8博主 · 20261103_一修论市(1).md · L231",
+   "evidence": "20261103一修论市(1).md L231",
    "theme": "其他",
    "quality_score": 7,
    "precheck": {
@@ -778,6 +1042,81 @@
    "a": "受亚太市场影响，大盘低开，板块割裂。昨日领涨的煤炭、贵金属等老龙头股因主力获利盘兑现而集体砸盘，与科技股形成跷跷板效应，导致指数硬跌。",
    "source": "视频号学习_8博主 · 20261103_一修论市(1).md · L981",
    "evidence": "20261103一修论市(1).md L981",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0104",
+   "project_id": "视频号学习_8博主",
+   "blogger": "一修论市",
+   "concept": "科技为主导",
+   "q": "什么是「科技为主导」？",
+   "a": "从目前的盘面来看，市场上涨主要由科技板块带动。虽然证券、保险等金融群众在拉升，但更多起到护盘作用，无法根本带动指数持续上涨。",
+   "source": "视频号学习_8博主 · 20261103_一修论市(1).md · L291",
+   "evidence": "20261103一修论市(1).md L291",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0097",
+   "project_id": "视频号学习_8博主",
+   "blogger": "一修论市",
+   "concept": "科技主线",
+   "q": "什么是「科技主线」？",
+   "a": "尽管外围科技大跌拖累盘面，但 A 股低开后大涨，展现出极强韧性。英伟达今晚将公布业绩，此次调整旨在规避不确定性。综合来看，科技板块仍是当前市场核心主线，下午行情预计不会大幅下跌，将在 20 日线上方震荡或微幅反弹。",
+   "source": "视频号学习_8博主 · 20261103_一修论市(1).md · L211",
+   "evidence": "20261103一修论市(1).md L211",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0154",
+   "project_id": "视频号学习_8博主",
+   "blogger": "一修论市",
+   "concept": "科技持续砸盘",
+   "q": "什么是「科技持续砸盘」？",
+   "a": "科技板块连续三天呈现市钱加个股下跌的崩盘式走势，早盘惯性调整后虽翻红，但短期仍需洗盘，筹码松动将给其他方向提供机会。",
+   "source": "视频号学习_8博主 · 20261103_一修论市(1).md · L841",
+   "evidence": "20261103一修论市(1).md L841",
    "theme": "其他",
    "quality_score": 7,
    "precheck": {
@@ -1145,6 +1484,31 @@
    }
   },
   {
+   "card_id": "RX-0203",
+   "project_id": "视频号学习_8博主",
+   "blogger": "一修论市",
+   "concept": "震荡磨底阶段",
+   "q": "什么是「震荡磨底阶段」？",
+   "a": "早盘银行、保险等老龙头股护盘拉出长上影线，仅维持指数震荡；科技股高开低走但部分飘红，本质是洗盘消耗躺平筹码。市场缩量 1300 亿，虽大概率维持红盘，但未放量前仍需控制仓位继续观察。",
+   "source": "视频号学习_8博主 · 20261103_一修论市(1).md · L1371",
+   "evidence": "20261103一修论市(1).md L1371",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
    "card_id": "RX-0319",
    "project_id": "视频号学习_8博主",
    "blogger": "乔木缠论ROEE",
@@ -1153,6 +1517,31 @@
    "a": "K 线合并是确保缠论分形准确的关键。上涨时高取高低取高，下跌时高取低低取低。需先判断涨跌方向，处理左侧或右侧包含关系，连续合并可构成顶分形或底分形，自动工具能更精准处理。",
    "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L691",
    "evidence": "20261103乔木缠论ROEE.md L691",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0404",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "K线合并原则",
+   "q": "什么是「K线合并原则」？",
+   "a": "当今日 K 线高低点被前一根完全包含时，依据缠论理论需向下合并。合并后新 K 线高点取两者较低值，低点取两者较低值，以此确定顶分形结构及后续走势方向。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L1571",
+   "evidence": "20261103乔木缠论ROEE.md L1571",
    "theme": "其他",
    "quality_score": 7,
    "precheck": {
@@ -1420,6 +1809,31 @@
    }
   },
   {
+   "card_id": "RX-0460",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "中枢判断逻辑",
+   "q": "什么是「中枢判断逻辑」？",
+   "a": "中枢由至少三笔构成，需取重叠区间内所有低点最高值为下轨、高点最低值为上轨。其核心作用是定位多空厮杀主战场，通过对比前后走势力度判断背驰，辅助捕捉买卖点。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L2381",
+   "evidence": "20261103乔木缠论ROEE.md L2381",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
    "card_id": "RX-0421",
    "project_id": "视频号学习_8博主",
    "blogger": "乔木缠论ROEE",
@@ -1428,6 +1842,31 @@
    "a": "中枢新生指价格强势离开老中枢，在上方或下方形成全新不重叠中枢，标志着趋势确立，是主升浪或主跌浪的起点，代表明确的交易机会。",
    "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L1911",
    "evidence": "20261103乔木缠论ROEE.md L1911",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0259",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "中枢显示设置",
+   "q": "什么是「中枢显示设置」？",
+   "a": "参数值设为 1 时显示，0 时不显示。系统会展示当前周期最小级别的笔及其构成的中枢，笔和中枢以红绿区分；上级中枢用粉色虚线笔和灰色实心中枢表示；上上级中枢为蓝色；上三中枢则为褐色。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L21",
+   "evidence": "20261103乔木缠论ROEE.md L21",
    "theme": "其他",
    "quality_score": 7,
    "precheck": {
@@ -1470,6 +1909,31 @@
    }
   },
   {
+   "card_id": "RX-0298",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "临时叠加其他指标",
+   "q": "什么是「临时叠加其他指标」？",
+   "a": "在通达信缠论工具的主图 K 线图中，点击鼠标右键，选择菜单“主图指标”中的“临时叠加其他指标”。调出界面后，可在列表中查找并选中目标指标（如缠论至尊辅助指标），点击确定即可在主图上显示该指标。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L451",
+   "evidence": "20261103乔木缠论ROEE.md L451",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
    "card_id": "RX-0419",
    "project_id": "视频号学习_8博主",
    "blogger": "乔木缠论ROEE",
@@ -1478,6 +1942,31 @@
    "a": "解决交易难题的关键在于将底仓与加仓分开处理。底仓本质是试盘，下跌趋势中风险大，建议用一两成仓位试探；加仓则分三种策略：突破压力时激进加至五六成，趋势确认（第三类买点）时确定性高，回调支撑位出现背驰时顺势上车。",
    "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L1891",
    "evidence": "20261103乔木缠论ROEE.md L1891",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0379",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "分钟级别中枢",
+   "q": "什么是「30分钟级别中枢」？",
+   "a": "图中虚线标识的 30 分钟比面积柱子高度显示，最后一笔下跌力度大于前笔。当前正在生长中的 30 分钟级别向下笔尚未结束，需等待其构建出 30 分钟级别中枢。目前该区域已出现三脉，存在构成新中枢的可能，需等待走出离开中枢背驰才有机会。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L1301",
+   "evidence": "20261103乔木缠论ROEE.md L1301",
    "theme": "其他",
    "quality_score": 7,
    "precheck": {
@@ -1570,6 +2059,31 @@
    }
   },
   {
+   "card_id": "RX-0264",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "底分型加成交量",
+   "q": "什么是「底分型加成交量」？",
+   "a": "在每天盘后复盘时，以底分型出现且成交量持续放大为条件，利用行情软件的条件选股指标筛选出系列品种。随后加入自选板块进行人工筛选，重点观察底分型位置是否处于完整走势级别结束处及中枢背驰段，确认共振趋势后再介入。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L81",
+   "evidence": "20261103乔木缠论ROEE.md L81",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
    "card_id": "RX-0287",
    "project_id": "视频号学习_8博主",
    "blogger": "乔木缠论ROEE",
@@ -1578,6 +2092,31 @@
    "a": "禅师提出的实用战法：选定如 5 分钟、30 分钟或日线级别，介入该级别第三类买点股票。若次级别向上未新高或盘整背驰则卖出；若进入中枢上移，出现背驰至少卖一半，后续不创新高或背驰则清仓，以此节省时间捕捉新机会。",
    "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L331",
    "evidence": "20261103乔木缠论ROEE.md L331",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0296",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "指标模板",
+   "q": "什么是「指标模板」？",
+   "a": "通过通达信批量管理指标功能，将K 线图及副图调整后的缠论工具组合保存为模板。右键主图选择“当前设置另存为模板”，命名后点击保存即可一键调用。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L421",
+   "evidence": "20261103乔木缠论ROEE.md L421",
    "theme": "其他",
    "quality_score": 7,
    "precheck": {
@@ -1695,6 +2234,56 @@
    }
   },
   {
+   "card_id": "RX-0266",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "涨停板复盘",
+   "q": "什么是「涨停板复盘」？",
+   "a": "每日复盘涨停板至关重要，需探究涨停所处位置是阶段性底部还是加速阶段，并审视个股股价状况。高价股涨停具最强赚钱效应，低价股多处于底部或反弹空间有限。选择底部起涨且有涨停的个股，因其具备频繁涨停特质，后续表现往往更显著。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L101",
+   "evidence": "20261103乔木缠论ROEE.md L101",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0262",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "特征序列",
+   "q": "什么是「特征序列」？",
+   "a": "缠论中，下跌线段参考向上比特征序列（X1、X2、X3），向下线段参考向上笔特征序列（S1、S2、S3）。特征序列元素方向与对应段方向相反。若顶分形元素间无缺口则线段终结，有缺口需待底分形确认。工具可自动标识各级笔和线段。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L61",
+   "evidence": "20261103乔木缠论ROEE.md L61",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
    "card_id": "RX-0277",
    "project_id": "视频号学习_8博主",
    "blogger": "乔木缠论ROEE",
@@ -1778,6 +2367,31 @@
    "a": "缠论中中枢分笔中枢和标准中枢。笔中枢由笔画出，反应灵敏，适合捕捉短线转折；标准中枢由线段构成，过滤杂波，结构更稳，适合确认大级别趋势。建议新手先练笔中枢感知市场，再用标准中枢把握方向。",
    "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L2271",
    "evidence": "20261103乔木缠论ROEE.md L2271",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0452",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "笔的画法",
+   "q": "什么是「笔的画法」？",
+   "a": "画缠论中的“笔”需先处理包含关系，确保底分形与顶分形间至少有一根不共用的独立 K 线，总计最少五根 K 线。若不足五根则忽略，如案例中两分形仅隔一根 K 线不构成笔，需继续向右寻找满足条件的走势。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L2221",
+   "evidence": "20261103乔木缠论ROEE.md L2221",
    "theme": "其他",
    "quality_score": 7,
    "precheck": {
@@ -2020,6 +2634,31 @@
    }
   },
   {
+   "card_id": "RX-0267",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论三类买卖点",
+   "q": "什么是「缠论三类买卖点」？",
+   "a": "缠论实战重在规避亏损而非盲目追求每笔绝对盈利。三类买卖点提供严密逻辑保障，确保不出现大亏。只要严格遵循操作规则及时应对，如无法突破中枢或力度不及预期便果断离场，在避免亏损基础上，盈利便会顺理成章。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L111",
+   "evidence": "20261103乔木缠论ROEE.md L111",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
    "card_id": "RX-0490",
    "project_id": "视频号学习_8博主",
    "blogger": "乔木缠论ROEE",
@@ -2120,6 +2759,31 @@
    }
   },
   {
+   "card_id": "RX-0307",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论买卖点级别",
+   "q": "什么是「缠论买卖点级别」？",
+   "a": "缠论的买卖点、中枢、笔和线段均有级别之分，明确操作级别至关重要。实战原则是在某级别买点买入，持有至同级别第一类卖点。日线买点少而分钟级多，大级别买点容忍区间大，可忽略小级别调整或做短差，中线潜力股应反复操作。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L541",
+   "evidence": "20261103乔木缠论ROEE.md L541",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
    "card_id": "RX-0297",
    "project_id": "视频号学习_8博主",
    "blogger": "乔木缠论ROEE",
@@ -2153,6 +2817,56 @@
    "a": "缠论的三类买卖点至关重要。一买属左侧交易，成本低但准确率不高；二买属右侧交易，安全性高但可能盘整；三买效率高，常开启上涨。止损分主动（买入条件不成立）和被动（亏损超标或出现卖点），第一类买点需根据背离确认及跌破低点情况灵活设置。",
    "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L841",
    "evidence": "20261103乔木缠论ROEE.md L841",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0311",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论二买跟随策略",
+   "q": "什么是「缠论二买跟随策略」？",
+   "a": "该策略在周线向下笔内部，利用日线背驰段及 30 分钟区间套确认第一类买点作为转折最低点。随后密切关注第二类买点出现时果断入场，止损设于第一类买点处。若行情向上突破则持有，以此实现以小博大并获取稳定盈利。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L611",
+   "evidence": "20261103乔木缠论ROEE.md L611",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0412",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论交易本质",
+   "q": "什么是「缠论交易本质」？",
+   "a": "在缠论交易中，其本质就是等待：上涨回调时等待中枢形成，中枢出现时等待背驰信号，背驰之后等待进场时机，进场后则等待冲高。耐心等待能让交易变得简单，市场只惩罚被情绪驱动的人。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L1671",
+   "evidence": "20261103乔木缠论ROEE.md L1671",
    "theme": "其他",
    "quality_score": 7,
    "precheck": {
@@ -2253,6 +2967,31 @@
    "a": "本课诠释实战操作意义，强调成就源于操作而非分析。通过上证五分钟周期走势演示，指出市场如狩猎场，真正的猎手只观操作盈亏，不被成见迷惑，依靠直觉看穿陷阱，用眼睛观察猎物而非依赖脑筋分析或听信流言。",
    "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L1201",
    "evidence": "20261103乔木缠论ROEE.md L1201",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0279",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论唯一划分",
+   "q": "什么是「缠论唯一划分」？",
+   "a": "缠论通过严谨推导确保划分唯一标准。首先确定符合标准的分形，若无包含关系，三根 K 线即决定一个分形，顶底分形间需相隔一根以上 K 线。其次处理同性质分形，保留后续更极值者。最后相邻异性质分形连为笔，连续同性质则连接首尾构成新笔，中间剔除，从而唯一划分出所有笔。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L241",
+   "evidence": "20261103乔木缠论ROEE.md L241",
    "theme": "其他",
    "quality_score": 7,
    "precheck": {
@@ -2395,6 +3134,31 @@
    }
   },
   {
+   "card_id": "RX-0303",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论实战操作原则",
+   "q": "什么是「缠论实战操作原则」？",
+   "a": "缠论实战操作需按图行事：中线启动后按次级别归程持有至卖点；所有品种适合波段，紧跟大部队避免定势；关键不在点位而在利用调整增加资金利用率，避开大级别调整看 30 分钟第一类卖点，短线猛股可忽略日线。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L501",
+   "evidence": "20261103乔木缠论ROEE.md L501",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
    "card_id": "RX-0329",
    "project_id": "视频号学习_8博主",
    "blogger": "乔木缠论ROEE",
@@ -2445,6 +3209,31 @@
    }
   },
   {
+   "card_id": "RX-0358",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论工具安装",
+   "q": "什么是「缠论工具安装」？",
+   "a": "下载通达信软件及缠论工具包，解压后全选复制至通达信安装目录并覆盖确认。启动通达信，通过公式管理器导入“缠论至尊版”指标，勾选所有项并覆盖同名。最后输入CLZZB或CLBMJ即可看到自动标识的笔、中枢及复图。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L1081",
+   "evidence": "20261103乔木缠论ROEE.md L1081",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
    "card_id": "RX-0288",
    "project_id": "视频号学习_8博主",
    "blogger": "乔木缠论ROEE",
@@ -2453,6 +3242,31 @@
    "a": "缠论工具自动将走势中的笔、线段、中枢等用不同颜色和线条标识：红色虚线为向上笔，绿色为向下笔；红绿方框构成周线级别中枢；粉色标识周线级别线段及笔；灰色标识月线级别笔和中枢。颜色严格遵循图例显示级别。",
    "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L341",
    "evidence": "20261103乔木缠论ROEE.md L341",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0445",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论底分形结构",
+   "q": "什么是「缠论底分形结构」？",
+   "a": "上证指数今日 K 线被昨日包含，最高低于昨日高点、低点高于昨日低点，合并后构成向上包含结构的底分形，且右侧 K 线明显低于左侧，属于弱底分形结构。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L2151",
+   "evidence": "20261103乔木缠论ROEE.md L2151",
    "theme": "其他",
    "quality_score": 7,
    "precheck": {
@@ -2553,6 +3367,31 @@
    "a": "确定操作级别是因为缠论的一二三类买卖点、中枢和笔均区分级别。通过通达信指标参数调整，设置买卖点参数为 1 可显示本级别买卖点，买卖点二参数设为 1 则显示上一级别买卖点，以此类推逐级别控制显示。",
    "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L361",
    "evidence": "20261103乔木缠论ROEE.md L361",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0284",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论时操需要具备的心境",
+   "q": "什么是「缠论时操需要具备的心境」？",
+   "a": "市场里任何侥幸终将被加倍偿还，不洗心革面无法战胜市场。切忌急功近利与贪婪，需摆脱多空思维奴役，培养良好操作习惯。市场永远有机会，关键在于发现能力与长期有效策略。买入深思、持有坚决、卖出果断，牢记是你炒股票而非被其控制，耐心者终获回报。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L291",
+   "evidence": "20261103乔木缠论ROEE.md L291",
    "theme": "其他",
    "quality_score": 7,
    "precheck": {
@@ -2945,6 +3784,31 @@
    }
   },
   {
+   "card_id": "RX-0280",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论线段分析",
+   "q": "什么是「缠论线段分析」？",
+   "a": "缠论线段分析严谨，因逻辑如数学般可证明。其定义要求线段至少含三笔且为单数，起始三笔需重合，不能同顶或同底结束。线段须被另一性质不同的线段破坏方可确认完成，若满足条件则前一线段结束。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L251",
+   "evidence": "20261103乔木缠论ROEE.md L251",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
    "card_id": "RX-0393",
    "project_id": "视频号学习_8博主",
    "blogger": "乔木缠论ROEE",
@@ -3020,6 +3884,31 @@
    }
   },
   {
+   "card_id": "RX-0472",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论背驰",
+   "q": "什么是「缠论背驰」？",
+   "a": "缠论背驰判断核心在于走势长度与力度的对比。普通背驰无中枢，比较相邻两段；盘整背驰含中枢，比较离开段与进入段。若后段小于前段则为背驰，反之趋势延续。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L2631",
+   "evidence": "20261103乔木缠论ROEE.md L2631",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
    "card_id": "RX-0375",
    "project_id": "视频号学习_8博主",
    "blogger": "乔木缠论ROEE",
@@ -3028,6 +3917,31 @@
    "a": "根据原文，缠论中走势中枢是指某级别走势类型中，被至少三个连续次级别走势类型所重叠的部分。例如图中灰色方框标识的日线级别中枢，是由粉色 30 分钟级别的笔（次级别）重叠形成的，其进入段和离开段的柱子高度对比可判断是否发生背驰。",
    "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L1261",
    "evidence": "20261103乔木缠论ROEE.md L1261",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0439",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论走势分析",
+   "q": "什么是「缠论走势分析」？",
+   "a": "月 1 日上证指数跳空高开后下行，跌穿 60 日均线。日线级别向下比延伸至 4045 点，30 分钟和 5 分钟周期图显示行情在构建下跌中枢及三脉结构，短线需等待新机会。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L2091",
+   "evidence": "20261103乔木缠论ROEE.md L2091",
    "theme": "其他",
    "quality_score": 7,
    "precheck": {
@@ -3128,6 +4042,81 @@
    "a": "通过中枢盘整背驰、压力位顶分形及明确离场信号的顶分形三个特征叠加，可大幅提高逃顶成功率。",
    "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L3161",
    "evidence": "20261103乔木缠论ROEE.md L3161",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0473",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论难学",
+   "q": "什么是「缠论难学」？",
+   "a": "很多人觉得缠论难学，是因为原著像随笔罗列，顺序未精心编排，内容东倒西歪。课程旨在系统化梳理零散内容，帮助大家轻松掌握识别中枢和背驰的实战技能，建立持续稳定盈利的交易模型。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L2651",
+   "evidence": "20261103乔木缠论ROEE.md L2651",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0409",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论顶分形",
+   "q": "什么是「缠论顶分形」？",
+   "a": "缠论顶分形由三根无包含关系的 K 线构成，中间高点最高。它记录了多空三次博弈：卖方阻击、买方反攻衰减及买方衰竭。结合大小级别分析，若小级别走出第三类卖点且无中枢扩展，则预示下跌反转；反之若出现中枢扩展，则为上涨途中的中级分型。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L1641",
+   "evidence": "20261103乔木缠论ROEE.md L1641",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0416",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "股票操作策略",
+   "q": "什么是「股票操作策略」？",
+   "a": "该策略规定：不上二十均线不买；不破五日均线不卖；跌破五日线减半仓，跌破十日线清仓；站上五日线不轻易卖；六十日均线以下不买；上升趋势回调至 5 日或 20 日线为买点；5 日上穿 10 日为买点；无八成把握管住手；不碰前期大涨回调票；不打板。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L1721",
+   "evidence": "20261103乔木缠论ROEE.md L1721",
    "theme": "其他",
    "quality_score": 7,
    "precheck": {
@@ -3295,6 +4284,31 @@
    }
   },
   {
+   "card_id": "RX-0318",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "走势本质",
+   "q": "什么是「走势本质」？",
+   "a": "走势本质上是预期的合力，而预期本质上是在心理层面。在图形中，A1 作为第一个反弹起点具有强心理暗示，跌破后成为重要心理位。市场走势反映了预期分类（能否上破 A1）形成的合力痕迹，体现了人心因预期交易及贪婪与恐惧的作用。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L681",
+   "evidence": "20261103乔木缠论ROEE.md L681",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
    "card_id": "RX-0402",
    "project_id": "视频号学习_8博主",
    "blogger": "乔木缠论ROEE",
@@ -3328,6 +4342,56 @@
    "a": "缠论实战操作的核心在于把握两个基本点：走势类型与级别。严格遵照理论运用工具自动标识，得出各层级走势及买卖点。图形结构居首，无级别则买卖点无效，需顺应市场节奏，分段操作只关心当下。",
    "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L1061",
    "evidence": "20261103乔木缠论ROEE.md L1061",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0323",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "超短线入场",
+   "q": "什么是「超短线入场」？",
+   "a": "缠论工具自动标示中枢、笔、线段及买卖点。在五分钟级别向下笔中，若一分钟级别反向上涨空间超过前三笔下降空间，即为高胜率入场点；也可选更安全的第二类买点。止损设于前低点，跌破前三笔向上空间或出现第二类卖点时离场。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L731",
+   "evidence": "20261103乔木缠论ROEE.md L731",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0301",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "通达信快捷键",
+   "q": "什么是「通达信快捷键」？",
+   "a": "在通达信中移动 K 线图时，默认需按住鼠标左键且不能离开特定区域。更灵活的操作是按下 Ctrl+0 切换至手型光标模式，此时只需在 K 线图中按住左键即可随意拖动；完成操作后按 ESC 键取消该模式并恢复原状。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L481",
+   "evidence": "20261103乔木缠论ROEE.md L481",
    "theme": "其他",
    "quality_score": 7,
    "precheck": {
@@ -3420,6 +4484,1481 @@
    }
   },
   {
+   "card_id": "RX-0534",
+   "project_id": "视频号学习_8博主",
+   "blogger": "指标公式入门",
+   "concept": "KDJ金叉",
+   "q": "什么是「KDJ金叉」？",
+   "a": "当 K 值大于 D 值且两者均处于上升趋势时，可视为 KDJ 指标在日线与周线级别同时出现金叉形态，通常预示短期上涨动能增强。",
+   "source": "视频号学习_8博主 · 20261103_指标公式入门(1).md · L111",
+   "evidence": "20261103指标公式入门(1).md L111",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0554",
+   "project_id": "视频号学习_8博主",
+   "blogger": "指标公式入门",
+   "concept": "三倍量指标",
+   "q": "什么是「三倍量指标」？",
+   "a": "该指标包含两种常见模型：一是今日成交量为昨日的三倍左右；二是今日成交量为二十日均量的三倍左右。这两种模型均涉及主图和副图的公式编辑。",
+   "source": "视频号学习_8博主 · 20261103_指标公式入门(1).md · L471",
+   "evidence": "20261103指标公式入门(1).md L471",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0550",
+   "project_id": "视频号学习_8博主",
+   "blogger": "指标公式入门",
+   "concept": "三军会师",
+   "q": "什么是「三军会师」？",
+   "a": "三军会师是一种经典的结构形态，通常指短期均线上传长期均线，且 MACD 开口向上，20 日均线走平或向上，呈现极多头排列。",
+   "source": "视频号学习_8博主 · 20261103_指标公式入门(1).md · L431",
+   "evidence": "20261103指标公式入门(1).md L431",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0546",
+   "project_id": "视频号学习_8博主",
+   "blogger": "指标公式入门",
+   "concept": "均线排列",
+   "q": "什么是「均线排列」？",
+   "a": "日、10 日和 20 日均线从前一日空头排列变为多头排列的图形，可通过公式在主图和副图标记，节省肉眼查找时间。",
+   "source": "视频号学习_8博主 · 20261103_指标公式入门(1).md · L361",
+   "evidence": "20261103指标公式入门(1).md L361",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0539",
+   "project_id": "视频号学习_8博主",
+   "blogger": "指标公式入门",
+   "concept": "均线结构编辑方法",
+   "q": "什么是「均线结构编辑方法」？",
+   "a": "该方法要求 MA60 大于 MA120，且 MA10 上穿 MA20 时 MA20 小于 MA60。需满足上次 MA10 下插、MA20 至上次 MA60 上穿 MA120 间存在至少三天多头排列，同时 MA20 大于上次上穿时的数值，且 MA60 不低于 REFMA60。",
+   "source": "视频号学习_8博主 · 20261103_指标公式入门(1).md · L261",
+   "evidence": "20261103指标公式入门(1).md L261",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0536",
+   "project_id": "视频号学习_8博主",
+   "blogger": "指标公式入门",
+   "concept": "多周期MACD",
+   "q": "什么是「多周期MACD」？",
+   "a": "用户希望将日线、周线和月线三个级别的 MACD 指标通过一个公式进行复合表达，以解决看盘时频繁切换周期的繁琐问题，从而节省时间并简化操作。",
+   "source": "视频号学习_8博主 · 20261103_指标公式入门(1).md · L171",
+   "evidence": "20261103指标公式入门(1).md L171",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0555",
+   "project_id": "视频号学习_8博主",
+   "blogger": "指标公式入门",
+   "concept": "底分型三线组合",
+   "q": "什么是「底分型三线组合」？",
+   "a": "该结构由三根 K 线组成：第一根为阴线，第二根高低点及实体最低价均为三者最低，第三根为阳线且收盘价达到三者实体最高。",
+   "source": "视频号学习_8博主 · 20261103_指标公式入门(1).md · L481",
+   "evidence": "20261103指标公式入门(1).md L481",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0530",
+   "project_id": "视频号学习_8博主",
+   "blogger": "指标公式入门",
+   "concept": "指标位置关系",
+   "q": "什么是「指标位置关系」？",
+   "a": "判断 MACD 与 KDJ 的位置关系需观察其数值高低及交叉方向；合并使用时可设置双指标窗口，结合金叉死叉信号进行综合研判。",
+   "source": "视频号学习_8博主 · 20261103_指标公式入门(1).md · L41",
+   "evidence": "20261103指标公式入门(1).md L41",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0545",
+   "project_id": "视频号学习_8博主",
+   "blogger": "指标公式入门",
+   "concept": "每人间形态",
+   "q": "什么是「每人间形态」？",
+   "a": "每人间形态是一种经典的终极调整图形，可以通过公式编写来识别。在主图或副图上使用该形态进行标记定位，能够省去使用眼镜寻找的麻烦，因为肉眼查找过程非常费劲。",
+   "source": "视频号学习_8博主 · 20261103_指标公式入门(1).md · L331",
+   "evidence": "20261103指标公式入门(1).md L331",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0553",
+   "project_id": "视频号学习_8博主",
+   "blogger": "指标公式入门",
+   "concept": "老鸭头结构",
+   "q": "什么是「老鸭头结构」？",
+   "a": "该形态由 MACD 指标的 DIF 和 DEA 两条线及零轴组成。具体表现为 MACD 在水下发生交叉后向上穿越零轴，随后回调但未跌破零轴，最后再次形成交叉的结构。",
+   "source": "视频号学习_8博主 · 20261103_指标公式入门(1).md · L461",
+   "evidence": "20261103指标公式入门(1).md L461",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0535",
+   "project_id": "视频号学习_8博主",
+   "blogger": "指标公式入门",
+   "concept": "连续三日放量收阳",
+   "q": "什么是「连续三日放量收阳」？",
+   "a": "连续三日成交量放大，且每日均收出阳线，同时收盘价逐日抬高，形成特定的多头排列形态。",
+   "source": "视频号学习_8博主 · 20261103_指标公式入门(1).md · L121",
+   "evidence": "20261103指标公式入门(1).md L121",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0714",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "DIF上传0轴",
+   "q": "什么是「DIF上传0轴」？",
+   "a": "在 MACD 指标中，若 DIF 线在 5 天内向上穿越 0 轴，可通过在公式管理集中输入特定公式快速筛选，无需逐个手动查找，极大提升了选股效率。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L2291",
+   "evidence": "20261103数据帝-量化开发.md L2291",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0694",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "MACD周经叉",
+   "q": "什么是「MACD周经叉」？",
+   "a": "在公式管理集中输入特定公式即可快速查找 MACD 周金叉，无需逐个手动寻找，操作便捷高效。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L1901",
+   "evidence": "20261103数据帝-量化开发.md L1901",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0715",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "MACD底背离",
+   "q": "什么是「MACD底背离」？",
+   "a": "在公式管理集中输入特定公式，即可快速找到周线 MACD 底背离信号，无需逐个手动查找，极大提升了选股效率。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L2301",
+   "evidence": "20261103数据帝-量化开发.md L2301",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0567",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "QMT功能",
+   "q": "什么是「QMT功能」？",
+   "a": "QMT具备全品种覆盖（股票、期权、期货）、提供行情数据、支持多语言策略编写与回测、实现毫秒级急速交易以及风险监控等六大核心功能。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L121",
+   "evidence": "20261103数据帝-量化开发.md L121",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0693",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "T字阴线跌停",
+   "q": "什么是「T字阴线跌停」？",
+   "a": "在公式管理集中输入特定公式，即可快速筛选出 T 字阴线且跌停的个股，无需逐个手动查找，极大提高了选股效率。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L1891",
+   "evidence": "20261103数据帝-量化开发.md L1891",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0713",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "三联阳缩量阴战法",
+   "q": "什么是「三联阳缩量阴战法」？",
+   "a": "个股在一波走势后出现三根小幅拉升的红柱，随后出现一根或以上的缩量阴线代表缩量洗盘和主力控盘，出现起稳阳线可入场，底部止损后可一路拉升。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L2281",
+   "evidence": "20261103数据帝-量化开发.md L2281",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0625",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "中性策略类型",
+   "q": "什么是「中性策略类型」？",
+   "a": "常见的中性策略包括贝塔中性、货币中性、长短仓、市场中性、宏观中性及行业中性等，它们分别通过匹配贝塔值、对冲外币风险、持有多空头寸、买卖关联资产、基于宏观因素或平衡行业风险暴露来实现。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L781",
+   "evidence": "20261103数据帝-量化开发.md L781",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0563",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "主观交易与量化交易",
+   "q": "什么是「主观交易与量化交易」？",
+   "a": "主观交易依赖主观判断、情绪及对未来预期的手动操作，速度较慢且风险较高；量化交易则基于数据和算法，遵循过去规律进行自动交易，速度快且风险较低。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L81",
+   "evidence": "20261103数据帝-量化开发.md L81",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0644",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "于情因子",
+   "q": "什么是「于情因子」？",
+   "a": "医疗行业因药物安全、医疗事故等与公众健康密切相关；食品行业因质量安全问题迅速影响品牌；金融行业受监管处罚、高管丑闻等影响投资者信心；新能源行业因技术发展和安全事故引发关注；科技行业关乎国家发展。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L991",
+   "evidence": "20261103数据帝-量化开发.md L991",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0705",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "五步抓龙战法",
+   "q": "什么是「五步抓龙战法」？",
+   "a": "当个股出现二连板后，次日出现一根放量阴线，调整三天，且不跌破首板最低价。第四天收出一根放量阳线，即可介入。后续一路大涨，像这样的形态只需在盘中导入公式圆码，就能一键寻找了。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L2201",
+   "evidence": "20261103数据帝-量化开发.md L2201",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0645",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "交易策略与风险",
+   "q": "什么是「交易策略与风险」？",
+   "a": "不同交易策略下，预期回报与风险关系各异：高赔率高概率策略如买入业绩增长好的公司，成功率和回报均较高；高赔率低概率策略如高风险股票，波动大但一旦正确回报高；低赔率高概率策略如稳定股票，长期收益稳但回报率较低。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L1001",
+   "evidence": "20261103数据帝-量化开发.md L1001",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0651",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "价值投资派",
+   "q": "什么是「价值投资派」？",
+   "a": "侧重公司基本面分析，比如财务、营收、行业等。用估值模型估算公司内在价值从而进行投资，一般是长期投资。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L1071",
+   "evidence": "20261103数据帝-量化开发.md L1071",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0707",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "先人指路反包战法",
+   "q": "什么是「先人指路反包战法」？",
+   "a": "个股在一波走势后出现倒垂头 K 线，上影线是实体两倍以上且无下影线。当日红柱收盘价突破前一日上影线一半以上形成反包形态，后续大涨。盘中导入公式圆码即可一键寻找。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L2221",
+   "evidence": "20261103数据帝-量化开发.md L2221",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0696",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "公式管理集",
+   "q": "什么是「公式管理集」？",
+   "a": "在公式管理集中输入特定公式，即可快速筛选出一个月内有过两次涨停且今天又涨停的股票，无需逐个手动查找，极大提升了选股效率。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L1931",
+   "evidence": "20261103数据帝-量化开发.md L1931",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0684",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "反弹不创新高",
+   "q": "什么是「反弹不创新高」？",
+   "a": "原文指出，当股价出现反弹但未能创出新高时，这被视为一个明确的卖出信号，提示投资者应在此时考虑离场。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L1551",
+   "evidence": "20261103数据帝-量化开发.md L1551",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0675",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "合理设置止损点",
+   "q": "什么是「合理设置止损点」？",
+   "a": "确定每笔资金能承受的最大损失（如资金的2%），分析历史价格波动，利用技术指标或前高低价设置，根据市场变化动态调整，结合个人风险承受能力和市场环境波动性来设定。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L1371",
+   "evidence": "20261103数据帝-量化开发.md L1371",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0612",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "因子失效风险",
+   "q": "什么是「因子失效风险」？",
+   "a": "降低因子失效风险需采取前瞻性测试与样本外验证，结合经济环境变化；保持长期视角并按因子周期性调整投资时间；实施多元化投资，组合多个因子或加入不同资产；避免过度拟合，简化模型；定期监控评估因子表现；设置止损点并根据市场及因子表现动态调整权重。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L641",
+   "evidence": "20261103数据帝-量化开发.md L641",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0663",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "因子的预测能力",
+   "q": "什么是「因子的预测能力」？",
+   "a": "判断因子预测能力的方法包括：时间序列分析、回归分析、经济意义检验、相关性分析、稳健性测试、交叉验证、夏普比率及排序测试等，旨在全面评估其有效性。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L1221",
+   "evidence": "20261103数据帝-量化开发.md L1221",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0564",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "因子量化",
+   "q": "什么是「因子量化」？",
+   "a": "机构量化交易中的因子量化，指利用影响股票涨跌的变量（如价值、波动性、动量等）进行策略构建，既可采用单个因子，也可组合多个因子实现量化交易。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L91",
+   "evidence": "20261103数据帝-量化开发.md L91",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0647",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "常见集群算力",
+   "q": "什么是「常见集群算力」？",
+   "a": "常见集群算力广泛应用于科学研究、气候模拟、生物学及物理模拟等领域；在游戏电影画面渲染、动画制作和 AI 角色方面表现突出；同时支撑人工智能、自动驾驶、机器学习等前沿技术，还涵盖虚拟现实、AR 模拟训练以及金融高频交易、风险分析和市场预测等场景。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L1021",
+   "evidence": "20261103数据帝-量化开发.md L1021",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0629",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "数据清洗",
+   "q": "什么是「数据清洗」？",
+   "a": "数据清洗在模型开发中至关重要：它能去除冗余特征增加可靠性，优化交易信号避免误导，通过处理异常值减少过度拟合以提升准确性，修正缺失错误数据增强稳定性，并因彻底的风险评估和减少错误交易而降低风险与成本。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L821",
+   "evidence": "20261103数据帝-量化开发.md L821",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0716",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "易阳盖三阴战法",
+   "q": "什么是「易阳盖三阴战法」？",
+   "a": "该战法指股价下跌末期连续出现三根实体小阴线（十字星最佳且缩量），第四天放量收大阳线，其高点与成交量均高于前三日阴线，收盘价站上五日均线即可入场，随后往往上涨。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L2311",
+   "evidence": "20261103数据帝-量化开发.md L2311",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0662",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "期限结构因子",
+   "q": "什么是「期限结构因子」？",
+   "a": "期限结构变化会影响投资组合价值。收益率曲线变平预示经济衰退，应减少长期债券持有；预期利率升高时可选较短期限债券或对冲利率风险，帮助选择固定收益资产及进行债券定价。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L1211",
+   "evidence": "20261103数据帝-量化开发.md L1211",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0660",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "期限结构因子失效",
+   "q": "什么是「期限结构因子失效」？",
+   "a": "在政府购买长期债券扭曲定价、流动性陷阱、市场动荡如金融危机、收益率曲线反转或平坦化、央行实施非常规货币政策、长期结构性变化及国际资本流动等情况下，期限结构因子会失效。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L1191",
+   "evidence": "20261103数据帝-量化开发.md L1191",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0588",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "海归交易法",
+   "q": "什么是「海归交易法」？",
+   "a": "该方法包含五个步骤：首先选择具备一定交易量和流动性的市场；其次根据风险承受能力确定头寸规模；接着在价格突破前期高低点时入市；随后设定止损位，当价格反向移动达到二人时执行止损；最后在达到预设目标或出现反转信号时离市，可参考十日、二十日最低价做决策。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L371",
+   "evidence": "20261103数据帝-量化开发.md L371",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0717",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "涨停回马枪战法",
+   "q": "什么是「涨停回马枪战法」？",
+   "a": "该战法要求个股近 15 天内涨停，缩量回调至 5 日或 10 日均线且最低价不破涨停板最低价，优选长下影或十字星形态。后续若持续上涨即为有效信号，可通过导入公式代码在盘中一键筛选此类形态。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L2331",
+   "evidence": "20261103数据帝-量化开发.md L2331",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0681",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "深度学习硬件",
+   "q": "什么是「深度学习硬件」？",
+   "a": "深度学习需要大内存存储参数与结果，需快速固态硬盘处理数据，多核 CPU 并行任务，大量核心 GPU 进行矩阵运算，低延迟网络加速通信，硬件加速器提效，以及稳定电源供应。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L1441",
+   "evidence": "20261103数据帝-量化开发.md L1441",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0687",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "短线交易口诀",
+   "q": "什么是「短线交易口诀」？",
+   "a": "热股不拿酒，换股要换新；放量巨羊要跑路，尾盘抢筹要清仓；主升加速要见底，急跌急卖还涨缓卖；连续小涨是真涨，逢高减仓；连续大涨要离场，拉高出货。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L1701",
+   "evidence": "20261103数据帝-量化开发.md L1701",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0676",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "短线炒股高手能力",
+   "q": "什么是「短线炒股高手能力」？",
+   "a": "具备判断涨跌、把握节奏及预判走势三项能力：关注题材板块联动与资金流动；识别 K 线形态、量价及技术指标；寻找潜在热点与主力介入的强势股。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L1381",
+   "evidence": "20261103数据帝-量化开发.md L1381",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0698",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "筹码峰主图",
+   "q": "什么是「筹码峰主图」？",
+   "a": "在公式管理集中输入特定公式即可，无需一个个手动查找设置，能直接显示概念风格下的筹码峰主图效果。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L2001",
+   "evidence": "20261103数据帝-量化开发.md L2001",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0590",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "订单流基础",
+   "q": "什么是「订单流基础」？",
+   "a": "订单流基础指中大型机构在特定价格区下达大量订单，反映其立场并作为重要交易信号。识别方法包括价格行为法、成交量分析法及观察支撑阻力位和时间因素。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L391",
+   "evidence": "20261103数据帝-量化开发.md L391",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0626",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "贝塔中性策略",
+   "q": "什么是「贝塔中性策略」？",
+   "a": "建立多头头寸后，选市场指数为基准，计算各资产相对基准的贝塔值并加权平均。再选方向相反且贝塔匹配的资产建空头头寸，根据贝塔和价格调整头寸大小，也可用衍生品匹配，并定期监控组合贝塔值。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L791",
+   "evidence": "20261103数据帝-量化开发.md L791",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0583",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "过度拟合",
+   "q": "什么是「过度拟合」？",
+   "a": "过度拟合是量化交易的隐形杀手，指模型在历史数据上表现完美却在现实中屡屡失手。防止方法包括简化模型、在函数中引入正则项以及早停（验证精度不再增加时停止训练）。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L321",
+   "evidence": "20261103数据帝-量化开发.md L321",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0565",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "通达信量化交易",
+   "q": "什么是「通达信量化交易」？",
+   "a": "打开通达信预警系统（CTRL+Y），选择或添加条件选股公式生成预警文件并储存到本地电脑。随后在QMP中导入该文件，设置相关参数后等待预警触发即可进行交易。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L101",
+   "evidence": "20261103数据帝-量化开发.md L101",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0641",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "量价因子",
+   "q": "什么是「量价因子」？",
+   "a": "了解量价因子及其反映的市场趋势，结合技术分析中的图表与指标寻找交易信号，通过策略回测调整参数，并在监控中动态优化量价因子与技术指标的权重。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L951",
+   "evidence": "20261103数据帝-量化开发.md L951",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0642",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "量价因子表现",
+   "q": "什么是「量价因子表现」？",
+   "a": "不同市场周期中量价因子的表现：熊市初期价跌量跌，突破时放量仍跌；中期价跌量高，缩量将见底；末期下跌量涨，价量齐升转升势。牛市初期价升量升，突破关键水平续增则持续上升；中期价升量高，缩量趋势到头；末期价升量跌，价量齐跌转跌势。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L961",
+   "evidence": "20261103数据帝-量化开发.md L961",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0556",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "量化交易",
+   "q": "什么是「量化交易」？",
+   "a": "量化交易是利用数字模型替代人为主观判断，通过计算机技术从历史数据中筛选大概率事件制定策略，减少情绪影响，避免非理性决策并管理风险。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L11",
+   "evidence": "20261103数据帝-量化开发.md L11",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0605",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "量化交易专业毕业证",
+   "q": "什么是「量化交易专业毕业证」？",
+   "a": "量化交易通常需要计算机、数学、工程、金融、统计学、信息科学、物理学及运筹学等专业毕业证，分别对应编程开发、数理基础、复杂问题解决、市场理解、数据分析、数据挖掘、逻辑思维及决策优化等能力。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L571",
+   "evidence": "20261103数据帝-量化开发.md L571",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0670",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "量化交易复盘",
+   "q": "什么是「量化交易复盘」？",
+   "a": "量化交易复盘应关注：1.交易中的滑点、成交比例及成本；2.模型有效性与参数稳定性；3.策略盈亏、胜率及回测表现；4.系统稳定度与流程合理性；5.风险收益平衡；6.不同市场环境下策略表现。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L1291",
+   "evidence": "20261103数据帝-量化开发.md L1291",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0618",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "量化交易常见工具",
+   "q": "什么是「量化交易常见工具」？",
+   "a": "使用偏差或低质数据、过度依赖历史数据、模型复杂致过拟合、忽视滑点手续费等成本、频繁调参致策略不稳、忽略市场变化及流动性延迟问题，均为量化交易中需警惕的常见工具误区。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L711",
+   "evidence": "20261103数据帝-量化开发.md L711",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0572",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "量化交易选择",
+   "q": "什么是「量化交易选择」？",
+   "a": "高频交易频率极高、持仓时间短，但对硬件网络要求高且资金门槛大；中低频交易频率低、持仓时间长，对硬件网络要求不高且资金门槛低。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L181",
+   "evidence": "20261103数据帝-量化开发.md L181",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0613",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "量化宽松",
+   "q": "什么是「量化宽松」？",
+   "a": "央行通过购买政府债券等金融资产增加市场货币量，旨在刺激经济、降低利率并促进信贷投资，虽能缓解市场饥饿，但也可能引发通胀和资产泡沫等副作用，因此适度使用是关键。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L651",
+   "evidence": "20261103数据帝-量化开发.md L651",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0639",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "量化投资",
+   "q": "什么是「量化投资」？",
+   "a": "本书通过真实案例介绍量化策略，讲述物理学家转行数量金融的传奇经历，通俗讲解对冲、无套利等概念，并阐述统计学在风险管理中的应用及量化投资基础知识。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L931",
+   "evidence": "20261103数据帝-量化开发.md L931",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0570",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "量化机器人",
+   "q": "什么是「量化机器人」？",
+   "a": "量化机器人能分析处理大量金融数据以掌握市场规律，据此制定交易策略并快速执行。同时，它能严格管控交易风险，并通过持续学习新模型来不断优化策略。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L151",
+   "evidence": "20261103数据帝-量化开发.md L151",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0649",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "集群算力",
+   "q": "什么是「集群算力」？",
+   "a": "集群算力具有高可靠性（节点故障可替代）、高并行处理能力、高灵活性（增加节点满足需求）、实用性（多场景应用）、资源优化（均衡分配调整成本效率）及安全管理（远程监管性能）等特点。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L1041",
+   "evidence": "20261103数据帝-量化开发.md L1041",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0648",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "集群算力组成",
+   "q": "什么是「集群算力组成」？",
+   "a": "集群算力由软件站提供基础资源管理，计算节点含 CPU/GPU 执行任务，网络连接实现高速互联，管理系统负责监控调度与故障处理，安全系统保障加密通信及访问控制。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L1031",
+   "evidence": "20261103数据帝-量化开发.md L1031",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0659",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "高频订单簿还原",
+   "q": "什么是「高频订单簿还原」？",
+   "a": "可通过缓存主笔委托、利用专业工具合成、模拟交易所撮合机制、编写 Python 代码实现逻辑，以及输入历史数据配合市场模拟器来还原高频订单簿的动态变化。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L1181",
+   "evidence": "20261103数据帝-量化开发.md L1181",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0646",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "龙头战法",
+   "q": "什么是「龙头战法」？",
+   "a": "龙头战法分为战法派和情绪派。战法派有严格交易规则，设止损控风险，结合图表指标分析，依历史规律定策略；情绪派涨时买跌时卖，受舆情影响，关注大资金流向及市场情绪如热点板块等。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L1011",
+   "evidence": "20261103数据帝-量化开发.md L1011",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
    "card_id": "RX-0767",
    "project_id": "视频号学习_8博主",
    "blogger": "爱死磕-康康",
@@ -3428,6 +5967,181 @@
    "a": "判断入场位置主要基于两点：一是交易体系的完整度，需结合热点与技术点；二是安全性。若只关注单一技巧如左移突破，在结构复杂时易出错。完整的体系包含结构、方向、位置及进出场时机等要素。",
    "source": "视频号学习_8博主 · 20261103_爱死磕-康康.md · L461",
    "evidence": "20261103爱死磕-康康.md L461",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0742",
+   "project_id": "视频号学习_8博主",
+   "blogger": "爱死磕-康康",
+   "concept": "单针探顶",
+   "q": "什么是「单针探顶」？",
+   "a": "遇到单针探顶时，直接抄顶容易上当。稳健做法是找到左侧第一根不包含 K 线的低点作为支撑，若三根以内实体跌破该支撑，代表空方发力可入场；若不破则预示上涨延续。",
+   "source": "视频号学习_8博主 · 20261103_爱死磕-康康.md · L211",
+   "evidence": "20261103爱死磕-康康.md L211",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0732",
+   "project_id": "视频号学习_8博主",
+   "blogger": "爱死磕-康康",
+   "concept": "多单逃顶",
+   "q": "什么是「多单逃顶」？",
+   "a": "在上升趋势中，先找到最高线的低点，再对比左侧第一个更低的点并标注。当三个月内实体跌破该低点时，即为卖出信号，可避免市场回撤导致利润回吐。",
+   "source": "视频号学习_8博主 · 20261103_爱死磕-康康.md · L111",
+   "evidence": "20261103爱死磕-康康.md L111",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0733",
+   "project_id": "视频号学习_8博主",
+   "blogger": "爱死磕-康康",
+   "concept": "多波重叠区域",
+   "q": "什么是「多波重叠区域」？",
+   "a": "当市场出现实体较大的线后往往会有回撤，此时可观察前面是否存在多波重叠区域并画出中枢。若市场强势浅调，该区域即为入场机会；若是深调，也可在此位置寻找抄底机会。",
+   "source": "视频号学习_8博主 · 20261103_爱死磕-康康.md · L121",
+   "evidence": "20261103爱死磕-康康.md L121",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0737",
+   "project_id": "视频号学习_8博主",
+   "blogger": "爱死磕-康康",
+   "concept": "左翼K线",
+   "q": "什么是「左翼K线」？",
+   "a": "在临近上行过程中找到最高 K 线左侧第一根不包含的 K 线即为左翼 K 线。其最低价或最高价是关键标准：三根以内破掉对应价格点，预示走势向下回调；反之则向上发力延续上行，该位置可作为入场或出场参考。",
+   "source": "视频号学习_8博主 · 20261103_爱死磕-康康.md · L161",
+   "evidence": "20261103爱死磕-康康.md L161",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0741",
+   "project_id": "视频号学习_8博主",
+   "blogger": "爱死磕-康康",
+   "concept": "抄底误区",
+   "q": "什么是「抄底误区」？",
+   "a": "上涨未必是真涨，可能是反弹。若破前期高点可空；简单下跌破低后拿利润即可。难的是洗盘：先超短再升，关键看是否破支撑。踩支撑突破左翼为真涨，直接破支撑则是反弹。",
+   "source": "视频号学习_8博主 · 20261103_爱死磕-康康.md · L201",
+   "evidence": "20261103爱死磕-康康.md L201",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0722",
+   "project_id": "视频号学习_8博主",
+   "blogger": "爱死磕-康康",
+   "concept": "淘顶位置",
+   "q": "什么是「淘顶位置」？",
+   "a": "通过绘制 N 字形结构，依次定位三个关键点，观察上方波浪池一倍处即为淘顶位置。市场触及该位置时需规避风险，待形成新 N 字形后可重复此方法判断。",
+   "source": "视频号学习_8博主 · 20261103_爱死磕-康康.md · L11",
+   "evidence": "20261103爱死磕-康康.md L11",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0748",
+   "project_id": "视频号学习_8博主",
+   "blogger": "爱死磕-康康",
+   "concept": "特殊左移",
+   "q": "什么是「特殊左移」？",
+   "a": "在存在跳空的情况下，除了关注正常左移的高点压制外，还需特别留意“特殊左移”。此时应优先参考该 K 线的收盘价作为支撑位，因为中间有跳空缺口，其约束能力优于常规位置。",
+   "source": "视频号学习_8博主 · 20261103_爱死磕-康康.md · L271",
+   "evidence": "20261103爱死磕-康康.md L271",
    "theme": "其他",
    "quality_score": 7,
    "precheck": {
@@ -3495,6 +6209,31 @@
    }
   },
   {
+   "card_id": "RX-0724",
+   "project_id": "视频号学习_8博主",
+   "blogger": "爱死磕-康康",
+   "concept": "突破颈线位",
+   "q": "什么是「突破颈线位」？",
+   "a": "当市场突破颈线位后，需观察高点是否被突破以打开上涨空间。若多方力度不足导致震荡，应减仓规避风险；若跌破震荡区域则大概率看跌，需清仓离场，避免被套死。",
+   "source": "视频号学习_8博主 · 20261103_爱死磕-康康.md · L31",
+   "evidence": "20261103爱死磕-康康.md L31",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
    "card_id": "RX-0760",
    "project_id": "视频号学习_8博主",
    "blogger": "爱死磕-康康",
@@ -3503,6 +6242,81 @@
    "a": "趋势结构需满足三个条件：一是 A 和 B、C 和 D 段需有顶底分形不公用 K 线；二是 BC 段需满足有效调整，如四次破低；三是 CD 段长度需大于等于 AB 段。只有同时符合这些要求，才能构成有效的趋势结构买入机会。",
    "source": "视频号学习_8博主 · 20261103_爱死磕-康康.md · L391",
    "evidence": "20261103爱死磕-康康.md L391",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0735",
+   "project_id": "视频号学习_8博主",
+   "blogger": "爱死磕-康康",
+   "concept": "阻力计算器",
+   "q": "什么是「阻力计算器」？",
+   "a": "文中提到打开阻力计算器，输入高点 5652 和低点的不同数值进行计算，自动得出两个压力位。当走势反弹触及这些压力位并出现转折向下时，即为入场做空的机会。",
+   "source": "视频号学习_8博主 · 20261103_爱死磕-康康.md · L141",
+   "evidence": "20261103爱死磕-康康.md L141",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0729",
+   "project_id": "视频号学习_8博主",
+   "blogger": "爱死磕-康康",
+   "concept": "震荡走势",
+   "q": "什么是「震荡走势」？",
+   "a": "这种震荡走势特别容易抓强势拉升。它是先走出了一个下调，然后又走出了一个震荡上升，这样就可以把这个中枢给它画出来。事实上调整到中枢阻力的位置，有向上启动就是入场机会。",
+   "source": "视频号学习_8博主 · 20261103_爱死磕-康康.md · L81",
+   "evidence": "20261103爱死磕-康康.md L81",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0749",
+   "project_id": "视频号学习_8博主",
+   "blogger": "爱死磕-康康",
+   "concept": "顶底飞行",
+   "q": "什么是「顶底飞行」？",
+   "a": "顶底飞行指行情出现特定形态后的走势特征，如顶飞行后继续上涨且涨得快，底飞行则有支撑作用。判断时需结合影线最低或最高是否破位，以及实体是否跌破，同时参考黄金分割等指标综合研判。",
+   "source": "视频号学习_8博主 · 20261103_爱死磕-康康.md · L281",
+   "evidence": "20261103爱死磕-康康.md L281",
    "theme": "其他",
    "quality_score": 7,
    "precheck": {
@@ -3628,6 +6442,31 @@
    "a": "确认期指涨停后 3-5 个交易日，通过观察量能结构（如缩量回调）和价格位置，分辨主力是启动还是出货，以此判断后续走势。",
    "source": "视频号学习_8博主 · 20261103_K哥真交易(1).md · L121",
    "evidence": "20261103K哥真交易(1).md L121",
+   "theme": "其他",
+   "quality_score": 6,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0093",
+   "project_id": "视频号学习_8博主",
+   "blogger": "一修论市",
+   "concept": "半导体",
+   "q": "什么是「半导体」？",
+   "a": "早盘探底回升后，半导体与指数同涨同跌，但随后回落且成交量缩量。这表明当前走势主要是测试抛压，因此下午大概率不会出现大涨行情。",
+   "source": "视频号学习_8博主 · 20261103_一修论市(1).md · L171",
+   "evidence": "20261103一修论市(1).md L171",
    "theme": "其他",
    "quality_score": 6,
    "precheck": {
@@ -3945,6 +6784,131 @@
    }
   },
   {
+   "card_id": "RX-0552",
+   "project_id": "视频号学习_8博主",
+   "blogger": "指标公式入门",
+   "concept": "银山鼓",
+   "q": "什么是「银山鼓」？",
+   "a": "银山鼓由 BMA10、MA20 和 MA30 三条均线组成，当它们先后向上交叉形成闭环三角形结构时即构成该形态，可通过编写代码识别此交叉序列并进行图形标记。",
+   "source": "视频号学习_8博主 · 20261103_指标公式入门(1).md · L451",
+   "evidence": "20261103指标公式入门(1).md L451",
+   "theme": "其他",
+   "quality_score": 6,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0589",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "不灵怠",
+   "q": "什么是「不灵怠」？",
+   "a": "原文提到‘不灵怠’用于判断超买超卖，是极具实战的波动性指标之一，常与其他如标准差、方差等统计量一起用于分析数据分布及市场状态。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L381",
+   "evidence": "20261103数据帝-量化开发.md L381",
+   "theme": "其他",
+   "quality_score": 6,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0731",
+   "project_id": "视频号学习_8博主",
+   "blogger": "爱死磕-康康",
+   "concept": "垂头线",
+   "q": "什么是「垂头线」？",
+   "a": "在上升调整中出现的止跌垂头线属于顺势止跌，蕴含多单机会。当下一根 K 线实体突破左侧高架时代表多方发力，可以前期低点位防守抓向上机会；若为滞涨垂头线且跌破左侧低价，则多为虚假信号，无空单机会。",
+   "source": "视频号学习_8博主 · 20261103_爱死磕-康康.md · L101",
+   "evidence": "20261103爱死磕-康康.md L101",
+   "theme": "其他",
+   "quality_score": 6,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0745",
+   "project_id": "视频号学习_8博主",
+   "blogger": "爱死磕-康康",
+   "concept": "波浪尺",
+   "q": "什么是「波浪尺」？",
+   "a": "画出波浪尺观察走势是否达到一倍以判断上升趋势力度，确定方向后不再抄顶，而是等待调整结束入场。通过计算支撑位置，在转折处入场，避免一路抄顶的错误操作。",
+   "source": "视频号学习_8博主 · 20261103_爱死磕-康康.md · L241",
+   "evidence": "20261103爱死磕-康康.md L241",
+   "theme": "其他",
+   "quality_score": 6,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0009",
+   "project_id": "视频号学习_8博主",
+   "blogger": "AI量化工具手记",
+   "concept": "金叉判断",
+   "q": "什么是「金叉判断」？",
+   "a": "金叉判断的是穿越那一根，昨天还在下面，今天上去了，只算一次。",
+   "source": "视频号学习_8博主 · 20261103_AI量化工具手记(1).md · L111",
+   "evidence": "20261103AI量化工具手记(1).md L111",
+   "theme": "其他",
+   "quality_score": 5,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
    "card_id": "RX-0145",
    "project_id": "视频号学习_8博主",
    "blogger": "一修论市",
@@ -3995,6 +6959,81 @@
    }
   },
   {
+   "card_id": "RX-0721",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "导入公式",
+   "q": "什么是「导入公式」？",
+   "a": "点击公式管理，再点击导入公式，即可找到像前一日涨停、第二日收放量这样的股票。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L3041",
+   "evidence": "20261103数据帝-量化开发.md L3041",
+   "theme": "其他",
+   "quality_score": 5,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0638",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "成本管理",
+   "q": "什么是「成本管理」？",
+   "a": "通过减少交易次数降低交易成本，并使用限价单来减少滑点。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L921",
+   "evidence": "20261103数据帝-量化开发.md L921",
+   "theme": "其他",
+   "quality_score": 5,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0622",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "订单部结构",
+   "q": "什么是「订单部结构」？",
+   "a": "新的买卖订单会直接影响订单部的结构，进而影响市场定价。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L751",
+   "evidence": "20261103数据帝-量化开发.md L751",
+   "theme": "其他",
+   "quality_score": 5,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": true,
+     "revise": false,
+     "reject": false
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": ""
+   }
+  },
+  {
    "card_id": "RX-0138",
    "project_id": "视频号学习_8博主",
    "blogger": "一修论市",
@@ -4017,6 +7056,33 @@
     },
     "reviewer": "card_precheck_generic_v1",
     "notes": ""
+   }
+  },
+  {
+   "card_id": "RX-0008",
+   "project_id": "视频号学习_8博主",
+   "blogger": "AI量化工具手记",
+   "concept": "均线粘合",
+   "q": "什么是「均线粘合」？",
+   "a": "当翻条都不粘时才能触发信号，若均线算不出来或过滤放在最后，都会导致漏掉机会。过滤是前置条件而非可选项，上市不满 250 根均线的情况无法计算。",
+   "source": "视频号学习_8博主 · 20261103_AI量化工具手记(1).md · L101",
+   "evidence": "20261103AI量化工具手记(1).md L101",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
    }
   },
   {
@@ -4073,6 +7139,33 @@
     },
     "reviewer": "card_precheck_generic_v1",
     "notes": "duplicate_existing_concept;duplicate_existing_answer"
+   }
+  },
+  {
+   "card_id": "RX-0076",
+   "project_id": "视频号学习_8博主",
+   "blogger": "K哥真交易",
+   "concept": "均线粘合",
+   "q": "什么是「均线粘合」？",
+   "a": "真正炒股的高手只盯三根线，即五日线、二十日线、六十日线。二十日线往上穿六十日线时，在五日线找阴线果断买；二十日线下穿六十日线时，在五日线找阳线阻断卖。",
+   "source": "视频号学习_8博主 · 20261103_K哥真交易(1).md · L191",
+   "evidence": "20261103K哥真交易(1).md L191",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
    }
   },
   {
@@ -4780,6 +7873,87 @@
    }
   },
   {
+   "card_id": "RX-0049",
+   "project_id": "视频号学习_8博主",
+   "blogger": "cash猫4415",
+   "concept": "日线一笔战法",
+   "q": "什么是「日线一笔战法」？",
+   "a": "该策略核心为：日线定方向，只关注顶底分形；30 分钟看结构，判断日线顶底是中继还是转折；5 分钟找精准买卖点。日线涨趋势在 30 分钟高抛低吸，跌趋势则低吸高抛。",
+   "source": "视频号学习_8博主 · 20261103_cash猫4415.md · L331",
+   "evidence": "20261103cash猫4415.md L331",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0043",
+   "project_id": "视频号学习_8博主",
+   "blogger": "cash猫4415",
+   "concept": "日线一笔战法",
+   "q": "什么是「日线一笔战法」？",
+   "a": "该战法核心策略为：日线上涨趋势时，在 30 分钟级别做高抛低吸；日线下跌趋势时，在 30 分钟级别做低吸高抛。通过日线定方向、看顶底分形，结合 30 分钟结构判断中继或转折，并利用 5 分钟寻找精准买卖点。",
+   "source": "视频号学习_8博主 · 20261103_cash猫4415.md · L261",
+   "evidence": "20261103cash猫4415.md L261",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0041",
+   "project_id": "视频号学习_8博主",
+   "blogger": "cash猫4415",
+   "concept": "日线一笔战法",
+   "q": "什么是「日线一笔战法」？",
+   "a": "该战法核心策略为：日线定方向并关注顶底分形；在 30 分钟级别依据结构判断中继或转折，进行高抛低吸；利用 5 分钟走势寻找精准买卖点。",
+   "source": "视频号学习_8博主 · 20261103_cash猫4415.md · L241",
+   "evidence": "20261103cash猫4415.md L241",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
    "card_id": "RX-0192",
    "project_id": "视频号学习_8博主",
    "blogger": "一修论市",
@@ -4915,6 +8089,60 @@
    }
   },
   {
+   "card_id": "RX-0131",
+   "project_id": "视频号学习_8博主",
+   "blogger": "一修论市",
+   "concept": "一休云战法",
+   "q": "什么是「一休云战法」？",
+   "a": "文中提到白子黑子都在一休云战法中可见，想品尝行情可在平时跟佳人聊天发祝福的地方找到该战法，点好小关小祝即可看到，策略和重要方向也会在其中端上餐桌供大家品鉴。",
+   "source": "视频号学习_8博主 · 20261103_一修论市(1).md · L571",
+   "evidence": "20261103一修论市(1).md L571",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0117",
+   "project_id": "视频号学习_8博主",
+   "blogger": "一修论市",
+   "concept": "一休云战法",
+   "q": "什么是「一休云战法」？",
+   "a": "文中提到‘白纸黑纸都在伊修云战法中都能看得到’，并建议新朋友想品尝新方向时，去大家平时跟佳人聊天发祝福的地方找一休云藏，点好小关小注就能看到相关内容。",
+   "source": "视频号学习_8博主 · 20261103_一修论市(1).md · L431",
+   "evidence": "20261103一修论市(1).md L431",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
    "card_id": "RX-0184",
    "project_id": "视频号学习_8博主",
    "blogger": "一修论市",
@@ -5031,6 +8259,33 @@
    "a": "今天指数站上了五日均线上方，且与指数深度绑定的科技股经过连续调整后不再创新低，符合底部特征。但均线整体趋势仍向下，短期上方缺口可能形成压力位，市场存在分歧和抛压，建议等待深蹲后再操作。",
    "source": "视频号学习_8博主 · 20261103_一修论市(1).md · L1861",
    "evidence": "20261103一修论市(1).md L1861",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0186",
+   "project_id": "视频号学习_8博主",
+   "blogger": "一修论市",
+   "concept": "仓位管理",
+   "q": "什么是「仓位管理」？",
+   "a": "视频建议投资者控制好仓位，不要轻易追高，因为指数虽确认左侧底部但尚未站稳五日均线，市场全面反转还需时日，需耐心等待真正反转信号出现后再行操作。",
+   "source": "视频号学习_8博主 · 20261103_一修论市(1).md · L1191",
+   "evidence": "20261103一修论市(1).md L1191",
    "theme": "其他",
    "quality_score": 0,
    "precheck": {
@@ -5380,6 +8635,33 @@
    }
   },
   {
+   "card_id": "RX-0211",
+   "project_id": "视频号学习_8博主",
+   "blogger": "一修论市",
+   "concept": "均线粘合",
+   "q": "什么是「均线粘合」？",
+   "a": "文中提到从 3942 点开始的反弹为锚点，是本轮反弹的关键支撑，到 9 月 22 号的 3967 点为压力。从最高点到今天的 3888 点，已经整整跌了近 80 个点，所以从调整的空间来看也差不多了，而向下的调整空间也极其有限。",
+   "source": "视频号学习_8博主 · 20261103_一修论市(1).md · L1451",
+   "evidence": "20261103一修论市(1).md L1451",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
    "card_id": "RX-0164",
    "project_id": "视频号学习_8博主",
    "blogger": "一修论市",
@@ -5463,6 +8745,33 @@
    }
   },
   {
+   "card_id": "RX-0190",
+   "project_id": "视频号学习_8博主",
+   "blogger": "一修论市",
+   "concept": "指数低开高走",
+   "q": "什么是「指数低开高走」？",
+   "a": "早盘三大指数集体低开，随后因半导体、贵金属等板块逆势走强带动翻红，但个股超 3000 家下跌，呈现极致割裂局面，这既是主力博弈抛压的表现，也暗示下午行情大概率收红而个股继续分化。",
+   "source": "视频号学习_8博主 · 20261103_一修论市(1).md · L1231",
+   "evidence": "20261103一修论市(1).md L1231",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "concept_market_commentary"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "concept_market_commentary"
+   }
+  },
+  {
    "card_id": "RX-0149",
    "project_id": "视频号学习_8博主",
    "blogger": "一修论市",
@@ -5515,6 +8824,33 @@
     },
     "reviewer": "card_precheck_generic_v1",
     "notes": "duplicate_existing_concept;duplicate_existing_answer"
+   }
+  },
+  {
+   "card_id": "RX-0100",
+   "project_id": "视频号学习_8博主",
+   "blogger": "一修论市",
+   "concept": "探底回升",
+   "q": "什么是「探底回升」？",
+   "a": "早盘高开低走探底回踩 60 日线后快速拉起，印证了昨日预判的探底回升走势，清洗获利盘释放抛压，成交量缩量显示抛压衰竭，下午行情有望紫苏汇红。",
+   "source": "视频号学习_8博主 · 20261103_一修论市(1).md · L251",
+   "evidence": "20261103一修论市(1).md L251",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
    }
   },
   {
@@ -5771,6 +9107,33 @@
    "a": "外围利空导致市场冲高回落，主力借机承接筹码打破心理预期，促使福筹出逃减轻后续抛压。分时图显示下跌即被拉起，MACD 形成底背离共振，表明调整处于筑底阶段，有望迎来反弹。",
    "source": "视频号学习_8博主 · 20261103_一修论市(1).md · L1681",
    "evidence": "20261103一修论市(1).md L1681",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0215",
+   "project_id": "视频号学习_8博主",
+   "blogger": "一修论市",
+   "concept": "黄金坑",
+   "q": "什么是「黄金坑」？",
+   "a": "早盘指数跌破 3850 点且伴随 800 多亿放量，显示恐慌情绪出逃。市场连续三天低迷，此时虽处试错阶段而非反转，但往往迎来反弹。若下午继续放量，可耐心等待修复反弹，熬过此“黄金坑”。",
+   "source": "视频号学习_8博主 · 20261103_一修论市(1).md · L1491",
+   "evidence": "20261103一修论市(1).md L1491",
    "theme": "其他",
    "quality_score": 0,
    "precheck": {
@@ -6091,6 +9454,114 @@
    }
   },
   {
+   "card_id": "RX-0440",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "底分形结构",
+   "q": "什么是「底分形结构」？",
+   "a": "在日 K 线上，上证指数于 4032 点位置构建出了一个较为标准的底分形结构。尽管当前 K 线整体重心开始向上迁移，但受其次级别走势结构影响，日线级别向下笔走势尚未确认结束，仍大概率继续向下延伸。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L2101",
+   "evidence": "20261103乔木缠论ROEE.md L2101",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0438",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "底分形结构",
+   "q": "什么是「底分形结构」？",
+   "a": "当前日线级别虽在 4055 点构建出底分形，但右侧 K 线重心低于左侧，且最高点与最低点持平构成最弱形态，大概率演变为中继底分形，行情将继续向下延伸。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L2081",
+   "evidence": "20261103乔木缠论ROEE.md L2081",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0432",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "底分形结构",
+   "q": "什么是「底分形结构」？",
+   "a": "上证指数在日线级别上由四根 K 线构成一个底分形结构。该结构总体高度明显低于左侧 K 线，属于弱底分形，表明行情未走出明确反转，从 4258 点开始的向下笔将继续延伸。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L2021",
+   "evidence": "20261103乔木缠论ROEE.md L2021",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0444",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "底分形结构",
+   "q": "什么是「底分形结构」？",
+   "a": "上证指数在当前位置构建出底分形结构，但右侧 K 线高度和重心低于左侧，属弱底分形。30 分钟级别回拉未回到最后中枢内部，仍为三脉结构，需等待中枢走出再寻背驰机会。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L2141",
+   "evidence": "20261103乔木缠论ROEE.md L2141",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
    "card_id": "RX-0509",
    "project_id": "视频号学习_8博主",
    "blogger": "乔木缠论ROEE",
@@ -6116,6 +9587,60 @@
     },
     "reviewer": "card_precheck_generic_v1",
     "notes": "duplicate_existing_concept;duplicate_existing_answer"
+   }
+  },
+  {
+   "card_id": "RX-0437",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "日线级别向下笔",
+   "q": "什么是「日线级别向下笔」？",
+   "a": "从 4258 点开始的日线级别向下笔，午后创出该笔新低 4055 点。当前周线方向向上，日线回调为周线向上笔的第二笔次级别走势，大概率结束。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L2071",
+   "evidence": "20261103乔木缠论ROEE.md L2071",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0355",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "日线级别向下笔",
+   "q": "什么是「日线级别向下笔」？",
+   "a": "从 3509.82 开始，上证走势在 30 分钟周期缠论图中构建了一个 30 分钟第二类买点后展开向下。结束该笔需完成中枢并观察离开段背驰，预计下周后期，支撑位在 3356 点及中枢上沿 3295.74 点。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L1051",
+   "evidence": "20261103乔木缠论ROEE.md L1051",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
    }
   },
   {
@@ -6308,6 +9833,33 @@
    }
   },
   {
+   "card_id": "RX-0328",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "第二三类买点结合",
+   "q": "什么是「第二三类买点结合」？",
+   "a": "缠论中第二、三类买点结合的最强形态，指第一类买点后上涨，次级别回调背驰形成第二类买点，且该点位于前中枢上沿之上，构成与第三类买点重合的形态。此形态常引发趋势 V 型反转，确定性高；若第二类买点在中枢内或下，则属一般或最弱形态，确定性降低。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L781",
+   "evidence": "20261103乔木缠论ROEE.md L781",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "concept_filler_word"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "concept_filler_word"
+   }
+  },
+  {
    "card_id": "RX-0515",
    "project_id": "视频号学习_8博主",
    "blogger": "乔木缠论ROEE",
@@ -6316,6 +9868,33 @@
    "a": "第二类买点是第一类买点出现上涨后，在次级别回调过程中发生背驰或止跌的位置。例如五分钟第一类买点后的上涨，接一分钟级别的回调背驰点即为第二类买点。",
    "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L3131",
    "evidence": "20261103乔木缠论ROEE.md L3131",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "concept_filler_word"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "concept_filler_word"
+   }
+  },
+  {
+   "card_id": "RX-0471",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "第二类买点",
+   "q": "什么是「第二类买点」？",
+   "a": "第二类买点是缠论中实战成功率最高的右侧上车点。其核心特征是在第一类买点后，多头反击，空头反抽低点未破前低即构成。它确定性高，接近起爆点且资金效率高。若介入后行情未突破中枢反而震荡形成新中枢，则需按纪律果断离场。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L2611",
+   "evidence": "20261103乔木缠论ROEE.md L2611",
    "theme": "其他",
    "quality_score": 0,
    "precheck": {
@@ -6524,6 +10103,33 @@
    }
   },
   {
+   "card_id": "RX-0269",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论中枢",
+   "q": "什么是「缠论中枢」？",
+   "a": "在创业板指日线周期的向下笔内部，已形成日线级别中枢。其进入段与离开段对应的缠论笔面积柱子明显缩小，表明出现盘整背驰，因此该位置构成 30 分钟级别第一类买点，日线下降笔可能结束。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L131",
+   "evidence": "20261103乔木缠论ROEE.md L131",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
    "card_id": "RX-0283",
    "project_id": "视频号学习_8博主",
    "blogger": "乔木缠论ROEE",
@@ -6605,6 +10211,33 @@
    }
   },
   {
+   "card_id": "RX-0305",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论买卖点",
+   "q": "什么是「缠论买卖点」？",
+   "a": "缠论工具的买卖点可精确标识。实战中应遵循“买点买、卖点卖”策略，即使大牛市有级别卖点也需先卖再买。若开盘大幅低开后次级别回拉不破顶或盘整背驰，即构成最佳第二类卖点，往往是突发事件中的逃命点。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L521",
+   "evidence": "20261103乔木缠论ROEE.md L521",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
    "card_id": "RX-0390",
    "project_id": "视频号学习_8博主",
    "blogger": "乔木缠论ROEE",
@@ -6613,6 +10246,33 @@
    "a": "今日上证大盘指数收小阳线，K 线最高价和最低价均在上周五 K 线内部，构成包含关系。根据缠论理论需合并处理，向上合并后不构成顶分形，笔继续向上延伸，持有仓位无需减仓。",
    "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L1431",
    "evidence": "20261103乔木缠论ROEE.md L1431",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0275",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论区间套",
+   "q": "什么是「缠论区间套」？",
+   "a": "缠论区间套是一种有效的摸底逃顶分析方法。该方法通过自动绘画各级别中枢和笔，比较进入段与离开段的面积柱子高度变化来识别背驰段。在发现大级别背驰后，继续深入分析其内部结构，逐层寻找更小级别的背驰段，从而精确找到走势转折点。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L201",
+   "evidence": "20261103乔木缠论ROEE.md L201",
    "theme": "其他",
    "quality_score": 0,
    "precheck": {
@@ -6686,6 +10346,141 @@
    }
   },
   {
+   "card_id": "RX-0451",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论工具",
+   "q": "什么是「缠论工具」？",
+   "a": "缠论工具见我置顶视频。但抄底风险高，怎么防守？记住两条红线。第一，看次级别，如果跌破了次级别小中枢的下轨，立刻走人。第二，看本级别，一旦跌破你买入时那个底分型的最低点，说明判断失误，果断止损。那什么时候止盈呢？当股价反弹到前期那的大中枢的上下轨附近，发现涨不动了，或者次级别出现了顶背驰，别贪心，先落袋为安。接着看第二类买点，这是上涨途中的回彩上车机会。一买之后，回彩不创新低，次级别再出底背驰，趋势就稳了。这时候的止损线非常清晰，就是本级别最后一个中枢的下轨。只要不跌破，你就安心拿着，一旦跌破，说明趋势走弱，马上离场。只赢得目标位，首先盯住本级别中枢的上轨。如果强势突破了上轨，那就继续持有。直到",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L2211",
+   "evidence": "20261103乔木缠论ROEE.md L2211",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0286",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论工具",
+   "q": "什么是「缠论工具」？",
+   "a": "下载并安装缠论工具至通达信后，在任意品种 K 线图输入 CLZZB 回车即可调用。该工具自动标识中枢、笔及买卖点，支持通过 Ctrl+F 查看公式管理器，用 Tab 键临时开关显示，且需缩小 K 图以加载更多数据展示高级别内容。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L311",
+   "evidence": "20261103乔木缠论ROEE.md L311",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0407",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论工具",
+   "q": "什么是「缠论工具」？",
+   "a": "缠论工具见我置顶视频。该工具可自动计算中枢离开段与进入段的比面积柱子高度，用于判断是否出现背驰，并辅助分析日线及 30 分钟级别的走势结构、压力支撑位等关键信息。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L1611",
+   "evidence": "20261103乔木缠论ROEE.md L1611",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0434",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论工具",
+   "q": "什么是「缠论工具」？",
+   "a": "缠论工具见我置顶视频。很多人做短线只看五分钟图，看到背驰就冲进去，结果一买就跌。交易前需搞清大级别、本级别和次级别的顺序：大级别定方向，本级别找买点，次级别等确认，缺一步都不动手，这样胜率会大幅提升。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L2041",
+   "evidence": "20261103乔木缠论ROEE.md L2041",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0302",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论操作",
+   "q": "什么是「缠论操作」？",
+   "a": "缠论操作强调只跟随市场节奏，在刀锋上零波微步。买卖点是合理结果，该涨时凶、该跌时也凶。交易中需存天理灭人欲，不预测高位被持仓卖或低位被持仓卖，通过短线进出降低成本，保持谨慎心态与技术，方能战胜一切。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L491",
+   "evidence": "20261103乔木缠论ROEE.md L491",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
    "card_id": "RX-0435",
    "project_id": "视频号学习_8博主",
    "blogger": "乔木缠论ROEE",
@@ -6713,6 +10508,168 @@
    }
   },
   {
+   "card_id": "RX-0431",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论笔面积",
+   "q": "什么是「缠论笔面积」？",
+   "a": "从 4258 点下来的日线级别向下笔，其内部走出了日线级别下跌中枢。今天走完了离开段，对应的缠论笔面积明显小于进入段，表明在最低点 4067 存在背驰走势，构建了 30 分钟级别买点结构。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L2011",
+   "evidence": "20261103乔木缠论ROEE.md L2011",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0428",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论笔面积",
+   "q": "什么是「缠论笔面积」？",
+   "a": "从缠论笔面积也可看出，向上比的笔面积还是要远小于向下比走势的。从最后这个中枢的离开段和进入段的缠论笔面积可以看到，离开段的缠论笔面积是没有减少的，反而是有大幅的增加。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L1981",
+   "evidence": "20261103乔木缠论ROEE.md L1981",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0448",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论笔面积",
+   "q": "什么是「缠论笔面积」？",
+   "a": "通过对比进入段与离开段的缠论笔面积，发现离开段面积明显变小，表明短线存在背驰走势，虽短期有回调需求，但大级别向上趋势未改，回调后仍具机会。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L2181",
+   "evidence": "20261103乔木缠论ROEE.md L2181",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0442",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论笔面积",
+   "q": "什么是「缠论笔面积」？",
+   "a": "通过比较缠论笔面积，发现目前日线级别向下笔的离开段明显小于进入段，表明存在背驰可能；但在 30 分钟级别内部结构中，离开段对应面积大于进入段，故不存在背驰，行情将继续构建中枢。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L2121",
+   "evidence": "20261103乔木缠论ROEE.md L2121",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0447",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论笔面积",
+   "q": "什么是「缠论笔面积」？",
+   "a": "通过缠论笔面积反应，最后这笔 30 分钟级别的向上笔明显强于前一笔，表明当前重心向上，行情有望在 4023 点附近构建三买结构并继续形成上涨中枢。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L2171",
+   "evidence": "20261103乔木缠论ROEE.md L2171",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0449",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论笔面积",
+   "q": "什么是「缠论笔面积」？",
+   "a": "在 3927 点以来的走势中，上证指数走出第二个 30 分钟上涨中枢后，观察发现离开段的缠论笔面积明显小于进入段，表明行情在最高点 4103 点发生背驰。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L2191",
+   "evidence": "20261103乔木缠论ROEE.md L2191",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
    "card_id": "RX-0350",
    "project_id": "视频号学习_8博主",
    "blogger": "乔木缠论ROEE",
@@ -6721,6 +10678,60 @@
    "a": "在上证指数图中，30 分钟级别中枢的离开段笔面积柱子高度明显变矮，表明发生背驰，因此在该位置构成了 30 分钟级别的第一类买点，同时该位置也是日线级别中枢第三类买点的共振点。",
    "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L1001",
    "evidence": "20261103乔木缠论ROEE.md L1001",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0271",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论第一类买点",
+   "q": "什么是「缠论第一类买点」？",
+   "a": "图中显示上证指数在 2984 点出现标准背驰，结合五分钟周期推导出的内部结构，该位置已构成缠论 30 分钟级别的第一类买点，行情有望在此结束下降并开启向上走势。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L151",
+   "evidence": "20261103乔木缠论ROEE.md L151",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0273",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论第一类买点",
+   "q": "什么是「缠论第一类买点」？",
+   "a": "图中通过缠论笔面积判断，在最后一个中枢的离开段与进入段形成明显标准背驰，构成了五分钟级别的第一类买点。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L171",
+   "evidence": "20261103乔木缠论ROEE.md L171",
    "theme": "其他",
    "quality_score": 0,
    "precheck": {
@@ -7010,6 +11021,60 @@
    }
   },
   {
+   "card_id": "RX-0268",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论结构",
+   "q": "什么是「缠论结构」？",
+   "a": "从缠论结构看，上证指数虽跌破 3000 点，但未破前低 2984 点第二类买点，日线仍有入场机会，建议仓位控制在 2-4 成。若下周出大阳线可加仓，否则继续等待。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L121",
+   "evidence": "20261103乔木缠论ROEE.md L121",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0378",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论结构",
+   "q": "什么是「缠论结构」？",
+   "a": "从缠论结构分析，当前走势形成 5 分钟级别中枢离开段，未出现背驰，大概率延续向上并构建第二个 30 分钟中枢；同时日线级别也形成三买，后续可能构建第二日线中枢。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L1291",
+   "evidence": "20261103乔木缠论ROEE.md L1291",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
    "card_id": "RX-0372",
    "project_id": "视频号学习_8博主",
    "blogger": "乔木缠论ROEE",
@@ -7018,6 +11083,33 @@
    "a": "月 3 日上证大盘延续上涨，全天涨幅 0.44%。日线周期显示正在走从 3227.36 点开始的向上一笔，该笔由 30 分钟级别递归推导得出，与日线顶底分形连接一致，内部走出昨日预测的 30 分钟二买机会。",
    "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L1221",
    "evidence": "20261103乔木缠论ROEE.md L1221",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0457",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论背驰",
+   "q": "什么是「缠论背驰」？",
+   "a": "缠论中的背驰指走势力度衰竭，分简单与盘整两种。简单背驰无中枢，比较同向两段走势力度；盘整背驰含中枢，离开段力度弱于进入段。判断关键看有无中枢及力度强弱，以此识别卖出信号或趋势延续。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L2311",
+   "evidence": "20261103乔木缠论ROEE.md L2311",
    "theme": "其他",
    "quality_score": 0,
    "precheck": {
@@ -7064,6 +11156,195 @@
    }
   },
   {
+   "card_id": "RX-0430",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论走势分析",
+   "q": "什么是「缠论走势分析」？",
+   "a": "月 21 日上证指数放量下挫，日线向下比延伸并跌破平台，30 分钟级别下跌中枢已构建完成但离开段未完，5 分钟图显示下午加速下跌跌穿前高，目前存在背驰但非介入良机，需等待 5 分钟级别走出中枢及背驰后才有止跌可能。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L2001",
+   "evidence": "20261103乔木缠论ROEE.md L2001",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0441",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论走势分析",
+   "q": "什么是「缠论走势分析」？",
+   "a": "月 4 日上证指数跳空低开震荡下行，日线延续从 4258 点开始的向下笔延伸。30 分钟图显示走出第二个下跌中枢离开段但未完成，5 分钟图可见粉色标识的向下笔及绿色方框中枢，需等待多级别背驰共振介入机会。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L2111",
+   "evidence": "20261103乔木缠论ROEE.md L2111",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0443",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论走势分析",
+   "q": "什么是「缠论走势分析」？",
+   "a": "月 8 日上证指数受外围影响大幅下挫跌破 4000 点，日线及 30 分钟级别均出现向下笔并构建下跌中枢，当前处于离开段且无背驰，需耐心观察是否构建第三个中枢。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L2131",
+   "evidence": "20261103乔木缠论ROEE.md L2131",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0450",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论走势分析",
+   "q": "什么是「缠论走势分析」？",
+   "a": "月 17 日上证指数缩量收涨，日线级别向上笔从 3927 点延伸至 4109 点，K 线呈现包含结构并向上合并。30 分钟周期内走出第五笔，5 分钟周期内最后一笔向上笔强于前一笔，行情在区域构建上涨中枢，仍具备上攻动能。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L2201",
+   "evidence": "20261103乔木缠论ROEE.md L2201",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0433",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论走势分析",
+   "q": "什么是「缠论走势分析」？",
+   "a": "月 26 日上证指数跳空高开后震荡收跌 7 个点。日线级别延续向下笔走势，支撑位 4067 点，压力位 4258 点。30 分钟图显示下跌中枢向右延伸，行情在中枢轴下方运行；5 分钟图亦在 30 分钟下跌中枢内震荡，需等待离开段及背驰机会。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L2031",
+   "evidence": "20261103乔木缠论ROEE.md L2031",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0446",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论走势分析",
+   "q": "什么是「缠论走势分析」？",
+   "a": "月 11 日上证指数低开后整档收红但下跌 6 个点。缠论结构显示仍在延伸最后一笔日线向下笔，K 线高低点下降，重心下移。30 分钟图构建两中枢下跌趋势，5 分钟图在区域构建第二下跌中枢，行情纠结未走出离开段，动量未减。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L2161",
+   "evidence": "20261103乔木缠论ROEE.md L2161",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0429",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论走势分析",
+   "q": "什么是「缠论走势分析」？",
+   "a": "月 20 日上证指数收假阳线，日线级别向下笔未变，虽现弱底分形但重心仍向下。从 4258 点下来构建日线下跌中枢，30 分钟及 5 分钟图显示正在构建下跌中枢与三脉结构，短线不宜多操作，需等待中枢离开段。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L1991",
+   "evidence": "20261103乔木缠论ROEE.md L1991",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
    "card_id": "RX-0354",
    "project_id": "视频号学习_8博主",
    "blogger": "乔木缠论ROEE",
@@ -7072,6 +11353,33 @@
    "a": "图中展示了上证走势在 30 分钟周期上的缠论走势图，由顶底分形连接形成笔，粉色标识日线级别笔，灰色标识周线级别笔，并标注了买卖点及中枢位置。",
    "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L1041",
    "evidence": "20261103乔木缠论ROEE.md L1041",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0353",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论走势图",
+   "q": "什么是「缠论走势图」？",
+   "a": "缠论走势图是严格按照缠论理论，用缠论工具自动实时推导标识出来的各个级别的走势类型以及买卖点。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L1031",
+   "evidence": "20261103乔木缠论ROEE.md L1031",
    "theme": "其他",
    "quality_score": 0,
    "precheck": {
@@ -7307,6 +11615,249 @@
    }
   },
   {
+   "card_id": "RX-0338",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论走势类型",
+   "q": "什么是「缠论走势类型」？",
+   "a": "该工具基于严格缠论理论，在上证指数 K 线图中自动标识各级别走势类型及买卖点。通过日线与一分钟周期对比，验证了从分钟到日线逐层推导的笔和中枢准确一致，证明了缠论体系的严谨性，不存在千人千缠问题。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L881",
+   "evidence": "20261103乔木缠论ROEE.md L881",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0352",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论走势类型",
+   "q": "什么是「缠论走势类型」？",
+   "a": "文中分析了上证指数在 5 分钟、30 分钟及日线周期上的缠论走势类型，指出当前处于日线向上一笔生长中，内部构成中枢。只要 30 分钟向下笔低点低于 3421 点，就不会产生新中枢，日线向上笔也不会结束。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L1021",
+   "evidence": "20261103乔木缠论ROEE.md L1021",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0340",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论走势类型",
+   "q": "什么是「缠论走势类型」？",
+   "a": "该工具基于严格缠论理论，在上证指数 K 图中自动标识各级别走势类型及买卖点。分析显示日线向上笔未完成，内部 30 分钟级别第 4 笔结束并构成中枢，出现背驰形成第二类买点，若不破 3411.84 点可加仓持有。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L901",
+   "evidence": "20261103乔木缠论ROEE.md L901",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0349",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论走势类型",
+   "q": "什么是「缠论走势类型」？",
+   "a": "图中虚线标识的是 30 分钟级别的笔，粉色实线标识的是地规推导出来的日线级别的笔。绿色方框标识的是日线级别的下跌中枢，红色方框标识的是日线级别的上涨中枢，灰色方框是周线级别的中枢。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L991",
+   "evidence": "20261103乔木缠论ROEE.md L991",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0345",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论走势类型",
+   "q": "什么是「缠论走势类型」？",
+   "a": "图中蓝色标识的是日线级别的笔。目前日线级别的最后一笔向上笔的最高点，出现在 10 月 29 日的开盘不久的位置。行情在这个位置形成了反转。观察这个蓝色方框标识的日线级别的中枢，它的进入段和离开段，也就这个灰色标识的 30 分钟级别的笔，它们对应的缠论笔面积是有明显的背驰。所以，在这个位置，构成了日线级别中枢的第一类买点。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L951",
+   "evidence": "20261103乔木缠论ROEE.md L951",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0348",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论走势类型",
+   "q": "什么是「缠论走势类型」？",
+   "a": "月 4 日上证指数日线仍走向上笔，30 分钟图显示该区域构成日线中枢，上下沿分别为 3258.73 和 3340.46。若突破后回踩不破上沿，可构建第三类买点，有望走出两中枢上涨趋势。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L981",
+   "evidence": "20261103乔木缠论ROEE.md L981",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0339",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论走势类型",
+   "q": "什么是「缠论走势类型」？",
+   "a": "该工具基于严格缠论理论，在上证指数 K 图中自动标识各级别走势类型及买卖点。日线向上笔内部中枢离开段背驰后转折，30 分钟级别亦出现背驰结束，预计将走出向下笔回调，只要不跌破 3152.82 点可继续持有。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L891",
+   "evidence": "20261103乔木缠论ROEE.md L891",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0341",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论走势类型",
+   "q": "什么是「缠论走势类型」？",
+   "a": "该工具基于严格缠论理论，在上证指数 K 图中自动标识各级别走势类型及买卖点。通过低级别笔推导可精准观察内部生长过程，当前日线向上一笔正构建中枢，若不破 3266.88 点可适当加仓，待 30 分钟背驰则离场。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L911",
+   "evidence": "20261103乔木缠论ROEE.md L911",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0342",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "缠论走势类型",
+   "q": "什么是「缠论走势类型」？",
+   "a": "该工具基于严格缠论理论，在上证指数 K 图中自动标识各级别走势类型及买卖点。当前日线向上笔内部走出 7 比 30 分钟笔并构建中枢，若回踩不破 3316.68 点将形成第三类买点，持仓者可继续持有。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L921",
+   "evidence": "20261103乔木缠论ROEE.md L921",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
    "card_id": "RX-0475",
    "project_id": "视频号学习_8博主",
    "blogger": "乔木缠论ROEE",
@@ -7388,6 +11939,60 @@
    }
   },
   {
+   "card_id": "RX-0282",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "走势必完美",
+   "q": "什么是「走势必完美」？",
+   "a": "缠论认为行情走势终将完成，未完成前会朝完美方向演进。依据左侧交易原则，下跌终要完成级别走势类型时即为介入点，随后右侧上涨或盘整也必将走出完整走势类型，转折后亦遵循此规律。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L271",
+   "evidence": "20261103乔木缠论ROEE.md L271",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0418",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "走势类型",
+   "q": "什么是「走势类型」？",
+   "a": "缠论中走势类型分为盘整型和趋势型两种。盘整仅含一个中枢，趋势则需至少两个同级别、同方向且不重合的中枢。盘整与趋势均分上升和下降，且必须基于同级别中枢构建，大级别优先，小级别可生长为大级别。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L1881",
+   "evidence": "20261103乔木缠论ROEE.md L1881",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
    "card_id": "RX-0306",
    "project_id": "视频号学习_8博主",
    "blogger": "乔木缠论ROEE",
@@ -7396,6 +12001,33 @@
    "a": "根据缠论理论，市场所有顶点必然是顶分形。一旦出现顶分形，离开就是唯一选择。随后可能形成笔（构成底分形）或不形成笔，无论哪种情况都有反应空间。向上离开中枢时也是卖点，宁愿卖错也绝不能买错。",
    "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L531",
    "evidence": "20261103乔木缠论ROEE.md L531",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0403",
+   "project_id": "视频号学习_8博主",
+   "blogger": "乔木缠论ROEE",
+   "concept": "顶分形",
+   "q": "什么是「顶分形」？",
+   "a": "今日日线级别构建了顶分形，右侧 K 线低点未低于左侧，属弱顶分形，大概率成为中继顶分形，行情仍可能向上延伸。",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L1561",
+   "evidence": "20261103乔木缠论ROEE.md L1561",
    "theme": "其他",
    "quality_score": 0,
    "precheck": {
@@ -7450,6 +12082,330 @@
    "a": "判断顶底分形是转折还是中继，需看三招：一是力度，大阴线跌破第一根低点多为真转折；二是小级别证据，跌破中枢后反弹无力确认下跌，反之则可能中继；三是位置，压力位上的分形更致命。",
    "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L1901",
    "evidence": "20261103乔木缠论ROEE.md L1901",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0544",
+   "project_id": "视频号学习_8博主",
+   "blogger": "指标公式入门",
+   "concept": "均线粘合",
+   "q": "什么是「均线粘合」？",
+   "a": "该形态核心为一阳上穿五、十、二十日均线，原版假信号多。通过加入中长线走势和均线粘合图形特点，可优化过滤下行信号，配合指标公式复图定位，省去肉眼查找的繁琐，提升效率。",
+   "source": "视频号学习_8博主 · 20261103_指标公式入门(1).md · L321",
+   "evidence": "20261103指标公式入门(1).md L321",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0531",
+   "project_id": "视频号学习_8博主",
+   "blogger": "指标公式入门",
+   "concept": "均线粘合",
+   "q": "什么是「均线粘合」？",
+   "a": "当 10 日、20 日和 60 日均线在短时间内出现交叉，且 10 日线上穿 20 日线，20 日线上穿 60 日线时，即形成黄金三角形形态的标的。",
+   "source": "视频号学习_8博主 · 20261103_指标公式入门(1).md · L51",
+   "evidence": "20261103指标公式入门(1).md L51",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0700",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "RSI小于30收第一根阳线",
+   "q": "什么是「RSI小于30收第一根阳线」？",
+   "a": "在公式管理集中输入特定公式，即可快速筛选出 RSI 小于 30 且随后出现第一根阳线的 K 线形态，无需逐个手动查找。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L2081",
+   "evidence": "20261103数据帝-量化开发.md L2081",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "concept_sentence_like"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "concept_sentence_like"
+   }
+  },
+  {
+   "card_id": "RX-0637",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "交易成本",
+   "q": "什么是「交易成本」？",
+   "a": "优化交易频率可减少不必要交易；使用限价单降低滑点；选择佣金低的平台；利用算法或量化技术；设置止损、仓位管理、对冲分散风险；长期持有也能有效减少成本。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L911",
+   "evidence": "20261103数据帝-量化开发.md L911",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0691",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "公式管理集",
+   "q": "什么是「公式管理集」？",
+   "a": "在公式管理集中输入“昨日涨停同时上市两年以上”的筛选条件，即可快速批量查找符合条件的股票，无需逐个手动搜索，极大提升了选股效率。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L1841",
+   "evidence": "20261103数据帝-量化开发.md L1841",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0695",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "向上跳空后三日不回补缺口",
+   "q": "什么是「向上跳空后三日不回补缺口」？",
+   "a": "在公式管理集中输入特定公式，即可快速筛选出向上跳空后三日未回补缺口的情况，无需手动逐个查找，极大提升了选股效率。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L1921",
+   "evidence": "20261103数据帝-量化开发.md L1921",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "concept_action_phrase"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "concept_action_phrase"
+   }
+  },
+  {
+   "card_id": "RX-0712",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "均线战法",
+   "q": "什么是「520均线战法」？",
+   "a": "股价拉升中 5 日线金叉 20 日线，4 日收红柱且收盘价高于前一日，尾盘介入。若后续不跌破 20 日线可持有，冲高 20% 止盈或亏 10% 止损。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L2271",
+   "evidence": "20261103数据帝-量化开发.md L2271",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0615",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "市场深度数据",
+   "q": "什么是「市场深度数据」？",
+   "a": "可通过交易软件如CityRadar、MetaTrader直接查询；利用交易所API编程获取实时或延迟数据；借助第三方软件Zenbot、QuantConnect进行量化策略开发；或使用Bloomberg、TradingView等金融信息平台及Wordful Analysis Market Profile等专业工具。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L681",
+   "evidence": "20261103数据帝-量化开发.md L681",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "concept_non_noun_ending"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "concept_non_noun_ending"
+   }
+  },
+  {
+   "card_id": "RX-0636",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "散户与机构交易差别",
+   "q": "什么是「散户与机构交易差别」？",
+   "a": "信息获取上，散户渠道有限且延迟，机构数据快而质高；资金规模方面，散户小、机构大；技术研发中，散户手工慢，机构用算法模型快；成本上散户高、机构低；策略上散户简单、机构复杂；风险管理上散户靠止损仓位，机构有成熟体系和对冲工具。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L901",
+   "evidence": "20261103数据帝-量化开发.md L901",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "concept_market_commentary"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "concept_market_commentary"
+   }
+  },
+  {
+   "card_id": "RX-0598",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "足记图与挂单报告",
+   "q": "什么是「足记图与挂单报告」？",
+   "a": "足记图指试时的买单和卖单，可判断多空强弱且更客观；挂单报告则是预计的买单和卖单，能了解资金去向但可随时撤销，客观性弱。两者各有优势，交易者可选用更全面的数据，技术分析者则偏好足记图，也可结合使用。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L481",
+   "evidence": "20261103数据帝-量化开发.md L481",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "concept_generic_or_header"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "concept_generic_or_header"
+   }
+  },
+  {
+   "card_id": "RX-0703",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "通达信公式",
+   "q": "什么是「通达信公式」？",
+   "a": "在公式管理集中输入 MACD 经差、底背离、二次经差的公式代码，即可实现这些指标的自动显示，无需手动一个个查找，操作十分便捷。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L2131",
+   "evidence": "20261103数据帝-量化开发.md L2131",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
+   }
+  },
+  {
+   "card_id": "RX-0692",
+   "project_id": "视频号学习_8博主",
+   "blogger": "数据帝-量化开发",
+   "concept": "通达信公式",
+   "q": "什么是「通达信公式」？",
+   "a": "在公式管理集中输入特定公式，即可快速筛选出连续两日涨停封板、今日却涨停炸板的股票，无需一个个手动查找，极大提升了选股效率。",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L1881",
+   "evidence": "20261103数据帝-量化开发.md L1881",
    "theme": "其他",
    "quality_score": 0,
    "precheck": {
@@ -7633,6 +12589,33 @@
     },
     "reviewer": "card_precheck_generic_v1",
     "notes": "concept_filler_word"
+   }
+  },
+  {
+   "card_id": "RX-0746",
+   "project_id": "视频号学习_8博主",
+   "blogger": "爱死磕-康康",
+   "concept": "黄金分割",
+   "q": "什么是「黄金分割」？",
+   "a": "通过画出黄金分割，0.618 和 764 是重要压力区域。等待行情进入该区域且大绿线出现向下启动时抓机会；若连续三根红线未破左翼则持有，快速破掉左翼才是真正出局时机。",
+   "source": "视频号学习_8博主 · 20261103_爱死磕-康康.md · L251",
+   "evidence": "20261103爱死磕-康康.md L251",
+   "theme": "其他",
+   "quality_score": 0,
+   "precheck": {
+    "action": "reject",
+    "issues": [
+     "duplicate_existing_concept"
+    ]
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "card_precheck_generic_v1",
+    "notes": "duplicate_existing_concept"
    }
   }
  ]
