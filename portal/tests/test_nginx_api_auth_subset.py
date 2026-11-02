@@ -28,7 +28,7 @@ CONF = Path(__file__).resolve().parents[1] / "nginx.conf"
 PORTAL_ROOT = CONF.parent
 
 PROTECTED_API_PREFIXES = ("/api/platform/", "/api/org/", "/api/analysis/",
-                          "/api/os/", "/api/jev/", "/api/dw/")
+                          "/api/os/", "/api/jev/", "/api/dw/", "/api/hq/", "/api/a2a/")
 # 既有专项保护（精确/前缀），H4-B 不得把它们放进公开白名单
 SPECIAL_PROTECTED = (
     ("=", "/api/news/intel"),
@@ -277,3 +277,4 @@ def test_nginx_syntax_if_available():
     r = subprocess.run([nginx, "-t", "-c", str(CONF)], capture_output=True,
                        text=True, encoding="utf-8", errors="replace", timeout=60)
     assert r.returncode == 0, (r.stderr or r.stdout)[-2000:]
+

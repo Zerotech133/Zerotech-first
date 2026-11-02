@@ -52,8 +52,9 @@ def build_probe() -> dict:
     def add(name, port, path, want):
         try:
             code, body, ms = _get(port, path)
-            ok = code == want
-            if ok and want == 200 and path.startswith("/api/hq/"):
+            wants = want if isinstance(want, (tuple, list)) else (want,)
+            ok = code in wants
+            if ok and 200 in wants and path.startswith("/api/hq/"):
                 try:
                     ok = json.loads(body.decode("utf-8")).get("ok") is True
                 except Exception:  # noqa: BLE001
@@ -66,7 +67,8 @@ def build_probe() -> dict:
     add("health", 8091, "/health", 200)
     for p in API_PATHS:
         add("api " + p, 8091, p, 200)
-    add("page /hq", 8734, "/hq", 200)
+    # /hq 页面壳已加 auth_request：未登录 302 登录或 401 均视为鉴权生效。
+    add("page /hq auth gate", 8734, "/hq", [302, 401])
     add("unauth api 401", 8734, "/api/hq/snapshot", 401)
     api_lat = [c["ms"] for c in checks if c["name"].startswith("api ") and c["ms"] is not None]
     api_sorted = sorted(api_lat)
@@ -75,8 +77,8 @@ def build_probe() -> dict:
     failures = [c for c in checks if not c["ok"]]
     # Q2/SLO 稳态门槛：9 端点 p95 < 800ms；页面 /hq < 1500ms（页面 SLO 必须真实参与判定）。
     p95_ok = p95 is not None and p95 < 800
-    page_ms = [c["ms"] for c in checks if c["name"] == "page /hq" and c["ms"] is not None]
-    page_ok = bool(page_ms) and page_ms[0] < 1500 and all(c["ok"] for c in checks if c["name"] == "page /hq")
+    page_ms = [c["ms"] for c in checks if c["name"].startswith("page /hq") and c["ms"] is not None]
+    page_ok = bool(page_ms) and page_ms[0] < 1500 and all(c["ok"] for c in checks if c["name"].startswith("page /hq"))
     return {
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
         "schema": "hq/q2-probe/v1",

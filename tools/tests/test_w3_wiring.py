@@ -42,6 +42,14 @@ def test_mcp_registry():
     assert len(r["ids"]) == len(set(r["ids"]))
 
 
+def test_mcp_registry_reconcile_hermes_config():
+    rec = mcp_registry.reconcile()
+    assert rec["error"] is None
+    assert rec["matched"] >= 13
+    assert rec["missing_in_registry"] == []
+    assert rec["missing_in_config"] == []
+
+
 def test_a2a_cards_match_compositions():
     r = a2a_cards.validate()
     assert r["ok"] is True
