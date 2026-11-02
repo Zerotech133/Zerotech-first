@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-03T05:04:27+08:00",
+ "generated_at": "2026-11-03T06:44:27+08:00",
  "write": true,
  "projects": [
   {
@@ -13,16 +13,28 @@
     "failed": 0
    },
    "texts": 1,
+   "units_audit": {
+    "path": "C:\\项目\\知识库\\30_知识单元\\laomu_notes_units_draft.jsonl",
+    "exists": true,
+    "total": 288,
+    "meta_skipped": 0,
+    "kept": 288,
+    "meta_ratio": 0.0,
+    "samples": [],
+    "rewritten": false
+   },
    "action": "pipelined",
    "clean_files": [
     "C:\\项目\\知识库\\20_清洗\\laomu_notes\\clean\\20261102_老木创业笔记_交易老木29条视频文案汇编.md"
    ],
    "units": 288,
+   "meta_skipped": 0,
+   "units_raw": 288,
    "concepts_top": 30
   },
   {
    "project_id": "视频号学习_8博主",
-   "status": "intake_pending",
+   "status": "distilling",
    "pdf_ocr": {
     "stage": "skip_no_pdf",
     "pdfs": 0,
@@ -31,6 +43,22 @@
     "failed": 0
    },
    "texts": 8,
+   "units_audit": {
+    "path": "C:\\项目\\知识库\\30_知识单元\\视频号学习_8博主_units_draft.jsonl",
+    "exists": true,
+    "total": 3813,
+    "meta_skipped": 2795,
+    "kept": 1018,
+    "meta_ratio": 0.733,
+    "samples": [
+     "> 共 23 条 · 由 faster-whisper 转写，可能有个别同音字错误",
+     "- 文件：`20261010_1835_缩量后放量 AI 把它翻译成公式.mp4`",
+     "- 时长：1:16",
+     "- 字数：405",
+     "- 文件：`20261011_2005_AI 到底能不能预判行情？.mp4`"
+    ],
+    "rewritten": false
+   },
    "action": "pipelined",
    "clean_files": [
     "C:\\项目\\知识库\\20_清洗\\视频号学习_8博主\\clean\\20261103_AI量化工具手记(1).md",
@@ -42,7 +70,9 @@
     "C:\\项目\\知识库\\20_清洗\\视频号学习_8博主\\clean\\20261103_数据帝-量化开发.md",
     "C:\\项目\\知识库\\20_清洗\\视频号学习_8博主\\clean\\20261103_爱死磕-康康.md"
    ],
-   "units": 3813,
+   "units": 1018,
+   "meta_skipped": 2795,
+   "units_raw": 3813,
    "concepts_top": 30
   }
  ]

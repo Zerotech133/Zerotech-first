@@ -1,21 +1,15 @@
 {
- "generated_at": "2026-11-03T06:36:46+08:00",
+ "generated_at": "2026-11-03T06:44:47+08:00",
  "project": "视频号学习_8博主",
  "dedupe": {
-  "exact_dup_groups": 35,
-  "exact_dup_units": 218,
-  "near_dup_pairs": 1,
-  "examples": [
-   {
-    "a": "缠论的严谨如同数学，在这一刻中再次得到了验证，缠诗就线段划分，再进一步地给出了定义。这就由不得你不佩服缠诗的智慧，进一步",
-    "b": "缠论的严谨如同数学，在这一刻中再次得到了验证，缠诗就线段划分，再进一步地给出了定义。这就由不得你不佩服缠诗的智慧，进一步",
-    "jaccard": 0.989
-   }
-  ],
+  "exact_dup_groups": 0,
+  "exact_dup_units": 0,
+  "near_dup_pairs": 0,
+  "examples": [],
   "card_concept_dups": []
  },
  "authenticity": {
-  "verified": 3813,
+  "verified": 800,
   "verified_pct": 100.0,
   "unverifiable": 0,
   "unverifiable_sample": [],
@@ -25,34 +19,36 @@
  "drift": {
   "baseline": {
    "units": 3813,
+   "knowledge_units": 1018,
+   "meta_units": 2795,
    "verified": 3813,
    "verified_pct": 100.0,
    "unverifiable": 0,
-   "exact_dup_units": 404,
-   "near_dup_pairs": 4,
-   "dup_ratio_pct": 10.7,
+   "exact_dup_units": 218,
+   "near_dup_pairs": 1,
+   "dup_ratio_pct": 5.7,
    "card_concept_dup": 0,
    "candidate_pool": 259,
    "multi_source_concepts": 0,
-   "conflicts": 62
+   "conflicts": 0
   },
   "delta": {
    "verified_pct": 0.0,
-   "dup_ratio_pct": -5.0,
+   "dup_ratio_pct": -5.7,
    "multi_source_concepts": 0,
-   "conflicts": -62
+   "conflicts": 0
   }
  },
  "metrics": {
-  "units": 3813,
-  "knowledge_units": 1018,
-  "meta_units": 2795,
-  "verified": 3813,
+  "units": 800,
+  "knowledge_units": 800,
+  "meta_units": 0,
+  "verified": 800,
   "verified_pct": 100.0,
   "unverifiable": 0,
-  "exact_dup_units": 218,
-  "near_dup_pairs": 1,
-  "dup_ratio_pct": 5.7,
+  "exact_dup_units": 0,
+  "near_dup_pairs": 0,
+  "dup_ratio_pct": 0.0,
   "card_concept_dup": 0,
   "candidate_pool": 259,
   "multi_source_concepts": 0,

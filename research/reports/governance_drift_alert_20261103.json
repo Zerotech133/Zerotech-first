@@ -2,7 +2,7 @@
  "schema_version": 1,
  "kind": "governance_drift_alert",
  "date": "2026-11-03",
- "generated_at": "2026-11-03T06:42:05+08:00",
+ "generated_at": "2026-11-03T06:44:47+08:00",
  "dry_run": true,
  "thresholds": {
   "verified_drop_pp": 5.0,
@@ -15,6 +15,20 @@
   "baseline": "C:\\项目\\老田的AI助手\\research\\reports\\governance_baseline_20261103.json"
  },
  "current": {
+  "units": 800,
+  "knowledge_units": 800,
+  "verified": 800,
+  "verified_pct": 100.0,
+  "unverifiable": 0,
+  "exact_dup_units": 0,
+  "near_dup_pairs": 0,
+  "dup_ratio_pct": 0.0,
+  "card_concept_dup": 0,
+  "candidate_pool": 259,
+  "multi_source_concepts": 0,
+  "conflicts": 0
+ },
+ "baseline": {
   "units": 3813,
   "knowledge_units": 1018,
   "verified": 3813,
@@ -28,29 +42,15 @@
   "multi_source_concepts": 0,
   "conflicts": 0
  },
- "baseline": {
-  "units": 3813,
-  "knowledge_units": null,
-  "verified": 3813,
-  "verified_pct": 100.0,
-  "unverifiable": 0,
-  "exact_dup_units": 404,
-  "near_dup_pairs": 4,
-  "dup_ratio_pct": 10.7,
-  "card_concept_dup": 0,
-  "candidate_pool": 259,
-  "multi_source_concepts": 0,
-  "conflicts": 62
- },
  "delta": {
   "verified_pct": 0.0,
-  "dup_ratio_pct": -5.0,
+  "dup_ratio_pct": -5.7,
   "multi_source_concepts": 0,
-  "conflicts": -62
+  "conflicts": 0
  },
  "drifts": [],
  "alert_count": 0,
- "alert_text": "【知识治理漂移日报 2026-11-03】正常：核验率 100.0%、重复率 5.7%、多源概念 0、冲突 0",
+ "alert_text": "【知识治理漂移日报 2026-11-03】正常：核验率 100.0%、重复率 0.0%、多源概念 0、冲突 0",
  "send": {
   "attempted": false,
   "sent": false,
