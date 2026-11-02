@@ -1,0 +1,47 @@
+{
+ "protocolVersion": "0.3.0",
+ "name": "量化策略线",
+ "description": "量化策略线 A2A 入口（W3 planned；经零界 8734 单点登录/内部调用）",
+ "url": "http://127.0.0.1:8091/api/a2a/quant-strategy-line",
+ "preferredTransport": "JSONRPC",
+ "version": "1.0.0",
+ "provider": {
+  "organization": "零界",
+  "owner": "STRAT1"
+ },
+ "capabilities": {
+  "streaming": false,
+  "pushNotifications": false,
+  "stateTransitionHistory": true
+ },
+ "defaultInputModes": [
+  "text/plain",
+  "application/json"
+ ],
+ "defaultOutputModes": [
+  "application/json"
+ ],
+ "skills": [
+  {
+   "id": "strategy-line",
+   "name": "策略线",
+   "description": "策略线",
+   "tags": [
+    "quant-strategy-line",
+    "zerobound"
+   ]
+  },
+  {
+   "id": "shadow",
+   "name": "影子盘",
+   "description": "影子盘",
+   "tags": [
+    "quant-strategy-line",
+    "zerobound"
+   ]
+  }
+ ],
+ "x-composition": "quant-strategy-line",
+ "x-status": "planned",
+ "x-auth": "8734 OIDC / internal key"
+}

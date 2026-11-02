@@ -58,6 +58,7 @@ spec:
       - page: /strategies
       - page: /shadow.html
     consumes:
+      - interface/hermes-control
       - taskstore
       - llm/qwen3.5:9b
       - envelope/s21

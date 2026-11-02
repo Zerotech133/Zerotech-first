@@ -38,6 +38,7 @@ spec:
       - http: /quant-api/
       - page: /quant/
     consumes:
+      - interface/hermes-control
       - taskstore
       - envelope/s21
       - llm/glm-5.3

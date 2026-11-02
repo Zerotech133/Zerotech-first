@@ -1,0 +1,103 @@
+# 零界私有 MCP Registry v1（W3 前置）
+# 只登记元数据，不分发密钥；实际配置仍以 ~/.hermes/config.yaml 为准。
+schema: zerobound/mcp-registry/v1
+version: 1.0.0
+generated_at: "2026-11-03"
+owner: ARCH1
+source: "~/.hermes/config.yaml"
+policy:
+  transport_allow: [stdio, streamable_http, sse]
+  secret_handling: "env/secret-ref only; no plaintext in this file"
+  access: "Hermes 8787 内部；经 8734 单点登录后可用"
+servers:
+  - id: stock-data
+    transport: stdio
+    command: "C:/Program Files/Python311/python.exe"
+    args: ["C:/项目/zerobound-kg/stock_data_mcp.py"]
+    owner: DATA1
+    status: active
+    capabilities: [stock_data, warehouse_catalog, table_detail]
+  - id: stock-intel-readonly
+    transport: stdio
+    command: "C:/Program Files/Python311/python.exe"
+    args: ["C:/项目/zerobound-kg/stock_data_mcp.py", "--intel-readonly"]
+    owner: INTEL0
+    status: active
+    capabilities: [latest_intel, sources_recon]
+  - id: jev-news
+    transport: stdio
+    command: "C:/Program Files/Python311/python.exe"
+    args: ["C:/aios/tools/jev_mcp.py"]
+    owner: INTEL0
+    status: active
+    capabilities: [news, jev]
+  - id: playwright
+    transport: stdio
+    command: "C:/aios/Hermes/node_tools/bin/node.exe"
+    args: ["C:/aios/Hermes/node_tools/playwright-mcp/node_modules/@playwright/mcp/cli.js", "--browser", "chromium"]
+    owner: ARCH1
+    status: active
+    capabilities: [browser, e2e, screenshot]
+  - id: om-metadata
+    transport: stdio
+    command: "C:/Program Files/Python311/python.exe"
+    args: ["C:/aios/Hermes/node_tools/om_mcp_bridge.py"]
+    owner: DATA1
+    status: active
+    capabilities: [lineage, metadata]
+  - id: d1-research
+    transport: stdio
+    command: "C:/Program Files/Python311/python.exe"
+    args: ["C:/项目/老田的AI助手/agent_platform/tools/d1_research_mcp.py"]
+    owner: D1
+    status: active
+    capabilities: [research, decisions, evidence]
+  - id: huangzhong
+    transport: stdio
+    command: "C:/Program Files/Python311/python.exe"
+    args: ["C:/项目/老田的AI助手/agent_platform/tools/huangzhong_mcp.py"]
+    owner: HUANGZHONG
+    status: active
+    capabilities: [acceptance, gate, evidence]
+  - id: zhice-selection
+    transport: stdio
+    command: "C:/Program Files/Python311/python.exe"
+    args: ["C:/项目/老田的AI助手/agent_platform/tools/zhice_selection_mcp.py"]
+    owner: ACAD1
+    status: active
+    capabilities: [selection, pool, research]
+  - id: dw-governance
+    transport: stdio
+    command: "C:/Program Files/Python311/python.exe"
+    args: ["C:/项目/老田的AI助手/agent_platform/tools/dw_governance_mcp.py"]
+    owner: DATA1
+    status: active
+    capabilities: [contract, lifecycle, governance]
+  - id: dw-quality
+    transport: stdio
+    command: "C:/项目/py312/python.exe"
+    args: ["C:/项目/老田的AI助手/agent_platform/tools/dw_quality_mcp.py"]
+    owner: DATA1
+    status: active
+    capabilities: [quality, checks, freshness]
+  - id: dw-catalog
+    transport: stdio
+    command: "C:/项目/py312/python.exe"
+    args: ["C:/项目/老田的AI助手/agent_platform/tools/dw_catalog_mcp.py"]
+    owner: DATA1
+    status: active
+    capabilities: [catalog, search, schema]
+  - id: factor-tools
+    transport: stdio
+    command: "C:/项目/py312/python.exe"
+    args: ["C:/项目/老田的AI助手/agent_platform/tools/factor_tools_mcp.py"]
+    owner: STRAT1
+    status: active
+    capabilities: [factor, screening, backtest]
+  - id: kb-corpus
+    transport: stdio
+    command: "C:/项目/py312/python.exe"
+    args: ["C:/项目/老田的AI助手/agent_platform/tools/kb_corpus_mcp.py"]
+    owner: ACAD1
+    status: active
+    capabilities: [corpus, knowledge, search]

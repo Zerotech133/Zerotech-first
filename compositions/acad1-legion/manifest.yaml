@@ -62,6 +62,7 @@ spec:
       - http: /quant-api/api/v1/acad1-research   # 8734 宿主入口→8105 原生 /api/v1/acad1-research（auth_request）
       - page: /academy/shuijing
     consumes:
+      - interface/hermes-control
       - taskstore
       - llm/glm-5.3
       - envelope/s21

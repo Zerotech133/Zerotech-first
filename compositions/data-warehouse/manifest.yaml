@@ -63,6 +63,7 @@ spec:
       - page: /dw
       - page: /dataops
     consumes:
+      - interface/hermes-control
       - taskstore
       - envelope/s21
     auth:

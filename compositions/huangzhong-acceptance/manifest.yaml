@@ -34,6 +34,7 @@ spec:
   interfaces:
     exposes: []
     consumes:
+      - interface/hermes-control
       - taskstore
       - llm/glm-5.3
       - envelope/s21

@@ -1,0 +1,36 @@
+# 零界统一接口：Hermes 控制面 v1
+# 6 军团统一消费 interface/hermes-control（W3 前置；不新增第二入口/认证）
+id: hermes-control
+version: 1.0.0
+status: active
+owner: ARCH1
+provider: hermes
+kind: control-plane
+transport: http
+endpoint: http://127.0.0.1:8787
+ui_entry: /hermes/
+entry_policy:
+  public_entry: http://127.0.0.1:8734
+  auth: nginx auth_request + trusted-header（单点登录，不二次密码）
+  bind: 127.0.0.1
+capabilities:
+  - chat
+  - sessions
+  - agents
+  - mcp_tools
+  - extensions
+  - legion_ide
+contracts:
+  mcp: platform/mcp/registry.yaml
+  a2a: platform/a2a/agent_cards/
+  health: /hermes/
+  logs: C:/Temp/hermes_webui.log
+slo:
+  availability: "99.5%"
+  p95_latency_ms: 500
+  error_rate: "<1%"
+evidence:
+  - tools/hermes_audit.py
+  - docs/ops/2026-11-07_L1正式验收回执_v1.md
+  - docs/adr/ADR-016-single-host-integration.md
+note: "Hermes=交互/控制面；执行仍可由 agent_platform/CLI adapter 承担；不替换内核。"

@@ -54,6 +54,7 @@ spec:
       - page: /d1/research
       - page: /d1/war-room
     consumes:
+      - interface/hermes-control
       - taskstore
       - envelope/s21
       - llm/glm-5.3
