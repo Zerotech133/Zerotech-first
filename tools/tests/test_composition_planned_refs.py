@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """W1 planned refs 登记：validate 视为可解析，但不掩盖未知引用。"""
 from __future__ import annotations
 import sys
