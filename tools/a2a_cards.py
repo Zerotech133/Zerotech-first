@@ -52,8 +52,8 @@ def validate(cards: list[dict] | None = None) -> dict:
         url = str(c.get("url") or "")
         if url and "127.0.0.1" not in url and "localhost" not in url:
             errors.append(f"{cid}: url must be loopback (found {url})")
-        if c.get("x-status") not in ("planned", "active"):
-            errors.append(f"{cid}: x-status must planned/active")
+        if c.get("x-status") not in ("planned", "active", "discovery"):
+            errors.append(f"{cid}: x-status must planned/active/discovery")
     missing = sorted(want - set(ids)) if want else []
     if missing:
         errors.append("missing cards for: " + ", ".join(missing))

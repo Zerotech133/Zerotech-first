@@ -59,7 +59,7 @@ def test_a2a_cards_match_compositions():
 
 def test_a2a_cards_are_planned_and_loopback():
     for c in a2a_cards.load_cards():
-        assert c["x-status"] == "planned"
+        assert c["x-status"] in ("planned", "discovery", "active")
         assert "127.0.0.1" in c["url"]
         assert c["protocolVersion"] == "0.3.0"
 

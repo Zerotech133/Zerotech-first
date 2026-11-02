@@ -42,6 +42,6 @@
   }
  ],
  "x-composition": "quant-strategy-line",
- "x-status": "planned",
+ "x-status": "discovery",
  "x-auth": "8734 OIDC / internal key"
 }

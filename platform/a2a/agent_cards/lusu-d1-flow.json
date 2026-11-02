@@ -51,6 +51,6 @@
   }
  ],
  "x-composition": "lusu-d1-flow",
- "x-status": "planned",
+ "x-status": "discovery",
  "x-auth": "8734 OIDC / internal key"
 }
