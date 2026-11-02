@@ -65,3 +65,13 @@
 - **L1 18/18：FAIL=0 PENDING=0**；
 - 页面/UI 测试 21 passed；
 - Q2 会话文件当前为占位符 `<value>`：工具已加占位符拒绝（9 tests），不会误报 provided；A0 替换为真实 `zb_session` 后再跑。
+
+## 八、P0 第三波（C2 纪要草稿器 + C1 自检器）
+
+| 任务 | Owner | 结果 | 验证 |
+|---|---|---|---|
+| C2 会议纪要草稿器 | pilot-qa | `tools/hq_meeting_record.py`：agenda+五角色意见→hq_meeting v2 草稿；四态/不写生产 | **9 passed** |
+| C1 激活自检器 | platform-core | `tools/hq_c1_verify.py`：5 组 15 项；未换血=PENDING、鉴权泄漏=FAIL | **10 passed；实测 15/15 PASS** |
+
+- C1 自检：`python -X utf8 tools/hq_c1_verify.py --json` → verdict PASS，15/15。
+- 仍待人工：真实 `zb_session`（Q2）、A0 晨会（5 纪要/25 意见/≥5 Directive）、S1 持久化低峰激活（11-05/06）。
