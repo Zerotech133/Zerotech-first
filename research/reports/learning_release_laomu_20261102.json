@@ -1,0 +1,88 @@
+{
+ "schema_version": 1,
+ "date": "20261102",
+ "generated_at": "2026-11-02T18:31:27+08:00",
+ "generator": "tools/kb_corpus/learning_release.py（统一发布器，发布门强制）",
+ "project": "laomu",
+ "apply": false,
+ "mode": "dry-run",
+ "proposals": {
+  "path": "research/reports/card_proposals_laomu_20261102.json",
+  "sha256": "55b39fc453496f15a0cfcdc8286b09b9537c90ee96e79ec460dc4a0bcd829e43",
+  "total": 203,
+  "approved": 28
+ },
+ "steps": [
+  {
+   "name": "gate_publish_precheck",
+   "ok": true,
+   "detail": "fail=0 summary={\"projects\": 2, \"checks\": 2, \"fail\": 0}",
+   "gate": {
+    "ok": true,
+    "fail": 0,
+    "summary": {
+     "projects": 2,
+     "checks": 2,
+     "fail": 0
+    },
+    "projects": 2
+   }
+  },
+  {
+   "name": "validate_approved",
+   "ok": true,
+   "detail": "28/203 approved"
+  },
+  {
+   "name": "card_merge_dry_run",
+   "ok": true,
+   "detail": "rc=0 would_add=0 resulting=172 backup=None",
+   "command": [
+    "C:\\项目\\py312\\python.exe",
+    "-X",
+    "utf8",
+    "C:\\项目\\老田的AI助手\\tools\\kb_corpus\\card_merge.py",
+    "merge",
+    "--proposals",
+    "research/reports/card_proposals_laomu_20261102.json",
+    "--no-preview",
+    "--json"
+   ],
+   "stdout_tail": "ing_wins\",\n      \"note\": \"现有学习卡已有同主题，保留现有卡\"\n    },\n    {\n      \"proposal_id\": null,\n      \"concept\": \"因子分解\",\n      \"resolution\": \"existing_wins\",\n      \"note\": \"现有学习卡已有同主题，保留现有卡\"\n    }\n  ],\n  \"validation\": {\n    \"ok\": true,\n    \"errors\": []\n  },\n  \"warnings\": [\n    \"learning_cards.py 重跑会覆盖 kb_learning_cards.json；合并卡需在其后运行本工具或改造生成器保留人工卡。\"\n  ],\n  \"disclaimer\": \"合并工具仅做本地文件合并；卡片内容为研究/学习候选，不构成投资建议。\"\n}\n",
+   "stderr_tail": ""
+  }
+ ],
+ "merge_stats": {
+  "base_cards": 172,
+  "proposal_cards": 203,
+  "approved": 28,
+  "would_add": 0,
+  "skipped_total": 203,
+  "skipped_not_reviewed": 0,
+  "skipped_rejected": 175,
+  "skipped_needs_revision": 0,
+  "skipped_concept_exists": 28,
+  "skipped_duplicate_in_batch": 0,
+  "resulting_cards": 172
+ },
+ "digest": null,
+ "cards": {
+  "before": {
+   "count": 172,
+   "sha256": "c0f3bd3b784844e7ef65376ee1d64a3fc7926d898f0e5caf4de8bcf9d6625582"
+  },
+  "after": {
+   "count": 172,
+   "sha256": "c0f3bd3b784844e7ef65376ee1d64a3fc7926d898f0e5caf4de8bcf9d6625582"
+  }
+ },
+ "ok": true,
+ "stopped_at": null,
+ "reason": null,
+ "rollback": null,
+ "disclaimer": "统一发布器：dry-run 默认；--apply 需人工审核后执行；不构成投资建议。",
+ "receipt": {
+  "json": "C:\\项目\\老田的AI助手\\research\\reports\\learning_release_laomu_20261102.json",
+  "md": "C:\\项目\\老田的AI助手\\research\\reports\\learning_release_laomu_20261102.md"
+ }
+}

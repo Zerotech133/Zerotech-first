@@ -39,6 +39,11 @@ ul.todos li{margin:3px 0}
 <div class="panel"><h2>质量门</h2><table><thead><tr><th>检查项</th><th>结果</th><th>说明</th></tr></thead>
 <tbody id="quality"></tbody></table></div>
 
+<div class="panel"><h2>门禁状态（v2）</h2>
+<div class="sub" id="gate-summary">加载中…</div>
+<table><thead><tr><th>项目</th><th>阶段</th><th>结果</th><th>errors</th></tr></thead>
+<tbody id="gate"></tbody></table></div>
+
 <div class="panel"><h2>待办</h2><ul class="todos" id="todos"></ul></div>
 <script>
 (function(){
@@ -73,6 +78,24 @@ ul.todos li{margin:3px 0}
       return '<tr><td>'+esc(c.name)+'</td><td class="'+(c.ok?'ok':'bad')+'">'+(c.ok?'✅ 通过':'❌ 未通过')+'</td>'
         +'<td class="muted">'+(c.issues!=null?('issues='+esc(c.issues)):'')+(c.projects!=null?('projects='+esc(c.projects)):'')+'</td></tr>';
     }).join('')+'<tr><td><b>总门禁</b></td><td class="'+(qa.gate_passed?'ok':'bad')+'"><b>'+(qa.gate_passed?'✅ 通过':'❌ 未通过')+'</b></td><td class="muted">issues='+esc(qa.issues||0)+' high='+esc(qa.high||0)+'</td></tr>';
+    // 门禁状态（v2）：总体 + 项目×阶段 + 失败红标 + 生成时间
+    const gate=d.gate||{}, gs=gate.summary||{}, gfailed=gate.failed_stages||[];
+    const okCls=gate.ok?'ok':'bad';
+    if(q('gate-summary')) q('gate-summary').innerHTML='总体 <b class="'+okCls+'">'+(gate.ok?'✅ 通过':'❌ 未通过')+'</b>'
+      +' · 项目 '+esc(gs.projects||0)+' / 检查 '+esc(gs.checks||0)+' / 失败 '+esc(gs.fail||0)
+      +' · 生成 '+esc(gate.generated_at? String(gate.generated_at).replace('T',' ').slice(0,19):'—')
+      +' · 报告 '+esc(gate.file? String(gate.file).split('\\\\').pop():'—');
+    const grow=[];
+    (gate.projects||[]).forEach(function(p){
+      const stages=p.stages||[];
+      if(!stages.length){ grow.push('<tr><td>'+esc(p.project_id)+'</td><td>—</td><td class="muted">无阶段数据</td><td></td></tr>'); return; }
+      stages.forEach(function(s){
+        grow.push('<tr><td>'+esc(p.project_id)+'</td><td>'+esc(s.stage)+'</td>'
+          +'<td class="'+(s.ok?'ok':'bad')+'">'+(s.ok?'✅ 通过':'❌ 失败')+'</td>'
+          +'<td class="muted">'+esc((s.errors||[]).join('；'))+'</td></tr>');
+      });
+    });
+    if(q('gate')) q('gate').innerHTML=grow.length?grow.join(''):'<tr><td colspan="4" class="muted">暂无门禁数据（等待 learning_gate 报告）</td></tr>';
     const todos=d.todos||[];
     q('todos').innerHTML=todos.length?todos.map(function(t){
       return '<li class="'+(t.level==='high'?'bad':'muted')+'">['+esc(t.project_id)+'] '+esc(t.todo)+'</li>';}).join(''):'<li class="muted">暂无待办</li>';

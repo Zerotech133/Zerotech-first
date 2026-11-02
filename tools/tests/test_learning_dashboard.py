@@ -82,7 +82,11 @@ def test_dashboard_json_contract():
     assert data["owner"]["cn"] == "张松"
     assert data["summary"]["pipeline_tasks"] == 4
     assert any(p["status"] == "archived" for p in data["projects"])
-    assert any(p["status"] == "intake_pending" for p in data["projects"])
+    # 状态随流水线推进变化（intake_pending→…→archived）：只校验合法状态集合
+    assert {p["status"] for p in data["projects"]} <= {"intake_pending", "registered", "ingesting",
+                                                      "cleaning", "extracting", "governing",
+                                                      "distilling", "standardizing", "published",
+                                                      "archived", "blocked"}
     assert data["quality"]["gate_passed"] in (True, False)
     assert data["quality"]["checks"]
     assert data["sop"] and "学习项目标准化流程" in data["sop"]
@@ -131,3 +135,66 @@ def test_http_200():
     assert st2 == 200, f"数据 HTTP {st2}: {body2[:200]}"
     data = json.loads(body2)
     assert data["summary"]["projects"] >= 2
+
+# ---------------------------------------------------------------------------
+# 6. v2 门禁状态（learning_gate 聚合 + 页面区块）
+# ---------------------------------------------------------------------------
+def test_dashboard_gate_section_contract():
+    assert DASHBOARD.exists()
+    data = json.loads(DASHBOARD.read_text(encoding="utf-8"))
+    assert data["schema_version"] == "learning_projects_dashboard.v2"
+    gate = data.get("gate")
+    assert isinstance(gate, dict) and gate.get("available") is True
+    for key in ("ok", "summary", "projects", "failed_stages", "generated_at", "file", "stage"):
+        assert key in gate, key
+    assert gate["ok"] is True
+    assert gate["summary"]["checks"] >= 1
+    assert isinstance(gate["failed_stages"], list)
+    assert gate["projects"] and all("stages" in p for p in gate["projects"])
+    for old in ("projects", "pipeline", "quality", "todos", "owner", "executors", "sop"):
+        assert old in data, old
+    assert data["summary"].get("gate_v2_ok") is True
+
+
+def test_gate_aggregation_with_fixture(tmp_path):
+    reports = tmp_path / "reports"
+    reports.mkdir()
+    fixture = {
+        "generated_at": "2026-11-02T12:00:00+08:00", "stage": "all",
+        "projects": [
+            {"project_id": "p_ok", "status": "published", "fail": 0,
+             "stages": {"intake": {"ok": True, "errors": []},
+                        "units": {"ok": True, "errors": []}}},
+            {"project_id": "p_bad", "status": "distilling", "fail": 1,
+             "stages": {"candidates": {"ok": False, "errors": ["stage_dirty:candidates"]},
+                        "publish": {"ok": True, "errors": []}}},
+        ],
+        "summary": {"projects": 2, "checks": 4, "fail": 1}, "ok": False,
+    }
+    (reports / "learning_gate_20261102_fixture.json").write_text(
+        json.dumps(fixture, ensure_ascii=False), encoding="utf-8")
+    out = tmp_path / "dashboard.json"
+    payload = B.build(reports_dir=reports, out_path=out)
+    assert payload["schema_version"] == "learning_projects_dashboard.v2"
+    gate = payload["gate"]
+    assert gate["ok"] is False
+    assert gate["summary"]["fail"] == 1 and gate["summary"]["checks"] == 4
+    assert gate["generated_at"] == "2026-11-02T12:00:00+08:00"
+    failed = gate["failed_stages"]
+    assert len(failed) == 1
+    assert failed[0]["project_id"] == "p_bad" and failed[0]["stage"] == "candidates"
+    assert failed[0]["errors"] == ["stage_dirty:candidates"]
+    proj = {p["project_id"]: p for p in gate["projects"]}
+    assert proj["p_bad"]["fail"] == 1
+    assert any(not st["ok"] for st in proj["p_bad"]["stages"])
+    assert "projects" in payload and "pipeline" in payload and "todos" in payload
+    assert out.exists()
+
+
+def test_page_gate_block():
+    html = PAGE.read_text(encoding="utf-8")
+    assert "门禁状态（v2）" in html
+    assert 'id="gate-summary"' in html
+    assert 'id="gate"' in html
+    assert "gate.failed_stages" in html
+    assert "❌ 失败" in html and "✅ 通过" in html

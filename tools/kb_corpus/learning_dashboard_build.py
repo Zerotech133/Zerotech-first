@@ -58,6 +58,44 @@ def latest_report(pattern: str, reports_dir: Path = REPORTS):
     return None, None
 
 
+def latest_gate(reports_dir: Path = REPORTS):
+    """读取最新 learning_gate_*.json（v2 门禁报告）。"""
+    files = sorted(Path(reports_dir).glob("learning_gate_*.json"),
+                   key=lambda p: p.stat().st_mtime, reverse=True)
+    for f in files:
+        data = load_json(f)
+        if data:
+            return f, data
+    return None, None
+
+
+def build_gate_section(f, data) -> dict:
+    """把 v2 门禁报告归一为看板 gate 段（保留各项目×阶段 errors 明细）。"""
+    if not data:
+        return {"available": False, "file": None, "ok": None, "generated_at": None,
+                "stage": None, "summary": {"projects": 0, "checks": 0, "fail": 0},
+                "projects": [], "failed_stages": []}
+    projects = []
+    failed = []
+    for proj in data.get("projects") or []:
+        stages = []
+        for name, info in (proj.get("stages") or {}).items():
+            ok = bool((info or {}).get("ok"))
+            errs = list((info or {}).get("errors") or [])
+            stages.append({"stage": name, "ok": ok, "errors": errs})
+            if not ok:
+                failed.append({"project_id": proj.get("project_id"), "stage": name, "errors": errs})
+        projects.append({"project_id": proj.get("project_id"), "status": proj.get("status"),
+                         "stages": stages, "fail": int(proj.get("fail") or 0)})
+    return {"available": True, "file": str(f) if f else None,
+            "ok": bool(data.get("ok")), "generated_at": data.get("generated_at"),
+            "stage": data.get("stage"),
+            "summary": {"projects": int((data.get("summary") or {}).get("projects") or 0),
+                        "checks": int((data.get("summary") or {}).get("checks") or 0),
+                        "fail": int((data.get("summary") or {}).get("fail") or 0)},
+            "projects": projects, "failed_stages": failed}
+
+
 def task_status() -> dict:
     """查询 ZeroBound_Learning* 计划任务状态/下次运行；失败返回静态表。"""
     names = [n for n, *_ in PIPELINE_TASKS]
@@ -137,6 +175,8 @@ def build(registry_path: Path = REGISTRY, reports_dir: Path = REPORTS,
     status_counts = {}
     for p in projects:
         status_counts[p["status"]] = status_counts.get(p["status"], 0) + 1
+    gate_file, gate_data = latest_gate(Path(reports_dir))
+    gate = build_gate_section(gate_file, gate_data)
     tasks = task_status()
     pipeline_rows = []
     for name, label, pattern, desc in PIPELINE_TASKS:
@@ -161,15 +201,17 @@ def build(registry_path: Path = REGISTRY, reports_dir: Path = REPORTS,
                       "level": "warn"})
     now = datetime.now().astimezone().isoformat(timespec="seconds")
     payload = {
-        "schema_version": "learning_projects_dashboard.v1", "kind": "learning_projects_dashboard",
+        "schema_version": "learning_projects_dashboard.v2", "kind": "learning_projects_dashboard",
         "generated_at": now,
         "owner": {"agent_id": owner_meta.get("agent_id"), "cn": owner_cn,
                   "title": owner_meta.get("title"), "reports_to": owner_meta.get("reports_to")},
         "executors": reg.get("executors") or {},
         "summary": {"projects": len(projects), "status_counts": status_counts,
                     "pipeline_tasks": len(pipeline_rows), "gate_passed": gate_passed,
+                    "gate_v2_ok": gate.get("ok"), "gate_v2_fail": gate.get("summary", {}).get("fail"),
                     "issues": len(issues), "high": high, "kb_units": kb_units},
         "projects": projects, "pipeline": pipeline_rows,
+        "gate": gate,
         "quality": {"gate_passed": gate_passed, "issues": len(issues), "high": high,
                     "checks": [{"name": "intake", "ok": bool(intake.get("write", True)), "report": reports.get("ZeroBound_LearningIntake", {}).get("file")},
                                {"name": "standardize", "ok": int(std_summary.get("issues") or 0) == 0, "issues": std_summary.get("issues")},

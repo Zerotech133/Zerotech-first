@@ -1,0 +1,329 @@
+{
+ "schema_version": "daily_tasks_health.v1",
+ "kind": "daily_tasks_health",
+ "tag": "20261102",
+ "generated_at": "2026-11-02T18:38:33+08:00",
+ "dry_run": true,
+ "summary": {
+  "total": 7,
+  "ok": 7,
+  "alert": 0
+ },
+ "tasks": [
+  {
+   "name": "ZeroBound_DailyKB",
+   "label": "每日知识库",
+   "status": "ok",
+   "issues": [],
+   "task": {
+    "found": true,
+    "last_run_time": "2026/11/2 8:35:01",
+    "last_result": 0,
+    "status": "Ready"
+   },
+   "log": {
+    "exists": true,
+    "timestamp": "2026-11-02T08:35:05+08:00",
+    "rc": 0,
+    "line": "2026-11-02 08:35:05 daily_kb rc=0",
+    "age_hours": 10.06
+   },
+   "outputs": [
+    {
+     "path": "portal\\static\\kb_learning_digest.json",
+     "exists": true,
+     "mtime": "2026-11-02T17:32:44+08:00",
+     "age_hours": 1.1,
+     "fresh": true,
+     "spec": {
+      "path": "portal/static/kb_learning_digest.json",
+      "stale_hours": 30
+     }
+    }
+   ],
+   "gate": null
+  },
+  {
+   "name": "ZeroBound_DailyScreening",
+   "label": "每日筛选",
+   "status": "ok",
+   "issues": [],
+   "task": {
+    "found": true,
+    "last_run_time": "2026/11/2 17:35:01",
+    "last_result": 0,
+    "status": "Ready"
+   },
+   "log": {
+    "exists": true,
+    "timestamp": "2026-11-02T17:35:03+08:00",
+    "rc": 0,
+    "line": "2026-11-02 17:35:03 daily_screening rc=0",
+    "age_hours": 1.06
+   },
+   "outputs": [
+    {
+     "path": "research\\reports\\daily_screening_20261030.json",
+     "exists": true,
+     "mtime": "2026-11-02T17:36:12+08:00",
+     "age_hours": 1.04,
+     "fresh": true,
+     "spec": {
+      "dir": "research/reports",
+      "pattern": "daily_screening_????????.json",
+      "stale_hours": 30
+     }
+    }
+   ],
+   "gate": null
+  },
+  {
+   "name": "ZeroBound_DailyPush",
+   "label": "每日飞书推送",
+   "status": "ok",
+   "issues": [],
+   "task": {
+    "found": true,
+    "last_run_time": "2026/11/2 17:45:02",
+    "last_result": 0,
+    "status": "Ready"
+   },
+   "log": {
+    "exists": true,
+    "timestamp": "2026-11-02T17:45:03+08:00",
+    "rc": 0,
+    "line": "2026-11-02 17:45:03 daily_push rc=0",
+    "age_hours": 0.89
+   },
+   "outputs": [
+    {
+     "path": "research\\reports\\kb_daily_push_send_20261102.json",
+     "exists": true,
+     "mtime": "2026-11-02T17:45:10+08:00",
+     "age_hours": 0.89,
+     "fresh": true,
+     "spec": {
+      "dir": "research/reports",
+      "pattern": "kb_daily_push_send_*.json",
+      "stale_hours": 30
+     }
+    }
+   ],
+   "gate": null
+  },
+  {
+   "name": "ZeroBound_LearningIntake",
+   "label": "学习-入库",
+   "status": "ok",
+   "issues": [],
+   "task": {
+    "found": true,
+    "last_run_time": "2026/11/2 18:37:11",
+    "last_result": 0,
+    "status": "Ready"
+   },
+   "log": {
+    "exists": true,
+    "timestamp": "2026-11-02T18:37:12+08:00",
+    "rc": 0,
+    "rcs": {
+     "rc_pipeline": 0,
+     "rc_gate": 0
+    },
+    "line": "2026-11-02 18:37:12 learning_intake_task.ps1 rc_pipeline=0 rc_gate=0",
+    "age_hours": 0.02
+   },
+   "outputs": [
+    {
+     "path": "research\\reports\\learning_gate_20261102.json",
+     "exists": true,
+     "mtime": "2026-11-02T18:38:01+08:00",
+     "age_hours": 0.01,
+     "fresh": true,
+     "spec": {
+      "dir": "research/reports",
+      "pattern": "learning_gate_*.json",
+      "stale_hours": 36
+     }
+    }
+   ],
+   "gate": {
+    "exists": true,
+    "path": "research\\reports\\learning_gate_20261102.json",
+    "ok": true,
+    "generated_at": "2026-11-02T18:38:01+08:00",
+    "summary": {
+     "projects": 2,
+     "checks": 5,
+     "fail": 0
+    },
+    "age_hours": 0.01,
+    "fresh": true
+   }
+  },
+  {
+   "name": "ZeroBound_LearningPipeline",
+   "label": "学习-流水线",
+   "status": "ok",
+   "issues": [],
+   "task": {
+    "found": true,
+    "last_run_time": "2026/11/2 18:37:48",
+    "last_result": 0,
+    "status": "Ready"
+   },
+   "log": {
+    "exists": true,
+    "timestamp": "2026-11-02T18:37:49+08:00",
+    "rc": 0,
+    "rcs": {
+     "rc_pipeline": 0,
+     "rc_gate": 0
+    },
+    "line": "2026-11-02 18:37:49 learning_pipeline_task.ps1 rc_pipeline=0 rc_gate=0",
+    "age_hours": 0.01
+   },
+   "outputs": [
+    {
+     "path": "research\\reports\\learning_gate_20261102.json",
+     "exists": true,
+     "mtime": "2026-11-02T18:38:01+08:00",
+     "age_hours": 0.01,
+     "fresh": true,
+     "spec": {
+      "dir": "research/reports",
+      "pattern": "learning_gate_*.json",
+      "stale_hours": 36
+     }
+    },
+    {
+     "path": "portal\\static\\learning_projects_dashboard.json",
+     "exists": true,
+     "mtime": "2026-11-02T18:25:51+08:00",
+     "age_hours": 0.21,
+     "fresh": true,
+     "spec": {
+      "path": "portal/static/learning_projects_dashboard.json",
+      "stale_hours": 36
+     }
+    }
+   ],
+   "gate": {
+    "exists": true,
+    "path": "research\\reports\\learning_gate_20261102.json",
+    "ok": true,
+    "generated_at": "2026-11-02T18:38:01+08:00",
+    "summary": {
+     "projects": 2,
+     "checks": 5,
+     "fail": 0
+    },
+    "age_hours": 0.01,
+    "fresh": true
+   }
+  },
+  {
+   "name": "ZeroBound_LearningGovernance",
+   "label": "学习-治理",
+   "status": "ok",
+   "issues": [],
+   "task": {
+    "found": true,
+    "last_run_time": "2026/11/2 18:37:54",
+    "last_result": 0,
+    "status": "Ready"
+   },
+   "log": {
+    "exists": true,
+    "timestamp": "2026-11-02T18:37:55+08:00",
+    "rc": 0,
+    "rcs": {
+     "rc_pipeline": 0,
+     "rc_gate": 0
+    },
+    "line": "2026-11-02 18:37:55 learning_governance_task.ps1 rc_pipeline=0 rc_gate=0",
+    "age_hours": 0.01
+   },
+   "outputs": [
+    {
+     "path": "research\\reports\\learning_gate_20261102.json",
+     "exists": true,
+     "mtime": "2026-11-02T18:38:01+08:00",
+     "age_hours": 0.01,
+     "fresh": true,
+     "spec": {
+      "dir": "research/reports",
+      "pattern": "learning_gate_*.json",
+      "stale_hours": 36
+     }
+    }
+   ],
+   "gate": {
+    "exists": true,
+    "path": "research\\reports\\learning_gate_20261102.json",
+    "ok": true,
+    "generated_at": "2026-11-02T18:38:01+08:00",
+    "summary": {
+     "projects": 2,
+     "checks": 5,
+     "fail": 0
+    },
+    "age_hours": 0.01,
+    "fresh": true
+   }
+  },
+  {
+   "name": "ZeroBound_LearningStandardize",
+   "label": "学习-标准化",
+   "status": "ok",
+   "issues": [],
+   "task": {
+    "found": true,
+    "last_run_time": "2026/11/2 18:38:00",
+    "last_result": 0,
+    "status": "Ready"
+   },
+   "log": {
+    "exists": true,
+    "timestamp": "2026-11-02T18:38:01+08:00",
+    "rc": 0,
+    "rcs": {
+     "rc_pipeline": 0,
+     "rc_gate": 0
+    },
+    "line": "2026-11-02 18:38:01 learning_standardize_task.ps1 rc_pipeline=0 rc_gate=0",
+    "age_hours": 0.01
+   },
+   "outputs": [
+    {
+     "path": "research\\reports\\learning_gate_20261102.json",
+     "exists": true,
+     "mtime": "2026-11-02T18:38:01+08:00",
+     "age_hours": 0.01,
+     "fresh": true,
+     "spec": {
+      "dir": "research/reports",
+      "pattern": "learning_gate_*.json",
+      "stale_hours": 36
+     }
+    }
+   ],
+   "gate": {
+    "exists": true,
+    "path": "research\\reports\\learning_gate_20261102.json",
+    "ok": true,
+    "generated_at": "2026-11-02T18:38:01+08:00",
+    "summary": {
+     "projects": 2,
+     "checks": 5,
+     "fail": 0
+    },
+    "age_hours": 0.01,
+    "fresh": true
+   }
+  }
+ ],
+ "alerts": [],
+ "alert_text": "",
+ "disclaimer": "研究/运维监控输出；告警默认 dry-run，--send 才发飞书。"
+}

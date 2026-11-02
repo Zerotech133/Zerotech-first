@@ -40,8 +40,24 @@ TASKS = [
     {"name": "ZeroBound_DailyPush", "label": "每日飞书推送", "log": r"C:\Temp\zero_daily_push.log",
      "outputs": [{"dir": "research/reports", "pattern": "kb_daily_push_send_*.json"}],
      "stale_hours": 30},
+    # ---- 学习线 4 任务（task-133：rc_pipeline/rc_gate 双 rc + gate/dashboard 新鲜度 ≤36h）----
+    {"name": "ZeroBound_LearningIntake", "label": "学习-入库", "log": r"C:\Temp\zero_learning_intake.log",
+     "outputs": [{"dir": "research/reports", "pattern": "learning_gate_*.json"}],
+     "stale_hours": 36, "gate": True},
+    {"name": "ZeroBound_LearningPipeline", "label": "学习-流水线", "log": r"C:\Temp\zero_learning_pipeline.log",
+     "outputs": [{"dir": "research/reports", "pattern": "learning_gate_*.json"},
+                 {"path": "portal/static/learning_projects_dashboard.json"}],
+     "stale_hours": 36, "gate": True},
+    {"name": "ZeroBound_LearningGovernance", "label": "学习-治理", "log": r"C:\Temp\zero_learning_governance.log",
+     "outputs": [{"dir": "research/reports", "pattern": "learning_gate_*.json"}],
+     "stale_hours": 36, "gate": True},
+    {"name": "ZeroBound_LearningStandardize", "label": "学习-标准化", "log": r"C:\Temp\zero_learning_standardize.log",
+     "outputs": [{"dir": "research/reports", "pattern": "learning_gate_*.json"}],
+     "stale_hours": 36, "gate": True},
 ]
 _LOG_RC_RE = re.compile(r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\s+(\S+)\s+rc=(-?\d+)\s*$")
+_LOG_RC2_RE = re.compile(r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\s+(\S+)\s+"
+                         r"rc_pipeline=(-?\d+)\s+rc_gate=(-?\d+)\s*$")
 _LOG_EXC_RE = re.compile(r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\s+(\S+)\s+EXCEPTION:\s*(.+)$")
 _LAST_RUN_RE = re.compile(r"(?:Last Run Time|上次运行时间|上次執行時間)[:：]\s*(.+)", re.I)
 _LAST_RESULT_RE = re.compile(r"(?:Last Result|上次结果|上次結果)[:：]\s*(-?\d+)", re.I)
@@ -108,6 +124,14 @@ def parse_last_log(path: str | Path, now: datetime | None = None) -> dict:
                 "age_hours": None, "error": f"日志读取失败：{exc}"}
     for line in reversed(lines):
         line = line.lstrip("\ufeff")
+        m = _LOG_RC2_RE.match(line.strip())
+        if m:
+            ts = datetime.fromisoformat(m.group(1)).astimezone()
+            rcs = {"rc_pipeline": int(m.group(3)), "rc_gate": int(m.group(4))}
+            return {"exists": True, "timestamp": ts.isoformat(timespec="seconds"),
+                    "rc": 0 if all(v == 0 for v in rcs.values()) else 1,
+                    "rcs": rcs, "line": line.strip(),
+                    "age_hours": round((now - ts).total_seconds() / 3600, 2)}
         m = _LOG_RC_RE.match(line.strip())
         if m:
             ts = datetime.fromisoformat(m.group(1)).astimezone()
@@ -153,11 +177,33 @@ def latest_output(spec: dict, now: datetime | None = None) -> dict:
 # ---------------------------------------------------------------------------
 # 检查 / 报告 / 告警
 # ---------------------------------------------------------------------------
+def gate_status(now: datetime | None = None, stale_hours: float = 36.0) -> dict:
+    """学习 gate 最新产出（research/reports/learning_gate_*.json）状态与新鲜度。"""
+    now = now or datetime.now().astimezone()
+    files = sorted((REPO / "research" / "reports").glob("learning_gate_*.json"),
+                   key=lambda p: p.stat().st_mtime, reverse=True)
+    if not files:
+        return {"exists": False, "ok": None, "age_hours": None, "fresh": False}
+    p = files[0]
+    age = round((now - datetime.fromtimestamp(p.stat().st_mtime).astimezone()).total_seconds() / 3600, 2)
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        data = {}
+    return {"exists": True, "path": str(p.relative_to(REPO)), "ok": data.get("ok"),
+            "generated_at": data.get("generated_at"), "summary": data.get("summary"),
+            "age_hours": age, "fresh": age <= stale_hours}
+
+
 def check_task(cfg: dict, now: datetime | None = None, *, info: dict | None = None,
-               log: dict | None = None, outputs: list[dict] | None = None) -> dict:
+               log: dict | None = None, outputs: list[dict] | None = None,
+               gate: dict | None = None) -> dict:
     now = now or datetime.now().astimezone()
     info = info if info is not None else query_task(cfg["name"])
-    log = log if log is not None else parse_last_log(cfg["log"], now)
+    if log is None:
+        log = (parse_last_log(cfg["log"], now) if cfg.get("log")
+               else {"exists": False, "timestamp": None, "rc": None, "rcs": None,
+                     "line": None, "age_hours": None, "error": "未配置日志路径"})
     outputs = outputs if outputs is not None else [
         latest_output({**spec, "stale_hours": cfg.get("stale_hours")}, now)
         for spec in cfg.get("outputs") or []]
@@ -166,7 +212,12 @@ def check_task(cfg: dict, now: datetime | None = None, *, info: dict | None = No
         issues.append("计划任务未找到")
     if info.get("last_result") not in (0, None):
         issues.append(f"Last Result={info['last_result']}")
-    if log.get("rc") not in (0, None):
+    if log.get("rcs"):
+        bad = {k: v for k, v in log["rcs"].items() if v != 0}
+        if bad:
+            issues.append("日志 " + " ".join(f"{k}={v}" for k, v in log["rcs"].items())
+                          + f"（{log.get('line')}）")
+    elif log.get("rc") not in (0, None):
         issues.append(f"日志 rc={log['rc']}（{log.get('line') or log.get('error')}）")
     if log.get("exists") is False:
         issues.append(log.get("error") or "日志缺失")
@@ -177,8 +228,18 @@ def check_task(cfg: dict, now: datetime | None = None, *, info: dict | None = No
             issues.append(f"产出缺失：{out.get('spec')}")
         elif not out.get("fresh"):
             issues.append(f"产出过期 {out.get('age_hours')}h：{out.get('path')}")
+    gate_info = None
+    if cfg.get("gate"):
+        gate_info = gate if gate is not None else gate_status(now)
+        if not gate_info.get("exists"):
+            issues.append("gate 产出缺失（learning_gate_*.json）")
+        else:
+            if gate_info.get("ok") is not True:
+                issues.append(f"gate 未通过：ok={gate_info.get('ok')} summary={gate_info.get('summary')}")
+            if gate_info.get("age_hours") is not None and gate_info["age_hours"] > 36:
+                issues.append(f"gate 产出过期 {gate_info['age_hours']}h（>36h）")
     return {"name": cfg["name"], "label": cfg.get("label"), "status": "ok" if not issues else "alert",
-            "issues": issues, "task": info, "log": log, "outputs": outputs}
+            "issues": issues, "task": info, "log": log, "outputs": outputs, "gate": gate_info}
 
 
 def build_report(tasks: list[dict], now: datetime | None = None, *,
@@ -187,6 +248,9 @@ def build_report(tasks: list[dict], now: datetime | None = None, *,
     alerts = [{"task": t["name"], "label": t.get("label"), "issues": t["issues"],
                "last_result": (t.get("task") or {}).get("last_result"),
                "log_line": (t.get("log") or {}).get("line"),
+               "log_rcs": (t.get("log") or {}).get("rcs"),
+               "gate_ok": (t.get("gate") or {}).get("ok"),
+               "gate_age_hours": (t.get("gate") or {}).get("age_hours"),
                "last_log": (t.get("log") or {}).get("timestamp")}
               for t in tasks if t["status"] == "alert"]
     return {
@@ -216,6 +280,10 @@ def format_alert(alerts: list[dict]) -> str:
             lines.append(f"  最后日志: {a['last_log']}")
         if a.get("log_line"):
             lines.append(f"  日志行: {str(a['log_line'])[:180]}")
+        if a.get("log_rcs"):
+            lines.append(f"  rc: {a['log_rcs']}")
+        if a.get("gate_ok") is not None:
+            lines.append(f"  gate: ok={a['gate_ok']} age={a.get('gate_age_hours')}h")
         for issue in a.get("issues") or []:
             lines.append(f"  - {issue}")
         lines.append("")

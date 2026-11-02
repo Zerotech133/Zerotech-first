@@ -136,3 +136,52 @@ def test_main_dry_run_and_send(tmp_path, monkeypatch):
     data2 = json.loads((out / "daily_tasks_health_20261101.json").read_text(encoding="utf-8"))
     assert data2["dry_run"] is False
     assert data2["send_result"]["ok"] is True and "ZeroBound_DailyScreening" in seen["text"]
+
+
+# ---------------------------------------------------------------------------
+# 新增（task-133）：学习任务 rc_pipeline/rc_gate 解析 + gate 新鲜度
+# ---------------------------------------------------------------------------
+def test_learning_log_rc_pipeline_rc_gate_parse(tmp_path):
+    log = tmp_path / "zero_learning_intake.log"
+    log.write_text("2026-11-02 04:02:54 learning_intake_task.ps1 rc=0\n"
+                   "2026-11-02 18:03:15 learning_intake_task.ps1 rc_pipeline=1 rc_gate=0\n",
+                   encoding="utf-8")
+    now = datetime.fromisoformat("2026-11-02T18:10:00+08:00")
+    out = mod.parse_last_log(log, now)
+    assert out["rcs"] == {"rc_pipeline": 1, "rc_gate": 0}
+    assert out["rc"] == 1 and "rc_pipeline=1" in out["line"]
+    cfg = {"name": "ZeroBound_LearningIntake", "label": "学习-入库", "stale_hours": 36,
+           "gate": True}
+    task = mod.check_task(
+        cfg, now, info={"found": True, "last_result": 0}, log=out,
+        outputs=[{"path": "research/reports/learning_gate_20261102.json", "exists": True,
+                  "age_hours": 0.5, "fresh": True}],
+        gate={"exists": True, "ok": True, "age_hours": 0.5, "summary": {"fail": 0}})
+    assert task["status"] == "alert"
+    assert any("rc_pipeline=1" in x for x in task["issues"])
+    assert task["gate"]["ok"] is True
+
+
+def test_gate_freshness_and_fail_alerts():
+    cfg = {"name": "ZeroBound_LearningPipeline", "label": "学习-流水线",
+           "stale_hours": 36, "gate": True}
+    base = {"found": True, "last_result": 0}
+    log = {"exists": True, "timestamp": "2026-11-02T17:39:00+08:00", "rc": 0,
+           "line": "rc_pipeline=0 rc_gate=0", "rcs": {"rc_pipeline": 0, "rc_gate": 0},
+           "age_hours": 1.0}
+    outputs = [{"path": "research/reports/learning_gate_20261102.json", "exists": True,
+                "age_hours": 1.0, "fresh": True}]
+    ok = mod.check_task(cfg, info=base, log=log, outputs=outputs,
+                        gate={"exists": True, "ok": True, "age_hours": 1.0})
+    assert ok["status"] == "ok" and ok["gate"]["ok"] is True
+    stale = mod.check_task(cfg, info=base, log=log, outputs=outputs,
+                           gate={"exists": True, "ok": False, "age_hours": 40.0,
+                                 "summary": {"fail": 1}})
+    assert stale["status"] == "alert"
+    assert any("gate 未通过" in x for x in stale["issues"])
+    assert any("gate 产出过期" in x for x in stale["issues"])
+    missing = mod.check_task(cfg, info=base, log=log, outputs=outputs,
+                             gate={"exists": False})
+    assert any("gate 产出缺失" in x for x in missing["issues"])
+    assert len(mod.TASKS) == 7                      # 原 3 + 学习线 4
+    assert sum(1 for t in mod.TASKS if t.get("gate")) == 4
