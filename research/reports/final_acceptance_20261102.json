@@ -1,0 +1,325 @@
+{
+ "tool": "final_acceptance",
+ "version": "v1",
+ "generated_at": "2026-11-02T15:56:22+08:00",
+ "date": "2026-11-02",
+ "night_date": "2026-11-02",
+ "verdict": "FAIL",
+ "counts": {
+  "pass": 4,
+  "fail": 4,
+  "expected-risk": 1,
+  "unknown": 1,
+  "total": 10
+ },
+ "definitions_source": "deliverables/2026-11-02_S3-08终验收_检查清单_v1.md §1（G1–G10）",
+ "gates": [
+  {
+   "gate": "G1",
+   "title": "今晚 TdxSync 四批（任务+数据级）",
+   "status": "fail",
+   "reason": "last_result_nonzero:\\ZeroBound\\TdxSync_A_高频=267011; not_run_in_night:\\ZeroBound\\TdxSync_A_高频(1999-11-30T00:00:00+08:00); last_result_nonzero:\\ZeroBound\\TdxSync_B_财务=267011; not_run_in_night:\\ZeroBound\\TdxSync_B_财务(1999-11-30T00:00:00+08:00); last_result_nonzero:\\ZeroBound\\TdxSync_C_低频=267011; not_run_in_night:\\ZeroBound\\TdxSync_C_低频(1999-11-30T00:00:00+08:00); last_result_nonzero:\\ZeroBound\\TdxSync_D_缺口=267011; not_run_in_night:\\ZeroBound\\TdxSync_D_缺口(1999-11-30T00:00:00+08:00); no_part_mtime_after_window",
+   "notes": "",
+   "evidence": {
+    "night_date": "2026-11-02",
+    "tasks": {
+     "\\ZeroBound\\TdxSync_A_高频": {
+      "found": true,
+      "state": "Ready",
+      "last_run": "1999-11-30T00:00:00+08:00",
+      "last_result": 267011
+     },
+     "\\ZeroBound\\TdxSync_B_财务": {
+      "found": true,
+      "state": "Ready",
+      "last_run": "1999-11-30T00:00:00+08:00",
+      "last_result": 267011
+     },
+     "\\ZeroBound\\TdxSync_C_低频": {
+      "found": true,
+      "state": "Ready",
+      "last_run": "1999-11-30T00:00:00+08:00",
+      "last_result": 267011
+     },
+     "\\ZeroBound\\TdxSync_D_缺口": {
+      "found": true,
+      "state": "Ready",
+      "last_run": "1999-11-30T00:00:00+08:00",
+      "last_result": 267011
+     }
+    },
+    "probe_source": "C:\\Temp\\tdx_sync_probe_task.log",
+    "rows_delta_total": null,
+    "fresh_tables": {
+     "ts_daily": {
+      "latest_part_mtime": "2026-10-30T17:49:56+08:00",
+      "fresh": false
+     },
+     "ts_daily_basic": {
+      "latest_part_mtime": "2026-10-30T17:49:15+08:00",
+      "fresh": false
+     },
+     "ts_index_daily": {
+      "latest_part_mtime": "2026-10-31T17:46:14+08:00",
+      "fresh": false
+     },
+     "ts_moneyflow": {
+      "latest_part_mtime": "2026-10-30T17:47:36+08:00",
+      "fresh": false
+     },
+     "ts_margin_detail": {
+      "latest_part_mtime": "2026-10-31T17:40:03+08:00",
+      "fresh": false
+     },
+     "ts_hk_daily": {
+      "latest_part_mtime": "2026-10-31T17:35:23+08:00",
+      "fresh": false
+     },
+     "ts_fx_daily": {
+      "latest_part_mtime": "2026-10-31T17:33:02+08:00",
+      "fresh": false
+     }
+    },
+    "fresh_table_count": 0
+   }
+  },
+  {
+   "gate": "G2",
+   "title": "TdxSyncProbe 严格判定（19:20+）",
+   "status": "unknown",
+   "reason": "无 19:20 后 probe 严格判定记录（not_found）",
+   "notes": "",
+   "evidence": {
+    "night_date": "2026-11-02",
+    "since": "19:20",
+    "source": "C:\\Temp\\tdx_sync_probe_task.log"
+   }
+  },
+  {
+   "gate": "G3",
+   "title": "qualify 分布 / K8 复判",
+   "status": "pass",
+   "reason": "unknown=15 < 40",
+   "notes": "",
+   "evidence": {
+    "threshold": 40,
+    "path": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\warehouse_registry.json",
+    "physical_count": 256,
+    "distribution": {
+     "deprecated": 8,
+     "evidence_ok": 170,
+     "evidence_partial": 54,
+     "planned": 9,
+     "unknown": 15
+    },
+    "unknown": 15
+   }
+  },
+  {
+   "gate": "G4",
+   "title": "XmapSync 明早首跑",
+   "status": "pass",
+   "reason": "rc=0 且今日已跑",
+   "notes": "",
+   "evidence": {
+    "task": "\\XmapSync",
+    "log": "C:\\项目\\老田的AI助手\\quant_backtest\\logs\\xmap_sync.out",
+    "log_tail": [
+     "ModuleNotFoundError: No module named 'tools.sql_guard'",
+     "[incr] stock 水位：2026-10-29 22:00:02+00:00 → MySQL 挂钟 2026-10-30 06:00:02（回看 0:05:00）",
+     "[incr] 拉取 0 行 | 新插 0 更新 0 | 入队 0 | 水位已推进至 2026-11-02T06:37:48+00:00"
+    ],
+    "state": "Ready",
+    "last_run": "2026-11-02T14:37:47+08:00",
+    "next_run": "2026-11-03T06:00:00+08:00",
+    "last_result": 0
+   }
+  },
+  {
+   "gate": "G5",
+   "title": "KgDailySync 链",
+   "status": "pass",
+   "reason": "KgDailySync rc=0 + catalog 当日更新 + registry sha 对齐",
+   "notes": "",
+   "evidence": {
+    "catalog": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\catalog.json",
+    "registry": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\warehouse_registry.json",
+    "log_tail": [
+     "registry_rebuild date=2026-11-02T15:45:27+08:00 tables=256 sha=f4f9c0b1fe449731 exit=0",
+     "qual_probe date=2026-11-02T15:45:28+08:00 tables=11 ok=5 partial=6 bad=0 exit=0",
+     "registry_rebuild date=2026-11-02T15:47:30+08:00 tables=256 sha=4ea9790a88ce9159 exit=0",
+     "qual_probe date=2026-11-02T15:47:30+08:00 tables=11 ok=11 partial=0 bad=0 exit=0"
+    ],
+    "catalog_build_tail": [
+     "  report       → stock_report > research_report",
+     "  stock_basic  → ts_stock_basic > stock_basic",
+     "  us_daily     → us_daily > us_legacy"
+    ],
+    "state": "Ready",
+    "last_run": "2026-11-02T06:20:01+08:00",
+    "last_result": 0,
+    "catalog_mtime": "2026-11-02T15:47:29+08:00",
+    "catalog_version": 32,
+    "catalog_updated": "2026-11-02T15:47:29",
+    "catalog_sha256": "4ea9790a88ce9159c39443b995a269f39422a5c9a965ef230c0fce626e6856d8",
+    "registry_catalog_sha256": "4ea9790a88ce9159c39443b995a269f39422a5c9a965ef230c0fce626e6856d8"
+   }
+  },
+  {
+   "gate": "G6",
+   "title": "DataWarehouseSnapshot 首跑（K3）",
+   "status": "fail",
+   "reason": "catalog_version_mismatch(snapshot=28/catalog=32)",
+   "notes": "",
+   "evidence": {
+    "task": "\\ZeroBound\\DataWarehouseSnapshot",
+    "snapshot": "C:\\项目\\老田的AI助手\\portal\\static\\dw_snapshot.json",
+    "dw_log": "C:\\Temp\\dw_snapshot_daily.log",
+    "state": "Ready",
+    "last_run": "2026-11-02T10:06:47+08:00",
+    "last_result": 0,
+    "snapshot_generated_at": "2026-11-02T14:05:55+08:00",
+    "snapshot_catalog": {
+     "version": 28,
+     "tables": 256,
+     "registry": {
+      "physical": 256,
+      "display": 224
+     },
+     "contracts": 10,
+     "qualification_unknown": 0,
+     "manifest": {
+      "closed": 243,
+      "not_applicable": 11,
+      "open": 1,
+      "missing": 1
+     }
+    },
+    "dw_log_last": {
+     "tool": "dw_snapshot_daily",
+     "finished_at": "2026-11-02T14:05:56+08:00",
+     "generated_at": "2026-11-02T14:05:55+08:00",
+     "ok": true,
+     "rc": 0,
+     "catalog_version": 28
+    },
+    "catalog_version": 32,
+    "snapshot_catalog_version": 28
+   }
+  },
+  {
+   "gate": "G7",
+   "title": "NoticeBackfill（PT8H）",
+   "status": "fail",
+   "reason": "last_result=267014",
+   "notes": "",
+   "evidence": {
+    "task": "\\ZeroBound\\NoticeBackfill",
+    "old_task": "\\NoticeBackfill",
+    "old_task_disabled": true,
+    "state": "Ready",
+    "last_run": "2026-11-02T14:46:43+08:00",
+    "next_run": "2026-11-03T06:45:00+08:00",
+    "last_result": 267014
+   }
+  },
+  {
+   "gate": "G8",
+   "title": "A3RotationCanary（accepted-risk）",
+   "status": "expected-risk",
+   "reason": "A3 canary rc=1 属 accepted-risk（裁定 B；8 处旧值未轮换不变）",
+   "notes": "",
+   "evidence": {
+    "log": "C:\\Temp\\rotation_canary.log",
+    "log_tail": [
+     "zhice_env      OLD -> zhice tushare(len=56,sha8=97b7a9a4)",
+     "结论：仍存在 8 处已泄露旧值 → 未轮换"
+    ],
+    "state": "Ready",
+    "last_run": "2026-11-02T07:00:01+08:00",
+    "last_result": 1
+   }
+  },
+  {
+   "gate": "G9",
+   "title": "SentimentBT 首跑",
+   "status": "fail",
+   "reason": "not_run_today(last_run=1999-11-30T00:00:00+08:00)",
+   "notes": "",
+   "evidence": {
+    "task": "\\ZeroBound\\SentimentBT",
+    "products": {
+     "sentiment_bt_result.json": {
+      "path": "C:\\项目\\老田的AI助手\\news_collector\\data\\sentiment_bt_result.json",
+      "exists": true,
+      "mtime": "2026-11-02T11:32:14+08:00",
+      "age_hours": 4.4,
+      "fresh": true
+     },
+     "jev_impact.json": {
+      "path": "C:\\项目\\老田的AI助手\\news_collector\\data\\jev_impact.json",
+      "exists": true,
+      "mtime": "2026-11-02T11:32:14+08:00",
+      "age_hours": 4.4,
+      "fresh": true
+     }
+    },
+    "pushed_file": {
+     "path": "C:\\项目\\老田的AI助手\\news_collector\\data\\sentiment_bt_pushed.json",
+     "mtime": "2026-10-14T20:35:12+08:00",
+     "push_today": false
+    },
+    "state": "Ready",
+    "last_run": "1999-11-30T00:00:00+08:00",
+    "next_run": "2026-11-03T07:20:00+08:00",
+    "last_result": 267011
+   }
+  },
+  {
+   "gate": "G10",
+   "title": "KPI 复跑（kpi_report）",
+   "status": "pass",
+   "reason": "ok=9>=9、unknown=0、K3=ok",
+   "notes": "",
+   "evidence": {
+    "min_ok": 9,
+    "measured_at": "2026-11-02T15:57:01+08:00",
+    "summary": {
+     "ok": 9,
+     "warn": 1,
+     "unknown": 0,
+     "total": 10
+    },
+    "kpi_status": {
+     "K1": "ok",
+     "K2": "ok",
+     "K3": "ok",
+     "K4": "ok",
+     "K5": "ok",
+     "K6": "ok",
+     "K7": "ok",
+     "K8": "ok",
+     "K9": "ok",
+     "K10": "warn"
+    },
+    "k3": {
+     "status": "ok",
+     "value": "2026-11-02T14:05:55+08:00",
+     "evidence": "generated_at=2026-11-02T14:05:55+08:00（今日）；任务 LastRun=2026/11/2 10:06:47 LastResult=0；自动任务今日已跑且成功（LastResult=0）"
+    }
+   }
+  }
+ ],
+ "environment": {
+  "repo": "C:\\项目\\老田的AI助手",
+  "data": "C:\\项目\\老田的AI助手\\quant_backtest\\data",
+  "host": "windows",
+  "mode": "read-only（不触发任务/不改数据/不重启）"
+ },
+ "limitations": [
+  "G1 数据级 rows 增量与 G2 同源（TdxSyncProbe 严格窗口记录）；probe 未装/未跑时 G1/G2=unknown（不硬编码判过）",
+  "G4–G9 以「LastRunTime.date == 验收日」判明早窗口是否跑过；跨日长任务（NoticeBackfill PT8H）以 LastResult 为准",
+  "G10 导入 kpi_report.build_report()（只读，不写文件）；K10 的 warn 不计失败（清单口径）",
+  "expected-risk 仅 G8（A3 canary rc=1，裁定 B）计入；其它 Gate 不接受 expected-risk"
+ ]
+}
