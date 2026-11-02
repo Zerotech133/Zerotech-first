@@ -1,7 +1,7 @@
 # ADR（Proposed）：DWH-103 · K5 数据契约补齐——dataset_registry 增 `pg_table` 与 `C:\Temp` 契约产物
 
-- **状态**：**Proposed（2026-11-02 草案；未生效）**——待 ARCH1 预审 + **A0 拍板**；本 ADR **不实现、不改运行时**，不写 `tools/`、`platform/`、registry/schema 文件
-- **建议编号**：ADR-019（待 A0 分配；本文件按 task-13 任务单命名 `2026-11-02_DWH-103_K5数据契约_pg_table_temp_v0.md`，避免与在途 ADR 编号冲突）
+- **状态**：**Accepted（2026-11-02 A0 批准；编号 ADR-019）**——待 ARCH1 预审 + **A0 拍板**；本 ADR **不实现、不改运行时**，不写 `tools/`、`platform/`、registry/schema 文件
+- **编号**：**ADR-019**（A0 2026-11-02 批准；本文件按 task-13 任务单命名 `2026-11-02_DWH-103_K5数据契约_pg_table_temp_v0.md`，避免与在途 ADR 编号冲突）
 - **日期**：2026-11-02
 - **关联**：ADR-015（K5 数据/证据层；§5 单一真源、§6 声明被消费、§7 变更纪律）、ADR-017（§6 禁止把 `C:\Temp\*.json` 当契约）、`platform/kernel_v1.yaml` K5（owner DATA1，status partial）、ADR-010（凭据）、ADR-012（L2 五要素）、ADGS 试点 DWH-103（治理道）、前置 DWH-101/102/104（已交付证据）、ACL-103 ADR（ACAD1 池契约，同批依赖）
 - **性质**：治理道**预审材料**；定义 K5 数据契约补齐的 schema/登记/口径，不写实现、不写 registry/schema 文件
