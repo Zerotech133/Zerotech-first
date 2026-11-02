@@ -1,6 +1,6 @@
 {
   "schema": "zerobound/composition-registry/v0.1",
-  "generated_at": "2026-11-02",
+  "generated_at": "2026-11-03",
   "status": "draft-shadow",
   "note": "P0 影子账本：只登记、不装载、不改变运行时。P1 起由 tools/composition.py 校验与维护。",
   "host": {

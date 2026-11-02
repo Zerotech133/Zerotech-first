@@ -73,6 +73,7 @@ compositions/_schema/composition.schema.json
 | `quant-strategy-line` | product | STRAT1 | 策略线（12 策略 + 影子账本 + PIT） |
 | `data-warehouse` | data | DATA1 | 数据仓（314 数据集 + catalog + 血缘） |
 | `huangzhong-acceptance` | workflow | HUANGZHONG | 黄忠 11-04 全链路验收链 |
+| `dev-legion` | legion | ARCH1 | 曹操军团（11 席 + 只读作战屏契约 `/api/dev/legion`；WP1+WP3 影子清单，不接运行时） |
 
 ## 七、与其它契约的关系
 

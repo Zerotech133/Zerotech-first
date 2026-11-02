@@ -129,8 +129,8 @@
       "action": "string",
       "source": "string（可选：workorder_bus 合成项固定 \"workorder_bus\"；配置项可缺省）"
      },
-     "source": "agent_platform/config/dev_legion_decisions.json#items + 由 workorder_bus 合成 1 项（source=workorder_bus）",
-     "degrade": "配置缺失/坏 JSON → []（并记 errors[]；合成项不生成）"
+     "source": "agent_platform/config/dev_legion_decisions.json#items（可为空；含配置项）+ 若 workorder_bus 非空则追加 1 条合成项（source=workorder_bus；与配置是否可用无关）",
+     "degrade": "配置缺失/坏 JSON → 基础项 [] 并记 errors[]；若 workorder_bus 非空则仍追加 1 条 source=workorder_bus 合成项（不静默）"
     },
     "events": {
      "type": "array<object>",
@@ -154,7 +154,7 @@
    },
    "extensions_flags": {
     "v2_workorder_bus": "workorder_bus 非空时加入顶层 extensions[]",
-    "v2_decisions": "decisions 非空时加入顶层 extensions[]",
+    "v2_decisions": "decisions 非空（含仅由 workorder_bus 合成项构成）时加入顶层 extensions[]",
     "v2_events": "events 非空时加入顶层 extensions[]"
    },
    "readonly_boundary": "仅 GET /api/dev/legion；无写接口/写方法；不写库/文件/事件；任一源缺失/损坏 → 对应字段 [] + errors[] + ok=false，HTTP 仍 200（不 500）"

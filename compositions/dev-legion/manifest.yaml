@@ -39,7 +39,7 @@ spec:
       - interface/hermes-control
       - taskstore
     auth:
-      public: false
+      public: true
       methods: [portal-token]
       roles: [A0, ARCH1, D1]
   pages:
@@ -60,6 +60,7 @@ spec:
     adapter: portal/api_dev_legion.py
     readonly: true
     extras: [workorder_bus, decisions, events, v2]
+    auth_public_reason: "现网 /api/dev/legion 属 H4-B 只读公开族（8734 匿名 200）；后续 auth_request 收口另立 L2"
   runtime:
     service: portal-api
     endpoint: http://127.0.0.1:8091
@@ -77,6 +78,7 @@ spec:
     - "11 席引用 org.json/HR：ARCH1+DEV1-8+OPS1+DOC1；不复制席位内容，不新增席位。"
     - "ADR-015/017 仍 Proposed：本组合仅 draft/shadow，需 ARCH1 预审；Lead 16:30 窗口统一合并，不自并。"
     - "字段只增不改；v1 schema 不变；既有 live-only 字段差异（ai/quant/risk_cards 等）另立追平单，不猜。"
+    - "auth.public=true 理由：现网 /api/dev/legion 属 H4-B 只读公开族（8734 匿名 200）；后续 auth_request 收口另立 L2，不在本清单改运行时。"
 status:
   phase: shadow
   health: unknown

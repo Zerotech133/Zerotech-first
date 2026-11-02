@@ -130,3 +130,26 @@ def test_v2_extras_shapes_and_limits():
         assert set(("ts", "kind", "agent", "task")) <= set(row)
     for row in p["decisions"]:
         assert isinstance(row, dict)
+
+
+def test_v2_decisions_synthetic_when_config_missing(tmp_path):
+    """P0 回归：decisions 配置缺失 + workorder_bus 非空 → 仍合成 1 条且 errors 非空。"""
+    import json as _json
+
+    wt = tmp_path / ".worktrees"
+    wt.mkdir(parents=True)
+    (wt / "tasks.json").write_text(_json.dumps({
+        "WO-TEST-P0-1": {"status": "doing", "owner": "ARCH1",
+                         "desc": "P0 回归样例", "created": "2026-11-03 00:00:00"},
+    }, ensure_ascii=False), encoding="utf-8")
+    p = A.build_payload(tmp_path)
+    # 契约：配置缺失 → 基础项 [] + errors[]（不静默）
+    assert any("dev_legion_decisions" in e for e in p["errors"]), p["errors"]
+    # 契约：bus 非空 → 仍追加 1 条 source=workorder_bus 合成项
+    assert p["workorder_bus"], "前置：workorder_bus 非空"
+    synth = [d for d in p["decisions"] if d.get("source") == "workorder_bus"]
+    assert len(synth) == 1
+    assert synth[0].get("title")
+    # 合成项计入扩展标志；只读保持不变
+    assert "v2_decisions" in p["extensions"]
+    assert p["v2"]["readonly"] is True

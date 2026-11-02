@@ -58,11 +58,12 @@
 | 字段 | 类型 | 来源 | 只读边界 |
 |---|---|---|---|
 | `workorder_bus` | `array<object>{id,owner,status,desc,created}` | `.worktrees/tasks.json`（`status∈{doing,review}`；`created desc`；**≤30 条**；跨席） | 只读；源缺失/坏 JSON → `[]`+`errors[]` |
-| `decisions` | `array<object>{title,due,owner,high,desc,action[,source]}` | `agent_platform/config/dev_legion_decisions.json#items`（配置项可无 `source`）+ 由 `workorder_bus` 合成 1 项（`source=workorder_bus`） | 只读；配置缺失/坏 → `[]`+`errors[]` |
+| `decisions` | `array<object>{title,due,owner,high,desc,action[,source]}` | `agent_platform/config/dev_legion_decisions.json#items`（配置项可无 `source`）+ 若 `workorder_bus` 非空则追加 1 项（`source=workorder_bus`；**与配置是否可用无关**） | 只读；配置缺失/坏 → 基础项 `[]`+`errors[]`，但 bus 非空时**仍合成 1 项**（不静默） |
 | `events` | `array<object>{ts,kind,agent,task}` | `portal/data/dev_events.jsonl`（尾 12 行解析 → 末 10 条） | 只读；文件缺失/不可读 → `[]`+`errors[]` |
 | `v2` | `object{readonly:true, extras:[workorder_bus,decisions,events]}` | 派生（非独立真源） | 恒 `readonly=true` |
 
 - **条件性 `extensions[]` 追加**：`v2_workorder_bus` / `v2_decisions` / `v2_events`（对应字段非空时追加；空则不加）。
+- **decisions 错误语义（2026-11-03 P0 复核修正）**：配置缺失/坏 JSON → 基础项 `[]` 并记 `errors[]`；**若 `workorder_bus` 非空，仍追加 1 条 `source=workorder_bus` 合成项（不静默）**；`v2_decisions` 扩展标志仍追加。实现依据：`portal/api_dev_legion.py::build_payload`（合成在 `if bus:` 分支，与 decisions 配置错误解耦；本修订对齐实现、不改代码）。
 - `schema` 仍 **`legion_screen_contract/v1`**；v1 既有字段/语义不变；新增字段向后兼容（老客户端忽略）；**无写接口/写方法**。
 - 机器可读登记：`docs/dev/legion_screen_contract.json` → `optional_extensions.v2`（含 `readonly_boundary`）。
 
@@ -79,6 +80,8 @@
 - **live 复核（2026-11-03 06:58:39，只读 8734 `/api/dev/legion`）**：`schema=v1`、`readonly=true`、`v2.readonly=true`；
   `workorder_bus=5`、`decisions=3`（2 条配置项 + 1 条 `source=workorder_bus` 合成项）、`events=10`、`errors=[]`；
   `extensions` 含 `v2_workorder_bus/v2_decisions/v2_events`（另有 v1.1 real 两项，属既有扩展）。字段形状与本节登记一致。
+- **P0 回归（2026-11-03 复核）**：`agent_platform/tests/test_dev_legion_api.py::test_v2_decisions_synthetic_when_config_missing`——
+  decisions 配置缺失 + `workorder_bus` 非空 → `decisions` 含 1 条 `source=workorder_bus` 合成项、`errors[]` 非空、`v2_decisions` 扩展标志仍在；与本修订措辞一致。
 
 ### R4 诚实差异报告（不在本修订扩面，不猜）
 
