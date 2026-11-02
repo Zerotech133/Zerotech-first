@@ -471,7 +471,7 @@ async function hqDispatch() {
 // ---- 会前议题（8798 收编只读 + 留言追加）----
 async function loadHqAgenda() {
   try {
-    const r = await fetch('/api/hq/agenda');
+    const r = await fetch('/api/hq/meeting/agenda');
     const env = await r.json();
     if (!env.ok) throw new Error(env.error || '加载失败');
     const t3 = (env.topics || []).slice(-3).map(x => x.topic).filter(Boolean);
@@ -487,7 +487,7 @@ async function hqPostMsg() {
   const text = document.getElementById('hqMsg').value.trim();
   if (!topic || !text) { add('HOST', '议题和留言都要填。', 'host'); return; }
   try {
-    const r = await fetch('/api/hq/agenda/message', { method:'POST', headers:{'Content-Type':'application/json'},
+    const r = await fetch('/api/hq/meeting/agenda/message', { method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ topic: topic, text: text, seat: 'laotian', kind: 'hq' }) });
     const env = await r.json();
     if (!r.ok || !env.ok) throw new Error(env.error || '留言失败');
