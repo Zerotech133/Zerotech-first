@@ -13,7 +13,7 @@
 #
 # 修改本文件后：重跑 build_catalog（CATALOG_VERSION_OVERRIDE=13）→ registry_rebuild --apply。
 
-version: 3
+version: 4
 updated: 2026-11-02
 tables:
   xq_comment:
@@ -76,3 +76,25 @@ tables:
       内容重复；xtcloud 侧不再采集，保留只读占位。恢复需 L1 采集单。
   # guba_posts 本轮**未**标 planned/deprecated：实测 data/guba 有 432 个 .jsonl（10-31 更新），
   # 属「jsonl 布局探针缺口」而非无数据；标生命周期会掩盖真实数据。待 jsonl 探针支持后复判。
+
+  # ── 2026-11-02 S3-01/K8：未覆盖 11 张处置（wa-map 证据 → 4 张 deprecated） ──
+  # 依据：deliverables/2026-11-02_K8未覆盖11张处置建议_v1.md §2/§3
+  irm_qa_sh_probe:
+    lifecycle: deprecated
+    reason: >-
+      单日探针表（catalog desc 自述「单日探针，不代表全量覆盖」）；主表 irm_qa_sh
+      （2277 分片）已覆盖，无消费方；保留只读占位，不参与资格台账。
+  irm_qa_sz_probe:
+    lifecycle: deprecated
+    reason: >-
+      单日探针表（同上）；主表 irm_qa_sz（3250 分片）已覆盖，无消费方。
+  shibor_lpr:
+    lifecycle: deprecated
+    reason: >-
+      上游 Tushare shibor_lpr(LPR) 停更于 2026-08-20（tushare_sync.py:365 注释）；
+      数据 freshness=20260820；接棒表 shibor 正常（verified 20261030）。恢复需上游复更。
+  xq_quote_snap:
+    lifecycle: deprecated
+    reason: >-
+      仅 2 行；xq_quote_router 明示「两表长期 degraded 断供」，行情快照改走
+      tushare/akshare，本表仅手动兜底；不参与资格台账。
