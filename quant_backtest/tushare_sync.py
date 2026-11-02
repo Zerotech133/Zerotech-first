@@ -763,7 +763,7 @@ def incr_mins(m, market, dryrun=False):
         if cal_parts:
             cal = pd.concat([pd.read_parquet(p, columns=["cal_date", "is_open"])
                              for p in cal_parts])
-            open_days = sorted(cal[cal["is_open"] == 1]["cal_date"].astype(str).tolist())
+            open_days = sorted(set(cal[cal["is_open"] == 1]["cal_date"].astype(str).tolist()))
             for d in open_days[-20:-1]:
                 try:
                     df = pull_paged("hk_hold", {"trade_date": d}, 4200)
@@ -788,6 +788,53 @@ def incr_mins(m, market, dryrun=False):
                          m=m, tag="[incr]")
 
 
+def incr_raw_by_date(apis, days, dryrun=False):
+    """raw 日频表按交易日补拉（2026-11-03 P2：daily_basic/moneyflow/margin_detail）。
+
+    背景：--incremental 原本只更新 trade_cal/news/anns_d/top_list/mins/
+    cb_daily/bak_basic/us_daily 等，raw tushare 的 daily_basic/moneyflow/
+    margin_detail 长期未进夜间增量（11-03 晨 freshness 报滞后 4-5 天）。
+    做法：按本地 d_YYYYMMDD.parquet 的最大日期，逐交易日补缺失文件；
+    单日一页（cap 6000，max_off=cap*20 防翻页失控）；幂等（已存在跳过）。
+    """
+    days = sorted(set(days))
+    for api, cap in apis:
+        files = sorted(glob.glob(os.path.join(tdir(api), "d_*.parquet")))
+        last = None
+        if files:
+            import re as _re
+            m = _re.search(r"d_(\d{8})\.parquet", os.path.basename(files[-1]))
+            last = m.group(1) if m else None
+        todo = [d for d in days if last is None or d > last]
+        if dryrun:
+            print("  DRY %s 缺失%d 日: %s..%s" % (api, len(todo),
+                  todo[0] if todo else "-", todo[-1] if todo else "-"))
+            continue
+        ok = fail = skip = 0
+        for i, d in enumerate(todo):
+            f = os.path.join(tdir(api), "d_%s.parquet" % d)
+            if os.path.exists(f):
+                continue
+            try:
+                df = pull_paged(api, {"trade_date": d}, cap, max_off=cap * 20)
+                if df is not None and not df.empty:
+                    df.to_parquet(f, index=False)
+                    ok += 1
+                else:
+                    # 当日数据未发布（如 11-03 盘前）→ skip，不算 fail
+                    skip += 1
+                    if skip <= 3:
+                        print("%s incr_by_date %s SKIP 空数据（未发布/非交易日）" % (api, d))
+            except Exception as e:  # noqa: BLE001
+                fail += 1
+                if fail <= 3:
+                    print("%s incr_by_date %s FAIL %s" % (api, d, str(e)[:60]))
+            if (i + 1) % 20 == 0:
+                print("%s incr_by_date %d/%d ok=%d fail=%d" % (api, i + 1, len(todo), ok, fail), flush=True)
+        print("%s incr_by_date 完成 ok=%d fail=%d skip=%d last_before=%s last_day=%s"
+              % (api, ok, fail, skip, last, todo[-1] if todo else last))
+
+
 def incremental(m, market="cn", dryrun=False):
     """增量同步：高频表日级续拉，低频财报留 deep 批。
 
@@ -809,7 +856,7 @@ def incremental(m, market="cn", dryrun=False):
         calp = sorted(glob.glob(os.path.join(OUT, "trade_cal", "part_*.parquet")))
         cal = pd.concat([pd.read_parquet(p, columns=["cal_date", "is_open"])
                          for p in calp]) if calp else pd.DataFrame()
-        open_days = sorted(cal[cal["is_open"] == 1]["cal_date"].astype(str).tolist()) \
+        open_days = sorted(set(cal[cal["is_open"] == 1]["cal_date"].astype(str).tolist())) \
             if not cal.empty else []
     past = [d for d in open_days if d <= today_s]
 
@@ -890,6 +937,12 @@ def incremental(m, market="cn", dryrun=False):
                     df.to_parquet(f, index=False)
                 except Exception as e:
                     print("top_list %s FAIL %s" % (d, str(e)[:60]))
+
+    # 4c) raw 日频表按交易日补齐（2026-11-03 P2）
+    if market in ("all", "cn"):
+        raw_days = past[-60:] if len(past) >= 60 else past
+        incr_raw_by_date([("daily_basic", 6000), ("moneyflow", 6000),
+                          ("margin_detail", 6000)], raw_days, dryrun=dryrun)
 
     # 5) 分钟表增量：删当月+上月 → 重拉
     if market in ("all", "cn", "hk"):
