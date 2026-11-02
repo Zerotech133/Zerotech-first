@@ -38,7 +38,7 @@ DEFAULT_INPUT = REPO / "research" / "reports" / "knowledge_multisource_20261103.
 OUT_JSON = REPO / "research" / "reports" / "concept_synonyms_20261103.json"
 OUT_MD = REPO / "research" / "reports" / "concept_synonyms_20261103.md"
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 FUZZY_JACCARD = 0.60            # 字符集合 Jaccard 阈值（任务口径）
 MIN_KEY_LEN = 2                 # 清洗后概念最短长度（更短→噪声）
 MAX_CONTAIN_EXTRA = 4           # 包含合并允许的额外修饰字符数上限
@@ -505,6 +505,9 @@ def plan_from_input(doc: dict) -> tuple[list[dict], dict]:
         "concepts_total": doc.get("meta", {}).get("concepts_total"),
         "multi_source_concepts": doc.get("meta", {}).get("multi_source_concepts"),
         "confidence_counts": doc.get("meta", {}).get("confidence_counts"),
+        "w1_version": doc.get("meta", {}).get("version"),
+        "with_sources": sum(1 for e in entries if e.get("sources")),
+        "sources_complete": bool(entries) and all(e.get("sources") for e in entries),
     }
     return entries, meta
 
@@ -538,7 +541,10 @@ def build_payload(input_path: str | Path = DEFAULT_INPUT,
             "input": {"path": str(path), "sha256_before": sha_before,
                       "sha256_after": sha_after, "unchanged": unchanged,
                       "concepts_total": in_meta.get("concepts_total"),
-                      "multi_source_concepts": in_meta.get("multi_source_concepts")},
+                      "multi_source_concepts": in_meta.get("multi_source_concepts"),
+                      "w1_version": in_meta.get("w1_version"),
+                      "with_sources": in_meta.get("with_sources"),
+                      "sources_complete": in_meta.get("sources_complete")},
             "params": {
                 "synonym_groups": len(groups if groups is not None else DOMAIN_SYNONYM_GROUPS),
                 "fuzzy_jaccard": FUZZY_JACCARD,
@@ -548,14 +554,21 @@ def build_payload(input_path: str | Path = DEFAULT_INPUT,
                 "merge_guard": "数字/序数/方向/窗口周期差异不合并；泛词不作包含短词；短词须为同义表规范词",
             },
             "stats": stats,
-            "limitations": [
+            "limitations": ([
+                "输入 W1-1（v1.1.0）全量概念已带 sources[source_key]：合并簇可回源确认独立来源，"
+                "本批无「多源-待确认」；但 source_key 正确性（同一博主/书/研报识别）仍建议抽样核对。",
+                "同义表/模糊合并会引入一定误并风险；已用数字/方向/窗口/泛词四类守卫，但仍建议人工抽检"
+                "「多源-确认」簇后再抬置信。",
+                "只做概念命名归并，不重新计算答案一致性/冲突；合并簇的置信等级仅为命名层面的保守估计。",
+                "只读输入，不改学习卡/units/治理 JSON；本报告由 run() 写到指定输出路径。",
+            ] if in_meta.get("sources_complete") else [
                 "输入 W1-1 JSON 中「低置信」概念只保留 source_types、无 source_key：同类型单源概念合并后"
                 "只能给出多源数下界/上界，独立来源确认需回源（标「多源-待确认」）。",
                 "同义表/模糊合并会引入一定误并风险；已用数字/方向/窗口/泛词四类守卫，但仍建议人工抽检"
                 "「多源-确认」簇后再抬置信。",
                 "只做概念命名归并，不重新计算答案一致性/冲突；合并簇的置信等级仅为命名层面的保守估计。",
                 "只读输入，不改学习卡/units/治理 JSON；本报告由 run() 写到指定输出路径。",
-            ],
+            ]),
         },
         "stats": stats,
         "merged_multi_source": multi_clusters,
@@ -648,7 +661,7 @@ def render_markdown(payload: dict) -> str:
     add("## 五、下一步建议")
     add("")
     add("1. 对「多源-确认」簇回源抽检 10~20 个，验证同义合并是否误并（尤其量学词与研报主题词）；")
-    add("2. 对「多源-待确认」簇回源补齐 source_key（同一博主/书/研报识别），把上界收敛为确认值；")
+    add("2. 对合并簇抽检 source_key 正确性（同一博主/书/研报识别），必要时回源修正映射；")
     add("3. 在 W1-1 pipeline 里前置本模块的 `clean_concept + synonym_map`（同一套表），减少 W1-1 阶段的概念分裂；")
     add("4. 长尾概念建议用 LLM 语义归并（人工抽检阈值 0.8+），但需保留可回滚的映射表（本模块表即底稿）。")
     add("")

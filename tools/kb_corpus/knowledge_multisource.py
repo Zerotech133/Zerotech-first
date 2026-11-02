@@ -64,7 +64,7 @@ DEFAULT_INPUTS: list[tuple[str, Path]] = [
      "card_candidates_laomu_notes_20261102.json"),
 ]
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 SOURCE_TYPE_LABEL = {"blogger": "博主", "book": "书", "research_report": "研报", "other": "其他"}
 CONFIDENCE_ORDER = {"高": 0, "中": 1, "低": 2}
 # 一致性阈值（3-gram Jaccard；同义改写常见 0.35~0.55，同句复述 >0.6）
@@ -521,9 +521,16 @@ def build_payload(inputs: list[tuple[str, Path]] | None = None,
     multi = [a for a in ordered if a["n_sources"] >= 2]
     conflicts = [dict(c, concept_key=a["concept_key"])
                  for a in ordered for c in a["conflicts"]]
+    # 低置信概念：保留紧凑字段 + 全量 sources[]（W1-2b：含 source_key，供下游回源确认独立来源）
     low_compact = [{"concept": a["concept"], "concept_key": a["concept_key"],
                     "n_sources": a["n_sources"], "confidence": a["confidence"],
-                    "source_types": a["source_types"]}
+                    "source_types": a["source_types"],
+                    "sources": [{"source_type": s["source_type"],
+                                 "source_key": s["source_key"],
+                                 "source_label": s["source_label"],
+                                 "n_records": s["n_records"],
+                                 "origins": s["origins"]}
+                                for s in a["sources"]]}
                    for a in ordered if a["n_sources"] < 2]
     lines = [
         "口径：概念归一=去标点/疑问前缀/泛化后缀+同义词表映射；独立来源=(来源类型,来源标识)，"
@@ -536,6 +543,8 @@ def build_payload(inputs: list[tuple[str, Path]] | None = None,
         "注意：研报按 rp 编号计独立来源，同一机构不同期报告常高度模板化——高置信里若为「周度/月度表现」类"
         "时点事实，只代表两份报告同期方向一致，不代表可复用的稳定规律；此类条目应按“事实型”而非“规律型”使用。",
         "只读：输入文件前后 sha256 一致；本报告由 run() 写到指定输出路径，不改学习卡、不写数据库。",
+        "W1-2b 契约：`concepts` 全量条目（含低置信单源概念）均输出 sources[]（source_key/source_type/"
+        "source_label），下游 concept_synonyms 可据此对合并簇回源确认独立来源，不再出现「多源-待确认」。",
     ]
     payload = {
         "meta": {

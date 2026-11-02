@@ -194,3 +194,31 @@ def test_default_inputs_integration(tmp_path):
     json.dumps(payload, ensure_ascii=False)
     md = out_m.read_text(encoding="utf-8")
     assert "知识多源交叉验证" in md and "只读" in md
+
+
+# ------------------------------------------------------------------ 6. W1-2b：全量概念必须带 sources[source_key]（含低置信）
+def test_all_concepts_carry_sources(tmp_path):
+    """所有概念条目（含低置信单源）都输出 sources[{source_key,source_type,source_label}]。"""
+    def check(concepts):
+        assert concepts
+        for c in concepts:
+            assert c.get("sources"), f"概念缺 sources: {c.get('concept')}"
+            for src in c["sources"]:
+                for key in ("source_key", "source_type", "source_label"):
+                    assert src.get(key), f"{c.get('concept')}.sources 缺 {key}"
+        low = [c for c in concepts if int(c.get("n_sources") or 0) < 2]
+        assert low, "应包含低置信概念"
+        assert all(c.get("sources") for c in low)
+
+    # 1) 用默认输入现跑一遍（输出到 tmp，输入只读）
+    existing = [(kind, path) for kind, path in km.DEFAULT_INPUTS if Path(path).is_file()]
+    if existing:
+        payload = km.run(existing, out_json=tmp_path / "w11.json", out_md=tmp_path / "w11.md")
+        check(payload["concepts"])
+    # 2) 真实 W1-1 报告（若已生成）：1092 个概念全量校验
+    report = ROOT / "research" / "reports" / "knowledge_multisource_20261103.json"
+    if report.is_file():
+        doc = json.loads(report.read_text(encoding="utf-8"))
+        assert doc["meta"]["version"] >= "1.1.0"
+        check(doc["concepts"])
+        assert len(doc["concepts"]) == doc["meta"]["concepts_total"]

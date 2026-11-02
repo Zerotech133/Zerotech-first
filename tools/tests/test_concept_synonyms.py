@@ -152,3 +152,10 @@ def test_run_read_only_and_schema(tmp_path):
         assert section in md, section
     # 真实数据上至少有 1 个合并簇（否则同义表/模糊规则失效）
     assert s["merged_clusters"] >= 1
+    # W1-2b：输入全量概念已带 source_key → 合并簇多源可确认，无「多源-待确认」
+    with_sources = sum(1 for c in json.loads(INPUT_JSON.read_text(encoding="utf-8"))["concepts"]
+                       if c.get("sources"))
+    assert with_sources == 1092
+    assert s["multi_after_uncertain"] == 0
+    assert s["multi_after_confirmed"] > s["multi_before"]      # 12 → 23（回源后确认数提升）
+    assert payload["uncertain"]["multi_source_pending"] == []
