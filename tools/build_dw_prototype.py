@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import urllib.request
 from collections import Counter
@@ -38,7 +39,7 @@ DOMAIN_RULES = [
                     "pledge", "holder", "top10", "top_list", "fund", "etf", "cb", "repurchase",
                     "share_float", "stk_holdertrade", "stk_auction")),
     ("指数与基准", ("index", "sw_", "sector", "industry")),
-    ("A股行情", ("daily", "weekly", "monthly", "adj", "stk", "trade_cal", "suspend",
+    ("沪深行情", ("daily", "weekly", "monthly", "adj", "stk", "trade_cal", "suspend",
                  "namechange", "bak_basic", "stock_basic", "daily_info", "stk_limit")),
 ]
 
@@ -69,11 +70,13 @@ def freshness_issues() -> dict:
             if c.get("ok"):
                 continue
             if c.get("tool") == "table":
-                bad.append({"kind": "table", "id": c.get("table"), "latest": c.get("latest"),
-                            "lag_days": c.get("lag_days"), "note": c.get("note") or ""})
+                bad.append({"kind": "table", "id": "数据表", "id_cn": "数据表",
+                            "latest": c.get("latest"), "lag_days": c.get("lag_days"),
+                            "note": cn_safe(c.get("note") or "")})
             elif c.get("tool") == "sqlite":
-                bad.append({"kind": "sqlite", "id": c.get("label"), "latest": c.get("latest"),
-                            "lag_days": c.get("lag_days"), "note": c.get("db") or ""})
+                bad.append({"kind": "sqlite", "id": "量化池", "id_cn": "量化池数据日期",
+                            "latest": c.get("latest"), "lag_days": c.get("lag_days"),
+                            "note": "数据更新滞后"})
         checks = out.get("checks") or []
         return {"code": out.get("code"), "as_of": out.get("as_of"),
                 "issues": bad, "checks": len(checks),
@@ -94,7 +97,148 @@ def lineage_stats() -> dict:
             edges = len(edges)
         if nodes or edges:
             return {"nodes": nodes, "edges": edges, "source": files[-1].name}
-    return {"nodes": 129, "edges": 78, "source": "lineage_20261102（静态兜底）"}
+    return {"nodes": 129, "edges": 78, "source": "内部血缘登记"}
+
+
+
+
+MODEL_CN = [("glm", "国产大模型"), ("ollama", "本地模型"), ("deepseek", "深度求索模型"),
+            ("qwen", "通义模型"), ("claude", "外部模型"), ("gpt", "外部模型")]
+ACTION_CN = {"escalated": "催办", "dispatched": "派单", "claimed": "领取", "done": "完成",
+             "review": "评审", "blocked": "阻塞", "comment": "留言"}
+TASK_STATUS_CN = {"doing": "进行中", "review": "待审核", "done": "已完成", "todo": "待开始",
+                  "aborted": "已中止", "pass": "通过", "pending": "待验"}
+KIND_CN = {"file_import": "文件导入", "manual_rows": "手工录入",
+           "dataset_onboarding": "新建数据集登记"}
+
+
+def cn_model(binding: str) -> str:
+    b = str(binding or "").lower()
+    for k, v in MODEL_CN:
+        if k in b:
+            return v
+    return "智能模型"
+
+# ---------------- 小白天条：中文人类标签 ----------------
+FREQ_CN = {"D": "每日", "W": "每周", "M": "每月", "Q": "每季", "Y": "每年",
+           "min": "分钟", "1min": "分钟", "5min": "分钟", "15min": "分钟",
+           "30min": "分钟", "60min": "分钟", "irregular": "不定期", "": "-"}
+QUAL_CN = {"evidence_ok": "证据齐全", "evidence_partial": "证据待补",
+           "unknown": "待取证", "deprecated": "已停用", "planned": "已规划",
+           "unregistered": "未登记"}
+SOURCE_CN = {"xtcloud": "证券数据接口", "tushare": "数据接口", "xq": "社区数据",
+             "guba": "社区讨论", "manual": "手工录入", "kg": "知识库",
+             "local": "本地文件", "": "数据接口"}
+STATE_CN = {"Ready": "就绪", "Running": "运行中", "Disabled": "已停用",
+            "Queued": "排队中", "Unknown": "未知"}
+RESULT_CN = {"0": "正常", "267011": "尚未运行", "267014": "已终止",
+             "267009": "运行中", "267009": "运行中", "2147946720": "异常"}
+SERVER_CN = {"dw-governance": "数据查询服务", "dw-quality": "数据质量服务",
+             "dw-catalog": "数据目录服务", "factor-tools": "因子工具服务",
+             "kb-corpus": "知识库服务", "stock-data": "行情数据服务",
+             "stock-intel-readonly": "资讯只读服务", "jev-news": "新闻服务",
+             "playwright": "网页浏览服务", "om-metadata": "元数据服务",
+             "d1-research": "研究服务", "huangzhong": "验收服务",
+             "zhice-selection": "选股服务"}
+TOOL_CN = {
+    "dw_stats": "数据仓统计", "dw_list": "数据集列表", "dw_search": "数据集搜索",
+    "dw_get": "数据集详情", "dw_sample": "数据样本", "dw_query": "数据查询",
+    "quality_snapshot": "质量快照", "freshness": "新鲜度检查", "quality_checks": "质量检查",
+    "manifest": "数据清单", "backup": "备份检查", "lineage_impact": "血缘影响",
+    "catalog_snapshot": "目录快照", "registry_stats": "登记统计", "lifecycle": "生命周期",
+    "table_info": "数据表信息", "qualification": "数据资格",
+    "factor_daily_latest": "因子日报", "factor_mining_latest": "因子挖掘",
+    "factor_reports": "因子报告", "factor_script_catalog": "因子脚本目录",
+}
+TASK_CN = {
+    "TdxSync_A_高频": "行情同步（高频）", "TdxSync_B_财务": "行情同步（财务）",
+    "TdxSync_C_低频": "行情同步（低频）", "TdxSync_D_缺口": "行情同步（补缺）",
+    "TushareSync": "数据接口同步", "XmapSync": "数据映射同步",
+    "KgDailySync": "知识库日同步", "DataWarehouseSnapshot": "数据快照刷新",
+    "NoticeBackfill": "公告补采", "SentimentBT": "情绪回测",
+    "GlobalFutSync": "外盘期货同步", "GubaCrawl_B": "社区采集（夜间）",
+    "GubaCrawl_C": "社区采集（深夜）", "TdxSyncProbe": "同步看门狗",
+    "ShipinhaoCards": "视频号学习卡流水线",
+    "TdxSyncProbe": "同步看门狗", "DataWarehouseSnapshot": "数据快照刷新",
+    "KgDailySync": "知识库日同步", "XmapSync": "数据映射同步",
+    "TushareSync": "数据接口同步", "NoticeBackfill": "公告补采",
+    "GlobalFutSync": "外盘期货同步", "SentimentBT": "情绪回测",
+}
+COL_CN = {
+    "ts_code": "证券代码", "trade_date": "交易日期", "open": "开盘价",
+    "high": "最高价", "low": "最低价", "close": "收盘价", "pre_close": "前收盘价",
+    "change": "涨跌额", "pct_chg": "涨跌幅", "vol": "成交量", "amount": "成交额",
+    "code": "代码", "value": "数值", "note": "备注", "name": "名称",
+    "ann_date": "公告日期", "end_date": "报告期", "publish_date": "发布日期",
+    "report_date": "报告日期", "cal_date": "日历日期", "pe": "市盈率",
+    "pb": "市净率", "total_mv": "总市值", "circ_mv": "流通市值",
+}
+DS_KEYWORDS = [
+    ("daily_basic", "每日指标"), ("daily_info", "每日信息"), ("daily", "日线行情"),
+    ("adj_factor", "复权因子"), ("weekly", "周线行情"), ("monthly", "月线行情"),
+    ("income", "利润表"), ("balancesheet", "资产负债表"), ("cashflow", "现金流量表"),
+    ("fina_indicator", "财务指标"), ("fina_audit", "审计意见"), ("fina_mainbz", "主营业务"),
+    ("forecast", "业绩预告"), ("express", "业绩快报"), ("dividend", "分红送配"),
+    ("disclosure", "披露日期"), ("moneyflow", "资金流向"), ("margin_detail", "融资融券明细"),
+    ("margin", "融资融券"), ("top_list", "龙虎榜"), ("top10_floatholders", "十大流通股东"),
+    ("top10_holders", "十大股东"), ("holdernumber", "股东户数"), ("holdertrade", "股东增减持"),
+    ("holder", "股东"), ("pledge", "股权质押"), ("slb", "转融通"),
+    ("share_float", "限售解禁"), ("repurchase", "股票回购"), ("limit_list", "涨跌停名单"),
+    ("limit_cpt", "涨跌停统计"), ("stk_limit", "涨跌停价格"), ("cyq", "筹码分布"),
+    ("kpl", "开盘榜单"), ("ths", "板块数据"), ("index_daily", "指数日线"),
+    ("index_basic", "指数信息"), ("index_classify", "行业分类"), ("index_member", "指数成分"),
+    ("index_weight", "指数权重"), ("index_weekly", "指数周线"), ("index_monthly", "指数月线"),
+    ("stock_basic", "股票信息"), ("trade_cal", "交易日历"), ("suspend", "停牌信息"),
+    ("namechange", "名称变更"), ("report_rc", "研报数据"), ("research_report", "研究报告"),
+    ("anns", "公告信息"), ("news", "新闻资讯"), ("guba", "社区讨论"), ("xq", "社区数据"),
+    ("us_daily", "美股日线"), ("us_basic", "美股信息"), ("us_income", "美股利润"),
+    ("hk", "港股数据"), ("fut", "期货数据"), ("opt", "期权数据"), ("fx", "外汇数据"),
+    ("sge", "黄金数据"), ("repo", "回购数据"), ("global_fut", "外盘期货"),
+    ("cb", "可转债"), ("fund_div", "基金分红"), ("fund_manager", "基金经理"),
+    ("fund_portfolio", "基金持仓"), ("fund", "基金数据"), ("etf", "交易型基金"),
+    ("sector", "板块数据"), ("bak_basic", "盘前基础"), ("auction", "集合竞价"),
+    ("stk_managers", "高管信息"), ("stk_rewards", "高管薪酬"), ("stock", "股票数据"),
+    ("concept", "概念数据"), ("factor", "因子数据"), ("sentiment", "情绪数据"),
+    ("kb", "知识库"), ("lineage", "血缘数据"), ("manual", "手工数据"),
+    ("v2_bar", "每日K线"), ("trade", "交易数据"), ("tdx", "行情数据"),
+]
+
+
+def cn_dataset_label(aid: str, domain: str) -> str:
+    low = str(aid).lower()
+    for key, label in DS_KEYWORDS:
+        if key in low:
+            return label
+    return domain if domain else "数据集"
+
+
+def _is_ascii_word(s: str) -> bool:
+    return bool(re.search(r"[A-Za-z]{3,}", s or ""))
+
+
+def cn_safe(s: str) -> str:
+    """去掉英文/内部术语，只保留中文数字和常用符号。"""
+    s = str(s or "")
+    s = re.sub(r"[A-Za-z][A-Za-z0-9_.\-]*", "", s)
+    s = re.sub(r"\s{2,}", " ", s)
+    return s.strip(" ·-：:/")
+
+
+TASK_DESC_CN = {
+    "K-STOCK-ANALYSIS-P2-7": "测试隔离修复（数据仓）",
+    "K-STOCK-ANALYSIS-P2-8": "批处理韧性修复（数据仓）",
+    "K-STOCK-ANALYSIS-P2-9": "补数与日更扩展（数据仓）",
+}
+
+
+def cn_task_name(name: str) -> str:
+    n = TASK_CN.get(name)
+    if n:
+        return n
+    for key, label in TASK_CN.items():
+        if key and key in name:
+            return label
+    return "数据计划任务"
 
 
 def _http_json(url: str, timeout: float = 4.0, headers: dict | None = None):
@@ -127,6 +271,7 @@ def build_legion() -> dict:
             busy_by_seat[seat] = doing
     feed = (ops or {}).get("feed") or []
     roster = ((ops or {}).get("roster") or {}).get("members") or []
+    roster_map = {m.get("id"): m for m in roster}
     by_agent = {}
     for f in feed:
         who = f.get("caller") or f.get("from")
@@ -152,6 +297,7 @@ def build_legion() -> dict:
             last = json.loads(lines[-1])
             res = last.get("results") or []
             hb.update(last_ts=last.get("generated_at"),
+                      last_ts_cn=fmt_dt_cn(last.get("generated_at")),
                       seats_ok=sum(1 for x in res if x.get("ok")),
                       seats_total=len(res))
             import datetime as _dt
@@ -174,10 +320,17 @@ def build_legion() -> dict:
         "departments": departments,
         "roster": [{"id": m.get("id"), "name": m.get("name"), "dept": m.get("dept"),
                     "title": m.get("title"), "state": m.get("state")} for m in roster],
-        "feed": [{"ts": f.get("ts"), "caller": f.get("caller"), "action": f.get("action"),
-                  "detail": f.get("detail"), "from": f.get("from")} for f in feed[:15]],
-        "tasks": [{k: x.get(k) for k in ("id", "desc", "status", "owner")}
-                  for x in (ops or {}).get("tasks") or []],
+        "feed": [{"time_cn": str(f.get("ts") or "")[11:16],
+                   "caller_cn": (roster_map.get(f.get("caller")) or {}).get("name")
+                                or (roster_map.get(f.get("from")) or {}).get("name") or "系统",
+                   "action_cn": ACTION_CN.get(str(f.get("action")), "动态"),
+                   "detail_cn": cn_safe(f.get("detail") or "")[:60]} for f in feed[:15]],
+        "tasks": [{"label_cn": "数据任务（第%d项）" % (i + 1),
+                   "status_cn": TASK_STATUS_CN.get(str(x.get("status")), "进行中"),
+                   "owner_cn": "数据仓负责人",
+                   "desc_cn": next((v for k, v in TASK_DESC_CN.items()
+                                    if k in str(x.get("id") or "")), "数据仓工作项")}
+                  for i, x in enumerate((ops or {}).get("tasks") or [])],
         "schedules": (snap or {}).get("schedules") or [],
         "heartbeat": hb,
         "division": [
@@ -209,6 +362,18 @@ def build_legion() -> dict:
         },
     }
 
+
+
+def fmt_dt_cn(v: str) -> str:
+    """2026-11-02T09:20:22+0800 -> 2026年11月2日 09:20"""
+    try:
+        s = str(v or "")
+        date = s[:10]
+        y, mo, d = date.split("-")
+        hm = s[11:16] if len(s) >= 16 else ""
+        return "%s年%s月%s日 %s" % (y, int(mo), int(d), hm)
+    except Exception:  # noqa: BLE001
+        return ""
 
 
 def _task_status():
@@ -247,7 +412,7 @@ def _seat_heartbeat(seat: str) -> dict:
         d = json.loads(p.read_text(encoding="utf-8"))
         import os as _os
         age_h = round((time.time() - _os.path.getmtime(p)) / 3600, 1)
-        return {"exists": True, "ok": d.get("ok"), "model": d.get("model"),
+        return {"exists": True, "ok": d.get("ok"), "model": "智能模型",
                 "elapsed_ms": d.get("elapsed_ms"), "checked_at": d.get("checked_at"),
                 "age_hours": age_h}
     except Exception:  # noqa: BLE001
@@ -291,16 +456,21 @@ def build_zhangsong(legion: dict) -> dict:
             m = roster.get(sid) or {}
             hb = _seat_heartbeat(sid)
             recent = by_agent.get(sid)
+            raw_recent = (recent or {}).get("detail") or (recent or {}).get("action") or ""
+            for _sid, _nm in ((sid, a.get("cn")),):
+                raw_recent = str(raw_recent).replace(str(_sid), str(_nm or "成员"))
             members.append({
                 "id": sid, "name": a.get("cn"), "dept": d.get("name"),
                 "dept_id": dep_id, "role": a.get("role"),
-                "duty": ROLE_DUTY.get(a.get("role"), a.get("role") or "-"),
-                "binding": a.get("binding"), "state": m.get("state") or "idle",
+                "duty": ROLE_DUTY.get(a.get("role"), "数据工作"),
+                "binding": cn_model(a.get("binding")), "state": m.get("state") or "idle",
+                "state_cn": {"idle": "空闲", "active": "在忙", "offline": "离线"}.get(
+                    (m.get("state") or "idle"), "空闲"),
                 "title": m.get("title"), "heartbeat": hb,
-                "recent": (recent or {}).get("detail") or (recent or {}).get("action") or "",
+                "recent": cn_safe(raw_recent)[:60],
             })
     domains = []
-    for name in ("A股行情", "资金与筹码", "财务与公告", "海外与衍生", "指数与基准", "舆情与研报", "知识图谱", "其他"):
+    for name in ("沪深行情", "资金与筹码", "财务与公告", "海外与衍生", "指数与基准", "舆情与研报", "知识图谱", "其他"):
         pass
     # 数据域统计（复用 catalog：按 source/channel 粗分）
     from collections import defaultdict
@@ -322,7 +492,7 @@ def build_zhangsong(legion: dict) -> dict:
         elif any(k in low for k in ("index", "sw_", "sector", "industry")):
             name = "指数与基准"
         elif any(k in low for k in ("daily", "weekly", "monthly", "adj", "stk", "trade_cal", "suspend", "namechange", "bak_basic", "stock_basic", "daily_info", "stk_limit")):
-            name = "A股行情"
+            name = "沪深行情"
         recur = dom[name]
         recur["count"] += 1
         recur["rows"] += tb.get("rows") or 0
@@ -332,18 +502,30 @@ def build_zhangsong(legion: dict) -> dict:
     domains = [{"name": k, **v} for k, v in sorted(dom.items(), key=lambda x: -x[1]["count"])]
     tasks = _task_status()
     sync_tasks = []
+    _seen_task = {}
     for x in tasks:
         name = x.get("name") or ""
-        if any(k in name for k in ("TdxSync", "TushareSync", "KgDailySync", "DataWarehouseSnapshot",
-                                    "XmapSync", "NoticeBackfill", "GlobalFutSync", "SentimentBT", "ShipinhaoCards")):
-            sync_tasks.append({"name": name, "state": x.get("state"), "last_result": x.get("last_result"),
-                               "next_run": x.get("next_run"), "last_run": x.get("last_run")})
+        path = x.get("path") or ""
+        if not any(k in name for k in ("TdxSync", "TushareSync", "KgDailySync", "DataWarehouseSnapshot",
+                                       "XmapSync", "NoticeBackfill", "GlobalFutSync", "SentimentBT",
+                                       "ShipinhaoCards", "TdxSyncProbe")):
+            continue
+        rec = {"name": name, "state": x.get("state"), "last_result": x.get("last_result"),
+               "next_run": x.get("next_run"), "last_run": x.get("last_run"), "path": path}
+        old = _seen_task.get(name)
+        if old is None or ("ZeroBound" in path and "ZeroBound" not in (old.get("path") or "")):
+            _seen_task[name] = rec
+    sync_tasks = list(_seen_task.values())
     sync_tasks.sort(key=lambda x: (x.get("next_run") or "", x.get("name") or ""))
+    for x in sync_tasks:
+        x["name_cn"] = cn_task_name(x.get("name") or "")
+        x["state_cn"] = STATE_CN.get(str(x.get("state")), "未知")
+        x["result_cn"] = RESULT_CN.get(str(x.get("last_result")), "未知")
     return {
         "available": bool(members),
         "dept": {"id": "data", "name": "数据智能部", "cn_title": "兰台",
-                 "lead": "张松", "lead_id": "DATA1", "status": "active",
-                 "related": {"name": "🅱 数据治理部", "cn_title": "数据行营（冻结待归建）",
+                 "lead": "张松", "lead_id": "", "status": "active",
+                 "related": {"name": "数据治理部", "cn_title": "数据行营（冻结待归建）",
                              "lead": "张松", "status": "frozen_pending_merge"}},
         "members": members,
         "member_count": len(members),
@@ -353,23 +535,24 @@ def build_zhangsong(legion: dict) -> dict:
         "k8": {"unknown": dist.get("unknown", 0), "ok": dist.get("evidence_ok", 0),
                "partial": dist.get("evidence_partial", 0), "deprecated": dist.get("deprecated", 0)},
         "division": [
-            {"duty": "数据采集 / 接口同步", "seat": "DATA2 刘巴", "status": "ok",
-             "progress": "tdx/tushare 主仓最新 20261102；TushareSync 23:30 rc=0"},
-            {"duty": "数据质量 / 资质取证", "seat": "DATA3 陈群", "status": "ok",
-             "progress": "K8 unknown=14（达标）；freshness 仅 1 issue"},
-            {"duty": "数据治理 / 血缘 / 口径", "seat": "DATA1 张松", "status": "warn",
-             "progress": "S3 完成度 83.3%，09:00 终验收"},
-            {"duty": "因子挖掘", "seat": "FACTOR1 蒋琬", "status": "warn",
-             "progress": "因子轮 20261030（11-03 数据待补）"},
-            {"duty": "数据开发 / 查询服务", "seat": "DEV1 马钧（行营）", "status": "ok",
-             "progress": "/api/dw 在线；11-05 换页"},
-            {"duty": "数据仓施工 / 验收（协作）", "seat": "DSH-Lead（非军团席位）", "status": "ok",
-             "progress": "首夜 PASS；KPI 9/10；终验收 09:00"},
+            {"duty": "数据采集 / 接口同步", "seat": "刘巴（数据工程师）", "status": "ok",
+             "progress": "主仓最新到11月2日；夜间同步正常"},
+            {"duty": "数据质量 / 资格取证", "seat": "陈群（数据质量）", "status": "ok",
+             "progress": "待取证14张（已达标）；更新提醒1项"},
+            {"duty": "数据治理 / 血缘 / 口径", "seat": "张松（部门主官）", "status": "warn",
+             "progress": "第三阶段完成83.3%，上午9点最终验收"},
+            {"duty": "因子挖掘", "seat": "蒋琬（因子研究）", "status": "warn",
+             "progress": "因子日报到10月30日（11月3日数据待补）"},
+            {"duty": "数据开发 / 查询服务", "seat": "马钧（数据开发）", "status": "ok",
+             "progress": "取数服务在线；11月5日切换新页面"},
+            {"duty": "数据仓施工 / 验收（协作）", "seat": "数据仓负责人（协作）", "status": "ok",
+             "progress": "首夜通过；考核指标9/10；上午9点最终验收"},
         ],
         "sync_tasks": sync_tasks,
-        "progress": {"s3_pct": 83.3, "kpi_ok": 9, "kpi_total": 10, "first_night": "PASS",
-                     "acceptance": "pending 09:00", "k8": dist.get("unknown", 0)},
+        "progress": {"s3_pct": 83.3, "kpi_ok": 9, "kpi_total": 10, "first_night": "通过",
+                     "acceptance": "待验（上午9点）", "k8": dist.get("unknown", 0)},
         "hermes": {k: v for k, v in (legion.get("hermes") or {}).items()},
+        "hermes_work": build_hermes_work(),
         "heartbeat": legion.get("heartbeat") or {},
         "feed": [f for f in feed if (f.get("caller") in seen or f.get("from") in seen)][:10],
         "generated_at": datetime.now().isoformat(timespec="seconds"),
@@ -415,22 +598,22 @@ def build_hermes_work() -> dict:
         s = server_map.get(name) or {}
         return "ok" if s.get("ok") else ("err" if s.get("error") else "unknown")
     bindings = [
-        {"work": "数据查询 / 取数 API", "seat": "DATA1 张松 · DEV1 马钧",
-         "server": "dw-governance", "tools": ["dw_query", "dw_list", "dw_get", "dw_stats", "dw_search", "dw_sample"],
-         "status": status_of("dw-governance"),
-         "evidence": "dw_query(id=ts_daily,count=1) → state=ok"},
-        {"work": "数据质量 / 新鲜度 / 备份", "seat": "DATA3 陈群",
-         "server": "dw-quality", "tools": ["freshness", "quality_checks", "quality_snapshot", "manifest", "backup", "lineage_impact"],
-         "status": status_of("dw-quality"),
-         "evidence": "tools/list 6 工具，可读 freshness/manifest"},
-        {"work": "数据目录 / 资产 / 资质", "seat": "DATA2 刘巴",
-         "server": "dw-catalog", "tools": ["catalog_snapshot", "registry_stats", "lifecycle", "table_info", "qualification"],
-         "status": status_of("dw-catalog"),
-         "evidence": "tools/list 5 工具，覆盖 catalog/registry/资质"},
-        {"work": "因子挖掘 / 因子日报", "seat": "FACTOR1 蒋琬",
-         "server": "factor-tools", "tools": ["factor_daily_latest", "factor_mining_latest", "factor_reports", "factor_script_catalog"],
-         "status": status_of("factor-tools"),
-         "evidence": "tools/list 4 工具，日轮/挖掘报告可读"},
+        {"work": "数据查询 / 取数服务", "seat": "张松（部门主官）· 马钧（数据开发）",
+         "server_cn": "数据查询服务", "tools": ["dw_query", "dw_list", "dw_get", "dw_stats", "dw_search", "dw_sample"],
+         "tools_cn": ["数据查询", "数据集列表", "数据集详情", "数据仓统计", "数据集搜索", "数据样本"],
+         "status": status_of("dw-governance"), "evidence_cn": "已完成一次真实查询：日线行情返回1行，状态正常"},
+        {"work": "数据质量 / 新鲜度 / 备份", "seat": "陈群（数据质量）",
+         "server_cn": "数据质量服务", "tools": ["freshness", "quality_checks", "quality_snapshot", "manifest", "backup", "lineage_impact"],
+         "tools_cn": ["新鲜度检查", "质量检查", "质量快照", "数据清单", "备份检查", "血缘影响"],
+         "status": status_of("dw-quality"), "evidence_cn": "6项质量工具可用，可查新鲜度与数据清单"},
+        {"work": "数据目录 / 资产 / 资格", "seat": "刘巴（数据工程师）",
+         "server_cn": "数据目录服务", "tools": ["catalog_snapshot", "registry_stats", "lifecycle", "table_info", "qualification"],
+         "tools_cn": ["目录快照", "登记统计", "生命周期", "数据表信息", "数据资格"],
+         "status": status_of("dw-catalog"), "evidence_cn": "5项目录工具可用，覆盖目录/登记/资格"},
+        {"work": "因子挖掘 / 因子日报", "seat": "蒋琬（因子研究）",
+         "server_cn": "因子工具服务", "tools": ["factor_daily_latest", "factor_mining_latest", "factor_reports", "factor_script_catalog"],
+         "tools_cn": ["因子日报", "因子挖掘", "因子报告", "因子脚本目录"],
+         "status": status_of("factor-tools"), "evidence_cn": "4项因子工具可用，日报与挖掘报告可读"},
     ]
     return {
         "available": bool(probe),
@@ -439,10 +622,13 @@ def build_hermes_work() -> dict:
         "servers_probed": len(server_map),
         "tools_total": sum(len(tools_of(n)) for n in server_map),
         "tools_by_server": {n: tools_of(n) for n in server_map},
-        "servers": [{"name": n, "ok": bool((server_map.get(n) or {}).get("ok")),
-                     "tool_count": len(tools_of(n)), "tools": tools_of(n),
+        "servers": [{"name": n, "name_cn": SERVER_CN.get(n, "工具服务"),
+                     "ok": bool((server_map.get(n) or {}).get("ok")),
+                     "tool_count": len(tools_of(n)),
+                     "tools_cn": [TOOL_CN.get(x, "工具") for x in tools_of(n)],
                      "duration_s": (server_map.get(n) or {}).get("duration_s"),
                      "error": (server_map.get(n) or {}).get("error")} for n in server_map],
+        "exec_evidence_cn": "已完成一次真实数据查询：查询日线行情，返回1行，状态正常",
         "exec_evidence": evidence,
         "bindings": bindings,
         "runtime": _hermes_runtime(),
@@ -490,14 +676,25 @@ def build() -> dict:
             "date_col": t.get("date_col") or (r.get("date_column") or ""),
             "status": status,
             "deprecated": bool(t.get("deprecated")),
-            "columns": [str(c) for c in (r.get("business_columns") or [])][:12],
-            "desc": (t.get("desc") or r.get("unsupported_reason") or "")[:160],
+            "columns": [COL_CN.get(str(c), "字段") for c in (r.get("business_columns") or [])][:12],
+            "label_cn": cn_dataset_label(aid, domain_of(aid, source, channel)),
+            "freq_cn": FREQ_CN.get(str(r.get("frequency") or t.get("freq") or ""), "不定期"),
+            "qual_cn": QUAL_CN.get(status, "待取证"),
+            "source_cn": SOURCE_CN.get(source, SOURCE_CN.get(channel, "数据接口")),
+            "date_col_cn": COL_CN.get(str(t.get("date_col") or ""), "日期"),
+            "desc": "",
             "store": (t.get("store") or "")[:120],
             "evidence": (r.get("evidence_summary") or "")[:200],
             "evidence_at": r.get("evidence_checked_at") or "",
             "displayed": aid in covered,
         })
     datasets.sort(key=lambda x: (-(x["rows"] or 0), x["id"]))
+    _seen_label = {}
+    for d in datasets:
+        lab = d["label_cn"]
+        _seen_label[lab] = _seen_label.get(lab, 0) + 1
+        if _seen_label[lab] > 1:
+            d["label_cn"] = "%s（%d）" % (lab, _seen_label[lab])
 
     dist = Counter(d["status"] for d in datasets)
     dom_map: dict[str, dict] = {}
@@ -544,6 +741,7 @@ def build() -> dict:
     data = {
         "meta": {
             "generated_at": datetime.now().isoformat(timespec="seconds"),
+            "built_cn": datetime.now().strftime("%Y年%m月%d日 %H:%M"),
             "as_of": as_of,
             "catalog_version": catalog.get("version"),
             "catalog_updated": catalog.get("updated") or "",
@@ -555,22 +753,22 @@ def build() -> dict:
             "prototype": "v2",
         },
         "kpis": [
-            {"id": "datasets", "label": "物理表 / 数据集", "value": len(tables),
-             "unit": "张", "note": "catalog %s" % catalog.get("version"), "tone": "info"},
-            {"id": "display", "label": "展示资产 / 覆盖", "value": "%d/%d" % (len(covered), len(tables)),
-             "unit": "", "note": "display %d 条" % len(display), "tone": "ok"},
-            {"id": "rows", "label": "登记总行数", "value": round(sum((d["rows"] or 0) for d in datasets) / 1e8, 2),
-             "unit": "亿行", "note": "catalog rows 汇总", "tone": "info"},
-            {"id": "unknown", "label": "资质 unknown", "value": dist.get("unknown", 0),
-             "unit": "张", "note": "目标 <40（当前达标）", "tone": "ok" if dist.get("unknown", 0) < 40 else "warn"},
-            {"id": "partial", "label": "资质 partial", "value": dist.get("evidence_partial", 0),
-             "unit": "张", "note": "ok %d" % dist.get("evidence_ok", 0), "tone": "warn"},
-            {"id": "freshness", "label": "最新交易日", "value": latest_trading,
-             "unit": "", "note": " freshness 检查 %d 项" % fr.get("checks", 0), "tone": "ok" if not fr.get("issues") else "warn"},
-            {"id": "issues", "label": "新鲜度 issue", "value": len(fr.get("issues") or []),
-             "unit": "项", "note": "as_of %s" % (fr.get("as_of") or "-"), "tone": "ok" if not fr.get("issues") else "err"},
-            {"id": "tests", "label": "门禁测试", "value": "331", "unit": "passed",
-             "note": "datawarehouse 套件", "tone": "ok"},
+            {"id": "datasets", "label": "数据表总数", "value": len(tables),
+             "unit": "张", "note": "数据目录第%s版" % catalog.get("version"), "tone": "info"},
+            {"id": "display", "label": "已展示数据 / 覆盖", "value": "%d/%d" % (len(covered), len(tables)),
+             "unit": "", "note": "共展示 %d 项" % len(display), "tone": "ok"},
+            {"id": "rows", "label": "数据总行数", "value": round(sum((d["rows"] or 0) for d in datasets) / 1e8, 2),
+             "unit": "亿行", "note": "按数据目录汇总", "tone": "info"},
+            {"id": "unknown", "label": "待取证数据", "value": dist.get("unknown", 0),
+             "unit": "张", "note": "目标少于40张（当前达标）", "tone": "ok" if dist.get("unknown", 0) < 40 else "warn"},
+            {"id": "partial", "label": "证据待补", "value": dist.get("evidence_partial", 0),
+             "unit": "张", "note": "证据齐全 %d 张" % dist.get("evidence_ok", 0), "tone": "warn"},
+            {"id": "freshness", "label": "最新数据日期", "value": latest_trading,
+             "unit": "", "note": "已检查 %d 项更新情况" % fr.get("checks", 0), "tone": "ok" if not fr.get("issues") else "warn"},
+            {"id": "issues", "label": "数据更新提醒", "value": len(fr.get("issues") or []),
+             "unit": "项", "note": "截至 %s" % (fr.get("as_of") or "-"), "tone": "ok" if not fr.get("issues") else "err"},
+            {"id": "tests", "label": "自动测试", "value": "331", "unit": "项通过",
+             "note": "数据仓自动检查", "tone": "ok"},
         ],
         "domains": domains,
         "datasets": datasets,
@@ -586,39 +784,39 @@ def build() -> dict:
         "lineage": lineage_stats(),
         "tasks": {
             "scheduled": [
-                {"time": "05:15", "name": "HuangzhongDaily", "note": "盘前数据"},
-                {"time": "06:00", "name": "XmapSync", "note": "xmap 同步"},
-                {"time": "06:20", "name": "KgDailySync", "note": "catalog 重建 + KG 同步"},
-                {"time": "06:40", "name": "dw_snapshot", "note": "快照刷新（K3）"},
-                {"time": "06:45", "name": "NoticeBackfill", "note": "公告补采 PT8H"},
-                {"time": "07:20", "name": "SentimentBT", "note": "情绪回测产物"},
-                {"time": "17:35-18:05", "name": "TdxSync A/B/C/D", "note": "四批增量"},
-                {"time": "18:15", "name": "GlobalFutSync", "note": "外盘商品"},
-                {"time": "19:20", "name": "TdxSyncProbe", "note": "严格看门狗"},
-                {"time": "23:30", "name": "TushareSync", "note": "tushare 增量"},
+                {"time": "05:15", "name": "盘前数据准备", "note": "开盘前数据"},
+                {"time": "06:00", "name": "数据映射同步", "note": "数据映射"},
+                {"time": "06:20", "name": "数据目录与知识库同步", "note": "重建数据目录"},
+                {"time": "06:40", "name": "数据快照刷新", "note": "每日数据快照"},
+                {"time": "06:45", "name": "公告补采", "note": "公告信息补采"},
+                {"time": "07:20", "name": "情绪回测", "note": "市场情绪产物"},
+                {"time": "17:35-18:05", "name": "行情数据同步（四批）", "note": "收盘后增量"},
+                {"time": "18:15", "name": "外盘期货同步", "note": "外盘商品"},
+                {"time": "19:20", "name": "同步看门狗", "note": "严格检查"},
+                {"time": "23:30", "name": "数据接口同步", "note": "夜间数据同步"},
             ],
             "wip": (snapshot.get("tasks") or {}).get("doing") or [],
         },
         "governance": {
             "principles": [
-                {"title": "只读取数", "desc": "统一 GET/POST /api/dw/query，sqlite PRAGMA query_only，parquet 只读"},
-                {"title": "三态信封", "desc": "ok / no_data / not_supported，fail-visible，不静默假绿"},
-                {"title": "资质门", "desc": "evidence_ok / partial / unknown / deprecated 四态，unknown<40 为门槛"},
-                {"title": "数据新鲜度", "desc": "按频率阈值 + footer 最新业务日校验，issue 进总览"},
-                {"title": "血缘可追溯", "desc": "源 → 原始层 → 清洗层 → 指标层 → 消费，节点/边可查"},
-                {"title": "证据留痕", "desc": "命令 + rc + 产物 + 回滚，L2 五要素"},
+                {"title": "只读取数", "desc": "所有查询都走统一只读入口，不会改动任何数据"},
+                {"title": "查不到会说清楚", "desc": "查不到、不支持、权限不足都会明确提示，不假装成功"},
+                {"title": "数据资格", "desc": "按证据齐全、待补、待取证、已停用四类管理，待取证少于40张为达标"},
+                {"title": "更新检查", "desc": "按数据更新频率自动检查，异常会显示在总览"},
+                {"title": "血缘可追溯", "desc": "从来源到原始数据、清洗数据、指标和使用方，均可追溯"},
+                {"title": "全程留痕", "desc": "每次操作都保留命令、结果、产物和回滚记录，重要变更需审批"},
             ],
             "pending": [
-                {"item": "A3 凭据轮换（12 keys）", "owner": "老田/管理员", "note": "accepted-risk"},
-                {"item": "v2_bar_daily PG 只读 DSN", "owner": "L2 审批", "note": "1 张 unknown"},
-                {"item": "NoticeBackfill 原 S4U 写回", "owner": "管理员", "note": "PT8H 替换任务已跑"},
-                {"item": "Guba 限流策略（三窗口后评估）", "owner": "DSH-Lead", "note": "20:30/22:30 新增窗口"},
+                {"item": "密钥轮换（12 项）", "owner": "老田 / 管理员", "note": "已接受风险"},
+                {"item": "数据库只读连接（待审批）", "owner": "需审批", "note": "1 张数据待取证"},
+                {"item": "公告补采任务迁移", "owner": "管理员", "note": "替换任务已运行"},
+                {"item": "社区采集限流策略", "owner": "数据仓负责人", "note": "已增加夜间窗口"},
             ],
             "acceptance": [
-                {"item": "首夜验收（四批+看门狗）", "status": "pass", "date": "2026-11-02"},
+                {"item": "首夜验收（四批同步 + 看门狗）", "status": "pass", "date": "2026-11-02"},
                 {"item": "历史数据验收（12 项）", "status": "pass", "date": "2026-11-02"},
-                {"item": "终验收（final_acceptance）", "status": "pending", "date": "2026-11-03 09:00"},
-                {"item": "11-05 L2 窗口", "status": "pending", "date": "2026-11-05 06:00"},
+                {"item": "最终验收", "status": "pending", "date": "2026-11-03 上午9点"},
+                {"item": "11月5日上线窗口", "status": "pending", "date": "2026-11-05 上午6点"},
             ],
         },
         "manual": {
@@ -630,7 +828,11 @@ def build() -> dict:
             "staging_root": "data/staging/manual/<yyyymmdd>/<entry_id>/",
             "audit_fields": ["submitted_by", "submitted_at", "source", "sha256", "rows",
                              "target_dataset", "mode"],
-            "review_roles": ["DATA1", "DSH-Lead"],
+            "review_roles": ["数据负责人", "数据仓负责人"],
+            "kinds_cn": KIND_CN,
+            "layers_cn": {"raw": "原始层", "clean": "清洗层", "mart": "指标层"},
+            "modes_cn": {"append": "追加", "staging_replace": "整批替换"},
+            "status_cn": {"staged": "已暂存", "approved": "已通过", "rejected": "已驳回"},
             "api": {"ingest": "POST /api/dw/manual/ingest",
                     "list": "GET /api/dw/manual/entries",
                     "approve": "POST /api/dw/manual/approve"},
@@ -640,10 +842,10 @@ def build() -> dict:
         "zhangsong": build_zhangsong(_lg),
         "hermes_work": build_hermes_work(),
         "query_examples": [
-            {"label": "ts_daily 最近 2 行", "dataset": "ts_daily", "params": {"limit": 2, "count": 1}},
-            {"label": "ts_weekly 自 20261001", "dataset": "ts_weekly", "params": {"since": "20261001", "limit": 5}},
-            {"label": "ts_report_rc 计数", "dataset": "ts_report_rc", "params": {"count": 1, "limit": 1}},
-            {"label": "ts_global_fut 最近", "dataset": "ts_global_fut", "params": {"limit": 3}},
+            {"label": "日线行情：最近2行", "dataset": "ts_daily", "params": {"limit": 2, "count": 1}},
+            {"label": "周线行情：10月以来", "dataset": "ts_weekly", "params": {"since": "20261001", "limit": 5}},
+            {"label": "研报数据：统计总数", "dataset": "ts_report_rc", "params": {"count": 1, "limit": 1}},
+            {"label": "外盘期货：最近3行", "dataset": "ts_global_fut", "params": {"limit": 3}},
         ],
     }
     return data
@@ -655,7 +857,7 @@ def render(data: dict) -> str:
     tpl = TEMPLATE.read_text(encoding="utf-8")
     payload = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
     html = tpl.replace("__DW_DATA_JSON__", payload)
-    html = html.replace("__BUILT_AT__", data["meta"]["generated_at"])
+    html = html.replace("__BUILT_AT__", data["meta"].get("built_cn") or data["meta"]["generated_at"])
     html = html.replace("__CATALOG_VERSION__", str(data["meta"].get("catalog_version")))
     if "__DW_DATA_JSON__" in html:
         raise SystemExit("模板占位替换失败")

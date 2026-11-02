@@ -21,7 +21,8 @@ REQUIRED_IDS = [
     "mg-dataset", "mg-body", "mg-submit", "mn-id", "mn-submit", "mq-body",
     "legion-kpis", "legion-banner", "legion-depts", "legion-seat-body",
     "legion-tasks-body", "legion-feed-body", "legion-division-body",
-    "legion-hermes-servers", "legion-progress", "legion-schedules-body",
+    "legion-hermes-servers", "legion-hermes-bindings", "legion-hermes-evidence",
+    "legion-progress", "legion-schedules-body",
 ]
 REQUIRED_REFS = ['/static/tokens.css', '/static/nav.js']
 VIEWS = ["overview", "map", "query", "manual", "quality", "legion", "governance"]
@@ -70,6 +71,15 @@ def check(html_path: Path = HTML, data_path: Path = DATA) -> dict:
     panels = re.findall(r'id="view-([a-z]+)"', html)
     if sorted(set(panels)) != sorted(VIEWS + ["lineage"]):
         out["issues"].append("panel 集合不符: %r" % (panels,))
+
+    # 小白友好：可见文本不得出现英文（脚本/样式/属性已剔除）
+    _visible = re.sub(r"<script.*?</script>", "", html, flags=re.S)
+    _visible = re.sub(r"<style.*?</style>", "", _visible, flags=re.S)
+    _visible = re.sub(r"<[^>]+>", " ", _visible)
+    _eng = sorted(set(re.findall(r"[A-Za-z][A-Za-z0-9_.\-]*", _visible)))
+    out["facts"]["visible_english"] = _eng[:20]
+    if _eng:
+        out["issues"].append("可见英文残留: %r" % (_eng[:10],))
 
     ext = re.findall(r'(?:src|href)="(https?://[^"]+)"', html)
     var_ext = re.findall(r'fetch\(\s*"(https?://[^"]*)"', html)

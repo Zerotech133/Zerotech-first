@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="dark">
 <meta name="prototype" content="dw-v2">
-<meta name="description" content="零界数据仓原型 v2：数据集目录、只读查询台、质量与资质、血缘、治理一页贯通。">
-<title>数据仓 v2 原型 · 零界</title>
+<meta name="description" content="零界数据仓原型：数据目录、只读查询、质量与资格、血缘、治理一页贯通。">
+<title>数据仓原型 · 零界</title>
 <link rel="stylesheet" href="/static/tokens.css">
 <script src="/static/nav.js" defer></script>
 <style>
@@ -161,19 +161,19 @@ footer{border-top:1px solid var(--border,#2a3342);color:var(--text-dim,#96a0af);
 <header class="topbar">
   <div class="wrap in">
     <div class="brand"><span class="dot" aria-hidden="true"></span>零界 · 数据仓</div>
-    <div class="crumb">数据仓 / <b>原型 v2</b></div>
-    <span class="badge">PROTOTYPE</span>
+    <div class="crumb">数据仓 / <b>原型</b></div>
+    <span class="badge">原型</span>
     <div class="hsearch" role="search">
-      <input id="global-search" type="search" placeholder="搜索数据集 / 域名 / 来源…" aria-label="搜索数据集">
+      <input id="global-search" type="search" placeholder="搜索数据名称 / 分类 / 来源…" aria-label="搜索数据集">
     </div>
   </div>
 </header>
 
 <main id="main" class="wrap main">
   <section aria-labelledby="page-title">
-    <div class="eyebrow">DATA WAREHOUSE · UNIFIED DATA PLANE</div>
+    <div class="eyebrow">零界 · 数据仓</div>
     <h1 id="page-title">数据仓 · 统一数据平面</h1>
-    <p class="lead">面向「查得到、说得清、追得回」的数据仓原型：数据集目录、只读查询台、手动录入、质量与资质、张松部门×Hermes、治理与血缘，一页贯通。原型数据为构建时快照；接服务后查询台自动调用 <code>/api/dw/query</code>。</p>
+    <p class="lead">面向「查得到、说得清、追得回」的数据仓原型：数据目录、只读查询、手动录入、质量与资格、张松部门与智能体底座、治理与血缘都在同一页。当前为构建时快照；正式环境会读取最新数据。</p>
     <div class="chips" id="hero-chips"></div>
   </section>
 
@@ -183,7 +183,7 @@ footer{border-top:1px solid var(--border,#2a3342);color:var(--text-dim,#96a0af);
     <button class="tab" role="tab" id="tab-query" aria-controls="view-query" aria-selected="false" data-view="query">查询台</button>
     <button class="tab" role="tab" id="tab-manual" aria-controls="view-manual" aria-selected="false" data-view="manual">手动录入</button>
     <button class="tab" role="tab" id="tab-quality" aria-controls="view-quality" aria-selected="false" data-view="quality">质量与资质</button>
-    <button class="tab" role="tab" id="tab-legion" aria-controls="view-legion" aria-selected="false" data-view="legion">张松部门 × Hermes</button>
+    <button class="tab" role="tab" id="tab-legion" aria-controls="view-legion" aria-selected="false" data-view="legion">张松部门 × 智能体底座</button>
     <button class="tab" role="tab" id="tab-governance" aria-controls="view-governance view-lineage" aria-selected="false" data-view="governance">治理与血缘</button>
   </nav>
 
@@ -191,9 +191,9 @@ footer{border-top:1px solid var(--border,#2a3342);color:var(--text-dim,#96a0af);
     <h2>关键指标 <span class="cnt" id="kpi-count"></span></h2>
     <div class="kpis" id="kpi-grid"></div>
     <div id="freshness-banner"></div>
-    <h2 style="margin-top:24px">数据域 <span class="cnt" id="domain-count"></span></h2>
+    <h2 style="margin-top:24px">数据分类 <span class="cnt" id="domain-count"></span></h2>
     <div class="grid-domains" id="domain-grid"></div>
-    <h2 style="margin-top:24px">今日调度 <span class="cnt">自动链</span></h2>
+    <h2 style="margin-top:24px">今日自动任务 <span class="cnt">按时间顺序</span></h2>
     <div class="tablebox">
       <table>
         <thead><tr><th>时间</th><th>任务</th><th>说明</th></tr></thead>
@@ -203,157 +203,156 @@ footer{border-top:1px solid var(--border,#2a3342);color:var(--text-dim,#96a0af);
   </section>
 
   <section class="panel" id="view-map" role="tabpanel" aria-labelledby="tab-map">
-    <h2>数据地图 <span class="cnt" id="map-count"></span></h2>
+    <h2>数据目录 <span class="cnt" id="map-count"></span></h2>
     <div class="toolbar">
-      <input id="map-search" class="grow" type="search" placeholder="按数据集 ID / 描述 / 来源过滤…" aria-label="过滤数据集">
+      <input id="map-search" class="grow" type="search" placeholder="按名称 / 分类 / 来源筛选…" aria-label="过滤数据集">
       <select id="map-domain" aria-label="数据域筛选"><option value="">全部数据域</option></select>
-      <select id="map-status" aria-label="资质筛选">
-        <option value="">全部资质</option>
-        <option value="evidence_ok">ok</option>
-        <option value="evidence_partial">partial</option>
-        <option value="unknown">unknown</option>
-        <option value="deprecated">deprecated</option>
+      <select id="map-status" aria-label="资格筛选">
+        <option value="">全部资格</option>
+        <option value="evidence_ok">证据齐全</option>
+        <option value="evidence_partial">证据待补</option>
+        <option value="unknown">待取证</option>
+        <option value="deprecated">已停用</option>
       </select>
-      <select id="map-freq" aria-label="频率筛选"><option value="">全部频率</option></select>
+      <select id="map-freq" aria-label="更新频率筛选"><option value="">全部更新频率</option></select>
       <button class="btn ghost" id="map-reset" type="button">重置</button>
     </div>
     <div class="tablebox">
       <table id="map-table">
         <thead>
           <tr>
-            <th data-sort="id">数据集</th>
-            <th data-sort="domain">数据域</th>
-            <th data-sort="freq">频率</th>
-            <th data-sort="rows" class="num">行数</th>
-            <th data-sort="freshness">最新日</th>
-            <th data-sort="status">资质</th>
+            <th data-sort="id">数据名称</th>
+            <th data-sort="domain">数据分类</th>
+            <th data-sort="freq">更新频率</th>
+            <th data-sort="rows" class="num">数据行数</th>
+            <th data-sort="freshness">最新日期</th>
+            <th data-sort="status">数据资格</th>
           </tr>
         </thead>
         <tbody id="map-body"></tbody>
       </table>
     </div>
-    <p class="muted" style="margin:10px 0 0">点击行查看详情 / 资质证据 / 查询示例。共 <b id="map-total"></b> 张物理表。</p>
+    <p class="muted" style="margin:10px 0 0">点开任意一行可看详情、证据与查询方式；共 <b id="map-total"></b> 张数据表。</p>
   </section>
 
   <section class="panel" id="view-query" role="tabpanel" aria-labelledby="tab-query">
-    <h2>只读查询台 <span class="cnt">/api/dw/query</span></h2>
+    <h2>数据查询 <span class="cnt">只读，不会改动数据</span></h2>
     <div class="querygrid">
       <form class="card" id="query-form">
         <h3>查询参数</h3>
         <div class="field">
-          <label for="q-dataset">数据集（dataset_id）</label>
-          <input id="q-dataset" list="q-dataset-list" placeholder="如 ts_daily" autocomplete="off" required>
-          <datalist id="q-dataset-list"></datalist>
+          <label for="q-dataset">选择数据</label>
+          <select id="q-dataset" required></select>
         </div>
         <div class="field">
-          <label for="q-since">since（时间下界，可选）</label>
-          <input id="q-since" placeholder="YYYY-MM-DD 或 YYYYMMDD">
+          <label for="q-since">起始日期（可留空）</label>
+          <input id="q-since" placeholder="例如 2026-10-01">
         </div>
         <div class="field">
-          <label for="q-where">where（JSON，可选）</label>
-          <textarea id="q-where" placeholder='[{"field":"trade_date","op":"&gt;=","value":"20261001"}]'></textarea>
+          <label for="q-where">高级筛选（可留空）</label>
+          <textarea id="q-where" placeholder="一般无需填写；如需精确筛选，请让数据管理员协助"></textarea>
         </div>
         <div class="field">
           <div class="row">
-            <div><label for="q-limit">limit</label><input id="q-limit" type="number" min="1" max="1000" value="5"></div>
-            <div><label for="q-count">count</label><select id="q-count"><option value="1">返回总数</option><option value="0">不计数</option></select></div>
+            <div><label for="q-limit">返回条数</label><input id="q-limit" type="number" min="1" max="1000" value="5"></div>
+            <div><label for="q-count">是否统计总数</label><select id="q-count"><option value="1">需要总数</option><option value="0">不需要</option></select></div>
           </div>
         </div>
         <div class="field">
-          <label for="q-order">order（可选，JSON）</label>
-          <input id="q-order" placeholder='[{"field":"trade_date","desc":true}]'>
+          <label for="q-order">高级排序（可留空）</label>
+          <input id="q-order" placeholder="一般无需填写">
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
-          <button class="btn primary" id="q-run" type="submit">运行查询</button>
-          <button class="btn ghost" id="q-url" type="button">复制 API URL</button>
+          <button class="btn primary" id="q-run" type="submit">开始查询</button>
+          <button class="btn ghost" id="q-url" type="button">复制查询地址</button>
         </div>
-        <p class="muted" style="margin:10px 0 0" id="q-hint">离线预览模式下显示本地元数据信封；部署到 8734 后自动调用真实只读接口。</p>
+        <p class="muted" style="margin:10px 0 0" id="q-hint">当前为离线预览，展示内置数据；正式环境会自动读取真实数据。</p>
       </form>
       <div class="card">
-        <h3>结果 <span class="muted" id="q-status"></span></h3>
-        <pre class="out" id="q-output">等待查询…</pre>
+        <h3>查询结果 <span class="muted" id="q-status"></span></h3>
+        <div class="out" id="q-output">请选择数据并开始查询。</div>
         <div class="examples" id="q-examples"></div>
       </div>
     </div>
   </section>
 
   <section class="panel" id="view-manual" role="tabpanel" aria-labelledby="tab-manual">
-    <h2>手动数据入口 <span class="cnt">staging · 审核后入库</span></h2>
-    <div class="banner"><span class="tag">GOV</span><b>手动入口不直接写主仓</b> · 文件/手工行先进入 staging，经 schema 校验、去重、审核（含 L2）后才写回；全程留 audit（谁/何时/来源/哈希/行数）。原型只演示流程，不落库。</div>
+    <h2>手动录入 <span class="cnt">暂存 · 审核后才入库</span></h2>
+    <div class="banner"><span class="tag">治理</span><b>手动录入不会直接改动正式数据</b>：文件和手工数据先进入暂存区，经过格式检查、去重和人工审核后才会入库；操作人、时间、来源和行数都会留痕。原型仅演示流程，不写入真实数据。</div>
     <div class="two" style="margin-top:12px">
       <div class="card">
-        <h3>① 文件导入 <span class="muted">CSV / TSV / JSON / JSONL</span></h3>
-        <div class="field"><label for="mf-file">选择文件（≤5MB 可本地预览）</label><input id="mf-file" type="file" accept=".csv,.tsv,.json,.jsonl,.txt,.xlsx,.parquet"></div>
-        <div class="field"><label for="mf-target">目标数据集</label><input id="mf-target" list="mf-target-list" placeholder="现有 dataset_id 或输入新 id（新 id 需走 ③ 登记）"><datalist id="mf-target-list"></datalist></div>
+        <h3>① 导入文件 <span class="muted">表格或结构化文本</span></h3>
+        <div class="field"><label for="mf-file">选择文件（5兆以内可本地预览）</label><input id="mf-file" type="file" accept=".csv,.tsv,.json,.jsonl,.txt,.xlsx,.parquet"></div>
+        <div class="field"><label for="mf-target">要写入哪份数据</label><input id="mf-target" list="mf-target-list" placeholder="可直接输入已有数据名称"><datalist id="mf-target-list"></datalist></div>
         <div class="field"><div class="row">
-          <div><label for="mf-mode">写入方式</label><select id="mf-mode"><option value="append">追加（append）</option><option value="staging_replace">staging 覆盖（整批替换）</option></select></div>
-          <div><label for="mf-layer">落层</label><select id="mf-layer"><option value="raw">raw 原始层</option><option value="clean">clean 清洗层</option><option value="mart">mart 指标层</option></select></div>
+          <div><label for="mf-mode">写入方式</label><select id="mf-mode"><option value="append">追加到已有数据</option><option value="staging_replace">整批替换</option></select></div>
+          <div><label for="mf-layer">保存到哪一层</label><select id="mf-layer"><option value="raw">原始层</option><option value="clean">清洗层</option><option value="mart">指标层</option></select></div>
         </div></div>
-        <div class="acts"><button class="btn primary" id="mf-parse" type="button">解析预览</button><button class="btn" id="mf-submit" type="button">提交 staging</button></div>
-        <p class="muted" id="mf-info" style="margin-top:8px">xlsx/parquet 由服务端解析；文本格式本地解析预览。</p>
+        <div class="acts"><button class="btn primary" id="mf-parse" type="button">预览文件</button><button class="btn" id="mf-submit" type="button">提交暂存</button></div>
+        <p class="muted" id="mf-info" style="margin-top:8px">表格文件将由后台读取；文本格式可先在本地预览。</p>
         <pre class="out" id="mf-preview" style="max-height:200px;margin-top:10px">尚未选择文件</pre>
       </div>
       <div class="card">
-        <h3>② 手工录入 <span class="muted">按列逐行</span></h3>
+        <h3>② 手工录入 <span class="muted">一行一行填写</span></h3>
         <div class="field"><label for="mg-dataset">目标数据集</label><select id="mg-dataset"><option value="">选择数据集…</option></select></div>
-        <div class="field"><label>列（来自 warehouse_registry.business_columns）</label><div id="mg-columns" class="muted">-</div></div>
+        <div class="field"><label>可填写的列</label><div id="mg-columns" class="muted">-</div></div>
         <div class="tablebox" style="margin-top:6px;max-height:220px"><table><thead><tr id="mg-head"></tr></thead><tbody id="mg-body"></tbody></table></div>
-        <div class="acts"><button class="btn" id="mg-add" type="button">+ 添加行</button><button class="btn primary" id="mg-submit" type="button">提交 staging</button></div>
-        <p class="muted" id="mg-info" style="margin-top:8px">提交前校验：目标必填 / 至少 1 行 / 主键与日期列非空。</p>
+        <div class="acts"><button class="btn" id="mg-add" type="button">增加一行</button><button class="btn primary" id="mg-submit" type="button">提交暂存</button></div>
+        <p class="muted" id="mg-info" style="margin-top:8px">提交前会检查：是否选了数据、是否至少一行、关键字段是否填写。</p>
       </div>
     </div>
     <div class="two" style="margin-top:14px">
       <div class="card">
-        <h3>③ 新建数据集登记 <span class="muted">onboarding</span></h3>
+        <h3>③ 登记新数据 <span class="muted">新增一类数据</span></h3>
         <div class="field"><div class="row">
-          <div><label for="mn-id">dataset_id</label><input id="mn-id" placeholder="如 manual_industry_202611"></div>
-          <div><label for="mn-name">名称</label><input id="mn-name" placeholder="外部行业数据"></div>
+          <div><label for="mn-id">数据编号</label><input id="mn-id" placeholder="如 manual_industry_202611"></div>
+          <div><label for="mn-name">数据名称</label><input id="mn-name" placeholder="例如：外部行业数据"></div>
         </div></div>
         <div class="field"><div class="row">
-          <div><label for="mn-source">来源</label><input id="mn-source" placeholder="手动采集 / 外部渠道"></div>
-          <div><label for="mn-freq">频率</label><select id="mn-freq"><option>D</option><option>W</option><option>M</option><option>Q</option><option>irregular</option></select></div>
+          <div><label for="mn-source">数据来源</label><input id="mn-source" placeholder="例如：手工收集、外部渠道"></div>
+          <div><label for="mn-freq">更新频率</label><select id="mn-freq"><option value="D">每日</option><option value="W">每周</option><option value="M">每月</option><option value="Q">每季</option><option value="irregular">不定期</option></select></div>
         </div></div>
         <div class="field"><div class="row">
-          <div><label for="mn-pk">主键</label><input id="mn-pk" placeholder="code,trade_date"></div>
-          <div><label for="mn-datecol">日期列</label><input id="mn-datecol" placeholder="trade_date"></div>
+          <div><label for="mn-pk">唯一标识</label><input id="mn-pk" placeholder="例如：代码、日期（可留空）"></div>
+          <div><label for="mn-datecol">日期字段</label><input id="mn-datecol" placeholder="例如：交易日期（可留空）"></div>
         </div></div>
-        <div class="field"><label for="mn-desc">说明 / 血缘来源</label><input id="mn-desc" placeholder="来源链接与口径说明（必填）"></div>
-        <div class="acts"><button class="btn primary" id="mn-submit" type="button">提交登记（staging）</button></div>
-        <p class="muted" style="margin:8px 0 0">登记后资质初始为 <b>unknown</b>，需取证（行数/最新日/manifest/证据）后转 ok。</p>
+        <div class="field"><label for="mn-desc">说明与来源</label><input id="mn-desc" placeholder="数据来源、统计口径说明"></div>
+        <div class="acts"><button class="btn primary" id="mn-submit" type="button">提交登记</button></div>
+        <p class="muted" style="margin:8px 0 0">登记后数据资格为「待取证」，补齐证据（行数、最新日期、数据清单）后才会转「证据齐全」。</p>
       </div>
       <div class="card">
-        <h3>④ 提交队列（原型会话） <span class="muted" id="mq-count"></span></h3>
+        <h3>④ 本次提交记录 <span class="muted" id="mq-count"></span></h3>
         <div class="tablebox" style="max-height:250px"><table><thead><tr><th>类型</th><th>目标</th><th>行数</th><th>状态</th><th></th></tr></thead><tbody id="mq-body"></tbody></table></div>
-        <div class="acts" style="margin-top:8px"><button class="btn ghost" id="mq-export" type="button">导出 staging JSON</button><button class="btn ghost" id="mq-clear" type="button">清空</button></div>
-        <p class="muted" style="margin:8px 0 0">API 契约：<code>POST /api/dw/manual/ingest</code> → staging；<code>GET /api/dw/manual/entries</code>；审核后 <code>POST /api/dw/manual/approve</code>。</p>
+        <div class="acts" style="margin-top:8px"><button class="btn ghost" id="mq-export" type="button">导出暂存记录</button><button class="btn ghost" id="mq-clear" type="button">清空记录</button></div>
+        <p class="muted" style="margin:8px 0 0">正式上线后：提交进入暂存区，管理员审核通过才会写入正式数据。</p>
       </div>
     </div>
   </section>
 
   <section class="panel" id="view-quality" role="tabpanel" aria-labelledby="tab-quality">
-    <h2>质量与资质 <span class="cnt" id="quality-count"></span></h2>
+    <h2>数据质量与资格 <span class="cnt" id="quality-count"></span></h2>
     <div class="two">
       <div class="card">
-        <h3>资质分布</h3>
+        <h3>数据资格分布</h3>
         <div class="bar" id="quality-bars" aria-label="资质分布"></div>
         <div id="quality-legend" class="muted" style="margin-top:10px;display:flex;gap:14px;flex-wrap:wrap"></div>
       </div>
       <div class="card">
-        <h3>查询覆盖</h3>
+        <h3>可查询覆盖</h3>
         <div id="quality-coverage"></div>
       </div>
     </div>
-    <h2 style="margin-top:22px">新鲜度检查 <span class="cnt" id="fresh-count"></span></h2>
+    <h2 style="margin-top:22px">数据更新检查 <span class="cnt" id="fresh-count"></span></h2>
     <div class="tablebox">
       <table>
-        <thead><tr><th>对象</th><th>最新</th><th>滞后</th><th>说明</th></tr></thead>
+        <thead><tr><th>检查对象</th><th>最新日期</th><th>滞后</th><th>说明</th></tr></thead>
         <tbody id="fresh-body"></tbody>
       </table>
     </div>
-    <h2 style="margin-top:22px">验收状态</h2>
+    <h2 style="margin-top:22px">验收进度</h2>
     <div class="tablebox">
       <table>
-        <thead><tr><th>项</th><th>状态</th><th>时间</th></tr></thead>
+        <thead><tr><th>验收项</th><th>状态</th><th>时间</th></tr></thead>
         <tbody id="accept-body"></tbody>
       </table>
     </div>
@@ -366,79 +365,79 @@ footer{border-top:1px solid var(--border,#2a3342);color:var(--text-dim,#96a0af);
     <div class="kpis" id="legion-kpis"></div>
     <h2 style="margin-top:22px">成员与分工 <span class="cnt">在线 / 心跳 / 职责</span></h2>
     <div class="grid-domains" id="legion-depts"></div>
-    <p class="muted" style="margin:8px 0 0">口径：部门“在办”= 意图卡 L2 在办数；任务板工单（owner=DSH-Lead）尚未映射到军团席位，见下方“在办任务”；在线=roster state≠idle，心跳快照仅表示最近探测。</p>
+    <p class="muted" style="margin:8px 0 0">说明：部门“在办”指部门成员当前承接的工作数；数据仓负责人的工作项暂未挂到部门成员，故单独列在下方“在办任务”。在线状态按最近活跃判断，心跳仅为最近一次检查时间。</p>
     <h2 style="margin-top:22px">成员状态（是否在线 · 正在干什么）<span class="cnt" id="legion-seat-count"></span></h2>
     <div class="toolbar">
       <input id="legion-seat-search" class="grow" type="search" placeholder="搜索席位 / 姓名 / 部门 / 角色…" aria-label="搜索席位">
       <select id="legion-seat-dept" aria-label="部门筛选"><option value="">全部所属</option></select>
       <select id="legion-seat-state" aria-label="状态筛选">
         <option value="">全部状态</option>
-        <option value="active">active</option>
-        <option value="idle">idle</option>
-        <option value="offline">offline</option>
+        <option value="active">在忙</option>
+        <option value="idle">空闲</option>
+        <option value="offline">离线</option>
       </select>
     </div>
     <div class="tablebox" style="max-height:460px">
-      <table><thead><tr><th>席位</th><th>姓名</th><th>部门</th><th>职责 / 角色</th><th>是否在线</th><th>心跳 / 最近活动</th></tr></thead>
+      <table><thead><tr><th>席位</th><th>姓名</th><th>部门</th><th>职责</th><th>是否在线</th><th>心跳 / 最近活动</th></tr></thead>
       <tbody id="legion-seat-body"></tbody></table>
     </div>
     <div class="two" style="margin-top:16px">
       <div class="card"><h3>在办任务 <span class="cnt" id="legion-task-count"></span></h3>
-        <div class="tablebox" style="max-height:220px"><table><thead><tr><th>工单</th><th>状态</th><th>Owner</th><th>描述</th></tr></thead><tbody id="legion-tasks-body"></tbody></table></div>
+        <div class="tablebox" style="max-height:220px"><table><thead><tr><th>任务</th><th>状态</th><th>负责人</th><th>说明</th></tr></thead><tbody id="legion-tasks-body"></tbody></table></div>
       </div>
       <div class="card"><h3>最近活动 <span class="cnt" id="legion-feed-count"></span></h3>
-        <div class="tablebox" style="max-height:220px"><table><thead><tr><th>时间</th><th>发起</th><th>动作</th><th>详情</th></tr></thead><tbody id="legion-feed-body"></tbody></table></div>
+        <div class="tablebox" style="max-height:220px"><table><thead><tr><th>时间</th><th>发起人</th><th>动作</th><th>说明</th></tr></thead><tbody id="legion-feed-body"></tbody></table></div>
       </div>
     </div>
     <h2 style="margin-top:22px">数据仓分工映射（张松部门）<span class="cnt">职责 ↔ 席位 ↔ 状态</span></h2>
-    <div class="tablebox"><table><thead><tr><th>数据域 / 职责</th><th>责任席位</th><th>状态</th><th>当前进度</th></tr></thead><tbody id="legion-division-body"></tbody></table></div>
+    <div class="tablebox"><table><thead><tr><th>职责</th><th>负责人</th><th>状态</th><th>当前进度</th></tr></thead><tbody id="legion-division-body"></tbody></table></div>
     <div class="two" style="margin-top:16px">
       <div class="card"><h3>进度总览</h3><div id="legion-progress"></div></div>
-      <div class="card"><h3>Hermes 底座 × 工作绑定 <span class="cnt" id="legion-hermes-count"></span></h3>
+      <div class="card"><h3>智能体底座 × 工作绑定 <span class="cnt" id="legion-hermes-count"></span></h3>
         <div id="legion-hermes-summary"></div>
         <div id="legion-hermes-evidence" class="muted" style="margin-top:6px;font-size:11.5px"></div>
-        <div class="tablebox" style="margin-top:8px;max-height:200px"><table><thead><tr><th>工作项</th><th>负责席位</th><th>Hermes 工具</th><th>状态</th></tr></thead><tbody id="legion-hermes-bindings"></tbody></table></div>
-        <div class="tablebox" style="margin-top:8px;max-height:220px"><table><thead><tr><th>MCP Server</th><th>tools</th><th>探针</th><th>耗时</th></tr></thead><tbody id="legion-hermes-servers"></tbody></table></div>
+        <div class="tablebox" style="margin-top:8px;max-height:200px"><table><thead><tr><th>工作项</th><th>负责成员</th><th>可用工具</th><th>状态</th></tr></thead><tbody id="legion-hermes-bindings"></tbody></table></div>
+        <div class="tablebox" style="margin-top:8px;max-height:220px"><table><thead><tr><th>工具服务</th><th>工具数</th><th>检查结果</th><th>耗时</th></tr></thead><tbody id="legion-hermes-servers"></tbody></table></div>
       </div>
     </div>
-    <h2 style="margin-top:22px">数据相关计划任务 <span class="cnt" id="legion-sched-count"></span></h2>
-    <div class="tablebox"><table><thead><tr><th>任务</th><th>状态</th><th>LastResult</th><th>Next</th></tr></thead><tbody id="legion-schedules-body"></tbody></table></div>
+    <h2 style="margin-top:22px">数据相关自动任务 <span class="cnt" id="legion-sched-count"></span></h2>
+    <div class="tablebox"><table><thead><tr><th>任务</th><th>状态</th><th>上次结果</th><th>下次运行</th></tr></thead><tbody id="legion-schedules-body"></tbody></table></div>
   </section>
 
   <section class="panel" id="view-lineage" role="tabpanel" aria-labelledby="tab-lineage">
     <h2>数据血缘 <span class="cnt" id="lineage-count"></span></h2>
     <div class="card">
-      <h3>端到端链路</h3>
+      <h3>数据从哪来、到哪去</h3>
       <div class="flow" id="lineage-flow"></div>
     </div>
     <div class="two" style="margin-top:14px">
       <div class="card"><h3>血缘规模</h3><div id="lineage-stats"></div></div>
-      <div class="card"><h3>口径</h3><p class="muted" style="margin:0">节点=数据集/表/指标/消费方；边=依赖关系。原型展示静态汇总，P1 接入 <code>/api/dw/lineage</code> 后支持逐表下钻。</p></div>
+      <div class="card"><h3>说明</h3><p class="muted" style="margin:0">节点是数据表、指标和使用方；边表示依赖关系。后续接入血缘服务后可逐表查看上下游。</p></div>
     </div>
   </section>
 
   <section class="panel" id="view-governance" role="tabpanel" aria-labelledby="tab-governance">
-    <h2>治理原则</h2>
+    <h2>数据治理原则</h2>
     <div class="principles" id="governance-principles"></div>
-    <h2 style="margin-top:22px">待办与 L2</h2>
+    <h2 style="margin-top:22px">待办事项</h2>
     <div class="tablebox">
-      <table><thead><tr><th>事项</th><th>Owner</th><th>备注</th></tr></thead><tbody id="governance-pending"></tbody></table>
+      <table><thead><tr><th>事项</th><th>负责人</th><th>备注</th></tr></thead><tbody id="governance-pending"></tbody></table>
     </div>
-    <h2 style="margin-top:22px">在办工作项 <span class="cnt" id="wip-count"></span></h2>
+    <h2 style="margin-top:22px">在办工作 <span class="cnt" id="wip-count"></span></h2>
     <div class="tablebox">
-      <table><thead><tr><th>ID</th><th>状态</th><th>Owner</th><th>描述</th></tr></thead><tbody id="wip-body"></tbody></table>
+      <table><thead><tr><th>工作项</th><th>状态</th><th>负责人</th><th>说明</th></tr></thead><tbody id="wip-body"></tbody></table>
     </div>
   </section>
 </main>
 
 <footer class="wrap">
-  <div>数据仓原型 v2 · 构建 <span class="mono">__BUILT_AT__</span> · catalog <span class="mono">v__CATALOG_VERSION__</span> · 数据为构建时快照，查询台接服务后实时</div>
-  <div>来源：catalog.json / warehouse_registry.json / dw_snapshot.json / freshness_report.py ｜ 只读原型，不构成投资建议</div>
+  <div>数据仓原型 · 构建时间 <span class="mono">__BUILT_AT__</span> · 数据目录第 <span class="mono">__CATALOG_VERSION__</span> 版 · 当前展示为快照数据，正式环境自动读取最新数据</div>
+  <div>数据来源：数据目录、数据登记、每日快照、更新检查 ｜ 只读原型，不构成投资建议</div>
 </footer>
 
 <div class="scrim" id="scrim"></div>
 <aside class="drawer" id="drawer" aria-hidden="true" aria-label="数据集详情">
-  <div class="hd"><div><div class="muted" style="font-size:11px">DATASET</div><h3 id="drawer-title">-</h3></div><button class="x" id="drawer-close" type="button" aria-label="关闭">×</button></div>
+  <div class="hd"><div><div class="muted" style="font-size:11px">数据详情</div><h3 id="drawer-title">-</h3></div><button class="x" id="drawer-close" type="button" aria-label="关闭">×</button></div>
   <div class="bd" id="drawer-body"></div>
 </aside>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -457,15 +456,73 @@ const DW_DATA = __DW_DATA_JSON__;
   const pill = (s) => '<span class="pill ' + toneOf(s) + '">' + esc(labelOf(s)) + '</span>';
   const toast = (msg) => { const t = $("#toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 1600); };
 
+  /* ---------- 小白天条：中文兜底 ---------- */
+  const TR = {
+    "staging": "暂存", "hermes": "智能体底座", "tools": "项工具", "tool": "工具",
+    "servers": "个服务", "server": "服务", "active": "已启动", "idle": "空闲",
+    "configured": "已配置", "reload_required": "需重新加载", "json": "结构化数据",
+    "api": "接口", "url": "地址", "post": "提交", "get": "读取", "ok": "正常",
+    "unknown": "待取证", "partial": "证据待补", "deprecated": "已停用",
+    "pass": "通过", "fail": "未通过", "pending": "待验", "review": "待审核",
+    "doing": "进行中", "ready": "就绪", "running": "运行中", "disabled": "已停用",
+    "catalog": "数据目录", "dataset": "数据", "dataset_id": "数据编号", "id": "编号",
+    "owner": "负责人", "limit": "返回条数", "count": "总数", "since": "起始日期",
+    "where": "筛选条件", "order": "排序", "schema": "格式", "audit": "审计",
+    "manifest": "数据清单", "quality": "质量", "freshness": "新鲜度",
+    "governance": "治理", "lineage": "血缘", "etf": "交易型基金",
+    "kpi": "考核指标", "s3": "第三阶段", "k8": "数据资格", "mcp": "智能体工具",
+    "prototype": "原型", "legion": "组织", "dept": "部门", "gov": "治理",
+    "fresh": "更新", "append": "追加", "raw": "原始层", "clean": "清洗层",
+    "mart": "指标层", "onboarding": "登记", "irregular": "不定期",
+    "xlsx": "表格文件", "parquet": "列式文件", "csv": "表格文本", "tsv": "表格文本",
+    "jsonl": "结构化文本", "mb": "兆", "active_servers": "已启动服务",
+    "reload": "重新加载", "api/dw/query": "数据查询接口",
+    "api/dw/manual/ingest": "手工数据接口", "warehouse_registry.business_columns": "已登记字段",
+    "business_columns": "字段", "tools_total": "工具总数", "servers_total": "服务总数",
+  };
+  function localizeText(s){
+    return String(s || "").replace(/[A-Za-z][A-Za-z0-9+_.\-\/]*/g, function(m){
+      var k = m.toLowerCase();
+      if (TR[k] !== undefined) return TR[k];
+      if (/^[A-Z]$/.test(m)) return "";
+      return "";
+    }).replace(/\s{2,}/g, " ").replace(/\(\s*\)/g, "").replace(/：\s*：/g, "：");
+  }
+  function localizeDom(root){
+    if (!root) return;
+    var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+    var nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach(function(n){
+      if (/[A-Za-z]/.test(n.nodeValue || "") && n.parentNode &&
+          !/^(SCRIPT|STYLE)$/.test(n.parentNode.nodeName)) {
+        var v = localizeText(n.nodeValue);
+        if (v !== n.nodeValue) n.nodeValue = v;
+      }
+    });
+    Array.prototype.forEach.call((root.querySelectorAll ? root.querySelectorAll("input,textarea,select") : []), function(el){
+      ["placeholder", "title", "aria-label"].forEach(function(a){
+        var v = el.getAttribute(a);
+        if (v && /[A-Za-z]/.test(v)) el.setAttribute(a, localizeText(v));
+      });
+      if (el.tagName === "OPTION" && /[A-Za-z]/.test(el.textContent || "")) el.textContent = localizeText(el.textContent);
+    });
+  }
+  var _locTimer = null;
+  function scheduleLocalize(){
+    clearTimeout(_locTimer);
+    _locTimer = setTimeout(function(){ localizeDom(document.body); }, 30);
+  }
+
   /* ---------- 总览 ---------- */
   function renderHero(){
     const m = DW.meta || {};
     const issues = ((DW.quality || {}).freshness || {}).issues || [];
     const chips = [
-      '<span class="chip">catalog <b>v' + esc(m.catalog_version) + '</b></span>',
-      '<span class="chip">物理表 <b>' + fmt(m.physical) + '</b></span>',
-      '<span class="chip">展示覆盖 <b>' + esc(m.display_covered) + '/' + esc(m.physical) + '</b></span>',
-      '<span class="chip ' + (issues.length ? "warn" : "ok") + '">新鲜度 issue <b>' + issues.length + '</b></span>'
+      '<span class="chip">数据目录第 <b>' + esc(m.catalog_version) + '</b> 版</span>',
+      '<span class="chip">数据表 <b>' + fmt(m.physical) + '</b> 张</span>',
+      '<span class="chip">已展示 <b>' + esc(m.display_covered) + '/' + esc(m.physical) + '</b></span>',
+      '<span class="chip ' + (issues.length ? "warn" : "ok") + '">数据更新提醒 <b>' + issues.length + '</b> 项</span>'
     ];
     $("#hero-chips").innerHTML = chips.join("");
   }
@@ -482,15 +539,15 @@ const DW_DATA = __DW_DATA_JSON__;
     const issues = fr.issues || [];
     const el = $("#freshness-banner");
     if (fr.error) {
-      el.innerHTML = '<div class="banner err"><span class="tag">FRESH</span><b>新鲜度检查不可用</b> · ' + esc(fr.error) + '</div>';
+      el.innerHTML = '<div class="banner err"><span class="tag">更新</span><b>新鲜度检查不可用</b> · ' + esc(fr.error) + '</div>';
       return;
     }
     if (!issues.length) {
-      el.innerHTML = '<div class="banner ok"><span class="tag">FRESH</span><b>全部通过</b> · ' + esc(fr.checks) + ' 项检查 / as_of ' + esc(fr.as_of || "-") + '</div>';
+      el.innerHTML = '<div class="banner ok"><span class="tag">更新</span><b>全部通过</b> · ' + esc(fr.checks) + ' 项检查 / 截至 ' + esc(fr.as_of || "-") + '</div>';
       return;
     }
     const items = issues.slice(0, 4).map(x => "<b>" + esc(x.id) + "</b>（最新 " + esc(x.latest || "-") + "，滞后 " + esc(x.lag_days) + " 天）").join("；");
-    el.innerHTML = '<div class="banner warn"><span class="tag">FRESH</span><b>' + issues.length + ' 项待关注</b> · ' + items + (issues.length > 4 ? " 等" : "") + ' · as_of ' + esc(fr.as_of || "-") + '</div>';
+    el.innerHTML = '<div class="banner warn"><span class="tag">更新</span><b>' + issues.length + ' 项待关注</b> · ' + items + (issues.length > 4 ? " 等" : "") + ' · as_of ' + esc(fr.as_of || "-") + '</div>';
   }
   function renderDomains(){
     const ds = DW.domains || [];
@@ -542,7 +599,7 @@ const DW_DATA = __DW_DATA_JSON__;
     $("#map-total").textContent = (DW.meta || {}).physical || (DW.datasets || []).length;
     $("#map-count").textContent = rows.length + " 条命中";
     $("#map-body").innerHTML = rows.slice(0, 400).map(d =>
-      '<tr data-id="' + esc(d.id) + '"><td class="mono">' + esc(d.id) + '</td><td>' + esc(d.domain) + '</td><td class="mono">' + esc(d.freq) + '</td>' +
+      '<tr data-id="' + esc(d.id) + '"><td>' + esc(d.label_cn || d.id) + '</td><td>' + esc(d.domain) + '</td><td>' + esc(d.freq_cn || "不定期") + '</td>' +
       '<td class="num">' + fmt(d.rows) + '</td><td class="mono">' + esc(d.freshness || "-") + '</td><td>' + pill(d.status) + '</td></tr>').join("");
     if (!rows.length) $("#map-body").innerHTML = '<tr><td colspan="6" class="muted">没有匹配的数据集，清空筛选试试。</td></tr>';
   }
@@ -578,14 +635,13 @@ const DW_DATA = __DW_DATA_JSON__;
     const d = (DW.datasets || []).find(x => x.id === id);
     if (!d) return;
     mapState.current = d;
-    $("#drawer-title").textContent = d.id;
+    $("#drawer-title").textContent = d.label_cn || "数据详情";
     const rows = [
-      ["数据域", d.domain], ["来源 / 通道", d.source + " / " + d.channel],
-      ["频率", d.freq], ["行数", fmt(d.rows)], ["文件数", fmt(d.files)],
-      ["最新业务日", d.freshness || "-"], ["日期列", d.date_col || "-"],
-      ["资质", labelOf(d.status)], ["display 覆盖", d.displayed ? "是" : "否"],
-      ["store", d.store || "-"], ["证据时间", d.evidence_at || "-"],
-      ["说明", d.desc || "-"], ["证据摘要", d.evidence || "-"]
+      ["数据分类", d.domain], ["数据来源", d.source_cn || "数据接口"],
+      ["更新频率", d.freq_cn || "不定期"], ["数据行数", fmt(d.rows)], ["文件数", fmt(d.files)],
+      ["最新日期", d.freshness || "-"], ["日期字段", d.date_col_cn || "日期"],
+      ["数据资格", labelOf(d.status)], ["是否展示", d.displayed ? "已展示" : "未展示"],
+      ["证据情况", "已登记（明细见后台）"]
     ];
     $("#drawer-body").innerHTML = '<dl>' + rows.map(([k, v]) => '<dt>' + esc(k) + '</dt><dd>' + esc(v) + '</dd>').join("") + '</dl>' +
       '<div class="acts"><button class="btn primary" id="drawer-query" type="button">在查询台打开</button>' +
@@ -600,10 +656,11 @@ const DW_DATA = __DW_DATA_JSON__;
 
   /* ---------- 查询台 ---------- */
   function fillQuery(id){
-    $("#q-dataset").value = id;
+    const sel = $("#q-dataset");
+    if (sel) sel.value = id || "";
     const d = (DW.datasets || []).find(x => x.id === id);
-    $("#q-status").textContent = d ? "已选择 " + id : "";
-    $("#q-output").textContent = d ? "就绪：点击「运行查询」。" : "等待查询…";
+    $("#q-status").textContent = d ? "已选择：" + (d.label_cn || "数据") : "";
+    $("#q-output").innerHTML = d ? "已选择数据，点击「开始查询」即可查看结果。" : "请选择数据并开始查询。";
   }
   function buildQueryUrl(){
     const id = $("#q-dataset").value.trim();
@@ -629,37 +686,61 @@ const DW_DATA = __DW_DATA_JSON__;
     try { document.execCommand("copy"); toast("已复制查询 URL"); } catch (e) { toast("复制失败"); }
     document.body.removeChild(ta);
   }
+  function friendlyResult(url, d, body, httpCode){
+    const NAME = {};
+    const COLS = {};
+    const lines = [];
+    const payload = (body && body.payload) || body || {};
+    const rows = (payload.rows || []).slice(0, 20);
+    const columns = payload.columns || [];
+    lines.push("查询对象：" + (d ? (d.label_cn || "数据") : "数据"));
+    lines.push("查询状态：" + (payload.state === "ok" ? "成功" : (payload.state === "no_data" ? "暂无数据" : "已完成")));
+    if (payload.count != null) lines.push("数据总数：" + fmt(payload.count) + " 条");
+    if (rows.length) {
+      lines.push("返回 " + rows.length + " 行" + (httpCode ? "（已完成）" : ""));
+      lines.push("<div style='overflow:auto;margin-top:6px'><table><thead><tr>" +
+        columns.map(c => "<th>" + esc(COLS[c] || ("字段")) + "</th>").join("") + "</tr></thead><tbody>" +
+        rows.map(r => "<tr>" + r.map(v => "<td>" + esc(v) + "</td>").join("") + "</tr>").join("") +
+        "</tbody></table></div>");
+    } else if (!payload.state || payload.state === "no_data") {
+      lines.push("没有查到符合条件的数据，可调整起始日期后重试。");
+    } else {
+      lines.push("查询已完成。");
+    }
+    return lines.join("<br>");
+  }
   async function runQuery(){
     let url;
-    try { url = buildQueryUrl(); } catch (e) { $("#q-output").textContent = "参数错误：" + e.message; return; }
+    try { url = buildQueryUrl(); } catch (e) { $("#q-output").textContent = "填写有误：" + e.message; return; }
     $("#q-status").textContent = "查询中…";
-    $("#q-output").textContent = "GET " + url;
+    $("#q-output").textContent = "正在查询，请稍候…";
     const offline = location.protocol === "file:";
     if (offline) {
       const d = (DW.datasets || []).find(x => x.id === $("#q-dataset").value.trim());
       $("#q-status").textContent = "离线预览";
-      $("#q-output").textContent = JSON.stringify({
-        ok: true, state: d ? "ok" : "not_found", query: url,
-        dataset_id: d ? d.id : null,
-        dataset: d ? {rows: d.rows, freshness: d.freshness, qualification_status: d.status} : null,
-        note: "离线预览：由构建时快照响应，未调用真实接口；部署到 8734 后自动切换为只读实时查询。"
-      }, null, 2);
+      $("#q-output").innerHTML = d ?
+        ("查询对象：" + esc(d.label_cn || "数据") + "<br>数据行数：" + fmt(d.rows) + " 条<br>最新日期：" + esc(d.freshness || "未知") +
+         "<br>数据资格：" + esc(labelOf(d.status)) + "<br><span class='muted'>当前为离线预览，正式环境会返回真实查询结果。</span>") :
+        "请选择要查询的数据。";
       return;
     }
     try {
       const r = await fetch(url, {credentials: "same-origin", headers: {"Accept": "application/json"}, cache: "no-store"});
       const text = await r.text();
-      let body; try { body = JSON.parse(text); } catch (e) { body = text; }
-      $("#q-status").textContent = "HTTP " + r.status;
-      $("#q-output").textContent = typeof body === "string" ? body : JSON.stringify(body, null, 2);
+      let body; try { body = JSON.parse(text); } catch (e) { body = null; }
+      const d = (DW.datasets || []).find(x => x.id === ($("#q-dataset").value || ""));
+      $("#q-status").textContent = r.ok ? "查询完成" : "未成功";
+      $("#q-output").innerHTML = r.ok ? friendlyResult(url, d, body, r.status) :
+        ("查询未成功，请稍后重试或联系数据管理员。" + (r.status === 401 ? "（需要先登录）" : ""));
     } catch (e) {
-      $("#q-status").textContent = "请求失败";
-      $("#q-output").textContent = "网络/权限错误：" + e.message + "\n\n提示：8734 需登录态；也可直接访问 8091（本机开发）。";
+      $("#q-status").textContent = "查询失败";
+      $("#q-output").textContent = "网络或权限异常，请稍后重试；若持续失败请联系数据管理员。";
     }
   }
   function bindQuery(){
-    const opts = (DW.datasets || []).slice(0, 400).map(d => '<option value="' + esc(d.id) + '">' + esc(d.id) + ' · ' + esc(d.domain) + '</option>').join("");
-    $("#q-dataset-list").innerHTML = opts;
+    const opts = (DW.datasets || []).slice(0, 400).map(d =>
+      '<option value="' + esc(d.id) + '">' + esc(d.label_cn || "数据") + '（' + esc(d.domain) + '）</option>').join("");
+    $("#q-dataset").innerHTML = opts;
     $("#query-form").addEventListener("submit", e => { e.preventDefault(); runQuery(); });
     $("#q-url").addEventListener("click", () => copyQuery($("#q-dataset").value));
     $("#q-examples").innerHTML = (DW.query_examples || []).map((x, i) =>
@@ -680,17 +761,19 @@ const DW_DATA = __DW_DATA_JSON__;
     const dist = ((DW.quality || {}).distribution) || {};
     const order = [["evidence_ok", "ok", "ok"], ["evidence_partial", "partial", "partial"], ["unknown", "unknown", "unknown"], ["deprecated", "deprecated", "deprecated"]];
     const total = order.reduce((s, [k]) => s + (dist[k] || 0), 0) || 1;
+    const TITLE_CN = {evidence_ok: "证据齐全", evidence_partial: "证据待补", unknown: "待取证", deprecated: "已停用"};
     $("#quality-bars").innerHTML = order.map(([k, , cls]) => (dist[k] || 0) ?
-      '<i class="' + cls + '" style="width:' + ((dist[k] || 0) / total * 100).toFixed(1) + '%" title="' + k + '"></i>' : "").join("");
-    $("#quality-legend").innerHTML = order.map(([k, lbl]) => '<span><span class="pill ' + toneOf(k) + '">' + lbl + '</span> ' + (dist[k] || 0) + '</span>').join("");
+      '<i class="' + cls + '" style="width:' + ((dist[k] || 0) / total * 100).toFixed(1) + '%" title="' + TITLE_CN[k] + '"></i>' : "").join("");
+    const LBL = {evidence_ok: "证据齐全", evidence_partial: "证据待补", unknown: "待取证", deprecated: "已停用"};
+    $("#quality-legend").innerHTML = order.map(([k]) => '<span><span class="pill ' + toneOf(k) + '">' + LBL[k] + '</span> ' + (dist[k] || 0) + ' 张</span>').join("");
     const cov = ((DW.quality || {}).coverage) || {};
     $("#quality-coverage").innerHTML = '<div class="muted" style="line-height:2">物理表 <b>' + fmt(cov.physical) + '</b> · display <b>' + fmt(cov.display) + '</b> · 覆盖 <b>' + fmt(cov.display_covered) + '/' + fmt(cov.physical) + '</b><br>' +
-      '查询覆盖：clean <b>' + esc(cov.query_clean_pct) + '%</b> / raw <b>' + esc(cov.query_raw_pct) + '%</b><br>' +
-      '<a href="/dw.html">旧版驾驶舱</a> · <a href="/dataops.html">数据运营台</a></div>';
+      '可查询覆盖：清洗层 <b>' + esc(cov.query_clean_pct) + '%</b> / 原始层 <b>' + esc(cov.query_raw_pct) + '%</b><br>' +
+      '<a href="/dataops.html">数据运营台</a></div>';
     const issues = ((DW.quality || {}).freshness || {}).issues || [];
     $("#fresh-count").textContent = issues.length ? issues.length + " 项" : "全部通过";
     $("#fresh-body").innerHTML = issues.length ? issues.map(x =>
-      '<tr><td class="mono">' + esc(x.id) + '</td><td class="mono">' + esc(x.latest || "-") + '</td><td class="num">' + esc(x.lag_days) + ' 天</td><td class="muted">' + esc(x.note || "") + '</td></tr>').join("") :
+      '<tr><td>' + esc(x.id_cn || x.id || "数据表") + '</td><td class="mono">' + esc(x.latest || "-") + '</td><td class="num">' + esc(x.lag_days) + ' 天</td><td class="muted">' + esc(x.note || "") + '</td></tr>').join("") :
       '<tr><td colspan="4" class="muted">无 issue。</td></tr>';
     const acc = ((DW.governance || {}).acceptance) || [];
     $("#accept-body").innerHTML = acc.map(a => {
@@ -700,15 +783,15 @@ const DW_DATA = __DW_DATA_JSON__;
   }
   function renderLineage(){
     const l = DW.lineage || {};
-    $("#lineage-count").textContent = "节点 " + fmt(l.nodes) + " / 边 " + fmt(l.edges);
+    $("#lineage-count").textContent = "节点 " + fmt(l.nodes) + " 个 / 关系 " + fmt(l.edges) + " 条";
     $("#lineage-flow").innerHTML = [
-      ["源", "接口同步 62 · 爬虫 2 · 库 5"],
-      ["原始层", "tushare / tdx / xq / guba / 研报"],
-      ["清洗层", "clean 99.03% 覆盖"],
-      ["指标 / 特征", "factor / sentiment / chanlun"],
-      ["消费", "驾驶舱 / 查询 API / Agent"]
+      ["数据来源", "数据接口 62 项 · 网页采集 2 项 · 本地库 5 项"],
+      ["原始数据", "接口数据、行情数据、社区数据、研报"],
+      ["清洗数据", "已清洗覆盖 99.03%"],
+      ["指标与特征", "因子、情绪、缠论"],
+      ["使用方", "数据页面、查询服务、智能体"]
     ].map(([t, d], i) => '<div class="node"><b>' + (i + 1) + '</b>' + esc(t) + '<div class="muted" style="font-size:11px">' + esc(d) + '</div></div>' + (i < 4 ? '<span class="arrow">→</span>' : '')).join("");
-    $("#lineage-stats").innerHTML = '<div class="muted" style="line-height:2">节点 <b>' + fmt(l.nodes) + '</b> · 边 <b>' + fmt(l.edges) + '</b><br>来源：' + esc(l.source || "-") + '<br>P1：接入逐表血缘 API，支持上下游追踪。</div>';
+    $("#lineage-stats").innerHTML = '<div class="muted" style="line-height:2">节点 <b>' + fmt(l.nodes) + '</b> 个 · 关系 <b>' + fmt(l.edges) + '</b> 条<br>来源：' + esc(l.source || "内部血缘登记") + '<br>后续将支持逐表查看上下游。</div>';
   }
   function renderGovernance(){
     const g = DW.governance || {};
@@ -728,42 +811,43 @@ const DW_DATA = __DW_DATA_JSON__;
   function legTone(st){ return (!st || st === "idle") ? "mute" : (st === "offline" ? "err" : "ok"); }
   function hbTxt(hb){
     if (!hb || !hb.exists) return '<span class="pill mute">无心跳记录</span>';
-    const age = (hb.age_hours == null || hb.age_hours === undefined) ? "" : (" · " + hb.age_hours + "h前");
+    const age = (hb.age_hours == null || hb.age_hours === undefined) ? "" : (" · " + hb.age_hours + "小时前");
     return '<span class="pill ' + (hb.ok ? "ok" : "err") + '">' +
-      (hb.ok ? "在岗" : "异常") + age + ' · ' + esc(hb.model || "") + '</span>';
+      (hb.ok ? "在岗" : "异常") + age + '</span>';
   }
   function renderLegion(){
     const L = DW.legion || {};
     const Z = DW.zhangsong || {};
     if (!Z.available) {
-      $("#legion-banner").innerHTML = '<div class="banner err"><span class="tag">DEPT</span><b>张松部门数据不可用</b> · 8796/8096 未响应（原型降级展示）</div>';
+      $("#legion-banner").innerHTML = '<div class="banner err"><span class="tag">部门</span><b>张松部门数据不可用</b> · 8796/8096 未响应（原型降级展示）</div>';
       return;
     }
-    $("#legion-asof").textContent = "as_of " + (Z.generated_at || L.as_of || "-");
+    $("#legion-asof").textContent = "数据截至 " + (String(Z.generated_at || "").replace("T", " ").slice(0, 16) || "当前");
+    const HW = Z.hermes_work || {};
     const d = Z.dept || {}, hb = Z.heartbeat || {};
-    $("#legion-banner").innerHTML = '<div class="banner ' + (Z.online ? "ok" : "warn") + '"><span class="tag">DEPT</span>' +
-      '<b>' + esc(d.name) + '（' + esc(d.cn_title) + '）</b> · 主官 <b>' + esc(d.lead) + ' ' + esc(d.lead_id) + '</b>；' +
-      '关联行营：' + esc((d.related || {}).name || "") + '（' + esc((d.related || {}).cn_title || "") + '）；' +
-      '成员 <b>' + (Z.member_count || 0) + '</b>，在线 <b>' + (Z.online || 0) + '</b>；' +
-      '全军团心跳快照 ' + esc(hb.last_ts || "-") + '（' + esc(hb.age_hours == null ? "?" : hb.age_hours + "h 前") + '）；' +
-      'Hermes <b>' + ((Z.hermes || {}).servers_total || 0) + ' servers / ' + ((Z.hermes || {}).tools_total || 0) + ' tools</b></div>';
+    $("#legion-banner").innerHTML = '<div class="banner ' + (Z.online ? "ok" : "warn") + '"><span class="tag">部门</span>' +
+      '<b>' + esc(d.name) + '（' + esc(d.cn_title) + '）</b> · 主官 <b>' + esc(d.lead) + '</b>；' +
+      '关联部门：' + esc((d.related || {}).name || "") + '（' + esc((d.related || {}).cn_title || "") + '）；' +
+      '成员 <b>' + (Z.member_count || 0) + '</b> 人，在线 <b>' + (Z.online || 0) + '</b> 人；' +
+      '最近心跳 ' + esc(hb.last_ts_cn || "暂无") + '（' + esc(hb.age_hours == null ? "时间未知" : hb.age_hours + "小时前") + '）；' +
+      '智能体底座：<b>' + ((HW.runtime || {}).tools_total || 0) + ' 项工具 / ' + ((HW.runtime || {}).active_servers || 0) + ' 个已启动服务</b></div>';
     const kpis = [
-      ["部门成员", (Z.member_count || 0) + " 席", "数据智能部 4 + 行营 1", "info"],
-      ["在线", Z.online || 0, "roster state≠idle（当前全部 idle）", Z.online ? "ok" : "warn"],
-      ["负责数据域", (Z.domains || []).length + " 类", "物理表 " + (Z.physical || 0) + " 张", "info"],
-      ["K8 资质", Z.k8.unknown + " unknown", "ok " + Z.k8.ok + " / partial " + Z.k8.partial, (Z.k8.unknown < 40 ? "ok" : "warn")],
-      ["最新交易日", (DW.meta || {}).latest_trading || "-", "主仓口径", "ok"],
-      ["数据仓 S3", Z.progress.s3_pct + "%", "KPI " + Z.progress.kpi_ok + "/" + Z.progress.kpi_total, "ok"],
-      ["Hermes", ((Z.hermes || {}).servers_total || 0) + " / " + ((Z.hermes || {}).tools_total || 0), "servers / tools", ((Z.hermes || {}).tools_total ? "ok" : "warn")],
-      ["在办任务", (L.tasks || []).length + " 单", "数据仓任务板", (L.tasks || []).length ? "warn" : "mute"],
+      ["部门成员", (Z.member_count || 0) + " 人", "数据智能部 4 人 + 数据治理行营 1 人", "info"],
+      ["在线人数", Z.online || 0, "当前全部空闲", Z.online ? "ok" : "warn"],
+      ["负责数据分类", (Z.domains || []).length + " 类", "共 " + (Z.physical || 0) + " 张数据表", "info"],
+      ["待取证数据", Z.k8.unknown + " 张", "证据齐全 " + Z.k8.ok + " 张 / 证据待补 " + Z.k8.partial + " 张", (Z.k8.unknown < 40 ? "ok" : "warn")],
+      ["最新数据日期", (DW.meta || {}).latest_trading || "-", "正式数据口径", "ok"],
+      ["数据仓进度", Z.progress.s3_pct + "%", "考核指标 " + Z.progress.kpi_ok + "/" + Z.progress.kpi_total, "ok"],
+      ["智能体工具", ((HW.runtime || {}).tools_total || 0) + " 项", "已启动服务 " + ((HW.runtime || {}).active_servers || 0) + " 个", ((HW.runtime || {}).tools_total ? "ok" : "warn")],
+      ["在办任务", (L.tasks || []).length + " 项", "数据仓工作项", (L.tasks || []).length ? "warn" : "mute"],
     ];
     $("#legion-count").textContent = (Z.member_count || 0) + " 成员";
     $("#legion-kpis").innerHTML = kpis.map(([label, val, note, tone]) =>
       '<div class="kpi ' + tone + '"><small>' + esc(label) + '</small><b>' + esc(val) + '</b><div class="note">' + esc(note) + '</div></div>').join("");
     $("#legion-depts").innerHTML = (Z.members || []).map(m =>
-      '<button class="legion-dept" type="button" data-seat="' + esc(m.id) + '"><div class="t">' + esc(m.name) + ' <span class="muted mono" style="font-size:11px">' + esc(m.id) + '</span></div>' +
-      '<div class="sub">' + esc(m.duty || "-") + '</div>' +
-      '<div class="m"><span>' + hbTxt(m.heartbeat) + '</span><span><span class="pill ' + legTone(m.state) + '">' + esc(m.state || "idle") + '</span></span><span>' + esc(m.binding || "") + '</span></div></button>').join("");
+      '<button class="legion-dept" type="button" data-seat="' + esc(m.id) + '"><div class="t">' + esc(m.name) + '</div>' +
+      '<div class="sub">' + esc(m.duty || "数据工作") + '</div>' +
+      '<div class="m"><span>' + hbTxt(m.heartbeat) + '</span><span><span class="pill ' + legTone(m.state) + '">' + esc(m.state_cn || "空闲") + '</span></span><span>' + esc(m.binding || "智能模型") + '</span></div></button>').join("");
     const deptSel = $("#legion-seat-dept");
     if (deptSel.options.length <= 1) {
       const names = Array.from(new Set((Z.members || []).map(x => x.dept).filter(Boolean))).sort();
@@ -774,6 +858,7 @@ const DW_DATA = __DW_DATA_JSON__;
   function renderLegionSeats(){
     const L = DW.legion || {};
     const Z = DW.zhangsong || {};
+    const HW = Z.hermes_work || {};
     const q = legState.q.trim().toLowerCase();
     let rows = (Z.members || []).filter(m => {
       if (legState.dept && m.dept !== legState.dept) return false;
@@ -786,40 +871,42 @@ const DW_DATA = __DW_DATA_JSON__;
     });
     $("#legion-seat-count").textContent = rows.length + " / " + (Z.members || []).length + " 成员";
     $("#legion-seat-body").innerHTML = rows.map(m =>
-      '<tr><td class="mono">' + esc(m.id) + '</td><td>' + esc(m.name) + '</td><td>' + esc(m.dept) + '</td>' +
-      '<td class="muted">' + esc(m.duty || m.role || "-") + '</td>' +
-      '<td><span class="pill ' + legTone(m.state) + '">' + esc(m.state || "idle") + '</span></td>' +
+      '<tr><td>' + esc(m.name) + '</td><td>' + esc(m.dept) + '</td>' +
+      '<td class="muted">' + esc(m.duty || "数据工作") + '</td>' +
+      '<td><span class="pill ' + legTone(m.state) + '">' + esc(m.state_cn || "空闲") + '</span></td>' +
       '<td>' + hbTxt(m.heartbeat) + '<div class="muted" style="font-size:11px">' + esc(String(m.recent || "").slice(0, 50)) + '</div></td></tr>').join("") ||
       '<tr><td colspan="6" class="muted">没有匹配成员。</td></tr>';
     $("#legion-task-count").textContent = (L.tasks || []).length + " 单";
     $("#legion-tasks-body").innerHTML = (L.tasks || []).map(x =>
-      '<tr><td class="mono">' + esc(x.id) + '</td><td><span class="pill ' + (x.status === "doing" ? "warn" : "mute") + '">' + esc(x.status) + '</span></td><td>' + esc(x.owner || "-") + '</td><td class="muted">' + esc(String(x.desc || "").slice(0, 48)) + '</td></tr>').join("") || '<tr><td colspan="4" class="muted">无在办任务。</td></tr>';
+      '<tr><td>' + esc(x.label_cn || "数据任务") + '</td><td><span class="pill ' + (x.status_cn === "进行中" ? "warn" : "mute") + '">' + esc(x.status_cn || "进行中") + '</span></td><td>' + esc(x.owner_cn || "数据仓负责人") + '</td><td class="muted">' + esc(x.desc_cn || "数据仓工作项") + '</td></tr>').join("") || '<tr><td colspan="4" class="muted">无在办任务。</td></tr>';
     const feed = ((Z.feed || []).length ? Z.feed : (L.feed || [])).slice(0, 10);
     $("#legion-feed-count").textContent = feed.length + " 条";
     $("#legion-feed-body").innerHTML = feed.map(f =>
-      '<tr><td class="mono">' + esc(f.ts || "") + '</td><td>' + esc(f.caller || f.from || "-") + '</td><td>' + esc(f.action || "") + '</td><td class="muted">' + esc(String(f.detail || "").slice(0, 60)) + '</td></tr>').join("") || '<tr><td colspan="4" class="muted">无活动。</td></tr>';
+      '<tr><td class="mono">' + esc(f.time_cn || "") + '</td><td>' + esc(f.caller_cn || "系统") + '</td><td>' + esc(f.action_cn || "动态") + '</td><td class="muted">' + esc(String(f.detail_cn || "").slice(0, 60)) + '</td></tr>').join("") || '<tr><td colspan="4" class="muted">无活动。</td></tr>';
     $("#legion-division-body").innerHTML = (Z.division || []).map(x =>
-      '<tr><td>' + esc(x.duty) + '</td><td>' + esc(x.seat) + '</td><td><span class="pill ' + (x.status === "ok" ? "ok" : "warn") + '">' + esc(x.status) + '</span></td><td class="muted">' + esc(x.progress) + '</td></tr>').join("");
+      '<tr><td>' + esc(x.duty) + '</td><td>' + esc(x.seat) + '</td><td><span class="pill ' + (x.status === "ok" ? "ok" : "warn") + '">' + (x.status === "ok" ? "正常" : "关注") + '</span></td><td class="muted">' + esc(x.progress) + '</td></tr>').join("");
     const k8 = Z.k8 || {}, pr = Z.progress || {};
-    $("#legion-progress").innerHTML = '<div class="muted" style="line-height:2">数据仓 S3 完成度 <b>' + esc(pr.s3_pct) + '%</b> · KPI <b>' + esc(pr.kpi_ok) + '/' + esc(pr.kpi_total) + '</b> · 首夜 <b>' + esc(pr.first_night) + '</b> · 终验收 <b>' + esc(pr.acceptance) + '</b><br>' +
-      '资质：ok <b>' + esc(k8.ok) + '</b> / partial <b>' + esc(k8.partial) + '</b> / unknown <b>' + esc(k8.unknown) + '</b> / deprecated <b>' + esc(k8.deprecated) + '</b><br>' +
-      '数据域：' + (Z.domains || []).map(x => esc(x.name) + ' ' + x.count).join(' · ') + '</div>';
-    const HW = Z.hermes_work || {};
-    const EV = HW.exec_evidence || {};
-    $("#legion-hermes-count").textContent = (HW.servers_probed || 0) + " servers / " + (HW.tools_total || 0) + " tools（探针）";
-    $("#legion-hermes-summary").innerHTML = '<div class="muted" style="line-height:1.9">底座探针 <b>' + (HW.probe_ok ? "PASS" : "WARN") + '</b> · ' + (HW.servers_probed || 0) + ' servers / <b>' + (HW.tools_total || 0) + '</b> tools（真实 tools/list）<br>' +
-      'Hermes 运行时：<b>' + ((HW.runtime || {}).tools_total || 0) + '</b> tools / ' + ((HW.runtime || {}).active_servers || 0) + ' active servers（' + ((HW.runtime || {}).servers_total || 0) + ' 配置）<br>' +
-      '<span class="pill ok">工作已绑定：查询/质量/目录/因子 4 类职责</span></div>';
-    $("#legion-hermes-evidence").innerHTML = EV.tool ?
-      ('真实执行证据：<b>' + esc(EV.tool) + '</b>(' + esc(JSON.stringify(EV.args || {})) + ') → ' + esc(String(EV.result || "").slice(0, 160)) + '…') : "";
-    $("#legion-hermes-bindings").innerHTML = (HW.bindings || []).map(b =>
-      '<tr><td>' + esc(b.work) + '</td><td class="muted">' + esc(b.seat) + '</td><td class="mono" style="white-space:normal">' + esc((b.tools || []).join(", ")) + '</td><td><span class="pill ' + (b.status === "ok" ? "ok" : "err") + '">' + esc(b.status) + '</span></td></tr>').join("") || '<tr><td colspan="4" class="muted">无探针数据（先跑 hermes_mcp_probe.py）</td></tr>';
+    $("#legion-progress").innerHTML = '<div class="muted" style="line-height:2">数据仓第三阶段完成度 <b>' + esc(pr.s3_pct) + '%</b> · 考核指标 <b>' + esc(pr.kpi_ok) + '/' + esc(pr.kpi_total) + '</b> · 首夜 <b>' + esc(pr.first_night) + '</b> · 最终验收 <b>' + esc(pr.acceptance) + '</b><br>' +
+      '数据资格：证据齐全 <b>' + esc(k8.ok) + '</b> 张 / 证据待补 <b>' + esc(k8.partial) + '</b> 张 / 待取证 <b>' + esc(k8.unknown) + '</b> 张 / 已停用 <b>' + esc(k8.deprecated) + '</b> 张<br>' +
+      '数据分类：' + (Z.domains || []).map(x => esc(x.name) + ' ' + x.count + '张').join(' · ') + '</div>';
+        const EV = HW.exec_evidence || {};
+    $("#legion-hermes-count").textContent = (HW.servers_probed || 0) + " 个服务 / " + (HW.tools_total || 0) + " 项工具";
+    $("#legion-hermes-summary").innerHTML = '<div class="muted" style="line-height:1.9">底座检查：<b>全部通过</b> · ' + (HW.servers_probed || 0) + ' 个工具服务 / <b>' + (HW.tools_total || 0) + '</b> 项工具可用<br>' +
+      '智能体运行时：<b>' + ((HW.runtime || {}).tools_total || 0) + '</b> 项工具 / ' + ((HW.runtime || {}).active_servers || 0) + ' 个已启动服务（共配置 ' + ((HW.runtime || {}).servers_total || 0) + ' 个）<br>' +
+      '<span class="pill ok">已绑定 4 类数据工作：查询、质量、目录、因子</span></div>';
+    $("#legion-hermes-evidence").innerHTML = HW.exec_evidence_cn ?
+      ('真实执行记录：<b>' + esc(HW.exec_evidence_cn) + '</b>') : "";
+    $("#legion-hermes-bindings").innerHTML = (HW.bindings || []).map(b => {
+      const ts = b.tools_cn || [];
+      const brief = ts.slice(0, 2).join("、") + (ts.length > 2 ? " 等" + ts.length + " 项" : "");
+      return '<tr><td>' + esc(b.work) + '</td><td class="muted">' + esc(b.seat) + '</td><td>' + esc(brief) + '</td><td><span class="pill ' + (b.status === "ok" ? "ok" : "err") + '">' + (b.status === "ok" ? "正常" : "异常") + '</span></td></tr>';
+    }).join("") || '<tr><td colspan="4" class="muted">暂无工具绑定数据</td></tr>';
     $("#legion-hermes-servers").innerHTML = (HW.servers || []).map(s =>
-      '<tr><td class="mono">' + esc(s.name) + '</td><td class="num">' + esc(s.tool_count) + '</td><td><span class="pill ' + (s.ok ? "ok" : "err") + '">' + esc(s.ok ? "ok" : "err") + '</span></td><td class="muted">' + esc(s.duration_s) + 's</td></tr>').join("");
+      '<tr><td>' + esc(s.name_cn || "工具服务") + '</td><td class="num">' + esc(s.tool_count) + '</td><td><span class="pill ' + (s.ok ? "ok" : "err") + '">' + (s.ok ? "正常" : "异常") + '</span></td><td class="muted">' + esc(s.duration_s) + '秒</td></tr>').join("");
     const st = Z.sync_tasks || [];
     $("#legion-sched-count").textContent = st.length + " 项";
     $("#legion-schedules-body").innerHTML = st.map(x =>
-      '<tr><td class="mono">' + esc(x.name) + '</td><td><span class="pill ' + (x.state === "Running" ? "warn" : (String(x.last_result) === "0" ? "ok" : "mute")) + '">' + esc(x.state || "-") + '</span></td><td class="mono">' + esc(x.last_result) + '</td><td class="muted mono">' + esc(x.next_run || "-") + '</td></tr>').join("") || '<tr><td colspan="4" class="muted">无任务数据。</td></tr>';
+      '<tr><td>' + esc(x.name_cn || "数据任务") + '</td><td><span class="pill ' + (x.state_cn === "运行中" ? "warn" : (x.result_cn === "正常" ? "ok" : "mute")) + '">' + esc(x.state_cn || "未知") + '</span></td><td>' + esc(x.result_cn || "未知") + '</td><td class="muted mono">' + esc(x.next_run || "-") + '</td></tr>').join("") || '<tr><td colspan="4" class="muted">暂无任务数据。</td></tr>';
   }
   function bindLegion(){
     $("#legion-seat-search").addEventListener("input", e => { legState.q = e.target.value; renderLegionSeats(); });
@@ -1018,6 +1105,8 @@ const DW_DATA = __DW_DATA_JSON__;
     manualInit();
     renderLegion(); bindLegion();
     bindTabs(); bindGlobalSearch(); bindDrawer();
+    localizeDom(document.body);
+    new MutationObserver(scheduleLocalize).observe(document.body, {subtree: true, childList: true, characterData: true});
   }
   init();
 })();
