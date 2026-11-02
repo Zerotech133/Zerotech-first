@@ -98,8 +98,53 @@ def _pyarrow():
     return pq
 
 
+def _norm_epoch(value) -> str | None:
+    """epoch 秒/毫秒 → YYYYMMDD。"""
+    try:
+        f = float(value)
+    except (TypeError, ValueError):
+        return None
+    if f > 1e12:  # 毫秒
+        f = f / 1000.0
+    try:
+        return dt.datetime.fromtimestamp(f).strftime("%Y%m%d")
+    except (OverflowError, ValueError, OSError):
+        return None
+
+
+def _parse_month_quarter(raw: str) -> tuple:
+    """解析月/季字符串 → (matched, YYYYMMDD 月末/季末 | None)。
+
+    - 季频：YYYYQn / YYYY-Qn / yyyy/qn（n=1..4）→ 季末最后一天（如 2026Q2 → 20260630）
+    - 月频：YYYY-MM / YYYY/MM / YYYY.MM → 当月最后一天（如 2026-09 → 20260930）
+    非法（月份 00/13+、季度 0/5+）→ (True, None) 显式 fail-visible。
+    """
+    s = str(raw).strip()
+    m = re.fullmatch(r"(?i)\s*(\d{4})\s*[-_/]?\s*q\s*([1-4])\s*", s)
+    if m:
+        return True, quarter_end(int(m.group(1)), int(m.group(2)))
+    m = re.fullmatch(r"\s*(\d{4})\s*[-_/.]\s*(\d{1,2})\s*", s)
+    if m:
+        y, mo = int(m.group(1)), int(m.group(2))
+        if not 1 <= mo <= 12:
+            return True, None
+        return True, month_end("%04d%02d" % (y, mo))
+    return False, None
+
+
 def norm_date(value) -> str | None:
-    """把 footer 统计值/文件日期归一为 YYYYMMDD；无法识别返回 None。"""
+    """把 footer 统计值/文件日期归一为 YYYYMMDD；无法识别返回 None（fail-visible）。
+
+    支持（2026-11-02 task-40 A4 月/季日期归一）：
+      - YYYYMMDD / YYYY-MM-DD / YYYY/MM/DD（含 ISO datetime 串，取日期部分）
+      - YYYYMM（月频）→ **当月最后一天**（202609 → 20260930）
+      - YYYY-MM / YYYY/MM（月频）→ 同上
+      - YYYYQn / YYYY-Qn（季频）→ **当季最后一天**（2026Q2 → 20260630，2026-Q4 → 20261231）
+      - 时间戳：epoch 秒/毫秒（10~13 位数字串或数值）、parquet date32 天数
+      - date/datetime 对象
+    非法值（月份 00/13+、季度越界、非法日期、无法识别）→ None；probe 侧落
+    no_latest_date/no_date_column 等 reason，不静默当 ok。
+    """
     if value is None or isinstance(value, bool):
         return None
     if isinstance(value, dt.datetime):
@@ -110,28 +155,56 @@ def norm_date(value) -> str | None:
         iv = int(value)
         if 19000101 <= iv <= 21001231:
             return str(iv)
+        # 6 位 YYYYMM（月频）→ 月末（2026-11-02 task-40）
+        if 190001 <= iv <= 210012:
+            return month_end(str(iv))
         # parquet DATE 逻辑类型（date32）以 1970-01-01 起的天数存盘
         if 0 <= iv <= 100000:
             try:
                 return (dt.date(1970, 1, 1) + dt.timedelta(days=iv)).strftime("%Y%m%d")
             except (OverflowError, ValueError):
                 return None
-        # 兼容 epoch 秒
+        # epoch 秒/毫秒
         if 1_000_000_000 <= iv <= 2_200_000_000:
-            try:
-                return dt.datetime.fromtimestamp(iv).strftime("%Y%m%d")
-            except (OverflowError, ValueError, OSError):
-                return None
+            return _norm_epoch(iv)
+        if 1_000_000_000_000 <= iv <= 2_200_000_000_000:
+            return _norm_epoch(iv)
         return None
-    digits = re.sub(r"\D", "", str(value))
-    if len(digits) < 8:
+    s = str(value).strip()
+    if not s:
         return None
-    s = digits[:8]
-    try:
-        dt.date(int(s[:4]), int(s[4:6]), int(s[6:]))
-    except ValueError:
-        return None
-    return s
+    # ① 月/季格式（先于数字剥离，避免 "2026Q2" 被剥成 "20262"）
+    matched, month_quarter = _parse_month_quarter(s)
+    if matched:
+        return month_quarter
+    # ② 纯数字串：epoch（10~13 位）/ YYYYMM（6 位）/ YYYYMMDD（8 位）
+    if re.fullmatch(r"\d{10,13}(?:\.\d+)?", s):
+        return _norm_epoch(s)
+    if re.fullmatch(r"\d{6}", s):
+        return month_end(s)
+    if re.fullmatch(r"\d{8}", s):
+        try:
+            dt.date(int(s[:4]), int(s[4:6]), int(s[6:]))
+        except ValueError:
+            return None
+        return s
+    # ③ 日期/时间串（YYYY-MM-DD / YYYY/MM/DD / ISO datetime 前缀）
+    m = re.match(r"^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(?:[T ]|$)", s)
+    if m:
+        try:
+            return dt.date(int(m.group(1)), int(m.group(2)), int(m.group(3))).strftime("%Y%m%d")
+        except ValueError:
+            return None
+    # ④ 兜底：旧行为（混合串取前 8 位数字，严格校验日期）
+    digits = re.sub(r"\D", "", s)
+    if len(digits) >= 8:
+        s8 = digits[:8]
+        try:
+            dt.date(int(s8[:4]), int(s8[4:6]), int(s8[6:]))
+        except ValueError:
+            return None
+        return s8
+    return None
 
 
 def month_end(yyyymm: str) -> str | None:
@@ -140,6 +213,13 @@ def month_end(yyyymm: str) -> str | None:
         return "%04d%02d%02d" % (y, m, calendar.monthrange(y, m)[1])
     except (ValueError, IndexError):
         return None
+
+
+def quarter_end(year: int, quarter: int) -> str | None:
+    """季频归一：YYYYQn → 当季最后一天（2026-11-02 task-40）。非法季度返回 None。"""
+    if not 1 <= int(quarter) <= 4:
+        return None
+    return month_end("%04d%02d" % (int(year), int(quarter) * 3))
 
 
 def date_from_name(name: str) -> tuple[str | None, str | None]:

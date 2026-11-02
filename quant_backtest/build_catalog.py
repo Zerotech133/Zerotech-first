@@ -441,6 +441,45 @@ _FREQ_FIX_20 = {
 }
 for _freq_name, _freq_value in _FREQ_FIX_20.items():
     TABLE_DEFS.setdefault(_freq_name, {})["freq"] = _freq_value
+# ── catalog v21 字段：24 张 A/B 类豁免口径修正（2026-11-02 task-41 / S3-01）──
+# 依据：deliverables/2026-11-02_24张豁免口径方案_v1.md §六（24 张未声明豁免动态表口径方案）。
+# 只增 date_col / static_no_date / freq 字段及注释，不动 layout/schema/priority/desc；
+# date_col 均为该表 parquet footer 实测存在且可解析的列（已逐表核验，见方案 §三/§七）。
+# 生效需下一次 build_catalog + registry_rebuild（本单不跑，回执给 Lead 命令）。
+_CATALOG_V21_FIELDS = {
+    # A1（10）：footer 业务日期列，rebuild+qualify 后预期 evidence_ok（lag 3~5d）
+    "ts_cctv_news": {"date_col": "date"},
+    "ts_major_news": {"date_col": "pub_time"},
+    "ts_news": {"date_col": "datetime"},
+    "ts_report_rc": {"date_col": "report_date"},
+    "ts_stk_surv": {"date_col": "surv_date"},
+    "ts_new_share": {"date_col": "ipo_date"},
+    "ts_us_tbr": {"date_col": "date"},
+    "ts_us_trycr": {"date_col": "date"},
+    "ts_us_tycr": {"date_col": "date"},
+    "ts_wz_index": {"date_col": "date"},
+    # A2（2）：改后仍 partial 但 reason 更准（真实滞后，非口径缺失）
+    "ts_cb_price_chg": {"date_col": "publish_date"},
+    # ts_ths_member：_fetched_at 为**摄入时间戳代理**（非业务日期）——用于反映同步是否在跑；
+    # 重跑历史也会让 latest 变新，读方勿当业务日期，语义已在方案 §八 风险项标注。
+    "ts_ths_member": {"date_col": "_fetched_at"},
+    # A3（1）：成分调整低频（in_date=最新成分纳入日），date_col 与 freq 同改；
+    # D→M（40d 容忍）避免把"长期无调整"误判断流。
+    "ts_index_member_all": {"date_col": "in_date", "freq": "M"},
+    # A4（5）：宏观月/季表。**前置**：qualify_probe.norm_date 需支持 YYYYMM→月末、YYYYQn→季末；
+    # 工具未改前补 date_col 会使 probe 从 no_date_column 变 no_latest_date（仍 partial，fail-visible）。
+    "ts_cn_cpi": {"date_col": "month"},
+    "ts_cn_m": {"date_col": "month"},
+    "ts_cn_pmi": {"date_col": "MONTH"},   # footer 实际列名为大写 MONTH
+    "ts_cn_ppi": {"date_col": "month"},
+    "ts_cn_gdp": {"date_col": "quarter"},
+    # B（3）：静态字典/基础信息表——catalog 显式声明 static_no_date（优于代码白名单硬编码）
+    "ts_fx_obasic": {"static_no_date": True},
+    "ts_hm_list": {"static_no_date": True},
+    "ts_index_classify": {"static_no_date": True},
+}
+for _v21_name, _v21_fields in _CATALOG_V21_FIELDS.items():
+    TABLE_DEFS.setdefault(_v21_name, {}).update(_v21_fields)
 # ── 雪球仓（xueqiu，设计 §3.3：7 张 parquet 表）──
 TABLE_DEFS.update(
     {
@@ -501,10 +540,12 @@ TABLE_DEFS["ts_emotion_ladder"] = {
     "freq": "D",
     "layout": "single",
 }
+# 快照/成分表（无业务日期列 → date_status=not_applicable，避免误算新鲜度）。
+# 2026-11-02 task-41（catalog v21）：ts_ths_member 已移出本清单——改登记 date_col=_fetched_at
+# 摄入时间代理（动态成分表，需可观测同步是否在跑；见 _CATALOG_V21_FIELDS）。
 for _name in (
     "tdx_sector_def",
     "tdx_sector_member",
-    "ts_ths_member",
     "stock_company",
     "sw_classify_l1",
     "sw_l1_member",

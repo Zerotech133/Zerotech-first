@@ -77,6 +77,77 @@ class TestDateHelpers(unittest.TestCase):
         self.assertIsNone(qualify_probe.norm_date(None))
         self.assertIsNone(qualify_probe.norm_date("not-a-date"))
 
+    def test_norm_date_month_end(self):
+        """task-40 A4：YYYYMM / YYYY-MM / YYYY/MM → 当月最后一天。"""
+        self.assertEqual(qualify_probe.norm_date("202609"), "20260930")
+        self.assertEqual(qualify_probe.norm_date("2026-09"), "20260930")
+        self.assertEqual(qualify_probe.norm_date("2026/09"), "20260930")
+        self.assertEqual(qualify_probe.norm_date(202609), "20260930")
+        self.assertEqual(qualify_probe.norm_date("202602"), "20260228")
+        self.assertEqual(qualify_probe.norm_date("202402"), "20240229")  # 闰年 2 月
+
+    def test_norm_date_quarter_end(self):
+        """task-40 A4：YYYYQn / YYYY-Qn → 当季最后一天。"""
+        self.assertEqual(qualify_probe.norm_date("2026Q1"), "20260331")
+        self.assertEqual(qualify_probe.norm_date("2026Q2"), "20260630")
+        self.assertEqual(qualify_probe.norm_date("2026Q3"), "20260930")
+        self.assertEqual(qualify_probe.norm_date("2026Q4"), "20261231")
+        self.assertEqual(qualify_probe.norm_date("2026-Q2"), "20260630")
+        self.assertEqual(qualify_probe.norm_date("2026q4"), "20261231")
+
+    def test_norm_date_timestamps(self):
+        """task-40 A4：带时间戳/ISO datetime 仍归一为日期。"""
+        self.assertEqual(qualify_probe.norm_date("2026-10-27 10:30:00"), "20261027")
+        self.assertEqual(qualify_probe.norm_date("2026/10/27T08:00:00"), "20261027")
+        epoch = 1790000000
+        self.assertEqual(qualify_probe.norm_date(epoch), qualify_probe.norm_date(str(epoch)))
+        self.assertEqual(qualify_probe.norm_date(epoch * 1000), qualify_probe.norm_date(epoch))
+
+    def test_norm_date_invalid_fail_visible(self):
+        """task-40 A4：非法月/季/日期 → None（fail-visible，不静默当 ok）。"""
+        for bad in ("202613", "2026-13", "2026Q0", "2026Q5", "2026-02-30",
+                    "202600", "abc", "", None, True):
+            self.assertIsNone(qualify_probe.norm_date(bad), bad)
+
+    def test_probe_monthly_quarter_dates(self):
+        """probe 端：月频/季频 footer 日期被解析 → 给出 latest/lag（不再 no_date_column）。"""
+        with tempfile.TemporaryDirectory() as d:
+            store = Path(d) / "store"
+            store.mkdir()
+            write_parquet(store / "part_0000.parquet", ["202607", "202608"], col="month")
+            card = qualify_probe.probe_table(
+                "t1", entry(store, date_col="month", layout="part", freq="D"),
+                {"t1"}, TODAY, CHECKED)
+            self.assertEqual(card["latest_business_date"], "20260831")
+            self.assertEqual(card["lag_days"], (TODAY - dt.date(2026, 8, 31)).days)
+            self.assertNotIn("no_latest_date", card["reasons"])
+            self.assertNotIn("no_date_column", card["reasons"])
+            self.assertIn("stale_gt_7d", card["reasons"])
+            # 季频
+            store2 = Path(d) / "store2"
+            store2.mkdir()
+            write_parquet(store2 / "part_0000.parquet", ["2026Q1", "2026Q2"], col="quarter")
+            card2 = qualify_probe.probe_table(
+                "t2", entry(store2, date_col="quarter", layout="part", freq="Q"),
+                {"t2"}, TODAY, CHECKED)
+            self.assertEqual(card2["latest_business_date"], "20260630")
+            self.assertNotIn("no_latest_date", card2["reasons"])
+            self.assertNotIn("no_date_column", card2["reasons"])
+
+    def test_probe_invalid_dates_fail_visible(self):
+        """probe 端：日期列值不可解析 → latest 缺失 → partial（fail-visible）。"""
+        with tempfile.TemporaryDirectory() as d:
+            store = Path(d) / "store"
+            store.mkdir()
+            write_parquet(store / "part_0000.parquet", ["2026-13", "bad-date"])
+            card = qualify_probe.probe_table(
+                "t1", entry(store, date_col="month", layout="part", freq="D"),
+                {"t1"}, TODAY, CHECKED)
+            self.assertIsNone(card["latest_business_date"])
+            self.assertEqual(card["verdict"], "evidence_partial")
+            self.assertTrue(any(x in card["reasons"]
+                                for x in ("no_latest_date", "no_footer_date")), card["reasons"])
+
     def test_date_from_name(self):
         self.assertEqual(qualify_probe.date_from_name("d_20261026.parquet"),
                          ("20261026", "20261026"))
