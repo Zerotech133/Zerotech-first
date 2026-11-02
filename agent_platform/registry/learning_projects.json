@@ -58,7 +58,7 @@
     "stage_updated_at": "2026-11-02T03:50:25+08:00",
     "gate": {
      "ok": true,
-     "checked_at": "2026-11-03T00:16:16+08:00"
+     "checked_at": "2026-11-03T05:03:16+08:00"
     },
     "history": [
      {
@@ -83,14 +83,14 @@
    "note": "源文件已入库（md，48KB，29 条视频文案）；S2 文本抽取完成，进入流水线",
    "manifest_path": "C:\\项目\\知识库\\05_学习源件\\laomu_notes\\manifest.json",
    "updated_at": "2026-11-02T04:11:50+08:00",
-   "stage_updated_at": "2026-11-02T20:00:01+08:00",
+   "stage_updated_at": "2026-11-03T05:04:27+08:00",
    "schema_version": "learning_project.v1",
    "lifecycle": {
     "stage": "distilling",
     "stage_updated_at": "2026-11-02T18:37:49+08:00",
     "gate": {
      "ok": true,
-     "checked_at": "2026-11-03T00:16:16+08:00"
+     "checked_at": "2026-11-03T05:03:16+08:00"
     },
     "history": [
      {
@@ -100,6 +100,18 @@
      }
     ]
    }
+  },
+  {
+   "project_id": "视频号学习_8博主",
+   "name": "视频号学习_8博主",
+   "type": "auto_intake",
+   "status": "distilling",
+   "owner": "DATA1",
+   "source": [
+    "C:\\项目\\知识库\\05_学习源件\\视频号学习_8博主\\source"
+   ],
+   "manifest_path": "C:\\项目\\知识库\\05_学习源件\\视频号学习_8博主\\manifest.json",
+   "stage_updated_at": "2026-11-03T05:04:27+08:00"
   }
  ],
  "sop": "docs/standards/2026-11-02_学习项目标准化流程_v1.md",

@@ -1,10 +1,10 @@
 {
- "generated_at": "2026-11-02T04:11:51+08:00",
+ "generated_at": "2026-11-02T20:00:01+08:00",
  "write": true,
  "projects": [
   {
    "project_id": "laomu_notes",
-   "status": "cleaning",
+   "status": "distilling",
    "pdf_ocr": {
     "stage": "skip_no_pdf",
     "pdfs": 0,

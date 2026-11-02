@@ -1,9 +1,16 @@
 {
- "generated_at": "2026-11-02T04:02:55+08:00",
- "dirs": [],
+ "generated_at": "2026-11-02T18:38:01+08:00",
+ "dirs": [
+  {
+   "dir": "laomu_notes",
+   "meta": true,
+   "meta_ok": true,
+   "manifest": true
+  }
+ ],
  "issues": [],
  "summary": {
-  "dirs": 0,
+  "dirs": 1,
   "issues": 0
  }
 }

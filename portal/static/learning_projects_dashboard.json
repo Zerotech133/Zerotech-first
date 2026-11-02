@@ -1,7 +1,7 @@
 {
  "schema_version": "learning_projects_dashboard.v2",
  "kind": "learning_projects_dashboard",
- "generated_at": "2026-11-03T00:16:22+08:00",
+ "generated_at": "2026-11-03T05:05:02+08:00",
  "owner": {
   "agent_id": "DATA1",
   "cn": "张松",
@@ -16,18 +16,18 @@
   "FACTOR1": "蒋琬·因子挖掘（研究类按需）"
  },
  "summary": {
-  "projects": 2,
+  "projects": 3,
   "status_counts": {
    "archived": 1,
-   "distilling": 1
+   "distilling": 2
   },
   "pipeline_tasks": 4,
   "gate_passed": true,
   "gate_v2_ok": true,
   "gate_v2_fail": 0,
-  "lifecycle_projects": 2,
+  "lifecycle_projects": 3,
   "lifecycle_gate_ok": 2,
-  "registry_gate_synced": false,
+  "registry_gate_synced": true,
   "issues": 0,
   "high": 0,
   "kb_units": 516
@@ -43,7 +43,7 @@
     "stage_updated_at": "2026-11-02T03:50:25+08:00",
     "gate": {
      "ok": true,
-     "checked_at": "2026-11-03T00:16:16+08:00"
+     "checked_at": "2026-11-03T05:03:16+08:00"
     },
     "history": [
      {
@@ -75,7 +75,7 @@
      "book_cards": 9
     }
    },
-   "last_update": "2026-11-03T00:03:17+08:00",
+   "last_update": "2026-11-03T05:04:27+08:00",
    "next_action": null,
    "note": "已归档只读；结论=无正向alpha；禁止再投入做多/反向策略",
    "archive": "_archive/2026-11-02_学习PDF_量学/"
@@ -90,7 +90,7 @@
     "stage_updated_at": "2026-11-02T18:37:49+08:00",
     "gate": {
      "ok": true,
-     "checked_at": "2026-11-03T00:16:16+08:00"
+     "checked_at": "2026-11-03T05:03:16+08:00"
     },
     "history": [
      {
@@ -115,10 +115,41 @@
     "pipeline_action": "pipelined",
     "artifacts": {}
    },
-   "last_update": "2026-11-03T00:03:17+08:00",
+   "last_update": "2026-11-03T05:04:27+08:00",
    "next_action": "待老田提供源文件（放 C:\\项目\\PDF\\ 或知识库）→ DATA2 入库 → S2 起流水线",
    "note": "源文件已入库（md，48KB，29 条视频文案）；S2 文本抽取完成，进入流水线",
    "archive": "_archive/2026-11-02_老木创业笔记/"
+  },
+  {
+   "project_id": "视频号学习_8博主",
+   "name": "视频号学习_8博主",
+   "type": "auto_intake",
+   "schema_version": "learning_project.v1",
+   "lifecycle": {
+    "stage": "distilling",
+    "stage_updated_at": null,
+    "gate": {},
+    "history": []
+   },
+   "status": "distilling",
+   "stage": "distilling",
+   "stage_label": "提炼中",
+   "owner": "张松",
+   "owner_agent": "DATA1",
+   "source_count": 1,
+   "sources": [
+    "C:\\项目\\知识库\\05_学习源件\\视频号学习_8博主\\source"
+   ],
+   "drafts": {
+    "units_draft": 0,
+    "manifest": false,
+    "pipeline_action": "pipelined",
+    "artifacts": {}
+   },
+   "last_update": "2026-11-03T05:04:27+08:00",
+   "next_action": null,
+   "note": null,
+   "archive": null
   }
  ],
  "pipeline": [
@@ -127,9 +158,9 @@
    "label": "学习入库",
    "desc": "入库巡检",
    "schedule": "04:00",
-   "next_run": "2026-11-03T00:33:14",
+   "next_run": "2026-11-03T05:33:14",
    "state": "Ready",
-   "last_run": "2026-11-03T00:03:17+08:00",
+   "last_run": "2026-11-03T05:04:27+08:00",
    "report": "C:\\项目\\老田的AI助手\\research\\reports\\learning_intake_20261103.json"
   },
   {
@@ -149,29 +180,29 @@
    "schedule": "20:00",
    "next_run": "2026-11-03T20:00:00",
    "state": "Ready",
-   "last_run": "2026-11-02T20:00:01+08:00",
-   "report": "C:\\项目\\老田的AI助手\\research\\reports\\learning_pipeline_20261102.json"
+   "last_run": "2026-11-03T05:04:27+08:00",
+   "report": "C:\\项目\\老田的AI助手\\research\\reports\\learning_pipeline_20261103.json"
   },
   {
    "task": "ZeroBound_LearningGovernance",
    "label": "学习治理",
    "desc": "清单/质量/归档治理",
    "schedule": "02:00",
-   "next_run": "2026-11-03T02:00:00",
+   "next_run": "2026-11-04T02:00:00",
    "state": "Ready",
-   "last_run": "2026-11-02T18:37:55+08:00",
-   "report": "C:\\项目\\老田的AI助手\\research\\reports\\learning_governance_20261102.json"
+   "last_run": "2026-11-03T02:00:01+08:00",
+   "report": "C:\\项目\\老田的AI助手\\research\\reports\\learning_governance_20261103.json"
   }
  ],
  "gate": {
   "available": true,
   "file": "C:\\项目\\老田的AI助手\\research\\reports\\learning_gate_20261103.json",
   "ok": true,
-  "generated_at": "2026-11-03T00:16:16+08:00",
-  "stage": "all",
+  "generated_at": "2026-11-03T05:03:16+08:00",
+  "stage": "intake",
   "summary": {
    "projects": 2,
-   "checks": 5,
+   "checks": 2,
    "fail": 0
   },
   "projects": [
@@ -195,21 +226,6 @@
       "stage": "intake",
       "ok": true,
       "errors": []
-     },
-     {
-      "stage": "units",
-      "ok": true,
-      "errors": []
-     },
-     {
-      "stage": "candidates",
-      "ok": true,
-      "errors": []
-     },
-     {
-      "stage": "publish",
-      "ok": true,
-      "errors": []
      }
     ],
     "fail": 0
@@ -220,9 +236,9 @@
  "lifecycle": {
   "source": "agent_platform/registry/learning_projects.json",
   "schema_version": "learning_project.v1",
-  "projects": 2,
+  "projects": 3,
   "gate_ok": 2,
-  "registry_synced": false
+  "registry_synced": true
  },
  "quality": {
   "gate_passed": true,
@@ -242,7 +258,7 @@
    {
     "name": "pipeline",
     "ok": true,
-    "projects": 1
+    "projects": 2
    },
    {
     "name": "governance",

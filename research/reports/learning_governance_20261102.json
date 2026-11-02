@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-02T04:02:55+08:00",
+ "generated_at": "2026-11-02T18:37:55+08:00",
  "projects": [
   {
    "project_id": "learnpdf_liangxue",
@@ -9,9 +9,10 @@
   },
   {
    "project_id": "laomu_notes",
-   "status": "intake_pending",
-   "manifest": false,
-   "units_draft": 0
+   "status": "distilling",
+   "manifest": true,
+   "files": 1,
+   "units_draft": 288
   }
  ],
  "issues": [],
