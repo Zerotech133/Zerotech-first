@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
 """final_report_render 单元测试：纯函数渲染，不依赖真实数据。"""
-from final_report_render import render
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # tools/datawarehouse
+
+from final_report_render import render  # noqa: E402
 
 
 def _accept(verdict="PASS"):
