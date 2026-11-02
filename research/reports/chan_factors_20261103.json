@@ -1,0 +1,333 @@
+{
+ "schema_version": "chan_factors.v1",
+ "lib": "chan_factors",
+ "version": "1.0.0",
+ "generated_at": "2026-11-03T07:23:03+08:00",
+ "meta": {
+  "n_codes": 50,
+  "n_days_requested": 60,
+  "window_start": "20260803",
+  "window_end": "20261102",
+  "months": [
+   "202608",
+   "202609",
+   "202610",
+   "202611"
+  ],
+  "data_root": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\tushare\\stk_mins",
+  "bar_freq": "30 分钟（由 stk_mins 1 分钟聚合，每日 8 根）",
+  "runtime_sec": 3.61
+ },
+ "factors": {
+  "bi_endpoints": {
+   "title": "笔端点",
+   "formula": "包含处理 → 简化分型 → 相邻异性分型成笔（处理后索引差≥4）",
+   "definition": "笔端点价格序列（上笔/下笔交替）；端点可被后续更极端同性分型延伸",
+   "pit": "分型在右侧处理后 K 线完成时确认（confirm_idx）；未闭合最后一笔 closed=False，PIT 快照只用 closed=True",
+   "coverage": {
+    "codes_requested": 50,
+    "codes_loaded": 50,
+    "codes_with_bars": 50,
+    "codes_with_bi": 50,
+    "codes_with_zhongshu": 50,
+    "codes_with_beichi": 50,
+    "codes_with_points": 50,
+    "codes_insufficient": 0
+   },
+   "coverage_pct": 100.0,
+   "distribution": {
+    "bis_closed_per_code": {
+     "n": 50,
+     "mean": 22.86,
+     "median": 23.0,
+     "p25": 20.25,
+     "p75": 26.0,
+     "min": 11.0,
+     "max": 33.0
+    }
+   }
+  },
+  "zhongshu": {
+   "title": "中枢区间/宽度",
+   "formula": "连续三笔重叠 ZD=max(低点), ZG=min(高点)；宽度=(ZG−ZD)/ZD",
+   "definition": "中枢区间 [ZD,ZG]、宽度、延伸笔数；某笔完全离开区间则中枢终结",
+   "pit": "第三笔完成时确认；未闭合中枢可能延伸（closed=False）",
+   "coverage": {
+    "codes_requested": 50,
+    "codes_loaded": 50,
+    "codes_with_bars": 50,
+    "codes_with_bi": 50,
+    "codes_with_zhongshu": 50,
+    "codes_with_beichi": 50,
+    "codes_with_points": 50,
+    "codes_insufficient": 0
+   },
+   "coverage_pct": 100.0,
+   "distribution": {
+    "width_pct_closed": {
+     "n": 138,
+     "mean": 0.0361,
+     "median": 0.0304,
+     "p25": 0.0189,
+     "p75": 0.0481,
+     "min": 0.0023,
+     "max": 0.1182
+    }
+   }
+  },
+  "beichi": {
+   "title": "背驰强度",
+   "formula": "相邻同向两笔：价格创新高/低 且 MACD 面积缩小；strength=1−面积后/面积前",
+   "definition": "strength>0 且价格创新极值 → 背驰成立；顶背驰/底背驰分别标记",
+   "pit": "第二段同向笔完成时确认（confirm_idx）；closed 结构才可判",
+   "coverage": {
+    "codes_requested": 50,
+    "codes_loaded": 50,
+    "codes_with_bars": 50,
+    "codes_with_bi": 50,
+    "codes_with_zhongshu": 50,
+    "codes_with_beichi": 50,
+    "codes_with_points": 50,
+    "codes_insufficient": 0
+   },
+   "coverage_pct": 100.0,
+   "distribution": {
+    "strength_divergence": {
+     "n": 243,
+     "mean": 0.6142,
+     "median": 0.6577,
+     "p25": 0.3763,
+     "p75": 0.8575,
+     "min": 0.0001,
+     "max": 0.9994
+    }
+   }
+  },
+  "buy_sell_points": {
+   "title": "三类买卖点（简化，非交易信号）",
+   "formula": "B1/S1=底/顶背驰；B2/S2=一买/一卖后不破前低/高；B3/S3=离开中枢回抽不破 ZG/反抽不上 ZD",
+   "definition": "按确认 bar 标记的事件序列（B1/B2/B3/S1/S2/S3）",
+   "pit": "全部落在确认 bar（判例 H29 纪律）；**研究型因子，非交易信号，须未来收益验证后才可使用**",
+   "coverage": {
+    "codes_requested": 50,
+    "codes_loaded": 50,
+    "codes_with_bars": 50,
+    "codes_with_bi": 50,
+    "codes_with_zhongshu": 50,
+    "codes_with_beichi": 50,
+    "codes_with_points": 50,
+    "codes_insufficient": 0
+   },
+   "coverage_pct": 100.0,
+   "distribution": {
+    "point_counts": {
+     "S1": 111,
+     "S3": 81,
+     "B1": 121,
+     "B2": 47,
+     "B3": 57,
+     "S2": 53
+    }
+   }
+  }
+ },
+ "coverage": {
+  "codes_requested": 50,
+  "codes_loaded": 50,
+  "codes_with_bars": 50,
+  "codes_with_bi": 50,
+  "codes_with_zhongshu": 50,
+  "codes_with_beichi": 50,
+  "codes_with_points": 50,
+  "codes_insufficient": 0
+ },
+ "examples": [
+  {
+   "ts_code": "000892.SZ",
+   "bars": 360,
+   "merged": 177,
+   "bis_closed": 19,
+   "zhongshu_closed": 2,
+   "beichi_divergence": 3,
+   "points": 7,
+   "last_zhongshu": {
+    "zg": 4.73,
+    "zd": 4.48,
+    "width_pct": 0.055804,
+    "e_dt": "20261009 11:30"
+   },
+   "last_point": {
+    "point": "S2",
+    "bar_idx": 344,
+    "dt": "20261008 10:00",
+    "price": 4.62,
+    "detail": "反抽高点不破一卖高点"
+   }
+  },
+  {
+   "ts_code": "000923.SZ",
+   "bars": 360,
+   "merged": 241,
+   "bis_closed": 23,
+   "zhongshu_closed": 1,
+   "beichi_divergence": 3,
+   "points": 5,
+   "last_zhongshu": {
+    "zg": 16.59,
+    "zd": 16.1,
+    "width_pct": 0.030435,
+    "e_dt": "20261009 10:30"
+   },
+   "last_point": {
+    "point": "S1",
+    "bar_idx": 194,
+    "dt": "20260904 11:00",
+    "price": 16.94,
+    "detail": "顶背驰 strength=0.5519"
+   }
+  },
+  {
+   "ts_code": "001255.SZ",
+   "bars": 360,
+   "merged": 218,
+   "bis_closed": 25,
+   "zhongshu_closed": 4,
+   "beichi_divergence": 5,
+   "points": 11,
+   "last_zhongshu": {
+    "zg": 27.25,
+    "zd": 26.96,
+    "width_pct": 0.010757,
+    "e_dt": "20261009 15:00"
+   },
+   "last_point": {
+    "point": "S2",
+    "bar_idx": 340,
+    "dt": "20261008 13:30",
+    "price": 27.25,
+    "detail": "反抽高点不破一卖高点"
+   }
+  },
+  {
+   "ts_code": "001283.SZ",
+   "bars": 360,
+   "merged": 221,
+   "bis_closed": 23,
+   "zhongshu_closed": 2,
+   "beichi_divergence": 5,
+   "points": 9,
+   "last_zhongshu": {
+    "zg": 48.53,
+    "zd": 46.75,
+    "width_pct": 0.038075,
+    "e_dt": "20261012 11:00"
+   },
+   "last_point": {
+    "point": "S2",
+    "bar_idx": 348,
+    "dt": "20261009 13:30",
+    "price": 48.68,
+    "detail": "反抽高点不破一卖高点"
+   }
+  },
+  {
+   "ts_code": "001314.SZ",
+   "bars": 360,
+   "merged": 240,
+   "bis_closed": 21,
+   "zhongshu_closed": 4,
+   "beichi_divergence": 4,
+   "points": 12,
+   "last_zhongshu": {
+    "zg": 55.61,
+    "zd": 54.0,
+    "width_pct": 0.029815,
+    "e_dt": "20260928 11:00"
+   },
+   "last_point": {
+    "point": "S3",
+    "bar_idx": 322,
+    "dt": "20260929 11:00",
+    "price": 51.62,
+    "detail": "反抽不上中枢下沿 ZD=54.0"
+   }
+  },
+  {
+   "ts_code": "001325.SZ",
+   "bars": 360,
+   "merged": 231,
+   "bis_closed": 27,
+   "zhongshu_closed": 4,
+   "beichi_divergence": 8,
+   "points": 16,
+   "last_zhongshu": {
+    "zg": 36.34,
+    "zd": 35.65,
+    "width_pct": 0.019355,
+    "e_dt": "20261009 13:30"
+   },
+   "last_point": {
+    "point": "B3",
+    "bar_idx": 354,
+    "dt": "20261012 11:00",
+    "price": 37.21,
+    "detail": "回抽不破中枢上沿 ZG=36.93"
+   }
+  },
+  {
+   "ts_code": "002144.SZ",
+   "bars": 360,
+   "merged": 203,
+   "bis_closed": 21,
+   "zhongshu_closed": 3,
+   "beichi_divergence": 5,
+   "points": 12,
+   "last_zhongshu": {
+    "zg": 10.99,
+    "zd": 10.75,
+    "width_pct": 0.022326,
+    "e_dt": "20261009 15:00"
+   },
+   "last_point": {
+    "point": "S1",
+    "bar_idx": 339,
+    "dt": "20261008 11:00",
+    "price": 11.27,
+    "detail": "顶背驰 strength=0.52"
+   }
+  },
+  {
+   "ts_code": "002355.SZ",
+   "bars": 360,
+   "merged": 173,
+   "bis_closed": 23,
+   "zhongshu_closed": 1,
+   "beichi_divergence": 5,
+   "points": 8,
+   "last_zhongshu": {
+    "zg": 4.63,
+    "zd": 4.6,
+    "width_pct": 0.006522,
+    "e_dt": "20261012 13:30"
+   },
+   "last_point": {
+    "point": "S3",
+    "bar_idx": 313,
+    "dt": "20260924 15:00",
+    "price": 4.68,
+    "detail": "反抽不上中枢下沿 ZD=4.7"
+   }
+  }
+ ],
+ "data_gaps": [
+  "1 分钟数据按代码×月分文件，缺月/停牌会导致 bars 不足（<80 根无法判结构，已计入 codes_insufficient）",
+  "30 分钟聚合按 A 股两段交易（9:30–11:30 / 13:00–15:00）切 8 根，与交易所分钟 bar 口径一致"
+ ],
+ "notes": [
+  "规则与仓内 chanlun_fractal.py / chanlun_bi.py 的「新笔口径」对齐（不 import、不改既有工具）。",
+  "PIT：所有结构只用当前 bar 及以前数据；确认型结构（分型/中枢/背驰/买卖点）一律落在确认 bar（判例 H29）。",
+  "**本模块为研究型因子：结构标注本身不是收益信号，未做未来收益检验；用于交易前必须过 PIT/样本外/成本/容量验证。",
+  "笔端点允许被后续更极端同性分型延伸（缠论标准行为）：报告统计仅计 closed=True 结构。"
+ ],
+ "unimplemented": []
+}

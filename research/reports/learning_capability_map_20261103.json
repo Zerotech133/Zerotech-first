@@ -1,6 +1,6 @@
 {
  "schema_version": "learning_capability.v1",
- "generated_at": "2026-11-03T07:01:05+08:00",
+ "generated_at": "2026-11-03T07:26:49+08:00",
  "project": "视频号学习_8博主",
  "overall": {
   "files": 8,
@@ -341,7 +341,7 @@
    "factor": "缠论笔/中枢/背驰强度",
    "formula": "笔端点序列→中枢区间/背驰幅度",
    "data": "分钟K线（stk_mins）",
-   "status": "数据已具备，待实现（W2+）",
+   "status": "✅ 已实现（chan_factors.py；50代码覆盖100%；待独立验证）",
    "tactic": "缠论"
   },
   {

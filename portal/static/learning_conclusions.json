@@ -1,0 +1,7703 @@
+{
+ "schema_version": "learning_conclusions.v1",
+ "generated_at": "2026-11-03T07:08:52+08:00",
+ "date": "20261103",
+ "source": {
+  "path": "C:\\项目\\老田的AI助手\\research\\reports\\learning_conclusions_lib_20261103.json",
+  "sha256": "9860bbebb38b54ae3bf5a146ec99afc286b8dde399dd37582e0502558094692a",
+  "generated_at": "2026-11-03T07:08:52+08:00",
+  "task": "W1-4",
+  "title": "有效结论库 v1（Top100 治理后结论，含置信/PIT/战法/可执行性）",
+  "read_only": true,
+  "read_only_verified": true
+ },
+ "endpoint": {
+  "current": "/static/learning_conclusions.json",
+  "static_copy": "portal/static/learning_conclusions.json",
+  "suggested_api": "/api/learning/conclusions",
+  "status": "static_only_contract_first（当前静态导出；8091 API 待接线，契约先行）"
+ },
+ "consumer_contract": {
+  "schema_version": "learning_conclusions.v1",
+  "suggested_endpoint": "/api/learning/conclusions",
+  "suggested_static_copy": "portal/static/learning_conclusions.json",
+  "query_params": {
+   "confidence": "高|中|低",
+   "executability": "A|B|C",
+   "tactic": "缠论|均线|指标|量价|形态|风控|心理|量化|未分类",
+   "limit": "1..100（默认 100）",
+   "offset": "分页偏移"
+  },
+  "required_fields": [
+   "conclusion_id",
+   "concept",
+   "text",
+   "confidence",
+   "executability",
+   "tactic",
+   "claim_type",
+   "n_sources",
+   "sources",
+   "pit",
+   "review_status",
+   "score"
+  ],
+  "legions": {
+   "quant": "取 executability=A/B 且 confidence∈{高,中} 的结论 → 战法/因子假设 → 四关",
+   "research": "取 confidence=高 的结论 → 研报问答/RAG 引用（引用 sources[].source_label）",
+   "arbitration": "取 conflicts/arbitration_queue → DATA1 张松仲裁后回写状态"
+  }
+ },
+ "query_support": {
+  "params": {
+   "confidence": "高|中|低",
+   "executability": "A|B|C",
+   "tactic": "缠论|均线|指标|量价|形态|风控|心理|量化|未分类",
+   "limit": "1..100（默认 100）",
+   "offset": "分页偏移"
+  },
+  "server_side": false,
+  "note": "当前静态端点由消费方按参数本地过滤；8091 接线后由服务端过滤（见契约文档）",
+  "examples": [
+   "/static/learning_conclusions.json（全量 Top100）",
+   "/api/learning/conclusions?confidence=高&limit=20（建议 API 形式）",
+   "/api/learning/conclusions?tactic=缠论&executability=A&limit=50"
+  ]
+ },
+ "summary": {
+  "conclusions_total_lib": 730,
+  "top_n": 100,
+  "returned": 100,
+  "confidence_dist": {
+   "高": 5,
+   "中": 24,
+   "低": 71
+  },
+  "executability_dist": {
+   "C": 15,
+   "A": 84,
+   "B": 1
+  },
+  "tactic_dist": {
+   "未分类": 15,
+   "风控": 12,
+   "均线": 11,
+   "缠论": 6,
+   "指标": 7,
+   "量价": 21,
+   "形态": 12,
+   "量化": 16
+  },
+  "claim_type_dist": {
+   "事实型（研报）": 11,
+   "规律型（方法论/博主/书）": 89
+  },
+  "review_status_dist": {
+   "published": 82,
+   "multi_source_verified": 18
+  },
+  "multi_source_conclusions": 29,
+  "conflict_count": 0,
+  "arbitration_queue_count": 24,
+  "score_range": [
+   218.0,
+   356.0
+  ]
+ },
+ "legions": {
+  "quant": "取 executability=A/B 且 confidence∈{高,中} 的结论 → 战法/因子假设 → 四关",
+  "research": "取 confidence=高 的结论 → 研报问答/RAG 引用（引用 sources[].source_label）",
+  "arbitration": "取 conflicts/arbitration_queue → DATA1 张松仲裁后回写状态",
+  "counts": {
+   "quant": 14,
+   "research": 5,
+   "arbitration": 24
+  }
+ },
+ "arbitration_queue": [
+  {
+   "arbitration_id": "AR-001",
+   "conclusion_ref": "LC-0006",
+   "concept": "仓位管理",
+   "reason": "多源但答案不一致/无法比对，措辞待统一或条件化拆分",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 3,
+    "consistent": false,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "sources": [
+    "博主·一修论市",
+    "博主·乔木缠论ROEE",
+    "博主·老木创业笔记_交易老木29条视频文案汇编"
+   ],
+   "status": "待仲裁",
+   "arbitration_owner": "DATA1 张松"
+  },
+  {
+   "arbitration_id": "AR-002",
+   "conclusion_ref": "LC-0007",
+   "concept": "五日均线",
+   "reason": "多源但答案不一致/无法比对，措辞待统一或条件化拆分",
+   "consistency": {
+    "max_similarity": 0.0146,
+    "pairs_compared": 1,
+    "consistent": false,
+    "direction_conflicts": 1,
+    "threshold": 0.45
+   },
+   "sources": [
+    "博主·一修论市",
+    "博主·数据帝-量化开发"
+   ],
+   "status": "待仲裁",
+   "arbitration_owner": "DATA1 张松"
+  },
+  {
+   "arbitration_id": "AR-003",
+   "conclusion_ref": "LC-0008",
+   "concept": "中枢判断逻辑",
+   "reason": "多源但答案不一致/无法比对，措辞待统一或条件化拆分",
+   "consistency": {
+    "max_similarity": 0.0181,
+    "pairs_compared": 1,
+    "consistent": false,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "sources": [
+    "博主·乔木缠论ROEE",
+    "博主·爱死磕-康康"
+   ],
+   "status": "待仲裁",
+   "arbitration_owner": "DATA1 张松"
+  },
+  {
+   "arbitration_id": "AR-004",
+   "conclusion_ref": "LC-0009",
+   "concept": "KDJ金叉",
+   "reason": "多源但答案不一致/无法比对，措辞待统一或条件化拆分",
+   "consistency": {
+    "max_similarity": 0.0096,
+    "pairs_compared": 1,
+    "consistent": false,
+    "direction_conflicts": 1,
+    "threshold": 0.45
+   },
+   "sources": [
+    "博主·指标公式入门",
+    "博主·老木创业笔记_交易老木29条视频文案汇编"
+   ],
+   "status": "待仲裁",
+   "arbitration_owner": "DATA1 张松"
+  },
+  {
+   "arbitration_id": "AR-005",
+   "conclusion_ref": "LC-0010",
+   "concept": "缠论底分形结构",
+   "reason": "多源但答案不一致/无法比对，措辞待统一或条件化拆分",
+   "consistency": {
+    "max_similarity": 0.0323,
+    "pairs_compared": 1,
+    "consistent": false,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "sources": [
+    "博主·一修论市",
+    "博主·乔木缠论ROEE"
+   ],
+   "status": "待仲裁",
+   "arbitration_owner": "DATA1 张松"
+  },
+  {
+   "arbitration_id": "AR-006",
+   "conclusion_ref": "LC-0011",
+   "concept": "倍量伸缩密码",
+   "reason": "多源但答案不一致/无法比对，措辞待统一或条件化拆分",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "sources": [
+    "博主·涨停密码",
+    "书·涨停密码(2)"
+   ],
+   "status": "待仲裁",
+   "arbitration_owner": "DATA1 张松"
+  },
+  {
+   "arbitration_id": "AR-007",
+   "conclusion_ref": "LC-0012",
+   "concept": "倒车接人",
+   "reason": "多源但答案不一致/无法比对，措辞待统一或条件化拆分",
+   "consistency": {
+    "max_similarity": 0.0189,
+    "pairs_compared": 1,
+    "consistent": false,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "sources": [
+    "博主·cash猫4415",
+    "博主·一修论市"
+   ],
+   "status": "待仲裁",
+   "arbitration_owner": "DATA1 张松"
+  },
+  {
+   "arbitration_id": "AR-008",
+   "conclusion_ref": "LC-0013",
+   "concept": "通达信公式",
+   "reason": "多源但答案不一致/无法比对，措辞待统一或条件化拆分",
+   "consistency": {
+    "max_similarity": 0.0083,
+    "pairs_compared": 1,
+    "consistent": false,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "sources": [
+    "博主·AI量化工具手记",
+    "博主·数据帝-量化开发"
+   ],
+   "status": "待仲裁",
+   "arbitration_owner": "DATA1 张松"
+  },
+  {
+   "arbitration_id": "AR-009",
+   "conclusion_ref": "LC-0014",
+   "concept": "十月怀胎一朝分娩",
+   "reason": "多源但答案不一致/无法比对，措辞待统一或条件化拆分",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "sources": [
+    "博主·涨停密码",
+    "书·涨停密码(2)"
+   ],
+   "status": "待仲裁",
+   "arbitration_owner": "DATA1 张松"
+  },
+  {
+   "arbitration_id": "AR-010",
+   "conclusion_ref": "LC-0015",
+   "concept": "涨停基因与涨停密码",
+   "reason": "多源但答案不一致/无法比对，措辞待统一或条件化拆分",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "sources": [
+    "博主·涨停密码",
+    "书·涨停密码(2)"
+   ],
+   "status": "待仲裁",
+   "arbitration_owner": "DATA1 张松"
+  },
+  {
+   "arbitration_id": "AR-011",
+   "conclusion_ref": "LC-0016",
+   "concept": "涨停密码",
+   "reason": "多源但答案不一致/无法比对，措辞待统一或条件化拆分",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "sources": [
+    "博主·涨停密码",
+    "书·涨停密码(2)"
+   ],
+   "status": "待仲裁",
+   "arbitration_owner": "DATA1 张松"
+  },
+  {
+   "arbitration_id": "AR-012",
+   "conclusion_ref": "LC-0017",
+   "concept": "百日低量群",
+   "reason": "多源但答案不一致/无法比对，措辞待统一或条件化拆分",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "sources": [
+    "博主·涨停密码",
+    "书·涨停密码(2)"
+   ],
+   "status": "待仲裁",
+   "arbitration_owner": "DATA1 张松"
+  },
+  {
+   "arbitration_id": "AR-013",
+   "conclusion_ref": "LC-0018",
+   "concept": "精准线伏击",
+   "reason": "多源但答案不一致/无法比对，措辞待统一或条件化拆分",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "sources": [
+    "博主·涨停密码",
+    "书·涨停密码(2)"
+   ],
+   "status": "待仲裁",
+   "arbitration_owner": "DATA1 张松"
+  },
+  {
+   "arbitration_id": "AR-014",
+   "conclusion_ref": "LC-0019",
+   "concept": "均线粘合",
+   "reason": "多源但答案不一致/无法比对，措辞待统一或条件化拆分",
+   "consistency": {
+    "max_similarity": 0.0086,
+    "pairs_compared": 10,
+    "consistent": false,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "sources": [
+    "博主·AI量化工具手记",
+    "博主·K哥真交易",
+    "博主·cash猫4415",
+    "博主·一修论市",
+    "博主·指标公式入门"
+   ],
+   "status": "待仲裁",
+   "arbitration_owner": "DATA1 张松"
+  },
+  {
+   "arbitration_id": "AR-015",
+   "conclusion_ref": "LC-0020",
+   "concept": "电力设备板块周度表现",
+   "reason": "多源但答案不一致/无法比对，措辞待统一或条件化拆分",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "sources": [
+    "研报·rp_AP202610021830105330",
+    "研报·rp_AP202610021830105333",
+    "研报·rp_AP202610021830105372"
+   ],
+   "status": "待仲裁",
+   "arbitration_owner": "DATA1 张松"
+  },
+  {
+   "arbitration_id": "AR-016",
+   "conclusion_ref": "LC-0021",
+   "concept": "交易成本",
+   "reason": "多源但答案不一致/无法比对，措辞待统一或条件化拆分",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 1,
+    "consistent": false,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "sources": [
+    "博主·数据帝-量化开发",
+    "博主·老木创业笔记_交易老木29条视频文案汇编"
+   ],
+   "status": "待仲裁",
+   "arbitration_owner": "DATA1 张松"
+  },
+  {
+   "arbitration_id": "AR-017",
+   "conclusion_ref": "LC-0022",
+   "concept": "优先行动",
+   "reason": "多源但答案不一致/无法比对，措辞待统一或条件化拆分",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "sources": [
+    "研报·rp_AP202609301830015407",
+    "研报·rp_AP202610021830105410"
+   ],
+   "status": "待仲裁",
+   "arbitration_owner": "DATA1 张松"
+  },
+  {
+   "arbitration_id": "AR-018",
+   "conclusion_ref": "LC-0023",
+   "concept": "量学核心逻辑",
+   "reason": "多源但答案不一致/无法比对，措辞待统一或条件化拆分",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "sources": [
+    "博主·伏击涨停",
+    "书·伏击涨停(2)"
+   ],
+   "status": "待仲裁",
+   "arbitration_owner": "DATA1 张松"
+  },
+  {
+   "arbitration_id": "AR-019",
+   "conclusion_ref": "LC-0024",
+   "concept": "SNPO (Scale-Up NPO)",
+   "reason": "多源但答案不一致/无法比对，措辞待统一或条件化拆分",
+   "consistency": {
+    "max_similarity": 0.2018,
+    "pairs_compared": 1,
+    "consistent": false,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "sources": [
+    "研报·rp_AP202609301830022983",
+    "研报·rp_AP202609301830034656"
+   ],
+   "status": "待仲裁",
+   "arbitration_owner": "DATA1 张松"
+  },
+  {
+   "arbitration_id": "AR-020",
+   "conclusion_ref": "LC-0025",
+   "concept": "东盟区域贸易地位",
+   "reason": "多源但答案不一致/无法比对，措辞待统一或条件化拆分",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "sources": [
+    "研报·rp_AP202610061830165956",
+    "研报·rp_AP202610061830165957"
+   ],
+   "status": "待仲裁",
+   "arbitration_owner": "DATA1 张松"
+  },
+  {
+   "arbitration_id": "AR-021",
+   "conclusion_ref": "LC-0026",
+   "concept": "光伏产业链价格变动",
+   "reason": "多源但答案不一致/无法比对，措辞待统一或条件化拆分",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "sources": [
+    "研报·rp_AP202610021830105330",
+    "研报·rp_AP202610021830105370"
+   ],
+   "status": "待仲裁",
+   "arbitration_owner": "DATA1 张松"
+  },
+  {
+   "arbitration_id": "AR-022",
+   "conclusion_ref": "LC-0027",
+   "concept": "接力双阳密码",
+   "reason": "多源但答案不一致/无法比对，措辞待统一或条件化拆分",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "sources": [
+    "博主·涨停密码",
+    "书·涨停密码(2)"
+   ],
+   "status": "待仲裁",
+   "arbitration_owner": "DATA1 张松"
+  },
+  {
+   "arbitration_id": "AR-023",
+   "conclusion_ref": "LC-0028",
+   "concept": "数据中心用电量占比预测",
+   "reason": "多源但答案不一致/无法比对，措辞待统一或条件化拆分",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "sources": [
+    "研报·rp_AP202610021830112192",
+    "研报·rp_AP202610031830126544"
+   ],
+   "status": "待仲裁",
+   "arbitration_owner": "DATA1 张松"
+  },
+  {
+   "arbitration_id": "AR-024",
+   "conclusion_ref": "LC-0029",
+   "concept": "量柱完全分类",
+   "reason": "多源但答案不一致/无法比对，措辞待统一或条件化拆分",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "sources": [
+    "博主·伏击涨停",
+    "书·伏击涨停(2)"
+   ],
+   "status": "待仲裁",
+   "arbitration_owner": "DATA1 张松"
+  }
+ ],
+ "conclusions": [
+  {
+   "concept": "航运市场运价与租金数据",
+   "aliases": [
+    "航运市场运价与租金"
+   ],
+   "text": "航运市场运价与租金：上周中国出口集装箱运价指数环比上涨 34.97 点，Fearnleys 一年期油船（VLCC）租金为 16 万美元/天，环比上涨 1.5 万美元/天。 依据：上上周，中国出口集装箱运价综合指数为 1897.15，环比上涨 34.97 点...Fearnleys 一年期租金（油船:VLCC）为 160000 美元/天，环比上涨 15000 美元/天。",
+   "text_length": 185,
+   "source_types": [
+    "research_report"
+   ],
+   "n_sources": 2,
+   "sources": [
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610021830105332",
+     "source_label": "研报·rp_AP202610021830105332",
+     "raw": "研报·rp_AP202610021830105332"
+    },
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610021830105365",
+     "source_label": "研报·rp_AP202610021830105365",
+     "raw": "研报·rp_AP202610021830105365"
+    }
+   ],
+   "bloggers": [],
+   "research_reports": [
+    "rp_AP202610021830105332",
+    "rp_AP202610021830105365"
+   ],
+   "books": [],
+   "confidence": "高",
+   "confidence_reason": "≥2 独立来源且答案一致（3-gram Jaccard ≥0.45）",
+   "consistency": {
+    "max_similarity": 0.4522,
+    "pairs_compared": 1,
+    "consistent": true,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0023",
+    "display": "航运市场运价与租金数据",
+    "status": "多源-确认",
+    "confidence_after": "中",
+    "n_members": 2
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261002",
+    "precision": "day",
+    "date_kind": "report_date",
+    "dates": [
+     "20261002"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "未分类",
+    "name": "其他（未归类战法）",
+    "hits": 0,
+    "keywords": [],
+    "confidence": "none"
+   },
+   "executability": {
+    "level": "C",
+    "label": "人工/文本判断",
+    "reason": "无量化规则可落地（行业事实/宏观观点/文本结论）"
+   },
+   "claim_type": "事实型（研报）",
+   "review_status": "published",
+   "topic": "交运/物流",
+   "score": 356.0,
+   "conclusion_id": "LC-0001"
+  },
+  {
+   "concept": "国防军工行业周度表现",
+   "aliases": [],
+   "text": "上周（2026.9.21-2026.9.24）国防军工板块下跌 1.79%，落后沪深 300 指数 0.28 个百分点，在申万行业中排名第 27 位。",
+   "text_length": 75,
+   "source_types": [
+    "research_report"
+   ],
+   "n_sources": 2,
+   "sources": [
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610021830105332",
+     "source_label": "研报·rp_AP202610021830105332",
+     "raw": "研报·rp_AP202610021830105332"
+    },
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610021830105365",
+     "source_label": "研报·rp_AP202610021830105365",
+     "raw": "研报·rp_AP202610021830105365"
+    }
+   ],
+   "bloggers": [],
+   "research_reports": [
+    "rp_AP202610021830105332",
+    "rp_AP202610021830105365"
+   ],
+   "books": [],
+   "confidence": "高",
+   "confidence_reason": "W1-2 概念簇「多源-确认」且簇级置信=高（答案证据见来源）",
+   "consistency": {
+    "max_similarity": 0.4143,
+    "pairs_compared": 1,
+    "consistent": false,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0432",
+    "display": "国防军工行业周度表现",
+    "status": "多源-确认",
+    "confidence_after": "高",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261002",
+    "precision": "day",
+    "date_kind": "report_date",
+    "dates": [
+     "20260921",
+     "20260924",
+     "20261002"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "未分类",
+    "name": "其他（未归类战法）",
+    "hits": 0,
+    "keywords": [],
+    "confidence": "none"
+   },
+   "executability": {
+    "level": "C",
+    "label": "人工/文本判断",
+    "reason": "无量化规则可落地（行业事实/宏观观点/文本结论）"
+   },
+   "claim_type": "事实型（研报）",
+   "review_status": "published",
+   "topic": "军工/航天",
+   "score": 355.0,
+   "conclusion_id": "LC-0002"
+  },
+  {
+   "concept": "行业评级定义",
+   "aliases": [],
+   "text": "证券投资评级的类别、级别定义：行业评级 - 看好：预计未来 6~12 个月内，行业指数表现强于市场基准指数。",
+   "text_length": 54,
+   "source_types": [
+    "research_report"
+   ],
+   "n_sources": 2,
+   "sources": [
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202609301830023858",
+     "source_label": "研报·rp_AP202609301830023858",
+     "raw": "研报·rp_AP202609301830023858"
+    },
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202609301830053954",
+     "source_label": "研报·rp_AP202609301830053954",
+     "raw": "研报·rp_AP202609301830053954"
+    }
+   ],
+   "bloggers": [],
+   "research_reports": [
+    "rp_AP202609301830023858",
+    "rp_AP202609301830053954"
+   ],
+   "books": [],
+   "confidence": "高",
+   "confidence_reason": "W1-2 概念簇「多源-确认」且簇级置信=高（答案证据见来源）",
+   "consistency": {
+    "max_similarity": 0.3385,
+    "pairs_compared": 1,
+    "consistent": false,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0887",
+    "display": "行业评级定义",
+    "status": "多源-确认",
+    "confidence_after": "高",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20260930",
+    "precision": "day",
+    "date_kind": "report_date",
+    "dates": [
+     "20260930"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "未分类",
+    "name": "其他（未归类战法）",
+    "hits": 0,
+    "keywords": [],
+    "confidence": "none"
+   },
+   "executability": {
+    "level": "C",
+    "label": "人工/文本判断",
+    "reason": "无量化规则可落地（行业事实/宏观观点/文本结论）"
+   },
+   "claim_type": "事实型（研报）",
+   "review_status": "published",
+   "topic": "评级/研报方法论",
+   "score": 355.0,
+   "conclusion_id": "LC-0003"
+  },
+  {
+   "concept": "跨境电子商务面临的四大挑战",
+   "aliases": [],
+   "text": "东盟中小微企业在从事跨境数字贸易时面临四大主要制约：监管与市场准入要求复杂、连接生态系统困难（物流/支付）、缺乏专门技能（如数字营销）以及信息差距。 原文依据：该报告确定了四大主要挑战领域。首先，企业在进入外国市场时，会遇到监管和市场准入要求方面的挑战...其次，中小微企业面临连接更广泛的电子商务生态系统的困难...第三，企业通常缺乏有效运营数字贸易环境所需的专门技能...第四，关于可用的支持工具、服务以及能够促进参与跨境电子商务的生态系统合作伙伴的信息差距仍然存在。",
+   "text_length": 236,
+   "source_types": [
+    "research_report"
+   ],
+   "n_sources": 2,
+   "sources": [
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202609301830015407",
+     "source_label": "研报·rp_AP202609301830015407",
+     "raw": "研报·rp_AP202609301830015407"
+    },
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610021830105410",
+     "source_label": "研报·rp_AP202610021830105410",
+     "raw": "研报·rp_AP202610021830105410"
+    }
+   ],
+   "bloggers": [],
+   "research_reports": [
+    "rp_AP202609301830015407",
+    "rp_AP202610021830105410"
+   ],
+   "books": [],
+   "confidence": "高",
+   "confidence_reason": "W1-2 概念簇「多源-确认」且簇级置信=高（答案证据见来源）",
+   "consistency": {
+    "max_similarity": 0.3424,
+    "pairs_compared": 1,
+    "consistent": false,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0927",
+    "display": "跨境电子商务面临的四大挑战",
+    "status": "多源-确认",
+    "confidence_after": "高",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20260930",
+    "precision": "day",
+    "date_kind": "report_date",
+    "dates": [
+     "20260930"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "未分类",
+    "name": "其他（未归类战法）",
+    "hits": 0,
+    "keywords": [],
+    "confidence": "none"
+   },
+   "executability": {
+    "level": "C",
+    "label": "人工/文本判断",
+    "reason": "无量化规则可落地（行业事实/宏观观点/文本结论）"
+   },
+   "claim_type": "事实型（研报）",
+   "review_status": "published",
+   "topic": "交运/物流",
+   "score": 355.0,
+   "conclusion_id": "LC-0004"
+  },
+  {
+   "concept": "东盟中小微企业（MSME）经济地位",
+   "aliases": [],
+   "text": "微、小和中型企业是东盟私营部门的中坚力量，占所有企业的 97% 至 99%，雇佣了该地区约 85% 的劳动力，并贡献了约 44.8% 的国内生产总值。",
+   "text_length": 75,
+   "source_types": [
+    "research_report"
+   ],
+   "n_sources": 2,
+   "sources": [
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202609301830015407",
+     "source_label": "研报·rp_AP202609301830015407",
+     "raw": "研报·rp_AP202609301830015407"
+    },
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610021830105410",
+     "source_label": "研报·rp_AP202610021830105410",
+     "raw": "研报·rp_AP202610021830105410"
+    }
+   ],
+   "bloggers": [],
+   "research_reports": [
+    "rp_AP202609301830015407",
+    "rp_AP202610021830105410"
+   ],
+   "books": [],
+   "confidence": "高",
+   "confidence_reason": "≥2 独立来源且答案一致（3-gram Jaccard ≥0.45）",
+   "consistency": {
+    "max_similarity": 1.0,
+    "pairs_compared": 1,
+    "consistent": true,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0174",
+    "display": "东盟中小微企业（MSME）经济地位",
+    "status": "多源-确认",
+    "confidence_after": "高",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": false,
+    "as_of": null,
+    "precision": "none",
+    "date_kind": null,
+    "dates": [],
+    "note": "来源无可解析日期（PIT 不可追溯）"
+   },
+   "tactic": {
+    "category": "未分类",
+    "name": "其他（未归类战法）",
+    "hits": 0,
+    "keywords": [],
+    "confidence": "none"
+   },
+   "executability": {
+    "level": "C",
+    "label": "人工/文本判断",
+    "reason": "无量化规则可落地（行业事实/宏观观点/文本结论）"
+   },
+   "claim_type": "事实型（研报）",
+   "review_status": "multi_source_verified",
+   "topic": "未标注",
+   "score": 346.0,
+   "conclusion_id": "LC-0005"
+  },
+  {
+   "concept": "仓位管理",
+   "aliases": [
+    "仓位"
+   ],
+   "text": "解决交易难题的关键在于将底仓与加仓分开处理。底仓本质是试盘，下跌趋势中风险大，建议用一两成仓位试探；加仓则分三种策略：突破压力时激进加至五六成，趋势确认（第三类买点）时确定性高，回",
+   "text_length": 90,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 3,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "一修论市",
+     "source_label": "博主·一修论市",
+     "raw": "博主·一修论市"
+    },
+    {
+     "source_type": "blogger",
+     "source_key": "乔木缠论ROEE",
+     "source_label": "博主·乔木缠论ROEE",
+     "raw": "博主·乔木缠论ROEE"
+    },
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编",
+     "raw": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    }
+   ],
+   "bloggers": [
+    "一修论市",
+    "乔木缠论ROEE",
+    "老木创业笔记_交易老木29条视频文案汇编"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "中",
+   "confidence_reason": "≥2 独立来源但措辞/数值不一致（需人工复核）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 3,
+    "consistent": false,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0268",
+    "display": "仓位管理",
+    "status": "多源-确认",
+    "confidence_after": "中",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261102",
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "风控",
+    "name": "仓位与止损纪律",
+    "hits": 2,
+    "keywords": [
+     "仓位",
+     "加仓"
+    ],
+    "confidence": "high"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "multi_source_verified",
+   "topic": "其他",
+   "score": 329.0,
+   "conclusion_id": "LC-0006"
+  },
+  {
+   "concept": "五日均线",
+   "aliases": [],
+   "text": "短线看，五日均线。中线看，五周均线。长线看，五月均线。线下出阴，空仓就行。线下小阳，不可守阳。线下连阳，不可中仓。反弹三阳，可先收场。线下大阳，试错中仓。",
+   "text_length": 77,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 2,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "一修论市",
+     "source_label": "博主·一修论市",
+     "raw": "博主·一修论市"
+    },
+    {
+     "source_type": "blogger",
+     "source_key": "数据帝-量化开发",
+     "source_label": "博主·数据帝-量化开发",
+     "raw": "博主·数据帝-量化开发"
+    }
+   ],
+   "bloggers": [
+    "一修论市",
+    "数据帝-量化开发"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "中",
+   "confidence_reason": "≥2 独立来源但措辞/数值不一致（需人工复核）",
+   "consistency": {
+    "max_similarity": 0.0146,
+    "pairs_compared": 1,
+    "consistent": false,
+    "direction_conflicts": 1,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0234",
+    "display": "五日均线",
+    "status": "多源-确认",
+    "confidence_after": "中",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "均线",
+    "name": "均线系统（粘合/多头排列/支撑）",
+    "hits": 2,
+    "keywords": [
+     "均线",
+     "五日均线"
+    ],
+    "confidence": "high"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 326.0,
+   "conclusion_id": "LC-0007"
+  },
+  {
+   "concept": "中枢判断逻辑",
+   "aliases": [
+    "禅论中枢",
+    "缠论中枢",
+    "缠论中枢级别"
+   ],
+   "text": "缠论中的中枢是行情运行过程中的节奏点，指在某个级别里出现至少三段次级别走势且存在重叠的区域。它是多空双方反复争夺的共识区间，连接完整趋势的关键节点，用于判断趋势延续或转折，其形状多样但需结合位置分析多空力量变化。",
+   "text_length": 106,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 2,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "乔木缠论ROEE",
+     "source_label": "博主·乔木缠论ROEE",
+     "raw": "博主·乔木缠论ROEE"
+    },
+    {
+     "source_type": "blogger",
+     "source_key": "爱死磕-康康",
+     "source_label": "博主·爱死磕-康康",
+     "raw": "博主·爱死磕-康康"
+    }
+   ],
+   "bloggers": [
+    "乔木缠论ROEE",
+    "爱死磕-康康"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "中",
+   "confidence_reason": "≥2 独立来源但措辞/数值不一致（需人工复核）",
+   "consistency": {
+    "max_similarity": 0.0181,
+    "pairs_compared": 1,
+    "consistent": false,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0001",
+    "display": "中枢判断逻辑",
+    "status": "多源-确认",
+    "confidence_after": "中",
+    "n_members": 4
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "缠论",
+    "name": "缠论结构（笔/线段/中枢/背驰/买卖点）",
+    "hits": 3,
+    "keywords": [
+     "缠论",
+     "禅论",
+     "中枢"
+    ],
+    "confidence": "high"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "multi_source_verified",
+   "topic": "其他",
+   "score": 325.0,
+   "conclusion_id": "LC-0008"
+  },
+  {
+   "concept": "KDJ金叉",
+   "aliases": [
+    "- **#08 KDJ",
+    "- 08 KDJ"
+   ],
+   "text": "- #08 KDJ：价格在区间里的位置。 高低区间归一化，再递推平滑。AI 特征：区间位置与变化速度。J 值可超出 0–100；超买不等于下跌。",
+   "text_length": 72,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 2,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "指标公式入门",
+     "source_label": "博主·指标公式入门",
+     "raw": "博主·指标公式入门"
+    },
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编",
+     "raw": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    }
+   ],
+   "bloggers": [
+    "指标公式入门",
+    "老木创业笔记_交易老木29条视频文案汇编"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "中",
+   "confidence_reason": "≥2 独立来源但措辞/数值不一致（需人工复核）",
+   "consistency": {
+    "max_similarity": 0.0096,
+    "pairs_compared": 1,
+    "consistent": false,
+    "direction_conflicts": 1,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0006",
+    "display": "KDJ金叉",
+    "status": "多源-确认",
+    "confidence_after": "中",
+    "n_members": 2
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261102",
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "指标",
+    "name": "MACD/KDJ/RSI 指标与背离",
+    "hits": 2,
+    "keywords": [
+     "KDJ",
+     "金叉"
+    ],
+    "confidence": "high"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "multi_source_verified",
+   "topic": "其他",
+   "score": 324.0,
+   "conclusion_id": "LC-0009"
+  },
+  {
+   "concept": "缠论底分形结构",
+   "aliases": [
+    "底分形",
+    "底分形结构"
+   ],
+   "text": "在日 K 线上，上证指数于 4032 点位置构建出了一个较为标准的底分形结构。尽管当前 K 线整体重心开始向上迁移，但受其次级别走势结构影响，日线级别向下笔走势尚未确认结束，仍大概",
+   "text_length": 90,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 2,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "一修论市",
+     "source_label": "博主·一修论市",
+     "raw": "博主·一修论市"
+    },
+    {
+     "source_type": "blogger",
+     "source_key": "乔木缠论ROEE",
+     "source_label": "博主·乔木缠论ROEE",
+     "raw": "博主·乔木缠论ROEE"
+    }
+   ],
+   "bloggers": [
+    "一修论市",
+    "乔木缠论ROEE"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "中",
+   "confidence_reason": "≥2 独立来源但措辞/数值不一致（需人工复核）",
+   "consistency": {
+    "max_similarity": 0.0323,
+    "pairs_compared": 1,
+    "consistent": false,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0018",
+    "display": "缠论底分形结构",
+    "status": "多源-确认",
+    "confidence_after": "中",
+    "n_members": 2
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "缠论",
+    "name": "缠论结构（笔/线段/中枢/背驰/买卖点）",
+    "hits": 3,
+    "keywords": [
+     "缠论",
+     "分形",
+     "笔"
+    ],
+    "confidence": "high"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "multi_source_verified",
+   "topic": "其他",
+   "score": 324.0,
+   "conclusion_id": "LC-0010"
+  },
+  {
+   "concept": "倍量伸缩密码",
+   "aliases": [
+    "倍量伸缩"
+   ],
+   "text": "连续的密集“倍量伸缩”（倍量拉升后紧跟倍量收缩）是“涨停临盆的异动”，通常在随后的第2、3、5或8天出现涨停。",
+   "text_length": 55,
+   "source_types": [
+    "book"
+   ],
+   "n_sources": 2,
+   "sources": [
+    {
+     "source_type": "book",
+     "source_key": "涨停密码",
+     "source_label": "博主·涨停密码",
+     "raw": "书·涨停密码"
+    },
+    {
+     "source_type": "book",
+     "source_key": "涨停密码(2)",
+     "source_label": "书·涨停密码(2)",
+     "raw": "《涨停密码(2)》 第三章 p15-27"
+    }
+   ],
+   "bloggers": [],
+   "research_reports": [],
+   "books": [
+    "涨停密码",
+    "涨停密码(2)"
+   ],
+   "confidence": "中",
+   "confidence_reason": "≥2 独立来源但无可比对答案（措辞未核）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0012",
+    "display": "倍量伸缩密码",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 2
+   },
+   "pit": {
+    "verifiable": false,
+    "as_of": null,
+    "precision": "none",
+    "date_kind": null,
+    "dates": [],
+    "note": "来源无可解析日期（PIT 不可追溯）"
+   },
+   "tactic": {
+    "category": "量价",
+    "name": "量价与筹码（放量/缩量/筹码）",
+    "hits": 2,
+    "keywords": [
+     "倍量",
+     "涨停"
+    ],
+    "confidence": "high"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "量学/涨停",
+   "score": 322.0,
+   "conclusion_id": "LC-0011"
+  },
+  {
+   "concept": "倒车接人",
+   "aliases": [],
+   "text": "早盘指数调整时，证券迅速护盘，科技获利盘被清洗。回踩 4150 点缩量拉起，确认支撑位，非主力出货，而是洗盘行为，大盘未创新高前的调整属于倒车接人策略。",
+   "text_length": 76,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 2,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "cash猫4415",
+     "source_label": "博主·cash猫4415",
+     "raw": "博主·cash猫4415"
+    },
+    {
+     "source_type": "blogger",
+     "source_key": "一修论市",
+     "source_label": "博主·一修论市",
+     "raw": "博主·一修论市"
+    }
+   ],
+   "bloggers": [
+    "cash猫4415",
+    "一修论市"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "中",
+   "confidence_reason": "≥2 独立来源但措辞/数值不一致（需人工复核）",
+   "consistency": {
+    "max_similarity": 0.0189,
+    "pairs_compared": 1,
+    "consistent": false,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0308",
+    "display": "倒车接人",
+    "status": "多源-确认",
+    "confidence_after": "中",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "形态",
+    "name": "平台/箱体/突破/缺口",
+    "hits": 2,
+    "keywords": [
+     "回踩",
+     "支撑位"
+    ],
+    "confidence": "high"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "multi_source_verified",
+   "topic": "其他",
+   "score": 322.0,
+   "conclusion_id": "LC-0012"
+  },
+  {
+   "concept": "通达信公式",
+   "aliases": [],
+   "text": "它能将模糊想法转化为条件，生成可直接在通达信中运行的公式。主要功能是写准逻辑、查错及绘制结果，但不预测涨跌，旨在排查回测收益中的公式漏洞，属于软件技术科普。",
+   "text_length": 78,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 2,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "AI量化工具手记",
+     "source_label": "博主·AI量化工具手记",
+     "raw": "博主·AI量化工具手记"
+    },
+    {
+     "source_type": "blogger",
+     "source_key": "数据帝-量化开发",
+     "source_label": "博主·数据帝-量化开发",
+     "raw": "博主·数据帝-量化开发"
+    }
+   ],
+   "bloggers": [
+    "AI量化工具手记",
+    "数据帝-量化开发"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "中",
+   "confidence_reason": "≥2 独立来源但措辞/数值不一致（需人工复核）",
+   "consistency": {
+    "max_similarity": 0.0083,
+    "pairs_compared": 1,
+    "consistent": false,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0950",
+    "display": "通达信公式",
+    "status": "多源-确认",
+    "confidence_after": "中",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "指标",
+    "name": "MACD/KDJ/RSI 指标与背离",
+    "hits": 1,
+    "keywords": [
+     "通达信"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "multi_source_verified",
+   "topic": "其他",
+   "score": 322.0,
+   "conclusion_id": "LC-0013"
+  },
+  {
+   "concept": "十月怀胎一朝分娩",
+   "aliases": [],
+   "text": "主力运作股票的过程如同“十月怀胎”，一旦完成孕育并进入“一朝分娩”的前夜（基因密集呈现），无论大盘涨跌，主力都会拉出涨停板。",
+   "text_length": 62,
+   "source_types": [
+    "book"
+   ],
+   "n_sources": 2,
+   "sources": [
+    {
+     "source_type": "book",
+     "source_key": "涨停密码",
+     "source_label": "博主·涨停密码",
+     "raw": "书·涨停密码"
+    },
+    {
+     "source_type": "book",
+     "source_key": "涨停密码(2)",
+     "source_label": "书·涨停密码(2)",
+     "raw": "《涨停密码(2)》 第三章 p15-27"
+    }
+   ],
+   "bloggers": [],
+   "research_reports": [],
+   "books": [
+    "涨停密码",
+    "涨停密码(2)"
+   ],
+   "confidence": "中",
+   "confidence_reason": "≥2 独立来源但无可比对答案（措辞未核）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0379",
+    "display": "十月怀胎一朝分娩",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": false,
+    "as_of": null,
+    "precision": "none",
+    "date_kind": null,
+    "dates": [],
+    "note": "来源无可解析日期（PIT 不可追溯）"
+   },
+   "tactic": {
+    "category": "量价",
+    "name": "量价与筹码（放量/缩量/筹码）",
+    "hits": 1,
+    "keywords": [
+     "涨停"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "量学/涨停",
+   "score": 321.0,
+   "conclusion_id": "LC-0014"
+  },
+  {
+   "concept": "涨停基因与涨停密码",
+   "aliases": [],
+   "text": "‘涨停基因’是单个因子，而‘涨停密码’是由多个因子按特定规律排列组合形成的助涨形态。",
+   "text_length": 42,
+   "source_types": [
+    "book"
+   ],
+   "n_sources": 2,
+   "sources": [
+    {
+     "source_type": "book",
+     "source_key": "涨停密码",
+     "source_label": "博主·涨停密码",
+     "raw": "书·涨停密码"
+    },
+    {
+     "source_type": "book",
+     "source_key": "涨停密码(2)",
+     "source_label": "书·涨停密码(2)",
+     "raw": "《涨停密码(2)》 前言从“涨停基因”到“涨停密码 p11-14"
+    }
+   ],
+   "bloggers": [],
+   "research_reports": [],
+   "books": [
+    "涨停密码",
+    "涨停密码(2)"
+   ],
+   "confidence": "中",
+   "confidence_reason": "≥2 独立来源但无可比对答案（措辞未核）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0706",
+    "display": "涨停基因与涨停密码",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": false,
+    "as_of": null,
+    "precision": "none",
+    "date_kind": null,
+    "dates": [],
+    "note": "来源无可解析日期（PIT 不可追溯）"
+   },
+   "tactic": {
+    "category": "量价",
+    "name": "量价与筹码（放量/缩量/筹码）",
+    "hits": 1,
+    "keywords": [
+     "涨停"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "量学/涨停",
+   "score": 321.0,
+   "conclusion_id": "LC-0015"
+  },
+  {
+   "concept": "涨停密码",
+   "aliases": [],
+   "text": "“涨停密码”是指构成股票涨停或走牛的基本因子组合，包含单个基因（如倍量柱）和组合基因（如倍量伸缩），可用于前瞻性预测牛股走势。",
+   "text_length": 63,
+   "source_types": [
+    "book"
+   ],
+   "n_sources": 2,
+   "sources": [
+    {
+     "source_type": "book",
+     "source_key": "涨停密码",
+     "source_label": "博主·涨停密码",
+     "raw": "书·涨停密码"
+    },
+    {
+     "source_type": "book",
+     "source_key": "涨停密码(2)",
+     "source_label": "书·涨停密码(2)",
+     "raw": "《涨停密码(2)》 前言 p9-10"
+    }
+   ],
+   "bloggers": [],
+   "research_reports": [],
+   "books": [
+    "涨停密码",
+    "涨停密码(2)"
+   ],
+   "confidence": "中",
+   "confidence_reason": "≥2 独立来源但无可比对答案（措辞未核）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0707",
+    "display": "涨停密码",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": false,
+    "as_of": null,
+    "precision": "none",
+    "date_kind": null,
+    "dates": [],
+    "note": "来源无可解析日期（PIT 不可追溯）"
+   },
+   "tactic": {
+    "category": "量价",
+    "name": "量价与筹码（放量/缩量/筹码）",
+    "hits": 2,
+    "keywords": [
+     "倍量",
+     "涨停"
+    ],
+    "confidence": "high"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "量学/涨停",
+   "score": 321.0,
+   "conclusion_id": "LC-0016"
+  },
+  {
+   "concept": "百日低量群",
+   "aliases": [],
+   "text": "股票出现重复的长时间“百日低量群”（价柱波浪滔天而量柱风平浪静），表明该股可能已进入“十月怀胎”的孕育过程，值得重点关注。 依据：一只股票一旦出现（或重复出现）长时间的“百日低量群”，即可能进入“十月怀胎”的过程。特别是那些“价柱波浪滔天”而“量柱风平浪静”的量价建构值得重点关注。",
+   "text_length": 141,
+   "source_types": [
+    "book"
+   ],
+   "n_sources": 2,
+   "sources": [
+    {
+     "source_type": "book",
+     "source_key": "涨停密码",
+     "source_label": "博主·涨停密码",
+     "raw": "书·涨停密码"
+    },
+    {
+     "source_type": "book",
+     "source_key": "涨停密码(2)",
+     "source_label": "书·涨停密码(2)",
+     "raw": "《涨停密码(2)》 第三章 p15-27"
+    }
+   ],
+   "bloggers": [],
+   "research_reports": [],
+   "books": [
+    "涨停密码",
+    "涨停密码(2)"
+   ],
+   "confidence": "中",
+   "confidence_reason": "≥2 独立来源但无可比对答案（措辞未核）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0741",
+    "display": "百日低量群",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": false,
+    "as_of": null,
+    "precision": "none",
+    "date_kind": null,
+    "dates": [],
+    "note": "来源无可解析日期（PIT 不可追溯）"
+   },
+   "tactic": {
+    "category": "量价",
+    "name": "量价与筹码（放量/缩量/筹码）",
+    "hits": 1,
+    "keywords": [
+     "量价"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "量学/涨停",
+   "score": 321.0,
+   "conclusion_id": "LC-0017"
+  },
+  {
+   "concept": "精准线伏击",
+   "aliases": [],
+   "text": "通过识别主力绘制的8条精准线（虚实双重精准线）及三次精准回踩形成的平衡点，可判断主力控盘稳健且即将发动攻击，适合进行伏击操作。 依据：图中0点右侧的每一个回落的低点，都自然切合了左边的关键点位，形成了底部逐级抬高的8条精准线。主力的操盘完全由这8条“虚实线”来调控。凡是“假象”都是“异动”，“假动作”后面必有“真意图”。",
+   "text_length": 161,
+   "source_types": [
+    "book"
+   ],
+   "n_sources": 2,
+   "sources": [
+    {
+     "source_type": "book",
+     "source_key": "涨停密码",
+     "source_label": "博主·涨停密码",
+     "raw": "书·涨停密码"
+    },
+    {
+     "source_type": "book",
+     "source_key": "涨停密码(2)",
+     "source_label": "书·涨停密码(2)",
+     "raw": "《涨停密码(2)》 第三章 p15-27"
+    }
+   ],
+   "bloggers": [],
+   "research_reports": [],
+   "books": [
+    "涨停密码",
+    "涨停密码(2)"
+   ],
+   "confidence": "中",
+   "confidence_reason": "≥2 独立来源但无可比对答案（措辞未核）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0786",
+    "display": "精准线伏击",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": false,
+    "as_of": null,
+    "precision": "none",
+    "date_kind": null,
+    "dates": [],
+    "note": "来源无可解析日期（PIT 不可追溯）"
+   },
+   "tactic": {
+    "category": "形态",
+    "name": "平台/箱体/突破/缺口",
+    "hits": 1,
+    "keywords": [
+     "回踩"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "量学/涨停",
+   "score": 321.0,
+   "conclusion_id": "LC-0018"
+  },
+  {
+   "concept": "均线粘合",
+   "aliases": [],
+   "text": "上证指数在突破 3930 点后进入止跌向上预判阶段，需等待回踩确认是否守住 3850 点。30 分钟上涨延续且强于预期，下午回调仅用 1 分钟横盘完成以盘代跌，未出现理想低吸点，操",
+   "text_length": 90,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 5,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "AI量化工具手记",
+     "source_label": "博主·AI量化工具手记",
+     "raw": "博主·AI量化工具手记"
+    },
+    {
+     "source_type": "blogger",
+     "source_key": "K哥真交易",
+     "source_label": "博主·K哥真交易",
+     "raw": "博主·K哥真交易"
+    },
+    {
+     "source_type": "blogger",
+     "source_key": "cash猫4415",
+     "source_label": "博主·cash猫4415",
+     "raw": "博主·cash猫4415"
+    },
+    {
+     "source_type": "blogger",
+     "source_key": "一修论市",
+     "source_label": "博主·一修论市",
+     "raw": "博主·一修论市"
+    },
+    {
+     "source_type": "blogger",
+     "source_key": "指标公式入门",
+     "source_label": "博主·指标公式入门",
+     "raw": "博主·指标公式入门"
+    }
+   ],
+   "bloggers": [
+    "AI量化工具手记",
+    "K哥真交易",
+    "cash猫4415",
+    "一修论市",
+    "指标公式入门"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "中",
+   "confidence_reason": "≥2 独立来源但措辞/数值不一致（需人工复核）",
+   "consistency": {
+    "max_similarity": 0.0086,
+    "pairs_compared": 10,
+    "consistent": false,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0448",
+    "display": "均线粘合",
+    "status": "多源-确认",
+    "confidence_after": "中",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "均线",
+    "name": "均线系统（粘合/多头排列/支撑）",
+    "hits": 2,
+    "keywords": [
+     "均线",
+     "均线粘合"
+    ],
+    "confidence": "high"
+   },
+   "executability": {
+    "level": "B",
+    "label": "需分钟数据",
+    "reason": "结论涉及分钟/分时/盘口/竞价等分钟级数据"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "multi_source_verified",
+   "topic": "其他",
+   "score": 310.0,
+   "conclusion_id": "LC-0019"
+  },
+  {
+   "concept": "电力设备板块周度表现",
+   "aliases": [
+    "电力设备行业周度表现",
+    "电力设备行业表现"
+   ],
+   "text": "2026 年 9 月 14 日至 18 日（本周），电力设备（申万）指数上涨 0.04%，跑赢沪深 300 指数 0.11pct，其中光伏设备子行业涨幅居前，达到 3.86%。",
+   "text_length": 88,
+   "source_types": [
+    "research_report"
+   ],
+   "n_sources": 3,
+   "sources": [
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610021830105330",
+     "source_label": "研报·rp_AP202610021830105330",
+     "raw": "研报·rp_AP202610021830105330"
+    },
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610021830105333",
+     "source_label": "研报·rp_AP202610021830105333",
+     "raw": "研报·rp_AP202610021830105333"
+    },
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610021830105372",
+     "source_label": "研报·rp_AP202610021830105372",
+     "raw": "研报·rp_AP202610021830105372"
+    }
+   ],
+   "bloggers": [],
+   "research_reports": [
+    "rp_AP202610021830105330",
+    "rp_AP202610021830105333",
+    "rp_AP202610021830105372"
+   ],
+   "books": [],
+   "confidence": "中",
+   "confidence_reason": "≥2 独立来源但无可比对答案（措辞未核）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0003",
+    "display": "电力设备板块周度表现",
+    "status": "多源-确认",
+    "confidence_after": "中",
+    "n_members": 3
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261002",
+    "precision": "day",
+    "date_kind": "report_date",
+    "dates": [
+     "20260914",
+     "20260918",
+     "20261002"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "未分类",
+    "name": "其他（未归类战法）",
+    "hits": 0,
+    "keywords": [],
+    "confidence": "none"
+   },
+   "executability": {
+    "level": "C",
+    "label": "人工/文本判断",
+    "reason": "无量化规则可落地（行业事实/宏观观点/文本结论）"
+   },
+   "claim_type": "事实型（研报）",
+   "review_status": "published",
+   "topic": "新能源/电力",
+   "score": 263.0,
+   "conclusion_id": "LC-0020"
+  },
+  {
+   "concept": "交易成本",
+   "aliases": [],
+   "text": "交易成本——预测优势，要过成本这一关。 手续费、滑点和冲击成本，都会消耗收益。",
+   "text_length": 39,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 2,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "数据帝-量化开发",
+     "source_label": "博主·数据帝-量化开发",
+     "raw": "博主·数据帝-量化开发"
+    },
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编",
+     "raw": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    }
+   ],
+   "bloggers": [
+    "数据帝-量化开发",
+    "老木创业笔记_交易老木29条视频文案汇编"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "中",
+   "confidence_reason": "≥2 独立来源但措辞/数值不一致（需人工复核）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 1,
+    "consistent": false,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0240",
+    "display": "交易成本",
+    "status": "多源-确认",
+    "confidence_after": "中",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261102",
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "未分类",
+    "name": "其他（未归类战法）",
+    "hits": 0,
+    "keywords": [],
+    "confidence": "none"
+   },
+   "executability": {
+    "level": "C",
+    "label": "人工/文本判断",
+    "reason": "无量化规则可落地（行业事实/宏观观点/文本结论）"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 261.0,
+   "conclusion_id": "LC-0021"
+  },
+  {
+   "concept": "优先行动",
+   "aliases": [
+    "优先行动：开发技能与 AI 课程",
+    "优先行动：提升商业支持组织（BSO）能力",
+    "优先行动：支持本土生态系统",
+    "优先行动：本土生态系统支持"
+   ],
+   "text": "需为中小微企业开发针对跨境电子商务和人工智能的技能课程，以解决市场准入限制、技能差距及信息不对称问题，并推广本土 AI 解决方案。",
+   "text_length": 65,
+   "source_types": [
+    "research_report"
+   ],
+   "n_sources": 2,
+   "sources": [
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202609301830015407",
+     "source_label": "研报·rp_AP202609301830015407",
+     "raw": "研报·rp_AP202609301830015407"
+    },
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610021830105410",
+     "source_label": "研报·rp_AP202610021830105410",
+     "raw": "研报·rp_AP202610021830105410"
+    }
+   ],
+   "bloggers": [],
+   "research_reports": [
+    "rp_AP202609301830015407",
+    "rp_AP202610021830105410"
+   ],
+   "books": [],
+   "confidence": "中",
+   "confidence_reason": "≥2 独立来源但无可比对答案（措辞未核）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0286",
+    "display": "优先行动",
+    "status": "多源-确认",
+    "confidence_after": "中",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261002",
+    "precision": "day",
+    "date_kind": "report_date",
+    "dates": [
+     "20261002"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "未分类",
+    "name": "其他（未归类战法）",
+    "hits": 0,
+    "keywords": [],
+    "confidence": "none"
+   },
+   "executability": {
+    "level": "C",
+    "label": "人工/文本判断",
+    "reason": "无量化规则可落地（行业事实/宏观观点/文本结论）"
+   },
+   "claim_type": "事实型（研报）",
+   "review_status": "published",
+   "topic": "AI/科技",
+   "score": 258.0,
+   "conclusion_id": "LC-0022"
+  },
+  {
+   "concept": "量学核心逻辑",
+   "aliases": [
+    "量学理论"
+   ],
+   "text": "2009 年“量学”问世，它摆脱了“以价论价”的“价学”桔，在“以量论价”动态平衡规律，构建了“量柱选股、量线选价、量波选时”的“三维互动”看盘操 盘系统，形成了一个独立的科学体系。",
+   "text_length": 91,
+   "source_types": [
+    "book"
+   ],
+   "n_sources": 2,
+   "sources": [
+    {
+     "source_type": "book",
+     "source_key": "伏击涨停",
+     "source_label": "博主·伏击涨停",
+     "raw": "书·伏击涨停"
+    },
+    {
+     "source_type": "book",
+     "source_key": "伏击涨停(2)",
+     "source_label": "书·伏击涨停(2)",
+     "raw": "《伏击涨停(2)》 序言1 p5-6"
+    }
+   ],
+   "bloggers": [],
+   "research_reports": [],
+   "books": [
+    "伏击涨停",
+    "伏击涨停(2)"
+   ],
+   "confidence": "中",
+   "confidence_reason": "≥2 独立来源但无可比对答案（措辞未核）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0026",
+    "display": "量学核心逻辑",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 2
+   },
+   "pit": {
+    "verifiable": false,
+    "as_of": null,
+    "precision": "none",
+    "date_kind": null,
+    "dates": [],
+    "note": "来源无可解析日期（PIT 不可追溯）"
+   },
+   "tactic": {
+    "category": "未分类",
+    "name": "其他（未归类战法）",
+    "hits": 0,
+    "keywords": [],
+    "confidence": "none"
+   },
+   "executability": {
+    "level": "C",
+    "label": "人工/文本判断",
+    "reason": "无量化规则可落地（行业事实/宏观观点/文本结论）"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "量学/涨停",
+   "score": 257.0,
+   "conclusion_id": "LC-0023"
+  },
+  {
+   "concept": "SNPO (Scale-Up NPO)",
+   "aliases": [
+    "SNPO (ScaleUp NPO)"
+   ],
+   "text": "SNPO 是全球首款实现光互连技术落地的超节点服务器方案，专为 GPU 服务器 Scale-Up 互连设计，支持从原型概念走向 AI 云的真实工程部署。",
+   "text_length": 76,
+   "source_types": [
+    "research_report"
+   ],
+   "n_sources": 2,
+   "sources": [
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202609301830022983",
+     "source_label": "研报·rp_AP202609301830022983",
+     "raw": "研报·rp_AP202609301830022983"
+    },
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202609301830034656",
+     "source_label": "研报·rp_AP202609301830034656",
+     "raw": "研报·rp_AP202609301830034656"
+    }
+   ],
+   "bloggers": [],
+   "research_reports": [
+    "rp_AP202609301830022983",
+    "rp_AP202609301830034656"
+   ],
+   "books": [],
+   "confidence": "中",
+   "confidence_reason": "≥2 独立来源但措辞/数值不一致（需人工复核）",
+   "consistency": {
+    "max_similarity": 0.2018,
+    "pairs_compared": 1,
+    "consistent": false,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0123",
+    "display": "SNPO (Scale-Up NPO)",
+    "status": "多源-确认",
+    "confidence_after": "中",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20260930",
+    "precision": "day",
+    "date_kind": "report_date",
+    "dates": [
+     "20260930"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "未分类",
+    "name": "其他（未归类战法）",
+    "hits": 0,
+    "keywords": [],
+    "confidence": "none"
+   },
+   "executability": {
+    "level": "C",
+    "label": "人工/文本判断",
+    "reason": "无量化规则可落地（行业事实/宏观观点/文本结论）"
+   },
+   "claim_type": "事实型（研报）",
+   "review_status": "published",
+   "topic": "AI/科技",
+   "score": 256.0,
+   "conclusion_id": "LC-0024"
+  },
+  {
+   "concept": "东盟区域贸易地位",
+   "aliases": [
+    "东盟地区贸易地位"
+   ],
+   "text": "2026 年 8 月当月，东盟是北京市货物贸易出口额最高的单一区域，达到 24.0 亿美元。",
+   "text_length": 46,
+   "source_types": [
+    "research_report"
+   ],
+   "n_sources": 2,
+   "sources": [
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610061830165956",
+     "source_label": "研报·rp_AP202610061830165956",
+     "raw": "研报·rp_AP202610061830165956"
+    },
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610061830165957",
+     "source_label": "研报·rp_AP202610061830165957",
+     "raw": "研报·rp_AP202610061830165957"
+    }
+   ],
+   "bloggers": [],
+   "research_reports": [
+    "rp_AP202610061830165956",
+    "rp_AP202610061830165957"
+   ],
+   "books": [],
+   "confidence": "中",
+   "confidence_reason": "≥2 独立来源但无可比对答案（措辞未核）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0008",
+    "display": "东盟区域贸易地位",
+    "status": "多源-确认",
+    "confidence_after": "中",
+    "n_members": 2
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261006",
+    "precision": "day",
+    "date_kind": "report_date",
+    "dates": [
+     "20261006"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "未分类",
+    "name": "其他（未归类战法）",
+    "hits": 0,
+    "keywords": [],
+    "confidence": "none"
+   },
+   "executability": {
+    "level": "C",
+    "label": "人工/文本判断",
+    "reason": "无量化规则可落地（行业事实/宏观观点/文本结论）"
+   },
+   "claim_type": "事实型（研报）",
+   "review_status": "published",
+   "topic": "制造/宏观",
+   "score": 256.0,
+   "conclusion_id": "LC-0025"
+  },
+  {
+   "concept": "光伏产业链价格变动",
+   "aliases": [
+    "光伏产业链价格"
+   ],
+   "text": "光伏产业链价格变动：截至 2026 年 9 月 16 日，硅料成交价环比持平为 40 元/kg，银浆价格环比下跌 5.1% 至 15890 元/kg，而硅片、电池片和组件价格均保持环比持平。",
+   "text_length": 95,
+   "source_types": [
+    "research_report"
+   ],
+   "n_sources": 2,
+   "sources": [
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610021830105330",
+     "source_label": "研报·rp_AP202610021830105330",
+     "raw": "研报·rp_AP202610021830105330"
+    },
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610021830105370",
+     "source_label": "研报·rp_AP202610021830105370",
+     "raw": "研报·rp_AP202610021830105370"
+    }
+   ],
+   "bloggers": [],
+   "research_reports": [
+    "rp_AP202610021830105330",
+    "rp_AP202610021830105370"
+   ],
+   "books": [],
+   "confidence": "中",
+   "confidence_reason": "≥2 独立来源但无可比对答案（措辞未核）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0013",
+    "display": "光伏产业链价格变动",
+    "status": "多源-确认",
+    "confidence_after": "中",
+    "n_members": 2
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261002",
+    "precision": "day",
+    "date_kind": "report_date",
+    "dates": [
+     "20261002"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "未分类",
+    "name": "其他（未归类战法）",
+    "hits": 0,
+    "keywords": [],
+    "confidence": "none"
+   },
+   "executability": {
+    "level": "C",
+    "label": "人工/文本判断",
+    "reason": "无量化规则可落地（行业事实/宏观观点/文本结论）"
+   },
+   "claim_type": "事实型（研报）",
+   "review_status": "published",
+   "topic": "AI/科技",
+   "score": 256.0,
+   "conclusion_id": "LC-0026"
+  },
+  {
+   "concept": "接力双阳密码",
+   "aliases": [],
+   "text": "由两个‘小倍阳’基因踩着同一条‘精准线’构成，其上攻基础已成。",
+   "text_length": 31,
+   "source_types": [
+    "book"
+   ],
+   "n_sources": 2,
+   "sources": [
+    {
+     "source_type": "book",
+     "source_key": "涨停密码",
+     "source_label": "博主·涨停密码",
+     "raw": "书·涨停密码"
+    },
+    {
+     "source_type": "book",
+     "source_key": "涨停密码(2)",
+     "source_label": "书·涨停密码(2)",
+     "raw": "《涨停密码(2)》 前言从“涨停基因”到“涨停密码 p11-14"
+    }
+   ],
+   "bloggers": [],
+   "research_reports": [],
+   "books": [
+    "涨停密码",
+    "涨停密码(2)"
+   ],
+   "confidence": "中",
+   "confidence_reason": "≥2 独立来源但无可比对答案（措辞未核）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0609",
+    "display": "接力双阳密码",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": false,
+    "as_of": null,
+    "precision": "none",
+    "date_kind": null,
+    "dates": [],
+    "note": "来源无可解析日期（PIT 不可追溯）"
+   },
+   "tactic": {
+    "category": "未分类",
+    "name": "其他（未归类战法）",
+    "hits": 0,
+    "keywords": [],
+    "confidence": "none"
+   },
+   "executability": {
+    "level": "C",
+    "label": "人工/文本判断",
+    "reason": "无量化规则可落地（行业事实/宏观观点/文本结论）"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "量学/涨停",
+   "score": 256.0,
+   "conclusion_id": "LC-0027"
+  },
+  {
+   "concept": "数据中心用电量占比预测",
+   "aliases": [
+    "数据中心用电量预测"
+   ],
+   "text": "预计到 2030 年，美国数据中心占全国用电量的比例将从目前的 5.9% 升至约 12%，2035 年或进一步攀升至 20%。",
+   "text_length": 63,
+   "source_types": [
+    "research_report"
+   ],
+   "n_sources": 2,
+   "sources": [
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610021830112192",
+     "source_label": "研报·rp_AP202610021830112192",
+     "raw": "研报·rp_AP202610021830112192"
+    },
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610031830126544",
+     "source_label": "研报·rp_AP202610031830126544",
+     "raw": "研报·rp_AP202610031830126544"
+    }
+   ],
+   "bloggers": [],
+   "research_reports": [
+    "rp_AP202610021830112192",
+    "rp_AP202610031830126544"
+   ],
+   "books": [],
+   "confidence": "中",
+   "confidence_reason": "≥2 独立来源但无可比对答案（措辞未核）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0015",
+    "display": "数据中心用电量占比预测",
+    "status": "多源-确认",
+    "confidence_after": "中",
+    "n_members": 2
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261002",
+    "precision": "day",
+    "date_kind": "report_date",
+    "dates": [
+     "20261002"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "未分类",
+    "name": "其他（未归类战法）",
+    "hits": 0,
+    "keywords": [],
+    "confidence": "none"
+   },
+   "executability": {
+    "level": "C",
+    "label": "人工/文本判断",
+    "reason": "无量化规则可落地（行业事实/宏观观点/文本结论）"
+   },
+   "claim_type": "事实型（研报）",
+   "review_status": "published",
+   "topic": "AI/科技",
+   "score": 256.0,
+   "conclusion_id": "LC-0028"
+  },
+  {
+   "concept": "量柱完全分类",
+   "aliases": [],
+   "text": "王子老师对量柱进行了“完全分类”，将形状万千的量柱归纳为“高低平倍梯缩金”七种形态，为量柱结构研究指明了方向。",
+   "text_length": 55,
+   "source_types": [
+    "book"
+   ],
+   "n_sources": 2,
+   "sources": [
+    {
+     "source_type": "book",
+     "source_key": "伏击涨停",
+     "source_label": "博主·伏击涨停",
+     "raw": "书·伏击涨停"
+    },
+    {
+     "source_type": "book",
+     "source_key": "伏击涨停(2)",
+     "source_label": "书·伏击涨停(2)",
+     "raw": "《伏击涨停(2)》 序言1 p5-6"
+    }
+   ],
+   "bloggers": [],
+   "research_reports": [],
+   "books": [
+    "伏击涨停",
+    "伏击涨停(2)"
+   ],
+   "confidence": "中",
+   "confidence_reason": "≥2 独立来源但无可比对答案（措辞未核）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0972",
+    "display": "量柱完全分类",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": false,
+    "as_of": null,
+    "precision": "none",
+    "date_kind": null,
+    "dates": [],
+    "note": "来源无可解析日期（PIT 不可追溯）"
+   },
+   "tactic": {
+    "category": "未分类",
+    "name": "其他（未归类战法）",
+    "hits": 0,
+    "keywords": [],
+    "confidence": "none"
+   },
+   "executability": {
+    "level": "C",
+    "label": "人工/文本判断",
+    "reason": "无量化规则可落地（行业事实/宏观观点/文本结论）"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "量学/涨停",
+   "score": 256.0,
+   "conclusion_id": "LC-0029"
+  },
+  {
+   "concept": "AI 量化",
+   "aliases": [
+    "AI 量化呢"
+   ],
+   "text": "专业的 AI 量化，需要把数据依据、决策逻辑和风险约束连接起来。所以想让 AI 做出有依据的分析，先把它能看到的数据配置好。我是老木，欢迎大家交流。",
+   "text_length": 74,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编",
+     "raw": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    }
+   ],
+   "bloggers": [
+    "老木创业笔记_交易老木29条视频文案汇编"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0052",
+    "display": "AI 量化",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261102",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261102"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "量化",
+    "name": "量化工程（回测/因子/过拟合）",
+    "hits": 1,
+    "keywords": [
+     "量化"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "AI算力/硬件",
+   "score": 221.0,
+   "conclusion_id": "LC-0030"
+  },
+  {
+   "concept": "AI土雄策略",
+   "aliases": [],
+   "text": "该策略需在通达信软件下运行。先安装软件并找到其安装目录下的T0002\\DLLS文件夹，将解压后的DLL文件放入其中，再将公式指标导入。登录软件后按Ctrl+F打开公式管理器，选择导入“交易型”下的AI土雄，输入ATX4即可在K线图显示买卖点。",
+   "text_length": 121,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "乔木缠论ROEE",
+     "source_label": "博主·乔木缠论ROEE",
+     "raw": "博主·乔木缠论ROEE"
+    }
+   ],
+   "bloggers": [
+    "乔木缠论ROEE"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0063",
+    "display": "AI土雄策略",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "缠论",
+    "name": "缠论结构（笔/线段/中枢/背驰/买卖点）",
+    "hits": 1,
+    "keywords": [
+     "买卖点"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0031"
+  },
+  {
+   "concept": "MACD号称指标之王",
+   "aliases": [],
+   "text": "MACD号称指标之王，但上穿下穿形成比较滞后。可以结合MA、EMA、SMA及WMA等函数优化，引入MACD量能助的平均线来增加灵敏度，增加带状填充，加强视觉冲击。以MA为例，优化公式如下。",
+   "text_length": 94,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "指标公式入门",
+     "source_label": "博主·指标公式入门",
+     "raw": "博主·指标公式入门"
+    }
+   ],
+   "bloggers": [
+    "指标公式入门"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0092",
+    "display": "MACD号称指标之王",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "均线",
+    "name": "均线系统（粘合/多头排列/支撑）",
+    "hits": 1,
+    "keywords": [
+     "均线"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0032"
+  },
+  {
+   "concept": "MACD指标的D0轴之上",
+   "aliases": [],
+   "text": "像这种、这种、还有这种。MACD指标的D0轴之上。DIF拐头向上。MACD量能柱开始向上。收阳线的位置如何一眼分辨出来。安排。",
+   "text_length": 63,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "指标公式入门",
+     "source_label": "博主·指标公式入门",
+     "raw": "博主·指标公式入门"
+    }
+   ],
+   "bloggers": [
+    "指标公式入门"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0095",
+    "display": "MACD指标的D0轴之上",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "指标",
+    "name": "MACD/KDJ/RSI 指标与背离",
+    "hits": 2,
+    "keywords": [
+     "MACD",
+     "DIF"
+    ],
+    "confidence": "high"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0033"
+  },
+  {
+   "concept": "RSI等技术指标",
+   "aliases": [],
+   "text": "系统性因子。1. 动量因子，基于股票价格和成交量的变化趋势。2. 价值因子，公司基本面分析。3. 波动率因子，股票价格波动。4. 规模因子，公司市值大小。5. 技术因子，MA、RSI等技术指标。6. 资金流因子，资金流入流出情况。7. 高频因子，价格变动，订单不深度等。",
+   "text_length": 135,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "数据帝-量化开发",
+     "source_label": "博主·数据帝-量化开发",
+     "raw": "博主·数据帝-量化开发"
+    }
+   ],
+   "bloggers": [
+    "数据帝-量化开发"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0121",
+    "display": "RSI等技术指标",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "量价",
+    "name": "量价与筹码（放量/缩量/筹码）",
+    "hits": 2,
+    "keywords": [
+     "成交量",
+     "资金流"
+    ],
+    "confidence": "high"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0034"
+  },
+  {
+   "concept": "SKDJ和均线指标",
+   "aliases": [],
+   "text": "部分朋友喜欢用MACD、SKDJ和均线指标，但指标过多看着眼花缭乱了。我们可以将MA、SKDJ和MACD合并到一个指标内，方便比对参考。",
+   "text_length": 68,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "指标公式入门",
+     "source_label": "博主·指标公式入门",
+     "raw": "博主·指标公式入门"
+    }
+   ],
+   "bloggers": [
+    "指标公式入门"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0122",
+    "display": "SKDJ和均线指标",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "指标",
+    "name": "MACD/KDJ/RSI 指标与背离",
+    "hits": 2,
+    "keywords": [
+     "MACD",
+     "KDJ"
+    ],
+    "confidence": "high"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0035"
+  },
+  {
+   "concept": "三均线形成",
+   "aliases": [],
+   "text": "三均线形成、架拖三角形。如何快速寻找?一个个去找太麻烦了。在公式管理集中输入下列公式就可以了。你还想写什么公式呢?",
+   "text_length": 57,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "数据帝-量化开发",
+     "source_label": "博主·数据帝-量化开发",
+     "raw": "博主·数据帝-量化开发"
+    }
+   ],
+   "bloggers": [
+    "数据帝-量化开发"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0151",
+    "display": "三均线形成",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "均线",
+    "name": "均线系统（粘合/多头排列/支撑）",
+    "hits": 1,
+    "keywords": [
+     "均线"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0036"
+  },
+  {
+   "concept": "与风险因子低相关",
+   "aliases": [],
+   "text": "因子入库的标准。1.清洗处理数据，保证因子准确性和完整性。2.因子需具备正收益能力且稳定性好。3.因子之间的相关性需要低于0.7。4.与风险因子低相关。5.多维度检验，保证因子的有效性。",
+   "text_length": 93,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "数据帝-量化开发",
+     "source_label": "博主·数据帝-量化开发",
+     "raw": "博主·数据帝-量化开发"
+    }
+   ],
+   "bloggers": [
+    "数据帝-量化开发"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0171",
+    "display": "与风险因子低相关",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "量化",
+    "name": "量化工程（回测/因子/过拟合）",
+    "hits": 1,
+    "keywords": [
+     "因子"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0037"
+  },
+  {
+   "concept": "个人开通量化的资金要多少",
+   "aliases": [],
+   "text": "个人开通量化的资金要多少?国金证券10万。国信证券20万。中信证券50万。这商证券不开放。国泰军安300万。银河证券500万。除了开户资金，交易策略1万到5万不等。",
+   "text_length": 82,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "数据帝-量化开发",
+     "source_label": "博主·数据帝-量化开发",
+     "raw": "博主·数据帝-量化开发"
+    }
+   ],
+   "bloggers": [
+    "数据帝-量化开发"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0177",
+    "display": "个人开通量化的资金要多少",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "量化",
+    "name": "量化工程（回测/因子/过拟合）",
+    "hits": 1,
+    "keywords": [
+     "量化"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0038"
+  },
+  {
+   "concept": "个人量化平台",
+   "aliases": [],
+   "text": "量化交易中的大白话。因子，选股票好坏的条件。API接口，连接不同系统的桥梁。本地部署，软件安装在你的电脑上。QMT，个人量化平台。算法交易，把你的想法程序化。Alpha，掌听版。核心策略，最挣钱的。策略拥挤，用的人太多了。",
+   "text_length": 111,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "数据帝-量化开发",
+     "source_label": "博主·数据帝-量化开发",
+     "raw": "博主·数据帝-量化开发"
+    }
+   ],
+   "bloggers": [
+    "数据帝-量化开发"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0178",
+    "display": "个人量化平台",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "量化",
+    "name": "量化工程（回测/因子/过拟合）",
+    "hits": 2,
+    "keywords": [
+     "因子",
+     "量化"
+    ],
+    "confidence": "high"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0039"
+  },
+  {
+   "concept": "个人量化软件门槛低",
+   "aliases": [],
+   "text": "个人量化软件和量化基金有什么区别?个人量化软件门槛低，只要十万起步。量化基金门槛高，需要一百万起头。个人量化软件资金安全都在自己账户。量化基金的资金都在私募资金账户。个人量化软件账户透明度高，所有操作都能看见。量化基金只能每个月看净值。个人量化软件资金灵活随自己支配。量化基金固定周期赎回。个人量化软件收益高，不需要管理费。量化基金收益低，需要管理费。",
+   "text_length": 176,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "数据帝-量化开发",
+     "source_label": "博主·数据帝-量化开发",
+     "raw": "博主·数据帝-量化开发"
+    }
+   ],
+   "bloggers": [
+    "数据帝-量化开发"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0179",
+    "display": "个人量化软件门槛低",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "量化",
+    "name": "量化工程（回测/因子/过拟合）",
+    "hits": 1,
+    "keywords": [
+     "量化"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0040"
+  },
+  {
+   "concept": "买卖点完备性",
+   "aliases": [],
+   "text": "买卖点的完备性出自缠论 108 奖励第 21 课，是系统化交易模型的基石。其逻辑起点在于判断走势延续或转折，核心围绕中枢的三种演变（延续、扩张、新生）。其中中枢新生代表明确趋势，最具吸引力，需精准定位三类买点以捕捉机会。",
+   "text_length": 110,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "乔木缠论ROEE",
+     "source_label": "博主·乔木缠论ROEE",
+     "raw": "博主·乔木缠论ROEE"
+    }
+   ],
+   "bloggers": [
+    "乔木缠论ROEE"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0224",
+    "display": "买卖点完备性",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "缠论",
+    "name": "缠论结构（笔/线段/中枢/背驰/买卖点）",
+    "hits": 3,
+    "keywords": [
+     "缠论",
+     "中枢",
+     "买卖点"
+    ],
+    "confidence": "high"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0041"
+  },
+  {
+   "concept": "交易平台",
+   "aliases": [],
+   "text": "如何减少交易执行中的滑点?1.交易速度。使用高频交易，减少交易延迟。2.交易时间。选择容易成交的时间点进行交易。3.优化订单。使用限价单或冰山订单。4.订单大小。分批下单。保证订单大小和市场承受能力匹配。市场环境。选择流动性高的市场进行交易。交易平台。选择提供好的执行交易算法和订单类型的平台。",
+   "text_length": 147,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "数据帝-量化开发",
+     "source_label": "博主·数据帝-量化开发",
+     "raw": "博主·数据帝-量化开发"
+    }
+   ],
+   "bloggers": [
+    "数据帝-量化开发"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0239",
+    "display": "交易平台",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "形态",
+    "name": "平台/箱体/突破/缺口",
+    "hits": 1,
+    "keywords": [
+     "平台"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0042"
+  },
+  {
+   "concept": "交易所资金流",
+   "aliases": [],
+   "text": "交易所资金流——追踪资金，流向哪里。 交易所资金流、矿工流向和相关链上指标，帮助观察资金往哪里走。流入交易所，不等于已经卖出。",
+   "text_length": 63,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编",
+     "raw": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    }
+   ],
+   "bloggers": [
+    "老木创业笔记_交易老木29条视频文案汇编"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0242",
+    "display": "交易所资金流",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261102",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261102"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "量价",
+    "name": "量价与筹码（放量/缩量/筹码）",
+    "hits": 1,
+    "keywords": [
+     "资金流"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0043"
+  },
+  {
+   "concept": "交易风控于一体",
+   "aliases": [],
+   "text": "什么是QMT?QMT是迅投研发的一个专业量化平台。集行情数据、策略制定、交易风控于一体。能满足绝大用户的交易需求。大部分券商都与QMT有深度合作。另外，QMT是在本地运行的。不仅灵活性高、可拓展性强，还很好地保护了策略的安全。",
+   "text_length": 113,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "数据帝-量化开发",
+     "source_label": "博主·数据帝-量化开发",
+     "raw": "博主·数据帝-量化开发"
+    }
+   ],
+   "bloggers": [
+    "数据帝-量化开发"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0245",
+    "display": "交易风控于一体",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "形态",
+    "name": "平台/箱体/突破/缺口",
+    "hits": 1,
+    "keywords": [
+     "平台"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0044"
+  },
+  {
+   "concept": "仓位与风险",
+   "aliases": [],
+   "text": "仓位与风险——信号有强弱，仓位有边界。 模型输出之后，还要约束集中度和风险；协方差估计本身也有误差。",
+   "text_length": 50,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编",
+     "raw": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    }
+   ],
+   "bloggers": [
+    "老木创业笔记_交易老木29条视频文案汇编"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0267",
+    "display": "仓位与风险",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261102",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261102"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "风控",
+    "name": "仓位与止损纪律",
+    "hits": 1,
+    "keywords": [
+     "仓位"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0045"
+  },
+  {
+   "concept": "仓位管理也就是资金管理",
+   "aliases": [],
+   "text": "仓位映射。仓位映射又叫仓位管理。仓位在投资领域就是你投资的资金占总流动资金的比例。仓位管理也就是资金管理。下面是一些仓位管理的名词。满仓，将所有资金都投资在股票或基金里。半仓，投资一半资金。空仓，没有资金投入。重仓，一般只投资三分之二级以上。建仓，开始买。加仓，多买点。补仓，亏损时接着买入。平仓，买多少后卖多少。每个投资者具体情况都是不同的。在实际操作中需要根据自己的情况来定制和调整仓位策略。",
+   "text_length": 198,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "数据帝-量化开发",
+     "source_label": "博主·数据帝-量化开发",
+     "raw": "博主·数据帝-量化开发"
+    }
+   ],
+   "bloggers": [
+    "数据帝-量化开发"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0269",
+    "display": "仓位管理也就是资金管理",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "风控",
+    "name": "仓位与止损纪律",
+    "hits": 4,
+    "keywords": [
+     "仓位",
+     "满仓",
+     "半仓",
+     "加仓"
+    ],
+    "confidence": "high"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0046"
+  },
+  {
+   "concept": "仓位要注意适当的做作检法",
+   "aliases": [],
+   "text": "而且鉴于上次回小美之后就反悔，主力也担心期间会出现什么幺蛾子。所以这个时候，至今更多的是对性等待后面谈判的结果。至于策略上，指数如此高位并不是加仓的时候。反而是大展的时候，仓位要注意适当的做作检法。好了，就说这么多，点个小关小周和小红星。下午收盘后，欢迎回来验证。更多的细节在收盘后全面的细说。我们下午收盘，不见不散。",
+   "text_length": 159,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "一修论市",
+     "source_label": "博主·一修论市",
+     "raw": "博主·一修论市"
+    }
+   ],
+   "bloggers": [
+    "一修论市"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0271",
+    "display": "仓位要注意适当的做作检法",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "风控",
+    "name": "仓位与止损纪律",
+    "hits": 2,
+    "keywords": [
+     "仓位",
+     "加仓"
+    ],
+    "confidence": "high"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0047"
+  },
+  {
+   "concept": "价格行为 PA/SMC",
+   "aliases": [],
+   "text": "价格行为 PA/SMC：把叙事变成规则。 突破、回落、扫过前高，都要先定义。AI 特征：结构事件与条件概率。PA/SMC 没有统一公式；复杂不等于有效。",
+   "text_length": 76,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编",
+     "raw": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    }
+   ],
+   "bloggers": [
+    "老木创业笔记_交易老木29条视频文案汇编"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0276",
+    "display": "价格行为 PA/SMC",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261102",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261102"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "形态",
+    "name": "平台/箱体/突破/缺口",
+    "hits": 1,
+    "keywords": [
+     "突破"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "AI/科技",
+   "score": 220.0,
+   "conclusion_id": "LC-0048"
+  },
+  {
+   "concept": "优化策略参数改进模型",
+   "aliases": [],
+   "text": "如何提高次核心策略收益率?一、数据增强。丰富策略的信息基础使用高质量数据。二、多元化策略组合。多策略组合增加策略盈利渠道。三、策略优化。优化策略参数改进模型。4.执行能力，降低交易成本，提高交易速度。5.市场适应，灵活调整策略，与当前市场环境匹配。6.风险管理，设置指引止损点，优化头寸大小。7.学习和研究，保持策略前沿性。",
+   "text_length": 162,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "数据帝-量化开发",
+     "source_label": "博主·数据帝-量化开发",
+     "raw": "博主·数据帝-量化开发"
+    }
+   ],
+   "bloggers": [
+    "数据帝-量化开发"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0287",
+    "display": "优化策略参数改进模型",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "风控",
+    "name": "仓位与止损纪律",
+    "hits": 1,
+    "keywords": [
+     "止损"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0049"
+  },
+  {
+   "concept": "但并没有跌破关键支撑位",
+   "aliases": [],
+   "text": "好了，综合以上观点，我表达的非常明确了。五穷六绝七方生。六月份会复刻五月份的走势，并且今天虽然跌幅太大，但并没有跌破关键支撑位，所以对于下周的行情的形容就是探底回升，指数收红。但不要轻易的去追高，而是随着上涨锁定利润。如果您也喜欢我这种简单直白的风格，那么不妨点好小关小注和小红星，咱们下周不见不散。",
+   "text_length": 150,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "一修论市",
+     "source_label": "博主·一修论市",
+     "raw": "博主·一修论市"
+    }
+   ],
+   "bloggers": [
+    "一修论市"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0295",
+    "display": "但并没有跌破关键支撑位",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "形态",
+    "name": "平台/箱体/突破/缺口",
+    "hits": 1,
+    "keywords": [
+     "支撑位"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0050"
+  },
+  {
+   "concept": "低换手量低迷",
+   "aliases": [],
+   "text": "低换手量低迷。低位好股，可留意。中换手，量见起，低位加仓，高位季，高换手，量剧增，低位参与，高位奔，超念手，风险零。无论高低，要小心。",
+   "text_length": 67,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "数据帝-量化开发",
+     "source_label": "博主·数据帝-量化开发",
+     "raw": "博主·数据帝-量化开发"
+    }
+   ],
+   "bloggers": [
+    "数据帝-量化开发"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0298",
+    "display": "低换手量低迷",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "风控",
+    "name": "仓位与止损纪律",
+    "hits": 1,
+    "keywords": [
+     "加仓"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0051"
+  },
+  {
+   "concept": "使用多个因子的投资组合",
+   "aliases": [],
+   "text": "如何解决策略同质化?1.使用多个因子的投资组合，投资不同资产类别。2.优化交易算法。3.研发新的策略，挖掘新的因子。4.及时根据市场风格调整策略。5.深入研究，发现新的投资机会。6.多与同行交流策略研究成果。",
+   "text_length": 104,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "数据帝-量化开发",
+     "source_label": "博主·数据帝-量化开发",
+     "raw": "博主·数据帝-量化开发"
+    }
+   ],
+   "bloggers": [
+    "数据帝-量化开发"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0301",
+    "display": "使用多个因子的投资组合",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "量化",
+    "name": "量化工程（回测/因子/过拟合）",
+    "hits": 1,
+    "keywords": [
+     "因子"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0052"
+  },
+  {
+   "concept": "假期虽然不开盘",
+   "aliases": [],
+   "text": "假期虽然不开盘，但是消息却一个比一个中斑。如果您还想长假期间安安心心的过节，那么请务必听我一言，我直接说结论。隔夜外围连续两天暴涨，费城半导体也持续两天收养，但诡异的是，特不靠谱否认再度让祸木之海峡暗流涌动。叠加A股301，截清3900点再度失守，超跌4300加，成交量跌至1.66万亿。",
+   "text_length": 144,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "一修论市",
+     "source_label": "博主·一修论市",
+     "raw": "博主·一修论市"
+    }
+   ],
+   "bloggers": [
+    "一修论市"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0309",
+    "display": "假期虽然不开盘",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "量价",
+    "name": "量价与筹码（放量/缩量/筹码）",
+    "hits": 1,
+    "keywords": [
+     "成交量"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0053"
+  },
+  {
+   "concept": "六大量化交易模块",
+   "aliases": [],
+   "text": "六大量化交易模块。一、数据模块，提供准确和及时的数据。二、策略模块，研发、生成、优化交易策略。三、交易模块，按照交易策略进行买卖。四、回测模块，对策略进行测试和验证。五、风险管理模块，监控交易过程中可能遇到的风险。六、管理模块，监控整个投资组合，确保投资目标与风险偏好。",
+   "text_length": 135,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "数据帝-量化开发",
+     "source_label": "博主·数据帝-量化开发",
+     "raw": "博主·数据帝-量化开发"
+    }
+   ],
+   "bloggers": [
+    "数据帝-量化开发"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0335",
+    "display": "六大量化交易模块",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "量化",
+    "name": "量化工程（回测/因子/过拟合）",
+    "hits": 2,
+    "keywords": [
+     "回测",
+     "量化"
+    ],
+    "confidence": "high"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0054"
+  },
+  {
+   "concept": "利用机器学习优化因子权重",
+   "aliases": [],
+   "text": "何时的因子权重是量化的关键?1.相关性高的因子需降低权重。2.选择不同市场条件下表现稳定的因子。3.使用历史数据测试出表现最好的权重组合。4.根据不同投资目标，风险偏好选择权重。5.定期调整因子权重。6.利用机器学习优化因子权重。7.咨询专业人士。",
+   "text_length": 124,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "数据帝-量化开发",
+     "source_label": "博主·数据帝-量化开发",
+     "raw": "博主·数据帝-量化开发"
+    }
+   ],
+   "bloggers": [
+    "数据帝-量化开发"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0357",
+    "display": "利用机器学习优化因子权重",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "量化",
+    "name": "量化工程（回测/因子/过拟合）",
+    "hits": 2,
+    "keywords": [
+     "因子",
+     "量化"
+    ],
+    "confidence": "high"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0055"
+  },
+  {
+   "concept": "去量化交易平台进行回测",
+   "aliases": [],
+   "text": "如何定制自己的量化交易?一、有一个自己的交易体系。二、将交易想法做成交易策略。自己平台做或者叫专业人士代写。三、去量化交易平台进行回测。四、进行虚拟盘自动化交易。五、对策略进行优化。六、实盘交易。",
+   "text_length": 98,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "数据帝-量化开发",
+     "source_label": "博主·数据帝-量化开发",
+     "raw": "博主·数据帝-量化开发"
+    }
+   ],
+   "bloggers": [
+    "数据帝-量化开发"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0389",
+    "display": "去量化交易平台进行回测",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "量化",
+    "name": "量化工程（回测/因子/过拟合）",
+    "hits": 2,
+    "keywords": [
+     "回测",
+     "量化"
+    ],
+    "confidence": "high"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0056"
+  },
+  {
+   "concept": "双底形态",
+   "aliases": [],
+   "text": "指数在 4258 点见顶后连续调整数月，昨日探底回升走出双底形态，属于黎明前的黑暗，符合反弹修复需求，新一轮主升浪有望可期。",
+   "text_length": 62,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "一修论市",
+     "source_label": "博主·一修论市",
+     "raw": "博主·一修论市"
+    }
+   ],
+   "bloggers": [
+    "一修论市"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0390",
+    "display": "双底形态",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "形态",
+    "name": "平台/箱体/突破/缺口",
+    "hits": 1,
+    "keywords": [
+     "双底"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0057"
+  },
+  {
+   "concept": "回测换一个均线函数",
+   "aliases": [],
+   "text": "毛线影响力持续衰减限价一遍。立刻快速响应同一段行情翻跟均线拐点幅度不一样。拐头最慢。居中。反应最快想要抗震荡。少假信号。优先想要快速抓行情拐点。紧跟限价就选重点。回测换一个均线函数。整套测乐结果大便只差一个字母。均线性格天差地别本是凭景眼是量化工具搭建与代码编写。属于软件技术科普，不够承认核投资建议。你回测你吧。",
+   "text_length": 157,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "AI量化工具手记",
+     "source_label": "博主·AI量化工具手记",
+     "raw": "博主·AI量化工具手记"
+    }
+   ],
+   "bloggers": [
+    "AI量化工具手记"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0417",
+    "display": "回测换一个均线函数",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "量化",
+    "name": "量化工程（回测/因子/过拟合）",
+    "hits": 2,
+    "keywords": [
+     "回测",
+     "量化"
+    ],
+    "confidence": "high"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0058"
+  },
+  {
+   "concept": "因子分解",
+   "aliases": [],
+   "text": "因子分解——收益来源，先拆开再评价。 市场、规模等共同因子之外，才讨论剩余部分。估计出的 α 有统计误差，不代表可持续超额收益。",
+   "text_length": 64,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编",
+     "raw": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    }
+   ],
+   "bloggers": [
+    "老木创业笔记_交易老木29条视频文案汇编"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0419",
+    "display": "因子分解",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261102",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261102"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "量化",
+    "name": "量化工程（回测/因子/过拟合）",
+    "hits": 1,
+    "keywords": [
+     "因子"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0059"
+  },
+  {
+   "concept": "国内外量化发展对比",
+   "aliases": [],
+   "text": "国内外量化发展对比。国外1969年首支量化基金成立。国内2004年首支量化投资基金成立。国外1973年到1988年量化投资兴起。国内2009年到2015年量化产品发行迅速。国外1990年到2007年量化黄金时段。国内2015年到2019年高频策略快速发展。国外2007年到2008年量化动荡发生金融危机。国内2019年至今量化多元化精细化发展。国外2009年至今量化高速发展。",
+   "text_length": 188,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "数据帝-量化开发",
+     "source_label": "博主·数据帝-量化开发",
+     "raw": "博主·数据帝-量化开发"
+    }
+   ],
+   "bloggers": [
+    "数据帝-量化开发"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0426",
+    "display": "国内外量化发展对比",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "量化",
+    "name": "量化工程（回测/因子/过拟合）",
+    "hits": 1,
+    "keywords": [
+     "量化"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0060"
+  },
+  {
+   "concept": "在支撑位有背离",
+   "aliases": [],
+   "text": "那么MACD的主体背离，快线背离。这个背离对于行情的分析是可有可无的，有最佳，没有也可以。它的关键点在谁呢?它的关键点就是这个当前的地点是否在支撑位。也就是说价格在支撑位有背离这个第一容易选择向上。如果它不在支撑位，这个第一的上涨可能就会干嘛?受限。甚至是有可能走失败。这是一个最基本的关键点，就是有背离最佳，在支撑位最好。但是从这个基本点角度来讲是没有问题的。关键是我们还要往外进行扩展。",
+   "text_length": 195,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "爱死磕-康康",
+     "source_label": "博主·爱死磕-康康",
+     "raw": "博主·爱死磕-康康"
+    }
+   ],
+   "bloggers": [
+    "爱死磕-康康"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0438",
+    "display": "在支撑位有背离",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "指标",
+    "name": "MACD/KDJ/RSI 指标与背离",
+    "hits": 2,
+    "keywords": [
+     "MACD",
+     "背离"
+    ],
+    "confidence": "high"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0061"
+  },
+  {
+   "concept": "地量进地价",
+   "aliases": [],
+   "text": "在连续暴跌后市场出现地量，这被视为见底信号。此时若再下跌大概率是空头力量耗尽，一旦明日市场稍微放量，反弹便会一触即发。",
+   "text_length": 59,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "一修论市",
+     "source_label": "博主·一修论市",
+     "raw": "博主·一修论市"
+    }
+   ],
+   "bloggers": [
+    "一修论市"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0439",
+    "display": "地量进地价",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "量价",
+    "name": "量价与筹码（放量/缩量/筹码）",
+    "hits": 2,
+    "keywords": [
+     "放量",
+     "地量"
+    ],
+    "confidence": "high"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0062"
+  },
+  {
+   "concept": "均线 MA/EMA",
+   "aliases": [],
+   "text": "均线 MA/EMA：给趋势一个可计算的尺度。 等权平均，与指数衰减比较。AI 特征：均线距离、斜率与多尺度。多条均线高度相关，不等于多份证据。",
+   "text_length": 71,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编",
+     "raw": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    }
+   ],
+   "bloggers": [
+    "老木创业笔记_交易老木29条视频文案汇编"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0442",
+    "display": "均线 MA/EMA",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261102",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261102"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "均线",
+    "name": "均线系统（粘合/多头排列/支撑）",
+    "hits": 1,
+    "keywords": [
+     "均线"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "AI/科技",
+   "score": 220.0,
+   "conclusion_id": "LC-0063"
+  },
+  {
+   "concept": "均线上行过程中的背离形态",
+   "aliases": [],
+   "text": "我们知道均线周期越大，趋势形成后就越难被改变。MACD底背是经典形态之一，那将MACD背离形态和均线趋势结合。均线上行过程中的背离形态，如何用几行公式代码自动标记出来，因为用眼镜寻找实在是太费劲了。",
+   "text_length": 99,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "指标公式入门",
+     "source_label": "博主·指标公式入门",
+     "raw": "博主·指标公式入门"
+    }
+   ],
+   "bloggers": [
+    "指标公式入门"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0443",
+    "display": "均线上行过程中的背离形态",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "指标",
+    "name": "MACD/KDJ/RSI 指标与背离",
+    "hits": 2,
+    "keywords": [
+     "MACD",
+     "背离"
+    ],
+    "confidence": "high"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0064"
+  },
+  {
+   "concept": "均线向上",
+   "aliases": [],
+   "text": "均线向上——方向，要有连续性。 观察均线斜率与价格位置：均线向上、价格位于均线上方，再结合结构判断。均线会滞后，横盘时可能反复穿越。",
+   "text_length": 66,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编",
+     "raw": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    }
+   ],
+   "bloggers": [
+    "老木创业笔记_交易老木29条视频文案汇编"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0444",
+    "display": "均线向上",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261102",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261102"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "均线",
+    "name": "均线系统（粘合/多头排列/支撑）",
+    "hits": 1,
+    "keywords": [
+     "均线"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0065"
+  },
+  {
+   "concept": "均线是使用最广泛的指标",
+   "aliases": [],
+   "text": "均线是使用最广泛的指标。很多人喜欢用均线粘合。作为信号，那均线粘合是什么?简单来说就是，不同周期均线非常接近。成本集中，属于形态信号。那均线粘合指标怎么编呢?",
+   "text_length": 79,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "指标公式入门",
+     "source_label": "博主·指标公式入门",
+     "raw": "博主·指标公式入门"
+    }
+   ],
+   "bloggers": [
+    "指标公式入门"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0447",
+    "display": "均线是使用最广泛的指标",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "均线",
+    "name": "均线系统（粘合/多头排列/支撑）",
+    "hits": 2,
+    "keywords": [
+     "均线",
+     "均线粘合"
+    ],
+    "confidence": "high"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0066"
+  },
+  {
+   "concept": "均线老丫头是一种中继形态",
+   "aliases": [],
+   "text": "均线老丫头是一种中继形态。短期均线上行后小幅回调，后再次拐头上行走出丫头形态。把这个形态逻辑写进公式，就能自动标记这个图形。因为用眼睛寻找就太费劲了。",
+   "text_length": 75,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "指标公式入门",
+     "source_label": "博主·指标公式入门",
+     "raw": "博主·指标公式入门"
+    }
+   ],
+   "bloggers": [
+    "指标公式入门"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0451",
+    "display": "均线老丫头是一种中继形态",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "均线",
+    "name": "均线系统（粘合/多头排列/支撑）",
+    "hits": 1,
+    "keywords": [
+     "均线"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0067"
+  },
+  {
+   "concept": "复利产品更有效",
+   "aliases": [],
+   "text": "如何选择单立和复立产品?1. 资金需求。需要保持资金流动性选单立产品。不需要资金流动性选复立产品。2. 投资时间。短期投资选单立产品较为简便。长期投资选复立产品。3. 风险偏好。想保证本金安全、风险承受能力较低的选单立产品。愿意承担高风险换取较高收益的选复立产品。4. 市场环境。在低利率情况下，两者差别不大。在高利率环境下，复利产品更有效。",
+   "text_length": 171,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "数据帝-量化开发",
+     "source_label": "博主·数据帝-量化开发",
+     "raw": "博主·数据帝-量化开发"
+    }
+   ],
+   "bloggers": [
+    "数据帝-量化开发"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0458",
+    "display": "复利产品更有效",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "量价",
+    "name": "量价与筹码（放量/缩量/筹码）",
+    "hits": 1,
+    "keywords": [
+     "资金流"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0068"
+  },
+  {
+   "concept": "多周期一致性",
+   "aliases": [],
+   "text": "多周期一致性——不同尺度，是否同向。 在 1、4、12 根基础 K 线聚合的周期上，分别观察已收盘均线斜率，让不同尺度互相核对。同一行情的多尺度相关，不能当作独立证据。",
+   "text_length": 84,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编",
+     "raw": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    }
+   ],
+   "bloggers": [
+    "老木创业笔记_交易老木29条视频文案汇编"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0465",
+    "display": "多周期一致性",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261102",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261102"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "均线",
+    "name": "均线系统（粘合/多头排列/支撑）",
+    "hits": 1,
+    "keywords": [
+     "均线"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0069"
+  },
+  {
+   "concept": "多因子模型",
+   "aliases": [],
+   "text": "管理因子暴露的手段和工具。1、智能Beta，通过选择和加权成分股获取特定的因子暴露。2、多因子模型，发热提供风险管理系统。帮助投资者对因子暴露进行管理和分析。3、风格因子表征指数。通过因子倾斜加权的方式实现高因子暴露。4、Portfolio Optimizer。根据因子暴露目标优化投资组合。5、纯因子组合构建。控制其他因子暴露。最大化投资组合在目标因子上的暴露。",
+   "text_length": 182,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "数据帝-量化开发",
+     "source_label": "博主·数据帝-量化开发",
+     "raw": "博主·数据帝-量化开发"
+    }
+   ],
+   "bloggers": [
+    "数据帝-量化开发"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0466",
+    "display": "多因子模型",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "量化",
+    "name": "量化工程（回测/因子/过拟合）",
+    "hits": 1,
+    "keywords": [
+     "因子"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0070"
+  },
+  {
+   "concept": "大周期压力",
+   "aliases": [],
+   "text": "大周期压力——小周期突破，上方还有没有墙。 把更大周期上已形成的压力位放到同一张图。小周期突破之后，可能很快遇到上方压力；大周期关键位也可能失效，不能当作绝对屏障。",
+   "text_length": 82,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编",
+     "raw": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    }
+   ],
+   "bloggers": [
+    "老木创业笔记_交易老木29条视频文案汇编"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0474",
+    "display": "大周期压力",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261102",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261102"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "形态",
+    "name": "平台/箱体/突破/缺口",
+    "hits": 2,
+    "keywords": [
+     "突破",
+     "压力位"
+    ],
+    "confidence": "high"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0071"
+  },
+  {
+   "concept": "天才交易员的十大风控防线",
+   "aliases": [],
+   "text": "天才交易员的十大风控防线——先守住风险，再谈策略：",
+   "text_length": 25,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编",
+     "raw": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    }
+   ],
+   "bloggers": [
+    "老木创业笔记_交易老木29条视频文案汇编"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0489",
+    "display": "天才交易员的十大风控防线",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261102",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261102"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "风控",
+    "name": "仓位与止损纪律",
+    "hits": 1,
+    "keywords": [
+     "风控"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0072"
+  },
+  {
+   "concept": "左翼技术",
+   "aliases": [],
+   "text": "左翼技术用于过滤无效买点，提高准确度。通过观察关键目标位及左移 K 线（如最低点 K 线、中位线）的支撑与突破情况，判断市场多空力量强弱及行情是否疲软，从而辅助交易决策。",
+   "text_length": 85,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "爱死磕-康康",
+     "source_label": "博主·爱死磕-康康",
+     "raw": "博主·爱死磕-康康"
+    }
+   ],
+   "bloggers": [
+    "爱死磕-康康"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0528",
+    "display": "左翼技术",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "形态",
+    "name": "平台/箱体/突破/缺口",
+    "hits": 1,
+    "keywords": [
+     "突破"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0073"
+  },
+  {
+   "concept": "开盘半小时快速跳水",
+   "aliases": [],
+   "text": "该方法指早盘急跌是主力刻意制造恐慌、逼散户低位割肉的假摔动作。若开盘半小时快速跳水且跌幅超 3%，随后在 10 点半前收复失地，往往意味着主力在低位吸筹洗盘，当日或次日易收红甚至涨停。",
+   "text_length": 92,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "K哥真交易",
+     "source_label": "博主·K哥真交易",
+     "raw": "博主·K哥真交易"
+    }
+   ],
+   "bloggers": [
+    "K哥真交易"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0552",
+    "display": "开盘半小时快速跳水",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "量价",
+    "name": "量价与筹码（放量/缩量/筹码）",
+    "hits": 1,
+    "keywords": [
+     "涨停"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0074"
+  },
+  {
+   "concept": "形中有形",
+   "aliases": [],
+   "text": "形中有形属于结构工阵模型的一种，通过构建 AB 大结构及 BCDE 调整段，要求 D 点过 B 高但不突破 CB 的 1.382，以此形成合力推动单边行情。",
+   "text_length": 78,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "爱死磕-康康",
+     "source_label": "博主·爱死磕-康康",
+     "raw": "博主·爱死磕-康康"
+    }
+   ],
+   "bloggers": [
+    "爱死磕-康康"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0553",
+    "display": "形中有形",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "形态",
+    "name": "平台/箱体/突破/缺口",
+    "hits": 1,
+    "keywords": [
+     "突破"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0075"
+  },
+  {
+   "concept": "待执行的订单数量",
+   "aliases": [],
+   "text": "专业交易者的秘密武器订单流。一、定义、待执行的订单数量。二、订单流交易。通过每一笔主动买卖单分析市场参与者的可能行为。三、分析原理。通过分析交易行为预测未来价格水平上买卖订单的不平衡，从而找到买点。四、订单类型。市价单、限价单、止损单。五、分析工具、足迹图、市场深度、订单部、Tick量等。",
+   "text_length": 145,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "数据帝-量化开发",
+     "source_label": "博主·数据帝-量化开发",
+     "raw": "博主·数据帝-量化开发"
+    }
+   ],
+   "bloggers": [
+    "数据帝-量化开发"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0554",
+    "display": "待执行的订单数量",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "缠论",
+    "name": "缠论结构（笔/线段/中枢/背驰/买卖点）",
+    "hits": 1,
+    "keywords": [
+     "笔"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0076"
+  },
+  {
+   "concept": "愿意秒内交易超过300笔",
+   "aliases": [],
+   "text": "高频交易将提高交易费用，但你知道如何判定为高频交易吗?满足下列条件，其中之一为高频交易，否则归为低频交易。一，愿意秒内交易超过300笔。二，全天交易超过2万笔。特别说明，这是指单个账户在单个交易所的量。所以，你觉得这跟有没有提高有多大区别?",
+   "text_length": 120,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "数据帝-量化开发",
+     "source_label": "博主·数据帝-量化开发",
+     "raw": "博主·数据帝-量化开发"
+    }
+   ],
+   "bloggers": [
+    "数据帝-量化开发"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0563",
+    "display": "愿意秒内交易超过300笔",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "缠论",
+    "name": "缠论结构（笔/线段/中枢/背驰/买卖点）",
+    "hits": 1,
+    "keywords": [
+     "笔"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0077"
+  },
+  {
+   "concept": "成交量",
+   "aliases": [],
+   "text": "成交量——参与增加，还是只有价格动。 对比当期量与此前均量。突破时量能不足、或放量回落，都需要结合价格重新审视。放量不等于有效突破，缩量也不能单独判假。",
+   "text_length": 76,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编",
+     "raw": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    }
+   ],
+   "bloggers": [
+    "老木创业笔记_交易老木29条视频文案汇编"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0564",
+    "display": "成交量",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261102",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261102"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "量价",
+    "name": "量价与筹码（放量/缩量/筹码）",
+    "hits": 4,
+    "keywords": [
+     "放量",
+     "缩量",
+     "成交量",
+     "量能"
+    ],
+    "confidence": "high"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0078"
+  },
+  {
+   "concept": "成交量配合",
+   "aliases": [],
+   "text": "成交量配合——价格突破，也看参与度。 把当前成交量与前 20 期平均量比较：放量说明参与增加，但要和价格方向一起看。放量下跌也会出现，成交量不是单独买点。",
+   "text_length": 77,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编",
+     "raw": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    }
+   ],
+   "bloggers": [
+    "老木创业笔记_交易老木29条视频文案汇编"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0566",
+    "display": "成交量配合",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261102",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261102"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "量价",
+    "name": "量价与筹码（放量/缩量/筹码）",
+    "hits": 2,
+    "keywords": [
+     "放量",
+     "成交量"
+    ],
+    "confidence": "high"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0079"
+  },
+  {
+   "concept": "探底回升",
+   "aliases": [],
+   "text": "早盘暴跌回踩 3761 点后，午后神秘力量护盘，指数放量翻红并修复跌幅，走出探底回升的阳线，确认关键支撑。",
+   "text_length": 53,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "一修论市",
+     "source_label": "博主·一修论市",
+     "raw": "博主·一修论市"
+    }
+   ],
+   "bloggers": [
+    "一修论市"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0605",
+    "display": "探底回升",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "量价",
+    "name": "量价与筹码（放量/缩量/筹码）",
+    "hits": 1,
+    "keywords": [
+     "放量"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0080"
+  },
+  {
+   "concept": "敞布冷堵",
+   "aliases": [],
+   "text": "今天盘面用四个字形容为“敞布冷堵”，外围市场暴跌，半指跌到垄断，大阿一放量暴跌近百顶，个股超跌，科技和老灯股熄火，反弹行情是否结束引发讨论。",
+   "text_length": 70,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "一修论市",
+     "source_label": "博主·一修论市",
+     "raw": "博主·一修论市"
+    }
+   ],
+   "bloggers": [
+    "一修论市"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0619",
+    "display": "敞布冷堵",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "量价",
+    "name": "量价与筹码（放量/缩量/筹码）",
+    "hits": 1,
+    "keywords": [
+     "放量"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0081"
+  },
+  {
+   "concept": "无量拉升",
+   "aliases": [],
+   "text": "周五 A 股早盘三大指数高开高走，军工、白酒等板块爆发，超 4500 家普涨，但下午开盘后指数直线跳水，医药、半导体回落。全天成交额 1.56 万亿，缩量 700 多亿。这种无量拉升被视为耍流氓，背后原因不简单。",
+   "text_length": 106,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "一修论市",
+     "source_label": "博主·一修论市",
+     "raw": "博主·一修论市"
+    }
+   ],
+   "bloggers": [
+    "一修论市"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0637",
+    "display": "无量拉升",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "量价",
+    "name": "量价与筹码（放量/缩量/筹码）",
+    "hits": 1,
+    "keywords": [
+     "缩量"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0082"
+  },
+  {
+   "concept": "更大周期均线",
+   "aliases": [],
+   "text": "均线图形结构中时常能看到小周期均线快速下穿，更大周期均线，然后在短时间内，小周期均线又快速上穿。较大周期均线的黄金坑图形结构如何用公式编写出来?以5、10、20日均线为例来编辑。",
+   "text_length": 89,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "指标公式入门",
+     "source_label": "博主·指标公式入门",
+     "raw": "博主·指标公式入门"
+    }
+   ],
+   "bloggers": [
+    "指标公式入门"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0651",
+    "display": "更大周期均线",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "均线",
+    "name": "均线系统（粘合/多头排列/支撑）",
+    "hits": 1,
+    "keywords": [
+     "均线"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0083"
+  },
+  {
+   "concept": "更有效的因子挖掘方法",
+   "aliases": [],
+   "text": "更有效的因子挖掘方法。一、机器学习方法，用随机森林、决策数、支持向量机等发现数据中的模式。二、遗传规划，挖掘具有预测能力的因子。三、统计测试，用T检验、F检验等识别与股票收益率相关的因子。因子分析。通过PCA等方法提取主成分，简化模型。因子评价。用信息比率评估因子相对于其跟踪误差的信息贡献。因子交叉验证。通过训练模型来选择和优化因子。因子优化。通过模拟于群社会行为来优化因子权重。",
+   "text_length": 191,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "数据帝-量化开发",
+     "source_label": "博主·数据帝-量化开发",
+     "raw": "博主·数据帝-量化开发"
+    }
+   ],
+   "bloggers": [
+    "数据帝-量化开发"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0652",
+    "display": "更有效的因子挖掘方法",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "量化",
+    "name": "量化工程（回测/因子/过拟合）",
+    "hits": 1,
+    "keywords": [
+     "因子"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0084"
+  },
+  {
+   "concept": "最大回测",
+   "aliases": [],
+   "text": "如何评估策略回报?1.胜率，看盈利交易点或盈利与亏损比。2.交易频率，评估可执行交易频次以及频率对收益的影响。3.利润率，预估平均利润或者计算耽搁交易预期利润。4.最大回测，评估在某时间内可能出现的最大亏损。5.夏普比率，比率越高，回报越高。",
+   "text_length": 121,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "数据帝-量化开发",
+     "source_label": "博主·数据帝-量化开发",
+     "raw": "博主·数据帝-量化开发"
+    }
+   ],
+   "bloggers": [
+    "数据帝-量化开发"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0655",
+    "display": "最大回测",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "量化",
+    "name": "量化工程（回测/因子/过拟合）",
+    "hits": 1,
+    "keywords": [
+     "回测"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0085"
+  },
+  {
+   "concept": "最大资金回撤加凯利公式",
+   "aliases": [],
+   "text": "量化交易达分体系的组成。一、资金管理，最大资金回撤加凯利公式。二、盈利，平均盈亏比加胜率。三、交易成本，持仓成本加交易费用。四、收益率，年化收益率加总收益率。五、风险指标，夏普比率加信息比率加标准差。六、策略稳定性，策略适应性和持续盈利时间。七、其他指标，实现盈亏加容量。",
+   "text_length": 136,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "数据帝-量化开发",
+     "source_label": "博主·数据帝-量化开发",
+     "raw": "博主·数据帝-量化开发"
+    }
+   ],
+   "bloggers": [
+    "数据帝-量化开发"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0656",
+    "display": "最大资金回撤加凯利公式",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "风控",
+    "name": "仓位与止损纪律",
+    "hits": 2,
+    "keywords": [
+     "回撤",
+     "盈亏比"
+    ],
+    "confidence": "high"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0086"
+  },
+  {
+   "concept": "最适合量化交易的编程语言",
+   "aliases": [],
+   "text": "最适合量化交易的编程语言。数据统计分析功能强大。天生支持相量化运算，但运行速度较慢。MarkLab主要用于研究和原型开发阶段。在工程领域和矩阵运算方面优势较大。",
+   "text_length": 80,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "数据帝-量化开发",
+     "source_label": "博主·数据帝-量化开发",
+     "raw": "博主·数据帝-量化开发"
+    }
+   ],
+   "bloggers": [
+    "数据帝-量化开发"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0657",
+    "display": "最适合量化交易的编程语言",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261103",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261103"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "量化",
+    "name": "量化工程（回测/因子/过拟合）",
+    "hits": 1,
+    "keywords": [
+     "量化"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0087"
+  },
+  {
+   "concept": "特征向量",
+   "aliases": [],
+   "text": "特征向量——把行情，变成可计算的输入。 收益率、成交量、持仓变化、波动率，先统一到同一时点、同一口径。只使用决策时已经能拿到的数据，避免未来信息泄漏。",
+   "text_length": 75,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编",
+     "raw": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    }
+   ],
+   "bloggers": [
+    "老木创业笔记_交易老木29条视频文案汇编"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0723",
+    "display": "特征向量",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261102",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261102"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "量价",
+    "name": "量价与筹码（放量/缩量/筹码）",
+    "hits": 1,
+    "keywords": [
+     "成交量"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0088"
+  },
+  {
+   "concept": "突破幅度",
+   "aliases": [],
+   "text": "突破幅度——刺穿一点，还是明显越过。 把收盘超过关键位的距离，除以事前 ATR：先衡量幅度，再判断它是否只是日常波动。距离小不必然是假突破，距离大也可能过度拉伸。",
+   "text_length": 81,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编",
+     "raw": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    }
+   ],
+   "bloggers": [
+    "老木创业笔记_交易老木29条视频文案汇编"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0768",
+    "display": "突破幅度",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261102",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261102"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "形态",
+    "name": "平台/箱体/突破/缺口",
+    "hits": 1,
+    "keywords": [
+     "突破"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "其他",
+   "score": 220.0,
+   "conclusion_id": "LC-0089"
+  },
+  {
+   "concept": "识别假突破",
+   "aliases": [],
+   "text": "识别假突破：先观察，再验证——幅度、收盘、量价、后续、执行条件。AI 帮助把线索写成规则，失效后按预案应对。",
+   "text_length": 54,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编",
+     "raw": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    }
+   ],
+   "bloggers": [
+    "老木创业笔记_交易老木29条视频文案汇编"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0901",
+    "display": "识别假突破",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261102",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261102"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "量价",
+    "name": "量价与筹码（放量/缩量/筹码）",
+    "hits": 1,
+    "keywords": [
+     "量价"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "published",
+   "topic": "AI/科技",
+   "score": 220.0,
+   "conclusion_id": "LC-0090"
+  },
+  {
+   "concept": "回踩表现",
+   "aliases": [
+    "**05 回踩表现——原来的压力",
+    "**06 回踩表现——突破之后",
+    "05 回踩表现——原来的压力",
+    "06 回踩表现——突破之后"
+   ],
+   "text": "05 回踩表现——原来的压力，变成支撑了吗。 回踩关键位附近后，观察能否重新站回并延续；若收回区间内且反抽受阻，需提高警惕。一次触碰不等于确认，容忍区间应预先规定。",
+   "text_length": 82,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编",
+     "raw": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    }
+   ],
+   "bloggers": [
+    "老木创业笔记_交易老木29条视频文案汇编"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0418",
+    "display": "回踩表现",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261102",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261102"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "形态",
+    "name": "平台/箱体/突破/缺口",
+    "hits": 2,
+    "keywords": [
+     "突破",
+     "回踩"
+    ],
+    "confidence": "high"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "multi_source_verified",
+   "topic": "其他",
+   "score": 219.0,
+   "conclusion_id": "LC-0091"
+  },
+  {
+   "concept": "CUSUM 监测",
+   "aliases": [
+    "**14 CUSUM 监测——模型失配",
+    "14 CUSUM 监测——模型失配"
+   ],
+   "text": "14 CUSUM 监测——模型失配，累积证据再报警。 残差持续偏移，累积量越过阈值，触发复核或预设风控。报警不是必然下跌，也不自动等于无条件平仓。",
+   "text_length": 73,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编",
+     "raw": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    }
+   ],
+   "bloggers": [
+    "老木创业笔记_交易老木29条视频文案汇编"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0076",
+    "display": "CUSUM 监测",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261102",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261102"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "风控",
+    "name": "仓位与止损纪律",
+    "hits": 1,
+    "keywords": [
+     "风控"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "multi_source_verified",
+   "topic": "其他",
+   "score": 218.0,
+   "conclusion_id": "LC-0092"
+  },
+  {
+   "concept": "MACD",
+   "aliases": [
+    "- **#09 MACD",
+    "- 09 MACD"
+   ],
+   "text": "- #09 MACD：趋势动量的二次平滑。 两条指数均线做差，再平滑。AI 特征：动量、交叉与斜率。滞后来自平滑——交叉不是盈利证明。",
+   "text_length": 67,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编",
+     "raw": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    }
+   ],
+   "bloggers": [
+    "老木创业笔记_交易老木29条视频文案汇编"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0091",
+    "display": "MACD",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261102",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261102"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "均线",
+    "name": "均线系统（粘合/多头排列/支撑）",
+    "hits": 1,
+    "keywords": [
+     "均线"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "multi_source_verified",
+   "topic": "AI算力/硬件",
+   "score": 218.0,
+   "conclusion_id": "LC-0093"
+  },
+  {
+   "concept": "Netflow 净流向",
+   "aliases": [
+    "第二个 **Netflow 净流向**",
+    "第二个 Netflow 净流向"
+   ],
+   "text": "第二个 Netflow 净流向，它看的是主力主动买卖的意图。净流入持续翻绿，说明大资金在偷偷吃筹码；净流出持续扩大，甚至突然出现极端大单流出，赶紧撤——那是大户在甩货，甚至准备插针清算。",
+   "text_length": 93,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编",
+     "raw": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    }
+   ],
+   "bloggers": [
+    "老木创业笔记_交易老木29条视频文案汇编"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0107",
+    "display": "Netflow 净流向",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261102",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261102"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "量价",
+    "name": "量价与筹码（放量/缩量/筹码）",
+    "hits": 2,
+    "keywords": [
+     "筹码",
+     "净流入"
+    ],
+    "confidence": "high"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "multi_source_verified",
+   "topic": "量学/交易",
+   "score": 218.0,
+   "conclusion_id": "LC-0094"
+  },
+  {
+   "concept": "OI",
+   "aliases": [
+    "第 1 个 **OI**",
+    "第 1 个 OI"
+   ],
+   "text": "第 1 个 OI，也就是场内未平仓合约量，它看的是博弈真假。记住两条铁律：价格涨、OI 猛增，那是主力真金白银在加仓，趋势极强，直接跟；价格暴涨、OI 却断崖式暴跌，别追——那是空头爆仓踩踏出来的虚火，随时可能掉头埋人。",
+   "text_length": 110,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编",
+     "raw": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    }
+   ],
+   "bloggers": [
+    "老木创业笔记_交易老木29条视频文案汇编"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0108",
+    "display": "OI",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261102",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261102"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "风控",
+    "name": "仓位与止损纪律",
+    "hits": 1,
+    "keywords": [
+     "加仓"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "multi_source_verified",
+   "topic": "其他",
+   "score": 218.0,
+   "conclusion_id": "LC-0095"
+  },
+  {
+   "concept": "RSI",
+   "aliases": [
+    "- **#07 RSI",
+    "- 07 RSI"
+   ],
+   "text": "- #07 RSI：上涨与下跌的相对强度。 把涨幅与跌幅分别递推平滑。AI 特征：方向强度，而非绝对价格。趋势中可以持续超买；阈值不是反转。",
+   "text_length": 70,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编",
+     "raw": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    }
+   ],
+   "bloggers": [
+    "老木创业笔记_交易老木29条视频文案汇编"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0119",
+    "display": "RSI",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261102",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261102"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "指标",
+    "name": "MACD/KDJ/RSI 指标与背离",
+    "hits": 1,
+    "keywords": [
+     "RSI"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "multi_source_verified",
+   "topic": "AI算力/硬件",
+   "score": 218.0,
+   "conclusion_id": "LC-0096"
+  },
+  {
+   "concept": "VWAP",
+   "aliases": [
+    "- **#04 VWAP",
+    "- 04 VWAP"
+   ],
+   "text": "- #04 VWAP：把成交量放进价格权重。 从固定锚点累计价格乘成交量。AI 特征：相对成交均价的偏离。它是成交加权基准，不代表机构持仓。",
+   "text_length": 70,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编",
+     "raw": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    }
+   ],
+   "bloggers": [
+    "老木创业笔记_交易老木29条视频文案汇编"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0134",
+    "display": "VWAP",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261102",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261102"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "量价",
+    "name": "量价与筹码（放量/缩量/筹码）",
+    "hits": 1,
+    "keywords": [
+     "成交量"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "multi_source_verified",
+   "topic": "AI算力/硬件",
+   "score": 218.0,
+   "conclusion_id": "LC-0097"
+  },
+  {
+   "concept": "从理论走向约束",
+   "aliases": [
+    "**06 从理论走向约束",
+    "06 从理论走向约束"
+   ],
+   "text": "06 从理论走向约束。 所以，AI 量化第一步是管住风险：波动估计上升时，重新评估风险敞口；仓位规则仍需考虑成本、误差与杠杆边界。",
+   "text_length": 65,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编",
+     "raw": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    }
+   ],
+   "bloggers": [
+    "老木创业笔记_交易老木29条视频文案汇编"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0264",
+    "display": "从理论走向约束",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261102",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261102"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "风控",
+    "name": "仓位与止损纪律",
+    "hits": 1,
+    "keywords": [
+     "仓位"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "multi_source_verified",
+   "topic": "AI算力/硬件",
+   "score": 218.0,
+   "conclusion_id": "LC-0098"
+  },
+  {
+   "concept": "准备工具与数据",
+   "aliases": [
+    "**01 准备工具与数据",
+    "01 准备工具与数据"
+   ],
+   "text": "01 准备工具与数据。 Python + Backtrader，导入 ETF 日线的日期、开高低收与成交量。先检查，再计算：核对日期排序、缺失、重复和复权口径，不能用未来值回填历史。",
+   "text_length": 91,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编",
+     "raw": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    }
+   ],
+   "bloggers": [
+    "老木创业笔记_交易老木29条视频文案汇编"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0350",
+    "display": "准备工具与数据",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261102",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261102"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "量价",
+    "name": "量价与筹码（放量/缩量/筹码）",
+    "hits": 1,
+    "keywords": [
+     "成交量"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "multi_source_verified",
+   "topic": "其他",
+   "score": 218.0,
+   "conclusion_id": "LC-0099"
+  },
+  {
+   "concept": "凸组合优化",
+   "aliases": [
+    "- **05 凸组合优化——信号进入约束",
+    "- 05 凸组合优化——信号进入约束"
+   ],
+   "text": "- 05 凸组合优化——信号进入约束系统。 收益预测、风险与换手成本，共同决定仓位。",
+   "text_length": 42,
+   "source_types": [
+    "blogger"
+   ],
+   "n_sources": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编",
+     "raw": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    }
+   ],
+   "bloggers": [
+    "老木创业笔记_交易老木29条视频文案汇编"
+   ],
+   "research_reports": [],
+   "books": [],
+   "confidence": "低",
+   "confidence_reason": "仅 1 个独立来源（单源，低置信）",
+   "consistency": {
+    "max_similarity": 0.0,
+    "pairs_compared": 0,
+    "consistent": null,
+    "direction_conflicts": 0,
+    "threshold": 0.45
+   },
+   "cluster": {
+    "cluster_id": "CM-0352",
+    "display": "凸组合优化",
+    "status": "单源",
+    "confidence_after": "低",
+    "n_members": 1
+   },
+   "pit": {
+    "verifiable": true,
+    "as_of": "20261102",
+    "precision": "day",
+    "date_kind": "file_date",
+    "dates": [
+     "20261102"
+    ],
+    "note": "来源可定位到日级时点"
+   },
+   "tactic": {
+    "category": "风控",
+    "name": "仓位与止损纪律",
+    "hits": 1,
+    "keywords": [
+     "仓位"
+    ],
+    "confidence": "medium"
+   },
+   "executability": {
+    "level": "A",
+    "label": "日线可算",
+    "reason": "结论可落到日线行情/复权/筹码等已入库数据计算"
+   },
+   "claim_type": "规律型（方法论/博主/书）",
+   "review_status": "multi_source_verified",
+   "topic": "其他",
+   "score": 218.0,
+   "conclusion_id": "LC-0100"
+  }
+ ],
+ "validation": {
+  "ok": true,
+  "errors": [],
+  "required_fields": [
+   "conclusion_id",
+   "concept",
+   "text",
+   "confidence",
+   "executability",
+   "tactic",
+   "claim_type",
+   "n_sources",
+   "sources",
+   "pit",
+   "review_status",
+   "score"
+  ],
+  "checked": 100
+ },
+ "disclaimer": "学习结论为研究输出，不构成投资建议；军团消费需按 consumer_contract 门禁（四关/PIT/引用可追溯）。",
+ "source_unchanged": true
+}
