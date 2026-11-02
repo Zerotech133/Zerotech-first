@@ -633,6 +633,11 @@ class DatasetRegistry:
         v1 = self.stats()
         pg_available = [d for d in self.pg_datasets if d.get("available")]
         art_active = [d for d in self.contract_artifacts if d.get("status") == "active"]
+        # 合并口径"不假绿"：只按行自身 registered/exposed 标记求和（available 行未必已登记/已暴露）
+        pg_registered = sum(1 for d in pg_available if d["registered"])
+        pg_exposed = sum(1 for d in pg_available if d["exposed"])
+        art_registered = sum(1 for d in art_active if d["registered"])
+        art_exposed = sum(1 for d in art_active if d["exposed"])
         return {
             "denominator_version": "v2",
             "generated_at": _now(),
@@ -660,8 +665,8 @@ class DatasetRegistry:
             },
             "all": {
                 "total": v1["total"] + len(pg_available) + len(art_active),
-                "registered": v1["registered"] + len(pg_available) + len(art_active),
-                "exposed": v1["exposed"] + len(pg_available) + len(art_active),
+                "registered": v1["registered"] + pg_registered + art_registered,
+                "exposed": v1["exposed"] + pg_exposed + art_exposed,
             },
         }
 
@@ -669,6 +674,12 @@ class DatasetRegistry:
              registered: bool | None = None, exposed: bool | None = None,
              limit: int = 50, kinds=None) -> list[dict]:
         """默认仅文件级（向后兼容 v1）；kinds='all' 或指定 kind 时含 pg/契约产物。"""
+        try:
+            limit = int(limit)
+        except (TypeError, ValueError):
+            limit = 50
+        if limit < 0:
+            limit = 0  # 负值不得触发 Python 负切片语义（会静默截掉尾部元素）
         if kinds is None:
             pool = self.datasets
         elif kinds == "all":

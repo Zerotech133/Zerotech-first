@@ -105,6 +105,12 @@ def main(argv=None) -> int:
     elif args.cmd == "sample":
         try:
             out = reg.sample(args.id, n=args.n)
+        except KeyError:
+            # 未知 dataset_id 必须是 fail-visible 的 rc=2 JSON（不得抛 traceback 当内部错）
+            print(json.dumps({"ok": False, "state": "not_found", "fail_visible": True,
+                              "error": "dataset_id 不存在", "dataset_id": args.id},
+                             ensure_ascii=False, indent=1))
+            return 2
         except (ConnectorUnavailable, ContractArtifactUnavailable, PermissionError) as exc:
             print(json.dumps({"ok": False, "error": "%s: %s" % (type(exc).__name__, str(exc))[:240],
                               "fail_visible": True, "id": args.id},
