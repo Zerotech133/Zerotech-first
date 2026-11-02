@@ -73,6 +73,18 @@ def build_feed() -> list:
     return recent(60 * 6)[::-1]  # 近6h，新在后
 
 
+CORS_ALLOWED_ORIGINS = (
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+    "http://127.0.0.1:8734",
+)
+
+
+def cors_origin(origin: str | None) -> str | None:
+    """仅回显白名单来源；陌生来源不下发 CORS 头（UF-12：通配 * 下线）。"""
+    return origin if origin in CORS_ALLOWED_ORIGINS else None
+
+
 def build_tasks() -> list:
     try:
         t = json.loads(TASKS.read_text(encoding="utf-8"))
@@ -92,7 +104,10 @@ class H(BaseHTTPRequestHandler):
                               "tasks": build_tasks()}, ensure_ascii=False)
         self.send_response(200)
         self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Access-Control-Allow-Origin", "*")
+        origin = cors_origin(self.headers.get("Origin"))
+        if origin:
+            self.send_header("Access-Control-Allow-Origin", origin)
+            self.send_header("Vary", "Origin")
         self.end_headers()
         self.wfile.write(payload.encode("utf-8"))
 
