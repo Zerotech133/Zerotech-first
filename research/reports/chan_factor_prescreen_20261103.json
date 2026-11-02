@@ -1,0 +1,1715 @@
+{
+ "schema_version": "chan_factor_prescreen.v1",
+ "meta": {
+  "generated_at": "2026-11-03T07:43:10+08:00",
+  "researcher": "司马微",
+  "task": "task-152 缠论因子独立前筛（不代替正式四关）",
+  "source": "quant_backtest/factor_lib/chan_factors.py（只读，未修改）",
+  "sample": {
+   "n_codes_requested": 60,
+   "n_codes_loaded": 60,
+   "n_days": 120,
+   "window_start": "20260508",
+   "window_end": "20261102",
+   "seed": 42,
+   "bar_freq": "30min（1min→30min 聚合，每日 8 根）"
+  },
+  "horizons": [
+   5,
+   10,
+   20
+  ],
+  "primary_horizon": 20,
+  "return_label": "day close（30min 末根）× adj_factor；fwd_h=adj[t+h]/adj[t]−1（%）",
+  "data_root": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\tushare\\stk_mins",
+  "codes_insufficient": [],
+  "runtime_sec": 81.1
+ },
+ "thresholds": {
+  "primary_horizon": 20,
+  "abs_ic_min": 0.02,
+  "ir_min": 0.3,
+  "coverage_min_pct": 60.0,
+  "half_split_same_sign": true,
+  "pit_required": true,
+  "grade_rules": {
+   "通过": "PIT 截断检查通过 且 覆盖率≥60% 且 |IC(20d)|≥0.02 且 |IR(20d)|≥0.3 且 前后半窗同号",
+   "观察": "满足 |IC|≥0.02 或 |IR|≥0.3 任一项，或仅短周期(5/10d)显著，但未全部满足通过条件",
+   "不通过": "|IC|<0.02 且 |IR|<0.3（或覆盖率不足/PIT 未过）"
+  }
+ },
+ "pit_check": {
+  "sampled": [
+   {
+    "ts_code": "000717.SZ",
+    "checked_code_days": 3,
+    "mismatch_counts": {
+     "bi_count_20d": 1,
+     "bi_last_dir": 1,
+     "zs_count_20d": 0,
+     "zs_width_last": 0,
+     "beichi_last_strength": 1,
+     "beichi_div_count_20d": 1,
+     "bs_net_5d": 1,
+     "bs_last_sign": 1
+    },
+    "mismatch_rates": {
+     "bi_count_20d": 0.3333333333333333,
+     "bi_last_dir": 0.3333333333333333,
+     "zs_count_20d": 0.0,
+     "zs_width_last": 0.0,
+     "beichi_last_strength": 0.3333333333333333,
+     "beichi_div_count_20d": 0.3333333333333333,
+     "bs_net_5d": 0.3333333333333333,
+     "bs_last_sign": 0.3333333333333333
+    },
+    "details": [
+     {
+      "date": "20260622",
+      "mismatch": [
+       "bi_count_20d",
+       "bi_last_dir",
+       "beichi_last_strength",
+       "beichi_div_count_20d",
+       "bs_net_5d",
+       "bs_last_sign"
+      ]
+     },
+     {
+      "date": "20260803",
+      "mismatch": []
+     },
+     {
+      "date": "20260914",
+      "mismatch": []
+     }
+    ],
+    "pass_by_feature": {
+     "bi_count_20d": false,
+     "bi_last_dir": false,
+     "zs_count_20d": true,
+     "zs_width_last": true,
+     "beichi_last_strength": false,
+     "beichi_div_count_20d": false,
+     "bs_net_5d": false,
+     "bs_last_sign": false
+    }
+   },
+   {
+    "ts_code": "002445.SZ",
+    "checked_code_days": 3,
+    "mismatch_counts": {
+     "bi_count_20d": 2,
+     "bi_last_dir": 2,
+     "zs_count_20d": 1,
+     "zs_width_last": 1,
+     "beichi_last_strength": 1,
+     "beichi_div_count_20d": 1,
+     "bs_net_5d": 2,
+     "bs_last_sign": 2
+    },
+    "mismatch_rates": {
+     "bi_count_20d": 0.6666666666666666,
+     "bi_last_dir": 0.6666666666666666,
+     "zs_count_20d": 0.3333333333333333,
+     "zs_width_last": 0.3333333333333333,
+     "beichi_last_strength": 0.3333333333333333,
+     "beichi_div_count_20d": 0.3333333333333333,
+     "bs_net_5d": 0.6666666666666666,
+     "bs_last_sign": 0.6666666666666666
+    },
+    "details": [
+     {
+      "date": "20260622",
+      "mismatch": []
+     },
+     {
+      "date": "20260803",
+      "mismatch": [
+       "bi_count_20d",
+       "bi_last_dir",
+       "bs_net_5d",
+       "bs_last_sign"
+      ]
+     },
+     {
+      "date": "20260914",
+      "mismatch": [
+       "bi_count_20d",
+       "bi_last_dir",
+       "zs_count_20d",
+       "zs_width_last",
+       "beichi_last_strength",
+       "beichi_div_count_20d",
+       "bs_net_5d",
+       "bs_last_sign"
+      ]
+     }
+    ],
+    "pass_by_feature": {
+     "bi_count_20d": false,
+     "bi_last_dir": false,
+     "zs_count_20d": false,
+     "zs_width_last": false,
+     "beichi_last_strength": false,
+     "beichi_div_count_20d": false,
+     "bs_net_5d": false,
+     "bs_last_sign": false
+    }
+   },
+   {
+    "ts_code": "300859.SZ",
+    "checked_code_days": 3,
+    "mismatch_counts": {
+     "bi_count_20d": 1,
+     "bi_last_dir": 1,
+     "zs_count_20d": 0,
+     "zs_width_last": 0,
+     "beichi_last_strength": 1,
+     "beichi_div_count_20d": 1,
+     "bs_net_5d": 1,
+     "bs_last_sign": 1
+    },
+    "mismatch_rates": {
+     "bi_count_20d": 0.3333333333333333,
+     "bi_last_dir": 0.3333333333333333,
+     "zs_count_20d": 0.0,
+     "zs_width_last": 0.0,
+     "beichi_last_strength": 0.3333333333333333,
+     "beichi_div_count_20d": 0.3333333333333333,
+     "bs_net_5d": 0.3333333333333333,
+     "bs_last_sign": 0.3333333333333333
+    },
+    "details": [
+     {
+      "date": "20260622",
+      "mismatch": [
+       "bi_count_20d",
+       "bi_last_dir",
+       "beichi_last_strength",
+       "beichi_div_count_20d",
+       "bs_net_5d",
+       "bs_last_sign"
+      ]
+     },
+     {
+      "date": "20260803",
+      "mismatch": []
+     },
+     {
+      "date": "20260914",
+      "mismatch": []
+     }
+    ],
+    "pass_by_feature": {
+     "bi_count_20d": false,
+     "bi_last_dir": false,
+     "zs_count_20d": true,
+     "zs_width_last": true,
+     "beichi_last_strength": false,
+     "beichi_div_count_20d": false,
+     "bs_net_5d": false,
+     "bs_last_sign": false
+    }
+   },
+   {
+    "ts_code": "301585.SZ",
+    "checked_code_days": 3,
+    "mismatch_counts": {
+     "bi_count_20d": 2,
+     "bi_last_dir": 2,
+     "zs_count_20d": 0,
+     "zs_width_last": 0,
+     "beichi_last_strength": 0,
+     "beichi_div_count_20d": 0,
+     "bs_net_5d": 0,
+     "bs_last_sign": 0
+    },
+    "mismatch_rates": {
+     "bi_count_20d": 0.6666666666666666,
+     "bi_last_dir": 0.6666666666666666,
+     "zs_count_20d": 0.0,
+     "zs_width_last": 0.0,
+     "beichi_last_strength": 0.0,
+     "beichi_div_count_20d": 0.0,
+     "bs_net_5d": 0.0,
+     "bs_last_sign": 0.0
+    },
+    "details": [
+     {
+      "date": "20260622",
+      "mismatch": []
+     },
+     {
+      "date": "20260803",
+      "mismatch": [
+       "bi_count_20d",
+       "bi_last_dir"
+      ]
+     },
+     {
+      "date": "20260914",
+      "mismatch": [
+       "bi_count_20d",
+       "bi_last_dir"
+      ]
+     }
+    ],
+    "pass_by_feature": {
+     "bi_count_20d": false,
+     "bi_last_dir": false,
+     "zs_count_20d": true,
+     "zs_width_last": true,
+     "beichi_last_strength": true,
+     "beichi_div_count_20d": true,
+     "bs_net_5d": true,
+     "bs_last_sign": true
+    }
+   },
+   {
+    "ts_code": "601225.SH",
+    "checked_code_days": 3,
+    "mismatch_counts": {
+     "bi_count_20d": 1,
+     "bi_last_dir": 1,
+     "zs_count_20d": 2,
+     "zs_width_last": 2,
+     "beichi_last_strength": 0,
+     "beichi_div_count_20d": 0,
+     "bs_net_5d": 0,
+     "bs_last_sign": 0
+    },
+    "mismatch_rates": {
+     "bi_count_20d": 0.3333333333333333,
+     "bi_last_dir": 0.3333333333333333,
+     "zs_count_20d": 0.6666666666666666,
+     "zs_width_last": 0.6666666666666666,
+     "beichi_last_strength": 0.0,
+     "beichi_div_count_20d": 0.0,
+     "bs_net_5d": 0.0,
+     "bs_last_sign": 0.0
+    },
+    "details": [
+     {
+      "date": "20260622",
+      "mismatch": [
+       "bi_count_20d",
+       "bi_last_dir",
+       "zs_count_20d",
+       "zs_width_last"
+      ]
+     },
+     {
+      "date": "20260803",
+      "mismatch": [
+       "zs_count_20d",
+       "zs_width_last"
+      ]
+     },
+     {
+      "date": "20260914",
+      "mismatch": []
+     }
+    ],
+    "pass_by_feature": {
+     "bi_count_20d": false,
+     "bi_last_dir": false,
+     "zs_count_20d": false,
+     "zs_width_last": false,
+     "beichi_last_strength": true,
+     "beichi_div_count_20d": true,
+     "bs_net_5d": true,
+     "bs_last_sign": true
+    }
+   },
+   {
+    "ts_code": "603610.SH",
+    "checked_code_days": 3,
+    "mismatch_counts": {
+     "bi_count_20d": 3,
+     "bi_last_dir": 3,
+     "zs_count_20d": 1,
+     "zs_width_last": 1,
+     "beichi_last_strength": 0,
+     "beichi_div_count_20d": 0,
+     "bs_net_5d": 1,
+     "bs_last_sign": 1
+    },
+    "mismatch_rates": {
+     "bi_count_20d": 1.0,
+     "bi_last_dir": 1.0,
+     "zs_count_20d": 0.3333333333333333,
+     "zs_width_last": 0.3333333333333333,
+     "beichi_last_strength": 0.0,
+     "beichi_div_count_20d": 0.0,
+     "bs_net_5d": 0.3333333333333333,
+     "bs_last_sign": 0.3333333333333333
+    },
+    "details": [
+     {
+      "date": "20260622",
+      "mismatch": [
+       "bi_count_20d",
+       "bi_last_dir",
+       "bs_net_5d",
+       "bs_last_sign"
+      ]
+     },
+     {
+      "date": "20260803",
+      "mismatch": [
+       "bi_count_20d",
+       "bi_last_dir"
+      ]
+     },
+     {
+      "date": "20260914",
+      "mismatch": [
+       "bi_count_20d",
+       "bi_last_dir",
+       "zs_count_20d",
+       "zs_width_last"
+      ]
+     }
+    ],
+    "pass_by_feature": {
+     "bi_count_20d": false,
+     "bi_last_dir": false,
+     "zs_count_20d": false,
+     "zs_width_last": false,
+     "beichi_last_strength": true,
+     "beichi_div_count_20d": true,
+     "bs_net_5d": false,
+     "bs_last_sign": false
+    }
+   }
+  ],
+  "aggregate_mismatch_rates": {
+   "bi_count_20d": 0.5555555555555556,
+   "bi_last_dir": 0.5555555555555556,
+   "zs_count_20d": 0.2222222222222222,
+   "zs_width_last": 0.2222222222222222,
+   "beichi_last_strength": 0.16666666666666666,
+   "beichi_div_count_20d": 0.16666666666666666,
+   "bs_net_5d": 0.27777777777777773,
+   "bs_last_sign": 0.27777777777777773
+  },
+  "pass_by_feature": {
+   "bi_count_20d": false,
+   "bi_last_dir": false,
+   "zs_count_20d": false,
+   "zs_width_last": false,
+   "beichi_last_strength": false,
+   "beichi_div_count_20d": false,
+   "bs_net_5d": false,
+   "bs_last_sign": false
+  },
+  "method": "对 6 只 × 3 个窗口日：bars 截断到当日收盘 → analyze_chan 重算 → features_asof 对比全样本 as-of 特征（不一致率≤10% 视为通过）",
+  "note": "全样本 as-of 特征仅使用「确认时间 ≤ 当日」的结构；截断重算用于验证结构状态（closed/延伸）不依赖未来 bar。"
+ },
+ "features": {
+  "bi_count_20d": {
+   "name": "bi_count_20d",
+   "label": "近20日闭笔数",
+   "family": "笔",
+   "coverage": {
+    "valid": 5513,
+    "expected": 7200,
+    "pct": 76.57
+   },
+   "ic": {
+    "h5": {
+     "n_days": 90,
+     "ic_mean": -0.028536,
+     "ic_std": 0.161914,
+     "ir": -0.176,
+     "t": -1.672,
+     "positive_rate": 0.4111,
+     "half_split": {
+      "first_mean": -0.02896,
+      "second_mean": -0.028111,
+      "same_sign": true
+     }
+    },
+    "h10": {
+     "n_days": 90,
+     "ic_mean": -0.030693,
+     "ic_std": 0.148934,
+     "ir": -0.206,
+     "t": -1.955,
+     "positive_rate": 0.3889,
+     "half_split": {
+      "first_mean": -0.03369,
+      "second_mean": -0.027697,
+      "same_sign": true
+     }
+    },
+    "h20": {
+     "n_days": 84,
+     "ic_mean": -0.062192,
+     "ic_std": 0.116013,
+     "ir": -0.536,
+     "t": -4.913,
+     "positive_rate": 0.3095,
+     "half_split": {
+      "first_mean": -0.078672,
+      "second_mean": -0.045712,
+      "same_sign": true
+     }
+    }
+   },
+   "decay": {
+    "h5": -0.028536,
+    "h10": -0.030693,
+    "h20": -0.062192
+   },
+   "layers": {
+    "h5": {
+     "n_days": 90,
+     "groups": {
+      "G1": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.4516
+      },
+      "G2": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.0167
+      },
+      "G3": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.2545
+      },
+      "G4": {
+       "n_days": 90,
+       "mean_fwd_pct": 0.0411
+      },
+      "G5": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.8589
+      }
+     },
+     "long_short": {
+      "mean_fwd_pct": -0.4073,
+      "ann_pct": -20.53
+     },
+     "monotonicity": -0.1,
+     "note": "组内等权未来 h 日收益均值；多空=G5−G1；样本仅 60 只，5 层每组约 12 只，噪声大"
+    },
+    "h10": {
+     "n_days": 90,
+     "groups": {
+      "G1": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.4615
+      },
+      "G2": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.2363
+      },
+      "G3": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.1518
+      },
+      "G4": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.439
+      },
+      "G5": {
+       "n_days": 90,
+       "mean_fwd_pct": -1.6159
+      }
+     },
+     "long_short": {
+      "mean_fwd_pct": -1.1544,
+      "ann_pct": -29.09
+     },
+     "monotonicity": -0.3,
+     "note": "组内等权未来 h 日收益均值；多空=G5−G1；样本仅 60 只，5 层每组约 12 只，噪声大"
+    },
+    "h20": {
+     "n_days": 84,
+     "groups": {
+      "G1": {
+       "n_days": 84,
+       "mean_fwd_pct": -0.3919
+      },
+      "G2": {
+       "n_days": 84,
+       "mean_fwd_pct": -0.6072
+      },
+      "G3": {
+       "n_days": 84,
+       "mean_fwd_pct": -0.7202
+      },
+      "G4": {
+       "n_days": 84,
+       "mean_fwd_pct": -1.7685
+      },
+      "G5": {
+       "n_days": 84,
+       "mean_fwd_pct": -2.9928
+      }
+     },
+     "long_short": {
+      "mean_fwd_pct": -2.6009,
+      "ann_pct": -32.77
+     },
+     "monotonicity": -1.0,
+     "note": "组内等权未来 h 日收益均值；多空=G5−G1；样本仅 60 只，5 层每组约 12 只，噪声大"
+    }
+   },
+   "pit": {
+    "pass": false,
+    "sampled_mismatch_rate": 0.5556,
+    "method": "抽样 code-day 截断到当日重算结构/特征 vs 全样本 as-of 特征"
+   },
+   "grade": "不通过",
+   "grade_reasons": [
+    "PIT 严格截断检查未通过：as-of 特征与「截断到当日重算」不一致（缠论结构修订：最后一笔/中枢 closed 状态依赖未来 bar）→ 本前筛口径下不可使用"
+   ]
+  },
+  "bi_last_dir": {
+   "name": "bi_last_dir",
+   "label": "最后一笔方向（+1上/−1下）",
+   "family": "笔",
+   "coverage": {
+    "valid": 5513,
+    "expected": 7200,
+    "pct": 76.57
+   },
+   "ic": {
+    "h5": {
+     "n_days": 90,
+     "ic_mean": -0.083035,
+     "ic_std": 0.159444,
+     "ir": -0.521,
+     "t": -4.941,
+     "positive_rate": 0.2778,
+     "half_split": {
+      "first_mean": -0.067023,
+      "second_mean": -0.099046,
+      "same_sign": true
+     }
+    },
+    "h10": {
+     "n_days": 90,
+     "ic_mean": -0.044982,
+     "ic_std": 0.154633,
+     "ir": -0.291,
+     "t": -2.76,
+     "positive_rate": 0.3778,
+     "half_split": {
+      "first_mean": -0.044014,
+      "second_mean": -0.045951,
+      "same_sign": true
+     }
+    },
+    "h20": {
+     "n_days": 84,
+     "ic_mean": -0.006808,
+     "ic_std": 0.150611,
+     "ir": -0.045,
+     "t": -0.414,
+     "positive_rate": 0.5476,
+     "half_split": {
+      "first_mean": -0.013865,
+      "second_mean": 0.000249,
+      "same_sign": false
+     }
+    }
+   },
+   "decay": {
+    "h5": -0.083035,
+    "h10": -0.044982,
+    "h20": -0.006808
+   },
+   "layers": {
+    "h5": {
+     "n_days": 90,
+     "groups": {
+      "G1": {
+       "n_days": 90,
+       "mean_fwd_pct": 0.552
+      },
+      "G2": {
+       "n_days": 90,
+       "mean_fwd_pct": 0.0314
+      },
+      "G3": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.4115
+      },
+      "G4": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.9469
+      },
+      "G5": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.7746
+      }
+     },
+     "long_short": {
+      "mean_fwd_pct": -1.3266,
+      "ann_pct": -66.86
+     },
+     "monotonicity": -0.9,
+     "note": "组内等权未来 h 日收益均值；多空=G5−G1；样本仅 60 只，5 层每组约 12 只，噪声大"
+    },
+    "h10": {
+     "n_days": 90,
+     "groups": {
+      "G1": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.0238
+      },
+      "G2": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.1073
+      },
+      "G3": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.7835
+      },
+      "G4": {
+       "n_days": 90,
+       "mean_fwd_pct": -1.3253
+      },
+      "G5": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.6029
+      }
+     },
+     "long_short": {
+      "mean_fwd_pct": -0.5791,
+      "ann_pct": -14.59
+     },
+     "monotonicity": -0.7,
+     "note": "组内等权未来 h 日收益均值；多空=G5−G1；样本仅 60 只，5 层每组约 12 只，噪声大"
+    },
+    "h20": {
+     "n_days": 84,
+     "groups": {
+      "G1": {
+       "n_days": 84,
+       "mean_fwd_pct": -1.5156
+      },
+      "G2": {
+       "n_days": 84,
+       "mean_fwd_pct": -0.4727
+      },
+      "G3": {
+       "n_days": 84,
+       "mean_fwd_pct": -0.946
+      },
+      "G4": {
+       "n_days": 84,
+       "mean_fwd_pct": -1.6203
+      },
+      "G5": {
+       "n_days": 84,
+       "mean_fwd_pct": -1.7933
+      }
+     },
+     "long_short": {
+      "mean_fwd_pct": -0.2777,
+      "ann_pct": -3.5
+     },
+     "monotonicity": -0.7,
+     "note": "组内等权未来 h 日收益均值；多空=G5−G1；样本仅 60 只，5 层每组约 12 只，噪声大"
+    }
+   },
+   "pit": {
+    "pass": false,
+    "sampled_mismatch_rate": 0.5556,
+    "method": "抽样 code-day 截断到当日重算结构/特征 vs 全样本 as-of 特征"
+   },
+   "grade": "不通过",
+   "grade_reasons": [
+    "PIT 严格截断检查未通过：as-of 特征与「截断到当日重算」不一致（缠论结构修订：最后一笔/中枢 closed 状态依赖未来 bar）→ 本前筛口径下不可使用"
+   ]
+  },
+  "zs_count_20d": {
+   "name": "zs_count_20d",
+   "label": "近20日闭中枢数",
+   "family": "中枢",
+   "coverage": {
+    "valid": 5513,
+    "expected": 7200,
+    "pct": 76.57
+   },
+   "ic": {
+    "h5": {
+     "n_days": 90,
+     "ic_mean": 0.006985,
+     "ic_std": 0.163712,
+     "ir": 0.043,
+     "t": 0.405,
+     "positive_rate": 0.4556,
+     "half_split": {
+      "first_mean": -0.017055,
+      "second_mean": 0.031024,
+      "same_sign": false
+     }
+    },
+    "h10": {
+     "n_days": 90,
+     "ic_mean": 0.01731,
+     "ic_std": 0.175648,
+     "ir": 0.099,
+     "t": 0.935,
+     "positive_rate": 0.4556,
+     "half_split": {
+      "first_mean": 0.014216,
+      "second_mean": 0.020403,
+      "same_sign": true
+     }
+    },
+    "h20": {
+     "n_days": 84,
+     "ic_mean": 0.050215,
+     "ic_std": 0.140875,
+     "ir": 0.356,
+     "t": 3.267,
+     "positive_rate": 0.631,
+     "half_split": {
+      "first_mean": 0.053704,
+      "second_mean": 0.046726,
+      "same_sign": true
+     }
+    }
+   },
+   "decay": {
+    "h5": 0.006985,
+    "h10": 0.01731,
+    "h20": 0.050215
+   },
+   "layers": {
+    "h5": {
+     "n_days": 90,
+     "groups": {
+      "G1": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.1823
+      },
+      "G2": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.0189
+      },
+      "G3": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.7373
+      },
+      "G4": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.8112
+      },
+      "G5": {
+       "n_days": 90,
+       "mean_fwd_pct": 0.2752
+      }
+     },
+     "long_short": {
+      "mean_fwd_pct": 0.4575,
+      "ann_pct": 23.06
+     },
+     "monotonicity": 0.1,
+     "note": "组内等权未来 h 日收益均值；多空=G5−G1；样本仅 60 只，5 层每组约 12 只，噪声大"
+    },
+    "h10": {
+     "n_days": 90,
+     "groups": {
+      "G1": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.2552
+      },
+      "G2": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.6242
+      },
+      "G3": {
+       "n_days": 90,
+       "mean_fwd_pct": -1.6799
+      },
+      "G4": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.8397
+      },
+      "G5": {
+       "n_days": 90,
+       "mean_fwd_pct": 0.6277
+      }
+     },
+     "long_short": {
+      "mean_fwd_pct": 0.8829,
+      "ann_pct": 22.25
+     },
+     "monotonicity": 0.1,
+     "note": "组内等权未来 h 日收益均值；多空=G5−G1；样本仅 60 只，5 层每组约 12 只，噪声大"
+    },
+    "h20": {
+     "n_days": 84,
+     "groups": {
+      "G1": {
+       "n_days": 84,
+       "mean_fwd_pct": -1.4136
+      },
+      "G2": {
+       "n_days": 84,
+       "mean_fwd_pct": -1.3286
+      },
+      "G3": {
+       "n_days": 84,
+       "mean_fwd_pct": -2.5029
+      },
+      "G4": {
+       "n_days": 84,
+       "mean_fwd_pct": -1.5575
+      },
+      "G5": {
+       "n_days": 84,
+       "mean_fwd_pct": 0.5456
+      }
+     },
+     "long_short": {
+      "mean_fwd_pct": 1.9592,
+      "ann_pct": 24.69
+     },
+     "monotonicity": 0.2,
+     "note": "组内等权未来 h 日收益均值；多空=G5−G1；样本仅 60 只，5 层每组约 12 只，噪声大"
+    }
+   },
+   "pit": {
+    "pass": false,
+    "sampled_mismatch_rate": 0.2222,
+    "method": "抽样 code-day 截断到当日重算结构/特征 vs 全样本 as-of 特征"
+   },
+   "grade": "不通过",
+   "grade_reasons": [
+    "PIT 严格截断检查未通过：as-of 特征与「截断到当日重算」不一致（缠论结构修订：最后一笔/中枢 closed 状态依赖未来 bar）→ 本前筛口径下不可使用"
+   ]
+  },
+  "zs_width_last": {
+   "name": "zs_width_last",
+   "label": "最新闭中枢宽度 (ZG−ZD)/ZD",
+   "family": "中枢",
+   "coverage": {
+    "valid": 4580,
+    "expected": 7200,
+    "pct": 63.61
+   },
+   "ic": {
+    "h5": {
+     "n_days": 81,
+     "ic_mean": -0.084073,
+     "ic_std": 0.254271,
+     "ir": -0.331,
+     "t": -2.976,
+     "positive_rate": 0.3827,
+     "half_split": {
+      "first_mean": -0.047018,
+      "second_mean": -0.120225,
+      "same_sign": true
+     }
+    },
+    "h10": {
+     "n_days": 81,
+     "ic_mean": -0.10364,
+     "ic_std": 0.269082,
+     "ir": -0.385,
+     "t": -3.466,
+     "positive_rate": 0.3827,
+     "half_split": {
+      "first_mean": -0.046459,
+      "second_mean": -0.159426,
+      "same_sign": true
+     }
+    },
+    "h20": {
+     "n_days": 75,
+     "ic_mean": -0.146232,
+     "ic_std": 0.26397,
+     "ir": -0.554,
+     "t": -4.798,
+     "positive_rate": 0.36,
+     "half_split": {
+      "first_mean": -0.13303,
+      "second_mean": -0.159087,
+      "same_sign": true
+     }
+    }
+   },
+   "decay": {
+    "h5": -0.084073,
+    "h10": -0.10364,
+    "h20": -0.146232
+   },
+   "layers": {
+    "h5": {
+     "n_days": 81,
+     "groups": {
+      "G1": {
+       "n_days": 81,
+       "mean_fwd_pct": 0.1081
+      },
+      "G2": {
+       "n_days": 81,
+       "mean_fwd_pct": -1.0499
+      },
+      "G3": {
+       "n_days": 81,
+       "mean_fwd_pct": -0.0217
+      },
+      "G4": {
+       "n_days": 81,
+       "mean_fwd_pct": 0.5495
+      },
+      "G5": {
+       "n_days": 81,
+       "mean_fwd_pct": -1.4355
+      }
+     },
+     "long_short": {
+      "mean_fwd_pct": -1.5436,
+      "ann_pct": -77.8
+     },
+     "monotonicity": -0.3,
+     "note": "组内等权未来 h 日收益均值；多空=G5−G1；样本仅 60 只，5 层每组约 12 只，噪声大"
+    },
+    "h10": {
+     "n_days": 81,
+     "groups": {
+      "G1": {
+       "n_days": 81,
+       "mean_fwd_pct": 0.0824
+      },
+      "G2": {
+       "n_days": 81,
+       "mean_fwd_pct": -1.4089
+      },
+      "G3": {
+       "n_days": 81,
+       "mean_fwd_pct": -0.2338
+      },
+      "G4": {
+       "n_days": 81,
+       "mean_fwd_pct": 0.2295
+      },
+      "G5": {
+       "n_days": 81,
+       "mean_fwd_pct": -3.176
+      }
+     },
+     "long_short": {
+      "mean_fwd_pct": -3.2584,
+      "ann_pct": -82.11
+     },
+     "monotonicity": -0.3,
+     "note": "组内等权未来 h 日收益均值；多空=G5−G1；样本仅 60 只，5 层每组约 12 只，噪声大"
+    },
+    "h20": {
+     "n_days": 75,
+     "groups": {
+      "G1": {
+       "n_days": 75,
+       "mean_fwd_pct": -0.4249
+      },
+      "G2": {
+       "n_days": 75,
+       "mean_fwd_pct": -1.1759
+      },
+      "G3": {
+       "n_days": 75,
+       "mean_fwd_pct": -0.6147
+      },
+      "G4": {
+       "n_days": 75,
+       "mean_fwd_pct": 0.5641
+      },
+      "G5": {
+       "n_days": 75,
+       "mean_fwd_pct": -6.8904
+      }
+     },
+     "long_short": {
+      "mean_fwd_pct": -6.4655,
+      "ann_pct": -81.47
+     },
+     "monotonicity": -0.3,
+     "note": "组内等权未来 h 日收益均值；多空=G5−G1；样本仅 60 只，5 层每组约 12 只，噪声大"
+    }
+   },
+   "pit": {
+    "pass": false,
+    "sampled_mismatch_rate": 0.2222,
+    "method": "抽样 code-day 截断到当日重算结构/特征 vs 全样本 as-of 特征"
+   },
+   "grade": "不通过",
+   "grade_reasons": [
+    "PIT 严格截断检查未通过：as-of 特征与「截断到当日重算」不一致（缠论结构修订：最后一笔/中枢 closed 状态依赖未来 bar）→ 本前筛口径下不可使用"
+   ]
+  },
+  "beichi_last_strength": {
+   "name": "beichi_last_strength",
+   "label": "最近背驰强度（无则0）",
+   "family": "背驰",
+   "coverage": {
+    "valid": 5513,
+    "expected": 7200,
+    "pct": 76.57
+   },
+   "ic": {
+    "h5": {
+     "n_days": 90,
+     "ic_mean": 0.040302,
+     "ic_std": 0.129544,
+     "ir": 0.311,
+     "t": 2.951,
+     "positive_rate": 0.6889,
+     "half_split": {
+      "first_mean": 0.03133,
+      "second_mean": 0.049274,
+      "same_sign": true
+     }
+    },
+    "h10": {
+     "n_days": 90,
+     "ic_mean": 0.04353,
+     "ic_std": 0.116317,
+     "ir": 0.374,
+     "t": 3.55,
+     "positive_rate": 0.6333,
+     "half_split": {
+      "first_mean": 0.055874,
+      "second_mean": 0.031186,
+      "same_sign": true
+     }
+    },
+    "h20": {
+     "n_days": 84,
+     "ic_mean": 0.04726,
+     "ic_std": 0.114233,
+     "ir": 0.414,
+     "t": 3.792,
+     "positive_rate": 0.6786,
+     "half_split": {
+      "first_mean": 0.078271,
+      "second_mean": 0.016249,
+      "same_sign": true
+     }
+    }
+   },
+   "decay": {
+    "h5": 0.040302,
+    "h10": 0.04353,
+    "h20": 0.04726
+   },
+   "layers": {
+    "h5": {
+     "n_days": 90,
+     "groups": {
+      "G1": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.6925
+      },
+      "G2": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.1559
+      },
+      "G3": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.3393
+      },
+      "G4": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.4356
+      },
+      "G5": {
+       "n_days": 90,
+       "mean_fwd_pct": 0.15
+      }
+     },
+     "long_short": {
+      "mean_fwd_pct": 0.8425,
+      "ann_pct": 42.46
+     },
+     "monotonicity": 0.6,
+     "note": "组内等权未来 h 日收益均值；多空=G5−G1；样本仅 60 只，5 层每组约 12 只，噪声大"
+    },
+    "h10": {
+     "n_days": 90,
+     "groups": {
+      "G1": {
+       "n_days": 90,
+       "mean_fwd_pct": -1.3574
+      },
+      "G2": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.0218
+      },
+      "G3": {
+       "n_days": 90,
+       "mean_fwd_pct": -1.0501
+      },
+      "G4": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.6719
+      },
+      "G5": {
+       "n_days": 90,
+       "mean_fwd_pct": 0.2852
+      }
+     },
+     "long_short": {
+      "mean_fwd_pct": 1.6426,
+      "ann_pct": 41.39
+     },
+     "monotonicity": 0.7,
+     "note": "组内等权未来 h 日收益均值；多空=G5−G1；样本仅 60 只，5 层每组约 12 只，噪声大"
+    },
+    "h20": {
+     "n_days": 84,
+     "groups": {
+      "G1": {
+       "n_days": 84,
+       "mean_fwd_pct": -2.1143
+      },
+      "G2": {
+       "n_days": 84,
+       "mean_fwd_pct": -1.626
+      },
+      "G3": {
+       "n_days": 84,
+       "mean_fwd_pct": -0.4306
+      },
+      "G4": {
+       "n_days": 84,
+       "mean_fwd_pct": -1.5582
+      },
+      "G5": {
+       "n_days": 84,
+       "mean_fwd_pct": -0.5554
+      }
+     },
+     "long_short": {
+      "mean_fwd_pct": 1.5589,
+      "ann_pct": 19.64
+     },
+     "monotonicity": 0.7,
+     "note": "组内等权未来 h 日收益均值；多空=G5−G1；样本仅 60 只，5 层每组约 12 只，噪声大"
+    }
+   },
+   "pit": {
+    "pass": false,
+    "sampled_mismatch_rate": 0.1667,
+    "method": "抽样 code-day 截断到当日重算结构/特征 vs 全样本 as-of 特征"
+   },
+   "grade": "不通过",
+   "grade_reasons": [
+    "PIT 严格截断检查未通过：as-of 特征与「截断到当日重算」不一致（缠论结构修订：最后一笔/中枢 closed 状态依赖未来 bar）→ 本前筛口径下不可使用"
+   ]
+  },
+  "beichi_div_count_20d": {
+   "name": "beichi_div_count_20d",
+   "label": "近20日背驰数",
+   "family": "背驰",
+   "coverage": {
+    "valid": 5513,
+    "expected": 7200,
+    "pct": 76.57
+   },
+   "ic": {
+    "h5": {
+     "n_days": 90,
+     "ic_mean": 0.004433,
+     "ic_std": 0.118021,
+     "ir": 0.038,
+     "t": 0.356,
+     "positive_rate": 0.5889,
+     "half_split": {
+      "first_mean": 0.02608,
+      "second_mean": -0.017214,
+      "same_sign": false
+     }
+    },
+    "h10": {
+     "n_days": 90,
+     "ic_mean": 0.009125,
+     "ic_std": 0.108561,
+     "ir": 0.084,
+     "t": 0.797,
+     "positive_rate": 0.6,
+     "half_split": {
+      "first_mean": 0.040269,
+      "second_mean": -0.02202,
+      "same_sign": false
+     }
+    },
+    "h20": {
+     "n_days": 84,
+     "ic_mean": 0.005509,
+     "ic_std": 0.121517,
+     "ir": 0.045,
+     "t": 0.416,
+     "positive_rate": 0.5357,
+     "half_split": {
+      "first_mean": 0.049687,
+      "second_mean": -0.038668,
+      "same_sign": false
+     }
+    }
+   },
+   "decay": {
+    "h5": 0.004433,
+    "h10": 0.009125,
+    "h20": 0.005509
+   },
+   "layers": {
+    "h5": {
+     "n_days": 90,
+     "groups": {
+      "G1": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.2496
+      },
+      "G2": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.4787
+      },
+      "G3": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.7737
+      },
+      "G4": {
+       "n_days": 90,
+       "mean_fwd_pct": 0.017
+      },
+      "G5": {
+       "n_days": 90,
+       "mean_fwd_pct": 0.0068
+      }
+     },
+     "long_short": {
+      "mean_fwd_pct": 0.2564,
+      "ann_pct": 12.92
+     },
+     "monotonicity": 0.5,
+     "note": "组内等权未来 h 日收益均值；多空=G5−G1；样本仅 60 只，5 层每组约 12 只，噪声大"
+    },
+    "h10": {
+     "n_days": 90,
+     "groups": {
+      "G1": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.4023
+      },
+      "G2": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.4482
+      },
+      "G3": {
+       "n_days": 90,
+       "mean_fwd_pct": -1.1628
+      },
+      "G4": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.3621
+      },
+      "G5": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.4648
+      }
+     },
+     "long_short": {
+      "mean_fwd_pct": -0.0625,
+      "ann_pct": -1.57
+     },
+     "monotonicity": -0.2,
+     "note": "组内等权未来 h 日收益均值；多空=G5−G1；样本仅 60 只，5 层每组约 12 只，噪声大"
+    },
+    "h20": {
+     "n_days": 84,
+     "groups": {
+      "G1": {
+       "n_days": 84,
+       "mean_fwd_pct": -0.6398
+      },
+      "G2": {
+       "n_days": 84,
+       "mean_fwd_pct": -2.0175
+      },
+      "G3": {
+       "n_days": 84,
+       "mean_fwd_pct": -0.4199
+      },
+      "G4": {
+       "n_days": 84,
+       "mean_fwd_pct": -0.9313
+      },
+      "G5": {
+       "n_days": 84,
+       "mean_fwd_pct": -2.4068
+      }
+     },
+     "long_short": {
+      "mean_fwd_pct": -1.767,
+      "ann_pct": -22.26
+     },
+     "monotonicity": -0.5,
+     "note": "组内等权未来 h 日收益均值；多空=G5−G1；样本仅 60 只，5 层每组约 12 只，噪声大"
+    }
+   },
+   "pit": {
+    "pass": false,
+    "sampled_mismatch_rate": 0.1667,
+    "method": "抽样 code-day 截断到当日重算结构/特征 vs 全样本 as-of 特征"
+   },
+   "grade": "不通过",
+   "grade_reasons": [
+    "PIT 严格截断检查未通过：as-of 特征与「截断到当日重算」不一致（缠论结构修订：最后一笔/中枢 closed 状态依赖未来 bar）→ 本前筛口径下不可使用"
+   ]
+  },
+  "bs_net_5d": {
+   "name": "bs_net_5d",
+   "label": "近5日买卖点净信号（B+1/S−1）",
+   "family": "买卖点",
+   "coverage": {
+    "valid": 5513,
+    "expected": 7200,
+    "pct": 76.57
+   },
+   "ic": {
+    "h5": {
+     "n_days": 90,
+     "ic_mean": 0.064265,
+     "ic_std": 0.119856,
+     "ir": 0.536,
+     "t": 5.087,
+     "positive_rate": 0.7333,
+     "half_split": {
+      "first_mean": 0.048607,
+      "second_mean": 0.079923,
+      "same_sign": true
+     }
+    },
+    "h10": {
+     "n_days": 90,
+     "ic_mean": 0.013544,
+     "ic_std": 0.15648,
+     "ir": 0.087,
+     "t": 0.821,
+     "positive_rate": 0.5222,
+     "half_split": {
+      "first_mean": -0.012607,
+      "second_mean": 0.039694,
+      "same_sign": false
+     }
+    },
+    "h20": {
+     "n_days": 84,
+     "ic_mean": -0.026257,
+     "ic_std": 0.138335,
+     "ir": -0.19,
+     "t": -1.74,
+     "positive_rate": 0.4643,
+     "half_split": {
+      "first_mean": -0.075944,
+      "second_mean": 0.023429,
+      "same_sign": false
+     }
+    }
+   },
+   "decay": {
+    "h5": 0.064265,
+    "h10": 0.013544,
+    "h20": -0.026257
+   },
+   "layers": {
+    "h5": {
+     "n_days": 90,
+     "groups": {
+      "G1": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.7032
+      },
+      "G2": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.7379
+      },
+      "G3": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.3752
+      },
+      "G4": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.299
+      },
+      "G5": {
+       "n_days": 90,
+       "mean_fwd_pct": 0.6642
+      }
+     },
+     "long_short": {
+      "mean_fwd_pct": 1.3674,
+      "ann_pct": 68.92
+     },
+     "monotonicity": 0.9,
+     "note": "组内等权未来 h 日收益均值；多空=G5−G1；样本仅 60 只，5 层每组约 12 只，噪声大"
+    },
+    "h10": {
+     "n_days": 90,
+     "groups": {
+      "G1": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.8674
+      },
+      "G2": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.9781
+      },
+      "G3": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.699
+      },
+      "G4": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.6132
+      },
+      "G5": {
+       "n_days": 90,
+       "mean_fwd_pct": 0.2982
+      }
+     },
+     "long_short": {
+      "mean_fwd_pct": 1.1656,
+      "ann_pct": 29.37
+     },
+     "monotonicity": 0.9,
+     "note": "组内等权未来 h 日收益均值；多空=G5−G1；样本仅 60 只，5 层每组约 12 只，噪声大"
+    },
+    "h20": {
+     "n_days": 84,
+     "groups": {
+      "G1": {
+       "n_days": 84,
+       "mean_fwd_pct": -1.083
+      },
+      "G2": {
+       "n_days": 84,
+       "mean_fwd_pct": -1.5269
+      },
+      "G3": {
+       "n_days": 84,
+       "mean_fwd_pct": -0.8827
+      },
+      "G4": {
+       "n_days": 84,
+       "mean_fwd_pct": -1.4715
+      },
+      "G5": {
+       "n_days": 84,
+       "mean_fwd_pct": -1.459
+      }
+     },
+     "long_short": {
+      "mean_fwd_pct": -0.376,
+      "ann_pct": -4.74
+     },
+     "monotonicity": -0.1,
+     "note": "组内等权未来 h 日收益均值；多空=G5−G1；样本仅 60 只，5 层每组约 12 只，噪声大"
+    }
+   },
+   "pit": {
+    "pass": false,
+    "sampled_mismatch_rate": 0.2778,
+    "method": "抽样 code-day 截断到当日重算结构/特征 vs 全样本 as-of 特征"
+   },
+   "grade": "不通过",
+   "grade_reasons": [
+    "PIT 严格截断检查未通过：as-of 特征与「截断到当日重算」不一致（缠论结构修订：最后一笔/中枢 closed 状态依赖未来 bar）→ 本前筛口径下不可使用"
+   ]
+  },
+  "bs_last_sign": {
+   "name": "bs_last_sign",
+   "label": "最新买卖点方向（B+1/S−1/0）",
+   "family": "买卖点",
+   "coverage": {
+    "valid": 5513,
+    "expected": 7200,
+    "pct": 76.57
+   },
+   "ic": {
+    "h5": {
+     "n_days": 90,
+     "ic_mean": 0.05241,
+     "ic_std": 0.119099,
+     "ir": 0.44,
+     "t": 4.175,
+     "positive_rate": 0.6889,
+     "half_split": {
+      "first_mean": 0.02227,
+      "second_mean": 0.08255,
+      "same_sign": true
+     }
+    },
+    "h10": {
+     "n_days": 90,
+     "ic_mean": 0.006361,
+     "ic_std": 0.143168,
+     "ir": 0.044,
+     "t": 0.421,
+     "positive_rate": 0.4889,
+     "half_split": {
+      "first_mean": -0.027304,
+      "second_mean": 0.040025,
+      "same_sign": false
+     }
+    },
+    "h20": {
+     "n_days": 84,
+     "ic_mean": -0.008261,
+     "ic_std": 0.121231,
+     "ir": -0.068,
+     "t": -0.625,
+     "positive_rate": 0.5238,
+     "half_split": {
+      "first_mean": -0.047302,
+      "second_mean": 0.03078,
+      "same_sign": false
+     }
+    }
+   },
+   "decay": {
+    "h5": 0.05241,
+    "h10": 0.006361,
+    "h20": -0.008261
+   },
+   "layers": {
+    "h5": {
+     "n_days": 90,
+     "groups": {
+      "G1": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.4339
+      },
+      "G2": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.8362
+      },
+      "G3": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.3558
+      },
+      "G4": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.1824
+      },
+      "G5": {
+       "n_days": 90,
+       "mean_fwd_pct": 0.3459
+      }
+     },
+     "long_short": {
+      "mean_fwd_pct": 0.7798,
+      "ann_pct": 39.3
+     },
+     "monotonicity": 0.9,
+     "note": "组内等权未来 h 日收益均值；多空=G5−G1；样本仅 60 只，5 层每组约 12 只，噪声大"
+    },
+    "h10": {
+     "n_days": 90,
+     "groups": {
+      "G1": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.4673
+      },
+      "G2": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.8327
+      },
+      "G3": {
+       "n_days": 90,
+       "mean_fwd_pct": -1.005
+      },
+      "G4": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.2556
+      },
+      "G5": {
+       "n_days": 90,
+       "mean_fwd_pct": -0.3313
+      }
+     },
+     "long_short": {
+      "mean_fwd_pct": 0.136,
+      "ann_pct": 3.43
+     },
+     "monotonicity": 0.5,
+     "note": "组内等权未来 h 日收益均值；多空=G5−G1；样本仅 60 只，5 层每组约 12 只，噪声大"
+    },
+    "h20": {
+     "n_days": 84,
+     "groups": {
+      "G1": {
+       "n_days": 84,
+       "mean_fwd_pct": -1.1873
+      },
+      "G2": {
+       "n_days": 84,
+       "mean_fwd_pct": -0.8661
+      },
+      "G3": {
+       "n_days": 84,
+       "mean_fwd_pct": -1.8236
+      },
+      "G4": {
+       "n_days": 84,
+       "mean_fwd_pct": -0.5236
+      },
+      "G5": {
+       "n_days": 84,
+       "mean_fwd_pct": -2.0867
+      }
+     },
+     "long_short": {
+      "mean_fwd_pct": -0.8994,
+      "ann_pct": -11.33
+     },
+     "monotonicity": -0.3,
+     "note": "组内等权未来 h 日收益均值；多空=G5−G1；样本仅 60 只，5 层每组约 12 只，噪声大"
+    }
+   },
+   "pit": {
+    "pass": false,
+    "sampled_mismatch_rate": 0.2778,
+    "method": "抽样 code-day 截断到当日重算结构/特征 vs 全样本 as-of 特征"
+   },
+   "grade": "不通过",
+   "grade_reasons": [
+    "PIT 严格截断检查未通过：as-of 特征与「截断到当日重算」不一致（缠论结构修订：最后一笔/中枢 closed 状态依赖未来 bar）→ 本前筛口径下不可使用"
+   ]
+  }
+ },
+ "summary": {
+  "通过": [],
+  "观察": [],
+  "不通过": [
+   "bi_count_20d",
+   "bi_last_dir",
+   "zs_count_20d",
+   "zs_width_last",
+   "beichi_last_strength",
+   "beichi_div_count_20d",
+   "bs_net_5d",
+   "bs_last_sign"
+  ]
+ },
+ "limitations": [
+  "样本仅 60 只 × 120 交易日（seed=42），横截面小、5 层每组约 12 只，RankIC/分层噪声大；",
+  "结构从窗口首日开始累积（无窗口前历史），前 ~20 日结构不充分 → 覆盖率前低后高；",
+  "30 分钟 bar 由 1 分钟聚合，停牌/缺月会缺 bar；未来收益用日频收盘复权，未做 T+1 入场/成本；",
+  "特征方向无先验（缠论结构本身不带方向），前筛按 |IC|/|IR| 判强度，方向需正式四关确认；",
+  "PIT：本前筛的快照特征由「全窗口一次 analyze + 按确认时间 as-of 过滤」得到；抽样严格截断重算显示两者不一致率 22-56%（笔端点延伸/中枢 closed 状态会随未来 bar 修订），因此 8 特征在本口径下均判 PIT 不通过；若要正式四关，必须先按日截断重算（60 只×120 日 ≈ 7200 次 analyze ≈ 50-60 分钟，或实现增量式结构引擎）。",
+  "不构成投资建议；前筛不代替正式四关。"
+ ],
+ "schema_check": []
+}
