@@ -1,0 +1,500 @@
+{
+ "schema_version": "learning_capability.v1",
+ "generated_at": "2026-11-03T06:24:46+08:00",
+ "project": "视频号学习_8博主",
+ "overall": {
+  "files": 8,
+  "chars": 760826,
+  "units": 3813,
+  "units_with_domain": 910,
+  "candidate_pool": 418,
+  "cards_merged_video": 84,
+  "cards_total": 256,
+  "unusable_reasons": {
+   "生成阶段拒绝": {
+    "duplicate_batch_concept": 3020,
+    "answer_too_long": 583,
+    "duplicate_existing_answer": 27,
+    "duplicate_existing_concept": 6
+   },
+   "预审阶段驳回": {
+    "concept_no_domain_term": 382,
+    "concept_sentence_like": 190,
+    "concept_meta_or_person": 23,
+    "concept_answer_mismatch": 21,
+    "other": 70
+   }
+  }
+ },
+ "usability": [
+  {
+   "file": "20261103_AI量化工具手记(1).md",
+   "chars": 8879,
+   "units": 93,
+   "units_with_domain": 31,
+   "usable_pct": 33.3,
+   "candidate_pool": 11,
+   "conclusion": "可用"
+  },
+  {
+   "file": "20261103_cash猫4415.md",
+   "chars": 47589,
+   "units": 177,
+   "units_with_domain": 43,
+   "usable_pct": 24.3,
+   "candidate_pool": 11,
+   "conclusion": "可用"
+  },
+  {
+   "file": "20261103_K哥真交易(1).md",
+   "chars": 27207,
+   "units": 77,
+   "units_with_domain": 10,
+   "usable_pct": 13.0,
+   "candidate_pool": 17,
+   "conclusion": "部分可用"
+  },
+  {
+   "file": "20261103_一修论市(1).md",
+   "chars": 237602,
+   "units": 781,
+   "units_with_domain": 43,
+   "usable_pct": 5.5,
+   "candidate_pool": 136,
+   "conclusion": "可用"
+  },
+  {
+   "file": "20261103_乔木缠论ROEE.md",
+   "chars": 262538,
+   "units": 1251,
+   "units_with_domain": 299,
+   "usable_pct": 23.9,
+   "candidate_pool": 128,
+   "conclusion": "可用"
+  },
+  {
+   "file": "20261103_指标公式入门(1).md",
+   "chars": 9419,
+   "units": 148,
+   "units_with_domain": 71,
+   "usable_pct": 48.0,
+   "candidate_pool": 19,
+   "conclusion": "可用"
+  },
+  {
+   "file": "20261103_数据帝-量化开发.md",
+   "chars": 66784,
+   "units": 1081,
+   "units_with_domain": 384,
+   "usable_pct": 35.5,
+   "candidate_pool": 144,
+   "conclusion": "可用"
+  },
+  {
+   "file": "20261103_爱死磕-康康.md",
+   "chars": 100808,
+   "units": 205,
+   "units_with_domain": 29,
+   "usable_pct": 14.1,
+   "candidate_pool": 36,
+   "conclusion": "部分可用"
+  }
+ ],
+ "capabilities": [
+  {
+   "capability": "知识单元（可入 RAG/检索）",
+   "count": 3813,
+   "status": "已入库",
+   "output": "问答检索/证据链"
+  },
+  {
+   "capability": "学习卡（已发布）",
+   "count": 256,
+   "status": "已发布",
+   "output": "门户学习/研报问答"
+  },
+  {
+   "capability": "视频号学习卡（已合并）",
+   "count": 84,
+   "status": "已发布",
+   "output": "交易方法论卡池"
+  },
+  {
+   "capability": "候选池（待审核）",
+   "count": 418,
+   "status": "待审",
+   "output": "下一批学习卡"
+  },
+  {
+   "capability": "方法论卡片",
+   "count": 8,
+   "status": "已生成",
+   "output": "8 博主风格画像/核心观点"
+  },
+  {
+   "capability": "主题对比报告",
+   "count": 1,
+   "status": "已生成",
+   "output": "学习路径/互补关系"
+  },
+  {
+   "capability": "战法/策略候选",
+   "count": 8,
+   "status": "研究级",
+   "output": "策略假设（需四关）"
+  }
+ ],
+ "tactics": [
+  {
+   "name": "缠论结构（笔/线段/中枢/背驰/买卖点）",
+   "category": "缠论",
+   "unit_support": 679,
+   "samples": [
+    "- 文件：`20260828_1107_8.27，缠论一笔，30分钟高抛低吸实战分享#股市分享#缠论.mp4`",
+    "今天继续用同一套战法复盘上证指数。我们先从日线开始。昨天日线的核心观点是指数仍处于3994点之后的一笔下跌中。3930点不能有效上破就只按日线下跌中的30分钟反",
+    "- 文件：`20260829_0844_本周完美收官，本周操作如何，评论区聊聊！！#股市分析#缠论学习.mp4`",
+    "今天是8月28日，周五。继续用日线一笔，30分钟高抛低吸这套战法复盘上证指数。我们不预测涨跌，只按照日线定方向，30分钟看结构，5分钟找确认的顺序，判断当前走势"
+   ],
+   "computability": "B",
+   "data_dependency": "分钟/日线K线",
+   "warehouse_support": [
+    "日线行情"
+   ],
+   "gap": "分钟K线缺失（缠论笔/中枢需分钟级或近似日线实现）"
+  },
+  {
+   "name": "均线系统（粘合/多头排列/支撑）",
+   "category": "均线",
+   "unit_support": 127,
+   "samples": [
+    "趋势不是预测出来的，是确认出来的。而确认趋势，三根均线就够了，不需要更多花样。看这段走势。短期均线跑在最上面，中期在中间，长期在最下面，三条线一次展开，像扇子一",
+    "- 文件：`20261013_1920_通达信5日均线向上的正确写法.mp4`",
+    "写均线向上，90%新手代码直接写错。肉眼看着均线往上走，不等于公式能识别。很多人刚学通达信，第一步就在这里踩坑。先搞懂5日均线本质，费尽5根收盘价的平均值。5，",
+    "千万别随便叠加选股条件。越叠加，越选不出票。两个看起来优质的量化条件拼在一起，直接变成一条废公式。条件拼接，核心是取舍，不是简单堆砌。逻辑选错，选股结果直接讨天"
+   ],
+   "computability": "A",
+   "data_dependency": "日线+复权",
+   "warehouse_support": [
+    "复权因子"
+   ],
+   "gap": ""
+  },
+  {
+   "name": "MACD/KDJ/RSI 指标与背离",
+   "category": "指标",
+   "unit_support": 123,
+   "samples": [
+    "上一期我们分享了应该以什么样的心态面对交易。那么要做到以交易为生，交易就必须产生盈利。第二章我们先解决一个更基础的问题。投资赚取涨幅，投机赚取波动。你准备选择什",
+    "9月10日收盘盘后复盘及明日观点分享。老规矩，先点赞，后观看。先回顾昨天的判断。昨天我们看到上证处在30分钟高位，中证1000处在相对低位。重点观察两者会怎样联",
+    "10月13日收盘盘后复盘及明日观点分享。老规矩，先点赞，后观看。昨天的核心观点是，关注从3828下来的30分钟回调何时结束，内部要观察5分钟下跌中枢的构建。今天",
+    "10月28日收盘盘后复盘及明日观点分享。老规矩，先点赞，后观看。昨天我们说，今天重点关注从3708下来的这一笔30分钟回调能否结束。日内耐心等5分钟反弹之后再回"
+   ],
+   "computability": "A",
+   "data_dependency": "日线",
+   "warehouse_support": [
+    "日线行情"
+   ],
+   "gap": ""
+  },
+  {
+   "name": "量价与筹码（放量/缩量/筹码）",
+   "category": "量价",
+   "unit_support": 336,
+   "samples": [
+    "- 文件：`20261010_1835_缩量后放量 AI 把它翻译成公式.mp4`",
+    "五天的成交量加起来还不如今天一天。这句话听着简单，怎么变成一条能跑的选股条件?先讲原理。缩量说明多空双方都不想动，谁也没兴趣。突然放量说明有人开始真金白银的进场",
+    "- 文件：`20261014_2121_通达信区分真假放量避开脉冲量陷阱.mp4`",
+    "放量不等于有效放量。同一根柱子，可能是资金真进场，也可能只是冲高一下就算了虚量。它别就藏在那几根柱子的关系里，很多人第一眼就分错了。只看单日量能，这是量能条件里"
+   ],
+   "computability": "A",
+   "data_dependency": "日线+筹码",
+   "warehouse_support": [
+    "筹码分布"
+   ],
+   "gap": ""
+  },
+  {
+   "name": "平台/箱体/突破/缺口",
+   "category": "形态",
+   "unit_support": 326,
+   "samples": [
+    "- 文件：`20261016_1930_放量突破平台：区间怎么自动识别.mp4`",
+    "写平台突破公式，90%的人第一步就写错。费大坑，直接把横盘写成固定线根数，横谈几天算平台，行情不一样，周期完全不同，没法提前定死。平台本质，价格在一个狭窄区间来",
+    "回彩放量还是缩量。一眼分清洗盘还是变盘上涨途中放量。资金高位主动接盘。良性拉伸回彩阶段缩量。筹码吸收抛压清。典型洗盘信号回彩如果放量。大量筹码出逃。大概率是变盘",
+    "今天继续用同一套战法复盘上证指数。我们先从日线开始。昨天日线的核心观点是指数仍处于3994点之后的一笔下跌中。3930点不能有效上破就只按日线下跌中的30分钟反"
+   ],
+   "computability": "A",
+   "data_dependency": "日线+复权",
+   "warehouse_support": [
+    "复权因子"
+   ],
+   "gap": ""
+  },
+  {
+   "name": "仓位与止损纪律",
+   "category": "风控",
+   "unit_support": 165,
+   "samples": [
+    "今天继续用同一套战法复盘上证指数。我们先从日线开始。昨天日线的核心观点是指数仍处于3994点之后的一笔下跌中。3930点不能有效上破就只按日线下跌中的30分钟反",
+    "- 文件：`20260830_2134_周初耐心等止跌可以回补仓位！！_#缠论学习#股票分析.mp4`",
+    "9月7日收盘盘后复盘及明日观点分享。老规矩，先点赞，后观看。你今天有没有回补仓位?评论区聊聊。先回顾周末观点。我们关注从3980下来的30分钟回调能否止跌。5分",
+    "9月14日收盘盘后复盘及明日观点分享。老规矩，先点赞，后观看。先回顾周末的观点。我们当时重点观察周一早盘能否构建5分钟级别二买，并由此启动30分钟级别的反弹。今"
+   ],
+   "computability": "A",
+   "data_dependency": "日线+组合",
+   "warehouse_support": [
+    "日线行情"
+   ],
+   "gap": ""
+  },
+  {
+   "name": "交易纪律/心态/复盘",
+   "category": "心理",
+   "unit_support": 329,
+   "samples": [
+    "回彩放量还是缩量。一眼分清洗盘还是变盘上涨途中放量。资金高位主动接盘。良性拉伸回彩阶段缩量。筹码吸收抛压清。典型洗盘信号回彩如果放量。大量筹码出逃。大概率是变盘",
+    "今天继续用同一套战法复盘上证指数。我们先从日线开始。昨天日线的核心观点是指数仍处于3994点之后的一笔下跌中。3930点不能有效上破就只按日线下跌中的30分钟反",
+    "今天是8月28日，周五。继续用日线一笔，30分钟高抛低吸这套战法复盘上证指数。我们不预测涨跌，只按照日线定方向，30分钟看结构，5分钟找确认的顺序，判断当前走势",
+    "大家好，我是蝉猫。我们所有参与股票交易的人都希望可以做到以交易为生。股票交易，可以说是能伴随人一生的副业。之所以可以伴随一生，是因为交易这个事跟其他事业，可以说"
+   ],
+   "computability": "C",
+   "data_dependency": "人工/文本",
+   "warehouse_support": [],
+   "gap": ""
+  },
+  {
+   "name": "量化工程（回测/因子/过拟合）",
+   "category": "量化",
+   "unit_support": 182,
+   "samples": [
+    "AI到底能不能预判行情?先说结论不能。但先别滑走，它能替你揪出一条公式里最致命的错，而那个错肉眼几乎看不出来。那它到底能干什么?说穿了就三步，把模糊的想法说成人",
+    "写均线向上，90%新手代码直接写错。肉眼看着均线往上走，不等于公式能识别。很多人刚学通达信，第一步就在这里踩坑。先搞懂5日均线本质，费尽5根收盘价的平均值。5，",
+    "千万别随便叠加选股条件。越叠加，越选不出票。两个看起来优质的量化条件拼在一起，直接变成一条废公式。条件拼接，核心是取舍，不是简单堆砌。逻辑选错，选股结果直接讨天",
+    "回看几乎完美，石盘一根都拿不到。往前画了三根，你该信哪一根?有人把它当成提前预判，其实他只做一件事，把今天的结果往前面图。哪个参数，图哪个信号，往前图几根。图三"
+   ],
+   "computability": "A",
+   "data_dependency": "行情+财务+研报",
+   "warehouse_support": [
+    "日线行情"
+   ],
+   "gap": ""
+  }
+ ],
+ "factors": [
+  {
+   "factor": "均线粘合度",
+   "formula": "std(MA5,MA10,MA20,MA60)/mean(MA20)",
+   "data": "日线+复权",
+   "status": "可立即实现",
+   "tactic": "均线"
+  },
+  {
+   "factor": "多头排列强度",
+   "formula": "(MA5-MA60)/MA60 的横截面分位",
+   "data": "日线+复权",
+   "status": "可立即实现",
+   "tactic": "均线"
+  },
+  {
+   "factor": "MACD背离强度",
+   "formula": "价格新高分位 - DIF新高分位",
+   "data": "日线",
+   "status": "可立即实现",
+   "tactic": "指标"
+  },
+  {
+   "factor": "放量突破幅度",
+   "formula": "vol/MA(vol,50) 与 close/平台高点-1",
+   "data": "日线",
+   "status": "可立即实现",
+   "tactic": "量价/形态"
+  },
+  {
+   "factor": "平台整理天数/高度",
+   "formula": "60日内收盘价极差/均值、振幅收窄速度",
+   "data": "日线",
+   "status": "可立即实现",
+   "tactic": "形态"
+  },
+  {
+   "factor": "筹码集中度",
+   "formula": "cyq_chips 90%成本区间宽度/中位成本",
+   "data": "筹码分布",
+   "status": "可立即实现（新数据）",
+   "tactic": "量价"
+  },
+  {
+   "factor": "涨停后行为",
+   "formula": "limit_list_d 涨停后 N 日收益/回落",
+   "data": "涨跌停+日线",
+   "status": "可立即实现",
+   "tactic": "量价"
+  },
+  {
+   "factor": "资金流强度",
+   "formula": "moneyflow 净流入/成交额 5日均",
+   "data": "资金流",
+   "status": "可立即实现",
+   "tactic": "量价"
+  },
+  {
+   "factor": "缠论笔/中枢/背驰强度",
+   "formula": "笔端点序列→中枢区间/背驰幅度",
+   "data": "分钟K线（缺失）",
+   "status": "**需补齐分钟数据后实现**",
+   "tactic": "缠论"
+  },
+  {
+   "factor": "盘口/分时特征",
+   "formula": "买卖盘不平衡/大单占比",
+   "data": "Level2（缺失）",
+   "status": "**不可实现（数据缺口）**",
+   "tactic": "短线"
+  },
+  {
+   "factor": "博主方法论情绪分",
+   "formula": "文本情绪/确定性词频（需 NLP）",
+   "data": "转写文本",
+   "status": "需 NLP 提炼（研究级）",
+   "tactic": "心理"
+  }
+ ],
+ "data_capabilities": [
+  {
+   "name": "日线行情",
+   "status": "已入库",
+   "datasets": [
+    "cb_daily",
+    "daily",
+    "daily_basic",
+    "fx_daily",
+    "hk_daily"
+   ]
+  },
+  {
+   "name": "复权因子",
+   "status": "已入库",
+   "datasets": [
+    "adj_factor",
+    "ts_adj_factor"
+   ]
+  },
+  {
+   "name": "筹码分布",
+   "status": "已入库（2026-11-02 新增）",
+   "datasets": [
+    "cyq_chips"
+   ]
+  },
+  {
+   "name": "涨跌停/连板",
+   "status": "已入库",
+   "datasets": [
+    "limit_list_d",
+    "ts_limit_list_ths"
+   ]
+  },
+  {
+   "name": "资金流",
+   "status": "已入库",
+   "datasets": [
+    "moneyflow",
+    "moneyflow_hsgt",
+    "ts_moneyflow",
+    "ts_moneyflow_dc",
+    "ts_moneyflow_hsgt"
+   ]
+  },
+  {
+   "name": "财务/预告",
+   "status": "已入库",
+   "datasets": [
+    "balancesheet",
+    "cashflow",
+    "fina_indicator",
+    "forecast",
+    "hk_balancesheet"
+   ]
+  },
+  {
+   "name": "研报/评级",
+   "status": "已入库",
+   "datasets": [
+    "report_rc",
+    "reports",
+    "research_report",
+    "ts_report_rc"
+   ]
+  },
+  {
+   "name": "新闻/舆情",
+   "status": "已入库",
+   "datasets": [
+    "data",
+    "major_news",
+    "news",
+    "news.db",
+    "tdx_info.db"
+   ]
+  },
+  {
+   "name": "指数/板块权重",
+   "status": "已入库",
+   "datasets": [
+    "index_weight",
+    "ts_index_classify",
+    "ts_index_weight"
+   ]
+  },
+  {
+   "name": "分钟级K线",
+   "status": "**缺失（需补齐）**",
+   "datasets": [
+    "stk_mins"
+   ]
+  },
+  {
+   "name": "盘口/Level2",
+   "status": "**缺失（需补齐）**",
+   "datasets": []
+  }
+ ],
+ "legion_calls": [
+  {
+   "legion": "量化交易部（司马微）",
+   "call": "战法/因子候选 → 四关回测",
+   "input": "learning_capability.json 的 tactics/factors",
+   "gate": "四关+PIT+成本",
+   "status": "待通知"
+  },
+  {
+   "legion": "数据智能部（张松/DATA1）",
+   "call": "补齐分钟K线/Level2、筹码/资金流 ETL",
+   "input": "gap 清单",
+   "gate": "ETL质检",
+   "status": "待通知"
+  },
+  {
+   "legion": "因子挖掘（蒋琬/FACTOR1）",
+   "call": "细化因子（均线/背离/平台/筹码）纳入每日因子轮",
+   "input": "factors 清单",
+   "gate": "IC/分层/衰减",
+   "status": "待通知"
+  },
+  {
+   "legion": "研报/知识线（ACAD1）",
+   "call": "学习卡/方法论卡片入 RAG 与研报问答",
+   "input": "256 卡+8 方法论卡",
+   "gate": "引用可追溯",
+   "status": "已就绪"
+  },
+  {
+   "legion": "门户/研发（ARCH1）",
+   "call": "能力图谱页面/API 接入",
+   "input": "learning_capability.json",
+   "gate": "HTTP 200+导航",
+   "status": "页面已接入"
+  }
+ ],
+ "boundary": "学习资料/研究结论，不构成投资建议；任何战法/因子需过四关后才可进入策略池。"
+}

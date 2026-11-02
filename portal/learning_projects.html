@@ -44,6 +44,10 @@ ul.todos li{margin:3px 0}
 <table><thead><tr><th>项目</th><th>阶段</th><th>结果</th><th>errors</th></tr></thead>
 <tbody id="gate"></tbody></table></div>
 
+<div class="panel"><h2>学习能力矩阵（数据可用性 → 战法 → 数据仓 → 因子 → 军团）</h2>
+<div class="sub" id="cap-summary">加载中…</div>
+<div id="cap" class="muted">加载中…</div></div>
+
 <div class="panel"><h2>待办</h2><ul class="todos" id="todos"></ul></div>
 <script>
 (function(){
@@ -104,6 +108,27 @@ ul.todos li{margin:3px 0}
     if(!r.ok) throw new Error('HTTP '+r.status); return r.json();
   }).then(render).catch(function(e){
     q('meta').textContent='加载失败：'+(e&&e.message||e);
+  });
+
+  // 学习能力矩阵（v1）：可用性 / 战法×数据仓 / 因子 / 军团调用
+  function renderCap(d){
+    var o=d.overall||{};
+    if(q('cap-summary')) q('cap-summary').innerHTML='入库 '+(o.files||0)+' 文件 / '+(o.chars||0).toLocaleString()+' 字 / '+(o.units||0)+' 单元 · 可用单元 <b>'+(o.units_with_domain||0)+'</b> · 可审候选 <b>'+(o.candidate_pool||0)+'</b> · 已发布视频学习卡 <b>'+(o.cards_merged_video||0)+'</b> / 总卡 '+(o.cards_total||0);
+    var h='<h3 style="margin:10px 0 6px">① 数据可用性（入库≠能用）</h3><table><thead><tr><th>文件</th><th>字数</th><th>单元</th><th>含领域词</th><th>可用率</th><th>可审候选</th><th>结论</th></tr></thead><tbody>';
+    (d.usability||[]).forEach(function(u){h+='<tr><td>'+esc(String(u.file).replace('20261103_',''))+'</td><td>'+u.chars+'</td><td>'+u.units+'</td><td>'+u.units_with_domain+'</td><td>'+u.usable_pct+'%</td><td>'+u.candidate_pool+'</td><td class="'+(u.conclusion==='可用'?'ok':'muted')+'">'+esc(u.conclusion)+'</td></tr>';});
+    h+='</tbody></table><h3 style="margin:10px 0 6px">② 可提炼战法 × 数据仓组合</h3><table><thead><tr><th>战法</th><th>单元支持</th><th>可计算性</th><th>数据依赖</th><th>数据仓支持</th><th>缺口</th></tr></thead><tbody>';
+    (d.tactics||[]).forEach(function(t){h+='<tr><td>'+esc(t.name)+'</td><td>'+t.unit_support+'</td><td>'+esc(t.computability)+'</td><td>'+esc(t.data_dependency)+'</td><td>'+esc((t.warehouse_support||[]).join('、'))+'</td><td class="muted">'+esc(t.gap||'—')+'</td></tr>';});
+    h+='</tbody></table><h3 style="margin:10px 0 6px">③ 细化因子（可立即实现 / 需补齐）</h3><table><thead><tr><th>因子</th><th>公式</th><th>数据</th><th>状态</th></tr></thead><tbody>';
+    (d.factors||[]).forEach(function(f){h+='<tr><td>'+esc(f.factor)+'</td><td class="muted">'+esc(f.formula)+'</td><td>'+esc(f.data)+'</td><td class="'+(/需补齐|不可实现|研究级/.test(f.status)?'bad':'ok')+'">'+esc(f.status)+'</td></tr>';});
+    h+='</tbody></table><h3 style="margin:10px 0 6px">④ 军团调用</h3><table><thead><tr><th>军团</th><th>调用内容</th><th>门禁</th><th>状态</th></tr></thead><tbody>';
+    (d.legion_calls||[]).forEach(function(g){h+='<tr><td>'+esc(g.legion)+'</td><td>'+esc(g.call)+'</td><td>'+esc(g.gate)+'</td><td class="muted">'+esc(g.status)+'</td></tr>';});
+    h+='</tbody></table><div class="muted" style="margin-top:8px">'+esc(d.boundary||'')+'</div>';
+    if(q('cap')) q('cap').innerHTML=h;
+  }
+  fetch('/static/learning_capability.json?ts='+Date.now()).then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status); return r.json();
+  }).then(renderCap).catch(function(e){
+    if(q('cap')) q('cap').textContent='能力矩阵加载失败：'+(e&&e.message||e);
   });
 })();
 </script>
