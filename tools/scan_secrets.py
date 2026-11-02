@@ -50,6 +50,10 @@ EXEMPT_PATH_PATTERNS = [
     # 2026-10-31 K-ORG-20261031-PLANREG：计划台账生成物列出计划路径/标题，
     # 文件名可能触发 HIGH_ENTROPY 误报；它不是凭据载体，按生成物路径豁免。
     r"(^|/)docs/plans/PLAN_REGISTER(_ALL)?_[0-9]+\.(json|md)$",
+    # 2026-11-02 错误修正：dw_snapshot 生成物内嵌 hypotheses 的 evidence 文件名
+    # （如 research/reports/H13_xxx_20261029.md），每日重写且文件名含哈希段会触发
+    # HIGH_ENTROPY 误报；它是只读展示数据生成物，非凭据载体，按生成物路径豁免。
+    r"(^|/)portal/static/dw_snapshot\.json$",
 ]
 
 # 测试桩目录/文件标记（按路径豁免）
