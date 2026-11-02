@@ -4,7 +4,8 @@
 每张表只读四类证据：
 1) catalog 条目（store/layout/date_col/files/rows）；
 2) 磁盘实况（store、parquet 文件、抽样 footer：行数/行组/schema/最新业务日）；
-3) tushare `_manifest.json` 是否覆盖该表；
+3) 表自身 manifest（**按 catalog 条目 `manifest` 字段解析**，如 tdx/_manifest.json；字段缺失或
+   文件不可读时回退 tushare manifest 并 fail-visible 标 evidence_partial）；
 4) 新鲜度（最新业务日 vs 今天、lag、抽样行数是否为 0）。
 
 默认只读；`--apply` 只写 `warehouse_registry.json` 的四个资格字段，
@@ -43,7 +44,7 @@ DEFAULT_TABLES = [
     "sw_l1_member", "top10_floatholders", "top10_holders", "top_list",
     "us_balancesheet", "us_cashflow", "us_daily", "us_fina_indicator", "us_income",
 ]
-MANIFEST = common.DATA / "tushare" / "_manifest.json"
+MANIFEST = common.DATA / "tushare" / "_manifest.json"  # 兜底（历史行为；2026-11-02 task-23 起按 catalog 条目解析）
 KG_LOG = Path(r"C:\Temp\kg_sync_task.log")
 EXPECTED_PHYSICAL = None  # 动态：运行时取 registry 当前 physical_count
 EXPECTED_DISPLAY = None
@@ -263,6 +264,24 @@ def manifest_keys(data) -> set:
     return set(data.keys())
 
 
+def resolve_manifest_path(entry: dict | None, fallback: Path | None = None) -> tuple:
+    """解析表所属 manifest（2026-11-02 task-23：不再固定 tushare）。
+
+    - catalog 条目 `manifest` 字段优先（绝对路径原样；仓库相对路径按 REPO 解析）→ ("...", "catalog")
+    - 字段缺失 → 回退 fallback（默认 tushare/_manifest.json）→ ("...", "tushare_fallback")
+    - 回退文件也不存在 → (None, "none")
+    caller 负责读取与不可读回退；`tushare_fallback` 一律 fail-visible（probe_table 标 partial）。
+    """
+    raw = (entry or {}).get("manifest")
+    if raw:
+        p = Path(str(raw))
+        if not p.is_absolute():
+            p = common.REPO / p
+        return p, "catalog"
+    fb = Path(fallback) if fallback is not None else MANIFEST
+    return (fb, "tushare_fallback") if fb.is_file() else (None, "none")
+
+
 def _summary(card: dict) -> str:
     if not card["store_exists"]:
         base = "store 缺失"
@@ -275,7 +294,12 @@ def _summary(card: dict) -> str:
             card["files_on_disk"], card["files_top_level"], card["sample_count"], card["rows_sampled"])
     date = card["latest_business_date"] or "无"
     lag = "NA" if card["lag_days"] is None else str(card["lag_days"])
-    manifest = "manifest 在" if card["manifest_state"] == "present" else "manifest 缺"
+    if card["manifest_state"] != "present":
+        manifest = "manifest 缺"
+    elif card.get("manifest_source") == "tushare_fallback":
+        manifest = "manifest 回退ts"
+    else:
+        manifest = "manifest 在"
     reason = "/".join(card["reasons"]) or "证据齐备"
     text = "%s；最新业务日 %s（%s，lag %s 天）；%s；判 %s：%s" % (
         base, date, card["latest_source"], lag, manifest, card["verdict"], reason)
@@ -286,7 +310,11 @@ def _unsupported_reason(card: dict) -> str:
     table = card["table"]
     if card["verdict"] == "evidence_ok":
         return "资格取证批次1：证据齐备（文件/行/最新日/manifest），待发布/覆盖核验"
-    if not card["store_exists"]:
+    if "manifest_catalog_unreadable" in card["reasons"]:
+        gap = "catalog 指定 manifest 不可读（%s）" % (card.get("manifest_path") or "路径缺失")
+    elif "manifest_fallback_tushare" in card["reasons"]:
+        gap = "catalog 未指定 manifest，回退 tushare（%s）" % (card.get("manifest_path") or "-")
+    elif not card["store_exists"]:
         gap = "store 缺失"
     elif card["files_on_disk"] == 0:
         gap = "store 内无 parquet"
@@ -310,7 +338,9 @@ def _unsupported_reason(card: dict) -> str:
 
 
 def probe_table(table: str, entry: dict, mkeys: set, today: dt.date,
-                checked_at: str, sample_limit: int = SAMPLE_LIMIT) -> dict:
+                checked_at: str, sample_limit: int = SAMPLE_LIMIT,
+                manifest_path: Path | None = None, manifest_source: str = "catalog",
+                manifest_issue: str | None = None) -> dict:
     store_raw = str(entry.get("store") or "")
     store = Path(store_raw)
     date_col = entry.get("date_col") or entry.get("date_column")
@@ -329,6 +359,9 @@ def probe_table(table: str, entry: dict, mkeys: set, today: dt.date,
         "catalog_verification_status": entry.get("verification_status"),
         "manifest_state": "present" if table in mkeys else "missing",
         "manifest_catalog_status": entry.get("manifest_status"),
+        "manifest_path": common.rel(manifest_path) if manifest_path is not None else None,
+        "manifest_source": manifest_source,
+        "manifest_issue": manifest_issue,
         "sample_strategy": "none",
         "sample_count": 0,
         "sampled_files": [],
@@ -413,6 +446,10 @@ def probe_table(table: str, entry: dict, mkeys: set, today: dt.date,
         reasons = []
         if card["manifest_state"] != "present":
             reasons.append("manifest_missing")
+        if card["manifest_source"] == "tushare_fallback":
+            reasons.append("manifest_fallback_tushare")
+        if card["manifest_issue"]:
+            reasons.append("manifest_catalog_unreadable")
         if card["latest_source"] == "no_date_column":
             reasons.append("no_date_column")
         elif not card["latest_business_date"]:
@@ -434,17 +471,72 @@ def probe_table(table: str, entry: dict, mkeys: set, today: dt.date,
     return card
 
 
-def collect_evidence(tables, catalog: dict, manifest: dict, today: dt.date,
+def collect_evidence(tables, catalog: dict, manifest: dict | None, today: dt.date,
                      checked_at: str, sample_limit: int = SAMPLE_LIMIT,
-                     catalog_sha: str | None = None) -> dict:
+                     catalog_sha: str | None = None,
+                     fallback_manifest: Path | None = None) -> dict:
+    """逐表取证。
+
+    manifest 传 dict 时=历史单 manifest 模式（全部表共用，测试/旧调用兼容）；
+    传 None 时=按 catalog 条目 `manifest` 字段逐表解析（tdx/tushare/xueqiu/cnopendata），
+    字段缺失或不可读 → 回退 fallback_manifest（默认 tushare）并 fail-visible（evidence_partial）。
+    """
     if not isinstance(catalog, dict) or not isinstance(catalog.get("tables"), dict):
         raise ProbeError("catalog.json 不可读或缺少 tables")
     entries = catalog["tables"]
     missing = [t for t in tables if t not in entries]
     if missing:
         raise ProbeError("catalog 缺少目标表：%s" % ",".join(missing))
-    mkeys = manifest_keys(manifest)
-    cards = [probe_table(t, entries[t], mkeys, today, checked_at, sample_limit) for t in tables]
+
+    if manifest is not None:
+        # 历史单 manifest 模式（保持既有单测/调用方语义）
+        mkeys = manifest_keys(manifest)
+        cards = [probe_table(t, entries[t], mkeys, today, checked_at, sample_limit)
+                 for t in tables]
+        manifest_info = {"mode": "single", "path": common.rel(MANIFEST), "keys": len(mkeys)}
+    else:
+        fb_path = Path(fallback_manifest) if fallback_manifest is not None else MANIFEST
+        cache: dict = {}
+        used, fallbacks, unreadable, missing_manifest = {}, [], [], []
+        cards = []
+        for t in tables:
+            entry = entries[t] or {}
+            cand, source = resolve_manifest_path(entry, fallback=fb_path)
+            data, issue = None, None
+            if cand is not None:
+                key = str(cand)
+                if key not in cache:
+                    cache[key] = common.load_json(cand)
+                data = cache[key]
+            if data is None and source == "catalog":
+                # catalog 指定了路径但不可读：记 issue 并回退 tushare（fail-visible）
+                issue = "catalog_manifest_unreadable"
+                fb_key = str(fb_path)
+                if fb_key not in cache:
+                    cache[fb_key] = common.load_json(fb_path)
+                if cache[fb_key] is not None:
+                    cand, source, data = fb_path, "tushare_fallback", cache[fb_key]
+                else:
+                    cand = None
+            if data is None:
+                missing_manifest.append(t)
+            else:
+                if source == "tushare_fallback" and t not in fallbacks:
+                    fallbacks.append(t)
+                if cand is not None:
+                    used[common.rel(cand)] = len(manifest_keys(data))
+            if issue:
+                unreadable.append(t)
+            mkeys = manifest_keys(data) if data is not None else set()
+            cards.append(probe_table(t, entry, mkeys, today, checked_at, sample_limit,
+                                     manifest_path=cand if data is not None else None,
+                                     manifest_source=source,
+                                     manifest_issue=issue))
+        manifest_info = {"mode": "per_table", "manifests": used,
+                         "fallbacks": fallbacks, "unreadable": unreadable,
+                         "missing": missing_manifest,
+                         "fallback_path": common.rel(fb_path) if fallbacks else None}
+
     counts = Counter(c["verdict"] for c in cards)
     return {
         "tool": TOOL,
@@ -457,7 +549,7 @@ def collect_evidence(tables, catalog: dict, manifest: dict, today: dt.date,
             "sha256": catalog_sha if catalog_sha is not None else common.sha256_file(common.CATALOG),
             "target_tables": len(tables),
         },
-        "manifest": {"path": common.rel(MANIFEST), "keys": len(mkeys)},
+        "manifest": manifest_info,
         "summary": {
             "tables": len(cards),
             "ok": counts.get("evidence_ok", 0),
@@ -657,10 +749,10 @@ def main(argv=None) -> int:
         if EXPECTED_DISPLAY is not None and registry.get("display_count") != EXPECTED_DISPLAY:
             raise ProbeError("registry.display_count=%s，期望 %d" % (
                 registry.get("display_count"), EXPECTED_DISPLAY))
-        manifest = common.load_json(MANIFEST) or {}
         today = _parse_today(a.today)
         checked_at = dt.datetime.now().astimezone().isoformat(timespec="seconds")
-        payload = collect_evidence(tables, catalog, manifest, today, checked_at)
+        # 2026-11-02 task-23：manifest 按 catalog 条目 manifest 字段逐表解析（不再固定 tushare）
+        payload = collect_evidence(tables, catalog, None, today, checked_at)
         payload["code"] = common.EXIT_OK if payload["summary"]["bad"] == 0 else common.EXIT_WARN
         payload["catalog"]["sha256"] = cat_sha
         payload["registry"] = {

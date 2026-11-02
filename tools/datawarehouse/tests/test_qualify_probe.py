@@ -326,5 +326,139 @@ class TestDefaults(unittest.TestCase):
         self.assertIn("us_fina_indicator", qualify_probe.DEFAULT_TABLES)
 
 
+@unittest.skipUnless(HAS_PYARROW, "pyarrow 不可用")
+class TestManifestPathResolution(unittest.TestCase):
+    """task-23：manifest 按 catalog 条目 manifest 字段解析，不再固定 tushare。"""
+
+    def test_catalog_manifest_wins(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "tdx" / "_manifest.json"
+            p.parent.mkdir(parents=True)
+            p.write_text("{}", encoding="utf-8")
+            path, source = qualify_probe.resolve_manifest_path({"manifest": str(p)})
+            self.assertEqual(path, p)
+            self.assertEqual(source, "catalog")
+
+    def test_relative_manifest_resolved_under_repo(self):
+        path, source = qualify_probe.resolve_manifest_path(
+            {"manifest": "quant_backtest/data/tdx/_manifest.json"})
+        self.assertEqual(source, "catalog")
+        self.assertTrue(path.is_absolute())
+        self.assertTrue(str(path).replace("\\", "/").endswith(
+            "quant_backtest/data/tdx/_manifest.json"))
+
+    def test_absent_manifest_falls_back(self):
+        with tempfile.TemporaryDirectory() as d:
+            fb = Path(d) / "tushare_manifest.json"
+            fb.write_text("{}", encoding="utf-8")
+            self.assertEqual(qualify_probe.resolve_manifest_path({}, fallback=fb),
+                             (fb, "tushare_fallback"))
+            self.assertEqual(
+                qualify_probe.resolve_manifest_path({}, fallback=Path(d) / "nope.json"),
+                (None, "none"))
+
+
+@unittest.skipUnless(HAS_PYARROW, "pyarrow 不可用")
+class TestFallbackVerdicts(unittest.TestCase):
+    """task-23：fallback manifest 不可读/缺失必须 fail-visible（evidence_partial）。"""
+
+    def _store(self, d):
+        store = Path(d) / "store"
+        store.mkdir()
+        write_parquet(store / "d_20261026.parquet", ["20261026"])
+        return store
+
+    def test_manifest_fallback_is_partial_visible(self):
+        with tempfile.TemporaryDirectory() as d:
+            card = qualify_probe.probe_table(
+                "t1", entry(self._store(d)), {"t1"}, TODAY, CHECKED,
+                manifest_path=Path(d) / "tushare" / "_manifest.json",
+                manifest_source="tushare_fallback")
+            self.assertEqual(card["manifest_state"], "present")
+            self.assertIn("manifest_fallback_tushare", card["reasons"])
+            self.assertEqual(card["verdict"], "evidence_partial")
+            self.assertIn("回退", card["unsupported_reason"])
+
+    def test_manifest_catalog_unreadable_is_partial_visible(self):
+        with tempfile.TemporaryDirectory() as d:
+            card = qualify_probe.probe_table(
+                "t1", entry(self._store(d)), set(), TODAY, CHECKED,
+                manifest_issue="catalog_manifest_unreadable")
+            self.assertIn("manifest_missing", card["reasons"])
+            self.assertIn("manifest_catalog_unreadable", card["reasons"])
+            self.assertEqual(card["verdict"], "evidence_partial")
+            self.assertIn("不可读", card["unsupported_reason"])
+
+
+@unittest.skipUnless(HAS_PYARROW, "pyarrow 不可用")
+class TestCollectPerTableManifest(unittest.TestCase):
+    """task-23：collect_evidence 逐表读取 catalog 指定 manifest。"""
+
+    def _mkstore(self, d, name, date="20261026"):
+        store = Path(d) / name
+        store.mkdir()
+        write_parquet(store / ("d_%s.parquet" % date), [date])
+        return store
+
+    def test_catalog_manifest_path_used_for_tdx_and_tushare(self):
+        with tempfile.TemporaryDirectory() as d:
+            dfiles = Path(d)
+            tdx_m = dfiles / "tdx_manifest.json"
+            tdx_m.write_text(json.dumps({"t_tdx": {}}), encoding="utf-8")
+            ts_m = dfiles / "tushare_manifest.json"
+            ts_m.write_text(json.dumps({"t_ts": {"rows": 1}}), encoding="utf-8")
+            s1 = self._mkstore(d, "s1")
+            s2 = self._mkstore(d, "s2")
+            catalog = {"version": 18, "updated": "x", "tables": {
+                "t_tdx": dict(entry(s1), source="xtcloud", manifest=str(tdx_m),
+                              manifest_status="closed"),
+                "t_ts": dict(entry(s2), source="tushare", manifest=str(ts_m),
+                             manifest_status="closed"),
+            }}
+            payload = qualify_probe.collect_evidence(
+                ["t_tdx", "t_ts"], catalog, None, TODAY, CHECKED,
+                fallback_manifest=dfiles / "no_fallback.json")
+            self.assertEqual(payload["summary"],
+                             {"tables": 2, "ok": 2, "partial": 0, "bad": 0})
+            self.assertEqual(payload["manifest"]["mode"], "per_table")
+            self.assertEqual(len(payload["manifest"]["manifests"]), 2)
+            cards = {c["table"]: c for c in payload["tables"]}
+            self.assertEqual(cards["t_tdx"]["manifest_state"], "present")
+            self.assertEqual(cards["t_tdx"]["manifest_source"], "catalog")
+            self.assertTrue(cards["t_tdx"]["manifest_path"].endswith("tdx_manifest.json"))
+            self.assertEqual(cards["t_ts"]["manifest_source"], "catalog")
+            self.assertEqual(cards["t_ts"]["verdict"], "evidence_ok")
+
+    def test_missing_catalog_manifest_field_falls_back_visible(self):
+        with tempfile.TemporaryDirectory() as d:
+            dfiles = Path(d)
+            s1 = self._mkstore(d, "s1")
+            fb = dfiles / "tushare_manifest.json"
+            fb.write_text(json.dumps({"t_no_manifest": {}}), encoding="utf-8")
+            catalog = {"version": 18, "updated": "x",
+                       "tables": {"t_no_manifest": entry(s1)}}
+            payload = qualify_probe.collect_evidence(
+                ["t_no_manifest"], catalog, None, TODAY, CHECKED, fallback_manifest=fb)
+            card = payload["tables"][0]
+            self.assertEqual(card["manifest_source"], "tushare_fallback")
+            self.assertIn("manifest_fallback_tushare", card["reasons"])
+            self.assertEqual(card["verdict"], "evidence_partial")
+            self.assertEqual(payload["manifest"]["fallbacks"], ["t_no_manifest"])
+
+    def test_unreadable_catalog_manifest_is_partial_visible(self):
+        with tempfile.TemporaryDirectory() as d:
+            dfiles = Path(d)
+            s1 = self._mkstore(d, "s1")
+            catalog = {"version": 18, "updated": "x", "tables": {
+                "t_bad": dict(entry(s1), manifest=str(dfiles / "missing_manifest.json"))}}
+            payload = qualify_probe.collect_evidence(
+                ["t_bad"], catalog, None, TODAY, CHECKED,
+                fallback_manifest=dfiles / "no_fb.json")
+            card = payload["tables"][0]
+            self.assertIn("manifest_catalog_unreadable", card["reasons"])
+            self.assertEqual(card["verdict"], "evidence_partial")
+            self.assertEqual(payload["manifest"]["unreadable"], ["t_bad"])
+
+
 if __name__ == "__main__":
     unittest.main()
