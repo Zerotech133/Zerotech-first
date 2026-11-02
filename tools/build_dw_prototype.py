@@ -209,6 +209,172 @@ def build_legion() -> dict:
     }
 
 
+
+def _task_status():
+    """读取 Windows 计划任务关键行（名称/状态/LastResult/Next），供部门任务进度展示。"""
+    import subprocess
+    cmd = (
+        "$pats=@('TdxSync*','TushareSync','XmapSync','KgDailySync','DataWarehouseSnapshot',"
+        "'NoticeBackfill','SentimentBT','GlobalFutSync','GubaCrawl*','ShipinhaoCards');"
+        "$r=Get-ScheduledTask | Where-Object { $n=$_.TaskName; @($pats | Where-Object { $n -like $_ }).Count -gt 0 } |"
+        " ForEach-Object { $i=Get-ScheduledTaskInfo -TaskName $_.TaskName -TaskPath $_.TaskPath -ErrorAction SilentlyContinue;"
+        " [pscustomobject]@{name=$_.TaskName; path=$_.TaskPath; state=[string]$_.State;"
+        " last_result=$i.LastTaskResult; next_run=$(if($i.NextRunTime){$i.NextRunTime.ToString('MM-dd HH:mm')}else{''});"
+        " last_run=$(if($i.LastRunTime -and $i.LastRunTime.Year -gt 2000){$i.LastRunTime.ToString('MM-dd HH:mm')}else{''})} };"
+        "$r | ConvertTo-Json -Compress"
+    )
+    try:
+        r = subprocess.run(["powershell", "-NoProfile", "-Command", cmd],
+                           capture_output=True, text=True, encoding="utf-8",
+                           errors="replace", timeout=20)
+        raw = (r.stdout or "").strip()
+        if not raw:
+            return []
+        data = json.loads(raw)
+        if isinstance(data, dict):
+            data = [data]
+        return data
+    except Exception:  # noqa: BLE001
+        return []
+
+
+def _seat_heartbeat(seat: str) -> dict:
+    p = REPO / "agent_platform" / "data" / "seat_heartbeat" / seat / "status.json"
+    if not p.exists():
+        return {"exists": False}
+    try:
+        d = json.loads(p.read_text(encoding="utf-8"))
+        import os as _os
+        age_h = round((time.time() - _os.path.getmtime(p)) / 3600, 1)
+        return {"exists": True, "ok": d.get("ok"), "model": d.get("model"),
+                "elapsed_ms": d.get("elapsed_ms"), "checked_at": d.get("checked_at"),
+                "age_hours": age_h}
+    except Exception:  # noqa: BLE001
+        return {"exists": False}
+
+
+ROLE_DUTY = {
+    "data_team_lead": "部门主官：数据仓总体/资质/口径",
+    "factor_miner": "因子挖掘：每日因子轮/候选",
+    "data_engineer": "数据采集/ETL/接口同步",
+    "data_quality": "数据质量/校验/新鲜度",
+    "data_governance": "数据治理/血缘/口径（行营）",
+    "data_dev": "数据开发/查询服务（行营）",
+}
+
+
+def build_zhangsong(legion: dict) -> dict:
+    """张松部门（数据智能部·兰台 + 数据治理行营）专属视图数据。"""
+    catalog = _read_json(CATALOG, {})
+    registry = _read_json(REGISTRY, {})
+    tables = catalog.get("tables") or {}
+    phys = registry.get("physical_tables") or []
+    dist = Counter((x.get("qualification_status") or "unknown") for x in phys)
+    depts = {d.get("id"): d for d in (legion.get("departments") or [])}
+    roster = {m.get("id"): m for m in (legion.get("roster") or [])}
+    feed = legion.get("feed") or []
+    by_agent = {}
+    for f in feed:
+        who = f.get("caller") or f.get("from")
+        if who and who not in by_agent:
+            by_agent[who] = f
+    members = []
+    seen = set()
+    for dep_id in ("data", "proj_data"):
+        d = depts.get(dep_id) or {}
+        for a in d.get("agents") or []:
+            sid = a.get("id")
+            if not sid or sid in seen:
+                continue
+            seen.add(sid)
+            m = roster.get(sid) or {}
+            hb = _seat_heartbeat(sid)
+            recent = by_agent.get(sid)
+            members.append({
+                "id": sid, "name": a.get("cn"), "dept": d.get("name"),
+                "dept_id": dep_id, "role": a.get("role"),
+                "duty": ROLE_DUTY.get(a.get("role"), a.get("role") or "-"),
+                "binding": a.get("binding"), "state": m.get("state") or "idle",
+                "title": m.get("title"), "heartbeat": hb,
+                "recent": (recent or {}).get("detail") or (recent or {}).get("action") or "",
+            })
+    domains = []
+    for name in ("A股行情", "资金与筹码", "财务与公告", "海外与衍生", "指数与基准", "舆情与研报", "知识图谱", "其他"):
+        pass
+    # 数据域统计（复用 catalog：按 source/channel 粗分）
+    from collections import defaultdict
+    dom = defaultdict(lambda: {"count": 0, "rows": 0, "latest": ""})
+    for aid, tb in tables.items():
+        name = "其他"
+        low = str(aid).lower()
+        src = str(tb.get("source") or "").lower()
+        if any(k in low or k in src for k in ("xq", "guba", "news", "report", "notice", "intel", "sentiment", "anns")):
+            name = "舆情与研报"
+        elif any(k in low for k in ("kg", "neo4j", "lineage", "graph", "relation")):
+            name = "知识图谱"
+        elif any(k in low or k in src for k in ("income", "balance", "cashflow", "fina", "forecast", "express", "dividend", "disclosure", "audit", "report_rc", "mainbz")):
+            name = "财务与公告"
+        elif any(k in low or k in src for k in ("hk", "us_", "global", "fx", "fut", "opt", "sge", "repo", "crypto")):
+            name = "海外与衍生"
+        elif any(k in low for k in ("moneyflow", "margin", "limit", "cyq", "kpl", "ths", "slb", "pledge", "holder", "top10", "top_list", "fund", "etf", "cb", "repurchase", "share_float", "stk_holdertrade", "stk_auction")):
+            name = "资金与筹码"
+        elif any(k in low for k in ("index", "sw_", "sector", "industry")):
+            name = "指数与基准"
+        elif any(k in low for k in ("daily", "weekly", "monthly", "adj", "stk", "trade_cal", "suspend", "namechange", "bak_basic", "stock_basic", "daily_info", "stk_limit")):
+            name = "A股行情"
+        recur = dom[name]
+        recur["count"] += 1
+        recur["rows"] += tb.get("rows") or 0
+        f = str(tb.get("freshness") or "")
+        if f and f > recur["latest"]:
+            recur["latest"] = f
+    domains = [{"name": k, **v} for k, v in sorted(dom.items(), key=lambda x: -x[1]["count"])]
+    tasks = _task_status()
+    sync_tasks = []
+    for x in tasks:
+        name = x.get("name") or ""
+        if any(k in name for k in ("TdxSync", "TushareSync", "KgDailySync", "DataWarehouseSnapshot",
+                                    "XmapSync", "NoticeBackfill", "GlobalFutSync", "SentimentBT", "ShipinhaoCards")):
+            sync_tasks.append({"name": name, "state": x.get("state"), "last_result": x.get("last_result"),
+                               "next_run": x.get("next_run"), "last_run": x.get("last_run")})
+    sync_tasks.sort(key=lambda x: (x.get("next_run") or "", x.get("name") or ""))
+    return {
+        "available": bool(members),
+        "dept": {"id": "data", "name": "数据智能部", "cn_title": "兰台",
+                 "lead": "张松", "lead_id": "DATA1", "status": "active",
+                 "related": {"name": "🅱 数据治理部", "cn_title": "数据行营（冻结待归建）",
+                             "lead": "张松", "status": "frozen_pending_merge"}},
+        "members": members,
+        "member_count": len(members),
+        "online": sum(1 for m in members if (m.get("state") or "idle") != "idle"),
+        "domains": domains,
+        "physical": len(tables),
+        "k8": {"unknown": dist.get("unknown", 0), "ok": dist.get("evidence_ok", 0),
+               "partial": dist.get("evidence_partial", 0), "deprecated": dist.get("deprecated", 0)},
+        "division": [
+            {"duty": "数据采集 / 接口同步", "seat": "DATA2 刘巴", "status": "ok",
+             "progress": "tdx/tushare 主仓最新 20261102；TushareSync 23:30 rc=0"},
+            {"duty": "数据质量 / 资质取证", "seat": "DATA3 陈群", "status": "ok",
+             "progress": "K8 unknown=14（达标）；freshness 仅 1 issue"},
+            {"duty": "数据治理 / 血缘 / 口径", "seat": "DATA1 张松", "status": "warn",
+             "progress": "S3 完成度 83.3%，09:00 终验收"},
+            {"duty": "因子挖掘", "seat": "FACTOR1 蒋琬", "status": "warn",
+             "progress": "因子轮 20261030（11-03 数据待补）"},
+            {"duty": "数据开发 / 查询服务", "seat": "DEV1 马钧（行营）", "status": "ok",
+             "progress": "/api/dw 在线；11-05 换页"},
+            {"duty": "数据仓施工 / 验收（协作）", "seat": "DSH-Lead（非军团席位）", "status": "ok",
+             "progress": "首夜 PASS；KPI 9/10；终验收 09:00"},
+        ],
+        "sync_tasks": sync_tasks,
+        "progress": {"s3_pct": 83.3, "kpi_ok": 9, "kpi_total": 10, "first_night": "PASS",
+                     "acceptance": "pending 09:00", "k8": dist.get("unknown", 0)},
+        "hermes": {k: v for k, v in (legion.get("hermes") or {}).items()},
+        "heartbeat": legion.get("heartbeat") or {},
+        "feed": [f for f in feed if (f.get("caller") in seen or f.get("from") in seen)][:10],
+        "generated_at": datetime.now().isoformat(timespec="seconds"),
+    }
+
+
 def build() -> dict:
     catalog = _read_json(CATALOG, {})
     registry = _read_json(REGISTRY, {})
@@ -300,6 +466,7 @@ def build() -> dict:
     as_of = datetime.now().strftime("%Y-%m-%d")
     kpis_state = kpi.get("kpis") or kpi
 
+    _lg = build_legion()
     data = {
         "meta": {
             "generated_at": datetime.now().isoformat(timespec="seconds"),
@@ -395,7 +562,8 @@ def build() -> dict:
                     "approve": "POST /api/dw/manual/approve"},
             "note": "手动入口只写 staging；schema/主键/日期/去重校验 + 审核后才写回主仓",
         },
-        "legion": build_legion(),
+        "legion": _lg,
+        "zhangsong": build_zhangsong(_lg),
         "query_examples": [
             {"label": "ts_daily 最近 2 行", "dataset": "ts_daily", "params": {"limit": 2, "count": 1}},
             {"label": "ts_weekly 自 20261001", "dataset": "ts_weekly", "params": {"since": "20261001", "limit": 5}},

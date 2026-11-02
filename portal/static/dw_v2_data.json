@@ -1,6 +1,6 @@
 {
  "meta": {
-  "generated_at": "2026-11-03T05:56:24",
+  "generated_at": "2026-11-03T06:01:33",
   "as_of": "2026-11-03",
   "catalog_version": 35,
   "catalog_updated": "2026-11-03T05:07:35",
@@ -7026,7 +7026,7 @@
  },
  "legion": {
   "available": true,
-  "as_of": "2026-11-03T05:56:24+0800",
+  "as_of": "2026-11-03T06:01:33+0800",
   "chief": {
    "agent_id": "A0",
    "binding": "glm/glm-5.3"
@@ -8439,7 +8439,7 @@
    "seats_ok": 12,
    "seats_total": 12,
    "source": "agent_platform/data/seat_heartbeat",
-   "age_hours": 20.6
+   "age_hours": 20.7
   },
   "division": [
    {
@@ -8614,6 +8614,459 @@
    "expected_tools": 98,
    "inventory_scope": "already_known_runtime_only"
   }
+ },
+ "zhangsong": {
+  "available": true,
+  "dept": {
+   "id": "data",
+   "name": "数据智能部",
+   "cn_title": "兰台",
+   "lead": "张松",
+   "lead_id": "DATA1",
+   "status": "active",
+   "related": {
+    "name": "🅱 数据治理部",
+    "cn_title": "数据行营（冻结待归建）",
+    "lead": "张松",
+    "status": "frozen_pending_merge"
+   }
+  },
+  "members": [
+   {
+    "id": "DATA1",
+    "name": "张松",
+    "dept": "数据智能部",
+    "dept_id": "data",
+    "role": "data_team_lead",
+    "duty": "部门主官：数据仓总体/资质/口径",
+    "binding": "glm/glm-5.3",
+    "state": "idle",
+    "title": "🅱 数据治理部",
+    "heartbeat": {
+     "exists": false
+    },
+    "recent": "请DATA1催办：1人无任务活动、0单超期"
+   },
+   {
+    "id": "FACTOR1",
+    "name": "蒋琬",
+    "dept": "数据智能部",
+    "dept_id": "data",
+    "role": "factor_miner",
+    "duty": "因子挖掘：每日因子轮/候选",
+    "binding": "ollama/qwen3.5:9b",
+    "state": "idle",
+    "title": "数据智能部",
+    "heartbeat": {
+     "exists": false
+    },
+    "recent": ""
+   },
+   {
+    "id": "DATA2",
+    "name": "刘巴",
+    "dept": "数据智能部",
+    "dept_id": "data",
+    "role": "data_engineer",
+    "duty": "数据采集/ETL/接口同步",
+    "binding": "ollama/qwen3.5:9b",
+    "state": "idle",
+    "title": "数据智能部",
+    "heartbeat": {
+     "exists": false
+    },
+    "recent": ""
+   },
+   {
+    "id": "DATA3",
+    "name": "陈群",
+    "dept": "数据智能部",
+    "dept_id": "data",
+    "role": "data_quality",
+    "duty": "数据质量/校验/新鲜度",
+    "binding": "glm/glm-5.3-flash",
+    "state": "idle",
+    "title": "数据智能部",
+    "heartbeat": {
+     "exists": false
+    },
+    "recent": ""
+   },
+   {
+    "id": "DEV1",
+    "name": "马钧",
+    "dept": "🅱 数据治理部",
+    "dept_id": "proj_data",
+    "role": "data_dev",
+    "duty": "数据开发/查询服务（行营）",
+    "binding": "ollama/qwen3.5:9b",
+    "state": "idle",
+    "title": "🅱 数据治理部",
+    "heartbeat": {
+     "exists": false
+    },
+    "recent": ""
+   }
+  ],
+  "member_count": 5,
+  "online": 0,
+  "domains": [
+   {
+    "name": "资金与筹码",
+    "count": 68,
+    "rows": 93155071,
+    "latest": "20261231"
+   },
+   {
+    "name": "其他",
+    "count": 39,
+    "rows": 47195014,
+    "latest": "20261102"
+   },
+   {
+    "name": "海外与衍生",
+    "count": 37,
+    "rows": 61653128,
+    "latest": "20261102"
+   },
+   {
+    "name": "A股行情",
+    "count": 33,
+    "rows": 74221866,
+    "latest": "20271231"
+   },
+   {
+    "name": "财务与公告",
+    "count": 32,
+    "rows": 4467260,
+    "latest": "20261030"
+   },
+   {
+    "name": "舆情与研报",
+    "count": 25,
+    "rows": 15227644,
+    "latest": "20261102"
+   },
+   {
+    "name": "指数与基准",
+    "count": 22,
+    "rows": 53819184,
+    "latest": "20261102"
+   }
+  ],
+  "physical": 256,
+  "k8": {
+   "unknown": 14,
+   "ok": 187,
+   "partial": 38,
+   "deprecated": 8
+  },
+  "division": [
+   {
+    "duty": "数据采集 / 接口同步",
+    "seat": "DATA2 刘巴",
+    "status": "ok",
+    "progress": "tdx/tushare 主仓最新 20261102；TushareSync 23:30 rc=0"
+   },
+   {
+    "duty": "数据质量 / 资质取证",
+    "seat": "DATA3 陈群",
+    "status": "ok",
+    "progress": "K8 unknown=14（达标）；freshness 仅 1 issue"
+   },
+   {
+    "duty": "数据治理 / 血缘 / 口径",
+    "seat": "DATA1 张松",
+    "status": "warn",
+    "progress": "S3 完成度 83.3%，09:00 终验收"
+   },
+   {
+    "duty": "因子挖掘",
+    "seat": "FACTOR1 蒋琬",
+    "status": "warn",
+    "progress": "因子轮 20261030（11-03 数据待补）"
+   },
+   {
+    "duty": "数据开发 / 查询服务",
+    "seat": "DEV1 马钧（行营）",
+    "status": "ok",
+    "progress": "/api/dw 在线；11-05 换页"
+   },
+   {
+    "duty": "数据仓施工 / 验收（协作）",
+    "seat": "DSH-Lead（非军团席位）",
+    "status": "ok",
+    "progress": "首夜 PASS；KPI 9/10；终验收 09:00"
+   }
+  ],
+  "sync_tasks": [
+   {
+    "name": "KgDailySync",
+    "state": "Ready",
+    "last_result": 0,
+    "next_run": "11-03 06:20",
+    "last_run": "11-02 06:20"
+   },
+   {
+    "name": "TdxSyncProbe",
+    "state": "Ready",
+    "last_result": 0,
+    "next_run": "11-03 06:20",
+    "last_run": "11-03 05:20"
+   },
+   {
+    "name": "ShipinhaoCards",
+    "state": "Ready",
+    "last_result": 267011,
+    "next_run": "11-03 06:30",
+    "last_run": ""
+   },
+   {
+    "name": "DataWarehouseSnapshot",
+    "state": "Ready",
+    "last_result": 0,
+    "next_run": "11-03 06:40",
+    "last_run": "11-02 10:06"
+   },
+   {
+    "name": "NoticeBackfill",
+    "state": "Disabled",
+    "last_result": 267014,
+    "next_run": "11-03 06:45",
+    "last_run": "11-02 06:45"
+   },
+   {
+    "name": "NoticeBackfill",
+    "state": "Ready",
+    "last_result": 267014,
+    "next_run": "11-03 06:45",
+    "last_run": "11-02 14:46"
+   },
+   {
+    "name": "SentimentBT",
+    "state": "Ready",
+    "last_result": 267011,
+    "next_run": "11-03 07:20",
+    "last_run": ""
+   },
+   {
+    "name": "TdxSync",
+    "state": "Disabled",
+    "last_result": 267014,
+    "next_run": "11-03 17:30",
+    "last_run": "11-01 17:30"
+   },
+   {
+    "name": "TdxSync_A_高频",
+    "state": "Ready",
+    "last_result": 0,
+    "next_run": "11-03 17:35",
+    "last_run": "11-02 17:35"
+   },
+   {
+    "name": "TdxSync_B_财务",
+    "state": "Ready",
+    "last_result": 0,
+    "next_run": "11-03 17:45",
+    "last_run": "11-02 17:45"
+   },
+   {
+    "name": "TdxSync_C_低频",
+    "state": "Ready",
+    "last_result": 0,
+    "next_run": "11-03 17:55",
+    "last_run": "11-02 17:55"
+   },
+   {
+    "name": "TdxSync_D_缺口",
+    "state": "Ready",
+    "last_result": 0,
+    "next_run": "11-03 18:05",
+    "last_run": "11-02 18:05"
+   },
+   {
+    "name": "GlobalFutSync",
+    "state": "Ready",
+    "last_result": 267014,
+    "next_run": "11-03 18:15",
+    "last_run": "11-02 18:15"
+   },
+   {
+    "name": "TushareSync",
+    "state": "Ready",
+    "last_result": 0,
+    "next_run": "11-03 23:30",
+    "last_run": "11-02 23:30"
+   },
+   {
+    "name": "XmapSync",
+    "state": "Ready",
+    "last_result": 0,
+    "next_run": "11-04 06:00",
+    "last_run": "11-03 06:00"
+   }
+  ],
+  "progress": {
+   "s3_pct": 83.3,
+   "kpi_ok": 9,
+   "kpi_total": 10,
+   "first_night": "PASS",
+   "acceptance": "pending 09:00",
+   "k8": 14
+  },
+  "hermes": {
+   "available": true,
+   "servers_total": 13,
+   "servers": [
+    {
+     "name": "stock-data",
+     "transport": "stdio",
+     "enabled": true,
+     "active": false,
+     "status": "configured",
+     "tool_count": 0
+    },
+    {
+     "name": "stock-intel-readonly",
+     "transport": "stdio",
+     "enabled": true,
+     "active": false,
+     "status": "configured",
+     "tool_count": 0
+    },
+    {
+     "name": "jev-news",
+     "transport": "stdio",
+     "enabled": true,
+     "active": false,
+     "status": "configured",
+     "tool_count": 0
+    },
+    {
+     "name": "playwright",
+     "transport": "stdio",
+     "enabled": true,
+     "active": false,
+     "status": "configured",
+     "tool_count": 0
+    },
+    {
+     "name": "om-metadata",
+     "transport": "stdio",
+     "enabled": true,
+     "active": false,
+     "status": "configured",
+     "tool_count": 0
+    },
+    {
+     "name": "d1-research",
+     "transport": "stdio",
+     "enabled": true,
+     "active": false,
+     "status": "configured",
+     "tool_count": 0
+    },
+    {
+     "name": "huangzhong",
+     "transport": "stdio",
+     "enabled": true,
+     "active": false,
+     "status": "configured",
+     "tool_count": 0
+    },
+    {
+     "name": "zhice-selection",
+     "transport": "stdio",
+     "enabled": true,
+     "active": false,
+     "status": "configured",
+     "tool_count": 0
+    },
+    {
+     "name": "dw-governance",
+     "transport": "stdio",
+     "enabled": true,
+     "active": false,
+     "status": "configured",
+     "tool_count": 0
+    },
+    {
+     "name": "dw-quality",
+     "transport": "stdio",
+     "enabled": true,
+     "active": false,
+     "status": "configured",
+     "tool_count": 0
+    },
+    {
+     "name": "dw-catalog",
+     "transport": "stdio",
+     "enabled": true,
+     "active": false,
+     "status": "configured",
+     "tool_count": 0
+    },
+    {
+     "name": "factor-tools",
+     "transport": "stdio",
+     "enabled": true,
+     "active": false,
+     "status": "configured",
+     "tool_count": 0
+    },
+    {
+     "name": "kb-corpus",
+     "transport": "stdio",
+     "enabled": true,
+     "active": false,
+     "status": "configured",
+     "tool_count": 0
+    }
+   ],
+   "tools_total": 0,
+   "reload_required": true,
+   "unavailable_servers": [
+    "stock-data",
+    "stock-intel-readonly",
+    "jev-news",
+    "playwright",
+    "om-metadata",
+    "d1-research",
+    "huangzhong",
+    "zhice-selection",
+    "dw-governance",
+    "dw-quality",
+    "dw-catalog",
+    "factor-tools",
+    "kb-corpus"
+   ],
+   "expected_tools": 98,
+   "inventory_scope": "already_known_runtime_only"
+  },
+  "heartbeat": {
+   "last_ts": "2026-11-02T09:20:22+0800",
+   "seats_ok": 12,
+   "seats_total": 12,
+   "source": "agent_platform/data/seat_heartbeat",
+   "age_hours": 20.7
+  },
+  "feed": [
+   {
+    "ts": "2026-11-03T04:51:13",
+    "caller": "DATA1",
+    "action": "escalated",
+    "detail": "请DATA1催办：1人无任务活动、0单超期",
+    "from": "A0"
+   },
+   {
+    "ts": "2026-11-03T05:21:13",
+    "caller": "DATA1",
+    "action": "escalated",
+    "detail": "请DATA1催办：3人无任务活动、0单超期",
+    "from": "A0"
+   }
+  ],
+  "generated_at": "2026-11-03T06:01:36"
  },
  "query_examples": [
   {
