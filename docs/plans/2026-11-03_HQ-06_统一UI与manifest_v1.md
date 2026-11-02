@@ -1,6 +1,6 @@
 # HQ-06 解决方案：/hq 统一 UI/manifest + API/UI 接入 v1
 
-- 日期：2026-11-02｜状态：**manifest + `/hq.html` + `/api/hq/*` 代码已落；等待 L2 激活（8091 重启 + nginx reload）**
+- 日期：2026-11-02｜状态：**✅ 已激活并验收通过（2026-11-03 05:22）**
 - 依赖：ADR-021、HQ-01~05、`portal/config/hq_manifest.json`
 - 目标：一个 `/hq` 指挥面，5 个 tab，全部同源只读；不新增第二入口/DB/调度
 
@@ -95,3 +95,19 @@ HQ-06 的实时 API/clean 路由在 W3（12-03 起）按 a→e 顺序实施；�
   - `/api/hq/*` 仍走旧 8091：未登录 401、登录后 404。
 - **结论**：HQ-06 页面/路由已激活；API 代码已就绪但**需提权重启 8091**才生效（L2）。
 - **下一步**：A0 以管理员执行 `C:\aios\portal\start_portal_api.ps1`（带 restart flag）或 W3 正常重启；重启后验证 `/api/hq/snapshot` 200。
+
+## 十、验收回执（2026-11-03 05:22）
+
+| 项 | 结果 |
+|---|---|
+| 8091 | 新 pid **33508**（05:21:30 启动），`/health` 200 |
+| `/api/hq/*` 9 端点 | **全部 200 / ok=true**（snapshot/org/tasks/board/approvals/summary/budget/alerts/heartbeat） |
+| 数据断言 | org agents=77；tasks total=2046/wip=2；approvals=40；budget usage=2/api=9587；heartbeat wakes=3 |
+| `/hq` / `/hq.html` / `/static/hq_snapshot.json` | **200 / 200 / 200** |
+| 未登录 `/api/hq/snapshot`（8734） | **401**（鉴权生效） |
+| L1 | **18/18 PASS** |
+| HQ 测试 | **14 passed**（api_hq/snapshot/manifest） |
+| 页面 | 5 tabs；live API 优先，失败回退静态快照 |
+| Q2 健康 | `/health` 200 + 9 API 200 + 401 鉴权 + L1 18/18 |
+
+**结论：HQ-06 验收通过，W3 `/hq` 入口可开。**

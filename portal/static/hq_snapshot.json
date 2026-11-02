@@ -1,8 +1,8 @@
 {
  "schema": "hq/snapshot/v1",
- "generated_at": "2026-11-03T00:15:47+0800",
+ "generated_at": "2026-11-03T05:22:26+0800",
  "read_only": true,
- "note": "HQ-06 静态只读快照；实时 API 待 W3（/hq/*）",
+ "note": "HQ-06 只读数据快照（静态文件）；实时 API=/api/hq/snapshot",
  "org": {
   "summary": {
    "departments": 17,
@@ -151,7 +151,7 @@
      "status": "doing",
      "owner": "DSH-Lead",
      "created": "2026-11-02 15:56:25",
-     "age_days": 0.3,
+     "age_days": 0.6,
      "branch": true,
      "worktree": true,
      "desc": "P2.8 批处理韧性：run_id 跨日同时刻冲突修复(retry suffix)+watchlist 恢复 603667+测试"
@@ -163,7 +163,7 @@
      "status": "review",
      "owner": "DSH-Lead",
      "created": "2026-11-02 13:41:20",
-     "age_days": 0.4,
+     "age_days": 0.7,
      "branch": true,
      "worktree": true,
      "desc": "P2.7 测试隔离修复：test_api_customer 试用/任务写入生产 commercial.db（796 个 trial 污染）+ 断言"
@@ -175,7 +175,7 @@
      "status": "parked",
      "owner": "ZHAOYUN",
      "created": "2026-11-01 05:34:17",
-     "age_days": 1.8,
+     "age_days": 2.0,
      "branch": true,
      "worktree": true,
      "desc": "ACAD1池数据合约v0：ODCS+agentPolicy(allowed_use/PII/freshness/PIT)+30卡校验"
@@ -185,7 +185,7 @@
      "status": "parked",
      "owner": "pipeline-graph",
      "created": "2026-11-01 07:05:06",
-     "age_days": 1.7,
+     "age_days": 1.9,
      "branch": true,
      "worktree": true,
      "desc": "张松仓 zhice v2 只读探针 CLI：新增 tools/datawarehouse/zhice_v2_probe.py（env ZHICE_V2_DSN 读取 PG DSN，缺失 exit2、不"
@@ -195,7 +195,7 @@
      "status": "parked",
      "owner": "ZHAOYUN",
      "created": "2026-11-01 07:38:51",
-     "age_days": 1.7,
+     "age_days": 1.9,
      "branch": true,
      "worktree": true,
      "desc": "H37-H39研究台账"
@@ -205,7 +205,7 @@
      "status": "parked",
      "owner": "ZHAOYUN",
      "created": "2026-11-01 07:54:44",
-     "age_days": 1.7,
+     "age_days": 1.9,
      "branch": true,
      "worktree": true,
      "desc": "快照与BADGE修复"
@@ -215,7 +215,7 @@
      "status": "parked",
      "owner": "ZHAOYUN",
      "created": "2026-11-01 11:51:39",
-     "age_days": 1.5,
+     "age_days": 1.7,
      "branch": true,
      "worktree": true,
      "desc": "导航生成同步"
@@ -225,7 +225,7 @@
      "status": "parked",
      "owner": "DSH-Lead",
      "created": "2026-11-01 16:45:55",
-     "age_days": 1.3,
+     "age_days": 1.5,
      "branch": true,
      "worktree": true,
      "desc": "曹操军团 v2 只读 API：/api/dev/legion/v2 增加 workorder_bus/decisions/events 只增字段 + 前端消费 + 测试"
@@ -235,7 +235,7 @@
      "status": "parked",
      "owner": "DSH-Lead",
      "created": "2026-11-01 21:38:44",
-     "age_days": 1.1,
+     "age_days": 1.3,
      "branch": true,
      "worktree": true,
      "desc": "曹操军团页收口：动态跨席文案 + 事件流卡片 + 决策/工单计数，清掉静态 16"
@@ -245,7 +245,7 @@
      "status": "parked",
      "owner": "DSH-Lead",
      "created": "2026-11-02 00:27:38",
-     "age_days": 1.0,
+     "age_days": 1.2,
      "branch": true,
      "worktree": true,
      "desc": "曹操军团页接入 Hermes：页头 Hermes 控制台入口 + 页脚底座标识 + 派工跳 Hermes legion-ide，页面仍只读"
@@ -466,7 +466,7 @@
    "usage_calls": 2,
    "in_tok": 1012,
    "out_tok": 3,
-   "api_calls": 9422,
+   "api_calls": 9587,
    "api_fail": 4
   },
   "credits_estimate": 0.0,

@@ -37,7 +37,7 @@ def build_snapshot() -> dict:
         "schema": "hq/snapshot/v1",
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
         "read_only": True,
-        "note": "HQ-06 静态只读快照；实时 API 待 W3（/hq/*）",
+        "note": "HQ-06 只读数据快照（静态文件）；实时 API=/api/hq/snapshot",
         "org": {
             "summary": org["summary"],
             "chief": org["chief"],

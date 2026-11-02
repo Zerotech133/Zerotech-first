@@ -3,7 +3,7 @@
   "id": "hq",
   "title": "零界指挥部",
   "entry": "/hq",
-  "status": "w3-pending",
+  "status": "active",
   "owner": "ARCH1",
   "auth": "8734 OIDC（同源；不新增登录）",
   "single_entry": true,
