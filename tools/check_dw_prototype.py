@@ -17,9 +17,11 @@ REQUIRED_IDS = [
     "map-body", "map-total", "query-form", "q-dataset", "q-output",
     "quality-bars", "fresh-body", "accept-body", "lineage-flow",
     "governance-principles", "governance-pending", "wip-body", "drawer",
+    "mf-file", "mf-target", "mf-mode", "mf-preview", "mf-submit",
+    "mg-dataset", "mg-body", "mg-submit", "mn-id", "mn-submit", "mq-body",
 ]
 REQUIRED_REFS = ['/static/tokens.css', '/static/nav.js']
-VIEWS = ["overview", "map", "query", "quality", "lineage", "governance"]
+VIEWS = ["overview", "map", "query", "manual", "quality", "lineage", "governance"]
 
 
 def extract_data(html: str) -> dict:
@@ -81,7 +83,7 @@ def check(html_path: Path = HTML, data_path: Path = DATA) -> dict:
         data = {}
     if data:
         for key, minimum in (("datasets", 200), ("domains", 5), ("kpis", 6),
-                             ("query_examples", 3), ("governance", 1)):
+                             ("query_examples", 3), ("governance", 1), ("manual", 1)):
             v = data.get(key)
             n = len(v) if hasattr(v, "__len__") else (1 if v else 0)
             out["facts"]["count_%s" % key] = n

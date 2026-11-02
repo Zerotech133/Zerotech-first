@@ -99,9 +99,9 @@ tr:last-child td{border-bottom:none}
 .btn.ghost{background:none}
 .muted{color:var(--text-dim,#96a0af);font-size:12px}
 .mono{font-family:var(--font-mono,monospace)}
-.querygrid{display:grid;grid-template-columns:minmax(250px,340px) 1fr;gap:14px;margin-top:12px}
+.querygrid{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:14px;margin-top:12px}
 @media(max-width:820px){.querygrid{grid-template-columns:1fr}}
-.card{border:1px solid var(--border,#2a3342);border-radius:10px;background:var(--bg-surface,#151b26);padding:14px}
+.card{border:1px solid var(--border,#2a3342);border-radius:10px;background:var(--bg-surface,#151b26);padding:14px;min-width:0}
 .card h3{margin:0 0 10px;font-size:13px;letter-spacing:.02em}
 .field{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
 .field label{font-size:11.5px;color:var(--text-dim,#96a0af)}
@@ -113,7 +113,7 @@ pre.out{margin:0;padding:12px;border-radius:8px;background:var(--bg-page,#0b0e14
 .examples{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .examples button{font-size:11.5px;border-radius:999px;border:1px solid var(--border,#2a3342);background:var(--bg-surface,#151b26);padding:3px 10px;color:var(--link,#4d9fff)}
 .examples button:hover{border-color:var(--color-focus,#4d9fff)}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
 @media(max-width:820px){.two{grid-template-columns:1fr}}
 .flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px}
 .flow .node{border:1px solid var(--border,#2a3342);background:var(--bg-raised,#1b2230);border-radius:9px;padding:9px 12px;font-size:12px}
@@ -138,6 +138,12 @@ pre.out{margin:0;padding:12px;border-radius:8px;background:var(--bg-page,#0b0e14
 footer{border-top:1px solid var(--border,#2a3342);color:var(--text-dim,#96a0af);font-size:11.5px;padding:16px 0 28px;margin-top:34px;line-height:1.7}
 .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);opacity:0;background:var(--bg-raised,#1b2230);border:1px solid var(--color-ok,#39c07a);color:var(--text,#e6e9ef);border-radius:999px;padding:7px 16px;font-size:12px;z-index:300;transition:.2s;pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.manual-grid td input{background:transparent;border:1px solid transparent;border-radius:6px;padding:3px 5px;color:inherit;width:100%;font:inherit}
+.manual-grid td input:focus{border-color:var(--color-focus,#4d9fff);outline:none;background:var(--bg-raised,#1b2230)}
+.manual-grid td{white-space:nowrap}
+.manual-grid td.del button{background:none;border:1px solid var(--border,#2a3342);border-radius:6px;color:var(--text-dim,#96a0af);padding:0 7px}
+.manual-grid td.del button:hover{color:var(--color-err,#f05e5e);border-color:var(--color-err,#f05e5e)}
+.mq-ok{color:var(--color-warn,#e0a33c)}
 :focus-visible{outline:2px solid var(--color-focus,#4d9fff);outline-offset:2px}
 @media(max-width:720px){.hsearch{display:none}.topbar .in{min-height:44px}}
 </style>
@@ -160,7 +166,7 @@ footer{border-top:1px solid var(--border,#2a3342);color:var(--text-dim,#96a0af);
   <section aria-labelledby="page-title">
     <div class="eyebrow">DATA WAREHOUSE · UNIFIED DATA PLANE</div>
     <h1 id="page-title">数据仓 · 统一数据平面</h1>
-    <p class="lead">面向「查得到、说得清、追得回」的数据仓原型：数据集目录、只读查询台、质量与资质、血缘与治理，一页贯通。原型数据为构建时快照；接服务后查询台自动调用 <code>/api/dw/query</code>。</p>
+    <p class="lead">面向「查得到、说得清、追得回」的数据仓原型：数据集目录、只读查询台、手动录入、质量与资质、血缘与治理，一页贯通。原型数据为构建时快照；接服务后查询台自动调用 <code>/api/dw/query</code>。</p>
     <div class="chips" id="hero-chips"></div>
   </section>
 
@@ -168,6 +174,7 @@ footer{border-top:1px solid var(--border,#2a3342);color:var(--text-dim,#96a0af);
     <button class="tab" role="tab" id="tab-overview" aria-controls="view-overview" aria-selected="true" data-view="overview">总览</button>
     <button class="tab" role="tab" id="tab-map" aria-controls="view-map" aria-selected="false" data-view="map">数据地图</button>
     <button class="tab" role="tab" id="tab-query" aria-controls="view-query" aria-selected="false" data-view="query">查询台</button>
+    <button class="tab" role="tab" id="tab-manual" aria-controls="view-manual" aria-selected="false" data-view="manual">手动录入</button>
     <button class="tab" role="tab" id="tab-quality" aria-controls="view-quality" aria-selected="false" data-view="quality">质量与资质</button>
     <button class="tab" role="tab" id="tab-lineage" aria-controls="view-lineage" aria-selected="false" data-view="lineage">血缘</button>
     <button class="tab" role="tab" id="tab-governance" aria-controls="view-governance" aria-selected="false" data-view="governance">治理</button>
@@ -259,6 +266,59 @@ footer{border-top:1px solid var(--border,#2a3342);color:var(--text-dim,#96a0af);
         <h3>结果 <span class="muted" id="q-status"></span></h3>
         <pre class="out" id="q-output">等待查询…</pre>
         <div class="examples" id="q-examples"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="view-manual" role="tabpanel" aria-labelledby="tab-manual">
+    <h2>手动数据入口 <span class="cnt">staging · 审核后入库</span></h2>
+    <div class="banner"><span class="tag">GOV</span><b>手动入口不直接写主仓</b> · 文件/手工行先进入 staging，经 schema 校验、去重、审核（含 L2）后才写回；全程留 audit（谁/何时/来源/哈希/行数）。原型只演示流程，不落库。</div>
+    <div class="two" style="margin-top:12px">
+      <div class="card">
+        <h3>① 文件导入 <span class="muted">CSV / TSV / JSON / JSONL</span></h3>
+        <div class="field"><label for="mf-file">选择文件（≤5MB 可本地预览）</label><input id="mf-file" type="file" accept=".csv,.tsv,.json,.jsonl,.txt,.xlsx,.parquet"></div>
+        <div class="field"><label for="mf-target">目标数据集</label><input id="mf-target" list="mf-target-list" placeholder="现有 dataset_id 或输入新 id（新 id 需走 ③ 登记）"><datalist id="mf-target-list"></datalist></div>
+        <div class="field"><div class="row">
+          <div><label for="mf-mode">写入方式</label><select id="mf-mode"><option value="append">追加（append）</option><option value="staging_replace">staging 覆盖（整批替换）</option></select></div>
+          <div><label for="mf-layer">落层</label><select id="mf-layer"><option value="raw">raw 原始层</option><option value="clean">clean 清洗层</option><option value="mart">mart 指标层</option></select></div>
+        </div></div>
+        <div class="acts"><button class="btn primary" id="mf-parse" type="button">解析预览</button><button class="btn" id="mf-submit" type="button">提交 staging</button></div>
+        <p class="muted" id="mf-info" style="margin-top:8px">xlsx/parquet 由服务端解析；文本格式本地解析预览。</p>
+        <pre class="out" id="mf-preview" style="max-height:200px;margin-top:10px">尚未选择文件</pre>
+      </div>
+      <div class="card">
+        <h3>② 手工录入 <span class="muted">按列逐行</span></h3>
+        <div class="field"><label for="mg-dataset">目标数据集</label><select id="mg-dataset"><option value="">选择数据集…</option></select></div>
+        <div class="field"><label>列（来自 warehouse_registry.business_columns）</label><div id="mg-columns" class="muted">-</div></div>
+        <div class="tablebox" style="margin-top:6px;max-height:220px"><table><thead><tr id="mg-head"></tr></thead><tbody id="mg-body"></tbody></table></div>
+        <div class="acts"><button class="btn" id="mg-add" type="button">+ 添加行</button><button class="btn primary" id="mg-submit" type="button">提交 staging</button></div>
+        <p class="muted" id="mg-info" style="margin-top:8px">提交前校验：目标必填 / 至少 1 行 / 主键与日期列非空。</p>
+      </div>
+    </div>
+    <div class="two" style="margin-top:14px">
+      <div class="card">
+        <h3>③ 新建数据集登记 <span class="muted">onboarding</span></h3>
+        <div class="field"><div class="row">
+          <div><label for="mn-id">dataset_id</label><input id="mn-id" placeholder="如 manual_industry_202611"></div>
+          <div><label for="mn-name">名称</label><input id="mn-name" placeholder="外部行业数据"></div>
+        </div></div>
+        <div class="field"><div class="row">
+          <div><label for="mn-source">来源</label><input id="mn-source" placeholder="手动采集 / 外部渠道"></div>
+          <div><label for="mn-freq">频率</label><select id="mn-freq"><option>D</option><option>W</option><option>M</option><option>Q</option><option>irregular</option></select></div>
+        </div></div>
+        <div class="field"><div class="row">
+          <div><label for="mn-pk">主键</label><input id="mn-pk" placeholder="code,trade_date"></div>
+          <div><label for="mn-datecol">日期列</label><input id="mn-datecol" placeholder="trade_date"></div>
+        </div></div>
+        <div class="field"><label for="mn-desc">说明 / 血缘来源</label><input id="mn-desc" placeholder="来源链接与口径说明（必填）"></div>
+        <div class="acts"><button class="btn primary" id="mn-submit" type="button">提交登记（staging）</button></div>
+        <p class="muted" style="margin:8px 0 0">登记后资质初始为 <b>unknown</b>，需取证（行数/最新日/manifest/证据）后转 ok。</p>
+      </div>
+      <div class="card">
+        <h3>④ 提交队列（原型会话） <span class="muted" id="mq-count"></span></h3>
+        <div class="tablebox" style="max-height:250px"><table><thead><tr><th>类型</th><th>目标</th><th>行数</th><th>状态</th><th></th></tr></thead><tbody id="mq-body"></tbody></table></div>
+        <div class="acts" style="margin-top:8px"><button class="btn ghost" id="mq-export" type="button">导出 staging JSON</button><button class="btn ghost" id="mq-clear" type="button">清空</button></div>
+        <p class="muted" style="margin:8px 0 0">API 契约：<code>POST /api/dw/manual/ingest</code> → staging；<code>GET /api/dw/manual/entries</code>；审核后 <code>POST /api/dw/manual/approve</code>。</p>
       </div>
     </div>
   </section>
@@ -645,11 +705,152 @@ const DW_DATA = __DW_DATA_JSON__;
     document.addEventListener("keydown", e => { if (e.key === "Escape") closeDrawer(); });
   }
 
+  /* ---------- 手动数据入口（staging 原型） ---------- */
+  const MQ_KEY = "dw_v2_manual_queue_v1";
+  let mq = [];
+  let mfParsed = null;
+  let mgCols = [];
+  let mgRows = [];
+  function loadMQ(){ try { mq = JSON.parse(localStorage.getItem(MQ_KEY) || "[]"); } catch(e){ mq = []; } }
+  function saveMQ(){ try { localStorage.setItem(MQ_KEY, JSON.stringify(mq)); } catch(e){} }
+  function nowIso(){ return new Date().toISOString(); }
+  function entryId(){ return "MAN-" + nowIso().replace(/[-:TZ.]/g, "").slice(0, 14) + "-" + Math.floor(Math.random()*900+100); }
+  function mqRender(){
+    $("#mq-count").textContent = mq.length ? "（" + mq.length + "）" : "";
+    $("#mq-body").innerHTML = mq.length ? mq.map((e, i) =>
+      '<tr><td>' + esc(e.kind) + '</td><td class="mono">' + esc(e.target_dataset || "-") + '</td>' +
+      '<td class="num">' + (e.rows == null ? "-" : esc(e.rows)) + '</td>' +
+      '<td><span class="pill warn">' + esc(e.status || "staged") + '</span></td>' +
+      '<td><button class="btn ghost mq-del" type="button" data-i="' + i + '">撤销</button></td></tr>').join("") :
+      '<tr><td colspan="5" class="muted">暂无提交。提交后先进 staging（原型不落库）。</td></tr>';
+    $$("#mq-body .mq-del").forEach(b => b.addEventListener("click", () => { mq.splice(Number(b.dataset.i), 1); saveMQ(); mqRender(); toast("已撤销（原型）"); }));
+  }
+  function pushEntry(e){ e.entry_id = entryId(); e.submitted_at = nowIso(); e.submitted_by = (DW.manual || {}).submitter || "laotian"; e.status = "staged"; mq.unshift(e); saveMQ(); mqRender(); toast("已暂存 staging（原型，未落库）"); }
+  function parseFile(file){
+    if (!file) { $("#mf-preview").textContent = "尚未选择文件"; return null; }
+    const name = (file.name || "").toLowerCase();
+    const sizeMb = file.size / 1048576;
+    if (sizeMb > ((DW.manual || {}).max_file_mb || 5)) {
+      $("#mf-preview").textContent = "文件 " + sizeMb.toFixed(2) + "MB 超过本地预览上限，提交后由服务端解析";
+      return { rows: null, filename: file.name, size_mb: Number(sizeMb.toFixed(2)), note: "server_parse" };
+    }
+    if (/\.(csv|tsv|txt)$/.test(name)) {
+      return new Promise(resolve => {
+        const fr = new FileReader();
+        fr.onload = () => {
+          const text = String(fr.result || "");
+          const lines = text.split(/\r?\n/).filter(x => x.trim());
+          const sep = name.endsWith(".tsv") ? "\t" : ",";
+          const head = (lines[0] || "").split(sep).map(x => x.trim());
+          const rows = lines.slice(1, 6).map(l => l.split(sep));
+          $("#mf-preview").textContent = "解析 " + (lines.length - 1) + " 行 / " + head.length + " 列\n" +
+            head.join(" | ") + "\n" + rows.map(r => r.join(" | ")).join("\n") + (lines.length > 6 ? "\n…" : "");
+          resolve({ rows: lines.length - 1, columns: head.length, headers: head, filename: file.name });
+        };
+        fr.readAsText(file);
+      });
+    }
+    if (/\.(json|jsonl)$/.test(name)) {
+      return new Promise(resolve => {
+        const fr = new FileReader();
+        fr.onload = () => {
+          const text = String(fr.result || "").trim();
+          let arr = [];
+          try { arr = JSON.parse(text); if (!Array.isArray(arr)) arr = [arr]; }
+          catch(e) { arr = text.split(/\r?\n/).filter(Boolean).slice(0, 5).map(l => { try { return JSON.parse(l); } catch(_) { return { raw: l }; } }); }
+          const head = arr.length ? Object.keys(arr[0] || {}) : [];
+          $("#mf-preview").textContent = "解析 " + arr.length + " 行 / " + head.length + " 列\n" + JSON.stringify(arr.slice(0, 3), null, 1);
+          resolve({ rows: arr.length, columns: head.length, headers: head, filename: file.name });
+        };
+        fr.readAsText(file);
+      });
+    }
+    $("#mf-preview").textContent = "二进制/表格文件（xlsx/parquet）：本地不解析，提交后由服务端校验 schema";
+    return { rows: null, filename: file.name, size_mb: Number(sizeMb.toFixed(2)), note: "server_parse" };
+  }
+  function mgRender(){
+    $("#mg-head").innerHTML = mgCols.map(c => '<th>' + esc(c) + '</th>').join("") + '<th>操作</th>';
+    $("#mg-body").innerHTML = mgRows.length ? mgRows.map((row, ri) =>
+      '<tr>' + mgCols.map(c => '<td><input data-r="' + ri + '" data-c="' + esc(c) + '" value="' + esc(row[c] || "") + '"></td>').join("") +
+      '<td class="del"><button type="button" data-del="' + ri + '" aria-label="删除行">×</button></td></tr>').join("") :
+      '<tr><td colspan="' + (mgCols.length + 1) + '" class="muted">点击「+ 添加行」开始录入。</td></tr>';
+    $$("#mg-body input").forEach(inp => inp.addEventListener("input", e => {
+      const r = Number(e.target.dataset.r), c = e.target.dataset.c;
+      if (mgRows[r]) mgRows[r][c] = e.target.value;
+    }));
+    $$("#mg-body button[data-del]").forEach(b => b.addEventListener("click", () => { mgRows.splice(Number(b.dataset.del), 1); mgRender(); }));
+    $("#mg-info").textContent = "列：" + (mgCols.length ? mgCols.join(" / ") : "-") + " · 行：" + mgRows.length;
+  }
+  function manualInit(){
+    const m = DW.manual || {};
+    const dsOpts = (DW.datasets || []).slice(0, 400).map(d => '<option value="' + esc(d.id) + '">' + esc(d.id) + '</option>').join("");
+    $("#mf-target-list").innerHTML = dsOpts;
+    $("#mg-dataset").innerHTML += dsOpts;
+    loadMQ(); mqRender();
+    $("#mf-parse").addEventListener("click", async () => {
+      const f = $("#mf-file").files && $("#mf-file").files[0];
+      if (!f) { toast("请先选择文件"); return; }
+      const r = await parseFile(f); if (r) mfParsed = r;
+    });
+    $("#mf-file").addEventListener("change", () => { mfParsed = null; $("#mf-preview").textContent = "已选择，点击「解析预览」"; });
+    $("#mf-submit").addEventListener("click", async () => {
+      const f = $("#mf-file").files && $("#mf-file").files[0];
+      if (!f) { toast("请先选择文件"); return; }
+      const target = $("#mf-target").value.trim();
+      if (!target) { toast("请填写目标数据集"); return; }
+      if (!mfParsed) mfParsed = await parseFile(f);
+      pushEntry({ kind: "file_import", target_dataset: target, mode: $("#mf-mode").value, layer: $("#mf-layer").value,
+        source: { filename: f.name, size_mb: Number((f.size / 1048576).toFixed(2)) },
+        rows: mfParsed ? mfParsed.rows : null,
+        columns: mfParsed ? mfParsed.columns : null,
+        note: "服务端将做 schema/类型/主键/日期/去重校验；xlsx/parquet 由服务端解析" });
+    });
+    $("#mg-dataset").addEventListener("change", e => {
+      const d = (DW.datasets || []).find(x => x.id === e.target.value);
+      mgCols = (d && d.columns && d.columns.length) ? d.columns.slice(0, 10) : ["code", "trade_date", "value", "note"];
+      mgRows = [{}]; mgRender();
+    });
+    $("#mg-add").addEventListener("click", () => { mgRows.push({}); mgRender(); });
+    $("#mg-submit").addEventListener("click", () => {
+      const target = $("#mg-dataset").value;
+      if (!target) { toast("请选择目标数据集"); return; }
+      if (!mgRows.length) { toast("至少添加 1 行"); return; }
+      const d = (DW.datasets || []).find(x => x.id === target);
+      const filled = mgRows.map(r => { const o = {}; mgCols.forEach(c => { o[c] = (r[c] || "").trim(); }); return o; });
+      pushEntry({ kind: "manual_rows", target_dataset: target, mode: "append", layer: "staging",
+        rows: filled.length, columns: mgCols.length, preview: filled.slice(0, 5),
+        source: { channel: "manual_grid" } });
+    });
+    $("#mn-submit").addEventListener("click", () => {
+      const id = $("#mn-id").value.trim(), name = $("#mn-name").value.trim();
+      if (!id || !name) { toast("dataset_id 与名称必填"); return; }
+      if (!/^[a-z0-9_]{3,64}$/.test(id)) { toast("dataset_id 只允许小写字母/数字/下划线（3-64）"); return; }
+      pushEntry({ kind: "dataset_onboarding", target_dataset: id,
+        registration: { id: id, name: name, source: $("#mn-source").value.trim(), freq: $("#mn-freq").value,
+                        primary_key: $("#mn-pk").value.trim(), date_col: $("#mn-datecol").value.trim(),
+                        desc: $("#mn-desc").value.trim(), qualification_status: "unknown" }, rows: null,
+        note: "登记后需取证（行数/最新日/manifest/证据）才能转 ok；新表不进 display 直到覆盖核验完成" });
+    });
+    $("#mq-export").addEventListener("click", () => {
+      const payload = { exported_at: nowIso(), entries: mq,
+        api: (m || {}).api || { ingest: "POST /api/dw/manual/ingest" },
+        note: "原型 staging 导出；真实接口按契约落 data/staging/manual/<date>/<entry_id>/" };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = "dw_v2_manual_staging.json"; a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      toast("已导出 staging JSON（原型）");
+    });
+    $("#mq-clear").addEventListener("click", () => { mq = []; saveMQ(); mqRender(); mqRender(); toast("已清空（原型）"); });
+    mgCols = ["code", "trade_date", "value", "note"]; mgRows = [{}]; mgRender();
+  }
+
   function init(){
     renderHero(); renderKPIs(); renderFreshness(); renderDomains(); renderTasks();
     initMapFilters(); renderMap(); bindMap();
     bindQuery(); fillQuery(((DW.datasets || [])[0] || {}).id || "");
     renderQuality(); renderLineage(); renderGovernance();
+    manualInit();
     bindTabs(); bindGlobalSearch(); bindDrawer();
   }
   init();
