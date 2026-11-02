@@ -19,7 +19,11 @@
 有会话 cookie 时执行：
 
 ```powershell
-python -X utf8 tools/dw_q2_probe.py --cookie "zb_session=<value>"
+# 1) 浏览器登录 8734 → DevTools → Application → Cookies → 复制 zb_session 的值
+# 2) 写入一次性文件（不要发到聊天/不要提交）：
+Set-Content -Path C:\Temp\zb_session.txt -Value "zb_session=<value>" -Encoding ascii
+# 3) 验收：
+python -X utf8 tools/dw_q2_probe.py --cookie-file C:\Temp\zb_session.txt
 ```
 
 期望：
@@ -27,6 +31,7 @@ python -X utf8 tools/dw_q2_probe.py --cookie "zb_session=<value>"
 - 页面含数据仓统计/列表内容；
 - 无 JS 报错、无 401 循环；
 - 通过后 `auth_state=PASS`，才可标 Q2 PASS。
+- 验收后立即删除 `C:\Temp\zb_session.txt`。
 
 无 cookie 时工具输出 **PENDING-LOGIN**，不伪造通过。
 

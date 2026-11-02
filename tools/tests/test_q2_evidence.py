@@ -39,3 +39,11 @@ def test_dw_probe_pending_without_cookie():
     assert all(c["ok"] for c in d["checks"])
     # 不伪造登录通过
     assert d["ok"] is False
+
+
+def test_cookie_file_parser(tmp_path):
+    p = tmp_path / "s.txt"
+    p.write_text("zb_session=abc123\n", encoding="utf-8")
+    assert dw_q2_probe.cookie_from_file(str(p)) == "zb_session=abc123"
+    p.write_text("plainvalue", encoding="utf-8")
+    assert dw_q2_probe.cookie_from_file(str(p)) == "zb_session=plainvalue"

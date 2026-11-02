@@ -75,12 +75,28 @@ def build(cookie: str = "") -> dict:
     }
 
 
+def cookie_from_file(path: str) -> str:
+    """读取一次性 cookie 文件：支持 `zb_session=...` 或纯值；不打印内容。"""
+    if not path:
+        return ""
+    p = Path(path)
+    if not p.is_file():
+        raise FileNotFoundError(path)
+    raw = p.read_text(encoding="utf-8", errors="replace").strip().splitlines()
+    val = raw[0].strip() if raw else ""
+    if not val:
+        return ""
+    return val if val.startswith("zb_session=") else ("zb_session=" + val)
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="data-warehouse Q2 探针")
+    ap.add_argument("--cookie-file", default="")
     ap.add_argument("--cookie", default="")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args(argv)
-    d = build(args.cookie)
+    cookie = args.cookie or cookie_from_file(args.cookie_file)
+    d = build(cookie)
     if args.json:
         print(json.dumps(d, ensure_ascii=False, indent=1))
     else:
