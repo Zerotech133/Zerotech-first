@@ -88,8 +88,32 @@ def test_three_piece_and_short_screen():
     assert "/static/tokens.css" in txt
     assert "/static/nav.js" in txt
     assert "/static/shortscreen.js" in txt
-    assert "/static/os_light.css" in txt
+    assert "/static/os_light.css" not in txt, "技术框架深屏不得再依赖浅色 os_light"
     assert len(re.findall(r"<h2[ >]", txt)) >= 6
+
+
+def test_framework_dark_baseline():
+    """技术框架深屏：tokens 深色、1210 宽、10px 圆角细边框、蓝强调，无浅色依赖。"""
+    txt = HTML.read_text(encoding="utf-8")
+    css = CSS.read_text(encoding="utf-8")
+    assert "/static/os_light.css" not in txt
+    assert "技术框架深屏" in css, "缺少技术框架深色覆盖段"
+    section = css.split("技术框架深屏", 1)[1]
+    # GitHub Dark tokens 深色基底
+    assert "color-scheme: dark" in section
+    for token in ("--bg-page", "--bg-raised", "--text", "--border"):
+        assert token in section, "深屏必须使用 tokens 深色变量 %s" % token
+    # 1210 宽 + 字号 + 卡片形态
+    assert "max-width: 1210px" in section
+    assert "font-size: 13.2px" in section            # 正文 13–13.5
+    assert "font-size: 23px" in section              # h1 22–24
+    assert "border-radius: 10px" in section
+    assert "box-shadow: 0 1px 2px" in section        # 低阴影
+    # 强调色蓝（link/os-blue），不用金橙 org-400
+    assert "--org-400: var(--os-blue)" in section
+    assert "var(--link)" in section and "var(--os-blue)" in section
+    # 不再出现大面积渐变（body::before 已置 none）
+    assert "body::before { background: none; }" in section
 
 
 def test_live_api_readonly():
