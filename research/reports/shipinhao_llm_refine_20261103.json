@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-03T05:48:54+08:00",
+ "generated_at": "2026-11-03T06:01:09+08:00",
  "phase1": {
   "pass": 81,
   "revise": 0,
@@ -40,27 +40,29 @@
   "total": 772
  },
  "phase3_llm": {
-  "sample": 512,
-  "extracted": 86,
+  "sample": 120,
+  "extracted": 105,
   "precheck": {
-   "pass": 66,
+   "pass": 105,
    "revise": 0,
-   "reject": 20,
+   "reject": 86,
    "issues": {
-    "concept_filler_word": 3,
-    "concept_market_commentary": 7,
+    "duplicate_existing_concept": 70,
+    "duplicate_existing_answer": 25,
+    "concept_filler_word": 5,
+    "concept_market_commentary": 8,
     "concept_action_phrase": 1,
-    "duplicate_existing_concept": 8,
-    "concept_too_short": 1
+    "concept_too_short": 1,
+    "concept_non_noun_ending": 1
    },
-   "total": 86
+   "total": 191
   }
  },
  "by_blogger": {
-  "爱死磕-康康": 10,
-  "K哥真交易": 6,
-  "cash猫4415": 4,
-  "乔木缠论ROEE": 19,
-  "一修论市": 27
+  "爱死磕-康康": 7,
+  "K哥真交易": 4,
+  "cash猫4415": 6,
+  "乔木缠论ROEE": 55,
+  "一修论市": 33
  }
 }
