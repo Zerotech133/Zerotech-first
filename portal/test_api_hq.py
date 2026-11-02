@@ -58,8 +58,8 @@ def test_unknown_is_404():
     assert code == 404 and obj["code"] == "not_found"
 
 
-def test_page_prefers_live_api_with_fallback():
+def test_page_uses_authenticated_api_only():
     h = (ROOT / "portal" / "hq.html").read_text(encoding="utf-8", errors="replace")
     assert "/api/hq/snapshot" in h
-    assert "/static/hq_snapshot.json" in h
-    assert "source='live'" in h
+    assert "/static/hq_snapshot.json" not in h  # 不再公开静态快照
+    assert "需登录" in h

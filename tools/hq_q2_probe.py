@@ -7,7 +7,7 @@
 - 9 个 /api/hq/* 直连端点
 - 8734 /hq 页面
 - 8734 /api/hq/snapshot 未登录 401（鉴权）
-SLO：全部通过；API p95 < 500ms；页面 < 1500ms。
+SLO：全部通过；API p95 < 800ms；页面 < 1500ms。
 用法：python -X utf8 tools/hq_q2_probe.py [--json]
 """
 from __future__ import annotations
@@ -15,7 +15,7 @@ from __future__ import annotations
 import argparse
 import http.client
 import json
-import statistics
+import math
 import sys
 import time
 from pathlib import Path
@@ -69,11 +69,14 @@ def build_probe() -> dict:
     add("page /hq", 8734, "/hq", 200)
     add("unauth api 401", 8734, "/api/hq/snapshot", 401)
     api_lat = [c["ms"] for c in checks if c["name"].startswith("api ") and c["ms"] is not None]
-    p95 = round(statistics.quantiles(api_lat, n=20)[-1], 1) if len(api_lat) >= 2 else (api_lat[0] if api_lat else None)
-    p50 = round(statistics.median(api_lat), 1) if api_lat else None
+    api_sorted = sorted(api_lat)
+    p95 = round(api_sorted[max(0, math.ceil(0.95 * len(api_sorted)) - 1)], 1) if api_sorted else None
+    p50 = round(api_sorted[len(api_sorted) // 2], 1) if api_sorted else None
     failures = [c for c in checks if not c["ok"]]
-    # Q2/SLO 稳态门槛：9 端点 p95 < 800ms（snapshot 为聚合读，单列 800ms）；页面 <1500ms。
+    # Q2/SLO 稳态门槛：9 端点 p95 < 800ms；页面 /hq < 1500ms（页面 SLO 必须真实参与判定）。
     p95_ok = p95 is not None and p95 < 800
+    page_ms = [c["ms"] for c in checks if c["name"] == "page /hq" and c["ms"] is not None]
+    page_ok = bool(page_ms) and page_ms[0] < 1500 and all(c["ok"] for c in checks if c["name"] == "page /hq")
     return {
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
         "schema": "hq/q2-probe/v1",
@@ -81,9 +84,10 @@ def build_probe() -> dict:
         "read_only": True,
         "checks": checks,
         "summary": {"total": len(checks), "passed": len(checks) - len(failures),
-                    "failed": len(failures), "api_p50_ms": p50, "api_p95_ms": p95, "p95_ok": p95_ok},
+                    "failed": len(failures), "api_p50_ms": p50, "api_p95_ms": p95,
+                    "p95_ok": p95_ok, "page_ms": page_ms[0] if page_ms else None, "page_ok": page_ok},
         "slo": {"availability": "99.5%", "api_p95_ms_lt": 800, "page_ms_lt": 1500, "auth_401_required": True},
-        "ok": not failures and p95_ok,
+        "ok": not failures and p95_ok and page_ok,
         "failures": failures,
     }
 
@@ -91,7 +95,7 @@ def build_probe() -> dict:
 def render_md(p: dict) -> str:
     s = p["summary"]
     lines = ["# HQ 控制面 Q2/SLO 探针", "",
-             f"- 生成：{p['generated_at']}｜检查 **{s['passed']}/{s['total']}**｜API p50 **{s['api_p50_ms']}ms** / p95 **{s['api_p95_ms']}ms**（<800ms: {s['p95_ok']}）",
+             f"- 生成：{p['generated_at']}｜检查 **{s['passed']}/{s['total']}**｜API p50 **{s['api_p50_ms']}ms** / p95 **{s['api_p95_ms']}ms**（<800ms: {s['p95_ok']}）｜页面 {s['page_ms']}ms（<1500ms: {s['page_ok']}）",
              "", "| 检查 | 端口 | 期望 | 实际 | ms | 结果 |", "|---|---:|---:|---:|---:|---|"]
     for c in p["checks"]:
         lines.append(f"| {c['name']} | {c['port']} | {c['want']} | {c.get('got')} | {c.get('ms')} | {'PASS' if c['ok'] else 'FAIL'} |")

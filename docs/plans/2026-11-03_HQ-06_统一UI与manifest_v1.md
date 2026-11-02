@@ -61,8 +61,8 @@
 ## 六、当前落地
 
 - `portal/config/hq_manifest.json`：页面/API/数据源/约束/W3 任务；
-- `portal/hq.html`：5 tabs 静态预览（真实快照，只读）；实测 **`/hq.html` 200**；
-- `tools/hq_snapshot.py`：合成 HQ-01~05 快照 → `portal/static/hq_snapshot.json`；
+- `portal/hq.html`：5 tabs 页面（实时鉴权 API；未登录显示 401 提示）；实测 **`/hq` / `/hq.html` 200**；
+- `tools/hq_snapshot.py`：合成 HQ-01~05 快照 → `portal/private/hq_snapshot.json`（私有，不公开静态）；
 - `/hq` clean 路由仍 404，待 W3 nginx location + 8091 `api_hq.py`（L2）；
 - `tools/tests/test_hq_manifest.py`：**4 passed**；
 - HQ-01~05 数据层已具备（hq_org/tasks/approvals/budget/heartbeat）；
@@ -77,10 +77,10 @@ HQ-06 的实时 API/clean 路由在 W3（12-03 起）按 a→e 顺序实施；�
 - 新增 `portal/api_hq.py`：8 个只读端点，返回 `{ok,data}`；未知 404。
 - `portal/portal_api.py`：`do_GET` 增加 `/api/hq/` 早分支（独立模块，lazy import）。
 - `portal/nginx.conf`：新增 `location = /hq { try_files /hq.html =404; }`。
-- `portal/hq.html`：优先 `/api/hq/snapshot`，失败回退 `/static/hq_snapshot.json`。
+- `portal/hq.html`：只走鉴权 `/api/hq/snapshot`；未登录 401 时显示登录提示（不再回退公开静态）。
 - 测试：`portal/test_api_hq.py` + `tools/tests/test_hq_snapshot.py` **10 passed**。
 - **未生效**：变更需 8091 重启 + nginx reload（L2）；当前 `/hq.html` 200、`/hq` 404、`/api/hq/*` 401/404。
-- 激活五要素：命令=重启 8091（现有 start_portal_api 守卫）+ nginx -s reload；影响=门户全站短暂重连（秒级）；不可逆=进程切换；替代=保持静态快照；回滚=旧进程/旧配置。
+- 激活五要素：命令=重启 8091（现有 start_portal_api 守卫）+ nginx -s reload；影响=门户全站短暂重连（秒级）；不可逆=进程切换；回滚=旧进程/旧配置。
 
 ## 九、激活记录（2026-11-03 05:06）
 
@@ -111,3 +111,11 @@ HQ-06 的实时 API/clean 路由在 W3（12-03 起）按 a→e 顺序实施；�
 | Q2 健康 | `/health` 200 + 9 API 200 + 401 鉴权 + L1 18/18 |
 
 **结论：HQ-06 验收通过，W3 `/hq` 入口可开。**
+
+## 十一、代码审查修复（2026-11-03 05:36）
+
+- **F1 高（安全）**：公开 `/static/hq_snapshot.json` 含组织/任务/审批数据，已移除（404）；快照移 `portal/private/` 并 gitignore；页面仅走鉴权 API。
+- **F2**：Q2 探针页面 <1500ms 纳入判定。
+- **F3**：审批 pending 从 records 计算，不再硬编码 0。
+- **F4**：快照原子写（tmp + os.replace）。
+- 回归：16 tests、Q2 12/12、`/hq` 200、静态快照 404、未登录 401、L1 18/18。

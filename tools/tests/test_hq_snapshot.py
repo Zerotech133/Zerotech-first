@@ -11,7 +11,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 import hq_snapshot  # noqa: E402
 
-SNAP = ROOT / "portal" / "static" / "hq_snapshot.json"
+SNAP = ROOT / "portal" / "private" / "hq_snapshot.json"
 PAGE = ROOT / "portal" / "hq.html"
 
 
@@ -37,7 +37,8 @@ def test_page_contract():
     h = PAGE.read_text(encoding="utf-8", errors="replace")
     assert "/static/tokens.css" in h
     assert "/static/nav.js" in h
-    assert "/static/hq_snapshot.json" in h
+    assert "/api/hq/snapshot" in h
+    assert "/static/hq_snapshot.json" not in h  # 敏感快照不得公开静态暴露
     for tab in ("org", "tasks", "approvals", "budget", "heartbeat"):
         assert f'data-tab="{tab}"' in h
 
@@ -45,3 +46,15 @@ def test_page_contract():
 def test_snapshot_is_not_second_store():
     s = json.loads(SNAP.read_text(encoding="utf-8-sig"))
     assert "静态" in s["note"] and "只读" in s["note"]
+
+
+def test_public_static_snapshot_absent():
+    # 回归：敏感快照不得回到公开 static 目录（未鉴权可读）。
+    assert not (ROOT / "portal" / "static" / "hq_snapshot.json").exists()
+
+
+def test_snapshot_atomic_write(tmp_path):
+    out = tmp_path / "snap.json"
+    assert hq_snapshot.main(["--out", str(out)]) == 0
+    assert json.loads(out.read_text(encoding="utf-8"))["schema"] == "hq/snapshot/v1"
+    assert not (tmp_path / "snap.json.tmp").exists()

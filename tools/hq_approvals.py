@@ -78,6 +78,11 @@ def build_approvals() -> dict:
         feed_actions[a] = feed_actions.get(a, 0) + 1
     pol = _policy()
     all_approved = bool(by_decision) and set(by_decision) == {"approved"}
+    # pending 必须从数据面计算，不能硬编码 0（否则审批待办永远不可见）。
+    pending_records = [r for r in records if not str(r.get("decision") or "").strip()]
+    pending = len(pending_records)
+    pending_source = ("approvals.db（decision 为空）" if pending else
+                      "none（approvals.db 无 decision 空行；飞书待办未同步，不伪造）")
     risks = []
     if all_approved and len(records) >= 10:
         risks.append("100% approved / 无 rejected：审批可能过于宽松或只记录通过项，需审计抽样")
@@ -96,8 +101,8 @@ def build_approvals() -> dict:
             "by_decision": by_decision,
             "by_target_type": by_target,
             "top_deciders": sorted(deciders.items(), key=lambda kv: -kv[1])[:10],
-            "pending": 0,
-            "pending_source": "none（当前无本地 pending 队列；不伪造待办）",
+            "pending": pending,
+            "pending_source": pending_source,
             "feed_total": len(feed),
             "feed_actions": feed_actions,
         },

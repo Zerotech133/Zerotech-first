@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """HQ-06 snapshot：把 HQ-01~05 只读模型合成一个静态快照。
 
-用途：W3 实时 API 接入前的 /hq 页面数据源（portal/static/hq_snapshot.json）。
+用途：HQ-06 快照诊断/离线核对（private 目录，不经 nginx 静态公开）。
 只读源数据；生成文件可随时重跑，不写 DB/审批/任务/调度。
 
 用法：python -X utf8 tools/hq_snapshot.py [--out PATH]
@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -24,7 +25,7 @@ import hq_heartbeat  # noqa: E402
 import hq_org  # noqa: E402
 import hq_tasks  # noqa: E402
 
-DEFAULT_OUT = ROOT / "portal" / "static" / "hq_snapshot.json"
+DEFAULT_OUT = ROOT / "portal" / "private" / "hq_snapshot.json"
 
 
 def build_snapshot() -> dict:
@@ -82,7 +83,10 @@ def main(argv=None) -> int:
     snap = build_snapshot()
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(snap, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    # 原子替换：避免页面在重跑快照时读到半截 JSON。
+    tmp = out.with_name(out.name + ".tmp")
+    tmp.write_text(json.dumps(snap, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    os.replace(tmp, out)
     print(json.dumps({"ok": True, "out": str(out), "bytes": out.stat().st_size,
                       "generated_at": snap["generated_at"]}, ensure_ascii=False))
     return 0

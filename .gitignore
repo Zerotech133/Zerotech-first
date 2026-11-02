@@ -252,6 +252,9 @@ k_stock/data/*.jsonl
 k_stock/data/*.json
 k_stock/data/*.lock
 
+# HQ 敏感快照：只允许 API（鉴权）读取，禁止公开静态/入库
+portal/private/
+
 # 临时/探针/垃圾文件（D0卫生）
 .commit_msg_tmp.txt
 .tmp_cn_roster.json
