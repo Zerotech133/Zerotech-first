@@ -9,7 +9,7 @@
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from types import SimpleNamespace
 
@@ -40,7 +40,7 @@ def _lot(position_id: str, *, status: str = "OPEN") -> SimpleNamespace:
         status=PositionStatus(status),
         close_qty=None,
         close_price=None,
-        opened_at=utc_now(),
+        opened_at=utc_now() - timedelta(days=1),  # CN T+1：昨仓方可卖（P0-1 守卫）
         closed_at=None,
         trade_plan_id=None,
         pnl_amount=None,
@@ -136,6 +136,15 @@ def test_positions_close_writes_sell_fill_and_closed_at(
         "_record_fill",
         lambda self, **kw: fill_calls.append(kw),
     )
+    # P0-1：/positions/close 已禁止调用方任意价，按最新行情价成交；行情打桩为 12.5。
+    import zhice_os_v2.api.routers.positions as pos_mod
+
+    monkeypatch.setattr(
+        pos_mod, "_get_latest_prices", lambda symbols, market: {"603311.SH": 12.5}
+    )
+    monkeypatch.setattr(
+        pos_mod, "_get_pre_closes", lambda symbols, market: {"603311.SH": 12.5}
+    )
 
     app.dependency_overrides[get_db] = lambda: db
     app.dependency_overrides[get_current_user] = lambda: User(
@@ -145,7 +154,7 @@ def test_positions_close_writes_sell_fill_and_closed_at(
         from fastapi.testclient import TestClient
 
         resp = TestClient(app).post(
-            "/api/v1/positions/close", json={"close_price": 12.5, "market": "CN"}
+            "/api/v1/positions/close", json={"market": "CN"}
         )
     finally:
         app.dependency_overrides.pop(get_db, None)
