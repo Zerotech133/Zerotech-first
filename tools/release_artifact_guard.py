@@ -368,6 +368,18 @@ def lock(release_root: Path | str = DEFAULT_RELEASE_ROOT,
     pointer_dir = Path(chk["pointer"]["dir"])
     files = chk["files"]
     targets = _lock_targets(pointer_dir, files)
+    # 审计修复：锁写前显式复核目标 sha256，不依赖 check() 的隐式一致性；
+    # 任何不一致先拒绝，避免把被替换的 artifact 锁成“已验收”。
+    for name in targets:
+        fp = pointer_dir / name
+        if not fp.is_file():
+            continue
+        expected_sha = (files.get(name) or {}).get("sha256") or (
+            _sha256(pointer_dir / MANIFEST_NAME) if name == MANIFEST_NAME else "")
+        if expected_sha and _sha256(fp) != expected_sha:
+            res["errors"].append("sha256_mismatch:%s" % name)
+            res["exit_code"] = 1
+            return res
     original_modes = {}
     applied = []
     for name in targets:
