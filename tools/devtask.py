@@ -23,13 +23,17 @@
                            （且在 git worktree list 在册）+ task/<TID> 分支；
                            不满足 → 逐项清单 + rc=1；只读，不删/不移 worktree。
   port <服务名>            申请分配一个未注册端口（并提示写回 REGISTRY）
-  merge <TID> [--l2-ack --l2-reason "五要素"] [--keep-worktree]
+  merge <TID> [--l2-ack --l2-reason "五要素"] [--keep-worktree] [--train-force]
                                     过评审门（Mixin/导航/端口/明文凭据 + L2 危险操作门
                                     + 组合/内核门：compositions/** 漂移与内核契约改动
-                                    必须带 ADR-号，P1.2 ADR-015）
+                                    必须带 ADR-号，P1.2 ADR-015
+                                    + merge train 门：窗口 16:30–17:00 / 21:40–22:10；
+                                    禁并期/窗外只提交不合，文档/组合声明旁路随时，W1/UF-09）
                                     后合并回 master；成功后**自动回收 worktree+分支**（仅当干净），
                                     --keep-worktree=跳过自动回收（保留待人工处理）；
-                                    --l2-ack=人工确认豁免 L2 命中（K-STOCK-416，须带 --l2-reason）
+                                    --l2-ack=人工确认豁免 L2 命中（K-STOCK-416，须带 --l2-reason）；
+                                    --train-force=merge train 紧急放行（仅回滚/紧急；打印
+                                    留痕警告并写工单 note/approval_verdict 事件，须 24h 复盘）
   board [out.html]         生成看板 HTML（默认 docs/dev/devboard.html）
   drop <TID>               放弃任务（留原因，清 worktree）
   prune [--dry-run|--apply] [--all|--merged|--worktrees] [--repo <path>]
@@ -2148,6 +2152,34 @@ def _composition_kernel_gate(tid, branch, changed):
         _branch_tip_commit_msg(tid, branch))
 
 
+# ---- merge train 门（W1/UF-09，ADGS v1.1 §七；复用 tools/merge_train.py 单一口径）----
+# 主窗口 16:30–17:00 / 次窗口 21:40–22:10；禁并期 09:15–15:05、17:10–18:40、
+# 20:00–20:20、21:20–21:40；文档/组合声明（docs/**、deliverables/**、compositions/**、
+# 任意 *.md）旁路随时允许。只读判定、无副作用；now 参数仅供单测注入。
+def _merge_train_gate(tid, changed, force=False, now=None):
+    """merge train 门：返回 (ok, detail)。
+
+    force=True 仅由 cmd_merge 的 `--train-force` 显式紧急放行触发（调用方负责打印
+    留痕警告、写工单 note 与 approval_verdict 事件）；now 为 ISO 时间串（测试注入，
+    None=当前 Asia/Shanghai 时间）。工具缺失/判定异常=拒（fail-visible）。
+    """
+    tools_dir = os.path.dirname(os.path.abspath(__file__))
+    if tools_dir not in sys.path:
+        sys.path.insert(0, tools_dir)
+    try:
+        import merge_train as _mt
+    except Exception as exc:  # noqa: BLE001 —— 组件缺失=拒（fail-visible）
+        return False, "merge train 组件缺失（tools/merge_train.py）：%r" % exc
+    try:
+        payload = _mt.evaluate(_mt.parse_now(now), files=list(changed or []),
+                               force=bool(force))
+    except Exception as exc:  # noqa: BLE001 —— 判定异常=拒（fail-visible）
+        return False, "merge train 判定异常：%r" % exc
+    if payload.get("allowed"):
+        return True, payload.get("reason") or "merge train 放行"
+    return False, payload.get("reason") or "窗口外/禁并期禁止合并"
+
+
 _MERGE_TIMINGS = []
 
 
@@ -2245,6 +2277,8 @@ def cmd_merge(tid, *flags):
         reason = flags[i + 1]
     # 2026-10-31 WO-WORKTREE-MECH：--keep-worktree 跳过合并后自动回收
     keep_worktree = _should_keep_worktree(flags)
+    # W1/UF-09 merge train：--train-force 显式紧急放行（不静默，失败/放行均留痕）
+    train_force = "--train-force" in flags
     tasks = _tasks()
     t = tasks.get(tid)
     if not t:
@@ -2373,6 +2407,31 @@ def cmd_merge(tid, *flags):
         t["status"] = "review"
         _save(tasks, changed=(tid,))
         _emit("guard_fail", tid, "质量闸未过：%s" % qg_detail[:120])
+        return 1
+    # W1/UF-09（ADGS §七）：merge train 门——窗口/禁并期/文档组合旁路；失败语义与质量闸同构。
+    _mt0 = time.perf_counter()
+    mt_ok, mt_detail = _merge_train_gate(tid, _bundle_changed, force=train_force)
+    _MERGE_TIMINGS.append(("merge train", time.perf_counter() - _mt0))
+    if mt_ok:
+        if train_force:
+            print("  %-8s ⚠ %s" % ("merge train", mt_detail))
+            print("  ⚠ --train-force 紧急放行：须在工单回单留痕（五要素）+ 24h 复盘；"
+                  "禁止日常绕过（ADGS §七/§十）")
+            _force_note = "[W1/UF-09 merge-train force] %s" % mt_detail
+            if reason:
+                _force_note += "；reason=%s" % reason
+            t["note"] = ((t.get("note", "") + "；" + _force_note).strip("；")
+                         if t.get("note") else _force_note)
+            _emit("approval_verdict", tid, _force_note)
+        else:
+            print("  %-8s ✓ %s" % ("merge train", mt_detail))
+    else:
+        print("  %-8s ✗ %s" % ("merge train", mt_detail[:200]))
+        print("门未过，拒绝合并。窗口：主 16:30–17:00、次 21:40–22:10；"
+              "文档/组合声明随时可合；紧急请 --train-force（留痕）后重跑。")
+        t["status"] = "review"
+        _save(tasks, changed=(tid,))
+        _emit("guard_fail", tid, "merge train 未过：%s" % mt_detail[:120])
         return 1
     # P1.2（ADR-015）：组合门 + 内核守卫——分支级只读校验；失败语义与质量闸同构。
     _ck0 = time.perf_counter()

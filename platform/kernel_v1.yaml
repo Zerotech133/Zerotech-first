@@ -215,6 +215,10 @@ contracts:
     owner: ARCH1
     status: existing
     artifacts:
+      - path: tools/merge_train.py
+        kind: gate
+        status: existing
+        note: "W1/UF-09：merge 窗口判定（devtask/merge_preflight 共用）"
       - path: tools/merge_preflight.py
         kind: gate
         status: existing

@@ -277,6 +277,31 @@ def composition_kernel_preflight(files):
     return composition_kernel_check(files, run_repo_tool, merge_head_commit_msg())
 
 
+# ---- merge train 门（W1/UF-09，ADGS v1.1 §七；复用 tools/merge_train.py 单一口径）----
+# 窗口 16:30–17:00 / 21:40–22:10；禁并期/窗外禁止**直连 git merge**（防绕过 devtask）。
+# 钩子侧不提供 force：紧急走 devtask --train-force 留痕，或既有 DEVTOOL_MERGE_GATE=0 显式绕过。
+def merge_train_preflight(files, now=None):
+    """同口径 merge train 判定（钩子侧，无 force）→ (ok, detail)。
+
+    now 为 ISO 时间串（单测注入；None=当前 Asia/Shanghai 时间）。
+    工具缺失/判定异常=拒（fail-visible，不静默放行）。
+    """
+    tools_dir = str(HERE)
+    if tools_dir not in sys.path:
+        sys.path.insert(0, tools_dir)
+    try:
+        import merge_train as _mt
+    except Exception as exc:  # noqa: BLE001 —— 组件缺失=拒（fail-visible）
+        return False, "仓库缺 tools/merge_train.py：%r" % exc
+    try:
+        payload = _mt.evaluate(_mt.parse_now(now), files=list(files or []), force=False)
+    except Exception as exc:  # noqa: BLE001 —— 判定异常=拒（fail-visible）
+        return False, "merge train 判定异常：%r" % exc
+    if payload.get("allowed"):
+        return True, payload.get("reason") or "merge train 放行"
+    return False, payload.get("reason") or "窗口外/禁并期禁止合并"
+
+
 def dep_age_hint(files: list[str], runner=None):
     """依赖文件变更时打印年龄 warn；**永不阻断合并**（warn-only）。"""
     if not deps_changed(files):
@@ -377,6 +402,19 @@ def main() -> int:
     if docs:
         print("[merge-gate] 纯文档/配置变更 → 放行（不跑测试）")
         return 0
+    # W1/UF-09（ADGS §七）：merge train——窗口外/禁并期禁止直连 git merge。
+    # docs_only 已在上方放行（= 文档/组合声明旁路）；此处只对代码改动生效。
+    try:
+        _mt_ok, _mt_detail = merge_train_preflight(files)
+    except Exception as exc:  # noqa: BLE001 —— 复检自身异常按拒绝处理（fail-visible）
+        print("[merge-gate] merge train 复检异常：%r → 拒绝合并" % exc)
+        return 2
+    if not _mt_ok:
+        print("[merge-gate] FAIL：merge train 未过 → 拒绝合并：%s" % _mt_detail)
+        print("[merge-gate] 处置：窗口内重试（主 16:30–17:00 / 次 21:40–22:10）；"
+              "紧急走 devtask --train-force 留痕，或 DEVTOOL_MERGE_GATE=0 显式绕过")
+        return 1
+    print("[merge-gate] merge train PASS：%s" % _mt_detail)
     log = TMP / ("merge_hook_%s.log" % time.strftime("%Y%m%d_%H%M%S"))
     print("[merge-gate] 跑测试门：test_gate -Suite %s（日志 %s）" % (suite, log))
     with log.open("w", encoding="utf-8") as f:
