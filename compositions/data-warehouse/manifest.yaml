@@ -3,7 +3,7 @@ kind: Composition
 metadata:
   id: data-warehouse
   name: 数据仓
-  version: 1.0.0
+  version: 1.1.0
   owner: DATA1
   lifecycle: draft
   tier: data
