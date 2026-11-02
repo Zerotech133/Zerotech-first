@@ -63,8 +63,52 @@ def _metric_title(name):
     return name, "指标值"
 
 
+_PAGE_STATE = {
+    "ok": "正常",
+    "stale": "数据可能过期",
+    "no_data": "无数据",
+    "not_found": "未找到",
+}
+
+
+def _data_date(data):
+    """页面数据时点：优先扫描生成时间，其次完整度时间/应到交易日/快照日期。"""
+    integrity = data.get("integrity") or {}
+    daily = data.get("daily_snapshot") or {}
+    for raw in (
+        data.get("generated_at"),
+        integrity.get("generated_at"),
+        integrity.get("expected_latest"),
+        daily.get("date"),
+    ):
+        text = str(raw or "").strip()
+        hit = re.search(r"\d{4}-\d{2}-\d{2}", text)
+        if hit:
+            return hit.group(0)
+        hit = re.search(r"(?<!\d)\d{8}(?!\d)", text)
+        if hit:
+            day = hit.group(0)
+            return "%s-%s-%s" % (day[:4], day[4:6], day[6:])
+    return None
+
+
+def _page_state(data, state):
+    """页面三态：not_found（无快照）/ no_data（空扫描）/ stale（刷新异常沿用上次）/ ok。"""
+    if not isinstance(data, dict):
+        return "not_found", "扫描结果不存在（尚无核验快照）"
+    if state.get("error"):
+        return "stale", "刷新失败，当前显示上次扫描结果：" + str(state["error"])
+    if state.get("refreshing"):
+        return "stale", "重新核验中，当前显示上次扫描结果。"
+    if not ((data.get("integrity") or {}).get("metrics") or data.get("groups")):
+        return "no_data", "本次扫描结果为空（无核验项目/资产），请先完成核验后刷新。"
+    return "ok", ""
+
+
 def build_model(data, state):
     """统一展示口径；不同单位及重复对账指标永远不相加。"""
+    raw_data = data
+    data = data or {}
     integrity = data.get("integrity") or {}
     metrics, coverage, assets = [], [], []
     counts = dict.fromkeys(_STATUS, 0)
@@ -202,10 +246,15 @@ def build_model(data, state):
         if counts["WARN"]
         else "ok"
     )
+    page_state, page_reason = _page_state(raw_data, state)
     return {
         "generated_at": data.get("generated_at", "未知"),
         "integrity_at": integrity.get("generated_at", "未知"),
         "expected_latest": integrity.get("expected_latest", "未知"),
+        "data_date": _data_date(data),
+        "state": page_state,
+        "state_label": _PAGE_STATE[page_state],
+        "state_reason": page_reason,
         "counts": counts,
         "metrics": metrics,
         "coverage": coverage,
@@ -323,11 +372,17 @@ def render_dashboard(
         "warn": "有项目需要核实",
         "ok": "本次核验项目全部通过",
     }[model["health_status"]]
-    notice = (
-        '<div class="wh-note" role="status">%s</div>' % e(model["notice"])
-        if model["notice"]
-        else ""
-    )
+    notices = []
+    if model["notice"]:
+        notices.append(
+            '<div class="wh-note" role="status">%s</div>' % e(model["notice"])
+        )
+    if model["state"] in ("no_data", "not_found") and model["state_reason"]:
+        notices.append(
+            '<div class="wh-note" role="status">%s：%s</div>'
+            % (e(model["state"]), e(model["state_reason"]))
+        )
+    notice = "".join(notices)
     stats = "".join(
         '<div class="wh-stat %s"><b>%s</b>%s项</div>' % (st, counts[st], _STATUS[st])
         for st in ("FAIL", "WARN", "OK", "INFO", "UNKNOWN")
@@ -585,7 +640,7 @@ def render_dashboard(
         + nav
         + '<main class="wh">'
         '<header class="wh-header"><div><h1>数据仓 · 全部资产</h1><p class="muted">看清覆盖、定位缺口、核对查询，再安排更新。</p></div>'
-        '<div class="wh-header-right"><div>仓库扫描：%s</div><small>完整度核验：%s</small><br><button id="wh-refresh">刷新核验快照</button></div></header>%s'
+        '<div class="wh-header-right"><div>仓库扫描：%s</div><div>数据时点：%s · 状态：%s（%s）</div><small>完整度核验：%s</small><br><button id="wh-refresh">刷新核验快照</button></div></header>%s'
         '<nav class="wh-tabs" role="tablist" aria-label="数据仓视图"><button id="wh-tab-overview" role="tab" aria-controls="wh-overview" data-view="overview" aria-selected="true">总览</button>'
         '<button id="wh-tab-coverage" role="tab" aria-controls="wh-coverage" data-view="coverage" aria-selected="false">覆盖日历</button>'
         '<button id="wh-tab-gaps" role="tab" aria-controls="wh-gaps" data-view="gaps" aria-selected="false">缺口管理</button>'
@@ -630,6 +685,9 @@ def render_dashboard(
         '<script type="application/json" id="warehouse-data">%s</script>'
         % (
             e(model["generated_at"]),
+            e(model["data_date"] or "—"),
+            e(model["state"]),
+            e(model["state_label"]),
             e(model["integrity_at"]),
             notice,
             model["health_status"],

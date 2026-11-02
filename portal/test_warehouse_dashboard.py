@@ -436,3 +436,158 @@ def test_daily_snapshot_is_non_live_and_preserves_full_json_safely(dashboard):
     )
     assert payload["daily_read_only"] is True
     assert payload["daily_snapshot"]["assets"][0]["asset_id"] == "</script><img src=x>"
+
+
+# ── DWH-105（2026-11-02）：data_date 显式 + 空结果三态 ──────────────────
+
+
+class _Recorder:
+    """模拟 portal_api Handler._json：记录 payload/status。"""
+
+    def __init__(self):
+        self.payload = None
+        self.code = 200
+
+    def _json(self, obj, code=200):
+        self.payload = obj
+        self.code = code
+
+
+class _FakeRegistry:
+    """api_dw_registry 的最小 DatasetRegistry 替身（不读生产数据）。"""
+
+    def __init__(self, rows=None, dataset=None, sample=None):
+        self.rows = rows or []
+        self.dataset = dataset
+        self.sample_data = sample
+        self.inventory_path = "unused-inventory.json"
+
+    def stats(self):
+        return {"total": 314, "registered": 265, "exposed": 72,
+                "by_domain": {"接口数据": 241}, "by_kind": {"dir": 258}}
+
+    def list(self, **kwargs):
+        return list(self.rows)
+
+    def get(self, did):
+        return self.dataset
+
+    def sample(self, did, n=3):
+        return dict(self.sample_data or {})
+
+
+@pytest.fixture
+def dw_api():
+    path = Path(__file__).with_name("api_dw_registry.py")
+    spec = importlib.util.spec_from_file_location("api_dw_registry_dwh105", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _call_dw(api, monkeypatch, fake, path, qs="", data_date="2026-11-02"):
+    monkeypatch.setattr(api, "_REG", fake)
+    monkeypatch.setattr(api, "_data_date", lambda: data_date)
+    rec = _Recorder()
+    api.handle_get(rec, path, qs)
+    return rec
+
+
+def test_dw_api_stats_carries_data_date_and_ok_state(dw_api, monkeypatch):
+    rec = _call_dw(dw_api, monkeypatch, _FakeRegistry(), "/api/dw/stats")
+    assert rec.code == 200
+    assert rec.payload["ok"] is True
+    assert rec.payload["data_date"] == "2026-11-02"
+    assert rec.payload["state"] == "ok"
+    assert rec.payload["total"] == 314
+    assert rec.payload["registered"] == 265
+
+
+def test_dw_api_empty_list_is_no_data_with_reason(dw_api, monkeypatch):
+    rec = _call_dw(dw_api, monkeypatch, _FakeRegistry(rows=[]), "/api/dw/list",
+                   "domain=无此域&limit=10")
+    assert rec.code == 200
+    assert rec.payload["count"] == 0
+    assert rec.payload["state"] == "no_data"
+    assert rec.payload["reason"].startswith("no_data:")
+    assert "无此域" in rec.payload["reason"]
+    assert rec.payload["data_date"] == "2026-11-02"
+
+
+def test_dw_api_missing_dataset_is_not_found_with_reason(dw_api, monkeypatch):
+    rec = _call_dw(dw_api, monkeypatch, _FakeRegistry(dataset=None),
+                   "/api/dw/get?id=no_such")
+    assert rec.code == 404
+    assert rec.payload["ok"] is False
+    assert rec.payload["state"] == "not_found"
+    assert rec.payload["reason"].startswith("not_found:")
+    assert rec.payload["data_date"] == "2026-11-02"
+
+
+def test_dw_api_sample_missing_path_and_empty_rows_are_no_data(dw_api, monkeypatch):
+    missing = _FakeRegistry(sample={"dataset_id": "x", "exists": False,
+                                    "path": "C:/tmp/x"})
+    rec = _call_dw(dw_api, monkeypatch, missing, "/api/dw/sample", "id=x&n=3")
+    assert rec.code == 200
+    assert rec.payload["state"] == "no_data"
+    assert "路径不存在" in rec.payload["reason"]
+    assert rec.payload["data_date"] == "2026-11-02"
+
+    empty = _FakeRegistry(sample={"dataset_id": "y", "kind": "sqlite_table",
+                                  "columns": ["a"], "sample": []})
+    rec = _call_dw(dw_api, monkeypatch, empty, "/api/dw/sample", "id=y&n=3")
+    assert rec.payload["state"] == "no_data"
+    assert "样本为空" in rec.payload["reason"]
+
+
+def test_dw_api_stale_data_date_marks_state_stale(dw_api, monkeypatch):
+    fake = _FakeRegistry(rows=[{"dataset_id": "d1", "registered": True, "exposed": True}])
+    rec = _call_dw(dw_api, monkeypatch, fake, "/api/dw/stats", "",
+                   data_date="2026-10-01")
+    assert rec.payload["state"] == "stale"
+    assert "超过" in rec.payload["reason"]
+    rec = _call_dw(dw_api, monkeypatch, fake, "/api/dw/list", "limit=10",
+                   data_date="2026-10-01")
+    assert rec.payload["count"] == 1
+    assert rec.payload["state"] == "stale"
+
+
+def test_dw_api_error_body_always_has_reason_and_data_date(dw_api, monkeypatch):
+    rec = _call_dw(dw_api, monkeypatch, _FakeRegistry(), "/api/dw/search", "")
+    assert rec.code == 400
+    assert rec.payload["ok"] is False
+    assert rec.payload["reason"].startswith("missing_param:")
+    assert rec.payload["data_date"] == "2026-11-02"
+
+    rec = _call_dw(dw_api, monkeypatch, _FakeRegistry(), "/api/dw/nope", "")
+    assert rec.code == 404
+    assert rec.payload["state"] == "not_found"
+    assert rec.payload["reason"].startswith("not_found:")
+    assert rec.payload["data_date"] == "2026-11-02"
+
+
+def test_page_model_exposes_data_date_and_stale_state(dashboard):
+    state = {"refreshing": False, "error": "扫描读取失败"}
+    model = dashboard.build_model(report(), state)
+    assert model["data_date"] == "2026-10-09"
+    assert model["state"] == "stale"
+    assert model["state_label"] == "数据可能过期"
+    assert model["stale"] is True
+    html = dashboard.render_dashboard(
+        report(), state, freshness_html="", graph_html="", nav="",
+        base_css="", preview_js="",
+    )
+    assert "数据时点：2026-10-09" in html
+    assert "状态：stale" in html
+
+
+def test_page_empty_scan_is_no_data_state(dashboard):
+    model = dashboard.build_model({}, {})
+    assert model["state"] == "no_data"
+    assert model["data_date"] is None
+    html = dashboard.render_dashboard(
+        {}, {}, freshness_html="", graph_html="", nav="", base_css="", preview_js="",
+    )
+    assert "no_data：" in html
+    assert "状态：no_data" in html
+

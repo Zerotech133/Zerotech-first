@@ -203,7 +203,7 @@ tbody tr:last-child td{border-bottom:none}
   var DW="/api/"+"dw";                 /* 统一取数入口（H4-B 公开白名单未登记时自动降级） */
   var SNAP="/static/dw_snapshot.json"; /* 静态快照兜底（nginx /static/ 直出） */
   var OPS="/api/dataops/overview";     /* 公开运营接口（H4-B 白名单已登记 dataops） */
-  var state={mode:"probing",stats:null,datasets:[],snapshot:null,ops:null,apiStatus:0,lastQuery:""};
+  var state={mode:"probing",stats:null,datasets:[],snapshot:null,ops:null,apiStatus:0,lastQuery:"",dd:null,apiState:"",apiReason:""};
 
   function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
   function n(v){return v==null?"—":Number(v).toLocaleString("zh-CN")}
@@ -250,7 +250,7 @@ tbody tr:last-child td{border-bottom:none}
   function probeApi(){
     return getJSON(DW+"/stats").then(function(r){
       state.apiStatus=r.status;
-      if(r.ok&&r.data&&r.data.ok){state.stats=r.data;state.mode="api"}
+      if(r.ok&&r.data&&r.data.ok){state.stats=r.data;state.mode="api";state.dd=r.data.data_date||null;state.apiState=r.data.state||"ok";state.apiReason=r.data.reason||""}
       else{state.mode="snapshot"}
       return state.mode;
     }).catch(function(){state.apiStatus=-1;state.mode="snapshot";return state.mode});
@@ -264,7 +264,7 @@ tbody tr:last-child td{border-bottom:none}
       var url=q?(DW+"/search?q="+encodeURIComponent(q)+"&limit="+limit)
                :(DW+"/list?limit="+limit+(domain?"&domain="+encodeURIComponent(domain):"")+(reg?"&registered="+reg:""));
       return getJSON(url).then(function(r){
-        if(r.ok&&r.data&&r.data.ok){state.datasets=r.data.datasets||[];return state.datasets}
+        if(r.ok&&r.data&&r.data.ok){state.datasets=r.data.datasets||[];if(r.data.state){state.apiState=r.data.state;state.apiReason=r.data.reason||""}return state.datasets}
         if(r.status===401||r.status===403){
           /* 运行中放行状态变化：切快照降级并重建筛选器（域→层语义不同，必须重置） */
           state.mode="snapshot";state.modeChanged=true;
@@ -380,7 +380,7 @@ tbody tr:last-child td{border-bottom:none}
     $("#cat-cnt").textContent=(state.mode==="api"?"API 模式":"快照模式")+" · "+rows.length+" 条";
     if(state.mode==="api"){
       thead.innerHTML="<tr><th>数据集</th><th>域</th><th>类型</th><th class='num'>体量</th><th class='num'>行数</th><th>登记</th><th>入口</th><th>归属</th><th>操作</th></tr>";
-      if(!rows.length){tbody.innerHTML='<tr><td colspan="9" class="empty">没有匹配的数据集（可放宽筛选或清空检索词）</td></tr>';return}
+      if(!rows.length){var why=state.apiState==="no_data"?("no_data："+esc(state.apiReason||"没有匹配的数据集")):"没有匹配的数据集（可放宽筛选或清空检索词）";tbody.innerHTML='<tr><td colspan="9" class="empty">'+why+'</td></tr>';return}
       tbody.innerHTML=rows.map(function(d){
         return "<tr>"
           +"<td class='name'><div class='lbl'>"+esc(d.label)+"</div><div class='mono'>"+esc(d.dataset_id)+"</div></td>"
@@ -447,10 +447,10 @@ tbody tr:last-child td{border-bottom:none}
   function showSample(id){
     openModal("数据集样本","请求中…","<div class='empty'>加载中…</div>");
     getJSON(DW+"/sample?id="+encodeURIComponent(id)+"&n=5").then(function(r){
-      if(r.ok&&r.data){$("#modal-sub").textContent="dataset_id = "+id+" · 只读采样 n=5";$("#modal-body").innerHTML=renderSampleData(r.data);return}
+      if(r.ok&&r.data){var note=(r.data.state&&r.data.state!=="ok")?('<div class="note">['+esc(r.data.state)+'] '+esc(r.data.reason||"")+' · 数据时点 '+esc(r.data.data_date||"—")+'</div>'):"";$("#modal-sub").textContent="dataset_id = "+id+" · 只读采样 n=5";$("#modal-body").innerHTML=note+renderSampleData(r.data);return}
       var msg=r.status===401||r.status===403
         ? "取数接口未通过 H4-B 公开白名单（HTTP "+r.status+"），当前为快照降级模式，样本取数不可用。属 L2 配置变更，需在 <code>portal/nginx.conf</code> 的 H4-B 白名单登记统一取数一级前缀并同步守卫测试后重启 nginx 生效；本页已自动降级为目录/搜索只读，不影响其它功能。"
-        : "样本请求失败：HTTP "+r.status+(r.data&&r.data.error?(" · "+esc(r.data.error)):"");
+        : "样本请求失败：HTTP "+r.status+(r.data&&r.data.error?(" · "+esc(r.data.error)):"")+(r.data&&r.data.state?(" · 状态 "+esc(r.data.state)+"（"+esc(r.data.reason||"")+"）"):"");
       $("#modal-body").innerHTML="<div class='note'>"+msg+"</div>";
     }).catch(function(e){
       $("#modal-body").innerHTML="<div class='note'>请求异常："+esc(e&&e.message||e)+"</div>";
@@ -493,7 +493,8 @@ tbody tr:last-child td{border-bottom:none}
   /* ---------- 9. 模式横幅 ---------- */
   function renderBanner(){
     if(state.mode==="api"){
-      setBanner("ok","API","取数接口在线：数据集目录 / 关键词检索 / 样本取数全部可用；状态卡另取公开运营接口与每日快照。");
+      var stale=state.apiState==="stale";
+      setBanner(stale?"warn":"ok",stale?"STALE":"API","取数接口在线 · 数据时点 <b>"+esc(state.dd||"—")+"</b> · 状态 "+esc(state.apiState||"ok")+(state.apiReason?("（"+esc(state.apiReason)+"）"):"")+"；数据集目录 / 关键词检索 / 样本取数全部可用，状态卡另取公开运营接口与每日快照。");
     }else{
       var why=state.apiStatus===401||state.apiStatus===403
         ? "取数接口经 8734 被 <b>H4-B 公开白名单</b>拦截（HTTP "+state.apiStatus+" · 默认拒绝）"
@@ -505,7 +506,7 @@ tbody tr:last-child td{border-bottom:none}
   /* ---------- 10. 主流程 ---------- */
   function renderAll(){
     renderBanner();renderKpis();renderStatus();renderTable();renderApiMap();
-    $("#foot-mode").textContent=state.mode==="api"?"取数 API 在线（全功能）":"快照降级（只读目录/搜索）";
+    $("#foot-mode").textContent=state.mode==="api"?("取数 API 在线（全功能）· 数据时点 "+(state.dd||"—")+" · 状态 "+(state.apiState||"ok")):"快照降级（只读目录/搜索）· 快照时点 "+((state.snapshot||{}).generated_at||"—");
     $("#foot-at").textContent=new Date().toLocaleString("zh-CN",{hour12:false});
   }
   function fillFilters(){
@@ -527,7 +528,7 @@ tbody tr:last-child td{border-bottom:none}
       if(state.modeChanged)renderBanner();
       renderKpis();renderStatus();renderTable();renderApiMap();
       var qty=(state.datasets||[]).length;
-      setStatus((state.mode==="api"?"API 模式":"快照模式")+" · 已加载 "+qty+" 条"+(qty===200?"（已达单次上限 200，建议收窄条件）":""),false);
+      setStatus((state.mode==="api"?"API 模式":"快照模式")+" · 已加载 "+qty+" 条"+(qty===200?"（已达单次上限 200，建议收窄条件）":"")+(state.mode==="api"&&state.dd?(" · 数据时点 "+state.dd):""),false);
     }).catch(function(e){setStatus("加载失败："+(e&&e.message||e),true)});
   }
 
