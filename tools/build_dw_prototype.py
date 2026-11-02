@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import urllib.request
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
@@ -93,6 +94,119 @@ def lineage_stats() -> dict:
         if nodes or edges:
             return {"nodes": nodes, "edges": edges, "source": files[-1].name}
     return {"nodes": 129, "edges": 78, "source": "lineage_20261102（静态兜底）"}
+
+
+def _http_json(url: str, timeout: float = 4.0, headers: dict | None = None):
+    try:
+        req = urllib.request.Request(url, headers=headers or {"Accept": "application/json"})
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return json.loads(r.read().decode("utf-8", "replace"))
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def build_legion() -> dict:
+    """军团组织 × Hermes：8796 指挥台快照/intent + 8096 作战大屏 ops + 8787 MCP。"""
+    snap = _http_json("http://127.0.0.1:8796/api/snapshot")
+    intent = _http_json("http://127.0.0.1:8796/api/intent")
+    ops = _http_json("http://127.0.0.1:8096/api/legion/ops")
+    hv = {"Accept": "application/json", "X-Portal-User": "laotian"}
+    servers = _http_json("http://127.0.0.1:8787/api/mcp/servers", headers=hv)
+    tools = _http_json("http://127.0.0.1:8787/api/mcp/tools", headers=hv)
+
+    depts = (snap or {}).get("departments") or []
+    intent_cards = (intent or {}).get("cards") or []
+    busy_by_seat = {}
+    for c in intent_cards:
+        seat = (c.get("seat") or {}).get("id")
+        if not seat:
+            continue
+        doing = c.get("L2_doing") or {}
+        if doing.get("count"):
+            busy_by_seat[seat] = doing
+    feed = (ops or {}).get("feed") or []
+    roster = ((ops or {}).get("roster") or {}).get("members") or []
+    by_agent = {}
+    for f in feed:
+        who = f.get("caller") or f.get("from")
+        if who and who not in by_agent:
+            by_agent[who] = f
+    departments = []
+    for d in depts:
+        agents = d.get("agents") or []
+        departments.append({
+            "id": d.get("id"), "name": d.get("name"), "cn_title": d.get("cn_title"),
+            "lead": d.get("lead"), "lead_id": d.get("lead_id"),
+            "status": d.get("status"), "agent_count": len(agents),
+            "doing": sum(1 for a in agents if (busy_by_seat.get(a.get("id")) or {}).get("count")),
+            "agents": [{"id": a.get("id"), "cn": a.get("cn"), "role": a.get("role"),
+                        "binding": a.get("binding")} for a in agents],
+        })
+    # 心跳快照（seat_heartbeat/history.jsonl 最后一条）
+    hb = {"last_ts": None, "seats_ok": 0, "seats_total": 0, "source": "agent_platform/data/seat_heartbeat"}
+    try:
+        hist = REPO / "agent_platform" / "data" / "seat_heartbeat" / "history.jsonl"
+        lines = [ln for ln in hist.read_text(encoding="utf-8").splitlines() if ln.strip()]
+        if lines:
+            last = json.loads(lines[-1])
+            res = last.get("results") or []
+            hb.update(last_ts=last.get("generated_at"),
+                      seats_ok=sum(1 for x in res if x.get("ok")),
+                      seats_total=len(res))
+            import datetime as _dt
+            t0 = _dt.datetime.fromisoformat(hb["last_ts"])
+            age_h = round((_dt.datetime.now(t0.tzinfo) - t0).total_seconds() / 3600, 1)
+            hb["age_hours"] = age_h
+    except Exception:  # noqa: BLE001
+        pass
+    return {
+        "available": bool(snap or ops),
+        "as_of": (snap or ops or {}).get("ts"),
+        "chief": (snap or {}).get("chief") or {},
+        "summary": (snap or {}).get("summary") or {},
+        "intent": {
+            "counts": (intent or {}).get("counts") or {},
+            "doing": (intent or {}).get("doing") or [],
+            "review": (intent or {}).get("review") or [],
+            "cards_with_doing": len(busy_by_seat),
+        },
+        "departments": departments,
+        "roster": [{"id": m.get("id"), "name": m.get("name"), "dept": m.get("dept"),
+                    "title": m.get("title"), "state": m.get("state")} for m in roster],
+        "feed": [{"ts": f.get("ts"), "caller": f.get("caller"), "action": f.get("action"),
+                  "detail": f.get("detail"), "from": f.get("from")} for f in feed[:15]],
+        "tasks": [{k: x.get(k) for k in ("id", "desc", "status", "owner")}
+                  for x in (ops or {}).get("tasks") or []],
+        "schedules": (snap or {}).get("schedules") or [],
+        "heartbeat": hb,
+        "division": [
+            {"domain": "接口数据 / 行情主仓", "owner": "数据智能部 · DATA2 刘巴", "seat": "DATA2",
+             "status": "ok", "progress": "tdx/tushare 主仓最新 20261102"},
+            {"domain": "数据质量 / 资质取证", "owner": "数据智能部 · DATA3 陈群", "seat": "DATA3",
+             "status": "ok", "progress": "K8 unknown=14（达标）"},
+            {"domain": "数据治理 / 血缘 / 口径", "owner": "数据治理部 · DATA1 张松", "seat": "DATA1",
+             "status": "warn", "progress": "S3 完成度 83.3%，待终验收"},
+            {"domain": "取数 API / 数据仓前端", "owner": "研发部 · DEV1 马钧", "seat": "DEV1",
+             "status": "ok", "progress": "/api/dw 在线（11-05 换页）"},
+            {"domain": "学习卡 / 知识库", "owner": "研究院 · ACAD1 司马徽", "seat": "ACAD1",
+             "status": "ok", "progress": "视频号常态化流水线已上线"},
+            {"domain": "调度 / 运维 / 首夜验收", "owner": "运行体部 · A0A", "seat": "A0A",
+             "status": "ok", "progress": "TdxSync 四批 rc=0，看门狗 PASS"},
+        ],
+        "hermes": {
+            "available": bool(servers),
+            "servers_total": len(((servers or {}).get("servers") or [])),
+            "servers": [{"name": s.get("name"), "transport": s.get("transport"),
+                         "enabled": s.get("enabled"), "active": s.get("active"),
+                         "status": s.get("status"), "tool_count": s.get("tool_count")}
+                        for s in ((servers or {}).get("servers") or [])],
+            "tools_total": (tools or {}).get("total", 0),
+            "reload_required": (servers or {}).get("reload_required"),
+            "unavailable_servers": (tools or {}).get("unavailable_servers") or [],
+            "expected_tools": 98,
+            "inventory_scope": (tools or {}).get("inventory_scope"),
+        },
+    }
 
 
 def build() -> dict:
@@ -281,6 +395,7 @@ def build() -> dict:
                     "approve": "POST /api/dw/manual/approve"},
             "note": "手动入口只写 staging；schema/主键/日期/去重校验 + 审核后才写回主仓",
         },
+        "legion": build_legion(),
         "query_examples": [
             {"label": "ts_daily 最近 2 行", "dataset": "ts_daily", "params": {"limit": 2, "count": 1}},
             {"label": "ts_weekly 自 20261001", "dataset": "ts_weekly", "params": {"since": "20261001", "limit": 5}},

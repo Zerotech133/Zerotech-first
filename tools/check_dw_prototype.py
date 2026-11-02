@@ -19,9 +19,12 @@ REQUIRED_IDS = [
     "governance-principles", "governance-pending", "wip-body", "drawer",
     "mf-file", "mf-target", "mf-mode", "mf-preview", "mf-submit",
     "mg-dataset", "mg-body", "mg-submit", "mn-id", "mn-submit", "mq-body",
+    "legion-kpis", "legion-banner", "legion-depts", "legion-seat-body",
+    "legion-tasks-body", "legion-feed-body", "legion-division-body",
+    "legion-hermes-servers", "legion-progress", "legion-schedules-body",
 ]
 REQUIRED_REFS = ['/static/tokens.css', '/static/nav.js']
-VIEWS = ["overview", "map", "query", "manual", "quality", "lineage", "governance"]
+VIEWS = ["overview", "map", "query", "manual", "quality", "legion", "governance"]
 
 
 def extract_data(html: str) -> dict:
@@ -65,7 +68,7 @@ def check(html_path: Path = HTML, data_path: Path = DATA) -> dict:
     if tabs != VIEWS:
         out["issues"].append("视图集合不符: %r != %r" % (tabs, VIEWS))
     panels = re.findall(r'id="view-([a-z]+)"', html)
-    if sorted(panels) != sorted(VIEWS):
+    if sorted(set(panels)) != sorted(VIEWS + ["lineage"]):
         out["issues"].append("panel 集合不符: %r" % (panels,))
 
     ext = re.findall(r'(?:src|href)="(https?://[^"]+)"', html)
@@ -83,7 +86,8 @@ def check(html_path: Path = HTML, data_path: Path = DATA) -> dict:
         data = {}
     if data:
         for key, minimum in (("datasets", 200), ("domains", 5), ("kpis", 6),
-                             ("query_examples", 3), ("governance", 1), ("manual", 1)):
+                             ("query_examples", 3), ("governance", 1), ("manual", 1),
+                             ("legion", 1)):
             v = data.get(key)
             n = len(v) if hasattr(v, "__len__") else (1 if v else 0)
             out["facts"]["count_%s" % key] = n

@@ -144,6 +144,13 @@ footer{border-top:1px solid var(--border,#2a3342);color:var(--text-dim,#96a0af);
 .manual-grid td.del button{background:none;border:1px solid var(--border,#2a3342);border-radius:6px;color:var(--text-dim,#96a0af);padding:0 7px}
 .manual-grid td.del button:hover{color:var(--color-err,#f05e5e);border-color:var(--color-err,#f05e5e)}
 .mq-ok{color:var(--color-warn,#e0a33c)}
+.legion-dept{border:1px solid var(--border,#2a3342);border-radius:10px;background:var(--bg-surface,#151b26);padding:12px 14px;text-align:left;color:inherit;min-width:0}
+.legion-dept:hover{border-color:var(--color-focus,#4d9fff);transform:translateY(-1px);transition:.15s}
+.legion-dept .t{font-weight:650;font-size:13px;margin-bottom:4px}
+.legion-dept .sub{font-size:11px;color:var(--text-dim,#96a0af);margin-bottom:6px}
+.legion-dept .m{font:11px var(--font-mono,monospace);color:var(--text-dim,#96a0af);display:flex;gap:10px;flex-wrap:wrap}
+.legion-dept .m b{color:var(--text,#e6e9ef)}
+.avatar{display:inline-flex;width:20px;height:20px;border-radius:50%;background:var(--bg-raised,#1b2230);align-items:center;justify-content:center;font:700 9px var(--font-mono,monospace);color:var(--text-dim,#96a0af);margin-right:6px}
 :focus-visible{outline:2px solid var(--color-focus,#4d9fff);outline-offset:2px}
 @media(max-width:720px){.hsearch{display:none}.topbar .in{min-height:44px}}
 </style>
@@ -166,7 +173,7 @@ footer{border-top:1px solid var(--border,#2a3342);color:var(--text-dim,#96a0af);
   <section aria-labelledby="page-title">
     <div class="eyebrow">DATA WAREHOUSE · UNIFIED DATA PLANE</div>
     <h1 id="page-title">数据仓 · 统一数据平面</h1>
-    <p class="lead">面向「查得到、说得清、追得回」的数据仓原型：数据集目录、只读查询台、手动录入、质量与资质、血缘与治理，一页贯通。原型数据为构建时快照；接服务后查询台自动调用 <code>/api/dw/query</code>。</p>
+    <p class="lead">面向「查得到、说得清、追得回」的数据仓原型：数据集目录、只读查询台、手动录入、质量与资质、军团×Hermes、治理与血缘，一页贯通。原型数据为构建时快照；接服务后查询台自动调用 <code>/api/dw/query</code>。</p>
     <div class="chips" id="hero-chips"></div>
   </section>
 
@@ -176,8 +183,8 @@ footer{border-top:1px solid var(--border,#2a3342);color:var(--text-dim,#96a0af);
     <button class="tab" role="tab" id="tab-query" aria-controls="view-query" aria-selected="false" data-view="query">查询台</button>
     <button class="tab" role="tab" id="tab-manual" aria-controls="view-manual" aria-selected="false" data-view="manual">手动录入</button>
     <button class="tab" role="tab" id="tab-quality" aria-controls="view-quality" aria-selected="false" data-view="quality">质量与资质</button>
-    <button class="tab" role="tab" id="tab-lineage" aria-controls="view-lineage" aria-selected="false" data-view="lineage">血缘</button>
-    <button class="tab" role="tab" id="tab-governance" aria-controls="view-governance" aria-selected="false" data-view="governance">治理</button>
+    <button class="tab" role="tab" id="tab-legion" aria-controls="view-legion" aria-selected="false" data-view="legion">军团 × Hermes</button>
+    <button class="tab" role="tab" id="tab-governance" aria-controls="view-governance view-lineage" aria-selected="false" data-view="governance">治理与血缘</button>
   </nav>
 
   <section class="panel active" id="view-overview" role="tabpanel" aria-labelledby="tab-overview">
@@ -350,6 +357,49 @@ footer{border-top:1px solid var(--border,#2a3342);color:var(--text-dim,#96a0af);
         <tbody id="accept-body"></tbody>
       </table>
     </div>
+  </section>
+
+  <section class="panel" id="view-legion" role="tabpanel" aria-labelledby="tab-legion">
+    <h2>军团组织 × Hermes <span class="cnt" id="legion-asof"></span></h2>
+    <div id="legion-banner"></div>
+    <h2 style="margin-top:18px">组织总览 <span class="cnt" id="legion-count"></span></h2>
+    <div class="kpis" id="legion-kpis"></div>
+    <h2 style="margin-top:22px">部门分工 <span class="cnt">在线 / 在办 / 编制</span></h2>
+    <div class="grid-domains" id="legion-depts"></div>
+    <p class="muted" style="margin:8px 0 0">口径：部门“在办”= 意图卡 L2 在办数；任务板工单（owner=DSH-Lead）尚未映射到军团席位，见下方“在办任务”；在线=roster state≠idle，心跳快照仅表示最近探测。</p>
+    <h2 style="margin-top:22px">席位状态（是否在线 · 正在干什么）<span class="cnt" id="legion-seat-count"></span></h2>
+    <div class="toolbar">
+      <input id="legion-seat-search" class="grow" type="search" placeholder="搜索席位 / 姓名 / 部门 / 角色…" aria-label="搜索席位">
+      <select id="legion-seat-dept" aria-label="部门筛选"><option value="">全部部门</option></select>
+      <select id="legion-seat-state" aria-label="状态筛选">
+        <option value="">全部状态</option>
+        <option value="active">active</option>
+        <option value="idle">idle</option>
+        <option value="offline">offline</option>
+      </select>
+    </div>
+    <div class="tablebox" style="max-height:460px">
+      <table><thead><tr><th>席位</th><th>姓名</th><th>部门</th><th>角色 / 职务</th><th>是否在线</th><th>正在干什么</th></tr></thead>
+      <tbody id="legion-seat-body"></tbody></table>
+    </div>
+    <div class="two" style="margin-top:16px">
+      <div class="card"><h3>在办任务 <span class="cnt" id="legion-task-count"></span></h3>
+        <div class="tablebox" style="max-height:220px"><table><thead><tr><th>工单</th><th>状态</th><th>Owner</th><th>描述</th></tr></thead><tbody id="legion-tasks-body"></tbody></table></div>
+      </div>
+      <div class="card"><h3>最近活动 <span class="cnt" id="legion-feed-count"></span></h3>
+        <div class="tablebox" style="max-height:220px"><table><thead><tr><th>时间</th><th>发起</th><th>动作</th><th>详情</th></tr></thead><tbody id="legion-feed-body"></tbody></table></div>
+      </div>
+    </div>
+    <h2 style="margin-top:22px">数据仓分工映射 <span class="cnt">数据域 ↔ 责任席位 ↔ 状态</span></h2>
+    <div class="tablebox"><table><thead><tr><th>数据域 / 职责</th><th>责任席位</th><th>状态</th><th>当前进度</th></tr></thead><tbody id="legion-division-body"></tbody></table></div>
+    <div class="two" style="margin-top:16px">
+      <div class="card"><h3>进度总览</h3><div id="legion-progress"></div></div>
+      <div class="card"><h3>Hermes MCP <span class="cnt" id="legion-hermes-count"></span></h3><div id="legion-hermes-summary"></div>
+        <div class="tablebox" style="margin-top:8px;max-height:240px"><table><thead><tr><th>Server</th><th>传输</th><th>状态</th><th>tools</th></tr></thead><tbody id="legion-hermes-servers"></tbody></table></div>
+      </div>
+    </div>
+    <h2 style="margin-top:22px">军团排程 <span class="cnt" id="legion-sched-count"></span></h2>
+    <div class="tablebox"><table><thead><tr><th>Cron</th><th>任务</th><th>状态</th></tr></thead><tbody id="legion-schedules-body"></tbody></table></div>
   </section>
 
   <section class="panel" id="view-lineage" role="tabpanel" aria-labelledby="tab-lineage">
@@ -670,12 +720,113 @@ const DW_DATA = __DW_DATA_JSON__;
       '<tr><td colspan="4" class="muted">当前无在办项。</td></tr>';
   }
 
+  /* ---------- 军团 × Hermes ---------- */
+  const legState = {q: "", dept: "", state: ""};
+  function renderLegion(){
+    const L = DW.legion || {};
+    if (!L.available) {
+      $("#legion-banner").innerHTML = '<div class="banner err"><span class="tag">LEGION</span><b>军团数据不可用</b> · 8796/8096 未响应（原型降级展示）</div>';
+      return;
+    }
+    $("#legion-asof").textContent = "as_of " + (L.as_of || "-");
+    const s = L.summary || {}, ic = (L.intent || {}).counts || {}, hb = L.heartbeat || {};
+    const active = Number(s.active || 0);
+    $("#legion-banner").innerHTML = '<div class="banner ' + (hb.age_hours > 12 ? "warn" : "ok") + '"><span class="tag">LEGION</span>' +
+      '<b>在线状态</b>：roster 在线 <b>' + active + '</b> / 编制 <b>' + (s.agents || 0) + '</b>；' +
+      '心跳快照 <b>' + esc(hb.last_ts || "-") + '</b>（' + esc(hb.age_hours == null ? "?" : hb.age_hours + "h 前") + '，' + (hb.seats_ok || 0) + '/' + (hb.seats_total || 0) + ' 席在岗）；' +
+      '在办 <b>' + ((ic.doing || 0) + (ic.review || 0)) + '</b>（doing ' + (ic.doing || 0) + ' + review ' + (ic.review || 0) + '）；累计完成 ' + fmt(ic.done) + ' 单</div>';
+    const kpis = [
+      ["部门 / 席位", (s.departments || 0) + " / " + (ic.seats || s.agents || 0), "17 部门 · 77 agents", "info"],
+      ["在线席位", active, "roster state≠idle", active ? "ok" : "warn"],
+      ["在办 / 评审", (ic.doing || 0) + " / " + (ic.review || 0), "intent 在办", (ic.doing || 0) ? "ok" : "mute"],
+      ["累计完成", fmt(ic.done), "intent 历史", "ok"],
+      ["Hermes", (L.hermes || {}).servers_total + " / " + (L.hermes || {}).tools_total, "servers / tools", ((L.hermes || {}).tools_total ? "ok" : "warn")],
+      ["心跳在岗", (hb.seats_ok || 0) + "/" + (hb.seats_total || 0), "seat_heartbeat", (hb.age_hours > 12 ? "warn" : "ok")]
+    ];
+    $("#legion-count").textContent = (L.roster || []).length + " 席位";
+    $("#legion-kpis").innerHTML = kpis.map(([label, val, note, tone]) =>
+      '<div class="kpi ' + tone + '"><small>' + esc(label) + '</small><b>' + esc(val) + '</b><div class="note">' + esc(note) + '</div></div>').join("");
+    $("#legion-depts").innerHTML = (L.departments || []).map(d =>
+      '<button class="legion-dept" type="button" data-dept="' + esc(d.name) + '"><div class="t">' + esc(d.name) + '</div>' +
+      '<div class="sub">' + esc(d.cn_title || "") + ' · 主官 ' + esc(d.lead || "-") + '</div>' +
+      '<div class="m"><span><b>' + (d.agent_count || 0) + '</b> 编制</span><span><b>' + (d.doing || 0) + '</b> 在办</span><span>' + esc(d.status || "") + '</span></div></button>').join("");
+    const deptSel = $("#legion-seat-dept");
+    if (deptSel.options.length <= 1) {
+      const names = Array.from(new Set((L.roster || []).map(x => x.dept).filter(Boolean))).sort();
+      deptSel.innerHTML += names.map(n => '<option value="' + esc(n) + '">' + esc(n) + '</option>').join("");
+    }
+    renderLegionSeats();
+  }
+  function renderLegionSeats(){
+    const L = DW.legion || {};
+    const feed = L.feed || [];
+    const byAgent = {};
+    feed.forEach(f => { const k = f.caller || f.from; if (k && !byAgent[k]) byAgent[k] = f; });
+    const q = legState.q.trim().toLowerCase();
+    let rows = (L.roster || []).filter(m => {
+      if (legState.dept && m.dept !== legState.dept) return false;
+      if (legState.state && (m.state || "idle") !== legState.state) return false;
+      if (q) {
+        const hay = (m.id + " " + m.name + " " + m.dept + " " + (m.title || "")).toLowerCase();
+        if (hay.indexOf(q) < 0) return false;
+      }
+      return true;
+    });
+    const stateTone = (st) => (!st || st === "idle") ? "mute" : (st === "offline" ? "err" : "ok");
+    $("#legion-seat-count").textContent = rows.length + " / " + (L.roster || []).length + " 席位";
+    $("#legion-seat-body").innerHTML = rows.map(m => {
+      const st = m.state || "idle";
+      const doing = byAgent[m.id];
+      const doingTxt = doing ? esc((doing.action || "") + "：") + esc(String(doing.detail || "").slice(0, 60)) : "—";
+      return '<tr data-dept="' + esc(m.dept) + '"><td class="mono">' + esc(m.id) + '</td><td>' + esc(m.name) + '</td><td>' + esc(m.dept) +
+        '</td><td class="muted">' + esc(m.title || "-") + '</td><td><span class="pill ' + stateTone(st) + '">' + esc(st) + '</span></td><td class="muted">' + doingTxt + '</td></tr>';
+    }).join("") || '<tr><td colspan="6" class="muted">没有匹配席位。</td></tr>';
+    $("#legion-task-count").textContent = (L.tasks || []).length + " 单";
+    $("#legion-tasks-body").innerHTML = (L.tasks || []).map(x =>
+      '<tr><td class="mono">' + esc(x.id) + '</td><td><span class="pill ' + (x.status === "doing" ? "warn" : "mute") + '">' + esc(x.status) + '</span></td><td>' + esc(x.owner || "-") + '</td><td class="muted">' + esc(x.desc || "") + '</td></tr>').join("") || '<tr><td colspan="4" class="muted">无在办任务。</td></tr>';
+    $("#legion-feed-count").textContent = feed.length + " 条";
+    $("#legion-feed-body").innerHTML = feed.map(f =>
+      '<tr><td class="mono">' + esc(f.ts || "") + '</td><td>' + esc(f.caller || f.from || "-") + '</td><td>' + esc(f.action || "") + '</td><td class="muted">' + esc(String(f.detail || "").slice(0, 70)) + '</td></tr>').join("");
+    $("#legion-division-body").innerHTML = (L.division || []).map(d =>
+      '<tr><td>' + esc(d.domain) + '</td><td>' + esc(d.owner) + '</td><td><span class="pill ' + (d.status === "ok" ? "ok" : "warn") + '">' + esc(d.status) + '</span></td><td class="muted">' + esc(d.progress) + '</td></tr>').join("");
+    const ic = (L.intent || {}).counts || {};
+    const total = Math.max(1, (ic.done || 0) + (ic.doing || 0) + (ic.review || 0) + (ic.aborted || 0));
+    const pct = (n) => ((n || 0) / total * 100).toFixed(1) + "%";
+    $("#legion-progress").innerHTML = '<div class="bar" style="height:8px"><i class="ok" style="width:' + pct(ic.done) + '"></i><i class="partial" style="width:' + pct(ic.doing) + '"></i><i class="warn" style="width:' + pct(ic.review) + '"></i><i class="deprecated" style="width:' + pct(ic.aborted) + '"></i></div>' +
+      '<div class="muted" style="margin-top:8px;line-height:1.9">完成 <b>' + fmt(ic.done) + '</b> · 在办 <b>' + (ic.doing || 0) + '</b> · 评审 <b>' + (ic.review || 0) + '</b> · 中止 <b>' + fmt(ic.aborted) + '</b><br>' +
+      '工单/席位 <b>' + fmt(ic.entries) + '/' + fmt(ic.seats) + '</b> · lead 签署 <b>' + (ic.lead_signed || 0) + '/' + (ic.lead_total || 0) + '</b><br>' +
+      '数据仓项目：KPI <b>9/10</b> · S3 完成度 <b>83.3%</b>（终验收 09:00）</div>';
+    const H = L.hermes || {};
+    $("#legion-hermes-count").textContent = (H.servers_total || 0) + " servers / " + (H.tools_total || 0) + " tools";
+    $("#legion-hermes-summary").innerHTML = '<div class="muted" style="line-height:1.9">servers <b>' + (H.servers_total || 0) + '</b> · tools <b>' + (H.tools_total || 0) + '</b>（期望约 ' + (H.expected_tools || 98) + '）' +
+      '<br>reload_required=<b>' + esc(String(H.reload_required)) + '</b> · unavailable ' + ((H.unavailable_servers || []).length) + ' servers' +
+      '<br><span class="pill warn">tools=0 → 需 /reload-mcp</span></div>';
+    $("#legion-hermes-servers").innerHTML = (H.servers || []).map(s =>
+      '<tr><td class="mono">' + esc(s.name) + '</td><td class="muted">' + esc(s.transport || "") + '</td><td><span class="pill ' + (s.active ? "ok" : (s.enabled ? "mute" : "err")) + '">' + esc(s.active ? "active" : (s.status || "configured")) + '</span></td><td class="num">' + esc(s.tool_count) + '</td></tr>').join("");
+    $("#legion-sched-count").textContent = (L.schedules || []).length + " 条";
+    $("#legion-schedules-body").innerHTML = (L.schedules || []).map(x =>
+      '<tr><td class="mono">' + esc(x.spec) + '</td><td>' + esc(x.desc) + '</td><td class="muted">' + esc(x.enabled === false ? "disabled" : "enabled") + '</td></tr>').join("");
+  }
+  function bindLegion(){
+    $("#legion-seat-search").addEventListener("input", e => { legState.q = e.target.value; renderLegionSeats(); });
+    $("#legion-seat-dept").addEventListener("change", e => { legState.dept = e.target.value; renderLegionSeats(); });
+    $("#legion-seat-state").addEventListener("change", e => { legState.state = e.target.value; renderLegionSeats(); });
+    $("#legion-depts").addEventListener("click", e => {
+      const b = e.target.closest("button[data-dept]"); if (!b) return;
+      legState.dept = b.dataset.dept; $("#legion-seat-dept").value = legState.dept;
+      renderLegionSeats(); $("#legion-seat-body").scrollIntoView({behavior: "smooth", block: "center"});
+    });
+  }
+
   /* ---------- 视图切换 / 搜索 ---------- */
   function activate(name){
+    if (name === "lineage") name = "governance";
+    const panels = name === "governance" ? ["governance", "lineage"] : [name];
     $$(".tab").forEach(t => t.setAttribute("aria-selected", String(t.dataset.view === name)));
-    $$(".panel").forEach(p => p.classList.toggle("active", p.id === "view-" + name));
+    $$(".panel").forEach(p => p.classList.toggle("active", panels.some(x => p.id === "view-" + x)));
     if (name === "map") renderMap();
     if (name === "query") $("#q-dataset").focus();
+    if (name === "legion") renderLegion();
     location.hash = name === "overview" ? "" : name;
   }
   function bindTabs(){
@@ -851,6 +1002,7 @@ const DW_DATA = __DW_DATA_JSON__;
     bindQuery(); fillQuery(((DW.datasets || [])[0] || {}).id || "");
     renderQuality(); renderLineage(); renderGovernance();
     manualInit();
+    renderLegion(); bindLegion();
     bindTabs(); bindGlobalSearch(); bindDrawer();
   }
   init();

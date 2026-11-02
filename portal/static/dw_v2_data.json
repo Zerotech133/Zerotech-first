@@ -1,6 +1,6 @@
 {
  "meta": {
-  "generated_at": "2026-11-03T05:32:55",
+  "generated_at": "2026-11-03T05:56:24",
   "as_of": "2026-11-03",
   "catalog_version": 35,
   "catalog_updated": "2026-11-03T05:07:35",
@@ -7023,6 +7023,1597 @@
    "approve": "POST /api/dw/manual/approve"
   },
   "note": "手动入口只写 staging；schema/主键/日期/去重校验 + 审核后才写回主仓"
+ },
+ "legion": {
+  "available": true,
+  "as_of": "2026-11-03T05:56:24+0800",
+  "chief": {
+   "agent_id": "A0",
+   "binding": "glm/glm-5.3"
+  },
+  "summary": {
+   "departments": 17,
+   "agents": 77,
+   "doing": 2,
+   "schedules": 3
+  },
+  "intent": {
+   "counts": {
+    "seats": 69,
+    "entries": 77,
+    "doing": 2,
+    "review": 1,
+    "done": 1902,
+    "aborted": 134,
+    "other": 8,
+    "doing_incl_review": 3,
+    "unmapped": 0,
+    "unclaimed_keys": 0,
+    "lead_signed": 16,
+    "lead_total": 17,
+    "verified": 0,
+    "ledger_missing": true
+   },
+   "doing": [
+    {
+     "key": "K-STOCK-ANALYSIS-P2-8-20261030",
+     "dept": "invest",
+     "rule": "K-STOCK（量化盯盘/行情单）",
+     "unmapped": false,
+     "owner": "DSH-Lead"
+    },
+    {
+     "key": "K-STOCK-ANALYSIS-P2-9-20261030",
+     "dept": "invest",
+     "rule": "K-STOCK（量化盯盘/行情单）",
+     "unmapped": false,
+     "owner": "DSH-Lead"
+    }
+   ],
+   "review": [
+    "K-STOCK-ANALYSIS-P2-7-20261030"
+   ],
+   "cards_with_doing": 0
+  },
+  "departments": [
+   {
+    "id": "invest",
+    "name": "量化交易部",
+    "cn_title": "谋略府",
+    "lead": "鲁肃",
+    "lead_id": "D1",
+    "status": "active",
+    "agent_count": 13,
+    "doing": 0,
+    "agents": [
+     {
+      "id": "T1",
+      "cn": "庞统",
+      "role": "t1_bull",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "T2",
+      "cn": "\"贾诩\"",
+      "role": "t2_bear",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "N1",
+      "cn": "许劭",
+      "role": "n1_sentiment",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "F1",
+      "cn": "荀彧",
+      "role": "f1_fundamental",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "D1",
+      "cn": "鲁肃",
+      "role": "d1_decision",
+      "binding": "glm/glm-5.3"
+     },
+     {
+      "id": "ST1",
+      "cn": "\"程昱\"",
+      "role": "quant_analyst",
+      "binding": "glm/glm-5.3"
+     },
+     {
+      "id": "WA1",
+      "cn": "许褚",
+      "role": "watch_monitor",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "QS1",
+      "cn": "司马懿",
+      "role": "quant_sector_receiver",
+      "binding": "none"
+     },
+     {
+      "id": "TR1",
+      "cn": "周瑜",
+      "role": "trade_executor",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "WA2",
+      "cn": "张郃",
+      "role": "watch_monitor",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "WA3",
+      "cn": "太史慈",
+      "role": "watch_monitor",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "TR2",
+      "cn": "徐盛",
+      "role": "trade_executor",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "TR3",
+      "cn": "丁奉",
+      "role": "trade_executor",
+      "binding": "ollama/qwen3.5:9b"
+     }
+    ]
+   },
+   {
+    "id": "dev",
+    "name": "研发部",
+    "cn_title": "将作监",
+    "lead": "曹操",
+    "lead_id": "ARCH1",
+    "status": "active",
+    "agent_count": 11,
+    "doing": 0,
+    "agents": [
+     {
+      "id": "DEV1",
+      "cn": "马钧",
+      "role": "code_engineer",
+      "binding": "glm/glm-5.3"
+     },
+     {
+      "id": "DEV6",
+      "cn": "胡昭",
+      "role": "code_engineer",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "DEV7",
+      "cn": "姜维",
+      "role": "code_engineer",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "DEV2",
+      "cn": "刘晔",
+      "role": "model_trainer",
+      "binding": "ollama/qwen3.6:35b-a3b"
+     },
+     {
+      "id": "DEV3",
+      "cn": "蒋济",
+      "role": "strategy_engineer",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "DEV4",
+      "cn": "\"杜预\"",
+      "role": "backtest_engineer",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "DEV5",
+      "cn": "邓艾",
+      "role": "frontend_engineer",
+      "binding": "glm/glm-5.3"
+     },
+     {
+      "id": "DEV8",
+      "cn": "郝昭",
+      "role": "frontend_engineer",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "ARCH1",
+      "cn": "曹操",
+      "role": "solution_architect",
+      "binding": "glm/glm-5.3"
+     },
+     {
+      "id": "OPS1",
+      "cn": "王基",
+      "role": "devops_engineer",
+      "binding": "glm/glm-5.3"
+     },
+     {
+      "id": "DOC1",
+      "cn": "陈寿",
+      "role": "tech_writer",
+      "binding": "ollama/qwen3.5:9b"
+     }
+    ]
+   },
+   {
+    "id": "trading",
+    "name": "交易部",
+    "cn_title": "先登营",
+    "lead": "",
+    "lead_id": "",
+    "status": "merged_into_invest",
+    "agent_count": 0,
+    "doing": 0,
+    "agents": []
+   },
+   {
+    "id": "data",
+    "name": "数据智能部",
+    "cn_title": "兰台",
+    "lead": "张松",
+    "lead_id": "DATA1",
+    "status": "active",
+    "agent_count": 4,
+    "doing": 0,
+    "agents": [
+     {
+      "id": "DATA1",
+      "cn": "张松",
+      "role": "data_team_lead",
+      "binding": "glm/glm-5.3"
+     },
+     {
+      "id": "FACTOR1",
+      "cn": "蒋琬",
+      "role": "factor_miner",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "DATA2",
+      "cn": "刘巴",
+      "role": "data_engineer",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "DATA3",
+      "cn": "陈群",
+      "role": "data_quality",
+      "binding": "glm/glm-5.3-flash"
+     }
+    ]
+   },
+   {
+    "id": "product",
+    "name": "产品管理部",
+    "cn_title": "度支府",
+    "lead": "吕蒙",
+    "lead_id": "PM1",
+    "status": "active",
+    "agent_count": 3,
+    "doing": 0,
+    "agents": [
+     {
+      "id": "PM1",
+      "cn": "吕蒙",
+      "role": "product_manager",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "DSGN1",
+      "cn": "曹植",
+      "role": "ui_designer",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "DSGN2",
+      "cn": "杨修",
+      "role": "ui_designer",
+      "binding": "ollama/qwen3.5:9b"
+     }
+    ]
+   },
+   {
+    "id": "quality",
+    "name": "质量工程部",
+    "cn_title": "监军府",
+    "lead": "于禁",
+    "lead_id": "QA1",
+    "status": "active",
+    "agent_count": 4,
+    "doing": 0,
+    "agents": [
+     {
+      "id": "QA1",
+      "cn": "于禁",
+      "role": "qa_engineer",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "QA2",
+      "cn": "郭淮",
+      "role": "qa_engineer",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "SEC1",
+      "cn": "李严",
+      "role": "security_auditor",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "SEC2",
+      "cn": "法正",
+      "role": "security_lead",
+      "binding": "glm/glm-5.3"
+     }
+    ]
+   },
+   {
+    "id": "proj_backtest",
+    "name": "🅰 回测开发部",
+    "cn_title": "🅰 回测行营",
+    "lead": "蒋济",
+    "lead_id": "DEV3",
+    "status": "active",
+    "agent_count": 3,
+    "doing": 0,
+    "agents": [
+     {
+      "id": "DEV3",
+      "cn": "蒋济",
+      "role": "backtest_dev",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "DEV4",
+      "cn": "\"杜预\"",
+      "role": "backtest_dev",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "QA1",
+      "cn": "于禁",
+      "role": "qa_runner",
+      "binding": "ollama/qwen3.5:9b"
+     }
+    ]
+   },
+   {
+    "id": "proj_data",
+    "name": "🅱 数据治理部",
+    "cn_title": "🅱 数据行营（冻结待归建）",
+    "lead": "张松",
+    "lead_id": "DATA1",
+    "status": "frozen_pending_merge",
+    "agent_count": 2,
+    "doing": 0,
+    "agents": [
+     {
+      "id": "DATA1",
+      "cn": "张松",
+      "role": "data_governance",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "DEV1",
+      "cn": "马钧",
+      "role": "data_dev",
+      "binding": "ollama/qwen3.5:9b"
+     }
+    ]
+   },
+   {
+    "id": "proj_next",
+    "name": "🅲 下版本设计推理部",
+    "cn_title": "🅲 设计行营",
+    "lead": "吕蒙",
+    "lead_id": "PM1",
+    "status": "active",
+    "agent_count": 3,
+    "doing": 0,
+    "agents": [
+     {
+      "id": "PM1",
+      "cn": "吕蒙",
+      "role": "next_version_pm",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "ARCH1",
+      "cn": "曹操",
+      "role": "next_version_arch",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "DEV2",
+      "cn": "刘晔",
+      "role": "next_version_dev",
+      "binding": "ollama/qwen3.5:9b"
+     }
+    ]
+   },
+   {
+    "id": "marketing",
+    "name": "市场部",
+    "cn_title": "鸿胪署",
+    "lead": "简雍",
+    "lead_id": "MKT1",
+    "status": "active",
+    "agent_count": 1,
+    "doing": 0,
+    "agents": [
+     {
+      "id": "MKT1",
+      "cn": "简雍",
+      "role": "mkt1_marketer",
+      "binding": "ollama/qwen3.5:9b"
+     }
+    ]
+   },
+   {
+    "id": "legal",
+    "name": "合规法务部",
+    "cn_title": "廷尉府",
+    "lead": "诸葛瑾",
+    "lead_id": "LEG1",
+    "status": "active",
+    "agent_count": 1,
+    "doing": 0,
+    "agents": [
+     {
+      "id": "LEG1",
+      "cn": "诸葛瑾",
+      "role": "leg1_legal",
+      "binding": "glm/glm-5.3"
+     }
+    ]
+   },
+   {
+    "id": "ops_runtime",
+    "name": "运行体部",
+    "cn_title": "驿传署",
+    "lead": "董允",
+    "lead_id": "A0A",
+    "status": "active",
+    "agent_count": 7,
+    "doing": 0,
+    "agents": [
+     {
+      "id": "JEV_GATE",
+      "cn": "廖化",
+      "role": "jev_alert_gate",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "JEV_REVIEW",
+      "cn": "蒋干",
+      "role": "jev_signal_reviewer",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "JEV_QD",
+      "cn": "伊籍",
+      "role": "jev_quantdinger_bridge",
+      "binding": "none"
+     },
+     {
+      "id": "LARK_CARDS",
+      "cn": "秦宓",
+      "role": "lark_card_listener",
+      "binding": "none"
+     },
+     {
+      "id": "COWBRIDGE",
+      "cn": "桥玄",
+      "role": "cowbridge_memory_bridge",
+      "binding": "none"
+     },
+     {
+      "id": "HERMES_UI",
+      "cn": "糜竺",
+      "role": "hermes_ui_gateway",
+      "binding": "none"
+     },
+     {
+      "id": "WATCH_TOWER",
+      "cn": "\"朱然\"",
+      "role": "watchtower_arbiter",
+      "binding": "ollama/qwen3.5:9b"
+     }
+    ]
+   },
+   {
+    "id": "academy",
+    "name": "研究院",
+    "cn_title": "太学",
+    "lead": "司马徽",
+    "lead_id": "ACAD1",
+    "status": "active",
+    "agent_count": 9,
+    "doing": 0,
+    "agents": [
+     {
+      "id": "ACAD1",
+      "cn": "司马徽",
+      "role": "academy_director",
+      "binding": "glm/glm-5.3"
+     },
+     {
+      "id": "STRAT1",
+      "cn": "徐庶",
+      "role": "strategy_researcher",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "BACK1",
+      "cn": "\"王粲\"",
+      "role": "backtest_researcher",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "COMM1",
+      "cn": "马良",
+      "role": "commercialization_researcher",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "INTEL1",
+      "cn": "郭嘉",
+      "role": "competitive_intelligence_researcher",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "AI1",
+      "cn": "诸葛亮",
+      "role": "ai_methodology_researcher",
+      "binding": "openai/gpt-6.0"
+     },
+     {
+      "id": "GUANYU",
+      "cn": "关羽",
+      "role": "guanyu_code_audit_governance",
+      "binding": "deepseek/deepseek-flash"
+     },
+     {
+      "id": "PROD1",
+      "cn": "黄月英",
+      "role": "strategy_product_manager",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "HUANGZHONG",
+      "cn": "黄忠",
+      "role": "delivery_acceptance_chief",
+      "binding": "glm/glm-5.3"
+     }
+    ]
+   },
+   {
+    "id": "intel",
+    "name": "情报部",
+    "cn_title": "军情司",
+    "lead": "是仪",
+    "lead_id": "INTEL0",
+    "status": "active",
+    "agent_count": 8,
+    "doing": 0,
+    "agents": [
+     {
+      "id": "XQ1",
+      "cn": "水镜",
+      "role": "雪球与股吧舆情采集哨",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "TDX1",
+      "cn": "\"韦昭\"",
+      "role": "接口新闻面挖掘史官",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "BEACON1",
+      "cn": "\"周泰\"",
+      "role": "平台内务巡检哨",
+      "binding": "none"
+     },
+     {
+      "id": "INTEL0",
+      "cn": "是仪",
+      "role": "军情司上行受理席",
+      "binding": "glm/glm-5.3-flash"
+     },
+     {
+      "id": "MANCHONG1",
+      "cn": "满宠",
+      "role": "全量数据串联与治理席",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "KGMAP1",
+      "cn": "郑玄",
+      "role": "情报知识图谱构建席",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "WORDC1",
+      "cn": "陈琳",
+      "role": "文本词云挖掘席",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "LINEAGE1",
+      "cn": "谯周",
+      "role": "数据血缘治理席",
+      "binding": "ollama/qwen3.5:9b"
+     }
+    ]
+   },
+   {
+    "id": "comm",
+    "name": "通信与客户服务部",
+    "cn_title": "信驿司",
+    "lead": "阚泽",
+    "lead_id": "LUSU1",
+    "status": "active",
+    "agent_count": 2,
+    "doing": 0,
+    "agents": [
+     {
+      "id": "LUSU1",
+      "cn": "阚泽",
+      "role": "comm_entry_chief",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "DENGZHI1",
+      "cn": "邓芝",
+      "role": "comm_envoy",
+      "binding": "none"
+     }
+    ]
+   },
+   {
+    "id": "chief_line",
+    "name": "直属参谋长线",
+    "cn_title": "参军署",
+    "lead": "田丰",
+    "lead_id": "A0",
+    "status": "active",
+    "agent_count": 3,
+    "doing": 0,
+    "agents": [
+     {
+      "id": "OPT1",
+      "cn": "枣祗",
+      "role": "opt1_workflow_optimizer",
+      "binding": "glm/glm-5.3"
+     },
+     {
+      "id": "A0",
+      "cn": "田丰",
+      "role": "product_rd_chief",
+      "binding": "glm/glm-5.3"
+     },
+     {
+      "id": "A0A",
+      "cn": "董允",
+      "role": "chief_assistant",
+      "binding": "glm/glm-5.3-flash"
+     }
+    ]
+   },
+   {
+    "id": "risk",
+    "name": "风控部",
+    "cn_title": "大都督府",
+    "lead": "陆逊",
+    "lead_id": "R3",
+    "status": "active",
+    "agent_count": 3,
+    "doing": 0,
+    "agents": [
+     {
+      "id": "R1",
+      "cn": "甘宁",
+      "role": "risk_aggressive_sentinel",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "R2",
+      "cn": "赵云",
+      "role": "risk_conservative_sentinel",
+      "binding": "ollama/qwen3.5:9b"
+     },
+     {
+      "id": "R3",
+      "cn": "陆逊",
+      "role": "risk_arbiter",
+      "binding": "ollama/qwen3.5:9b"
+     }
+    ]
+   }
+  ],
+  "roster": [
+   {
+    "id": "A0",
+    "name": "田丰",
+    "dept": "chief",
+    "title": "参谋长",
+    "state": "idle"
+   },
+   {
+    "id": "T1",
+    "name": "庞统",
+    "dept": "invest",
+    "title": "量化交易部",
+    "state": "idle"
+   },
+   {
+    "id": "T2",
+    "name": "\"贾诩\"",
+    "dept": "invest",
+    "title": "量化交易部",
+    "state": "idle"
+   },
+   {
+    "id": "N1",
+    "name": "许劭",
+    "dept": "invest",
+    "title": "量化交易部",
+    "state": "idle"
+   },
+   {
+    "id": "F1",
+    "name": "荀彧",
+    "dept": "invest",
+    "title": "量化交易部",
+    "state": "idle"
+   },
+   {
+    "id": "D1",
+    "name": "鲁肃",
+    "dept": "invest",
+    "title": "量化交易部",
+    "state": "idle"
+   },
+   {
+    "id": "ST1",
+    "name": "\"程昱\"",
+    "dept": "invest",
+    "title": "量化交易部",
+    "state": "idle"
+   },
+   {
+    "id": "WA1",
+    "name": "许褚",
+    "dept": "invest",
+    "title": "量化交易部",
+    "state": "idle"
+   },
+   {
+    "id": "QS1",
+    "name": "司马懿",
+    "dept": "invest",
+    "title": "量化交易部",
+    "state": "idle"
+   },
+   {
+    "id": "TR1",
+    "name": "周瑜",
+    "dept": "invest",
+    "title": "量化交易部",
+    "state": "idle"
+   },
+   {
+    "id": "WA2",
+    "name": "WA2",
+    "dept": "invest",
+    "title": "量化交易部",
+    "state": "idle"
+   },
+   {
+    "id": "WA3",
+    "name": "WA3",
+    "dept": "invest",
+    "title": "量化交易部",
+    "state": "idle"
+   },
+   {
+    "id": "TR2",
+    "name": "TR2",
+    "dept": "invest",
+    "title": "量化交易部",
+    "state": "idle"
+   },
+   {
+    "id": "TR3",
+    "name": "TR3",
+    "dept": "invest",
+    "title": "量化交易部",
+    "state": "idle"
+   },
+   {
+    "id": "DEV1",
+    "name": "马钧",
+    "dept": "dev",
+    "title": "研发部",
+    "state": "idle"
+   },
+   {
+    "id": "DEV6",
+    "name": "胡昭",
+    "dept": "dev",
+    "title": "研发部",
+    "state": "idle"
+   },
+   {
+    "id": "DEV7",
+    "name": "姜维",
+    "dept": "dev",
+    "title": "研发部",
+    "state": "idle"
+   },
+   {
+    "id": "DEV2",
+    "name": "刘晔",
+    "dept": "dev",
+    "title": "研发部",
+    "state": "idle"
+   },
+   {
+    "id": "DEV3",
+    "name": "蒋济",
+    "dept": "dev",
+    "title": "研发部",
+    "state": "idle"
+   },
+   {
+    "id": "DEV4",
+    "name": "\"杜预\"",
+    "dept": "dev",
+    "title": "研发部",
+    "state": "idle"
+   },
+   {
+    "id": "DEV5",
+    "name": "邓艾",
+    "dept": "dev",
+    "title": "研发部",
+    "state": "idle"
+   },
+   {
+    "id": "DEV8",
+    "name": "郝昭",
+    "dept": "dev",
+    "title": "研发部",
+    "state": "idle"
+   },
+   {
+    "id": "ARCH1",
+    "name": "曹操",
+    "dept": "dev",
+    "title": "研发部",
+    "state": "idle"
+   },
+   {
+    "id": "OPS1",
+    "name": "王基",
+    "dept": "dev",
+    "title": "研发部",
+    "state": "idle"
+   },
+   {
+    "id": "DOC1",
+    "name": "陈寿",
+    "dept": "dev",
+    "title": "研发部",
+    "state": "idle"
+   },
+   {
+    "id": "DATA1",
+    "name": "张松",
+    "dept": "data",
+    "title": "数据智能部",
+    "state": "idle"
+   },
+   {
+    "id": "FACTOR1",
+    "name": "蒋琬",
+    "dept": "data",
+    "title": "数据智能部",
+    "state": "idle"
+   },
+   {
+    "id": "DATA2",
+    "name": "刘巴",
+    "dept": "data",
+    "title": "数据智能部",
+    "state": "idle"
+   },
+   {
+    "id": "DATA3",
+    "name": "陈群",
+    "dept": "data",
+    "title": "数据智能部",
+    "state": "idle"
+   },
+   {
+    "id": "PM1",
+    "name": "吕蒙",
+    "dept": "product",
+    "title": "产品管理部",
+    "state": "idle"
+   },
+   {
+    "id": "DSGN1",
+    "name": "曹植",
+    "dept": "product",
+    "title": "产品管理部",
+    "state": "idle"
+   },
+   {
+    "id": "DSGN2",
+    "name": "杨修",
+    "dept": "product",
+    "title": "产品管理部",
+    "state": "idle"
+   },
+   {
+    "id": "QA1",
+    "name": "于禁",
+    "dept": "quality",
+    "title": "质量工程部",
+    "state": "idle"
+   },
+   {
+    "id": "QA2",
+    "name": "郭淮",
+    "dept": "quality",
+    "title": "质量工程部",
+    "state": "idle"
+   },
+   {
+    "id": "SEC1",
+    "name": "李严",
+    "dept": "quality",
+    "title": "质量工程部",
+    "state": "idle"
+   },
+   {
+    "id": "SEC2",
+    "name": "法正",
+    "dept": "quality",
+    "title": "质量工程部",
+    "state": "idle"
+   },
+   {
+    "id": "DEV3",
+    "name": "蒋济",
+    "dept": "proj_backtest",
+    "title": "🅰 回测开发部",
+    "state": "idle"
+   },
+   {
+    "id": "DEV4",
+    "name": "\"杜预\"",
+    "dept": "proj_backtest",
+    "title": "🅰 回测开发部",
+    "state": "idle"
+   },
+   {
+    "id": "QA1",
+    "name": "于禁",
+    "dept": "proj_backtest",
+    "title": "🅰 回测开发部",
+    "state": "idle"
+   },
+   {
+    "id": "DATA1",
+    "name": "张松",
+    "dept": "proj_data",
+    "title": "🅱 数据治理部",
+    "state": "idle"
+   },
+   {
+    "id": "DEV1",
+    "name": "马钧",
+    "dept": "proj_data",
+    "title": "🅱 数据治理部",
+    "state": "idle"
+   },
+   {
+    "id": "PM1",
+    "name": "吕蒙",
+    "dept": "proj_next",
+    "title": "🅲 下版本设计推理部",
+    "state": "idle"
+   },
+   {
+    "id": "ARCH1",
+    "name": "曹操",
+    "dept": "proj_next",
+    "title": "🅲 下版本设计推理部",
+    "state": "idle"
+   },
+   {
+    "id": "DEV2",
+    "name": "刘晔",
+    "dept": "proj_next",
+    "title": "🅲 下版本设计推理部",
+    "state": "idle"
+   },
+   {
+    "id": "MKT1",
+    "name": "简雍",
+    "dept": "marketing",
+    "title": "市场部",
+    "state": "idle"
+   },
+   {
+    "id": "LEG1",
+    "name": "诸葛瑾",
+    "dept": "legal",
+    "title": "合规法务部",
+    "state": "idle"
+   },
+   {
+    "id": "JEV_GATE",
+    "name": "廖化",
+    "dept": "ops_runtime",
+    "title": "运行体部",
+    "state": "idle"
+   },
+   {
+    "id": "JEV_REVIEW",
+    "name": "蒋干",
+    "dept": "ops_runtime",
+    "title": "运行体部",
+    "state": "idle"
+   },
+   {
+    "id": "JEV_QD",
+    "name": "伊籍",
+    "dept": "ops_runtime",
+    "title": "运行体部",
+    "state": "idle"
+   },
+   {
+    "id": "LARK_CARDS",
+    "name": "秦宓",
+    "dept": "ops_runtime",
+    "title": "运行体部",
+    "state": "idle"
+   },
+   {
+    "id": "COWBRIDGE",
+    "name": "桥玄",
+    "dept": "ops_runtime",
+    "title": "运行体部",
+    "state": "idle"
+   },
+   {
+    "id": "HERMES_UI",
+    "name": "糜竺",
+    "dept": "ops_runtime",
+    "title": "运行体部",
+    "state": "idle"
+   },
+   {
+    "id": "WATCH_TOWER",
+    "name": "\"朱然\"",
+    "dept": "ops_runtime",
+    "title": "运行体部",
+    "state": "idle"
+   },
+   {
+    "id": "ACAD1",
+    "name": "司马徽",
+    "dept": "academy",
+    "title": "研究院",
+    "state": "idle"
+   },
+   {
+    "id": "STRAT1",
+    "name": "徐庶",
+    "dept": "academy",
+    "title": "研究院",
+    "state": "idle"
+   },
+   {
+    "id": "BACK1",
+    "name": "\"王粲\"",
+    "dept": "academy",
+    "title": "研究院",
+    "state": "idle"
+   },
+   {
+    "id": "COMM1",
+    "name": "马良",
+    "dept": "academy",
+    "title": "研究院",
+    "state": "idle"
+   },
+   {
+    "id": "INTEL1",
+    "name": "郭嘉",
+    "dept": "academy",
+    "title": "研究院",
+    "state": "idle"
+   },
+   {
+    "id": "AI1",
+    "name": "诸葛亮",
+    "dept": "academy",
+    "title": "研究院",
+    "state": "idle"
+   },
+   {
+    "id": "GUANYU",
+    "name": "关羽",
+    "dept": "academy",
+    "title": "研究院",
+    "state": "idle"
+   },
+   {
+    "id": "PROD1",
+    "name": "黄月英",
+    "dept": "academy",
+    "title": "研究院",
+    "state": "idle"
+   },
+   {
+    "id": "HUANGZHONG",
+    "name": "黄忠",
+    "dept": "academy",
+    "title": "研究院",
+    "state": "idle"
+   },
+   {
+    "id": "XQ1",
+    "name": "水镜",
+    "dept": "intel",
+    "title": "情报部",
+    "state": "idle"
+   },
+   {
+    "id": "TDX1",
+    "name": "\"韦昭\"",
+    "dept": "intel",
+    "title": "情报部",
+    "state": "idle"
+   },
+   {
+    "id": "BEACON1",
+    "name": "\"周泰\"",
+    "dept": "intel",
+    "title": "情报部",
+    "state": "idle"
+   },
+   {
+    "id": "INTEL0",
+    "name": "是仪",
+    "dept": "intel",
+    "title": "情报部",
+    "state": "idle"
+   },
+   {
+    "id": "MANCHONG1",
+    "name": "满宠",
+    "dept": "intel",
+    "title": "情报部",
+    "state": "idle"
+   },
+   {
+    "id": "KGMAP1",
+    "name": "郑玄",
+    "dept": "intel",
+    "title": "情报部",
+    "state": "idle"
+   },
+   {
+    "id": "WORDC1",
+    "name": "陈琳",
+    "dept": "intel",
+    "title": "情报部",
+    "state": "idle"
+   },
+   {
+    "id": "LINEAGE1",
+    "name": "谯周",
+    "dept": "intel",
+    "title": "情报部",
+    "state": "idle"
+   },
+   {
+    "id": "LUSU1",
+    "name": "阚泽",
+    "dept": "comm",
+    "title": "通信与客户服务部",
+    "state": "idle"
+   },
+   {
+    "id": "DENGZHI1",
+    "name": "邓芝",
+    "dept": "comm",
+    "title": "通信与客户服务部",
+    "state": "idle"
+   },
+   {
+    "id": "OPT1",
+    "name": "枣祗",
+    "dept": "chief_line",
+    "title": "直属参谋长线",
+    "state": "idle"
+   },
+   {
+    "id": "A0",
+    "name": "田丰",
+    "dept": "chief_line",
+    "title": "直属参谋长线",
+    "state": "idle"
+   },
+   {
+    "id": "A0A",
+    "name": "董允",
+    "dept": "chief_line",
+    "title": "直属参谋长线",
+    "state": "idle"
+   },
+   {
+    "id": "R1",
+    "name": "甘宁",
+    "dept": "risk",
+    "title": "风控部",
+    "state": "idle"
+   },
+   {
+    "id": "R2",
+    "name": "赵云",
+    "dept": "risk",
+    "title": "风控部",
+    "state": "idle"
+   },
+   {
+    "id": "R3",
+    "name": "陆逊",
+    "dept": "risk",
+    "title": "风控部",
+    "state": "idle"
+   }
+  ],
+  "feed": [
+   {
+    "ts": "2026-11-03T04:51:13",
+    "caller": "QA1",
+    "action": "escalated",
+    "detail": "请QA1催办：3人无任务活动、0单超期",
+    "from": "A0"
+   },
+   {
+    "ts": "2026-11-03T04:51:13",
+    "caller": "DEV3",
+    "action": "escalated",
+    "detail": "请DEV3催办：1人无任务活动、0单超期",
+    "from": "A0"
+   },
+   {
+    "ts": "2026-11-03T04:51:13",
+    "caller": "DATA1",
+    "action": "escalated",
+    "detail": "请DATA1催办：1人无任务活动、0单超期",
+    "from": "A0"
+   },
+   {
+    "ts": "2026-11-03T04:51:13",
+    "caller": "PM1",
+    "action": "escalated",
+    "detail": "请PM1催办：1人无任务活动、0单超期",
+    "from": "A0"
+   },
+   {
+    "ts": "2026-11-03T04:51:13",
+    "caller": "A0A",
+    "action": "escalated",
+    "detail": "请A0A催办：1人无任务活动、0单超期",
+    "from": "A0"
+   },
+   {
+    "ts": "2026-11-03T04:51:13",
+    "caller": "ACAD1",
+    "action": "escalated",
+    "detail": "请ACAD1催办：8人无任务活动、0单超期",
+    "from": "A0"
+   },
+   {
+    "ts": "2026-11-03T04:51:13",
+    "caller": "INTEL0",
+    "action": "escalated",
+    "detail": "请INTEL0催办：7人无任务活动、0单超期",
+    "from": "A0"
+   },
+   {
+    "ts": "2026-11-03T04:51:13",
+    "caller": "LUSU1",
+    "action": "escalated",
+    "detail": "请LUSU1催办：1人无任务活动、0单超期",
+    "from": "A0"
+   },
+   {
+    "ts": "2026-11-03T04:51:13",
+    "caller": "A0",
+    "action": "escalated",
+    "detail": "请A0催办：1人无任务活动、0单超期",
+    "from": "A0"
+   },
+   {
+    "ts": "2026-11-03T04:51:13",
+    "caller": "R3",
+    "action": "escalated",
+    "detail": "请R3催办：2人无任务活动、0单超期",
+    "from": "A0"
+   },
+   {
+    "ts": "2026-11-03T05:21:13",
+    "caller": "A0",
+    "action": "patrol",
+    "detail": "巡察完成: 49人无心跳 | 0单超期 | 0单滞留 | 14部门待督办",
+    "from": null
+   },
+   {
+    "ts": "2026-11-03T05:21:13",
+    "caller": "D1",
+    "action": "escalated",
+    "detail": "请D1催办：12人无任务活动、0单超期",
+    "from": "A0"
+   },
+   {
+    "ts": "2026-11-03T05:21:13",
+    "caller": "ARCH1",
+    "action": "escalated",
+    "detail": "请ARCH1催办：9人无任务活动、0单超期",
+    "from": "A0"
+   },
+   {
+    "ts": "2026-11-03T05:21:13",
+    "caller": "DATA1",
+    "action": "escalated",
+    "detail": "请DATA1催办：3人无任务活动、0单超期",
+    "from": "A0"
+   },
+   {
+    "ts": "2026-11-03T05:21:13",
+    "caller": "PM1",
+    "action": "escalated",
+    "detail": "请PM1催办：2人无任务活动、0单超期",
+    "from": "A0"
+   }
+  ],
+  "tasks": [
+   {
+    "id": "K-STOCK-ANALYSIS-P2-7-20261030",
+    "desc": "P2.7 测试隔离修复：test_api_customer 试用/任务写入生产 ",
+    "status": "review",
+    "owner": null
+   },
+   {
+    "id": "K-STOCK-ANALYSIS-P2-8-20261030",
+    "desc": "P2.8 批处理韧性：run_id 跨日同时刻冲突修复(retry suffix",
+    "status": "doing",
+    "owner": null
+   },
+   {
+    "id": "K-STOCK-ANALYSIS-P2-9-20261030",
+    "desc": "P0补数：研报/一致预期维度(report_rc月分区)+curated日更扩展",
+    "status": "doing",
+    "owner": null
+   }
+  ],
+  "schedules": [
+   {
+    "id": "sch-1792172371",
+    "spec": "daily 09:30",
+    "desc": "盘前 weak 池三线扫描"
+   },
+   {
+    "id": "sch-1792172372",
+    "spec": "daily 17:50",
+    "desc": "每日复盘三问汇总"
+   },
+   {
+    "id": "sch-weekly-report-001",
+    "spec": "weekly MON 08:00",
+    "desc": "军团周报生成（weekly_report.py，账本投影只读；周窗=上周一~上周日）"
+   }
+  ],
+  "heartbeat": {
+   "last_ts": "2026-11-02T09:20:22+0800",
+   "seats_ok": 12,
+   "seats_total": 12,
+   "source": "agent_platform/data/seat_heartbeat",
+   "age_hours": 20.6
+  },
+  "division": [
+   {
+    "domain": "接口数据 / 行情主仓",
+    "owner": "数据智能部 · DATA2 刘巴",
+    "seat": "DATA2",
+    "status": "ok",
+    "progress": "tdx/tushare 主仓最新 20261102"
+   },
+   {
+    "domain": "数据质量 / 资质取证",
+    "owner": "数据智能部 · DATA3 陈群",
+    "seat": "DATA3",
+    "status": "ok",
+    "progress": "K8 unknown=14（达标）"
+   },
+   {
+    "domain": "数据治理 / 血缘 / 口径",
+    "owner": "数据治理部 · DATA1 张松",
+    "seat": "DATA1",
+    "status": "warn",
+    "progress": "S3 完成度 83.3%，待终验收"
+   },
+   {
+    "domain": "取数 API / 数据仓前端",
+    "owner": "研发部 · DEV1 马钧",
+    "seat": "DEV1",
+    "status": "ok",
+    "progress": "/api/dw 在线（11-05 换页）"
+   },
+   {
+    "domain": "学习卡 / 知识库",
+    "owner": "研究院 · ACAD1 司马徽",
+    "seat": "ACAD1",
+    "status": "ok",
+    "progress": "视频号常态化流水线已上线"
+   },
+   {
+    "domain": "调度 / 运维 / 首夜验收",
+    "owner": "运行体部 · A0A",
+    "seat": "A0A",
+    "status": "ok",
+    "progress": "TdxSync 四批 rc=0，看门狗 PASS"
+   }
+  ],
+  "hermes": {
+   "available": true,
+   "servers_total": 13,
+   "servers": [
+    {
+     "name": "stock-data",
+     "transport": "stdio",
+     "enabled": true,
+     "active": false,
+     "status": "configured",
+     "tool_count": 0
+    },
+    {
+     "name": "stock-intel-readonly",
+     "transport": "stdio",
+     "enabled": true,
+     "active": false,
+     "status": "configured",
+     "tool_count": 0
+    },
+    {
+     "name": "jev-news",
+     "transport": "stdio",
+     "enabled": true,
+     "active": false,
+     "status": "configured",
+     "tool_count": 0
+    },
+    {
+     "name": "playwright",
+     "transport": "stdio",
+     "enabled": true,
+     "active": false,
+     "status": "configured",
+     "tool_count": 0
+    },
+    {
+     "name": "om-metadata",
+     "transport": "stdio",
+     "enabled": true,
+     "active": false,
+     "status": "configured",
+     "tool_count": 0
+    },
+    {
+     "name": "d1-research",
+     "transport": "stdio",
+     "enabled": true,
+     "active": false,
+     "status": "configured",
+     "tool_count": 0
+    },
+    {
+     "name": "huangzhong",
+     "transport": "stdio",
+     "enabled": true,
+     "active": false,
+     "status": "configured",
+     "tool_count": 0
+    },
+    {
+     "name": "zhice-selection",
+     "transport": "stdio",
+     "enabled": true,
+     "active": false,
+     "status": "configured",
+     "tool_count": 0
+    },
+    {
+     "name": "dw-governance",
+     "transport": "stdio",
+     "enabled": true,
+     "active": false,
+     "status": "configured",
+     "tool_count": 0
+    },
+    {
+     "name": "dw-quality",
+     "transport": "stdio",
+     "enabled": true,
+     "active": false,
+     "status": "configured",
+     "tool_count": 0
+    },
+    {
+     "name": "dw-catalog",
+     "transport": "stdio",
+     "enabled": true,
+     "active": false,
+     "status": "configured",
+     "tool_count": 0
+    },
+    {
+     "name": "factor-tools",
+     "transport": "stdio",
+     "enabled": true,
+     "active": false,
+     "status": "configured",
+     "tool_count": 0
+    },
+    {
+     "name": "kb-corpus",
+     "transport": "stdio",
+     "enabled": true,
+     "active": false,
+     "status": "configured",
+     "tool_count": 0
+    }
+   ],
+   "tools_total": 0,
+   "reload_required": true,
+   "unavailable_servers": [
+    "stock-data",
+    "stock-intel-readonly",
+    "jev-news",
+    "playwright",
+    "om-metadata",
+    "d1-research",
+    "huangzhong",
+    "zhice-selection",
+    "dw-governance",
+    "dw-quality",
+    "dw-catalog",
+    "factor-tools",
+    "kb-corpus"
+   ],
+   "expected_tools": 98,
+   "inventory_scope": "already_known_runtime_only"
+  }
  },
  "query_examples": [
   {
