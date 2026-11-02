@@ -1,0 +1,35 @@
+{
+ "schema_version": "learning_meta_filter.v1",
+ "tag": "20261103",
+ "generated_at": "2026-11-03T06:42:25+08:00",
+ "dry_run": true,
+ "units_rewritten": false,
+ "audit": {
+  "path": "C:\\项目\\知识库\\30_知识单元\\视频号学习_8博主_units_draft.jsonl",
+  "exists": true,
+  "total": 3813,
+  "meta_skipped": 2795,
+  "kept": 1018,
+  "meta_ratio": 0.733,
+  "samples": [
+   "> 共 23 条 · 由 faster-whisper 转写，可能有个别同音字错误",
+   "- 文件：`20261010_1835_缩量后放量 AI 把它翻译成公式.mp4`",
+   "- 时长：1:16",
+   "- 字数：405",
+   "- 文件：`20261011_2005_AI 到底能不能预判行情？.mp4`"
+  ],
+  "rewritten": false,
+  "project_id": "视频号学习_8博主",
+  "dry_run": true,
+  "rules": [
+   "文件：*.mp4",
+   "时长：",
+   "字数：",
+   "共 N 条",
+   "由 faster-whisper 转写",
+   "纯 · / —— / ++++ 分隔线",
+   "视频文件名 .mp4 行"
+  ]
+ },
+ "note": "dry-run 只读统计；真实 units 文件未重写；重新 pipeline --write 时生效"
+}

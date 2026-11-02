@@ -81,17 +81,117 @@ def clean_md(src: Path, out: Path) -> dict:
     return {"src": str(src), "out": str(out), "chars": len(text), "lines": len(out_lines)}
 
 
-def draft_units(pid: str, clean_files: list[Path], out_jsonl: Path) -> int:
-    units, n = [], 0
+# ---------------------------------------------------------------------------
+# S3 元数据行过滤（task-137）：转写元数据不是知识，入库前剔除
+# ---------------------------------------------------------------------------
+_META_FILE_RE = re.compile(r"^[-*•>·\s]*文件\s*[:：]")
+_META_DURATION_RE = re.compile(r"^[-*•>·\s]*时长\s*[:：]\s*\d")
+_META_WORDS_RE = re.compile(r"^[-*•>·\s]*字数\s*[:：]\s*\d")
+_META_TOTAL_RE = re.compile(r"^[-*•>·\s]*共\s*\d+\s*条")
+_META_PURE_SEP_RE = re.compile(r"^[-—－~～·•*+>\s]+$")
+_META_WHISPER_RE = re.compile(r"(由\s*)?faster[-_ ]?whisper", re.I)
+
+
+def _is_meta_claim(claim: str) -> bool:
+    """识别转写元数据行：文件:/时长:/字数:/共N条/faster-whisper/纯·分隔/.mp4/——/++++。"""
+    s = (claim or "").strip()
+    if not s:
+        return True
+    if _META_FILE_RE.match(s) or _META_DURATION_RE.match(s) or _META_WORDS_RE.match(s):
+        return True
+    if _META_TOTAL_RE.match(s) or _META_WHISPER_RE.search(s):
+        return True
+    if _META_PURE_SEP_RE.match(s):                      # 纯分隔线：—— / ··· / ++++ / ----
+        return True
+    if re.search(r"\.mp4\b", s, re.I) and (len(s) < 120 or "文件" in s):
+        return True                                     # 视频文件名行
+    return False
+
+
+def audit_units_file(units_path: Path, sample_limit: int = 5) -> dict:
+    """只读审计既有 units：统计元数据行（不改文件）。"""
+    total = meta = 0
+    samples: list[str] = []
+    try:
+        lines = units_path.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError as exc:
+        return {"path": str(units_path), "exists": True, "error": f"{type(exc).__name__}: {exc}"}
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            claim = str(json.loads(line).get("claim") or "")
+        except json.JSONDecodeError:
+            claim = line
+        total += 1
+        if _is_meta_claim(claim):
+            meta += 1
+            if len(samples) < sample_limit:
+                samples.append(claim[:160])
+    return {"path": str(units_path), "exists": True, "total": total,
+            "meta_skipped": meta, "kept": total - meta,
+            "meta_ratio": round(meta / total, 4) if total else 0.0,
+            "samples": samples, "rewritten": False}
+
+
+def meta_filter(project_id: str, kb: Path | None = None, report: bool = False) -> dict:
+    """dry-run：对项目既有 units 统计将过滤的元数据行（不重写 units）；--report 落报告。"""
+    kb = kb or DEFAULT_KB
+    units_path = kb / "30_知识单元" / f"{project_id}_units_draft.jsonl"
+    if not units_path.exists():
+        return {"project_id": project_id, "exists": False, "note": "units 文件不存在"}
+    audit = audit_units_file(units_path)
+    audit["project_id"] = project_id
+    audit["dry_run"] = True
+    audit["rules"] = ["文件：*.mp4", "时长：", "字数：", "共 N 条", "由 faster-whisper 转写",
+                      "纯 · / —— / ++++ 分隔线", "视频文件名 .mp4 行"]
+    if not report:
+        return audit
+    tag = datetime.now().strftime("%Y%m%d")
+    jp = REPORTS / f"learning_meta_filter_{tag}.json"
+    mp = REPORTS / f"learning_meta_filter_{tag}.md"
+    REPORTS.mkdir(parents=True, exist_ok=True)
+    payload = {"schema_version": "learning_meta_filter.v1", "tag": tag,
+               "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+               "dry_run": True, "units_rewritten": False, "audit": audit,
+               "note": "dry-run 只读统计；真实 units 文件未重写；重新 pipeline --write 时生效"}
+    jp.write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
+    L = [f"# 学习 S3 元数据行过滤（{tag}，dry-run）", "",
+         f"> 项目 `{project_id}`｜units **未重写**｜生成 {payload['generated_at']}", "",
+         "## 一、预计减少量", "",
+         f"- 总单元：**{audit['total']}**；元数据行：**{audit['meta_skipped']}**"
+         f"（{audit['meta_ratio']*100:.1f}%）；保留：**{audit['kept']}**",
+         f"- 文件：`{audit['path']}`（只读审计，未改动）", "",
+         "## 二、过滤规则（_is_meta_claim）", ""]
+    L += [f"- `{r}`" for r in audit["rules"]]
+    L += ["", "## 三、命中样例（前 5 条）", ""]
+    L += [f"- `{s[:120]}`" for s in audit.get("samples") or []]
+    L += ["", "## 四、生效方式", "",
+          "- pipeline **--write** 生成单元时调用 `_is_meta_claim` 跳过元数据行，并记录 `meta_skipped`；",
+          "- 本次仅 dry-run，真实 `30_知识单元/*_units_draft.jsonl` 未被重写。", ""]
+    mp.write_text("\n".join(L), encoding="utf-8")
+    payload["outputs"] = {"json": str(jp), "md": str(mp)}
+    return payload
+
+
+def draft_units(pid: str, clean_files: list[Path], out_jsonl: Path,
+                stats: dict | None = None) -> int:
+    units, n, meta = [], 0, 0
     for f in clean_files:
         for i, line in enumerate(f.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
             s = line.strip()
             if len(s) < 8 or s.startswith("#") or s.startswith("|"):
                 continue
+            if _is_meta_claim(s):
+                meta += 1
+                continue
             n += 1
             units.append({"unit_id": f"learn_{pid}_{n:04d}", "project_id": pid,
                           "claim": s, "evidence": {"file": f.name, "line": i},
                           "status": "draft", "created_at": datetime.now().astimezone().isoformat(timespec="seconds")})
+    if stats is not None:
+        stats.update({"units_raw": n + meta, "meta_skipped": meta, "units": n})
     out_jsonl.parent.mkdir(parents=True, exist_ok=True)
     with open(out_jsonl, "w", encoding="utf-8") as fh:
         for u in units:
@@ -111,6 +211,9 @@ def pipeline(kb: Path, write: bool = False) -> dict:
         item = {"project_id": pid, "status": p.get("status"), "pdf_ocr": ocr}
         texts = read_texts(kb, pid)
         item["texts"] = len(texts)
+        units_path = kb / "30_知识单元" / f"{pid}_units_draft.jsonl"
+        if units_path.exists():
+            item["units_audit"] = audit_units_file(units_path)   # 只读：dry-run 显示将过滤数量
         if not texts:
             item["action"] = "skip_no_text"
             rep["projects"].append(item)
@@ -124,7 +227,9 @@ def pipeline(kb: Path, write: bool = False) -> dict:
         cleaned = [clean_md(t, clean_dir / t.name) for t in texts]
         units_path = kb / "30_知识单元" / f"{pid}_units_draft.jsonl"
         safe(units_path, kb)
-        n_units = draft_units(pid, [Path(c["out"]) for c in cleaned], units_path)
+        units_stats: dict = {}
+        n_units = draft_units(pid, [Path(c["out"]) for c in cleaned], units_path,
+                              stats=units_stats)
         # 概念草稿（简单词频，不发布）
         concept_dir = kb / "35_知识提炼"
         safe(concept_dir / f"{pid}_concepts_draft.json", kb)
@@ -141,7 +246,8 @@ def pipeline(kb: Path, write: bool = False) -> dict:
         p["status"] = "distilling"
         p["stage_updated_at"] = rep["generated_at"]
         item.update(action="pipelined", clean_files=[c["out"] for c in cleaned], units=n_units,
-                    concepts_top=len(top))
+                    meta_skipped=units_stats.get("meta_skipped", 0),
+                    units_raw=units_stats.get("units_raw", n_units), concepts_top=len(top))
         rep["projects"].append(item)
     if write:
         save_reg(reg)
@@ -545,10 +651,11 @@ def archive_report(kb: Path, project_id: str, write: bool = False) -> dict:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["pipeline", "governance", "standardize", "archive"])
+    ap.add_argument("cmd", choices=["pipeline", "governance", "standardize", "archive",
+                                    "meta_filter"])
     ap.add_argument("--write", action="store_true")
     ap.add_argument("--project", default="")
-    ap.add_argument("--report", action="store_true", help="archive 后输出 learning_archive_<tag>.{json,md}")
+    ap.add_argument("--report", action="store_true", help="archive/meta_filter 输出报告")
     ap.add_argument("--root", default=str(DEFAULT_KB))
     args = ap.parse_args(argv)
     kb = Path(args.root)
@@ -562,6 +669,10 @@ def main(argv=None) -> int:
                              ensure_ascii=False, indent=1)[:4000])
             return 0
         rep = archive(kb, args.project, write=args.write)
+        print(json.dumps(rep, ensure_ascii=False, indent=1)[:4000])
+        return 0
+    if args.cmd == "meta_filter":
+        rep = meta_filter(args.project or "视频号学习_8博主", kb, report=args.report)
         print(json.dumps(rep, ensure_ascii=False, indent=1)[:4000])
         return 0
     fn = {"pipeline": pipeline, "governance": governance, "standardize": standardize}[args.cmd]
