@@ -28,13 +28,14 @@ NGINX = PORTAL / "nginx.conf"
 PW_ENABLED = os.environ.get("SHUIJING_PW") == "1"
 PW_EVIDENCE = Path(os.environ.get("SHUIJING_PW_EVIDENCE_DIR", r"C:\Temp\acad1_shuijing_evidence"))
 
-ACTIONS = ["buy"] * 3 + ["watch"] * 5 + ["avoid"] * 2 + ["pending_analysis"] * 9
+ACTIONS = ["pending_analysis"] * 36  # live 2026-11-03：全池待分析
 RISKS = [["stale_data"], ["env_diff"], ["panic_buy"], [], ["stale_data", "env_diff"]]
 
 
 def _fixture_payload():
+    """对齐 live 实测：pool_total=36 > 设计上限 30（超限 6 只）+ stale 3d。"""
     items = []
-    for i in range(19):
+    for i in range(36):
         items.append({
             "code": "60%04d" % (1000 + i),
             "name": "夹具标的%02d" % i,
@@ -42,30 +43,29 @@ def _fixture_payload():
             "tier": "T1" if i < 3 else "T2",
             "sources": ["chanlun", "ninedim"] if i % 2 else ["chanlun"],
             "data_date": "2026-10-30",
-            "freshness_days": 4,
+            "freshness_days": 3,
             "expiry_date": "2026-11-02",
             "risk_flags": RISKS[i % len(RISKS)],
-            "recommendation": {"buy": "BUY", "watch": "WATCH",
-                               "avoid": "AVOID"}.get(ACTIONS[i], None),
-            "confidence": round(0.5 + (i % 5) / 10.0, 2),
-            "price": 10.0 + i,
-            "decision_status": "done" if i < 2 else "pending",
+            "recommendation": None,
+            "confidence": None,
+            "price": None,
+            "decision_status": "pending",
             "action": ACTIONS[i],
-            "analyses": {"chanlun": "夹具多角色分析摘要 %02d" % i} if i < 2 else {},
+            "analyses": {},
             "node_exec": [],
         })
     return {
         "ok": True, "mode": "acad1_pool_review", "trading_permitted": False,
         "generated_at": "2026-11-03 07:00:00", "date": "2026-11-02",
         "pool_id": "ACAD1-REC-20261102", "owner": "ACAD1",
-        "data_date": "2026-10-30", "stale": False, "freshness_days": 4,
+        "data_date": "2026-10-30", "stale": True, "freshness_days": 3,
         "summary": {
             "date": "2026-11-02", "pool_id": "ACAD1-REC-20261102",
-            "pool_total": 19, "reviewed": 2, "pending": 17,
-            "by_action": {"buy": 3, "watch": 5, "avoid": 2, "pending_analysis": 9},
-            "by_tier": {"T1": 3, "T2": 16},
+            "pool_total": 36, "reviewed": 0, "pending": 36,
+            "by_action": {"buy": 0, "watch": 0, "avoid": 0, "pending_analysis": 36},
+            "by_tier": {"T1": 0, "T2": 36},
         },
-        "plan": {"selected": 3, "watch": 5, "avoid": 2, "total_weight": 0.3},
+        "plan": {"selected": 0, "watch": 0, "avoid": 0, "total_weight": 0},
         "items": items,
     }
 
@@ -99,6 +99,21 @@ def test_framework_dark_baseline():
     assert "box-shadow: 0 1px 2px" in section   # 低阴影
     assert "var(--link)" in section and "var(--os-blue)" in section
     assert "body::before { background: none; }" in section
+
+
+def test_honest_limit_stale_and_main_padding():
+    """P1 诚实性：KPI/池标题显示“超限 N 只 / stale Xd”；.main.wrap padding 真正命中。"""
+    txt = HTML.read_text(encoding="utf-8")
+    css = CSS.read_text(encoding="utf-8")
+    assert 'id="kpi-limit"' in txt and 'id="pool-limit-tag"' in txt
+    # 诚实提示由页面内联只读脚本渲染（不改 shuijing.js/API）：超限 + stale 天数必须直说
+    assert "超限" in txt and "stale " in txt and "CAP = 30" in txt
+    assert "MutationObserver" in txt and "fresh-tag" in txt
+    assert ".pool-limit" in css
+    # HTML 是 <main class="main wrap">：选择器必须 .main.wrap（.wrap .main 不命中）
+    assert ".main.wrap" in css
+    assert ".wrap .main" not in css
+    assert "padding: 18px 18px 46px" in css
 
 
 def test_readonly_and_api():
@@ -181,16 +196,20 @@ def test_playwright_three_viewports(tmp_path):
             page.on("pageerror", lambda e: errors.append("pageerror: %s" % e))
             page.goto(base + "/shuijing.html", wait_until="load")
             page.wait_for_selector("#pool-rows .pool-row", timeout=15000)
-            assert page.locator("#kpi-pool").inner_text().strip() == "19"
-            assert page.locator("#pool-rows .pool-row").count() == 19
+            assert page.locator("#kpi-pool").inner_text().strip() == "36"
+            assert page.locator("#pool-rows .pool-row").count() == 36
             assert page.locator("#risk-list li").count() >= 1
-            # 筛选：已复盘 2 / 待复盘 17 / 全部 19
+            # 诚实提示：超限 6 只 / stale 3d（KPI 脚注 + 池标题），不能只写“设计上限 30”
+            limit_text = page.locator("#kpi-limit").inner_text()
+            assert "超限 6 只" in limit_text and "stale 3d" in limit_text, limit_text
+            assert "超限 6 只" in page.locator("#pool-limit-tag").inner_text()
+            # 筛选：已复盘 0 / 待复盘 36 / 全部 36
             page.click('.tab[data-filter="reviewed"]')
-            assert page.locator("#pool-rows .pool-row").count() == 2
+            assert page.locator("#pool-rows .pool-row").count() == 0
             page.click('.tab[data-filter="pending"]')
-            assert page.locator("#pool-rows .pool-row").count() == 17
+            assert page.locator("#pool-rows .pool-row").count() == 36
             page.click('.tab[data-filter="all"]')
-            assert page.locator("#pool-rows .pool-row").count() == 19
+            assert page.locator("#pool-rows .pool-row").count() == 36
             # 点击抽屉（只读）：打开后含边界文案，Esc 关闭
             page.locator("#pool-rows .pool-row").first.click()
             assert page.locator("#drawer.is-open").count() == 1
@@ -218,6 +237,6 @@ def test_playwright_three_viewports(tmp_path):
         assert scroll_w <= inner_w + 1, "%s 横向溢出：scrollWidth=%s innerWidth=%s" % (label, scroll_w, inner_w)
     assert len(shots) == 3
     (PW_EVIDENCE / "acad1_shuijing_evidence.json").write_text(json.dumps(
-        {"mode": "19_pool_fixture", "viewports": shots, "console_errors": errors,
+        {"mode": "36_pool_stale3_fixture", "viewports": shots, "console_errors": errors,
          "overflow": overflow, "api_calls": api_calls["n"]},
         ensure_ascii=False, indent=1), encoding="utf-8")
