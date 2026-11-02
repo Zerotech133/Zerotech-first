@@ -1,0 +1,60 @@
+{
+ "generated_at": "2026-11-03T05:25:14+08:00",
+ "old": {
+  "pass": 81,
+  "revise": 0,
+  "reject": 210,
+  "issues": {
+   "concept_sentence_like": 83,
+   "concept_no_domain_term": 128,
+   "concept_too_short": 7,
+   "answer_too_short": 12,
+   "concept_meta_or_person": 23,
+   "concept_filler_word": 45,
+   "concept_sentence_punct": 2,
+   "concept_sentence_ending": 9,
+   "concept_non_noun_ending": 4,
+   "concept_action_phrase": 5,
+   "concept_question_like": 36,
+   "concept_generic_or_header": 2,
+   "duplicate_existing_answer": 2
+  },
+  "total": 291
+ },
+ "new": {
+  "pass": 259,
+  "revise": 0,
+  "reject": 513,
+  "issues": {
+   "concept_no_domain_term": 382,
+   "concept_question_like": 17,
+   "concept_answer_mismatch": 21,
+   "concept_non_noun_ending": 18,
+   "concept_sentence_like": 190,
+   "concept_meta_or_person": 23,
+   "concept_action_phrase": 16,
+   "concept_too_short": 6,
+   "concept_sentence_ending": 18,
+   "concept_generic_or_header": 2
+  },
+  "total": 772
+ },
+ "new_pass_by_blogger": {
+  "AI量化工具手记": 9,
+  "cash猫4415": 3,
+  "K哥真交易": 10,
+  "一修论市": 77,
+  "乔木缠论ROEE": 25,
+  "指标公式入门": 11,
+  "数据帝-量化开发": 101,
+  "爱死磕-康康": 23
+ },
+ "candidates_v2": {
+  "units": 3813,
+  "skip_meta": 8,
+  "skip_no_concept": 2958,
+  "skip_duplicate": 69,
+  "skip_short_answer": 6,
+  "candidates": 772
+ }
+}

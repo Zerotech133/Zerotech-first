@@ -12,6 +12,16 @@ CAND = REPO / "research/reports/card_candidates_视频号学习_8博主_20261103
 CARDS = REPO / "portal/static/kb_learning_cards.json"
 PID = "视频号学习_8博主"
 DATE = datetime.now().strftime("%Y%m%d")
+import argparse  # noqa: E402
+
+
+def parse_args(argv=None):
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--candidates", default=str(CAND))
+    ap.add_argument("--pid", default=PID)
+    ap.add_argument("--prefix", default=None, help="输出文件名前缀（默认同 pid）")
+    ap.add_argument("--top", type=int, default=50)
+    return ap.parse_args(argv)
 
 spec = importlib.util.spec_from_file_location("cpl", REPO / "tools/kb_corpus/card_precheck_laomu.py")
 cpl = importlib.util.module_from_spec(spec)
@@ -34,8 +44,12 @@ def blogger_of(source: str) -> str:
     return name or "未标注"
 
 
-def main() -> int:
-    cand = json.loads(CAND.read_text(encoding="utf-8"))
+def main(argv=None) -> int:
+    args = parse_args(argv)
+    cand_path = Path(args.candidates)
+    pid = args.pid
+    prefix = args.prefix or pid
+    cand = json.loads(cand_path.read_text(encoding="utf-8"))
     cards = cand.get("candidates") or []
     base = json.loads(CARDS.read_text(encoding="utf-8")).get("cards") or []
     base_concepts = {cpl.norm_key(c.get("concept")) for c in base}
@@ -70,7 +84,7 @@ def main() -> int:
             if c.get("unit_id"):
                 score += 1
         out_cards.append({
-            "card_id": c.get("card_id"), "project_id": PID, "blogger": bl,
+            "card_id": c.get("card_id"), "project_id": pid, "blogger": bl,
             "concept": ev["concept"], "q": cpl.clean_text(c.get("q")), "a": ev["a"],
             "source": ev["source"], "evidence": ev["evidence"], "theme": ev["theme"],
             "quality_score": score,
@@ -82,16 +96,16 @@ def main() -> int:
         })
     out_cards.sort(key=lambda x: (-x["quality_score"], x["blogger"], x["concept"]))
     passes = [c for c in out_cards if c["review"]["checkboxes"]["pass"]]
-    top = passes[:50]
+    top = passes[:args.top]
     result = {
         "schema_version": "card_proposals.v2", "date": DATE, "generated_at":
             datetime.now().astimezone().isoformat(timespec="seconds"),
-        "generator": "card_precheck_generic.py", "project_id": PID,
-        "source": CAND.name, "summary": stats,
+        "generator": "card_precheck_generic.py", "project_id": pid,
+        "source": cand_path.name, "summary": stats,
         "by_blogger": by_blogger, "top_candidates": len(top),
         "cards": out_cards,
     }
-    p = REPO / "research/reports" / f"card_proposals_{PID}_{DATE}.json"
+    p = REPO / "research/reports" / f"card_proposals_{prefix}_{DATE}.json"
     p.write_text(json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8")
     print("proposals:", p.name, "| pass", stats["pass"], "| revise", stats["revise"], "| reject", stats["reject"])
 
@@ -115,7 +129,7 @@ def main() -> int:
           "1. 预审为**机器规则**（Markdown 清洗/口语碎片/领域词/去重/长度），不等于语义正确；",
           "2. 勾选「通过」后走 `learning_release.py`（发布门强制）才合并；",
           "3. 视频号内容为学习资料，不构成投资建议。"]
-    md = REPO / "research/reports" / f"card_review_top_{PID}_{DATE}.md"
+    md = REPO / "research/reports" / f"card_review_top_{prefix}_{DATE}.md"
     md.write_text("\n".join(L), encoding="utf-8")
     print("review list:", md.name, "| top", len(top))
     return 0
