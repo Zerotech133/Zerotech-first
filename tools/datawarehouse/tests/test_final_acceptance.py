@@ -123,7 +123,7 @@ def test_g1_pass_with_rows_delta_and_fresh_parts():
     assert gate["evidence"]["fresh_table_count"] == len(FA.KEY_TABLES)
 
 
-def test_g1_zero_rows_fail_and_missing_probe_unknown():
+def test_g1_zero_rows_fail_and_missing_probe_unknown(monkeypatch):
     fresh = {table: {"fresh": True} for table in FA.KEY_TABLES}
     zero = FA.collect_g1(date=DATE, now=NOW, night_date=NIGHT, tasks=_g1_tasks(),
                          probe_entry={"ts": "2026-11-02T19:25:00+08:00",
@@ -132,6 +132,8 @@ def test_g1_zero_rows_fail_and_missing_probe_unknown():
                          fresh_tables=fresh)
     assert zero["status"] == "fail"
     assert "rows_delta_total<=0" in zero["reason"]
+    monkeypatch.setattr(FA, "load_probe_entries",
+                        lambda *a, **k: ([], "none", ""))
     unknown = FA.collect_g1(date=DATE, now=NOW, night_date=NIGHT, tasks=_g1_tasks(),
                             probe_entry=None, fresh_tables=fresh)
     assert unknown["status"] == "unknown"

@@ -5,6 +5,7 @@
 """
 from __future__ import annotations
 
+import datetime as dt
 import json
 import sqlite3
 import sys
@@ -122,7 +123,7 @@ def _env(tmp_path: Path) -> dict:
 def test_k1_streak_three_days_ok(tmp_path):
     db = tmp_path / "xq.db"
     _write_xq(db)
-    k = kr.collect_k1(db_path=db)
+    k = kr.collect_k1(db_path=db, today=dt.date(2026, 11, 2))
     assert k["status"] == "ok" and k["value"] == 1  # 今日（11-02）1 行 >0
     assert "连续 3 天" in k["evidence"]
 
@@ -130,7 +131,7 @@ def test_k1_streak_three_days_ok(tmp_path):
 def test_k1_two_days_warn_and_missing_unknown(tmp_path):
     db = tmp_path / "xq.db"
     _write_xq(db, days=("2026-11-02", "2026-11-01"))
-    k = kr.collect_k1(db_path=db)
+    k = kr.collect_k1(db_path=db, today=dt.date(2026, 11, 2))
     assert k["status"] == "warn" and "连续 2 天" in k["evidence"]
     missing = kr.collect_k1(db_path=tmp_path / "nope.db")
     assert missing["status"] == "unknown" and missing["value"] is None
@@ -160,15 +161,18 @@ def test_k3_auto_ok_manual_warn_missing_unknown(tmp_path):
     snap.write_text(json.dumps({"generated_at": "2026-11-02T14:05:55+08:00"}),
                     encoding="utf-8")
     auto = kr.collect_k3(snapshot_path=snap, task_text=(
-        "Last Run Time: 2026/11/2 10:06:47\nLast Result: 0\n"))
+        "Last Run Time: 2026/11/2 10:06:47\nLast Result: 0\n"),
+        today=dt.date(2026, 11, 2))
     assert auto["status"] == "ok" and "自动任务今日已跑" in auto["evidence"]
     manual = kr.collect_k3(snapshot_path=snap, task_text=(
-        "Last Run Time: 2026/11/1 10:06:47\nLast Result: 0\n"))
+        "Last Run Time: 2026/11/1 10:06:47\nLast Result: 0\n"),
+        today=dt.date(2026, 11, 2))
     assert manual["status"] == "warn"
     fail = kr.collect_k3(snapshot_path=snap, task_text=(
-        "Last Run Time: 2026/11/2 10:06:47\nLast Result: 1\n"))
+        "Last Run Time: 2026/11/2 10:06:47\nLast Result: 1\n"),
+        today=dt.date(2026, 11, 2))
     assert fail["status"] == "warn"
-    missing = kr.collect_k3(snapshot_path=tmp_path / "nope.json")
+    missing = kr.collect_k3(snapshot_path=tmp_path / "nope.json", today=dt.date(2026, 11, 2))
     assert missing["status"] == "unknown" and missing["value"] is None
     # 中文标签解析（本地化 schtasks）
     cn = kr.parse_task_listing("上次运行时间: 2026/11/2 10:06:47\n上次结果: 0\n")
