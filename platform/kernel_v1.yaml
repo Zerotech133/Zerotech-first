@@ -153,14 +153,18 @@ contracts:
       - path: tools/datawarehouse/dataset_registry.py
         kind: contract
         status: existing
-        note: "文件级；缺 pg_table 与 C:\\Temp 覆盖（P2）"
+        note: "文件级 + pg_table/contract_artifact wave1；登记契约见 platform/schemas/dataset.schema.json v0.1（ADR-019 D6/D7）；wave2 83 张表与 registry v2 待实现"
+      - path: agent_platform/catalogs/contracts/v2_acad1_pool.odcs.yaml
+        kind: contract
+        status: existing
+        note: "ADR-018 D6/D7：ACAD1 池数据契约 v1.0.0（ODCS v3.0.2，A0 2026-11-02 Accepted）；SLA 唯一落点=compositions/acad1-legion/manifest.yaml spec.data.sla"
       - path: docs/standards/2026-10-31_知识全链路标准_v1.yaml
         kind: contract
         status: existing
       - path: platform/schemas/dataset.schema.json
         kind: schema
-        status: planned
-        note: "P2：含 pg_table/文件/契约产物三类"
+        status: existing
+        note: "ADR-019 D6/D7：dataset schema v0.1 冻结（kind=dir/sqlite_table/corpus_layer/pg_table/contract_artifact；新增 kind 须 ADR）"
       - path: platform/schemas/evidence_bundle.schema.json
         kind: schema
         status: planned

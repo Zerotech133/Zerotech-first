@@ -1,0 +1,167 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://aios.local/schemas/dataset-v0.1.json",
+  "title": "zerobound/dataset/v0.1",
+  "description": "平台数据集登记契约 v0.1（ADR-019 D6/D7；A0 2026-11-02 Accepted）。kind 枚举 = dir / sqlite_table / corpus_layer / pg_table / contract_artifact，按 kind 判别必填字段。v0.1 冻结：后续只增不改；新增 kind 或删除/改变字段语义须新 ADR（ADR-015 §7）。additionalProperties=true 允许实现扩展字段。字段映射：本 schema 的 id/name 对应登记实现（tools/datawarehouse/dataset_registry.py）的 dataset_id/label，映射收敛见 ADR-019 D7 registry v2 实现单。",
+  "$comment": "v0.1 冻结（2026-11-02，ADR-018/019 同批 K5 登记）。兼容策略：minor=只增字段/新增可选枚举值须 ADR 记录并在 K5 保留版本；major=删改必填字段或改变语义须新 ADR + 双版本并存（对齐 ADR-014 的 ≥90 天 deprecation 纪律）。运行时强制点（registry v2 / composition.py 严格解析 / ODCS lint）属后续实现单，本 schema 当前只做登记契约与只读校验。",
+  "type": "object",
+  "required": ["id", "name", "kind", "owner", "domain"],
+  "additionalProperties": true,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_.:-]{2,127}$",
+      "description": "全局唯一数据集标识（登记实现 dataset_id 映射；例：pg_public_v2_acad1_pool、tmp_acad1_evidence_bundle、ds_quant_data）"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "description": "人读名称/标签（登记实现 label 映射）"
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["dir", "sqlite_table", "corpus_layer", "pg_table", "contract_artifact"],
+      "description": "数据载体类型（枚举冻结；新增 kind 须新 ADR）"
+    },
+    "owner": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "责任人/席位（如 DATA1/ACAD1/D1/A0）"
+    },
+    "domain": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "数据域（如 接口数据域/学习派生/平台运行/selection）"
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "description": "文件/目录/SQLite/契约产物路径（dir/sqlite_table/corpus_layer 必填；contract_artifact 可选，见 ADR-019 D4 白名单）"
+    },
+    "table": {
+      "type": "string",
+      "pattern": "^[a-z_][a-z0-9_]{0,62}$",
+      "description": "sqlite_table 的表名（同 kind sqlite_table 必填）"
+    },
+    "schema": {
+      "type": "string",
+      "pattern": "^[a-z_][a-z0-9_]{0,62}$",
+      "description": "pg_table 的 PG schema（默认 public；跨 schema 需 A0 加白，ADR-019 D2）"
+    },
+    "physical": {
+      "$ref": "#/definitions/physical",
+      "description": "pg_table 物理定位（ADR-019 D2：information_schema 只读探测）"
+    },
+    "pg_table": {
+      "description": "pg_table 简写：字符串表名，或 {schema,table} 对象（与顶层 schema/table 二选一）",
+      "anyOf": [
+        { "type": "string", "pattern": "^[a-z_][a-z0-9_]{0,62}$" },
+        { "$ref": "#/definitions/physical" }
+      ]
+    },
+    "connector": {
+      "type": "string",
+      "minLength": 1,
+      "description": "只读连接器标签（逻辑串，不含凭据；如 pg@127.0.0.1:5446/zhice_os_v2）"
+    },
+    "artifact_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{2,127}$",
+      "description": "contract_artifact 的产物 id（受控白名单，ADR-019 D4）"
+    },
+    "sha256": {
+      "type": ["string", "null"],
+      "pattern": "^[a-fA-F0-9]{64}$",
+      "description": "contract_artifact 内容 sha256（64 hex；首次登记可 null，ADR-019 D4）"
+    },
+    "retention_days": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "contract_artifact 保留期（天）"
+    },
+    "produced_by_job": {
+      "type": "string",
+      "minLength": 1,
+      "description": "contract_artifact 产出任务 ref（如 job/acad1-evidence）"
+    },
+    "schema_ref": {
+      "type": "string",
+      "minLength": 1,
+      "description": "contract_artifact 内容 schema 引用（如 acad1-evidence/v1）"
+    },
+    "registered": { "type": "boolean", "description": "是否已登记（ADR-019 D7 registry v2 公共字段）" },
+    "exposed": { "type": "boolean", "description": "是否有业务取数入口（ADR-019 D7 公共字段）" },
+    "access": {
+      "type": "string",
+      "enum": ["read_only"],
+      "description": "访问模式（v0.1 仅 read_only；写入口须新 ADR）"
+    },
+    "status": {
+      "type": "string",
+      "description": "登记/产物状态（如 active/planned/missing/sha256_mismatch/retired）"
+    },
+    "ref_aliases": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "manifest ref 别名（ADR-019 D5：dataset/pg/<token>、dataset/file/<token> 等）"
+    },
+    "freshness": {
+      "type": ["string", "null"],
+      "description": "新鲜度口径（pg_table v0 固定 null，防假新鲜度；ADR-019 D2/P7）"
+    },
+    "row_estimate": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "description": "行数估算（pg_class.reltuples 只读参考，不参与 SLA）"
+    }
+  },
+  "oneOf": [
+    {
+      "description": "dir：文件/目录数据集，需 path",
+      "properties": { "kind": { "const": "dir" } },
+      "required": ["kind", "path"]
+    },
+    {
+      "description": "sqlite_table：SQLite 表，需 path + table",
+      "properties": { "kind": { "const": "sqlite_table" } },
+      "required": ["kind", "path", "table"]
+    },
+    {
+      "description": "corpus_layer：语料层，需 path",
+      "properties": { "kind": { "const": "corpus_layer" } },
+      "required": ["kind", "path"]
+    },
+    {
+      "description": "pg_table：PG 业务表，需 schema+table 或 physical{schema,table} 或 pg_table 简写",
+      "properties": { "kind": { "const": "pg_table" } },
+      "required": ["kind"],
+      "anyOf": [
+        { "required": ["schema", "table"] },
+        {
+          "required": ["physical"],
+          "properties": { "physical": { "$ref": "#/definitions/physical" } }
+        },
+        { "required": ["pg_table"] }
+      ]
+    },
+    {
+      "description": "contract_artifact：契约产物，需 artifact_id/sha256/owner/retention_days",
+      "properties": { "kind": { "const": "contract_artifact" } },
+      "required": ["kind", "artifact_id", "sha256", "owner", "retention_days"]
+    }
+  ],
+  "definitions": {
+    "physical": {
+      "type": "object",
+      "required": ["schema", "table"],
+      "additionalProperties": true,
+      "properties": {
+        "schema": { "type": "string", "pattern": "^[a-z_][a-z0-9_]{0,62}$" },
+        "table": { "type": "string", "pattern": "^[a-z_][a-z0-9_]{0,62}$" }
+      }
+    }
+  }
+}
