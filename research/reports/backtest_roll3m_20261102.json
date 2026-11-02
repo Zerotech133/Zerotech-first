@@ -1,0 +1,170 @@
+{
+ "generated_at": "2026-11-02T16:47:48+08:00",
+ "engine": "backtest_engine_v2",
+ "windows": {
+  "JUL": {
+   "d0": "20260701",
+   "d1": "20260731",
+   "bench": {
+    "000300.SH": -7.86,
+    "000905.SH": -17.02
+   }
+  },
+  "AUG": {
+   "d0": "20260803",
+   "d1": "20260831",
+   "bench": {
+    "000300.SH": 0.8,
+    "000905.SH": 6.11
+   }
+  },
+  "SEP": {
+   "d0": "20260901",
+   "d1": "20260930",
+   "bench": {
+    "000300.SH": -5.78,
+    "000905.SH": -6.5
+   }
+  },
+  "SEP1M": {
+   "d0": "20260928",
+   "d1": "20261030",
+   "bench": {
+    "000300.SH": -10.22,
+    "000905.SH": -17.81
+   }
+  }
+ },
+ "results": {
+  "ROLL-JUL-CHAN": {
+   "name": "缠论等机会轮动",
+   "total_return_pct": -2.66,
+   "annualized_pct": -24.96,
+   "max_drawdown_pct": -7.56,
+   "calmar": -3.3,
+   "n_trades": 89,
+   "win_rate_pct": 44.9,
+   "profit_factor": 0.92,
+   "avg_invested_pct": 30.6,
+   "n_trim": 3,
+   "n_mid_slot_days": 0
+  },
+  "ROLL-JUL-DK": {
+   "name": "量子双刀日内纪律",
+   "total_return_pct": 0.0,
+   "annualized_pct": 0.0,
+   "max_drawdown_pct": 0.0,
+   "calmar": null,
+   "n_trades": 0,
+   "win_rate_pct": null,
+   "profit_factor": null,
+   "avg_invested_pct": 0.0,
+   "n_trim": 0,
+   "n_mid_slot_days": 0
+  },
+  "ROLL-AUG-CHAN": {
+   "name": "缠论等机会轮动",
+   "total_return_pct": 3.09,
+   "annualized_pct": 42.61,
+   "max_drawdown_pct": -5.38,
+   "calmar": 7.92,
+   "n_trades": 169,
+   "win_rate_pct": 56.2,
+   "profit_factor": 1.47,
+   "avg_invested_pct": 67.5,
+   "n_trim": 0,
+   "n_mid_slot_days": 0
+  },
+  "ROLL-AUG-DK": {
+   "name": "量子双刀日内纪律",
+   "total_return_pct": -0.48,
+   "annualized_pct": -5.44,
+   "max_drawdown_pct": -2.41,
+   "calmar": -2.26,
+   "n_trades": 44,
+   "win_rate_pct": 43.2,
+   "profit_factor": 1.12,
+   "avg_invested_pct": 19.5,
+   "n_trim": 0,
+   "n_mid_slot_days": 0
+  },
+  "ROLL-SEP-CHAN": {
+   "name": "缠论等机会轮动",
+   "total_return_pct": -9.71,
+   "annualized_pct": -69.64,
+   "max_drawdown_pct": -9.71,
+   "calmar": -7.17,
+   "n_trades": 167,
+   "win_rate_pct": 44.3,
+   "profit_factor": 0.69,
+   "avg_invested_pct": 64.2,
+   "n_trim": 0,
+   "n_mid_slot_days": 0
+  },
+  "ROLL-SEP-DK": {
+   "name": "量子双刀日内纪律",
+   "total_return_pct": -5.35,
+   "annualized_pct": -47.37,
+   "max_drawdown_pct": -6.62,
+   "calmar": -7.15,
+   "n_trades": 82,
+   "win_rate_pct": 46.3,
+   "profit_factor": 0.71,
+   "avg_invested_pct": 31.8,
+   "n_trim": 1,
+   "n_mid_slot_days": 0
+  },
+  "SEP1M-CHANLUN": {
+   "name": "缠论等机会轮动",
+   "total_return_pct": -6.35,
+   "annualized_pct": -55.25,
+   "max_drawdown_pct": -6.77,
+   "calmar": -8.16,
+   "n_trades": 93,
+   "win_rate_pct": 40.9,
+   "profit_factor": 0.68,
+   "avg_invested_pct": 34.6,
+   "n_trim": 3,
+   "n_mid_slot_days": 0
+  },
+  "SEP1M-DK": {
+   "name": "量子双刀日内纪律",
+   "total_return_pct": -1.55,
+   "annualized_pct": -17.42,
+   "max_drawdown_pct": -3.28,
+   "calmar": -5.3,
+   "n_trades": 26,
+   "win_rate_pct": 50.0,
+   "profit_factor": 0.69,
+   "avg_invested_pct": 9.9,
+   "n_trim": 2,
+   "n_mid_slot_days": 0
+  },
+  "SEP1M-CHAN-DEF": {
+   "name": "缠论等机会轮动",
+   "total_return_pct": 0.58,
+   "annualized_pct": 7.31,
+   "max_drawdown_pct": 0.0,
+   "calmar": null,
+   "n_trades": 7,
+   "win_rate_pct": 85.7,
+   "profit_factor": 9.13,
+   "avg_invested_pct": 2.5,
+   "n_trim": 0,
+   "n_mid_slot_days": 0
+  },
+  "ROLL-JUL-CHAN-DEF": {
+   "name": "缠论等机会轮动",
+   "total_return_pct": -0.17,
+   "annualized_pct": -1.81,
+   "max_drawdown_pct": -1.2,
+   "calmar": -1.51,
+   "n_trades": 8,
+   "win_rate_pct": 50.0,
+   "profit_factor": 0.97,
+   "avg_invested_pct": 2.6,
+   "n_trim": 1,
+   "n_mid_slot_days": 0
+  }
+ }
+}
