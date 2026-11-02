@@ -14,10 +14,13 @@ from urllib.parse import parse_qs
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 
+import hq_agenda  # noqa: E402
 import hq_approvals  # noqa: E402
 import hq_budget  # noqa: E402
+import hq_commercial  # noqa: E402
 import hq_heartbeat  # noqa: E402
 import hq_org  # noqa: E402
+import hq_roles  # noqa: E402
 import hq_snapshot  # noqa: E402
 import hq_tasks  # noqa: E402
 
@@ -37,6 +40,15 @@ def handle_get(h, path: str, qs: str = "") -> None:
             return
         if path == "/api/hq/org":
             h._json({"ok": True, "data": hq_org.build_org()})
+            return
+        if path == "/api/hq/roles":
+            h._json({"ok": True, "data": hq_roles.build_roles()})
+            return
+        if path == "/api/hq/agenda":
+            h._json({"ok": True, "data": hq_agenda.build_agenda()})
+            return
+        if path == "/api/hq/commercial":
+            h._json({"ok": True, "data": hq_commercial.build_commercial()})
             return
         if path == "/api/hq/tasks":
             h._json({"ok": True, "data": hq_tasks.build_board()})

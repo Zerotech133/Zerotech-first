@@ -19,7 +19,9 @@ def test_manifest_shape():
     assert m["entry"] == "/hq"
     assert m["single_entry"] is True
     assert m["read_only"] is True
-    assert len(m["tabs"]) == 5
+    assert len(m["tabs"]) >= 8
+    ids={t["id"] for t in m["tabs"]}
+    assert {"roles","agenda","commercial","tasks"} <= ids
     assert m["auth"].startswith("8734")
 
 
@@ -34,7 +36,7 @@ def test_tabs_have_api_and_sources():
 def test_apis_unique_and_hq_scoped():
     m = _load()
     assert len(m["apis"]) == len(set(m["apis"]))
-    assert all(a.startswith("GET /hq/") for a in m["apis"])
+    assert all(a.startswith("GET /api/hq/") for a in m["apis"])
 
 
 def test_constraints_present():

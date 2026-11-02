@@ -24,6 +24,9 @@ def test_snapshot_shape():
     assert "total_decisions" in s["approvals"]["summary"]
     assert "totals" in s["budget"]
     assert "coalesced_wakes" in s["heartbeat"]
+    assert s["roles"]["summary"]["roles"] == 5
+    assert "items" in s["agenda"]
+    assert "summary" in s["commercial"]
 
 
 def test_snapshot_file_is_valid():
@@ -39,7 +42,7 @@ def test_page_contract():
     assert "/static/nav.js" in h
     assert "/api/hq/snapshot" in h
     assert "/static/hq_snapshot.json" not in h  # 敏感快照不得公开静态暴露
-    for tab in ("org", "tasks", "approvals", "budget", "heartbeat"):
+    for tab in ("roles", "agenda", "org", "tasks", "approvals", "commercial", "budget", "heartbeat"):
         assert f'data-tab="{tab}"' in h
 
 

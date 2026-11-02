@@ -10,50 +10,119 @@
   "read_only": true,
   "tabs": [
     {
+      "id": "roles",
+      "title": "五角色",
+      "api": [
+        "/api/hq/roles"
+      ],
+      "sources": [
+        "agent_platform/command_hq/roles.py",
+        "agent_platform/data/meetings/hq"
+      ],
+      "component": "hq-roles"
+    },
+    {
+      "id": "agenda",
+      "title": "议程",
+      "api": [
+        "/api/hq/agenda"
+      ],
+      "sources": [
+        "portal/data/council_*",
+        "agent_platform/data/meetings/hq"
+      ],
+      "component": "hq-agenda"
+    },
+    {
       "id": "org",
       "title": "组织",
-      "api": ["/hq/org"],
-      "sources": ["agent_platform/registry/org.json", "agent_platform/registry/team_*.json", "agent_platform/hr/*/resume.yaml"],
+      "api": [
+        "/api/hq/org"
+      ],
+      "sources": [
+        "agent_platform/registry/org.json",
+        "agent_platform/registry/team_*.json",
+        "agent_platform/hr/*/resume.yaml"
+      ],
       "component": "hq-org"
     },
     {
       "id": "tasks",
       "title": "任务",
-      "api": ["/hq/tasks", "/hq/tasks/board"],
-      "sources": [".worktrees/tasks.json"],
+      "api": [
+        "/api/hq/tasks",
+        "/api/hq/tasks/board"
+      ],
+      "sources": [
+        ".worktrees/tasks.json"
+      ],
       "component": "hq-tasks"
     },
     {
       "id": "approvals",
       "title": "审批",
-      "api": ["/hq/approvals"],
-      "sources": ["agent_platform/data/approvals/approvals.db", "agent_platform/data/approvals.jsonl", "agent_platform/config/approval_signers.json"],
+      "api": [
+        "/api/hq/approvals"
+      ],
+      "sources": [
+        "agent_platform/data/approvals/approvals.db",
+        "agent_platform/data/approvals.jsonl",
+        "agent_platform/config/approval_signers.json"
+      ],
       "component": "hq-approvals"
+    },
+    {
+      "id": "commercial",
+      "title": "商业",
+      "api": [
+        "/api/hq/commercial"
+      ],
+      "sources": [
+        "C:/项目/commercial",
+        "gzh/drafts",
+        "portal/data/strategy_subscriptions.json"
+      ],
+      "component": "hq-commercial"
     },
     {
       "id": "budget",
       "title": "预算",
-      "api": ["/hq/budget", "/hq/budget/alerts"],
-      "sources": ["portal/data/llm_usage.jsonl", "agent_platform/data/llm_tool_audit.jsonl", "agent_platform/registry/org.json"],
+      "api": [
+        "/api/hq/budget",
+        "/api/hq/budget/alerts"
+      ],
+      "sources": [
+        "portal/data/llm_usage.jsonl",
+        "agent_platform/data/llm_tool_audit.jsonl",
+        "agent_platform/registry/org.json"
+      ],
       "component": "hq-budget"
     },
     {
       "id": "heartbeat",
       "title": "心跳",
-      "api": ["/hq/heartbeat/status"],
-      "sources": ["agent_platform/data/schedules.json", ".worktrees/tasks.json"],
+      "api": [
+        "/api/hq/heartbeat/status"
+      ],
+      "sources": [
+        "agent_platform/data/schedules.json",
+        ".worktrees/tasks.json"
+      ],
       "component": "hq-heartbeat"
     }
   ],
   "apis": [
-    "GET /hq/org",
-    "GET /hq/tasks",
-    "GET /hq/tasks/board",
-    "GET /hq/approvals",
-    "GET /hq/approvals/summary",
-    "GET /hq/budget",
-    "GET /hq/budget/alerts",
-    "GET /hq/heartbeat/status"
+    "GET /api/hq/org",
+    "GET /api/hq/tasks",
+    "GET /api/hq/tasks/board",
+    "GET /api/hq/approvals",
+    "GET /api/hq/approvals/summary",
+    "GET /api/hq/budget",
+    "GET /api/hq/budget/alerts",
+    "GET /api/hq/heartbeat/status",
+    "GET /api/hq/roles",
+    "GET /api/hq/agenda",
+    "GET /api/hq/commercial"
   ],
   "ui": {
     "tokens": "portal/static/tokens.css",

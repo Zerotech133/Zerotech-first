@@ -47,16 +47,22 @@ tr:last-child td{border-bottom:none}.mono{font-family:ui-monospace,Consolas,mono
   <div class="cards" id="cards"></div>
 
   <div class="tabs" id="tabs">
-    <button class="tab on" data-tab="org">组织</button>
+    <button class="tab on" data-tab="roles">五角色</button>
+    <button class="tab" data-tab="agenda">议程</button>
+    <button class="tab" data-tab="org">组织</button>
     <button class="tab" data-tab="tasks">任务</button>
     <button class="tab" data-tab="approvals">审批</button>
+    <button class="tab" data-tab="commercial">商业</button>
     <button class="tab" data-tab="budget">预算</button>
     <button class="tab" data-tab="heartbeat">心跳</button>
   </div>
 
-  <div class="panel on" id="p-org"></div>
+  <div class="panel on" id="p-roles"></div>
+  <div class="panel" id="p-agenda"></div>
+  <div class="panel" id="p-org"></div>
   <div class="panel" id="p-tasks"></div>
   <div class="panel" id="p-approvals"></div>
+  <div class="panel" id="p-commercial"></div>
   <div class="panel" id="p-budget"></div>
   <div class="panel" id="p-heartbeat"></div>
 </div>
@@ -77,11 +83,16 @@ async function main(){
     return;
   }
   document.getElementById('meta').textContent=`数据源：实时 /api/hq/snapshot · 生成：${d.generated_at||'-'} · ${d.read_only?'只读':'?'}`;
-  const o=d.org.summary,t=d.tasks.summary,a=d.approvals.summary,b=d.budget,bh=d.heartbeat.summary;
+  const o=d.org?.summary||{},t=d.tasks?.summary||{},a=d.approvals?.summary||{},b=d.budget||{},bh=d.heartbeat?.summary||{},ro=d.roles||{},ag=d.agenda||{},cm=d.commercial||{};
   document.getElementById('cards').innerHTML=[
-    card('席位',o.agents),card('部门',o.departments),card('任务 WIP',t.wip),card('审批已决',a.total_decisions),card('Credit 估算',b.credits_estimate)
+    card('五角色',(ro.summary||{}).roles||0),card('议程待办',(ag.summary||{}).pending_orders||0),card('任务 WIP',t.wip||0),card('审批已决',a.total_decisions||0),card('商业租户',(cm.summary||{}).tenants||0)
   ].join('');
-  document.getElementById('p-org').innerHTML=table(['部门','名称','Lead','席位'],(d.org.departments||[]).map(x=>[x.dept,x.name,x.lead||'-',x.n])) + `<div class="meta">无 HR：${d.org.gaps.no_hr_profile}｜无 team 投影：${d.org.gaps.no_team_projection}</div>`;
+  document.getElementById('p-roles').innerHTML=table(['角色','席位','职责','模型','会议','派单'],(ro.roles||[]).map(x=>[x.name+'（'+x.role+'）',x.seat_id,x.duty,x.model||'-',x.meetings,x.orders])) + `<div class="meta">${esc(ro.note||'五角色只读：意见/会议/派单，不执行、不签字')}</div>`;
+  const ags=ag.summary||{};
+  document.getElementById('p-agenda').innerHTML=`<div class="meta">议题按类型：${esc(JSON.stringify(ags.by_kind||{}))} · 会议 ${esc((ag.meetings||{}).total||0)} · 闭环率 ${esc((ag.meetings||{}).closure_rate??'-')}</div>` + table(['类型','议题','owner','状态','来源'],(ag.items||[]).slice().reverse().slice(0,40).map(x=>[x.kind,x.item,x.owner||'-',x.status,x.source]));
+  const cs=cm.summary||{};
+  document.getElementById('p-commercial').innerHTML=table(['指标','值'],[['租户',cs.tenants],['活跃',cs.active],['套餐分布',JSON.stringify(cs.by_plan||{})],['试用',cs.trials],['试用转付费',cs.trial_to_paid],['待回访',cs.followups],['公众号草稿',(cs.content||{}).gzh_drafts],['策略订阅',(cs.content||{}).strategy_subscriptions]]) + table(['套餐','价格/月','报告/月','API/日'],(cm.plans||[]).map(x=>[x.name||x.plan,x.price_month,x.reports_month,x.api_day])) + `<div class="meta">${esc(cm.note||'')}</div>`;
+  document.getElementById('p-org').innerHTML=table(['部门','名称','Lead','席位'],(d.org.departments||[]).map(x=>[x.dept,x.name,x.lead||'-',x.n])) + `<div class="meta">无 HR：${(d.org.gaps||{}).no_hr_profile}｜无 team 投影：${(d.org.gaps||{}).no_team_projection}</div>`;
   const bd=d.tasks.board||{};
   document.getElementById('p-tasks').innerHTML=table(['任务','状态','owner','年龄(天)','描述'],[...(bd.doing||[]),...(bd.review||[])].map(x=>[x.id,x.status,x.owner||'-',x.age_days??'-',x.desc]));
   document.getElementById('p-approvals').innerHTML=(d.approvals.risks||[]).map(x=>`<div class="risk">${esc(x)}</div>`).join('') + table(['时间','类型','目标','决策','决策人'],(d.approvals.latest||[]).map(x=>[x.decided_at||x.created_at,x.target_type,x.target_id,x.decision,x.decided_by]));

@@ -19,10 +19,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
+import hq_agenda  # noqa: E402
 import hq_approvals  # noqa: E402
 import hq_budget  # noqa: E402
+import hq_commercial  # noqa: E402
 import hq_heartbeat  # noqa: E402
 import hq_org  # noqa: E402
+import hq_roles  # noqa: E402
 import hq_tasks  # noqa: E402
 
 DEFAULT_OUT = ROOT / "portal" / "private" / "hq_snapshot.json"
@@ -34,11 +37,17 @@ def build_snapshot() -> dict:
     approvals = hq_approvals.build_approvals()
     budget = hq_budget.build_budget(days=30)
     heartbeat = hq_heartbeat.build_heartbeat()
+    roles = hq_roles.build_roles()
+    agenda = hq_agenda.build_agenda()
+    commercial = hq_commercial.build_commercial()
     return {
         "schema": "hq/snapshot/v1",
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
         "read_only": True,
-        "note": "HQ-06 只读数据快照（静态文件）；实时 API=/api/hq/snapshot",
+        "note": "HQ v2 静态只读数据快照（五角色/议程/商业/任务/证据）；实时 API=/api/hq/snapshot",
+        "roles": roles,
+        "agenda": agenda,
+        "commercial": commercial,
         "org": {
             "summary": org["summary"],
             "chief": org["chief"],
