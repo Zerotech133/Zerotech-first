@@ -24,3 +24,9 @@ def test_caches_moved_out_of_portal_api():
 def test_methods_visible_via_mro():
     for name in ("_api_health", "_api_jev_stack", "_sys_health", "_api_ctl_alert"):
         assert hasattr(portal_api.Handler, name), name
+
+def test_card_9104_retired_probe_fast():
+    """已退役 9104 不建 TCP：ok=True/optional=True/state=retired/ms=0（2026-11-02）。"""
+    s = api_health_portal._probe_service(("card", 9104, None, True, "retired"))
+    assert s["ok"] is True and s["optional"] is True
+    assert s["state"] == "retired" and s["ms"] == 0

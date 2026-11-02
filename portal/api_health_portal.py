@@ -36,6 +36,35 @@ _JEV_DLQ = os.path.join(ROOT, "..", "jev-eval",
                         "push_dead_letter.jsonl")
 
 
+def _probe_service(spec):
+    """探测单个服务；spec=(name, port, http_path[, optional[, state]])。
+
+    2026-11-02：已退役服务（state="retired"，如 W3 退役的 9104 card）直接返回
+    ok=True/optional=True，不建 TCP（原先 2s 超时拖慢 /api/health 冷请求）。
+    """
+    name, port, http_path = spec[:3]
+    optional = bool(spec[3]) if len(spec) > 3 else False
+    state = spec[4] if len(spec) > 4 else ""
+    if state == "retired":
+        return {"name": name, "port": port, "ok": True, "optional": True,
+                "state": "retired", "ms": 0}
+    import socket as _sk
+    import time as _time
+    t0 = _time.time()
+    try:
+        if http_path:
+            from urllib.request import urlopen
+            ok = urlopen("http://127.0.0.1:%d%s" % (port, http_path), timeout=2.5).status == 200
+        else:
+            s = _sk.create_connection(("127.0.0.1", port), timeout=2)
+            s.close()
+            ok = True
+    except Exception:
+        ok = False
+    return {"name": name, "port": port, "ok": ok, "optional": optional,
+            "ms": int((_time.time() - t0) * 1000)}
+
+
 class Handler:  # Mixin 壳：经基座多继承并入
 
     def _sys_health(self):
@@ -193,24 +222,7 @@ class Handler:  # Mixin 壳：经基座多继承并入
                 return
 
         def probe(spec):
-            name, port, http_path = spec[:3]
-            optional = bool(spec[3]) if len(spec) > 3 else False
-            t0 = time.time()
-            try:
-                if http_path:
-                    ok = safe_urlopen("http://127.0.0.1:%d%s"
-                                    % (port, http_path),
-                                    timeout=2.5).status == 200
-                else:
-                    s = _sk.create_connection(("127.0.0.1", port),
-                                              timeout=2)
-                    s.close()
-                    ok = True
-            except Exception:
-                ok = False
-            return {"name": name, "port": port, "ok": ok,
-                    "optional": optional,
-                    "ms": int((time.time() - t0) * 1000)}
+            return _probe_service(spec)
 
         # W3 清债（2026-10-25）：9104 card 已按 W3 回执退役（按需拉起，
         # OPTIONAL_OFFLINE）；不再作为整体健康阻断，仅保留观测位。
@@ -220,7 +232,7 @@ class Handler:  # Mixin 壳：经基座多继承并入
                  ("gate", 9101, None),
                  ("review", 9102, None),
                  ("qd bridge", 9103, None),
-                 ("card", 9104, None, True)]
+                 ("card", 9104, None, True, "retired")]
         with ThreadPoolExecutor(max_workers=7) as _ex:
             services = list(_ex.map(probe, _spec))
 
