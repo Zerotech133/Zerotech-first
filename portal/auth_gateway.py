@@ -9,10 +9,11 @@
 
 安全边界：
 - 密码只在本次请求内存中出现；不落盘、不写日志；
-- 智策 token 只存服务端 session，不下发浏览器；
+- 智策 token 只存服务端 session（内存），不下发浏览器；**持久化模式绝不落盘 IdP token**；
 - cookie HttpOnly + SameSite=Lax；本地 HTTP 不加 Secure（HTTPS 部署时加）；
 - 只允许 identity_registry 中已验证的智策账号登录；
-- session 内存存储，进程重启即失效（Phase A 明确取舍）；
+- session 默认内存存储，进程重启即失效（Phase A 明确取舍）；
+  `ZB_SESSION_PERSIST=1` 时可选 SQLite 持久化（S1，2026-11-03；默认关闭，激活属 L2）；
 - 不鉴权、不写交易/业务数据。
 
 Phase A 之后由真正的 OIDC/token exchange 替换本模块。
@@ -22,13 +23,16 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import logging
 import os
 import secrets
+import sqlite3
 import threading
 import time
 import urllib.error
 import urllib.request
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 try:
     from safe_urlopen import safe_urlopen
@@ -45,6 +49,21 @@ ZHICE_BASE = os.environ.get("ZHICE_BASE_URL", "http://127.0.0.1:8105").rstrip("/
 # 本地管理员（2026-10-30 老田要求）：凭据只存 vault 的 PBKDF2 哈希，不入库。
 ADMIN_FILE = os.environ.get("ZB_LOCAL_ADMIN_FILE", r"C:\项目\_vault\secrets\zb_admin.env")
 ADMIN_PBKDF2_ITER = 260000
+
+# ── S1（2026-11-03）可选会话持久化：默认关闭，激活属 L2（需重启 8091）──
+# ZB_SESSION_PERSIST=1 时启用 SQLite；ZB_SESSION_DB 可覆盖路径（默认 portal/private/，
+# 已被 .gitignore 覆盖）。只存 session_id/sub/ctx/csrf_hash/时间/idp/amr，
+# **不存 IdP token、不存明文 CSRF**；session_id 本身是 bearer 凭据 → DB 文件需 ACL 保护。
+SESSION_PERSIST_ENABLED = (os.environ.get("ZB_SESSION_PERSIST", "0") or "0").strip().lower() in (
+    "1", "true", "yes", "on")
+SESSION_PERSIST_DB = Path(os.environ.get("ZB_SESSION_DB")
+                          or (Path(__file__).resolve().parent / "private" / "auth_sessions.db"))
+SESSION_DB_TABLE = "auth_sessions"
+_log = logging.getLogger(__name__)
+
+
+class SessionPersistenceError(RuntimeError):
+    """SQLite 会话存储不可用（fail-closed 信号：登录拒绝；读取视为无会话）。"""
 
 _sessions: Dict[str, Dict[str, Any]] = {}
 _lock = threading.Lock()
@@ -77,13 +96,156 @@ def _json_safe(handler, obj, code=200, set_cookie=None):
 
 
 class SessionStore:
-    """线程安全内存 session store（Phase A）。"""
+    """线程安全 session store：默认纯内存；persist=True 时 SQLite 持久化（TTL 秒）。
 
-    def __init__(self, ttl: int = SESSION_TTL_SECONDS):
+    持久化字段：session_id/sub/capacity/identity_context/csrf_hash/issued_at/
+    auth_time/expires_at/idp/amr。**不落盘 IdP token、不落盘明文 CSRF**；进程内 rec 仍带
+    token（同进程语义不变），重启后从 DB 恢复的会话 token 为空（当前无消费点，见
+    `_session_payload` 不暴露 token）。session_id 本身是 bearer 凭据 → DB 文件需 ACL 保护。
+    """
+
+    _SCHEMA = (
+        "CREATE TABLE IF NOT EXISTS auth_sessions ("
+        "session_id TEXT PRIMARY KEY, sub TEXT NOT NULL, capacity TEXT NOT NULL,"
+        " identity_context TEXT NOT NULL, csrf_hash TEXT NOT NULL,"
+        " issued_at TEXT NOT NULL, auth_time TEXT NOT NULL, expires_at TEXT NOT NULL,"
+        " idp TEXT NOT NULL, amr TEXT NOT NULL)"
+    )
+
+    def __init__(self, ttl: int = SESSION_TTL_SECONDS, persist: Optional[bool] = None,
+                 db_path: Optional[str] = None):
         self.ttl = int(ttl)
+        self.persist = bool(SESSION_PERSIST_ENABLED if persist is None else persist)
+        self.db_path = Path(db_path) if db_path is not None else SESSION_PERSIST_DB
         self._data: Dict[str, Dict[str, Any]] = {}
         self._lock = threading.Lock()
 
+    # ── 持久化底层（调用方必须持 self._lock）────────────────────────────────
+    def _db_connect_locked(self) -> sqlite3.Connection:
+        conn = None
+        try:
+            self.db_path.parent.mkdir(parents=True, exist_ok=True)
+            conn = sqlite3.connect(str(self.db_path), timeout=5.0)
+            conn.row_factory = sqlite3.Row
+            try:
+                conn.execute("PRAGMA journal_mode=WAL")
+            except sqlite3.DatabaseError:
+                pass  # WAL 非必需；真实损坏由下方 DDL 暴露
+            conn.execute(self._SCHEMA)
+            conn.execute("CREATE INDEX IF NOT EXISTS ix_auth_sessions_expires"
+                         " ON auth_sessions(expires_at)")
+            conn.commit()
+            return conn
+        except (sqlite3.DatabaseError, OSError) as exc:
+            if conn is not None:
+                try:
+                    conn.close()
+                except Exception:  # noqa: BLE001
+                    pass
+            raise SessionPersistenceError("session db unavailable: %s" % exc) from exc
+
+    def _db_insert_locked(self, rec: Dict[str, Any]) -> None:
+        try:
+            conn = self._db_connect_locked()
+            try:
+                conn.execute(
+                    "INSERT OR REPLACE INTO auth_sessions"
+                    " (session_id, sub, capacity, identity_context, csrf_hash,"
+                    "  issued_at, auth_time, expires_at, idp, amr)"
+                    " VALUES (?,?,?,?,?,?,?,?,?,?)",
+                    (rec["session_id"], rec["sub"], rec["capacity"],
+                     json.dumps(rec["identity_context"], ensure_ascii=False),
+                     rec["csrf_hash"], rec["issued_at"], rec["auth_time"],
+                     rec["expires_at"], rec["idp"],
+                     json.dumps(rec["amr"], ensure_ascii=False)))
+                conn.commit()
+            finally:
+                conn.close()
+        except (sqlite3.DatabaseError, OSError, ValueError, TypeError) as exc:
+            raise SessionPersistenceError("session persist failed: %s" % exc) from exc
+
+    def _db_row_to_rec_locked(self, row) -> Dict[str, Any]:
+        return {
+            "session_id": row["session_id"],
+            "sub": row["sub"],
+            "capacity": row["capacity"],
+            "identity_context": json.loads(row["identity_context"]),
+            "csrf_hash": row["csrf_hash"],
+            "issued_at": row["issued_at"],
+            "auth_time": row["auth_time"],
+            "expires_at": row["expires_at"],
+            "idp": row["idp"],
+            "amr": json.loads(row["amr"]),
+            "zhice_token": "",            # 持久化不落 IdP token
+            "token_persisted": False,
+        }
+
+    def _db_get_locked(self, sid: str) -> Optional[Dict[str, Any]]:
+        if not self.db_path.exists():
+            return None
+        try:
+            conn = self._db_connect_locked()
+            try:
+                row = conn.execute(
+                    "SELECT * FROM auth_sessions WHERE session_id=?", (sid,)).fetchone()
+                if row is None:
+                    return None
+                rec = self._db_row_to_rec_locked(row)
+                try:
+                    expired = datetime.fromisoformat(rec["expires_at"]) <= _now()
+                except (KeyError, ValueError):
+                    expired = True
+                if expired:
+                    conn.execute("DELETE FROM auth_sessions WHERE session_id=?", (sid,))
+                    conn.commit()
+                    return None
+                # 重启后明文 CSRF 不在 DB：重新签发一次性 CSRF 并回写哈希（logout 仍可用）
+                csrf = secrets.token_urlsafe(24)
+                rec["_csrf"] = csrf
+                rec["csrf_hash"] = hashlib.sha256(csrf.encode("utf-8")).hexdigest()
+                conn.execute("UPDATE auth_sessions SET csrf_hash=? WHERE session_id=?",
+                             (rec["csrf_hash"], sid))
+                conn.commit()
+                # 回填进程内缓存：后续 get 不再轮换 CSRF（否则 me→guard 之间 token 会漂移）
+                self._data[sid] = rec
+                return dict(rec)
+            finally:
+                conn.close()
+        except (SessionPersistenceError, sqlite3.DatabaseError, OSError,
+                ValueError, TypeError) as exc:
+            # fail-closed：DB 不可用 → 视为无会话（guard/me 401），绝不回退匿名/伪造
+            _log.warning("session persist read unavailable (%s): %s", type(exc).__name__, exc)
+            return None
+
+    def _db_delete_locked(self, sid: str) -> bool:
+        if not self.db_path.exists():
+            return False
+        try:
+            conn = self._db_connect_locked()
+            try:
+                cur = conn.execute("DELETE FROM auth_sessions WHERE session_id=?", (sid,))
+                conn.commit()
+                return cur.rowcount > 0
+            finally:
+                conn.close()
+        except (SessionPersistenceError, sqlite3.DatabaseError, OSError) as exc:
+            _log.warning("session persist delete unavailable (%s): %s", type(exc).__name__, exc)
+            return False
+
+    def _db_purge_locked(self) -> None:
+        if not self.db_path.exists():
+            return
+        try:
+            conn = self._db_connect_locked()
+            try:
+                conn.execute("DELETE FROM auth_sessions WHERE expires_at <= ?", (_iso(_now()),))
+                conn.commit()
+            finally:
+                conn.close()
+        except (SessionPersistenceError, sqlite3.DatabaseError, OSError) as exc:
+            _log.warning("session persist purge unavailable (%s): %s", type(exc).__name__, exc)
+
+    # ── 公共 API（与内存版调用方兼容）────────────────────────────────────
     def create(self, sub: str, identity_context: Dict[str, Any], zhice_token: str,
                idp: str = "zhice", amr: list | None = None) -> str:
         sid = secrets.token_urlsafe(32)
@@ -105,6 +267,9 @@ class SessionStore:
         }
         with self._lock:
             self._purge_locked()
+            if self.persist:
+                # fail-closed：落库失败则不建内存会话（登录方据此返回 503，不静默降级）
+                self._db_insert_locked(rec)
             self._data[sid] = rec
         return sid
 
@@ -114,11 +279,18 @@ class SessionStore:
         with self._lock:
             self._purge_locked()
             rec = self._data.get(sid)
-            return dict(rec) if rec else None
+            if rec is not None:
+                return dict(rec)
+            if self.persist:
+                return self._db_get_locked(sid)
+            return None
 
     def delete(self, sid: str) -> bool:
         with self._lock:
-            return self._data.pop(sid, None) is not None
+            existed = self._data.pop(sid, None) is not None
+            if self.persist:
+                existed = self._db_delete_locked(sid) or existed
+            return existed
 
     def _purge_locked(self) -> None:
         now = _now()
@@ -131,6 +303,8 @@ class SessionStore:
                 expired.append(sid)
         for sid in expired:
             self._data.pop(sid, None)
+        if self.persist:
+            self._db_purge_locked()
 
 
 STORE = SessionStore()
@@ -330,7 +504,12 @@ def login(handler) -> None:
             _json_safe(handler, {"ok": False, "error": "identity_registry_unavailable"}, 503)
             return
         _clear_fails(ip, username)
-        sid = STORE.create(ctx["sub"], ctx, "", idp="local-admin")
+        try:
+            sid = STORE.create(ctx["sub"], ctx, "", idp="local-admin")
+        except SessionPersistenceError as exc:
+            _log.error("login local-admin: session store unavailable: %s", exc)
+            _json_safe(handler, {"ok": False, "error": "session_store_unavailable"}, 503)
+            return
         _json_safe(handler, {"ok": True, "sub": ctx["sub"], "local_admin": True,
                              "expires_in": SESSION_TTL_SECONDS},
                    set_cookie=_cookie_header_value(sid))
@@ -352,7 +531,12 @@ def login(handler) -> None:
         _json_safe(handler, {"ok": False, "error": "identity_not_mapped"}, 403)
         return
     _clear_fails(ip, username)
-    sid = STORE.create(ctx["sub"], ctx, ident["token"])
+    try:
+        sid = STORE.create(ctx["sub"], ctx, ident["token"])
+    except SessionPersistenceError as exc:
+        _log.error("login zhice: session store unavailable: %s", exc)
+        _json_safe(handler, {"ok": False, "error": "session_store_unavailable"}, 503)
+        return
     _json_safe(handler, {"ok": True, "sub": ctx["sub"], "expires_in": SESSION_TTL_SECONDS},
                set_cookie=_cookie_header_value(sid))
     _ = password  # noqa: F841 - 仅本次调用使用，不落存储
