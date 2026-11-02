@@ -18,8 +18,10 @@ import hq_agenda  # noqa: E402
 import hq_approvals  # noqa: E402
 import hq_budget  # noqa: E402
 import hq_commercial  # noqa: E402
+import hq_directives  # noqa: E402
 import hq_heartbeat  # noqa: E402
 import hq_org  # noqa: E402
+import hq_reports  # noqa: E402
 import hq_roles  # noqa: E402
 import hq_snapshot  # noqa: E402
 import hq_tasks  # noqa: E402
@@ -46,6 +48,12 @@ def handle_get(h, path: str, qs: str = "") -> None:
             return
         if path == "/api/hq/agenda":
             h._json({"ok": True, "data": hq_agenda.build_agenda()})
+            return
+        if path == "/api/hq/directives":
+            h._json({"ok": True, "data": hq_directives.build_directives()})
+            return
+        if path == "/api/hq/reports":
+            h._json({"ok": True, "data": hq_reports.build_reports()})
             return
         if path == "/api/hq/commercial":
             h._json({"ok": True, "data": hq_commercial.build_commercial()})

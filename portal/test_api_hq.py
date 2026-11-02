@@ -53,6 +53,22 @@ def test_heartbeat_and_snapshot():
     assert code == 200 and obj["data"]["schema"] == "hq/snapshot/v1"
 
 
+def test_directives_reports():
+    code, obj = _call("/api/hq/directives")
+    assert code == 200 and obj["data"]["ok"] is True
+    code, obj = _call("/api/hq/reports")
+    assert code == 200 and "summary" in obj["data"]
+
+
+def test_roles_agenda_commercial():
+    code, obj = _call("/api/hq/roles")
+    assert code == 200 and obj["data"]["summary"]["roles"] == 5
+    code, obj = _call("/api/hq/agenda")
+    assert code == 200 and "summary" in obj["data"]
+    code, obj = _call("/api/hq/commercial")
+    assert code == 200 and "summary" in obj["data"]
+
+
 def test_unknown_is_404():
     code, obj = _call("/api/hq/nope")
     assert code == 404 and obj["code"] == "not_found"

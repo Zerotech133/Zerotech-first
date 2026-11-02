@@ -27,6 +27,8 @@ def test_snapshot_shape():
     assert s["roles"]["summary"]["roles"] == 5
     assert "items" in s["agenda"]
     assert "summary" in s["commercial"]
+    assert s["directives"]["ok"] is True
+    assert s["reports"]["ok"] is True
 
 
 def test_snapshot_file_is_valid():

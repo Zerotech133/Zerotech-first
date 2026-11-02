@@ -23,8 +23,10 @@ import hq_agenda  # noqa: E402
 import hq_approvals  # noqa: E402
 import hq_budget  # noqa: E402
 import hq_commercial  # noqa: E402
+import hq_directives  # noqa: E402
 import hq_heartbeat  # noqa: E402
 import hq_org  # noqa: E402
+import hq_reports  # noqa: E402
 import hq_roles  # noqa: E402
 import hq_tasks  # noqa: E402
 
@@ -40,6 +42,8 @@ def build_snapshot() -> dict:
     roles = hq_roles.build_roles()
     agenda = hq_agenda.build_agenda()
     commercial = hq_commercial.build_commercial()
+    directives = hq_directives.build_directives()
+    reports = hq_reports.build_reports()
     return {
         "schema": "hq/snapshot/v1",
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
@@ -47,6 +51,8 @@ def build_snapshot() -> dict:
         "note": "HQ v2 静态只读数据快照（五角色/议程/商业/任务/证据）；实时 API=/api/hq/snapshot",
         "roles": roles,
         "agenda": agenda,
+        "directives": directives,
+        "reports": reports,
         "commercial": commercial,
         "org": {
             "summary": org["summary"],

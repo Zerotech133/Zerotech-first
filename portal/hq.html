@@ -5,105 +5,510 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>零界指挥部 · /hq</title>
 <link rel="stylesheet" href="/static/tokens.css">
+<link rel="stylesheet" href="/static/ui/ui.css">
 <script src="/static/nav.js" defer></script>
 <style>
-body{margin:0;font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg,#0f1216);color:var(--text,#e8eaf0);font-size:14px}
-.wrap{max-width:1180px;margin:0 auto;padding:14px 14px 60px}
-.head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:10px 0 6px}
-.head h1{font-size:21px;margin:0}
-.head small{color:var(--text-dim,#8a93a6);font-size:12px}
-.badge{display:inline-block;border:1px solid var(--border,#2a3242);border-radius:6px;padding:1px 8px;font-size:11px;color:var(--text-dim,#8a93a6)}
-.badge.warn{color:#e8b45a;border-color:rgba(232,180,90,.4)}
-.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:12px 0}
-.card{background:var(--card,#1a1f27);border:1px solid var(--border,#2a3242);border-radius:9px;padding:9px 11px}
-.card .k{font-size:11.5px;color:var(--text-dim,#8a93a6)}
-.card .v{font-size:21px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
-.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 10px;border-bottom:1px solid var(--border,#2a3242);padding-bottom:8px}
-.tab{background:var(--card2,#202735);border:1px solid var(--border,#2a3242);border-radius:7px;color:var(--text,#e8eaf0);padding:6px 13px;font-size:13px;cursor:pointer}
-.tab.on{border-color:#4f8ef7;color:#9cc4ff}
-.panel{display:none}.panel.on{display:block}
-table{width:100%;border-collapse:collapse;background:var(--card,#1a1f27);border:1px solid var(--border,#2a3242);border-radius:9px;overflow:hidden;margin:8px 0}
-th,td{padding:7px 9px;text-align:left;border-bottom:1px solid var(--border,#2a3242);font-size:12.5px;vertical-align:top}
-th{color:var(--text-dim,#8a93a6);font-weight:600;font-size:11.5px;background:var(--card2,#202735)}
-tr:last-child td{border-bottom:none}.mono{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;color:var(--text-dim,#8a93a6);word-break:break-all}
-.risk{background:rgba(232,105,113,.07);border:1px solid rgba(232,105,113,.35);border-radius:8px;padding:9px 11px;margin:8px 0;font-size:12.5px;color:#e86971}
-.ok{background:rgba(93,211,158,.07);border:1px solid rgba(93,211,158,.3);border-radius:8px;padding:9px 11px;margin:8px 0;font-size:12.5px;color:#5dd39e}
-.meta{color:var(--text-dim,#8a93a6);font-size:11.5px;margin:6px 2px}
-.empty{padding:24px;text-align:center;color:var(--text-dim,#8a93a6)}
-.err{background:rgba(232,105,113,.08);border:1px solid rgba(232,105,113,.4);border-radius:9px;padding:10px 12px;margin:10px 0;font-size:12.5px;color:#e86971}
-@media(max-width:900px){.cards{grid-template-columns:repeat(2,1fr)}}
+/* /hq 驾驶舱 U1：Calm Command Center（只读；视觉全部走 tokens 语义变量，紧凑布局） */
+body{margin:0;font-family:var(--font-ui,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif);background:var(--bg-page,var(--bg,#0f1216));color:var(--text,#e8eaf0);font-size:var(--fs-m,13.5px)}
+.wrap{max-width:1210px;margin:0 auto;padding:12px 16px 56px}
+.head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:8px 0 4px}
+.head h1{font-size:var(--fs-xl,22px);margin:0}
+.head small{color:var(--text-dim,#8a93a6);font-size:var(--fs-xs,11.5px)}
+.badge{display:inline-block;border:1px solid var(--border,#2a3242);border-radius:var(--r-s,6px);padding:1px 8px;font-size:var(--fs-xs,11px);color:var(--text-dim,#8a93a6)}
+.badge.warn{color:var(--color-warn,#e8b45a);border-color:rgba(232,180,90,.4)}
+.controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0 2px}
+.meta{color:var(--text-dim,#8a93a6);font-size:var(--fs-xs,11.5px);margin:4px 2px}
+.cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:10px 0}
+.card{background:var(--bg-raised,var(--card,#1a1f27));border:1px solid var(--border,#2a3242);border-radius:var(--r-m,10px);padding:8px 11px;min-width:0}
+.card .k{font-size:var(--fs-xs,11.5px);color:var(--text-dim,#8a93a6)}
+.card .v{font-size:var(--fs-xl,21px);font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:7px 10px;border:1px solid var(--border,#2a3242);border-radius:var(--r-m,10px);background:var(--bg-surface,var(--card,#161b22));margin:8px 0}
+.toolbar .field{display:inline-flex;align-items:center;gap:6px;margin:0}
+.toolbar .field-label{color:var(--text-dim,#8a93a6);font-size:var(--fs-xs,11.5px);white-space:nowrap}
+.toolbar .field-search{flex:1 1 240px;min-width:0}
+.toolbar input[type="search"],.toolbar select{min-height:30px;border:1px solid var(--border,#30363d);border-radius:var(--r-s,6px);background:var(--bg-page,var(--gray-0,#0d1117));color:var(--text,#e6edf3);padding:4px 8px;font:inherit;font-size:var(--fs-s,12.5px)}
+.toolbar input[type="search"]{width:100%}
+.toolbar .count{color:var(--text-dim,#8a93a6);font-size:var(--fs-xs,11.5px);margin-left:auto;font-variant-numeric:tabular-nums}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin:12px 0 10px;border-bottom:1px solid var(--border,#2a3242);padding-bottom:6px}
+.tab{background:transparent;border:1px solid transparent;border-bottom:2px solid transparent;border-radius:var(--r-s,6px);color:var(--text-dim,#8a93a6);padding:6px 11px;font:inherit;font-size:var(--fs-s,12.5px);cursor:pointer;min-height:32px;white-space:nowrap}
+.tab:hover{color:var(--text,#e6edf3);background:var(--bg-raised,#202735)}
+.tab.on,.tab[aria-selected="true"]{color:var(--link,var(--blu-500,#58a6ff));border-color:var(--border,#2a3242);background:var(--bg-raised,#202735)}
+.tab:focus-visible{outline:2px solid var(--color-focus,#58a6ff);outline-offset:2px}
+.panel{display:none}.panel.on{display:block}.panel[hidden]{display:none!important}
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--border,#2a3242);border-radius:var(--r-m,10px);margin:6px 0;background:var(--bg-raised,var(--card,#1a1f27))}
+table{width:100%;border-collapse:collapse;min-width:560px}
+th,td{padding:6px 9px;text-align:left;border-bottom:1px solid var(--border,#2a3242);font-size:var(--fs-s,12.5px);vertical-align:top}
+th{color:var(--text-dim,#8a93a6);font-weight:600;font-size:var(--fs-xs,11.5px);background:var(--bg-surface,#202735);white-space:nowrap}
+tr:last-child td{border-bottom:none}
+.mono{font-family:var(--font-mono,ui-monospace,Consolas,monospace);font-size:11.5px;color:var(--text-dim,#8a93a6);word-break:break-all}
+.risk{background:rgba(232,105,113,.07);border:1px solid rgba(232,105,113,.35);border-radius:var(--r-m,10px);padding:8px 11px;margin:8px 0;font-size:var(--fs-s,12.5px);color:var(--color-err,#e86971)}
+.ok{background:rgba(93,211,158,.07);border:1px solid rgba(93,211,158,.3);border-radius:var(--r-m,10px);padding:8px 11px;margin:8px 0;font-size:var(--fs-s,12.5px);color:var(--color-ok,#5dd39e)}
+.empty{padding:20px;text-align:center;color:var(--text-dim,#8a93a6);font-size:var(--fs-s,12.5px)}
+.empty .ui-btn{margin-top:8px}
+.err{background:rgba(232,105,113,.08);border:1px solid rgba(232,105,113,.4);border-radius:var(--r-m,10px);padding:10px 12px;margin:10px 0;font-size:var(--fs-s,12.5px);color:var(--color-err,#e86971)}
+.auth-box{background:var(--bg-raised,var(--card,#1a1f27));border:1px solid var(--color-warn,#d29922);border-radius:var(--r-m,10px);padding:12px 14px;margin:12px 0}
+.auth-title{font-size:var(--fs-l,15px);font-weight:700;margin-bottom:4px}
+.auth-body{margin:0;color:var(--text-dim,#c9d1d9);font-size:var(--fs-s,12.5px);line-height:1.6}
+.auth-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
+.auth-hint{color:var(--text-dim,#8a93a6);font-size:var(--fs-xs,11px);margin-top:8px;line-height:1.6}
+/* 骨架屏（首屏 KPI + 表格占位；数据到达后整体替换） */
+.skel-line{height:10px;border-radius:var(--r-s,6px);margin:7px 0;background:linear-gradient(90deg,var(--bg-raised,#202735) 25%,var(--border,#2a3242) 37%,var(--bg-raised,#202735) 63%);background-size:400% 100%;animation:skel-shimmer 1.4s ease infinite}
+.skel-card .skel-line:first-child{width:42%;height:9px}
+.skel-card .skel-line:last-child{width:64%;height:20px}
+.skel-block .skel-line:nth-child(1){width:34%}
+.skel-block .skel-line:nth-child(2){width:92%}
+.skel-block .skel-line:nth-child(3){width:78%}
+.skel-block .skel-line:nth-child(4){width:86%}
+@keyframes skel-shimmer{0%{background-position:100% 0}100%{background-position:0 0}}
+/* 自动刷新开关 */
+.switch{display:inline-flex;align-items:center;gap:7px;min-height:30px;padding:4px 10px;border:1px solid var(--border,#30363d);border-radius:var(--r-pill,16px);background:var(--bg-raised,#202735);color:var(--text,#e8eaf0);font:inherit;font-size:var(--fs-s,12px);cursor:pointer}
+.switch:hover{border-color:var(--link,#58a6ff)}
+.switch .dot{width:9px;height:9px;border-radius:50%;background:var(--text-dim,#8b949e);flex:0 0 auto}
+.switch[aria-checked="true"] .dot{background:var(--color-ok,#3fb950);box-shadow:0 0 0 2px rgba(63,185,80,.18)}
+.switch[aria-checked="false"]{color:var(--text-dim,#8b949e)}
+.switch:focus-visible{outline:2px solid var(--color-focus,#58a6ff);outline-offset:2px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:900px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){
+  .wrap{padding:10px 12px 48px}
+  /* 移动端：tabs 横滑（不换行、可惯性滚动） */
+  .tabs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;padding-bottom:8px}
+  .tab{flex:0 0 auto}
+  .card .v{font-size:var(--fs-l,18px)}
+  .toolbar input[type="search"]{flex:1 1 100%}
+}
+@media(prefers-reduced-motion:reduce){.skel-line{animation:none}}
 </style>
 </head>
 <body>
+<a class="wb-skip" href="#main">跳到主内容</a>
 <div class="wrap">
   <div class="head">
     <h1>零界指挥部</h1>
-    <small>组织 · 任务 · 审批 · 预算 · 心跳｜只读</small>
-    <span class="badge">/hq 静态快照</span>
-    <span class="badge warn">实时 API 待 W3</span>
-  </div>
-  <div class="meta" id="meta">加载中…</div>
-
-  <div class="cards" id="cards"></div>
-
-  <div class="tabs" id="tabs">
-    <button class="tab on" data-tab="roles">五角色</button>
-    <button class="tab" data-tab="agenda">议程</button>
-    <button class="tab" data-tab="org">组织</button>
-    <button class="tab" data-tab="tasks">任务</button>
-    <button class="tab" data-tab="approvals">审批</button>
-    <button class="tab" data-tab="commercial">商业</button>
-    <button class="tab" data-tab="budget">预算</button>
-    <button class="tab" data-tab="heartbeat">心跳</button>
+    <small>组织 · 任务 · 审批 · 预算 · 心跳｜只读驾驶舱</small>
+    <span class="badge">实时 · /api/hq/snapshot</span>
+    <span class="badge warn">实时 API 待 W3 只读</span>
   </div>
 
-  <div class="panel on" id="p-roles"></div>
-  <div class="panel" id="p-agenda"></div>
-  <div class="panel" id="p-org"></div>
-  <div class="panel" id="p-tasks"></div>
-  <div class="panel" id="p-approvals"></div>
-  <div class="panel" id="p-commercial"></div>
-  <div class="panel" id="p-budget"></div>
-  <div class="panel" id="p-heartbeat"></div>
+  <div class="controls" role="toolbar" aria-label="数据刷新控制">
+    <button type="button" class="ui-btn ui-btn--sm" id="refresh-btn">刷新</button>
+    <button type="button" class="switch" id="auto-refresh" role="switch" aria-checked="true" aria-labelledby="auto-label">
+      <span class="dot" aria-hidden="true"></span>
+      <span id="auto-label">自动刷新 30s · 开</span>
+    </button>
+    <span class="meta" id="auto-state" aria-live="polite"></span>
+    <span class="meta">最后更新 <time id="last-updated">—</time></span>
+    <span class="meta" id="load-status" role="status" aria-live="polite">加载中…</span>
+  </div>
+  <div class="meta" id="meta">数据源：实时 /api/hq/snapshot · 快照生成：— · 只读</div>
+
+  <main id="main" aria-busy="true" aria-label="零界指挥部数据">
+    <div class="auth-box" id="error-panel" role="alert" hidden>
+      <div class="auth-title" id="err-title">数据加载失败</div>
+      <p class="auth-body" id="err-body">正在获取 /api/hq/snapshot …</p>
+      <div class="auth-actions">
+        <a class="ui-btn ui-btn--primary" id="login-cta" href="/login?next=/hq">去登录 →</a>
+        <button type="button" class="ui-btn" id="retry-btn">重试</button>
+      </div>
+      <div class="auth-hint">未登录（401）时需先登录：登录后会自动回到 /hq；也可点“重试”重新拉取快照。</div>
+    </div>
+
+    <div class="cards" id="cards" aria-hidden="true">
+      <div class="card skel-card"><div class="skel-line"></div><div class="skel-line"></div></div>
+      <div class="card skel-card"><div class="skel-line"></div><div class="skel-line"></div></div>
+      <div class="card skel-card"><div class="skel-line"></div><div class="skel-line"></div></div>
+      <div class="card skel-card"><div class="skel-line"></div><div class="skel-line"></div></div>
+      <div class="card skel-card"><div class="skel-line"></div><div class="skel-line"></div></div>
+    </div>
+
+    <div class="tabs" id="tabs" role="tablist" aria-label="指挥部视图">
+      <button type="button" class="tab on" id="tab-roles" role="tab" aria-selected="true" aria-controls="p-roles" tabindex="0" data-tab="roles">五角色</button>
+      <button type="button" class="tab" id="tab-agenda" role="tab" aria-selected="false" aria-controls="p-agenda" tabindex="-1" data-tab="agenda">议程</button>
+      <button type="button" class="tab" id="tab-org" role="tab" aria-selected="false" aria-controls="p-org" tabindex="-1" data-tab="org">组织</button>
+      <button type="button" class="tab" id="tab-tasks" role="tab" aria-selected="false" aria-controls="p-tasks" tabindex="-1" data-tab="tasks">任务</button>
+      <button type="button" class="tab" id="tab-approvals" role="tab" aria-selected="false" aria-controls="p-approvals" tabindex="-1" data-tab="approvals">审批</button>
+      <button type="button" class="tab" id="tab-commercial" role="tab" aria-selected="false" aria-controls="p-commercial" tabindex="-1" data-tab="commercial">商业</button>
+      <button type="button" class="tab" id="tab-budget" role="tab" aria-selected="false" aria-controls="p-budget" tabindex="-1" data-tab="budget">预算</button>
+      <button type="button" class="tab" id="tab-heartbeat" role="tab" aria-selected="false" aria-controls="p-heartbeat" tabindex="-1" data-tab="heartbeat">心跳</button>
+    </div>
+
+    <div class="panel on" id="p-roles" role="tabpanel" aria-labelledby="tab-roles" tabindex="0">
+      <div class="skel-block" aria-hidden="true"><div class="skel-line"></div><div class="skel-line"></div><div class="skel-line"></div><div class="skel-line"></div></div>
+    </div>
+    <div class="panel" id="p-agenda" role="tabpanel" aria-labelledby="tab-agenda" tabindex="0" hidden>
+      <div class="skel-block" aria-hidden="true"><div class="skel-line"></div><div class="skel-line"></div><div class="skel-line"></div><div class="skel-line"></div></div>
+    </div>
+    <div class="panel" id="p-org" role="tabpanel" aria-labelledby="tab-org" tabindex="0" hidden>
+      <div class="skel-block" aria-hidden="true"><div class="skel-line"></div><div class="skel-line"></div><div class="skel-line"></div><div class="skel-line"></div></div>
+    </div>
+    <div class="panel" id="p-tasks" role="tabpanel" aria-labelledby="tab-tasks" tabindex="0" hidden>
+      <div class="skel-block" aria-hidden="true"><div class="skel-line"></div><div class="skel-line"></div><div class="skel-line"></div><div class="skel-line"></div></div>
+    </div>
+    <div class="panel" id="p-approvals" role="tabpanel" aria-labelledby="tab-approvals" tabindex="0" hidden>
+      <div class="skel-block" aria-hidden="true"><div class="skel-line"></div><div class="skel-line"></div><div class="skel-line"></div><div class="skel-line"></div></div>
+    </div>
+    <div class="panel" id="p-commercial" role="tabpanel" aria-labelledby="tab-commercial" tabindex="0" hidden>
+      <div class="skel-block" aria-hidden="true"><div class="skel-line"></div><div class="skel-line"></div><div class="skel-line"></div><div class="skel-line"></div></div>
+    </div>
+    <div class="panel" id="p-budget" role="tabpanel" aria-labelledby="tab-budget" tabindex="0" hidden>
+      <div class="skel-block" aria-hidden="true"><div class="skel-line"></div><div class="skel-line"></div><div class="skel-line"></div><div class="skel-line"></div></div>
+    </div>
+    <div class="panel" id="p-heartbeat" role="tabpanel" aria-labelledby="tab-heartbeat" tabindex="0" hidden>
+      <div class="skel-block" aria-hidden="true"><div class="skel-line"></div><div class="skel-line"></div><div class="skel-line"></div><div class="skel-line"></div></div>
+    </div>
+  </main>
 </div>
 <script>
-function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function card(k,v){return `<div class="card"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`}
-function table(headers,rows){return `<table><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join('')}</tr>`).join('')||'<tr><td colspan="'+headers.length+'" class="empty">无数据</td></tr>'}</tbody></table>`}
-async function main(){
-  let d=null;
-  try{
-    const live=await fetch('/api/hq/snapshot',{cache:'no-store'});
-    if(!live.ok) throw new Error('HTTP '+live.status);
-    const p=await live.json();
-    if(!(p && p.ok && p.data)) throw new Error('bad payload');
-    d=p.data;
-  }catch(e){
-    document.getElementById('meta').innerHTML=`<div class="err">数据加载失败：${esc(e.message)}（需登录；未登录返回 401）</div>`;
-    return;
+(function(){
+'use strict';
+var API='/api/hq/snapshot';
+var AUTO_REFRESH_MS=30000;
+var TABS=['roles','agenda','org','tasks','approvals','commercial','budget','heartbeat'];
+var AGENDA_STATUS_LABELS={pending:'待派单',dispatched:'已派单',decided:'已决议',agenda:'会议议程',topic:'议题',scheduled:'已排期'};
+var TASK_STATUS_LABELS={doing:'进行中 · doing',review:'待评审 · review',parked:'停放 · parked'};
+var state={data:null,loading:false,auto:true,timer:0,hover:false,lastUpdated:'',
+           tasks:[],agenda:[],taskQuery:'',taskStatus:'',agendaQuery:'',agendaStatus:''};
+
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+
+function table(headers,rows,caption,emptyText){
+  var head='<caption class="sr-only">'+esc(caption||'')+'</caption><thead><tr>'+headers.map(function(h){return '<th scope="col">'+esc(h)+'</th>';}).join('')+'</tr></thead>';
+  var body;
+  if(rows&&rows.length){
+    body=rows.map(function(r){return '<tr>'+r.map(function(c){return '<td>'+esc(c)+'</td>';}).join('')+'</tr>';}).join('');
+  }else{
+    body='<tr><td colspan="'+headers.length+'" class="empty">'+esc(emptyText||'无数据')+'</td></tr>';
   }
-  document.getElementById('meta').textContent=`数据源：实时 /api/hq/snapshot · 生成：${d.generated_at||'-'} · ${d.read_only?'只读':'?'}`;
-  const o=d.org?.summary||{},t=d.tasks?.summary||{},a=d.approvals?.summary||{},b=d.budget||{},bh=d.heartbeat?.summary||{},ro=d.roles||{},ag=d.agenda||{},cm=d.commercial||{};
-  document.getElementById('cards').innerHTML=[
-    card('五角色',(ro.summary||{}).roles||0),card('议程待办',(ag.summary||{}).pending_orders||0),card('任务 WIP',t.wip||0),card('审批已决',a.total_decisions||0),card('商业租户',(cm.summary||{}).tenants||0)
-  ].join('');
-  document.getElementById('p-roles').innerHTML=table(['角色','席位','职责','模型','会议','派单'],(ro.roles||[]).map(x=>[x.name+'（'+x.role+'）',x.seat_id,x.duty,x.model||'-',x.meetings,x.orders])) + `<div class="meta">${esc(ro.note||'五角色只读：意见/会议/派单，不执行、不签字')}</div>`;
-  const ags=ag.summary||{};
-  document.getElementById('p-agenda').innerHTML=`<div class="meta">议题按类型：${esc(JSON.stringify(ags.by_kind||{}))} · 会议 ${esc((ag.meetings||{}).total||0)} · 闭环率 ${esc((ag.meetings||{}).closure_rate??'-')}</div>` + table(['类型','议题','owner','状态','来源'],(ag.items||[]).slice().reverse().slice(0,40).map(x=>[x.kind,x.item,x.owner||'-',x.status,x.source]));
-  const cs=cm.summary||{};
-  document.getElementById('p-commercial').innerHTML=table(['指标','值'],[['租户',cs.tenants],['活跃',cs.active],['套餐分布',JSON.stringify(cs.by_plan||{})],['试用',cs.trials],['试用转付费',cs.trial_to_paid],['待回访',cs.followups],['公众号草稿',(cs.content||{}).gzh_drafts],['策略订阅',(cs.content||{}).strategy_subscriptions]]) + table(['套餐','价格/月','报告/月','API/日'],(cm.plans||[]).map(x=>[x.name||x.plan,x.price_month,x.reports_month,x.api_day])) + `<div class="meta">${esc(cm.note||'')}</div>`;
-  document.getElementById('p-org').innerHTML=table(['部门','名称','Lead','席位'],(d.org.departments||[]).map(x=>[x.dept,x.name,x.lead||'-',x.n])) + `<div class="meta">无 HR：${(d.org.gaps||{}).no_hr_profile}｜无 team 投影：${(d.org.gaps||{}).no_team_projection}</div>`;
-  const bd=d.tasks.board||{};
-  document.getElementById('p-tasks').innerHTML=table(['任务','状态','owner','年龄(天)','描述'],[...(bd.doing||[]),...(bd.review||[])].map(x=>[x.id,x.status,x.owner||'-',x.age_days??'-',x.desc]));
-  document.getElementById('p-approvals').innerHTML=(d.approvals.risks||[]).map(x=>`<div class="risk">${esc(x)}</div>`).join('') + table(['时间','类型','目标','决策','决策人'],(d.approvals.latest||[]).map(x=>[x.decided_at||x.created_at,x.target_type,x.target_id,x.decision,x.decided_by]));
-  document.getElementById('p-budget').innerHTML=table(['域','calls','in_tok','out_tok'],Object.entries(d.budget.by_domain||{}).map(([k,v])=>[k,v.calls,v.in_tok,v.out_tok])) + (d.budget.risks||[]).map(x=>`<div class="risk">${esc(x)}</div>`).join('');
-  document.getElementById('p-heartbeat').innerHTML=table(['agent','count','due','reasons'],(d.heartbeat.coalesced_wakes||[]).map(x=>[x.agent,x.count,x.due||'-',(x.reasons||[]).join(',')])) + (d.heartbeat.schedules.failed_last_result||[]).slice(0,5).map(x=>`<div class="risk">${esc(x.id)} · ${esc(x.agent)} · ${esc(x.result)}</div>`).join('');
-  document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>{
-    document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b===btn));
-    document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on',p.id==='p-'+btn.dataset.tab));
-  }));
+  return '<div class="table-wrap"><table>'+head+'<tbody>'+body+'</tbody></table></div>';
 }
-main();
+function card(k,v){return '<div class="card"><div class="k">'+esc(k)+'</div><div class="v">'+esc(v)+'</div></div>';}
+function emptyBlock(msg,kind){
+  return '<div class="empty" role="status"><div>'+esc(msg)+'</div>'
+    +'<button type="button" class="ui-btn ui-btn--sm reset-btn" data-reset="'+esc(kind)+'">重置筛选</button></div>';
+}
+function formatNow(){
+  try{return new Date().toLocaleTimeString('zh-CN',{hour12:false});}catch(e){return new Date().toTimeString().slice(0,8);}
+}
+function setStatus(msg){var el=$('load-status');if(el)el.textContent=msg;}
+function setBusy(busy){
+  var m=$('main');if(m)m.setAttribute('aria-busy',busy?'true':'false');
+  var btn=$('refresh-btn');if(btn){btn.disabled=busy;btn.textContent=busy?'刷新中…':'刷新';}
+}
+
+/* ---- tabs：role=tablist，左右键/Home/End 切换，焦点跟随 ---- */
+function selectTab(name,focusTab){
+  var tabs=document.querySelectorAll('#tabs [role="tab"]');
+  var panels=document.querySelectorAll('.panel');
+  [].forEach.call(tabs,function(tab){
+    var on=tab.getAttribute('data-tab')===name;
+    tab.classList.toggle('on',on);
+    tab.setAttribute('aria-selected',on?'true':'false');
+    tab.setAttribute('tabindex',on?'0':'-1');
+    if(on&&focusTab){tab.focus();}
+  });
+  [].forEach.call(panels,function(p){
+    var on=p.id==='p-'+name;
+    p.classList.toggle('on',on);
+    if(on){p.removeAttribute('hidden');}else{p.setAttribute('hidden','');}
+  });
+}
+(function bindTabs(){
+  var box=$('tabs');if(!box)return;
+  box.addEventListener('click',function(e){
+    var t=e.target&&e.target.closest?e.target.closest('[role="tab"]'):null;
+    if(t){selectTab(t.getAttribute('data-tab'),false);}
+  });
+  box.addEventListener('keydown',function(e){
+    var t=e.target&&e.target.closest?e.target.closest('[role="tab"]'):null;
+    if(!t)return;
+    var i=TABS.indexOf(t.getAttribute('data-tab'));
+    if(i<0)return;
+    var n=-1;
+    if(e.key==='ArrowRight'){n=(i+1)%TABS.length;}
+    else if(e.key==='ArrowLeft'){n=(i-1+TABS.length)%TABS.length;}
+    else if(e.key==='Home'){n=0;}
+    else if(e.key==='End'){n=TABS.length-1;}
+    if(n<0)return;
+    e.preventDefault();
+    selectTab(TABS[n],true);
+  });
+})();
+
+/* ---- 任务/议程：客户端搜索 + 状态筛选 + 空结果提示（不新增 API） ---- */
+function taskToolbar(){
+  var opts=['doing','review','parked'].map(function(s){
+    return '<option value="'+esc(s)+'"'+(state.taskStatus===s?' selected':'')+'>'+esc(TASK_STATUS_LABELS[s]||s)+'</option>';
+  }).join('');
+  return '<div class="toolbar" role="search" aria-label="任务搜索与状态筛选">'
+    +'<label class="field field-search"><span class="sr-only">搜索任务</span>'
+    +'<input type="search" id="task-search" placeholder="搜索任务 ID / owner / 描述…" autocomplete="off" value="'+esc(state.taskQuery)+'"></label>'
+    +'<label class="field"><span class="field-label">状态</span>'
+    +'<select id="task-status" aria-label="按状态筛选任务"><option value="">全部状态</option>'+opts+'</select></label>'
+    +'<span class="count" id="task-count" aria-live="polite"></span></div>';
+}
+function agendaToolbar(){
+  var opts=['pending','dispatched','decided','agenda','topic','scheduled'].map(function(s){
+    return '<option value="'+esc(s)+'"'+(state.agendaStatus===s?' selected':'')+'>'+esc(AGENDA_STATUS_LABELS[s]||s)+'</option>';
+  }).join('');
+  return '<div class="toolbar" role="search" aria-label="议程搜索与状态筛选">'
+    +'<label class="field field-search"><span class="sr-only">搜索议程</span>'
+    +'<input type="search" id="agenda-search" placeholder="搜索议题 / owner / 类型…" autocomplete="off" value="'+esc(state.agendaQuery)+'"></label>'
+    +'<label class="field"><span class="field-label">状态</span>'
+    +'<select id="agenda-status" aria-label="按状态筛选议程"><option value="">全部状态</option>'+opts+'</select></label>'
+    +'<span class="count" id="agenda-count" aria-live="polite"></span></div>';
+}
+function renderTasks(){
+  var rows=state.tasks||[];
+  var q=(state.taskQuery||'').trim().toLowerCase();
+  var st=state.taskStatus||'';
+  var filtered=rows.filter(function(x){
+    if(st&&x.status!==st)return false;
+    if(!q)return true;
+    var hay=[x.id,x.status,x.owner||'',x.desc||''].join(' ').toLowerCase();
+    return hay.indexOf(q)>=0;
+  });
+  var host=$('task-table');if(!host)return;
+  if(!rows.length){
+    host.innerHTML='<div class="empty">暂无任务板数据。</div>';
+  }else if(!filtered.length){
+    host.innerHTML=emptyBlock('没有匹配的任务（共 '+rows.length+' 条）。清空搜索或把状态切回“全部状态”。','task');
+  }else{
+    host.innerHTML=table(['任务','状态','owner','年龄(天)','描述'],
+      filtered.map(function(x){return [x.id,x.status,x.owner||'-',x.age_days==null?'-':x.age_days,x.desc];}),'任务板');
+  }
+  var cnt=$('task-count');if(cnt)cnt.textContent=filtered.length+' / '+rows.length+' 条';
+}
+function renderAgenda(){
+  var rows=state.agenda||[];
+  var q=(state.agendaQuery||'').trim().toLowerCase();
+  var st=state.agendaStatus||'';
+  var filtered=rows.filter(function(x){
+    if(st&&x.status!==st)return false;
+    if(!q)return true;
+    var hay=[x.kind,x.item,x.owner||'',x.status,x.source].join(' ').toLowerCase();
+    return hay.indexOf(q)>=0;
+  });
+  var host=$('agenda-table');if(!host)return;
+  if(!rows.length){
+    host.innerHTML='<div class="empty">暂无议程数据。</div>';
+  }else if(!filtered.length){
+    host.innerHTML=emptyBlock('没有匹配的议程（共 '+rows.length+' 条）。清空搜索或切换状态筛选后重试。','agenda');
+  }else{
+    host.innerHTML=table(['类型','议题','owner','状态','来源'],
+      filtered.map(function(x){return [x.kind,x.item,x.owner||'-',x.status,x.source];}),'议程与派单');
+  }
+  var cnt=$('agenda-count');if(cnt)cnt.textContent=filtered.length+' / '+rows.length+' 条';
+}
+document.addEventListener('input',function(e){
+  var el=e.target;
+  if(!el||!el.id)return;
+  if(el.id==='task-search'){state.taskQuery=el.value||'';renderTasks();}
+  else if(el.id==='agenda-search'){state.agendaQuery=el.value||'';renderAgenda();}
+});
+document.addEventListener('change',function(e){
+  var el=e.target;
+  if(!el||!el.id)return;
+  if(el.id==='task-status'){state.taskStatus=el.value||'';renderTasks();}
+  else if(el.id==='agenda-status'){state.agendaStatus=el.value||'';renderAgenda();}
+});
+document.addEventListener('click',function(e){
+  var btn=e.target&&e.target.closest?e.target.closest('[data-reset]'):null;
+  if(!btn)return;
+  var kind=btn.getAttribute('data-reset');
+  if(kind==='task'){
+    state.taskQuery='';state.taskStatus='';
+    var ti=$('task-search');if(ti)ti.value='';
+    var ts=$('task-status');if(ts)ts.value='';
+    renderTasks();
+  }else if(kind==='agenda'){
+    state.agendaQuery='';state.agendaStatus='';
+    var ai=$('agenda-search');if(ai)ai.value='';
+    var as=$('agenda-status');if(as)as.value='';
+    renderAgenda();
+  }
+});
+
+/* ---- 渲染 ---- */
+function clearSkeleton(){
+  var c=$('cards');if(c){c.innerHTML='';c.setAttribute('aria-hidden','true');}
+  [].forEach.call(document.querySelectorAll('.panel'),function(p){p.innerHTML='';});
+}
+function renderAll(d){
+  d=d||{};
+  var o=d.org||{},t=d.tasks||{},a=d.approvals||{},b=d.budget||{},bh=d.heartbeat||{},ro=d.roles||{},ag=d.agenda||{},cm=d.commercial||{},dr=d.directives||{},rp=d.reports||{};
+  var os=o.summary||{},ts=t.summary||{},as=a.summary||{},ros=ro.summary||{},ags=ag.summary||{},cms=cm.summary||{};
+  $('cards').innerHTML=[
+    card('五角色',ros.roles||0),card('议程待办',ags.pending_orders||0),
+    card('任务 WIP',ts.wip||0),card('审批已决',as.total_decisions||0),
+    card('商业租户',cms.tenants||0)
+  ].join('');
+  $('cards').removeAttribute('aria-hidden');
+  $('meta').textContent='数据源：实时 /api/hq/snapshot · 快照生成：'+(d.generated_at||'—')+' · '+(d.read_only?'只读':'未知');
+
+  $('p-roles').innerHTML=table(['角色','席位','职责','模型','会议','派单'],
+    (ro.roles||[]).map(function(x){return [x.name+'（'+x.role+'）',x.seat_id,x.duty,x.model||'-',x.meetings,x.orders];}),'五角色只读席表')
+    +'<div class="meta">'+esc(ro.note||'五角色只读：意见/会议/派单，不执行、不签字')+'</div>';
+
+  state.agenda=(ag.items||[]).slice().reverse().slice(0,40);
+  $('p-agenda').innerHTML='<div class="meta">议题按类型：'+esc(JSON.stringify(ags.by_kind||{}))
+    +' · 会议 '+esc((ag.meetings||{}).total||0)
+    +' · 闭环率 '+esc((ag.meetings||{}).closure_rate==null?'-':(ag.meetings||{}).closure_rate)+'</div>'
+    +agendaToolbar()+'<div id="agenda-table"></div>';
+  renderAgenda();
+  var dirs=dr.directives||[];
+  $('p-agenda').innerHTML += '<h3>Directive · 五角色→军团（只读）</h3>'
+    + '<div class="meta">共 '+dirs.length+' 条；有意见 '+(dirs.filter(function(x){return (x.opinions||[]).length;}).length)
+    + '；待派单 '+(dirs.filter(function(x){return x.status==='open';}).length)+'</div>'
+    + table(['ID','类型','议题','军团','owner','状态','due'],
+      dirs.slice(0,30).map(function(x){return [x.id,x.kind,x.topic,x.legion||'-',x.owner||'-',x.status,x.due||'-'];}),'Directive 指令');
+
+  $('p-org').innerHTML=table(['部门','名称','Lead','席位'],
+    ((o.departments)||[]).map(function(x){return [x.dept,x.name,x.lead||'-',x.n];}),'组织部门')
+    +'<div class="meta">无 HR：'+(o.gaps||{}).no_hr_profile+'｜无 team 投影：'+(o.gaps||{}).no_team_projection+'</div>';
+
+  var bd=t.board||{};
+  state.tasks=[].concat(bd.doing||[],bd.review||[],bd.parked||[]);
+  $('p-tasks').innerHTML=taskToolbar()+'<div id="task-table"></div>';
+  renderTasks();
+  var reps=rp.legions||[];
+  $('p-tasks').innerHTML += '<h3>军团汇报 · LegionReport（只读）</h3>'
+    + '<div class="meta">'+esc(JSON.stringify((rp.summary||{}).status_counts||{}))+'</div>'
+    + table(['军团','进度','状态','任务','阻塞','ETA'],
+      reps.slice(0,20).map(function(x){return [(x.scope||{}).legion||'-',(x.progress==null?'-':x.progress+'%'),x.status,x.tasks_total,x.blockers_count,x.eta||'-'];}),'军团进度');
+
+  $('p-approvals').innerHTML=(a.risks||[]).map(function(x){return '<div class="risk">'+esc(x)+'</div>';}).join('')
+    +table(['时间','类型','目标','决策','决策人'],
+      (a.latest||[]).map(function(x){return [x.decided_at||x.created_at,x.target_type,x.target_id,x.decision,x.decided_by];}),'最近审批决策');
+
+  $('p-commercial').innerHTML=table(['指标','值'],[
+      ['租户',cms.tenants],['活跃',cms.active],['套餐分布',JSON.stringify(cms.by_plan||{})],
+      ['试用',cms.trials],['试用转付费',cms.trial_to_paid],['待回访',cms.followups],
+      ['公众号草稿',(cms.content||{}).gzh_drafts],['策略订阅',(cms.content||{}).strategy_subscriptions]
+    ],'商业指标')
+    +table(['套餐','价格/月','报告/月','API/日'],
+      (cm.plans||[]).map(function(x){return [x.name||x.plan,x.price_month,x.reports_month,x.api_day];}),'套餐')
+    +'<div class="meta">'+esc(cm.note||'')+'</div>';
+
+  $('p-budget').innerHTML=table(['域','calls','in_tok','out_tok'],
+      Object.keys(b.by_domain||{}).map(function(k){var v=b.by_domain[k]||{};return [k,v.calls,v.in_tok,v.out_tok];}),'预算按域')
+    +(b.risks||[]).map(function(x){return '<div class="risk">'+esc(x)+'</div>';}).join('')
+    +'<div class="meta">credits 估算：'+esc(JSON.stringify(b.credits_estimate||{}))+'</div>';
+
+  var sched=bh.schedules||{};
+  $('p-heartbeat').innerHTML=table(['agent','count','due','reasons'],
+      (bh.coalesced_wakes||[]).map(function(x){return [x.agent,x.count,x.due||'-',(x.reasons||[]).join(',')];}),'心跳合并唤醒')
+    +(sched.failed_last_result||[]).slice(0,5).map(function(x){return '<div class="risk">'+esc(x.id)+' · '+esc(x.agent)+' · '+esc(x.result)+'</div>';}).join('');
+}
+
+/* ---- 错误/401 恢复 ---- */
+function showError(err,auth,isAuto){
+  if(!state.data){clearSkeleton();}
+  var box=$('error-panel');if(!box)return;
+  var title=$('err-title'),body=$('err-body');
+  if(title)title.textContent=auth?'未登录或登录已过期（需登录）':(isAuto?'自动刷新失败':'数据加载失败');
+  if(body)body.textContent=auth
+    ?'该页面数据受保护：需登录后才能读取 /api/hq/snapshot。登录后自动回到 /hq，再点“重试”或等待自动刷新。'
+    :'请求 /api/hq/snapshot 失败：'+(err&&err.message?err.message:'未知错误')+'。可点“重试”；若会话已过期，请重新登录。';
+  box.hidden=false;
+  if(!state.data){
+    var meta=$('meta');if(meta)meta.textContent='数据源：实时 /api/hq/snapshot · 快照生成：— · 只读';
+    var lu=$('last-updated');if(lu)lu.textContent='—';
+  }
+  setStatus(auth?'未登录（401）':'加载失败');
+  if(auth){setAutoEnabled(false);}
+}
+
+/* ---- 刷新 + 30s 自动刷新（悬浮/后台/编辑中暂停，显示最后更新时间） ---- */
+function stopAuto(){if(state.timer){window.clearInterval(state.timer);state.timer=0;}}
+function startAuto(){stopAuto();if(!state.auto)return;state.timer=window.setInterval(tick,AUTO_REFRESH_MS);}
+function setAutoEnabled(on){
+  state.auto=!!on;
+  var btn=$('auto-refresh');
+  if(btn)btn.setAttribute('aria-checked',state.auto?'true':'false');
+  var lab=$('auto-label');
+  if(lab)lab.textContent='自动刷新 30s · '+(state.auto?'开':'关');
+  if(state.auto){startAuto();}else{stopAuto();}
+  setAutoState();
+}
+function setAutoState(){
+  var el=$('auto-state');if(!el)return;
+  if(!state.auto){el.textContent='自动刷新已关';return;}
+  if(document.visibilityState==='hidden'){el.textContent='页面后台，暂停';return;}
+  if(state.hover){el.textContent='悬停暂停';return;}
+  var ae=document.activeElement;
+  if(ae&&/^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName)){el.textContent='编辑筛选，暂停';return;}
+  el.textContent='';
+}
+function tick(){
+  if(!state.auto||state.loading)return;
+  if(state.hover||document.visibilityState==='hidden')return;
+  var ae=document.activeElement;
+  if(ae&&/^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName))return;
+  load({auto:true});
+}
+async function load(opts){
+  if(state.loading)return;
+  state.loading=true;
+  setBusy(true);
+  setStatus(opts&&opts.auto?'自动刷新中…':'加载中…');
+  try{
+    var res=await fetch(API,{cache:'no-store',credentials:'same-origin',headers:{'Accept':'application/json'}});
+    if(res.status===401||res.status===403){var e1=new Error('HTTP '+res.status);e1.auth=true;throw e1;}
+    if(!res.ok){throw new Error('HTTP '+res.status);}
+    var ct=(res.headers.get('content-type')||'').toLowerCase();
+    if(ct.indexOf('json')<0){var e2=new Error('返回非 JSON（可能被重定向到登录页）');e2.auth=true;throw e2;}
+    var payload=await res.json();
+    if(!(payload&&payload.ok&&payload.data)){throw new Error('返回数据格式异常');}
+    state.data=payload.data;
+    renderAll(state.data);
+    state.lastUpdated=formatNow();
+    var lu=$('last-updated');if(lu)lu.textContent=state.lastUpdated;
+    var box=$('error-panel');if(box)box.hidden=true;
+    setStatus('已更新');
+  }catch(err){
+    showError(err,!!err.auth,!!(opts&&opts.auto));
+  }finally{
+    state.loading=false;
+    setBusy(false);
+    setAutoState();
+  }
+}
+
+/* ---- 事件接线 ---- */
+(function bindControls(){
+  var rb=$('refresh-btn');if(rb){rb.addEventListener('click',function(){if(!state.loading)load({});});}
+  var retry=$('retry-btn');if(retry){retry.addEventListener('click',function(){if(!state.loading)load({});});}
+  var ab=$('auto-refresh');
+  if(ab){ab.addEventListener('click',function(){setAutoEnabled(!state.auto);setStatus(state.auto?'自动刷新已开启（30s）':'自动刷新已暂停');});}
+  var mainEl=$('main');
+  if(mainEl){
+    mainEl.addEventListener('mouseenter',function(){state.hover=true;setAutoState();});
+    mainEl.addEventListener('mouseleave',function(){state.hover=false;setAutoState();});
+  }
+  document.addEventListener('visibilitychange',setAutoState);
+  document.addEventListener('keydown',function(e){
+    var tag=(e.target&&e.target.tagName)||'';
+    var typing=/^(INPUT|SELECT|TEXTAREA)$/.test(tag)||!!(e.target&&e.target.isContentEditable);
+    if(typing||e.ctrlKey||e.metaKey||e.altKey)return;
+    if(e.key==='/'){
+      var target=document.querySelector('.panel.on input[type="search"]');
+      if(!target){
+        // 当前 tab 无搜索框（如“五角色”）时，切到任务视图再聚焦搜索
+        selectTab('tasks',false);
+        target=$('task-search');
+      }
+      if(target){e.preventDefault();target.focus();if(target.select)target.select();}
+    }else if(e.key==='r'||e.key==='R'){
+      e.preventDefault();
+      if(!state.loading)load({});
+    }
+  });
+})();
+
+setAutoEnabled(true);
+load({});
+})();
 </script>
 </body>
 </html>
