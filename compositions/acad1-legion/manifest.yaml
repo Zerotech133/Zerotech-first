@@ -117,6 +117,7 @@ spec:
     - "接口口径：/api/v1/acad1-research 是智策 8105 原生路径；8734 宿主入口实为 /quant-api/api/v1/acad1-research（auth_request，未登录 401）。"
     - "页面/鉴权现状（2026-11-02 GET 实测）：/academy/shuijing=200、/api/acad1/pool=200（nginx H4-B 公开族 C，只读无 auth_request）；/acad1/pool 在 8734=404（8091=200，nginx 路由未登记）→ L2 待批（acad1_pool 包，11-05 窗口）。"
     - "运行时双层：research API 走智策 8105（internal-service，经 /quant-api/ 反代）；pool API/页走 portal-api 8091（/api/acad1/pool、/academy/shuijing）；runtime.service=quant-api 为整合主服务，P2 单栈收口。"
+    - "W1 引用收口（2026-11-02）：5 条 strategy/v1-* 已按 PG v2_strategy 真源（ACTIVE/PUBLISHED）在 strategy_portfolio 增 planned 登记（本地组合层口径；不改 portal/strategies.json 展示），strategy ref 全部可解析。证据：deliverables/2026-11-02_W1引用收口证据_v1.md。"
 status:
   phase: shadow
   health: unknown

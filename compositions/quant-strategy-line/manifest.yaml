@@ -35,15 +35,17 @@ spec:
     - ref: strategy/v1-crypto-strat-11
     - ref: strategy/qpzm
     - ref: strategy/chanlun
-    - ref: strategy/dk
-      note: 研究态，不产每日 picks、不计产数
+    - ref: strategy/double_knife
+      note: "研究态，不产每日 picks、不计产数（W1 引用收口 2026-11-02：原 ref strategy/dk 为别名/笔误，按 portal/strategies.json 唯一'刀'策略 double_knife 校正）"
   data:
     requires:
       - ref: dataset/file/strategy_registry
+        note: "真实载体 agent_platform/engine/strategy_registry.py（K5 contract）；composition.py file-kind 解析口径未覆盖 .py（P2 registry v2/ref_aliases 接线前保持 planned，不伪造路径）"
       - ref: dataset/file/shadow_ledger
       - ref: dataset/file/paper_ledger
       - ref: dataset/file/research_hypotheses
-      - ref: dataset/dir/quant_backtest_data
+      - ref: dataset/dir/tushare
+        note: "接口数据域数据根 quant_backtest/data 的主数据子树 tushare/（真实目录，只读；2026-11-02 由原 ref quant_backtest_data 校正，根级聚合无 inventory 单条）"
     contract: strategy-ledger/v1
     sla:
       strategy_count: 12
@@ -64,7 +66,8 @@ spec:
       methods: [portal-token]
       roles: [A0, STRAT1, BACK1, ACAD1]
   pages:
-    - ref: page/strategies
+    - ref: page/market_strategy
+      note: "策略市场页（portal/market_strategy.html，标题『策略市场』）；2026-11-02 W1 引用收口由原 page/strategies 校正（无 strategies.html）"
     - ref: page/shadow
   jobs:
     - ref: job/strategy-daily
@@ -100,6 +103,7 @@ spec:
     - "S1–S5 收编流水线未全部完成：Manifest 注册/Agent 化/回放/影子/授权。"
     - "PIT 与幸存者偏差为硬门槛：策略结论必须附 PIT 全池 + 容量 + 成本三件套。"
     - "2026-11-02 策略线结项：修正 PIT/幸存者偏差后无统计显著超额，待团队复核去留。"
+    - "W1 引用收口（2026-11-02）：9 条 strategy/v1-* 按 PG v2_strategy 在 strategy_portfolio 增 planned 登记；dk→double_knife、page/strategies→market_strategy、dataset/dir→tushare 校正；strategy_registry 口径未覆盖（保持 planned）。"
 status:
   phase: shadow
   health: unknown

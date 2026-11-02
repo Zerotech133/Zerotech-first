@@ -46,10 +46,12 @@ spec:
       methods: [portal-token, internal-key]
       roles: [A0, ACAD1, D1, ARCH1]
   pages:
-    - ref: page/quant/overview
-      note: 整合后由页面 manifest 纳管（当前为智策 React 路由）
-    - ref: page/quant/replay
+    - ref: page/quant
+      note: "量化 SPA 页面（portal/quant.html，VITE_BASE=/quant/ hash 路由承载 overview）；2026-11-02 W1 引用收口由原 page/quant/overview 校正"
+    - ref: page/quant
+      note: "量化 SPA 页面 hash 路由承载 replay（无独立 replay.html）；2026-11-02 W1 引用收口由原 page/quant/replay 校正"
     - ref: page/quant/selection
+      note: "选中/选股页（portal/selection.html 解析通过）；P2 页面 manifest 收口"
   jobs:
     - ref: job/zhice-daily-research-ops
     - ref: job/zhice-obs-calc

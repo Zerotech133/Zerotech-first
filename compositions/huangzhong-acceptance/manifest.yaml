@@ -71,6 +71,7 @@ spec:
     - "P0 影子清单；该链当前由报告/脚本驱动，无页面与 manifest。"
     - "11-04 计划：09:30 preflight → 10:00 runner → 人工核对 → finalize → 老田 L3。"
     - "目录化后应迁为正式 workflow 组合：节点/边/收敛/审批态由 WorkflowSpec 描述（ADR-015 P2）。"
+    - "W1 引用收口（2026-11-02）：acceptance_corpus/report/evidence 无契约定义的真实单文件载体、acceptance-1104-preflight/runner/finalize 未建 Windows 计划任务（job_map 保持 planned 空值，不伪造）；保留为 planned 缺口，证据见 deliverables/2026-11-02_W1引用收口证据_v1.md。"
 status:
   phase: shadow
   health: unknown

@@ -26,14 +26,14 @@ spec:
         note: "统一登记真源：314 数据集，registered 265（84.4%）/ exposed 72（22.9%）；文件级只读"
       - ref: dataset/registry/catalog
         note: "资产 catalog v18：256 物理表口径；与 314 数据集口径不同，勿混用"
-      - ref: dataset/dir/quant_backtest_data
-        note: "接口数据域数据根（241 数据集）；路径 quant_backtest/data，只读"
-      - ref: dataset/dir/knowledge_base
-        note: "学习派生/开源情报语料根（YouTube 补盘来源，学习派生 29 数据集）；只读"
+      - ref: dataset/dir/tushare
+        note: "接口数据域数据根 quant_backtest/data 的主数据子树 tushare/（真实目录，只读）；根级 241 数据集聚合口径见 inventory summary（W1 引用收口 2026-11-02：原 ref quant_backtest_data 根级聚合无 inventory 单条，校正到真实子树）"
+      - ref: dataset/dir/knowledge_docs
+        note: "学习派生文档根 knowledge_docs（inventory registered dir，117 文件/12.3MB，只读）；C:\\项目\\知识库 语料层见 yt_* corpus_layer（2026-11-02 校正：原 knowledge_base 根级聚合无 inventory 单条）"
       - ref: dataset/pg/v2_zhice_tables
         note: "GAP：智策 83 张 v2_* 表未登记（pg_table 连接器缺）；整改期 2026-11-12，DWH-103"
       - ref: dataset/file/temp_contract
-        note: "GAP：C:\\Temp 契约产物 0 覆盖；整改期 2026-11-12 契约目录化（schema/版本/保留期），DWH-103"
+        note: "GAP（保持 planned）：C:\\Temp 契约产物聚合口径无单文件真实载体；单件白名单见 dataset_registry TEMP_CONTRACT_WHITELIST；整改期 2026-11-12 契约目录化（DWH-103）"
     contract: data-warehouse/v1
     sla:
       # 目标（Sprint3 WP-I6）：登记率≥95%、取数入口覆盖率≥80%；不因基线低而下调
@@ -113,6 +113,7 @@ spec:
     - "页面口径（2026-11-02 抽检 P2-1）：page /dw、/dataops 在 8734=404（资产 dw.html/dataops.html=200）；页面路由待 P2 收口。"
     - "口径双写（2026-11-02 抽检 P3-1）：spec.slo 与 spec.data.sla.baseline 同组数字双写；DWH-103 收口为单一真源。"
     - "metadata.version 已同批升 1.1.0（registry+manifest，2026-11-02，ARCH1 抽检通过）；后续升版仍须 registry.json 同批。"
+    - "W1 引用收口（2026-11-02）：dataset/dir 两条校正到真实载体（quant_backtest_data→tushare 子树、knowledge_base→knowledge_docs inventory dir）；dataset/file/temp_contract 无单文件真实载体，保持 planned 缺口（不伪造）。证据：deliverables/2026-11-02_W1引用收口证据_v1.md。"
 status:
   phase: shadow
   health: unknown
