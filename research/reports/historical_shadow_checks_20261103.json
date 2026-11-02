@@ -1,0 +1,862 @@
+{
+ "tool": "task-80 历史数据影子验收 + 可前移任务清单（只读证据包）",
+ "generated_at": "2026-11-03T06:48:49+0800",
+ "as_of": "2026-11-03T06:49+08:00",
+ "environment": {
+  "catalog": {
+   "version": 35,
+   "updated": "2026-11-03T06:25:30",
+   "tables": 256
+  },
+  "snapshot": {
+   "generated_at": "2026-11-03T06:40:32+08:00"
+  },
+  "registry": {
+   "distribution": {
+    "evidence_ok": 187,
+    "evidence_partial": 38,
+    "unknown": 14,
+    "deprecated": 8,
+    "planned": 9
+   }
+  },
+  "kpi_current": {
+   "ok": 8,
+   "warn": 2,
+   "unknown": 0,
+   "total": 10
+  },
+  "kpi_status": {
+   "K1": "warn",
+   "K2": "ok",
+   "K3": "ok",
+   "K4": "ok",
+   "K5": "ok",
+   "K6": "ok",
+   "K7": "ok",
+   "K8": "ok",
+   "K9": "ok",
+   "K10": "warn"
+  },
+  "task_states_at_as_of": {
+   "XmapSync": "LastResult=0 @06:00",
+   "KgDailySync": "running(267009) @06:20",
+   "DataWarehouseSnapshot": "LastResult=0 @06:40",
+   "NoticeBackfill": "running(267009) @06:45",
+   "A3RotationCanary": "last=11-02 07:00 rc=1(accepted-risk); next=11-03 07:00",
+   "SentimentBT": "never run(267011); next=11-03 07:20"
+  }
+ },
+ "data_coverage": {
+  "ashare": {
+   "files": 5604,
+   "samples": {
+    "000001_SH.parquet": {
+     "rows": 431,
+     "min": "20250102",
+     "max": "20261016"
+    },
+    "600519_SH.parquet": {
+     "rows": 867,
+     "min": "20230403",
+     "max": "20261102"
+    },
+    "300750_SZ.parquet": {
+     "rows": 867,
+     "min": "20230403",
+     "max": "20261102"
+    }
+   },
+   "latest_mtime": 1793606852.7723837,
+   "engine_d0_min": "D0_MIN = \"20231010\"  # 273 体检诚实上限（因子湖 2023-07 起连续，池指数预热再往前）",
+   "sample_min_of_mins": "20230403",
+   "sample_max_of_maxs": "20261102",
+   "claim_vs_measured": "计划 v4 附录 A 称 ashare 2010→2026-11-02；实测抽样 min=2023-04-03/max=2026-11-02（引擎 D0_MIN=20231010）；2010→ 全历史在 tushare 深度数据中，需 owner 确认 ashare 缓存口径"
+  },
+  "tushare": {
+   "files": 8745,
+   "first": "d_19910102.parquet",
+   "last": "d_20261102.parquet",
+   "deep_curated": null,
+   "v2_daily_files": null
+  },
+  "catalog_by_source": {
+   "xtcloud": {
+    "tables": 170,
+    "rows": 307209805,
+    "files": 2573,
+    "verified": {
+     "verified_stale": 48,
+     "verified": 107,
+     "static_no_date": 15
+    },
+    "freshness_months": {
+     "202608": 5,
+     "202609": 15,
+     "202610": 114,
+     "202611": 13,
+     "202712": 1
+    }
+   },
+   "tushare": {
+    "tables": 66,
+    "rows": 42318354,
+    "files": 234047,
+    "verified": {
+     "verified": 43,
+     "verified_stale": 22,
+     "placeholder_empty": 1
+    },
+    "freshness_months": {
+     "202609": 9,
+     "202610": 18,
+     "202611": 21,
+     "202612": 1,
+     "202712": 1
+    }
+   },
+   "xueqiu": {
+    "tables": 10,
+    "rows": 33485,
+    "files": 1,
+    "verified": {
+     "verified_stale": 1,
+     "verified": 2,
+     "placeholder_empty": 7
+    },
+    "freshness_months": {
+     "202610": 1,
+     "202611": 2
+    }
+   },
+   "cnopendata": {
+    "tables": 6,
+    "rows": 151421,
+    "files": 13,
+    "verified": {
+     "static_no_date": 1,
+     "verified_stale": 5
+    },
+    "freshness_months": {
+     "2014": 1,
+     "2017": 1,
+     "2019": 1,
+     "2024": 2
+    }
+   },
+   "legacy": {
+    "tables": 1,
+    "rows": 0,
+    "files": 5924,
+    "verified": {
+     "verified": 1
+    },
+    "freshness_months": {
+     "202610": 1
+    }
+   },
+   "crypto": {
+    "tables": 1,
+    "rows": 0,
+    "files": 37,
+    "verified": {
+     "verified_stale": 1
+    },
+    "freshness_months": {
+     "202610": 1
+    }
+   },
+   "guba": {
+    "tables": 1,
+    "rows": 26102,
+    "files": 432,
+    "verified": {
+     "verified": 1
+    },
+    "freshness_months": {}
+   },
+   "pg": {
+    "tables": 1,
+    "rows": 0,
+    "files": 0,
+    "verified": {
+     "verified_external": 1
+    },
+    "freshness_months": {}
+   }
+  },
+  "tdx": {
+   "tables": 183,
+   "rows_total": 307342218,
+   "done": 175,
+   "catalog_tables_xtcloud": 170,
+   "catalog_rows_xtcloud": 307209805,
+   "freshness_top": {
+    "202608": 5,
+    "202609": 15,
+    "202610": 114,
+    "202611": 13,
+    "202712": 1
+   },
+   "verification": {
+    "verified_stale": 48,
+    "verified": 107,
+    "static_no_date": 15
+   }
+  },
+  "reports_forecast": {
+   "research_report": {
+    "freshness": "20261102",
+    "rows": 243,
+    "files": 2,
+    "verification_status": "verified",
+    "date_status": "registered",
+    "source": "tushare",
+    "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/research_report",
+    "desc": "研报（tushare 兜底源）"
+   },
+   "anns_d": {
+    "freshness": "20261102",
+    "rows": null,
+    "files": 1898,
+    "verification_status": "verified",
+    "date_status": "registered",
+    "source": "tushare",
+    "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/anns_d",
+    "desc": "公告（按日分片，tushare 兜底源）"
+   },
+   "stock_report": {
+    "freshness": "20261101",
+    "rows": 149776,
+    "files": 0,
+    "verification_status": "verified",
+    "date_status": null,
+    "source": "xtcloud",
+    "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/tdx_info.db",
+    "desc": "tdx 信息库（公告/个股新闻/研报）"
+   },
+   "forecast": {
+    "freshness": "20261030",
+    "rows": 110470,
+    "files": 17,
+    "verification_status": "verified",
+    "date_status": "registered",
+    "source": "tushare",
+    "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/forecast",
+    "desc": ""
+   },
+   "express": {
+    "freshness": "20261021",
+    "rows": 5947,
+    "files": 4,
+    "verification_status": "verified_stale",
+    "date_status": "registered",
+    "source": "tushare",
+    "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/express",
+    "desc": ""
+   },
+   "ts_forecast": {
+    "freshness": "20261013",
+    "rows": 34342,
+    "files": 2,
+    "verification_status": "verified_stale",
+    "date_status": "registered",
+    "source": "xtcloud",
+    "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_forecast",
+    "desc": ""
+   },
+   "ts_express": {
+    "freshness": "20261013",
+    "rows": 11664,
+    "files": 6,
+    "verification_status": "verified_stale",
+    "date_status": "registered",
+    "source": "xtcloud",
+    "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_express",
+    "desc": ""
+   },
+   "report_rc": {
+    "freshness": null,
+    "rows": 2910978,
+    "files": 202,
+    "verification_status": "verified",
+    "date_status": "unknown",
+    "source": "tushare",
+    "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/report_rc",
+    "desc": ""
+   }
+  },
+  "anns_pdf": {
+   "count": 2614,
+   "latest_name": "AN1225470149_20260813_关于为全资子公司提供担保的进展公告.pdf",
+   "latest_mtime": "2026-10-19T19:15:14.780473"
+  },
+  "backtest_results": {
+   "bt2_SEP1M-DK": "41,011B",
+   "bt2_SEP1M-CHANLUN": "315,699B",
+   "bt2_SHADOW-DK-REPRO": "41,018B; reproducible vs SEP1M-DK"
+  },
+  "probe_log_coverage": {
+   "entries": 25,
+   "min_ts": "2026-11-02T11:21:48+08:00",
+   "max_ts": "2026-11-03T06:20:02+08:00",
+   "by_day": {
+    "2026-11-02": 18,
+    "2026-11-03": 7
+   },
+   "last5": [
+    [
+     "2026-11-03T02:20:02+08:00",
+     0,
+     0,
+     0
+    ],
+    [
+     "2026-11-03T03:20:02+08:00",
+     0,
+     0,
+     0
+    ],
+    [
+     "2026-11-03T04:20:02+08:00",
+     0,
+     0,
+     0
+    ],
+    [
+     "2026-11-03T05:20:02+08:00",
+     0,
+     0,
+     0
+    ],
+    [
+     "2026-11-03T06:20:02+08:00",
+     0,
+     0,
+     0
+    ]
+   ]
+  }
+ },
+ "shadow_acceptance": {
+  "method": "final_acceptance.py --date <历史日> --json-out research/reports/final_acceptance_<历史日>.json（只读；不覆盖 20261102/03）",
+  "dates": [
+   "20261028",
+   "20261030",
+   "20261031"
+  ],
+  "results": {
+   "20261028": {
+    "verdict": "FAIL",
+    "counts": {
+     "pass": 1,
+     "fail": 8,
+     "expected-risk": 0,
+     "unknown": 1,
+     "total": 10
+    },
+    "night_date": "2026-10-27",
+    "gates": [
+     [
+      "G1",
+      "fail",
+      "not_run_in_night:\\ZeroBound\\TdxSync_A_高频(2026-11-02T17:35:00+08:00); not_run_in_night:\\ZeroBound\\TdxSync_B_财务(2026-11-02T17:45:00+08:00); not_run_in_night:\\ZeroBound\\TdxSync_C_低频(2"
+     ],
+     [
+      "G2",
+      "unknown",
+      "无 19:20 后 probe 严格判定记录（not_found）"
+     ],
+     [
+      "G3",
+      "pass",
+      "unknown=14 < 40"
+     ],
+     [
+      "G4",
+      "fail",
+      "not_run_today(last_run=2026-11-03T06:00:01+08:00)"
+     ],
+     [
+      "G5",
+      "fail",
+      "task_last_result=267009; not_run_today(last_run=2026-11-03T06:20:01+08:00); catalog_not_updated_today; registry_sha_mismatch"
+     ],
+     [
+      "G6",
+      "fail",
+      "not_run_after_0640(last_run=2026-11-03T06:40:01+08:00); snapshot_not_today(generated_at=2026-11-03T06:40:32+08:00); dw_log_not_today"
+     ],
+     [
+      "G7",
+      "fail",
+      "not_run_today(last_run=2026-11-02T14:46:43+08:00)"
+     ],
+     [
+      "G8",
+      "fail",
+      "not_run_today(last_run=2026-11-02T07:00:01+08:00)"
+     ],
+     [
+      "G9",
+      "fail",
+      "not_run_today(last_run=1999-11-30T00:00:00+08:00)"
+     ],
+     [
+      "G10",
+      "fail",
+      "ok=8 < 9; K3=warn（期 K3 转 ok：dw_snapshot 每日自动）"
+     ]
+    ]
+   },
+   "20261030": {
+    "verdict": "FAIL",
+    "counts": {
+     "pass": 1,
+     "fail": 8,
+     "expected-risk": 0,
+     "unknown": 1,
+     "total": 10
+    },
+    "night_date": "2026-10-29",
+    "gates": [
+     [
+      "G1",
+      "fail",
+      "not_run_in_night:\\ZeroBound\\TdxSync_A_高频(2026-11-02T17:35:00+08:00); not_run_in_night:\\ZeroBound\\TdxSync_B_财务(2026-11-02T17:45:00+08:00); not_run_in_night:\\ZeroBound\\TdxSync_C_低频(2"
+     ],
+     [
+      "G2",
+      "unknown",
+      "无 19:20 后 probe 严格判定记录（not_found）"
+     ],
+     [
+      "G3",
+      "pass",
+      "unknown=14 < 40"
+     ],
+     [
+      "G4",
+      "fail",
+      "not_run_today(last_run=2026-11-03T06:00:01+08:00)"
+     ],
+     [
+      "G5",
+      "fail",
+      "task_last_result=267009; not_run_today(last_run=2026-11-03T06:20:01+08:00); catalog_not_updated_today; registry_sha_mismatch"
+     ],
+     [
+      "G6",
+      "fail",
+      "not_run_after_0640(last_run=2026-11-03T06:40:01+08:00); snapshot_not_today(generated_at=2026-11-03T06:40:32+08:00); dw_log_not_today"
+     ],
+     [
+      "G7",
+      "fail",
+      "not_run_today(last_run=2026-11-02T14:46:43+08:00)"
+     ],
+     [
+      "G8",
+      "fail",
+      "not_run_today(last_run=2026-11-02T07:00:01+08:00)"
+     ],
+     [
+      "G9",
+      "fail",
+      "not_run_today(last_run=1999-11-30T00:00:00+08:00)"
+     ],
+     [
+      "G10",
+      "fail",
+      "ok=8 < 9; K3=warn（期 K3 转 ok：dw_snapshot 每日自动）"
+     ]
+    ]
+   },
+   "20261031": {
+    "verdict": "FAIL",
+    "counts": {
+     "pass": 1,
+     "fail": 8,
+     "expected-risk": 0,
+     "unknown": 1,
+     "total": 10
+    },
+    "night_date": "2026-10-30",
+    "gates": [
+     [
+      "G1",
+      "fail",
+      "not_run_in_night:\\ZeroBound\\TdxSync_A_高频(2026-11-02T17:35:00+08:00); not_run_in_night:\\ZeroBound\\TdxSync_B_财务(2026-11-02T17:45:00+08:00); not_run_in_night:\\ZeroBound\\TdxSync_C_低频(2"
+     ],
+     [
+      "G2",
+      "unknown",
+      "无 19:20 后 probe 严格判定记录（not_found）"
+     ],
+     [
+      "G3",
+      "pass",
+      "unknown=14 < 40"
+     ],
+     [
+      "G4",
+      "fail",
+      "not_run_today(last_run=2026-11-03T06:00:01+08:00)"
+     ],
+     [
+      "G5",
+      "fail",
+      "task_last_result=267009; not_run_today(last_run=2026-11-03T06:20:01+08:00); catalog_not_updated_today; registry_sha_mismatch"
+     ],
+     [
+      "G6",
+      "fail",
+      "not_run_after_0640(last_run=2026-11-03T06:40:01+08:00); snapshot_not_today(generated_at=2026-11-03T06:40:32+08:00); dw_log_not_today"
+     ],
+     [
+      "G7",
+      "fail",
+      "not_run_today(last_run=2026-11-02T14:46:43+08:00)"
+     ],
+     [
+      "G8",
+      "fail",
+      "not_run_today(last_run=2026-11-02T07:00:01+08:00)"
+     ],
+     [
+      "G9",
+      "fail",
+      "not_run_today(last_run=1999-11-30T00:00:00+08:00)"
+     ],
+     [
+      "G10",
+      "fail",
+      "ok=8 < 9; K3=warn（期 K3 转 ok：dw_snapshot 每日自动）"
+     ]
+    ]
+   }
+  },
+  "replayability": [
+   {
+    "gate": "G1",
+    "status": "不可回放",
+    "reason": "任务 LastRun 为当前 11-02/03（非历史夜）；历史夜 rows_delta 无 probe 记录；part mtime 已被 11-02 首夜重写覆盖"
+   },
+   {
+    "gate": "G2",
+    "status": "不可回放（日志缺失→unknown）",
+    "reason": "tdx_sync_probe.log 仅 2026-11-02T11:21:48 起（25 条）；历史夜无 19:20 记录"
+   },
+   {
+    "gate": "G3",
+    "status": "当前态可判（非历史回放）",
+    "reason": "读当前 registry（06:25 重建）；unknown=14<40 → pass；历史快照未留存"
+   },
+   {
+    "gate": "G4",
+    "status": "不可回放",
+    "reason": "依赖当日 XmapSync LastRun（历史日无对应运行）"
+   },
+   {
+    "gate": "G5",
+    "status": "不可回放",
+    "reason": "依赖当日 KgDailySync/catalog/registry sha；历史日数据已更新"
+   },
+   {
+    "gate": "G6",
+    "status": "不可回放",
+    "reason": "依赖当日 06:40 snapshot/日志/任务 LastRun；当前快照仅 11-03"
+   },
+   {
+    "gate": "G7",
+    "status": "不可回放",
+    "reason": "依赖 NoticeBackfill 当日运行（历史日无记录）"
+   },
+   {
+    "gate": "G8",
+    "status": "不可回放",
+    "reason": "依赖 A3 canary 当日 LastRun（历史日无记录）"
+   },
+   {
+    "gate": "G9",
+    "status": "不可回放",
+    "reason": "依赖 SentimentBT 当日首跑/产物 freshness；历史日无运行"
+   },
+   {
+    "gate": "G10",
+    "status": "不可回放（部分数据类可当前态判）",
+    "reason": "KPI 混当前值 + K3 日期绑定；历史日 K3=warn、ok=8<9 → fail"
+   }
+  ],
+  "conclusion": "历史影子验收仅 G3（当前态）可判，9/10 Gate 不可回放；不替代 09:00 实时终验（对齐计划 v4 §三.1/§九）"
+ },
+ "query_chain": {
+  "dataset": "ts_forecast",
+  "carrier": "dir_parquet",
+  "window": {
+   "field": "ann_date",
+   "gte": "20261008",
+   "lte": "20261030"
+  },
+  "registry_api": {
+   "count": 157,
+   "rows_sample": 3,
+   "direct_pyarrow_count": 157,
+   "truncated": false
+  },
+  "cli": {
+   "rc": 0,
+   "state": "ok",
+   "count": 157,
+   "rows": 3,
+   "truncated": false
+  },
+  "result": "registry count 157 = direct pyarrow 157 = CLI count 157（±0）；链路可用"
+ },
+ "backtest_chain": {
+  "invalid_window_attempt": {
+   "window": [
+    "20261008",
+    "20261030"
+   ],
+   "runs": 2,
+   "rc": 1,
+   "reason": "窗口内交易日不足（17 日）< 引擎最小 20 日",
+   "note": "任务建议窗口不可用，改用 20260928-20261030（20 个交易日）"
+  },
+  "repro": {
+   "job_id": "SHADOW-DK-REPRO",
+   "window": [
+    "20260928",
+    "20261030"
+   ],
+   "strategy": "double_knife",
+   "rc": 0,
+   "elapsed_s": 146,
+   "output": "quant_backtest/data/bt2/bt2_SHADOW-DK-REPRO.json",
+   "compare_to": "bt2_SEP1M-DK.json",
+   "summary_equal": true,
+   "equity_equal": true,
+   "trades_equal": true,
+   "days_equal": true,
+   "holdings_equal": true,
+   "meta_diffs_nonjob": [],
+   "summary": {
+    "name": "量子双刀日内纪律",
+    "total_return_pct": -1.55,
+    "annualized_pct": -17.42,
+    "max_drawdown_pct": -3.28,
+    "calmar": -5.3,
+    "n_trades": 26,
+    "win_rate_pct": 50.0,
+    "profit_factor": 0.69,
+    "avg_invested_pct": 9.9,
+    "n_trim": 2,
+    "n_mid_slot_days": 0
+   }
+  },
+  "result": "历史窗口回测 rc=0，summary/equity/trades/days/holdings 全量一致（meta 仅 job_id 不同）；可复现链路成立"
+ },
+ "frontload": {
+  "can_move": [
+   {
+    "id": "W2-01/02/03/04",
+    "task": "历史影子验收 + 覆盖台账 + 可前移清单 + 查询/回测前置验证",
+    "original": "无（新增）",
+    "move_to": "11-03 07:00 前（本单完成）",
+    "precondition": "只读；历史数据可用",
+    "risk": "不替代实时验收",
+    "evidence": "本证据包 + 3 个历史日 final_acceptance JSON"
+   },
+   {
+    "id": "Hermes /reload-mcp",
+    "task": "Hermes MCP 重载/工具面",
+    "original": "11-05",
+    "move_to": "已于 11-03 06:10 完成",
+    "precondition": "—",
+    "risk": "无",
+    "evidence": "research/reports/hermes_reload_20261103.json / hermes_mcp_probe_20261103.json / hermes_health_20261103.json（计划 v4 §六）"
+   },
+   {
+    "id": "P0-1",
+    "task": "registry 自动对齐",
+    "original": "终验后",
+    "move_to": "11-03 开发 / 11-04 接入",
+    "precondition": "L2 任务动作变更",
+    "risk": "registry 写回需审批",
+    "evidence": "catalog v35 06:25 重建；G3 unknown=14；shadow G3 pass"
+   },
+   {
+    "id": "P0-2",
+    "task": "Hermes 两 inactive 服务修复",
+    "original": "11-05 后",
+    "move_to": "11-03 诊断 / 11-05 窗口修",
+    "precondition": "L2 config+reload",
+    "risk": "config 变更需窗口",
+    "evidence": "hermes_mcp_probe_20261103.json（离线诊断可行）"
+   },
+   {
+    "id": "P0-3",
+    "task": "前端质量门入 fast",
+    "original": "待排期",
+    "move_to": "11-03 终验后",
+    "precondition": "fast 门变更",
+    "risk": "门禁变更需回归",
+    "evidence": "计划 v4 §六；builder/checker 已就绪"
+   },
+   {
+    "id": "W1-03 前置",
+    "task": "11-05 页面替换离线演练",
+    "original": "11-05 上线窗口",
+    "move_to": "11-03 离线演练（不切生产）",
+    "precondition": "不写生产文件；临时目录复制+sha 校验",
+    "risk": "误操作生产页 → 仅演练",
+    "evidence": "portal/static/dw.html 37,660B sha=0effc125…；portal/dw.html 39,027B sha=e05dd93b…（sha 对比可预演）"
+   },
+   {
+    "id": "W2-03",
+    "task": "近1月/滚动月回测复现与扩展",
+    "original": "11-03/后续",
+    "move_to": "11-03 上午",
+    "precondition": "窗口≥20 交易日；ashare 2023-10-10 起或 tushare 深度数据",
+    "risk": "20261008-20261030 仅 17 交易日不可用；单次约 146s",
+    "evidence": "SHADOW-DK-REPRO rc=0 与 SEP1M-DK 全量一致；task-76 100% 复现"
+   },
+   {
+    "id": "K8/G3",
+    "task": "资质分布/K8 复判核验",
+    "original": "09:00 终验",
+    "move_to": "11-03 早间（当前态）",
+    "precondition": "KgDailySync 重建完成（06:25）",
+    "risk": "chain 仍在运行，需完成后复核",
+    "evidence": "registry unknown=14<40；G3 pass（3 历史日均一致）"
+   },
+   {
+    "id": "K6/研报预告",
+    "task": "查询覆盖率复跑 + 研报/预告覆盖核查",
+    "original": "11-05 前",
+    "move_to": "11-03 上午（只读）",
+    "precondition": "数据已就绪（research_report 20261102/forecast 20261030）",
+    "risk": "express/ts_forecast 滞后需补采（历史回放不可解决）",
+    "evidence": "catalog entries：research_report 20261102 / forecast 20261030 / express 20261021(stale) / ts_forecast 20261013(stale)"
+   },
+   {
+    "id": "W4-03/04",
+    "task": "数据保留容量估算 + ODCS Top50 准备",
+    "original": "12 月",
+    "move_to": "11-17 起（略前移）",
+    "precondition": "历史数据可估算容量",
+    "risk": "容量/合同口径需 owner",
+    "evidence": "catalog 256 表/349,739,167 行；tdx 307.2M 行；计划 v4 §六"
+   }
+  ],
+  "cannot_move": [
+   {
+    "id": "W1-01",
+    "task": "09:00 终验 G1–G10",
+    "reason": "G1/G2 依赖首夜实时证据、G4–G9 依赖当日任务 LastRun/当前快照、G10 依赖 KPI 全量；历史影子 9/10 不可回放（本单实测）",
+    "evidence": "历史 3 日 shadow：pass=1(G3 当前态)/fail=8/unknown=1；不替代实时"
+   },
+   {
+    "id": "W1-02",
+    "task": "K3 自动首跑/公告补采(G7)/情绪回测(G9)/看门狗(G2)",
+    "reason": "实时首跑依赖（计划 v4 §六明确不前移）；probe 日志 11-02 11:21 起，历史无 G2；SentimentBT 07:20 待跑",
+    "evidence": "probe_log min=2026-11-02T11:21:48；task states"
+   },
+   {
+    "id": "W1-03",
+    "task": "8091 重启 + nginx /dw.html 上线（11-05 06:00）",
+    "reason": "服务/网关实时状态不可回放；仅离线演练可前移",
+    "evidence": "计划 v4 §六；L2 五要素 pending"
+   },
+   {
+    "id": "W1-04/05",
+    "task": "L2 任务动作/config 变更（registry 自动对齐接入/P0-2）",
+    "reason": "需 L2 审批与窗口",
+    "evidence": "计划 v4 §六"
+   },
+   {
+    "id": "W3-01",
+    "task": "手动录入后端写回",
+    "reason": "需 staging+审核+L2 写回，非历史可回放",
+    "evidence": "计划 v4 §五"
+   },
+   {
+    "id": "—",
+    "task": "A3 凭据轮换 / v2 DB 只读连接 / NoticeBackfill 管理员收口",
+    "reason": "外部/管理员依赖",
+    "evidence": "计划 v4 §十二"
+   },
+   {
+    "id": "—",
+    "task": "黄忠彩排 11-04 / ACAD1 冻结 11-08",
+    "reason": "日期绑定外部签字/评审，历史数据不可前移",
+    "evidence": "ROADMAP v4 P0"
+   },
+   {
+    "id": "—",
+    "task": "实时交易/盘中数据/飞书外发",
+    "reason": "交易日实时依赖，历史数据不可替代",
+    "evidence": "计划 v4 §三.1 原则"
+   }
+  ],
+  "schedule": [
+   {
+    "time": "11-03 07:30 前",
+    "action": "数据类前移完成包：本单证据包 + 查询/回测链 + K8/G3 + K6/研报预告核查（只读）",
+    "owner": "wa-verify"
+   },
+   {
+    "time": "11-03 07:30–09:00",
+    "action": "收 G4 XmapSync(06:00 rc=0)/G6 快照(06:40 rc=0)/G8 A3(07:00)/G9 SentimentBT(07:20)；G5 KgDailySync 完成复核；G7 NoticeBackfill PT8H 跟踪",
+    "owner": "DSH-Lead"
+   },
+   {
+    "time": "11-03 09:00",
+    "action": "W1-01 终验 G1–G10；若 G7 仍未完成则记录条件（不以前移替代）",
+    "owner": "DSH-Lead"
+   },
+   {
+    "time": "11-03 下午",
+    "action": "P0-3 前端质量门；集成 P0 回执；KPI/STATUS 更新",
+    "owner": "DSH-Lead/impl"
+   },
+   {
+    "time": "11-04",
+    "action": "P0-1 接入 KgDaily；W4-01/02；11-05 窗口预检（端口/文件/sha/L2 材料）",
+    "owner": "Lead/impl"
+   },
+   {
+    "time": "11-05 06:00",
+    "action": "L2 窗口：8091 重启 + /dw.html 替换 + Hermes 复核；S3 结项",
+    "owner": "DSH-Lead+老田"
+   }
+  ]
+ },
+ "boundaries": {
+  "read_only": "查询/覆盖/影子验收均为只读；未改数据/catalog/registry/任务；未 commit/未重启",
+  "runtime_outputs": [
+   "research/reports/final_acceptance_20261028.json/.md",
+   "..._20261030.json/.md",
+   "..._20261031.json/.md",
+   "research/reports/historical_shadow_checks_20261103.json",
+   "quant_backtest/data/bt2/bt2_SHADOW-DK-REPRO.json（运行态回测输出）"
+  ],
+  "not_overwritten": [
+   "research/reports/final_acceptance_20261102.json",
+   "research/reports/final_acceptance_20261103.json"
+  ],
+  "tdx_window": "KgDailySync 06:20 起运行中（catalog/registry 写入）；tdx 数据未读取（本单查询用 tushare/forecast），避免写窗口"
+ },
+ "evidence_files": [
+  "C:\\Temp\\task80_data_coverage.json",
+  "C:\\Temp\\task80_catalog_by_source.json",
+  "C:\\Temp\\task80_query_chain2.json",
+  "C:\\Temp\\task80_cli_query.json",
+  "C:\\Temp\\task80_backtest_compare.json",
+  "C:\\Temp\\task80_misc.json",
+  "C:\\Temp\\task80_kpi.json",
+  "C:\\Temp\\task80_ashare_check.json",
+  "C:\\Temp\\task80_shadow_acceptance.log"
+ ]
+}
