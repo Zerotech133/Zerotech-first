@@ -48,7 +48,10 @@ MANIFEST = common.DATA / "tushare" / "_manifest.json"  # 兜底（历史行为�
 KG_LOG = Path(r"C:\Temp\kg_sync_task.log")
 EXPECTED_PHYSICAL = None  # 动态：运行时取 registry 当前 physical_count
 EXPECTED_DISPLAY = None
-FRESH_LAG_DAYS = 7
+FRESH_LAG_DAYS = 7  # 默认滞后阈值（自然日；D 频/未知频率）
+# 2026-11-02 task-24：按 catalog 条目 freq 分级滞后阈值（自然日）
+FREQ_LAG_DAYS = {"D": 7, "W": 14, "M": 40, "Q": 100}
+STATIC_DATE_EXEMPT = "skipped_static_no_date"
 SAMPLE_LIMIT = 5
 ALLOWED_REGISTRY_FIELDS = {
     "qualification_status", "evidence_checked_at", "evidence_summary", "unsupported_reason",
@@ -264,6 +267,17 @@ def manifest_keys(data) -> set:
     return set(data.keys())
 
 
+def lag_limit_for(entry: dict | None) -> tuple:
+    """按 catalog 条目 freq 返回 (滞后阈值天数, 口径标签)。
+
+    D=7 / W=14 / M=40 / Q=100（自然日）；未知/事件/分钟频回退 D=7（口径标签 freq_default，fail-visible）。
+    """
+    freq = str((entry or {}).get("freq") or "").upper()
+    if freq in FREQ_LAG_DAYS:
+        return FREQ_LAG_DAYS[freq], "freq:%s" % freq
+    return FRESH_LAG_DAYS, "freq_default"
+
+
 def resolve_manifest_path(entry: dict | None, fallback: Path | None = None) -> tuple:
     """解析表所属 manifest（2026-11-02 task-23：不再固定 tushare）。
 
@@ -292,7 +306,10 @@ def _summary(card: dict) -> str:
     else:
         base = "store 在，%d 文件（顶层 %d），抽样 %d 文件 %d 行" % (
             card["files_on_disk"], card["files_top_level"], card["sample_count"], card["rows_sampled"])
-    date = card["latest_business_date"] or "无"
+    if card.get("date_check") == STATIC_DATE_EXEMPT:
+        date = "豁免(%s)" % card.get("exempt_reason")
+    else:
+        date = card["latest_business_date"] or "无"
     lag = "NA" if card["lag_days"] is None else str(card["lag_days"])
     if card["manifest_state"] != "present":
         manifest = "manifest 缺"
@@ -309,7 +326,12 @@ def _summary(card: dict) -> str:
 def _unsupported_reason(card: dict) -> str:
     table = card["table"]
     if card["verdict"] == "evidence_ok":
-        return "资格取证批次1：证据齐备（文件/行/最新日/manifest），待发布/覆盖核验"
+        if card.get("date_check") == STATIC_DATE_EXEMPT:
+            # fail-visible：静态/无日期列口径豁免必须显式标注，不静默当普通 ok
+            return ("资格取证批次1：文件/行/manifest 齐备；静态/无日期列（%s）日期检查豁免"
+                    "（口径标注 visible），待发布/覆盖核验" % card.get("exempt_reason"))
+        return ("资格取证批次1：证据齐备（文件/行/最新日 lag 在 %s 阈值内/manifest），"
+                "待发布/覆盖核验" % card.get("lag_limit_rule", "freq"))
     if "manifest_catalog_unreadable" in card["reasons"]:
         gap = "catalog 指定 manifest 不可读（%s）" % (card.get("manifest_path") or "路径缺失")
     elif "manifest_fallback_tushare" in card["reasons"]:
@@ -328,8 +350,11 @@ def _unsupported_reason(card: dict) -> str:
         gap = "最新业务日不可证"
     elif card["latest_degraded"]:
         gap = "最新日仅文件名回退（degraded）"
-    elif card["lag_days"] is not None and card["lag_days"] > FRESH_LAG_DAYS:
-        gap = "最新日 lag=%s>%d" % (card["lag_days"], FRESH_LAG_DAYS)
+    elif card["lag_days"] is not None and card["lag_days"] > card.get(
+            "lag_limit_days", FRESH_LAG_DAYS):
+        gap = "最新日 lag=%s>%d（%s 阈值）" % (
+            card["lag_days"], card.get("lag_limit_days", FRESH_LAG_DAYS),
+            card.get("lag_limit_rule", "freq"))
     elif card["future_date"]:
         gap = "最新业务日出现未来日期"
     else:
@@ -349,6 +374,12 @@ def probe_table(table: str, entry: dict, mkeys: set, today: dt.date,
         "store": common.rel(store) if store_raw else "",
         "layout": entry.get("layout"),
         "date_column": date_col,
+        "freq": entry.get("freq"),
+        "lag_limit_days": lag_limit_for(entry)[0],
+        "lag_limit_rule": lag_limit_for(entry)[1],
+        "static_no_date": bool(entry.get("static_no_date")),
+        "date_check": "footer",
+        "exempt_reason": None,
         "store_exists": bool(store_raw) and store.exists(),
         "files_on_disk": 0,
         "files_top_level": 0,
@@ -440,6 +471,15 @@ def probe_table(table: str, entry: dict, mkeys: set, today: dt.date,
             card["latest_business_date"] = None
             card["latest_source"] = "invalid_date"
 
+    # 2026-11-02 task-24：静态/无日期列口径例外（fail-visible：卡片 date_check/exempt_reason 显式标注）
+    static_exempt = (bool(entry.get("static_no_date"))
+                     or not date_col
+                     or card["latest_source"] == "no_date_column")
+    if static_exempt:
+        card["date_check"] = STATIC_DATE_EXEMPT
+        card["exempt_reason"] = ("static_no_date" if entry.get("static_no_date")
+                                 else "no_date_column")
+
     if card["rows_sampled"] == 0:
         card["reasons"] = ["zero_rows_sampled"]
     else:
@@ -450,16 +490,18 @@ def probe_table(table: str, entry: dict, mkeys: set, today: dt.date,
             reasons.append("manifest_fallback_tushare")
         if card["manifest_issue"]:
             reasons.append("manifest_catalog_unreadable")
-        if card["latest_source"] == "no_date_column":
-            reasons.append("no_date_column")
-        elif not card["latest_business_date"]:
-            reasons.append("no_latest_date")
-        elif card["latest_degraded"]:
-            reasons.append("filename_fallback")
-        if card["future_date"]:
-            reasons.append("future_date")
-        if card["lag_days"] is not None and card["lag_days"] > FRESH_LAG_DAYS:
-            reasons.append("stale_gt_7d")
+        if not static_exempt:
+            if card["latest_source"] == "no_date_column":
+                reasons.append("no_date_column")
+            elif not card["latest_business_date"]:
+                reasons.append("no_latest_date")
+            elif card["latest_degraded"]:
+                reasons.append("filename_fallback")
+            if card["future_date"]:
+                reasons.append("future_date")
+            limit = card["lag_limit_days"]
+            if card["lag_days"] is not None and card["lag_days"] > limit:
+                reasons.append("stale_gt_%dd" % limit)
         card["reasons"] = reasons
         if reasons:
             card["verdict"] = "evidence_partial"
@@ -550,6 +592,14 @@ def collect_evidence(tables, catalog: dict, manifest: dict | None, today: dt.dat
             "target_tables": len(tables),
         },
         "manifest": manifest_info,
+        "date_policy": {
+            "freq_lag_days": dict(FREQ_LAG_DAYS),
+            "default_lag_days": FRESH_LAG_DAYS,
+            "static_exempt_tables": [c["table"] for c in cards
+                                     if c.get("date_check") == STATIC_DATE_EXEMPT],
+            "note": "按 catalog freq 判滞后阈值（D7/W14/M40/Q100，其余回退 7）；"
+                    "静态/无日期列豁免日期检查，但在卡片 date_check/exempt_reason 与本段显式标注（fail-visible）",
+        },
         "summary": {
             "tables": len(cards),
             "ok": counts.get("evidence_ok", 0),

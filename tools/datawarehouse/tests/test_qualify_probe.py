@@ -33,8 +33,19 @@ def write_parquet(path: Path, dates, col: str = "trade_date", stats: bool = True
     pq.write_table(table, path, write_statistics=stats)
 
 
-def entry(store: Path, date_col: str | None = "trade_date", layout: str = "by_date") -> dict:
-    return {"store": str(store), "layout": layout, "date_col": date_col}
+def entry(store: Path, date_col: str | None = "trade_date", layout: str = "by_date",
+          freq: str | None = None, static_no_date: bool = False) -> dict:
+    e = {"store": str(store), "layout": layout, "date_col": date_col}
+    if freq is not None:
+        e["freq"] = freq
+    if static_no_date:
+        e["static_no_date"] = True
+    return e
+
+
+def _dated(days_ago: int):
+    """构造距今 N 天的 YYYYMMDD（基于固定 TODAY，保证单测可重复）。"""
+    return (TODAY - dt.timedelta(days=days_ago)).strftime("%Y%m%d")
 
 
 @unittest.skipUnless(HAS_PYARROW, "pyarrow 不可用")
@@ -148,7 +159,8 @@ class TestProbeVerdicts(unittest.TestCase):
             self.assertEqual(card["verdict"], "evidence_partial")
             self.assertIn("future_date", card["reasons"])
 
-    def test_no_date_column_is_partial(self):
+    def test_no_date_column_static_exempt_visible(self):
+        """task-24：无日期列 → 静态口径豁免日期检查，但必须 fail-visible 标注（不静默）。"""
         with tempfile.TemporaryDirectory() as d:
             store = Path(d) / "store"
             store.mkdir()
@@ -157,8 +169,11 @@ class TestProbeVerdicts(unittest.TestCase):
             card = qualify_probe.probe_table("t1", entry(store, None), {"t1"}, TODAY, CHECKED)
             self.assertIsNone(card["latest_business_date"])
             self.assertEqual(card["latest_source"], "no_date_column")
-            self.assertEqual(card["verdict"], "evidence_partial")
-            self.assertIn("no_date_column", card["reasons"])
+            self.assertEqual(card["verdict"], "evidence_ok")
+            self.assertEqual(card["date_check"], qualify_probe.STATIC_DATE_EXEMPT)
+            self.assertEqual(card["exempt_reason"], "no_date_column")
+            self.assertNotIn("no_date_column", card["reasons"])
+            self.assertIn("豁免", card["unsupported_reason"])
 
     def test_sample_limit_and_latest(self):
         with tempfile.TemporaryDirectory() as d:
@@ -191,6 +206,79 @@ class TestProbeVerdicts(unittest.TestCase):
             card = qualify_probe.probe_table("t1", entry(store), set(), TODAY, CHECKED)
             self.assertLessEqual(len(card["evidence_summary"]), 200)
             self.assertLessEqual(len(card["unsupported_reason"]), 200)
+
+
+@unittest.skipUnless(HAS_PYARROW, "pyarrow 不可用")
+class TestFreqAwareLag(unittest.TestCase):
+    """task-24：freq-aware 滞后阈值（D=7/W=14/M=40/Q=100）+ 静态表例外 fail-visible。"""
+
+    def _card(self, freq, days_ago, static_no_date=False, has_date=True):
+        with tempfile.TemporaryDirectory() as d:
+            store = Path(d) / "store"
+            store.mkdir()
+            if has_date:
+                date = _dated(days_ago)
+                write_parquet(store / ("d_%s.parquet" % date), [date])
+                date_col = "trade_date"
+            else:
+                pq.write_table(pa.table({"a": pa.array([1])}), str(store / "part_0000.parquet"))
+                date_col = None
+            return qualify_probe.probe_table(
+                "t1", entry(store, date_col, freq=freq, static_no_date=static_no_date),
+                {"t1"}, TODAY, CHECKED)
+
+    def test_lag_limit_for(self):
+        self.assertEqual(qualify_probe.lag_limit_for({"freq": "D"}), (7, "freq:D"))
+        self.assertEqual(qualify_probe.lag_limit_for({"freq": "W"}), (14, "freq:W"))
+        self.assertEqual(qualify_probe.lag_limit_for({"freq": "M"}), (40, "freq:M"))
+        self.assertEqual(qualify_probe.lag_limit_for({"freq": "Q"}), (100, "freq:Q"))
+        self.assertEqual(qualify_probe.lag_limit_for({}), (7, "freq_default"))
+        self.assertEqual(qualify_probe.lag_limit_for({"freq": "1min"}), (7, "freq_default"))
+
+    def test_week_threshold(self):
+        card = self._card("W", 12)
+        self.assertEqual(card["lag_limit_days"], 14)
+        self.assertEqual(card["verdict"], "evidence_ok")
+        self.assertEqual(card["reasons"], [])
+        over = self._card("W", 20)
+        self.assertEqual(over["verdict"], "evidence_partial")
+        self.assertIn("stale_gt_14d", over["reasons"])
+
+    def test_month_threshold(self):
+        card = self._card("M", 35)
+        self.assertEqual(card["lag_limit_days"], 40)
+        self.assertEqual(card["verdict"], "evidence_ok")
+        over = self._card("M", 45)
+        self.assertEqual(over["verdict"], "evidence_partial")
+        self.assertIn("stale_gt_40d", over["reasons"])
+
+    def test_quarter_threshold(self):
+        card = self._card("Q", 90)
+        self.assertEqual(card["lag_limit_days"], 100)
+        self.assertEqual(card["verdict"], "evidence_ok")
+        over = self._card("Q", 120)
+        self.assertEqual(over["verdict"], "evidence_partial")
+        self.assertIn("stale_gt_100d", over["reasons"])
+
+    def test_d_still_strict(self):
+        card = self._card("D", 8)
+        self.assertEqual(card["verdict"], "evidence_partial")
+        self.assertIn("stale_gt_7d", card["reasons"])
+
+    def test_unknown_freq_defaults_to_d(self):
+        card = self._card(None, 8)
+        self.assertEqual(card["lag_limit_rule"], "freq_default")
+        self.assertEqual(card["verdict"], "evidence_partial")
+        self.assertIn("stale_gt_7d", card["reasons"])
+
+    def test_static_no_date_flag_exempt_visible(self):
+        """static_no_date=True：即使日期可读也不判 stale，但需显式标注豁免。"""
+        card = self._card("D", 400, static_no_date=True)
+        self.assertEqual(card["verdict"], "evidence_ok")
+        self.assertEqual(card["date_check"], qualify_probe.STATIC_DATE_EXEMPT)
+        self.assertEqual(card["exempt_reason"], "static_no_date")
+        self.assertNotIn("stale_gt_7d", card["reasons"])
+        self.assertIn("豁免", card["unsupported_reason"])
 
 
 @unittest.skipUnless(HAS_PYARROW, "pyarrow 不可用")
