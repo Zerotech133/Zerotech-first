@@ -37,10 +37,16 @@ def chat(text: str, timeout: int = 300) -> str:
 
 
 def extract_one(item: dict) -> dict | None:
-    try:
-        raw = chat(item["claim"])
-        obj = json.loads(raw)
-    except Exception:  # noqa: BLE001
+    raw = ""
+    for _ in range(int(item.get("retries", 2))):
+        try:
+            raw = chat(item["claim"])
+            obj = json.loads(raw)
+            break
+        except Exception:  # noqa: BLE001
+            obj = None
+            continue
+    if obj is None:
         return None
     concept = str(obj.get("concept") or "").strip()
     answer = str(obj.get("answer") or "").strip()
@@ -56,6 +62,8 @@ def extract_one(item: dict) -> dict | None:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--limit", type=int, default=60)
+    ap.add_argument("--retries", type=int, default=2)
+    ap.add_argument("--skip-existing", action=argparse.BooleanOptionalAction, default=True)
     ap.add_argument("--workers", type=int, default=2)
     ap.add_argument("--write", action="store_true")
     args = ap.parse_args(argv)
@@ -80,8 +88,22 @@ def main(argv=None) -> int:
         items.append({"card_id": c["card_id"], "unit_id": raw.get("unit_id"),
                       "blogger": c.get("blogger"), "source": c.get("source"),
                       "evidence": c.get("evidence"), "claim": str(u.get("claim") or "")})
+    llm_p = R / f"card_candidates_{PID}_llm_{DATE}.json"
+    existing = []
+    done_units = set()
+    if llm_p.exists():
+        try:
+            ed = json.loads(llm_p.read_text(encoding="utf-8"))
+            existing = ed.get("candidates") or []
+            done_units = {c.get("unit_id") for c in existing if c.get("unit_id")}
+        except ValueError:
+            existing = []
+    if args.skip_existing:
+        items = [i for i in items if i["unit_id"] not in done_units]
     items.sort(key=lambda x: -len(x["claim"]))
     items = items[:args.limit]
+    for it in items:
+        it["retries"] = args.retries
     print(f"selected {len(items)} rejected for LLM; workers={args.workers}")
     out = []
     with ThreadPoolExecutor(max_workers=args.workers) as ex:
@@ -95,8 +117,11 @@ def main(argv=None) -> int:
               "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
               "generator": "card_llm_extract.py", "model": MODEL,
               "pid": PID, "sample": len(items), "extracted": len(out), "candidates": out}
+    all_cards = existing + out
+    result["candidates"] = all_cards
+    result["cumulative"] = len(all_cards)
     if args.write:
-        p = R / f"card_candidates_{PID}_llm_{DATE}.json"
+        p = llm_p
         p.write_text(json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8")
         (REPO / "portal/static" / f"card_candidates_{PID}_llm.json").write_text(
             json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8")
