@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""HQ 会议纪要草稿器（C2，dry-run；2026-11-03）。
+r"""HQ 会议纪要草稿器（C2，dry-run；2026-11-03）。
 
 把「五角色晨会草案（hq_meeting_prep --json）+ 五角色 RoleOpinion（可缺省）」整理为
 **hq_meeting v2 格式的纪要草稿**，默认 dry-run：只打印，不写生产会议、不调模型、不自动派单。
