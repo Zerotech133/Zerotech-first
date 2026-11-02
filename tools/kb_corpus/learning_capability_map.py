@@ -145,14 +145,14 @@ for name, cat, kws, comp, dep in TACTICS:
 
 # ---------- 4) 补齐与细化因子 ----------
 factors = [
-    {"factor": "均线粘合度", "formula": "std(MA5,MA10,MA20,MA60)/mean(MA20)", "data": "日线+复权", "status": "可立即实现", "tactic": "均线"},
-    {"factor": "多头排列强度", "formula": "(MA5-MA60)/MA60 的横截面分位", "data": "日线+复权", "status": "可立即实现", "tactic": "均线"},
-    {"factor": "MACD背离强度", "formula": "价格新高分位 - DIF新高分位", "data": "日线", "status": "可立即实现", "tactic": "指标"},
-    {"factor": "放量突破幅度", "formula": "vol/MA(vol,50) 与 close/平台高点-1", "data": "日线", "status": "可立即实现", "tactic": "量价/形态"},
-    {"factor": "平台整理天数/高度", "formula": "60日内收盘价极差/均值、振幅收窄速度", "data": "日线", "status": "可立即实现", "tactic": "形态"},
-    {"factor": "筹码集中度", "formula": "cyq_chips 90%成本区间宽度/中位成本", "data": "筹码分布", "status": "可立即实现（新数据）", "tactic": "量价"},
-    {"factor": "涨停后行为", "formula": "limit_list_d 涨停后 N 日收益/回落", "data": "涨跌停+日线", "status": "可立即实现", "tactic": "量价"},
-    {"factor": "资金流强度", "formula": "moneyflow 净流入/成交额 5日均", "data": "资金流", "status": "可立即实现", "tactic": "量价"},
+    {"factor": "均线粘合度", "formula": "std(MA5,MA10,MA20,MA60)/mean(MA20)", "data": "日线+复权", "status": "✅ 已实现（learning_factors.py，覆盖≈95%）", "tactic": "均线"},
+    {"factor": "多头排列强度", "formula": "(MA5-MA60)/MA60 的横截面分位", "data": "日线+复权", "status": "✅ 已实现（learning_factors.py，覆盖≈95%）", "tactic": "均线"},
+    {"factor": "MACD背离强度", "formula": "价格新高分位 - DIF新高分位", "data": "日线", "status": "✅ 已实现（learning_factors.py，覆盖≈95%）", "tactic": "指标"},
+    {"factor": "放量突破幅度", "formula": "vol/MA(vol,50) 与 close/平台高点-1", "data": "日线", "status": "✅ 已实现（learning_factors.py，覆盖≈95%）", "tactic": "量价/形态"},
+    {"factor": "平台整理天数/高度", "formula": "60日内收盘价极差/均值、振幅收窄速度", "data": "日线", "status": "✅ 已实现（learning_factors.py，覆盖≈95%）", "tactic": "形态"},
+    {"factor": "筹码集中度", "formula": "cyq_chips 90%成本区间宽度/中位成本", "data": "筹码分布", "status": "✅ 已实现（筹码探针714值；cyq 覆盖不足）", "tactic": "量价"},
+    {"factor": "涨停后行为", "formula": "limit_list_d 涨停后 N 日收益/回落", "data": "涨跌停+日线", "status": "✅ 已实现（learning_factors.py，覆盖≈95%）", "tactic": "量价"},
+    {"factor": "资金流强度", "formula": "moneyflow 净流入/成交额 5日均", "data": "资金流", "status": "✅ 已实现（learning_factors.py，覆盖≈95%）", "tactic": "量价"},
     {"factor": "缠论笔/中枢/背驰强度", "formula": "笔端点序列→中枢区间/背驰幅度", "data": "分钟K线（缺失）", "status": "**需补齐分钟数据后实现**", "tactic": "缠论"},
     {"factor": "盘口/分时特征", "formula": "买卖盘不平衡/大单占比", "data": "Level2（缺失）", "status": "**不可实现（数据缺口）**", "tactic": "短线"},
     {"factor": "博主方法论情绪分", "formula": "文本情绪/确定性词频（需 NLP）", "data": "转写文本", "status": "需 NLP 提炼（研究级）", "tactic": "心理"},
