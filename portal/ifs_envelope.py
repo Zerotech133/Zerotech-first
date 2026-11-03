@@ -155,6 +155,8 @@ _LEGACY_CODE_MAP = {
     "execution_field_forbidden": "execution_field_forbidden",
     "data_unavailable": "data_unavailable",
     "war_room_snapshot_failed": "internal_error",
+    "bad_idempotency_key": "invalid_parameter",
+    "idempotency_conflict": "conflict",
 }
 
 _REQUEST_ID_RE = re.compile(REQUEST_ID_PATTERN)
@@ -162,7 +164,14 @@ _REQUEST_ID_RE = re.compile(REQUEST_ID_PATTERN)
 
 # ── 基础工具 ──────────────────────────────────────────────────────────
 def request_id_for(handler: Any) -> str:
-    """取请求 request_id：合法 X-Request-Id 沿用，否则生成；并记录到 handler。"""
+    """取请求 request_id：同一请求内稳定（幂等重放需首个 request_id 可追）。
+
+    已记录（``handler._ifs_request_id`` 合法）→ 直接复用；否则合法 X-Request-Id
+    沿用、缺失/非法则生成 ``req-<32hex>``，并记录到 handler（响应头回写用）。
+    """
+    existing = getattr(handler, "_ifs_request_id", "")
+    if isinstance(existing, str) and _REQUEST_ID_RE.match(existing):
+        return existing
     headers = getattr(handler, "headers", None) or {}
     raw = ""
     try:
@@ -202,6 +211,10 @@ def ifs_error_code(legacy_code: str, http_status: int = 400) -> str:
         return code
     if code in _LEGACY_CODE_MAP:
         return _LEGACY_CODE_MAP[code]
+    if ":" in code:
+        head = code.split(":", 1)[0].strip()
+        if head in ifs.ERROR_CODES:
+            return head
     if code.startswith(("missing_", "bad_", "invalid_")):
         return "invalid_parameter"
     if code.startswith("duplicate_"):
@@ -389,12 +402,29 @@ def send(
     return payload
 
 
+def auth_error(
+    handler: Any,
+    method: Optional[str] = None,
+    message: Optional[str] = None,
+) -> Dict[str, Any]:
+    """IFS G2：鉴权失败（403）统一 error/v1 信封；旧 ``error`` 字符串保留。
+
+    ``message`` 缺省为既有 403 文案；interface_id 由路径/方法推断（未登记则不带 source）。
+    """
+    legacy_error = message or "forbidden: 缺失或不匹配的 X-Portal-Token"
+    interface_id = interface_for_path(
+        getattr(handler, "path", ""), method, None
+    )
+    return error_payload(handler, interface_id, {"error": legacy_error}, 403)
+
+
 __all__ = [
     "ERROR_SCHEMA_VERSION",
     "INTERFACES",
     "INTERFACE_META",
     "LOCAL_INTERFACES",
     "SCHEMA_VERSION",
+    "auth_error",
     "error_payload",
     "ifs_error_code",
     "interface_for_path",

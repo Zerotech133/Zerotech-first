@@ -1052,9 +1052,12 @@ color:#fff;font-size:13.5px;cursor:pointer}
         # P142：早分支变更端点先过 token 闸门（本机直连/页面自动带 token；
         # 反代+局域网须 X-Portal-Token）。403 语义与 :1042 闸门保持一致。
         if path.startswith(_EARLY_TOKEN_PREFIXES) and not self._check_portal_token():
-            self._json({"error": "forbidden: 缺失或不匹配的 X-Portal-Token"
-                        "（该变更端点需 token；本机页面自动携带，脚本请带"
-                        " header X-Portal-Token）"}, 403)
+            import ifs_envelope  # IFS G2：403 统一 error/v1（WO-IFS-IDEMP-20261104）
+            self._json(ifs_envelope.auth_error(
+                self, "POST",
+                "forbidden: 缺失或不匹配的 X-Portal-Token"
+                "（该变更端点需 token；本机页面自动携带，脚本请带"
+                " header X-Portal-Token）"), 403)
             return
         if path == '/api/zhuge/review' or path.startswith('/api/zhuge/review/'):
             # P0/运营化：只读复核 + <id>/adoption 子资源（模块内校验 feature flag/
@@ -1103,10 +1106,13 @@ color:#fff;font-size:13.5px;cursor:pointer}
         # P0-1b：变更类 POST 鉴权闸门（本机放行；局域网须 X-Portal-Token）。
         # /feishu/event 不在 _MUTATION_POSTS，单独走验签（_api_feishu_event）。
         if path in _MUTATION_POSTS and not self._check_portal_token():
-            self._json({"error": "forbidden: 缺失或不匹配的 X-Portal-Token"
-                        "（本机浏览器经门户页面操作会自动携带；脚本调用请带"
-                        " header X-Portal-Token，token 见 PORTAL_API_TOKEN"
-                        " 或 C:\\Temp\\portal_api_token）"}, 403)
+            import ifs_envelope  # IFS G2：403 统一 error/v1（WO-IFS-IDEMP-20261104）
+            self._json(ifs_envelope.auth_error(
+                self, "POST",
+                "forbidden: 缺失或不匹配的 X-Portal-Token"
+                "（本机浏览器经门户页面操作会自动携带；脚本调用请带"
+                " header X-Portal-Token，token 见 PORTAL_API_TOKEN"
+                " 或 C:\\Temp\\portal_api_token）"), 403)
             return
         # K-STOCK-185b：写端点频控（鉴权之后、业务之前），超限 429。
         if path in _MUTATION_POSTS:
@@ -1905,10 +1911,13 @@ color:#fff;font-size:13.5px;cursor:pointer}
         # 本机浏览器）放行；反代+局域网须 X-Portal-Token，缺失/不匹配
         # 返回 403，防止匿名 GET 触发后台子进程与飞书推送。
         if path in _ACTION_GETS and not self._check_portal_token():
-            self._json({"error": "forbidden: 缺失或不匹配的 X-Portal-Token"
-                        "（本机浏览器经门户页面操作直接放行；脚本调用请带"
-                        " header X-Portal-Token，token 见 PORTAL_API_TOKEN"
-                        " 或 C:\\Temp\\portal_api_token）"}, 403)
+            import ifs_envelope  # IFS G2：403 统一 error/v1（WO-IFS-IDEMP-20261104）
+            self._json(ifs_envelope.auth_error(
+                self, "GET",
+                "forbidden: 缺失或不匹配的 X-Portal-Token"
+                "（本机浏览器经门户页面操作直接放行；脚本调用请带"
+                " header X-Portal-Token，token 见 PORTAL_API_TOKEN"
+                " 或 C:\\Temp\\portal_api_token）"), 403)
             return
         if path == "/":
             # 根路径引导：8091 是 API+页面后端，首页在 nginx 8080——
