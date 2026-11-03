@@ -1,0 +1,738 @@
+{
+ "schema_version": "four_gate_prep.v1",
+ "meta": {
+  "generated_at": "2026-11-03T08:50:27+08:00",
+  "researcher": "司马微",
+  "task": "task-154 四关前稳健性预检",
+  "sample": {
+   "n_codes": 300,
+   "n_days": 120,
+   "window_start": "20260508",
+   "window_end": "20261102",
+   "seed": 42,
+   "horizons": [
+    5,
+    10,
+    20
+   ],
+   "primary_horizon": 20
+  },
+  "neutralization": "逐日横截面 OLS：因子 ~ 1 + 行业哑变量（stock_basic.industry，首类为基准）+ ln(流通市值)；取残差后再算 RankIC/分层",
+  "industry_count": 70,
+  "return_label": "复权价（close×adj_factor）未来 h 日收益（%）",
+  "data_root": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\tushare",
+  "runtime_sec": 296.7
+ },
+ "thresholds": {
+  "abs_ic_20_min": 0.02,
+  "ir_20_min": 0.3,
+  "min_positive_segments": 2,
+  "monotonicity_min_abs": 0.6,
+  "cost_supported_bp": 50,
+  "coverage_min_pct": 60.0,
+  "pit_required": true
+ },
+ "candidates": {
+  "platform_consolidation": {
+   "direction_note": "平台整理强度：值大=整理久且窄（先验 +1）",
+   "raw_ic": {
+    "h5": {
+     "n_days": 115,
+     "mean": 0.056053,
+     "std": 0.241753,
+     "ir": 0.232,
+     "t": 2.486,
+     "positive_rate": 0.6,
+     "split": {
+      "first_mean": 0.054992,
+      "second_mean": 0.057096,
+      "same_sign": true
+     }
+    },
+    "h10": {
+     "n_days": 110,
+     "mean": 0.067258,
+     "std": 0.248658,
+     "ir": 0.27,
+     "t": 2.837,
+     "positive_rate": 0.6455,
+     "split": {
+      "first_mean": 0.059204,
+      "second_mean": 0.075311,
+      "same_sign": true
+     }
+    },
+    "h20": {
+     "n_days": 100,
+     "mean": 0.078545,
+     "std": 0.25683,
+     "ir": 0.306,
+     "t": 3.058,
+     "positive_rate": 0.62,
+     "split": {
+      "first_mean": 0.089547,
+      "second_mean": 0.067544,
+      "same_sign": true
+     }
+    }
+   },
+   "neutral_ic": {
+    "h5": {
+     "n_days": 115,
+     "mean": 0.052352,
+     "std": 0.119235,
+     "ir": 0.439,
+     "t": 4.708,
+     "positive_rate": 0.6696,
+     "split": {
+      "first_mean": 0.032551,
+      "second_mean": 0.071811,
+      "same_sign": true
+     }
+    },
+    "h10": {
+     "n_days": 110,
+     "mean": 0.066305,
+     "std": 0.11929,
+     "ir": 0.556,
+     "t": 5.83,
+     "positive_rate": 0.7455,
+     "split": {
+      "first_mean": 0.037935,
+      "second_mean": 0.094675,
+      "same_sign": true
+     }
+    },
+    "h20": {
+     "n_days": 100,
+     "mean": 0.07765,
+     "std": 0.100535,
+     "ir": 0.772,
+     "t": 7.724,
+     "positive_rate": 0.8,
+     "split": {
+      "first_mean": 0.046153,
+      "second_mean": 0.109147,
+      "same_sign": true
+     }
+    }
+   },
+   "decay": {
+    "h5": 0.052352,
+    "h10": 0.066305,
+    "h20": 0.07765
+   },
+   "layers": {
+    "h5": {
+     "n_days": 115,
+     "groups": {
+      "G1": {
+       "n_days": 115,
+       "mean_fwd_pct": -1.1287
+      },
+      "G2": {
+       "n_days": 115,
+       "mean_fwd_pct": -1.0056
+      },
+      "G3": {
+       "n_days": 115,
+       "mean_fwd_pct": -0.8227
+      },
+      "G4": {
+       "n_days": 115,
+       "mean_fwd_pct": -0.6023
+      },
+      "G5": {
+       "n_days": 115,
+       "mean_fwd_pct": -0.7096
+      }
+     },
+     "long_short": {
+      "mean_fwd_pct": 0.4191,
+      "ann_pct": 21.12
+     },
+     "monotonicity": 0.9,
+     "note": "按中性化因子序数分桶；多空=G5−G1；收益=未来 h 日原始收益（%）"
+    },
+    "h10": {
+     "n_days": 110,
+     "groups": {
+      "G1": {
+       "n_days": 110,
+       "mean_fwd_pct": -2.0327
+      },
+      "G2": {
+       "n_days": 110,
+       "mean_fwd_pct": -1.8793
+      },
+      "G3": {
+       "n_days": 110,
+       "mean_fwd_pct": -1.3455
+      },
+      "G4": {
+       "n_days": 110,
+       "mean_fwd_pct": -1.0181
+      },
+      "G5": {
+       "n_days": 110,
+       "mean_fwd_pct": -1.246
+      }
+     },
+     "long_short": {
+      "mean_fwd_pct": 0.7867,
+      "ann_pct": 19.82
+     },
+     "monotonicity": 0.9,
+     "note": "按中性化因子序数分桶；多空=G5−G1；收益=未来 h 日原始收益（%）"
+    },
+    "h20": {
+     "n_days": 100,
+     "groups": {
+      "G1": {
+       "n_days": 100,
+       "mean_fwd_pct": -3.2683
+      },
+      "G2": {
+       "n_days": 100,
+       "mean_fwd_pct": -3.4079
+      },
+      "G3": {
+       "n_days": 100,
+       "mean_fwd_pct": -2.0522
+      },
+      "G4": {
+       "n_days": 100,
+       "mean_fwd_pct": -1.8043
+      },
+      "G5": {
+       "n_days": 100,
+       "mean_fwd_pct": -1.4025
+      }
+     },
+     "long_short": {
+      "mean_fwd_pct": 1.8658,
+      "ann_pct": 23.51
+     },
+     "monotonicity": 0.9,
+     "note": "按中性化因子序数分桶；多空=G5−G1；收益=未来 h 日原始收益（%）"
+    }
+   },
+   "cost": {
+    "ann_turnover_long": 0.69,
+    "ann_turnover_short": 0.67,
+    "ann_turnover_2leg": 1.36,
+    "30bp": {
+     "gross_ann_pct": 23.51,
+     "cost_drag_ann_pct": 0.41,
+     "net_ann_pct": 23.1
+    },
+    "50bp": {
+     "gross_ann_pct": 23.51,
+     "cost_drag_ann_pct": 0.68,
+     "net_ann_pct": 22.83
+    },
+    "80bp": {
+     "gross_ann_pct": 23.51,
+     "cost_drag_ann_pct": 1.08,
+     "net_ann_pct": 22.43
+    }
+   },
+   "walk_forward": [
+    {
+     "segment": "seg1",
+     "dates": [
+      "20260508",
+      "20260703"
+     ],
+     "n_days": 40,
+     "ic_mean": 0.03808,
+     "ir": 0.357,
+     "long_short_ann_pct": 23.51
+    },
+    {
+     "segment": "seg2",
+     "dates": [
+      "20260706",
+      "20260828"
+     ],
+     "n_days": 40,
+     "ic_mean": 0.064349,
+     "ir": 0.898,
+     "long_short_ann_pct": 23.51
+    },
+    {
+     "segment": "seg3",
+     "dates": [
+      "20260831",
+      "20261102"
+     ],
+     "n_days": 20,
+     "ic_mean": 0.183394,
+     "ir": 3.17,
+     "long_short_ann_pct": 23.51
+    }
+   ],
+   "subsamples": {
+    "first_half": {
+     "n_days": 60,
+     "mean": 0.038657,
+     "std": 0.094284,
+     "ir": 0.41,
+     "t": 3.176,
+     "positive_rate": 0.7,
+     "split": {
+      "first_mean": 0.009598,
+      "second_mean": 0.067715,
+      "same_sign": true
+     }
+    },
+    "second_half": {
+     "n_days": 40,
+     "mean": 0.13614,
+     "std": 0.079756,
+     "ir": 1.707,
+     "t": 10.796,
+     "positive_rate": 0.95,
+     "split": {
+      "first_mean": 0.088886,
+      "second_mean": 0.183394,
+      "same_sign": true
+     }
+    },
+    "by_quarter": {
+     "202605": {
+      "n_days": 16,
+      "ic_mean": 0.084572,
+      "ir": 1.328
+     },
+     "202606": {
+      "n_days": 21,
+      "ic_mean": -0.017089,
+      "ir": -0.161
+     },
+     "202607": {
+      "n_days": 23,
+      "ic_mean": 0.057614,
+      "ir": 0.75
+     },
+     "202608": {
+      "n_days": 21,
+      "ic_mean": 0.090545,
+      "ir": 1.305
+     },
+     "202609": {
+      "n_days": 19,
+      "ic_mean": 0.186535,
+      "ir": 3.235
+     },
+     "202610": {
+      "n_days": 0,
+      "ic_mean": null,
+      "ir": null
+     },
+     "202611": {
+      "n_days": 0,
+      "ic_mean": null,
+      "ir": null
+     }
+    }
+   },
+   "coverage": {
+    "pct": 95.14,
+    "neutral_pct": 95.14
+   },
+   "pit": {
+    "pass": true,
+    "method": "日线因子仅用 t 及以前收盘；抽样截断重算不变性",
+    "samples": [
+     {
+      "date": "20260622",
+      "pass": true,
+      "n_compare": 285
+     },
+     {
+      "date": "20260803",
+      "pass": true,
+      "n_compare": 283
+     },
+     {
+      "date": "20260914",
+      "pass": true,
+      "n_compare": 289
+     }
+    ]
+   },
+   "decision": {
+    "support": "支持",
+    "reasons": [
+     "中性化 |IC(20d)|=0.07765（≥0.02? 是）、|IR|=0.772（≥0.3? 是）",
+     "walk-forward 3 段符号：[1, 1, 1]（≥2 段同向? 是）",
+     "5 层单调性=0.9（|·|≥0.6? 是）、50bp 净多空=22.83%（>0? 是）、覆盖率=95.14%",
+     "全部稳健性门槛通过 → 支持进入正式四关"
+    ],
+    "checks": {
+     "ic": true,
+     "segments_ic": [
+      0.03808,
+      0.064349,
+      0.183394
+     ]
+    },
+    "reserved_items": []
+   }
+  },
+  "chan_zs_width_reverse": {
+   "direction_note": "缠论 zs_width_last 反向：中枢越宽 → 取负后越大（先验 +1，反向候选）",
+   "raw_ic": {
+    "h5": {
+     "n_days": 86,
+     "mean": 0.069801,
+     "std": 0.190047,
+     "ir": 0.367,
+     "t": 3.406,
+     "positive_rate": 0.7674,
+     "split": {
+      "first_mean": 0.043778,
+      "second_mean": 0.095825,
+      "same_sign": true
+     }
+    },
+    "h10": {
+     "n_days": 81,
+     "mean": 0.08948,
+     "std": 0.19331,
+     "ir": 0.463,
+     "t": 4.166,
+     "positive_rate": 0.7654,
+     "split": {
+      "first_mean": 0.047358,
+      "second_mean": 0.130574,
+      "same_sign": true
+     }
+    },
+    "h20": {
+     "n_days": 71,
+     "mean": 0.106204,
+     "std": 0.198037,
+     "ir": 0.536,
+     "t": 4.519,
+     "positive_rate": 0.7042,
+     "split": {
+      "first_mean": 0.056733,
+      "second_mean": 0.154301,
+      "same_sign": true
+     }
+    }
+   },
+   "neutral_ic": {
+    "h5": {
+     "n_days": 86,
+     "mean": 0.037518,
+     "std": 0.110919,
+     "ir": 0.338,
+     "t": 3.137,
+     "positive_rate": 0.7093,
+     "split": {
+      "first_mean": 0.012571,
+      "second_mean": 0.062465,
+      "same_sign": true
+     }
+    },
+    "h10": {
+     "n_days": 81,
+     "mean": 0.051799,
+     "std": 0.123237,
+     "ir": 0.42,
+     "t": 3.783,
+     "positive_rate": 0.7654,
+     "split": {
+      "first_mean": 0.017344,
+      "second_mean": 0.085415,
+      "same_sign": true
+     }
+    },
+    "h20": {
+     "n_days": 71,
+     "mean": 0.046248,
+     "std": 0.133132,
+     "ir": 0.347,
+     "t": 2.927,
+     "positive_rate": 0.6479,
+     "split": {
+      "first_mean": 0.006158,
+      "second_mean": 0.085225,
+      "same_sign": true
+     }
+    }
+   },
+   "decay": {
+    "h5": 0.037518,
+    "h10": 0.051799,
+    "h20": 0.046248
+   },
+   "layers": {
+    "h5": {
+     "n_days": 86,
+     "groups": {
+      "G1": {
+       "n_days": 86,
+       "mean_fwd_pct": -1.2495
+      },
+      "G2": {
+       "n_days": 86,
+       "mean_fwd_pct": -0.5315
+      },
+      "G3": {
+       "n_days": 86,
+       "mean_fwd_pct": -0.1772
+      },
+      "G4": {
+       "n_days": 86,
+       "mean_fwd_pct": -0.2523
+      },
+      "G5": {
+       "n_days": 86,
+       "mean_fwd_pct": -0.7922
+      }
+     },
+     "long_short": {
+      "mean_fwd_pct": 0.4573,
+      "ann_pct": 23.05
+     },
+     "monotonicity": 0.3,
+     "note": "按中性化因子序数分桶；多空=G5−G1；收益=未来 h 日原始收益（%）"
+    },
+    "h10": {
+     "n_days": 81,
+     "groups": {
+      "G1": {
+       "n_days": 81,
+       "mean_fwd_pct": -2.0504
+      },
+      "G2": {
+       "n_days": 81,
+       "mean_fwd_pct": -0.8045
+      },
+      "G3": {
+       "n_days": 81,
+       "mean_fwd_pct": 0.1518
+      },
+      "G4": {
+       "n_days": 81,
+       "mean_fwd_pct": -0.3502
+      },
+      "G5": {
+       "n_days": 81,
+       "mean_fwd_pct": -0.9331
+      }
+     },
+     "long_short": {
+      "mean_fwd_pct": 1.1173,
+      "ann_pct": 28.16
+     },
+     "monotonicity": 0.3,
+     "note": "按中性化因子序数分桶；多空=G5−G1；收益=未来 h 日原始收益（%）"
+    },
+    "h20": {
+     "n_days": 71,
+     "groups": {
+      "G1": {
+       "n_days": 71,
+       "mean_fwd_pct": -2.4603
+      },
+      "G2": {
+       "n_days": 71,
+       "mean_fwd_pct": -0.3142
+      },
+      "G3": {
+       "n_days": 71,
+       "mean_fwd_pct": 0.6006
+      },
+      "G4": {
+       "n_days": 71,
+       "mean_fwd_pct": -0.1548
+      },
+      "G5": {
+       "n_days": 71,
+       "mean_fwd_pct": -1.0732
+      }
+     },
+     "long_short": {
+      "mean_fwd_pct": 1.3871,
+      "ann_pct": 17.48
+     },
+     "monotonicity": 0.3,
+     "note": "按中性化因子序数分桶；多空=G5−G1；收益=未来 h 日原始收益（%）"
+    }
+   },
+   "cost": {
+    "ann_turnover_long": 1.23,
+    "ann_turnover_short": 1.13,
+    "ann_turnover_2leg": 2.36,
+    "30bp": {
+     "gross_ann_pct": 17.48,
+     "cost_drag_ann_pct": 0.71,
+     "net_ann_pct": 16.77
+    },
+    "50bp": {
+     "gross_ann_pct": 17.48,
+     "cost_drag_ann_pct": 1.18,
+     "net_ann_pct": 16.3
+    },
+    "80bp": {
+     "gross_ann_pct": 17.48,
+     "cost_drag_ann_pct": 1.89,
+     "net_ann_pct": 15.59
+    }
+   },
+   "walk_forward": [
+    {
+     "segment": "seg1",
+     "dates": [
+      "20260508",
+      "20260703"
+     ],
+     "n_days": 11,
+     "ic_mean": 0.123908,
+     "ir": 7.092,
+     "long_short_ann_pct": 17.48
+    },
+    {
+     "segment": "seg2",
+     "dates": [
+      "20260706",
+      "20260828"
+     ],
+     "n_days": 40,
+     "ic_mean": -0.035142,
+     "ir": -0.284,
+     "long_short_ann_pct": 17.48
+    },
+    {
+     "segment": "seg3",
+     "dates": [
+      "20260831",
+      "20261102"
+     ],
+     "n_days": 20,
+     "ic_mean": 0.166316,
+     "ir": 5.277,
+     "long_short_ann_pct": 17.48
+    }
+   ],
+   "subsamples": {
+    "first_half": {
+     "n_days": 31,
+     "mean": 0.030789,
+     "std": 0.137704,
+     "ir": 0.224,
+     "t": 1.245,
+     "positive_rate": 0.6774,
+     "split": {
+      "first_mean": 0.118278,
+      "second_mean": -0.051233,
+      "same_sign": false
+     }
+    },
+    "second_half": {
+     "n_days": 40,
+     "mean": 0.05823,
+     "std": 0.129957,
+     "ir": 0.448,
+     "t": 2.834,
+     "positive_rate": 0.625,
+     "split": {
+      "first_mean": -0.049856,
+      "second_mean": 0.166316,
+      "same_sign": false
+     }
+    },
+    "by_quarter": {
+     "202605": {
+      "n_days": 0,
+      "ic_mean": null,
+      "ir": null
+     },
+     "202606": {
+      "n_days": 8,
+      "ic_mean": 0.120882,
+      "ir": 6.562
+     },
+     "202607": {
+      "n_days": 23,
+      "ic_mean": -0.000548,
+      "ir": -0.004
+     },
+     "202608": {
+      "n_days": 21,
+      "ic_mean": -0.042369,
+      "ir": -0.428
+     },
+     "202609": {
+      "n_days": 19,
+      "ic_mean": 0.169418,
+      "ir": 5.828
+     },
+     "202610": {
+      "n_days": 0,
+      "ic_mean": null,
+      "ir": null
+     },
+     "202611": {
+      "n_days": 0,
+      "ic_mean": null,
+      "ir": null
+     }
+    }
+   },
+   "coverage": {
+    "pct": 66.98,
+    "neutral_pct": 66.66
+   },
+   "pit": {
+    "pass": true,
+    "method": "每个更新点用截断到该日 15:00 的 30min bars 重算闭中枢（严格只用过去 bar），日频前向填充（最大滞后 4 日）",
+    "n_updates": 24
+   },
+   "decision": {
+    "support": "不支持",
+    "reasons": [
+     "中性化 |IC(20d)|=0.046248（≥0.02? 是）、|IR|=0.347（≥0.3? 是）",
+     "walk-forward 3 段符号：[1, -1, 1]（≥2 段同向? 是）",
+     "5 层单调性=0.3（|·|≥0.6? 否）、50bp 净多空=16.3%（>0? 是）、覆盖率=66.98%",
+     "存在未通过项 → 不支持进入正式四关（见保留项）"
+    ],
+    "checks": {
+     "ic": true,
+     "segments_ic": [
+      0.123908,
+      -0.035142,
+      0.166316
+     ]
+    },
+    "reserved_items": [
+     "walk-forward 存在反向段（[0.123908, -0.035142, 0.166316]），仅达最低同向数",
+     "5 层单调性=0.3 绝对 < 0.6"
+    ]
+   }
+  }
+ },
+ "summary": {
+  "支持": [
+   "platform_consolidation"
+  ],
+  "不支持": [
+   "chan_zs_width_reverse"
+  ]
+ },
+ "limitations": [
+  "样本 300 只 × 120 交易日（约 6 个月），只覆盖单一市场环境，非全样本；",
+  "行业中性化用 stock_basic 静态行业（非 PIT 行业变迁）；市值用 daily_basic.circ_mv；",
+  "成本为 30/50/80bp 单边 × 年化换手估算，未含冲击/涨跌停不可执行；",
+  "缠论 zs_width 用 5 日更新点截断重算 + 前向填充（最大滞后 4 日），非逐日重算；",
+  "平台整理因子需要 80 日历史，窗口前用 100 日 warmup；",
+  "walk-forward 3 段为窗口内等分（各约 40 日），非跨年样本外；",
+  "不构成投资建议；结论仅决定是否值得进入正式四关。"
+ ],
+ "schema_check": []
+}

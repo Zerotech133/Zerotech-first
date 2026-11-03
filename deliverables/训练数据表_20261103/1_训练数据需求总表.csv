@@ -1,0 +1,25 @@
+﻿序号,类别,数据集,接口/来源,本地路径（相对仓库）,文件数,大小(MB),最新日期,频率,覆盖范围,训练用途,PIT 口径,状态,缺口/备注
+1,基础,tushare.stock_basic,tushare,quant_backtest\data\tushare\stock_basic,38,9.8,2026-11-01,日,全A基本资料,基础映射,静态,已具备,股票列表
+2,基础,tushare.trade_cal,tushare,quant_backtest\data\tushare\trade_cal,38,5.0,2026-11-01,日,全市场交易日,样本切分,静态,已具备,交易日历
+3,行情,tushare.daily,tushare,quant_backtest\data\tushare\daily,8744,961.4,2026-10-30,日,全A 1990-2026,因子/回测/标签,T日收盘后可用,已具备,最新 2026-10-30
+4,行情,tushare.adj_factor,tushare,quant_backtest\data\tushare\adj_factor,8744,234.6,2026-10-30,日,全A,复权收益标签,T日,已具备,与 daily 逐日对齐
+5,行情,tushare.daily_basic,tushare,quant_backtest\data\tushare\daily_basic,925,588.4,2026-10-30,日,全A,市值/换手/估值因子,T日,已具备,manifest Δ=0（W3-1 复检）
+6,行情,tushare.stk_limit / ts_stk_limit,tushare/tdx,,,,,日,全A,可交易性/涨跌停过滤,T日,已具备,涨跌停判断
+7,分钟,tushare.stk_mins,tushare,quant_backtest\data\tushare\stk_mins,33998,3461.2,2026-11-01,1分钟,"5,038 代码 / 202509-202611 / 15个月",缠论/日内因子,按日截断（PIT 引擎）,已具备,202611 仅 800 代码有文件
+8,分钟,tushare.idx_mins,tushare,quant_backtest\data\tushare\idx_mins,2030,397.2,2026-11-01,1分钟,指数,大盘/板块节奏,按日截断,已具备,指数分钟线
+9,筹码,tushare.cyq_chips,tushare,quant_backtest\data\tushare\cyq_chips,23,0.2,2026-10-31,日,仅 23 文件/少量代码,筹码集中度因子,T日,部分具备,覆盖不足（23文件/0.2MB），因子抽样 0%
+10,资金,tushare.moneyflow,tushare,quant_backtest\data\tushare\moneyflow,925,574.5,2026-10-30,日,全A,资金流因子,T日,已具备,个股资金流
+11,资金,tushare.moneyflow_hsgt,tushare,quant_backtest\data\tushare\moneyflow_hsgt,1,0.1,2026-10-30,日,沪深港通,北向情绪因子,T日,已具备,仅 1 文件
+12,涨跌停,tushare.limit_list_d,tushare,quant_backtest\data\tushare\limit_list_d,282,5.4,2026-11-01,日,全A,涨停后行为因子,T日,已具备,涨跌停/连板
+13,财务,tushare.fina_indicator,tushare,quant_backtest\data\tushare\fina_indicator,5586,418.0,2026-10-30,季,"全A（5,586 文件）",基本面因子/过滤,按公告日(ann_date),已具备,财务指标
+14,财务,tushare.income,tushare,quant_backtest\data\tushare\income,5586,216.1,2026-10-30,季,全A,基本面,按公告日,已具备,利润表
+15,财务,tushare.balancesheet,tushare,quant_backtest\data\tushare\balancesheet,5582,358.6,2026-10-30,季,全A,基本面,按公告日,已具备,资产负债表
+16,财务,tushare.cashflow,tushare,quant_backtest\data\tushare\cashflow,5586,274.5,2026-10-30,季,全A,基本面,按公告日,已具备,现金流量表
+17,财务,tushare.forecast / express,tushare,quant_backtest\data\tushare\forecast,4,8.4,2026-10-30,事件,全A,事件因子,按公告日,已具备,forecast 仅 4 文件（覆盖有限）
+18,研报,tushare.report_rc,tushare,quant_backtest\data\tushare\report_rc,95,85.5,2026-10-31,日,全A,研报因子/情绪,按研报日,已具备,W3-1 去重 166 行
+19,研报,tushare.research_report,tushare,quant_backtest\data\tushare\research_report,38,19.3,2026-11-01,日,全A,NLP/知识,按发布日,已具备,研究报告
+20,新闻,tushare.news / major_news,tushare,quant_backtest\data\tushare\news,38,46.7,2026-11-01,日,全市场,情绪/NLP,按发布时间,已具备,新闻
+21,舆情,xueqiu,xueqiu,quant_backtest\data\xueqiu,602,109.6,2026-11-02,日,个股/讨论,情绪因子,按发布时间,已具备,602 文件/109.6MB
+22,指数,tushare.index_weight,tushare,quant_backtest\data\tushare\index_weight,142,1.5,2026-11-01,日/月,指数,行业中性化/基准,按成分生效日,已具备,指数/板块权重
+23,海外,tushare.us_daily / hk_daily,tushare,quant_backtest\data\tushare\us_daily,24211,1600.2,2026-11-02,日,美股/港股,外围联动,T日,已具备,因美股数据量较大（1.6GB）
+24,缺口,Level2/盘口,无,,,,,tick,无,盘口类战法,—,缺失,数据缺口，短线盘口类不可行

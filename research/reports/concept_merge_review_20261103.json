@@ -1,0 +1,396 @@
+{
+ "generated_at": "2026-11-03T09:42:25+08:00",
+ "reviewed_groups": 37,
+ "approved": 21,
+ "rejected": 16,
+ "multi_before": 23,
+ "approved_multi_groups": 6,
+ "multi_after_human_review": 29,
+ "target": 30,
+ "meets": false,
+ "decisions": [
+  {
+   "group_id": "MG-001",
+   "display": "缠论操作级别",
+   "members": [
+    "缠论操作级别",
+    "缠论买卖点级别",
+    "缠论级别",
+    "缠论级别实质逻辑",
+    "缠论级别推导",
+    "缠论级别确认"
+   ],
+   "multi_confirmed": false,
+   "decision": "reject"
+  },
+  {
+   "group_id": "MG-002",
+   "display": "伏击涨停第一定律",
+   "members": [
+    "伏击涨停第一定律",
+    "伏击涨停第三定律",
+    "伏击涨停第二定律",
+    "伏击涨停第四定律"
+   ],
+   "multi_confirmed": false,
+   "decision": "reject"
+  },
+  {
+   "group_id": "MG-003",
+   "display": "缠论结构走势",
+   "members": [
+    "缠论结构走势",
+    "缠论结构",
+    "缠论走势分析"
+   ],
+   "multi_confirmed": false,
+   "decision": "approve"
+  },
+  {
+   "group_id": "MG-004",
+   "display": "Meta AI 智能体 Muse",
+   "members": [
+    "Meta AI 智能体 Muse",
+    "Meta个人智能体Muse",
+    "Muse 智能体"
+   ],
+   "multi_confirmed": true,
+   "decision": "approve"
+  },
+  {
+   "group_id": "MG-005",
+   "display": "天才交易员 AI 量化十大止损误区",
+   "members": [
+    "天才交易员 AI 量化十大止损误区",
+    "天才交易员 AI 量化十大误区",
+    "天才交易员 AI 量化自动交易十大故障—"
+   ],
+   "multi_confirmed": false,
+   "decision": "reject"
+  },
+  {
+   "group_id": "MG-006",
+   "display": "山东省主要出口产品类别",
+   "members": [
+    "山东省主要出口产品类别",
+    "山东省主要出口目的地",
+    "山东省主要进口产品类别"
+   ],
+   "multi_confirmed": false,
+   "decision": "reject"
+  },
+  {
+   "group_id": "MG-007",
+   "display": "科技持续砸盘",
+   "members": [
+    "科技持续砸盘",
+    "科技股砸盘",
+    "科技集体砸盘"
+   ],
+   "multi_confirmed": false,
+   "decision": "approve"
+  },
+  {
+   "group_id": "MG-008",
+   "display": "缠论工具",
+   "members": [
+    "缠论工具",
+    "缠论工具安装",
+    "缠论工具标识"
+   ],
+   "multi_confirmed": false,
+   "decision": "approve"
+  },
+  {
+   "group_id": "MG-009",
+   "display": "量化交易复盘",
+   "members": [
+    "量化交易复盘",
+    "量化交易选择",
+    "量化投资"
+   ],
+   "multi_confirmed": false,
+   "decision": "reject"
+  },
+  {
+   "group_id": "MG-010",
+   "display": "AI 量化",
+   "members": [
+    "AI 量化",
+    "AI 量化的深度"
+   ],
+   "multi_confirmed": false,
+   "decision": "approve"
+  },
+  {
+   "group_id": "MG-011",
+   "display": "下周一市场",
+   "members": [
+    "下周一市场",
+    "下周一走势"
+   ],
+   "multi_confirmed": false,
+   "decision": "approve"
+  },
+  {
+   "group_id": "MG-012",
+   "display": "中国畜禽肉产品贸易总体规模",
+   "members": [
+    "中国畜禽肉产品贸易总体规模",
+    "中国畜禽肉产品贸易结构变化"
+   ],
+   "multi_confirmed": false,
+   "decision": "reject"
+  },
+  {
+   "group_id": "MG-013",
+   "display": "中国粮食贸易同比变化趋势",
+   "members": [
+    "中国粮食贸易同比变化趋势",
+    "中国粮食贸易总体规模"
+   ],
+   "multi_confirmed": false,
+   "decision": "reject"
+  },
+  {
+   "group_id": "MG-014",
+   "display": "主要原材料价格波动",
+   "members": [
+    "主要原材料价格波动",
+    "原材料价格变动"
+   ],
+   "multi_confirmed": true,
+   "decision": "approve"
+  },
+  {
+   "group_id": "MG-015",
+   "display": "主要快递公司业务量增速排名（1-8 月）",
+   "members": [
+    "主要快递公司业务量增速排名（1-8 月）",
+    "主要快递公司单票收入增速排名（1-8 月）"
+   ],
+   "multi_confirmed": false,
+   "decision": "reject"
+  },
+  {
+   "group_id": "MG-016",
+   "display": "二手复购用户特征",
+   "members": [
+    "二手复购用户特征",
+    "二手首购用户特征"
+   ],
+   "multi_confirmed": false,
+   "decision": "reject"
+  },
+  {
+   "group_id": "MG-017",
+   "display": "交易复盘",
+   "members": [
+    "交易复盘",
+    "量化交易"
+   ],
+   "multi_confirmed": true,
+   "decision": "reject"
+  },
+  {
+   "group_id": "MG-018",
+   "display": "低开高走",
+   "members": [
+    "低开高走",
+    "指数低开高走"
+   ],
+   "multi_confirmed": false,
+   "decision": "approve"
+  },
+  {
+   "group_id": "MG-019",
+   "display": "国防军工子板块分化",
+   "members": [
+    "国防军工子板块分化",
+    "国防军工子板块表现"
+   ],
+   "multi_confirmed": true,
+   "decision": "approve"
+  },
+  {
+   "group_id": "MG-020",
+   "display": "常见集群算力",
+   "members": [
+    "常见集群算力",
+    "集群算力"
+   ],
+   "multi_confirmed": false,
+   "decision": "approve"
+  },
+  {
+   "group_id": "MG-021",
+   "display": "成交量",
+   "members": [
+    "成交量",
+    "成交量配合"
+   ],
+   "multi_confirmed": false,
+   "decision": "reject"
+  },
+  {
+   "group_id": "MG-022",
+   "display": "我是老木，这是我的第 5 篇创业笔记",
+   "members": [
+    "我是老木，这是我的第 5 篇创业笔记",
+    "我是老木，这是我的第七篇创业笔记"
+   ],
+   "multi_confirmed": false,
+   "decision": "reject"
+  },
+  {
+   "group_id": "MG-023",
+   "display": "房地产行业板块表现",
+   "members": [
+    "房地产行业板块表现",
+    "计算机行业板块表现"
+   ],
+   "multi_confirmed": true,
+   "decision": "reject"
+  },
+  {
+   "group_id": "MG-024",
+   "display": "技术指标",
+   "members": [
+    "技术指标",
+    "计算技术指标"
+   ],
+   "multi_confirmed": true,
+   "decision": "approve"
+  },
+  {
+   "group_id": "MG-025",
+   "display": "期限结构因子",
+   "members": [
+    "期限结构因子",
+    "期限结构因子失效"
+   ],
+   "multi_confirmed": false,
+   "decision": "reject"
+  },
+  {
+   "group_id": "MG-026",
+   "display": "构建特征工程",
+   "members": [
+    "构建特征工程",
+    "特征工程"
+   ],
+   "multi_confirmed": false,
+   "decision": "approve"
+  },
+  {
+   "group_id": "MG-027",
+   "display": "涨停基因",
+   "members": [
+    "涨停基因",
+    "涨停基因与涨停密码"
+   ],
+   "multi_confirmed": false,
+   "decision": "approve"
+  },
+  {
+   "group_id": "MG-028",
+   "display": "类买点",
+   "members": [
+    "类买点",
+    "类买点结合"
+   ],
+   "multi_confirmed": false,
+   "decision": "approve"
+  },
+  {
+   "group_id": "MG-029",
+   "display": "纺织品出口增长",
+   "members": [
+    "纺织品出口增长",
+    "纺织品出口趋势"
+   ],
+   "multi_confirmed": true,
+   "decision": "approve"
+  },
+  {
+   "group_id": "MG-030",
+   "display": "缠论一买",
+   "members": [
+    "缠论一买",
+    "缠论三买"
+   ],
+   "multi_confirmed": false,
+   "decision": "reject"
+  },
+  {
+   "group_id": "MG-031",
+   "display": "缠论中枢震荡",
+   "members": [
+    "缠论中枢震荡",
+    "缠论走势中枢"
+   ],
+   "multi_confirmed": false,
+   "decision": "reject"
+  },
+  {
+   "group_id": "MG-032",
+   "display": "缠论笔面积",
+   "members": [
+    "缠论笔面积",
+    "缠论笔面积柱子"
+   ],
+   "multi_confirmed": false,
+   "decision": "approve"
+  },
+  {
+   "group_id": "MG-033",
+   "display": "缩量弱势调整",
+   "members": [
+    "缩量弱势调整",
+    "缩量调整"
+   ],
+   "multi_confirmed": false,
+   "decision": "approve"
+  },
+  {
+   "group_id": "MG-034",
+   "display": "贵金属",
+   "members": [
+    "贵金属",
+    "贵金属金银"
+   ],
+   "multi_confirmed": true,
+   "decision": "approve"
+  },
+  {
+   "group_id": "MG-035",
+   "display": "走势中完美",
+   "members": [
+    "走势中完美",
+    "走势必完美"
+   ],
+   "multi_confirmed": false,
+   "decision": "approve"
+  },
+  {
+   "group_id": "MG-036",
+   "display": "逆风翻盘时机",
+   "members": [
+    "逆风翻盘时机",
+    "逆风翻盘窗口期"
+   ],
+   "multi_confirmed": false,
+   "decision": "approve"
+  },
+  {
+   "group_id": "MG-037",
+   "display": "非银流动性支持工具的定价与退出约束",
+   "members": [
+    "非银流动性支持工具的定价与退出约束",
+    "非银流动性支持工具退出约束"
+   ],
+   "multi_confirmed": false,
+   "decision": "approve"
+  }
+ ]
+}

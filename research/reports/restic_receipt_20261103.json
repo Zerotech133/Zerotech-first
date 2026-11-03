@@ -1,0 +1,51 @@
+{
+ "schema": "restic_receipt_v1",
+ "generated_at": "2026-11-03T12:19:27+08:00",
+ "ok": true,
+ "snapshot": {
+  "id": "59fb2ff7",
+  "time": "2026-11-03T12:19:07.2915386+08:00",
+  "hostname": "DESKTOP-ARF447U",
+  "paths": [
+   "C:\\项目\\DOCS_INDEX.md",
+   "C:\\项目\\STATUS.md",
+   "C:\\项目\\_vault",
+   "C:\\项目\\deliverables",
+   "C:\\项目\\老田的AI助手\\agent_platform\\catalogs",
+   "C:\\项目\\老田的AI助手\\agent_platform\\registry",
+   "C:\\项目\\老田的AI助手\\tools\\secrets"
+  ],
+  "tags": [
+   "p1-trial"
+  ]
+ },
+ "backup": {
+  "rc": 0,
+  "files_new": 52,
+  "files_changed": 29,
+  "files_unmodified": 79858,
+  "bytes_processed": 21476427639,
+  "data_added": 44470450
+ },
+ "check": {
+  "rc": 0,
+  "read_data_subset": "5%"
+ },
+ "forget": {
+  "rc": 0
+ },
+ "prune": {
+  "rc": -1
+ },
+ "repo_bytes": 8307140088,
+ "repo_gb": 8.307,
+ "log": "C:\\项目\\work\\restic_trial\\run-2026-11-03.log",
+ "offsite": {
+  "rc": 0,
+  "repo": "sftp:aiosbackup@10.205.0.118:/home/aios-offsite/restic/zerobound",
+  "snapshot": {
+   "id": "0e85ee7d",
+   "time": "2026-11-03T12:19:07.2915386+08:00"
+  }
+ }
+}

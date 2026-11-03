@@ -37,6 +37,7 @@ except Exception as exc:
     logging.getLogger(__name__).warning("silent-except %s: %s", "tools/attribution_gap_report.py", exc)
 
 import argparse  # noqa: E402
+import datetime  # noqa: E402
 import json  # noqa: E402
 import subprocess  # noqa: E402
 import time  # noqa: E402
@@ -284,6 +285,8 @@ def main(argv=None) -> int:
     fmt.add_argument("--md", action="store_true", help="Markdown 输出")
     parser.add_argument("--strict", action="store_true",
                         help="存在归因缺口时退出码 1（巡检/CI 用）")
+    parser.add_argument("--now", default="",
+                        help="复算/测试用 ISO 时间（如 2026-10-27T10:00:00）")
     args = parser.parse_args(argv)
 
     events_path = Path(args.events) if args.events else default_events_path()
@@ -293,7 +296,13 @@ def main(argv=None) -> int:
         print("警告：事件文件不存在：%s（按空报表处理）" % events_path,
               file=sys.stderr)
     events = load_events(events_path)
-    report = compute(events, window_days=max(1, args.window_days),
+    now_ts = None
+    if args.now:
+        try:
+            now_ts = datetime.datetime.fromisoformat(args.now).timestamp()
+        except ValueError:
+            parser.error("--now 需要 ISO 时间，如 2026-10-27T10:00:00")
+    report = compute(events, window_days=max(1, args.window_days), now=now_ts,
                      source=str(events_path), source_exists=exists)
 
     if args.md:

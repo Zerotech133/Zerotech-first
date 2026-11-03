@@ -33,6 +33,22 @@ import hq_tasks  # noqa: E402
 DEFAULT_OUT = ROOT / "portal" / "private" / "hq_snapshot.json"
 
 
+def _latest_briefing():
+    """最新部门早报汇总的 A0 简报（没有则 None）。"""
+    root = ROOT / "deliverables" / "daily_briefs"
+    if not root.is_dir():
+        return None
+    for p in sorted(root.glob("*/rollup.json"), reverse=True):
+        try:
+            d = json.loads(p.read_text(encoding="utf-8-sig"))
+        except (OSError, ValueError):
+            continue
+        b = d.get("briefing") if isinstance(d, dict) else None
+        if isinstance(b, dict):
+            return b
+    return None
+
+
 def build_snapshot() -> dict:
     org = hq_org.build_org()
     tasks = hq_tasks.build_board()
@@ -51,6 +67,7 @@ def build_snapshot() -> dict:
         "note": "HQ v2 静态只读数据快照（五角色/议程/商业/任务/证据）；实时 API=/api/hq/snapshot",
         "roles": roles,
         "agenda": agenda,
+        "briefing": _latest_briefing(),
         "directives": directives,
         "reports": reports,
         "commercial": commercial,

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-11-03T08:00:00+08:00",
+  "updated_at": "2026-11-03T11:52:00+08:00",
   "note": "只做身份映射，不做鉴权决策；unconfirmed 不得当已合并身份使用。",
   "actors": [
     {
@@ -186,10 +186,11 @@
       "actor_type": "member",
       "source": "zero_bound",
       "roles": [
-        "VIEWER"
+        "APPROVER"
       ],
       "permissions": [
-        "view"
+        "view",
+        "approve"
       ],
       "owner_scope": "own",
       "mapping_status": "partial",
@@ -199,10 +200,11 @@
       "source_claims": {
         "zero_bound": {
           "roles": [
-            "VIEWER"
+            "APPROVER"
           ],
           "permissions": [
-            "view"
+            "view",
+            "approve"
           ]
         },
         "zhice": {

@@ -58,3 +58,19 @@ def test_meeting_chat_route_is_proxied_and_protected():
     block = s.split("location = /api/chat {", 1)[1].split("}", 1)[0]
     assert "auth_request /_auth_guard;" in block
     assert "proxy_pass http://$h:8796;" in block
+
+
+def test_meeting_room_reflects_new_org_leads():
+    s = MEETING.read_text(encoding="utf-8")
+    for lead in ("DATA1", "PM1", "QA1", "DEV3", "MKT1", "LEG1", "LUSU1"):
+        assert lead + ":{nm:" in s or lead + ":{ nm:" in s
+    assert "const HQ_PRESET" in s
+    assert "'D1','ARCH1','DATA1','INTEL0','QA1'" in s
+    assert "部门负责人池" in s
+
+
+def test_department_morning_template_exists():
+    s = MEETING.read_text(encoding="utf-8")
+    assert "dept_morning" in s
+    assert "部门早会" in s
+    assert "部门早报速览" in s

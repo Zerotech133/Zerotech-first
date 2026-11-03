@@ -3,7 +3,7 @@
   "report": "concept_merge_llm",
   "version": "1.0.0",
   "task": "W1-2c 长尾概念 LLM 语义归并",
-  "generated_at": "2026-11-03T07:07:20+08:00",
+  "generated_at": "2026-11-03T09:36:16+08:00",
   "read_only": true,
   "read_only_verified": true,
   "input": {
@@ -16,21 +16,18 @@
    "embed_model": "bge-m3:latest",
    "llm_model": "qwen3.5:9b",
    "embedding": {
-    "source": "fallback_lexical",
-    "model": null,
-    "calls": 0,
-    "sec": 0.0,
-    "errors": [
-     "OllamaError: batch: TimeoutError: timed out; single: TimeoutError: timed out",
-     "batch: TimeoutError: timed out",
-     "single: TimeoutError: timed out"
-    ]
+    "source": "ollama_bge_m3",
+    "model": "bge-m3:latest",
+    "calls": 1006,
+    "sec": 34.25,
+    "errors": [],
+    "mode": "batch"
    },
    "llm": {
-    "enabled": false,
-    "model": null,
-    "calls": 0,
-    "sec": 0.0,
+    "enabled": true,
+    "model": "qwen3.5:9b",
+    "calls": 40,
+    "sec": 7.61,
     "errors": [],
     "failed": 0
    }
@@ -39,11 +36,11 @@
    "auto_cos": 0.85,
    "boundary_lo": 0.75,
    "max_llm_pairs": 40,
-   "use_llm": false,
+   "use_llm": true,
    "force_lexical": false,
    "merge_scope": "仅单源长尾簇（规则归并后 ≥2 源的簇不参与二次合并）"
   },
-  "runtime_sec": 14.78,
+  "runtime_sec": 256.18,
   "limitations": [
    "语义合并仅在单源长尾簇内进行；多源簇不参与二次合并（避免稀释既有证据）。",
    "bge-m3 不可用时回退字符 n-gram 向量（embedding.source=fallback_lexical），召回弱、需复核；LLM 连续失败会熔断，边界对一律不合并（保守）。",
@@ -57,28 +54,903 @@
   "clusters_before": 1029,
   "multi_before": 23,
   "single_pool": 1006,
-  "merged_groups": 0,
-  "merged_members": 0,
-  "clusters_after": 1029,
-  "multi_after_confirmed": 23,
-  "new_multi_from_llm": 0,
-  "auto_pairs": 0,
-  "boundary_pairs": 3,
-  "auto_merged": 0,
-  "llm_calls": 0,
-  "llm_accept": 0,
-  "llm_reject": 0,
+  "merged_groups": 37,
+  "merged_members": 50,
+  "clusters_after": 979,
+  "multi_after_confirmed": 31,
+  "new_multi_from_llm": 8,
+  "auto_pairs": 61,
+  "boundary_pairs": 352,
+  "auto_merged": 37,
+  "llm_calls": 40,
+  "llm_accept": 3,
+  "llm_reject": 37,
   "llm_failed": 0
  },
  "baseline": {
   "clusters": 1029,
   "multi_confirmed": 23
  },
- "mapping": [],
- "merged_groups": [],
- "false_merge_risk": [],
+ "mapping": [
+  {
+   "from_cluster_id": "CS-0016",
+   "from_concept": "缠论买卖点级别",
+   "to_cluster_id": "CS-0003",
+   "to_concept": "缠论操作级别",
+   "method": "embedding",
+   "similarity": 0.8567,
+   "reason": "余弦 0.857≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0834",
+   "from_concept": "缠论级别",
+   "to_cluster_id": "CS-0003",
+   "to_concept": "缠论操作级别",
+   "method": "embedding",
+   "similarity": 0.908,
+   "reason": "余弦 0.908≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0835",
+   "from_concept": "缠论级别实质逻辑",
+   "to_cluster_id": "CS-0003",
+   "to_concept": "缠论操作级别",
+   "method": "transitive",
+   "similarity": null,
+   "reason": "并查集传递合并"
+  },
+  {
+   "from_cluster_id": "CS-0836",
+   "from_concept": "缠论级别推导",
+   "to_cluster_id": "CS-0003",
+   "to_concept": "缠论操作级别",
+   "method": "transitive",
+   "similarity": null,
+   "reason": "并查集传递合并"
+  },
+  {
+   "from_cluster_id": "CS-0837",
+   "from_concept": "缠论级别确认",
+   "to_cluster_id": "CS-0003",
+   "to_concept": "缠论操作级别",
+   "method": "transitive",
+   "similarity": null,
+   "reason": "并查集传递合并"
+  },
+  {
+   "from_cluster_id": "CS-0839",
+   "from_concept": "缠论结构",
+   "to_cluster_id": "CS-0019",
+   "to_concept": "缠论结构走势",
+   "method": "embedding",
+   "similarity": 0.9016,
+   "reason": "余弦 0.902≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0843",
+   "from_concept": "缠论走势分析",
+   "to_cluster_id": "CS-0019",
+   "to_concept": "缠论结构走势",
+   "method": "embedding",
+   "similarity": 0.8781,
+   "reason": "余弦 0.878≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0054",
+   "from_concept": "AI 量化的深度",
+   "to_cluster_id": "CS-0051",
+   "to_concept": "AI 量化",
+   "method": "embedding",
+   "similarity": 0.8608,
+   "reason": "余弦 0.861≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0101",
+   "from_concept": "Meta个人智能体Muse",
+   "to_cluster_id": "CS-0096",
+   "to_concept": "Meta AI 智能体 Muse",
+   "method": "embedding",
+   "similarity": 0.8696,
+   "reason": "余弦 0.870≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0102",
+   "from_concept": "Muse 智能体",
+   "to_cluster_id": "CS-0096",
+   "to_concept": "Meta AI 智能体 Muse",
+   "method": "embedding",
+   "similarity": 0.8733,
+   "reason": "余弦 0.873≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0162",
+   "from_concept": "下周一走势",
+   "to_cluster_id": "CS-0161",
+   "to_concept": "下周一市场",
+   "method": "embedding",
+   "similarity": 0.8501,
+   "reason": "余弦 0.850≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0192",
+   "from_concept": "中国畜禽肉产品贸易结构变化",
+   "to_cluster_id": "CS-0191",
+   "to_concept": "中国畜禽肉产品贸易总体规模",
+   "method": "embedding",
+   "similarity": 0.8505,
+   "reason": "余弦 0.850≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0197",
+   "from_concept": "中国粮食贸易总体规模",
+   "to_cluster_id": "CS-0196",
+   "to_concept": "中国粮食贸易同比变化趋势",
+   "method": "embedding",
+   "similarity": 0.8542,
+   "reason": "余弦 0.854≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0387",
+   "from_concept": "原材料价格变动",
+   "to_cluster_id": "CS-0214",
+   "to_concept": "主要原材料价格波动",
+   "method": "llm_boundary",
+   "similarity": 0.8494,
+   "reason": "LLM: 两者均指代原材料市场价格的变化，仅用词略有差异（“主要”与省略、“波动”与“变动”），属于同一指标的不同表述。"
+  },
+  {
+   "from_cluster_id": "CS-0216",
+   "from_concept": "主要快递公司单票收入增速排名（1-8 月）",
+   "to_cluster_id": "CS-0215",
+   "to_concept": "主要快递公司业务量增速排名（1-8 月）",
+   "method": "embedding",
+   "similarity": 0.8703,
+   "reason": "余弦 0.870≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0228",
+   "from_concept": "二手首购用户特征",
+   "to_cluster_id": "CS-0224",
+   "to_concept": "二手复购用户特征",
+   "method": "embedding",
+   "similarity": 0.9336,
+   "reason": "余弦 0.934≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0962",
+   "from_concept": "量化交易",
+   "to_cluster_id": "CS-0237",
+   "to_concept": "交易复盘",
+   "method": "transitive",
+   "similarity": null,
+   "reason": "并查集传递合并"
+  },
+  {
+   "from_cluster_id": "CS-0282",
+   "from_concept": "伏击涨停第三定律",
+   "to_cluster_id": "CS-0281",
+   "to_concept": "伏击涨停第一定律",
+   "method": "embedding",
+   "similarity": 0.8646,
+   "reason": "余弦 0.865≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0283",
+   "from_concept": "伏击涨停第二定律",
+   "to_cluster_id": "CS-0281",
+   "to_concept": "伏击涨停第一定律",
+   "method": "embedding",
+   "similarity": 0.8739,
+   "reason": "余弦 0.874≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0284",
+   "from_concept": "伏击涨停第四定律",
+   "to_cluster_id": "CS-0281",
+   "to_concept": "伏击涨停第一定律",
+   "method": "embedding",
+   "similarity": 0.8651,
+   "reason": "余弦 0.865≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0597",
+   "from_concept": "指数低开高走",
+   "to_cluster_id": "CS-0296",
+   "to_concept": "低开高走",
+   "method": "embedding",
+   "similarity": 0.9371,
+   "reason": "余弦 0.937≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0430",
+   "from_concept": "国防军工子板块表现",
+   "to_cluster_id": "CS-0429",
+   "to_concept": "国防军工子板块分化",
+   "method": "embedding",
+   "similarity": 0.8598,
+   "reason": "余弦 0.860≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0484",
+   "from_concept": "天才交易员 AI 量化十大误区",
+   "to_cluster_id": "CS-0482",
+   "to_concept": "天才交易员 AI 量化十大止损误区",
+   "method": "embedding",
+   "similarity": 0.9383,
+   "reason": "余弦 0.938≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0487",
+   "from_concept": "天才交易员 AI 量化自动交易十大故障—",
+   "to_cluster_id": "CS-0482",
+   "to_concept": "天才交易员 AI 量化十大止损误区",
+   "method": "embedding",
+   "similarity": 0.8712,
+   "reason": "余弦 0.871≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0514",
+   "from_concept": "山东省主要出口目的地",
+   "to_cluster_id": "CS-0513",
+   "to_concept": "山东省主要出口产品类别",
+   "method": "embedding",
+   "similarity": 0.864,
+   "reason": "余弦 0.864≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0515",
+   "from_concept": "山东省主要进口产品类别",
+   "to_cluster_id": "CS-0513",
+   "to_concept": "山东省主要出口产品类别",
+   "method": "embedding",
+   "similarity": 0.9134,
+   "reason": "余弦 0.913≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0996",
+   "from_concept": "集群算力",
+   "to_cluster_id": "CS-0537",
+   "to_concept": "常见集群算力",
+   "method": "embedding",
+   "similarity": 0.868,
+   "reason": "余弦 0.868≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0565",
+   "from_concept": "成交量配合",
+   "to_cluster_id": "CS-0563",
+   "to_concept": "成交量",
+   "method": "embedding",
+   "similarity": 0.8508,
+   "reason": "余弦 0.851≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0574",
+   "from_concept": "我是老木，这是我的第七篇创业笔记",
+   "to_cluster_id": "CS-0573",
+   "to_concept": "我是老木，这是我的第 5 篇创业笔记",
+   "method": "embedding",
+   "similarity": 0.9338,
+   "reason": "余弦 0.934≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0892",
+   "from_concept": "计算机行业板块表现",
+   "to_cluster_id": "CS-0578",
+   "to_concept": "房地产行业板块表现",
+   "method": "embedding",
+   "similarity": 0.8566,
+   "reason": "余弦 0.857≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0891",
+   "from_concept": "计算技术指标",
+   "to_cluster_id": "CS-0586",
+   "to_concept": "技术指标",
+   "method": "embedding",
+   "similarity": 0.8571,
+   "reason": "余弦 0.857≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0662",
+   "from_concept": "期限结构因子失效",
+   "to_cluster_id": "CS-0661",
+   "to_concept": "期限结构因子",
+   "method": "embedding",
+   "similarity": 0.877,
+   "reason": "余弦 0.877≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0723",
+   "from_concept": "特征工程",
+   "to_cluster_id": "CS-0672",
+   "to_concept": "构建特征工程",
+   "method": "embedding",
+   "similarity": 0.8654,
+   "reason": "余弦 0.865≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0705",
+   "from_concept": "涨停基因与涨停密码",
+   "to_cluster_id": "CS-0704",
+   "to_concept": "涨停基因",
+   "method": "embedding",
+   "similarity": 0.8656,
+   "reason": "余弦 0.866≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0762",
+   "from_concept": "科技股砸盘",
+   "to_cluster_id": "CS-0758",
+   "to_concept": "科技持续砸盘",
+   "method": "embedding",
+   "similarity": 0.8593,
+   "reason": "余弦 0.859≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0763",
+   "from_concept": "科技集体砸盘",
+   "to_cluster_id": "CS-0758",
+   "to_concept": "科技持续砸盘",
+   "method": "llm_boundary",
+   "similarity": 0.8427,
+   "reason": "LLM: 两者均指代科技板块股价大幅下跌的现象，仅用词略有差异（“持续”与“集体”），属于同一指标的不同描述叫法。"
+  },
+  {
+   "from_cluster_id": "CS-0782",
+   "from_concept": "类买点结合",
+   "to_cluster_id": "CS-0781",
+   "to_concept": "类买点",
+   "method": "embedding",
+   "similarity": 0.8829,
+   "reason": "余弦 0.883≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0790",
+   "from_concept": "纺织品出口趋势",
+   "to_cluster_id": "CS-0789",
+   "to_concept": "纺织品出口增长",
+   "method": "embedding",
+   "similarity": 0.8872,
+   "reason": "余弦 0.887≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0802",
+   "from_concept": "缠论三买",
+   "to_cluster_id": "CS-0800",
+   "to_concept": "缠论一买",
+   "method": "embedding",
+   "similarity": 0.8787,
+   "reason": "余弦 0.879≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0842",
+   "from_concept": "缠论走势中枢",
+   "to_cluster_id": "CS-0804",
+   "to_concept": "缠论中枢震荡",
+   "method": "embedding",
+   "similarity": 0.8753,
+   "reason": "余弦 0.875≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0821",
+   "from_concept": "缠论工具安装",
+   "to_cluster_id": "CS-0819",
+   "to_concept": "缠论工具",
+   "method": "embedding",
+   "similarity": 0.8575,
+   "reason": "余弦 0.858≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0822",
+   "from_concept": "缠论工具标识",
+   "to_cluster_id": "CS-0819",
+   "to_concept": "缠论工具",
+   "method": "embedding",
+   "similarity": 0.8914,
+   "reason": "余弦 0.891≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0830",
+   "from_concept": "缠论笔面积柱子",
+   "to_cluster_id": "CS-0829",
+   "to_concept": "缠论笔面积",
+   "method": "embedding",
+   "similarity": 0.8616,
+   "reason": "余弦 0.862≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0848",
+   "from_concept": "缩量调整",
+   "to_cluster_id": "CS-0847",
+   "to_concept": "缩量弱势调整",
+   "method": "embedding",
+   "similarity": 0.8918,
+   "reason": "余弦 0.892≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0909",
+   "from_concept": "贵金属金银",
+   "to_cluster_id": "CS-0907",
+   "to_concept": "贵金属",
+   "method": "embedding",
+   "similarity": 0.9006,
+   "reason": "余弦 0.901≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0915",
+   "from_concept": "走势必完美",
+   "to_cluster_id": "CS-0913",
+   "to_concept": "走势中完美",
+   "method": "embedding",
+   "similarity": 0.8618,
+   "reason": "余弦 0.862≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0947",
+   "from_concept": "逆风翻盘窗口期",
+   "to_cluster_id": "CS-0946",
+   "to_concept": "逆风翻盘时机",
+   "method": "embedding",
+   "similarity": 0.8839,
+   "reason": "余弦 0.884≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0966",
+   "from_concept": "量化交易选择",
+   "to_cluster_id": "CS-0964",
+   "to_concept": "量化交易复盘",
+   "method": "transitive",
+   "similarity": null,
+   "reason": "并查集传递合并"
+  },
+  {
+   "from_cluster_id": "CS-0968",
+   "from_concept": "量化投资",
+   "to_cluster_id": "CS-0964",
+   "to_concept": "量化交易复盘",
+   "method": "transitive",
+   "similarity": null,
+   "reason": "并查集传递合并"
+  },
+  {
+   "from_cluster_id": "CS-1006",
+   "from_concept": "非银流动性支持工具退出约束",
+   "to_cluster_id": "CS-1005",
+   "to_concept": "非银流动性支持工具的定价与退出约束",
+   "method": "embedding",
+   "similarity": 0.8916,
+   "reason": "余弦 0.892≥0.85"
+  }
+ ],
+ "merged_groups": [
+  {
+   "group_id": "MG-001",
+   "display": "缠论操作级别",
+   "members": [
+    "缠论操作级别",
+    "缠论买卖点级别",
+    "缠论级别",
+    "缠论级别实质逻辑",
+    "缠论级别推导",
+    "缠论级别确认"
+   ],
+   "n_members": 6,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-002",
+   "display": "伏击涨停第一定律",
+   "members": [
+    "伏击涨停第一定律",
+    "伏击涨停第三定律",
+    "伏击涨停第二定律",
+    "伏击涨停第四定律"
+   ],
+   "n_members": 4,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-003",
+   "display": "缠论结构走势",
+   "members": [
+    "缠论结构走势",
+    "缠论结构",
+    "缠论走势分析"
+   ],
+   "n_members": 3,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-004",
+   "display": "Meta AI 智能体 Muse",
+   "members": [
+    "Meta AI 智能体 Muse",
+    "Meta个人智能体Muse",
+    "Muse 智能体"
+   ],
+   "n_members": 3,
+   "multi_confirmed": true
+  },
+  {
+   "group_id": "MG-005",
+   "display": "天才交易员 AI 量化十大止损误区",
+   "members": [
+    "天才交易员 AI 量化十大止损误区",
+    "天才交易员 AI 量化十大误区",
+    "天才交易员 AI 量化自动交易十大故障—"
+   ],
+   "n_members": 3,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-006",
+   "display": "山东省主要出口产品类别",
+   "members": [
+    "山东省主要出口产品类别",
+    "山东省主要出口目的地",
+    "山东省主要进口产品类别"
+   ],
+   "n_members": 3,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-007",
+   "display": "科技持续砸盘",
+   "members": [
+    "科技持续砸盘",
+    "科技股砸盘",
+    "科技集体砸盘"
+   ],
+   "n_members": 3,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-008",
+   "display": "缠论工具",
+   "members": [
+    "缠论工具",
+    "缠论工具安装",
+    "缠论工具标识"
+   ],
+   "n_members": 3,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-009",
+   "display": "量化交易复盘",
+   "members": [
+    "量化交易复盘",
+    "量化交易选择",
+    "量化投资"
+   ],
+   "n_members": 3,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-010",
+   "display": "AI 量化",
+   "members": [
+    "AI 量化",
+    "AI 量化的深度"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-011",
+   "display": "下周一市场",
+   "members": [
+    "下周一市场",
+    "下周一走势"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-012",
+   "display": "中国畜禽肉产品贸易总体规模",
+   "members": [
+    "中国畜禽肉产品贸易总体规模",
+    "中国畜禽肉产品贸易结构变化"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-013",
+   "display": "中国粮食贸易同比变化趋势",
+   "members": [
+    "中国粮食贸易同比变化趋势",
+    "中国粮食贸易总体规模"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-014",
+   "display": "主要原材料价格波动",
+   "members": [
+    "主要原材料价格波动",
+    "原材料价格变动"
+   ],
+   "n_members": 2,
+   "multi_confirmed": true
+  },
+  {
+   "group_id": "MG-015",
+   "display": "主要快递公司业务量增速排名（1-8 月）",
+   "members": [
+    "主要快递公司业务量增速排名（1-8 月）",
+    "主要快递公司单票收入增速排名（1-8 月）"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-016",
+   "display": "二手复购用户特征",
+   "members": [
+    "二手复购用户特征",
+    "二手首购用户特征"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-017",
+   "display": "交易复盘",
+   "members": [
+    "交易复盘",
+    "量化交易"
+   ],
+   "n_members": 2,
+   "multi_confirmed": true
+  },
+  {
+   "group_id": "MG-018",
+   "display": "低开高走",
+   "members": [
+    "低开高走",
+    "指数低开高走"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-019",
+   "display": "国防军工子板块分化",
+   "members": [
+    "国防军工子板块分化",
+    "国防军工子板块表现"
+   ],
+   "n_members": 2,
+   "multi_confirmed": true
+  },
+  {
+   "group_id": "MG-020",
+   "display": "常见集群算力",
+   "members": [
+    "常见集群算力",
+    "集群算力"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-021",
+   "display": "成交量",
+   "members": [
+    "成交量",
+    "成交量配合"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-022",
+   "display": "我是老木，这是我的第 5 篇创业笔记",
+   "members": [
+    "我是老木，这是我的第 5 篇创业笔记",
+    "我是老木，这是我的第七篇创业笔记"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-023",
+   "display": "房地产行业板块表现",
+   "members": [
+    "房地产行业板块表现",
+    "计算机行业板块表现"
+   ],
+   "n_members": 2,
+   "multi_confirmed": true
+  },
+  {
+   "group_id": "MG-024",
+   "display": "技术指标",
+   "members": [
+    "技术指标",
+    "计算技术指标"
+   ],
+   "n_members": 2,
+   "multi_confirmed": true
+  },
+  {
+   "group_id": "MG-025",
+   "display": "期限结构因子",
+   "members": [
+    "期限结构因子",
+    "期限结构因子失效"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-026",
+   "display": "构建特征工程",
+   "members": [
+    "构建特征工程",
+    "特征工程"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-027",
+   "display": "涨停基因",
+   "members": [
+    "涨停基因",
+    "涨停基因与涨停密码"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-028",
+   "display": "类买点",
+   "members": [
+    "类买点",
+    "类买点结合"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-029",
+   "display": "纺织品出口增长",
+   "members": [
+    "纺织品出口增长",
+    "纺织品出口趋势"
+   ],
+   "n_members": 2,
+   "multi_confirmed": true
+  },
+  {
+   "group_id": "MG-030",
+   "display": "缠论一买",
+   "members": [
+    "缠论一买",
+    "缠论三买"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-031",
+   "display": "缠论中枢震荡",
+   "members": [
+    "缠论中枢震荡",
+    "缠论走势中枢"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-032",
+   "display": "缠论笔面积",
+   "members": [
+    "缠论笔面积",
+    "缠论笔面积柱子"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-033",
+   "display": "缩量弱势调整",
+   "members": [
+    "缩量弱势调整",
+    "缩量调整"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-034",
+   "display": "贵金属",
+   "members": [
+    "贵金属",
+    "贵金属金银"
+   ],
+   "n_members": 2,
+   "multi_confirmed": true
+  },
+  {
+   "group_id": "MG-035",
+   "display": "走势中完美",
+   "members": [
+    "走势中完美",
+    "走势必完美"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-036",
+   "display": "逆风翻盘时机",
+   "members": [
+    "逆风翻盘时机",
+    "逆风翻盘窗口期"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-037",
+   "display": "非银流动性支持工具的定价与退出约束",
+   "members": [
+    "非银流动性支持工具的定价与退出约束",
+    "非银流动性支持工具退出约束"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  }
+ ],
+ "false_merge_risk": [
+  {
+   "group": "主要原材料价格波动",
+   "members": [
+    "主要原材料价格波动",
+    "原材料价格变动"
+   ],
+   "risk_score": 0.5,
+   "note": "边界/低字符重合合并，建议人工抽检"
+  },
+  {
+   "group": "科技持续砸盘",
+   "members": [
+    "科技持续砸盘",
+    "科技股砸盘",
+    "科技集体砸盘"
+   ],
+   "risk_score": 0.5,
+   "note": "边界/低字符重合合并，建议人工抽检"
+  },
+  {
+   "group": "缠论结构走势",
+   "members": [
+    "缠论结构走势",
+    "缠论结构",
+    "缠论走势分析"
+   ],
+   "risk_score": 0.3,
+   "note": "边界/低字符重合合并，建议人工抽检"
+  },
+  {
+   "group": "量化交易复盘",
+   "members": [
+    "量化交易复盘",
+    "量化交易选择",
+    "量化投资"
+   ],
+   "risk_score": 0.3,
+   "note": "边界/低字符重合合并，建议人工抽检"
+  }
+ ],
  "rollback": {
   "strategy": "忽略 mapping（原概念→目标簇），即回到 W1-2 的 1029 簇基线",
-  "mapping_entries": 0
+  "mapping_entries": 50
  }
 }

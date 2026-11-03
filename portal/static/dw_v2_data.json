@@ -1,10 +1,10 @@
 {
  "meta": {
-  "generated_at": "2026-11-03T06:21:46",
-  "built_cn": "2026年11月03日 06:21",
+  "generated_at": "2026-11-03T10:01:08",
+  "built_cn": "2026年11月03日 10:01",
   "as_of": "2026-11-03",
   "catalog_version": 35,
-  "catalog_updated": "2026-11-03T05:07:35",
+  "catalog_updated": "2026-11-03T09:13:43",
   "physical": 256,
   "display": 258,
   "display_covered": 244,
@@ -63,15 +63,15 @@
    "value": "20261102",
    "unit": "",
    "note": "已检查 10 项更新情况",
-   "tone": "warn"
+   "tone": "ok"
   },
   {
    "id": "issues",
    "label": "数据更新提醒",
-   "value": 1,
+   "value": 0,
    "unit": "项",
    "note": "截至 2026-11-03",
-   "tone": "err"
+   "tone": "ok"
   },
   {
    "id": "tests",
@@ -130,7 +130,7 @@
   {
    "name": "财务与公告",
    "count": 32,
-   "rows": 4467260,
+   "rows": 4466369,
    "ok": 21,
    "partial": 10,
    "unknown": 1,
@@ -141,7 +141,7 @@
   {
    "name": "舆情与研报",
    "count": 25,
-   "rows": 15227644,
+   "rows": 15227478,
    "ok": 17,
    "partial": 0,
    "unknown": 0,
@@ -189,7 +189,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/tdx_sector_min",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/tdx_sector_min",
    "evidence": "store 在，7 文件（顶层 7），抽样 5 文件 27626713 行；最新业务日 20260901（footer_statistics，lag 62 天）；manifest 在；判 evidence_partial：stale_gt_7d",
    "evidence_at": "2026-11-02T08:34:55+08:00",
    "displayed": true
@@ -217,7 +217,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_tdx_member",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_tdx_member",
    "evidence": "store 在，123 文件（顶层 123），抽样 5 文件 801962 行；最新业务日 20261029（footer_statistics，lag 4 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -254,7 +254,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_opt_daily",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_opt_daily",
    "evidence": "store 在，123 文件（顶层 123），抽样 5 文件 414826 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -282,7 +282,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_dc_member",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_dc_member",
    "evidence": "store 在，98 文件（顶层 98），抽样 5 文件 601251 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -315,7 +315,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_fut_holding",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_fut_holding",
    "evidence": "store 在，80 文件（顶层 80），抽样 5 文件 242283 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -350,7 +350,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/index_daily",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/index_daily",
    "evidence": "store 在，925 文件（顶层 925），抽样 5 文件 50028 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:24:30+08:00",
    "displayed": true
@@ -385,7 +385,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_us_daily",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_us_daily",
    "evidence": "store 在，48 文件（顶层 48），抽样 5 文件 480961 行；最新业务日 20261029（footer_statistics，lag 4 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -418,7 +418,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_stk_auction_c",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_stk_auction_c",
    "evidence": "store 在，52 文件（顶层 52），抽样 5 文件 227884 行；最新业务日 20261029（footer_statistics，lag 4 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -456,7 +456,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_stk_factor_pro",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_stk_factor_pro",
    "evidence": "store 在，52 文件（顶层 52），抽样 5 文件 222279 行；最新业务日 20261029（footer_statistics，lag 4 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:28:28+08:00",
    "displayed": true
@@ -494,7 +494,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_stk_factor",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_stk_factor",
    "evidence": "store 在，52 文件（顶层 52），抽样 5 文件 222279 行；最新业务日 20261029（footer_statistics，lag 4 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:28:28+08:00",
    "displayed": true
@@ -522,7 +522,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_stk_limit",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_stk_limit",
    "evidence": "store 在，51 文件（顶层 51），抽样 5 文件 222615 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -553,7 +553,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_stk_premarket",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_stk_premarket",
    "evidence": "store 在，51 文件（顶层 51），抽样 5 文件 222280 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -588,7 +588,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_cyq_perf",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_cyq_perf",
    "evidence": "store 在，50 文件（顶层 50），抽样 5 文件 227852 行；最新业务日 20261029（footer_statistics，lag 4 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -621,7 +621,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_stk_auction_o",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_stk_auction_o",
    "evidence": "store 在，52 文件（顶层 52），抽样 5 文件 222158 行；最新业务日 20261029（footer_statistics，lag 4 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:28:28+08:00",
    "displayed": true
@@ -659,7 +659,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_bak_basic",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_bak_basic",
    "evidence": "store 在，50 文件（顶层 50），抽样 5 文件 227892 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -684,7 +684,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_index_daily",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_index_daily",
    "evidence": "store 在，49 文件（顶层 49），抽样 5 文件 217406 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -712,7 +712,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_margin_secs",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_margin_secs",
    "evidence": "store 在，39 文件（顶层 39），抽样 5 文件 218056 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -741,7 +741,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_anns_d",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_anns_d",
    "evidence": "store 在，39 文件（顶层 39），抽样 5 文件 828234 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T15:09:42+08:00",
    "displayed": true
@@ -773,7 +773,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_fund_portfolio",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_fund_portfolio",
    "evidence": "",
    "evidence_at": "",
    "displayed": true
@@ -811,7 +811,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/daily_basic",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/daily_basic",
    "evidence": "store 在，925 文件（顶层 925），抽样 5 文件 27821 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:24:30+08:00",
    "displayed": true
@@ -842,7 +842,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_kpl_concept_cons",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_kpl_concept_cons",
    "evidence": "store 在，33 文件（顶层 33），抽样 5 文件 254419 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -880,7 +880,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/moneyflow",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/moneyflow",
    "evidence": "store 在，925 文件（顶层 925），抽样 5 文件 27480 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:24:30+08:00",
    "displayed": true
@@ -918,7 +918,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_stk_week_month_adj",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_stk_week_month_adj",
    "evidence": "store 在，23 文件（顶层 23），抽样 5 文件 821418 行；最新业务日 20261031（footer_statistics，lag 2 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -955,7 +955,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_stk_weekly_monthly",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_stk_weekly_monthly",
    "evidence": "store 在，22 文件（顶层 22），抽样 5 文件 970441 行；最新业务日 20261031（footer_statistics，lag 2 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -982,7 +982,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_adj_factor",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_adj_factor",
    "evidence": "store 在，33 文件（顶层 33），抽样 5 文件 226891 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -1007,7 +1007,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/adj_factor",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/adj_factor",
    "evidence": "store 在，8744 文件（顶层 8744），抽样 5 文件 27902 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:24:30+08:00",
    "displayed": true
@@ -1042,7 +1042,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_daily",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_daily",
    "evidence": "store 在，57 文件（顶层 57），抽样 5 文件 149291 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -1067,7 +1067,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_daily_basic",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_daily_basic",
    "evidence": "store 在，57 文件（顶层 57），抽样 5 文件 149291 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -1092,7 +1092,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/daily",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/daily",
    "evidence": "store 在，8744 文件（顶层 8744），抽样 5 文件 27820 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:24:30+08:00",
    "displayed": true
@@ -1117,7 +1117,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_moneyflow",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_moneyflow",
    "evidence": "store 在，52 文件（顶层 52），抽样 5 文件 140508 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -1155,7 +1155,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_moneyflow_dc",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_moneyflow_dc",
    "evidence": "store 在，28 文件（顶层 28），抽样 5 文件 221521 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:28:28+08:00",
    "displayed": true
@@ -1189,7 +1189,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/margin_detail",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/margin_detail",
    "evidence": "store 在，924 文件（顶层 924），抽样 5 文件 22379 行；最新业务日 20261029（footer_statistics，lag 4 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:24:30+08:00",
    "displayed": true
@@ -1227,7 +1227,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_hk_daily_adj",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_hk_daily_adj",
    "evidence": "store 在，26 文件（顶层 26），抽样 5 文件 208758 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -1265,7 +1265,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/report_rc",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/report_rc",
    "evidence": "store 在，94 文件（顶层 94），抽样 5 文件 108825 行；最新业务日 豁免(no_date_column)（no_date_column，lag NA 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:52:32+08:00",
    "displayed": true
@@ -1290,7 +1290,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_margin_detail",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_margin_detail",
    "evidence": "store 在，34 文件（顶层 34），抽样 5 文件 217941 行；最新业务日 20261029（footer_statistics，lag 4 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -1320,7 +1320,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_major_news",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_major_news",
    "evidence": "store 在，25 文件（顶层 25），抽样 5 文件 605459 行；最新业务日 20261029（footer_statistics，lag 4 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:19:52+08:00",
    "displayed": true
@@ -1351,7 +1351,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_hk_hold",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_hk_hold",
    "evidence": "store 在，22 文件（顶层 22），抽样 5 文件 204071 行；最新业务日 20261029（footer_statistics，lag 4 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -1380,7 +1380,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_news",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_news",
    "evidence": "store 在，24 文件（顶层 24），抽样 5 文件 410176 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:19:52+08:00",
    "displayed": true
@@ -1413,7 +1413,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_stk_auction",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_stk_auction",
    "evidence": "store 在，22 文件（顶层 22），抽样 5 文件 224376 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:28:28+08:00",
    "displayed": true
@@ -1450,7 +1450,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_moneyflow_ths",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_moneyflow_ths",
    "evidence": "store 在，21 文件（顶层 21），抽样 5 文件 216129 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:28:28+08:00",
    "displayed": true
@@ -1481,7 +1481,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_share_float",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_share_float",
    "evidence": "store 在，21 文件（顶层 21），抽样 5 文件 668046 行；最新业务日 20261027（footer_statistics，lag 6 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T15:20:38+08:00",
    "displayed": true
@@ -1508,7 +1508,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_fund_adj",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_fund_adj",
    "evidence": "store 在，22 文件（顶层 22），抽样 5 文件 208830 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -1539,7 +1539,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_slb_sec",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_slb_sec",
    "evidence": "",
    "evidence_at": "",
    "displayed": true
@@ -1570,7 +1570,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/hk_hold",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/hk_hold",
    "evidence": "store 在，891 文件（顶层 891），抽样 5 文件 8271 行；最新业务日 20261029（footer_statistics，lag 4 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:24:30+08:00",
    "displayed": true
@@ -1605,7 +1605,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_weekly",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_weekly",
    "evidence": "store 在，12 文件（顶层 12），抽样 5 文件 805650 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T18:26:31+08:00",
    "displayed": true
@@ -1636,7 +1636,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_stk_rewards",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_stk_rewards",
    "evidence": "store 在，9 文件（顶层 9），抽样 5 文件 843408 行；最新业务日 20260930（footer_statistics，lag 33 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:00:34+08:00",
    "displayed": true
@@ -1661,7 +1661,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/tdx_sector_min_tail",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/tdx_sector_min_tail",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 1606697 行；最新业务日 20261012（footer_statistics，lag 21 天）；manifest 在；判 evidence_partial：stale_gt_7d",
    "evidence_at": "2026-11-02T08:34:55+08:00",
    "displayed": true
@@ -1690,7 +1690,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_fund_share",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_fund_share",
    "evidence": "store 在，18 文件（顶层 18），抽样 5 文件 200186 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -1725,7 +1725,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/hk_daily",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/hk_daily",
    "evidence": "store 在，1365 文件（顶层 1365），抽样 5 文件 11053 行；最新业务日 20261029（footer_statistics，lag 4 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:24:30+08:00",
    "displayed": true
@@ -1750,7 +1750,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/cyq_perf",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/cyq_perf",
    "evidence": "store 在，276 文件（顶层 276），抽样 5 文件 27792 行；最新业务日 20261029（footer_statistics，lag 4 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T18:26:32+08:00",
    "displayed": true
@@ -1782,7 +1782,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_fut_wsr",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_fut_wsr",
    "evidence": "store 在，19 文件（顶层 19），抽样 5 文件 204753 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -1814,7 +1814,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/tdx_sector_daily",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/tdx_sector_daily",
    "evidence": "store 在，31 文件（顶层 31），抽样 5 文件 203381 行；最新业务日 20261022（footer_statistics，lag 11 天）；manifest 在；判 evidence_partial：stale_gt_7d",
    "evidence_at": "2026-11-02T08:34:55+08:00",
    "displayed": true
@@ -1847,7 +1847,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_top10_holders",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_top10_holders",
    "evidence": "",
    "evidence_at": "",
    "displayed": true
@@ -1876,7 +1876,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_stock_hsgt",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_stock_hsgt",
    "evidence": "store 在，19 文件（顶层 19），抽样 5 文件 217611 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -1909,7 +1909,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_top10_floatholders",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_top10_floatholders",
    "evidence": "",
    "evidence_at": "",
    "displayed": true
@@ -1944,7 +1944,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_index_weekly",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_index_weekly",
    "evidence": "store 在，7 文件（顶层 7），抽样 5 文件 924185 行；最新业务日 20261009（footer_statistics，lag 24 天）；manifest 在；判 evidence_partial：stale_gt_14d",
    "evidence_at": "2026-11-02T10:00:34+08:00",
    "displayed": true
@@ -1969,7 +1969,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_ths_daily",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_ths_daily",
    "evidence": "store 在，19 文件（顶层 19），抽样 5 文件 209076 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -1994,7 +1994,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_fund_daily",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_fund_daily",
    "evidence": "store 在，23 文件（顶层 23），抽样 5 文件 208688 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -2032,7 +2032,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_fut_daily",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_fut_daily",
    "evidence": "store 在，18 文件（顶层 18），抽样 5 文件 204300 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -2069,7 +2069,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_dc_daily",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_dc_daily",
    "evidence": "store 在，18 文件（顶层 18），抽样 5 文件 204172 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -2103,7 +2103,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_fut_settle",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_fut_settle",
    "evidence": "store 在，17 文件（顶层 17），抽样 5 文件 203592 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -2135,7 +2135,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "报告期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_fina_mainbz_vip",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_fina_mainbz_vip",
    "evidence": "store 在，17 文件（顶层 17），抽样 5 文件 400040 行；最新业务日 20260630（footer_statistics，lag 125 天）；manifest 在；判 evidence_partial：stale_gt_100d",
    "evidence_at": "2026-11-02T10:00:34+08:00",
    "displayed": true
@@ -2166,7 +2166,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "报告期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_pledge_stat",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_pledge_stat",
    "evidence": "",
    "evidence_at": "",
    "displayed": true
@@ -2191,7 +2191,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/cb_daily",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/cb_daily",
    "evidence": "store 在，1171 文件（顶层 1171），抽样 5 文件 4045 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T18:26:32+08:00",
    "displayed": true
@@ -2223,7 +2223,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "报告期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_fina_mainbz",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_fina_mainbz",
    "evidence": "store 在，5 文件（顶层 5），抽样 5 文件 784383 行；最新业务日 20260630（footer_statistics，lag 125 天）；manifest 在；判 evidence_partial：stale_gt_100d",
    "evidence_at": "2026-11-02T10:00:34+08:00",
    "displayed": true
@@ -2248,7 +2248,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_rt_min",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_rt_min",
    "evidence": "store 在，3 文件（顶层 3），抽样 3 文件 600000 行；最新业务日 20261023（footer_statistics，lag 10 天）；manifest 在；判 evidence_partial：stale_gt_7d",
    "evidence_at": "2026-11-02T14:34:43+08:00",
    "displayed": true
@@ -2273,7 +2273,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/stk_managers",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/stk_managers",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 575201 行；最新业务日 20260929（footer_statistics，lag 34 天）；manifest 在；判 evidence_partial：stale_gt_7d",
    "evidence_at": "2026-11-02T14:34:43+08:00",
    "displayed": true
@@ -2306,7 +2306,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/dknife_snap",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/dknife_snap",
    "evidence": "store 在，2 文件（顶层 2），抽样 2 文件 548956 行；最新业务日 20261013（footer_statistics，lag 20 天）；manifest 在；判 evidence_partial：stale_gt_7d",
    "evidence_at": "2026-11-02T08:34:55+08:00",
    "displayed": true
@@ -2318,7 +2318,7 @@
    "source": "xtcloud",
    "channel": "xtcloud",
    "freq": "D",
-   "rows": 530153,
+   "rows": 529987,
    "files": 14,
    "freshness": "20261030",
    "date_col": "report_date",
@@ -2344,7 +2344,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "报告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_report_rc",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_report_rc",
    "evidence": "store 在，14 文件（顶层 14），抽样 5 文件 327923 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:19:52+08:00",
    "displayed": true
@@ -2369,7 +2369,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/top10_holders",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/top10_holders",
    "evidence": "store 在，9 文件（顶层 9），抽样 5 文件 291822 行；最新业务日 20260923（footer_statistics，lag 40 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T18:26:32+08:00",
    "displayed": true
@@ -2394,7 +2394,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/top10_floatholders",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/top10_floatholders",
    "evidence": "store 在，9 文件（顶层 9），抽样 5 文件 288168 行；最新业务日 20260831（footer_statistics，lag 63 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T18:26:32+08:00",
    "displayed": true
@@ -2419,7 +2419,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_hk_daily",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_hk_daily",
    "evidence": "store 在，18 文件（顶层 18），抽样 5 文件 208746 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -2444,7 +2444,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_top_inst",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_top_inst",
    "evidence": "store 在，17 文件（顶层 17），抽样 5 文件 202150 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:28:28+08:00",
    "displayed": true
@@ -2479,7 +2479,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_monthly",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_monthly",
    "evidence": "store 在，4 文件（顶层 4），抽样 4 文件 412419 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -2504,7 +2504,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_ths_member",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_ths_member",
    "evidence": "store 在，7 文件（顶层 7），抽样 5 文件 382555 行；最新业务日 20261013（footer_statistics，lag 20 天）；manifest 在；判 evidence_partial：stale_gt_7d",
    "evidence_at": "2026-11-02T10:19:52+08:00",
    "displayed": true
@@ -2542,7 +2542,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_moneyflow_ind_dc",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_moneyflow_ind_dc",
    "evidence": "store 在，12 文件（顶层 12），抽样 5 文件 204172 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -2567,7 +2567,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/tdx_info.db",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/tdx_info.db",
    "evidence": "sqlite 表 stock_news，380365 行；最新业务日 20261101（sqlite_max，lag 1 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:00:33+08:00",
    "displayed": true
@@ -2592,7 +2592,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "报告期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_income",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_income",
    "evidence": "store 在，3 文件（顶层 3），抽样 3 文件 346985 行；最新业务日 20260930（footer_statistics，lag 33 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:00:34+08:00",
    "displayed": true
@@ -2627,7 +2627,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_cb_daily",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_cb_daily",
    "evidence": "store 在，13 文件（顶层 13），抽样 5 文件 201260 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -2662,7 +2662,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_stk_managers",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_stk_managers",
    "evidence": "",
    "evidence_at": "",
    "displayed": true
@@ -2697,7 +2697,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_index_monthly",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_index_monthly",
    "evidence": "",
    "evidence_at": "",
    "displayed": true
@@ -2734,7 +2734,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_dc_index",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_dc_index",
    "evidence": "store 在，13 文件（顶层 13），抽样 5 文件 204172 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -2759,7 +2759,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "报告期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_cashflow",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_cashflow",
    "evidence": "store 在，3 文件（顶层 3），抽样 3 文件 310912 行；最新业务日 20260930（footer_statistics，lag 33 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:00:34+08:00",
    "displayed": true
@@ -2788,7 +2788,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_disclosure_date",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_disclosure_date",
    "evidence": "store 在，3 文件（顶层 3），抽样 3 文件 303492 行；最新业务日 20261012（footer_statistics，lag 21 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:00:34+08:00",
    "displayed": true
@@ -2813,7 +2813,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "报告期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_balancesheet",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_balancesheet",
    "evidence": "store 在，3 文件（顶层 3），抽样 3 文件 288234 行；最新业务日 20260930（footer_statistics，lag 33 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:00:34+08:00",
    "displayed": true
@@ -2841,7 +2841,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_stk_holdernumber",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_stk_holdernumber",
    "evidence": "store 在，14 文件（顶层 14），抽样 5 文件 201980 行；最新业务日 20261013（footer_statistics，lag 20 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:00:34+08:00",
    "displayed": true
@@ -2868,7 +2868,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_fut_mapping",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_fut_mapping",
    "evidence": "store 在，14 文件（顶层 14），抽样 5 文件 200804 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -2906,7 +2906,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_fut_weekly_detail",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_fut_weekly_detail",
    "evidence": "store 在，15 文件（顶层 15），抽样 5 文件 201386 行；最新业务日 无（no_date_column，lag NA 天）；manifest 在；判 evidence_partial：no_date_column",
    "evidence_at": "2026-11-02T10:19:52+08:00",
    "displayed": true
@@ -2931,7 +2931,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "报告期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_fina_indicator",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_fina_indicator",
    "evidence": "store 在，3 文件（顶层 3），抽样 3 文件 266088 行；最新业务日 20260930（footer_statistics，lag 33 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:00:34+08:00",
    "displayed": true
@@ -2969,7 +2969,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_opt_basic",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_opt_basic",
    "evidence": "store 在，2 文件（顶层 2），抽样 2 文件 235096 行；最新业务日 豁免(static_no_date)（footer_statistics，lag 20 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T15:47:30+08:00",
    "displayed": true
@@ -2994,7 +2994,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/tdx_info.db",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/tdx_info.db",
    "evidence": "sqlite 表 stock_notice，214167 行；最新业务日 20261101（sqlite_max，lag 1 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:00:33+08:00",
    "displayed": true
@@ -3026,7 +3026,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/top_inst",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/top_inst",
    "evidence": "store 在，761 文件（顶层 761），抽样 5 文件 9460 行；最新业务日 20261029（footer_statistics，lag 4 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:24:30+08:00",
    "displayed": true
@@ -3064,7 +3064,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_kpl_list",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_kpl_list",
    "evidence": "store 在，12 文件（顶层 12），抽样 5 文件 200456 行；最新业务日 20261029（footer_statistics，lag 4 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:28:28+08:00",
    "displayed": true
@@ -3102,7 +3102,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_dividend",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_dividend",
    "evidence": "store 在，2 文件（顶层 2），抽样 2 文件 199249 行；最新业务日 20261013（footer_statistics，lag 20 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:00:34+08:00",
    "displayed": true
@@ -3140,7 +3140,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_fina_indicator_vip",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_fina_indicator_vip",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 157142 行；最新业务日 20261013（footer_statistics，lag 20 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:00:34+08:00",
    "displayed": true
@@ -3172,7 +3172,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_hm_detail",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_hm_detail",
    "evidence": "store 在，11 文件（顶层 11），抽样 5 文件 148466 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:28:28+08:00",
    "displayed": true
@@ -3197,7 +3197,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/tdx_info.db",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/tdx_info.db",
    "evidence": "sqlite 表 stock_report，149776 行；最新业务日 20261101（sqlite_max，lag 1 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:00:33+08:00",
    "displayed": true
@@ -3235,7 +3235,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_income_vip",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_income_vip",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 145476 行；最新业务日 20261013（footer_statistics，lag 20 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:00:34+08:00",
    "displayed": true
@@ -3273,7 +3273,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_cashflow_vip",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_cashflow_vip",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 145292 行；最新业务日 20261013（footer_statistics，lag 20 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:00:34+08:00",
    "displayed": true
@@ -3311,7 +3311,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_balancesheet_vip",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_balancesheet_vip",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 143773 行；最新业务日 20261013（footer_statistics，lag 20 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:00:34+08:00",
    "displayed": true
@@ -3336,7 +3336,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/index_weight",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/index_weight",
    "evidence": "store 在，143 文件（顶层 143），抽样 5 文件 4000 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T18:26:32+08:00",
    "displayed": true
@@ -3370,7 +3370,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/forecast",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/forecast",
    "evidence": "store 在，4 文件（顶层 4），抽样 4 文件 21197 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:24:30+08:00",
    "displayed": true
@@ -3408,7 +3408,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_dividend_vip",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_dividend_vip",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 103960 行；最新业务日 20261013（footer_statistics，lag 20 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:00:34+08:00",
    "displayed": true
@@ -3446,7 +3446,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_pledge_detail",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_pledge_detail",
    "evidence": "",
    "evidence_at": "",
    "displayed": true
@@ -3477,7 +3477,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_fina_audit",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_fina_audit",
    "evidence": "",
    "evidence_at": "",
    "displayed": true
@@ -3515,7 +3515,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "报告期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_cb_share",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_cb_share",
    "evidence": "store 在，13 文件（顶层 13），抽样 5 文件 89672 行；最新业务日 20261029（footer_statistics，lag 4 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T15:20:38+08:00",
    "displayed": true
@@ -3553,7 +3553,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/cnopendata/firm-level-climate-change-exposure",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/cnopendata/firm-level-climate-change-exposure",
    "evidence": "store 在，2 文件（顶层 2），抽样 2 文件 81759 行；最新业务日 20241231（footer_statistics，lag 671 天）；manifest 在；判 evidence_partial：stale_gt_400d",
    "evidence_at": "2026-11-02T14:34:43+08:00",
    "displayed": true
@@ -3567,7 +3567,7 @@
    "freq": "D",
    "rows": 76374,
    "files": 23,
-   "freshness": "20261030",
+   "freshness": "20261102",
    "date_col": "trade_date",
    "status": "evidence_ok",
    "deprecated": false,
@@ -3578,7 +3578,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/cyq_chips",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/cyq_chips",
    "evidence": "store 在，23 文件（顶层 23），抽样 5 文件 17557 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T18:26:32+08:00",
    "displayed": true
@@ -3613,7 +3613,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_stk_holdertrade",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_stk_holdertrade",
    "evidence": "store 在，14 文件（顶层 14），抽样 5 文件 74153 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T15:20:38+08:00",
    "displayed": true
@@ -3641,7 +3641,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/cnopendata/fepu",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/cnopendata/fepu",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 57044 行；最新业务日 20241231（footer_statistics，lag 671 天）；manifest 在；判 evidence_partial：stale_gt_400d",
    "evidence_at": "2026-11-02T14:34:43+08:00",
    "displayed": true
@@ -3679,7 +3679,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_limit_list_ths",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_limit_list_ths",
    "evidence": "store 在，11 文件（顶层 11），抽样 5 文件 55719 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:28:28+08:00",
    "displayed": true
@@ -3715,7 +3715,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_repo_daily",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_repo_daily",
    "evidence": "store 在，12 文件（顶层 12），抽样 5 文件 54291 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -3740,7 +3740,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_top_list",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_top_list",
    "evidence": "store 在，15 文件（顶层 15），抽样 5 文件 53622 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:28:28+08:00",
    "displayed": true
@@ -3773,7 +3773,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_repurchase",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_repurchase",
    "evidence": "store 在，13 文件（顶层 13），抽样 5 文件 47506 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -3811,7 +3811,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_fund_div",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_fund_div",
    "evidence": "store 在，15 文件（顶层 15），抽样 5 文件 45551 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T15:20:38+08:00",
    "displayed": true
@@ -3847,7 +3847,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_moneyflow_ind_ths",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_moneyflow_ind_ths",
    "evidence": "store 在，11 文件（顶层 11），抽样 5 文件 45270 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -3885,7 +3885,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_sge_daily",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_sge_daily",
    "evidence": "store 在，12 文件（顶层 12），抽样 5 文件 42249 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -3916,7 +3916,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_block_trade",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_block_trade",
    "evidence": "store 在，12 文件（顶层 12），抽样 5 文件 41998 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -3953,7 +3953,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_forecast_vip",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_forecast_vip",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 40054 行；最新业务日 20261013（footer_statistics，lag 20 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:00:34+08:00",
    "displayed": true
@@ -3982,7 +3982,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_cctv_news",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_cctv_news",
    "evidence": "store 在，12 文件（顶层 12），抽样 5 文件 34141 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:19:52+08:00",
    "displayed": true
@@ -4016,7 +4016,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_fund_manager",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_fund_manager",
    "evidence": "",
    "evidence_at": "",
    "displayed": true
@@ -4051,7 +4051,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_index_global",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_index_global",
    "evidence": "store 在，12 文件（顶层 12），抽样 5 文件 34766 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:28:28+08:00",
    "displayed": true
@@ -4063,7 +4063,7 @@
    "source": "xtcloud",
    "channel": "xtcloud",
    "freq": "D",
-   "rows": 34342,
+   "rows": 33451,
    "files": 2,
    "freshness": "20261013",
    "date_col": "ann_date",
@@ -4088,7 +4088,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_forecast",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_forecast",
    "evidence": "store 在，2 文件（顶层 2），抽样 2 文件 34342 行；最新业务日 20261013（footer_statistics，lag 20 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:00:34+08:00",
    "displayed": true
@@ -4126,7 +4126,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/xueqiu/xueqiu_info.db",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/xueqiu/xueqiu_info.db",
    "evidence": "sqlite 表 xq_status，33353 行；最新业务日 20261101（sqlite_max，lag 1 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T11:17:34+08:00",
    "displayed": true
@@ -4154,7 +4154,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_suspend_d",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_suspend_d",
    "evidence": "store 在，13 文件（顶层 13），抽样 5 文件 30480 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -4189,7 +4189,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_stk_ah_comparison",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_stk_ah_comparison",
    "evidence": "store 在，13 文件（顶层 13），抽样 5 文件 28248 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -4224,7 +4224,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_fx_daily",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_fx_daily",
    "evidence": "store 在，11 文件（顶层 11），抽样 5 文件 28404 行；最新业务日 20261029（footer_statistics，lag 4 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -4249,7 +4249,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/limit_list_d",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/limit_list_d",
    "evidence": "store 在，283 文件（顶层 283），抽样 5 文件 406 行；最新业务日 20261029（footer_statistics，lag 4 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T18:26:32+08:00",
    "displayed": true
@@ -4283,7 +4283,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_stk_surv",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_stk_surv",
    "evidence": "store 在，12 文件（顶层 12），抽样 5 文件 25425 行；最新业务日 20261029（footer_statistics，lag 4 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:19:52+08:00",
    "displayed": true
@@ -4315,7 +4315,7 @@
    "source_cn": "社区讨论",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/guba",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/guba",
    "evidence": "jsonl store：432 文件（顶层 432），抽样 40 文件 5148 行；最新业务日 20261101（jsonl_max，lag 1 天）；manifest N/A；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T12:10:59+08:00",
    "displayed": true
@@ -4345,7 +4345,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_us_basic",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_us_basic",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 24215 行；最新业务日 豁免(static_no_date)（footer_statistics，lag 21 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T15:47:30+08:00",
    "displayed": true
@@ -4381,7 +4381,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_index_dailybasic",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_index_dailybasic",
    "evidence": "store 在，12 文件（顶层 12），抽样 5 文件 23839 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -4406,7 +4406,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/us_basic",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/us_basic",
    "evidence": "store 在，33 文件（顶层 33），抽样 5 文件 120187 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T11:17:34+08:00",
    "displayed": true
@@ -4435,7 +4435,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日历日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_trade_cal",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_trade_cal",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 22287 行；最新业务日 20271231(未来期例外)（footer_statistics，lag -424 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T11:52:41+08:00",
    "displayed": true
@@ -4473,7 +4473,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_daily_info",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_daily_info",
    "evidence": "store 在，12 文件（顶层 12），抽样 5 文件 22004 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -4511,7 +4511,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_ggt_top10",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_ggt_top10",
    "evidence": "store 在，11 文件（顶层 11），抽样 5 文件 20308 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -4536,7 +4536,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/npr",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/npr",
    "evidence": "store 在，38 文件（顶层 38），抽样 5 文件 95292 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T11:17:34+08:00",
    "displayed": true
@@ -4561,7 +4561,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_fund_basic",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_fund_basic",
    "evidence": "store 在，5 文件（顶层 5），抽样 5 文件 18586 行；最新业务日 豁免(static_no_date)（footer_statistics，lag 34 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T15:47:30+08:00",
    "displayed": true
@@ -4590,7 +4590,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_broker_recommend",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_broker_recommend",
    "evidence": "store 在，2 文件（顶层 2），抽样 2 文件 18406 行；最新业务日 豁免(no_date_column)（no_date_column，lag NA 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -4628,7 +4628,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_global_fut",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_global_fut",
    "evidence": "store 在，4 文件（顶层 4），抽样 4 文件 16019 行；最新业务日 20261102（footer_statistics，lag 0 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:09:26+08:00",
    "displayed": true
@@ -4661,7 +4661,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_limit_cpt_list",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_limit_cpt_list",
    "evidence": "store 在，11 文件（顶层 11），抽样 5 文件 14194 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -4694,7 +4694,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_sz_daily_info",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_sz_daily_info",
    "evidence": "store 在，12 文件（顶层 12），抽样 5 文件 14056 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -4728,7 +4728,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_dc_hot",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_dc_hot",
    "evidence": "store 在，11 文件（顶层 11），抽样 5 文件 5886 行；最新业务日 20261029（footer_statistics，lag 4 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:28:28+08:00",
    "displayed": true
@@ -4753,7 +4753,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日历日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/trade_cal",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/trade_cal",
    "evidence": "store 在，38 文件（顶层 12），抽样 5 文件 67570 行；最新业务日 20271231(未来期例外)（footer_statistics，lag -424 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T18:26:32+08:00",
    "displayed": true
@@ -4778,7 +4778,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_index_weight",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_index_weight",
    "evidence": "store 在，2 文件（顶层 2），抽样 2 文件 11700 行；最新业务日 20260930（footer_statistics，lag 33 天）；manifest 在；判 evidence_partial：stale_gt_7d",
    "evidence_at": "2026-11-02T08:34:55+08:00",
    "displayed": true
@@ -4816,7 +4816,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_express",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_express",
    "evidence": "store 在，6 文件（顶层 6），抽样 5 文件 11662 行；最新业务日 20261013（footer_statistics，lag 20 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:00:34+08:00",
    "displayed": true
@@ -4854,7 +4854,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_express_vip",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_express_vip",
    "evidence": "store 在，6 文件（顶层 6），抽样 5 文件 11662 行；最新业务日 20261013（footer_statistics，lag 20 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:00:34+08:00",
    "displayed": true
@@ -4892,7 +4892,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_fut_basic",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_fut_basic",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 11294 行；最新业务日 豁免(static_no_date)（footer_statistics，lag 25 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T15:47:30+08:00",
    "displayed": true
@@ -4917,7 +4917,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_index_basic",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_index_basic",
    "evidence": "store 在，5 文件（顶层 5），抽样 5 文件 9766 行；最新业务日 豁免(static_no_date)（footer_statistics，lag 46 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T15:47:30+08:00",
    "displayed": true
@@ -4942,7 +4942,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/tdx_sector_member",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/tdx_sector_member",
    "evidence": "store 在，5 文件（顶层 5），抽样 5 文件 9273 行；最新业务日 豁免(no_date_column)（no_date_column，lag NA 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:34:55+08:00",
    "displayed": true
@@ -4970,7 +4970,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/cnopendata/chinese-dictionary-of-financial-sentiment",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/cnopendata/chinese-dictionary-of-financial-sentiment",
    "evidence": "store 在，2 文件（顶层 2），抽样 2 文件 9228 行；最新业务日 豁免(whitelist)（no_date_column，lag NA 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T11:17:34+08:00",
    "displayed": true
@@ -4995,7 +4995,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_eco_cal",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_eco_cal",
    "evidence": "",
    "evidence_at": "",
    "displayed": false
@@ -5030,7 +5030,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_hsgt_top10",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_hsgt_top10",
    "evidence": "store 在，11 文件（顶层 11），抽样 5 文件 8240 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:28:28+08:00",
    "displayed": true
@@ -5055,7 +5055,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/sw_l1_member",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/sw_l1_member",
    "evidence": "store 在，31 文件（顶层 31），抽样 5 文件 1121 行；最新业务日 豁免(whitelist)（no_date_column，lag NA 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T18:26:32+08:00",
    "displayed": true
@@ -5083,7 +5083,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_limit_step",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_limit_step",
    "evidence": "store 在，11 文件（顶层 11），抽样 5 文件 6509 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -5108,7 +5108,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/stock_company",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/stock_company",
    "evidence": "store 在，38 文件（顶层 38），抽样 5 文件 31601 行；最新业务日 豁免(whitelist)（no_date_column，lag NA 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T11:17:34+08:00",
    "displayed": true
@@ -5133,7 +5133,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_stock_company",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_stock_company",
    "evidence": "",
    "evidence_at": "",
    "displayed": true
@@ -5165,7 +5165,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "发布日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_cb_price_chg",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_cb_price_chg",
    "evidence": "store 在，2 文件（顶层 2），抽样 2 文件 6157 行；最新业务日 20261013（footer_statistics，lag 20 天）；manifest 在；判 evidence_partial：stale_gt_7d",
    "evidence_at": "2026-11-02T10:19:52+08:00",
    "displayed": true
@@ -5190,7 +5190,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/news",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/news",
    "evidence": "store 在，38 文件（顶层 38），抽样 5 文件 30000 行；最新业务日 20261101（footer_statistics，lag 1 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:24:30+08:00",
    "displayed": true
@@ -5222,7 +5222,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/express",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/express",
    "evidence": "store 在，4 文件（顶层 4），抽样 4 文件 5947 行；最新业务日 20261021（footer_statistics，lag 12 天）；manifest 在；判 evidence_partial：stale_gt_7d",
    "evidence_at": "2026-11-02T08:34:55+08:00",
    "displayed": true
@@ -5254,7 +5254,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/index_member_all",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/index_member_all",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 5922 行；最新业务日 无（no_date_column，lag NA 天）；manifest 在；判 evidence_partial：no_date_column",
    "evidence_at": "2026-11-02T10:00:33+08:00",
    "displayed": true
@@ -5290,7 +5290,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_index_member_all",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_index_member_all",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 5914 行；最新业务日 20260924（footer_statistics，lag 39 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:19:52+08:00",
    "displayed": true
@@ -5315,7 +5315,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_stock_basic",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_stock_basic",
    "evidence": "store 在，4 文件（顶层 4），抽样 4 文件 5913 行；最新业务日 豁免(static_no_date)（footer_statistics，lag 39 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T15:47:30+08:00",
    "displayed": true
@@ -5340,7 +5340,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/stock_basic",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/stock_basic",
    "evidence": "store 在，38 文件（顶层 38），抽样 5 文件 27882 行；最新业务日 20261029（footer_statistics，lag 4 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:24:30+08:00",
    "displayed": true
@@ -5354,7 +5354,7 @@
    "freq": "D",
    "rows": 5415,
    "files": 2,
-   "freshness": "20261030",
+   "freshness": "20261103",
    "date_col": "trade_date",
    "status": "evidence_ok",
    "deprecated": false,
@@ -5365,7 +5365,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/fx_daily",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/fx_daily",
    "evidence": "store 在，2 文件（顶层 2），抽样 2 文件 8668 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:24:30+08:00",
    "displayed": true
@@ -5394,7 +5394,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_kpl_concept",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_kpl_concept",
    "evidence": "",
    "evidence_at": "",
    "displayed": true
@@ -5429,7 +5429,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_ths_hot",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_ths_hot",
    "evidence": "store 在，11 文件（顶层 11），抽样 5 文件 4781 行；最新业务日 20261029（footer_statistics，lag 4 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:28:28+08:00",
    "displayed": true
@@ -5463,7 +5463,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_margin",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_margin",
    "evidence": "store 在，11 文件（顶层 11），抽样 5 文件 4174 行；最新业务日 20261029（footer_statistics，lag 4 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -5493,7 +5493,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_namechange",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_namechange",
    "evidence": "store 在，9 文件（顶层 9），抽样 5 文件 4050 行；最新业务日 20261029（footer_statistics，lag 4 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -5529,7 +5529,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_hk_basic",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_hk_basic",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 3555 行；最新业务日 豁免(static_no_date)（footer_statistics，lag 24 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T15:47:30+08:00",
    "displayed": true
@@ -5563,7 +5563,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_emotion_ladder",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_emotion_ladder",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 3489 行；最新业务日 20261014（footer_statistics，lag 19 天）；manifest 在；判 evidence_partial：stale_gt_7d",
    "evidence_at": "2026-11-02T08:34:55+08:00",
    "displayed": true
@@ -5594,7 +5594,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "报告期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/stk_pledge",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/stk_pledge",
    "evidence": "store 在，10 文件（顶层 10），抽样 5 文件 2039 行；最新业务日 20261231（footer_statistics，lag -65 天）；manifest 缺；判 evidence_partial：manifest_missing/future_date",
    "evidence_at": "2026-10-27T10:41:06+08:00",
    "displayed": true
@@ -5619,7 +5619,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/irm_qa_sh_probe",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/irm_qa_sh_probe",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 3000 行；最新业务日 20260924（footer_statistics，lag 39 天）；manifest 在；判 evidence_partial：stale_gt_7d",
    "evidence_at": "2026-11-02T14:34:43+08:00",
    "displayed": true
@@ -5644,7 +5644,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/irm_qa_sz_probe",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/irm_qa_sz_probe",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 3000 行；最新业务日 20260924（footer_statistics，lag 39 天）；manifest 在；判 evidence_partial：stale_gt_7d",
    "evidence_at": "2026-11-02T14:34:43+08:00",
    "displayed": true
@@ -5679,7 +5679,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_cb_call",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_cb_call",
    "evidence": "store 在，12 文件（顶层 12），抽样 5 文件 2965 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T15:20:38+08:00",
    "displayed": true
@@ -5704,7 +5704,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/hk_basic",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/hk_basic",
    "evidence": "store 在，38 文件（顶层 38），抽样 5 文件 13946 行；最新业务日 20261028（footer_statistics，lag 5 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T11:17:34+08:00",
    "displayed": true
@@ -5732,7 +5732,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日历日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_hk_tradecal",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_hk_tradecal",
    "evidence": "store 在，12 文件（顶层 12），抽样 5 文件 2482 行；最新业务日 20261029（footer_statistics，lag 4 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -5760,7 +5760,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日历日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_us_tradecal",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_us_tradecal",
    "evidence": "store 在，12 文件（顶层 12），抽样 5 文件 2482 行；最新业务日 20261029（footer_statistics，lag 4 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -5797,7 +5797,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_new_share",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_new_share",
    "evidence": "store 在，6 文件（顶层 6），抽样 5 文件 2070 行；最新业务日 20261028（footer_statistics，lag 5 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:19:52+08:00",
    "displayed": true
@@ -5832,7 +5832,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/shibor",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/shibor",
    "evidence": "store 在，3 文件（顶层 3），抽样 3 文件 6000 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T11:52:41+08:00",
    "displayed": true
@@ -5870,7 +5870,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/cnopendata/czyx",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/cnopendata/czyx",
    "evidence": "store 在，7 文件（顶层 6），抽样 5 文件 1386 行；最新业务日 20191231（footer_statistics，lag 2498 天）；manifest 在；判 evidence_partial：stale_gt_400d",
    "evidence_at": "2026-11-02T14:34:43+08:00",
    "displayed": true
@@ -5895,7 +5895,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_etf_basic",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_etf_basic",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 1829 行；最新业务日 豁免(static_no_date)（footer_statistics，lag 61 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T15:47:30+08:00",
    "displayed": true
@@ -5933,7 +5933,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_us_tbr",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_us_tbr",
    "evidence": "store 在，12 文件（顶层 12），抽样 5 文件 1697 行；最新业务日 20261029（footer_statistics，lag 4 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:19:52+08:00",
    "displayed": true
@@ -5965,7 +5965,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_us_trycr",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_us_trycr",
    "evidence": "store 在，12 文件（顶层 12），抽样 5 文件 1696 行；最新业务日 20261029（footer_statistics，lag 4 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:19:52+08:00",
    "displayed": true
@@ -6003,7 +6003,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_us_tycr",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_us_tycr",
    "evidence": "store 在，12 文件（顶层 12），抽样 5 文件 1697 行；最新业务日 20261029（footer_statistics，lag 4 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:19:52+08:00",
    "displayed": true
@@ -6028,7 +6028,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_ths_index",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_ths_index",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 1666 行；最新业务日 豁免(static_no_date)（footer_statistics，lag 94 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T15:47:30+08:00",
    "displayed": true
@@ -6053,7 +6053,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/top_list",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/top_list",
    "evidence": "store 在，762 文件（顶层 762），抽样 5 文件 953 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T18:26:32+08:00",
    "displayed": true
@@ -6083,7 +6083,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_ggt_daily",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_ggt_daily",
    "evidence": "store 在，11 文件（顶层 11），抽样 5 文件 1552 行；最新业务日 20261029（footer_statistics，lag 4 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:28:28+08:00",
    "displayed": true
@@ -6108,7 +6108,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/shibor_lpr",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/shibor_lpr",
    "evidence": "store 在，37 文件（顶层 37），抽样 5 文件 7660 行；最新业务日 20260820（footer_statistics，lag 74 天）；manifest 在；判 evidence_partial：stale_gt_40d",
    "evidence_at": "2026-11-02T14:34:43+08:00",
    "displayed": true
@@ -6146,7 +6146,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_wz_index",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_wz_index",
    "evidence": "store 在，8 文件（顶层 8），抽样 5 文件 1522 行；最新业务日 20261029（footer_statistics，lag 4 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:19:52+08:00",
    "displayed": true
@@ -6177,7 +6177,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_slb_len",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_slb_len",
    "evidence": "",
    "evidence_at": "",
    "displayed": true
@@ -6202,7 +6202,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/cb_basic",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/cb_basic",
    "evidence": "store 在，38 文件（顶层 38），抽样 5 文件 5865 行；最新业务日 20261106(未来期例外)（footer_statistics，lag -4 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T11:52:41+08:00",
    "displayed": true
@@ -6240,7 +6240,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_cb_basic",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_cb_basic",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 1171 行；最新业务日 豁免(static_no_date)（footer_statistics，lag 34 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T15:47:30+08:00",
    "displayed": true
@@ -6265,7 +6265,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_cb_rate",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_cb_rate",
    "evidence": "store 在，2 文件（顶层 2），抽样 2 文件 1169 行；最新业务日 无（no_date_column，lag NA 天）；manifest 在；判 evidence_partial：no_date_column",
    "evidence_at": "2026-11-02T10:19:52+08:00",
    "displayed": true
@@ -6290,7 +6290,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/tdx_sector_def",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/tdx_sector_def",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 1119 行；最新业务日 豁免(no_date_column)（no_date_column，lag NA 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:34:55+08:00",
    "displayed": true
@@ -6323,7 +6323,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_tdx_index",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_tdx_index",
    "evidence": "",
    "evidence_at": "",
    "displayed": true
@@ -6355,7 +6355,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/moneyflow_hsgt",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/moneyflow_hsgt",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 895 行；最新业务日 20261029（footer_statistics，lag 4 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:24:30+08:00",
    "displayed": true
@@ -6393,7 +6393,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_moneyflow_mkt_dc",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_moneyflow_mkt_dc",
    "evidence": "store 在，11 文件（顶层 11），抽样 5 文件 847 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -6423,7 +6423,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_hs_const",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_hs_const",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 823 行；最新业务日 无（no_date_column，lag NA 天）；manifest 在；判 evidence_partial：no_date_column",
    "evidence_at": "2026-11-02T10:19:52+08:00",
    "displayed": true
@@ -6448,7 +6448,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/major_news",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/major_news",
    "evidence": "store 在，38 文件（顶层 38），抽样 5 文件 3821 行；最新业务日 20261101（footer_statistics，lag 1 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:24:30+08:00",
    "displayed": true
@@ -6486,7 +6486,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_cb_issue",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_cb_issue",
    "evidence": "store 在，8 文件（顶层 8），抽样 5 文件 781 行；最新业务日 20261027（footer_statistics，lag 6 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T15:20:38+08:00",
    "displayed": true
@@ -6511,7 +6511,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_moneyflow_hsgt",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_moneyflow_hsgt",
    "evidence": "store 在，15 文件（顶层 15），抽样 5 文件 746 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -6549,7 +6549,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/cnopendata/yspl",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/cnopendata/yspl",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 744 行；最新业务日 19750711（footer_statistics，lag 18742 天）；manifest 在；判 evidence_partial：stale_gt_400d",
    "evidence_at": "2026-11-02T14:34:43+08:00",
    "displayed": true
@@ -6587,7 +6587,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/cnopendata/gjzfssfc",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/cnopendata/gjzfssfc",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 651 行；最新业务日 19750708（footer_statistics，lag 18745 天）；manifest 在；判 evidence_partial：stale_gt_400d",
    "evidence_at": "2026-11-02T14:34:43+08:00",
    "displayed": true
@@ -6620,7 +6620,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_index_classify",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_index_classify",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 642 行；最新业务日 豁免(static_no_date)（no_date_column，lag NA 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:19:52+08:00",
    "displayed": true
@@ -6645,7 +6645,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/sw_classify_l1",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/sw_classify_l1",
    "evidence": "store 在，38 文件（顶层 38），抽样 5 文件 2555 行；最新业务日 豁免(whitelist)（no_date_column，lag NA 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T11:17:34+08:00",
    "displayed": true
@@ -6670,7 +6670,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/sf_month",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/sf_month",
    "evidence": "store 在，36 文件（顶层 36），抽样 5 文件 1482 行；最新业务日 20260930（footer_statistics，lag 33 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T11:17:34+08:00",
    "displayed": true
@@ -6706,7 +6706,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_emotion_daily",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_emotion_daily",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 268 行；最新业务日 20261014（footer_statistics，lag 19 天）；manifest 在；判 evidence_partial：stale_gt_7d",
    "evidence_at": "2026-11-02T08:34:55+08:00",
    "displayed": true
@@ -6735,7 +6735,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_bse_mapping",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_bse_mapping",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 248 行；最新业务日 豁免(static_no_date)（footer_statistics，lag 938 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T15:47:30+08:00",
    "displayed": true
@@ -6760,7 +6760,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/research_report",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/research_report",
    "evidence": "store 在，38 文件（顶层 38），抽样 5 文件 30000 行；最新业务日 20261101（footer_statistics，lag 1 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:24:30+08:00",
    "displayed": true
@@ -6785,7 +6785,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_fund_company",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_fund_company",
    "evidence": "",
    "evidence_at": "",
    "displayed": false
@@ -6814,7 +6814,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_hm_list",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_hm_list",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 117 行；最新业务日 豁免(static_no_date)（no_date_column，lag NA 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:19:52+08:00",
    "displayed": true
@@ -6852,7 +6852,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/xueqiu/xueqiu_info.db",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/xueqiu/xueqiu_info.db",
    "evidence": "sqlite 表 xq_hot_post，100 行；最新业务日 20261102（sqlite_max，lag 0 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T11:17:34+08:00",
    "displayed": true
@@ -6890,7 +6890,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_cn_pmi",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_cn_pmi",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 81 行；最新业务日 20260930（footer_statistics，lag 33 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T11:16:59+08:00",
    "displayed": true
@@ -6928,7 +6928,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_cn_cpi",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_cn_cpi",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 80 行；最新业务日 20260831（footer_statistics，lag 63 天）；manifest 在；判 evidence_partial：stale_gt_40d",
    "evidence_at": "2026-11-02T11:16:59+08:00",
    "displayed": true
@@ -6964,7 +6964,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_cn_m",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_cn_m",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 80 行；最新业务日 20260831（footer_statistics，lag 63 天）；manifest 在；判 evidence_partial：stale_gt_40d",
    "evidence_at": "2026-11-02T11:16:59+08:00",
    "displayed": true
@@ -7002,7 +7002,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_cn_ppi",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_cn_ppi",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 80 行；最新业务日 20260831（footer_statistics，lag 63 天）；manifest 在；判 evidence_partial：stale_gt_40d",
    "evidence_at": "2026-11-02T11:16:59+08:00",
    "displayed": true
@@ -7039,7 +7039,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_fx_obasic",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_fx_obasic",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 69 行；最新业务日 豁免(static_no_date)（no_date_column，lag NA 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T10:19:52+08:00",
    "displayed": true
@@ -7074,7 +7074,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_cn_gdp",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_cn_gdp",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 26 行；最新业务日 20260630（footer_statistics，lag 125 天）；manifest 在；判 evidence_partial：stale_gt_100d",
    "evidence_at": "2026-11-02T11:16:59+08:00",
    "displayed": true
@@ -7112,7 +7112,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_sge_basic",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_sge_basic",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 13 行；最新业务日 豁免(static_no_date)（no_date_column，lag NA 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T11:52:41+08:00",
    "displayed": true
@@ -7137,7 +7137,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/anns_d",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/anns_d",
    "evidence": "store 在，1897 文件（顶层 1897），抽样 5 文件 86403 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T18:26:32+08:00",
    "displayed": true
@@ -7162,7 +7162,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/bak_basic",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/bak_basic",
    "evidence": "store 在，5569 文件（顶层 5569），抽样 5 文件 5781 行；最新业务日 20261102（footer_statistics，lag 0 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T18:26:32+08:00",
    "displayed": true
@@ -7187,7 +7187,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "报告期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/balancesheet",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/balancesheet",
    "evidence": "store 在，5582 文件（顶层 5582），抽样 5 文件 229 行；最新业务日 20260930（footer_statistics，lag 33 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:34:55+08:00",
    "displayed": true
@@ -7212,7 +7212,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "报告期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/cashflow",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/cashflow",
    "evidence": "store 在，5586 文件（顶层 5586），抽样 5 文件 232 行；最新业务日 20260930（footer_statistics，lag 33 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:34:55+08:00",
    "displayed": true
@@ -7237,7 +7237,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/crypto",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/crypto",
    "evidence": "",
    "evidence_at": "",
    "displayed": false
@@ -7262,7 +7262,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/etf_mins",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/etf_mins",
    "evidence": "store 在，780 文件（顶层 780），抽样 5 文件 21931 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T11:17:34+08:00",
    "displayed": true
@@ -7287,7 +7287,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "报告期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/fina_indicator",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/fina_indicator",
    "evidence": "store 在，5586 文件（顶层 5586），抽样 5 文件 274 行；最新业务日 20260930（footer_statistics，lag 33 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:34:55+08:00",
    "displayed": true
@@ -7312,7 +7312,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "报告期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/hk_balancesheet",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/hk_balancesheet",
    "evidence": "store 在，2773 文件（顶层 2773），抽样 5 文件 13696 行；最新业务日 20260630（footer_statistics，lag 119 天）；manifest 缺；判 evidence_partial：manifest_missing/stale_gt_7d",
    "evidence_at": "2026-10-27T10:41:06+08:00",
    "displayed": true
@@ -7337,7 +7337,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "报告期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/hk_cashflow",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/hk_cashflow",
    "evidence": "store 在，2787 文件（顶层 2787），抽样 5 文件 7406 行；最新业务日 20260630（footer_statistics，lag 119 天）；manifest 缺；判 evidence_partial：manifest_missing/stale_gt_7d",
    "evidence_at": "2026-10-27T10:41:06+08:00",
    "displayed": true
@@ -7362,7 +7362,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "报告期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/hk_fina_indicator",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/hk_fina_indicator",
    "evidence": "store 在，2787 文件（顶层 2787），抽样 5 文件 419 行；最新业务日 20260630（footer_statistics，lag 119 天）；manifest 缺；判 evidence_partial：manifest_missing/stale_gt_7d",
    "evidence_at": "2026-10-27T10:41:06+08:00",
    "displayed": true
@@ -7387,7 +7387,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "报告期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/hk_income",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/hk_income",
    "evidence": "store 在，2785 文件（顶层 2785），抽样 5 文件 10740 行；最新业务日 20260630（footer_statistics，lag 119 天）；manifest 缺；判 evidence_partial：manifest_missing/stale_gt_7d",
    "evidence_at": "2026-10-27T10:41:06+08:00",
    "displayed": true
@@ -7412,7 +7412,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/idx_mins",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/idx_mins",
    "evidence": "store 在，2030 文件（顶层 2030），抽样 5 文件 22261 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T11:17:34+08:00",
    "displayed": true
@@ -7437,7 +7437,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "报告期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/income",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/income",
    "evidence": "store 在，5586 文件（顶层 5586），抽样 5 文件 403 行；最新业务日 20260930（footer_statistics，lag 33 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:34:55+08:00",
    "displayed": true
@@ -7462,7 +7462,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/index_global",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/index_global",
    "evidence": "store 在，20 文件（顶层 20），抽样 5 文件 10835 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest N/A；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T18:26:32+08:00",
    "displayed": true
@@ -7487,7 +7487,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/irm_qa_sh",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/irm_qa_sh",
    "evidence": "store 在，2277 文件（顶层 2277），抽样 5 文件 14694 行；最新业务日 20261014（footer_statistics，lag 13 天）；manifest 缺；判 evidence_partial：manifest_missing/stale_gt_7d",
    "evidence_at": "2026-10-27T10:41:06+08:00",
    "displayed": true
@@ -7512,7 +7512,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/irm_qa_sz",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/irm_qa_sz",
    "evidence": "store 在，3250 文件（顶层 3250），抽样 5 文件 29618 行；最新业务日 20261014（footer_statistics，lag 13 天）；manifest 缺；判 evidence_partial：manifest_missing/stale_gt_7d",
    "evidence_at": "2026-10-27T10:41:06+08:00",
    "displayed": true
@@ -7537,7 +7537,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/quarantine_prod_overwrite",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/quarantine_prod_overwrite",
    "evidence": "store 在，2 文件（顶层 0），抽样 2 文件 14284 行；最新业务日 20260105（footer_statistics，lag 295 天）；manifest 缺；判 evidence_partial：manifest_missing/stale_gt_7d",
    "evidence_at": "2026-10-27T10:41:06+08:00",
    "displayed": false
@@ -7562,7 +7562,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "公告日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/stk_holdernumber",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/stk_holdernumber",
    "evidence": "store 在，5572 文件（顶层 5572），抽样 5 文件 551 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T18:26:32+08:00",
    "displayed": true
@@ -7587,7 +7587,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/stk_mins",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/stk_mins",
    "evidence": "store 在，33998 文件（顶层 33998），抽样 5 文件 15665 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T11:17:34+08:00",
    "displayed": true
@@ -7612,7 +7612,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/sw_mins",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/sw_mins",
    "evidence": "store 在，2201 文件（顶层 2201），抽样 5 文件 21931 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T11:17:34+08:00",
    "displayed": true
@@ -7650,7 +7650,7 @@
    "source_cn": "证券数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tdx/ts_fut_weekly_monthly",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_fut_weekly_monthly",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 37088 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T08:38:44+08:00",
    "displayed": true
@@ -7675,7 +7675,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "报告期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/us_balancesheet",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/us_balancesheet",
    "evidence": "store 在，22303 文件（顶层 22303），抽样 5 文件 6064 行；最新业务日 20260630（footer_statistics，lag 119 天）；manifest 缺；判 evidence_partial：manifest_missing/stale_gt_7d",
    "evidence_at": "2026-10-27T10:41:06+08:00",
    "displayed": true
@@ -7700,7 +7700,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "报告期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/us_cashflow",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/us_cashflow",
    "evidence": "store 在，21851 文件（顶层 21851），抽样 5 文件 5615 行；最新业务日 20260630（footer_statistics，lag 119 天）；manifest 缺；判 evidence_partial：manifest_missing/stale_gt_7d",
    "evidence_at": "2026-10-27T10:41:06+08:00",
    "displayed": true
@@ -7725,7 +7725,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/us_daily",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/us_daily",
    "evidence": "store 在，24211 文件（顶层 24211），抽样 5 文件 17553 行；最新业务日 20261030（footer_statistics，lag 3 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T18:26:32+08:00",
    "displayed": true
@@ -7750,7 +7750,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "报告期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/us_fina_indicator",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/us_fina_indicator",
    "evidence": "store 在，23679 文件（顶层 23679），抽样 5 文件 269 行；最新业务日 20260630（footer_statistics，lag 119 天）；manifest 缺；判 evidence_partial：manifest_missing/stale_gt_7d",
    "evidence_at": "2026-10-27T10:41:06+08:00",
    "displayed": true
@@ -7775,7 +7775,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "报告期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/tushare/us_income",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/tushare/us_income",
    "evidence": "store 在，23338 文件（顶层 23338），抽样 5 文件 6462 行；最新业务日 20260801（footer_statistics，lag 93 天）；manifest 在；判 evidence_ok：证据齐备",
    "evidence_at": "2026-11-02T18:26:32+08:00",
    "displayed": true
@@ -7800,7 +7800,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/us",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/us",
    "evidence": "",
    "evidence_at": "",
    "displayed": false
@@ -7859,7 +7859,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/xueqiu/xq_capital_flow",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/xueqiu/xq_capital_flow",
    "evidence": "",
    "evidence_at": "",
    "displayed": false
@@ -7884,7 +7884,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/xueqiu/xueqiu_info.db",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/xueqiu/xueqiu_info.db",
    "evidence": "",
    "evidence_at": "",
    "displayed": false
@@ -7909,7 +7909,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/xueqiu/xq_earningforecast",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/xueqiu/xq_earningforecast",
    "evidence": "",
    "evidence_at": "",
    "displayed": false
@@ -7934,7 +7934,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/xueqiu/xq_hot_deal",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/xueqiu/xq_hot_deal",
    "evidence": "",
    "evidence_at": "",
    "displayed": false
@@ -7959,7 +7959,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/xueqiu/xq_inner_trade",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/xueqiu/xq_inner_trade",
    "evidence": "",
    "evidence_at": "",
    "displayed": false
@@ -7984,7 +7984,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/xueqiu/xq_kline_d",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/xueqiu/xq_kline_d",
    "evidence": "",
    "evidence_at": "",
    "displayed": false
@@ -8009,7 +8009,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/xueqiu/xq_northbound",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/xueqiu/xq_northbound",
    "evidence": "",
    "evidence_at": "",
    "displayed": false
@@ -8046,7 +8046,7 @@
    "source_cn": "数据接口",
    "date_col_cn": "交易日期",
    "desc": "",
-   "store": "C:/aios/quant_backtest/data/xueqiu/xq_quote_snap",
+   "store": "C:/项目/老田的AI助手/quant_backtest/data/xueqiu/xq_quote_snap",
    "evidence": "store 在，1 文件（顶层 1），抽样 1 文件 2 行；最新业务日 20261016（footer_statistics，lag 17 天）；manifest 在；判 evidence_partial：stale_gt_7d",
    "evidence_at": "2026-11-02T14:34:43+08:00",
    "displayed": true
@@ -8061,20 +8061,11 @@
    "deprecated": 8
   },
   "freshness": {
-   "code": 1,
+   "code": 0,
    "as_of": "2026-11-03",
-   "issues": [
-    {
-     "kind": "sqlite",
-     "id": "量化池",
-     "id_cn": "量化池数据日期",
-     "latest": "2026-10-30",
-     "lag_days": 4,
-     "note": "数据更新滞后"
-    }
-   ],
+   "issues": [],
    "checks": 10,
-   "ok": 9,
+   "ok": 10,
    "raw": []
   },
   "coverage": {
@@ -8190,16 +8181,22 @@
   ],
   "wip": [
    {
-    "id": "K-ORG-20261102-RELGUARD",
+    "id": "K-STOCK-ANALYSIS-P2-7-20261030",
     "status": "review",
     "owner": "DSH-Lead",
-    "desc": "审计修复：release_artifact_guard expected_sha 未校验，锁写前补 sha256 一致性检查+测试"
+    "desc": "P2.7 测试隔离修复：test_api_customer 试用/任务写入生产 commercial.db（796 个 trial 污染）+ 断言"
    },
    {
-    "id": "K-STOCK-ANALYSIS-P2-7-20261030",
+    "id": "K-STOCK-ANALYSIS-P2-8-20261030",
     "status": "doing",
     "owner": "DSH-Lead",
-    "desc": "P2.7 测试隔离修复：test_api_customer 试用/任务写入生产 commercial.db（796 个 trial 污染）+ 断言"
+    "desc": "P2.8 批处理韧性：run_id 跨日同时刻冲突修复(retry suffix)+watchlist 恢复 603667+测试"
+   },
+   {
+    "id": "K-STOCK-ANALYSIS-P2-9-20261030",
+    "status": "doing",
+    "owner": "DSH-Lead",
+    "desc": "P0补数：研报/一致预期维度(report_rc月分区)+curated日更扩展(cyq/margin/anns/limit从数据根增量)+测试"
    }
   ]
  },
@@ -8327,7 +8324,7 @@
  },
  "legion": {
   "available": true,
-  "as_of": "2026-11-03T06:21:46+0800",
+  "as_of": "2026-11-03T10:01:08+0800",
   "chief": {
    "agent_id": "A0",
    "binding": "glm/glm-5.3"
@@ -8335,20 +8332,20 @@
   "summary": {
    "departments": 17,
    "agents": 77,
-   "doing": 2,
+   "doing": 27,
    "schedules": 3
   },
   "intent": {
    "counts": {
     "seats": 69,
     "entries": 77,
-    "doing": 2,
+    "doing": 27,
     "review": 1,
-    "done": 1902,
+    "done": 1903,
     "aborted": 134,
     "other": 8,
-    "doing_incl_review": 3,
-    "unmapped": 0,
+    "doing_incl_review": 28,
+    "unmapped": 22,
     "unclaimed_keys": 0,
     "lead_signed": 16,
     "lead_total": 17,
@@ -8369,12 +8366,187 @@
      "rule": "K-STOCK（量化盯盘/行情单）",
      "unmapped": false,
      "owner": "DSH-Lead"
+    },
+    {
+     "key": "WO-CAOCAO-FRAME-20261103",
+     "dept": "",
+     "rule": "",
+     "unmapped": true,
+     "owner": "DSH-Lead"
+    },
+    {
+     "key": "WO-CAOCAO-PAGE-20261103",
+     "dept": "",
+     "rule": "",
+     "unmapped": true,
+     "owner": "DSH-Lead"
+    },
+    {
+     "key": "WO-ACAD1-DARK-20261103",
+     "dept": "",
+     "rule": "",
+     "unmapped": true,
+     "owner": "DSH-Lead"
+    },
+    {
+     "key": "WO-UI-CONSIST-20261103",
+     "dept": "",
+     "rule": "",
+     "unmapped": true,
+     "owner": "DSH-Lead"
+    },
+    {
+     "key": "WO-ACAD1-NAV-20261103",
+     "dept": "",
+     "rule": "",
+     "unmapped": true,
+     "owner": "DSH-Lead"
+    },
+    {
+     "key": "WO-IFS-STD-20261103",
+     "dept": "",
+     "rule": "",
+     "unmapped": true,
+     "owner": "DSH-Lead"
+    },
+    {
+     "key": "WO-IFS-POOL-20261103",
+     "dept": "",
+     "rule": "",
+     "unmapped": true,
+     "owner": "DSH-Lead"
+    },
+    {
+     "key": "WO-IFS-HANDOFF-20261103",
+     "dept": "",
+     "rule": "",
+     "unmapped": true,
+     "owner": "DSH-Lead"
+    },
+    {
+     "key": "WO-IFS-PAPER-20261103",
+     "dept": "",
+     "rule": "",
+     "unmapped": true,
+     "owner": "DSH-Lead"
+    },
+    {
+     "key": "WO-IFS-COMP-20261103",
+     "dept": "",
+     "rule": "",
+     "unmapped": true,
+     "owner": "DSH-Lead"
+    },
+    {
+     "key": "WO-IFS-WIRE-20261103",
+     "dept": "",
+     "rule": "",
+     "unmapped": true,
+     "owner": "DSH-Lead"
+    },
+    {
+     "key": "WO-ACAD1-NAV2-20261103",
+     "dept": "",
+     "rule": "",
+     "unmapped": true,
+     "owner": "DSH-Lead"
+    },
+    {
+     "key": "WO-INTEL-ENTITY-20261103",
+     "dept": "",
+     "rule": "",
+     "unmapped": true,
+     "owner": "intel-entity-dev(DSH)"
+    },
+    {
+     "key": "WO-HERMES-CONTRACT-20261103",
+     "dept": "",
+     "rule": "",
+     "unmapped": true,
+     "owner": "hermes-contract-dev"
+    },
+    {
+     "key": "WO-JEV-OPS-20261103",
+     "dept": "",
+     "rule": "",
+     "unmapped": true,
+     "owner": "jev-ops-dev"
+    },
+    {
+     "key": "K-STOCK-ANALYSIS-H1-20261103",
+     "dept": "invest",
+     "rule": "K-STOCK（量化盯盘/行情单）",
+     "unmapped": false,
+     "owner": "DSH-Lead"
+    },
+    {
+     "key": "WO-ACAD1-POOLROUTE-20261103",
+     "dept": "",
+     "rule": "",
+     "unmapped": true,
+     "owner": "DSH-Lead"
+    },
+    {
+     "key": "WO-IFS-SCHEMA-20261103",
+     "dept": "",
+     "rule": "",
+     "unmapped": true,
+     "owner": "DSH-Lead"
+    },
+    {
+     "key": "WO-IFS-TRAIN-20261103",
+     "dept": "",
+     "rule": "",
+     "unmapped": true,
+     "owner": "DSH-Lead"
+    },
+    {
+     "key": "K-STOCK-ANALYSIS-H2-20261103",
+     "dept": "invest",
+     "rule": "K-STOCK（量化盯盘/行情单）",
+     "unmapped": false,
+     "owner": "DSH-Lead"
+    },
+    {
+     "key": "UI-UNIFY-P0FIX-20261103",
+     "dept": "",
+     "rule": "",
+     "unmapped": true,
+     "owner": "DSH-Lead"
+    },
+    {
+     "key": "legion-1103093009",
+     "dept": "invest",
+     "rule": "legion-（军团指挥台派单）",
+     "unmapped": false,
+     "owner": "T1"
+    },
+    {
+     "key": "UI-UNIFY-TOKENS-20261103",
+     "dept": "",
+     "rule": "",
+     "unmapped": true,
+     "owner": "DSH-Lead"
+    },
+    {
+     "key": "UI-UNIFY-SHELL-20261103",
+     "dept": "",
+     "rule": "",
+     "unmapped": true,
+     "owner": "DSH-Lead"
+    },
+    {
+     "key": "UI-UNIFY-MANIFEST-20261103",
+     "dept": "",
+     "rule": "",
+     "unmapped": true,
+     "owner": "DSH-Lead"
     }
    ],
    "review": [
     "K-STOCK-ANALYSIS-P2-7-20261030"
    ],
-   "cards_with_doing": 0
+   "cards_with_doing": 1
   },
   "departments": [
    {
@@ -8385,7 +8557,7 @@
     "lead_id": "D1",
     "status": "active",
     "agent_count": 13,
-    "doing": 0,
+    "doing": 1,
     "agents": [
      {
       "id": "T1",
@@ -8505,7 +8677,7 @@
       "id": "DEV3",
       "cn": "蒋济",
       "role": "strategy_engineer",
-      "binding": "ollama/qwen3.5:9b"
+      "binding": "glm/glm-5.3"
      },
      {
       "id": "DEV4",
@@ -8606,7 +8778,7 @@
       "id": "PM1",
       "cn": "吕蒙",
       "role": "product_manager",
-      "binding": "ollama/qwen3.5:9b"
+      "binding": "glm/glm-5.3"
      },
      {
       "id": "DSGN1",
@@ -8636,7 +8808,7 @@
       "id": "QA1",
       "cn": "于禁",
       "role": "qa_engineer",
-      "binding": "ollama/qwen3.5:9b"
+      "binding": "glm/glm-5.3"
      },
      {
       "id": "QA2",
@@ -8672,7 +8844,7 @@
       "id": "DEV3",
       "cn": "蒋济",
       "role": "backtest_dev",
-      "binding": "ollama/qwen3.5:9b"
+      "binding": "glm/glm-5.3"
      },
      {
       "id": "DEV4",
@@ -8684,7 +8856,7 @@
       "id": "QA1",
       "cn": "于禁",
       "role": "qa_runner",
-      "binding": "ollama/qwen3.5:9b"
+      "binding": "glm/glm-5.3"
      }
     ]
    },
@@ -8702,7 +8874,7 @@
       "id": "DATA1",
       "cn": "张松",
       "role": "data_governance",
-      "binding": "ollama/qwen3.5:9b"
+      "binding": "glm/glm-5.3"
      },
      {
       "id": "DEV1",
@@ -8726,13 +8898,13 @@
       "id": "PM1",
       "cn": "吕蒙",
       "role": "next_version_pm",
-      "binding": "ollama/qwen3.5:9b"
+      "binding": "glm/glm-5.3"
      },
      {
       "id": "ARCH1",
       "cn": "曹操",
       "role": "next_version_arch",
-      "binding": "ollama/qwen3.5:9b"
+      "binding": "glm/glm-5.3"
      },
      {
       "id": "DEV2",
@@ -8756,7 +8928,7 @@
       "id": "MKT1",
       "cn": "简雍",
       "role": "mkt1_marketer",
-      "binding": "ollama/qwen3.5:9b"
+      "binding": "glm/glm-5.3"
      }
     ]
    },
@@ -8930,7 +9102,7 @@
       "id": "INTEL0",
       "cn": "是仪",
       "role": "军情司上行受理席",
-      "binding": "glm/glm-5.3-flash"
+      "binding": "glm/glm-5.3"
      },
      {
       "id": "MANCHONG1",
@@ -8972,7 +9144,7 @@
       "id": "LUSU1",
       "cn": "阚泽",
       "role": "comm_entry_chief",
-      "binding": "ollama/qwen3.5:9b"
+      "binding": "glm/glm-5.3"
      },
      {
       "id": "DENGZHI1",
@@ -9008,7 +9180,7 @@
       "id": "A0A",
       "cn": "董允",
       "role": "chief_assistant",
-      "binding": "glm/glm-5.3-flash"
+      "binding": "glm/glm-5.3"
      }
     ]
    },
@@ -9038,7 +9210,7 @@
       "id": "R3",
       "cn": "陆逊",
       "role": "risk_arbiter",
-      "binding": "ollama/qwen3.5:9b"
+      "binding": "glm/glm-5.3"
      }
     ]
    }
@@ -9056,7 +9228,7 @@
     "name": "庞统",
     "dept": "invest",
     "title": "量化交易部",
-    "state": "idle"
+    "state": "active"
    },
    {
     "id": "T2",
@@ -9593,94 +9765,94 @@
   ],
   "feed": [
    {
-    "time_cn": "05:21",
-    "caller_cn": "于禁",
-    "action_cn": "催办",
-    "detail_cn": "请催办：3人无任务活动、0单超期"
-   },
-   {
-    "time_cn": "05:21",
-    "caller_cn": "蒋济",
-    "action_cn": "催办",
-    "detail_cn": "请催办：1人无任务活动、0单超期"
-   },
-   {
-    "time_cn": "05:21",
-    "caller_cn": "张松",
-    "action_cn": "催办",
-    "detail_cn": "请催办：1人无任务活动、0单超期"
-   },
-   {
-    "time_cn": "05:21",
+    "time_cn": "08:51",
     "caller_cn": "吕蒙",
     "action_cn": "催办",
     "detail_cn": "请催办：1人无任务活动、0单超期"
    },
    {
-    "time_cn": "05:21",
+    "time_cn": "08:51",
     "caller_cn": "董允",
     "action_cn": "催办",
     "detail_cn": "请催办：1人无任务活动、0单超期"
    },
    {
-    "time_cn": "05:21",
+    "time_cn": "08:51",
     "caller_cn": "司马徽",
     "action_cn": "催办",
     "detail_cn": "请催办：8人无任务活动、0单超期"
    },
    {
-    "time_cn": "05:21",
+    "time_cn": "08:51",
     "caller_cn": "是仪",
     "action_cn": "催办",
     "detail_cn": "请催办：7人无任务活动、0单超期"
    },
    {
-    "time_cn": "05:21",
+    "time_cn": "08:51",
     "caller_cn": "阚泽",
     "action_cn": "催办",
     "detail_cn": "请催办：1人无任务活动、0单超期"
    },
    {
-    "time_cn": "05:21",
+    "time_cn": "08:51",
     "caller_cn": "田丰",
     "action_cn": "催办",
     "detail_cn": "请催办：1人无任务活动、0单超期"
    },
    {
-    "time_cn": "05:21",
+    "time_cn": "08:51",
     "caller_cn": "陆逊",
     "action_cn": "催办",
     "detail_cn": "请催办：2人无任务活动、0单超期"
    },
    {
-    "time_cn": "05:51",
+    "time_cn": "09:00",
+    "caller_cn": "田丰",
+    "action_cn": "动态",
+    "detail_cn": "2026-11-03 晨会材料生成 14 部门"
+   },
+   {
+    "time_cn": "09:21",
     "caller_cn": "田丰",
     "action_cn": "动态",
     "detail_cn": "巡察完成: 49人无心跳 | 0单超期 | 0单滞留 | 14部门待督办"
    },
    {
-    "time_cn": "05:51",
+    "time_cn": "09:21",
     "caller_cn": "鲁肃",
     "action_cn": "催办",
     "detail_cn": "请催办：12人无任务活动、0单超期"
    },
    {
-    "time_cn": "05:51",
+    "time_cn": "09:21",
     "caller_cn": "曹操",
     "action_cn": "催办",
     "detail_cn": "请催办：9人无任务活动、0单超期"
    },
    {
-    "time_cn": "05:51",
+    "time_cn": "09:21",
     "caller_cn": "张松",
     "action_cn": "催办",
     "detail_cn": "请催办：3人无任务活动、0单超期"
    },
    {
-    "time_cn": "05:51",
+    "time_cn": "09:21",
     "caller_cn": "吕蒙",
     "action_cn": "催办",
     "detail_cn": "请催办：2人无任务活动、0单超期"
+   },
+   {
+    "time_cn": "09:21",
+    "caller_cn": "于禁",
+    "action_cn": "催办",
+    "detail_cn": "请催办：3人无任务活动、0单超期"
+   },
+   {
+    "time_cn": "09:21",
+    "caller_cn": "蒋济",
+    "action_cn": "催办",
+    "detail_cn": "请催办：1人无任务活动、0单超期"
    }
   ],
   "tasks": [
@@ -9701,6 +9873,156 @@
     "status_cn": "进行中",
     "owner_cn": "数据仓负责人",
     "desc_cn": "补数与日更扩展（数据仓）"
+   },
+   {
+    "label_cn": "数据任务（第4项）",
+    "status_cn": "进行中",
+    "owner_cn": "数据仓负责人",
+    "desc_cn": "数据仓工作项"
+   },
+   {
+    "label_cn": "数据任务（第5项）",
+    "status_cn": "进行中",
+    "owner_cn": "数据仓负责人",
+    "desc_cn": "数据仓工作项"
+   },
+   {
+    "label_cn": "数据任务（第6项）",
+    "status_cn": "进行中",
+    "owner_cn": "数据仓负责人",
+    "desc_cn": "数据仓工作项"
+   },
+   {
+    "label_cn": "数据任务（第7项）",
+    "status_cn": "进行中",
+    "owner_cn": "数据仓负责人",
+    "desc_cn": "数据仓工作项"
+   },
+   {
+    "label_cn": "数据任务（第8项）",
+    "status_cn": "进行中",
+    "owner_cn": "数据仓负责人",
+    "desc_cn": "数据仓工作项"
+   },
+   {
+    "label_cn": "数据任务（第9项）",
+    "status_cn": "进行中",
+    "owner_cn": "数据仓负责人",
+    "desc_cn": "数据仓工作项"
+   },
+   {
+    "label_cn": "数据任务（第10项）",
+    "status_cn": "进行中",
+    "owner_cn": "数据仓负责人",
+    "desc_cn": "数据仓工作项"
+   },
+   {
+    "label_cn": "数据任务（第11项）",
+    "status_cn": "进行中",
+    "owner_cn": "数据仓负责人",
+    "desc_cn": "数据仓工作项"
+   },
+   {
+    "label_cn": "数据任务（第12项）",
+    "status_cn": "进行中",
+    "owner_cn": "数据仓负责人",
+    "desc_cn": "数据仓工作项"
+   },
+   {
+    "label_cn": "数据任务（第13项）",
+    "status_cn": "进行中",
+    "owner_cn": "数据仓负责人",
+    "desc_cn": "数据仓工作项"
+   },
+   {
+    "label_cn": "数据任务（第14项）",
+    "status_cn": "进行中",
+    "owner_cn": "数据仓负责人",
+    "desc_cn": "数据仓工作项"
+   },
+   {
+    "label_cn": "数据任务（第15项）",
+    "status_cn": "进行中",
+    "owner_cn": "数据仓负责人",
+    "desc_cn": "数据仓工作项"
+   },
+   {
+    "label_cn": "数据任务（第16项）",
+    "status_cn": "进行中",
+    "owner_cn": "数据仓负责人",
+    "desc_cn": "数据仓工作项"
+   },
+   {
+    "label_cn": "数据任务（第17项）",
+    "status_cn": "进行中",
+    "owner_cn": "数据仓负责人",
+    "desc_cn": "数据仓工作项"
+   },
+   {
+    "label_cn": "数据任务（第18项）",
+    "status_cn": "进行中",
+    "owner_cn": "数据仓负责人",
+    "desc_cn": "数据仓工作项"
+   },
+   {
+    "label_cn": "数据任务（第19项）",
+    "status_cn": "进行中",
+    "owner_cn": "数据仓负责人",
+    "desc_cn": "数据仓工作项"
+   },
+   {
+    "label_cn": "数据任务（第20项）",
+    "status_cn": "进行中",
+    "owner_cn": "数据仓负责人",
+    "desc_cn": "数据仓工作项"
+   },
+   {
+    "label_cn": "数据任务（第21项）",
+    "status_cn": "进行中",
+    "owner_cn": "数据仓负责人",
+    "desc_cn": "数据仓工作项"
+   },
+   {
+    "label_cn": "数据任务（第22项）",
+    "status_cn": "进行中",
+    "owner_cn": "数据仓负责人",
+    "desc_cn": "数据仓工作项"
+   },
+   {
+    "label_cn": "数据任务（第23项）",
+    "status_cn": "进行中",
+    "owner_cn": "数据仓负责人",
+    "desc_cn": "数据仓工作项"
+   },
+   {
+    "label_cn": "数据任务（第24项）",
+    "status_cn": "进行中",
+    "owner_cn": "数据仓负责人",
+    "desc_cn": "数据仓工作项"
+   },
+   {
+    "label_cn": "数据任务（第25项）",
+    "status_cn": "进行中",
+    "owner_cn": "数据仓负责人",
+    "desc_cn": "数据仓工作项"
+   },
+   {
+    "label_cn": "数据任务（第26项）",
+    "status_cn": "进行中",
+    "owner_cn": "数据仓负责人",
+    "desc_cn": "数据仓工作项"
+   },
+   {
+    "label_cn": "数据任务（第27项）",
+    "status_cn": "进行中",
+    "owner_cn": "数据仓负责人",
+    "desc_cn": "数据仓工作项"
+   },
+   {
+    "label_cn": "数据任务（第28项）",
+    "status_cn": "进行中",
+    "owner_cn": "数据仓负责人",
+    "desc_cn": "数据仓工作项"
    }
   ],
   "schedules": [
@@ -9721,12 +10043,12 @@
    }
   ],
   "heartbeat": {
-   "last_ts": "2026-11-02T09:20:22+0800",
-   "seats_ok": 12,
+   "last_ts": "2026-11-03T09:20:19+0800",
+   "seats_ok": 11,
    "seats_total": 12,
    "source": "agent_platform/data/seat_heartbeat",
-   "last_ts_cn": "2026年11月2日 09:20",
-   "age_hours": 21.0
+   "last_ts_cn": "2026年11月3日 09:20",
+   "age_hours": 0.7
   },
   "division": [
    {
@@ -10008,7 +10330,7 @@
     "name": "海外与衍生",
     "count": 37,
     "rows": 61653128,
-    "latest": "20261102"
+    "latest": "20261103"
    },
    {
     "name": "沪深行情",
@@ -10019,13 +10341,13 @@
    {
     "name": "财务与公告",
     "count": 32,
-    "rows": 4467260,
+    "rows": 4466369,
     "latest": "20261030"
    },
    {
     "name": "舆情与研报",
     "count": 25,
-    "rows": 15227644,
+    "rows": 15227478,
     "latest": "20261102"
    },
    {
@@ -10082,55 +10404,11 @@
   ],
   "sync_tasks": [
    {
-    "name": "ShipinhaoCards",
-    "state": "Ready",
-    "last_result": 267011,
-    "next_run": "11-03 06:30",
-    "last_run": "",
-    "path": "\\ZeroBound\\",
-    "name_cn": "视频号学习卡流水线",
-    "state_cn": "就绪",
-    "result_cn": "尚未运行"
-   },
-   {
-    "name": "DataWarehouseSnapshot",
-    "state": "Ready",
-    "last_result": 0,
-    "next_run": "11-03 06:40",
-    "last_run": "11-02 10:06",
-    "path": "\\ZeroBound\\",
-    "name_cn": "数据快照刷新",
-    "state_cn": "就绪",
-    "result_cn": "正常"
-   },
-   {
-    "name": "NoticeBackfill",
-    "state": "Ready",
-    "last_result": 267014,
-    "next_run": "11-03 06:45",
-    "last_run": "11-02 14:46",
-    "path": "\\ZeroBound\\",
-    "name_cn": "公告补采",
-    "state_cn": "就绪",
-    "result_cn": "已终止"
-   },
-   {
-    "name": "SentimentBT",
-    "state": "Ready",
-    "last_result": 267011,
-    "next_run": "11-03 07:20",
-    "last_run": "",
-    "path": "\\ZeroBound\\",
-    "name_cn": "情绪回测",
-    "state_cn": "就绪",
-    "result_cn": "尚未运行"
-   },
-   {
     "name": "TdxSyncProbe",
     "state": "Ready",
     "last_result": 0,
-    "next_run": "11-03 07:20",
-    "last_run": "11-03 06:20",
+    "next_run": "11-03 10:20",
+    "last_run": "11-03 09:20",
     "path": "\\ZeroBound\\",
     "name_cn": "同步看门狗",
     "state_cn": "就绪",
@@ -10226,14 +10504,58 @@
    },
    {
     "name": "KgDailySync",
-    "state": "Running",
-    "last_result": 267009,
+    "state": "Ready",
+    "last_result": 0,
     "next_run": "11-04 06:20",
-    "last_run": "11-03 06:20",
+    "last_run": "11-03 09:06",
     "path": "\\",
     "name_cn": "知识库日同步",
-    "state_cn": "运行中",
-    "result_cn": "运行中"
+    "state_cn": "就绪",
+    "result_cn": "正常"
+   },
+   {
+    "name": "ShipinhaoCards",
+    "state": "Ready",
+    "last_result": 0,
+    "next_run": "11-04 06:30",
+    "last_run": "11-03 06:30",
+    "path": "\\ZeroBound\\",
+    "name_cn": "视频号学习卡流水线",
+    "state_cn": "就绪",
+    "result_cn": "正常"
+   },
+   {
+    "name": "DataWarehouseSnapshot",
+    "state": "Ready",
+    "last_result": 0,
+    "next_run": "11-04 06:40",
+    "last_run": "11-03 06:40",
+    "path": "\\ZeroBound\\",
+    "name_cn": "数据快照刷新",
+    "state_cn": "就绪",
+    "result_cn": "正常"
+   },
+   {
+    "name": "NoticeBackfill",
+    "state": "Ready",
+    "last_result": 0,
+    "next_run": "11-04 06:45",
+    "last_run": "11-03 09:15",
+    "path": "\\ZeroBound\\",
+    "name_cn": "公告补采",
+    "state_cn": "就绪",
+    "result_cn": "正常"
+   },
+   {
+    "name": "SentimentBT",
+    "state": "Ready",
+    "last_result": 0,
+    "next_run": "11-04 07:20",
+    "last_run": "11-03 07:20",
+    "path": "\\ZeroBound\\",
+    "name_cn": "情绪回测",
+    "state_cn": "就绪",
+    "result_cn": "正常"
    }
   ],
   "progress": {
@@ -10594,15 +10916,15 @@
    }
   },
   "heartbeat": {
-   "last_ts": "2026-11-02T09:20:22+0800",
-   "seats_ok": 12,
+   "last_ts": "2026-11-03T09:20:19+0800",
+   "seats_ok": 11,
    "seats_total": 12,
    "source": "agent_platform/data/seat_heartbeat",
-   "last_ts_cn": "2026年11月2日 09:20",
-   "age_hours": 21.0
+   "last_ts_cn": "2026年11月3日 09:20",
+   "age_hours": 0.7
   },
   "feed": [],
-  "generated_at": "2026-11-03T06:21:50"
+  "generated_at": "2026-11-03T10:01:10"
  },
  "hermes_work": {
   "available": true,

@@ -1,0 +1,60 @@
+{
+ "base_multi": 18,
+ "current_after_approved": 25,
+ "candidate_groups": [
+  {
+   "group_id": "MG-004",
+   "display": "成交量",
+   "members": [
+    "成交量",
+    "成交量配合",
+    "成交额",
+    "成交额和成交量",
+    "成交额大"
+   ],
+   "delta": 1,
+   "sources": 2
+  },
+  {
+   "group_id": "MG-013",
+   "display": "AI 量化",
+   "members": [
+    "AI 量化",
+    "AI 量化的深度",
+    "量化"
+   ],
+   "delta": 1,
+   "sources": 2
+  },
+  {
+   "group_id": "MG-066",
+   "display": "分形结构",
+   "members": [
+    "分形结构",
+    "底分形结构"
+   ],
+   "delta": 1,
+   "sources": 2
+  },
+  {
+   "group_id": "MG-094",
+   "display": "开盘半小时快速跳水",
+   "members": [
+    "开盘半小时快速跳水",
+    "开盘直接大跳水"
+   ],
+   "delta": 1,
+   "sources": 2
+  },
+  {
+   "group_id": "MG-099",
+   "display": "房地产行业板块表现",
+   "members": [
+    "房地产行业板块表现",
+    "计算机行业板块表现"
+   ],
+   "delta": 1,
+   "sources": 2
+  }
+ ]
+}

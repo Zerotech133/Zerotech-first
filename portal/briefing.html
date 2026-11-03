@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-store">
+<title>零界 · 田丰早间简报</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<link rel="stylesheet" href="/static/ui/ui.css">
+<script src="/static/nav.js" defer></script>
+<script src="/static/hq_people.js"></script>
+<style>
+body{margin:0;background:var(--bg-page);color:var(--text);font-family:var(--font-ui)}
+.wrap{max-width:1210px;margin:0 auto;padding:20px 24px 56px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+h1{font-size:22px;margin:18px 0 4px}.meta{color:var(--text-dim);font-size:12px;margin:6px 0}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--bg-surface)}
+.toolbar label{display:flex;gap:6px;align-items:center;color:var(--text-dim);font-size:12px}
+select,input,textarea{background:var(--bg-raised);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:7px 9px;font:inherit}
+select{min-width:160px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg-raised);color:var(--text);text-decoration:none;cursor:pointer;font-size:13px}
+.btn.primary{border-color:var(--blu-600);background:var(--blu-600);color:#fff}
+.btn:hover{border-color:var(--link)}
+.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0}
+.card{background:var(--bg-raised);border:1px solid var(--border);border-radius:10px;padding:12px}
+.card .k{color:var(--text-dim);font-size:11.5px}.card .v{font-size:22px;font-weight:700;margin-top:4px}
+h2{font-size:15px;margin:22px 0 8px}
+.list{display:grid;gap:8px}
+.item{display:block;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--bg-surface);color:inherit;text-decoration:none}
+.item:hover{border-color:var(--link)}
+.item .t{font-weight:650;margin-bottom:4px}.item .m{color:var(--text-dim);font-size:12px;line-height:1.6}
+.pill{display:inline-block;padding:2px 7px;border-radius:999px;border:1px solid var(--border);font-size:11px;margin-right:4px}
+.pill.red{color:var(--color-err);border-color:color-mix(in srgb,var(--color-err) 42%,transparent)}
+.pill.amber{color:var(--color-warn);border-color:color-mix(in srgb,var(--color-warn) 42%,transparent)}
+.pill.green{color:var(--color-ok);border-color:color-mix(in srgb,var(--color-ok) 42%,transparent)}
+.err{padding:12px;border:1px solid var(--red-500);border-radius:10px;color:var(--red-500)}
+.local-card{margin:12px 0;padding:14px;border:1px solid var(--border);border-radius:10px;background:var(--bg-surface)}
+.local-card summary{cursor:pointer;font-weight:650}
+.local-card .row{margin-top:8px}
+#local-preview{white-space:pre-wrap;font-size:12.5px;line-height:1.7;color:var(--text-dim);margin-top:8px}
+#personal-brief{white-space:pre-wrap;font-size:13px;line-height:1.75;background:var(--bg-page);border:1px solid var(--border);border-radius:8px;padding:10px;margin-top:8px;display:none}
+#detail{margin:12px 0;padding:16px;border:1px solid var(--blu-600);border-radius:12px;background:var(--bg-surface)}
+.dept-card{cursor:pointer}
+.dept-card:hover{border-color:var(--link)}
+.chat{display:flex;flex-direction:column;gap:8px;max-height:260px;overflow:auto;padding:8px;margin:8px 0;background:var(--bg-page);border:1px solid var(--border);border-radius:8px}
+.chat .msg{padding:7px 10px;border-radius:8px;font-size:12.5px;line-height:1.6;white-space:pre-wrap}
+.chat .msg.user{align-self:flex-end;background:var(--blu-600);color:#fff;max-width:85%}
+.chat .msg.bot{align-self:flex-start;background:var(--bg-raised);max-width:90%}
+#summary{white-space:pre-wrap;line-height:1.8;background:var(--bg-surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin:10px 0;font-size:13px}
+#modal{display:none;margin:12px 0}
+#modal.open{display:block}
+.modal-card{background:var(--bg-surface);border:1px solid var(--border);border-radius:12px;max-width:100%;width:100%;padding:18px}
+.modal-card label{display:block;margin:8px 0;color:var(--text-dim);font-size:12px}
+.modal-card input,.modal-card select,.modal-card textarea{width:100%;box-sizing:border-box;margin-top:4px}
+.modal-card textarea{min-height:64px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+@media(max-width:760px){.cards{grid-template-columns:repeat(2,1fr)}.wrap{padding:14px}.toolbar{align-items:stretch}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><strong>零界 · 田丰早间简报</strong><span class="meta" id="build">v13</span><a href="/hq">返回指挥部</a></div>
+  <h1>今日简报</h1>
+  <div class="meta" id="meta">加载中…</div>
+
+  <div class="toolbar" role="toolbar" aria-label="简报筛选与动作">
+    <label>部门
+      <select id="dept-filter" aria-label="只看一个部门"><option value="">全部部门</option></select>
+    </label>
+    <button class="btn primary" id="btn-summary" type="button">立即总结（全席运行）</button>
+    <button class="btn" id="btn-quick" type="button">只汇总已提交</button>
+    <button class="btn" id="btn-report" type="button">汇报工作</button>
+    <a class="btn" href="/meeting">去早会</a>
+    <a class="btn" href="/case#quick-box">⚡ 即时拆解</a>
+    <span class="meta" id="run-progress" aria-live="polite"></span><span class="meta" id="state-note" aria-live="polite"></span>
+  </div>
+
+  <details class="local-card" id="local-box">
+    <summary>我的本地库 · 千人千面（本地读取，不上传原文）</summary>
+    <div class="meta">选择本地库文件夹；只在本页读取，原文不发送。勾选授权后，仅摘要/证据交给 A0 生成个人版早报。</div>
+    <input id="lib-files" type="file" webkitdirectory multiple hidden>
+    <div class="row">
+      <button class="btn" id="btn-pick" type="button">选择本地库文件夹</button>
+      <label class="meta"><input type="checkbox" id="authorize"> 我同意将摘要/证据上云</label>
+      <button class="btn primary" id="btn-personal" type="button" disabled>生成个人版早报</button>
+    </div>
+    <div id="local-preview"></div>
+    <div id="personal-brief"></div>
+  </details>
+  <div id="summary" hidden></div>
+  <div class="cards" id="cards"></div>
+  <div id="error"></div>
+
+  <h2>部门汇报</h2>
+  <div id="depts" class="list"></div>
+  <div id="detail" hidden></div>
+
+  <h2>研究题（点击进入人专项）</h2>
+  <div id="topics" class="list"></div>
+</div>
+
+<div id="modal" role="dialog" aria-modal="true" aria-labelledby="report-title">
+  <div class="modal-card">
+    <h2 id="report-title">汇报工作（人类）</h2>
+    <div class="meta">本地汇报卡：可随时总结、可只看一个部门；不自动入库/不自动派单。保存后可复制/下载交田丰。</div>
+    <label>部门
+      <select id="f-dept"></select>
+    </label>
+    <label>状态
+      <select id="f-status"><option value="green">绿色 · 正常</option><option value="amber">黄色 · 有风险</option><option value="red">红色 · 阻塞</option></select>
+    </label>
+    <label>昨天完成（每行一条）
+      <textarea id="f-highlights" placeholder="例：数据资源台账首版完成"></textarea>
+    </label>
+    <label>阻塞 / 证据缺口（每行一条）
+      <textarea id="f-blockers" placeholder="例：314 数据集口径未核"></textarea>
+    </label>
+    <label>需要 A0/老田决策（每行一条）
+      <textarea id="f-decisions" placeholder="例：数据资源权限分级由谁拍板"></textarea>
+    </label>
+    <label>研究题（每行一条，可点击进人专项）
+      <textarea id="f-research" placeholder="例：数据资源台账最小字段集"></textarea>
+    </label>
+    <div class="row">
+      <button class="btn primary" id="btn-save" type="button">保存到本页</button>
+      <button class="btn" id="btn-copy" type="button">复制汇报卡</button>
+      <button class="btn" id="btn-download" type="button">下载汇报卡</button>
+      <button class="btn" id="btn-close" type="button">关闭</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+var DAY=new Date().toISOString().slice(0,10);
+var LS='hq_human_brief_'+DAY;
+var state={data:null, reports:[], dept:'', lastCard:null, running:false, detail:null};
+var CHATLS='hq_dept_chat_'+DAY; var chats={};
+function pLead(id){return (window.HQ_PEOPLE&&HQ_PEOPLE.leads&&HQ_PEOPLE.leads[id])||id||'-';}
+function pDept(code){return (window.HQ_PEOPLE&&HQ_PEOPLE.depts&&HQ_PEOPLE.depts[code])||code||'-';}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function $(id){return document.getElementById(id);}
+function card(k,v){return '<div class="card"><div class="k">'+esc(k)+'</div><div class="v">'+esc(v)+'</div></div>';}
+function pill(s){var v=String(s||'');var c=/red/.test(v)?'red':(/amber/.test(v)?'amber':'green');return '<span class="pill '+c+'">'+esc(v)+'</span>';}
+function loadReports(){try{var a=JSON.parse(localStorage.getItem(LS)||'[]');state.reports=Array.isArray(a)?a:[];}catch(e){state.reports=[];}}
+function loadChats(){try{chats=JSON.parse(localStorage.getItem(CHATLS)||'{}')||{};}catch(e){chats={};}}
+function saveChats(){try{localStorage.setItem(CHATLS,JSON.stringify(chats));}catch(e){}}
+function saveReports(){try{localStorage.setItem(LS,JSON.stringify(state.reports.slice(-50)));}catch(e){}}
+function departments(){
+  var d=(state.data&&state.data.org&&state.data.org.departments)||[];
+  var map={};
+  d.forEach(function(x){map[x.dept]={dept:x.dept,name:x.name,lead:x.lead};});
+  state.reports.forEach(function(r){if(r.dept&&!map[r.dept])map[r.dept]={dept:r.dept,name:r.dept,lead:r.lead||''};});
+  return Object.keys(map).map(function(k){return map[k];});
+}
+function expectedLeads(){
+  var m={}; departments().forEach(function(d){if(d.lead&&d.lead!=='A0')m[d.lead]=1;});
+  return Object.keys(m).length;
+}
+function reportRows(){
+  var b=(state.data&&state.data.briefing&&state.data.briefing.departments)||[];
+  var map={};
+  b.forEach(function(r){map[(r.lead||r.dept)+'|'+r.dept]=r;});
+  state.reports.forEach(function(r){map[(r.lead||'')+'|'+(r.dept||'')]={lead:r.lead||'',dept:r.dept||r.dept_name||'',status:r.status||'green',yesterday_done:r.yesterday_done||r.highlights||[],in_progress:r.in_progress||[],highlights:r.highlights||r.yesterday_done||[],blockers:r.blockers||[],decision_requests:r.decision_requests||[],research_topics:r.research_topics||[]};});
+  return Object.keys(map).map(function(k){return map[k];});
+}
+function cleanTopic(t){
+  var title=String((t&&t.title)||t||'').trim();
+  if(!title||title.length<4||/\?{2,}/.test(title))return false;
+  if(/^聊聊状态$|^测试|^todo/i.test(title))return false;
+  if(/#\d{4}-\d{4}/.test(title))return false; // 旧议程编号不计入研究题
+  return true;
+}
+function topics(){
+  var b=(state.data&&state.data.briefing&&state.data.briefing.research_topics)||[];
+  var out=b.filter(function(t){return cleanTopic(t);}).slice();
+  state.reports.forEach(function(r){
+    (r.research_topics||[]).forEach(function(t){
+      var x={id:'RT-H-'+Math.random().toString(36).slice(2,7),title:(t&&t.title)||t,question:(t&&t.question)||'',source_lead:r.lead||'',source_dept:r.dept||''};
+      if(cleanTopic(x))out.push(x);
+    });
+  });
+  return out;
+}
+function specLink(t){
+  var p=new URLSearchParams({topic:t.id||t.title||'',title:t.title||'',source:t.source_lead||'',kind:t.kind||'研究'});
+  return '/special?'+p.toString();
+}
+function filteredRows(rows){
+  if(!state.dept)return rows;
+  return rows.filter(function(r){return r.dept===state.dept||(r.lead&&r.lead===deptLead(state.dept));});
+}
+function deptLead(code){var d=departments().filter(function(x){return x.dept===code;})[0];return d?d.lead:'';}
+var localState={docs:[],user:'tf'};
+var CONSENT_LS='hq_local_consent';
+function fmtBytes(n){return n<1024?n+'B':(n<1048576?(n/1024).toFixed(1)+'KB':(n/1048576).toFixed(1)+'MB');}
+function loadConsent(){try{var c=JSON.parse(localStorage.getItem(CONSENT_LS)||'null');if(c&&c.expires_at&&new Date(c.expires_at).getTime()>Date.now()){$('authorize').checked=true;return c;}}catch(e){}return null;}
+function saveConsent(on){try{if(on)localStorage.setItem(CONSENT_LS,JSON.stringify({scope:'summary_only',granted_at:new Date().toISOString(),expires_at:new Date(Date.now()+86400000).toISOString()}));else localStorage.removeItem(CONSENT_LS);}catch(e){}}
+function localSummary(){var titles=localState.docs.slice(0,10).map(function(d){return d.title;});return '本地库共 '+localState.docs.length+' 个文档；主题：'+(titles.length?titles.join('、'):'暂无文档');}
+async function digest(text){try{var b=new TextEncoder().encode(text);var h=await crypto.subtle.digest('SHA-256',b);return Array.from(new Uint8Array(h)).map(function(x){return x.toString(16).padStart(2,'0');}).join('');}catch(e){return '';}}
+async function scanLocal(files){
+  var allowed={md:1,txt:1,json:1,yaml:1,yml:1,csv:1,log:1};
+  var docs=[],total=0;
+  for(var i=0;i<files.length && docs.length<200;i++){
+    var f=files[i]; if(!f||f.name.charAt(0)==='.')continue;
+    var ext=(f.name.split('.').pop()||'').toLowerCase(); if(!allowed[ext])continue;
+    if(f.size<=0||f.size>1048576)continue;
+    if(total+f.size>5000000)break;
+    var text=await f.text();
+    var lines=text.split(/\r?\n/).map(function(x){return x.trim();}).filter(Boolean);
+    var heads=lines.filter(function(x){return x.charAt(0)==='#';}).slice(0,8).map(function(x){return x.replace(/^#+/,'').trim();});
+    var title=heads[0]||f.name.replace(/\.[^.]+$/,'');
+    var sha=await digest(text); total+=f.size;
+    docs.push({path:f.webkitRelativePath||f.name,title:title.slice(0,120),headings:heads,bytes:f.size,sha256:sha});
+  }
+  localState.docs=docs;
+  var el=$('local-preview');
+  if(!docs.length){el.textContent='未发现可读文本（支持 md/txt/json/yaml/csv/log，单文件≤1MB，总量≤5MB，最多200个）。';}
+  else{el.textContent='已本地读取 '+docs.length+' 个文档，共 '+fmtBytes(total)+'。\n'+localSummary()+'\n原文与本地路径不会上传。';}
+  $('btn-personal').disabled=!(docs.length&&$('authorize').checked);
+}
+function cloudFromLocal(){
+  return {schema:'hq/local_brief_cloud/v1',user_id:localState.user,
+    summary:localSummary(),stats:{files:localState.docs.length,bytes:localState.docs.reduce(function(n,d){return n+d.bytes;},0)},
+    evidence:localState.docs.map(function(d){return {sha256:d.sha256,title:d.title,headings:d.headings,bytes:d.bytes};})};
+}
+async function whoAmI(){
+  try{var r=await fetch('/api/auth/me',{cache:'no-store'});var p=await r.json();var sub=(p.session&&p.session.sub)||'';localState.user=(sub.split(':').pop())||'tf';}catch(e){localState.user='tf';}
+}
+async function personalBrief(){
+  if(!localState.docs.length||!$('authorize').checked)return;
+  var btn=$('btn-personal');btn.disabled=true;var out=$('personal-brief');out.style.display='block';out.textContent='A0 正在生成个人版早报（只基于授权摘要/证据）…';
+  var cp=cloudFromLocal();
+  var system='你是田丰（A0）。为当前个人用户生成个人版早报；只使用授权摘要/证据，不臆测本地原文，不编造数字。输出结论、今日重点、需决策、研究题。';
+  var user='用户：'+cp.user_id+'\n授权摘要：'+cp.summary+'\n证据标题：\n'+cp.evidence.slice(0,20).map(function(e){return '- '+e.title+'（'+(e.sha256||'').slice(0,12)+'）';}).join('\n');
+  var body={agent:'A0',system:system,purpose:'personal_brief',user:user};
+  try{
+    var ctl=new AbortController();var timer=setTimeout(function(){ctl.abort();},120000);
+    var r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},signal:ctl.signal,body:JSON.stringify(body)});
+    var env=await r.json();clearTimeout(timer);
+    if(!r.ok||!env||!env.ok)throw new Error((env&&env.error&&(env.error.message||env.error.code))||('HTTP '+r.status));
+    var text=(env.data&&env.data.text)||'';if(!text)throw new Error('empty_model_text');
+    out.textContent=text+'\n\n—— A0 · '+(env.binding||env.data.binding_resolved||'-')+(env.degraded?'（降级）':'（云端）');
+  }catch(e){out.textContent='[个人版早报失败] '+String(e.message||e).slice(0,200);}
+  finally{btn.disabled=false;}
+}
+function leadsList(){
+  var out=[]; var seen={};
+  departments().forEach(function(d){if(d.lead&&d.lead!=='A0'&&!seen[d.lead]){seen[d.lead]=1;out.push(d);}});
+  [{lead:'AI1',dept:'zhong',name:'中军帐·诸葛亮'},{lead:'ZHAOYUN',dept:'zhong',name:'中军帐·赵云治理'},{lead:'GUANYU',dept:'zhong',name:'中军帐·关羽整治'},{lead:'HUANGZHONG',dept:'zhong',name:'中军帐·黄忠验收'}].forEach(function(d){if(!seen[d.lead]){seen[d.lead]=1;out.push(d);}});
+  return out;
+}
+function leadDept(lead){
+  var d=departments().filter(function(x){return x.lead===lead;})[0];
+  return d?d.dept:'';
+}
+function ctxText(){
+  var ds=(state.data&&state.data.directives&&state.data.directives.directives)||[];
+  return ds.filter(function(x){return x.status==='open';}).slice(0,6).map(function(x){return (x.kind||'')+':'+(x.topic||'');}).join('\n');
+}
+function normalizeReport(lead,dept,text){
+  var d=null; var t=String(text||'').trim();
+  t=t.replace(/^\s*```(?:json)?/i,'').replace(/```\s*$/,'').trim();
+  var a=t.indexOf('{'),b=t.lastIndexOf('}');
+  if(a>=0&&b>a){try{d=JSON.parse(t.slice(a,b+1));}catch(e){d=null;}}
+  var arr=function(v){return Array.isArray(v)?v.map(function(x){return typeof x==='string'?x:JSON.stringify(x);}).filter(Boolean).slice(0,6):[];};
+  var st=(d&&d.status)||'amber'; if(['green','amber','red'].indexOf(st)<0)st='amber';
+  var yd=arr(d&&(d.yesterday_done||d.highlights)); var ip=arr(d&&d.in_progress); var bl=arr(d&&d.blockers); var dec=arr(d&&d.decision_requests);
+  var rt=[]; if(d&&Array.isArray(d.research_topics)){d.research_topics.forEach(function(x){if(typeof x==='string')rt.push({title:x,question:''});else if(x&&x.title)rt.push({title:String(x.title),question:String(x.question||'')});});}
+  if(!d){hi=[t.slice(0,500)];bl=['模型输出非结构化，需人工复核'];}
+  return {lead:lead,dept:dept,status:st,yesterday_done:yd,in_progress:ip,highlights:yd,blockers:bl,decision_requests:dec,research_topics:rt,source:'auto-13',created_at:new Date().toISOString()};
+}
+async function askLead(d){
+  var system='你是'+d.lead+'，零界'+(d.name||d.dept)+'负责人。只从你的职能面做部门早报；不编造具体数字，缺证据标需查证。'
+    +'只输出JSON：{"status":"green|amber|red","highlights":["3条以内工作要点"],"blockers":["阻塞/证据缺口"],"decision_requests":["需A0/老田决策事项"],"research_topics":[{"title":"研究题","question":"研究问题"}]}';
+  var y=new Date(Date.now()-86400000).toISOString().slice(0,10);
+  var user='报告日期 '+DAY+'｜统计昨天 '+y+'。\n请汇报：1)昨天实际完成；2)今天正在做；3)当前卡点/正在卡点；4)需A0/老田决策；5)研究题。\n当前未派单议题：\n'+(ctxText()||'（无）');
+  var ctl=new AbortController(); var timer=setTimeout(function(){ctl.abort();},90000);
+  try{
+    var r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},signal:ctl.signal,
+      body:JSON.stringify({agent:d.lead,system:system,purpose:'dept_report',user:user})});
+    var env=await r.json(); if(!r.ok||!env||!env.ok) throw new Error((env&&env.error&&(env.error.message||env.error.code))||('HTTP '+r.status));
+    var text=(env.data&&env.data.text)||''; if(!text) throw new Error('empty_model_text');
+    var rep=normalizeReport(d.lead,d.dept,text);
+    rep._binding=env.binding||(env.data&&env.data.binding_resolved)||'';rep._latency_ms=env.latency_ms;rep._degraded=!!env.degraded;return rep;
+  }finally{clearTimeout(timer);}
+}
+async function runAllDepartments(){
+  if(state.running)return;
+  var leads=leadsList();
+  if(!leads.length){$('state-note').textContent='无部门负责人可运行';return;}
+  state.running=true; var btn=$('btn-summary'); btn.disabled=true; btn.textContent='全席运行中…';
+  state.reports=state.reports.filter(function(r){return r.source!=='auto-13';});
+  var done=0,fail=[]; var queue=leads.slice();
+  function tick(){ $('run-progress').textContent='云端汇报 '+done+'/'+leads.length+(fail.length?('，失败 '+fail.length):''); }
+  tick();
+  async function worker(){
+    while(queue.length){
+      var d=queue.shift();
+      try{var rep=await askLead(d);state.reports.push(rep);}
+      catch(e){fail.push(d.lead+'：'+String(e.message||e).slice(0,60));}
+      done++;tick();saveReports();render();
+    }
+  }
+  await Promise.all([worker(),worker(),worker()]);
+  state.running=false;btn.disabled=false;btn.textContent='立即总结（全席运行）';
+  saveReports();render();renderSummary();
+  $('state-note').textContent='全席运行完成：成功 '+(leads.length-fail.length)+'/'+leads.length+(fail.length?('｜失败：'+fail.slice(0,3).join('；')):'');
+}
+function renderSummary(){
+  var rows=filteredRows(reportRows()), ts=topics();
+  if(state.dept) ts=ts.filter(function(t){return t.source_dept===state.dept||t.source_lead===deptLead(state.dept);});
+  var red=rows.filter(function(r){return r.status==='red';});
+  var amber=rows.filter(function(r){return r.status==='amber';});
+  var dec=[]; rows.forEach(function(r){(r.decision_requests||[]).forEach(function(x){dec.push(pLead(r.lead)+' / '+pDept(r.dept)+'：'+x);});});
+  var text='A0 速览 · '+new Date().toLocaleString()+(state.dept?(' · 仅看 '+state.dept):(' · 全部门'))+'\n';
+  text+='部门汇报 '+rows.length+' / '+expectedLeads()+'｜红 '+red.length+'｜黄 '+amber.length+'｜需决策 '+dec.length+' 项｜部门研究题 '+ts.length+' 条\n';
+  if(!rows.length) text+='\n今日部门早报尚未提交；页面不再用旧 Directive 充当研究题。请点「汇报工作」或等 07:50 负责人提交。\n';
+  if(red.length) text+='\n先处理红：\n'+red.map(function(r){return '- '+pLead(r.lead)+' '+pDept(r.dept)+'：'+(r.blockers||[]).join('；')||'无阻塞说明';}).join('\n');
+  if(amber.length) text+='\n黄：\n'+amber.map(function(r){return '- '+pLead(r.lead)+' '+pDept(r.dept)+'：'+(r.blockers||[]).join('；')||'有风险待补';}).join('\n');
+  if(dec.length) text+='\n需老田/A0决策：\n'+dec.slice(0,8).map(function(x){return '- '+x;}).join('\n');
+  if(ts.length) text+='\n部门研究题：\n'+ts.slice(0,8).map(function(t){return '- '+(t.title||'')+'（'+(t.source_lead||'-')+'）';}).join('\n');
+  var el=$('summary');el.hidden=false;el.textContent=text;
+}
+function render(){
+  var rows=filteredRows(reportRows()), ts=topics();
+  if(state.dept) ts=ts.filter(function(t){return (t.source_dept===state.dept)||(t.source_lead===deptLead(state.dept));});
+  $('cards').innerHTML=[card('部门汇报',rows.length+' / '+expectedLeads()),card('部门研究题',ts.length),card('需决策',rows.reduce(function(n,r){return n+(r.decision_requests||[]).length;},0)),card('红色',rows.filter(function(r){return r.status==='red';}).length)].join('');
+  $('depts').innerHTML=rows.length?rows.map(function(x){
+    return '<a class="item dept-card" href="/dept-chat?'+new URLSearchParams({lead:x.lead||'',dept:x.dept||''}).toString()+'"><div class="t">'+esc(pLead(x.lead))+'（'+esc(x.lead||'-')+'）· '+esc(pDept(x.dept))+' '+pill(x.status||'')+'</div>'
+      +'<div class="m">昨天完成：'+esc((x.yesterday_done||x.highlights||[]).join('；')||'未填')+'<br>正在做：'+esc((x.in_progress||[]).join('；')||'无')+'<br>当前卡点：'+esc((x.blockers||[]).join('；')||'无')+'<br>需决策：'+esc((x.decision_requests||[]).join('；')||'无')+'<br><span style="color:var(--link)">点对点对话 →</span></div></a>';
+  }).join(''):'<div class="meta">'+ (state.dept?'该部门今日暂无汇报。':'今日部门早报尚未汇总；可点「汇报工作」随时补一份，或等 07:50 部门负责人提交。不再用旧 Directive 凑研究题。') +'</div>';
+  $('topics').innerHTML=ts.length?ts.map(function(t){return '<a class="item" href="'+esc(specLink(t))+'"><div class="t">'+esc(t.title||'未命名研究题')+'</div><div class="m">'+esc(t.kind||'研究')+' · 来源 '+esc(t.source_lead||t.source_dept||'-')+'</div></a>';}).join(''):'<div class="meta">暂无研究题。</div>';
+  $('state-note').textContent=state.dept?('只看：'+state.dept):'全部部门';
+}
+function detailMessages(){var l=state.detail&&state.detail.lead;return (l&&chats[l])||[];}
+function renderDetail(){
+  var r=state.detail; if(!r)return;
+  var box=$('detail'); if(!box)return;
+  var topics=(r.research_topics||[]).map(function(t){return '<a class="btn" href="'+esc(specLink({id:'',title:(t&&t.title)||t,source_lead:r.lead,kind:'研究'}))+'" style="margin:2px 4px 2px 0">'+esc((t&&t.title)||t)+' → 人专项</a>';}).join('');
+  var msgs=detailMessages().map(function(m){return '<div class="msg '+(m.role==='user'?'user':'bot')+'">'+esc(m.text)+'</div>';}).join('');
+  box.innerHTML='<div class="row" style="justify-content:space-between"><div><b>'+esc(pLead(r.lead))+'（'+esc(r.lead||'-')+'）· '+esc(pDept(r.dept))+'</b> '+pill(r.status||'')+'</div><button class="btn" id="d-close" type="button">关闭</button></div>'
+    +'<div class="meta">昨天完成：'+esc((r.yesterday_done||r.highlights||[]).join('；')||'未填')+'<br>正在做：'+esc((r.in_progress||[]).join('；')||'无')+'<br>当前卡点：'+esc((r.blockers||[]).join('；')||'无')+'<br>需决策：'+esc((r.decision_requests||[]).join('；')||'无')+'</div>'
+    +(topics?'<div class="meta">研究题：</div><div>'+topics+'</div>':'')
+    +'<h2 style="margin:12px 0 4px">继续对话（'+esc(pLead(r.lead))+' · 云端模型）</h2>'
+    +'<div class="chat" id="d-chat">'+(msgs||'<div class="msg bot">点击下方输入，继续追问该部门负责人；只会发送文字，不自动派单。</div>')+'</div>'
+    +'<div class="row"><input id="d-input" placeholder="继续问 '+esc(r.lead||'')+'…" style="flex:1;min-width:0"><button class="btn primary" id="d-send" type="button">发送</button></div>'
+    +'<div class="meta" id="d-status">对话保存在本页；真实云端调用。</div>';
+  box.hidden=false;
+  $('d-close').onclick=function(){state.detail=null;box.hidden=true;};
+  $('d-send').onclick=sendDetail;
+  $('d-input').addEventListener('keydown',function(e){if(e.key==='Enter')sendDetail();});
+  var c=$('d-chat');c.scrollTop=c.scrollHeight;
+}
+function openDetail(lead){
+  var r=reportRows().filter(function(x){return x.lead===lead;})[0];
+  if(!r)return; state.detail=r; renderDetail(); $('detail').scrollIntoView({behavior:'smooth',block:'start'});
+}
+async function sendDetail(){
+  var r=state.detail;if(!r)return;var input=$('d-input');var q=(input.value||'').trim();if(!q)return;
+  var l=r.lead||''; chats[l]=chats[l]||[]; chats[l].push({role:'user',text:q,ts:Date.now()}); input.value=''; saveChats(); renderDetail();
+  var st=$('d-status'); if(st)st.textContent='云端思考中…'; var btn=$('d-send'); if(btn)btn.disabled=true;
+  var hist=chats[l].slice(-8).map(function(m){return (m.role==='user'?'老田：':'负责人：')+m.text;}).join('\n');
+  var system='你是'+l+'，零界'+(r.dept||'')+'负责人。继续回答老田的问题；只从职能面，不编造数字，缺证据标需查证；不自动派单。';
+  var body={agent:l,system:system,purpose:'dept_chat',user:'历史对话：\n'+hist+'\n\n当前问题：'+q};
+  try{
+    var ctl=new AbortController();var timer=setTimeout(function(){ctl.abort();},90000);
+    var resp=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},signal:ctl.signal,body:JSON.stringify(body)});
+    var env=await resp.json();clearTimeout(timer);
+    if(!resp.ok||!env||!env.ok)throw new Error((env&&env.error&&(env.error.message||env.error.code))||('HTTP '+resp.status));
+    var text=(env.data&&env.data.text)||'';if(!text)throw new Error('empty_model_text');
+    chats[l].push({role:'assistant',text:text,ts:Date.now()});saveChats();renderDetail();
+    if($('d-status'))$('d-status').textContent='已回复 · binding='+(env.binding||env.data.binding_resolved||'-')+(env.degraded?' · 降级':'');
+  }catch(e){
+    chats[l].push({role:'assistant',text:'[云端回复失败] '+String(e.message||e).slice(0,200),ts:Date.now()});saveChats();renderDetail();
+    if($('d-status'))$('d-status').textContent='回复失败，可重试';
+  }finally{var b=$('d-send');if(b)b.disabled=false;}
+}
+function fillDeptSelects(){
+  var ds=departments();
+  var opts='<option value="">全部部门</option>'+ds.map(function(d){return '<option value="'+esc(d.dept)+'">'+esc(d.name||pDept(d.dept))+(d.lead?(' · '+esc(pLead(d.lead))):'')+'</option>';}).join('');
+  $('dept-filter').innerHTML=opts;
+  $('f-dept').innerHTML=ds.map(function(d){return '<option value="'+esc(d.dept)+'">'+esc(d.name||d.dept)+(d.lead?(' · '+esc(d.lead)):'')+'</option>';}).join('');
+}
+function openModal(){fillDeptSelects();if(state.dept)$('f-dept').value=state.dept;$('modal').classList.add('open');$('modal').scrollIntoView({behavior:'smooth',block:'start'});setTimeout(function(){$('f-highlights').focus();},300);}
+function closeModal(){$('modal').classList.remove('open');}
+function lines(id){return $(id).value.split('\n').map(function(x){return x.trim();}).filter(Boolean);}
+function buildReport(){
+  var dept=$('f-dept').value, lead=deptLead(dept);
+  var r={lead:lead,dept:dept,lead_name:pLead(lead),dept_name:pDept(dept),status:$('f-status').value,yesterday_done:lines('f-highlights'),in_progress:[],highlights:lines('f-highlights'),blockers:lines('f-blockers'),decision_requests:lines('f-decisions'),research_topics:lines('f-research').map(function(x){return {title:x,question:''};}),created_at:new Date().toISOString(),human:true};
+  return r;
+}
+function saveReport(){var r=buildReport();if(!r.dept){$('state-note').textContent='请选择部门';return;}state.reports.push(r);saveReports();render();if($('summary').hidden===false)renderSummary();closeModal();$('state-note').textContent='汇报已保存在本页（本地），可随时总结或复制给田丰。';}
+function copyReport(){var r=buildReport();state.lastCard=r;var t=JSON.stringify(r,null,2);navigator.clipboard.writeText(t).then(function(){$('state-note').textContent='汇报卡已复制。';}).catch(function(){$('state-note').textContent='复制失败，请手动下载。';});}
+function downloadReport(){var r=buildReport();var b=new Blob([JSON.stringify(r,null,2)],{type:'application/json'});var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='human_brief_'+(r.dept||'dept')+'_'+DAY+'.json';a.click();URL.revokeObjectURL(a.href);}
+async function main(){
+  loadReports();loadChats();whoAmI();loadConsent();
+  var tb=document.querySelector('.toolbar');if(tb&&$('modal'))tb.insertAdjacentElement('afterend',$('modal'));
+  try{
+    var r=await fetch('/api/hq/snapshot',{cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    var p=await r.json();if(!(p&&p.ok&&p.data))throw new Error('bad payload');
+    state.data=p.data;fillDeptSelects();render();
+    $('meta').textContent='A0 简报 · '+new Date().toLocaleString()+' · 部门 '+departments().length+' 个';
+  }catch(e){
+    $('meta').textContent='加载失败';
+    $('error').innerHTML='<div class="err">简报加载失败：'+esc(e.message)+'（需登录 /hq）</div>';
+  }
+}
+$('btn-summary').onclick=function(){runAllDepartments();};
+$('btn-pick').onclick=function(){$('lib-files').click();};
+$('lib-files').addEventListener('change',function(e){scanLocal(e.target.files);});
+$('authorize').addEventListener('change',function(){saveConsent(this.checked);$('btn-personal').disabled=!(localState.docs.length&&this.checked);});
+$('btn-personal').onclick=personalBrief;
+$('btn-quick').onclick=function(){renderSummary();$('state-note').textContent='已汇总当前已提交数据 · '+new Date().toLocaleTimeString();};
+$('btn-report').onclick=function(){openModal();$('state-note').textContent='汇报工作：填写后点保存到本页';};
+$('dept-filter').onchange=function(){state.dept=this.value;render();if(!$('summary').hidden)renderSummary();};
+$('btn-save').onclick=saveReport;
+$('btn-copy').onclick=copyReport;
+$('btn-download').onclick=downloadReport;
+$('btn-close').onclick=closeModal;
+$('modal').addEventListener('click',function(e){if(e.target===$('modal'))closeModal();});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal();});
+window.addEventListener('error',function(e){var el=$('error');if(el)el.innerHTML='<div class="err">页面脚本错误：'+esc(e.message||'unknown')+'。请 Ctrl+F5 强刷。</div>';});
+window.__briefingReady='v13-20261103-1116';
+var build=$('build');if(build)build.textContent='v13 · 11:16';
+main();
+})();
+</script>
+</body>
+</html>

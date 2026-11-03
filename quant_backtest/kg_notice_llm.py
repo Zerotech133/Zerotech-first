@@ -363,8 +363,19 @@ def main():
 
     if args.backfill:
         # 每日链模式：Ollama 挂了不阻断（exit 0），只做已判行回填
+        # [2026-11-03 B] 分批补采：--limit >0 时本轮只判前 N 条，批次完成即 rc0；
+        # 未完成积压由后续轮次续跑（events.jsonl 已判行自动跳过）
         if ollama_ok():
             unhit, _ = load_events()
+            limit = max(0, int(args.limit or 0))
+            if limit:
+                before = len(unhit)
+                _, done = load_done()
+                unhit = [r for r in unhit if r["id"] not in done]
+                unjudged = len(unhit)
+                unhit = unhit[:limit]
+                print("分批补采：总待判 %d，未判 %d，本轮上限 %d，本轮处理 %d"
+                      % (before, unjudged, limit, len(unhit)))
             run(unhit, "G6b 判定")
         else:
             print("Ollama 不可达，跳过判定（断点续跑下日自动补）")

@@ -17,7 +17,7 @@
     "roles": {
       "type": "array",
       "uniqueItems": true,
-      "items": {"type": "string", "enum": ["ADMIN", "USER", "TRADER", "RESEARCHER", "RISK_MANAGER", "VIEWER"]}
+      "items": {"type": "string", "enum": ["ADMIN", "USER", "TRADER", "RESEARCHER", "RISK_MANAGER", "VIEWER", "APPROVER"]}
     },
     "permissions": {
       "type": "array",

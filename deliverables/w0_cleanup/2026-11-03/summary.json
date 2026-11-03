@@ -1,0 +1,22 @@
+{
+  "generated_at": "2026-11-03T14:55:54+08:00",
+  "doing": 30,
+  "worktrees": 38,
+  "worktree_actions": {
+    "dirty_review": 6,
+    "active_task_review": 30,
+    "stale_review": 1,
+    "unregistered_review": 1
+  },
+  "doing_owners": {
+    "DSH-Lead": 27,
+    "intel-entity-dev(DSH)": 1,
+    "hermes-contract-dev": 1,
+    "jev-ops-dev": 1
+  },
+  "targets": {
+    "doing": 8,
+    "worktree": 20,
+    "parked": 8
+  }
+}

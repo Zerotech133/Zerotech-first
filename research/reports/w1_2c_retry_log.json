@@ -8,7 +8,37 @@
    "embed_result": "BLOCKED TimeoutError 30s",
    "action": "postpone retry to 08:40",
    "reason": "other session keeps qwen loaded; bge-m3/CPU queued timeout"
+  },
+  {
+   "at": "2026-11-03T08:54:47+08:00",
+   "held_model": "qwen3.5:9b",
+   "vram": 7204702780,
+   "expires_at": "2026-11-03T08:49:30+08:00",
+   "embed_result": "BLOCKED TimeoutError 30s",
+   "action": "continue blocked; W1-2c remains external-blocked"
+  },
+  {
+   "at": "2026-11-03T08:55:40+08:00",
+   "held_model": "qwen3.5:9b",
+   "vram": 7204702780,
+   "expires_at": "2026-11-03T08:49:30+08:00",
+   "embed_result": "BLOCKED TimeoutError 30s",
+   "action": "reminder retry #2; still blocked; next scheduled 09:30"
+  },
+  {
+   "at": "2026-11-03T09:30:59+08:00",
+   "action": "cloud_fallback_used",
+   "model": "deepseek-flash",
+   "result": "strict judge 5 pairs; multi 12->17; lenient 44 pairs/multi 31 but 37 low-lexical suspicious; honest conclusion: <30"
+  },
+  {
+   "at": "2026-11-03T09:40:40+08:00",
+   "action": "local_retry_after_gpu_free",
+   "model": "bge-m3+qwen3.5:9b",
+   "result": "clusters 1029->979; tool multi 23->31 (达标); quality: 3 clear false merges, raw recount 12->19; needs human review"
   }
  ],
- "last_check": "2026-11-03T08:06:34+08:00"
+ "last_check": "2026-11-03T08:06:34+08:00",
+ "next_retry": "2026-11-03T09:30:00+08:00",
+ "resolution": "local run completed when GPU freed; machine threshold met but merges need human spot-check; cloud fallback available"
 }
