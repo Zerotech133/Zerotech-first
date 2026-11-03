@@ -1,0 +1,9 @@
+# 6 MCP server · 生产解释器 + Hermes 同构 env · tools/list stdout 编码检查（修复后）
+# 期望：6/6 UTF8_OK（修复前同一检查为 GBK 字节，见 red 测试日志/任务-44 证据）
+d1-research    interp=python   rc=0 stdout=UTF8_OK first_desc=D1 鲁肃投研快照：池内股票、已研究/可买/盯盘/pending 汇总；可按代码
+dw-governance  interp=python   rc=0 stdout=UTF8_OK first_desc=数据仓数据集统计：总量、登记数、有取数入口数、按域/类型分布。只读。
+huangzhong     interp=python   rc=0 stdout=UTF8_OK first_desc=黄忠验收现状聚合：六条复核（passed/total、各条 status/mea
+dw-quality     interp=python   rc=0 stdout=UTF8_OK first_desc=数据质量快照：聚合 freshness/quality/manifest/bac
+dw-catalog     interp=python   rc=0 stdout=UTF8_OK first_desc=catalog 快照：版本/表数/sha256/登记一致性/漂移抽样（只读）。
+kb-corpus      interp=python   rc=0 stdout=UTF8_OK first_desc=知识库状态：文档数/知识单元数/RAG 索引/抽检合规（调 kb_read_ap
+SUMMARY utf8_ok=6/6
