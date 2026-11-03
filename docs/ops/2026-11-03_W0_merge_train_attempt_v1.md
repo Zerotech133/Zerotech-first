@@ -61,5 +61,5 @@
 - `UI-UNIFY-MANIFEST-20261103`：完整 fast 门 **PASS（无新增失败）**；
 - datawarehouse：0F；
 - 数据引导：`tools/w0_worktree_bootstrap.py` 已复制 catalog/registry/xueqiu db；
-- 结论：**merge-ready**，11-04 15:00 窗口优先合；
+- 结论：**merge-ready**，11-04 16:30 主窗口优先合（须 rebase + 复跑）；
 - 其它候选仍需各自 fast 门/ADR（CAOCAO-FRAME 需组合注册 ADR）。

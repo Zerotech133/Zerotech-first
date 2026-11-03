@@ -212,7 +212,7 @@ Step 6 上线/观测：健康探针 + SLO + 组合账本登记；退役走 retir
 | 12 | 认证未统一/autoSession | 单认证 + 安全默认值先修 | L1 | 三态探针通过；autoSession 关 |
 | 13 | 双计费体系冲突 | 定商业化 Of Record（零界 commercial vs 智策 billing） | L1 决策 | 归档范围确认 |
 | 14 | 单库范围过大 | L2 只统一共享业务数据，运行态文件保留 | L2 决策 | 范围写入 ADR-016 附录 |
-| 15 | P1 resolver 缺口 | `tools/resolver.py`（复用 composition 注册表；agent/skill/strategy/dataset/page/job） | **已完成 2026-11-03** | `--all` 6 组合 126 refs / 0 error / 0 warning |
+| 15 | P1 resolver 缺口 | `tools/resolver.py`（复用 composition 注册表；agent/skill/strategy/dataset/page/job） | **已完成 2026-11-03** | `--all` 6 组合 131 refs / 0 error / 0 warning（QA 11-04 复核；126→131 为 lusu 合法 +5） |
 | 16 | kernel guard bootstrap | 手动门禁开关 → 自动 | P1 | 无 ADR 改内核被拒 |
 | 17 | 组合文件触发测试门 | devtask/test_gate 加组合跳过/专用 gate | P1 | 组合改动只跑组合门 |
 | 18 | 并发清理事故 | AGENTS.md 判例 + 写域/锁 + 未跟踪交付物保护 | 立即 | 判例入库；无再次发生 |
