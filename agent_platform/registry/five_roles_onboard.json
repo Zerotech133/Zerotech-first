@@ -10,7 +10,12 @@
       "seat": "指挥部·参谋长",
       "department": "chief_line",
       "reports_to": "老田",
-      "duties": ["汇总", "组织会议", "任务拆解", "推进与验收编排"],
+      "duties": [
+        "汇总",
+        "组织会议",
+        "任务拆解",
+        "推进与验收编排"
+      ],
       "llm_binding": "glm/glm-5.3",
       "role_profile": "product_rd_chief",
       "prompt_file": "agent_platform/prompts/a0_chief.md",
@@ -24,12 +29,18 @@
       "seat": "指挥部·军师",
       "department": "academy",
       "reports_to": "A0",
-      "duties": ["反向质询", "pre-mortem", "方法论研究", "风险挑刺"],
+      "duties": [
+        "反向质询",
+        "pre-mortem",
+        "方法论研究",
+        "风险挑刺"
+      ],
       "llm_binding": "openai/gpt-6.0",
       "role_profile": "ai_methodology_researcher",
       "prompt_file": "agent_platform/prompts/ai_methodology_researcher.md",
       "status": "active",
-      "onboarded_at": "2026-11-04"
+      "onboarded_at": "2026-11-04",
+      "admin_reports_to": "ACAD1"
     },
     {
       "agent_id": "ZHAOYUN",
@@ -38,7 +49,12 @@
       "seat": "指挥部·治理官",
       "department": "command_hq",
       "reports_to": "A0",
-      "duties": ["治理", "审计", "独立证据复核", "记忆与评估飞轮"],
+      "duties": [
+        "治理",
+        "审计",
+        "独立证据复核",
+        "记忆与评估飞轮"
+      ],
       "llm_binding": "deepseek/deepseek-v4-pro",
       "role_profile": "governance_seat",
       "prompt_file": "",
@@ -52,12 +68,18 @@
       "seat": "指挥部·整治官",
       "department": "academy",
       "reports_to": "A0",
-      "duties": ["代码审计", "技术债", "门禁", "整改闭环"],
+      "duties": [
+        "代码审计",
+        "技术债",
+        "门禁",
+        "整改闭环"
+      ],
       "llm_binding": "deepseek/deepseek-flash",
       "role_profile": "guanyu_code_audit_governance",
       "prompt_file": "agent_platform/prompts/guanyu_code_audit_governance.md",
       "status": "active",
-      "onboarded_at": "2026-11-04"
+      "onboarded_at": "2026-11-04",
+      "admin_reports_to": "A0"
     },
     {
       "agent_id": "HUANGZHONG",
@@ -66,12 +88,18 @@
       "seat": "指挥部·验收官",
       "department": "academy",
       "reports_to": "A0",
-      "duties": ["验收标准", "抽样", "质量终检", "放行/拒收"],
+      "duties": [
+        "验收标准",
+        "抽样",
+        "质量终检",
+        "放行/拒收"
+      ],
       "llm_binding": "glm/glm-5.3",
       "role_profile": "delivery_acceptance_chief",
       "prompt_file": "agent_platform/prompts/delivery_acceptance_chief.md",
       "status": "active",
-      "onboarded_at": "2026-11-04"
+      "onboarded_at": "2026-11-04",
+      "admin_reports_to": "A0"
     }
   ]
 }

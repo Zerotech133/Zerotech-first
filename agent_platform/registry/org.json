@@ -3162,14 +3162,15 @@
           "grade": "E3",
           "grade_note": "补档初始档，待 KPI 观察后调整",
           "attributes": {},
-          "reports_to": "A0",
+          "reports_to": "ACAD1",
           "parent_node_keys": [
             "acad1_core"
           ],
           "actual_position": "军师（反向军师/方法论）",
           "command_seat": "指挥部·军师",
           "onboarded_at": "2026-11-04",
-          "office_title": "军师（反向军师/方法论）"
+          "office_title": "军师（反向军师/方法论）",
+          "command_reports_to": "A0"
         },
         {
           "agent_id": "GUANYU",
@@ -3235,7 +3236,8 @@
           "actual_position": "整治官（代码审计/技术债）",
           "command_seat": "指挥部·整治官",
           "onboarded_at": "2026-11-04",
-          "office_title": "整治官（代码审计/技术债）"
+          "office_title": "整治官（代码审计/技术债）",
+          "command_reports_to": "A0"
         },
         {
           "agent_id": "PROD1",
@@ -3306,7 +3308,8 @@
           "actual_position": "验收官",
           "command_seat": "指挥部·验收官",
           "onboarded_at": "2026-11-04",
-          "office_title": "验收官"
+          "office_title": "验收官",
+          "command_reports_to": "A0"
         }
       ],
       "lead_appointed": {
@@ -3340,7 +3343,8 @@
           "command_seat": "指挥部·整治官",
           "onboarded_at": "2026-11-04",
           "office_title": "整治官（代码审计/技术债）",
-          "role_profile": "guanyu_code_audit_governance"
+          "role_profile": "guanyu_code_audit_governance",
+          "command_reports_to": "A0"
         },
         {
           "agent_id": "HUANGZHONG",
@@ -3354,7 +3358,8 @@
           "command_seat": "指挥部·验收官",
           "onboarded_at": "2026-11-04",
           "office_title": "验收官",
-          "role_profile": "delivery_acceptance_chief"
+          "role_profile": "delivery_acceptance_chief",
+          "command_reports_to": "A0"
         }
       ],
       "agents_note": "2026-10-29 A：agents=formal(7)+liaison(2) 的并集；GUANYU/HUANGZHONG 为指挥部双身份，不占研究院正式编制。"
