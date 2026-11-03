@@ -132,7 +132,7 @@ function renderSeats() {
     return;
   }
   $("seat-grid").innerHTML = seats.map((s) => {
-    const wip = SEAT_WIP[s.id] || 0;
+    const wip = (SEAT_WIP[s.id] || []).length;
     const caps = [DISCIPLINE[s.discipline] || s.discipline, s.group, s.grade].filter(Boolean);
     return `<button class="seat-card ${s.id === "ARCH1" ? "is-lead" : ""}" type="button" data-seat="${esc(s.id)}">
       <div class="seat-top"><span><span class="seat-id">${esc(s.id)}</span><span class="seat-name">${esc(s.name)}</span></span><span class="seat-grade">${esc(s.grade || "—")}</span></div>
