@@ -14,6 +14,8 @@ standards:
   owner_consumer_slo_matrix: docs/standards/2026-11-03_OWNER_CONSUMER_SLO_MATRIX.md
   envelope_schema: docs/standards/schemas/interface_envelope_v1.schema.json
   error_schema: docs/standards/schemas/interface_error_v1.schema.json
+  f1_schema_wiring: docs/standards/2026-11-03_F1接口Schema接线说明_v1.md
+  schema_index: docs/standards/schemas/README.md
 method_enum:
 - GET
 - POST
@@ -142,6 +144,7 @@ interfaces:
     note: ADR-018 契约 zerobond.selection.v2_acad1_pool@1.0.0；JSON 仅为只读投影（当前 36 vs PG
       30 双池并存，F2 收口）
   schema: acad1_pool/v2
+  schema_file: docs/standards/schemas/acad1_pool_v2.schema.json
   auth: portal-token
   write: false
   paper_only: true
@@ -257,6 +260,7 @@ interfaces:
     ref: agent_platform/data/pool_review/ + agent_platform/data/shadow/shadow_ledger.jsonl
     note: 池内研究聚合（T1/T2/N1/F1 + D1 结论）；不管理策略、不接实盘
   schema: d1_research/v1
+  schema_file: docs/standards/schemas/d1_research_v1.schema.json
   auth: portal-token
   write: false
   paper_only: true
@@ -316,6 +320,7 @@ interfaces:
     ref: agent_platform/data/d1_decisions.jsonl
     note: d1_decision/v1 落账；decision_id 权威生成方（另见 id_chain deviations 的引擎格式）
   schema: d1_decision/v1
+  schema_file: docs/standards/schemas/d1_decision_v1.schema.json
   auth: portal-token+roles
   write: true
   paper_only: true
@@ -344,6 +349,7 @@ interfaces:
     kind: ledger
     ref: agent_platform/data/d1_decisions.jsonl
   schema: d1_decision/v1
+  schema_file: docs/standards/schemas/d1_decision_v1.schema.json
   auth: portal-token
   write: false
   paper_only: true
@@ -432,6 +438,7 @@ interfaces:
     ref: agent_platform/data/d1_handoffs.jsonl
     note: 只落交棒回执（d1h-）；禁止携带 order/qty/broker/execute/trade_id/fill/account（IFS-05）
   schema: d1_handoff/v2
+  schema_file: docs/standards/schemas/d1_handoff_v2.schema.json
   auth: portal-token+roles
   write: true
   paper_only: true
@@ -463,6 +470,7 @@ interfaces:
     kind: ledger
     ref: agent_platform/data/d1_handoffs.jsonl
   schema: d1_handoff/v2
+  schema_file: docs/standards/schemas/d1_handoff_v2.schema.json
   auth: portal-token
   write: false
   paper_only: true
@@ -493,6 +501,7 @@ interfaces:
     kind: ledger
     ref: agent_platform/data/watch_plans.jsonl
   schema: watch_plan/v1
+  schema_file: docs/standards/schemas/watch_plan_v1.schema.json
   auth: portal-token
   write: false
   paper_only: true
@@ -524,6 +533,7 @@ interfaces:
     ref: agent_platform/data/watch_plans.jsonl
     note: handoff→armed watch_plan 消费器（当前缺失，F3 WO-IFS-WATCHCONS）
   schema: watch_plan/v1
+  schema_file: docs/standards/schemas/watch_plan_v1.schema.json
   auth: internal-only
   write: true
   paper_only: true
@@ -553,6 +563,8 @@ interfaces:
     ref: agent_platform/data/watch_triggers.jsonl
     note: 当前 watch_trigger_adapter 直接建 confirmation（无独立 trigger 账本），F3 补 trigger_id
   schema: trigger_event/v1
+  schema_file: docs/standards/schemas/watch_plan_v1.schema.json#/$defs/trigger_event
+  schema_note: watch 与 trigger 合并定义：watch_plan_v1.schema.json#/$defs/trigger_event（F1）
   auth: internal-only
   write: true
   paper_only: true
@@ -581,8 +593,9 @@ interfaces:
   source_of_truth:
     kind: ledger
     ref: agent_platform/data/confirmations/<confirmation_id>.json
-    note: trading_bot_confirmation/v1；幂等按 source_report_id（同 report_id 返回同一记录）
+    note: trading_bot_confirmation/v2（F1 对齐；v2 四 ID 必填）；幂等按 source_report_id（同 report_id 返回同一记录）
   schema: trading_bot_confirmation/v2
+  schema_file: docs/standards/schemas/trading_bot_confirmation_v2.schema.json
   auth: portal-token+roles
   write: true
   paper_only: true
@@ -616,6 +629,7 @@ interfaces:
     kind: ledger
     ref: agent_platform/data/confirmations/
   schema: trading_bot_confirmation/v2
+  schema_file: docs/standards/schemas/trading_bot_confirmation_v2.schema.json
   auth: portal-token
   write: false
   paper_only: true
@@ -644,7 +658,9 @@ interfaces:
     kind: ledger
     ref: agent_platform/data/paper/paper_ledger.jsonl
     note: 官方 paper 账本（hash 链）；trade_id 由本接口生成（当前仅 hash，F4 补 trade_id）
-  schema: paper_ledger/v1
+  schema: paper_receipt/v1
+  schema_file: docs/standards/schemas/paper_receipt_v1.schema.json
+  schema_note: paper_receipt/v1 承载 trade_id + 四 ID + hash 链字段（F1 对齐；不接实盘）
   auth: internal-only
   write: true
   paper_only: true
@@ -836,7 +852,9 @@ interfaces:
     kind: ledger
     ref: agent_platform/data/shadow/decision_outcomes.jsonl
     note: T+1 sidecar；当前行无 outcome_id（F5 补），decision_id 可与 shadow_ledger 对账
-  schema: d1_outcome/v1
+  schema: outcome/v1
+  schema_file: docs/standards/schemas/outcome_v1.schema.json
+  schema_note: outcome/v1 承载 outcome_id + 上游 ID；行情缺失显式 null（F1 不伪造）
   auth: internal-only
   write: true
   paper_only: true

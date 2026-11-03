@@ -1,0 +1,142 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "paper_receipt.v1",
+  "title": "Paper Receipt v1（trade_id 可追）",
+  "description": "IFS F1 单接口 schema：interface_id=paper.execution.record（唯一执行入口 trading_bot_flow.decide→paper_book 的内部契约）。落官方 paper 账 agent_platform/data/paper/paper_ledger.jsonl（hash 链），承载 trade_id + 四 ID 追溯；paper_only=true、trading_permitted=false，不接实盘。",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "trade_id",
+    "confirmation_id",
+    "decision_id",
+    "handoff_id",
+    "watch_plan_id",
+    "date",
+    "symbol",
+    "action",
+    "price",
+    "prev_hash",
+    "hash",
+    "paper_only",
+    "trading_permitted",
+    "mode"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "paper_receipt/v1"
+    },
+    "trade_id": {
+      "type": "string",
+      "pattern": "^trd-\\d{8}-[0-9A-F]{8}$",
+      "description": "ID chain 权威节点 trade_id（由唯一执行入口生成）"
+    },
+    "confirmation_id": {
+      "type": "string",
+      "pattern": "^CFM-[0-9A-F]{12}$"
+    },
+    "decision_id": {
+      "anyOf": [
+        {"type": "string", "pattern": "^D1-\\d{8}-[0-9a-f]{10}$"},
+        {"type": "string", "pattern": "^d1-\\d{14}-[0-9a-f]{6}$"}
+      ]
+    },
+    "handoff_id": {
+      "type": "string",
+      "pattern": "^d1h-\\d{14}-[0-9a-f]{6}$"
+    },
+    "watch_plan_id": {
+      "type": "string",
+      "pattern": "^wp-\\d{8}-[0-9a-f]{6}$"
+    },
+    "trigger_id": {
+      "type": ["string", "null"],
+      "pattern": "^trg-\\d{8}-[0-9a-f]{6}$"
+    },
+    "date": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "symbol": {
+      "type": "string",
+      "pattern": "^(sh|sz|bj)?\\d{6}$"
+    },
+    "name": {
+      "type": ["string", "null"]
+    },
+    "action": {
+      "type": "string",
+      "enum": ["buy", "close", "hold", "watch"]
+    },
+    "recommendation": {
+      "type": ["string", "null"]
+    },
+    "price": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "target_weight": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "maximum": 1
+    },
+    "weight_before": {
+      "type": ["number", "null"]
+    },
+    "weight_after": {
+      "type": ["number", "null"]
+    },
+    "prev_hash": {
+      "type": "string",
+      "pattern": "^(|[0-9a-f]{64})$",
+      "description": "hash 链上一行（首行为空串）"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "paper_only": {
+      "type": "boolean",
+      "const": true
+    },
+    "trading_permitted": {
+      "type": "boolean",
+      "const": false
+    },
+    "mode": {
+      "type": "string",
+      "const": "paper"
+    }
+  },
+  "propertyNames": {
+    "not": {
+      "enum": ["broker", "account", "fill", "real_order_id", "order_id"]
+    }
+  },
+  "additionalProperties": true,
+  "examples": [
+    {
+      "schema_version": "paper_receipt/v1",
+      "trade_id": "trd-20261103-1A2B3C4D",
+      "confirmation_id": "CFM-1A2B3C4D5E6F",
+      "decision_id": "D1-20261102-8f3a1c2b90",
+      "handoff_id": "d1h-20261102170000-a1b2c3",
+      "watch_plan_id": "wp-20261102-a1b2c3",
+      "trigger_id": "trg-20261103-0f1e2d",
+      "date": "2026-11-03",
+      "symbol": "sz003006",
+      "name": "百亚股份",
+      "action": "buy",
+      "recommendation": "BUY",
+      "price": 22.1,
+      "target_weight": 0.05,
+      "weight_before": 0.0,
+      "weight_after": 0.05,
+      "prev_hash": "",
+      "hash": "0f1e2d3c4b5a69788796a5b4c3d2e1f00f1e2d3c4b5a69788796a5b4c3d2e1f0",
+      "paper_only": true,
+      "trading_permitted": false,
+      "mode": "paper"
+    }
+  ]
+}

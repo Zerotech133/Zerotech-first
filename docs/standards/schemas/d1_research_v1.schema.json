@@ -1,0 +1,177 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "d1_research.v1",
+  "title": "D1 Research Snapshot v1",
+  "description": "IFS F1 单接口 schema：interface_id=d1.research.get（GET /api/d1/research）。只读聚合（pool_review + shadow_ledger + research_plan/technical_levels），不管理策略、不接实盘；source 必须声明真源与新鲜度（IFS-01/IFS-07）。",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "owner",
+    "readonly",
+    "mode",
+    "source",
+    "summary",
+    "items"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "d1_research/v1"
+    },
+    "generated_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "owner": {
+      "type": "string",
+      "const": "D1"
+    },
+    "readonly": {
+      "type": "boolean",
+      "const": true
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["official", "shadow", "mixed", "unknown"],
+      "description": "数据来源模式（官方池/影子池/混合）；unknown 必须配 warnings"
+    },
+    "source": {
+      "type": "object",
+      "required": ["source_mode", "source_of_truth"],
+      "properties": {
+        "source_mode": {
+          "type": "string",
+          "enum": ["aggregate", "projection", "pg_official", "ledger"]
+        },
+        "source_of_truth": {
+          "type": "string",
+          "minLength": 1
+        },
+        "as_of": {
+          "type": ["string", "null"]
+        },
+        "freshness_s": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "stale": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": true
+    },
+    "summary": {
+      "type": "object",
+      "required": ["total"],
+      "properties": {
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "researched": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "buyable": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "watch": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pending": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": true
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["code"],
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^\\d{6}$"
+          },
+          "name": {
+            "type": ["string", "null"]
+          },
+          "tier": {
+            "type": ["string", "null"]
+          },
+          "status": {
+            "type": ["string", "null"],
+            "description": "researched / buyable / watch / pending 等；缺失显式 null"
+          },
+          "pool_id": {
+            "type": ["string", "null"],
+            "pattern": "^ACAD1-REC-\\d{8}$"
+          },
+          "case_id": {
+            "type": ["string", "null"],
+            "pattern": "^D1-CASE-\\d{8}-[0-9A-Za-z._-]{1,16}$"
+          },
+          "decision_id": {
+            "type": ["string", "null"],
+            "description": "已裁决时携带 decision_id（ID chain）"
+          },
+          "levels": {
+            "type": ["object", "null"]
+          },
+          "rationale": {
+            "type": ["string", "null"]
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    }
+  },
+  "propertyNames": {
+    "not": {
+      "enum": ["order", "qty", "quantity", "broker", "execute", "fill", "account"]
+    }
+  },
+  "additionalProperties": true,
+  "examples": [
+    {
+      "schema_version": "d1_research/v1",
+      "generated_at": "2026-11-03T07:05:00+08:00",
+      "owner": "D1",
+      "readonly": true,
+      "mode": "shadow",
+      "source": {
+        "source_mode": "aggregate",
+        "source_of_truth": "agent_platform/data/pool_review/ + shadow/shadow_ledger.jsonl",
+        "as_of": "2026-11-03",
+        "freshness_s": 3600,
+        "stale": false
+      },
+      "summary": {"total": 1, "researched": 1, "buyable": 1, "watch": 0, "pending": 0},
+      "items": [
+        {
+          "code": "003006",
+          "name": "百亚股份",
+          "tier": "T2",
+          "status": "researched",
+          "pool_id": "ACAD1-REC-20261102",
+          "case_id": null,
+          "decision_id": null,
+          "levels": {"support": 21.8, "resistance": 24.6},
+          "rationale": "T2 命中 chanlun+ninedim"
+        }
+      ],
+      "warnings": []
+    }
+  ]
+}

@@ -1,0 +1,144 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "d1_handoff.v2",
+  "title": "D1 Handoff Receipt v2",
+  "description": "IFS F1 单接口 schema：interface_id=d1.handoff.create / d1.handoff.list。四 ID 贯通（decision_id + handoff_id + watch_plans[].watch_plan_id），并禁止执行字段（IFS-05：order/qty/broker/execute/trade_id/fill/account 一律拒绝）。receipt_id 为 deprecated alias。",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "handoff_id",
+    "decision_id",
+    "target",
+    "action",
+    "rationale",
+    "created_at",
+    "paper_only",
+    "not_a_trade",
+    "watch_plans"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "d1_handoff/v2"
+    },
+    "handoff_id": {
+      "type": "string",
+      "pattern": "^d1h-\\d{14}-[0-9a-f]{6}$",
+      "description": "唯一交棒 ID（ID chain 权威节点）"
+    },
+    "receipt_id": {
+      "type": ["string", "null"],
+      "pattern": "^d1h-\\d{14}-[0-9a-f]{6}$",
+      "description": "deprecated alias：仅兼容读，统一写 handoff_id"
+    },
+    "decision_id": {
+      "description": "上游 D1 裁决（ID chain：decision_id→handoff_id），v2 必填",
+      "anyOf": [
+        {"type": "string", "pattern": "^D1-\\d{8}-[0-9a-f]{10}$"},
+        {"type": "string", "pattern": "^d1-\\d{14}-[0-9a-f]{6}$"}
+      ]
+    },
+    "case_id": {
+      "type": ["string", "null"],
+      "pattern": "^D1-CASE-\\d{8}-[0-9A-Za-z._-]{1,16}$"
+    },
+    "target": {
+      "type": "string",
+      "enum": ["WA1", "WA2", "WA3", "TR1", "TR2", "TR3", "WATCH_TOWER"]
+    },
+    "action": {
+      "type": "string",
+      "enum": ["watch", "trade", "no_trade"]
+    },
+    "rationale": {
+      "type": "string",
+      "minLength": 1
+    },
+    "buy_zone": {
+      "type": ["array", "null"],
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {"type": "number", "exclusiveMinimum": 0}
+    },
+    "stop": {
+      "type": ["number", "null"],
+      "exclusiveMinimum": 0
+    },
+    "trigger": {
+      "type": ["object", "null"]
+    },
+    "watch_plans": {
+      "type": "array",
+      "minItems": 1,
+      "description": "v2：handoff 必须给出可消费的 armed watch plan（F3 消费器输入）",
+      "items": {
+        "type": "object",
+        "required": ["watch_plan_id", "status", "symbol", "conditions"],
+        "properties": {
+          "watch_plan_id": {
+            "type": "string",
+            "pattern": "^wp-\\d{8}-[0-9a-f]{6}$"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["armed", "triggered", "expired", "cancelled"]
+          },
+          "symbol": {
+            "type": "string",
+            "pattern": "^(sh|sz|bj)?\\d{6}$"
+          },
+          "conditions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {"type": "object"}
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "paper_only": {
+      "type": "boolean",
+      "const": true
+    },
+    "not_a_trade": {
+      "type": "boolean",
+      "const": true
+    }
+  },
+  "propertyNames": {
+    "not": {
+      "enum": ["order", "qty", "quantity", "broker", "execute", "trade_id", "fill", "account"]
+    }
+  },
+  "additionalProperties": true,
+  "examples": [
+    {
+      "schema_version": "d1_handoff/v2",
+      "handoff_id": "d1h-20261102170000-a1b2c3",
+      "receipt_id": null,
+      "decision_id": "D1-20261102-8f3a1c2b90",
+      "case_id": "D1-CASE-20261102-003006",
+      "target": "WA1",
+      "action": "watch",
+      "rationale": "回踩 22.0 附近观察企稳后触发",
+      "buy_zone": [21.5, 22.5],
+      "stop": 20.8,
+      "trigger": {"price_gte": 22.0, "confirm_bars": 2},
+      "watch_plans": [
+        {
+          "watch_plan_id": "wp-20261102-a1b2c3",
+          "status": "armed",
+          "symbol": "sz003006",
+          "conditions": [{"type": "price_gte", "value": 22.0}]
+        }
+      ],
+      "created_at": "2026-11-02T17:45:00+08:00",
+      "paper_only": true,
+      "not_a_trade": true
+    }
+  ]
+}
