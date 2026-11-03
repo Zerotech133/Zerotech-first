@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """H3 strategy 测试：StrategySpec v1 校验/编译/描述/策略库（离线临时 ANALYSIS_WORK）。
 
-契约：`C:\\项目\\deliverables\\2026-11-04_H3策略与回测口径规范_v1.md`
-（§1.4 A/B/C 三个标准示例作为 golden fixtures）。
+契约：`C:\\项目\\deliverables\\2026-11-04_H3策略与回测口径规范_v1.md`（§1.4 A/B/C golden）
++ Wave B 评审返工（规范 v1.1）：禁静默单位归一、spec_hash 稳定、原子写/并发锁、
+validate 业务失败保持 200。
 """
 import copy
 import json
@@ -10,6 +11,8 @@ import os
 import re
 import sys
 import tempfile
+import threading
+import time
 import unittest
 
 WT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -233,29 +236,52 @@ class TestValidateRules(_Base):
         nan_v = st.validate(_spec(filters=[{"field": "roe", "op": ">=", "value": float("nan")}]))
         self.assertFalse(nan_v["ok"])
 
-    def test_unit_normalize_fraction(self):
-        v = st.validate(_spec(filters=[{"field": "revenue_yoy", "op": ">=", "value": 25}]))
-        self.assertTrue(v["ok"], v["errors"])
-        self.assertEqual(v["normalized"]["filters"][0]["value"], 0.25)
-        self.assertTrue(any("疑似百分数，已归一" in w for w in v["warnings"]))
-        roe_v = st.validate(_spec(filters=[{"field": "roe", "op": ">=", "value": 12}]))
-        self.assertEqual(roe_v["normalized"]["filters"][0]["value"], 0.12)
-        keep = st.validate(_spec(filters=[{"field": "roe", "op": ">=", "value": 0.12}]))
-        self.assertEqual(keep["normalized"]["filters"][0]["value"], 0.12)
-        self.assertFalse(any("疑似" in w for w in keep["warnings"]))
+    def test_unit_no_silent_rewrite_four_samples(self):
+        """P1 返工：4 个评审误改样例必须保留原值（仅 warning）。"""
+        cases = [("ps_pct_hist", 0.8), ("turnover_rate", 0.5),
+                 ("revenue_yoy", 2.5), ("ret_20", 3.0)]
+        for field, raw in cases:
+            v = st.validate(_spec(filters=[{"field": field, "op": "<=", "value": raw}]))
+            self.assertTrue(v["ok"], (field, v["errors"]))
+            self.assertEqual(v["normalized"]["filters"][0]["value"], raw, field)
+            self.assertTrue(any("保留原值" in w for w in v["warnings"]), field)
 
-    def test_unit_normalize_percent(self):
-        v = st.validate(_spec(filters=[{"field": "ps_pct_hist", "op": "<=", "value": 0.3}]))
+    def test_unit_warning_only_for_suspect_scale(self):
+        v = st.validate(_spec(filters=[{"field": "ps_pct_hist", "op": "<=", "value": 30}]))
         self.assertTrue(v["ok"])
-        self.assertEqual(v["normalized"]["filters"][0]["value"], 30.0)
-        self.assertTrue(any("疑似小数，已归一" in w for w in v["warnings"]))
-        keep = st.validate(_spec(filters=[{"field": "ps_pct_hist", "op": "<=", "value": 30}]))
-        self.assertFalse(any("已归一" in w for w in keep["warnings"]))
+        self.assertFalse(any("疑似" in w for w in v["warnings"]))
+        v2 = st.validate(_spec(filters=[{"field": "dv_ratio", "op": "<=", "value": 150}]))
+        self.assertTrue(v2["ok"])
+        self.assertTrue(any("超出权威单位范围" in w for w in v2["warnings"]))
 
-    def test_percent_out_of_range_only_warning(self):
-        v = st.validate(_spec(filters=[{"field": "dv_ratio", "op": "<=", "value": 150}]))
+    def test_explicit_unit_pct_converts_only_when_declared(self):
+        spec = _spec(filters=[{"field": "roe", "op": ">=", "value": 12, "unit": "pct"}])
+        v = st.validate(spec)
         self.assertTrue(v["ok"], v["errors"])
-        self.assertTrue(any("超出权威单位范围" in w for w in v["warnings"]))
+        nf = v["normalized"]["filters"][0]
+        self.assertEqual(nf["value"], 0.12)
+        self.assertEqual(nf["unit"], "pct")
+        self.assertTrue(any("显式 unit=pct" in w for w in v["warnings"]))
+        comp = st.compile(spec)
+        self.assertEqual(comp["screener_spec"]["filters"][0]["value"], 0.12)
+        self.assertNotIn("unit", comp["screener_spec"]["filters"][0])
+
+    def test_explicit_unit_ratio_converts_percent_field(self):
+        v = st.validate(_spec(filters=[{"field": "ps_pct_hist", "op": "<=",
+                                        "value": 0.25, "unit": "ratio"}]))
+        self.assertTrue(v["ok"], v["errors"])
+        self.assertEqual(v["normalized"]["filters"][0]["value"], 25.0)
+
+    def test_explicit_unit_invalid(self):
+        v = st.validate(_spec(filters=[{"field": "ps", "op": "<=", "value": 0.2, "unit": "pct"}]))
+        self.assertFalse(v["ok"])
+        self.assertTrue(any("unit" in e for e in v["errors"]))
+        v2 = st.validate(_spec(filters=[{"field": "roe", "op": ">=", "value": 0.1,
+                                         "unit": "foo"}]))
+        self.assertFalse(v2["ok"])
+        v3 = st.validate(_spec(filters=[{"field": "flag_st", "op": "=", "value": False,
+                                         "unit": "pct"}]))
+        self.assertFalse(v3["ok"])
 
     def test_rank_by_rules(self):
         v = st.validate(_spec(rank_by=[{"field": "quality_score", "order": "desc"}] * 4))
@@ -300,6 +326,19 @@ class TestValidateRules(_Base):
         self.assertTrue(any("非交易日" in w for w in v2["warnings"]))
         v3 = st.validate(_spec(as_of="2026-11-04"))
         self.assertEqual(v3["normalized"]["as_of"], "2026-11-04")
+
+    def test_as_of_explicit_flag(self):
+        """P2：validate 暴露 as_of_explicit 供 spec_hash 决定是否计入 as_of。"""
+        self.assertFalse(st.validate(_minimal())["as_of_explicit"])
+        self.assertTrue(st.validate(_spec(as_of="2026-11-04"))["as_of_explicit"])
+
+    def test_business_validation_failure_semantics(self):
+        """规范 v1.1：业务校验失败 = ok:false + errors（HTTP 200 由代理层保持）。"""
+        v = st.validate({"name": ""})
+        self.assertFalse(v["ok"])
+        self.assertTrue(v["errors"])
+        self.assertIn("normalized", v)
+        self.assertIn("warnings", v)
 
     def test_schema_version(self):
         self.assertEqual(st.validate(_minimal())["normalized"]["schema_version"], "v1")
@@ -484,6 +523,145 @@ class TestStrategyLibrary(_Base):
         self.assertFalse(r["ok"])
         self.assertTrue(r.get("engine_missing"))
         self.assertEqual(r["errors"], [st.ENGINE_MISSING])
+
+
+class TestSpecHashStability(_Base):
+    """P2 返工：默认 as_of 不进 spec_hash（跨日同 hash）；显式 as_of 才进。"""
+
+    def _with_today(self, day):
+        import types as _types
+        orig = st.time
+        st.time = _types.SimpleNamespace(strftime=lambda fmt, *a, **k: day)
+        self.addCleanup(lambda: setattr(st, "time", orig))
+
+    def test_default_as_of_hash_stable_across_days(self):
+        spec = copy.deepcopy(GOLDEN_A)
+        self._with_today("2026-11-04")
+        h1 = st.compile(spec)["spec_hash"]
+        self._with_today("2026-11-05")
+        h2 = st.compile(spec)["spec_hash"]
+        self.assertEqual(h1, h2)
+
+    def test_explicit_as_of_participates_in_hash(self):
+        h1 = st.compile(_spec(as_of="2026-11-04"))["spec_hash"]
+        h2 = st.compile(_spec(as_of="2026-11-05"))["spec_hash"]
+        self.assertNotEqual(h1, h2)
+
+    def test_default_vs_explicit_same_date_hash_differs(self):
+        today = time.strftime("%Y-%m-%d")
+        h_default = st.compile(copy.deepcopy(GOLDEN_A))["spec_hash"]
+        h_explicit = st.compile(_spec(as_of=today))["spec_hash"]
+        self.assertNotEqual(h_default, h_explicit)
+
+    def test_hash_covers_user_fields(self):
+        h1 = st.compile(copy.deepcopy(GOLDEN_A))["spec_hash"]
+        h2 = st.compile(_spec(limit=5))["spec_hash"]
+        h3 = st.compile(_spec(cost_bps=30))["spec_hash"]
+        self.assertNotEqual(h1, h2)
+        self.assertNotEqual(h1, h3)
+
+
+class TestConcurrencyAndAtomic(_Base):
+    """P2 返工：原子写（uuid tmp + O_EXCL）与 slug 分配文件锁。"""
+
+    def test_concurrent_new_same_name_unique_slugs(self):
+        with tempfile.TemporaryDirectory() as td:
+            results = []
+            guard = threading.Lock()
+
+            def worker():
+                r = st.save_strategy(copy.deepcopy(GOLDEN_A), base=td)
+                with guard:
+                    results.append(r)
+
+            threads = [threading.Thread(target=worker) for _ in range(6)]
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join(timeout=30)
+            self.assertEqual(len(results), 6)
+            self.assertTrue(all(r.get("ok") for r in results), results)
+            slugs = [r["slug"] for r in results]
+            self.assertEqual(len(set(slugs)), 6, slugs)
+            d = os.path.join(td, "strategies")
+            files = os.listdir(d)
+            self.assertEqual(len([f for f in files if f.endswith(".json")]), 6)
+            self.assertFalse([f for f in files if ".tmp" in f or f == ".lock"])
+
+    def test_concurrent_explicit_upsert_atomic(self):
+        with tempfile.TemporaryDirectory() as td:
+            results = []
+            guard = threading.Lock()
+
+            def worker(i):
+                r = st.save_strategy(_spec(limit=5 + i), slug="same-slug", base=td)
+                with guard:
+                    results.append(r)
+
+            threads = [threading.Thread(target=worker, args=(i,)) for i in range(6)]
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join(timeout=30)
+            self.assertEqual(len(results), 6)
+            self.assertTrue(all(r.get("ok") for r in results), results)
+            d = os.path.join(td, "strategies")
+            self.assertEqual([f for f in os.listdir(d) if f.endswith(".json")],
+                             ["same-slug.json"])
+            doc = json.load(open(os.path.join(d, "same-slug.json"), encoding="utf-8"))
+            self.assertIn(doc["spec"]["limit"], list(range(5, 11)))
+            self.assertFalse([f for f in os.listdir(d) if ".tmp" in f])
+
+    def test_lock_timeout_returns_busy(self):
+        with tempfile.TemporaryDirectory() as td:
+            d = os.path.join(td, "strategies")
+            os.makedirs(d)
+            open(os.path.join(d, ".lock"), "w").close()
+            orig_t, orig_s = st.LOCK_TIMEOUT, st.LOCK_STALE
+            st.LOCK_TIMEOUT, st.LOCK_STALE = 0.05, 999.0
+            try:
+                r = st.save_strategy(copy.deepcopy(GOLDEN_A), base=td)
+            finally:
+                st.LOCK_TIMEOUT, st.LOCK_STALE = orig_t, orig_s
+            self.assertFalse(r["ok"])
+            self.assertIn("繁忙", r["error"])
+
+    def test_stale_lock_recovered(self):
+        with tempfile.TemporaryDirectory() as td:
+            d = os.path.join(td, "strategies")
+            os.makedirs(d)
+            lock = os.path.join(d, ".lock")
+            open(lock, "w").close()
+            old = time.time() - 3600
+            os.utime(lock, (old, old))
+            orig_s = st.LOCK_STALE
+            st.LOCK_STALE = 1.0
+            try:
+                r = st.save_strategy(copy.deepcopy(GOLDEN_A), base=td)
+            finally:
+                st.LOCK_STALE = orig_s
+            self.assertTrue(r["ok"], r)
+
+    def test_write_atomic_uses_uuid_tmp_and_o_excl(self):
+        with tempfile.TemporaryDirectory() as td:
+            d = os.path.join(td, "strategies")
+            os.makedirs(d)
+            path = os.path.join(d, "x.json")
+            real_open = os.open
+            seen = []
+
+            def spy(p, flags, mode=0o777):
+                seen.append((p, flags))
+                return real_open(p, flags, mode)
+
+            st.os.open = spy
+            try:
+                st._write_atomic(path, {"a": 1})
+            finally:
+                st.os.open = real_open
+            self.assertTrue(any(".tmp-" in p for p, _ in seen), seen)
+            self.assertTrue(any(flags & os.O_EXCL for _, flags in seen))
+            self.assertFalse([f for f in os.listdir(d) if ".tmp" in f])
 
 
 if __name__ == "__main__":

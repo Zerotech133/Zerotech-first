@@ -31,18 +31,26 @@ StrategySpec v1（JSON dict）：
 - 字段白名单复用 H2a `analysis.screener.FIELDS`（冻结，不改 H2a）；单位口径以规范 §1.2
   「权威单位表」为准（D3）：百分数字段 0–100（ps_pct_hist/turnover_rate/dv_ratio/quality_score），
   小数字段 0.01=1%（revenue_yoy/net_profit_yoy/roe/debt_ratio/ret_20/ret_60）。
-  validate 对疑似错位的百分数/小数做**归一 + warning**；compile 不二次换算（规范 §2.1）。
-- screener 模块缺失 → validate 返回 {ok:false, errors:["选股引擎未就绪"]}，代理层转 503（§5.1）。
+  **规范 v1.1（Wave B 评审 P1）：禁止静默归一改写**——值超合理区间只出 warning 并**保留原值**，
+  normalized/compile/spec_hash 一律使用输入原值；如确需换算，filter 元素必须显式声明
+  `unit`（"native"|"pct"|"ratio"），显式归一才允许改值并出 warning。compile 不二次换算。
+- spec_hash 稳定性（P2）：未显式 as_of 时默认 as_of **不进入** spec_hash（跨日同 hash）；
+  显式给出 as_of 才计入。hash 覆盖 normalized 用户字段（含 schema_version）。
+- screener 模块缺失 → validate 返回 {ok:false, errors:["选股引擎未就绪"]}，代理层转 503（§5.1）；
+  业务校验失败（errors 非空）仍返回 HTTP 200 + {ok:false, errors}（规范 v1.1 口径）。
 - rebalance/cost_bps 不进入 ScreeningDSL，由 compile 顶层/策略库 meta 承载（§2.2）。
-- 策略库：`ANALYSIS_WORK/strategies/<slug>.json`（schema_version/slug/spec/meta/changelog），
-  原子写（<slug>.json.tmp → os.replace）；slug 缺省冲突加 -2/-3，显式 slug=upsert（§5.3）。
+- 策略库：`ANALYSIS_WORK/strategies/<slug>.json`（schema_version/slug/spec/meta/changelog）；
+  原子写（`<slug>.json.tmp-<pid>-<uuid>` + O_EXCL → os.replace）；slug 分配持 `.lock` 文件锁
+  （P2 并发：锁内完成查重/后缀分配/写入）；slug 缺省冲突加 -2/-3，显式 slug=upsert（§5.3）。
 """
+import contextlib
 import hashlib
 import json
 import math
 import os
 import re
 import time
+import uuid
 
 SCHEMA_VERSION = "v1"
 REBALANCE_ENUM = ("daily", "weekly", "monthly")
@@ -59,6 +67,9 @@ COST_MIN, COST_MAX = 0, 100
 SPEC_MAX_BYTES = 64 * 1024
 STRATEGY_DIRNAME = "strategies"
 MAX_STRATEGIES = 200
+LOCK_TIMEOUT = 5.0
+LOCK_STALE = 30.0
+UNIT_ENUM = ("native", "pct", "ratio")
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,48}$")
 WORK_DEFAULT = r"C:\项目\analysis_work"
 ENGINE_MISSING = "选股引擎未就绪"
@@ -144,31 +155,64 @@ def _kind_ops(screener, kind):
     return tuple(getattr(screener, "NUM_OPS", ()) or _NUM_OPS)
 
 
-# ---------------- 单位归一（规范 §1.2 / D3） ----------------
-def _unit_normalize(field, value, warnings):
-    """按权威单位表归一疑似错位的百分数/小数，并出 warning（不阻断）。"""
+# ---------------- 单位口径（规范 §1.2 / v1.1：禁止静默归一改写） ----------------
+def _unit_check(field, value, warnings):
+    """值超权威单位合理区间 → 仅 warning，**保留原值**（v1.1 P1 禁静默改写）。"""
     unit = AUTHORITATIVE_UNITS.get(field)
     if unit in ("percent", "score"):
         if value != 0 and abs(value) < 1:
-            warnings.append("字段 %s 权威单位为%s（0–100），输入 %g 疑似小数，已归一为 %g"
-                            % (field, "百分数" if unit == "percent" else "分值",
-                               value, value * 100))
-            return round(value * 100, 6)
+            warnings.append("字段 %s 权威单位为%s（0–100），输入 %g 疑似小数；按 v1.1 禁止静默归一，"
+                            "保留原值（如确需按比例解释请显式 unit）"
+                            % (field, "百分数" if unit == "percent" else "分值", value))
         if abs(value) > 100:
-            warnings.append("字段 %s 超出权威单位范围 0–100（%g），不阻断但请确认口径" % (field, value))
-        return value
-    if unit == "fraction":
+            warnings.append("字段 %s 超出权威单位范围 0–100（%g），保留原值，请确认口径"
+                            % (field, value))
+    elif unit == "fraction":
         if abs(value) > 2:
-            warnings.append("字段 %s 权威单位为小数（0.01=1%%），输入 %g 疑似百分数，已归一为 %g"
-                            % (field, value, value / 100.0))
-            return round(value / 100.0, 6)
-        return value
-    return value
+            warnings.append("字段 %s 权威单位为小数（0.01=1%%），输入 %g 疑似百分数；按 v1.1 禁止静默归一，"
+                            "保留原值（如确需按百分数解释请显式 unit）" % (field, value))
+
+
+def _apply_explicit_unit(field, value, unit, warnings):
+    """只有一个 filter 显式声明 unit 时才允许改值：把声明单位换算到权威单位。"""
+    declared = str(unit).strip().lower()
+    if declared not in UNIT_ENUM:
+        return None, "unit 仅支持 %s" % "/".join(UNIT_ENUM)
+    native = AUTHORITATIVE_UNITS.get(field)
+    if declared == "native":
+        return value, ""
+    if native in ("percent", "score"):
+        if declared == "ratio":
+            warnings.append("字段 %s 显式 unit=ratio → 按百分数口径归一为 %g"
+                            % (field, round(float(value) * 100, 6)))
+            return round(float(value) * 100, 6), ""
+        return value, ""
+    if native == "fraction":
+        if declared == "pct":
+            warnings.append("字段 %s 显式 unit=pct → 按小数口径归一为 %g"
+                            % (field, round(float(value) / 100.0, 6)))
+            return round(float(value) / 100.0, 6), ""
+        return value, ""
+    if declared == "pct":
+        return None, "字段 %s 不支持 unit=pct（权威单位为 %s）" % (field, native or "native")
+    return value, ""
+
+
+def _as_of_explicit(spec):
+    """spec 是否显式给出 as_of（决定 as_of 是否进入 spec_hash，P2）。"""
+    if not isinstance(spec, dict):
+        return False
+    value = spec.get("as_of")
+    return isinstance(value, str) and bool(value.strip())
 
 
 # ---------------- 校验 ----------------
 def validate(spec):
-    """校验 StrategySpec v1 → {ok, errors[], warnings[], normalized{...}}；不抛。"""
+    """校验 StrategySpec v1 → {ok, errors[], warnings[], normalized{...}, as_of_explicit}；不抛。
+
+    规范 v1.1 口径：业务校验失败 = ok:false + errors（HTTP 200，由代理层保持）；
+    单位不做静默归一（超合理区间仅 warning 且保留原值）；显式 unit 才换算。
+    """
     errors = []
     warnings = []
     if not isinstance(spec, dict):
@@ -274,6 +318,10 @@ def validate(spec):
             errors.append("filters[%d] 字段 %s（%s）不支持算子 %s（支持 %s）"
                           % (i, field, kind, op, "/".join(allowed)))
             continue
+        unit = f.get("unit")
+        if unit is not None and kind != "number":
+            errors.append("filters[%d] unit 仅支持数值字段（%s 为 %s）" % (i, field, kind))
+            continue
         if kind == "number":
             if isinstance(value, bool) or not isinstance(value, (int, float)):
                 errors.append("filters[%d] 数值字段 %s 的 value 必须为有限数值" % (i, field))
@@ -281,7 +329,21 @@ def validate(spec):
             if not math.isfinite(float(value)):
                 errors.append("filters[%d] 数值字段 %s 的 value 不能为 NaN/Inf" % (i, field))
                 continue
-            value = _unit_normalize(field, float(value), warnings)
+            numeric = float(value)
+            if unit is not None:
+                if not isinstance(unit, str):
+                    errors.append("filters[%d] unit 必须为字符串（%s）"
+                                  % (i, "/".join(UNIT_ENUM)))
+                    continue
+                converted, uerr = _apply_explicit_unit(field, numeric, unit, warnings)
+                if uerr:
+                    errors.append("filters[%d] %s" % (i, uerr))
+                    continue
+                numeric = float(converted)
+            else:
+                # 禁止静默归一：只 warning，保留用户原值（规范 v1.1 P1）
+                _unit_check(field, numeric, warnings)
+            value = numeric
         elif kind == "bool":
             if not isinstance(value, bool):
                 errors.append("filters[%d] 布尔字段 %s 的 value 必须为 true/false（JSON boolean）"
@@ -302,7 +364,10 @@ def validate(spec):
             if field in ("quality_score", "event_types", "industry_l2"):
                 warnings.append("filters[%d] 字段 %s 覆盖有限（仅已分析股票/当前分类），命中可能偏少"
                                 % (i, field))
-        norm_filters.append({"field": field, "op": op, "value": value})
+        nf = {"field": field, "op": op, "value": value}
+        if unit is not None:
+            nf["unit"] = str(unit).strip().lower()
+        norm_filters.append(nf)
 
     # rank_by
     raw_rank = spec.get("rank_by")
@@ -394,7 +459,7 @@ def validate(spec):
         "as_of": as_of,
     }
     return {"ok": not errors, "errors": errors, "warnings": _uniq(warnings),
-            "normalized": normalized}
+            "normalized": normalized, "as_of_explicit": _as_of_explicit(spec)}
 
 
 # ---------------- 编译（规范 §2.3） ----------------
@@ -402,14 +467,20 @@ def _canonical(obj):
     return json.dumps(obj, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
-def _spec_hash(normalized):
-    return "sha256:" + hashlib.sha256(_canonical(normalized).encode("utf-8")).hexdigest()
+def _spec_hash(normalized, include_as_of=False):
+    """P2：默认 as_of 不进入 hash（跨日同 spec 同 hash）；仅显式 as_of 参与。"""
+    payload = dict(normalized)
+    if not include_as_of:
+        payload.pop("as_of", None)
+    return "sha256:" + hashlib.sha256(_canonical(payload).encode("utf-8")).hexdigest()
 
 
 def _screener_spec(normalized):
+    # unit 是 StrategySpec 层的显式口径标记，不进 ScreeningDSL（值已按声明单位换算）
     return {
         "universe": normalized["universe"],
-        "filters": [dict(f) for f in normalized["filters"]],
+        "filters": [{"field": f["field"], "op": f["op"], "value": f["value"]}
+                    for f in normalized["filters"]],
         "rank_by": [dict(r) for r in normalized["rank_by"]],
         "limit": normalized["limit"],
         "as_of": normalized["as_of"],
@@ -431,7 +502,7 @@ def compile(spec):
         "screener_spec": _screener_spec(n),
         "rebalance": n["rebalance"],
         "cost_bps": n["cost_bps"],
-        "spec_hash": _spec_hash(n),
+        "spec_hash": _spec_hash(n, bool(v.get("as_of_explicit"))),
     }
 
 
@@ -522,11 +593,51 @@ def _read_json(path):
         return None
 
 
-def _write_atomic(path, doc):
-    """<slug>.json.tmp → os.replace；失败不破坏旧文件。"""
-    tmp = path + ".tmp"
+@contextlib.contextmanager
+def _file_lock(d, timeout=None, stale=None):
+    """策略库目录级文件锁（`.lock` + O_CREAT|O_EXCL；支持超时与陈旧锁回收）。"""
+    timeout = LOCK_TIMEOUT if timeout is None else timeout
+    stale = LOCK_STALE if stale is None else stale
+    lock_path = os.path.join(d, ".lock")
+    deadline = time.time() + timeout
+    fd = None
+    while True:
+        try:
+            fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_RDWR)
+            break
+        except FileExistsError:
+            try:
+                if time.time() - os.path.getmtime(lock_path) > stale:
+                    os.remove(lock_path)
+                    continue
+            except OSError:
+                pass
+            if time.time() >= deadline:
+                raise TimeoutError("save lock timeout: %s" % lock_path)
+            time.sleep(0.01)
     try:
-        with open(tmp, "w", encoding="utf-8", newline="\n") as f:
+        try:
+            os.write(fd, str(os.getpid()).encode("ascii"))
+        except OSError:
+            pass
+        yield
+    finally:
+        try:
+            os.close(fd)
+        except OSError:
+            pass
+        try:
+            os.remove(lock_path)
+        except OSError:
+            pass
+
+
+def _write_atomic(path, doc):
+    """原子写：`<slug>.json.tmp-<pid>-<uuid>` + O_EXCL → os.replace；失败不破坏旧文件。"""
+    tmp = "%s.tmp-%d-%s" % (path, os.getpid(), uuid.uuid4().hex[:12])
+    fd = os.open(tmp, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as f:
             json.dump(doc, f, ensure_ascii=False, indent=1)
             f.write("\n")
         os.replace(tmp, path)
@@ -555,7 +666,7 @@ def _meta_of(doc):
 
 
 def save_strategy(spec, slug=None, base=None):
-    """保存策略（原子写）：slug 缺省=新建（冲突加后缀）；显式 slug=upsert。"""
+    """保存策略（原子写 + `.lock` 并发保护）：slug 缺省=新建（冲突加后缀）；显式 slug=upsert。"""
     v = validate(spec)
     if not v["ok"]:
         errs = v["errors"]
@@ -567,70 +678,73 @@ def save_strategy(spec, slug=None, base=None):
     if len(raw) > SPEC_MAX_BYTES:
         return {"ok": False, "error": "spec 体积超过 %dKB" % (SPEC_MAX_BYTES // 1024),
                 "errors": ["spec 体积超限"]}
-    spec_hash = _spec_hash(n)
+    spec_hash = _spec_hash(n, bool(v.get("as_of_explicit")))
     now = time.strftime("%Y-%m-%dT%H:%M:%S")
     d = _strategies_dir(base)
     try:
         os.makedirs(d, exist_ok=True)
     except Exception as e:  # noqa: BLE001
         return {"ok": False, "error": "策略目录不可写: " + str(e)[:120]}
-
-    created = False
     if slug is not None:
         slug = str(slug).strip().lower()
         if not _valid_slug(slug):
             return {"ok": False, "error": "invalid slug",
                     "errors": ["invalid slug（%s）" % SLUG_RE.pattern]}
-        path = os.path.join(d, slug + ".json")
-        old = _read_json(path)
-        if isinstance(old, dict):
-            created = False
-        else:
-            created = True
-            if len(_strategy_files(d)) >= MAX_STRATEGIES:
-                return {"ok": False, "error": "策略库已满（上限 %d）" % MAX_STRATEGIES,
-                        "errors": ["策略库已满"]}
-    else:
-        base_slug = slugify(n["name"])
-        if len(_strategy_files(d)) >= MAX_STRATEGIES:
-            return {"ok": False, "error": "策略库已满（上限 %d）" % MAX_STRATEGIES,
-                    "errors": ["策略库已满"]}
-        candidate = base_slug
-        for i in range(1, MAX_STRATEGIES + 1):
-            path = os.path.join(d, candidate + ".json")
-            if _read_json(path) is None:
-                slug = candidate
-                created = True
-                break
-            candidate = "%s-%d" % (base_slug, i + 1)
-        else:
-            return {"ok": False, "error": "无法分配 slug（同名策略过多）",
-                    "errors": ["无法分配 slug"]}
 
-    meta = {"name": n["name"], "spec_hash": spec_hash,
-            "rebalance": n["rebalance"], "cost_bps": n["cost_bps"],
-            "as_of": n["as_of"], "cost_standard": "v1-bilateral-20bp"}
-    changelog = []
-    if not created:
-        old = _read_json(path) or {}
-        old_meta, _ = _meta_of(old)
-        meta["created"] = old_meta.get("created") or now
-        cl = old.get("changelog")
-        if isinstance(cl, list):
-            changelog = [x for x in cl if isinstance(x, dict)][-49:]
-        else:
-            changelog = []
-    else:
-        meta["created"] = now
-    meta["updated"] = now
-    if created:
-        changelog.append({"ts": now, "note": "init", "spec_hash": spec_hash})
-    else:
-        changelog.append({"ts": now, "note": "update", "spec_hash": spec_hash})
-    doc = {"schema_version": SCHEMA_VERSION, "slug": slug, "spec": n,
-           "meta": meta, "changelog": changelog}
     try:
-        _write_atomic(path, doc)
+        with _file_lock(d):
+            # 锁内完成：查重/后缀分配/写盘，避免并发同 slug 冲突（P2）
+            created = False
+            if slug is not None:
+                path = os.path.join(d, slug + ".json")
+                old = _read_json(path)
+                if isinstance(old, dict):
+                    created = False
+                else:
+                    created = True
+                    if len(_strategy_files(d)) >= MAX_STRATEGIES:
+                        return {"ok": False,
+                                "error": "策略库已满（上限 %d）" % MAX_STRATEGIES,
+                                "errors": ["策略库已满"]}
+            else:
+                base_slug = slugify(n["name"])
+                if len(_strategy_files(d)) >= MAX_STRATEGIES:
+                    return {"ok": False, "error": "策略库已满（上限 %d）" % MAX_STRATEGIES,
+                            "errors": ["策略库已满"]}
+                candidate = base_slug
+                for i in range(1, MAX_STRATEGIES + 1):
+                    path = os.path.join(d, candidate + ".json")
+                    if _read_json(path) is None:
+                        slug = candidate
+                        created = True
+                        break
+                    candidate = "%s-%d" % (base_slug, i + 1)
+                else:
+                    return {"ok": False, "error": "无法分配 slug（同名策略过多）",
+                            "errors": ["无法分配 slug"]}
+
+            meta = {"name": n["name"], "spec_hash": spec_hash,
+                    "rebalance": n["rebalance"], "cost_bps": n["cost_bps"],
+                    "as_of": n["as_of"], "cost_standard": "v1-bilateral-20bp"}
+            changelog = []
+            if not created:
+                old = _read_json(path) or {}
+                old_meta, _ = _meta_of(old)
+                meta["created"] = old_meta.get("created") or now
+                cl = old.get("changelog")
+                changelog = ([x for x in cl if isinstance(x, dict)][-49:]
+                             if isinstance(cl, list) else [])
+            else:
+                meta["created"] = now
+            meta["updated"] = now
+            changelog.append({"ts": now, "note": "init" if created else "update",
+                              "spec_hash": spec_hash})
+            doc = {"schema_version": SCHEMA_VERSION, "slug": slug, "spec": n,
+                   "meta": meta, "changelog": changelog}
+            _write_atomic(path, doc)
+    except TimeoutError as e:  # noqa: BLE001
+        return {"ok": False, "error": "策略库写入繁忙: " + str(e)[:80],
+                "errors": ["save lock timeout"]}
     except Exception as e:  # noqa: BLE001
         return {"ok": False, "error": "策略写入失败: " + str(e)[:120]}
     return {"ok": True, "slug": slug, "created": created, "updated": now,
