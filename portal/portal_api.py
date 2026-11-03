@@ -648,6 +648,9 @@ class Handler(api_data.Handler, api_chanlun_pages.Handler, api_pages_portal.Hand
         self.send_response(code)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Cache-Control", "no-store")
+        request_id = getattr(self, "_ifs_request_id", "")
+        if request_id:
+            self.send_header("X-Request-Id", str(request_id))
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
@@ -3400,8 +3403,11 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 os.path.dirname(os.path.abspath(__file__)), "quant_paper.html"))
         elif path == "/api/d1/research":
             # WO-D1-RESEARCH：D1 投研工作台只读数据口（池内研究，不管理策略）
+            # IFS F1b：叠统一 envelope + request_id（WO-IFS-ENVELOPE-20261104）
             import d1_data
-            self._json(d1_data.d1_snapshot())
+            import ifs_envelope
+            self._json(ifs_envelope.ok_payload(self, "d1.research.get",
+                                               d1_data.d1_snapshot()))
         elif path == "/api/d1/decisions":
             # WO-D1-UI-20261101：D1 正式裁决只读列表（页面展示/回填）
             import api_d1_decision

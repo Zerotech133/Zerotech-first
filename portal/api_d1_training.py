@@ -32,6 +32,8 @@ import time
 from pathlib import Path
 from urllib.parse import parse_qs
 
+import ifs_envelope
+
 _REPO = Path(__file__).resolve().parents[1]
 if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
@@ -193,7 +195,7 @@ def detail_payload(episode_id, path=None):
 
 
 def _json(handler, obj, code=200):
-    handler._json(obj, code)
+    ifs_envelope.send(handler, obj, code, fallback_interface="training.episode.get")
 
 
 def _query_limit(qs):
