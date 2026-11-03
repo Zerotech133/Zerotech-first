@@ -3389,7 +3389,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 os.path.dirname(os.path.abspath(__file__)), "perf.html"))
         elif path == "/api/acad1/pool":
             # WO-INV-POOL-UI：ACAD1 推荐池全池复盘只读数据口
-            self._json(pool_snapshot())
+            # ACAD1-FULLVIEW（2026-11-04）：仅透传 query 供 ?view=full 只读聚合视图；
+            # 缺省行为不变（单日视图），不改路由集合。
+            self._json(pool_snapshot(query=self.path.split("?", 1)[1]
+                                     if "?" in self.path else ""))
         elif path == "/acad1/pool":
             # WO-INV-POOL-UI：ACAD1 推荐池全池复盘只读页
             self._html_file(os.path.join(
