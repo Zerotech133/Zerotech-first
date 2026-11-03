@@ -6,7 +6,7 @@ registry YAML、JSON Schema 与规范文档，校验接口规范层自身的一�
 
 覆盖验收口径：
 1) `INTERFACE_REGISTRY_v1.yaml` 可被 Python/yaml 解析；元信息/枚举/席位目录齐全；
-2) 接口数 ≥20（当前 30）；IFS-02 的 12 个必填字段齐全 + 类型/取值域/唯一性；
+2) 接口数 ≥20（当前 32；F1d 登记 war_room.snapshot.get 后 31→32）；IFS-02 的 12 个必填字段齐全 + 类型/取值域/唯一性；
 3) owner 在册、consumer 非空、SLO 命中档位、paper_only 恒 true、write 语义正确；
 4) 统一 ID chain：11 实体顺序/上下游邻接/格式正则/生成方/真源/无空洞/单生成方；
 5) envelope/error：YAML annex 与两份 JSON Schema 一致（必填字段/错误码集合）；
@@ -89,6 +89,15 @@ REQUEST_ID_RE = re.compile(r"^req-[0-9a-f]{32}$")
 SCHEMA_VERSION_RE = re.compile(r"^[a-z0-9_.-]+/v[0-9]+$")
 PATH_RE = re.compile(r"^(/|internal:|mcp:|manifest:)")
 VALID_AUTH = ("portal-token", "portal-token+roles", "internal-only", "mcp-config", "manifest")
+WAR_ROOM_INTERFACE_ID = "war_room.snapshot.get"
+WAR_ROOM_EXPECTED_FIELDS = {
+    "method": "GET",
+    "path": "/api/war-room/snapshot",
+    "owner": "WATCH_TOWER",
+    "schema": "war_room/v1",
+    "slo_class": "read_heavy",
+    "status": "draft",
+}
 
 SAMPLE_REQUEST_ID = "req-0123456789abcdef0123456789abcdef"
 SAMPLE_SUCCESS = {
@@ -238,6 +247,24 @@ class TestRegistryMeta:
 class TestInterfaces:
     def test_interface_count_at_least_20(self, interfaces):
         assert len(interfaces) >= 20, "接口登记数不足 20：%d" % len(interfaces)
+
+    def test_war_room_snapshot_registered(self, registry, interfaces):
+        """F1d war_room.snapshot.get 正式登记（IFS-02 12 字段 + matrix/计数同步）。"""
+        by_id = {item["id"]: item for item in interfaces}
+        item = by_id.get(WAR_ROOM_INTERFACE_ID)
+        assert item, "registry 缺 F1d 接口登记: %s" % WAR_ROOM_INTERFACE_ID
+        for field, expected in WAR_ROOM_EXPECTED_FIELDS.items():
+            assert item[field] == expected, "%s.%s=%r != %r" % (
+                WAR_ROOM_INTERFACE_ID, field, item[field], expected)
+        assert item["write"] is False and item["paper_only"] is True
+        assert item["source_of_truth"]["kind"] == "aggregate"
+        assert item["consumer"] == ["门户", "WATCH_TOWER", "D1"]
+        assert item["ids"] == {"produces": [], "consumes": []}
+        assert item["remediation"]["wo"] == "WO-IFS-WARROOM-ENVELOPE-20261104"
+        assert registry["counts"]["interfaces"] == 32
+        matrix = MATRIX_DOC.read_text(encoding="utf-8")
+        assert WAR_ROOM_INTERFACE_ID in matrix, "matrix 缺 war_room 接口行"
+        assert "32 接口" in matrix, "matrix 未同步接口数 32"
 
     def test_required_fields_present(self, interfaces):
         for item in interfaces:
