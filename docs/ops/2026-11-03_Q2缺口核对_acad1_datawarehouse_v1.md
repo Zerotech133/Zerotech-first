@@ -66,3 +66,14 @@
 - **lifecycle 仍 draft、validated=false，不写成 active/Q2**。
 
 Q2 剩余缺口：**rollback 步骤**仍未写；validated 需 11-16 复审。 
+
+
+## 七、2026-11-04 02:26：rollback 字段已补
+
+- `acad1-legion` / `data-warehouse` 的 `status.rollback` 已写 4 步：revert manifest/registry → 摘入口保留审计 → 恢复只读投影/重载 8091 → q2_probe + composition validate；
+- `last_drilled: pending`，**尚未演练**；
+- `composition.py validate --all --strict`：**6/6 PASS**；
+- lifecycle 仍 `draft`、`validated=false`，仍未写 active/Q2；
+- Q2 剩：rollback 演练 + 11-16 复审后 validated。
+
+schema 说明：rollback 必须放 `status.*`（`spec.additionalProperties=false`）。

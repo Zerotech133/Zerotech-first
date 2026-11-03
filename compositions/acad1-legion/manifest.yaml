@@ -123,6 +123,14 @@ spec:
 status:
   phase: shadow
   health: unknown
+
+  rollback:
+    steps:
+      - "回退 manifest/registry 到上一版（git revert 本次 manifest 提交；registry 同批）"
+      - "摘除入口：暂停 /quant-api/api/v1/acad1-research 与 8091 /api/acad1/pool 暴露，保留只读审计"
+      - "恢复数据投影：PG v2_acad1_pool 以只读快照为准，停止写；重跑 pool 校验 data_date/freshness"
+      - "验证：tools/q2_probe.py --composition acad1-legion 2/2 + composition.py validate --all --strict"
+    last_drilled: "pending（需在 11-16 前演练一次）"
   health_probe:
     tool: tools/q2_probe.py
     endpoints:

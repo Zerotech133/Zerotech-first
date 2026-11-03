@@ -118,6 +118,14 @@ spec:
 status:
   phase: shadow
   health: unknown
+
+  rollback:
+    steps:
+      - "回退 manifest/registry 到上一版（git revert；不动数据文件）"
+      - "停新入口：摘除 /api/dw/stats 与 /api/dw/search 暴露，保留 8091 只读审计"
+      - "恢复 catalog/registry 只读快照并重载 8091；重跑 dw-stats 校验 total/registered/exposed"
+      - "验证：tools/q2_probe.py --composition data-warehouse 2/2 + composition.py validate --all --strict"
+    last_drilled: "pending（需在 11-16 前演练一次）"
   health_probe:
     tool: tools/q2_probe.py
     endpoints:
