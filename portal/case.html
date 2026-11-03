@@ -25,6 +25,10 @@ textarea{min-height:90px}
 pre{white-space:pre-wrap;background:var(--bg-page);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:12.5px;line-height:1.7;margin:8px 0;max-height:220px;overflow:auto}
 .err{color:var(--color-err);font-size:12px}.ok{color:var(--color-ok);font-size:12px}
 .pill{display:inline-block;padding:2px 7px;border-radius:999px;border:1px solid var(--border);font-size:11px;margin-left:6px}
+.progress{height:7px;background:var(--bg-raised);border:1px solid var(--border);border-radius:999px;overflow:hidden;margin-top:8px}
+.progress>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--blu-600),#4FD1A5);transition:width .35s ease}
+.pmeta{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:var(--text-dim);margin-top:5px}
+.qbar{height:5px;margin-top:7px}
 </style>
 </head>
 <body>
@@ -33,12 +37,17 @@ pre{white-space:pre-wrap;background:var(--bg-page);border:1px solid var(--border
   <h1>田丰汇总 → 五角色 → 会议 → 方案 → 审批 → 下发</h1>
   <div class="meta">真实云端模型/会议系统；审批前不可下发；本页只保存流程状态到本机，会议纪要与任务申请落服务端。</div>
   <div class="meta" id="identity">身份加载中…</div>
+  <div class="btns" style="margin-top:4px"><a class="btn" id="relogin" href="/login?next=/case" style="display:none">重新登录刷新身份</a></div>
+  <div class="progress"><i id="flowfill"></i></div>
+  <div class="pmeta"><span id="flowtext">流程进度：0/7</span><span id="flowpct">0%</span></div>
 
   <div class="card" id="quick-box">
     <h2>⚡ 即时拆解（虚拟临战会）</h2>
     <div class="meta">随时把一句话任务丢进来：田丰拆解 + 五角色快速意见 + 田丰方案。不落正式会议纪要；需要留痕时再升级为正式 Case。</div>
     <textarea id="quick-task" placeholder="例：明天上午把数据资源台账补齐，同时不影响早会；先给我拆到可执行"></textarea>
     <div class="btns"><button class="btn primary" id="btn-quick">立即拆解</button><span class="meta" id="quick-status"></span><button class="btn" id="btn-upgrade" disabled>升级为正式 Case</button></div>
+    <div class="progress qbar"><i id="quickfill"></i></div>
+    <div class="pmeta"><span id="quicktext">即时拆解：待开始</span><span id="quickpct">0%</span></div>
     <pre id="quick-out" hidden></pre>
   </div>
 
@@ -113,13 +122,16 @@ function $(id){return document.getElementById(id);}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function save(){try{localStorage.setItem(LS,JSON.stringify(state.case||{}));}catch(e){}}
 function load(){try{var c=JSON.parse(localStorage.getItem(LS)||'null');if(c&&c.id)state.case=c;}catch(e){}}
+function setProgress(fill,pct,label,pctEl,textEl){var f=$(fill);if(f)f.style.width=Math.max(0,Math.min(100,pct))+'%';var t=$(textEl);if(t)t.textContent=label;var pe=$(pctEl);if(pe)pe.textContent=Math.round(pct)+'%';}
 function show(id,text){var e=$(id);e.hidden=false;e.textContent=text;}
 function status(id,text,ok){var e=$(id);e.textContent=text;e.className=ok?'ok':'meta';}
 async function loadIdentity(){
-  try{var r=await fetch('/api/auth/me',{cache:'no-store'});var p=await r.json();var s=(p&&p.session)||{};var ctx=s.identity_context||{};state.identity={sub:s.sub||'',name:ctx.display_name||s.sub||'',roles:ctx.roles||[]};state.canApprove=(state.identity.roles.indexOf('ADMIN')>=0||state.identity.roles.indexOf('OWNER')>=0||state.identity.roles.indexOf('APPROVER')>=0||(ctx.permissions||[]).indexOf('approve')>=0);$('identity').textContent='当前身份：'+state.identity.name+'（'+state.identity.sub+'）· '+state.identity.roles.join(',')+(state.canApprove?' · 可审批':' · 无审批权（需 APPROVER/ADMIN/OWNER）');$('approver').value=state.identity.name||state.identity.sub;}
+  try{var r=await fetch('/api/auth/me',{cache:'no-store'});var p=await r.json();var s=(p&&p.session)||{};var ctx=s.identity_context||{};state.identity={sub:s.sub||'',name:ctx.display_name||s.sub||'',roles:ctx.roles||[]};state.canApprove=(state.identity.roles.indexOf('ADMIN')>=0||state.identity.roles.indexOf('OWNER')>=0||state.identity.roles.indexOf('APPROVER')>=0||(ctx.permissions||[]).indexOf('approve')>=0);$('identity').textContent='当前身份：'+state.identity.name+'（'+state.identity.sub+'）· '+state.identity.roles.join(',')+(state.canApprove?' · 可审批':' · 无审批权（需 APPROVER/ADMIN/OWNER）');$('approver').value=state.identity.name||state.identity.sub;var rl=$('relogin');if(rl)rl.style.display=state.canApprove?'none':'inline-flex';if(!state.canApprove&&state.identity){status('approve-status','当前会话仍是 '+state.identity.roles.join(',')+'；请点“重新登录刷新身份”');}}
   catch(e){state.identity=null;state.canApprove=false;$('identity').textContent='身份加载失败，不能审批';}
   setBtns();
 }
+function refreshFlow(){var c=state.case;var done=0,label='流程进度：0/7';if(c){done=1;label='1/7 已建 Case';if(c.summary){done=2;label='2/7 田丰已汇总';}if((c.opinions||[]).filter(function(x){return x.text;}).length>=5){done=3;label='3/7 五角色 5/5';}if(c.meeting_id){done=4;label='4/7 会议已保存';}if(c.proposal){done=5;label='5/7 方案已生成';}if(c.approved){done=6;label='6/7 人类已审批';}if(c.dispatch){done=7;label='7/7 已下发任务申请';}}
+  var pct=Math.round(done/7*100);setProgress('flowfill',pct,label,'flowpct','flowtext');}
 function setBtns(){
   var c=state.case;
   $('case-id').textContent=c?c.id:'';
@@ -129,29 +141,35 @@ function setBtns(){
   $('btn-propose').disabled=!c||!c.meeting_id||state.busy;
   $('btn-approve').disabled=!c||!c.proposal||state.busy||!state.canApprove;
   $('btn-dispatch').disabled=!c||!c.approved||!c.meeting_id||state.busy;
+  refreshFlow();
 }
 async function chat(agent,system,user){
-  var r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agent:agent,system:system,purpose:'case',user:user})});
-  var env=await r.json();if(!r.ok||!env||!env.ok)throw new Error((env&&env.error&&(env.error.message||env.error.code))||('HTTP '+r.status));
-  var t=(env.data&&env.data.text)||'';if(!t)throw new Error('empty_model_text');
-  return {text:t,binding:env.binding||env.data.binding_resolved||'',degraded:!!env.degraded};
+  var ctl=new AbortController();var timer=setTimeout(function(){ctl.abort();},120000);
+  try{
+    var r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},signal:ctl.signal,body:JSON.stringify({agent:agent,system:system,purpose:'case',user:user})});
+    var env=await r.json();if(!r.ok||!env||!env.ok)throw new Error((env&&env.error&&(env.error.message||env.error.code))||('HTTP '+r.status));
+    var t=(env.data&&env.data.text)||'';if(!t)throw new Error('empty_model_text');
+    return {text:t,binding:env.binding||env.data.binding_resolved||'',degraded:!!env.degraded};
+  }catch(e){if(e&&e.name==='AbortError')throw new Error('模型调用超时（120s）');throw e;}finally{clearTimeout(timer);}
 }
 async function quickBreakdown(){
   var task=($('quick-task').value||'').trim();if(!task){status('quick-status','先写任务');return;}
-  state.busy=true;$('btn-quick').disabled=true;status('quick-status','田丰拆解中…');
+  state.busy=true;$('btn-quick').disabled=true;status('quick-status','田丰拆解中…');setProgress('quickfill',8,'即时拆解：田丰拆解中…','quickpct','quicktext');
   try{
-    var a0=await chat('A0','你是田丰。把用户的一句话任务快速拆成：目标/子任务/依赖/风险/验收；不超过300字，给出可执行顺序。','任务：'+task);
+    var a0=await chat('A0','你是田丰。把用户的一句话任务快速拆成：目标/子任务/依赖/风险/验收；不超过300字，给出可执行顺序。','任务：'+task);setProgress('quickfill',22,'即时拆解：五角色并行会诊…','quickpct','quicktext');
     var roles=[['A0','田丰','目标拆解、任务DAG、派单'],['AI1','诸葛亮','反向质询、pre-mortem'],['ZHAOYUN','赵云','证据复核、审计'],['HUANGZHONG','黄忠','验收标准、抽样'],['GUANYU','关羽','技术债、门禁、整改']];
-    var ops=await Promise.all(roles.map(async function(x){
+    var done=0;var ops=await Promise.all(roles.map(async function(x){
       try{var r=await chat(x[0],'你是'+x[1]+'（'+x[0]+'），零界五角色之一，职责：'+x[2]+'。只给一句话结论+一个风险/建议，不编造数字。','任务：'+task+'\n田丰拆解：'+a0.text.slice(0,1500));return {seat:x[0],name:x[1],text:r.text};}
       catch(e){return {seat:x[0],name:x[1],error:e.message};}
+      finally{done++;setProgress('quickfill',22+Math.round(done/roles.length*46),'即时拆解：角色意见 '+done+'/5','quickpct','quicktext');}
     }));
     var opText=ops.map(function(o){return '【'+o.name+'】'+(o.text||('[失败] '+o.error));}).join('\n');
     var synth=await chat('A0','你是田丰。基于快速拆解和五角色一句话意见，给：结论/推荐执行顺序/需老田拍板的点/是否值得升级正式Case。不超过300字。','任务：'+task+'\n拆解：'+a0.text+'\n五角色：\n'+opText);
+    setProgress('quickfill',82,'即时拆解：田丰合成…','quickpct','quicktext');
     state.quick={task:task,a0:a0.text,opinions:ops,synth:synth.text,at:new Date().toISOString()};
     $('quick-out').hidden=false;$('quick-out').textContent='【田丰拆解】\n'+a0.text+'\n\n【五角色】\n'+opText+'\n\n【田丰合成】\n'+synth.text+'\n\n—— 虚拟临战会 · '+synth.binding;
-    $('btn-upgrade').disabled=false;status('quick-status','已完成 · 未落会议');
-  }catch(e){status('quick-status','失败：'+e.message);}
+    $('btn-upgrade').disabled=false;status('quick-status','已完成 · 未落会议');setProgress('quickfill',100,'即时拆解：完成','quickpct','quicktext');
+  }catch(e){status('quick-status','失败：'+e.message);setProgress('quickfill',0,'即时拆解：失败','quickpct','quicktext');}
   state.busy=false;$('btn-quick').disabled=false;
 }
 function upgradeQuick(){
@@ -221,6 +239,7 @@ async function dispatchCase(){
 $('btn-new').onclick=newCase;$('btn-quick').onclick=quickBreakdown;$('btn-upgrade').onclick=upgradeQuick;$('btn-agg').onclick=aggregate;$('btn-review').onclick=review;$('btn-meeting').onclick=meeting;$('btn-propose').onclick=propose;$('btn-approve').onclick=approve;$('btn-dispatch').onclick=dispatchCase;
 load();if(state.case){$('title').value=state.case.title||'';$('materials').value=state.case.materials||'';if(state.case.summary)show('agg-out',state.case.summary);if(state.case.opinions&&state.case.opinions.length)show('review-out',state.case.opinions.map(function(o){return '【'+o.name+'】'+(o.text||('[失败] '+o.error));}).join('\n\n'));if(state.case.meeting_id)show('meeting-out','meeting_id='+state.case.meeting_id);if(state.case.proposal)show('proposal-out',state.case.proposal);if(state.case.approved)status('approve-status','已由 '+(state.case.approver||'')+' 审批通过');if(state.case.dispatch)show('dispatch-out',JSON.stringify(state.case.dispatch,null,2));}
 loadIdentity();
+refreshFlow();
 setBtns();
 })();
 </script>
