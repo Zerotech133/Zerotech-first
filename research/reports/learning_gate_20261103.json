@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-03T09:42:54+08:00",
+ "generated_at": "2026-11-03T10:20:11+08:00",
  "stage": "all",
  "projects": [
   {
@@ -58,11 +58,34 @@
     }
    },
    "fail": 0
+  },
+  {
+   "project_id": "视频号学习_第二期",
+   "status": "distilling",
+   "stages": {
+    "intake": {
+     "ok": true,
+     "errors": []
+    },
+    "units": {
+     "ok": true,
+     "errors": []
+    },
+    "candidates": {
+     "ok": true,
+     "errors": []
+    },
+    "publish": {
+     "ok": true,
+     "errors": []
+    }
+   },
+   "fail": 0
   }
  ],
  "summary": {
-  "projects": 3,
-  "checks": 9,
+  "projects": 4,
+  "checks": 13,
   "fail": 0
  },
  "ok": true
