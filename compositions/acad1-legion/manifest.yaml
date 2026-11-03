@@ -10,7 +10,7 @@ metadata:
   host: lingjie
   description: ACAD1 选股研究治理军团（11 席 + 策略研究/验证/复核；30 卡池 CN12/HK10/US6/CRYPTO2；SLA freshness 1d / pool 30 / evidence≤26h / data_date lag 1d）
   created: "2026-11-02"
-  updated: "2026-11-02"
+  updated: "2026-11-04"
 spec:
   kernel: ">=0.9 <2.0"
   seats:
@@ -64,6 +64,12 @@ spec:
     exposes:
       - http: /api/acad1/pool
       - http: /quant-api/api/v1/acad1-research   # 8734 宿主入口→8105 原生 /api/v1/acad1-research（auth_request）
+      - http: /quant-api/api/v1/acad1-research/pool
+      - http: /quant-api/api/v1/acad1-research/stats
+      - http: /quant-api/api/v1/acad1-research/reviews
+      - http: /quant-api/api/v1/acad1-research/decisions
+      - http: /quant-api/api/v1/acad1-research/evidence
+      - http: /quant-api/api/v1/acad1-research/calendar
       - page: /academy/shuijing
     consumes:
       - interface/hermes-control
@@ -119,7 +125,7 @@ spec:
     - "人工复核不自动通过/否决；11-08 冻结前 13 张 review 卡需逐张复核。"
     - "ACL-102 v1.1 对齐（2026-11-02）：SLA 四字段唯一落 spec.data.sla（1/30/26/1），不双写 spec.slo；口径源=2026-10-31 老田 30 配额决策 + ACL-101 回归测试固化。"
     - "metadata.version 已同批升 1.1.0（registry+manifest，2026-11-02，ARCH1 抽检通过）；后续升版仍须 registry.json 同批，否则 plan --strict 漂移被 P1.2 组合门拒收。"
-    - "接口口径：/api/v1/acad1-research 是智策 8105 原生路径；8734 宿主入口实为 /quant-api/api/v1/acad1-research（auth_request，未登录 401）。"
+    - "接口口径（2026-11-04 六接口登记）：8105 原生=/api/v1/acad1-research/{pool,stats,reviews,decisions,evidence,calendar}（JWT/SSO 未登录 401）；8734 反代=/quant-api/api/v1/acad1-research/*（auth_request 401）；exposes 已登记 6 条反代路径；schema 本地契约 acad1_research/v1。"
     - "页面/鉴权现状（2026-11-02 GET 实测）：/academy/shuijing=200、/api/acad1/pool=200（nginx H4-B 公开族 C，只读无 auth_request）；/acad1/pool 在 8734=404（8091=200，nginx 路由未登记）→ L2 待批（acad1_pool 包，11-05 窗口）。"
     - "运行时双层：research API 走智策 8105（internal-service，经 /quant-api/ 反代）；pool API/页走 portal-api 8091（/api/acad1/pool、/academy/shuijing）；runtime.service=quant-api 为整合主服务，P2 单栈收口。"
     - "W1 引用收口（2026-11-02）：5 条 strategy/v1-* 已按 PG v2_strategy 真源（ACTIVE/PUBLISHED）在 strategy_portfolio 增 planned 登记（本地组合层口径；不改 portal/strategies.json 展示），strategy ref 全部可解析。证据：deliverables/2026-11-02_W1引用收口证据_v1.md。"
