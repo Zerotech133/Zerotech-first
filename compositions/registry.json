@@ -28,9 +28,9 @@
       "manifest": "compositions/acad1-legion/manifest.yaml",
       "status": {
         "phase": "shadow",
-        "health": "unknown",
+        "health": "degraded",
         "validated": false,
-        "evidence": "2026-11-02 只读反推；双池/寄居/临时 JSON 三项待 P2 净化"
+        "evidence": "2026-11-04 live 只读验收（task-57）：/acad1/pool 8734=200（旧台账 404 已过期）；/academy/shuijing=200（已加载 acad1_client 面板）；8105 /api/v1/health=200；6 research 接口未登录 401（8105 JWT，非 auth_request）；池 stale=true/freshness_days=5 > SLA 1d → health=degraded（不掩盖）；2026-11-02 双池/寄居/临时 JSON 三项 P2 待净化"
       }
     },
     {
