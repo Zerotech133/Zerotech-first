@@ -32,6 +32,7 @@ pre{white-space:pre-wrap;background:var(--bg-page);border:1px solid var(--border
   <div class="top"><strong>零界 · Case 决策流程</strong><a href="/hq">返回指挥部</a></div>
   <h1>田丰汇总 → 五角色 → 会议 → 方案 → 审批 → 下发</h1>
   <div class="meta">真实云端模型/会议系统；审批前不可下发；本页只保存流程状态到本机，会议纪要与任务申请落服务端。</div>
+  <div class="meta" id="identity">身份加载中…</div>
 
   <div class="card">
     <h2><span class="step">1</span>建 Case</h2>
@@ -69,7 +70,7 @@ pre{white-space:pre-wrap;background:var(--bg-page);border:1px solid var(--border
     <h2><span class="step">6</span>人类审批</h2>
     <div class="meta">只有审批通过，下一步「下发」才可点。</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center">
-      <input id="approver" value="老田" placeholder="审批人" style="max-width:180px">
+      <input id="approver" readonly placeholder="由登录身份决定" style="max-width:240px">
       <input id="approve-note" placeholder="审批备注（可选）" style="flex:1;min-width:180px">
       <button class="btn primary" id="btn-approve" disabled>人类审批通过</button>
       <span class="meta" id="approve-status"></span>
@@ -99,13 +100,18 @@ pre{white-space:pre-wrap;background:var(--bg-page);border:1px solid var(--border
 (function(){
 'use strict';
 var LS='hq_case_current';
-var state={case:null,busy:false};
+var state={case:null,busy:false,identity:null,canApprove:false};
 function $(id){return document.getElementById(id);}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function save(){try{localStorage.setItem(LS,JSON.stringify(state.case||{}));}catch(e){}}
 function load(){try{var c=JSON.parse(localStorage.getItem(LS)||'null');if(c&&c.id)state.case=c;}catch(e){}}
 function show(id,text){var e=$(id);e.hidden=false;e.textContent=text;}
 function status(id,text,ok){var e=$(id);e.textContent=text;e.className=ok?'ok':'meta';}
+async function loadIdentity(){
+  try{var r=await fetch('/api/auth/me',{cache:'no-store'});var p=await r.json();var s=(p&&p.session)||{};var ctx=s.identity_context||{};state.identity={sub:s.sub||'',name:ctx.display_name||s.sub||'',roles:ctx.roles||[]};state.canApprove=(state.identity.roles.indexOf('ADMIN')>=0||state.identity.roles.indexOf('OWNER')>=0);$('identity').textContent='当前身份：'+state.identity.name+'（'+state.identity.sub+'）· '+state.identity.roles.join(',')+(state.canApprove?' · 可审批':' · 无审批权（需 ADMIN/OWNER）');$('approver').value=state.identity.name||state.identity.sub;}
+  catch(e){state.identity=null;state.canApprove=false;$('identity').textContent='身份加载失败，不能审批';}
+  setBtns();
+}
 function setBtns(){
   var c=state.case;
   $('case-id').textContent=c?c.id:'';
@@ -113,7 +119,7 @@ function setBtns(){
   $('btn-review').disabled=!c||!c.summary||state.busy;
   $('btn-meeting').disabled=!c||(c.opinions||[]).filter(function(x){return x.text;}).length<5||state.busy;
   $('btn-propose').disabled=!c||!c.meeting_id||state.busy;
-  $('btn-approve').disabled=!c||!c.proposal||state.busy;
+  $('btn-approve').disabled=!c||!c.proposal||state.busy||!state.canApprove;
   $('btn-dispatch').disabled=!c||!c.approved||!c.meeting_id||state.busy;
 }
 async function chat(agent,system,user){
@@ -168,8 +174,9 @@ async function propose(){
 }
 function approve(){
   if(!state.case||!state.case.proposal)return;
-  var who=($('approver').value||'').trim();if(!who){status('approve-status','必须填审批人');return;}
-  state.case.approved=true;state.case.approver=who;state.case.approved_at=new Date().toISOString();save();status('approve-status','已由 '+who+' 审批通过');setBtns();
+  if(!state.canApprove||!state.identity){status('approve-status','当前身份无审批权，需 ADMIN/OWNER 登录');return;}
+  var who=state.identity.name||state.identity.sub;
+  state.case.approved=true;state.case.approver=who;state.case.approver_sub=state.identity.sub;state.case.approver_roles=state.identity.roles;state.case.approved_at=new Date().toISOString();save();status('approve-status','已由 '+who+'（'+state.identity.sub+'）审批通过');setBtns();
 }
 async function dispatchCase(){
   if(!state.case||!state.case.approved||!state.case.meeting_id)return;
@@ -181,6 +188,7 @@ async function dispatchCase(){
 }
 $('btn-new').onclick=newCase;$('btn-agg').onclick=aggregate;$('btn-review').onclick=review;$('btn-meeting').onclick=meeting;$('btn-propose').onclick=propose;$('btn-approve').onclick=approve;$('btn-dispatch').onclick=dispatchCase;
 load();if(state.case){$('title').value=state.case.title||'';$('materials').value=state.case.materials||'';if(state.case.summary)show('agg-out',state.case.summary);if(state.case.opinions&&state.case.opinions.length)show('review-out',state.case.opinions.map(function(o){return '【'+o.name+'】'+(o.text||('[失败] '+o.error));}).join('\n\n'));if(state.case.meeting_id)show('meeting-out','meeting_id='+state.case.meeting_id);if(state.case.proposal)show('proposal-out',state.case.proposal);if(state.case.approved)status('approve-status','已由 '+(state.case.approver||'')+' 审批通过');if(state.case.dispatch)show('dispatch-out',JSON.stringify(state.case.dispatch,null,2));}
+loadIdentity();
 setBtns();
 })();
 </script>

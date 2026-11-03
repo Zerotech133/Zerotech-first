@@ -26,6 +26,9 @@ def test_case_page_has_seven_steps_and_approval_gate():
     assert "state.case.approved" in s
     assert "/api/hq/meeting/save" in s and "/api/hq/meeting/dispatch" in s
     assert "localStorage" in s
+    assert "/api/auth/me" in s and "canApprove" in s
+    assert "ADMIN" in s and "OWNER" in s
+    assert 'id="identity"' in s
 
 
 def test_hq_has_case_entry():
