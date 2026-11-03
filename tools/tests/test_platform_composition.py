@@ -288,3 +288,14 @@ def test_kernel_guard_absolute_path_blocks_without_adr():
                             "--adr", "ADR-015"])
     assert rc2 == 0, f"带 ADR 应放行，实际 rc={rc2}\n{out2}\n{err2}"
     assert "ADR-015" in out2
+
+
+def test_validate_accepts_bare_composition_id(capfd):
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools"))
+    import composition as C
+    rc = C.main(["validate", "acad1-legion", "--strict", "--json"])
+    assert rc == 0
+    out = capfd.readouterr()
+    assert "acad1-legion" in out.out

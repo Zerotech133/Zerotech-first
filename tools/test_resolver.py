@@ -15,7 +15,7 @@ def test_all_compositions_resolve():
     res = R.check_all(strict=True)
     s = res["summary"]
     assert s["manifests"] == 6
-    assert s["refs"] >= 100
+    assert s["refs"] == 131  # G7: 分母锁，防扩分母/缩分母
     assert s["errors"] == 0 and s["warnings"] == 0
     assert s["ok"] is True
 
@@ -32,3 +32,12 @@ def test_manifest_check_returns_refs():
     p = ROOT / "compositions" / "acad1-legion" / "manifest.yaml"
     res = R.check_manifest(p)
     assert res["ok"] is True and len(res["refs"]) > 10
+
+
+def test_manifest_strict_propagates_warning(monkeypatch):
+    import resolver as R2
+    monkeypatch.setattr(R2, "check_manifest", lambda p: {
+        "manifest": str(p), "ok": True, "errors": 0, "warnings": 1, "refs": []})
+    assert R2.main(["--manifest", "x.yaml", "--strict", "--json"]) == 1
+    # 非 strict 保持原行为
+    assert R2.main(["--manifest", "x.yaml", "--json"]) == 0

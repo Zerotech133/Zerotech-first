@@ -94,6 +94,10 @@ def main(argv=None) -> int:
     try:
         if a.manifest:
             res = check_manifest(Path(a.manifest))
+            if a.strict:
+                res["strict"] = True
+                if res.get("warnings", 0):
+                    res["ok"] = False
         elif a.all:
             res = check_all(a.strict)
         else:
