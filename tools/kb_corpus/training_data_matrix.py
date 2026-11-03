@@ -330,7 +330,51 @@ def main(argv=None) -> int:
     style_sheet(ws, widths=[26, 80, 24])
     write_csv("6_字段字典", h, DICT_ROWS)
 
-    xlsx = OUT_DIR / f"2026-11-03_训练真实数据标准化表_v1.xlsx"
+    # 7 全量数据集需求清单
+    import importlib.util as _ilu
+    _spec = _ilu.spec_from_file_location("dataset_requirements",
+                                         REPO / "tools/kb_corpus/dataset_requirements.py")
+    _mod = _ilu.module_from_spec(_spec)
+    _spec.loader.exec_module(_mod)
+    REQ_ROWS, status_of = _mod.REQ_ROWS, _mod.status_of
+    ws = wb.create_sheet("7_全量数据集需求清单")
+    h7 = ["序号", "类别", "数据集/字段", "训练用途", "优先级", "当前状态",
+          "现有数据集", "最新日期", "本地路径", "来源接口建议"]
+    ws.append(h7)
+    req_rows = []
+    for i, (cat, name, use, prio, kw, api) in enumerate(REQ_ROWS, 1):
+        st, label, latest, path = status_of(datasets, kw, name)
+        req_rows.append([i, cat, name, use, prio, st, label, latest, path, api])
+    for r in req_rows:
+        ws.append(r)
+    style_sheet(ws, widths=[6, 8, 30, 22, 8, 12, 26, 12, 36, 30])
+    ws.auto_filter.ref = ws.dimensions
+    write_csv("7_全量数据集需求清单", h7, req_rows)
+
+    # 8 新增数据集需求单（缺失/部分覆盖/未注册）
+    ws = wb.create_sheet("8_新增数据集需求单")
+    h8 = ["序号", "数据集/字段", "类别", "用途", "优先级", "当前状态",
+          "来源接口建议", "缺口说明", "建议 Owner", "验收标准"]
+    ws.append(h8)
+    need = []
+    for cat, name, use, prio, kw, api in REQ_ROWS:
+        st, label, latest, path = status_of(datasets, kw, name)
+        if st == "已有" or st == "字段/口径":
+            continue
+        note = {"缺失": "数据仓无此数据集，需新增抓取",
+                "部分覆盖": f"仅少量文件/覆盖不足（{label}），需补全历史与更新",
+                "已有未注册": f"数据已在（{label}），未注册/暴露，需登记"}.get(st, st)
+        need.append([len(need) + 1, name, cat, use, prio, st, api, note,
+                     "DATA2（张松线）" if "tushare" in api else "DATA1",
+                     "落仓+注册+暴露+抽样校验"])
+    for r in need:
+        ws.append(r)
+    style_sheet(ws, widths=[6, 30, 8, 22, 8, 12, 30, 42, 16, 26])
+    ws.auto_filter.ref = ws.dimensions
+    write_csv("8_新增数据集需求单", h8, need)
+    print("dataset requirements:", len(REQ_ROWS), "| need rows:", len(need))
+
+    xlsx = OUT_DIR / f"2026-11-03_训练真实数据标准化表_v2.xlsx"
     wb.save(xlsx)
     print("xlsx:", xlsx, xlsx.stat().st_size)
     print("csv dir:", CSV_DIR, len(list(CSV_DIR.glob('*.csv'))), "files")
