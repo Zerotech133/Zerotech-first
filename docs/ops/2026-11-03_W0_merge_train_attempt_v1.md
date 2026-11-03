@@ -55,3 +55,11 @@
 
 - 17 席 smoke 失败 2 席（AI1 OpenClaw/ ZHAOYUN deepseek 空回），修复 `hq_daily_run` 与 `/api/chat` 日报降级；
 - 例外目的：保 11-04 07:50 首跑；已重跑全量基线并复核。
+
+## 八、下一窗口首选候选（17:46 预验证）
+
+- `UI-UNIFY-MANIFEST-20261103`：完整 fast 门 **PASS（无新增失败）**；
+- datawarehouse：0F；
+- 数据引导：`tools/w0_worktree_bootstrap.py` 已复制 catalog/registry/xueqiu db；
+- 结论：**merge-ready**，11-04 15:00 窗口优先合；
+- 其它候选仍需各自 fast 门/ADR（CAOCAO-FRAME 需组合注册 ADR）。
