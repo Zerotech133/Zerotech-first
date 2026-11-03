@@ -232,5 +232,7 @@ def test_route_baseline_unchanged():
     sigs = mod.signatures(inv)
     baseline = json.loads((REPO / "tools" / "portal_route_baseline.json")
                           .read_text(encoding="utf-8"))
-    assert baseline.get("total") == 297
+    assert baseline.get("total") == inv["total"], (
+        "route baseline total 应与当前 portal_api 路由集合一致：baseline=%r inv=%r"
+        % (baseline.get("total"), inv["total"]))
     assert set(tuple(x) for x in baseline.get("signatures") or []) == sigs
