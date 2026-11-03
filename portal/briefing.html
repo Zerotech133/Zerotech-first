@@ -46,7 +46,7 @@ h2{font-size:15px;margin:22px 0 8px}
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><strong>零界 · 田丰早间简报</strong><span class="meta" id="build">v4</span><a href="/hq">返回指挥部</a></div>
+  <div class="top"><strong>零界 · 田丰早间简报</strong><span class="meta" id="build">v5</span><a href="/hq">返回指挥部</a></div>
   <h1>今日简报</h1>
   <div class="meta" id="meta">加载中…</div>
 
@@ -54,10 +54,11 @@ h2{font-size:15px;margin:22px 0 8px}
     <label>部门
       <select id="dept-filter" aria-label="只看一个部门"><option value="">全部部门</option></select>
     </label>
-    <button class="btn primary" id="btn-summary" type="button">立即总结</button>
+    <button class="btn primary" id="btn-summary" type="button">立即总结（13部门运行）</button>
+    <button class="btn" id="btn-quick" type="button">只汇总已提交</button>
     <button class="btn" id="btn-report" type="button">汇报工作</button>
     <a class="btn" href="/meeting">去早会</a>
-    <span class="meta" id="state-note" aria-live="polite"></span>
+    <span class="meta" id="run-progress" aria-live="polite"></span><span class="meta" id="state-note" aria-live="polite"></span>
   </div>
 
   <div id="summary" hidden></div>
@@ -107,7 +108,7 @@ h2{font-size:15px;margin:22px 0 8px}
 'use strict';
 var DAY=new Date().toISOString().slice(0,10);
 var LS='hq_human_brief_'+DAY;
-var state={data:null, reports:[], dept:'', lastCard:null};
+var state={data:null, reports:[], dept:'', lastCard:null, running:false};
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function $(id){return document.getElementById(id);}
 function card(k,v){return '<div class="card"><div class="k">'+esc(k)+'</div><div class="v">'+esc(v)+'</div></div>';}
@@ -127,7 +128,10 @@ function expectedLeads(){
 }
 function reportRows(){
   var b=(state.data&&state.data.briefing&&state.data.briefing.departments)||[];
-  return b.concat(state.reports.map(function(r){return {lead:r.lead||'',dept:r.dept||r.dept_name||'',status:r.status||'green',highlights:r.highlights||[],blockers:r.blockers||[],decision_requests:r.decision_requests||[],research_topics:r.research_topics||[]};}));
+  var map={};
+  b.forEach(function(r){map[(r.lead||r.dept)+'|'+r.dept]=r;});
+  state.reports.forEach(function(r){map[(r.lead||'')+'|'+(r.dept||'')]={lead:r.lead||'',dept:r.dept||r.dept_name||'',status:r.status||'green',highlights:r.highlights||[],blockers:r.blockers||[],decision_requests:r.decision_requests||[],research_topics:r.research_topics||[]};});
+  return Object.keys(map).map(function(k){return map[k];});
 }
 function cleanTopic(t){
   var title=String((t&&t.title)||t||'').trim();
@@ -156,6 +160,66 @@ function filteredRows(rows){
   return rows.filter(function(r){return r.dept===state.dept||(r.lead&&r.lead===deptLead(state.dept));});
 }
 function deptLead(code){var d=departments().filter(function(x){return x.dept===code;})[0];return d?d.lead:'';}
+function leadsList(){
+  var out=[]; var seen={};
+  departments().forEach(function(d){if(d.lead&&d.lead!=='A0'&&!seen[d.lead]){seen[d.lead]=1;out.push(d);}});
+  return out;
+}
+function leadDept(lead){
+  var d=departments().filter(function(x){return x.lead===lead;})[0];
+  return d?d.dept:'';
+}
+function ctxText(){
+  var ds=(state.data&&state.data.directives&&state.data.directives.directives)||[];
+  return ds.filter(function(x){return x.status==='open';}).slice(0,6).map(function(x){return (x.kind||'')+':'+(x.topic||'');}).join('\n');
+}
+function normalizeReport(lead,dept,text){
+  var d=null; var t=String(text||'').trim();
+  t=t.replace(/^\s*```(?:json)?/i,'').replace(/```\s*$/,'').trim();
+  var a=t.indexOf('{'),b=t.lastIndexOf('}');
+  if(a>=0&&b>a){try{d=JSON.parse(t.slice(a,b+1));}catch(e){d=null;}}
+  var arr=function(v){return Array.isArray(v)?v.map(function(x){return typeof x==='string'?x:JSON.stringify(x);}).filter(Boolean).slice(0,6):[];};
+  var st=(d&&d.status)||'amber'; if(['green','amber','red'].indexOf(st)<0)st='amber';
+  var hi=arr(d&&d.highlights); var bl=arr(d&&d.blockers); var dec=arr(d&&d.decision_requests);
+  var rt=[]; if(d&&Array.isArray(d.research_topics)){d.research_topics.forEach(function(x){if(typeof x==='string')rt.push({title:x,question:''});else if(x&&x.title)rt.push({title:String(x.title),question:String(x.question||'')});});}
+  if(!d){hi=[t.slice(0,500)];bl=['模型输出非结构化，需人工复核'];}
+  return {lead:lead,dept:dept,status:st,highlights:hi,blockers:bl,decision_requests:dec,research_topics:rt,source:'auto-13',created_at:new Date().toISOString()};
+}
+async function askLead(d){
+  var system='你是'+d.lead+'，零界'+(d.name||d.dept)+'负责人。只从你的职能面做部门早报；不编造具体数字，缺证据标需查证。'
+    +'只输出JSON：{"status":"green|amber|red","highlights":["3条以内工作要点"],"blockers":["阻塞/证据缺口"],"decision_requests":["需A0/老田决策事项"],"research_topics":[{"title":"研究题","question":"研究问题"}]}';
+  var user='日期 '+DAY+'。当前未派单议题：\n'+(ctxText()||'（无）')+'\n请立即生成你的部门早报，供田丰汇总。';
+  var ctl=new AbortController(); var timer=setTimeout(function(){ctl.abort();},90000);
+  try{
+    var r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},signal:ctl.signal,
+      body:JSON.stringify({agent:d.lead,system:system,purpose:'dept_report',user:user})});
+    var env=await r.json(); if(!r.ok||!env||!env.ok) throw new Error((env&&env.error&&(env.error.message||env.error.code))||('HTTP '+r.status));
+    var text=(env.data&&env.data.text)||''; if(!text) throw new Error('empty_model_text');
+    return normalizeReport(d.lead,d.dept,text);
+  }finally{clearTimeout(timer);}
+}
+async function runAllDepartments(){
+  if(state.running)return;
+  var leads=leadsList();
+  if(!leads.length){$('state-note').textContent='无部门负责人可运行';return;}
+  state.running=true; var btn=$('btn-summary'); btn.disabled=true; btn.textContent='13部门运行中…';
+  state.reports=state.reports.filter(function(r){return r.source!=='auto-13';});
+  var done=0,fail=[]; var queue=leads.slice();
+  function tick(){ $('run-progress').textContent='云端汇报 '+done+'/'+leads.length+(fail.length?('，失败 '+fail.length):''); }
+  tick();
+  async function worker(){
+    while(queue.length){
+      var d=queue.shift();
+      try{var rep=await askLead(d);state.reports.push(rep);}
+      catch(e){fail.push(d.lead+'：'+String(e.message||e).slice(0,60));}
+      done++;tick();saveReports();render();
+    }
+  }
+  await Promise.all([worker(),worker(),worker()]);
+  state.running=false;btn.disabled=false;btn.textContent='立即总结（13部门运行）';
+  saveReports();render();renderSummary();
+  $('state-note').textContent='13部门运行完成：成功 '+(leads.length-fail.length)+'/'+leads.length+(fail.length?('｜失败：'+fail.slice(0,3).join('；')):'');
+}
 function renderSummary(){
   var rows=filteredRows(reportRows()), ts=topics();
   if(state.dept) ts=ts.filter(function(t){return t.source_dept===state.dept||t.source_lead===deptLead(state.dept);});
@@ -213,7 +277,8 @@ async function main(){
     $('error').innerHTML='<div class="err">简报加载失败：'+esc(e.message)+'（需登录 /hq）</div>';
   }
 }
-$('btn-summary').onclick=function(){renderSummary();$('state-note').textContent='已生成 A0 速览 · '+new Date().toLocaleTimeString();};
+$('btn-summary').onclick=function(){runAllDepartments();};
+$('btn-quick').onclick=function(){renderSummary();$('state-note').textContent='已汇总当前已提交数据 · '+new Date().toLocaleTimeString();};
 $('btn-report').onclick=function(){openModal();$('state-note').textContent='汇报工作：填写后点保存到本页';};
 $('dept-filter').onchange=function(){state.dept=this.value;render();if(!$('summary').hidden)renderSummary();};
 $('btn-save').onclick=saveReport;
@@ -223,8 +288,8 @@ $('btn-close').onclick=closeModal;
 $('modal').addEventListener('click',function(e){if(e.target===$('modal'))closeModal();});
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal();});
 window.addEventListener('error',function(e){var el=$('error');if(el)el.innerHTML='<div class="err">页面脚本错误：'+esc(e.message||'unknown')+'。请 Ctrl+F5 强刷。</div>';});
-window.__briefingReady='v4-20261103-0940';
-var build=$('build');if(build)build.textContent='v4 · 09:40';
+window.__briefingReady='v5-20261103-0945';
+var build=$('build');if(build)build.textContent='v5 · 09:45';
 main();
 })();
 </script>

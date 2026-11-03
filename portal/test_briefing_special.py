@@ -32,8 +32,11 @@ def test_briefing_links_to_special_and_uses_snapshot():
     assert "localStorage" in s
     assert "directives.directives" not in s  # 不再用旧 Directive 冒充研究题
     assert "cleanTopic" in s
-    assert 'id="build"' in s and "v4" in s
-    assert "已生成 A0 速览" in s
+    assert 'id="build"' in s and "v5" in s
+    assert "立即总结（13部门运行）" in s
+    assert "只汇总已提交" in s
+    assert "runAllDepartments" in s
+    assert "云端汇报 " in s
     assert "部门研究题" in s
 
 
