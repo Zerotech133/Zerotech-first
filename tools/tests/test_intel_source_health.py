@@ -381,3 +381,322 @@ def test_wrapper_config_error_exit2_without_calling_tool(tmp_path):
     assert any(logs.iterdir()), "应有 run_<date>.log"
     # 参数错误不应产生任何预审产物
     assert not list(out.glob("intel_pre_review_*.jsonl"))
+
+
+# ══════════════════════════════════════════════════════════════════════
+# IL-08 三源健康盘点（增量能力；不改动以上 I1 用例与 legacy 契约）
+# schema: intel_source_health_il08/v1；--md 输出到达 stdout，不落盘
+# ══════════════════════════════════════════════════════════════════════
+IL08_SCHEMA = "intel_source_health_il08/v1"
+SOURCE_KEYS = {"source_id", "name", "in_registry", "owner", "license",
+                    "watermark", "watermark_at", "age_days", "stale_days", "stale",
+                    "probe_available", "notes", "gaps", "mode", "enabled",
+                    "registry_source_id", "registry_note"}
+IL08_TOP_KEYS = {"schema", "kind", "readonly", "network", "online_health_claimed",
+                 "generated_at", "now", "no_authoritative_registry", "registry",
+                 "thresholds", "sources", "summary", "gaps", "errors", "policy", "ok"}
+
+
+def _mk_sqlite_db(path, specs):
+    """specs: [(ddl, insert_sql, rows)]；创建只读探针用的临时 sqlite。"""
+    import sqlite3
+    con = sqlite3.connect(str(path))
+    try:
+        for ddl, insert_sql, rows in specs:
+            con.execute(ddl)
+            if rows:
+                con.executemany(insert_sql, rows)
+        con.commit()
+    finally:
+        con.close()
+
+
+def _il08_fixture(tmp_path, *, xq_created_h=1.0, xq_labeled_h=1.5,
+                  guba_ts_h=2.0, tdx_days=3, guba_nonempty=2, guba_zero=1,
+                  xq_empty=False, tdx_corrupt=False):
+    """构造 IL-08 夹具：三源本地仓 + registry(guba/tdx, 无 xueqiu) + status。"""
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    clk = datetime.fromisoformat(NOW)
+    epoch = clk.timestamp()
+
+    # 雪球 sqlite
+    xq = tmp_path / "xueqiu_info.db"
+    created = (clk.timestamp() - xq_created_h * 3600)
+    labeled = (clk.timestamp() - xq_labeled_h * 3600)
+    _mk_sqlite_db(xq, [
+        ("CREATE TABLE xq_status (status_id TEXT PRIMARY KEY, created_at TEXT)",
+         "INSERT INTO xq_status VALUES (?,?)",
+         [] if xq_empty else [("s1", datetime.fromtimestamp(created).strftime("%Y-%m-%d %H:%M:%S")),
+                              ("s2", datetime.fromtimestamp(created - 3600).strftime("%Y-%m-%d %H:%M:%S"))]),
+        ("CREATE TABLE xq_status_classified (status_id TEXT PRIMARY KEY, labeled_at TEXT)",
+         "INSERT INTO xq_status_classified VALUES (?,?)",
+         [] if xq_empty else [("s1", datetime.fromtimestamp(labeled).strftime("%Y-%m-%d %H:%M:%S"))]),
+    ])
+
+    # 股吧 目录
+    gdir = tmp_path / "guba"
+    gdir.mkdir()
+    ts = datetime.fromtimestamp(clk.timestamp() - guba_ts_h * 3600)
+    for i in range(guba_nonempty):
+        f = gdir / ("f%d.jsonl" % i)
+        f.write_text(json.dumps({"post_id": i, "title": "t", "ts": ts.strftime("%Y-%m-%d %H:%M:%S")},
+                                ensure_ascii=False), encoding="utf-8")
+        _set_mtime(f, epoch - guba_ts_h * 3600 - i)
+    for i in range(guba_zero):
+        f = gdir / ("zero%d.jsonl" % i)
+        f.write_text("", encoding="utf-8")
+        _set_mtime(f, epoch - guba_ts_h * 3600 - guba_nonempty - i)
+
+    # TDX sqlite
+    tdx = tmp_path / "tdx_info.db"
+    if tdx_corrupt:
+        tdx.write_bytes(b"not-a-sqlite-file")
+    else:
+        d = datetime.fromtimestamp(clk.timestamp() - tdx_days * 86400).strftime("%Y-%m-%d")
+        _mk_sqlite_db(tdx, [
+            ("CREATE TABLE stock_notice (ts_code TEXT, notice_date TEXT)",
+             "INSERT INTO stock_notice VALUES (?,?)", [("600519.SH", d)]),
+            ("CREATE TABLE stock_news (ts_code TEXT, pub_date TEXT)",
+             "INSERT INTO stock_news VALUES (?,?)", [("600519.SH", d)]),
+            ("CREATE TABLE stock_report (ts_code TEXT, pub_date TEXT)",
+             "INSERT INTO stock_report VALUES (?,?)", [("600519.SH", d)]),
+        ])
+
+    reg = _write_registry(tmp_path, [
+        _src("guba", gdir, enabled=True),
+        _src("osint_video", tmp_path / "osint", enabled=False),
+        _src("tdx_market", tdx, enabled=False, mode="registered",
+             kind="market_data", fmt="sqlite"),
+    ])
+    st = _write_status(tmp_path, _news_sources())
+    args = ["--registry", str(reg), "--status", str(st), "--now", NOW,
+            "--xueqiu-db", str(xq), "--guba-dir", str(gdir), "--tdx-db", str(tdx)]
+    return {"registry": reg, "status": st, "xueqiu": xq, "guba": gdir,
+            "tdx": tdx, "args": args, "clk": clk}
+
+
+def _il08_json(tmp_path, capsys, **fixture_kw):
+    fx = _il08_fixture(tmp_path, **fixture_kw)
+    rc, data = _run_json(capsys, *fx["args"])
+    return rc, data, fx
+
+
+def test_il08_json_additive_block_and_three_sources(tmp_path, capsys):
+    rc, data, fx = _il08_json(tmp_path, capsys)
+    assert rc == 0, "legacy 健康输入下 rc 应保持 0"
+    # legacy 契约零破坏
+    assert data["schema"] == "intel_source_health/v1"
+    assert len(data["sources"]) == 12 and data["summary"]["total"] == 12
+    # 新增 il08 块
+    inv = data["il08"]
+    assert inv["schema"] == IL08_SCHEMA and inv["kind"] == "intel_source_health_il08"
+    assert inv["readonly"] is True and inv["network"] is False
+    assert inv["online_health_claimed"] is False
+    assert inv["no_authoritative_registry"] is True
+    assert inv["registry"]["authoritative"] is False
+    assert inv["registry"]["covers_three_sources"] is False
+    assert inv["registry"]["source_count"] == 3
+    ids = [s["source_id"] for s in inv["sources"]]
+    assert ids == ["xueqiu", "guba", "tdx_market"]
+    by = {s["source_id"]: s for s in inv["sources"]}
+    assert by["xueqiu"]["in_registry"] is False
+    assert by["guba"]["in_registry"] is True
+    assert by["tdx_market"]["in_registry"] is True
+    # 每源一行必需字段
+    for src in inv["sources"]:
+        assert SOURCE_KEYS <= set(src), src["source_id"]
+        assert src["stale_days"] == 2.0
+    # 水位事实（注入时钟 NOW 附近）
+    assert by["xueqiu"]["watermark"]["kind"] == "sqlite"
+    assert by["xueqiu"]["watermark"]["rows_total"] == 3
+    assert by["xueqiu"]["watermark_at"].startswith("2026-10-31 1")
+    assert by["xueqiu"]["probe_available"] is True
+    assert by["guba"]["watermark"]["kind"] == "directory"
+    assert by["guba"]["watermark"]["files"] == 3
+    assert by["guba"]["watermark"]["files_nonempty"] == 2
+    assert by["guba"]["watermark"]["files_zero_bytes"] == 1
+    assert by["guba"]["watermark_at"] == "2026-10-31 11:00:00"
+    assert by["tdx_market"]["watermark"]["kind"] == "sqlite"
+    assert by["tdx_market"]["watermark"]["rows_total"] == 3
+    # owner / 许可：在册源有，未在册源 null
+    assert by["guba"]["owner"] == "test"
+    assert by["guba"]["license"] == "test"
+    assert by["xueqiu"]["owner"] is None and by["xueqiu"]["license"] is None
+    assert "not_in_registry" in by["xueqiu"]["gaps"]
+    assert "owner_unknown" in by["xueqiu"]["gaps"]
+    assert "license_unknown" in by["xueqiu"]["gaps"]
+    sm = inv["summary"]
+    assert sm["total"] == 3 and sm["in_registry"] == 2
+    assert sm["not_in_registry"] == ["xueqiu"]
+    assert sm["probe_available"] == 3 and sm["errors"] == 0
+    assert inv["policy"]["writes_db"] is False
+    assert inv["policy"]["starts_stops_services"] is False
+
+
+def test_il08_md_output_only(tmp_path, capsys):
+    fx = _il08_fixture(tmp_path)
+    rc = h.main(fx["args"] + ["--md"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert IL08_SCHEMA in out
+    assert "no_authoritative_registry=true" in out
+    assert "| 源 | in_registry | 水位 |" in out
+    for token in ("雪球", "股吧", "TDX"):
+        assert token in out
+    assert "## 缺口（fail-visible）" in out
+    assert "## 未做 / 边界" in out
+    # --md 只输出 IL-08，不混 legacy 文本
+    assert "情报来源健康（intel_source_health/v1）" not in out
+
+
+def test_il08_stale_days_and_threshold(tmp_path, capsys):
+    rc, data, _ = _il08_json(tmp_path, capsys, xq_created_h=1.0, tdx_days=5)
+    by = {s["source_id"]: s for s in data["il08"]["sources"]}
+    assert by["xueqiu"]["stale"] is False
+    assert by["tdx_market"]["stale"] is True
+    assert by["tdx_market"]["age_days"] >= 5
+    # 提高阈值后 TDX 不再 stale
+    fx = _il08_fixture(tmp_path / "t2", xq_created_h=1.0, tdx_days=5)
+    (tmp_path / "t2").mkdir(exist_ok=True)
+    rc2, data2 = _run_json(capsys, *fx["args"], "--stale-days", "10")
+    by2 = {s["source_id"]: s for s in data2["il08"]["sources"]}
+    assert rc2 == 0
+    assert by2["tdx_market"]["stale"] is False
+    assert by2["tdx_market"]["stale_days"] == 10.0
+
+
+def test_il08_future_watermark_conservative(tmp_path, capsys):
+    fx = _il08_fixture(tmp_path)
+    # 把雪球水位改成未来（+2 天）
+    import sqlite3
+    con = sqlite3.connect(str(fx["xueqiu"]))
+    try:
+        future = (fx["clk"].timestamp() + 2 * 86400)
+        con.execute("UPDATE xq_status SET created_at = ?",
+                    (datetime.fromtimestamp(future).strftime("%Y-%m-%d %H:%M:%S"),))
+        con.commit()
+    finally:
+        con.close()
+    rc, data = _run_json(capsys, *fx["args"])
+    xq = {s["source_id"]: s for s in data["il08"]["sources"]}["xueqiu"]
+    assert rc == 0
+    assert xq["age_days"] == 0.0 and xq["stale"] is False
+    assert "watermark_in_future" in xq["notes"]
+
+
+def test_il08_empty_and_bad_sqlite_fail_visible(tmp_path, capsys):
+    rc, data, _ = _il08_json(tmp_path, capsys, xq_empty=True, tdx_corrupt=True)
+    inv = data["il08"]
+    by = {s["source_id"]: s for s in inv["sources"]}
+    assert rc == 0, "IL-08 失败不改 legacy rc（fail-visible 在 il08.errors）"
+    assert by["xueqiu"]["watermark_at"] is None
+    assert "空水位" in by["xueqiu"]["notes"]
+    assert by["tdx_market"]["probe_available"] is False
+    assert by["tdx_market"]["watermark"]["error"].startswith("sqlite_open_failed")
+    assert inv["ok"] is False
+    assert inv["summary"]["errors"] == 1
+    assert any(e["source_id"] == "tdx_market" for e in inv["errors"])
+    assert any(g["source_id"] == "tdx_market" and g["gap"] == "probe_error"
+               for g in inv["gaps"])
+    # --md 也 fail-visible 且 rc=0（事实盘点模式）
+    rc_md = h.main(_il08_fixture(tmp_path / "t2", xq_empty=True, tdx_corrupt=True)["args"] + ["--md"])
+    md = capsys.readouterr().out
+    assert rc_md == 0
+    assert "sqlite_open_failed" in md
+
+
+def test_il08_bad_registry_degrade_and_gaps(tmp_path, capsys):
+    fx = _il08_fixture(tmp_path)
+    # 缺注册表 → legacy rc=1（旧语义），IL-08 仍给事实 + no_authoritative_registry
+    rc, data = _run_json(capsys, "--registry", str(tmp_path / "nope.json"),
+                         "--status", str(fx["status"]), "--now", NOW,
+                         "--xueqiu-db", str(fx["xueqiu"]),
+                         "--guba-dir", str(fx["guba"]), "--tdx-db", str(fx["tdx"]))
+    inv = data["il08"]
+    assert rc == 1, "旧契约：缺注册表 fail-visible rc=1（不得被 IL-08 改写）"
+    assert inv["no_authoritative_registry"] is True
+    assert inv["registry"]["ok"] is False
+    assert inv["summary"]["in_registry"] == 0
+    assert all(not s["in_registry"] for s in inv["sources"])
+    assert {g["gap"] for g in inv["gaps"]} >= {"not_in_registry", "owner_unknown",
+                                               "license_unknown"}
+    assert inv["summary"]["probe_available"] == 3  # 事实仍可查
+
+
+def test_il08_guba_zero_byte_only_fail_visible(tmp_path, capsys):
+    rc, data, _ = _il08_json(tmp_path, capsys, guba_nonempty=0, guba_zero=2)
+    guba = {s["source_id"]: s for s in data["il08"]["sources"]}["guba"]
+    assert guba["probe_available"] is False
+    assert guba["watermark"]["error"] == "all_files_zero_bytes"
+    assert "all_files_zero_bytes" in guba["notes"]
+    assert data["il08"]["ok"] is False
+
+
+def test_il08_readonly_no_write_and_uri(tmp_path, capsys):
+    import hashlib
+    fx = _il08_fixture(tmp_path)
+    before = {p: hashlib.sha256(p.read_bytes()).hexdigest()
+              for p in (fx["xueqiu"], fx["tdx"])}
+    before_tree = {str(p): (p.stat().st_size, p.stat().st_mtime_ns)
+                   for p in sorted(tmp_path.rglob("*")) if p.is_file()}
+    rc = h.main(fx["args"] + ["--json"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "mode=ro" in out  # il08.watermark.path 所在只读 URI 由 probe 记录
+    rc_md = h.main(fx["args"] + ["--md"])
+    assert rc_md == 0
+    capsys.readouterr()
+    after = {p: hashlib.sha256(p.read_bytes()).hexdigest()
+             for p in (fx["xueqiu"], fx["tdx"])}
+    assert before == after, "IL-08 探针不得写/改 source 数据仓"
+    after_tree = {str(p): (p.stat().st_size, p.stat().st_mtime_ns)
+                  for p in sorted(tmp_path.rglob("*")) if p.is_file()}
+    assert before_tree == after_tree, "IL-08 盘点不得新增/改任何文件"
+
+
+def test_il08_json_schema_stable_and_legacy_equal(tmp_path, capsys):
+    fx = _il08_fixture(tmp_path)
+    rc, data = _run_json(capsys, *fx["args"])
+    assert rc == 0
+    inv = data["il08"]
+    assert IL08_TOP_KEYS <= set(inv), set(inv) ^ IL08_TOP_KEYS
+    assert {"total", "in_registry", "not_in_registry", "probe_available",
+            "probe_unavailable", "stale", "errors", "gaps"} <= set(inv["summary"])
+    assert {"path", "ok", "error", "registry_id", "schema_version", "updated_at",
+            "phase", "source_count", "authoritative", "covers_three_sources",
+            "reason"} <= set(inv["registry"])
+    # legacy 无 il08 版本与带 il08 版本的 legacy 键完全一致（零破坏）
+    legacy_only = h.build_report(str(fx["registry"]), str(fx["status"]), NOW,
+                                 include_il08=False)
+    got = {k: v for k, v in data.items() if k != "il08"}
+    assert got == legacy_only, "legacy JSON 语义被改动"
+
+
+def test_il08_no_credentials_in_output(tmp_path, capsys):
+    fx = _il08_fixture(tmp_path)
+    h.main(fx["args"] + ["--json"])
+    js = capsys.readouterr().out
+    h.main(fx["args"] + ["--md"])
+    md = capsys.readouterr().out
+    for text in (js, md):
+        low = text.lower()
+        for bad in ("token=", "cookie", "bearer ", "password", "passwd", "api_key"):
+            assert bad not in low, "IL-08 输出不得含凭据线索: %s" % bad
+
+
+def test_il08_helper_static_readonly_boundary():
+    helper = ROOT / "tools" / "intel_source_probe.py"
+    src = helper.read_text(encoding="utf-8")
+    tree = ast.parse(src)
+    imported = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            imported |= {a.name.split(".")[0] for a in node.names}
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            imported.add(node.module.split(".")[0])
+    banned = {"urllib", "requests", "http", "socket", "shutil"}  # sqlite3 仅只读必需
+    assert not (imported & banned), imported & banned
+    assert "mode=ro" in src and "query_only" in src, "helper 必须以只读 URI + query_only 打开"
+    for token in ("write_text", "write_bytes", "unlink", "rmtree", "mkdir(",
+                  "os.remove", ".execute(\"INSERT", ".execute(\"UPDATE"):
+        assert token not in src, "只读 helper 不得含写盘/写库调用: %s" % token
