@@ -33,7 +33,7 @@ def test_briefing_links_to_special_and_uses_snapshot():
     assert "不再用旧 Directive" in s  # 旧 Directive 仅作模型上下文，不冒充研究题
     assert "cleanTopic" in s
     assert 'id="build"' in s and "v13" in s
-    assert "立即总结（13部门运行）" in s
+    assert "立即总结（全席运行）" in s
     assert "只汇总已提交" in s
     assert "runAllDepartments" in s
     assert "openDetail" in s and "继续对话" in s

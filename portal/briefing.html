@@ -67,7 +67,7 @@ h2{font-size:15px;margin:22px 0 8px}
     <label>部门
       <select id="dept-filter" aria-label="只看一个部门"><option value="">全部部门</option></select>
     </label>
-    <button class="btn primary" id="btn-summary" type="button">立即总结（13部门运行）</button>
+    <button class="btn primary" id="btn-summary" type="button">立即总结（全席运行）</button>
     <button class="btn" id="btn-quick" type="button">只汇总已提交</button>
     <button class="btn" id="btn-report" type="button">汇报工作</button>
     <a class="btn" href="/meeting">去早会</a>
@@ -248,6 +248,7 @@ async function personalBrief(){
 function leadsList(){
   var out=[]; var seen={};
   departments().forEach(function(d){if(d.lead&&d.lead!=='A0'&&!seen[d.lead]){seen[d.lead]=1;out.push(d);}});
+  [{lead:'AI1',dept:'zhong',name:'中军帐·诸葛亮'},{lead:'ZHAOYUN',dept:'zhong',name:'中军帐·赵云治理'},{lead:'GUANYU',dept:'zhong',name:'中军帐·关羽整治'},{lead:'HUANGZHONG',dept:'zhong',name:'中军帐·黄忠验收'}].forEach(function(d){if(!seen[d.lead]){seen[d.lead]=1;out.push(d);}});
   return out;
 }
 function leadDept(lead){
@@ -289,7 +290,7 @@ async function runAllDepartments(){
   if(state.running)return;
   var leads=leadsList();
   if(!leads.length){$('state-note').textContent='无部门负责人可运行';return;}
-  state.running=true; var btn=$('btn-summary'); btn.disabled=true; btn.textContent='13部门运行中…';
+  state.running=true; var btn=$('btn-summary'); btn.disabled=true; btn.textContent='全席运行中…';
   state.reports=state.reports.filter(function(r){return r.source!=='auto-13';});
   var done=0,fail=[]; var queue=leads.slice();
   function tick(){ $('run-progress').textContent='云端汇报 '+done+'/'+leads.length+(fail.length?('，失败 '+fail.length):''); }
@@ -303,9 +304,9 @@ async function runAllDepartments(){
     }
   }
   await Promise.all([worker(),worker(),worker()]);
-  state.running=false;btn.disabled=false;btn.textContent='立即总结（13部门运行）';
+  state.running=false;btn.disabled=false;btn.textContent='立即总结（全席运行）';
   saveReports();render();renderSummary();
-  $('state-note').textContent='13部门运行完成：成功 '+(leads.length-fail.length)+'/'+leads.length+(fail.length?('｜失败：'+fail.slice(0,3).join('；')):'');
+  $('state-note').textContent='全席运行完成：成功 '+(leads.length-fail.length)+'/'+leads.length+(fail.length?('｜失败：'+fail.slice(0,3).join('；')):'');
 }
 function renderSummary(){
   var rows=filteredRows(reportRows()), ts=topics();

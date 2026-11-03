@@ -36,7 +36,16 @@ SYSTEM_TMPL = (
 )
 
 
-def _leads() -> list[dict]:
+# 中军帐常任指挥席：每天也必须报“昨天完成/正在做/当前卡点”
+COMMAND_LEADS = [
+    {"lead": "AI1", "dept": "zhong", "name": "中军帐·诸葛亮", "role": "军师"},
+    {"lead": "ZHAOYUN", "dept": "zhong", "name": "中军帐·赵云治理", "role": "治理"},
+    {"lead": "GUANYU", "dept": "zhong", "name": "中军帐·关羽整治", "role": "整治"},
+    {"lead": "HUANGZHONG", "dept": "zhong", "name": "中军帐·黄忠验收", "role": "验收"},
+]
+
+
+def _leads(include_command: bool = True) -> list[dict]:
     d = json.loads(ORG.read_text(encoding="utf-8-sig"))
     out, seen = [], set()
     for dept in d.get("departments", []):
@@ -45,6 +54,11 @@ def _leads() -> list[dict]:
             continue
         seen.add(lead)
         out.append({"lead": lead, "dept": dept.get("dept"), "name": dept.get("name")})
+    if include_command:
+        for lead in COMMAND_LEADS:
+            if lead["lead"] not in seen:
+                seen.add(lead["lead"])
+                out.append(dict(lead))
     return out
 
 
@@ -112,9 +126,10 @@ def _parse(lead: dict, text: str) -> dict:
 
 
 def run(date: str | None = None, base: str = DEFAULT_BASE, concurrency: int = 3,
-        timeout: int = 120, write: bool = True, out_dir: Path | None = None) -> dict:
+        timeout: int = 120, write: bool = True, out_dir: Path | None = None,
+        include_command: bool = True) -> dict:
     date = date or datetime.date.today().isoformat()
-    leads = _leads()
+    leads = _leads(include_command)
     reports, failed = [], []
     with cf.ThreadPoolExecutor(max_workers=max(1, concurrency)) as ex:
         futs = {ex.submit(_ask, l, date, base, timeout): l for l in leads}
@@ -178,10 +193,12 @@ def main(argv=None) -> int:
     ap.add_argument("--no-write", action="store_true")
     ap.add_argument("--out-dir", default="")
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--no-command", action="store_true", help="只跑13部门，不含四席")
     a = ap.parse_args(argv)
     try:
         r = run(a.date or None, a.base, a.concurrency, a.timeout,
-                write=not a.no_write, out_dir=Path(a.out_dir) if a.out_dir else None)
+                write=not a.no_write, out_dir=Path(a.out_dir) if a.out_dir else None,
+                include_command=not a.no_command)
     except Exception as e:  # noqa: BLE001
         print("daily_run_error: %s" % str(e)[:300], file=sys.stderr)
         return 1

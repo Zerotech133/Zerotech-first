@@ -14,6 +14,7 @@ window.HQ_PEOPLE = {
     proj_data: "数据治理部", proj_next: "下版本设计推理部",
     marketing: "市场部", legal: "合规法务部", ops_runtime: "运行体部",
     academy: "研究院", intel: "情报部", comm: "通信与客户服务部",
-    chief_line: "直属参谋长线", risk: "风控部", trading: "交易部"
+    chief_line: "直属参谋长线", risk: "风控部", trading: "交易部",
+    zhong: "中军帐"
   }
 };

@@ -1,13 +1,13 @@
 # A0 每日跑板 v1（07:50 自动）
 
 - 日期：2026-11-03｜触发：A0「未来汇报的 A0 应该每天把整个板块的数据真的跑一遍」
-- 结论：**已从“按钮/提醒”升级为真实每日跑板**：13 位负责人云端汇报 → 田丰简报 → 08:00 早会消费。
+- 结论：**已从“按钮/提醒”升级为真实每日跑板**：17 席云端汇报 → 田丰简报 → 08:00 早会消费。
 
 ## 一、每日节奏
 
 | 时间 | 动作 | 产物 |
 |---|---|---|
-| **07:50** | Windows 计划任务 `AI-Workstation-A0-Daily-Board` 自动执行 | `deliverables/daily_briefs/<date>/rollup.json` + `a0_briefing.md` |
+| **07:50** | Windows 计划任务 `AI-Workstation-A0-Daily-Board` 自动执行（17 席） | `deliverables/daily_briefs/<date>/rollup.json` + `a0_briefing.md` |
 | 08:00 | A0 早会读取简报；13 部门已提交昨天完成/正在做/当前卡点 | `/briefing` 页面 |
 | 08:20 | 老田决策清单 | 会议纪要/派单 |
 

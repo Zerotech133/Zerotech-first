@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""A0 每日跑板：13 部门真实编排逻辑（模型调用注入 mock）。"""
+"""A0 每日跑板：13 部门 + 中军帐四席（17 席）编排逻辑（模型注入 mock）。"""
 from __future__ import annotations
 
 import json
@@ -22,16 +22,18 @@ def _fake(lead, date, base, timeout):
     return {"lead": lead, "text": text, "binding": "glm/glm-5.3", "latency_ms": 1}
 
 
-def test_run_all_13_and_write(monkeypatch, tmp_path):
+def test_run_all_seats_and_write(monkeypatch, tmp_path):
     monkeypatch.setattr(d, "_ask", _fake)
     r = d.run("2026-11-04", write=True, out_dir=tmp_path)
-    assert r["ok"] and r["submitted"] == r["expected"] == 13
+    assert r["ok"] and r["submitted"] == r["expected"] == 17
     assert (tmp_path / "rollup.json").is_file()
     assert (tmp_path / "a0_briefing.md").is_file()
     b = json.loads((tmp_path / "rollup.json").read_text(encoding="utf-8"))["briefing"]
     assert b["schema"] == "hq/a0_briefing/v1"
     assert b["departments"][0]["yesterday_done"] and b["departments"][0]["in_progress"]
-    assert len(b["research_topics"]) == 13
+    assert len(b["research_topics"]) == 17
+    leads={x["lead"] for x in b["departments"]}
+    assert {"AI1","ZHAOYUN","GUANYU","HUANGZHONG"} <= leads
     assert "数据智能部" in (tmp_path / "a0_briefing.md").read_text(encoding="utf-8")
 
 
@@ -43,7 +45,7 @@ def test_partial_failure_is_visible(monkeypatch, tmp_path):
     monkeypatch.setattr(d, "_ask", flaky)
     r = d.run("2026-11-04", write=True, out_dir=tmp_path)
     assert r["ok"] is False
-    assert r["submitted"] == 12 and len(r["failed"]) == 1
+    assert r["submitted"] == 16 and len(r["failed"]) == 1
     assert r["failed"][0]["lead"] == "QA1"
 
 
