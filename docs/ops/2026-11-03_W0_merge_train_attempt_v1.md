@@ -50,3 +50,8 @@
 - 修复后 UI worktree 的 datawarehouse 测试 **340 passed / 0F**；
 - 17:00 窗口关闭，**不再 merge；代码冻结到 11-04 10:00**；
 - 下一窗口 11-04 15:00 重试。
+
+## 七、冻结后例外（17:20）
+
+- 17 席 smoke 失败 2 席（AI1 OpenClaw/ ZHAOYUN deepseek 空回），修复 `hq_daily_run` 与 `/api/chat` 日报降级；
+- 例外目的：保 11-04 07:50 首跑；已重跑全量基线并复核。

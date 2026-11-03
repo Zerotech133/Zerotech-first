@@ -78,8 +78,11 @@ def _ask(lead: dict, date: str, base: str, timeout: int) -> dict:
             "请汇报：1) 昨天实际完成了什么（有证据，没做就写无）；"
             "2) 今天正在做什么；3) 当前卡点/正在卡点；4) 需 A0/老田决策；5) 研究题。\n"
             "当前未派单议题：\n" + (_context() or "（无）") + "\n请立即生成部门早报，供田丰汇总。")
+    system = (SYSTEM_TMPL.replace("{name}", str(lead.get("name") or ""))
+              .replace("{lead}", str(lead.get("lead") or ""))
+              .replace("{dept}", str(lead.get("dept") or "")))
     body = json.dumps({"agent": lead["lead"],
-                       "system": SYSTEM_TMPL.format(**lead),
+                       "system": system,
                        "purpose": "dept_report", "user": text}, ensure_ascii=False).encode("utf-8")
     req = urllib.request.Request(base.rstrip("/") + "/api/chat", data=body,
                                  headers={"Content-Type": "application/json"}, method="POST")
@@ -202,7 +205,7 @@ def main(argv=None) -> int:
     except Exception as e:  # noqa: BLE001
         print("daily_run_error: %s" % str(e)[:300], file=sys.stderr)
         return 1
-    print(json.dumps({k: r[k] for k in ("schema", "date", "ok", "submitted", "expected", "failed", "out_dir")},
+    print(json.dumps({k: r.get(k) for k in ("schema", "date", "ok", "submitted", "expected", "failed", "out_dir")},
                      ensure_ascii=False, indent=2))
     return 0 if r["ok"] else 2
 

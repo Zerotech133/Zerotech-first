@@ -60,3 +60,11 @@ def test_parse_malformed_output_does_not_fabricate():
     r = d._parse(lead, "这不是 JSON，模型胡说")
     assert r["status"] == "amber"
     assert r["highlights"] == [] and r["blockers"] == []
+
+
+def test_main_no_write_summary(monkeypatch, capsys):
+    monkeypatch.setattr(d, "_ask", _fake)
+    assert d.main(["--no-write", "--json", "--date", "2026-11-04"]) == 0
+    import json as _j
+    out = _j.loads(capsys.readouterr().out)
+    assert out["ok"] and out["submitted"] == 17 and out["out_dir"] is None
