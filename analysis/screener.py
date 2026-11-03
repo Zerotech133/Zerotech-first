@@ -14,7 +14,6 @@
 
 DSL 示例见 `docs`/`contracts`；NL 解析见 `analysis/screen_parse.py`。
 """
-import json
 import math
 import os
 import time
@@ -275,6 +274,68 @@ def _candidate(row) -> Dict[str, Any]:
 
 # ---------- 真实数据 provider（curated + SW；PIT） ----------
 
+DATA_ROOT = os.path.join(ROOT, "quant_backtest", "data", "tushare")
+_BASIC_CACHE = None
+
+
+def _stock_basic(root=None):
+    """读数据根 stock_basic（part_*.parquet）→ {ts_code: name}（当前名称，非 PIT）。"""
+    global _BASIC_CACHE
+    if root is None and _BASIC_CACHE is not None:
+        return _BASIC_CACHE
+    base = root or DATA_ROOT
+    out = {}
+    try:
+        import glob
+        for p in sorted(glob.glob(os.path.join(base, "stock_basic", "*.parquet"))):
+            d = _read_parquet(p)
+            if len(d) == 0 or "ts_code" not in d.columns:
+                continue
+            for _, r in d.iterrows():
+                code = str(r.get("ts_code") or "").strip()
+                if code:
+                    out[code] = str(r.get("name") or "")
+    except Exception:
+        out = {}
+    if root is None:
+        _BASIC_CACHE = out
+    return out
+
+
+def _apply_names(feat, names):
+    """把名称与 ST 标记写入特征表（flag_st=True 表示名称含 ST/*ST）。"""
+    import pandas as pd
+    feat = feat.copy()
+    feat["name"] = pd.Series({c: names.get(c, "") for c in feat.index})
+    feat["flag_st"] = pd.Series({c: ("ST" in str(names.get(c, "")).upper()) for c in feat.index})
+    return feat
+
+
+def _event_types(codes, as_of, db_path=None):
+    """事件库 → {code: [类别...]}（events 表列名为 code；兼容 ts_code）。"""
+    out = {}
+    dbp = db_path or os.path.join(WORK, "analysis.db")
+    try:
+        import sqlite3
+        if not os.path.exists(dbp):
+            return out
+        con = sqlite3.connect("file:%s?mode=ro" % dbp.replace("\\", "/"), uri=True)
+        cols = [r[1] for r in con.execute("PRAGMA table_info(events)")]
+        code_col = "code" if "code" in cols else ("ts_code" if "ts_code" in cols else None)
+        if code_col is None:
+            con.close()
+            return out
+        rows = con.execute("SELECT %s, category_final, category, date FROM events WHERE date >= ?"
+                           % code_col, (as_of[:4] + "-01-01",)).fetchall()
+        con.close()
+        for code, cat_f, cat, dt in rows:
+            if str(code) in codes:
+                out.setdefault(str(code), set()).add(str(cat_f or cat or ""))
+        return {c: sorted(v) for c, v in out.items()}
+    except Exception:
+        return out
+
+
 def _read_parquet(path, columns=None):
     import pandas as pd
     if not os.path.exists(path):
@@ -288,7 +349,6 @@ def _read_parquet(path, columns=None):
 
 
 def _sw_industry() -> Dict[str, Dict[str, str]]:
-    import pandas as pd
     out = {}
     p = os.path.join(SW_CACHE, "member.parquet")
     d = _read_parquet(p)
@@ -310,7 +370,6 @@ def _sw_industry() -> Dict[str, Dict[str, str]]:
 
 
 def _universe_codes(spec) -> List[str]:
-    import pandas as pd
     as_of = spec["as_of"].replace("-", "")
     uni = spec["universe"]
     if uni == "WATCHLIST":
@@ -429,23 +488,19 @@ def load_features(spec: Dict[str, Any]) -> Any:
     if sw:
         feat["industry_l1"] = pd.Series({c: sw.get(c, {}).get("l1") for c in feat.index})
         feat["industry_l2"] = pd.Series({c: sw.get(c, {}).get("l2") for c in feat.index})
+    # 名称 + ST 标记（数据根 stock_basic）
+    basics = _stock_basic()
+    if basics:
+        feat = _apply_names(feat, basics)
+    else:
+        feat["flag_st"] = False
+        feat.attrs.setdefault("warnings", []).append("ST 名单未核验（数据根 stock_basic 缺失），flag_st 过滤不可信")
     # event_types（仅已分析股票；来自 analysis.db 事件库）
-    try:
-        import sqlite3
-        dbp = os.path.join(WORK, "analysis.db")
-        if os.path.exists(dbp):
-            con = sqlite3.connect("file:%s?mode=ro" % dbp.replace("\\", "/"), uri=True)
-            rows = con.execute("SELECT ts_code, category_final, category, date FROM events "
-                               "WHERE date >= ?", (as_of[:4] + "-01-01",)).fetchall()
-            con.close()
-            ev = {}
-            for code, cat_f, cat, dt in rows:
-                if str(code) in codes:
-                    ev.setdefault(str(code), set()).add(str(cat_f or cat or ""))
-            feat["event_types"] = pd.Series({c: sorted(v) for c, v in ev.items()})
-    except Exception:
-        pass
-    feat["flag_st"] = False  # MVP：ST 名单未全量接入（报告中标注）
+    ev = _event_types(codes, as_of)
+    if ev:
+        feat["event_types"] = pd.Series(ev)
+    if codes - set(feat.index):
+        feat.attrs.setdefault("warnings", []).append("部分股票无特征数据（字段缺失/未上市/退市）")
     uni = spec["universe"]
     if uni.lower().startswith("industry:"):
         name = uni.split(":", 1)[1].strip()
@@ -473,6 +528,7 @@ def run(spec: Dict[str, Any], provider: Optional[Callable] = None) -> Dict[str, 
         return {"ok": True, "as_of": sp["as_of"], "universe": sp["universe"],
                 "universe_size": 0, "matched": 0, "candidates": [],
                 "warnings": ["股票池为空或数据缺失（检查数据仓/日期）"]}
+    warnings.extend(list(getattr(df, "attrs", {}).get("warnings") or []))
     # 字段缺失提示
     need = {f["field"] for f in sp["filters"]} | {r["field"] for r in sp["rank_by"]}
     missing = sorted(need - set(df.columns))

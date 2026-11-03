@@ -92,5 +92,51 @@ class TestFilterAndRun(unittest.TestCase):
         self.assertFalse(r["ok"])
 
 
+
+class TestDataHelpers(unittest.TestCase):
+    def test_apply_names_flags_st(self):
+        df = pd.DataFrame({"ts_code": ["600337.SH", "688023.SH"]}).set_index("ts_code")
+        out = screener._apply_names(df, {"600337.SH": "ST美克", "688023.SH": "安恒信息"})
+        self.assertTrue(bool(out.loc["600337.SH", "flag_st"]))
+        self.assertFalse(bool(out.loc["688023.SH", "flag_st"]))
+        self.assertEqual(out.loc["600337.SH", "name"], "ST美克")
+
+    def test_stock_basic_loader(self):
+        import os
+        import tempfile
+        td = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        try:
+            d = os.path.join(td.name, "stock_basic")
+            os.makedirs(d)
+            pd.DataFrame({"ts_code": ["600000.SH"], "name": ["浦发银行"]}).to_parquet(
+                os.path.join(d, "part_0000.parquet"), index=False)
+            names = screener._stock_basic(root=td.name)
+            self.assertEqual(names.get("600000.SH"), "浦发银行")
+        finally:
+            td.cleanup()
+
+    def test_event_types_uses_code_column(self):
+        import os
+        import sqlite3
+        import tempfile
+        td = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        try:
+            db = os.path.join(td.name, "analysis.db")
+            con = sqlite3.connect(db)
+            con.execute("CREATE TABLE events(event_id TEXT, code TEXT, date TEXT, category TEXT, "
+                        "category_final TEXT)")
+            con.execute("INSERT INTO events VALUES('e1','600337.SH','2026-11-03','回购','回购')")
+            con.execute("INSERT INTO events VALUES('e2','688023.SH','2026-10-01','业绩','业绩')")
+            con.commit()
+            con.close()
+            ev = screener._event_types({"600337.SH", "688023.SH"}, "2026-11-03", db_path=db)
+            self.assertEqual(ev.get("600337.SH"), ["回购"])
+            self.assertEqual(ev.get("688023.SH"), ["业绩"])
+            ev2 = screener._event_types({"600000.SH"}, "2026-11-03", db_path=db)
+            self.assertEqual(ev2, {})
+        finally:
+            td.cleanup()
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

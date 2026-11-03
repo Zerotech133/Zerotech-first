@@ -66,10 +66,6 @@ def parse(text: str, industries: Optional[List[str]] = None) -> Dict[str, Any]:
     if m:
         specs.append({"field": "ps_pct_hist", "op": "<=", "value": float(m.group(1))})
         notes.append("筛选：PS 历史分位 ≤ %s%%" % m.group(1))
-    else:
-        m2 = re.search(r"PS[^，。;；\n]{0,12}?(?:低于|小于)\s*" + NUM + r"\s*(?:%|倍|分位)", t, re.I)
-        if m2 and "分位" not in t:
-            pass  # PS 绝对值筛选暂不接（口径不同），记 unmatched
 
     # 营收同比
     if re.search(r"营收[^，。;；\n]{0,6}?同比[^0-9]{0,4}?转正", t):
