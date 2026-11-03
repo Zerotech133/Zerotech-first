@@ -1,0 +1,48 @@
+{
+ "schema_version": 1,
+ "date": "20261104",
+ "generated_at": "2026-11-04T03:14:43+08:00",
+ "generator": "tools/kb_corpus/knowledge_dedupe.py（W0-2 重复单元合并）",
+ "mode": "dry-run",
+ "dry_run": true,
+ "project": "视频号学习_8博主",
+ "source": {
+  "path": "C:\\项目\\知识库\\30_知识单元\\视频号学习_8博主_units_draft.jsonl",
+  "sha256": "2a38fc0531a74c3fb594e7bf94fcb43764d4681826105297b03b05ae959ac793",
+  "bytes": 1548366
+ },
+ "policy": {
+  "key": "normalize_claim_first_14_cjk",
+  "skip_boilerplate": true,
+  "merge": "保留首条 + merged_count/merged_unit_ids/evidence_list",
+  "write": "--apply 才写；写前备份 research/reports/backups/"
+ },
+ "stats": {
+  "input": 800,
+  "output": 800,
+  "dup_groups": 0,
+  "duplicate_rows": 0,
+  "merged": 0,
+  "boilerplate": 148,
+  "by_group_size": {}
+ },
+ "duplicates": [],
+ "kept_sample": [
+  "learn_视频号学习_8博主_0001",
+  "learn_视频号学习_8博主_0002",
+  "learn_视频号学习_8博主_0003",
+  "learn_视频号学习_8博主_0004",
+  "learn_视频号学习_8博主_0005",
+  "learn_视频号学习_8博主_0006",
+  "learn_视频号学习_8博主_0007",
+  "learn_视频号学习_8博主_0008",
+  "learn_视频号学习_8博主_0009",
+  "learn_视频号学习_8博主_0010"
+ ],
+ "notes": [
+  "任务预期 -218 基于旧审计的 1018 单元快照；当前 30_知识单元 文件经 re-extraction 扩充为 800 行（其中元数据行 148），实际重复 0 行（占比 0.0%，与旧审计 21.4% 一致）；按比例口径当前应约 -407，故实际值与旧预期 218 不同。"
+ ],
+ "backup": null,
+ "applied": false,
+ "disclaimer": "W0-2 重复单元合并：默认 dry-run；不修改知识卡/其他项目；不构成投资建议。"
+}

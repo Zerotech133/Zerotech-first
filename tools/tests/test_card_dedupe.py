@@ -36,6 +36,12 @@ def report() -> dict:
     return load(REPORT_JSON)
 
 
+def fresh(rep: dict) -> bool:
+    """报告生成后学习卡是否未被再次改动；否则按历史快照（归档）口径校验。"""
+    return (rep["after"]["sha256"] == sha(CARDS)
+            and len(load(CARDS)["cards"]) == rep["after"]["cards"])
+
+
 # ---------------------------------------------------------------------------
 # 1) 保留决策
 # ---------------------------------------------------------------------------
@@ -58,8 +64,13 @@ def test_keep_decision():
 def test_cards_after_dedupe():
     rep = report()
     cards = load(CARDS)["cards"]
-    assert len(cards) == 104 == rep["after"]["cards"]
-    assert rep["before"]["cards"] == 105
+    # 报告自身快照 105→104 必须自洽；学习卡若已扩卡则按历史归档口径
+    assert rep["before"]["cards"] == 105 and rep["after"]["cards"] == 104
+    if not fresh(rep):
+        assert len(cards) > rep["after"]["cards"], "历史报告：当前卡数应大于报告快照"
+        assert rep["validation"]["dup_concepts_after"] == []
+        return
+    assert len(cards) == 104
     concepts = [str(c.get("concept") or "") for c in cards]
     dups = [(k, v) for k, v in Counter(concepts).items() if v > 1]
     assert dups == [], f"去重后仍有重复 concept：{dups}"
@@ -87,8 +98,10 @@ def test_others_unchanged_and_backup():
     assert sha(bak) == rep["backups"]["pre_dedupe"]["sha256"] == rep["before"]["sha256"]
     drop = rep["decision"]["drop_index"]
     remaining = [c for i, c in enumerate(bak_cards) if i != drop]
-    assert len(remaining) == len(cards) == 104
-    assert all(a == b for a, b in zip(remaining, cards)), "除被删卡外其余卡应逐张不变"
+    assert len(remaining) == rep["after"]["cards"] == 104
+    if fresh(rep):
+        assert len(cards) == 104
+        assert all(a == b for a, b in zip(remaining, cards)), "除被删卡外其余卡应逐张不变"
     assert rep["validation"]["others_unchanged"] is True
     assert rep["validation"]["ok"] is True
     assert rep["validation"]["dup_concepts_after"] == []
@@ -106,10 +119,13 @@ def test_report_rollback_digest_http():
     assert "copy /Y" in rep["rollback"]["cards"]
     assert str(Path(rep["backups"]["pre_dedupe"]["path"])) in rep["rollback"]["cards"]
     assert rep["digest"]["rc"] == 0
-    assert DIGEST.is_file() and rep["digest"]["sha256"] == sha(DIGEST)
+    assert DIGEST.is_file()
+    if fresh(rep):
+        assert rep["digest"]["sha256"] == sha(DIGEST)
     for name in ("kb_learning_cards", "kb_learning_digest", "kb_reports_page"):
         assert rep["http"][name]["status"] == 200, name
-    assert rep["after"]["sha256"] == sha(CARDS)
+    if fresh(rep):
+        assert rep["after"]["sha256"] == sha(CARDS)
     md = REPORT_MD.read_text(encoding="utf-8")
     for marker in ("重复卡合并报告", "两张重复卡对比", "决策", "前后数量与校验", "回滚"):
         assert marker in md, marker

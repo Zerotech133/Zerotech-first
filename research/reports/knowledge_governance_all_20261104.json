@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-04T02:45:54+08:00",
+ "generated_at": "2026-11-04T03:15:29+08:00",
  "projects": [
   {
    "project_id": "laomu_notes",
@@ -47,5 +47,16 @@
   "projects": 3,
   "verify_pct": 99.0,
   "junk_pct": 39.6
+ },
+ "metrics": {
+  "units": 2202,
+  "meta_lines": 18,
+  "dup_groups": 8,
+  "verified": 2181,
+  "junk_units": 871,
+  "projects": 3,
+  "verify_pct": 99.0,
+  "junk_pct": 39.6,
+  "verified_pct": 99.0
  }
 }

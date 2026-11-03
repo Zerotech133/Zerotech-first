@@ -1,7 +1,7 @@
 {
- "generated_at": "2026-11-04T02:29:34",
- "source": "portal\\portal_api.py",
- "total": 297,
+ "generated_at": "2026-11-04T03:13:51",
+ "source": "C:\\项目\\老田的AI助手\\portal\\portal_api.py",
+ "total": 298,
  "signatures": [
   [
    "GET",
@@ -347,6 +347,11 @@
    "GET",
    "exact",
    "/api/learning/conclusions"
+  ],
+  [
+   "GET",
+   "exact",
+   "/api/learning/tool-intel"
   ],
   [
    "GET",

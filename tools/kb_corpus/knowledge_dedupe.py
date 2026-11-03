@@ -106,11 +106,16 @@ def dedupe(units: list[dict], *, skip_boilerplate: bool = True) -> dict:
             "input": len(units), "output": len(kept)}
 
 
-def write_report(payload: dict, out_dir: Path | None = None) -> None:
+def _pid_slug(payload: dict) -> str:
+    return re.sub(r"[^\w\u4e00-\u9fff-]+", "_", str(payload.get("project") or "unknown"))[:40]
+
+
+def write_report(payload: dict, out_dir: Path | None = None) -> dict:
     out = Path(out_dir) if out_dir else R
     out.mkdir(parents=True, exist_ok=True)
-    jp = out / f"knowledge_dedupe_{payload['date']}.json"
-    mp = out / f"knowledge_dedupe_{payload['date']}.md"
+    pid = _pid_slug(payload)
+    jp = out / f"knowledge_dedupe_{payload['date']}_{pid}.json"
+    mp = out / f"knowledge_dedupe_{payload['date']}_{pid}.md"
     jp.write_text(json.dumps(payload, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     s = payload["stats"]
     lines = [
@@ -135,6 +140,13 @@ def write_report(payload: dict, out_dir: Path | None = None) -> None:
               "- 本工具不修改知识卡/其他项目；仅作用于输入 units 文件。",
               "", f"> {payload['disclaimer']}", ""]
     mp.write_text("\n".join(lines), encoding="utf-8")
+    # 旧文件名兼容：knowledge_dedupe_<date>.{json,md} = 最近一次运行
+    legacy_jp = out / f"knowledge_dedupe_{payload['date']}.json"
+    legacy_mp = out / f"knowledge_dedupe_{payload['date']}.md"
+    legacy_jp.write_text(jp.read_text(encoding="utf-8"), encoding="utf-8")
+    legacy_mp.write_text(mp.read_text(encoding="utf-8"), encoding="utf-8")
+    return {"json": str(jp), "md": str(mp),
+            "legacy": {"json": str(legacy_jp), "md": str(legacy_mp)}}
 
 
 def build(*, input_path: str | Path, apply: bool = False, date: str = DATE,
@@ -196,8 +208,7 @@ def build(*, input_path: str | Path, apply: bool = False, date: str = DATE,
         payload["idempotent_noop"] = duplicate_rows == 0
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
-    write_report(payload, out)
-    payload["_outputs"] = {"json": str(out / f"knowledge_dedupe_{payload['date']}.json"), "md": str(out / f"knowledge_dedupe_{payload['date']}.md")}
+    payload["_outputs"] = write_report(payload, out)
     return payload
 
 
