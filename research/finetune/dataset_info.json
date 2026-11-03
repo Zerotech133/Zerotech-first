@@ -38,5 +38,12 @@
    "chosen": "chosen",
    "rejected": "rejected"
   }
+ },
+ "quant_kb_sft_v3": {
+  "file_name": "sft/quant_kb_sft_v3_train.jsonl",
+  "formatting": "sharegpt",
+  "columns": {
+   "messages": "messages"
+  }
  }
 }
