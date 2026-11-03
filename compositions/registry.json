@@ -62,7 +62,7 @@
         "phase": "shadow",
         "health": "unknown",
         "validated": false,
-        "evidence": "WO-IFS-WIRE-20261103：7 active API + /api/d1/training planned；d1_handoff/v2→watch_plan→confirmation→trade 四 ID 已贯通；数据 5 active + d1_decisions/training planned；Q2 仍待 health/SLO/rollback/测试入闸"
+        "evidence": "WO-Q2-D1-20261104：Q2 证据 2 已证/2 部分/1 未证（health 只读探针 8/8 GET 200；SLO 目标已登记未实测；rollback 四步已写演练 pending；D1 单测 21 passed 入 fast 门、IFS 契约 109 passed 部分未入闸；envelope 缺口）→ Q2 未成立，仍 draft/validated=false；证据 docs/plans/2026-11-04_D1_Q2验收证据_v1.md"
       }
     },
     {
