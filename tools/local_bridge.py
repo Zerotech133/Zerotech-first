@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -27,11 +28,12 @@ import local_library as ll  # noqa: E402
 
 BASE = Path(os.environ.get("ZB_LOCAL_LIBRARIES", r"C:\项目\_local_libraries"))
 SCHEMA = "hq/local_bridge/v1"
+USER_RE = re.compile(r"^[A-Za-z0-9._@-]{1,80}$")
 
 
 def _user_dir(user: str) -> Path:
     u = str(user or "").strip()
-    if not u or u in (".", "..") or any(c not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.@" for c in u):
+    if not u or u in (".", "..") or not USER_RE.fullmatch(u):
         raise ValueError("bad_user")
     p = (BASE / u).resolve()
     try:
