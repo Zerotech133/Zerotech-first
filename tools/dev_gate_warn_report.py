@@ -284,6 +284,8 @@ def main(argv=None):
         description="研发试点门 [dev-gate] 告警汇总（只读，不写盘）")
     parser.add_argument("--events", default=str(EVENTS_PATH),
                         help="事件 JSONL 路径（默认 portal/data/dev_events.jsonl）")
+    parser.add_argument("--now", default="",
+                        help="复算/测试用 ISO 时间")
     parser.add_argument("--window-days", type=int, default=7,
                         help="统计窗口天数（默认 7，最小 1）")
     group = parser.add_mutually_exclusive_group()
@@ -291,7 +293,13 @@ def main(argv=None):
     group.add_argument("--md", action="store_true", help="输出 Markdown")
     args = parser.parse_args(argv)
     _ensure_utf8_stdout()
-    report = build_report(args.events, window_days=args.window_days)
+    now_ts = None
+    if args.now:
+        try:
+            now_ts = time.mktime(time.strptime(args.now, "%Y-%m-%dT%H:%M:%S"))
+        except ValueError:
+            parser.error("--now 需要 ISO 时间，如 2026-10-27T10:00:00")
+    report = build_report(args.events, window_days=max(1, args.window_days), now=now_ts)
     if args.md:
         print(render_markdown(report))
     else:

@@ -245,7 +245,7 @@ def test_cli_json_is_default(tmp_path, capsys):
         _ev("2026-10-27 08:00:00", "DSH-Lead", "T-CLI",
            "[dev-gate] owner 不在研发部（路由规则：新 dev 需求派 ARCH1/组长） · CLI 夹具"),
     ])
-    rc = GWR.main(["--events", str(path)])
+    rc = GWR.main(["--events", str(path), "--now", "2026-10-27T10:00:00"])
     assert rc == 0
     out = json.loads(capsys.readouterr().out)
     assert out["schema"] == GWR.SCHEMA
@@ -259,7 +259,7 @@ def test_cli_markdown(tmp_path, capsys):
         _ev("2026-10-27 08:00:00", "DEV1", "T-MD",
            "[dev-gate] owner 不在合法域；缺验收命令 · MD 夹具"),
     ])
-    rc = GWR.main(["--events", str(path), "--md", "--window-days", "7"])
+    rc = GWR.main(["--events", str(path), "--md", "--window-days", "7", "--now", "2026-10-27T10:00:00"])
     assert rc == 0
     md = capsys.readouterr().out
     for key in ("研发试点门告警汇总", "原因分类", "按 Agent", "最近 5 条样例",
@@ -271,7 +271,7 @@ def test_cli_markdown(tmp_path, capsys):
 
 
 def test_cli_report_mode_rc0_on_missing_file(tmp_path, capsys):
-    rc = GWR.main(["--events", str(tmp_path / "absent.jsonl"), "--json"])
+    rc = GWR.main(["--events", str(tmp_path / "absent.jsonl"), "--json", "--now", "2026-10-27T10:00:00"])
     assert rc == 0
     out = json.loads(capsys.readouterr().out)
     assert out["source_exists"] is False

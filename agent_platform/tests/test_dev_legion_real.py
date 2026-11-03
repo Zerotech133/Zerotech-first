@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import json
 import sys
+import time
 from pathlib import Path
 
 import pytest
 
+NOW = time.mktime(time.strptime("2026-10-28 23:00:00", "%Y-%m-%d %H:%M:%S"))
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "portal"))
 import dev_legion_quant_real as Q  # noqa: E402
@@ -56,7 +58,7 @@ def _mkroot(tmp_path):
 
 def test_quant_real_aggregate_only(tmp_path):
     root = _mkroot(tmp_path)
-    d = Q.build_quant_real(root)
+    d = Q.build_quant_real(root, now=NOW)
     assert d["metrics"]["runs_window"] == 4
     assert d["metrics"]["last_run_at"] == "2026-10-28T12:00:00"
     blob = json.dumps(d, ensure_ascii=False)
@@ -105,3 +107,34 @@ def test_api_real_optional_and_compatible():
 def test_page_has_real_renderer():
     html = (ROOT / "portal" / "dev_legion.html").read_text(encoding="utf-8")
     assert "realText" in html and "真实 ·" in html
+
+
+# 日报 purpose 降级（原 test_seat_chat_fallback_purpose.py，归入 gate 覆盖文件）
+sys.path.insert(0, str(ROOT / "agent_platform"))
+from legion_command import serve as srv  # noqa: E402
+
+def test_report_purpose_allows_non_glm_fallback():
+    calls = []
+
+    def chat(binding, system, user):
+        calls.append(binding)
+        if binding == "deepseek/deepseek-v4-pro":
+            return {"ok": False, "error": {"message": "finish=length"}}
+        return {"ok": True, "data": {"text": "glm fallback", "binding_resolved": binding}}
+
+    env, attempts = srv._seat_chat(chat, "deepseek/deepseek-v4-pro", ["ollama/qwen3.5:9b"],
+                                   "s", "u", allow_non_glm_fallback=True)
+    assert env["ok"] and env["degraded"] is True
+    assert env["fallback_from"] == "deepseek/deepseek-v4-pro"
+    assert attempts[0] == "deepseek/deepseek-v4-pro" and "glm/glm-5.3" in attempts
+
+
+def test_meeting_default_does_not_fallback_non_glm():
+    calls = []
+
+    def chat(binding, system, user):
+        calls.append(binding)
+        return {"ok": False, "error": {"message": "down"}}
+
+    env, attempts = srv._seat_chat(chat, "deepseek/deepseek-v4-pro", ["ollama/qwen3.5:9b"], "s", "u")
+    assert env["ok"] is False and attempts == ["deepseek/deepseek-v4-pro"]
