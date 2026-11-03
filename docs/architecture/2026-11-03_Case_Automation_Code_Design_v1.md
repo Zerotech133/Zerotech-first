@@ -106,6 +106,14 @@ Case Service（唯一状态机 + 唯一真源）
   - `/api/case/dispatch` 仅服务端 approval.approved=true 且 meeting_id 存在；
   - 实测：未审批 dispatch **409 human_approval_required**；审批后 dispatch **200** 并落 DISPATCHED。
 
+### 服务端 orchestrator（已落地）
+
+- `legion_command/case_orchestrator.py`：田丰汇总 → 五角色并行 → 失败重试 → 会议 → 方案；
+- 8796 `/api/case/autorun` 后台线程执行，页面轮询 `/api/case/get/{id}`；
+- **刷新不中断**；不自动审批/下发；
+- 真实 E2E：服务端完成 5/5 + 会议 + 方案，Case 恢复到 5/7（方案已生成）；
+- 修复服务端 `dispatch:{}` 空对象被前端误显示 7/7。
+
 ### 存储（P0-1）
 
 - `legion_command/case_api.py`：`deliverables/cases/<case_id>/case.json` 原子存储、revision、list/latest/get/approve；

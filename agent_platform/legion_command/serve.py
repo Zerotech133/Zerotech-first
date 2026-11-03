@@ -22,6 +22,7 @@ import re
 import subprocess
 import sys
 import time
+import threading
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -39,6 +40,7 @@ from engine.openclaw_cli import agent_primary_model, is_relay, run as oc_run  # 
 from legion_command.snapshot import build_snapshot  # noqa: E402
 from legion_command import hq_meeting  # noqa: E402
 from legion_command import case_api  # noqa: E402
+from legion_command import case_orchestrator  # noqa: E402
 from legion_command import hq_agenda  # noqa: E402
 from legion_command import hq_acceptance  # noqa: E402
 from legion_command import hq_stats  # noqa: E402
@@ -2519,6 +2521,38 @@ class Handler(BaseHTTPRequestHandler):
                 return
             code, env = hq_agenda.append_message(COUNCIL_DATA, req)
             self._send_json(env, code)
+            return
+        if path == "/api/case/autorun":
+            sub, roles = _case_actor(self.headers)
+            if not sub:
+                self._send_json({"ok": False, "error": "unauthorized"}, 401)
+                return
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 256 * 1024:
+                    raise ValueError("bad length")
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                self._send_json({"ok": False, "error": "bad_request"}, 400)
+                return
+            cid = str(req.get("case_id") or "").strip()
+            if not cid:
+                import random
+                cid = "CASE-%s-%s" % (time.strftime("%Y%m%d"), "".join(random.choice("abcdefghijklmnopqrstuvwxyz0123456789") for _ in range(4)))
+            try:
+                c = case_api.get_case(cid) if cid else None
+                if not c:
+                    c = case_api.save_case({"case_id": cid, "title": str(req.get("title") or "未命名 Case"),
+                                            "materials": str(req.get("materials") or ""),
+                                            "status": "DRAFT", "opinions": [], "meeting_id": "", "proposal": ""})
+                if (c.get("orchestration") or {}).get("state") == "running":
+                    self._send_json({"ok": False, "error": "case_already_running", "case": c}, 409)
+                    return
+                threading.Thread(target=case_orchestrator.autorun, args=(cid,), daemon=True).start()
+            except ValueError as exc:
+                self._send_json({"ok": False, "error": str(exc)[:200]}, 400)
+                return
+            self._send_json({"ok": True, "case": c, "status": "running"}, 202)
             return
         if path == "/api/case/save":
             _sub, _roles = _case_actor(self.headers)

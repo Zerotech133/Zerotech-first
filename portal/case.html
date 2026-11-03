@@ -44,7 +44,7 @@ pre{white-space:pre-wrap;background:var(--bg-page);border:1px solid var(--border
   <div class="card" id="auto-box">
     <h2>⚡ 一键自动化（到方案）</h2>
     <div class="meta">填好下方标题/材料后，一次点击自动跑：田丰汇总 → 五角色并行（失败自动重试）→ 保存会议 → 生成方案。审批仍由人类点。</div>
-    <div class="btns"><button class="btn primary" id="btn-auto">一键自动跑完（到方案）</button><span class="meta" id="auto-status"></span></div>
+    <div class="btns"><button class="btn primary" id="btn-auto">一键自动跑完（到方案）</button><button class="btn" id="btn-server-auto">服务端自动跑（刷新不中断）</button><span class="meta" id="auto-status"></span></div>
     <div class="progress"><i id="autofill"></i></div>
     <div class="pmeta"><span id="autotext">自动化：待开始</span><span id="autopct">0%</span></div>
   </div>
@@ -139,7 +139,7 @@ async function loadIdentity(){
   catch(e){state.identity=null;state.canApprove=false;$('identity').textContent='身份加载失败，不能审批';}
   setBtns();
 }
-function refreshFlow(){var c=state.case;var done=0,label='流程进度：0/7';if(c){done=1;label='1/7 已建 Case';if(c.summary){done=2;label='2/7 田丰已汇总';}if((c.opinions||[]).filter(function(x){return x.text;}).length>=5){done=3;label='3/7 五角色 5/5';}if(c.meeting_id){done=4;label='4/7 会议已保存';}if(c.proposal){done=5;label='5/7 方案已生成';}if(c.approved){done=6;label='6/7 人类已审批';}if(c.dispatch){done=7;label='7/7 已下发任务申请';}}
+function refreshFlow(){var c=state.case;var done=0,label='流程进度：0/7';if(c){done=1;label='1/7 已建 Case';if(c.summary){done=2;label='2/7 田丰已汇总';}if((c.opinions||[]).filter(function(x){return x.text;}).length>=5){done=3;label='3/7 五角色 5/5';}if(c.meeting_id){done=4;label='4/7 会议已保存';}if(c.proposal){done=5;label='5/7 方案已生成';}if(c.approved){done=6;label='6/7 人类已审批';}if(c.dispatch&&(c.dispatch.owner||c.dispatch.request_id)){done=7;label='7/7 已下发任务申请';}}
   var pct=Math.round(done/7*100);setProgress('flowfill',pct,label,'flowpct','flowtext');}
 function setBtns(){
   var c=state.case;
@@ -149,6 +149,7 @@ function setBtns(){
   $('btn-meeting').disabled=!c||(c.opinions||[]).filter(function(x){return x.text;}).length<5||state.busy;
   $('btn-retry').disabled=!c||!c.summary||state.busy||state.autoRunning||(c.opinions||[]).filter(function(x){return x.text;}).length>=5;
   $('btn-auto').disabled=state.busy||state.autoRunning;
+  $('btn-server-auto').disabled=state.busy||state.autoRunning;
   $('btn-propose').disabled=!c||!c.meeting_id||state.busy;
   $('btn-approve').disabled=!c||!c.proposal||state.busy||!state.canApprove;
   $('btn-approve-dispatch').disabled=!c||!c.proposal||!c.meeting_id||state.busy||!state.canApprove||!!c.dispatch;
@@ -218,6 +219,32 @@ async function autoRun(){
     status('auto-status','已完成：5/5 + 会议 + 方案');
     status('proposal-status','方案已生成，待人类审批');
   }catch(e){phase(0,'自动化失败：'+e.message);status('auto-status','自动化失败：'+e.message);}
+  state.autoRunning=false;state.busy=false;setBtns();
+}
+async function serverAuto(){
+  if(state.autoRunning)return;
+  var title=($('title').value||'').trim()||((state.case&&state.case.title)||'');
+  if(!title){alert('先填议题标题');return;}
+  state.autoRunning=true;state.busy=true;setBtns();setProgress('autofill',5,'服务端编排启动…','autopct','autotext');
+  var body={title:title,materials:($('materials').value||'')};
+  if(state.case&&state.case.id)body.case_id=state.case.id;
+  try{
+    var r=await fetch('/api/case/autorun',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    var p=await r.json();if(!r.ok||!p.ok)throw new Error(p.error||('HTTP '+r.status));
+    state.case=p.case;state.case.id=state.case.id||state.case.case_id;try{localStorage.setItem(LS,JSON.stringify(state.case));}catch(e){}
+    status('auto-status','服务端运行中：'+(state.case.case_id||''));restoreCase();
+    var cid=state.case.case_id||state.case.id;var tries=0;
+    while(tries++<180){
+      await new Promise(function(res){setTimeout(res,2000);});
+      var rr=await fetch('/api/case/get/'+encodeURIComponent(cid),{cache:'no-store'});var pp=await rr.json();
+      if(!rr.ok||!pp.ok)continue;
+      state.case=pp.case;state.case.id=state.case.id||state.case.case_id;try{localStorage.setItem(LS,JSON.stringify(state.case));}catch(e){}
+      var o=state.case.orchestration||{};var pct=o.state==='done'?100:(o.phase==='propose'?85:(o.phase==='meeting'?70:(o.phase==='review'?20+Math.round((o.done||0)/5*45):12)));
+      setProgress('autofill',pct,'服务端编排：'+(o.phase||'')+' '+(o.state||''),'autopct','autotext');restoreCase();
+      if(o.state==='done'){status('auto-status','服务端完成：5/5 + 会议 + 方案');break;}
+      if(o.state==='error'){status('auto-status','服务端失败：'+(o.error||''));break;}
+    }
+  }catch(e){status('auto-status','服务端自动化失败：'+e.message);setProgress('autofill',0,'服务端编排失败','autopct','autotext');}
   state.autoRunning=false;state.busy=false;setBtns();
 }
 async function newCase(){
@@ -297,7 +324,7 @@ async function dispatchCase(){
   catch(e){status('dispatch-status','下发失败：'+e.message);}
   state.busy=false;setBtns();
 }
-$('btn-new').onclick=newCase;$('btn-auto').onclick=autoRun;$('btn-quick').onclick=quickBreakdown;$('btn-upgrade').onclick=upgradeQuick;$('btn-agg').onclick=aggregate;$('btn-review').onclick=review;$('btn-retry').onclick=review;$('btn-meeting').onclick=meeting;$('btn-propose').onclick=propose;$('btn-approve').onclick=approve;$('btn-approve-dispatch').onclick=approveAndDispatch;$('btn-dispatch').onclick=dispatchCase;
+$('btn-new').onclick=newCase;$('btn-auto').onclick=autoRun;$('btn-server-auto').onclick=serverAuto;$('btn-quick').onclick=quickBreakdown;$('btn-upgrade').onclick=upgradeQuick;$('btn-agg').onclick=aggregate;$('btn-review').onclick=review;$('btn-retry').onclick=review;$('btn-meeting').onclick=meeting;$('btn-propose').onclick=propose;$('btn-approve').onclick=approve;$('btn-approve-dispatch').onclick=approveAndDispatch;$('btn-dispatch').onclick=dispatchCase;
 function restoreCase(){
   if(!state.case)return;
   $('title').value=state.case.title||'';
@@ -307,7 +334,7 @@ function restoreCase(){
   if(state.case.meeting_id)show('meeting-out','meeting_id='+state.case.meeting_id);
   if(state.case.proposal)show('proposal-out',state.case.proposal);
   if(state.case.approved)status('approve-status','已由 '+(state.case.approver||'')+' 审批通过');
-  if(state.case.dispatch)show('dispatch-out',JSON.stringify(state.case.dispatch,null,2));
+  if(state.case.dispatch&&(state.case.dispatch.owner||state.case.dispatch.request_id))show('dispatch-out',JSON.stringify(state.case.dispatch,null,2));
   setBtns();
 }
 async function serverHydrate(){
