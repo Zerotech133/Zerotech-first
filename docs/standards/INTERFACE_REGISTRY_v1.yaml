@@ -1,5 +1,5 @@
 schema_version: interface_registry/v1
-registry_version: 1.1.0
+registry_version: 1.2.0
 updated_at: '2026-11-04'
 owner: A0
 maintainers:
@@ -1069,6 +1069,174 @@ interfaces:
     phase: F1
     wo: WO-IFS-WARROOM-ENVELOPE-20261104
   notes: F1d（WO-IFS-WARROOM-ENVELOPE-20261104）已接 envelope/request_id；payload 契约见 portal/war_room_data.py；独立 JSON Schema（schema_file）待补；登记 WO-IFS-REGISTRY-WARROOM-20261104
+- id: acad1.research.pool
+  method: GET
+  path: /quant-api/api/v1/acad1-research/pool
+  owner: ACAD1
+  consumer:
+  - ACAD1 研究台
+  - 门户
+  source_of_truth:
+    kind: pg_table
+    ref: zhice_os_v2.public.v2_acad1_pool@127.0.0.1:5446
+    note: ACAD1 选池表（pool_date 维度；query date/limit≤500）；8105 原生 /api/v1/acad1-research/pool
+  schema: acad1_research/v1
+  auth: portal-token
+  write: false
+  paper_only: true
+  SLO:
+    latency_ms_p95: 1500
+    error_rate_max: 0.02
+    availability: 0.99
+  slo_class: read_heavy
+  status: draft
+  ids:
+    produces: []
+    consumes: []
+  remediation:
+    phase: F1
+    wo: WO-ACAD1-INTERFACES-20261104
+  notes: 本地契约 acad1_research/v1（无独立 JSON Schema/schema_file、无 envelope schema_version）；8105 原生走 JWT/SSO（get_current_user），8734 反代走 auth_request，未登录 401；登记 WO-ACAD1-INTERFACES-20261104
+- id: acad1.research.stats
+  method: GET
+  path: /quant-api/api/v1/acad1-research/stats
+  owner: ACAD1
+  consumer:
+  - ACAD1 研究台
+  - 门户
+  source_of_truth:
+    kind: aggregate
+    ref: zhice_os_v2.public.v2_acad1_pool + v2_strategy_observation + v2_strategy_backtest + v2_acad1_review
+    note: 最新 pool_date 的池/观察/回测/复盘计数聚合（只读 SELECT）
+  schema: acad1_research/v1
+  auth: portal-token
+  write: false
+  paper_only: true
+  SLO:
+    latency_ms_p95: 1500
+    error_rate_max: 0.02
+    availability: 0.99
+  slo_class: read_heavy
+  status: draft
+  ids:
+    produces: []
+    consumes: []
+  remediation:
+    phase: F1
+    wo: WO-ACAD1-INTERFACES-20261104
+  notes: 本地契约 acad1_research/v1；聚合口径跨 4 张 PG 表；无 envelope/schema_file；401 同 pool 口径；登记 WO-ACAD1-INTERFACES-20261104
+- id: acad1.research.reviews
+  method: GET
+  path: /quant-api/api/v1/acad1-research/reviews
+  owner: ACAD1
+  consumer:
+  - ACAD1 研究台
+  - 门户
+  source_of_truth:
+    kind: pg_table
+    ref: zhice_os_v2.public.v2_acad1_review@127.0.0.1:5446
+    note: ACAD1 池级复盘记录（review_date/topic/verdict/evidence/reviewer；limit≤200）
+  schema: acad1_research/v1
+  auth: portal-token
+  write: false
+  paper_only: true
+  SLO:
+    latency_ms_p95: 1500
+    error_rate_max: 0.02
+    availability: 0.99
+  slo_class: read_heavy
+  status: draft
+  ids:
+    produces: []
+    consumes: []
+  remediation:
+    phase: F1
+    wo: WO-ACAD1-INTERFACES-20261104
+  notes: 本地契约 acad1_research/v1；无 envelope/schema_file；401 同 pool 口径；登记 WO-ACAD1-INTERFACES-20261104
+- id: acad1.research.decisions
+  method: GET
+  path: /quant-api/api/v1/acad1-research/decisions
+  owner: ACAD1
+  consumer:
+  - ACAD1 研究台
+  - 门户
+  source_of_truth:
+    kind: pg_table
+    ref: zhice_os_v2.public.v2_lusu_decision@127.0.0.1:5446
+    note: 鲁肃裁决只读列表（pool_date/verdict/reasons/risk_checks/position_hint；limit≤100）
+  schema: acad1_research/v1
+  auth: portal-token
+  write: false
+  paper_only: true
+  SLO:
+    latency_ms_p95: 1500
+    error_rate_max: 0.02
+    availability: 0.99
+  slo_class: read_heavy
+  status: draft
+  ids:
+    produces: []
+    consumes: []
+  remediation:
+    phase: F1
+    wo: WO-ACAD1-INTERFACES-20261104
+  notes: 本地契约 acad1_research/v1；只读视图（裁决写入归 D1 decision 接口）；无 envelope/schema_file；登记 WO-ACAD1-INTERFACES-20261104
+- id: acad1.research.evidence
+  method: GET
+  path: /quant-api/api/v1/acad1-research/evidence
+  owner: ACAD1
+  consumer:
+  - ACAD1 研究台
+  - 门户
+  source_of_truth:
+    kind: file
+    ref: C:\Temp\acad1_evidence_bundle.json（ACAD1_EVIDENCE_BUNDLE_PATH 可覆盖）
+    note: ACAD1 证据包（summary+items）；缺文件→404、损坏/结构非法→503（不把半成品当证据）
+  schema: acad1_research/v1
+  auth: portal-token
+  write: false
+  paper_only: true
+  SLO:
+    latency_ms_p95: 1500
+    error_rate_max: 0.02
+    availability: 0.99
+  slo_class: read_heavy
+  status: draft
+  ids:
+    produces: []
+    consumes: []
+  remediation:
+    phase: F1
+    wo: WO-ACAD1-INTERFACES-20261104
+  notes: 本地契约 acad1_research/v1；文件真源（C:\Temp 契约目录化属 P2）；404/503 诚实语义；无 envelope/schema_file；登记 WO-ACAD1-INTERFACES-20261104
+- id: acad1.research.calendar
+  method: GET
+  path: /quant-api/api/v1/acad1-research/calendar
+  owner: ACAD1
+  consumer:
+  - ACAD1 研究台
+  - 门户
+  source_of_truth:
+    kind: aggregate
+    ref: zhice_os_v2.public.v2_acad1_pool（按 pool_date 聚合）
+    note: 池日历（pool_date → total/strategies；limit≤60，倒序）
+  schema: acad1_research/v1
+  auth: portal-token
+  write: false
+  paper_only: true
+  SLO:
+    latency_ms_p95: 1500
+    error_rate_max: 0.02
+    availability: 0.99
+  slo_class: read_heavy
+  status: draft
+  ids:
+    produces: []
+    consumes: []
+  remediation:
+    phase: F1
+    wo: WO-ACAD1-INTERFACES-20261104
+  notes: 本地契约 acad1_research/v1；PG 聚合口径；无 envelope/schema_file；401 同 pool 口径；登记 WO-ACAD1-INTERFACES-20261104
 id_chain:
   version: id_chain/v1
   order:
@@ -1478,14 +1646,14 @@ plan_phases:
     - WO-IFS-E2E-20261103
     - WO-IFS-EVIDENCE-20261103
 counts:
-  interfaces: 32
+  interfaces: 38
   by_status:
-    draft: 24
+    draft: 30
     v1: 5
     deprecated: 3
     retired: 0
   by_owner:
-    ACAD1: 1
+    ACAD1: 7
     DATA1: 2
     STRAT1: 1
     D1: 12
@@ -1494,5 +1662,5 @@ counts:
     WATCH_TOWER: 2
     A0: 3
   write_interfaces: 12
-  read_interfaces: 20
+  read_interfaces: 26
   id_chain_entities: 11

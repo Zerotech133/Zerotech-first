@@ -4,7 +4,7 @@
 - **机器可读真源**：`docs/standards/INTERFACE_REGISTRY_v1.yaml`（`interfaces[*]` = owner/consumer/SLO；`owners` = 席位目录；`slo_classes` = SLO 档位）
 - **配套**：`docs/standards/2026-11-03_接口对接规范_IFS_v1.md`（IFS-01~14）、`docs/standards/2026-11-03_ID_CHAIN_v1.md`
 - **性质**：规范层矩阵（本单只登记，不改代码/不启动服务）
-- **验收口径**：32 接口 × owner × consumer × SLO **无空洞**；owner 必须在册；consumer ≥1；SLO 必须命中档位；write/paper_only 与 IFS-05 一致。
+- **验收口径**：38 接口 × owner × consumer × SLO **无空洞**；owner 必须在册；consumer ≥1；SLO 必须命中档位；write/paper_only 与 IFS-05 一致。
 
 ---
 
@@ -24,7 +24,7 @@
 
 ---
 
-## 二、接口矩阵（32 接口）
+## 二、接口矩阵（38 接口）
 
 | # | interface_id | 方法 | 路径 | owner | consumer | SLO 档位（p95/err） | write | paper_only | status |
 |---|---|---|---|---|---|---|---|---|---|
@@ -60,8 +60,14 @@
 | 29 | `health.probe.get` | GET | `/api/health` | A0 | 门户、运维、守护器 | read_fast（300ms/1%） | false | true | draft |
 | 30 | `health.landing.get` | GET | `/health` | A0 | 监控、nginx | read_fast（300ms/1%） | false | true | draft |
 | 31 | `war_room.snapshot.get` | GET | `/api/war-room/snapshot` | WATCH_TOWER | 门户、WATCH_TOWER、D1 | read_heavy（1500ms/2%） | false | true | draft |
+| 32 | `acad1.research.pool` | GET | `/quant-api/api/v1/acad1-research/pool` | ACAD1 | ACAD1 研究台、门户 | read_heavy（1500ms/2%） | false | true | draft |
+| 33 | `acad1.research.stats` | GET | `/quant-api/api/v1/acad1-research/stats` | ACAD1 | ACAD1 研究台、门户 | read_heavy（1500ms/2%） | false | true | draft |
+| 34 | `acad1.research.reviews` | GET | `/quant-api/api/v1/acad1-research/reviews` | ACAD1 | ACAD1 研究台、门户 | read_heavy（1500ms/2%） | false | true | draft |
+| 35 | `acad1.research.decisions` | GET | `/quant-api/api/v1/acad1-research/decisions` | ACAD1 | ACAD1 研究台、门户 | read_heavy（1500ms/2%） | false | true | draft |
+| 36 | `acad1.research.evidence` | GET | `/quant-api/api/v1/acad1-research/evidence` | ACAD1 | ACAD1 研究台、门户 | read_heavy（1500ms/2%） | false | true | draft |
+| 37 | `acad1.research.calendar` | GET | `/quant-api/api/v1/acad1-research/calendar` | ACAD1 | ACAD1 研究台、门户 | read_heavy（1500ms/2%） | false | true | draft |
 
-> 统计：draft 24 / v1 5 / deprecated 3 / retired 0；write=true 12；read-only 20；**paper_only 全 32 = true（平台 paper-only 铁律）**。
+> 统计：draft 30 / v1 5 / deprecated 3 / retired 0；write=true 12；read-only 26；**paper_only 全 38 = true（平台 paper-only 铁律）**。
 
 ---
 
@@ -69,7 +75,7 @@
 
 | owner | 席位角色 | 接口数 | 接口清单 |
 |---|---|---|---|
-| ACAD1 | academy_director | 1 | acad1.pool.get |
+| ACAD1 | academy_director | 7 | acad1.pool.get、acad1.research.pool、acad1.research.stats、acad1.research.reviews、acad1.research.decisions、acad1.research.evidence、acad1.research.calendar |
 | DATA1 | data_team_lead | 2 | dw.query.get、dw.query.post |
 | STRAT1 | strategy_researcher | 1 | strategy.list |
 | D1 | d1_decision | 11 | d1.research.get、d1.case.upsert、d1.decision.create、d1.decision.list、d1.meeting.get、d1.meeting.create、d1.handoff.create、d1.handoff.list、outcome.get、training.episode.get、mcp.d1-research |
@@ -78,7 +84,7 @@
 | WATCH_TOWER | watchtower_arbiter | 2 | watchtower.membership.get、war_room.snapshot.get |
 | A0 | product_rd_chief | 3 | composition.interface.list、health.probe.get、health.landing.get |
 
-校验结果：**32 接口全部有 owner；全部 owner 在 registry `owners` 目录内（8 席）**；无 owner 空洞。
+校验结果：**38 接口全部有 owner；全部 owner 在 registry `owners` 目录内（8 席）**；无 owner 空洞。
 
 ---
 
@@ -91,11 +97,12 @@
 | TR1 | d1.handoff.create、confirm.create、confirm.list、paper.*、outcome.get | 模拟交易所 |
 | 门户（8734） | 全部只读接口（含 war_room.snapshot.get 作战台聚合） | 人类入口唯一 8734 |
 | WATCH_TOWER / D1 | war_room.snapshot.get | 作战台实时只读聚合（D1 可消费） |
+| ACAD1 研究台 / 门户 | acad1.research.*（6） | 司马徽研究台只读消费（8105 原生 JWT / 8734 反代 auth_request） |
 | HERMES | d1.research.get、mcp.d1-research | MCP 只读消费 |
 | 数据仓/训练 | outcome.get、training.episode.get、dw.query.* | 回放/训练 |
 | 组合/ARCH1/平台 | composition.interface.list、strategy.list、dw.query.* | 组合登记/治理 |
 
-校验结果：**32 接口全部 consumer ≥1**；关键链路（池→D1→WA→确认→paper→outcome）每跳至少 1 个消费方（缺 watch_plan/trigger 的生产接口为内部契约，见 ID chain 空洞表）。
+校验结果：**38 接口全部 consumer ≥1**；关键链路（池→D1→WA→确认→paper→outcome）每跳至少 1 个消费方（缺 watch_plan/trigger 的生产接口为内部契约，见 ID chain 空洞表）。
 
 ---
 
@@ -104,19 +111,19 @@
 | 档位 | 接口数 | 接口 |
 |---|---|---|
 | read_fast | 13 | acad1.pool.get、strategy.list、d1.decision.list、d1.meeting.get、d1.handoff.list、confirm.list、paper.status、paper.exchange.health、paper.exchange.snapshot、training.episode.get、watchtower.membership.get、health.probe.get、health.landing.get |
-| read_heavy | 4 | dw.query.get、dw.query.post、d1.research.get、war_room.snapshot.get |
+| read_heavy | 10 | dw.query.get、dw.query.post、d1.research.get、war_room.snapshot.get、acad1.research.pool、acad1.research.stats、acad1.research.reviews、acad1.research.decisions、acad1.research.evidence、acad1.research.calendar |
 | write_ledger | 2 | d1.decision.create、d1.handoff.create |
 | write_gate | 5 | d1.meeting.create、confirm.create、paper.order、paper.direct、paper.stop |
 | internal_contract | 5 | d1.case.upsert、watch.plan.create、watch.trigger.create、paper.execution.record、outcome.get |
 | mcp_tool | 1 | mcp.d1-research |
 | manifest | 1 | composition.interface.list |
 
-> 精确数量以 registry 为准（契约测试用 counts 锚点校验：interfaces=32、write=12、read=20）。
+> 精确数量以 registry 为准（契约测试用 counts 锚点校验：interfaces=38、write=12、read=26）。
 
 状态说明：
 
 - `v1`（5）：dw.query.get/post、strategy.list、paper.exchange.health/snapshot —— 已带 schema_version/只读/真源；仍待按 IFS-03 补齐 request_id 与 source 对象后由 registry 复核（F1）。
-- `draft`（24）：已存在或规划中，未满足 v1 全部条件（缺 envelope/ID/契约测试/登记）；其中 war_room.snapshot.get 已完成 F1d envelope 接线，待独立 schema 与 Q2 证据后升 v1。
+- `draft`（30）：已存在或规划中，未满足 v1 全部条件（缺 envelope/ID/契约测试/登记）；其中 war_room.snapshot.get 已完成 F1d envelope 接线，待独立 schema 与 Q2 证据后升 v1；acad1.research.*（6）为本地契约 `acad1_research/v1`（无独立 JSON Schema/schema_file、无 envelope），升 v1 需补 schema/envelope/证据。
 - `deprecated`（3）：paper.order / paper.direct / paper.stop —— 多入口收敛（F4），迁移期内只兼容不扩展。
 - `retired`（0）。
 
@@ -133,6 +140,7 @@
 | MCP 未登记 servers.json | mcp.d1-research | F6 `WO-IFS-MCP-20261103` |
 | composition 未暴露全部接口 | composition.interface.list | F6 `WO-IFS-COMPOSITION-20261103` |
 | war_room 无独立 JSON Schema/schema_file | war_room.snapshot.get | F1 后续补 schema（F1d 仅完成 envelope 接线；本单只登记） |
+| ACAD1 research 6 接口无独立 JSON Schema/envelope（本地契约） | acad1.research.*（6） | F1 后续补 `acad1_research/v1` schema/envelope；evidence 依赖 C:\Temp 文件（404/503 已诚实）；401 由 8105 JWT/8734 auth_request 承担 |
 | envelope 未统一 | 除 D1（F1b）/作战台（F1d）外的 draft 接口 | F1 `WO-IFS-ENVELOPE-20261103` |
 
 ---
@@ -150,3 +158,4 @@
 |---|---|---|
 | v1.0 | 2026-11-03 | 首版：31 接口矩阵、8 席位 owner、7 档 SLO、空洞与整改映射 |
 | v1.1 | 2026-11-04 | WO-IFS-REGISTRY-WARROOM-20261104：登记 F1d `war_room.snapshot.get`（GET `/api/war-room/snapshot`，owner WATCH_TOWER，consumer 门户/WATCH_TOWER/D1，schema war_room/v1，source_kind=aggregate，read-only，paper_only，read_heavy，status draft，ids 空）→ **接口数 31→32**（draft 23→24、read 19→20、WATCH_TOWER 1→2）；registry_version 1.0.0→1.1.0。回滚：`git revert <本单 commit>`（3 文件：registry YAML / 本矩阵 / tools/tests 契约测试），再跑 `pytest tools/tests/test_interface_registry_contract.py tools/tests/test_interface_schema_contract.py -q` 与 `composition.py validate --all` 复核。 |
+| v1.2 | 2026-11-04 | WO-ACAD1-INTERFACES-20261104：登记司马徽军团（ACAD1）6 个 research 接口 `acad1.research.{pool,stats,reviews,decisions,evidence,calendar}`（GET `/quant-api/api/v1/acad1-research/*`，8105 原生 `/api/v1/acad1-research/*`；owner ACAD1，consumer ACAD1 研究台/门户，schema `acad1_research/v1` 本地契约，auth portal-token（8105 JWT/SSO、8734 auth_request），read-only，paper_only，SLO read_heavy，status draft，ids 空）→ **接口数 32→38**（draft 24→30、read 20→26、ACAD1 1→7、read_heavy 4→10）；registry_version 1.1.0→1.2.0。回滚：`git revert <本单 commit>`（4 文件：registry YAML / 本矩阵 / acad1-legion manifest / tools/tests 契约测试），再跑契约测试与 `composition.py validate --all` 复核。 |
