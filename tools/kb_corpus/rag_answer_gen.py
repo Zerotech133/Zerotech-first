@@ -36,7 +36,7 @@ W13 = REPO / "tools" / "kb_corpus" / "answer_eval.py"
 DATE = "20261104"
 CJK = re.compile(r"[\u4e00-\u9fff]+")
 SENT = re.compile(r"[^。！？!?；;\n]+[。！？!?；;]?")
-STRATEGIES = ("A", "B", "C")
+STRATEGIES = ("A", "B", "C", "D")
 WORKERS = 6
 
 
@@ -66,9 +66,21 @@ FEWSHOT = ("示例：资料：[1] 均线粘合度衡量多条均线收敛程度�
            "问题：均线粘合度的作用？\n答：均线粘合度衡量多条均线收敛程度 [1]；收敛后常伴随方向选择 [2]。")
 
 
+D_RULES = ("你是投研知识助手。只能使用下面编号资料回答，禁止使用任何外部知识、推测或扩写；"
+           "用 2-4 句话回答；每个事实句末必须用 [n] 标注资料编号（至少 1 个 [n]）；"
+           "仅当资料与问题完全无关、没有任何可用信息时，才回答「资料不足，无法回答」；"
+           "只要资料包含部分相关信息，就应基于资料作答并引用，不得强制拒答；"
+           "不得给出投资建议或收益承诺；答案不超过 180 字。")
+
+
 def build_prompt(strategy: str, question: str, contexts: list[dict]) -> str:
     if strategy == "A":
         return AE.answer_prompt(question, contexts)
+    if strategy == "D":
+        lines = [D_RULES, FEWSHOT, "", "资料："]
+        lines += [f"[{i+1}] {c['text'][:220]}" for i, c in enumerate(contexts)]
+        lines += ["", f"问题：{question}", "回答："]
+        return "\n".join(lines)
     ev = extract_evidence(question, contexts) if strategy == "C" else None
     lines = [BASE_RULES, FEWSHOT, ""]
     if strategy == "C" and ev:
@@ -131,7 +143,8 @@ def aggregate(results: list[dict]) -> dict:
 
 def evaluate(*, write: bool = False, budget_s: int = 900, strategies: tuple[str, ...] = STRATEGIES,
              embed_fn=None, chat_fn=None, docs: list[dict] | None = None,
-             questions: list[dict] | None = None) -> dict:
+             questions: list[dict] | None = None,
+             out_json: Path | None = None, out_md: Path | None = None) -> dict:
     t0 = time.monotonic()
     docs = docs if docs is not None else AE.W6MOD.load_docs()
     if questions is None:
@@ -184,6 +197,7 @@ def evaluate(*, write: bool = False, budget_s: int = 900, strategies: tuple[str,
                 "A": "原 prompt（W13 基线）",
                 "B": "强化 prompt：仅用资料/每句末引用/资料不足拒答/不扩写/无投资建议/≤180字 + few-shot",
                 "C": "B + 证据摘录（先从 top5 抽取相关证据句，再依据证据回答并引用）",
+                "D": "A 原规则 + 每句末必须 [n] + 只依据资料不扩写 + 仅完全无相关信息才拒答（不强制拒答）",
             },
             "elapsed_s": round(time.monotonic() - t0, 1), "budget_s": budget_s,
         },
@@ -204,47 +218,65 @@ def evaluate(*, write: bool = False, budget_s: int = 900, strategies: tuple[str,
         ],
         "disclaimer": "研究输出，不构成投资建议。",
     }
+    parts = []
+    for s in strategies:
+        if s == "A" or f"{s}-A" not in deltas:
+            continue
+        d = deltas[f"{s}-A"]
+        parts.append(f"{s}/A：引用 {d['citation_accuracy']}、groundedness {d['groundedness']}、"
+                     f"不可答拒答 {d['correct_refusal_rate']}、平均长度 {d['avg_answer_len']}")
     payload["conclusion"] = (
-        f"最优策略 {best}：引用正确率 {aggs[best]['citation_accuracy']}（A 基线 {aggs.get('A', {}).get('citation_accuracy')}），"
+        f"最优策略 {best}：引用正确率 {aggs[best]['citation_accuracy']}（A {aggs.get('A', {}).get('citation_accuracy')}），"
         f"groundedness {aggs[best]['groundedness']}（A {aggs.get('A', {}).get('groundedness')}），"
         f"不可答拒答率 {aggs[best]['correct_refusal_rate']}；"
-        f"B/A 提升：引用 {deltas.get('B-A', {}).get('citation_accuracy')}、groundedness {deltas.get('B-A', {}).get('groundedness')}；"
-        f"C/A 提升：引用 {deltas.get('C-A', {}).get('citation_accuracy')}、groundedness {deltas.get('C-A', {}).get('groundedness')}。")
+        + "；".join(parts) + "。")
+    oj = Path(out_json) if out_json else OUT_JSON
+    om = Path(out_md) if out_md else OUT_MD
     if write:
-        OUT_JSON.write_text(json.dumps(payload, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
-        lines = ["# RAG 生成侧优化 A/B/C 对比（W16 · 2026-11-04）", "",
-                 "> 数据集：W13 40 题（30 可答 + 10 不可答）· hybrid top5 · qwen3.5:9b（同模型，只改生成策略）", "",
-                 "## 一、三策略对比", "", "| 指标 | A（基线） | B（强化 prompt） | C（B+证据摘录） | B-A | C-A |", "|---|---|---|---|---|---|"]
-        rows = ["citation_accuracy", "groundedness", "correct_refusal_rate", "over_refusal_rate",
-                "gold_similarity", "overclaim_rate", "length_anomaly_rate", "avg_answer_len"]
-        for k in rows:
-            a = aggs.get("A", {}).get(k)
-            b = aggs.get("B", {}).get(k)
-            c = aggs.get("C", {}).get(k)
-            db = deltas.get("B-A", {}).get(k, "—") if k in deltas.get("B-A", {}) else "—"
-            dc = deltas.get("C-A", {}).get(k, "—") if k in deltas.get("C-A", {}) else "—"
-            lines.append(f"| {k} | {a} | {b} | {c} | {db} | {dc} |")
-        lines += ["", f"- 最优策略：**{best}**", f"- {payload['conclusion']}",
-                  "- SFT/DPO 目标：引用正确率 ≥0.90、groundedness ≥0.60、不可答拒答率 ≥0.80；",
-                  f"- sampled_note：{sampled_note or '无（三策略均全量 40 题）'}",
-                  "", "## 二、策略定义", "",
-                  "- **A**：W13 原 prompt（2-4 句 + 句末 [n] + 可拒答）；",
-                  "- **B**：强化 prompt —— 仅用资料/每个事实句末引用/资料不足明确拒答/不扩写/无投资建议/≤180 字 + few-shot；",
-                  "- **C**：B + 证据摘录 —— 先从 top5 按查询相关度抽证据句（≤5 条，带编号），再依据证据回答并引用。",
-                  "", "## 三、样例（每策略前 2 题）", ""]
-        for s in strategies:
-            lines += [f"### 策略 {s}", ""]
-            for smp in payload["samples"][s]:
-                lines += [f"- **{smp['qid']}** {smp['question']}", f"  - 回答：{smp['answer']}",
-                          f"  - groundedness={smp['groundedness']} · 引用正确={smp['citation_ok']}", ""]
-        lines += ["## 四、结论与推荐", "",
-                  f"- {payload['conclusion']}",
-                  "- 推荐：若 B/C 中引用正确率与 groundedness 同时提升且拒答不降，优先采用该策略作为生成默认 prompt（无需改模型）；",
-                  "- 局限：" + "；".join(payload["limitations"][:3]),
-                  "", f"> {payload['disclaimer']}", ""]
-        OUT_MD.write_text("\n".join(lines), encoding="utf-8")
-        payload["_outputs"] = {"json": str(OUT_JSON), "md": str(OUT_MD)}
+        oj.write_text(json.dumps(payload, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        om.write_text(render_md(payload), encoding="utf-8")
+        payload["_outputs"] = {"json": str(oj), "md": str(om)}
     return payload
+
+
+def render_md(payload: dict) -> str:
+    strategies = list(payload["aggregate"].keys())
+    aggs = payload["aggregate"]
+    deltas = payload.get("deltas_vs_A") or {}
+    rows = ["citation_accuracy", "groundedness", "correct_refusal_rate", "over_refusal_rate",
+            "gold_similarity", "overclaim_rate", "length_anomaly_rate", "avg_answer_len"]
+    labels = {"citation_accuracy": "引用正确率", "groundedness": "groundedness",
+              "correct_refusal_rate": "不可答拒答率", "over_refusal_rate": "可答过拒率",
+              "gold_similarity": "gold 相似度", "overclaim_rate": "过度声明率",
+              "length_anomaly_rate": "长度异常率", "avg_answer_len": "平均长度"}
+    title = f"# RAG 生成策略对比 {'/'.join(strategies)}（{'W18' if 'D' in strategies else 'W16'} · 2026-11-04）"
+    lines = [title, "",
+             "> 数据集：W13 40 题（30 可答 + 10 不可答）· hybrid top5 · qwen3.5:9b（同模型，只改生成策略）", "",
+             "## 一、策略对比", "",
+             "| 指标 | " + " | ".join(strategies) + " | " + " | ".join(f"{x}-A" for x in strategies if x != "A") + " |",
+             "|" + "---|" * (1 + len(strategies) + max(0, len(strategies) - 1))]
+    for k in rows:
+        vals = [str(aggs.get(x, {}).get(k)) for x in strategies]
+        ds = [str(deltas.get(f"{x}-A", {}).get(k, "—")) for x in strategies if x != "A"]
+        lines.append("| " + " | ".join([labels[k]] + vals + ds) + " |")
+    lines += ["", f"- 最优策略：**{payload.get('best')}**",
+              f"- {payload.get('conclusion')}",
+              f"- SFT/DPO 目标：引用正确率 ≥0.90、groundedness ≥0.60、不可答拒答率 ≥0.80；",
+              f"- sampled_note：{payload.get('sampled_note') or '无（各策略均全量 40 题）'}",
+              "", "## 二、策略定义", ""]
+    for sname, desc in (payload.get("method", {}).get("strategies") or {}).items():
+        lines.append(f"- **{sname}**：{desc}")
+    lines += ["", "## 三、样例（每策略前 2 题）", ""]
+    for sname in strategies:
+        lines += [f"### 策略 {sname}", ""]
+        for smp in (payload.get("samples") or {}).get(sname, []):
+            lines += [f"- **{smp.get('qid')}** {smp.get('question')}", f"  - 回答：{smp.get('answer')}",
+                      f"  - groundedness={smp.get('groundedness')} · 引用正确={smp.get('citation_ok')}", ""]
+    lines += ["## 四、结论与推荐", "", f"- {payload.get('conclusion')}",
+              "- 目标：citation_accuracy 提升且 groundedness 不降；若未达成，停止 prompt 迭代，转向 SFT/DPO（W14b 引用对齐数据）。",
+              "- 局限：" + "；".join((payload.get("limitations") or [])[:3]),
+              "", f"> {payload.get('disclaimer')}", ""]
+    return "\n".join(lines)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -257,8 +289,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("command", nargs="?", default="build", choices=["build"])
     parser.add_argument("--budget", type=int, default=900)
     parser.add_argument("--write", action="store_true")
+    parser.add_argument("--out-json", default="")
+    parser.add_argument("--out-md", default="")
     args = parser.parse_args(argv)
-    payload = evaluate(write=args.write, budget_s=args.budget)
+    payload = evaluate(write=args.write, budget_s=args.budget,
+                       out_json=Path(args.out_json) if args.out_json else None,
+                       out_md=Path(args.out_md) if args.out_md else None)
     print(f"[rag_answer_gen] 40题 × A/B/C | best={payload['best']}")
     for s in STRATEGIES:
         a = payload["aggregate"][s]

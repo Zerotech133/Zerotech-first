@@ -35,7 +35,10 @@ def test_strategy_prompts():
     assert "2-4 句话" in pa and "证据摘录" not in pa
     assert "每个事实句末" in pb and "资料不足" in pb and "180" in pb
     assert "证据摘录" in pc and "[1]" in pc
-    assert pa != pb != pc
+    pd = m.build_prompt("D", "什么是均线粘合度？", CTX)
+    assert "至少 1 个 [n]" in pd and "完全无关" in pd and "不得强制拒答" in pd
+    assert "资料不足必须拒答" not in pd
+    assert len({pa, pb, pc, pd}) == 4
 
 
 def test_extract_evidence():
@@ -89,9 +92,9 @@ def test_evaluate_mock():
 
     payload = m.evaluate(write=False, docs=docs, questions=questions, embed_fn=embed_fn, chat_fn=chat_fn)
     assert payload["schema_version"] == "rag_gen_improve.v1"
-    for s in ("A", "B", "C"):
+    for s in ("A", "B", "C", "D"):
         assert s in payload["aggregate"] and payload["aggregate"][s]["evaluated"] == 2
-    assert set(payload["deltas_vs_A"]) == {"B-A", "C-A"}
+    assert set(payload["deltas_vs_A"]) == {"B-A", "C-A", "D-A"}
     assert payload["best"] in ("A", "B", "C")
     assert payload["conclusion"] and payload["targets"]
 
@@ -104,5 +107,20 @@ def test_timeout_sampling():
                         embed_fn=lambda texts: [[1.0] for _ in texts],
                         chat_fn=lambda prompt: "回答 [1]", budget_s=-1)
     assert payload["sampled_note"] and "超预算" in payload["sampled_note"]
-    for s in ("A", "B", "C"):
-        assert payload["aggregate"][s]["evaluated"] == 1, "三策略均按同题补齐"
+    for s in ("A", "B", "C", "D"):
+        assert payload["aggregate"][s]["evaluated"] == 1, "四策略均按同题补齐"
+
+
+def test_strategy_d_rules():
+    pd = m.build_prompt("D", "什么是均线粘合度？", CTX)
+    assert "只能使用下面编号资料" in pd
+    assert "每个事实句末必须用 [n]" in pd
+    assert "禁止使用任何外部知识、推测或扩写" in pd
+    assert "完全无关" in pd
+    assert "不得强制拒答" in pd
+    # D 不含 B 的激进拒答规则
+    pb = m.build_prompt("B", "什么是均线粘合度？", CTX)
+    assert "资料不足以回答时必须明确说" in pb
+    assert "资料不足以回答时必须明确说" not in pd
+    # D 不含证据摘录（与 C 区分）
+    assert "证据摘录" not in pd
