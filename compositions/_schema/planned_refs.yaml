@@ -50,10 +50,5 @@ refs:
   - ref: dataset/file/training_episode
     owner: D1
     due: "2026-11-16"
-    reason: "训练 episode 契约未定（IFS F5 WO-IFS-TRAIN，11/16 前）"
-    acceptance: "F5 训练契约落地并登记 dataset_registry 后移除 planned"
-  - ref: page/d1/training
-    owner: D1
-    due: "2026-11-18"
-    reason: "训练页面未建（IFS F6 WO-IFS-UI / WO-IFS-ROUTE）"
-    acceptance: "页面+route 落地后由 Lead 移除 planned 并跑 route baseline check"
+    reason: "训练 episode 契约已落地（F5），生产 episodes.jsonl 尚未生成"
+    acceptance: "训练链生成真实 episodes.jsonl 并登记 dataset_registry 后移除 planned"
