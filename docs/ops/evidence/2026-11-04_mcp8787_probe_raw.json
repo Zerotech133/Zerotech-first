@@ -1,0 +1,1062 @@
+{
+ "tool": "mcp8787_probe",
+ "ts": "2026-11-04T03:05:00+08:00",
+ "endpoint": "http://127.0.0.1:8787",
+ "read_only": true,
+ "trusted_header_name": "X-Portal-User",
+ "trusted_header_user": "laotian",
+ "cookie_name": "hermes_session",
+ "probes": {
+  "health_anon": {
+   "status": 200,
+   "ms": 7.6,
+   "body": {
+    "status": "ok",
+    "sessions": 0,
+    "active_streams": 0,
+    "active_runs": 0,
+    "runs": [],
+    "last_run_finished_at": null,
+    "server_started_at": 1793684096.3336213,
+    "uptime_seconds": 48604.5,
+    "accept_loop": {
+     "requests_total": 814,
+     "last_request_at": 1793732700.806
+    }
+   }
+  },
+  "auth_status_anon": {
+   "status": 200,
+   "ms": 2.9,
+   "body": {
+    "auth_enabled": true,
+    "logged_in": false,
+    "oidc_enabled": false,
+    "password_auth_enabled": true,
+    "passwordless_enabled": false,
+    "passkeys_enabled": false,
+    "passkeys_count": 0,
+    "passkey_feature_flag": false,
+    "auth_disabled_acknowledged": false,
+    "trusted_auth_enabled": true
+   }
+  },
+  "mcp_tools_anon": {
+   "status": 401,
+   "ms": 23.7,
+   "body": {
+    "error": "Authentication required"
+   },
+   "content_type": "application/json"
+  },
+  "mcp_servers_anon": {
+   "status": 401,
+   "ms": 15.4,
+   "body": {
+    "error": "Authentication required"
+   }
+  },
+  "mcp_path_anon": {
+   "status": 302,
+   "ms": 15.2,
+   "location": "login?next=/mcp"
+  },
+  "mcp_tools_wrong_header_X-Forwarded-User": {
+   "status": 401
+  },
+  "mcp_tools_empty_trusted_header": {
+   "status": 401
+  },
+  "auth_status_trusted_header": {
+   "status": 200,
+   "ms": 22.2,
+   "body": {
+    "auth_enabled": true,
+    "logged_in": true,
+    "oidc_enabled": false,
+    "password_auth_enabled": true,
+    "passwordless_enabled": false,
+    "passkeys_enabled": false,
+    "passkeys_count": 0,
+    "passkey_feature_flag": false,
+    "auth_disabled_acknowledged": false,
+    "trusted_auth_enabled": true,
+    "auth_type": "trusted",
+    "user": "laotian",
+    "bound_profile": null
+   }
+  },
+  "mcp_tools_trusted_header": {
+   "status": 200,
+   "ms": 107.4,
+   "set_cookies_masked": [
+    {
+     "name": "hermes_session",
+     "value_len": 129,
+     "value_sha256_12": "1e162ae8324b",
+     "attrs": [
+      "HttpOnly",
+      "Max-Age=2592000",
+      "Path=/",
+      "SameSite=Lax"
+     ]
+    }
+   ],
+   "total": 98,
+   "source": "tool_registry",
+   "inventory_scope": "already_known_runtime_only",
+   "runtime_scope": "profile",
+   "unavailable_servers": [
+    "om-metadata",
+    "zhice-selection"
+   ],
+   "tool_count_by_server": {
+    "d1-research": 1,
+    "dw-catalog": 5,
+    "dw-governance": 6,
+    "dw-quality": 6,
+    "factor-tools": 4,
+    "huangzhong": 11,
+    "jev-news": 5,
+    "kb-corpus": 5,
+    "playwright": 25,
+    "stock-data": 28,
+    "stock-intel-readonly": 2
+   },
+   "tools": [
+    {
+     "name": "mcp__d1_research__d1_research",
+     "server": "d1-research",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "D1 ³��Ͷ�п��գ����ڹ�Ʊ�����о�/����/����/pending ���ܣ��ɰ�����ɸѡ��ֻ����paper-only��"
+    },
+    {
+     "name": "mcp__dw_catalog__catalog_snapshot",
+     "server": "dw-catalog",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "catalog ���գ��汾/����/sha256/�Ǽ�һ����/Ư�Ƴ�����ֻ������"
+    },
+    {
+     "name": "mcp__dw_catalog__lifecycle",
+     "server": "dw-catalog",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "catalog lifecycle ��̬��active/planned/deprecated/archived��������ȱʧ�嵥��ֻ������"
+    },
+    {
+     "name": "mcp__dw_catalog__qualification",
+     "server": "dw-catalog",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "�ʸ�ֲ�������unknown/evidence_partial/planned/deprecated����ռ�ȣ���ֻ����"
+    },
+    {
+     "name": "mcp__dw_catalog__registry_stats",
+     "server": "dw-catalog",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "warehouse_registry ͳ�ƣ�physical/display �������ʸ�ֲ����� catalog sha256 �Ƿ�һ�£�ֻ������"
+    },
+    {
+     "name": "mcp__dw_catalog__table_info",
+     "server": "dw-catalog",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "��������Ǽ�/����/·����warehouse_registry ��Ŀ + catalog �洢��Ϣ��֧�� catalog ������ֻ������"
+    },
+    {
+     "name": "mcp__dw_governance__dw_get",
+     "server": "dw-governance",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "�� dataset_id ȡ���ݼ�Ԫ���ݡ�ֻ����"
+    },
+    {
+     "name": "mcp__dw_governance__dw_list",
+     "server": "dw-governance",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "�г����ݼ���dataset_id/label/domain/kind/path/registered/exposed����ֻ����"
+    },
+    {
+     "name": "mcp__dw_governance__dw_query",
+     "server": "dw-governance",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "ͨ��ֻ����ѯ��S3-06 P1������ dataset_id ����/����/��ҳ/ͶӰ/������sqlite �߲����� WHERE��parquet �� pyarrow ����+��ͶӰ��jsonl/���Ŀ¼/��Լ����Ȳ�֧�����巵�� not_supported��f…"
+    },
+    {
+     "name": "mcp__dw_governance__dw_sample",
+     "server": "dw-governance",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "�� dataset_id ȡ������sqlite ����/parquet ��/json ͷ/Ŀ¼�ļ��嵥����ֻ����"
+    },
+    {
+     "name": "mcp__dw_governance__dw_search",
+     "server": "dw-governance",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "���ؼ��ʼ������ݼ����ȼ� list --q����ֻ����"
+    },
+    {
+     "name": "mcp__dw_governance__dw_stats",
+     "server": "dw-governance",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "���ݲ����ݼ�ͳ�ƣ��������Ǽ�������ȡ�������������/���ͷֲ���ֻ����"
+    },
+    {
+     "name": "mcp__dw_quality__backup",
+     "server": "dw-quality",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "���ݻ�ִ�˶ԣ����±��ݴ���������ȫ�ԡ�offsite_remote_receipt���ϵ�Сʱ����ֻ����"
+    },
+    {
+     "name": "mcp__dw_quality__freshness",
+     "server": "dw-quality",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "���ʶȣ����� prod_max��parquet footer��+ 4 ��ͣ�ڣ���ѡ table ֻȡ������ֻ����"
+    },
+    {
+     "name": "mcp__dw_quality__lineage_impact",
+     "server": "dw-quality",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "�ı�Ӱ���棨��̬����catalog �� �� store �� alias �� �������ѷ��嵥��ֻ����"
+    },
+    {
+     "name": "mcp__dw_quality__manifest",
+     "server": "dw-quality",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "4 �� _manifest.json��tdx/tushare/xueqiu/cnopendata�������� catalog ������������ߡ�ֻ����"
+    },
+    {
+     "name": "mcp__dw_quality__quality_checks",
+     "server": "dw-quality",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "ȷ����������飺store ����/�շ�Ƭ/�����ظ�/��������ѡ��������ֻ����"
+    },
+    {
+     "name": "mcp__dw_quality__quality_snapshot",
+     "server": "dw-quality",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "�����������գ��ۺ� freshness/quality/manifest/backup/metadata �������״̬��ժҪ��ֻ����"
+    },
+    {
+     "name": "mcp__factor_tools__factor_daily_latest",
+     "server": "factor-tools",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "最新因子日报（factor_daily_<日期>.json）摘要：生成时间/最新数据日/窗口/因子数/衰减告警数/提案数/各因子 IC 明细。可选 factor 参数精确查某因子 IC。只读。"
+    },
+    {
+     "name": "mcp__factor_tools__factor_mining_latest",
+     "server": "factor-tools",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "最新因子挖掘榜（strategy_mining_<日期>.json）排名前 N：每行 feature/IC 均值/t 值/多空均值等。只读。"
+    },
+    {
+     "name": "mcp__factor_tools__factor_reports",
+     "server": "factor-tools",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "列出 research/reports 下 factor_daily / strategy_mining / neutral_effect 三类研究产物文件清单（含 json/md、大小、mtime、日期标签）。只读。"
+    },
+    {
+     "name": "mcp__factor_tools__factor_script_catalog",
+     "server": "factor-tools",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "因子研究脚本清单：tools/research 下 factor_*.py、strategy_miner.py、neutral_effect.py 等（名称/大小/mtime/文件首行说明）。只读，不执行。"
+    },
+    {
+     "name": "mcp__huangzhong__huangzhong_acceptance_latest",
+     "server": "huangzhong",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "���һ�Ż������յ���verdict/commit/sha/ʱ��/reasons/֤��ժҪ��ֻ����"
+    },
+    {
+     "name": "mcp__huangzhong__huangzhong_brief",
+     "server": "huangzhong",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "����ÿ�ռ򱨣�P1��ֻ�������� tools/huangzhong_brief.py --json������ conclusion��һ�н��ۣ���kpi��runs/merge_done/coverage �ȣ���events ������review/acceptance/push_state…"
+    },
+    {
+     "name": "mcp__huangzhong__huangzhong_evidence",
+     "server": "huangzhong",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "��������֤�����ʶȣ����� test_baseline/latest.json �����º�ӱ���� generated_at/age_hours/�Ƿ� ��48h��R3 �ţ���ֻ����"
+    },
+    {
+     "name": "mcp__huangzhong__huangzhong_health",
+     "server": "huangzhong",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "���ҹ�����������P0��ֻ�������� tools/huangzhong_health.py --json������ status��ok/warn/fail����summary��ok/warn/fail ��������checks ժҪ��id/name/status/detail����…"
+    },
+    {
+     "name": "mcp__huangzhong__huangzhong_preflight",
+     "server": "huangzhong",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "���� 11-04 ���� preflight��P1��ֻ�������� tools/huangzhong_1104_preflight.py --json������ ready��blockers/warnings����������checks ժҪ��id/name/status/result����…"
+    },
+    {
+     "name": "mcp__huangzhong__huangzhong_review_latest",
+     "server": "huangzhong",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "���һ�λ����������˱�����ϸ��generated_at/items/kpi/���ǣ���ֻ����"
+    },
+    {
+     "name": "mcp__huangzhong__huangzhong_run_acceptance",
+     "server": "huangzhong",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "���ܿ�д���Ե�ǰ HEAD ������һ�λ������գ�д acceptance �� + �ո��������� confirm=\"RUN-ACCEPT\"��60s ��Ƶ������ HUANGZHONG_MCP_WRITE=1 ʱ���á�"
+    },
+    {
+     "name": "mcp__huangzhong__huangzhong_run_review",
+     "server": "huangzhong",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "���ܿ�д��������һ�λ����������ˣ�ֻ������ + д work ���棩������ confirm=\"RUN-REVIEW\"��60s ��Ƶ������ HUANGZHONG_MCP_WRITE=1 ʱ���á�"
+    },
+    {
+     "name": "mcp__huangzhong__huangzhong_status",
+     "server": "huangzhong",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "����������״�ۺϣ��������ˣ�passed/total������ status/measured�����������յ���verdict/commit����֤�����䣨����/��ӣ���������/���ټ�����ֻ����"
+    },
+    {
+     "name": "mcp__huangzhong__huangzhong_tasks_health",
+     "server": "huangzhong",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "���������ƻ�����HuangzhongDaily / HuangzhongEvidenceRefresh���� LastRunTime/LastTaskResult/NextRunTime��ֻ����ѯ Windows Scheduler����"
+    },
+    {
+     "name": "mcp__huangzhong__huangzhong_weekly_kpi",
+     "server": "huangzhong",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "���� 7 �촰�� KPI��ֻ�����㣩��runs��merge_done�������ʡ�PASS/REJECT/OBSERVE ������"
+    },
+    {
+     "name": "mcp__jev_news__jev_calibration",
+     "server": "jev-news",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "JEV 判读校准状态：方向准确率 vs 全判 bull 基线、neutral 带宽命中率、bull/bear 可用性判定、conf 是否入决策。用于回答『JEV 判断现在准不准、能不能用』。"
+    },
+    {
+     "name": "mcp__jev_news__jev_digest",
+     "server": "jev-news",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "JEV 一站式摘要（推荐优先使用）：一次返回 近N小时多空统计 + Top 重点/风险条目（含后验） + 校准状态 + 数据质量告警。用于回答『今天有什么值得注意的利好/利空』『JEV 当前是否可信』，避免多次调用 jev_query。"
+    },
+    {
+     "name": "mcp__jev_news__jev_feedback",
+     "server": "jev-news",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "提交对某条 JEV 判定的存疑/纠正（写入 review 反馈集，供人工复核后回灌 JEV-Eval）。用于『这条判断我不认同/有补充证据』，不会直接改判定。"
+    },
+    {
+     "name": "mcp__jev_news__jev_query",
+     "server": "jev-news",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "查询 JEV（新闻结构化判读）已判结果：可按时间窗/方向(bull,bear,neutral)/关联 A 股代码/事件类型筛选，可选联查 T+1 后验（ret/bench/excess/hit）。用于回答『今天 JEV 抓到哪些利空/利多』『某只股票最近被 JEV 判了什么』。"
+    },
+    {
+     "name": "mcp__jev_news__jev_risk",
+     "server": "jev-news",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "JEV 风险速报：近N小时高影响利空事件 Top N（含 T+1 后验），用于盘前/盘中风险扫描。"
+    },
+    {
+     "name": "mcp__kb_corpus__kb_books",
+     "server": "kb-corpus",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "��Ŀ�嵥��ͳ�ƣ��鼮/�б�/���Ծ����������ҳ�����½�����֪ʶ��Ԫ������ kb_read_api.py books����ֻ����"
+    },
+    {
+     "name": "mcp__kb_corpus__kb_search",
+     "server": "kb-corpus",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "֪ʶ��Ԫ����������/�½�/ҳ��/�۶�/֤�ݣ����������� kb_read_api.py search����ֻ����"
+    },
+    {
+     "name": "mcp__kb_corpus__kb_status",
+     "server": "kb-corpus",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "֪ʶ��״̬���ĵ���/֪ʶ��Ԫ��/RAG ����/���Ϲ棨�� kb_read_api.py status����ֻ����"
+    },
+    {
+     "name": "mcp__kb_corpus__yt_query",
+     "server": "kb-corpus",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "YouTube ѧϰ���ݲְ�������ֻ��ȡ����SELECT * LIMIT n��n��20��Ĭ�� 5���ı��нض� 500 �֣���"
+    },
+    {
+     "name": "mcp__kb_corpus__yt_tables",
+     "server": "kb-corpus",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "YouTube ѧϰ���ݲ� yt_learning.db �ı�/��ͼ�嵥��������sqlite mode=ro����ֻ����"
+    },
+    {
+     "name": "mcp__playwright__browser_click",
+     "server": "playwright",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "Perform click on a web page"
+    },
+    {
+     "name": "mcp__playwright__browser_close",
+     "server": "playwright",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "Close the page"
+    },
+    {
+     "name": "mcp__playwright__browser_console_messages",
+     "server": "playwright",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "Returns all console messages"
+    },
+    {
+     "name": "mcp__playwright__browser_drag",
+     "server": "playwright",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "Perform drag and drop between two elements"
+    },
+    {
+     "name": "mcp__playwright__browser_drop",
+     "server": "playwright",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "Drop files or MIME-typed data onto an element, as if dragged from outside the page. At least one of \"paths\" or \"data\" must be provided."
+    },
+    {
+     "name": "mcp__playwright__browser_emulate_media",
+     "server": "playwright",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "Emulate CSS media features for the page, for example switch between the light and dark color scheme. Omitted parameters are left unchanged; null clears an over…"
+    },
+    {
+     "name": "mcp__playwright__browser_evaluate",
+     "server": "playwright",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "Evaluate JavaScript expression on page or element"
+    },
+    {
+     "name": "mcp__playwright__browser_file_upload",
+     "server": "playwright",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "Upload one or multiple files"
+    },
+    {
+     "name": "mcp__playwright__browser_fill_form",
+     "server": "playwright",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "Fill multiple form fields"
+    },
+    {
+     "name": "mcp__playwright__browser_find",
+     "server": "playwright",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "Search the accessibility snapshot of the current page for text or a regular expression. Returns matching snapshot nodes with a few lines of surrounding context…"
+    },
+    {
+     "name": "mcp__playwright__browser_handle_dialog",
+     "server": "playwright",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "Handle a dialog"
+    },
+    {
+     "name": "mcp__playwright__browser_hover",
+     "server": "playwright",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "Hover over element on page"
+    },
+    {
+     "name": "mcp__playwright__browser_navigate",
+     "server": "playwright",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "Navigate to a URL"
+    },
+    {
+     "name": "mcp__playwright__browser_navigate_back",
+     "server": "playwright",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "Go back to the previous page in the history"
+    },
+    {
+     "name": "mcp__playwright__browser_network_request",
+     "server": "playwright",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "Returns full details (headers and body) of a single network request, or a single part if `part` is set. Use the number from browser_network_requests."
+    },
+    {
+     "name": "mcp__playwright__browser_network_requests",
+     "server": "playwright",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "Returns a numbered list of network requests since loading the page. Use browser_network_request with the number to get full details."
+    },
+    {
+     "name": "mcp__playwright__browser_press_key",
+     "server": "playwright",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "Press a key on the keyboard"
+    },
+    {
+     "name": "mcp__playwright__browser_resize",
+     "server": "playwright",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "Resize the browser window"
+    },
+    {
+     "name": "mcp__playwright__browser_run_code_unsafe",
+     "server": "playwright",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "Run a Playwright code snippet. Unsafe: executes arbitrary JavaScript in the Playwright server process and is RCE-equivalent."
+    },
+    {
+     "name": "mcp__playwright__browser_select_option",
+     "server": "playwright",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "Select an option in a dropdown"
+    },
+    {
+     "name": "mcp__playwright__browser_snapshot",
+     "server": "playwright",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "Capture accessibility snapshot of the current page, this is better than screenshot"
+    },
+    {
+     "name": "mcp__playwright__browser_tabs",
+     "server": "playwright",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "List, create, close, or select a browser tab."
+    },
+    {
+     "name": "mcp__playwright__browser_take_screenshot",
+     "server": "playwright",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "Take a screenshot of the current page. You can't perform actions based on the screenshot, use browser_snapshot for actions."
+    },
+    {
+     "name": "mcp__playwright__browser_type",
+     "server": "playwright",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "Type text into editable element"
+    },
+    {
+     "name": "mcp__playwright__browser_wait_for",
+     "server": "playwright",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "Wait for text to appear or disappear or a specified time to pass"
+    },
+    {
+     "name": "mcp__stock_data__chain_alerts",
+     "server": "stock-data",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "晨链告警面：链路体检最新结论（overall 与 fail/stale 任务明细，如 XmapSync/KgDailySync/RiskGuardShadowDaily）与近 N 次历史。"
+    },
+    {
+     "name": "mcp__stock_data__daily_brief",
+     "server": "stock-data",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "每日简报（四段合一，快路径首选）：链路状态（晨链/风控环/采集环/基础设施各环健康与 staleness）+ 当日组合信号 + 风控水位 + 数据池健康，markdown 文本。回答「今天整体怎么样/信号多少/风控什么水位/链路有没有问题」类问题时优先用本工具一次拿全量，避免多轮调用。【无需参数，直接调用，不要传任何…"
+    },
+    {
+     "name": "mcp__stock_data__data_overview",
+     "server": "stock-data",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "股票数据系统总览：Neo4j 图节点/边总量、情报件分源统计、最新情报时间。【无需参数，直接调用，不要传任何键】"
+    },
+    {
+     "name": "mcp__stock_data__dataops_query",
+     "server": "stock-data",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "门户数据指挥台查询（只读）：view=summary 全量数据地图摘要（采集动线/数据池/管道调度/104 计划任务/233 表 catalog，含 alerts）；view=map 全局拓扑（22 节点+18 边+实时健康）；view=entity 单实体下钻（status/metrics/upstream/dow…"
+    },
+    {
+     "name": "mcp__stock_data__entity_profile",
+     "server": "stock-data",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "只读查询个股实体画像。回答按结论→指标口径→证据→数据限制组织；标明 run_id，不能混用不同 run_id 的数据。corr（相关系数）与 FastRP 分数口径不同，不可混称为同一种强度。"
+    },
+    {
+     "name": "mcp__stock_data__kg_query",
+     "server": "stock-data",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "知识图谱只读查询（白名单 Cypher，禁止写语句）。例：MATCH (s:Security) RETURN s.ts_code LIMIT 5"
+    },
+    {
+     "name": "mcp__stock_data__latest_intel",
+     "server": "stock-data",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "最新情报条目（标题摘要+提及标的+指针，不含正文）：可选按源过滤。"
+    },
+    {
+     "name": "mcp__stock_data__leiden_community",
+     "server": "stock-data",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "SIMILAR_K 形态族（Leiden 聚类社区）查询：传 stock 查个股所属形态族档案（行业倾斜/ST占比/HHI混杂度/族内样本/LLM中文摘要），传 community_id 查指定社区，默认列 Top 形态族。"
+    },
+    {
+     "name": "mcp__stock_data__lineage_breaks",
+     "server": "stock-data",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "数据血缘断链亮牌：每张产出表最近一次作业状态汇总（在册表数/健康数/断链清单+历史非 ok 运行数）。回答「血缘/断链/管道健康/表多久没更新」类问题首选；断链=该表依赖的管道最近一次运行非 ok，情报可信度存疑。【无需参数，直接调用，不要传任何键】"
+    },
+    {
+     "name": "mcp__stock_data__lineage_trace",
+     "server": "stock-data",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "血缘溯源与影响面：查一张逻辑表的血缘边。direction=upstream 回答「这张表是谁算出来的」；direction=downstream 回答「这张表坏了影响谁」。表名用 URN（如 neo4j:TRADED_ON / parquet:tdx/ts_daily / jsonl:chanlun_pool），可…"
+    },
+    {
+     "name": "mcp__stock_data__manual_jobs",
+     "server": "stock-data",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "手动任务面板：可触发的白名单任务（label+key）与最近运行记录（状态/rc）。【无需参数，直接调用，不要传任何键】"
+    },
+    {
+     "name": "mcp__stock_data__pool_overview",
+     "server": "stock-data",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "数据池总览：子模块清单（tushare/tdx/xueqiu/xqsent/guba/xtcloud/crypto/legacy），各模块表数/完成度/失败数/采集链路状态（计划任务结果）/manifest 新鲜度，以及池级汇总。submodule 可选，仅返回该子模块。xqsent=雪球舆情（与 xueqiu 行情…"
+    },
+    {
+     "name": "mcp__stock_data__profile_compare",
+     "server": "stock-data",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "只读比较两个运行批次的个股或社区画像。回答按结论→指标口径→证据→数据限制组织；baseline_run_id 与 target_run_id 分开列示，不混用不同 run_id 的指标或证据。corr（相关系数）与 FastRP 分数不可混称为同一种强度。"
+    },
+    {
+     "name": "mcp__stock_data__profile_evidence",
+     "server": "stock-data",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "只读查询个股或社区画像的证据。回答按结论→指标口径→证据→数据限制组织；标明 run_id，不混用不同 run_id 的证据；corr（相关系数）与 FastRP 分数不可混称为同一种强度。"
+    },
+    {
+     "name": "mcp__stock_data__risk_overview",
+     "server": "stock-data",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "RiskGuard 风控水位总览（影子模式）：四规则（R1 市场质量/R2 流动性冲击/R3 事件风险/R4 仓位集中度）各水位的 pass/block 计数、最后评分、市场级闸（market_gate action）、最新 z4 快照来源与衰竭（exhausted）清单。数据来自影子账本尾部 20k 行，只读、零跨…"
+    },
+    {
+     "name": "mcp__stock_data__scheduled_tasks",
+     "server": "stock-data",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "Windows 计划任务状态：15 个采集任务的上次运行/结果（success/failed/never）/下次运行。【无需参数，直接调用，不要传任何键】"
+    },
+    {
+     "name": "mcp__stock_data__sources_recon",
+     "server": "stock-data",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "情报源对账：各源数仓条数 vs 图内条数 delta、采集水位、WARN。【无需参数，直接调用，不要传任何键】"
+    },
+    {
+     "name": "mcp__stock_data__strategies_overview",
+     "server": "stock-data",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "多策略编排面总览：注册表内全部策略（id/权重/启停状态）。与 07:30 StrategyDaily 编排、动线管理页同源。【无需参数，直接调用，不要传任何键】"
+    },
+    {
+     "name": "mcp__stock_data__strategy_adjust",
+     "server": "stock-data",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "受控调整单策略（提案制）：调用即创建待确认提案，不直接生效；需用户在管理台「策略管理 → 待确认提案」卡片确认（apply）后才写回 strategy_registry.json，下轮 07:30 编排生效，拒绝（reject）则作废。可提案：启停（enabled）/权重（weight 0~1，原值写回，归一由权重进…"
+    },
+    {
+     "name": "mcp__stock_data__strategy_signals",
+     "server": "stock-data",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "当日（或指定日）合成信号账：各策略产出信号经聚合去重后的权威账（trade_date/symbol/strategy/score/conf 等字段），即 07:30 编排落库的快照视图。"
+    },
+    {
+     "name": "mcp__stock_data__table_detail",
+     "server": "stock-data",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "单表下钻详情：元数据、Schema（含主键）、最新文件前 10 行数据样例、文件清单。"
+    },
+    {
+     "name": "mcp__stock_data__task_detail",
+     "server": "stock-data",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "单个计划任务下钻：全字段 + wrapper 状态日志尾部（可直接看到失败步骤）。"
+    },
+    {
+     "name": "mcp__stock_data__trigger_task",
+     "server": "stock-data",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "受控触发手动更新任务（白名单：xueqiu_sync/xueqiu_crawl/kg_sync/guba_crawl/selftest）。返回 job_id，用 manual_jobs 轮询结果。"
+    },
+    {
+     "name": "mcp__stock_data__warehouse_catalog",
+     "server": "stock-data",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "数仓 catalog 表清单（210 表）：表名/源/行数/最新数据日期/更新时间/status。可按源筛选。"
+    },
+    {
+     "name": "mcp__stock_data__xq_backlog",
+     "server": "stock-data",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "雪球采集队列（只读）：种子号段游标与 blocked streak、近期线（2024+）回填进度。【无需参数，直接调用，不要传任何键】"
+    },
+    {
+     "name": "mcp__stock_data__xq_coverage",
+     "server": "stock-data",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "雪球舆情治理总账（只读）：raw/classified/pending 总数、进度百分比、按年覆盖表。回答「雪球治理到哪了」优先用这个。【无需参数，直接调用，不要传任何键】"
+    },
+    {
+     "name": "mcp__stock_data__xq_drift",
+     "server": "stock-data",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "雪球标注口径漂移探针（只读）：label_drift verdict（STABLE/WARN/CRITICAL）与版本对拍明细。内部跑子进程较慢（可达 2 分钟），非必要不频繁调用。【无需参数，直接调用，不要传任何键】"
+    },
+    {
+     "name": "mcp__stock_data__xq_queue",
+     "server": "stock-data",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "雪球治理队列（只读）：pending 数、最近打标速率、双实例拓扑（各 worker 日志末行进度）。【无需参数，直接调用，不要传任何键】"
+    },
+    {
+     "name": "mcp__stock_intel_readonly__latest_intel",
+     "server": "stock-intel-readonly",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "最新情报条目（标题摘要+提及标的+指针，不含正文）：可选按源过滤。"
+    },
+    {
+     "name": "mcp__stock_intel_readonly__sources_recon",
+     "server": "stock-intel-readonly",
+     "active": true,
+     "enabled": true,
+     "status": "active",
+     "description": "情报源对账：各源数仓条数 vs 图内条数 delta、采集水位、WARN。【无需参数，直接调用，不要传任何键】"
+    }
+   ]
+  },
+  "mcp_servers_trusted_header": {
+   "status": 200,
+   "ms": 41.6,
+   "server_count": 13,
+   "servers": [
+    {
+     "name": "stock-data",
+     "transport": "stdio",
+     "enabled": true,
+     "active": true,
+     "status": "active",
+     "tool_count": 28
+    },
+    {
+     "name": "stock-intel-readonly",
+     "transport": "stdio",
+     "enabled": true,
+     "active": true,
+     "status": "active",
+     "tool_count": 2
+    },
+    {
+     "name": "jev-news",
+     "transport": "stdio",
+     "enabled": true,
+     "active": true,
+     "status": "active",
+     "tool_count": 5
+    },
+    {
+     "name": "playwright",
+     "transport": "stdio",
+     "enabled": true,
+     "active": true,
+     "status": "active",
+     "tool_count": 25
+    },
+    {
+     "name": "om-metadata",
+     "transport": "stdio",
+     "enabled": true,
+     "active": false,
+     "status": "configured",
+     "tool_count": 0
+    },
+    {
+     "name": "d1-research",
+     "transport": "stdio",
+     "enabled": true,
+     "active": true,
+     "status": "active",
+     "tool_count": 1
+    },
+    {
+     "name": "huangzhong",
+     "transport": "stdio",
+     "enabled": true,
+     "active": true,
+     "status": "active",
+     "tool_count": 11
+    },
+    {
+     "name": "zhice-selection",
+     "transport": "stdio",
+     "enabled": true,
+     "active": false,
+     "status": "configured",
+     "tool_count": 0
+    },
+    {
+     "name": "dw-governance",
+     "transport": "stdio",
+     "enabled": true,
+     "active": true,
+     "status": "active",
+     "tool_count": 6
+    },
+    {
+     "name": "dw-quality",
+     "transport": "stdio",
+     "enabled": true,
+     "active": true,
+     "status": "active",
+     "tool_count": 6
+    },
+    {
+     "name": "dw-catalog",
+     "transport": "stdio",
+     "enabled": true,
+     "active": true,
+     "status": "active",
+     "tool_count": 5
+    },
+    {
+     "name": "factor-tools",
+     "transport": "stdio",
+     "enabled": true,
+     "active": true,
+     "status": "active",
+     "tool_count": 4
+    },
+    {
+     "name": "kb-corpus",
+     "transport": "stdio",
+     "enabled": true,
+     "active": true,
+     "status": "active",
+     "tool_count": 5
+    }
+   ],
+   "runtime_scope": "profile",
+   "server_tool_count_sum": 98
+  },
+  "mcp_path_trusted_header": {
+   "status": 404,
+   "location": ""
+  },
+  "mcp_tools_session_cookie_only": {
+   "status": 401,
+   "total": null,
+   "source": null
+  }
+ },
+ "summary": {
+  "auth_method": "trusted-header X-Portal-User (nginx SSO) -> hermes_session cookie",
+  "unauth_tools_status": 401,
+  "unauth_tools_body": {
+   "error": "Authentication required"
+  },
+  "auth_tools_status": 200,
+  "tool_count": 98,
+  "server_count": 13,
+  "active_server_count": 11,
+  "unavailable_servers": [
+   "om-metadata",
+   "zhice-selection"
+  ],
+  "server_tool_count_sum": 98,
+  "tool_count_matches_server_sum": true,
+  "source": "tool_registry",
+  "runtime_scope": "profile",
+  "session_cookie_works_without_header": false,
+  "d1_research_server_present": true,
+  "d1_research_tool_count": 1,
+  "research_tool_hits": [
+   "mcp__d1_research__d1_research"
+  ],
+  "mcp_http_endpoint_on_8787": "none (/mcp is not a route; MCP tools inventory = GET /api/mcp/tools)"
+ }
+}

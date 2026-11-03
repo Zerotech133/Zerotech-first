@@ -1,0 +1,24 @@
+port=8734 path=/hermes/api/mcp/tools -> 302 loc=/login?next=/api/mcp/tools ct=text/html body=<html>
+ <head><title>302 Found</title></head>
+ <body>
+ <center><h1>302 Found</h1></center>
+ <hr><center>nginx/1.31.7</center>
+ </body>
+ </html>
+ 
+port=8734 path=/hermes/api/auth/status -> 302 loc=/login?next=/api/auth/status ct=text/html body=<html>
+ <head><title>302 Found</title></head>
+ <body>
+ <center><h1>302 Found</h1></center>
+ <hr><center>nginx/1.31.7</center>
+ </body>
+ </html>
+ 
+port=8734 path=/hermes/health -> 302 loc=/login?next=/health ct=text/html body=<html>
+ <head><title>302 Found</title></head>
+ <body>
+ <center><h1>302 Found</h1></center>
+ <hr><center>nginx/1.31.7</center>
+ </body>
+ </html>
+ 

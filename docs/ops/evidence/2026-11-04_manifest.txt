@@ -1,0 +1,16 @@
+# MCP-8787 只读验证 · 证据清单（manifest）
+# 任务: task-41 / 工单 WO-MCP-8787-VERIFY-20261104
+# 快照: 2026-11-04T03:05:00+08:00
+# 分支: task/WO-MCP-8787-VERIFY-20261104（基线 c97106fc9）
+# 边界: 仅只读 GET；未改配置/未启停服务/未 reload-mcp/未打印 token 或 cookie 原文
+# 文件清单（sha256  size  path）
+
+6001d85860cda474192ff9624dfd756afd12e64ab0f48d2863a0230f409e9984  707  docs/ops/evidence/2026-11-04_8734_portal_gate_probe.txt
+2bb15e6527926ecd57765f45f71ee93eebf3cca6429d35f6891978c394b39af6  574  docs/ops/evidence/2026-11-04_environment.txt
+43f07e10e7b0e1bb5e6213070f2a21dba8a46ef4b520f5cca5c774fe4332d9d3  471  docs/ops/evidence/2026-11-04_hermes_launch_auth_evidence.txt
+d786a3b8ccafb4944ee861f649382b592d3224fd95d682cf896edb008a2ed174  10546  docs/ops/evidence/2026-11-04_mcp8787_probe.py
+41a806e2b24f3f346f19feb6d4d75cfc532eb29dad70701dcc01b469e9710a03  40085  docs/ops/evidence/2026-11-04_mcp8787_probe_raw.json
+e6a76d1dfab6bed1bf02f376067d3310b36eec03704a05e331c142560cb1f5c4  889  docs/ops/evidence/2026-11-04_mcp8787_probe_stdout.txt
+45f6ce1985b0bdacebaa7183daf51a1ef642a6b8b2b03a98e9d9e2f3c86066e3  2377  docs/ops/evidence/2026-11-04_mcp8787_tool_desc_encoding_scan.txt
+5762cb77f06cb10e95bd829382d36dd18654a6db4542455f6fb4c2976caf89e9  4000  docs/ops/evidence/2026-11-04_mcp8787_tools_list.md
+d7d8551c58033dbbb07f9d337e716887fd69e628a544f6ca7d2f0c318d8fd3f9  19834  docs/ops/2026-11-04_MCP8787登录与tools验证_v1.md
