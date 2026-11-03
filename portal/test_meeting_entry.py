@@ -67,3 +67,10 @@ def test_meeting_room_reflects_new_org_leads():
     assert "const HQ_PRESET" in s
     assert "'D1','ARCH1','DATA1','INTEL0','QA1'" in s
     assert "部门负责人池" in s
+
+
+def test_department_morning_template_exists():
+    s = MEETING.read_text(encoding="utf-8")
+    assert "dept_morning" in s
+    assert "部门早会" in s
+    assert "部门早报速览" in s

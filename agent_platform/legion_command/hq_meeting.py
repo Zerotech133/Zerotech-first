@@ -13,7 +13,7 @@ import time
 from pathlib import Path
 
 SCHEMA = "2.0"
-TYPES = ("morning", "operation", "acceptance")
+TYPES = ("morning", "operation", "acceptance", "dept_morning")
 # 2026-11-03 新组织架构：指挥席 + 部门负责人池
 COMMAND_SEATS = {"A0", "AI1", "ZHAOYUN", "GUANYU", "HUANGZHONG", "LAOTIAN"}
 DEPT_LEADS = {"D1", "ARCH1", "DATA1", "PM1", "QA1", "DEV3",

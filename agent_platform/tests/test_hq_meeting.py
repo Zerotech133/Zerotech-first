@@ -120,3 +120,10 @@ def test_new_org_department_leads_accepted(tmp_path):
     assert doc["attendees"] == leads
     # 未知席位仍拒绝
     assert hq.save_meeting(d, _valid(attendees=["UNKNOWN"]))[1]["error"] == "bad_attendee"
+
+
+def test_dept_morning_type_supported(tmp_path):
+    d = tmp_path / "hq"
+    leads = ["A0", "D1", "DATA1", "QA1", "INTEL0", "ARCH1"]
+    code, env = hq.save_meeting(d, _valid(type="dept_morning", attendees=leads))
+    assert code == 200 and env["ok"]

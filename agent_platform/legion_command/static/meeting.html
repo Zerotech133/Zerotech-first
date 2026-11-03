@@ -168,6 +168,7 @@
     <h3>指挥部会议（指挥席 + 部门负责人池）<span class="muted" id="hqState">选模板载入</span></h3>
     <div class="quick">
       <button class="qk" onclick="hqPreset('morning')">晨会 · 15min</button>
+      <button class="qk" onclick="hqPreset('dept_morning')">部门早会 · 08:00</button>
       <button class="qk" onclick="hqPreset('operation')">作战会 · 30-45min</button>
       <button class="qk" onclick="hqPreset('acceptance')">验收/复盘会</button>
     </div>
@@ -421,7 +422,7 @@ async function endMeeting() {
 // ---- 指挥部会议 P0：五席预设 / 决议 / 派单 ----
 let HQ_TYPE = 'morning';
 let HQ_ID = '';
-const HQ_TITLE = { morning:'晨会', operation:'作战会', acceptance:'验收/复盘会' };
+const HQ_TITLE = { morning:'晨会', operation:'作战会', acceptance:'验收/复盘会', dept_morning:'部门早会' };
 const HQ_AGENDA = {
   morning: [{item:'昨日决议跟进',owner:'A0',minutes:3},{item:'今日三优先',owner:'A0',minutes:4},
             {item:'阻塞与风险',owner:'GUANYU',minutes:3},{item:'黄忠验收闸口',owner:'HUANGZHONG',minutes:3},
@@ -431,12 +432,19 @@ const HQ_AGENDA = {
               {item:'质量/验收判据',owner:'QA1',minutes:5}],
   acceptance: [{item:'基线/红队证据',owner:'HUANGZHONG',minutes:5},{item:'PASS/REJECT',owner:'HUANGZHONG',minutes:5},
                {item:'拒绝理由与回滚点',owner:'GUANYU',minutes:5},{item:'赵云归档判例',owner:'ZHAOYUN',minutes:3},
-               {item:'改进项',owner:'A0',minutes:3}]
+               {item:'改进项',owner:'A0',minutes:3}],
+  dept_morning: [{item:'部门早报速览（13 份，07:50 前提交）',owner:'A0',minutes:5},
+                 {item:'红黄军团/阻塞与证据缺口',owner:'D1',minutes:5},
+                 {item:'各部门工作要点（3 条以内）',owner:'ARCH1',minutes:5},
+                 {item:'需 A0 决策事项聚类',owner:'QA1',minutes:5},
+                 {item:'今日决策清单/owner/due',owner:'A0',minutes:5}]
 };
 const HQ_PRESET = {
   morning: ['A0','AI1','ZHAOYUN','GUANYU','HUANGZHONG'],
   operation: ['A0','D1','ARCH1','DATA1','INTEL0','QA1'],
-  acceptance: ['A0','HUANGZHONG','QA1','ZHAOYUN','GUANYU']
+  acceptance: ['A0','HUANGZHONG','QA1','ZHAOYUN','GUANYU'],
+  // 13 位负责人异步早报；现场仅 6 人：A0 + 当日红黄/带决策的负责人（下表为默认上桌）
+  dept_morning: ['A0','D1','ARCH1','DATA1','QA1','INTEL0']
 };
 function hqPreset(kind) {
   HQ_TYPE = kind;
