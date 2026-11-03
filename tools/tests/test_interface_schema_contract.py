@@ -11,8 +11,8 @@ WO-IFS-SCHEMA-20261103（task-31）。**不依赖真实服务/网络/生产数�
    trade_id/hash 链、outcome 缺失显式 null、watch/trigger 合并定义；
 3) envelope/error 适配器：wrap_ok/wrap_error 正反例、21 错误码与 registry 一致、
    request_id/message/retryable 校验、纯函数无副作用；
-4) 与 `INTERFACE_REGISTRY_v1.yaml` 对齐：31 接口数不变、schema/schema_file 一致、
-   standards 引用新文档；
+4) 与 `INTERFACE_REGISTRY_v1.yaml` 对齐：32 接口数（F1d war_room.snapshot.get 登记后 +1）、
+   schema/schema_file 一致、standards 引用新文档；
 5) 文档交付物存在（schema README + F1 接线说明含回滚）。
 """
 
@@ -473,9 +473,17 @@ class TestEnvelopeAdapter:
 
 # ── 4. registry 对齐（接口数不变 / schema + schema_file 一致） ────────
 class TestRegistryAlignment:
-    def test_interface_count_unchanged(self, registry):
-        assert len(registry["interfaces"]) == 31
-        assert registry["counts"]["interfaces"] == 31
+    def test_interface_count_matches_counts(self, registry):
+        assert len(registry["interfaces"]) == 32
+        assert registry["counts"]["interfaces"] == 32
+
+    def test_war_room_registered_without_schema_file(self, registry, interfaces):
+        """F1d 接口登记：schema war_room/v1；独立 JSON Schema/schema_file 待补（缺口显式）。"""
+        item = interfaces["war_room.snapshot.get"]
+        assert item["schema"] == "war_room/v1"
+        assert "schema_file" not in item, "war_room 独立 schema 未交付前不得声明 schema_file"
+        assert item["SLO"] == registry["slo_classes"]["read_heavy"]
+        assert item["status"] == "draft"
 
     def test_every_delivered_schema_is_referenced(self, interfaces):
         for spec in ALL_SPECS:

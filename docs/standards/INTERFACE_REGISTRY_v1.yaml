@@ -1,6 +1,6 @@
 schema_version: interface_registry/v1
-registry_version: 1.0.0
-updated_at: '2026-11-03'
+registry_version: 1.1.0
+updated_at: '2026-11-04'
 owner: A0
 maintainers:
 - ARCH1
@@ -1040,6 +1040,35 @@ interfaces:
     phase: F6
     wo: WO-IFS-ROUTE-20261103
   notes: 落地探针：仅表达存活；接口级健康见 health.probe.get
+- id: war_room.snapshot.get
+  method: GET
+  path: /api/war-room/snapshot
+  owner: WATCH_TOWER
+  consumer:
+  - 门户
+  - WATCH_TOWER
+  - D1
+  source_of_truth:
+    kind: aggregate
+    ref: portal/war_room_data.py（聚合：pool_data/d1_data/paper_data/sim_confirm + watch-admin 快照）
+    note: 作战台实时聚合（只读，不接实盘；D1/池/paper/确认/盯盘摘要）
+  schema: war_room/v1
+  auth: portal-token
+  write: false
+  paper_only: true
+  SLO:
+    latency_ms_p95: 1500
+    error_rate_max: 0.02
+    availability: 0.99
+  slo_class: read_heavy
+  status: draft
+  ids:
+    produces: []
+    consumes: []
+  remediation:
+    phase: F1
+    wo: WO-IFS-WARROOM-ENVELOPE-20261104
+  notes: F1d（WO-IFS-WARROOM-ENVELOPE-20261104）已接 envelope/request_id；payload 契约见 portal/war_room_data.py；独立 JSON Schema（schema_file）待补；登记 WO-IFS-REGISTRY-WARROOM-20261104
 id_chain:
   version: id_chain/v1
   order:
@@ -1449,9 +1478,9 @@ plan_phases:
     - WO-IFS-E2E-20261103
     - WO-IFS-EVIDENCE-20261103
 counts:
-  interfaces: 31
+  interfaces: 32
   by_status:
-    draft: 23
+    draft: 24
     v1: 5
     deprecated: 3
     retired: 0
@@ -1462,8 +1491,8 @@ counts:
     D1: 12
     TR1: 9
     WA1: 2
-    WATCH_TOWER: 1
+    WATCH_TOWER: 2
     A0: 3
   write_interfaces: 12
-  read_interfaces: 19
+  read_interfaces: 20
   id_chain_entities: 11
