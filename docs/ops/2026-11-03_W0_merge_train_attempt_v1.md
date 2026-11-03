@@ -41,3 +41,12 @@
 - `C:\Temp\w0_merge_train.log`
 - `C:\Users\t\AppData\Local\Temp\merge_gated_20261103_163349.log`
 - 当前 `summary.json`：doing 30 / worktree 38
+
+## 六、16:40–17:00 追加尝试与修复
+
+- `WO-CAOCAO-FRAME`：数据引导后 fast 门通过，但被 kernel_guard **组合注册 ADR 门**拦下，未提交；
+- `UI-UNIFY-MANIFEST`：数据引导前 fast 门 1F（`xq_xq_status` 缺 sqlite）；
+- 新增 `tools/w0_worktree_bootstrap.py`：复制 catalog/registry/xueqiu_info.db 到 worktree；
+- 修复后 UI worktree 的 datawarehouse 测试 **340 passed / 0F**；
+- 17:00 窗口关闭，**不再 merge；代码冻结到 11-04 10:00**；
+- 下一窗口 11-04 15:00 重试。
