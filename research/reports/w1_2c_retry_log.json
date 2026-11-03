@@ -8,6 +8,14 @@
    "embed_result": "BLOCKED TimeoutError 30s",
    "action": "postpone retry to 08:40",
    "reason": "other session keeps qwen loaded; bge-m3/CPU queued timeout"
+  },
+  {
+   "at": "2026-11-03T08:54:47+08:00",
+   "held_model": "qwen3.5:9b",
+   "vram": 7204702780,
+   "expires_at": "2026-11-03T08:49:30+08:00",
+   "embed_result": "BLOCKED TimeoutError 30s",
+   "action": "continue blocked; W1-2c remains external-blocked"
   }
  ],
  "last_check": "2026-11-03T08:06:34+08:00"
