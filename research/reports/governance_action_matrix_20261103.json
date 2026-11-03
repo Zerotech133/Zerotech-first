@@ -1,0 +1,45 @@
+{
+ "generated_at": "2026-11-03T16:43:09+08:00",
+ "actions": [
+  {
+   "id": "A1",
+   "item": "DATA2 外部抓取 26 项",
+   "owner": "DATA2",
+   "approval": "TUSHARE token(SOPS)+DATA1 排期",
+   "package": "2026-11-03_DATA2外部抓取执行包.md",
+   "status": "pending_approval"
+  },
+  {
+   "id": "A2",
+   "item": "manifest 补键 5 项（数据已在盘）",
+   "owner": "DATA3",
+   "approval": "DATA3 复核",
+   "package": "2026-11-03_manifest补键审批包.md",
+   "status": "pending_approval"
+  },
+  {
+   "id": "A3",
+   "item": "未注册 49（登记 48/忽略 1）",
+   "owner": "DATA4",
+   "approval": "DATA4+DATA1",
+   "package": "2026-11-03_注册暴露审批包.md",
+   "status": "pending_approval"
+  },
+  {
+   "id": "A4",
+   "item": "未暴露 242 分批排期",
+   "owner": "DATA4",
+   "approval": "产品/门户评审",
+   "package": "2026-11-03_注册暴露审批包.md",
+   "status": "pending_approval"
+  },
+  {
+   "id": "A5",
+   "item": "多源 +1（29→30）",
+   "owner": "DATA1",
+   "approval": "需新资料/合法合并；当前唯一候选为错误合并",
+   "package": "research/reports/multi_source_plus1_candidates_20261103.json",
+   "status": "blocked_no_valid_candidate"
+  }
+ ]
+}
