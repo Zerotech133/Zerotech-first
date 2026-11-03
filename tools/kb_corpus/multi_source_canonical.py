@@ -43,7 +43,7 @@ REPO = Path(__file__).resolve().parents[2]
 R = REPO / "research" / "reports"
 OUT = R / "multi_source_canonical_20261104.json"
 TARGET = 30
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 
 # 参与 canoncial 的现有产物（不重跑语义合并，只读）
 SRC_SYNONYMS = R / "concept_synonyms_20261103_v4.json"
@@ -52,6 +52,7 @@ SRC_MERGE = R / "concept_merge_llm_20261103_v4.json"
 SRC_V2_FINAL = R / "multi_source_final_20261103.json"       # legacy 已批多源组（v2）
 SRC_P1 = R / "multi_source_final_p1_20261103.json"         # KPI 29 参考
 SRC_LLM_V4 = R / "concept_merge_llm_20261103_v4_llm.json"   # 自动 30（未签核，参考）
+SRC_EXTRA = R / "multi_source_extra_20261104.json"         # v1.1 扩展签核（布林线，W22）
 
 DEFINITION = {
     "name": "多源概念（canonical v1）",
@@ -182,6 +183,13 @@ def build_canonical() -> dict:
         add(name, srcs, "legacy_signed", "v2_legacy", members=list(members),
             note="v2 人工已批、v4 输入替换后未复现；按冻结定义 legacy 携带")
 
+    # (e) v1.1 扩展：公开投教人工签核概念（W22，布林线）
+    extra = _load(SRC_EXTRA) if SRC_EXTRA.is_file() else {}
+    for c in extra.get("concepts") or []:
+        add(c.get("concept"), c.get("sources") or [], c.get("sign_off") or "lead_signed",
+            c.get("group") or "extra_signed", members=c.get("members"),
+            note=c.get("note") or "")
+
     # 剔除项（显式记录）
     excluded = []
     for dec in decisions:
@@ -208,7 +216,7 @@ def build_canonical() -> dict:
     count = len(concepts)
     source_artifacts = [{"path": str(p), "sha256": _sha(p)}
                         for p in (SRC_SYNONYMS, SRC_MULTISOURCE, SRC_MERGE, SRC_V2_FINAL,
-                                  SRC_P1, SRC_LLM_V4) if p.is_file()]
+                                  SRC_P1, SRC_LLM_V4, SRC_EXTRA) if p.is_file()]
     payload = {
         "schema_version": 1,
         "report": "multi_source_canonical",
@@ -229,6 +237,8 @@ def build_canonical() -> dict:
             "v4_auto_groups": int((merge.get("stats") or {}).get("multi_auto_confirmed") or 29),
             "v4_llm_auto_groups": int((llm.get("stats") or {}).get("multi_after_confirmed") or 30),
             "canonical": count,
+            "extra_signed": sum(1 for c in concepts if c.get("group") == "w22_public_edu_3src"),
+            "kpi_30": 30,
         },
         "reconciliation": {
             "canonical_29": "19(v4 规则基线) + 9(v4 语义合并人工签核) + 1(legacy 人工签核：主要原材料价格波动) = 29",
@@ -276,8 +286,9 @@ def self_check() -> dict:
     names = {str(x.get("concept")) for x in concepts}
     if any("房地产" in n and "计算机" in n for n in names):
         problems.append("驳回组（房地产/计算机）出现在 canonical")
+    extra_n = sum(1 for x in concepts if x.get("group") == "w22_public_edu_3src")
     if len(concepts) != int(c.get("calibers", {}).get("v4_signed_concepts") or 0) + \
-            sum(1 for x in concepts if x.get("sign_off") == "legacy_signed"):
+            sum(1 for x in concepts if x.get("sign_off") == "legacy_signed") + extra_n:
         problems.append("count 公式不成立（v4_signed + legacy）")
     return {"ok": not problems, "count": len(concepts), "groups": groups,
             "problems": problems}

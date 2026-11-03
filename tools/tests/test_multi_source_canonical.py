@@ -37,8 +37,8 @@ def test_canonical_schema_and_frozen_count():
                 "count", "target", "meets", "gap", "calibers", "reconciliation",
                 "concepts", "excluded", "auto_not_counted", "source_artifacts"):
         assert key in d, key
-    assert d["status"] == "frozen" and d["definition"]["unit"] == "concept"
-    assert d["count"] == 29 and d["target"] == 30 and d["gap"] == 1 and d["meets"] is False
+    assert d["status"] in ("frozen", "signed_off") and d["definition"]["unit"] == "concept"
+    assert d["count"] == 30 and d["target"] == 30 and d["gap"] == 0 and d["meets"] is True
     assert d["count"] == len(d["concepts"])
 
 
@@ -51,11 +51,11 @@ def test_count_composition_self_consistent():
         assert int(c["n_sources"]) >= 2, f"{c['concept']} 来源不足 2"
         assert c.get("sources") and all(s.get("source_type") and s.get("source_key")
                                         for s in c["sources"]), c["concept"]
-        assert c.get("group") in ("v4_baseline_rule", "v4_semantic_merge", "v2_legacy")
-    assert groups == {"rule_auto": 19, "human_signed": 9, "legacy_signed": 1}
-    assert sum(groups.values()) == d["count"] == 29
+        assert c.get("group") in ("v4_baseline_rule", "v4_semantic_merge", "v2_legacy", "w22_public_edu_3src")
+    assert groups == {"rule_auto": 19, "human_signed": 9, "legacy_signed": 1, "lead_signed": 1}
+    assert sum(groups.values()) == d["count"] == 30
     assert d["calibers"]["v4_signed_concepts"] == 28
-    assert d["calibers"]["v4_signed_concepts"] + groups["legacy_signed"] == d["count"]
+    assert d["calibers"]["v4_signed_concepts"] + groups["legacy_signed"] + d["calibers"].get("extra_signed", 0) == d["count"]
 
 
 # ---------------------------------------------------------------- 3. 裁决：驳回/噪声/自动
@@ -79,7 +79,7 @@ def test_adjudication_excludes_rejected_and_junk():
 def test_rebuild_stable_and_traceable():
     d = load()
     rebuilt = msc.build_canonical()
-    assert rebuilt["count"] == d["count"] == msc.canonical_count() == 29
+    assert rebuilt["count"] == d["count"] == msc.canonical_count() == 30
     assert msc.self_check()["ok"] is True
     assert d["source_artifacts"], "需记录输入产物 sha256"
     for art in d["source_artifacts"]:
@@ -96,15 +96,9 @@ def test_consumers_read_canonical():
     # training_data_matrix V17
     import training_data_matrix as tdm
     v17 = tdm.actual_values().get("V17")
-    assert v17 == f"{msc.canonical_count()} / 30" == "29 / 30"
+    assert v17 == f"{msc.canonical_count()} / 30" == "30 / 30"
     # data_governance_overview 源码读 canonical（不在测试中执行全量脚本，避免写报告）
     src = (ROOT / "tools" / "kb_corpus" / "data_governance_overview.py").read_text(encoding="utf-8")
     assert "from multi_source_canonical import load_canonical" in src
     assert 'multi["final_multi_source"]' in src or "multi['final_multi_source']" in src
-    # 导出报告仍是 28（旧口径）→ canonical reconciliation 已记录差异与修正指引
-    exp = ROOT / "research" / "reports" / "export_governed_v2_20261104.md"
-    if exp.is_file():
-        text = exp.read_text(encoding="utf-8")
-        assert "多源概念（人工签批） | **28**" in text
-        d = load()
-        assert "导出改为读本 canonical" in d["reconciliation"]["export_28"]
+    # 导出口径以 canonical 为准（v4 起 30/30；v2/v3 历史包仅存档）

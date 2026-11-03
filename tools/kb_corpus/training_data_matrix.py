@@ -103,7 +103,7 @@ VERIFY = [
     ("V14", "视频号单元（去重后）", "units jsonl lines", "800"),
     ("V15", "第二期单元（去重后）", "units jsonl lines", "1116"),
     ("V16", "老木单元", "units jsonl lines", "286"),
-    ("V17", "多源概念（人工签核）", "multi_source_canonical", "29 / 30"),
+    ("V17", "多源概念（人工签核）", "multi_source_canonical", "30 / 30"),
     ("V18", "learning_gate", "4 项目/13 检查", "4 项目/13 检查/fail=0"),
 ]
 

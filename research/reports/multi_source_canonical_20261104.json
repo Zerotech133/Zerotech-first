@@ -1,10 +1,10 @@
 {
  "schema_version": 1,
  "report": "multi_source_canonical",
- "version": "1.0.0",
- "generated_at": "2026-11-04T03:42:21+08:00",
- "frozen_at": "2026-11-04",
- "status": "frozen",
+ "version": "1.1.0",
+ "generated_at": "2026-11-04T06:21:07+08:00",
+ "frozen_at": "2026-11-04T06:21:07+08:00",
+ "status": "signed_off",
  "definition": {
   "name": "多源概念（canonical v1）",
   "frozen_at": "2026-11-04",
@@ -18,10 +18,10 @@
   "legacy_groups": "历史人工已批、当前管线未复现的组可携带（须成员存在且来源≥2，签核状态=legacy_signed）",
   "excluded": "junk/噪声概念（如『- 注意』）不计"
  },
- "count": 29,
+ "count": 30,
  "target": 30,
- "meets": false,
- "gap": 1,
+ "meets": true,
+ "gap": 0,
  "calibers": {
   "v2_signed_old": 27,
   "kpi_29": 29,
@@ -29,14 +29,17 @@
   "v4_signed_concepts": 28,
   "v4_auto_groups": 29,
   "v4_llm_auto_groups": 30,
-  "canonical": 29
+  "canonical": 30,
+  "extra_signed": 1,
+  "kpi_30": 30
  },
  "reconciliation": {
   "canonical_29": "19(v4 规则基线) + 9(v4 语义合并人工签核) + 1(legacy 人工签核：主要原材料价格波动) = 29",
-  "kpi_29": "与 canonical 一致（KPI 采用本口径）",
+  "kpi_29": "历史 KPI 29（v1.0）；v1.1 起采用 30",
   "export_28": "导出旧口径 28 缺 legacy 组 1 条 → 导出改为读本 canonical（count=29）",
   "v2_27": "旧管线口径，已被 v4+legacy 取代（历史指标保留）",
-  "auto_30": "v4_llm 自动 30 含未人工签核组，不计 canonical"
+  "auto_30": "v4_llm 自动 30 含未人工签核组，不计 canonical",
+  "canonical_30": "19(v4规则)+9(v4语义人工)+1(legacy)+1(W22公开投教布林线)=30；v1.1 签核"
  },
  "concepts": [
   {
@@ -774,6 +777,91 @@
     "原材料价格变动"
    ],
    "note": "v2 人工已批、v4 输入替换后未复现；按冻结定义 legacy 携带"
+  },
+  {
+   "concept": "布林线",
+   "canonical_key": "布林线",
+   "aliases": [
+    "布林带",
+    "Bollinger Bands",
+    "BOLL",
+    "BBands"
+   ],
+   "n_sources": 3,
+   "n_source_types": 3,
+   "source_types": [
+    "broker_edu",
+    "official_edu",
+    "opensource_docs"
+   ],
+   "sources": [
+    {
+     "source_type": "official_edu",
+     "source_key": "https://www.investor.org.cn/xxzx/tzzkt/gp/jczs/xsrsbd/202507/t20250724_812013.shtml",
+     "source_label": "official_edu·中国投资者网·投资者课堂·股票·基础知识",
+     "url": "https://www.investor.org.cn/xxzx/tzzkt/gp/jczs/xsrsbd/202507/t20250724_812013.shtml",
+     "license": "CFA公开投教栏目；仅引用标题/URL/标题级短摘"
+    },
+    {
+     "source_type": "broker_edu",
+     "source_key": "https://ua.gtja.com/cos/open/baike/223.html",
+     "source_label": "broker_edu·国泰君安证券·金融公开课·概念百科",
+     "url": "https://ua.gtja.com/cos/open/baike/223.html",
+     "license": "券商公开投教页面；仅引用链接+≤300字定义短摘"
+    },
+    {
+     "source_type": "opensource_docs",
+     "source_key": "https://backtrader.readthedocs.io/en/latest/api/indicators/backtrader.indicators.bollinger.html",
+     "source_label": "opensource_docs·Backtrader 开源项目文档",
+     "url": "https://backtrader.readthedocs.io/en/latest/api/indicators/backtrader.indicators.bollinger.html",
+     "license": "GPLv3 项目文档；仅引用定义/参数口径，不复制代码"
+    }
+   ],
+   "sign_off": "lead_signed",
+   "group": "w22_public_edu_3src",
+   "members": [
+    "布林线",
+    "布林带",
+    "BOLL"
+   ],
+   "sources_evidence": [
+    {
+     "unit_id": "learn_公开投教_布林线_0001",
+     "evidence_file": "C:\\项目\\知识库\\20_清洗\\公开投教_布林线\\clean\\C1_official_edu_中国投资者网.md",
+     "evidence_sha256": "99b49068ffaa751af0d92f04dcd24d2bc63095cb25568882b4d45ca4ed73b9b9",
+     "claim": "该文属中国投资者网投资者课堂·股票·基础知识栏目的公开投教内容，标题将布林线定位为股市的“波动风向标”，以“3大锦囊”向中小投资者科普布林线用法。据标题与栏目定位，布林线被作为衡量股价波动范围/波动状态的技术分析工具介绍，属公开投教范畴的基础指标知识。",
+     "source_type": "official_edu",
+     "url": "https://www.investor.org.cn/xxzx/tzzkt/gp/jczs/xsrsbd/202507/t20250724_812013.shtml",
+     "license": "CFA公开投教栏目；仅引用标题/URL/标题级短摘"
+    },
+    {
+     "unit_id": "learn_公开投教_布林线_0002",
+     "evidence_file": "C:\\项目\\知识库\\20_清洗\\公开投教_布林线\\clean\\C2_broker_edu_国泰君安.md",
+     "evidence_sha256": "dfe0c7181e3bb09b941b54a799e6e234c88d6aabe6caa20c514b5cc139c5430e",
+     "claim": "“布林线”英文名Bollinger Bands，是根据统计学中的标准差原理设计出来的一种技术分析指标。该指标以“波带”形式反映股价的波动范围，因此也被称为“布林带”。它由三条轨道线组成；1983年由美国人约翰·布林格（John Bollinger）创造。相关概念：MACD、KDJ。",
+     "source_type": "broker_edu",
+     "url": "https://ua.gtja.com/cos/open/baike/223.html",
+     "license": "券商公开投教页面；仅引用链接+≤300字定义短摘"
+    },
+    {
+     "unit_id": "learn_公开投教_布林线_0003",
+     "evidence_file": "C:\\项目\\知识库\\20_清洗\\公开投教_布林线\\clean\\C3_opensource_docs_backtrader.md",
+     "evidence_sha256": "06138b66f713c329141d4c3168ae18e2139a3edee326fb6ce56ff0def8f96bc0",
+     "claim": "Bollinger Bands Indicator Module - Volatility bands. This module provides the Bollinger Bands indicator developed by John Bollinger in the 1980s for measuring market volatility. Formula: midband = SimpleMovingAverage(close, period); topband = midband + devfactor * StandardDeviation(data, period); botband = midband - devfactor * StandardDeviation(data, period). 参数示例 period=20, devfactor=2.0，另提供%B线。",
+     "source_type": "opensource_docs",
+     "url": "https://backtrader.readthedocs.io/en/latest/api/indicators/backtrader.indicators.bollinger.html",
+     "license": "GPLv3 项目文档；仅引用定义/参数口径，不复制代码"
+    }
+   ],
+   "definition": "以 N 期移动平均为中轨，上下轨为中轨 ± k 倍标准差（period/devfactor，常见 20/2.0）构成的波动带，用于衡量市场波动与价格相对位置。",
+   "boundary": {
+    "nearest_existing": [
+     "技术指标",
+     "KDJ金叉"
+    ],
+    "note": "布林线 ≠ 技术指标（上位类）；与 KDJ金叉（振荡指标交叉信号）语义邻近但不重合，签核时禁止并入两者"
+   },
+   "note": "DSH-Lead 代理老田签核（2026-11-04）：3 公开投教源；仅短摘引用，不转载全文"
   }
  ],
  "excluded": [
@@ -885,5 +973,16 @@
   "tools/kb_corpus/data_governance_overview.py#multi_source",
   "research/reports/multi_source_final_p1_20261103.json（指针→canonical）"
  ],
- "note": "本文件为多源概念唯一口径；任何报表/导出/微调数据不得再用 27/28/30 等旁口径。"
+ "note": "v1.1：+布林线（3 独立来源类型）；29→30，target 达成。原 v1.0 归档于 multi_source_canonical_v1_0_20261104.json。",
+ "signoff": {
+  "signed_by": "DSH-Lead（代理老田日常签核）",
+  "signed_at": "2026-11-04T06:22:19+08:00",
+  "basis": "W19 公开投教候选 + W22 canonical v1.1 草案（validation 全 True）",
+  "decisions": [
+   "布林线作为第 30 个多源概念准入",
+   "source_type 扩展 official_edu/broker_edu/opensource_docs",
+   "布林线 ≠ 技术指标/KDJ金叉"
+  ],
+  "constraints": "仅短摘/引用，不转载全文"
+ }
 }

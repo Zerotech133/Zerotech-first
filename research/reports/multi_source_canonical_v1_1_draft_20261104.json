@@ -1,0 +1,1079 @@
+{
+ "schema_version": 2,
+ "report": "multi_source_canonical",
+ "version": "1.1-draft",
+ "generated_at": "2026-11-04T06:19:23+08:00",
+ "frozen_at": null,
+ "status": "draft_pending_signoff",
+ "definition": {
+  "name": "多源概念（canonical v1）",
+  "frozen_at": "2026-11-04",
+  "unit": "concept",
+  "min_independent_sources": 2,
+  "independent_source": "(source_type, source_key)：同博主/同书/同研报只算 1 源",
+  "signoff_required": "语义/LLM 合并组必须人工签核；规则/同义归并的确定性多源概念免逐条签核",
+  "partial_subset": "按合并组计 1 个概念（成员不重复计数）",
+  "rejected_groups": "不计（如不同对象/方向/序数差异被驳回组）",
+  "auto_only_groups": "不计（未人工签核的自动语义合并进入观察队列）",
+  "legacy_groups": "历史人工已批、当前管线未复现的组可携带（须成员存在且来源≥2，签核状态=legacy_signed）",
+  "excluded": "junk/噪声概念（如『- 注意』）不计",
+  "amendment_v1_1": "新增 source_type：official_edu / broker_edu / opensource_docs（公开投教/开源文档，待 DATA4/A0 评审）；新增概念须人工签核后方可进入正式 canonical。"
+ },
+ "count": 30,
+ "target": 30,
+ "meets": false,
+ "gap": 0,
+ "calibers": {
+  "v2_signed_old": 27,
+  "kpi_29": 29,
+  "export_v2_28": 28,
+  "v4_signed_concepts": 28,
+  "v4_auto_groups": 29,
+  "v4_llm_auto_groups": 30,
+  "canonical": 29,
+  "canonical_v1": 29,
+  "canonical_v1_1_draft": 30,
+  "v5_rule_multi": 10,
+  "v5_synonyms_multi": 20
+ },
+ "reconciliation": {
+  "canonical_29": "19(v4 规则基线) + 9(v4 语义合并人工签核) + 1(legacy 人工签核：主要原材料价格波动) = 29",
+  "kpi_29": "与 canonical 一致（KPI 采用本口径）",
+  "export_28": "导出旧口径 28 缺 legacy 组 1 条 → 导出改为读本 canonical（count=29）",
+  "v2_27": "旧管线口径，已被 v4+legacy 取代（历史指标保留）",
+  "auto_30": "v4_llm 自动 30 含未人工签核组，不计 canonical"
+ },
+ "concepts": [
+  {
+   "concept": "中枢判断逻辑",
+   "canonical_key": "中枢判断逻辑",
+   "n_sources": 2,
+   "n_source_types": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "乔木缠论ROEE",
+     "source_label": "博主·乔木缠论ROEE"
+    },
+    {
+     "source_type": "blogger",
+     "source_key": "爱死磕-康康",
+     "source_label": "博主·爱死磕-康康"
+    }
+   ],
+   "sign_off": "rule_auto",
+   "group": "v4_baseline_rule",
+   "members": [
+    "中枢判断逻辑",
+    "缠论中枢级别",
+    "禅论中枢",
+    "中枢"
+   ],
+   "note": ""
+  },
+  {
+   "concept": "电力设备板块周度表现",
+   "canonical_key": "电力设备板块周度表现",
+   "n_sources": 3,
+   "n_source_types": 1,
+   "sources": [
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610021830105330",
+     "source_label": "研报·rp_AP202610021830105330"
+    },
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610021830105372",
+     "source_label": "研报·rp_AP202610021830105372"
+    },
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610021830105333",
+     "source_label": "研报·rp_AP202610021830105333"
+    }
+   ],
+   "sign_off": "rule_auto",
+   "group": "v4_baseline_rule",
+   "members": [
+    "电力设备板块周度表现",
+    "电力设备行业周度表现",
+    "电力设备行业表现"
+   ],
+   "note": ""
+  },
+  {
+   "concept": "KDJ金叉",
+   "canonical_key": "kdj金叉",
+   "n_sources": 2,
+   "n_source_types": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "指标公式入门",
+     "source_label": "博主·指标公式入门"
+    },
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    }
+   ],
+   "sign_off": "rule_auto",
+   "group": "v4_baseline_rule",
+   "members": [
+    "kdj金叉",
+    "kdj"
+   ],
+   "note": ""
+  },
+  {
+   "concept": "东盟区域贸易地位",
+   "canonical_key": "东盟区域贸易地位",
+   "n_sources": 2,
+   "n_source_types": 1,
+   "sources": [
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610061830165956",
+     "source_label": "研报·rp_AP202610061830165956"
+    },
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610061830165957",
+     "source_label": "研报·rp_AP202610061830165957"
+    }
+   ],
+   "sign_off": "rule_auto",
+   "group": "v4_baseline_rule",
+   "members": [
+    "东盟区域贸易地位",
+    "东盟地区贸易地位"
+   ],
+   "note": ""
+  },
+  {
+   "concept": "主要出口市场格局",
+   "canonical_key": "主要出口市场格局",
+   "n_sources": 2,
+   "n_source_types": 1,
+   "sources": [
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610061830165866",
+     "source_label": "研报·rp_AP202610061830165866"
+    },
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610061830165864",
+     "source_label": "研报·rp_AP202610061830165864"
+    }
+   ],
+   "sign_off": "rule_auto",
+   "group": "v4_baseline_rule",
+   "members": [
+    "主要出口市场格局",
+    "主要出口市场"
+   ],
+   "note": ""
+  },
+  {
+   "concept": "光伏产业链价格变动",
+   "canonical_key": "光伏产业链价格变动",
+   "n_sources": 2,
+   "n_source_types": 1,
+   "sources": [
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610021830105330",
+     "source_label": "研报·rp_AP202610021830105330"
+    },
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610021830105370",
+     "source_label": "研报·rp_AP202610021830105370"
+    }
+   ],
+   "sign_off": "rule_auto",
+   "group": "v4_baseline_rule",
+   "members": [
+    "光伏产业链价格变动",
+    "光伏产业链价格"
+   ],
+   "note": ""
+  },
+  {
+   "concept": "数据中心用电量占比预测",
+   "canonical_key": "数据中心用电量占比预测",
+   "n_sources": 2,
+   "n_source_types": 1,
+   "sources": [
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610021830112192",
+     "source_label": "研报·rp_AP202610021830112192"
+    },
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610031830126544",
+     "source_label": "研报·rp_AP202610031830126544"
+    }
+   ],
+   "sign_off": "rule_auto",
+   "group": "v4_baseline_rule",
+   "members": [
+    "数据中心用电量占比预测",
+    "数据中心用电量预测"
+   ],
+   "note": ""
+  },
+  {
+   "concept": "航运市场运价与租金数据",
+   "canonical_key": "航运市场运价与租金数据",
+   "n_sources": 2,
+   "n_source_types": 1,
+   "sources": [
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610021830105365",
+     "source_label": "研报·rp_AP202610021830105365"
+    },
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610021830105332",
+     "source_label": "研报·rp_AP202610021830105332"
+    }
+   ],
+   "sign_off": "rule_auto",
+   "group": "v4_baseline_rule",
+   "members": [
+    "航运市场运价与租金数据",
+    "航运市场运价与租金"
+   ],
+   "note": ""
+  },
+  {
+   "concept": "行业投资建议",
+   "canonical_key": "行业投资建议",
+   "n_sources": 3,
+   "n_source_types": 2,
+   "sources": [
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202609301830038557",
+     "source_label": "研报·rp_AP202609301830038557"
+    },
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202609301830054738",
+     "source_label": "研报·rp_AP202609301830054738"
+    },
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    }
+   ],
+   "sign_off": "rule_auto",
+   "group": "v4_baseline_rule",
+   "members": [
+    "行业投资建议",
+    "投资建议"
+   ],
+   "note": ""
+  },
+  {
+   "concept": "风电设备细分行业表现",
+   "canonical_key": "风电设备细分行业表现",
+   "n_sources": 2,
+   "n_source_types": 1,
+   "sources": [
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610021830105372",
+     "source_label": "研报·rp_AP202610021830105372"
+    },
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610021830105333",
+     "source_label": "研报·rp_AP202610021830105333"
+    }
+   ],
+   "sign_off": "rule_auto",
+   "group": "v4_baseline_rule",
+   "members": [
+    "风电设备细分行业表现",
+    "风电设备细分表现"
+   ],
+   "note": ""
+  },
+  {
+   "concept": "SNPO (Scale-Up NPO)",
+   "canonical_key": "snposcaleupnpo",
+   "n_sources": 2,
+   "n_source_types": 1,
+   "sources": [
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202609301830022983",
+     "source_label": "研报·rp_AP202609301830022983"
+    },
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202609301830034656",
+     "source_label": "研报·rp_AP202609301830034656"
+    }
+   ],
+   "sign_off": "rule_auto",
+   "group": "v4_baseline_rule",
+   "members": [
+    "snpo"
+   ],
+   "note": ""
+  },
+  {
+   "concept": "东盟中小微企业（MSME）经济地位",
+   "canonical_key": "东盟中小微企业msme经济地位",
+   "n_sources": 2,
+   "n_source_types": 1,
+   "sources": [
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202609301830015407",
+     "source_label": "研报·rp_AP202609301830015407"
+    },
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610021830105410",
+     "source_label": "研报·rp_AP202610021830105410"
+    }
+   ],
+   "sign_off": "rule_auto",
+   "group": "v4_baseline_rule",
+   "members": [
+    "东盟中小微企业经济地位"
+   ],
+   "note": ""
+  },
+  {
+   "concept": "仓位管理",
+   "canonical_key": "仓位管理",
+   "n_sources": 2,
+   "n_source_types": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    },
+    {
+     "source_type": "blogger",
+     "source_key": "乔木缠论ROEE",
+     "source_label": "博主·乔木缠论ROEE"
+    }
+   ],
+   "sign_off": "rule_auto",
+   "group": "v4_baseline_rule",
+   "members": [
+    "仓位"
+   ],
+   "note": ""
+  },
+  {
+   "concept": "优先行动",
+   "canonical_key": "优先行动",
+   "n_sources": 2,
+   "n_source_types": 1,
+   "sources": [
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610021830105410",
+     "source_label": "研报·rp_AP202610021830105410"
+    },
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202609301830015407",
+     "source_label": "研报·rp_AP202609301830015407"
+    }
+   ],
+   "sign_off": "rule_auto",
+   "group": "v4_baseline_rule",
+   "members": [
+    "优先行动"
+   ],
+   "note": ""
+  },
+  {
+   "concept": "冲高回落",
+   "canonical_key": "冲高回落",
+   "n_sources": 2,
+   "n_source_types": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    },
+    {
+     "source_type": "blogger",
+     "source_key": "一修论市",
+     "source_label": "博主·一修论市"
+    }
+   ],
+   "sign_off": "rule_auto",
+   "group": "v4_baseline_rule",
+   "members": [
+    "冲高回落"
+   ],
+   "note": ""
+  },
+  {
+   "concept": "国防军工行业周度表现",
+   "canonical_key": "国防军工行业周度表现",
+   "n_sources": 2,
+   "n_source_types": 1,
+   "sources": [
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610021830105332",
+     "source_label": "研报·rp_AP202610021830105332"
+    },
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610021830105365",
+     "source_label": "研报·rp_AP202610021830105365"
+    }
+   ],
+   "sign_off": "rule_auto",
+   "group": "v4_baseline_rule",
+   "members": [
+    "国防军工行业周度表现"
+   ],
+   "note": ""
+  },
+  {
+   "concept": "行业评级定义",
+   "canonical_key": "行业评级定义",
+   "n_sources": 2,
+   "n_source_types": 1,
+   "sources": [
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202609301830023858",
+     "source_label": "研报·rp_AP202609301830023858"
+    },
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202609301830053954",
+     "source_label": "研报·rp_AP202609301830053954"
+    }
+   ],
+   "sign_off": "rule_auto",
+   "group": "v4_baseline_rule",
+   "members": [
+    "行业评级定义"
+   ],
+   "note": ""
+  },
+  {
+   "concept": "跨境电子商务面临的四大挑战",
+   "canonical_key": "跨境电子商务面临的四大挑战",
+   "n_sources": 2,
+   "n_source_types": 1,
+   "sources": [
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202609301830015407",
+     "source_label": "研报·rp_AP202609301830015407"
+    },
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610021830105410",
+     "source_label": "研报·rp_AP202610021830105410"
+    }
+   ],
+   "sign_off": "rule_auto",
+   "group": "v4_baseline_rule",
+   "members": [
+    "跨境电子商务面临的四大挑战"
+   ],
+   "note": ""
+  },
+  {
+   "concept": "量化平台",
+   "canonical_key": "量化平台",
+   "n_sources": 2,
+   "n_source_types": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    },
+    {
+     "source_type": "blogger",
+     "source_key": "数据帝-量化开发",
+     "source_label": "博主·数据帝-量化开发"
+    }
+   ],
+   "sign_off": "rule_auto",
+   "group": "v4_baseline_rule",
+   "members": [
+    "量化平台"
+   ],
+   "note": ""
+  },
+  {
+   "concept": "AI 量化",
+   "canonical_key": "ai量化",
+   "n_sources": 2,
+   "n_source_types": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    },
+    {
+     "source_type": "blogger",
+     "source_key": "一修论市",
+     "source_label": "博主·一修论市"
+    }
+   ],
+   "sign_off": "human_signed",
+   "group": "v4_semantic_merge",
+   "members": [
+    "AI 量化",
+    "AI 量化的深度",
+    "量化"
+   ],
+   "note": "「AI 量化」⊃「AI 量化的深度」；「量化」为同一主题的上位写法，来源跨博主"
+  },
+  {
+   "concept": "Meta AI 智能体 Muse",
+   "canonical_key": "metaai智能体muse",
+   "n_sources": 3,
+   "n_source_types": 1,
+   "sources": [
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202609301830039062",
+     "source_label": "研报·rp_AP202609301830039062"
+    },
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610021830111802",
+     "source_label": "研报·rp_AP202610021830111802"
+    },
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610031830126605",
+     "source_label": "研报·rp_AP202610031830126605"
+    }
+   ],
+   "sign_off": "human_signed",
+   "group": "v4_semantic_merge",
+   "members": [
+    "Meta AI 智能体 Muse",
+    "Meta个人智能体Muse",
+    "Muse 智能体"
+   ],
+   "note": "同一产品名的三种截断/表述（Meta AI 智能体 Muse / Meta个人智能体Muse / Muse 智能体）"
+  },
+  {
+   "concept": "出现一个新的同级别中枢",
+   "canonical_key": "出现一个新的同级别中枢",
+   "n_sources": 2,
+   "n_source_types": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "乔木缠论ROEE",
+     "source_label": "博主·乔木缠论ROEE"
+    },
+    {
+     "source_type": "blogger",
+     "source_key": "爱死磕-康康",
+     "source_label": "博主·爱死磕-康康"
+    }
+   ],
+   "sign_off": "human_signed",
+   "group": "v4_semantic_merge",
+   "members": [
+    "出现一个新的同级别中枢",
+    "又形成一个同级别中枢"
+   ],
+   "note": "两条为同一走势描述的同义改写（出现新中枢/又形成同级别中枢）"
+  },
+  {
+   "concept": "分形结构",
+   "canonical_key": "分形结构",
+   "n_sources": 2,
+   "n_source_types": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "乔木缠论ROEE",
+     "source_label": "博主·乔木缠论ROEE"
+    },
+    {
+     "source_type": "blogger",
+     "source_key": "一修论市",
+     "source_label": "博主·一修论市"
+    }
+   ],
+   "sign_off": "human_signed",
+   "group": "v4_semantic_merge",
+   "members": [
+    "分形结构",
+    "底分形结构"
+   ],
+   "note": "「底分形结构」为「分形结构」的子集；按 v2 已批口径部分合并"
+  },
+  {
+   "concept": "国防军工子板块分化",
+   "canonical_key": "国防军工子板块分化",
+   "n_sources": 2,
+   "n_source_types": 1,
+   "sources": [
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610021830105332",
+     "source_label": "研报·rp_AP202610021830105332"
+    },
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610021830105365",
+     "source_label": "研报·rp_AP202610021830105365"
+    }
+   ],
+   "sign_off": "human_signed",
+   "group": "v4_semantic_merge",
+   "members": [
+    "国防军工子板块分化",
+    "国防军工子板块表现"
+   ],
+   "note": "同对象（国防军工子板块）的「分化/表现」同义表述"
+  },
+  {
+   "concept": "开盘半小时快速跳水",
+   "canonical_key": "开盘半小时快速跳水",
+   "n_sources": 2,
+   "n_source_types": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "K哥真交易",
+     "source_label": "博主·K哥真交易"
+    },
+    {
+     "source_type": "blogger",
+     "source_key": "一修论市",
+     "source_label": "博主·一修论市"
+    }
+   ],
+   "sign_off": "human_signed",
+   "group": "v4_semantic_merge",
+   "members": [
+    "开盘半小时快速跳水",
+    "开盘直接大跳水"
+   ],
+   "note": "同一盘面现象的同义改写（快速跳水/直接大跳水）"
+  },
+  {
+   "concept": "技术指标",
+   "canonical_key": "技术指标",
+   "n_sources": 2,
+   "n_source_types": 1,
+   "sources": [
+    {
+     "source_type": "blogger",
+     "source_key": "数据帝-量化开发",
+     "source_label": "博主·数据帝-量化开发"
+    },
+    {
+     "source_type": "blogger",
+     "source_key": "老木创业笔记_交易老木29条视频文案汇编",
+     "source_label": "博主·老木创业笔记_交易老木29条视频文案汇编"
+    }
+   ],
+   "sign_off": "human_signed",
+   "group": "v4_semantic_merge",
+   "members": [
+    "技术指标",
+    "计算技术指标"
+   ],
+   "note": "「计算技术指标」⊃「技术指标」，同一对象+动作修饰"
+  },
+  {
+   "concept": "纺织品出口增长",
+   "canonical_key": "纺织品出口增长",
+   "n_sources": 2,
+   "n_source_types": 1,
+   "sources": [
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610061830165974",
+     "source_label": "研报·rp_AP202610061830165974"
+    },
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610061830165957",
+     "source_label": "研报·rp_AP202610061830165957"
+    }
+   ],
+   "sign_off": "human_signed",
+   "group": "v4_semantic_merge",
+   "members": [
+    "纺织品出口增长",
+    "纺织品出口趋势"
+   ],
+   "note": "同对象「纺织品出口」的「增长/趋势」同义表述"
+  },
+  {
+   "concept": "贵金属",
+   "canonical_key": "贵金属",
+   "n_sources": 2,
+   "n_source_types": 1,
+   "sources": [
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202609301830053954",
+     "source_label": "研报·rp_AP202609301830053954"
+    },
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610061830164303",
+     "source_label": "研报·rp_AP202610061830164303"
+    }
+   ],
+   "sign_off": "human_signed",
+   "group": "v4_semantic_merge",
+   "members": [
+    "贵金属",
+    "贵金属金银"
+   ],
+   "note": "「贵金属金银」⊃「贵金属」，子集关系（v2 已批口径）"
+  },
+  {
+   "concept": "主要原材料价格波动",
+   "canonical_key": "主要原材料价格波动",
+   "n_sources": 2,
+   "n_source_types": 1,
+   "sources": [
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610021830105372",
+     "source_label": "研报·rp_AP202610021830105372"
+    },
+    {
+     "source_type": "research_report",
+     "source_key": "rp_AP202610021830105333",
+     "source_label": "研报·rp_AP202610021830105333"
+    }
+   ],
+   "sign_off": "legacy_signed",
+   "group": "v2_legacy",
+   "members": [
+    "主要原材料价格波动",
+    "原材料价格变动"
+   ],
+   "note": "v2 人工已批、v4 输入替换后未复现；按冻结定义 legacy 携带"
+  },
+  {
+   "concept": "布林线",
+   "canonical_key": "布林线",
+   "aliases": [
+    "布林带",
+    "Bollinger Bands",
+    "BOLL",
+    "BBands"
+   ],
+   "n_sources": 3,
+   "n_source_types": 3,
+   "source_types": [
+    "broker_edu",
+    "official_edu",
+    "opensource_docs"
+   ],
+   "sources": [
+    {
+     "source_type": "official_edu",
+     "source_key": "https://www.investor.org.cn/xxzx/tzzkt/gp/jczs/xsrsbd/202507/t20250724_812013.shtml",
+     "source_label": "official_edu·中国投资者网·投资者课堂·股票·基础知识",
+     "url": "https://www.investor.org.cn/xxzx/tzzkt/gp/jczs/xsrsbd/202507/t20250724_812013.shtml",
+     "license": "CFA公开投教栏目；仅引用标题/URL/标题级短摘"
+    },
+    {
+     "source_type": "broker_edu",
+     "source_key": "https://ua.gtja.com/cos/open/baike/223.html",
+     "source_label": "broker_edu·国泰君安证券·金融公开课·概念百科",
+     "url": "https://ua.gtja.com/cos/open/baike/223.html",
+     "license": "券商公开投教页面；仅引用链接+≤300字定义短摘"
+    },
+    {
+     "source_type": "opensource_docs",
+     "source_key": "https://backtrader.readthedocs.io/en/latest/api/indicators/backtrader.indicators.bollinger.html",
+     "source_label": "opensource_docs·Backtrader 开源项目文档",
+     "url": "https://backtrader.readthedocs.io/en/latest/api/indicators/backtrader.indicators.bollinger.html",
+     "license": "GPLv3 项目文档；仅引用定义/参数口径，不复制代码"
+    }
+   ],
+   "sign_off": "pending_老田",
+   "group": "w22_public_edu_3src",
+   "members": [
+    "布林线",
+    "布林带",
+    "BOLL"
+   ],
+   "sources_evidence": [
+    {
+     "unit_id": "learn_公开投教_布林线_0001",
+     "evidence_file": "C:\\项目\\知识库\\20_清洗\\公开投教_布林线\\clean\\C1_official_edu_中国投资者网.md",
+     "evidence_sha256": "99b49068ffaa751af0d92f04dcd24d2bc63095cb25568882b4d45ca4ed73b9b9",
+     "claim": "该文属中国投资者网投资者课堂·股票·基础知识栏目的公开投教内容，标题将布林线定位为股市的“波动风向标”，以“3大锦囊”向中小投资者科普布林线用法。据标题与栏目定位，布林线被作为衡量股价波动范围/波动状态的技术分析工具介绍，属公开投教范畴的基础指标知识。",
+     "source_type": "official_edu",
+     "url": "https://www.investor.org.cn/xxzx/tzzkt/gp/jczs/xsrsbd/202507/t20250724_812013.shtml",
+     "license": "CFA公开投教栏目；仅引用标题/URL/标题级短摘"
+    },
+    {
+     "unit_id": "learn_公开投教_布林线_0002",
+     "evidence_file": "C:\\项目\\知识库\\20_清洗\\公开投教_布林线\\clean\\C2_broker_edu_国泰君安.md",
+     "evidence_sha256": "dfe0c7181e3bb09b941b54a799e6e234c88d6aabe6caa20c514b5cc139c5430e",
+     "claim": "“布林线”英文名Bollinger Bands，是根据统计学中的标准差原理设计出来的一种技术分析指标。该指标以“波带”形式反映股价的波动范围，因此也被称为“布林带”。它由三条轨道线组成；1983年由美国人约翰·布林格（John Bollinger）创造。相关概念：MACD、KDJ。",
+     "source_type": "broker_edu",
+     "url": "https://ua.gtja.com/cos/open/baike/223.html",
+     "license": "券商公开投教页面；仅引用链接+≤300字定义短摘"
+    },
+    {
+     "unit_id": "learn_公开投教_布林线_0003",
+     "evidence_file": "C:\\项目\\知识库\\20_清洗\\公开投教_布林线\\clean\\C3_opensource_docs_backtrader.md",
+     "evidence_sha256": "06138b66f713c329141d4c3168ae18e2139a3edee326fb6ce56ff0def8f96bc0",
+     "claim": "Bollinger Bands Indicator Module - Volatility bands. This module provides the Bollinger Bands indicator developed by John Bollinger in the 1980s for measuring market volatility. Formula: midband = SimpleMovingAverage(close, period); topband = midband + devfactor * StandardDeviation(data, period); botband = midband - devfactor * StandardDeviation(data, period). 参数示例 period=20, devfactor=2.0，另提供%B线。",
+     "source_type": "opensource_docs",
+     "url": "https://backtrader.readthedocs.io/en/latest/api/indicators/backtrader.indicators.bollinger.html",
+     "license": "GPLv3 项目文档；仅引用定义/参数口径，不复制代码"
+    }
+   ],
+   "definition": "以 N 期移动平均为中轨，上下轨为中轨 ± k 倍标准差（period/devfactor，常见 20/2.0）构成的波动带，用于衡量市场波动与价格相对位置。",
+   "boundary": {
+    "nearest_existing": [
+     "技术指标",
+     "KDJ金叉"
+    ],
+    "note": "布林线 ≠ 技术指标（上位类）；与 KDJ金叉（振荡指标交叉信号）语义邻近但不重合，签核时禁止并入两者"
+   }
+  }
+ ],
+ "excluded": [
+  {
+   "concept": "房地产行业板块表现",
+   "reason": "不同对象：房地产 vs 计算机，属不同行业对象（序数/方向均无，但对象不同不可并）",
+   "source": "v4_adjudication_rejected"
+  },
+  {
+   "concept": "跨境电子商务面临的四大挑战",
+   "reason": "非白名单 legacy 组：已被 v4 签核覆盖，或依赖已排除的指标说明书来源；不计 canonical",
+   "source": "v2_legacy_not_counted"
+  },
+  {
+   "concept": "Meta个人智能体Muse",
+   "reason": "非白名单 legacy 组：已被 v4 签核覆盖，或依赖已排除的指标说明书来源；不计 canonical",
+   "source": "v2_legacy_not_counted"
+  },
+  {
+   "concept": "国防军工行业周度表现",
+   "reason": "非白名单 legacy 组：已被 v4 签核覆盖，或依赖已排除的指标说明书来源；不计 canonical",
+   "source": "v2_legacy_not_counted"
+  },
+  {
+   "concept": "SNPO (Scale-Up NPO)",
+   "reason": "非白名单 legacy 组：已被 v4 签核覆盖，或依赖已排除的指标说明书来源；不计 canonical",
+   "source": "v2_legacy_not_counted"
+  },
+  {
+   "concept": "国防军工子板块表现",
+   "reason": "非白名单 legacy 组：已被 v4 签核覆盖，或依赖已排除的指标说明书来源；不计 canonical",
+   "source": "v2_legacy_not_counted"
+  },
+  {
+   "concept": "贵金属金银",
+   "reason": "非白名单 legacy 组：已被 v4 签核覆盖，或依赖已排除的指标说明书来源；不计 canonical",
+   "source": "v2_legacy_not_counted"
+  },
+  {
+   "concept": "一根K线拉起",
+   "reason": "非白名单 legacy 组：已被 v4 签核覆盖，或依赖已排除的指标说明书来源；不计 canonical",
+   "source": "v2_legacy_not_counted"
+  },
+  {
+   "concept": "均线战法",
+   "reason": "非白名单 legacy 组：已被 v4 签核覆盖，或依赖已排除的指标说明书来源；不计 canonical",
+   "source": "v2_legacy_not_counted"
+  },
+  {
+   "concept": "行业评级定义",
+   "reason": "非白名单 legacy 组：已被 v4 签核覆盖，或依赖已排除的指标说明书来源；不计 canonical",
+   "source": "v2_legacy_not_counted"
+  },
+  {
+   "concept": "- 注意",
+   "reason": "非白名单 legacy 组：已被 v4 签核覆盖，或依赖已排除的指标说明书来源；不计 canonical",
+   "source": "v2_legacy_not_counted"
+  },
+  {
+   "concept": "出现一个新的同级别中枢",
+   "reason": "非白名单 legacy 组：已被 v4 签核覆盖，或依赖已排除的指标说明书来源；不计 canonical",
+   "source": "v2_legacy_not_counted"
+  },
+  {
+   "concept": "纺织品出口增长",
+   "reason": "非白名单 legacy 组：已被 v4 签核覆盖，或依赖已排除的指标说明书来源；不计 canonical",
+   "source": "v2_legacy_not_counted"
+  },
+  {
+   "concept": "东盟中小微企业（MSME）经济地位",
+   "reason": "非白名单 legacy 组：已被 v4 签核覆盖，或依赖已排除的指标说明书来源；不计 canonical",
+   "source": "v2_legacy_not_counted"
+  }
+ ],
+ "auto_not_counted": {
+  "v4_auto_group_count": 0,
+  "v4_llm_auto_count": 30,
+  "llm_new_auto_groups": 11,
+  "policy": "未人工签核的自动语义合并组不计入 canonical；进入观察队列，签核后按版本 +N"
+ },
+ "source_artifacts": [
+  {
+   "path": "C:\\项目\\老田的AI助手\\research\\reports\\concept_synonyms_20261103_v4.json",
+   "sha256": "9cb77f4a0c20cf6ed0310526785efb5de33ef81abafce86ffa24cd902255d3e0"
+  },
+  {
+   "path": "C:\\项目\\老田的AI助手\\research\\reports\\knowledge_multisource_20261103_v4.json",
+   "sha256": "5b316f57e965ec354e75e060b30fe989fc49b9518ae03cdf14dd52ed3b164d57"
+  },
+  {
+   "path": "C:\\项目\\老田的AI助手\\research\\reports\\concept_merge_llm_20261103_v4.json",
+   "sha256": "d2dbcf32484df28617ff1ee4974d8f42232546f48a58f1bd33da1069908e6e8e"
+  },
+  {
+   "path": "C:\\项目\\老田的AI助手\\research\\reports\\multi_source_final_20261103.json",
+   "sha256": "cc9e821f349c9b083b545b5edd4d6bc19e7a37dc1e05f3e7e3a19c09d06e718a"
+  },
+  {
+   "path": "C:\\项目\\老田的AI助手\\research\\reports\\multi_source_final_p1_20261103.json",
+   "sha256": "a5a6eea6a01d1b7e28a3b7246a5bcf4433a3b2caf885907804a8edbff450b831"
+  },
+  {
+   "path": "C:\\项目\\老田的AI助手\\research\\reports\\concept_merge_llm_20261103_v4_llm.json",
+   "sha256": "bec21c329d213fd67e77131b0c223360da804fb42c2565b7a35e37e925d78689"
+  }
+ ],
+ "consumers": [
+  "tools/kb_corpus/training_data_matrix.py#V17",
+  "tools/kb_corpus/data_governance_overview.py#multi_source",
+  "research/reports/multi_source_final_p1_20261103.json（指针→canonical）"
+ ],
+ "note": "canonical v1.1 草案：布林线 3 独立来源类型入库后 30/30，pending 老田人工签核；签核前正式 canonical 保持 29/30。",
+ "parent": {
+  "canonical_v1": "C:\\项目\\老田的AI助手\\research\\reports\\multi_source_canonical_20261104.json",
+  "sha256": "4fdcc57ef51b54ba58b5be14ebe7a7ca4a4db269e1a125f8ec68b4f8b159b661",
+  "count": 29
+ },
+ "meets_pending_signoff": true,
+ "gap_pending_signoff": 0,
+ "evidence": {
+  "units_file": "C:\\项目\\知识库\\30_知识单元\\公开投教_布林线_units_draft.jsonl",
+  "units": 3,
+  "knowledge_units": [
+   {
+    "unit_id": "learn_公开投教_布林线_0001",
+    "evidence_file": "C:\\项目\\知识库\\20_清洗\\公开投教_布林线\\clean\\C1_official_edu_中国投资者网.md",
+    "evidence_sha256": "99b49068ffaa751af0d92f04dcd24d2bc63095cb25568882b4d45ca4ed73b9b9",
+    "claim": "该文属中国投资者网投资者课堂·股票·基础知识栏目的公开投教内容，标题将布林线定位为股市的“波动风向标”，以“3大锦囊”向中小投资者科普布林线用法。据标题与栏目定位，布林线被作为衡量股价波动范围/波动状态的技术分析工具介绍，属公开投教范畴的基础指标知识。",
+    "source_type": "official_edu",
+    "url": "https://www.investor.org.cn/xxzx/tzzkt/gp/jczs/xsrsbd/202507/t20250724_812013.shtml",
+    "license": "CFA公开投教栏目；仅引用标题/URL/标题级短摘"
+   },
+   {
+    "unit_id": "learn_公开投教_布林线_0002",
+    "evidence_file": "C:\\项目\\知识库\\20_清洗\\公开投教_布林线\\clean\\C2_broker_edu_国泰君安.md",
+    "evidence_sha256": "dfe0c7181e3bb09b941b54a799e6e234c88d6aabe6caa20c514b5cc139c5430e",
+    "claim": "“布林线”英文名Bollinger Bands，是根据统计学中的标准差原理设计出来的一种技术分析指标。该指标以“波带”形式反映股价的波动范围，因此也被称为“布林带”。它由三条轨道线组成；1983年由美国人约翰·布林格（John Bollinger）创造。相关概念：MACD、KDJ。",
+    "source_type": "broker_edu",
+    "url": "https://ua.gtja.com/cos/open/baike/223.html",
+    "license": "券商公开投教页面；仅引用链接+≤300字定义短摘"
+   },
+   {
+    "unit_id": "learn_公开投教_布林线_0003",
+    "evidence_file": "C:\\项目\\知识库\\20_清洗\\公开投教_布林线\\clean\\C3_opensource_docs_backtrader.md",
+    "evidence_sha256": "06138b66f713c329141d4c3168ae18e2139a3edee326fb6ce56ff0def8f96bc0",
+    "claim": "Bollinger Bands Indicator Module - Volatility bands. This module provides the Bollinger Bands indicator developed by John Bollinger in the 1980s for measuring market volatility. Formula: midband = SimpleMovingAverage(close, period); topband = midband + devfactor * StandardDeviation(data, period); botband = midband - devfactor * StandardDeviation(data, period). 参数示例 period=20, devfactor=2.0，另提供%B线。",
+    "source_type": "opensource_docs",
+    "url": "https://backtrader.readthedocs.io/en/latest/api/indicators/backtrader.indicators.bollinger.html",
+    "license": "GPLv3 项目文档；仅引用定义/参数口径，不复制代码"
+   }
+  ],
+  "v5": {
+   "path": "C:\\项目\\老田的AI助手\\research\\reports\\knowledge_multisource_20261104_v5.json",
+   "sha256": "f7eadccdfa0f09085d24a4f152cebdb1210f88b620915f261e9a329a12522874",
+   "multi_source_concepts": 10,
+   "bollinger": {
+    "n_sources": 3,
+    "source_types": [
+     "broker_edu",
+     "official_edu",
+     "opensource_docs"
+    ]
+   }
+  },
+  "synonyms_v5": {
+   "path": "C:\\项目\\老田的AI助手\\research\\reports\\concept_synonyms_20261104_v5.json",
+   "sha256": "f8f24ba94b9a687c1fe53c5a2a8a96c1e300a6810e47dbc99d4ea6542c874412",
+   "multi_after_confirmed": 20
+  },
+  "sources": [
+   {
+    "unit_id": "learn_公开投教_布林线_0001",
+    "evidence_file": "C:\\项目\\知识库\\20_清洗\\公开投教_布林线\\clean\\C1_official_edu_中国投资者网.md",
+    "evidence_sha256": "99b49068ffaa751af0d92f04dcd24d2bc63095cb25568882b4d45ca4ed73b9b9",
+    "claim": "该文属中国投资者网投资者课堂·股票·基础知识栏目的公开投教内容，标题将布林线定位为股市的“波动风向标”，以“3大锦囊”向中小投资者科普布林线用法。据标题与栏目定位，布林线被作为衡量股价波动范围/波动状态的技术分析工具介绍，属公开投教范畴的基础指标知识。",
+    "source_type": "official_edu",
+    "url": "https://www.investor.org.cn/xxzx/tzzkt/gp/jczs/xsrsbd/202507/t20250724_812013.shtml",
+    "license": "CFA公开投教栏目；仅引用标题/URL/标题级短摘"
+   },
+   {
+    "unit_id": "learn_公开投教_布林线_0002",
+    "evidence_file": "C:\\项目\\知识库\\20_清洗\\公开投教_布林线\\clean\\C2_broker_edu_国泰君安.md",
+    "evidence_sha256": "dfe0c7181e3bb09b941b54a799e6e234c88d6aabe6caa20c514b5cc139c5430e",
+    "claim": "“布林线”英文名Bollinger Bands，是根据统计学中的标准差原理设计出来的一种技术分析指标。该指标以“波带”形式反映股价的波动范围，因此也被称为“布林带”。它由三条轨道线组成；1983年由美国人约翰·布林格（John Bollinger）创造。相关概念：MACD、KDJ。",
+    "source_type": "broker_edu",
+    "url": "https://ua.gtja.com/cos/open/baike/223.html",
+    "license": "券商公开投教页面；仅引用链接+≤300字定义短摘"
+   },
+   {
+    "unit_id": "learn_公开投教_布林线_0003",
+    "evidence_file": "C:\\项目\\知识库\\20_清洗\\公开投教_布林线\\clean\\C3_opensource_docs_backtrader.md",
+    "evidence_sha256": "06138b66f713c329141d4c3168ae18e2139a3edee326fb6ce56ff0def8f96bc0",
+    "claim": "Bollinger Bands Indicator Module - Volatility bands. This module provides the Bollinger Bands indicator developed by John Bollinger in the 1980s for measuring market volatility. Formula: midband = SimpleMovingAverage(close, period); topband = midband + devfactor * StandardDeviation(data, period); botband = midband - devfactor * StandardDeviation(data, period). 参数示例 period=20, devfactor=2.0，另提供%B线。",
+    "source_type": "opensource_docs",
+    "url": "https://backtrader.readthedocs.io/en/latest/api/indicators/backtrader.indicators.bollinger.html",
+    "license": "GPLv3 项目文档；仅引用定义/参数口径，不复制代码"
+   }
+  ]
+ },
+ "validation": {
+  "units_traceable": true,
+  "units": 3,
+  "bollinger_source_types": 3,
+  "bollinger_sources": 3,
+  "boundary_ok": true,
+  "official_canonical_unchanged": true,
+  "count_formula": "29 + 1 = 30",
+  "self_consistent": true
+ },
+ "rollback": {
+  "strategy": "本草案不落正式 canonical；丢弃草案即回滚，正式 multi_source_canonical_20261104.json 未改",
+  "official_sha256": "4fdcc57ef51b54ba58b5be14ebe7a7ca4a4db269e1a125f8ec68b4f8b159b661"
+ }
+}

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import os
 import json
 import sys
 import zipfile
@@ -26,8 +27,9 @@ R = REPO / "research/reports"
 S = REPO / "portal/static"
 KB = Path(r"C:\项目\知识库")
 OUT = REPO / "deliverables"
-STAGE = OUT / "已治理数据_20261104_v3"
-ZIP = OUT / "2026-11-04_已治理数据导出_v3.zip"
+VERSION = os.environ.get("GOVERNED_EXPORT_VERSION", "v3")
+STAGE = OUT / f"已治理数据_20261104_{VERSION}"
+ZIP = OUT / f"2026-11-04_已治理数据导出_{VERSION}.zip"
 TAG = "20261104"
 NOW = datetime.now().astimezone().isoformat(timespec="seconds")
 sys.path.insert(0, str(REPO / "tools" / "kb_corpus"))
@@ -163,13 +165,13 @@ metrics = {"generated_at": NOW,
                       "reviewed_candidates": len(rrows), "source_files": len(sh_rows) - 1},
            "audit": {"cards_issues": 0, "traceable_rate": 1.0},
            "source": "W0 治理（元数据过滤/去重/核验）+ 多源人工双签 后的可输出数据；只读生成"}
-(R / f"governed_export_metrics_{TAG}_v3.json").write_text(
+(R / f"governed_export_metrics_{TAG}_{VERSION}.json").write_text(
     json.dumps(metrics, ensure_ascii=False, indent=1), encoding="utf-8")
 write_csv("08_治理指标.csv", ["指标", "值"],
           [[k, json.dumps(v, ensure_ascii=False)] for k, v in metrics.items()])
 
 # README
-readme = f"""# 已治理数据导出包 v3（2026-11-04，多源 canonical 29）
+readme = f"""# 已治理数据导出包 {VERSION}（2026-11-04，多源 canonical {CANON_COUNT}）
 
 本包只含**已治理/已审计**数据，不含原始转写与未审候选。
 
@@ -200,7 +202,7 @@ readme = f"""# 已治理数据导出包 v3（2026-11-04，多源 canonical 29）
 (STAGE / "README.md").write_text(readme, encoding="utf-8")
 
 # MANIFEST
-manifest = {"schema": "governed_export.v3", "generated_at": NOW,
+manifest = {"schema": f"governed_export.{VERSION}", "generated_at": NOW,
             "counts": metrics["counts"], "files": []}
 for p in sorted(STAGE.glob("*")):
     if p.name == "MANIFEST.json":
@@ -214,13 +216,13 @@ if ZIP.exists():
     ZIP.unlink()
 with zipfile.ZipFile(ZIP, "w", zipfile.ZIP_DEFLATED) as z:
     for p in sorted(STAGE.glob("*")):
-        z.write(p, arcname=f"已治理数据_20261104_v3/{p.name}")
+        z.write(p, arcname=f"已治理数据_20261104_{VERSION}/{p.name}")
 zip_sha = sha256(ZIP)
 zip_size = ZIP.stat().st_size
 
 v2 = json.loads((R / "export_governed_v2_20261104.json").read_text(encoding="utf-8")) \
     if (R / "export_governed_v2_20261104.json").exists() else {}
-report = {"schema_version": "export_governed_v3.v1", "date_tag": TAG, "generated_at": NOW,
+report = {"schema_version": f"export_governed_{VERSION}.v1", "date_tag": TAG, "generated_at": NOW,
           "zip": {"path": str(ZIP.relative_to(REPO)), "size_bytes": zip_size,
                   "size_mb": round(zip_size / 1e6, 2), "sha256": zip_sha},
           "counts": metrics["counts"], "files": manifest["files"],
@@ -230,14 +232,14 @@ report = {"schema_version": "export_governed_v3.v1", "date_tag": TAG, "generated
                 "count": CANON_COUNT, "target": CANON.get("target"), "meets": CANON.get("meets"),
                 "calibers": CANON.get("calibers")},
           "diff_from_v2": {"multi_source_concepts": {"v2": (v2.get("counts") or {}).get("multi_source_concepts"),
-                                                      "v3": CANON_COUNT},
-                           "zip_sha256": {"v2": (v2.get("zip") or {}).get("sha256"), "v3": zip_sha},
-                           "zip_size_bytes": {"v2": (v2.get("zip") or {}).get("size_bytes"), "v3": zip_size},
-                           "note": "v2 保留不覆盖；v3 多源改为 canonical（28→29，补 legacy 组 1 条）"},
+                                                      VERSION: CANON_COUNT},
+                           "zip_sha256": {"v2": (v2.get("zip") or {}).get("sha256"), VERSION: zip_sha},
+                           "zip_size_bytes": {"v2": (v2.get("zip") or {}).get("size_bytes"), VERSION: zip_size},
+                           "note": "v2/v3 保留；v4 多源 canonical v1.1 30/30（+布林线）"},
           "note": "只读知识库/报告；未写数据仓；口径=全量2202/有效1331/400卡/Top100/多源canonical29"}
-(R / f"export_governed_v3_{TAG}.json").write_text(
+(R / f"export_governed_{VERSION}_{TAG}.json").write_text(
     json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
-L = [f"# 已治理数据导出 v3（{TAG}，多源 canonical 29）", "",
+L = [f"# 已治理数据导出 {VERSION}（{TAG}，多源 canonical {CANON_COUNT}）", "",
      f"- 生成：{NOW}；ZIP：`{report['zip']['path']}`",
      f"- 大小：**{report['zip']['size_mb']} MB**（{zip_size} bytes）；sha256：`{zip_sha}`", "",
      "## 计数", "", "| 项 | 数值 |", "|---|---|",
@@ -258,8 +260,8 @@ L += ["", "## 口径", "",
       f"- 多源概念采用 **multi_source_canonical v1**（count={CANON_COUNT} / target {CANON.get('target')}），"
       "与 KPI 同口径；v2 导出保留不动；",
       "- 只读生成，不写数据仓；不构成投资建议。", ""]
-(R / f"export_governed_v3_{TAG}.md").write_text("\n".join(L), encoding="utf-8")
+(R / f"export_governed_{VERSION}_{TAG}.md").write_text("\n".join(L), encoding="utf-8")
 print(json.dumps({"zip": report["zip"], "counts": metrics["counts"],
-                  "report": {"json": str(R / f'export_governed_v3_{TAG}.json'),
-                             "md": str(R / f'export_governed_v3_{TAG}.md')}},
+                  "report": {"json": str(R / f'export_governed_{VERSION}_{TAG}.json'),
+                             "md": str(R / f'export_governed_{VERSION}_{TAG}.md')}},
                  ensure_ascii=False, indent=1))

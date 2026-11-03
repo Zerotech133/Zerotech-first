@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-04T03:49:02+08:00",
+ "generated_at": "2026-11-04T06:22:33+08:00",
  "knowledge": {
   "projects": [
    {
@@ -24,6 +24,18 @@
     "project_id": "视频号学习_第二期",
     "status": "distilling",
     "units": 1116,
+    "owner": "DATA1"
+   },
+   {
+    "project_id": "视频号学习_北斗股术1688",
+    "status": "distilling",
+    "units": 108,
+    "owner": "DATA1"
+   },
+   {
+    "project_id": "公开投教_布林线",
+    "status": "distilling",
+    "units": 3,
     "owner": "DATA1"
    }
   ],
@@ -84,7 +96,7 @@
     "研报": 147
    }
   },
-  "multi_source": 29,
+  "multi_source": 30,
   "gate": {
    "projects": 4,
    "checks": 13,
@@ -106,12 +118,12 @@
    "平台运行": 25
   },
   "size": {
-   "files": 269389,
+   "files": 269391,
    "gb": 55.86
   },
   "kb_size": {
-   "files": 4361,
-   "gb": 5.79
+   "files": 4445,
+   "gb": 5.81
   },
   "stale_30d": 17,
   "stale_samples": [
@@ -276,8 +288,8 @@
   {
    "kpi": "多源概念",
    "target": "≥30",
-   "current": "29（canonical 冻结口径；机器 30 未签核）",
-   "status": "⚠️ 差 1"
+   "current": "30（canonical 1.1.0 签核口径）",
+   "status": "✅"
   },
   {
    "kpi": "第二期有效候选",

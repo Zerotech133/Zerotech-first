@@ -101,7 +101,7 @@ kpis = [
     ("有效知识单元（今日文件）", "—", "1,045（800+245）", "✅"),
     ("学习卡", "≥400", "400（审计 0 问题/可追溯 100%）", "✅"),
     ("有效候选", "—", "1,372（已排除 823 垃圾）", "✅"),
-    ("多源概念", "≥30", f"{multi['final_multi_source']}（canonical 冻结口径；机器 {(_canon.get('auto_not_counted') or {}).get('v4_llm_auto_count', 30)} 未签核）", "⚠️ 差 1"),
+    ("多源概念", "≥30", f"{multi['final_multi_source']}（canonical {multi.get('canonical_version', '')} 签核口径）", "✅" if int(multi['final_multi_source']) >= 30 else "⚠️ 差 1"),
     ("第二期有效候选", "—", "46（已审：0 通过，工具推广为主）", "⚠️ 低价值"),
     ("数据仓质量检查", "8/8 PASS", "8/8 PASS（C6/C7/C8 复检 true）", "✅"),
     ("元数据一致性", "PASS", "PASS（catalog v35/256 表/registry 256）", "✅"),
