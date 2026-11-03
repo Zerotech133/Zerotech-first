@@ -4,7 +4,7 @@
 GET /api/dev/legion
     → 只读聚合 org.json + .worktrees/tasks.json + daily_metrics.json
     契约：docs/dev/legion_screen_contract.json（frozen v1.0）
-    ADR：docs/adr/ADR-009-dev-legion-screen-contract.md
+    ADR：docs/adr/ADR-020-dev-legion-screen-contract.md
 
 只读纪律：不写文件/库/事件；数据源缺失 → 空态 + errors 标注，HTTP 200，
 不 500（契约 §errors）。

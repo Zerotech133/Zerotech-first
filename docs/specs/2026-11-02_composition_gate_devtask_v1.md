@@ -32,7 +32,7 @@
 | `kernel_guard.py --files a,b --commit-msg "<提交信息>"` | 提交信息中出现 `ADR-\d{3,}` 即视为关联（`--adr` 优先） | `--commit-msg` | 同上 |
 | `kernel_guard.py --staged` / `--list` | 暂存区文件 / 列出受保护 artifact | — | 0 |
 
-当前实测：`validate --all` = 6 个组合 / errors=0 / warnings=28（P1 已知软引用缺口，P2 resolver 收口）；`pytest tools/tests/test_platform_composition.py -q` = 23 passed。
+当前实测：`validate --all` = 7 个组合 / errors=0 / warnings=28（P1 已知软引用缺口，P2 resolver 收口）；`pytest tools/tests/test_platform_composition.py -q` = 23 passed。
 
 ### 1.2 devtask merge 现有门顺序（接线位置上下文）
 
@@ -233,7 +233,7 @@ def _composition_kernel_gate(tid, branch, changed):
 
 | # | 命令 | 预期 |
 |---|---|---|
-| 1 | `python -X utf8 tools/composition.py validate --all` | rc=0；6 个组合；errors=0 |
+| 1 | `python -X utf8 tools/composition.py validate --all` | rc=0；7 个组合；errors=0 |
 | 2 | `python -X utf8 tools/composition.py plan --strict --json` | rc=0；`ok=true`；`findings=[]`（当前无漂移） |
 | 3 | `python -X utf8 tools/composition.py diff compositions/<id>/manifest.yaml --registry --strict`（×6） | rc=0；无差异 |
 | 4 | `python -X utf8 tools/kernel_guard.py --list` | rc=0；列出 K0/K8 artifacts 含 `platform/kernel_v1.yaml` |
