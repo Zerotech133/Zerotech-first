@@ -1,7 +1,7 @@
 {
- "generated_at": "2026-11-03T05:41:48",
+ "generated_at": "2026-11-03T08:40:23",
  "source": "C:\\项目\\老田的AI助手\\portal\\portal_api.py",
- "total": 292,
+ "total": 293,
  "signatures": [
   [
    "GET",
@@ -327,6 +327,11 @@
    "GET",
    "exact",
    "/api/kline_qy"
+  ],
+  [
+   "GET",
+   "exact",
+   "/api/learning/conclusions"
   ],
   [
    "GET",
