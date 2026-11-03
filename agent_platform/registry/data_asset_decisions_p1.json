@@ -1,0 +1,2927 @@
+{
+ "schema": "data_asset_decisions.v1",
+ "generated_at": "2026-11-03T17:12:26+08:00",
+ "approval": {
+  "approved_by": "老田",
+  "approved_at": "2026-11-03T17:12:26+08:00",
+  "scope": "DATA4 注册/忽略清单（P1）"
+ },
+ "summary": {
+  "register": 48,
+  "ignore": 1,
+  "expose_backlog": 242
+ },
+ "register": [
+  {
+   "label": "xueqiu_info.xq_status_classified",
+   "domain": "开源情报",
+   "suggested_id": "xq_xq_status_classified",
+   "size_mb": null,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "hypotheses.hypotheses",
+   "domain": "学习派生",
+   "suggested_id": "research_hypotheses",
+   "size_mb": null,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "research_shadow",
+   "domain": "学习派生",
+   "suggested_id": "research_shadow",
+   "size_mb": 0.2,
+   "latest": "2026-11-02",
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "paper.orders",
+   "domain": "平台运行",
+   "suggested_id": "paper_orders",
+   "size_mb": null,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "paper.ledger",
+   "domain": "平台运行",
+   "suggested_id": "paper_ledger",
+   "size_mb": null,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "paper.positions",
+   "domain": "平台运行",
+   "suggested_id": "paper_positions",
+   "size_mb": null,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "paper.equity_marks",
+   "domain": "平台运行",
+   "suggested_id": "paper_equity_marks",
+   "size_mb": null,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "paper.positions_snapshot",
+   "domain": "平台运行",
+   "suggested_id": "paper_positions_snapshot",
+   "size_mb": null,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "paper.decision_snapshots",
+   "domain": "平台运行",
+   "suggested_id": "paper_decision_snapshots",
+   "size_mb": null,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "quant_db.chanlun_pool",
+   "domain": "平台运行",
+   "suggested_id": "quant_chanlun_pool",
+   "size_mb": null,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "quant_db.nine_dim_rc",
+   "domain": "平台运行",
+   "suggested_id": "quant_nine_dim_rc",
+   "size_mb": null,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "quant_db.nine_dim_rc_meta",
+   "domain": "平台运行",
+   "suggested_id": "quant_nine_dim_rc_meta",
+   "size_mb": null,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "quant_db.nine_dim_fina",
+   "domain": "平台运行",
+   "suggested_id": "quant_nine_dim_fina",
+   "size_mb": null,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "quant_db.nine_dim_fc",
+   "domain": "平台运行",
+   "suggested_id": "quant_nine_dim_fc",
+   "size_mb": null,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "quant_db.nine_dim_fc_meta",
+   "domain": "平台运行",
+   "suggested_id": "quant_nine_dim_fc_meta",
+   "size_mb": null,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "news_db.runs",
+   "domain": "平台运行",
+   "suggested_id": "news_runs",
+   "size_mb": null,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "news_db.ai_briefs",
+   "domain": "平台运行",
+   "suggested_id": "news_ai_briefs",
+   "size_mb": null,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "news_db.ai_reviews",
+   "domain": "平台运行",
+   "suggested_id": "news_ai_reviews",
+   "size_mb": null,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "news_db.quotes",
+   "domain": "平台运行",
+   "suggested_id": "news_quotes",
+   "size_mb": null,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "news_db.jev_review_queue",
+   "domain": "平台运行",
+   "suggested_id": "news_jev_review_queue",
+   "size_mb": null,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "automation_runs",
+   "domain": "平台运行",
+   "suggested_id": "automation_runs",
+   "size_mb": 829.1,
+   "latest": "2026-11-02",
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "yt_raw_zip（948 ZIP/清单/sha256）",
+   "domain": "开源情报",
+   "suggested_id": "yt_raw_zip",
+   "size_mb": 2903.3,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "yt_normalized（videos/comments/channel_map parquet）",
+   "domain": "开源情报",
+   "suggested_id": "yt_normalized",
+   "size_mb": 822.7,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "yt_cleaned_comments（清洗+PII脱敏）",
+   "domain": "开源情报",
+   "suggested_id": "yt_cleaned_comments",
+   "size_mb": 148.5,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "yt_transcripts（转写）",
+   "domain": "开源情报",
+   "suggested_id": "yt_transcripts",
+   "size_mb": 2.5,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "yt_knowledge_units（知识单元）",
+   "domain": "学习派生",
+   "suggested_id": "yt_knowledge_units",
+   "size_mb": 0.0,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "yt_distill（知识提炼）",
+   "domain": "学习派生",
+   "suggested_id": "yt_distill",
+   "size_mb": 19.7,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "yt_faq（FAQ 语义归并 133 条）",
+   "domain": "学习派生",
+   "suggested_id": "yt_faq",
+   "size_mb": 63.9,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "yt_index（62,401 docs bge-m3）",
+   "domain": "学习派生",
+   "suggested_id": "yt_index",
+   "size_mb": 331.9,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "yt_rag（4,926 chunks + packed 62,401）",
+   "domain": "学习派生",
+   "suggested_id": "yt_rag",
+   "size_mb": 720.3,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "yt_learning_cards（学习卡）",
+   "domain": "学习派生",
+   "suggested_id": "yt_learning_cards",
+   "size_mb": 0.0,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "yt_briefs（简报）",
+   "domain": "学习派生",
+   "suggested_id": "yt_briefs",
+   "size_mb": 0.0,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "yt_review（复核）",
+   "domain": "平台运行",
+   "suggested_id": "yt_review",
+   "size_mb": 0.1,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "yt_reports（报告）",
+   "domain": "学习派生",
+   "suggested_id": "yt_reports",
+   "size_mb": 0.4,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "yt_learning.db（星型模型 9 表，统一取数入口）",
+   "domain": "学习派生",
+   "suggested_id": "yt_learning.db",
+   "size_mb": 580.7,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "yt_learning_db.dim_channel",
+   "domain": "学习派生",
+   "suggested_id": "yt_dim_channel",
+   "size_mb": null,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "yt_learning_db.dim_topic",
+   "domain": "学习派生",
+   "suggested_id": "yt_dim_topic",
+   "size_mb": null,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "yt_learning_db.dim_video",
+   "domain": "学习派生",
+   "suggested_id": "yt_dim_video",
+   "size_mb": null,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "yt_learning_db.bridge_video_topic",
+   "domain": "学习派生",
+   "suggested_id": "yt_bridge_video_topic",
+   "size_mb": null,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "yt_learning_db.fact_comment",
+   "domain": "学习派生",
+   "suggested_id": "yt_fact_comment",
+   "size_mb": null,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "yt_learning_db.fact_knowledge_unit",
+   "domain": "学习派生",
+   "suggested_id": "yt_fact_knowledge_unit",
+   "size_mb": null,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "yt_learning_db.fact_transcript",
+   "domain": "学习派生",
+   "suggested_id": "yt_fact_transcript",
+   "size_mb": null,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "yt_learning_db.fact_faq_semantic",
+   "domain": "学习派生",
+   "suggested_id": "yt_fact_faq_semantic",
+   "size_mb": null,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "yt_learning_db.bridge_faq_comment",
+   "domain": "学习派生",
+   "suggested_id": "yt_bridge_faq_comment",
+   "size_mb": null,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "yt_learning_db.meta_faq_build",
+   "domain": "学习派生",
+   "suggested_id": "yt_meta_faq_build",
+   "size_mb": null,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "yt_learning_db.fact_transcript_seg",
+   "domain": "学习派生",
+   "suggested_id": "yt_fact_transcript_seg",
+   "size_mb": null,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "yt_learning_db.meta_etl",
+   "domain": "学习派生",
+   "suggested_id": "yt_meta_etl",
+   "size_mb": null,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  },
+  {
+   "label": "yt_learning_db.fact_transcript_signal",
+   "domain": "学习派生",
+   "suggested_id": "yt_fact_transcript_signal",
+   "size_mb": null,
+   "latest": null,
+   "status": "approved_pending_metadata",
+   "owner": "DATA4",
+   "next_step": "补 catalog 元数据(schema/主键/date_col/manifest)后入册"
+  }
+ ],
+ "ignore": [
+  {
+   "label": "tushare..git",
+   "domain": "接口数据",
+   "path": "quant_backtest\\data\\tushare\\.git",
+   "reason": "probe/.git/临时/备份目录，不作为数据资产管理"
+  }
+ ],
+ "expose_backlog": [
+  {
+   "label": "tushare.adj_factor",
+   "domain": "接口数据",
+   "suggested_id": "ts_adj_factor",
+   "size_mb": 234.6,
+   "latest": "2026-10-30",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.anns_d",
+   "domain": "接口数据",
+   "suggested_id": "ts_anns_d",
+   "size_mb": 279.3,
+   "latest": "2026-11-01",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.cb_basic",
+   "domain": "接口数据",
+   "suggested_id": "ts_cb_basic",
+   "size_mb": 7.3,
+   "latest": "2026-11-01",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.cyq_perf",
+   "domain": "接口数据",
+   "suggested_id": "ts_cyq_perf",
+   "size_mb": 44.7,
+   "latest": "2026-11-01",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.etf_mins",
+   "domain": "接口数据",
+   "suggested_id": "ts_etf_mins",
+   "size_mb": 91.8,
+   "latest": "2026-11-01",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.express",
+   "domain": "接口数据",
+   "suggested_id": "ts_express",
+   "size_mb": 0.3,
+   "latest": "2026-10-28",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.fx_daily",
+   "domain": "接口数据",
+   "suggested_id": "ts_fx_daily",
+   "size_mb": 0.1,
+   "latest": "2026-10-30",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.hk_balancesheet",
+   "domain": "接口数据",
+   "suggested_id": "ts_hk_balancesheet",
+   "size_mb": 37.2,
+   "latest": "2026-09-28",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.hk_basic",
+   "domain": "接口数据",
+   "suggested_id": "ts_hk_basic",
+   "size_mb": 8.4,
+   "latest": "2026-11-01",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.hk_cashflow",
+   "domain": "接口数据",
+   "suggested_id": "ts_hk_cashflow",
+   "size_mb": 31.1,
+   "latest": "2026-09-28",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.hk_hold",
+   "domain": "接口数据",
+   "suggested_id": "ts_hk_hold",
+   "size_mb": 66.6,
+   "latest": "2026-10-30",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.hk_income",
+   "domain": "接口数据",
+   "suggested_id": "ts_hk_income",
+   "size_mb": 27.2,
+   "latest": "2026-09-28",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.idx_mins",
+   "domain": "接口数据",
+   "suggested_id": "ts_idx_mins",
+   "size_mb": 397.2,
+   "latest": "2026-11-01",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.index_global",
+   "domain": "接口数据",
+   "suggested_id": "ts_index_global",
+   "size_mb": 2.6,
+   "latest": "2026-11-01",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.index_member_all",
+   "domain": "接口数据",
+   "suggested_id": "ts_index_member_all",
+   "size_mb": 0.1,
+   "latest": "2026-10-29",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.index_weight",
+   "domain": "接口数据",
+   "suggested_id": "ts_index_weight",
+   "size_mb": 1.5,
+   "latest": "2026-11-01",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.irm_qa_sh",
+   "domain": "接口数据",
+   "suggested_id": "ts_irm_qa_sh",
+   "size_mb": 102.7,
+   "latest": "2026-10-15",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.irm_qa_sh_probe",
+   "domain": "接口数据",
+   "suggested_id": "ts_irm_qa_sh_probe",
+   "size_mb": 1.0,
+   "latest": "2026-09-27",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.irm_qa_sz",
+   "domain": "接口数据",
+   "suggested_id": "ts_irm_qa_sz",
+   "size_mb": 199.4,
+   "latest": "2026-10-15",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.irm_qa_sz_probe",
+   "domain": "接口数据",
+   "suggested_id": "ts_irm_qa_sz_probe",
+   "size_mb": 0.8,
+   "latest": "2026-09-27",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.limit_list_d",
+   "domain": "接口数据",
+   "suggested_id": "ts_limit_list_d",
+   "size_mb": 5.4,
+   "latest": "2026-11-01",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.major_news",
+   "domain": "接口数据",
+   "suggested_id": "ts_major_news",
+   "size_mb": 2.1,
+   "latest": "2026-11-01",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.margin_detail",
+   "domain": "接口数据",
+   "suggested_id": "ts_margin_detail",
+   "size_mb": 195.9,
+   "latest": "2026-10-30",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.moneyflow_hsgt",
+   "domain": "接口数据",
+   "suggested_id": "ts_moneyflow_hsgt",
+   "size_mb": 0.1,
+   "latest": "2026-10-30",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.quarantine_prod_overwrite",
+   "domain": "接口数据",
+   "suggested_id": "ts_quarantine_prod_overwrite",
+   "size_mb": 0.7,
+   "latest": "2026-10-17",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.report_rc",
+   "domain": "接口数据",
+   "suggested_id": "ts_report_rc",
+   "size_mb": 85.5,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.research_report",
+   "domain": "接口数据",
+   "suggested_id": "ts_research_report",
+   "size_mb": 19.3,
+   "latest": "2026-11-01",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.sf_month",
+   "domain": "接口数据",
+   "suggested_id": "ts_sf_month",
+   "size_mb": 0.3,
+   "latest": "2026-11-01",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.shibor",
+   "domain": "接口数据",
+   "suggested_id": "ts_shibor",
+   "size_mb": 0.2,
+   "latest": "2026-11-01",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.shibor_lpr",
+   "domain": "接口数据",
+   "suggested_id": "ts_shibor_lpr",
+   "size_mb": 0.4,
+   "latest": "2026-11-01",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.stk_holdernumber",
+   "domain": "接口数据",
+   "suggested_id": "ts_stk_holdernumber",
+   "size_mb": 24.3,
+   "latest": "2026-10-30",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.stk_managers",
+   "domain": "接口数据",
+   "suggested_id": "ts_stk_managers",
+   "size_mb": 7.2,
+   "latest": "2026-09-30",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.stk_mins",
+   "domain": "接口数据",
+   "suggested_id": "ts_stk_mins",
+   "size_mb": 3461.2,
+   "latest": "2026-11-01",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.stk_pledge",
+   "domain": "接口数据",
+   "suggested_id": "ts_stk_pledge",
+   "size_mb": 0.1,
+   "latest": "2026-10-19",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.stock_company",
+   "domain": "接口数据",
+   "suggested_id": "ts_stock_company",
+   "size_mb": 299.7,
+   "latest": "2026-11-01",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.sw_classify_l1",
+   "domain": "接口数据",
+   "suggested_id": "ts_sw_classify_l1",
+   "size_mb": 0.6,
+   "latest": "2026-11-01",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.sw_l1_member",
+   "domain": "接口数据",
+   "suggested_id": "ts_sw_l1_member",
+   "size_mb": 0.2,
+   "latest": "2026-09-28",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.sw_mins",
+   "domain": "接口数据",
+   "suggested_id": "ts_sw_mins",
+   "size_mb": 495.1,
+   "latest": "2026-11-01",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.top10_floatholders",
+   "domain": "接口数据",
+   "suggested_id": "ts_top10_floatholders",
+   "size_mb": 15.7,
+   "latest": "2026-09-30",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.us_balancesheet",
+   "domain": "接口数据",
+   "suggested_id": "ts_us_balancesheet",
+   "size_mb": 111.1,
+   "latest": "2026-09-28",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.us_basic",
+   "domain": "接口数据",
+   "suggested_id": "ts_us_basic",
+   "size_mb": 33.1,
+   "latest": "2026-11-01",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.us_cashflow",
+   "domain": "接口数据",
+   "suggested_id": "ts_us_cashflow",
+   "size_mb": 103.8,
+   "latest": "2026-09-28",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.us_fina_indicator",
+   "domain": "接口数据",
+   "suggested_id": "ts_us_fina_indicator",
+   "size_mb": 841.5,
+   "latest": "2026-09-28",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare.us_income",
+   "domain": "接口数据",
+   "suggested_id": "ts_us_income",
+   "size_mb": 110.0,
+   "latest": "2026-09-28",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.dknife_snap",
+   "domain": "接口数据",
+   "suggested_id": "tdx_dknife_snap",
+   "size_mb": 12.9,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.tdx_sector_min_tail",
+   "domain": "接口数据",
+   "suggested_id": "tdx_tdx_sector_min_tail",
+   "size_mb": 61.2,
+   "latest": "2026-10-12",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_adj_factor",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_adj_factor",
+   "size_mb": 15.1,
+   "latest": "2026-10-30",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_anns_d",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_anns_d",
+   "size_mb": 196.2,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_bak_basic",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_bak_basic",
+   "size_mb": 296.5,
+   "latest": "2026-10-30",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_balancesheet",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_balancesheet",
+   "size_mb": 9.6,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_balancesheet_vip",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_balancesheet_vip",
+   "size_mb": 62.4,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_block_trade",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_block_trade",
+   "size_mb": 1.0,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_broker_recommend",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_broker_recommend",
+   "size_mb": 0.1,
+   "latest": "2026-10-14",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_bse_mapping",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_bse_mapping",
+   "size_mb": 0.0,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_cashflow",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_cashflow",
+   "size_mb": 8.6,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_cashflow_vip",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_cashflow_vip",
+   "size_mb": 51.0,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_cb_basic",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_cb_basic",
+   "size_mb": 0.2,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_cb_call",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_cb_call",
+   "size_mb": 0.1,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_cb_daily",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_cb_daily",
+   "size_mb": 12.7,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_cb_issue",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_cb_issue",
+   "size_mb": 0.2,
+   "latest": "2026-10-28",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_cb_price_chg",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_cb_price_chg",
+   "size_mb": 0.1,
+   "latest": "2026-10-16",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_cb_rate",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_cb_rate",
+   "size_mb": 0.0,
+   "latest": "2026-10-16",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_cb_share",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_cb_share",
+   "size_mb": 5.6,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_cctv_news",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_cctv_news",
+   "size_mb": 34.3,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_cn_cpi",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_cn_cpi",
+   "size_mb": 0.0,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_cn_gdp",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_cn_gdp",
+   "size_mb": 0.0,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_cn_m",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_cn_m",
+   "size_mb": 0.0,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_cn_pmi",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_cn_pmi",
+   "size_mb": 0.1,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_cn_ppi",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_cn_ppi",
+   "size_mb": 0.0,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_cyq_perf",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_cyq_perf",
+   "size_mb": 121.8,
+   "latest": "2026-10-30",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_daily_basic",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_daily_basic",
+   "size_mb": 195.6,
+   "latest": "2026-10-30",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_daily_info",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_daily_info",
+   "size_mb": 0.8,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_dc_daily",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_dc_daily",
+   "size_mb": 60.8,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_dc_hot",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_dc_hot",
+   "size_mb": 0.4,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_dc_index",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_dc_index",
+   "size_mb": 6.7,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_dc_member",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_dc_member",
+   "size_mb": 72.5,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_disclosure_date",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_disclosure_date",
+   "size_mb": 1.4,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_dividend",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_dividend",
+   "size_mb": 1.8,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_dividend_vip",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_dividend_vip",
+   "size_mb": 0.8,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_eco_cal",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_eco_cal",
+   "size_mb": 0.0,
+   "latest": "",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_emotion_daily",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_emotion_daily",
+   "size_mb": 0.0,
+   "latest": "2026-10-15",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_emotion_ladder",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_emotion_ladder",
+   "size_mb": 0.1,
+   "latest": "2026-10-15",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_etf_basic",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_etf_basic",
+   "size_mb": 0.1,
+   "latest": "2026-09-27",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_express",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_express",
+   "size_mb": 0.8,
+   "latest": "2026-10-23",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_express_vip",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_express_vip",
+   "size_mb": 0.9,
+   "latest": "2026-10-23",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_fina_audit",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_fina_audit",
+   "size_mb": 1.2,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_fina_indicator",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_fina_indicator",
+   "size_mb": 9.0,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_fina_indicator_vip",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_fina_indicator_vip",
+   "size_mb": 100.0,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_fina_mainbz",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_fina_mainbz",
+   "size_mb": 20.0,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_fina_mainbz_vip",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_fina_mainbz_vip",
+   "size_mb": 24.9,
+   "latest": "2026-10-30",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_forecast",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_forecast",
+   "size_mb": 12.6,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_forecast_vip",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_forecast_vip",
+   "size_mb": 14.9,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_fund_adj",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_fund_adj",
+   "size_mb": 4.2,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_fund_basic",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_fund_basic",
+   "size_mb": 1.0,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_fund_company",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_fund_company",
+   "size_mb": 0.0,
+   "latest": "",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_fund_daily",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_fund_daily",
+   "size_mb": 38.7,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_fund_div",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_fund_div",
+   "size_mb": 1.6,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_fund_manager",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_fund_manager",
+   "size_mb": 3.0,
+   "latest": "2026-10-16",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_fund_portfolio",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_fund_portfolio",
+   "size_mb": 63.7,
+   "latest": "2026-10-17",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_fund_share",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_fund_share",
+   "size_mb": 8.8,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_fut_basic",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_fut_basic",
+   "size_mb": 0.3,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_fut_daily",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_fut_daily",
+   "size_mb": 43.7,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_fut_holding",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_fut_holding",
+   "size_mb": 175.0,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_fut_mapping",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_fut_mapping",
+   "size_mb": 0.3,
+   "latest": "2026-10-30",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_fut_settle",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_fut_settle",
+   "size_mb": 4.1,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_fut_weekly_detail",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_fut_weekly_detail",
+   "size_mb": 2.7,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_fut_weekly_monthly",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_fut_weekly_monthly",
+   "size_mb": 1.5,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_fut_wsr",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_fut_wsr",
+   "size_mb": 4.1,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_fx_daily",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_fx_daily",
+   "size_mb": 1.8,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_fx_obasic",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_fx_obasic",
+   "size_mb": 0.0,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_ggt_daily",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_ggt_daily",
+   "size_mb": 0.1,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_ggt_top10",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_ggt_top10",
+   "size_mb": 1.2,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_global_fut",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_global_fut",
+   "size_mb": 0.7,
+   "latest": "2026-10-15",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_hk_basic",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_hk_basic",
+   "size_mb": 0.3,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_hk_daily",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_hk_daily",
+   "size_mb": 11.9,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_hk_daily_adj",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_hk_daily_adj",
+   "size_mb": 147.3,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_hk_hold",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_hk_hold",
+   "size_mb": 32.1,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_hk_tradecal",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_hk_tradecal",
+   "size_mb": 0.1,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_hm_detail",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_hm_detail",
+   "size_mb": 4.4,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_hm_list",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_hm_list",
+   "size_mb": 0.0,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_hs_const",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_hs_const",
+   "size_mb": 0.0,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_hsgt_top10",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_hsgt_top10",
+   "size_mb": 0.4,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_income",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_income",
+   "size_mb": 14.3,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_income_vip",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_income_vip",
+   "size_mb": 36.4,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_index_basic",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_index_basic",
+   "size_mb": 0.2,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_index_classify",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_index_classify",
+   "size_mb": 0.0,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_index_dailybasic",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_index_dailybasic",
+   "size_mb": 1.4,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_index_global",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_index_global",
+   "size_mb": 2.0,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_index_member_all",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_index_member_all",
+   "size_mb": 0.2,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_index_monthly",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_index_monthly",
+   "size_mb": 19.8,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_index_weekly",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_index_weekly",
+   "size_mb": 80.1,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_index_weight",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_index_weight",
+   "size_mb": 0.0,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_kpl_concept",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_kpl_concept",
+   "size_mb": 0.0,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_kpl_concept_cons",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_kpl_concept_cons",
+   "size_mb": 319.7,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_kpl_list",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_kpl_list",
+   "size_mb": 10.5,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_limit_cpt_list",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_limit_cpt_list",
+   "size_mb": 0.3,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_limit_list_ths",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_limit_list_ths",
+   "size_mb": 3.2,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_limit_step",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_limit_step",
+   "size_mb": 0.1,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_major_news",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_major_news",
+   "size_mb": 175.0,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_margin",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_margin",
+   "size_mb": 0.3,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_margin_detail",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_margin_detail",
+   "size_mb": 116.1,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_margin_secs",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_margin_secs",
+   "size_mb": 15.5,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_moneyflow",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_moneyflow",
+   "size_mb": 425.4,
+   "latest": "2026-10-30",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_moneyflow_dc",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_moneyflow_dc",
+   "size_mb": 171.4,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_moneyflow_hsgt",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_moneyflow_hsgt",
+   "size_mb": 0.1,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_moneyflow_ind_dc",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_moneyflow_ind_dc",
+   "size_mb": 22.7,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_moneyflow_ind_ths",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_moneyflow_ind_ths",
+   "size_mb": 1.2,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_moneyflow_mkt_dc",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_moneyflow_mkt_dc",
+   "size_mb": 0.2,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_moneyflow_ths",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_moneyflow_ths",
+   "size_mb": 101.6,
+   "latest": "2026-10-30",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_namechange",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_namechange",
+   "size_mb": 0.1,
+   "latest": "2026-10-29",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_new_share",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_new_share",
+   "size_mb": 0.2,
+   "latest": "2026-10-29",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_news",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_news",
+   "size_mb": 556.6,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_opt_basic",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_opt_basic",
+   "size_mb": 5.1,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_opt_daily",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_opt_daily",
+   "size_mb": 469.2,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_pledge_detail",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_pledge_detail",
+   "size_mb": 2.8,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_pledge_stat",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_pledge_stat",
+   "size_mb": 6.9,
+   "latest": "2026-10-27",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_repo_daily",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_repo_daily",
+   "size_mb": 1.4,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_report_rc",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_report_rc",
+   "size_mb": 38.3,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_repurchase",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_repurchase",
+   "size_mb": 0.9,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_rt_min",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_rt_min",
+   "size_mb": 11.4,
+   "latest": "2026-10-23",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_sge_basic",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_sge_basic",
+   "size_mb": 0.0,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_sge_daily",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_sge_daily",
+   "size_mb": 1.1,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_share_float",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_share_float",
+   "size_mb": 29.1,
+   "latest": "2026-10-30",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_slb_len",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_slb_len",
+   "size_mb": 0.0,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_slb_sec",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_slb_sec",
+   "size_mb": 35.7,
+   "latest": "2026-10-14",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_stk_ah_comparison",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_stk_ah_comparison",
+   "size_mb": 0.8,
+   "latest": "2026-10-30",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_stk_auction",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_stk_auction",
+   "size_mb": 85.0,
+   "latest": "2026-10-30",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_stk_auction_c",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_stk_auction_c",
+   "size_mb": 188.4,
+   "latest": "2026-10-30",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_stk_auction_o",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_stk_auction_o",
+   "size_mb": 176.4,
+   "latest": "2026-10-30",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_stk_factor",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_stk_factor",
+   "size_mb": 1293.4,
+   "latest": "2026-10-30",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_stk_factor_pro",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_stk_factor_pro",
+   "size_mb": 13878.1,
+   "latest": "2026-10-30",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_stk_holdernumber",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_stk_holdernumber",
+   "size_mb": 1.9,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_stk_holdertrade",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_stk_holdertrade",
+   "size_mb": 3.0,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_stk_limit",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_stk_limit",
+   "size_mb": 48.1,
+   "latest": "2026-10-30",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_stk_managers",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_stk_managers",
+   "size_mb": 5.3,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_stk_premarket",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_stk_premarket",
+   "size_mb": 94.5,
+   "latest": "2026-10-30",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_stk_rewards",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_stk_rewards",
+   "size_mb": 16.7,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_stk_surv",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_stk_surv",
+   "size_mb": 0.6,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_stk_week_month_adj",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_stk_week_month_adj",
+   "size_mb": 207.7,
+   "latest": "2026-10-17",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_stk_weekly_monthly",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_stk_weekly_monthly",
+   "size_mb": 131.0,
+   "latest": "2026-10-17",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_stock_company",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_stock_company",
+   "size_mb": 0.0,
+   "latest": "",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_stock_hsgt",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_stock_hsgt",
+   "size_mb": 6.1,
+   "latest": "2026-10-30",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_suspend_d",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_suspend_d",
+   "size_mb": 0.1,
+   "latest": "2026-10-30",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_sz_daily_info",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_sz_daily_info",
+   "size_mb": 0.5,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_tdx_index",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_tdx_index",
+   "size_mb": 0.0,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_tdx_member",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_tdx_member",
+   "size_mb": 91.7,
+   "latest": "2026-10-30",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_ths_daily",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_ths_daily",
+   "size_mb": 94.7,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_ths_hot",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_ths_hot",
+   "size_mb": 0.5,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_ths_index",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_ths_index",
+   "size_mb": 0.0,
+   "latest": "2026-09-27",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_ths_member",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_ths_member",
+   "size_mb": 1.7,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_top10_floatholders",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_top10_floatholders",
+   "size_mb": 40.7,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_top10_holders",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_top10_holders",
+   "size_mb": 43.2,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_trade_cal",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_trade_cal",
+   "size_mb": 0.1,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_us_basic",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_us_basic",
+   "size_mb": 1.0,
+   "latest": "2026-10-13",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_us_daily",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_us_daily",
+   "size_mb": 277.1,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_us_tbr",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_us_tbr",
+   "size_mb": 0.1,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_us_tradecal",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_us_tradecal",
+   "size_mb": 0.1,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_us_trycr",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_us_trycr",
+   "size_mb": 0.1,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_us_tycr",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_us_tycr",
+   "size_mb": 0.1,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tdx.ts_wz_index",
+   "domain": "接口数据",
+   "suggested_id": "tdx_ts_wz_index",
+   "size_mb": 0.1,
+   "latest": "2026-10-31",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "cnopendata",
+   "domain": "接口数据",
+   "suggested_id": "cnopendata",
+   "size_mb": 9.4,
+   "latest": "2026-10-21",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare_staging",
+   "domain": "接口数据",
+   "suggested_id": "tushare_staging",
+   "size_mb": 1657.8,
+   "latest": "2026-11-01",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "tushare_v2",
+   "domain": "接口数据",
+   "suggested_id": "tushare_v2",
+   "size_mb": 2083.3,
+   "latest": "2026-10-24",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "anns_pdf",
+   "domain": "开源情报",
+   "suggested_id": "intel_anns_pdf",
+   "size_mb": 1670.7,
+   "latest": "2026-10-19",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "anns_d",
+   "domain": "开源情报",
+   "suggested_id": "intel_anns_d",
+   "size_mb": 279.3,
+   "latest": "2026-11-01",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "major_news",
+   "domain": "开源情报",
+   "suggested_id": "intel_major_news",
+   "size_mb": 2.1,
+   "latest": "2026-11-01",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "irm_qa",
+   "domain": "开源情报",
+   "suggested_id": "intel_irm_qa",
+   "size_mb": 102.7,
+   "latest": "2026-10-15",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "research_report",
+   "domain": "开源情报",
+   "suggested_id": "intel_research_report",
+   "size_mb": 19.3,
+   "latest": "2026-11-01",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "xueqiu_info.xq_hot_post",
+   "domain": "开源情报",
+   "suggested_id": "xq_xq_hot_post",
+   "size_mb": null,
+   "latest": null,
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "xueqiu_info.xq_comment",
+   "domain": "开源情报",
+   "suggested_id": "xq_xq_comment",
+   "size_mb": null,
+   "latest": null,
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "xueqiu_info.xq_kline",
+   "domain": "开源情报",
+   "suggested_id": "xq_xq_kline",
+   "size_mb": null,
+   "latest": null,
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "hypotheses.hypotheses",
+   "domain": "学习派生",
+   "suggested_id": "research_hypotheses",
+   "size_mb": null,
+   "latest": null,
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "PDF_ingest_notes",
+   "domain": "学习派生",
+   "suggested_id": "kb_notes",
+   "size_mb": 0.0,
+   "latest": "2026-11-01",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "knowledge_docs",
+   "domain": "学习派生",
+   "suggested_id": "knowledge_docs",
+   "size_mb": 12.3,
+   "latest": "2026-11-01",
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "paper.positions_snapshot",
+   "domain": "平台运行",
+   "suggested_id": "paper_positions_snapshot",
+   "size_mb": null,
+   "latest": null,
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "paper.decision_snapshots",
+   "domain": "平台运行",
+   "suggested_id": "paper_decision_snapshots",
+   "size_mb": null,
+   "latest": null,
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "quant_db.nine_dim_rc_meta",
+   "domain": "平台运行",
+   "suggested_id": "quant_nine_dim_rc_meta",
+   "size_mb": null,
+   "latest": null,
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "quant_db.nine_dim_fc_meta",
+   "domain": "平台运行",
+   "suggested_id": "quant_nine_dim_fc_meta",
+   "size_mb": null,
+   "latest": null,
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "yt_raw_zip（948 ZIP/清单/sha256）",
+   "domain": "开源情报",
+   "suggested_id": "yt_raw_zip",
+   "size_mb": 2903.3,
+   "latest": null,
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "yt_normalized（videos/comments/channel_map parquet）",
+   "domain": "开源情报",
+   "suggested_id": "yt_normalized",
+   "size_mb": 822.7,
+   "latest": null,
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "yt_cleaned_comments（清洗+PII脱敏）",
+   "domain": "开源情报",
+   "suggested_id": "yt_cleaned_comments",
+   "size_mb": 148.5,
+   "latest": null,
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "yt_transcripts（转写）",
+   "domain": "开源情报",
+   "suggested_id": "yt_transcripts",
+   "size_mb": 2.5,
+   "latest": null,
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "yt_knowledge_units（知识单元）",
+   "domain": "学习派生",
+   "suggested_id": "yt_knowledge_units",
+   "size_mb": 0.0,
+   "latest": null,
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "yt_distill（知识提炼）",
+   "domain": "学习派生",
+   "suggested_id": "yt_distill",
+   "size_mb": 19.7,
+   "latest": null,
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "yt_faq（FAQ 语义归并 133 条）",
+   "domain": "学习派生",
+   "suggested_id": "yt_faq",
+   "size_mb": 63.9,
+   "latest": null,
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "yt_index（62,401 docs bge-m3）",
+   "domain": "学习派生",
+   "suggested_id": "yt_index",
+   "size_mb": 331.9,
+   "latest": null,
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "yt_briefs（简报）",
+   "domain": "学习派生",
+   "suggested_id": "yt_briefs",
+   "size_mb": 0.0,
+   "latest": null,
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "yt_review（复核）",
+   "domain": "平台运行",
+   "suggested_id": "yt_review",
+   "size_mb": 0.1,
+   "latest": null,
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "yt_reports（报告）",
+   "domain": "学习派生",
+   "suggested_id": "yt_reports",
+   "size_mb": 0.4,
+   "latest": null,
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "yt_learning_db.dim_channel",
+   "domain": "学习派生",
+   "suggested_id": "yt_dim_channel",
+   "size_mb": null,
+   "latest": null,
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "yt_learning_db.dim_topic",
+   "domain": "学习派生",
+   "suggested_id": "yt_dim_topic",
+   "size_mb": null,
+   "latest": null,
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "yt_learning_db.dim_video",
+   "domain": "学习派生",
+   "suggested_id": "yt_dim_video",
+   "size_mb": null,
+   "latest": null,
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "yt_learning_db.bridge_video_topic",
+   "domain": "学习派生",
+   "suggested_id": "yt_bridge_video_topic",
+   "size_mb": null,
+   "latest": null,
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "yt_learning_db.fact_comment",
+   "domain": "学习派生",
+   "suggested_id": "yt_fact_comment",
+   "size_mb": null,
+   "latest": null,
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "yt_learning_db.fact_knowledge_unit",
+   "domain": "学习派生",
+   "suggested_id": "yt_fact_knowledge_unit",
+   "size_mb": null,
+   "latest": null,
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "yt_learning_db.fact_transcript",
+   "domain": "学习派生",
+   "suggested_id": "yt_fact_transcript",
+   "size_mb": null,
+   "latest": null,
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "yt_learning_db.fact_faq_semantic",
+   "domain": "学习派生",
+   "suggested_id": "yt_fact_faq_semantic",
+   "size_mb": null,
+   "latest": null,
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "yt_learning_db.bridge_faq_comment",
+   "domain": "学习派生",
+   "suggested_id": "yt_bridge_faq_comment",
+   "size_mb": null,
+   "latest": null,
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "yt_learning_db.meta_faq_build",
+   "domain": "学习派生",
+   "suggested_id": "yt_meta_faq_build",
+   "size_mb": null,
+   "latest": null,
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "yt_learning_db.fact_transcript_seg",
+   "domain": "学习派生",
+   "suggested_id": "yt_fact_transcript_seg",
+   "size_mb": null,
+   "latest": null,
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "yt_learning_db.meta_etl",
+   "domain": "学习派生",
+   "suggested_id": "yt_meta_etl",
+   "size_mb": null,
+   "latest": null,
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  },
+  {
+   "label": "yt_learning_db.fact_transcript_signal",
+   "domain": "学习派生",
+   "suggested_id": "yt_fact_transcript_signal",
+   "size_mb": null,
+   "latest": null,
+   "status": "pending_product_review",
+   "owner": "DATA4",
+   "approval": "产品/门户评审"
+  }
+ ],
+ "note": "本决策不直接修改 catalog/warehouse_registry，避免未补元数据导致 metadata_consistency 漂移；register 项按批次补元数据后执行注册。"
+}

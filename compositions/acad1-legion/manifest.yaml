@@ -41,7 +41,7 @@ spec:
   data:
     requires:
       - ref: dataset/pg/v2_acad1_pool
-        note: PG 5446 zhice_os_v2；最新 30 只（10-31）；门户 JSON 池 19（10-30），双池未收口（P2 净化）
+        note: "PG 唯一真源（11-02 pool_date=30 selected，配额 CN12/HK10/US6/CRYPTO2）；JSON 池=shadow 投影（非官方）；/api/acad1/pool 优先 pg_official"
       - ref: dataset/pg/v2_stock_research
       - ref: dataset/pg/v2_selection_pool
       - ref: dataset/file/acad1_evidence_bundle
@@ -119,8 +119,34 @@ spec:
     - "页面/鉴权现状（2026-11-02 GET 实测）：/academy/shuijing=200、/api/acad1/pool=200（nginx H4-B 公开族 C，只读无 auth_request）；/acad1/pool 在 8734=404（8091=200，nginx 路由未登记）→ L2 待批（acad1_pool 包，11-05 窗口）。"
     - "运行时双层：research API 走智策 8105（internal-service，经 /quant-api/ 反代）；pool API/页走 portal-api 8091（/api/acad1/pool、/academy/shuijing）；runtime.service=quant-api 为整合主服务，P2 单栈收口。"
     - "W1 引用收口（2026-11-02）：5 条 strategy/v1-* 已按 PG v2_strategy 真源（ACTIVE/PUBLISHED）在 strategy_portfolio 增 planned 登记（本地组合层口径；不改 portal/strategies.json 展示），strategy ref 全部可解析。证据：deliverables/2026-11-02_W1引用收口证据_v1.md。"
+    - "IFS-POOL（2026-11-03）：/api/acad1/pool 官方口径=PG v2_acad1_pool（source_mode=pg_official；不可直连读只读投影=projection；shadow 自建 latest.json 仅降级出现且 official=false）。D1 6 data ref 已登记 dataset registry（d1_decisions=planned，owner=D1，due=2026-11-16）。"
 status:
   phase: shadow
   health: unknown
+
+  rollback:
+    steps:
+      - "回退 manifest/registry 到上一版（git revert 本次 manifest 提交；registry 同批）"
+      - "摘除入口：暂停 /quant-api/api/v1/acad1-research 与 8091 /api/acad1/pool 暴露，保留只读审计"
+      - "恢复数据投影：PG v2_acad1_pool 以只读快照为准，停止写；重跑 pool 校验 data_date/freshness"
+      - "验证：tools/q2_probe.py --composition acad1-legion 2/2 + composition.py validate --all --strict"
+    last_drilled: "pending（需在 11-16 前演练一次）"
+  health_probe:
+    tool: tools/q2_probe.py
+    endpoints:
+      - http://127.0.0.1:8091/api/acad1/pool
+      - http://127.0.0.1:8105/api/v1/health
+    last_checked: "2026-11-03T22:18:00+08:00"
+    last_result: ok
+  slo_alert:
+    tool: tools/q2_slo_alert.py
+    owner: ARCH1
+    checks:
+      - freshness_days<=1
+      - stale=false
+      - pool_total<=30
+      - data_date_present
+    last_checked: "2026-11-03T22:45:51+08:00"
+    last_result: ok
   validated: false
   source: "2026-11-02 只读反推（研究报告 v1.2 §2/§3 + 审计子任务）；2026-11-02 ACL-102 校准（SLA/接口/页面/任务 vs 实测）"

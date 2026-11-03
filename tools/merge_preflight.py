@@ -19,6 +19,14 @@
     校验 MERGE_HEAD、TTL，用后即删）；
   - A9 `docs_only` 去掉 `.js`：`portal/static/*.js` 属前端代码，必须跑测试。
 
+2026-11-03 WO-MERGE-HOOK-MERGEHEAD-20261103（pre-merge-commit 误拒修复）：
+  - Git 2.55/windows 实测：pre-merge-commit 触发时 **MERGE_HEAD 与 MERGE_MSG 均尚未落盘**
+    （merge 已成功、提交尚未生成），原 `git log MERGE_HEAD` 读到空串 → kernel_guard 把
+    `compositions/registry.json` 误判为"内核契约改动无 ADR"（分支 tip 实际带 `[ADR-020]`）；
+  - `merge_head_commit_msg()` 回退链：MERGE_HEAD → `git rev-parse --git-path MERGE_MSG` 读文件
+    → `GITHEAD_<40hex sha>` 环境变量（git merge 注入待合入 tip sha）→ `git log -1 --format=%B <sha>`；
+    只更换"待合入分支 tip 提交信息"的取数来源，不改任何门禁语义（读不到仍空串 → kernel_guard 判拒）。
+
 退出码：0=放行，1=拒绝合并，2=预检自身异常（按拒绝处理）。
 """
 from __future__ import annotations
@@ -260,16 +268,77 @@ def run_repo_tool(tool_rel, args, timeout=600):
     return proc, ""
 
 
-def merge_head_commit_msg():
-    """待合入分支 tip 提交信息（pre-merge-commit 阶段 HEAD=目标分支，取 MERGE_HEAD 侧）。"""
+def _git_stdout(args, timeout=30):
+    """在 REPO 上跑 git，返回 (rc, stdout.strip)；异常向上抛由调用方兜。"""
+    r = subprocess.run(["git", "-C", str(REPO), *args],
+                       capture_output=True, text=True, encoding="utf-8",
+                       errors="replace", timeout=timeout)
+    return int(r.returncode), (r.stdout or "").strip()
+
+
+def _read_git_path_file(name):
+    """用 `git rev-parse --git-path <name>` 定位并读取 git 目录内文件 → 文本/空串。"""
     try:
-        r = subprocess.run(["git", "-C", str(REPO), "log", "-1", "--format=%B",
-                            "MERGE_HEAD"],
-                           capture_output=True, text=True, encoding="utf-8",
-                           errors="replace", timeout=30)
-        return (r.stdout or "").strip()
+        rc, rel = _git_stdout(["rev-parse", "--git-path", name])
+        if rc != 0 or not rel:
+            return ""
+        p = Path(rel)
+        if not p.is_absolute():
+            p = Path(REPO) / p
+        if not p.is_file():
+            return ""
+        return p.read_text(encoding="utf-8", errors="replace").strip()
     except Exception:  # noqa: BLE001 —— 读不到=空串，由 kernel_guard 判拒
         return ""
+
+
+def _merged_head_sha_from_env(environ=None):
+    """从 git merge 注入的 `GITHEAD_<40hex>` 环境变量取出待合入 tip sha。
+
+    实测（Git 2.55/Win，2026-11-03）：pre-merge-commit 阶段 MERGE_HEAD/MERGE_MSG 尚未落盘，
+    但 git 以 `GITHEAD_<大写40hex>=<合并入 ref>` 形式提供待合入提交；用于兜底取 commit msg。
+    """
+    env = os.environ if environ is None else environ
+    prefix = "GITHEAD_"
+    for key in env:
+        k = str(key)
+        if not k.startswith(prefix):
+            continue
+        sha = k[len(prefix):]
+        if len(sha) == 40 and all(c in "0123456789abcdefABCDEF" for c in sha):
+            return sha
+    return ""
+
+
+def merge_head_commit_msg(environ=None):
+    """待合入分支 tip 提交信息（pre-merge-commit 阶段 HEAD=目标分支，取 MERGE_HEAD 侧）。
+
+    2026-11-03 修复（WO-MERGE-HOOK-MERGEHEAD-20261103）：Git 2.55/Win 实测
+    pre-merge-commit 时 MERGE_HEAD、MERGE_MSG 均尚未落盘，原实现返回空导致
+    kernel_guard 误报"内核契约改动无 ADR"。回退顺序（只换取数来源，不改门禁语义）：
+      1) `git log -1 --format=%B MERGE_HEAD`（旧行为；合并状态仍存在时优先）；
+      2) `git rev-parse --git-path MERGE_MSG` 定位并读文件（存在时用）；
+      3) `GITHEAD_<40hex>` 环境变量 → `git log -1 --format=%B <sha>`（实测可用兜底）；
+    全部读不到 → 空串（kernel_guard fail-closed 判拒）。
+    """
+    try:
+        _rc, out = _git_stdout(["log", "-1", "--format=%B", "MERGE_HEAD"])
+        if out:
+            return out
+    except Exception:  # noqa: BLE001
+        pass
+    msg = _read_git_path_file("MERGE_MSG")
+    if msg:
+        return msg
+    sha = _merged_head_sha_from_env(environ)
+    if sha:
+        try:
+            _rc, out = _git_stdout(["log", "-1", "--format=%B", sha])
+            if out:
+                return out
+        except Exception:  # noqa: BLE001
+            pass
+    return ""
 
 
 def composition_kernel_preflight(files):

@@ -1,0 +1,99 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "d1_decision.v1",
+  "title": "D1 Decision Record v1",
+  "description": "IFS F1 单接口 schema：interface_id=d1.decision.create / d1.decision.list。只落 D1 裁决（不执行、不下单、不接实盘）；decision_id 为 ID chain 权威节点（兼容双格式，见 docs/standards/2026-11-03_ID_CHAIN_v1.md deviations）。",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "decision_id",
+    "code",
+    "confidence",
+    "rationale",
+    "decided_by",
+    "decided_at",
+    "paper_only"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "d1_decision/v1"
+    },
+    "decision_id": {
+      "description": "权威格式 D1-<yyyymmdd>-<sha10>；兼容历史 d1-<yyyymmddHHMMSS>-<hex6>，F3/F5 收敛",
+      "anyOf": [
+        {"type": "string", "pattern": "^D1-\\d{8}-[0-9a-f]{10}$"},
+        {"type": "string", "pattern": "^d1-\\d{14}-[0-9a-f]{6}$"}
+      ]
+    },
+    "case_id": {
+      "type": ["string", "null"],
+      "pattern": "^D1-CASE-\\d{8}-[0-9A-Za-z._-]{1,16}$",
+      "description": "上游 case（ID chain：case_id→decision_id），缺失显式 null"
+    },
+    "card_id": {
+      "type": ["string", "null"],
+      "pattern": "^ACAD1-CARD-\\d{8}-[0-9A-Za-z._-]{1,16}$"
+    },
+    "code": {
+      "type": "string",
+      "pattern": "^\\d{6}$"
+    },
+    "name": {
+      "type": ["string", "null"]
+    },
+    "decision": {
+      "type": ["string", "null"],
+      "enum": ["BUY", "SELL", "WATCH", "HOLD", null],
+      "description": "D1 裁决方向（只建议，不执行）"
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "rationale": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence_refs": {
+      "type": ["array", "null"],
+      "items": {"type": "string", "minLength": 1}
+    },
+    "decided_by": {
+      "type": "string",
+      "minLength": 1
+    },
+    "decided_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "paper_only": {
+      "type": "boolean",
+      "const": true
+    }
+  },
+  "propertyNames": {
+    "not": {
+      "enum": ["order", "qty", "quantity", "broker", "execute", "fill", "account"]
+    }
+  },
+  "additionalProperties": true,
+  "examples": [
+    {
+      "schema_version": "d1_decision/v1",
+      "decision_id": "D1-20261102-8f3a1c2b90",
+      "case_id": "D1-CASE-20261102-003006",
+      "card_id": "ACAD1-CARD-20261102-003006",
+      "code": "003006",
+      "name": "百亚股份",
+      "decision": "BUY",
+      "confidence": 0.62,
+      "rationale": "T2 双源命中，回踩支撑企稳，风险收益比合适",
+      "evidence_refs": ["pool_review/20261102#003006"],
+      "decided_by": "D1",
+      "decided_at": "2026-11-02T17:40:00+08:00",
+      "paper_only": true
+    }
+  ]
+}

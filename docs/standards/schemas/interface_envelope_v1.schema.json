@@ -1,0 +1,96 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "interface_envelope.v1",
+  "title": "IFS Interface Success Envelope v1",
+  "description": "IFS-03 统一成功信封：ok/schema_version/request_id/source/data/warnings（generated_at/trace_id 建议）。配套 docs/standards/2026-11-03_Envelope_Error_v1.md。",
+  "type": "object",
+  "required": [
+    "ok",
+    "schema_version",
+    "request_id",
+    "source",
+    "data",
+    "warnings"
+  ],
+  "properties": {
+    "ok": {
+      "type": "boolean",
+      "const": true
+    },
+    "schema_version": {
+      "type": "string",
+      "pattern": "^[a-z0-9_.-]+/v[0-9]+$",
+      "description": "接口数据契约版本，如 d1.research/v1；禁止缺省"
+    },
+    "request_id": {
+      "type": "string",
+      "pattern": "^req-[0-9a-f]{32}$"
+    },
+    "trace_id": {
+      "type": "string"
+    },
+    "generated_at": {
+      "type": "string",
+      "description": "ISO-8601 带时区时间戳（建议必填）"
+    },
+    "source": {
+      "type": "object",
+      "required": ["interface_id", "source_of_truth", "source_mode"],
+      "properties": {
+        "interface_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9_.-]+$"
+        },
+        "source_of_truth": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_mode": {
+          "type": "string",
+          "enum": [
+            "pg_official",
+            "projection",
+            "ledger",
+            "static",
+            "aggregate",
+            "manifest"
+          ]
+        },
+        "as_of": {
+          "type": ["string", "null"]
+        },
+        "freshness_s": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "stale": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": true
+    },
+    "data": {
+      "description": "接口数据（object/array/null；null 仅限 ok=true 且 warnings 显式说明）"
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["code", "message"],
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "details": {}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": true
+}

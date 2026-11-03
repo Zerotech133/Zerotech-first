@@ -1,0 +1,165 @@
+{
+ "generated_at": "2026-11-03T16:43:09+08:00",
+ "mode": "approval_pending",
+ "approval_owner": "DATA3",
+ "fixable": [
+  {
+   "source": "tdx",
+   "dataset": "crypto_daily",
+   "store_exists": true,
+   "action": "manifest 补键（数据已在盘，仓内可安全修复）",
+   "owner": "DATA3（补键复核）"
+  },
+  {
+   "source": "tdx",
+   "dataset": "guba_posts",
+   "store_exists": true,
+   "action": "manifest 补键（数据已在盘，仓内可安全修复）",
+   "owner": "DATA3（补键复核）"
+  },
+  {
+   "source": "tdx",
+   "dataset": "us_legacy",
+   "store_exists": true,
+   "action": "manifest 补键（数据已在盘，仓内可安全修复）",
+   "owner": "DATA3（补键复核）"
+  },
+  {
+   "source": "tushare",
+   "dataset": "index_global",
+   "store_exists": true,
+   "action": "manifest 补键（数据已在盘，仓内可安全修复）",
+   "owner": "DATA3（补键复核）"
+  },
+  {
+   "source": "tushare",
+   "dataset": "quarantine_prod_overwrite",
+   "store_exists": true,
+   "action": "manifest 补键（数据已在盘，仓内可安全修复）",
+   "owner": "DATA3（补键复核）"
+  }
+ ],
+ "need_external": [
+  {
+   "source": "tdx",
+   "dataset": "v2_bar_daily",
+   "store_exists": false,
+   "action": "外部抓取后补 manifest（需 token/ETL）",
+   "owner": "DATA2（抓取）→DATA3"
+  },
+  {
+   "source": "xueqiu",
+   "dataset": "xq_earningforecast",
+   "store_exists": false,
+   "action": "外部抓取后补 manifest（需 token/ETL）",
+   "owner": "DATA2（抓取）→DATA3"
+  },
+  {
+   "source": "xueqiu",
+   "dataset": "xq_hot_deal",
+   "store_exists": false,
+   "action": "外部抓取后补 manifest（需 token/ETL）",
+   "owner": "DATA2（抓取）→DATA3"
+  },
+  {
+   "source": "xueqiu",
+   "dataset": "xq_inner_trade",
+   "store_exists": false,
+   "action": "外部抓取后补 manifest（需 token/ETL）",
+   "owner": "DATA2（抓取）→DATA3"
+  }
+ ],
+ "dry_run_manifest": {
+  "tool": "tools/datawarehouse/manifest_repair.py（默认 dry-run；--apply 才写）",
+  "items": [
+   {
+    "source": "tdx",
+    "missing_keys": [
+     "crypto_daily",
+     "guba_posts",
+     "us_legacy",
+     "v2_bar_daily"
+    ],
+    "count": 4,
+    "command_dry": "python tools/datawarehouse/manifest_repair.py --json"
+   },
+   {
+    "source": "tushare",
+    "missing_keys": [
+     "index_global",
+     "quarantine_prod_overwrite"
+    ],
+    "count": 2,
+    "command_dry": "python tools/datawarehouse/manifest_repair.py --json"
+   },
+   {
+    "source": "xueqiu",
+    "missing_keys": [
+     "xq_earningforecast",
+     "xq_hot_deal",
+     "xq_inner_trade"
+    ],
+    "count": 3,
+    "command_dry": "python tools/datawarehouse/manifest_repair.py --json"
+   }
+  ],
+  "note": "manifest 补键仅登记键名/状态，不抓数、不改 parquet；需 DATA3 复核后 apply",
+  "repair_tool_dry_run": {
+   "plan": [
+    {
+     "table": "quarantine_prod_overwrite",
+     "skip": "lifecycle_deprecated"
+    },
+    {
+     "table": "xq_comment",
+     "skip": "lifecycle_planned"
+    },
+    {
+     "table": "xq_quote_snap",
+     "skip": "lifecycle_deprecated"
+    }
+   ]
+  },
+  "registry_align_dry_run": {
+   "tool": "registry_align",
+   "mode": "check",
+   "generated_at": "2026-11-03T16:43:07+08:00",
+   "catalog": {
+    "path": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\catalog.json",
+    "version": 35,
+    "tables": 256,
+    "sha256": "e13b6a08a5f16f0cfa41a98a30708f7a6e85a48898e7d1deecf54d9868274ba9"
+   },
+   "registry": {
+    "path": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\warehouse_registry.json",
+    "catalog_sha256": "e13b6a08a5f16f0cfa41a98a30708f7a6e85a48898e7d1deecf54d9868274ba9",
+    "physical_count": 256,
+    "display_count": 258,
+    "generated_at": "2026-11-03T09:41:25.652612+08:00"
+   },
+   "match_before": true,
+   "diffs_before": [],
+   "rebuild": {
+    "performed": false
+   },
+   "match_after": null,
+   "diffs_after": [],
+   "metadata": {
+    "tool": "metadata_consistency",
+    "code": 0,
+    "catalog_version": 35,
+    "tables": 256,
+    "physical_count": 256,
+    "issues": [],
+    "warnings": []
+   },
+   "kg_log": null,
+   "lock": null,
+   "rolled_back": false,
+   "exit_code": 0,
+   "error": null,
+   "elapsed_s": 0.09,
+   "info_before": []
+  }
+ }
+}

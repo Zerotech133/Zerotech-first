@@ -52,3 +52,11 @@ schtasks /Change /TN "AI-Workstation-A0-Daily-Board" /ENABLE
 - `tools/tests/test_hq_daily_run.py`：全部成功、部分失败、no-write、坏输出不伪造；
 - 页面/对话证据：真实 `binding`/延迟显示；
 - 次日 08:00 检查 `rollup.json` 与 `/briefing` 是否更新。
+
+## 六、17席真实 smoke（17:20）
+
+- `hq_daily_run.py --json --no-write` 真实调用：**17/17 提交，0 失败**；
+- 修复 `--no-write` 汇总 KeyError、SYSTEM_TMPL 的 JSON 花括号被 `.format` 误解析；
+- `/api/chat` 日报 purpose 增加非 glm/OpenClaw 失败降级（glm→原链），会议场景默认不变；
+- 真实 smoke 证据：`C:\Temp\hq_daily_17_smoke4.log`；
+- 该修复发生在 17:00 冻结后，属“防 07:50 首跑翻车”的例外；已重跑全量基线。

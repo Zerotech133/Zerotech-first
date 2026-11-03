@@ -1,0 +1,12 @@
+{
+ "schema": "data_inventory_ignore.v1",
+ "generated_at": "2026-11-03T17:12:26+08:00",
+ "entries": [
+  {
+   "label": "tushare..git",
+   "domain": "接口数据",
+   "path": "quant_backtest\\data\\tushare\\.git",
+   "reason": "probe/.git/临时/备份目录，不作为数据资产管理"
+  }
+ ]
+}

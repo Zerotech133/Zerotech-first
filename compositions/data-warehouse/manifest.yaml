@@ -118,5 +118,29 @@ spec:
 status:
   phase: shadow
   health: unknown
+
+  rollback:
+    steps:
+      - "回退 manifest/registry 到上一版（git revert；不动数据文件）"
+      - "停新入口：摘除 /api/dw/stats 与 /api/dw/search 暴露，保留 8091 只读审计"
+      - "恢复 catalog/registry 只读快照并重载 8091；重跑 dw-stats 校验 total/registered/exposed"
+      - "验证：tools/q2_probe.py --composition data-warehouse 2/2 + composition.py validate --all --strict"
+    last_drilled: "pending（需在 11-16 前演练一次）"
+  health_probe:
+    tool: tools/q2_probe.py
+    endpoints:
+      - http://127.0.0.1:8091/api/dw/stats
+      - http://127.0.0.1:8091/api/dw/search?q=__none__
+    last_checked: "2026-11-03T22:18:00+08:00"
+    last_result: ok
+  slo_alert:
+    tool: tools/q2_slo_alert.py
+    owner: ARCH1
+    checks:
+      - registered_ratio>=0.95
+      - exposed_ratio>=0.80
+    last_checked: "2026-11-03T22:45:51+08:00"
+    last_result: alert
+    alert_reason: "registration 84.4% / exposed 22.9%; DWH-103 gap not closed"
   validated: false
   source: "dataset_inventory_20261102.json + WP-I3 回执 + DWH-104 四源对账（2026-11-02）"

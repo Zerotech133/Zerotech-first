@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-03T15:04:09+08:00",
+ "generated_at": "2026-11-03T16:50:00+08:00",
  "knowledge": {
   "projects": [
    {
@@ -11,7 +11,7 @@
    {
     "project_id": "laomu_notes",
     "status": "distilling",
-    "units": 288,
+    "units": 286,
     "owner": "DATA1"
    },
    {
@@ -84,7 +84,7 @@
     "研报": 147
    }
   },
-  "multi_source": 27,
+  "multi_source": 29,
   "gate": {
    "projects": 4,
    "checks": 13,
@@ -166,18 +166,18 @@
  },
  "open_items": [
   {
-   "priority": "P0",
-   "item": "指标说明书排除清单未应用到下游（候选/多源/微调）",
-   "detail": "exclusions_today_20261103.json 已生成，871 单元/823 候选待下游过滤",
+   "priority": "P1",
+   "item": "第二期知识价值低（已审 0 通过）",
+   "detail": "46 有效候选/17 预审通过项经人工抽检全部驳回（工具推广/碎片）；0 学习卡，建议降级工具情报库",
    "owner": "DATA1",
-   "eta": "立即"
+   "eta": "决策"
   },
   {
    "priority": "P1",
-   "item": "第二期 46 张有效候选未审",
-   "detail": "869 候选扣除 823 垃圾后仅 46，尚未预审/发布",
+   "item": "指标说明书排除清单需继续约束下游",
+   "detail": "候选池已过滤（869→46）；多源/微调输入后续统一用 effective 文件",
    "owner": "DATA1",
-   "eta": "1 天"
+   "eta": "已下发，持续"
   },
   {
    "priority": "P1",
@@ -276,8 +276,14 @@
   {
    "kpi": "多源概念",
    "target": "≥30",
-   "current": "27（人工双签）",
-   "status": "⚠️ 差 3"
+   "current": "29（人工签核；机器 30）",
+   "status": "⚠️ 差 1"
+  },
+  {
+   "kpi": "第二期有效候选",
+   "target": "—",
+   "current": "46（已审：0 通过，工具推广为主）",
+   "status": "⚠️ 低价值"
   },
   {
    "kpi": "数据仓质量检查",
