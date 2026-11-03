@@ -1,7 +1,7 @@
 {
- "generated_at": "2026-11-04T02:44:56",
- "source": "C:\\项目\\老田的AI助手\\.worktrees\\K-STOCK-ANALYSIS-WORKBENCH-20261104\\portal\\portal_api.py",
- "total": 298,
+ "generated_at": "2026-11-04T02:49:51",
+ "source": "C:\\项目\\老田的AI助手\\.worktrees\\K-STOCK-ANALYSIS-MONPAGE-20261104\\portal\\portal_api.py",
+ "total": 300,
  "signatures": [
   [
    "GET",
@@ -1136,6 +1136,11 @@
   [
    "GET",
    "prefix",
+   "/api/monitor/"
+  ],
+  [
+   "GET",
+   "prefix",
    "/api/os/"
   ],
   [
@@ -1482,6 +1487,11 @@
    "POST",
    "prefix",
    "/api/m/"
+  ],
+  [
+   "POST",
+   "prefix",
+   "/api/monitor/"
   ],
   [
    "POST",

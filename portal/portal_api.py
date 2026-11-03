@@ -158,6 +158,8 @@ _load_cainiao_env()
 # 不走 portal token，改走 X-Lark-Signature 验签，见 _api_feishu_event）
 _MUTATION_POSTS = frozenset((
     "/api/analysis/submit",  # K-STOCK-ANALYSIS-P0C2 个股分析入队（写队列文件）
+    "/api/monitor/run",      # 批量监控运行（写告警库）
+    "/api/monitor/pool",     # 监控股票池管理（写 pools.json）
     "/api/analysis/review",  # K-STOCK-ANALYSIS-P0F 事件人工复核（写复核状态）
     "/api/data/update-plan",
     "/api/data/update",
@@ -1135,6 +1137,12 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 self, path,
                 self.path.split("?", 1)[1] if "?" in self.path else "")
             return
+        if path.startswith('/api/monitor/'):
+            import api_monitor
+            api_monitor.handle_post(
+                self, path,
+                self.path.split("?", 1)[1] if "?" in self.path else "")
+            return
         try:
             if path == "/api/sim/confirm":
                 # IFS F4 唯一 A 路径：确认 v2（四 ID 链），执行仍走 trading_bot_flow
@@ -1684,6 +1692,11 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # 知识库问答 HTTP（L2 批准 2026-11-01；独立文件 api_kb_qa.py，预接线已测试）
             import api_kb_qa
             api_kb_qa.handle_get(self, path, qs)
+            return
+        if path.startswith('/api/monitor/'):
+            # 2026-11-04：个股批量监控只读入口（独立文件 api_monitor.py）
+            import api_monitor
+            api_monitor.handle_get(self, path, qs)
             return
         if path.startswith('/api/analysis/'):
             # K-STOCK-ANALYSIS-P0C2 个股分析只读入口（独立文件 api_analysis.py）
