@@ -1,0 +1,63 @@
+# -*- coding: utf-8 -*-
+"""HQ 数据简报：数据健康 + 挖掘信号 + 决策问题。"""
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "tools" / "datawarehouse"))
+import hq_brief as H  # noqa: E402
+
+
+def _inputs():
+    dw = {
+        "state": "ok", "data_date": "2026-11-02",
+        "catalog_version": 38, "catalog_tables": 304,
+        "catalog_updated": "2026-11-04T03:59:30+08:00",
+        "registry_physical": 304, "registry_display": 258,
+        "contract_artifacts": {"total": 4, "active": 1, "mismatch": 3},
+        "stats_v2": {
+            "file_inventory": {"total": 314, "registered": 265, "exposed": 72},
+            "pg": {"total": 84, "registered": 84, "available": 84},
+            "all": {"total": 399, "registered": 350, "exposed": 80},
+        },
+    }
+    ops = {"collectors": [
+        {"name": "TDX", "level": "red", "lag_hours": 58.0, "last_output_at": "2026-11-01 19:15:37"},
+        {"name": "Xueqiu", "level": "green", "today_incr": 0,
+         "last_output_at": "2026-11-03 18:00:44", "output_metrics": {"xq": {}}},
+    ], "pools": [{"db": "tdx/tdx_info.db",
+                  "tables": [{"name": "stock_notice", "level": "red", "lag_hours": 58.0}]}]}
+    factor = {"latest_date": "20261102", "owner": "FACTOR1",
+              "factors": [{"factor": "mom_20", "verdict": "四关 PASS（LS）"},
+                          {"factor": "rev_5", "verdict": "四关 FAIL"}],
+              "decay_alerts": [{"factor": "rev_5"}]}
+    selection = {"date": "20261102", "picks": [],
+                 "strategies": [{"id": "S01", "approved": False, "status": "validated_filter_no_alpha"}]}
+    learning = {"overall": {"files": 8, "units": 800, "candidate_pool": 539,
+                            "cards_total": 370, "units_with_domain": 258}}
+    return dw, ops, factor, selection, learning
+
+
+def test_data_brief_has_health_alarms_signals_questions():
+    b = H.build_brief(*_inputs(), now="2026-11-04T05:15:00+08:00")
+    assert b["schema"] == H.SCHEMA and b["owner"]["name"] == "张松"
+    assert b["data_health"]["assets"]["all"] == 399
+    assert b["data_health"]["catalog"]["tables"] == 304
+    assert any(a["code"] == "collector_lag" for a in b["alarms"])
+    assert any(a["code"] == "today_zero" for a in b["alarms"])
+    assert any(s["id"] == "factor.decay" for s in b["mining_signals"])
+    assert any(s["id"] == "selection.executability" for s in b["mining_signals"])
+    assert any(s["id"] == "learning.yield" for s in b["mining_signals"])
+    assert any(q["to"] == "DATA1" for q in b["questions"])
+    # 边界必须显式，防止信号被当交易建议
+    assert any("不是交易建议" in x for x in b["boundaries"])
+    assert json.dumps(b, ensure_ascii=False)  # 可序列化
+
+
+def test_data_brief_does_not_leak_raw_paths():
+    b = H.build_brief(*_inputs(), now="2026-11-04T05:15:00+08:00")
+    blob = json.dumps(b, ensure_ascii=False)
+    assert "C:\\" not in blob and "quant_backtest/data" not in blob
