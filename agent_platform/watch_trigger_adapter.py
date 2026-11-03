@@ -6,6 +6,10 @@ pending 人工确认。只建确认，不执行；缺 symbol/price/action 一律
 
 背景：QUANT_UPSTREAM_REPORT 只有 report_id/evidence_hash 等元数据，没有
 symbol/price，不能直接触发交易；本适配器要求显式 signal 补充，禁止臆造。
+
+IFS F3c（2026-11-04 WO-IFS-TRIGGER-LEDGER）：``trigger_watch_plan`` 支持
+``trigger_ledger=``/env 显式配置的独立 trigger 账本，落 trigger_id 并回写
+confirmation；未配置时保持旧行为，不产生生产写入。
 """
 from __future__ import annotations
 
@@ -205,7 +209,33 @@ def signal_from_watch_plan(plan):
     }
 
 
-def trigger_watch_plan(plan, profile="balanced", data_dir=None):
-    """watch_plan → pending confirmation（不执行/不下单）；重复调用按 report_id 幂等。"""
+def trigger_watch_plan(plan, profile="balanced", data_dir=None,
+                       trigger_ledger=None, quote_snapshot=None, now=None):
+    """watch_plan → pending confirmation（不执行/不下单）；重复调用按 report_id 幂等。
+
+    IFS F3c（WO-IFS-TRIGGER-LEDGER）：显式 ``trigger_ledger`` 路径或环境变量
+    ``WATCH_TRIGGER_LEDGER_PATH`` 配置后，先写 trigger 独立账本（幂等），再把
+    ``trigger_id`` 写回 confirmation；未配置时保持旧行为（不落 trigger 账本、
+    confirmation 无 trigger_id），因此本模块默认不产生生产写入。
+    """
     signal = signal_from_watch_plan(plan)
-    return trigger(signal, profile=profile, data_dir=data_dir)
+    confirmation = trigger(signal, profile=profile, data_dir=data_dir)
+    try:
+        from agent_platform import watch_trigger_ledger as ledger
+    except ImportError:  # 独立部署/单文件加载时退化
+        return confirmation
+    if ledger.ledger_path(trigger_ledger) is None:
+        return confirmation
+    plan_id = str(plan.get("plan_id") or signal.get("watch_plan_id") or "").strip()
+    recorded = ledger.record_trigger(
+        watch_plan_id=plan_id,
+        confirmation_id=confirmation.get("confirmation_id"),
+        handoff_id=signal.get("handoff_id"),
+        decision_id=signal.get("decision_id"),
+        quote_snapshot=quote_snapshot,
+        path=trigger_ledger,
+        now=now,
+    )
+    return ledger.attach_to_confirmation(
+        confirmation, recorded["trigger_id"], data_dir=data_dir
+    )
