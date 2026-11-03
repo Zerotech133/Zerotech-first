@@ -28,6 +28,15 @@ decision_id`` 同一公式 ``D1-<yyyymmdd>-sha256("symbol|date|run_id")[:10]``�
 延迟 import 单一真源，引擎不可用时回退同公式本地实现。重复运行按 run_id
 幂等去重，不重复追加。
 
+IFS F5c（2026-11-04 WO-IFS-OUTCOME-WIRE-20261104）：outcome 行补 **outcome_id +
+六 ID 链**（decision/handoff/watch_plan/confirmation/trade/outcome）——
+生成方复用 ``agent_platform.training.outcome_chain.new_outcome_id``（IFS-04 单一
+生成方，``out-<yyyymmdd>-<8HEX>``），不在本模块另造格式。六 ID 键**必在**且缺失
+显式 null（不拿 run_id/report 号冒充上游）；legacy 行（无 outcome_id）回填时
+只补空值、不覆盖原字段、不伪造行情；同 run_id 重复回填确定性同 ID（幂等）。
+补齐的行与既有 decision_id/model/PIT 回填分离计数（``ids_repaired``/``id_fields``），
+不影响旧 ``repaired`` 语义。
+
 ``--since YYYY-MM-DD``（2026-10-31 WO-D1-OUTCOME-DAILY）：只回填该日期（含）
 之后缺失的 outcome，用于日常增量；不带则补全历史缺失。输出新增行数 ``new``
 与按日期分布 ``dates``。历史 outcome 行缺 ``decision_id``/``model`` 时按下表
@@ -65,6 +74,124 @@ _PIT_TEXT_RE = re.compile(
     r"(?:Z|[+-]\d{2}:?\d{2})?$")
 
 _POLICY_DECISION_ID = None
+
+#: IFS-04 六 ID 键（decision → handoff → watch_plan → confirmation → trade → outcome）。
+SIX_ID_KEYS = ("decision_id", "handoff_id", "watch_plan_id",
+               "confirmation_id", "trade_id", "outcome_id")
+_UPSTREAM_ID_KEYS = SIX_ID_KEYS[:-1]
+
+#: IFS F5c：outcome_id 生成方复用 training.outcome_chain（单一生成方）。
+#: 直接脚本运行（python agent_platform/decision_outcomes.py）时用 training.*
+#: 兼容导入；两者都不可用才回退同公式本地实现（不改变 ID 格式/确定性）。
+try:  # 包导入（repo 根在 sys.path）
+    from agent_platform.training import outcome_chain as _outcome_chain  # noqa: E402
+except ImportError:  # 测试/脚本上下文：agent_platform 目录在 sys.path
+    try:
+        from training import outcome_chain as _outcome_chain  # noqa: E402
+    except ImportError:  # pragma: no cover - 极端裁剪环境兜底（同公式）
+        _outcome_chain = None
+
+if _outcome_chain is not None:
+    SIX_ID_KEYS = tuple(getattr(_outcome_chain, "SIX_ID_KEYS", SIX_ID_KEYS))
+    _UPSTREAM_ID_KEYS = SIX_ID_KEYS[:-1]
+
+
+def _id_or_none(value):
+    """ID 归一：空/空白 → None（缺失显式 null，不造值）。"""
+    text = str(value or "").strip()
+    return text or None
+
+
+def _record_ids(row):
+    """取六 ID（优先复用 outcome_chain.record_ids 单一实现；不可用时本地回退）。"""
+    if _outcome_chain is not None:
+        try:
+            return dict(_outcome_chain.record_ids(row))
+        except Exception:  # noqa: BLE001 - 回退实现同语义，不改变结果
+            pass
+    row = row if isinstance(row, dict) else {}
+    nested = row.get("ids") if isinstance(row.get("ids"), dict) else {}
+
+    def pick(*keys):
+        for key in keys:
+            value = row.get(key)
+            if value in (None, ""):
+                value = nested.get(key)
+            if value not in (None, ""):
+                return _id_or_none(value)
+        return None
+
+    return {
+        "decision_id": pick("decision_id", "source_decision_id"),
+        "handoff_id": pick("handoff_id", "source_handoff_id", "receipt_id"),
+        "watch_plan_id": pick("watch_plan_id", "source_watch_plan_id"),
+        "confirmation_id": pick("confirmation_id"),
+        "trade_id": pick("trade_id"),
+        "outcome_id": pick("outcome_id"),
+    }
+
+
+def _fallback_outcome_id(trade_id="", run_id="", as_of=""):
+    """outcome_chain 不可用时的同公式回退（格式/确定性完全一致，勿另立生成方）。"""
+    upstream = _id_or_none(trade_id) or _id_or_none(run_id)
+    match = re.match(r"^(\d{4})-?(\d{2})-?(\d{2})",
+                     str(as_of or "").strip())
+    if not upstream or match is None:
+        return None
+    day = match.group(1) + match.group(2) + match.group(3)
+    digest = hashlib.sha256(("%s|%s" % (upstream, 1)).encode("utf-8"))
+    return "out-%s-%s" % (day, digest.hexdigest().upper()[:8])
+
+
+def new_outcome_id(trade_id="", run_id="", as_of="", horizon_days=None):
+    """生成 outcome_id：调用 IFS F5 单一生成方 ``outcome_chain.new_outcome_id``。
+
+    上游键优先 trade_id（标准链），legacy 行回退 run_id；缺上游/日期 → None。
+    """
+    if _outcome_chain is not None:
+        return _outcome_chain.new_outcome_id(
+            trade_id=trade_id, run_id=run_id, as_of=as_of,
+            horizon_days=horizon_days)
+    return _fallback_outcome_id(trade_id=trade_id, run_id=run_id, as_of=as_of)
+
+
+def fill_outcome_ids(row, ledger_row=None):
+    """给 outcome 行补 outcome_id + 六 ID 键 + ``ids``（幂等，只补空值）。
+
+    - 上游 ID 优先取行内值，其次取同 run_id 的 shadow_ledger 行（若带，如未来
+      WIRE 账本行的 handoff/watch_plan/confirmation/trade）；
+    - 六个键**必在**：缺失显式 ``None``（不拿 run_id/report 号冒充）；
+    - ``outcome_id`` 已有不换；缺失时按 trade_id→run_id + 决策日生成（确定性）；
+    - 不改任何已有非空字段（不破坏 legacy 行）。
+    返回实际填充的字段名列表（用于 ``ids_repaired``/``id_fields`` 计数）。
+    """
+    if not isinstance(row, dict):
+        raise TypeError("row 须为 dict: %r" % (row,))
+    filled = []
+    upstream = _record_ids(ledger_row) if isinstance(ledger_row, dict) else {}
+    for key in _UPSTREAM_ID_KEYS:
+        if _id_or_none(row.get(key)) is None:
+            candidate = _id_or_none(upstream.get(key))
+            if candidate:
+                row[key] = candidate
+                filled.append(key)
+        row.setdefault(key, None)
+    if _id_or_none(row.get("outcome_id")) is None:
+        outcome_id = new_outcome_id(
+            trade_id=row.get("trade_id") or "",
+            run_id=row.get("run_id") or "",
+            as_of=row.get("date") or row.get("as_of")
+            or row.get("trade_date"))
+        row["outcome_id"] = outcome_id
+        if outcome_id:
+            filled.append("outcome_id")
+    row.setdefault("outcome_id", None)
+    ids = {key: _id_or_none(row.get(key)) for key in SIX_ID_KEYS}
+    if row.get("ids") != ids:
+        row["ids"] = ids
+        filled.append("ids")
+    return filled
+
 
 
 def _fallback_decision_id(symbol, date, run_id):
@@ -220,11 +347,18 @@ def enrich_outcome_row(row, ledger_index):
 
 
 def repair_outcomes(out_rows, ledger_rows):
-    """补历史 outcome 行缺失字段（行数/顺序不变）；返回 (rows, report)。"""
+    """补历史 outcome 行缺失字段（行数/顺序不变）；返回 (rows, report)。
+
+    IFS F5c：除既有 decision_id/model/PIT 回填外，还给每行补 outcome_id + 六 ID
+    + ``ids``（``fill_outcome_ids``，只补空值、确定性幂等）；ID 回填单独计数
+    （``ids_repaired``/``id_fields``），不改旧 ``repaired``（decision/model/PIT）语义。
+    """
     index = _ledger_by_run_id(ledger_rows)
     fields = {"decision_id": 0, "model": 0}
     repaired = 0
     pit_repaired = 0
+    ids_repaired = 0
+    id_fields = {}
     rows = []
     for row in out_rows or []:
         new_row = dict(row)
@@ -235,9 +369,17 @@ def repair_outcomes(out_rows, ledger_rows):
                 pit_repaired += 1
             for name in filled:
                 fields[name] = fields.get(name, 0) + 1
+        rid = str(new_row.get("run_id") or "")
+        ledger_row = index.get(rid) if rid else None
+        id_filled = fill_outcome_ids(new_row, ledger_row=ledger_row)
+        if id_filled:
+            ids_repaired += 1
+            for name in id_filled:
+                id_fields[name] = id_fields.get(name, 0) + 1
         rows.append(new_row)
     return rows, {"repaired": repaired, "fields": fields,
-                  "pit_repaired": pit_repaired}
+                  "pit_repaired": pit_repaired,
+                  "ids_repaired": ids_repaired, "id_fields": id_fields}
 
 
 def _write_jsonl_atomic(path, rows):
@@ -342,6 +484,9 @@ def compute_outcome(row, price_fetcher):
     outcome["pit_source"] = pit.get("pit_source")
     outcome["raw_refs_status"] = pit.get("raw_refs_status")
     outcome["raw_refs_in_bundle"] = pit.get("raw_refs_in_bundle")
+    # IFS F5c：六 ID 链（outcome_id 由 outcome_chain 单一生成方确定性生成；
+    # 账本行若带 handoff/watch_plan/confirmation/trade ID 则透传，缺则显式 null）
+    fill_outcome_ids(outcome, ledger_row=row)
     return outcome
 
 
@@ -368,9 +513,13 @@ def run_backfill(ledger_path, out_path, since=None, price_fetcher=None,
                  write=True, repair=True, week=None):
     """回填 outcome sidecar：只补缺失（run_id 幂等）+ 补历史行缺字段。
 
-    返回 {'new','dates','since','repaired','repaired_fields','written',
-    'out_path','outcomes','summary'}；write=False 时零写盘（dry-run，但仍报告
-    「本可补行数」便于运维预演）。价格取不到的行不写、不伪造。
+    IFS F5c：新 outcome 行与历史回填行都会补 outcome_id + 六 ID + ``ids``；旧
+    legacy 行只补空值（不覆盖原字段、不伪造行情）。缺行情/价格的行不生成、
+    不写（不造数）。
+
+    返回 {'new','dates','since','repaired','repaired_pit','repaired_fields',
+    'ids_repaired','id_fields','written','out_path','outcomes','summary'}；
+    ``write=False`` 时零写盘（dry-run，但仍报告「本可补行数」便于运维预演）。
     """
     ledger_rows = _load_jsonl(ledger_path)
     out_rows = _load_jsonl(out_path)
@@ -380,11 +529,13 @@ def run_backfill(ledger_path, out_path, since=None, price_fetcher=None,
     new_rows = compute_all(ledger_rows, fetcher, existing, since=since)
     merged = list(out_rows) + new_rows
     repaired_report = {"repaired": 0, "pit_repaired": 0,
-                       "fields": {"decision_id": 0, "model": 0}}
+                       "fields": {"decision_id": 0, "model": 0},
+                       "ids_repaired": 0, "id_fields": {}}
     if repair:
         merged, repaired_report = repair_outcomes(merged, ledger_rows)
+    ids_repaired = repaired_report.get("ids_repaired", 0)
     written = False
-    if write and (new_rows or repaired_report["repaired"]):
+    if write and (new_rows or repaired_report["repaired"] or ids_repaired):
         _write_jsonl_atomic(out_path, merged)
         written = True
     summary = summarize(merged, ledger_rows, week=week)
@@ -396,6 +547,8 @@ def run_backfill(ledger_path, out_path, since=None, price_fetcher=None,
             "since": since, "repaired": repaired_report["repaired"],
             "repaired_pit": repaired_report.get("pit_repaired", 0),
             "repaired_fields": repaired_report["fields"],
+            "ids_repaired": ids_repaired,
+            "id_fields": dict(repaired_report.get("id_fields") or {}),
             "written": written, "out_path": out_path,
             "outcomes": len(merged), "summary": summary}
 
@@ -466,6 +619,16 @@ def summarize(outcomes, ledger_rows=None, week=None):
         "pit": {"outcomes_with_pit_as_of": len(pit_rows),
                 "outcomes_with_raw_status": sum(raw_status_counts.values()),
                 "raw_refs_status": raw_status_counts},
+        # IFS F5c：六 ID 覆盖率（只计数，不推断；旧行缺失计 0）
+        "id_chain": {
+            "outcomes_with_outcome_id": sum(
+                1 for o in outcomes if _id_or_none(o.get("outcome_id"))),
+            "outcomes_with_decision_id": sum(
+                1 for o in outcomes if _id_or_none(o.get("decision_id"))),
+            "outcomes_with_trade_id": sum(
+                1 for o in outcomes if _id_or_none(o.get("trade_id"))),
+            "six_id_keys": list(SIX_ID_KEYS),
+        },
         "warn_only": True,
     }
 
@@ -534,15 +697,19 @@ def main(argv=None):
         payload = {"new": rep["new"], "dates": rep["dates"],
                    "since": rep["since"], "repaired": rep["repaired"],
                    "repaired_fields": rep["repaired_fields"],
+                   "repaired_pit": rep.get("repaired_pit", 0),
+                   "ids_repaired": rep.get("ids_repaired", 0),
+                   "id_fields": rep.get("id_fields") or {},
                    "written": rep["written"], "summary": summary}
         print(json.dumps(payload, ensure_ascii=False, indent=2))
     else:
         days = ",".join("%s:%d" % (d, n) for d, n in rep["dates"].items()) or "-"
         state = ("（--no-write 预演，未写盘）" if args.no_write
                  else ("已写 sidecar" if rep["written"] else "无新增（幂等）"))
-        print("[decision_outcomes] since=%s new=%d dates=%s repaired=%d %s：%s"
+        print("[decision_outcomes] since=%s new=%d dates=%s repaired=%d ids=%d "
+              "%s：%s"
               % (args.since or "-", rep["new"], days, rep["repaired"],
-                 state, args.out))
+                 rep.get("ids_repaired", 0), state, args.out))
         print(render_markdown(summary))
     return 0
 
