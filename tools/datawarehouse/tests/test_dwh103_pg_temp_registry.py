@@ -66,13 +66,13 @@ def test_pg_table_missing_dsn_is_disabled_not_green(tmp_path, monkeypatch):
     monkeypatch.setenv("DW_PG_DSN_FALLBACK", "0")
     reg = _reg(tmp_path, temp_whitelist=[])  # 本用例只看 pg 节，空契约白名单保证确定性
     assert reg.connector_status == "missing_dsn"
-    assert len(reg.pg_datasets) == 7  # wave1 核心表（≤15）
+    assert len(reg.pg_datasets) == 9  # wave1 核心表（≤15；ACAD1-DATAREFS 2026-11-04 增 2 表）
     assert all(d["kind"] == "pg_table" and d["status"] == "missing_dsn"
                and d["available"] is False for d in reg.pg_datasets)
     sv2 = reg.stats_v2()
     assert sv2["denominator_version"] == "v2"
     assert sv2["connector_status"] == "missing_dsn"
-    assert sv2["pg"]["total"] == 7 and sv2["pg"]["available"] == 0
+    assert sv2["pg"]["total"] == 9 and sv2["pg"]["available"] == 0
     # 不假绿：未连接的 PG 表不计入合并可用口径
     assert sv2["all"]["total"] == reg.stats()["total"]
     with pytest.raises(ConnectorUnavailable) as exc:
@@ -116,7 +116,8 @@ def test_pg_connector_ok_marks_available_tables(tmp_path):
     sv2 = reg.stats_v2()
     assert sv2["pg"]["available"] == 1
     assert sv2["all"]["total"] == reg.stats()["total"] + 1
-    assert len(seen["tables"]) == 7 and "v2_acad1_pool" in seen["tables"]
+    assert len(seen["tables"]) == 9 and "v2_acad1_pool" in seen["tables"]
+    assert "v2_acad1_review" in seen["tables"] and "v2_lusu_decision" in seen["tables"]
     assert reg.resolve_ref("dataset/pg/v2_acad1_pool") is pool
 
 
@@ -221,7 +222,7 @@ def test_cli_json_contract(tmp_path, monkeypatch, capsys):
 
     assert cli.main(["--json", "list", "--kind", "pg_table", "--limit", "20"]) == 0
     rows = json.loads(capsys.readouterr().out)
-    assert len(rows) == 7 and all(r["kind"] == "pg_table" for r in rows)
+    assert len(rows) == 9 and all(r["kind"] == "pg_table" for r in rows)
 
     assert cli.main(["--json", "resolve-ref", "--ref", "dataset/pg/v2_acad1_pool"]) == 0
     assert json.loads(capsys.readouterr().out)["kind"] == "pg_table"

@@ -70,15 +70,18 @@ PG_CONNECTOR = "pg@127.0.0.1:5446/zhice_os_v2"  # 逻辑连接串标签（不含
 PG_SCHEMA_WHITELIST = ("public",)  # 跨库/其他 schema 需 A0 加白（ADR-019 D2）
 PG_TIMEOUT_S = 5
 PG_DOMAIN = "平台运行"
-# wave1：组合 manifest 已引用 + ACAD1/D1 核心表（≤15 张）；wave2 全 83 张另单（ADR-019 D3）
+# wave1：组合 manifest 已引用 + ACAD1/D1 核心表（≤15 张）；wave2 全 83+ 张另单（ADR-019 D3）
+# ACAD1-DATAREFS（2026-11-04）：补 research reviews/decisions 数据源（G6 收口；表不存在时探测 fail-visible）
 PG_WAVE1_TABLES = (
     {"table": "v2_acad1_pool", "owner": "ACAD1", "registered": True, "exposed": True},
     {"table": "v2_selection_pool", "owner": "ACAD1", "registered": True, "exposed": True},
     {"table": "v2_stock_research", "owner": "ACAD1", "registered": True, "exposed": True},
     {"table": "v2_selection_report", "owner": "ACAD1", "registered": True, "exposed": True},
     {"table": "v2_strategy_ownership", "owner": "ACAD1", "registered": True, "exposed": True},
+    {"table": "v2_acad1_review", "owner": "ACAD1", "registered": True, "exposed": True},
     {"table": "v2_base_signal", "owner": "D1", "registered": True, "exposed": True},
     {"table": "v2_score_component", "owner": "D1", "registered": True, "exposed": True},
+    {"table": "v2_lusu_decision", "owner": "D1", "registered": True, "exposed": True},
 )
 
 # ---------- IFS-POOL（2026-11-03 WO-IFS-POOL-20261103）：显式 dataset ref 登记 ----------

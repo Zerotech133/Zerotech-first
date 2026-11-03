@@ -43,6 +43,10 @@ spec:
       note: 官方池唯一真源（dataset_refs_declared canonical_ref=dataset/pg/v2_acad1_pool，IFS-POOL 已登记）；file/recommendation_pool 为 shadow fallback（非官方）
     - ref: dataset/pg/v2_base_signal
       note: D1 基础信号（PG wave1 registry 已登记，owner=D1）；只读消费，paper-only
+    - ref: dataset/pg/v2_acad1_review
+      note: ACAD1 池级复核（PG wave1 registry 已登记，owner=ACAD1，registered/exposed=true）；D1 复盘只读；file pool_review 保留 fallback
+    - ref: dataset/pg/v2_lusu_decision
+      note: D1 裁决读模型（PG wave1 registry 已登记，owner=D1）；当前仅 1 行实验数据，不冒充正式账；正式账 file/d1_decisions 仍 planned
     - ref: dataset/file/pool_review
       note: IFS F2 池复盘；dataset_registry 登记由 task-27 完成（当前 planned）
     - ref: dataset/file/team_exec
