@@ -41,6 +41,14 @@ pre{white-space:pre-wrap;background:var(--bg-page);border:1px solid var(--border
   <div class="progress"><i id="flowfill"></i></div>
   <div class="pmeta"><span id="flowtext">流程进度：0/7</span><span id="flowpct">0%</span></div>
 
+  <div class="card" id="auto-box">
+    <h2>⚡ 一键自动化（到方案）</h2>
+    <div class="meta">填好下方标题/材料后，一次点击自动跑：田丰汇总 → 五角色并行（失败自动重试）→ 保存会议 → 生成方案。审批仍由人类点。</div>
+    <div class="btns"><button class="btn primary" id="btn-auto">一键自动跑完（到方案）</button><span class="meta" id="auto-status"></span></div>
+    <div class="progress"><i id="autofill"></i></div>
+    <div class="pmeta"><span id="autotext">自动化：待开始</span><span id="autopct">0%</span></div>
+  </div>
+
   <div class="card" id="quick-box">
     <h2>⚡ 即时拆解（虚拟临战会）</h2>
     <div class="meta">随时把一句话任务丢进来：田丰拆解 + 五角色快速意见 + 田丰方案。不落正式会议纪要；需要留痕时再升级为正式 Case。</div>
@@ -90,6 +98,7 @@ pre{white-space:pre-wrap;background:var(--bg-page);border:1px solid var(--border
       <input id="approver" readonly placeholder="由登录身份决定" style="max-width:240px">
       <input id="approve-note" placeholder="审批备注（可选）" style="flex:1;min-width:180px">
       <button class="btn primary" id="btn-approve" disabled>人类审批通过</button>
+      <button class="btn" id="btn-approve-dispatch" disabled>审批并下发</button>
       <span class="meta" id="approve-status"></span>
     </div>
   </div>
@@ -117,7 +126,7 @@ pre{white-space:pre-wrap;background:var(--bg-page);border:1px solid var(--border
 (function(){
 'use strict';
 var LS='hq_case_current';
-var state={case:null,busy:false,identity:null,canApprove:false,quick:null};
+var state={case:null,busy:false,identity:null,canApprove:false,quick:null,autoRunning:false};
 function $(id){return document.getElementById(id);}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function save(){try{localStorage.setItem(LS,JSON.stringify(state.case||{}));}catch(e){}}
@@ -138,9 +147,11 @@ function setBtns(){
   $('btn-agg').disabled=!c||state.busy;
   $('btn-review').disabled=!c||!c.summary||state.busy;
   $('btn-meeting').disabled=!c||(c.opinions||[]).filter(function(x){return x.text;}).length<5||state.busy;
-  $('btn-retry').disabled=!c||!c.summary||state.busy||(c.opinions||[]).filter(function(x){return x.text;}).length>=5;
+  $('btn-retry').disabled=!c||!c.summary||state.busy||state.autoRunning||(c.opinions||[]).filter(function(x){return x.text;}).length>=5;
+  $('btn-auto').disabled=state.busy||state.autoRunning;
   $('btn-propose').disabled=!c||!c.meeting_id||state.busy;
   $('btn-approve').disabled=!c||!c.proposal||state.busy||!state.canApprove;
+  $('btn-approve-dispatch').disabled=!c||!c.proposal||!c.meeting_id||state.busy||!state.canApprove||!!c.dispatch;
   $('btn-dispatch').disabled=!c||!c.approved||!c.meeting_id||state.busy;
   refreshFlow();
 }
@@ -178,6 +189,36 @@ function upgradeQuick(){
   var q=state.quick;
   state.case={id:'CASE-'+new Date().toISOString().slice(0,10).replace(/-/g,'')+'-'+Math.random().toString(36).slice(2,6),title:q.task.slice(0,80),materials:q.task+' | [田丰快速拆解] '+q.a0,summary:q.a0,opinions:(q.opinions||[]).map(function(o){return {seat:o.seat,name:o.name,text:o.text||('[失败] '+(o.error||''))};}),meeting_id:'',proposal:'',approved:false,approver:'',approved_at:'',dispatch:null,created_at:new Date().toISOString()};
   save();$('title').value=state.case.title;$('materials').value=state.case.materials;show('agg-out',q.a0);show('review-out',state.case.opinions.map(function(o){return '【'+o.name+'】'+(o.text||'');}).join(String.fromCharCode(10)+String.fromCharCode(10)));setBtns();status('agg-status','已从即时拆解升级，可继续正式流程');$('quick-status').textContent='已升级为 '+state.case.id;
+}
+async function autoRun(){
+  if(state.autoRunning)return;
+  var title=($('title').value||'').trim();
+  if(!title&&(!state.case||!state.case.title)){alert('先填议题标题');return;}
+  state.autoRunning=true;state.busy=true;setBtns();
+  function phase(pct,text){setProgress('autofill',pct,text,'autopct','autotext');}
+  try{
+    phase(5,'创建/载入 Case…');
+    if(!state.case||!(state.case.title||'').trim()){newCase();}
+    if(!state.case)throw new Error('Case 创建失败');
+    phase(12,'田丰汇总…');if(!state.case.summary){await aggregate();}
+    if(!state.case.summary)throw new Error('田丰汇总失败');
+    for(var attempt=0;attempt<2;attempt++){
+      var ok=(state.case.opinions||[]).filter(function(x){return x.text;}).length;
+      if(ok>=5)break;
+      phase(28+attempt*12,attempt===0?'五角色并行会诊…':'重试失败角色…');
+      await review();
+    }
+    var success=(state.case.opinions||[]).filter(function(x){return x.text;}).length;
+    if(success<5)throw new Error('五角色只完成 '+success+'/5');
+    if(!state.case.meeting_id){phase(60,'保存作战会纪要…');await meeting();}
+    if(!state.case.meeting_id)throw new Error('会议保存失败');
+    if(!state.case.proposal){phase(82,'田丰生成方案…');await propose();}
+    if(!state.case.proposal)throw new Error('方案生成失败');
+    phase(100,'自动化完成：已到方案，等待人类审批');
+    status('auto-status','已完成：5/5 + 会议 + 方案');
+    status('proposal-status','方案已生成，待人类审批');
+  }catch(e){phase(0,'自动化失败：'+e.message);status('auto-status','自动化失败：'+e.message);}
+  state.autoRunning=false;state.busy=false;setBtns();
 }
 async function newCase(){
   var title=($('title').value||'').trim();if(!title){alert('先填议题标题');return;}
@@ -233,6 +274,7 @@ async function propose(){
   catch(e){status('proposal-status','失败：'+e.message);}
   state.busy=false;setBtns();
 }
+async function approveAndDispatch(){approve();if(state.case&&state.case.approved)await dispatchCase();}
 function approve(){
   if(!state.case||!state.case.proposal)return;
   if(!state.canApprove||!state.identity){status('approve-status','当前身份无审批权，需 ADMIN/OWNER 登录');return;}
@@ -247,7 +289,7 @@ async function dispatchCase(){
   catch(e){status('dispatch-status','下发失败：'+e.message);}
   state.busy=false;setBtns();
 }
-$('btn-new').onclick=newCase;$('btn-quick').onclick=quickBreakdown;$('btn-upgrade').onclick=upgradeQuick;$('btn-agg').onclick=aggregate;$('btn-review').onclick=review;$('btn-retry').onclick=review;$('btn-meeting').onclick=meeting;$('btn-propose').onclick=propose;$('btn-approve').onclick=approve;$('btn-dispatch').onclick=dispatchCase;
+$('btn-new').onclick=newCase;$('btn-auto').onclick=autoRun;$('btn-quick').onclick=quickBreakdown;$('btn-upgrade').onclick=upgradeQuick;$('btn-agg').onclick=aggregate;$('btn-review').onclick=review;$('btn-retry').onclick=review;$('btn-meeting').onclick=meeting;$('btn-propose').onclick=propose;$('btn-approve').onclick=approve;$('btn-approve-dispatch').onclick=approveAndDispatch;$('btn-dispatch').onclick=dispatchCase;
 load();if(state.case){$('title').value=state.case.title||'';$('materials').value=state.case.materials||'';if(state.case.summary)show('agg-out',state.case.summary);if(state.case.opinions&&state.case.opinions.length)show('review-out',state.case.opinions.map(function(o){return '【'+o.name+'】'+(o.text||('[失败] '+o.error));}).join('\n\n'));if(state.case.meeting_id)show('meeting-out','meeting_id='+state.case.meeting_id);if(state.case.proposal)show('proposal-out',state.case.proposal);if(state.case.approved)status('approve-status','已由 '+(state.case.approver||'')+' 审批通过');if(state.case.dispatch)show('dispatch-out',JSON.stringify(state.case.dispatch,null,2));}
 loadIdentity();
 refreshFlow();

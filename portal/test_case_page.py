@@ -35,6 +35,8 @@ def test_case_page_has_seven_steps_and_approval_gate():
     assert "APPROVER" in s and "重新登录刷新身份" in s
     assert 'id="btn-retry"' in s and "重试失败角色" in s
     assert "Promise.all(roles.map" in s and "已完成 '+ok+'/5" in s
+    assert 'id="auto-box"' in s and 'id="btn-auto"' in s and "autoRun" in s
+    assert 'id="btn-approve-dispatch"' in s and "approveAndDispatch" in s
     assert 'id="quick-box"' in s and 'id="btn-quick"' in s and "虚拟临战会" in s
     assert "Promise.all" in s and "升级为正式 Case" in s
 
