@@ -1700,6 +1700,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
             import api_customer
             api_customer.handle_get(self, path, qs)
             return
+        if path == '/api/bff/quant/sso':
+            import auth_gateway
+            auth_gateway.handle_get(self, path)
+            return
         if path == '/api/bff/identity/me' or path.startswith('/api/auth/'):
             # Phase A auth-gateway（2026-10-30）：登录态 / 登出 / 当前 SessionContext。
             # 与只读 BFF 分离；认证端点单独模块，不混入 /api/bff/ 只读面。
