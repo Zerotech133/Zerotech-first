@@ -33,6 +33,13 @@ h2{font-size:15px;margin:22px 0 8px}
 .pill.amber{color:var(--color-warn);border-color:color-mix(in srgb,var(--color-warn) 42%,transparent)}
 .pill.green{color:var(--color-ok);border-color:color-mix(in srgb,var(--color-ok) 42%,transparent)}
 .err{padding:12px;border:1px solid var(--red-500);border-radius:10px;color:var(--red-500)}
+#detail{margin:12px 0;padding:16px;border:1px solid var(--blu-600);border-radius:12px;background:var(--bg-surface)}
+.dept-card{cursor:pointer}
+.dept-card:hover{border-color:var(--link)}
+.chat{display:flex;flex-direction:column;gap:8px;max-height:260px;overflow:auto;padding:8px;margin:8px 0;background:var(--bg-page);border:1px solid var(--border);border-radius:8px}
+.chat .msg{padding:7px 10px;border-radius:8px;font-size:12.5px;line-height:1.6;white-space:pre-wrap}
+.chat .msg.user{align-self:flex-end;background:var(--blu-600);color:#fff;max-width:85%}
+.chat .msg.bot{align-self:flex-start;background:var(--bg-raised);max-width:90%}
 #summary{white-space:pre-wrap;line-height:1.8;background:var(--bg-surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin:10px 0;font-size:13px}
 #modal{display:none;margin:12px 0}
 #modal.open{display:block}
@@ -46,7 +53,7 @@ h2{font-size:15px;margin:22px 0 8px}
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><strong>零界 · 田丰早间简报</strong><span class="meta" id="build">v5</span><a href="/hq">返回指挥部</a></div>
+  <div class="top"><strong>零界 · 田丰早间简报</strong><span class="meta" id="build">v6</span><a href="/hq">返回指挥部</a></div>
   <h1>今日简报</h1>
   <div class="meta" id="meta">加载中…</div>
 
@@ -67,6 +74,7 @@ h2{font-size:15px;margin:22px 0 8px}
 
   <h2>部门汇报</h2>
   <div id="depts" class="list"></div>
+  <div id="detail" hidden></div>
 
   <h2>研究题（点击进入人专项）</h2>
   <div id="topics" class="list"></div>
@@ -108,12 +116,15 @@ h2{font-size:15px;margin:22px 0 8px}
 'use strict';
 var DAY=new Date().toISOString().slice(0,10);
 var LS='hq_human_brief_'+DAY;
-var state={data:null, reports:[], dept:'', lastCard:null, running:false};
+var state={data:null, reports:[], dept:'', lastCard:null, running:false, detail:null};
+var CHATLS='hq_dept_chat_'+DAY; var chats={};
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function $(id){return document.getElementById(id);}
 function card(k,v){return '<div class="card"><div class="k">'+esc(k)+'</div><div class="v">'+esc(v)+'</div></div>';}
 function pill(s){var v=String(s||'');var c=/red/.test(v)?'red':(/amber/.test(v)?'amber':'green');return '<span class="pill '+c+'">'+esc(v)+'</span>';}
 function loadReports(){try{var a=JSON.parse(localStorage.getItem(LS)||'[]');state.reports=Array.isArray(a)?a:[];}catch(e){state.reports=[];}}
+function loadChats(){try{chats=JSON.parse(localStorage.getItem(CHATLS)||'{}')||{};}catch(e){chats={};}}
+function saveChats(){try{localStorage.setItem(CHATLS,JSON.stringify(chats));}catch(e){}}
 function saveReports(){try{localStorage.setItem(LS,JSON.stringify(state.reports.slice(-50)));}catch(e){}}
 function departments(){
   var d=(state.data&&state.data.org&&state.data.org.departments)||[];
@@ -240,11 +251,54 @@ function render(){
   if(state.dept) ts=ts.filter(function(t){return (t.source_dept===state.dept)||(t.source_lead===deptLead(state.dept));});
   $('cards').innerHTML=[card('部门汇报',rows.length+' / '+expectedLeads()),card('部门研究题',ts.length),card('需决策',rows.reduce(function(n,r){return n+(r.decision_requests||[]).length;},0)),card('红色',rows.filter(function(r){return r.status==='red';}).length)].join('');
   $('depts').innerHTML=rows.length?rows.map(function(x){
-    return '<div class="item"><div class="t">'+esc(x.lead||'-')+' · '+esc(x.dept||'-')+' '+pill(x.status||'')+'</div>'
-      +'<div class="m">工作要点：'+esc((x.highlights||[]).join('；')||'未填')+'<br>阻塞：'+esc((x.blockers||[]).join('；')||'无')+'<br>需决策：'+esc((x.decision_requests||[]).join('；')||'无')+'</div></div>';
+    return '<div class="item dept-card" role="button" tabindex="0" data-lead="'+esc(x.lead||'')+'" data-dept="'+esc(x.dept||'')+'"><div class="t">'+esc(x.lead||'-')+' · '+esc(x.dept||'-')+' '+pill(x.status||'')+'</div>'
+      +'<div class="m">工作要点：'+esc((x.highlights||[]).join('；')||'未填')+'<br>阻塞：'+esc((x.blockers||[]).join('；')||'无')+'<br>需决策：'+esc((x.decision_requests||[]).join('；')||'无')+'<br><span style="color:var(--link)">点击查看详情 / 继续对话 →</span></div></div>';
   }).join(''):'<div class="meta">'+ (state.dept?'该部门今日暂无汇报。':'今日部门早报尚未汇总；可点「汇报工作」随时补一份，或等 07:50 部门负责人提交。不再用旧 Directive 凑研究题。') +'</div>';
   $('topics').innerHTML=ts.length?ts.map(function(t){return '<a class="item" href="'+esc(specLink(t))+'"><div class="t">'+esc(t.title||'未命名研究题')+'</div><div class="m">'+esc(t.kind||'研究')+' · 来源 '+esc(t.source_lead||t.source_dept||'-')+'</div></a>';}).join(''):'<div class="meta">暂无研究题。</div>';
   $('state-note').textContent=state.dept?('只看：'+state.dept):'全部部门';
+}
+function detailMessages(){var l=state.detail&&state.detail.lead;return (l&&chats[l])||[];}
+function renderDetail(){
+  var r=state.detail; if(!r)return;
+  var box=$('detail'); if(!box)return;
+  var topics=(r.research_topics||[]).map(function(t){return '<a class="btn" href="'+esc(specLink({id:'',title:(t&&t.title)||t,source_lead:r.lead,kind:'研究'}))+'" style="margin:2px 4px 2px 0">'+esc((t&&t.title)||t)+' → 人专项</a>';}).join('');
+  var msgs=detailMessages().map(function(m){return '<div class="msg '+(m.role==='user'?'user':'bot')+'">'+esc(m.text)+'</div>';}).join('');
+  box.innerHTML='<div class="row" style="justify-content:space-between"><div><b>'+esc(r.lead||'-')+' · '+esc(r.dept||'-')+'</b> '+pill(r.status||'')+'</div><button class="btn" id="d-close" type="button">关闭</button></div>'
+    +'<div class="meta">工作要点：'+esc((r.highlights||[]).join('；')||'未填')+'<br>阻塞：'+esc((r.blockers||[]).join('；')||'无')+'<br>需决策：'+esc((r.decision_requests||[]).join('；')||'无')+'</div>'
+    +(topics?'<div class="meta">研究题：</div><div>'+topics+'</div>':'')
+    +'<h2 style="margin:12px 0 4px">继续对话（'+esc(r.lead||'')+' · 云端模型）</h2>'
+    +'<div class="chat" id="d-chat">'+(msgs||'<div class="msg bot">点击下方输入，继续追问该部门负责人；只会发送文字，不自动派单。</div>')+'</div>'
+    +'<div class="row"><input id="d-input" placeholder="继续问 '+esc(r.lead||'')+'…" style="flex:1;min-width:0"><button class="btn primary" id="d-send" type="button">发送</button></div>'
+    +'<div class="meta" id="d-status">对话保存在本页；真实云端调用。</div>';
+  box.hidden=false;
+  $('d-close').onclick=function(){state.detail=null;box.hidden=true;};
+  $('d-send').onclick=sendDetail;
+  $('d-input').addEventListener('keydown',function(e){if(e.key==='Enter')sendDetail();});
+  var c=$('d-chat');c.scrollTop=c.scrollHeight;
+}
+function openDetail(lead){
+  var r=reportRows().filter(function(x){return x.lead===lead;})[0];
+  if(!r)return; state.detail=r; renderDetail(); $('detail').scrollIntoView({behavior:'smooth',block:'start'});
+}
+async function sendDetail(){
+  var r=state.detail;if(!r)return;var input=$('d-input');var q=(input.value||'').trim();if(!q)return;
+  var l=r.lead||''; chats[l]=chats[l]||[]; chats[l].push({role:'user',text:q,ts:Date.now()}); input.value=''; saveChats(); renderDetail();
+  var st=$('d-status'); if(st)st.textContent='云端思考中…'; var btn=$('d-send'); if(btn)btn.disabled=true;
+  var hist=chats[l].slice(-8).map(function(m){return (m.role==='user'?'老田：':'负责人：')+m.text;}).join('\n');
+  var system='你是'+l+'，零界'+(r.dept||'')+'负责人。继续回答老田的问题；只从职能面，不编造数字，缺证据标需查证；不自动派单。';
+  var body={agent:l,system:system,purpose:'dept_chat',user:'历史对话：\n'+hist+'\n\n当前问题：'+q};
+  try{
+    var ctl=new AbortController();var timer=setTimeout(function(){ctl.abort();},90000);
+    var resp=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},signal:ctl.signal,body:JSON.stringify(body)});
+    var env=await resp.json();clearTimeout(timer);
+    if(!resp.ok||!env||!env.ok)throw new Error((env&&env.error&&(env.error.message||env.error.code))||('HTTP '+resp.status));
+    var text=(env.data&&env.data.text)||'';if(!text)throw new Error('empty_model_text');
+    chats[l].push({role:'assistant',text:text,ts:Date.now()});saveChats();renderDetail();
+    if($('d-status'))$('d-status').textContent='已回复 · binding='+(env.binding||env.data.binding_resolved||'-')+(env.degraded?' · 降级':'');
+  }catch(e){
+    chats[l].push({role:'assistant',text:'[云端回复失败] '+String(e.message||e).slice(0,200),ts:Date.now()});saveChats();renderDetail();
+    if($('d-status'))$('d-status').textContent='回复失败，可重试';
+  }finally{var b=$('d-send');if(b)b.disabled=false;}
 }
 function fillDeptSelects(){
   var ds=departments();
@@ -264,7 +318,7 @@ function saveReport(){var r=buildReport();if(!r.dept){$('state-note').textConten
 function copyReport(){var r=buildReport();state.lastCard=r;var t=JSON.stringify(r,null,2);navigator.clipboard.writeText(t).then(function(){$('state-note').textContent='汇报卡已复制。';}).catch(function(){$('state-note').textContent='复制失败，请手动下载。';});}
 function downloadReport(){var r=buildReport();var b=new Blob([JSON.stringify(r,null,2)],{type:'application/json'});var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='human_brief_'+(r.dept||'dept')+'_'+DAY+'.json';a.click();URL.revokeObjectURL(a.href);}
 async function main(){
-  loadReports();
+  loadReports();loadChats();
   var tb=document.querySelector('.toolbar');if(tb&&$('modal'))tb.insertAdjacentElement('afterend',$('modal'));
   try{
     var r=await fetch('/api/hq/snapshot',{cache:'no-store'});
@@ -280,6 +334,8 @@ async function main(){
 $('btn-summary').onclick=function(){runAllDepartments();};
 $('btn-quick').onclick=function(){renderSummary();$('state-note').textContent='已汇总当前已提交数据 · '+new Date().toLocaleTimeString();};
 $('btn-report').onclick=function(){openModal();$('state-note').textContent='汇报工作：填写后点保存到本页';};
+$('depts').addEventListener('click',function(e){var c=e.target.closest&&e.target.closest('.dept-card');if(c)openDetail(c.getAttribute('data-lead'));});
+$('depts').addEventListener('keydown',function(e){if(e.key==='Enter'){var c=e.target.closest&&e.target.closest('.dept-card');if(c)openDetail(c.getAttribute('data-lead'));}});
 $('dept-filter').onchange=function(){state.dept=this.value;render();if(!$('summary').hidden)renderSummary();};
 $('btn-save').onclick=saveReport;
 $('btn-copy').onclick=copyReport;
@@ -288,8 +344,8 @@ $('btn-close').onclick=closeModal;
 $('modal').addEventListener('click',function(e){if(e.target===$('modal'))closeModal();});
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal();});
 window.addEventListener('error',function(e){var el=$('error');if(el)el.innerHTML='<div class="err">页面脚本错误：'+esc(e.message||'unknown')+'。请 Ctrl+F5 强刷。</div>';});
-window.__briefingReady='v5-20261103-0945';
-var build=$('build');if(build)build.textContent='v5 · 09:45';
+window.__briefingReady='v6-20261103-1019';
+var build=$('build');if(build)build.textContent='v6 · 10:19';
 main();
 })();
 </script>
