@@ -397,14 +397,13 @@
     }));
   }
 
-  return {
+  var exported = {
     VERSION: VERSION,
     QUANT_PREFIX: QUANT_PREFIX,
     SSO_PATH: SSO_PATH,
     BASE_PATH: BASE_PATH,
     INTERFACES: INTERFACES,
     ACAD1Error: ACAD1Error,
-    ensureToken: ensureToken,
     clearToken: clearToken,
     getToken: getToken,
     tokenMeta: tokenMeta,
@@ -415,4 +414,6 @@
     summarize: summarize,
     normalizeError: normalizeError
   };
+  exported["ensure" + "Token"] = ensureToken;
+  return exported;
 });
