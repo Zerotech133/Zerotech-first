@@ -27,8 +27,11 @@ sys.path.insert(0, str(ROOT / "tools"))
 SYSTEM_TMPL = (
     "你是{name}（{lead}），零界{dept}负责人。只从你的职能面做部门早报；"
     "不编造具体数字，缺证据标需查证；不代替田丰派单、不代替老田拍板。"
-    "只输出JSON：{\"status\":\"green|amber|red\",\"highlights\":[\"3条以内工作要点\"],"
-    "\"blockers\":[\"阻塞/证据缺口\"],\"decision_requests\":[\"需A0/老田决策事项\"],"
+    "只输出JSON：{\"status\":\"green|amber|red\","
+    "\"yesterday_done\":[\"昨天实际完成、有证据的事\"],"
+    "\"in_progress\":[\"今天正在做/未完成的事\"],"
+    "\"blockers\":[\"当前卡点/正在卡点\"],"
+    "\"decision_requests\":[\"需A0/老田决策事项\"],"
     "\"research_topics\":[{\"title\":\"研究题\",\"question\":\"研究问题\"}]}"
 )
 
@@ -56,7 +59,11 @@ def _context() -> str:
 
 
 def _ask(lead: dict, date: str, base: str, timeout: int) -> dict:
-    text = "日期 " + date + "。当前未派单议题：\n" + (_context() or "（无）") + "\n请立即生成部门早报，供田丰汇总。"
+    y = (datetime.date.fromisoformat(date) - datetime.timedelta(days=1)).isoformat()
+    text = ("报告日期 " + date + "｜统计昨天 " + y + "。\n"
+            "请汇报：1) 昨天实际完成了什么（有证据，没做就写无）；"
+            "2) 今天正在做什么；3) 当前卡点/正在卡点；4) 需 A0/老田决策；5) 研究题。\n"
+            "当前未派单议题：\n" + (_context() or "（无）") + "\n请立即生成部门早报，供田丰汇总。")
     body = json.dumps({"agent": lead["lead"],
                        "system": SYSTEM_TMPL.format(**lead),
                        "purpose": "dept_report", "user": text}, ensure_ascii=False).encode("utf-8")
@@ -94,8 +101,11 @@ def _parse(lead: dict, text: str) -> dict:
             topics.append({"title": x, "question": ""})
         elif isinstance(x, dict) and x.get("title"):
             topics.append({"title": str(x["title"]), "question": str(x.get("question") or "")})
+    yesterday = arr((d or {}).get("yesterday_done") or (d or {}).get("highlights"))
     return {"lead": lead["lead"], "dept": lead["dept"], "dept_name": lead["name"],
-            "status": st, "highlights": arr((d or {}).get("highlights")),
+            "status": st, "yesterday_done": yesterday,
+            "in_progress": arr((d or {}).get("in_progress")),
+            "highlights": yesterday,  # 兼容旧消费方
             "blockers": arr((d or {}).get("blockers")),
             "decision_requests": arr((d or {}).get("decision_requests")),
             "research_topics": topics[:6]}
@@ -150,8 +160,9 @@ def _markdown(r: dict) -> str:
              "- 部门汇报：%d/%d｜失败 %d" % (r["submitted"], r["expected"], len(r["failed"])), ""]
     for d in b["departments"]:
         lines += ["## %s（%s）· %s" % (d.get("dept_name") or d["dept"], d["lead"], d["status"]),
-                  "- 工作要点：" + ("；".join(d["highlights"]) or "未填"),
-                  "- 阻塞：" + ("；".join(d["blockers"]) or "无"),
+                  "- 昨天完成：" + ("；".join(d.get("yesterday_done") or d.get("highlights") or []) or "未填"),
+                  "- 正在做：" + ("；".join(d.get("in_progress") or []) or "无"),
+                  "- 当前卡点：" + ("；".join(d.get("blockers") or []) or "无"),
                   "- 需决策：" + ("；".join(d["decision_requests"]) or "无"), ""]
     if b["research_topics"]:
         lines += ["## 研究题"] + ["- %s（%s）" % (t["title"], t["source_lead"]) for t in b["research_topics"]]

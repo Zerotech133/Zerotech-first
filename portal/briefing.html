@@ -59,7 +59,7 @@ h2{font-size:15px;margin:22px 0 8px}
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><strong>零界 · 田丰早间简报</strong><span class="meta" id="build">v12</span><a href="/hq">返回指挥部</a></div>
+  <div class="top"><strong>零界 · 田丰早间简报</strong><span class="meta" id="build">v13</span><a href="/hq">返回指挥部</a></div>
   <h1>今日简报</h1>
   <div class="meta" id="meta">加载中…</div>
 
@@ -108,7 +108,7 @@ h2{font-size:15px;margin:22px 0 8px}
     <label>状态
       <select id="f-status"><option value="green">绿色 · 正常</option><option value="amber">黄色 · 有风险</option><option value="red">红色 · 阻塞</option></select>
     </label>
-    <label>工作要点（每行一条）
+    <label>昨天完成（每行一条）
       <textarea id="f-highlights" placeholder="例：数据资源台账首版完成"></textarea>
     </label>
     <label>阻塞 / 证据缺口（每行一条）
@@ -161,7 +161,7 @@ function reportRows(){
   var b=(state.data&&state.data.briefing&&state.data.briefing.departments)||[];
   var map={};
   b.forEach(function(r){map[(r.lead||r.dept)+'|'+r.dept]=r;});
-  state.reports.forEach(function(r){map[(r.lead||'')+'|'+(r.dept||'')]={lead:r.lead||'',dept:r.dept||r.dept_name||'',status:r.status||'green',highlights:r.highlights||[],blockers:r.blockers||[],decision_requests:r.decision_requests||[],research_topics:r.research_topics||[]};});
+  state.reports.forEach(function(r){map[(r.lead||'')+'|'+(r.dept||'')]={lead:r.lead||'',dept:r.dept||r.dept_name||'',status:r.status||'green',yesterday_done:r.yesterday_done||r.highlights||[],in_progress:r.in_progress||[],highlights:r.highlights||r.yesterday_done||[],blockers:r.blockers||[],decision_requests:r.decision_requests||[],research_topics:r.research_topics||[]};});
   return Object.keys(map).map(function(k){return map[k];});
 }
 function cleanTopic(t){
@@ -264,15 +264,16 @@ function normalizeReport(lead,dept,text){
   if(a>=0&&b>a){try{d=JSON.parse(t.slice(a,b+1));}catch(e){d=null;}}
   var arr=function(v){return Array.isArray(v)?v.map(function(x){return typeof x==='string'?x:JSON.stringify(x);}).filter(Boolean).slice(0,6):[];};
   var st=(d&&d.status)||'amber'; if(['green','amber','red'].indexOf(st)<0)st='amber';
-  var hi=arr(d&&d.highlights); var bl=arr(d&&d.blockers); var dec=arr(d&&d.decision_requests);
+  var yd=arr(d&&(d.yesterday_done||d.highlights)); var ip=arr(d&&d.in_progress); var bl=arr(d&&d.blockers); var dec=arr(d&&d.decision_requests);
   var rt=[]; if(d&&Array.isArray(d.research_topics)){d.research_topics.forEach(function(x){if(typeof x==='string')rt.push({title:x,question:''});else if(x&&x.title)rt.push({title:String(x.title),question:String(x.question||'')});});}
   if(!d){hi=[t.slice(0,500)];bl=['模型输出非结构化，需人工复核'];}
-  return {lead:lead,dept:dept,status:st,highlights:hi,blockers:bl,decision_requests:dec,research_topics:rt,source:'auto-13',created_at:new Date().toISOString()};
+  return {lead:lead,dept:dept,status:st,yesterday_done:yd,in_progress:ip,highlights:yd,blockers:bl,decision_requests:dec,research_topics:rt,source:'auto-13',created_at:new Date().toISOString()};
 }
 async function askLead(d){
   var system='你是'+d.lead+'，零界'+(d.name||d.dept)+'负责人。只从你的职能面做部门早报；不编造具体数字，缺证据标需查证。'
     +'只输出JSON：{"status":"green|amber|red","highlights":["3条以内工作要点"],"blockers":["阻塞/证据缺口"],"decision_requests":["需A0/老田决策事项"],"research_topics":[{"title":"研究题","question":"研究问题"}]}';
-  var user='日期 '+DAY+'。当前未派单议题：\n'+(ctxText()||'（无）')+'\n请立即生成你的部门早报，供田丰汇总。';
+  var y=new Date(Date.now()-86400000).toISOString().slice(0,10);
+  var user='报告日期 '+DAY+'｜统计昨天 '+y+'。\n请汇报：1)昨天实际完成；2)今天正在做；3)当前卡点/正在卡点；4)需A0/老田决策；5)研究题。\n当前未派单议题：\n'+(ctxText()||'（无）');
   var ctl=new AbortController(); var timer=setTimeout(function(){ctl.abort();},90000);
   try{
     var r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},signal:ctl.signal,
@@ -326,7 +327,7 @@ function render(){
   $('cards').innerHTML=[card('部门汇报',rows.length+' / '+expectedLeads()),card('部门研究题',ts.length),card('需决策',rows.reduce(function(n,r){return n+(r.decision_requests||[]).length;},0)),card('红色',rows.filter(function(r){return r.status==='red';}).length)].join('');
   $('depts').innerHTML=rows.length?rows.map(function(x){
     return '<a class="item dept-card" href="/dept-chat?'+new URLSearchParams({lead:x.lead||'',dept:x.dept||''}).toString()+'"><div class="t">'+esc(pLead(x.lead))+'（'+esc(x.lead||'-')+'）· '+esc(pDept(x.dept))+' '+pill(x.status||'')+'</div>'
-      +'<div class="m">工作要点：'+esc((x.highlights||[]).join('；')||'未填')+'<br>阻塞：'+esc((x.blockers||[]).join('；')||'无')+'<br>需决策：'+esc((x.decision_requests||[]).join('；')||'无')+'<br><span style="color:var(--link)">点对点对话 →</span></div></a>';
+      +'<div class="m">昨天完成：'+esc((x.yesterday_done||x.highlights||[]).join('；')||'未填')+'<br>正在做：'+esc((x.in_progress||[]).join('；')||'无')+'<br>当前卡点：'+esc((x.blockers||[]).join('；')||'无')+'<br>需决策：'+esc((x.decision_requests||[]).join('；')||'无')+'<br><span style="color:var(--link)">点对点对话 →</span></div></a>';
   }).join(''):'<div class="meta">'+ (state.dept?'该部门今日暂无汇报。':'今日部门早报尚未汇总；可点「汇报工作」随时补一份，或等 07:50 部门负责人提交。不再用旧 Directive 凑研究题。') +'</div>';
   $('topics').innerHTML=ts.length?ts.map(function(t){return '<a class="item" href="'+esc(specLink(t))+'"><div class="t">'+esc(t.title||'未命名研究题')+'</div><div class="m">'+esc(t.kind||'研究')+' · 来源 '+esc(t.source_lead||t.source_dept||'-')+'</div></a>';}).join(''):'<div class="meta">暂无研究题。</div>';
   $('state-note').textContent=state.dept?('只看：'+state.dept):'全部部门';
@@ -338,7 +339,7 @@ function renderDetail(){
   var topics=(r.research_topics||[]).map(function(t){return '<a class="btn" href="'+esc(specLink({id:'',title:(t&&t.title)||t,source_lead:r.lead,kind:'研究'}))+'" style="margin:2px 4px 2px 0">'+esc((t&&t.title)||t)+' → 人专项</a>';}).join('');
   var msgs=detailMessages().map(function(m){return '<div class="msg '+(m.role==='user'?'user':'bot')+'">'+esc(m.text)+'</div>';}).join('');
   box.innerHTML='<div class="row" style="justify-content:space-between"><div><b>'+esc(pLead(r.lead))+'（'+esc(r.lead||'-')+'）· '+esc(pDept(r.dept))+'</b> '+pill(r.status||'')+'</div><button class="btn" id="d-close" type="button">关闭</button></div>'
-    +'<div class="meta">工作要点：'+esc((r.highlights||[]).join('；')||'未填')+'<br>阻塞：'+esc((r.blockers||[]).join('；')||'无')+'<br>需决策：'+esc((r.decision_requests||[]).join('；')||'无')+'</div>'
+    +'<div class="meta">昨天完成：'+esc((r.yesterday_done||r.highlights||[]).join('；')||'未填')+'<br>正在做：'+esc((r.in_progress||[]).join('；')||'无')+'<br>当前卡点：'+esc((r.blockers||[]).join('；')||'无')+'<br>需决策：'+esc((r.decision_requests||[]).join('；')||'无')+'</div>'
     +(topics?'<div class="meta">研究题：</div><div>'+topics+'</div>':'')
     +'<h2 style="margin:12px 0 4px">继续对话（'+esc(pLead(r.lead))+' · 云端模型）</h2>'
     +'<div class="chat" id="d-chat">'+(msgs||'<div class="msg bot">点击下方输入，继续追问该部门负责人；只会发送文字，不自动派单。</div>')+'</div>'
@@ -385,7 +386,7 @@ function closeModal(){$('modal').classList.remove('open');}
 function lines(id){return $(id).value.split('\n').map(function(x){return x.trim();}).filter(Boolean);}
 function buildReport(){
   var dept=$('f-dept').value, lead=deptLead(dept);
-  var r={lead:lead,dept:dept,lead_name:pLead(lead),dept_name:pDept(dept),status:$('f-status').value,highlights:lines('f-highlights'),blockers:lines('f-blockers'),decision_requests:lines('f-decisions'),research_topics:lines('f-research').map(function(x){return {title:x,question:''};}),created_at:new Date().toISOString(),human:true};
+  var r={lead:lead,dept:dept,lead_name:pLead(lead),dept_name:pDept(dept),status:$('f-status').value,yesterday_done:lines('f-highlights'),in_progress:[],highlights:lines('f-highlights'),blockers:lines('f-blockers'),decision_requests:lines('f-decisions'),research_topics:lines('f-research').map(function(x){return {title:x,question:''};}),created_at:new Date().toISOString(),human:true};
   return r;
 }
 function saveReport(){var r=buildReport();if(!r.dept){$('state-note').textContent='请选择部门';return;}state.reports.push(r);saveReports();render();if($('summary').hidden===false)renderSummary();closeModal();$('state-note').textContent='汇报已保存在本页（本地），可随时总结或复制给田丰。';}
@@ -420,8 +421,8 @@ $('btn-close').onclick=closeModal;
 $('modal').addEventListener('click',function(e){if(e.target===$('modal'))closeModal();});
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal();});
 window.addEventListener('error',function(e){var el=$('error');if(el)el.innerHTML='<div class="err">页面脚本错误：'+esc(e.message||'unknown')+'。请 Ctrl+F5 强刷。</div>';});
-window.__briefingReady='v12-20261103-1110';
-var build=$('build');if(build)build.textContent='v12 · 11:10';
+window.__briefingReady='v13-20261103-1116';
+var build=$('build');if(build)build.textContent='v13 · 11:16';
 main();
 })();
 </script>

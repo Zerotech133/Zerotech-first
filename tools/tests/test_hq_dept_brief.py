@@ -68,6 +68,7 @@ def test_research_topics_and_a0_briefing(tmp_path):
     p = tmp_path / "brief.json"
     p.write_text(json.dumps({"items": items}, ensure_ascii=False), encoding="utf-8")
     d = q.collect(p)
+    assert "yesterday_done" in items[0] and "in_progress" in items[0]
     assert d["research_topics"] and d["research_topics"][0]["title"] == "数据资源台账"
     b = d["briefing"]
     assert b["schema"] == "hq/a0_briefing/v1"

@@ -13,8 +13,10 @@ import hq_daily_run as d  # noqa: E402
 
 
 def _fake(lead, date, base, timeout):
-    text = json.dumps({"status": "amber", "highlights": [lead["lead"] + " 要点"],
-                       "blockers": ["需查证"], "decision_requests": ["请 A0 定"],
+    text = json.dumps({"status": "amber",
+                       "yesterday_done": [lead["lead"] + " 昨天完成"],
+                       "in_progress": [lead["lead"] + " 正在做"],
+                       "blockers": ["当前卡点：需查证"], "decision_requests": ["请 A0 定"],
                        "research_topics": [{"title": lead["lead"] + " 研究题", "question": "怎么验证"}]},
                       ensure_ascii=False)
     return {"lead": lead, "text": text, "binding": "glm/glm-5.3", "latency_ms": 1}
@@ -28,6 +30,7 @@ def test_run_all_13_and_write(monkeypatch, tmp_path):
     assert (tmp_path / "a0_briefing.md").is_file()
     b = json.loads((tmp_path / "rollup.json").read_text(encoding="utf-8"))["briefing"]
     assert b["schema"] == "hq/a0_briefing/v1"
+    assert b["departments"][0]["yesterday_done"] and b["departments"][0]["in_progress"]
     assert len(b["research_topics"]) == 13
     assert "数据智能部" in (tmp_path / "a0_briefing.md").read_text(encoding="utf-8")
 

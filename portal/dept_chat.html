@@ -84,8 +84,9 @@ function renderChat(){
 function reportHtml(r){
   var topics=(r.research_topics||[]).map(function(t){var title=(t&&t.title)||t;return '<a class="topic" href="/special?'+new URLSearchParams({topic:title,title:title,source:lead,kind:'研究'}).toString()+'">'+esc(title)+' → 人专项</a>';}).join('');
   return '<p><b>'+esc(pLead(r.lead||lead))+'（'+esc(r.lead||lead)+'）· '+esc(leadingDept(r))+'</b> '+pill(r.status||'')+'</p>'
-    +'<p><b>工作要点</b><br>'+esc((r.highlights||[]).join('；')||'未填')+'</p>'
-    +'<p><b>阻塞</b><br>'+esc((r.blockers||[]).join('；')||'无')+'</p>'
+    +'<p><b>昨天完成</b><br>'+esc((r.yesterday_done||r.highlights||[]).join('；')||'未填')+'</p>'
+    +'<p><b>正在做</b><br>'+esc((r.in_progress||[]).join('；')||'无')+'</p>'
+    +'<p><b>当前卡点</b><br>'+esc((r.blockers||[]).join('；')||'无')+'</p>'
     +'<p><b>需决策</b><br>'+esc((r.decision_requests||[]).join('；')||'无')+'</p>'
     +'<div class="meta" id="topics-inline">'+topics+'</div>';
 }

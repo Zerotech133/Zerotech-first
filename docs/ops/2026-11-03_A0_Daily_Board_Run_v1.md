@@ -8,7 +8,7 @@
 | 时间 | 动作 | 产物 |
 |---|---|---|
 | **07:50** | Windows 计划任务 `AI-Workstation-A0-Daily-Board` 自动执行 | `deliverables/daily_briefs/<date>/rollup.json` + `a0_briefing.md` |
-| 08:00 | A0 早会读取简报；13 部门已提交 | `/briefing` 页面 |
+| 08:00 | A0 早会读取简报；13 部门已提交昨天完成/正在做/当前卡点 | `/briefing` 页面 |
 | 08:20 | 老田决策清单 | 会议纪要/派单 |
 
 ## 二、实现

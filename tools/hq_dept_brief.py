@@ -40,7 +40,7 @@ def template(date: str | None = None) -> dict:
         items.append({
             "dept": x["dept"], "dept_name": x["dept_name"], "lead": x["lead"],
             "legions": [], "status": "todo",
-            "highlights": [], "blockers": [],
+            "yesterday_done": [], "in_progress": [], "highlights": [], "blockers": [],
             "research_topics": [], "decision_requests": [], "evidence": [],
             "note": "请填：军团进展 / 3 条工作要点 / 阻塞 / 需 A0 决策事项（无证据标需查证）",
         })
@@ -80,7 +80,10 @@ def collect(path: Path) -> dict:
         valid.append({
             "lead": lead, "dept": leads[lead]["dept"], "dept_name": leads[lead]["dept_name"],
             "legions": r.get("legions") or [], "status": status,
-            "highlights": r.get("highlights") or [], "blockers": r.get("blockers") or [],
+            "yesterday_done": r.get("yesterday_done") or r.get("highlights") or [],
+            "in_progress": r.get("in_progress") or [],
+            "highlights": r.get("highlights") or r.get("yesterday_done") or [],
+            "blockers": r.get("blockers") or [],
             "research_topics": r.get("research_topics") or [],
             "decision_requests": r.get("decision_requests") or [],
             "evidence": r.get("evidence") or [],
@@ -109,7 +112,7 @@ def collect(path: Path) -> dict:
                         {"item": "红黄军团/阻塞", "owner": "A0", "minutes": 5},
                         {"item": "需 A0 决策事项", "owner": "A0", "minutes": 5},
                         {"item": "今日决策清单", "owner": "A0", "minutes": 5}],
-            "transcript": [{"by": x["lead"], "text": "；".join(x["highlights"])[:1900] or "（未填工作要点）",
+            "transcript": [{"by": x["lead"], "text": ("昨天完成：" + "；".join(x["yesterday_done"]) + "；正在做：" + "；".join(x["in_progress"]) + "；卡点：" + "；".join(x["blockers"]))[:1900] or "（未填工作要点）",
                             "src": "brief", "evidence": x["evidence"][:10]} for x in valid],
             "decisions": [],
         },
@@ -119,7 +122,8 @@ def collect(path: Path) -> dict:
             "red": [x["lead"] for x in valid if x["status"] == "red"],
             "amber": [x["lead"] for x in valid if x["status"] == "amber"],
             "departments": [{"lead": x["lead"], "dept": x["dept_name"], "status": x["status"],
-                             "highlights": x["highlights"][:3], "blockers": x["blockers"][:3]} for x in valid],
+                             "yesterday_done": x["yesterday_done"][:5], "in_progress": x["in_progress"][:5],
+                             "highlights": x["highlights"][:3], "blockers": x["blockers"][:5]} for x in valid],
             "research_topics": topics, "decision_requests": decisions,
         },
     }
