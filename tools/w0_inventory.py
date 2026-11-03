@@ -53,7 +53,9 @@ def _worktrees() -> list[dict]:
             cur["branch"] = line[7:].strip()
     if cur:
         rows.append(cur)
-    return rows
+    # 主工作区不是待清理 worktree
+    root = str(ROOT.resolve())
+    return [w for w in rows if str(Path(w["path"]).resolve()) != root]
 
 
 def _classify(wt: dict, tasks: dict) -> dict:
@@ -95,7 +97,8 @@ def main(argv=None) -> int:
     wts = [_classify(w, tasks) for w in _worktrees()]
     registered = {Path(w["path"]).name for w in wts}
     for d in sorted((ROOT / ".worktrees").glob("*")):
-        if d.is_dir() and d.name not in registered:
+        # 只有真正的 git worktree（.git 文件/目录）才纳入；lock/temp 目录不算
+        if d.is_dir() and d.name not in registered and (d / ".git").exists():
             wts.append({"path": str(d), "name": d.name, "branch": "", "head": "", "exists": True,
                         "dirty": -1, "merged": False,
                         "task_status": (tasks.get(d.name) or {}).get("status", ""),
@@ -110,7 +113,7 @@ def main(argv=None) -> int:
         w = csv.writer(fh)
         w.writerow(["name", "branch", "head", "exists", "dirty", "merged", "task_status", "owner", "action"])
         for x in wts:
-            w.writerow([x["name"], x.get("branch", ""), x.get("head", ""), x["exists"], x["dirty"],
+            w.writerow([x["name"], x.get("branch", ""), str(x.get("head", ""))[:8], x["exists"], x["dirty"],
                         x["merged"], x["task_status"], x["owner"], x["action"]])
     summary = {
         "generated_at": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),

@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-11-03T14:39:21+08:00",
+  "generated_at": "2026-11-03T14:40:27+08:00",
   "doing": 31,
-  "worktrees": 43,
+  "worktrees": 39,
   "worktree_actions": {
-    "dirty_review": 7,
+    "dirty_review": 6,
     "active_task_review": 31,
     "stale_review": 1,
-    "unregistered_review": 4
+    "unregistered_review": 1
   },
   "doing_owners": {
     "DSH-Lead": 27,
