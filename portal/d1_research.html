@@ -24,6 +24,9 @@
 body{background:var(--bg);color:var(--ink);font-family:var(--font-ui);color-scheme:dark}
 .wrap{max-width:1280px;margin:0 auto;padding:18px 16px 60px}
 .head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.links{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.links a{border:1px solid var(--line);background:var(--gray-1);color:var(--link);border-radius:8px;padding:6px 10px;font-size:12.5px;text-decoration:none}
+.links a:hover{border-color:var(--link)}
 h1{font-size:21px;margin:4px 0}
 .sub{color:var(--gray-5);font-size:12.5px;line-height:1.7}
 .banner{background:rgba(210,153,34,.08);border:1px solid rgba(210,153,34,.35);border-radius:9px;padding:8px 12px;font-size:12px;margin:10px 0}
@@ -84,7 +87,11 @@ tr.detail td{padding:10px 12px}
       <h1>D1 投研工作台</h1>
       <div class="sub">股票池内研究 · 看多/看空/买点/止盈止损/交盯盘 · paper-only</div>
     </div>
-    <div><button id="refresh">刷新</button></div>
+    <div class="links">
+      <a href="/d1/war-room">D1 作战台</a>
+      <a href="/d1/training">🧪 训练面板</a>
+      <button id="refresh" type="button">刷新</button>
+    </div>
   </div>
   <div class="banner"><b>边界：</b>策略与股票由 <b>ACAD1 司马徽</b> 上游池提供；D1 鲁肃只做<b>池内研究</b>，不管理策略、不选股。研究完成后买点/止损交盯盘，盯盘触发后交 TR1。</div>
   <div id="team" class="team"></div>
