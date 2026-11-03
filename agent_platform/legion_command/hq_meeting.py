@@ -18,7 +18,10 @@ TYPES = ("morning", "operation", "acceptance", "dept_morning")
 COMMAND_SEATS = {"A0", "AI1", "ZHAOYUN", "GUANYU", "HUANGZHONG", "LAOTIAN"}
 DEPT_LEADS = {"D1", "ARCH1", "DATA1", "PM1", "QA1", "DEV3",
               "MKT1", "LEG1", "A0A", "ACAD1", "INTEL0", "LUSU1", "R3"}
-SEATS = COMMAND_SEATS | DEPT_LEADS
+# UI 花名册中的观察/专业席：可上桌，不等于常任指挥席
+OBSERVER_SEATS = {"R2", "OPT1", "QS1", "ST1", "R1", "INTEL1", "JEV",
+                  "HERMES_UI", "DEV1", "DEV2"}
+SEATS = COMMAND_SEATS | DEPT_LEADS | OBSERVER_SEATS
 MAX_ATTENDEES = 6
 KIND_MAP = {"work": "task_request", "trade": "task_request", "study": "question"}
 MID_RE = re.compile(r"hq-\d{8}-\d{6}")
