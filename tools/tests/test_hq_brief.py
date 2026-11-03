@@ -61,3 +61,11 @@ def test_data_brief_does_not_leak_raw_paths():
     b = H.build_brief(*_inputs(), now="2026-11-04T05:15:00+08:00")
     blob = json.dumps(b, ensure_ascii=False)
     assert "C:\\" not in blob and "quant_backtest/data" not in blob
+
+
+def test_catalog_registry_mismatch_is_red():
+    dw, ops, factor, selection, learning = _inputs()
+    dw["catalog_tables"] = 256
+    b = H.build_brief(dw, ops, factor, selection, learning, now="2026-11-04T07:10:00+08:00")
+    assert any(a["code"] == "catalog_registry_mismatch" and a["severity"] == "red" for a in b["alarms"])
+    assert any(q["to"] == "DATA1" and "registry" in q["q"] for q in b["questions"])

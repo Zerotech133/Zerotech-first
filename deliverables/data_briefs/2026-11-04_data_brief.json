@@ -1,6 +1,6 @@
 {
   "schema": "hq/data_brief/v1",
-  "as_of": "2026-11-04T05:14:48+08:00",
+  "as_of": "2026-11-04T07:07:24+08:00",
   "owner": {
     "agent_id": "DATA1",
     "name": "张松",
@@ -10,7 +10,7 @@
     "assets": {
       "all": 399,
       "registered": 350,
-      "exposed": 80,
+      "exposed": 82,
       "file": {
         "total": 314,
         "registered": 265,
@@ -23,9 +23,9 @@
       }
     },
     "catalog": {
-      "version": 38,
-      "tables": 304,
-      "updated": "2026-11-04T03:59:30+08:00"
+      "version": 39,
+      "tables": 256,
+      "updated": "2026-11-04T06:24:56"
     },
     "registry": {
       "physical": 304,
@@ -71,7 +71,7 @@
           {
             "db": "tdx/tdx_info.db",
             "table": "stock_notice",
-            "lag_hours": 58.0,
+            "lag_hours": 59.9,
             "last_output_at": "2026-11-01 19:15:37"
           }
         ]
@@ -91,6 +91,16 @@
           "last_output_at": "2026-11-03 18:00:44"
         }
       ]
+    },
+    {
+      "severity": "red",
+      "code": "catalog_registry_mismatch",
+      "summary": "catalog 256 表 != registry physical 304；数据资产口径不一致，先修 catalog/registry 再验收",
+      "evidence": {
+        "catalog_tables": 256,
+        "registry_physical": 304,
+        "catalog_version": 39
+      }
     },
     {
       "severity": "amber",
@@ -179,6 +189,10 @@
     {
       "to": "DATA1",
       "q": "dataset inventory 仍为 2026-11-02（距今天 2 天），何时刷新到今日盘点？"
+    },
+    {
+      "to": "DATA1",
+      "q": "catalog 256 表与 registry physical 304 表不一致：哪边是真源？何时对齐？"
     },
     {
       "to": "A0/ACAD1",

@@ -82,6 +82,15 @@ def build_brief(dw: dict, ops: dict, factor: dict, selection: dict, learning: di
         alarms.append({"severity": "amber", "code": "today_zero",
                        "summary": "当日增量为 0（可能是时点/断流），勿把存量当今日新增",
                        "evidence": zero_sources})
+    cat_tables = dw.get("catalog_tables")
+    reg_physical = dw.get("registry_physical")
+    if isinstance(cat_tables, int) and isinstance(reg_physical, int) and cat_tables != reg_physical:
+        alarms.append({"severity": "red", "code": "catalog_registry_mismatch",
+                       "summary": "catalog %s 表 != registry physical %s；数据资产口径不一致，先修 catalog/registry 再验收" % (
+                           cat_tables, reg_physical),
+                       "evidence": {"catalog_tables": cat_tables,
+                                    "registry_physical": reg_physical,
+                                    "catalog_version": dw.get("catalog_version")}})
     mismatch = (dw.get("contract_artifacts") or {}).get("mismatch", 0)
     if mismatch:
         alarms.append({"severity": "amber", "code": "contract_mismatch",
@@ -143,6 +152,8 @@ def build_brief(dw: dict, ops: dict, factor: dict, selection: dict, learning: di
         questions.append({"to": "DATA1", "q": "哪几条采集/表先修复？给出 ETA 与替代数据源"})
     if age_days is not None and age_days >= 1:
         questions.append({"to": "DATA1", "q": "dataset inventory 仍为 %s（距今天 %d 天），何时刷新到今日盘点？" % (dw.get("data_date"), age_days)})
+    if isinstance(cat_tables, int) and isinstance(reg_physical, int) and cat_tables != reg_physical:
+        questions.append({"to": "DATA1", "q": "catalog %s 表与 registry physical %s 表不一致：哪边是真源？何时对齐？" % (cat_tables, reg_physical)})
     if s and not (s.get("picks") or []):
         questions.append({"to": "A0/ACAD1", "q": "当前无可执行 picks，今天指挥部按“研究/观察”还是“空仓”处理？"})
     if f and (f.get("decay_alerts") or []):
