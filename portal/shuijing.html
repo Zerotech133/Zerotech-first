@@ -7,7 +7,25 @@
 <link rel="stylesheet" href="/static/tokens.css">
 <script src="/static/nav.js" defer></script>
 <script src="/static/shortscreen.js" defer></script>
+<script src="/static/acad1_client.js"></script>
 <link rel="stylesheet" href="/static/shuijing.css">
+<style>
+/* 军团接口（8105 SSO）只读面板：颜色一律走 tokens.css 变量，禁自绘配色 */
+.acad1-api-panel{margin:13px 0}
+.acad1-api-state{margin:0 15px 8px;color:var(--text-dim);font-size:11.5px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.acad1-api-state .tag{font-size:10px;padding:1px 6px;border-radius:4px;border:1px solid var(--border);color:var(--text-dim)}
+.acad1-api-state .tag.ok{color:var(--color-up);border-color:var(--color-up-bd)}
+.acad1-api-state .tag.wait{color:var(--color-warn);border-color:var(--color-warn)}
+.acad1-api-state .tag.err{color:var(--color-dn);border-color:var(--color-dn-bd)}
+.acad1-api-table{padding:0 8px}
+.acad1-api-header,.acad1-api-row{display:grid;grid-template-columns:86px minmax(160px,1.1fr) 92px minmax(220px,2fr);gap:8px;align-items:center;padding:7px 8px;font-size:11.5px;border-bottom:1px solid var(--border)}
+.acad1-api-header{color:var(--text-dim);font-size:10.5px;background:var(--gray-1)}
+.acad1-api-row .path{font-family:var(--mono);font-size:10.5px;color:var(--text-dim);word-break:break-all}
+.acad1-api-row .summary{color:var(--text-dim);word-break:break-word}
+.acad1-api-row .st{font-family:var(--mono);font-size:10.5px;white-space:nowrap}
+.acad1-api-row .st.ok{color:var(--color-up)} .acad1-api-row .st.err{color:var(--color-dn)}
+@media(max-width:760px){.acad1-api-header,.acad1-api-row{grid-template-columns:70px minmax(0,1fr) 70px}.acad1-api-row .summary{grid-column:1 / -1}}
+</style>
 </head>
 <body>
 <main class="main wrap">
@@ -52,6 +70,22 @@
       <div class="flow-step is-warn"><span class="flow-index">07</span><strong>反馈</strong><em>待接</em><small>反馈 API</small></div><span class="flow-link"></span>
       <div class="flow-step is-warn"><span class="flow-index">08</span><strong>督导</strong><em>待接</em><small>督导 API</small></div>
     </div>
+  </section>
+
+  <section class="panel acad1-api-panel" id="acad1-api-panel" aria-label="军团接口（8105 SSO 只读）">
+    <div class="panel-head">
+      <div><h2>军团接口 · 8105 SSO <span class="count-pill" id="acad1-api-count">—</span></h2>
+        <p>同源 <code>/quant-api</code> 反代 · 仅 GET 只读 · 门户 zb_session 单点登录换 token；未登录显式 401，不假绿。</p></div>
+      <div class="pool-tools">
+        <button class="btn" id="acad1-api-load" type="button" title="用门户登录态换 token（仅内存）后加载六接口">加载军团接口</button>
+      </div>
+    </div>
+    <div class="acad1-api-state" id="acad1-api-state"><span class="tag wait">未加载</span><span id="acad1-api-who">点击“加载军团接口”（SSO 仅换票；数据只读 GET）</span></div>
+    <div class="acad1-api-table" role="table" aria-label="军团接口列表">
+      <div class="acad1-api-header" role="row"><span>接口</span><span>路径</span><span>状态</span><span>摘要</span></div>
+      <div id="acad1-api-rows"><div class="empty-row">未加载 · 未登录时点加载会显式提示 401</div></div>
+    </div>
+    <div class="pool-foot"><span id="acad1-api-foot">只读：pool/stats/reviews/decisions/evidence/calendar · 无业务写操作</span><span class="audit-flag">SSO 401 显式</span></div>
   </section>
 
   <div class="layout-grid">
@@ -169,6 +203,81 @@
   if (document.readyState !== "loading") sync();
   else document.addEventListener("DOMContentLoaded", sync);
   window.addEventListener("load", sync);
+})();
+</script>
+<script>
+/* 军团接口（8105）只读面板（2026-11-04 WO-ACAD1-SSO-20261104）：
+   门户 zb_session → POST /quant-api/api/v1/auth/portal-sso 换 token（仅内存）
+   → 六个只读 GET；未登录/401 显式提示，不假绿；不改现有 pool 页逻辑。 */
+(function () {
+  var btn = document.getElementById("acad1-api-load");
+  var stateEl = document.getElementById("acad1-api-state");
+  var rowsEl = document.getElementById("acad1-api-rows");
+  var countEl = document.getElementById("acad1-api-count");
+  var footEl = document.getElementById("acad1-api-foot");
+  if (!btn || !stateEl || !rowsEl) return;
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function setState(cls, text, who) {
+    stateEl.innerHTML = '<span class="tag ' + cls + '">' + esc(text) + "</span>" +
+      (who ? "<span>" + esc(who) + "</span>" : "");
+  }
+  function renderRows(items) {
+    if (!items || !items.length) {
+      rowsEl.innerHTML = '<div class="empty-row">无接口结果</div>';
+      countEl.textContent = "—";
+      return;
+    }
+    var okCount = 0;
+    rowsEl.innerHTML = items.map(function (it) {
+      if (it.ok) okCount++;
+      var status = it.ok ? "200" : (it.status ? String(it.status) : "ERR");
+      var extra = it.ok ? "" : " · " + (it.status === 401 ? "401 未登录" : esc(it.code || "ERR"));
+      return '<div class="acad1-api-row" role="row">' +
+        "<b>" + esc(it.label || it.key) + "</b>" +
+        '<span class="path">' + esc(it.path || "") + "</span>" +
+        '<span class="st ' + (it.ok ? "ok" : "err") + '">' + esc(status) + extra + "</span>" +
+        '<span class="summary">' + esc(it.summary || "—") + "</span></div>";
+    }).join("");
+    countEl.textContent = okCount + "/" + items.length;
+    footEl.textContent = "只读加载完成 " + okCount + "/" + items.length +
+      " · token 仅内存（不落盘）· 无业务写操作";
+  }
+  function load() {
+    if (!window.ACAD1Client) {
+      setState("err", "客户端未加载", "页面仅显示只读提示（/static/acad1_client.js 不可用）");
+      return;
+    }
+    btn.disabled = true;
+    setState("wait", "加载中", "换取门户登录态 token（仅内存）…");
+    window.ACAD1Client.ensureToken().then(function () {
+      var meta = window.ACAD1Client.tokenMeta() || {};
+      setState("ok", "已登录", "user=" + (meta.username || "—") +
+        " · role=" + (meta.role || "—") + " · token 仅内存");
+      return window.ACAD1Client.loadAll();
+    }).then(function (items) {
+      renderRows(items);
+      var has401 = items.some(function (it) { return it.status === 401; });
+      if (has401) {
+        setState("err", "部分接口 401", "门户登录态失效或权限不足：请重新登录 8734 后重试");
+      }
+    }).catch(function (e) {
+      var info = window.ACAD1Client.normalizeError(e);
+      if (info.kind === "unauthorized" || info.status === 401) {
+        setState("err", "401 未登录/登录态失效",
+          "请先在 8734 登录门户（zb_session）后重试；token 不落盘");
+        rowsEl.innerHTML = '<div class="empty-row">未加载：未登录或门户会话失效（401 ' +
+          esc(info.code || "") + "）</div>";
+        countEl.textContent = "—";
+      } else {
+        setState("err", "加载失败", (info.code || "") + " " + (info.message || ""));
+      }
+    }).then(function () { btn.disabled = false; });
+  }
+  btn.addEventListener("click", load);
 })();
 </script>
 </body>
