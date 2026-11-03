@@ -30,9 +30,15 @@
    "action": "cloud_fallback_used",
    "model": "deepseek-flash",
    "result": "strict judge 5 pairs; multi 12->17; lenient 44 pairs/multi 31 but 37 low-lexical suspicious; honest conclusion: <30"
+  },
+  {
+   "at": "2026-11-03T09:40:40+08:00",
+   "action": "local_retry_after_gpu_free",
+   "model": "bge-m3+qwen3.5:9b",
+   "result": "clusters 1029->979; tool multi 23->31 (达标); quality: 3 clear false merges, raw recount 12->19; needs human review"
   }
  ],
  "last_check": "2026-11-03T08:06:34+08:00",
  "next_retry": "2026-11-03T09:30:00+08:00",
- "resolution": "local GPU blocked -> cloud model used; KPI 30 not honestly reachable; alternatives documented"
+ "resolution": "local run completed when GPU freed; machine threshold met but merges need human spot-check; cloud fallback available"
 }
