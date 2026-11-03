@@ -34,4 +34,4 @@ def test_briefing_cards_link_to_dept_chat():
     s = BRIEF.read_text(encoding="utf-8")
     assert "/dept-chat?" in s
     assert "点对点对话" in s
-    assert 'id="build"' in s and "v10" in s
+    assert 'id="build"' in s and "v11" in s

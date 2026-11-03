@@ -74,7 +74,19 @@ python -X utf8 tools/hq_personal_brief.py `
 - 本地桥/个人 A0：5 tests（users/brief/授权/越权/个人输出）
 - 实际 tf 库：`users` 返回 `tf`；未授权 cloud_brief 返回 `authorize_required` rc=2
 
-## 五、下一步
+## 五、网页入口（已接）
+
+`/briefing` 新增「我的本地库 · 千人千面」：
+
+1. 选择本地库文件夹（浏览器本地读取，原文不发送）；
+2. 本地扫描 md/txt/json/yaml/csv/log，≤1MB/文件、≤5MB/总量、≤200 文件；
+3. 勾选「我同意将摘要/证据上云」才可生成；
+4. 点「生成个人版早报」：只把 summary/evidence 发给 A0，原文/路径不发送；
+5. 结果显示 A0 binding/是否云端。
+
+Playwright 实测：本地 1 文档、授权前按钮禁用、授权后生成成功，发送体不含原文 secret。
+
+## 六、下一步
 
 1. 桌面 Agent 接 stdio 桥，把“用户确认”做成 UI 按钮；
 2. 网页只接收 `cloud_brief` 的 summary/evidence；

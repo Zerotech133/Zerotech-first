@@ -34,6 +34,11 @@ h2{font-size:15px;margin:22px 0 8px}
 .pill.amber{color:var(--color-warn);border-color:color-mix(in srgb,var(--color-warn) 42%,transparent)}
 .pill.green{color:var(--color-ok);border-color:color-mix(in srgb,var(--color-ok) 42%,transparent)}
 .err{padding:12px;border:1px solid var(--red-500);border-radius:10px;color:var(--red-500)}
+.local-card{margin:12px 0;padding:14px;border:1px solid var(--border);border-radius:10px;background:var(--bg-surface)}
+.local-card summary{cursor:pointer;font-weight:650}
+.local-card .row{margin-top:8px}
+#local-preview{white-space:pre-wrap;font-size:12.5px;line-height:1.7;color:var(--text-dim);margin-top:8px}
+#personal-brief{white-space:pre-wrap;font-size:13px;line-height:1.75;background:var(--bg-page);border:1px solid var(--border);border-radius:8px;padding:10px;margin-top:8px;display:none}
 #detail{margin:12px 0;padding:16px;border:1px solid var(--blu-600);border-radius:12px;background:var(--bg-surface)}
 .dept-card{cursor:pointer}
 .dept-card:hover{border-color:var(--link)}
@@ -54,7 +59,7 @@ h2{font-size:15px;margin:22px 0 8px}
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><strong>零界 · 田丰早间简报</strong><span class="meta" id="build">v10</span><a href="/hq">返回指挥部</a></div>
+  <div class="top"><strong>零界 · 田丰早间简报</strong><span class="meta" id="build">v11</span><a href="/hq">返回指挥部</a></div>
   <h1>今日简报</h1>
   <div class="meta" id="meta">加载中…</div>
 
@@ -69,6 +74,18 @@ h2{font-size:15px;margin:22px 0 8px}
     <span class="meta" id="run-progress" aria-live="polite"></span><span class="meta" id="state-note" aria-live="polite"></span>
   </div>
 
+  <details class="local-card" id="local-box">
+    <summary>我的本地库 · 千人千面（本地读取，不上传原文）</summary>
+    <div class="meta">选择本地库文件夹；只在本页读取，原文不发送。勾选授权后，仅摘要/证据交给 A0 生成个人版早报。</div>
+    <input id="lib-files" type="file" webkitdirectory multiple hidden>
+    <div class="row">
+      <button class="btn" id="btn-pick" type="button">选择本地库文件夹</button>
+      <label class="meta"><input type="checkbox" id="authorize"> 我同意将摘要/证据上云</label>
+      <button class="btn primary" id="btn-personal" type="button" disabled>生成个人版早报</button>
+    </div>
+    <div id="local-preview"></div>
+    <div id="personal-brief"></div>
+  </details>
   <div id="summary" hidden></div>
   <div class="cards" id="cards"></div>
   <div id="error"></div>
@@ -174,6 +191,56 @@ function filteredRows(rows){
   return rows.filter(function(r){return r.dept===state.dept||(r.lead&&r.lead===deptLead(state.dept));});
 }
 function deptLead(code){var d=departments().filter(function(x){return x.dept===code;})[0];return d?d.lead:'';}
+var localState={docs:[],user:'tf'};
+function fmtBytes(n){return n<1024?n+'B':(n<1048576?(n/1024).toFixed(1)+'KB':(n/1048576).toFixed(1)+'MB');}
+function localSummary(){var titles=localState.docs.slice(0,10).map(function(d){return d.title;});return '本地库共 '+localState.docs.length+' 个文档；主题：'+(titles.length?titles.join('、'):'暂无文档');}
+async function digest(text){try{var b=new TextEncoder().encode(text);var h=await crypto.subtle.digest('SHA-256',b);return Array.from(new Uint8Array(h)).map(function(x){return x.toString(16).padStart(2,'0');}).join('');}catch(e){return '';}}
+async function scanLocal(files){
+  var allowed={md:1,txt:1,json:1,yaml:1,yml:1,csv:1,log:1};
+  var docs=[],total=0;
+  for(var i=0;i<files.length && docs.length<200;i++){
+    var f=files[i]; if(!f||f.name.charAt(0)==='.')continue;
+    var ext=(f.name.split('.').pop()||'').toLowerCase(); if(!allowed[ext])continue;
+    if(f.size<=0||f.size>1048576)continue;
+    if(total+f.size>5000000)break;
+    var text=await f.text();
+    var lines=text.split(/\r?\n/).map(function(x){return x.trim();}).filter(Boolean);
+    var heads=lines.filter(function(x){return x.charAt(0)==='#';}).slice(0,8).map(function(x){return x.replace(/^#+/,'').trim();});
+    var title=heads[0]||f.name.replace(/\.[^.]+$/,'');
+    var sha=await digest(text); total+=f.size;
+    docs.push({path:f.webkitRelativePath||f.name,title:title.slice(0,120),headings:heads,bytes:f.size,sha256:sha});
+  }
+  localState.docs=docs;
+  var el=$('local-preview');
+  if(!docs.length){el.textContent='未发现可读文本（支持 md/txt/json/yaml/csv/log，单文件≤1MB，总量≤5MB，最多200个）。';}
+  else{el.textContent='已本地读取 '+docs.length+' 个文档，共 '+fmtBytes(total)+'。\n'+localSummary()+'\n原文与本地路径不会上传。';}
+  $('btn-personal').disabled=!(docs.length&&$('authorize').checked);
+}
+function cloudFromLocal(){
+  return {schema:'hq/local_brief_cloud/v1',user_id:localState.user,
+    summary:localSummary(),stats:{files:localState.docs.length,bytes:localState.docs.reduce(function(n,d){return n+d.bytes;},0)},
+    evidence:localState.docs.map(function(d){return {sha256:d.sha256,title:d.title,headings:d.headings,bytes:d.bytes};})};
+}
+async function whoAmI(){
+  try{var r=await fetch('/api/auth/me',{cache:'no-store'});var p=await r.json();var sub=(p.session&&p.session.sub)||'';localState.user=(sub.split(':').pop())||'tf';}catch(e){localState.user='tf';}
+}
+async function personalBrief(){
+  if(!localState.docs.length||!$('authorize').checked)return;
+  var btn=$('btn-personal');btn.disabled=true;var out=$('personal-brief');out.style.display='block';out.textContent='A0 正在生成个人版早报（只基于授权摘要/证据）…';
+  var cp=cloudFromLocal();
+  var system='你是田丰（A0）。为当前个人用户生成个人版早报；只使用授权摘要/证据，不臆测本地原文，不编造数字。输出结论、今日重点、需决策、研究题。';
+  var user='用户：'+cp.user_id+'\n授权摘要：'+cp.summary+'\n证据标题：\n'+cp.evidence.slice(0,20).map(function(e){return '- '+e.title+'（'+(e.sha256||'').slice(0,12)+'）';}).join('\n');
+  var body={agent:'A0',system:system,purpose:'personal_brief',user:user};
+  try{
+    var ctl=new AbortController();var timer=setTimeout(function(){ctl.abort();},120000);
+    var r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},signal:ctl.signal,body:JSON.stringify(body)});
+    var env=await r.json();clearTimeout(timer);
+    if(!r.ok||!env||!env.ok)throw new Error((env&&env.error&&(env.error.message||env.error.code))||('HTTP '+r.status));
+    var text=(env.data&&env.data.text)||'';if(!text)throw new Error('empty_model_text');
+    out.textContent=text+'\n\n—— A0 · '+(env.binding||env.data.binding_resolved||'-')+(env.degraded?'（降级）':'（云端）');
+  }catch(e){out.textContent='[个人版早报失败] '+String(e.message||e).slice(0,200);}
+  finally{btn.disabled=false;}
+}
 function leadsList(){
   var out=[]; var seen={};
   departments().forEach(function(d){if(d.lead&&d.lead!=='A0'&&!seen[d.lead]){seen[d.lead]=1;out.push(d);}});
@@ -322,7 +389,7 @@ function saveReport(){var r=buildReport();if(!r.dept){$('state-note').textConten
 function copyReport(){var r=buildReport();state.lastCard=r;var t=JSON.stringify(r,null,2);navigator.clipboard.writeText(t).then(function(){$('state-note').textContent='汇报卡已复制。';}).catch(function(){$('state-note').textContent='复制失败，请手动下载。';});}
 function downloadReport(){var r=buildReport();var b=new Blob([JSON.stringify(r,null,2)],{type:'application/json'});var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='human_brief_'+(r.dept||'dept')+'_'+DAY+'.json';a.click();URL.revokeObjectURL(a.href);}
 async function main(){
-  loadReports();loadChats();
+  loadReports();loadChats();whoAmI();
   var tb=document.querySelector('.toolbar');if(tb&&$('modal'))tb.insertAdjacentElement('afterend',$('modal'));
   try{
     var r=await fetch('/api/hq/snapshot',{cache:'no-store'});
@@ -336,6 +403,10 @@ async function main(){
   }
 }
 $('btn-summary').onclick=function(){runAllDepartments();};
+$('btn-pick').onclick=function(){$('lib-files').click();};
+$('lib-files').addEventListener('change',function(e){scanLocal(e.target.files);});
+$('authorize').addEventListener('change',function(){$('btn-personal').disabled=!(localState.docs.length&&this.checked);});
+$('btn-personal').onclick=personalBrief;
 $('btn-quick').onclick=function(){renderSummary();$('state-note').textContent='已汇总当前已提交数据 · '+new Date().toLocaleTimeString();};
 $('btn-report').onclick=function(){openModal();$('state-note').textContent='汇报工作：填写后点保存到本页';};
 $('dept-filter').onchange=function(){state.dept=this.value;render();if(!$('summary').hidden)renderSummary();};
@@ -346,8 +417,8 @@ $('btn-close').onclick=closeModal;
 $('modal').addEventListener('click',function(e){if(e.target===$('modal'))closeModal();});
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal();});
 window.addEventListener('error',function(e){var el=$('error');if(el)el.innerHTML='<div class="err">页面脚本错误：'+esc(e.message||'unknown')+'。请 Ctrl+F5 强刷。</div>';});
-window.__briefingReady='v10-20261103-1042';
-var build=$('build');if(build)build.textContent='v10 · 10:42';
+window.__briefingReady='v11-20261103-1102';
+var build=$('build');if(build)build.textContent='v11 · 11:02';
 main();
 })();
 </script>
