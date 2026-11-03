@@ -925,3 +925,190 @@ body::before {
 #ss-bar { display: none !important; }
 /* 新页使用自有面包屑；隐藏 page_shell 对未收编页自动注入的旧版回退条。 */
 .wb-crumb, .wb-shell-head, .wb-adopted-chip { display: none !important; }
+
+
+/* ==== 2026-11-03 WO-CAOCAO-PAGE-20261103：决策优先 + 真实工单总线 + 事件流 ==== */
+/* 首屏「今日必须拍板」：3 件事（v1.1 批文 / 11 席回执 / 跨席回流），先于 KPI 与席位。 */
+.today-board { border-color: color-mix(in srgb, var(--color-warn) 32%, var(--hair)); }
+.today-board .panel-head { margin-bottom: 11px; }
+.today-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.today-item {
+  display: flex; flex-direction: column; gap: 6px; min-width: 0;
+  padding: 10px 11px;
+  border: 1px solid var(--hair); border-radius: 8px;
+  background: color-mix(in srgb, var(--bg-raised) 46%, transparent);
+}
+.today-item.high { border-color: color-mix(in srgb, var(--color-warn) 46%, var(--hair)); }
+.today-item.high .today-rank { color: var(--color-warn); }
+.today-head { display: flex; align-items: baseline; gap: 7px; min-width: 0; }
+.today-rank { color: var(--teal); font-family: var(--mono); font-size: 10px; }
+.today-head b { color: var(--text); font-size: 12.5px; letter-spacing: .01em; }
+.today-due { margin-left: auto; color: var(--color-warn); font-family: var(--mono); font-size: 9.5px; white-space: nowrap; }
+.today-desc { margin: 0; color: var(--text-dim); font-size: 10.5px; line-height: 1.5; overflow-wrap: anywhere; }
+.today-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; padding-top: 3px; }
+.today-owner { color: var(--text-dim); font-size: 9.5px; }
+.today-go { color: var(--teal); font-size: 10px; text-decoration: none; white-space: nowrap; }
+.today-go:hover { text-decoration: underline; }
+
+/* 工单筛选（复用 .tabs/.tab，全部/在制/待复核）；真实 workorder_bus 只读。 */
+.work-panel .tabs { border-bottom: 0; padding: 0 14px 9px; margin: 0; }
+.work-panel .tab { cursor: pointer; background: transparent; border: 0; }
+.work-status.other { color: var(--color-warn); }
+
+/* 事件流：API events 最近 8 条（ts/kind/agent/task）；空态明确。 */
+.event-card .event-list { margin: 0; padding: 0; }
+.event-list li.event-row {
+  display: grid; grid-template-columns: 62px 86px minmax(0, 1fr);
+  gap: 2px 7px; align-items: baseline;
+  padding: 5px 0; font-size: 10px; color: var(--text-dim);
+}
+.event-row .event-kind { color: var(--teal); font-family: var(--mono); font-size: 9px; letter-spacing: .03em; }
+.event-row .event-ts { color: var(--text-dim); font-family: var(--mono); font-size: 9px; white-space: nowrap; }
+.event-row .event-agent { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.event-row .event-task {
+  grid-column: 1 / -1; color: var(--text-dim); font-size: 9px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.event-list li.event-empty { display: block; padding: 12px 0; color: var(--text-dim); font-size: 10px; }
+
+/* 席位卡下移（HTML 顺序）+ 压缩：5 列、缩 padding、隐藏标签（能力仍在抽屉里）。 */
+.seats-panel .seat-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 0 12px 12px; }
+.seats-panel .seat-card { padding: 7px 8px; }
+.seats-panel .seat-tags { display: none; }
+.seats-panel .seat-role { font-size: 9.5px; }
+.seats-panel .seat-last { max-width: 104px; }
+
+/* 响应式：三档不横向溢出（1440 / 1180 / 390） */
+.work-task, .work-desc, .today-head b { min-width: 0; }
+.work-desc, .work-id { overflow-wrap: anywhere; }
+@media (max-width: 1180px) {
+  .today-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .seats-panel .seat-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 900px) {
+  .today-grid { grid-template-columns: minmax(0, 1fr); }
+  .seats-panel .seat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .event-list li.event-row { grid-template-columns: 56px minmax(0, 1fr) 64px; }
+}
+@media (max-width: 560px) {
+  .today-head { flex-wrap: wrap; }
+  .today-due { margin-left: 0; }
+  .event-list li.event-row { grid-template-columns: 52px minmax(0, 1fr); }
+  .seats-panel .seat-grid { grid-template-columns: minmax(0, 1fr); }
+  .today-item { padding: 9px 10px; }
+}
+
+
+/* ==== 2026-11-03 修正：技术框架深屏（深色 Calm Command Center） ====
+   依据：
+   - 双版本 UI 规范（2026-10-27，docs/design）：技术框架深屏=深色深屏，不做浅色卡片；
+   - UI UX Research v1（2026-11-03，docs/design）：GitHub Dark + tokens + ui.css + 1210 宽 +
+     紧凑/细边框/低饱和，去掉 neon/玻璃拟态/多层渐变卡片。
+   说明：本段只换视觉基准，保留本轮「今日必须拍板 / 真实 workorder_bus / 事件流 / 筛选 /
+   Hermes / 只读」等功能；不新增写接口、不改数据契约。 */
+:root {
+  /* 强调色统一切到蓝（os-blue/link），不用金橙 org-400；状态色仍走语义色+文字。 */
+  --org-400: var(--os-blue);
+  --teal: var(--os-blue);
+  --teal-soft: color-mix(in srgb, var(--os-blue) 14%, transparent);
+  --teal-line: color-mix(in srgb, var(--os-blue) 38%, transparent);
+  --panel-bg: color-mix(in srgb, var(--bg-surface) 96%, transparent);
+  --panel-bg-2: color-mix(in srgb, var(--bg-raised) 76%, transparent);
+  --hair: color-mix(in srgb, var(--border) 68%, transparent);
+  --shadow: var(--shadow-1);
+}
+html { color-scheme: dark; }
+body {
+  background: var(--bg-page);
+  color: var(--text);
+  font-size: 13.2px;
+}
+body::before { background: none; }  /* 去大面积渐变（低饱和纯深底） */
+.wrap { max-width: 1210px; margin: 0 auto; padding: 18px 18px 46px; }
+.page-head { margin-bottom: 12px; }
+.page-head h1, h1 { font-size: 23px; line-height: 1.25; letter-spacing: -.02em; color: var(--text); }
+.lede { margin: 4px 0 0; color: var(--text-dim); font-size: 12.5px; }
+.crumb { color: var(--text-dim); font-size: 11px; }
+
+/* 卡片：深色面板 + 10px 圆角 + 细边框 + 低阴影；不做浅色卡片 */
+.panel, .side-card, .kpi, .today-item, .decision-item, .seat-card,
+.run-banner, .logic-strip, .logic-item, .drawer {
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--gray-0) 55%, transparent);
+  background: color-mix(in srgb, var(--bg-surface) 97%, transparent);
+}
+.today-item, .decision-item, .seat-card {
+  background: color-mix(in srgb, var(--bg-raised) 64%, transparent);
+}
+.run-banner { background: color-mix(in srgb, var(--bg-surface) 96%, transparent); }
+.panel-head, .side-head, .pool-foot, .page-foot { border-color: var(--border); }
+.panel-head h2, .side-head h2 { color: var(--text); }
+.panel-head p, .decision-help, .panel-note, .muted { color: var(--text-dim); }
+
+/* 紧凑间距 */
+.layout-grid { gap: 10px; }
+.left-stack { gap: 10px; }
+.right-rail { gap: 10px; }
+.kpi-row { gap: 8px; margin-bottom: 10px; }
+.kpi { padding: 8px 10px; }
+.kpi strong { font-size: 21px; color: var(--text); }
+.kpi-foot, .panel-head p { font-size: 10.5px; }
+.logic-strip { gap: 8px; margin-bottom: 10px; }
+.logic-item { padding: 8px 10px; }
+.today-board .panel-head { margin-bottom: 9px; }
+.today-grid { gap: 8px; }
+.today-item { padding: 9px 10px; }
+.today-desc { font-size: 11.5px; }
+
+/* 强调色：蓝（link/os-blue），不用金色/大面积渐变 */
+.today-board { border-color: color-mix(in srgb, var(--link) 32%, var(--border)); }
+.today-item.high { border-color: color-mix(in srgb, var(--link) 44%, var(--border)); }
+.today-rank, .today-item.high .today-rank, .today-due { color: var(--link); }
+.today-go, .link-btn, .today-go:hover { color: var(--link); }
+.count-pill { background: var(--teal-soft); color: var(--link); }
+.count-pill.warn { background: color-mix(in srgb, var(--link) 12%, transparent); color: var(--link); border-color: color-mix(in srgb, var(--link) 36%, var(--border)); }
+.btn-primary { border-color: color-mix(in srgb, var(--link) 55%, var(--border)); background: var(--link); color: var(--gray-0); box-shadow: none; }
+.btn-primary:hover { background: color-mix(in srgb, var(--link) 84%, white); border-color: var(--link); }
+.run-banner { border-color: color-mix(in srgb, var(--link) 26%, var(--border)); }
+.tab.is-active { color: var(--link); border-bottom-color: var(--link); }
+.tab.is-active b { color: var(--link); }
+.decision-item.high::before { background: var(--link); }
+.decision-item.high .decision-top em { color: var(--link); }
+.flow-step.is-active { border-color: color-mix(in srgb, var(--link) 52%, var(--border)); background: color-mix(in srgb, var(--link) 10%, var(--bg-raised)); }
+.flow-step.is-done em, .status.review, .kpi-top .mini.accent { color: var(--link); }
+.logic-item:hover { border-color: color-mix(in srgb, var(--link) 42%, var(--border)); background: var(--teal-soft); }
+.logic-char { border-color: color-mix(in srgb, var(--link) 38%, var(--border)); background: color-mix(in srgb, var(--link) 10%, transparent); color: var(--link); }
+.seat-card:hover { border-color: color-mix(in srgb, var(--link) 42%, var(--border)); }
+.seat-card.is-lead {
+  border-color: color-mix(in srgb, var(--link) 38%, var(--border));
+  background: color-mix(in srgb, var(--link) 12%, var(--bg-raised));
+}
+.seat-card.is-lead .seat-id { color: var(--os-blue); }
+.flow-link { background: var(--hair); }
+.flow-link::after { border-left-color: var(--hair); }
+.mini-progress i { background: var(--color-ok); }
+
+/* 表格 12–12.5px；正文 13–13.5px */
+.work-header { font-size: 11px; }
+.work-row { font-size: 12.2px; padding: 6px 7px; }
+.work-desc, .decision-item p { font-size: 10.5px; }
+.work-status { font-size: 11px; }
+.decision-item .decision-top b { font-size: 12px; }
+.event-list li.event-row { font-size: 11.5px; padding: 4px 0; }
+.event-row .event-kind, .event-row .event-ts, .event-row .event-task { font-size: 9.5px; }
+
+/* 页脚/只读提示保持低饱和 */
+.page-foot { color: color-mix(in srgb, var(--text-dim) 82%, transparent); font-size: 10px; }
+.audit-flag, .panel-note { color: var(--text-dim); }
+
+@media (max-width: 900px) {
+  .wrap { padding: 14px 12px 64px; }
+  .layout-grid, .left-stack, .right-rail { gap: 9px; }
+}
+@media (max-width: 560px) {
+  .wrap { padding: 12px 10px 58px; }
+  .page-head h1, h1 { font-size: 22px; }
+  .kpi strong { font-size: 19px; }
+}
+

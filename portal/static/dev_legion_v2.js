@@ -1,6 +1,6 @@
-/* 曹操军团 · 研发指挥台 v2（只读）
-   数据：GET /api/dev/legion（ADR-009 契约 v1）
-   不写接口、不派单、不合并。 */
+/* 曹操军团 · 研发指挥台 v2（决策优先 · 只读）
+   数据：GET /api/dev/legion（ADR-020 契约 v1；v2 extras：workorder_bus / decisions / events）
+   纪律：只读；不写库、不派单、不合并、不新增写接口。 */
 
 const $ = (id) => document.getElementById(id);
 const esc = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({
@@ -12,31 +12,46 @@ const DISCIPLINE = {
   devops: "运维/SRE", docs: "文档", architecture: "架构"
 };
 
-// 治理状态为人工维护快照；API v1 未暴露决策/跨席工单接口。
-const DECISIONS_AS_OF = "2026-11-01 15:35";
 const API_V2 = "/api/dev/legion";
-const DECISIONS = [
+const EVENT_LIMIT = 8;  // 事件流最多显示最近 8 条
+const DECISION_SNAPSHOT_AS_OF = "2026-11-01 15:35";
+// 仅当 API 未返回 decisions 时才使用的人工快照（必须标注时点，不伪装实时）。
+const DECISION_SNAPSHOT = [
   { title: "v1.1 批文 0/1", due: "11-02 12:00", owner: "ARCH1", high: true, desc: "12:00 已滑期；补签须注明实际时间，不倒签。", action: "补签/记滑期" },
   { title: "11 席回执 0/11", due: "11-03 09:30", owner: "ARCH1/G1/G2", high: false, desc: "11 席能力迭代回执仍为 0；未回=未完成。", action: "分组催办" },
-  { title: "跨席 16 单未回流", due: "今日", owner: "ARCH1", high: true, desc: "研发部直属在制 0；跨席总额为人工快照，待工单 API 接入。", action: "决定派工规则" }
+  { title: "跨席工单回流", due: "今日", owner: "ARCH1", high: true, desc: "跨席工单在工单总线；由 ARCH1 决定回流规则。", action: "决定派工规则" }
 ];
-const CROSS_SEAT_SNAPSHOT = 16;
 
 let DATA = null;
 let SEAT_WIP = {};
+let WORK_FILTER = "all";
+
+const STATUS_LABEL = { doing: "在制", review: "待复核", blocked: "阻塞", done: "已完成" };
 
 function pill(text, cls) { return `<span class="pill ${cls || ""}">${esc(text)}</span>`; }
+
+function _workRows() {
+  if (DATA && Array.isArray(DATA.workorder_bus) && DATA.workorder_bus.length) {
+    return DATA.workorder_bus.map((t) => ({ owner: t.owner, ...t }));
+  }
+  const rows = [];
+  Object.keys(SEAT_WIP).forEach((owner) => {
+    (SEAT_WIP[owner] || []).forEach((t) => rows.push({ owner, ...t }));
+  });
+  return rows;
+}
 
 function renderStatus() {
   const d = DATA || {};
   const m = d.metrics || {};
   const g = d.governance || {};
   const errors = d.errors || [];
-  const bus = d.workorder_bus || [];
+  const bus = _workRows();
+  const wip = Object.values(SEAT_WIP).reduce((a, b) => a + b, 0);
   $("run-time").textContent = (d.generated_at || "").replace("T", " ").slice(0, 19) || "—";
   $("run-banner").querySelector("strong").textContent =
     `近 7 日：${m.dev_tasks_recent ?? "—"} 任务 / ${m.dev_merged_recent ?? "—"} 合并 / 审批覆盖 ${g.approval_ok ? "PASS" : "未判定"}`;
-  $("run-sub").textContent = `直属在制 ${Object.values(SEAT_WIP).reduce((a, b) => a + b, 0)} · 跨席 ${bus.length ? bus.length + " 单(API)" : CROSS_SEAT_SNAPSHOT + " 单(快照)"} · ${errors.length ? "有数据源告警" : "无 API errors"}`;
+  $("run-sub").textContent = `直属在制 ${wip} · 跨席总线 ${bus.length} 单(API) · 决策 ${((d.decisions || DECISION_SNAPSHOT).length)} 项 · ${errors.length ? "有数据源告警" : "无 API errors"}`;
   const banner = $("error-banner");
   if (errors.length) {
     banner.hidden = false;
@@ -58,13 +73,12 @@ function renderStatus() {
   $("kpi-redline-sub").textContent = `${pass} PASS · ${unknown} 未判定`;
 
   $("logic-bing").textContent = ((d.seats || []).length || "—") + " 席";
-  const cross = bus.length || CROSS_SEAT_SNAPSHOT;
-  $("logic-zhang").textContent = Object.values(SEAT_WIP).reduce((a, b) => a + b, 0) + " / " + cross;
+  $("logic-zhang").textContent = wip + " / " + bus.length;
   $("logic-men").textContent = g.approval_ok ? "PASS" : "待判定";
-  $("logic-ling").textContent = ((d.decisions || DECISIONS).length) + " 项";
+  $("logic-ling").textContent = ((d.decisions || DECISION_SNAPSHOT).length) + " 项";
 
   $("flow-tasks").textContent = m.dev_tasks_recent ?? "—";
-  $("flow-wip").textContent = Object.values(SEAT_WIP).reduce((a, b) => a + b, 0);
+  $("flow-wip").textContent = wip;
   $("flow-merged").textContent = m.dev_merged_recent ?? "—";
 
   $("m-lead").textContent = m.dev_leadtime_p50_min == null ? "—" : m.dev_leadtime_p50_min;
@@ -86,6 +100,30 @@ function renderStatus() {
   }).join("") : '<div class="muted">未取到红线</div>';
 }
 
+/* 首屏「今日必须拍板」：API decisions 优先；无 API 才回退人工快照并标时点。 */
+function renderToday() {
+  const items = (DATA && Array.isArray(DATA.decisions) && DATA.decisions.length)
+    ? DATA.decisions : DECISION_SNAPSHOT;
+  const apiDriven = !!(DATA && Array.isArray(DATA.decisions) && DATA.decisions.length);
+  $("today-count").textContent = String(items.length);
+  $("today-source").textContent = apiDriven
+    ? "API v2 · decisions（配置快照）· 只读"
+    : "人工快照 · as_of " + DECISION_SNAPSHOT_AS_OF;
+  $("today-list").innerHTML = items.map((d, i) => `
+    <article class="today-item ${d.high ? "high" : ""}">
+      <div class="today-head">
+        <span class="today-rank">${String(i + 1).padStart(2, "0")}</span>
+        <b>${esc(d.title)}</b>
+        <em class="today-due">${esc(d.due || "—")}</em>
+      </div>
+      <p class="today-desc">${esc(d.desc || "")}</p>
+      <div class="today-foot">
+        <span class="today-owner">owner：${esc(d.owner || "—")}</span>
+        <a class="today-go" href="/hermes/" target="_blank" rel="noopener" title="只读跳转：处理仍走 devtask/Hermes">${esc(d.action || "去处理")} ↗</a>
+      </div>
+    </article>`).join("");
+}
+
 function renderSeats() {
   const seats = (DATA && DATA.seats) || [];
   $("seat-count").textContent = seats.length || "—";
@@ -105,39 +143,77 @@ function renderSeats() {
   }).join("");
 }
 
-function renderDecisions(items) {
-  const list = items && items.length ? items : DECISIONS;
-  $("decision-list").innerHTML = list.map((d) => `
+function renderDecisions() {
+  const items = (DATA && Array.isArray(DATA.decisions) && DATA.decisions.length)
+    ? DATA.decisions : DECISION_SNAPSHOT;
+  const apiDriven = !!(DATA && Array.isArray(DATA.decisions) && DATA.decisions.length);
+  $("decision-count").textContent = String(items.length);
+  $("decision-help").textContent = apiDriven
+    ? "来源：API decisions（配置快照）；只读，不代签、不写库；非实时。"
+    : "人工快照 · as_of " + DECISION_SNAPSHOT_AS_OF + "；待 API v2 接入后改为实时。";
+  $("decision-list").innerHTML = items.map((d) => `
     <div class="decision-item ${d.high ? "high" : ""}">
       <div class="decision-top"><b>${esc(d.title)}</b><em>${esc(d.due)}</em></div>
       <p>${esc(d.desc)}</p>
-      <div class="decision-foot"><span>${esc(d.owner)}</span><span class="audit-flag">${DATA && DATA.api_v2 ? "API v2" : "人工快照 · " + esc(DECISIONS_AS_OF.slice(11))}</span></div>
+      <div class="decision-foot"><span>${esc(d.owner)}</span><span class="audit-flag">${apiDriven ? "API v2 · 配置快照" : "人工快照 · " + esc(DECISION_SNAPSHOT_AS_OF.slice(11))}</span></div>
     </div>`).join("");
 }
 
+/* 工单区：真实 DATA.workorder_bus（只读）+ 全部/在制/待复核筛选；空态明确。 */
 function renderWip() {
-  const rows = [];
-  if (DATA && Array.isArray(DATA.workorder_bus) && DATA.workorder_bus.length) {
-    DATA.workorder_bus.forEach((t) => rows.push({ owner: t.owner, ...t }));
-  } else {
-    Object.keys(SEAT_WIP).forEach((owner) => {
-      (SEAT_WIP[owner] || []).forEach((t) => rows.push({ owner, ...t }));
-    });
-  }
+  const all = _workRows();
+  const doing = all.filter((w) => w.status === "doing");
+  const review = all.filter((w) => w.status === "review");
+  $("work-count").textContent = String(all.length);
+  $("tab-all-count").textContent = String(all.length);
+  $("tab-doing-count").textContent = String(doing.length);
+  $("tab-review-count").textContent = String(review.length);
+
+  const rows = WORK_FILTER === "doing" ? doing
+    : WORK_FILTER === "review" ? review : all;
   if (!rows.length) {
-    $("work-rows").innerHTML = '<div class="empty-row">研发部直属在制 0（API 实测）。跨席 16 单未在 API v1 暴露，请到 devops 工单总线查看。</div>';
-    $("work-foot").textContent = "来源：/api/dev/legion work_in_progress（空）";
-    return;
+    $("work-rows").innerHTML = `<div class="empty-row">当前筛选（${WORK_FILTER === "all" ? "全部" : STATUS_LABEL[WORK_FILTER] || WORK_FILTER}）无工单；总线共 ${all.length} 单（在制 ${doing.length} / 待复核 ${review.length}）。</div>`;
+  } else {
+    $("work-rows").innerHTML = rows.map((w) => {
+      const label = STATUS_LABEL[w.status] || esc(w.status || "—");
+      const cls = w.status === "doing" ? "doing" : w.status === "review" ? "review" : "other";
+      return `
+      <div class="work-row">
+        <span class="work-status ${cls}">${label}</span>
+        <span class="work-task"><span class="work-id">${esc(w.id)}</span><small class="work-desc">${esc(w.desc || "")}</small></span>
+        <span class="work-owner">${esc(w.owner || "—")}</span>
+        <span class="work-age">${w.created ? esc(String(w.created).slice(5, 10)) : "—"}</span>
+        <span class="work-next">${w.status === "doing" ? "继续开发" : w.status === "review" ? "待复核" : "待处理"}</span>
+      </div>`;
+    }).join("");
   }
-  $("work-rows").innerHTML = rows.map((w) => `
-    <div class="work-row">
-      <span class="work-status ${w.status === "doing" ? "doing" : "review"}">${w.status === "doing" ? "在制" : "待复核"}</span>
-      <span class="work-task"><span class="work-id">${esc(w.id)}</span><small class="work-desc">${esc(w.desc || "")}</small></span>
-      <span class="work-owner">${esc(w.owner)}</span>
-      <span class="work-age">—</span>
-      <span class="work-next">${w.status === "doing" ? "继续开发" : "待复核"}</span>
-    </div>`).join("");
-  $("work-foot").textContent = (DATA && DATA.api_v2) ? "来源：/api/dev/legion workorder_bus" : "来源：/api/dev/legion work_in_progress";
+  $("work-foot").textContent = `来源：/api/dev/legion workorder_bus（${all.length} 单 · 筛选：${WORK_FILTER === "all" ? "全部" : STATUS_LABEL[WORK_FILTER] || WORK_FILTER}）`;
+}
+
+/* 事件流：API events（10 条），只显示最近 8 条；字段 ts/kind/agent/task。 */
+function renderEvents() {
+  const events = (DATA && Array.isArray(DATA.events)) ? DATA.events : [];
+  const latest = events.slice(-EVENT_LIMIT).reverse();
+  $("event-count").textContent = events.length ? `${latest.length}/${events.length}` : "0";
+  $("event-list").innerHTML = latest.length
+    ? latest.map((e) => `
+      <li class="event-row">
+        <span class="event-kind">${esc(e.kind || "—")}</span>
+        <span class="event-ts">${esc(e.ts || "—")}</span>
+        <span class="event-agent">${esc(e.agent || "—")}</span>
+        <span class="event-task" title="${esc(e.task || "")}">${esc(e.task || "—")}</span>
+      </li>`).join("")
+    : '<li class="event-empty">暂无事件（API events 为空）· 不伪造、不补造。</li>';
+}
+
+function setWorkFilter(next) {
+  WORK_FILTER = ["all", "doing", "review"].includes(next) ? next : "all";
+  document.querySelectorAll("[data-work-filter]").forEach((btn) => {
+    const active = btn.dataset.workFilter === WORK_FILTER;
+    btn.classList.toggle("is-active", active);
+    btn.setAttribute("aria-selected", active ? "true" : "false");
+  });
+  renderWip();
 }
 
 function renderDrawer(s) {
@@ -177,21 +253,19 @@ async function load() {
     const res = await fetch(API_V2, { cache: "no-store" });
     if (!res.ok) throw new Error("HTTP " + res.status);
     DATA = await res.json();
-    DATA.api_v2 = Array.isArray(DATA.workorder_bus) || !!DATA.v2;
+    const v2 = DATA.v2 || {};
+    DATA.api_v2 = !!(v2.readonly || Array.isArray(v2.extras)) ||
+      Array.isArray(DATA.workorder_bus) || Array.isArray(DATA.decisions) || Array.isArray(DATA.events);
     SEAT_WIP = {};
     (DATA.work_in_progress || []).forEach((x) => {
       if (x && x.owner) SEAT_WIP[x.owner] = x.tasks || [];
     });
-    if (DATA.api_v2) {
-      const small = document.querySelector("#logic-zhang").closest(".logic-copy")?.querySelector("small");
-      if (small) small.textContent = "直属在制 · 跨席 API 总线";
-      const help = $("work-help");
-      if (help) help.textContent = "API v1 + 只增字段：跨席工单总线实时只读；直属在制与跨席单分开显示。";
-    }
     renderStatus();
+    renderToday();
     renderSeats();
-    renderDecisions(DATA.decisions || DECISIONS);
-    renderWip();
+    renderDecisions();
+    setWorkFilter(WORK_FILTER);
+    renderEvents();
   } catch (e) {
     $("error-banner").hidden = false;
     $("error-banner").textContent = "⚠ 读取 /api/dev/legion 失败：" + String(e.message || e);
@@ -200,6 +274,10 @@ async function load() {
 }
 
 $("btn-refresh").addEventListener("click", () => load());
+$("work-tabs").addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-work-filter]");
+  if (btn) setWorkFilter(btn.dataset.workFilter);
+});
 $("seat-grid").addEventListener("click", (e) => {
   const card = e.target.closest(".seat-card");
   if (!card) return;
