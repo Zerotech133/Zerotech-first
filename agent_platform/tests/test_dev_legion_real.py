@@ -146,6 +146,7 @@ def test_five_role_persona():
     cases = {
         "A0": "幕府参谋长", "AI1": "军师", "ZHAOYUN": "治理官",
         "GUANYU": "整治官", "HUANGZHONG": "验收官",
+        "DATA1": "数据资源主官（兰台令）",
     }
     for aid, pos in cases.items():
         text = srv.five_role_persona(aid)

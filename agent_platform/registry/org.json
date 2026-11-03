@@ -1725,7 +1725,14 @@
               "llm_fallback": [
                 "deepseek/deepseek-flash",
                 "ollama/qwen3.5:9b"
-              ]
+              ],
+              "name": "张松",
+              "cn_name": "张松",
+              "actual_position": "数据资源主官（兰台令）",
+              "command_seat": "数据智能部·兰台令",
+              "reports_to": "A0",
+              "status": "active",
+              "onboarded_at": "2026-10-24"
             }
           ],
           "office_title": "兰台令 · 数据资源主官",
@@ -1735,7 +1742,14 @@
           "llm_fallback": [
             "deepseek/deepseek-flash",
             "ollama/qwen3.5:9b"
-          ]
+          ],
+          "name": "张松",
+          "cn_name": "张松",
+          "actual_position": "数据资源主官（兰台令）",
+          "command_seat": "数据智能部·兰台令",
+          "reports_to": "A0",
+          "status": "active",
+          "onboarded_at": "2026-10-24"
         },
         {
           "agent_id": "FACTOR1",

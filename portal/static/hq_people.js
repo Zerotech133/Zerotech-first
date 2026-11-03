@@ -9,6 +9,7 @@ window.HQ_PEOPLE = {
     GUANYU: "关羽", HUANGZHONG: "黄忠", LAOTIAN: "老田"
   },
   positions: {
+    DATA1: "数据资源主官（兰台令）",
     A0: "幕府参谋长", AI1: "军师（反向军师/方法论）", ZHAOYUN: "治理官",
     GUANYU: "整治官（代码审计/技术债）", HUANGZHONG: "验收官"
   },

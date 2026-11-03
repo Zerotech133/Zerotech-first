@@ -458,7 +458,16 @@ def lock_info(worktree: Path) -> dict:
     try:
         data = json.loads(p.read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        return {"locked": False}
+        # O_CREAT|O_EXCL 与写入内容之间存在空窗：新鲜但不可解析的锁必须视为已锁，
+        # 否则竞态方会误删有效锁（2026-11-04 test_acquire_lock_is_exclusive 实锤）。
+        try:
+            age = time.time() - p.stat().st_mtime
+        except OSError:
+            return {"locked": False}
+        if age <= LOCK_TTL_S:
+            return {"locked": True, "owner": "unknown", "age_s": round(age, 1),
+                    "unparsed": True}
+        return {"locked": False, "stale": True, "owner": "unknown"}
     age = time.time() - float(data.get("ts") or 0)
     if age > LOCK_TTL_S:
         return {"locked": False, "stale": True, "owner": data.get("owner")}

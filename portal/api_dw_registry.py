@@ -61,6 +61,30 @@ def _bool(v):
     return v in ("1", "true", "True", "yes")
 
 
+CATALOG_PATH = REPO / "quant_backtest" / "data" / "catalog.json"
+WAREHOUSE_REGISTRY_PATH = REPO / "quant_backtest" / "data" / "warehouse_registry.json"
+
+
+def _catalog_alignment() -> dict:
+    """把 catalog/registry 的当前口径显式挂到 /api/dw/stats，避免与 /api/dataops 的 304 表读数打架。"""
+    out = {}
+    try:
+        cat = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
+        out["catalog_version"] = cat.get("version")
+        out["catalog_updated"] = cat.get("updated")
+        out["catalog_tables"] = len(cat.get("tables") or {})
+    except (OSError, ValueError, TypeError):
+        pass
+    try:
+        reg = json.loads(WAREHOUSE_REGISTRY_PATH.read_text(encoding="utf-8"))
+        out["registry_physical"] = reg.get("physical_count")
+        out["registry_display"] = reg.get("display_count")
+        out["registry_catalog_sha256"] = reg.get("catalog_sha256")
+    except (OSError, ValueError, TypeError):
+        pass
+    return out
+
+
 def _data_date():
     """盘点数据时点：dataset_inventory 文件 mtime 的日期（YYYY-MM-DD）。"""
     try:
@@ -224,7 +248,9 @@ def handle_get(handler, path: str, qs: str) -> None:
     get = lambda k, d="": (params.get(k) or [d])[0].strip()  # noqa: E731
     try:
         if path == "/api/dw/stats":
-            handler._json({"ok": True, **_ok_envelope(_data_date()), **_reg().stats()})
+            stats = _reg().stats()
+            stats.update(_catalog_alignment())
+            handler._json({"ok": True, **_ok_envelope(_data_date()), **stats})
             return
         if path == "/api/dw/list":
             domain = get("domain") or None
