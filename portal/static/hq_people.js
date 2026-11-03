@@ -8,6 +8,10 @@ window.HQ_PEOPLE = {
     R3: "陆逊", A0: "田丰", AI1: "诸葛亮", ZHAOYUN: "赵云",
     GUANYU: "关羽", HUANGZHONG: "黄忠", LAOTIAN: "老田"
   },
+  positions: {
+    A0: "幕府参谋长", AI1: "军师（反向军师/方法论）", ZHAOYUN: "治理官",
+    GUANYU: "整治官（代码审计/技术债）", HUANGZHONG: "验收官"
+  },
   depts: {
     invest: "量化交易部", dev: "研发部", data: "数据智能部",
     product: "产品管理部", quality: "质量工程部", proj_backtest: "回测开发部",

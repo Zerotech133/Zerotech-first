@@ -43,7 +43,7 @@
         "danger": "deny"
       }
     },
-    "office_title": "幕府",
+    "office_title": "幕府参谋长",
     "_superseded_by": "departments.chief_line.agent_profiles",
     "_superseded_note": "S43 已迁入部门档案表（工单 WO-LEGION-S43 / 放行人 老田）；此副本仅为兼容既有读取方，勿在此维护",
     "role_model": {
@@ -56,7 +56,11 @@
         "L2_requires_human": "生产/客户消息、资金/交易/审批、宿主机级危险操作、上线/真实数据删除/密钥",
         "principle": "无人能定案时由田丰做最优决策并派 AI 自动执行；仅 L2 报老田，不逐项点确定"
       }
-    }
+    },
+    "actual_position": "幕府参谋长",
+    "command_seat": "指挥部·参谋长",
+    "reports_to": "老田",
+    "onboarded_at": "2026-11-04"
   },
   "departments": [
     {
@@ -3158,10 +3162,14 @@
           "grade": "E3",
           "grade_note": "补档初始档，待 KPI 观察后调整",
           "attributes": {},
-          "reports_to": "ACAD1",
+          "reports_to": "A0",
           "parent_node_keys": [
             "acad1_core"
-          ]
+          ],
+          "actual_position": "军师（反向军师/方法论）",
+          "command_seat": "指挥部·军师",
+          "onboarded_at": "2026-11-04",
+          "office_title": "军师（反向军师/方法论）"
         },
         {
           "agent_id": "GUANYU",
@@ -3223,7 +3231,11 @@
           ],
           "reports_to": "A0",
           "parent_node_keys": [],
-          "academy_status": "liaison"
+          "academy_status": "liaison",
+          "actual_position": "整治官（代码审计/技术债）",
+          "command_seat": "指挥部·整治官",
+          "onboarded_at": "2026-11-04",
+          "office_title": "整治官（代码审计/技术债）"
         },
         {
           "agent_id": "PROD1",
@@ -3290,7 +3302,11 @@
           },
           "reports_to": "A0",
           "parent_node_keys": [],
-          "academy_status": "liaison"
+          "academy_status": "liaison",
+          "actual_position": "验收官",
+          "command_seat": "指挥部·验收官",
+          "onboarded_at": "2026-11-04",
+          "office_title": "验收官"
         }
       ],
       "lead_appointed": {
@@ -3319,7 +3335,12 @@
           "basis": "指挥部成员；研究院E3审计席（双身份，非 team_academy 正式编制）",
           "reports_to": "A0",
           "parent_node_keys": [],
-          "academy_status": "liaison"
+          "academy_status": "liaison",
+          "actual_position": "整治官（代码审计/技术债）",
+          "command_seat": "指挥部·整治官",
+          "onboarded_at": "2026-11-04",
+          "office_title": "整治官（代码审计/技术债）",
+          "role_profile": "guanyu_code_audit_governance"
         },
         {
           "agent_id": "HUANGZHONG",
@@ -3328,7 +3349,12 @@
           "basis": "指挥部成员；研究院交付验收协作（双身份，非 team_academy 正式编制；HR 待补）",
           "reports_to": "A0",
           "parent_node_keys": [],
-          "academy_status": "liaison"
+          "academy_status": "liaison",
+          "actual_position": "验收官",
+          "command_seat": "指挥部·验收官",
+          "onboarded_at": "2026-11-04",
+          "office_title": "验收官",
+          "role_profile": "delivery_acceptance_chief"
         }
       ],
       "agents_note": "2026-10-29 A：agents=formal(7)+liaison(2) 的并集；GUANYU/HUANGZHONG 为指挥部双身份，不占研究院正式编制。"
@@ -3714,7 +3740,12 @@
           "llm_fallback": [
             "deepseek/deepseek-flash",
             "ollama/qwen3.5:9b"
-          ]
+          ],
+          "actual_position": "幕府参谋长",
+          "command_seat": "指挥部·参谋长",
+          "reports_to": "老田",
+          "onboarded_at": "2026-11-04",
+          "office_title": "幕府参谋长"
         },
         {
           "agent_id": "A0A",
@@ -3967,6 +3998,15 @@
       "GUANYU",
       "HUANGZHONG"
     ],
-    "note": "2026-10-27 老田令：田丰、赵云、诸葛亮、关羽、黄忠组成指挥部；统筹决策/交付验收"
+    "note": "2026-10-27 老田令：田丰、赵云、诸葛亮、关羽、黄忠组成指挥部；统筹决策/交付验收",
+    "positions": {
+      "A0": "幕府参谋长",
+      "AI1": "军师（反向军师/方法论）",
+      "ZHAOYUN": "治理官",
+      "GUANYU": "整治官（代码审计/技术债）",
+      "HUANGZHONG": "验收官"
+    },
+    "effective_date": "2026-11-04",
+    "onboard_ledger": "agent_platform/registry/five_roles_onboard.json"
   }
 }
