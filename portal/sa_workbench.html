@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>个股分析 · 新版工作台 · 零界</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<script src="/static/nav.js" defer></script>
+<script src="/static/shortscreen.js" defer></script>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg-page);color:var(--text);
+  font:14px/1.6 "Microsoft YaHei","PingFang SC",system-ui,-apple-system,sans-serif;
+  -webkit-font-smoothing:antialiased}
+a{color:var(--link);text-decoration:none}
+a:hover{text-decoration:underline}
+::selection{background:rgba(88,166,255,.25)}
+:focus-visible{outline:2px solid var(--color-focus,var(--blu-500));outline-offset:2px;border-radius:6px}
+
+/* ── 顶栏 ── */
+.topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:18px;
+  height:54px;padding:0 22px;background:rgba(13,17,23,.92);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--border-weak)}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;letter-spacing:.4px;color:var(--text)}
+.brand .dot{width:9px;height:9px;border-radius:50%;background:var(--blu-500);
+  box-shadow:0 0 10px rgba(88,166,255,.8)}
+.brand small{font-weight:500;color:var(--text-dim);letter-spacing:0}
+.tabs{display:flex;gap:4px;margin-left:10px}
+.tabs a{padding:7px 12px;border-radius:8px;color:var(--text-dim);font-size:13px;font-weight:600}
+.tabs a:hover{color:var(--text);background:var(--bg-raised);text-decoration:none}
+.tabs a.active{color:var(--blu-500);background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.25)}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--text-dim)}
+.top-right .pill{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid var(--border);
+  border-radius:999px;background:var(--bg-raised)}
+.top-right .pill .dot{width:7px;height:7px;border-radius:50%;background:var(--grn-500)}
+
+/* ── 布局 ── */
+main{max-width:var(--page-w);margin:0 auto;padding:20px 22px 72px}
+.crumbs{font-size:12px;color:var(--text-dim);margin:4px 0 12px}
+h1{font-size:23px;margin:0 0 6px;letter-spacing:.2px}
+.sub{color:var(--text-dim);font-size:13px;margin:0 0 16px;max-width:820px}
+h2{font-size:14.5px;margin:0 0 10px;display:flex;align-items:center;gap:8px;justify-content:space-between}
+h2 .hint{font-size:11.5px;color:var(--text-dim);font-weight:400}
+.card{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-l);padding:16px 18px;margin-bottom:14px}
+.card.hover:hover{border-color:var(--blu-500);transition:border-color var(--dur-base) var(--ease-standard)}
+.grid{display:grid;gap:12px}
+.grid-2{grid-template-columns:1fr 1fr}
+.grid-3{grid-template-columns:repeat(3,1fr)}
+.grid-4{grid-template-columns:repeat(4,1fr)}
+.grid-kpi{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.muted{color:var(--text-dim)}
+.small{font-size:12px}
+.mono{font-family:"Cascadia Mono",Consolas,monospace;font-size:12px}
+.spacer{flex:1}
+
+/* ── 按钮/输入 ── */
+.btn{cursor:pointer;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);
+  background:var(--bg-raised);color:var(--text);border-radius:9px;padding:8px 14px;font-size:13px;
+  font-family:inherit;transition:all var(--dur-fast) var(--ease-standard)}
+.btn:hover{border-color:var(--blu-500);color:var(--blu-500)}
+.btn.primary{background:var(--blu-600);border-color:var(--blu-600);color:#fff;font-weight:700}
+.btn.primary:hover{background:#2b7fff;border-color:#2b7fff;color:#fff}
+.btn.ghost{background:transparent}
+.btn.sm{padding:5px 10px;font-size:12px;border-radius:7px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.input,.select,.textarea{width:100%;border:1px solid var(--border);background:var(--bg-raised);
+  color:var(--text);border-radius:9px;padding:9px 12px;font:inherit;font-size:13.5px;outline:none}
+.input:focus,.select:focus,.textarea:focus{border-color:var(--blu-500);box-shadow:0 0 0 3px rgba(88,166,255,.15)}
+.searchbar{display:flex;gap:8px;align-items:center}
+.searchbar .input{flex:1;height:42px;font-size:14.5px}
+.searchbar .btn{height:42px}
+
+/* ── badge / tag / chip ── */
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;
+  padding:2px 9px;border-radius:999px;border:1px solid var(--border);color:var(--text-dim);white-space:nowrap}
+.badge.blue{color:var(--blu-500);border-color:rgba(88,166,255,.45);background:rgba(88,166,255,.08)}
+.badge.ok{color:var(--color-ok);border-color:rgba(63,185,80,.45);background:rgba(63,185,80,.08)}
+.badge.warn{color:var(--color-warn);border-color:rgba(210,153,34,.45);background:rgba(210,153,34,.08)}
+.badge.err{color:var(--color-err);border-color:rgba(248,81,73,.45);background:rgba(248,81,73,.08)}
+.badge.up{color:var(--color-up);border-color:var(--color-up-bd);background:var(--color-up-bg)}
+.badge.dn{color:var(--color-dn);border-color:var(--color-dn-bd);background:var(--color-dn-bg)}
+.tag{display:inline-block;font-size:11px;padding:1px 8px;border-radius:999px;border:1px solid var(--border);color:var(--text-dim);margin:0 6px 4px 0}
+.tag.ok{color:var(--color-ok);border-color:rgba(63,185,80,.4)}
+.tag.bad{color:var(--color-err);border-color:rgba(248,81,73,.4)}
+.tag.event{color:var(--color-warn);border-color:rgba(210,153,34,.4)}
+.chip{display:inline-flex;align-items:center;gap:7px;padding:5px 10px;border-radius:999px;
+  border:1px solid var(--border);background:var(--bg-raised);font-size:12px;color:var(--text)}
+.chip .k{color:var(--text-dim)}
+.chip .x{cursor:pointer;color:var(--text-dim);font-weight:700}
+.chip .x:hover{color:var(--color-err)}
+.chip.add{border-style:dashed;color:var(--text-dim);cursor:pointer}
+
+/* ── 表格 ── */
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--border-weak);vertical-align:middle}
+th{color:var(--text-dim);font-weight:600;font-size:11.5px;text-transform:none;position:sticky;top:54px;background:var(--bg-surface)}
+tbody tr:hover{background:rgba(88,166,255,.05)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+td.code{font-family:"Cascadia Mono",Consolas,monospace;font-size:12px;color:var(--blu-500)}
+.up{color:var(--color-up)!important}.dn{color:var(--color-dn)!important}
+
+/* ── KPI ── */
+.kpi{background:var(--bg-surface);border:1px solid var(--border);border-radius:12px;padding:11px 13px}
+.kpi .k{font-size:11.5px;color:var(--text-dim)}
+.kpi .v{font-size:20px;font-weight:800;margin-top:2px;font-variant-numeric:tabular-nums}
+.kpi .v small{font-size:12px;font-weight:600;color:var(--text-dim)}
+.kpi .d{font-size:11px;color:var(--text-dim);margin-top:2px}
+
+/* ── 图表 ── */
+.chart{width:100%;height:220px;display:block}
+.chart-legend{display:flex;gap:16px;font-size:11.5px;color:var(--text-dim);margin-top:6px}
+.chart-legend .sw{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
+
+/* ── 空状态/提示 ── */
+.empty{text-align:center;color:var(--text-dim);padding:34px 10px;font-size:13px}
+.empty b{display:block;color:var(--text);font-size:14px;margin-bottom:4px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#12303f;color:#e6f6ff;
+  border:1px solid rgba(88,166,255,.35);border-radius:10px;padding:9px 18px;font-size:13px;
+  box-shadow:var(--shadow-2);display:none;z-index:200}
+.notice{display:flex;gap:10px;align-items:flex-start;padding:10px 13px;border-radius:10px;font-size:12.5px;
+  border:1px solid var(--border);background:var(--bg-raised);color:var(--text-dim);margin:10px 0}
+.notice.warn{border-color:rgba(210,153,34,.35);background:rgba(210,153,34,.06);color:#e3c173}
+.notice.info{border-color:rgba(88,166,255,.3);background:rgba(88,166,255,.06);color:#a9cdf6}
+.notice b{color:var(--text)}
+
+/* ── steps ── */
+.steps{display:flex;gap:8px;margin:4px 0 16px}
+.steps .s{flex:1;padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg-raised);
+  font-size:12.5px;color:var(--text-dim);display:flex;align-items:center;gap:8px}
+.steps .s .n{width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+  border:1px solid var(--border);font-size:11px;font-weight:700}
+.steps .s.active{border-color:rgba(88,166,255,.5);color:var(--text);background:rgba(88,166,255,.08)}
+.steps .s.active .n{background:var(--blu-600);border-color:var(--blu-600);color:#fff}
+.steps .s.done{border-color:rgba(63,185,80,.35);color:var(--color-ok)}
+
+/* ── 页脚 ── */
+footer{border-top:1px solid var(--border-weak);margin-top:28px;padding-top:14px;color:var(--text-dim);font-size:11.5px;display:flex;gap:16px;flex-wrap:wrap}
+
+/* ── 响应式 ── */
+@media(max-width:1020px){.grid-kpi{grid-template-columns:repeat(3,1fr)}.grid-4{grid-template-columns:repeat(2,1fr)}.grid-3{grid-template-columns:1fr 1fr}}
+@media(max-width:760px){
+  .tabs{display:none}.grid-2,.grid-3,.grid-4,.grid-kpi{grid-template-columns:1fr}
+  main{padding:14px 12px 60px}.topbar{padding:0 12px;gap:8px;height:52px}
+  .brand{font-size:14px;white-space:nowrap}.brand small{display:none}
+  .top-right{gap:6px}
+  .top-right .pill{display:none}
+  .top-right .btn.sm{padding:5px 8px;font-size:11px}
+}
+
+</style>
+</head>
+<body>
+<main>
+  <div class="crumbs"><a href="/">零界</a> / <a href="/sa">个股分析</a> / 新版工作台</div>
+  <h1>个股分析</h1>
+  <p class="sub">数据快照 → 事件库 → 特征 → 五维研判 → 报告/H5，全链路可复核、可追溯。研究分析，不构成投资建议。</p>
+
+  <!-- 搜索 + 快捷动作 -->
+  <div class="card">
+    <div class="searchbar">
+      <input class="input" id="q" placeholder="输入股票代码/名称，或直接说需求，例如：帮我分析 600337 的三季报影响">
+      <button class="btn primary" onclick="toast('已解析：单股分析（600337.SH），进入分析队列')">开始分析</button>
+      <button class="btn" onclick="toast('已切换到条件选股：请描述筛选条件')">条件选股</button>
+    </div>
+    <div class="row small muted" style="margin-top:10px">
+      <span>试试：</span>
+      <a href="#" onclick="fillSearch('600337');return false">600337 三季报影响</a>
+      <span>·</span>
+      <a href="#" onclick="fillSearch('轻工制造 PS 分位低于 50%');return false">轻工制造 PS 分位 &lt; 50%</a>
+      <span>·</span>
+      <a href="#" onclick="fillSearch('近期有回购事件且 ROE 转正');return false">回购 + ROE 转正</a>
+    </div>
+  </div>
+
+  <!-- KPI -->
+  <div class="grid-kpi">
+    <div class="kpi"><div class="k">观察池</div><div class="v">4 <small>只</small></div><div class="d">全部已复核</div></div>
+    <div class="kpi"><div class="k">最近报告</div><div class="v">4 <small>份</small></div><div class="d">今日新增 4</div></div>
+    <div class="kpi"><div class="k">事件库</div><div class="v">211 <small>条</small></div><div class="d">待复核 0</div></div>
+    <div class="kpi"><div class="k">数据覆盖</div><div class="v">93.7 <small>%</small></div><div class="d">12 域中 11.5 齐全</div></div>
+    <div class="kpi"><div class="k">数据时效</div><div class="v">T+1</div><div class="d">行情/财务/筹码 11-02</div></div>
+    <div class="kpi"><div class="k">研究简报</div><div class="v">开 <small>·可选</small></div><div class="d">多/空/风险，不参与评级</div></div>
+  </div>
+
+  <div class="grid grid-2">
+    <!-- 观察池 -->
+    <section class="card">
+      <h2><span>观察池</span><span class="hint">最近分析 · 点击行进入报告</span></h2>
+      <table>
+        <thead><tr><th>代码</th><th>名称</th><th>评级</th><th class="num">总分</th><th class="num">20日</th><th>数据 as-of</th><th></th></tr></thead>
+        <tbody>
+          <tr><td class="code">600337.SH</td><td>ST美克</td><td><span class="badge warn">事件观察</span></td><td class="num">27.5</td><td class="num dn">-4.37%</td><td class="muted">11-02</td><td><button class="btn sm">查看</button></td></tr>
+          <tr><td class="code">605258.SH</td><td>协和电子</td><td><span class="badge warn">事件观察</span></td><td class="num">48.8</td><td class="num up">+2.10%</td><td class="muted">11-02</td><td><button class="btn sm">查看</button></td></tr>
+          <tr><td class="code">688023.SH</td><td>安恒信息</td><td><span class="badge blue">观察</span></td><td class="num">49.4</td><td class="num dn">-16.08%</td><td class="muted">11-02</td><td><button class="btn sm">查看</button></td></tr>
+          <tr><td class="code">603667.SH</td><td>五洲新春</td><td><span class="badge blue">观察</span></td><td class="num">36.1</td><td class="num up">+1.32%</td><td class="muted">11-02</td><td><button class="btn sm">查看</button></td></tr>
+        </tbody>
+      </table>
+      <div class="row" style="margin-top:12px">
+        <button class="btn sm primary" onclick="toast('已提交：观察池 4 只批量分析')">批量分析（4）</button>
+        <button class="btn sm" onclick="toast('已打开观察池管理')">管理观察池</button>
+        <span class="spacer"></span>
+        <span class="small muted">上次更新：15:41</span>
+      </div>
+    </section>
+
+    <!-- Hermes 对话 -->
+    <section class="card">
+      <h2><span>Hermes 助手</span><span class="hint">研究问答 · 工具优先</span></h2>
+      <div class="notice info"><span>💬</span><div><b>可以这样问：</b>"600337 三季报后风险点有哪些？"、"帮我筛轻工制造里低估值高成长的票"、"用低估值+质量因子做个回测"。</div></div>
+      <div class="row">
+        <input class="input" placeholder="输入问题…" onkeydown="if(event.key==='Enter')toast('已发送到 Hermes（需登录 8787）')">
+        <button class="btn primary" onclick="toast('已发送到 Hermes（需登录 8787）')">发送</button>
+      </div>
+      <div class="row small muted" style="margin-top:10px">
+        <span class="tag ok">工具优先</span><span class="tag">不编造数据</span><span class="tag">引用 run_id</span>
+      </div>
+    </section>
+  </div>
+
+  <!-- 最近报告 -->
+  <section class="card">
+    <h2><span>最近报告</span><span class="hint">报告 = 数据 + 事件 + 评分 + 风险清单</span></h2>
+    <table>
+      <thead><tr><th>run_id</th><th>股票</th><th>评级</th><th>覆盖</th><th>关键结论</th><th>生成时间</th><th></th></tr></thead>
+      <tbody>
+        <tr><td class="mono">600337SH-20261102-055625</td><td class="code">600337.SH ST美克</td><td><span class="badge warn">事件观察</span></td><td>91.7%</td><td class="muted">净资产转正、负债率 87.5%；退市风险短期缓解未消除</td><td class="muted">05:56</td><td><button class="btn sm">MD</button> <button class="btn sm">H5</button></td></tr>
+        <tr><td class="mono">688023SH-20261102-055456</td><td class="code">688023.SH 安恒信息</td><td><span class="badge blue">观察</span></td><td>100%</td><td class="muted">PS 历史分位 21%，20 日 -16%，机构研报覆盖 51 篇</td><td class="muted">05:54</td><td><button class="btn sm">MD</button> <button class="btn sm">H5</button></td></tr>
+        <tr><td class="mono">603667SH-20261102-055521</td><td class="code">603667.SH 五洲新春</td><td><span class="badge blue">观察</span></td><td>100%</td><td class="muted">扣非 -22.9% vs 归母 +898%（非经常性 9.12 亿）</td><td class="muted">05:55</td><td><button class="btn sm">MD</button> <button class="btn sm">H5</button></td></tr>
+        <tr><td class="mono">605258SH-20261102-055643</td><td class="code">605258.SH 协和电子</td><td><span class="badge warn">事件观察</span></td><td>83.3%</td><td class="muted">控制权拟变更、复牌；非两融/无卖方覆盖</td><td class="muted">05:56</td><td><button class="btn sm">MD</button> <button class="btn sm">H5</button></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="grid grid-3">
+    <section class="card hover">
+      <h2>条件选股</h2>
+      <p class="small muted" style="margin:0 0 12px">自然语言描述 → 解析为可核对条件 → 预览确认 → 批量出报告。</p>
+      <a class="btn sm" href="/static/proto/2_nl_screener.html">进入选股 →</a>
+    </section>
+    <section class="card hover">
+      <h2>策略工作室</h2>
+      <p class="small muted" style="margin:0 0 12px">把你的想法写成策略 Spec：筛选、排序、调仓、成本；先校验后回测。</p>
+      <a class="btn sm" href="/static/proto/3_strategy_studio.html">进入策略 →</a>
+    </section>
+    <section class="card hover">
+      <h2>回测报告</h2>
+      <p class="small muted" style="margin:0 0 12px">样本内外、成本敏感性、分年度表现；结果可追溯、可导出。</p>
+      <a class="btn sm" href="/static/proto/4_backtest_report.html">看示例 →</a>
+    </section>
+  </div>
+
+  <footer>
+    <span>数据来源：本地数据仓（curated 51 表 + 数据根 256 表）</span>
+    <span>质量门：G1-G4 · 六套件</span>
+    <span>研究分析，不构成投资建议 · 历史回测不代表未来</span>
+  </footer>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+function toast(t){const el=document.getElementById('toast');el.textContent=t;el.style.display='block';clearTimeout(window.__t);window.__t=setTimeout(()=>el.style.display='none',2600);}
+function fillSearch(t){document.getElementById('q').value=t;}
+document.getElementById('q').addEventListener('keydown',e=>{if(e.key==='Enter')toast('已解析请求，提交分析队列（原型）');});
+</script>
+</body>
+</html>
