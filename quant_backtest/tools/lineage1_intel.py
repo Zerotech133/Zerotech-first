@@ -255,6 +255,7 @@ def build_html(json_doc: dict, legacy_n: int, legacy_e: int) -> str:
         sorted(ek_counts.items(), key=lambda kv: -kv[1]))
 
     nbk = json_doc["counts"]["nodes_by_kind"]
+    cols = cols.replace('</div>\n<div class="col">', '</div>\n<div class="colgap">→</div>\n<div class="col">')
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -307,7 +308,7 @@ def build_html(json_doc: dict, legacy_n: int, legacy_e: int) -> str:
 
 <h2>四列血缘（source → bridge → dataset → product）</h2>
 <div class="board">
-{cols.replace('</div>\n<div class="col">', '</div>\n<div class="colgap">→</div>\n<div class="col">')}
+{cols}
 </div>
 <div class="sub" style="margin-top:8px">列内盒 = 节点（标题 / intel:id / ref 落点）；箭头方向恒为左→右：ingest 摄入 → writes 写库 → feeds 喂给 → derives 派生（raw 为源直落库）。</div>
 
