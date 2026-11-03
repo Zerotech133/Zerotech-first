@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-03T16:49:53+08:00",
+ "generated_at": "2026-11-03T16:50:00+08:00",
  "knowledge": {
   "projects": [
    {
@@ -84,7 +84,7 @@
     "研报": 147
    }
   },
-  "multi_source": 27,
+  "multi_source": 29,
   "gate": {
    "projects": 4,
    "checks": 13,
@@ -276,8 +276,8 @@
   {
    "kpi": "多源概念",
    "target": "≥30",
-   "current": "27（人工双签）",
-   "status": "⚠️ 差 3"
+   "current": "29（人工签核；机器 30）",
+   "status": "⚠️ 差 1"
   },
   {
    "kpi": "第二期有效候选",
