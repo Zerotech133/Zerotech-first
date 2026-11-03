@@ -68,13 +68,13 @@
 </head>
 <body>
 <h1>采集即服务平台 · 实时面板</h1>
-<p class="lead">数据来自真实 registry/sources.json 与 store/observations.db（原型态 · 不触网）。生成于 2026-11-01T15:29:44Z</p>
+<p class="lead">数据来自真实 registry/sources.json 与 store/observations.db（原型态 · 不触网）。生成于 2026-11-03T23:25:16Z</p>
 
 <div class="grid4">
-<div class="metric"><div class="label">已登记源</div><div class="num">5</div></div>
+<div class="metric"><div class="label">已登记源</div><div class="num">7</div></div>
 <div class="metric"><div class="label">闸门授权用途</div><div class="num">3 / 8</div></div>
 <div class="metric"><div class="label">跨源实体命名空间</div><div class="num">4</div></div>
-<div class="metric"><div class="label">测试</div><div class="num ok">78 passed</div></div>
+<div class="metric"><div class="label">测试</div><div class="num ok">92 passed</div></div>
 </div>
 
 <div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem 1.25rem;margin-bottom:16px;">
@@ -85,6 +85,8 @@
 <div class="row src"><div><b>guba</b><br><span class="sub">股吧舆情</span></div><div>intel(军情司·INTEL0)</div><div>internal_retention · cleaning · controlled_query</div><div class="ok">ok</div></div>
 <div class="row src"><div><b>news</b><br><span class="sub">新闻聚合</span></div><div>intel(军情司·INTEL0)</div><div>internal_retention · cleaning · controlled_query</div><div class="ok">ok</div></div>
 <div class="row src"><div><b>youtube_envelope</b><br><span class="sub">YouTube 系统外元信息包（仅 envelope，不碰原包）</span></div><div>intel(军情司·INTEL0)</div><div>internal_retention · cleaning · controlled_query</div><div class="ok">ok</div></div>
+<div class="row src"><div><b>youtube_corpus</b><br><span class="sub">YouTube 学习语料（规范化层批式，只读桥）</span></div><div>intel(军情司·INTEL0)</div><div>internal_retention · cleaning · controlled_query</div><div class="ok">ok</div></div>
+<div class="row src"><div><b>pdf_methodology</b><br><span class="sub">PDF 方法论/研报蒸馏（kb_corpus 管线产出快照）</span></div><div>intel(军情司·INTEL0)</div><div>internal_retention · cleaning · controlled_query</div><div class="ok">ok</div></div>
 </div>
 
 <div class="cols2">
@@ -147,10 +149,12 @@
 <div style="font-size:14px;font-weight:500;margin-bottom:12px;">质量 SLA / 合规 · 新鲜度与 PII 脱敏</div>
 <div class="row hdr"><div>源</div><div>新鲜度态</div><div>age/fresh</div><div>空观测比</div><div>熔断</div><div>PII命中</div></div>
 <div class="row qa"><div><b>res_downloader_py</b></div><div class="state-no_data">无数据</div><div class="muted">—/1440m</div><div class="muted">—</div><div class="muted">closed</div><div class="muted">0</div></div>
-<div class="row qa"><div><b>xueqiu</b></div><div class="state-breach">违约</div><div class="muted">762m/30m</div><div class="muted">0%</div><div class="muted">open</div><div class="muted">0</div></div>
-<div class="row qa"><div><b>guba</b></div><div class="state-breach">违约</div><div class="muted">762m/60m</div><div class="muted">33%</div><div class="muted">closed</div><div class="muted">0</div></div>
-<div class="row qa"><div><b>news</b></div><div class="state-breach">违约</div><div class="muted">762m/30m</div><div class="muted">0%</div><div class="muted">closed</div><div class="muted">0</div></div>
-<div class="row qa"><div><b>youtube_envelope</b></div><div class="state-breach">违约</div><div class="muted">18210m/4320m</div><div class="muted">0%</div><div class="muted">closed</div><div class="muted">0</div></div>
+<div class="row qa"><div><b>xueqiu</b></div><div class="state-breach">违约</div><div class="muted">4118m/30m</div><div class="muted">0%</div><div class="muted">open</div><div class="muted">0</div></div>
+<div class="row qa"><div><b>guba</b></div><div class="state-breach">违约</div><div class="muted">4118m/60m</div><div class="muted">33%</div><div class="muted">closed</div><div class="muted">0</div></div>
+<div class="row qa"><div><b>news</b></div><div class="state-breach">违约</div><div class="muted">4118m/30m</div><div class="muted">0%</div><div class="muted">closed</div><div class="muted">0</div></div>
+<div class="row qa"><div><b>youtube_envelope</b></div><div class="state-breach">违约</div><div class="muted">21565m/4320m</div><div class="muted">0%</div><div class="muted">closed</div><div class="muted">0</div></div>
+<div class="row qa"><div><b>youtube_corpus</b></div><div class="state-no_data">无数据</div><div class="muted">—/10080m</div><div class="muted">—</div><div class="muted">unknown</div><div class="muted">0</div></div>
+<div class="row qa"><div><b>pdf_methodology</b></div><div class="state-no_data">无数据</div><div class="muted">—/10080m</div><div class="muted">—</div><div class="muted">unknown</div><div class="muted">0</div></div>
 <div class="note">新鲜度态：达标≤freshness / 滞后≤2×freshness / 违约&gt;2×freshness（按 sources.json 真实阈值）。PII：入湖前对 email/手机号/身份证脱敏，仅计数不落明文；本面板 PII 命中合计 0（合成数据通常 0，接真实采集后反映真实命中）。注：seed 时间戳为 2026-10-21/22，相对真实 now 已超 freshness，故多源正确显示违约——证明告警引擎有效。</div>
 </div>
 
@@ -162,6 +166,8 @@
 <div class="row fb"><div><b>guba</b></div><div class="state-stale">加速补采</div><div class="muted">新鲜度违约(&gt;120m)，加速补采</div></div>
 <div class="row fb"><div><b>news</b></div><div class="state-stale">加速补采</div><div class="muted">新鲜度违约(&gt;60m)，加速补采</div></div>
 <div class="row fb"><div><b>youtube_envelope</b></div><div class="state-stale">加速补采</div><div class="muted">新鲜度违约(&gt;8640m)，加速补采</div></div>
+<div class="row fb"><div><b>youtube_corpus</b></div><div class="state-stale">加速补采</div><div class="muted">无观测，加速补采</div></div>
+<div class="row fb"><div><b>pdf_methodology</b></div><div class="state-stale">加速补采</div><div class="muted">无观测，加速补采</div></div>
 <div class="note">闭环逻辑：质量 SLA 违约/滞后/无数据 → <b>加速补采</b>（强制下次到期=现在）；连续违约达阈值 → <b>熔断开闸</b>自动禁用 + 人工复核；PII 命中 → <b>合规降级</b>（即便曾授权也撤 training/redistribution/commercial）+ 人工复核。strike 计数等会话态由生产 CronRunner 的 FeedbackEngine 持有，本面板仅做单帧推算、不写源文件。</div>
 <div style="font-size:14px;font-weight:500;margin:14px 0 10px;">统一 cron 实体 · CronRunner</div>
 <div class="row hdr"><div>职责</div><div>实现</div></div>
@@ -170,6 +176,23 @@
 <div class="row cron"><div><b>部署形态</b></div><div class="muted">run_forever(poll_interval) 真实轮询；now_provider/sleep_fn 可注入，单测用虚拟时钟</div></div>
 <div class="row cron"><div><b>收敛范围</b></div><div class="muted">替代 Orchestrator.as_scheduler 与分散 demo 循环，单一实体驱动采集</div></div>
 <div class="note">CronRunner 自身不触网；触网只在注入的 dispatcher 内，且须 RightsGate 授权。同一份代码既能单元测试（手动 tick + 注入 now），也能生产部署。</div>
+</div>
+
+<div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem 1.25rem;margin-bottom:16px;">
+<div style="font-size:14px;font-weight:500;margin-bottom:4px;">开源情报板块 · 作战视图（2026-11-04 晨）</div>
+<div class="sub" style="margin-bottom:10px;">P1.5✅ P2✅ P3✅✅✅ P4 v1-v4✅ · B1-b 待 XQ_COOKIE</div>
+<div class="row hdr"><div>桥</div><div>模块</div><div>状态</div></div>
+<div class="row" style="grid-template-columns:1.8fr 2.4fr 0.8fr;"><div>雪球桥（行级+治理双写）</div><div class="sub" style="font-family:monospace;">xq_pump_bridge.XqPumpDispatcher</div><div style="color:var(--color-text-danger);font-weight:500;">不可达</div></div>
+<div class="row" style="grid-template-columns:1.8fr 2.4fr 0.8fr;"><div>学习语料桥（YT评点赞+PDF蒸馏）</div><div class="sub" style="font-family:monospace;">kb_bridge.KBBridge</div><div style="color:var(--color-text-danger);font-weight:500;">不可达</div></div>
+<div class="row" style="grid-template-columns:1.8fr 2.4fr 0.8fr;"><div>通讯线桥（news.db 增量）</div><div class="sub" style="font-family:monospace;">news_bridge.NewsBridge</div><div style="color:var(--color-text-danger);font-weight:500;">不可达</div></div>
+<div class="row" style="grid-template-columns:1.8fr 2.4fr 0.8fr;"><div>真实 fetcher（传输委托）</div><div class="sub" style="font-family:monospace;">xueqiu_live.LiveXqFetcher</div><div style="color:var(--color-text-danger);font-weight:500;">不可达</div></div>
+<div class="row" style="grid-template-columns:1.8fr 2.4fr 0.8fr;"><div>共振事件库桥</div><div class="sub" style="font-family:monospace;">resonance_bridge.ResonanceStoreDispatcher</div><div style="color:var(--color-text-danger);font-weight:500;">不可达</div></div>
+<div style="font-size:13px;font-weight:500;margin:12px 0 6px;">三深加工席位（11-04 破零）</div>
+<div class="row" style="grid-template-columns:1.5fr 2.7fr 1fr;"><div>WORDC1 陈琳 · 词云</div><div class="muted">双源词频+共振词（港股 11:1 缺口发现）</div><div class="ok">✅ 11-04 首产出</div></div>
+<div class="row" style="grid-template-columns:1.5fr 2.7fr 1fr;"><div>KGMAP1 郑玄 · 图谱</div><div class="muted">383 节点/2315 边四层图（quantlabs 单源垄断）</div><div class="ok">✅ 11-04 首产出</div></div>
+<div class="row" style="grid-template-columns:1.5fr 2.7fr 1fr;"><div>LINEAGE1 谯周 · 血缘</div><div class="muted">情报链入谱 23 节点/30 边（129 既有零损）</div><div class="ok">✅ 11-04 首产出</div></div>
+<div style="font-size:13px;font-weight:500;margin:12px 0 6px;">共振事件库（自生长） · 65 天 / 3 事件 / gap均值 -0.109 · fwd 待回填事件 1</div>
+<div class="sub">字幕批次：log 269 行 / ok 124 / vtt 126（429 额度熬制中，候选 400/已完 124/待做 276）</div>
 </div>
 
 <div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem 1.25rem;margin-bottom:16px;">
