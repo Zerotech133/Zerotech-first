@@ -4,17 +4,21 @@
 
 用途：
 - 把 `portal` 生产页集（123 页）登记为机器可校验的 `portal/config/page_manifest.json`；
-- `--check` 做四类校验：页面缺 manifest / manifest 多余 / 路由漂移 / active 页缺
-  tokens·nav.js·m.js 依赖（另含 schema、三态备注、入口职责、路由基线对账）；
+- `--check` 做四类校验：页面缺 manifest / manifest 多余 / 路由漂移（含动态页路由与鉴权）/
+  active 页缺 tokens·nav.js·m.js 依赖（另含 schema、三态备注、入口职责、路由基线对账）；
 - 页面清单与 `portal_route_inventory` 路由基线（tools/portal_route_baseline.json）
-  对账：基线 sha256/条数变化即视为漂移，需同批 `--generate` 刷新。
+  对账：基线 sha256/条数变化即视为漂移，需同批 `--generate` 刷新；
+- 动态页对账：`portal_api.py` 中 `if path == "/x": ... _html_file("<file>.html")` 形式的
+  「动态路由直出静态页」也参与规范路由推导（如 /btview→bt_view.html、/sa→stock_analysis.html），
+  避免把在役动态页误判为静态旧版。
 
 范围（scan 口径，见 UI 宪法 §1 / 页面清单 doc §2）：
   portal 根 *.html + portal/m/**/*.html + portal/protos/*.html +
-  portal/czsc-eval/*.html + portal/chanlun-learn-report/*.html + portal/quant/*.html
-  排除：portal/static/**（资产/静态模板）、portal/_templates/**（壳模板）、
+  portal/czsc-eval/*.html + portal/chanlun-learn-report/*.html + portal/quant/*.html +
+  static/ 下有 nginx 路由的 4 个只读投影页（notify_command/ops_board/sub_admin/my_subscription）
+  排除：portal/static/**（除上述 4 个路由页外的资产/静态模板）、portal/_templates/**（壳模板）、
   portal/work/**（回滚/未发布）、portal/data/**、portal/picks_public/**（发布生成物）、
-  rollback/backup/_old/archive 等备份目录，以及运行时生成页（agent_board.html）。
+  rollback/backup/_old/archive 等备份目录，以及运行时生成页（agent_board.html）与构建产物。
 
 用法：
   python tools/page_manifest.py --generate          # 写 portal/config/page_manifest.json
@@ -47,13 +51,14 @@ if hasattr(sys.stdout, "reconfigure"):  # GBK 控制台兼容（同 tools/portal
         pass
 
 SCHEMA = "lingjie/page-manifest/v0"
-TOOL_VERSION = "v0.1"
+TOOL_VERSION = "v0.2"
 DEFAULT_MANIFEST_REL = "portal/config/page_manifest.json"
 ROUTE_BASELINE_REL = "tools/portal_route_baseline.json"
 NGINX_CONF_REL = "portal/nginx.conf"
 NAV_SOURCE_REL = "portal/api_common.py"
+PORTAL_API_REL = "portal/portal_api.py"
 
-# ---- 扫描口径（v0）----
+# ---- 扫描口径（v0.2）----
 SCAN_DIRS = (
     "portal",
     "portal/m",
@@ -61,6 +66,13 @@ SCAN_DIRS = (
     "portal/czsc-eval",
     "portal/chanlun-learn-report",
     "portal/quant",
+)
+# static/ 下有 nginx 短路由的只读投影页（2026-11-03 复核结论：入 v0 清单，见 docs/design 复核文档）
+EXTRA_PAGES = (
+    "portal/static/notify_command.html",
+    "portal/static/ops_board.html",
+    "portal/static/sub_admin.html",
+    "portal/static/my_subscription.html",
 )
 EXCLUDE_DIR_NAMES = {
     "static", "_templates", "work", "data", "picks_public", "tests", "fixtures", "logs",
@@ -75,6 +87,11 @@ EXCLUDE_REL_FILES = {
     "portal/quant/app.html",     # L1 Quant 构建产物（未跟踪；nginx /quant/ 302 目标）
 }
 EXCLUDE_FILE_RE = re.compile(r"(\.bak|\.orig|\.old|~$|copy\.html$|^tmp_)", re.I)
+
+# portal_api.py 中经间接 handler 直出的静态页（无法从路由段直接正则捕获的，显式登记）
+SUPPLEMENTAL_DYNAMIC_PAGES = {
+    "/sa": "portal/stock_analysis.html",  # portal_api /sa → _sa_page() → 直出 stock_analysis.html
+}
 
 FAMILIES = ("cockpit", "os", "portal", "h5", "adapter", "legacy", "review")
 THEMES = ("light-cockpit", "dark-os", "h5", "adapter:hermes", "adapter:quant", "legacy-dark")
@@ -167,24 +184,60 @@ CURATED = {
         note="旧跳转页（nginx /picks_index.html 301 → /picks.html；保留入口，不迁移）"),
     "portal/approvals.html": dict(
         family="os", theme="legacy-dark", shell="none", nav="nav-js", auth="oidc",
-        status="legacy",
-        note="静态注册表页（nginx /approvals.html 302 → /approvals 8091 动态页）；保留入口，以动态页为准"),
+        status="active",
+        note="审批注册表只读聚合页；nginx /approvals（OIDC）→ 8091 → portal_api 直出本文件；"
+             "直链 /approvals.html 302 → /approvals"),
     "portal/capability.html": dict(
-        status="legacy", note="静态旧版；nav.js 指向动态 /capability（8091 渲染），静态版保留/待归档"),
+        status="active",
+        note="能力看板（M3-P5，数据 /api/capability/board）页在役；nginx 缺 /capability 短路由"
+             "（8734 /capability=404，nav.js 该入口断链，L2 待修），当前经直链 /capability.html 可达"),
     "portal/flow.html": dict(
-        status="legacy", note="静态旧版；nav.js 指向动态 /flow（8091），静态版保留/待归档"),
+        status="active",
+        note="动作流中心（F1，/api/flow/*）；nginx /flow → 8091 → portal_api 直出本文件"),
     "portal/org.html": dict(
-        status="legacy", note="静态组织架构图；nav.js 指向动态 /org（8091），静态版保留/待归档"),
+        status="legacy",
+        note="新版 Agent 指挥台（K-ORG-190，写回链 /api/org）；当前 /org 路由仍由 portal_api 历史 SSR 渲染，"
+             "org.html 未接 nginx 短路由（/org.html 直链 200）→ 是否接线/转 active 待 A0/ARCH1 定"),
     "portal/perf.html": dict(
-        status="legacy", note="静态绩效看板；nav.js 指向动态 /perf（8091），静态版保留/待归档"),
+        status="active",
+        note="投研绩效看板（M4-P5，/api/perf/*）页在役；nginx 缺 /perf 短路由"
+             "（8734 /perf=404，nav.js 该入口断链，L2 待修），当前经直链 /perf.html 可达"),
     "portal/bt_view.html": dict(
-        status="legacy", note="静态回测中心旧版；现行 /bt、/btview 为 8091 动态页，静态版保留/待归档"),
+        status="active",
+        note="回测中心（K-STOCK-277，逐日账本/决策流水）；门户 /btview（nginx ^~ /bt → 8091）"
+             "→ portal_api 直出本文件"),
     "portal/bt2_view.html": dict(
-        status="legacy", note="静态回测框架 v2 旧版；现行动态 /bt2view（8091），静态版保留/待归档"),
+        status="active",
+        note="回测框架 v2（K-STOCK-285b）；门户 /bt2view（nginx ^~ /bt → 8091）→ portal_api 直出本文件"),
     "portal/dev_legion.html": dict(
         status="legacy", note="研发军团作战屏 v1；nav.js 已指向 /dev_legion_v2.html，v1 保留/待归档"),
+    "portal/dev_legion_v2.html": dict(
+        status="active",
+        note="曹操军团研发指挥台 v2（/api/dev/legion 只读；nav.js 挂 /dev_legion_v2.html，"
+             "11-01 WO-DEV-LEGION-V2 交付，已取代 v1）"),
     "portal/stock_analysis.html": dict(
-        status="legacy", note="静态个股分析旧版；现行 /sa 为 8091 动态页，静态版保留/待归档"),
+        status="active",
+        note="个股全维分析页（K-STOCK-ANALYSIS-P0F）；门户 /sa（nginx ^~ /sa → 8091；"
+             "portal_api _sa_page 直出本文件，/api/analysis/* 流水线）"),
+    "portal/intel_workbench.html": dict(
+        family="os", theme="dark-os", shell="os-shell", nav="nav-js", status="active",
+        note="情报工作台；门户 /intel（nginx OIDC）→ 8091 → portal_api 直出本文件；"
+             "注意静态直链 /intel_workbench.html 实测未过 auth_request（安全债，L2 待修）"),
+    "portal/card_review.html": dict(
+        status="active",
+        note="学习卡审核工具页（nav.js 挂 /card_review.html；100 候选人工审核 + decisions 导出，"
+             "11-01 学习卡 wave 在役）"),
+    "portal/ui_kit.html": dict(
+        status="active",
+        note="UI Kit v0.1 官方组件示例页（WO-LEGION-UI-KIT：设计系统/组件规范/来源对比；"
+             "无 nginx 短路由与导航入口，直链访问）"),
+    "portal/case.html": dict(
+        family="os", theme="legacy-dark", shell="none", nav="nav-js", auth="oidc", status="active",
+        note="Case 决策流程页（WO-CASE-UI-20261103 七步：汇总/五角色/会议/方案/审批/下发；"
+             "nginx /case OIDC 保护，审批绑定登录身份/角色）"),
+    "portal/dept_chat.html": dict(
+        family="os", theme="legacy-dark", shell="none", nav="nav-js", auth="oidc", status="active",
+        note="部门点对点对话页（/api/chat 会话；nginx /dept-chat OIDC 保护）"),
     "portal/dw.html": dict(
         theme="legacy-dark", shell="none", auth="oidc", status="legacy",
         note="数据仓驾驶舱（nginx /dw，OIDC 保护）；未接 tokens（宪法 §11 缺口 13 页之一），W1 补齐后转 active"),
@@ -251,20 +304,50 @@ CURATED = {
     "portal/os_personal.html": dict(
         status="review", note="个人 OS 驾驶舱旧稿（非生产）"),
     "portal/os_software.html": dict(
-        status="review", note="软件面工作台 G1b（骨架阶段，未接入 nav）"),
+        status="review",
+        note="软件面工作台 G1b 骨架；页面自述接口需 8091 重启后现网生效（未上线），上线后转 active"),
     "portal/os_approval_voice.html": dict(
-        status="review", note="语音审批台（实验/评审稿，未接入 nav）"),
+        status="review",
+        note="C1 审批语音通道页（/api/os/* 后端在役、页面自测可用）；未接导航/无短路由/无引用，"
+             "是否转 active 待 A0 定"),
     "portal/os_voice_eval.html": dict(
-        status="review", note="语音质量门槛评测页（评测工具，非生产入口）"),
+        status="review",
+        note="ASR 语音质量门槛评测工具页（/api/os/asr 在役）；QA 评测工具定位、非生产入口，"
+             "是否转 active 待 A0 定"),
     "portal/intel_dossier_skeleton.html": dict(
-        status="review", note="情报对象案卷离线骨架（评审稿）"),
+        status="review",
+        note="情报对象案卷离线骨架（评审稿）；门户 /intel-dossier 在 nginx 未接通（8734=404），"
+             "当前仅直链 /intel_dossier_skeleton.html 可读"),
     "portal/preview_hq.html": dict(
         auth="oidc", status="review",
         note="指挥部本机只读预览（nginx /preview/hq，OIDC 保护）；非生产入口"),
     "portal/quant_v2_demo.html": dict(
         status="review", note="量化股票 v2 Demo（评审稿，非生产入口）"),
-    "portal/card_review.html": dict(
-        status="active", note="学习卡审核工具页（nav.js 挂 /card_review.html，100 候选审核）"),
+    "portal/notify_command.html": dict(
+        status="legacy",
+        note="旧版飞书通知指挥页（HERMES 四态队列）；现行页面为 /notify-command → "
+             "static/notify_command.html（K-ORG-201），本文件保留旧入口/待归档"),
+    # —— static/ 下有 nginx 短路由的只读投影页（2026-11-03 复核：入 v0 清单）——
+    "portal/static/notify_command.html": dict(
+        family="os", theme="legacy-dark", shell="none", nav="nav-js", auth="none",
+        status="active",
+        note="通知指挥只读投影（飞书四态队列，数据 /api/notify/queue）；nginx /notify-command "
+             "→ 本文件（portal_api 同路由亦直出）；未接 os_theme/ui.css，W2 迁主题"),
+    "portal/static/ops_board.html": dict(
+        family="os", theme="legacy-dark", shell="none", nav="nav-js", auth="none",
+        status="active",
+        note="运维对账只读投影（/api/notify/queue + /api/state）；nginx /ops-board → 本文件；"
+             "未接 os_theme/ui.css，W2 迁主题"),
+    "portal/static/sub_admin.html": dict(
+        family="os", theme="legacy-dark", shell="none", nav="nav-js", auth="none",
+        status="active",
+        note="订阅运营只读投影（本人/商务域内部页，含 open_id 明文）；nginx /sub-admin → 本文件；"
+             "鉴权依赖 8091 portal-token 后端（页面层未接 auth_request，L2 待评估）"),
+    "portal/static/my_subscription.html": dict(
+        family="os", theme="legacy-dark", shell="none", nav="nav-js", auth="none",
+        status="active",
+        note="客户订阅面只读投影（/api/subscription/status，字段最小化）；nginx /my-subscription "
+             "→ 本文件（移动 UA 302 → /m/subscription）"),
     # protos / czsc-eval / chanlun-learn-report：评审/原型/报告类，非生产入口
     "portal/protos/proto_backtest.html": dict(
         status="review", note="原型 v1 · 回测工作台（待拍板，页面清单 doc §2.3 review）"),
@@ -342,6 +425,11 @@ def production_files(root=None) -> list:
             if EXCLUDE_DIR_RE.search(inner.as_posix()):
                 continue
             out.append(p)
+    # static/ 下有 nginx 路由的只读投影页：显式补录（其余 static HTML 仍按资产/模板排除）
+    for rel in EXTRA_PAGES:
+        p = root / rel
+        if p.is_file():
+            out.append(p)
     # 去重（portal 根扫描与子目录扫描不会重叠，这里防御性去重）
     uniq = []
     seen = set()
@@ -379,12 +467,12 @@ def _iter_location_blocks(lines: list):
     i = 0
     while i < len(lines):
         s = lines[i].strip()
-        m = re.match(r"location\s+(?:(=)\s*|(~?\*?)\s*)?(\S+)\s*\{", s)
+        m = re.match(r"location\s+(?:(=)\s*|(\^~)\s*|(~?\*?)\s*)?(\S+)\s*\{", s)
         if not m:
             i += 1
             continue
-        mod = m.group(1) or m.group(2) or ""
-        target = m.group(3)
+        mod = m.group(1) or m.group(2) or m.group(3) or ""
+        target = m.group(4)
         depth = s.count("{") - s.count("}")
         body = [s]
         j = i + 1
@@ -397,13 +485,17 @@ def _iter_location_blocks(lines: list):
 
 
 def parse_nginx(conf_path: Path) -> dict:
-    """解析 nginx.conf：文件→规范路由/鉴权、显式与正则重定向。
+    """解析 nginx.conf：文件→规范路由/鉴权、路由可达性、显式与正则重定向。
 
-    返回 {"file_routes": {rel: [{"path","auth","line"}]}, "exact_redirects": {url: target},
-          "regex_redirects": [{"pattern","target","line"}]}
+    返回：
+      file_routes     {rel: [{"path","auth","line"}]}   try_files 直出文件的路由
+      exact_locations {path: {"auth","proxy8091","has_try_files","redirect","line"}}
+      proxy_prefixes  [{"prefix","auth","line"}]        前缀反代 8091 的 location（^~ / 普通前缀）
+      exact_redirects {url: target}
+      regex_redirects [{"pattern","target","line"}]
     """
-    out = {"file_routes": {}, "exact_redirects": {}, "regex_redirects": [],
-           "present": False}
+    out = {"file_routes": {}, "exact_locations": {}, "proxy_prefixes": [],
+           "exact_redirects": {}, "regex_redirects": [], "present": False}
     if not conf_path.is_file():
         return out
     out["present"] = True
@@ -411,6 +503,7 @@ def parse_nginx(conf_path: Path) -> dict:
     for b in _iter_location_blocks(lines):
         body = b["body"]
         auth = "auth_request" in body
+        proxy8091 = "proxy_pass" in body and "8091" in body
         rets = re.findall(r"return\s+(30[12478])\s+([^\s;]+)", body)
         if b["mod"] == "=":
             path = b["target"]
@@ -421,20 +514,94 @@ def parse_nginx(conf_path: Path) -> dict:
                         files.append(tok.lstrip("/"))
                     elif tok == "$uri" and path.endswith(".html"):
                         files.append(path.lstrip("/"))
+            out["exact_locations"][path] = {
+                "auth": auth, "proxy8091": proxy8091, "has_try_files": bool(files),
+                "redirect": rets[0][1] if rets else "", "line": b["line"]}
             if files:
                 rec = {"path": path, "auth": auth, "line": b["line"]}
                 for f in files:
                     out["file_routes"].setdefault(f, []).append(rec)
             elif rets:
                 out["exact_redirects"][path] = rets[0][1]
-        elif b["mod"].startswith("~") and rets:
-            out["regex_redirects"].append(
-                {"pattern": b["target"], "target": rets[0][1], "line": b["line"]})
+        elif b["mod"] in ("~", "~*"):
+            if rets:
+                out["regex_redirects"].append(
+                    {"pattern": b["target"], "target": rets[0][1], "line": b["line"]})
+        elif proxy8091:
+            # 前缀反代 8091（^~ 或普通前缀）：nav 指向 /btview 等由此命中
+            out["proxy_prefixes"].append(
+                {"prefix": b["target"], "auth": auth, "line": b["line"]})
     return out
 
 
-def _mount_path(inner: str, nginx: dict) -> tuple:
-    """(规范路径, 鉴权, 重定向目标)；inner = portal/ 相对路径。"""
+def route_location(route: str, nginx: dict) -> dict | None:
+    """路由在 nginx 中是否可达 + 是否 OIDC 保护；不可达返回 None。
+
+    精确 location 优先；否则按最长前缀反代（^~ / 普通前缀）匹配 8091 反代块。
+    """
+    loc = nginx.get("exact_locations", {}).get(route)
+    if loc is not None:
+        return {"auth": bool(loc.get("auth")), "via": "exact",
+                "line": loc.get("line", 0)}
+    best = None
+    for p in nginx.get("proxy_prefixes") or []:
+        prefix = p.get("prefix", "")
+        if not prefix or not prefix.startswith("/"):
+            continue
+        if route == prefix or route.startswith(prefix):
+            if best is None or len(prefix) > len(best.get("prefix", "")):
+                best = p
+    if best is not None:
+        return {"auth": bool(best.get("auth")), "via": "prefix",
+                "line": best.get("line", 0)}
+    return None
+
+
+def parse_dynamic_pages(root: Path) -> dict:
+    """解析 portal_api.py：动态路由直出静态页 → {页面相对路径: [路由, ...]}。
+
+    识别 `if/elif path == "/x": ... _html_file(... "<file>.html")` 段；
+    /api/* 路由不作为人类页面入口；间接 handler（_sa_page 等）见 SUPPLEMENTAL_DYNAMIC_PAGES。
+    """
+    out = {}
+    src = root / PORTAL_API_REL
+    if src.is_file():
+        text = _read_text(src)
+        seg_re = re.compile(
+            r"(?:el)?if\s+path\s*==\s*[\"']([^\"']+)[\"']\s*:(.*?)"
+            r"(?=(?:\s*(?:el)?if\s+path\s*==)|(?:\s*(?:el)?if\s+path\s+in\s)|"
+            r"(?:\s*else\s*:)|(?:\Z))", re.S)
+        for m in seg_re.finditer(text):
+            route, body = m.group(1), m.group(2)
+            if route.startswith("/api/"):
+                continue
+            for fm in re.finditer(r"[\"']([A-Za-z0-9_\-]+\.html)[\"']", body):
+                fname = fm.group(1)
+                # 依据就近的 os.path.join 上下文判定目录：portal/static/ 或 portal 根；
+                # quant_backtest/reports 等仓外报告文件不计入 portal 页面清单。
+                window = body[max(0, fm.start() - 320):fm.start()]
+                if re.search(r"[\"']static[\"']", window):
+                    rel = "portal/static/" + fname
+                elif re.search(r"reports|quant_backtest", window):
+                    continue
+                else:
+                    rel = "portal/" + fname
+                if (root / rel).is_file():
+                    if route not in out.setdefault(rel, []):
+                        out[rel].append(route)
+    for route, rel in SUPPLEMENTAL_DYNAMIC_PAGES.items():
+        if (root / rel).is_file():
+            out.setdefault(rel, []).append(route)
+    return out
+
+
+def _mount_path(inner: str, nginx: dict, dynamic_pages: dict | None = None) -> dict:
+    """推导规范路由/鉴权。
+
+    返回 {"path", "auth", "redirect", "dynamic", "via"}；inner = portal/ 相对路径。
+    优先级：动态页路由（nginx 可达）> try_files 直出路由 > m/quant/home 特例 > 静态直链。
+    """
+    rel = "portal/" + inner
     direct = "/" + inner
     redirect = nginx["exact_redirects"].get(direct)
     if redirect is None:
@@ -445,21 +612,35 @@ def _mount_path(inner: str, nginx: dict) -> tuple:
                     break
             except re.error:
                 continue
-    routes = nginx["file_routes"].get(inner) or []
-    if routes:
-        # 主路由：无 .html 后缀优先（短路由），其次短、再字典序
-        best = sorted(routes, key=lambda r: (r["path"].endswith(".html"),
-                                             len(r["path"]), r["path"]))[0]
-        return best["path"], ("oidc" if best["auth"] else "none"), redirect
+    candidates = {}
+    for route in (dynamic_pages or {}).get(rel, []):
+        loc = route_location(route, nginx)
+        if loc is not None:
+            candidates[route] = {"path": route, "auth": loc["auth"],
+                                 "dynamic": True, "via": loc["via"]}
+    for fr in nginx["file_routes"].get(inner, []):
+        candidates.setdefault(fr["path"], {"path": fr["path"], "auth": fr["auth"],
+                                           "dynamic": False, "via": "try_files"})
+    if candidates:
+        best = sorted(candidates.values(),
+                      key=lambda c: (c["path"].endswith(".html"), len(c["path"]),
+                                     c["path"], not c["dynamic"]))[0]
+        return {"path": best["path"], "auth": "oidc" if best["auth"] else "none",
+                "redirect": redirect, "dynamic": best["dynamic"], "via": best["via"]}
     if inner == "home_v3.html":
-        return "/", "none", redirect
+        return {"path": "/", "auth": "none", "redirect": redirect,
+                "dynamic": False, "via": "special"}
     if inner == "m/index.html":
-        return "/m/", "none", redirect
+        return {"path": "/m/", "auth": "none", "redirect": redirect,
+                "dynamic": False, "via": "m"}
     if inner.startswith("m/") and inner.endswith(".html"):
-        return "/m/" + inner[2:-5], "none", redirect
+        return {"path": "/m/" + inner[2:-5], "auth": "none", "redirect": redirect,
+                "dynamic": False, "via": "m"}
     if inner == "quant/index.html":
-        return "/quant/", "none", redirect
-    return direct, "none", redirect
+        return {"path": "/quant/", "auth": "none", "redirect": redirect,
+                "dynamic": False, "via": "special"}
+    return {"path": direct, "auth": "none", "redirect": redirect,
+            "dynamic": False, "via": "static"}
 
 
 # ---------- 页面记录派生 ----------
@@ -469,14 +650,18 @@ def _page_id(inner: str) -> str:
     return "page/" + slug.strip("_-")
 
 
-def _auto_note(rec: dict, meta: dict, nginx_route: bool, redirect: str) -> str:
+def _auto_note(rec: dict, mount: dict) -> str:
     parts = []
     if rec["status"] == "active":
         parts.append("生产页")
-    if nginx_route:
+    if mount.get("dynamic"):
+        parts.append("门户路由 %s（portal_api 动态页直出本文件）" % rec["path"])
+    elif mount.get("redirect") and not (mount.get("via") == "try_files"):
+        parts.append("直链 %s 重定向 → %s（保留/归档）" % (
+            "/" + rec["source"][len("portal/"):], mount["redirect"]))
+    elif mount.get("via") in ("try_files", "m", "special") and \
+            rec["path"] != "/" + rec["source"][len("portal/"):]:
         parts.append("nginx 路由 %s → 本页" % rec["path"])
-    elif redirect:
-        parts.append("直链 %s 重定向 → %s（保留/归档）" % (("/" + rec["source"][len("portal/"):]), redirect))
     else:
         parts.append("静态直链 %s" % rec["path"])
     if rec["status"] == "active" and rec["theme"] == "legacy-dark":
@@ -490,11 +675,13 @@ def _auto_note(rec: dict, meta: dict, nginx_route: bool, redirect: str) -> str:
     return "；".join(parts)
 
 
-def derive_record(root: Path, src: Path, nginx: dict) -> dict:
+def derive_record(root: Path, src: Path, nginx: dict,
+                  dynamic_pages: dict | None = None) -> dict:
     rel = _rel(root, src)
     inner = rel[len("portal/"):] if rel.startswith("portal/") else rel
     meta = scan_page(src)
-    path, auth, redirect = _mount_path(inner, nginx)
+    mount = _mount_path(inner, nginx, dynamic_pages)
+    path, auth = mount["path"], mount["auth"]
     is_m = inner.startswith("m/")
     is_adapter = inner.startswith("quant/")
     family = "h5" if is_m else ("adapter" if is_adapter else "os")
@@ -540,7 +727,7 @@ def derive_record(root: Path, src: Path, nginx: dict) -> dict:
     rec["source"] = rel
     rec["title"] = meta["title"]
     if not curated or "note" not in curated:
-        rec["note"] = _auto_note(rec, meta, bool(nginx["file_routes"].get(inner)), redirect)
+        rec["note"] = _auto_note(rec, mount)
     return rec
 
 
@@ -608,6 +795,7 @@ def _counts(pages: list) -> dict:
 def build_manifest(root=None, existing: dict | None = None, refresh: bool = False) -> dict:
     root = resolve_root(root)
     nginx = parse_nginx(root / NGINX_CONF_REL)
+    dynamic_pages = parse_dynamic_pages(root)
     old_by_source = {}
     if existing and not refresh:
         for p in existing.get("pages") or []:
@@ -616,7 +804,7 @@ def build_manifest(root=None, existing: dict | None = None, refresh: bool = Fals
     pages = []
     preserved = 0
     for src in production_files(root):
-        rec = derive_record(root, src, nginx)
+        rec = derive_record(root, src, nginx, dynamic_pages)
         old = old_by_source.get(rec["source"])
         if old:
             preserved += 1
@@ -635,10 +823,13 @@ def build_manifest(root=None, existing: dict | None = None, refresh: bool = Fals
         "scan": {
             "root": "portal",
             "dirs": list(SCAN_DIRS),
+            "extra_pages": list(EXTRA_PAGES),
             "excluded_dirs": sorted(EXCLUDE_DIR_NAMES),
             "excluded_files": sorted(EXCLUDE_FILE_NAMES),
             "exclude_dir_pattern": EXCLUDE_DIR_RE.pattern,
-            "note": "生成物/备份/静态模板不入清单；页面新增/删除须同批更新 manifest 与路由基线",
+            "dynamic_page_routes": {rel: routes for rel, routes in sorted(dynamic_pages.items())},
+            "note": "生成物/备份/静态模板不入清单；static/ 仅补录有 nginx 短路由的 4 个只读投影页；"
+                    "动态页（portal_api 直出静态文件）按可达路由归一；页面新增/删除须同批更新 manifest 与路由基线",
         },
         "route_baseline": _route_baseline_state(root),
         "entry_map": ENTRY_MAP,
@@ -814,17 +1005,26 @@ def _check_entry_map(manifest: dict, root: Path, pages: list, violations: list) 
 
 
 def _check_route_drift(manifest: dict, root: Path, pages: list, nginx: dict,
-                       violations: list) -> None:
+                       dynamic_pages: dict, violations: list) -> None:
     for p in pages:
         src = root / p.get("source", "")
         if not src.is_file():
             continue
         inner = p["source"][len("portal/"):] if p["source"].startswith("portal/") else p["source"]
-        path, _auth, _redirect = _mount_path(inner, nginx)
-        if path != p.get("path"):
+        mount = _mount_path(inner, nginx, dynamic_pages)
+        if mount["path"] != p.get("path"):
             violations.append({"code": "route_drift", "ref": p.get("source"),
                                "message": "路由漂移：%s 规范路由为 %s，manifest 记为 %s（改路由/文件须同批 --generate）" % (
-                                   p.get("source"), path, p.get("path"))})
+                                   p.get("source"), mount["path"], p.get("path"))})
+        # 鉴权漂移：OIDC 由 nginx 路由决定；portal-token 为页面级写令牌，不参与比对
+        if mount["auth"] == "oidc" and p.get("auth") != "oidc":
+            violations.append({"code": "auth_drift", "ref": p.get("source"),
+                               "message": "鉴权漂移：%s 路由受 OIDC 保护，manifest auth=%r（--generate 刷新）" % (
+                                   p.get("source"), p.get("auth"))})
+        elif mount["auth"] == "none" and p.get("auth") == "oidc":
+            violations.append({"code": "auth_drift", "ref": p.get("source"),
+                               "message": "鉴权漂移：%s 路由已无 OIDC 保护，manifest 仍标 oidc（核实后 --generate）" % (
+                                   p.get("source"))})
 
 
 def _check_route_baseline(manifest: dict, root: Path, violations: list) -> None:
@@ -880,7 +1080,8 @@ def check_manifest(root=None, manifest: dict | None = None, path: Path | None = 
             violations.append({"code": "extra_page", "ref": src,
                                "message": "manifest 多余：%s 文件不存在（删除或重定向后须同批 --generate）" % src})
     nginx = parse_nginx(root / NGINX_CONF_REL)
-    _check_route_drift(manifest, root, pages, nginx, violations)
+    dynamic_pages = parse_dynamic_pages(root)
+    _check_route_drift(manifest, root, pages, nginx, dynamic_pages, violations)
     _check_status_semantics(pages, violations)
     _check_nav_isolation(pages, root, violations)
     _check_active_deps(pages, root, violations)

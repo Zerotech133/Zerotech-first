@@ -1,10 +1,11 @@
 # page_manifest 使用说明 v1（页面清单机器版）
 
-- 状态：**v1 已落地（v0 口径）**，随 UI-UNIFY-MANIFEST-20261103 交付
+- 状态：**v1 已落地（v0.2 口径，129 页；含 2026-11-03 状态复核）**，随 UI-UNIFY-MANIFEST-20261103 交付
 - 日期：2026-11-03
 - 工单：`UI-UNIFY-MANIFEST-20261103`
 - 上位依据：`docs/design/2026-11-03_零界UI宪法_v1.md`（§2 分层模型"清单层"、§10 页面清单 schema v0）、
   `docs/design/2026-11-03_UI页面清单与入口职责_v1.md`（入口职责 canonical map / 三态清单）
+- 配套复核：`docs/design/2026-11-03_page_manifest状态复核与static路由结论_v1.md`（15 页 status 复核 + static/ 结论 + 路由缺口）
 - 产物：
   - 工具：`tools/page_manifest.py`
   - 清单：`portal/config/page_manifest.json`
@@ -20,7 +21,12 @@
 
 ---
 
-## 2. 范围与统计口径（为什么是 123 页）
+## 2. 范围与统计口径（为什么是 129 页）
+
+> 口径演进：v0 初版按"页目录"得 123 页；2026-11-03 Lead 复核追加后，`static/` 下 4 个
+> **有 nginx 短路由、且在 nav.js 导航内**的只读投影页入清单 → 127 页；随后 rebase 到 master
+> 同批登记 master 新增的 2 页（`case.html`、`dept_chat.html`）→ **129 页**。
+> 差=6，页面本体与归类详见复核文档 §3/§5。
 
 ### 2.1 扫描范围
 
@@ -31,13 +37,22 @@ portal/protos/*.html
 portal/czsc-eval/*.html
 portal/chanlun-learn-report/*.html
 portal/quant/*.html                      # Quant React 构建产物（适配器例外）
+portal/static/notify_command.html        # static/ 显式补录：有 nginx 短路由的只读投影页
+portal/static/ops_board.html             #   （EXTRA_PAGES，2026-11-03 复核结论，见
+portal/static/sub_admin.html             #    《2026-11-03_page_manifest状态复核与static路由结论_v1.md》）
+portal/static/my_subscription.html
 ```
+
+**动态页对账（v0.2）**：`portal_api.py` 中 `if path == "/x": ... _html_file("<file>.html")`
+形式的「动态路由直出静态页」参与规范路由推导——页面 `path` 取 nginx 实际可达的路由
+（如 `/btview → bt_view.html`、`/sa → stock_analysis.html`、`/intel → intel_workbench.html`），
+避免把在役动态页误判成"静态旧版"；`auth` 随该路由的 `auth_request` 归一（如 `/intel` → oidc）。
 
 **排除（生成物/备份/资产模板，不入清单）：**
 
 | 路径 | 原因 |
 |---|---|
-| `portal/static/**` | 静态资产/静态模板（12 个 HTML，如 `dw_v2.html`、`comm_ticket.html`），非独立路由页 |
+| `portal/static/**`（除上述 4 个路由页外） | 静态资产/静态模板/离线评审页（8 个 HTML，如 `dw_v2.html`、`comm_ticket.html`） |
 | `portal/_templates/**` | 壳模板（`page_shell_v1.html`） |
 | `portal/work/**` | 回滚副本/未发布稿（含 `publish_rollback_*`） |
 | `portal/picks_public/**` | 发布链路生成页 |
@@ -46,24 +61,27 @@ portal/quant/*.html                      # Quant React 构建产物（适配器�
 | `portal/quant/app.html` | L1 Quant 构建产物（未跟踪；nginx `/quant/` 302 目标），生成物不入清单 |
 | 任意 `rollback/backup/_old/archive/snapshot/unpublished` 目录、`*.bak/*.orig/~` 文件 | 备份/归档 |
 
-### 2.2 口径对账（2026-11-03 实测）
+### 2.2 口径对账（2026-11-03 复核后实测）
 
 | 计数 | 值 | 说明 |
 |---|---|---|
-| 在库（git tracked）`portal/**/*.html` | 136 | 97 根 + 17 m（16 主 + auth/callback）+ 12 static + 4 protos + 3 czsc-eval + 1 chanlun + 1 quant + 1 _templates |
-| 减 `static/` 12 | 124 | 资产/静态模板不属于页面清单 |
-| 减 `_templates/` 1 | **123** | **清单最终页数 = 123** |
-| 三态分布 | active 71 / legacy 22 / review 30 | 见 §5 |
-| 未入清单的 live 增量 | `picks_public/`、`work/`、`data/`、`agent_board.html` | 生成物/备份，不参与 UI 三件套检查 |
+| 在库（git tracked）`portal/**/*.html` | 138 | 99 根（含新增 case/dept_chat）+ 17 m（16 主 + auth/callback）+ 12 static + 4 protos + 3 czsc-eval + 1 chanlun + 1 quant + 1 _templates |
+| 减 `static/` 非路由页 8 | 130 | 12 个 static HTML 中 4 个有 nginx 短路由（入清单），其余 8 个属资产/模板/离线页 |
+| 减 `_templates/` 1 | **129** | **清单最终页数 = 129**（原 123 + 4 static 路由页 + 2 master 新增页） |
+| 三态分布 | active 83 / legacy 16 / review 30 | 见 §5 |
+| 未入清单的 live 增量 | `picks_public/`、`work/`、`data/`、`agent_board.html`、`quant/app.html` | 生成物/备份，不参与 UI 三件套检查 |
 
 > 与"实测 153 个 HTML"的差异：153/155 含 picks_public、work 回滚、data 工作区等生成物；
-> 生产审计页以本清单 123 页为准（与 UI 宪法验收表"页面清单 100%（W3）"同一口径）。
+> 生产审计页以本清单 129 页为准（与 UI 宪法验收表"页面清单 100%（W3）"同一口径）。
+> 原 v0 的 123 页为"页目录口径"；127 为"页目录 + static 路由页"口径；129 = 127 + master
+> 新增 2 页（rebase 同批登记；后续 master 再新增页面须同批 `--generate`）。
 
 ### 2.3 不在本清单 v0 的对象
 
-- **动态页面**（portal_api 直接渲染，无静态文件）：`/portal`、`/bt`、`/intel`、`/flow`、
-  `/capability`、`/org`、`/perf` 等，由 `tools/portal_route_baseline.json`（293 条路由）约束；
+- **纯动态页面**（portal_api 直接渲染 HTML、无静态文件可登记）：`/portal`、`/bt`、`/kg/*`、
+  `/council`、`/devops` 等，由 `tools/portal_route_baseline.json`（293 条路由）约束；
   v0 仅在 `entry_map` 登记其中入口职责关键的 `/portal`。
+  （注：**动态路由直出静态文件**的页面已入清单并按路由归一，见 §2.1。）
 - **外部适配器**：`/hermes/`（8787 反代）仅在 `entry_map` 以 `external:hermes` 登记。
 - **H5 参数路由**：`/m/strategy/<id>`、`/m/feed/<ticket>` 复用 `m/strategy.html`、`m/feed.html`，
   v0 不单列条目，在对应页 `note` 中说明。
@@ -75,24 +93,25 @@ portal/quant/*.html                      # Quant React 构建产物（适配器�
 ```jsonc
 {
   "schema": "lingjie/page-manifest/v0",
-  "generated_at": "2026-11-03T09:53:54+08:00",
-  "generator": "tools/page_manifest.py v0.1",
-  "scan":   { "root": "portal", "dirs": [...], "excluded_dirs": [...], ... },
+  "generated_at": "2026-11-03T...",
+  "generator": "tools/page_manifest.py v0.2",
+  "scan":   { "root": "portal", "dirs": [...], "extra_pages": [...], "excluded_dirs": [...],
+              "dynamic_page_routes": { "portal/bt_view.html": ["/btview"], ... } },
   "route_baseline": { "present": true, "path": "tools/portal_route_baseline.json",
                       "generated_at": "...", "total": 293, "sha256": "..." },
   "entry_map": [ { "entry": "/", "source": "portal/home_v3.html", "role": "...",
                    "theme": "dark-os", "nav": "nav-js", "status": "active", "note": "..." }, ... ],
-  "counts": { "total": 123, "by_status": {...}, "by_family": {...} },
+  "counts": { "total": 129, "by_status": {...}, "by_family": {...} },
   "pages": [
     {
       "id": "page/zero_proto",              // 全局唯一，page/<slug>
-      "path": "/zero_proto.html",           // 规范路由（来自 nginx try_files / m 规则 / 静态直链）
+      "path": "/zero_proto.html",           // 规范路由：nginx try_files / 动态页可达路由 / m 规则 / 静态直链
       "family": "cockpit",                  // cockpit|os|portal|h5|adapter（legacy/review 由 status 表达）
       "title": "零界 · AI 驾驶舱",
       "theme": "light-cockpit",             // light-cockpit|dark-os|h5|adapter:hermes|adapter:quant|legacy-dark
       "shell": "cockpit-shell",             // cockpit-shell|os-shell|h5-shell|none
       "nav": "own-6",                       // nav-js|own-6|m-shell|none
-      "auth": "none",                       // none|oidc|portal-token
+      "auth": "none",                       // none|oidc|portal-token（oidc 随规范路由的 auth_request）
       "status": "active",                   // active|legacy|review|archived
       "owner": "A0",
       "apis": ["/api/council/state"],       // 页面直接引用的 /api/*（静态扫描，可能不全）
@@ -148,28 +167,37 @@ portal/quant/*.html                      # Quant React 构建产物（适配器�
 
 ---
 
-## 5. 当前基线（2026-11-03 09:53 生成，123 页）
+## 5. 当前基线（2026-11-03 复核 + rebase 后生成，129 页）
 
-- 三态：**active 71 / legacy 22 / review 30 / archived 0**
-- family：os 101、h5 17、portal 3、adapter 1、cockpit 1
-- theme：dark-os 77、legacy-dark 27、h5 17、adapter:quant 1、light-cockpit 1
-- auth：none 106、oidc 14、portal-token 3
+- 三态：**active 83 / legacy 16 / review 30 / archived 0**
+- family：os 107、h5 17、portal 3、adapter 1、cockpit 1
+- theme：dark-os 77、legacy-dark 33、h5 17、adapter:quant 1、light-cockpit 1
+- auth：none 109、oidc 17、portal-token 3
 - 路由基线：`tools/portal_route_baseline.json` 293 条（sha256 记录在 manifest 头部）
 
-**legacy 22 页构成**：
+**legacy 16 页构成**：
 1. 旧入口/旧版：`/home.html`、`/hall`（旧 index）、`/picks_index.html`（301 → `/picks.html`）、
-   `/approvals.html`、`/bt_view.html`、`/bt2_view.html`、`/capability.html`、`/dev_legion.html`、
-   `/flow.html`、`/org.html`、`/perf.html`、`/stock_analysis.html`（12 页，多数对应 8091 动态页或称旧版）；
+   `/dev_legion.html`（v1，nav 已指 v2）、`/notify_command.html`（旧版通知指挥，现行页为
+   `/notify-command` 静态投影）；`/org.html`（新版指挥台待接线，**待 A0**）；
 2. **缺 tokens 的宪法 §11 缺口页**（生产可用但未接设计令牌，W1 补齐后转 active）：
    `/dw`、`/h14_shadow.html`、`/kb_cards.html`、`/kb_corpus.html`、`/kb_ingest.html`、
    `/kb_reports.html`、`/minervini.html`、`/selection.html`、`/shadow.html`（9 页，均在 nav.js 导航内）；
 3. Quant 旧构建产物：`/quant/`（nginx 已 302 → `/quant/app.html`，app.html 为未跟踪构建产物，不入清单）。
 
+> 复核后 `capability/flow/perf/bt_view/bt2_view/stock_analysis/approvals` 7 页由 legacy 修正为 active
+> （动态页直出/在役看板，详见《2026-11-03_page_manifest状态复核与static路由结论_v1.md》§2）。
+
 **review 30 页构成**：os_entry 旧入口系 6 页（v系全部 nginx 302 → `/os-entry`）、
 `os_demo`/`os_integrated_demo`/`os_map`/`os_goal`/`os_personal`/`os_room_preview`/`os_software`/
-`os_approval_voice`/`os_voice_eval`/`zero_home`/`quant_v2_demo`（评审稿/骨架/演示）、
+`os_approval_voice`/`os_voice_eval`/`zero_home`/`quant_v2_demo`（评审稿/骨架/演示；其中
+os_software 未上线、os_approval_voice/os_voice_eval 待 A0 定是否转 active）、
 `d1_war_room`/`sandbox`/`watch_admin_page`/`preview_hq`（原型/预览）、
-`protos/` 4 页（待拍板原型）、`czsc-eval/` 3 页与 `chanlun-learn-report/`（静态报告证据页）。
+`protos/` 4 页（待拍板原型）、`czsc-eval/` 3 页与 `chanlun-learn-report/`（静态报告证据页）、
+`intel_dossier_skeleton`（/intel-dossier 路由未接通）。
+
+**static/ 4 个路由投影页（active，theme 暂 legacy-dark）**：
+`/notify-command`、`/ops-board`、`/sub-admin`、`/my-subscription`（未接 os_theme/ui.css，W2 迁主题；
+`sub_admin` 页面层鉴权待评估）。
 
 ---
 
@@ -205,7 +233,8 @@ python tools/page_manifest.py --root C:\项目\老田的AI助手 --check
 |---|---|---|
 | `missing_page` | 磁盘上有生产页，manifest 未登记 | `--generate`（并人工复核 status） |
 | `extra_page` | manifest 有，磁盘上无文件 | 删除/重命名后 `--generate`（审查是否应保留 review 归档条目） |
-| `route_drift` | manifest `path` ≠ nginx/m 规则推导的规范路由 | 改 nginx（L2 单）后 `--generate`；或修正 manifest |
+| `route_drift` | manifest `path` ≠ nginx/m 规则/**动态页可达路由**推导的规范路由 | 改 nginx（L2 单）后 `--generate`；或修正 manifest |
+| `auth_drift` | manifest `auth` 与规范路由的 OIDC 保护状态不一致（如页面已挂 `/intel` 仍标 none） | 核实路由/访问控制后 `--generate` 刷新 |
 | `active_deps` | active 页缺 tokens.css / nav.js / m.js 依赖 | 补齐资产（page_shell_gen）或把 status 降为 legacy/review |
 | `entry_map_*` | 入口职责缺失/与页面登记不一致（默认首页非 home_v3 等） | 修 `ENTRY_MAP` 后 `--generate` |
 | `route_baseline_drift` | 路由基线 sha256/条数变化，manifest 未对账 | 先 `portal_route_inventory --write-baseline`（同批路由变更），再 `--generate` |
@@ -224,7 +253,12 @@ python tools/page_manifest.py --root C:\项目\老田的AI助手 --check
    active 页依赖校验会兜底（例如声明 dark-os+nav-js 却没引 nav.js 会 FAIL）。
 4. **改路由基线**：`portal_route_inventory.py --write-baseline` 与页面/清单**同一提交**，
    然后 `page_manifest.py --generate` 刷新头部 sha256。
-5. **提交前自检（必须）**：
+5. **改动态页路由**（portal_api 把路由切到/新增直出静态文件，或 nginx 新增/删除页路由）：
+   同批 `page_manifest.py --generate`——工具会重新推导规范 `path`/`auth`；
+   nginx 未接通的动态路由不会虚构路径（保持静态直链并在 note 标注缺口）。
+6. **static/ 新增有 nginx 短路由的页面**：在 `tools/page_manifest.py::EXTRA_PAGES` 显式补录后
+   `--generate`（目录口径排除 + 路由页显式补录，见复核文档 §3）。
+7. **提交前自检（必须）**：
 
    ```powershell
    python tools/page_manifest.py --check
@@ -248,34 +282,43 @@ python tools/page_manifest.py --root C:\项目\老田的AI助手 --check
 
 ---
 
-## 9. 已知缺口 / 待复核（交 Lead 复核）
+## 9. 已知缺口 / 待复核
 
-1. **status 人工判定不确定项**（已按"宁 legacy/review 不伪造 active"处理）：
-   - `dev_legion_v2.html`（判 active：nav.js 直接挂 `/dev_legion_v2.html`；v1 判 legacy）；
-   - `card_review.html`、`ui_kit.html`（判 active：前者在 nav 内，后者为 UI Kit 开发参考页）；
-   - `os_approval_voice.html`、`os_software.html`、`os_voice_eval.html`（判 review：实验/骨架/评测工具）；
-   - `capability/flow/org/perf/bt_view/bt2_view/stock_analysis`（判 legacy：nav 指向对应 8091 动态页）。
+> 15 页不确定性复核 + static/ 结论 + 路由缺口已单独成文：
+> **`docs/design/2026-11-03_page_manifest状态复核与static路由结论_v1.md`**（含逐页证据与 8734 实测）。
+> 本节只列仍未关闭项（不确定项保持现状，已写 note）。
+
+1. **待 A0/ARCH1 决策项**：
+   - `org.html`：新版 Agent 指挥台未接 nginx 短路由（`/org` 仍历史 SSR）→ 是否接线/转 active；
+   - `os_approval_voice.html`、`os_voice_eval.html`：功能/后端在役但无入口无引用 → 是否转 active；
+   - `os_software.html`：页面自述接口需 8091 重启后生效（未上线）→ 上线后转 active；
+   - 3 个页面当前保持 review/legacy，**不伪造 active**。
 2. **13 页缺 tokens 的宪法 §11 缺口**：本清单口径下实测 10 页（9 页在 nav 内 + quant 构建产物），
    已标 legacy；W1/W2 补齐 tokens 后应把 status 改回 active（`--check` 会强制依赖齐全）。
-3. `portal/static/` 下 4 个有显式 nginx 路由的静态页（`notify-command`、`ops-board`、`sub-admin`、
-   `my-subscription`）未入 v0 清单（口径排除 static/），建议 W3 决定是否单列"静态路由页"补录。
+3. **路由缺口/安全债（L2 单，非 manifest 工具写域，详见复核文档 §4.2）**：
+   `/capability`、`/perf`、`/intel-dossier` 静态页在役但 nginx 未接通（8734 404）；
+   `/bt_view.html`、`/bt2_view.html` 直链被 `^~ /bt` 前缀反代劫持后 404（短路由 `/btview`/`/bt2view` 正常）；
+   **`/intel_workbench.html` 静态直链实测未过 auth_request（情报内容可绕过 OIDC 直读，建议优先处置）**。
 4. `m/strategy.html`、`m/feed.html` 的参数路由（`/m/strategy/<id>`、`/m/feed/<ticket>`）未单列条目。
-5. 动态页面（/bt、/intel、/sa 等 8091 渲染页）不在 v0 清单，仅由路由基线约束；如需 100% 页面覆盖，
-   W3 起可加 `dynamic_pages` 段（需与 portal_api 路由表连通）。
-6. `owner` 目前 122 页 `A0`、1 页 `ARCH1`，未按域细化；细化时需同步 manifest。
+5. 纯动态渲染页（/bt、/kg/*、/council 等无静态文件）不在 v0 清单，仅由路由基线约束；
+   如需 100% 页面覆盖，W3 起可加 `dynamic_pages` 段（需与 portal_api 路由表连通）。
+6. `owner` 目前 128 页 `A0`、1 页 `ARCH1`，未按域细化；细化时需同步 manifest。
+7. `static/` 4 个路由投影页未接 `os_theme.css`/`ui.css`（theme 暂 `legacy-dark`，W2 迁主题）；
+   `sub_admin` 页面层未接 `auth_request`（依赖 8091 后端密钥闸，L2 待评估）。
 
 ---
 
 ## 10. 回滚
 
-- 清单/工具/测试均为**新增文件**，回滚 = `git revert` 对应提交（无运行时/服务/nginx 依赖，不影响 8734）。
-- 工具只读扫描 portal 页面与 nginx.conf（不改任何 HTML/nginx/路由基线/tokens）。
+- 清单/工具/测试/文档为新增或本工单内更新文件，回滚 = `git revert` 本工单提交（无运行时/服务/nginx 依赖，不影响 8734）。
+- 工具只读扫描 portal 页面、nginx.conf、portal_api.py（不改任何 HTML/nginx/路由基线/tokens）。
 - `--generate` 写盘前保留人工字段，误生成可用 `git checkout -- portal/config/page_manifest.json` 恢复。
 
 ---
 
 ## 11. 参考
 
+- `docs/design/2026-11-03_page_manifest状态复核与static路由结论_v1.md`（15 页 status 复核 + static/4 页入清单结论 + 路由缺口）
 - `docs/design/2026-11-03_零界UI宪法_v1.md`（清单层/schema v0/入口职责）
 - `docs/design/2026-11-03_UI页面清单与入口职责_v1.md`（人工版页面清单 v0）
 - `tools/portal_route_inventory.py` + `tools/portal_route_baseline.json`（路由基线，293 条）

@@ -69,7 +69,19 @@ server {
     }
     location = /login { try_files /login.html =404; }
     location = /hall { try_files /index.html =404; }
+    location = /notify-command { try_files /static/notify_command.html =404; }
+    # 动态页：portal_api 直出 dyn.html（无 try_files，走 8091 动态页语义）
+    location = /dyn-page { auth_request /_auth_guard; }
 }
+"""
+
+PORTAL_API_STUB = """
+class Handler:
+    def do_GET(self):
+        if path == "/dyn-page":
+            self._html_file(os.path.join(ROOT, "dyn.html"))
+        elif path == "/ghost":
+            self._html_file(os.path.join(ROOT, "ghost.html"))
 """
 
 
@@ -81,8 +93,9 @@ def _mk(root: Path, rel: str, content: str) -> Path:
 
 
 def _build_tree(root: Path) -> None:
-    """最小生产页集 + 入口页 + 生成物/备份目录（应被排除）。"""
+    """最小生产页集 + 入口页 + 动态页 + 生成物/备份目录（应被排除）。"""
     _mk(root, "portal/nginx.conf", NGINX_CONF)
+    _mk(root, "portal/portal_api.py", PORTAL_API_STUB)
     _mk(root, "portal/home_v3.html", _page("首页"))
     _mk(root, "portal/alpha.html", _page("Alpha 页"))
     _mk(root, "portal/beta.html", _page("Beta 页"))
@@ -93,10 +106,14 @@ def _build_tree(root: Path) -> None:
     _mk(root, "portal/os_entry_v9_prod.html", _page("深色入口"))
     _mk(root, "portal/os.html", _page("实况深页"))
     _mk(root, "portal/hq.html", _page("指挥部"))
+    _mk(root, "portal/dyn.html", _page("动态页"))
+    _mk(root, "portal/ghost.html", _page("不可达动态页"))
     _mk(root, "portal/m/index.html", _page("移动端", mjs=True))
     _mk(root, "portal/m/picks.html", _page("移动选股", mjs=True))
     _mk(root, "portal/quant/index.html", _page("量化包", tokens=False, nav=False, os_theme=False))
     _mk(root, "portal/quant/app.html", _page("量化包 app（构建产物）"))
+    # static/ 有 nginx 短路由的只读投影页：入清单
+    _mk(root, "portal/static/notify_command.html", _page("通知指挥", os_theme=False))
     # 生成物/备份/资产模板：均不得进入清单
     _mk(root, "portal/work/rollback_1/old.html", _page("回滚副本"))
     _mk(root, "portal/picks_public/gen.html", _page("发布生成页"))
@@ -150,10 +167,33 @@ def test_current_manifest_covers_production_pages():
     sources = {p["source"] for p in manifest["pages"]}
     disk = {p.relative_to(P.resolve_root()).as_posix() for p in P.production_files()}
     assert sources == disk
-    assert len(manifest["pages"]) == 123
+    assert len(manifest["pages"]) == 129
     counts = manifest["counts"]["by_status"]
-    assert counts["active"] + counts["legacy"] + counts["review"] + counts["archived"] == 123
+    assert counts["active"] + counts["legacy"] + counts["review"] + counts["archived"] == 129
     assert counts["review"] >= 1 and counts["legacy"] >= 1 and counts["active"] >= 1
+    # static/ 4 个有 nginx 短路由的只读投影页已入清单（2026-11-03 复核结论）
+    by_source = {p["source"]: p for p in manifest["pages"]}
+    for rel in P.EXTRA_PAGES:
+        assert rel in by_source, rel
+        assert by_source[rel]["status"] == "active"
+        assert by_source[rel]["theme"] == "legacy-dark"
+    # 动态页（portal_api 直出静态文件）按可达路由归一
+    assert by_source["portal/bt_view.html"]["path"] == "/btview"
+    assert by_source["portal/bt2_view.html"]["path"] == "/bt2view"
+    assert by_source["portal/stock_analysis.html"]["path"] == "/sa"
+    assert by_source["portal/flow.html"]["path"] == "/flow"
+    assert by_source["portal/approvals.html"]["path"] == "/approvals"
+    assert by_source["portal/approvals.html"]["auth"] == "oidc"
+    assert by_source["portal/intel_workbench.html"]["path"] == "/intel"
+    assert by_source["portal/intel_workbench.html"]["auth"] == "oidc"
+    # capability/perf：nginx 未接通短路由，仍按静态直链登记（route gap 见复核文档）
+    assert by_source["portal/capability.html"]["path"] == "/capability.html"
+    assert by_source["portal/perf.html"]["path"] == "/perf.html"
+    # 复核结论：7 页 legacy→active
+    for rel in ("portal/approvals.html", "portal/capability.html", "portal/flow.html",
+                "portal/perf.html", "portal/bt_view.html", "portal/bt2_view.html",
+                "portal/stock_analysis.html"):
+        assert by_source[rel]["status"] == "active", rel
 
 
 def test_current_manifest_schema_and_unique(capsys):
@@ -174,9 +214,10 @@ def test_current_manifest_schema_and_unique(capsys):
     # 入口职责（UI 宪法 §1）
     entries = {e["entry"] for e in manifest["entry_map"]}
     assert {"/", "/portal", "/zero_proto.html", "/os-entry", "/hq", "/home.html"} <= entries
-    # 生成物/备份不入清单
+    # 生成物/备份不入清单：static/ 仅允许 4 个有 nginx 短路由的只读投影页
+    static_pages = {p["source"] for p in manifest["pages"] if p["source"].startswith("portal/static/")}
+    assert static_pages == set(P.EXTRA_PAGES)
     for page in manifest["pages"]:
-        assert "/static/" not in page["source"]
         assert "/_templates/" not in page["source"]
         assert "picks_public" not in page["source"]
         assert "work/" not in page["source"]
@@ -201,6 +242,15 @@ def test_tmp_tree_generate_and_check_ok(tree_with_manifest):
     assert "portal/_templates/page_shell_v1.html" not in sources
     assert "portal/agent_board.html" not in sources
     assert "portal/alpha.html" in sources
+    # static/ 有 nginx 短路由的页：入清单并按短路由映射
+    assert "portal/static/notify_command.html" in sources
+    by_source = {p["source"]: p for p in manifest["pages"]}
+    assert by_source["portal/static/notify_command.html"]["path"] == "/notify-command"
+    # 动态页（portal_api 直出）：按 nginx 可达路由归一 + 继承 OIDC
+    assert by_source["portal/dyn.html"]["path"] == "/dyn-page"
+    assert by_source["portal/dyn.html"]["auth"] == "oidc"
+    # 动态页路由 nginx 不可达 → 回退静态直链
+    assert by_source["portal/ghost.html"]["path"] == "/ghost.html"
 
 
 def test_missing_manifest_entry_fails(tree_with_manifest):
@@ -356,11 +406,20 @@ def test_list_and_json(monkeypatch, capsys, tree_with_manifest):
     assert isinstance(dumped["pages"], list)
 
 
+def test_route_gap_dynamic_page_falls_back(tree_with_manifest):
+    # 动态页路由在 nginx 不存在（/ghost 未接线）→ 规范路由回退静态直链，且不误判可达
+    manifest = _manifest(tree_with_manifest)
+    page = next(p for p in manifest["pages"] if p["source"] == "portal/ghost.html")
+    assert page["path"] == "/ghost.html"
+    assert page["auth"] == "none"
+
+
 def test_scan_excludes_generated_and_backup(tree):
     files = {p.relative_to(tree).as_posix() for p in P.production_files(tree)}
     assert "portal/alpha.html" in files
     assert "portal/m/picks.html" in files
     assert "portal/quant/index.html" in files
+    assert "portal/static/notify_command.html" in files  # static/ 有短路由的只读投影页补录
     for excluded in ("portal/work/rollback_1/old.html", "portal/picks_public/gen.html",
                      "portal/static/dw_v2.html", "portal/_templates/page_shell_v1.html",
                      "portal/data/os_goals/x/workspace/w.html", "portal/agent_board.html",

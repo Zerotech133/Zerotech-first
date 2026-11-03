@@ -1,7 +1,7 @@
 {
  "schema": "lingjie/page-manifest/v0",
- "generated_at": "2026-11-03T09:56:24+08:00",
- "generator": "tools/page_manifest.py v0.1",
+ "generated_at": "2026-11-03T11:29:10+08:00",
+ "generator": "tools/page_manifest.py v0.2",
  "scan": {
   "root": "portal",
   "dirs": [
@@ -11,6 +11,12 @@
    "portal/czsc-eval",
    "portal/chanlun-learn-report",
    "portal/quant"
+  ],
+  "extra_pages": [
+   "portal/static/notify_command.html",
+   "portal/static/ops_board.html",
+   "portal/static/sub_admin.html",
+   "portal/static/my_subscription.html"
   ],
   "excluded_dirs": [
    ".pytest_cache",
@@ -37,7 +43,60 @@
    "agent_board.html"
   ],
   "exclude_dir_pattern": "(rollback|backup|_bak|\\.bak|_old|archive|snapshot|unpublished)",
-  "note": "生成物/备份/静态模板不入清单；页面新增/删除须同批更新 manifest 与路由基线"
+  "dynamic_page_routes": {
+   "portal/acad1_pool.html": [
+    "/acad1/pool"
+   ],
+   "portal/approvals.html": [
+    "/approvals"
+   ],
+   "portal/bt2_view.html": [
+    "/bt2view"
+   ],
+   "portal/bt_view.html": [
+    "/btview"
+   ],
+   "portal/capability.html": [
+    "/capability"
+   ],
+   "portal/flow.html": [
+    "/flow"
+   ],
+   "portal/intel_dossier_skeleton.html": [
+    "/intel-dossier"
+   ],
+   "portal/intel_workbench.html": [
+    "/intel"
+   ],
+   "portal/paper.html": [
+    "/paper"
+   ],
+   "portal/perf.html": [
+    "/perf"
+   ],
+   "portal/quant_paper.html": [
+    "/quant/paper"
+   ],
+   "portal/screen.html": [
+    "/screen"
+   ],
+   "portal/static/comm_ticket.html": [
+    "/comm/ticket"
+   ],
+   "portal/static/my_subscription.html": [
+    "/my-subscription"
+   ],
+   "portal/static/notify_command.html": [
+    "/notify-command"
+   ],
+   "portal/static/ops_board.html": [
+    "/ops-board"
+   ],
+   "portal/stock_analysis.html": [
+    "/sa"
+   ]
+  },
+  "note": "生成物/备份/静态模板不入清单；static/ 仅补录有 nginx 短路由的 4 个只读投影页；动态页（portal_api 直出静态文件）按可达路由归一；页面新增/删除须同批更新 manifest 与路由基线"
  },
  "route_baseline": {
   "present": true,
@@ -148,16 +207,16 @@
   }
  ],
  "counts": {
-  "total": 123,
+  "total": 129,
   "by_status": {
-   "active": 71,
-   "legacy": 22,
+   "active": 83,
+   "legacy": 16,
    "review": 30,
    "archived": 0
   },
   "by_family": {
    "cockpit": 1,
-   "os": 101,
+   "os": 107,
    "portal": 3,
    "h5": 17,
    "adapter": 1,
@@ -195,7 +254,7 @@
    "apis": [
     "/api/acad1/pool"
    ],
-   "note": "生产页；nginx 路由 /acad1/pool → 本页",
+   "note": "生产页；门户路由 /acad1/pool（portal_api 动态页直出本文件）",
    "source": "portal/acad1_pool.html"
   },
   {
@@ -230,19 +289,19 @@
   },
   {
    "id": "page/approvals",
-   "path": "/approvals.html",
+   "path": "/approvals",
    "family": "os",
    "title": "Approval 注册表 · 零界",
    "theme": "legacy-dark",
    "shell": "none",
    "nav": "nav-js",
    "auth": "oidc",
-   "status": "legacy",
+   "status": "active",
    "owner": "A0",
    "apis": [
     "/api/platform/approvals"
    ],
-   "note": "静态注册表页（nginx /approvals.html 302 → /approvals 8091 动态页）；保留入口，以动态页为准",
+   "note": "审批注册表只读聚合页；nginx /approvals（OIDC）→ 8091 → portal_api 直出本文件；直链 /approvals.html 302 → /approvals",
    "source": "portal/approvals.html"
   },
   {
@@ -274,6 +333,8 @@
    "status": "active",
    "owner": "A0",
    "apis": [
+    "/api/auth/me",
+    "/api/chat",
     "/api/hq/snapshot"
    ],
    "note": "生产页；nginx 路由 /briefing → 本页；legacy-dark 基底，待 W2 迁 dark-os/light-cockpit；OIDC 登录保护",
@@ -281,14 +342,14 @@
   },
   {
    "id": "page/bt2_view",
-   "path": "/bt2_view.html",
+   "path": "/bt2view",
    "family": "os",
    "title": "回测框架 v2 · 零界",
    "theme": "dark-os",
    "shell": "os-shell",
    "nav": "nav-js",
    "auth": "none",
-   "status": "legacy",
+   "status": "active",
    "owner": "A0",
    "apis": [
     "/api/bt2_job",
@@ -296,25 +357,25 @@
     "/api/bt2_nl",
     "/api/bt2_run"
    ],
-   "note": "静态回测框架 v2 旧版；现行动态 /bt2view（8091），静态版保留/待归档",
+   "note": "回测框架 v2（K-STOCK-285b）；门户 /bt2view（nginx ^~ /bt → 8091）→ portal_api 直出本文件",
    "source": "portal/bt2_view.html"
   },
   {
    "id": "page/bt_view",
-   "path": "/bt_view.html",
+   "path": "/btview",
    "family": "os",
    "title": "回测中心 · 零界",
    "theme": "dark-os",
    "shell": "os-shell",
    "nav": "nav-js",
    "auth": "none",
-   "status": "legacy",
+   "status": "active",
    "owner": "A0",
    "apis": [
     "/api/bt_daily_ledger",
     "/api/ops_today"
    ],
-   "note": "静态回测中心旧版；现行 /bt、/btview 为 8091 动态页，静态版保留/待归档",
+   "note": "回测中心（K-STOCK-277，逐日账本/决策流水）；门户 /btview（nginx ^~ /bt → 8091）→ portal_api 直出本文件",
    "source": "portal/bt_view.html"
   },
   {
@@ -326,12 +387,12 @@
    "shell": "os-shell",
    "nav": "nav-js",
    "auth": "none",
-   "status": "legacy",
+   "status": "active",
    "owner": "A0",
    "apis": [
     "/api/capability/board"
    ],
-   "note": "静态旧版；nav.js 指向动态 /capability（8091 渲染），静态版保留/待归档",
+   "note": "能力看板（M3-P5，数据 /api/capability/board）页在役；nginx 缺 /capability 短路由（8734 /capability=404，nav.js 该入口断链，L2 待修），当前经直链 /capability.html 可达",
    "source": "portal/capability.html"
   },
   {
@@ -346,8 +407,28 @@
    "status": "active",
    "owner": "A0",
    "apis": [],
-   "note": "学习卡审核工具页（nav.js 挂 /card_review.html，100 候选审核）",
+   "note": "学习卡审核工具页（nav.js 挂 /card_review.html；100 候选人工审核 + decisions 导出，11-01 学习卡 wave 在役）",
    "source": "portal/card_review.html"
+  },
+  {
+   "id": "page/case",
+   "path": "/case",
+   "family": "os",
+   "title": "零界 · Case 决策流程",
+   "theme": "legacy-dark",
+   "shell": "none",
+   "nav": "nav-js",
+   "auth": "oidc",
+   "status": "active",
+   "owner": "A0",
+   "apis": [
+    "/api/auth/me",
+    "/api/chat",
+    "/api/hq/meeting/dispatch",
+    "/api/hq/meeting/save"
+   ],
+   "note": "Case 决策流程页（WO-CASE-UI-20261103 七步：汇总/五角色/会议/方案/审批/下发；nginx /case OIDC 保护，审批绑定登录身份/角色）",
+   "source": "portal/case.html"
   },
   {
    "id": "page/cases",
@@ -557,6 +638,24 @@
    "source": "portal/dataops.html"
   },
   {
+   "id": "page/dept_chat",
+   "path": "/dept-chat",
+   "family": "os",
+   "title": "零界 · 部门点对点对话",
+   "theme": "legacy-dark",
+   "shell": "none",
+   "nav": "nav-js",
+   "auth": "oidc",
+   "status": "active",
+   "owner": "A0",
+   "apis": [
+    "/api/chat",
+    "/api/hq/snapshot"
+   ],
+   "note": "部门点对点对话页（/api/chat 会话；nginx /dept-chat OIDC 保护）",
+   "source": "portal/dept_chat.html"
+  },
+  {
    "id": "page/dev",
    "path": "/dev",
    "family": "os",
@@ -602,7 +701,7 @@
    "status": "active",
    "owner": "A0",
    "apis": [],
-   "note": "生产页；静态直链 /dev_legion_v2.html；legacy-dark 基底，待 W2 迁 dark-os/light-cockpit",
+   "note": "曹操军团研发指挥台 v2（/api/dev/legion 只读；nav.js 挂 /dev_legion_v2.html，11-01 WO-DEV-LEGION-V2 交付，已取代 v1）",
    "source": "portal/dev_legion_v2.html"
   },
   {
@@ -622,14 +721,14 @@
   },
   {
    "id": "page/flow",
-   "path": "/flow.html",
+   "path": "/flow",
    "family": "os",
    "title": "动作流中心 · 零界",
    "theme": "dark-os",
    "shell": "os-shell",
    "nav": "nav-js",
    "auth": "none",
-   "status": "legacy",
+   "status": "active",
    "owner": "A0",
    "apis": [
     "/api/flow/artifact",
@@ -637,7 +736,7 @@
     "/api/flow/rerun",
     "/api/flow/stats"
    ],
-   "note": "静态旧版；nav.js 指向动态 /flow（8091），静态版保留/待归档",
+   "note": "动作流中心（F1，/api/flow/*）；nginx /flow → 8091 → portal_api 直出本文件",
    "source": "portal/flow.html"
   },
   {
@@ -728,6 +827,25 @@
    "source": "portal/ide.html"
   },
   {
+   "id": "page/intel_workbench",
+   "path": "/intel",
+   "family": "os",
+   "title": "情报工作台｜零界",
+   "theme": "dark-os",
+   "shell": "os-shell",
+   "nav": "nav-js",
+   "auth": "oidc",
+   "status": "active",
+   "owner": "A0",
+   "apis": [
+    "/api/intel/sources",
+    "/api/kg/lineage",
+    "/api/xq/intel/ticker"
+   ],
+   "note": "情报工作台；门户 /intel（nginx OIDC）→ 8091 → portal_api 直出本文件；注意静态直链 /intel_workbench.html 实测未过 auth_request（安全债，L2 待修）",
+   "source": "portal/intel_workbench.html"
+  },
+  {
    "id": "page/intel_dossier_skeleton",
    "path": "/intel_dossier_skeleton.html",
    "family": "os",
@@ -741,27 +859,8 @@
    "apis": [
     "/api/intel-graph/dossier"
    ],
-   "note": "情报对象案卷离线骨架（评审稿）",
+   "note": "情报对象案卷离线骨架（评审稿）；门户 /intel-dossier 在 nginx 未接通（8734=404），当前仅直链 /intel_dossier_skeleton.html 可读",
    "source": "portal/intel_dossier_skeleton.html"
-  },
-  {
-   "id": "page/intel_workbench",
-   "path": "/intel_workbench.html",
-   "family": "os",
-   "title": "情报工作台｜零界",
-   "theme": "dark-os",
-   "shell": "os-shell",
-   "nav": "nav-js",
-   "auth": "none",
-   "status": "active",
-   "owner": "A0",
-   "apis": [
-    "/api/intel/sources",
-    "/api/kg/lineage",
-    "/api/xq/intel/ticker"
-   ],
-   "note": "生产页；静态直链 /intel_workbench.html",
-   "source": "portal/intel_workbench.html"
   },
   {
    "id": "page/kb_cards",
@@ -973,7 +1072,7 @@
    "status": "active",
    "owner": "A0",
    "apis": [],
-   "note": "生产页；静态直链 /m/analysis；m.js 壳导航、移动优先",
+   "note": "生产页；nginx 路由 /m/analysis → 本页；m.js 壳导航、移动优先",
    "source": "portal/m/analysis.html"
   },
   {
@@ -1005,7 +1104,7 @@
    "status": "active",
    "owner": "A0",
    "apis": [],
-   "note": "生产页；静态直链 /m/brief；m.js 壳导航、移动优先",
+   "note": "生产页；nginx 路由 /m/brief → 本页；m.js 壳导航、移动优先",
    "source": "portal/m/brief.html"
   },
   {
@@ -1020,7 +1119,7 @@
    "status": "active",
    "owner": "A0",
    "apis": [],
-   "note": "生产页；静态直链 /m/chan；m.js 壳导航、移动优先",
+   "note": "生产页；nginx 路由 /m/chan → 本页；m.js 壳导航、移动优先",
    "source": "portal/m/chan.html"
   },
   {
@@ -1035,7 +1134,7 @@
    "status": "active",
    "owner": "A0",
    "apis": [],
-   "note": "生产页；静态直链 /m/daily；m.js 壳导航、移动优先",
+   "note": "生产页；nginx 路由 /m/daily → 本页；m.js 壳导航、移动优先",
    "source": "portal/m/daily.html"
   },
   {
@@ -1050,7 +1149,7 @@
    "status": "active",
    "owner": "A0",
    "apis": [],
-   "note": "生产页；静态直链 /m/feed；m.js 壳导航、移动优先",
+   "note": "生产页；nginx 路由 /m/feed → 本页；m.js 壳导航、移动优先",
    "source": "portal/m/feed.html"
   },
   {
@@ -1065,7 +1164,7 @@
    "status": "active",
    "owner": "A0",
    "apis": [],
-   "note": "生产页；静态直链 /m/ledger；m.js 壳导航、移动优先",
+   "note": "生产页；nginx 路由 /m/ledger → 本页；m.js 壳导航、移动优先",
    "source": "portal/m/ledger.html"
   },
   {
@@ -1080,7 +1179,7 @@
    "status": "active",
    "owner": "A0",
    "apis": [],
-   "note": "生产页；静态直链 /m/lineage；m.js 壳导航、移动优先",
+   "note": "生产页；nginx 路由 /m/lineage → 本页；m.js 壳导航、移动优先",
    "source": "portal/m/lineage.html"
   },
   {
@@ -1095,7 +1194,7 @@
    "status": "active",
    "owner": "A0",
    "apis": [],
-   "note": "生产页；静态直链 /m/notify；m.js 壳导航、移动优先",
+   "note": "生产页；nginx 路由 /m/notify → 本页；m.js 壳导航、移动优先",
    "source": "portal/m/notify.html"
   },
   {
@@ -1110,7 +1209,7 @@
    "status": "active",
    "owner": "A0",
    "apis": [],
-   "note": "生产页；静态直链 /m/ops；m.js 壳导航、移动优先",
+   "note": "生产页；nginx 路由 /m/ops → 本页；m.js 壳导航、移动优先",
    "source": "portal/m/ops.html"
   },
   {
@@ -1125,7 +1224,7 @@
    "status": "active",
    "owner": "A0",
    "apis": [],
-   "note": "生产页；静态直链 /m/picks；m.js 壳导航、移动优先",
+   "note": "生产页；nginx 路由 /m/picks → 本页；m.js 壳导航、移动优先",
    "source": "portal/m/picks.html"
   },
   {
@@ -1140,7 +1239,7 @@
    "status": "active",
    "owner": "A0",
    "apis": [],
-   "note": "生产页；静态直链 /m/position；m.js 壳导航、移动优先",
+   "note": "生产页；nginx 路由 /m/position → 本页；m.js 壳导航、移动优先",
    "source": "portal/m/position.html"
   },
   {
@@ -1155,7 +1254,7 @@
    "status": "active",
    "owner": "A0",
    "apis": [],
-   "note": "生产页；静态直链 /m/push；m.js 壳导航、移动优先",
+   "note": "生产页；nginx 路由 /m/push → 本页；m.js 壳导航、移动优先",
    "source": "portal/m/push.html"
   },
   {
@@ -1170,7 +1269,7 @@
    "status": "active",
    "owner": "A0",
    "apis": [],
-   "note": "生产页；静态直链 /m/strategy；m.js 壳导航、移动优先",
+   "note": "生产页；nginx 路由 /m/strategy → 本页；m.js 壳导航、移动优先",
    "source": "portal/m/strategy.html"
   },
   {
@@ -1185,7 +1284,7 @@
    "status": "active",
    "owner": "A0",
    "apis": [],
-   "note": "生产页；静态直链 /m/subscription；m.js 壳导航、移动优先",
+   "note": "生产页；nginx 路由 /m/subscription → 本页；m.js 壳导航、移动优先",
    "source": "portal/m/subscription.html"
   },
   {
@@ -1200,7 +1299,7 @@
    "status": "active",
    "owner": "A0",
    "apis": [],
-   "note": "生产页；静态直链 /m/ticket；m.js 壳导航、移动优先",
+   "note": "生产页；nginx 路由 /m/ticket → 本页；m.js 壳导航、移动优先",
    "source": "portal/m/ticket.html"
   },
   {
@@ -1302,6 +1401,23 @@
    "source": "portal/model_admin.html"
   },
   {
+   "id": "page/static_my_subscription",
+   "path": "/my-subscription",
+   "family": "os",
+   "title": "我的订阅 · 只读投影｜零界",
+   "theme": "legacy-dark",
+   "shell": "none",
+   "nav": "nav-js",
+   "auth": "none",
+   "status": "active",
+   "owner": "A0",
+   "apis": [
+    "/api/subscription/status"
+   ],
+   "note": "客户订阅面只读投影（/api/subscription/status，字段最小化）；nginx /my-subscription → 本文件（移动 UA 302 → /m/subscription）",
+   "source": "portal/static/my_subscription.html"
+  },
+  {
    "id": "page/news_intel",
    "path": "/news_intel.html",
    "family": "os",
@@ -1315,8 +1431,25 @@
    "apis": [
     "/api/news/intel"
    ],
-   "note": "生产页；nginx 路由 /news_intel.html → 本页；OIDC 登录保护",
+   "note": "生产页；静态直链 /news_intel.html；OIDC 登录保护",
    "source": "portal/news_intel.html"
+  },
+  {
+   "id": "page/static_notify_command",
+   "path": "/notify-command",
+   "family": "os",
+   "title": "通知指挥 · 只读投影｜零界",
+   "theme": "legacy-dark",
+   "shell": "none",
+   "nav": "nav-js",
+   "auth": "none",
+   "status": "active",
+   "owner": "A0",
+   "apis": [
+    "/api/notify/queue"
+   ],
+   "note": "通知指挥只读投影（飞书四态队列，数据 /api/notify/queue）；nginx /notify-command → 本文件（portal_api 同路由亦直出）；未接 os_theme/ui.css，W2 迁主题",
+   "source": "portal/static/notify_command.html"
   },
   {
    "id": "page/notify_command",
@@ -1327,12 +1460,12 @@
    "shell": "os-shell",
    "nav": "nav-js",
    "auth": "none",
-   "status": "active",
+   "status": "legacy",
    "owner": "A0",
    "apis": [
     "/api/notify/queue"
    ],
-   "note": "生产页；直链 /notify_command.html 重定向 → /m/notify（保留/归档）",
+   "note": "旧版飞书通知指挥页（HERMES 四态队列）；现行页面为 /notify-command → static/notify_command.html（K-ORG-201），本文件保留旧入口/待归档",
    "source": "portal/notify_command.html"
   },
   {
@@ -1351,6 +1484,24 @@
    ],
    "note": "生产页；nginx 路由 /ops → 本页",
    "source": "portal/ops.html"
+  },
+  {
+   "id": "page/static_ops_board",
+   "path": "/ops-board",
+   "family": "os",
+   "title": "运维对账 · 只读投影｜零界",
+   "theme": "legacy-dark",
+   "shell": "none",
+   "nav": "nav-js",
+   "auth": "none",
+   "status": "active",
+   "owner": "A0",
+   "apis": [
+    "/api/notify/queue",
+    "/api/state"
+   ],
+   "note": "运维对账只读投影（/api/notify/queue + /api/state）；nginx /ops-board → 本文件；未接 os_theme/ui.css，W2 迁主题",
+   "source": "portal/static/ops_board.html"
   },
   {
    "id": "page/org",
@@ -1374,7 +1525,7 @@
     "/api/project/register",
     "/api/register"
    ],
-   "note": "静态组织架构图；nav.js 指向动态 /org（8091），静态版保留/待归档",
+   "note": "新版 Agent 指挥台（K-ORG-190，写回链 /api/org）；当前 /org 路由仍由 portal_api 历史 SSR 渲染，org.html 未接 nginx 短路由（/org.html 直链 200）→ 是否接线/转 active 待 A0/ARCH1 定",
    "source": "portal/org.html"
   },
   {
@@ -1462,7 +1613,7 @@
     "/api/os/consumer/register",
     "/api/os/item/"
    ],
-   "note": "语音审批台（实验/评审稿，未接入 nav）",
+   "note": "C1 审批语音通道页（/api/os/* 后端在役、页面自测可用）；未接导航/无短路由/无引用，是否转 active 待 A0 定",
    "source": "portal/os_approval_voice.html"
   },
   {
@@ -1762,7 +1913,7 @@
    "apis": [
     "/api/os/item/"
    ],
-   "note": "软件面工作台 G1b（骨架阶段，未接入 nav）",
+   "note": "软件面工作台 G1b 骨架；页面自述接口需 8091 重启后现网生效（未上线），上线后转 active",
    "source": "portal/os_software.html"
   },
   {
@@ -1781,7 +1932,7 @@
     "/api/os/asr/recover",
     "/api/os/asr/status"
    ],
-   "note": "语音质量门槛评测页（评测工具，非生产入口）",
+   "note": "ASR 语音质量门槛评测工具页（/api/os/asr 在役）；QA 评测工具定位、非生产入口，是否转 active 待 A0 定",
    "source": "portal/os_voice_eval.html"
   },
   {
@@ -1820,7 +1971,7 @@
     "/api/strategy_market",
     "/api/trader_roster"
    ],
-   "note": "生产页；nginx 路由 /paper → 本页",
+   "note": "生产页；门户路由 /paper（portal_api 动态页直出本文件）",
    "source": "portal/paper.html"
   },
   {
@@ -1832,13 +1983,13 @@
    "shell": "os-shell",
    "nav": "nav-js",
    "auth": "none",
-   "status": "legacy",
+   "status": "active",
    "owner": "A0",
    "apis": [
     "/api/perf/board",
     "/api/perf/replay"
    ],
-   "note": "静态绩效看板；nav.js 指向动态 /perf（8091），静态版保留/待归档",
+   "note": "投研绩效看板（M4-P5，/api/perf/*）页在役；nginx 缺 /perf 短路由（8734 /perf=404，nav.js 该入口断链，L2 待修），当前经直链 /perf.html 可达",
    "source": "portal/perf.html"
   },
   {
@@ -2069,6 +2220,30 @@
    "source": "portal/radar.html"
   },
   {
+   "id": "page/stock_analysis",
+   "path": "/sa",
+   "family": "os",
+   "title": "个股分析 · 零界",
+   "theme": "dark-os",
+   "shell": "os-shell",
+   "nav": "nav-js",
+   "auth": "none",
+   "status": "active",
+   "owner": "A0",
+   "apis": [
+    "/api/analysis/events",
+    "/api/analysis/h5",
+    "/api/analysis/latest",
+    "/api/analysis/list",
+    "/api/analysis/report",
+    "/api/analysis/review",
+    "/api/analysis/submit",
+    "/api/analysis/watchlist"
+   ],
+   "note": "个股全维分析页（K-STOCK-ANALYSIS-P0F）；门户 /sa（nginx ^~ /sa → 8091；portal_api _sa_page 直出本文件，/api/analysis/* 流水线）",
+   "source": "portal/stock_analysis.html"
+  },
+  {
    "id": "page/sandbox",
    "path": "/sandbox",
    "family": "os",
@@ -2104,7 +2279,7 @@
     "/api/portfolio_undo",
     "/api/screen"
    ],
-   "note": "生产页；nginx 路由 /screen → 本页",
+   "note": "生产页；门户路由 /screen（portal_api 动态页直出本文件）",
    "source": "portal/screen.html"
   },
   {
@@ -2203,30 +2378,6 @@
    "source": "portal/stack.html"
   },
   {
-   "id": "page/stock_analysis",
-   "path": "/stock_analysis.html",
-   "family": "os",
-   "title": "个股分析 · 零界",
-   "theme": "dark-os",
-   "shell": "os-shell",
-   "nav": "nav-js",
-   "auth": "none",
-   "status": "legacy",
-   "owner": "A0",
-   "apis": [
-    "/api/analysis/events",
-    "/api/analysis/h5",
-    "/api/analysis/latest",
-    "/api/analysis/list",
-    "/api/analysis/report",
-    "/api/analysis/review",
-    "/api/analysis/submit",
-    "/api/analysis/watchlist"
-   ],
-   "note": "静态个股分析旧版；现行 /sa 为 8091 动态页，静态版保留/待归档",
-   "source": "portal/stock_analysis.html"
-  },
-  {
    "id": "page/strong",
    "path": "/strong",
    "family": "os",
@@ -2242,6 +2393,26 @@
    "source": "portal/strong.html"
   },
   {
+   "id": "page/static_sub_admin",
+   "path": "/sub-admin",
+   "family": "os",
+   "title": "订阅运营 · 只读投影｜零界",
+   "theme": "legacy-dark",
+   "shell": "none",
+   "nav": "nav-js",
+   "auth": "none",
+   "status": "active",
+   "owner": "A0",
+   "apis": [
+    "/api/comm/interest",
+    "/api/notify/queue",
+    "/api/subscription/list",
+    "/api/subscription/status"
+   ],
+   "note": "订阅运营只读投影（本人/商务域内部页，含 open_id 明文）；nginx /sub-admin → 本文件；鉴权依赖 8091 portal-token 后端（页面层未接 auth_request，L2 待评估）",
+   "source": "portal/static/sub_admin.html"
+  },
+  {
    "id": "page/ui_kit",
    "path": "/ui_kit.html",
    "family": "os",
@@ -2253,7 +2424,7 @@
    "status": "active",
    "owner": "A0",
    "apis": [],
-   "note": "生产页；静态直链 /ui_kit.html",
+   "note": "UI Kit v0.1 官方组件示例页（WO-LEGION-UI-KIT：设计系统/组件规范/来源对比；无 nginx 短路由与导航入口，直链访问）",
    "source": "portal/ui_kit.html"
   },
   {
@@ -2290,7 +2461,7 @@
     "/api/xq/intel/dates",
     "/api/xq/intel/ticker"
    ],
-   "note": "生产页；nginx 路由 /xq_intel.html → 本页；OIDC 登录保护",
+   "note": "生产页；静态直链 /xq_intel.html；OIDC 登录保护",
    "source": "portal/xq_intel.html"
   },
   {
