@@ -92,7 +92,21 @@ Case Service（唯一状态机 + 唯一真源）
 5. 会议保存失败不得进入 PROPOSED；
 6. 所有动作写 append-only 事件和 revision（CAS）。
 
-## 三、本轮已落地的服务端部分（P0-1）
+## 三、本轮已落地的服务端部分（P0）
+
+### 已落地
+
+- 审批竞态修复：`approve()` 先 await `/api/case/save` 再 `/api/case/approve`；`审批并下发` 等审批落盘后才 dispatch；
+- 并发写修复：case_api 进程锁 + 唯一临时文件；并发 20 次 save 后 JSON 仍可解析；
+
+- 服务端审批/下发硬门：
+  - 8796 用浏览器 Cookie 调 8091 `/api/auth/me` 解析身份；
+  - `/api/case/save` 要求登录；保存时保留服务端 approval/dispatch，不信任客户端伪造；
+  - `/api/case/approve` 仅 APPROVER/ADMIN/OWNER；
+  - `/api/case/dispatch` 仅服务端 approval.approved=true 且 meeting_id 存在；
+  - 实测：未审批 dispatch **409 human_approval_required**；审批后 dispatch **200** 并落 DISPATCHED。
+
+### 存储（P0-1）
 
 - `legion_command/case_api.py`：`deliverables/cases/<case_id>/case.json` 原子存储、revision、list/latest/get/approve；
 - 8796 新增 `/api/case/list|latest|get/{id}|save|approve`，nginx `/api/case/` 登录保护；
@@ -100,7 +114,7 @@ Case Service（唯一状态机 + 唯一真源）
 - 实测：清 localStorage 后刷新，从服务端恢复标题/case_id；`save` 200。
 - **仍未做**：服务端 approval 身份校验、服务端 orchestrator、dispatch 硬门；这三项仍是 P0 剩余。
 
-## 四、迁移步骤
+## 四、剩余迁移步骤
 
 1. **P0（今天）**：新增 Case Service 读/写 API + 文件存储；`/case` 改为读服务端；
 2. **P1**：前端动作全部改调 API；localStorage 只保留草稿；审批/下发服务端硬门；

@@ -24,7 +24,7 @@ def test_case_page_has_seven_steps_and_approval_gate():
         assert text in s
     assert 'id="btn-dispatch"' in s and "disabled" in s
     assert "state.case.approved" in s
-    assert "/api/hq/meeting/save" in s and "/api/hq/meeting/dispatch" in s
+    assert "/api/hq/meeting/save" in s and "/api/case/dispatch" in s
     assert "localStorage" in s
     assert "/api/auth/me" in s and "canApprove" in s
     assert "ADMIN" in s and "OWNER" in s and "APPROVER" in s

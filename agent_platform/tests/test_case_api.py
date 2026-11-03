@@ -2,7 +2,9 @@
 """Case 服务端文件存储：原子/版本/列表/审批。"""
 from __future__ import annotations
 
+import json
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -36,3 +38,14 @@ def test_approve(tmp_path):
     c = ca.approve_case("CASE-TEST-002", "老田", "同意", "zero_bound:tf", tmp_path)
     assert c["approval"]["approved"] is True and c["status"] == "APPROVED"
     assert c["approval"]["sub"] == "zero_bound:tf"
+
+
+def test_concurrent_saves_do_not_corrupt(tmp_path):
+    def one(i):
+        return ca.save_case({"case_id": "CASE-TEST-CONC", "title": "并发", "seq": i}, tmp_path)
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        list(ex.map(one, range(20)))
+    p = tmp_path / "CASE-TEST-CONC" / "case.json"
+    d = json.loads(p.read_text(encoding="utf-8"))
+    assert d["case_id"] == "CASE-TEST-CONC" and d["revision"] >= 20
+    assert ca.list_cases(tmp_path)[0]["case_id"] == "CASE-TEST-CONC"

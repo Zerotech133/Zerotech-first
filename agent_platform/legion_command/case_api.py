@@ -11,11 +11,14 @@ import datetime
 import json
 import os
 import re
+import tempfile
+import threading
 from pathlib import Path
 
 CASE_RE = re.compile(r"^CASE-[A-Za-z0-9._-]{3,80}$")
 ROOT = Path(os.environ.get("ZB_CASE_DIR", r"C:\项目\老田的AI助手\deliverables\cases"))
 SCHEMA = "hq/case/v2"
+_LOCK = threading.RLock()
 
 
 def _now() -> str:
@@ -36,13 +39,27 @@ def _path(cid: str, root: Path | None = None) -> Path:
 def _write(case: dict, root: Path | None = None) -> dict:
     p = _path(case["case_id"], root)
     p.parent.mkdir(parents=True, exist_ok=True)
-    tmp = p.with_name(p.name + ".tmp")
-    tmp.write_text(json.dumps(case, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    os.replace(tmp, p)
+    with _LOCK:
+        fd, tmp = tempfile.mkstemp(prefix=p.name + ".", suffix=".tmp", dir=str(p.parent))
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                fh.write(json.dumps(case, ensure_ascii=False, indent=2) + "\n")
+            os.replace(tmp, p)
+        finally:
+            try:
+                if os.path.exists(tmp):
+                    os.unlink(tmp)
+            except OSError:
+                pass
     return case
 
 
 def save_case(case: dict, root: Path | None = None) -> dict:
+    with _LOCK:
+        return _save_case_locked(case, root)
+
+
+def _save_case_locked(case: dict, root: Path | None = None) -> dict:
     if not isinstance(case, dict):
         raise ValueError("bad_case")
     cid = _safe_id(case.get("case_id") or case.get("id"))
@@ -55,6 +72,9 @@ def save_case(case: dict, root: Path | None = None) -> dict:
     out["case_id"] = cid
     out.pop("id", None)
     out["revision"] = rev
+    # 审批/下发只能由服务端 approve/dispatch 写；save 回写时保留服务端状态，防止客户端伪造
+    out["approval"] = (old or {}).get("approval") or {}
+    out["dispatch"] = (old or {}).get("dispatch") or {}
     out["updated_at"] = _now()
     out.setdefault("created_at", (old or {}).get("created_at") or _now())
     return _write(out, root)
@@ -93,6 +113,12 @@ def latest_case(root: Path | None = None) -> dict | None:
 
 def approve_case(cid: str, approver: str, note: str = "", sub: str = "",
                  root: Path | None = None) -> dict:
+    with _LOCK:
+        return _approve_case_locked(cid, approver, note, sub, root)
+
+
+def _approve_case_locked(cid: str, approver: str, note: str = "", sub: str = "",
+                         root: Path | None = None) -> dict:
     c = get_case(cid, root)
     if not c:
         raise ValueError("case_not_found")
@@ -101,6 +127,22 @@ def approve_case(cid: str, approver: str, note: str = "", sub: str = "",
     c["approval"] = {"approved": True, "approver": str(approver)[:80],
                      "sub": str(sub)[:120], "note": str(note)[:500], "at": _now()}
     c["status"] = "APPROVED" if c.get("proposal") else c.get("status", "PROPOSED")
+    c["revision"] = int(c.get("revision") or 0) + 1
+    c["updated_at"] = _now()
+    return _write(c, root)
+
+
+def mark_dispatched(cid: str, owner: str, result: dict, root: Path | None = None) -> dict:
+    with _LOCK:
+        return _mark_dispatched_locked(cid, owner, result, root)
+
+
+def _mark_dispatched_locked(cid: str, owner: str, result: dict, root: Path | None = None) -> dict:
+    c = get_case(cid, root)
+    if not c:
+        raise ValueError("case_not_found")
+    c["dispatch"] = {"owner": str(owner)[:80], "at": _now(), "result": result}
+    c["status"] = "DISPATCHED"
     c["revision"] = int(c.get("revision") or 0) + 1
     c["updated_at"] = _now()
     return _write(c, root)
