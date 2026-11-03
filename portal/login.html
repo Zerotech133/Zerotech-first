@@ -40,7 +40,7 @@
     <h1 id="auth-title">登录零界</h1>
     <p>使用智策账号密码登录，或使用 Pocket ID passkey 登录。零界只创建只读会话，不保存密码、不向浏览器下发智策 token。</p>
     <form id="login-form" novalidate>
-      <label class="auth-field"><span>用户名</span><input id="username" name="username" autocomplete="username" required></label>
+      <label class="auth-field"><span>用户名（智策用户名，不是邮箱）</span><input id="username" name="username" autocomplete="username" placeholder="例如 tf" required></label>
       <label class="auth-field"><span>密码</span><input id="password" name="password" type="password" autocomplete="current-password" required></label>
       <div class="auth-actions">
         <button id="login-btn" class="ui-btn ui-btn--primary" type="submit">登录</button>
@@ -75,7 +75,7 @@
   var btn = document.getElementById('login-btn');
   function say(text, ok) { msg.textContent = text; msg.setAttribute('data-kind', ok ? 'ok' : 'err'); }
   var errors = {
-    invalid_credentials: '用户名或密码不正确。',
+    invalid_credentials: '用户名或密码不正确。智策用户名不是邮箱（例如 tf）。',
     identity_not_mapped: '该账号尚未映射到零界身份，请联系管理员。',
     too_many_attempts: '尝试次数过多，请 5 分钟后再试。',
     unauthorized: '登录态已失效，请重新登录。'
