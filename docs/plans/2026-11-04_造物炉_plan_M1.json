@@ -1,0 +1,80 @@
+{
+ "schema": "plan_dispatch/v1",
+ "project": "idea-forge",
+ "note": "造物炉 M1 影棚批（8 单，11-09~11-13）；M0 出口后 apply；跨计划前置不写入 elements.deps：F010/F011/F014 前置=M0 F003（CLI 骨架），F012 前置=M0 F002（契约）——apply 前人工核对，未完成不得开单。影子跑 merge-ready 即停，不自动合并。详见 docs/plans/2026-11-04_造物炉_研发计划_v1.md",
+ "external_prereqs": ["F002", "F003"],
+ "elements": [
+  {
+   "id": "F010",
+   "title": "executor_adapter 实现 + agent_coder 适配器（单文件，复用 e2e_pipeline 路径；前置=M0 F003）",
+   "owner": "DEV1",
+   "discipline": "backend",
+   "acceptance": "python -X utf8 -m pytest tests/forge/test_adapter_agent_coder.py -q",
+   "effort": "M",
+   "deps": []
+  },
+  {
+   "id": "F011",
+   "title": "codex CLI 适配器（多文件；headless JSON；超时/预算/只读工具白名单；前置=M0 F003）",
+   "owner": "DEV2",
+   "discipline": "ai",
+   "acceptance": "python -X utf8 -m pytest tests/forge/test_adapter_codex.py -q",
+   "effort": "M",
+   "deps": []
+  },
+  {
+   "id": "F012",
+   "title": "run 账本（zb.run/v1 落账；状态机；append-only；复用 trace/run_id；前置=M0 F002）",
+   "owner": "DEV6",
+   "discipline": "backend",
+   "acceptance": "python -X utf8 -m pytest tests/forge/test_run_ledger.py -q",
+   "effort": "M",
+   "deps": []
+  },
+  {
+   "id": "F013",
+   "title": "evidence pack 生成/校验/哈希链（门结果/测试/评审/成本/回滚）",
+   "owner": "DEV7",
+   "discipline": "backend",
+   "acceptance": "python -X utf8 -m pytest tests/forge/test_evidence_pack.py -q",
+   "effort": "M",
+   "deps": ["F012"]
+  },
+  {
+   "id": "F014",
+   "title": "验真编排器（只读调用 gate_pin_check + test_gate fast + 结果比对；不改造门禁；前置=M0 F003）",
+   "owner": "DEV1",
+   "discipline": "backend",
+   "acceptance": "python -X utf8 -m pytest tests/forge/test_verify_orchestrator.py -q",
+   "effort": "M",
+   "deps": ["F012"]
+  },
+  {
+   "id": "F015",
+   "title": "影子跑 I-001（zb-journal 单文件链：spec→run→verify→merge-ready 即停）",
+   "owner": "OPS1",
+   "discipline": "devops",
+   "acceptance": "python -X utf8 -m pytest tests/forge/test_shadow_singlefile.py -q",
+   "effort": "S",
+   "deps": ["F010", "F012", "F013", "F014"]
+  },
+  {
+   "id": "F016",
+   "title": "影子跑多文件链（codex 适配器；≥2 文件改动；merge-ready 即停）",
+   "owner": "OPS1",
+   "discipline": "devops",
+   "acceptance": "python -X utf8 -m pytest tests/forge/test_shadow_multifile.py -q",
+   "effort": "S",
+   "deps": ["F011", "F013", "F015"]
+  },
+  {
+   "id": "F017",
+   "title": "M1 出口回执（2 影子 run 证据 + 0 自动合并/0 绕过声明 + 移交 M2）",
+   "owner": "DOC1",
+   "discipline": "docs",
+   "acceptance": "python -X utf8 -m pytest tests/forge/test_m1_exit_report.py -q",
+   "effort": "S",
+   "deps": ["F010", "F011", "F012", "F013", "F014", "F015", "F016"]
+  }
+ ]
+}
