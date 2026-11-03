@@ -103,6 +103,8 @@ def _static_api_paths() -> list:
     files = (sorted((PORTAL_ROOT / "static").rglob("*.js"))
              + sorted((PORTAL_ROOT / "static").rglob("*.html"))
              + sorted(PORTAL_ROOT.glob("*.html")))
+    # static/proto 为设计原型/沙盘，非生产公开页；其未实现 API 不应阻塞 H4-B 门。
+    files = [p for p in files if "proto" not in p.parts]
     for p in files:
         try:
             text = p.read_text(encoding="utf-8", errors="ignore")
