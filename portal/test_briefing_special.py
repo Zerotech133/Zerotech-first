@@ -30,6 +30,9 @@ def test_briefing_links_to_special_and_uses_snapshot():
     assert 'id="btn-report"' in s and "汇报工作" in s
     assert 'id="dept-filter"' in s and 'option value=""' in s
     assert "localStorage" in s
+    assert "directives.directives" not in s  # 不再用旧 Directive 冒充研究题
+    assert "cleanTopic" in s
+    assert "部门研究题" in s
 
 
 def test_special_is_local_draft_workspace():

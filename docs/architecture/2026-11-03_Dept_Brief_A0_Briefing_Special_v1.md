@@ -44,7 +44,7 @@ python -X utf8 tools/hq_dept_brief.py --collect deliverables/daily_briefs/2026-1
 
 - 专项卡是**本地草稿**，不自动建任务、不自动派单、不代签；
 - 研究题来自真实早报/未派单 Directive，不编造；
-- 部门早报未提交时，简报会明确“尚未汇总”，不假装有数据；
+- 部门早报未提交时，简报明确 0/13，不再用旧 Directive 冒充研究题；旧议题/乱码/旧编号不进入研究题；
 - 页面/工具变更需 8091 重启后才把最新 `briefing` 字段带进 snapshot；页面已有 Directive 兜底。
 
 ## 五、验证

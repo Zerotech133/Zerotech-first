@@ -120,22 +120,30 @@ function departments(){
   state.reports.forEach(function(r){if(r.dept&&!map[r.dept])map[r.dept]={dept:r.dept,name:r.dept,lead:r.lead||''};});
   return Object.keys(map).map(function(k){return map[k];});
 }
+function expectedLeads(){
+  var m={}; departments().forEach(function(d){if(d.lead&&d.lead!=='A0')m[d.lead]=1;});
+  return Object.keys(m).length;
+}
 function reportRows(){
   var b=(state.data&&state.data.briefing&&state.data.briefing.departments)||[];
   return b.concat(state.reports.map(function(r){return {lead:r.lead||'',dept:r.dept||r.dept_name||'',status:r.status||'green',highlights:r.highlights||[],blockers:r.blockers||[],decision_requests:r.decision_requests||[],research_topics:r.research_topics||[]};}));
 }
+function cleanTopic(t){
+  var title=String((t&&t.title)||t||'').trim();
+  if(!title||title.length<4||/\?{2,}/.test(title))return false;
+  if(/^聊聊状态$|^测试|^todo/i.test(title))return false;
+  if(/#\d{4}-\d{4}/.test(title))return false; // 旧议程编号不计入研究题
+  return true;
+}
 function topics(){
   var b=(state.data&&state.data.briefing&&state.data.briefing.research_topics)||[];
-  var out=b.slice();
+  var out=b.filter(function(t){return cleanTopic(t);}).slice();
   state.reports.forEach(function(r){
     (r.research_topics||[]).forEach(function(t){
-      out.push({id:'RT-H-'+Math.random().toString(36).slice(2,7),title:(t&&t.title)||t,question:(t&&t.question)||'',source_lead:r.lead||'',source_dept:r.dept||''});
+      var x={id:'RT-H-'+Math.random().toString(36).slice(2,7),title:(t&&t.title)||t,question:(t&&t.question)||'',source_lead:r.lead||'',source_dept:r.dept||''};
+      if(cleanTopic(x))out.push(x);
     });
   });
-  if(!out.length){
-    var dirs=(state.data&&state.data.directives&&state.data.directives.directives)||[];
-    out=dirs.filter(function(x){return x.status==='open'||/(分析|研发|挖掘)/.test(x.kind||'');}).slice(0,10).map(function(x){return {id:x.id,title:x.topic,kind:x.kind,source_lead:x.owner||x.legion||''};});
-  }
   return out;
 }
 function specLink(t){
@@ -154,21 +162,22 @@ function renderSummary(){
   var amber=rows.filter(function(r){return r.status==='amber';});
   var dec=[]; rows.forEach(function(r){(r.decision_requests||[]).forEach(function(x){dec.push(r.lead+' / '+r.dept+'：'+x);});});
   var text='A0 速览 · '+new Date().toLocaleString()+(state.dept?(' · 仅看 '+state.dept):(' · 全部门'))+'\n';
-  text+='汇报 '+rows.length+' 个部门｜红 '+red.length+'｜黄 '+amber.length+'｜需决策 '+dec.length+' 项｜研究题 '+ts.length+' 条\n';
+  text+='部门汇报 '+rows.length+' / '+expectedLeads()+'｜红 '+red.length+'｜黄 '+amber.length+'｜需决策 '+dec.length+' 项｜部门研究题 '+ts.length+' 条\n';
+  if(!rows.length) text+='\n今日部门早报尚未提交；页面不再用旧 Directive 充当研究题。请点「汇报工作」或等 07:50 负责人提交。\n';
   if(red.length) text+='\n先处理红：\n'+red.map(function(r){return '- '+r.lead+' '+r.dept+'：'+(r.blockers||[]).join('；')||'无阻塞说明';}).join('\n');
   if(amber.length) text+='\n黄：\n'+amber.map(function(r){return '- '+r.lead+' '+r.dept+'：'+(r.blockers||[]).join('；')||'有风险待补';}).join('\n');
   if(dec.length) text+='\n需老田/A0决策：\n'+dec.slice(0,8).map(function(x){return '- '+x;}).join('\n');
-  if(ts.length) text+='\n研究题：\n'+ts.slice(0,8).map(function(t){return '- '+(t.title||'')+'（'+(t.source_lead||'-')+'）';}).join('\n');
+  if(ts.length) text+='\n部门研究题：\n'+ts.slice(0,8).map(function(t){return '- '+(t.title||'')+'（'+(t.source_lead||'-')+'）';}).join('\n');
   var el=$('summary');el.hidden=false;el.textContent=text;
 }
 function render(){
   var rows=filteredRows(reportRows()), ts=topics();
   if(state.dept) ts=ts.filter(function(t){return (t.source_dept===state.dept)||(t.source_lead===deptLead(state.dept));});
-  $('cards').innerHTML=[card('汇报部门',rows.length),card('研究题',ts.length),card('需决策',rows.reduce(function(n,r){return n+(r.decision_requests||[]).length;},0)),card('红色',rows.filter(function(r){return r.status==='red';}).length)].join('');
+  $('cards').innerHTML=[card('部门汇报',rows.length+' / '+expectedLeads()),card('部门研究题',ts.length),card('需决策',rows.reduce(function(n,r){return n+(r.decision_requests||[]).length;},0)),card('红色',rows.filter(function(r){return r.status==='red';}).length)].join('');
   $('depts').innerHTML=rows.length?rows.map(function(x){
     return '<div class="item"><div class="t">'+esc(x.lead||'-')+' · '+esc(x.dept||'-')+' '+pill(x.status||'')+'</div>'
       +'<div class="m">工作要点：'+esc((x.highlights||[]).join('；')||'未填')+'<br>阻塞：'+esc((x.blockers||[]).join('；')||'无')+'<br>需决策：'+esc((x.decision_requests||[]).join('；')||'无')+'</div></div>';
-  }).join(''):'<div class="meta">'+ (state.dept?'该部门今日暂无汇报。':'今日部门早报尚未汇总；可点「汇报工作」随时补一份，或等 07:50 部门负责人提交。') +'</div>';
+  }).join(''):'<div class="meta">'+ (state.dept?'该部门今日暂无汇报。':'今日部门早报尚未汇总；可点「汇报工作」随时补一份，或等 07:50 部门负责人提交。不再用旧 Directive 凑研究题。') +'</div>';
   $('topics').innerHTML=ts.length?ts.map(function(t){return '<a class="item" href="'+esc(specLink(t))+'"><div class="t">'+esc(t.title||'未命名研究题')+'</div><div class="m">'+esc(t.kind||'研究')+' · 来源 '+esc(t.source_lead||t.source_dept||'-')+'</div></a>';}).join(''):'<div class="meta">暂无研究题。</div>';
   $('state-note').textContent=state.dept?('只看：'+state.dept):'全部部门';
 }
