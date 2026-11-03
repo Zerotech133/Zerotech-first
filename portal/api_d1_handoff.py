@@ -17,6 +17,7 @@ import sys
 from pathlib import Path
 
 import ifs_envelope
+import ifs_idempotency  # IFS G1 幂等重放（WO-IFS-IDEMP-20261104）
 
 _REPO = Path(__file__).resolve().parents[1]
 if str(_REPO) not in sys.path:
@@ -100,16 +101,34 @@ def handle_post(handler):
     try:
         from agent_platform import d1_handoff as H
         if action in ("create", "handoff"):
-            row = H.append_handoff(obj, ledger=ledger)
-            _json(handler, {
-                "ok": True,
-                "schema_version": H.schema_version(row),
-                "handoff": row,
-                "watch_plans": H.watch_plans_of(row),
-                "summary": H.summary(ledger=ledger),
-                "paper_only": True,
-                "not_a_trade": True,
-            }, 200)
+            key, key_error = ifs_idempotency.resolve_key(handler, obj)
+            if key_error:
+                _json(handler, {"ok": False, "error": key_error,
+                                "message": "幂等键非法：Idempotent-Key 需 8-128 位"
+                                           "[A-Za-z0-9._:-]，以字母/数字开头"}, 400)
+                return
+            with ifs_idempotency.replay_guard(
+                    "d1.handoff.create", key, handler, obj) as ctx:
+                if ctx.replay is not None:
+                    if ctx.conflict():
+                        _json(handler, {"ok": False, "error": "idempotency_conflict",
+                                        "message": "同一 Idempotent-Key 的请求体与首次不一致，"
+                                                   "拒绝重复/改写写入"}, 409)
+                        return
+                    _json(handler, ctx.replayed_payload(), 200)
+                    return
+                row = H.append_handoff(obj, ledger=ledger)
+                result = {
+                    "ok": True,
+                    "schema_version": H.schema_version(row),
+                    "handoff": row,
+                    "watch_plans": H.watch_plans_of(row),
+                    "summary": H.summary(ledger=ledger),
+                    "paper_only": True,
+                    "not_a_trade": True,
+                }
+                ctx.remember(result)
+                _json(handler, result, 200)
             return
         if action in ("ack", "acknowledge"):
             row = H.ack_handoff(obj.get("receipt_id"), obj.get("by"),
