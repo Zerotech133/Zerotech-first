@@ -29,6 +29,8 @@ def test_case_page_has_seven_steps_and_approval_gate():
     assert "/api/auth/me" in s and "canApprove" in s
     assert "ADMIN" in s and "OWNER" in s
     assert 'id="identity"' in s
+    assert 'id="quick-box"' in s and 'id="btn-quick"' in s and "虚拟临战会" in s
+    assert "Promise.all" in s and "升级为正式 Case" in s
 
 
 def test_hq_has_case_entry():
