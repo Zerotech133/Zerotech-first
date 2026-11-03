@@ -2965,6 +2965,9 @@ color:#fff;font-size:13.5px;cursor:pointer}
             from urllib.parse import parse_qs
             jid = (parse_qs(qs).get("job") or [""])[0]
             self._sa_result(jid)
+        elif path == "/sa/workbench":
+            # 2026-11-04：个股分析新版工作台（独立页；tokens/nav/shortscreen 三件套）
+            self._html_file(os.path.join(ROOT, "sa_workbench.html"))
         elif path == "/bt-signals":
             # 飞书卡片「明日信号」按钮目标页：全池 4 策略持仓信号
             self._html_file(os.path.join(STATION, "quant_backtest",
