@@ -45,3 +45,13 @@
 | SLO 告警接线 | ARCH1 |
 | Q2 证据复核 | QA/ARCH1 |
 | 11-16 定稿 | A0 |
+
+## 五、健康探针工具（2026-11-03 22:18）
+
+新增 `tools/q2_probe.py`（只读 GET）：
+
+- acad1-legion：`/api/acad1/pool` 200、`8105/api/v1/health` 200；
+- data-warehouse：`/api/dw/stats` 200、`/api/dw/search?q=__none__` 200（state=no_data 属于正确空结果）；
+- 实测 summary：**2/2 composition ok**。
+
+**但 Q2 仍未达成**：探针证据只在工具输出，manifest 还没有 `status.health_probe` 字段；回滚步骤也仍缺。需 owner 把探针端点/字段写进 manifest 后，才能从 Q1→Q2。
