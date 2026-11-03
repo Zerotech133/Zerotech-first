@@ -8,7 +8,6 @@ K-STOCK-ANALYSIS-H2-20261103,refs/heads/task/K-STOCK-ANALYSIS-H2-20261103,02e312
 K-STOCK-ANALYSIS-P2-7-20261030,refs/heads/task/K-STOCK-ANALYSIS-P2-7-20261030,9d806b7d,True,0,False,review,DSH-Lead,stale_review
 K-STOCK-ANALYSIS-P2-8-20261030,refs/heads/task/K-STOCK-ANALYSIS-P2-8-20261030,4c1fb7a3,True,0,False,doing,DSH-Lead,active_task_review
 K-STOCK-ANALYSIS-P2-9-20261030,refs/heads/task/K-STOCK-ANALYSIS-P2-9-20261030,4682728a,True,0,False,doing,DSH-Lead,active_task_review
-legion-1103093009,refs/heads/task/legion-1103093009,42aed344,True,0,True,doing,T1,active_task_review
 UI-UNIFY-A11Y-20261103,refs/heads/task/UI-UNIFY-A11Y-20261103,13f91a52,True,0,False,doing,DSH-Lead,active_task_review
 UI-UNIFY-MANIFEST-20261103,refs/heads/task/UI-UNIFY-MANIFEST-20261103,5e233b27,True,0,False,doing,DSH-Lead,active_task_review
 UI-UNIFY-P0FIX-20261103,refs/heads/task/UI-UNIFY-P0FIX-20261103,b03e64a0,True,0,False,doing,DSH-Lead,active_task_review

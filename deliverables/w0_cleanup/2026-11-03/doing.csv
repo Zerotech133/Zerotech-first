@@ -22,7 +22,6 @@ WO-IFS-SCHEMA-20261103,DSH-Lead,2026-11-03 08:37:29,C:\项目\老田的AI助手\
 WO-IFS-TRAIN-20261103,DSH-Lead,2026-11-03 08:37:36,C:\项目\老田的AI助手\.worktrees\WO-IFS-TRAIN-20261103,IFS F5：outcome_id/training_episode_id链+契约+测试（基于WIRE分支）
 K-STOCK-ANALYSIS-H2-20261103,DSH-Lead,2026-11-03 08:40:17,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-H2-20261103,H2 选股引擎：ScreeningDSL(schema校验/PIT/可解释)+NL规则解析+筛选执行+测试（网关端点待H1合并后接）
 UI-UNIFY-P0FIX-20261103,DSH-Lead,2026-11-03 09:19:07,C:\项目\老田的AI助手\.worktrees\UI-UNIFY-P0FIX-20261103,UI P0快捷修复：selection重复nav.js+缺失viewport/lang页补齐+回归测试
-legion-1103093009,T1,2026-11-03 09:30:22,C:\项目\老田的AI助手\.worktrees\legion-1103093009,[T1] 盘前 weak 池三线扫描
 UI-UNIFY-TOKENS-20261103,DSH-Lead,2026-11-03 09:41:36,C:\项目\老田的AI助手\.worktrees\UI-UNIFY-TOKENS-20261103,tokens单一真源+漂移门：3副本hash校验工具/测试/说明
 UI-UNIFY-SHELL-20261103,DSH-Lead,2026-11-03 09:41:43,C:\项目\老田的AI助手\.worktrees\UI-UNIFY-SHELL-20261103,page_shell缺失23页壳资产逐页补齐（含排除理由/测试/截图）
 UI-UNIFY-MANIFEST-20261103,DSH-Lead,2026-11-03 09:41:50,C:\项目\老田的AI助手\.worktrees\UI-UNIFY-MANIFEST-20261103,页面清单工具tools/page_manifest.py+初始manifest+回归
