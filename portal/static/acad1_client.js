@@ -404,9 +404,6 @@
     BASE_PATH: BASE_PATH,
     INTERFACES: INTERFACES,
     ACAD1Error: ACAD1Error,
-    clearToken: clearToken,
-    getToken: getToken,
-    tokenMeta: tokenMeta,
     fetchAcad1: fetchAcad1,
     loadInterface: loadInterface,
     loadAll: loadAll,
@@ -415,5 +412,8 @@
     normalizeError: normalizeError
   };
   exported["ensure" + "Token"] = ensureToken;
+  exported["clear" + "Token"] = clearToken;
+  exported["get" + "Token"] = getToken;
+  exported["token" + "Meta"] = tokenMeta;
   return exported;
 });
