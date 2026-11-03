@@ -6,8 +6,9 @@
 需 `X-Analysis-Token`（环境变量或 token 文件）。
 
 工具：sa_health / sa_overview / sa_watchlist / sa_data_status / sa_report /
-      sa_events / sa_analyze / sa_batch / sa_job_status
-只读为主；sa_analyze / sa_batch 为受控提交（入文件队列，由盘后批消费）。
+      sa_events / sa_analyze / sa_batch / sa_job_status / sa_screen
+只读为主；sa_analyze / sa_batch 为受控提交（入文件队列，由盘后批消费）；
+sa_screen 为只读条件选股（NL 解析预览 / DSL 筛选候选，不自动批量分析）。
 
 自测：python stock_analysis_mcp.py --selftest
 联通：python stock_analysis_mcp.py --check-gateway
@@ -75,6 +76,13 @@ TOOLS = [
      "description": "查询分析任务状态（pending/running/done）。",
      "inputSchema": {"type": "object", "properties": {"job_id": {"type": "string"}},
                      "required": ["job_id"], "additionalProperties": False}},
+    {"name": "sa_screen",
+     "description": "条件选股（只读）：text=自然语言→解析预览（spec/notes/unmatched）；dsl=筛选DSL→候选清单。"
+                    "两者二选一；确认结果后再用 sa_batch 提交分析。",
+     "inputSchema": {"type": "object", "properties": {
+         "text": {"type": "string", "description": "自然语言筛选条件（与 dsl 二选一）"},
+         "dsl": {"type": "object", "description": "ScreeningDSL 对象（与 text 二选一）"}},
+         "additionalProperties": False}},
 ]
 
 
@@ -165,6 +173,18 @@ def call_tool(name, args):
         if not job_id:
             return {"ok": False, "error": "缺少 job_id"}
         return _http("/api/analysis/internal/job/" + urllib.parse.quote(job_id, safe=""))
+    if name == "sa_screen":
+        text = a.get("text")
+        dsl = a.get("dsl")
+        has_text = isinstance(text, str) and bool(text.strip())
+        has_dsl = isinstance(dsl, dict) and bool(dsl)
+        if has_text and has_dsl:
+            return {"ok": False, "error": "text 与 dsl 只能二选一"}
+        if not has_text and not has_dsl:
+            return {"ok": False, "error": "需要 text 或 dsl（二选一）"}
+        if has_dsl:
+            return _http("/api/analysis/internal/screen/run", "POST", {"dsl": dsl})
+        return _http("/api/analysis/internal/screen/parse", "POST", {"text": str(text).strip()})
     raise KeyError(name)
 
 
@@ -216,7 +236,7 @@ def main(argv=None):
     argv = argv if argv is not None else sys.argv[1:]
     if "--selftest" in argv:
         names = [t["name"] for t in TOOLS]
-        print(json.dumps({"ok": len(names) == len(set(names)) and len(names) >= 9,
+        print(json.dumps({"ok": len(names) == len(set(names)) and len(names) >= 10,
                           "server": SERVER_NAME, "version": SERVER_VERSION, "tools": names},
                          ensure_ascii=False))
         return 0
