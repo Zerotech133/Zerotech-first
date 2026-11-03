@@ -109,3 +109,14 @@ def test_http_routes(tmp_path, monkeypatch):
     finally:
         srvr.shutdown()
         srvr.server_close()
+
+
+def test_new_org_department_leads_accepted(tmp_path):
+    d = tmp_path / "hq"
+    leads = ["D1", "ARCH1", "DATA1", "QA1", "INTEL0", "PM1"]
+    code, env = hq.save_meeting(d, _valid(attendees=leads))
+    assert code == 200 and env["ok"]
+    doc = json.loads((d / (env["meeting_id"] + ".json")).read_text(encoding="utf-8"))
+    assert doc["attendees"] == leads
+    # 未知席位仍拒绝
+    assert hq.save_meeting(d, _valid(attendees=["UNKNOWN"]))[1]["error"] == "bad_attendee"

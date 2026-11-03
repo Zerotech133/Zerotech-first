@@ -14,7 +14,12 @@ from pathlib import Path
 
 SCHEMA = "2.0"
 TYPES = ("morning", "operation", "acceptance")
-SEATS = {"A0", "AI1", "ZHAOYUN", "GUANYU", "HUANGZHONG", "LAOTIAN"}
+# 2026-11-03 新组织架构：指挥席 + 部门负责人池
+COMMAND_SEATS = {"A0", "AI1", "ZHAOYUN", "GUANYU", "HUANGZHONG", "LAOTIAN"}
+DEPT_LEADS = {"D1", "ARCH1", "DATA1", "PM1", "QA1", "DEV3",
+              "MKT1", "LEG1", "A0A", "ACAD1", "INTEL0", "LUSU1", "R3"}
+SEATS = COMMAND_SEATS | DEPT_LEADS
+MAX_ATTENDEES = 6
 KIND_MAP = {"work": "task_request", "trade": "task_request", "study": "question"}
 MID_RE = re.compile(r"hq-\d{8}-\d{6}")
 
@@ -87,7 +92,7 @@ def validate(req) -> tuple[dict | None, str | None]:
     mtype = _r(req.get("type") or "morning", 16)
     if mtype not in TYPES:
         return None, "bad_type"
-    attendees = [_r(x, 24) for x in (req.get("attendees") or [])][:6]
+    attendees = [_r(x, 24) for x in (req.get("attendees") or [])][:MAX_ATTENDEES]
     if not attendees or any(x not in SEATS for x in attendees):
         return None, "bad_attendee"
     agenda = []

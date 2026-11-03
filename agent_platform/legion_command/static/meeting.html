@@ -121,6 +121,7 @@
     </div>
     <div class="pgroup"><h3>左军 · 研发线</h3>
       <div class="pdept"><div class="dn">研发部 <span>11 员</span></div><div class="pags" id="pick-dev"></div></div>
+      <div class="pdept"><div class="dn">部门负责人 <span>新组织架构</span></div><div class="pags" id="pick-dept"></div></div>
     </div>
     <div class="pickfoot">已选 <b id="pickCount" style="color:#4FD1A5">0</b> 席 · 老田固定主持<br>每员按 SOUL 人格异声发言（正式版各接真实模型通道）</div>
   </div>
@@ -164,19 +165,25 @@
   </div>
 
   <div class="panelbox hq">
-    <h3>指挥部会议（A 组 · 五席）<span class="muted" id="hqState">选模板载入</span></h3>
+    <h3>指挥部会议（指挥席 + 部门负责人池）<span class="muted" id="hqState">选模板载入</span></h3>
     <div class="quick">
       <button class="qk" onclick="hqPreset('morning')">晨会 · 15min</button>
       <button class="qk" onclick="hqPreset('operation')">作战会 · 30-45min</button>
       <button class="qk" onclick="hqPreset('acceptance')">验收/复盘会</button>
     </div>
-    <div class="muted" id="hqAgenda">议程：点模板载入（五席固定上桌：田丰/诸葛亮/赵云/关羽/黄忠）</div>
+    <div class="muted" id="hqAgenda">议程：点模板载入（晨会=指挥五席；作战会=指挥+量化/研发/数据/情报/质量；验收会=指挥+质量）</div>
     <textarea id="hqDecision" placeholder="决议（一句话，可验收；仅记录，不自动执行）" style="width:100%;height:52px;margin-top:8px;background:#0F2440;color:#E6EDF5;border:0.5px solid #1E3A5F;border-radius:8px;padding:6px;box-sizing:border-box"></textarea>
     <div style="display:flex;gap:6px;margin-top:6px">
       <select id="hqOwner" style="flex:1;background:#0F2440;color:#E6EDF5;border:0.5px solid #1E3A5F;border-radius:8px;padding:5px">
         <option value="A0">田丰</option><option value="AI1">诸葛亮</option>
         <option value="ZHAOYUN">赵云</option><option value="GUANYU">关羽</option>
         <option value="HUANGZHONG">黄忠</option>
+        <option value="D1">鲁肃·量化</option><option value="ARCH1">曹操·研发</option>
+        <option value="DATA1">张松·数据</option><option value="PM1">吕蒙·产品</option>
+        <option value="QA1">于禁·质量</option><option value="DEV3">蒋济·回测</option>
+        <option value="MKT1">简雍·市场</option><option value="LEG1">诸葛瑾·合规</option>
+        <option value="LUSU1">阚泽·客户</option><option value="INTEL0">是仪·情报</option>
+        <option value="ACAD1">司马徽·研究</option><option value="R3">陆逊·风控</option>
       </select>
       <input id="hqDue" placeholder="截止 2026-11-01" style="flex:1;background:#0F2440;color:#E6EDF5;border:0.5px solid #1E3A5F;border-radius:8px;padding:5px">
     </div>
@@ -215,7 +222,7 @@ const AGENT_BIND = {
 const DEPT_FACE = {
   zhong:'中军帐（决策与归口）', quant:'量化交易营（选股与研判）', risk:'风控与盯盘营',
   acad:'研究院（研究方法与架构）', intel:'情报营（信源与判读）',
-  ops:'运行体（机制运行与汇报）', dev:'研发营（工程质量）'
+  ops:'运行体（机制运行与汇报）', dev:'研发营（工程质量）', dept:'部门负责人（新组织架构）'
 };
 // 三常任席保留 SOUL 人格；其余按营职能面发言
 const SOUL_HINT = {
@@ -283,23 +290,30 @@ const AGENTS = {
   OPT1:{ nm:'枣祗', av:'枣', c:'c-g', md:'glm-4.6', grp:'zhong', line:'从流程看：这步卡在哪个环节，我给工作流优化建议。' },
   D1:  { nm:'鲁肃', av:'鲁', c:'c-r', md:'9b', grp:'quant', line:'选股面：weak 池今晨三线扫描已出，候选 X 只，评分前列是…' },
   QS1: { nm:'司马懿', av:'司', c:'c-b', md:'9b', grp:'quant', line:'研判面：量价背离信号在积聚，仓位建议偏防御。' },
-  ST1: { nm:'策略研判', av:'策', c:'c-b', md:'glm-5.3', grp:'quant', line:'策略面：该信号历史胜率 58%，样本外衰减风险要提示。' },
+  ST1: { nm:'程昱', av:'策', c:'c-b', md:'glm-5.3', grp:'quant', line:'策略面：该信号历史胜率 58%，样本外衰减风险要提示。' },
   R3:  { nm:'陆逊', av:'陆', c:'c-r', md:'9b', grp:'risk', line:'风控面：RiskGuard 昨拦 2 笔，误杀样本后验 +0.65%，判据该校了。' },
   R1:  { nm:'甘宁', av:'甘', c:'c-r', md:'9b', grp:'risk', line:'盯盘面：张郃触发器盯双池，今晨无 G1 预警。' },
   ACAD1:{nm:'司马徽', av:'徽', c:'c-g', md:'9b', grp:'acad', line:'研究面：缠论学习环最新一条经验提示本段中枢震荡概率大。' },
-  ARCH1:{ nm:'架构师', av:'架', c:'c-b', md:'glm-5.3', grp:'acad', line:'架构面：该改动影响链三条，建议先影子后主链。' },
-  INTEL0:{nm:'情报主官', av:'情', c:'c-i', md:'9b', grp:'intel', line:'情报面：雪球增量帖情感中性偏暖，无黑天鹅信号。' },
-  INTEL1:{nm:'情报员', av:'报', c:'c-i', md:'9b', grp:'intel', line:'采集面：今晨增量帖 N 条已入库，新鲜度达标。' },
+  ARCH1:{ nm:'曹操', av:'架', c:'c-b', md:'glm-5.3', grp:'acad', line:'架构面：该改动影响链三条，建议先影子后主链。' },
+  INTEL0:{nm:'是仪', av:'情', c:'c-i', md:'9b', grp:'intel', line:'情报面：雪球增量帖情感中性偏暖，无黑天鹅信号。' },
+  INTEL1:{nm:'郭嘉', av:'报', c:'c-i', md:'9b', grp:'intel', line:'采集面：今晨增量帖 N 条已入库，新鲜度达标。' },
   JEV: { nm:'jev判读', av:'判', c:'c-i', md:'jev', grp:'intel', line:'判读面：异动帖集中在两板块，疑似游资预热。' },
   A0A: { nm:'董允', av:'董', c:'c-g', md:'5通道', grp:'ops', line:'运营面：昨日复盘三问已归档，周报明早出。' },
   HERMES_UI:{nm:'邓芝桥', av:'邓', c:'c-g', md:'8787', grp:'ops', line:'通讯面：会议纪要可实时推飞书卡。' },
-  DEV1:{ nm:'曹操', av:'曹', c:'c-b', md:'9b', grp:'dev', line:'研发面：凭单实施，无单不写码。工期一天内。' },
+  DEV1:{ nm:'马钧', av:'曹', c:'c-b', md:'9b', grp:'dev', line:'研发面：凭单实施，无单不写码。工期一天内。' },
   DEV2:{ nm:'蒸馏席', av:'蒸', c:'c-b', md:'35b', grp:'dev', line:'数据面：可先离线蒸馏一版判据样本再上。' },
   ZHAOYUN:{ nm:'赵云·治理', av:'云', c:'c-y', md:'glm-5.3', grp:'zhong', line:'治理面：审计/审批/记忆与评估飞轮，L2 不代批。' },
   GUANYU:{ nm:'关羽·整治', av:'羽', c:'c-b', md:'deepseek-flash', grp:'zhong', line:'执行面：代码审计与系统整治，先根因后批量修复，带证据包。' },
   HUANGZHONG:{ nm:'黄忠·验收', av:'忠', c:'c-t', md:'glm-5.3', grp:'zhong', line:'验收面：只验不改、只退不批；基线/红队不过即 REJECT，回滚点必须写。' },
+  DATA1:{nm:'张松', av:'松', c:'c-g', md:'glm-5.3', grp:'dept', line:'数据面：血缘/口径/数据质量，先给可追溯证据再谈结论。' },
+  PM1:{nm:'吕蒙', av:'蒙', c:'c-r', md:'9b', grp:'dept', line:'产品面：先定义用户问题与验收标准，再排优先级。' },
+  QA1:{nm:'于禁', av:'禁', c:'c-b', md:'9b', grp:'dept', line:'质量面：基线/回归/门禁，证据不足不放行。' },
+  DEV3:{nm:'蒋济', av:'济', c:'c-b', md:'glm-5.3', grp:'dept', line:'回测面：样本外/成本/滑点先校准，策略结论才可信。' },
+  MKT1:{nm:'简雍', av:'简', c:'c-g', md:'9b', grp:'dept', line:'市场面：客户/渠道/内容，先讲可验证的获客动作。' },
+  LEG1:{nm:'诸葛瑾', av:'瑾', c:'c-g', md:'glm-5.3', grp:'dept', line:'合规面：授权/隐私/对外承诺，红线先列清楚。' },
+  LUSU1:{nm:'阚泽', av:'泽', c:'c-r', md:'9b', grp:'dept', line:'客户成功面：反馈/回访/交付体验，先听客户原话。' },
 };
-const GROUPS = { zhong:'pick-zhong', quant:'pick-quant', risk:'pick-risk', acad:'pick-acad', intel:'pick-intel', ops:'pick-ops', dev:'pick-dev' };
+const GROUPS = { zhong:'pick-zhong', quant:'pick-quant', risk:'pick-risk', acad:'pick-acad', intel:'pick-intel', ops:'pick-ops', dev:'pick-dev', dept:'pick-dept' };
 let picked = [];
 
 function esc(s) {
@@ -412,16 +426,21 @@ const HQ_AGENDA = {
   morning: [{item:'昨日决议跟进',owner:'A0',minutes:3},{item:'今日三优先',owner:'A0',minutes:4},
             {item:'阻塞与风险',owner:'GUANYU',minutes:3},{item:'黄忠验收闸口',owner:'HUANGZHONG',minutes:3},
             {item:'老田终裁',owner:'LAOTIAN',minutes:2}],
-  operation: [{item:'诸葛亮败因卡',owner:'AI1',minutes:5},{item:'各席证据陈述',owner:'ALL',minutes:12},
-              {item:'黄忠验收判据',owner:'HUANGZHONG',minutes:4},{item:'决议草案',owner:'A0',minutes:4},
-              {item:'老田终裁',owner:'LAOTIAN',minutes:3}],
+  operation: [{item:'量化面·候选与仓位',owner:'D1',minutes:5},{item:'研发面·交付风险',owner:'ARCH1',minutes:5},
+              {item:'数据面·血缘与口径',owner:'DATA1',minutes:5},{item:'情报面·信号与反例',owner:'INTEL0',minutes:5},
+              {item:'质量/验收判据',owner:'QA1',minutes:5}],
   acceptance: [{item:'基线/红队证据',owner:'HUANGZHONG',minutes:5},{item:'PASS/REJECT',owner:'HUANGZHONG',minutes:5},
                {item:'拒绝理由与回滚点',owner:'GUANYU',minutes:5},{item:'赵云归档判例',owner:'ZHAOYUN',minutes:3},
                {item:'改进项',owner:'A0',minutes:3}]
 };
+const HQ_PRESET = {
+  morning: ['A0','AI1','ZHAOYUN','GUANYU','HUANGZHONG'],
+  operation: ['A0','D1','ARCH1','DATA1','INTEL0','QA1'],
+  acceptance: ['A0','HUANGZHONG','QA1','ZHAOYUN','GUANYU']
+};
 function hqPreset(kind) {
   HQ_TYPE = kind;
-  picked = ['A0','AI1','ZHAOYUN','GUANYU','HUANGZHONG'];
+  picked = (HQ_PRESET[kind] || HQ_PRESET.morning).slice();
   document.querySelectorAll('.pa').forEach(x => x.classList.remove('on'));
   picked.forEach(id => { const el = document.getElementById('pk-' + id); if (el) el.classList.add('on'); });
   renderTable();
