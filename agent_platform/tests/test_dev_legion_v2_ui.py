@@ -188,6 +188,7 @@ def test_workorder_bus_real_and_filters():
     # 2026-11-04 hotfix：SEAT_WIP 是 owner→tasks[]；求和在制数必须按数组长度，
     # 不能把数组直接相加（会渲染成 0[object Object]）。
     assert "Array.isArray(b) ? b.length" in js
+    assert "(SEAT_WIP[s.id] || []).length" in js
     assert "a + b, 0" not in js
     assert "WORK_FILTER" in js and "setWorkFilter" in js
     assert 'id="work-foot"' in txt and "workorder_bus" in txt
