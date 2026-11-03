@@ -31,12 +31,13 @@ S = REPO / "portal" / "static"
 R = REPO / "research" / "reports"
 CARDS = S / "kb_learning_cards.json"
 UNITS = S / "kb_units_all.json"
-OUT_JSON = R / "card_quality_audit_20261101.json"
-OUT_MD = R / "card_quality_audit_20261101.md"
-DATE = "20261101"
+DATE = datetime.now().strftime("%Y%m%d")
+OUT_JSON = R / f"card_quality_audit_{DATE}.json"
+OUT_MD = R / f"card_quality_audit_{DATE}.md"
 REQUIRED = ("q", "a", "concept", "source", "topic", "evidence")
 MIN_ANSWER, MAX_ANSWER = 20, 500
 SOURCE_RE = re.compile(r"《(.+?)》\s*(.*?)\s*p(\d+)\s*-\s*(\d+)")
+PROVENANCE_RE = re.compile(r"^(.+?)\s*·\s*(.+?)\s*·\s*L(\d+)")
 NOISE = re.compile(r"[\s\u3000（）()【】\[\]《》「」『』“”\"'’·、，,。.：:；;？?！!—-]+")
 
 
@@ -77,7 +78,14 @@ def parse_source(source: str) -> dict:
     out = {"raw": raw, "ok": False, "book": None, "chapter": None, "p1": None, "p2": None, "errors": []}
     m = SOURCE_RE.search(raw)
     if not m:
-        out["errors"].append("无法匹配《书名》…pX-Y 格式")
+        pm = PROVENANCE_RE.search(raw)
+        if pm:
+            project, fname, line = pm.group(1).strip(), pm.group(2).strip(), int(pm.group(3))
+            kind = "视频号" if ("视频号" in project or "视频号" in fname) else "笔记"
+            out.update({"book": project, "chapter": fname, "p1": line, "p2": line, "kind": kind,
+                        "ok": True})
+            return out
+        out["errors"].append("无法匹配《书名》…pX-Y 或「项目 · 文件 · L行号」格式")
         return out
     book, chapter, p1, p2 = m.group(1).strip(), m.group(2).strip(), int(m.group(3)), int(m.group(4))
     if not book:
@@ -92,7 +100,9 @@ def parse_source(source: str) -> dict:
     return out
 
 
-def source_kind(book: str | None) -> str:
+def source_kind(book: str | None, kind: str | None = None) -> str:
+    if kind:
+        return kind
     b = str(book or "")
     if b.lower().startswith("rp") or b.startswith("RP"):
         return "研报"
@@ -121,6 +131,8 @@ def trace_card(card: dict, src: dict, unit_index: dict) -> dict:
         if exact:
             return {"traceable": True, "method": "concept+book", "unit": exact[0]}
         return {"traceable": True, "method": "concept", "unit": candidates[0]}
+    if src.get("kind") in ("视频号", "笔记") and src.get("chapter") and src.get("p1"):
+        return {"traceable": True, "method": "provenance(file+line)", "unit": None}
     ev = str(card.get("evidence") or "")
     if ev:
         best = None
@@ -170,12 +182,14 @@ def audit(cards: list[dict], units: list[dict], learn) -> dict:
                            "concept": c.get("concept"), "check": "source_parse",
                            "severity": "high", "detail": "source 不可解析：" + "；".join(src["errors"]),
                            "suggestion": "规范为《书名》 章节 p起始-结束"})
+        elif src.get("kind") in ("视频号", "笔记"):
+            pass  # 结构化 provenance（项目·文件·L行号），不在 PDF 单元集合中属正常
         elif src["book"] not in unit_books:
             issues.append({"issue_id": f"Q-{len(issues)+1:03d}", "card_index": i,
                            "concept": c.get("concept"), "check": "source_book",
                            "severity": "medium", "detail": f"书名不在知识单元集合：{src['book']}",
                            "suggestion": "核对书名或标注人工来源"})
-        source_kinds[source_kind(src.get("book"))] += 1
+        source_kinds[source_kind(src.get("book"), src.get("kind"))] += 1
         # 3) 答案长度
         a_len = len(str(c.get("a") or ""))
         if a_len < MIN_ANSWER or a_len > MAX_ANSWER:
