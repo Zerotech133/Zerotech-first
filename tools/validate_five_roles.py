@@ -88,7 +88,7 @@ def validate() -> dict:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="五角色入职校验")
     ap.add_argument("--json", action="store_true")
-    a = ap.parse_args(argv)
+    ap.parse_args(argv)
     r = validate()
     print(json.dumps(r, ensure_ascii=False, indent=2))
     return 0 if r["ok"] else 1

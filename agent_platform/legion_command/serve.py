@@ -141,7 +141,7 @@ def five_role_persona(agent: str) -> str:
             data = json.loads(_FIVE_ROLES_FILE.read_text(encoding="utf-8"))
             _FIVE_ROLE_CACHE["map"] = {r["agent_id"]: r for r in data.get("roles", [])}
             _FIVE_ROLE_CACHE["mtime"] = mt
-    except OSError:
+    except (OSError, ValueError):
         return ""
     rec = _FIVE_ROLE_CACHE["map"].get(agent)
     if not rec:
