@@ -14,7 +14,7 @@ New-Item -ItemType Directory -Path $BriefDir -Force | Out-Null
 
 # 2) 17 席跑板；有简报就注入，没有就按原逻辑
 if (Test-Path $Brief) {
-    & $Py -X utf8 (Join-Path $Root 'tools\hq_daily_run.py') --data-brief $Brief *>> $Log
+    & $Py -X utf8 (Join-Path $Root 'tools\hq_daily_run.py') --data-brief $Brief --notify-inbox *>> $Log
 } else {
     & $Py -X utf8 (Join-Path $Root 'tools\hq_daily_run.py') *>> $Log
 }

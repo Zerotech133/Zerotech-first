@@ -2847,6 +2847,7 @@ class Handler(BaseHTTPRequestHandler):
             "order_type": otype,
             "title": str(req.get("title", ""))[:120],
             "attendees": req.get("attendees", []),
+            "owner": str(req.get("owner") or "")[:40],
             "host": "laotian",
             "note": str(req.get("note", ""))[:400],
         }

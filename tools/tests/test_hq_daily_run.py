@@ -97,3 +97,15 @@ def test_briefing_contains_data_brief(monkeypatch, tmp_path):
     md = (tmp_path / "a0_briefing.md").read_text(encoding="utf-8")
     assert "## 数据简报（DATA1 张松）" in md and "TDX 58h" in md
     assert json.loads((tmp_path / "rollup.json").read_text(encoding="utf-8"))["briefing"]["data_brief"] == txt
+
+
+def test_run_notifies_decision_requests_to_inbox(monkeypatch, tmp_path):
+    sys.path.insert(0, str(ROOT / "agent_platform"))
+    from gateway import inbox_gateway
+    inbox_gateway.set_store(tmp_path / "bridge")
+    monkeypatch.setattr(d, "_ask", _fake)
+    r = d.run("2026-11-04", write=False, notify_inbox=True)
+    assert r["ok"] and len(r["notifications"]) == 17
+    assert all(x.get("ok") for x in r["notifications"])
+    files = list((tmp_path / "bridge" / "inbox").glob("*.json"))
+    assert len(files) == 17
