@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
-"""导出已治理数据包 v2（2026-11-04）：知识单元(全量/有效) / 学习卡 / Top100 结论 /
+"""导出已治理数据包 v3（2026-11-04，多源口径=canonical 29）：知识单元(全量/有效) / 学习卡 / Top100 结论 /
 多源概念 / 候选审核 / 来源清单 / 治理指标，ZIP+MANIFEST+sha256+报告。
 
 输出：
-  deliverables/2026-11-04_已治理数据导出_v2.zip
-  deliverables/已治理数据_20261104/（解包目录，含 MANIFEST.json）
-  research/reports/export_governed_v2_20261104.{json,md}
+  deliverables/2026-11-04_已治理数据导出_v3.zip
+  deliverables/已治理数据_20261104_v3/（解包目录，含 MANIFEST.json）
+  research/reports/export_governed_v3_20261104.{json,md}
 口径：2202 单元（视频 800 / 二期 1116 / 老木 286）；有效=剔除「指标说明书」噪声后
-      800/245/286（合计 1331）；400 卡；结论库 Top100；多源概念以 v4 同义词簇聚合。
+      800/245/286（合计 1331）；400 卡；结论库 Top100；多源概念读 multi_source_canonical（29）。
 只读知识库与报告，不写数据仓。
 """
 from __future__ import annotations
@@ -17,7 +17,6 @@ import hashlib
 import json
 import sys
 import zipfile
-from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 
@@ -27,10 +26,12 @@ R = REPO / "research/reports"
 S = REPO / "portal/static"
 KB = Path(r"C:\项目\知识库")
 OUT = REPO / "deliverables"
-STAGE = OUT / "已治理数据_20261104"
-ZIP = OUT / "2026-11-04_已治理数据导出_v2.zip"
+STAGE = OUT / "已治理数据_20261104_v3"
+ZIP = OUT / "2026-11-04_已治理数据导出_v3.zip"
 TAG = "20261104"
 NOW = datetime.now().astimezone().isoformat(timespec="seconds")
+sys.path.insert(0, str(REPO / "tools" / "kb_corpus"))
+import multi_source_canonical as msc  # noqa: E402
 PROJECTS = ("视频号学习_8博主", "视频号学习_第二期", "laomu_notes")
 ISSUE_MARK = "指标说明书"
 
@@ -110,65 +111,17 @@ for c in conclusions:
                        c.get("pit", "")])
 concl_csv = write_csv("04_有效结论库_Top100.csv", ch, concl_rows)
 
-# 4) 多源概念（v4 同义词簇 ∩ v4 多源概念，≥2 独立来源）
-syn = load(R / "concept_synonyms_20261103_v4.json")
-ms = load(R / "knowledge_multisource_20261103_v4.json")
-src = {c["concept"]: {s.get("source_key") for s in (c.get("sources") or []) if s.get("source_key")}
-       for c in (ms.get("concepts") or []) if c.get("concept")}
-src.update({c["concept"]: {s.get("source_key") for s in (c.get("sources") or []) if s.get("source_key")}
-            for c in (ms.get("multi_source_concepts") or []) if c.get("concept")})
-parent = {}
-
-
-def find(x):
-    parent.setdefault(x, x)
-    while parent[x] != x:
-        parent[x] = parent[parent[x]]
-        x = parent[x]
-    return x
-
-
-def union(a, b):
-    ra, rb = find(a), find(b)
-    if ra != rb:
-        parent[rb] = ra
-
-
-for cl in syn.get("clusters") or []:
-    members = [m["concept"] for m in cl.get("members") or [] if m.get("concept") in src]
-    for m in members[1:]:
-        union(members[0], m)
-review = load(R / "concept_merge_review_20261103.json")
-for g in review.get("decisions") or []:
-    if g.get("decision") == "approve":
-        mem = [m for m in g.get("members") or [] if m in src]
-        for m in mem[1:]:
-            union(mem[0], m)
-rb = load(R / "concept_merge_review_b_20261103.json")
-APPROVED = set(rb.get("v2_full_approved") or [])
-PARTIAL = rb.get("v2_partial") or {}
-v2m = load(R / "concept_merge_llm_20261103_v2.json")
-for g in v2m.get("merged_groups") or []:
-    if g.get("group_id") in APPROVED:
-        mem = [m for m in g.get("members") or [] if m in src]
-        for m in mem[1:]:
-            union(mem[0], m)
-    elif g.get("group_id") in PARTIAL:
-        mem = [m for m in PARTIAL[g["group_id"]] if m in src]
-        for m in mem[1:]:
-            union(mem[0], m)
-clusters = defaultdict(list)
-for c in src:
-    clusters[find(c)].append(c)
-mh = ["cluster_id", "display_concept", "members", "n_members", "独立来源数", "source_keys", "KPI口径"]
+# 4) 多源概念（唯一口径：multi_source_canonical，count=29 / target 30）
+CANON = msc.load_canonical()
+CANON_COUNT = msc.canonical_count()
+mh = ["cluster_id", "display_concept", "members", "n_members", "独立来源数", "source_keys", "签核口径"]
 mrows = []
-i = 0
-for root, members in clusters.items():
-    keys = set().union(*(src.get(m, set()) for m in members)) if members else set()
-    if len(keys) >= 2:
-        i += 1
-        mrows.append([f"MS-{i:03d}", members[0], " / ".join(members), len(members), len(keys),
-                      "；".join(sorted(keys)[:10]), "人工双签"])
+for i, c in enumerate(CANON.get("concepts") or [], 1):
+    members = c.get("members") or [c.get("concept")]
+    keys = sorted({s.get("source_key") for s in (c.get("sources") or []) if s.get("source_key")})
+    mrows.append([f"MS-{i:03d}", c.get("concept"), " / ".join(members), len(members),
+                  c.get("n_sources") or len(keys), "；".join(keys[:10]),
+                  c.get("sign_off") or c.get("group") or ""])
 multi_csv = write_csv("05_多源概念_人工签批.csv", mh, mrows)
 
 # 5) 候选卡人工审核结果（最新两份）
@@ -210,13 +163,13 @@ metrics = {"generated_at": NOW,
                       "reviewed_candidates": len(rrows), "source_files": len(sh_rows) - 1},
            "audit": {"cards_issues": 0, "traceable_rate": 1.0},
            "source": "W0 治理（元数据过滤/去重/核验）+ 多源人工双签 后的可输出数据；只读生成"}
-(R / f"governed_export_metrics_{TAG}.json").write_text(
+(R / f"governed_export_metrics_{TAG}_v3.json").write_text(
     json.dumps(metrics, ensure_ascii=False, indent=1), encoding="utf-8")
 write_csv("08_治理指标.csv", ["指标", "值"],
           [[k, json.dumps(v, ensure_ascii=False)] for k, v in metrics.items()])
 
 # README
-readme = f"""# 已治理数据导出包 v2（2026-11-04）
+readme = f"""# 已治理数据导出包 v3（2026-11-04，多源 canonical 29）
 
 本包只含**已治理/已审计**数据，不含原始转写与未审候选。
 
@@ -247,7 +200,7 @@ readme = f"""# 已治理数据导出包 v2（2026-11-04）
 (STAGE / "README.md").write_text(readme, encoding="utf-8")
 
 # MANIFEST
-manifest = {"schema": "governed_export.v2", "generated_at": NOW,
+manifest = {"schema": "governed_export.v3", "generated_at": NOW,
             "counts": metrics["counts"], "files": []}
 for p in sorted(STAGE.glob("*")):
     if p.name == "MANIFEST.json":
@@ -261,20 +214,30 @@ if ZIP.exists():
     ZIP.unlink()
 with zipfile.ZipFile(ZIP, "w", zipfile.ZIP_DEFLATED) as z:
     for p in sorted(STAGE.glob("*")):
-        z.write(p, arcname=f"已治理数据_20261104/{p.name}")
+        z.write(p, arcname=f"已治理数据_20261104_v3/{p.name}")
 zip_sha = sha256(ZIP)
 zip_size = ZIP.stat().st_size
 
-report = {"schema_version": "export_governed_v2.v1", "date_tag": TAG, "generated_at": NOW,
+v2 = json.loads((R / "export_governed_v2_20261104.json").read_text(encoding="utf-8")) \
+    if (R / "export_governed_v2_20261104.json").exists() else {}
+report = {"schema_version": "export_governed_v3.v1", "date_tag": TAG, "generated_at": NOW,
           "zip": {"path": str(ZIP.relative_to(REPO)), "size_bytes": zip_size,
                   "size_mb": round(zip_size / 1e6, 2), "sha256": zip_sha},
           "counts": metrics["counts"], "files": manifest["files"],
           "stage_dir": str(STAGE.relative_to(REPO)),
           "metrics": metrics,
-          "note": "只读知识库/报告；未写数据仓；口径=全量2202/有效1331/400卡/Top100/多源簇"}
-(R / f"export_governed_v2_{TAG}.json").write_text(
+          "canonical": {"path": str(OUT.parent / "research/reports/multi_source_canonical_20261104.json"),
+                "count": CANON_COUNT, "target": CANON.get("target"), "meets": CANON.get("meets"),
+                "calibers": CANON.get("calibers")},
+          "diff_from_v2": {"multi_source_concepts": {"v2": (v2.get("counts") or {}).get("multi_source_concepts"),
+                                                      "v3": CANON_COUNT},
+                           "zip_sha256": {"v2": (v2.get("zip") or {}).get("sha256"), "v3": zip_sha},
+                           "zip_size_bytes": {"v2": (v2.get("zip") or {}).get("size_bytes"), "v3": zip_size},
+                           "note": "v2 保留不覆盖；v3 多源改为 canonical（28→29，补 legacy 组 1 条）"},
+          "note": "只读知识库/报告；未写数据仓；口径=全量2202/有效1331/400卡/Top100/多源canonical29"}
+(R / f"export_governed_v3_{TAG}.json").write_text(
     json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
-L = [f"# 已治理数据导出 v2（{TAG}）", "",
+L = [f"# 已治理数据导出 v3（{TAG}，多源 canonical 29）", "",
      f"- 生成：{NOW}；ZIP：`{report['zip']['path']}`",
      f"- 大小：**{report['zip']['size_mb']} MB**（{zip_size} bytes）；sha256：`{zip_sha}`", "",
      "## 计数", "", "| 项 | 数值 |", "|---|---|",
@@ -283,7 +246,7 @@ L = [f"# 已治理数据导出 v2（{TAG}）", "",
      f"二期 {per_project.get('视频号学习_第二期', {}).get('effective')} / 老木 {per_project.get('laomu_notes', {}).get('effective')}） |",
      f"| 学习卡 | **{len(cards)}** |",
      f"| 结论库 Top100 | **{len(conclusions)}** |",
-     f"| 多源概念（人工签批） | **{len(mrows)}** |",
+     f"| 多源概念（canonical 冻结口径） | **{len(mrows)}**（target {CANON.get('target')}，gap {CANON.get('gap')}） |",
      f"| 候选审核结果 | {len(rrows)} |",
      f"| 原始来源文件 | {len(sh_rows) - 1} |", "",
      "## 包内文件", "", "| 文件 | 大小(B) | sha256(前16) |", "|---|---|---|"]
@@ -291,10 +254,12 @@ for f in manifest["files"]:
     L.append(f"| {f['name']} | {f['size']} | `{f['sha256'][:16]}…` |")
 L += ["", "## 口径", "",
       "- 全量 2202 单元（视频 800 / 二期 1116 / 老木 286）；有效=剔除「指标说明书」噪声行后 1331；",
-      "- 400 学习卡（审计 0 问题/可追溯 100%）；结论库 Top100；多源概念为 v4 同义词簇人工双签口径；",
+      "- 400 学习卡（审计 0 问题/可追溯 100%）；结论库 Top100；",
+      f"- 多源概念采用 **multi_source_canonical v1**（count={CANON_COUNT} / target {CANON.get('target')}），"
+      "与 KPI 同口径；v2 导出保留不动；",
       "- 只读生成，不写数据仓；不构成投资建议。", ""]
-(R / f"export_governed_v2_{TAG}.md").write_text("\n".join(L), encoding="utf-8")
+(R / f"export_governed_v3_{TAG}.md").write_text("\n".join(L), encoding="utf-8")
 print(json.dumps({"zip": report["zip"], "counts": metrics["counts"],
-                  "report": {"json": str(R / f'export_governed_v2_{TAG}.json'),
-                             "md": str(R / f'export_governed_v2_{TAG}.md')}},
+                  "report": {"json": str(R / f'export_governed_v3_{TAG}.json'),
+                             "md": str(R / f'export_governed_v3_{TAG}.md')}},
                  ensure_ascii=False, indent=1))

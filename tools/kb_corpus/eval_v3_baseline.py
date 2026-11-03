@@ -24,7 +24,6 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from collections import Counter
 from datetime import datetime
 from pathlib import Path
 
@@ -32,7 +31,6 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools" / "kb_corpus"))
 
 import eval_report_header as rh  # noqa: E402
-import eval_registry as er  # noqa: E402
 import eval_search_v2_ext as ev  # noqa: E402
 import eval_search_v2_ext2 as e2  # noqa: E402
 import search_v2 as sv  # noqa: E402

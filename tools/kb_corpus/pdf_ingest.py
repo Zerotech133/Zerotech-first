@@ -115,7 +115,6 @@ def cmd_ocr(args) -> int:
     import fitz
     import numpy as np
     from rapidocr_onnxruntime import RapidOCR
-    pdf_dir = Path(args.pdf_dir)
     out = Path(args.out_dir)
     engine = None
     for pdf in iter_pdfs(args):
@@ -189,7 +188,6 @@ def clean_line(ln: str) -> bool:
 
 def cmd_structure(args) -> int:
     out = Path(args.out_dir)
-    pdf_dir = Path(args.pdf_dir)
     for pdf in iter_pdfs(args):
         d = book_out(pdf, out)
         layout = d / "layout.jsonl"
@@ -274,7 +272,6 @@ def chat(prompt: str, num: int = 1600, timeout: int = 300) -> str:
 
 def cmd_distill(args) -> int:
     out = Path(args.out_dir)
-    pdf_dir = Path(args.pdf_dir)
     for pdf in iter_pdfs(args):
         d = book_out(pdf, out)
         st = d / "structure.json"
@@ -351,7 +348,6 @@ def cmd_distill(args) -> int:
 # ---------------------------------------------------------------- verify
 def cmd_verify(args) -> int:
     out = Path(args.out_dir)
-    pdf_dir = Path(args.pdf_dir)
     units_min = int(getattr(args, "units_min", 10))
     chapters_min = int(getattr(args, "chapters_min", 5))
     report = {"generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
@@ -446,7 +442,6 @@ def cmd_verify(args) -> int:
 # ---------------------------------------------------------------- index
 def cmd_index(args) -> int:
     out = Path(args.out_dir)
-    pdf_dir = Path(args.pdf_dir)
     kb_docs = REPO / "knowledge_docs"
     kb_docs.mkdir(parents=True, exist_ok=True)
     for pdf in iter_pdfs(args):

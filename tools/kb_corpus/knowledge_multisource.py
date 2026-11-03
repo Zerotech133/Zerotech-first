@@ -401,7 +401,7 @@ def _detect_conflicts(cluster: dict, sources: dict[tuple, dict]) -> list[dict]:
     items = [(key, src) for key, src in sources.items()]
     for i in range(len(items)):
         for j in range(i + 1, len(items)):
-            (ka, sa), (kb, sb) = items[i], items[j]
+            (_, sa), (_, sb) = items[i], items[j]
             text_a = " ".join(sa["answers"])
             text_b = " ".join(sb["answers"])
             up_a, down_a = len(UP_WORDS.findall(text_a)), len(DOWN_WORDS.findall(text_a))

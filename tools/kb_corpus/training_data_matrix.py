@@ -103,7 +103,7 @@ VERIFY = [
     ("V14", "视频号单元（去重后）", "units jsonl lines", "800"),
     ("V15", "第二期单元（去重后）", "units jsonl lines", "1116"),
     ("V16", "老木单元", "units jsonl lines", "286"),
-    ("V17", "多源概念（人工签核）", "multi_source_final_p1", "29 / 30"),
+    ("V17", "多源概念（人工签核）", "multi_source_canonical", "29 / 30"),
     ("V18", "learning_gate", "4 项目/13 检查", "4 项目/13 检查/fail=0"),
 ]
 
@@ -157,8 +157,11 @@ def actual_values():
     out["V15"] = lines(KB / "30_知识单元/视频号学习_第二期_units_draft.jsonl")
     out["V16"] = lines(KB / "30_知识单元/laomu_notes_units_draft.jsonl")
     try:
-        b = json.loads((R / "multi_source_final_p1_20261103.json").read_text(encoding="utf-8"))
-        out["V17"] = f"{b['final_multi_source']} / 30"
+        # 唯一口径：research/reports/multi_source_canonical_20261104.json（冻结 count）
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from multi_source_canonical import canonical_count, load_canonical
+        _canon = load_canonical()
+        out["V17"] = f"{canonical_count()} / {_canon.get('target', 30)}"
     except Exception:
         out["V17"] = "?"
     try:
