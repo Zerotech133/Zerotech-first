@@ -1,0 +1,254 @@
+{
+ "generated_at": "2026-11-03T14:59:53+08:00",
+ "source_files": 11,
+ "projects": {
+  "视频号学习_8博主": {
+   "units_after_dedupe": 800,
+   "pipeline": {
+    "units": 1018,
+    "units_raw": 3813,
+    "meta_skipped": 2795
+   }
+  },
+  "视频号学习_第二期": {
+   "units_after_dedupe": 1116,
+   "pipeline": {
+    "units": 1293,
+    "units_raw": 2027,
+    "meta_skipped": 734
+   }
+  }
+ },
+ "dedupe": {
+  "视频号学习_8博主": "1018 → 800（-218；备份 …103049.v1bak）",
+  "视频号学习_第二期": "1293 → 1116（-177；备份 …103049.v1bak）"
+ },
+ "governance": {
+  "units": 800,
+  "knowledge_units": 800,
+  "meta_units": 0,
+  "verified": 800,
+  "verified_pct": 100.0,
+  "unverifiable": 0,
+  "exact_dup_units": 0,
+  "near_dup_pairs": 0,
+  "dup_ratio_pct": 0.0,
+  "card_concept_dup": 0,
+  "candidate_pool": 259,
+  "multi_source_concepts": 0,
+  "conflicts": 0
+ },
+ "gate": {
+  "projects": 4,
+  "checks": 13,
+  "fail": 0
+ },
+ "cards_audit": {
+  "cards_total": 400,
+  "units_total": 516,
+  "issues_total": 0,
+  "by_severity": {
+   "high": 0,
+   "medium": 0,
+   "low": 0
+  },
+  "by_check": {},
+  "fields_missing": {},
+  "source_unparseable": 0,
+  "answer_length_anomalies": 0,
+  "concept_duplicate_groups": 0,
+  "concept_duplicate_cards": 0,
+  "traceable_cards": 400,
+  "traceable_rate": 1.0,
+  "trace_methods": {
+   "concept+book+page": 159,
+   "provenance(file+line)": 241
+  },
+  "themes_total": 21,
+  "themes_with_cards": 21,
+  "low_coverage_themes": [],
+  "source_kinds": {
+   "研报": 147,
+   "书籍": 12,
+   "笔记": 28,
+   "视频号": 213
+  },
+  "book_vs_report": {
+   "书籍": 12,
+   "研报": 147
+  }
+ },
+ "multi_source": {
+  "human_signed": 27,
+  "target": 30,
+  "machine": 32
+ },
+ "per_file": [
+  {
+   "project": "视频号学习_8博主",
+   "file": "20261103_AI量化工具手记(1).md",
+   "size_kb": 22.9,
+   "sha256_16": "18b611f70bffea76",
+   "units": 23,
+   "verified": 23,
+   "verify_pct": 100.0,
+   "candidates": 39,
+   "cards": 3,
+   "excluded": false,
+   "effective_units": 23,
+   "effective_candidates": 39
+  },
+  {
+   "project": "视频号学习_8博主",
+   "file": "20261103_cash猫4415.md",
+   "size_kb": 127.7,
+   "sha256_16": "ff7eb9f97a054793",
+   "units": 14,
+   "verified": 14,
+   "verify_pct": 100.0,
+   "candidates": 50,
+   "cards": 4,
+   "excluded": false,
+   "effective_units": 14,
+   "effective_candidates": 50
+  },
+  {
+   "project": "视频号学习_8博主",
+   "file": "20261103_K哥真交易(1).md",
+   "size_kb": 76.2,
+   "sha256_16": "61c4b219efde1e47",
+   "units": 19,
+   "verified": 19,
+   "verify_pct": 100.0,
+   "candidates": 30,
+   "cards": 4,
+   "excluded": false,
+   "effective_units": 19,
+   "effective_candidates": 30
+  },
+  {
+   "project": "视频号学习_8博主",
+   "file": "20261103_一修论市(1).md",
+   "size_kb": 654.3,
+   "sha256_16": "a6867429b3543437",
+   "units": 129,
+   "verified": 129,
+   "verify_pct": 100.0,
+   "candidates": 262,
+   "cards": 38,
+   "excluded": false,
+   "effective_units": 129,
+   "effective_candidates": 262
+  },
+  {
+   "project": "视频号学习_8博主",
+   "file": "20261103_乔木缠论ROEE.md",
+   "size_kb": 715.0,
+   "sha256_16": "db7a0019a7efab01",
+   "units": 206,
+   "verified": 206,
+   "verify_pct": 100.0,
+   "candidates": 414,
+   "cards": 54,
+   "excluded": false,
+   "effective_units": 206,
+   "effective_candidates": 414
+  },
+  {
+   "project": "视频号学习_8博主",
+   "file": "20261103_指标公式入门(1).md",
+   "size_kb": 20.2,
+   "sha256_16": "454a3de53b3b999b",
+   "units": 47,
+   "verified": 47,
+   "verify_pct": 100.0,
+   "candidates": 71,
+   "cards": 17,
+   "excluded": false,
+   "effective_units": 47,
+   "effective_candidates": 71
+  },
+  {
+   "project": "视频号学习_8博主",
+   "file": "20261103_数据帝-量化开发.md",
+   "size_kb": 148.6,
+   "sha256_16": "547b54ebf6402c38",
+   "units": 313,
+   "verified": 313,
+   "verify_pct": 100.0,
+   "candidates": 371,
+   "cards": 80,
+   "excluded": false,
+   "effective_units": 313,
+   "effective_candidates": 371
+  },
+  {
+   "project": "视频号学习_8博主",
+   "file": "20261103_爱死磕-康康.md",
+   "size_kb": 282.0,
+   "sha256_16": "92f90584340b22fa",
+   "units": 49,
+   "verified": 49,
+   "verify_pct": 100.0,
+   "candidates": 89,
+   "cards": 13,
+   "excluded": false,
+   "effective_units": 49,
+   "effective_candidates": 89
+  },
+  {
+   "project": "视频号学习_第二期",
+   "file": "20261103_刺猬投研.md",
+   "size_kb": 109.1,
+   "sha256_16": "16878abd66f322ce",
+   "units": 41,
+   "verified": 41,
+   "verify_pct": 100.0,
+   "candidates": 7,
+   "cards": 0,
+   "excluded": false,
+   "effective_units": 41,
+   "effective_candidates": 7
+  },
+  {
+   "project": "视频号学习_第二期",
+   "file": "20261103_指标说明书.md",
+   "size_kb": 58.2,
+   "sha256_16": "7bb6f180abbd4c25",
+   "units": 871,
+   "verified": 850,
+   "verify_pct": 97.6,
+   "candidates": 823,
+   "cards": 0,
+   "excluded": true,
+   "effective_units": 0,
+   "effective_candidates": 0
+  },
+  {
+   "project": "视频号学习_第二期",
+   "file": "20261103_爱吃折耳根的Ace.md",
+   "size_kb": 497.3,
+   "sha256_16": "d9aa0c9a95d64e80",
+   "units": 204,
+   "verified": 204,
+   "verify_pct": 100.0,
+   "candidates": 39,
+   "cards": 0,
+   "excluded": false,
+   "effective_units": 204,
+   "effective_candidates": 39
+  }
+ ],
+ "effective": {
+  "units": 1045,
+  "candidates": 1372,
+  "excluded_units": 871,
+  "excluded_candidates": 823
+ },
+ "special": {
+  "指标说明书": {
+   "units": 871,
+   "issue": "整文件为目录/图片引用（871 单元），微调 D0 已整文件剔除；知识库单元仍保留待决定是否移除"
+  }
+ }
+}
