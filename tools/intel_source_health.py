@@ -62,9 +62,12 @@ if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
 
 import intel_sources as reg  # noqa: E402  复用登记表契约/样本 stat（同一口径）
+import intel_source_probe as probe  # noqa: E402  IL-08 三源只读探针（水位/owner/许可/可得性）
 
 SCHEMA = "intel_source_health/v1"
 KIND = "intel_source_health"
+IL08_SCHEMA = probe.SCHEMA
+DEFAULT_IL08_STALE_DAYS = 2.0
 
 DEFAULT_REGISTRY = reg.DEFAULT_REGISTRY
 DEFAULT_STATUS = (Path(os.environ.get("AIOS_ROOT", r"C:\aios"))
@@ -233,8 +236,15 @@ def _news_source_health(source_id: str, entry, status_ok: bool,
 
 def build_report(registry_path=None, status_path=None, now=None,
                  news_stale_hours: float = DEFAULT_NEWS_STALE_HOURS,
-                 sample_stale_hours: float = DEFAULT_SAMPLE_STALE_HOURS) -> dict:
-    """只读生成健康报告（不写任何文件/库）。返回 JSON 契约 dict。"""
+                 sample_stale_hours: float = DEFAULT_SAMPLE_STALE_HOURS,
+                 include_il08: bool = True,
+                 il08_stale_days: float = DEFAULT_IL08_STALE_DAYS,
+                 il08_paths=None) -> dict:
+    """只读生成健康报告（不写任何文件/库）。返回 JSON 契约 dict。
+
+    IL-08（增量，向后兼容）：``include_il08=True`` 时在 legacy 报告上追加顶层
+    ``il08`` 键（三源事实盘点：在册/水位/owner/许可/探针可得性）；legacy 键与语义不变。
+    """
     clk = _now_naive(now)
     news_stale_s = float(news_stale_hours) * 3600.0
     sample_stale_s = float(sample_stale_hours) * 3600.0
@@ -319,7 +329,49 @@ def build_report(registry_path=None, status_path=None, now=None,
     report["ok"] = bool(
         report["registry"]["ok"] and report["status"]["ok"]
         and report["summary"]["enabled_bad"] == 0)
+    if include_il08:
+        # 增量：只追加顶层 il08 键；legacy 键/语义/ok/rc 全部不变（IL-08 v1）
+        report["il08"] = _build_il08(report, registry_data, clk, il08_stale_days,
+                                     il08_paths)
     return report
+
+
+def _build_il08(report, registry_data, clk, stale_days, il08_paths):
+    """构建 IL-08 三源事实盘点；异常降级为 fail-visible 的 il08 块，不影响 legacy。"""
+    try:
+        return probe.build_il08_inventory(
+            registry=registry_data,
+            registry_path=report["registry"]["path"],
+            registry_ok=report["registry"]["ok"],
+            registry_error=report["registry"]["error"],
+            now=clk,
+            stale_days=stale_days,
+            overrides=il08_paths,
+        )
+    except Exception as exc:  # noqa: BLE001 —— fail-visible，绝不外抛破坏 legacy
+        return {
+            "schema": IL08_SCHEMA, "kind": probe.KIND, "ok": False,
+            "readonly": True, "network": False, "online_health_claimed": False,
+            "generated_at": "", "now": "", "no_authoritative_registry": True,
+            "registry": {"path": report["registry"]["path"], "ok": False,
+                         "error": "il08_build_failed", "reason": str(exc),
+                         "registry_id": None, "schema_version": None,
+                         "updated_at": None, "phase": None, "source_count": 0,
+                         "authoritative": False, "covers_three_sources": False},
+            "thresholds": {"stale_days": float(stale_days)},
+            "sources": [],
+            "summary": {"total": 0, "in_registry": 0, "not_in_registry": [],
+                        "probe_available": 0, "probe_unavailable": [],
+                        "stale": 0, "errors": 1, "gaps": 0},
+            "gaps": [],
+            "errors": [{"source_id": "*", "error": "il08_build_failed: %s" % exc,
+                        "path": report["registry"]["path"]}],
+            "policy": {"readonly": True, "network": False, "writes_db": False,
+                       "writes_files": False, "changes_collect_config": False,
+                       "starts_stops_services": False,
+                       "no_second_registry_source": True,
+                       "credentials_read": False},
+        }
 
 
 def format_text(report: dict) -> str:
@@ -369,6 +421,16 @@ def _hours_arg(value: str) -> float:
     return n
 
 
+def _days_arg(value: str) -> float:
+    try:
+        n = float(value)
+    except (TypeError, ValueError):
+        raise argparse.ArgumentTypeError("阈值必须是数字（天）")
+    if n <= 0:
+        raise argparse.ArgumentTypeError("阈值必须 > 0 天")
+    return n
+
+
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(
         description="情报来源健康检查（只读 registry/status/mtime；不联网不写库）")
@@ -383,9 +445,18 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--sample-stale-hours", type=_hours_arg,
                     default=DEFAULT_SAMPLE_STALE_HOURS,
                     help="登记表采样源 mtime 过期阈值（小时，默认 30）")
-    ap.add_argument("--json", action="store_true", help="输出 JSON 契约（stdout）")
+    out = ap.add_mutually_exclusive_group()
+    out.add_argument("--json", action="store_true", help="输出 JSON 契约（stdout）")
+    out.add_argument("--md", action="store_true",
+                     help="输出 IL-08 三源盘点 Markdown（stdout，只读事实）")
     ap.add_argument("--strict", action="store_true",
                     help="启用源不健康 → exit 1（输入错误始终 fail-visible）")
+    il08 = ap.add_argument_group("IL-08 三源盘点（增量，可注入路径/阈值）")
+    il08.add_argument("--stale-days", type=_days_arg, default=DEFAULT_IL08_STALE_DAYS,
+                      help="三源水位过期阈值（天，默认 2）")
+    il08.add_argument("--xueqiu-db", default=None, help="雪球 sqlite 路径（默认数据根 xueqiu/xueqiu_info.db）")
+    il08.add_argument("--guba-dir", default=None, help="股吧 jsonl 目录（默认数据根 guba）")
+    il08.add_argument("--tdx-db", default=None, help="TDX sqlite 路径（默认数据根 tdx/tdx_info.db）")
     return ap
 
 
@@ -395,14 +466,25 @@ def main(argv=None) -> int:
     except Exception:  # noqa: BLE001
         pass
     args = build_parser().parse_args(argv)
+    il08_paths = {"xueqiu_db": args.xueqiu_db, "guba_dir": args.guba_dir,
+                  "tdx_db": args.tdx_db}
     try:
         report = build_report(args.registry, args.status, args.now,
                               news_stale_hours=args.stale_hours,
-                              sample_stale_hours=args.sample_stale_hours)
+                              sample_stale_hours=args.sample_stale_hours,
+                              include_il08=bool(args.json or args.md),
+                              il08_stale_days=args.stale_days,
+                              il08_paths=il08_paths)
     except ValueError as exc:
         print(json.dumps({"ok": False, "schema": SCHEMA, "error": str(exc)},
                          ensure_ascii=False), file=sys.stderr)
         return EXIT_UNHEALTHY
+    if args.md:
+        inv = report.get("il08") or {}
+        print(probe.format_il08_md(inv))
+        if not isinstance(inv, dict) or inv.get("schema") != IL08_SCHEMA:
+            return EXIT_UNHEALTHY
+        return EXIT_OK
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=1))
     else:
