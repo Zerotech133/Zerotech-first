@@ -1,16 +1,16 @@
 {
  "schema_version": 1,
  "date": "20261102",
- "generated_at": "2026-11-03T05:51:09+08:00",
+ "generated_at": "2026-11-03T08:53:20+08:00",
  "generator": "tools/kb_corpus/learning_release.py（统一发布器，发布门强制）",
  "project": "视频号学习_8博主",
  "apply": true,
  "mode": "apply",
  "proposals": {
-  "path": "research/reports/card_proposals_视频号学习_8博主_reviewed_20261103.json",
-  "sha256": "b800d59bd4ca6085589e26551650c82d0f50cf314597aea74fe9655ac7c4d1ba",
-  "total": 100,
-  "approved": 84
+  "path": "research/reports/card_proposals_视频号学习_8博主_reviewed_batch2_20261103.json",
+  "sha256": "248dceb0b840f11274658589e90ffd3965b2a31d936e0836ad0b7b667fd799e1",
+  "total": 99,
+  "approved": 99
  },
  "steps": [
   {
@@ -31,12 +31,12 @@
   {
    "name": "validate_approved",
    "ok": true,
-   "detail": "84/100 approved"
+   "detail": "99/99 approved"
   },
   {
    "name": "card_merge_apply",
    "ok": true,
-   "detail": "rc=0 would_add=84 resulting=256 backup=C:\\项目\\老田的AI助手\\research\\reports\\kb_learning_cards.20261103_055109.bak.json",
+   "detail": "rc=0 would_add=99 resulting=370 backup=C:\\项目\\老田的AI助手\\research\\reports\\kb_learning_cards.20261103_085320.bak.json",
    "command": [
     "C:\\项目\\py312\\python.exe",
     "-X",
@@ -44,12 +44,12 @@
     "C:\\项目\\老田的AI助手\\tools\\kb_corpus\\card_merge.py",
     "merge",
     "--proposals",
-    "research/reports/card_proposals_视频号学习_8博主_reviewed_20261103.json",
+    "research/reports/card_proposals_视频号学习_8博主_reviewed_batch2_20261103.json",
     "--no-preview",
     "--json",
     "--apply"
    ],
-   "stdout_tail": "\": {\n    \"ok\": true,\n    \"errors\": []\n  },\n  \"warnings\": [\n    \"learning_cards.py 重跑会覆盖 kb_learning_cards.json；合并卡需在其后运行本工具或改造生成器保留人工卡。\"\n  ],\n  \"disclaimer\": \"合并工具仅做本地文件合并；卡片内容为研究/学习候选，不构成投资建议。\",\n  \"applied\": true,\n  \"apply_error\": null,\n  \"backup\": \"C:\\\\项目\\\\老田的AI助手\\\\research\\\\reports\\\\kb_learning_cards.20261103_055109.bak.json\",\n  \"post_write_validation\": {\n    \"ok\": true,\n    \"errors\": []\n  }\n}\n",
+   "stdout_tail": "\": {\n    \"ok\": true,\n    \"errors\": []\n  },\n  \"warnings\": [\n    \"learning_cards.py 重跑会覆盖 kb_learning_cards.json；合并卡需在其后运行本工具或改造生成器保留人工卡。\"\n  ],\n  \"disclaimer\": \"合并工具仅做本地文件合并；卡片内容为研究/学习候选，不构成投资建议。\",\n  \"applied\": true,\n  \"apply_error\": null,\n  \"backup\": \"C:\\\\项目\\\\老田的AI助手\\\\research\\\\reports\\\\kb_learning_cards.20261103_085320.bak.json\",\n  \"post_write_validation\": {\n    \"ok\": true,\n    \"errors\": []\n  }\n}\n",
    "stderr_tail": ""
   },
   {
@@ -75,27 +75,27 @@
   }
  ],
  "merge_stats": {
-  "base_cards": 172,
-  "proposal_cards": 100,
-  "approved": 84,
-  "would_add": 84,
-  "skipped_total": 16,
+  "base_cards": 271,
+  "proposal_cards": 99,
+  "approved": 99,
+  "would_add": 99,
+  "skipped_total": 0,
   "skipped_not_reviewed": 0,
-  "skipped_rejected": 11,
-  "skipped_needs_revision": 5,
+  "skipped_rejected": 0,
+  "skipped_needs_revision": 0,
   "skipped_concept_exists": 0,
   "skipped_duplicate_in_batch": 0,
-  "resulting_cards": 256
+  "resulting_cards": 370
  },
  "digest": null,
  "cards": {
   "before": {
-   "count": 172,
-   "sha256": "c0f3bd3b784844e7ef65376ee1d64a3fc7926d898f0e5caf4de8bcf9d6625582"
+   "count": 271,
+   "sha256": "062484a2e220bc9a8e22f6a5b6722106e3a550b823fad1b7d2c1cd99e52f31fb"
   },
   "after": {
-   "count": 256,
-   "sha256": "2b5ac3db224e4367a22a5c4d74b1eb5bb901c981f8764e60a45adeb15cb2666f"
+   "count": 370,
+   "sha256": "cc75579197e1b125f158c0b7b554280c07e9e079afadc0b2e47b63568856cda0"
   }
  },
  "ok": true,

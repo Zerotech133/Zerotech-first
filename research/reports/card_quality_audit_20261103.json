@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "date": "20261103",
- "generated_at": "2026-11-03T08:05:29+08:00",
+ "generated_at": "2026-11-03T08:53:29+08:00",
  "generator": "tools/kb_corpus/card_quality_audit.py（只读审计）",
  "mode": "read_only_audit（不修改学习卡）",
  "policy": {
@@ -25,8 +25,8 @@
  "sources": {
   "cards": {
    "path": "portal/static/kb_learning_cards.json",
-   "sha256": "2b5ac3db224e4367a22a5c4d74b1eb5bb901c981f8764e60a45adeb15cb2666f",
-   "count": 256
+   "sha256": "cc75579197e1b125f158c0b7b554280c07e9e079afadc0b2e47b63568856cda0",
+   "count": 370
   },
   "units": {
    "path": "C:\\项目\\老田的AI助手\\portal\\static\\kb_units_all.json",
@@ -35,7 +35,7 @@
   }
  },
  "summary": {
-  "cards_total": 256,
+  "cards_total": 370,
   "units_total": 516,
   "issues_total": 0,
   "by_severity": {
@@ -49,24 +49,24 @@
   "answer_length_anomalies": 0,
   "concept_duplicate_groups": 0,
   "concept_duplicate_cards": 0,
-  "traceable_cards": 256,
+  "traceable_cards": 370,
   "traceable_rate": 1.0,
   "trace_methods": {
-   "concept+book+page": 144,
-   "provenance(file+line)": 112
+   "concept+book+page": 159,
+   "provenance(file+line)": 211
   },
   "themes_total": 21,
   "themes_with_cards": 21,
   "low_coverage_themes": [],
   "source_kinds": {
-   "研报": 132,
+   "研报": 147,
    "书籍": 12,
    "笔记": 28,
-   "视频号": 84
+   "视频号": 183
   },
   "book_vs_report": {
    "书籍": 12,
-   "研报": 132
+   "研报": 147
   }
  },
  "issues": [],
@@ -2118,44 +2118,956 @@
    "method": "provenance(file+line)",
    "unit_book": null,
    "unit_pages": "None-None"
+  },
+  {
+   "card_index": 256,
+   "concept": "传统审查的低效性",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830015454",
+   "unit_pages": "1-13"
+  },
+  {
+   "card_index": 257,
+   "concept": "上市快递企业盈利修复",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830034661",
+   "unit_pages": "1-3"
+  },
+  {
+   "card_index": 258,
+   "concept": "Meta Muse",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830035707",
+   "unit_pages": "1-4"
+  },
+  {
+   "card_index": 259,
+   "concept": "钠电池行业生命周期",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830042382",
+   "unit_pages": "1-4"
+  },
+  {
+   "card_index": 260,
+   "concept": "驾驭工程 (Harness Engineering)",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830015410",
+   "unit_pages": "1-13"
+  },
+  {
+   "card_index": 261,
+   "concept": "投资风险预警",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830038557",
+   "unit_pages": "1-5"
+  },
+  {
+   "card_index": 262,
+   "concept": "新型电池产业发展规划",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610071830182729",
+   "unit_pages": "1-13"
+  },
+  {
+   "card_index": 263,
+   "concept": "动力电池行业竞争格局",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830042321",
+   "unit_pages": "1-4"
+  },
+  {
+   "card_index": 264,
+   "concept": "Fluence 数据中心业务增长",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610021830111958",
+   "unit_pages": "1-4"
+  },
+  {
+   "card_index": 265,
+   "concept": "OpenAI GPT-6 Sol",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830039062",
+   "unit_pages": "1-13"
+  },
+  {
+   "card_index": 266,
+   "concept": "线控转向响应优势",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610021830111904",
+   "unit_pages": "1-13"
+  },
+  {
+   "card_index": 267,
+   "concept": "AIDC 储能分层架构",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610021830111958",
+   "unit_pages": "1-4"
+  },
+  {
+   "card_index": 268,
+   "concept": "固态电池产业化进度",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610071830182729",
+   "unit_pages": "1-13"
+  },
+  {
+   "card_index": 269,
+   "concept": "锂电产业链产销情况",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202610071830182729",
+   "unit_pages": "1-13"
+  },
+  {
+   "card_index": 270,
+   "concept": "贵金属",
+   "traceable": true,
+   "method": "concept+book+page",
+   "unit_book": "rp_AP202609301830053954",
+   "unit_pages": "1-13"
+  },
+  {
+   "card_index": 271,
+   "concept": "AI赛道",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 272,
+   "concept": "DIF上传0轴",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 273,
+   "concept": "KDJ金叉",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 274,
+   "concept": "K线合并",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 275,
+   "concept": "MACD周经叉",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 276,
+   "concept": "MACD底背离",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 277,
+   "concept": "QMT功能",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 278,
+   "concept": "T字阴线跌停",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 279,
+   "concept": "一休云战法",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 280,
+   "concept": "一夜吃股法",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 281,
+   "concept": "一笑云战法",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 282,
+   "concept": "一笔的硬性标准",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 283,
+   "concept": "三倍量指标",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 284,
+   "concept": "三军会师",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 285,
+   "concept": "三类买点风控",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 286,
+   "concept": "上涨趋势核心",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 287,
+   "concept": "下跌加盘整加下跌",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 288,
+   "concept": "下跌盘整下跌结构",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 289,
+   "concept": "中性策略类型",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 290,
+   "concept": "中报业绩",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 291,
+   "concept": "中枢上移",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 292,
+   "concept": "中枢与背驰",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 293,
+   "concept": "中枢判定",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 294,
+   "concept": "中枢判断逻辑",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 295,
+   "concept": "中枢新生",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 296,
+   "concept": "中枢显示设置",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 297,
+   "concept": "中枢起笔方向",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 298,
+   "concept": "临时叠加其他指标",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 299,
+   "concept": "主观交易与量化交易",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 300,
+   "concept": "交易策略与风险",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 301,
+   "concept": "仓位管理",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 302,
+   "concept": "以交易为生",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 303,
+   "concept": "价值投资派",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 304,
+   "concept": "低开高走",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 305,
+   "concept": "倒车接人",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 306,
+   "concept": "公式管理集",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 307,
+   "concept": "分钟级别中枢",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 308,
+   "concept": "区间套运用",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 309,
+   "concept": "单针探顶",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 310,
+   "concept": "反弹不创新高",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 311,
+   "concept": "因子失效风险",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 312,
+   "concept": "因子的预测能力",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 313,
+   "concept": "因子量化",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 314,
+   "concept": "均线战法",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 315,
+   "concept": "均线排列",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 316,
+   "concept": "均线结构编辑方法",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 317,
+   "concept": "均线缠绕",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 318,
+   "concept": "外围科技巨头",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 319,
+   "concept": "多周期MACD",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 320,
+   "concept": "多波重叠区域",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 321,
+   "concept": "大A最后红灯",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 322,
+   "concept": "左翼K线",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 323,
+   "concept": "常见集群算力",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 324,
+   "concept": "平台突破公式",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 325,
+   "concept": "底分型加成交量",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 326,
+   "concept": "底分形结构",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 327,
+   "concept": "底部放量",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 328,
+   "concept": "情绪冰点修复",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 329,
+   "concept": "指标位置关系",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 330,
+   "concept": "指标模板",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 331,
+   "concept": "摩底注底阶段",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 332,
+   "concept": "撞琴效应",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 333,
+   "concept": "操作级别",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 334,
+   "concept": "数据清洗",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 335,
+   "concept": "日线一笔战法",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 336,
+   "concept": "日线级别向下笔",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 337,
+   "concept": "易阳盖三阴战法",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 338,
+   "concept": "期货仓位配比",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 339,
+   "concept": "期限结构因子",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 340,
+   "concept": "期限结构因子失效",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 341,
+   "concept": "条件交易单的风险有哪些",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 342,
+   "concept": "板块串出新高",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 343,
+   "concept": "标准中枢",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 344,
+   "concept": "标准背驰",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 345,
+   "concept": "根据关键指标筛选股票",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 346,
+   "concept": "根据各种技术指标如布林黛",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 347,
+   "concept": "根据技术指标执行交易",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 348,
+   "concept": "止盈止损设置",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 349,
+   "concept": "此时均线多头排列",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 350,
+   "concept": "此时第六日阳线突破前一日",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 351,
+   "concept": "每人间形态",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 352,
+   "concept": "波动率产品的交易",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 353,
+   "concept": "涨停后5天数量调整",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 354,
+   "concept": "涨停回马枪战法",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 355,
+   "concept": "涨停板复盘",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 356,
+   "concept": "液冷赛道",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 357,
+   "concept": "淘顶位置",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 358,
+   "concept": "深度学习硬件",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 359,
+   "concept": "深蹲布局",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 360,
+   "concept": "煤炭、贵金属",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 361,
+   "concept": "熟悉交易工具和平台",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 362,
+   "concept": "特征序列",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 363,
+   "concept": "玩死庄家",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 364,
+   "concept": "盘整背驰",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 365,
+   "concept": "盘整背驰看中枢进出",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 366,
+   "concept": "盘背则指的是线段内的背驰",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 367,
+   "concept": "知识落地",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 368,
+   "concept": "研发新模型进行数据训练",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 369,
+   "concept": "禅论中枢",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
   }
  ],
  "theme_distribution": [
   {
    "theme": "AI算力/硬件",
    "units": 116,
-   "cards": 27,
-   "per_100_units": 23.28
+   "cards": 37,
+   "per_100_units": 31.9
   },
   {
    "theme": "其他",
    "units": 104,
-   "cards": 103,
-   "per_100_units": 99.04
+   "cards": 178,
+   "per_100_units": 171.15
   },
   {
    "theme": "新能源/电力",
    "units": 71,
-   "cards": 14,
-   "per_100_units": 19.72
+   "cards": 19,
+   "per_100_units": 26.76
   },
   {
    "theme": "宏观/政策",
    "units": 37,
-   "cards": 13,
-   "per_100_units": 35.14
+   "cards": 21,
+   "per_100_units": 56.76
   },
   {
    "theme": "量学/交易",
    "units": 34,
-   "cards": 12,
-   "per_100_units": 35.29
+   "cards": 21,
+   "per_100_units": 61.76
   },
   {
    "theme": "金融/地产",
    "units": 34,
-   "cards": 11,
-   "per_100_units": 32.35
+   "cards": 14,
+   "per_100_units": 41.18
   },
   {
    "theme": "消费/零售",
@@ -2208,8 +3120,8 @@
   {
    "theme": "半导体/电子",
    "units": 4,
-   "cards": 7,
-   "per_100_units": 175.0
+   "cards": 8,
+   "per_100_units": 200.0
   },
   {
    "theme": "建筑/建材",
@@ -2220,20 +3132,20 @@
   {
    "theme": "有色/金属",
    "units": 4,
-   "cards": 7,
-   "per_100_units": 175.0
+   "cards": 8,
+   "per_100_units": 200.0
   },
   {
    "theme": "评级/研报方法论",
    "units": 4,
-   "cards": 2,
-   "per_100_units": 50.0
+   "cards": 3,
+   "per_100_units": 75.0
   },
   {
    "theme": "医药/生物",
    "units": 3,
-   "cards": 2,
-   "per_100_units": 66.67
+   "cards": 3,
+   "per_100_units": 100.0
   },
   {
    "theme": "传媒/文化",
