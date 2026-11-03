@@ -86,7 +86,7 @@ python -X utf8 tools/hq_case.py dispatch --case CASE-... --owner DATA1
 7. 审批后才可下发任务申请。
 
 - 页面只把流程状态存本机 localStorage；会议纪要与任务申请落服务端；
-- 审批按钮绑定登录身份：只有 ADMIN/OWNER 可审批，VIEWER（tf）不能审批下发；审批人自动取 session 身份；
+- 审批按钮绑定登录身份：ADMIN/OWNER/APPROVER 可审批；VIEWER 不可审批下发；审批人自动取 session 身份（2026-11-03 老田授权 tf=APPROVER）；
 - `下发` 按钮在审批前 `disabled`；Playwright 实测 7 步走通、审批前不可下发；
 - CLI 仍是强校验入口（`hq_case.py` 状态机硬拦）。
 

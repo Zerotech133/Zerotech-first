@@ -116,7 +116,7 @@ function load(){try{var c=JSON.parse(localStorage.getItem(LS)||'null');if(c&&c.i
 function show(id,text){var e=$(id);e.hidden=false;e.textContent=text;}
 function status(id,text,ok){var e=$(id);e.textContent=text;e.className=ok?'ok':'meta';}
 async function loadIdentity(){
-  try{var r=await fetch('/api/auth/me',{cache:'no-store'});var p=await r.json();var s=(p&&p.session)||{};var ctx=s.identity_context||{};state.identity={sub:s.sub||'',name:ctx.display_name||s.sub||'',roles:ctx.roles||[]};state.canApprove=(state.identity.roles.indexOf('ADMIN')>=0||state.identity.roles.indexOf('OWNER')>=0);$('identity').textContent='当前身份：'+state.identity.name+'（'+state.identity.sub+'）· '+state.identity.roles.join(',')+(state.canApprove?' · 可审批':' · 无审批权（需 ADMIN/OWNER）');$('approver').value=state.identity.name||state.identity.sub;}
+  try{var r=await fetch('/api/auth/me',{cache:'no-store'});var p=await r.json();var s=(p&&p.session)||{};var ctx=s.identity_context||{};state.identity={sub:s.sub||'',name:ctx.display_name||s.sub||'',roles:ctx.roles||[]};state.canApprove=(state.identity.roles.indexOf('ADMIN')>=0||state.identity.roles.indexOf('OWNER')>=0||state.identity.roles.indexOf('APPROVER')>=0||(ctx.permissions||[]).indexOf('approve')>=0);$('identity').textContent='当前身份：'+state.identity.name+'（'+state.identity.sub+'）· '+state.identity.roles.join(',')+(state.canApprove?' · 可审批':' · 无审批权（需 APPROVER/ADMIN/OWNER）');$('approver').value=state.identity.name||state.identity.sub;}
   catch(e){state.identity=null;state.canApprove=false;$('identity').textContent='身份加载失败，不能审批';}
   setBtns();
 }
