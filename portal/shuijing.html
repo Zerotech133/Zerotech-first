@@ -8,7 +8,6 @@
 <script src="/static/nav.js" defer></script>
 <script src="/static/shortscreen.js" defer></script>
 <link rel="stylesheet" href="/static/shuijing.css">
-<link rel="stylesheet" href="/static/os_light.css">
 </head>
 <body>
 <main class="main wrap">
@@ -34,7 +33,7 @@
   <div class="error-banner" id="error-banner" hidden></div>
 
   <section class="kpi-row" aria-label="关键数字">
-    <article class="kpi"><div class="kpi-top"><span>推荐池</span><i class="mini accent"></i></div><strong id="kpi-pool">—</strong><div class="kpi-foot"><span class="delta accent">设计上限 30</span><span>ACAD1</span></div></article>
+    <article class="kpi"><div class="kpi-top"><span>推荐池</span><i class="mini accent"></i></div><strong id="kpi-pool">—</strong><div class="kpi-foot"><span class="delta accent" id="kpi-limit">设计上限 30</span><span>ACAD1</span></div></article>
     <article class="kpi"><div class="kpi-top"><span>已复盘</span><i class="mini up"></i></div><strong id="kpi-reviewed">—</strong><div class="kpi-foot"><span class="delta up">T1/T2/N1/F1</span><span>+ D1</span></div></article>
     <article class="kpi"><div class="kpi-top"><span>待复盘</span><i class="mini warn"></i></div><strong id="kpi-pending">—</strong><div class="kpi-foot"><span class="delta warn">未分析</span><span>not reviewed</span></div></article>
     <article class="kpi"><div class="kpi-top"><span>WATCH / BUY</span><i class="mini flat"></i></div><strong id="kpi-actions">—</strong><div class="kpi-foot"><span class="delta">人工复核</span><span>不自动决策</span></div></article>
@@ -58,7 +57,7 @@
   <div class="layout-grid">
     <section class="panel pool-panel" aria-label="ACAD1 推荐池">
       <div class="panel-head pool-head">
-        <div><h2>ACAD1 推荐池 <span class="count-pill" id="pool-count">—</span></h2><p>按 ACAD1 返回的全池；点击行看证据与风险。人工复核，不自动决策。</p></div>
+        <div><h2>ACAD1 推荐池 <span class="count-pill" id="pool-count">—</span> <span class="pool-limit" id="pool-limit-tag">—</span></h2><p>按 ACAD1 返回的全池；点击行看证据与风险。人工复核，不自动决策。</p></div>
         <div class="pool-tools">
           <label class="search"><input id="search" type="search" placeholder="代码 / 名称 / 来源" autocomplete="off"></label>
           <select id="action-filter" class="select" aria-label="动作筛选">
@@ -133,5 +132,44 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script src="/static/shuijing.js"></script>
+<script>
+/* 诚实提示（P1，2026-11-03 WO-ACAD1-DARK-20261103）：设计上限 30；
+   实际 pool_total/stale 必须直说，不粉饰。只读 DOM 同步，不新增 API/写接口；
+   shuijing.js 渲染完成后由 MutationObserver 自动刷新。 */
+(function () {
+  var CAP = 30;
+  function txt(id) { var el = document.getElementById(id); return el ? el.textContent : ""; }
+  function sync() {
+    var total = parseInt(txt("kpi-pool"), 10);
+    var stale = txt("kpi-stale").indexOf("STALE") >= 0;
+    var m = /stale\D*([0-9]+)\s*d/i.exec(txt("fresh-tag"));
+    var days = (m && m[1]) ? m[1] : "—";
+    var over = isFinite(total) ? Math.max(0, total - CAP) : 0;
+    var staleText = stale ? "stale " + days + "d" : "数据新鲜";
+    var label = over > 0
+      ? "超限 " + over + " 只 / " + staleText
+      : "设计上限 " + CAP + " · " + staleText;
+    var warn = over > 0 || stale;
+    var k = document.getElementById("kpi-limit");
+    if (k) { k.textContent = label; k.className = "delta " + (warn ? "warn" : "accent"); }
+    var t = document.getElementById("pool-limit-tag");
+    if (t) {
+      t.textContent = label;
+      t.className = "pool-limit" + (warn ? " warn" : "");
+      t.title = "pool_total=" + (isFinite(total) ? total : "—") +
+        " · 设计上限 " + CAP + " · " + staleText;
+    }
+  }
+  ["kpi-pool", "kpi-stale", "fresh-tag"].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el && window.MutationObserver) {
+      new MutationObserver(sync).observe(el, { childList: true, subtree: true, characterData: true });
+    }
+  });
+  if (document.readyState !== "loading") sync();
+  else document.addEventListener("DOMContentLoaded", sync);
+  window.addEventListener("load", sync);
+})();
+</script>
 </body>
 </html>
