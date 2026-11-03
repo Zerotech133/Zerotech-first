@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 import sys
 from collections import Counter
 from datetime import date, datetime
@@ -59,20 +60,35 @@ for d in ds:
     except Exception:  # noqa: BLE001
         nodate += 1
 
-dw_size = {"files": 269276, "gb": 55.8}   # 实测 Get-ChildItem 汇总
-kb_size = {"files": 4355, "gb": 5.79}
+def dir_size(root: Path) -> dict:
+    """实时统计目录文件数与 GB（避免硬编码漂移）。"""
+    n = total = 0
+    for base, _dirs, files in os.walk(root):
+        for f in files:
+            try:
+                total += os.path.getsize(os.path.join(base, f))
+                n += 1
+            except OSError:
+                pass
+    return {"files": n, "gb": round(total / 1024 ** 3, 2)}
+
+
+dw_size = dir_size(REPO / "quant_backtest/data")
+kb_size = dir_size(KB)
+registered_pct = round(100 * registered / max(1, len(ds)), 1)
+exposed_pct = round(100 * exposed / max(1, len(ds)), 1)
 
 open_items = [
     ("P1", "第二期知识价值低（已审 0 通过）", "46 有效候选/17 预审通过项经人工抽检全部驳回（工具推广/碎片）；0 学习卡，建议降级工具情报库", "DATA1", "决策"),
     ("P1", "指标说明书排除清单需继续约束下游", "候选池已过滤（869→46）；多源/微调输入后续统一用 effective 文件", "DATA1", "已下发，持续"),
-    ("P1", "多源概念 27/30（差 3）", "已扩 3 来源仍不足，需补主题重叠资料或人工复核", "DATA1/Lead", "1 周"),
-    ("P1", "知识治理脚本仅覆盖一期", "knowledge_governance.py 固定 PID，第二期未进治理日报", "DATA1", "2 天"),
+    ("P1", "多源概念 29/30（差 1）", "无新资料下上限；唯一 +1 候选为错误合并（房地产/计算机），不注水", "DATA1/Lead", "待新资料"),
+    ("P1", "知识治理覆盖已扩多项目", "已加入每日任务（knowledge_governance_all），二期/老木纳入", "DATA1", "已完成"),
     ("P1", "cyq_chips 覆盖不足", "23 文件/0.2MB，筹码因子抽样覆盖 0-0.27%", "DATA2", "排期"),
     ("P2", "17 个数据集 >30 天未更新", "港股利润/现金流/财务指标等 2026-09-28，及 probe 类", "DATA2", "排期"),
     ("P2", "59 个数据集无 latest 字段", "inventory 元数据不完整", "DATA4", "2 周"),
-    ("P2", "数据仓注册率/暴露率偏低", f"注册 {registered}/{len(ds)}（84.4%）、暴露 {exposed}/{len(ds)}（22.9%）", "DATA4", "季度"),
-    ("P2", "laomu 1 组重复单元未清", "288 单元中 1 个 exact dup 组", "DATA5", "下次治理"),
-    ("P2", "manifest 覆盖缺口", "tdx missing 86 / tushare missing 192（manifest_check code 0 但覆盖不足）", "DATA3", "季度"),
+    ("P2", "数据仓注册率/暴露率偏低", f"注册 {registered}/{len(ds)}（{registered_pct}%）、暴露 {exposed}/{len(ds)}（{exposed_pct}%）", "DATA4", "季度"),
+    ("P2", "laomu 重复单元已清", "288→286（去重 2 条）", "DATA5", "已完成"),
+    ("P2", "manifest 覆盖缺口", "真实缺口 9（5 可补键/4 需抓取）；补键 apply 0 变更（lifecycle 跳过 3）", "DATA3", "季度"),
 ]
 kpis = [
     ("元数据行占比（一期）", "≤5%", "0%", "✅"),
@@ -85,7 +101,7 @@ kpis = [
     ("第二期有效候选", "—", "46（已审：0 通过，工具推广为主）", "⚠️ 低价值"),
     ("数据仓质量检查", "8/8 PASS", "8/8 PASS（C6/C7/C8 复检 true）", "✅"),
     ("元数据一致性", "PASS", "PASS（catalog v35/256 表/registry 256）", "✅"),
-    ("注册率/暴露率", "—", "84.4% / 22.9%", "⚠️"),
+    ("注册率/暴露率", "—", f"{registered_pct}% / {exposed_pct}%", "⚠️"),
 ]
 
 out = {
@@ -107,7 +123,7 @@ out = {
 (R / f"data_governance_overview_{STAMP}.json").write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
 
 # CSV
-csv_p = REPO / "deliverables" / f"2026-11-03_数据治理情况.csv"
+csv_p = REPO / "deliverables" / "2026-11-03_数据治理情况.csv"
 with csv_p.open("w", encoding="utf-8-sig", newline="") as f:
     w = csv.writer(f)
     w.writerow(["模块", "指标", "目标", "当前", "状态"])
@@ -145,13 +161,13 @@ L += [f"| 单元/知识单元 | {g.get('units')} / {g.get('knowledge_units')} |"
       f"| learning_gate | {gate.get('summary', {}).get('projects')} 项目/{gate.get('summary', {}).get('checks')} 检查/fail={gate.get('summary', {}).get('fail')} |", ""]
 L += ["## 三、数据仓治理", "", "| 项 | 数值 |", "|---|---|",
       f"| 数据集 | **{len(ds)}**（接口 241 / 开源情报 19 / 学习派生 29 / 平台运行 25） |",
-      f"| 注册 / 暴露 | {registered}（84.4%）/ {exposed}（22.9%） |",
-      f"| 数据量 | 269,276 文件 / 55.8GB（知识库另 4,355 文件 / 5.79GB） |",
-      f"| 质量检查 | **8/8 PASS**（ts_forecast/report_rc 去重后 C6/C7/C8 复检 true） |",
-      f"| 元数据一致性 | **PASS**（catalog v35 / 256 表 / registry 256 物理） |",
+      f"| 注册 / 暴露 | {registered}（{registered_pct}%）/ {exposed}（{exposed_pct}%） |",
+      f"| 数据量 | {dw_size['files']:,} 文件 / {dw_size['gb']}GB（知识库另 {kb_size['files']:,} 文件 / {kb_size['gb']}GB） |",
+      "| 质量检查 | **8/8 PASS**（ts_forecast/report_rc 去重后 C6/C7/C8 复检 true） |",
+      "| 元数据一致性 | **PASS**（catalog v35 / 256 表 / registry 256 物理） |",
       f"| 陈旧 >30 天 | **{len(stale)}**（港股利润/现金流/财务指标 2026-09-28 等；probe 类） |",
       f"| 无 latest 字段 | {nodate} |",
-      f"| manifest 覆盖 | tdx missing 86 / tushare missing 192（检查 code 0，覆盖不足） |", ""]
+      "| manifest 覆盖 | tdx missing 86 / tushare missing 192（检查 code 0，覆盖不足） |", ""]
 L += ["## 四、治理机制（自动化）", "", "| 机制 | 状态 |", "|---|---|",
       "| LearningGovernance 每日 02:00 | ✅ rc=0（最近 11-03 02:00） |",
       "| LearningIntake 每 30 分钟 | ✅ rc=0（最近 14:33） |",

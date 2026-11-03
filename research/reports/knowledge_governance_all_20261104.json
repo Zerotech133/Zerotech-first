@@ -1,0 +1,51 @@
+{
+ "generated_at": "2026-11-04T02:45:54+08:00",
+ "projects": [
+  {
+   "project_id": "laomu_notes",
+   "status": "distilling",
+   "units": 286,
+   "meta_lines": 0,
+   "dup_groups": 0,
+   "verified": 286,
+   "verify_pct": 100.0,
+   "avg_chars": 56,
+   "junk_units": 0,
+   "junk_pct": 0.0
+  },
+  {
+   "project_id": "视频号学习_8博主",
+   "status": "distilling",
+   "units": 800,
+   "meta_lines": 4,
+   "dup_groups": 4,
+   "verified": 800,
+   "verify_pct": 100.0,
+   "avg_chars": 569,
+   "junk_units": 0,
+   "junk_pct": 0.0
+  },
+  {
+   "project_id": "视频号学习_第二期",
+   "status": "distilling",
+   "units": 1116,
+   "meta_lines": 14,
+   "dup_groups": 4,
+   "verified": 1095,
+   "verify_pct": 98.1,
+   "avg_chars": 213,
+   "junk_units": 871,
+   "junk_pct": 78.0
+  }
+ ],
+ "aggregate": {
+  "units": 2202,
+  "meta_lines": 18,
+  "dup_groups": 8,
+  "verified": 2181,
+  "junk_units": 871,
+  "projects": 3,
+  "verify_pct": 99.0,
+  "junk_pct": 39.6
+ }
+}

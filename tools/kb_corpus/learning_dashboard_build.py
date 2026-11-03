@@ -62,7 +62,8 @@ def latest_report(pattern: str, reports_dir: Path = REPORTS):
 def latest_gate(reports_dir: Path = REPORTS):
     """读取最新 learning_gate_*.json（v2 门禁报告）。"""
     files = sorted(Path(reports_dir).glob("learning_gate_*.json"),
-                   key=lambda p: p.stat().st_mtime, reverse=True)
+                   key=lambda p: (not re.fullmatch(r"learning_gate_\d{8}\.json", p.name),
+                                  -p.stat().st_mtime))
     for f in files:
         data = load_json(f)
         if data:

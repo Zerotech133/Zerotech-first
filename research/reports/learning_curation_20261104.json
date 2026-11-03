@@ -1,0 +1,31 @@
+{
+ "generated_at": "2026-11-04T02:44:14+08:00",
+ "mode": "apply",
+ "exclude_pattern": "指标说明书",
+ "projects": [
+  {
+   "project_id": "laomu_notes",
+   "units_before": 288,
+   "units_after": 286,
+   "effective": 286,
+   "excluded": 0,
+   "dedupe_rc": 0
+  },
+  {
+   "project_id": "视频号学习_8博主",
+   "units_before": 1018,
+   "units_after": 800,
+   "effective": 800,
+   "excluded": 0,
+   "dedupe_rc": 0
+  },
+  {
+   "project_id": "视频号学习_第二期",
+   "units_before": 1293,
+   "units_after": 1116,
+   "effective": 245,
+   "excluded": 871,
+   "dedupe_rc": 0
+  }
+ ]
+}

@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-03T16:50:00+08:00",
+ "generated_at": "2026-11-04T02:45:18+08:00",
  "knowledge": {
   "projects": [
    {
@@ -106,11 +106,11 @@
    "平台运行": 25
   },
   "size": {
-   "files": 269276,
-   "gb": 55.8
+   "files": 269387,
+   "gb": 55.86
   },
   "kb_size": {
-   "files": 4355,
+   "files": 4358,
    "gb": 5.79
   },
   "stale_30d": 17,
@@ -181,17 +181,17 @@
   },
   {
    "priority": "P1",
-   "item": "多源概念 27/30（差 3）",
-   "detail": "已扩 3 来源仍不足，需补主题重叠资料或人工复核",
+   "item": "多源概念 29/30（差 1）",
+   "detail": "无新资料下上限；唯一 +1 候选为错误合并（房地产/计算机），不注水",
    "owner": "DATA1/Lead",
-   "eta": "1 周"
+   "eta": "待新资料"
   },
   {
    "priority": "P1",
-   "item": "知识治理脚本仅覆盖一期",
-   "detail": "knowledge_governance.py 固定 PID，第二期未进治理日报",
+   "item": "知识治理覆盖已扩多项目",
+   "detail": "已加入每日任务（knowledge_governance_all），二期/老木纳入",
    "owner": "DATA1",
-   "eta": "2 天"
+   "eta": "已完成"
   },
   {
    "priority": "P1",
@@ -223,15 +223,15 @@
   },
   {
    "priority": "P2",
-   "item": "laomu 1 组重复单元未清",
-   "detail": "288 单元中 1 个 exact dup 组",
+   "item": "laomu 重复单元已清",
+   "detail": "288→286（去重 2 条）",
    "owner": "DATA5",
-   "eta": "下次治理"
+   "eta": "已完成"
   },
   {
    "priority": "P2",
    "item": "manifest 覆盖缺口",
-   "detail": "tdx missing 86 / tushare missing 192（manifest_check code 0 但覆盖不足）",
+   "detail": "真实缺口 9（5 可补键/4 需抓取）；补键 apply 0 变更（lifecycle 跳过 3）",
    "owner": "DATA3",
    "eta": "季度"
   }

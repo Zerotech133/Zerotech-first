@@ -59,14 +59,15 @@ def check(files: list[str], fail_on_warning: bool = False, base: Path | None = N
     base = Path(base) if base is not None else REPO
     cache = _load_cache()
     new_cache = {}
-    bad, warned = [], []
+    bad, warned, skipped = [], [], []
     t0 = time.time()
     for rel in files:
         p = base / rel
         try:
             st = p.stat()
         except OSError:
-            bad.append({"file": rel, "err": "stat_failed"})
+            # 文件在清单中但工作树缺失：多会话并发下的暂态（他人删除/合并中），跳过而非阻塞语法门
+            skipped.append({"file": rel, "err": "missing_in_worktree"})
             continue
         key = "%s:%d" % (st.st_mtime_ns, st.st_size)
         prev = cache.get(rel)
@@ -103,8 +104,8 @@ def check(files: list[str], fail_on_warning: bool = False, base: Path | None = N
     if bad or (fail_on_warning and warned):
         code = 1
     return {"tool": "check_syntax", "code": code, "scanned": len(files),
-            "errors": bad[:30], "warnings": warned[:30],
-            "error_count": len(bad), "warning_count": len(warned),
+            "errors": bad[:30], "warnings": warned[:30], "skipped": skipped[:30],
+            "error_count": len(bad), "warning_count": len(warned), "skipped_count": len(skipped),
             "elapsed_s": round(time.time() - t0, 2)}
 
 

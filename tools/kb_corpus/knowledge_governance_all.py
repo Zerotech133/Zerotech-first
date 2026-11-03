@@ -13,7 +13,7 @@ sys.stdout.reconfigure(encoding="utf-8")
 REPO = Path(__file__).resolve().parents[2]
 R = REPO / "research/reports"
 KB = Path(r"C:\项目\知识库")
-STAMP = "20261103"
+STAMP = datetime.now().strftime("%Y%m%d")
 now = datetime.now().astimezone().isoformat(timespec="seconds")
 META = re.compile(r"共\s*\d+\s*条|faster-whisper|文件\s*[:：]|时长\s*[:：]|字数\s*[:：]|目录|\.mp4")
 

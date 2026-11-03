@@ -7,7 +7,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import sys
 from datetime import datetime
@@ -103,8 +102,8 @@ VERIFY = [
     ("V13", "学习卡总数", "kb_learning_cards", "400"),
     ("V14", "视频号单元（去重后）", "units jsonl lines", "800"),
     ("V15", "第二期单元（去重后）", "units jsonl lines", "1116"),
-    ("V16", "老木单元", "units jsonl lines", "288"),
-    ("V17", "多源概念（人工双签）", "concept_merge_review_b", "27 / 30"),
+    ("V16", "老木单元", "units jsonl lines", "286"),
+    ("V17", "多源概念（人工签核）", "multi_source_final_p1", "29 / 30"),
     ("V18", "learning_gate", "4 项目/13 检查", "4 项目/13 检查/fail=0"),
 ]
 
@@ -158,7 +157,7 @@ def actual_values():
     out["V15"] = lines(KB / "30_知识单元/视频号学习_第二期_units_draft.jsonl")
     out["V16"] = lines(KB / "30_知识单元/laomu_notes_units_draft.jsonl")
     try:
-        b = json.loads((R / "concept_merge_review_b_20261103.json").read_text(encoding="utf-8"))
+        b = json.loads((R / "multi_source_final_p1_20261103.json").read_text(encoding="utf-8"))
         out["V17"] = f"{b['final_multi_source']} / 30"
     except Exception:
         out["V17"] = "?"
@@ -374,7 +373,7 @@ def main(argv=None) -> int:
     write_csv("8_新增数据集需求单", h8, need)
     print("dataset requirements:", len(REQ_ROWS), "| need rows:", len(need))
 
-    xlsx = OUT_DIR / f"2026-11-03_训练真实数据标准化表_v2.xlsx"
+    xlsx = OUT_DIR / "2026-11-03_训练真实数据标准化表_v2.xlsx"
     wb.save(xlsx)
     print("xlsx:", xlsx, xlsx.stat().st_size)
     print("csv dir:", CSV_DIR, len(list(CSV_DIR.glob('*.csv'))), "files")
