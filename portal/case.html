@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>零界 · Case 决策流程</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<link rel="stylesheet" href="/static/ui/ui.css">
+<script src="/static/nav.js" defer></script>
+<style>
+body{margin:0;background:var(--bg-page);color:var(--text);font-family:var(--font-ui)}
+.wb-palette-trigger{display:none!important}
+.wrap{max-width:1100px;margin:0 auto;padding:20px 24px 56px}
+.top{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+h1{font-size:22px;margin:16px 0 4px}.meta{color:var(--text-dim);font-size:12px;line-height:1.6}
+.card{border:1px solid var(--border);border-radius:12px;background:var(--bg-surface);padding:16px;margin:12px 0}
+.card h2{font-size:15px;margin:0 0 8px}
+.step{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--bg-raised);border:1px solid var(--border);font-size:11px;margin-right:6px}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg-raised);color:var(--text);cursor:pointer;font:inherit;font-size:13px}
+.btn.primary{background:var(--blu-600);border-color:var(--blu-600);color:#fff}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+textarea,input,select{width:100%;box-sizing:border-box;background:var(--bg-raised);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px;font:inherit}
+textarea{min-height:90px}
+pre{white-space:pre-wrap;background:var(--bg-page);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:12.5px;line-height:1.7;margin:8px 0;max-height:220px;overflow:auto}
+.err{color:var(--color-err);font-size:12px}.ok{color:var(--color-ok);font-size:12px}
+.pill{display:inline-block;padding:2px 7px;border-radius:999px;border:1px solid var(--border);font-size:11px;margin-left:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><strong>零界 · Case 决策流程</strong><a href="/hq">返回指挥部</a></div>
+  <h1>田丰汇总 → 五角色 → 会议 → 方案 → 审批 → 下发</h1>
+  <div class="meta">真实云端模型/会议系统；审批前不可下发；本页只保存流程状态到本机，会议纪要与任务申请落服务端。</div>
+
+  <div class="card">
+    <h2><span class="step">1</span>建 Case</h2>
+    <input id="title" placeholder="议题标题（一句话）" autocomplete="off">
+    <div class="meta" style="margin:8px 0 4px">材料（可粘贴要点/证据；不上传文件路径）：</div>
+    <textarea id="materials" placeholder="粘贴材料摘要、数据口径、已知证据…"></textarea>
+    <div class="btns"><button class="btn primary" id="btn-new">新建 Case</button><span id="case-id" class="meta"></span></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="step">2</span>田丰汇总</h2>
+    <div class="btns"><button class="btn primary" id="btn-agg" disabled>让田丰汇总</button><span class="meta" id="agg-status"></span></div>
+    <pre id="agg-out" hidden></pre>
+  </div>
+
+  <div class="card">
+    <h2><span class="step">3</span>五角色读材料给意见</h2>
+    <div class="btns"><button class="btn primary" id="btn-review" disabled>五角色并行会诊</button><span class="meta" id="review-status"></span></div>
+    <pre id="review-out" hidden></pre>
+  </div>
+
+  <div class="card">
+    <h2><span class="step">4</span>田丰组织会议</h2>
+    <div class="btns"><button class="btn primary" id="btn-meeting" disabled>保存作战会纪要</button><a class="btn" href="/meeting">打开会议室</a><span class="meta" id="meeting-status"></span></div>
+    <pre id="meeting-out" hidden></pre>
+  </div>
+
+  <div class="card">
+    <h2><span class="step">5</span>田丰总结解决办法</h2>
+    <div class="btns"><button class="btn primary" id="btn-propose" disabled>生成方案</button><span class="meta" id="proposal-status"></span></div>
+    <pre id="proposal-out" hidden></pre>
+  </div>
+
+  <div class="card">
+    <h2><span class="step">6</span>人类审批</h2>
+    <div class="meta">只有审批通过，下一步「下发」才可点。</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center">
+      <input id="approver" value="老田" placeholder="审批人" style="max-width:180px">
+      <input id="approve-note" placeholder="审批备注（可选）" style="flex:1;min-width:180px">
+      <button class="btn primary" id="btn-approve" disabled>人类审批通过</button>
+      <span class="meta" id="approve-status"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="step">7</span>执行下发</h2>
+    <div class="btns">
+      <select id="owner" style="max-width:260px" aria-label="下发 owner">
+        <option value="A0">田丰 A0</option>
+        <option value="DATA1">张松 DATA1</option>
+        <option value="ARCH1">曹操 ARCH1</option>
+        <option value="D1">鲁肃 D1</option>
+        <option value="QA1">于禁 QA1</option>
+        <option value="ACAD1">司马徽 ACAD1</option>
+        <option value="INTEL0">是仪 INTEL0</option>
+      </select>
+      <button class="btn primary" id="btn-dispatch" disabled>下发任务申请</button>
+      <span class="meta" id="dispatch-status"></span>
+    </div>
+    <pre id="dispatch-out" hidden></pre>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+var LS='hq_case_current';
+var state={case:null,busy:false};
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function save(){try{localStorage.setItem(LS,JSON.stringify(state.case||{}));}catch(e){}}
+function load(){try{var c=JSON.parse(localStorage.getItem(LS)||'null');if(c&&c.id)state.case=c;}catch(e){}}
+function show(id,text){var e=$(id);e.hidden=false;e.textContent=text;}
+function status(id,text,ok){var e=$(id);e.textContent=text;e.className=ok?'ok':'meta';}
+function setBtns(){
+  var c=state.case;
+  $('case-id').textContent=c?c.id:'';
+  $('btn-agg').disabled=!c||state.busy;
+  $('btn-review').disabled=!c||!c.summary||state.busy;
+  $('btn-meeting').disabled=!c||(c.opinions||[]).filter(function(x){return x.text;}).length<5||state.busy;
+  $('btn-propose').disabled=!c||!c.meeting_id||state.busy;
+  $('btn-approve').disabled=!c||!c.proposal||state.busy;
+  $('btn-dispatch').disabled=!c||!c.approved||!c.meeting_id||state.busy;
+}
+async function chat(agent,system,user){
+  var r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agent:agent,system:system,purpose:'case',user:user})});
+  var env=await r.json();if(!r.ok||!env||!env.ok)throw new Error((env&&env.error&&(env.error.message||env.error.code))||('HTTP '+r.status));
+  var t=(env.data&&env.data.text)||'';if(!t)throw new Error('empty_model_text');
+  return {text:t,binding:env.binding||env.data.binding_resolved||'',degraded:!!env.degraded};
+}
+async function newCase(){
+  var title=($('title').value||'').trim();if(!title){alert('先填议题标题');return;}
+  state.case={id:'CASE-'+new Date().toISOString().slice(0,10).replace(/-/g,'')+'-'+Math.random().toString(36).slice(2,6),title:title,materials:($('materials').value||'').trim(),summary:'',opinions:[],meeting_id:'',proposal:'',approved:false,approver:'',approved_at:'',dispatch:null,created_at:new Date().toISOString()};
+  save();setBtns();status('agg-status','Case 已建，待田丰汇总');
+}
+async function aggregate(){
+  if(!state.case)return;state.busy=true;setBtns();status('agg-status','田丰汇总中…');
+  try{
+    var r=await chat('A0','你是田丰（A0）。汇总材料：事实/证据缺口/关键矛盾/建议议程；不编造数字，不代替老田拍板。','议题：'+state.case.title+'\n材料：\n'+(state.case.materials||'（无）'));
+    state.case.summary=r.text;save();show('agg-out',r.text+'\n\n—— '+r.binding);status('agg-status','已汇总');
+  }catch(e){status('agg-status','失败：'+e.message);}
+  state.busy=false;setBtns();
+}
+async function review(){
+  if(!state.case||!state.case.summary)return;state.busy=true;setBtns();status('review-status','5角色会诊中（可能要 1–3 分钟）…');
+  var roles=[['A0','田丰','目标拆解、任务DAG、派单、汇总'],['AI1','诸葛亮','反向质询、pre-mortem'],['ZHAOYUN','赵云','证据复核、审计、归档'],['HUANGZHONG','黄忠','验收标准、抽样、终检'],['GUANYU','关羽','代码审计、技术债、门禁']];
+  var out=[];
+  for(var i=0;i<roles.length;i++){
+    var x=roles[i];
+    try{var r=await chat(x[0],'你是'+x[1]+'（'+x[0]+'），零界五角色之一，职责：'+x[2]+'。只从职能面读材料给意见；不编造数字，缺证据标需查证。输出结论/证据/风险/建议。','议题：'+state.case.title+'\n田丰汇总：'+state.case.summary.slice(0,3000)+'\n材料：'+(state.case.materials||'（无）'));out.push({seat:x[0],name:x[1],text:r.text,binding:r.binding});}
+    catch(e){out.push({seat:x[0],name:x[1],error:e.message});}
+    status('review-status','已完成 '+(i+1)+'/5');save();
+  }
+  state.case.opinions=out;save();show('review-out',out.map(function(o){return '【'+o.name+'】'+(o.text||('[失败] '+o.error));}).join('\n\n'));
+  state.busy=false;setBtns();
+}
+async function meeting(){
+  if(!state.case)return;state.busy=true;setBtns();status('meeting-status','保存会议纪要…');
+  var attendees=['A0','AI1','ZHAOYUN','HUANGZHONG','GUANYU'];
+  var body={type:'operation',attendees:attendees,agenda:[{item:'田丰汇总',owner:'A0',minutes:5},{item:'五角色意见',owner:'ALL',minutes:10},{item:'方案与决策',owner:'A0',minutes:10}],transcript:(state.case.opinions||[]).map(function(o){return {by:o.seat,text:o.text||('[失败] '+(o.error||'')),src:o.text?'live':'error',evidence:[]};}),decisions:[],acceptance:[]};
+  try{
+    var r=await fetch('/api/hq/meeting/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    var env=await r.json();if(!r.ok||!env||!env.ok)throw new Error(env.error||('HTTP '+r.status));
+    state.case.meeting_id=env.meeting_id;save();show('meeting-out','meeting_id='+env.meeting_id+'\nstatus='+(env.status||''));status('meeting-status','纪要已保存');
+  }catch(e){status('meeting-status','保存失败：'+e.message);}
+  state.busy=false;setBtns();
+}
+async function propose(){
+  if(!state.case)return;state.busy=true;setBtns();status('proposal-status','田丰总结方案…');
+  var ops=(state.case.opinions||[]).map(function(o){return o.name+'：'+(o.text||'');}).join('\n');
+  try{var r=await chat('A0','你是田丰。基于五角色意见给可执行方案：推荐/备选/风险/回滚/验收/需老田批准点；只输出方案，不派单、不执行。','议题：'+state.case.title+'\n五角色：\n'+ops);state.case.proposal=r.text;save();show('proposal-out',r.text+'\n\n—— '+r.binding);status('proposal-status','方案已生成，待人类审批');}
+  catch(e){status('proposal-status','失败：'+e.message);}
+  state.busy=false;setBtns();
+}
+function approve(){
+  if(!state.case||!state.case.proposal)return;
+  var who=($('approver').value||'').trim();if(!who){status('approve-status','必须填审批人');return;}
+  state.case.approved=true;state.case.approver=who;state.case.approved_at=new Date().toISOString();save();status('approve-status','已由 '+who+' 审批通过');setBtns();
+}
+async function dispatchCase(){
+  if(!state.case||!state.case.approved||!state.case.meeting_id)return;
+  state.busy=true;setBtns();status('dispatch-status','已审批，创建任务申请…');
+  var body={meeting_id:state.case.meeting_id,title:('CASE '+state.case.id+'：'+state.case.title).slice(0,120),order_type:'work',owner:$('owner').value};
+  try{var r=await fetch('/api/hq/meeting/dispatch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});var env=await r.json();if(!r.ok||!env||!env.ok)throw new Error(env.error||('HTTP '+r.status));state.case.dispatch=env.dispatch;save();show('dispatch-out','已生成任务申请（待田丰派工，不自动执行）：\n'+JSON.stringify(env.dispatch,null,2));status('dispatch-status','已下发任务申请');}
+  catch(e){status('dispatch-status','下发失败：'+e.message);}
+  state.busy=false;setBtns();
+}
+$('btn-new').onclick=newCase;$('btn-agg').onclick=aggregate;$('btn-review').onclick=review;$('btn-meeting').onclick=meeting;$('btn-propose').onclick=propose;$('btn-approve').onclick=approve;$('btn-dispatch').onclick=dispatchCase;
+load();if(state.case){$('title').value=state.case.title||'';$('materials').value=state.case.materials||'';if(state.case.summary)show('agg-out',state.case.summary);if(state.case.opinions&&state.case.opinions.length)show('review-out',state.case.opinions.map(function(o){return '【'+o.name+'】'+(o.text||('[失败] '+o.error));}).join('\n\n'));if(state.case.meeting_id)show('meeting-out','meeting_id='+state.case.meeting_id);if(state.case.proposal)show('proposal-out',state.case.proposal);if(state.case.approved)status('approve-status','已由 '+(state.case.approver||'')+' 审批通过');if(state.case.dispatch)show('dispatch-out',JSON.stringify(state.case.dispatch,null,2));}
+setBtns();
+})();
+</script>
+</body>
+</html>
