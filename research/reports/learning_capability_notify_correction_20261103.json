@@ -1,0 +1,6 @@
+{
+ "generated_at": "2026-11-03T08:56:56+08:00",
+ "kind": "learning:capability:correction",
+ "text": "【学习能力图谱·更正】分钟K线已入库（tushare.stk_mins：5038代码/202509-202611/1分钟），数据仓缺口仅剩 Level2/盘口；缠论结构可计算性由B升为A（因子已实现，四关待验证）。其余通知内容不变。明细：http://127.0.0.1:8734/learning_projects.html",
+ "result": true
+}

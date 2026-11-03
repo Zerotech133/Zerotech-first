@@ -160,9 +160,9 @@ factors = [
 
 # ---------- 5) 军团调用 ----------
 legion_calls = [
-    {"legion": "量化交易部（司马微）", "call": "战法/因子候选 → 四关回测", "input": "learning_capability.json 的 tactics/factors", "gate": "四关+PIT+成本", "status": "待通知"},
-    {"legion": "数据智能部（张松/DATA1）", "call": "补齐分钟K线/Level2、筹码/资金流 ETL", "input": "gap 清单", "gate": "ETL质检", "status": "待通知"},
-    {"legion": "因子挖掘（蒋琬/FACTOR1）", "call": "细化因子（均线/背离/平台/筹码）纳入每日因子轮", "input": "factors 清单", "gate": "IC/分层/衰减", "status": "待通知"},
+    {"legion": "量化交易部（司马微）", "call": "战法/因子候选 → 四关回测", "input": "learning_capability.json 的 tactics/factors", "gate": "四关+PIT+成本", "status": "已通知"},
+    {"legion": "数据智能部（张松/DATA1）", "call": "补齐 Level2 盘口；分钟K线已入库(stk_mins)加完整性抽检；筹码/资金流 ETL", "input": "gap 清单", "gate": "ETL质检", "status": "已通知"},
+    {"legion": "因子挖掘（蒋琬/FACTOR1）", "call": "细化因子（均线/背离/平台/筹码）纳入每日因子轮", "input": "factors 清单", "gate": "IC/分层/衰减", "status": "已通知"},
     {"legion": "研报/知识线（ACAD1）", "call": "学习卡/方法论卡片入 RAG 与研报问答", "input": "256 卡+8 方法论卡", "gate": "引用可追溯", "status": "已就绪"},
     {"legion": "门户/研发（ARCH1）", "call": "能力图谱页面/API 接入", "input": "learning_capability.json", "gate": "HTTP 200+导航", "status": "页面已接入"},
 ]

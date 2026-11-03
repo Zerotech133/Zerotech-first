@@ -1,6 +1,6 @@
 {
  "schema_version": "learning_capability.v1",
- "generated_at": "2026-11-03T07:26:49+08:00",
+ "generated_at": "2026-11-03T08:57:04+08:00",
  "project": "视频号学习_8博主",
  "overall": {
   "files": 8,
@@ -8,8 +8,8 @@
   "units": 800,
   "units_with_domain": 258,
   "candidate_pool": 539,
-  "cards_merged_video": 84,
-  "cards_total": 256,
+  "cards_merged_video": 183,
+  "cards_total": 370,
   "unusable_reasons": {
    "生成阶段拒绝": {
     "duplicate_batch_concept": 3020,
@@ -33,7 +33,7 @@
    "units": 23,
    "units_with_domain": 13,
    "usable_pct": 56.5,
-   "candidate_pool": 18,
+   "candidate_pool": 19,
    "conclusion": "部分可用"
   },
   {
@@ -42,7 +42,7 @@
    "units": 14,
    "units_with_domain": 0,
    "usable_pct": 0.0,
-   "candidate_pool": 11,
+   "candidate_pool": 13,
    "conclusion": "不可用"
   },
   {
@@ -51,7 +51,7 @@
    "units": 19,
    "units_with_domain": 2,
    "usable_pct": 10.5,
-   "candidate_pool": 17,
+   "candidate_pool": 15,
    "conclusion": "部分可用"
   },
   {
@@ -60,7 +60,7 @@
    "units": 129,
    "units_with_domain": 0,
    "usable_pct": 0.0,
-   "candidate_pool": 145,
+   "candidate_pool": 150,
    "conclusion": "不可用"
   },
   {
@@ -69,7 +69,7 @@
    "units": 206,
    "units_with_domain": 4,
    "usable_pct": 1.9,
-   "candidate_pool": 156,
+   "candidate_pool": 182,
    "conclusion": "部分可用"
   },
   {
@@ -78,7 +78,7 @@
    "units": 47,
    "units_with_domain": 35,
    "usable_pct": 74.5,
-   "candidate_pool": 31,
+   "candidate_pool": 39,
    "conclusion": "可用"
   },
   {
@@ -87,7 +87,7 @@
    "units": 313,
    "units_with_domain": 193,
    "usable_pct": 61.7,
-   "candidate_pool": 196,
+   "candidate_pool": 229,
    "conclusion": "可用"
   },
   {
@@ -96,7 +96,7 @@
    "units": 49,
    "units_with_domain": 11,
    "usable_pct": 22.4,
-   "candidate_pool": 49,
+   "candidate_pool": 50,
    "conclusion": "部分可用"
   }
  ],
@@ -109,13 +109,13 @@
   },
   {
    "capability": "学习卡（已发布）",
-   "count": 256,
+   "count": 370,
    "status": "已发布",
    "output": "门户学习/研报问答"
   },
   {
    "capability": "视频号学习卡（已合并）",
-   "count": 84,
+   "count": 183,
    "status": "已发布",
    "output": "交易方法论卡池"
   },
@@ -465,21 +465,21 @@
    "call": "战法/因子候选 → 四关回测",
    "input": "learning_capability.json 的 tactics/factors",
    "gate": "四关+PIT+成本",
-   "status": "待通知"
+   "status": "已通知"
   },
   {
    "legion": "数据智能部（张松/DATA1）",
-   "call": "补齐分钟K线/Level2、筹码/资金流 ETL",
+   "call": "补齐 Level2 盘口；分钟K线已入库(stk_mins)加完整性抽检；筹码/资金流 ETL",
    "input": "gap 清单",
    "gate": "ETL质检",
-   "status": "待通知"
+   "status": "已通知"
   },
   {
    "legion": "因子挖掘（蒋琬/FACTOR1）",
    "call": "细化因子（均线/背离/平台/筹码）纳入每日因子轮",
    "input": "factors 清单",
    "gate": "IC/分层/衰减",
-   "status": "待通知"
+   "status": "已通知"
   },
   {
    "legion": "研报/知识线（ACAD1）",

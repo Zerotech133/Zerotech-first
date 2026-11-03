@@ -25,7 +25,12 @@ def build_text(d: dict) -> str:
     ]
     for t in (d.get("tactics") or [])[:8]:
         lines.append(f"· {t['name']}｜单元 {t['unit_support']}｜可计算性 {t['computability']}")
-    lines += ["", "需补齐：分钟K线（缠论结构）、Level2（盘口类不可行）；其余日线级可立即实现。", "",
+    gaps = [x["name"] for x in (d.get("data_capabilities") or [])
+            if str(x.get("status", "")).startswith("**缺失")]
+    ready_min = [x["name"] for x in (d.get("data_capabilities") or [])
+                 if "分钟" in str(x.get("name")) and "已入库" in str(x.get("status"))]
+    lines += ["", f"数据缺口：{'、'.join(gaps) or '无'}（不可行类）；"
+              f"{'分钟K线已入库（stk_mins），' if ready_min else ''}其余日线级可立即实现。", "",
               "因子（细化）："]
     for f in (d.get("factors") or [])[:6]:
         lines.append(f"· {f['factor']}：{f['status']}")
