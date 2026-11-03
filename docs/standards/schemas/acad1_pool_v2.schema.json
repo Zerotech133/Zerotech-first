@@ -1,0 +1,200 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "acad1_pool.v2",
+  "title": "ACAD1 Recommendation Pool Snapshot v2",
+  "description": "IFS F1 单接口 schema：interface_id=acad1.pool.get（GET /api/acad1/pool）。source_of_truth=智策 PG zhice_os_v2.public.v2_acad1_pool@5446（ADR-018 契约 zerobond.selection.v2_acad1_pool），门户 JSON 仅为只读投影；source_mode=projection 时必须以 stale/published_at 显式标注。禁止执行字段、禁止下单。",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "pool_id",
+    "generated_at",
+    "owner",
+    "source",
+    "data_date",
+    "freshness_days",
+    "stale",
+    "counts",
+    "items"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "acad1_pool/v2"
+    },
+    "pool_id": {
+      "type": "string",
+      "pattern": "^ACAD1-REC-\\d{8}$",
+      "description": "池批次 ID（ID chain 根：pool_id）"
+    },
+    "generated_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "owner": {
+      "type": "string",
+      "const": "ACAD1"
+    },
+    "source": {
+      "type": "object",
+      "required": ["source_mode", "source_of_truth", "pool_version", "published_at"],
+      "properties": {
+        "source_mode": {
+          "type": "string",
+          "enum": ["pg_official", "projection"]
+        },
+        "source_of_truth": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pool_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "published_at": {
+          "type": ["string", "null"],
+          "description": "官方池发布时间；投影缺失时显式 null，不猜"
+        },
+        "as_of": {
+          "type": ["string", "null"]
+        },
+        "freshness_s": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "stale": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": true
+    },
+    "data_date": {
+      "type": "string",
+      "pattern": "^\\d{8}$"
+    },
+    "freshness_days": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "stale": {
+      "type": "boolean"
+    },
+    "counts": {
+      "type": "object",
+      "required": ["total"],
+      "properties": {
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "by_tier": {
+          "type": "object"
+        },
+        "by_source": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["item_id", "code", "name", "tier", "sources", "status"],
+        "properties": {
+          "item_id": {
+            "type": "string",
+            "pattern": "^REC-\\d{8}-\\d{6}$",
+            "description": "当前投影 ID；F2 起正式 card_id 见 card_id 字段（ID chain：pool_id→card_id）"
+          },
+          "card_id": {
+            "type": ["string", "null"],
+            "pattern": "^ACAD1-CARD-\\d{8}-[0-9A-Za-z._-]{1,16}$"
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^\\d{6}$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "industry": {
+            "type": ["string", "null"]
+          },
+          "tier": {
+            "type": "string",
+            "enum": ["T1", "T2", "T3"]
+          },
+          "sources": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "reason": {
+            "type": ["string", "null"]
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1
+          },
+          "decision_ref": {
+            "type": ["string", "null"],
+            "description": "关联 decision_id（ID chain：card_id→case_id→decision_id）"
+          },
+          "risk_flags": {
+            "type": ["array", "null"],
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "propertyNames": {
+    "not": {
+      "enum": ["order", "qty", "quantity", "broker", "execute", "trade_id", "fill", "account"]
+    }
+  },
+  "additionalProperties": true,
+  "examples": [
+    {
+      "schema_version": "acad1_pool/v2",
+      "pool_id": "ACAD1-REC-20261102",
+      "generated_at": "2026-11-02T17:30:00+08:00",
+      "owner": "ACAD1",
+      "source": {
+        "source_mode": "pg_official",
+        "source_of_truth": "zhice_os_v2.public.v2_acad1_pool@5446",
+        "pool_version": "acad1-pool/v1@1.0.0",
+        "published_at": "2026-11-02T17:28:00+08:00",
+        "as_of": "2026-11-02",
+        "freshness_s": 7200,
+        "stale": false
+      },
+      "data_date": "20261102",
+      "freshness_days": 1,
+      "stale": false,
+      "counts": {"total": 30, "by_tier": {"T1": 2, "T2": 28}},
+      "items": [
+        {
+          "item_id": "REC-20261102-003006",
+          "card_id": "ACAD1-CARD-20261102-003006",
+          "code": "003006",
+          "name": "百亚股份",
+          "industry": "造纸",
+          "tier": "T2",
+          "sources": ["chanlun", "ninedim"],
+          "reason": "T2 · 命中 chanlun+ninedim · n_hit=2",
+          "status": "selected",
+          "decision_ref": null,
+          "risk_flags": []
+        }
+      ]
+    }
+  ]
+}
