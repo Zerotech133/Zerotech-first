@@ -14,6 +14,11 @@ $receipt = 'C:\项目\老田的AI助手\tools\restic\restic_receipt.py'
 $alert = 'C:\项目\老田的AI助手\news_collector\alert_fail_wrap.py'
 $env:RESTIC_REPOSITORY = 'C:\项目\_restic_repo'
 $env:RESTIC_CACHE_DIR = 'C:\项目\_restic_cache'
+$offsiteRepo = 'sftp:aiosbackup@10.205.0.118:/home/aios-offsite/restic/zerobound'
+$offsiteSftpArgs = 'sftp.args=-i C:/Users/t/.ssh/zeroq_deploy -o BatchMode=yes -o StrictHostKeyChecking=yes'
+$offsiteRc = -1
+$offsiteChkRc = -1
+$offsiteForgetRc = -1
 $errLog = 'C:\Temp\restic_backup_err.log'
 
 $pwdOut = & $py $vault decrypt restic/repo_password 2>&1
@@ -58,7 +63,22 @@ if ($rc -eq 0) {
     foreach ($line in @($chk | Select-Object -Last 4)) { Log ('CHK ' + ([string]$line)) }
     Log ('CHECK rc=' + $crc + ' subset=' + $subset)
 
-    $receiptOut = & $py -X utf8 $receipt --backup-rc $rc --check-rc $crc --forget-rc $frc --prune-rc $prc --subset $subset --repo $env:RESTIC_REPOSITORY --restic $restic --log $log 2>&1
+    # 异地复制（sftp: aiosbackup@10.205.0.118）
+    $env:RESTIC_FROM_REPOSITORY = $env:RESTIC_REPOSITORY
+    $env:RESTIC_FROM_PASSWORD = $env:RESTIC_PASSWORD
+    $copyOut = & $restic -o $offsiteSftpArgs -r $offsiteRepo copy 2>&1
+    $offsiteRc = $LASTEXITCODE
+    Log ('OFFSITE_COPY rc=' + $offsiteRc)
+    if ($isWeekly -and $offsiteRc -eq 0) {
+        $chkOff = & $restic -o $offsiteSftpArgs -r $offsiteRepo check --read-data-subset=10% 2>&1
+        $offsiteChkRc = $LASTEXITCODE
+        foreach ($line in @($chkOff | Select-Object -Last 3)) { Log ('OFFSITE_CHK ' + ([string]$line)) }
+        Log ('OFFSITE_CHECK rc=' + $offsiteChkRc)
+        $forgetOff = & $restic -o $offsiteSftpArgs -r $offsiteRepo forget --keep-daily 30 --keep-weekly 8 --keep-monthly 6 --json 2>&1
+        $offsiteForgetRc = $LASTEXITCODE
+        Log ('OFFSITE_FORGET rc=' + $offsiteForgetRc)
+    }
+    $receiptOut = & $py -X utf8 $receipt --backup-rc $rc --check-rc $crc --forget-rc $frc --prune-rc $prc --subset $subset --repo $env:RESTIC_REPOSITORY --restic $restic --offsite-rc $offsiteRc --offsite-repo $offsiteRepo --offsite-sftp-args $offsiteSftpArgs --log $log 2>&1
     $rrc = $LASTEXITCODE
     Log ('RECEIPT rc=' + $rrc + ' ' + ([string]$receiptOut))
 } else {
@@ -68,6 +88,9 @@ if ($rc -eq 0) {
 $finalRc = $rc
 if ($crc -ne 0) { $finalRc = 1 }
 if ($rrc -ne 0) { $finalRc = 1 }
+if ($offsiteRc -ne 0) { $finalRc = 1 }
+if ($offsiteChkRc -ne -1 -and $offsiteChkRc -ne 0) { $finalRc = 1 }
+if ($offsiteForgetRc -ne -1 -and $offsiteForgetRc -ne 0) { $finalRc = 1 }
 if ($finalRc -ne 0) {
     Log ('ALERT final_rc=' + $finalRc)
     (& $py -X utf8 $alert 'restic_backup' $finalRc $errLog) 1>$null 2>$null

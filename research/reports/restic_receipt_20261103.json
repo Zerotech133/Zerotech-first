@@ -1,10 +1,10 @@
 {
  "schema": "restic_receipt_v1",
- "generated_at": "2026-11-03T11:07:28+08:00",
+ "generated_at": "2026-11-03T12:19:27+08:00",
  "ok": true,
  "snapshot": {
-  "id": "13a69e80",
-  "time": "2026-11-03T11:07:07.1791094+08:00",
+  "id": "59fb2ff7",
+  "time": "2026-11-03T12:19:07.2915386+08:00",
   "hostname": "DESKTOP-ARF447U",
   "paths": [
    "C:\\项目\\DOCS_INDEX.md",
@@ -21,11 +21,11 @@
  },
  "backup": {
   "rc": 0,
-  "files_new": 3,
-  "files_changed": 7,
-  "files_unmodified": 79877,
-  "bytes_processed": 21451340115,
-  "data_added": 8782496
+  "files_new": 52,
+  "files_changed": 29,
+  "files_unmodified": 79858,
+  "bytes_processed": 21476427639,
+  "data_added": 44470450
  },
  "check": {
   "rc": 0,
@@ -37,7 +37,15 @@
  "prune": {
   "rc": -1
  },
- "repo_bytes": 8273703245,
- "repo_gb": 8.274,
- "log": "C:\\项目\\work\\restic_trial\\run-2026-11-03.log"
+ "repo_bytes": 8307140088,
+ "repo_gb": 8.307,
+ "log": "C:\\项目\\work\\restic_trial\\run-2026-11-03.log",
+ "offsite": {
+  "rc": 0,
+  "repo": "sftp:aiosbackup@10.205.0.118:/home/aios-offsite/restic/zerobound",
+  "snapshot": {
+   "id": "0e85ee7d",
+   "time": "2026-11-03T12:19:07.2915386+08:00"
+  }
+ }
 }

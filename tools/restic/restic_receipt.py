@@ -53,6 +53,9 @@ def main() -> int:
     ap.add_argument("--subset", default="")
     ap.add_argument("--snapshot-json", default="")
     ap.add_argument("--restic", default=r"C:\Users\t\dw_ops\restic.exe")
+    ap.add_argument("--offsite-rc", type=int, default=-1)
+    ap.add_argument("--offsite-repo", default="")
+    ap.add_argument("--offsite-sftp-args", default="")
     ap.add_argument("--repo", default=r"C:\项目\_restic_repo")
     ap.add_argument("--log", default="")
     args = ap.parse_args()
@@ -87,6 +90,22 @@ def main() -> int:
             "repo_gb": round(rb / 1e9, 3),
             "log": args.log,
         }
+        off = {"rc": args.offsite_rc, "repo": args.offsite_repo}
+        if args.offsite_rc == 0 and args.offsite_repo:
+            try:
+                o = subprocess.run([args.restic, "-o", args.offsite_sftp_args, "-r", args.offsite_repo,
+                                    "snapshots", "latest", "--json"], capture_output=True)
+                od = json.loads(o.stdout.decode("utf-8-sig"))
+                if isinstance(od, dict):
+                    od = [od]
+                if od:
+                    off["snapshot"] = {"id": od[-1].get("short_id") or od[-1].get("id"),
+                                       "time": od[-1].get("time")}
+            except Exception as exc:  # noqa: BLE001
+                off["snapshot_error"] = str(exc)
+        rec["offsite"] = off
+        if args.offsite_rc != -1:
+            rec["ok"] = bool(rec["ok"] and args.offsite_rc == 0)
         RECEIPT_DIR.mkdir(parents=True, exist_ok=True)
         day = datetime.now().strftime("%Y%m%d")
         out = RECEIPT_DIR / ("receipt-%s.json" % day)
