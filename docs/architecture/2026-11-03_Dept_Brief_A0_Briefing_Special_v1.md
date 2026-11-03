@@ -36,6 +36,7 @@ python -X utf8 tools/hq_dept_brief.py --collect deliverables/daily_briefs/2026-1
 ## 三、页面
 
 - 简报：http://127.0.0.1:8734/briefing（需登录）
+- 简报页提供「立即总结」「汇报工作」按钮和部门筛选；人类汇报保存在本页（localStorage），可复制/下载给田丰
 - 人专项：点击研究题进入 `/special`，可填“为什么关心/期望产出”，生成/复制/下载专项卡
 - 入口：`/hq` 页头「早间简报 →」
 

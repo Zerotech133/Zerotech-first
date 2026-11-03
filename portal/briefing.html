@@ -12,6 +12,13 @@ body{margin:0;background:var(--bg-page);color:var(--text);font-family:var(--font
 .wrap{max-width:1210px;margin:0 auto;padding:20px 24px 56px}
 .top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
 h1{font-size:22px;margin:18px 0 4px}.meta{color:var(--text-dim);font-size:12px;margin:6px 0}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--bg-surface)}
+.toolbar label{display:flex;gap:6px;align-items:center;color:var(--text-dim);font-size:12px}
+select,input,textarea{background:var(--bg-raised);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:7px 9px;font:inherit}
+select{min-width:160px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg-raised);color:var(--text);text-decoration:none;cursor:pointer;font-size:13px}
+.btn.primary{border-color:var(--blu-600);background:var(--blu-600);color:#fff}
+.btn:hover{border-color:var(--link)}
 .cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0}
 .card{background:var(--bg-raised);border:1px solid var(--border);border-radius:10px;padding:12px}
 .card .k{color:var(--text-dim);font-size:11.5px}.card .v{font-size:22px;font-weight:700;margin-top:4px}
@@ -19,10 +26,21 @@ h2{font-size:15px;margin:22px 0 8px}
 .list{display:grid;gap:8px}
 .item{display:block;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--bg-surface);color:inherit;text-decoration:none}
 .item:hover{border-color:var(--link)}
-.item .t{font-weight:650;margin-bottom:4px}.item .m{color:var(--text-dim);font-size:12px}
+.item .t{font-weight:650;margin-bottom:4px}.item .m{color:var(--text-dim);font-size:12px;line-height:1.6}
 .pill{display:inline-block;padding:2px 7px;border-radius:999px;border:1px solid var(--border);font-size:11px;margin-right:4px}
+.pill.red{color:var(--color-err);border-color:color-mix(in srgb,var(--color-err) 42%,transparent)}
+.pill.amber{color:var(--color-warn);border-color:color-mix(in srgb,var(--color-warn) 42%,transparent)}
+.pill.green{color:var(--color-ok);border-color:color-mix(in srgb,var(--color-ok) 42%,transparent)}
 .err{padding:12px;border:1px solid var(--red-500);border-radius:10px;color:var(--red-500)}
-@media(max-width:760px){.cards{grid-template-columns:repeat(2,1fr)}.wrap{padding:14px}}
+#summary{white-space:pre-wrap;line-height:1.8;background:var(--bg-surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin:10px 0;font-size:13px}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:20;padding:16px}
+#modal.open{display:flex}
+.modal-card{background:var(--bg-page);border:1px solid var(--border);border-radius:12px;max-width:720px;width:100%;max-height:90vh;overflow:auto;padding:18px}
+.modal-card label{display:block;margin:8px 0;color:var(--text-dim);font-size:12px}
+.modal-card input,.modal-card select,.modal-card textarea{width:100%;box-sizing:border-box;margin-top:4px}
+.modal-card textarea{min-height:64px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+@media(max-width:760px){.cards{grid-template-columns:repeat(2,1fr)}.wrap{padding:14px}.toolbar{align-items:stretch}}
 </style>
 </head>
 <body>
@@ -30,51 +48,169 @@ h2{font-size:15px;margin:22px 0 8px}
   <div class="top"><strong>零界 · 田丰早间简报</strong><a href="/hq">返回指挥部</a></div>
   <h1>今日简报</h1>
   <div class="meta" id="meta">加载中…</div>
+
+  <div class="toolbar" role="toolbar" aria-label="简报筛选与动作">
+    <label>部门
+      <select id="dept-filter" aria-label="只看一个部门"><option value="">全部部门</option></select>
+    </label>
+    <button class="btn primary" id="btn-summary" type="button">立即总结</button>
+    <button class="btn" id="btn-report" type="button">汇报工作</button>
+    <a class="btn" href="/meeting">去早会</a>
+    <span class="meta" id="state-note" aria-live="polite"></span>
+  </div>
+
+  <div id="summary" hidden></div>
   <div class="cards" id="cards"></div>
   <div id="error"></div>
+
   <h2>部门汇报</h2>
   <div id="depts" class="list"></div>
+
   <h2>研究题（点击进入人专项）</h2>
   <div id="topics" class="list"></div>
 </div>
+
+<div id="modal" role="dialog" aria-modal="true" aria-labelledby="report-title">
+  <div class="modal-card">
+    <h2 id="report-title">汇报工作（人类）</h2>
+    <div class="meta">本地汇报卡：可随时总结、可只看一个部门；不自动入库/不自动派单。保存后可复制/下载交田丰。</div>
+    <label>部门
+      <select id="f-dept"></select>
+    </label>
+    <label>状态
+      <select id="f-status"><option value="green">绿色 · 正常</option><option value="amber">黄色 · 有风险</option><option value="red">红色 · 阻塞</option></select>
+    </label>
+    <label>工作要点（每行一条）
+      <textarea id="f-highlights" placeholder="例：数据资源台账首版完成"></textarea>
+    </label>
+    <label>阻塞 / 证据缺口（每行一条）
+      <textarea id="f-blockers" placeholder="例：314 数据集口径未核"></textarea>
+    </label>
+    <label>需要 A0/老田决策（每行一条）
+      <textarea id="f-decisions" placeholder="例：数据资源权限分级由谁拍板"></textarea>
+    </label>
+    <label>研究题（每行一条，可点击进人专项）
+      <textarea id="f-research" placeholder="例：数据资源台账最小字段集"></textarea>
+    </label>
+    <div class="row">
+      <button class="btn primary" id="btn-save" type="button">保存到本页</button>
+      <button class="btn" id="btn-copy" type="button">复制汇报卡</button>
+      <button class="btn" id="btn-download" type="button">下载汇报卡</button>
+      <button class="btn" id="btn-close" type="button">关闭</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
 'use strict';
+var DAY=new Date().toISOString().slice(0,10);
+var LS='hq_human_brief_'+DAY;
+var state={data:null, reports:[], dept:'', lastCard:null};
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function $(id){return document.getElementById(id);}
 function card(k,v){return '<div class="card"><div class="k">'+esc(k)+'</div><div class="v">'+esc(v)+'</div></div>';}
+function pill(s){var v=String(s||'');var c=/red/.test(v)?'red':(/amber/.test(v)?'amber':'green');return '<span class="pill '+c+'">'+esc(v)+'</span>';}
+function loadReports(){try{var a=JSON.parse(localStorage.getItem(LS)||'[]');state.reports=Array.isArray(a)?a:[];}catch(e){state.reports=[];}}
+function saveReports(){try{localStorage.setItem(LS,JSON.stringify(state.reports.slice(-50)));}catch(e){}}
+function departments(){
+  var d=(state.data&&state.data.org&&state.data.org.departments)||[];
+  var map={};
+  d.forEach(function(x){map[x.dept]={dept:x.dept,name:x.name,lead:x.lead};});
+  state.reports.forEach(function(r){if(r.dept&&!map[r.dept])map[r.dept]={dept:r.dept,name:r.dept,lead:r.lead||''};});
+  return Object.keys(map).map(function(k){return map[k];});
+}
+function reportRows(){
+  var b=(state.data&&state.data.briefing&&state.data.briefing.departments)||[];
+  return b.concat(state.reports.map(function(r){return {lead:r.lead||'',dept:r.dept||r.dept_name||'',status:r.status||'green',highlights:r.highlights||[],blockers:r.blockers||[],decision_requests:r.decision_requests||[],research_topics:r.research_topics||[]};}));
+}
+function topics(){
+  var b=(state.data&&state.data.briefing&&state.data.briefing.research_topics)||[];
+  var out=b.slice();
+  state.reports.forEach(function(r){
+    (r.research_topics||[]).forEach(function(t){
+      out.push({id:'RT-H-'+Math.random().toString(36).slice(2,7),title:(t&&t.title)||t,question:(t&&t.question)||'',source_lead:r.lead||'',source_dept:r.dept||''});
+    });
+  });
+  if(!out.length){
+    var dirs=(state.data&&state.data.directives&&state.data.directives.directives)||[];
+    out=dirs.filter(function(x){return x.status==='open'||/(分析|研发|挖掘)/.test(x.kind||'');}).slice(0,10).map(function(x){return {id:x.id,title:x.topic,kind:x.kind,source_lead:x.owner||x.legion||''};});
+  }
+  return out;
+}
 function specLink(t){
-  var p=new URLSearchParams({topic:t.id||'',title:t.title||'',source:t.source_lead||t.lead||'',kind:t.kind||'研究'});
+  var p=new URLSearchParams({topic:t.id||t.title||'',title:t.title||'',source:t.source_lead||'',kind:t.kind||'研究'});
   return '/special?'+p.toString();
 }
-function item(t,extra){
-  return '<a class="item" href="'+esc(specLink(t))+'"><div class="t">'+esc(t.title||t.topic||t.item||'未命名研究题')+'</div>'
-    +'<div class="m">'+esc(t.kind||'研究')+' · 来源 '+esc(t.source_lead||t.lead||t.source||'-')+(extra||'')+'</div></a>';
+function filteredRows(rows){
+  if(!state.dept)return rows;
+  return rows.filter(function(r){return r.dept===state.dept||(r.lead&&r.lead===deptLead(state.dept));});
 }
+function deptLead(code){var d=departments().filter(function(x){return x.dept===code;})[0];return d?d.lead:'';}
+function renderSummary(){
+  var rows=filteredRows(reportRows()), ts=topics();
+  if(state.dept) ts=ts.filter(function(t){return t.source_dept===state.dept||t.source_lead===deptLead(state.dept);});
+  var red=rows.filter(function(r){return r.status==='red';});
+  var amber=rows.filter(function(r){return r.status==='amber';});
+  var dec=[]; rows.forEach(function(r){(r.decision_requests||[]).forEach(function(x){dec.push(r.lead+' / '+r.dept+'：'+x);});});
+  var text='A0 速览 · '+new Date().toLocaleString()+(state.dept?(' · 仅看 '+state.dept):(' · 全部门'))+'\n';
+  text+='汇报 '+rows.length+' 个部门｜红 '+red.length+'｜黄 '+amber.length+'｜需决策 '+dec.length+' 项｜研究题 '+ts.length+' 条\n';
+  if(red.length) text+='\n先处理红：\n'+red.map(function(r){return '- '+r.lead+' '+r.dept+'：'+(r.blockers||[]).join('；')||'无阻塞说明';}).join('\n');
+  if(amber.length) text+='\n黄：\n'+amber.map(function(r){return '- '+r.lead+' '+r.dept+'：'+(r.blockers||[]).join('；')||'有风险待补';}).join('\n');
+  if(dec.length) text+='\n需老田/A0决策：\n'+dec.slice(0,8).map(function(x){return '- '+x;}).join('\n');
+  if(ts.length) text+='\n研究题：\n'+ts.slice(0,8).map(function(t){return '- '+(t.title||'')+'（'+(t.source_lead||'-')+'）';}).join('\n');
+  var el=$('summary');el.hidden=false;el.textContent=text;
+}
+function render(){
+  var rows=filteredRows(reportRows()), ts=topics();
+  if(state.dept) ts=ts.filter(function(t){return (t.source_dept===state.dept)||(t.source_lead===deptLead(state.dept));});
+  $('cards').innerHTML=[card('汇报部门',rows.length),card('研究题',ts.length),card('需决策',rows.reduce(function(n,r){return n+(r.decision_requests||[]).length;},0)),card('红色',rows.filter(function(r){return r.status==='red';}).length)].join('');
+  $('depts').innerHTML=rows.length?rows.map(function(x){
+    return '<div class="item"><div class="t">'+esc(x.lead||'-')+' · '+esc(x.dept||'-')+' '+pill(x.status||'')+'</div>'
+      +'<div class="m">工作要点：'+esc((x.highlights||[]).join('；')||'未填')+'<br>阻塞：'+esc((x.blockers||[]).join('；')||'无')+'<br>需决策：'+esc((x.decision_requests||[]).join('；')||'无')+'</div></div>';
+  }).join(''):'<div class="meta">'+ (state.dept?'该部门今日暂无汇报。':'今日部门早报尚未汇总；可点「汇报工作」随时补一份，或等 07:50 部门负责人提交。') +'</div>';
+  $('topics').innerHTML=ts.length?ts.map(function(t){return '<a class="item" href="'+esc(specLink(t))+'"><div class="t">'+esc(t.title||'未命名研究题')+'</div><div class="m">'+esc(t.kind||'研究')+' · 来源 '+esc(t.source_lead||t.source_dept||'-')+'</div></a>';}).join(''):'<div class="meta">暂无研究题。</div>';
+  $('state-note').textContent=state.dept?('只看：'+state.dept):'全部部门';
+}
+function fillDeptSelects(){
+  var ds=departments();
+  var opts='<option value="">全部部门</option>'+ds.map(function(d){return '<option value="'+esc(d.dept)+'">'+esc(d.name||d.dept)+(d.lead?(' · '+esc(d.lead)):'')+'</option>';}).join('');
+  $('dept-filter').innerHTML=opts;
+  $('f-dept').innerHTML=ds.map(function(d){return '<option value="'+esc(d.dept)+'">'+esc(d.name||d.dept)+(d.lead?(' · '+esc(d.lead)):'')+'</option>';}).join('');
+}
+function openModal(){fillDeptSelects();if(state.dept)$('f-dept').value=state.dept;$('modal').classList.add('open');$('f-highlights').focus();}
+function closeModal(){$('modal').classList.remove('open');}
+function lines(id){return $(id).value.split('\n').map(function(x){return x.trim();}).filter(Boolean);}
+function buildReport(){
+  var dept=$('f-dept').value, lead=deptLead(dept);
+  var r={lead:lead,dept:dept,status:$('f-status').value,highlights:lines('f-highlights'),blockers:lines('f-blockers'),decision_requests:lines('f-decisions'),research_topics:lines('f-research').map(function(x){return {title:x,question:''};}),created_at:new Date().toISOString(),human:true};
+  return r;
+}
+function saveReport(){var r=buildReport();if(!r.dept){$('state-note').textContent='请选择部门';return;}state.reports.push(r);saveReports();render();if($('summary').hidden===false)renderSummary();closeModal();$('state-note').textContent='汇报已保存在本页（本地），可随时总结或复制给田丰。';}
+function copyReport(){var r=buildReport();state.lastCard=r;var t=JSON.stringify(r,null,2);navigator.clipboard.writeText(t).then(function(){$('state-note').textContent='汇报卡已复制。';}).catch(function(){$('state-note').textContent='复制失败，请手动下载。';});}
+function downloadReport(){var r=buildReport();var b=new Blob([JSON.stringify(r,null,2)],{type:'application/json'});var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='human_brief_'+(r.dept||'dept')+'_'+DAY+'.json';a.click();URL.revokeObjectURL(a.href);}
 async function main(){
+  loadReports();
   try{
     var r=await fetch('/api/hq/snapshot',{cache:'no-store'});
     if(!r.ok) throw new Error('HTTP '+r.status);
-    var p=await r.json(); if(!(p&&p.ok&&p.data)) throw new Error('bad payload');
-    var d=p.data, b=d.briefing||null;
-    document.getElementById('meta').textContent='生成 '+new Date().toLocaleString()+' · 数据源 /api/hq/snapshot';
-    var dirs=(d.directives&&d.directives.directives)||[];
-    var topics=b&&b.research_topics?b.research_topics.slice():[];
-    // 无部门早报时，用未派单 Directive 生成 A0 研究题，避免空页
-    if(!topics.length){ topics=dirs.filter(function(x){return x.status==='open'||/(分析|研发|挖掘)/.test(x.kind||'');}).slice(0,8).map(function(x){return {id:x.id,title:x.topic,kind:x.kind,source_lead:x.owner||x.legion};}); }
-    document.getElementById('cards').innerHTML=[
-      card('研究题',topics.length),card('Directive',dirs.length),
-      card('部门汇报',b&&b.departments?b.departments.length:0),card('需决策',b&&b.decision_requests?b.decision_requests.length:0)
-    ].join('');
-    var depts=(b&&b.departments)||[];
-    document.getElementById('depts').innerHTML=depts.length?depts.map(function(x){
-      return '<div class="item"><div class="t">'+esc(x.lead)+' · '+esc(x.dept)+' <span class="pill">'+esc(x.status)+'</span></div><div class="m">工作要点：'+esc((x.highlights||[]).join('；')||'未填')+'<br>阻塞：'+esc((x.blockers||[]).join('；')||'无')+'</div></div>';
-    }).join(''):'<div class="meta">今日部门早报尚未汇总（13 位负责人 07:50 前提交，A0 用 <code>tools/hq_dept_brief.py --collect ... --briefing</code> 生成）。</div>';
-    document.getElementById('topics').innerHTML=topics.length?topics.map(function(t){return item(t);}).join(''):'<div class="meta">暂无研究题。</div>';
+    var p=await r.json();if(!(p&&p.ok&&p.data))throw new Error('bad payload');
+    state.data=p.data;fillDeptSelects();render();
+    $('meta').textContent='A0 简报 · '+new Date().toLocaleString()+' · 部门 '+departments().length+' 个';
   }catch(e){
-    document.getElementById('error').innerHTML='<div class="err">简报加载失败：'+esc(e.message)+'（需登录 /hq）</div>';
-    document.getElementById('meta').textContent='加载失败';
+    $('meta').textContent='加载失败';
+    $('error').innerHTML='<div class="err">简报加载失败：'+esc(e.message)+'（需登录 /hq）</div>';
   }
 }
+$('btn-summary').onclick=function(){renderSummary();};
+$('btn-report').onclick=openModal;
+$('dept-filter').onchange=function(){state.dept=this.value;render();if(!$('summary').hidden)renderSummary();};
+$('btn-save').onclick=saveReport;
+$('btn-copy').onclick=copyReport;
+$('btn-download').onclick=downloadReport;
+$('btn-close').onclick=closeModal;
+$('modal').addEventListener('click',function(e){if(e.target===$('modal'))closeModal();});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal();});
 main();
 })();
 </script>

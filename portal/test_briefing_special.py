@@ -26,6 +26,10 @@ def test_briefing_links_to_special_and_uses_snapshot():
     assert "/special?" in s
     assert "研究题" in s
     assert "部门汇报" in s
+    assert 'id="btn-summary"' in s and "立即总结" in s
+    assert 'id="btn-report"' in s and "汇报工作" in s
+    assert 'id="dept-filter"' in s and 'option value=""' in s
+    assert "localStorage" in s
 
 
 def test_special_is_local_draft_workspace():
