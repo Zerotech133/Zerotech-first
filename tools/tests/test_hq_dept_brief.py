@@ -59,3 +59,17 @@ def test_out_file(tmp_path):
     out = tmp_path / "out.json"
     assert q.main(["--template", "--out", str(out)]) == 0
     assert out.is_file() and json.loads(out.read_text(encoding="utf-8"))["deadline"] == "07:50"
+
+
+def test_research_topics_and_a0_briefing(tmp_path):
+    items = q.template("2026-11-03")["items"]
+    items[0]["research_topics"] = [{"title": "数据资源台账", "question": "首版台账怎么建"}]
+    items[0]["decision_requests"] = ["请 A0 定专项优先级"]
+    p = tmp_path / "brief.json"
+    p.write_text(json.dumps({"items": items}, ensure_ascii=False), encoding="utf-8")
+    d = q.collect(p)
+    assert d["research_topics"] and d["research_topics"][0]["title"] == "数据资源台账"
+    b = d["briefing"]
+    assert b["schema"] == "hq/a0_briefing/v1"
+    assert b["research_topics"][0]["source_lead"] == items[0]["lead"]
+    assert b["decision_requests"]

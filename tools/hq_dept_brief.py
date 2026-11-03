@@ -41,7 +41,7 @@ def template(date: str | None = None) -> dict:
             "dept": x["dept"], "dept_name": x["dept_name"], "lead": x["lead"],
             "legions": [], "status": "todo",
             "highlights": [], "blockers": [],
-            "decision_requests": [], "evidence": [],
+            "research_topics": [], "decision_requests": [], "evidence": [],
             "note": "请填：军团进展 / 3 条工作要点 / 阻塞 / 需 A0 决策事项（无证据标需查证）",
         })
     return {"schema": SCHEMA, "date": date, "deadline": "07:50", "items": items,
@@ -81,6 +81,7 @@ def collect(path: Path) -> dict:
             "lead": lead, "dept": leads[lead]["dept"], "dept_name": leads[lead]["dept_name"],
             "legions": r.get("legions") or [], "status": status,
             "highlights": r.get("highlights") or [], "blockers": r.get("blockers") or [],
+            "research_topics": r.get("research_topics") or [],
             "decision_requests": r.get("decision_requests") or [],
             "evidence": r.get("evidence") or [],
         })
@@ -88,11 +89,19 @@ def collect(path: Path) -> dict:
     live = ["A0"] + [x["lead"] for x in valid if x["lead"] != "A0"][:5]
     decisions = [{"lead": x["lead"], "dept": x["dept_name"], "request": str(q)[:300]}
                  for x in valid for q in x["decision_requests"]][:30]
+    topics = []
+    for x in valid:
+        for t in x["research_topics"]:
+            topics.append({"id": "RT-%s-%02d" % (datetime.date.today().isoformat().replace("-",""), len(topics)+1),
+                           "title": str((t.get("title") if isinstance(t,dict) else t) or "")[:200],
+                           "question": str((t.get("question") if isinstance(t,dict) else "") or "")[:500],
+                           "source_lead": x["lead"], "source_dept": x["dept_name"]})
     return {
         "schema": "hq/dept_brief_rollup/v1",
         "generated_at": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
         "read_only": True, "submitted": len(valid), "expected": len(leads),
         "errors": errors, "decision_requests": decisions,
+        "research_topics": topics,
         "live_attendees": live,
         "meeting_payload": {
             "type": "dept_morning", "attendees": live,
@@ -104,6 +113,15 @@ def collect(path: Path) -> dict:
                             "src": "brief", "evidence": x["evidence"][:10]} for x in valid],
             "decisions": [],
         },
+        "briefing": {
+            "schema": "hq/a0_briefing/v1",
+            "headline": "部门早报汇总：%d/%d 已提交，%d 项需决策" % (len(valid), len(leads), len(decisions)),
+            "red": [x["lead"] for x in valid if x["status"] == "red"],
+            "amber": [x["lead"] for x in valid if x["status"] == "amber"],
+            "departments": [{"lead": x["lead"], "dept": x["dept_name"], "status": x["status"],
+                             "highlights": x["highlights"][:3], "blockers": x["blockers"][:3]} for x in valid],
+            "research_topics": topics, "decision_requests": decisions,
+        },
     }
 
 
@@ -111,6 +129,7 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="08:00 部门早会早报/汇总")
     ap.add_argument("--template", action="store_true")
     ap.add_argument("--collect", default="")
+    ap.add_argument("--briefing", action="store_true")
     ap.add_argument("--out", default="")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args(argv)
@@ -118,6 +137,8 @@ def main(argv=None) -> int:
         d = template()
     elif args.collect:
         d = collect(Path(args.collect))
+        if args.briefing:
+            d = d["briefing"]
     else:
         ap.error("need --template or --collect")
     text = json.dumps(d, ensure_ascii=False, indent=2)
