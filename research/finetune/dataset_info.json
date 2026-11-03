@@ -22,5 +22,21 @@
    "chosen": "chosen",
    "rejected": "rejected"
   }
+ },
+ "quant_kb_sft_v2": {
+  "file_name": "sft/quant_kb_sft_v2_train.jsonl",
+  "formatting": "sharegpt",
+  "columns": {
+   "messages": "messages"
+  }
+ },
+ "quant_kb_dpo_v2": {
+  "file_name": "dpo/quant_kb_dpo_v2.jsonl",
+  "formatting": "sharegpt",
+  "columns": {
+   "messages": "prompt",
+   "chosen": "chosen",
+   "rejected": "rejected"
+  }
  }
 }
