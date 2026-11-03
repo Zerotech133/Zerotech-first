@@ -1,0 +1,28 @@
+# ACAD1 live 验收 · 采集环境（只读）
+
+采集时间: 2026-11-04T05:29:00+08:00
+
+## 监听/进程（Get-NetTCPConnection + CIM）
+  8734: 127.0.0.1:8734 pid=7044
+  8105: 127.0.0.1:8105 pid=14100
+  8091: 127.0.0.1:8091 pid=14580
+
+## 服务身份（响应体/header 自证，未登录）
+  8105 /api/v1/health -> 200 body={"status": "ok", "app": "zhice-os-v2", "version": "0.1.0"}
+  8091 /api/acad1/pool -> 200（body 摘要见 probe raw JSON）
+
+## 页面 8734/academy/shuijing -> 200
+  title=司马徽研究台 · 今日决策台 html_len=11202
+  script_src=['/static/nav.js', '/static/shortscreen.js', '/static/shuijing.js']
+  link_href(前5)=['/static/tokens.css', '/static/shuijing.css']
+  acad1 相关字面量=['/acad1/pool']
+
+## 页面 8734/acad1/pool -> 200
+  title=司马徽推荐池 · 全池复盘 · 零界 html_len=11138
+  script_src=['/static/nav.js', '/static/shortscreen.js', '/static/ui/ui.js']
+  link_href(前5)=['/static/tokens.css', 'data:,', '/static/os_theme.css', '/static/ui/ui.css']
+  acad1 相关字面量=['/api/acad1/pool']
+
+## 说明
+  - 只读 GET；未发送 Cookie/Authorization；不重启/不改配置。
+  - 页面/接口实测时间与 probe raw JSON 同一窗口（2026-11-04 05:28 +08）。
