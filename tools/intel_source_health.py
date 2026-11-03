@@ -67,7 +67,7 @@ import intel_source_probe as probe  # noqa: E402  IL-08 三源只读探针（水
 SCHEMA = "intel_source_health/v1"
 KIND = "intel_source_health"
 IL08_SCHEMA = probe.SCHEMA
-DEFAULT_IL08_STALE_DAYS = 2.0
+DEFAULT_STALE_DAYS = 2.0
 
 DEFAULT_REGISTRY = reg.DEFAULT_REGISTRY
 DEFAULT_STATUS = (Path(os.environ.get("AIOS_ROOT", r"C:\aios"))
@@ -238,7 +238,7 @@ def build_report(registry_path=None, status_path=None, now=None,
                  news_stale_hours: float = DEFAULT_NEWS_STALE_HOURS,
                  sample_stale_hours: float = DEFAULT_SAMPLE_STALE_HOURS,
                  include_il08: bool = True,
-                 il08_stale_days: float = DEFAULT_IL08_STALE_DAYS,
+                 il08_stale_days: float = DEFAULT_STALE_DAYS,
                  il08_paths=None) -> dict:
     """只读生成健康报告（不写任何文件/库）。返回 JSON 契约 dict。
 
@@ -452,7 +452,7 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--strict", action="store_true",
                     help="启用源不健康 → exit 1（输入错误始终 fail-visible）")
     il08 = ap.add_argument_group("IL-08 三源盘点（增量，可注入路径/阈值）")
-    il08.add_argument("--stale-days", type=_days_arg, default=DEFAULT_IL08_STALE_DAYS,
+    il08.add_argument("--stale-days", type=_days_arg, default=DEFAULT_STALE_DAYS,
                       help="三源水位过期阈值（天，默认 2）")
     il08.add_argument("--xueqiu-db", default=None, help="雪球 sqlite 路径（默认数据根 xueqiu/xueqiu_info.db）")
     il08.add_argument("--guba-dir", default=None, help="股吧 jsonl 目录（默认数据根 guba）")

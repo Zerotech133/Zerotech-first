@@ -388,7 +388,7 @@ def test_wrapper_config_error_exit2_without_calling_tool(tmp_path):
 # schema: intel_source_health_il08/v1；--md 输出到达 stdout，不落盘
 # ══════════════════════════════════════════════════════════════════════
 IL08_SCHEMA = "intel_source_health_il08/v1"
-IL08_SOURCE_KEYS = {"source_id", "name", "in_registry", "owner", "license",
+SOURCE_KEYS = {"source_id", "name", "in_registry", "owner", "license",
                     "watermark", "watermark_at", "age_days", "stale_days", "stale",
                     "probe_available", "notes", "gaps", "mode", "enabled",
                     "registry_source_id", "registry_note"}
@@ -504,7 +504,7 @@ def test_il08_json_additive_block_and_three_sources(tmp_path, capsys):
     assert by["tdx_market"]["in_registry"] is True
     # 每源一行必需字段
     for src in inv["sources"]:
-        assert IL08_SOURCE_KEYS <= set(src), src["source_id"]
+        assert SOURCE_KEYS <= set(src), src["source_id"]
         assert src["stale_days"] == 2.0
     # 水位事实（注入时钟 NOW 附近）
     assert by["xueqiu"]["watermark"]["kind"] == "sqlite"
