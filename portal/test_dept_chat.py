@@ -26,10 +26,11 @@ def test_dept_chat_page_has_point_to_point_chat():
     assert "hq_human_brief_" in s
     assert "返回简报" in s
     assert ".wb-palette-trigger{display:none!important}" in s
+    assert "hq_people.js" in s and "pLead" in s
 
 
 def test_briefing_cards_link_to_dept_chat():
     s = BRIEF.read_text(encoding="utf-8")
     assert "/dept-chat?" in s
     assert "点对点对话" in s
-    assert 'id="build"' in s and "v7" in s
+    assert 'id="build"' in s and "v9" in s

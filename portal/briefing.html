@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="/static/tokens.css">
 <link rel="stylesheet" href="/static/ui/ui.css">
 <script src="/static/nav.js" defer></script>
+<script src="/static/hq_people.js"></script>
 <style>
 body{margin:0;background:var(--bg-page);color:var(--text);font-family:var(--font-ui)}
 .wrap{max-width:1210px;margin:0 auto;padding:20px 24px 56px}
@@ -53,7 +54,7 @@ h2{font-size:15px;margin:22px 0 8px}
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><strong>零界 · 田丰早间简报</strong><span class="meta" id="build">v6</span><a href="/hq">返回指挥部</a></div>
+  <div class="top"><strong>零界 · 田丰早间简报</strong><span class="meta" id="build">v9</span><a href="/hq">返回指挥部</a></div>
   <h1>今日简报</h1>
   <div class="meta" id="meta">加载中…</div>
 
@@ -118,6 +119,8 @@ var DAY=new Date().toISOString().slice(0,10);
 var LS='hq_human_brief_'+DAY;
 var state={data:null, reports:[], dept:'', lastCard:null, running:false, detail:null};
 var CHATLS='hq_dept_chat_'+DAY; var chats={};
+function pLead(id){return (window.HQ_PEOPLE&&HQ_PEOPLE.leads&&HQ_PEOPLE.leads[id])||id||'-';}
+function pDept(code){return (window.HQ_PEOPLE&&HQ_PEOPLE.depts&&HQ_PEOPLE.depts[code])||code||'-';}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function $(id){return document.getElementById(id);}
 function card(k,v){return '<div class="card"><div class="k">'+esc(k)+'</div><div class="v">'+esc(v)+'</div></div>';}
@@ -236,12 +239,12 @@ function renderSummary(){
   if(state.dept) ts=ts.filter(function(t){return t.source_dept===state.dept||t.source_lead===deptLead(state.dept);});
   var red=rows.filter(function(r){return r.status==='red';});
   var amber=rows.filter(function(r){return r.status==='amber';});
-  var dec=[]; rows.forEach(function(r){(r.decision_requests||[]).forEach(function(x){dec.push(r.lead+' / '+r.dept+'：'+x);});});
+  var dec=[]; rows.forEach(function(r){(r.decision_requests||[]).forEach(function(x){dec.push(pLead(r.lead)+' / '+pDept(r.dept)+'：'+x);});});
   var text='A0 速览 · '+new Date().toLocaleString()+(state.dept?(' · 仅看 '+state.dept):(' · 全部门'))+'\n';
   text+='部门汇报 '+rows.length+' / '+expectedLeads()+'｜红 '+red.length+'｜黄 '+amber.length+'｜需决策 '+dec.length+' 项｜部门研究题 '+ts.length+' 条\n';
   if(!rows.length) text+='\n今日部门早报尚未提交；页面不再用旧 Directive 充当研究题。请点「汇报工作」或等 07:50 负责人提交。\n';
-  if(red.length) text+='\n先处理红：\n'+red.map(function(r){return '- '+r.lead+' '+r.dept+'：'+(r.blockers||[]).join('；')||'无阻塞说明';}).join('\n');
-  if(amber.length) text+='\n黄：\n'+amber.map(function(r){return '- '+r.lead+' '+r.dept+'：'+(r.blockers||[]).join('；')||'有风险待补';}).join('\n');
+  if(red.length) text+='\n先处理红：\n'+red.map(function(r){return '- '+pLead(r.lead)+' '+pDept(r.dept)+'：'+(r.blockers||[]).join('；')||'无阻塞说明';}).join('\n');
+  if(amber.length) text+='\n黄：\n'+amber.map(function(r){return '- '+pLead(r.lead)+' '+pDept(r.dept)+'：'+(r.blockers||[]).join('；')||'有风险待补';}).join('\n');
   if(dec.length) text+='\n需老田/A0决策：\n'+dec.slice(0,8).map(function(x){return '- '+x;}).join('\n');
   if(ts.length) text+='\n部门研究题：\n'+ts.slice(0,8).map(function(t){return '- '+(t.title||'')+'（'+(t.source_lead||'-')+'）';}).join('\n');
   var el=$('summary');el.hidden=false;el.textContent=text;
@@ -251,8 +254,8 @@ function render(){
   if(state.dept) ts=ts.filter(function(t){return (t.source_dept===state.dept)||(t.source_lead===deptLead(state.dept));});
   $('cards').innerHTML=[card('部门汇报',rows.length+' / '+expectedLeads()),card('部门研究题',ts.length),card('需决策',rows.reduce(function(n,r){return n+(r.decision_requests||[]).length;},0)),card('红色',rows.filter(function(r){return r.status==='red';}).length)].join('');
   $('depts').innerHTML=rows.length?rows.map(function(x){
-    return '<div class="item dept-card" role="button" tabindex="0" data-lead="'+esc(x.lead||'')+'" data-dept="'+esc(x.dept||'')+'"><div class="t">'+esc(x.lead||'-')+' · '+esc(x.dept||'-')+' '+pill(x.status||'')+'</div>'
-      +'<div class="m">工作要点：'+esc((x.highlights||[]).join('；')||'未填')+'<br>阻塞：'+esc((x.blockers||[]).join('；')||'无')+'<br>需决策：'+esc((x.decision_requests||[]).join('；')||'无')+'<br><span style="color:var(--link)">点击查看详情 / 继续对话 →</span></div></div>';
+    return '<a class="item dept-card" href="/dept-chat?'+new URLSearchParams({lead:x.lead||'',dept:x.dept||''}).toString()+'"><div class="t">'+esc(pLead(x.lead))+'（'+esc(x.lead||'-')+'）· '+esc(pDept(x.dept))+' '+pill(x.status||'')+'</div>'
+      +'<div class="m">工作要点：'+esc((x.highlights||[]).join('；')||'未填')+'<br>阻塞：'+esc((x.blockers||[]).join('；')||'无')+'<br>需决策：'+esc((x.decision_requests||[]).join('；')||'无')+'<br><span style="color:var(--link)">点对点对话 →</span></div></a>';
   }).join(''):'<div class="meta">'+ (state.dept?'该部门今日暂无汇报。':'今日部门早报尚未汇总；可点「汇报工作」随时补一份，或等 07:50 部门负责人提交。不再用旧 Directive 凑研究题。') +'</div>';
   $('topics').innerHTML=ts.length?ts.map(function(t){return '<a class="item" href="'+esc(specLink(t))+'"><div class="t">'+esc(t.title||'未命名研究题')+'</div><div class="m">'+esc(t.kind||'研究')+' · 来源 '+esc(t.source_lead||t.source_dept||'-')+'</div></a>';}).join(''):'<div class="meta">暂无研究题。</div>';
   $('state-note').textContent=state.dept?('只看：'+state.dept):'全部部门';
@@ -263,10 +266,10 @@ function renderDetail(){
   var box=$('detail'); if(!box)return;
   var topics=(r.research_topics||[]).map(function(t){return '<a class="btn" href="'+esc(specLink({id:'',title:(t&&t.title)||t,source_lead:r.lead,kind:'研究'}))+'" style="margin:2px 4px 2px 0">'+esc((t&&t.title)||t)+' → 人专项</a>';}).join('');
   var msgs=detailMessages().map(function(m){return '<div class="msg '+(m.role==='user'?'user':'bot')+'">'+esc(m.text)+'</div>';}).join('');
-  box.innerHTML='<div class="row" style="justify-content:space-between"><div><b>'+esc(r.lead||'-')+' · '+esc(r.dept||'-')+'</b> '+pill(r.status||'')+'</div><button class="btn" id="d-close" type="button">关闭</button></div>'
+  box.innerHTML='<div class="row" style="justify-content:space-between"><div><b>'+esc(pLead(r.lead))+'（'+esc(r.lead||'-')+'）· '+esc(pDept(r.dept))+'</b> '+pill(r.status||'')+'</div><button class="btn" id="d-close" type="button">关闭</button></div>'
     +'<div class="meta">工作要点：'+esc((r.highlights||[]).join('；')||'未填')+'<br>阻塞：'+esc((r.blockers||[]).join('；')||'无')+'<br>需决策：'+esc((r.decision_requests||[]).join('；')||'无')+'</div>'
     +(topics?'<div class="meta">研究题：</div><div>'+topics+'</div>':'')
-    +'<h2 style="margin:12px 0 4px">继续对话（'+esc(r.lead||'')+' · 云端模型）</h2>'
+    +'<h2 style="margin:12px 0 4px">继续对话（'+esc(pLead(r.lead))+' · 云端模型）</h2>'
     +'<div class="chat" id="d-chat">'+(msgs||'<div class="msg bot">点击下方输入，继续追问该部门负责人；只会发送文字，不自动派单。</div>')+'</div>'
     +'<div class="row"><input id="d-input" placeholder="继续问 '+esc(r.lead||'')+'…" style="flex:1;min-width:0"><button class="btn primary" id="d-send" type="button">发送</button></div>'
     +'<div class="meta" id="d-status">对话保存在本页；真实云端调用。</div>';
@@ -302,7 +305,7 @@ async function sendDetail(){
 }
 function fillDeptSelects(){
   var ds=departments();
-  var opts='<option value="">全部部门</option>'+ds.map(function(d){return '<option value="'+esc(d.dept)+'">'+esc(d.name||d.dept)+(d.lead?(' · '+esc(d.lead)):'')+'</option>';}).join('');
+  var opts='<option value="">全部部门</option>'+ds.map(function(d){return '<option value="'+esc(d.dept)+'">'+esc(d.name||pDept(d.dept))+(d.lead?(' · '+esc(pLead(d.lead))):'')+'</option>';}).join('');
   $('dept-filter').innerHTML=opts;
   $('f-dept').innerHTML=ds.map(function(d){return '<option value="'+esc(d.dept)+'">'+esc(d.name||d.dept)+(d.lead?(' · '+esc(d.lead)):'')+'</option>';}).join('');
 }
@@ -311,7 +314,7 @@ function closeModal(){$('modal').classList.remove('open');}
 function lines(id){return $(id).value.split('\n').map(function(x){return x.trim();}).filter(Boolean);}
 function buildReport(){
   var dept=$('f-dept').value, lead=deptLead(dept);
-  var r={lead:lead,dept:dept,status:$('f-status').value,highlights:lines('f-highlights'),blockers:lines('f-blockers'),decision_requests:lines('f-decisions'),research_topics:lines('f-research').map(function(x){return {title:x,question:''};}),created_at:new Date().toISOString(),human:true};
+  var r={lead:lead,dept:dept,lead_name:pLead(lead),dept_name:pDept(dept),status:$('f-status').value,highlights:lines('f-highlights'),blockers:lines('f-blockers'),decision_requests:lines('f-decisions'),research_topics:lines('f-research').map(function(x){return {title:x,question:''};}),created_at:new Date().toISOString(),human:true};
   return r;
 }
 function saveReport(){var r=buildReport();if(!r.dept){$('state-note').textContent='请选择部门';return;}state.reports.push(r);saveReports();render();if($('summary').hidden===false)renderSummary();closeModal();$('state-note').textContent='汇报已保存在本页（本地），可随时总结或复制给田丰。';}
@@ -334,8 +337,6 @@ async function main(){
 $('btn-summary').onclick=function(){runAllDepartments();};
 $('btn-quick').onclick=function(){renderSummary();$('state-note').textContent='已汇总当前已提交数据 · '+new Date().toLocaleTimeString();};
 $('btn-report').onclick=function(){openModal();$('state-note').textContent='汇报工作：填写后点保存到本页';};
-$('depts').addEventListener('click',function(e){var c=e.target.closest&&e.target.closest('.dept-card');if(c)openDetail(c.getAttribute('data-lead'));});
-$('depts').addEventListener('keydown',function(e){if(e.key==='Enter'){var c=e.target.closest&&e.target.closest('.dept-card');if(c)openDetail(c.getAttribute('data-lead'));}});
 $('dept-filter').onchange=function(){state.dept=this.value;render();if(!$('summary').hidden)renderSummary();};
 $('btn-save').onclick=saveReport;
 $('btn-copy').onclick=copyReport;
@@ -344,8 +345,8 @@ $('btn-close').onclick=closeModal;
 $('modal').addEventListener('click',function(e){if(e.target===$('modal'))closeModal();});
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal();});
 window.addEventListener('error',function(e){var el=$('error');if(el)el.innerHTML='<div class="err">页面脚本错误：'+esc(e.message||'unknown')+'。请 Ctrl+F5 强刷。</div>';});
-window.__briefingReady='v6-20261103-1019';
-var build=$('build');if(build)build.textContent='v6 · 10:19';
+window.__briefingReady='v9-20261103-1038';
+var build=$('build');if(build)build.textContent='v9 · 10:38';
 main();
 })();
 </script>

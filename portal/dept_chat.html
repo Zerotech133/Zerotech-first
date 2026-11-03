@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="/static/tokens.css">
 <link rel="stylesheet" href="/static/ui/ui.css">
 <script src="/static/nav.js" defer></script>
+<script src="/static/hq_people.js"></script>
 <style>
 html,body{height:100%}
 .wb-palette-trigger{display:none!important}
@@ -61,6 +62,8 @@ body{margin:0;background:var(--bg-page);color:var(--text);font-family:var(--font
 'use strict';
 var DAY=new Date().toISOString().slice(0,10);
 var LS='hq_human_brief_'+DAY, CHATLS='hq_dept_chat_'+DAY;
+function pLead(id){return (window.HQ_PEOPLE&&HQ_PEOPLE.leads&&HQ_PEOPLE.leads[id])||id||'-';}
+function pDept(code){return (window.HQ_PEOPLE&&HQ_PEOPLE.depts&&HQ_PEOPLE.depts[code])||code||'-';}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function $(id){return document.getElementById(id);}
 function qs(k){return new URLSearchParams(location.search).get(k)||'';}
@@ -79,13 +82,13 @@ function renderChat(){
 }
 function reportHtml(r){
   var topics=(r.research_topics||[]).map(function(t){var title=(t&&t.title)||t;return '<a class="topic" href="/special?'+new URLSearchParams({topic:title,title:title,source:lead,kind:'研究'}).toString()+'">'+esc(title)+' → 人专项</a>';}).join('');
-  return '<p><b>'+esc(r.lead||lead)+' · '+esc(leadingDept(r))+'</b> '+pill(r.status||'')+'</p>'
+  return '<p><b>'+esc(pLead(r.lead||lead))+'（'+esc(r.lead||lead)+'）· '+esc(leadingDept(r))+'</b> '+pill(r.status||'')+'</p>'
     +'<p><b>工作要点</b><br>'+esc((r.highlights||[]).join('；')||'未填')+'</p>'
     +'<p><b>阻塞</b><br>'+esc((r.blockers||[]).join('；')||'无')+'</p>'
     +'<p><b>需决策</b><br>'+esc((r.decision_requests||[]).join('；')||'无')+'</p>'
     +'<div class="meta" id="topics-inline">'+topics+'</div>';
 }
-function leadingDept(r){return r.dept||dept||'';}
+function leadingDept(r){return pDept(r.dept||dept||'');}
 function findReport(){
   var arr=[]; try{arr=JSON.parse(localStorage.getItem(LS)||'[]')||[];}catch(e){arr=[];}
   var r=arr.filter(function(x){return (x.lead||'')===lead;})[0]; if(r)return r;
@@ -108,8 +111,8 @@ async function init(){
     renderChat(); return;
   }
   dept=report.dept||dept;
-  document.title='零界 · '+lead+' · 点对点对话';
-  $('title').textContent=lead+' · '+leadingDept(report);
+  document.title='零界 · '+pLead(lead)+' · 点对点对话';
+  $('title').textContent=pLead(lead)+' · '+leadingDept(report);
   $('status').innerHTML=pill(report.status||'')+' · 对话保存在本页';
   $('report').innerHTML=reportHtml(report);
   renderChat();
@@ -118,7 +121,7 @@ async function send(){
   var q=($('input').value||'').trim(); if(!q||!lead)return;
   var btn=$('send'); btn.disabled=true; $('input').value=''; addMsg('user',q);
   var hist=msgs().slice(-10).map(function(m){return (m.role==='user'?'老田：':'负责人：')+m.text;}).join('\n');
-  var system='你是'+lead+'，零界'+(dept||'')+'负责人。只从职能面回答；不编造具体数字，缺证据标需查证；不自动派单、不代批 L2。';
+  var system='你是'+pLead(lead)+'（'+lead+'），零界'+pDept(dept)+'负责人。只从职能面回答；不编造具体数字，缺证据标需查证；不自动派单、不代批 L2。';
   var body={agent:lead,system:system,purpose:'dept_chat',user:'历史对话：\n'+hist+'\n\n当前问题：'+q};
   try{
     var ctl=new AbortController(); var timer=setTimeout(function(){ctl.abort();},90000);
