@@ -500,6 +500,26 @@ def load_quotes_json(path) -> dict:
 
 
 # ── status 输出（原子写；dry-run 不写）───────────────────────────────
+def _previous_status(status_path):
+    """读既有 status.json 的累计字段（tick_count/started_at）；缺失/坏文件不猜。"""
+    if not status_path:
+        return {}
+    try:
+        data = json.loads(Path(str(status_path)).read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(data, dict):
+        return {}
+    prev = {}
+    tick_count = data.get("tick_count")
+    if isinstance(tick_count, int) and not isinstance(tick_count, bool):
+        prev["tick_count"] = tick_count
+    started_at = data.get("started_at")
+    if isinstance(started_at, str) and started_at.strip():
+        prev["started_at"] = started_at.strip()
+    return prev
+
+
 def write_status_atomic(status, path) -> bool:
     target = Path(str(path))
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -513,6 +533,10 @@ def write_status_atomic(status, path) -> bool:
 
 
 def _finalize(status, status_path, dry_run):
+    # API 兼容别名（WO-WATCH-WIRE-20261104）：心跳/tick 时间与引擎状态
+    status["last_tick_at"] = status.get("last_tick_at") or _now_iso(None)
+    status["heartbeat_at"] = status["last_tick_at"]
+    status["engine_state"] = "running" if status.get("ok") else "error"
     status["status_written"] = False
     if status_path and not dry_run:
         try:
@@ -523,15 +547,22 @@ def _finalize(status, status_path, dry_run):
             status["status_write_error"] = "%s: %s" % (type(exc).__name__, exc)
     elif status_path and dry_run:
         status["status_write_skipped"] = "dry_run"
+    status["engine_state"] = "running" if status.get("ok") else "error"
     return status
 
 
 # ── 引擎主循环（单轮）────────────────────────────────────────────────
 def evaluate_once(plan_ledger=None, trigger_ledger=None, data_dir=None,
                   quote_provider=None, dry_run=False, status_path=None,
-                  now=None, run_id=None) -> dict:
-    """单轮评估：armed plan → 条件 → 命中调 consumer.trigger_plan（pending 确认，不执行）。"""
+                  now=None, run_id=None, extra_status=None) -> dict:
+    """单轮评估：armed plan → 条件 → 命中调 consumer.trigger_plan（pending 确认，不执行）。
+
+    ``extra_status`` 供 runner 注入 mode/pid/interval_s/started_at/tick_count 等运行态字段
+    （不改评估逻辑；核心字段不可覆盖，started_at/tick_count 两项除外）。
+    """
     stamp = _now_iso(now)
+    prev = _previous_status(status_path)
+    tick_count = (int(prev["tick_count"]) + 1) if prev.get("tick_count") else 1
     status = {
         "schema": SCHEMA,
         "ok": True,
@@ -553,7 +584,18 @@ def evaluate_once(plan_ledger=None, trigger_ledger=None, data_dir=None,
         "paper_only": True,
         "not_a_trade": True,
         "executes": False,
+        # API 兼容别名（WO-WATCH-WIRE-20261104；评估字段保持不变）
+        "engine_state": "running",
+        "started_at": prev.get("started_at") or stamp,
+        "last_tick_at": stamp,
+        "heartbeat_at": stamp,
+        "armed_count": 0,
+        "tick_count": tick_count,
     }
+    if isinstance(extra_status, dict):
+        for key, value in extra_status.items():
+            if key in ("started_at", "tick_count") or key not in status:
+                status[key] = value
     try:
         plans = consumer.list_plans(path=plan_ledger, status="armed")
     except Exception as exc:  # noqa: BLE001 — plan ledger 不可读 → 显式 fail-visible
@@ -562,6 +604,7 @@ def evaluate_once(plan_ledger=None, trigger_ledger=None, data_dir=None,
         return _finalize(status, status_path, dry_run)
     status["scanned"] = len(plans)
     status["armed"] = len(plans)
+    status["armed_count"] = len(plans)
     parsed = []
     expired = 0
     for plan in plans:
