@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """Q2 健康探针：成功/失败不假绿。"""
 from __future__ import annotations
 

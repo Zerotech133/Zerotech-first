@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """组合 Q2 健康探针（只读）：只 GET 本机只读端点，不写服务、不改 manifest。"""
 from __future__ import annotations
