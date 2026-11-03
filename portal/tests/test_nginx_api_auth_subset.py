@@ -28,7 +28,8 @@ CONF = Path(__file__).resolve().parents[1] / "nginx.conf"
 PORTAL_ROOT = CONF.parent
 
 PROTECTED_API_PREFIXES = ("/api/platform/", "/api/org/", "/api/analysis/",
-                          "/api/os/", "/api/jev/", "/api/dw/", "/api/hq/", "/api/a2a/")
+                          "/api/os/", "/api/jev/", "/api/dw/", "/api/hq/",
+                          "/api/a2a/", "/api/monitor/")
 # 既有专项保护（精确/前缀），H4-B 不得把它们放进公开白名单
 SPECIAL_PROTECTED = (
     ("=", "/api/news/intel"),
