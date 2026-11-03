@@ -126,6 +126,31 @@ _DEFAULT_BINDING = "ollama/qwen3.5:9b"
 # 平台级兜底降级档：席位没配 llm_fallback 时只降这一档（A0/AI1 等无链席位的旧行为）
 _DEFAULT_FALLBACK = _DEFAULT_BINDING
 REPORT_PURPOSES = {"dept_report", "case", "case_autorun", "personal_brief"}
+
+
+# ---- 五角色实际岗位 persona（2026-11-04 入职台账为唯一口径） ----
+_FIVE_ROLES_FILE = _PLATFORM / "registry" / "five_roles_onboard.json"
+_FIVE_ROLE_CACHE = {"mtime": None, "map": {}}
+
+
+def five_role_persona(agent: str) -> str:
+    """返回五角色岗位 persona；非五角色返回空串。缓存按 mtime 失效。"""
+    try:
+        mt = _FIVE_ROLES_FILE.stat().st_mtime
+        if _FIVE_ROLE_CACHE["mtime"] != mt:
+            data = json.loads(_FIVE_ROLES_FILE.read_text(encoding="utf-8"))
+            _FIVE_ROLE_CACHE["map"] = {r["agent_id"]: r for r in data.get("roles", [])}
+            _FIVE_ROLE_CACHE["mtime"] = mt
+    except OSError:
+        return ""
+    rec = _FIVE_ROLE_CACHE["map"].get(agent)
+    if not rec:
+        return ""
+    duties = "、".join(rec.get("duties") or [])
+    return ("你是零界指挥部%s的%s（%s），实际岗位：%s；汇报对象：%s；职责：%s。"
+            "必须以该实际岗位身份回答，不越权、不冒充其他席位。"
+            % (rec.get("seat", ""), rec.get("name", ""), agent,
+               rec.get("actual_position", ""), rec.get("reports_to", ""), duties))
 # 会议场景绑定覆盖：治理席 ZHAOYUN 的正式绑定是 DSH 会话载体（deepseek-v4-pro），
 # 不适配同步 /api/chat；会议仅用本地模型发声，不改变正式治理席位绑定。
 MEETING_BINDING_OVERRIDES = {"ZHAOYUN": "ollama/qwen3.5:9b"}
@@ -2397,6 +2422,10 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"ok": False, "error": "bad_agent"}, 400)
                 return
             purpose = str(req.get("purpose", "")).strip()
+            _persona = five_role_persona(agent)
+            if _persona:
+                _caller_system = str(req.get("system", ""))
+                req["system"] = _persona + ("\n\n" + _caller_system if _caller_system else "")
             binding_orig = resolve_binding(agent)
             meeting_override = purpose == "meeting" and agent in MEETING_BINDING_OVERRIDES
             binding = (resolve_meeting_binding(agent) if meeting_override else binding_orig)
