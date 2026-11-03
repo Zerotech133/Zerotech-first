@@ -84,7 +84,7 @@ def test_append_message_validation(tmp_path):
 
 def test_frontend_markers():
     h = (WT / "agent_platform" / "legion_command" / "static" / "meeting.html").read_text(encoding="utf-8")
-    for key in ("/api/hq/agenda", "hqPostMsg", "hqPre", "会前议题"):
+    for key in ("/api/hq/meeting/agenda", "hqPostMsg", "hqPre", "会前议题"):
         assert key in h, key
 
 
