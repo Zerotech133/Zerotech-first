@@ -39,6 +39,10 @@ spec:
     requires:
     - ref: dataset/file/recommendation_pool
       note: IFS F2 上游池；dataset_registry 登记由 task-27 完成（当前 planned）
+    - ref: dataset/pg/v2_acad1_pool
+      note: 官方池唯一真源（dataset_refs_declared canonical_ref=dataset/pg/v2_acad1_pool，IFS-POOL 已登记）；file/recommendation_pool 为 shadow fallback（非官方）
+    - ref: dataset/pg/v2_base_signal
+      note: D1 基础信号（PG wave1 registry 已登记，owner=D1）；只读消费，paper-only
     - ref: dataset/file/pool_review
       note: IFS F2 池复盘；dataset_registry 登记由 task-27 完成（当前 planned）
     - ref: dataset/file/team_exec
