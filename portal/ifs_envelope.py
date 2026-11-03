@@ -118,9 +118,25 @@ INTERFACES: Dict[str, Dict[str, str]] = {
     },
 }
 
+#: F1d 本地扩展接口（registry 暂无 war-room 条目，待登记；不混入 INTERFACES 以保持
+#: 「INTERFACES == registry 已登记接口」的 F1b 契约测试不变）
+LOCAL_INTERFACES: Dict[str, Dict[str, str]] = {
+    "war_room.snapshot.get": {
+        "path": "/api/war-room/snapshot",
+        "schema_version": "war_room/v1",
+        "source_of_truth": "portal/war_room_data.py 聚合（pool_data/d1_data/paper_data/sim_confirm + watch-admin 快照）",
+        "source_mode": "aggregate",
+    },
+}
+
+#: 运行时全量映射（registry 已登记 + 本地扩展）
+INTERFACE_META: Dict[str, Dict[str, str]] = {}
+INTERFACE_META.update(INTERFACES)
+INTERFACE_META.update(LOCAL_INTERFACES)
+
 _PATH_TO_INTERFACE = {
     meta["path"]: interface_id
-    for interface_id, meta in INTERFACES.items()
+    for interface_id, meta in INTERFACE_META.items()
     if interface_id not in ("d1.meeting.create", "d1.meeting.get")
 }
 _TRAINING_DETAIL_PREFIX = "/api/d1/training/episodes/"
@@ -138,6 +154,7 @@ _LEGACY_CODE_MAP = {
     "not_paper": "not_paper",
     "execution_field_forbidden": "execution_field_forbidden",
     "data_unavailable": "data_unavailable",
+    "war_room_snapshot_failed": "internal_error",
 }
 
 _REQUEST_ID_RE = re.compile(REQUEST_ID_PATTERN)
@@ -233,7 +250,7 @@ def _source_ids(interface_id: str, legacy: Mapping[str, Any]) -> Dict[str, str]:
 
 
 def _source_block(interface_id: str, legacy: Mapping[str, Any]) -> Dict[str, Any]:
-    meta = INTERFACES[interface_id]
+    meta = INTERFACE_META[interface_id]
     freshness_s = legacy.get("freshness_s")
     if not isinstance(freshness_s, int) or isinstance(freshness_s, bool):
         freshness_days = legacy.get("freshness_days")
@@ -262,7 +279,7 @@ def ok_payload(handler: Any, interface_id: str, legacy: Any) -> Dict[str, Any]:
     - 旧 ``schema_version`` 存在则优先保留（信封值与之相同，如 training_episode/v1）；
     - 旧 ``source`` 若为字符串（旧契约）则保留字符串，IFS source 对象放 ``source_detail``。
     """
-    if interface_id not in INTERFACES:
+    if interface_id not in INTERFACE_META:
         raise ValueError("未登记的 D1 接口: %r" % (interface_id,))
     legacy_map = dict(legacy) if isinstance(legacy, Mapping) else {"data": legacy}
     data_copy = dict(legacy_map)
@@ -275,7 +292,7 @@ def ok_payload(handler: Any, interface_id: str, legacy: Any) -> Dict[str, Any]:
     schema_version = (
         legacy_schema_version
         if isinstance(legacy_schema_version, str) and legacy_schema_version
-        else INTERFACES[interface_id]["schema_version"]
+        else INTERFACE_META[interface_id]["schema_version"]
     )
     envelope = ifs.wrap_ok(
         interface_id,
@@ -330,7 +347,7 @@ def error_payload(handler: Any, interface_id: Optional[str], legacy: Any, http_s
             "warnings": [],
         }
     )
-    if interface_id and interface_id in INTERFACES:
+    if interface_id and interface_id in INTERFACE_META:
         source_block = _source_block(interface_id, legacy_map)
         if isinstance(legacy_map.get("source"), Mapping):
             merged["source"] = source_block
@@ -375,6 +392,8 @@ def send(
 __all__ = [
     "ERROR_SCHEMA_VERSION",
     "INTERFACES",
+    "INTERFACE_META",
+    "LOCAL_INTERFACES",
     "SCHEMA_VERSION",
     "error_payload",
     "ifs_error_code",

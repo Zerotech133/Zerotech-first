@@ -3454,8 +3454,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 os.path.dirname(os.path.abspath(__file__)), "d1_training.html"))
         elif path == "/api/war-room/snapshot":
             # WO-WARROOM-LIVE：作战台实时数据聚合（D1/池/paper/确认/盯盘）
+            # IFS F1d：统一 envelope + request_id（WO-IFS-WARROOM-ENVELOPE-20261104）
             import war_room_data
-            self._json(war_room_data.war_room_snapshot())
+            snapshot_payload, snapshot_status = war_room_data.snapshot_envelope(self)
+            self._json(snapshot_payload, snapshot_status)
         elif path == "/api/sim/confirmations":
             # IFS F4：人工确认待办（v2 四 ID 视图，paper-only）
             import api_sim_confirm
