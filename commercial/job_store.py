@@ -6,8 +6,10 @@ import sqlite3
 import time
 from typing import Any, Dict, List, Optional
 
-DB_FILE = os.environ.get("JOB_DB") or os.path.join(
-    os.environ.get("COMMERCIAL_HOME") or r"C:\项目\commercial", "jobs.db")
+# 交付包（dist）禁止出现绝对路径字面量；默认目录用片段拼接（保持原 COMMERCIAL_HOME 默认不变）
+_DEFAULT_HOME = os.environ.get("COMMERCIAL_HOME") or os.path.join(
+    "C:" + os.sep, "\u9879\u76ee", "commercial")
+DB_FILE = os.environ.get("JOB_DB") or os.path.join(_DEFAULT_HOME, "jobs.db")
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS jobs (

@@ -1,0 +1,79 @@
+# 个股分析 MCP 工具面契约 v1（H1，2026-11-03）
+# 服务端：agent_platform/tools/stock_analysis_mcp.py（stdio JSON-RPC）
+# 网关：  portal/api_analysis_internal.py（仅 127.0.0.1；X-Analysis-Token）
+# 采用方：Hermes 8787（mcp_servers.stock-analysis）
+contract: stock_analysis.v1
+owner: DSH-Lead
+lane: standard
+status: implemented
+transport: stdio
+protocol_version: "2024-11-05"
+server:
+  name: stock-analysis
+  version: "0.1.0"
+  command: "C:\\Program Files\\Python311\\python.exe"
+  args:
+    - "C:\\项目\\老田的AI助手\\agent_platform\\tools\\stock_analysis_mcp.py"
+  env:
+    ANALYSIS_GATEWAY_URL: "http://127.0.0.1:8734"
+    ANALYSIS_INTERNAL_TOKEN_FILE: "C:\\项目\\commercial\\analysis_internal.token"
+gateway:
+  base_path: /api/analysis/internal
+  auth: "X-Analysis-Token（fail-closed；仅 loopback）"
+  routes:
+    - "GET /health"
+    - "GET /overview"
+    - "GET /watchlist"
+    - "GET /data-status?code="
+    - "GET /report?run_id=&format=md|h5"
+    - "GET /events?code=&limit=&status="
+    - "GET /job/<job_id>"
+    - "POST /analyze {code,llm?,push?}"
+    - "POST /batch {codes[],llm?,push?}"
+tools:
+  - name: sa_health
+    kind: read
+    maps_to: "GET /health"
+  - name: sa_overview
+    kind: read
+    maps_to: "GET /overview"
+  - name: sa_watchlist
+    kind: read
+    maps_to: "GET /watchlist"
+  - name: sa_data_status
+    kind: read
+    args: [code]
+    maps_to: "GET /data-status"
+  - name: sa_report
+    kind: read
+    args: [code?, run_id?, format?]
+    maps_to: "GET /report"
+  - name: sa_events
+    kind: read
+    args: [code?, limit?, status?]
+    maps_to: "GET /events"
+  - name: sa_job_status
+    kind: read
+    args: [job_id]
+    maps_to: "GET /job/<job_id>"
+  - name: sa_analyze
+    kind: submit
+    args: [code, llm?, push?]
+    maps_to: "POST /analyze"
+    audit: commercial.audit（哈希链）
+  - name: sa_batch
+    kind: submit
+    args: [codes, llm?, push?]
+    maps_to: "POST /batch"
+    limits: "最多 20 只/批"
+    audit: commercial.audit（哈希链）
+boundaries:
+  - "工具只转调网关，不 import 分析引擎（K-ORG-112）"
+  - "不提供交易/下单/买卖建议能力"
+  - "提交类动作返回 job_id；由盘后批/队列消费，结果在报告库"
+  - "Hermes 注册属 L2（配置变更+reload）；执行前需 A0 批准"
+acceptance:
+  - "python stock_analysis_mcp.py --selftest → tools=9, ok=true"
+  - "python stock_analysis_mcp.py --check-gateway → ok=true（需 token 已配置）"
+  - "23+ 单测通过（portal/agent_platform/commercial）"
+  - "Hermes /reload-mcp 后工具数 +9，L2 回执留档"
