@@ -1,0 +1,425 @@
+{
+  "schema": "huangzhong_reject_review_packet/v1",
+  "generated_at": "2026-11-03T17:20:00+08:00",
+  "note": "人工复核候选，不是 reject_review 签字文件；不得直接用于 ③ 通过",
+  "natural_rejects": 26,
+  "drill_rejects": 1,
+  "reviews": [
+    {
+      "file": "acceptance_005605f5.json",
+      "sha8": "005605f5",
+      "generated_at": "2026-11-03T11:15:01+08:00",
+      "commit": "005605f54468",
+      "subject": "WO-DAILY-THREE-20261103: 13部门日报三问——昨天完成/正在做/当前卡点；07:50跑板+页面+对话统一；v13；17 tests",
+      "verdict": "REJECT",
+      "reasons": [
+        "基线失败：failed=2 error=0"
+      ],
+      "baseline_failed": 2,
+      "baseline_passed": 3457,
+      "redteam_pass_rate": 1.0,
+      "proposed": "确认拒收（待老田/黄忠签字）",
+      "overturned": null
+    },
+    {
+      "file": "acceptance_05cf8578.json",
+      "sha8": "05cf8578",
+      "generated_at": "2026-11-03T15:45:01+08:00",
+      "commit": "05cf8578d33b",
+      "subject": "SESSION-RETRO-20261103: 会话复盘——Case v1可冻结；HZ/W0/L1未收；三类基线根因与下一步",
+      "verdict": "REJECT",
+      "reasons": [
+        "基线失败：failed=7 error=0"
+      ],
+      "baseline_failed": 7,
+      "baseline_passed": 3465,
+      "redteam_pass_rate": 1.0,
+      "proposed": "确认拒收（待老田/黄忠签字）",
+      "overturned": null
+    },
+    {
+      "file": "acceptance_06985f05.json",
+      "sha8": "06985f05",
+      "generated_at": "2026-11-03T14:15:00+08:00",
+      "commit": "06985f05985f",
+      "subject": "双4090方案：14B双卡SFT/DPO提速；32B QLoRA stretch(ZeRO3)；部署72B-int4 TP2+14B-int4分流；3份配置落yaml",
+      "verdict": "REJECT",
+      "reasons": [
+        "基线失败：failed=2 error=0"
+      ],
+      "baseline_failed": 2,
+      "baseline_passed": 3457,
+      "redteam_pass_rate": 1.0,
+      "proposed": "确认拒收（待老田/黄忠签字）",
+      "overturned": null
+    },
+    {
+      "file": "acceptance_114b66f1.json",
+      "sha8": "114b66f1",
+      "generated_at": "2026-11-03T10:45:01+08:00",
+      "commit": "114b66f1cd1a",
+      "subject": "WO-CHAT-EVIDENCE-20261103: 对话消息显示真实binding/延迟/云端标记；修复channel被title覆盖；v10；7 tests",
+      "verdict": "REJECT",
+      "reasons": [
+        "基线失败：failed=2 error=0"
+      ],
+      "baseline_failed": 2,
+      "baseline_passed": 3457,
+      "redteam_pass_rate": 1.0,
+      "proposed": "确认拒收（待老田/黄忠签字）",
+      "overturned": null
+    },
+    {
+      "file": "acceptance_138bed77.json",
+      "sha8": "138bed77",
+      "generated_at": "2026-11-03T10:15:01+08:00",
+      "commit": "138bed7769be",
+      "subject": "restic P1试跑一周复盘：7天备份/校验全rc0、10快照、源20.04GB→仓库7.27GB(2.75x)、恢复sha一致；建议切生产(异地待L2)",
+      "verdict": "REJECT",
+      "reasons": [
+        "基线失败：failed=2 error=0"
+      ],
+      "baseline_failed": 2,
+      "baseline_passed": 3457,
+      "redteam_pass_rate": 1.0,
+      "proposed": "确认拒收（待老田/黄忠签字）",
+      "overturned": null
+    },
+    {
+      "file": "acceptance_20267605.json",
+      "sha8": "20267605",
+      "generated_at": "2026-11-03T12:45:01+08:00",
+      "commit": "20267605c667",
+      "subject": "WO-CASE-RETRY-20261103: 五角色真并行+失败x/5单角色重试；修复会诊假5/5导致会议/方案卡死",
+      "verdict": "REJECT",
+      "reasons": [
+        "基线失败：failed=2 error=0"
+      ],
+      "baseline_failed": 2,
+      "baseline_passed": 3457,
+      "redteam_pass_rate": 1.0,
+      "proposed": "确认拒收（待老田/黄忠签字）",
+      "overturned": null
+    },
+    {
+      "file": "acceptance_24ca101b.json",
+      "sha8": "24ca101b",
+      "generated_at": "2026-11-03T11:45:01+08:00",
+      "commit": "24ca101beb50",
+      "subject": "WO-CASE-QUICK-20261103: /case即时拆解虚拟临战会——田丰拆解+5角色+合成；不落会议；可升级正式Case；Playwright实测",
+      "verdict": "REJECT",
+      "reasons": [
+        "基线失败：failed=2 error=0"
+      ],
+      "baseline_failed": 2,
+      "baseline_passed": 3457,
+      "redteam_pass_rate": 1.0,
+      "proposed": "确认拒收（待老田/黄忠签字）",
+      "overturned": null
+    },
+    {
+      "file": "acceptance_25f65874.json",
+      "sha8": "25f65874",
+      "generated_at": "2026-11-03T05:15:01+08:00",
+      "commit": "25f658746dd0",
+      "subject": "视频号学习产出：291候选统一预审(通过81/Top50抽审清单)+8博主人设方法论卡片+主题摘要对比报告",
+      "verdict": "REJECT",
+      "reasons": [
+        "基线失败：failed=2 error=0"
+      ],
+      "baseline_failed": 2,
+      "baseline_passed": 3457,
+      "redteam_pass_rate": 1.0,
+      "proposed": "确认拒收（待老田/黄忠签字）",
+      "overturned": null
+    },
+    {
+      "file": "acceptance_4b449af7.json",
+      "sha8": "4b449af7",
+      "generated_at": "2026-11-03T07:15:01+08:00",
+      "commit": "4b449af7c1ff",
+      "subject": "WO-P0-WAVE3-RECEIPT-20261103: C2纪要草稿9tests+C1自检15/15 PASS；更新回执",
+      "verdict": "REJECT",
+      "reasons": [
+        "基线失败：failed=2 error=0"
+      ],
+      "baseline_failed": 2,
+      "baseline_passed": 3457,
+      "redteam_pass_rate": 1.0,
+      "proposed": "确认拒收（待老田/黄忠签字）",
+      "overturned": null
+    },
+    {
+      "file": "acceptance_5c142d02.json",
+      "sha8": "5c142d02",
+      "generated_at": "2026-11-03T09:45:00+08:00",
+      "commit": "5c142d0298c3",
+      "subject": "收口更新：学习卡400达标；多源29/30（人工签核）",
+      "verdict": "REJECT",
+      "reasons": [
+        "基线失败：failed=2 error=0"
+      ],
+      "baseline_failed": 2,
+      "baseline_passed": 3457,
+      "redteam_pass_rate": 1.0,
+      "proposed": "确认拒收（待老田/黄忠签字）",
+      "overturned": null
+    },
+    {
+      "file": "acceptance_831e57e6.json",
+      "sha8": "831e57e6",
+      "generated_at": "2026-11-03T06:15:00+08:00",
+      "commit": "831e57e6d470",
+      "subject": "视频号LLM补跑：累计候选更新+预审+合并清单刷新（后台继续批次）",
+      "verdict": "REJECT",
+      "reasons": [
+        "基线失败：failed=2 error=0"
+      ],
+      "baseline_failed": 2,
+      "baseline_passed": 3457,
+      "redteam_pass_rate": 1.0,
+      "proposed": "确认拒收（待老田/黄忠签字）",
+      "overturned": null
+    },
+    {
+      "file": "acceptance_8e94a749.json",
+      "sha8": "8e94a749",
+      "generated_at": "2026-11-03T04:45:02+08:00",
+      "commit": "8e94a74943af",
+      "subject": "首夜日志补TushareSync结果：23:30长跑LastResult=0/us_daily ok20077 fail0 skip4399/4369s(73min) PT3H内；err空",
+      "verdict": "REJECT",
+      "reasons": [
+        "基线失败：failed=2 error=0"
+      ],
+      "baseline_failed": 2,
+      "baseline_passed": 3457,
+      "redteam_pass_rate": 1.0,
+      "proposed": "确认拒收（待老田/黄忠签字）",
+      "overturned": null
+    },
+    {
+      "file": "acceptance_8f0ecbec.json",
+      "sha8": "8f0ecbec",
+      "generated_at": "2026-11-03T12:15:00+08:00",
+      "commit": "8f0ecbec1063",
+      "subject": "微调D0数据管线：清洗2204→1190单元；SFT 2678(train2545/val133)+heldout105(C733/A541/B100/D18/E1400)；DPO规则对65；dataset_info+配置+回执",
+      "verdict": "REJECT",
+      "reasons": [
+        "基线失败：failed=2 error=0"
+      ],
+      "baseline_failed": 2,
+      "baseline_passed": 3457,
+      "redteam_pass_rate": 1.0,
+      "proposed": "确认拒收（待老田/黄忠签字）",
+      "overturned": null
+    },
+    {
+      "file": "acceptance_969102cf.json",
+      "sha8": "969102cf",
+      "generated_at": "2026-11-03T08:45:00+08:00",
+      "commit": "969102cf9e8d",
+      "subject": "WO-MEETING-CHAT-20261103: 会议室/api/chat经8734鉴权反代8796；五席发言可调试；6 tests",
+      "verdict": "REJECT",
+      "reasons": [
+        "基线失败：failed=2 error=0"
+      ],
+      "baseline_failed": 2,
+      "baseline_passed": 3457,
+      "redteam_pass_rate": 1.0,
+      "proposed": "确认拒收（待老田/黄忠签字）",
+      "overturned": null
+    },
+    {
+      "file": "acceptance_ab5feacb.json",
+      "sha8": "ab5feacb",
+      "generated_at": "2026-11-03T07:45:01+08:00",
+      "commit": "ab5feacb55aa",
+      "subject": "缠论因子前筛：8特征全部PIT不通过(快照修订16.7-55.6%)→暂不进四关；探索信号4个(zs_width_last反向IC-0.146最强)；5 tests；W2-6b PIT引擎派单",
+      "verdict": "REJECT",
+      "reasons": [
+        "基线失败：failed=2 error=0"
+      ],
+      "baseline_failed": 2,
+      "baseline_passed": 3457,
+      "redteam_pass_rate": 1.0,
+      "proposed": "确认拒收（待老田/黄忠签字）",
+      "overturned": null
+    },
+    {
+      "file": "acceptance_b4480ce2.json",
+      "sha8": "b4480ce2",
+      "generated_at": "2026-11-03T14:45:00+08:00",
+      "commit": "b4480ce2216a",
+      "subject": "WO-W0-INVENTORY-FIX-20261103: 只统计真实worktree(排除主区/lock)，修正为doing31/worktree39/parked8",
+      "verdict": "REJECT",
+      "reasons": [
+        "基线失败：failed=2 error=0"
+      ],
+      "baseline_failed": 2,
+      "baseline_passed": 3457,
+      "redteam_pass_rate": 1.0,
+      "proposed": "确认拒收（待老田/黄忠签字）",
+      "overturned": null
+    },
+    {
+      "file": "acceptance_b7ab50d1.json",
+      "sha8": "b7ab50d1",
+      "generated_at": "2026-11-03T09:15:01+08:00",
+      "commit": "b7ab50d14296",
+      "subject": "W1-07 L2执行（A0 09:0x授权）：KgDaily 链注释 notice_llm --backfill（backfill 归 NoticeBackfill 独占）；W1-07 回执/09:00检查点/L2组织单同步；脚本 PARSE_OK、BOM 保留",
+      "verdict": "REJECT",
+      "reasons": [
+        "基线失败：failed=2 error=0"
+      ],
+      "baseline_failed": 2,
+      "baseline_passed": 3457,
+      "redteam_pass_rate": 1.0,
+      "proposed": "确认拒收（待老田/黄忠签字）",
+      "overturned": null
+    },
+    {
+      "file": "acceptance_ccc69bc5.json",
+      "sha8": "ccc69bc5",
+      "generated_at": "2026-11-03T08:15:01+08:00",
+      "commit": "ccc69bc5cfae",
+      "subject": "W1-2c 重试记录：08:05 GPU仍被其他会话qwen占用(至08:34)，embed超时；顺延08:40重试",
+      "verdict": "REJECT",
+      "reasons": [
+        "基线失败：failed=2 error=0"
+      ],
+      "baseline_failed": 2,
+      "baseline_passed": 3457,
+      "redteam_pass_rate": 1.0,
+      "proposed": "确认拒收（待老田/黄忠签字）",
+      "overturned": null
+    },
+    {
+      "file": "acceptance_ddc9ca98.json",
+      "sha8": "ddc9ca98",
+      "generated_at": "2026-11-02T23:12:40+08:00",
+      "commit": "ddc9ca98eb36",
+      "subject": "wave47：门禁接学习看板/统一发布器learning_release/健康7任务(21 tests)；修复学习任务Queued根因(电池策略,10任务)并验证4任务rc=0",
+      "verdict": "REJECT",
+      "reasons": [
+        "基线失败：failed=2 error=0"
+      ],
+      "baseline_failed": 2,
+      "baseline_passed": 3457,
+      "redteam_pass_rate": 1.0,
+      "proposed": "确认拒收（待老田/黄忠签字）",
+      "overturned": null
+    },
+    {
+      "file": "acceptance_e4105f65.json",
+      "sha8": "e4105f65",
+      "generated_at": "2026-11-02T23:45:01+08:00",
+      "commit": "e4105f65e563",
+      "subject": "明日执行清单(11-03)：06:40 K3/06:45 NoticeBackfill/07:20 SentimentBT/09:00终验收+PASS判据；晚间四批+GlobalFut+Guba三窗口；11-05步骤；STATUS",
+      "verdict": "REJECT",
+      "reasons": [
+        "基线失败：failed=2 error=0"
+      ],
+      "baseline_failed": 2,
+      "baseline_passed": 3457,
+      "redteam_pass_rate": 1.0,
+      "proposed": "确认拒收（待老田/黄忠签字）",
+      "overturned": null
+    },
+    {
+      "file": "acceptance_e8e45c2f.json",
+      "sha8": "e8e45c2f",
+      "generated_at": "2026-11-03T13:45:00+08:00",
+      "commit": "e8e45c2fe9dd",
+      "subject": "WO-CASE-DESIGN-20261103: Case自动化代码设计+研发计划复盘；修会议观察席R2/OPT1 400；12 tests",
+      "verdict": "REJECT",
+      "reasons": [
+        "基线失败：failed=2 error=0"
+      ],
+      "baseline_failed": 2,
+      "baseline_passed": 3457,
+      "redteam_pass_rate": 1.0,
+      "proposed": "确认拒收（待老田/黄忠签字）",
+      "overturned": null
+    },
+    {
+      "file": "acceptance_edf00635.json",
+      "sha8": "edf00635",
+      "generated_at": "2026-11-03T15:15:01+08:00",
+      "commit": "edf00635dc55",
+      "subject": "数据治理总览(知识4项目/卡400/多源27+数据仓314集/质量8-8PASS/17陈旧)；修复gate单阶段覆盖；补路由基线(/api/bff/quant/sso,294)",
+      "verdict": "REJECT",
+      "reasons": [
+        "基线失败：failed=2 error=0"
+      ],
+      "baseline_failed": 2,
+      "baseline_passed": 3457,
+      "redteam_pass_rate": 1.0,
+      "proposed": "确认拒收（待老田/黄忠签字）",
+      "overturned": null
+    },
+    {
+      "file": "acceptance_ef9e24d4.json",
+      "sha8": "ef9e24d4",
+      "generated_at": "2026-11-03T06:45:01+08:00",
+      "commit": "ef9e24d46c89",
+      "subject": "W0落地：S3元数据过滤(2795/73.3%)+重复合并工具(407/+幂等备份)+治理漂移告警(4阈值/5tests)；20 tests",
+      "verdict": "REJECT",
+      "reasons": [
+        "基线失败：failed=2 error=0"
+      ],
+      "baseline_failed": 2,
+      "baseline_passed": 3457,
+      "redteam_pass_rate": 1.0,
+      "proposed": "确认拒收（待老田/黄忠签字）",
+      "overturned": null
+    },
+    {
+      "file": "acceptance_f119a7c7.json",
+      "sha8": "f119a7c7",
+      "generated_at": "2026-11-02T23:15:01+08:00",
+      "commit": "f119a7c701f3",
+      "subject": "K-ORG-20261102-D1W1 D1 23:12 READY但new=0不写；W1 L2未批准不执行/窗口已过回执",
+      "verdict": "REJECT",
+      "reasons": [
+        "基线失败：failed=2 error=0"
+      ],
+      "baseline_failed": 2,
+      "baseline_passed": 3457,
+      "redteam_pass_rate": 1.0,
+      "proposed": "确认拒收（待老田/黄忠签字）",
+      "overturned": null
+    },
+    {
+      "file": "acceptance_f5a31ef3.json",
+      "sha8": "f5a31ef3",
+      "generated_at": "2026-11-03T00:15:01+08:00",
+      "commit": "f5a31ef32058",
+      "subject": "修 final_report_render 测试导入路径(tools/datawarehouse→sys.path)；datawarehouse测试全绿",
+      "verdict": "REJECT",
+      "reasons": [
+        "基线失败：failed=2 error=0"
+      ],
+      "baseline_failed": 2,
+      "baseline_passed": 3457,
+      "redteam_pass_rate": 1.0,
+      "proposed": "确认拒收（待老田/黄忠签字）",
+      "overturned": null
+    },
+    {
+      "file": "acceptance_f86f37dd.json",
+      "sha8": "f86f37dd",
+      "generated_at": "2026-11-03T05:45:00+08:00",
+      "commit": "f86f37dd419e",
+      "subject": "WO-RISK-CLOSE-20261103: /hq壳+api/hq+a2a鉴权、/dw/dataops 302、A2A discover API、MCP对账13/13、审批抽样10/40、六军团Q2矩阵；43 tests/route292",
+      "verdict": "REJECT",
+      "reasons": [
+        "基线失败：failed=2 error=0"
+      ],
+      "baseline_failed": 2,
+      "baseline_passed": 3457,
+      "redteam_pass_rate": 1.0,
+      "proposed": "确认拒收（待老田/黄忠签字）",
+      "overturned": null
+    }
+  ]
+}
