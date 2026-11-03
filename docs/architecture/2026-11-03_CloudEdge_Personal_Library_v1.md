@@ -38,7 +38,36 @@ summary: 本地库共 n 个文档；主题：...
 notice: 上云需显式授权，只传 summary/evidence，不传原始文档
 ```
 
-## 三、已实现
+## 三、已经实现的第二步：manifest + 授权上云
+
+每个用户 root 放 `library.json`：
+
+```json
+{
+  "schema": "hq/local_library/v1",
+  "user_id": "tf",
+  "sources": ["notes", "research"],
+  "exclude": ["notes/private", "research/raw"],
+  "upload": {"mode": "summary_only", "require_confirmation": true}
+}
+```
+
+- `sources` 白名单：只读这些子目录；`exclude` 排除；
+- 路径逃逸/绝对路径/`..`/符号链接拒绝；
+- 只有 `--authorize` 才能 `--export-cloud`；
+- 上云载荷 `hq/local_brief_cloud/v1` **不含原文、excerpt、本地 path、root**，只含 summary/evidence(hash/title/headings)/stats；
+- `confirmed=true` 仅在用户授权导出时写入。
+
+```powershell
+# 本地简报（不上云）
+python -X utf8 tools/local_library.py --user tf --root C:\项目\_local_libraries\tf
+
+# 用户确认后，导出可上云摘要
+python -X utf8 tools/local_library.py --user tf --root C:\项目\_local_libraries\tf `
+  --authorize --export-cloud C:\Temp\tf_cloud_brief.json
+```
+
+## 四、已实现
 
 - `tools/local_library.py`
   - 只读扫描本地 root；拒绝路径逃逸、隐藏文件、符号链接、超大文件；
@@ -56,14 +85,14 @@ python -X utf8 tools/local_library.py `
   --out C:\项目\_local_libraries\tf\local_brief.json
 ```
 
-## 四、边界
+## 五、边界
 
 - 当前只做“本地读取/本地确定性总结”，不调用云端、不写入用户库；
 - 上云同步、用户授权弹窗、按用户隔离的云端存储，属下一阶段；
 - 浏览器不能直接读任意本地目录；未来由本地 Agent/桌面桥调用本工具，网页只收授权后的摘要；
 - 云端 A0 日报不得混入他人原始库；千人千面必须按 `user_id` 隔离。
 
-## 五、下一步
+## 六、下一步
 
 1. 为每个用户建独立 root + `library.json`（允许目录/排除规则/上云策略）；
 2. LocalBrief → 用户确认 → 云端同步（摘要 only）；
