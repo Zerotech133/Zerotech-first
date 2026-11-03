@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="/static/tokens.css">
 <script src="/static/nav.js" defer></script>
 <script src="/static/shortscreen.js" defer></script>
+<script src="/static/ifs_client.js"></script>
 <style>
 :root{
   /* 统一全站语义：页面变量映射到 tokens.css，禁止自绘配色 */
@@ -59,6 +60,10 @@ tr.detail td{background:var(--panel2)}
 .note{color:var(--gray-5);font-size:11.5px;line-height:1.8;border-top:1px solid var(--line);padding-top:10px;margin-top:14px}
 .note code{font-family:ui-monospace,Consolas,monospace;color:var(--gray-6)}
 .empty{padding:18px;text-align:center;color:var(--gray-5)}
+.envline{color:var(--text-dim);font-size:11px;line-height:1.7;word-break:break-all;min-height:16px;margin:2px 0 4px}
+.envline[data-envelope="legacy"]{color:var(--warn)}
+.warns{border:1px solid var(--warn);border-radius:8px;padding:8px 10px;margin:8px 0;font-size:12px;line-height:1.7}
+.warns b{display:block;margin-bottom:3px}.warns ul{margin:0;padding-left:18px}
 @media(max-width:900px){.cards{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:640px){.cards{grid-template-columns:1fr 1fr}input{min-width:0;width:100%}}
 </style>
@@ -93,6 +98,8 @@ tr.detail td{background:var(--panel2)}
     <div class="card"><b id="c-auto">—</b><small>auto_training</small></div>
   </div>
   <div id="msg" class="sub" style="margin:6px 0"></div>
+  <div id="env" class="envline"></div>
+  <div id="warns" class="warns" style="display:none"></div>
 
   <div class="toolbar">
     <label>返回条数
@@ -134,7 +141,31 @@ tr.detail td{background:var(--panel2)}
 <script>
 const $=s=>document.querySelector(s);
 const API='/api/d1/training/episodes';
-let DATA=null, LIMIT=50, KW='';
+let DATA=null, ENV=null, LIMIT=50, KW='';
+const IFS=(typeof window!=='undefined'&&window.IFSClient)?window.IFSClient:null;
+// envelope 解包：ifs_client.js 优先；缺失时（如 8091 直连未提供该静态文件）按旧顶层字段兜底
+function unwrapPayload(payload){
+  if(IFS&&IFS.unwrapEnvelope)return IFS.unwrapEnvelope(payload||{});
+  const raw=(payload&&typeof payload==='object')?payload:{};
+  const err=raw.ok===false?{code:String(raw.error||'unknown_error'),message:String(raw.message||raw.error||''),retryable:false,details:null,legacyCode:String(raw.error||''),httpStatus:null,source:'legacy_error'}:null;
+  return {version:'fallback',isEnvelope:false,hasData:false,ok:(raw.ok!==false)&&!err,data:raw,raw:raw,warnings:[],requestId:String(raw.request_id||''),schemaVersion:String(raw.schema_version||''),source:null,sourceMode:'',interfaceId:'',stale:false,error:err};
+}
+function errText(payload){
+  if(IFS&&IFS.errorText)return IFS.errorText(payload||{});
+  const e=unwrapPayload(payload||{}).error;
+  return e?e.code+(e.message&&e.message!==e.code?'：'+e.message:''):'';
+}
+// 只读展示 IFS envelope 元信息 + warnings（不改业务数据）
+function renderEnvelope(env){
+  const box=$('#env'); if(!box)return;
+  if(IFS&&IFS.renderMeta)IFS.renderMeta(box,env?env.raw:{},{});
+  else box.textContent=(env&&env.requestId)?('IFS envelope · request_id='+env.requestId+' · warnings='+(env.warnings||[]).length):'旧格式响应（无 IFS envelope，按旧顶层字段兼容读取）';
+  const warn=$('#warns');
+  if(warn){
+    if(IFS&&IFS.renderWarnings)IFS.renderWarnings(warn,env?env.raw:{},{title:'IFS warnings'});
+    else {warn.innerHTML='';warn.style.display='none';}
+  }
+}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function txt(v){return (v===null||v===undefined||v==='')?'—':String(v);}
 function num(v,d){if(v===null||v===undefined||v==='')return '—';const n=Number(v);return Number.isFinite(n)?n.toFixed(d==null?2:d):esc(v);}
@@ -201,6 +232,7 @@ function renderTable(){
 function render(){
   if(!DATA)return;
   kvRows();
+  renderEnvelope(ENV||unwrapPayload(DATA));
   if(DATA.data_unavailable){
     $('#tbl').classList.remove('show');
     stateBox('<b>数据未生成（data_unavailable=true）</b>'+
@@ -232,14 +264,18 @@ async function load(){
   $('#tbl').classList.remove('show');
   try{
     const r=await fetch(API+'?limit='+encodeURIComponent(LIMIT),{cache:'no-store'});
-    const d=await r.json().catch(()=>null);
-    if(!r.ok||!d||d.ok!==true){
-      throw new Error((d&&(d.error||d.message))||('HTTP '+r.status));
+    const raw=await r.json().catch(()=>null);
+    const env=unwrapPayload(raw||{});
+    if(!r.ok||!env.ok||(env.data&&env.data.ok===false)){
+      const et=errText((env&&env.raw)||raw||{})||('HTTP '+r.status);
+      const rid=(env&&env.requestId)?(' · request_id='+env.requestId):'';
+      throw new Error(et+rid);
     }
-    DATA=d;
+    DATA=env.data; ENV=env;
+    renderEnvelope(env);
     render();
   }catch(e){
-    DATA=null;
+    DATA=null; ENV=null;
     $('#msg').textContent='加载失败';
     stateBox('<b>接口加载失败</b>'+esc(e.message||String(e))+
       '<div class="hint">请确认 portal_api 已加载路由 <span class="mono">/api/d1/training/episodes</span>（接线后需维护窗口重启生效）；本页只读，不重试写操作。</div>');
