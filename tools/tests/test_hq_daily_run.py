@@ -87,3 +87,13 @@ def test_brief_digest(tmp_path):
     assert "数据简报" in s and "399" in s and "雪球 today 0" in s
     assert "selection.executability" in s and "观察还是空仓" in s and "不是交易建议" in s
     assert d._brief_digest(tmp_path / "missing.json") == ""
+
+
+def test_briefing_contains_data_brief(monkeypatch, tmp_path):
+    monkeypatch.setattr(d, "_ask", _fake)
+    txt = "数据简报 2026-11-04\n资产 all=399 registered=350\n告警[collector_lag] TDX 58h"
+    r = d.run("2026-11-04", write=True, out_dir=tmp_path, data_brief=txt)
+    assert r["briefing"]["data_brief"] == txt
+    md = (tmp_path / "a0_briefing.md").read_text(encoding="utf-8")
+    assert "## 数据简报（DATA1 张松）" in md and "TDX 58h" in md
+    assert json.loads((tmp_path / "rollup.json").read_text(encoding="utf-8"))["briefing"]["data_brief"] == txt

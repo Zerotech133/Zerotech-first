@@ -185,7 +185,8 @@ def run(date: str | None = None, base: str = DEFAULT_BASE, concurrency: int = 3,
     briefing = {"schema": "hq/a0_briefing/v1", "date": date, "generated_at": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
                 "headline": "部门早报：%d/%d 提交，%d 失败" % (len(reports), len(leads), len(failed)),
                 "submitted": len(reports), "expected": len(leads), "failed": failed,
-                "departments": reports, "research_topics": topics}
+                "departments": reports, "research_topics": topics,
+                "data_brief": data_brief}
     result = {"schema": "hq/dept_daily_run/v1", "date": date, "ok": len(reports) == len(leads),
               "submitted": len(reports), "expected": len(leads), "failed": failed,
               "reports": reports, "briefing": briefing,
@@ -211,6 +212,10 @@ def _markdown(r: dict) -> str:
                   "- 正在做：" + ("；".join(d.get("in_progress") or []) or "无"),
                   "- 当前卡点：" + ("；".join(d.get("blockers") or []) or "无"),
                   "- 需决策：" + ("；".join(d["decision_requests"]) or "无"), ""]
+    if b.get("data_brief"):
+        lines += ["## 数据简报（DATA1 张松）", ""]
+        lines += ["- " + ln for ln in str(b["data_brief"]).splitlines()]
+        lines += [""]
     if b["research_topics"]:
         lines += ["## 研究题"] + ["- %s（%s）" % (t["title"], t["source_lead"]) for t in b["research_topics"]]
     return "\n".join(lines) + "\n"
