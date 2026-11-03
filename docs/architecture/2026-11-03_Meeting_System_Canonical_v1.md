@@ -28,6 +28,8 @@
 
 ### 2.2 路由
 
+五席发言 `/api/chat` 也必须经 8734 鉴权反代到 8796（否则会议页只能看不能发言）。
+
 ```nginx
 location = /meeting { auth_request; proxy_pass 8796/static/meeting.html; }
 location ^~ /api/hq/meeting/ { auth_request; proxy_pass 8796;
