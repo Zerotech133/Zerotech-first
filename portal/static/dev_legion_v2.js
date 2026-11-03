@@ -47,7 +47,7 @@ function renderStatus() {
   const g = d.governance || {};
   const errors = d.errors || [];
   const bus = _workRows();
-  const wip = Object.values(SEAT_WIP).reduce((a, b) => a + b, 0);
+  const wip = Object.values(SEAT_WIP).reduce((a, b) => a + (Array.isArray(b) ? b.length : 0), 0);
   $("run-time").textContent = (d.generated_at || "").replace("T", " ").slice(0, 19) || "—";
   $("run-banner").querySelector("strong").textContent =
     `近 7 日：${m.dev_tasks_recent ?? "—"} 任务 / ${m.dev_merged_recent ?? "—"} 合并 / 审批覆盖 ${g.approval_ok ? "PASS" : "未判定"}`;
