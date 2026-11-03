@@ -67,7 +67,7 @@ pre{white-space:pre-wrap;background:var(--bg-page);border:1px solid var(--border
 
   <div class="card">
     <h2><span class="step">3</span>五角色读材料给意见</h2>
-    <div class="btns"><button class="btn primary" id="btn-review" disabled>五角色并行会诊</button><span class="meta" id="review-status"></span></div>
+    <div class="btns"><button class="btn primary" id="btn-review" disabled>五角色并行会诊</button><button class="btn" id="btn-retry" type="button" disabled>重试失败角色</button><span class="meta" id="review-status"></span></div>
     <pre id="review-out" hidden></pre>
   </div>
 
@@ -138,6 +138,7 @@ function setBtns(){
   $('btn-agg').disabled=!c||state.busy;
   $('btn-review').disabled=!c||!c.summary||state.busy;
   $('btn-meeting').disabled=!c||(c.opinions||[]).filter(function(x){return x.text;}).length<5||state.busy;
+  $('btn-retry').disabled=!c||!c.summary||state.busy||(c.opinions||[]).filter(function(x){return x.text;}).length>=5;
   $('btn-propose').disabled=!c||!c.meeting_id||state.busy;
   $('btn-approve').disabled=!c||!c.proposal||state.busy||!state.canApprove;
   $('btn-dispatch').disabled=!c||!c.approved||!c.meeting_id||state.busy;
@@ -192,16 +193,26 @@ async function aggregate(){
   state.busy=false;setBtns();
 }
 async function review(){
-  if(!state.case||!state.case.summary)return;state.busy=true;setBtns();status('review-status','5角色会诊中（可能要 1–3 分钟）…');
+  if(!state.case||!state.case.summary)return;
+  state.busy=true;setBtns();status('review-status','五角色并行会诊中…');
   var roles=[['A0','田丰','目标拆解、任务DAG、派单、汇总'],['AI1','诸葛亮','反向质询、pre-mortem'],['ZHAOYUN','赵云','证据复核、审计、归档'],['HUANGZHONG','黄忠','验收标准、抽样、终检'],['GUANYU','关羽','代码审计、技术债、门禁']];
-  var out=[];
-  for(var i=0;i<roles.length;i++){
-    var x=roles[i];
-    try{var r=await chat(x[0],'你是'+x[1]+'（'+x[0]+'），零界五角色之一，职责：'+x[2]+'。只从职能面读材料给意见；不编造数字，缺证据标需查证。输出结论/证据/风险/建议。','议题：'+state.case.title+'\n田丰汇总：'+state.case.summary.slice(0,3000)+'\n材料：'+(state.case.materials||'（无）'));out.push({seat:x[0],name:x[1],text:r.text,binding:r.binding});}
-    catch(e){out.push({seat:x[0],name:x[1],error:e.message});}
-    status('review-status','已完成 '+(i+1)+'/5');save();
-  }
+  var prev=state.case.opinions||[];
+  var out=[];var done=0;
+  await Promise.all(roles.map(async function(x){
+    var old=prev.filter(function(o){return o.seat===x[0]&&o.text;})[0];
+    if(old){out.push(old);done++;return;}
+    try{
+      var r=await chat(x[0],'你是'+x[1]+'（'+x[0]+'），零界五角色之一，职责：'+x[2]+'。只从职能面读材料给意见；不编造数字，缺证据标需查证。输出结论/证据/风险/建议。','议题：'+state.case.title+'\n田丰汇总：'+state.case.summary.slice(0,3000)+'\n材料：'+(state.case.materials||'（无）'));
+      out.push({seat:x[0],name:x[1],text:r.text,binding:r.binding});
+    }catch(e){out.push({seat:x[0],name:x[1],error:e.message});}
+    done++;status('review-status','会诊完成 '+done+'/5');
+  }));
+  // 保持固定顺序
+  out.sort(function(a,b){return roles.findIndex(function(x){return x[0]===a.seat;})-roles.findIndex(function(x){return x[0]===b.seat;});});
   state.case.opinions=out;save();show('review-out',out.map(function(o){return '【'+o.name+'】'+(o.text||('[失败] '+o.error));}).join('\n\n'));
+  var ok=out.filter(function(o){return o.text;}).length;
+  if(ok===5){status('review-status','已完成 5/5');status('meeting-status','5/5，已可保存会议');}
+  else{status('review-status','已完成 '+ok+'/5 · '+(5-ok)+' 个失败，请点“重试失败角色”');status('meeting-status','当前 '+ok+'/5，需 5/5 才能保存会议');}
   state.busy=false;setBtns();
 }
 async function meeting(){
@@ -236,7 +247,7 @@ async function dispatchCase(){
   catch(e){status('dispatch-status','下发失败：'+e.message);}
   state.busy=false;setBtns();
 }
-$('btn-new').onclick=newCase;$('btn-quick').onclick=quickBreakdown;$('btn-upgrade').onclick=upgradeQuick;$('btn-agg').onclick=aggregate;$('btn-review').onclick=review;$('btn-meeting').onclick=meeting;$('btn-propose').onclick=propose;$('btn-approve').onclick=approve;$('btn-dispatch').onclick=dispatchCase;
+$('btn-new').onclick=newCase;$('btn-quick').onclick=quickBreakdown;$('btn-upgrade').onclick=upgradeQuick;$('btn-agg').onclick=aggregate;$('btn-review').onclick=review;$('btn-retry').onclick=review;$('btn-meeting').onclick=meeting;$('btn-propose').onclick=propose;$('btn-approve').onclick=approve;$('btn-dispatch').onclick=dispatchCase;
 load();if(state.case){$('title').value=state.case.title||'';$('materials').value=state.case.materials||'';if(state.case.summary)show('agg-out',state.case.summary);if(state.case.opinions&&state.case.opinions.length)show('review-out',state.case.opinions.map(function(o){return '【'+o.name+'】'+(o.text||('[失败] '+o.error));}).join('\n\n'));if(state.case.meeting_id)show('meeting-out','meeting_id='+state.case.meeting_id);if(state.case.proposal)show('proposal-out',state.case.proposal);if(state.case.approved)status('approve-status','已由 '+(state.case.approver||'')+' 审批通过');if(state.case.dispatch)show('dispatch-out',JSON.stringify(state.case.dispatch,null,2));}
 loadIdentity();
 refreshFlow();

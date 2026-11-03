@@ -87,6 +87,7 @@ python -X utf8 tools/hq_case.py dispatch --case CASE-... --owner DATA1
 
 - 页面只把流程状态存本机 localStorage；会议纪要与任务申请落服务端；
 - 顶部整体 7 步进度条；即时拆解有阶段进度（拆解/5角色/合成）和 120s 超时；旧会话显示「重新登录刷新身份」；
+- 五角色真正并行（原来代码串行）；失败角色显示 `x/5` 并可「重试失败角色」；5/5 才允许保存会议/生成方案；
 - 审批按钮绑定登录身份：ADMIN/OWNER/APPROVER 可审批；VIEWER 不可审批下发；审批人自动取 session 身份（2026-11-03 老田授权 tf=APPROVER）；
 - `下发` 按钮在审批前 `disabled`；Playwright 实测 7 步走通、审批前不可下发；
 - CLI 仍是强校验入口（`hq_case.py` 状态机硬拦）。
