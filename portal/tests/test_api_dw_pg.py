@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import date, datetime
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
@@ -77,6 +79,7 @@ class FakeRegistry:
         self.connector_error = ""
         self.calls = []
         self.sample_error = None
+        self.sample_data = [[1, "600519.SH"]]
         self.stats_v2_error = None
 
     def stats(self):
@@ -159,7 +162,7 @@ class FakeRegistry:
             "connector": PG_ROW["connector"],
             "physical": dict(PG_ROW["physical"]),
             "columns": ["pool_id", "symbol"],
-            "sample": [[1, "600519.SH"]],
+            "sample": self.sample_data,
             "row_estimate": None,
         }
 
@@ -310,6 +313,14 @@ class TestSamplePg:
         assert payload["sample"] == [[1, "600519.SH"]]
         assert payload["connector"] == PG_ROW["connector"]
         assert payload["state"] in ("ok", "stale")
+
+    def test_sample_pg_date_decimal_json_safe(self, reg):
+        """PG 样本的 date/datetime/Decimal 必须转 JSON 安全值，不能再 503。"""
+        reg.sample_data = [[date(2026, 11, 3), datetime(2026, 11, 3, 12, 0, 0),
+                            Decimal("1.23")]]
+        status, payload = _last(_get("/api/dw/sample", "id=pg_public_v2_acad1_pool&n=2"))
+        assert status == 200 and payload["ok"] is True
+        assert payload["sample"] == [["2026-11-03", "2026-11-03T12:00:00", "1.23"]]
 
     def test_sample_missing_dsn_explicit(self, reg):
         reg.sample_error = ConnectorUnavailable("DSN 未配置（缺 ZHICE_V2_DSN）",

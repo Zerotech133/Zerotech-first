@@ -35,6 +35,7 @@ DWH-103 pg_table（2026-11-04 DW-API-PG / WO-DW-API-PG-20261104）：
 from __future__ import annotations
 
 import datetime
+import decimal
 import json
 import sys
 import urllib.parse
@@ -60,6 +61,19 @@ def _reg() -> DatasetRegistry:
     if _REG is None:
         _REG = DatasetRegistry()
     return _REG
+
+
+def _jsonable(value):
+    """把 PG 样本中的 date/datetime/time/Decimal 转成 JSON 可序列化值。"""
+    if isinstance(value, (datetime.datetime, datetime.date, datetime.time)):
+        return value.isoformat()
+    if isinstance(value, decimal.Decimal):
+        return str(value)
+    if isinstance(value, dict):
+        return {k: _jsonable(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_jsonable(v) for v in value]
+    return value
 
 
 def _int(v, default: int, lo: int, hi: int) -> int:
@@ -468,6 +482,7 @@ def handle_get(handler, path: str, qs: str) -> None:
                 _artifact_fail(handler, did, exc)
                 return
             dd = _data_date()
+            obj = _jsonable(obj)
             empty = _sample_empty_reason(obj)
             if empty:
                 handler._json({"ok": True, **obj, **_envelope("no_data", empty, dd)})
