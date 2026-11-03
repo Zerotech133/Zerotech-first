@@ -497,3 +497,115 @@ def test_incidents_confirm_absent_keeps_manual_item(monkeypatch, env):
     _run_tool(mod, env)
     md = _drafts(env)[-1].read_text(encoding="utf-8")
     assert "④ 满窗人工核对：`work/huangzhong/incidents.jsonl` 缺失时须人工确认" in md
+
+
+# ------------------------------------- 目标日期参数化（HZ-FINAL-DATE-20261104）
+
+def _draft_text(env, rep) -> str:
+    return Path(rep["draft"]["path"]).read_text(encoding="utf-8")
+
+
+def test_default_target_is_1104_unchanged(monkeypatch, env):
+    """默认（不传 --target-date/--date）= v1 11-04：草案名/九段内日期引用不变。"""
+    mod = _load()
+    _setup(mod, monkeypatch, env, options={"gng_code": "NO_GO"})
+    rep = _run_tool(mod, env)
+    assert rep["date"] == "2026-11-04"
+    assert rep["target_time"] == "2026-11-04T10:00:00+08:00"
+    draft = Path(rep["draft"]["path"])
+    assert draft.name.startswith("2026-11-04_黄忠观察期复核回执_草案_")
+    text = _draft_text(env, rep)
+    assert text.startswith("# 黄忠观察期复核回执（草案）· 2026-11-04")
+    assert "（当前 / 11-04 投影 / unique 补充）" in text
+    assert "| 11-04 投影（趋势工具） |" in text
+    assert "11-04 10:00 预计满窗" in text
+    assert "DSH-Lead 代执行（2026-11-04）" in text
+    assert "deliverables/2026-11-04_黄忠观察期复核回执.md" in text
+
+
+def test_target_date_default_equals_explicit_1104(monkeypatch, env):
+    """不传日期 与 --target-date 2026-11-04 完全等价（同 now → 草案逐字一致）。"""
+    mod = _load()
+    _setup(mod, monkeypatch, env)
+    rep1 = _run_tool(mod, env)
+    text1 = _draft_text(env, rep1)
+    rep2 = mod.run(work_dir=str(env["work"]), out_dir=str(env["out"]),
+                   repo_root=str(env["repo"]), now=NOW,
+                   date_value="2026-11-04")
+    text2 = _draft_text(env, rep2)
+    assert text1 == text2
+    assert rep1["target_time"] == rep2["target_time"]
+    assert Path(rep1["draft"]["path"]).name == Path(rep2["draft"]["path"]).name
+
+
+def test_target_date_1110_generates_and_forwards(monkeypatch, env, capsys):
+    """显式 2026-11-10：草案可生成/自校验，且 preflight/趋势子调用切到 11-10。"""
+    mod = _load()
+    runner, _ = _setup(mod, monkeypatch, env)
+    rc = mod.main(["--json", "--repo-root", str(env["repo"]),
+                   "--work-dir", str(env["work"]),
+                   "--out-dir", str(env["out"]),
+                   "--target-date", "2026-11-10",
+                   "--now", NOW_ISO])
+    assert rc == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["ok"] is True
+    assert out["target_time"].startswith("2026-11-10T10:00:00")
+    draft = Path(out["draft"]["path"])
+    assert draft.name.startswith("2026-11-10_黄忠观察期复核回执_草案_")
+    text = draft.read_text(encoding="utf-8")
+    assert text.startswith("# 黄忠观察期复核回执（草案）· 2026-11-10")
+    assert "（当前 / 11-10 投影 / unique 补充）" in text
+    assert "| 11-10 投影（趋势工具） |" in text
+    assert "11-10 10:00 预计满窗" in text
+    assert "DSH-Lead 代执行（2026-11-10）" in text
+    assert "deliverables/2026-11-10_黄忠观察期复核回执.md" in text
+    # 子调用口径一致：preflight 收 --target-date + --now；趋势工具 --target 切 11-10
+    by_tool = {}
+    for call in runner.calls:
+        joined = " ".join(call["cmd"])
+        if "huangzhong_1104_preflight.py" in joined:
+            by_tool["preflight"] = joined
+        elif "huangzhong_coverage_trend.py" in joined:
+            by_tool["trend"] = joined
+    assert "--target-date 2026-11-10T10:00" in by_tool["preflight"]
+    assert "--now %s" % NOW_ISO in by_tool["preflight"]
+    assert "--target 2026-11-10T10:00" in by_tool["trend"]
+
+
+def test_target_date_takes_precedence_over_date(monkeypatch, env, capsys):
+    """--target-date 优先于历史 --date（11-10 复算用统一参数）。"""
+    mod = _load()
+    _setup(mod, monkeypatch, env)
+    rc = mod.main(["--json", "--repo-root", str(env["repo"]),
+                   "--work-dir", str(env["work"]),
+                   "--out-dir", str(env["out"]),
+                   "--date", "2026-11-05",
+                   "--target-date", "2026-11-10",
+                   "--now", NOW_ISO])
+    assert rc == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["target_time"].startswith("2026-11-10T10:00:00")
+    assert Path(out["draft"]["path"]).name.startswith(
+        "2026-11-10_黄忠观察期复核回执_草案_")
+
+
+def test_cli_invalid_target_date_rc2(monkeypatch, env, capsys):
+    mod = _load()
+    _setup(mod, monkeypatch, env)
+    rc = mod.main(["--json", "--repo-root", str(env["repo"]),
+                   "--work-dir", str(env["work"]),
+                   "--out-dir", str(env["out"]),
+                   "--target-date", "2026/11/10"])
+    assert rc == 2
+    assert "参数错误" in capsys.readouterr().err
+
+
+def test_default_preflight_cmd_not_polluted(monkeypatch, env):
+    """默认路径不下发 --target-date（v1 子调用命令行保持不变）。"""
+    mod = _load()
+    runner, _ = _setup(mod, monkeypatch, env)
+    mod.run(work_dir=str(env["work"]), out_dir=str(env["out"]),
+            repo_root=str(env["repo"]), now=NOW)
+    joined = [" ".join(c["cmd"]) for c in runner.calls]
+    assert not any("--target-date" in c for c in joined)
