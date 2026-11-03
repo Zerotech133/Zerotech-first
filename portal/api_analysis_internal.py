@@ -190,10 +190,10 @@ def _read_body(handler):
 
 
 def handle_get(handler, path, qs):
-    if not _authorized(handler):
-        return _deny(handler)
     if not _token():
         return _json(handler, {"ok": False, "error": "internal token 未配置（fail-closed）"}, 503)
+    if not _authorized(handler):
+        return _deny(handler)
     q = _qs(qs)
     sub = path[len(BASE):] if path.startswith(BASE) else path
 
@@ -279,10 +279,10 @@ def handle_get(handler, path, qs):
 
 
 def handle_post(handler, path, qs):
-    if not _authorized(handler):
-        return _deny(handler)
     if not _token():
         return _json(handler, {"ok": False, "error": "internal token 未配置（fail-closed）"}, 503)
+    if not _authorized(handler):
+        return _deny(handler)
     sub = path[len(BASE):] if path.startswith(BASE) else path
     if sub not in ("/analyze", "/batch"):
         return _json(handler, {"ok": False, "error": "unknown internal post: " + sub}, 404)
@@ -313,6 +313,7 @@ def handle_post(handler, path, qs):
     if not isinstance(codes, list) or not codes:
         return _json(handler, {"ok": False, "error": "codes 必须为非空数组"}, 400)
     codes = [str(c).strip().upper() for c in codes]
+    codes = list(dict.fromkeys(codes))  # 去重保序，避免重复入队
     bad = [c for c in codes if not CODE_RE.match(c)]
     if bad:
         return _json(handler, {"ok": False, "error": "非法代码: " + ",".join(bad[:5])}, 400)

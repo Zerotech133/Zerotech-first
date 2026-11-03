@@ -106,10 +106,30 @@ class TestInternalApi(unittest.TestCase):
         h = self._h("/api/analysis/internal/batch", body={"codes": ["bad"]})
         mod.handle_post(h, "/api/analysis/internal/batch", "")
         self.assertEqual(h.status, 400)
-        many = {"codes": ["600337.SH"] * 21}
+        many = {"codes": ["%06d.SH" % (600000 + i) for i in range(21)]}
         h = self._h("/api/analysis/internal/batch", body=many)
         mod.handle_post(h, "/api/analysis/internal/batch", "")
         self.assertEqual(h.status, 400)
+
+    def test_batch_dedup(self):
+        h = self._h("/api/analysis/internal/batch",
+                    body={"codes": ["600337.SH", "600337.SH", "688023.SH"]})
+        mod.handle_post(h, "/api/analysis/internal/batch", "")
+        self.assertEqual(h.status, 202)
+        self.assertEqual(h.obj["count"], 2)
+
+    def test_token_not_configured_503(self):
+        orig_env = os.environ.pop("ANALYSIS_INTERNAL_TOKEN", None)
+        orig_file = getattr(mod, "TOKEN_FILE", None)
+        mod.TOKEN_FILE = os.path.join(os.path.dirname(__file__), "_no_such_token")
+        try:
+            h = self._h("/api/analysis/internal/health")
+            mod.handle_get(h, "/api/analysis/internal/health", "")
+            self.assertEqual(h.status, 503)
+        finally:
+            mod.TOKEN_FILE = orig_file
+            if orig_env is not None:
+                os.environ["ANALYSIS_INTERNAL_TOKEN"] = orig_env
 
     def test_batch_ok(self):
         h = self._h("/api/analysis/internal/batch", body={"codes": ["600337.SH", "688023.SH"]})

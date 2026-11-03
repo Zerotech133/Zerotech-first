@@ -41,16 +41,32 @@ def _hash_record(rec: Dict[str, Any]) -> str:
 def _last_hash(p: str) -> str:
     """读取最后一条非空记录的 hash；文件不存在/为空 → GENESIS。
 
-    最后一行无法解析时 fail-closed（抛错），避免在损坏链上继续追加。
+    只读文件尾部 8KB（审计记录通常 <2KB），避免每次 append 全量扫描；
+    末行解析失败时回退整体读取以给出明确错误（fail-closed）。
     """
     if not os.path.exists(p):
         return GENESIS
     last = None
-    with open(p, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                last = line
+    try:
+        with open(p, "rb") as f:
+            f.seek(0, 2)
+            size = f.tell()
+            if size == 0:
+                return GENESIS
+            f.seek(max(0, size - 8192))
+            data = f.read()
+        parts = [x for x in data.split(b"\n") if x.strip()]
+        if parts:
+            last = parts[-1].decode("utf-8", errors="replace").strip()
+    except OSError:
+        last = None
+    if last is None:
+        # 回退：整体读取（文件异常/超长记录）
+        with open(p, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    last = line
     if last is None:
         return GENESIS
     try:
