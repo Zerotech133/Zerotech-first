@@ -3443,6 +3443,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # WO-WARROOM-UI：量化作战台整合版（策略池/投研/盯盘/模拟交易）
             self._html_file(os.path.join(
                 os.path.dirname(os.path.abspath(__file__)), "d1_war_room.html"))
+        elif path in ("/d1/training", "/d1_training.html"):
+            # IFS F6b：D1 训练面板只读页（数据走 /api/d1/training/episodes，只读不训练）
+            self._html_file(os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "d1_training.html"))
         elif path == "/api/war-room/snapshot":
             # WO-WARROOM-LIVE：作战台实时数据聚合（D1/池/paper/确认/盯盘）
             import war_room_data
