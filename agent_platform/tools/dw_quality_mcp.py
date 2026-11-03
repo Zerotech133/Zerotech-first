@@ -25,7 +25,6 @@ from __future__ import annotations
 
 import datetime as dt
 import json
-import os
 import re
 import subprocess
 import sys
@@ -324,6 +323,16 @@ def _selftest() -> int:
 
 
 def main(argv=None) -> int:
+    # WO-MCP-UTF8-GUARD-20261104（判例 K-STOCK-428；根因见 WO-MCP-ENCODING-AUDIT-20261104）：
+    # Hermes 以管道拉起 MCP server，且 spawn env 白名单不含 PYTHONIOENCODING/PYTHONUTF8，
+    # Windows 文本 stdout 默认 cp936/GBK → json.dumps(ensure_ascii=False) 的中文按 GBK 字节
+    # 写出，客户端按 UTF-8 + errors="replace" 解码 → U+FFFD 乱码。故显式 UTF-8；
+    # 流不可 reconfigure（如测试 CaptureIO）时无害跳过。
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
     argv = list(argv if argv is not None else sys.argv[1:])
     if "--selftest" in argv:
         return _selftest()

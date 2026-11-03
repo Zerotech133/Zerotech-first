@@ -1,0 +1,14 @@
+# MCP UTF-8 守卫落地 · 证据清单（manifest）
+# 任务: task-46 / 工单 WO-MCP-UTF8-GUARD-20261104
+# 分支: task/WO-MCP-UTF8-GUARD-20261104（基线 a25a81084）
+# 边界: 只改 6 个 MCP server + 新增测试 + docs/ops；未改 Hermes/WebUI/配置/凭据；未启停 8787/8796/8091；未 reload-mcp
+# 状态: 代码+测试+文档已提交；生效需 L2 /reload-mcp 或重启 8787（本单未执行）
+# 文件清单（sha256  size  path）
+
+6af24658df175d404d25e60937a3d568bd1fc3b31a7fb22eaa2551b9edf33d03  18191  docs/ops/evidence/2026-11-04_utf8_guard_test_red.txt
+2c8f89e284f0f190643da475814f9d4e134e9fe9e82117ee7c280c1d6c32be0d  99  docs/ops/evidence/2026-11-04_utf8_guard_test_green.txt
+e100ec8618105edcb40e7aeb0aa7435df5377eeff2470bb5ad9b5b70c2dc4181  99  docs/ops/evidence/2026-11-04_utf8_guard_related_tests.txt
+9ee1ecb291ae88a139e166a061c811564c155ef39b0520b52358a67b073ddabc  95  docs/ops/evidence/2026-11-04_utf8_guard_ruff.txt
+cc3ad4f5fde88be7d08497702bc0c70c03782003a2c801dd25827048a30f5a4c  516  docs/ops/evidence/2026-11-04_utf8_guard_syntax_import_gates.txt
+bf40b667fe79d9c2767708033cc68373a858172393e66ef0e526cddfae4db0e1  1094  docs/ops/evidence/2026-11-04_utf8_guard_prod_interp_check.txt
+e53421d59f998bdcbddd75b778286ef15068d5d305d834bb266da0e314e98ca6  12114  docs/ops/2026-11-04_MCP_UTF8修复_v1.md
