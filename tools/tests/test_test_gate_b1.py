@@ -73,6 +73,9 @@ AGENT_KEY = {
     "agent_platform/tests/test_check_trigger_chain.py",
     "agent_platform/tests/test_gov_ai.py",
     "agent_platform/tests/test_codex_bridge.py",
+    "agent_platform/tests/test_ifs_handoff.py",
+    "agent_platform/tests/test_ifs_paper_chain.py",
+    "agent_platform/tests/test_ifs_wire_chain.py",
 }
 QUANT_KEY = {
     "quant_backtest/tests/test_xq_acceptance_evidence_offline.py",
@@ -117,6 +120,7 @@ TOOLS_KEY = {
     "tools/tests/test_merge_lock_gated.py",
     # ---- 黄忠工具测试纳管（WO-HZ-GATE-20261031，+1 聚合入口）----
     "tools/tests/test_huangzhong_tools_suite_gate.py",
+    "tools/tests/test_interface_registry_contract.py",
 }
 
 
@@ -136,9 +140,9 @@ def test_b1_b2_lists_frozen():
     assert set(_suite_files("agent_key")) == AGENT_KEY
     assert set(_suite_files("quant_key")) == QUANT_KEY
     assert set(_suite_files("tools_key")) == TOOLS_KEY
-    assert len(AGENT_KEY) == 52 and len(QUANT_KEY) == 23 and len(TOOLS_KEY) == 14
+    assert len(AGENT_KEY) == 55 and len(QUANT_KEY) == 23 and len(TOOLS_KEY) == 15
     all_files = AGENT_KEY | QUANT_KEY | TOOLS_KEY
-    assert len(all_files) == 89, "B1(57)+B2(31)+黄忠聚合入口(1) 应为 89 文件"
+    assert len(all_files) == 93, "B1(57)+B2(31)+IFS(4)+黄忠聚合入口(1) 应为 93 文件"
 
 
 def test_b1_b2_files_exist_and_under_expected_dir():

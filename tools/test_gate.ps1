@@ -200,7 +200,11 @@ $paths = @{
         'agent_platform/tests/test_org_enroll.py',
         'agent_platform/tests/test_check_trigger_chain.py',
         'agent_platform/tests/test_gov_ai.py',
-        'agent_platform/tests/test_codex_bridge.py'
+        'agent_platform/tests/test_codex_bridge.py',
+        # ---- IFS v1 接口对接（WO-IFS-WIRE-20261103）----
+        'agent_platform/tests/test_ifs_handoff.py',
+        'agent_platform/tests/test_ifs_paper_chain.py',
+        'agent_platform/tests/test_ifs_wire_chain.py'
     )
     'quant_key' = @(
         'quant_backtest/tests/test_xq_acceptance_evidence_offline.py',
@@ -246,7 +250,9 @@ $paths = @{
         # ---- 黄忠工具测试纳管（WO-HZ-GATE-20261031，+1 聚合入口）----
         # 黄忠 15 个测试文件位于 tools/ 根与 agent_platform/tests（不在 tools/tests/ 约定内），
         # 由唯一聚合 gate 测试用子进程跑全套（独立 pytest 防 sys.path 污染）。
-        'tools/tests/test_huangzhong_tools_suite_gate.py'
+        'tools/tests/test_huangzhong_tools_suite_gate.py',
+        # ---- IFS v1 契约测试（WO-IFS-WIRE-20261103）----
+        'tools/tests/test_interface_registry_contract.py'
     )
 }
 

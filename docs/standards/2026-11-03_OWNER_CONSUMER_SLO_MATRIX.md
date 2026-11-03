@@ -4,7 +4,7 @@
 - **机器可读真源**：`docs/standards/INTERFACE_REGISTRY_v1.yaml`（`interfaces[*]` = owner/consumer/SLO；`owners` = 席位目录；`slo_classes` = SLO 档位）
 - **配套**：`docs/standards/2026-11-03_接口对接规范_IFS_v1.md`（IFS-01~14）、`docs/standards/2026-11-03_ID_CHAIN_v1.md`
 - **性质**：规范层矩阵（本单只登记，不改代码/不启动服务）
-- **验收口径**：30 接口 × owner × consumer × SLO **无空洞**；owner 必须在册；consumer ≥1；SLO 必须命中档位；write/paper_only 与 IFS-05 一致。
+- **验收口径**：31 接口 × owner × consumer × SLO **无空洞**；owner 必须在册；consumer ≥1；SLO 必须命中档位；write/paper_only 与 IFS-05 一致。
 
 ---
 
@@ -24,7 +24,7 @@
 
 ---
 
-## 二、接口矩阵（30 接口）
+## 二、接口矩阵（31 接口）
 
 | # | interface_id | 方法 | 路径 | owner | consumer | SLO 档位（p95/err） | write | paper_only | status |
 |---|---|---|---|---|---|---|---|---|---|
@@ -40,6 +40,7 @@
 | 10 | `d1.meeting.create` | POST | `/api/d1/meeting` | D1 | 会议、门户 | write_gate（800ms/0.5%） | true | true | draft |
 | 11 | `d1.handoff.create` | POST | `/api/d1/handoff` | D1 | WA1、WA2、WA3、TR1、WATCH_TOWER、门户 | write_ledger（500ms/0.5%） | true | true | draft |
 | 12 | `d1.handoff.list` | GET | `/api/d1/handoffs` | D1 | 门户、WA1、TR1 | read_fast（300ms/1%） | false | true | draft |
+| 12b | `d1.watch_plans.list` | GET | `/api/d1/watch-plans` | D1 | 门户、WA1、WA2、WA3、WATCH_TOWER | read_fast（300ms/1%） | false | true | draft |
 | 13 | `watch.plan.create` | INTERNAL | `internal:watch/plan` | WA1 | WA2、WA3、WATCH_TOWER、确认门 | internal_contract（100ms/0.1%） | true | true | draft |
 | 14 | `watch.trigger.create` | INTERNAL | `internal:watch/trigger` | WA1 | 确认门、TR1 | internal_contract（100ms/0.1%） | true | true | draft |
 | 15 | `confirm.create` | POST | `/api/sim/confirm` | TR1 | HUMAN、TR1、paper | write_gate（800ms/0.5%） | true | true | draft |
@@ -59,7 +60,7 @@
 | 29 | `health.probe.get` | GET | `/api/health` | A0 | 门户、运维、守护器 | read_fast（300ms/1%） | false | true | draft |
 | 30 | `health.landing.get` | GET | `/health` | A0 | 监控、nginx | read_fast（300ms/1%） | false | true | draft |
 
-> 统计：draft 22 / v1 5 / deprecated 3 / retired 0；write=true 12；read-only 18；**paper_only 全 30 = true（平台 paper-only 铁律）**。
+> 统计：draft 23 / v1 5 / deprecated 3 / retired 0；write=true 12；read-only 19；**paper_only 全 31 = true（平台 paper-only 铁律）**。
 
 ---
 
@@ -76,7 +77,7 @@
 | WATCH_TOWER | watchtower_arbiter | 1 | watchtower.membership.get |
 | A0 | product_rd_chief | 3 | composition.interface.list、health.probe.get、health.landing.get |
 
-校验结果：**30 接口全部有 owner；全部 owner 在 registry `owners` 目录内（8 席）**；无 owner 空洞。
+校验结果：**31 接口全部有 owner；全部 owner 在 registry `owners` 目录内（8 席）**；无 owner 空洞。
 
 ---
 
@@ -92,7 +93,7 @@
 | 数据仓/训练 | outcome.get、training.episode.get、dw.query.* | 回放/训练 |
 | 组合/ARCH1/平台 | composition.interface.list、strategy.list、dw.query.* | 组合登记/治理 |
 
-校验结果：**30 接口全部 consumer ≥1**；关键链路（池→D1→WA→确认→paper→outcome）每跳至少 1 个消费方（缺 watch_plan/trigger 的生产接口为内部契约，见 ID chain 空洞表）。
+校验结果：**31 接口全部 consumer ≥1**；关键链路（池→D1→WA→确认→paper→outcome）每跳至少 1 个消费方（缺 watch_plan/trigger 的生产接口为内部契约，见 ID chain 空洞表）。
 
 ---
 
@@ -108,12 +109,12 @@
 | mcp_tool | 1 | mcp.d1-research |
 | manifest | 1 | composition.interface.list |
 
-> 精确数量以 registry 为准（契约测试用 counts 锚点校验：interfaces=30、write=12、read=18）。
+> 精确数量以 registry 为准（契约测试用 counts 锚点校验：interfaces=31、write=12、read=19）。
 
 状态说明：
 
 - `v1`（5）：dw.query.get/post、strategy.list、paper.exchange.health/snapshot —— 已带 schema_version/只读/真源；仍待按 IFS-03 补齐 request_id 与 source 对象后由 registry 复核（F1）。
-- `draft`（22）：已存在或规划中，未满足 v1 全部条件（缺 envelope/ID/契约测试/登记）。
+- `draft`（23）：已存在或规划中，未满足 v1 全部条件（缺 envelope/ID/契约测试/登记）。
 - `deprecated`（3）：paper.order / paper.direct / paper.stop —— 多入口收敛（F4），迁移期内只兼容不扩展。
 - `retired`（0）。
 
@@ -123,8 +124,7 @@
 
 | 缺口 | 影响接口 | 整改 |
 |---|---|---|
-| 缺 `watch_plan_id`/`trigger_id` 生产接口 | watch.plan.create、watch.trigger.create（internal 契约） | F3 `WO-IFS-WATCHCONS-20261103`、`WO-IFS-TRIGGER-20261103` |
-| confirmation 未承接四 ID | confirm.create/list | F4 `WO-IFS-CONFIRM-20261103` |
+| confirmation 已承接四 ID（WIRE 收口） | confirm.create/list | F4 已完成，保留 envelope 整改 |
 | paper 多入口 + 无 trade_id | paper.* | F4 `WO-IFS-PAPER-20261103` |
 | outcome 无 outcome_id | outcome.get | F5 `WO-IFS-OUTCOME-20261103` |
 | training episode 缺 | training.episode.get | F5 `WO-IFS-TRAIN-20261103` |
@@ -145,4 +145,4 @@
 
 | 版本 | 日期 | 变更 |
 |---|---|---|
-| v1.0 | 2026-11-03 | 首版：30 接口矩阵、8 席位 owner、7 档 SLO、空洞与整改映射 |
+| v1.0 | 2026-11-03 | 首版：31 接口矩阵、8 席位 owner、7 档 SLO、空洞与整改映射 |

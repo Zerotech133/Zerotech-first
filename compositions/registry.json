@@ -62,7 +62,7 @@
         "phase": "shadow",
         "health": "unknown",
         "validated": false,
-        "evidence": "WO-IFS-COMP-20261103：D1 7 API（6 active + training planned）/3 页面/4 任务/数据 ref planned 登记；health/SLO/rollback/test 缺口见 docs/plans/2026-11-03_IFS-COMP_D1组合对接登记_v1.md；不改运行时"
+        "evidence": "WO-IFS-WIRE-20261103：7 active API + /api/d1/training planned；d1_handoff/v2→watch_plan→confirmation→trade 四 ID 已贯通；数据 5 active + d1_decisions/training planned；Q2 仍待 health/SLO/rollback/测试入闸"
       }
     },
     {
