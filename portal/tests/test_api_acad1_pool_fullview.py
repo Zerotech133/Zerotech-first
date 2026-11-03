@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
-"""ACAD1 全池 30 只读聚合视图（?view=full）单测 — ACAD1-FULLVIEW（2026-11-04）。
+"""ACAD1 全池 30 只读聚合视图（默认 full / 显式 single）单测 — ACAD1-FULLDEFAULT（2026-11-04）。
 
 覆盖验收：
-1) `view=full`：每市场最新 pool_date 聚合 → 30（CN12/HK10/US6/CRYPTO2），
+1) **默认 view=full**：每市场最新 pool_date 聚合 → 30（CN12/HK10/US6/CRYPTO2），
    source_mode=pg_official_aggregated、official=true、pool_id=ACAD1-POOL-PG-FULL-<maxdate>、
    pool_dates、trading_permitted=false；
-2) 默认行为不变：不带 view / view=single 仍为单日视图（当前 12，source_mode=pg_official）；
-3) 缺 PG 降级：view=full 不伪造 30，降级单日并显式 degraded_reason；
-4) pool_data query 解析：view=full 透传、非法值回落 single；
-5) 只读：不写任何文件；页面开关存在且默认单日。
+2) 显式 `?view=single`：历史单日视图（当前 12，source_mode=pg_official）；
+   低层 `api.load_pool_snapshot()` 保留 single 兼容默认（内部/旧调用不因默认切换被动变化）；
+3) 缺 PG 降级：默认 full 不伪造 30，降级单日并显式 degraded_reason；
+4) pool_data query 解析：缺省/非法 → full；`view=single` 显式 → single；
+5) 只读：不写任何文件；页面默认全池30、保留单日切换。
 
 全程离线：PG 用注入 reader，投影/旧池用 tmp_path；不连真实 PG、不改真实数据。
 """
@@ -188,9 +189,15 @@ class TestFullView:
         assert snap["degraded_reason"].startswith("full_view_requires_pg_aggregation")
 
 
-# ── 2. 默认单日视图不变（12） ────────────────────────────────────────
-class TestDefaultSingleView:
-    def test_default_is_single_12(self):
+# ── 2. 默认视图：对外 full / 低层单日兼容 ───────────────────────────
+class TestDefaultView:
+    def test_constants(self):
+        assert api.DEFAULT_VIEW == "full"
+        assert api.LOW_LEVEL_DEFAULT_VIEW == "single"
+        assert pool_data.DEFAULT_VIEW == "full"
+
+    def test_low_level_compat_default_is_single_12(self):
+        # 低层 load_pool_snapshot 保留 single 兼容默认（内部/单测/旧调用方不被默认切换影响）
         snap = api.load_pool_snapshot(
             pg_reader=lambda day: _single_payload(),
             allow_projection=False,
@@ -203,33 +210,52 @@ class TestDefaultSingleView:
         assert len(snap["items"]) == 12
         assert snap["pool_id"] == "ACAD1-POOL-PG-20261103"
 
-    def test_explicit_single_same_as_default(self):
-        default = api.load_pool_snapshot(
-            pg_reader=lambda day: _single_payload(),
-            allow_projection=False, legacy_loader=lambda day: _legacy())
-        explicit = api.load_pool_snapshot(
+    def test_explicit_single_low_level(self):
+        snap = api.load_pool_snapshot(
             view="single", pg_reader=lambda day: _single_payload(),
             allow_projection=False, legacy_loader=lambda day: _legacy())
-        assert explicit["view"] == "single"
-        assert explicit["source_mode"] == default["source_mode"] == "pg_official"
-        assert len(explicit["items"]) == len(default["items"]) == 12
+        assert snap["view"] == "single"
+        assert snap["source_mode"] == "pg_official"
+        assert snap["count"] == 12
+
+    def test_endpoint_default_full_30(self, monkeypatch):
+        # 对外 HTTP 路径（pool_data.pool_snapshot）默认 full → 30，无需显式 query
+        monkeypatch.setattr(
+            api, "default_pg_reader_full", lambda day=None: _full_payload())
+        snap = pool_data.pool_snapshot()
+        assert snap["view"] == "full"
+        assert snap["source_mode"] == "pg_official_aggregated"
+        assert snap["official"] is True
+        assert snap["pool_id"] == "ACAD1-POOL-PG-FULL-20261103"
+        assert snap["count"] == 30
+        assert snap["summary"]["by_market"] == QUOTAS
+        assert snap["trading_permitted"] is False
+
+    def test_endpoint_explicit_single_12(self, monkeypatch):
+        monkeypatch.setattr(
+            api, "default_pg_reader", lambda day=None: _single_payload())
+        snap = pool_data.pool_snapshot(query="view=single")
+        assert snap["view"] == "single"
+        assert snap["source_mode"] == "pg_official"
+        assert snap["count"] == 12
+
+    def test_endpoint_default_degraded_not_30(self, monkeypatch):
+        def boom(day=None):
+            raise RuntimeError("pg down")
+
+        monkeypatch.setattr(api, "default_pg_reader_full", boom)
+        monkeypatch.setattr(api, "default_pg_reader", boom)
+        monkeypatch.setattr(pool_data, "_legacy_snapshot", lambda day=None: _legacy())
+        snap = pool_data.pool_snapshot()
+        assert snap["view"] == "full"
+        assert snap["source_mode"] == "shadow"
+        assert snap["official"] is False
+        assert snap["count"] == 1  # 不伪造 30
+        assert snap["degraded_reason"].startswith("full_view_requires_pg_aggregation")
 
     def test_invalid_view_raises(self):
         with pytest.raises(ValueError, match="未知 view"):
             api.load_pool_snapshot(view="bogus")
-
-    def test_pool_data_default_query_keeps_single(self, monkeypatch):
-        captured = {}
-
-        def fake(day=None, legacy_loader=None, allow_pg=True,
-                 allow_projection=True, view="single"):
-            captured["view"] = view
-            return {"ok": True, "view": view}
-
-        monkeypatch.setattr(pool_data._api, "load_pool_snapshot", fake)
-        snap = pool_data.pool_snapshot(query=None)
-        assert snap["view"] == "single"
-        assert captured["view"] == "single"
 
 
 # ── 3. 缺 PG 降级（不伪造 30） ───────────────────────────────────────
@@ -298,20 +324,22 @@ class TestDegradation:
         assert snap["items"] == []
 
 
-# ── 4. pool_data query 解析/透传 ─────────────────────────────────────
+# ── 4. pool_data query 解析/透传（默认 full） ───────────────────────
 class TestQueryParsing:
     @pytest.mark.parametrize(
         "query,expected",
         [
-            (None, "single"),
-            ("", "single"),
+            (None, "full"),
+            ("", "full"),
             ("view=single", "single"),
             ("view=full", "full"),
             ("view=FULL", "full"),
-            ("x=1&view=full", "full"),
-            ("view=bogus", "single"),
-            ("view=", "single"),
+            ("x=1&view=single", "single"),
+            ("x=1", "full"),
+            ("view=bogus", "full"),
+            ("view=", "full"),
             ({"view": ["full"]}, "full"),
+            ({"view": ["single"]}, "single"),
         ],
     )
     def test_view_from_query(self, query, expected):
@@ -327,10 +355,12 @@ class TestQueryParsing:
             return {"ok": True, "view": view}
 
         monkeypatch.setattr(pool_data._api, "load_pool_snapshot", fake)
-        assert pool_data.pool_snapshot(query="view=full")["view"] == "full"
+        assert pool_data.pool_snapshot(query=None)["view"] == "full"
         assert calls["view"] == "full"
-        pool_data.pool_snapshot(query="view=bogus")
+        assert pool_data.pool_snapshot(query="view=single")["view"] == "single"
         assert calls["view"] == "single"
+        pool_data.pool_snapshot(query="view=bogus")
+        assert calls["view"] == "full"
 
 
 # ── 5. 只读 / 页面开关 ──────────────────────────────────────────────
@@ -351,13 +381,16 @@ class TestReadOnlyAndPage:
 
     def test_page_has_toggle(self):
         html = (PORTAL / "acad1_pool.html").read_text(encoding="utf-8")
-        assert "view=full" in html
+        assert "view=full" in html or "view=single" in html
         assert "全池30" in html
         assert "单日视图" in html
         assert "pg_official_aggregated" in html
         assert "/api/acad1/pool" in html
-        # 默认仍是单日视图（按钮默认 single，不自动请求 full）
-        assert "let currentView='single'" in html
+        assert "?view=single" in html
+        # 默认仍是「全池30」（2026-11-04 ACAD1-FULLDEFAULT 起）
+        assert "let currentView='full'" in html
+        assert "setView('full')" in html
+        assert "全池30（默认）" in html
 
     def test_portal_api_route_passes_query(self):
         api_src = (PORTAL / "portal_api.py").read_text(encoding="utf-8")
@@ -376,9 +409,19 @@ class TestCli:
         assert payload["count"] == 30
         assert payload["pool_id"] == "ACAD1-POOL-PG-FULL-20261103"
 
-    def test_cli_default_single(self, capsys, monkeypatch):
-        monkeypatch.setattr(api, "default_pg_reader", lambda day=None: _single_payload())
+    def test_cli_default_full(self, capsys, monkeypatch):
+        # 对外默认 full：CLI 不带 --view 也走聚合 30
+        monkeypatch.setattr(api, "default_pg_reader_full", lambda day=None: _full_payload())
         rc = api.main(["--json"])
+        assert rc == 0
+        payload = json.loads(capsys.readouterr().out)
+        assert payload["view"] == "full"
+        assert payload["source_mode"] == "pg_official_aggregated"
+        assert payload["count"] == 30
+
+    def test_cli_explicit_single(self, capsys, monkeypatch):
+        monkeypatch.setattr(api, "default_pg_reader", lambda day=None: _single_payload())
+        rc = api.main(["--json", "--view", "single"])
         assert rc == 0
         payload = json.loads(capsys.readouterr().out)
         assert payload["view"] == "single"
