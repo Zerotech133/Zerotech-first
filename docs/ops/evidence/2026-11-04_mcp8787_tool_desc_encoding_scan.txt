@@ -19,11 +19,11 @@ tools_total=98  description_with_U+FFFD=34  clean=64
 
 ## 样本（工具名正常，描述含替换符 U+FFFD；base64 存放原文避免终端编码二次污染）
   mcp__d1_research__d1_research
-    desc_b64=RDEgwrPvv73vv73Ntu+/vdC/77+977+91aPvv73vv73vv73vv73aue+/vcax77+977+977+977+977+90L7vv70v77+977+977+977+9L++/ve+/ve+/ve+/vS9wZW5kaW5nIO+/ve+/ve+/vdyj77+977+9ybDvv73vv73vv73vv73vv73JuNGh77+977+91rvvv73vv73vv73vv71wYXBlci1vbmx577+977+9
+    desc_b64=[REDACTED len=232 sha256_12=ac9a26718686]
   mcp__dw_catalog__catalog_snapshot
-    desc_b64=Y2F0YWxvZyDvv73vv73vv73Vo++/ve+/veaxvi/vv73vv73vv73vv70vc2hhMjU2L++/vce877+90rvvv73vv73vv73vv70vxq/vv73Gs++/ve+/ve+/ve+/ve+/vda777+977+977+977+977+977+9
+    desc_b64=[REDACTED len=152 sha256_12=e34e5e3ce42c]
   mcp__dw_catalog__lifecycle
-    desc_b64=Y2F0YWxvZyBsaWZlY3ljbGUg77+977+9zKzvv73vv71hY3RpdmUvcGxhbm5lZC9kZXByZWNhdGVkL2FyY2hpdmVk77+977+977+977+977+977+977+977+9yLHKp++/veW1pe+/ve+/vda777+977+977+977+977+977+9
+    desc_b64=[REDACTED len=168 sha256_12=7db292c3168f]
 
 ## 交叉线索（不改配置、不重启、不重载；纯对照既有证据）
   - 直连 stdio MCP server 的独立探针 research/reports/hermes_mcp_probe_20261103.json
