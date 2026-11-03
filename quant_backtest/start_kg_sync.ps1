@@ -150,6 +150,22 @@ try {
             exit 1
         }
     }
+    # P0-1（2026-11-03 计划 v4）：catalog -> registry 自动对齐（KgDaily 链尾，失败告警不静默）
+    $alignPy = 'C:\项目\py312\python.exe'
+    $alignScript = 'C:\项目\老田的AI助手\tools\datawarehouse\registry_align.py'
+    $alignOut = 'C:\Temp\kg_registry_align_out.log'
+    $alignErr = 'C:\Temp\kg_registry_align_err.log'
+    $alignProc = Start-Process -FilePath $alignPy `
+        -ArgumentList @('-X','utf8',$alignScript,'--apply','--json') `
+        -WorkingDirectory 'C:\项目\老田的AI助手' `
+        -RedirectStandardOutput $alignOut -RedirectStandardError $alignErr `
+        -PassThru -WindowStyle Hidden -Wait
+    $alignRc = $alignProc.ExitCode
+    ('registry_align exit=' + $alignRc + ' ' + (Get-Date -Format s)) | Out-File $log -Append -Encoding utf8
+    if ($alignRc -ne 0) {
+        ('kg_sync WARN registry_align (data chain already done) rc=' + $alignRc) | Out-File $log -Append -Encoding utf8
+        & 'C:\Program Files\Python311\python.exe' -X utf8 C:\项目\老田的AI助手\news_collector\alert_fail_wrap.py kg_sync:registry_align $alignRc $alignErr 1>$null 2>$null
+    }
     ('kg_sync OK ' + (Get-Date -Format s)) | Out-File $log -Append -Encoding utf8
     exit 0
 } catch {

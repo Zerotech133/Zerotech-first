@@ -1,0 +1,5204 @@
+{
+ "schema_version": "datawarehouse_coverage_p1.v1",
+ "task": "task-157 P1 数据仓覆盖缺口清单",
+ "generated_at": "2026-11-03T16:43:09+08:00",
+ "as_of": "2026-11-03",
+ "mode": "readonly（只写报告/草案；不改数据根）",
+ "evidence": {
+  "dataset_inventory": "research\\reports\\dataset_inventory_20261102.json",
+  "catalog_version": 35,
+  "tools": {
+   "manifest_check": {
+    "rc": 0,
+    "data": {
+     "tool": "manifest_check",
+     "code": 0,
+     "manifests": {
+      "tdx": {
+       "exists": true,
+       "keys": 183,
+       "covered": 170,
+       "extra": 13,
+       "missing_count": 86,
+       "missing_sample": [
+        "adj_factor",
+        "anns_d",
+        "bak_basic",
+        "balancesheet",
+        "cashflow",
+        "cb_basic",
+        "cb_daily",
+        "chinese-dictionary-of-financial-sentiment",
+        "crypto_daily",
+        "cyq_chips"
+       ],
+       "extra_names": [
+        "ts_etf_index",
+        "ts_fund_nav",
+        "ts_fut_index_daily",
+        "ts_hibor",
+        "ts_hk_mins",
+        "ts_index_member",
+        "ts_libor",
+        "ts_limit_list_d",
+        "ts_opt_mins",
+        "ts_rt_k",
+        "ts_shibor",
+        "ts_shibor_quote",
+        "ts_tdx_daily"
+       ],
+       "baseline": 166
+      },
+      "tushare": {
+       "exists": true,
+       "keys": 71,
+       "covered": 64,
+       "extra": 7,
+       "missing_count": 192,
+       "missing_sample": [
+        "chinese-dictionary-of-financial-sentiment",
+        "crypto_daily",
+        "czyx",
+        "dknife_snap",
+        "fepu",
+        "firm-level-climate-change-exposure",
+        "gjzfssfc",
+        "guba_posts",
+        "index_global",
+        "quarantine_prod_overwrite"
+       ],
+       "extra_names": [
+        "anns_d_probe",
+        "etf_auction_probe",
+        "hk_mins",
+        "stk_auction_c_probe",
+        "stk_auction_o_probe",
+        "stk_auction_probe",
+        "stk_mins_mkt325"
+       ],
+       "baseline": 30
+      },
+      "xueqiu": {
+       "exists": true,
+       "keys": 9,
+       "covered": 7,
+       "extra": 2,
+       "missing_count": 249,
+       "missing_sample": [
+        "adj_factor",
+        "anns_d",
+        "bak_basic",
+        "balancesheet",
+        "cashflow",
+        "cb_basic",
+        "cb_daily",
+        "chinese-dictionary-of-financial-sentiment",
+        "crypto_daily",
+        "cyq_chips"
+       ],
+       "extra_names": [
+        "health",
+        "schema_docs"
+       ],
+       "baseline": 7
+      },
+      "cnopendata": {
+       "exists": true,
+       "keys": 6,
+       "covered": 6,
+       "extra": 0,
+       "missing_count": 250,
+       "missing_sample": [
+        "adj_factor",
+        "anns_d",
+        "bak_basic",
+        "balancesheet",
+        "cashflow",
+        "cb_basic",
+        "cb_daily",
+        "crypto_daily",
+        "cyq_chips",
+        "cyq_perf"
+       ],
+       "extra_names": [],
+       "baseline": 6
+      }
+     },
+     "issues": []
+    }
+   },
+   "metadata_consistency": {
+    "rc": 0,
+    "data": {
+     "stdout_tail": "元数据一致性：catalog v35 / 256 表 / registry 256 物理\nresult: PASS\n"
+    }
+   },
+   "freshness_report": {
+    "rc": 0,
+    "issues": [],
+    "checks": 10
+   }
+  }
+ },
+ "summary": {
+  "datasets_inventory": 314,
+  "registered": 265,
+  "registered_pct": 84.4,
+  "exposed": 72,
+  "exposed_pct": 22.9,
+  "unregistered": 49,
+  "unexposed": 242,
+  "catalog_tables": 256,
+  "manifest_missing_true": {
+   "tdx": 4,
+   "tushare": 2,
+   "xueqiu": 3,
+   "cnopendata": 0
+  },
+  "manifest_extra": {
+   "tdx": 13,
+   "tushare": 7,
+   "xueqiu": 2,
+   "cnopendata": 0
+  },
+  "stale_30d": 17,
+  "no_latest": 59,
+  "by_domain": {
+   "接口数据": {
+    "datasets": 241,
+    "registered": 240,
+    "exposed": 38,
+    "mb": 48245.2
+   },
+   "开源情报": {
+    "datasets": 19,
+    "registered": 14,
+    "exposed": 7,
+    "mb": 5997.8
+   },
+   "学习派生": {
+    "datasets": 29,
+    "registered": 5,
+    "exposed": 7,
+    "mb": 1749.2
+   },
+   "平台运行": {
+    "datasets": 25,
+    "registered": 6,
+    "exposed": 20,
+    "mb": 886.7
+   }
+  }
+ },
+ "categories": {
+  "missing": [
+   {
+    "source": "tdx",
+    "dataset": "crypto_daily",
+    "store_exists": true,
+    "action": "manifest 补键（数据已在盘，仓内可安全修复）",
+    "owner": "DATA3（补键复核）"
+   },
+   {
+    "source": "tdx",
+    "dataset": "guba_posts",
+    "store_exists": true,
+    "action": "manifest 补键（数据已在盘，仓内可安全修复）",
+    "owner": "DATA3（补键复核）"
+   },
+   {
+    "source": "tdx",
+    "dataset": "us_legacy",
+    "store_exists": true,
+    "action": "manifest 补键（数据已在盘，仓内可安全修复）",
+    "owner": "DATA3（补键复核）"
+   },
+   {
+    "source": "tdx",
+    "dataset": "v2_bar_daily",
+    "store_exists": false,
+    "action": "外部抓取后补 manifest（需 token/ETL）",
+    "owner": "DATA2（抓取）→DATA3"
+   },
+   {
+    "source": "tushare",
+    "dataset": "index_global",
+    "store_exists": true,
+    "action": "manifest 补键（数据已在盘，仓内可安全修复）",
+    "owner": "DATA3（补键复核）"
+   },
+   {
+    "source": "tushare",
+    "dataset": "quarantine_prod_overwrite",
+    "store_exists": true,
+    "action": "manifest 补键（数据已在盘，仓内可安全修复）",
+    "owner": "DATA3（补键复核）"
+   },
+   {
+    "source": "xueqiu",
+    "dataset": "xq_earningforecast",
+    "store_exists": false,
+    "action": "外部抓取后补 manifest（需 token/ETL）",
+    "owner": "DATA2（抓取）→DATA3"
+   },
+   {
+    "source": "xueqiu",
+    "dataset": "xq_hot_deal",
+    "store_exists": false,
+    "action": "外部抓取后补 manifest（需 token/ETL）",
+    "owner": "DATA2（抓取）→DATA3"
+   },
+   {
+    "source": "xueqiu",
+    "dataset": "xq_inner_trade",
+    "store_exists": false,
+    "action": "外部抓取后补 manifest（需 token/ETL）",
+    "owner": "DATA2（抓取）→DATA3"
+   }
+  ],
+  "extra": [
+   {
+    "source": "tdx",
+    "key": "ts_etf_index",
+    "action": "确认后从 manifest 清理或补 catalog 登记",
+    "owner": "DATA3"
+   },
+   {
+    "source": "tdx",
+    "key": "ts_fund_nav",
+    "action": "确认后从 manifest 清理或补 catalog 登记",
+    "owner": "DATA3"
+   },
+   {
+    "source": "tdx",
+    "key": "ts_fut_index_daily",
+    "action": "确认后从 manifest 清理或补 catalog 登记",
+    "owner": "DATA3"
+   },
+   {
+    "source": "tdx",
+    "key": "ts_hibor",
+    "action": "确认后从 manifest 清理或补 catalog 登记",
+    "owner": "DATA3"
+   },
+   {
+    "source": "tdx",
+    "key": "ts_hk_mins",
+    "action": "确认后从 manifest 清理或补 catalog 登记",
+    "owner": "DATA3"
+   },
+   {
+    "source": "tdx",
+    "key": "ts_index_member",
+    "action": "确认后从 manifest 清理或补 catalog 登记",
+    "owner": "DATA3"
+   },
+   {
+    "source": "tdx",
+    "key": "ts_libor",
+    "action": "确认后从 manifest 清理或补 catalog 登记",
+    "owner": "DATA3"
+   },
+   {
+    "source": "tdx",
+    "key": "ts_limit_list_d",
+    "action": "确认后从 manifest 清理或补 catalog 登记",
+    "owner": "DATA3"
+   },
+   {
+    "source": "tdx",
+    "key": "ts_opt_mins",
+    "action": "确认后从 manifest 清理或补 catalog 登记",
+    "owner": "DATA3"
+   },
+   {
+    "source": "tdx",
+    "key": "ts_rt_k",
+    "action": "确认后从 manifest 清理或补 catalog 登记",
+    "owner": "DATA3"
+   },
+   {
+    "source": "tdx",
+    "key": "ts_shibor",
+    "action": "确认后从 manifest 清理或补 catalog 登记",
+    "owner": "DATA3"
+   },
+   {
+    "source": "tdx",
+    "key": "ts_shibor_quote",
+    "action": "确认后从 manifest 清理或补 catalog 登记",
+    "owner": "DATA3"
+   },
+   {
+    "source": "tdx",
+    "key": "ts_tdx_daily",
+    "action": "确认后从 manifest 清理或补 catalog 登记",
+    "owner": "DATA3"
+   },
+   {
+    "source": "tushare",
+    "key": "anns_d_probe",
+    "action": "确认后从 manifest 清理或补 catalog 登记",
+    "owner": "DATA3"
+   },
+   {
+    "source": "tushare",
+    "key": "etf_auction_probe",
+    "action": "确认后从 manifest 清理或补 catalog 登记",
+    "owner": "DATA3"
+   },
+   {
+    "source": "tushare",
+    "key": "hk_mins",
+    "action": "确认后从 manifest 清理或补 catalog 登记",
+    "owner": "DATA3"
+   },
+   {
+    "source": "tushare",
+    "key": "stk_auction_c_probe",
+    "action": "确认后从 manifest 清理或补 catalog 登记",
+    "owner": "DATA3"
+   },
+   {
+    "source": "tushare",
+    "key": "stk_auction_o_probe",
+    "action": "确认后从 manifest 清理或补 catalog 登记",
+    "owner": "DATA3"
+   },
+   {
+    "source": "tushare",
+    "key": "stk_auction_probe",
+    "action": "确认后从 manifest 清理或补 catalog 登记",
+    "owner": "DATA3"
+   },
+   {
+    "source": "tushare",
+    "key": "stk_mins_mkt325",
+    "action": "确认后从 manifest 清理或补 catalog 登记",
+    "owner": "DATA3"
+   },
+   {
+    "source": "xueqiu",
+    "key": "health",
+    "action": "确认后从 manifest 清理或补 catalog 登记",
+    "owner": "DATA3"
+   },
+   {
+    "source": "xueqiu",
+    "key": "schema_docs",
+    "action": "确认后从 manifest 清理或补 catalog 登记",
+    "owner": "DATA3"
+   }
+  ],
+  "unregistered": [
+   {
+    "label": "tushare..git",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\.git",
+    "latest": "2026-10-17",
+    "size_mb": 0.0,
+    "suggested_id": "ts_.git",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "xueqiu_info.xq_status_classified",
+    "domain": "开源情报",
+    "kind": "sqlite_table",
+    "path": "quant_backtest\\data\\xueqiu\\xueqiu_info.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "xq_xq_status_classified",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "hypotheses.hypotheses",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "research\\hypotheses.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "research_hypotheses",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "research_shadow",
+    "domain": "学习派生",
+    "kind": "dir",
+    "path": "research\\shadow",
+    "latest": "2026-11-02",
+    "size_mb": 0.2,
+    "suggested_id": "research_shadow",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "paper.orders",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "k_stock\\data\\paper.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "paper_orders",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "paper.ledger",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "k_stock\\data\\paper.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "paper_ledger",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "paper.positions",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "k_stock\\data\\paper.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "paper_positions",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "paper.equity_marks",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "k_stock\\data\\paper.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "paper_equity_marks",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "paper.positions_snapshot",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "k_stock\\data\\paper.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "paper_positions_snapshot",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "paper.decision_snapshots",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "k_stock\\data\\paper.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "paper_decision_snapshots",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "quant_db.chanlun_pool",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "quant_backtest\\data\\quant.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "quant_chanlun_pool",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "quant_db.nine_dim_rc",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "quant_backtest\\data\\quant.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "quant_nine_dim_rc",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "quant_db.nine_dim_rc_meta",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "quant_backtest\\data\\quant.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "quant_nine_dim_rc_meta",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "quant_db.nine_dim_fina",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "quant_backtest\\data\\quant.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "quant_nine_dim_fina",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "quant_db.nine_dim_fc",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "quant_backtest\\data\\quant.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "quant_nine_dim_fc",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "quant_db.nine_dim_fc_meta",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "quant_backtest\\data\\quant.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "quant_nine_dim_fc_meta",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "news_db.runs",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "news_collector\\news.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "news_runs",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "news_db.ai_briefs",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "news_collector\\news.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "news_ai_briefs",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "news_db.ai_reviews",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "news_collector\\news.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "news_ai_reviews",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "news_db.quotes",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "news_collector\\news.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "news_quotes",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "news_db.jev_review_queue",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "news_collector\\news.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "news_jev_review_queue",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "automation_runs",
+    "domain": "平台运行",
+    "kind": "dir",
+    "path": "C:\\aios\\automation_runs",
+    "latest": "2026-11-02",
+    "size_mb": 829.1,
+    "suggested_id": "automation_runs",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_raw_zip（948 ZIP/清单/sha256）",
+    "domain": "开源情报",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/01_数据分包",
+    "latest": null,
+    "size_mb": 2903.3,
+    "suggested_id": "yt_raw_zip",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_normalized（videos/comments/channel_map parquet）",
+    "domain": "开源情报",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/10_规范化",
+    "latest": null,
+    "size_mb": 822.7,
+    "suggested_id": "yt_normalized",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_cleaned_comments（清洗+PII脱敏）",
+    "domain": "开源情报",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/20_清洗",
+    "latest": null,
+    "size_mb": 148.5,
+    "suggested_id": "yt_cleaned_comments",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_transcripts（转写）",
+    "domain": "开源情报",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/20_转写",
+    "latest": null,
+    "size_mb": 2.5,
+    "suggested_id": "yt_transcripts",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_knowledge_units（知识单元）",
+    "domain": "学习派生",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/30_知识单元",
+    "latest": null,
+    "size_mb": 0.0,
+    "suggested_id": "yt_knowledge_units",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_distill（知识提炼）",
+    "domain": "学习派生",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/35_知识提炼",
+    "latest": null,
+    "size_mb": 19.7,
+    "suggested_id": "yt_distill",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_faq（FAQ 语义归并 133 条）",
+    "domain": "学习派生",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/37_FAQ挖掘",
+    "latest": null,
+    "size_mb": 63.9,
+    "suggested_id": "yt_faq",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_index（62,401 docs bge-m3）",
+    "domain": "学习派生",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/40_索引",
+    "latest": null,
+    "size_mb": 331.9,
+    "suggested_id": "yt_index",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_rag（4,926 chunks + packed 62,401）",
+    "domain": "学习派生",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/50_RAG",
+    "latest": null,
+    "size_mb": 720.3,
+    "suggested_id": "yt_rag",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_cards（学习卡）",
+    "domain": "学习派生",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/60_学习卡",
+    "latest": null,
+    "size_mb": 0.0,
+    "suggested_id": "yt_learning_cards",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_briefs（简报）",
+    "domain": "学习派生",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/70_简报",
+    "latest": null,
+    "size_mb": 0.0,
+    "suggested_id": "yt_briefs",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_review（复核）",
+    "domain": "平台运行",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/80_复核",
+    "latest": null,
+    "size_mb": 0.1,
+    "suggested_id": "yt_review",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_reports（报告）",
+    "domain": "学习派生",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/90_报告",
+    "latest": null,
+    "size_mb": 0.4,
+    "suggested_id": "yt_reports",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning.db（星型模型 9 表，统一取数入口）",
+    "domain": "学习派生",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/00_数据仓",
+    "latest": null,
+    "size_mb": 580.7,
+    "suggested_id": "yt_learning.db",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.dim_channel",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_dim_channel",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.dim_topic",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_dim_topic",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.dim_video",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_dim_video",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.bridge_video_topic",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_bridge_video_topic",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.fact_comment",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_fact_comment",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.fact_knowledge_unit",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_fact_knowledge_unit",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.fact_transcript",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_fact_transcript",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.fact_faq_semantic",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_fact_faq_semantic",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.bridge_faq_comment",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_bridge_faq_comment",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.meta_faq_build",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_meta_faq_build",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.fact_transcript_seg",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_fact_transcript_seg",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.meta_etl",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_meta_etl",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.fact_transcript_signal",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_fact_transcript_signal",
+    "action": "评估登记或列入忽略清单（probe/.git/临时目录不登记）",
+    "owner": "DATA4"
+   }
+  ],
+  "unexposed": [
+   {
+    "label": "tushare.adj_factor",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\adj_factor",
+    "latest": "2026-10-30",
+    "size_mb": 234.6,
+    "suggested_id": "ts_adj_factor",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.anns_d",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\anns_d",
+    "latest": "2026-11-01",
+    "size_mb": 279.3,
+    "suggested_id": "ts_anns_d",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.cb_basic",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\cb_basic",
+    "latest": "2026-11-01",
+    "size_mb": 7.3,
+    "suggested_id": "ts_cb_basic",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.cyq_perf",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\cyq_perf",
+    "latest": "2026-11-01",
+    "size_mb": 44.7,
+    "suggested_id": "ts_cyq_perf",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.etf_mins",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\etf_mins",
+    "latest": "2026-11-01",
+    "size_mb": 91.8,
+    "suggested_id": "ts_etf_mins",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.express",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\express",
+    "latest": "2026-10-28",
+    "size_mb": 0.3,
+    "suggested_id": "ts_express",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.fx_daily",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\fx_daily",
+    "latest": "2026-10-30",
+    "size_mb": 0.1,
+    "suggested_id": "ts_fx_daily",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.hk_balancesheet",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\hk_balancesheet",
+    "latest": "2026-09-28",
+    "size_mb": 37.2,
+    "suggested_id": "ts_hk_balancesheet",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.hk_basic",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\hk_basic",
+    "latest": "2026-11-01",
+    "size_mb": 8.4,
+    "suggested_id": "ts_hk_basic",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.hk_cashflow",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\hk_cashflow",
+    "latest": "2026-09-28",
+    "size_mb": 31.1,
+    "suggested_id": "ts_hk_cashflow",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.hk_hold",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\hk_hold",
+    "latest": "2026-10-30",
+    "size_mb": 66.6,
+    "suggested_id": "ts_hk_hold",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.hk_income",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\hk_income",
+    "latest": "2026-09-28",
+    "size_mb": 27.2,
+    "suggested_id": "ts_hk_income",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.idx_mins",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\idx_mins",
+    "latest": "2026-11-01",
+    "size_mb": 397.2,
+    "suggested_id": "ts_idx_mins",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.index_global",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\index_global",
+    "latest": "2026-11-01",
+    "size_mb": 2.6,
+    "suggested_id": "ts_index_global",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.index_member_all",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\index_member_all",
+    "latest": "2026-10-29",
+    "size_mb": 0.1,
+    "suggested_id": "ts_index_member_all",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.index_weight",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\index_weight",
+    "latest": "2026-11-01",
+    "size_mb": 1.5,
+    "suggested_id": "ts_index_weight",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.irm_qa_sh",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\irm_qa_sh",
+    "latest": "2026-10-15",
+    "size_mb": 102.7,
+    "suggested_id": "ts_irm_qa_sh",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.irm_qa_sh_probe",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\irm_qa_sh_probe",
+    "latest": "2026-09-27",
+    "size_mb": 1.0,
+    "suggested_id": "ts_irm_qa_sh_probe",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.irm_qa_sz",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\irm_qa_sz",
+    "latest": "2026-10-15",
+    "size_mb": 199.4,
+    "suggested_id": "ts_irm_qa_sz",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.irm_qa_sz_probe",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\irm_qa_sz_probe",
+    "latest": "2026-09-27",
+    "size_mb": 0.8,
+    "suggested_id": "ts_irm_qa_sz_probe",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.limit_list_d",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\limit_list_d",
+    "latest": "2026-11-01",
+    "size_mb": 5.4,
+    "suggested_id": "ts_limit_list_d",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.major_news",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\major_news",
+    "latest": "2026-11-01",
+    "size_mb": 2.1,
+    "suggested_id": "ts_major_news",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.margin_detail",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\margin_detail",
+    "latest": "2026-10-30",
+    "size_mb": 195.9,
+    "suggested_id": "ts_margin_detail",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.moneyflow_hsgt",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\moneyflow_hsgt",
+    "latest": "2026-10-30",
+    "size_mb": 0.1,
+    "suggested_id": "ts_moneyflow_hsgt",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.quarantine_prod_overwrite",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\quarantine_prod_overwrite",
+    "latest": "2026-10-17",
+    "size_mb": 0.7,
+    "suggested_id": "ts_quarantine_prod_overwrite",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.report_rc",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\report_rc",
+    "latest": "2026-10-31",
+    "size_mb": 85.5,
+    "suggested_id": "ts_report_rc",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.research_report",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\research_report",
+    "latest": "2026-11-01",
+    "size_mb": 19.3,
+    "suggested_id": "ts_research_report",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.sf_month",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\sf_month",
+    "latest": "2026-11-01",
+    "size_mb": 0.3,
+    "suggested_id": "ts_sf_month",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.shibor",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\shibor",
+    "latest": "2026-11-01",
+    "size_mb": 0.2,
+    "suggested_id": "ts_shibor",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.shibor_lpr",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\shibor_lpr",
+    "latest": "2026-11-01",
+    "size_mb": 0.4,
+    "suggested_id": "ts_shibor_lpr",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.stk_holdernumber",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\stk_holdernumber",
+    "latest": "2026-10-30",
+    "size_mb": 24.3,
+    "suggested_id": "ts_stk_holdernumber",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.stk_managers",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\stk_managers",
+    "latest": "2026-09-30",
+    "size_mb": 7.2,
+    "suggested_id": "ts_stk_managers",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.stk_mins",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\stk_mins",
+    "latest": "2026-11-01",
+    "size_mb": 3461.2,
+    "suggested_id": "ts_stk_mins",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.stk_pledge",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\stk_pledge",
+    "latest": "2026-10-19",
+    "size_mb": 0.1,
+    "suggested_id": "ts_stk_pledge",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.stock_company",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\stock_company",
+    "latest": "2026-11-01",
+    "size_mb": 299.7,
+    "suggested_id": "ts_stock_company",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.sw_classify_l1",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\sw_classify_l1",
+    "latest": "2026-11-01",
+    "size_mb": 0.6,
+    "suggested_id": "ts_sw_classify_l1",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.sw_l1_member",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\sw_l1_member",
+    "latest": "2026-09-28",
+    "size_mb": 0.2,
+    "suggested_id": "ts_sw_l1_member",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.sw_mins",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\sw_mins",
+    "latest": "2026-11-01",
+    "size_mb": 495.1,
+    "suggested_id": "ts_sw_mins",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.top10_floatholders",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\top10_floatholders",
+    "latest": "2026-09-30",
+    "size_mb": 15.7,
+    "suggested_id": "ts_top10_floatholders",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.us_balancesheet",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\us_balancesheet",
+    "latest": "2026-09-28",
+    "size_mb": 111.1,
+    "suggested_id": "ts_us_balancesheet",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.us_basic",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\us_basic",
+    "latest": "2026-11-01",
+    "size_mb": 33.1,
+    "suggested_id": "ts_us_basic",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.us_cashflow",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\us_cashflow",
+    "latest": "2026-09-28",
+    "size_mb": 103.8,
+    "suggested_id": "ts_us_cashflow",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.us_fina_indicator",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\us_fina_indicator",
+    "latest": "2026-09-28",
+    "size_mb": 841.5,
+    "suggested_id": "ts_us_fina_indicator",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare.us_income",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\us_income",
+    "latest": "2026-09-28",
+    "size_mb": 110.0,
+    "suggested_id": "ts_us_income",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.dknife_snap",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\dknife_snap",
+    "latest": "2026-10-13",
+    "size_mb": 12.9,
+    "suggested_id": "tdx_dknife_snap",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.tdx_sector_min_tail",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\tdx_sector_min_tail",
+    "latest": "2026-10-12",
+    "size_mb": 61.2,
+    "suggested_id": "tdx_tdx_sector_min_tail",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_adj_factor",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_adj_factor",
+    "latest": "2026-10-30",
+    "size_mb": 15.1,
+    "suggested_id": "tdx_ts_adj_factor",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_anns_d",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_anns_d",
+    "latest": "2026-10-31",
+    "size_mb": 196.2,
+    "suggested_id": "tdx_ts_anns_d",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_bak_basic",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_bak_basic",
+    "latest": "2026-10-30",
+    "size_mb": 296.5,
+    "suggested_id": "tdx_ts_bak_basic",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_balancesheet",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_balancesheet",
+    "latest": "2026-10-13",
+    "size_mb": 9.6,
+    "suggested_id": "tdx_ts_balancesheet",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_balancesheet_vip",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_balancesheet_vip",
+    "latest": "2026-10-13",
+    "size_mb": 62.4,
+    "suggested_id": "tdx_ts_balancesheet_vip",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_block_trade",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_block_trade",
+    "latest": "2026-10-31",
+    "size_mb": 1.0,
+    "suggested_id": "tdx_ts_block_trade",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_broker_recommend",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_broker_recommend",
+    "latest": "2026-10-14",
+    "size_mb": 0.1,
+    "suggested_id": "tdx_ts_broker_recommend",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_bse_mapping",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_bse_mapping",
+    "latest": "2026-10-13",
+    "size_mb": 0.0,
+    "suggested_id": "tdx_ts_bse_mapping",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_cashflow",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_cashflow",
+    "latest": "2026-10-13",
+    "size_mb": 8.6,
+    "suggested_id": "tdx_ts_cashflow",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_cashflow_vip",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_cashflow_vip",
+    "latest": "2026-10-13",
+    "size_mb": 51.0,
+    "suggested_id": "tdx_ts_cashflow_vip",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_cb_basic",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_cb_basic",
+    "latest": "2026-10-13",
+    "size_mb": 0.2,
+    "suggested_id": "tdx_ts_cb_basic",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_cb_call",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_cb_call",
+    "latest": "2026-10-31",
+    "size_mb": 0.1,
+    "suggested_id": "tdx_ts_cb_call",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_cb_daily",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_cb_daily",
+    "latest": "2026-10-31",
+    "size_mb": 12.7,
+    "suggested_id": "tdx_ts_cb_daily",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_cb_issue",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_cb_issue",
+    "latest": "2026-10-28",
+    "size_mb": 0.2,
+    "suggested_id": "tdx_ts_cb_issue",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_cb_price_chg",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_cb_price_chg",
+    "latest": "2026-10-16",
+    "size_mb": 0.1,
+    "suggested_id": "tdx_ts_cb_price_chg",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_cb_rate",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_cb_rate",
+    "latest": "2026-10-16",
+    "size_mb": 0.0,
+    "suggested_id": "tdx_ts_cb_rate",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_cb_share",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_cb_share",
+    "latest": "2026-10-31",
+    "size_mb": 5.6,
+    "suggested_id": "tdx_ts_cb_share",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_cctv_news",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_cctv_news",
+    "latest": "2026-10-31",
+    "size_mb": 34.3,
+    "suggested_id": "tdx_ts_cctv_news",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_cn_cpi",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_cn_cpi",
+    "latest": "2026-10-13",
+    "size_mb": 0.0,
+    "suggested_id": "tdx_ts_cn_cpi",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_cn_gdp",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_cn_gdp",
+    "latest": "2026-10-13",
+    "size_mb": 0.0,
+    "suggested_id": "tdx_ts_cn_gdp",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_cn_m",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_cn_m",
+    "latest": "2026-10-13",
+    "size_mb": 0.0,
+    "suggested_id": "tdx_ts_cn_m",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_cn_pmi",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_cn_pmi",
+    "latest": "2026-10-13",
+    "size_mb": 0.1,
+    "suggested_id": "tdx_ts_cn_pmi",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_cn_ppi",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_cn_ppi",
+    "latest": "2026-10-13",
+    "size_mb": 0.0,
+    "suggested_id": "tdx_ts_cn_ppi",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_cyq_perf",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_cyq_perf",
+    "latest": "2026-10-30",
+    "size_mb": 121.8,
+    "suggested_id": "tdx_ts_cyq_perf",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_daily_basic",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_daily_basic",
+    "latest": "2026-10-30",
+    "size_mb": 195.6,
+    "suggested_id": "tdx_ts_daily_basic",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_daily_info",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_daily_info",
+    "latest": "2026-10-31",
+    "size_mb": 0.8,
+    "suggested_id": "tdx_ts_daily_info",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_dc_daily",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_dc_daily",
+    "latest": "2026-10-31",
+    "size_mb": 60.8,
+    "suggested_id": "tdx_ts_dc_daily",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_dc_hot",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_dc_hot",
+    "latest": "2026-10-31",
+    "size_mb": 0.4,
+    "suggested_id": "tdx_ts_dc_hot",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_dc_index",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_dc_index",
+    "latest": "2026-10-31",
+    "size_mb": 6.7,
+    "suggested_id": "tdx_ts_dc_index",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_dc_member",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_dc_member",
+    "latest": "2026-10-31",
+    "size_mb": 72.5,
+    "suggested_id": "tdx_ts_dc_member",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_disclosure_date",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_disclosure_date",
+    "latest": "2026-10-13",
+    "size_mb": 1.4,
+    "suggested_id": "tdx_ts_disclosure_date",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_dividend",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_dividend",
+    "latest": "2026-10-13",
+    "size_mb": 1.8,
+    "suggested_id": "tdx_ts_dividend",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_dividend_vip",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_dividend_vip",
+    "latest": "2026-10-13",
+    "size_mb": 0.8,
+    "suggested_id": "tdx_ts_dividend_vip",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_eco_cal",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_eco_cal",
+    "latest": "",
+    "size_mb": 0.0,
+    "suggested_id": "tdx_ts_eco_cal",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_emotion_daily",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_emotion_daily",
+    "latest": "2026-10-15",
+    "size_mb": 0.0,
+    "suggested_id": "tdx_ts_emotion_daily",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_emotion_ladder",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_emotion_ladder",
+    "latest": "2026-10-15",
+    "size_mb": 0.1,
+    "suggested_id": "tdx_ts_emotion_ladder",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_etf_basic",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_etf_basic",
+    "latest": "2026-09-27",
+    "size_mb": 0.1,
+    "suggested_id": "tdx_ts_etf_basic",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_express",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_express",
+    "latest": "2026-10-23",
+    "size_mb": 0.8,
+    "suggested_id": "tdx_ts_express",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_express_vip",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_express_vip",
+    "latest": "2026-10-23",
+    "size_mb": 0.9,
+    "suggested_id": "tdx_ts_express_vip",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_fina_audit",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_fina_audit",
+    "latest": "2026-10-13",
+    "size_mb": 1.2,
+    "suggested_id": "tdx_ts_fina_audit",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_fina_indicator",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_fina_indicator",
+    "latest": "2026-10-13",
+    "size_mb": 9.0,
+    "suggested_id": "tdx_ts_fina_indicator",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_fina_indicator_vip",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_fina_indicator_vip",
+    "latest": "2026-10-13",
+    "size_mb": 100.0,
+    "suggested_id": "tdx_ts_fina_indicator_vip",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_fina_mainbz",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_fina_mainbz",
+    "latest": "2026-10-13",
+    "size_mb": 20.0,
+    "suggested_id": "tdx_ts_fina_mainbz",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_fina_mainbz_vip",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_fina_mainbz_vip",
+    "latest": "2026-10-30",
+    "size_mb": 24.9,
+    "suggested_id": "tdx_ts_fina_mainbz_vip",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_forecast",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_forecast",
+    "latest": "2026-10-13",
+    "size_mb": 12.6,
+    "suggested_id": "tdx_ts_forecast",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_forecast_vip",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_forecast_vip",
+    "latest": "2026-10-13",
+    "size_mb": 14.9,
+    "suggested_id": "tdx_ts_forecast_vip",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_fund_adj",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_fund_adj",
+    "latest": "2026-10-31",
+    "size_mb": 4.2,
+    "suggested_id": "tdx_ts_fund_adj",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_fund_basic",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_fund_basic",
+    "latest": "2026-10-13",
+    "size_mb": 1.0,
+    "suggested_id": "tdx_ts_fund_basic",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_fund_company",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_fund_company",
+    "latest": "",
+    "size_mb": 0.0,
+    "suggested_id": "tdx_ts_fund_company",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_fund_daily",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_fund_daily",
+    "latest": "2026-10-31",
+    "size_mb": 38.7,
+    "suggested_id": "tdx_ts_fund_daily",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_fund_div",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_fund_div",
+    "latest": "2026-10-31",
+    "size_mb": 1.6,
+    "suggested_id": "tdx_ts_fund_div",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_fund_manager",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_fund_manager",
+    "latest": "2026-10-16",
+    "size_mb": 3.0,
+    "suggested_id": "tdx_ts_fund_manager",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_fund_portfolio",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_fund_portfolio",
+    "latest": "2026-10-17",
+    "size_mb": 63.7,
+    "suggested_id": "tdx_ts_fund_portfolio",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_fund_share",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_fund_share",
+    "latest": "2026-10-31",
+    "size_mb": 8.8,
+    "suggested_id": "tdx_ts_fund_share",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_fut_basic",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_fut_basic",
+    "latest": "2026-10-13",
+    "size_mb": 0.3,
+    "suggested_id": "tdx_ts_fut_basic",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_fut_daily",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_fut_daily",
+    "latest": "2026-10-31",
+    "size_mb": 43.7,
+    "suggested_id": "tdx_ts_fut_daily",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_fut_holding",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_fut_holding",
+    "latest": "2026-10-31",
+    "size_mb": 175.0,
+    "suggested_id": "tdx_ts_fut_holding",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_fut_mapping",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_fut_mapping",
+    "latest": "2026-10-30",
+    "size_mb": 0.3,
+    "suggested_id": "tdx_ts_fut_mapping",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_fut_settle",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_fut_settle",
+    "latest": "2026-10-31",
+    "size_mb": 4.1,
+    "suggested_id": "tdx_ts_fut_settle",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_fut_weekly_detail",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_fut_weekly_detail",
+    "latest": "2026-10-31",
+    "size_mb": 2.7,
+    "suggested_id": "tdx_ts_fut_weekly_detail",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_fut_weekly_monthly",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_fut_weekly_monthly",
+    "latest": "2026-10-13",
+    "size_mb": 1.5,
+    "suggested_id": "tdx_ts_fut_weekly_monthly",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_fut_wsr",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_fut_wsr",
+    "latest": "2026-10-31",
+    "size_mb": 4.1,
+    "suggested_id": "tdx_ts_fut_wsr",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_fx_daily",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_fx_daily",
+    "latest": "2026-10-31",
+    "size_mb": 1.8,
+    "suggested_id": "tdx_ts_fx_daily",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_fx_obasic",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_fx_obasic",
+    "latest": "2026-10-13",
+    "size_mb": 0.0,
+    "suggested_id": "tdx_ts_fx_obasic",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_ggt_daily",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_ggt_daily",
+    "latest": "2026-10-31",
+    "size_mb": 0.1,
+    "suggested_id": "tdx_ts_ggt_daily",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_ggt_top10",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_ggt_top10",
+    "latest": "2026-10-31",
+    "size_mb": 1.2,
+    "suggested_id": "tdx_ts_ggt_top10",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_global_fut",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_global_fut",
+    "latest": "2026-10-15",
+    "size_mb": 0.7,
+    "suggested_id": "tdx_ts_global_fut",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_hk_basic",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_hk_basic",
+    "latest": "2026-10-13",
+    "size_mb": 0.3,
+    "suggested_id": "tdx_ts_hk_basic",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_hk_daily",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_hk_daily",
+    "latest": "2026-10-31",
+    "size_mb": 11.9,
+    "suggested_id": "tdx_ts_hk_daily",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_hk_daily_adj",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_hk_daily_adj",
+    "latest": "2026-10-31",
+    "size_mb": 147.3,
+    "suggested_id": "tdx_ts_hk_daily_adj",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_hk_hold",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_hk_hold",
+    "latest": "2026-10-31",
+    "size_mb": 32.1,
+    "suggested_id": "tdx_ts_hk_hold",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_hk_tradecal",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_hk_tradecal",
+    "latest": "2026-10-31",
+    "size_mb": 0.1,
+    "suggested_id": "tdx_ts_hk_tradecal",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_hm_detail",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_hm_detail",
+    "latest": "2026-10-31",
+    "size_mb": 4.4,
+    "suggested_id": "tdx_ts_hm_detail",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_hm_list",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_hm_list",
+    "latest": "2026-10-13",
+    "size_mb": 0.0,
+    "suggested_id": "tdx_ts_hm_list",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_hs_const",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_hs_const",
+    "latest": "2026-10-13",
+    "size_mb": 0.0,
+    "suggested_id": "tdx_ts_hs_const",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_hsgt_top10",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_hsgt_top10",
+    "latest": "2026-10-31",
+    "size_mb": 0.4,
+    "suggested_id": "tdx_ts_hsgt_top10",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_income",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_income",
+    "latest": "2026-10-13",
+    "size_mb": 14.3,
+    "suggested_id": "tdx_ts_income",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_income_vip",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_income_vip",
+    "latest": "2026-10-13",
+    "size_mb": 36.4,
+    "suggested_id": "tdx_ts_income_vip",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_index_basic",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_index_basic",
+    "latest": "2026-10-13",
+    "size_mb": 0.2,
+    "suggested_id": "tdx_ts_index_basic",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_index_classify",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_index_classify",
+    "latest": "2026-10-13",
+    "size_mb": 0.0,
+    "suggested_id": "tdx_ts_index_classify",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_index_dailybasic",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_index_dailybasic",
+    "latest": "2026-10-31",
+    "size_mb": 1.4,
+    "suggested_id": "tdx_ts_index_dailybasic",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_index_global",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_index_global",
+    "latest": "2026-10-31",
+    "size_mb": 2.0,
+    "suggested_id": "tdx_ts_index_global",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_index_member_all",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_index_member_all",
+    "latest": "2026-10-13",
+    "size_mb": 0.2,
+    "suggested_id": "tdx_ts_index_member_all",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_index_monthly",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_index_monthly",
+    "latest": "2026-10-13",
+    "size_mb": 19.8,
+    "suggested_id": "tdx_ts_index_monthly",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_index_weekly",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_index_weekly",
+    "latest": "2026-10-13",
+    "size_mb": 80.1,
+    "suggested_id": "tdx_ts_index_weekly",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_index_weight",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_index_weight",
+    "latest": "2026-10-13",
+    "size_mb": 0.0,
+    "suggested_id": "tdx_ts_index_weight",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_kpl_concept",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_kpl_concept",
+    "latest": "2026-10-13",
+    "size_mb": 0.0,
+    "suggested_id": "tdx_ts_kpl_concept",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_kpl_concept_cons",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_kpl_concept_cons",
+    "latest": "2026-10-31",
+    "size_mb": 319.7,
+    "suggested_id": "tdx_ts_kpl_concept_cons",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_kpl_list",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_kpl_list",
+    "latest": "2026-10-31",
+    "size_mb": 10.5,
+    "suggested_id": "tdx_ts_kpl_list",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_limit_cpt_list",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_limit_cpt_list",
+    "latest": "2026-10-31",
+    "size_mb": 0.3,
+    "suggested_id": "tdx_ts_limit_cpt_list",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_limit_list_ths",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_limit_list_ths",
+    "latest": "2026-10-31",
+    "size_mb": 3.2,
+    "suggested_id": "tdx_ts_limit_list_ths",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_limit_step",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_limit_step",
+    "latest": "2026-10-31",
+    "size_mb": 0.1,
+    "suggested_id": "tdx_ts_limit_step",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_major_news",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_major_news",
+    "latest": "2026-10-31",
+    "size_mb": 175.0,
+    "suggested_id": "tdx_ts_major_news",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_margin",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_margin",
+    "latest": "2026-10-31",
+    "size_mb": 0.3,
+    "suggested_id": "tdx_ts_margin",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_margin_detail",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_margin_detail",
+    "latest": "2026-10-31",
+    "size_mb": 116.1,
+    "suggested_id": "tdx_ts_margin_detail",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_margin_secs",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_margin_secs",
+    "latest": "2026-10-31",
+    "size_mb": 15.5,
+    "suggested_id": "tdx_ts_margin_secs",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_moneyflow",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_moneyflow",
+    "latest": "2026-10-30",
+    "size_mb": 425.4,
+    "suggested_id": "tdx_ts_moneyflow",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_moneyflow_dc",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_moneyflow_dc",
+    "latest": "2026-10-31",
+    "size_mb": 171.4,
+    "suggested_id": "tdx_ts_moneyflow_dc",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_moneyflow_hsgt",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_moneyflow_hsgt",
+    "latest": "2026-10-31",
+    "size_mb": 0.1,
+    "suggested_id": "tdx_ts_moneyflow_hsgt",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_moneyflow_ind_dc",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_moneyflow_ind_dc",
+    "latest": "2026-10-31",
+    "size_mb": 22.7,
+    "suggested_id": "tdx_ts_moneyflow_ind_dc",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_moneyflow_ind_ths",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_moneyflow_ind_ths",
+    "latest": "2026-10-31",
+    "size_mb": 1.2,
+    "suggested_id": "tdx_ts_moneyflow_ind_ths",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_moneyflow_mkt_dc",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_moneyflow_mkt_dc",
+    "latest": "2026-10-31",
+    "size_mb": 0.2,
+    "suggested_id": "tdx_ts_moneyflow_mkt_dc",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_moneyflow_ths",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_moneyflow_ths",
+    "latest": "2026-10-30",
+    "size_mb": 101.6,
+    "suggested_id": "tdx_ts_moneyflow_ths",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_namechange",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_namechange",
+    "latest": "2026-10-29",
+    "size_mb": 0.1,
+    "suggested_id": "tdx_ts_namechange",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_new_share",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_new_share",
+    "latest": "2026-10-29",
+    "size_mb": 0.2,
+    "suggested_id": "tdx_ts_new_share",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_news",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_news",
+    "latest": "2026-10-31",
+    "size_mb": 556.6,
+    "suggested_id": "tdx_ts_news",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_opt_basic",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_opt_basic",
+    "latest": "2026-10-13",
+    "size_mb": 5.1,
+    "suggested_id": "tdx_ts_opt_basic",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_opt_daily",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_opt_daily",
+    "latest": "2026-10-31",
+    "size_mb": 469.2,
+    "suggested_id": "tdx_ts_opt_daily",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_pledge_detail",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_pledge_detail",
+    "latest": "2026-10-13",
+    "size_mb": 2.8,
+    "suggested_id": "tdx_ts_pledge_detail",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_pledge_stat",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_pledge_stat",
+    "latest": "2026-10-27",
+    "size_mb": 6.9,
+    "suggested_id": "tdx_ts_pledge_stat",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_repo_daily",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_repo_daily",
+    "latest": "2026-10-31",
+    "size_mb": 1.4,
+    "suggested_id": "tdx_ts_repo_daily",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_report_rc",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_report_rc",
+    "latest": "2026-10-31",
+    "size_mb": 38.3,
+    "suggested_id": "tdx_ts_report_rc",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_repurchase",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_repurchase",
+    "latest": "2026-10-31",
+    "size_mb": 0.9,
+    "suggested_id": "tdx_ts_repurchase",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_rt_min",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_rt_min",
+    "latest": "2026-10-23",
+    "size_mb": 11.4,
+    "suggested_id": "tdx_ts_rt_min",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_sge_basic",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_sge_basic",
+    "latest": "2026-10-13",
+    "size_mb": 0.0,
+    "suggested_id": "tdx_ts_sge_basic",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_sge_daily",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_sge_daily",
+    "latest": "2026-10-31",
+    "size_mb": 1.1,
+    "suggested_id": "tdx_ts_sge_daily",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_share_float",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_share_float",
+    "latest": "2026-10-30",
+    "size_mb": 29.1,
+    "suggested_id": "tdx_ts_share_float",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_slb_len",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_slb_len",
+    "latest": "2026-10-13",
+    "size_mb": 0.0,
+    "suggested_id": "tdx_ts_slb_len",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_slb_sec",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_slb_sec",
+    "latest": "2026-10-14",
+    "size_mb": 35.7,
+    "suggested_id": "tdx_ts_slb_sec",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_stk_ah_comparison",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_stk_ah_comparison",
+    "latest": "2026-10-30",
+    "size_mb": 0.8,
+    "suggested_id": "tdx_ts_stk_ah_comparison",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_stk_auction",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_stk_auction",
+    "latest": "2026-10-30",
+    "size_mb": 85.0,
+    "suggested_id": "tdx_ts_stk_auction",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_stk_auction_c",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_stk_auction_c",
+    "latest": "2026-10-30",
+    "size_mb": 188.4,
+    "suggested_id": "tdx_ts_stk_auction_c",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_stk_auction_o",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_stk_auction_o",
+    "latest": "2026-10-30",
+    "size_mb": 176.4,
+    "suggested_id": "tdx_ts_stk_auction_o",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_stk_factor",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_stk_factor",
+    "latest": "2026-10-30",
+    "size_mb": 1293.4,
+    "suggested_id": "tdx_ts_stk_factor",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_stk_factor_pro",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_stk_factor_pro",
+    "latest": "2026-10-30",
+    "size_mb": 13878.1,
+    "suggested_id": "tdx_ts_stk_factor_pro",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_stk_holdernumber",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_stk_holdernumber",
+    "latest": "2026-10-31",
+    "size_mb": 1.9,
+    "suggested_id": "tdx_ts_stk_holdernumber",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_stk_holdertrade",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_stk_holdertrade",
+    "latest": "2026-10-31",
+    "size_mb": 3.0,
+    "suggested_id": "tdx_ts_stk_holdertrade",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_stk_limit",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_stk_limit",
+    "latest": "2026-10-30",
+    "size_mb": 48.1,
+    "suggested_id": "tdx_ts_stk_limit",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_stk_managers",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_stk_managers",
+    "latest": "2026-10-13",
+    "size_mb": 5.3,
+    "suggested_id": "tdx_ts_stk_managers",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_stk_premarket",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_stk_premarket",
+    "latest": "2026-10-30",
+    "size_mb": 94.5,
+    "suggested_id": "tdx_ts_stk_premarket",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_stk_rewards",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_stk_rewards",
+    "latest": "2026-10-13",
+    "size_mb": 16.7,
+    "suggested_id": "tdx_ts_stk_rewards",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_stk_surv",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_stk_surv",
+    "latest": "2026-10-31",
+    "size_mb": 0.6,
+    "suggested_id": "tdx_ts_stk_surv",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_stk_week_month_adj",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_stk_week_month_adj",
+    "latest": "2026-10-17",
+    "size_mb": 207.7,
+    "suggested_id": "tdx_ts_stk_week_month_adj",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_stk_weekly_monthly",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_stk_weekly_monthly",
+    "latest": "2026-10-17",
+    "size_mb": 131.0,
+    "suggested_id": "tdx_ts_stk_weekly_monthly",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_stock_company",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_stock_company",
+    "latest": "",
+    "size_mb": 0.0,
+    "suggested_id": "tdx_ts_stock_company",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_stock_hsgt",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_stock_hsgt",
+    "latest": "2026-10-30",
+    "size_mb": 6.1,
+    "suggested_id": "tdx_ts_stock_hsgt",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_suspend_d",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_suspend_d",
+    "latest": "2026-10-30",
+    "size_mb": 0.1,
+    "suggested_id": "tdx_ts_suspend_d",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_sz_daily_info",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_sz_daily_info",
+    "latest": "2026-10-31",
+    "size_mb": 0.5,
+    "suggested_id": "tdx_ts_sz_daily_info",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_tdx_index",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_tdx_index",
+    "latest": "2026-10-13",
+    "size_mb": 0.0,
+    "suggested_id": "tdx_ts_tdx_index",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_tdx_member",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_tdx_member",
+    "latest": "2026-10-30",
+    "size_mb": 91.7,
+    "suggested_id": "tdx_ts_tdx_member",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_ths_daily",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_ths_daily",
+    "latest": "2026-10-31",
+    "size_mb": 94.7,
+    "suggested_id": "tdx_ts_ths_daily",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_ths_hot",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_ths_hot",
+    "latest": "2026-10-31",
+    "size_mb": 0.5,
+    "suggested_id": "tdx_ts_ths_hot",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_ths_index",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_ths_index",
+    "latest": "2026-09-27",
+    "size_mb": 0.0,
+    "suggested_id": "tdx_ts_ths_index",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_ths_member",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_ths_member",
+    "latest": "2026-10-13",
+    "size_mb": 1.7,
+    "suggested_id": "tdx_ts_ths_member",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_top10_floatholders",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_top10_floatholders",
+    "latest": "2026-10-13",
+    "size_mb": 40.7,
+    "suggested_id": "tdx_ts_top10_floatholders",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_top10_holders",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_top10_holders",
+    "latest": "2026-10-13",
+    "size_mb": 43.2,
+    "suggested_id": "tdx_ts_top10_holders",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_trade_cal",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_trade_cal",
+    "latest": "2026-10-13",
+    "size_mb": 0.1,
+    "suggested_id": "tdx_ts_trade_cal",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_us_basic",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_us_basic",
+    "latest": "2026-10-13",
+    "size_mb": 1.0,
+    "suggested_id": "tdx_ts_us_basic",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_us_daily",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_us_daily",
+    "latest": "2026-10-31",
+    "size_mb": 277.1,
+    "suggested_id": "tdx_ts_us_daily",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_us_tbr",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_us_tbr",
+    "latest": "2026-10-31",
+    "size_mb": 0.1,
+    "suggested_id": "tdx_ts_us_tbr",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_us_tradecal",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_us_tradecal",
+    "latest": "2026-10-31",
+    "size_mb": 0.1,
+    "suggested_id": "tdx_ts_us_tradecal",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_us_trycr",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_us_trycr",
+    "latest": "2026-10-31",
+    "size_mb": 0.1,
+    "suggested_id": "tdx_ts_us_trycr",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_us_tycr",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_us_tycr",
+    "latest": "2026-10-31",
+    "size_mb": 0.1,
+    "suggested_id": "tdx_ts_us_tycr",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_wz_index",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_wz_index",
+    "latest": "2026-10-31",
+    "size_mb": 0.1,
+    "suggested_id": "tdx_ts_wz_index",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "cnopendata",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\cnopendata",
+    "latest": "2026-10-21",
+    "size_mb": 9.4,
+    "suggested_id": "cnopendata",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare_staging",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare_staging",
+    "latest": "2026-11-01",
+    "size_mb": 1657.8,
+    "suggested_id": "tushare_staging",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tushare_v2",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare_v2",
+    "latest": "2026-10-24",
+    "size_mb": 2083.3,
+    "suggested_id": "tushare_v2",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "anns_pdf",
+    "domain": "开源情报",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\anns_pdf",
+    "latest": "2026-10-19",
+    "size_mb": 1670.7,
+    "suggested_id": "intel_anns_pdf",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "anns_d",
+    "domain": "开源情报",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\anns_d",
+    "latest": "2026-11-01",
+    "size_mb": 279.3,
+    "suggested_id": "intel_anns_d",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "major_news",
+    "domain": "开源情报",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\major_news",
+    "latest": "2026-11-01",
+    "size_mb": 2.1,
+    "suggested_id": "intel_major_news",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "irm_qa",
+    "domain": "开源情报",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\irm_qa_sh",
+    "latest": "2026-10-15",
+    "size_mb": 102.7,
+    "suggested_id": "intel_irm_qa",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "research_report",
+    "domain": "开源情报",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\research_report",
+    "latest": "2026-11-01",
+    "size_mb": 19.3,
+    "suggested_id": "intel_research_report",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "xueqiu_info.xq_hot_post",
+    "domain": "开源情报",
+    "kind": "sqlite_table",
+    "path": "quant_backtest\\data\\xueqiu\\xueqiu_info.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "xq_xq_hot_post",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "xueqiu_info.xq_comment",
+    "domain": "开源情报",
+    "kind": "sqlite_table",
+    "path": "quant_backtest\\data\\xueqiu\\xueqiu_info.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "xq_xq_comment",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "xueqiu_info.xq_kline",
+    "domain": "开源情报",
+    "kind": "sqlite_table",
+    "path": "quant_backtest\\data\\xueqiu\\xueqiu_info.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "xq_xq_kline",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "hypotheses.hypotheses",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "research\\hypotheses.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "research_hypotheses",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "PDF_ingest_notes",
+    "domain": "学习派生",
+    "kind": "dir",
+    "path": "C:\\项目\\PDF\\_ingest_notes",
+    "latest": "2026-11-01",
+    "size_mb": 0.0,
+    "suggested_id": "kb_notes",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "knowledge_docs",
+    "domain": "学习派生",
+    "kind": "dir",
+    "path": "knowledge_docs",
+    "latest": "2026-11-01",
+    "size_mb": 12.3,
+    "suggested_id": "knowledge_docs",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "paper.positions_snapshot",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "k_stock\\data\\paper.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "paper_positions_snapshot",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "paper.decision_snapshots",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "k_stock\\data\\paper.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "paper_decision_snapshots",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "quant_db.nine_dim_rc_meta",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "quant_backtest\\data\\quant.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "quant_nine_dim_rc_meta",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "quant_db.nine_dim_fc_meta",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "quant_backtest\\data\\quant.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "quant_nine_dim_fc_meta",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_raw_zip（948 ZIP/清单/sha256）",
+    "domain": "开源情报",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/01_数据分包",
+    "latest": null,
+    "size_mb": 2903.3,
+    "suggested_id": "yt_raw_zip",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_normalized（videos/comments/channel_map parquet）",
+    "domain": "开源情报",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/10_规范化",
+    "latest": null,
+    "size_mb": 822.7,
+    "suggested_id": "yt_normalized",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_cleaned_comments（清洗+PII脱敏）",
+    "domain": "开源情报",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/20_清洗",
+    "latest": null,
+    "size_mb": 148.5,
+    "suggested_id": "yt_cleaned_comments",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_transcripts（转写）",
+    "domain": "开源情报",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/20_转写",
+    "latest": null,
+    "size_mb": 2.5,
+    "suggested_id": "yt_transcripts",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_knowledge_units（知识单元）",
+    "domain": "学习派生",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/30_知识单元",
+    "latest": null,
+    "size_mb": 0.0,
+    "suggested_id": "yt_knowledge_units",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_distill（知识提炼）",
+    "domain": "学习派生",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/35_知识提炼",
+    "latest": null,
+    "size_mb": 19.7,
+    "suggested_id": "yt_distill",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_faq（FAQ 语义归并 133 条）",
+    "domain": "学习派生",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/37_FAQ挖掘",
+    "latest": null,
+    "size_mb": 63.9,
+    "suggested_id": "yt_faq",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_index（62,401 docs bge-m3）",
+    "domain": "学习派生",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/40_索引",
+    "latest": null,
+    "size_mb": 331.9,
+    "suggested_id": "yt_index",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_briefs（简报）",
+    "domain": "学习派生",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/70_简报",
+    "latest": null,
+    "size_mb": 0.0,
+    "suggested_id": "yt_briefs",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_review（复核）",
+    "domain": "平台运行",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/80_复核",
+    "latest": null,
+    "size_mb": 0.1,
+    "suggested_id": "yt_review",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_reports（报告）",
+    "domain": "学习派生",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/90_报告",
+    "latest": null,
+    "size_mb": 0.4,
+    "suggested_id": "yt_reports",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.dim_channel",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_dim_channel",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.dim_topic",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_dim_topic",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.dim_video",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_dim_video",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.bridge_video_topic",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_bridge_video_topic",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.fact_comment",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_fact_comment",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.fact_knowledge_unit",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_fact_knowledge_unit",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.fact_transcript",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_fact_transcript",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.fact_faq_semantic",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_fact_faq_semantic",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.bridge_faq_comment",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_bridge_faq_comment",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.meta_faq_build",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_meta_faq_build",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.fact_transcript_seg",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_fact_transcript_seg",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.meta_etl",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_meta_etl",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.fact_transcript_signal",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_fact_transcript_signal",
+    "action": "按价值排期暴露（dataset contract/portal 映射）",
+    "owner": "DATA4"
+   }
+  ],
+  "stale_30d": [
+   {
+    "label": "tushare.irm_qa_sh_probe",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\irm_qa_sh_probe",
+    "latest": "2026-09-27",
+    "size_mb": 1.0,
+    "suggested_id": "ts_irm_qa_sh_probe",
+    "age_days": 37,
+    "action": "排查采集/重抓；probe 类可降级",
+    "owner": "DATA2"
+   },
+   {
+    "label": "tushare.irm_qa_sz_probe",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\irm_qa_sz_probe",
+    "latest": "2026-09-27",
+    "size_mb": 0.8,
+    "suggested_id": "ts_irm_qa_sz_probe",
+    "age_days": 37,
+    "action": "排查采集/重抓；probe 类可降级",
+    "owner": "DATA2"
+   },
+   {
+    "label": "tdx.tdx_sector_def",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\tdx_sector_def",
+    "latest": "2026-09-27",
+    "size_mb": 0.0,
+    "suggested_id": "tdx_tdx_sector_def",
+    "age_days": 37,
+    "action": "排查采集/重抓；probe 类可降级",
+    "owner": "DATA2"
+   },
+   {
+    "label": "tdx.ts_etf_basic",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_etf_basic",
+    "latest": "2026-09-27",
+    "size_mb": 0.1,
+    "suggested_id": "tdx_ts_etf_basic",
+    "age_days": 37,
+    "action": "排查采集/重抓；probe 类可降级",
+    "owner": "DATA2"
+   },
+   {
+    "label": "tdx.ts_ths_index",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_ths_index",
+    "latest": "2026-09-27",
+    "size_mb": 0.0,
+    "suggested_id": "tdx_ts_ths_index",
+    "age_days": 37,
+    "action": "排查采集/重抓；probe 类可降级",
+    "owner": "DATA2"
+   },
+   {
+    "label": "tushare.hk_balancesheet",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\hk_balancesheet",
+    "latest": "2026-09-28",
+    "size_mb": 37.2,
+    "suggested_id": "ts_hk_balancesheet",
+    "age_days": 36,
+    "action": "排查采集/重抓；probe 类可降级",
+    "owner": "DATA2"
+   },
+   {
+    "label": "tushare.hk_cashflow",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\hk_cashflow",
+    "latest": "2026-09-28",
+    "size_mb": 31.1,
+    "suggested_id": "ts_hk_cashflow",
+    "age_days": 36,
+    "action": "排查采集/重抓；probe 类可降级",
+    "owner": "DATA2"
+   },
+   {
+    "label": "tushare.hk_fina_indicator",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\hk_fina_indicator",
+    "latest": "2026-09-28",
+    "size_mb": 181.5,
+    "suggested_id": "ts_hk_fina_indicator",
+    "age_days": 36,
+    "action": "排查采集/重抓；probe 类可降级",
+    "owner": "DATA2"
+   },
+   {
+    "label": "tushare.hk_income",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\hk_income",
+    "latest": "2026-09-28",
+    "size_mb": 27.2,
+    "suggested_id": "ts_hk_income",
+    "age_days": 36,
+    "action": "排查采集/重抓；probe 类可降级",
+    "owner": "DATA2"
+   },
+   {
+    "label": "tushare.sw_l1_member",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\sw_l1_member",
+    "latest": "2026-09-28",
+    "size_mb": 0.2,
+    "suggested_id": "ts_sw_l1_member",
+    "age_days": 36,
+    "action": "排查采集/重抓；probe 类可降级",
+    "owner": "DATA2"
+   },
+   {
+    "label": "tushare.us_balancesheet",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\us_balancesheet",
+    "latest": "2026-09-28",
+    "size_mb": 111.1,
+    "suggested_id": "ts_us_balancesheet",
+    "age_days": 36,
+    "action": "排查采集/重抓；probe 类可降级",
+    "owner": "DATA2"
+   },
+   {
+    "label": "tushare.us_cashflow",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\us_cashflow",
+    "latest": "2026-09-28",
+    "size_mb": 103.8,
+    "suggested_id": "ts_us_cashflow",
+    "age_days": 36,
+    "action": "排查采集/重抓；probe 类可降级",
+    "owner": "DATA2"
+   },
+   {
+    "label": "tushare.us_fina_indicator",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\us_fina_indicator",
+    "latest": "2026-09-28",
+    "size_mb": 841.5,
+    "suggested_id": "ts_us_fina_indicator",
+    "age_days": 36,
+    "action": "排查采集/重抓；probe 类可降级",
+    "owner": "DATA2"
+   },
+   {
+    "label": "tushare.us_income",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\us_income",
+    "latest": "2026-09-28",
+    "size_mb": 110.0,
+    "suggested_id": "ts_us_income",
+    "age_days": 36,
+    "action": "排查采集/重抓；probe 类可降级",
+    "owner": "DATA2"
+   },
+   {
+    "label": "tushare.stk_managers",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\stk_managers",
+    "latest": "2026-09-30",
+    "size_mb": 7.2,
+    "suggested_id": "ts_stk_managers",
+    "age_days": 34,
+    "action": "排查采集/重抓；probe 类可降级",
+    "owner": "DATA2"
+   },
+   {
+    "label": "tushare.top10_floatholders",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\top10_floatholders",
+    "latest": "2026-09-30",
+    "size_mb": 15.7,
+    "suggested_id": "ts_top10_floatholders",
+    "age_days": 34,
+    "action": "排查采集/重抓；probe 类可降级",
+    "owner": "DATA2"
+   },
+   {
+    "label": "tushare.top10_holders",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tushare\\top10_holders",
+    "latest": "2026-09-30",
+    "size_mb": 16.3,
+    "suggested_id": "ts_top10_holders",
+    "age_days": 34,
+    "action": "排查采集/重抓；probe 类可降级",
+    "owner": "DATA2"
+   }
+  ],
+  "no_latest": [
+   {
+    "label": "tdx.ts_eco_cal",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_eco_cal",
+    "latest": "",
+    "size_mb": 0.0,
+    "suggested_id": "tdx_ts_eco_cal",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_fund_company",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_fund_company",
+    "latest": "",
+    "size_mb": 0.0,
+    "suggested_id": "tdx_ts_fund_company",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx.ts_stock_company",
+    "domain": "接口数据",
+    "kind": "dir",
+    "path": "quant_backtest\\data\\tdx\\ts_stock_company",
+    "latest": "",
+    "size_mb": 0.0,
+    "suggested_id": "tdx_ts_stock_company",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "xueqiu_info.xq_status",
+    "domain": "开源情报",
+    "kind": "sqlite_table",
+    "path": "quant_backtest\\data\\xueqiu\\xueqiu_info.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "xq_xq_status",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "xueqiu_info.xq_status_classified",
+    "domain": "开源情报",
+    "kind": "sqlite_table",
+    "path": "quant_backtest\\data\\xueqiu\\xueqiu_info.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "xq_xq_status_classified",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "xueqiu_info.xq_hot_post",
+    "domain": "开源情报",
+    "kind": "sqlite_table",
+    "path": "quant_backtest\\data\\xueqiu\\xueqiu_info.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "xq_xq_hot_post",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "xueqiu_info.xq_comment",
+    "domain": "开源情报",
+    "kind": "sqlite_table",
+    "path": "quant_backtest\\data\\xueqiu\\xueqiu_info.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "xq_xq_comment",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "xueqiu_info.xq_quote",
+    "domain": "开源情报",
+    "kind": "sqlite_table",
+    "path": "quant_backtest\\data\\xueqiu\\xueqiu_info.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "xq_xq_quote",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "xueqiu_info.xq_kline",
+    "domain": "开源情报",
+    "kind": "sqlite_table",
+    "path": "quant_backtest\\data\\xueqiu\\xueqiu_info.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "xq_xq_kline",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx_info.stock_notice",
+    "domain": "开源情报",
+    "kind": "sqlite_table",
+    "path": "quant_backtest\\data\\tdx\\tdx_info.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "tdx_stock_notice",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx_info.stock_report",
+    "domain": "开源情报",
+    "kind": "sqlite_table",
+    "path": "quant_backtest\\data\\tdx\\tdx_info.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "tdx_stock_report",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "tdx_info.stock_news",
+    "domain": "开源情报",
+    "kind": "sqlite_table",
+    "path": "quant_backtest\\data\\tdx\\tdx_info.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "tdx_stock_news",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "hypotheses.hypotheses",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "research\\hypotheses.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "research_hypotheses",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "paper.orders",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "k_stock\\data\\paper.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "paper_orders",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "paper.ledger",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "k_stock\\data\\paper.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "paper_ledger",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "paper.account",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "k_stock\\data\\paper.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "paper_account",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "paper.positions",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "k_stock\\data\\paper.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "paper_positions",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "paper.equity_marks",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "k_stock\\data\\paper.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "paper_equity_marks",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "paper.positions_snapshot",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "k_stock\\data\\paper.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "paper_positions_snapshot",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "paper.decision_snapshots",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "k_stock\\data\\paper.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "paper_decision_snapshots",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "quant_db.chanlun_pool",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "quant_backtest\\data\\quant.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "quant_chanlun_pool",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "quant_db.nine_dim_rc",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "quant_backtest\\data\\quant.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "quant_nine_dim_rc",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "quant_db.nine_dim_rc_meta",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "quant_backtest\\data\\quant.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "quant_nine_dim_rc_meta",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "quant_db.nine_dim_fina",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "quant_backtest\\data\\quant.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "quant_nine_dim_fina",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "quant_db.nine_dim_fc",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "quant_backtest\\data\\quant.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "quant_nine_dim_fc",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "quant_db.nine_dim_fc_meta",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "quant_backtest\\data\\quant.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "quant_nine_dim_fc_meta",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "news_db.news",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "news_collector\\news.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "news_news",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "news_db.runs",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "news_collector\\news.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "news_runs",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "news_db.ai_briefs",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "news_collector\\news.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "news_ai_briefs",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "news_db.ai_reviews",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "news_collector\\news.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "news_ai_reviews",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "news_db.quotes",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "news_collector\\news.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "news_quotes",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "news_db.jev_review_queue",
+    "domain": "平台运行",
+    "kind": "sqlite_table",
+    "path": "news_collector\\news.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "news_jev_review_queue",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_raw_zip（948 ZIP/清单/sha256）",
+    "domain": "开源情报",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/01_数据分包",
+    "latest": null,
+    "size_mb": 2903.3,
+    "suggested_id": "yt_raw_zip",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_normalized（videos/comments/channel_map parquet）",
+    "domain": "开源情报",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/10_规范化",
+    "latest": null,
+    "size_mb": 822.7,
+    "suggested_id": "yt_normalized",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_cleaned_comments（清洗+PII脱敏）",
+    "domain": "开源情报",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/20_清洗",
+    "latest": null,
+    "size_mb": 148.5,
+    "suggested_id": "yt_cleaned_comments",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_transcripts（转写）",
+    "domain": "开源情报",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/20_转写",
+    "latest": null,
+    "size_mb": 2.5,
+    "suggested_id": "yt_transcripts",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_knowledge_units（知识单元）",
+    "domain": "学习派生",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/30_知识单元",
+    "latest": null,
+    "size_mb": 0.0,
+    "suggested_id": "yt_knowledge_units",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_distill（知识提炼）",
+    "domain": "学习派生",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/35_知识提炼",
+    "latest": null,
+    "size_mb": 19.7,
+    "suggested_id": "yt_distill",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_faq（FAQ 语义归并 133 条）",
+    "domain": "学习派生",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/37_FAQ挖掘",
+    "latest": null,
+    "size_mb": 63.9,
+    "suggested_id": "yt_faq",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_index（62,401 docs bge-m3）",
+    "domain": "学习派生",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/40_索引",
+    "latest": null,
+    "size_mb": 331.9,
+    "suggested_id": "yt_index",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_rag（4,926 chunks + packed 62,401）",
+    "domain": "学习派生",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/50_RAG",
+    "latest": null,
+    "size_mb": 720.3,
+    "suggested_id": "yt_rag",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_cards（学习卡）",
+    "domain": "学习派生",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/60_学习卡",
+    "latest": null,
+    "size_mb": 0.0,
+    "suggested_id": "yt_learning_cards",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_briefs（简报）",
+    "domain": "学习派生",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/70_简报",
+    "latest": null,
+    "size_mb": 0.0,
+    "suggested_id": "yt_briefs",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_review（复核）",
+    "domain": "平台运行",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/80_复核",
+    "latest": null,
+    "size_mb": 0.1,
+    "suggested_id": "yt_review",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_reports（报告）",
+    "domain": "学习派生",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/90_报告",
+    "latest": null,
+    "size_mb": 0.4,
+    "suggested_id": "yt_reports",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning.db（星型模型 9 表，统一取数入口）",
+    "domain": "学习派生",
+    "kind": "corpus_layer",
+    "path": "C:/项目/知识库/00_数据仓",
+    "latest": null,
+    "size_mb": 580.7,
+    "suggested_id": "yt_learning.db",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.dim_channel",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_dim_channel",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.dim_topic",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_dim_topic",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.dim_video",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_dim_video",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.bridge_video_topic",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_bridge_video_topic",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.fact_comment",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_fact_comment",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.fact_knowledge_unit",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_fact_knowledge_unit",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.fact_transcript",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_fact_transcript",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.fact_faq_semantic",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_fact_faq_semantic",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.bridge_faq_comment",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_bridge_faq_comment",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.meta_faq_build",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_meta_faq_build",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.fact_transcript_seg",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_fact_transcript_seg",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.meta_etl",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_meta_etl",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   },
+   {
+    "label": "yt_learning_db.fact_transcript_signal",
+    "domain": "学习派生",
+    "kind": "sqlite_table",
+    "path": "C:/项目/知识库/00_数据仓/yt_learning.db",
+    "latest": null,
+    "size_mb": null,
+    "suggested_id": "yt_fact_transcript_signal",
+    "action": "补 inventory 元数据 latest 字段（生成器修复，不写数据根）",
+    "owner": "DATA4"
+   }
+  ]
+ },
+ "dry_run_drafts": {
+  "manifest": {
+   "tool": "tools/datawarehouse/manifest_repair.py（默认 dry-run；--apply 才写）",
+   "items": [
+    {
+     "source": "tdx",
+     "missing_keys": [
+      "crypto_daily",
+      "guba_posts",
+      "us_legacy",
+      "v2_bar_daily"
+     ],
+     "count": 4,
+     "command_dry": "python tools/datawarehouse/manifest_repair.py --json"
+    },
+    {
+     "source": "tushare",
+     "missing_keys": [
+      "index_global",
+      "quarantine_prod_overwrite"
+     ],
+     "count": 2,
+     "command_dry": "python tools/datawarehouse/manifest_repair.py --json"
+    },
+    {
+     "source": "xueqiu",
+     "missing_keys": [
+      "xq_earningforecast",
+      "xq_hot_deal",
+      "xq_inner_trade"
+     ],
+     "count": 3,
+     "command_dry": "python tools/datawarehouse/manifest_repair.py --json"
+    }
+   ],
+   "note": "manifest 补键仅登记键名/状态，不抓数、不改 parquet；需 DATA3 复核后 apply",
+   "repair_tool_dry_run": {
+    "plan": [
+     {
+      "table": "quarantine_prod_overwrite",
+      "skip": "lifecycle_deprecated"
+     },
+     {
+      "table": "xq_comment",
+      "skip": "lifecycle_planned"
+     },
+     {
+      "table": "xq_quote_snap",
+      "skip": "lifecycle_deprecated"
+     }
+    ]
+   },
+   "registry_align_dry_run": {
+    "tool": "registry_align",
+    "mode": "check",
+    "generated_at": "2026-11-03T16:43:07+08:00",
+    "catalog": {
+     "path": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\catalog.json",
+     "version": 35,
+     "tables": 256,
+     "sha256": "e13b6a08a5f16f0cfa41a98a30708f7a6e85a48898e7d1deecf54d9868274ba9"
+    },
+    "registry": {
+     "path": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\warehouse_registry.json",
+     "catalog_sha256": "e13b6a08a5f16f0cfa41a98a30708f7a6e85a48898e7d1deecf54d9868274ba9",
+     "physical_count": 256,
+     "display_count": 258,
+     "generated_at": "2026-11-03T09:41:25.652612+08:00"
+    },
+    "match_before": true,
+    "diffs_before": [],
+    "rebuild": {
+     "performed": false
+    },
+    "match_after": null,
+    "diffs_after": [],
+    "metadata": {
+     "tool": "metadata_consistency",
+     "code": 0,
+     "catalog_version": 35,
+     "tables": 256,
+     "physical_count": 256,
+     "issues": [],
+     "warnings": []
+    },
+    "kg_log": null,
+    "lock": null,
+    "rolled_back": false,
+    "exit_code": 0,
+    "error": null,
+    "elapsed_s": 0.09,
+    "info_before": []
+   }
+  },
+  "registry": {
+   "count": 49,
+   "items": [
+    {
+     "suggested_id": "ts_.git",
+     "label": "tushare..git",
+     "domain": "接口数据",
+     "kind": "dir",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "xq_xq_status_classified",
+     "label": "xueqiu_info.xq_status_classified",
+     "domain": "开源情报",
+     "kind": "sqlite_table",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "research_hypotheses",
+     "label": "hypotheses.hypotheses",
+     "domain": "学习派生",
+     "kind": "sqlite_table",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "research_shadow",
+     "label": "research_shadow",
+     "domain": "学习派生",
+     "kind": "dir",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "paper_orders",
+     "label": "paper.orders",
+     "domain": "平台运行",
+     "kind": "sqlite_table",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "paper_ledger",
+     "label": "paper.ledger",
+     "domain": "平台运行",
+     "kind": "sqlite_table",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "paper_positions",
+     "label": "paper.positions",
+     "domain": "平台运行",
+     "kind": "sqlite_table",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "paper_equity_marks",
+     "label": "paper.equity_marks",
+     "domain": "平台运行",
+     "kind": "sqlite_table",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "paper_positions_snapshot",
+     "label": "paper.positions_snapshot",
+     "domain": "平台运行",
+     "kind": "sqlite_table",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "paper_decision_snapshots",
+     "label": "paper.decision_snapshots",
+     "domain": "平台运行",
+     "kind": "sqlite_table",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "quant_chanlun_pool",
+     "label": "quant_db.chanlun_pool",
+     "domain": "平台运行",
+     "kind": "sqlite_table",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "quant_nine_dim_rc",
+     "label": "quant_db.nine_dim_rc",
+     "domain": "平台运行",
+     "kind": "sqlite_table",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "quant_nine_dim_rc_meta",
+     "label": "quant_db.nine_dim_rc_meta",
+     "domain": "平台运行",
+     "kind": "sqlite_table",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "quant_nine_dim_fina",
+     "label": "quant_db.nine_dim_fina",
+     "domain": "平台运行",
+     "kind": "sqlite_table",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "quant_nine_dim_fc",
+     "label": "quant_db.nine_dim_fc",
+     "domain": "平台运行",
+     "kind": "sqlite_table",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "quant_nine_dim_fc_meta",
+     "label": "quant_db.nine_dim_fc_meta",
+     "domain": "平台运行",
+     "kind": "sqlite_table",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "news_runs",
+     "label": "news_db.runs",
+     "domain": "平台运行",
+     "kind": "sqlite_table",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "news_ai_briefs",
+     "label": "news_db.ai_briefs",
+     "domain": "平台运行",
+     "kind": "sqlite_table",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "news_ai_reviews",
+     "label": "news_db.ai_reviews",
+     "domain": "平台运行",
+     "kind": "sqlite_table",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "news_quotes",
+     "label": "news_db.quotes",
+     "domain": "平台运行",
+     "kind": "sqlite_table",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "news_jev_review_queue",
+     "label": "news_db.jev_review_queue",
+     "domain": "平台运行",
+     "kind": "sqlite_table",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "automation_runs",
+     "label": "automation_runs",
+     "domain": "平台运行",
+     "kind": "dir",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "yt_raw_zip",
+     "label": "yt_raw_zip（948 ZIP/清单/sha256）",
+     "domain": "开源情报",
+     "kind": "corpus_layer",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "yt_normalized",
+     "label": "yt_normalized（videos/comments/channel_map parquet）",
+     "domain": "开源情报",
+     "kind": "corpus_layer",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "yt_cleaned_comments",
+     "label": "yt_cleaned_comments（清洗+PII脱敏）",
+     "domain": "开源情报",
+     "kind": "corpus_layer",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "yt_transcripts",
+     "label": "yt_transcripts（转写）",
+     "domain": "开源情报",
+     "kind": "corpus_layer",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "yt_knowledge_units",
+     "label": "yt_knowledge_units（知识单元）",
+     "domain": "学习派生",
+     "kind": "corpus_layer",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "yt_distill",
+     "label": "yt_distill（知识提炼）",
+     "domain": "学习派生",
+     "kind": "corpus_layer",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "yt_faq",
+     "label": "yt_faq（FAQ 语义归并 133 条）",
+     "domain": "学习派生",
+     "kind": "corpus_layer",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "yt_index",
+     "label": "yt_index（62,401 docs bge-m3）",
+     "domain": "学习派生",
+     "kind": "corpus_layer",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "yt_rag",
+     "label": "yt_rag（4,926 chunks + packed 62,401）",
+     "domain": "学习派生",
+     "kind": "corpus_layer",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "yt_learning_cards",
+     "label": "yt_learning_cards（学习卡）",
+     "domain": "学习派生",
+     "kind": "corpus_layer",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "yt_briefs",
+     "label": "yt_briefs（简报）",
+     "domain": "学习派生",
+     "kind": "corpus_layer",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "yt_review",
+     "label": "yt_review（复核）",
+     "domain": "平台运行",
+     "kind": "corpus_layer",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "yt_reports",
+     "label": "yt_reports（报告）",
+     "domain": "学习派生",
+     "kind": "corpus_layer",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "yt_learning.db",
+     "label": "yt_learning.db（星型模型 9 表，统一取数入口）",
+     "domain": "学习派生",
+     "kind": "corpus_layer",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "yt_dim_channel",
+     "label": "yt_learning_db.dim_channel",
+     "domain": "学习派生",
+     "kind": "sqlite_table",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "yt_dim_topic",
+     "label": "yt_learning_db.dim_topic",
+     "domain": "学习派生",
+     "kind": "sqlite_table",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "yt_dim_video",
+     "label": "yt_learning_db.dim_video",
+     "domain": "学习派生",
+     "kind": "sqlite_table",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "yt_bridge_video_topic",
+     "label": "yt_learning_db.bridge_video_topic",
+     "domain": "学习派生",
+     "kind": "sqlite_table",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "yt_fact_comment",
+     "label": "yt_learning_db.fact_comment",
+     "domain": "学习派生",
+     "kind": "sqlite_table",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "yt_fact_knowledge_unit",
+     "label": "yt_learning_db.fact_knowledge_unit",
+     "domain": "学习派生",
+     "kind": "sqlite_table",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "yt_fact_transcript",
+     "label": "yt_learning_db.fact_transcript",
+     "domain": "学习派生",
+     "kind": "sqlite_table",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "yt_fact_faq_semantic",
+     "label": "yt_learning_db.fact_faq_semantic",
+     "domain": "学习派生",
+     "kind": "sqlite_table",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "yt_bridge_faq_comment",
+     "label": "yt_learning_db.bridge_faq_comment",
+     "domain": "学习派生",
+     "kind": "sqlite_table",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "yt_meta_faq_build",
+     "label": "yt_learning_db.meta_faq_build",
+     "domain": "学习派生",
+     "kind": "sqlite_table",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "yt_fact_transcript_seg",
+     "label": "yt_learning_db.fact_transcript_seg",
+     "domain": "学习派生",
+     "kind": "sqlite_table",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "yt_meta_etl",
+     "label": "yt_learning_db.meta_etl",
+     "domain": "学习派生",
+     "kind": "sqlite_table",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    },
+    {
+     "suggested_id": "yt_fact_transcript_signal",
+     "label": "yt_learning_db.fact_transcript_signal",
+     "domain": "学习派生",
+     "kind": "sqlite_table",
+     "action": "registry_rebuild/registry_align 登记映射（需 DATA4 审批；probe/.git 类建议不登记）",
+     "owner": "DATA4"
+    }
+   ],
+   "noise_hint": "probe/*_probe/.git/临时目录建议划入忽略清单，不纳入注册目标"
+  }
+ },
+ "external_fetch_required": [
+  {
+   "source": "tdx",
+   "dataset": "crypto_daily",
+   "type": "外部抓取",
+   "reason": "catalog 有、该源 manifest 无（需 token/ETL 抓取）",
+   "owner": "DATA2（抓取）",
+   "approval": "需 token 与采集排期（DATA1 审批）"
+  },
+  {
+   "source": "tdx",
+   "dataset": "guba_posts",
+   "type": "外部抓取",
+   "reason": "catalog 有、该源 manifest 无（需 token/ETL 抓取）",
+   "owner": "DATA2（抓取）",
+   "approval": "需 token 与采集排期（DATA1 审批）"
+  },
+  {
+   "source": "tdx",
+   "dataset": "us_legacy",
+   "type": "外部抓取",
+   "reason": "catalog 有、该源 manifest 无（需 token/ETL 抓取）",
+   "owner": "DATA2（抓取）",
+   "approval": "需 token 与采集排期（DATA1 审批）"
+  },
+  {
+   "source": "tdx",
+   "dataset": "v2_bar_daily",
+   "type": "外部抓取",
+   "reason": "catalog 有、该源 manifest 无（需 token/ETL 抓取）",
+   "owner": "DATA2（抓取）",
+   "approval": "需 token 与采集排期（DATA1 审批）"
+  },
+  {
+   "source": "tushare",
+   "dataset": "index_global",
+   "type": "外部抓取",
+   "reason": "catalog 有、该源 manifest 无（需 token/ETL 抓取）",
+   "owner": "DATA2（抓取）",
+   "approval": "需 token 与采集排期（DATA1 审批）"
+  },
+  {
+   "source": "tushare",
+   "dataset": "quarantine_prod_overwrite",
+   "type": "外部抓取",
+   "reason": "catalog 有、该源 manifest 无（需 token/ETL 抓取）",
+   "owner": "DATA2（抓取）",
+   "approval": "需 token 与采集排期（DATA1 审批）"
+  },
+  {
+   "source": "xueqiu",
+   "dataset": "xq_earningforecast",
+   "type": "外部抓取",
+   "reason": "catalog 有、该源 manifest 无（需 token/ETL 抓取）",
+   "owner": "DATA2（抓取）",
+   "approval": "需 token 与采集排期（DATA1 审批）"
+  },
+  {
+   "source": "xueqiu",
+   "dataset": "xq_hot_deal",
+   "type": "外部抓取",
+   "reason": "catalog 有、该源 manifest 无（需 token/ETL 抓取）",
+   "owner": "DATA2（抓取）",
+   "approval": "需 token 与采集排期（DATA1 审批）"
+  },
+  {
+   "source": "xueqiu",
+   "dataset": "xq_inner_trade",
+   "type": "外部抓取",
+   "reason": "catalog 有、该源 manifest 无（需 token/ETL 抓取）",
+   "owner": "DATA2（抓取）",
+   "approval": "需 token 与采集排期（DATA1 审批）"
+  },
+  {
+   "source": "接口数据",
+   "dataset": "tushare.irm_qa_sh_probe",
+   "type": "陈旧需重新抓取",
+   "latest": "2026-09-27",
+   "age_days": 37,
+   "owner": "DATA2",
+   "approval": "外部源更新后重跑 ETL（无需人工审批，但占用抓取配额）"
+  },
+  {
+   "source": "接口数据",
+   "dataset": "tushare.irm_qa_sz_probe",
+   "type": "陈旧需重新抓取",
+   "latest": "2026-09-27",
+   "age_days": 37,
+   "owner": "DATA2",
+   "approval": "外部源更新后重跑 ETL（无需人工审批，但占用抓取配额）"
+  },
+  {
+   "source": "接口数据",
+   "dataset": "tdx.tdx_sector_def",
+   "type": "陈旧需重新抓取",
+   "latest": "2026-09-27",
+   "age_days": 37,
+   "owner": "DATA2",
+   "approval": "外部源更新后重跑 ETL（无需人工审批，但占用抓取配额）"
+  },
+  {
+   "source": "接口数据",
+   "dataset": "tdx.ts_etf_basic",
+   "type": "陈旧需重新抓取",
+   "latest": "2026-09-27",
+   "age_days": 37,
+   "owner": "DATA2",
+   "approval": "外部源更新后重跑 ETL（无需人工审批，但占用抓取配额）"
+  },
+  {
+   "source": "接口数据",
+   "dataset": "tdx.ts_ths_index",
+   "type": "陈旧需重新抓取",
+   "latest": "2026-09-27",
+   "age_days": 37,
+   "owner": "DATA2",
+   "approval": "外部源更新后重跑 ETL（无需人工审批，但占用抓取配额）"
+  },
+  {
+   "source": "接口数据",
+   "dataset": "tushare.hk_balancesheet",
+   "type": "陈旧需重新抓取",
+   "latest": "2026-09-28",
+   "age_days": 36,
+   "owner": "DATA2",
+   "approval": "外部源更新后重跑 ETL（无需人工审批，但占用抓取配额）"
+  },
+  {
+   "source": "接口数据",
+   "dataset": "tushare.hk_cashflow",
+   "type": "陈旧需重新抓取",
+   "latest": "2026-09-28",
+   "age_days": 36,
+   "owner": "DATA2",
+   "approval": "外部源更新后重跑 ETL（无需人工审批，但占用抓取配额）"
+  },
+  {
+   "source": "接口数据",
+   "dataset": "tushare.hk_fina_indicator",
+   "type": "陈旧需重新抓取",
+   "latest": "2026-09-28",
+   "age_days": 36,
+   "owner": "DATA2",
+   "approval": "外部源更新后重跑 ETL（无需人工审批，但占用抓取配额）"
+  },
+  {
+   "source": "接口数据",
+   "dataset": "tushare.hk_income",
+   "type": "陈旧需重新抓取",
+   "latest": "2026-09-28",
+   "age_days": 36,
+   "owner": "DATA2",
+   "approval": "外部源更新后重跑 ETL（无需人工审批，但占用抓取配额）"
+  },
+  {
+   "source": "接口数据",
+   "dataset": "tushare.sw_l1_member",
+   "type": "陈旧需重新抓取",
+   "latest": "2026-09-28",
+   "age_days": 36,
+   "owner": "DATA2",
+   "approval": "外部源更新后重跑 ETL（无需人工审批，但占用抓取配额）"
+  },
+  {
+   "source": "接口数据",
+   "dataset": "tushare.us_balancesheet",
+   "type": "陈旧需重新抓取",
+   "latest": "2026-09-28",
+   "age_days": 36,
+   "owner": "DATA2",
+   "approval": "外部源更新后重跑 ETL（无需人工审批，但占用抓取配额）"
+  },
+  {
+   "source": "接口数据",
+   "dataset": "tushare.us_cashflow",
+   "type": "陈旧需重新抓取",
+   "latest": "2026-09-28",
+   "age_days": 36,
+   "owner": "DATA2",
+   "approval": "外部源更新后重跑 ETL（无需人工审批，但占用抓取配额）"
+  },
+  {
+   "source": "接口数据",
+   "dataset": "tushare.us_fina_indicator",
+   "type": "陈旧需重新抓取",
+   "latest": "2026-09-28",
+   "age_days": 36,
+   "owner": "DATA2",
+   "approval": "外部源更新后重跑 ETL（无需人工审批，但占用抓取配额）"
+  },
+  {
+   "source": "接口数据",
+   "dataset": "tushare.us_income",
+   "type": "陈旧需重新抓取",
+   "latest": "2026-09-28",
+   "age_days": 36,
+   "owner": "DATA2",
+   "approval": "外部源更新后重跑 ETL（无需人工审批，但占用抓取配额）"
+  },
+  {
+   "source": "接口数据",
+   "dataset": "tushare.stk_managers",
+   "type": "陈旧需重新抓取",
+   "latest": "2026-09-30",
+   "age_days": 34,
+   "owner": "DATA2",
+   "approval": "外部源更新后重跑 ETL（无需人工审批，但占用抓取配额）"
+  },
+  {
+   "source": "接口数据",
+   "dataset": "tushare.top10_floatholders",
+   "type": "陈旧需重新抓取",
+   "latest": "2026-09-30",
+   "age_days": 34,
+   "owner": "DATA2",
+   "approval": "外部源更新后重跑 ETL（无需人工审批，但占用抓取配额）"
+  },
+  {
+   "source": "接口数据",
+   "dataset": "tushare.top10_holders",
+   "type": "陈旧需重新抓取",
+   "latest": "2026-09-30",
+   "age_days": 34,
+   "owner": "DATA2",
+   "approval": "外部源更新后重跑 ETL（无需人工审批，但占用抓取配额）"
+  }
+ ],
+ "approval_required": [
+  {
+   "item": "manifest 补键 apply",
+   "owner": "DATA3",
+   "approval": "DATA3 复核后执行（写 _manifest.json，不改数据）"
+  },
+  {
+   "item": "未注册数据集登记/忽略清单",
+   "owner": "DATA4",
+   "approval": "DATA1 审批（registry 变更）"
+  },
+  {
+   "item": "暴露面扩展（72/314）",
+   "owner": "DATA4",
+   "approval": "需产品/门户评审（contract_export/nexus 映射）"
+  },
+  {
+   "item": "catalog/registry 重建",
+   "owner": "DATA4",
+   "approval": "registry_align apply 需变更审批+留痕"
+  }
+ ],
+ "conclusions": [
+  "真实 manifest 缺口（按源归属计算）：9 项（tdx 4 / tushare 2 / xueqiu 3 / cnopendata 0）",
+  "未注册 49、未暴露 242；陈旧 >30 天 17、无 latest 59",
+  "仓内可安全修复：manifest 补键（dry-run 草案）、inventory latest 字段生成器修复（DATA4）、registry 登记映射草案；均不改数据根",
+  "需外部抓取：manifest 缺口对应数据集与陈旧数据集（token/配额）；需审批：registry/catalog 变更与暴露面扩展"
+ ]
+}

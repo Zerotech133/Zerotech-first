@@ -1,0 +1,12 @@
+{
+ "generated_at": "2026-11-03T16:37:04+08:00",
+ "source": "card_candidates_视频号学习_第二期_20261102.json",
+ "total": 869,
+ "excluded": 823,
+ "kept": 46,
+ "output": "card_candidates_视频号学习_第二期_effective_20261103.json",
+ "applied_to": [
+  "portal/static（供预审/发布）",
+  "多源/微调输入（后续使用 effective 文件）"
+ ]
+}

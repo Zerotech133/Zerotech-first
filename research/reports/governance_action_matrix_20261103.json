@@ -1,0 +1,51 @@
+{
+ "generated_at": "2026-11-03T16:43:09+08:00",
+ "actions": [
+  {
+   "id": "A1",
+   "item": "DATA2 外部抓取 26 项",
+   "owner": "DATA2",
+   "approval": "TUSHARE token(SOPS)+DATA1 排期",
+   "package": "2026-11-03_DATA2外部抓取执行包.md",
+   "status": "blocked_no_token",
+   "result": "TUSHARE token 需 SOPS/审批；执行包已备"
+  },
+  {
+   "id": "A2",
+   "item": "manifest 补键 5 项（数据已在盘）",
+   "owner": "DATA3",
+   "approval": "DATA3 复核",
+   "package": "2026-11-03_manifest补键审批包.md",
+   "status": "executed_noop",
+   "result": "manifest_repair --apply 已执行；3 个候选均被 lifecycle(deprecated/planned) 跳过 → 0 变更；需 DATA3 处理 lifecycle"
+  },
+  {
+   "id": "A3",
+   "item": "未注册 49（登记 48/忽略 1）",
+   "owner": "DATA4",
+   "approval": "DATA4+DATA1",
+   "package": "2026-11-03_注册暴露审批包.md",
+   "status": "approved_recorded",
+   "result": "注册 48/忽略 1 已落册（待补元数据入册）"
+  },
+  {
+   "id": "A4",
+   "item": "未暴露 242 分批排期",
+   "owner": "DATA4",
+   "approval": "产品/门户评审",
+   "package": "2026-11-03_注册暴露审批包.md",
+   "status": "backlog_created",
+   "result": "暴露 242 项 backlog 已生成（待产品评审）"
+  },
+  {
+   "id": "A5",
+   "item": "多源 +1（29→30）",
+   "owner": "DATA1",
+   "approval": "需新资料/合法合并；当前唯一候选为错误合并",
+   "package": "research/reports/multi_source_plus1_candidates_20261103.json",
+   "status": "blocked_no_valid_candidate",
+   "result": "多源 29/30；唯一 +1 候选为错误合并，不采用"
+  }
+ ],
+ "updated_at": "2026-11-03T17:12:26+08:00"
+}

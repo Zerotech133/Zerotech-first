@@ -1,0 +1,129 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "trading_bot_confirmation.v2",
+  "title": "Trading Bot Confirmation v2（四 ID）",
+  "description": "IFS F1 单接口 schema：interface_id=confirm.create / confirm.list。v2 承接四 ID（decision_id / handoff_id / watch_plan_id / trigger_id）；paper_only=true，not_a_trade=true；只建人工确认，不执行。",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "confirmation_id",
+    "decision_id",
+    "handoff_id",
+    "watch_plan_id",
+    "trigger_id",
+    "status",
+    "symbol",
+    "action",
+    "created_at",
+    "paper_only",
+    "not_a_trade"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "trading_bot_confirmation/v2"
+    },
+    "confirmation_id": {
+      "type": "string",
+      "pattern": "^CFM-[0-9A-F]{12}$"
+    },
+    "decision_id": {
+      "anyOf": [
+        {"type": "string", "pattern": "^D1-\\d{8}-[0-9a-f]{10}$"},
+        {"type": "string", "pattern": "^d1-\\d{14}-[0-9a-f]{6}$"}
+      ]
+    },
+    "handoff_id": {
+      "type": "string",
+      "pattern": "^d1h-\\d{14}-[0-9a-f]{6}$"
+    },
+    "watch_plan_id": {
+      "type": "string",
+      "pattern": "^wp-\\d{8}-[0-9a-f]{6}$"
+    },
+    "trigger_id": {
+      "type": "string",
+      "pattern": "^trg-\\d{8}-[0-9a-f]{6}$"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "approved", "rejected", "blocked", "executed", "killed"]
+    },
+    "symbol": {
+      "type": "string",
+      "pattern": "^(sh|sz|bj)?\\d{6}$"
+    },
+    "name": {
+      "type": ["string", "null"]
+    },
+    "action": {
+      "type": "string",
+      "enum": ["BUY", "SELL", "WATCH"]
+    },
+    "price": {
+      "type": ["number", "null"],
+      "exclusiveMinimum": 0
+    },
+    "stop": {
+      "type": ["number", "null"],
+      "exclusiveMinimum": 0
+    },
+    "target": {
+      "type": ["number", "null"],
+      "exclusiveMinimum": 0
+    },
+    "confidence": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "maximum": 1
+    },
+    "source_report_id": {
+      "type": ["string", "null"],
+      "description": "deprecated：迁移期保留兼容；四 ID 为权威关联"
+    },
+    "created_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "decided_at": {
+      "type": ["string", "null"]
+    },
+    "paper_only": {
+      "type": "boolean",
+      "const": true
+    },
+    "not_a_trade": {
+      "type": "boolean",
+      "const": true
+    }
+  },
+  "propertyNames": {
+    "not": {
+      "enum": ["order", "qty", "quantity", "broker", "execute", "fill", "account"]
+    }
+  },
+  "additionalProperties": true,
+  "examples": [
+    {
+      "schema_version": "trading_bot_confirmation/v2",
+      "confirmation_id": "CFM-1A2B3C4D5E6F",
+      "decision_id": "D1-20261102-8f3a1c2b90",
+      "handoff_id": "d1h-20261102170000-a1b2c3",
+      "watch_plan_id": "wp-20261102-a1b2c3",
+      "trigger_id": "trg-20261103-0f1e2d",
+      "status": "pending",
+      "symbol": "sz003006",
+      "name": "百亚股份",
+      "action": "BUY",
+      "price": 22.1,
+      "stop": 20.8,
+      "target": 24.6,
+      "confidence": 0.62,
+      "source_report_id": null,
+      "created_at": "2026-11-03T09:35:00+08:00",
+      "decided_at": null,
+      "paper_only": true,
+      "not_a_trade": true
+    }
+  ]
+}

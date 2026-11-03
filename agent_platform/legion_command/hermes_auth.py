@@ -120,11 +120,19 @@ def auth_urlopen(url_or_req, timeout: float = 30.0):
             return req
         return urllib.request.Request(url_or_req, headers={"Cookie": cookie})
 
-    cookie = _get_cookie()
+    # 登录失败/密码过期时回退为无 Cookie 请求（服务可达性优先；
+    # 认证接口仍按自身 401 返回，不伪造通过）
+    try:
+        cookie = _get_cookie()
+    except (urllib.error.HTTPError, RuntimeError, OSError):
+        return safe_urlopen(url_or_req, timeout=timeout)
     try:
         return safe_urlopen(_with_cookie(cookie), timeout=timeout)
     except urllib.error.HTTPError as exc:
         if exc.code in (401, 403):
-            cookie = _get_cookie(force=True)
-            return safe_urlopen(_with_cookie(cookie), timeout=timeout)
+            try:
+                cookie = _get_cookie(force=True)
+                return safe_urlopen(_with_cookie(cookie), timeout=timeout)
+            except (urllib.error.HTTPError, RuntimeError, OSError):
+                return safe_urlopen(url_or_req, timeout=timeout)
         raise

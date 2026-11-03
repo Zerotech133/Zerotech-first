@@ -125,6 +125,7 @@ AGENT_BINDING = {
 _DEFAULT_BINDING = "ollama/qwen3.5:9b"
 # 平台级兜底降级档：席位没配 llm_fallback 时只降这一档（A0/AI1 等无链席位的旧行为）
 _DEFAULT_FALLBACK = _DEFAULT_BINDING
+REPORT_PURPOSES = {"dept_report", "case", "case_autorun", "personal_brief"}
 # 会议场景绑定覆盖：治理席 ZHAOYUN 的正式绑定是 DSH 会话载体（deepseek-v4-pro），
 # 不适配同步 /api/chat；会议仅用本地模型发声，不改变正式治理席位绑定。
 MEETING_BINDING_OVERRIDES = {"ZHAOYUN": "ollama/qwen3.5:9b"}
@@ -198,6 +199,7 @@ def _seat_chat(
     system: str,
     user: str,
     default_fallback: str = _DEFAULT_FALLBACK,
+    allow_non_glm_fallback: bool = False,
 ) -> tuple[dict, list[str]]:
     """会议/指挥台单席位对话：主绑失败时按**席位级降级链**依次尝试。
 
@@ -221,10 +223,13 @@ def _seat_chat(
     attempts = [binding]
     if env.get("ok"):
         return env, attempts
-    if not binding.startswith("glm/"):
+    if not binding.startswith("glm/") and not allow_non_glm_fallback:
         return env, attempts
     reason = (env.get("error") or {}).get("message") or "cloud unavailable"
     chain = list(fallbacks or [default_fallback])
+    if not binding.startswith("glm/") and allow_non_glm_fallback:
+        # 日报/Case 场景：非 glm 主绑失败时允许云端 glm 兜底，再走原降级链
+        chain = ["glm/glm-5.3"] + [x for x in chain if x != "glm/glm-5.3"]
     for fb in chain:
         fb_env = chat_fn(binding=fb, system=system, user=user)
         attempts.append(fb)
@@ -2473,6 +2478,20 @@ class Handler(BaseHTTPRequestHandler):
                         }
                     )
                 else:
+                    if purpose in REPORT_PURPOSES:
+                        fb_env, _fb_attempts = _seat_chat(
+                            llm_gateway.chat, "glm/glm-5.3", resolve_fallbacks(agent),
+                            str(req.get("system", ""))[:4000],
+                            str(req.get("user", ""))[:8000],
+                        )
+                        if fb_env.get("ok"):
+                            fb_env["degraded"] = True
+                            fb_env["fallback_from"] = binding
+                            fb_env["fallback_reason"] = "openclaw_unavailable:%s" % (oc_err or "unknown")
+                            fb_env["agent"] = agent
+                            fb_env["binding"] = fb_env.get("data", {}).get("binding_resolved", "glm/glm-5.3")
+                            self._send_json(fb_env)
+                            return
                     self._send_json(
                         {
                             "schema_version": "1.0",
@@ -2502,6 +2521,7 @@ class Handler(BaseHTTPRequestHandler):
                 resolve_fallbacks(agent),
                 str(req.get("system", ""))[:4000],
                 str(req.get("user", ""))[:8000],
+                allow_non_glm_fallback=(purpose in REPORT_PURPOSES),
             )
             env["agent"] = agent
             env["binding"] = env.get("data", {}).get("binding_resolved", binding)

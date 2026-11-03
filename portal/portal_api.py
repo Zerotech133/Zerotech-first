@@ -1137,9 +1137,9 @@ color:#fff;font-size:13.5px;cursor:pointer}
             return
         try:
             if path == "/api/sim/confirm":
-                # WO-BOT-CONFIRM：人工确认 approve/reject（paper-only，执行走 trading_bot_flow）
-                import sim_confirm
-                sim_confirm.handle_post(self)
+                # IFS F4 唯一 A 路径：确认 v2（四 ID 链），执行仍走 trading_bot_flow
+                import api_sim_confirm
+                api_sim_confirm.handle_post(self)
                 return
             if path == "/chanlun-anno":
                 # K77 缠论图手工标注增删（body 已在 _chanlun_anno 读）
@@ -1699,6 +1699,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # P2.4 客户门户（登录/分析/报告下载/历史/配额，独立文件 api_customer.py）
             import api_customer
             api_customer.handle_get(self, path, qs)
+            return
+        if path == '/api/bff/quant/sso':
+            import auth_gateway
+            auth_gateway.handle_get(self, path)
             return
         if path == '/api/bff/identity/me' or path.startswith('/api/auth/'):
             # Phase A auth-gateway（2026-10-30）：登录态 / 登出 / 当前 SessionContext。
@@ -3408,6 +3412,11 @@ color:#fff;font-size:13.5px;cursor:pointer}
             import api_d1_handoff
             api_d1_handoff.handle_get(self, self.path.split("?", 1)[1]
                                       if "?" in self.path else "")
+        elif path == "/api/d1/watch-plans":
+            # IFS F3：handoff v2 → watch_plan 只读视图（不触发、不执行）
+            import api_d1_handoff
+            api_d1_handoff.handle_get(self, self.path.split("?", 1)[1]
+                                      if "?" in self.path else "")
         elif path == "/api/d1/meeting":
             # WO-D1-MEETING-20261101：D1 投研会读取（无 id 时 summary+list）
             import api_d1_meeting
@@ -3425,10 +3434,11 @@ color:#fff;font-size:13.5px;cursor:pointer}
             import war_room_data
             self._json(war_room_data.war_room_snapshot())
         elif path == "/api/sim/confirmations":
-            # WO-BOT-CONFIRM：盯盘触发→人工确认待办（paper-only）
-            import sim_confirm
-            self._json(sim_confirm.list_payload(self.path.split("status=")[-1]
-                                                if "status=" in self.path else "pending"))
+            # IFS F4：人工确认待办（v2 四 ID 视图，paper-only）
+            import api_sim_confirm
+            self._json(api_sim_confirm.list_payload(
+                self.path.split("status=")[-1]
+                if "status=" in self.path else "pending"))
         elif path in ("/sim/confirm", "/sim_confirm"):
             self._html_file(os.path.join(
                 os.path.dirname(os.path.abspath(__file__)), "sim_confirm.html"))

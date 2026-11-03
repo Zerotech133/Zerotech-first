@@ -1,17 +1,16 @@
 {
-  "generated_at": "2026-11-03T14:55:54+08:00",
-  "doing": 30,
-  "worktrees": 38,
+  "generated_at": "2026-11-03T21:52:53+08:00",
+  "doing": 23,
+  "worktrees": 40,
   "worktree_actions": {
     "dirty_review": 6,
-    "active_task_review": 30,
-    "stale_review": 1,
+    "active_task_review": 23,
+    "stale_review": 10,
     "unregistered_review": 1
   },
   "doing_owners": {
-    "DSH-Lead": 27,
+    "DSH-Lead": 21,
     "intel-entity-dev(DSH)": 1,
-    "hermes-contract-dev": 1,
     "jev-ops-dev": 1
   },
   "targets": {

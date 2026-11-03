@@ -98,14 +98,15 @@ for _n, _v in list(GLOBAL_FUT.items()):
 
 
 def fetch(
-    secid: str, klt: int = 101, beg: str = "0", lmt: int = 800, retry: int = 6
+    secid: str, klt: int = 101, beg: str = "0", lmt: int = 800, retry: int = 6,
+    deadline: float | None = None,
 ) -> list[str] | None:
     """返回 klines 原始行列表；失败返回 None（None=网络失败，[]=secid 无效/无数据）。
 
     退避策略：轮转 KLINE_HOSTS + 指数退避（2/4/8/16/32s，上限 40s）。
     """
     last = None
-    for a in range(retry, deadline=None):
+    for a in range(retry):
         if deadline is not None and time.monotonic() > deadline:
             print("    [timeout] budget exhausted before attempt", flush=True)
             return None

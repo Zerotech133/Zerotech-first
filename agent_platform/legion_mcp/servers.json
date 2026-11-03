@@ -1,6 +1,6 @@
 {
   "schema": "zhaoyun_mcp_servers/v1",
-  "generated_at": "2026-10-27T07:45:00+08:00",
+  "generated_at": "2026-11-03T10:30:00+08:00",
   "note": "赵云可直接调用的 MCP server 白名单；risk 必须 read-only；http 需 token_env 且默认 disabled",
   "servers": {
     "filesystem": {
@@ -44,6 +44,16 @@
         "health_read"
       ],
       "timeout": 25
+    },
+    "d1-research": {
+      "script": "agent_platform/tools/d1_research_mcp.py",
+      "args": [],
+      "risk": "read-only",
+      "allow_tools": [
+        "d1_research"
+      ],
+      "timeout": 20,
+      "note": "WO-IFS-COMP-20261103 / IFS F6：D1 投研只读 stdio MCP（d1_research 工具）；仅在调用时按需拉起，不常驻/不自动启动；Hermes 侧登录后 tool_count=1 验收由 Lead 接线"
     },
     "tushare-http": {
       "transport": "http",

@@ -1,0 +1,194 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "watch_plan.v1",
+  "title": "Watch Plan v1（含 trigger_event/v1 合并定义）",
+  "description": "IFS F1 单接口 schema：interface_id=watch.plan.create / watch.trigger.create。按任务约定 watch 与 trigger 合并为一份文件：顶层 = watch_plan/v1，$defs.trigger_event = trigger_event/v1（registry schema_file 以 #/$defs/trigger_event 引用）。只读计划/触发，不执行、不下单。",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "watch_plan_id",
+    "handoff_id",
+    "decision_id",
+    "status",
+    "symbol",
+    "conditions",
+    "created_at",
+    "paper_only"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "watch_plan/v1"
+    },
+    "watch_plan_id": {
+      "type": "string",
+      "pattern": "^wp-\\d{8}-[0-9a-f]{6}$"
+    },
+    "handoff_id": {
+      "type": "string",
+      "pattern": "^d1h-\\d{14}-[0-9a-f]{6}$",
+      "description": "上游交棒（ID chain：handoff_id→watch_plan_id）"
+    },
+    "decision_id": {
+      "description": "上游 D1 裁决（跨跳携带）",
+      "anyOf": [
+        {"type": "string", "pattern": "^D1-\\d{8}-[0-9a-f]{10}$"},
+        {"type": "string", "pattern": "^d1-\\d{14}-[0-9a-f]{6}$"}
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["armed", "triggered", "expired", "cancelled"]
+    },
+    "symbol": {
+      "type": "string",
+      "pattern": "^(sh|sz|bj)?\\d{6}$"
+    },
+    "conditions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["price_gte", "price_lte", "pct_change_gte", "volume_ratio_gte", "bar_close"]
+          },
+          "value": {"type": ["number", "null"]},
+          "timeframe": {"type": "string"},
+          "note": {"type": "string"}
+        },
+        "additionalProperties": true
+      }
+    },
+    "owner": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "expires_at": {
+      "type": ["string", "null"]
+    },
+    "paper_only": {
+      "type": "boolean",
+      "const": true
+    },
+    "not_a_trade": {
+      "type": "boolean",
+      "const": true
+    }
+  },
+  "$defs": {
+    "trigger_event": {
+      "title": "trigger_event/v1",
+      "description": "watch_plan → trigger → confirmation 的中间契约；只产生待确认事件，不执行。ID chain：watch_plan_id→trigger_id。",
+      "type": "object",
+      "required": [
+        "schema_version",
+        "trigger_id",
+        "watch_plan_id",
+        "handoff_id",
+        "decision_id",
+        "symbol",
+        "action",
+        "ts",
+        "paper_only"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "const": "trigger_event/v1"
+        },
+        "trigger_id": {
+          "type": "string",
+          "pattern": "^trg-\\d{8}-[0-9a-f]{6}$"
+        },
+        "watch_plan_id": {
+          "type": "string",
+          "pattern": "^wp-\\d{8}-[0-9a-f]{6}$"
+        },
+        "handoff_id": {
+          "type": "string",
+          "pattern": "^d1h-\\d{14}-[0-9a-f]{6}$"
+        },
+        "decision_id": {
+          "anyOf": [
+            {"type": "string", "pattern": "^D1-\\d{8}-[0-9a-f]{10}$"},
+            {"type": "string", "pattern": "^d1-\\d{14}-[0-9a-f]{6}$"}
+          ]
+        },
+        "symbol": {
+          "type": "string",
+          "pattern": "^(sh|sz|bj)?\\d{6}$"
+        },
+        "action": {
+          "type": "string",
+          "enum": ["BUY", "SELL", "WATCH"]
+        },
+        "price": {
+          "type": ["number", "null"],
+          "exclusiveMinimum": 0
+        },
+        "ts": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_report_id": {
+          "type": ["string", "null"]
+        },
+        "payload": {
+          "type": ["object", "null"]
+        },
+        "paper_only": {
+          "type": "boolean",
+          "const": true
+        }
+      },
+      "additionalProperties": true,
+      "examples": [
+        {
+          "schema_version": "trigger_event/v1",
+          "trigger_id": "trg-20261103-0f1e2d",
+          "watch_plan_id": "wp-20261102-a1b2c3",
+          "handoff_id": "d1h-20261102170000-a1b2c3",
+          "decision_id": "D1-20261102-8f3a1c2b90",
+          "symbol": "sz003006",
+          "action": "BUY",
+          "price": 22.1,
+          "ts": "2026-11-03T09:35:00+08:00",
+          "source_report_id": "QUANT_UPSTREAM_REPORT-20261103-001",
+          "payload": {"condition": "price_gte", "value": 22.0},
+          "paper_only": true
+        }
+      ]
+    }
+  },
+  "propertyNames": {
+    "not": {
+      "enum": ["order", "qty", "quantity", "broker", "execute", "fill", "account"]
+    }
+  },
+  "additionalProperties": true,
+  "examples": [
+    {
+      "schema_version": "watch_plan/v1",
+      "watch_plan_id": "wp-20261102-a1b2c3",
+      "handoff_id": "d1h-20261102170000-a1b2c3",
+      "decision_id": "D1-20261102-8f3a1c2b90",
+      "status": "armed",
+      "symbol": "sz003006",
+      "conditions": [
+        {"type": "price_gte", "value": 22.0, "timeframe": "1d"},
+        {"type": "bar_close", "value": null, "note": "收盘确认 2 根"}
+      ],
+      "owner": "WA1",
+      "created_at": "2026-11-02T17:50:00+08:00",
+      "expires_at": "2026-11-09T15:00:00+08:00",
+      "paper_only": true,
+      "not_a_trade": true
+    }
+  ]
+}

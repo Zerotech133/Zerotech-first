@@ -1,5 +1,5 @@
 schema: zerobound/composition-planned-refs/v0.1
-updated_at: "2026-11-02"
+updated_at: "2026-11-03"
 note: "W1 引用收口：已声明但载体未就绪的 planned 引用。owner/due/acceptance 必须齐全；validate 将其视为已登记（不计 warning），11-16 复审时逐项核销或升级为 active。"
 refs:
   - ref: dataset/file/temp_contract
@@ -42,3 +42,18 @@ refs:
     due: "2026-11-04"
     reason: "验收 finalize 为工具命令，未建计划任务"
     acceptance: "11-04 执行后登记"
+  - ref: dataset/file/d1_decisions
+    owner: D1
+    due: "2026-11-16"
+    reason: "D1 裁决账尚未生成真实文件；dataset_registry 已登记 planned，不伪造空账"
+    acceptance: "首条 D1 正式裁决落盘后由 Lead 移除 planned"
+  - ref: dataset/file/training_episode
+    owner: D1
+    due: "2026-11-16"
+    reason: "训练 episode 契约未定（IFS F5 WO-IFS-TRAIN，11/16 前）"
+    acceptance: "F5 训练契约落地并登记 dataset_registry 后移除 planned"
+  - ref: page/d1/training
+    owner: D1
+    due: "2026-11-18"
+    reason: "训练页面未建（IFS F6 WO-IFS-UI / WO-IFS-ROUTE）"
+    acceptance: "页面+route 落地后由 Lead 移除 planned 并跑 route baseline check"

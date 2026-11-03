@@ -1,0 +1,1974 @@
+{
+ "meta": {
+  "report": "concept_merge_llm",
+  "version": "1.0.0",
+  "task": "W1-2c 长尾概念 LLM 语义归并",
+  "generated_at": "2026-11-03T16:49:09+08:00",
+  "read_only": true,
+  "read_only_verified": true,
+  "input": {
+   "path": "research\\reports\\knowledge_multisource_20261103_v4.json",
+   "sha256_before": "5b316f57e965ec354e75e060b30fe989fc49b9518ae03cdf14dd52ed3b164d57",
+   "sha256_after": "5b316f57e965ec354e75e060b30fe989fc49b9518ae03cdf14dd52ed3b164d57"
+  },
+  "ollama": {
+   "base_url": "http://127.0.0.1:11434",
+   "embed_model": "bge-m3:latest",
+   "llm_model": "qwen3.5:9b",
+   "embedding": {
+    "source": "ollama_bge_m3",
+    "model": "bge-m3:latest",
+    "calls": 1577,
+    "sec": 39.98,
+    "errors": [],
+    "mode": "batch"
+   },
+   "llm": {
+    "enabled": true,
+    "model": "qwen3.5:9b",
+    "calls": 40,
+    "sec": 1.44,
+    "errors": [
+     "无法解析 JSON 响应"
+    ],
+    "failed": 0
+   }
+  },
+  "params": {
+   "auto_cos": 0.85,
+   "boundary_lo": 0.75,
+   "max_llm_pairs": 40,
+   "use_llm": true,
+   "force_lexical": false,
+   "merge_scope": "仅单源长尾簇（规则归并后 ≥2 源的簇不参与二次合并）"
+  },
+  "runtime_sec": 104.53,
+  "limitations": [
+   "语义合并仅在单源长尾簇内进行；多源簇不参与二次合并（避免稀释既有证据）。",
+   "bge-m3 不可用时回退字符 n-gram 向量（embedding.source=fallback_lexical），召回弱、需复核；LLM 连续失败会熔断，边界对一律不合并（保守）。",
+   "多源确认数按 concept_synonyms 口径（独立 (source_type,source_key) ≥2）重算；合并后概念本身的答案一致性/冲突未重算，置信仍为命名层面。",
+   "映射表可回滚：忽略 mapping 记录即恢复 W1-2 的 1029 簇基线。",
+   "只读输入，不改学习卡/units/治理；本次未真实调 LLM 的部分以 mock/降级路径标注。"
+  ]
+ },
+ "stats": {
+  "concepts_before": 1646,
+  "clusters_before": 1596,
+  "multi_before": 19,
+  "single_pool": 1577,
+  "merged_groups": 76,
+  "merged_members": 113,
+  "clusters_after": 1483,
+  "multi_after_confirmed": 30,
+  "new_multi_from_llm": 11,
+  "auto_pairs": 171,
+  "boundary_pairs": 952,
+  "auto_merged": 76,
+  "llm_calls": 40,
+  "llm_accept": 6,
+  "llm_reject": 33,
+  "llm_failed": 1
+ },
+ "baseline": {
+  "clusters": 1596,
+  "multi_confirmed": 19
+ },
+ "mapping": [
+  {
+   "from_cluster_id": "CS-1355",
+   "from_concept": "背驰信号成立",
+   "to_cluster_id": "CS-0009",
+   "to_concept": "出现了背驰信号",
+   "method": "embedding",
+   "similarity": 0.8616,
+   "reason": "余弦 0.862≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1416",
+   "from_concept": "识别背驰的信号",
+   "to_cluster_id": "CS-0009",
+   "to_concept": "出现了背驰信号",
+   "method": "embedding",
+   "similarity": 0.8753,
+   "reason": "余弦 0.875≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0041",
+   "from_concept": "AI 量化的深度",
+   "to_cluster_id": "CS-0038",
+   "to_concept": "AI 量化",
+   "method": "embedding",
+   "similarity": 0.8608,
+   "reason": "余弦 0.861≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1499",
+   "from_concept": "量化",
+   "to_cluster_id": "CS-0038",
+   "to_concept": "AI 量化",
+   "method": "embedding",
+   "similarity": 0.8693,
+   "reason": "余弦 0.869≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0102",
+   "from_concept": "Meta个人智能体Muse",
+   "to_cluster_id": "CS-0097",
+   "to_concept": "Meta AI 智能体 Muse",
+   "method": "embedding",
+   "similarity": 0.8696,
+   "reason": "余弦 0.870≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0103",
+   "from_concept": "Muse 智能体",
+   "to_cluster_id": "CS-0097",
+   "to_concept": "Meta AI 智能体 Muse",
+   "method": "embedding",
+   "similarity": 0.8733,
+   "reason": "余弦 0.873≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1495",
+   "from_concept": "重磅消息来袭",
+   "to_cluster_id": "CS-0150",
+   "to_concept": "一条重磅消息",
+   "method": "embedding",
+   "similarity": 0.8557,
+   "reason": "余弦 0.856≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0169",
+   "from_concept": "上两笔的30分钟级别的笔",
+   "to_cluster_id": "CS-0167",
+   "to_concept": "上三笔30分钟级别的笔",
+   "method": "embedding",
+   "similarity": 0.9184,
+   "reason": "余弦 0.918≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0179",
+   "from_concept": "下两笔30分钟级别的笔",
+   "to_cluster_id": "CS-0167",
+   "to_concept": "上三笔30分钟级别的笔",
+   "method": "embedding",
+   "similarity": 0.9124,
+   "reason": "余弦 0.912≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0182",
+   "from_concept": "下午收盘后欢迎回来验证",
+   "to_cluster_id": "CS-0180",
+   "to_concept": "下午收盘后回来验证",
+   "method": "embedding",
+   "similarity": 0.9631,
+   "reason": "余弦 0.963≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1253",
+   "from_concept": "等明天收盘后回来找我验证",
+   "to_cluster_id": "CS-0180",
+   "to_concept": "下午收盘后回来验证",
+   "method": "embedding",
+   "similarity": 0.9322,
+   "reason": "余弦 0.932≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0188",
+   "from_concept": "下周开盘要不要跑",
+   "to_cluster_id": "CS-0185",
+   "to_concept": "下周一开盘就跑",
+   "method": "embedding",
+   "similarity": 0.8761,
+   "reason": "余弦 0.876≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0990",
+   "from_concept": "明天周三开盘要不要跑",
+   "to_cluster_id": "CS-0185",
+   "to_concept": "下周一开盘就跑",
+   "method": "transitive",
+   "similarity": null,
+   "reason": "并查集传递合并"
+  },
+  {
+   "from_cluster_id": "CS-0991",
+   "from_concept": "明天周五开盘就跑",
+   "to_cluster_id": "CS-0185",
+   "to_concept": "下周一开盘就跑",
+   "method": "embedding",
+   "similarity": 0.9498,
+   "reason": "余弦 0.950≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0992",
+   "from_concept": "明天周五开盘要不要跑",
+   "to_cluster_id": "CS-0185",
+   "to_concept": "下周一开盘就跑",
+   "method": "embedding",
+   "similarity": 0.8503,
+   "reason": "余弦 0.850≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0996",
+   "from_concept": "明天开盘就跑",
+   "to_cluster_id": "CS-0185",
+   "to_concept": "下周一开盘就跑",
+   "method": "embedding",
+   "similarity": 0.9465,
+   "reason": "余弦 0.946≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0288",
+   "from_concept": "也不用等明天周二开盘了",
+   "to_cluster_id": "CS-0201",
+   "to_concept": "不用等下周开盘了",
+   "method": "embedding",
+   "similarity": 0.9374,
+   "reason": "余弦 0.937≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0215",
+   "from_concept": "两中枢背驰",
+   "to_cluster_id": "CS-0213",
+   "to_concept": "两中枢下跌形成背驰",
+   "method": "embedding",
+   "similarity": 0.8778,
+   "reason": "余弦 0.878≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0251",
+   "from_concept": "中枢与背驰",
+   "to_cluster_id": "CS-0213",
+   "to_concept": "两中枢下跌形成背驰",
+   "method": "transitive",
+   "similarity": null,
+   "reason": "并查集传递合并"
+  },
+  {
+   "from_cluster_id": "CS-0235",
+   "from_concept": "中国畜禽肉产品贸易结构变化",
+   "to_cluster_id": "CS-0234",
+   "to_concept": "中国畜禽肉产品贸易总体规模",
+   "method": "embedding",
+   "similarity": 0.8505,
+   "reason": "余弦 0.850≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0240",
+   "from_concept": "中国粮食贸易总体规模",
+   "to_cluster_id": "CS-0239",
+   "to_concept": "中国粮食贸易同比变化趋势",
+   "method": "embedding",
+   "similarity": 0.8542,
+   "reason": "余弦 0.854≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0659",
+   "from_concept": "在这里构成中枢的次级别",
+   "to_cluster_id": "CS-0261",
+   "to_concept": "中枢是由次级别构成",
+   "method": "embedding",
+   "similarity": 0.8582,
+   "reason": "余弦 0.858≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0543",
+   "from_concept": "原材料价格变动",
+   "to_cluster_id": "CS-0279",
+   "to_concept": "主要原材料价格波动",
+   "method": "llm_boundary",
+   "similarity": 0.8494,
+   "reason": "LLM: 两者均指代原材料市场价格的变化，仅用词略有差异（“主要”与省略、“波动”与“变动”），核心语义一致。"
+  },
+  {
+   "from_cluster_id": "CS-0281",
+   "from_concept": "主要快递公司单票收入增速排名（1-8 月）",
+   "to_cluster_id": "CS-0280",
+   "to_concept": "主要快递公司业务量增速排名（1-8 月）",
+   "method": "embedding",
+   "similarity": 0.8703,
+   "reason": "余弦 0.870≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0586",
+   "from_concept": "向下的日线级别的笔",
+   "to_cluster_id": "CS-0296",
+   "to_concept": "也就是日线级别的笔",
+   "method": "transitive",
+   "similarity": null,
+   "reason": "并查集传递合并"
+  },
+  {
+   "from_cluster_id": "CS-0726",
+   "from_concept": "如今这笔日线级别的向下笔",
+   "to_cluster_id": "CS-0296",
+   "to_concept": "也就是日线级别的笔",
+   "method": "transitive",
+   "similarity": null,
+   "reason": "并查集传递合并"
+  },
+  {
+   "from_cluster_id": "CS-0837",
+   "from_concept": "当前这笔日线级别的向下笔",
+   "to_cluster_id": "CS-0296",
+   "to_concept": "也就是日线级别的笔",
+   "method": "transitive",
+   "similarity": null,
+   "reason": "并查集传递合并"
+  },
+  {
+   "from_cluster_id": "CS-1101",
+   "from_concept": "正在走出日线级别的向上一笔",
+   "to_cluster_id": "CS-0296",
+   "to_concept": "也就是日线级别的笔",
+   "method": "transitive",
+   "similarity": null,
+   "reason": "并查集传递合并"
+  },
+  {
+   "from_cluster_id": "CS-0300",
+   "from_concept": "也就是这个日线级别的向下笔",
+   "to_cluster_id": "CS-0298",
+   "to_concept": "也就是虚线标识的30分钟级别笔",
+   "method": "transitive",
+   "similarity": null,
+   "reason": "并查集传递合并"
+  },
+  {
+   "from_cluster_id": "CS-0700",
+   "from_concept": "大概率这笔日线级别的向下",
+   "to_cluster_id": "CS-0298",
+   "to_concept": "也就是虚线标识的30分钟级别笔",
+   "method": "transitive",
+   "similarity": null,
+   "reason": "并查集传递合并"
+  },
+  {
+   "from_cluster_id": "CS-0725",
+   "from_concept": "如今这笔日线级别的向下比",
+   "to_cluster_id": "CS-0298",
+   "to_concept": "也就是虚线标识的30分钟级别笔",
+   "method": "transitive",
+   "similarity": null,
+   "reason": "并查集传递合并"
+  },
+  {
+   "from_cluster_id": "CS-0818",
+   "from_concept": "开始的这笔日线级别的向下笔走势",
+   "to_cluster_id": "CS-0298",
+   "to_concept": "也就是虚线标识的30分钟级别笔",
+   "method": "transitive",
+   "similarity": null,
+   "reason": "并查集传递合并"
+  },
+  {
+   "from_cluster_id": "CS-0835",
+   "from_concept": "当前日线级别的向下一笔",
+   "to_cluster_id": "CS-0298",
+   "to_concept": "也就是虚线标识的30分钟级别笔",
+   "method": "transitive",
+   "similarity": null,
+   "reason": "并查集传递合并"
+  },
+  {
+   "from_cluster_id": "CS-0836",
+   "from_concept": "当前最后一笔日线级别下",
+   "to_cluster_id": "CS-0298",
+   "to_concept": "也就是虚线标识的30分钟级别笔",
+   "method": "transitive",
+   "similarity": null,
+   "reason": "并查集传递合并"
+  },
+  {
+   "from_cluster_id": "CS-0983",
+   "from_concept": "日线级别向下笔",
+   "to_cluster_id": "CS-0298",
+   "to_concept": "也就是虚线标识的30分钟级别笔",
+   "method": "transitive",
+   "similarity": null,
+   "reason": "并查集传递合并"
+  },
+  {
+   "from_cluster_id": "CS-1380",
+   "from_concept": "虚线标识出来的是五分钟级别的笔",
+   "to_cluster_id": "CS-0298",
+   "to_concept": "也就是虚线标识的30分钟级别笔",
+   "method": "embedding",
+   "similarity": 0.86,
+   "reason": "余弦 0.860≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0740",
+   "from_concept": "它的级别就是日线级别的笔",
+   "to_cluster_id": "CS-0301",
+   "to_concept": "也就是这个虚线标识的日线级别笔",
+   "method": "transitive",
+   "similarity": null,
+   "reason": "并查集传递合并"
+  },
+  {
+   "from_cluster_id": "CS-0314",
+   "from_concept": "二手首购用户特征",
+   "to_cluster_id": "CS-0310",
+   "to_concept": "二手复购用户特征",
+   "method": "embedding",
+   "similarity": 0.9336,
+   "reason": "余弦 0.934≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0986",
+   "from_concept": "日线级别的上涨中枢结构",
+   "to_cluster_id": "CS-0318",
+   "to_concept": "五分钟级别的上涨中枢走势结构",
+   "method": "embedding",
+   "similarity": 0.8536,
+   "reason": "余弦 0.854≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1256",
+   "from_concept": "策略和风险",
+   "to_cluster_id": "CS-0327",
+   "to_concept": "交易策略与风险",
+   "method": "embedding",
+   "similarity": 0.9066,
+   "reason": "余弦 0.907≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0691",
+   "from_concept": "大A三大指数开盘大幅低开",
+   "to_cluster_id": "CS-0344",
+   "to_concept": "今早三大指数开盘大幅低开",
+   "method": "embedding",
+   "similarity": 0.9046,
+   "reason": "余弦 0.905≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1337",
+   "from_concept": "而中枢至少由三笔重叠构成",
+   "to_cluster_id": "CS-0371",
+   "to_concept": "任何一个中枢至少由三笔构成",
+   "method": "embedding",
+   "similarity": 0.8992,
+   "reason": "余弦 0.899≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0378",
+   "from_concept": "伏击涨停第三定律",
+   "to_cluster_id": "CS-0377",
+   "to_concept": "伏击涨停第一定律",
+   "method": "embedding",
+   "similarity": 0.8646,
+   "reason": "余弦 0.865≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0379",
+   "from_concept": "伏击涨停第二定律",
+   "to_cluster_id": "CS-0377",
+   "to_concept": "伏击涨停第一定律",
+   "method": "embedding",
+   "similarity": 0.8739,
+   "reason": "余弦 0.874≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0380",
+   "from_concept": "伏击涨停第四定律",
+   "to_cluster_id": "CS-0377",
+   "to_concept": "伏击涨停第一定律",
+   "method": "embedding",
+   "similarity": 0.8651,
+   "reason": "余弦 0.865≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1057",
+   "from_concept": "板块也呈现极致的割裂行情",
+   "to_cluster_id": "CS-0394",
+   "to_concept": "但板块却迎来了极致的分化",
+   "method": "transitive",
+   "similarity": null,
+   "reason": "并查集传递合并"
+  },
+  {
+   "from_cluster_id": "CS-1058",
+   "from_concept": "板块也极其割裂",
+   "to_cluster_id": "CS-0394",
+   "to_concept": "但板块却迎来了极致的分化",
+   "method": "transitive",
+   "similarity": null,
+   "reason": "并查集传递合并"
+  },
+  {
+   "from_cluster_id": "CS-1062",
+   "from_concept": "板块更是迎来极致割裂局面",
+   "to_cluster_id": "CS-0394",
+   "to_concept": "但板块却迎来了极致的分化",
+   "method": "embedding",
+   "similarity": 0.8704,
+   "reason": "余弦 0.870≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0417",
+   "from_concept": "保险等金融群众在拉升",
+   "to_cluster_id": "CS-0416",
+   "to_concept": "保险等金融群众发动了反弹",
+   "method": "embedding",
+   "similarity": 0.869,
+   "reason": "余弦 0.869≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1249",
+   "from_concept": "笔的级别",
+   "to_cluster_id": "CS-0458",
+   "to_concept": "关于笔的级别",
+   "method": "embedding",
+   "similarity": 0.9336,
+   "reason": "余弦 0.934≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0800",
+   "from_concept": "平台突破公式",
+   "to_cluster_id": "CS-0475",
+   "to_concept": "写平台突破公式",
+   "method": "embedding",
+   "similarity": 0.9111,
+   "reason": "余弦 0.911≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0494",
+   "from_concept": "分钟级别下跌中枢走势",
+   "to_cluster_id": "CS-0483",
+   "to_concept": "出30分钟级别的下跌中枢结构",
+   "method": "transitive",
+   "similarity": null,
+   "reason": "并查集传递合并"
+  },
+  {
+   "from_cluster_id": "CS-0546",
+   "from_concept": "又形成一个同级别中枢",
+   "to_cluster_id": "CS-0488",
+   "to_concept": "出现一个新的同级别中枢",
+   "method": "embedding",
+   "similarity": 0.9026,
+   "reason": "余弦 0.903≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0810",
+   "from_concept": "底分形结构",
+   "to_cluster_id": "CS-0491",
+   "to_concept": "分形结构",
+   "method": "embedding",
+   "similarity": 0.8536,
+   "reason": "余弦 0.854≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0556",
+   "from_concept": "反而是耐心的等待提问信号的出现",
+   "to_cluster_id": "CS-0555",
+   "to_concept": "反而是耐心的等待提稳信号的出现",
+   "method": "embedding",
+   "similarity": 0.8839,
+   "reason": "余弦 0.884≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1344",
+   "from_concept": "而是耐心的等待企稳信号的出现",
+   "to_cluster_id": "CS-0555",
+   "to_concept": "反而是耐心的等待提稳信号的出现",
+   "method": "embedding",
+   "similarity": 0.8986,
+   "reason": "余弦 0.899≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1349",
+   "from_concept": "耐心等待提稳信号的出现",
+   "to_cluster_id": "CS-0555",
+   "to_concept": "反而是耐心的等待提稳信号的出现",
+   "method": "embedding",
+   "similarity": 0.8846,
+   "reason": "余弦 0.885≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0564",
+   "from_concept": "受外围消息影响",
+   "to_cluster_id": "CS-0563",
+   "to_concept": "受外围情绪的影响",
+   "method": "embedding",
+   "similarity": 0.8761,
+   "reason": "余弦 0.876≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1186",
+   "from_concept": "的30分钟级别的向下一笔回调",
+   "to_cluster_id": "CS-0570",
+   "to_concept": "只要30分钟级别的笔向下回调",
+   "method": "llm_boundary",
+   "similarity": 0.8399,
+   "reason": "LLM: 两个概念描述的是同一技术指标，仅存在语序调整和助词差异，核心语义完全一致。"
+  },
+  {
+   "from_cluster_id": "CS-0588",
+   "from_concept": "周二刚刚收盘",
+   "to_cluster_id": "CS-0587",
+   "to_concept": "周三刚刚收盘",
+   "method": "embedding",
+   "similarity": 0.9666,
+   "reason": "余弦 0.967≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0592",
+   "from_concept": "周末各种利好消息",
+   "to_cluster_id": "CS-0591",
+   "to_concept": "周末也多重利好消息",
+   "method": "embedding",
+   "similarity": 0.8955,
+   "reason": "余弦 0.896≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0693",
+   "from_concept": "大一开盘指数低开低走",
+   "to_cluster_id": "CS-0596",
+   "to_concept": "咱们大一开盘指数低开高走",
+   "method": "embedding",
+   "similarity": 0.8854,
+   "reason": "余弦 0.885≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1036",
+   "from_concept": "期限结构因子",
+   "to_cluster_id": "CS-0603",
+   "to_concept": "哪些情况下期限结构因子会失效",
+   "method": "transitive",
+   "similarity": null,
+   "reason": "并查集传递合并"
+  },
+  {
+   "from_cluster_id": "CS-0634",
+   "from_concept": "国防军工子板块表现",
+   "to_cluster_id": "CS-0633",
+   "to_concept": "国防军工子板块分化",
+   "method": "embedding",
+   "similarity": 0.8598,
+   "reason": "余弦 0.860≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1109",
+   "from_concept": "比较其对应的缠论笔面积",
+   "to_cluster_id": "CS-0648",
+   "to_concept": "在当前位置比较缠论笔面积",
+   "method": "embedding",
+   "similarity": 0.8574,
+   "reason": "余弦 0.857≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1289",
+   "from_concept": "经过我仿佛深度的复盘",
+   "to_cluster_id": "CS-0653",
+   "to_concept": "在经过我七八个小时反复深度复盘",
+   "method": "transitive",
+   "similarity": null,
+   "reason": "并查集传递合并"
+  },
+  {
+   "from_cluster_id": "CS-1290",
+   "from_concept": "经过我全天深度的复盘",
+   "to_cluster_id": "CS-0653",
+   "to_concept": "在经过我七八个小时反复深度复盘",
+   "method": "transitive",
+   "similarity": null,
+   "reason": "并查集传递合并"
+  },
+  {
+   "from_cluster_id": "CS-1293",
+   "from_concept": "经过我深度的复盘",
+   "to_cluster_id": "CS-0653",
+   "to_concept": "在经过我七八个小时反复深度复盘",
+   "method": "transitive",
+   "similarity": null,
+   "reason": "并查集传递合并"
+  },
+  {
+   "from_cluster_id": "CS-0682",
+   "from_concept": "外围突发重磅利空消息",
+   "to_cluster_id": "CS-0680",
+   "to_concept": "外围局势突发重磅利空消息",
+   "method": "embedding",
+   "similarity": 0.9462,
+   "reason": "余弦 0.946≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0712",
+   "from_concept": "天才交易员 AI 量化十大误区",
+   "to_cluster_id": "CS-0710",
+   "to_concept": "天才交易员 AI 量化十大止损误区",
+   "method": "embedding",
+   "similarity": 0.9383,
+   "reason": "余弦 0.938≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0715",
+   "from_concept": "天才交易员 AI 量化自动交易十大故障—",
+   "to_cluster_id": "CS-0710",
+   "to_concept": "天才交易员 AI 量化十大止损误区",
+   "method": "embedding",
+   "similarity": 0.8712,
+   "reason": "余弦 0.871≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0732",
+   "from_concept": "它们所对应的缠论笔面积柱子高度",
+   "to_cluster_id": "CS-0731",
+   "to_concept": "它们对应的缠论笔面积柱子高度",
+   "method": "embedding",
+   "similarity": 0.9907,
+   "reason": "余弦 0.991≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0741",
+   "from_concept": "它的级别是日线级别中枢",
+   "to_cluster_id": "CS-0736",
+   "to_concept": "它就是生长中的日线级别的中枢",
+   "method": "embedding",
+   "similarity": 0.8515,
+   "reason": "余弦 0.851≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0867",
+   "from_concept": "意味着主力意在洗盘",
+   "to_cluster_id": "CS-0747",
+   "to_concept": "实则是主力在洗盘",
+   "method": "embedding",
+   "similarity": 0.8739,
+   "reason": "余弦 0.874≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0758",
+   "from_concept": "小级别给出背驰",
+   "to_cluster_id": "CS-0756",
+   "to_concept": "小级别似乎也出现了背驰迹象",
+   "method": "llm_boundary",
+   "similarity": 0.8473,
+   "reason": "LLM: 两者均指代技术分析中在小级别出现背驰这一相同的市场现象，仅表述方式略有差异。"
+  },
+  {
+   "from_cluster_id": "CS-0769",
+   "from_concept": "就要进一步观察周线级别回调的展开",
+   "to_cluster_id": "CS-0767",
+   "to_concept": "就要按周线级别回调来观察",
+   "method": "embedding",
+   "similarity": 0.8962,
+   "reason": "余弦 0.896≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0775",
+   "from_concept": "山东省主要出口目的地",
+   "to_cluster_id": "CS-0774",
+   "to_concept": "山东省主要出口产品类别",
+   "method": "embedding",
+   "similarity": 0.864,
+   "reason": "余弦 0.864≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0776",
+   "from_concept": "山东省主要进口产品类别",
+   "to_cluster_id": "CS-0774",
+   "to_concept": "山东省主要出口产品类别",
+   "method": "embedding",
+   "similarity": 0.9134,
+   "reason": "余弦 0.913≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1211",
+   "from_concept": "确认了下方的支撑位",
+   "to_cluster_id": "CS-0789",
+   "to_concept": "已经确认了支撑位",
+   "method": "embedding",
+   "similarity": 0.9188,
+   "reason": "余弦 0.919≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1169",
+   "from_concept": "用底分型加成交量持续放大为条件",
+   "to_cluster_id": "CS-0809",
+   "to_concept": "底分型加成交量",
+   "method": "embedding",
+   "similarity": 0.8662,
+   "reason": "余弦 0.866≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0826",
+   "from_concept": "开盘指数低开",
+   "to_cluster_id": "CS-0822",
+   "to_concept": "开盘先是低开",
+   "method": "embedding",
+   "similarity": 0.8526,
+   "reason": "余弦 0.853≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0827",
+   "from_concept": "开盘直接大跳水",
+   "to_cluster_id": "CS-0823",
+   "to_concept": "开盘半小时快速跳水",
+   "method": "embedding",
+   "similarity": 0.8862,
+   "reason": "余弦 0.886≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0829",
+   "from_concept": "开盘近5000家普跌",
+   "to_cluster_id": "CS-0824",
+   "to_concept": "开盘就迎来五千家普跌",
+   "method": "embedding",
+   "similarity": 0.9187,
+   "reason": "余弦 0.919≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1071",
+   "from_concept": "构成了一个日线级别的中枢",
+   "to_cluster_id": "CS-0847",
+   "to_concept": "形成了一个日线级别的中枢",
+   "method": "embedding",
+   "similarity": 0.9511,
+   "reason": "余弦 0.951≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0877",
+   "from_concept": "成交量配合",
+   "to_cluster_id": "CS-0870",
+   "to_concept": "成交量",
+   "method": "embedding",
+   "similarity": 0.8508,
+   "reason": "余弦 0.851≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-0885",
+   "from_concept": "我是老木，这是我的第七篇创业笔记",
+   "to_cluster_id": "CS-0884",
+   "to_concept": "我是老木，这是我的第 5 篇创业笔记",
+   "method": "embedding",
+   "similarity": 0.9338,
+   "reason": "余弦 0.934≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1401",
+   "from_concept": "计算机行业板块表现",
+   "to_cluster_id": "CS-0891",
+   "to_concept": "房地产行业板块表现",
+   "method": "embedding",
+   "similarity": 0.8566,
+   "reason": "余弦 0.857≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1400",
+   "from_concept": "计算技术指标",
+   "to_cluster_id": "CS-0904",
+   "to_concept": "技术指标",
+   "method": "embedding",
+   "similarity": 0.8571,
+   "reason": "余弦 0.857≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1025",
+   "from_concept": "月3号明天周四开盘",
+   "to_cluster_id": "CS-0993",
+   "to_concept": "明天周四开盘",
+   "method": "embedding",
+   "similarity": 0.9156,
+   "reason": "余弦 0.916≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1026",
+   "from_concept": "月3日收盘盘后复盘及明日观点分享",
+   "to_cluster_id": "CS-1023",
+   "to_concept": "月1日收盘盘后复盘及明日观点分享",
+   "method": "embedding",
+   "similarity": 0.9184,
+   "reason": "余弦 0.918≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1027",
+   "from_concept": "月4日收盘盘后复盘及明日观点分享",
+   "to_cluster_id": "CS-1023",
+   "to_concept": "月1日收盘盘后复盘及明日观点分享",
+   "method": "embedding",
+   "similarity": 0.912,
+   "reason": "余弦 0.912≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1028",
+   "from_concept": "月7日收盘盘后复盘及明日观点分享",
+   "to_cluster_id": "CS-1023",
+   "to_concept": "月1日收盘盘后复盘及明日观点分享",
+   "method": "embedding",
+   "similarity": 0.8925,
+   "reason": "余弦 0.893≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1029",
+   "from_concept": "月8日收盘盘后复盘及明日观点分享",
+   "to_cluster_id": "CS-1023",
+   "to_concept": "月1日收盘盘后复盘及明日观点分享",
+   "method": "embedding",
+   "similarity": 0.8943,
+   "reason": "余弦 0.894≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1190",
+   "from_concept": "盘后复盘及明日观点分享",
+   "to_cluster_id": "CS-1023",
+   "to_concept": "月1日收盘盘后复盘及明日观点分享",
+   "method": "embedding",
+   "similarity": 0.8834,
+   "reason": "余弦 0.883≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1052",
+   "from_concept": "来不及等下周一开盘了",
+   "to_cluster_id": "CS-1051",
+   "to_concept": "来不及的明天周二开盘了",
+   "method": "embedding",
+   "similarity": 0.9162,
+   "reason": "余弦 0.916≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1053",
+   "from_concept": "来不及等周四开盘了",
+   "to_cluster_id": "CS-1051",
+   "to_concept": "来不及的明天周二开盘了",
+   "method": "embedding",
+   "similarity": 0.9067,
+   "reason": "余弦 0.907≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1154",
+   "from_concept": "特征工程",
+   "to_cluster_id": "CS-1070",
+   "to_concept": "构建特征工程",
+   "method": "embedding",
+   "similarity": 0.8654,
+   "reason": "余弦 0.865≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1407",
+   "from_concept": "设置止盈止损点",
+   "to_cluster_id": "CS-1100",
+   "to_concept": "止盈止损设置",
+   "method": "embedding",
+   "similarity": 0.9456,
+   "reason": "余弦 0.946≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1408",
+   "from_concept": "设置止盈止损点或对冲风险",
+   "to_cluster_id": "CS-1100",
+   "to_concept": "止盈止损设置",
+   "method": "embedding",
+   "similarity": 0.8633,
+   "reason": "余弦 0.863≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1130",
+   "from_concept": "涨停基因与涨停密码",
+   "to_cluster_id": "CS-1129",
+   "to_concept": "涨停基因",
+   "method": "embedding",
+   "similarity": 0.8656,
+   "reason": "余弦 0.866≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1473",
+   "from_concept": "连续跌破多个关键支撑位",
+   "to_cluster_id": "CS-1173",
+   "to_concept": "由于今天连续跌破几个重要支撑位",
+   "method": "embedding",
+   "similarity": 0.9242,
+   "reason": "余弦 0.924≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1222",
+   "from_concept": "科技股砸盘",
+   "to_cluster_id": "CS-1220",
+   "to_concept": "科技持续砸盘",
+   "method": "embedding",
+   "similarity": 0.8593,
+   "reason": "余弦 0.859≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1223",
+   "from_concept": "科技集体砸盘",
+   "to_cluster_id": "CS-1220",
+   "to_concept": "科技持续砸盘",
+   "method": "llm_boundary",
+   "similarity": 0.8427,
+   "reason": "LLM: 两者均指代科技板块股价大幅下跌的现象，仅用词略有差异（“持续”与“集体”），属于同一指标的不同描述叫法。"
+  },
+  {
+   "from_cluster_id": "CS-1247",
+   "from_concept": "笔和买卖点",
+   "to_cluster_id": "CS-1245",
+   "to_concept": "笔和三种类型的买卖点",
+   "method": "embedding",
+   "similarity": 0.8959,
+   "reason": "余弦 0.896≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1266",
+   "from_concept": "粉色是三十分钟级别的笔",
+   "to_cluster_id": "CS-1265",
+   "to_concept": "粉色实现标识的是三十分钟级别的笔",
+   "method": "embedding",
+   "similarity": 0.8994,
+   "reason": "余弦 0.899≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1274",
+   "from_concept": "纺织品出口趋势",
+   "to_cluster_id": "CS-1273",
+   "to_concept": "纺织品出口增长",
+   "method": "embedding",
+   "similarity": 0.8872,
+   "reason": "余弦 0.887≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1287",
+   "from_concept": "经过一休的深度复盘",
+   "to_cluster_id": "CS-1286",
+   "to_concept": "经过一些我全听的深度复盘",
+   "method": "transitive",
+   "similarity": null,
+   "reason": "并查集传递合并"
+  },
+  {
+   "from_cluster_id": "CS-1292",
+   "from_concept": "经过我深度的六七个小时的盯盘复盘",
+   "to_cluster_id": "CS-1291",
+   "to_concept": "经过我全天深度的盯盘复盘",
+   "method": "embedding",
+   "similarity": 0.9126,
+   "reason": "余弦 0.913≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1304",
+   "from_concept": "缠论三买",
+   "to_cluster_id": "CS-1303",
+   "to_concept": "缠论一买",
+   "method": "embedding",
+   "similarity": 0.8787,
+   "reason": "余弦 0.879≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1314",
+   "from_concept": "缠论工具教程15",
+   "to_cluster_id": "CS-1313",
+   "to_concept": "缠论工具教程14",
+   "method": "embedding",
+   "similarity": 0.9143,
+   "reason": "余弦 0.914≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1362",
+   "from_concept": "自动绘画标识的各个级别的中枢",
+   "to_cluster_id": "CS-1361",
+   "to_concept": "自动绘画出各个级别的中枢",
+   "method": "embedding",
+   "similarity": 0.8804,
+   "reason": "余弦 0.880≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1429",
+   "from_concept": "贵金属金银",
+   "to_cluster_id": "CS-1426",
+   "to_concept": "贵金属",
+   "method": "embedding",
+   "similarity": 0.9006,
+   "reason": "余弦 0.901≥0.85"
+  },
+  {
+   "from_cluster_id": "CS-1562",
+   "from_concept": "非银流动性支持工具退出约束",
+   "to_cluster_id": "CS-1561",
+   "to_concept": "非银流动性支持工具的定价与退出约束",
+   "method": "embedding",
+   "similarity": 0.8916,
+   "reason": "余弦 0.892≥0.85"
+  }
+ ],
+ "merged_groups": [
+  {
+   "group_id": "MG-001",
+   "display": "也就是虚线标识的30分钟级别笔",
+   "members": [
+    "也就是虚线标识的30分钟级别笔",
+    "也就是这个日线级别的向下笔",
+    "大概率这笔日线级别的向下",
+    "如今这笔日线级别的向下比",
+    "开始的这笔日线级别的向下笔走势",
+    "当前日线级别的向下一笔",
+    "当前最后一笔日线级别下",
+    "日线级别向下笔",
+    "虚线标识出来的是五分钟级别的笔"
+   ],
+   "n_members": 9,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-002",
+   "display": "下周一开盘就跑",
+   "members": [
+    "下周一开盘就跑",
+    "下周开盘要不要跑",
+    "明天周三开盘要不要跑",
+    "明天周五开盘就跑",
+    "明天周五开盘要不要跑",
+    "明天开盘就跑"
+   ],
+   "n_members": 6,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-003",
+   "display": "月1日收盘盘后复盘及明日观点分享",
+   "members": [
+    "月1日收盘盘后复盘及明日观点分享",
+    "月3日收盘盘后复盘及明日观点分享",
+    "月4日收盘盘后复盘及明日观点分享",
+    "月7日收盘盘后复盘及明日观点分享",
+    "月8日收盘盘后复盘及明日观点分享",
+    "盘后复盘及明日观点分享"
+   ],
+   "n_members": 6,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-004",
+   "display": "也就是日线级别的笔",
+   "members": [
+    "也就是日线级别的笔",
+    "向下的日线级别的笔",
+    "如今这笔日线级别的向下笔",
+    "当前这笔日线级别的向下笔",
+    "正在走出日线级别的向上一笔"
+   ],
+   "n_members": 5,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-005",
+   "display": "伏击涨停第一定律",
+   "members": [
+    "伏击涨停第一定律",
+    "伏击涨停第三定律",
+    "伏击涨停第二定律",
+    "伏击涨停第四定律"
+   ],
+   "n_members": 4,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-006",
+   "display": "但板块却迎来了极致的分化",
+   "members": [
+    "但板块却迎来了极致的分化",
+    "板块也呈现极致的割裂行情",
+    "板块也极其割裂",
+    "板块更是迎来极致割裂局面"
+   ],
+   "n_members": 4,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-007",
+   "display": "反而是耐心的等待提稳信号的出现",
+   "members": [
+    "反而是耐心的等待提稳信号的出现",
+    "反而是耐心的等待提问信号的出现",
+    "而是耐心的等待企稳信号的出现",
+    "耐心等待提稳信号的出现"
+   ],
+   "n_members": 4,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-008",
+   "display": "在经过我七八个小时反复深度复盘",
+   "members": [
+    "在经过我七八个小时反复深度复盘",
+    "经过我仿佛深度的复盘",
+    "经过我全天深度的复盘",
+    "经过我深度的复盘"
+   ],
+   "n_members": 4,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-009",
+   "display": "出现了背驰信号",
+   "members": [
+    "出现了背驰信号",
+    "背驰信号成立",
+    "识别背驰的信号"
+   ],
+   "n_members": 3,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-010",
+   "display": "AI 量化",
+   "members": [
+    "AI 量化",
+    "AI 量化的深度",
+    "量化"
+   ],
+   "n_members": 3,
+   "multi_confirmed": true
+  },
+  {
+   "group_id": "MG-011",
+   "display": "Meta AI 智能体 Muse",
+   "members": [
+    "Meta AI 智能体 Muse",
+    "Meta个人智能体Muse",
+    "Muse 智能体"
+   ],
+   "n_members": 3,
+   "multi_confirmed": true
+  },
+  {
+   "group_id": "MG-012",
+   "display": "上三笔30分钟级别的笔",
+   "members": [
+    "上三笔30分钟级别的笔",
+    "上两笔的30分钟级别的笔",
+    "下两笔30分钟级别的笔"
+   ],
+   "n_members": 3,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-013",
+   "display": "下午收盘后回来验证",
+   "members": [
+    "下午收盘后回来验证",
+    "下午收盘后欢迎回来验证",
+    "等明天收盘后回来找我验证"
+   ],
+   "n_members": 3,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-014",
+   "display": "两中枢下跌形成背驰",
+   "members": [
+    "两中枢下跌形成背驰",
+    "两中枢背驰",
+    "中枢与背驰"
+   ],
+   "n_members": 3,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-015",
+   "display": "天才交易员 AI 量化十大止损误区",
+   "members": [
+    "天才交易员 AI 量化十大止损误区",
+    "天才交易员 AI 量化十大误区",
+    "天才交易员 AI 量化自动交易十大故障—"
+   ],
+   "n_members": 3,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-016",
+   "display": "山东省主要出口产品类别",
+   "members": [
+    "山东省主要出口产品类别",
+    "山东省主要出口目的地",
+    "山东省主要进口产品类别"
+   ],
+   "n_members": 3,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-017",
+   "display": "来不及的明天周二开盘了",
+   "members": [
+    "来不及的明天周二开盘了",
+    "来不及等下周一开盘了",
+    "来不及等周四开盘了"
+   ],
+   "n_members": 3,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-018",
+   "display": "止盈止损设置",
+   "members": [
+    "止盈止损设置",
+    "设置止盈止损点",
+    "设置止盈止损点或对冲风险"
+   ],
+   "n_members": 3,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-019",
+   "display": "科技持续砸盘",
+   "members": [
+    "科技持续砸盘",
+    "科技股砸盘",
+    "科技集体砸盘"
+   ],
+   "n_members": 3,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-020",
+   "display": "一条重磅消息",
+   "members": [
+    "一条重磅消息",
+    "重磅消息来袭"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-021",
+   "display": "不用等下周开盘了",
+   "members": [
+    "不用等下周开盘了",
+    "也不用等明天周二开盘了"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-022",
+   "display": "中国畜禽肉产品贸易总体规模",
+   "members": [
+    "中国畜禽肉产品贸易总体规模",
+    "中国畜禽肉产品贸易结构变化"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-023",
+   "display": "中国粮食贸易同比变化趋势",
+   "members": [
+    "中国粮食贸易同比变化趋势",
+    "中国粮食贸易总体规模"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-024",
+   "display": "中枢是由次级别构成",
+   "members": [
+    "中枢是由次级别构成",
+    "在这里构成中枢的次级别"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-025",
+   "display": "主要原材料价格波动",
+   "members": [
+    "主要原材料价格波动",
+    "原材料价格变动"
+   ],
+   "n_members": 2,
+   "multi_confirmed": true
+  },
+  {
+   "group_id": "MG-026",
+   "display": "主要快递公司业务量增速排名（1-8 月）",
+   "members": [
+    "主要快递公司业务量增速排名（1-8 月）",
+    "主要快递公司单票收入增速排名（1-8 月）"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-027",
+   "display": "也就是这个虚线标识的日线级别笔",
+   "members": [
+    "也就是这个虚线标识的日线级别笔",
+    "它的级别就是日线级别的笔"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-028",
+   "display": "二手复购用户特征",
+   "members": [
+    "二手复购用户特征",
+    "二手首购用户特征"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-029",
+   "display": "五分钟级别的上涨中枢走势结构",
+   "members": [
+    "五分钟级别的上涨中枢走势结构",
+    "日线级别的上涨中枢结构"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-030",
+   "display": "交易策略与风险",
+   "members": [
+    "交易策略与风险",
+    "策略和风险"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-031",
+   "display": "今早三大指数开盘大幅低开",
+   "members": [
+    "今早三大指数开盘大幅低开",
+    "大A三大指数开盘大幅低开"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-032",
+   "display": "任何一个中枢至少由三笔构成",
+   "members": [
+    "任何一个中枢至少由三笔构成",
+    "而中枢至少由三笔重叠构成"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-033",
+   "display": "保险等金融群众发动了反弹",
+   "members": [
+    "保险等金融群众发动了反弹",
+    "保险等金融群众在拉升"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-034",
+   "display": "关于笔的级别",
+   "members": [
+    "关于笔的级别",
+    "笔的级别"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-035",
+   "display": "写平台突破公式",
+   "members": [
+    "写平台突破公式",
+    "平台突破公式"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-036",
+   "display": "出30分钟级别的下跌中枢结构",
+   "members": [
+    "出30分钟级别的下跌中枢结构",
+    "分钟级别下跌中枢走势"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-037",
+   "display": "出现一个新的同级别中枢",
+   "members": [
+    "出现一个新的同级别中枢",
+    "又形成一个同级别中枢"
+   ],
+   "n_members": 2,
+   "multi_confirmed": true
+  },
+  {
+   "group_id": "MG-038",
+   "display": "分形结构",
+   "members": [
+    "分形结构",
+    "底分形结构"
+   ],
+   "n_members": 2,
+   "multi_confirmed": true
+  },
+  {
+   "group_id": "MG-039",
+   "display": "受外围情绪的影响",
+   "members": [
+    "受外围情绪的影响",
+    "受外围消息影响"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-040",
+   "display": "只要30分钟级别的笔向下回调",
+   "members": [
+    "只要30分钟级别的笔向下回调",
+    "的30分钟级别的向下一笔回调"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-041",
+   "display": "周三刚刚收盘",
+   "members": [
+    "周三刚刚收盘",
+    "周二刚刚收盘"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-042",
+   "display": "周末也多重利好消息",
+   "members": [
+    "周末也多重利好消息",
+    "周末各种利好消息"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-043",
+   "display": "咱们大一开盘指数低开高走",
+   "members": [
+    "咱们大一开盘指数低开高走",
+    "大一开盘指数低开低走"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-044",
+   "display": "哪些情况下期限结构因子会失效",
+   "members": [
+    "哪些情况下期限结构因子会失效",
+    "期限结构因子"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-045",
+   "display": "国防军工子板块分化",
+   "members": [
+    "国防军工子板块分化",
+    "国防军工子板块表现"
+   ],
+   "n_members": 2,
+   "multi_confirmed": true
+  },
+  {
+   "group_id": "MG-046",
+   "display": "在当前位置比较缠论笔面积",
+   "members": [
+    "在当前位置比较缠论笔面积",
+    "比较其对应的缠论笔面积"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-047",
+   "display": "外围局势突发重磅利空消息",
+   "members": [
+    "外围局势突发重磅利空消息",
+    "外围突发重磅利空消息"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-048",
+   "display": "它们对应的缠论笔面积柱子高度",
+   "members": [
+    "它们对应的缠论笔面积柱子高度",
+    "它们所对应的缠论笔面积柱子高度"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-049",
+   "display": "它就是生长中的日线级别的中枢",
+   "members": [
+    "它就是生长中的日线级别的中枢",
+    "它的级别是日线级别中枢"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-050",
+   "display": "实则是主力在洗盘",
+   "members": [
+    "实则是主力在洗盘",
+    "意味着主力意在洗盘"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-051",
+   "display": "小级别似乎也出现了背驰迹象",
+   "members": [
+    "小级别似乎也出现了背驰迹象",
+    "小级别给出背驰"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-052",
+   "display": "就要按周线级别回调来观察",
+   "members": [
+    "就要按周线级别回调来观察",
+    "就要进一步观察周线级别回调的展开"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-053",
+   "display": "已经确认了支撑位",
+   "members": [
+    "已经确认了支撑位",
+    "确认了下方的支撑位"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-054",
+   "display": "底分型加成交量",
+   "members": [
+    "底分型加成交量",
+    "用底分型加成交量持续放大为条件"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-055",
+   "display": "开盘先是低开",
+   "members": [
+    "开盘先是低开",
+    "开盘指数低开"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-056",
+   "display": "开盘半小时快速跳水",
+   "members": [
+    "开盘半小时快速跳水",
+    "开盘直接大跳水"
+   ],
+   "n_members": 2,
+   "multi_confirmed": true
+  },
+  {
+   "group_id": "MG-057",
+   "display": "开盘就迎来五千家普跌",
+   "members": [
+    "开盘就迎来五千家普跌",
+    "开盘近5000家普跌"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-058",
+   "display": "形成了一个日线级别的中枢",
+   "members": [
+    "形成了一个日线级别的中枢",
+    "构成了一个日线级别的中枢"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-059",
+   "display": "成交量",
+   "members": [
+    "成交量",
+    "成交量配合"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-060",
+   "display": "我是老木，这是我的第 5 篇创业笔记",
+   "members": [
+    "我是老木，这是我的第 5 篇创业笔记",
+    "我是老木，这是我的第七篇创业笔记"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-061",
+   "display": "房地产行业板块表现",
+   "members": [
+    "房地产行业板块表现",
+    "计算机行业板块表现"
+   ],
+   "n_members": 2,
+   "multi_confirmed": true
+  },
+  {
+   "group_id": "MG-062",
+   "display": "技术指标",
+   "members": [
+    "技术指标",
+    "计算技术指标"
+   ],
+   "n_members": 2,
+   "multi_confirmed": true
+  },
+  {
+   "group_id": "MG-063",
+   "display": "明天周四开盘",
+   "members": [
+    "明天周四开盘",
+    "月3号明天周四开盘"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-064",
+   "display": "构建特征工程",
+   "members": [
+    "构建特征工程",
+    "特征工程"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-065",
+   "display": "涨停基因",
+   "members": [
+    "涨停基因",
+    "涨停基因与涨停密码"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-066",
+   "display": "由于今天连续跌破几个重要支撑位",
+   "members": [
+    "由于今天连续跌破几个重要支撑位",
+    "连续跌破多个关键支撑位"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-067",
+   "display": "笔和三种类型的买卖点",
+   "members": [
+    "笔和三种类型的买卖点",
+    "笔和买卖点"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-068",
+   "display": "粉色实现标识的是三十分钟级别的笔",
+   "members": [
+    "粉色实现标识的是三十分钟级别的笔",
+    "粉色是三十分钟级别的笔"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-069",
+   "display": "纺织品出口增长",
+   "members": [
+    "纺织品出口增长",
+    "纺织品出口趋势"
+   ],
+   "n_members": 2,
+   "multi_confirmed": true
+  },
+  {
+   "group_id": "MG-070",
+   "display": "经过一些我全听的深度复盘",
+   "members": [
+    "经过一些我全听的深度复盘",
+    "经过一休的深度复盘"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-071",
+   "display": "经过我全天深度的盯盘复盘",
+   "members": [
+    "经过我全天深度的盯盘复盘",
+    "经过我深度的六七个小时的盯盘复盘"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-072",
+   "display": "缠论一买",
+   "members": [
+    "缠论一买",
+    "缠论三买"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-073",
+   "display": "缠论工具教程14",
+   "members": [
+    "缠论工具教程14",
+    "缠论工具教程15"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-074",
+   "display": "自动绘画出各个级别的中枢",
+   "members": [
+    "自动绘画出各个级别的中枢",
+    "自动绘画标识的各个级别的中枢"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  },
+  {
+   "group_id": "MG-075",
+   "display": "贵金属",
+   "members": [
+    "贵金属",
+    "贵金属金银"
+   ],
+   "n_members": 2,
+   "multi_confirmed": true
+  },
+  {
+   "group_id": "MG-076",
+   "display": "非银流动性支持工具的定价与退出约束",
+   "members": [
+    "非银流动性支持工具的定价与退出约束",
+    "非银流动性支持工具退出约束"
+   ],
+   "n_members": 2,
+   "multi_confirmed": false
+  }
+ ],
+ "false_merge_risk": [
+  {
+   "group": "主要原材料价格波动",
+   "members": [
+    "主要原材料价格波动",
+    "原材料价格变动"
+   ],
+   "risk_score": 0.5,
+   "note": "边界/低字符重合合并，建议人工抽检"
+  },
+  {
+   "group": "只要30分钟级别的笔向下回调",
+   "members": [
+    "只要30分钟级别的笔向下回调",
+    "的30分钟级别的向下一笔回调"
+   ],
+   "risk_score": 0.5,
+   "note": "边界/低字符重合合并，建议人工抽检"
+  },
+  {
+   "group": "小级别似乎也出现了背驰迹象",
+   "members": [
+    "小级别似乎也出现了背驰迹象",
+    "小级别给出背驰"
+   ],
+   "risk_score": 0.5,
+   "note": "边界/低字符重合合并，建议人工抽检"
+  },
+  {
+   "group": "科技持续砸盘",
+   "members": [
+    "科技持续砸盘",
+    "科技股砸盘",
+    "科技集体砸盘"
+   ],
+   "risk_score": 0.5,
+   "note": "边界/低字符重合合并，建议人工抽检"
+  },
+  {
+   "group": "AI 量化",
+   "members": [
+    "AI 量化",
+    "AI 量化的深度",
+    "量化"
+   ],
+   "risk_score": 0.3,
+   "note": "边界/低字符重合合并，建议人工抽检"
+  },
+  {
+   "group": "也就是虚线标识的30分钟级别笔",
+   "members": [
+    "也就是虚线标识的30分钟级别笔",
+    "也就是这个日线级别的向下笔",
+    "大概率这笔日线级别的向下",
+    "如今这笔日线级别的向下比",
+    "开始的这笔日线级别的向下笔走势",
+    "当前日线级别的向下一笔",
+    "当前最后一笔日线级别下",
+    "日线级别向下笔",
+    "虚线标识出来的是五分钟级别的笔"
+   ],
+   "risk_score": 0.3,
+   "note": "边界/低字符重合合并，建议人工抽检"
+  },
+  {
+   "group": "但板块却迎来了极致的分化",
+   "members": [
+    "但板块却迎来了极致的分化",
+    "板块也呈现极致的割裂行情",
+    "板块也极其割裂",
+    "板块更是迎来极致割裂局面"
+   ],
+   "risk_score": 0.3,
+   "note": "边界/低字符重合合并，建议人工抽检"
+  }
+ ],
+ "rollback": {
+  "strategy": "忽略 mapping（原概念→目标簇），即回到 W1-2 的 1029 簇基线",
+  "mapping_entries": 113
+ }
+}

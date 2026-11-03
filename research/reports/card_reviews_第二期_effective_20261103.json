@@ -1,0 +1,487 @@
+{
+ "generated_at": "2026-11-03T16:37:25+08:00",
+ "project_id": "视频号学习_第二期",
+ "reviewed": 17,
+ "approved": 0,
+ "rejected": 17,
+ "reason": "第二批内容以 AI 工具推广/营销文案为主（GoStock/Crimo/Chiba/FinRL/阿布量化等），非量化方法论知识；17 张预审通过项经人工抽检全部驳回，不发布学习卡。",
+ "recommendation": "第二期降级为「工具情报库」（非学习卡）；如需知识卡，需 LLM 重提炼工具参数/用法。",
+ "cards": [
+  {
+   "card_id": "CAND-005",
+   "project_id": "视频号学习_第二期",
+   "blogger": "刺猬投研",
+   "concept": "一段行情",
+   "q": "什么是「一段行情」？",
+   "a": "一段行情，K线里究竟藏着多少线索?四位AI把当时的新闻、公告、研报都放到了K线上。鼠标移到下面的小圆点，当天有哪些消息展开看看。股价的变化对照当时的信息，那些值得留意的线索有了具体的时间和出处。想进一步梳理这段行情，还可以点开AI区间分析。AI会结合相关资讯，整理可能的驱动因素，附上对应的资讯编号，方便你继续核对。看见涨跌，也看见涨跌背后的线索。",
+   "source": "视频号学习_第二期 · 20261103_刺猬投研.md · L351",
+   "evidence": "20261103刺猬投研.md L351",
+   "theme": "AI算力/硬件",
+   "quality_score": 8,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "lead_review_v2",
+    "notes": "抽检判定：AI工具推广/营销文案/句子碎片，非量化知识概念；不发布"
+   },
+   "final_issues": [
+    "tool_promotion_or_fragment"
+   ]
+  },
+  {
+   "card_id": "CAND-839",
+   "project_id": "视频号学习_第二期",
+   "blogger": "爱吃折耳根的Ace",
+   "concept": "AI生成的信息图总",
+   "q": "什么是「AI生成的信息图总」？",
+   "a": "AI生成的信息图总是改不了。这个Skill直接给你制好了。项目叫Drawio Scientific Illustrator。昨天刚火的Codex插件。它让Codex实时控制Drawio画布。一边看一边画，先拆解参考图，再逐步添加形状、标签、箭头，每画完一段就截图检查。最后给你一个每个元素都能单独修改的.Drawio文件。我就喜欢拿来做量化框架图，别提有多爽了。",
+   "source": "视频号学习_第二期 · 20261103_爱吃折耳根的Ace.md · L361",
+   "evidence": "20261103爱吃折耳根的Ace.md L361",
+   "theme": "AI算力/硬件",
+   "quality_score": 8,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "lead_review_v2",
+    "notes": "抽检判定：AI工具推广/营销文案/句子碎片，非量化知识概念；不发布"
+   },
+   "final_issues": [
+    "tool_promotion_or_fragment"
+   ]
+  },
+  {
+   "card_id": "CAND-004",
+   "project_id": "视频号学习_第二期",
+   "blogger": "刺猬投研",
+   "concept": "盘杆练习",
+   "q": "什么是「盘杆练习」？",
+   "a": "盘杆练习，你会在哪?B or S。日内节奏挑战，先看三天，再练一天。从200股底仓出发，观察节奏，尝试买卖，收盘，恢复底仓。趋势判断挑战，观察100日，练习200日。从空仓出发，分辨趋势与波动，建立自己的交易节奏。真实历史盘面，有效复盘。好友同练，实时监控收益，实力在最终排行见分晓。快来挑战吧!",
+   "source": "视频号学习_第二期 · 20261103_刺猬投研.md · L281",
+   "evidence": "20261103刺猬投研.md L281",
+   "theme": "其他",
+   "quality_score": 7,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "lead_review_v2",
+    "notes": "抽检判定：AI工具推广/营销文案/句子碎片，非量化知识概念；不发布"
+   },
+   "final_issues": [
+    "tool_promotion_or_fragment"
+   ]
+  },
+  {
+   "card_id": "CAND-007",
+   "project_id": "视频号学习_第二期",
+   "blogger": "刺猬投研",
+   "concept": "研究一家公司要翻多少资料",
+   "q": "什么是「研究一家公司要翻多少资料」？",
+   "a": "研究一家公司要翻多少资料?现在试试从一个问题开始。帮我分析宁德时代的核心竞争力以及值得关注的风险。刺猬投研AI开始规划任务、收集资料、逐步展开分析。技术壁垒、客户转换成本、规模优势、竞争力从不同维度展开。但研究不能只看优势。利润率、应收账款、存货变化同样值得警惕。从公司业务到财务表现，再到估值与风险，逐步形成系统化的研究报告。最后，不只是一个聊天回答，而是一份可以保存继续研究的完整成果。你可以查看分析过程，也可以下载报告和对来源继续研究。从提出问题到拿到报告，让研究有一个更清晰的起点。四位投研AI，个股分析，从一个问题开始。",
+   "source": "视频号学习_第二期 · 20261103_刺猬投研.md · L411",
+   "evidence": "20261103刺猬投研.md L411",
+   "theme": "AI算力/硬件",
+   "quality_score": 6,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "lead_review_v2",
+    "notes": "抽检判定：AI工具推广/营销文案/句子碎片，非量化知识概念；不发布"
+   },
+   "final_issues": [
+    "tool_promotion_or_fragment"
+   ]
+  },
+  {
+   "card_id": "CAND-835",
+   "project_id": "视频号学习_第二期",
+   "blogger": "爱吃折耳根的Ace",
+   "concept": "Codex 5.6确实牛",
+   "q": "什么是「Codex 5.6确实牛」？",
+   "a": "Codex 5.6确实牛，这七个插件最值得装。Browser自动化QA，交互写完，直接让它点、测、验收，比手动快太多。GitHub实时处理PR和issue,issue一丢，它直接写代码，开发流程瞬间闭环。Codex Security，自动扫描漏洞和密钥泄漏，并给出可执行的修复建议。Build Web Apps就是全站工厂，从构思、架构、设计、开发到浏览器测试。一套跑完。Figma，像素集还原，设计稿丢进去，几分钟生成响应式代码。Sentry，线上报错自动定位，并直接生成修复代码。王炸功能是Size，做完直接预览、发布、分享，还能绑定自定义域名。这套装完，你的Codex能力会更上一层楼。",
+   "source": "视频号学习_第二期 · 20261103_爱吃折耳根的Ace.md · L151",
+   "evidence": "20261103爱吃折耳根的Ace.md L151",
+   "theme": "机械/制造",
+   "quality_score": 6,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "lead_review_v2",
+    "notes": "抽检判定：AI工具推广/营销文案/句子碎片，非量化知识概念；不发布"
+   },
+   "final_issues": [
+    "tool_promotion_or_fragment"
+   ]
+  },
+  {
+   "card_id": "CAND-855",
+   "project_id": "视频号学习_第二期",
+   "blogger": "爱吃折耳根的Ace",
+   "concept": "一根K线拉起",
+   "q": "什么是「一根K线拉起」？",
+   "a": "一根K线拉起，先别急着判断价格背后资金消息和历史表现能不能一起看。GoStock把看行情、问AI和做复盘放进同一个桌面。A股、港股、美股、还有ETF从自选行情进入个股，图表和研究就在手边。看到一张走势图，可以直接截图问股。智能体再调用行情、财务和资讯工具把问题继续查下去。资金流向龙虎榜政策新闻也能接近分析，让涨跌之外的线索有地方交叉验证。它还加入了提示词回测，重放历史行情对照收益与回撤。AI说的好不好，回到历史里检验。收盘后自动复盘，盘前生成策略，再推送到非输货丁丁。今天的研究接上明天的计划。GoStock已经开源，把行情提问和验证连成你自己的研究流程。",
+   "source": "视频号学习_第二期 · 20261103_爱吃折耳根的Ace.md · L1351",
+   "evidence": "20261103爱吃折耳根的Ace.md L1351",
+   "theme": "AI算力/硬件",
+   "quality_score": 6,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "lead_review_v2",
+    "notes": "抽检判定：AI工具推广/营销文案/句子碎片，非量化知识概念；不发布"
+   },
+   "final_issues": [
+    "tool_promotion_or_fragment"
+   ]
+  },
+  {
+   "card_id": "CAND-858",
+   "project_id": "视频号学习_第二期",
+   "blogger": "爱吃折耳根的Ace",
+   "concept": "同一只股票有时在反弹",
+   "q": "什么是「同一只股票有时在反弹」？",
+   "a": "同一只股票有时在反弹，新闻却在降温，你会听谁的?Crimo Agent把这个问题拆成四个按顺序工作的智能体。先收集行情，再计算均线、RSI、MACD等六类技术指标，价格、趋势和动量，在同一份分析里对照。新闻也不只分利好利空，而是整理成相关性、情绪和风险变化等七个维度。最后，组合管理智能体结合这些结果和历史决策，输出买入、卖出或持有信号。置信度和仓位建议也一起留下。信号还要放进回测，仓库公布的结果有跑赢也有落后，收益和回撤要一起看。它是开源的研究流程，配置模型和数据源让每一个信号都有来路。",
+   "source": "视频号学习_第二期 · 20261103_爱吃折耳根的Ace.md · L1391",
+   "evidence": "20261103爱吃折耳根的Ace.md L1391",
+   "theme": "AI算力/硬件",
+   "quality_score": 6,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "lead_review_v2",
+    "notes": "抽检判定：AI工具推广/营销文案/句子碎片，非量化知识概念；不发布"
+   },
+   "final_issues": [
+    "tool_promotion_or_fragment"
+   ]
+  },
+  {
+   "card_id": "CAND-854",
+   "project_id": "视频号学习_第二期",
+   "blogger": "爱吃折耳根的Ace",
+   "concept": "同一张K线图",
+   "q": "什么是「同一张K线图」？",
+   "a": "同一张K线图，你看到的是涨跌还是价格背后的结构?Chavis让笔线段和中枢直接叠加在行情上。它基于TradingView本地SDK提供禅论和几何交易研究的可视化界面。从一段价格波动到折线连接，再到区域重叠，分析结果终于可以放在图上检查。识别逻辑与画图分开，后端传回结构数据，前端负责把结果画清楚。你还可以扩展自定义按钮、指标和数据点，把自己的研究方法接进来。代码已经开源，支持本地或私有部署，TradingView的图表库需要另外准备。ChainWiz的价值是让结构看得见，查得清。它提供可视化工具，不内置策略和回测引擎。",
+   "source": "视频号学习_第二期 · 20261103_爱吃折耳根的Ace.md · L1331",
+   "evidence": "20261103爱吃折耳根的Ace.md L1331",
+   "theme": "化工/材料",
+   "quality_score": 6,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "lead_review_v2",
+    "notes": "抽检判定：AI工具推广/营销文案/句子碎片，非量化知识概念；不发布"
+   },
+   "final_issues": [
+    "tool_promotion_or_fragment"
+   ]
+  },
+  {
+   "card_id": "CAND-857",
+   "project_id": "视频号学习_第二期",
+   "blogger": "爱吃折耳根的Ace",
+   "concept": "消息看了一整天",
+   "q": "什么是「消息看了一整天」？",
+   "a": "消息看了一整天，研究却还得从头整理。让问题、资料和分析留在同一个工作台。Vibe Research是一个开源的个人投研工作台。市场资讯、个股研究和研究记录可以接着往下做。接入你自己的AI平时直接聊问题。需要联网、取数和多部研究时再开启Agent。研究一家公司从画像、财务走到预期、估值和风险。最后形成报告。这套六阶段研究目前支持A股。已有的研报也能导入检索、提问，再回到原文核对。材料和计算留下来，结论才方便复查。想挑战一个判断，就让多空双方辩论。想验证一套规则，再交给回测。Vibe Research把这次研究变成下次的起点。",
+   "source": "视频号学习_第二期 · 20261103_爱吃折耳根的Ace.md · L1381",
+   "evidence": "20261103爱吃折耳根的Ace.md L1381",
+   "theme": "AI算力/硬件",
+   "quality_score": 6,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "lead_review_v2",
+    "notes": "抽检判定：AI工具推广/营销文案/句子碎片，非量化知识概念；不发布"
+   },
+   "final_issues": [
+    "tool_promotion_or_fragment"
+   ]
+  },
+  {
+   "card_id": "CAND-859",
+   "project_id": "视频号学习_第二期",
+   "blogger": "爱吃折耳根的Ace",
+   "concept": "行情不该只",
+   "q": "什么是「行情不该只」？",
+   "a": "行情不该只是屏幕上的一条线，把它接近自己的工具，数据才真正用起来。这个项目叫Stock API，一个开源的股票行情工具。用同一套接口查询报价历史K线，还有股票名称。A股、港股、美股，用代码前缀区分。从一个标的到一组自选股都能批量获取。同一段行情展开来看，才有开盘最高最低和收盘。这五根日K就是这次实际取回的数据。数据源也不止一条路。查询K线时，可以依次尝试腾讯、新浪和东方财富取得可用结果。写进程序、放进网页，也可以直接在命令行查询。接上MCP,AI助手也能调用这些行情工具。StockAPE让行情数据进入你自己的工作流。",
+   "source": "视频号学习_第二期 · 20261103_爱吃折耳根的Ace.md · L1401",
+   "evidence": "20261103爱吃折耳根的Ace.md L1401",
+   "theme": "AI算力/硬件",
+   "quality_score": 6,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "lead_review_v2",
+    "notes": "抽检判定：AI工具推广/营销文案/句子碎片，非量化知识概念；不发布"
+   },
+   "final_issues": [
+    "tool_promotion_or_fragment"
+   ]
+  },
+  {
+   "card_id": "CAND-843",
+   "project_id": "视频号学习_第二期",
+   "blogger": "爱吃折耳根的Ace",
+   "concept": "量化策略研究时很漂亮",
+   "q": "什么是「量化策略研究时很漂亮」？",
+   "a": "量化策略研究时很漂亮，一阶交易却失效。问题常常不是模型，而是研究和执行彼此割裂。FinRL Trading，也就是FinRLXIS，正要补上这条断链，一套AI原生量化交易基础设施。数据经过清洗和特征工程，再由选股、配置、择时与封控，生成目标仓位权重，权重向量是统一接口，等权、均值方差、PPO或SAC都能接入同一流程。同一套权重语义，减少研究与执行偏差。仓库给出强化学习、资产轮动和KIM择食案例，并处理交易成本、收益曲线、下补比率和最大回撤验证策略。奥派卡承接模拟交易和前置封控。FinRLXease，把数据策略、回测和执行压进一个可复现必还。以上几枚项目分享不构成投资建议。",
+   "source": "视频号学习_第二期 · 20261103_爱吃折耳根的Ace.md · L481",
+   "evidence": "20261103爱吃折耳根的Ace.md L481",
+   "theme": "AI算力/硬件",
+   "quality_score": 6,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "lead_review_v2",
+    "notes": "抽检判定：AI工具推广/营销文案/句子碎片，非量化知识概念；不发布"
+   },
+   "final_issues": [
+    "tool_promotion_or_fragment"
+   ]
+  },
+  {
+   "card_id": "CAND-861",
+   "project_id": "视频号学习_第二期",
+   "blogger": "爱吃折耳根的Ace",
+   "concept": "K线不变",
+   "q": "什么是「K线不变」？",
+   "a": "K线不变，换个指标观察角度就变了。这就是TradingView Custom Indicators公开的指标圆码合集。五类目录覆盖通道、均线、震荡器、指标和策略。按研究问题找到对应脚本。唐奇安通道取此前20根K线的最高和最低，排除当前柱，形成上下边界和中线。DEMA把两层指数均线组合成一条新线，放在同一段行情上比较响应的差别。Rapid RSI把涨跌变化转成0到100的刻度。它采用区间求和和常见的RSI算法不同。选好脚本，查看参数和版本，再打开PIME编辑器。老版本代码先调整兼容，再核对图表。从一个指标开始，读代码，改参数，看变化。把这个合集变成自己的指标研究起点。",
+   "source": "视频号学习_第二期 · 20261103_爱吃折耳根的Ace.md · L1631",
+   "evidence": "20261103爱吃折耳根的Ace.md L1631",
+   "theme": "其他",
+   "quality_score": 5,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "lead_review_v2",
+    "notes": "抽检判定：AI工具推广/营销文案/句子碎片，非量化知识概念；不发布"
+   },
+   "final_issues": [
+    "tool_promotion_or_fragment"
+   ]
+  },
+  {
+   "card_id": "CAND-853",
+   "project_id": "视频号学习_第二期",
+   "blogger": "爱吃折耳根的Ace",
+   "concept": "一张股票K线图",
+   "q": "什么是「一张股票K线图」？",
+   "a": "一张股票K线图，除了涨跌你还能看见什么?把笔、线段和中枢叠上去，价格的起伏就有了可以检查的结构。这个开源项目叫禅论X，它通过通达性的DLL扩展，把禅论结构直接画在主图上。先看笔，把算法识别出的顶底端点连起来，读出局部起伏，再看线段，在同一段行情里，观察更大一层的结构。中枢关注的是结构之间的重叠区间。把上沿、下沿和起止位置标清楚，就能回到图上，逐一核对。线段支持标准画法，以及1加1终结画法。同一份输入，两种结果并排看，先弄清规则，再理解图上的差异。编译后，把插件接入通达信，注意32位和64位要匹配。它帮你把结构画清楚，理解行情仍然要回到每一根K线。",
+   "source": "视频号学习_第二期 · 20261103_爱吃折耳根的Ace.md · L1281",
+   "evidence": "20261103爱吃折耳根的Ace.md L1281",
+   "theme": "其他",
+   "quality_score": 5,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "lead_review_v2",
+    "notes": "抽检判定：AI工具推广/营销文案/句子碎片，非量化知识概念；不发布"
+   },
+   "final_issues": [
+    "tool_promotion_or_fragment"
+   ]
+  },
+  {
+   "card_id": "CAND-844",
+   "project_id": "视频号学习_第二期",
+   "blogger": "爱吃折耳根的Ace",
+   "concept": "信息越多",
+   "q": "什么是「信息越多」？",
+   "a": "信息越多，判断反而越难。智能代理怎样建立研究流程?Day One Global Skills把五套投资能力放进一个开源仓库。财报深挖，16个模块，6种投资哲学，交叉检查公司质量。价值投资、收益率、债务、现金流和护城河组成四维评分。情绪与流动性接力判断市场环境和潜在风险，比特币模型用13项指标，合成市场热度评分。一条命令安装，一句话调用，不同结论还能交叉验证。它不是零散提示词，而是五套研究方法。以上仅为工具分享与研究参考，不构成投资建议。",
+   "source": "视频号学习_第二期 · 20261103_爱吃折耳根的Ace.md · L501",
+   "evidence": "20261103爱吃折耳根的Ace.md L501",
+   "theme": "其他",
+   "quality_score": 5,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "lead_review_v2",
+    "notes": "抽检判定：AI工具推广/营销文案/句子碎片，非量化知识概念；不发布"
+   },
+   "final_issues": [
+    "tool_promotion_or_fragment"
+   ]
+  },
+  {
+   "card_id": "CAND-864",
+   "project_id": "视频号学习_第二期",
+   "blogger": "爱吃折耳根的Ace",
+   "concept": "指标越加越多",
+   "q": "什么是「指标越加越多」？",
+   "a": "指标越加越多，买卖信号却在互相打架。这个量化脚本，让五套策略按权重投票。它叫Weighted Strategy，运行在Trading View上。原码公开，每套策略都能单独开关。MACD、随机RSI、常规RSI、超级趋势和均线交叉，先判断信号，再把各自的权重相加。例如三路信号各得一分，门槛设为二，就达到加权条件。多头和空头，分别计算。进场后可以分批止盈，并在止盈后调整止损。止盈次数、比例和多空参数都能设置。限定回测日期，配合月度表现表，比较不同阶段。上涨、震荡、下跌都要验证。历史收益不代表未来，想研究多指标量化策略，可以从这份原码开始。",
+   "source": "视频号学习_第二期 · 20261103_爱吃折耳根的Ace.md · L1801",
+   "evidence": "20261103爱吃折耳根的Ace.md L1801",
+   "theme": "其他",
+   "quality_score": 5,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "lead_review_v2",
+    "notes": "抽检判定：AI工具推广/营销文案/句子碎片，非量化知识概念；不发布"
+   },
+   "final_issues": [
+    "tool_promotion_or_fragment"
+   ]
+  },
+  {
+   "card_id": "CAND-860",
+   "project_id": "视频号学习_第二期",
+   "blogger": "爱吃折耳根的Ace",
+   "concept": "策略好不好",
+   "q": "什么是「策略好不好」？",
+   "a": "策略好不好，不只看最后赚多少。两条曲线终点相同，过程中的回撤却可能差很多。这个项目叫阿布量化，仓库名阿布。它把选股、择时、仓位和回撤串成一个Python框架。买入因子决定何时入场，卖出因子负责退出。选什么，买多少，也可以分别配置。把规则放回历史行情，记录交易和资金变化。手续费、滑点和基准表现也要纳入比较。同一个想法换一组参数再跑。比较收益也比较回撤，别只挑一次最漂亮的结果。它还带有交易过滤模块，像一道交易裁判。从历史交易特征中学习，辅助拦截信号，再用新数据检验。阿布量化，让策略从一个想法变成可以复盘的实验。",
+   "source": "视频号学习_第二期 · 20261103_爱吃折耳根的Ace.md · L1521",
+   "evidence": "20261103爱吃折耳根的Ace.md L1521",
+   "theme": "其他",
+   "quality_score": 5,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "lead_review_v2",
+    "notes": "抽检判定：AI工具推广/营销文案/句子碎片，非量化知识概念；不发布"
+   },
+   "final_issues": [
+    "tool_promotion_or_fragment"
+   ]
+  },
+  {
+   "card_id": "CAND-842",
+   "project_id": "视频号学习_第二期",
+   "blogger": "爱吃折耳根的Ace",
+   "concept": "策略想法",
+   "q": "什么是「一个策略想法」？",
+   "a": "一个策略想法，怎样快速变成能验证的交易系统，这就是Hikiu想解决的问题。它不是指标集合，而是基于C++和Python的开源高速量化研究框架，深度适配A股。市场环境、信号指引止损、资金管理、滑点、选股与资金分配都被拆成可组合部件。导入K线与财务数据，用Python组合策略，底层C++负责高速计算。买卖信号与仓位变化会在图表中展开。策略哪里有效，哪里失效，一眼看清，再进入模拟回测，收益、回撤、胜率与风险暴露，同步更新。画面数据均为模拟演示，想搭建自己的量化研究工作台。Hikiu是一套值得研究的开源底座，工具分享不构成投资建议。",
+   "source": "视频号学习_第二期 · 20261103_爱吃折耳根的Ace.md · L441",
+   "evidence": "20261103爱吃折耳根的Ace.md L441",
+   "theme": "其他",
+   "quality_score": 5,
+   "precheck": {
+    "action": "pass",
+    "issues": []
+   },
+   "review": {
+    "checkboxes": {
+     "pass": false,
+     "revise": false,
+     "reject": true
+    },
+    "reviewer": "lead_review_v2",
+    "notes": "抽检判定：AI工具推广/营销文案/句子碎片，非量化知识概念；不发布"
+   },
+   "final_issues": [
+    "tool_promotion_or_fragment"
+   ]
+  }
+ ]
+}

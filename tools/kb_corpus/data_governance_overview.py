@@ -23,6 +23,11 @@ gov = json.loads((R / f"knowledge_governance_{STAMP}.json").read_text(encoding="
 today = json.loads((R / f"governance_today_{STAMP}.json").read_text(encoding="utf-8"))
 audit = json.loads((R / f"card_quality_audit_{STAMP}.json").read_text(encoding="utf-8"))
 multi = json.loads((R / "concept_merge_review_b_20261103.json").read_text(encoding="utf-8"))
+try:
+    _p1 = json.loads((R / "multi_source_final_p1_20261103.json").read_text(encoding="utf-8"))
+    multi = {**multi, "final_multi_source": _p1.get("final_multi_source")}
+except Exception:
+    pass
 gate = json.loads((R / f"learning_gate_{STAMP}.json").read_text(encoding="utf-8"))
 excl = json.loads((R / f"exclusions_today_{STAMP}.json").read_text(encoding="utf-8"))
 cards = json.loads((S / "kb_learning_cards.json").read_text(encoding="utf-8")).get("cards") or []
@@ -58,8 +63,8 @@ dw_size = {"files": 269276, "gb": 55.8}   # 实测 Get-ChildItem 汇总
 kb_size = {"files": 4355, "gb": 5.79}
 
 open_items = [
-    ("P0", "指标说明书排除清单未应用到下游（候选/多源/微调）", "exclusions_today_20261103.json 已生成，871 单元/823 候选待下游过滤", "DATA1", "立即"),
-    ("P1", "第二期 46 张有效候选未审", "869 候选扣除 823 垃圾后仅 46，尚未预审/发布", "DATA1", "1 天"),
+    ("P1", "第二期知识价值低（已审 0 通过）", "46 有效候选/17 预审通过项经人工抽检全部驳回（工具推广/碎片）；0 学习卡，建议降级工具情报库", "DATA1", "决策"),
+    ("P1", "指标说明书排除清单需继续约束下游", "候选池已过滤（869→46）；多源/微调输入后续统一用 effective 文件", "DATA1", "已下发，持续"),
     ("P1", "多源概念 27/30（差 3）", "已扩 3 来源仍不足，需补主题重叠资料或人工复核", "DATA1/Lead", "1 周"),
     ("P1", "知识治理脚本仅覆盖一期", "knowledge_governance.py 固定 PID，第二期未进治理日报", "DATA1", "2 天"),
     ("P1", "cyq_chips 覆盖不足", "23 文件/0.2MB，筹码因子抽样覆盖 0-0.27%", "DATA2", "排期"),
@@ -76,7 +81,8 @@ kpis = [
     ("有效知识单元（今日文件）", "—", "1,045（800+245）", "✅"),
     ("学习卡", "≥400", "400（审计 0 问题/可追溯 100%）", "✅"),
     ("有效候选", "—", "1,372（已排除 823 垃圾）", "✅"),
-    ("多源概念", "≥30", "27（人工双签）", "⚠️ 差 3"),
+    ("多源概念", "≥30", "29（人工签核；机器 30）", "⚠️ 差 1"),
+    ("第二期有效候选", "—", "46（已审：0 通过，工具推广为主）", "⚠️ 低价值"),
     ("数据仓质量检查", "8/8 PASS", "8/8 PASS（C6/C7/C8 复检 true）", "✅"),
     ("元数据一致性", "PASS", "PASS（catalog v35/256 表/registry 256）", "✅"),
     ("注册率/暴露率", "—", "84.4% / 22.9%", "⚠️"),
@@ -117,6 +123,12 @@ L = [f"# 数据治理情况总览（{STAMP}）", "", f"> 生成：{now}｜范围
 L += ["## 一、一句话结论", "",
       "**知识侧：一期治理指标全达标（元数据 0/重复 0/核验 100%），今日文件有效单元 1,045、有效候选 1,372、卡 400、多源 27/30；"
       "数据仓侧：314 数据集/265 注册/72 暴露，质量 8/8 PASS、元数据一致性 PASS；主要缺口是 17 个陈旧数据集、指标说明书排除未下发、多源差 3。**", ""]
+L += ["## P0 治理执行（2026-11-03 傍晚）", "",
+      "| P0 项 | 结果 |", "|---|---|",
+      "| 指标说明书排除下发 | ✅ 第二期候选 869→46（823 排除），portal 静态同步 |",
+      "| 第二期候选终审 | ✅ 46 有效候选：预审通过 17 → 人工抽检全部驳回（工具推广/碎片），0 学习卡 |",
+      "| 多项目治理覆盖 | ✅ 二期+老木纳入（3 项目/2,202 单元/核验 99.1%） |",
+      "| laomu 去重 | ✅ 288→286（-2，备份保留） |", ""]
 L += ["## 二、知识治理", "", "| 项目 | 状态 | 单元 | Owner |", "|---|---|---|---|"]
 for p in projects:
     L.append(f"| {p['project_id']} | {p['status']} | {p['units']} | {p['owner']} |")

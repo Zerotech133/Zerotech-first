@@ -1,0 +1,27 @@
+﻿源,数据集,类型,原因,Owner,审批,状态
+tdx,crypto_daily,外部抓取,catalog 有、该源 manifest 无（需 token/ETL 抓取）,DATA2（抓取）,需 token 与采集排期（DATA1 审批）,待 token/审批
+tdx,guba_posts,外部抓取,catalog 有、该源 manifest 无（需 token/ETL 抓取）,DATA2（抓取）,需 token 与采集排期（DATA1 审批）,待 token/审批
+tdx,us_legacy,外部抓取,catalog 有、该源 manifest 无（需 token/ETL 抓取）,DATA2（抓取）,需 token 与采集排期（DATA1 审批）,待 token/审批
+tdx,v2_bar_daily,外部抓取,catalog 有、该源 manifest 无（需 token/ETL 抓取）,DATA2（抓取）,需 token 与采集排期（DATA1 审批）,待 token/审批
+tushare,index_global,外部抓取,catalog 有、该源 manifest 无（需 token/ETL 抓取）,DATA2（抓取）,需 token 与采集排期（DATA1 审批）,待 token/审批
+tushare,quarantine_prod_overwrite,外部抓取,catalog 有、该源 manifest 无（需 token/ETL 抓取）,DATA2（抓取）,需 token 与采集排期（DATA1 审批）,待 token/审批
+xueqiu,xq_earningforecast,外部抓取,catalog 有、该源 manifest 无（需 token/ETL 抓取）,DATA2（抓取）,需 token 与采集排期（DATA1 审批）,待 token/审批
+xueqiu,xq_hot_deal,外部抓取,catalog 有、该源 manifest 无（需 token/ETL 抓取）,DATA2（抓取）,需 token 与采集排期（DATA1 审批）,待 token/审批
+xueqiu,xq_inner_trade,外部抓取,catalog 有、该源 manifest 无（需 token/ETL 抓取）,DATA2（抓取）,需 token 与采集排期（DATA1 审批）,待 token/审批
+接口数据,tushare.irm_qa_sh_probe,陈旧需重新抓取,,DATA2,外部源更新后重跑 ETL（无需人工审批，但占用抓取配额）,待 token/审批
+接口数据,tushare.irm_qa_sz_probe,陈旧需重新抓取,,DATA2,外部源更新后重跑 ETL（无需人工审批，但占用抓取配额）,待 token/审批
+接口数据,tdx.tdx_sector_def,陈旧需重新抓取,,DATA2,外部源更新后重跑 ETL（无需人工审批，但占用抓取配额）,待 token/审批
+接口数据,tdx.ts_etf_basic,陈旧需重新抓取,,DATA2,外部源更新后重跑 ETL（无需人工审批，但占用抓取配额）,待 token/审批
+接口数据,tdx.ts_ths_index,陈旧需重新抓取,,DATA2,外部源更新后重跑 ETL（无需人工审批，但占用抓取配额）,待 token/审批
+接口数据,tushare.hk_balancesheet,陈旧需重新抓取,,DATA2,外部源更新后重跑 ETL（无需人工审批，但占用抓取配额）,待 token/审批
+接口数据,tushare.hk_cashflow,陈旧需重新抓取,,DATA2,外部源更新后重跑 ETL（无需人工审批，但占用抓取配额）,待 token/审批
+接口数据,tushare.hk_fina_indicator,陈旧需重新抓取,,DATA2,外部源更新后重跑 ETL（无需人工审批，但占用抓取配额）,待 token/审批
+接口数据,tushare.hk_income,陈旧需重新抓取,,DATA2,外部源更新后重跑 ETL（无需人工审批，但占用抓取配额）,待 token/审批
+接口数据,tushare.sw_l1_member,陈旧需重新抓取,,DATA2,外部源更新后重跑 ETL（无需人工审批，但占用抓取配额）,待 token/审批
+接口数据,tushare.us_balancesheet,陈旧需重新抓取,,DATA2,外部源更新后重跑 ETL（无需人工审批，但占用抓取配额）,待 token/审批
+接口数据,tushare.us_cashflow,陈旧需重新抓取,,DATA2,外部源更新后重跑 ETL（无需人工审批，但占用抓取配额）,待 token/审批
+接口数据,tushare.us_fina_indicator,陈旧需重新抓取,,DATA2,外部源更新后重跑 ETL（无需人工审批，但占用抓取配额）,待 token/审批
+接口数据,tushare.us_income,陈旧需重新抓取,,DATA2,外部源更新后重跑 ETL（无需人工审批，但占用抓取配额）,待 token/审批
+接口数据,tushare.stk_managers,陈旧需重新抓取,,DATA2,外部源更新后重跑 ETL（无需人工审批，但占用抓取配额）,待 token/审批
+接口数据,tushare.top10_floatholders,陈旧需重新抓取,,DATA2,外部源更新后重跑 ETL（无需人工审批，但占用抓取配额）,待 token/审批
+接口数据,tushare.top10_holders,陈旧需重新抓取,,DATA2,外部源更新后重跑 ETL（无需人工审批，但占用抓取配额）,待 token/审批
