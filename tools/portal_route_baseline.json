@@ -1,7 +1,7 @@
 {
- "generated_at": "2026-11-03T08:40:23",
+ "generated_at": "2026-11-03T15:05:23",
  "source": "C:\\项目\\老田的AI助手\\portal\\portal_api.py",
- "total": 293,
+ "total": 294,
  "signatures": [
   [
    "GET",
@@ -72,6 +72,11 @@
    "GET",
    "exact",
    "/api/bff/identity/me"
+  ],
+  [
+   "GET",
+   "exact",
+   "/api/bff/quant/sso"
   ],
   [
    "GET",
