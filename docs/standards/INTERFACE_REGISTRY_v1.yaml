@@ -1,0 +1,1451 @@
+schema_version: interface_registry/v1
+registry_version: 1.0.0
+updated_at: '2026-11-03'
+owner: A0
+maintainers:
+- ARCH1
+- D1
+status: draft
+source_plan: deliverables/2026-11-03_接口对接规范IFS_v1与整改计划.md
+standards:
+  ifs: docs/standards/2026-11-03_接口对接规范_IFS_v1.md
+  id_chain: docs/standards/2026-11-03_ID_CHAIN_v1.md
+  envelope_error: docs/standards/2026-11-03_Envelope_Error_v1.md
+  owner_consumer_slo_matrix: docs/standards/2026-11-03_OWNER_CONSUMER_SLO_MATRIX.md
+  envelope_schema: docs/standards/schemas/interface_envelope_v1.schema.json
+  error_schema: docs/standards/schemas/interface_error_v1.schema.json
+method_enum:
+- GET
+- POST
+- INTERNAL
+- MCP
+- MANIFEST
+status_enum:
+- draft
+- v1
+- deprecated
+- retired
+auth_enum:
+- portal-token
+- portal-token+roles
+- internal-only
+- mcp-config
+- manifest
+write_scope_enum:
+- none
+- ledger
+- gate
+- manifest
+slo_classes:
+  read_fast:
+    latency_ms_p95: 300
+    error_rate_max: 0.01
+    availability: 0.995
+  read_heavy:
+    latency_ms_p95: 1500
+    error_rate_max: 0.02
+    availability: 0.99
+  write_ledger:
+    latency_ms_p95: 500
+    error_rate_max: 0.005
+    availability: 0.999
+  write_gate:
+    latency_ms_p95: 800
+    error_rate_max: 0.005
+    availability: 0.999
+  internal_contract:
+    latency_ms_p95: 100
+    error_rate_max: 0.001
+    availability: 1.0
+  mcp_tool:
+    latency_ms_p95: 3000
+    error_rate_max: 0.02
+    availability: 0.99
+  manifest:
+    latency_ms_p95: 100
+    error_rate_max: 0.001
+    availability: 1.0
+owners:
+  A0:
+    dept: chief_line
+    role: product_rd_chief
+    oncall: human
+    escalation: human
+    note: 平台总入口唯一 8734；接口登记表与规范最终 owner
+  ARCH1:
+    dept: dev
+    role: solution_architect
+    oncall: agent
+    escalation: A0
+    note: 接口规范/版本策略/组合登记技术共签
+  ACAD1:
+    dept: academy
+    role: academy_director
+    oncall: agent
+    escalation: A0
+    note: ACAD1 推荐池 owner（池/卡发布）
+  D1:
+    dept: invest
+    role: d1_decision
+    oncall: agent
+    escalation: A0
+    note: D1 研究/裁决/交棒/outcome owner
+  DATA1:
+    dept: data
+    role: data_team_lead
+    oncall: agent
+    escalation: A0
+    note: 数据仓/数据契约/数据集登记 owner
+  STRAT1:
+    dept: academy
+    role: strategy_researcher
+    oncall: agent
+    escalation: D1
+    note: 策略注册表只读视图 owner
+  TR1:
+    dept: invest
+    role: trade_executor
+    oncall: agent
+    escalation: D1
+    note: 模拟交易所主管（确认门/paper 执行/账本）
+  WA1:
+    dept: invest
+    role: watch_monitor
+    oncall: agent
+    escalation: WATCH_TOWER
+    note: 盯盘触发/计划（WA 组代表性 owner）
+  WATCH_TOWER:
+    dept: ops_runtime
+    role: watchtower_arbiter
+    oncall: agent
+    escalation: A0
+    note: 盯盘仲裁/成员资格
+  HERMES:
+    dept: ops_runtime
+    role: hermes_runtime
+    oncall: agent
+    escalation: A0
+    note: MCP/Hermes 运行时消费方
+interfaces:
+- id: acad1.pool.get
+  method: GET
+  path: /api/acad1/pool
+  owner: ACAD1
+  consumer:
+  - D1
+  - 门户
+  - DATA1
+  source_of_truth:
+    kind: pg_table
+    ref: zhice_os_v2.public.v2_acad1_pool@127.0.0.1:5446
+    projection: agent_platform/data/recommendation_pool/latest.json
+    note: ADR-018 契约 zerobond.selection.v2_acad1_pool@1.0.0；JSON 仅为只读投影（当前 36 vs PG
+      30 双池并存，F2 收口）
+  schema: acad1_pool/v2
+  auth: portal-token
+  write: false
+  paper_only: true
+  SLO:
+    latency_ms_p95: 300
+    error_rate_max: 0.01
+    availability: 0.995
+  slo_class: read_fast
+  status: draft
+  ids:
+    produces:
+    - pool_id
+    - card_id
+    consumes: []
+  remediation:
+    phase: F2
+    wo: WO-IFS-ACAD1-20261103
+  notes: P0-1：需补 source_mode/pool_version/published_at；source_mode=pg_official 才算
+    v1
+- id: dw.query.get
+  method: GET
+  path: /api/dw/
+  owner: DATA1
+  consumer:
+  - 全平台 Agent
+  - 门户
+  - 组合
+  source_of_truth:
+    kind: catalog
+    ref: agent_platform/catalogs/data_catalog.yaml + dataset_registry
+    note: 只读数据仓查询；未登记数据集不得直读文件（IFS-07）
+  schema: data-warehouse/v1
+  auth: portal-token
+  write: false
+  paper_only: true
+  SLO:
+    latency_ms_p95: 1500
+    error_rate_max: 0.02
+    availability: 0.99
+  slo_class: read_heavy
+  status: v1
+  ids:
+    produces: []
+    consumes: []
+  remediation:
+    phase: F2
+    wo: WO-IFS-DW-20261103
+- id: dw.query.post
+  method: POST
+  path: /api/dw/
+  owner: DATA1
+  consumer:
+  - 全平台 Agent
+  - 门户
+  source_of_truth:
+    kind: catalog
+    ref: agent_platform/catalogs/data_catalog.yaml + dataset_registry
+    note: POST 仅为查询传输（body 上限 1MB），不产生写副作用（IFS-05）
+  schema: data-warehouse/v1
+  auth: portal-token
+  write: false
+  paper_only: true
+  SLO:
+    latency_ms_p95: 1500
+    error_rate_max: 0.02
+    availability: 0.99
+  slo_class: read_heavy
+  status: v1
+  ids:
+    produces: []
+    consumes: []
+  remediation:
+    phase: F2
+    wo: WO-IFS-DW-20261103
+- id: strategy.list
+  method: GET
+  path: /api/strategies
+  owner: STRAT1
+  consumer:
+  - D1
+  - 门户
+  - 组合
+  - WATCH_TOWER
+  source_of_truth:
+    kind: file
+    ref: quant_backtest/strategy_layer/strategy_registry.json
+    note: registry 运行语义唯一真源；页面/API 只读投影
+  schema: strategy/v1
+  auth: portal-token
+  write: false
+  paper_only: true
+  SLO:
+    latency_ms_p95: 300
+    error_rate_max: 0.01
+    availability: 0.995
+  slo_class: read_fast
+  status: v1
+  ids:
+    produces: []
+    consumes: []
+  remediation:
+    phase: F6
+    wo: WO-IFS-ROUTE-20261103
+- id: d1.research.get
+  method: GET
+  path: /api/d1/research
+  owner: D1
+  consumer:
+  - 门户
+  - HERMES
+  source_of_truth:
+    kind: aggregate
+    ref: agent_platform/data/pool_review/ + agent_platform/data/shadow/shadow_ledger.jsonl
+    note: 池内研究聚合（T1/T2/N1/F1 + D1 结论）；不管理策略、不接实盘
+  schema: d1_research/v1
+  auth: portal-token
+  write: false
+  paper_only: true
+  SLO:
+    latency_ms_p95: 1500
+    error_rate_max: 0.02
+    availability: 0.99
+  slo_class: read_heavy
+  status: draft
+  ids:
+    produces: []
+    consumes:
+    - pool_id
+  remediation:
+    phase: F1
+    wo: WO-IFS-ENVELOPE-20261103
+  notes: P0-4：现返回 items/summary/mode/ok，无 schema_version/request_id → 加 envelope
+- id: d1.case.upsert
+  method: INTERNAL
+  path: internal:d1/case
+  owner: D1
+  consumer:
+  - D1 投研
+  - 会议
+  source_of_truth:
+    kind: ledger
+    ref: agent_platform/data/d1_cases.jsonl
+    note: case 账本当前缺失（ID 链空洞），F3 落地；声明为契约接口先登记
+  schema: d1_case/v1
+  auth: internal-only
+  write: true
+  paper_only: true
+  SLO:
+    latency_ms_p95: 100
+    error_rate_max: 0.001
+    availability: 1.0
+  slo_class: internal_contract
+  status: draft
+  ids:
+    produces:
+    - case_id
+    consumes:
+    - card_id
+  remediation:
+    phase: F3
+    wo: WO-IFS-HANDOFF-20261103
+- id: d1.decision.create
+  method: POST
+  path: /api/d1/decision
+  owner: D1
+  consumer:
+  - 门户
+  - 会议
+  - WA1
+  source_of_truth:
+    kind: ledger
+    ref: agent_platform/data/d1_decisions.jsonl
+    note: d1_decision/v1 落账；decision_id 权威生成方（另见 id_chain deviations 的引擎格式）
+  schema: d1_decision/v1
+  auth: portal-token+roles
+  write: true
+  paper_only: true
+  SLO:
+    latency_ms_p95: 500
+    error_rate_max: 0.005
+    availability: 0.999
+  slo_class: write_ledger
+  status: draft
+  ids:
+    produces:
+    - decision_id
+    consumes:
+    - case_id
+  remediation:
+    phase: F1+F3
+    wo: WO-IFS-HANDOFF-20261103
+- id: d1.decision.list
+  method: GET
+  path: /api/d1/decisions
+  owner: D1
+  consumer:
+  - 门户
+  - 会议
+  source_of_truth:
+    kind: ledger
+    ref: agent_platform/data/d1_decisions.jsonl
+  schema: d1_decision/v1
+  auth: portal-token
+  write: false
+  paper_only: true
+  SLO:
+    latency_ms_p95: 300
+    error_rate_max: 0.01
+    availability: 0.995
+  slo_class: read_fast
+  status: draft
+  ids:
+    produces: []
+    consumes:
+    - decision_id
+  remediation:
+    phase: F1
+    wo: WO-IFS-ENVELOPE-20261103
+- id: d1.meeting.get
+  method: GET
+  path: /api/d1/meeting
+  owner: D1
+  consumer:
+  - 会议
+  - 门户
+  source_of_truth:
+    kind: ledger
+    ref: agent_platform/data/meetings/d1/
+    note: D1 投研会纪要（只读读取）
+  schema: d1_meeting/v1
+  auth: portal-token
+  write: false
+  paper_only: true
+  SLO:
+    latency_ms_p95: 300
+    error_rate_max: 0.01
+    availability: 0.995
+  slo_class: read_fast
+  status: draft
+  ids:
+    produces: []
+    consumes:
+    - decision_id
+  remediation:
+    phase: F1
+    wo: WO-IFS-ENVELOPE-20261103
+- id: d1.meeting.create
+  method: POST
+  path: /api/d1/meeting
+  owner: D1
+  consumer:
+  - 会议
+  - 门户
+  source_of_truth:
+    kind: ledger
+    ref: agent_platform/data/meetings/d1/
+    note: 只落会议纪要；不写决策/不下单
+  schema: d1_meeting/v1
+  auth: portal-token+roles
+  write: true
+  paper_only: true
+  SLO:
+    latency_ms_p95: 800
+    error_rate_max: 0.005
+    availability: 0.999
+  slo_class: write_gate
+  status: draft
+  ids:
+    produces: []
+    consumes:
+    - decision_id
+  remediation:
+    phase: F1
+    wo: WO-IFS-ENVELOPE-20261103
+- id: d1.handoff.create
+  method: POST
+  path: /api/d1/handoff
+  owner: D1
+  consumer:
+  - WA1
+  - WA2
+  - WA3
+  - TR1
+  - WATCH_TOWER
+  - 门户
+  source_of_truth:
+    kind: ledger
+    ref: agent_platform/data/d1_handoffs.jsonl
+    note: 只落交棒回执（d1h-）；禁止携带 order/qty/broker/execute/trade_id/fill/account（IFS-05）
+  schema: d1_handoff/v2
+  auth: portal-token+roles
+  write: true
+  paper_only: true
+  SLO:
+    latency_ms_p95: 500
+    error_rate_max: 0.005
+    availability: 0.999
+  slo_class: write_ledger
+  status: draft
+  ids:
+    produces:
+    - handoff_id
+    consumes:
+    - decision_id
+  remediation:
+    phase: F3
+    wo: WO-IFS-HANDOFF-20261103
+  notes: P0-2/P0-5：v2 扩 watch_plans[]；receipt_id 与 handoff_id 统一为 handoff_id（receipt_id
+    为 deprecated alias）
+- id: d1.handoff.list
+  method: GET
+  path: /api/d1/handoffs
+  owner: D1
+  consumer:
+  - 门户
+  - WA1
+  - TR1
+  source_of_truth:
+    kind: ledger
+    ref: agent_platform/data/d1_handoffs.jsonl
+  schema: d1_handoff/v2
+  auth: portal-token
+  write: false
+  paper_only: true
+  SLO:
+    latency_ms_p95: 300
+    error_rate_max: 0.01
+    availability: 0.995
+  slo_class: read_fast
+  status: draft
+  ids:
+    produces: []
+    consumes:
+    - handoff_id
+  remediation:
+    phase: F1
+    wo: WO-IFS-ENVELOPE-20261103
+- id: d1.watch_plans.list
+  method: GET
+  path: /api/d1/watch-plans
+  owner: D1
+  consumer:
+  - 门户
+  - WA1
+  - WA2
+  - WA3
+  - WATCH_TOWER
+  source_of_truth:
+    kind: ledger
+    ref: agent_platform/data/watch_plans.jsonl
+  schema: watch_plan/v1
+  auth: portal-token
+  write: false
+  paper_only: true
+  SLO:
+    latency_ms_p95: 300
+    error_rate_max: 0.01
+    availability: 0.995
+  slo_class: read_fast
+  status: draft
+  ids:
+    produces: []
+    consumes:
+    - watch_plan_id
+    - handoff_id
+  remediation:
+    phase: F3
+    wo: WO-IFS-WIRE-20261103
+- id: watch.plan.create
+  method: INTERNAL
+  path: internal:watch/plan
+  owner: WA1
+  consumer:
+  - WA2
+  - WA3
+  - WATCH_TOWER
+  - 确认门
+  source_of_truth:
+    kind: ledger
+    ref: agent_platform/data/watch_plans.jsonl
+    note: handoff→armed watch_plan 消费器（当前缺失，F3 WO-IFS-WATCHCONS）
+  schema: watch_plan/v1
+  auth: internal-only
+  write: true
+  paper_only: true
+  SLO:
+    latency_ms_p95: 100
+    error_rate_max: 0.001
+    availability: 1.0
+  slo_class: internal_contract
+  status: draft
+  ids:
+    produces:
+    - watch_plan_id
+    consumes:
+    - handoff_id
+  remediation:
+    phase: F3
+    wo: WO-IFS-WATCHCONS-20261103
+- id: watch.trigger.create
+  method: INTERNAL
+  path: internal:watch/trigger
+  owner: WA1
+  consumer:
+  - 确认门
+  - TR1
+  source_of_truth:
+    kind: ledger
+    ref: agent_platform/data/watch_triggers.jsonl
+    note: 当前 watch_trigger_adapter 直接建 confirmation（无独立 trigger 账本），F3 补 trigger_id
+  schema: trigger_event/v1
+  auth: internal-only
+  write: true
+  paper_only: true
+  SLO:
+    latency_ms_p95: 100
+    error_rate_max: 0.001
+    availability: 1.0
+  slo_class: internal_contract
+  status: draft
+  ids:
+    produces:
+    - trigger_id
+    consumes:
+    - watch_plan_id
+  remediation:
+    phase: F3
+    wo: WO-IFS-TRIGGER-20261103
+- id: confirm.create
+  method: POST
+  path: /api/sim/confirm
+  owner: TR1
+  consumer:
+  - HUMAN
+  - TR1
+  - paper
+  source_of_truth:
+    kind: ledger
+    ref: agent_platform/data/confirmations/<confirmation_id>.json
+    note: trading_bot_confirmation/v1；幂等按 source_report_id（同 report_id 返回同一记录）
+  schema: trading_bot_confirmation/v2
+  auth: portal-token+roles
+  write: true
+  paper_only: true
+  SLO:
+    latency_ms_p95: 800
+    error_rate_max: 0.005
+    availability: 0.999
+  slo_class: write_gate
+  status: draft
+  ids:
+    produces:
+    - confirmation_id
+    consumes:
+    - trigger_id
+    - decision_id
+    - handoff_id
+    - watch_plan_id
+  remediation:
+    phase: F4
+    wo: WO-IFS-CONFIRM-20261103
+  notes: P0-3：需承接四 ID（decision/handoff/watch_plan/trigger），当前仅 source_report_id；confirmation_id=CFM-<12
+    hex>
+- id: confirm.list
+  method: GET
+  path: /api/sim/confirmations
+  owner: TR1
+  consumer:
+  - 门户
+  - HUMAN
+  source_of_truth:
+    kind: ledger
+    ref: agent_platform/data/confirmations/
+  schema: trading_bot_confirmation/v2
+  auth: portal-token
+  write: false
+  paper_only: true
+  SLO:
+    latency_ms_p95: 300
+    error_rate_max: 0.01
+    availability: 0.995
+  slo_class: read_fast
+  status: draft
+  ids:
+    produces: []
+    consumes:
+    - confirmation_id
+  remediation:
+    phase: F4
+    wo: WO-IFS-CONFIRM-20261103
+- id: paper.execution.record
+  method: INTERNAL
+  path: internal:paper/execution
+  owner: TR1
+  consumer:
+  - paper 账本
+  - outcome
+  - 门户
+  source_of_truth:
+    kind: ledger
+    ref: agent_platform/data/paper/paper_ledger.jsonl
+    note: 官方 paper 账本（hash 链）；trade_id 由本接口生成（当前仅 hash，F4 补 trade_id）
+  schema: paper_ledger/v1
+  auth: internal-only
+  write: true
+  paper_only: true
+  SLO:
+    latency_ms_p95: 500
+    error_rate_max: 0.005
+    availability: 0.999
+  slo_class: write_ledger
+  status: draft
+  ids:
+    produces:
+    - trade_id
+    consumes:
+    - confirmation_id
+  remediation:
+    phase: F4
+    wo: WO-IFS-PAPER-20261103
+  notes: 唯一执行入口 = trading_bot_flow.decide→paper_book（经 confirm + risk_gate）；实盘订单恒
+    0
+- id: paper.order
+  method: POST
+  path: /api/paper_order
+  owner: TR1
+  consumer:
+  - paper 账本
+  - 门户
+  source_of_truth:
+    kind: db
+    ref: k_stock/data/paper.db
+    note: 旧模拟仓入口（多入口问题之一），F4 收敛到唯一执行入口后 deprecated
+  schema: paper_order/v1
+  auth: portal-token+roles
+  write: true
+  paper_only: true
+  SLO:
+    latency_ms_p95: 800
+    error_rate_max: 0.005
+    availability: 0.999
+  slo_class: write_gate
+  status: deprecated
+  ids:
+    produces: []
+    consumes:
+    - confirmation_id
+  remediation:
+    phase: F4
+    wo: WO-IFS-PAPER-20261103
+  notes: 旧模拟仓入口（多入口问题之一），迁移期只兼容；替代接口 paper.execution.record（唯一执行入口），F4 后下线
+- id: paper.direct
+  method: POST
+  path: /api/paper_direct_open
+  owner: TR1
+  consumer:
+  - paper 账本
+  source_of_truth:
+    kind: db
+    ref: k_stock/data/paper.db
+    note: 第三套 paper 入口（轻量直订），P0-3 多入口问题；F4 收敛
+  schema: paper_order/v1
+  auth: portal-token+roles
+  write: true
+  paper_only: true
+  SLO:
+    latency_ms_p95: 800
+    error_rate_max: 0.005
+    availability: 0.999
+  slo_class: write_gate
+  status: deprecated
+  ids:
+    produces: []
+    consumes:
+    - confirmation_id
+  remediation:
+    phase: F4
+    wo: WO-IFS-PAPER-20261103
+  notes: 第三套 paper 入口（轻量直订），P0-3 多入口问题；替代接口 paper.execution.record，F4 后下线
+- id: paper.stop
+  method: POST
+  path: /api/paper_stop
+  owner: TR1
+  consumer:
+  - paper 账本
+  source_of_truth:
+    kind: db
+    ref: k_stock/data/paper.db
+    note: 旧模拟仓止损挂/解入口，随 paper.order 一并收敛
+  schema: paper_order/v1
+  auth: portal-token+roles
+  write: true
+  paper_only: true
+  SLO:
+    latency_ms_p95: 800
+    error_rate_max: 0.005
+    availability: 0.999
+  slo_class: write_gate
+  status: deprecated
+  ids:
+    produces: []
+    consumes: []
+  remediation:
+    phase: F4
+    wo: WO-IFS-PAPER-20261103
+  notes: 旧模拟仓止损挂/解入口，随 paper.order 收敛到唯一执行入口，F4 后下线
+- id: paper.status
+  method: GET
+  path: /api/quant/paper
+  owner: TR1
+  consumer:
+  - 门户
+  - D1
+  source_of_truth:
+    kind: ledger
+    ref: agent_platform/data/paper/paper_ledger.jsonl
+    note: 只读投影；不接实盘
+  schema: paper_status/v1
+  auth: portal-token
+  write: false
+  paper_only: true
+  SLO:
+    latency_ms_p95: 300
+    error_rate_max: 0.01
+    availability: 0.995
+  slo_class: read_fast
+  status: draft
+  ids:
+    produces: []
+    consumes:
+    - trade_id
+  remediation:
+    phase: F4
+    wo: WO-IFS-PAPER-20261103
+- id: paper.exchange.health
+  method: GET
+  path: /paper_exchange/health
+  owner: TR1
+  consumer:
+  - 门户
+  - WATCH_TOWER
+  source_of_truth:
+    kind: aggregate
+    ref: agent_platform/paper/exchange_facade.py（只读两本账健康）
+    note: exchange_gateway 已带 schema_version 信封（SCHEMA_VERSION=1），只读不写账
+  schema: paper_exchange/v1
+  auth: portal-token
+  write: false
+  paper_only: true
+  SLO:
+    latency_ms_p95: 300
+    error_rate_max: 0.01
+    availability: 0.995
+  slo_class: read_fast
+  status: v1
+  ids:
+    produces: []
+    consumes: []
+- id: paper.exchange.snapshot
+  method: GET
+  path: /paper_exchange/snapshot
+  owner: TR1
+  consumer:
+  - 门户
+  - WATCH_TOWER
+  source_of_truth:
+    kind: aggregate
+    ref: agent_platform/paper/exchange_facade.py（official/legacy 隔离视图）
+    note: tenant/account/combo 隔离；两本账不合并
+  schema: paper_exchange/v1
+  auth: portal-token
+  write: false
+  paper_only: true
+  SLO:
+    latency_ms_p95: 300
+    error_rate_max: 0.01
+    availability: 0.995
+  slo_class: read_fast
+  status: v1
+  ids:
+    produces: []
+    consumes: []
+- id: outcome.get
+  method: INTERNAL
+  path: internal:d1/outcome
+  owner: D1
+  consumer:
+  - 训练
+  - 数据仓
+  - 校准
+  source_of_truth:
+    kind: ledger
+    ref: agent_platform/data/shadow/decision_outcomes.jsonl
+    note: T+1 sidecar；当前行无 outcome_id（F5 补），decision_id 可与 shadow_ledger 对账
+  schema: d1_outcome/v1
+  auth: internal-only
+  write: true
+  paper_only: true
+  SLO:
+    latency_ms_p95: 100
+    error_rate_max: 0.001
+    availability: 1.0
+  slo_class: internal_contract
+  status: draft
+  ids:
+    produces:
+    - outcome_id
+    consumes:
+    - trade_id
+    - decision_id
+  remediation:
+    phase: F5
+    wo: WO-IFS-OUTCOME-20261103
+- id: training.episode.get
+  method: GET
+  path: /api/d1/training/episodes
+  owner: D1
+  consumer:
+  - 训练
+  - 数据仓
+  source_of_truth:
+    kind: dataset
+    ref: agent_platform/data/training/episodes.jsonl
+    note: 训练 episode（当前缺失，F5 WO-IFS-TRAIN）；禁止用未登记数据集
+  schema: training/v1
+  auth: portal-token
+  write: false
+  paper_only: true
+  SLO:
+    latency_ms_p95: 300
+    error_rate_max: 0.01
+    availability: 0.995
+  slo_class: read_fast
+  status: draft
+  ids:
+    produces:
+    - training_episode_id
+    consumes:
+    - outcome_id
+  remediation:
+    phase: F5
+    wo: WO-IFS-TRAIN-20261103
+- id: mcp.d1-research
+  method: MCP
+  path: mcp:d1_research
+  owner: D1
+  consumer:
+  - HERMES
+  - 军团 Agent
+  source_of_truth:
+    kind: aggregate
+    ref: agent_platform/tools/d1_research_mcp.py（stdio，只读代理 /api/d1/research）
+    note: Hermes config 已配 d1-research；legion_mcp/servers.json 未登记（F6 补，IFS-08）
+  schema: mcp-tool/v1
+  auth: mcp-config
+  write: false
+  paper_only: true
+  SLO:
+    latency_ms_p95: 3000
+    error_rate_max: 0.02
+    availability: 0.99
+  slo_class: mcp_tool
+  status: draft
+  ids:
+    produces: []
+    consumes:
+    - pool_id
+  remediation:
+    phase: F6
+    wo: WO-IFS-MCP-20261103
+- id: composition.interface.list
+  method: MANIFEST
+  path: manifest:compositions/*/manifest.yaml
+  owner: A0
+  consumer:
+  - ARCH1
+  - DEV
+  - 平台
+  source_of_truth:
+    kind: manifest
+    ref: compositions/registry.json + compositions/*/manifest.yaml
+    note: 接口必须出现在 manifest interfaces.exposes（IFS-11）；lusu-d1-flow 当前缺 POST decision/handoffs
+  schema: composition/v1
+  auth: manifest
+  write: false
+  paper_only: true
+  SLO:
+    latency_ms_p95: 100
+    error_rate_max: 0.001
+    availability: 1.0
+  slo_class: manifest
+  status: draft
+  ids:
+    produces: []
+    consumes: []
+  remediation:
+    phase: F6
+    wo: WO-IFS-COMPOSITION-20261103
+- id: watchtower.membership.get
+  method: GET
+  path: /api/watch-tower/strategy-pool/membership
+  owner: WATCH_TOWER
+  consumer:
+  - WA1
+  - 门户
+  source_of_truth:
+    kind: file
+    ref: quant_backtest/strategy_layer/strategy_registry.json + agent_platform/registry/watch_methods.json
+    note: 策略池成员资格只读视图
+  schema: watch_membership/v1
+  auth: portal-token
+  write: false
+  paper_only: true
+  SLO:
+    latency_ms_p95: 300
+    error_rate_max: 0.01
+    availability: 0.995
+  slo_class: read_fast
+  status: draft
+  ids:
+    produces: []
+    consumes: []
+  remediation:
+    phase: F3
+    wo: WO-IFS-8789-20261103
+- id: health.probe.get
+  method: GET
+  path: /api/health
+  owner: A0
+  consumer:
+  - 门户
+  - 运维
+  - 守护器
+  source_of_truth:
+    kind: aggregate
+    ref: portal/portal_api.py 七口探活 + 五守护任务
+    note: 健康探针；失败必须 fail-visible（IFS-10），8787 401 为登录门不判故障
+  schema: health/v1
+  auth: portal-token
+  write: false
+  paper_only: true
+  SLO:
+    latency_ms_p95: 300
+    error_rate_max: 0.01
+    availability: 0.995
+  slo_class: read_fast
+  status: draft
+  ids:
+    produces: []
+    consumes: []
+  remediation:
+    phase: F6
+    wo: WO-IFS-ROUTE-20261103
+- id: health.landing.get
+  method: GET
+  path: /health
+  owner: A0
+  consumer:
+  - 监控
+  - nginx
+  source_of_truth:
+    kind: aggregate
+    ref: portal/portal_api.py /health 轻量落地探针
+  schema: health/v1
+  auth: portal-token
+  write: false
+  paper_only: true
+  SLO:
+    latency_ms_p95: 300
+    error_rate_max: 0.01
+    availability: 0.995
+  slo_class: read_fast
+  status: draft
+  ids:
+    produces: []
+    consumes: []
+  remediation:
+    phase: F6
+    wo: WO-IFS-ROUTE-20261103
+  notes: 落地探针：仅表达存活；接口级健康见 health.probe.get
+id_chain:
+  version: id_chain/v1
+  order:
+  - pool_id
+  - card_id
+  - case_id
+  - decision_id
+  - handoff_id
+  - watch_plan_id
+  - trigger_id
+  - confirmation_id
+  - trade_id
+  - outcome_id
+  - training_episode_id
+  entities:
+    pool_id:
+      format: ^ACAD1-REC-\d{8}$
+      generator:
+        owner: ACAD1
+        interface: acad1.pool.get
+        component: ACAD1 pool publisher
+        status: v1
+      source_of_truth:
+        kind: pg_table
+        ref: zhice_os_v2.public.v2_acad1_pool
+        projection: agent_platform/data/recommendation_pool/latest.json
+      upstream: []
+      downstream:
+      - card_id
+      status: v1
+      note: 当前 JSON 投影 pool_id=ACAD1-REC-YYYYMMDD 已存在；PG 发布器 F2 收口
+    card_id:
+      format: ^ACAD1-CARD-\d{8}-[0-9A-Za-z._-]{1,16}$
+      generator:
+        owner: ACAD1
+        interface: acad1.pool.get
+        component: ACAD1 pool card builder
+        status: draft
+      source_of_truth:
+        kind: pg_table
+        ref: v2_acad1_pool 卡视图（规划）
+        projection: recommendation_pool/latest.json items[].item_id（当前代理 REC-*）
+      upstream:
+      - pool_id
+      downstream:
+      - case_id
+      status: draft
+      note: 当前仅有 item_id=REC-YYYYMMDD-NNNNNN 投影，F2 正式化 card_id
+    case_id:
+      format: ^D1-CASE-\d{8}-[0-9A-Za-z._-]{1,16}$
+      generator:
+        owner: D1
+        interface: d1.case.upsert
+        component: D1 research case store
+        status: draft
+      source_of_truth:
+        kind: ledger
+        ref: agent_platform/data/d1_cases.jsonl
+        status: planned
+      upstream:
+      - card_id
+      downstream:
+      - decision_id
+      status: draft
+      note: 当前无 case 账本；D1 研究以 code/symbol 承载，F3 补 case_id（禁止用 code 代替）
+    decision_id:
+      format: ^D1-\d{8}-[0-9a-f]{10}$
+      generator:
+        owner: D1
+        interface: d1.decision.create
+        component: engine/decision_policy.py::decision_id
+        status: draft
+      source_of_truth:
+        kind: ledger
+        ref: agent_platform/data/d1_decisions.jsonl
+        secondary: agent_platform/data/shadow/shadow_ledger.jsonl
+      upstream:
+      - case_id
+      downstream:
+      - handoff_id
+      status: draft
+      note: 权威生成方=engine/decision_policy.py（D1-<date>-<sha10>）；agent_platform/d1_decision.new_decision_id
+        的 d1-<ts>-<hex6> 为人工裁决历史格式，F3 收敛，详见 deviations
+    handoff_id:
+      format: ^d1h-\d{14}-[0-9a-f]{6}$
+      generator:
+        owner: D1
+        interface: d1.handoff.create
+        component: agent_platform/d1_handoff.py::new_receipt_id
+        status: v1
+      source_of_truth:
+        kind: ledger
+        ref: agent_platform/data/d1_handoffs.jsonl
+      upstream:
+      - decision_id
+      downstream:
+      - watch_plan_id
+      status: v1
+      note: receipt_id 为 deprecated alias，统一名 handoff_id；v2 扩 watch_plans[] 后 handoff
+        携带下游计划
+    watch_plan_id:
+      format: ^wp-\d{8}-[0-9a-f]{6}$
+      generator:
+        owner: WA1
+        interface: watch.plan.create
+        component: watch plan consumer
+        status: v1
+      source_of_truth:
+        kind: ledger
+        ref: agent_platform/data/watch_plans.jsonl
+        status: planned
+      upstream:
+      - handoff_id
+      downstream:
+      - trigger_id
+      status: v1
+      note: 当前缺失（F3 WO-IFS-WATCHCONS）；armed plan 消费 D1 handoff
+    trigger_id:
+      format: ^trg-\d{8}-[0-9a-f]{6}$
+      generator:
+        owner: WA1
+        interface: watch.trigger.create
+        component: agent_platform/watch_trigger_adapter.py
+        status: draft
+      source_of_truth:
+        kind: ledger
+        ref: agent_platform/data/watch_triggers.jsonl
+        status: planned
+      upstream:
+      - watch_plan_id
+      downstream:
+      - confirmation_id
+      status: draft
+      note: 现状 adapter 直接建 confirmation（跳过独立 trigger 账本），F3 补
+    confirmation_id:
+      format: ^CFM-[0-9A-F]{12}$
+      generator:
+        owner: TR1
+        interface: confirm.create
+        component: agent_platform/trading_bot_flow.py::create_confirmation
+        status: v1
+      source_of_truth:
+        kind: ledger
+        ref: agent_platform/data/confirmations/<confirmation_id>.json
+      upstream:
+      - trigger_id
+      downstream:
+      - trade_id
+      status: v1
+      note: 已有；但当前只承接 source_report_id，未承接四 ID（decision/handoff/watch_plan/trigger），F4
+        补
+    trade_id:
+      format: ^trd-\d{8}-[0-9A-F]{8}$
+      generator:
+        owner: TR1
+        interface: paper.execution.record
+        component: agent_platform/paper/paper_book.py::append_ledger
+        status: v1
+      source_of_truth:
+        kind: ledger
+        ref: agent_platform/data/paper/paper_ledger.jsonl
+      upstream:
+      - confirmation_id
+      downstream:
+      - outcome_id
+      status: v1
+      note: 当前 paper ledger 只有 prev_hash/hash + date,symbol，无 trade_id（P1 实证），F4 补
+    outcome_id:
+      format: ^out-\d{8}-[0-9A-F]{8}$
+      generator:
+        owner: D1
+        interface: outcome.get
+        component: agent_platform/decision_outcomes.py::run_backfill
+        status: draft
+      source_of_truth:
+        kind: ledger
+        ref: agent_platform/data/shadow/decision_outcomes.jsonl
+      upstream:
+      - trade_id
+      downstream:
+      - training_episode_id
+      status: draft
+      note: outcome sidecar 已有 decision_id/next_day_return 等，但无 outcome_id，F5 补
+    training_episode_id:
+      format: ^ep-\d{8}-[0-9A-F]{8}$
+      generator:
+        owner: D1
+        interface: training.episode.get
+        component: D1 training episode builder
+        status: draft
+      source_of_truth:
+        kind: dataset
+        ref: agent_platform/data/training/episodes.jsonl
+        status: planned
+      upstream:
+      - outcome_id
+      downstream: []
+      status: draft
+      note: 训练 episode 当前缺失（F5 WO-IFS-TRAIN）
+  invariants:
+  - 下游记录必须保存上游 ID（每跳携带 upstream_id 字段；不得只存 code/report_id）
+  - 同一 ID 只允许一个权威生成方（见 entities[*].generator.interface）
+  - 禁止用 code 代替 case_id/decision_id（P0-5）
+  - receipt_id 与 handoff_id 不双名混用：handoff_id 唯一，receipt_id 仅兼容读
+  - trade_id 只由唯一执行入口 paper.execution.record 生成；paper.order/paper.direct 不得生成
+  - 幂等：同一上游 ID 重复投递返回同一记录/同一 ID（IFS-06）
+  deviations:
+  - id: decision-id-dual-format
+    current: engine/decision_policy.py → D1-<yyyymmdd>-<sha256[:10]>；agent_platform/d1_decision.py
+      → d1-<YYYYMMDDHHMMSS>-<hex6>
+    target: 单一权威 decision_id（建议 engine/decision_policy 公式）在 F3/F5 收敛；收敛前登记表以引擎公式为权威，人工裁决格式为兼容读
+    wo: WO-IFS-HANDOFF-20261103
+  - id: receipt-id-alias
+    current: d1_handoff 内部字段 receipt_id（历史命名）
+    target: 对外统一 handoff_id；receipt_id 仅作为 deprecated alias 读兼容
+    wo: WO-IFS-HANDOFF-20261103
+  - id: card-id-proxy
+    current: 池 items[].item_id=REC-YYYYMMDD-NNNNNN
+    target: 正式 card_id（ACAD1-CARD-*）由 ACAD1 卡构建器发布
+    wo: WO-IFS-ACAD1-20261103
+  gaps:
+  - card_id
+  - case_id
+  - trigger_id
+  - outcome_id
+  - training_episode_id
+envelope:
+  success_required:
+  - ok
+  - schema_version
+  - request_id
+  - source
+  - data
+  - warnings
+  success_optional:
+  - generated_at
+  - trace_id
+  success_constraints:
+    ok: true
+    schema_version: <interface schema，如 d1.research/v1；禁止缺省>
+    request_id: ^req-[0-9a-f]{32}$
+    source: object：interface_id/source_of_truth/source_mode/as_of/freshness_s/stale
+      + 接口相关 ID（如 pool_id/decision_id）
+    data: object|array|null（null 仅限 ok=true 且 warnings 说明无数据；禁止假成功）
+    warnings: array<{code,message,details}>（无告警必须 []，不得缺省）
+  error_required:
+  - ok
+  - schema_version
+  - request_id
+  - error
+  error_schema_version: error/v1
+  error_required_detail:
+  - code
+  - message
+  - retryable
+  - details
+  error_codes:
+    invalid_request:
+      http: 400
+      retryable: false
+      scene: 请求格式/方法/路由不匹配
+    invalid_parameter:
+      http: 400
+      retryable: false
+      scene: 参数取值非法
+    bad_body:
+      http: 400
+      retryable: false
+      scene: body 非 JSON / 非 object
+    execution_field_forbidden:
+      http: 400
+      retryable: false
+      scene: handoff/确认携带 order/qty/broker 等执行字段（IFS-05）
+    bad_target_action:
+      http: 400
+      retryable: false
+      scene: target/action 组合非法（watch/trade 目标域）
+    unauthorized:
+      http: 401
+      retryable: false
+      scene: 缺 portal-token；8787 401 为登录门
+    forbidden:
+      http: 403
+      retryable: false
+      scene: roles 不足
+    not_paper:
+      http: 403
+      retryable: false
+      scene: paper_only=true 被违反
+    not_found:
+      http: 404
+      retryable: false
+      scene: 资源不存在
+    route_not_found:
+      http: 404
+      retryable: false
+      scene: 未登记路由
+    conflict:
+      http: 409
+      retryable: false
+      scene: 状态冲突（已确认/已执行）
+    duplicate:
+      http: 409
+      retryable: false
+      scene: 重复创建但语义非幂等
+    idempotent_replay:
+      http: 200
+      retryable: false
+      scene: 同 idempotency_key/source 返回原记录（ok=true + warning）
+    unprocessable:
+      http: 422
+      retryable: false
+      scene: 业务规则拒绝（风控/证据不足）
+    rate_limited:
+      http: 429
+      retryable: true
+      scene: 限流，按 Retry-After 退避
+    internal_error:
+      http: 500
+      retryable: true
+      scene: 接口内部异常（掩码堆栈）
+    upstream_unavailable:
+      http: 502
+      retryable: true
+      scene: 上游依赖不可用
+    not_ready:
+      http: 503
+      retryable: true
+      scene: 依赖未就绪（如上下文预热）
+    data_unavailable:
+      http: 503
+      retryable: true
+      scene: 数据缺失/未生成（不造数）
+    kill_switch_active:
+      http: 503
+      retryable: false
+      scene: PAPER_KILL 生效
+    timeout:
+      http: 504
+      retryable: true
+      scene: 处理超时
+  source_modes:
+  - pg_official
+  - projection
+  - ledger
+  - static
+  - aggregate
+  - manifest
+plan_phases:
+  F0:
+    name: 规范冻结
+    windows: 11/03–11/04
+    items:
+    - WO-IFS-STD-20261103
+    - WO-IFS-REGISTRY-20261103
+    - WO-IFS-OWNER-20261103
+    - WO-IFS-CANONICAL-20261103
+  F1:
+    name: 契约与测试骨架
+    windows: 11/04–11/06
+    items:
+    - WO-IFS-SCHEMA-20261103
+    - WO-IFS-ENVELOPE-20261103
+    - WO-IFS-CONTRACT-TEST-20261103
+    - WO-IFS-ID-20261103
+  F2:
+    name: 上游池 + 数据仓
+    windows: 11/06–11/08
+    items:
+    - WO-IFS-ACAD1-20261103
+    - WO-IFS-DW-20261103
+    - WO-IFS-NOBUILD-20261103
+  F3:
+    name: D1→盯盘
+    windows: 11/08–11/11
+    items:
+    - WO-IFS-HANDOFF-20261103
+    - WO-IFS-WATCHCONS-20261103
+    - WO-IFS-TRIGGER-20261103
+    - WO-IFS-8789-20261103
+  F4:
+    name: 确认→paper
+    windows: 11/11–11/13
+    items:
+    - WO-IFS-CONFIRM-20261103
+    - WO-IFS-PAPER-20261103
+    - WO-IFS-KILL-20261103
+  F5:
+    name: outcome/训练
+    windows: 11/13–11/16
+    items:
+    - WO-IFS-OUTCOME-20261103
+    - WO-IFS-TRAIN-20261103
+    - WO-IFS-CALIB-20261103
+  F6:
+    name: Hermes/门户/组合
+    windows: 11/16–11/18
+    items:
+    - WO-IFS-MCP-20261103
+    - WO-IFS-COMPOSITION-20261103
+    - WO-IFS-ROUTE-20261103
+    - WO-IFS-UI-20261103
+  F7:
+    name: 端到端验收
+    windows: 11/19–11/20
+    items:
+    - WO-IFS-E2E-20261103
+    - WO-IFS-EVIDENCE-20261103
+counts:
+  interfaces: 31
+  by_status:
+    draft: 23
+    v1: 5
+    deprecated: 3
+    retired: 0
+  by_owner:
+    ACAD1: 1
+    DATA1: 2
+    STRAT1: 1
+    D1: 12
+    TR1: 9
+    WA1: 2
+    WATCH_TOWER: 1
+    A0: 3
+  write_interfaces: 12
+  read_interfaces: 19
+  id_chain_entities: 11

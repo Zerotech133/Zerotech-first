@@ -76,6 +76,15 @@ PG_WAVE1_TABLES = (
     {"table": "v2_score_component", "owner": "D1", "registered": True, "exposed": True},
 )
 
+# ---------- IFS-POOL（2026-11-03 WO-IFS-POOL-20261103）：显式 dataset ref 登记 ----------
+# D1 6 个 data ref 的 dataset registry 条目：能注册的带真实载体（active），
+# 暂未落盘的写 planned 并强制 owner/due（不伪造空账/空文件）。只读加载，不改基线 stats。
+DECLARED_REFS_PATH = Path(__file__).resolve().parent / "dataset_refs_declared.json"
+DECLARED_REFS_ENV = "DW_DECLARED_REFS_PATH"
+DECLARED_REFS_SCHEMA = "dataset_refs_declared/v1"
+DECLARED_DOMAIN = "平台运行"
+DECLARED_STATUSES = ("active", "planned")
+
 # ---------- DWH-103 wave2（ADR-019 D3，2026-11-02 task-25）：动态发现 public.v2_% 全量 ----------
 # 口径：DSN 可用时以**发现结果为准**（不硬编码 83/84 等数量）；DSN 未设置退回 wave1 固定清单。
 # LIKE 中 `\_` 转义下划线：只匹配字面 `v2_` 前缀，`%` 才是通配符。
@@ -478,6 +487,56 @@ class QueryNotSupported(QueryError):
         super().__init__(message, 409, detail)
 
 
+def load_declared_refs(path: str | Path | None = None) -> list[dict]:
+    """加载显式 dataset ref 声明（IFS-POOL，只读）。
+
+    - 文件缺失 → 返回 []（可选能力，不阻塞既有 registry 基线）；
+    - 契约非法（schema/重复 ref/缺 owner/planned 缺 due）→ 抛 RegistryError（fail-visible）；
+    - 只读取 JSON，不写任何文件。
+    """
+    target = Path(
+        path or os.environ.get(DECLARED_REFS_ENV) or str(DECLARED_REFS_PATH)
+    )
+    if not target.is_file():
+        return []
+    try:
+        raw = json.loads(target.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise RegistryError("declared refs 读取失败 %s: %s" % (target, exc)) from exc
+    if not isinstance(raw, dict) or raw.get("schema") != DECLARED_REFS_SCHEMA:
+        raise RegistryError(
+            "declared refs 契约非法: %s（schema 必须为 %s）"
+            % (target, DECLARED_REFS_SCHEMA)
+        )
+    refs = raw.get("refs")
+    if not isinstance(refs, list):
+        raise RegistryError("declared refs.refs 必须为 list: %s" % target)
+    seen: set[str] = set()
+    out: list[dict] = []
+    for index, item in enumerate(refs):
+        where = "refs[%d]" % index
+        if not isinstance(item, dict):
+            raise RegistryError("%s 必须为 dict" % where)
+        ref = str(item.get("ref") or "").strip()
+        if not ref.startswith("dataset/"):
+            raise RegistryError("%s ref 必须以 dataset/ 开头: %r" % (where, ref))
+        if ref in seen:
+            raise RegistryError("declared ref 重复: %s" % ref)
+        if not str(item.get("owner") or "").strip():
+            raise RegistryError("%s(%s) 缺 owner" % (where, ref))
+        status = str(item.get("status") or "")
+        if status not in DECLARED_STATUSES:
+            raise RegistryError(
+                "%s(%s) status 非法: %r（允许: %s）"
+                % (where, ref, status, ", ".join(DECLARED_STATUSES))
+            )
+        if status == "planned" and not str(item.get("due") or "").strip():
+            raise RegistryError("%s(%s) planned 必须声明 due" % (where, ref))
+        seen.add(ref)
+        out.append(dict(item))
+    return out
+
+
 def _sha256_file(path: Path) -> str:
     h = hashlib.sha256()
     with path.open("rb") as fh:
@@ -600,7 +659,8 @@ class DatasetRegistry:
                  pg_probe=None,
                  pg_connect=None,
                  temp_whitelist=None,
-                 temp_root: Path | str | None = None):
+                 temp_root: Path | str | None = None,
+                 declared_refs_path: Path | str | None = None):
         if inventory_path is None:
             cands = sorted((REPO / "research/reports").glob("dataset_inventory_*.json"))
             if not cands:
@@ -659,8 +719,21 @@ class DatasetRegistry:
         self._disc_cache: dict = {}
         self.pg_datasets = self._build_pg_datasets()
         self.contract_artifacts = self._build_contract_artifacts()
+        # IFS-POOL：显式 ref 登记（D1 6 data refs；缺失载体=false active，planned 必须 owner/due）
+        self.declared_refs_path = Path(
+            declared_refs_path
+            or os.environ.get(DECLARED_REFS_ENV)
+            or str(DECLARED_REFS_PATH)
+        )
+        self.declared_specs = load_declared_refs(self.declared_refs_path)
+        self.declared_datasets = self._build_declared_datasets()
         self._extra_by_id = {d["dataset_id"]: d
-                             for d in self.pg_datasets + self.contract_artifacts}
+                             for d in (self.pg_datasets + self.contract_artifacts
+                                       + self.declared_datasets)}
+        self._declared_by_alias: dict[str, dict] = {}
+        for row in self.declared_datasets:
+            for alias in row.get("ref_aliases") or []:
+                self._declared_by_alias.setdefault(str(alias), row)
 
     # ---------- 查询 ----------
     def stats(self) -> dict:
@@ -734,10 +807,12 @@ class DatasetRegistry:
         if kinds is None:
             pool = self.datasets
         elif kinds == "all":
-            pool = self.datasets + self.pg_datasets + self.contract_artifacts
+            pool = (self.datasets + self.pg_datasets + self.contract_artifacts
+                    + self.declared_datasets)
         else:
             wanted = {kinds} if isinstance(kinds, str) else set(kinds)
-            pool = [d for d in self.datasets + self.pg_datasets + self.contract_artifacts
+            pool = [d for d in (self.datasets + self.pg_datasets
+                                + self.contract_artifacts + self.declared_datasets)
                     if d["kind"] in wanted]
         out = []
         ql = (q or "").lower()
@@ -780,7 +855,85 @@ class DatasetRegistry:
             for row in self.datasets:
                 if token in (row["dataset_id"], str(row.get("label") or "").split(".")[-1]):
                     return row
+        # IFS-POOL：显式声明的 dataset/file/<token> ref（D1 6 data refs 等）
+        declared = self._declared_by_alias.get(ref) or self._declared_by_alias.get(token)
+        if declared is not None:
+            return declared
         return None
+
+    # ---------- IFS-POOL：显式 ref 登记（D1 6 data refs） ----------
+    def _build_declared_datasets(self) -> list[dict]:
+        """显式声明 ref → registry 行。
+
+        载体存在（file/dir）= active；声明 planned 且载体未落盘 = planned（必须 owner/due）；
+        声明 active 但载体缺失 = declared_missing（fail-visible，不假绿成 active）。
+        只读：仅 stat 路径，不创建/不写任何文件。
+        """
+        rows: list[dict] = []
+        for spec in self.declared_specs:
+            ref = str(spec["ref"])
+            token = ref.split("/")[-1]
+            rel = str(spec.get("path") or "")
+            path = Path(rel) if rel else None
+            if path is not None and not path.is_absolute():
+                path = REPO / path
+            carrier = "missing"
+            try:
+                if path is not None and path.is_dir():
+                    carrier = "dir"
+                elif path is not None and path.is_file():
+                    carrier = "file"
+            except OSError:
+                carrier = "unreadable"
+            declared_status = str(spec.get("status") or "planned")
+            if carrier in ("dir", "file"):
+                status = "active"
+            elif declared_status == "planned":
+                status = "planned"
+            else:
+                status = "declared_missing"
+            rows.append({
+                "dataset_id": str(spec.get("dataset_id")
+                                  or ("declared_%s" % slugify(token))),
+                "domain": spec.get("domain") or DECLARED_DOMAIN,
+                "label": spec.get("label") or token,
+                "kind": "file_dataset",
+                "path": str(path) if path is not None else "",
+                "owner": str(spec.get("owner") or ""),
+                "authority": spec.get("authority"),
+                "canonical_ref": spec.get("canonical_ref"),
+                "schema_ref": spec.get("schema_ref"),
+                "producer_job": spec.get("producer_job"),
+                "declared_status": declared_status,
+                "status": status,
+                "carrier": carrier,
+                "registered": True,
+                "exposed": False,
+                "access": "read_only",
+                "ref": ref,
+                "ref_aliases": [token, ref],
+                "due": spec.get("due"),
+                "due_source": spec.get("due_source"),
+                "reason": spec.get("reason"),
+                "declared_at": spec.get("declared_at"),
+                "note": spec.get("note"),
+                "unified_entry": True,
+            })
+        return rows
+
+    def declared_summary(self) -> dict:
+        """IFS-POOL 显式 ref 登记汇总（只读报告；不进入 stats v1 基线）。"""
+        return {
+            "path": str(self.declared_refs_path),
+            "total": len(self.declared_datasets),
+            "active": [d["ref"] for d in self.declared_datasets
+                       if d["status"] == "active"],
+            "planned": [{"ref": d["ref"], "owner": d["owner"], "due": d.get("due")}
+                        for d in self.declared_datasets
+                        if d["status"] == "planned"],
+            "declared_missing": [d["ref"] for d in self.declared_datasets
+                                 if d["status"] == "declared_missing"],
+        }
 
     # ---------- DWH-103：pg_table 构建/探测/取样 ----------
     def _build_pg_datasets(self) -> list[dict]:

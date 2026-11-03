@@ -54,7 +54,7 @@
       "name": "鲁肃 D1 投研裁决流水线",
       "tier": "product",
       "owner": "D1",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "lifecycle": "draft",
       "host": "lingjie",
       "manifest": "compositions/lusu-d1-flow/manifest.yaml",
@@ -62,7 +62,7 @@
         "phase": "shadow",
         "health": "unknown",
         "validated": false,
-        "evidence": "agent_platform/registry/trading_bot.json 六段流水线；盯盘/执行仍为契约态"
+        "evidence": "WO-IFS-WIRE-20261103：7 active API + /api/d1/training planned；d1_handoff/v2→watch_plan→confirmation→trade 四 ID 已贯通；数据 5 active + d1_decisions/training planned；Q2 仍待 health/SLO/rollback/测试入闸"
       }
     },
     {
