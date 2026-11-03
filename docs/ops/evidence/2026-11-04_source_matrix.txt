@@ -1,0 +1,46 @@
+# 乱码定位 · 源码/配置矩阵（自动抽取，行号为当前版本）
+
+## A. 乱码 server（6）：有 sys.stdout.write(json.dumps(ensure_ascii=False))，无 reconfigure(utf-8)
+  d1-research      agent_platform/tools/d1_research_mcp.py        main@L87   stdout.write_L98   reconfigure=无
+  dw-governance    agent_platform/tools/dw_governance_mcp.py      main@L152  stdout.write_L166  reconfigure=无
+  dw-quality       agent_platform/tools/dw_quality_mcp.py         main@L326  stdout.write_L340  reconfigure=无
+  dw-catalog       agent_platform/tools/dw_catalog_mcp.py         main@L388  stdout.write_L402  reconfigure=无
+  huangzhong       agent_platform/tools/huangzhong_mcp.py            main@L640   print(json.dumps)@L654  reconfigure=无（print 同走文本 stdout）
+  kb-corpus        agent_platform/tools/kb_corpus_mcp.py          main@L325  stdout.write_L341  reconfigure=无
+
+## B. 干净 server（3，Python）：启动时已强制 stdout/stderr=UTF-8
+  factor-tools     agent_platform/tools/factor_tools_mcp.py       reconfigure@[488]
+  jev-news         tools/jev_mcp.py                               reconfigure@[49, 50]
+  stock-data       zerobound-kg/stock_data_mcp.py                 reconfigure@[683]
+## C. 干净 server（Node）：playwright-mcp 走 Node.js，stdout 默认 UTF-8（无需 reconfigure）
+
+## D. Hermes Agent 侧（生产 venv / editable workspace，只读）
+  tools/mcp_tool_transport.py L371: server_params = _core.StdioServerParameters(
+    L372: command=command, args=args, env=safe_env or None, cwd=stdio_cwd,
+    L373: # Windows pipes can split non-UTF-8 bytes at chunk boundaries; substitute, don't raise.
+    L374: encoding_error_handler="replace")
+    L375: # Windows has no POSIX parent-death supervisor / killpg safety net (#61059): when this
+  tools/mcp_tool_config.py L147: _SAFE_ENV_KEYS = frozenset({"PATH", "HOME", "USER", "LANG", "LC_ALL", "TERM", "SHELL", "TMPDIR"})
+  tools/mcp_tool_config.py L184: def _build_safe_env(user_env: Optional[dict]) -> dict:
+  → 白名单不含 PYTHONIOENCODING / PYTHONUTF8 / PYTHONLEGACYWINDOWSSTDIO
+  mcp/client/stdio.py L106: encoding: str = "utf-8"
+  mcp/client/stdio.py L109: encoding_error_handler: Literal["strict", "ignore", "replace"] = "strict"
+  mcp/client/stdio.py L144: stdout = TextReceiveStream(process.stdout, encoding=server.encoding, errors=server.encoding_error_handler)
+
+## E. 生产启动器（8787 parent env 与 MCP 子进程 env 的差异）
+  Hermes/start_hermes_bg.py L159: "PYTHONUTF8": "1",
+  → 父进程有 PYTHONUTF8=1，但 MCP 子进程 env 由白名单重建 → 不继承，回到 cp936
+
+## F. 最小修复 patch 锚点（在 main 函数体第一条语句前插入 6 行 UTF-8 守卫）
+  agent_platform/tools/d1_research_mcp.py       main@L87（def main():）
+  agent_platform/tools/dw_governance_mcp.py     main@L152（def main(argv=None):）
+  agent_platform/tools/dw_quality_mcp.py        main@L326（def main(argv=None) -> int:）
+  agent_platform/tools/dw_catalog_mcp.py        main@L388（def main(argv=None) -> int:）
+  agent_platform/tools/huangzhong_mcp.py        main@L640（def main() -> int:）
+  agent_platform/tools/kb_corpus_mcp.py         main@L325（def main(argv=None) -> int:）
+  守卫（与 factor_tools_mcp.py L486-490 / tools/jev_mcp.py L48-52 同判例）：
+    try:  # Windows 管道默认 cp936：MCP JSON 必须 UTF-8 输出（判例 K-STOCK-428/ENCPROT）
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass

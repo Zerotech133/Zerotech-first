@@ -1,0 +1,10 @@
+# tools/call（只读 catalog_snapshot）返回文本同样受累
+
+## server 原始字节按 GBK 解码（正确原文；agent 本应看到）
+  y_date", "files_registered": 8745, "files_on_disk": 8746, "diff": 1, "reason": "登记时点快照 vs 实时写（diff=+1）"}, {"table": "anns_d", "layout": "by_date", "files_registered": 1898, "files_on_disk": 1899, "dif
+
+## 按 Hermes 客户端 utf-8(errors=replace) 解码（agent 实际看到）
+  y_date", "files_registered": 8745, "files_on_disk": 8746, "diff": 1, "reason": "�Ǽ�ʱ����� vs ʵʱд��diff=+1��"}, {"table": "anns_d", "layout": "by_date", "files_registered": 1898, "files_on_disk": 1899,
+
+# 结论：乱码不止 inventory 描述；工具**返回结果**的中文文本同样变 U+FFFD/杂字。
+# 该 tools/call 为只读 catalog_snapshot；探针进程抓包后已 terminate。
