@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "date": "20261103",
- "generated_at": "2026-11-03T08:53:29+08:00",
+ "generated_at": "2026-11-03T09:42:52+08:00",
  "generator": "tools/kb_corpus/card_quality_audit.py（只读审计）",
  "mode": "read_only_audit（不修改学习卡）",
  "policy": {
@@ -25,8 +25,8 @@
  "sources": {
   "cards": {
    "path": "portal/static/kb_learning_cards.json",
-   "sha256": "cc75579197e1b125f158c0b7b554280c07e9e079afadc0b2e47b63568856cda0",
-   "count": 370
+   "sha256": "e8fc247bfa28038c10c9a88bf440350b960e9fbb3c4d0e539ed9ca4f3453e081",
+   "count": 400
   },
   "units": {
    "path": "C:\\项目\\老田的AI助手\\portal\\static\\kb_units_all.json",
@@ -35,7 +35,7 @@
   }
  },
  "summary": {
-  "cards_total": 370,
+  "cards_total": 400,
   "units_total": 516,
   "issues_total": 0,
   "by_severity": {
@@ -49,11 +49,11 @@
   "answer_length_anomalies": 0,
   "concept_duplicate_groups": 0,
   "concept_duplicate_cards": 0,
-  "traceable_cards": 370,
+  "traceable_cards": 400,
   "traceable_rate": 1.0,
   "trace_methods": {
    "concept+book+page": 159,
-   "provenance(file+line)": 211
+   "provenance(file+line)": 241
   },
   "themes_total": 21,
   "themes_with_cards": 21,
@@ -62,7 +62,7 @@
    "研报": 147,
    "书籍": 12,
    "笔记": 28,
-   "视频号": 183
+   "视频号": 213
   },
   "book_vs_report": {
    "书籍": 12,
@@ -3030,6 +3030,246 @@
    "method": "provenance(file+line)",
    "unit_book": null,
    "unit_pages": "None-None"
+  },
+  {
+   "card_index": 370,
+   "concept": "科技为主导",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 371,
+   "concept": "科技主线",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 372,
+   "concept": "科技持续砸盘",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 373,
+   "concept": "科技板块",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 374,
+   "concept": "科技股砸盘",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 375,
+   "concept": "科技集体砸盘",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 376,
+   "concept": "突破交易策略的关键要素",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 377,
+   "concept": "突破前大阳线最高价的结构",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 378,
+   "concept": "突破布林线上轨",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 379,
+   "concept": "突破新高是大概率事件",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 380,
+   "concept": "突破颈线位",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 381,
+   "concept": "笔中枢与标准中枢",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 382,
+   "concept": "笔的级别",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 383,
+   "concept": "笔线段中枢",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 384,
+   "concept": "筹码峰主图",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 385,
+   "concept": "箱体突破战法",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 386,
+   "concept": "线段划分",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 387,
+   "concept": "线段定义",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 388,
+   "concept": "结构思维",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 389,
+   "concept": "缠论、游资、凯利公式",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 390,
+   "concept": "缠论一买",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 391,
+   "concept": "缠论三买",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 392,
+   "concept": "缠论三类买卖点",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 393,
+   "concept": "缠论中枢",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 394,
+   "concept": "缠论中枢级别",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 395,
+   "concept": "缠论中枢震荡",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 396,
+   "concept": "缠论买卖点",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 397,
+   "concept": "缠论买卖点级别",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 398,
+   "concept": "缠论买卖点股指标",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 399,
+   "concept": "缠论买点定位",
+   "traceable": true,
+   "method": "provenance(file+line)",
+   "unit_book": null,
+   "unit_pages": "None-None"
   }
  ],
  "theme_distribution": [
@@ -3042,8 +3282,8 @@
   {
    "theme": "其他",
    "units": 104,
-   "cards": 178,
-   "per_100_units": 171.15
+   "cards": 201,
+   "per_100_units": 193.27
   },
   {
    "theme": "新能源/电力",
@@ -3060,14 +3300,14 @@
   {
    "theme": "量学/交易",
    "units": 34,
-   "cards": 21,
-   "per_100_units": 61.76
+   "cards": 25,
+   "per_100_units": 73.53
   },
   {
    "theme": "金融/地产",
    "units": 34,
-   "cards": 14,
-   "per_100_units": 41.18
+   "cards": 17,
+   "per_100_units": 50.0
   },
   {
    "theme": "消费/零售",
