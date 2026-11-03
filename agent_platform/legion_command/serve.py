@@ -37,6 +37,7 @@ from engine.org_profiles import fallbacks_index, profile_index, stamp  # noqa: E
 from engine.openclaw_cli import agent_primary_model, is_relay, run as oc_run  # noqa: E402
 from legion_command.snapshot import build_snapshot  # noqa: E402
 from legion_command import hq_meeting  # noqa: E402
+from legion_command import case_api  # noqa: E402
 from legion_command import hq_agenda  # noqa: E402
 from legion_command import hq_acceptance  # noqa: E402
 from legion_command import hq_stats  # noqa: E402
@@ -629,6 +630,18 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/api/evolution":
             self._send_json(self._evolution())
+            return
+        if path == "/api/case/list":
+            self._send_json({"ok": True, "cases": case_api.list_cases()})
+            return
+        if path == "/api/case/latest":
+            c = case_api.latest_case()
+            self._send_json({"ok": True, "case": c})
+            return
+        m_case = re.fullmatch(r"/api/case/get/(CASE-[A-Za-z0-9._-]{3,80})", path)
+        if m_case:
+            c = case_api.get_case(m_case.group(1))
+            self._send_json({"ok": bool(c), "case": c}, 200 if c else 404)
             return
         if path == "/api/hq/meeting/stats":
             self._send_json(hq_stats.board(HQ_MEETINGS_DIR))
@@ -2484,6 +2497,39 @@ class Handler(BaseHTTPRequestHandler):
                 return
             code, env = hq_agenda.append_message(COUNCIL_DATA, req)
             self._send_json(env, code)
+            return
+        if path == "/api/case/save":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 1024 * 1024:
+                    raise ValueError("bad length")
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                self._send_json({"ok": False, "error": "bad_request"}, 400)
+                return
+            try:
+                c = case_api.save_case(req.get("case") or {})
+            except ValueError as exc:
+                self._send_json({"ok": False, "error": str(exc)[:200]}, 400)
+                return
+            self._send_json({"ok": True, "case": c})
+            return
+        if path == "/api/case/approve":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 64 * 1024:
+                    raise ValueError("bad length")
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                self._send_json({"ok": False, "error": "bad_request"}, 400)
+                return
+            try:
+                c = case_api.approve_case(str(req.get("case_id") or ""), str(req.get("approver") or ""),
+                                          str(req.get("note") or ""), str(req.get("sub") or ""))
+            except ValueError as exc:
+                self._send_json({"ok": False, "error": str(exc)[:200]}, 400)
+                return
+            self._send_json({"ok": True, "case": c})
             return
         if path == "/api/hq/meeting/save":
             try:

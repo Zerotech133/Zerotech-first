@@ -92,14 +92,22 @@ Case Service（唯一状态机 + 唯一真源）
 5. 会议保存失败不得进入 PROPOSED；
 6. 所有动作写 append-only 事件和 revision（CAS）。
 
-## 三、迁移步骤
+## 三、本轮已落地的服务端部分（P0-1）
+
+- `legion_command/case_api.py`：`deliverables/cases/<case_id>/case.json` 原子存储、revision、list/latest/get/approve；
+- 8796 新增 `/api/case/list|latest|get/{id}|save|approve`，nginx `/api/case/` 登录保护；
+- `/case` 每次 `save()` 同步 `/api/case/save`，无本地状态时从 `/api/case/latest` 恢复；
+- 实测：清 localStorage 后刷新，从服务端恢复标题/case_id；`save` 200。
+- **仍未做**：服务端 approval 身份校验、服务端 orchestrator、dispatch 硬门；这三项仍是 P0 剩余。
+
+## 四、迁移步骤
 
 1. **P0（今天）**：新增 Case Service 读/写 API + 文件存储；`/case` 改为读服务端；
 2. **P1**：前端动作全部改调 API；localStorage 只保留草稿；审批/下发服务端硬门；
 3. **P2**：服务端 orchestrator `autorun`（到方案），前端只显示进度；
 4. **P3**：任务回执回写 Case（DISPATCHED→VERIFYING→DONE），周报统计闭环率。
 
-## 四、本轮已修 BUG
+## 五、本轮已修 BUG
 
 - 五角色“假并行”改真并行；失败显示 x/5，支持单角色重试；
 - 页面错误显示 5/5 导致会议/方案卡死；
@@ -107,7 +115,7 @@ Case Service（唯一状态机 + 唯一真源）
 - `/case` 进度条/120s 超时/APPROVER 身份；
 - `tf` 身份旧会话提示重新登录。
 
-## 五、验收
+## 六、验收
 
 - `agent_platform/tests/test_hq_meeting.py` 9 passed（含观察席）；
 - `portal/test_case_page.py` 3 passed；

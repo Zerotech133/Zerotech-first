@@ -129,7 +129,7 @@ var LS='hq_case_current';
 var state={case:null,busy:false,identity:null,canApprove:false,quick:null,autoRunning:false};
 function $(id){return document.getElementById(id);}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
-function save(){try{localStorage.setItem(LS,JSON.stringify(state.case||{}));}catch(e){}}
+function save(){try{localStorage.setItem(LS,JSON.stringify(state.case||{}));}catch(e){}if(state.case){fetch('/api/case/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({case:state.case})}).catch(function(){});}}
 function load(){try{var c=JSON.parse(localStorage.getItem(LS)||'null');if(c&&c.id)state.case=c;}catch(e){}}
 function setProgress(fill,pct,label,pctEl,textEl){var f=$(fill);if(f)f.style.width=Math.max(0,Math.min(100,pct))+'%';var t=$(textEl);if(t)t.textContent=label;var pe=$(pctEl);if(pe)pe.textContent=Math.round(pct)+'%';}
 function show(id,text){var e=$(id);e.hidden=false;e.textContent=text;}
@@ -279,7 +279,7 @@ function approve(){
   if(!state.case||!state.case.proposal)return;
   if(!state.canApprove||!state.identity){status('approve-status','当前身份无审批权，需 ADMIN/OWNER 登录');return;}
   var who=state.identity.name||state.identity.sub;
-  state.case.approved=true;state.case.approver=who;state.case.approver_sub=state.identity.sub;state.case.approver_roles=state.identity.roles;state.case.approved_at=new Date().toISOString();save();status('approve-status','已由 '+who+'（'+state.identity.sub+'）审批通过');setBtns();
+  state.case.approved=true;state.case.approver=who;state.case.approver_sub=state.identity.sub;state.case.approver_roles=state.identity.roles;state.case.approved_at=new Date().toISOString();save();try{fetch('/api/case/approve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({case_id:state.case.id,approver:who,note:($('approve-note').value||''),sub:state.identity.sub})}).catch(function(){});}catch(e){}status('approve-status','已由 '+who+'（'+state.identity.sub+'）审批通过');setBtns();
 }
 async function dispatchCase(){
   if(!state.case||!state.case.approved||!state.case.meeting_id)return;
@@ -290,8 +290,28 @@ async function dispatchCase(){
   state.busy=false;setBtns();
 }
 $('btn-new').onclick=newCase;$('btn-auto').onclick=autoRun;$('btn-quick').onclick=quickBreakdown;$('btn-upgrade').onclick=upgradeQuick;$('btn-agg').onclick=aggregate;$('btn-review').onclick=review;$('btn-retry').onclick=review;$('btn-meeting').onclick=meeting;$('btn-propose').onclick=propose;$('btn-approve').onclick=approve;$('btn-approve-dispatch').onclick=approveAndDispatch;$('btn-dispatch').onclick=dispatchCase;
-load();if(state.case){$('title').value=state.case.title||'';$('materials').value=state.case.materials||'';if(state.case.summary)show('agg-out',state.case.summary);if(state.case.opinions&&state.case.opinions.length)show('review-out',state.case.opinions.map(function(o){return '【'+o.name+'】'+(o.text||('[失败] '+o.error));}).join('\n\n'));if(state.case.meeting_id)show('meeting-out','meeting_id='+state.case.meeting_id);if(state.case.proposal)show('proposal-out',state.case.proposal);if(state.case.approved)status('approve-status','已由 '+(state.case.approver||'')+' 审批通过');if(state.case.dispatch)show('dispatch-out',JSON.stringify(state.case.dispatch,null,2));}
+function restoreCase(){
+  if(!state.case)return;
+  $('title').value=state.case.title||'';
+  $('materials').value=state.case.materials||'';
+  if(state.case.summary)show('agg-out',state.case.summary);
+  if(state.case.opinions&&state.case.opinions.length)show('review-out',state.case.opinions.map(function(o){return '【'+o.name+'】'+(o.text||('[失败] '+o.error));}).join(String.fromCharCode(10)+String.fromCharCode(10)));
+  if(state.case.meeting_id)show('meeting-out','meeting_id='+state.case.meeting_id);
+  if(state.case.proposal)show('proposal-out',state.case.proposal);
+  if(state.case.approved)status('approve-status','已由 '+(state.case.approver||'')+' 审批通过');
+  if(state.case.dispatch)show('dispatch-out',JSON.stringify(state.case.dispatch,null,2));
+  setBtns();
+}
+async function serverHydrate(){
+  if(state.case)return;
+  try{
+    var r=await fetch('/api/case/latest',{cache:'no-store'});var p=await r.json();
+    if(r.ok&&p.ok&&p.case){p.case.id=p.case.id||p.case.case_id;state.case=p.case;try{localStorage.setItem(LS,JSON.stringify(state.case));}catch(e){}restoreCase();status('agg-status','已从服务端恢复 '+state.case.case_id);}
+  }catch(e){}
+}
+load();restoreCase();
 loadIdentity();
+serverHydrate();
 refreshFlow();
 setBtns();
 })();
