@@ -4,8 +4,10 @@
 - 数据来源：research/reports/dataset_inventory_*.json（全域盘点，文件级 v1 口径 314 数据集）
 - 能力：list / search / get / sample / emit（生成 dataset_registry YAML 草稿）
 - **DWH-103 wave1（ADR-019）**：
-  * 新 kind `pg_table`：智策 PG 5446 核心表（wave1 ≤15 张），只读 DSN 来自环境变量
-    `ZHICE_V2_DSN`（不落盘）。缺 DSN → `connector_status=missing_dsn`（不假绿）；
+  * 新 kind `pg_table`：智策 PG 5446 核心表（wave1 ≤15 张）。只读 DSN 解析优先级：
+    显式参数 > 环境变量 `ZHICE_V2_DSN` > `jev_common.DB_DSN` fallback（与
+    `portal/api_acad1_pool` 同源；`DW_PG_DSN_FALLBACK=0` 可显式关闭 fallback）。
+    **凭据不打印/不落盘**；全部来源不可用 → `connector_status=missing_dsn`（不假绿）；
     连接失败 → `connector_unavailable`，`sample()` 抛 `ConnectorUnavailable`（fail-visible）。
   * 新 kind `contract_artifact`：`C:\\Temp` 契约产物**显式白名单**（不扩 ALLOWED_ROOTS、
     禁递归扫描、仅直属文件）。缺失/sha256 漂移 → 行状态 missing/sha256_mismatch，
@@ -19,7 +21,8 @@
     发现/元数据查询异常 fail-visible（不吞、不假绿）。
   * `sample()` 只接受发现集合内且符合 `^[a-z_][a-z0-9_]*$` 的标识符（只读
     `SELECT * FROM "<schema>"."<table>" LIMIT n`，不拼接任意输入；越界/未发现表拒绝）。
-  * `ZHICE_V2_DSN` 未设置时保持 wave1 行为（固定清单 + `missing_dsn`，不报错、不假绿）。
+  * 全部 DSN 来源不可用（`ZHICE_V2_DSN` 未设且 jev_common fallback 不可用/被
+    `DW_PG_DSN_FALLBACK=0` 关闭）时保持 wave1 行为（固定清单 + `missing_dsn`，不报错、不假绿）。
 - 边界：只读；PG 仅只读会话 SELECT；不写业务数据/数据库/`C:\\Temp`；不递归扫描 Temp。
 """
 from __future__ import annotations
@@ -30,6 +33,7 @@ import json
 import os
 import re
 import sqlite3
+import sys
 import time
 from pathlib import Path
 from typing import Any
@@ -61,6 +65,7 @@ OWNER_HINTS = [
 
 # ---------- DWH-103 / ADR-019 D2/D3：pg_table（wave1） ----------
 PG_DSN_ENV = "ZHICE_V2_DSN"
+PG_DSN_FALLBACK_ENV = "DW_PG_DSN_FALLBACK"  # "0" 关闭 jev_common fallback（测试/应急）
 PG_CONNECTOR = "pg@127.0.0.1:5446/zhice_os_v2"  # 逻辑连接串标签（不含凭据）
 PG_SCHEMA_WHITELIST = ("public",)  # 跨库/其他 schema 需 A0 加白（ADR-019 D2）
 PG_TIMEOUT_S = 5
@@ -553,13 +558,106 @@ def _normalize_dsn(dsn: str) -> str:
     return dsn
 
 
-def _pg_connect_default(dsn: str):
-    """只读连接工厂（wave2 默认）：DSN 从 env 读取（不落盘）；异常向上抛（fail-visible）。
+def _pg_label_from_dsn(dsn: str) -> str:
+    """DSN → 不含凭据的逻辑连接标签（host:port/db）；非 URL DSN 不展示内容。"""
+    text = _normalize_dsn(str(dsn or "")).strip()
+    if not text:
+        return PG_CONNECTOR
+    try:
+        from urllib.parse import urlsplit
 
-    DSN 归一化：兼容 SQLAlchemy 风格 `postgresql+psycopg2://` / `postgresql+psycopg://`
-    → libpq `postgresql://`（运维常直接复用 .env 的 DB_MAIN_URL）。
+        parts = urlsplit(text)
+        if str(parts.scheme).startswith("postgres"):
+            host = parts.hostname or "?"
+            port = parts.port or "?"
+            dbname = (parts.path or "").lstrip("/") or "?"
+            return "pg@%s:%s/%s" % (host, port, dbname)
+    except Exception:  # noqa: BLE001 — 任何解析失败都不回显 DSN（可能含密码）
+        pass
+    return PG_CONNECTOR
+
+
+def _pg_label_from_kwargs(kwargs: dict) -> str:
+    """连接 kwargs → 不含凭据的逻辑连接标签。"""
+    try:
+        return "pg@%s:%s/%s" % (
+            kwargs.get("host") or "?",
+            kwargs.get("port") or "?",
+            kwargs.get("dbname") or "?",
+        )
+    except Exception:  # noqa: BLE001
+        return PG_CONNECTOR
+
+
+def _jev_common_connect_kwargs():
+    """读取 jev_common.DB_DSN（与 portal/api_acad1_pool 同款只读真源）。
+
+    返回 (kwargs|None, reason)；**不打印/返回密码以外的连接内容**，reason 只含
+    异常类型名（避免异常消息里可能夹带的路径/凭据片段落日志）。
     """
-    dsn = _normalize_dsn(dsn)
+    jev_dir = str(REPO / "jev-eval")
+    try:
+        if jev_dir not in sys.path:
+            sys.path.insert(0, jev_dir)
+        import jev_common  # noqa: PLC0415 — 延迟导入：不引入模块级副作用/不硬依赖
+
+        raw = jev_common.DB_DSN
+        return {
+            "host": str(raw["host"]),
+            "port": int(raw["port"]),
+            "user": str(raw["user"]),
+            "password": str(raw["password"]),
+            "dbname": str(raw["dbname"]),
+            "connect_timeout": PG_TIMEOUT_S,
+        }, None
+    except Exception as exc:  # noqa: BLE001 — fallback 不可用必须 fail-visible（不假绿）
+        return None, "jev_common_unavailable:%s" % type(exc).__name__
+
+
+def resolve_pg_connection(pg_dsn: str | None = None) -> dict:
+    """解析 PG 只读连接目标；返回不含密码的连接描述（供日志/状态展示）。
+
+    优先级（**不打印/不落盘凭据**）：
+    1. 显式参数 ``pg_dsn``（``""`` = 显式禁用连接器，不回退；测试/运维用）；
+    2. 环境变量 ``ZHICE_V2_DSN``；
+    3. ``jev_common.DB_DSN`` fallback（``DW_PG_DSN_FALLBACK=0`` 可显式关闭）。
+
+    返回 ``{source, dsn, kwargs, label, reason}``：
+    - source: explicit / env / jev_common / none
+    - dsn: libpq DSN 字符串（env/explicit）或 None（jev_common 用 kwargs）
+    - kwargs: psycopg2 连接参数 dict（jev_common fallback）或 None
+    - label: 逻辑连接标签（host:port/db，**不含凭据**）
+    - reason: 不可用原因（fail-visible；不含凭据）
+    """
+    if pg_dsn is not None:
+        dsn = str(pg_dsn).strip()
+        if not dsn:
+            return {"source": "none", "dsn": None, "kwargs": None,
+                    "label": PG_CONNECTOR, "reason": "explicit_empty_dsn"}
+        return {"source": "explicit", "dsn": dsn, "kwargs": None,
+                "label": _pg_label_from_dsn(dsn), "reason": ""}
+    env_dsn = os.environ.get(PG_DSN_ENV, "").strip()
+    if env_dsn:
+        return {"source": "env", "dsn": env_dsn, "kwargs": None,
+                "label": _pg_label_from_dsn(env_dsn), "reason": ""}
+    if os.environ.get(PG_DSN_FALLBACK_ENV, "1").strip() == "0":
+        return {"source": "none", "dsn": None, "kwargs": None,
+                "label": PG_CONNECTOR, "reason": "fallback_disabled"}
+    kwargs, reason = _jev_common_connect_kwargs()
+    if kwargs:
+        return {"source": "jev_common", "dsn": None, "kwargs": kwargs,
+                "label": _pg_label_from_kwargs(kwargs), "reason": ""}
+    return {"source": "none", "dsn": None, "kwargs": None,
+            "label": PG_CONNECTOR, "reason": reason or "dsn_unavailable"}
+
+
+def _pg_connect_default(dsn):
+    """只读连接工厂（wave2 默认）：libpq DSN 字符串或 psycopg2 kwargs dict。
+
+    - DSN 字符串：兼容 SQLAlchemy 风格 URL → libpq（运维常直接复用 .env 的 DB_MAIN_URL）；
+    - kwargs dict：jev_common fallback（连接密码只在内存中，不打印/不落盘）；
+    - 异常向上抛（fail-visible）；连接建立后强制只读会话。
+    """
     try:
         import psycopg2 as pg
     except ImportError:
@@ -568,7 +666,15 @@ def _pg_connect_default(dsn: str):
         except ImportError as exc:  # noqa: BLE001
             raise ConnectorUnavailable("driver_missing: 未安装 psycopg2/psycopg",
                                        status="driver_missing") from exc
-    con = pg.connect(dsn, connect_timeout=PG_TIMEOUT_S)
+    if isinstance(dsn, dict):
+        connect_kwargs = dict(dsn)
+        connect_kwargs.setdefault("connect_timeout", PG_TIMEOUT_S)
+        con = pg.connect(**connect_kwargs)
+    else:
+        target = _normalize_dsn(str(dsn or ""))
+        if not target:
+            raise ConnectorUnavailable("missing_dsn: DSN 为空", status="missing_dsn")
+        con = pg.connect(target, connect_timeout=PG_TIMEOUT_S)
     try:
         con.set_session(readonly=True, autocommit=True)
     except Exception:  # noqa: BLE001 — psycopg3 无 set_session：退化为只读事务外查询
@@ -704,7 +810,13 @@ class DatasetRegistry:
         # 附加数据集级别名（去掉 domain 前缀后的短名冲突时保留 id）
         self._by_id = {d["dataset_id"]: d for d in self.datasets}
         # DWH-103 wave1：pg_table / contract_artifact 两节（不进入文件级 datasets/stats v1）
-        self.pg_dsn = (os.environ.get(PG_DSN_ENV, "") if pg_dsn is None else str(pg_dsn)).strip()
+        # ACAD1/DW 同源只读 DSN：显式参数 > ZHICE_V2_DSN > jev_common.DB_DSN fallback。
+        # 连接描述只保留 host:port/db 标签，密码仅在内存 kwargs 中（不打印/不落盘）。
+        self.pg_connection = resolve_pg_connection(pg_dsn)
+        self.pg_dsn = self.pg_connection.get("dsn") or ""
+        self.pg_kwargs = self.pg_connection.get("kwargs")
+        self.pg_connector_source = self.pg_connection.get("source") or "none"
+        self.pg_connector_label = self.pg_connection.get("label") or PG_CONNECTOR
         self.pg_tables = [dict(x) for x in (pg_tables if pg_tables is not None else PG_WAVE1_TABLES)]
         self._pg_probe = pg_probe
         self._pg_connect = pg_connect
@@ -767,6 +879,7 @@ class DatasetRegistry:
             "generated_at": _now(),
             "connector_status": self.connector_status,
             "connector_error": self.connector_error,
+            "connector_source": self.pg_connector_source,
             "file_inventory": {
                 "total": v1["total"], "registered": v1["registered"],
                 "exposed": v1["exposed"], "by_kind": v1["by_kind"],
@@ -777,6 +890,7 @@ class DatasetRegistry:
                 "registered": sum(1 for d in self.pg_datasets if d["registered"]),
                 "exposed": sum(1 for d in self.pg_datasets if d["exposed"]),
                 "connector_status": self.connector_status,
+                "connector_source": self.pg_connector_source,
                 "by_status": _count_by(self.pg_datasets, "status"),
             },
             "contract_artifacts": {
@@ -952,6 +1066,7 @@ class DatasetRegistry:
                 "kind": "pg_table",
                 "path": PG_CONNECTOR,
                 "connector": PG_CONNECTOR,
+                "connector_source": self.pg_connector_source,
                 "physical": {"schema": schema, "table": table},
                 "ref": "dataset/pg/%s" % table,
                 "owner": spec.get("owner") or "DATA1",
@@ -986,6 +1101,7 @@ class DatasetRegistry:
             "kind": "pg_table",
             "path": PG_CONNECTOR,
             "connector": PG_CONNECTOR,
+            "connector_source": self.pg_connector_source,
             "physical": {"schema": schema, "table": table},
             "ref": "dataset/pg/%s" % table,
             "owner": spec.get("owner") or PG_DYNAMIC_OWNER_DEFAULT,
@@ -1014,17 +1130,20 @@ class DatasetRegistry:
         if not rows:
             self.connector_status = "disabled"
             return
-        if not self.pg_dsn:
+        target = self.pg_dsn or self.pg_kwargs
+        if not target:
             self.connector_status = "missing_dsn"
+            if self.pg_connection.get("reason"):
+                self.connector_error = str(self.pg_connection["reason"])
             for row in rows:
                 row["status"] = "missing_dsn"
             return
         tables = [row["physical"]["table"] for row in rows]
         try:
             if self._pg_probe is not None:  # wave1 兼容：注入探针只覆盖固定清单
-                found = self._pg_probe(self.pg_dsn, tables)
+                found = self._pg_probe(target, tables)
             else:                            # wave2：默认探针动态发现全量
-                found = _default_pg_probe(self.pg_dsn, tables, connect=self._pg_connect)
+                found = _default_pg_probe(target, tables, connect=self._pg_connect)
         except Exception as exc:  # noqa: BLE001 — fail-visible，不静默跳过
             self.connector_status = getattr(exc, "status", "connector_unavailable")
             self.connector_error = "%s: %s" % (type(exc).__name__, str(exc)[:160])
@@ -1083,7 +1202,8 @@ class DatasetRegistry:
                 "pg_table 未在发现集合（拒绝任意标识符）: %s.%s" % (schema, table))
         con = None
         try:
-            con = (self._pg_connect or _pg_connect_default)(self.pg_dsn)
+            target = self.pg_dsn or self.pg_kwargs
+            con = (self._pg_connect or _pg_connect_default)(target)
             cur = con.cursor()
             cur.execute('SELECT * FROM "%s"."%s" LIMIT %%s' % (schema, table), (int(n),))
             cols = [c[0] for c in cur.description or []]

@@ -62,6 +62,8 @@ def _artifact(tmp_path: Path, *, name="acad1_evidence_bundle", content=b'{"ok": 
 
 def test_pg_table_missing_dsn_is_disabled_not_green(tmp_path, monkeypatch):
     monkeypatch.delenv("ZHICE_V2_DSN", raising=False)
+    # DW-PG-DSN：显式关闭 jev_common fallback，锁定「全部来源不可用」口径
+    monkeypatch.setenv("DW_PG_DSN_FALLBACK", "0")
     reg = _reg(tmp_path, temp_whitelist=[])  # 本用例只看 pg 节，空契约白名单保证确定性
     assert reg.connector_status == "missing_dsn"
     assert len(reg.pg_datasets) == 7  # wave1 核心表（≤15）
@@ -206,6 +208,7 @@ def test_stats_v2_preserves_v1_baseline_and_keys(tmp_path):
 
 def test_cli_json_contract(tmp_path, monkeypatch, capsys):
     monkeypatch.delenv("ZHICE_V2_DSN", raising=False)
+    monkeypatch.setenv("DW_PG_DSN_FALLBACK", "0")  # 锁定 fail-visible 缺 DSN 口径
     assert cli.main(["--json", "stats"]) == 0
     stats = json.loads(capsys.readouterr().out)
     assert "total" in stats and "by_kind" in stats and stats["total"] > 0
