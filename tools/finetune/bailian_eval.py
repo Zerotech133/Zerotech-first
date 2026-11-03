@@ -374,7 +374,7 @@ def render_markdown(payload: dict) -> str:
     a = payload["aggregate"] or {}
     base = payload["w13_baseline"]["aggregate"]
     mode = payload["mode"]
-    lines = [f"# 百炼部署后评测（W17 · 2026-11-04）", "",
+    lines = ["# 百炼部署后评测（W17 · 2026-11-04）", "",
              f"> 模式：**{mode}**"
              + ("（未调用真实 API：仅请求计划/管道校验）" if mode in ("dry-run", "mock") else "（真实 API 复测）"),
              f"> 模型：`{payload['api']['model']}` · base_url：`{payload['api']['base_url']}` · "
@@ -416,7 +416,7 @@ def render_markdown(payload: dict) -> str:
         lines += [f"- 计划题数：{plan.get('planned')} / {plan.get('questions_total')}；"
                   f"has_api_key={plan.get('has_api_key')}",
                   f"- URL：`{(plan.get('request_preview') or {}).get('url', '')}`",
-                  f"- 样例 prompt（前 400 字）：", "", "```text",
+                  "- 样例 prompt（前 400 字）：", "", "```text",
                   ((plan.get("request_preview") or {}).get("messages") or [{}])[0].get("content", "")[:400],
                   "```", ""]
         lines += ["| qid | type | answerable | prompt字符 | ctx_ids |", "|---|---|---|---:|---|"]
@@ -427,7 +427,6 @@ def render_markdown(payload: dict) -> str:
     if payload.get("mock_sanity"):
         ms = payload["mock_sanity"]
         magg = ms.get("aggregate") or {}
-        mcmp = ms.get("comparison") or {}
         lines += ["## 三-B、评测管道自检（mock，非真实模型结果）", "",
                   f"> {ms.get('note', '')}（{magg.get('evaluated')} 题；errors={magg.get('errors')}）", "",
                   "| 指标 | W13 基线 | mock 管道 | 目标 |", "|---|---:|---:|---:|"]

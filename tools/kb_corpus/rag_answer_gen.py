@@ -213,7 +213,7 @@ def evaluate(*, write: bool = False, budget_s: int = 900, strategies: tuple[str,
     if write:
         OUT_JSON.write_text(json.dumps(payload, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
         lines = ["# RAG 生成侧优化 A/B/C 对比（W16 · 2026-11-04）", "",
-                 f"> 数据集：W13 40 题（30 可答 + 10 不可答）· hybrid top5 · qwen3.5:9b（同模型，只改生成策略）", "",
+                 "> 数据集：W13 40 题（30 可答 + 10 不可答）· hybrid top5 · qwen3.5:9b（同模型，只改生成策略）", "",
                  "## 一、三策略对比", "", "| 指标 | A（基线） | B（强化 prompt） | C（B+证据摘录） | B-A | C-A |", "|---|---|---|---|---|---|"]
         rows = ["citation_accuracy", "groundedness", "correct_refusal_rate", "over_refusal_rate",
                 "gold_similarity", "overclaim_rate", "length_anomaly_rate", "avg_answer_len"]
@@ -225,7 +225,7 @@ def evaluate(*, write: bool = False, budget_s: int = 900, strategies: tuple[str,
             dc = deltas.get("C-A", {}).get(k, "—") if k in deltas.get("C-A", {}) else "—"
             lines.append(f"| {k} | {a} | {b} | {c} | {db} | {dc} |")
         lines += ["", f"- 最优策略：**{best}**", f"- {payload['conclusion']}",
-                  f"- SFT/DPO 目标：引用正确率 ≥0.90、groundedness ≥0.60、不可答拒答率 ≥0.80；",
+                  "- SFT/DPO 目标：引用正确率 ≥0.90、groundedness ≥0.60、不可答拒答率 ≥0.80；",
                   f"- sampled_note：{sampled_note or '无（三策略均全量 40 题）'}",
                   "", "## 二、策略定义", "",
                   "- **A**：W13 原 prompt（2-4 句 + 句末 [n] + 可拒答）；",
