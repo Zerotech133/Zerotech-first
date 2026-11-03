@@ -1,10 +1,10 @@
 {
  "schema": "restic_receipt_v1",
- "generated_at": "2026-11-03T11:05:17+08:00",
+ "generated_at": "2026-11-03T11:07:28+08:00",
  "ok": true,
  "snapshot": {
-  "id": "41d870a3",
-  "time": "2026-11-03T11:04:53.3907644+08:00",
+  "id": "13a69e80",
+  "time": "2026-11-03T11:07:07.1791094+08:00",
   "hostname": "DESKTOP-ARF447U",
   "paths": [
    "C:\\项目\\DOCS_INDEX.md",
@@ -21,11 +21,11 @@
  },
  "backup": {
   "rc": 0,
-  "files_new": 1,
-  "files_changed": 8,
-  "files_unmodified": 79875,
-  "bytes_processed": 21451474102,
-  "data_added": 10594705
+  "files_new": 3,
+  "files_changed": 7,
+  "files_unmodified": 79877,
+  "bytes_processed": 21451340115,
+  "data_added": 8782496
  },
  "check": {
   "rc": 0,
@@ -37,7 +37,7 @@
  "prune": {
   "rc": -1
  },
- "repo_bytes": 8272415045,
- "repo_gb": 8.272,
+ "repo_bytes": 8273703245,
+ "repo_gb": 8.274,
  "log": "C:\\项目\\work\\restic_trial\\run-2026-11-03.log"
 }
