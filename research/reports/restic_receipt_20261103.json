@@ -1,0 +1,43 @@
+{
+ "schema": "restic_receipt_v1",
+ "generated_at": "2026-11-03T11:05:17+08:00",
+ "ok": true,
+ "snapshot": {
+  "id": "41d870a3",
+  "time": "2026-11-03T11:04:53.3907644+08:00",
+  "hostname": "DESKTOP-ARF447U",
+  "paths": [
+   "C:\\项目\\DOCS_INDEX.md",
+   "C:\\项目\\STATUS.md",
+   "C:\\项目\\_vault",
+   "C:\\项目\\deliverables",
+   "C:\\项目\\老田的AI助手\\agent_platform\\catalogs",
+   "C:\\项目\\老田的AI助手\\agent_platform\\registry",
+   "C:\\项目\\老田的AI助手\\tools\\secrets"
+  ],
+  "tags": [
+   "p1-trial"
+  ]
+ },
+ "backup": {
+  "rc": 0,
+  "files_new": 1,
+  "files_changed": 8,
+  "files_unmodified": 79875,
+  "bytes_processed": 21451474102,
+  "data_added": 10594705
+ },
+ "check": {
+  "rc": 0,
+  "read_data_subset": "5%"
+ },
+ "forget": {
+  "rc": 0
+ },
+ "prune": {
+  "rc": -1
+ },
+ "repo_bytes": 8272415045,
+ "repo_gb": 8.272,
+ "log": "C:\\项目\\work\\restic_trial\\run-2026-11-03.log"
+}
