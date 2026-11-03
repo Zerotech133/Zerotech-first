@@ -1,0 +1,35 @@
+### Qwen2.5-32B-Instruct QLoRA SFT · 2×4090（ZeRO-3，seq 1024）· 需先小步冒烟验证 4bit+ZeRO3
+### 启动：torchrun --nproc_per_node=2 src/train.py --deepspeed examples/deepspeed/ds_z3_config.json
+model_name_or_path: <Qwen2.5-32B-Instruct 本地路径>
+quantization_bit: 4
+stage: sft
+finetuning_type: lora
+lora_target: all
+lora_rank: 16
+lora_alpha: 32
+lora_dropout: 0.05
+dataset: quant_kb_sft_v1
+template: qwen
+cutoff_len: 1024
+train_on_prompt: false
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 16
+learning_rate: 5.0e-5
+num_train_epochs: 2.0
+lr_scheduler_type: cosine
+warmup_steps: 10
+bf16: true
+fp16: false
+gradient_checkpointing: true
+flash_attn: fa2
+weight_decay: 0.0
+max_grad_norm: 1.0
+packing: false
+val_size: 0.05
+eval_strategy: epoch
+save_strategy: epoch
+save_total_limit: 2
+logging_steps: 5
+ddp_timeout: 180000000
+output_dir: saves/qwen25-32b-qlora-sft-2x4090
+seed: 42
