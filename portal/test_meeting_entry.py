@@ -50,3 +50,11 @@ def test_hq_has_meeting_entry_link():
     s = HQ.read_text(encoding="utf-8")
     assert 'href="/meeting"' in s
     assert "作战会议室" in s
+
+
+def test_meeting_chat_route_is_proxied_and_protected():
+    s = NGINX.read_text(encoding="utf-8")
+    assert "location = /api/chat {" in s
+    block = s.split("location = /api/chat {", 1)[1].split("}", 1)[0]
+    assert "auth_request /_auth_guard;" in block
+    assert "proxy_pass http://$h:8796;" in block

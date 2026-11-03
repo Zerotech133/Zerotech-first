@@ -1658,6 +1658,11 @@ color:#fff;font-size:13.5px;cursor:pointer}
             import api_hq
             api_hq.handle_get(self, path, qs)
             return
+        if path == '/api/learning/conclusions':
+            # W3-3b 学习结论只读 API（独立文件 api_learning_conclusions.py，2026-11-03；8091 重启后生效）
+            import api_learning_conclusions
+            api_learning_conclusions.handle_get(self, path, qs)
+            return
         # P1 移动端 /m 家族（2026-10-25）：新 handler 独立文件 m_api.py，
         # 本处仅做早分支路由（portal_api 只改不扩）。
         if path.startswith('/api/m/'):

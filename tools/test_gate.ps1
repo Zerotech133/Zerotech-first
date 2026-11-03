@@ -137,6 +137,12 @@ $paths = @{
         # WO-QUAL-BUNDLE-20261031：fresh worktree 缺 gitignored IDE bundle 的引导
         # 回归（builder --out 受控生成 + bundle 契约断言，约 +1~2s）。
         'agent_platform/tests/test_ide_bundle_bootstrap.py'
+        'agent_platform/tests/test_evidence_raw_pit.py'
+        'agent_platform/tests/test_decision_outcomes_pit.py'
+        'agent_platform/tests/test_approval_control.py'
+        'agent_platform/tests/test_agent_policy.py'
+        'agent_platform/tests/test_execution_gate.py'
+        'agent_platform/tests/test_v11_m0_preflight.py'
     )
     # W5 P1-6 B1+B2 关键集（2026-10-31）：每次独立 pytest（不同套件 sys.path 不共用，
     # 混跑会 ImportError）。B1 清单见 W5 报告 §8.3；B2 扩容见 §8.4（工单 GATEB2，+31）。
