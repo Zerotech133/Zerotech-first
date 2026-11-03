@@ -90,10 +90,6 @@ ACAD1_D1_W3_KEY_FILES = {
     "agent_platform/tests/test_d1_data_fallback.py",
     # W3：outcome 记录闭环
     "agent_platform/tests/test_decision_outcomes.py",
-    # IFS v1（WO-IFS-WIRE-20261103）
-    "agent_platform/tests/test_ifs_handoff.py",
-    "agent_platform/tests/test_ifs_paper_chain.py",
-    "agent_platform/tests/test_ifs_wire_chain.py",
 }
 # 已审计确认“未入 fast gate”的 W3/W4 关键测试（债务台账，不代表已覆盖）：
 # 它们都在 tools/tests 或 quant_backtest/tests，接入必须扩 B1/B2 三清单并同步
