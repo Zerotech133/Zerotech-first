@@ -1,0 +1,140 @@
+[
+  {
+    "task": "K-STOCK-ANALYSIS-P2-8-20261030",
+    "status": "prepared",
+    "data": 3,
+    "base_commit": "commit_fail"
+  },
+  {
+    "task": "K-STOCK-ANALYSIS-P2-9-20261030",
+    "status": "prepared",
+    "data": 3,
+    "base_commit": "commit_fail"
+  },
+  {
+    "task": "WO-CAOCAO-PAGE-20261103",
+    "status": "prepared",
+    "data": 3,
+    "base_commit": "commit_fail"
+  },
+  {
+    "task": "WO-ACAD1-DARK-20261103",
+    "status": "prepared",
+    "data": 3,
+    "base_commit": "commit_fail"
+  },
+  {
+    "task": "WO-ACAD1-NAV-20261103",
+    "status": "prepared",
+    "data": 3,
+    "base_commit": "ok"
+  },
+  {
+    "task": "WO-IFS-POOL-20261103",
+    "status": "prepared",
+    "data": 3,
+    "base_commit": "ok"
+  },
+  {
+    "task": "WO-IFS-HANDOFF-20261103",
+    "status": "prepared",
+    "data": 3,
+    "base_commit": "ok"
+  },
+  {
+    "task": "WO-IFS-PAPER-20261103",
+    "status": "prepared",
+    "data": 3,
+    "base_commit": "ok"
+  },
+  {
+    "task": "WO-IFS-COMP-20261103",
+    "status": "prepared",
+    "data": 3,
+    "base_commit": "ok"
+  },
+  {
+    "task": "WO-ACAD1-NAV2-20261103",
+    "status": "prepared",
+    "data": 3,
+    "base_commit": "commit_fail"
+  },
+  {
+    "task": "WO-INTEL-ENTITY-20261103",
+    "status": "prepared",
+    "data": 3,
+    "base_commit": "ok"
+  },
+  {
+    "task": "WO-JEV-OPS-20261103",
+    "status": "prepared",
+    "data": 3,
+    "base_commit": "ok"
+  },
+  {
+    "task": "K-STOCK-ANALYSIS-H1-20261103",
+    "status": "prepared",
+    "data": 3,
+    "base_commit": "commit_fail"
+  },
+  {
+    "task": "WO-ACAD1-POOLROUTE-20261103",
+    "status": "prepared",
+    "data": 3,
+    "base_commit": "commit_fail"
+  },
+  {
+    "task": "WO-IFS-SCHEMA-20261103",
+    "status": "prepared",
+    "data": 3,
+    "base_commit": "commit_fail"
+  },
+  {
+    "task": "WO-IFS-TRAIN-20261103",
+    "status": "prepared",
+    "data": 3,
+    "base_commit": "commit_fail"
+  },
+  {
+    "task": "K-STOCK-ANALYSIS-H2-20261103",
+    "status": "prepared",
+    "data": 3,
+    "base_commit": "commit_fail"
+  },
+  {
+    "task": "UI-UNIFY-SHELL-20261103",
+    "status": "prepared",
+    "data": 3,
+    "base_commit": "commit_fail"
+  },
+  {
+    "task": "UI-UNIFY-SHRTSCREEN-20261103",
+    "status": "prepared",
+    "data": 3,
+    "base_commit": "commit_fail"
+  },
+  {
+    "task": "UI-UNIFY-VISUAL-20261103",
+    "status": "prepared",
+    "data": 3,
+    "base_commit": "commit_fail"
+  },
+  {
+    "task": "UI-UNIFY-TOOLFIX-20261103",
+    "status": "prepared",
+    "data": 3,
+    "base_commit": "commit_fail"
+  },
+  {
+    "task": "UI-UNIFY-A11Y-20261103",
+    "status": "prepared",
+    "data": 3,
+    "base_commit": "commit_fail"
+  },
+  {
+    "task": "WO-MERGE-HOOK-MERGEHEAD-20261103",
+    "status": "prepared",
+    "data": 3,
+    "base_commit": "commit_fail"
+  }
+]
