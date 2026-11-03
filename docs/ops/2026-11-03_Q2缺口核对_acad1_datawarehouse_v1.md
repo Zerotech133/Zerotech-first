@@ -55,3 +55,14 @@
 - 实测 summary：**2/2 composition ok**。
 
 **但 Q2 仍未达成**：探针证据只在工具输出，manifest 还没有 `status.health_probe` 字段；回滚步骤也仍缺。需 owner 把探针端点/字段写进 manifest 后，才能从 Q1→Q2。
+
+
+## 六、2026-11-03 22:46 更新：探针/SLO 已写进 manifest
+
+- `acad1-legion` status 增加 `health_probe`（/api/acad1/pool + 8105 health，last_result=ok）与 `slo_alert`（ARCH1，freshness/stale/pool/data_date，last_result=ok）；
+- `data-warehouse` status 增加 `health_probe`（/api/dw/stats + /api/dw/search，last_result=ok）与 `slo_alert`（注册率/暴露率；last_result=**alert**，84.4%/22.9%）；
+- `composition.py validate --all --strict`：**6/6 PASS**；
+- SLO 评估器 `tools/q2_slo_alert.py`：acad1 ok、data-warehouse 2 alerts；
+- **lifecycle 仍 draft、validated=false，不写成 active/Q2**。
+
+Q2 剩余缺口：**rollback 步骤**仍未写；validated 需 11-16 复审。 

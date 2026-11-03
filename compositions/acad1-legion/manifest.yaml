@@ -123,5 +123,22 @@ spec:
 status:
   phase: shadow
   health: unknown
+  health_probe:
+    tool: tools/q2_probe.py
+    endpoints:
+      - http://127.0.0.1:8091/api/acad1/pool
+      - http://127.0.0.1:8105/api/v1/health
+    last_checked: "2026-11-03T22:18:00+08:00"
+    last_result: ok
+  slo_alert:
+    tool: tools/q2_slo_alert.py
+    owner: ARCH1
+    checks:
+      - freshness_days<=1
+      - stale=false
+      - pool_total<=30
+      - data_date_present
+    last_checked: "2026-11-03T22:45:51+08:00"
+    last_result: ok
   validated: false
   source: "2026-11-02 只读反推（研究报告 v1.2 §2/§3 + 审计子任务）；2026-11-02 ACL-102 校准（SLA/接口/页面/任务 vs 实测）"
