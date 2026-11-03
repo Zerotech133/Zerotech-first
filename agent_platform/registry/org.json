@@ -411,7 +411,10 @@
           "team_role": "decision_chair",
           "reports_to": "A0",
           "meeting_chair": true,
-          "meeting": "D1投研会：T1/T2/N1/F1 投票，D1 主席裁决/最终表决"
+          "meeting": "D1投研会：T1/T2/N1/F1 投票，D1 主席裁决/最终表决",
+          "llm_fallbacks": [
+            "ollama/qwen3.5:9b"
+          ]
         },
         {
           "agent_id": "TR1",
@@ -995,7 +998,7 @@
           "agent_id": "DEV3",
           "role_profile": "strategy_engineer",
           "charter_detail": "写策略：strategies.json 注册制新增→回测判据前置自检→影子账挂载申请。纪律=回测判据不过就终止留档（缠论联立/快枪手判例入册），禁止跳过影子期直上模拟仓",
-          "llm_binding": "ollama/qwen3.5:9b",
+          "llm_binding": "glm/glm-5.3",
           "tools": [
             "devtask",
             "events"
@@ -1050,7 +1053,7 @@
               "role_profile": "backtest_dev",
               "analysis_type": "",
               "charter_detail": "回测开发部产码席：Python 产码、代码评审、工单执行、AST 静态门；按工单交付回测相关代码",
-              "llm_binding": "ollama/qwen3.5:9b",
+              "llm_binding": "glm/glm-5.3",
               "binding_note": "由 org_enroll 补档（工单 WO-ORG-222 / 放行人 老田）",
               "tools": [],
               "tools_note": "补档初始为空，按工单另行授予",
@@ -1059,14 +1062,28 @@
               "grade_note": "补档初始档，待 KPI 观察后调整",
               "attributes": {},
               "dept": "proj_backtest",
-              "migrated_from": "proj_backtest"
+              "migrated_from": "proj_backtest",
+              "llm_fallbacks": [
+                "ollama/qwen3.5:9b"
+              ],
+              "llm_fallback": [
+                "deepseek/deepseek-flash",
+                "ollama/qwen3.5:9b"
+              ]
             }
           ],
           "discipline": "quant",
           "role_title": "量化策略工程师",
           "group": "G2",
           "org_role": "G2组员",
-          "report_to": "DEV5"
+          "report_to": "DEV5",
+          "llm_fallbacks": [
+            "ollama/qwen3.5:9b"
+          ],
+          "llm_fallback": [
+            "deepseek/deepseek-flash",
+            "ollama/qwen3.5:9b"
+          ]
         },
         {
           "agent_id": "DEV4",
@@ -1353,7 +1370,7 @@
               "role_profile": "next_version_arch",
               "analysis_type": "",
               "charter_detail": "下版本设计推理部架构席：Python 产码、代码评审、工单执行、AST 静态门；负责设计推理链的架构落地",
-              "llm_binding": "ollama/qwen3.5:9b",
+              "llm_binding": "glm/glm-5.3",
               "binding_note": "由 org_enroll 补档（工单 WO-ORG-224 / 放行人 老田）",
               "tools": [],
               "tools_note": "补档初始为空，按工单另行授予",
@@ -1362,7 +1379,14 @@
               "grade_note": "补档初始档，待 KPI 观察后调整",
               "attributes": {},
               "dept": "proj_next",
-              "migrated_from": "proj_next"
+              "migrated_from": "proj_next",
+              "llm_fallbacks": [
+                "ollama/qwen3.5:9b"
+              ],
+              "llm_fallback": [
+                "deepseek/deepseek-flash",
+                "ollama/qwen3.5:9b"
+              ]
             }
           ],
           "tools_note": "2026-10-27 A0 L1 批：新增 codebase_intel/sandbox_verify/eval_harness/trace_log（A0 田丰批准；实现 tools/<name>.py；原 devtask/events 保留）",
@@ -1421,7 +1445,10 @@
           "role_title": "研发主官 · 架构师",
           "group": "",
           "org_role": "研发部主官/架构师",
-          "report_to": "A0"
+          "report_to": "A0",
+          "llm_fallbacks": [
+            "ollama/qwen3.5:9b"
+          ]
         },
         {
           "agent_id": "OPS1",
@@ -1678,7 +1705,7 @@
               "role_profile": "data_governance",
               "analysis_type": "",
               "charter_detail": "数据资源主官（数据治理部）：数据资源目录、接入、血缘、权限分级、生命周期与质量；只治理不裁决业务口径",
-              "llm_binding": "ollama/qwen3.5:9b",
+              "llm_binding": "glm/glm-5.3",
               "binding_note": "由 org_enroll 补档（工单 WO-ORG-223 / 放行人 老田）",
               "tools": [],
               "tools_note": "补档初始为空，按工单另行授予",
@@ -1687,10 +1714,24 @@
               "grade_note": "补档初始档，待 KPI 观察后调整",
               "attributes": {},
               "dept": "proj_data",
-              "migrated_from": "proj_data"
+              "migrated_from": "proj_data",
+              "llm_fallbacks": [
+                "ollama/qwen3.5:9b"
+              ],
+              "llm_fallback": [
+                "deepseek/deepseek-flash",
+                "ollama/qwen3.5:9b"
+              ]
             }
           ],
-          "office_title": "兰台令 · 数据资源主官"
+          "office_title": "兰台令 · 数据资源主官",
+          "llm_fallbacks": [
+            "ollama/qwen3.5:9b"
+          ],
+          "llm_fallback": [
+            "deepseek/deepseek-flash",
+            "ollama/qwen3.5:9b"
+          ]
         },
         {
           "agent_id": "FACTOR1",
@@ -1887,7 +1928,7 @@
           "agent_id": "PM1",
           "role_profile": "product_manager",
           "charter_detail": "产品经理：需求池维护·版本规划·验收口径定义（acceptance_criteria）·项目部门交付定义人（K-ORG-018 §3 归建判据产出位）",
-          "llm_binding": "ollama/qwen3.5:9b",
+          "llm_binding": "glm/glm-5.3",
           "tools": [
             "devtask",
             "events"
@@ -1938,7 +1979,7 @@
               "role_profile": "next_version_pm",
               "analysis_type": "",
               "charter_detail": "下版本设计推理部主官：需求梳理、验收判据、路线图；把设计意图转成可验收条目",
-              "llm_binding": "ollama/qwen3.5:9b",
+              "llm_binding": "glm/glm-5.3",
               "binding_note": "由 org_enroll 补档（工单 WO-ORG-224 / 放行人 老田）",
               "tools": [],
               "tools_note": "补档初始为空，按工单另行授予",
@@ -1947,11 +1988,21 @@
               "grade_note": "补档初始档，待 KPI 观察后调整",
               "attributes": {},
               "dept": "proj_next",
-              "migrated_from": "proj_next"
+              "migrated_from": "proj_next",
+              "llm_fallbacks": [
+                "ollama/qwen3.5:9b"
+              ],
+              "llm_fallback": [
+                "deepseek/deepseek-flash",
+                "ollama/qwen3.5:9b"
+              ]
             }
           ],
           "llm_fallback": [
             "deepseek/deepseek-flash",
+            "ollama/qwen3.5:9b"
+          ],
+          "llm_fallbacks": [
             "ollama/qwen3.5:9b"
           ]
         },
@@ -2092,7 +2143,7 @@
           "agent_id": "QA1",
           "role_profile": "qa_engineer",
           "charter_detail": "质量工程师：验收测试执行·三守卫（AST gate/金样本/回测判据）人化复核·review 积压单质检分派·质量红线亮牌",
-          "llm_binding": "ollama/qwen3.5:9b",
+          "llm_binding": "glm/glm-5.3",
           "tools": [
             "quality_gate"
           ],
@@ -2140,7 +2191,7 @@
               "role_profile": "qa_runner",
               "analysis_type": "",
               "charter_detail": "回测质量门：QA-RUN 执行、回归用例维护、fail-closed 只读纪律；不合格不签字",
-              "llm_binding": "ollama/qwen3.5:9b",
+              "llm_binding": "glm/glm-5.3",
               "binding_note": "由 org_enroll 补档（工单 WO-ORG-222 / 放行人 老田）",
               "tools": [
                 "quality_gate"
@@ -2151,11 +2202,21 @@
               "grade_note": "补档初始档，待 KPI 观察后调整",
               "attributes": {},
               "dept": "proj_backtest",
-              "migrated_from": "proj_backtest"
+              "migrated_from": "proj_backtest",
+              "llm_fallbacks": [
+                "ollama/qwen3.5:9b"
+              ],
+              "llm_fallback": [
+                "deepseek/deepseek-flash",
+                "ollama/qwen3.5:9b"
+              ]
             }
           ],
           "llm_fallback": [
             "deepseek/deepseek-flash",
+            "ollama/qwen3.5:9b"
+          ],
+          "llm_fallbacks": [
             "ollama/qwen3.5:9b"
           ]
         },
@@ -2415,7 +2476,7 @@
           "agent_id": "MKT1",
           "role_profile": "mkt1_marketer",
           "charter_detail": "E2·20年档·市场运营：统一口号纪律执法·宣发文案/视频脚本·开源社区高star项目对比报告·在研文稿协同；对外定位=能力平台，禁Tokens售卖标签",
-          "llm_binding": "ollama/qwen3.5:9b",
+          "llm_binding": "glm/glm-5.3",
           "tools": [
             "events"
           ],
@@ -2459,7 +2520,14 @@
               "execute": [],
               "danger": "deny"
             }
-          }
+          },
+          "llm_fallbacks": [
+            "ollama/qwen3.5:9b"
+          ],
+          "llm_fallback": [
+            "deepseek/deepseek-flash",
+            "ollama/qwen3.5:9b"
+          ]
         }
       ],
       "lead": "MKT1",
@@ -2536,6 +2604,9 @@
           "binding_note": "auto_assign 10-18：按分工定案自动适配（原 ollama/qwen3.5:9b）",
           "llm_fallback": [
             "deepseek/deepseek-flash",
+            "ollama/qwen3.5:9b"
+          ],
+          "llm_fallbacks": [
             "ollama/qwen3.5:9b"
           ]
         }
@@ -2951,7 +3022,10 @@
             "ollama/qwen3.5:9b"
           ],
           "reports_to": "A0",
-          "parent_node_keys": []
+          "parent_node_keys": [],
+          "llm_fallbacks": [
+            "ollama/qwen3.5:9b"
+          ]
         },
         {
           "agent_id": "STRAT1",
@@ -3387,7 +3461,7 @@
           "role_profile": "军情司上行受理席",
           "analysis_type": "",
           "charter_detail": "情报板块唯一上行受理口：专职签收上游情报报告（INTEL_UPSTREAM_REPORT）、哈希幂等核验、出具 ACK 受理回执、维护受理台账；只受理不裁决，受理后分发与研判归情报板块与参谋长线",
-          "llm_binding": "glm/glm-5.3-flash",
+          "llm_binding": "glm/glm-5.3",
           "binding_note": "由 org_enroll 补档（工单 WO-ORG-217 / 放行人 老田）；改档 glm/glm-5.3-flash → ollama/qwen3.5:9b（工单 WO-ORG-219 / 放行人 老田）：glm-5.3-flash 实调 HTTP 400（模型名不存在）；E1 受理岗只做签收/回执，本地 9b 足够且不耗云端额度；改档 llm_binding→glm/glm-5.3-flash（工单 WO-LEGION-S43 / 放行人 老田）：S38判例作废：glm 400 真因是 gateway 把整串 binding 当 model 传参（S41 已修），flash 探针实测 ok(3943ms)，恢复 S37 原档",
           "tools": [
             "data_pipeline_probe"
@@ -3396,7 +3470,14 @@
           "memory_grants": [],
           "grade": "E1",
           "grade_note": "补档初始档，待 KPI 观察后调整",
-          "attributes": {}
+          "attributes": {},
+          "llm_fallbacks": [
+            "ollama/qwen3.5:9b"
+          ],
+          "llm_fallback": [
+            "deepseek/deepseek-flash",
+            "ollama/qwen3.5:9b"
+          ]
         },
         {
           "agent_id": "BEACON1",
@@ -3447,7 +3528,7 @@
           "role_profile": "comm_entry_chief",
           "analysis_type": "",
           "charter_detail": "通信与客户服务部主官：客户入口总管、模型底座统一调度（本地 Ollama + 云端 GLM/GPT6.0/DeepSeek）、商业化触点；路由决策须留痕",
-          "llm_binding": "ollama/qwen3.5:9b",
+          "llm_binding": "glm/glm-5.3",
           "binding_note": "由 org_enroll 补档（工单 WO-ORG-226 / 放行人 老田）",
           "tools": [
             "service_probe"
@@ -3457,7 +3538,14 @@
           "grade": "E2",
           "grade_note": "补档初始档，待 KPI 观察后调整",
           "attributes": {},
-          "cn_name": "阚泽"
+          "cn_name": "阚泽",
+          "llm_fallbacks": [
+            "ollama/qwen3.5:9b"
+          ],
+          "llm_fallback": [
+            "deepseek/deepseek-flash",
+            "ollama/qwen3.5:9b"
+          ]
         },
         {
           "agent_id": "DENGZHI1",
@@ -3633,7 +3721,7 @@
           "role_profile": "chief_assistant",
           "analysis_type": "dispatch_tracking",
           "charter_detail": "参谋长助理：研发方案按部门并发分发·各部门产出归集初筛（聚类/标红异常·宁松勿严）·田丰修改命令下发跟踪台账·晨会三件套预备",
-          "llm_binding": "glm/glm-5.3-flash",
+          "llm_binding": "glm/glm-5.3",
           "binding_note": "10-18 修幽灵档：glm-4.5-flash 为旧档位，K-ORG-136 判例实测包年 key 的 coding 端点只通 5.3/5.3-flash——E1 轻量调度岗取 glm-5.3-flash（Lite 快档）；判读类一律上浮田丰，不占重模型",
           "tools": [
             "devtask",
@@ -3675,7 +3763,14 @@
             }
           },
           "org_role": "交付协调（0.5）",
-          "report_to": "ARCH1"
+          "report_to": "ARCH1",
+          "llm_fallbacks": [
+            "ollama/qwen3.5:9b"
+          ],
+          "llm_fallback": [
+            "deepseek/deepseek-flash",
+            "ollama/qwen3.5:9b"
+          ]
         }
       ],
       "teams": [],
@@ -3795,7 +3890,7 @@
           "cn_name": "陆逊",
           "display_name": "陆逊·风控R3",
           "charter_detail": "风控仲裁=书生拜帅平衡诸将一锤定音；双线分歧裁决与拦截复盘归口（R3 事件风险蒸馏复盘线）",
-          "llm_binding": "ollama/qwen3.5:9b",
+          "llm_binding": "glm/glm-5.3",
           "tools": [
             "events"
           ],
@@ -3832,6 +3927,9 @@
           "binding_note": "参谋长线判读本地档；云端恢复后可评估上浮 glm-5.3",
           "llm_fallback": [
             "deepseek/deepseek-flash",
+            "ollama/qwen3.5:9b"
+          ],
+          "llm_fallbacks": [
             "ollama/qwen3.5:9b"
           ]
         }

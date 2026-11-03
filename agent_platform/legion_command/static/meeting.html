@@ -292,7 +292,7 @@ const AGENTS = {
   D1:  { nm:'鲁肃', av:'鲁', c:'c-r', md:'9b', grp:'quant', line:'选股面：weak 池今晨三线扫描已出，候选 X 只，评分前列是…' },
   QS1: { nm:'司马懿', av:'司', c:'c-b', md:'9b', grp:'quant', line:'研判面：量价背离信号在积聚，仓位建议偏防御。' },
   ST1: { nm:'程昱', av:'策', c:'c-b', md:'glm-5.3', grp:'quant', line:'策略面：该信号历史胜率 58%，样本外衰减风险要提示。' },
-  R3:  { nm:'陆逊', av:'陆', c:'c-r', md:'9b', grp:'risk', line:'风控面：RiskGuard 昨拦 2 笔，误杀样本后验 +0.65%，判据该校了。' },
+  R3:  { nm:'陆逊', av:'陆', c:'c-r', md:'glm-5.3', grp:'risk', line:'风控面：RiskGuard 昨拦 2 笔，误杀样本后验 +0.65%，判据该校了。' },
   R1:  { nm:'甘宁', av:'甘', c:'c-r', md:'9b', grp:'risk', line:'盯盘面：张郃触发器盯双池，今晨无 G1 预警。' },
   ACAD1:{nm:'司马徽', av:'徽', c:'c-g', md:'9b', grp:'acad', line:'研究面：缠论学习环最新一条经验提示本段中枢震荡概率大。' },
   ARCH1:{ nm:'曹操', av:'架', c:'c-b', md:'glm-5.3', grp:'acad', line:'架构面：该改动影响链三条，建议先影子后主链。' },
@@ -307,12 +307,12 @@ const AGENTS = {
   GUANYU:{ nm:'关羽·整治', av:'羽', c:'c-b', md:'deepseek-flash', grp:'zhong', line:'执行面：代码审计与系统整治，先根因后批量修复，带证据包。' },
   HUANGZHONG:{ nm:'黄忠·验收', av:'忠', c:'c-t', md:'glm-5.3', grp:'zhong', line:'验收面：只验不改、只退不批；基线/红队不过即 REJECT，回滚点必须写。' },
   DATA1:{nm:'张松·数据资源', av:'松', c:'c-g', md:'glm-5.3', grp:'dept', line:'数据资源主官：资产目录/血缘/接入/权限分级/生命周期/质量；不裁决业务口径。' },
-  PM1:{nm:'吕蒙', av:'蒙', c:'c-r', md:'9b', grp:'dept', line:'产品面：先定义用户问题与验收标准，再排优先级。' },
-  QA1:{nm:'于禁', av:'禁', c:'c-b', md:'9b', grp:'dept', line:'质量面：基线/回归/门禁，证据不足不放行。' },
+  PM1:{nm:'吕蒙', av:'蒙', c:'c-r', md:'glm-5.3', grp:'dept', line:'产品面：先定义用户问题与验收标准，再排优先级。' },
+  QA1:{nm:'于禁', av:'禁', c:'c-b', md:'glm-5.3', grp:'dept', line:'质量面：基线/回归/门禁，证据不足不放行。' },
   DEV3:{nm:'蒋济', av:'济', c:'c-b', md:'glm-5.3', grp:'dept', line:'回测面：样本外/成本/滑点先校准，策略结论才可信。' },
-  MKT1:{nm:'简雍', av:'简', c:'c-g', md:'9b', grp:'dept', line:'市场面：客户/渠道/内容，先讲可验证的获客动作。' },
+  MKT1:{nm:'简雍', av:'简', c:'c-g', md:'glm-5.3', grp:'dept', line:'市场面：客户/渠道/内容，先讲可验证的获客动作。' },
   LEG1:{nm:'诸葛瑾', av:'瑾', c:'c-g', md:'glm-5.3', grp:'dept', line:'合规面：授权/隐私/对外承诺，红线先列清楚。' },
-  LUSU1:{nm:'阚泽', av:'泽', c:'c-r', md:'9b', grp:'dept', line:'客户成功面：反馈/回访/交付体验，先听客户原话。' },
+  LUSU1:{nm:'阚泽', av:'泽', c:'c-r', md:'glm-5.3', grp:'dept', line:'客户成功面：反馈/回访/交付体验，先听客户原话。' },
 };
 const GROUPS = { zhong:'pick-zhong', quant:'pick-quant', risk:'pick-risk', acad:'pick-acad', intel:'pick-intel', ops:'pick-ops', dev:'pick-dev', dept:'pick-dept' };
 let picked = [];
