@@ -72,7 +72,34 @@ def _context() -> str:
         return ""
 
 
-def _ask(lead: dict, date: str, base: str, timeout: int) -> dict:
+def _brief_digest(path) -> str:
+    """把 hq/data_brief JSON 压成 17 席可消费的短上下文；失败返回空串。"""
+    try:
+        d = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        return ""
+    h = d.get("data_health") or {}
+    a = h.get("assets") or {}
+    cat = h.get("catalog") or {}
+    fresh = h.get("freshness") or {}
+    lines = [
+        "数据简报 %s（DATA1 张松）" % (d.get("as_of") or ""),
+        "资产 all=%s registered=%s exposed=%s；catalog v%s/%s 表；数据时点 %s（%s 天）" % (
+            a.get("all"), a.get("registered"), a.get("exposed"),
+            cat.get("version"), cat.get("tables"), fresh.get("data_date"), fresh.get("age_days")),
+    ]
+    for x in (d.get("alarms") or [])[:4]:
+        lines.append("告警[%s] %s" % (x.get("code"), x.get("summary")))
+    for x in (d.get("mining_signals") or [])[:4]:
+        lines.append("信号[%s] %s" % (x.get("id"), x.get("summary")))
+    for x in (d.get("questions") or [])[:3]:
+        lines.append("待决[%s] %s" % (x.get("to"), x.get("q")))
+    for x in (d.get("boundaries") or [])[:2]:
+        lines.append("边界: %s" % x)
+    return "\n".join(lines)[:3000]
+
+
+def _ask(lead: dict, date: str, base: str, timeout: int, data_brief: str = "") -> dict:
     y = (datetime.date.fromisoformat(date) - datetime.timedelta(days=1)).isoformat()
     text = ("报告日期 " + date + "｜统计昨天 " + y + "。\n"
             "请汇报：1) 昨天实际完成了什么（有证据，没做就写无）；"
@@ -81,6 +108,8 @@ def _ask(lead: dict, date: str, base: str, timeout: int) -> dict:
     system = (SYSTEM_TMPL.replace("{name}", str(lead.get("name") or ""))
               .replace("{lead}", str(lead.get("lead") or ""))
               .replace("{dept}", str(lead.get("dept") or "")))
+    if data_brief:
+        system += "\n\n[零界数据简报]\n" + data_brief
     body = json.dumps({"agent": lead["lead"],
                        "system": system,
                        "purpose": "dept_report", "user": text}, ensure_ascii=False).encode("utf-8")
@@ -130,12 +159,12 @@ def _parse(lead: dict, text: str) -> dict:
 
 def run(date: str | None = None, base: str = DEFAULT_BASE, concurrency: int = 3,
         timeout: int = 120, write: bool = True, out_dir: Path | None = None,
-        include_command: bool = True) -> dict:
+        include_command: bool = True, data_brief: str = "") -> dict:
     date = date or datetime.date.today().isoformat()
     leads = _leads(include_command)
     reports, failed = [], []
     with cf.ThreadPoolExecutor(max_workers=max(1, concurrency)) as ex:
-        futs = {ex.submit(_ask, l, date, base, timeout): l for l in leads}
+        futs = {ex.submit(_ask, l, date, base, timeout, data_brief): l for l in leads}
         for f in cf.as_completed(futs):
             l = futs[f]
             try:
@@ -197,11 +226,13 @@ def main(argv=None) -> int:
     ap.add_argument("--out-dir", default="")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--no-command", action="store_true", help="只跑13部门，不含四席")
+    ap.add_argument("--data-brief", default="", help="hq/data_brief/v1 JSON 路径；注入17席上下文")
     a = ap.parse_args(argv)
     try:
         r = run(a.date or None, a.base, a.concurrency, a.timeout,
                 write=not a.no_write, out_dir=Path(a.out_dir) if a.out_dir else None,
-                include_command=not a.no_command)
+                include_command=not a.no_command,
+                data_brief=_brief_digest(a.data_brief) if a.data_brief else "")
     except Exception as e:  # noqa: BLE001
         print("daily_run_error: %s" % str(e)[:300], file=sys.stderr)
         return 1
