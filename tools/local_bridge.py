@@ -25,6 +25,7 @@ ROOT = Path(__file__).resolve().parents[1]
 TOOLS = ROOT / "tools"
 sys.path.insert(0, str(TOOLS))
 import local_library as ll  # noqa: E402
+import local_consent as lc  # noqa: E402
 
 BASE = Path(os.environ.get("ZB_LOCAL_LIBRARIES", r"C:\项目\_local_libraries"))
 SCHEMA = "hq/local_bridge/v1"
@@ -49,6 +50,8 @@ def handle(req: dict, base: Path | None = None) -> dict:
     global BASE
     if base is not None:
         BASE = Path(base)
+        lc.BASE = BASE
+        lc.CONSENT_DIR = BASE / ".consent"
     rid = str((req or {}).get("id") or "")
     try:
         action = str((req or {}).get("action") or "")
@@ -56,7 +59,7 @@ def handle(req: dict, base: Path | None = None) -> dict:
             users = []
             if BASE.is_dir():
                 for p in sorted(BASE.iterdir()):
-                    if not p.is_dir() or p.name.startswith("_"):
+                    if not p.is_dir() or p.name.startswith(("_", ".")):
                         continue
                     mf = ll.load_manifest(p)
                     if mf:
@@ -68,12 +71,21 @@ def handle(req: dict, base: Path | None = None) -> dict:
         p = _user_dir(user)
         if action == "brief":
             return {"id": rid, "ok": True, "schema": SCHEMA, "brief": ll.build_brief(user, p)}
+        if action == "grant_consent":
+            rec = lc.grant(user, int((req or {}).get("ttl_seconds") or 86400),
+                           str((req or {}).get("scope") or "summary_only"))
+            return {"id": rid, "ok": True, "schema": SCHEMA, "consent": rec}
+        if action == "revoke_consent":
+            return {"id": rid, "ok": True, "schema": SCHEMA, "consent": lc.revoke(user)}
         if action == "cloud_brief":
-            if (req or {}).get("authorize") is not True:
+            authorize = (req or {}).get("authorize") is True
+            consent = lc.get(user)
+            if not authorize and not consent:
                 return {"id": rid, "ok": False, "error": "authorize_required"}
             b = ll.build_brief(user, p)
             cp = ll.cloud_payload(b)
             cp["privacy"]["confirmed"] = True
+            cp["privacy"]["consent_source"] = "explicit" if authorize else "persisted"
             return {"id": rid, "ok": True, "schema": SCHEMA, "cloud_brief": cp}
         return {"id": rid, "ok": False, "error": "unknown_action"}
     except Exception as e:  # noqa: BLE001
@@ -86,6 +98,9 @@ def main(argv=None) -> int:
     ap.add_argument("--action", default="")
     ap.add_argument("--user", default="")
     ap.add_argument("--authorize", action="store_true")
+    ap.add_argument("--grant-consent", action="store_true")
+    ap.add_argument("--revoke-consent", action="store_true")
+    ap.add_argument("--ttl", type=int, default=86400)
     ap.add_argument("--base", default="")
     a = ap.parse_args(argv)
     global BASE
@@ -104,8 +119,13 @@ def main(argv=None) -> int:
             print(json.dumps(handle(req), ensure_ascii=False), flush=True)
         return 0
     if not a.action:
-        ap.error("need --stdio or --action")
-    req = {"id": "cli", "action": a.action, "user": a.user, "authorize": a.authorize}
+        ap.error("need --stdio, --action, --grant-consent or --revoke-consent")
+    if a.grant_consent:
+        a.action = "grant_consent"
+    if a.revoke_consent:
+        a.action = "revoke_consent"
+    req = {"id": "cli", "action": a.action, "user": a.user,
+           "authorize": a.authorize, "ttl_seconds": a.ttl}
     out = handle(req)
     print(json.dumps(out, ensure_ascii=False, indent=2))
     return 0 if out.get("ok") else 2

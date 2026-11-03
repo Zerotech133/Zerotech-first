@@ -59,7 +59,7 @@ h2{font-size:15px;margin:22px 0 8px}
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><strong>零界 · 田丰早间简报</strong><span class="meta" id="build">v11</span><a href="/hq">返回指挥部</a></div>
+  <div class="top"><strong>零界 · 田丰早间简报</strong><span class="meta" id="build">v12</span><a href="/hq">返回指挥部</a></div>
   <h1>今日简报</h1>
   <div class="meta" id="meta">加载中…</div>
 
@@ -192,7 +192,10 @@ function filteredRows(rows){
 }
 function deptLead(code){var d=departments().filter(function(x){return x.dept===code;})[0];return d?d.lead:'';}
 var localState={docs:[],user:'tf'};
+var CONSENT_LS='hq_local_consent';
 function fmtBytes(n){return n<1024?n+'B':(n<1048576?(n/1024).toFixed(1)+'KB':(n/1048576).toFixed(1)+'MB');}
+function loadConsent(){try{var c=JSON.parse(localStorage.getItem(CONSENT_LS)||'null');if(c&&c.expires_at&&new Date(c.expires_at).getTime()>Date.now()){$('authorize').checked=true;return c;}}catch(e){}return null;}
+function saveConsent(on){try{if(on)localStorage.setItem(CONSENT_LS,JSON.stringify({scope:'summary_only',granted_at:new Date().toISOString(),expires_at:new Date(Date.now()+86400000).toISOString()}));else localStorage.removeItem(CONSENT_LS);}catch(e){}}
 function localSummary(){var titles=localState.docs.slice(0,10).map(function(d){return d.title;});return '本地库共 '+localState.docs.length+' 个文档；主题：'+(titles.length?titles.join('、'):'暂无文档');}
 async function digest(text){try{var b=new TextEncoder().encode(text);var h=await crypto.subtle.digest('SHA-256',b);return Array.from(new Uint8Array(h)).map(function(x){return x.toString(16).padStart(2,'0');}).join('');}catch(e){return '';}}
 async function scanLocal(files){
@@ -389,7 +392,7 @@ function saveReport(){var r=buildReport();if(!r.dept){$('state-note').textConten
 function copyReport(){var r=buildReport();state.lastCard=r;var t=JSON.stringify(r,null,2);navigator.clipboard.writeText(t).then(function(){$('state-note').textContent='汇报卡已复制。';}).catch(function(){$('state-note').textContent='复制失败，请手动下载。';});}
 function downloadReport(){var r=buildReport();var b=new Blob([JSON.stringify(r,null,2)],{type:'application/json'});var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='human_brief_'+(r.dept||'dept')+'_'+DAY+'.json';a.click();URL.revokeObjectURL(a.href);}
 async function main(){
-  loadReports();loadChats();whoAmI();
+  loadReports();loadChats();whoAmI();loadConsent();
   var tb=document.querySelector('.toolbar');if(tb&&$('modal'))tb.insertAdjacentElement('afterend',$('modal'));
   try{
     var r=await fetch('/api/hq/snapshot',{cache:'no-store'});
@@ -405,7 +408,7 @@ async function main(){
 $('btn-summary').onclick=function(){runAllDepartments();};
 $('btn-pick').onclick=function(){$('lib-files').click();};
 $('lib-files').addEventListener('change',function(e){scanLocal(e.target.files);});
-$('authorize').addEventListener('change',function(){$('btn-personal').disabled=!(localState.docs.length&&this.checked);});
+$('authorize').addEventListener('change',function(){saveConsent(this.checked);$('btn-personal').disabled=!(localState.docs.length&&this.checked);});
 $('btn-personal').onclick=personalBrief;
 $('btn-quick').onclick=function(){renderSummary();$('state-note').textContent='已汇总当前已提交数据 · '+new Date().toLocaleTimeString();};
 $('btn-report').onclick=function(){openModal();$('state-note').textContent='汇报工作：填写后点保存到本页';};
@@ -417,8 +420,8 @@ $('btn-close').onclick=closeModal;
 $('modal').addEventListener('click',function(e){if(e.target===$('modal'))closeModal();});
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal();});
 window.addEventListener('error',function(e){var el=$('error');if(el)el.innerHTML='<div class="err">页面脚本错误：'+esc(e.message||'unknown')+'。请 Ctrl+F5 强刷。</div>';});
-window.__briefingReady='v11-20261103-1102';
-var build=$('build');if(build)build.textContent='v11 · 11:02';
+window.__briefingReady='v12-20261103-1110';
+var build=$('build');if(build)build.textContent='v12 · 11:10';
 main();
 })();
 </script>

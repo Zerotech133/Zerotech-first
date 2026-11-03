@@ -32,7 +32,7 @@ def test_briefing_links_to_special_and_uses_snapshot():
     assert "localStorage" in s
     assert "不再用旧 Directive" in s  # 旧 Directive 仅作模型上下文，不冒充研究题
     assert "cleanTopic" in s
-    assert 'id="build"' in s and "v11" in s
+    assert 'id="build"' in s and "v12" in s
     assert "立即总结（13部门运行）" in s
     assert "只汇总已提交" in s
     assert "runAllDepartments" in s
@@ -43,6 +43,7 @@ def test_briefing_links_to_special_and_uses_snapshot():
     assert 'id="lib-files"' in s and "webkitdirectory" in s
     assert 'id="authorize"' in s and "生成个人版早报" in s
     assert "cloudFromLocal" in s and "原文与本地路径不会上传" in s
+    assert "hq_local_consent" in s and "loadConsent" in s
     assert "hq_people.js" in s
     assert "云端汇报 " in s
     assert "部门研究题" in s

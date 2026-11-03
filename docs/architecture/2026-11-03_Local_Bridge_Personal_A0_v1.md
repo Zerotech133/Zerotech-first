@@ -86,7 +86,22 @@ python -X utf8 tools/hq_personal_brief.py `
 
 Playwright 实测：本地 1 文档、授权前按钮禁用、授权后生成成功，发送体不含原文 secret。
 
-## 六、下一步
+## 六、授权持久化（已实现）
+
+- 本地桥：`grant_consent` / `revoke_consent` / `cloud_brief` 自动识别持久授权；
+- consent 文件：`_local_libraries/.consent/<user>.json`，scope 仅 `summary_only`，默认 24h，可撤销；
+- 网页：勾选授权后写入 localStorage（24h），下次打开自动勾选；取消则删除；
+- 云端导出仍可由 `authorize:true` 单次覆盖。
+
+```powershell
+# 授予 24h 摘要上云同意
+python -X utf8 tools/local_bridge.py --grant-consent --user tf --ttl 86400
+
+# 撤销
+python -X utf8 tools/local_bridge.py --revoke-consent --user tf
+```
+
+## 七、下一步
 
 1. 桌面 Agent 接 stdio 桥，把“用户确认”做成 UI 按钮；
 2. 网页只接收 `cloud_brief` 的 summary/evidence；

@@ -12,6 +12,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 import local_bridge as lb  # noqa: E402
 import local_library as ll  # noqa: E402
 import hq_personal_brief as pb  # noqa: E402
+import local_consent as lc  # noqa: E402
 
 
 def _lib(tmp_path):
@@ -79,3 +80,26 @@ def test_personal_brief_rejects_raw_upload(tmp_path):
         assert False
     except ValueError as e:
         assert "raw_upload" in str(e)
+
+
+def test_bridge_persisted_consent_can_export_then_revoke(tmp_path):
+    base, _ = _lib(tmp_path)
+    out = lb.handle({"id": "g", "action": "grant_consent", "user": "tf", "ttl_seconds": 3600}, base=base)
+    assert out["ok"] and out["consent"]["scope"] == "summary_only"
+    out = lb.handle({"id": "c", "action": "cloud_brief", "user": "tf"}, base=base)
+    assert out["ok"] and out["cloud_brief"]["privacy"]["consent_source"] == "persisted"
+    out = lb.handle({"id": "r", "action": "revoke_consent", "user": "tf"}, base=base)
+    assert out["ok"] and out["consent"]["revoked"] is True
+    out = lb.handle({"id": "c2", "action": "cloud_brief", "user": "tf"}, base=base)
+    assert out["ok"] is False and out["error"] == "authorize_required"
+
+
+def test_consent_expiry_and_scope(tmp_path):
+    lc.BASE = tmp_path
+    lc.CONSENT_DIR = tmp_path / ".consent"
+    rec = lc.grant("tf", ttl_seconds=60)
+    assert lc.valid("tf") and rec["scope"] == "summary_only"
+    try:
+        lc.grant("tf", scope="all_raw"); assert False
+    except ValueError as e:
+        assert "bad_scope" in str(e)
