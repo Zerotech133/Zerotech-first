@@ -324,7 +324,7 @@ footer{border-top:1px solid var(--border,#2a3342);color:var(--text-dim,#96a0af);
         <h3>④ 本次提交记录 <span class="muted" id="mq-count"></span></h3>
         <div class="tablebox" style="max-height:250px"><table><thead><tr><th>类型</th><th>目标</th><th>行数</th><th>状态</th><th></th></tr></thead><tbody id="mq-body"></tbody></table></div>
         <div class="acts" style="margin-top:8px"><button class="btn ghost" id="mq-export" type="button">导出暂存记录</button><button class="btn ghost" id="mq-clear" type="button">清空记录</button></div>
-        <p class="muted" style="margin:8px 0 0">正式上线后：提交进入暂存区，管理员审核通过才会写入正式数据。</p>
+        <p class="muted" style="margin:8px 0 0">当前为前端演示；后端暂存/审核接口尚未上线（后续计划），提交不会写入数据。</p>
       </div>
     </div>
   </section>
@@ -432,7 +432,7 @@ footer{border-top:1px solid var(--border,#2a3342);color:var(--text-dim,#96a0af);
 
 <footer class="wrap">
   <div>数据仓原型 · 构建时间 <span class="mono">__BUILT_AT__</span> · 数据目录第 <span class="mono">__CATALOG_VERSION__</span> 版 · 当前展示为快照数据，正式环境自动读取最新数据</div>
-  <div>数据来源：数据目录、数据登记、每日快照、更新检查 ｜ 只读原型，不构成投资建议</div>
+  <div>数据来源：数据目录、数据登记、每日快照、更新检查 ｜ <span id="data-source-note">数据源：构建时内嵌快照</span> ｜ 只读原型，不构成投资建议</div>
 </footer>
 
 <div class="scrim" id="scrim"></div>
@@ -444,9 +444,10 @@ footer{border-top:1px solid var(--border,#2a3342);color:var(--text-dim,#96a0af);
 
 <script>
 const DW_DATA = __DW_DATA_JSON__;
+let DW = DW_DATA;
+let DW_SOURCE = "embedded";
 (function(){
   "use strict";
-  const DW = DW_DATA;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
   const esc = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -687,8 +688,13 @@ const DW_DATA = __DW_DATA_JSON__;
     document.body.removeChild(ta);
   }
   function friendlyResult(url, d, body, httpCode){
-    const NAME = {};
-    const COLS = {};
+    const COLS = {
+      ts_code: "证券代码", trade_date: "交易日期", open: "开盘价", high: "最高价",
+      low: "最低价", close: "收盘价", pre_close: "前收盘价", change: "涨跌额",
+      pct_chg: "涨跌幅", vol: "成交量", amount: "成交额", ann_date: "公告日期",
+      end_date: "报告期"
+    };
+    const colsCn = (d && Array.isArray(d.columns)) ? d.columns : [];
     const lines = [];
     const payload = (body && body.payload) || body || {};
     const rows = (payload.rows || []).slice(0, 20);
@@ -699,7 +705,7 @@ const DW_DATA = __DW_DATA_JSON__;
     if (rows.length) {
       lines.push("返回 " + rows.length + " 行" + (httpCode ? "（已完成）" : ""));
       lines.push("<div style='overflow:auto;margin-top:6px'><table><thead><tr>" +
-        columns.map(c => "<th>" + esc(COLS[c] || ("字段")) + "</th>").join("") + "</tr></thead><tbody>" +
+        columns.map((c, i) => "<th>" + esc(COLS[c] || colsCn[i] || "字段") + "</th>").join("") + "</tr></thead><tbody>" +
         rows.map(r => "<tr>" + r.map(v => "<td>" + esc(v) + "</td>").join("") + "</tr>").join("") +
         "</tbody></table></div>");
     } else if (!payload.state || payload.state === "no_data") {
@@ -1108,7 +1114,25 @@ const DW_DATA = __DW_DATA_JSON__;
     localizeDom(document.body);
     new MutationObserver(scheduleLocalize).observe(document.body, {subtree: true, childList: true, characterData: true});
   }
-  init();
+  async function boot(){
+    try {
+      const r = await fetch("/static/dw_v2_data.json?_=" + Date.now(), {
+        cache: "no-store", credentials: "same-origin",
+        headers: {"Accept": "application/json"}
+      });
+      if (r.ok) {
+        const live = await r.json();
+        if (live && Array.isArray(live.datasets) && live.datasets.length) {
+          DW = live;
+          DW_SOURCE = "live";
+        }
+      }
+    } catch (e) { /* file:// 或 8091 无静态：保留内嵌 */ }
+    const note = document.getElementById("data-source-note");
+    if (note) note.textContent = DW_SOURCE === "live" ? "数据源：服务端快照（已在线刷新）" : "数据源：构建时内嵌快照";
+    init();
+  }
+  boot();
 })();
 </script>
 </body>
