@@ -54,7 +54,7 @@ h2{font-size:15px;margin:22px 0 8px}
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><strong>零界 · 田丰早间简报</strong><span class="meta" id="build">v9</span><a href="/hq">返回指挥部</a></div>
+  <div class="top"><strong>零界 · 田丰早间简报</strong><span class="meta" id="build">v10</span><a href="/hq">返回指挥部</a></div>
   <h1>今日简报</h1>
   <div class="meta" id="meta">加载中…</div>
 
@@ -209,7 +209,8 @@ async function askLead(d){
       body:JSON.stringify({agent:d.lead,system:system,purpose:'dept_report',user:user})});
     var env=await r.json(); if(!r.ok||!env||!env.ok) throw new Error((env&&env.error&&(env.error.message||env.error.code))||('HTTP '+r.status));
     var text=(env.data&&env.data.text)||''; if(!text) throw new Error('empty_model_text');
-    return normalizeReport(d.lead,d.dept,text);
+    var rep=normalizeReport(d.lead,d.dept,text);
+    rep._binding=env.binding||(env.data&&env.data.binding_resolved)||'';rep._latency_ms=env.latency_ms;rep._degraded=!!env.degraded;return rep;
   }finally{clearTimeout(timer);}
 }
 async function runAllDepartments(){
@@ -345,8 +346,8 @@ $('btn-close').onclick=closeModal;
 $('modal').addEventListener('click',function(e){if(e.target===$('modal'))closeModal();});
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal();});
 window.addEventListener('error',function(e){var el=$('error');if(el)el.innerHTML='<div class="err">页面脚本错误：'+esc(e.message||'unknown')+'。请 Ctrl+F5 强刷。</div>';});
-window.__briefingReady='v9-20261103-1038';
-var build=$('build');if(build)build.textContent='v9 · 10:38';
+window.__briefingReady='v10-20261103-1042';
+var build=$('build');if(build)build.textContent='v10 · 10:42';
 main();
 })();
 </script>
