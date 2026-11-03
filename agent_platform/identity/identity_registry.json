@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-10-30T14:20:00+08:00",
+  "updated_at": "2026-11-03T08:00:00+08:00",
   "note": "只做身份映射，不做鉴权决策；unconfirmed 不得当已合并身份使用。",
   "actors": [
     {
@@ -8,8 +8,18 @@
       "display_name": "老田",
       "actor_type": "member",
       "source": "zero_bound",
-      "roles": ["ADMIN"],
-      "permissions": ["view", "manage_own", "trade", "approve", "research", "risk", "admin"],
+      "roles": [
+        "ADMIN"
+      ],
+      "permissions": [
+        "view",
+        "manage_own",
+        "trade",
+        "approve",
+        "research",
+        "risk",
+        "admin"
+      ],
       "owner_scope": "global",
       "mapping_status": "partial",
       "idp_issuer": "http://localhost:1411",
@@ -20,8 +30,23 @@
         "pocket_id_sub": "f5d9ec3c-cfd2-482c-9a00-b7b2250e9a43"
       },
       "source_claims": {
-        "zero_bound": {"roles": ["OWNER"], "permissions": ["*"]},
-        "zhice": {"roles": ["USER"], "permissions": ["view", "manage_own"]}
+        "zero_bound": {
+          "roles": [
+            "OWNER"
+          ],
+          "permissions": [
+            "*"
+          ]
+        },
+        "zhice": {
+          "roles": [
+            "USER"
+          ],
+          "permissions": [
+            "view",
+            "manage_own"
+          ]
+        }
       },
       "links": [
         {
@@ -43,12 +68,29 @@
       "display_name": "诸葛亮（AI 参谋长）",
       "actor_type": "agent",
       "source": "zero_bound",
-      "roles": ["RESEARCHER"],
-      "permissions": ["view", "research"],
+      "roles": [
+        "RESEARCHER"
+      ],
+      "permissions": [
+        "view",
+        "research"
+      ],
       "owner_scope": "own",
       "mapping_status": "verified",
-      "source_ids": {"zero_bound_actor": "zhuge"},
-      "source_claims": {"zero_bound": {"roles": ["AGENT"], "permissions": ["view", "research"]}},
+      "source_ids": {
+        "zero_bound_actor": "zhuge"
+      },
+      "source_claims": {
+        "zero_bound": {
+          "roles": [
+            "AGENT"
+          ],
+          "permissions": [
+            "view",
+            "research"
+          ]
+        }
+      },
       "links": []
     },
     {
@@ -56,8 +98,12 @@
       "display_name": "零界只读 BFF",
       "actor_type": "agent",
       "source": "zero_bound",
-      "roles": ["VIEWER"],
-      "permissions": ["view"],
+      "roles": [
+        "VIEWER"
+      ],
+      "permissions": [
+        "view"
+      ],
       "owner_scope": "own",
       "mapping_status": "verified",
       "source_ids": {
@@ -65,8 +111,22 @@
         "zhice_user_id": "u-f5da02974daa0ea6"
       },
       "source_claims": {
-        "zero_bound": {"roles": ["SERVICE"], "permissions": ["view"]},
-        "zhice": {"roles": ["VIEWER"], "permissions": ["view"]}
+        "zero_bound": {
+          "roles": [
+            "SERVICE"
+          ],
+          "permissions": [
+            "view"
+          ]
+        },
+        "zhice": {
+          "roles": [
+            "VIEWER"
+          ],
+          "permissions": [
+            "view"
+          ]
+        }
       },
       "links": [
         {
@@ -82,8 +142,18 @@
       "display_name": "菜鸟超级管理员",
       "actor_type": "admin",
       "source": "cainiao",
-      "roles": ["ADMIN"],
-      "permissions": ["view", "manage_own", "trade", "approve", "research", "risk", "admin"],
+      "roles": [
+        "ADMIN"
+      ],
+      "permissions": [
+        "view",
+        "manage_own",
+        "trade",
+        "approve",
+        "research",
+        "risk",
+        "admin"
+      ],
       "owner_scope": "global",
       "mapping_status": "verified",
       "source_ids": {
@@ -91,7 +161,15 @@
         "cainiao_username": "admin"
       },
       "source_claims": {
-        "cainiao": {"roles": ["admin"], "permissions": ["*"], "tenant_id": "1"}
+        "cainiao": {
+          "roles": [
+            "admin"
+          ],
+          "permissions": [
+            "*"
+          ],
+          "tenant_id": "1"
+        }
       },
       "links": [
         {
@@ -99,6 +177,50 @@
           "source_id": "1",
           "status": "verified",
           "evidence": "system_users.id=1 username=admin nickname=超级管理员"
+        }
+      ]
+    },
+    {
+      "sub": "zero_bound:tf",
+      "display_name": "tf",
+      "actor_type": "member",
+      "source": "zero_bound",
+      "roles": [
+        "VIEWER"
+      ],
+      "permissions": [
+        "view"
+      ],
+      "owner_scope": "own",
+      "mapping_status": "partial",
+      "source_ids": {
+        "zhice_user_id": "u-6195891e8668724c"
+      },
+      "source_claims": {
+        "zero_bound": {
+          "roles": [
+            "VIEWER"
+          ],
+          "permissions": [
+            "view"
+          ]
+        },
+        "zhice": {
+          "roles": [
+            "USER"
+          ],
+          "permissions": [
+            "view",
+            "manage_own"
+          ]
+        }
+      },
+      "links": [
+        {
+          "system": "zhice",
+          "source_id": "u-6195891e8668724c",
+          "status": "verified",
+          "evidence": "v2_user.username=tf; email present; account active"
         }
       ]
     }
