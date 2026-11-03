@@ -24,8 +24,15 @@
    "expires_at": "2026-11-03T08:49:30+08:00",
    "embed_result": "BLOCKED TimeoutError 30s",
    "action": "reminder retry #2; still blocked; next scheduled 09:30"
+  },
+  {
+   "at": "2026-11-03T09:30:59+08:00",
+   "action": "cloud_fallback_used",
+   "model": "deepseek-flash",
+   "result": "strict judge 5 pairs; multi 12->17; lenient 44 pairs/multi 31 but 37 low-lexical suspicious; honest conclusion: <30"
   }
  ],
  "last_check": "2026-11-03T08:06:34+08:00",
- "next_retry": "2026-11-03T09:30:00+08:00"
+ "next_retry": "2026-11-03T09:30:00+08:00",
+ "resolution": "local GPU blocked -> cloud model used; KPI 30 not honestly reachable; alternatives documented"
 }
