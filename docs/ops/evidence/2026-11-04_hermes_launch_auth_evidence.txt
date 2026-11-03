@@ -1,0 +1,5 @@
+﻿2026-11-03 13:33:51 [auth] trusted-header=X-Portal-User (settings password overridden by ephemeral random)
+2026-11-03 13:33:51 [launched] server.py detached (stdio=DEVNULL, handle-safe)
+
+# 来源: C:\aios\Hermes\start_hermes_bg.log（生产 Hermes 守护日志，仅摘录启动/auth 行；随机密码不落盘不打印）
+# 说明: 第 3087-3088 行 = 当前 8787 实例（pid 15920，CreationDate 2026-11-03 13:33:51）启动时注入 trusted-header 认证。

@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="/static/tokens.css">
 <script src="/static/nav.js" defer></script>
 <script src="/static/shortscreen.js" defer></script>
+<script src="/static/ifs_client.js"></script>
 <style>
 :root{
   /* 统一全站语义：页面变量映射到 tokens.css，禁止自绘配色 */
@@ -24,6 +25,9 @@
 body{background:var(--bg);color:var(--ink);font-family:var(--font-ui);color-scheme:dark}
 .wrap{max-width:1280px;margin:0 auto;padding:18px 16px 60px}
 .head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.links{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.links a{border:1px solid var(--line);background:var(--gray-1);color:var(--link);border-radius:8px;padding:6px 10px;font-size:12.5px;text-decoration:none}
+.links a:hover{border-color:var(--link)}
 h1{font-size:21px;margin:4px 0}
 .sub{color:var(--gray-5);font-size:12.5px;line-height:1.7}
 .banner{background:rgba(210,153,34,.08);border:1px solid rgba(210,153,34,.35);border-radius:9px;padding:8px 12px;font-size:12px;margin:10px 0}
@@ -57,6 +61,10 @@ tr.detail td{padding:10px 12px}
 .box.bull{border-color:var(--color-up-bd)} .box.bear{border-color:var(--color-dn-bd)}
 .note{color:var(--gray-5);font-size:11.5px;line-height:1.7}
 .empty{padding:26px;text-align:center;color:var(--gray-5)}
+.envline{color:var(--text-dim);font-size:11px;line-height:1.7;word-break:break-all;min-height:16px;margin:2px 0 4px}
+.envline[data-envelope="legacy"]{color:var(--warn)}
+.warns{border:1px solid var(--warn);border-radius:8px;padding:8px 10px;margin:8px 0;font-size:12px;line-height:1.7}
+.warns b{display:block;margin-bottom:3px}.warns ul{margin:0;padding-left:18px}
 @media(max-width:900px){.cards{grid-template-columns:repeat(3,1fr)}.cols{grid-template-columns:1fr}}
 .decbox{border-color:var(--color-warn,#d29922)}
 .dec-tier{font-weight:700}
@@ -84,11 +92,17 @@ tr.detail td{padding:10px 12px}
       <h1>D1 投研工作台</h1>
       <div class="sub">股票池内研究 · 看多/看空/买点/止盈止损/交盯盘 · paper-only</div>
     </div>
-    <div><button id="refresh">刷新</button></div>
+    <div class="links">
+      <a href="/d1/war-room">D1 作战台</a>
+      <a href="/d1/training">🧪 训练面板</a>
+      <button id="refresh" type="button">刷新</button>
+    </div>
   </div>
   <div class="banner"><b>边界：</b>策略与股票由 <b>ACAD1 司马徽</b> 上游池提供；D1 鲁肃只做<b>池内研究</b>，不管理策略、不选股。研究完成后买点/止损交盯盘，盯盘触发后交 TR1。</div>
   <div id="team" class="team"></div>
   <div id="msg" class="sub"></div>
+  <div id="env" class="envline"></div>
+  <div id="warns" class="warns" style="display:none"></div>
   <div class="cards" id="cards"></div>
   <div class="toolbar">
     <select id="f-action"><option value="">全部动作</option><option value="buy_ready">可买</option><option value="watch_trigger">盯盘触发</option><option value="avoid">回避</option><option value="pending_research">待研究</option></select>
@@ -123,6 +137,31 @@ const $=s=>document.querySelector(s);
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 let DATA={items:[],summary:{}};
 let DECISIONS={};
+let ENV=null;
+const IFS=(typeof window!=='undefined'&&window.IFSClient)?window.IFSClient:null;
+// envelope 解包：ifs_client.js 优先；缺失时（如 8091 直连未提供该静态文件）按旧顶层字段兜底
+function unwrapPayload(payload){
+  if(IFS&&IFS.unwrapEnvelope)return IFS.unwrapEnvelope(payload||{});
+  const raw=(payload&&typeof payload==='object')?payload:{};
+  const err=raw.ok===false?{code:String(raw.error||'unknown_error'),message:String(raw.message||raw.error||''),retryable:false,details:null,legacyCode:String(raw.error||''),httpStatus:null,source:'legacy_error'}:null;
+  return {version:'fallback',isEnvelope:false,hasData:false,ok:(raw.ok!==false)&&!err,data:raw,raw:raw,warnings:[],requestId:String(raw.request_id||''),schemaVersion:String(raw.schema_version||''),source:null,sourceMode:'',interfaceId:'',stale:false,error:err};
+}
+function errText(payload){
+  if(IFS&&IFS.errorText)return IFS.errorText(payload||{});
+  const e=unwrapPayload(payload||{}).error;
+  return e?e.code+(e.message&&e.message!==e.code?'：'+e.message:''):'';
+}
+// 只读展示 IFS envelope 元信息 + warnings（不改业务数据）
+function renderEnvelope(env){
+  const box=$('#env'); if(!box)return;
+  if(IFS&&IFS.renderMeta)IFS.renderMeta(box,env?env.raw:{},{});
+  else box.textContent=(env&&env.requestId)?('IFS envelope · request_id='+env.requestId+' · warnings='+(env.warnings||[]).length):'旧格式响应（无 IFS envelope，按旧顶层字段兼容读取）';
+  const warn=$('#warns');
+  if(warn){
+    if(IFS&&IFS.renderWarnings)IFS.renderWarnings(warn,env?env.raw:{},{title:'IFS warnings'});
+    else {warn.innerHTML='';warn.style.display='none';}
+  }
+}
 const TIERS=[['STRONG_BUY','强烈买入'],['BUY','买入'],['HOLD','持有/观察'],['SELL','卖出'],['STRONG_SELL','强烈卖出']];
 function tierLabel(t){const m={STRONG_BUY:'强烈买入',BUY:'买入',HOLD:'持有/观察',SELL:'卖出',STRONG_SELL:'强烈卖出'};return m[t]||t||'—';}
 function openDec(code,name){
@@ -152,8 +191,13 @@ async function submitDec(){
     r=await fetch('/api/d1/decision',{method:'POST',headers:headers,body:JSON.stringify(body)});
   }
   const d=await r.json();
-  if(!d.ok){alert('写入失败：'+(d.error||'')+' '+(d.message||''));return;}
-  alert('已写入 D1 正式裁决：'+tierLabel(d.decision.tier)+'（'+d.decision.decision_id+'）');
+  const env=unwrapPayload(d);
+  if(!r.ok||!env.ok||(env.data&&env.data.ok===false)){
+    alert('写入失败：'+(errText((env&&env.raw)||d)||('HTTP '+r.status)));
+    return;
+  }
+  const rec=(env.data&&env.data.decision)||d.decision||{};
+  alert('已写入 D1 正式裁决：'+tierLabel(rec.tier)+'（'+rec.decision_id+'）');
   closeDec(); await load();
 }
 function fm(v){return v==null?'—':Number(v).toFixed(2);}
@@ -229,6 +273,7 @@ function detail(x){
     '<div class="mono">交棒：'+esc(h.to||'—')+' / '+esc(h.status||'—')+' '+esc(h.condition||h.note||'')+'</div></div>'+decHtml;
 }
 function render(){
+  if(ENV)renderEnvelope(ENV);
   const fa=$('#f-action').value, ft=$('#f-tier').value, kw=$('#f-kw').value.trim();
   let items=(DATA.items||[]).filter(x=>(!fa||x.action===fa)&&(!ft||x.tier===ft)&&(!kw||x.code.includes(kw)||String(x.name).includes(kw)));
   $('#rows').innerHTML=items.length?items.map(row).join(''):'<tr><td colspan="9" class="empty">没有匹配的股票</td></tr>';
@@ -243,13 +288,22 @@ function render(){
 }
 async function load(){
   try{
-    const r=await fetch('/api/d1/research',{cache:'no-store'}); const d=await r.json();
-    if(!d.ok) throw new Error(d.error||'读取失败');
+    const r=await fetch('/api/d1/research',{cache:'no-store'});
+    const raw=await r.json().catch(()=>null);
+    const env=unwrapPayload(raw||{});
+    if(!r.ok||!env.ok||(env.data&&env.data.ok===false)){
+      const rid=(env&&env.requestId)?(' · request_id='+env.requestId):'';
+      throw new Error((errText((env&&env.raw)||raw)||'读取失败')+rid);
+    }
     try{
       const dr=await fetch('/api/d1/decisions',{cache:'no-store'});
-      if(dr.ok){const dd=await dr.json(); DECISIONS=(dd&&dd.latest_by_code)||{};}
+      if(dr.ok){
+        const dd=await dr.json().catch(()=>null);
+        const denv=unwrapPayload(dd||{});
+        DECISIONS=(denv.data&&denv.data.latest_by_code)||{};
+      }else{ DECISIONS={}; }
     }catch(e){ DECISIONS={}; }
-    DATA=d; render();
+    DATA=env.data; ENV=env; render();
   }catch(e){ $('#msg').textContent='加载失败：'+e.message; }
 }
 $('#refresh').addEventListener('click',load); ['#f-action','#f-tier','#f-kw'].forEach(s=>$(s).addEventListener('input',render));

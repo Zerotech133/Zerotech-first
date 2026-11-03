@@ -18,6 +18,8 @@ if str(_REPO_ROOT) not in sys.path:
 
 import json
 
+import ifs_envelope
+
 MAX_BODY = 64 * 1024
 ERROR_CODES = {
     "missing_code", "bad_creator", "bad_meeting_id", "duplicate_meeting",
@@ -28,7 +30,7 @@ ERROR_CODES = {
 
 
 def _json(handler, obj, code=200):
-    handler._json(obj, code)
+    ifs_envelope.send(handler, obj, code, fallback_interface="d1.meeting.get")
 
 
 def _body(handler):
@@ -56,6 +58,7 @@ def _error(handler, exc):
 
 
 def handle_post(handler):
+    handler._ifs_method = "POST"  # IFS F1b：envelope source.interface_id 需区分 get/create
     path = handler.path.split("?", 1)[0]
     if path != "/api/d1/meeting":
         _json(handler, {"ok": False, "error": "not_found"}, 404)
@@ -109,6 +112,7 @@ def handle_post(handler):
 
 
 def handle_get(handler, qs):
+    handler._ifs_method = "GET"  # IFS F1b：envelope source.interface_id 需区分 get/create
     path = handler.path.split("?", 1)[0]
     if path != "/api/d1/meeting":
         _json(handler, {"ok": False, "error": "not_found"}, 404)

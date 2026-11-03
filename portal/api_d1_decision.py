@@ -17,11 +17,13 @@ if str(_REPO_ROOT) not in sys.path:
 
 import json
 
+import ifs_envelope
+
 MAX_BODY = 64 * 1024
 
 
 def _json(handler, obj, code=200):
-    handler._json(obj, code)
+    ifs_envelope.send(handler, obj, code, fallback_interface="d1.decision.create")
 
 
 def handle_post(handler):

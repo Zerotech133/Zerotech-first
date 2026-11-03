@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>D1 训练面板 · 只读 · 零界</title>
+<meta name="description" content="D1 训练 episode 只读面板：接 /api/d1/training/episodes，缺数据显示 data_unavailable 诚实空态，不训练/不写盘/不下单。">
+<link rel="stylesheet" href="/static/tokens.css">
+<script src="/static/nav.js" defer></script>
+<script src="/static/shortscreen.js" defer></script>
+<script src="/static/ifs_client.js"></script>
+<style>
+:root{
+  /* 统一全站语义：页面变量映射到 tokens.css，禁止自绘配色 */
+  --bg: var(--bg-page);
+  --ink: var(--text);
+  --panel: var(--bg-surface);
+  --panel2: var(--bg-raised);
+  --line: var(--border);
+  --warn: var(--color-warn);
+  --muted: var(--text-dim);
+  --dim: var(--text-dim);
+}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-ui);color-scheme:dark}
+.wrap{max-width:1180px;margin:0 auto;padding:18px 16px 60px}
+.head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+h1{font-size:21px;margin:4px 0}
+h2{font-size:14.5px;margin:0 0 7px}
+.sub{color:var(--gray-5);font-size:12.5px;line-height:1.7}
+.links{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.links a,.links button{border:1px solid var(--line);background:var(--gray-1);color:var(--ink);border-radius:8px;padding:6px 10px;font-size:12.5px;text-decoration:none;cursor:pointer}
+.links a{color:var(--link)}
+.links a:hover,.links button:hover{border-color:var(--link)}
+.banner{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--warn);border-radius:9px;padding:9px 12px;font-size:12px;line-height:1.8;margin:10px 0}
+.cards{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:10px 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:9px 11px;min-width:0}
+.card b{display:block;font-size:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card small{color:var(--gray-5);font-size:11px;line-height:1.5;display:block}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}
+.toolbar label{color:var(--gray-5);font-size:12px;display:flex;gap:6px;align-items:center}
+select,input{border:1px solid var(--line);background:var(--gray-1);color:var(--ink);border-radius:8px;padding:6px 10px;font-size:12.5px}
+input{min-width:260px}
+.state{display:none;background:var(--panel2);border:1px dashed var(--line);border-radius:10px;padding:18px 16px;margin:12px 0;line-height:1.8;font-size:13px}
+.state.show{display:block}
+.state b{display:block;font-size:15px;margin-bottom:6px}
+.state .hint{color:var(--gray-5);font-size:12px;margin-top:8px}
+.state .warnbox{border:1px solid var(--warn);border-radius:8px;padding:8px 10px;margin-top:8px;font-size:12px}
+table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:12.5px;display:none}
+table.show{display:table}
+th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{color:var(--gray-5);font-weight:600;font-size:11.5px;background:var(--gray-1);white-space:nowrap}
+tr.ep{cursor:pointer}
+tr.ep:hover{background:var(--panel2)}
+tr.detail td{background:var(--panel2)}
+.mono{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;color:var(--gray-6);word-break:break-all}
+.pre{white-space:pre-wrap;max-height:420px;overflow:auto;margin:0}
+.badge{display:inline-block;font-size:11px;padding:2px 7px;border-radius:999px;border:1px solid var(--line);background:var(--gray-1);white-space:nowrap}
+.badge.on{color:var(--color-up);border-color:var(--color-up-bd)}
+.badge.off{color:var(--warn);border-color:var(--warn)}
+.note{color:var(--gray-5);font-size:11.5px;line-height:1.8;border-top:1px solid var(--line);padding-top:10px;margin-top:14px}
+.note code{font-family:ui-monospace,Consolas,monospace;color:var(--gray-6)}
+.empty{padding:18px;text-align:center;color:var(--gray-5)}
+.envline{color:var(--text-dim);font-size:11px;line-height:1.7;word-break:break-all;min-height:16px;margin:2px 0 4px}
+.envline[data-envelope="legacy"]{color:var(--warn)}
+.warns{border:1px solid var(--warn);border-radius:8px;padding:8px 10px;margin:8px 0;font-size:12px;line-height:1.7}
+.warns b{display:block;margin-bottom:3px}.warns ul{margin:0;padding-left:18px}
+@media(max-width:900px){.cards{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:640px){.cards{grid-template-columns:1fr 1fr}input{min-width:0;width:100%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div>
+      <h1>D1 训练面板</h1>
+      <div class="sub">训练 episode 只读视图 · 数据接口 <span class="mono">GET /api/d1/training/episodes</span> · paper-only · 不训练 / 不写盘 / 不下单</div>
+    </div>
+    <div class="links">
+      <a href="/d1/research">← D1 投研工作台</a>
+      <a href="/d1/war-room">D1 作战台</a>
+      <button id="refresh" type="button">刷新</button>
+    </div>
+  </div>
+
+  <div class="banner">
+    <b>只读边界：</b>本页只消费 F5 只读接口 <b>/api/d1/training/episodes</b>（契约 <span class="mono">training_episode/v1</span>），
+    全链路 <b>只读</b>：不触发训练、不写盘、不改 registry/paper 账、不接实盘（<span class="mono">auto_training=false</span> / <span class="mono">trading_permitted=false</span>）。
+    生产 <span class="mono">episodes.jsonl</span> 尚未生成时，接口返回 <span class="mono">data_unavailable=true</span>，本页显示“数据未生成”诚实空态：<b>不造样例、不显示假数据</b>。
+  </div>
+
+  <h2>只读状态</h2>
+  <div class="cards">
+    <div class="card"><b id="c-ok">—</b><small>API ok</small></div>
+    <div class="card"><b id="c-unavail">—</b><small>data_unavailable</small></div>
+    <div class="card"><b id="c-count">—</b><small>返回 count</small></div>
+    <div class="card"><b id="c-total">—</b><small>有效总数 total</small></div>
+    <div class="card"><b id="c-invalid">—</b><small>坏行 invalid_lines</small></div>
+    <div class="card"><b id="c-auto">—</b><small>auto_training</small></div>
+  </div>
+  <div id="msg" class="sub" style="margin:6px 0"></div>
+  <div id="env" class="envline"></div>
+  <div id="warns" class="warns" style="display:none"></div>
+
+  <div class="toolbar">
+    <label>返回条数
+      <select id="f-limit">
+        <option value="10">10</option>
+        <option value="20">20</option>
+        <option value="50" selected>50</option>
+        <option value="100">100</option>
+        <option value="200">200（接口上限）</option>
+      </select>
+    </label>
+    <input id="f-kw" placeholder="过滤：episode_id / combo_id / 标的代码" autocomplete="off">
+  </div>
+
+  <div id="state" class="state"></div>
+
+  <h2>Episode 列表</h2>
+  <table id="tbl">
+    <thead>
+      <tr>
+        <th>训练 Episode</th><th>组合 combo</th><th>数据时点</th>
+        <th>paper_trades</th><th>outcomes</th><th>coverage</th>
+        <th>hit_rate</th><th>avg_return</th><th>brier</th><th>只读</th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+
+  <div class="note">
+    <b>数据口径：</b>接口 <code>GET /api/d1/training/episodes?limit=N</code>（默认 50、上限 200），数据源
+    <code>agent_platform/data/training/episodes.jsonl</code>（<code>D1_TRAIN_EPISODES_PATH</code> 可覆盖）；文件不存在 →
+    <code>ok=true / data_unavailable=true / count=0</code>，文件存在但为空 → <code>data_unavailable=false / count=0</code>；坏行逐行跳过并计入
+    <code>invalid_lines</code>，不静默吞掉。<br>
+    <b>只读保证：</b>本页只有 1 个 <code>GET</code> 请求（含 1 个刷新按钮 + 前端过滤），无 POST、无训练触发、无写接口；
+    行点击仅展开只读 JSON 详情。<br>
+    <b>导航：</b>本页为标准静态页（tokens.css + nav.js 统一顶栏 + shortscreen.js）；入口在 D1 投研工作台页头“训练面板”链接。
+  </div>
+</div>
+<script>
+const $=s=>document.querySelector(s);
+const API='/api/d1/training/episodes';
+let DATA=null, ENV=null, LIMIT=50, KW='';
+const IFS=(typeof window!=='undefined'&&window.IFSClient)?window.IFSClient:null;
+// envelope 解包：ifs_client.js 优先；缺失时（如 8091 直连未提供该静态文件）按旧顶层字段兜底
+function unwrapPayload(payload){
+  if(IFS&&IFS.unwrapEnvelope)return IFS.unwrapEnvelope(payload||{});
+  const raw=(payload&&typeof payload==='object')?payload:{};
+  const err=raw.ok===false?{code:String(raw.error||'unknown_error'),message:String(raw.message||raw.error||''),retryable:false,details:null,legacyCode:String(raw.error||''),httpStatus:null,source:'legacy_error'}:null;
+  return {version:'fallback',isEnvelope:false,hasData:false,ok:(raw.ok!==false)&&!err,data:raw,raw:raw,warnings:[],requestId:String(raw.request_id||''),schemaVersion:String(raw.schema_version||''),source:null,sourceMode:'',interfaceId:'',stale:false,error:err};
+}
+function errText(payload){
+  if(IFS&&IFS.errorText)return IFS.errorText(payload||{});
+  const e=unwrapPayload(payload||{}).error;
+  return e?e.code+(e.message&&e.message!==e.code?'：'+e.message:''):'';
+}
+// 只读展示 IFS envelope 元信息 + warnings（不改业务数据）
+function renderEnvelope(env){
+  const box=$('#env'); if(!box)return;
+  if(IFS&&IFS.renderMeta)IFS.renderMeta(box,env?env.raw:{},{});
+  else box.textContent=(env&&env.requestId)?('IFS envelope · request_id='+env.requestId+' · warnings='+(env.warnings||[]).length):'旧格式响应（无 IFS envelope，按旧顶层字段兼容读取）';
+  const warn=$('#warns');
+  if(warn){
+    if(IFS&&IFS.renderWarnings)IFS.renderWarnings(warn,env?env.raw:{},{title:'IFS warnings'});
+    else {warn.innerHTML='';warn.style.display='none';}
+  }
+}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function txt(v){return (v===null||v===undefined||v==='')?'—':String(v);}
+function num(v,d){if(v===null||v===undefined||v==='')return '—';const n=Number(v);return Number.isFinite(n)?n.toFixed(d==null?2:d):esc(v);}
+function pct(v){if(v===null||v===undefined||v==='')return '—';const n=Number(v);if(!Number.isFinite(n))return esc(v);return Math.abs(n)<=1.5?(n*100).toFixed(1)+'%':n.toFixed(2);}
+function flag(v){return v===true?'<span class="badge on">true</span>':(v===false?'<span class="badge off">false</span>':'<span class="badge">—</span>');}
+function stateBox(html){$('#state').innerHTML=html;$('#state').classList.add('show');}
+function stateClear(){$('#state').innerHTML='';$('#state').classList.remove('show');}
+function kvRows(){
+  const d=DATA||{};
+  $('#c-ok').innerHTML=flag(d.ok);
+  $('#c-unavail').innerHTML=flag(d.data_unavailable);
+  $('#c-count').textContent=txt(d.count);
+  $('#c-total').textContent=txt(d.total);
+  $('#c-invalid').textContent=txt(d.invalid_lines);
+  $('#c-auto').innerHTML=flag(d.auto_training);
+  const parts=[];
+  if(d.schema_version)parts.push('schema='+txt(d.schema_version));
+  if(d.generated_at)parts.push('generated_at='+txt(d.generated_at));
+  if(d.source)parts.push('source='+txt(d.source));
+  parts.push('readonly='+(d.readonly===true?'true':'false'));
+  parts.push('paper_only='+(d.paper_only===true?'true':'false'));
+  parts.push('trading_permitted='+(d.trading_permitted===true?'true':'false'));
+  $('#msg').textContent=parts.join(' · ');
+}
+function epText(ep){
+  const bits=[ep.training_episode_id||'',ep.combo_id||'',JSON.stringify(ep.ids||{})];
+  (ep.paper_trades||[]).forEach(t=>{if(t&&t.symbol)bits.push(String(t.symbol));});
+  return bits.join(' ').toLowerCase();
+}
+function detailRow(ep,idx){
+  return '<tr class="detail" id="epd-'+idx+'" style="display:none"><td colspan="10">'+
+    '<div class="mono">只读原始 episode JSON（点击行可收起）</div>'+
+    '<pre class="mono pre">'+esc(JSON.stringify(ep,null,2))+'</pre></td></tr>';
+}
+function renderTable(){
+  const eps=(DATA&&DATA.episodes)||[];
+  const shown=eps.filter(e=>!KW||epText(e).indexOf(KW)>=0);
+  if(!shown.length){
+    $('#tbl').classList.remove('show');
+    stateBox('<b>无匹配 episode</b>接口返回 '+txt(eps.length)+' 条，当前过滤条件（'+esc(KW||'无')+'）下 0 条。');
+    return;
+  }
+  stateClear();
+  $('#rows').innerHTML=shown.map((ep,i)=>{
+    const ds=ep.data_snapshot||{}, m=ep.metrics||{};
+    const trades=(ep.paper_trades||[]).length, outcomes=(ep.outcomes||[]).length;
+    return '<tr class="ep" data-i="'+i+'">'+
+      '<td><b>'+esc(txt(ep.training_episode_id))+'</b><div class="mono">'+esc(txt(ep.schema||ep.schema_version))+'</div></td>'+
+      '<td>'+esc(txt(ep.combo_id))+'</td>'+
+      '<td>'+esc(txt(ds.as_of))+'<div class="mono">'+esc(txt(ds.source))+'</div></td>'+
+      '<td>'+trades+'</td><td>'+outcomes+'</td>'+
+      '<td>'+pct(m.outcome_coverage)+'</td><td>'+pct(m.hit_rate)+'</td><td>'+pct(m.avg_return)+'</td><td>'+num(m.brier,3)+'</td>'+
+      '<td>'+(ep.read_only===true?'<span class="badge on">只读</span>':'<span class="badge off">未标只读</span>')+'</td></tr>'+
+      detailRow(ep,i);
+  }).join('');
+  $('#tbl').classList.add('show');
+  document.querySelectorAll('tr.ep').forEach(tr=>{
+    tr.addEventListener('click',()=>{
+      const d=document.getElementById('epd-'+tr.dataset.i);
+      if(d)d.style.display=d.style.display==='table-row'?'none':'table-row';
+    });
+  });
+}
+function render(){
+  if(!DATA)return;
+  kvRows();
+  renderEnvelope(ENV||unwrapPayload(DATA));
+  if(DATA.data_unavailable){
+    $('#tbl').classList.remove('show');
+    stateBox('<b>数据未生成（data_unavailable=true）</b>'+
+      esc(DATA.note||'episodes.jsonl 不存在：训练 episode 数据尚未生成（不做样例、不造数）')+
+      '<div class="hint">数据源：'+esc(txt(DATA.source))+' · 接口契约：'+esc(txt(DATA.schema_version))+
+      ' · 本页不造假数据、不生成样例；F5 生产 episode 落盘后刷新即可见。</div>');
+    return;
+  }
+  if(DATA.invalid_lines&&DATA.invalid_lines>0){
+    const errs=(DATA.errors||[]).map(e=>esc(JSON.stringify(e))).join('<br>');
+    stateBox('<b>存在 '+DATA.invalid_lines+' 行坏数据（已逐行跳过并计数）</b>'+
+      (errs?'<div class="warnbox">前 10 条：<br>'+errs+'</div>':'')+
+      '<div class="hint">有效行照常展示，不中断；坏行明细以接口 invalid_lines/errors 为准。</div>');
+  }else{
+    stateClear();
+  }
+  if(!((DATA.episodes||[]).length)){
+    $('#tbl').classList.remove('show');
+    stateBox('<b>无 episode 记录（data_unavailable=false / count=0）</b>'+
+      '数据文件存在但当前为空；待 F5 outcome→episode 回填产出后刷新。'+
+      '<div class="hint">数据源：'+esc(txt(DATA.source))+' · 接口契约：'+esc(txt(DATA.schema_version))+'</div>');
+    return;
+  }
+  renderTable();
+}
+async function load(){
+  $('#msg').textContent='加载中…';
+  stateClear();
+  $('#tbl').classList.remove('show');
+  try{
+    const r=await fetch(API+'?limit='+encodeURIComponent(LIMIT),{cache:'no-store'});
+    const raw=await r.json().catch(()=>null);
+    const env=unwrapPayload(raw||{});
+    if(!r.ok||!env.ok||(env.data&&env.data.ok===false)){
+      const et=errText((env&&env.raw)||raw||{})||('HTTP '+r.status);
+      const rid=(env&&env.requestId)?(' · request_id='+env.requestId):'';
+      throw new Error(et+rid);
+    }
+    DATA=env.data; ENV=env;
+    renderEnvelope(env);
+    render();
+  }catch(e){
+    DATA=null; ENV=null;
+    $('#msg').textContent='加载失败';
+    stateBox('<b>接口加载失败</b>'+esc(e.message||String(e))+
+      '<div class="hint">请确认 portal_api 已加载路由 <span class="mono">/api/d1/training/episodes</span>（接线后需维护窗口重启生效）；本页只读，不重试写操作。</div>');
+  }
+}
+$('#refresh').addEventListener('click',load);
+$('#f-limit').addEventListener('change',()=>{LIMIT=Number($('#f-limit').value)||50;load();});
+$('#f-kw').addEventListener('input',()=>{KW=$('#f-kw').value.trim().toLowerCase();if(DATA)render();});
+load();
+</script>
+</body>
+</html>

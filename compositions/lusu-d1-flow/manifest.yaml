@@ -87,7 +87,7 @@ spec:
   - ref: page/d1/research
   - ref: page/d1/war-room
   - ref: page/d1/training
-    note: planned：页面未建（IFS F6 / WO-IFS-ROUTE 待 Lead 接线）；F5 只读 API 已 active
+    note: active：portal/d1_training.html 只读页 2026-11-04 落地（F6b）；接 /api/d1/training/episodes，data_unavailable 诚实空态；入口=D1 研究页页头
   jobs:
   - ref: job/zhice-daily-research-ops
     note: ZhiceAcad1Pool 17:00 上游池（schtasks 2026-11-03 实测）
@@ -126,14 +126,15 @@ spec:
     q_level: Q1
     health_probe: 已做只读探针 2026-11-04T02:25:51+08:00 8/8 GET 200（/api/health + /health + 6 D1 只读接口 + 8734 入口）；工具化（tools/q2_probe.py 暂无 d1 target）待接线
     rollback: 四步回滚见 status.rollback；last_drilled=pending（静态前置已核，未真回滚生产）
-    test_entry: python -m pytest portal/tests/test_api_d1_*.py -q（21 passed，portal/tests 已入 fast gate）&& python tools/composition.py validate --all
+    test_entry: python -m pytest portal/tests/test_api_d1_*.py -q（21 passed，portal/tests 已入 fast gate）&& python -m pytest portal/tests/test_d1_training_page.py -q && python tools/composition.py validate --all
   notes:
-  - IFS v1 F6+WIRE 登记：8 API（8 active，含 F5 /api/d1/training/episodes 只读）、3 页面（2 active，/d1/training
-    planned）、4 任务。
+  - IFS v1 F6+WIRE 登记：8 API（8 active，含 F5 /api/d1/training/episodes 只读）、3 页面（3 active）、4 任务。
   - 数据：recommendation_pool/pool_review/team_exec/paper_ledger/shadow_ledger 已登记 active；d1_decisions
     登记 planned；training_episode planned（F5 契约已落地，episodes.jsonl 未生成）。
   - F5 训练：/api/d1/training/episodes（列表/详情）只读、paper_only、auto_training=false；缺数据诚实
     data_unavailable 不造数；坏行 fail-visible 计数；route baseline 297 条同批。
+  - F6b 训练页：/d1/training 只读页 portal/d1_training.html 2026-11-04 落地（tokens/nav/shortscreen；接 episodes
+    API；data_unavailable 诚实空态；无写接口/POST/训练触发）；portal_api 仅加页面 dispatch，route baseline 297 零 diff。
   - 接口 schema/envelope 以 docs/standards/INTERFACE_REGISTRY_v1.yaml 为准；handoff v2 /
     watch_plan 由任务 28 实现，四 ID 由任务 29 + WIRE 收口。
   - Q2 缺口（health/SLO 实测/rollback 演练/契约测试入 fast gate）与 Lead 接线请求见 docs/plans/2026-11-03_IFS-COMP_D1组合对接登记_v1.md。
@@ -148,16 +149,15 @@ status:
     active: 8
     planned: []
   pages:
-    active: 2
-    planned:
-    - /d1/training
+    active: 3
+    planned: []
   jobs:
     active: 4
     planned: []
   data_refs: 5 active + d1_decisions planned + training_episode planned
   training_api: active（只读 /api/d1/training/episodes；缺数据 data_unavailable）
-  training_page: planned（F6 / WO-IFS-ROUTE 待 Lead 接线）
-  source: IFS v1 + WIRE 2026-11-03 集成 + schtasks + portal_api 实测 + Q2 证据 2026-11-04 + F5 training API 2026-11-04
+  training_page: active（只读 /d1/training → portal/d1_training.html；2026-11-04 F6b；接线生效需维护窗口重启 portal_api 换血）
+  source: IFS v1 + WIRE 2026-11-03 集成 + schtasks + portal_api 实测 + Q2 证据 2026-11-04 + F5 training API 2026-11-04 + F6b training page 2026-11-04
   gaps_doc: docs/plans/2026-11-03_IFS-COMP_D1组合对接登记_v1.md
   q2_evidence: docs/plans/2026-11-04_D1_Q2验收证据_v1.md
   health_probe:

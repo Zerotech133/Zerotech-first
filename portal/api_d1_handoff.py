@@ -16,6 +16,8 @@ import json
 import sys
 from pathlib import Path
 
+import ifs_envelope
+
 _REPO = Path(__file__).resolve().parents[1]
 if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
@@ -38,7 +40,7 @@ BAD_REQUEST_CODES = {
 
 
 def _json(handler, obj, code=200):
-    handler._json(obj, code)
+    ifs_envelope.send(handler, obj, code, fallback_interface="d1.handoff.create")
 
 
 def _body(handler):

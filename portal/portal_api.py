@@ -650,6 +650,9 @@ class Handler(api_data.Handler, api_chanlun_pages.Handler, api_pages_portal.Hand
         self.send_response(code)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Cache-Control", "no-store")
+        request_id = getattr(self, "_ifs_request_id", "")
+        if request_id:
+            self.send_header("X-Request-Id", str(request_id))
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
@@ -3402,7 +3405,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 os.path.dirname(os.path.abspath(__file__)), "perf.html"))
         elif path == "/api/acad1/pool":
             # WO-INV-POOL-UI：ACAD1 推荐池全池复盘只读数据口
-            self._json(pool_snapshot())
+            # ACAD1-FULLVIEW（2026-11-04）：仅透传 query 供 ?view=full 只读聚合视图；
+            # 缺省行为不变（单日视图），不改路由集合。
+            self._json(pool_snapshot(query=self.path.split("?", 1)[1]
+                                     if "?" in self.path else ""))
         elif path == "/acad1/pool":
             # WO-INV-POOL-UI：ACAD1 推荐池全池复盘只读页
             self._html_file(os.path.join(
@@ -3416,8 +3422,11 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 os.path.dirname(os.path.abspath(__file__)), "quant_paper.html"))
         elif path == "/api/d1/research":
             # WO-D1-RESEARCH：D1 投研工作台只读数据口（池内研究，不管理策略）
+            # IFS F1b：叠统一 envelope + request_id（WO-IFS-ENVELOPE-20261104）
             import d1_data
-            self._json(d1_data.d1_snapshot())
+            import ifs_envelope
+            self._json(ifs_envelope.ok_payload(self, "d1.research.get",
+                                               d1_data.d1_snapshot()))
         elif path == "/api/d1/decisions":
             # WO-D1-UI-20261101：D1 正式裁决只读列表（页面展示/回填）
             import api_d1_decision
@@ -3450,6 +3459,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # WO-WARROOM-UI：量化作战台整合版（策略池/投研/盯盘/模拟交易）
             self._html_file(os.path.join(
                 os.path.dirname(os.path.abspath(__file__)), "d1_war_room.html"))
+        elif path in ("/d1/training", "/d1_training.html"):
+            # IFS F6b：D1 训练面板只读页（数据走 /api/d1/training/episodes，只读不训练）
+            self._html_file(os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "d1_training.html"))
         elif path == "/api/war-room/snapshot":
             # WO-WARROOM-LIVE：作战台实时数据聚合（D1/池/paper/确认/盯盘）
             import war_room_data
