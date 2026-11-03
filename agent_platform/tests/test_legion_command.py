@@ -648,7 +648,7 @@ function node() {
 }
 const els = {};
 for (const id of ['chat', 'table', 'say', 'pickCount', 'pick-zhong', 'pick-quant',
-  'pick-risk', 'pick-acad', 'pick-intel', 'pick-ops', 'pick-dev']) els[id] = node();
+  'pick-risk', 'pick-acad', 'pick-intel', 'pick-ops', 'pick-dev', 'pick-dept']) els[id] = node();
 els.chat.querySelector = s => null;
 const cards = ['WO-EVO-102', 'SIM-301'].map(title => ({
   querySelector(s) { return { textContent: s === '.tn' ? title : '待派工' }; }

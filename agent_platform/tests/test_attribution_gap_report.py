@@ -23,9 +23,14 @@ AGR = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(AGR)
 
 # 固定 now，避免用例随真实日期漂移；含今天 7 天的切点=2026-10-21。
+NOW_ARG = ["--now", "2026-10-27T10:00:00"]
 NOW = time.mktime(time.strptime("2026-10-27 10:00:00", "%Y-%m-%d %H:%M:%S"))
 TODAY = "2026-10-27"
 CUT_7D = "2026-10-21"
+
+
+def _main(args):
+    return AGR.main(list(args) + NOW_ARG)
 
 
 def _ev(day, kind="task_start", agent="DEV6", task="WO-DRILL3-ATTRGAP", detail=""):
@@ -117,7 +122,7 @@ def test_empty_file_and_empty_events(tmp_path):
 
 
 def test_missing_file_is_empty_report(tmp_path, capsys):
-    rc = AGR.main(["--events", str(tmp_path / "absent.jsonl"), "--json"])
+    rc = _main(["--events", str(tmp_path / "absent.jsonl"), "--json"])
     captured = capsys.readouterr()
     assert rc == 0
     report = json.loads(captured.out)
@@ -162,7 +167,7 @@ def test_main_report_mode_rc0_with_gap(tmp_path, capsys):
         _ev(TODAY, detail="ok"),
     ])
     # 默认（无 --strict）报告模式必须 rc=0，即便存在缺口
-    assert AGR.main(["--events", str(path), "--json"]) == 0
+    assert _main(["--events", str(path), "--json"]) == 0
     report = json.loads(capsys.readouterr().out)
     assert report["missing"] == 1
     assert report["coverage"] == 0.5
@@ -175,16 +180,16 @@ def test_strict_semantics(tmp_path, capsys):
     clean = _write_jsonl(tmp_path / "clean.jsonl", [_ev(TODAY, detail="ok")])
     empty = _write_jsonl(tmp_path / "empty.jsonl", [])
 
-    assert AGR.main(["--events", str(gap), "--json", "--strict"]) == 1
+    assert _main(["--events", str(gap), "--json", "--strict"]) == 1
     captured = capsys.readouterr()
     # strict 提示走 stderr，stdout 仍是可解析 JSON
     assert "strict" in captured.err
     assert json.loads(captured.out)["missing"] == 1
 
-    assert AGR.main(["--events", str(clean), "--json", "--strict"]) == 0
+    assert _main(["--events", str(clean), "--json", "--strict"]) == 0
     assert json.loads(capsys.readouterr().out)["missing"] == 0
 
-    assert AGR.main(["--events", str(empty), "--json", "--strict"]) == 0
+    assert _main(["--events", str(empty), "--json", "--strict"]) == 0
     assert json.loads(capsys.readouterr().out)["missing"] == 0
 
 
@@ -194,7 +199,7 @@ def test_md_output(tmp_path, capsys):
         _ev(TODAY, detail="ok"),
         _ev(TODAY, kind="commit", detail="normal"),
     ])
-    assert AGR.main(["--events", str(path), "--md"]) == 0
+    assert _main(["--events", str(path), "--md"]) == 0
     md = capsys.readouterr().out
     for key in ("# 归因缺口报表", "## 一、总览", "## 二、按 Agent 分布",
                 "## 三、按事件类型分布", "## 四、最近 5 条缺失样例",
@@ -206,7 +211,7 @@ def test_md_output(tmp_path, capsys):
 
 def test_md_empty_window(tmp_path, capsys):
     path = _write_jsonl(tmp_path / "empty.jsonl", [])
-    assert AGR.main(["--events", str(path), "--md"]) == 0
+    assert _main(["--events", str(path), "--md"]) == 0
     md = capsys.readouterr().out
     assert "（窗口内无归因缺失样例）" in md
     assert "N/A" in md

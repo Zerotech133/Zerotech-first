@@ -1,0 +1,19 @@
+﻿序号,数据集/字段,类别,用途,优先级,当前状态,来源接口建议,缺口说明,建议 Owner,验收标准
+1,停复牌记录,基础,可交易性/停牌处理,P0,部分覆盖,tushare.suspend_d,仅少量文件/覆盖不足（tdx.ts_suspend_d），需补全历史与更新,DATA2（张松线）,落仓+注册+暴露+抽样校验
+2,分红送股,基础,复权/股息因子,P1,部分覆盖,tushare.dividend,仅少量文件/覆盖不足（tdx.ts_dividend），需补全历史与更新,DATA2（张松线）,落仓+注册+暴露+抽样校验
+3,周线/月线,行情,多周期因子,P2,缺失,tushare.weekly/monthly,数据仓无此数据集，需新增抓取,DATA2（张松线）,落仓+注册+暴露+抽样校验
+4,期货日线,行情,商品/宏观,P2,部分覆盖,tushare.fut_daily,仅少量文件/覆盖不足（tdx.ts_fut_basic），需补全历史与更新,DATA2（张松线）,落仓+注册+暴露+抽样校验
+5,期权数据,行情,波动率策略,P2,部分覆盖,tushare.opt_basic,仅少量文件/覆盖不足（tdx.ts_opt_basic），需补全历史与更新,DATA2（张松线）,落仓+注册+暴露+抽样校验
+6,Level2/逐笔委托,行情,盘口类战法,P2,缺失,券商/交易所（采购）,数据仓无此数据集，需新增抓取,DATA1,落仓+注册+暴露+抽样校验
+7,北向/沪深港通,资金,北向情绪,P1,部分覆盖,tushare.moneyflow_hsgt,仅少量文件/覆盖不足（tushare.moneyflow_hsgt），需补全历史与更新,DATA2（张松线）,落仓+注册+暴露+抽样校验
+8,股权质押,资金,风险因子,P1,部分覆盖,tushare.pledge_stat,仅少量文件/覆盖不足（tushare.stk_pledge），需补全历史与更新,DATA2（张松线）,落仓+注册+暴露+抽样校验
+9,机构调研,资金,事件因子,P1,部分覆盖,tushare.stk_surv,仅少量文件/覆盖不足（tdx.ts_stk_surv），需补全历史与更新,DATA2（张松线）,落仓+注册+暴露+抽样校验
+10,筹码分布,资金,筹码因子,P0,部分覆盖,tushare.cyq_chips,仅少量文件/覆盖不足（tushare.cyq_chips（23 文件/覆盖不足）），需补全历史与更新,DATA2（张松线）,落仓+注册+暴露+抽样校验
+11,业绩预告,基本面,事件因子,P1,部分覆盖,tushare.forecast,仅少量文件/覆盖不足（tushare.forecast），需补全历史与更新,DATA2（张松线）,落仓+注册+暴露+抽样校验
+12,业绩快报,基本面,事件因子,P1,部分覆盖,tushare.express,仅少量文件/覆盖不足（tushare.express），需补全历史与更新,DATA2（张松线）,落仓+注册+暴露+抽样校验
+13,主营构成,基本面,行业暴露,P2,部分覆盖,tushare.fina_mainbz,仅少量文件/覆盖不足（tdx.ts_fina_mainbz），需补全历史与更新,DATA2（张松线）,落仓+注册+暴露+抽样校验
+14,申万/中信行业分类,行业,行业中性化,P0,部分覆盖,tushare.index_classify,仅少量文件/覆盖不足（tdx.ts_index_classify），需补全历史与更新,DATA2（张松线）,落仓+注册+暴露+抽样校验
+15,概念板块,行业,主题/板块因子,P1,部分覆盖,tushare.ths_index,仅少量文件/覆盖不足（tdx.ts_ths_index），需补全历史与更新,DATA2（张松线）,落仓+注册+暴露+抽样校验
+16,板块成分,行业,板块映射,P1,部分覆盖,tdx_sector_member,仅少量文件/覆盖不足（tdx.tdx_sector_member），需补全历史与更新,DATA1,落仓+注册+暴露+抽样校验
+17,宏观指标(GDP/CPI/PPI/PMI),宏观,宏观因子,P1,缺失,cnopendata/ashare,数据仓无此数据集，需新增抓取,DATA1,落仓+注册+暴露+抽样校验
+18,利率/汇率/商品,宏观,宏观/商品因子,P1,部分覆盖,tushare.shibor/fx,仅少量文件/覆盖不足（tdx.ts_cb_rate），需补全历史与更新,DATA2（张松线）,落仓+注册+暴露+抽样校验

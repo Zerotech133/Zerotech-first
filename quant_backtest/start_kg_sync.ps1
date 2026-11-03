@@ -1,6 +1,6 @@
 ﻿# kg daily sync launcher (ASCII only, junction path)
 # 0) catalog rebuild (G7: freshness ground truth)  0.5) semantica events build
-# 0.7) notice LLM shadow judge + backfill (G6b)
+# 0.7) [W1-07 2026-11-03] notice LLM shadow judge + backfill -> owned by \ZeroBound\NoticeBackfill (removed from this chain)
 # 1) global index increment   2) events -> Neo4j
 # 3) CL-1 seats/chanlun/volume -> Neo4j
 # 4) M2 DRIVE edges          5) candle events (HAS_CANDLE)
@@ -107,7 +107,10 @@ try {
     foreach ($step in @(
         @{name='catalog_build';     script='build_catalog.py';       arg=''},
         @{name='evt_build';        script='event_graph.py';         arg='build'},
-        @{name='notice_llm';       script='kg_notice_llm.py';       arg='--backfill'},
+        # W1-07 (2026-11-03 A0 granted): notice_llm --backfill removed from KgDaily chain;
+        # backfill is owned solely by \ZeroBound\NoticeBackfill (dedupe; G5/G7 no longer block each other).
+        # rollback: restore C:\项目\backups\start_kg_sync.ps1.bak-20261103-W107 and rerun.
+        # @{name='notice_llm';       script='kg_notice_llm.py';       arg='--backfill'},
         @{name='pull_global_idx';  script='pull_global_idx.py';     arg=''},
         @{name='kg_evt_sync';      script='kg_build_p3_evt.py';     arg=''},
         @{name='intel_link';       script="$kg_root\kg_intel_link.py";       arg='--write'},

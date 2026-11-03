@@ -1,0 +1,301 @@
+{
+ "generated_at": "2026-11-03T15:04:09+08:00",
+ "knowledge": {
+  "projects": [
+   {
+    "project_id": "learnpdf_liangxue",
+    "status": "archived",
+    "units": 0,
+    "owner": "DATA1"
+   },
+   {
+    "project_id": "laomu_notes",
+    "status": "distilling",
+    "units": 288,
+    "owner": "DATA1"
+   },
+   {
+    "project_id": "视频号学习_8博主",
+    "status": "distilling",
+    "units": 800,
+    "owner": "DATA1"
+   },
+   {
+    "project_id": "视频号学习_第二期",
+    "status": "distilling",
+    "units": 1116,
+    "owner": "DATA1"
+   }
+  ],
+  "governance": {
+   "units": 800,
+   "knowledge_units": 800,
+   "meta_units": 0,
+   "verified": 800,
+   "verified_pct": 100.0,
+   "unverifiable": 0,
+   "exact_dup_units": 0,
+   "near_dup_pairs": 0,
+   "dup_ratio_pct": 0.0,
+   "card_concept_dup": 0,
+   "candidate_pool": 259,
+   "multi_source_concepts": 0,
+   "conflicts": 0
+  },
+  "today_effective": {
+   "units": 1045,
+   "candidates": 1372,
+   "excluded_units": 871,
+   "excluded_candidates": 823
+  },
+  "cards": 400,
+  "cards_audit": {
+   "cards_total": 400,
+   "units_total": 516,
+   "issues_total": 0,
+   "by_severity": {
+    "high": 0,
+    "medium": 0,
+    "low": 0
+   },
+   "by_check": {},
+   "fields_missing": {},
+   "source_unparseable": 0,
+   "answer_length_anomalies": 0,
+   "concept_duplicate_groups": 0,
+   "concept_duplicate_cards": 0,
+   "traceable_cards": 400,
+   "traceable_rate": 1.0,
+   "trace_methods": {
+    "concept+book+page": 159,
+    "provenance(file+line)": 241
+   },
+   "themes_total": 21,
+   "themes_with_cards": 21,
+   "low_coverage_themes": [],
+   "source_kinds": {
+    "研报": 147,
+    "书籍": 12,
+    "笔记": 28,
+    "视频号": 213
+   },
+   "book_vs_report": {
+    "书籍": 12,
+    "研报": 147
+   }
+  },
+  "multi_source": 27,
+  "gate": {
+   "projects": 4,
+   "checks": 13,
+   "fail": 0
+  },
+  "exclusions": {
+   "units": 871,
+   "candidates": 823
+  }
+ },
+ "warehouse": {
+  "datasets": 314,
+  "registered": 265,
+  "exposed": 72,
+  "domains": {
+   "接口数据": 241,
+   "开源情报": 19,
+   "学习派生": 29,
+   "平台运行": 25
+  },
+  "size": {
+   "files": 269276,
+   "gb": 55.8
+  },
+  "kb_size": {
+   "files": 4355,
+   "gb": 5.79
+  },
+  "stale_30d": 17,
+  "stale_samples": [
+   [
+    "tushare.hk_balancesheet",
+    "2026-09-28",
+    36
+   ],
+   [
+    "tushare.hk_cashflow",
+    "2026-09-28",
+    36
+   ],
+   [
+    "tushare.hk_fina_indicator",
+    "2026-09-28",
+    36
+   ],
+   [
+    "tushare.hk_income",
+    "2026-09-28",
+    36
+   ],
+   [
+    "tushare.irm_qa_sh_probe",
+    "2026-09-27",
+    37
+   ],
+   [
+    "tushare.irm_qa_sz_probe",
+    "2026-09-27",
+    37
+   ],
+   [
+    "tushare.stk_managers",
+    "2026-09-30",
+    34
+   ],
+   [
+    "tushare.sw_l1_member",
+    "2026-09-28",
+    36
+   ]
+  ],
+  "no_latest": 59,
+  "quality": "8/8 PASS",
+  "metadata_consistency": "PASS",
+  "manifest_missing": {
+   "tdx": 86,
+   "tushare": 192
+  }
+ },
+ "open_items": [
+  {
+   "priority": "P0",
+   "item": "指标说明书排除清单未应用到下游（候选/多源/微调）",
+   "detail": "exclusions_today_20261103.json 已生成，871 单元/823 候选待下游过滤",
+   "owner": "DATA1",
+   "eta": "立即"
+  },
+  {
+   "priority": "P1",
+   "item": "第二期 46 张有效候选未审",
+   "detail": "869 候选扣除 823 垃圾后仅 46，尚未预审/发布",
+   "owner": "DATA1",
+   "eta": "1 天"
+  },
+  {
+   "priority": "P1",
+   "item": "多源概念 27/30（差 3）",
+   "detail": "已扩 3 来源仍不足，需补主题重叠资料或人工复核",
+   "owner": "DATA1/Lead",
+   "eta": "1 周"
+  },
+  {
+   "priority": "P1",
+   "item": "知识治理脚本仅覆盖一期",
+   "detail": "knowledge_governance.py 固定 PID，第二期未进治理日报",
+   "owner": "DATA1",
+   "eta": "2 天"
+  },
+  {
+   "priority": "P1",
+   "item": "cyq_chips 覆盖不足",
+   "detail": "23 文件/0.2MB，筹码因子抽样覆盖 0-0.27%",
+   "owner": "DATA2",
+   "eta": "排期"
+  },
+  {
+   "priority": "P2",
+   "item": "17 个数据集 >30 天未更新",
+   "detail": "港股利润/现金流/财务指标等 2026-09-28，及 probe 类",
+   "owner": "DATA2",
+   "eta": "排期"
+  },
+  {
+   "priority": "P2",
+   "item": "59 个数据集无 latest 字段",
+   "detail": "inventory 元数据不完整",
+   "owner": "DATA4",
+   "eta": "2 周"
+  },
+  {
+   "priority": "P2",
+   "item": "数据仓注册率/暴露率偏低",
+   "detail": "注册 265/314（84.4%）、暴露 72/314（22.9%）",
+   "owner": "DATA4",
+   "eta": "季度"
+  },
+  {
+   "priority": "P2",
+   "item": "laomu 1 组重复单元未清",
+   "detail": "288 单元中 1 个 exact dup 组",
+   "owner": "DATA5",
+   "eta": "下次治理"
+  },
+  {
+   "priority": "P2",
+   "item": "manifest 覆盖缺口",
+   "detail": "tdx missing 86 / tushare missing 192（manifest_check code 0 但覆盖不足）",
+   "owner": "DATA3",
+   "eta": "季度"
+  }
+ ],
+ "kpis": [
+  {
+   "kpi": "元数据行占比（一期）",
+   "target": "≤5%",
+   "current": "0%",
+   "status": "✅"
+  },
+  {
+   "kpi": "重复率（一期）",
+   "target": "≤2%",
+   "current": "0%",
+   "status": "✅"
+  },
+  {
+   "kpi": "溯源核验率（一期）",
+   "target": "100%",
+   "current": "100%",
+   "status": "✅"
+  },
+  {
+   "kpi": "有效知识单元（今日文件）",
+   "target": "—",
+   "current": "1,045（800+245）",
+   "status": "✅"
+  },
+  {
+   "kpi": "学习卡",
+   "target": "≥400",
+   "current": "400（审计 0 问题/可追溯 100%）",
+   "status": "✅"
+  },
+  {
+   "kpi": "有效候选",
+   "target": "—",
+   "current": "1,372（已排除 823 垃圾）",
+   "status": "✅"
+  },
+  {
+   "kpi": "多源概念",
+   "target": "≥30",
+   "current": "27（人工双签）",
+   "status": "⚠️ 差 3"
+  },
+  {
+   "kpi": "数据仓质量检查",
+   "target": "8/8 PASS",
+   "current": "8/8 PASS（C6/C7/C8 复检 true）",
+   "status": "✅"
+  },
+  {
+   "kpi": "元数据一致性",
+   "target": "PASS",
+   "current": "PASS（catalog v35/256 表/registry 256）",
+   "status": "✅"
+  },
+  {
+   "kpi": "注册率/暴露率",
+   "target": "—",
+   "current": "84.4% / 22.9%",
+   "status": "⚠️"
+  }
+ ]
+}

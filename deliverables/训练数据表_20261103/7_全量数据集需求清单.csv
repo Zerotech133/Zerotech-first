@@ -1,0 +1,60 @@
+﻿序号,类别,数据集/字段,训练用途,优先级,当前状态,现有数据集,最新日期,本地路径,来源接口建议
+1,基础,股票列表/上市日期,样本域/幸存者偏差,P0,已有,tushare.stock_basic,2026-11-01,quant_backtest\data\tushare\stock_basic,tushare.stock_basic
+2,基础,交易日历,样本切分/对齐,P0,已有,tushare.trade_cal,2026-11-01,quant_backtest\data\tushare\trade_cal,tushare.trade_cal
+3,基础,停复牌记录,可交易性/停牌处理,P0,部分覆盖,tdx.ts_suspend_d,2026-10-30,quant_backtest\data\tdx\ts_suspend_d,tushare.suspend_d
+4,基础,ST/风险警示标记,样本过滤,P0,字段/口径,stock_basic name+list_status,-,,tushare.stock_basic 名称+status
+5,基础,涨跌停价格,可交易性/涨停因子,P0,已有,tdx.ts_stk_limit,2026-10-30,quant_backtest\data\tdx\ts_stk_limit,tushare.stk_limit
+6,基础,股本变动,市值/股本因子,P1,已有,tushare.daily_basic（total_share/float_share）,2026-10-30,quant_backtest/data/tushare,tushare.daily_basic 已含
+7,基础,分红送股,复权/股息因子,P1,部分覆盖,tdx.ts_dividend,2026-10-13,quant_backtest\data\tdx\ts_dividend,tushare.dividend
+8,基础,复权因子,收益标签/复权价,P0,已有,tushare.adj_factor,2026-10-30,quant_backtest\data\tushare\adj_factor,tushare.adj_factor
+9,行情,日线行情,因子/标签,P0,已有,tushare.daily,2026-10-30,quant_backtest\data\tushare\daily,tushare.daily
+10,行情,周线/月线,多周期因子,P2,缺失,,,,tushare.weekly/monthly
+11,行情,股票分钟线(1min),缠论/日内因子,P0,已有,tushare.stk_mins,2026-11-01,quant_backtest\data\tushare\stk_mins,tushare.stk_mins
+12,行情,指数日线,基准/大盘因子,P0,已有,tushare.index_daily,2026-10-31,quant_backtest\data\tushare\index_daily,tushare.index_daily
+13,行情,指数分钟线,大盘节奏,P1,已有,tushare.idx_mins,2026-11-01,quant_backtest\data\tushare\idx_mins,tushare.idx_mins
+14,行情,ETF日线,ETF 轮动/基准,P1,已有,tdx.ts_fund_daily,2026-10-31,quant_backtest\data\tdx\ts_fund_daily,tushare.fund_daily
+15,行情,ETF分钟线,ETF 日内,P2,已有,tushare.etf_mins,2026-11-01,quant_backtest\data\tushare\etf_mins,tushare.etf_mins
+16,行情,可转债日线,可转债策略,P2,已有,tushare.cb_daily,2026-11-01,quant_backtest\data\tushare\cb_daily,tushare.cb_daily
+17,行情,港股日线,外围联动,P2,已有,tushare.hk_daily,2026-10-30,quant_backtest\data\tushare\hk_daily,tushare.hk_daily
+18,行情,美股日线,外围联动,P2,已有,tushare.us_daily,2026-11-02,quant_backtest\data\tushare\us_daily,tushare.us_daily
+19,行情,期货日线,商品/宏观,P2,部分覆盖,tdx.ts_fut_basic,2026-10-13,quant_backtest\data\tdx\ts_fut_basic,tushare.fut_daily
+20,行情,期权数据,波动率策略,P2,部分覆盖,tdx.ts_opt_basic,2026-10-13,quant_backtest\data\tdx\ts_opt_basic,tushare.opt_basic
+21,行情,集合竞价/盘前,开盘因子,P1,已有,tdx.ts_stk_auction,2026-10-30,quant_backtest\data\tdx\ts_stk_auction,tushare.stk_auction（需开通）
+22,行情,Level2/逐笔委托,盘口类战法,P2,缺失,,,,券商/交易所（采购）
+23,资金,个股资金流,资金流因子,P0,已有,tushare.moneyflow,2026-10-30,quant_backtest\data\tushare\moneyflow,tushare.moneyflow
+24,资金,北向/沪深港通,北向情绪,P1,部分覆盖,tushare.moneyflow_hsgt,2026-10-30,quant_backtest\data\tushare\moneyflow_hsgt,tushare.moneyflow_hsgt
+25,资金,融资融券,杠杆情绪,P1,已有,tushare.margin_detail,2026-10-30,quant_backtest\data\tushare\margin_detail,tushare.margin_detail
+26,资金,龙虎榜,游资/席位,P1,已有,tushare.top_list,2026-11-01,quant_backtest\data\tushare\top_list,tushare.top_list
+27,资金,大宗交易,筹码/减持,P1,已有,tdx.ts_block_trade,2026-10-31,quant_backtest\data\tdx\ts_block_trade,tushare.block_trade
+28,资金,股权质押,风险因子,P1,部分覆盖,tushare.stk_pledge,2026-10-19,quant_backtest\data\tushare\stk_pledge,tushare.pledge_stat
+29,资金,股东户数,筹码集中度,P1,已有,tushare.stk_holdernumber,2026-10-30,quant_backtest\data\tushare\stk_holdernumber,tushare.stk_holdernumber
+30,资金,十大股东,机构持仓,P1,已有,tushare.top10_floatholders,2026-09-30,quant_backtest\data\tushare\top10_floatholders,tushare.top10_holders
+31,资金,基金持仓,机构持仓,P1,已有,tdx.ts_fund_portfolio,2026-10-17,quant_backtest\data\tdx\ts_fund_portfolio,tushare.fund_portfolio
+32,资金,机构调研,事件因子,P1,部分覆盖,tdx.ts_stk_surv,2026-10-31,quant_backtest\data\tdx\ts_stk_surv,tushare.stk_surv
+33,资金,限售解禁,供给冲击,P1,已有,tdx.ts_share_float,2026-10-30,quant_backtest\data\tdx\ts_share_float,tushare.share_float
+34,资金,筹码分布,筹码因子,P0,部分覆盖,tushare.cyq_chips（23 文件/覆盖不足）,2026-10-31,quant_backtest/data/tushare/cyq_chips,tushare.cyq_chips
+35,基本面,财务指标,基本面因子,P0,已有,tushare.fina_indicator,2026-10-30,quant_backtest\data\tushare\fina_indicator,tushare.fina_indicator
+36,基本面,利润表,基本面,P0,已有,tushare.income,2026-10-30,quant_backtest/data/tushare/income,tushare.income
+37,基本面,资产负债表,基本面,P0,已有,tushare.balancesheet,2026-10-30,quant_backtest\data\tushare\balancesheet,tushare.balancesheet
+38,基本面,现金流量表,基本面,P0,已有,tushare.cashflow,2026-10-30,quant_backtest\data\tushare\cashflow,tushare.cashflow
+39,基本面,业绩预告,事件因子,P1,部分覆盖,tushare.forecast,2026-10-30,quant_backtest\data\tushare\forecast,tushare.forecast
+40,基本面,业绩快报,事件因子,P1,部分覆盖,tushare.express,2026-10-28,quant_backtest\data\tushare\express,tushare.express
+41,基本面,主营构成,行业暴露,P2,部分覆盖,tdx.ts_fina_mainbz,2026-10-13,quant_backtest\data\tdx\ts_fina_mainbz,tushare.fina_mainbz
+42,基本面,公告文本,NLP/事件,P1,已有,tushare.anns_d,2026-11-01,quant_backtest\data\tushare\anns_d,tushare.anns_d
+43,基本面,研报评级,研报因子,P1,已有,tushare.report_rc,2026-10-31,quant_backtest\data\tushare\report_rc,tushare.report_rc
+44,基本面,研报文本,NLP/知识,P1,已有,tushare.research_report,2026-11-01,quant_backtest\data\tushare\research_report,tushare.research_report
+45,基本面,互动易问答,互动易情绪,P2,已有,tushare.irm_qa_sh,2026-10-15,quant_backtest\data\tushare\irm_qa_sh,irm_qa
+46,行业,申万/中信行业分类,行业中性化,P0,部分覆盖,tdx.ts_index_classify,2026-10-13,quant_backtest\data\tdx\ts_index_classify,tushare.index_classify
+47,行业,概念板块,主题/板块因子,P1,部分覆盖,tdx.ts_ths_index,2026-09-27,quant_backtest\data\tdx\ts_ths_index,tushare.ths_index
+48,行业,板块成分,板块映射,P1,部分覆盖,tdx.tdx_sector_member,2026-10-22,quant_backtest\data\tdx\tdx_sector_member,tdx_sector_member
+49,行业,指数成分权重,基准/中性化,P0,已有,tushare.index_weight,2026-11-01,quant_backtest\data\tushare\index_weight,tushare.index_weight
+50,行业,板块行情,板块因子,P1,已有,tdx.tdx_sector_daily,2026-10-22,quant_backtest\data\tdx\tdx_sector_daily,tdx_sector_daily
+51,行业,板块分钟,板块节奏,P2,已有,tdx.tdx_sector_min,2026-10-08,quant_backtest\data\tdx\tdx_sector_min,tdx_sector_min
+52,情绪,新闻,情绪/NLP,P1,已有,tushare.major_news,2026-11-01,quant_backtest\data\tushare\major_news,tushare.news/major_news
+53,情绪,股吧,散户情绪,P2,已有,guba,2026-11-01,quant_backtest\data\guba,guba
+54,情绪,雪球,舆情,P2,已有,xueqiu,2026-11-02,quant_backtest\data\xueqiu,xueqiu
+55,宏观,宏观指标(GDP/CPI/PPI/PMI),宏观因子,P1,缺失,,,,cnopendata/ashare
+56,宏观,利率/汇率/商品,宏观/商品因子,P1,部分覆盖,tdx.ts_cb_rate,2026-10-16,quant_backtest\data\tdx\ts_cb_rate,tushare.shibor/fx
+57,质量,公告时点/披露日期,PIT 防穿越,P0,字段/口径,各表 ann_date 字段,-,,各表 ann_date 字段
+58,质量,停牌/交易状态,可交易性,P0,字段/口径,daily 交易状态/停牌标记,-,,daily 交易状态
+59,质量,退市样本,幸存者偏差,P1,字段/口径,stock_basic list_status,-,,tushare.stock_basic list_status

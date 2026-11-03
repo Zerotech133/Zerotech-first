@@ -1,0 +1,38 @@
+# W0 merge queue（只排期，不执行）
+
+- 生成：2026-11-03 14:56
+- 约束：merge train 16:30–17:00；当前 09:15–15:05 禁并窗口结束前不 merge
+- 规则：按 IFS 依赖顺序（WIRE→SCHEMA/TRAIN）、UI 一致性、ACAD1、CAOCAO、股票；每单 merge 前跑门禁
+
+| 顺序 | task_id | owner | commits ahead | desc |
+|---:|---|---|---:|---|
+| 1 | `WO-UI-CONSIST-20261103` | DSH-Lead | 1 | 技术框架前端UI一致性：tokens/nav/shortscreen/字体统一 + 页面审计 |
+| 2 | `WO-IFS-STD-20261103` | DSH-Lead | 1 | IFS规范/接口登记表/ID/envelope/契约测试骨架 |
+| 3 | `WO-IFS-POOL-20261103` | DSH-Lead | 1 | ACAD1官方池单真源+数据仓登记 |
+| 4 | `WO-IFS-HANDOFF-20261103` | DSH-Lead | 1 | d1_handoff/v2+watch_plan消费器+trigger |
+| 5 | `WO-IFS-PAPER-20261103` | DSH-Lead | 1 | 确认→paper唯一入口+四ID链 |
+| 6 | `WO-IFS-COMP-20261103` | DSH-Lead | 1 | D1接口入composition+MCP/页面/任务登记 |
+| 7 | `WO-ACAD1-NAV2-20261103` | DSH-Lead | 1 | 司马徽导航入口重做（干净分支）：api_common学院入口+nav重导+独立测试文件，不改共享测试 |
+| 8 | `WO-INTEL-ENTITY-20261103` | intel-entity-dev(DSH) | 1 | 情报实体链抽取工具v0 [UNOWNED] |
+| 9 | `WO-JEV-OPS-20261103` | jev-ops-dev | 1 | JEV运维闭环工具v0 [UNOWNED] |
+| 10 | `WO-ACAD1-POOLROUTE-20261103` | DSH-Lead | 1 | ACAD1全池页路由补齐：/acad1/pool -> acad1_pool.html（L2，合并后reload） |
+| 11 | `UI-UNIFY-P0FIX-20261103` | DSH-Lead | 1 | UI P0快捷修复：selection重复nav.js+缺失viewport/lang页补齐+回归测试 |
+| 12 | `UI-UNIFY-SHELL-20261103` | DSH-Lead | 1 | page_shell缺失23页壳资产逐页补齐（含排除理由/测试/截图） |
+| 13 | `UI-UNIFY-SHRTSCREEN-20261103` | DSH-Lead | 1 | 短屏化补课：h2>=6未接shortscreen页逐页修复+例外记录+截图 |
+| 14 | `UI-UNIFY-VISUAL-20261103` | DSH-Lead | 1 | 视觉基线校准：ui_kit 1440/390截图更新+ui_visual_gate --update/--check rc0 |
+| 15 | `UI-UNIFY-TOOLFIX-20261103` | DSH-Lead | 1 | 工具健壮性：devtask worktree路径realpath归一+ui_visual_gate GBK告警不崩 |
+| 16 | `UI-UNIFY-A11Y-20261103` | DSH-Lead | 1 | a11y深水区：10个active页最小ARIA/aria-live/表格语义修复（不改视觉/不碰在途页） |
+| 17 | `WO-CAOCAO-FRAME-20261103` | DSH-Lead | 2 | 曹操军团框架契约与影子组合（WP1+WP3）：ADR-020修订/contract extras登记/compositions dev-legion draft |
+| 18 | `WO-ACAD1-DARK-20261103` | DSH-Lead | 2 | 司马徽页对齐技术框架深色Calm Command Center：移除os_light浅色，深色tokens/ui/1210紧凑，保留只读 |
+| 19 | `WO-HERMES-CONTRACT-20261103` | hermes-contract-dev | 2 | Hermes契约审计修复 [UNOWNED] |
+| 20 | `K-STOCK-ANALYSIS-H2-20261103` | DSH-Lead | 2 | H2 选股引擎：ScreeningDSL(schema校验/PIT/可解释)+NL规则解析+筛选执行+测试（网关端点待H1合并后接） |
+| 21 | `UI-UNIFY-TOKENS-20261103` | DSH-Lead | 2 | tokens单一真源+漂移门：3副本hash校验工具/测试/说明 |
+| 22 | `UI-UNIFY-MANIFEST-20261103` | DSH-Lead | 2 | 页面清单工具tools/page_manifest.py+初始manifest+回归 |
+| 23 | `K-STOCK-ANALYSIS-P2-8-20261030` | DSH-Lead | 3 | P2.8 批处理韧性：run_id 跨日同时刻冲突修复(retry suffix)+watchlist 恢复 603667+测试 |
+| 24 | `K-STOCK-ANALYSIS-P2-9-20261030` | DSH-Lead | 3 | P0补数：研报/一致预期维度(report_rc月分区)+curated日更扩展(cyq/margin/anns/limit从数据根增量)+测试 |
+| 25 | `WO-CAOCAO-PAGE-20261103` | DSH-Lead | 3 | 曹操军团页面决策化与Q2证据（WP2+WP5）：真实15单/事件流/筛选/决策优先/静态16清零/三档截图 |
+| 26 | `K-STOCK-ANALYSIS-H1-20261103` | DSH-Lead | 4 | H1 底座接入：内部分析网关(/api/analysis/internal/*)+stock-analysis MCP+审计哈希链+测试 |
+| 27 | `WO-ACAD1-NAV-20261103` | DSH-Lead | 5 | 司马徽页导航入口：学院→司马徽研究台，nav.js 重新导出，页面测试 |
+| 28 | `WO-IFS-WIRE-20261103` | DSH-Lead | 9 | IFS v1 五分支集成：portal_api接线+route baseline+composition对齐+E2E |
+| 29 | `WO-IFS-SCHEMA-20261103` | DSH-Lead | 10 | IFS F1：8份单接口schema+envelope适配+契约测试（基于WIRE分支） |
+| 30 | `WO-IFS-TRAIN-20261103` | DSH-Lead | 10 | IFS F5：outcome_id/training_episode_id链+契约+测试（基于WIRE分支） |

@@ -45,10 +45,18 @@ def test_save_get_list(tmp_path):
     assert rows and rows[0]["decisions"] == 1
 
 
+def test_observer_seats_are_accepted(tmp_path):
+    d = tmp_path / "hq"
+    code, env = hq.save_meeting(d, _valid(attendees=["A0", "R2", "OPT1", "AI1"]))
+    assert code == 200 and env["ok"]
+    got = hq.get_meeting(d, env["meeting_id"])
+    assert "R2" in got["meeting"]["attendees"]
+
+
 def test_save_rejects_bad_inputs(tmp_path):
     d = tmp_path / "hq"
     assert hq.save_meeting(d, _valid(type="x"))[1]["error"] == "bad_type"
-    assert hq.save_meeting(d, _valid(attendees=["R2"]))[1]["error"] == "bad_attendee"
+    assert hq.save_meeting(d, _valid(attendees=["R9"]))[1]["error"] == "bad_attendee"
     assert hq.save_meeting(d, _valid(decisions=[{"decision": ""}]))[1]["error"] == "bad_decision"
     assert hq.save_meeting(d, _valid(type="operation", decisions=[]))[1]["ok"]
 
@@ -109,3 +117,21 @@ def test_http_routes(tmp_path, monkeypatch):
     finally:
         srvr.shutdown()
         srvr.server_close()
+
+
+def test_new_org_department_leads_accepted(tmp_path):
+    d = tmp_path / "hq"
+    leads = ["D1", "ARCH1", "DATA1", "QA1", "INTEL0", "PM1"]
+    code, env = hq.save_meeting(d, _valid(attendees=leads))
+    assert code == 200 and env["ok"]
+    doc = json.loads((d / (env["meeting_id"] + ".json")).read_text(encoding="utf-8"))
+    assert doc["attendees"] == leads
+    # 未知席位仍拒绝
+    assert hq.save_meeting(d, _valid(attendees=["UNKNOWN"]))[1]["error"] == "bad_attendee"
+
+
+def test_dept_morning_type_supported(tmp_path):
+    d = tmp_path / "hq"
+    leads = ["A0", "D1", "DATA1", "QA1", "INTEL0", "ARCH1"]
+    code, env = hq.save_meeting(d, _valid(type="dept_morning", attendees=leads))
+    assert code == 200 and env["ok"]

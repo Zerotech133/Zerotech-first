@@ -22,6 +22,8 @@ import re
 import subprocess
 import sys
 import time
+import threading
+import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 import pathlib
@@ -37,6 +39,8 @@ from engine.org_profiles import fallbacks_index, profile_index, stamp  # noqa: E
 from engine.openclaw_cli import agent_primary_model, is_relay, run as oc_run  # noqa: E402
 from legion_command.snapshot import build_snapshot  # noqa: E402
 from legion_command import hq_meeting  # noqa: E402
+from legion_command import case_api  # noqa: E402
+from legion_command import case_orchestrator  # noqa: E402
 from legion_command import hq_agenda  # noqa: E402
 from legion_command import hq_acceptance  # noqa: E402
 from legion_command import hq_stats  # noqa: E402
@@ -346,6 +350,27 @@ def _litellm_route(prompt: str) -> tuple[dict, int]:
     return lr, (200 if lr.get("ok") else 502)
 
 
+def _case_actor(headers) -> tuple[str, set]:
+    """Case API 身份：优先 nginx 身份头；否则用浏览器 Cookie 问 8091 /api/auth/me。"""
+    sub = (headers.get("X-Auth-Sub") or "").strip()
+    roles = {x.strip() for x in (headers.get("X-Auth-Roles") or "").split(",") if x.strip()}
+    if sub:
+        return sub, roles
+    cookie = headers.get("Cookie") or ""
+    if not cookie:
+        return "", set()
+    try:
+        req = urllib.request.Request("http://127.0.0.1:8091/api/auth/me",
+                                     headers={"Cookie": cookie, "Accept": "application/json"})
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            d = json.loads(resp.read().decode("utf-8"))
+        sess = d.get("session") or {}
+        ctx = sess.get("identity_context") or {}
+        return str(sess.get("sub") or ""), {str(x) for x in (ctx.get("roles") or [])}
+    except Exception:
+        return "", set()
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "legion-command/1.0"
 
@@ -629,6 +654,18 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/api/evolution":
             self._send_json(self._evolution())
+            return
+        if path == "/api/case/list":
+            self._send_json({"ok": True, "cases": case_api.list_cases()})
+            return
+        if path == "/api/case/latest":
+            c = case_api.latest_case()
+            self._send_json({"ok": True, "case": c})
+            return
+        m_case = re.fullmatch(r"/api/case/get/(CASE-[A-Za-z0-9._-]{3,80})", path)
+        if m_case:
+            c = case_api.get_case(m_case.group(1))
+            self._send_json({"ok": bool(c), "case": c}, 200 if c else 404)
             return
         if path == "/api/hq/meeting/stats":
             self._send_json(hq_stats.board(HQ_MEETINGS_DIR))
@@ -2484,6 +2521,121 @@ class Handler(BaseHTTPRequestHandler):
                 return
             code, env = hq_agenda.append_message(COUNCIL_DATA, req)
             self._send_json(env, code)
+            return
+        if path == "/api/case/autorun":
+            sub, roles = _case_actor(self.headers)
+            if not sub:
+                self._send_json({"ok": False, "error": "unauthorized"}, 401)
+                return
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 256 * 1024:
+                    raise ValueError("bad length")
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                self._send_json({"ok": False, "error": "bad_request"}, 400)
+                return
+            cid = str(req.get("case_id") or "").strip()
+            if not cid:
+                import random
+                cid = "CASE-%s-%s" % (time.strftime("%Y%m%d"), "".join(random.choice("abcdefghijklmnopqrstuvwxyz0123456789") for _ in range(4)))
+            try:
+                c = case_api.get_case(cid) if cid else None
+                if not c:
+                    c = case_api.save_case({"case_id": cid, "title": str(req.get("title") or "未命名 Case"),
+                                            "materials": str(req.get("materials") or ""),
+                                            "status": "DRAFT", "opinions": [], "meeting_id": "", "proposal": ""})
+                if (c.get("orchestration") or {}).get("state") == "running":
+                    self._send_json({"ok": False, "error": "case_already_running", "case": c}, 409)
+                    return
+                threading.Thread(target=case_orchestrator.autorun, args=(cid,), daemon=True).start()
+            except ValueError as exc:
+                self._send_json({"ok": False, "error": str(exc)[:200]}, 400)
+                return
+            self._send_json({"ok": True, "case": c, "status": "running"}, 202)
+            return
+        if path == "/api/case/save":
+            _sub, _roles = _case_actor(self.headers)
+            if not _sub:
+                self._send_json({"ok": False, "error": "unauthorized"}, 401)
+                return
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 1024 * 1024:
+                    raise ValueError("bad length")
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                self._send_json({"ok": False, "error": "bad_request"}, 400)
+                return
+            try:
+                c = case_api.save_case(req.get("case") or {})
+            except ValueError as exc:
+                self._send_json({"ok": False, "error": str(exc)[:200]}, 400)
+                return
+            self._send_json({"ok": True, "case": c})
+            return
+        if path == "/api/case/approve":
+            sub, roles = _case_actor(self.headers)
+            if not sub:
+                self._send_json({"ok": False, "error": "unauthorized"}, 401)
+                return
+            if not (roles & {"APPROVER", "ADMIN", "OWNER"}):
+                self._send_json({"ok": False, "error": "approval_forbidden"}, 403)
+                return
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 64 * 1024:
+                    raise ValueError("bad length")
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                self._send_json({"ok": False, "error": "bad_request"}, 400)
+                return
+            try:
+                c = case_api.approve_case(str(req.get("case_id") or ""), str(req.get("approver") or ""),
+                                          str(req.get("note") or ""), sub)
+            except ValueError as exc:
+                self._send_json({"ok": False, "error": str(exc)[:200]}, 400)
+                return
+            self._send_json({"ok": True, "case": c})
+            return
+        if path == "/api/case/dispatch":
+            sub, roles = _case_actor(self.headers)
+            if not sub:
+                self._send_json({"ok": False, "error": "unauthorized"}, 401)
+                return
+            if not (roles & {"APPROVER", "ADMIN", "OWNER"}):
+                self._send_json({"ok": False, "error": "approval_forbidden"}, 403)
+                return
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                if length <= 0 or length > 64 * 1024:
+                    raise ValueError("bad length")
+                req = json.loads(self.rfile.read(length).decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                self._send_json({"ok": False, "error": "bad_request"}, 400)
+                return
+            c = case_api.get_case(str(req.get("case_id") or ""))
+            if not c:
+                self._send_json({"ok": False, "error": "case_not_found"}, 404)
+                return
+            if not ((c.get("approval") or {}).get("approved")):
+                self._send_json({"ok": False, "error": "human_approval_required"}, 409)
+                return
+            mid = c.get("meeting_id")
+            if not mid:
+                self._send_json({"ok": False, "error": "meeting_required"}, 409)
+                return
+            owner = str(req.get("owner") or "A0")[:40]
+            code, env = hq_meeting.dispatch_meeting(
+                HQ_MEETINGS_DIR,
+                {"meeting_id": mid, "title": ("CASE " + c["case_id"] + "：" + c.get("title", ""))[:120],
+                 "order_type": "work", "owner": owner},
+                inbox_gateway.submit)
+            if code != 200 or not env.get("ok"):
+                self._send_json(env, code)
+                return
+            c2 = case_api.mark_dispatched(c["case_id"], owner, env.get("dispatch") or env)
+            self._send_json({"ok": True, "dispatch": env.get("dispatch"), "case": c2})
             return
         if path == "/api/hq/meeting/save":
             try:

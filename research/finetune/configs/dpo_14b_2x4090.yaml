@@ -1,0 +1,32 @@
+### Qwen2.5-14B-Instruct QLoRA DPO · 2×4090（ZeRO-2，ref=SFT adapter）
+### 启动：torchrun --nproc_per_node=2 src/train.py --deepspeed examples/deepspeed/ds_z2_config.json
+model_name_or_path: <Qwen2.5-14B-Instruct 本地路径>
+adapter_name_or_path: <SFT 终验收通过的 adapter>
+stage: dpo
+pref_loss: sigmoid
+pref_beta: 0.1
+rpo_alpha: null
+learning_rate: 5.0e-7
+num_train_epochs: 1.0
+lr_scheduler_type: cosine
+warmup_ratio: 0.1
+per_device_train_batch_size: 1
+per_device_eval_batch_size: 1
+gradient_accumulation_steps: 16
+max_length: 1024
+max_prompt_length: 512
+quantization_bit: 4
+lora_rank: 32
+lora_alpha: 64
+lora_dropout: 0.0
+lora_target: all
+gradient_checkpointing: true
+bf16: true
+fp16: false
+flash_attn: fa2
+save_steps: 10
+eval_steps: 10
+logging_steps: 2
+ddp_timeout: 180000000
+output_dir: saves/qwen25-14b-qlora-dpo-2x4090
+seed: 42

@@ -256,7 +256,8 @@ def run(kb: Path, stage: str = "all", write: bool = False) -> dict:
     res["ok"] = res["summary"]["fail"] == 0
     if write:
         tag = datetime.now().strftime("%Y%m%d")
-        rp = REPORTS / f"learning_gate_{tag}.json"
+        suffix = "" if stage == "all" else f"_{stage}"
+        rp = REPORTS / f"learning_gate_{tag}{suffix}.json"
         rp.parent.mkdir(parents=True, exist_ok=True)
         rp.write_text(json.dumps(res, ensure_ascii=False, indent=1), encoding="utf-8")
         L = ["# 学习门禁报告", "", f"> {res['generated_at']}｜stage={stage}｜"
@@ -266,7 +267,7 @@ def run(kb: Path, stage: str = "all", write: bool = False) -> dict:
             for st, v in p["stages"].items():
                 L.append(f"- {'✅' if v['ok'] else '❌'} {st}" + ("（" + "; ".join(v["errors"][:3]) + "）" if v["errors"] else ""))
             L.append("")
-        (REPORTS / f"learning_gate_{tag}.md").write_text("\n".join(L), encoding="utf-8")
+        (REPORTS / f"learning_gate_{tag}{suffix}.md").write_text("\n".join(L), encoding="utf-8")
         res["receipt"] = str(rp)
     return res
 

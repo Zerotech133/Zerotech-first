@@ -7,7 +7,10 @@ $out = Join-Path $root 'logs\notice_backfill.out'
 $err = Join-Path $root 'logs\notice_backfill.err'
 $log = Join-Path $root 'logs\notice_backfill_status.log'
 Add-Content -Path $log -Value ("starting " + (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')) -Encoding ascii
-& $py -X utf8 (Join-Path $root 'kg_notice_llm.py') --backfill 1> $out 2> $err
+$batchLimit = 500
+if ($env:NOTICE_BACKFILL_LIMIT) { $batchLimit = [int]$env:NOTICE_BACKFILL_LIMIT }
+Add-Content -Path $log -Value ("batch_limit=" + $batchLimit + " " + (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')) -Encoding ascii
+& $py -X utf8 (Join-Path $root 'kg_notice_llm.py') --backfill --limit $batchLimit 1> $out 2> $err
 $rc = $LASTEXITCODE
 Add-Content -Path $log -Value ("exit=$rc " + (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')) -Encoding ascii
 if ($rc -ne 0) {

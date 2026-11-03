@@ -40,7 +40,7 @@ SPECIAL_PROTECTED = (
 )
 # 公开静态页/JS 里对受保护前缀的引用（这些页面本身要求登录，不参与白名单覆盖）
 PROTECTED_EXACT = {"/api/news/intel", "/api/intel/bus", "/api/intel/evidence-targets"}
-PROTECTED_PREFIXES_EXTRA = ("/api/xq/intel",)
+PROTECTED_PREFIXES_EXTRA = ("/api/xq/intel", "/api/case/")
 
 H4B_START = "    # ===== H4-B（K-ORG-20261101-H4HARDEN"
 H4B_END = "    # 未登记前缀默认拒绝（H4-B）"

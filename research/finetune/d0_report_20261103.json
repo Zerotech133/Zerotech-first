@@ -1,0 +1,68 @@
+{
+ "generated_at": "2026-11-03T12:10:04+08:00",
+ "plan": "2026-11-03_量化投资知识库垂域模型微调训练方案_v1",
+ "clean_stats": {
+  "input_units": 2204,
+  "raw_chars": 709529,
+  "removed_file_chars": 13523,
+  "placeholder_removed": 97,
+  "too_short": 277,
+  "whole_file_removed": 871,
+  "long_split": 85,
+  "boiler_removed": 364,
+  "exact_dup": 0,
+  "near_dup": 0,
+  "kept": 1190,
+  "char_retention": 0.713,
+  "A": 541,
+  "B": 100,
+  "D": 18,
+  "E": 1400,
+  "F": 0,
+  "C": 733,
+  "heldout": 105,
+  "DPO": {
+   "total": 65,
+   "self_pair": 25,
+   "robustness": 40,
+   "rejection_sampling_pending": "800-1200（需 D4 模型采样）"
+  },
+  "C_pending_prompts": 825
+ },
+ "sft": {
+  "train": 2545,
+  "val": 133,
+  "heldout": 105,
+  "total_train_val": 2678,
+  "by_category": {
+   "A_concept_qa": 541,
+   "B_conclusion_rewrite": 100,
+   "D_multi_source": 18,
+   "E_variant": 1400,
+   "C_reading_comprehension": 733
+  },
+  "plan_target": "2600-3100（C/E/F 完成后）"
+ },
+ "dpo": {
+  "total": 65,
+  "self_pair": 25,
+  "robustness": 40,
+  "rejection_sampling_pending": "800-1200（需 D4 模型采样）"
+ },
+ "gaps": [
+  "C 阅读理解 QA 待强模型生成（pending 980 prompts）",
+  "F 通用回混数据缺失（BELLE/Firefly/COIG，需 800-1200 条）",
+  "DPO 拒绝采样 800-1200 对需 D4 模型采样",
+  "指标说明书整文件剔除（规则 2）"
+ ],
+ "files": {
+  "clean": "research/finetune/clean/clean_units.jsonl",
+  "sft_train": "research/finetune/sft/quant_kb_sft_v1_train.jsonl",
+  "sft_val": "research/finetune/sft/quant_kb_sft_v1_val.jsonl",
+  "heldout": "research/finetune/heldout/quant_kb_heldout_105.jsonl",
+  "dpo": "research/finetune/dpo/quant_kb_dpo_v1.jsonl",
+  "c_pending": "research/finetune/pending/c_prompts_pending.jsonl",
+  "dataset_info": "research/finetune/dataset_info.json",
+  "configs": "research/finetune/configs/"
+ }
+}

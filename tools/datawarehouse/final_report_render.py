@@ -39,9 +39,14 @@ def _iso(ts: str | None) -> str:
     return str(ts).replace("T", " ")[:19]
 
 
-def load_kpi() -> dict:
+def load_kpi(date: str | None = None) -> dict:
+    path = KPI_JSON
+    if date:
+        cand = REPO / "research" / "reports" / ("kpi_baseline_%s.json" % date)
+        if cand.exists():
+            path = cand
     try:
-        d = json.loads(KPI_JSON.read_text(encoding="utf-8"))
+        d = json.loads(path.read_text(encoding="utf-8"))
         return d.get("kpis") or d
     except (OSError, ValueError):
         return {}
@@ -125,7 +130,7 @@ def main(argv=None) -> int:
         return 2
     out = Path(args.out) if args.out else OUT_TMPL.with_name(
         OUT_TMPL.name.format(date=args.date))
-    md = render(accept, load_kpi(), args.date)
+    md = render(accept, load_kpi(args.date), args.date)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(md, encoding="utf-8")
     print("OK verdict=%s -> %s" % (accept.get("verdict"), out))

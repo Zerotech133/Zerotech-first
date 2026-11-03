@@ -78,12 +78,14 @@ def _iso(dt: datetime) -> str:
     return dt.isoformat(timespec="seconds")
 
 
-def _respond(handler, obj, code=200, set_cookie=None):
+def _respond(handler, obj, code=200, set_cookie=None, headers=None):
     """认证面独立响应器：先 set-cookie 再 body（handler._json 无法带 cookie）。"""
     body = json.dumps(obj, ensure_ascii=False).encode("utf-8")
     handler.send_response(code)
     handler.send_header("Content-Type", "application/json; charset=utf-8")
     handler.send_header("Cache-Control", "no-store")
+    for k, v in (headers or {}).items():
+        handler.send_header(str(k), str(v))
     if set_cookie:
         handler.send_header("Set-Cookie", set_cookie)
     handler.send_header("Content-Length", str(len(body)))
@@ -91,8 +93,8 @@ def _respond(handler, obj, code=200, set_cookie=None):
     handler.wfile.write(body)
 
 
-def _json_safe(handler, obj, code=200, set_cookie=None):
-    _respond(handler, obj, code, set_cookie=set_cookie)
+def _json_safe(handler, obj, code=200, set_cookie=None, headers=None):
+    _respond(handler, obj, code, set_cookie=set_cookie, headers=headers)
 
 
 class SessionStore:
@@ -565,13 +567,39 @@ def me(handler) -> None:
     _json_safe(handler, _session_payload(rec))
 
 
+def quant_sso(handler) -> None:
+    """只读 SSO 握手：把门户 session 内的智策 token 交给同源量化前端。
+
+    仅限同源调用；Set-Cookie 已 HttpOnly，页面不能直接读 session。
+    持久化 session 重启后 token 为空 -> 要求重新登录。
+    """
+    rec = STORE.get(_cookie_value(handler))
+    if not rec:
+        _json_safe(handler, {"ok": False, "error": "unauthorized"}, 401)
+        return
+    token = str(rec.get("zhice_token") or "")
+    if not token:
+        _json_safe(handler, {"ok": False, "error": "sso_token_unavailable"}, 401)
+        return
+    _json_safe(handler, {
+        "ok": True,
+        "token": token,
+        "sub": rec["sub"],
+        "read_only": True,
+        "expires_in": SESSION_TTL_SECONDS,
+    })
+
+
 def guard(handler) -> None:
     """供 nginx auth_request 使用：有效 session → 200；否则 401。只读。"""
     rec = STORE.get(_cookie_value(handler))
     if not rec:
         _json_safe(handler, {"ok": False, "error": "unauthorized"}, 401)
         return
-    _json_safe(handler, {"ok": True, "sub": rec["sub"], "read_only": True})
+    ctx = rec.get("identity_context") or {}
+    roles = ctx.get("roles") or []
+    _json_safe(handler, {"ok": True, "sub": rec["sub"], "read_only": True},
+               headers={"X-Auth-Sub": rec["sub"], "X-Auth-Roles": ",".join(str(x) for x in roles)})
 
 
 def status(handler) -> None:
@@ -594,6 +622,9 @@ def handle_get(handler, path: str) -> None:
         return
     if path == "/api/auth/status":
         status(handler)
+        return
+    if path == "/api/bff/quant/sso":
+        quant_sso(handler)
         return
     if path == "/api/auth/guard":
         guard(handler)

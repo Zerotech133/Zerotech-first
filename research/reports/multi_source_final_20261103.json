@@ -1,0 +1,119 @@
+{
+ "generated_at": "2026-11-03T10:14:52+08:00",
+ "concepts": 2424,
+ "applied_groups": 29,
+ "applied_pairs": 20,
+ "clusters": 2410,
+ "multi_source": 14,
+ "target": 30,
+ "meets": false,
+ "multi_clusters": [
+  {
+   "concept": "跨境电子商务面临的四大挑战",
+   "members": [
+    "跨境电子商务面临的四大挑战"
+   ],
+   "n": 2
+  },
+  {
+   "concept": "Meta个人智能体Muse",
+   "members": [
+    "Meta个人智能体Muse",
+    "Muse 智能体",
+    "Meta AI 智能体 Muse"
+   ],
+   "n": 3
+  },
+  {
+   "concept": "国防军工行业周度表现",
+   "members": [
+    "国防军工行业周度表现"
+   ],
+   "n": 2
+  },
+  {
+   "concept": "SNPO (Scale-Up NPO)",
+   "members": [
+    "SNPO (Scale-Up NPO)"
+   ],
+   "n": 2
+  },
+  {
+   "concept": "主要原材料价格波动",
+   "members": [
+    "主要原材料价格波动",
+    "原材料价格变动"
+   ],
+   "n": 2
+  },
+  {
+   "concept": "国防军工子板块表现",
+   "members": [
+    "国防军工子板块表现",
+    "国防军工子板块分化"
+   ],
+   "n": 2
+  },
+  {
+   "concept": "贵金属金银",
+   "members": [
+    "贵金属金银",
+    "贵金属"
+   ],
+   "n": 2
+  },
+  {
+   "concept": "一根K线拉起",
+   "members": [
+    "一根K线拉起",
+    "一根K线",
+    "这根K线"
+   ],
+   "n": 2
+  },
+  {
+   "concept": "均线战法",
+   "members": [
+    "均线战法"
+   ],
+   "n": 2
+  },
+  {
+   "concept": "行业评级定义",
+   "members": [
+    "行业评级定义"
+   ],
+   "n": 2
+  },
+  {
+   "concept": "- 注意",
+   "members": [
+    "- 注意"
+   ],
+   "n": 2
+  },
+  {
+   "concept": "出现一个新的同级别中枢",
+   "members": [
+    "出现一个新的同级别中枢",
+    "又形成一个同级别中枢"
+   ],
+   "n": 2
+  },
+  {
+   "concept": "纺织品出口增长",
+   "members": [
+    "纺织品出口增长",
+    "纺织品出口趋势"
+   ],
+   "n": 2
+  },
+  {
+   "concept": "东盟中小微企业（MSME）经济地位",
+   "members": [
+    "东盟中小微企业（MSME）经济地位"
+   ],
+   "n": 2
+  }
+ ]
+}

@@ -1,0 +1,11 @@
+﻿数据集/文件,关键字段,说明
+tushare.daily,"ts_code, trade_date, open, high, low, close, pre_close, change, pct_chg, vol, amount",日线行情
+tushare.adj_factor,"ts_code, trade_date, adj_factor",复权因子
+tushare.daily_basic,"ts_code, trade_date, turnover_rate, volume_ratio, pe, pb, ps, dv_ratio, total_share, float_share, free_share, total_mv, circ_mv",每日指标
+tushare.stk_mins,"ts_code, trade_time, close, open, high, low, vol, amount",实测列（parquet，按代码×月分片）
+tushare.moneyflow,"ts_code, trade_date, buy_sm_vol/amount … net_mf_amount（以实际列为准）",资金流
+tushare.cyq_chips,以实际 parquet 列为准（date/code/price/percent 等）,筹码分布（覆盖有限）
+tushare.limit_list_d,"trade_date, ts_code, industry, name, close, pct_chg, amount, limit_amount, float_mv, total_mv, turnover_ratio, fd_amount, first_time, last_time, open_times, up_stat, limit_times, limit",涨跌停
+tushare.fina_indicator,"ts_code, ann_date, end_date, 各类财务比率（以实际列为准）",财务指标
+kb_learning_cards.json,"q, a, concept, source, topic, evidence, theme",学习卡
+knowledge_multisource,"concept, concept_key, n_sources, confidence, sources[{source_key,source_type}]",多源验证
