@@ -3417,6 +3417,11 @@ color:#fff;font-size:13.5px;cursor:pointer}
             import api_d1_handoff
             api_d1_handoff.handle_get(self, self.path.split("?", 1)[1]
                                       if "?" in self.path else "")
+        elif path == "/api/d1/training/episodes" or path.startswith("/api/d1/training/episodes/"):
+            # IFS F5：D1 training episodes 只读（不训练/不写盘；缺数据诚实 data_unavailable）
+            import api_d1_training
+            api_d1_training.handle_get(self, self.path.split("?", 1)[1]
+                                       if "?" in self.path else "")
         elif path == "/api/d1/meeting":
             # WO-D1-MEETING-20261101：D1 投研会读取（无 id 时 summary+list）
             import api_d1_meeting
