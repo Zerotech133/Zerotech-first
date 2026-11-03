@@ -48,6 +48,10 @@ spec:
         note: "ACAD1 选股报告表（PG wave1 registry 已登记 registered/exposed；dataset_registry.PG_WAVE1_TABLES）"
       - ref: dataset/pg/v2_strategy_ownership
         note: "策略归属表（PG wave1 registry 已登记；12 条策略 STRAT1=5/ST1=3/STRAT2=4）"
+      - ref: dataset/pg/v2_acad1_review
+        note: "ACAD1 池级复核（PG wave1 registry 已登记，owner=ACAD1，registered/exposed=true；research /reviews 数据源；JSON 复盘快照 dataset/file/pool_review 保留 file fallback，粒度不同不混用）"
+      - ref: dataset/pg/v2_lusu_decision
+        note: "D1 裁决读模型（PG wave1 registry 已登记，owner=D1；research /decisions 数据源；当前仅 1 行实验数据，不冒充正式账；正式账 file/d1_decisions 仍 planned）"
       - ref: dataset/file/acad1_evidence_bundle
         note: C:\Temp\acad1_evidence_bundle.json（2026-11-02 00:39，只读；P2 收敛为契约目录）
     contract: acad1-pool/v1

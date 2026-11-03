@@ -1,8 +1,8 @@
 {
   "schema": "dataset_refs_declared/v1",
-  "updated_at": "2026-11-03",
-  "wo": "WO-IFS-POOL-20261103",
-  "note": "IFS-POOL F2：D1 6 个 data ref 的显式 dataset registry 登记。能注册的带真实载体（active）；暂未落盘的写 planned 并强制 owner/due（不伪造空账/空文件）。由 tools/datawarehouse/dataset_registry.py 只读加载，dataset_registry_cli resolve-ref 解析。",
+  "updated_at": "2026-11-04",
+  "wo": "WO-ACAD1-DATAREFS-20261104",
+  "note": "IFS-POOL F2：D1 6 个 data ref 的显式 dataset registry 登记。能注册的带真实载体（active）；暂未落盘的写 planned 并强制 owner/due（不伪造空账/空文件）。由 tools/datawarehouse/dataset_registry.py 只读加载，dataset_registry_cli resolve-ref 解析。2026-11-04 ACAD1-DATAREFS：ACAD1 research reviews/decisions 的 canonical PG 表（v2_acad1_review / v2_lusu_decision）已入 dataset_registry wave1；本文件对应 file ref 保留 fallback，canonical_ref 只指向真实官方载体。",
   "refs": [
     {
       "ref": "dataset/file/recommendation_pool",
@@ -29,12 +29,12 @@
       "owner": "ACAD1",
       "status": "active",
       "authority": "review_snapshot",
-      "canonical_ref": null,
+      "canonical_ref": "dataset/pg/v2_acad1_review",
       "schema_ref": "acad1_pool_review/v1",
       "producer_job": "job/zhice-daily-research-ops",
       "access": "read_only",
       "declared_at": "2026-11-03",
-      "note": "按 pool_date 落盘的复盘记录（summary/records/plan）；官方 PG 池的池级复核另见 PG public.v2_acad1_review（review_date 粒度）。"
+      "note": "按 pool_date 落盘的复盘快照（summary/records/plan，file fallback）；官方池级复核 canonical=PG v2_acad1_review（dataset/pg/v2_acad1_review，review_date 粒度，wave1 已登记）。两者粒度不同：本文件是逐池日快照，PG 表是池级复核记录，不混用、不互冒充。"
     },
     {
       "ref": "dataset/file/team_exec",
@@ -101,7 +101,7 @@
       "due": "2026-11-16",
       "due_source": "ROADMAP_v4 W1 组合纳管 11-03~11-16（D1 首笔正式裁决落盘后转 active）",
       "reason": "载体尚未落盘：agent_platform/data/d1_decisions.jsonl 不存在（截至 2026-11-03；v2_lusu_decision 仅 1 行实验数据），不伪造空账。",
-      "note": "D1 正式裁决 JSONL（agent_platform/d1_decision.py DEFAULT_LEDGER）；落地后本条目转 active 并补 sha256/行数证据。"
+      "note": "D1 正式裁决 JSONL（agent_platform/d1_decision.py DEFAULT_LEDGER）；落地后本条目转 active 并补 sha256/行数证据。PG 读模型 dataset/pg/v2_lusu_decision 已入 wave1（owner=D1，仅 1 行实验数据，不冒充正式账；正式账仍以本 file ref 为准）。"
     }
   ]
 }
