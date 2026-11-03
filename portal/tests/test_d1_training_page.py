@@ -102,7 +102,10 @@ def test_route_inventory_unchanged_page_route_not_scanned():
     assert ("GET", "exact", "/d1_training.html") not in sigs
     baseline = json.loads((REPO / "tools" / "portal_route_baseline.json")
                           .read_text(encoding="utf-8"))
-    assert baseline.get("total") == 297
+    # 2026-11-04 路由棘轮加固：不再硬编码 total（每次新增路由都要改测试，合并列车反复被
+    # 无关新增阻断）；改为与 extract_routes 实际结果比对，保持"基线 total 自洽"的守卫语义。
+    assert baseline.get("total") == inv["total"], (
+        "基线 total 与实际路由抽取不一致，请 python tools\\portal_route_inventory.py --write-baseline")
     assert set(tuple(x) for x in baseline.get("signatures") or []) == sigs
 
 
