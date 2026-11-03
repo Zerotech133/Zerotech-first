@@ -1,0 +1,96 @@
+# -*- coding: utf-8 -*-
+"""H2 筛选引擎测试：DSL 校验/过滤/排序/解释/输出（纯函数 + 注入 provider，离线）。"""
+import os
+import sys
+import unittest
+
+import pandas as pd
+
+WT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(WT))
+sys.path.insert(0, WT)
+
+from analysis import screener  # noqa: E402
+
+
+def _df():
+    return pd.DataFrame([
+        {"ts_code": "600337.SH", "name": "ST美克", "industry_l1": "轻工制造", "ps_pct_hist": 92.0,
+         "revenue_yoy": -0.368, "net_profit_yoy": -3.12, "debt_ratio": 0.875, "flag_st": True,
+         "quality_score": 36.0},
+        {"ts_code": "603816.SH", "name": "顾家家居", "industry_l1": "轻工制造", "ps_pct_hist": 38.0,
+         "revenue_yoy": 0.062, "net_profit_yoy": 0.11, "debt_ratio": 0.45, "flag_st": False,
+         "quality_score": 72.4},
+        {"ts_code": "603833.SH", "name": "欧派家居", "industry_l1": "轻工制造", "ps_pct_hist": 44.0,
+         "revenue_yoy": 0.031, "net_profit_yoy": 0.08, "debt_ratio": 0.42, "flag_st": False,
+         "quality_score": 69.8},
+        {"ts_code": "688023.SH", "name": "安恒信息", "industry_l1": "计算机", "ps_pct_hist": 21.0,
+         "revenue_yoy": 0.0086, "net_profit_yoy": 0.0922, "debt_ratio": 0.46, "flag_st": False,
+         "quality_score": 49.4},
+    ])
+
+
+class TestValidate(unittest.TestCase):
+    def test_ok(self):
+        v = screener.validate({"universe": "WATCHLIST",
+                               "filters": [{"field": "ps_pct_hist", "op": "<=", "value": 50}],
+                               "rank_by": [{"field": "quality_score", "order": "desc"}],
+                               "limit": 10, "as_of": "2026-11-02"})
+        self.assertTrue(v["ok"], v["errors"])
+        self.assertEqual(v["spec"]["limit"], 10)
+
+    def test_bad_field_and_op(self):
+        v = screener.validate({"universe": "WATCHLIST",
+                               "filters": [{"field": "nope", "op": "<=", "value": 1}]})
+        self.assertFalse(v["ok"])
+        v = screener.validate({"universe": "WATCHLIST",
+                               "filters": [{"field": "ps", "op": "contains", "value": "x"}]})
+        self.assertFalse(v["ok"])
+
+    def test_limit_clamped(self):
+        v = screener.validate({"universe": "WATCHLIST",
+                               "filters": [{"field": "ps", "op": ">", "value": 0}], "limit": 9999})
+        self.assertEqual(v["spec"]["limit"], 200)
+
+
+class TestFilterAndRun(unittest.TestCase):
+    def _spec(self, **kw):
+        spec = {"universe": "A_SHARE", "as_of": "2026-11-02",
+                "filters": [
+                    {"field": "ps_pct_hist", "op": "<=", "value": 50},
+                    {"field": "revenue_yoy", "op": ">=", "value": 0},
+                    {"field": "flag_st", "op": "=", "value": False},
+                ],
+                "rank_by": [{"field": "quality_score", "order": "desc"}],
+                "limit": 20, "explain": True}
+        spec.update(kw)
+        return spec
+
+    def test_apply_filters_and_reasons(self):
+        sp = screener.validate(self._spec())["spec"]
+        out = screener.apply_filters(_df(), sp)
+        self.assertEqual(len(out), 3)  # 顾家/欧派/安恒；ST美克被 flag_st 排除
+        self.assertTrue(all(out["flag_st"] == False))  # noqa: E712
+        self.assertTrue(all(len(r) >= 1 for r in out["_reasons"]))
+
+    def test_run_with_provider(self):
+        r = screener.run(self._spec(), provider=lambda sp: _df())
+        self.assertTrue(r["ok"], r.get("errors"))
+        self.assertEqual(r["matched"], 3)
+        self.assertEqual([c["code"] for c in r["candidates"]],
+                         ["603816.SH", "603833.SH", "688023.SH"])
+        self.assertIn("研究", r["disclaimer"])
+        self.assertTrue(r["candidates"][0]["reasons"])
+
+    def test_run_empty_universe(self):
+        r = screener.run(self._spec(), provider=lambda sp: pd.DataFrame())
+        self.assertTrue(r["ok"])
+        self.assertEqual(r["matched"], 0)
+
+    def test_run_bad_spec(self):
+        r = screener.run({"filters": []})
+        self.assertFalse(r["ok"])
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)
