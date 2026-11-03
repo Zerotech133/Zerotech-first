@@ -69,7 +69,10 @@ CHAIN_DEFS = {
         "sla": "各源日更（tushare/tdx/guba/xueqiu/crypto）",
         "steps": [
             ("TushareSync", 30),
-            ("TdxSync", 30),
+            ("TdxSync_A_高频", 30),
+            ("TdxSync_B_财务", 30),
+            ("TdxSync_C_低频", 30),
+            ("TdxSync_D_缺口", 30),
             ("GubaCrawl", 30),
             ("XueqiuSync", 30),
             ("XueqiuCrawl", 30),
