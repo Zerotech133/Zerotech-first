@@ -44,6 +44,10 @@ spec:
         note: "PG 唯一真源（11-02 pool_date=30 selected，配额 CN12/HK10/US6/CRYPTO2）；JSON 池=shadow 投影（非官方）；/api/acad1/pool 优先 pg_official"
       - ref: dataset/pg/v2_stock_research
       - ref: dataset/pg/v2_selection_pool
+      - ref: dataset/pg/v2_selection_report
+        note: "ACAD1 选股报告表（PG wave1 registry 已登记 registered/exposed；dataset_registry.PG_WAVE1_TABLES）"
+      - ref: dataset/pg/v2_strategy_ownership
+        note: "策略归属表（PG wave1 registry 已登记；12 条策略 STRAT1=5/ST1=3/STRAT2=4）"
       - ref: dataset/file/acad1_evidence_bundle
         note: C:\Temp\acad1_evidence_bundle.json（2026-11-02 00:39，只读；P2 收敛为契约目录）
     contract: acad1-pool/v1
