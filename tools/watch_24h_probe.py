@@ -58,6 +58,28 @@ def _task_running(name):
         return False
 
 
+def _loop_process_running():
+    """Check the runner loop by process command line, not task state.
+
+    schtasks status can transiently read Ready while the task is being restarted;
+    24h probe must not emit a false production alert on that transient.
+    """
+    try:
+        cmd = (
+            "Get-CimInstance Win32_Process -Filter \"Name='powershell.exe'\" | "
+            "Where-Object { $_.CommandLine -like '*watch_engine_loop.ps1*' } | "
+            "Measure-Object | Select-Object -ExpandProperty Count"
+        )
+        out = subprocess.run(
+            ["powershell.exe", "-NoProfile", "-Command", cmd],
+            capture_output=True, text=True, timeout=10,
+            encoding="utf-8", errors="replace",
+        ).stdout.strip()
+        return int(out or "0") > 0
+    except Exception:
+        return False
+
+
 def _engine():
     try:
         d = json.loads(STATUS.read_text(encoding="utf-8-sig"))
@@ -82,16 +104,14 @@ def main(argv=None):
     a = p.parse_args(argv)
     closed = _market_closed()
     watch_ok = _http_ok(CHECK_URL)
-    admin_running = _task_running("WatchAdmin")
-    loop_running = _task_running("WatchEngineLoop")
+    admin_running = watch_ok  # 8789 HTTP is the authoritative WatchAdmin liveness
+    loop_running = _loop_process_running()
     eng = _engine()
     problems = []
     if not watch_ok:
         problems.append("8789_watch_admin_down")
-    if not admin_running:
-        problems.append("WatchAdmin_task_not_running")
     if not loop_running:
-        problems.append("WatchEngineLoop_task_not_running")
+        problems.append("WatchEngineLoop_process_not_running")
     if not closed and eng.get("age_s") is not None and eng["age_s"] > 180:
         problems.append("engine_heartbeat_stale_in_session")
     record = {
