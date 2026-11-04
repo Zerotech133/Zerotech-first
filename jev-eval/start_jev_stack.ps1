@@ -7,7 +7,11 @@
 # Exit: 0 = all up OR only externally-blocked components; 1 = internal start failure.
 param(
     [switch]$Status,
-    [switch]$Force
+    [switch]$Force,
+    # 2026-11-05：9104 card-handler 实际仍在serving（jev_card_actions_total 有数），
+    # 每次拉起都无脑 taskkill 会让飞书卡片「已处理/忽略」回调失效。改为显式开关，
+    # 默认不动 9104；-Force 仍会连带清理（等价旧行为）。
+    [switch]$StopRetired
 )
 $ErrorActionPreference = 'Continue'
 $Root = $PSScriptRoot
@@ -23,6 +27,34 @@ function Write-Log([string]$Msg) {
     $line = '[' + (Get-Date -Format 'yyyy-MM-dd HH:mm:ss') + '] ' + $Msg
     Add-Content -Path $Log -Value $line -Encoding UTF8
 }
+
+# 2026-11-05 JEVSTACK4：环境块大小写重复修复。
+# 本机会话环境块可同时存在 HTTPS_PROXY 与 https_proxy（沙箱/会话注入叠在用户环境之上），
+# Start-Process 克隆子进程环境时 .NET 字典大小写不敏感 -> 抛
+# 「已添加项。字典中的关键字:“HTTPS_PROXY”」，整段拉起失败（8-5 03:46 断档即此因）。
+# 处理：按大小写不敏感去重，保留首个键的原值（实测重复项取值相同，无损）。
+# 只改本进程环境，不碰系统/用户级设置。
+function Repair-DupEnv {
+    $all = [Environment]::GetEnvironmentVariables()
+    $keys = @($all.Keys | ForEach-Object { [string]$_ })
+    $val = @{}
+    foreach ($k in $keys) { $val[$k] = [string]$all[$k] }
+    $fixed = @()
+    foreach ($k in $keys) {
+        $u = $k.ToUpperInvariant()
+        if ($k -cne $u) { continue }                     # 只看全大写那一份
+        $variants = @($keys | Where-Object { $_ -cne $u -and $_.ToUpperInvariant() -eq $u })
+        if ($variants.Count -eq 0) { continue }
+        try {
+            [Environment]::SetEnvironmentVariable($u, $null, 'Process')
+            [Environment]::SetEnvironmentVariable($u, $val[$u], 'Process')
+            $fixed += ($u + '(+' + $variants.Count + ')')
+        } catch { }
+    }
+    return $fixed
+}
+$dupFixed = @(Repair-DupEnv)
+if ($dupFixed.Count -gt 0) { Write-Log ('env dedupe: ' + ($dupFixed -join ',')) }
 
 function Test-Port([int]$Port) {
     $conn = $null
@@ -137,8 +169,10 @@ if ($Force) {
     }
 }
 
-# 3) 9104 card-handler 已退役（W3/OS-FIX-W4FINAL）：不拉起；残留监听尽力停掉。
-if (Test-Port 9104) {
+# 3) 9104 card-handler：默认不清理（2026-11-05 实测它仍在 serving，metric
+# jev_card_actions_total 有计数，taskkill 会打断飞书卡片按钮回调）。
+# 仅 -Force 或显式 -StopRetired 时才按旧 W4 口径停掉。
+if (($Force -or $StopRetired) -and (Test-Port 9104)) {
     $oldPid = Stop-TreeByPort 9104
     Write-Log ('retired card-handler(9104) stopped pid=' + $oldPid)
 }
