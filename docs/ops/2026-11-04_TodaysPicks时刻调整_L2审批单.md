@@ -64,5 +64,15 @@ schtasks /query /tn "\TodaysPicks" /v /fo LIST   # 验收 Next Run=次日 15:40
 
 ## 8. 审批
 - 审批人：老田
-- 审批时间：待填
-- 结论：待批
+- 审批时间：2026-11-04 20:24
+- 结论：**批准**（选择「批准：改为 18:20（推荐）」）
+
+## 9. 实际执行记录
+- `schtasks /change` → Access is denied（S4U run-as 密码提示）；`Set-ScheduledTask` → E_ACCESSDENIED。
+- 改用 Task Scheduler COM `RegisterTaskDefinition(..., logonType=3)` **成功**；
+  StartBoundary=2026-10-16T18:20:00，Next Run=2026-11-05 18:20。
+- Principal 由 S4U 变为 **InteractiveToken**（风险与回滚见执行回执）。
+- 手动触发：LastResult=0，`todays_picks.json` 20:27:39 生成，
+  basis=2026-11-04，回填 404 只；详见
+  `deliverables/2026-11-04_TodaysPicks盘后时刻调整_执行回执.md`。
+
