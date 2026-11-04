@@ -43,6 +43,14 @@ while ($true) {
                     --status $autoarmStatus `
                     --json *>> $log
             }
+            if (Test-Path $planLedger) {
+                & $python -X utf8 tools\watch_guard.py `
+                    --status $statusPath `
+                    --expire-due `
+                    --plan-ledger $planLedger `
+                    --alert-file $guardAlert `
+                    --json *>> $log
+            }
             & $python -X utf8 -m agent_platform.watch_runner `
                 --once `
                 --plan-ledger $planLedger `
