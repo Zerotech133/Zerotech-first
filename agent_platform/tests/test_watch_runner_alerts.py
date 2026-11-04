@@ -14,6 +14,8 @@ import sys
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 REPO = Path(__file__).resolve().parents[2]
 for _p in (REPO, REPO / "portal"):
     if str(_p) not in sys.path:
@@ -21,12 +23,20 @@ for _p in (REPO, REPO / "portal"):
 
 from agent_platform import d1_handoff as H  # noqa: E402
 from agent_platform import watch_alerts as alerts  # noqa: E402
+from agent_platform import watch_engine as engine  # noqa: E402
 from agent_platform import watch_plan_consumer as consumer  # noqa: E402
 from agent_platform import watch_runner as R  # noqa: E402
 
 FUTURE = "2099-01-01T00:00:00+08:00"
 SYMBOL = "600519.SH"
 EXECUTION_KEYS = ("order", "qty", "quantity", "broker", "execute", "trade_id", "fill", "account")
+
+
+@pytest.fixture(autouse=True)
+def _isolate_watch_env(monkeypatch):
+    """隔离宿主 watch 账本/状态 env，避免测试串到生产账本。"""
+    for name in (R.ALERT_LEDGER_ENV, consumer.TRIGGER_LEDGER_ENV, engine.STATUS_ENV):
+        monkeypatch.delenv(name, raising=False)
 
 
 def _plan(plan_id="wp-p02-001", action="BUY", price=1500.0, operator=None):

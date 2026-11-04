@@ -30,6 +30,12 @@ SYMBOL = "600519.SH"
 QUOTE = "2026-11-04T05:30:00Z"
 
 
+@pytest.fixture(autouse=True)
+def _isolate_ledger_env(monkeypatch):
+    """隔离宿主环境中的 WATCH_ALERT_LEDGER_PATH，避免测试依赖本机配置。"""
+    monkeypatch.delenv(W.LEDGER_ENV, raising=False)
+
+
 def _event(**overrides):
     kwargs = dict(plan_id=PLAN, symbol=SYMBOL, action="alert",
                   observed="12.34", threshold="12.00", quote_as_of=QUOTE,
