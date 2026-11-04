@@ -12,6 +12,7 @@ POST（写，需 X-Portal-Token；页面 JS 本机自动注入）：
 import json
 import re
 import sys
+from urllib.parse import parse_qs
 
 ROOT = r"C:\项目\老田的AI助手"
 CODE_RE = re.compile(r"^(60[0-9]{4}|68[0-9]{4}|00[0-9]{4}|30[0-9]{4}|8[0-9]{6})\.(SH|SZ|BJ)$")
@@ -42,12 +43,9 @@ def _monitor():
 
 
 def _qs(qs):
-    out = {}
-    for part in (qs or "").split("&"):
-        if "=" in part:
-            k, v = part.split("=", 1)
-            out[k] = v
-    return out
+    """解析 query string 并做 URL 解码（页面用 encodeURIComponent(pool)，中文池名必须还原）."""
+    parsed = parse_qs(qs or "", keep_blank_values=True)
+    return {key: values[0] if values else "" for key, values in parsed.items()}
 
 
 def handle_get(handler, path, qs):

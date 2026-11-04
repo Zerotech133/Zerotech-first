@@ -96,6 +96,14 @@ class TestMonitorApi(unittest.TestCase):
         mod.handle_get(h, "/api/monitor/alerts", "severity=critical")
         self.assertEqual(h.status, 400)
 
+    def test_qs_unquotes_pool_name(self):
+        """页面用 encodeURIComponent(pool)，中文池名必须先 URL 解码再交给引擎（P2）。"""
+        h = self._h(token=False)
+        mod.handle_get(h, "/api/monitor/alerts",
+                       "pool=%E6%88%91%E7%9A%84%E8%87%AA%E9%80%89&limit=5")
+        self.assertEqual(h.status, 200)
+        self.assertEqual(self.fm.calls[-1], ("list", "我的自选", 5, None))
+
     def test_engine_missing(self):
         mod._monitor = lambda: None
         h = self._h(token=False)
