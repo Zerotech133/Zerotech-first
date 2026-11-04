@@ -1,7 +1,7 @@
 # 百炼部署后评测（W17 · 2026-11-04）
 
 > 模式：**api**（真实 API 复测）
-> 模型：`qwen2.5-14b-instruct-e383f32d42f2` · base_url：`https://llm-4n3lsps262hujtx3.cn-beijing.maas.aliyuncs.com/compatible-mode/v1` · key_source：C:\项目\_vault\secrets\dashscope_api_key.txt
+> 模型：`qwen2.5-14b-instruct-a57a3521e4e0` · base_url：`https://llm-4n3lsps262hujtx3.cn-beijing.maas.aliyuncs.com/compatible-mode/v1` · key_source：C:\项目\_vault\secrets\dashscope_api_key.txt
 > 数据：40 题（可答 30 + 不可答 10）· 来源 `C:\项目\老田的AI助手\research\reports\answer_eval_20261104.json`
 
 ## 一、部署后如何运行（命令）
@@ -23,11 +23,11 @@ python tools/finetune/bailian_eval.py --model <部署实例ID> --base-url https:
 
 | 指标 | W13 基线 | 部署后 | Δ | 目标 | 达标 |
 |---|---:|---:|---:|---:|---|
-| 引用正确率 | 0.725 | 0.55 | -0.175 | ≥0.9 | ❌ |
-| groundedness | 0.4776 | 0.6184 | +0.1408 | ≥0.6 | ✅ |
+| 引用正确率 | 0.725 | 0.8 | +0.075 | ≥0.9 | ❌ |
+| groundedness | 0.4776 | 0.6469 | +0.1693 | ≥0.6 | ✅ |
 | 不可答拒答率 | 0.8 | 1.0 | +0.2 | ≥0.8 | ✅ |
-| gold 相似度 | 0.3845 | 0.4964 | +0.1119 | ≥0.3 | ✅ |
-| 过度声明率 | 0.0 | 0.0 | 0.0 | ≤0.05 | ✅ |
+| gold 相似度 | 0.3845 | 0.5122 | +0.1277 | ≥0.3 | ✅ |
+| 过度声明率 | 0.0 | 0.025 | +0.025 | ≤0.05 | ✅ |
 | 长度异常率 | 0.0 | 0.0 | 0.0 | ≤0.1 | ✅ |
 
 > 本次 api 模式：mock 模式结果仅用于验证代码路径，不代表真实模型指标。
@@ -92,16 +92,16 @@ python tools/finetune/bailian_eval.py --model <部署实例ID> --base-url https:
 
 | qid | answerable | citation_ok | groundedness | gold_F1 | refused | 长度 | error |
 |---|---|---|---:|---:|---|---:|---|
-| A01 | True | False | 1.0 | 0.9318 | False | 107 | — |
-| A02 | True | True | 0.6049 | 0.5255 | False | 103 | — |
-| A03 | True | False | 0.8095 | 0.6355 | False | 99 | — |
-| A04 | True | False | 0.8421 | 0.7711 | False | 97 | — |
-| A05 | True | False | 0.9365 | 0.5291 | False | 76 | — |
-| A06 | True | True | 0.641 | 0.411 | False | 107 | — |
-| A07 | True | False | 1.0 | 0.5068 | False | 97 | — |
-| A08 | True | False | 1.0 | 0.9109 | False | 78 | — |
-| A09 | True | True | 0.7123 | 0.4384 | False | 109 | — |
-| A10 | True | True | 0.7089 | 0.7097 | False | 104 | — |
+| A01 | True | True | 0.9529 | 0.8715 | False | 116 | — |
+| A02 | True | True | 0.8 | 0.7129 | False | 61 | — |
+| A03 | True | True | 0.939 | 0.7264 | False | 102 | — |
+| A04 | True | True | 0.974 | 0.8982 | False | 97 | — |
+| A05 | True | True | 1.0 | 0.5388 | False | 74 | — |
+| A06 | True | True | 0.78 | 0.661 | False | 67 | — |
+| A07 | True | True | 1.0 | 0.5068 | False | 95 | — |
+| A08 | True | False | 1.0 | 0.9109 | False | 67 | — |
+| A09 | True | True | 0.8444 | 0.638 | False | 122 | — |
+| A10 | True | True | 0.8667 | 0.8212 | False | 93 | — |
 
 ## 五、结论
 
