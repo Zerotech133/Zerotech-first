@@ -252,10 +252,28 @@ class MockClient:
         return _Chat()
 
 
+# ================================================================ 引用校验（可选）
+def _verify_answer(answer: str, ctx: list[dict]) -> dict:
+    """离线引用支撑校验（复用 citation_verifier；失败返回 error 不阻断评测）。"""
+    try:
+        kb_dir = REPO / "tools" / "kb_corpus"
+        if str(kb_dir) not in sys.path:
+            sys.path.insert(0, str(kb_dir))
+        from citation_verifier import verify_answer
+        v = verify_answer(answer, ctx)
+        return {"citation_valid_rate": v.get("citation_valid_rate"),
+                "weak_rate": v.get("weak_rate"),
+                "all_supported": v.get("all_supported"),
+                "unsupported_count": len(v.get("unsupported_sentences") or []),
+                "sentences": len(v.get("per_sentence") or [])}
+    except Exception as exc:  # noqa: BLE001
+        return {"error": f"{type(exc).__name__}: {exc}"}
+
+
 # ================================================================ 评测
 def evaluate(dataset: list[dict], *, baseline_agg: dict, client, model: str,
-             limit: int = 0, mock: bool = False) -> dict:
-    """逐题调用 + W13 judge_one 评分 + 聚合（复用 W13 公式）。"""
+             limit: int = 0, mock: bool = False, verify_citations: bool = False) -> dict:
+    """逐题调用 + W13 judge_one 评分 + 聚合（可选离线引用支撑校验）。"""
     w13 = _load_w13()
     items = dataset[:limit] if limit and limit > 0 else dataset
     results = []
@@ -268,6 +286,8 @@ def evaluate(dataset: list[dict], *, baseline_agg: dict, client, model: str,
         except Exception as exc:  # noqa: BLE001
             error = f"{type(exc).__name__}: {exc}"
         judged = w13.judge_one(item, item["ctx"], answer)
+        if verify_citations:
+            judged["citation_verify"] = _verify_answer(answer, item["ctx"])
         judged["error"] = error
         results.append(judged)
     agg_bundle = aggregate_results(results, baseline_agg)
@@ -303,6 +323,16 @@ def aggregate_results(results: list[dict], baseline_agg: dict | None = None) -> 
         "avg_answer_len": round(sum(r["length"] for r in results) / max(1, n), 1),
         "answerable_n": len(ans), "unanswerable_n": len(unans),
     }
+    verified = [r["citation_verify"] for r in results if r.get("citation_verify")
+                and r["citation_verify"].get("citation_valid_rate") is not None]
+    if verified:
+        agg["citation_verified_rate"] = round(
+            sum(float(v["citation_valid_rate"]) for v in verified) / len(verified), 4)
+        agg["citation_all_supported_rate"] = round(
+            sum(1 for v in verified if v.get("all_supported")) / len(verified), 4)
+        agg["citation_weak_rate"] = round(
+            sum(float(v.get("weak_rate") or 0) for v in verified) / len(verified), 4)
+        agg["citation_unsupported_total"] = sum(int(v.get("unsupported_count") or 0) for v in verified)
     comparison = {}
     if baseline_agg:
         for k in ("citation_accuracy", "groundedness", "correct_refusal_rate", "gold_similarity",
@@ -486,7 +516,7 @@ def write_outputs(payload: dict, json_path: str | Path | None = None,
 # ================================================================ CLI
 def run(*, dry_run: bool = False, mock: bool = False, limit: int = 0, model: str = "",
         base_url: str = "", write: bool = False, key_file: str | Path | None = None,
-        w13_path: str | Path = W13_JSON) -> dict:
+        w13_path: str | Path = W13_JSON, verify_citations: bool = False) -> dict:
     payload_w13 = load_w13(w13_path)
     baseline_agg = payload_w13.get("aggregate") or {}
     dataset = build_dataset(payload_w13)
@@ -499,7 +529,7 @@ def run(*, dry_run: bool = False, mock: bool = False, limit: int = 0, model: str
         plan = build_plan(dataset, model=model, base_url=base_url, limit=limit, has_key=bool(key))
         # 管道自检（mock，不联网）：验证 40 题走通 judge/aggregate，结果仅作代码路径证据
         mock_eval = evaluate(dataset, baseline_agg=baseline_agg, client=MockClient(),
-                             model=model, limit=limit, mock=True)
+                             model=model, limit=limit, mock=True, verify_citations=verify_citations)
         payload = build_payload(payload_mode="dry-run", model=model, base_url=base_url,
                                 dataset=dataset, baseline_agg=baseline_agg, plan=plan,
                                 key_source=key_source)
@@ -511,7 +541,7 @@ def run(*, dry_run: bool = False, mock: bool = False, limit: int = 0, model: str
     else:
         client = MockClient() if mock else build_client(key, base_url)
         evaluation = evaluate(dataset, baseline_agg=baseline_agg, client=client, model=model,
-                              limit=limit, mock=mock)
+                              limit=limit, mock=mock, verify_citations=verify_citations)
         payload = build_payload(payload_mode="mock" if mock else "api", model=model,
                                 base_url=base_url, dataset=dataset, baseline_agg=baseline_agg,
                                 evaluation=evaluation,
@@ -540,12 +570,15 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--write", action="store_true", help="写 research/reports/bailian_eval_20261104.{json,md}")
     ap.add_argument("--prompt-profile", choices=["base", "strict"], default="base",
                     help="prompt 口径：base=W17 默认；strict=v4d 生产推荐（每句末引用/只引用支撑句）")
+    ap.add_argument("--verify-citations", action="store_true",
+                    help="附加离线引用支撑校验（citation_verifier），结果写 aggregate.citation_verified_rate 等")
     args = ap.parse_args(argv)
     global PROMPT_PROFILE
     PROMPT_PROFILE = args.prompt_profile
     payload = run(dry_run=args.dry_run, mock=args.mock, limit=args.limit, model=args.model,
                   base_url=args.base_url, write=args.write,
-                  key_file=Path(args.key_file) if args.key_file else None)
+                  key_file=Path(args.key_file) if args.key_file else None,
+                  verify_citations=args.verify_citations)
     agg = payload.get("aggregate") or {}
     print(f"[bailian_eval] mode={payload['mode']} model={payload['api']['model']} "
           f"base={payload['api']['base_url']} key={payload['api']['key_source']}")
