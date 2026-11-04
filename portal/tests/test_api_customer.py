@@ -13,6 +13,7 @@ sys.path.insert(0, os.path.join(WT, "portal"))
 sys.path.insert(0, WT)
 
 import api_customer  # noqa: E402
+from commercial import audit as audit_mod  # noqa: E402
 
 SECRET = "customer-portal-test-secret-32chars"
 
@@ -47,10 +48,15 @@ class TestCustomerApi(unittest.TestCase):
         self._home = api_customer.HOME
         api_customer.HOME = self.td.name
         os.environ["COMMERCIAL_HOME"] = self.td.name
+        # H1 审查修复：审计账本 hermetic 化——避免测试写入生产账本
+        # （生产账本已迁移为哈希链后，legacy 尾行会让 append fail-closed）。
+        self._audit_file = audit_mod.AUDIT_FILE
+        audit_mod.AUDIT_FILE = os.path.join(self.td.name, "audit", "audit.jsonl")
         from commercial import license as lic
         self.key = lic.issue("acme", plan="pro", expires=0, secret=SECRET)
 
     def tearDown(self):
+        audit_mod.AUDIT_FILE = self._audit_file
         api_customer.HOME = self._home
         os.environ.pop("COMMERCIAL_LICENSE_SECRET", None)
         self.td.cleanup()
