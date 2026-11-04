@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """weak_track_archive（§14）快照生成与守卫验证（K35-y · 可重复跑）。
 
-T1 快照头：标题/统计行（结案数/类型分布/命中率）
+T1 快照头：标题/统计行（结案数/类型分布/A 类兑现）
 T2 节结构：每案一节（emoji 色标+类型全名+源文件名），经验条目在内
 T3 守卫：ScopeError 拦截（不发半截链路，scopes 识别）
 T4 空态：无 close md → 空提示 rc=0（CLI 实跑）
@@ -107,7 +107,7 @@ def main():
     check(
         "T5 在案节有",
         "## 在案观察中" in md2
-        and "301216.SZ 万凯：跟踪 30 天·末次 0 天前·任务 Ready" in md2,
+        and "301216.SZ 万凯：跟踪 30 日历天·末次 0 天前·任务 Ready" in md2,
     )
     check("T5 None 跳过", "在案观察中" not in md)
 

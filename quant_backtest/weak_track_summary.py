@@ -43,6 +43,27 @@ _RE_OPEN = re.compile(r"^- 案例档案：weak_review_\d+_(\d{8})\.md")  # 立�
 _RE_ARCH = re.compile(r"^- 状态流：(\S+?\.jsonl)（已归档）")  # 归档声明（§13）
 
 
+_MIN_YEAR = 2015  # 本产线数据起点（更早的年份必为坏串）
+
+
+def valid_day(s):
+    """日期串是否可信：YYYY-MM-DD 且真实存在、年份落在 [_MIN_YEAR, 今天]。
+
+    用于拦截行情源坏日期入库（历史坏例：px_d/ts = 2026-10-16，月份与
+    日号越界；另有 02-30 这类"格式对但日期不存在"的串）。带时间的 ts
+    串只取前 10 位判定。缺失（None/空）一律判 False —— 调用方需自行
+    决定"缺失"是否算坏。
+    """
+    t = str(s or "").strip()[:10]
+    if len(t) != 10 or t[4] != "-" or t[7] != "-":
+        return False
+    try:
+        y, m, d = time.strptime(t, "%Y-%m-%d")[:3]
+    except ValueError:
+        return False
+    return _MIN_YEAR <= y and (y, m, d) <= time.localtime()[:3]
+
+
 def parse_cases(cases_dir=None):
     """扫描全部 weak_close_*.md → 案例列表（解析失败的文件跳过不炸）。"""
     d = cases_dir or CASES

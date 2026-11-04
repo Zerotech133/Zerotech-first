@@ -109,10 +109,16 @@ class KBBridge:
     # ---- YouTube：videos + comments 增量批 ----
 
     def _read_increment(self, path: Path, kind: str, max_rows: int) -> tuple[list[dict], int, int]:
-        """从游标行偏移续读，返回 (rows, new_offset, total_seen)。文件不存在→([],0,0)。"""
+        """从游标行偏移续读，返回 (rows, new_offset, total_seen)。文件不存在→([],offset,offset)。
+
+        游标语义（修复 2026-11-04 审计）：new_offset = 本轮实际消费到的最大行号+1
+        （含畸形行与截断时的边界行），保证：① max_rows 截断后下轮从断点续读不漏；
+        ② 二次采集不越界（旧行为 offset+全文件行数会在 offset>0 时跳过未读行）。
+        """
         st = self._load_cursor(kind)
         offset = int(st.get("offset", 0))
         rows: list[dict] = []
+        consumed = offset  # 已推进到的行号（下一个待读行）
         if not path.exists():
             return rows, offset, offset
         with path.open(encoding="utf-8") as f:
@@ -120,7 +126,8 @@ class KBBridge:
                 if i < offset:
                     continue
                 if len(rows) >= max_rows:
-                    break
+                    break  # 截断：游标停在本行（未消费），下轮续读
+                consumed = i + 1
                 line = line.strip()
                 if not line:
                     continue
@@ -128,8 +135,7 @@ class KBBridge:
                     rows.append(json.loads(line))
                 except Exception:
                     continue  # 畸形行跳过（失败可见在批摘要 count_malformed）
-        new_offset = offset + sum(1 for _ in path.open(encoding="utf-8")) if rows else offset
-        return rows, new_offset, new_offset
+        return rows, consumed, consumed
 
     def _collect_youtube(self, now) -> dict:
         collected_at = _now_iso()

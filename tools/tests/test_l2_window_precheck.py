@@ -159,6 +159,13 @@ def _fake_http(monkeypatch, *, health_8091=None, dw=None, health_8787=None):
     monkeypatch.setattr(pre, "http_get", fake)
 
 
+def _fake_container(monkeypatch, *, sha=None, size=None, error=""):
+    def fake(timeout=5.0):
+        return {"container": pre.CONTAINER, "path": pre.CONTAINER_DW,
+                "sha256": sha, "size": size, "error": error}
+    monkeypatch.setattr(pre, "container_dw_meta", fake)
+
+
 def _fake_process(monkeypatch, repo: Path, *, pid: int = 4321,
                   created_offset: float = 60.0, created_ts=None):
     code_ts = (repo / "portal" / "portal_api.py").stat().st_mtime
@@ -205,9 +212,9 @@ def _env_ready(tmp_path, monkeypatch, *, nginx=NGINX_READY,
                       tdx_latest=tdx_latest,
                       with_register_script=with_register_script,
                       with_jev_stack_handler=with_handler)
-    _fake_http(monkeypatch, dw={"status": 200, "ok": True,
-                                "body_len": len(DEPLOYED_HTML),
-                                "body_sha256": _sha(DEPLOYED_HTML)})
+    _fake_http(monkeypatch)
+    _fake_container(monkeypatch, sha=_sha(DEPLOYED_HTML),
+                    size=len(DEPLOYED_HTML))
     _fake_process(monkeypatch, repo)
     fixture = _tasks_fixture(tmp_path, registered=registered)
     return repo, _base_argv(repo, "--tasks-fixture", str(fixture))
@@ -277,9 +284,9 @@ def test_a1_http_fail_blocked(tmp_path, monkeypatch, capsys):
 # --------------------------------------------------------------------------- #
 def test_a2_already_swapped_ready(tmp_path, monkeypatch, capsys):
     repo = _make_repo(tmp_path)
-    _fake_http(monkeypatch, dw={"status": 200, "ok": True,
-                                "body_len": len(CANDIDATE_HTML),
-                                "body_sha256": _sha(CANDIDATE_HTML)})
+    _fake_http(monkeypatch)
+    _fake_container(monkeypatch, sha=_sha(CANDIDATE_HTML),
+                    size=len(CANDIDATE_HTML))
     _fake_process(monkeypatch, repo)
     fixture = _tasks_fixture(tmp_path)
     rc, out = _run_json(capsys, _base_argv(
@@ -290,10 +297,10 @@ def test_a2_already_swapped_ready(tmp_path, monkeypatch, capsys):
     assert "no-op" in rep["checks"][1]["reason"]
 
 
-def test_a2_served_drift_blocked(tmp_path, monkeypatch, capsys):
+def test_a2_container_drift_blocked(tmp_path, monkeypatch, capsys):
     repo = _make_repo(tmp_path)
-    _fake_http(monkeypatch, dw={"status": 200, "ok": True, "body_len": 5,
-                                "body_sha256": _sha("drift")})
+    _fake_http(monkeypatch)
+    _fake_container(monkeypatch, sha=_sha("drift"), size=5)
     _fake_process(monkeypatch, repo)
     fixture = _tasks_fixture(tmp_path)
     rc, out = _run_json(capsys, _base_argv(
@@ -302,6 +309,20 @@ def test_a2_served_drift_blocked(tmp_path, monkeypatch, capsys):
     assert rc == 2
     assert _status(rep, "A2") == "blocked"
     assert "bind mount" in rep["checks"][1]["reason"]
+
+
+def test_a2_container_unavailable_unknown(tmp_path, monkeypatch, capsys):
+    repo = _make_repo(tmp_path)
+    _fake_http(monkeypatch)
+    _fake_container(monkeypatch, error="docker daemon not running")
+    _fake_process(monkeypatch, repo)
+    fixture = _tasks_fixture(tmp_path)
+    rc, out = _run_json(capsys, _base_argv(
+        repo, "--tasks-fixture", str(fixture), "--json"))
+    rep = json.loads(out.out)
+    assert rc == 2
+    assert _status(rep, "A2") == "unknown"
+    assert "sha 读取失败" in rep["checks"][1]["reason"]
 
 
 def test_a2_candidate_missing_blocked(tmp_path, monkeypatch, capsys):

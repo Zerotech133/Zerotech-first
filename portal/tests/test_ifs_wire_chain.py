@@ -8,6 +8,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO = Path(__file__).resolve().parents[2]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
@@ -16,6 +18,17 @@ from agent_platform import d1_handoff as H  # noqa: E402
 from agent_platform import watch_plan_consumer as C  # noqa: E402
 from agent_platform import trading_bot_flow as flow  # noqa: E402
 from agent_platform.paper import trade_receipt as tr  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _hermetic_trigger_ledger(monkeypatch):
+    """宿主若导出 WATCH_TRIGGER_LEDGER_PATH，adapter 会把 trigger 事件写进生产账本。
+
+    本测试声明「全程 tmp，不读写生产账本」，故清空该环境变量，避免第二次运行命中
+    「watch_plan 已绑定其它 confirmation」而假红（H1 合并窗口 unblock，2026-11-04）。
+    """
+    monkeypatch.delenv("WATCH_TRIGGER_LEDGER_PATH", raising=False)
+
 
 EXPIRES = "2099-01-01T00:00:00+08:00"
 DECISION = "d1-20261103080000-abcdef"

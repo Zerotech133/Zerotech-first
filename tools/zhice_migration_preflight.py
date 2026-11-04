@@ -55,8 +55,8 @@ DEFAULT_VERSIONS_DIR = Path(os.environ.get(
     "ZHICE_MIGRATIONS_DIR",
     r"C:\项目\zhice-os-v2-windows-20260920\code\migrations\versions",
 ))
-DEFAULT_EXPECTED = "0049"
-DEFAULT_REQUIRE_RANGE = "0046-0049"
+DEFAULT_EXPECTED = "0050"
+DEFAULT_REQUIRE_RANGE = "0046-0050"
 DEFAULT_DB_CONTAINER = "zhice-db"
 DEFAULT_DB_NAME = "zhice_os_v2"
 DEFAULT_DB_USER = "zhice"

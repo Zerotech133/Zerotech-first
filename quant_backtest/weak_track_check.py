@@ -32,6 +32,8 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import linkage
+import cn_trading_days as ctd  # noqa: E402  （休市日历：px_d 不许落在非交易日）
+import weak_track_summary as wts  # noqa: E402  （共用 valid_day 日期校验）
 
 POOL = os.path.join(HERE, "data", "chanlun_pool.jsonl")
 OUT_DIR = os.path.join(os.path.dirname(HERE), "reports")
@@ -67,6 +69,77 @@ def trig_pivot_break(px, pivot):
     补进机查——此前破位只在 §4 打印展示，不进 trig，链路零感知。
     """
     return px is not None and pivot is not None and px < pivot
+
+
+def _last_px_d(fp):
+    """状态流末条合法且为交易日的 px_d（无流/无合法值 → 空串）。"""
+    last = ""
+    if not os.path.exists(fp):  # 首次跟踪时流还不存在，属正常
+        return last
+    try:
+        with open(fp, encoding="utf-8") as f:
+            for line in f:
+                try:
+                    r = json.loads(line)
+                except ValueError:
+                    continue
+                pd = str(r.get("px_d") or "")
+                if wts.valid_day(pd) and not ctd.why_not(pd):
+                    last = pd[:10]
+    except OSError as exc:
+        logging.getLogger(__name__).warning(
+            "silent-except %s: %s", "quant_backtest/weak_track_check.py", exc
+        )
+    return last
+
+
+def _guard_px_d(px_d, fp):
+    """坏日期拒写：px_d 非法时回退状态流末条合法值，绝不把坏串落盘。
+
+    行情缓存 bar 的 dt 可能被写坏（月/日越界、不存在的日期），也可能把
+    **休市日**当成交易日（2026 国庆 10-01~10-07 休市，行情源写出
+    px_d=2026-10-02）。而下游 weak_track_close.nd 按 px_d 去重算「跟踪
+    N 日」——坏串会塌缩、休市日会虚增，两者都让台账时长失真。落盘前设闸：
+      * 非法值不写，沿用该流上一条**合法交易日**；取不到则落 "?"；
+      * 落在周末/已登记休市日的值同样拒写（判据 cn_trading_days，未覆盖
+        年份只按周末判，不误杀）；
+      * 缺失值（空/"?"）不算坏数据，静默沿用，不刷告警；
+      * 合法交易日但小于上一合法日 = 倒退，仍照写但告警（可能是数据源
+        回滚，不阻断采集，异常交给 §13 审计的「日期倒退」项跟踪）。
+
+    返回 (落盘用 px_d, 被拦截的原始坏值或 None)；原始值仅用于审计追溯。
+    """
+    s = str(px_d or "").strip()
+    last = _last_px_d(fp)
+    if wts.valid_day(s):
+        s = s[:10]
+        why = ctd.why_not(s)
+        if why:
+            print(
+                "\n[warn] px_d 落在非交易日（%s）：%s → %s"
+                % (why, s, "沿用上一交易日 %s" % last if last else "无可沿用值，落 ?")
+            )
+            return (last or "?"), s
+        if last and s < last:  # 只告警不阻断：倒退多为缓存回滚
+            print("\n[warn] px_d 倒退：%s → %s（行情缓存可能回滚/陈旧）" % (last, s))
+        if ctd.confidence(s) == "weekday_only":
+            # 该年份还没登记休市安排 → 只能按周末判，节假日会漏判。
+            # 不阻断采集（拒写会停掉整条跟踪），但必须让人看见盲区。
+            print(
+                "\n[warn] %s 的休市安排未登记（cn_trading_days.HOLIDAYS）："
+                "当日是否开市无法确认，只按周末判断" % s
+            )
+        return s, None
+    missing = s in ("", "?")
+    print(
+        "\n%s px_d=%r → %s"
+        % (
+            "[warn] 行情源日期非法：" if not missing else "[info] px_d 缺失：",
+            px_d,
+            "沿用上一交易日 %s" % last if last else "无可沿用值，落 ?",
+        )
+    )
+    return (last or "?"), (None if missing else s)
 
 
 def trig_pool_new_sig(detect_date, since):
@@ -262,7 +335,10 @@ def main():
             else ("未命中（现价 %.2f）" % px if px else "现价不可算"),
         )
     )
-    # 状态统一构造（推送+落盘共用）
+    # 状态统一构造（推送+落盘共用）；fp 提前确定以便坏日期回退时读历史流
+    os.makedirs(OUT_DIR, exist_ok=True)
+    fp = os.path.join(OUT_DIR, "weak_track_%s.jsonl" % code.split(".")[0])
+    px_d, px_d_bad = _guard_px_d(px_d, fp)
     state = {
         "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "code": code,
@@ -276,6 +352,8 @@ def main():
         ],
         "trig": trig,
     }
+    if px_d_bad:  # 被拦截的原始坏值留痕，供 §13 审计追溯
+        state["px_d_bad"] = px_d_bad
     if trig:
         print("  >>> 触发复评！按 §6 重跑模板（执行 SOP 见 §8）。")
         # 推送主通路：飞书卡片版（默认；环境变量 WEAK_TRACK_TEXT=1 回退文本）
@@ -297,9 +375,7 @@ def main():
     else:
         print("  >>> 无触发，继续影子跟踪。")
 
-    # 状态落盘
-    os.makedirs(OUT_DIR, exist_ok=True)
-    fp = os.path.join(OUT_DIR, "weak_track_%s.jsonl" % code.split(".")[0])
+    # 状态落盘（fp 已在构造 state 前确定）
     with open(fp, "a", encoding="utf-8") as f:
         f.write(json.dumps(state, ensure_ascii=False) + "\n")
     print("\n状态已追加 %s" % fp)

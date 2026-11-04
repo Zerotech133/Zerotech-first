@@ -106,3 +106,24 @@ def legion_evidence_prod_guard(tmp_path_factory):
         if state["strict"]:
             raise AssertionError(message)
         warnings.warn(message, stacklevel=1)
+
+
+# ---------------- 宿主 watch 环境隔离（2026-11-04） ----------------
+# 宿主可能导出 WATCH_*/D1_*/TRADING_BOT_DIR（生产账本路径）。测试若未显式
+# 传路径会隐式读写生产账本；统一清空，用例要验证 env 行为时自行 setenv。
+WATCH_ENV_VARS = (
+    "WATCH_ALERT_LEDGER_PATH",
+    "WATCH_TRIGGER_LEDGER_PATH",
+    "WATCH_ENGINE_STATUS_PATH",
+    "WATCH_AUTOARM_STATUS_PATH",
+    "D1_HANDOFF_LEDGER",
+    "D1_WATCH_PLAN_LEDGER",
+    "WATCH_ALERT_FEISHU_TARGET",
+    "TRADING_BOT_DIR",
+)
+
+
+@pytest.fixture(autouse=True)
+def _isolate_watch_env(monkeypatch):
+    for name in WATCH_ENV_VARS:
+        monkeypatch.delenv(name, raising=False)

@@ -1,0 +1,644 @@
+{
+ "schema_version": "rag_rerank.v1",
+ "date": "20261104",
+ "generated_at": "2026-11-04T13:49:50+08:00",
+ "task": "W25-检索重排：gold top3 提升实验（复用 hybrid 候选，规则重排）",
+ "datasets": {
+  "w13_40": {
+   "total": 40,
+   "evaluated": 30,
+   "retrieval_evaluated": 27,
+   "no_gold": 3,
+   "no_gold_qids": [
+    "A21",
+    "A27",
+    "A29"
+   ],
+   "unanswerable": 10,
+   "unanswerable_note": "不可答 10 题无 gold，不参与检索指标（仅拒答侧评测）",
+   "candidate_source": "hybrid top10（30/30 按 question 映射 W6/hybrid）"
+  },
+  "heldout_50": {
+   "total": 50,
+   "evaluated": 50,
+   "candidate_source": "现有 W12 纯向量 top10 存储候选（held-out 无 hybrid 候选落盘）"
+  },
+  "docs": 1835
+ },
+ "method": {
+  "candidate_pool": "仅重排、不扩召回：使用已落盘 top10 候选（W13=hybrid、heldout=W12 向量）",
+  "reranker": {
+   "available": false,
+   "mode": "rule_only",
+   "models": [],
+   "reason": "本地无 rerank 模型（现有 ['qwen3.5:4b', 'qwen3.5:9b', 'bge-m3:latest']），按任务约束不联网下载 → 仅规则重排"
+  },
+  "rule_weights": {
+   "coverage": 0.45,
+   "title": 0.2,
+   "trust": 0.15,
+   "fresh": 0.1,
+   "cite": 0.1
+  },
+  "score": "0.45×查询词覆盖 + 0.20×标题/概念命中 + 0.15×来源可信 + 0.10×时效 + 0.10×引用数（同来源文件被文档库引用次数 log 归一）；score 降序、tie 保持原 rank",
+  "metrics": {
+   "rerank@5": "gold 进 top5 比例（hit@5）",
+   "recall@5": "top5 gold 命中数/gold 总数",
+   "mrr": "首个 gold 排名倒数",
+   "gold_top3": "gold 进 top3 比例"
+  },
+  "no_network_download": true
+ },
+ "sources": {
+  "hybrid_candidates": {
+   "path": "C:\\项目\\老田的AI助手\\research\\reports\\rag_hybrid_20261104.json",
+   "sha256": "a4a48d74da215783373fcc2ee0e417b226f20501f747c567e8f3ef0e530824d2"
+  },
+  "heldout": {
+   "path": "C:\\项目\\老田的AI助手\\research\\reports\\rag_heldout_20261104.json",
+   "sha256": "bd0ca32fb267c89c6aa25c28cbdbe40b89739a09dc85e6890d4f32d816343d1c"
+  },
+  "w13_questions": {
+   "path": "C:\\项目\\老田的AI助手\\research\\reports\\answer_eval_20261104.json",
+   "sha256": "ead7e21c3d453787acf0eed2ed64d929edd25321ff05674e30fbf724a04beae2"
+  },
+  "docs_loader": "C:\\项目\\老田的AI助手\\tools\\kb_corpus\\rag_baseline_eval.py"
+ },
+ "overall": {
+  "n": 77,
+  "baseline": {
+   "rerank@5": 0.9481,
+   "recall@5": 0.9416,
+   "mrr": 0.8731,
+   "gold_top3": 0.9221
+  },
+  "rerank": {
+   "rerank@5": 0.9481,
+   "recall@5": 0.9416,
+   "mrr": 0.8801,
+   "gold_top3": 0.9481
+  },
+  "delta": {
+   "rerank@5": 0.0,
+   "recall@5": 0.0,
+   "mrr": 0.007,
+   "gold_top3": 0.026
+  }
+ },
+ "sets": {
+  "w13_40": {
+   "set": "w13_40",
+   "n": 27,
+   "agg": {
+    "n": 27,
+    "baseline": {
+     "rerank@5": 1.0,
+     "recall@5": 1.0,
+     "mrr": 0.9167,
+     "gold_top3": 0.963
+    },
+    "rerank": {
+     "rerank@5": 1.0,
+     "recall@5": 1.0,
+     "mrr": 0.9259,
+     "gold_top3": 1.0
+    },
+    "delta": {
+     "rerank@5": 0.0,
+     "recall@5": 0.0,
+     "mrr": 0.0092,
+     "gold_top3": 0.037
+    }
+   },
+   "by_type": {
+    "card_concept": {
+     "n": 8,
+     "baseline": {
+      "rerank@5": 1.0,
+      "recall@5": 1.0,
+      "mrr": 1.0,
+      "gold_top3": 1.0
+     },
+     "rerank": {
+      "rerank@5": 1.0,
+      "recall@5": 1.0,
+      "mrr": 0.9375,
+      "gold_top3": 1.0
+     },
+     "delta": {
+      "rerank@5": 0.0,
+      "recall@5": 0.0,
+      "mrr": -0.0625,
+      "gold_top3": 0.0
+     }
+    },
+    "card_evidence": {
+     "n": 8,
+     "baseline": {
+      "rerank@5": 1.0,
+      "recall@5": 1.0,
+      "mrr": 0.875,
+      "gold_top3": 1.0
+     },
+     "rerank": {
+      "rerank@5": 1.0,
+      "recall@5": 1.0,
+      "mrr": 0.875,
+      "gold_top3": 1.0
+     },
+     "delta": {
+      "rerank@5": 0.0,
+      "recall@5": 0.0,
+      "mrr": 0.0,
+      "gold_top3": 0.0
+     }
+    },
+    "unit_fact": {
+     "n": 5,
+     "baseline": {
+      "rerank@5": 1.0,
+      "recall@5": 1.0,
+      "mrr": 0.9,
+      "gold_top3": 1.0
+     },
+     "rerank": {
+      "rerank@5": 1.0,
+      "recall@5": 1.0,
+      "mrr": 1.0,
+      "gold_top3": 1.0
+     },
+     "delta": {
+      "rerank@5": 0.0,
+      "recall@5": 0.0,
+      "mrr": 0.1,
+      "gold_top3": 0.0
+     }
+    },
+    "unit_howto": {
+     "n": 6,
+     "baseline": {
+      "rerank@5": 1.0,
+      "recall@5": 1.0,
+      "mrr": 0.875,
+      "gold_top3": 0.8333
+     },
+     "rerank": {
+      "rerank@5": 1.0,
+      "recall@5": 1.0,
+      "mrr": 0.9167,
+      "gold_top3": 1.0
+     },
+     "delta": {
+      "rerank@5": 0.0,
+      "recall@5": 0.0,
+      "mrr": 0.0417,
+      "gold_top3": 0.1667
+     }
+    }
+   }
+  },
+  "heldout_50": {
+   "set": "heldout_50",
+   "n": 50,
+   "agg": {
+    "n": 50,
+    "baseline": {
+     "rerank@5": 0.92,
+     "recall@5": 0.91,
+     "mrr": 0.8496,
+     "gold_top3": 0.9
+    },
+    "rerank": {
+     "rerank@5": 0.92,
+     "recall@5": 0.91,
+     "mrr": 0.8553,
+     "gold_top3": 0.92
+    },
+    "delta": {
+     "rerank@5": 0.0,
+     "recall@5": 0.0,
+     "mrr": 0.0057,
+     "gold_top3": 0.02
+    }
+   },
+   "by_type": {
+    "concept_real": {
+     "n": 10,
+     "baseline": {
+      "rerank@5": 0.9,
+      "recall@5": 0.85,
+      "mrr": 0.82,
+      "gold_top3": 0.8
+     },
+     "rerank": {
+      "rerank@5": 0.9,
+      "recall@5": 0.85,
+      "mrr": 0.85,
+      "gold_top3": 0.9
+     },
+     "delta": {
+      "rerank@5": 0.0,
+      "recall@5": 0.0,
+      "mrr": 0.03,
+      "gold_top3": 0.1
+     }
+    },
+    "note_reading": {
+     "n": 25,
+     "baseline": {
+      "rerank@5": 0.92,
+      "recall@5": 0.92,
+      "mrr": 0.9044,
+      "gold_top3": 0.92
+     },
+     "rerank": {
+      "rerank@5": 0.96,
+      "recall@5": 0.96,
+      "mrr": 0.96,
+      "gold_top3": 0.96
+     },
+     "delta": {
+      "rerank@5": 0.04,
+      "recall@5": 0.04,
+      "mrr": 0.0556,
+      "gold_top3": 0.04
+     }
+    },
+    "reading_comprehension": {
+     "n": 15,
+     "baseline": {
+      "rerank@5": 0.9333,
+      "recall@5": 0.9333,
+      "mrr": 0.7778,
+      "gold_top3": 0.9333
+     },
+     "rerank": {
+      "rerank@5": 0.8667,
+      "recall@5": 0.8667,
+      "mrr": 0.6844,
+      "gold_top3": 0.8667
+     },
+     "delta": {
+      "rerank@5": -0.0666,
+      "recall@5": -0.0666,
+      "mrr": -0.0934,
+      "gold_top3": -0.0666
+     }
+    }
+   }
+  }
+ },
+ "examples": {
+  "improved": [
+   {
+    "qid": "A09",
+    "type": "card_evidence",
+    "question": "关于「K线合并」，资料中的依据/来源是什么？",
+    "gold_doc_ids": [
+     "C:274"
+    ],
+    "candidate_depth": 10,
+    "candidate_source": "hybrid_top10",
+    "baseline": {
+     "rerank@5": 1.0,
+     "recall@5": 1.0,
+     "mrr": 0.5,
+     "gold_top3": 1.0
+    },
+    "rerank": {
+     "rerank@5": 1.0,
+     "recall@5": 1.0,
+     "mrr": 1.0,
+     "gold_top3": 1.0
+    },
+    "changed": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9
+    ]
+   },
+   {
+    "qid": "A23",
+    "type": "unit_howto",
+    "question": "关于「看这张图」，操作要点是什么？",
+    "gold_doc_ids": [
+     "U:learn_laomu_notes_0005"
+    ],
+    "candidate_depth": 10,
+    "candidate_source": "hybrid_top10",
+    "baseline": {
+     "rerank@5": 1.0,
+     "recall@5": 1.0,
+     "mrr": 0.25,
+     "gold_top3": 0.0
+    },
+    "rerank": {
+     "rerank@5": 1.0,
+     "recall@5": 1.0,
+     "mrr": 1.0,
+     "gold_top3": 1.0
+    },
+    "changed": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9
+    ]
+   },
+   {
+    "qid": "A30",
+    "type": "unit_fact",
+    "question": "「放量不等于有效放量」的依据/事实是什么？",
+    "gold_doc_ids": [
+     "U:learn_视频号学习_8博主_0005"
+    ],
+    "candidate_depth": 10,
+    "candidate_source": "hybrid_top10",
+    "baseline": {
+     "rerank@5": 1.0,
+     "recall@5": 1.0,
+     "mrr": 0.5,
+     "gold_top3": 1.0
+    },
+    "rerank": {
+     "rerank@5": 1.0,
+     "recall@5": 1.0,
+     "mrr": 1.0,
+     "gold_top3": 1.0
+    },
+    "changed": [
+     0,
+     1,
+     2,
+     3,
+     5,
+     6,
+     7,
+     9
+    ]
+   },
+   {
+    "qid": "Q008",
+    "type": "concept_real",
+    "question": "什么是「缠论级别逻辑」？",
+    "gold_doc_ids": [
+     "C:382",
+     "U:learn_视频号学习_8博主_0423"
+    ],
+    "candidate_depth": 10,
+    "candidate_source": "vector_top10_stored",
+    "baseline": {
+     "rerank@5": 1.0,
+     "recall@5": 0.5,
+     "mrr": 0.2,
+     "gold_top3": 0.0
+    },
+    "rerank": {
+     "rerank@5": 1.0,
+     "recall@5": 0.5,
+     "mrr": 0.5,
+     "gold_top3": 1.0
+    },
+    "changed": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9
+    ]
+   },
+   {
+    "qid": "Q015",
+    "type": "reading_comprehension",
+    "question": "买点正确但卖出不佳可能带来什么后果？",
+    "gold_doc_ids": [
+     "U:learn_视频号学习_8博主_1015"
+    ],
+    "candidate_depth": 10,
+    "candidate_source": "vector_top10_stored",
+    "baseline": {
+     "rerank@5": 1.0,
+     "recall@5": 1.0,
+     "mrr": 0.3333,
+     "gold_top3": 1.0
+    },
+    "rerank": {
+     "rerank@5": 1.0,
+     "recall@5": 1.0,
+     "mrr": 1.0,
+     "gold_top3": 1.0
+    },
+    "changed": [
+     0,
+     1,
+     2,
+     3,
+     5,
+     6,
+     7
+    ]
+   }
+  ],
+  "regressed": [
+   {
+    "qid": "A08",
+    "type": "card_concept",
+    "question": "「形中有形」的核心要点是什么？",
+    "gold_doc_ids": [
+     "C:236"
+    ],
+    "candidate_depth": 10,
+    "candidate_source": "hybrid_top10",
+    "baseline": {
+     "rerank@5": 1.0,
+     "recall@5": 1.0,
+     "mrr": 1.0,
+     "gold_top3": 1.0
+    },
+    "rerank": {
+     "rerank@5": 1.0,
+     "recall@5": 1.0,
+     "mrr": 0.5,
+     "gold_top3": 1.0
+    },
+    "changed": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     7,
+     8,
+     9
+    ]
+   },
+   {
+    "qid": "A14",
+    "type": "card_evidence",
+    "question": "关于「均线 MA/EMA」，资料中的依据/来源是什么？",
+    "gold_doc_ids": [
+     "C:164"
+    ],
+    "candidate_depth": 10,
+    "candidate_source": "hybrid_top10",
+    "baseline": {
+     "rerank@5": 1.0,
+     "recall@5": 1.0,
+     "mrr": 1.0,
+     "gold_top3": 1.0
+    },
+    "rerank": {
+     "rerank@5": 1.0,
+     "recall@5": 1.0,
+     "mrr": 0.5,
+     "gold_top3": 1.0
+    },
+    "changed": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9
+    ]
+   },
+   {
+    "qid": "A22",
+    "type": "unit_howto",
+    "question": "关于「写均线向上」，操作要点是什么？",
+    "gold_doc_ids": [
+     "U:learn_视频号学习_8博主_0004"
+    ],
+    "candidate_depth": 10,
+    "candidate_source": "hybrid_top10",
+    "baseline": {
+     "rerank@5": 1.0,
+     "recall@5": 1.0,
+     "mrr": 1.0,
+     "gold_top3": 1.0
+    },
+    "rerank": {
+     "rerank@5": 1.0,
+     "recall@5": 1.0,
+     "mrr": 0.5,
+     "gold_top3": 1.0
+    },
+    "changed": [
+     0,
+     1,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9
+    ]
+   },
+   {
+    "qid": "Q013",
+    "type": "reading_comprehension",
+    "question": "如何解决MACD、SKDJ和均线指标过多的问题？",
+    "gold_doc_ids": [
+     "U:learn_视频号学习_8博主_0647"
+    ],
+    "candidate_depth": 10,
+    "candidate_source": "vector_top10_stored",
+    "baseline": {
+     "rerank@5": 1.0,
+     "recall@5": 1.0,
+     "mrr": 1.0,
+     "gold_top3": 1.0
+    },
+    "rerank": {
+     "rerank@5": 1.0,
+     "recall@5": 1.0,
+     "mrr": 0.5,
+     "gold_top3": 1.0
+    },
+    "changed": [
+     0,
+     1,
+     2,
+     3,
+     9
+    ]
+   },
+   {
+    "qid": "Q014",
+    "type": "reading_comprehension",
+    "question": "1月7日上证大盘缠论分析结论是什么？",
+    "gold_doc_ids": [
+     "U:learn_视频号学习_8博主_0428"
+    ],
+    "candidate_depth": 10,
+    "candidate_source": "vector_top10_stored",
+    "baseline": {
+     "rerank@5": 1.0,
+     "recall@5": 1.0,
+     "mrr": 1.0,
+     "gold_top3": 1.0
+    },
+    "rerank": {
+     "rerank@5": 0.0,
+     "recall@5": 0.0,
+     "mrr": 0.1,
+     "gold_top3": 0.0
+    },
+    "changed": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9
+    ]
+   }
+  ]
+ },
+ "recommendation": {
+  "recommend": true,
+  "level": "小流量 A/B",
+  "reason": "gold_top3 提升 +0.0260、rerank@5 不降（+0.0000）、MRR 不降（+0.0070）：建议 top10 内重排小流量 A/B 上线"
+ },
+ "conclusion": "规则重排（top10 内）：gold_top3 0.9221→0.9481（+0.0260）、rerank@5 0.9481→0.9481（+0.0000）、MRR 0.8731→0.8801（+0.0070）；建议：小流量 A/B（gold_top3 提升 +0.0260、rerank@5 不降（+0.0000）、MRR 不降（+0.0070）：建议 top10 内重排小流量 A/B 上线）。",
+ "limitations": [
+  "候选池为已落盘 top10（非 top20 重算）：gold 在 11+ 名的题无法通过重排进 top5，提升空间受限；",
+  "held-out 候选来自 W12 纯向量 top10（非 hybrid），两数据集候选来源不一致；",
+  "本地无 bge-reranker 且按约束不联网下载 → 仅规则重排；规则权重为人工先验，未做权重学习；",
+  "W13 可答 30 题由 W6 50 题按题型均衡抽取，question 精确映射（30/30），gold=citation_gold；",
+  "只读评测：不改检索服务/索引，不写生产库；结果仅研究参考。"
+ ],
+ "disclaimer": "研究输出，不构成投资建议。",
+ "_outputs": {
+  "json": "C:\\项目\\老田的AI助手\\research\\reports\\rag_rerank_20261104.json",
+  "md": "C:\\项目\\老田的AI助手\\research\\reports\\rag_rerank_20261104.md"
+ }
+}
