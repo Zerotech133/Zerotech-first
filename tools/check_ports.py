@@ -377,6 +377,13 @@ OPTIONAL_OFFLINE |= {1234, 1238, 8898, 18899}
 # 隔离验收/按需语义同 8796；strict 语义=防抢占、不因闲置判负）。
 OPTIONAL_OFFLINE |= {8795}
 
+# 2026-11-04 21:40 合并窗口实测：3080=DeepSeek Harness Web GUI
+# (node .../@deepseek-ai/dsh/lib/bin.js web)，18787=billion-context
+# 会话上下文守护 (node .../billion-context/dist/index.js)。两者都是
+# 当前会话的 Agent 工具进程，不是平台服务；登记进 REGISTRY 会写成假事实。
+# strict 只豁免这两个会话端口，平台 node 服务仍按未登记拦截。
+HARNESS_UNREGISTERED_PORTS = {3080, 18787}
+
 
 def main():
     strict = "--strict" in sys.argv
@@ -411,6 +418,10 @@ def main():
     transient = []
     for p, pid in sorted(listen.items()):
         if not (1024 < p <= 49151) or p in REGISTRY:
+            continue
+        if p in HARNESS_UNREGISTERED_PORTS:
+            say("  ⚠ %d 由 %s 监听——DSH/billion-context 会话工具，strict 豁免"
+                % (p, proc_name(pid)))
             continue
         name = proc_name(pid)
         if any(w in name.lower() for w in WHITELIST):
