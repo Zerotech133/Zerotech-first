@@ -81,7 +81,9 @@ def view_from_query(query=None):
         return DEFAULT_VIEW
     if isinstance(query, dict):
         values = query.get(VIEW_QUERY_KEY) or []
-        if isinstance(values, str):
+        if isinstance(values, (str, bytes)):
+            values = [values]
+        elif not isinstance(values, (list, tuple)):
             values = [values]
     else:
         try:
