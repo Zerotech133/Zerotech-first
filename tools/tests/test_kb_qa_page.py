@@ -93,7 +93,7 @@ def test_static_samples_contract_readonly():
     assert guard.get("enabled") is True and guard.get("on_fail") == "fallback"
     assert data.get("disclaimer") and "不构成投资建议" in data["disclaimer"]
     samples = data.get("samples") or []
-    assert 10 <= len(samples) <= 12
+    assert len(samples) == 8
     for s in samples:
         assert s.get("question") and "answer" in s
         assert s.get("mode") == "multi"

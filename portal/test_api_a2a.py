@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""A2A cards API：6 卡 discovery、单卡、未知 404。"""
+"""A2A cards API：7 卡 discovery、单卡、未知 404。"""
 from __future__ import annotations
 
 import json
@@ -30,7 +30,7 @@ def _call(path):
 def test_list_cards():
     code, obj = _call("/api/a2a/agent-cards")
     assert code == 200 and obj["ok"] is True
-    assert obj["data"]["count"] == 6
+    assert obj["data"]["count"] == 7
 
 
 def test_single_card():

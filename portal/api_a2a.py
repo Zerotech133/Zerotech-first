@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """A2A Agent Card 只读入口（W3）。
 
-GET /api/a2a/agent-cards                  -> 6 张卡
+GET /api/a2a/agent-cards                  -> 7 张卡
 GET /api/a2a/agent-cards/<id>             -> 单卡
 GET /api/a2a/<id>/.well-known/agent-card.json -> 单卡（标准发现路径别名）
 未实现 A2A 任务执行；仅 discovery/cards，符合当前 planned 状态。

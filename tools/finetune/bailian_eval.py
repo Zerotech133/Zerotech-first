@@ -262,6 +262,7 @@ def _verify_answer(answer: str, ctx: list[dict]) -> dict:
         from citation_verifier import verify_answer
         v = verify_answer(answer, ctx)
         return {"citation_valid_rate": v.get("citation_valid_rate"),
+                "cited_sentences": v.get("cited_sentences"),
                 "weak_rate": v.get("weak_rate"),
                 "all_supported": v.get("all_supported"),
                 "unsupported_count": len(v.get("unsupported_sentences") or []),
@@ -286,6 +287,12 @@ def evaluate(dataset: list[dict], *, baseline_agg: dict, client, model: str,
         except Exception as exc:  # noqa: BLE001
             error = f"{type(exc).__name__}: {exc}"
         judged = w13.judge_one(item, item["ctx"], answer)
+        if error:
+            # 2026-11-05 审计修复：API 错误时空答案会被 is_refusal 的 len<8 判成
+            # 「合规拒答」，进而 citation_ok=True 抬高引用正确率；错误行不得计分。
+            judged["citation_ok"] = False
+            judged["citation_valid"] = False
+            judged["refused"] = False
         if verify_citations:
             judged["citation_verify"] = _verify_answer(answer, item["ctx"])
         judged["error"] = error
@@ -313,10 +320,14 @@ def aggregate_results(results: list[dict], baseline_agg: dict | None = None) -> 
         "citation_accuracy": round(sum(1 for r in results if r["citation_ok"]) / max(1, n), 4),
         "citation_valid_rate": round(sum(1 for r in results if r["citation_valid"]) / max(1, n), 4),
         "groundedness": round(sum(r["groundedness"] for r in results) / max(1, n), 4),
-        "gold_similarity": round(sum(r["gold_similarity"] for r in ans
-                                     if r["gold_similarity"] is not None) / max(1, len(ans)), 4),
+        "gold_similarity": (round(sum(r["gold_similarity"] for r in ans
+                                     if r["gold_similarity"] is not None)
+                                / max(1, sum(1 for r in ans if r["gold_similarity"] is not None)), 4)
+                           if any(r["gold_similarity"] is not None for r in ans) else None),
+        "gold_scored_n": sum(1 for r in ans if r["gold_similarity"] is not None),
         "refusal_rate": round(sum(1 for r in results if r["refused"]) / max(1, n), 4),
-        "correct_refusal_rate": round(sum(1 for r in unans if r["refused"]) / max(1, len(unans)), 4),
+        "correct_refusal_rate": round(sum(1 for r in unans
+                                         if r["refused"] and not r.get("error")) / max(1, len(unans)), 4),
         "over_refusal_rate": round(sum(1 for r in ans if r["refused"]) / max(1, len(ans)), 4),
         "overclaim_rate": round(sum(1 for r in results if r["overclaim"]) / max(1, n), 4),
         "length_anomaly_rate": round(sum(1 for r in results if r["length_anomaly"]) / max(1, n), 4),
@@ -324,7 +335,8 @@ def aggregate_results(results: list[dict], baseline_agg: dict | None = None) -> 
         "answerable_n": len(ans), "unanswerable_n": len(unans),
     }
     verified = [r["citation_verify"] for r in results if r.get("citation_verify")
-                and r["citation_verify"].get("citation_valid_rate") is not None]
+                and r["citation_verify"].get("citation_valid_rate") is not None
+                and int(r["citation_verify"].get("cited_sentences") or 0) > 0]
     if verified:
         agg["citation_verified_rate"] = round(
             sum(float(v["citation_valid_rate"]) for v in verified) / len(verified), 4)
@@ -333,6 +345,11 @@ def aggregate_results(results: list[dict], baseline_agg: dict | None = None) -> 
         agg["citation_weak_rate"] = round(
             sum(float(v.get("weak_rate") or 0) for v in verified) / len(verified), 4)
         agg["citation_unsupported_total"] = sum(int(v.get("unsupported_count") or 0) for v in verified)
+        agg["citation_verified_n"] = len(verified)
+        agg["citation_verified_excluded_n"] = sum(
+            1 for r in results if r.get("citation_verify")
+            and r["citation_verify"].get("citation_valid_rate") is not None
+            and int(r["citation_verify"].get("cited_sentences") or 0) == 0)
     comparison = {}
     if baseline_agg:
         for k in ("citation_accuracy", "groundedness", "correct_refusal_rate", "gold_similarity",
@@ -386,6 +403,7 @@ def build_payload(*, payload_mode: str, model: str, base_url: str, dataset: list
         "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
         "task": "W17-百炼部署后评测（W13 40 题 × 百炼 OpenAI 兼容接口）",
         "mode": payload_mode,
+        "prompt_profile": (evaluation or {}).get("prompt_profile") or PROMPT_PROFILE,
         "api": {"base_url": base_url, "model": model, "key_source": key_source,
                 "dry_run": payload_mode == "dry-run", "mock": payload_mode == "mock"},
         "dataset": dataset_meta,
@@ -516,7 +534,8 @@ def write_outputs(payload: dict, json_path: str | Path | None = None,
 # ================================================================ CLI
 def run(*, dry_run: bool = False, mock: bool = False, limit: int = 0, model: str = "",
         base_url: str = "", write: bool = False, key_file: str | Path | None = None,
-        w13_path: str | Path = W13_JSON, verify_citations: bool = False) -> dict:
+        w13_path: str | Path = W13_JSON, verify_citations: bool = False,
+        out_json: str | Path | None = None, out_md: str | Path | None = None) -> dict:
     payload_w13 = load_w13(w13_path)
     baseline_agg = payload_w13.get("aggregate") or {}
     dataset = build_dataset(payload_w13)
@@ -549,7 +568,7 @@ def run(*, dry_run: bool = False, mock: bool = False, limit: int = 0, model: str
                                                 has_key=bool(key)),
                                 key_source=key_source)
     if write:
-        jp, mp = write_outputs(payload)
+        jp, mp = write_outputs(payload, out_json, out_md)
         payload["_outputs"] = {"json": jp, "md": mp}
     return payload
 
@@ -568,6 +587,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--base-url", default="", help=f"OpenAI 兼容 base_url（默认北京 {DEFAULT_BASE}）")
     ap.add_argument("--key-file", default="", help="DASHSCOPE_API_KEY 本地文件路径")
     ap.add_argument("--write", action="store_true", help="写 research/reports/bailian_eval_20261104.{json,md}")
+    ap.add_argument("--out-json", default="", help="覆盖 --write 的 JSON 输出路径（周度复评按日期归档用）")
+    ap.add_argument("--out-md", default="", help="覆盖 --write 的 Markdown 输出路径")
     ap.add_argument("--prompt-profile", choices=["base", "strict"], default="base",
                     help="prompt 口径：base=W17 默认；strict=v4d 生产推荐（每句末引用/只引用支撑句）")
     ap.add_argument("--verify-citations", action="store_true",
@@ -578,7 +599,8 @@ def main(argv: list[str] | None = None) -> int:
     payload = run(dry_run=args.dry_run, mock=args.mock, limit=args.limit, model=args.model,
                   base_url=args.base_url, write=args.write,
                   key_file=Path(args.key_file) if args.key_file else None,
-                  verify_citations=args.verify_citations)
+                  verify_citations=args.verify_citations,
+                  out_json=args.out_json or None, out_md=args.out_md or None)
     agg = payload.get("aggregate") or {}
     print(f"[bailian_eval] mode={payload['mode']} model={payload['api']['model']} "
           f"base={payload['api']['base_url']} key={payload['api']['key_source']}")

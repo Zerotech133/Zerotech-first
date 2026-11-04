@@ -130,3 +130,47 @@ def test_env_model_override(tmp_path, monkeypatch):
     transport = lambda url, headers, payload, timeout: (200, BAILIAN_OK)
     r = lr.generate("问题", transport=transport, cost_log=_log(tmp_path))
     assert r["model"] == "custom-model-x"
+
+
+def test_default_cost_log_is_daily(tmp_path, monkeypatch):
+    """默认成本日志必须按本地日期分文件，而不是写死某一天。"""
+    from datetime import datetime
+    monkeypatch.delenv("LLM_COST_LOG", raising=False)
+    monkeypatch.setattr(lr, "REPORTS", tmp_path)
+    p = lr._cost_log_path(datetime(2026, 11, 5, 9, 0).astimezone())
+    assert p == tmp_path / "llm_cost_20261105.jsonl"
+    assert p != lr._cost_log_path(datetime(2026, 11, 6, 9, 0).astimezone())
+    # 显式 env 覆盖保持不变
+    monkeypatch.setenv("LLM_COST_LOG", str(tmp_path / "custom.jsonl"))
+    assert lr._cost_log_path() == tmp_path / "custom.jsonl"
+
+
+def test_empty_content_still_logs_cost_before_degrade(tmp_path):
+    """审计回归：200 但空内容已消耗 token，必须落账（error=empty_content）再降级。"""
+    empty = json.dumps({"choices": [{"message": {"content": ""}}],
+                        "usage": {"prompt_tokens": 5000, "completion_tokens": 1}})
+    seq = [(200, empty), (200, BAILIAN_OK)]
+
+    def transport(url, headers, payload, timeout):
+        return seq.pop(0)
+
+    r = lr.generate("问题", transport=transport, cost_log=_log(tmp_path))
+    assert r["ok"] is True and r["tier"] == 2
+    rows = lr.load_cost_log(Path(_log(tmp_path)))
+    assert len(rows) == 2
+    assert rows[0]["error"] == "empty_content" and rows[0]["prompt_tokens"] == 5000
+    assert rows[1]["tier"] == 2
+
+
+def test_cost_log_write_failure_does_not_discard_paid_answer(tmp_path):
+    """审计回归：记账失败不能把已付费的 200 答案当失败再降级。"""
+    calls = {"n": 0}
+
+    def transport(url, headers, payload, timeout):
+        calls["n"] += 1
+        return 200, BAILIAN_OK
+
+    r = lr.generate("问题", transport=transport, cost_log=tmp_path)  # 目录不可写
+    assert r["ok"] is True and r["text"] == "云端答案" and r["tier"] == 1
+    assert calls["n"] == 1
+    assert r["cost_log_error"] and "cost_log" in r["cost_log_error"]

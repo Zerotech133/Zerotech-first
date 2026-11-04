@@ -100,3 +100,11 @@ def test_ask_single_router_failure_falls_back_to_rule(monkeypatch):
     result = qa.ask("M9 覆铜板？", mode="single", search_fn=fake_search, guard=False)
     assert result["fallback"] is True
     assert "规则降级" in result["answer"]
+
+
+def test_invalid_provider_fails_fast(monkeypatch):
+    """审计回归：KB_QA_LLM_PROVIDER 拼错必须在 ask 入口报错，不能静默回退规则答案。"""
+    monkeypatch.setattr(qa, "DEFAULT_LLM_PROVIDER", "openai")
+    with pytest.raises(qa.KbQaError) as exc:
+        qa.ask("问题", search_fn=fake_search)
+    assert "KB_QA_LLM_PROVIDER" in str(exc.value)

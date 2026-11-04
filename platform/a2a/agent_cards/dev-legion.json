@@ -1,0 +1,56 @@
+{
+  "protocolVersion": "0.3.0",
+  "name": "曹操军团（研发军团）",
+  "description": "曹操研发军团 A2A 入口（draft/shadow；只读作战屏，经零界 8734 单点登录/内部调用）",
+  "url": "http://127.0.0.1:8091/api/dev/legion",
+  "preferredTransport": "JSONRPC",
+  "version": "0.1.0",
+  "provider": {
+    "organization": "零界",
+    "owner": "ARCH1"
+  },
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false,
+    "stateTransitionHistory": true
+  },
+  "defaultInputModes": [
+    "text/plain",
+    "application/json"
+  ],
+  "defaultOutputModes": [
+    "application/json"
+  ],
+  "skills": [
+    {
+      "id": "dev-legion-screen",
+      "name": "研发军团作战屏",
+      "description": "ARCH1 曹操军团 11 席只读作战屏与研发治理数据",
+      "tags": [
+        "dev-legion",
+        "zerobound"
+      ]
+    },
+    {
+      "id": "governance",
+      "name": "研发治理",
+      "description": "任务/WIP/红线/每日指标只读聚合",
+      "tags": [
+        "dev-legion",
+        "zerobound"
+      ]
+    },
+    {
+      "id": "acceptance",
+      "name": "验收复核",
+      "description": "研发交付与门禁证据复核",
+      "tags": [
+        "dev-legion",
+        "zerobound"
+      ]
+    }
+  ],
+  "x-composition": "dev-legion",
+  "x-status": "planned",
+  "x-auth": "8734 OIDC / internal key"
+}
