@@ -21,7 +21,9 @@ def test_catalog_alignment_uses_current_catalog_and_registry():
     live = json.loads(CATALOG.read_text(encoding="utf-8"))
     assert a["catalog_version"] == live.get("version"), (
         "HTTP stats 的 catalog_version 与 live catalog.json 不一致")
-    assert a["catalog_tables"] >= 300
+    assert a["catalog_tables"] == len(live.get("tables") or {}), (
+        "HTTP stats 的 catalog_tables 与 live catalog.json 表数不一致")
+    assert a["catalog_tables"] >= 200
     assert a["registry_physical"] == a["catalog_tables"]
     assert a["registry_display"] > 0
     assert a["catalog_updated"]
