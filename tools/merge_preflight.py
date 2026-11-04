@@ -135,11 +135,12 @@ def consume_preflight_token(head: str, token_dir=None,
 
 
 def changed_files() -> list[str]:
-    r = subprocess.run(["git", "-C", str(REPO), "-c", "core.quotepath=false",
-                        "diff", "--name-only", "HEAD", "MERGE_HEAD"],
-                       capture_output=True, text=True, encoding="utf-8", errors="replace")
-    if r.returncode != 0:
-        # 兜底：暂存区 vs HEAD
+    mh = merge_head_sha()
+    if mh:
+        r = subprocess.run(["git", "-C", str(REPO), "-c", "core.quotepath=false",
+                            "diff", "--name-only", "HEAD", mh],
+                           capture_output=True, text=True, encoding="utf-8", errors="replace")
+    else:
         r = subprocess.run(["git", "-C", str(REPO), "-c", "core.quotepath=false",
                             "diff", "--name-only", "--cached", "HEAD"],
                            capture_output=True, text=True, encoding="utf-8", errors="replace")
@@ -310,6 +311,29 @@ def _merged_head_sha_from_env(environ=None):
     return ""
 
 
+def merge_head_sha(environ=None):
+    """返回待合入分支 tip SHA；pre-merge-commit 阶段 MERGE_HEAD 可能未落盘。
+
+    2026-11-04 21:40 窗口实测：devtask 质量闸通过并写入 token
+    `edd1bacf...json`，但钩子用 `git rev-parse MERGE_HEAD` 取到空串，
+    于是把 token 键当成字面量 `MERGE_HEAD`，误判“无 token”并重跑整轮
+    fast 门（最终被 portal 并发污染测试拒收）。Git 在 merge 钩子中提供
+    `GITHEAD_<40hex>=<待合入 ref>`，用该 40hex 作为 token 的 head 口径，
+    与 devtask 写入的 token 对齐；仍读不到则返回空（fail-closed）。
+    """
+    try:
+        _rc, out = _git_stdout(["rev-parse", "MERGE_HEAD"])
+        if out:
+            return out
+    except Exception:  # noqa: BLE001 —— 取不到就回退 GITHEAD
+        pass
+    env = os.environ if environ is None else environ
+    for key in env:
+        if key.startswith("GITHEAD_") and len(key) == len("GITHEAD_") + 40:
+            return key[len("GITHEAD_"):].lower()
+    return ""
+
+
 def merge_head_commit_msg(environ=None):
     """待合入分支 tip 提交信息（pre-merge-commit 阶段 HEAD=目标分支，取 MERGE_HEAD 侧）。
 
@@ -435,13 +459,10 @@ def main() -> int:
     # 2026-10-31 H5-b：只认 devtask 质量闸真跑通过后写的一次性 token
     # （TID+HEAD 绑定、TTL、用后即删）；裸 env DEVTOOL_PREFLIGHT_DONE 不再有跳过效果。
     try:
-        _mh = subprocess.run(
-            ["git", "-C", str(REPO), "rev-parse", "MERGE_HEAD"],
-            capture_output=True, text=True, encoding="utf-8",
-            errors="replace").stdout.strip()
+        _mh = merge_head_sha()
     except Exception as exc:  # noqa: BLE001
         _mh = ""
-        print("[merge-gate] MERGE_HEAD 读取异常：%s（将正常跑测试）" % exc)
+        print("[merge-gate] MERGE_HEAD/GITHEAD 读取异常：%s（将正常跑测试）" % exc)
     if _mh:
         _tok_ok, _tok_detail = consume_preflight_token(_mh)
         if _tok_ok:
