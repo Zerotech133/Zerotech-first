@@ -1,0 +1,513 @@
+{
+ "schema_version": 1,
+ "kind": "kb_qa_bank_v3",
+ "generated_at": "2026-11-05T02:43:51+08:00",
+ "title": "20 题 v4d multi 答案（适配 kb_qa_multi_eval single 侧）",
+ "source": {
+  "note": "multi_pair inputs generated for kb_qa_multi_eval"
+ },
+ "questions": [],
+ "answer_validation": {
+  "samples": [
+   {
+    "id": "w13_U01",
+    "question": "如何申请申根旅游签证？",
+    "answer": "知识库中没有足够依据回答该问题。",
+    "citations": [],
+    "category": "w13",
+    "theme": "w13",
+    "no_evidence": true,
+    "fallback": false,
+    "confidence": {
+     "level": "none",
+     "reasons": [
+      "模型判断材料不足以回答（拒答）"
+     ]
+    }
+   },
+   {
+    "id": "w13_U04",
+    "question": "2026 年世界杯的冠军是哪支球队？",
+    "answer": "【事实摘录】\n【事实】公司单季度实现营业收入87.6亿美元，同比增长55.0%；毛利率40.5%，同比提升4.2个百分点[5908d9b2a2af] p.1。\n【事实】上周（2026.9.21-2026.9.24）房地产（申万）板块上涨2.28%，涨幅位列申万行业第1位，领先沪深300指数3.79个百分点[ebb18ca3da25] p.1。\n【事实】上周（2026.9.21-2026.9.24）国防军工板块下跌1.79%，落后沪深300指数0.28个百分点，在申万行业中排名第27位[f0aa3d2af1ef] p.1。\n【推断】\n【推断】材料仅提供2026年9月下旬房地产和国防军工行业的短期行情数据，未涉及2026年世界杯冠军信息[ebb18ca3da25] p.1、[f0aa3d2af1ef] p.1。",
+    "citations": [
+     {
+      "unit_id": "5908d9b2a2af",
+      "book": "rp_AP202609301830034708",
+      "chapter": "太 平 洋 证 券 股 份 有 限 公 司 证 券 研 究 报 告",
+      "page": 1,
+      "page_end": 1,
+      "origin": "units",
+      "text": "公司单季度实现营业收入87.6亿美元，同比增长55.0%；毛利率40.5%，同比提升4.2个百分点。 事件：安费诺发布 2026 财年第二季度财报，公司单季度实现营业收 入 87.6 亿美元，同比增长 55.0%；毛利率 40.5%，同比提升 4.2pct；每股收益 1.4 美元。"
+     },
+     {
+      "unit_id": "ebb18ca3da25",
+      "book": "rp_AP202609301830054738",
+      "chapter": "中性",
+      "page": 1,
+      "page_end": 1,
+      "origin": "units",
+      "text": "上周（2026.9.21-2026.9.24）房地产（申万）板块上涨 2.28%，涨幅位列申万行业第 1 位，领先沪深 300 指数 3.79 个百分点。 上周（2026.9.21-2026.9.24）房地产（申万）板块上涨 2.28%，沪深 300 指数下跌 1.51%，房地产板块领先沪深 300 指数 3.79 个百分点。和其他行业对比，房地产行业涨幅位列申万行业第 1 位。"
+     },
+     {
+      "unit_id": "f0aa3d2af1ef",
+      "book": "rp_AP202610021830105365",
+      "chapter": "看好",
+      "page": 1,
+      "page_end": 1,
+      "origin": "units",
+      "text": "上周（2026.9.21-2026.9.24）国防军工板块下跌 1.79%，落后沪深 300 指数 0.28 个百分点，在申万行业中排名第 27 位。 上周（2026.9.21-2026.9.24）国防军工（申万）板块下跌 1.79%，沪深 300 指数下跌 1.51%，国防军工板块落后沪深 300 指数 0.28 个百分点。和其他行业对比，国防军工行业上周排名申万行业涨幅第 27 位。"
+     }
+    ],
+    "category": "w13",
+    "theme": "w13",
+    "no_evidence": false,
+    "fallback": false,
+    "confidence": {
+     "level": "high",
+     "reasons": [
+      "3 条可核验引用、3 个聚类",
+      "直接事实标记 0、推断标记 2"
+     ]
+    }
+   },
+   {
+    "id": "w13_U07",
+    "question": "高血压的一线用药有哪些？",
+    "answer": "知识库中没有足够依据回答该问题。",
+    "citations": [],
+    "category": "w13",
+    "theme": "w13",
+    "no_evidence": true,
+    "fallback": false,
+    "confidence": {
+     "level": "none",
+     "reasons": [
+      "模型判断材料不足以回答（拒答）"
+     ]
+    }
+   },
+   {
+    "id": "w13_U10",
+    "question": "量子纠缠实验的贝尔不等式推导？",
+    "answer": "【事实摘录】\n【事实】AI 降低候选设计成本后，湿实验验证需求将增加，实验平台的高通量与交付效率成为关键价值点。（[52cfc0612e6b] p.2）\n【事实】本周观点指出，AI4S 竞争的关键，已不只是模型能提出多少候选答案，而是谁能更快把计算假设转化为可重复的实验结果和临床证据。（[d780edf3ffbf] p.1）\n【推断】\n【推断】AI4S 竞争正从单纯模型能力比拼，转向生物学发现与实验验证闭环构建。（依据：[d780edf3ffbf] p.1）\n【推断】实验平台的高通量与交付效率成为关键价值点，验证需求扩张将带动实验材料与服务需求增长。（依据：[52cfc0612e6b] p.2）",
+    "citations": [
+     {
+      "unit_id": "52cfc0612e6b",
+      "book": "rp_AP202610071830184407",
+      "chapter": "图表目录",
+      "page": 2,
+      "page_end": 2,
+      "origin": "units",
+      "text": "AI 降低候选设计成本后，湿实验验证需求将增加，实验平台的高通量与交付效率成为关键价值点。 模型能缩短计算设计时间，但蛋白表达、纯化及功能验证仍需数周湿实验确认。当生成更快更便宜时，后续验证需求扩张，带动实验材料与服务需求增长。"
+     },
+     {
+      "unit_id": "d780edf3ffbf",
+      "book": "rp_AP202610031830126598",
+      "chapter": "替代方案",
+      "page": 1,
+      "page_end": 1,
+      "origin": "units",
+      "text": "AI for Science (AI4S) 的竞争焦点已从单纯的模型能力比拼，转向生物学发现与实验验证的闭环构建。 本周观点指出：'AI4S 正在由模型能力竞争进入生物学发现与验证闭环竞争...下一阶段 AI4S 竞争的关键，已不只是模型能提出多少候选答案，而是谁能更快把计算假设转化为可重复的实验结果和临床证据。'"
+     }
+    ],
+    "category": "w13",
+    "theme": "w13",
+    "no_evidence": false,
+    "fallback": false,
+    "confidence": {
+     "level": "high",
+     "reasons": [
+      "2 条可核验引用、3 个聚类",
+      "直接事实标记 0、推断标记 3"
+     ]
+    }
+   },
+   {
+    "id": "w13_A01",
+    "question": "「AI 产业投资传导链条」的核心要点是什么？",
+    "answer": "【事实摘录】\n【事实】当前 AI 产业投资线索正沿着“模型降价→应用放量→芯片需求→制造扩产”的链条自上而下传导，景气验证不断下沉（[efa0bece0085] p.2）。",
+    "citations": [
+     {
+      "unit_id": "efa0bece0085",
+      "book": "rp_AP202609301830016191",
+      "chapter": "目录",
+      "page": 2,
+      "page_end": 2,
+      "origin": "units",
+      "text": "当前 AI 产业投资线索正沿“模型降价→应用放量→芯片需求→制造扩产”的链条自上而下传导，景气验证不断下沉。 我们认为，当前 AI 产业的投资线索正沿着“模型降价→应用放量→芯片需求→制造扩产”的链条自上而下传导，景气验证不断下沉：模型端价格战降低应用门槛，端侧与 AIoT 场景加速打开；芯片端新品周期临近，渗透率与单机价值量双升。"
+     }
+    ],
+    "category": "w13",
+    "theme": "w13",
+    "no_evidence": false,
+    "fallback": false,
+    "confidence": {
+     "level": "medium",
+     "reasons": [
+      "1 条可核验引用"
+     ]
+    }
+   },
+   {
+    "id": "w13_A07",
+    "question": "「多层级安全评估体系（ARIA）」的核心要点是什么？",
+    "answer": "【事实摘录】\n【事实】NIST 的 ARIA 计划将测试分为 Model Testing、Red Teeming 和 Field Testing（[ae05187cc3bc] p.2）。\n【事实】Model Testing 用于确认模型或系统声明的能力和防护，Red Teeming 尝试诱发违规，Field Testing 观察真实环境影响（[ae05187cc3bc] p.2）。\n【推断】\n【推断】ARIA 计划通过能力确认、违规诱发和真实环境观察三类测试构成完整证据链（依据：[ae05187cc3bc] p.2）。",
+    "citations": [
+     {
+      "unit_id": "ae05187cc3bc",
+      "book": "rp_AP202610061830170460",
+      "chapter": "图表目录",
+      "page": 2,
+      "page_end": 2,
+      "origin": "units",
+      "text": "NIST 的 ARIA 计划将测试分为 Model Testing（确认能力）、Red Teaming（诱发违规）和 Field Testing（观察真实环境影响），单一分数难以替代完整证据链。 安全评估需要回答三个不同问题...NIST 的ARIA 计划把测试分为Model Testing、Red Teaming 和Field Testing。Model Testing 用于确认模型或系统声明的能力和防护；Red Teaming 尝试…"
+     }
+    ],
+    "category": "w13",
+    "theme": "w13",
+    "no_evidence": false,
+    "fallback": false,
+    "confidence": {
+     "level": "medium",
+     "reasons": [
+      "1 条可核验引用"
+     ]
+    }
+   },
+   {
+    "id": "w13_A13",
+    "question": "关于「区间套运用」，资料中的依据/来源是什么？",
+    "answer": "知识库中没有足够依据回答该问题。",
+    "citations": [],
+    "category": "w13",
+    "theme": "w13",
+    "no_evidence": true,
+    "fallback": false,
+    "confidence": {
+     "level": "none",
+     "reasons": [
+      "模型判断材料不足以回答（拒答）"
+     ]
+    }
+   },
+   {
+    "id": "w13_A18",
+    "question": "关于「今天刺猬情报局的主题」，操作要点是什么？",
+    "answer": "知识库中没有足够依据回答该问题。",
+    "citations": [],
+    "category": "w13",
+    "theme": "w13",
+    "no_evidence": true,
+    "fallback": false,
+    "confidence": {
+     "level": "none",
+     "reasons": [
+      "模型判断材料不足以回答（拒答）"
+     ]
+    }
+   },
+   {
+    "id": "w13_A24",
+    "question": "「五天的成交量加起来还不如今天一天」的依据/事实是什么？",
+    "answer": "知识库中没有足够依据回答该问题。",
+    "citations": [],
+    "category": "w13",
+    "theme": "w13",
+    "no_evidence": true,
+    "fallback": false,
+    "confidence": {
+     "level": "none",
+     "reasons": [
+      "模型判断材料不足以回答（拒答）"
+     ]
+    }
+   },
+   {
+    "id": "w13_A30",
+    "question": "「放量不等于有效放量」的依据/事实是什么？",
+    "answer": "【事实摘录】\n【事实】大模型降价摊薄了终端智能化的边际成本，显著降低了端侧应用的普及门槛，使其进入放量通道[252c4dbe1667] p.1。",
+    "citations": [
+     {
+      "unit_id": "252c4dbe1667",
+      "book": "rp_AP202609301830016191",
+      "chapter": "强于大市",
+      "page": 1,
+      "page_end": 1,
+      "origin": "units",
+      "text": "大模型降价摊薄了终端智能化的边际成本，显著降低了端侧应用的普及门槛，使其进入放量通道。 近期海外大模型公司同步上新降价：Anthropic 发布 Claude Opus 5.5，运行成本比 Opus 5 低 40%；OpenAI 推出 GPT-6 Sol 与 GPT-6 Luna，API 价格较上代接近砍半。模型降价直接摊薄了终端智能化的边际成本，端侧应用的普及门槛显著降低。"
+     }
+    ],
+    "category": "w13",
+    "theme": "w13",
+    "no_evidence": false,
+    "fallback": false,
+    "confidence": {
+     "level": "medium",
+     "reasons": [
+      "1 条可核验引用"
+     ]
+    }
+   },
+   {
+    "id": "heldout_001",
+    "question": "什么是「频谱资源与许可」？",
+    "answer": "【事实摘录】\n【事实】可靠的频谱接入是轨道数据中心实现实用价值的关键资源，需通过简化许可流程和明确规则来减少监管不确定性及交易成本。（[8032d4ff1c17] p.6）\n【事实】政策制定者需创造简化的监管环境，包括确保频谱资源充足、简化卫星牌照发放、明确网络安全要求及解决轨道可持续性问题，以支持新技术测试和部署。（[a3b062104586] p.1）\n【推断】\n【推断】现有材料把“频谱资源与许可”表述为轨道数据中心实用化中的关键环节，强调简化许可流程、明确规则以减少监管不确定性和行政壁垒。（依据：[8032d4ff1c17] p.6、[a3b062104586] p.1）",
+    "citations": [
+     {
+      "unit_id": "8032d4ff1c17",
+      "book": "rp_AP202609301830015406",
+      "chapter": "供应链风险管理。现有的联邦网络安全框架可以为管理和控制空间和地面段的风险提供一个起点 。",
+      "page": 6,
+      "page_end": 6,
+      "origin": "units",
+      "text": "可靠的频谱接入是轨道数据中心实现实用价值的关键资源，需通过简化许可流程和明确规则来减少监管不确定性及交易成本。 轨道数据中心需要可靠的频谱接入...更清晰的规则和更高效的许可或许能减少监管不确定性以及不必要的行政壁垒。缓慢的许可流程和发射能力限制阻碍了轨道数据中心的频繁发射..."
+     },
+     {
+      "unit_id": "a3b062104586",
+      "book": "rp_AP202609301830015406",
+      "chapter": "轨道数据中心的政策考量",
+      "page": 1,
+      "page_end": 1,
+      "origin": "units",
+      "text": "政策制定者需创造简化的监管环境，包括确保频谱资源充足、简化卫星牌照发放、明确网络安全要求及解决轨道可持续性问题，以支持新技术测试和部署。 政策制定者应确保频谱资源充足，简化卫星牌照发放流程，明确网络安全要求...其价值将取决于...一个不会阻碍测试和部署的监管环境。"
+     }
+    ],
+    "category": "heldout",
+    "theme": "heldout",
+    "no_evidence": false,
+    "fallback": false,
+    "confidence": {
+     "level": "high",
+     "reasons": [
+      "2 条可核验引用、3 个聚类",
+      "直接事实标记 0、推断标记 2"
+     ]
+    }
+   },
+   {
+    "id": "heldout_011",
+    "question": "什么是「愿意秒内交易超过300笔」？",
+    "answer": "知识库中没有足够依据回答该问题。",
+    "citations": [],
+    "category": "heldout",
+    "theme": "heldout",
+    "no_evidence": true,
+    "fallback": false,
+    "confidence": {
+     "level": "none",
+     "reasons": [
+      "模型判断材料不足以回答（拒答）"
+     ]
+    }
+   },
+   {
+    "id": "heldout_021",
+    "question": "创业板指日线向下笔未跌破1740点时文中如何判断？",
+    "answer": "知识库中没有足够依据回答该问题。",
+    "citations": [],
+    "category": "heldout",
+    "theme": "heldout",
+    "no_evidence": true,
+    "fallback": false,
+    "confidence": {
+     "level": "none",
+     "reasons": [
+      "模型判断材料不足以回答（拒答）"
+     ]
+    }
+   },
+   {
+    "id": "heldout_030",
+    "question": "买点正确但卖出不佳可能带来什么后果？",
+    "answer": "知识库中没有足够依据回答该问题。",
+    "citations": [],
+    "category": "heldout",
+    "theme": "heldout",
+    "no_evidence": true,
+    "fallback": false,
+    "confidence": {
+     "level": "none",
+     "reasons": [
+      "模型判断材料不足以回答（拒答）"
+     ]
+    }
+   },
+   {
+    "id": "heldout_040",
+    "question": "策略收益与高赚率的原因是什么？",
+    "answer": "【事实摘录】\n【事实】未来网络安全的出海核心不只是产品出口，而是建立包含本地渠道、合规认证、交付服务和品牌信任的完整经营体系。（[070380b8404a] p.2）\n【事实】目前少数厂商已形成可验证的海外收入，但占总收入仍只有 7.45%。（[070380b8404a] p.2）\n【推断】\n【推断】网络安全出海的核心是本地化生态而非单纯产品出口，现有海外收入规模较小。（依据：[070380b8404a] p.2）",
+    "citations": [
+     {
+      "unit_id": "070380b8404a",
+      "book": "rp_AP202609301830015419",
+      "chapter": "目录",
+      "page": 2,
+      "page_end": 2,
+      "origin": "units",
+      "text": "未来网络安全的出海核心不只是产品出口，而是建立包含本地渠道、合规认证、交付服务和品牌信任的完整经营体系。 目前，少数厂商已形成可以验证的海外收入...但占总收入仍只有 7.45%...因此，未来出海的核心不只是产品出口，而是建立本地渠道、合规认证、交付服务和品牌信任组成的完整经营体系。"
+     }
+    ],
+    "category": "heldout",
+    "theme": "heldout",
+    "no_evidence": false,
+    "fallback": false,
+    "confidence": {
+     "level": "medium",
+     "reasons": [
+      "1 条可核验引用"
+     ]
+    }
+   },
+   {
+    "id": "citation_sft_0003",
+    "question": "「钠电池核心机会环节」的核心要点是什么？",
+    "answer": "【事实摘录】\n【事实】钠电池核心的机会集中在关键材料环节，尤其是硬碳负极和聚阴离子正极（[a44a13fbb69c] p.1）。",
+    "citations": [
+     {
+      "unit_id": "a44a13fbb69c",
+      "book": "rp_AP202609301830042382",
+      "chapter": "太 平 洋 证 券 股 份 有 限 公 司 证 券 研 究 报 告",
+      "page": 1,
+      "page_end": 1,
+      "origin": "units",
+      "text": "钠电池核心的机会集中在关键材料环节，尤其是硬碳负极和聚阴离子正极，其中聚阴离子正极适合长时间尺度储能场景。 分析：2）从产业链角度看，钠电池核心的机会集中在关键材料环节，尤其是硬碳负极和聚阴离子正极。聚阴离子正极安全性好、寿命长，适合长时间尺度储能场景。"
+     }
+    ],
+    "category": "citation_clean",
+    "theme": "citation_clean",
+    "no_evidence": false,
+    "fallback": false,
+    "confidence": {
+     "level": "medium",
+     "reasons": [
+      "1 条可核验引用"
+     ]
+    }
+   },
+   {
+    "id": "citation_sft_0026",
+    "question": "「行业评级定义」的核心要点是什么？",
+    "answer": "【事实摘录】\n【事实】“看好”评级意味着预计未来 6~12 个月内，行业指数表现强于市场基准指数（沪深 300）[3a4eff67a995] p.1。\n【事实】大同证券对有色金属行业的“看好”评级定义为：预计未来 6~12 个月内，行业指数表现强于市场基准指数（沪深 300）[de5d7e7138f5] p.1。\n【推断】\n【推断】“看好”评级的核心是预计未来 6~12 个月内行业指数表现强于市场基准指数，且该定义可跨行业适用[3a4eff67a995] p.1、[de5d7e7138f5] p.1。",
+    "citations": [
+     {
+      "unit_id": "3a4eff67a995",
+      "book": "rp_AP202609301830023858",
+      "chapter": "行业评级：看好",
+      "page": 1,
+      "page_end": 1,
+      "origin": "units",
+      "text": "“看好”评级意味着预计未来 6~12 个月内，行业指数表现强于市场基准指数（沪深 300）。 证券投资评级的类别、级别定义：行业评级 - 看好：预计未来 6~12 个月内，行业指数表现强于市场基准指数。"
+     },
+     {
+      "unit_id": "de5d7e7138f5",
+      "book": "rp_AP202609301830053954",
+      "chapter": "行业评级：看好",
+      "page": 1,
+      "page_end": 1,
+      "origin": "units",
+      "text": "大同证券对有色金属行业的“看好”评级定义为：预计未来6~12个月内，行业指数表现强于市场基准指数（沪深300）。 行业评级：看好 预计未来6~12 个月内，行业指数表现强于市场基准指数；中性 预计未来6~12 个月内，行业指数表现跟随市场基准指数。"
+     }
+    ],
+    "category": "citation_clean",
+    "theme": "citation_clean",
+    "no_evidence": false,
+    "fallback": false,
+    "confidence": {
+     "level": "high",
+     "reasons": [
+      "2 条可核验引用、3 个聚类",
+      "直接事实标记 0、推断标记 2"
+     ]
+    }
+   },
+   {
+    "id": "citation_sft_0013",
+    "question": "关于「北京零售市场现状」，资料中的依据/来源是什么？",
+    "answer": "【事实摘录】\n【事实】截至2026年上半年，北京零售市场总存量为953万平方米，其中购物中心存量765万平方米，优质购物中心平均租金报价为883元/月/平方米，空置率为10.4%。（[dd02cab720e0] p.2）\n【事实】大中华区零售物业市场呈现以下七大发展趋势：下沉市场消费韧性强劲、体验经济重塑线下场景、演出市场热度持续、入境游与国内游双轮驱动消费增长等。（[bf663d3e998a] p.2）\n【推断】\n【推断】资料把北京零售市场现状与大中华区七大发展趋势放在一起讨论，但两者来源不同，不能混用为单一依据。（依据：[dd02cab720e0] p.2、[bf663d3e998a] p.2）",
+    "citations": [
+     {
+      "unit_id": "dd02cab720e0",
+      "book": "rp_AP202609301830015453",
+      "chapter": "06",
+      "page": 2,
+      "page_end": 2,
+      "origin": "units",
+      "text": "截至2026年上半年，北京零售市场总存量为953万平方米（其中购物中心765万平方米），优质购物中心平均租金报价为883元/月/平方米，空置率为10.4%。未来趋势为存量优化为主，新增供应为辅。 截至2026年上半年，北京零售市场总存量为953万平方米，其中购物中心存量765万平方米...优质购物中心平均租金报价为人民币883元每月每平方米，空置率为10.4%...未来整体市场的供应节奏将进一步放缓，项目分区域分阶段开业也将成为长期趋势…"
+     },
+     {
+      "unit_id": "bf663d3e998a",
+      "book": "rp_AP202609301830015453",
+      "chapter": "06",
+      "page": 2,
+      "page_end": 2,
+      "origin": "units",
+      "text": "大中华区零售物业市场呈现以下七大发展趋势：下沉市场消费韧性强劲、体验经济重塑线下场景、演出市场热度持续、入境游与国内游双轮驱动消费增长、消费行为趋于理性保守、存量资产盘活与场景升级成为核心路径。 中国零售物业市场竞争持续激烈...主要有以下发展趋势：下沉市场展现出强劲的消费韧性；体验经济重塑线下消费场景；演出市场热度持续；入境游国内游双轮驱动消费增长...受居民储蓄意愿持续偏高...消费行为更趋理性保守影响...长期来看，存量资产盘活、…"
+     }
+    ],
+    "category": "citation_clean",
+    "theme": "citation_clean",
+    "no_evidence": false,
+    "fallback": false,
+    "confidence": {
+     "level": "high",
+     "reasons": [
+      "2 条可核验引用、3 个聚类",
+      "直接事实标记 0、推断标记 2"
+     ]
+    }
+   },
+   {
+    "id": "citation_sft_0039",
+    "question": "关于「资本市场现存障碍」，资料中的依据/来源是什么？",
+    "answer": "【事实摘录】\n【事实】非国有企业目前在科技创新债券市场中代表性不足，且缺乏有效的市场稳定长效机制。（[653a45d7f679] p.13）\n【事实】外国投资者在市场持仓中占比相对较小，国内证券公司参与国际市场的角色有限。（[918a6d233355] p.13）\n【推断】\n【推断】资料把“非国有企业代表性不足”和“外国投资者占比小、国内券商角色有限”列为现存市场障碍。（依据：[653a45d7f679] p.13、[918a6d233355] p.13）",
+    "citations": [
+     {
+      "unit_id": "653a45d7f679",
+      "book": "rp_AP202610031830124601",
+      "chapter": "VOL.172 2026.09《金融市场研究》13",
+      "page": 13,
+      "page_end": 13,
+      "origin": "units",
+      "text": "非国有企业目前在科技创新债券市场中代表性不足，且缺乏有效的市场稳定长效机制。 Non-state-owned enterprises are underrepresented in the science and technology innovation bond market while long-term mechanisms for market stabilization are inadequate."
+     },
+     {
+      "unit_id": "918a6d233355",
+      "book": "rp_AP202610031830124601",
+      "chapter": "VOL.172 2026.09《金融市场研究》13",
+      "page": 13,
+      "page_end": 13,
+      "origin": "units",
+      "text": "外国投资者在市场持仓中占比相对较小，国内证券公司参与国际市场的角色有限。 At the same time, foreign investors account for a relatively small share of market holdings and domestic securities firms have a limited role in international markets."
+     }
+    ],
+    "category": "citation_clean",
+    "theme": "citation_clean",
+    "no_evidence": false,
+    "fallback": false,
+    "confidence": {
+     "level": "high",
+     "reasons": [
+      "2 条可核验引用、3 个聚类",
+      "直接事实标记 0、推断标记 2"
+     ]
+    }
+   },
+   {
+    "id": "citation_sft_0178",
+    "question": "「但先别忙着给他发年终奖」的依据/事实是什么？",
+    "answer": "知识库中没有足够依据回答该问题。",
+    "citations": [],
+    "category": "citation_clean",
+    "theme": "citation_clean",
+    "no_evidence": true,
+    "fallback": false,
+    "confidence": {
+     "level": "none",
+     "reasons": [
+      "模型判断材料不足以回答（拒答）"
+     ]
+    }
+   }
+  ]
+ }
+}
