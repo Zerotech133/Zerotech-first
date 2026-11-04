@@ -24,6 +24,18 @@
 4. 保留：轮转件文件名里的时间戳早于 ``--keep-days``（默认 14）→ 进回收站；
    窗口内的轮转件保留（KEEP），不重复轮转。
 5. 默认 dry-run，只有显式 ``--execute`` 才动手；``--json`` 输出机器可读结果。
+6. **三级轮转（2026-11-05 JEV-LOGROT）**：
+   - A 快路 ``mode=rename``：同目录 rename 成功（原行为）；
+   - B 占用降级 ``mode=copy_truncate``：rename 抛 ``PermissionError``
+     （Windows WinError 32 / errno 13 EACCES）——常驻服务用
+     ``Start-Process -RedirectStandardError`` 拉起，``.err/.out`` 句柄被子进程
+     持有到进程退出，rename 必然失败。此时改为「复制内容到归档件
+     （沿用 ``--gzip`` / ``--keep-days`` 策略）+ 原地截断源文件」
+     （``open(path, "r+b")`` 后 ``truncate(0)``），截断成功即视为轮转成功；
+   - C 兜底 ``mode=deferred``：复制或截断都失败 → 记入
+     ``<root>/jev-eval/logs/rotate_deferred.json``，**exit 0 + WARN**；
+     下次运行**开头先重试**该清单，同一文件累计失败 3 次后转入
+     ``rotate_deferred_dead.json`` 且只 WARN 一次（防无限重试刷屏）。
 
 安全护栏
 --------
@@ -39,7 +51,8 @@
 
 退出码
 ------
-0 = 无需处理或全部成功；1 = 有失败（含回收站不可用）；2 = 参数/环境错误。
+0 = 无需处理或全部成功 / 降级成功 / 延后（deferred 不再让整条链变红）；
+1 = 有实质失败（gzip 回收失败等，不含占用延后）；2 = 参数/环境错误。
 
 用法
 ----
@@ -75,6 +88,7 @@ from __future__ import annotations
 
 import argparse
 import ctypes
+import errno
 import gzip
 import json
 import os
@@ -97,7 +111,21 @@ except (AttributeError, OSError) as exc:
 
 TOOL_NAME = "rotate_logs"
 SCHEMA = "rotate_logs/v1"
-TOOL_VERSION = 1
+TOOL_VERSION = 2
+
+# ---- 三级轮转模式（JEV-LOGROT-20261105）----
+MODE_RENAME = "rename"              # A 快路
+MODE_COPY_TRUNCATE = "copy_truncate"  # B 占用降级
+MODE_DEFERRED = "deferred"          # C 兜底延后
+
+DEFERRED_SCHEMA = "rotate_deferred/v1"
+DEFERRED_REL_DIR = "jev-eval/logs"
+DEFERRED_NAME = "rotate_deferred.json"
+DEFERRED_DEAD_NAME = "rotate_deferred_dead.json"
+DEFERRED_MAX_ATTEMPTS = 3
+
+DELETE_ACCESS = 0x00010000         # 探测句柄是否允许 rename/删除
+WIN_SHARING_VIOLATION = 32
 
 REPO_ROOT = Path(r"C:/项目/老田的AI助手")
 WORKSPACE_ROOT = Path(r"C:/项目")
@@ -201,6 +229,73 @@ def rel_display(path: Path, root: Path) -> str:
         return os.path.relpath(str(path), str(root))
     except (OSError, ValueError):  # pragma: no cover
         return str(path)
+
+
+# --------------------------------------------------------------------------
+# 三级轮转：占用判定 / 复制归档 / 原地截断 / dry-run 预判
+# --------------------------------------------------------------------------
+def is_lock_error(exc: OSError) -> bool:
+    """是否为「文件被别的进程占用」类错误（WinError 32/33、EACCES/EBUSY）。"""
+    winerror = getattr(exc, "winerror", None)
+    if winerror in (WIN_SHARING_VIOLATION, 33):
+        return True
+    return getattr(exc, "errno", None) in (errno.EACCES, errno.EBUSY, errno.EPERM)
+
+
+def probe_rename_blocked(path: Path) -> tuple[bool, str]:
+    """dry-run 用：只探测「rename 会不会被占用拦住」，不动文件内容。
+
+    Windows 下 rename/删除需要 DELETE 访问；若另一进程以「不含
+    FILE_SHARE_DELETE」的句柄打开着该文件，CreateFileW(DELETE) 会直接返回
+    WinError 32 —— 与随后 rename 失败同因，可据此预览 B 路。
+    """
+    if os.name != "nt" or not hasattr(ctypes, "WinDLL"):
+        return False, ""
+    try:
+        k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        k32.CreateFileW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD,
+                                    ctypes.c_void_p, wintypes.DWORD, wintypes.DWORD,
+                                    wintypes.HANDLE]
+        k32.CreateFileW.restype = wintypes.HANDLE
+        k32.CloseHandle.argtypes = [wintypes.HANDLE]
+        k32.CloseHandle.restype = wintypes.BOOL
+        handle = k32.CreateFileW(str(path), DELETE_ACCESS, FILE_SHARE_ALL, None,
+                                 OPEN_EXISTING, 0, None)
+        if handle in (INVALID_HANDLE_VALUE, None):
+            err = ctypes.get_last_error()
+            if err in (WIN_SHARING_VIOLATION, 33):
+                return True, f"WinError {err}（句柄被占用，rename 会失败）"
+            return False, f"probe WinError {err}"
+        k32.CloseHandle(handle)
+        return False, "probe ok"
+    except OSError as exc:  # pragma: no cover - 探测失败不影响主流程
+        return False, f"probe 异常：{exc}"
+
+
+def copy_to_archive(src: Path, dest: Path, gzip_on: bool) -> Path:
+    """B 路第一步：把源内容复制成归档件（沿用 --gzip 策略），返回归档路径。
+
+    gzip 时直接写 ``<dest>.gz``，不落明文中间件——避免复用回收站依赖。
+    """
+    if not gzip_on:
+        shutil.copy2(src, dest)
+        return dest
+    gz_path = dest.with_name(dest.name + ".gz")
+    with open(src, "rb") as f_in, gzip.open(gz_path, "wb", compresslevel=6) as f_out:
+        shutil.copyfileobj(f_in, f_out)
+    return gz_path
+
+
+def truncate_in_place(src: Path) -> None:
+    """B 路第二步：原地截断源文件（保留 inode/句柄，服务可继续写）。"""
+    with open(src, "r+b") as fh:
+        fh.truncate(0)
+        fh.flush()
+        try:
+            os.fsync(fh.fileno())
+        except OSError as exc:  # pragma: no cover - 某些卷不支持 fsync
+            logging.getLogger(__name__).warning("silent-except %s: %s",
+                                                "tools/rotate_logs.py", exc)
 
 
 # --------------------------------------------------------------------------
@@ -851,6 +946,31 @@ def build_plan(root: Path, targets: list[dict], cfg: dict,
                 })
                 continue
             record = classify_file(path, params, now)
+            dead_set = params.get("dead_paths") or set()
+            retry_set = params.get("deferred_paths") or set()
+            if record["action"] == "rotate" and norm_key(path) in dead_set:
+                # 已满 3 次重试转入 dead：不再自动轮转（避免每天白复制一遍大文件）
+                record.update(action="skip", result="skipped", reason="dead_deferred",
+                              detail=(f"已在 {DEFERRED_DEAD_NAME} 中，需人工处理"
+                                      "（释放句柄后手工重试）"))
+                record["target"] = target["path"]
+                record["rel"] = rel_display(path, root)
+                actions.append(record)
+                continue
+            if record["action"] == "rotate" and norm_key(path) in retry_set:
+                # 本轮开头已重试过（仍占用）：不重复复制归档，等下一轮
+                record.update(action="skip", result="skipped", reason="retried_this_run",
+                              detail="本轮已重试仍被占用，保留 deferred 至下一轮")
+                record["target"] = target["path"]
+                record["rel"] = rel_display(path, root)
+                actions.append(record)
+                continue
+            if not params.get("execute") and record["action"] == "rotate":
+                # dry-run 也要能预览走哪一级：占用探测 → 预览 B 路
+                blocked, why = probe_rename_blocked(path)
+                record["mode"] = MODE_COPY_TRUNCATE if blocked else MODE_RENAME
+                if blocked:
+                    record["detail"] = f"{record['detail']}；预览 mode=copy_truncate（{why}）"
             record["target"] = target["path"]
             record["rel"] = rel_display(path, root)
             actions.append(record)
@@ -859,7 +979,125 @@ def build_plan(root: Path, targets: list[dict], cfg: dict,
 
 
 # --------------------------------------------------------------------------
-# 执行
+# deferred 清单（C 路兜底）
+# --------------------------------------------------------------------------
+def deferred_paths(root: Path) -> tuple[Path, Path]:
+    base = root / DEFERRED_REL_DIR
+    return base / DEFERRED_NAME, base / DEFERRED_DEAD_NAME
+
+
+def norm_key(path: str | Path) -> str:
+    """路径归一化（Windows 大小写不敏感），用于 deferred/dead 去重。"""
+    try:
+        return os.path.normcase(os.path.abspath(str(path)))
+    except (OSError, ValueError):  # pragma: no cover
+        return str(path)
+
+
+def dead_path_set(dead_file: Path) -> set[str]:
+    return {norm_key(item.get("path", "")) for item in load_deferred(dead_file)}
+
+
+def load_deferred(path: Path) -> list[dict]:
+    """读 deferred 清单；坏文件不阻塞主流程（记 WARN 后当空清单）。"""
+    if not path.exists():
+        return []
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8-sig"))
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"[WARN] deferred 清单不可读，本次按空清单处理：{path}（{exc}）")
+        return []
+    items = raw.get("items") if isinstance(raw, dict) else raw
+    if not isinstance(items, list):
+        return []
+    return [dict(it) for it in items if isinstance(it, dict) and it.get("path")]
+
+
+def save_deferred(path: Path, items: list[dict]) -> None:
+    """写 deferred 清单（先写 .tmp 再 os.replace，避免半截文件）。"""
+    items = list(items or [])
+    if not items and not path.exists():
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "schema": DEFERRED_SCHEMA,
+        "updated_at": now_iso(),
+        "max_attempts": DEFERRED_MAX_ATTEMPTS,
+        "count": len(items),
+        "items": items,
+    }
+    text = json.dumps(payload, ensure_ascii=False, indent=2)
+    tmp = path.with_name(path.name + ".tmp")
+    try:
+        tmp.write_text(text + "\n", encoding="utf-8")
+        os.replace(tmp, path)
+    except OSError:
+        # 临时文件不可替换时直接覆盖（沙箱下 unlink 可能被劫持，不做删除）
+        path.write_text(text + "\n", encoding="utf-8")
+
+
+def append_dead(path: Path, items: list[dict]) -> None:
+    if not items:
+        return
+    try:
+        old = json.loads(path.read_text(encoding="utf-8-sig")).get("items", [])
+        if not isinstance(old, list):
+            old = []
+    except (OSError, json.JSONDecodeError):
+        old = []
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "schema": DEFERRED_SCHEMA,
+        "kind": "dead",
+        "updated_at": now_iso(),
+        "count": len(old) + len(items),
+        "items": list(old) + list(items),
+    }
+    try:
+        path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+                        encoding="utf-8")
+    except OSError as exc:  # pragma: no cover - 极端只读场景
+        print(f"[WARN] rotate_deferred_dead.json 写入失败：{exc}")
+
+
+def _deferred_entry(record: dict, now: datetime) -> dict:
+    rel = record.get("rel") or record.get("path")
+    return {
+        "path": record["path"],
+        "rel": rel,
+        "dest_hint": record.get("dest"),
+        "reason": record.get("defer_reason") or "rotate_failed",
+        "detail": record.get("detail", ""),
+        "first_seen": now.isoformat(timespec="seconds"),
+        "last_attempt": now.isoformat(timespec="seconds"),
+        "attempts": 1,
+        "next_attempt": 2,
+        "max_attempts": DEFERRED_MAX_ATTEMPTS,
+        "archive": record.get("archive"),
+    }
+
+
+def _merge_queue(old: list[dict], new: list[dict]) -> list[dict]:
+    """同名路径合并：老条目保留累计次数，只刷新明细；新条目直接入队。"""
+    merged: dict[str, dict] = {str(item.get("path")): item for item in old}
+    for item in new:
+        key = str(item.get("path"))
+        prev = merged.get(key)
+        if prev is None:
+            merged[key] = item
+            continue
+        prev.update({
+            "detail": item.get("detail", prev.get("detail", "")),
+            "last_attempt": item.get("last_attempt", now_iso()),
+            "archive": item.get("archive") or prev.get("archive"),
+            "reason": item.get("reason", prev.get("reason")),
+        })
+        prev["next_attempt"] = int(prev.get("attempts") or 1) + 1
+    return list(merged.values())
+
+
+# --------------------------------------------------------------------------
+# 三级轮转核心
 # --------------------------------------------------------------------------
 def _gzip_and_recycle(src: Path, gz_path: Path, cap: dict) -> tuple[bool, bool, str]:
     """返回 (整体成功, 压缩是否完成, 说明)。"""
@@ -874,29 +1112,146 @@ def _gzip_and_recycle(src: Path, gz_path: Path, cap: dict) -> tuple[bool, bool, 
     return True, True, f"压缩到 {gz_path.name}，明文副本已入回收站"
 
 
-def execute_actions(actions: list[dict], params: dict, cap: dict) -> None:
+def rotate_one(src: Path, dest: Path, params: dict, cap: dict,
+               record: dict, existing_archive: str | None = None) -> tuple[str, str, bool]:
+    """执行单个文件的三级轮转，返回 (mode, detail, ok)。
+
+    - A ``rename``：同目录 rename 成功；
+    - B ``copy_truncate``：rename 失败 → 复制归档 + 原地截断；
+    - C ``deferred``：复制/截断都失败（ok=False，交由上层登记 deferred）。
+    """
+    record.pop("defer_reason", None)
+    prefix = ""
+    try:
+        os.rename(src, dest)  # 同目录、同卷，原子改名
+    except OSError as exc:
+        record["rename_error"] = f"{type(exc).__name__}: {exc}"
+        record["defer_reason"] = "locked" if is_lock_error(exc) else "rename_error"
+        prefix = ("rename 被占用（%s）" % exc) if is_lock_error(exc) else ("rename 失败：%s" % exc)
+    else:
+        if not params["gzip"]:
+            return MODE_RENAME, f"已重命名为 {dest.name}", True
+        gz_path = dest.with_name(dest.name + ".gz")
+        ok, compressed, detail = _gzip_and_recycle(dest, gz_path, cap)
+        record["gz_path"] = str(gz_path)
+        record["gzip_ok"] = compressed
+        return MODE_RENAME, f"已重命名为 {dest.name}；{detail}", ok
+
+    # ---- B 路：复制归档 + 原地截断 ----
+    if existing_archive:
+        archive = Path(existing_archive)
+        try:
+            reuse = archive.exists() and archive.stat().st_size > 0
+        except OSError:  # pragma: no cover
+            reuse = False
+        if reuse:
+            try:
+                truncate_in_place(src)
+            except OSError as exc:
+                record["defer_reason"] = "truncate_failed"
+                return (MODE_DEFERRED,
+                        f"{prefix}；归档已存在 {archive.name}，但截断仍失败：{exc}", False)
+            return (MODE_COPY_TRUNCATE,
+                    f"{prefix}；归档已存在 {archive.name}，已原地截断", True)
+
+    try:
+        archive = copy_to_archive(src, dest, params["gzip"])
+    except OSError as exc:
+        record["defer_reason"] = "copy_failed"
+        return MODE_DEFERRED, f"{prefix}；复制归档失败：{exc}", False
+    record["archive"] = str(archive)
+    try:
+        truncate_in_place(src)
+    except OSError as exc:
+        record["defer_reason"] = "truncate_failed"
+        return (MODE_DEFERRED,
+                f"{prefix}；已归档 {archive.name}，但原地截断失败：{exc}", False)
+    return (MODE_COPY_TRUNCATE,
+            f"{prefix}；已复制归档 {archive.name} 并原地截断为 0 字节", True)
+
+
+def retry_deferred(queue: list[dict], params: dict, cap: dict, now: datetime
+                   ) -> tuple[list[dict], list[dict], list[dict], list[str]]:
+    """运行开头重试 deferred 清单。
+
+    返回 (剩余队列, 本轮完成的动作, 转 dead 的条目, WARN 文案)。
+    """
+    remaining: list[dict] = []
+    done: list[dict] = []
+    dead: list[dict] = []
+    warns: list[str] = []
+    for item in queue:
+        src = Path(str(item.get("path", "")))
+        rel = item.get("rel") or str(src)
+        if not src.is_file():
+            warns.append(f"deferred 源文件已不存在，移出队列：{rel}")
+            continue
+        try:
+            size = src.stat().st_size
+        except OSError as exc:  # pragma: no cover
+            warns.append(f"deferred 源文件 stat 失败，移出队列：{rel}（{exc}）")
+            continue
+        if size == 0:
+            continue
+        dest = rotation_dest(src, now)
+        record = {
+            "action": "rotate",
+            "path": str(src),
+            "rel": rel,
+            "size": size,
+            "dest": str(dest),
+            "reason": "deferred_retry",
+            "retried": True,
+            "detail": f"重试第 {int(item.get('attempts') or 1) + 1} 次",
+            "result": "ok",
+        }
+        mode, detail, ok = rotate_one(src, dest, params, cap, record,
+                                      existing_archive=item.get("archive"))
+        record["mode"] = mode
+        record["detail"] = f"{record['detail']}；{detail}"
+        attempts = int(item.get("attempts") or 1) + 1
+        if mode == MODE_DEFERRED:
+            record["result"] = "deferred"
+            item.update(
+                attempts=attempts,
+                last_attempt=now.isoformat(timespec="seconds"),
+                detail=record["detail"],
+                reason=record.get("defer_reason") or item.get("reason"),
+                archive=record.get("archive") or item.get("archive"),
+            )
+            if attempts >= DEFERRED_MAX_ATTEMPTS:
+                item.update(dead_at=now.isoformat(timespec="seconds"),
+                            result="dead",
+                            detail=f"{record['detail']}（累计失败 {attempts} 次，转 dead）")
+                dead.append(item)
+                warns.append(f"deferred 重试 {attempts} 次仍失败，转入 "
+                             f"{DEFERRED_DEAD_NAME}（不再自动重试）：{rel}")
+            else:
+                item["next_attempt"] = attempts + 1
+                remaining.append(item)
+        elif not ok:
+            record["result"] = "failed"
+        done.append(record)
+    return remaining, done, dead, warns
+
+
+def execute_actions(actions: list[dict], params: dict, cap: dict) -> list[dict]:
+    """执行计划；返回本轮新增的 deferred 条目。"""
+    newly_deferred: list[dict] = []
+    now = datetime.now()
     for action in actions:
         kind = action["action"]
         if kind == "rotate":
             src = Path(action["path"])
             dest = Path(action["dest"])
-            try:
-                os.rename(src, dest)  # 同目录、同卷，原子改名
-            except OSError as exc:
-                action.update(result="failed", reason=action.get("reason"),
-                              detail=f"{action['detail']}；rename 失败：{exc}")
-                continue
-            action["result"] = "ok"
-            if not params["gzip"]:
-                action["detail"] = f"{action['detail']}；已重命名为 {dest.name}"
-                continue
-            gz_path = dest.with_name(dest.name + ".gz")
-            ok, compressed, detail = _gzip_and_recycle(dest, gz_path, cap)
-            action["gz_path"] = str(gz_path)
-            action["gzip_ok"] = compressed
+            mode, detail, ok = rotate_one(src, dest, params, cap, action)
+            action["mode"] = mode
             action["detail"] = f"{action['detail']}；{detail}"
-            if not ok:
-                action["result"] = "failed"
+            if mode == MODE_DEFERRED:
+                action["result"] = "deferred"
+                newly_deferred.append(_deferred_entry(action, now))
+                continue
+            action["result"] = "ok" if ok else "failed"
         elif kind == "recycle":
             if not cap["available"]:
                 action.update(
@@ -909,6 +1264,7 @@ def execute_actions(actions: list[dict], params: dict, cap: dict) -> None:
             action["detail"] = detail
             action["result"] = "ok" if ok else "failed"
         # keep / skip：不动
+    return newly_deferred
 
 
 # --------------------------------------------------------------------------
@@ -918,6 +1274,7 @@ def summarize(actions: list[dict], target_rows: list[dict], failures: list[dict]
               scanned: int) -> dict:
     counts = Counter(a["action"] for a in actions)
     skip_reasons = Counter(a.get("reason") for a in actions if a["action"] == "skip")
+    mode_counts = Counter(a.get("mode") for a in actions if a.get("mode"))
     failed = [a for a in actions if a.get("result") == "failed"] + failures
     summary = {
         "files_scanned": scanned,
@@ -926,6 +1283,8 @@ def summarize(actions: list[dict], target_rows: list[dict], failures: list[dict]
         "keep": counts.get("keep", 0),
         "skip": counts.get("skip", 0),
         "fail": len(failed),
+        "deferred": sum(1 for a in actions if a.get("result") == "deferred"),
+        "modes": dict(sorted(mode_counts.items())),
         "rotate_bytes": sum(a.get("size") or 0 for a in actions
                             if a["action"] == "rotate"),
         "recycle_bytes": sum(a.get("size") or 0 for a in actions
@@ -936,6 +1295,15 @@ def summarize(actions: list[dict], target_rows: list[dict], failures: list[dict]
         "targets_missing": sum(1 for t in target_rows if t["status"] == "missing"),
     }
     return summary
+
+
+def mode_line(summary: dict, write: bool) -> str:
+    """输出末尾的 mode= 汇总行——P5 wrapper 只截最后两行，靠它判读三级结果。"""
+    modes = summary.get("modes") or {}
+    parts = [f"mode={m}={modes.get(m, 0)}"
+             for m in (MODE_RENAME, MODE_COPY_TRUNCATE, MODE_DEFERRED)]
+    tag = "模式" if write else "模式预览（dry-run）"
+    return f"  {tag}：" + " ".join(parts)
 
 
 def render_text(result: dict, verbose: bool) -> None:
@@ -969,7 +1337,7 @@ def render_text(result: dict, verbose: bool) -> None:
     for action in result["actions"]:
         if action["action"] in ("skip", "keep"):
             # 默认只展示「正在写」这类安全相关跳过；--verbose 才全量列
-            if not verbose and action.get("reason") != "active":
+            if not verbose and action.get("reason") not in ("active", "dead_deferred"):
                 continue
         rel = action.get("rel") or action["path"]
         size = human_size(action.get("size") or 0)
@@ -979,8 +1347,12 @@ def render_text(result: dict, verbose: bool) -> None:
                 extra = "  [FAILED]"
             elif action.get("result") == "planned":
                 extra = "  (dry-run)"
-            print(f"    [ROTATE ] {rel}  {size}  {action['detail']}{extra}")
-            print(f"              -> {Path(action['dest']).name}")
+            elif action.get("result") == "deferred":
+                extra = "  [DEFERRED]"
+            print(f"    [ROTATE ] {rel}  {size}  mode={action.get('mode') or '?'}  "
+                  f"{action['detail']}{extra}")
+            if action.get("dest"):
+                print(f"              -> {Path(action['dest']).name}")
         elif action["action"] == "recycle":
             status = {"planned": " (dry-run)", "ok": " (done)",
                       "failed": " [FAILED]"}.get(action.get("result"), "")
@@ -991,31 +1363,48 @@ def render_text(result: dict, verbose: bool) -> None:
             if verbose:
                 print(f"    [KEEP   ] {rel}  {size}  {action['detail']}")
         elif action["action"] == "skip":
-            if verbose or action.get("reason") == "active":
+            if verbose or action.get("reason") in ("active", "dead_deferred"):
                 print(f"    [SKIP   ] {rel}  {size}  {action['detail']}")
 
     summary = result["summary"]
     reasons = ", ".join(f"{k}={v}" for k, v in summary["skip_reasons"].items())
     print(
         "  汇总：scanned={scanned} rotate={rotate} recycle={recycle} "
-        "keep={keep} skip={skip} fail={fail}".format(
+        "keep={keep} skip={skip} fail={fail} deferred={deferred}".format(
             scanned=summary["files_scanned"], rotate=summary["rotate"],
             recycle=summary["recycle"], keep=summary["keep"],
             skip=summary["skip"], fail=summary["fail"],
+            deferred=summary.get("deferred", 0),
         )
     )
     if reasons:
         print(f"        跳过原因：{reasons}")
+    deferred = result.get("deferred") or {}
+    if deferred.get("count"):
+        verb = "待重试" if not result["write"] else "已登记"
+        print(f"  deferred {verb}（{deferred['count']} 条；清单 {deferred['file']}）：")
+        for item in deferred.get("items") or []:
+            print(f"    [DEFER  ] {item.get('rel')}  mode=deferred  "
+                  f"attempts={item.get('attempts')}/{item.get('max_attempts')}  "
+                  f"next={item.get('next_attempt')}  {item.get('detail', '')}")
     failures = [a for a in result["actions"] if a.get("result") == "failed"] + \
         result.get("failures", [])
     if failures:
         print("  失败：")
         for item in failures:
             print(f"    - {item.get('path')}  [{item.get('reason')}] {item.get('detail','')}")
+    for msg in result.get("warnings") or []:
+        # 走 stdout：P5 wrapper 用 2>&1 抓取且只留最后两行，stderr 会被缓冲打乱顺序
+        print(f"[WARN] {msg}")
+    summary = result["summary"]
+    modes = summary.get("modes") or {}
+    brief = " ".join(f"mode={m}:{modes.get(m, 0)}"
+                     for m in (MODE_RENAME, MODE_COPY_TRUNCATE, MODE_DEFERRED))
+    print(mode_line(summary, result["write"]))
     if not result["write"]:
-        print("  dry-run：未改动任何文件；确认后加 --execute。")
+        print(f"  dry-run：未改动任何文件；确认后加 --execute（{brief}）。")
     else:
-        print(f"  执行完毕；退出码 {result['exit_code']}。")
+        print(f"  执行完毕；退出码 {result['exit_code']}（{brief}）。")
 
 
 def emit_json(payload: dict) -> None:
@@ -1075,12 +1464,49 @@ def run(argv: list[str] | None = None) -> int:
     targets = resolve_targets(root, cfg, args.target, drill)
 
     now = datetime.now()
+    deferred_path, dead_path = deferred_paths(root)
+    warnings: list[str] = []
+    retried_actions: list[dict] = []
+    dead_items: list[dict] = []
+
+    # 1) 开头先重试上一轮 deferred 清单（dry-run 只预览，不动文件）
+    queue = load_deferred(deferred_path)
+    if queue and args.execute:
+        queue, retried_actions, dead_items, retry_warns = retry_deferred(
+            queue, params, cap, now)
+        warnings.extend(retry_warns)
+        append_dead(dead_path, dead_items)
+    elif queue:
+        for item in queue:
+            src = Path(str(item.get("path", "")))
+            dest_text = item.get("dest_hint") or ""
+            if src.is_file():
+                dest_text = str(rotation_dest(src, now))
+            retried_actions.append({
+                "action": "rotate",
+                "path": str(src),
+                "rel": item.get("rel") or str(src),
+                "size": None,
+                "dest": dest_text,
+                "reason": "deferred_retry",
+                "result": "planned",
+                "mode": MODE_DEFERRED,
+                "retried": True,
+                "detail": f"deferred 待重试（第 {int(item.get('attempts') or 1) + 1} 次）",
+            })
+
+    # 2) 常规扫描 + 执行
+    params["dead_paths"] = dead_path_set(dead_path)
+    params["deferred_paths"] = {norm_key(item.get("path", "")) for item in queue}
     actions, target_rows, walk_failures = build_plan(root, targets, cfg, params, now)
     if args.execute:
-        execute_actions(actions, params, cap)
+        new_deferred = execute_actions(actions, params, cap)
+        queue = _merge_queue(queue, new_deferred)
+        save_deferred(deferred_path, queue)
 
-    failures = [a for a in actions if a.get("result") == "failed"] + walk_failures
-    summary = summarize(actions, target_rows, walk_failures,
+    all_actions = retried_actions + actions
+    failures = [a for a in all_actions if a.get("result") == "failed"] + walk_failures
+    summary = summarize(all_actions, target_rows, walk_failures,
                         sum(row["files"] for row in target_rows))
     exit_code = 1 if failures else 0
 
@@ -1102,8 +1528,17 @@ def run(argv: list[str] | None = None) -> int:
         },
         "recycle": cap,
         "targets": target_rows,
-        "actions": actions,
+        "actions": all_actions,
         "failures": walk_failures,
+        "deferred": {
+            "file": str(deferred_path),
+            "dead_file": str(dead_path),
+            "count": len(queue),
+            "dead": len(dead_items),
+            "max_attempts": DEFERRED_MAX_ATTEMPTS,
+            "items": queue,
+        },
+        "warnings": warnings,
         "summary": summary,
         "ok": not failures,
         "exit_code": exit_code,
