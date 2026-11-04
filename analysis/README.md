@@ -286,8 +286,22 @@ python -X utf8 -m analysis.intraday_watch --loop --tick 60
 python -X utf8 -m analysis.intraday_watch --once --dry-run --no-fetch
 ```
 
-参数：`--once` / `--loop` / `--dry-run` / `--print-pool` / `--tick N`（默认 60）/ `--config PATH` / `--no-fetch`。
+参数：`--once` / `--loop` / `--dry-run` / `--print-pool` / `--tick N`（默认 60）/ `--config PATH` / `--no-fetch` /
+`--push`（L2 后：本轮触发发送飞书）/ `--push-test`（L2 后：发 1 张测试卡，需 `WATCH_PUSH_APPROVED=1`）。
 日志一律 `[MM-DD HH:MM:SS]` 前缀；`--loop` 异常自愈，非交易时段 sleep。
+
+### W3 飞书推送（8097 中台唯一通路）
+
+- 发送：`push_via_hub()` → `POST http://127.0.0.1:8097/api/send`，header `X-Push-Hub-Key`
+  （secret 读 `portal/work/push_secrets.json` 的 `push_hub_key`，环境变量 `PUSH_HUB_KEY` 优先），
+  `kind=watch:realtime`，`receive_id` 从 `quant_backtest/receivers.json` 按名字解析（默认 `个人`）。
+- 卡片：`build_feishu_card()` 生成 interactive 卡（A 股红涨绿跌 header、现价/涨跌/成交额/量比、
+  触发原因、新闻/板块、footer「研究提示，不构成投资建议」），按钮只放纯 URL「查看报告」
+  （hub 的 `card_actions.check_card` 会跳过 `open_url`；回调动作待动作中心注册后再加）。
+- 安全门：`push.enabled` 默认 **false**（不发送）；`--push` 显式开启；`--push-test` 需人工批准
+  `WATCH_PUSH_APPROVED=1`；发送失败 fail-safe 并 `forget_alert()` 撤销触发，下一 tick 自动重试
+  （避免 hub 短暂故障漏报）；`pushes` 表记录 sent=True/False 流水。
+- 依赖：hub 8097 不可达/鉴权失败时**不回落直发**（closed on failure，防绕过静默/配额/审计）。
 
 ### 配置
 
@@ -308,19 +322,23 @@ python -X utf8 -m analysis.intraday_watch --once --dry-run --no-fetch
 | `max_per_code_day` / `max_global_day` / `critical_exempt` | `6` / `40` / `true` | 限流与豁免 |
 | `session` | `09:25–11:30 / 13:00–15:00` | 交易时段（周一至周五） |
 | `em_enrich_limit` / `news_lookback_min` | `12` / `30` | 东财补充只数 / 新闻回看分钟 |
+| `sector_refresh_sec` | `180` | 板块榜刷新节流（缓存 KV，失败退回旧缓存） |
+| `push` | `{kind: watch:realtime, receiver: 个人, enabled: false}` | W3 推送目标、方式与总开关 |
 
 ### 测试
 
 ```bash
-python -m pytest analysis/tests/test_intraday_watch.py -q -p no:cacheprovider
+python -m pytest analysis/tests/test_intraday_watch.py analysis/tests/test_intraday_watch_sector.py analysis/tests/test_intraday_watch_push.py -q -p no:cacheprovider
 ```
 
 全部离线：`urllib` 打桩、新闻库/状态库落 tmp、构造 quote dict；**禁止测试访问真实网络**。
 覆盖新浪解析（停牌/缺字段）、交易时段、池构建降级、六类量价规则、新闻 JEV 与名称精确匹配、
-板块同向/急拉、去重/冷却/限流/豁免、状态持久化、配置覆盖、payload 字段。
+板块同向/急拉/分页全量/f127 映射、去重/冷却/限流/豁免、状态持久化、配置覆盖、payload 字段；
+W3 另覆盖卡片红涨绿跌/纯 URL 按钮、receiver 解析、hub 鉴权与开关、网络失败 fail-safe、
+`--push-test` 批准门、推送失败撤销 alert 重试语义。
 
 ### 边界
 
 - 只读：`news.db`、`quant_backtest/data`、`analysis.db`；只写 `analysis_work/intraday_watch/` 与本模块产物。
-- 不 import/不改 `news_collector/`；不发送飞书、不建计划任务（W3/W4）。
+- 不 import/不改 `news_collector/`；W3 只经 8097 hub 发送（默认关闭），W4 计划任务未建（需 L2 批准）。
 - 停牌（现价 0、昨收>0）以昨收计价且 `pct=None`，不出任何量价信号；坏数据一律 fail-safe 丢弃。

@@ -424,10 +424,13 @@ def test_to_push_payload_fields_and_no_send():
     assert len(payload) == 1
     card = payload[0]
     for key in ("title", "price", "pct", "amount", "vol_ratio", "reason",
-                "news", "sector", "ts", "buttons"):
+                "news", "sector", "ts", "fingerprint", "url"):
         assert key in card
     assert card["footer"] == "研究提示，不构成投资建议"
-    assert len(card["buttons"]) == 3 and card["dry_run"] is True
+    # W3：payload 只带纯 URL 按钮（hub 的 card_actions 跳过 open_url），
+    # 真正发送由 push_via_hub 负责（默认 push.enabled=false，不发送）。
+    assert "buttons" not in card
+    assert card["url"].endswith("/sa?code=%s" % s.code)
 
 
 # ---------------------------------------------------------------- 采集（全 mock）

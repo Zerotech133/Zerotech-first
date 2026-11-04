@@ -1,17 +1,20 @@
 # -*- coding: utf-8 -*-
-"""盘中实时盯盘引擎（W1 采集器 + W2 规则引擎）
+"""盘中实时盯盘引擎（W1 采集器 + W2 规则引擎 + W3 飞书推送适配）
 
 设计来源：`C:\\项目\\deliverables\\2026-11-05_盘中实时盯盘与飞书推送_设计方案_v1.md`
 （三路信号：量价 / 新闻 / 板块；去重·冷却·限流；SQLite 状态跨进程保持）。
 
 **研究提示，不构成投资建议**：本模块只读行情与新闻，只做异动提示，不下单、
-不输出买卖指令。W1/W2 只产出待推送 payload（dict/JSON），不真的 POST 8097
-推送中台（W3 再接）。
+不输出买卖指令。W3 只经 8097 推送中台（唯一通路，kind=watch:realtime，默认
+`push.enabled=false` 不发送）；`--push` 显式开启、`--push-test` 需人工批准
+（环境变量 WATCH_PUSH_APPROVED=1，L2 后设置）；W4 常驻任务需 L2 批准。
 
 用法：
     python -X utf8 -m analysis.intraday_watch --print-pool
     python -X utf8 -m analysis.intraday_watch --once --dry-run   # 真实冒烟（只读、不落库）
     python -X utf8 -m analysis.intraday_watch --once             # 写 watchtower.db 并打印 payload
+    python -X utf8 -m analysis.intraday_watch --once --push      # L2 后：触发即推送飞书
+    python -X utf8 -m analysis.intraday_watch --push-test        # L2 后：发 1 张测试卡
     python -X utf8 -m analysis.intraday_watch --loop --tick 60   # 常驻（W4 才启用）
 
 约束：不 import `news_collector.quote_snapshot`（解析逻辑参考，代码自包含）；
@@ -52,6 +55,10 @@ CONFIG_PATH = os.path.join(WORK, "intraday_watch_config.json")
 STATE_DIR = os.path.join(WORK, "intraday_watch")
 POOL_PATH = os.path.join(STATE_DIR, "pool.json")
 STATE_DB = os.path.join(STATE_DIR, "watchtower.db")
+#: W3 推送：8097 推送中台（唯一通路，带 kind 静默/配额/流水/卡片按钮校验）
+HUB_URL = os.environ.get("PUSH_HUB_URL", "http://127.0.0.1:8097").rstrip("/")
+PUSH_SECRETS_PATH = os.path.join(MAIN_ROOT, "portal", "work", "push_secrets.json")
+RECEIVERS_PATH = os.path.join(MAIN_ROOT, "quant_backtest", "receivers.json")
 
 SINA_URL = "https://hq.sinajs.cn/list=%s"
 SINA_HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
@@ -369,6 +376,21 @@ def _http_get(url: str, headers: Optional[Dict[str, str]] = None,
         return raw.decode(charset, errors="replace")
     except (LookupError, UnicodeDecodeError):
         return raw.decode(encoding, errors="replace")
+
+def _http_post_json(url: str, obj: Dict[str, Any],
+                    headers: Optional[Dict[str, str]] = None,
+                    timeout: int = 10) -> Dict[str, Any]:
+    """POST JSON 并解析响应；HTTP 非 2xx 抛 HTTPError（调用方 fail-safe）。"""
+    data = json.dumps(obj, ensure_ascii=False).encode("utf-8")
+    hd = {"Content-Type": "application/json; charset=utf-8"}
+    hd.update(headers or {})
+    req = urllib.request.Request(url, data=data, headers=hd, method="POST")
+    with urllib.request.urlopen(req, timeout=timeout) as resp:  # noqa: S310 - 本机 127.0.0.1
+        raw = resp.read()
+    try:
+        return json.loads(raw.decode("utf-8", errors="replace") or "{}")
+    except ValueError:
+        return {"ok": False, "error": "invalid json response"}
 
 def fetch_quotes(codes: Iterable[str], retries: int = 1, chunk_size: int = 50,
                  timeout: int = 12) -> List[Dict[str, Any]]:
@@ -819,6 +841,15 @@ class StateStore:
             log("状态：alert 落库失败（%s）" % str(exc)[:100])
             return False
         return True
+    def forget_alert(self, fingerprint: str) -> bool:
+        """推送失败时撤销触发记录，使下一 tick 能重新命中（避免 hub 故障漏报）。"""
+        try:
+            cur = self.con.execute("DELETE FROM alerts WHERE fingerprint = ?", (fingerprint,))
+            self.con.commit()
+            return cur.rowcount > 0
+        except sqlite3.Error as exc:
+            log("状态：撤销 alert 失败（%s）" % str(exc)[:100])
+            return False
     def last_alert_ts(self, code: str, rule: str) -> Optional[datetime]:
         row = self.con.execute("SELECT MAX(ts) FROM alerts WHERE code = ? AND rule = ?",
                                (code, rule)).fetchone()
@@ -1200,11 +1231,11 @@ def filter_signals(signals: List[Signal], store: StateStore,
             accepted.append(sig)
     return accepted
 
-# ---------------------------------------------------------------- 推送适配层
+# ---------------------------------------------------------------- 推送适配层（W3：8097 hub 唯一通路）
 
 def to_push_payload(signals: List[Signal],
                     cfg: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
-    """生成设计 §3.4 卡片字段的 payload；**只返回 dict，不发送**（W3 接 8097）。"""
+    """生成设计 §3.4 卡片字段的 payload；纯 dict，不发送（发送见 push_via_hub）。"""
     conf = cfg or load_config()
     push = conf.get("push") or {}
     base = str(conf.get("portal_base") or "").rstrip("/")
@@ -1218,13 +1249,141 @@ def to_push_payload(signals: List[Signal],
             "price": sig.price, "pct": sig.pct, "amount": sig.amount,
             "vol_ratio": sig.vol_ratio, "reason": sig.detail,
             "news": sig.news, "sector": sig.sector, "ts": sig.ts,
-            "buttons": [
-                {"text": "查看报告", "type": "url", "value": "%s/sa?code=%s" % (base, sig.code)},
-                {"text": "加入观察池", "type": "callback", "value": "watch:pool:add:%s" % sig.code},
-                {"text": "静音 30 分钟", "type": "callback",
-                 "value": "watch:mute:%s:%d" % (sig.code, 30)}],
-            "footer": "研究提示，不构成投资建议", "dry_run": True})
+            "fingerprint": sig.fingerprint,
+            # 只放纯 URL 按钮：hub 的 card_actions.check_card 会跳过 open_url，
+            # callback 按钮需先注册动作（后续动作中心落地后再加「加池/静音」）。
+            "url": "%s/sa?code=%s" % (base, sig.code),
+            "footer": "研究提示，不构成投资建议"})
     return out
+
+def _push_hub_key() -> str:
+    """hub 鉴权 key：环境变量优先，其次 portal/work/push_secrets.json 的 push_hub_key。"""
+    key = (os.environ.get("PUSH_HUB_KEY") or "").strip()
+    if key:
+        return key
+    try:
+        with open(PUSH_SECRETS_PATH, encoding="utf-8") as f:
+            return str((json.load(f) or {}).get("push_hub_key") or "").strip()
+    except (OSError, ValueError):
+        return ""
+
+def load_receivers(path: Optional[str] = None) -> List[Dict[str, Any]]:
+    doc = _read_json(path or RECEIVERS_PATH)
+    recs = doc.get("receivers") if isinstance(doc, dict) else doc
+    return [r for r in (recs or []) if isinstance(r, dict) and r.get("id")]
+
+def resolve_receiver(name: str = "个人",
+                     path: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    rows = load_receivers(path)
+    for r in rows:
+        if str(r.get("name") or "") == name:
+            return r
+    return rows[0] if rows else None
+
+def build_feishu_card(p: Dict[str, Any]) -> Dict[str, Any]:
+    """payload → 飞书 interactive 卡（A 股红涨绿跌；纯 URL 按钮，无回调动作）。"""
+    try:
+        pct = float(p.get("pct") or 0.0)
+    except (TypeError, ValueError):
+        pct = 0.0
+    color = "red" if pct >= 0 else "green"
+    name = p.get("name") or p.get("code") or ""
+    title = "盘中异动 · %s（%s）" % (name, p.get("code") or "")
+    price_line = "**现价** %s　**涨跌** %+.2f%%　**成交额** %s 万　**量比** %s" % (
+        _fmt_num(p.get("price")), pct, _fmt_num(p.get("amount")),
+        _fmt_num(p.get("vol_ratio")))
+    elements: List[Dict[str, Any]] = [
+        {"tag": "div", "text": {"tag": "lark_md", "content": price_line}},
+        {"tag": "div", "text": {"tag": "lark_md",
+                                "content": "**触发**：%s" % (p.get("reason") or p.get("title") or "")}},
+    ]
+    if p.get("news"):
+        elements.append({"tag": "div", "text": {"tag": "lark_md",
+                                                "content": "**相关新闻**：%s" % p["news"]}})
+    if p.get("sector"):
+        elements.append({"tag": "div", "text": {"tag": "lark_md",
+                                                "content": "**板块**：%s" % p["sector"]}})
+    elements.append({"tag": "hr"})
+    elements.append({"tag": "div", "text": {"tag": "lark_md",
+                                            "content": p.get("footer") or "研究提示，不构成投资建议"}})
+    if p.get("url"):
+        elements.append({"tag": "action", "actions": [{
+            "tag": "button", "type": "primary",
+            "text": {"tag": "plain_text", "content": "查看报告"},
+            "behaviors": [{"type": "open_url", "default_url": p["url"]}]}]})
+    return {
+        "config": {"wide_screen_mode": True},
+        "header": {"template": color,
+                   "title": {"tag": "plain_text", "content": title}},
+        "elements": elements,
+    }
+
+def push_via_hub(payloads: List[Dict[str, Any]],
+                 cfg: Optional[Dict[str, Any]] = None,
+                 receiver: Optional[str] = None,
+                 timeout: int = 10) -> List[Dict[str, Any]]:
+    """逐条 POST 8097 /api/send（kind/watch:realtime）；返回每条 ok/why。"""
+    conf = cfg or load_config()
+    push = conf.get("push") or {}
+    if not payloads:
+        return []
+    if not push.get("enabled"):
+        return [{"ok": False, "error": "push disabled（配置 push.enabled=false）",
+                 "code": p.get("code")} for p in payloads]
+    secret = _push_hub_key()
+    if not secret:
+        return [{"ok": False, "error": "missing PUSH_HUB_KEY", "code": p.get("code")}
+                for p in payloads]
+    rcpt = resolve_receiver(receiver or push.get("receiver") or "个人")
+    if not rcpt:
+        return [{"ok": False, "error": "missing receiver", "code": p.get("code")}
+                for p in payloads]
+    results: List[Dict[str, Any]] = []
+    for p in payloads:
+        body = {
+            "content": json.dumps(build_feishu_card(p), ensure_ascii=False),
+            "msg_type": "interactive",
+            "receive_id": rcpt.get("id"),
+            "receive_id_type": rcpt.get("type") or "open_id",
+            "kind": p.get("kind") or "watch:realtime",
+            "critical": bool(p.get("critical")),
+        }
+        try:
+            resp = _http_post_json(HUB_URL + "/api/send", body,
+                                   headers={"X-Push-Hub-Key": secret}, timeout=timeout)
+            ok = bool(resp.get("ok"))
+            results.append({"ok": ok, "code": p.get("code"), "rule": p.get("rule"),
+                            "why": resp.get("why") or resp.get("error") or ""})
+        except Exception as exc:  # noqa: BLE001 - 推送失败必须 fail-safe，不中断整轮
+            results.append({"ok": False, "code": p.get("code"), "rule": p.get("rule"),
+                            "error": str(exc)[:200]})
+    return results
+
+def push_test(cfg: Optional[Dict[str, Any]] = None,
+              code: str = "600337") -> Dict[str, Any]:
+    """人工批准后的测试卡：需 WATCH_PUSH_APPROVED=1；不写 alerts、不产生业务触发。"""
+    if (os.environ.get("WATCH_PUSH_APPROVED") or "").strip() != "1":
+        return {"ok": False,
+                "error": "WATCH_PUSH_APPROVED!=1：测试推送需人工批准（L2）后再执行"}
+    conf = config_with_push_enabled(cfg)
+    code_n = normalize_code(code)
+    sig = Signal(code=code_n, name="测试", rule="push_test", severity="info",
+                 title="盘中盯盘推送测试", detail="这是一条测试卡片，确认飞书链路可用。",
+                 ts=now_cst().strftime("%Y-%m-%d %H:%M:%S"),
+                 fingerprint=make_fingerprint(code_n, "push_test", "test",
+                                             now_cst().strftime("%Y-%m-%d")),
+                 price=10.0, pct=0.0, amount=0.0, vol_ratio=0.0)
+    payloads = to_push_payload([sig], cfg=conf)
+    res = push_via_hub(payloads, cfg=conf)
+    return {"ok": bool(res and res[0].get("ok")), "results": res}
+
+def config_with_push_enabled(cfg: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """CLI --push/--push-test 的显式开关：深拷贝后强制 push.enabled=true。"""
+    conf = dict(cfg or load_config())
+    push = dict(conf.get("push") or {})
+    push["enabled"] = True
+    conf["push"] = push
+    return conf
 
 # ---------------------------------------------------------------- 单轮编排
 
@@ -1293,14 +1452,28 @@ def run_once(dry_run: bool = False, cfg: Optional[Dict[str, Any]] = None,
         newest = max(n["ts"] for n in news)
         if newest and newest > (store.get_kv("news_watermark") or ""):
             store.set_kv("news_watermark", newest)
+    push_results: List[Dict[str, Any]] = []
     if not dry_run:
-        for sig in accepted:
-            store.record_push(sig, (conf.get("push") or {}).get("kind", "watch:realtime"))
+        kind = (conf.get("push") or {}).get("kind", "watch:realtime")
+        send = bool(payload) and bool((conf.get("push") or {}).get("enabled"))
+        if send:
+            push_results = push_via_hub(payload, cfg=conf)
+            log("推送：%d 条 → 成功 %d / 失败 %d" % (
+                len(push_results),
+                len([r for r in push_results if r.get("ok")]),
+                len([r for r in push_results if not r.get("ok")])))
+        for idx, sig in enumerate(accepted):
+            ok = bool(push_results[idx].get("ok")) if (send and idx < len(push_results)) else False
+            store.record_push(sig, kind, sent=ok)
+            if send and not ok:
+                # 推送失败撤销触发，下一 tick 重试（避免 hub 短暂故障造成漏报）
+                store.forget_alert(sig.fingerprint)
     store.close()
     if payload:
         print(json.dumps(payload, ensure_ascii=False, indent=1, default=str), flush=True)
     return {"pool": pool, "quotes": quotes, "news": news, "sectors": sectors,
-            "signals": raw, "accepted": accepted, "payload": payload}
+            "signals": raw, "accepted": accepted, "payload": payload,
+            "push": push_results}
 
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(
@@ -1313,8 +1486,20 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--tick", type=int, default=60, help="轮询间隔秒（默认 60）")
     parser.add_argument("--config", default=None, help="配置文件路径（默认 analysis_work/...json）")
     parser.add_argument("--no-fetch", action="store_true", help="跳过网络采集（自检/调试）")
+    parser.add_argument("--push", action="store_true",
+                        help="本轮触发发送到飞书（需 L2 批准；强制 push.enabled）")
+    parser.add_argument("--push-test", action="store_true",
+                        help="发送 1 张测试卡（需 WATCH_PUSH_APPROVED=1 人工批准）")
     args = parser.parse_args(argv)
     cfg = load_config(args.config)
+    if args.push_test:
+        res = push_test(cfg)
+        print(json.dumps(res, ensure_ascii=False, indent=1), flush=True)
+        return 0 if res.get("ok") else 2
+    if args.push:
+        cfg = config_with_push_enabled(cfg)
+        log("推送：--push 已显式启用（kind=%s）" %
+            ((cfg.get("push") or {}).get("kind") or "watch:realtime"))
     if args.print_pool:
         codes = build_pool(write=not args.dry_run)
         doc = _read_json(POOL_PATH) if os.path.exists(POOL_PATH) else {}
