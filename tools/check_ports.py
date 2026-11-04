@@ -139,6 +139,11 @@ REGISTRY = {
     # 2026-10-30 WO-WATCH-ADMIN：盯盘只读管理台（watch_admin_server.py）。
     # 8796 已注册给军团指挥台，watch_admin 换 8789；按需起停、只读、不写业务。
     8789: "watch_admin 盯盘只读管理台(M2/M3)",
+    # 2026-11-05 04:52 16:30 合并门前实测：8790 = workbuddy 本机 KG API
+    # (C:\Users\t\.workbuddy\binaries\python\envs\default\Scripts\python.exe kg_api.py)。
+    # 他线临时服务，不是本仓平台栈；按实际所有者登记，避免 strict 把第三服务误判为
+    # 未登记抢占；不启停、不改其进程。
+    8790: "KG API(workbuddy kg_api.py·他线临时服务,2026-11-05 实测)",
 }
 
 
@@ -340,7 +345,11 @@ WHITELIST = ("system", "svchost", "clash", "todesk", "editor_sdk",
              "cloudflared",
              # 2026-11-01 第三方桌面安全软件 KuaiAnCore.exe 监听 7890；
              # 非我方服务，登记为服务反而是错误事实；同 trae/codex/云梭先例入豁免。
-             "kuaiancore")
+             "kuaiancore",
+             # 2026-11-05 16:30 合并门前实测：9335=headless Edge 飞书简报调试口
+             # (--headless=new --remote-debugging-port=9335)。浏览器客户端不是平台服务，
+             # 同 msedgewebview2/feishu 先例入豁免；不整体放行 python/node。
+             "msedge")
 # 2026-10-13 QA1-R2质检排查(K-ORG-029)：5283=SogouCloud.exe(搜狗输入法云)、
 # 8475=baidunetdiskhost.exe(百度网盘)——均为终端第三方软件，非平台栈，入豁免。
 # 2026-10-14 K-STOCK-394：17788=Trae CN.exe（IDE 自身，桌面第三方非平台栈），入豁免

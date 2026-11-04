@@ -82,6 +82,21 @@ class StrictSemanticsTests(unittest.TestCase):
         self.assertEqual(len(payload['unknown']), 1)
         self.assertEqual(payload['summary']['unregistered'], 1)
 
+    def test_msedge_debug_port_is_whitelisted(self):
+        """9335 headless Edge remote-debugging 口是浏览器客户端，不是平台服务。"""
+        rc, out = self._main_json(
+            ['check_ports.py', '--strict', '--json'], True, {9335: 25268},
+            proc='msedge')
+        payload = json.loads(out)
+        self.assertEqual(rc, 0)
+        self.assertEqual(payload['unknown'], [])
+        self.assertIs(payload['strict_fail'], False)
+
+    def test_workbuddy_kg_api_port_is_registered(self):
+        """8790 是 workbuddy 他线 KG API 的实测监听口，不是本仓服务。"""
+        self.assertIn(8790, check_ports.REGISTRY)
+        self.assertIn('KG API', check_ports.REGISTRY[8790])
+
     def test_registry_duplicate_port_detected(self):
         with tempfile.TemporaryDirectory() as tmp:
             src = Path(tmp) / 'registry_dup.py'
