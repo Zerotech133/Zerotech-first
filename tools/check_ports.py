@@ -61,6 +61,7 @@ REGISTRY = {
     9104: "飞书卡片回调(lark_card)",
     9105: "agent_platform ack-serve",  # K-ORG-191 收编：2026-10-18 实证活监听（agent_platform.cli ack-serve）
     8105: "智策OS v2 API(zhice_os_v2.api.main:app,uvicorn,2026-10-31 他线起)",  # P136 补注册：13:53 未登记监听触发合并门红；owner=智策OS线
+    8110: "intel-kg 情报知识图谱API(intel-kg/services/api.py:app,uvicorn,2026-11-04 L2 批准)",  # L2-B 注册：12 只读接口+health+meta；只绑 127.0.0.1；owner=DSH-Lead/intel-kg
     8098: "模型管理台(api_model_admin.py)",  # K-ORG-191 收编：2026-10-18 实证活监听（并行线 model_admin）
     9899: "CowAgent console",
     11434: "Ollama",
@@ -377,6 +378,13 @@ OPTIONAL_OFFLINE |= {1234, 1238, 8898, 18899}
 # 隔离验收/按需语义同 8796；strict 语义=防抢占、不因闲置判负）。
 OPTIONAL_OFFLINE |= {8795}
 
+# 2026-11-04 21:40 合并窗口实测：3080=DeepSeek Harness Web GUI
+# (node .../@deepseek-ai/dsh/lib/bin.js web)，18787=billion-context
+# 会话上下文守护 (node .../billion-context/dist/index.js)。两者都是
+# 当前会话的 Agent 工具进程，不是平台服务；登记进 REGISTRY 会写成假事实。
+# strict 只豁免这两个会话端口，平台 node 服务仍按未登记拦截。
+HARNESS_UNREGISTERED_PORTS = {3080, 18787}
+
 
 def main():
     strict = "--strict" in sys.argv
@@ -411,6 +419,10 @@ def main():
     transient = []
     for p, pid in sorted(listen.items()):
         if not (1024 < p <= 49151) or p in REGISTRY:
+            continue
+        if p in HARNESS_UNREGISTERED_PORTS:
+            say("  ⚠ %d 由 %s 监听——DSH/billion-context 会话工具，strict 豁免"
+                % (p, proc_name(pid)))
             continue
         name = proc_name(pid)
         if any(w in name.lower() for w in WHITELIST):
