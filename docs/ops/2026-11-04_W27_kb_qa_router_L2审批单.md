@@ -80,3 +80,28 @@ Get-Content 'C:\项目\老田的AI助手\research\reports\llm_cost_*.jsonl' -Tai
 - 详见 `deliverables/2026-11-04_W27_kb_qa_router_执行回执.md`。
 - 回滚：删除启动脚本中 `KB_QA_LLM_PROVIDER='router'` 行并再次受控重启。
 
+## 9. 第二次重启（2026-11-05，修 multi 分支绕过）
+- 背景：2026-11-05 代码审计发现 `portal/api_kb_qa.py` 的 `mode=multi` 分支调用
+  `multi.answer_multi` 时未传 `chat_fn`，实际仍走本地 Ollama（不产生 v4d 成本行），
+  首次验收只测了 `mode=single`，属验收口径漏洞。修复见 commit **701c023fd**。
+- 审批：老田 2026-11-05 00:23 批准「执行 L2 重启让 W27 multi 修复在生产生效」。
+- 执行：00:24:38 flag 消费 killed `[12868,15772,37168]`；00:24:54 cold-start guard OK；
+  00:24:56 starting；00:26:03 `/api/health` 200，portal api pid **52780**；停机约 **85s**。
+- 验收：`mode=multi` 200/10.3s，`llm_cost_20261105.jsonl` 首行
+  `provider=bailian_v4d total_tokens=1201 cost=0.002962 purpose=kb_qa`；
+  `mode=single` 200，连续 4 行 v4d 成本记录；health 200。
+- 详见 `deliverables/2026-11-05_W27_multi_router_重启执行回执.md`。
+- 回滚：同第 5 节（删除启动脚本行 + 再次受控重启）。
+
+## 10. 回滚记录（2026-11-05 00:29，答案质量对比）
+- 触发：老田 2026-11-05 00:29「回滚一下，先确认 multi 答案质量和之前 Ollama 版本差异大不大」。
+- 变更：`portal/start_portal_api.ps1` 的 `KB_QA_LLM_PROVIDER` 由 `'router'` 改回 `'ollama'`。
+- 执行：`schtasks /end` → 停 8091 pid 52780 → flag + `schtasks /run`；00:31:08 killed
+  `[33980,39472,52780]`；00:31:25 guard OK；00:31:26 starting；health 200，新 pid **52424**；
+  回滚后 3 题 multi + 1 题 single，成本日志零新增（10→10 行）。
+- 对比结论（3 题，详见 `deliverables/2026-11-05_W27_multi_回滚与答案对比.md`）：
+  v4d 快 3–7 倍、答案更短，但 multi「资料不足」时输出截断自检句（无实际答复）；
+  Ollama 更完整但慢，且 Q3 引入无关事实。**暂保持 Ollama**；待修多单元空答案/重复引用
+  并用 20–40 题 multi 评测后再评估切回。
+- 恢复 router：改回 `'router'` + flag + `schtasks /run`（需再次 L2 批准）。
+

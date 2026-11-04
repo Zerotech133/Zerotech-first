@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import sys
 import urllib.request
 from pathlib import Path
@@ -250,15 +251,25 @@ def test_dashboard_lifecycle_and_registry_gate_sync():
     assert payload["schema_version"] == "learning_projects_dashboard.v2"
     assert payload["lifecycle"]["registry_synced"] in (True, False)
     assert payload["lifecycle"]["gate_ok"] == len(payload["projects"])
+    # 全量 gate 可能尚未覆盖新入项目；这些项目应保留各自较新的 gate，而不是回退到旧全量报告。
+    full_ids = {p.get("project_id") for p in gate_report.get("projects") or []}
     for proj in payload["projects"]:
+        pid = proj.get("project_id")
         life = proj.get("lifecycle") or {}
         assert life.get("stage") == proj.get("status")
-        assert (life.get("gate") or {}).get("checked_at") == last_gate_at
-        assert (life.get("gate") or {}).get("ok") is True
+        gate = life.get("gate") or {}
+        if pid in full_ids:
+            assert gate.get("checked_at") == last_gate_at, pid
+        else:
+            assert gate.get("checked_at"), pid
+        assert gate.get("ok") is True
         assert isinstance(life.get("history") or [], list)
     reg = _json.loads(REGISTRY.read_text(encoding="utf-8"))
     for proj in reg["projects"]:
-        assert proj["lifecycle"]["gate"]["checked_at"] == last_gate_at
+        if proj["project_id"] in full_ids:
+            assert proj["lifecycle"]["gate"]["checked_at"] == last_gate_at
+        else:
+            assert proj["lifecycle"]["gate"]["checked_at"]
     # HTTP：看板 JSON 已带 lifecycle
     import urllib.request
     with urllib.request.urlopen("http://127.0.0.1:8734/static/learning_projects_dashboard.json", timeout=10) as r:
@@ -310,3 +321,17 @@ def test_page_factor_lab_block_and_http():
     with urllib.request.urlopen("http://127.0.0.1:8734/static/learning_factors.json", timeout=10) as r:
         served = json.loads(r.read().decode("utf-8"))
         assert r.status == 200 and len(served["factors"]) == 8
+
+
+def test_latest_gate_prefers_generated_at_over_mtime(tmp_path):
+    """补跑/复制可能让旧报告 mtime 更新；应取 generated_at 最新的全量报告。"""
+    old = tmp_path / "learning_gate_20261103.json"
+    new = tmp_path / "learning_gate_20261104.json"
+    old.write_text(json.dumps({"generated_at": "2026-11-03T16:37:41+08:00"}), encoding="utf-8")
+    new.write_text(json.dumps({"generated_at": "2026-11-04T02:43:33+08:00"}), encoding="utf-8")
+    now = 1793737326.0
+    os.utime(old, (now + 3600, now + 3600))  # 旧报告 mtime 反而更晚
+    os.utime(new, (now, now))
+    picked, data = B.latest_gate(tmp_path)
+    assert picked == new
+    assert data["generated_at"] == "2026-11-04T02:43:33+08:00"
