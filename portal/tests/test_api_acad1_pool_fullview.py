@@ -30,6 +30,23 @@ sys.path.insert(0, str(PORTAL))
 import api_acad1_pool as api  # noqa: E402
 import pool_data  # noqa: E402
 
+
+@pytest.fixture(autouse=True)
+def _hermetic_acad1_dirs(tmp_path, monkeypatch):
+    """测试固定使用临时目录，不读主区 agent_platform/data 运行数据。
+
+    2026-11-04 主区 pool_review/2026-11-03.json 的 plan.selected=[]、
+    summary 缺 by_market，曾使聚合视图测试读到真实 review 数据而假红；
+    这里把 review/pool 目录都钉到 tmp_path（空目录 = 固定“无旧 review”）。
+    """
+    review_dir = tmp_path / "pool_review"
+    pool_dir = tmp_path / "recommendation_pool"
+    review_dir.mkdir()
+    pool_dir.mkdir()
+    monkeypatch.setattr(api, "DEFAULT_REVIEW_DIR", str(review_dir))
+    monkeypatch.setattr(api, "DEFAULT_POOL_DIR", str(pool_dir))
+
+
 MARKET_DATES = {"CN": "2026-11-03", "HK": "2026-10-30",
                 "US": "2026-10-29", "CRYPTO": "2026-10-31"}
 QUOTAS = {"CN": 12, "HK": 10, "US": 6, "CRYPTO": 2}
