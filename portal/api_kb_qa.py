@@ -399,10 +399,18 @@ def handle(method: str, path: str, query: dict | None = None, body: dict | None 
         if mode == "multi":
             multi = _load_multi()
             multi_k = max(MULTI_MIN_K, min(MULTI_MAX_K, int(topk)))
-            fn = multi_fn or multi.answer_multi
-            result = fn(question, k=multi_k, timeout=timeout,
-                        prompt_version=params["prompt"],
-                        citation_retry=params["citation_retry"])
+            if multi_fn:
+                result = multi_fn(question, k=multi_k, timeout=timeout,
+                                  prompt_version=params["prompt"],
+                                  citation_retry=params["citation_retry"])
+            else:
+                # 2026-11-05 审计修复：此前未传 chat_fn，answer_multi 默认走
+                # call_ollama，KB_QA_LLM_PROVIDER=router 对 HTTP multi 完全失效。
+                qa = _load_qa()
+                result = multi.answer_multi(question, k=multi_k, timeout=timeout,
+                                            prompt_version=params["prompt"],
+                                            citation_retry=params["citation_retry"],
+                                            chat_fn=qa.chat)
             k_value = int(result.get("k") or multi_k)
         else:
             qa = _load_qa()

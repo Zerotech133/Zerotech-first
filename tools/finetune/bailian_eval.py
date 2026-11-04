@@ -262,6 +262,7 @@ def _verify_answer(answer: str, ctx: list[dict]) -> dict:
         from citation_verifier import verify_answer
         v = verify_answer(answer, ctx)
         return {"citation_valid_rate": v.get("citation_valid_rate"),
+                "cited_sentences": v.get("cited_sentences"),
                 "weak_rate": v.get("weak_rate"),
                 "all_supported": v.get("all_supported"),
                 "unsupported_count": len(v.get("unsupported_sentences") or []),
@@ -286,6 +287,12 @@ def evaluate(dataset: list[dict], *, baseline_agg: dict, client, model: str,
         except Exception as exc:  # noqa: BLE001
             error = f"{type(exc).__name__}: {exc}"
         judged = w13.judge_one(item, item["ctx"], answer)
+        if error:
+            # 2026-11-05 审计修复：API 错误时空答案会被 is_refusal 的 len<8 判成
+            # 「合规拒答」，进而 citation_ok=True 抬高引用正确率；错误行不得计分。
+            judged["citation_ok"] = False
+            judged["citation_valid"] = False
+            judged["refused"] = False
         if verify_citations:
             judged["citation_verify"] = _verify_answer(answer, item["ctx"])
         judged["error"] = error
@@ -328,7 +335,8 @@ def aggregate_results(results: list[dict], baseline_agg: dict | None = None) -> 
         "answerable_n": len(ans), "unanswerable_n": len(unans),
     }
     verified = [r["citation_verify"] for r in results if r.get("citation_verify")
-                and r["citation_verify"].get("citation_valid_rate") is not None]
+                and r["citation_verify"].get("citation_valid_rate") is not None
+                and int(r["citation_verify"].get("cited_sentences") or 0) > 0]
     if verified:
         agg["citation_verified_rate"] = round(
             sum(float(v["citation_valid_rate"]) for v in verified) / len(verified), 4)
@@ -337,6 +345,11 @@ def aggregate_results(results: list[dict], baseline_agg: dict | None = None) -> 
         agg["citation_weak_rate"] = round(
             sum(float(v.get("weak_rate") or 0) for v in verified) / len(verified), 4)
         agg["citation_unsupported_total"] = sum(int(v.get("unsupported_count") or 0) for v in verified)
+        agg["citation_verified_n"] = len(verified)
+        agg["citation_verified_excluded_n"] = sum(
+            1 for r in results if r.get("citation_verify")
+            and r["citation_verify"].get("citation_valid_rate") is not None
+            and int(r["citation_verify"].get("cited_sentences") or 0) == 0)
     comparison = {}
     if baseline_agg:
         for k in ("citation_accuracy", "groundedness", "correct_refusal_rate", "gold_similarity",
@@ -390,6 +403,7 @@ def build_payload(*, payload_mode: str, model: str, base_url: str, dataset: list
         "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
         "task": "W17-百炼部署后评测（W13 40 题 × 百炼 OpenAI 兼容接口）",
         "mode": payload_mode,
+        "prompt_profile": (evaluation or {}).get("prompt_profile") or PROMPT_PROFILE,
         "api": {"base_url": base_url, "model": model, "key_source": key_source,
                 "dry_run": payload_mode == "dry-run", "mock": payload_mode == "mock"},
         "dataset": dataset_meta,

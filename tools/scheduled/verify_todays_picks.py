@@ -4,10 +4,13 @@
 校验项：
   1. 当日 `todays_picks.json` 的 generated_at 落在验收日、且不早于 18:15；
   2. trade_basis 含验收日；counts.total > 0 且 T1/T2/T3 齐全；
-  3. `picks_history/todays_<YYYYMMDD>.json` 存在，且其 generated_at/basis 为验收日；
-  4. 计划任务 `\\TodaysPicks` 当日 LastRunTime 有效、LastTaskResult=0。
+  3. `picks_history/todays_<YYYYMMDD>.json` 存在，generated_at/basis 为验收日，
+     且 counts 与主文件一致（窗口前首写允许但降级为 warning）；
+  4. 计划任务 `\\TodaysPicks` 当日已运行完成、LastTaskResult 0(=正常) 或
+     3(=T1 停挂但已落盘)；任务运行中（267009/0x41301）→ PENDING。
 
 退出码：0 PASS / 2 FAIL / 3 PENDING（任务当日尚未跑完）。
+非交易日（周六/周日）返回 SKIP，退出码 0。
 输出 JSON 默认 `research/reports/todays_picks_acceptance_<YYYYMMDD>.json`。
 """
 from __future__ import annotations
@@ -25,6 +28,9 @@ HISTORY = REPO / "portal" / "data" / "picks_history"
 REPORTS = REPO / "research" / "reports"
 TASK_NAME = "TodaysPicks"
 MIN_READY_TIME = "18:15:00"
+TASK_DEADLINE = "18:25:00"
+TASK_RUNNING = 267009  # 0x41301: task is currently running
+COUNT_KEYS = ("total", "T1_resonance", "T2_high_value", "T3_single")
 
 
 def parse_ts(value: str) -> datetime | None:
@@ -38,6 +44,10 @@ def parse_ts(value: str) -> datetime | None:
     return None
 
 
+def _hhmmss(ts: datetime) -> str:
+    return ts.strftime("%H:%M:%S")
+
+
 def check_payload(payload: dict, expect_day: str, label: str,
                   min_ready_time: str = MIN_READY_TIME) -> list[str]:
     errors: list[str] = []
@@ -49,8 +59,8 @@ def check_payload(payload: dict, expect_day: str, label: str,
     else:
         if gen.strftime("%Y-%m-%d") != expect_day:
             errors.append(f"{label}: generated_at 日期 {gen:%Y-%m-%d} != {expect_day}")
-        elif gen.strftime("%H:%M:%S") < min_ready_time:
-            errors.append(f"{label}: generated_at {gen:%H:%M:%S} 早于 {min_ready_time}")
+        elif _hhmmss(gen) < min_ready_time:
+            errors.append(f"{label}: generated_at {_hhmmss(gen)} 早于 {min_ready_time}")
     basis = str(payload.get("trade_basis") or "")
     if expect_day not in basis:
         errors.append(f"{label}: trade_basis 不含 {expect_day}（{basis!r}）")
@@ -58,81 +68,155 @@ def check_payload(payload: dict, expect_day: str, label: str,
     total = counts.get("total")
     if not isinstance(total, int) or total <= 0:
         errors.append(f"{label}: counts.total 非正（{total!r}）")
-    for key in ("T1_resonance", "T2_high_value", "T3_single"):
+    for key in COUNT_KEYS[1:]:
         if key not in counts:
             errors.append(f"{label}: counts 缺 {key}")
+        elif not isinstance(counts.get(key), int):
+            errors.append(f"{label}: counts.{key} 非整数（{counts.get(key)!r}）")
     return errors
 
 
-def check_archive(archive: dict | None, path: Path) -> list[str]:
+def check_archive(archive: dict | None, path: Path, picks: dict | None = None,
+                  expect_day: str = "", min_ready_time: str = MIN_READY_TIME
+                  ) -> tuple[list[str], list[str]]:
+    """返回 (errors, warnings)。归档窗口前首写且内容与主文件一致 → warning。"""
     if archive is None:
-        return [f"归档缺失: {path}"]
+        return [f"归档缺失: {path}"], []
     errors: list[str] = []
+    warnings: list[str] = []
+    if not isinstance(archive, dict):
+        return ["归档: 不是 JSON 对象"], warnings
     gen = parse_ts(archive.get("generated_at"))
     if gen is None:
         errors.append(f"归档: generated_at 不可解析（{archive.get('generated_at')!r}）")
-    if not isinstance((archive.get("counts") or {}).get("total"), int):
-        errors.append("归档: counts.total 非整数")
-    return errors
+    else:
+        if gen.strftime("%Y-%m-%d") != expect_day:
+            errors.append(f"归档: generated_at 日期 {gen:%Y-%m-%d} != {expect_day}")
+        elif _hhmmss(gen) < min_ready_time:
+            warnings.append(f"归档: generated_at {_hhmmss(gen)} 早于 {min_ready_time}"
+                            "（窗口前首写；校验内容与主文件一致）")
+    basis = str(archive.get("trade_basis") or "")
+    if expect_day not in basis:
+        errors.append(f"归档: trade_basis 不含 {expect_day}（{basis!r}）")
+    acounts = archive.get("counts") or {}
+    total = acounts.get("total")
+    if not isinstance(total, int) or total <= 0:
+        errors.append(f"归档: counts.total 非正（{total!r}）")
+    for key in COUNT_KEYS[1:]:
+        if key not in acounts:
+            errors.append(f"归档: counts 缺 {key}")
+        elif not isinstance(acounts.get(key), int):
+            errors.append(f"归档: counts.{key} 非整数（{acounts.get(key)!r}）")
+    if isinstance(picks, dict):
+        pcounts = picks.get("counts") or {}
+        for key in COUNT_KEYS:
+            if key in pcounts and isinstance(pcounts.get(key), int) and acounts.get(key) != pcounts.get(key):
+                errors.append(f"归档: counts.{key}={acounts.get(key)!r} 与主文件 {pcounts.get(key)!r} 不一致")
+    return errors, warnings
 
 
-def check_task(task: dict, expect_day: str) -> tuple[list[str], bool, list[str]]:
-    """返回 (错误列表, 是否当日已运行, 警告列表)。"""
+def check_task(task: dict, expect_day: str, now: datetime,
+               task_deadline: str = TASK_DEADLINE) -> tuple[list[str], bool, list[str], bool]:
+    """返回 (错误列表, 是否当日已运行完成, 警告列表, 是否 PENDING)。"""
     warnings: list[str] = []
+    if not isinstance(task, dict):
+        return ["任务: 快照不是对象"], False, warnings, False
     if task.get("error"):
         # 任务不存在/查询失败不是「尚未运行」，必须按失败处理，避免 PENDING 掩盖故障。
-        return [f"任务: 快照失败（{task.get('error')}）"], False, warnings
+        return [f"任务: 快照失败（{task.get('error')}）"], False, warnings, False
+    state = str(task.get("state") or "").strip().lower()
+    if state in ("disabled", "已禁用", "禁用"):
+        return [f"任务: state={task.get('state')!r}（任务被禁用）"], False, warnings, False
     last_run = parse_ts(task.get("last_run") or "")
     if last_run is None:
-        return [f"任务: last_run 不可解析（{task.get('last_run')!r}）"], False, warnings
+        # last_run 不可解析同样不能无限 PENDING：18:25 后按失败处理。
+        if _hhmmss(now) >= task_deadline:
+            return [f"任务: last_run 不可解析（{task.get('last_run')!r}）"], False, warnings, False
+        return [], False, ["任务: last_run 尚不可解析，等待任务启动"], True
+    try:
+        last_result = int(task.get("last_result") or 0)
+    except (TypeError, ValueError):
+        return [f"任务: last_result 非整数（{task.get('last_result')!r}）"], False, warnings, False
+    if last_result == TASK_RUNNING or state == "running":
+        return [], False, ["任务仍在运行（LastTaskResult=267009/state=Running），等待完成"], True
     if last_run.strftime("%Y-%m-%d") != expect_day:
-        return [], False, warnings  # 当日尚未运行 → PENDING，不算失败
+        if _hhmmss(now) >= task_deadline:
+            return [f"任务: 当日未运行（last_run={task.get('last_run')!r}）"], False, warnings, False
+        return [], False, ["任务当日尚未运行（18:20 后重试）"], True
     errors: list[str] = []
-    last_result = int(task.get("last_result") or 0)
     if last_result not in (0, 3):
         errors.append(f"任务: LastTaskResult={last_result}（期望 0；3=T1 停挂但仍已落盘）")
     elif last_result == 3:
         warnings.append("任务 rc=3：否决源异常导致 T1 停挂（清单已落盘，属降级运行）")
-    if str(task.get("state") or "").lower() not in ("ready", "running", "就绪"):
+    if state not in ("ready", "running", "就绪"):
         errors.append(f"任务: state={task.get('state')!r}（期望 Ready/就绪）")
-    return errors, True, warnings
+    return errors, True, warnings, False
 
 
 def evaluate(picks: dict | None, archive: dict | None, task: dict,
              expect_day: str, archive_path: Path,
-             min_ready_time: str = MIN_READY_TIME) -> dict:
+             min_ready_time: str = MIN_READY_TIME,
+             now: datetime | None = None,
+             task_deadline: str = TASK_DEADLINE) -> dict:
+    now = now or datetime.now()
     checks: list[dict] = []
     errors: list[str] = []
+    warnings: list[str] = []
 
     def add(name: str, ok: bool, detail: str = "") -> None:
         checks.append({"name": name, "ok": bool(ok), "detail": detail})
         if not ok:
             errors.append(f"{name}: {detail}" if detail else name)
 
+    try:
+        expect_dt = datetime.strptime(expect_day, "%Y-%m-%d")
+    except ValueError:
+        return {
+            "schema_version": 1, "expect_day": expect_day, "status": "FAIL", "ok": False,
+            "warnings": [], "generated_at": None, "trade_basis": None, "counts": {},
+            "archive_path": str(archive_path), "archive": {"exists": archive is not None},
+            "task": task, "checks": [],
+            "errors": [f"验收日格式错误: {expect_day!r}"],
+        }
+    if expect_dt.weekday() >= 5:
+        return {
+            "schema_version": 1, "expect_day": expect_day, "status": "SKIP", "ok": True,
+            "warnings": [f"{expect_day} 为周末（非交易日），跳过验收"],
+            "generated_at": (picks or {}).get("generated_at"),
+            "trade_basis": (picks or {}).get("trade_basis"),
+            "counts": (picks or {}).get("counts") or {},
+            "archive_path": str(archive_path),
+            "archive": {
+                "exists": archive is not None,
+                "generated_at": (archive or {}).get("generated_at"),
+                "trade_basis": (archive or {}).get("trade_basis"),
+                "total": ((archive or {}).get("counts") or {}).get("total"),
+                "mtime": datetime.fromtimestamp(archive_path.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+                if archive_path.exists() else None,
+            },
+            "task": task, "checks": [], "errors": [],
+        }
+
+    task_errors, ran_today, task_warnings, pending = check_task(task, expect_day, now, task_deadline)
+    warnings.extend(task_warnings)
+
     payload_errors = [] if picks is None else check_payload(picks, expect_day, "当日清单", min_ready_time)
     if picks is None:
         payload_errors = [f"当日清单缺失: {PICKS}"]
     add("当日清单 generated_at/basis/counts", not payload_errors, "; ".join(payload_errors))
 
-    archive_errors = check_archive(archive, archive_path)
-    if archive is not None:
-        gen = parse_ts(archive.get("generated_at"))
-        if gen is not None:
-            if gen.strftime("%Y-%m-%d") != expect_day:
-                archive_errors.append(f"归档: generated_at 日期 {gen:%Y-%m-%d} != {expect_day}")
-            elif gen.strftime("%H:%M:%S") < min_ready_time:
-                archive_errors.append(
-                    f"归档: generated_at {gen:%H:%M:%S} 早于 {min_ready_time}（可能是旧运行首写）")
-        if expect_day not in str(archive.get("trade_basis") or ""):
-            archive_errors.append(f"归档: trade_basis 不含 {expect_day}")
+    archive_errors, archive_warnings = check_archive(
+        archive, archive_path, picks, expect_day, min_ready_time)
+    warnings.extend(archive_warnings)
     add("picks_history 归档", not archive_errors, "; ".join(archive_errors))
 
-    task_errors, ran_today, warnings = check_task(task, expect_day)
     add("计划任务当日运行", ran_today and not task_errors, "; ".join(task_errors))
 
     snapshot_error = bool(task.get("error"))
-    if errors:
-        status = "FAIL" if (ran_today or snapshot_error) else "PENDING"
+    if pending and not task_errors:
+        status = "PENDING"
+    elif errors:
+        status = "FAIL" if (ran_today or snapshot_error or not pending) else "PENDING"
     else:
         status = "PASS"
     if status == "PENDING":
@@ -200,15 +284,19 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--history-dir", default=str(HISTORY))
     ap.add_argument("--json-out", default="", help="JSON 输出路径（默认 research/reports/...）")
     ap.add_argument("--min-ready-time", default=MIN_READY_TIME, help="当日生成时间下限 HH:MM:SS")
+    ap.add_argument("--task-deadline", default=TASK_DEADLINE,
+                    help="任务当日未运行改判 FAIL 的截止时间 HH:MM:SS")
     args = ap.parse_args(argv)
 
     day = args.date
+    now = datetime.now()
     picks_path = Path(args.picks)
     picks = load_json(picks_path)
     archive_path = Path(args.history_dir) / f"todays_{day.replace('-', '')}.json"
     archive = load_json(archive_path)
     task = task_snapshot()
-    result = evaluate(picks, archive, task, day, archive_path, args.min_ready_time)
+    result = evaluate(picks, archive, task, day, archive_path, args.min_ready_time,
+                      now=now, task_deadline=args.task_deadline)
 
     out = Path(args.json_out) if args.json_out else REPORTS / f"todays_picks_acceptance_{day.replace('-', '')}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -224,10 +312,14 @@ def main(argv: list[str] | None = None) -> int:
           f"archive.total={result['archive']['total']} mtime={result['archive']['mtime']}")
     print(f"task: last_run={task.get('last_run')!r} last_result={task.get('last_result')!r} "
           f"state={task.get('state')!r}")
+    for warn in result["warnings"]:
+        print(f"[WARN] {warn}")
     for err in result["errors"]:
         print(f"[FAIL] {err}")
     print(f"json_out={out}")
-    return 0 if result["status"] == "PASS" else (3 if result["status"] == "PENDING" else 2)
+    if result["status"] == "PASS":
+        return 0
+    return 3 if result["status"] == "PENDING" else (0 if result["status"] == "SKIP" else 2)
 
 
 if __name__ == "__main__":

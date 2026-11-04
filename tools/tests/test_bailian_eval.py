@@ -207,3 +207,45 @@ def test_write_outputs_custom_paths_weekly_archive(tmp_path):
     assert Path(payload["_outputs"]["json"]) == jp
     assert jp.exists() and mp.exists()
     assert "百炼部署后评测" in mp.read_text(encoding="utf-8")
+
+
+def test_api_error_row_not_counted_as_citation_correct():
+    """审计回归：API 错误行（空答案）不得被 judge 当作合规拒答来抬高引用正确率。"""
+    payload = be.evaluate([_item("A01", True)], baseline_agg=W13_BASE_AGG,
+                          client=_BoomClient(), model="mock-instance", mock=True)
+    assert payload["aggregate"]["errors"] == 1
+    assert payload["aggregate"]["citation_accuracy"] == 0.0
+    assert payload["results"][0]["citation_ok"] is False
+    assert payload["results"][0]["refused"] is False
+
+
+def test_citation_verified_rate_excludes_no_citation_rows():
+    """审计回归：verified 分母只算真正带引用的回答，纯拒答行不摊薄等于 1.0 的比值。"""
+    results = [
+        _result(qid="A01", citation_verify={"citation_valid_rate": 1.0, "cited_sentences": 2,
+                                            "weak_rate": 0.0, "all_supported": True,
+                                            "unsupported_count": 0}),
+        _result(qid="U01", answerable=False, answer="资料不足", cited=[], gold_similarity=None,
+                citation_ok=True, refused=True,
+                citation_verify={"citation_valid_rate": 0.0, "cited_sentences": 0,
+                                 "weak_rate": 0.0, "all_supported": None,
+                                 "unsupported_count": 0}),
+    ]
+    agg = be.aggregate_results(results, W13_BASE_AGG)["aggregate"]
+    assert agg["citation_verified_rate"] == 1.0
+    assert agg["citation_verified_n"] == 1
+    assert agg["citation_verified_excluded_n"] == 1
+
+
+def test_payload_carries_prompt_profile():
+    """审计回归：报告必须能追溯到 strict/base prompt，否则周度对比混口径。"""
+    payload = be.evaluate([_item("A01", True)], baseline_agg=W13_BASE_AGG,
+                          client=be.MockClient(), model="mock-instance", mock=True)
+    assert payload["prompt_profile"] == be.PROMPT_PROFILE
+    dataset = [_item("A01", True)]
+    plan = be.build_plan(dataset, model="m", base_url=be.DEFAULT_BASE, limit=1, has_key=False)
+    built = be.build_payload(payload_mode="dry-run", model="m", base_url=be.DEFAULT_BASE,
+                             dataset=dataset, baseline_agg=W13_BASE_AGG, plan=plan,
+                             key_source="未找到 key",
+                             evaluation={"prompt_profile": "strict", "results": [], "aggregate": {}})
+    assert built["prompt_profile"] == "strict"

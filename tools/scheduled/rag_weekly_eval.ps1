@@ -1,4 +1,4 @@
-# RAG 40 题周度复评（strict 生产口径）
+﻿# RAG 40 题周度复评（strict 生产口径）
 #
 # 用法（手动/计划任务均可）：
 #   powershell -NoProfile -ExecutionPolicy Bypass -File tools/scheduled/rag_weekly_eval.ps1
@@ -7,8 +7,9 @@
 #   research/reports/bailian_eval_weekly_YYYYMMDD.{json,md}
 #   C:\Temp\rag_weekly_eval.log（运行日志）
 # 仅调用已部署模型 API，不写生产库。
+# 注意：本文件必须存为 UTF-8 BOM，Windows PowerShell 5.1 才能正确解析中文路径。
 $ErrorActionPreference = "Stop"
-$Repo = "C:\项目\老田的AI助手"
+$Repo = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 $Py = "C:\项目\py312\python.exe"
 $BaseFile = "C:\项目\_vault\secrets\dashscope_base_url.txt"
 $Log = "C:\Temp\rag_weekly_eval.log"
