@@ -44,9 +44,22 @@ def test_lake_lagging_ashare_fails_closed(mod):
     assert "20261103" in err and "20261104" in err
 
 
-def test_ashare_probe_missing_does_not_block(mod):
-    assert mod._basis_guard("20261103", None) is None if False else True
-    # 显式 None 会回退到真实探测；这里直接验证 basis 为空的设计内降级
+def test_ashare_probe_missing_fails_closed(mod, monkeypatch):
+    # 2026-11-05 审计修复：探测失败=无法证明新鲜，必须 rc=4，不能静默写 D-1。
+    monkeypatch.setattr(mod, "_ashare_latest_day", lambda *a, **k: None)
+    err = mod._basis_guard("20261103", None)
+    assert err and "探测失败" in err
+    # 显式 None 同样回退到真实探测（此处已被 monkeypatch）
+    assert mod._basis_guard("20261103", None)
+
+
+def test_ashare_probe_missing_env_escape(mod, monkeypatch):
+    monkeypatch.setattr(mod, "_ashare_latest_day", lambda *a, **k: None)
+    monkeypatch.setenv("PICKS_BASIS_ALLOW_PROBE_FAIL", "1")
+    assert mod._basis_guard("20261103", None) is None
+
+
+def test_basis_missing_degrades(mod):
     assert mod._basis_guard(None, "20261104") is None
 
 

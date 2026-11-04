@@ -33,7 +33,6 @@ SECRETS = Path(r"C:/项目/_vault/secrets")
 KEY_FILE = SECRETS / "dashscope_api_key.txt"
 BASE_FILE = SECRETS / "dashscope_base_url.txt"
 REPORTS = REPO / "research" / "reports"
-DEFAULT_COST_LOG = REPORTS / "llm_cost_20261104.jsonl"
 DEFAULT_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 OLLAMA_DEFAULT = "http://127.0.0.1:11434"
 
@@ -135,8 +134,13 @@ def _estimate_cost(prompt_tokens: int, completion_tokens: int) -> float:
     return round(prompt_tokens / 1000.0 * pin + completion_tokens / 1000.0 * pout, 6)
 
 
-def _cost_log_path() -> Path:
-    return Path(os.environ.get("LLM_COST_LOG", str(DEFAULT_COST_LOG)))
+def _cost_log_path(now: datetime | None = None) -> Path:
+    """成本日志路径：默认按本地日期分文件（llm_cost_YYYYMMDD.jsonl），LLM_COST_LOG 可覆盖。"""
+    override = os.environ.get("LLM_COST_LOG", "").strip()
+    if override:
+        return Path(override)
+    day = (now or datetime.now().astimezone()).strftime("%Y%m%d")
+    return REPORTS / f"llm_cost_{day}.jsonl"
 
 
 def load_cost_log(path: Path | None = None) -> list[dict]:
@@ -170,10 +174,39 @@ def budget_cny() -> float:
 
 
 def _append_cost(row: dict, path: Path | None = None) -> None:
+    """追加一行成本流水；跨进程加锁，避免 Windows CRT seek-to-end 竞态丢行。"""
     p = Path(path) if path else _cost_log_path()
     p.parent.mkdir(parents=True, exist_ok=True)
-    with p.open("a", encoding="utf-8") as f:
-        f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    line = (json.dumps(row, ensure_ascii=False) + "\n").encode("utf-8")
+    fd = os.open(str(p), os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
+    try:
+        if os.name == "nt":
+            import msvcrt
+            # 锁文件首字节；O_APPEND 下写入前统一加锁，写完释放。
+            os.lseek(fd, 0, os.SEEK_SET)
+            msvcrt.locking(fd, msvcrt.LK_LOCK, 1)
+            try:
+                os.write(fd, line)
+            finally:
+                os.lseek(fd, 0, os.SEEK_SET)
+                msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(fd, fcntl.LOCK_EX)
+            try:
+                os.write(fd, line)
+            finally:
+                fcntl.flock(fd, fcntl.LOCK_UN)
+    finally:
+        os.close(fd)
+
+
+def _safe_daily_cost(day: str, path: Path | None) -> tuple[float, str | None]:
+    """读成本日志失败不应影响主流程（审计：记账失败曾导致已付费答案被丢弃/抛异常）。"""
+    try:
+        return daily_cost(day, path), None
+    except Exception as exc:  # noqa: BLE001
+        return 0.0, redact(f"cost_log_read_error:{type(exc).__name__}:{exc}")
 
 
 def generate(prompt: str, *, system: str | None = None, temperature: float = 0.2,
@@ -214,23 +247,34 @@ def generate(prompt: str, *, system: str | None = None, temperature: float = 0.2
                     cost = _estimate_cost(pt, ct)
                 attempts.append({"tier": t["tier"], "provider": prov, "model": model,
                                  "status": 200, "elapsed_ms": elapsed})
-                if not content:
-                    attempts[-1]["error"] = "empty_content"
-                    continue
                 log_path = cost_log or _cost_log_path()
                 row = {"ts": now.isoformat(timespec="seconds"), "provider": prov,
                        "model": model, "tier": t["tier"],
                        "prompt_tokens": pt, "completion_tokens": ct,
                        "total_tokens": pt + ct, "cost_cny": cost,
                        "purpose": purpose or "rag"}
-                _append_cost(row, log_path)
-                spent = daily_cost(now.strftime("%Y-%m-%d"), log_path)
+                cost_log_error = None
+                if not content:
+                    # 审计修复：200 但空内容已经消耗 token，必须落账，再降级。
+                    attempts[-1]["error"] = "empty_content"
+                    try:
+                        _append_cost({**row, "error": "empty_content"}, log_path)
+                    except Exception as exc:  # noqa: BLE001
+                        cost_log_error = redact(f"cost_log_write_error:{type(exc).__name__}")
+                    continue
+                # 审计修复：记账失败只记 cost_log_error，不能丢弃已付费的 200 答案。
+                try:
+                    _append_cost(row, log_path)
+                except Exception as exc:  # noqa: BLE001
+                    cost_log_error = redact(f"cost_log_write_error:{type(exc).__name__}")
+                spent, read_error = _safe_daily_cost(now.strftime("%Y-%m-%d"), log_path)
                 budget = budget_cny()
                 return {"ok": True, "text": content.strip(), "tier": t["tier"],
                         "provider": prov, "model": model, "attempts": attempts,
                         "usage": {"prompt_tokens": pt, "completion_tokens": ct},
                         "cost_cny": cost, "daily_cost_cny": spent, "budget_cny": budget,
-                        "budget_warning": spent >= budget, "elapsed_ms": elapsed}
+                        "budget_warning": spent >= budget, "elapsed_ms": elapsed,
+                        "cost_log_error": cost_log_error or read_error}
             # 非 200：429/5xx/网络类可降级；其余 4xx 也降级（可用性优先）并记录
             attempts.append({"tier": t["tier"], "provider": prov, "model": model,
                              "status": status, "elapsed_ms": elapsed,
@@ -248,11 +292,12 @@ def generate(prompt: str, *, system: str | None = None, temperature: float = 0.2
                              "status": None, "elapsed_ms": round((time.monotonic() - started) * 1000, 1),
                              "error": redact(f"{type(exc).__name__}:{exc}")})
     budget = budget_cny()
-    spent = daily_cost(now.strftime("%Y-%m-%d"), cost_log)
+    spent, read_error = _safe_daily_cost(now.strftime("%Y-%m-%d"), cost_log)
     return {"ok": False, "text": "", "tier": None, "provider": None, "model": None,
             "attempts": attempts, "usage": {"prompt_tokens": 0, "completion_tokens": 0},
             "cost_cny": 0.0, "daily_cost_cny": spent, "budget_cny": budget,
-            "budget_warning": spent >= budget, "error": "all_tiers_failed"}
+            "budget_warning": spent >= budget, "error": "all_tiers_failed",
+            "cost_log_error": read_error}
 
 
 def main(argv=None) -> int:

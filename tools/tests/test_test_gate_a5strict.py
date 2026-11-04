@@ -5,7 +5,7 @@
   · fast/all 的 budget 步骤必须以 `python -X utf8 $budget --strict` 调用；
   · strict 违规/执行异常/缺脚本必须计入 `$newFailures`（fail-closed，不假绿）；
   · 汇总仍保留 budget 行（Rc/New/Seconds/Log）与 suiteKey/耗时列；
-  · B1/B2 关键集不回归（agent 52 / quant 23 / tools 14 = 89，含黄忠聚合入口），fast 7 套件（2026-11-02 S2-08 起含 datawarehouse）。
+  · B1/B2 关键集不回归（agent 52 / quant 23 / tools 16 = 91，含黄忠聚合入口），fast 7 套件（2026-11-02 S2-08 起含 datawarehouse）。
 动态只读：
   · `check_portal_split.py --strict` 当前必须 PASS（rc=0，0 WARN）——strict 升级的前置条件；
   · PowerShell Parser 校验 test_gate.ps1 可解析、BOM 为 EF BB BF（PS5.1 中文不乱码）。
@@ -74,7 +74,7 @@ def test_budget_strict_currently_passes():
 
 def test_b1_b2_not_regressed():
     import re
-    for name, count in (("agent_key", 52), ("quant_key", 23), ("tools_key", 14)):
+    for name, count in (("agent_key", 52), ("quant_key", 23), ("tools_key", 16)):
         m = re.search(r"'%s'\s*=\s*@\((.*?)\n    \)" % name, GATE, re.S)
         assert m, "缺 %s 文件清单" % name
         assert len(re.findall(r"'([^']+\.py)'", m.group(1))) == count, "%s 清单应 %d 文件" % (

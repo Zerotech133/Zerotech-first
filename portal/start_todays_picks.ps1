@@ -31,8 +31,42 @@ function Invoke-Stage($name, $args_) {
 try {
     $rc = Invoke-Stage 'todays_picks' @('C:\aios\portal\build_todays_picks.py')
     if ($rc -eq 0 -or $rc -eq 3) {
-        $null = Invoke-Stage 'pick_details' @('C:\aios\portal\build_pick_details.py','--tier','T1')
-        $null = Invoke-Stage 'pick_verdicts' @('C:\aios\portal\build_pick_verdicts.py')
+        # 2026-11-05 audit fix: pick_details rc used to be dropped ($null), so the
+        # task stayed LastResult=0 and acceptance passed. Persist status and
+        # propagate nonzero rc instead.
+        $drc = Invoke-Stage 'pick_details' @('C:\aios\portal\build_pick_details.py','--tier','T1')
+        ('pick_details rc={0} {1}' -f $drc, (Get-Date -Format s)) |
+            Out-File 'C:\Temp\pick_details.status' -Append -Encoding utf8
+        if ($drc -ne 0) {
+            exit $drc
+        }
+        # 2026-11-03: verdicts full backfill can exceed 1h. Launch detached so the
+        # scheduled task itself completes; the verifier keeps writing its own logs.
+        $pidFile = 'C:\Temp\pick_verdicts.pid'
+        $running = $false
+        if (Test-Path $pidFile) {
+            try {
+                $oldPid = [int]((Get-Content $pidFile -ErrorAction Stop | Select-Object -First 1).Split('|')[0])
+                $proc = Get-Process -Id $oldPid -ErrorAction SilentlyContinue
+                if ($proc) {
+                    # PID reuse guard: trust only if process started around pid file write time.
+                    $fileTime = (Get-Item $pidFile).LastWriteTime
+                    if ($proc.StartTime -ge $fileTime.AddMinutes(-2)) { $running = $true }
+                }
+            } catch { $running = $false }
+        }
+        if (-not $running) {
+            $vp = Start-Process -FilePath $py `
+                -ArgumentList @('-X','utf8','C:\aios\portal\build_pick_verdicts.py') `
+                -WorkingDirectory 'C:\aios\portal' `
+                -RedirectStandardOutput 'C:\Temp\pick_verdicts_out.log' `
+                -RedirectStandardError 'C:\Temp\pick_verdicts_err.log' `
+                -PassThru -WindowStyle Hidden
+            ('{0}|{1}' -f $vp.Id, $vp.StartTime.ToString('o')) | Out-File $pidFile -Encoding ascii
+            ('pick_verdicts detached pid=' + $vp.Id + ' ' + (Get-Date -Format s)) | Out-File $log -Append -Encoding utf8
+        } else {
+            ('pick_verdicts already running pid=' + $oldPid + ' ' + (Get-Date -Format s)) | Out-File $log -Append -Encoding utf8
+        }
     }
     exit $rc
 } catch {

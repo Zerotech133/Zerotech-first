@@ -572,3 +572,30 @@ def test_prompt_guard_marker_invalid_and_cache_key():
                           {"q": ["M9 覆铜板价值量"], "mode": ["multi"], "prompt": ["v1"]},
                           ask_fn=mock_ask, multi_fn=mock_multi, guard_impl=_PASS_GUARD)
     assert s3 == 200 and env3["meta"]["cache_hit"] is True
+def test_multi_http_passes_router_chat_fn(monkeypatch):
+    """审计回归：HTTP mode=multi 真实链路必须把 kb_qa.chat 传给 answer_multi，
+    否则 KB_QA_LLM_PROVIDER=router 对生成默认模式失效。"""
+    seen = {}
+
+    class FakeMulti:
+        @staticmethod
+        def answer_multi(question, k=8, timeout=300, prompt_version="v4",
+                         citation_retry=False, chat_fn=None):
+            seen["chat_fn"] = chat_fn
+            return {"question": question, "k": k, "cluster_count": 1, "clusters": [{"unit_ids": ["u1"]}],
+                    "answer": "回答[1]", "citations": [{"sid": "S1", "doc_id": "d1"}],
+                    "confidence": {"level": "high", "reasons": []}, "fallback": False,
+                    "refusal": False}
+
+    class FakeQa:
+        @staticmethod
+        def chat(prompt, model="m", timeout=300, num_predict=800):
+            return "云端答案"
+
+    monkeypatch.setattr(api, "_load_multi", lambda: FakeMulti)
+    monkeypatch.setattr(api, "_load_qa", lambda: FakeQa)
+    api.reset_cache()
+    status, env = api.handle("GET", "/api/kb/qa",
+                             qmap(q="M9 覆铜板价值量", mode="multi", topk="6", guard="0"))
+    assert status == 200, env
+    assert seen["chat_fn"] is FakeQa.chat

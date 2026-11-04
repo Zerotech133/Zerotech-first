@@ -88,11 +88,11 @@ def _base_payload_with_card():
 
 
 def test_resolve_group_target_reads_push_targets(monkeypatch):
-    import types
-    fake = types.SimpleNamespace(
-        target_entry=lambda name: {"name": name, "id": "oc_test_123", "type": "chat_id", "app": "cli_x"})
-    # 注入 news_collector.push_targets 模块（resolve_group_target 内部延迟导入）
-    monkeypatch.setitem(__import__("sys").modules, "news_collector.push_targets", fake)
+    from news_collector import push_targets
+    # 直接替换真实模块函数；resolve_group_target 内部 from 包导入会拿到同一模块对象
+    monkeypatch.setattr(
+        push_targets, "target_entry",
+        lambda name: {"name": name, "id": "oc_test_123", "type": "chat_id", "app": "cli_x"})
     target = kp.resolve_group_target("内部测试")
     assert target and target["id"] == "oc_test_123" and target["type"] == "chat_id"
     assert target["app"] == "cli_x"

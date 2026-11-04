@@ -110,7 +110,7 @@ def test_http_checks_in_process():
     assert checks["multi"]["status"] == 200 and checks["multi"]["pass"]
     assert checks["multi_guard0"]["status"] == 200 and checks["multi_guard0"]["pass"]
     assert checks["guard_invalid"]["status"] == 400 and checks["guard_invalid"]["pass"]
-    assert res["summary"]["wired"] is False  # 预接线，未注册到 8091
+    assert res["summary"]["wired"] is True  # 2026-11-01 L2 批准后已注册到 8091
     assert res["summary"]["pass"] is True
 
 

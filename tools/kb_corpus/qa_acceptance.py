@@ -311,8 +311,12 @@ def build_conclusion(cli: dict, http: dict, portal: dict) -> dict:
                              f"（期望 {check['expected']}），需修 portal/api_kb_qa.py。")
     if not portal_pass:
         fixes.append("门户静态页/样本 JSON 未达 200 或 schema v2，需检查 nginx 静态服务与样本刷新。")
+    wired = bool(http["summary"].get("wired"))
     if cli_pass and http_pass and portal_pass:
-        verdict, can_go = "三段验收全部通过，可进入 8091 接线 L2 审批", "go"
+        if wired:
+            verdict, can_go = "三段验收全部通过；8091 已接线，可做上线后回归", "go"
+        else:
+            verdict, can_go = "三段验收全部通过，可进入 8091 接线 L2 审批", "go"
     elif cli_pass and portal_pass:
         verdict, can_go = ("CLI 与门户通过；HTTP 预接线存在需修项，修复后重新验收再提交 L2 审批",
                            "conditional")
@@ -325,7 +329,9 @@ def build_conclusion(cli: dict, http: dict, portal: dict) -> dict:
         "HTTP 用例中 single/multi 使用注入 mock（不真调 LLM），仅验证参数/状态码/信封契约。",
         "CLI 验收条数受 LLM 时间预算限制（默认 10 条），结论为 effective 子集。",
         "multi+guard 的 fallback 答案信息密度低于原答案，上线前需继续人工抽查。",
-        "WIRED=False：本轮不注册、不重启 8091；正式接线需 L2 五要素审批。",
+        ("WIRED=True：已注册到 8091（/api/kb/qa）；本验收仍为进程内调用。"
+         if wired else
+         "WIRED=False：本轮不注册、不重启 8091；正式接线需 L2 五要素审批。"),
     ]
     return {"cli_pass": cli_pass, "http_pass": http_pass, "portal_pass": portal_pass,
             "can_go_live": can_go, "verdict": verdict,
@@ -383,8 +389,9 @@ def render_markdown(payload: dict) -> str:
                      f"{r.get('guard_passed')}/{r.get('guard_action')} | {r['citations']} | "
                      f"{r.get('citation_resolvable_rate')} | {r.get('support_rate')} | "
                      f"{r.get('inference_ratio')} | {r['elapsed_seconds']}s |")
+    wired_note = "已注册到运行中的 8091" if hsum.get("wired") else "未注册到运行中的 8091"
     lines += ["", "## 二、HTTP 预接线（进程内）", "",
-              f"- WIRED=`{hsum['wired']}`（未注册到运行中的 8091）；用例 {hsum['passed']}/{hsum['cases']} 通过", "",
+              f"- WIRED=`{hsum['wired']}`（{wired_note}）；用例 {hsum['passed']}/{hsum['cases']} 通过", "",
               "| 用例 | 参数 | 状态码 | 期望 | 结果 | meta |", "|---|---|---|---|---|---|"]
     for idx, row in enumerate(http["rows"]):
         check = hsum["checks"][idx]
