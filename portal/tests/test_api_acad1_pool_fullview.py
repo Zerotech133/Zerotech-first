@@ -188,6 +188,35 @@ class TestFullView:
         assert snap["source_mode"] != "pg_official_aggregated"
         assert snap["degraded_reason"].startswith("full_view_requires_pg_aggregation")
 
+    def test_aggregate_summary_ignores_legacy_single_day_review(self):
+        # 回归（ACAD1-FULLVIEW 2026-11-04）：最新单日 review 文件存在时，
+        # 其 summary 是单日 12 行口径（无 by_market），plan.selected 是 legacy
+        # 空列表；full 聚合必须仍以 30 行聚合结果为准，不能回退成单日口径。
+        review = {
+            "schema": "acad1_pool_review/v1",
+            "summary": {
+                "date": "2026-11-03",
+                "pool_id": "ACAD1-REC-20261103",
+                "pool_total": 12,
+                "reviewed": 0,
+                "pending": 12,
+                "by_action": {"buy": 0, "watch": 0, "avoid": 0,
+                              "pending_analysis": 12},
+                "by_tier": {"T1": 0, "T2": 12},
+            },
+            "records": [],
+            "plan": {"selected": [], "watch": [], "avoid": [], "total_weight": None},
+        }
+        snap = api.build_pg_aggregated_response(_full_payload(), review)
+        assert snap["count"] == 30
+        assert snap["summary"]["pool_total"] == 30
+        assert snap["summary"]["pending"] == 30
+        assert snap["summary"]["by_market"] == QUOTAS
+        # review 的额外字段（by_tier/date/pool_id）保留，不被聚合计数清掉
+        assert snap["summary"]["by_tier"] == {"T1": 0, "T2": 12}
+        assert snap["summary"]["date"] == "2026-11-03"
+        assert snap["plan"]["selected"] == 30
+
 
 # ── 2. 默认视图：对外 full / 低层单日兼容 ───────────────────────────
 class TestDefaultView:
