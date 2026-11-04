@@ -6,7 +6,7 @@
   · **warn-only**：块内不得出现 `$newFailures++`（不得阻断），必须有 WARN-ONLY/不阻断；
   · JSON 解析（ConvertFrom-Json）与 fail/warn/info 汇总行；
   · 缺脚本/解析失败只告警不阻断；
-  · B1/B2 关键集不回归（agent 52 / quant 23 / tools 13 = 88）。
+  · B1/B2 关键集不回归（agent 52 / quant 23 / tools 16 = 91）。
 动态只读：org 工具 --json 契约与当前真实 fail>0（配置债）；「fail>0 仍 GATE PASS」
 由实跑 gate 证据覆盖（见 C:\\项目\\work\\_dsh_orggate_20261031\\）。
 """
@@ -62,7 +62,7 @@ def test_fast_suites_and_b1_b2_not_regressed():
     assert m, "test_gate.ps1 缺 fast 定义"
     assert re.findall(r"'([a-z_]+)'", m.group(1)) == [
         "portal", "kstock", "ide", "agent_key", "quant_key", "tools_key", "datawarehouse"]
-    for name, count in (("agent_key", 52), ("quant_key", 23), ("tools_key", 14)):
+    for name, count in (("agent_key", 52), ("quant_key", 23), ("tools_key", 16)):
         m = re.search(r"'%s'\s*=\s*@\((.*?)\n    \)" % name, GATE, re.S)
         assert m, "缺 %s 清单" % name
         files = re.findall(r"'([^']+\.py)'", m.group(1))

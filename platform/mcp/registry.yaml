@@ -101,3 +101,12 @@ servers:
     owner: ACAD1
     status: active
     capabilities: [corpus, knowledge, search]
+  - id: intel-kg
+    transport: stdio
+    command: "C:/项目/py312/python.exe"
+    args: ["-X", "utf8", "C:/项目/intel-kg/services/mcp_server.py", "--stdio"]
+    owner: INTEL0
+    status: active
+    capabilities: [atoms_extract, atoms_get, atoms_query, graph_query, graph_neighbors,
+                   search_hybrid, intel_classify, intel_assess, intel_compare, intel_signals,
+                   products_generate, requirements_coverage]
