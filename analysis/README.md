@@ -304,6 +304,17 @@ python -X utf8 -m analysis.intraday_watch --once --dry-run --no-fetch
   （避免 hub 短暂故障漏报）；`pushes` 表记录 sent=True/False 流水。
 - 依赖：hub 8097 不可达/鉴权失败时**不回落直发**（closed on failure，防绕过静默/配额/审计）。
 
+### 开盘首扫固定摘要（open_scan，2026-11-05 新增）
+
+- 每个交易日 09:25 后第一轮，无论是否触发规则，都发 **1 张固定摘要卡**（池内行情快照 +
+  领涨板块前 3 + 本轮触发数），作为「引擎活着 + 今日池」的信标；成功一天只发一次（KV
+  `open_scan_done:<date>`）；推送失败不置完成标记，下一 tick 自动重试。
+- 实现：`build_open_scan_payload()` + `maybe_open_scan()`（在 `run_once` 末尾、触发卡推送后调用）；
+  卡片由 `_build_open_scan_card()` 渲染（blue header、行情行、板块行、footer、纯 URL 按钮）。
+- 配置：`open_scan_enabled`（默认 true）、`open_scan_time`（默认 `09:25`）、
+  `open_scan_max_rows`（默认 10，行情行上限）；`--push-test` 仍是独立测试卡，不占用首扫额度。
+- 日志：`开盘首扫：已推送（池 N 只，行情 M 条，触发 K 条）`；heartbeat 增加 `open_scan` 字段。
+
 ### 配置
 
 缺省用内置默认（与设计一致），可用 `analysis_work/intraday_watch_config.json` 深层覆盖；
@@ -322,24 +333,27 @@ python -X utf8 -m analysis.intraday_watch --once --dry-run --no-fetch
 | `cooldown_min` | `default 30`（fast_move 15、limit_open/stop_hit 1440、news 0…） | 同规则冷却（分钟） |
 | `max_per_code_day` / `max_global_day` / `critical_exempt` | `6` / `40` / `true` | 限流与豁免 |
 | `session` | `09:25–11:30 / 13:00–15:00` | 交易时段（周一至周五） |
-| `em_enrich_limit` / `news_lookback_min` | `12` / `30` | 东财补充只数 / 新闻回看分钟 |
+| `em_enrich_limit` / `news_lookback_min` | `40` / `30` | 东财补充只数 / 新闻回看分钟 |
 | `sector_refresh_sec` | `180` | 板块榜刷新节流（缓存 KV，失败退回旧缓存） |
+| `open_scan_enabled` / `open_scan_time` / `open_scan_max_rows` | `true` / `09:25` / `10` | 开盘首扫固定摘要（每交易日 1 张） |
 | `push` | `{kind: watch:realtime, receiver: 个人, enabled: false}` | W3 推送目标、方式与总开关 |
 
 ### 测试
 
 ```bash
-python -m pytest analysis/tests/test_intraday_watch.py analysis/tests/test_intraday_watch_sector.py analysis/tests/test_intraday_watch_push.py -q -p no:cacheprovider
+python -m pytest analysis/tests/test_intraday_watch.py analysis/tests/test_intraday_watch_sector.py analysis/tests/test_intraday_watch_push.py analysis/tests/test_intraday_watch_review_fix.py analysis/tests/test_intraday_watch_open_scan.py -q -p no:cacheprovider
 ```
 
 全部离线：`urllib` 打桩、新闻库/状态库落 tmp、构造 quote dict；**禁止测试访问真实网络**。
 覆盖新浪解析（停牌/缺字段）、交易时段、池构建降级、六类量价规则、新闻 JEV 与名称精确匹配、
 板块同向/急拉/分页全量/f127 映射、去重/冷却/限流/豁免、状态持久化、配置覆盖、payload 字段；
 W3 另覆盖卡片红涨绿跌/纯 URL 按钮、receiver 解析、hub 鉴权与开关、网络失败 fail-safe、
-`--push-test` 批准门、推送失败撤销 alert 重试语义。
+`--push-test` 批准门、推送失败撤销 alert 重试语义；open_scan 覆盖 payload/卡片渲染、
+每交易日仅一次、09:25 前/收盘后不发、push 关闭与 dry-run 不发、失败重试、空行情降级。
 
 ### 边界
 
 - 只读：`news.db`、`quant_backtest/data`、`analysis.db`；只写 `analysis_work/intraday_watch/` 与本模块产物。
-- 不 import/不改 `news_collector/`；W3 只经 8097 hub 发送（默认关闭），W4 计划任务未建（需 L2 批准）。
+- 不 import/不改 `news_collector/`；推送只经 8097 hub；W4 任务（`IntradayWatch` / `IntradayWatchGuard`）
+  已于 2026-11-05 06:00 按 L2 批准激活（临时指向 worktree，合并后按回执切主仓）。
 - 停牌（现价 0、昨收>0）以昨收计价且 `pct=None`，不出任何量价信号；坏数据一律 fail-safe 丢弃。

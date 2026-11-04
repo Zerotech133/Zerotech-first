@@ -118,6 +118,11 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "em_enrich_limit": 40,
     "news_lookback_min": 30,
     "portal_base": "http://127.0.0.1:8734",
+    # D. 开盘首扫固定摘要：每个交易日 09:25 后第一轮发 1 张池内行情快照
+    #    （无论是否触发规则都发，作为「引擎活着 + 今日池」的固定信标；成功一天只发一次）。
+    "open_scan_enabled": True,
+    "open_scan_time": "09:25",
+    "open_scan_max_rows": 10,
     "push": {"kind": "watch:realtime", "receiver": "个人", "enabled": False},
 }
 
@@ -1059,6 +1064,15 @@ class StateStore:
             (sig.ts, sig.code, sig.rule, sig.fingerprint, kind,
              json.dumps(to_push_payload([sig]), ensure_ascii=False), int(bool(sent))))
         self.con.commit()
+    def record_raw_push(self, ts: str, code: str, rule: str, fingerprint: str,
+                        kind: str, payload: Dict[str, Any], sent: bool = False) -> None:
+        """摘要类推送（开盘首扫等）落 pushes 流水；不走 Signal 构造。"""
+        self.con.execute(
+            "INSERT INTO pushes(ts, code, rule, fingerprint, kind, payload, sent) "
+            "VALUES (?,?,?,?,?,?,?)",
+            (ts, code, rule, fingerprint, kind,
+             json.dumps(payload, ensure_ascii=False), int(bool(sent))))
+        self.con.commit()
     def close(self) -> None:
         try:
             self.con.close()
@@ -1521,6 +1535,52 @@ def resolve_receiver(name: str = "个人",
             return r
     return rows[0] if rows else None
 
+def _build_open_scan_card(p: Dict[str, Any]) -> Dict[str, Any]:
+    """开盘首扫固定摘要卡：池内行情快照 + 领涨板块 + 本轮触发数。"""
+    rows: List[str] = []
+    for q in (p.get("quotes") or [])[: int(p.get("max_rows") or 10)]:
+        pct = _to_float(q.get("pct"))
+        rows.append("- %s（%s） %s　%s　%s　量比 %s" % (
+            _md_clean(q.get("name") or q.get("code"), 20), q.get("code"),
+            _fmt_num(q.get("price")),
+            ("%+.2f%%" % pct) if pct is not None else "-",
+            _fmt_amount(q.get("amount")), _fmt_num(q.get("vol_ratio"))))
+    elements: List[Dict[str, Any]] = [
+        {"tag": "div", "text": {"tag": "lark_md",
+                                "content": "**时间** %s　**池** %s 只　**行情** %s 条" % (
+                                    _md_clean(p.get("ts") or "", 32),
+                                    p.get("pool_size") or 0, len(p.get("quotes") or []))}},
+    ]
+    if rows:
+        elements.append({"tag": "div", "text": {"tag": "lark_md",
+                                                "content": "\n".join(rows)}})
+    else:
+        elements.append({"tag": "div", "text": {"tag": "lark_md",
+                                                "content": "_本轮暂未取到有效行情_"}})
+    elements.append({"tag": "div", "text": {"tag": "lark_md",
+        "content": "**触发**：%s" % (_md_clean(p.get("reason") or "", 120))}})
+    tops = p.get("sector_top") or []
+    if tops:
+        elements.append({"tag": "div", "text": {"tag": "lark_md", "content":
+            "**板块前 %d**：%s" % (
+                len(tops), "　".join("%s %+.2f%%" % (
+                    _md_clean(s.get("name"), 20), float(s.get("pct") or 0.0))
+                    for s in tops))}})
+    elements.append({"tag": "hr"})
+    elements.append({"tag": "div", "text": {"tag": "lark_md",
+                                            "content": p.get("footer") or "研究提示，不构成投资建议"}})
+    if p.get("url"):
+        elements.append({"tag": "action", "actions": [{
+            "tag": "button", "type": "primary",
+            "text": {"tag": "plain_text", "content": "打开分析工作台"},
+            "behaviors": [{"type": "open_url", "default_url": p["url"]}]}]})
+    return {
+        "config": {"wide_screen_mode": True},
+        "header": {"template": "blue",
+                   "title": {"tag": "plain_text", "content": p.get("title") or "开盘首扫 · 09:25"}},
+        "elements": elements,
+    }
+
 def build_feishu_card(p: Dict[str, Any]) -> Dict[str, Any]:
     """payload → 飞书 interactive 卡（A 股红涨绿跌；纯 URL 按钮，无回调动作）。
 
@@ -1528,6 +1588,8 @@ def build_feishu_card(p: Dict[str, Any]) -> Dict[str, Any]:
     ②新闻/板块是 dict，不再直接 %s 插入 lark_md（否则卡片出现 {'title': ...}）；
     ③critical 强制红头并补「时间」行；④按钮 URL 用 /sa?q=。
     """
+    if p.get("rule") == "open_scan":
+        return _build_open_scan_card(p)
     try:
         pct = float(p.get("pct") or 0.0)
     except (TypeError, ValueError):
@@ -1645,6 +1707,85 @@ def config_with_push_enabled(cfg: Optional[Dict[str, Any]] = None) -> Dict[str, 
     conf["push"] = push
     return conf
 
+def build_open_scan_payload(quotes: List[Dict[str, Any]],
+                            pool: List[str],
+                            sectors: Optional[List[Dict[str, Any]]] = None,
+                            trigger_count: int = 0,
+                            cfg: Optional[Dict[str, Any]] = None,
+                            now: Optional[datetime] = None) -> Dict[str, Any]:
+    """09:25 开盘首扫固定摘要 payload（池内行情快照 + 领涨板块 + 本轮触发数）。"""
+    conf = cfg or load_config()
+    push = conf.get("push") or {}
+    base = str(conf.get("portal_base") or "").rstrip("/")
+    cur = now or now_cst()
+    tops = [{"name": s.get("name"), "pct": _to_float(s.get("pct"))}
+            for s in (sectors or [])[:3]]
+    cnt = int(trigger_count or 0)
+    return {
+        "kind": push.get("kind", "watch:realtime"),
+        "receiver": push.get("receiver", "个人"),
+        "code": "POOL", "name": "开盘首扫", "rule": "open_scan",
+        "severity": "info", "critical": False,
+        "title": "开盘首扫 · %s" % cur.strftime("%m-%d %H:%M"),
+        "quotes": [{"code": q.get("code"), "name": q.get("name"),
+                    "price": q.get("price"), "pct": q.get("pct"),
+                    "amount": q.get("amount"), "vol_ratio": q.get("vol_ratio")}
+                   for q in (quotes or [])],
+        "pool_size": len(pool or []),
+        "trigger_count": cnt,
+        "reason": ("本轮触发 %d 条（异动卡另发）；本条为开盘首扫固定摘要" % cnt) if cnt
+                  else "本轮无触发；本条为开盘首扫固定摘要（引擎存活信标）",
+        "sector_top": tops,
+        "ts": cur.strftime("%Y-%m-%d %H:%M:%S"),
+        "fingerprint": make_fingerprint("POOL", "open_scan",
+                                        cur.strftime("%Y-%m-%d"), cur.strftime("%Y-%m-%d")),
+        "url": "%s/sa" % base,
+        "footer": "研究提示，不构成投资建议",
+    }
+
+def maybe_open_scan(store: "StateStore",
+                    quotes: List[Dict[str, Any]],
+                    pool: List[str],
+                    sectors: Optional[List[Dict[str, Any]]] = None,
+                    trigger_count: int = 0,
+                    cfg: Optional[Dict[str, Any]] = None,
+                    now: Optional[datetime] = None,
+                    dry_run: bool = False,
+                    push_fn: Optional[Any] = None) -> Optional[Dict[str, Any]]:
+    """开盘首扫固定摘要：每个交易日成功推送一次；失败下一 tick 重试（不置完成标记）。"""
+    conf = cfg or load_config()
+    cur = now or now_cst()
+    if dry_run or not conf.get("open_scan_enabled", True):
+        return None
+    if not quotes:
+        return None
+    if not market_open(now=cur, cfg=conf):
+        return None
+    open_at = _parse_hhmm(str(conf.get("open_scan_time") or "09:25"), dtime(9, 25))
+    if cur.time() < open_at:
+        return None
+    if not ((conf.get("push") or {}).get("enabled")):
+        return None
+    day = cur.strftime("%Y-%m-%d")
+    done_key = "open_scan_done:%s" % day
+    if store.get_kv(done_key):
+        return None
+    payload = build_open_scan_payload(quotes, pool, sectors, trigger_count, conf, cur)
+    sender = push_fn or push_via_hub
+    results = sender([payload], cfg=conf)
+    ok = bool(results and results[0].get("ok"))
+    kind = (conf.get("push") or {}).get("kind", "watch:realtime")
+    store.record_raw_push(payload["ts"], "POOL", "open_scan", payload["fingerprint"],
+                          kind, payload, sent=ok)
+    if ok:
+        store.set_kv(done_key, payload["ts"])
+        log("开盘首扫：已推送（池 %d 只，行情 %d 条，触发 %d 条）" % (
+            len(pool or []), len(quotes), int(trigger_count or 0)))
+    else:
+        log("开盘首扫：推送失败，下一 tick 重试（%s）" % str(
+            (results or [{}])[0].get("error") or (results or [{}])[0].get("why") or "")[:120])
+    return {"ok": ok, "payload": payload, "results": results}
+
 # ---------------------------------------------------------------- 单轮编排
 
 def _sectors_cached(store: "StateStore", now: datetime,
@@ -1753,17 +1894,26 @@ def run_once(dry_run: bool = False, cfg: Optional[Dict[str, Any]] = None,
             if send and not ok:
                 # 推送失败撤销触发，下一 tick 重试（避免 hub 短暂故障造成漏报）
                 store.forget_alert(sig.fingerprint)
+        # 开盘首扫固定摘要（当日首轮；失败则下一 tick 重试；成功当日只发一次）
+        open_scan_res = maybe_open_scan(store, quotes, pool, sectors, len(accepted),
+                                        cfg=conf, now=cur)
+    else:
+        open_scan_res = None
     store.close()
     if not dry_run:
+        pushed_ok = len([r for r in push_results if r.get("ok")])
+        if open_scan_res and open_scan_res.get("ok"):
+            pushed_ok += 1
         _write_heartbeat(pool=len(pool), quotes=len(quotes), news=len(news),
                          sectors=len(sectors), raw=len(raw), accepted=len(accepted),
-                         pushed=len([r for r in push_results if r.get("ok")]),
+                         pushed=pushed_ok, open_scan=bool(
+                             open_scan_res and open_scan_res.get("ok")),
                          push_enabled=bool((conf.get("push") or {}).get("enabled")))
     if payload:
         print(json.dumps(payload, ensure_ascii=False, indent=1, default=str), flush=True)
     return {"pool": pool, "quotes": quotes, "news": news, "sectors": sectors,
             "signals": raw, "accepted": accepted, "payload": payload,
-            "push": push_results}
+            "push": push_results, "open_scan": open_scan_res}
 
 _INSTANCE_LOCK_PATH = os.path.join(STATE_DIR, "engine.lock")
 
