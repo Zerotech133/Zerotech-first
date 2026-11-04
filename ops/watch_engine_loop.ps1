@@ -18,6 +18,7 @@ $autoarmStatus = Join-Path $engineDir "autoarm_status.json"
 $guardAlert = Join-Path $engineDir "guard_alerts.jsonl"
 $botDir = Join-Path $data "trading_bot"
 $log = "C:\Temp\watch_engine_loop.log"
+$lastObserve = Get-Date
 
 $env:WATCH_ENGINE_STATUS_PATH = $statusPath
 $env:WATCH_ALERT_LEDGER_PATH = $alertLedger
@@ -32,6 +33,10 @@ function In-Trading-Window {
 
 while ($true) {
     try {
+        if (((Get-Date) - $lastObserve).TotalMinutes -ge 10) {
+            & $python -X utf8 tools\watch_24h_probe.py --json *>> $log
+            $lastObserve = Get-Date
+        }
         if (In-Trading-Window) {
             $stamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
             "[$stamp] tick" | Out-File -FilePath $log -Append -Encoding utf8
