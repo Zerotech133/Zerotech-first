@@ -8,7 +8,7 @@
 param(
     [switch]$Status,
     [switch]$Force,
-    # 2026-11-05：9104 card-handler 实际仍在serving（jev_card_actions_total 有数），
+    # 2026-11-05：9104 card-handler 实际仍在服务中（jev_card_actions_total 有计数），
     # 每次拉起都无脑 taskkill 会让飞书卡片「已处理/忽略」回调失效。改为显式开关，
     # 默认不动 9104；-Force 仍会连带清理（等价旧行为）。
     [switch]$StopRetired
@@ -31,7 +31,7 @@ function Write-Log([string]$Msg) {
 # 2026-11-05 JEVSTACK4：环境块大小写重复修复。
 # 本机会话环境块可同时存在 HTTPS_PROXY 与 https_proxy（沙箱/会话注入叠在用户环境之上），
 # Start-Process 克隆子进程环境时 .NET 字典大小写不敏感 -> 抛
-# 「已添加项。字典中的关键字:“HTTPS_PROXY”」，整段拉起失败（8-5 03:46 断档即此因）。
+# 「已添加项。字典中的关键字:“HTTPS_PROXY”」，整段拉起失败（11-05 03:46 断档即此因）。
 # 处理：按大小写不敏感去重，保留首个键的原值（实测重复项取值相同，无损）。
 # 只改本进程环境，不碰系统/用户级设置。
 function Repair-DupEnv {
