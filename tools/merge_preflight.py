@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -322,8 +323,12 @@ def merge_head_sha(environ=None):
     与 devtask 写入的 token 对齐；仍读不到则返回空（fail-closed）。
     """
     try:
-        _rc, out = _git_stdout(["rev-parse", "MERGE_HEAD"])
-        if out:
+        # 2026-11-04 22:5x 二次修复：`git rev-parse MERGE_HEAD` 在 MERGE_HEAD 不存在时
+        # 退出码=128 但 stdout 为字面量 "MERGE_HEAD"（非空），旧实现 `if out: return out`
+        # 会把字面量当 sha，导致 GITHEAD 兜底永不触发、token 永远 miss。
+        # 必须 --verify 且只接受 40/64 位十六进制，否则回退 GITHEAD。
+        _rc, out = _git_stdout(["rev-parse", "--verify", "MERGE_HEAD"])
+        if _rc == 0 and re.fullmatch(r"[0-9a-fA-F]{40}|[0-9a-fA-F]{64}", out or ""):
             return out
     except Exception:  # noqa: BLE001 —— 取不到就回退 GITHEAD
         pass
