@@ -25,7 +25,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from safe_json import SafeJsonError, backup_then_atomic_write
+from safe_json import backup_then_atomic_write
 
 REPO = Path(__file__).resolve().parents[2]
 OUT_JSON = REPO / "research" / "reports" / "kb_qa_bank_v3_20261101.json"

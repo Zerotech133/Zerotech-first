@@ -1,0 +1,33 @@
+### Qwen2.5-14B-Instruct QLoRA SFT（方案 §7.1）
+model_name_or_path: <Qwen2.5-14B-Instruct 本地路径>
+quantization_bit: 4
+stage: sft
+finetuning_type: lora
+lora_target: all
+lora_rank: 32
+lora_alpha: 64
+lora_dropout: 0.05
+dataset: quant_kb_sft_v3
+template: qwen
+cutoff_len: 2048
+train_on_prompt: false
+per_device_train_batch_size: 2
+gradient_accumulation_steps: 8
+learning_rate: 7.0e-5
+num_train_epochs: 3.0
+lr_scheduler_type: cosine
+warmup_steps: 10
+bf16: true
+gradient_checkpointing: true
+flash_attn: fa2
+weight_decay: 0.0
+max_grad_norm: 1.0
+packing: false
+val_size: 0.05
+eval_strategy: epoch
+save_strategy: epoch
+save_total_limit: 3
+load_best_model_at_end: false
+logging_steps: 5
+output_dir: saves/v3-qwen25-14b-qlora-sft
+seed: 42

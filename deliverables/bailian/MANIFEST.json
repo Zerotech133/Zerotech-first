@@ -1,0 +1,6 @@
+{
+ "files": {
+  "sft_v2_train_chatml.jsonl": "ed9b33b86c32e200621a2356f859e83079c9f232ff8a8a1020e97017abfa7998",
+  "sft_v2_val_chatml.jsonl": "120c85ad261c04a74ba2f000d4d2d21ea269ac79579a266383c3b97c8c5edbf7"
+ }
+}

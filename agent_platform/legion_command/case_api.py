@@ -73,8 +73,14 @@ def _save_case_locked(case: dict, root: Path | None = None) -> dict:
     out.pop("id", None)
     out["revision"] = rev
     # 审批/下发只能由服务端 approve/dispatch 写；save 回写时保留服务端状态，防止客户端伪造
+    old_status = (old or {}).get("status")
     out["approval"] = (old or {}).get("approval") or {}
     out["dispatch"] = (old or {}).get("dispatch") or {}
+    # 已审批/已下发的服务端终态不得被页面 save 覆盖回 PROPOSED
+    if old_status in ("APPROVED", "DISPATCHED") and out.get("status") not in ("APPROVED", "DISPATCHED"):
+        out["status"] = old_status
+    if old_status == "DISPATCHED":
+        out["status"] = "DISPATCHED"
     out["updated_at"] = _now()
     out.setdefault("created_at", (old or {}).get("created_at") or _now())
     return _write(out, root)

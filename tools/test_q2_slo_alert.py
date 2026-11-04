@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """Q2 SLO 告警：acad1 ok；data-warehouse 未达标必须 alert。"""
 from __future__ import annotations
 

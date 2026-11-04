@@ -72,7 +72,34 @@ def _context() -> str:
         return ""
 
 
-def _ask(lead: dict, date: str, base: str, timeout: int) -> dict:
+def _brief_digest(path) -> str:
+    """把 hq/data_brief JSON 压成 17 席可消费的短上下文；失败返回空串。"""
+    try:
+        d = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        return ""
+    h = d.get("data_health") or {}
+    a = h.get("assets") or {}
+    cat = h.get("catalog") or {}
+    fresh = h.get("freshness") or {}
+    lines = [
+        "数据简报 %s（DATA1 张松）" % (d.get("as_of") or ""),
+        "资产 all=%s registered=%s exposed=%s；catalog v%s/%s 表；数据时点 %s（%s 天）" % (
+            a.get("all"), a.get("registered"), a.get("exposed"),
+            cat.get("version"), cat.get("tables"), fresh.get("data_date"), fresh.get("age_days")),
+    ]
+    for x in (d.get("alarms") or [])[:4]:
+        lines.append("告警[%s] %s" % (x.get("code"), x.get("summary")))
+    for x in (d.get("mining_signals") or [])[:4]:
+        lines.append("信号[%s] %s" % (x.get("id"), x.get("summary")))
+    for x in (d.get("questions") or [])[:3]:
+        lines.append("待决[%s] %s" % (x.get("to"), x.get("q")))
+    for x in (d.get("boundaries") or [])[:2]:
+        lines.append("边界: %s" % x)
+    return "\n".join(lines)[:3000]
+
+
+def _ask(lead: dict, date: str, base: str, timeout: int, data_brief: str = "") -> dict:
     y = (datetime.date.fromisoformat(date) - datetime.timedelta(days=1)).isoformat()
     text = ("报告日期 " + date + "｜统计昨天 " + y + "。\n"
             "请汇报：1) 昨天实际完成了什么（有证据，没做就写无）；"
@@ -81,6 +108,8 @@ def _ask(lead: dict, date: str, base: str, timeout: int) -> dict:
     system = (SYSTEM_TMPL.replace("{name}", str(lead.get("name") or ""))
               .replace("{lead}", str(lead.get("lead") or ""))
               .replace("{dept}", str(lead.get("dept") or "")))
+    if data_brief:
+        system += "\n\n[零界数据简报]\n" + data_brief
     body = json.dumps({"agent": lead["lead"],
                        "system": system,
                        "purpose": "dept_report", "user": text}, ensure_ascii=False).encode("utf-8")
@@ -128,14 +157,41 @@ def _parse(lead: dict, text: str) -> dict:
             "research_topics": topics[:6]}
 
 
+def _notify_daily(date: str, reports: list[dict]) -> list[dict]:
+    """把每席的 decision_requests/blockers 自动投递到 A0 inbox；失败不阻断。"""
+    try:
+        sys.path.insert(0, str(ROOT / "agent_platform"))
+        from gateway import internal_notify
+        out = []
+        for r in reports:
+            reqs = [str(x) for x in (r.get("decision_requests") or []) if str(x).strip()]
+            blocks = [str(x) for x in (r.get("blockers") or []) if str(x).strip()]
+            if not reqs and not blocks:
+                continue
+            lead = str(r.get("lead") or "")
+            body = "\n".join(
+                (["需决策："] + ["- " + x for x in reqs] if reqs else []) +
+                (["卡点："] + ["- " + x for x in blocks] if blocks else []))
+            env = internal_notify.emit(
+                "A0",
+                "[A0跑板] %s %s：需决策/卡点" % (lead, r.get("dept_name") or r.get("dept") or ""),
+                body, kind="question", source="hq-daily",
+                link="deliverables/daily_briefs/%s/rollup.json" % date,
+                actor=lead)
+            out.append({"lead": lead, "ok": bool(env.get("ok")), "env": env})
+        return out
+    except Exception as e:  # noqa: BLE001
+        return [{"ok": False, "error": type(e).__name__ + ":" + str(e)[:200]}]
+
+
 def run(date: str | None = None, base: str = DEFAULT_BASE, concurrency: int = 3,
         timeout: int = 120, write: bool = True, out_dir: Path | None = None,
-        include_command: bool = True) -> dict:
+        include_command: bool = True, data_brief: str = "", notify_inbox: bool = False) -> dict:
     date = date or datetime.date.today().isoformat()
     leads = _leads(include_command)
     reports, failed = [], []
     with cf.ThreadPoolExecutor(max_workers=max(1, concurrency)) as ex:
-        futs = {ex.submit(_ask, l, date, base, timeout): l for l in leads}
+        futs = {ex.submit(_ask, l, date, base, timeout, data_brief): l for l in leads}
         for f in cf.as_completed(futs):
             l = futs[f]
             try:
@@ -156,10 +212,13 @@ def run(date: str | None = None, base: str = DEFAULT_BASE, concurrency: int = 3,
     briefing = {"schema": "hq/a0_briefing/v1", "date": date, "generated_at": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
                 "headline": "部门早报：%d/%d 提交，%d 失败" % (len(reports), len(leads), len(failed)),
                 "submitted": len(reports), "expected": len(leads), "failed": failed,
-                "departments": reports, "research_topics": topics}
+                "departments": reports, "research_topics": topics,
+                "data_brief": data_brief}
+    notifications = _notify_daily(date, reports) if notify_inbox else []
+    briefing["notifications"] = notifications
     result = {"schema": "hq/dept_daily_run/v1", "date": date, "ok": len(reports) == len(leads),
               "submitted": len(reports), "expected": len(leads), "failed": failed,
-              "reports": reports, "briefing": briefing,
+              "reports": reports, "briefing": briefing, "notifications": notifications,
               "generated_at": briefing["generated_at"]}
     if write:
         out = Path(out_dir) if out_dir else (ROOT / "deliverables" / "daily_briefs" / date)
@@ -182,6 +241,10 @@ def _markdown(r: dict) -> str:
                   "- 正在做：" + ("；".join(d.get("in_progress") or []) or "无"),
                   "- 当前卡点：" + ("；".join(d.get("blockers") or []) or "无"),
                   "- 需决策：" + ("；".join(d["decision_requests"]) or "无"), ""]
+    if b.get("data_brief"):
+        lines += ["## 数据简报（DATA1 张松）", ""]
+        lines += ["- " + ln for ln in str(b["data_brief"]).splitlines()]
+        lines += [""]
     if b["research_topics"]:
         lines += ["## 研究题"] + ["- %s（%s）" % (t["title"], t["source_lead"]) for t in b["research_topics"]]
     return "\n".join(lines) + "\n"
@@ -197,11 +260,15 @@ def main(argv=None) -> int:
     ap.add_argument("--out-dir", default="")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--no-command", action="store_true", help="只跑13部门，不含四席")
+    ap.add_argument("--data-brief", default="", help="hq/data_brief/v1 JSON 路径；注入17席上下文")
+    ap.add_argument("--notify-inbox", action="store_true", help="把 decision_requests/blockers 自动投递 A0 inbox")
     a = ap.parse_args(argv)
     try:
         r = run(a.date or None, a.base, a.concurrency, a.timeout,
                 write=not a.no_write, out_dir=Path(a.out_dir) if a.out_dir else None,
-                include_command=not a.no_command)
+                include_command=not a.no_command,
+                data_brief=_brief_digest(a.data_brief) if a.data_brief else "",
+                notify_inbox=a.notify_inbox)
     except Exception as e:  # noqa: BLE001
         print("daily_run_error: %s" % str(e)[:300], file=sys.stderr)
         return 1

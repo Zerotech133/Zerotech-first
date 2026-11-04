@@ -181,7 +181,8 @@ def gate_status(now: datetime | None = None, stale_hours: float = 36.0) -> dict:
     """学习 gate 最新产出（research/reports/learning_gate_*.json）状态与新鲜度。"""
     now = now or datetime.now().astimezone()
     files = sorted((REPO / "research" / "reports").glob("learning_gate_*.json"),
-                   key=lambda p: p.stat().st_mtime, reverse=True)
+                   key=lambda p: (not re.fullmatch(r"learning_gate_\d{8}\.json", p.name),
+                                  -p.stat().st_mtime))
     if not files:
         return {"exists": False, "ok": None, "age_hours": None, "fresh": False}
     p = files[0]

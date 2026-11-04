@@ -17,13 +17,13 @@ LEADS = ["D1", "ARCH1", "DATA1", "PM1", "QA1", "DEV3",
 def test_all_department_leads_use_cloud_binding():
     for lead in LEADS:
         binding = serve.resolve_binding(lead)
-        assert binding.startswith("glm/"), (lead, binding)
+        assert binding.startswith(("glm/", "deepseek/")), (lead, binding)
         assert not binding.startswith("ollama/"), (lead, binding)
 
 
 def test_meeting_resolver_keeps_leads_cloud():
     for lead in LEADS:
-        assert serve.resolve_meeting_binding(lead).startswith("glm/"), lead
+        assert serve.resolve_meeting_binding(lead).startswith(("glm/", "deepseek/")), lead
 
 
 def test_cloud_binding_has_local_fallback():

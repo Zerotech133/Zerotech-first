@@ -239,11 +239,13 @@ def test_registry_lifecycle_contract():
 
 def test_dashboard_lifecycle_and_registry_gate_sync():
     import json as _json
-    # 构建一次，registry 的 lifecycle.gate 应与最新 learning_gate 报告一致
+    import re as _re
+    # 构建一次，registry 的 lifecycle.gate 应与最新**全量** learning_gate 报告一致
     payload = B.build(out_path=DASHBOARD)
     gate_files = sorted((REPO / "research" / "reports").glob("learning_gate_*.json"))
     assert gate_files, "缺少 learning_gate 报告"
-    gate_report = _json.loads(gate_files[-1].read_text(encoding="utf-8"))
+    full = [f for f in gate_files if _re.fullmatch(r"learning_gate_\d{8}\.json", f.name)]
+    gate_report = _json.loads((full[-1] if full else gate_files[-1]).read_text(encoding="utf-8"))
     last_gate_at = gate_report.get("generated_at")
     assert payload["schema_version"] == "learning_projects_dashboard.v2"
     assert payload["lifecycle"]["registry_synced"] in (True, False)

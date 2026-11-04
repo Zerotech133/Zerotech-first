@@ -1,0 +1,139 @@
+{
+ "schema_version": "export_governed_v2.v1",
+ "date_tag": "20261104",
+ "generated_at": "2026-11-04T03:14:16+08:00",
+ "zip": {
+  "path": "deliverables\\2026-11-04_已治理数据导出_v2.zip",
+  "size_bytes": 1597207,
+  "size_mb": 1.6,
+  "sha256": "1c52fd9ee71bcb95827342c56674d1de649be3fc8a952705146a64e4ca7c9d23"
+ },
+ "counts": {
+  "units_total": 2202,
+  "units_effective": 1331,
+  "per_project": {
+   "视频号学习_8博主": {
+    "total": 800,
+    "effective": 800
+   },
+   "视频号学习_第二期": {
+    "total": 1116,
+    "effective": 245
+   },
+   "laomu_notes": {
+    "total": 286,
+    "effective": 286
+   }
+  },
+  "cards": 400,
+  "conclusions_top100": 100,
+  "multi_source_concepts": 28,
+  "reviewed_candidates": 417,
+  "source_files": 12
+ },
+ "files": [
+  {
+   "name": "01_知识单元_全量.csv",
+   "size": 2228832,
+   "sha256": "980b83d7fa3f41a4d5d64e1ac2c25418c42e4cc219f43f4f5f91f2efb3211811"
+  },
+  {
+   "name": "02_知识单元_有效.csv",
+   "size": 2097017,
+   "sha256": "a23e86a7fcbf39cfb8e0f3d48086530ef28d83d8c0f7a9e8b75eba6b71e7be1b"
+  },
+  {
+   "name": "03_学习卡_已审计.csv",
+   "size": 237875,
+   "sha256": "8567367d55dd0fff33a45a29a20d5126016e6754127e1be6ac5d58253ca99bdf"
+  },
+  {
+   "name": "04_有效结论库_Top100.csv",
+   "size": 77997,
+   "sha256": "c2f87b7a443a828c2c19effc943c9f9b767ea73b7a6f2cf5745efc9fb5781659"
+  },
+  {
+   "name": "05_多源概念_人工签批.csv",
+   "size": 4390,
+   "sha256": "2dd9081ed2c48d8385b030f2d8b460426ae1a9f4b9a0a42500f2dd7e39c8a7cb"
+  },
+  {
+   "name": "06_候选卡_人工审核结果.csv",
+   "size": 162228,
+   "sha256": "f3c8d8aaf516f8e8dfd3ea88d155933d6e48b7afb517321a04e0d75ae857bed6"
+  },
+  {
+   "name": "07_原始来源清单.csv",
+   "size": 1586,
+   "sha256": "a552aba9bd43857e287d2274e66186dc6495e72c6bd7ef654944fe6d8c56c915"
+  },
+  {
+   "name": "08_治理指标.csv",
+   "size": 1125,
+   "sha256": "3a2680e50a3f886b630ce1e1220c3eace51559c14725e05b458123c1507c287c"
+  },
+  {
+   "name": "README.md",
+   "size": 1373,
+   "sha256": "cbc60e6a01adc699da2da8df533c7be2a2c84e687b3711a303bc6c80610b401b"
+  }
+ ],
+ "stage_dir": "deliverables\\已治理数据_20261104",
+ "metrics": {
+  "generated_at": "2026-11-04T03:14:16+08:00",
+  "governance_single": {
+   "units": 800,
+   "knowledge_units": 800,
+   "meta_units": 0,
+   "verified": 800,
+   "verified_pct": 100.0,
+   "unverifiable": 0,
+   "exact_dup_units": 0,
+   "near_dup_pairs": 0,
+   "dup_ratio_pct": 0.0,
+   "card_concept_dup": 0,
+   "candidate_pool": 259,
+   "multi_source_concepts": 0,
+   "conflicts": 0
+  },
+  "governance_all": {
+   "units": 2202,
+   "meta_lines": 18,
+   "dup_groups": 8,
+   "verified": 2181,
+   "junk_units": 871,
+   "projects": 3,
+   "verify_pct": 99.0,
+   "junk_pct": 39.6
+  },
+  "counts": {
+   "units_total": 2202,
+   "units_effective": 1331,
+   "per_project": {
+    "视频号学习_8博主": {
+     "total": 800,
+     "effective": 800
+    },
+    "视频号学习_第二期": {
+     "total": 1116,
+     "effective": 245
+    },
+    "laomu_notes": {
+     "total": 286,
+     "effective": 286
+    }
+   },
+   "cards": 400,
+   "conclusions_top100": 100,
+   "multi_source_concepts": 28,
+   "reviewed_candidates": 417,
+   "source_files": 12
+  },
+  "audit": {
+   "cards_issues": 0,
+   "traceable_rate": 1.0
+  },
+  "source": "W0 治理（元数据过滤/去重/核验）+ 多源人工双签 后的可输出数据；只读生成"
+ },
+ "note": "只读知识库/报告；未写数据仓；口径=全量2202/有效1331/400卡/Top100/多源簇"
+}

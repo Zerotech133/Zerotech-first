@@ -1,0 +1,1681 @@
+{
+ "schema_version": "rag_baseline.v1",
+ "date": "20261104",
+ "generated_at": "2026-11-04T03:52:20+08:00",
+ "task": "W6-RAG 基线评测（bge-m3 检索 + qwen3.5:9b 生成）",
+ "method": {
+  "index": "effective units + 400 卡，共 1727 文档；bge-m3 /api/embed；内存余弦 top-10；不写生产库",
+  "questions": "50 题（卡概念/卡依据/单元操作/单元事实），gold=文档 id",
+  "generation": "qwen3.5:9b /api/chat，think=false，temperature=0，num_predict=220，top5 上下文；实际生成 20 题（限时抽样）",
+  "retrieval_full": true,
+  "gen_limit": 20,
+  "budget_s": 600,
+  "elapsed_s": 168.2
+ },
+ "sources": {
+  "units": [
+   {
+    "path": "C:\\项目\\知识库\\30_知识单元\\laomu_notes_units_effective.jsonl",
+    "sha256": "a85cf4595485cc291239b2cbc8ff921c43bb321f892b1cc1aa8afb6e87f20e6c",
+    "lines": 286
+   },
+   {
+    "path": "C:\\项目\\知识库\\30_知识单元\\视频号学习_8博主_units_effective.jsonl",
+    "sha256": "2a38fc0531a74c3fb594e7bf94fcb43764d4681826105297b03b05ae959ac793",
+    "lines": 800
+   },
+   {
+    "path": "C:\\项目\\知识库\\30_知识单元\\视频号学习_第二期_units_effective.jsonl",
+    "sha256": "95bf8fa2a2570123aa5e43e3c42160cb3871b3f1346d5f4f5b7dff5f7812e719",
+    "lines": 245
+   }
+  ],
+  "cards": {
+   "path": "C:\\项目\\老田的AI助手\\portal\\static\\kb_learning_cards.json",
+   "sha256": "e8fc247bfa28038c10c9a88bf440350b960e9fbb3c4d0e539ed9ca4f3453e081",
+   "count": 400
+  }
+ },
+ "aggregate": {
+  "questions_total": 50,
+  "evaluated": 50,
+  "recall@5": 0.84,
+  "recall@10": 0.84,
+  "mrr": 0.774,
+  "diversity@5": 0.604,
+  "generation_evaluated": 20,
+  "citation_rate": 1.0,
+  "consistency_avg": 0.4435,
+  "refusal_rate": 0.0,
+  "by_type": {
+   "card_concept": {
+    "n": 13,
+    "recall@5": 1.0
+   },
+   "card_evidence": {
+    "n": 12,
+    "recall@5": 1.0
+   },
+   "unit_howto": {
+    "n": 13,
+    "recall@5": 0.6923
+   },
+   "unit_fact": {
+    "n": 12,
+    "recall@5": 0.6667
+   }
+  }
+ },
+ "targets": {
+  "recall@5": 0.85,
+  "citation_rate": 0.9,
+  "note": "建议基线阈值（与微调后对比）；未达阈值需补检索/引用策略"
+ },
+ "sampled_note": "生成阶段按限时抽样 20/50 题（检索指标为全量 50 题）",
+ "limitations": [
+  "held-out 105（概念55+笔记50）在本次工作区未找到交付文件（另一并行任务域），50 题由 400 卡+effective units 规则生成；",
+  "问题由源文档概念/claim 模板生成，存在一定表面重叠（合成基线，非人工独立标注）；",
+  "引用率 = 答案含 [1..5] 或命中上下文来源/概念；闭卷一致性 = 中文 bigram Jaccard；均为规则近似；",
+  "生成阶段按限时抽样 ≤20 题（Lead 要求），检索指标为全量 50 题；",
+  "本机 ollama 模型：bge-m3 / qwen3.5:9b；仅本地调用，不联网。"
+ ],
+ "results": [
+  {
+   "qid": "Q001",
+   "type": "card_concept",
+   "question": "「AI 产业投资传导链条」的核心要点是什么？",
+   "gold_doc_ids": [
+    "C:009"
+   ],
+   "top_ids": [
+    "C:009",
+    "U:learn_视频号学习_第二期_0027",
+    "U:learn_视频号学习_第二期_0008",
+    "U:learn_视频号学习_第二期_0040",
+    "C:015",
+    "U:learn_视频号学习_第二期_1099",
+    "U:learn_laomu_notes_0237",
+    "U:learn_视频号学习_第二期_0018",
+    "U:learn_视频号学习_第二期_0011",
+    "U:learn_视频号学习_第二期_1163"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "answer": "「AI 产业投资传导链条」的核心逻辑是沿着“模型降价→应用放量→芯片需求→制造扩产”的路径自上而下传导。在此过程中，景气验证不断下沉，具体表现为模型端价格战降低应用门槛、端侧与 AIoT 场景加速打开，以及芯片端新品周期临近带来的渗透率与单机价值量双升 [4]。",
+   "citation": true,
+   "consistency": 0.5772,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q002",
+   "type": "card_evidence",
+   "question": "关于「K线合并」，资料中的依据/来源是什么？",
+   "gold_doc_ids": [
+    "C:274"
+   ],
+   "top_ids": [
+    "U:learn_视频号学习_8博主_0350",
+    "C:274",
+    "U:learn_视频号学习_8博主_0616",
+    "U:learn_laomu_notes_0170",
+    "U:learn_视频号学习_8博主_0505",
+    "U:learn_视频号学习_8博主_0609",
+    "U:learn_视频号学习_第二期_1243",
+    "U:learn_视频号学习_第二期_1259",
+    "C:155",
+    "U:learn_laomu_notes_0225"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 0.5,
+   "diversity@5": 0.8,
+   "answer": "K 线合并是确保缠论分形准确的关键步骤，其总体原则是在上涨行情中“高取高、低取高”，在下跌行情中“高取低、低取低”。处理时需先判断涨跌方向以解决包含关系，连续合并后可构成顶分形或底分形。[2][5]",
+   "citation": true,
+   "consistency": 0.4343,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q003",
+   "type": "card_concept",
+   "question": "「T字阴线跌停」的核心要点是什么？",
+   "gold_doc_ids": [
+    "C:278"
+   ],
+   "top_ids": [
+    "C:278",
+    "U:learn_视频号学习_8博主_0842",
+    "U:learn_视频号学习_8博主_0082",
+    "U:learn_视频号学习_8博主_0083",
+    "U:learn_视频号学习_8博主_0084",
+    "U:learn_视频号学习_8博主_0595",
+    "U:learn_视频号学习_8博主_0077",
+    "U:learn_视频号学习_8博主_0079",
+    "U:learn_视频号学习_8博主_0993",
+    "U:learn_视频号学习_8博主_0585"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "answer": "“ T 字阴线跌停”是指通过输入特定公式，在公式管理集中快速筛选出的同时具备\"T 字形 K 线形态”且处于“跌停”状态的个股。这种方法旨在替代逐个手动查找的繁琐过程，从而极大提高选股效率。[4][5]",
+   "citation": true,
+   "consistency": 0.3163,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q004",
+   "type": "card_evidence",
+   "question": "关于「下跌盘整下跌结构」，资料中的依据/来源是什么？",
+   "gold_doc_ids": [
+    "C:288"
+   ],
+   "top_ids": [
+    "C:288",
+    "C:287",
+    "U:learn_视频号学习_8博主_1005",
+    "C:366",
+    "C:388",
+    "C:326",
+    "U:learn_视频号学习_8博主_1006",
+    "C:208",
+    "U:learn_视频号学习_8博主_0985",
+    "C:362"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 1.0,
+   "answer": "资料 [3] 指出「下跌盘整下跌结构」由下跌、盘整、下跌三段组成，是最高效稳健的买入模式。该形态在末端介入可获得最佳盈亏比，后续可能走 V 型反转或演变成新中枢，相比追涨杀跌其直接大亏概率最低。[3]",
+   "citation": true,
+   "consistency": 0.6196,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q005",
+   "type": "card_concept",
+   "question": "「中小行负债端收缩成因」的核心要点是什么？",
+   "gold_doc_ids": [
+    "C:124"
+   ],
+   "top_ids": [
+    "C:124",
+    "C:103",
+    "C:090",
+    "C:057",
+    "U:learn_视频号学习_8博主_1007",
+    "U:learn_视频号学习_8博主_1004",
+    "C:290",
+    "U:learn_视频号学习_8博主_1010",
+    "U:learn_视频号学习_8博主_0585",
+    "U:learn_laomu_notes_0070"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "answer": "中小行负债端收缩主要受存款定价优势消失、监管约束久期与集中度、FTP 考核倒挂及利率低位下“落袋为安”诉求等多重因素驱动。这既包含主动收缩长端的防御成分，也叠加了核心存款流失带来的被动缩表压力。[5]",
+   "citation": true,
+   "consistency": 0.5547,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q006",
+   "type": "card_evidence",
+   "question": "关于「主观交易与量化交易」，资料中的依据/来源是什么？",
+   "gold_doc_ids": [
+    "C:299"
+   ],
+   "top_ids": [
+    "C:299",
+    "U:learn_视频号学习_8博主_0661",
+    "U:learn_视频号学习_8博主_0778",
+    "U:learn_视频号学习_8博主_0654",
+    "C:185",
+    "U:learn_视频号学习_第二期_1190",
+    "U:learn_视频号学习_8博主_0724",
+    "U:learn_laomu_notes_0078",
+    "U:learn_视频号学习_8博主_0674",
+    "U:learn_视频号学习_8博主_0745"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "answer": "主观交易依赖经验、情绪及对未来预期的手动操作，而量化交易则基于数据和算法遵循过去规律进行自动交易。两者在决策依据、操作速度及风险水平上存在显著差异，其中量化交易能有效减少情绪波动并更好地管理风险。[2][5]",
+   "citation": true,
+   "consistency": 0.3761,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q007",
+   "type": "card_concept",
+   "question": "「人工智能安全能力成熟度评估」的核心要点是什么？",
+   "gold_doc_ids": [
+    "C:038"
+   ],
+   "top_ids": [
+    "C:038",
+    "C:079",
+    "U:learn_视频号学习_第二期_0008",
+    "C:140",
+    "U:learn_视频号学习_第二期_0002",
+    "U:learn_laomu_notes_0041",
+    "U:learn_视频号学习_第二期_1111",
+    "U:learn_视频号学习_第二期_0018",
+    "U:learn_视频号学习_第二期_0040",
+    "C:127"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.4,
+   "answer": "“人工智能安全能力成熟度评估”依据《网络安全技术 人工智能安全能力成熟度评估方法》，将组织能力划分为非正式执行、计划跟踪、充分定义、量化控制和持续优化五个等级。该体系旨在衡量企业能否稳定执行安全活动、保留记录并根据结果进行改进，从而确保 AI 应用的可靠性与可追溯性 [3]。",
+   "citation": true,
+   "consistency": 0.5323,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q008",
+   "type": "card_evidence",
+   "question": "关于「低开高走」，资料中的依据/来源是什么？",
+   "gold_doc_ids": [
+    "C:304"
+   ],
+   "top_ids": [
+    "C:304",
+    "U:learn_视频号学习_8博主_0094",
+    "U:learn_视频号学习_8博主_0091",
+    "U:learn_视频号学习_8博主_0281",
+    "U:learn_视频号学习_8博主_0155",
+    "U:learn_视频号学习_8博主_0862",
+    "U:learn_视频号学习_8博主_0263",
+    "U:learn_视频号学习_8博主_0115",
+    "U:learn_laomu_notes_0011",
+    "U:learn_视频号学习_第二期_1279"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.4,
+   "answer": "资料 [5] 指出，“低开高走”是指受隔夜外围利空及科技股调整影响导致指数早盘低开，随后医药、地产等板块护盘并叠加科技回流，最终呈现的震荡格局。这种走势反映了市场在消耗套牢盘的同时等待方向选择的过程。[5]",
+   "citation": true,
+   "consistency": 0.5294,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q009",
+   "type": "card_concept",
+   "question": "「全生命周期经济性评估」的核心要点是什么？",
+   "gold_doc_ids": [
+    "C:073"
+   ],
+   "top_ids": [
+    "C:073",
+    "U:learn_视频号学习_第二期_0025",
+    "U:learn_视频号学习_8博主_1004",
+    "U:learn_视频号学习_8博主_0476",
+    "U:learn_视频号学习_8博主_0475",
+    "U:learn_视频号学习_第二期_0040",
+    "C:188",
+    "U:learn_视频号学习_8博主_0564",
+    "U:learn_视频号学习_第二期_0008",
+    "U:learn_视频号学习_第二期_0038"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.8,
+   "answer": "「全生命周期经济性评估」强调轨道系统的价值取决于发射、维护、通信、更换及运行等全周期的成本效益。由于轨道系统难以维修导致硬件故障修复成本高，其生命周期成本通常高于地面部署。此外，特定的系统配置虽能带来潜在益处，但无法证明其在通用云计算工作负载上比同等规模的地面部署更具成本竞争力 [5]。",
+   "citation": true,
+   "consistency": 0.4421,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q010",
+   "type": "card_evidence",
+   "question": "关于「区间套运用」，资料中的依据/来源是什么？",
+   "gold_doc_ids": [
+    "C:308"
+   ],
+   "top_ids": [
+    "C:308",
+    "U:learn_视频号学习_8博主_0301",
+    "U:learn_视频号学习_8博主_0604",
+    "U:learn_laomu_notes_0195",
+    "U:learn_视频号学习_8博主_0363",
+    "U:learn_laomu_notes_0213",
+    "U:learn_laomu_notes_0272",
+    "C:293",
+    "U:learn_laomu_notes_0179",
+    "U:learn_视频号学习_第二期_1156"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "answer": "资料指出常规买卖点即缠论的一买二买三买方法，运用区间套时只需缩小一个级别（如日线最多利用 30 分钟），无需无限缩小至更低级别。其核心在于结合不同级别的走势类型进行精确分析，而非仅凭表面力度比较背驰。相关依据来自 [3][5]",
+   "citation": true,
+   "consistency": 0.4151,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q011",
+   "type": "card_concept",
+   "question": "「因子分解」的核心要点是什么？",
+   "gold_doc_ids": [
+    "C:171"
+   ],
+   "top_ids": [
+    "C:171",
+    "U:learn_laomu_notes_0259",
+    "U:learn_视频号学习_8博主_0705",
+    "C:209",
+    "C:311",
+    "C:251",
+    "U:learn_视频号学习_第二期_0015",
+    "U:learn_视频号学习_8博主_0779",
+    "C:313",
+    "U:learn_视频号学习_8博主_0559"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 1.0,
+   "answer": "“因子分解”的核心在于先对市场、规模等共同因子进行拆解，再评价剩余部分以识别收益来源。需要明确的是，估计出的α包含统计误差，并不等同于可持续的超额收益。[1][3]",
+   "citation": true,
+   "consistency": 0.2692,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q012",
+   "type": "card_evidence",
+   "question": "关于「均线 MA/EMA」，资料中的依据/来源是什么？",
+   "gold_doc_ids": [
+    "C:164"
+   ],
+   "top_ids": [
+    "U:learn_laomu_notes_0214",
+    "C:164",
+    "U:learn_视频号学习_8博主_0631",
+    "U:learn_laomu_notes_0202",
+    "C:316",
+    "U:learn_视频号学习_8博主_0606",
+    "U:learn_视频号学习_第二期_1291",
+    "U:learn_视频号学习_8博主_0017",
+    "U:learn_laomu_notes_0227",
+    "C:173"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 0.5,
+   "diversity@5": 0.8,
+   "answer": "资料指出均线（MA/EMA）是价格的滚动平均或等权平均，旨在为趋势提供一个可计算的尺度。其 AI 特征包括均线距离、斜率与多尺度分析，但需注意多条均线高度相关并不等同于多份独立证据。此外，均线每根均可视为对应周期的平均成本，常用于区分短期（如 10 日、20 日）与中长期（如 60 日、120 日）趋势。[2][4]",
+   "citation": true,
+   "consistency": 0.2174,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q013",
+   "type": "card_concept",
+   "question": "「多层级安全评估体系（ARIA）」的核心要点是什么？",
+   "gold_doc_ids": [
+    "C:079"
+   ],
+   "top_ids": [
+    "C:079",
+    "C:038",
+    "U:learn_视频号学习_第二期_1163",
+    "U:learn_laomu_notes_0237",
+    "U:learn_laomu_notes_0276",
+    "C:013",
+    "U:learn_视频号学习_第二期_1151",
+    "C:267",
+    "C:061",
+    "U:learn_laomu_notes_0189"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "answer": "「多层级安全评估体系（ARIA）」将测试划分为 Model Testing（确认能力）、Red Teaming（诱发违规）和 Field Testing（观察真实环境影响）三个部分。该体系强调单一分数无法替代完整的证据链，旨在通过多维度测试全面评估系统表现。[5]",
+   "citation": true,
+   "consistency": 0.2734,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q014",
+   "type": "card_evidence",
+   "question": "关于「工业机器人产品分类」，资料中的依据/来源是什么？",
+   "gold_doc_ids": [
+    "C:093"
+   ],
+   "top_ids": [
+    "C:093",
+    "C:029",
+    "C:035",
+    "C:074",
+    "C:063",
+    "C:139",
+    "C:037",
+    "U:learn_视频号学习_第二期_1099",
+    "C:014",
+    "C:092"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.8,
+   "answer": "根据 GB/T 39405-2020 标准及对应的海关 HS2023 代码，工业机器人被界定为普通工业机器人、未列名工业机器人及其他专用机器人（如焊接、喷涂等）。[5]",
+   "citation": true,
+   "consistency": 0.4096,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q015",
+   "type": "card_concept",
+   "question": "「形中有形」的核心要点是什么？",
+   "gold_doc_ids": [
+    "C:236"
+   ],
+   "top_ids": [
+    "C:236",
+    "U:learn_视频号学习_8博主_0536",
+    "U:learn_视频号学习_8博主_0445",
+    "U:learn_视频号学习_8博主_0351",
+    "U:learn_视频号学习_8博主_0559",
+    "U:learn_视频号学习_8博主_1007",
+    "C:383",
+    "C:208",
+    "U:learn_视频号学习_8博主_0397",
+    "U:learn_视频号学习_8博主_1004"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.4,
+   "answer": "“形中有形”是结构工阵模型的一种，其核心在于构建 AB 大结构及 BCDE 调整段。该形态要求 D 点必须突破 B 点高点，但不得突破 CB 段的 1.382 回撤位，以此形成合力推动单边行情 [5]。",
+   "citation": true,
+   "consistency": 0.4024,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q016",
+   "type": "card_evidence",
+   "question": "关于「指标位置关系」，资料中的依据/来源是什么？",
+   "gold_doc_ids": [
+    "C:329"
+   ],
+   "top_ids": [
+    "C:329",
+    "U:learn_视频号学习_8博主_0609",
+    "U:learn_视频号学习_8博主_0607",
+    "U:learn_laomu_notes_0272",
+    "U:learn_视频号学习_8博主_0612",
+    "U:learn_视频号学习_8博主_0608",
+    "U:learn_视频号学习_8博主_1008",
+    "U:learn_laomu_notes_0057",
+    "C:174",
+    "U:learn_laomu_notes_0247"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "answer": "判断 MACD 与 KDJ 的位置关系需观察其数值高低及交叉方向。合并使用时可设置双指标窗口，结合金叉死叉信号进行综合研判。[5]",
+   "citation": true,
+   "consistency": 0.8246,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q017",
+   "type": "card_concept",
+   "question": "「新型电池产业发展规划」的核心要点是什么？",
+   "gold_doc_ids": [
+    "C:262"
+   ],
+   "top_ids": [
+    "C:262",
+    "C:141",
+    "C:215",
+    "C:102",
+    "C:259",
+    "C:268",
+    "C:263",
+    "C:137",
+    "C:101",
+    "C:049"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 1.0,
+   "answer": "根据《新型电池产业发展“十五五”规划》，到 2030 年全固态电池将初步实现规模化应用，长寿命锂电池循环寿命需达到 15000 次，且头部企业产品缺陷率应降至 PPB 级。该规划还强调要持续增强全链条创新能力以推动产业发展。[5]",
+   "citation": true,
+   "consistency": 0.56,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q018",
+   "type": "card_evidence",
+   "question": "关于「最适合量化交易的编程语言」，资料中的依据/来源是什么？",
+   "gold_doc_ids": [
+    "C:255"
+   ],
+   "top_ids": [
+    "C:255",
+    "U:learn_视频号学习_8博主_0711",
+    "U:learn_视频号学习_第二期_1147",
+    "U:learn_视频号学习_第二期_1125",
+    "U:learn_视频号学习_第二期_1201",
+    "U:learn_视频号学习_第二期_1115",
+    "U:learn_视频号学习_8博主_0658",
+    "U:learn_视频号学习_第二期_1101",
+    "U:learn_视频号学习_第二期_0005",
+    "U:learn_视频号学习_第二期_1170"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "answer": "资料 [1] 指出 Python 是适合量化交易的编程语言，因其数据统计分析功能强大且天生支持向量化运算，但运行速度较慢。该资料还提到 MarkLab（推测为对 Python 或相关库的误写或特定语境下的指代）主要用于研究和原型开发阶段，在工程领域和矩阵运算方面优势较大。资料 [2] 进一步补充说明功夫量化系统策略支持 Python 3、C++ 以及使用 RX CPP、Numpy 与 Pandas 等工具。[1][2]",
+   "citation": true,
+   "consistency": 0.4328,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q019",
+   "type": "card_concept",
+   "question": "「此时均线多头排列」的核心要点是什么？",
+   "gold_doc_ids": [
+    "C:349"
+   ],
+   "top_ids": [
+    "C:349",
+    "C:183",
+    "U:learn_视频号学习_8博主_0003",
+    "C:315",
+    "U:learn_视频号学习_8博主_0606",
+    "U:learn_视频号学习_8博主_0009",
+    "U:learn_视频号学习_8博主_0641",
+    "U:learn_laomu_notes_0202",
+    "U:learn_视频号学习_8博主_0607",
+    "U:learn_视频号学习_8博主_0617"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 1.0,
+   "answer": "「此时均线多头排列」指个股在一波走势后出现涨停，随后四日跳空高开收十字星，且当日最低价未跌破五日均线。在此形态下，短期均线呈现多头排列状态，通常预示着后续股价可能一路上涨。该形态可通过盘中导入特定公式圆码进行一键筛选和识别。[5]",
+   "citation": true,
+   "consistency": 0.3333,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q020",
+   "type": "card_evidence",
+   "question": "关于「深度学习硬件」，资料中的依据/来源是什么？",
+   "gold_doc_ids": [
+    "C:358"
+   ],
+   "top_ids": [
+    "C:358",
+    "U:learn_视频号学习_8博主_0797",
+    "U:learn_视频号学习_8博主_0727",
+    "U:learn_视频号学习_第二期_1090",
+    "U:learn_视频号学习_第二期_1150",
+    "U:learn_视频号学习_第二期_0040",
+    "U:learn_视频号学习_第二期_0003",
+    "C:037",
+    "U:learn_视频号学习_第二期_1279",
+    "U:learn_视频号学习_第二期_1270"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "answer": "深度学习所需的硬件包括大内存、快速固态硬盘、多核 CPU、大量核心 GPU、低延迟网络、硬件加速器及稳定电源供应。这些要求旨在支持参数存储、高速数据读写、并行任务处理、矩阵运算加速以及通信效率提升 [2][5]。",
+   "citation": true,
+   "consistency": 0.3509,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q021",
+   "type": "card_concept",
+   "question": "「知识图谱与叙事一致性」的核心要点是什么？",
+   "gold_doc_ids": [
+    "C:069"
+   ],
+   "top_ids": [
+    "C:069",
+    "U:learn_视频号学习_第二期_1161",
+    "C:127",
+    "U:learn_laomu_notes_0249",
+    "U:learn_视频号学习_第二期_1220",
+    "U:learn_laomu_notes_0191",
+    "U:learn_视频号学习_8博主_1016",
+    "U:learn_laomu_notes_0218",
+    "C:041",
+    "U:learn_视频号学习_第二期_1151"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.8,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q022",
+   "type": "card_evidence",
+   "question": "关于「突破新高是大概率事件」，资料中的依据/来源是什么？",
+   "gold_doc_ids": [
+    "C:379"
+   ],
+   "top_ids": [
+    "C:379",
+    "U:learn_视频号学习_8博主_0088",
+    "U:learn_视频号学习_8博主_0092",
+    "U:learn_laomu_notes_0165",
+    "U:learn_视频号学习_8博主_0157",
+    "U:learn_视频号学习_8博主_0810",
+    "C:342",
+    "U:learn_视频号学习_8博主_0708",
+    "U:learn_视频号学习_8博主_0154",
+    "U:learn_视频号学习_8博主_0865"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q023",
+   "type": "card_concept",
+   "question": "「缠论、游资、凯利公式」的核心要点是什么？",
+   "gold_doc_ids": [
+    "C:389"
+   ],
+   "top_ids": [
+    "C:389",
+    "U:learn_视频号学习_8博主_0564",
+    "U:learn_视频号学习_8博主_0451",
+    "U:learn_视频号学习_8博主_0476",
+    "C:383",
+    "U:learn_视频号学习_8博主_0309",
+    "U:learn_视频号学习_8博主_0477",
+    "U:learn_视频号学习_8博主_0333",
+    "U:learn_视频号学习_8博主_0343",
+    "U:learn_视频号学习_8博主_0475"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q024",
+   "type": "card_evidence",
+   "question": "关于「网络安全职位招聘周期」，资料中的依据/来源是什么？",
+   "gold_doc_ids": [
+    "C:117"
+   ],
+   "top_ids": [
+    "C:117",
+    "C:094",
+    "C:126",
+    "C:039",
+    "C:038",
+    "C:127",
+    "C:061",
+    "U:learn_laomu_notes_0082",
+    "U:learn_视频号学习_第二期_1146",
+    "U:learn_视频号学习_第二期_0040"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q025",
+   "type": "card_concept",
+   "question": "「迈威尔科技 (Marvell) 2027 财年第二财季业绩」的核心要点是什么？",
+   "gold_doc_ids": [
+    "C:086"
+   ],
+   "top_ids": [
+    "C:086",
+    "U:learn_视频号学习_第二期_1163",
+    "C:371",
+    "C:032",
+    "U:learn_视频号学习_第二期_0006",
+    "U:learn_视频号学习_第二期_0015",
+    "U:learn_laomu_notes_0101",
+    "U:learn_视频号学习_第二期_0001",
+    "U:learn_视频号学习_第二期_1156",
+    "U:learn_视频号学习_第二期_0040"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 1.0,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q026",
+   "type": "unit_howto",
+   "question": "关于「**两类视频的区别**」，操作要点是什么？",
+   "gold_doc_ids": [
+    "U:learn_laomu_notes_0001"
+   ],
+   "top_ids": [
+    "U:learn_laomu_notes_0001",
+    "U:learn_laomu_notes_0061",
+    "U:learn_视频号学习_第二期_1100",
+    "U:learn_laomu_notes_0285",
+    "U:learn_视频号学习_第二期_1151",
+    "U:learn_视频号学习_第二期_0032",
+    "U:learn_laomu_notes_0283",
+    "U:learn_视频号学习_第二期_1092",
+    "U:learn_视频号学习_8博主_0670",
+    "U:learn_视频号学习_第二期_1133"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.4,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q027",
+   "type": "unit_fact",
+   "question": "「五天的成交量加起来还不如今天一天」的依据/事实是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_8博主_0001"
+   ],
+   "top_ids": [
+    "U:learn_视频号学习_8博主_0001",
+    "U:learn_视频号学习_8博主_0013",
+    "U:learn_laomu_notes_0132",
+    "U:learn_laomu_notes_0094",
+    "U:learn_laomu_notes_0153",
+    "U:learn_laomu_notes_0166",
+    "U:learn_laomu_notes_0134",
+    "U:learn_laomu_notes_0083",
+    "U:learn_laomu_notes_0232",
+    "U:learn_laomu_notes_0202"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.4,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q028",
+   "type": "unit_howto",
+   "question": "关于「今天刺猬情报局的主题」，操作要点是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_第二期_0001"
+   ],
+   "top_ids": [
+    "U:learn_视频号学习_第二期_0023",
+    "U:learn_视频号学习_第二期_0027",
+    "U:learn_视频号学习_第二期_0025",
+    "U:learn_视频号学习_第二期_0041",
+    "U:learn_视频号学习_第二期_0021",
+    "U:learn_视频号学习_第二期_0026",
+    "U:learn_视频号学习_第二期_0022",
+    "U:learn_视频号学习_8博主_0259",
+    "U:learn_laomu_notes_0165",
+    "U:learn_视频号学习_第二期_1111"
+   ],
+   "recall@5": 0.0,
+   "recall@10": 0.0,
+   "mrr": 0.0,
+   "diversity@5": 0.2,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q029",
+   "type": "unit_fact",
+   "question": "「一个月 500 万美刀交易量的 AI 量」的依据/事实是什么？",
+   "gold_doc_ids": [
+    "U:learn_laomu_notes_0002"
+   ],
+   "top_ids": [
+    "U:learn_laomu_notes_0002",
+    "U:learn_laomu_notes_0008",
+    "U:learn_laomu_notes_0005",
+    "U:learn_laomu_notes_0019",
+    "U:learn_视频号学习_第二期_0023",
+    "U:learn_视频号学习_第二期_1139",
+    "U:learn_视频号学习_第二期_1150",
+    "U:learn_laomu_notes_0012",
+    "U:learn_laomu_notes_0182",
+    "U:learn_laomu_notes_0041"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.4,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q030",
+   "type": "unit_howto",
+   "question": "关于「AI到底能不能预判行情」，操作要点是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_8博主_0002"
+   ],
+   "top_ids": [
+    "U:learn_视频号学习_8博主_0002",
+    "U:learn_laomu_notes_0174",
+    "U:learn_视频号学习_8博主_0003",
+    "U:learn_视频号学习_第二期_1225",
+    "U:learn_laomu_notes_0041",
+    "U:learn_laomu_notes_0182",
+    "U:learn_视频号学习_第二期_0035",
+    "U:learn_laomu_notes_0269",
+    "U:learn_视频号学习_第二期_1230",
+    "U:learn_视频号学习_第二期_1214"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q031",
+   "type": "unit_fact",
+   "question": "「今天来聊被神化的AI Agent在真实商」的依据/事实是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_第二期_0002"
+   ],
+   "top_ids": [
+    "U:learn_视频号学习_第二期_0002",
+    "U:learn_视频号学习_第二期_1097",
+    "U:learn_laomu_notes_0021",
+    "U:learn_laomu_notes_0019",
+    "U:learn_laomu_notes_0022",
+    "U:learn_视频号学习_第二期_1185",
+    "U:learn_视频号学习_第二期_0019",
+    "U:learn_视频号学习_第二期_1175",
+    "U:learn_视频号学习_第二期_1230",
+    "U:learn_视频号学习_第二期_1111"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q032",
+   "type": "unit_howto",
+   "question": "关于「接下来我还会公开这个平台的所有收入和支出」，操作要点是什么？",
+   "gold_doc_ids": [
+    "U:learn_laomu_notes_0003"
+   ],
+   "top_ids": [
+    "U:learn_laomu_notes_0003",
+    "U:learn_laomu_notes_0009",
+    "U:learn_laomu_notes_0191",
+    "U:learn_laomu_notes_0285",
+    "C:107",
+    "U:learn_laomu_notes_0237",
+    "U:learn_视频号学习_第二期_1129",
+    "U:learn_laomu_notes_0025",
+    "U:learn_laomu_notes_0027",
+    "U:learn_视频号学习_第二期_0040"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.4,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q033",
+   "type": "unit_fact",
+   "question": "「趋势不」的依据/事实是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_8博主_0003"
+   ],
+   "top_ids": [
+    "U:learn_视频号学习_8博主_0980",
+    "U:learn_视频号学习_8博主_0003",
+    "U:learn_laomu_notes_0172",
+    "U:learn_视频号学习_8博主_0563",
+    "U:learn_视频号学习_8博主_1011",
+    "U:learn_视频号学习_8博主_1006",
+    "U:learn_laomu_notes_0212",
+    "C:157",
+    "U:learn_视频号学习_8博主_0585",
+    "U:learn_laomu_notes_0150"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 0.5,
+   "diversity@5": 0.8,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q034",
+   "type": "unit_howto",
+   "question": "关于「各位朋友」，操作要点是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_第二期_0003"
+   ],
+   "top_ids": [
+    "U:learn_laomu_notes_0288",
+    "U:learn_视频号学习_8博主_0118",
+    "U:learn_视频号学习_8博主_0084",
+    "U:learn_laomu_notes_0249",
+    "U:learn_视频号学习_8博主_0279",
+    "U:learn_视频号学习_8博主_0259",
+    "U:learn_视频号学习_8博主_0829",
+    "U:learn_视频号学习_8博主_0280",
+    "U:learn_视频号学习_8博主_0272",
+    "U:learn_laomu_notes_0068"
+   ],
+   "recall@5": 0.0,
+   "recall@10": 0.0,
+   "mrr": 0.0,
+   "diversity@5": 0.6,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q035",
+   "type": "unit_fact",
+   "question": "「我是老木，一个做 AI 量化系统的技术员」的依据/事实是什么？",
+   "gold_doc_ids": [
+    "U:learn_laomu_notes_0004"
+   ],
+   "top_ids": [
+    "U:learn_laomu_notes_0010",
+    "U:learn_laomu_notes_0004",
+    "U:learn_laomu_notes_0065",
+    "C:144",
+    "U:learn_laomu_notes_0023",
+    "U:learn_laomu_notes_0041",
+    "U:learn_laomu_notes_0034",
+    "U:learn_laomu_notes_0022",
+    "U:learn_laomu_notes_0005",
+    "U:learn_laomu_notes_0019"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 0.5,
+   "diversity@5": 0.4,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q036",
+   "type": "unit_howto",
+   "question": "关于「写均线向上」，操作要点是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_8博主_0004"
+   ],
+   "top_ids": [
+    "U:learn_视频号学习_8博主_0004",
+    "U:learn_laomu_notes_0202",
+    "C:152",
+    "U:learn_laomu_notes_0164",
+    "C:316",
+    "U:learn_视频号学习_8博主_0009",
+    "U:learn_视频号学习_8博主_0007",
+    "C:314",
+    "U:learn_视频号学习_8博主_0633",
+    "U:learn_视频号学习_8博主_0631"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.8,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q037",
+   "type": "unit_fact",
+   "question": "「今天我们聊一个问题」的依据/事实是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_第二期_0004"
+   ],
+   "top_ids": [
+    "U:learn_laomu_notes_0080",
+    "U:learn_laomu_notes_0083",
+    "U:learn_laomu_notes_0081",
+    "U:learn_laomu_notes_0241",
+    "U:learn_laomu_notes_0020",
+    "U:learn_视频号学习_8博主_0001",
+    "U:learn_laomu_notes_0150",
+    "U:learn_视频号学习_第二期_0019",
+    "U:learn_视频号学习_8博主_0281",
+    "U:learn_laomu_notes_0079"
+   ],
+   "recall@5": 0.0,
+   "recall@10": 0.0,
+   "mrr": 0.0,
+   "diversity@5": 0.2,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q038",
+   "type": "unit_howto",
+   "question": "关于「看这张图」，操作要点是什么？",
+   "gold_doc_ids": [
+    "U:learn_laomu_notes_0005"
+   ],
+   "top_ids": [
+    "U:learn_视频号学习_第二期_1151",
+    "U:learn_视频号学习_第二期_1199",
+    "U:learn_视频号学习_第二期_1273",
+    "U:learn_视频号学习_第二期_1216",
+    "U:learn_视频号学习_第二期_1262",
+    "U:learn_视频号学习_第二期_1284",
+    "U:learn_视频号学习_第二期_1171",
+    "U:learn_视频号学习_8博主_0012",
+    "U:learn_视频号学习_第二期_1276",
+    "U:learn_视频号学习_第二期_1220"
+   ],
+   "recall@5": 0.0,
+   "recall@10": 0.0,
+   "mrr": 0.0,
+   "diversity@5": 0.2,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q039",
+   "type": "unit_fact",
+   "question": "「放量不等于有效放量」的依据/事实是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_8博主_0005"
+   ],
+   "top_ids": [
+    "U:learn_视频号学习_8博主_0584",
+    "U:learn_视频号学习_8博主_0005",
+    "U:learn_laomu_notes_0153",
+    "C:148",
+    "U:learn_视频号学习_8博主_0020",
+    "C:327",
+    "U:learn_视频号学习_8博主_0001",
+    "U:learn_视频号学习_8博主_0019",
+    "U:learn_laomu_notes_0166",
+    "U:learn_laomu_notes_0094"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 0.5,
+   "diversity@5": 0.8,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q040",
+   "type": "unit_howto",
+   "question": "关于「程序员孤身投入量化投资」，操作要点是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_第二期_0005"
+   ],
+   "top_ids": [
+    "U:learn_视频号学习_第二期_0005",
+    "U:learn_laomu_notes_0010",
+    "U:learn_视频号学习_第二期_1139",
+    "U:learn_视频号学习_第二期_1182",
+    "U:learn_视频号学习_第二期_1147",
+    "U:learn_视频号学习_第二期_1101",
+    "U:learn_视频号学习_第二期_1134",
+    "U:learn_视频号学习_8博主_0674",
+    "U:learn_视频号学习_第二期_1180",
+    "U:learn_视频号学习_第二期_1252"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q041",
+   "type": "unit_fact",
+   "question": "「说得直接一点」的依据/事实是什么？",
+   "gold_doc_ids": [
+    "U:learn_laomu_notes_0006"
+   ],
+   "top_ids": [
+    "U:learn_laomu_notes_0150",
+    "U:learn_laomu_notes_0281",
+    "U:learn_laomu_notes_0286",
+    "U:learn_视频号学习_8博主_0401",
+    "U:learn_laomu_notes_0011",
+    "U:learn_laomu_notes_0020",
+    "U:learn_laomu_notes_0081",
+    "U:learn_视频号学习_8博主_0071",
+    "U:learn_laomu_notes_0249",
+    "U:learn_视频号学习_8博主_1005"
+   ],
+   "recall@5": 0.0,
+   "recall@10": 0.0,
+   "mrr": 0.0,
+   "diversity@5": 0.4,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q042",
+   "type": "unit_howto",
+   "question": "关于「千万别随便叠加选股条件」，操作要点是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_8博主_0006"
+   ],
+   "top_ids": [
+    "U:learn_视频号学习_8博主_0006",
+    "U:learn_视频号学习_8博主_0001",
+    "U:learn_视频号学习_8博主_0010",
+    "U:learn_视频号学习_8博主_0325",
+    "C:197",
+    "U:learn_视频号学习_8博主_0289",
+    "U:learn_视频号学习_8博主_1000",
+    "U:learn_视频号学习_8博主_0740",
+    "U:learn_laomu_notes_0288",
+    "U:learn_视频号学习_第二期_1268"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q043",
+   "type": "unit_fact",
+   "question": "「大家好」的依据/事实是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_第二期_0006"
+   ],
+   "top_ids": [
+    "U:learn_laomu_notes_0065",
+    "U:learn_laomu_notes_0079",
+    "U:learn_视频号学习_8博主_0129",
+    "U:learn_laomu_notes_0285",
+    "U:learn_laomu_notes_0150",
+    "U:learn_laomu_notes_0281",
+    "U:learn_laomu_notes_0081",
+    "U:learn_视频号学习_8博主_0128",
+    "U:learn_laomu_notes_0241",
+    "U:learn_laomu_notes_0020"
+   ],
+   "recall@5": 0.0,
+   "recall@10": 0.0,
+   "mrr": 0.0,
+   "diversity@5": 0.4,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q044",
+   "type": "unit_howto",
+   "question": "关于「那你可能会说」，操作要点是什么？",
+   "gold_doc_ids": [
+    "U:learn_laomu_notes_0007"
+   ],
+   "top_ids": [
+    "U:learn_视频号学习_8博主_0808",
+    "U:learn_laomu_notes_0027",
+    "U:learn_laomu_notes_0150",
+    "U:learn_laomu_notes_0288",
+    "U:learn_laomu_notes_0230",
+    "U:learn_laomu_notes_0266",
+    "U:learn_laomu_notes_0250",
+    "U:learn_视频号学习_第二期_1202",
+    "U:learn_视频号学习_8博主_1001",
+    "U:learn_视频号学习_第二期_1189"
+   ],
+   "recall@5": 0.0,
+   "recall@10": 0.0,
+   "mrr": 0.0,
+   "diversity@5": 0.4,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q045",
+   "type": "unit_fact",
+   "question": "「写平台突破公式」的依据/事实是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_8博主_0007"
+   ],
+   "top_ids": [
+    "U:learn_视频号学习_8博主_0007",
+    "C:324",
+    "U:learn_laomu_notes_0165",
+    "U:learn_laomu_notes_0161",
+    "U:learn_视频号学习_8博主_0824",
+    "C:378",
+    "U:learn_视频号学习_8博主_0702",
+    "C:376",
+    "U:learn_laomu_notes_0151",
+    "U:learn_视频号学习_8博主_0865"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.8,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q046",
+   "type": "unit_howto",
+   "question": "关于「芯片界最疯狂的百亿美金赌场」，操作要点是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_第二期_0007"
+   ],
+   "top_ids": [
+    "U:learn_视频号学习_第二期_0007",
+    "U:learn_视频号学习_8博主_0096",
+    "U:learn_视频号学习_第二期_0009",
+    "U:learn_视频号学习_8博主_0189",
+    "U:learn_视频号学习_8博主_0155",
+    "U:learn_视频号学习_第二期_0015",
+    "U:learn_视频号学习_8博主_0118",
+    "U:learn_视频号学习_第二期_0001",
+    "U:learn_视频号学习_8博主_0279",
+    "U:learn_视频号学习_8博主_0075"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.4,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q047",
+   "type": "unit_fact",
+   "question": "「再给大家看一个数据」的依据/事实是什么？",
+   "gold_doc_ids": [
+    "U:learn_laomu_notes_0008"
+   ],
+   "top_ids": [
+    "U:learn_laomu_notes_0063",
+    "U:learn_laomu_notes_0057",
+    "U:learn_laomu_notes_0242",
+    "U:learn_laomu_notes_0089",
+    "U:learn_laomu_notes_0067",
+    "U:learn_laomu_notes_0191",
+    "U:learn_laomu_notes_0103",
+    "U:learn_laomu_notes_0088",
+    "U:learn_laomu_notes_0249",
+    "U:learn_视频号学习_第二期_1199"
+   ],
+   "recall@5": 0.0,
+   "recall@10": 0.0,
+   "mrr": 0.0,
+   "diversity@5": 0.2,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q048",
+   "type": "unit_howto",
+   "question": "关于「你画的前期高点」，操作要点是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_8博主_0008"
+   ],
+   "top_ids": [
+    "U:learn_视频号学习_8博主_0008",
+    "U:learn_视频号学习_8博主_0612",
+    "U:learn_视频号学习_8博主_0346",
+    "U:learn_视频号学习_8博主_0968",
+    "U:learn_laomu_notes_0163",
+    "U:learn_视频号学习_8博主_0012",
+    "U:learn_视频号学习_8博主_1000",
+    "U:learn_视频号学习_8博主_0087",
+    "U:learn_视频号学习_8博主_0808",
+    "U:learn_视频号学习_8博主_0829"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 1.0,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q049",
+   "type": "unit_fact",
+   "question": "「如果AI不仅能比你更快地收集数据」的依据/事实是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_第二期_0008"
+   ],
+   "top_ids": [
+    "U:learn_laomu_notes_0019",
+    "U:learn_laomu_notes_0189",
+    "U:learn_laomu_notes_0022",
+    "U:learn_laomu_notes_0021",
+    "U:learn_视频号学习_第二期_0008",
+    "U:learn_视频号学习_第二期_0023",
+    "U:learn_laomu_notes_0089",
+    "U:learn_视频号学习_第二期_0002",
+    "U:learn_视频号学习_第二期_0019",
+    "U:learn_laomu_notes_0101"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 0.2,
+   "diversity@5": 0.4,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q050",
+   "type": "unit_howto",
+   "question": "关于「一个平台能不能做大做强」，操作要点是什么？",
+   "gold_doc_ids": [
+    "U:learn_laomu_notes_0009"
+   ],
+   "top_ids": [
+    "U:learn_laomu_notes_0009",
+    "U:learn_视频号学习_8博主_0096",
+    "U:learn_视频号学习_8博主_0007",
+    "C:191",
+    "U:learn_laomu_notes_0007",
+    "U:learn_视频号学习_8博主_1000",
+    "U:learn_视频号学习_第二期_1138",
+    "U:learn_laomu_notes_0003",
+    "U:learn_视频号学习_第二期_0018",
+    "C:361"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.8,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  }
+ ],
+ "examples": [
+  {
+   "qid": "Q016",
+   "type": "card_evidence",
+   "question": "关于「指标位置关系」，资料中的依据/来源是什么？",
+   "gold_doc_ids": [
+    "C:329"
+   ],
+   "top_ids": [
+    "C:329",
+    "U:learn_视频号学习_8博主_0609",
+    "U:learn_视频号学习_8博主_0607",
+    "U:learn_laomu_notes_0272",
+    "U:learn_视频号学习_8博主_0612",
+    "U:learn_视频号学习_8博主_0608",
+    "U:learn_视频号学习_8博主_1008",
+    "U:learn_laomu_notes_0057",
+    "C:174",
+    "U:learn_laomu_notes_0247"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "answer": "判断 MACD 与 KDJ 的位置关系需观察其数值高低及交叉方向。合并使用时可设置双指标窗口，结合金叉死叉信号进行综合研判。[5]",
+   "citation": true,
+   "consistency": 0.8246,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q004",
+   "type": "card_evidence",
+   "question": "关于「下跌盘整下跌结构」，资料中的依据/来源是什么？",
+   "gold_doc_ids": [
+    "C:288"
+   ],
+   "top_ids": [
+    "C:288",
+    "C:287",
+    "U:learn_视频号学习_8博主_1005",
+    "C:366",
+    "C:388",
+    "C:326",
+    "U:learn_视频号学习_8博主_1006",
+    "C:208",
+    "U:learn_视频号学习_8博主_0985",
+    "C:362"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 1.0,
+   "answer": "资料 [3] 指出「下跌盘整下跌结构」由下跌、盘整、下跌三段组成，是最高效稳健的买入模式。该形态在末端介入可获得最佳盈亏比，后续可能走 V 型反转或演变成新中枢，相比追涨杀跌其直接大亏概率最低。[3]",
+   "citation": true,
+   "consistency": 0.6196,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q001",
+   "type": "card_concept",
+   "question": "「AI 产业投资传导链条」的核心要点是什么？",
+   "gold_doc_ids": [
+    "C:009"
+   ],
+   "top_ids": [
+    "C:009",
+    "U:learn_视频号学习_第二期_0027",
+    "U:learn_视频号学习_第二期_0008",
+    "U:learn_视频号学习_第二期_0040",
+    "C:015",
+    "U:learn_视频号学习_第二期_1099",
+    "U:learn_laomu_notes_0237",
+    "U:learn_视频号学习_第二期_0018",
+    "U:learn_视频号学习_第二期_0011",
+    "U:learn_视频号学习_第二期_1163"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "answer": "「AI 产业投资传导链条」的核心逻辑是沿着“模型降价→应用放量→芯片需求→制造扩产”的路径自上而下传导。在此过程中，景气验证不断下沉，具体表现为模型端价格战降低应用门槛、端侧与 AIoT 场景加速打开，以及芯片端新品周期临近带来的渗透率与单机价值量双升 [4]。",
+   "citation": true,
+   "consistency": 0.5772,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q017",
+   "type": "card_concept",
+   "question": "「新型电池产业发展规划」的核心要点是什么？",
+   "gold_doc_ids": [
+    "C:262"
+   ],
+   "top_ids": [
+    "C:262",
+    "C:141",
+    "C:215",
+    "C:102",
+    "C:259",
+    "C:268",
+    "C:263",
+    "C:137",
+    "C:101",
+    "C:049"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 1.0,
+   "answer": "根据《新型电池产业发展“十五五”规划》，到 2030 年全固态电池将初步实现规模化应用，长寿命锂电池循环寿命需达到 15000 次，且头部企业产品缺陷率应降至 PPB 级。该规划还强调要持续增强全链条创新能力以推动产业发展。[5]",
+   "citation": true,
+   "consistency": 0.56,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q005",
+   "type": "card_concept",
+   "question": "「中小行负债端收缩成因」的核心要点是什么？",
+   "gold_doc_ids": [
+    "C:124"
+   ],
+   "top_ids": [
+    "C:124",
+    "C:103",
+    "C:090",
+    "C:057",
+    "U:learn_视频号学习_8博主_1007",
+    "U:learn_视频号学习_8博主_1004",
+    "C:290",
+    "U:learn_视频号学习_8博主_1010",
+    "U:learn_视频号学习_8博主_0585",
+    "U:learn_laomu_notes_0070"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "answer": "中小行负债端收缩主要受存款定价优势消失、监管约束久期与集中度、FTP 考核倒挂及利率低位下“落袋为安”诉求等多重因素驱动。这既包含主动收缩长端的防御成分，也叠加了核心存款流失带来的被动缩表压力。[5]",
+   "citation": true,
+   "consistency": 0.5547,
+   "refusal": false,
+   "generated": true
+  }
+ ]
+}

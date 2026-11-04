@@ -12,7 +12,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 import hq_daily_run as d  # noqa: E402
 
 
-def _fake(lead, date, base, timeout):
+def _fake(lead, date, base, timeout, data_brief=""):
     text = json.dumps({"status": "amber",
                        "yesterday_done": [lead["lead"] + " 昨天完成"],
                        "in_progress": [lead["lead"] + " 正在做"],
@@ -38,10 +38,10 @@ def test_run_all_seats_and_write(monkeypatch, tmp_path):
 
 
 def test_partial_failure_is_visible(monkeypatch, tmp_path):
-    def flaky(lead, date, base, timeout):
+    def flaky(lead, date, base, timeout, data_brief=""):
         if lead["lead"] == "QA1":
             raise RuntimeError("cloud timeout")
-        return _fake(lead, date, base, timeout)
+        return _fake(lead, date, base, timeout, data_brief)
     monkeypatch.setattr(d, "_ask", flaky)
     r = d.run("2026-11-04", write=True, out_dir=tmp_path)
     assert r["ok"] is False
@@ -68,3 +68,44 @@ def test_main_no_write_summary(monkeypatch, capsys):
     import json as _j
     out = _j.loads(capsys.readouterr().out)
     assert out["ok"] and out["submitted"] == 17 and out["out_dir"] is None
+
+
+def test_brief_digest(tmp_path):
+    import json as _j
+    p = tmp_path / "b.json"
+    p.write_text(_j.dumps({
+        "as_of": "2026-11-04T05:00:00+08:00",
+        "data_health": {"assets": {"all": 399, "registered": 350, "exposed": 80},
+                        "catalog": {"version": 38, "tables": 304},
+                        "freshness": {"data_date": "2026-11-02", "age_days": 2}},
+        "alarms": [{"code": "today_zero", "summary": "雪球 today 0"}],
+        "mining_signals": [{"id": "selection.executability", "summary": "0 获批/picks=0"}],
+        "questions": [{"to": "A0", "q": "观察还是空仓？"}],
+        "boundaries": ["不是交易建议"],
+    }, ensure_ascii=False), encoding="utf-8")
+    s = d._brief_digest(p)
+    assert "数据简报" in s and "399" in s and "雪球 today 0" in s
+    assert "selection.executability" in s and "观察还是空仓" in s and "不是交易建议" in s
+    assert d._brief_digest(tmp_path / "missing.json") == ""
+
+
+def test_briefing_contains_data_brief(monkeypatch, tmp_path):
+    monkeypatch.setattr(d, "_ask", _fake)
+    txt = "数据简报 2026-11-04\n资产 all=399 registered=350\n告警[collector_lag] TDX 58h"
+    r = d.run("2026-11-04", write=True, out_dir=tmp_path, data_brief=txt)
+    assert r["briefing"]["data_brief"] == txt
+    md = (tmp_path / "a0_briefing.md").read_text(encoding="utf-8")
+    assert "## 数据简报（DATA1 张松）" in md and "TDX 58h" in md
+    assert json.loads((tmp_path / "rollup.json").read_text(encoding="utf-8"))["briefing"]["data_brief"] == txt
+
+
+def test_run_notifies_decision_requests_to_inbox(monkeypatch, tmp_path):
+    sys.path.insert(0, str(ROOT / "agent_platform"))
+    from gateway import inbox_gateway
+    inbox_gateway.set_store(tmp_path / "bridge")
+    monkeypatch.setattr(d, "_ask", _fake)
+    r = d.run("2026-11-04", write=False, notify_inbox=True)
+    assert r["ok"] and len(r["notifications"]) == 17
+    assert all(x.get("ok") for x in r["notifications"])
+    files = list((tmp_path / "bridge" / "inbox").glob("*.json"))
+    assert len(files) == 17

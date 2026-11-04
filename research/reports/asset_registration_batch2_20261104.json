@@ -1,0 +1,1251 @@
+{
+ "tool": "asset_registration",
+ "mode": "apply",
+ "generated_at": "2026-11-04T03:59:30+08:00",
+ "task": "task-169 W11 数据仓注册批次2（12 项 corpus_layer 补全）",
+ "catalog_path": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\catalog.json",
+ "registry_path": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\warehouse_registry.json",
+ "draft_path": "C:\\项目\\老田的AI助手\\research\\reports\\data_asset_metadata_draft_20261104.json",
+ "pass": true,
+ "error": null,
+ "register_total": 48,
+ "batch": "manual",
+ "selected_count": 12,
+ "selected_ids": [
+  "research_shadow",
+  "yt_raw_zip",
+  "yt_normalized",
+  "yt_cleaned_comments",
+  "yt_knowledge_units",
+  "yt_faq",
+  "yt_index",
+  "yt_learning_cards",
+  "yt_briefs",
+  "yt_review",
+  "yt_reports",
+  "yt_learning.db"
+ ],
+ "not_selected": [
+  {
+   "id": "xq_xq_status_classified",
+   "label": "xueqiu_info.xq_status_classified",
+   "auto_generated": true
+  },
+  {
+   "id": "research_hypotheses",
+   "label": "hypotheses.hypotheses",
+   "auto_generated": true
+  },
+  {
+   "id": "paper_orders",
+   "label": "paper.orders",
+   "auto_generated": true
+  },
+  {
+   "id": "paper_ledger",
+   "label": "paper.ledger",
+   "auto_generated": true
+  },
+  {
+   "id": "paper_positions",
+   "label": "paper.positions",
+   "auto_generated": true
+  },
+  {
+   "id": "paper_equity_marks",
+   "label": "paper.equity_marks",
+   "auto_generated": true
+  },
+  {
+   "id": "paper_positions_snapshot",
+   "label": "paper.positions_snapshot",
+   "auto_generated": true
+  },
+  {
+   "id": "paper_decision_snapshots",
+   "label": "paper.decision_snapshots",
+   "auto_generated": true
+  },
+  {
+   "id": "quant_chanlun_pool",
+   "label": "quant_db.chanlun_pool",
+   "auto_generated": true
+  },
+  {
+   "id": "quant_nine_dim_rc",
+   "label": "quant_db.nine_dim_rc",
+   "auto_generated": true
+  },
+  {
+   "id": "quant_nine_dim_rc_meta",
+   "label": "quant_db.nine_dim_rc_meta",
+   "auto_generated": true
+  },
+  {
+   "id": "quant_nine_dim_fina",
+   "label": "quant_db.nine_dim_fina",
+   "auto_generated": true
+  },
+  {
+   "id": "quant_nine_dim_fc",
+   "label": "quant_db.nine_dim_fc",
+   "auto_generated": true
+  },
+  {
+   "id": "quant_nine_dim_fc_meta",
+   "label": "quant_db.nine_dim_fc_meta",
+   "auto_generated": true
+  },
+  {
+   "id": "news_runs",
+   "label": "news_db.runs",
+   "auto_generated": true
+  },
+  {
+   "id": "news_ai_briefs",
+   "label": "news_db.ai_briefs",
+   "auto_generated": true
+  },
+  {
+   "id": "news_ai_reviews",
+   "label": "news_db.ai_reviews",
+   "auto_generated": true
+  },
+  {
+   "id": "news_quotes",
+   "label": "news_db.quotes",
+   "auto_generated": true
+  },
+  {
+   "id": "news_jev_review_queue",
+   "label": "news_db.jev_review_queue",
+   "auto_generated": true
+  },
+  {
+   "id": "automation_runs",
+   "label": "automation_runs",
+   "auto_generated": true
+  },
+  {
+   "id": "yt_transcripts",
+   "label": "yt_transcripts（转写）",
+   "auto_generated": true
+  },
+  {
+   "id": "yt_distill",
+   "label": "yt_distill（知识提炼）",
+   "auto_generated": true
+  },
+  {
+   "id": "yt_rag",
+   "label": "yt_rag（4,926 chunks + packed 62,401）",
+   "auto_generated": true
+  },
+  {
+   "id": "yt_dim_channel",
+   "label": "yt_learning_db.dim_channel",
+   "auto_generated": true
+  },
+  {
+   "id": "yt_dim_topic",
+   "label": "yt_learning_db.dim_topic",
+   "auto_generated": true
+  },
+  {
+   "id": "yt_dim_video",
+   "label": "yt_learning_db.dim_video",
+   "auto_generated": true
+  },
+  {
+   "id": "yt_bridge_video_topic",
+   "label": "yt_learning_db.bridge_video_topic",
+   "auto_generated": true
+  },
+  {
+   "id": "yt_fact_comment",
+   "label": "yt_learning_db.fact_comment",
+   "auto_generated": true
+  },
+  {
+   "id": "yt_fact_knowledge_unit",
+   "label": "yt_learning_db.fact_knowledge_unit",
+   "auto_generated": true
+  },
+  {
+   "id": "yt_fact_transcript",
+   "label": "yt_learning_db.fact_transcript",
+   "auto_generated": true
+  },
+  {
+   "id": "yt_fact_faq_semantic",
+   "label": "yt_learning_db.fact_faq_semantic",
+   "auto_generated": true
+  },
+  {
+   "id": "yt_bridge_faq_comment",
+   "label": "yt_learning_db.bridge_faq_comment",
+   "auto_generated": true
+  },
+  {
+   "id": "yt_meta_faq_build",
+   "label": "yt_learning_db.meta_faq_build",
+   "auto_generated": true
+  },
+  {
+   "id": "yt_fact_transcript_seg",
+   "label": "yt_learning_db.fact_transcript_seg",
+   "auto_generated": true
+  },
+  {
+   "id": "yt_meta_etl",
+   "label": "yt_learning_db.meta_etl",
+   "auto_generated": true
+  },
+  {
+   "id": "yt_fact_transcript_signal",
+   "label": "yt_learning_db.fact_transcript_signal",
+   "auto_generated": true
+  }
+ ],
+ "auto_selected": 0,
+ "excluded_manual": [
+  {
+   "id": "xq_xq_status_classified",
+   "label": "xueqiu_info.xq_status_classified",
+   "auto_generated": true
+  },
+  {
+   "id": "research_hypotheses",
+   "label": "hypotheses.hypotheses",
+   "auto_generated": true
+  },
+  {
+   "id": "paper_orders",
+   "label": "paper.orders",
+   "auto_generated": true
+  },
+  {
+   "id": "paper_ledger",
+   "label": "paper.ledger",
+   "auto_generated": true
+  },
+  {
+   "id": "paper_positions",
+   "label": "paper.positions",
+   "auto_generated": true
+  },
+  {
+   "id": "paper_equity_marks",
+   "label": "paper.equity_marks",
+   "auto_generated": true
+  },
+  {
+   "id": "paper_positions_snapshot",
+   "label": "paper.positions_snapshot",
+   "auto_generated": true
+  },
+  {
+   "id": "paper_decision_snapshots",
+   "label": "paper.decision_snapshots",
+   "auto_generated": true
+  },
+  {
+   "id": "quant_chanlun_pool",
+   "label": "quant_db.chanlun_pool",
+   "auto_generated": true
+  },
+  {
+   "id": "quant_nine_dim_rc",
+   "label": "quant_db.nine_dim_rc",
+   "auto_generated": true
+  },
+  {
+   "id": "quant_nine_dim_rc_meta",
+   "label": "quant_db.nine_dim_rc_meta",
+   "auto_generated": true
+  },
+  {
+   "id": "quant_nine_dim_fina",
+   "label": "quant_db.nine_dim_fina",
+   "auto_generated": true
+  },
+  {
+   "id": "quant_nine_dim_fc",
+   "label": "quant_db.nine_dim_fc",
+   "auto_generated": true
+  },
+  {
+   "id": "quant_nine_dim_fc_meta",
+   "label": "quant_db.nine_dim_fc_meta",
+   "auto_generated": true
+  },
+  {
+   "id": "news_runs",
+   "label": "news_db.runs",
+   "auto_generated": true
+  },
+  {
+   "id": "news_ai_briefs",
+   "label": "news_db.ai_briefs",
+   "auto_generated": true
+  },
+  {
+   "id": "news_ai_reviews",
+   "label": "news_db.ai_reviews",
+   "auto_generated": true
+  },
+  {
+   "id": "news_quotes",
+   "label": "news_db.quotes",
+   "auto_generated": true
+  },
+  {
+   "id": "news_jev_review_queue",
+   "label": "news_db.jev_review_queue",
+   "auto_generated": true
+  },
+  {
+   "id": "automation_runs",
+   "label": "automation_runs",
+   "auto_generated": true
+  },
+  {
+   "id": "yt_transcripts",
+   "label": "yt_transcripts（转写）",
+   "auto_generated": true
+  },
+  {
+   "id": "yt_distill",
+   "label": "yt_distill（知识提炼）",
+   "auto_generated": true
+  },
+  {
+   "id": "yt_rag",
+   "label": "yt_rag（4,926 chunks + packed 62,401）",
+   "auto_generated": true
+  },
+  {
+   "id": "yt_dim_channel",
+   "label": "yt_learning_db.dim_channel",
+   "auto_generated": true
+  },
+  {
+   "id": "yt_dim_topic",
+   "label": "yt_learning_db.dim_topic",
+   "auto_generated": true
+  },
+  {
+   "id": "yt_dim_video",
+   "label": "yt_learning_db.dim_video",
+   "auto_generated": true
+  },
+  {
+   "id": "yt_bridge_video_topic",
+   "label": "yt_learning_db.bridge_video_topic",
+   "auto_generated": true
+  },
+  {
+   "id": "yt_fact_comment",
+   "label": "yt_learning_db.fact_comment",
+   "auto_generated": true
+  },
+  {
+   "id": "yt_fact_knowledge_unit",
+   "label": "yt_learning_db.fact_knowledge_unit",
+   "auto_generated": true
+  },
+  {
+   "id": "yt_fact_transcript",
+   "label": "yt_learning_db.fact_transcript",
+   "auto_generated": true
+  },
+  {
+   "id": "yt_fact_faq_semantic",
+   "label": "yt_learning_db.fact_faq_semantic",
+   "auto_generated": true
+  },
+  {
+   "id": "yt_bridge_faq_comment",
+   "label": "yt_learning_db.bridge_faq_comment",
+   "auto_generated": true
+  },
+  {
+   "id": "yt_meta_faq_build",
+   "label": "yt_learning_db.meta_faq_build",
+   "auto_generated": true
+  },
+  {
+   "id": "yt_fact_transcript_seg",
+   "label": "yt_learning_db.fact_transcript_seg",
+   "auto_generated": true
+  },
+  {
+   "id": "yt_meta_etl",
+   "label": "yt_learning_db.meta_etl",
+   "auto_generated": true
+  },
+  {
+   "id": "yt_fact_transcript_signal",
+   "label": "yt_learning_db.fact_transcript_signal",
+   "auto_generated": true
+  }
+ ],
+ "before": {
+  "catalog_version": 37,
+  "catalog_tables": 292,
+  "catalog_sha256": "92fd2757bd69da451a4931b25c006ef4dfa46dbf49348f2e4758444c40ee20f6",
+  "registry_sha256": "43ff23b1d77614ebf5c19133ca48411bf5025b5b2f30d631dbfb4ac6fe9c746d",
+  "registry_physical": 292,
+  "registry_display": 258
+ },
+ "dry_run": {
+  "add_count": 12,
+  "expected": 12,
+  "conflicts": [],
+  "missing_store": [],
+  "empty_schema": [],
+  "duplicate_ids": [],
+  "warnings": [],
+  "clean": true,
+  "ids": [
+   "research_shadow",
+   "yt_raw_zip",
+   "yt_normalized",
+   "yt_cleaned_comments",
+   "yt_knowledge_units",
+   "yt_faq",
+   "yt_index",
+   "yt_learning_cards",
+   "yt_briefs",
+   "yt_review",
+   "yt_reports",
+   "yt_learning.db"
+  ]
+ },
+ "granularity_decisions": [
+  {
+   "id": "research_shadow",
+   "label": "research_shadow",
+   "store": "research/shadow",
+   "decision": "影子盘台账目录（baseline/s08/s10/s11/selection 5 个子资产，各含 ledger.jsonl + shadow_report.json）；以目录资产登记，schema 取 ledger.jsonl 文件级字段，主键=子目录+date，D 频",
+   "layout": "shadow_ledger_dir",
+   "schema": [
+    "subdir",
+    "date",
+    "ret",
+    "net",
+    "turnover",
+    "n_positions"
+   ],
+   "date_col": "date",
+   "code_col": null,
+   "primary_key": [
+    "subdir",
+    "date"
+   ],
+   "freq": "D",
+   "static_no_date": false,
+   "evidence": {
+    "store_exists": true,
+    "kind": "dir",
+    "top_entries": 5,
+    "top_files": 0,
+    "top_dirs": 5,
+    "recursive_files": 12,
+    "ext_dist": {
+     ".json": 6,
+     ".jsonl": 5,
+     ".flag": 1
+    },
+    "sample_files": [],
+    "latest_mtime": "2026-11-02",
+    "schema_sample": {
+     "file": "baseline\\ledger.jsonl",
+     "kind": "jsonl",
+     "columns": [
+      "date",
+      "ret",
+      "net",
+      "turnover",
+      "n_positions"
+     ]
+    }
+   }
+  },
+  {
+   "id": "yt_raw_zip",
+   "label": "yt_raw_zip（948 ZIP/清单/sha256）",
+   "store": "C:/项目/知识库/01_数据分包",
+   "decision": "分包归档：780 个 .zip + 同名 .manifest.json + .sha256（另含 补充更正_v2 子目录）；catalog 粒度=包级资产（不逐文件登记），主键 package_id，date_col=manifest.created_at",
+   "layout": "zip_batch_manifest",
+   "schema": [
+    "package_id",
+    "scope",
+    "created_at",
+    "counts",
+    "members",
+    "packaging_integrity",
+    "sha256"
+   ],
+   "date_col": "created_at",
+   "code_col": null,
+   "primary_key": [
+    "package_id"
+   ],
+   "freq": "batch",
+   "static_no_date": false,
+   "evidence": {
+    "store_exists": true,
+    "kind": "dir",
+    "top_entries": 2341,
+    "top_files": 2340,
+    "top_dirs": 1,
+    "recursive_files": 2844,
+    "ext_dist": {
+     ".zip": 948,
+     ".json": 948,
+     ".sha256": 948
+    },
+    "sample_files": [
+     "youtube-initial100-20261019T035748Z-777430deb3f6.zip",
+     "youtube-initial100-20261019T035748Z-777430deb3f6.zip.manifest.json",
+     "youtube-initial100-20261019T035748Z-777430deb3f6.zip.sha256",
+     "youtube-initial100-20261019T040654Z-6a34aec0e9fa.zip",
+     "youtube-initial100-20261019T040654Z-6a34aec0e9fa.zip.manifest.json"
+    ],
+    "latest_mtime": "2026-10-26"
+   }
+  },
+  {
+   "id": "yt_normalized",
+   "label": "yt_normalized（videos/comments/channel_map parquet）",
+   "store": "C:/项目/知识库/10_规范化",
+   "decision": "规范化语料目录（videos/comments/channel_map 的 parquet+jsonl）；目录资产 schema 以 comments 主表字段为准，主键=video_id+comment_id，事件时间 published_at",
+   "layout": "corpus_parquet_jsonl",
+   "schema": [
+    "video_id",
+    "comment_id",
+    "parent",
+    "text",
+    "author_hash",
+    "like_count",
+    "published_at",
+    "collected_at",
+    "snapshot_id"
+   ],
+   "date_col": "published_at",
+   "code_col": "video_id",
+   "primary_key": [
+    "video_id",
+    "comment_id"
+   ],
+   "freq": "event",
+   "static_no_date": false,
+   "evidence": {
+    "store_exists": true,
+    "kind": "dir",
+    "top_entries": 6,
+    "top_files": 5,
+    "top_dirs": 1,
+    "recursive_files": 12,
+    "ext_dist": {
+     ".parquet": 9,
+     ".jsonl": 3
+    },
+    "sample_files": [
+     "comments.jsonl",
+     "video_channel_map.jsonl",
+     "video_channel_map.parquet",
+     "videos.jsonl",
+     "videos.parquet"
+    ],
+    "latest_mtime": "2026-10-30",
+    "schema_sample": {
+     "file": "comments\\part-0000.parquet",
+     "kind": "parquet",
+     "columns": [
+      "video_id",
+      "comment_id",
+      "parent",
+      "text",
+      "author_hash",
+      "like_count",
+      "published_at",
+      "collected_at",
+      "snapshot_id"
+     ]
+    }
+   }
+  },
+  {
+   "id": "yt_cleaned_comments",
+   "label": "yt_cleaned_comments（清洗+PII脱敏）",
+   "store": "C:/项目/知识库/20_清洗",
+   "decision": "清洗+PII 脱敏评论语料（comments_clean + laomu_notes + 两期视频号学习子集）；schema 以 comments_clean parquet 为准（含 pii_masked/text_sha1）",
+   "layout": "corpus_clean_dir",
+   "schema": [
+    "video_id",
+    "comment_id",
+    "parent",
+    "text",
+    "author_hash",
+    "like_count",
+    "published_at",
+    "collected_at",
+    "snapshot_id",
+    "pii_masked",
+    "text_sha1"
+   ],
+   "date_col": "published_at",
+   "code_col": "video_id",
+   "primary_key": [
+    "video_id",
+    "comment_id"
+   ],
+   "freq": "event",
+   "static_no_date": false,
+   "evidence": {
+    "store_exists": true,
+    "kind": "dir",
+    "top_entries": 4,
+    "top_files": 0,
+    "top_dirs": 4,
+    "recursive_files": 38,
+    "ext_dist": {
+     ".md": 24,
+     ".parquet": 14
+    },
+    "sample_files": [],
+    "latest_mtime": "2026-11-04",
+    "schema_sample": {
+     "file": "comments_clean\\part-0000.parquet",
+     "kind": "parquet",
+     "columns": [
+      "video_id",
+      "comment_id",
+      "parent",
+      "text",
+      "author_hash",
+      "like_count",
+      "published_at",
+      "collected_at",
+      "snapshot_id",
+      "pii_masked",
+      "text_sha1"
+     ]
+    }
+   }
+  },
+  {
+   "id": "yt_knowledge_units",
+   "label": "yt_knowledge_units（知识单元）",
+   "store": "C:/项目/知识库/30_知识单元",
+   "decision": "知识单元 draft/effective 共 7 个 jsonl；文件级 schema，主键 unit_id，按 project_id+created_at 组织",
+   "layout": "corpus_jsonl",
+   "schema": [
+    "unit_id",
+    "project_id",
+    "claim",
+    "evidence",
+    "status",
+    "created_at"
+   ],
+   "date_col": "created_at",
+   "code_col": "project_id",
+   "primary_key": [
+    "unit_id"
+   ],
+   "freq": "event",
+   "static_no_date": false,
+   "evidence": {
+    "store_exists": true,
+    "kind": "dir",
+    "top_entries": 7,
+    "top_files": 7,
+    "top_dirs": 0,
+    "recursive_files": 7,
+    "ext_dist": {
+     ".jsonl": 7
+    },
+    "sample_files": [
+     "laomu_notes_units_draft.jsonl",
+     "laomu_notes_units_effective.jsonl",
+     "pilot_videos.jsonl",
+     "视频号学习_8博主_units_draft.jsonl",
+     "视频号学习_8博主_units_effective.jsonl"
+    ],
+    "latest_mtime": "2026-11-04",
+    "schema_sample": {
+     "file": "laomu_notes_units_draft.jsonl",
+     "kind": "jsonl",
+     "columns": [
+      "unit_id",
+      "project_id",
+      "claim",
+      "evidence",
+      "status",
+      "created_at"
+     ]
+    }
+   }
+  },
+  {
+   "id": "yt_faq",
+   "label": "yt_faq（FAQ 语义归并 133 条）",
+   "store": "C:/项目/知识库/37_FAQ挖掘",
+   "decision": "FAQ 挖掘产物（json/jsonl/py/log/npy 混合，19 文件）；目录资产无统一日期列 → static_no_date=true，schema 取 faq_cluster_labels.jsonl，主键 cluster_id，按构建批次(event)更新",
+   "layout": "faq_assets_mixed",
+   "schema": [
+    "cluster_id",
+    "size",
+    "like_sum",
+    "sample_examples",
+    "n_videos",
+    "ok",
+    "is_technical",
+    "faq_en",
+    "faq_zh",
+    "topic"
+   ],
+   "date_col": null,
+   "code_col": null,
+   "primary_key": [
+    "cluster_id"
+   ],
+   "freq": "event",
+   "static_no_date": true,
+   "evidence": {
+    "store_exists": true,
+    "kind": "dir",
+    "top_entries": 19,
+    "top_files": 19,
+    "top_dirs": 0,
+    "recursive_files": 19,
+    "ext_dist": {
+     ".json": 6,
+     ".py": 5,
+     ".jsonl": 5,
+     ".log": 2,
+     ".npy": 1
+    },
+    "sample_files": [
+     "build_faq.py",
+     "build_faq_semantic.py",
+     "build_input_package.py",
+     "build_product_needs.py",
+     "emb_faq_bgem3.meta.json"
+    ],
+    "latest_mtime": "2026-11-01",
+    "schema_sample": {
+     "file": "faq_cluster_labels.jsonl",
+     "kind": "jsonl",
+     "columns": [
+      "cluster_id",
+      "size",
+      "like_sum",
+      "sample_examples",
+      "n_videos",
+      "ok",
+      "is_technical",
+      "faq_en",
+      "faq_zh",
+      "topic",
+      "answer_hint",
+      "confidence",
+      "src_video_id",
+      "src_video",
+      "src_channel",
+      "top_comment",
+      "top_like"
+     ]
+    }
+   }
+  },
+  {
+   "id": "yt_index",
+   "label": "yt_index（62,401 docs bge-m3）",
+   "store": "C:/项目/知识库/40_索引",
+   "decision": "62,401 docs bge-m3 索引（lite 索引 + full/shards）；目录资产 schema 取 shard jsonl 字段，主键 doc_id，按索引构建批次更新",
+   "layout": "index_shards",
+   "schema": [
+    "doc_id",
+    "video_id",
+    "channel_id",
+    "kind",
+    "title",
+    "upload_date",
+    "text"
+   ],
+   "date_col": "upload_date",
+   "code_col": "video_id",
+   "primary_key": [
+    "doc_id"
+   ],
+   "freq": "event",
+   "static_no_date": false,
+   "evidence": {
+    "store_exists": true,
+    "kind": "dir",
+    "top_entries": 2,
+    "top_files": 1,
+    "top_dirs": 1,
+    "recursive_files": 252,
+    "ext_dist": {
+     ".jsonl": 125,
+     ".npy": 125,
+     ".json": 2
+    },
+    "sample_files": [
+     "kb_lite_index.json"
+    ],
+    "latest_mtime": "2026-10-30",
+    "schema_sample": {
+     "file": "full\\shards\\shard-0000.jsonl",
+     "kind": "jsonl",
+     "columns": [
+      "doc_id",
+      "video_id",
+      "channel_id",
+      "kind",
+      "title",
+      "upload_date",
+      "text"
+     ]
+    }
+   }
+  },
+  {
+   "id": "yt_learning_cards",
+   "label": "yt_learning_cards（学习卡）",
+   "store": "C:/项目/知识库/60_学习卡",
+   "decision": "学习卡 Markdown 文件（cards_YYYYMMDD.md，按日）；目录资产以 file_path 为主键，trade_date 由文件名解析，D 频",
+   "layout": "markdown_daily",
+   "schema": [
+    "file_path",
+    "trade_date",
+    "title",
+    "body_markdown"
+   ],
+   "date_col": "trade_date",
+   "code_col": null,
+   "primary_key": [
+    "file_path"
+   ],
+   "freq": "D",
+   "static_no_date": false,
+   "evidence": {
+    "store_exists": true,
+    "kind": "dir",
+    "top_entries": 4,
+    "top_files": 4,
+    "top_dirs": 0,
+    "recursive_files": 4,
+    "ext_dist": {
+     ".md": 4
+    },
+    "sample_files": [
+     "cards_20261031.md",
+     "cards_20261101.md",
+     "cards_20261102.md",
+     "cards_20261103.md"
+    ],
+    "latest_mtime": "2026-11-03"
+   }
+  },
+  {
+   "id": "yt_briefs",
+   "label": "yt_briefs（简报）",
+   "store": "C:/项目/知识库/70_简报",
+   "decision": "简报 Markdown 文件（briefing_YYYYMMDD.md，按日）；以 file_path 为主键，trade_date 由文件名解析，D 频",
+   "layout": "markdown_daily",
+   "schema": [
+    "file_path",
+    "trade_date",
+    "title",
+    "body_markdown"
+   ],
+   "date_col": "trade_date",
+   "code_col": null,
+   "primary_key": [
+    "file_path"
+   ],
+   "freq": "D",
+   "static_no_date": false,
+   "evidence": {
+    "store_exists": true,
+    "kind": "dir",
+    "top_entries": 2,
+    "top_files": 2,
+    "top_dirs": 0,
+    "recursive_files": 2,
+    "ext_dist": {
+     ".md": 2
+    },
+    "sample_files": [
+     "briefing_20261031.md",
+     "briefing_20261101.md"
+    ],
+    "latest_mtime": "2026-11-01"
+   }
+  },
+  {
+   "id": "yt_review",
+   "label": "yt_review（复核）",
+   "store": "C:/项目/知识库/80_复核",
+   "decision": "复核报告成对文件（review_*.json + .md）；以 file_path 为主键，事件时间 generated_at，按复核批次更新",
+   "layout": "review_bundle",
+   "schema": [
+    "file_path",
+    "generated_at",
+    "seed",
+    "total_pool",
+    "items"
+   ],
+   "date_col": "generated_at",
+   "code_col": null,
+   "primary_key": [
+    "file_path"
+   ],
+   "freq": "event",
+   "static_no_date": false,
+   "evidence": {
+    "store_exists": true,
+    "kind": "dir",
+    "top_entries": 4,
+    "top_files": 4,
+    "top_dirs": 0,
+    "recursive_files": 4,
+    "ext_dist": {
+     ".json": 2,
+     ".md": 2
+    },
+    "sample_files": [
+     "review_20261031.json",
+     "review_20261031.md",
+     "review_20261031_verdicts.json",
+     "review_verdict_20261031.md"
+    ],
+    "latest_mtime": "2026-11-01"
+   }
+  },
+  {
+   "id": "yt_reports",
+   "label": "yt_reports（报告）",
+   "store": "C:/项目/知识库/90_报告",
+   "decision": "报告集（22 json + 11 md，含 corpus_manifest.json）；以 file_path 为主键，generated_at 为事件时间",
+   "layout": "report_bundle",
+   "schema": [
+    "file_path",
+    "generated_at",
+    "root",
+    "totals",
+    "packages"
+   ],
+   "date_col": "generated_at",
+   "code_col": null,
+   "primary_key": [
+    "file_path"
+   ],
+   "freq": "event",
+   "static_no_date": false,
+   "evidence": {
+    "store_exists": true,
+    "kind": "dir",
+    "top_entries": 33,
+    "top_files": 33,
+    "top_dirs": 0,
+    "recursive_files": 33,
+    "ext_dist": {
+     ".json": 22,
+     ".md": 11
+    },
+    "sample_files": [
+     "corpus_manifest.json",
+     "full_index_validate.json",
+     "llm_rerank_eval.json",
+     "p0_verify_report.json",
+     "p0_verify_report.md"
+    ],
+    "latest_mtime": "2026-10-30"
+   }
+  },
+  {
+   "id": "yt_learning.db",
+   "label": "yt_learning.db（星型模型 9 表，统一取数入口）",
+   "store": "C:/项目/知识库/00_数据仓",
+   "decision": "星型模型库级容器资产（yt_learning.db 共 15 表；其中 13 张星型表已在批次1 单独注册，本项只登记库容器，schema=已注册表名清单，避免与表级资产重复计覆盖）",
+   "layout": "sqlite_db_container",
+   "schema": [
+    "dim_channel",
+    "dim_topic",
+    "dim_video",
+    "bridge_video_topic",
+    "fact_comment",
+    "fact_knowledge_unit",
+    "fact_transcript",
+    "fact_faq_semantic",
+    "bridge_faq_comment",
+    "meta_faq_build",
+    "fact_transcript_seg",
+    "meta_etl",
+    "fact_transcript_signal"
+   ],
+   "date_col": null,
+   "code_col": null,
+   "primary_key": [
+    "table_name"
+   ],
+   "freq": "mixed",
+   "static_no_date": true,
+   "evidence": {
+    "store_exists": true,
+    "kind": "dir",
+    "top_entries": 5,
+    "top_files": 5,
+    "top_dirs": 0,
+    "recursive_files": 5,
+    "ext_dist": {
+     ".db": 2,
+     ".py": 1,
+     ".md": 1,
+     ".sql": 1
+    },
+    "sample_files": [
+     "README.md",
+     "etl_load.py",
+     "schema.sql",
+     "yt_learning.backup_20261102.db",
+     "yt_learning.db"
+    ],
+    "latest_mtime": "2026-11-04"
+   }
+  }
+ ],
+ "kg_precheck": {
+  "ok": true,
+  "last": "asset_registration_correction date=2026-11-04T03:42:45+08:00 action=apply catalog=v37 sha=92fd2757bd69da45 fixed=6 tables=292 physical=292 PASS exit=0",
+  "reason": ""
+ },
+ "backups": {
+  "catalog": {
+   "path": "C:\\项目\\老田的AI助手\\research\\reports\\backups\\catalog_before_task165_20261104-035930.json",
+   "sha256": "92fd2757bd69da451a4931b25c006ef4dfa46dbf49348f2e4758444c40ee20f6",
+   "bytes": 337132
+  },
+  "registry": {
+   "path": "C:\\项目\\老田的AI助手\\research\\reports\\backups\\warehouse_registry_before_task165_20261104-035930.json",
+   "sha256": "43ff23b1d77614ebf5c19133ca48411bf5025b5b2f30d631dbfb4ac6fe9c746d",
+   "bytes": 774883
+  }
+ },
+ "rollback_command": "Copy-Item 'C:\\项目\\老田的AI助手\\research\\reports\\backups\\catalog_before_task165_20261104-035930.json' 'C:\\项目\\老田的AI助手\\quant_backtest\\data\\catalog.json' -Force; Copy-Item 'C:\\项目\\老田的AI助手\\research\\reports\\backups\\warehouse_registry_before_task165_20261104-035930.json' 'C:\\项目\\老田的AI助手\\quant_backtest\\data\\warehouse_registry.json' -Force",
+ "after_catalog_write": {
+  "catalog_version": 38,
+  "catalog_tables": 304,
+  "catalog_sha256": "0de8839e57d7798f340145822fe48e47b71764868586aa74c7518f129b1348e4"
+ },
+ "registry_align_apply": {
+  "cmd": "C:\\项目\\py312\\python.exe -X utf8 C:\\项目\\老田的AI助手\\tools\\datawarehouse\\registry_align.py --apply --json",
+  "rc": 0,
+  "json": {
+   "tool": "registry_align",
+   "mode": "apply",
+   "generated_at": "2026-11-04T03:59:30+08:00",
+   "catalog": {
+    "path": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\catalog.json",
+    "version": 38,
+    "tables": 304,
+    "sha256": "0de8839e57d7798f340145822fe48e47b71764868586aa74c7518f129b1348e4"
+   },
+   "registry": {
+    "path": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\warehouse_registry.json",
+    "catalog_sha256": "92fd2757bd69da451a4931b25c006ef4dfa46dbf49348f2e4758444c40ee20f6",
+    "physical_count": 292,
+    "display_count": 258,
+    "generated_at": "2026-11-04T03:42:45.219411+08:00"
+   },
+   "match_before": false,
+   "diffs_before": [
+    {
+     "kind": "catalog_sha256",
+     "registry": "92fd2757bd69da451a4931b25c006ef4dfa46dbf49348f2e4758444c40ee20f6",
+     "catalog": "0de8839e57d7798f340145822fe48e47b71764868586aa74c7518f129b1348e4"
+    },
+    {
+     "kind": "catalog_tables_missing_from_registry",
+     "count": 12,
+     "tables": [
+      "research_shadow",
+      "yt_briefs",
+      "yt_cleaned_comments",
+      "yt_faq",
+      "yt_index",
+      "yt_knowledge_units",
+      "yt_learning.db",
+      "yt_learning_cards",
+      "yt_normalized",
+      "yt_raw_zip",
+      "yt_reports",
+      "yt_review"
+     ]
+    }
+   ],
+   "rebuild": {
+    "performed": true,
+    "backup": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\warehouse_registry.json.bak-20261104-035931",
+    "backup_rel": "quant_backtest/data/warehouse_registry.json.bak-20261104-035931",
+    "stats": {
+     "catalog_version": 38,
+     "catalog_tables": 304,
+     "old_physical_count": 292,
+     "added": 12,
+     "physical_count": 304,
+     "display_count": 258
+    },
+    "verify": {
+     "ok": true,
+     "checks": {
+      "json_valid": true,
+      "catalog_sha256_match": true,
+      "physical_count_match": true,
+      "display_count_match": true
+     }
+    }
+   },
+   "match_after": true,
+   "diffs_after": [],
+   "metadata": {
+    "tool": "metadata_consistency",
+    "code": 0,
+    "catalog_version": 38,
+    "tables": 304,
+    "physical_count": 304,
+    "issues": [],
+    "warnings": []
+   },
+   "kg_log": {
+    "ok": true,
+    "last": "asset_registration_correction date=2026-11-04T03:42:45+08:00 action=apply catalog=v37 sha=92fd2757bd69da45 fixed=6 tables=292 physical=292 PASS exit=0",
+    "reason": "",
+    "appended": "registry_align date=2026-11-04T03:59:31+08:00 action=apply catalog=v38 sha=0de8839e57d7798f physical=304 display=258 rebuild=ok exit=0",
+    "path": "C:\\Temp\\kg_sync_task.log"
+   },
+   "lock": {
+    "acquired": true,
+    "path": "C:\\Temp\\registry_align.lock",
+    "pid": 40864,
+    "started": "2026-11-04T03:59:31+08:00"
+   },
+   "rolled_back": false,
+   "exit_code": 0,
+   "error": null,
+   "elapsed_s": 0.0,
+   "info_before": []
+  },
+  "stdout_tail": "8:00\"\n },\n \"match_before\": false,\n \"diffs_before\": [\n  {\n   \"kind\": \"catalog_sha256\",\n   \"registry\": \"92fd2757bd69da451a4931b25c006ef4dfa46dbf49348f2e4758444c40ee20f6\",\n   \"catalog\": \"0de8839e57d7798f340145822fe48e47b71764868586aa74c7518f129b1348e4\"\n  },\n  {\n   \"kind\": \"catalog_tables_missing_from_registry\",\n   \"count\": 12,\n   \"tables\": [\n    \"research_shadow\",\n    \"yt_briefs\",\n    \"yt_cleaned_comments\",\n    \"yt_faq\",\n    \"yt_index\",\n    \"yt_knowledge_units\",\n    \"yt_learning.db\",\n    \"yt_learning_cards\",\n    \"yt_normalized\",\n    \"yt_raw_zip\",\n    \"yt_reports\",\n    \"yt_review\"\n   ]\n  }\n ],\n \"rebuild\": {\n  \"performed\": true,\n  \"backup\": \"C:\\\\项目\\\\老田的AI助手\\\\quant_backtest\\\\data\\\\warehouse_registry.json.bak-20261104-035931\",\n  \"backup_rel\": \"quant_backtest/data/warehouse_registry.json.bak-20261104-035931\",\n  \"stats\": {\n   \"catalog_version\": 38,\n   \"catalog_tables\": 304,\n   \"old_physical_count\": 292,\n   \"added\": 12,\n   \"physical_count\": 304,\n   \"display_count\": 258\n  },\n  \"verify\": {\n   \"ok\": true,\n   \"checks\": {\n    \"json_valid\": true,\n    \"catalog_sha256_match\": true,\n    \"physical_count_match\": true,\n    \"display_count_match\": true\n   }\n  }\n },\n \"match_after\": true,\n \"diffs_after\": [],\n \"metadata\": {\n  \"tool\": \"metadata_consistency\",\n  \"code\": 0,\n  \"catalog_version\": 38,\n  \"tables\": 304,\n  \"physical_count\": 304,\n  \"issues\": [],\n  \"warnings\": []\n },\n \"kg_log\": {\n  \"ok\": true,\n  \"last\": \"asset_registration_correction date=2026-11-04T03:42:45+08:00 action=apply catalog=v37 sha=92fd2757bd69da45 fixed=6 tables=292 physical=292 PASS exit=0\",\n  \"reason\": \"\",\n  \"appended\": \"registry_align date=2026-11-04T03:59:31+08:00 action=apply catalog=v38 sha=0de8839e57d7798f physical=304 display=258 rebuild=ok exit=0\",\n  \"path\": \"C:\\\\Temp\\\\kg_sync_task.log\"\n },\n \"lock\": {\n  \"acquired\": true,\n  \"path\": \"C:\\\\Temp\\\\registry_align.lock\",\n  \"pid\": 40864,\n  \"started\": \"2026-11-04T03:59:31+08:00\"\n },\n \"rolled_back\": false,\n \"exit_code\": 0,\n \"error\": null,\n \"elapsed_s\": 0.0,\n \"info_before\": []\n}",
+  "stderr_tail": "",
+  "elapsed_s": 0.34
+ },
+ "verify": {
+  "ok": true,
+  "metadata_consistency": {
+   "cmd": "C:\\项目\\py312\\python.exe -X utf8 C:\\项目\\老田的AI助手\\tools\\datawarehouse\\metadata_consistency.py --json",
+   "rc": 0,
+   "json": {
+    "tool": "metadata_consistency",
+    "code": 0,
+    "catalog_version": 38,
+    "tables": 304,
+    "physical_count": 304,
+    "issues": [],
+    "warnings": []
+   },
+   "stdout_tail": "{\n \"tool\": \"metadata_consistency\",\n \"code\": 0,\n \"catalog_version\": 38,\n \"tables\": 304,\n \"physical_count\": 304,\n \"issues\": [],\n \"warnings\": []\n}",
+   "stderr_tail": "",
+   "elapsed_s": 0.17
+  },
+  "registry_align_check": {
+   "cmd": "C:\\项目\\py312\\python.exe -X utf8 C:\\项目\\老田的AI助手\\tools\\datawarehouse\\registry_align.py --check --json",
+   "rc": 0,
+   "json": {
+    "tool": "registry_align",
+    "mode": "check",
+    "generated_at": "2026-11-04T03:59:31+08:00",
+    "catalog": {
+     "path": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\catalog.json",
+     "version": 38,
+     "tables": 304,
+     "sha256": "0de8839e57d7798f340145822fe48e47b71764868586aa74c7518f129b1348e4"
+    },
+    "registry": {
+     "path": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\warehouse_registry.json",
+     "catalog_sha256": "0de8839e57d7798f340145822fe48e47b71764868586aa74c7518f129b1348e4",
+     "physical_count": 304,
+     "display_count": 258,
+     "generated_at": "2026-11-04T03:59:31.068578+08:00"
+    },
+    "match_before": true,
+    "diffs_before": [],
+    "rebuild": {
+     "performed": false
+    },
+    "match_after": null,
+    "diffs_after": [],
+    "metadata": {
+     "tool": "metadata_consistency",
+     "code": 0,
+     "catalog_version": 38,
+     "tables": 304,
+     "physical_count": 304,
+     "issues": [],
+     "warnings": []
+    },
+    "kg_log": null,
+    "lock": null,
+    "rolled_back": false,
+    "exit_code": 0,
+    "error": null,
+    "elapsed_s": 0.07,
+    "info_before": []
+   },
+   "stdout_tail": "{\n \"tool\": \"registry_align\",\n \"mode\": \"check\",\n \"generated_at\": \"2026-11-04T03:59:31+08:00\",\n \"catalog\": {\n  \"path\": \"C:\\\\项目\\\\老田的AI助手\\\\quant_backtest\\\\data\\\\catalog.json\",\n  \"version\": 38,\n  \"tables\": 304,\n  \"sha256\": \"0de8839e57d7798f340145822fe48e47b71764868586aa74c7518f129b1348e4\"\n },\n \"registry\": {\n  \"path\": \"C:\\\\项目\\\\老田的AI助手\\\\quant_backtest\\\\data\\\\warehouse_registry.json\",\n  \"catalog_sha256\": \"0de8839e57d7798f340145822fe48e47b71764868586aa74c7518f129b1348e4\",\n  \"physical_count\": 304,\n  \"display_count\": 258,\n  \"generated_at\": \"2026-11-04T03:59:31.068578+08:00\"\n },\n \"match_before\": true,\n \"diffs_before\": [],\n \"rebuild\": {\n  \"performed\": false\n },\n \"match_after\": null,\n \"diffs_after\": [],\n \"metadata\": {\n  \"tool\": \"metadata_consistency\",\n  \"code\": 0,\n  \"catalog_version\": 38,\n  \"tables\": 304,\n  \"physical_count\": 304,\n  \"issues\": [],\n  \"warnings\": []\n },\n \"kg_log\": null,\n \"lock\": null,\n \"rolled_back\": false,\n \"exit_code\": 0,\n \"error\": null,\n \"elapsed_s\": 0.07,\n \"info_before\": []\n}",
+   "stderr_tail": "",
+   "elapsed_s": 0.22
+  }
+ },
+ "after": {
+  "catalog_version": 38,
+  "catalog_tables": 304,
+  "catalog_sha256": "0de8839e57d7798f340145822fe48e47b71764868586aa74c7518f129b1348e4",
+  "registry_sha256": "43ad008499f517eb1a8d5f108ec36263e1d1a592f153d055cb4af01e04bb6ed2",
+  "registry_physical": 304,
+  "registry_display": 258,
+  "added": [
+   "research_shadow",
+   "yt_briefs",
+   "yt_cleaned_comments",
+   "yt_faq",
+   "yt_index",
+   "yt_knowledge_units",
+   "yt_learning.db",
+   "yt_learning_cards",
+   "yt_normalized",
+   "yt_raw_zip",
+   "yt_reports",
+   "yt_review"
+  ]
+ },
+ "kg_append": {
+  "appended": "asset_registration date=2026-11-04T03:59:31+08:00 action=apply catalog=v38 sha=0de8839e57d7798f added=12 tables=304 physical=304 display=258 PASS exit=0",
+  "path": "C:\\Temp\\kg_sync_task.log"
+ },
+ "elapsed_s": 1.32,
+ "risks": [
+  "corpus_layer 以「目录/容器资产」粒度登记（不逐文件），文件级 schema 为采样值；逐文件清单/校验和需后续 manifest 化",
+  "目录型资产无统一日期列 → 按 task-169 决策标 static_no_date=true / freq=event（静态或批次口径），新鲜度检查对这些资产豁免",
+  "catalog/registry 属 .gitignore 数据文件，本任务不 commit；生产写入以 metadata_consistency+registry_align 复检为准",
+  "yt_learning.db 为库级容器资产，与批次1 已注册的 13 张星型表存在「容器+表」双登记：覆盖统计需按表级去重",
+  "yt_raw_zip 以包级登记（780 包），不含包内逐文件校验；包完整性由 .sha256 文件保障，建议后续补逐文件 manifest",
+  "markdown/py/log/npy 等非表格资产（learning_cards/briefs/faq 等）无行级 schema，下游取数需按文件路径+解析器约定"
+ ]
+}

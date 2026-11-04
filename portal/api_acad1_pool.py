@@ -18,16 +18,26 @@
 
 响应契约（``acad1_pool_api/v2``）
 ---------------------------------
+默认视图（2026-11-04 ACAD1-FULLDEFAULT 起）：``view=full``，即**每市场最新
+``pool_date`` 只读聚合**（当前 = CN12/HK10/US6/CRYPTO2 = 30，
+``source_mode=pg_official_aggregated``、``pool_id=ACAD1-POOL-PG-FULL-<maxdate>``、
+``pool_dates={...}``）。显式 ``?view=single`` 仍返回历史单日视图（当前 CN12=12，
+``source_mode=pg_official``）。缺 PG 时 full 降级为单日并显式
+``degraded_reason=full_view_requires_pg_aggregation...``，**不伪造 30**。
+
 在旧字段（ok/mode/trading_permitted/generated_at/date/pool_id/owner/data_date/
 freshness_days/stale/summary/plan/items/dates）基础上新增：
 
-- ``source_mode``：pg_official / projection / shadow
-- ``pool_id``：官方池身份（PG: ``ACAD1-POOL-PG-<YYYYMMDD>``）
-- ``pool_date``：业务池日（非数据日）
+- ``view``：single / full（默认 full；显式 single 保留旧单日视图）
+- ``source_mode``：pg_official / pg_official_aggregated / projection / shadow
+- ``pool_id``：官方池身份（single: ``ACAD1-POOL-PG-<YYYYMMDD>``；
+  full: ``ACAD1-POOL-PG-FULL-<YYYYMMDD>``）
+- ``pool_date``：业务池日（full 取各市场最新池日中的最大日）
+- ``pool_dates``：full 视图各市场最新池日映射（single 无此字段）
 - ``data_date``：数据日（新鲜度判定基准）
 - ``published_at``：发布/落库时刻（PG max(selected_at)）
 - ``review_status``：pool_reviewed / pool_published / shadow_only / unavailable
-- ``official``：仅 pg_official/projection 为 True；shadow 显式为 False
+- ``official``：pg_official / pg_official_aggregated / projection 为 True；shadow 显式 False
 - ``source_pool``：pg / projection / shadow（数据来源标识）
 - ``degraded_reason``：降级原因（正常为 None）
 
@@ -55,9 +65,19 @@ PG_DISABLE_ENV = "ACAD1_POOL_PG_DISABLE"
 
 RESPONSE_SCHEMA = "acad1_pool_api/v2"
 PROJECTION_SCHEMA = "acad1_pool_projection/v1"
-SOURCE_MODES = ("pg_official", "projection", "shadow")
-OFFICIAL_SOURCE_MODES = ("pg_official", "projection")
+SOURCE_MODES = ("pg_official", "pg_official_aggregated", "projection", "shadow")
+OFFICIAL_SOURCE_MODES = ("pg_official", "pg_official_aggregated", "projection")
 REVIEW_STATUSES = ("pool_reviewed", "pool_published", "shadow_only", "unavailable")
+# 视图口径（ACAD1-FULLVIEW 2026-11-04 → ACAD1-FULLDEFAULT 2026-11-04）：
+#   full   = 默认（对外）：每市场最新 pool_date 只读聚合（当前 = CN12/HK10/US6/CRYPTO2 = 30）；
+#   single = 显式 ?view=single：历史单日 max(pool_date) 视图（当前 CN12 = 12）。
+# 分层说明：`DEFAULT_VIEW` 是对外默认（HTTP /api/acad1/pool 与 CLI）；
+#           `load_pool_snapshot` 低层函数保留 `LOW_LEVEL_DEFAULT_VIEW="single"` 兼容默认，
+#           避免内部调用/单测/旧消费方因默认切换被动改变（pool_data 显式传 view）。
+VIEWS = ("single", "full")
+DEFAULT_VIEW = "full"                  # 对外默认：HTTP 端点 / CLI
+LOW_LEVEL_DEFAULT_VIEW = "single"      # 低层 load_pool_snapshot/builders 兼容默认
+AGGREGATED_SOURCE_MODE = "pg_official_aggregated"
 PG_TABLE = "public.v2_acad1_pool"
 PG_REVIEW_TABLE = "public.v2_acad1_review"
 PG_TIMEOUT_S = 3
@@ -241,6 +261,94 @@ def fetch_pg_pool(day=None, pg_reader=None):
     return payload, None
 
 
+def default_pg_reader_full(day=None):
+    """真实只读 PG 聚合查询（view=full）：每市场最新 pool_date 聚合。
+
+    返回 {rows, dates, pool_date, pool_dates, published_at, review_verdict,
+    aggregated=True}；`day` 传入时按「该日及以前」取每市场最新（默认全量最新）。
+    """
+    kwargs, reason = _pg_connect_kwargs()
+    if not kwargs:
+        raise RuntimeError(reason)
+    import psycopg2  # 产线既有依赖（Python311 已装）
+    from psycopg2.extras import RealDictCursor
+
+    where = ""
+    params = ()
+    if day:
+        where = " WHERE pool_date <= %s"
+        params = (day,)
+    sql = (
+        "WITH latest AS ("
+        "  SELECT market, max(pool_date) AS latest_pool_date FROM %s%s GROUP BY market"
+        ") "
+        "SELECT p.id, p.pool_date, p.strategy_id, p.code, p.name, p.market, p.signal, "
+        "p.score, p.selection_reason, p.selected_by, p.selected_at, p.status, p.data_date "
+        "FROM %s p "
+        "JOIN latest l ON p.market = l.market AND p.pool_date = l.latest_pool_date "
+        "ORDER BY p.market, p.code"
+    ) % (PG_TABLE, where, PG_TABLE)
+    conn = psycopg2.connect(**kwargs)
+    try:
+        try:
+            conn.set_session(readonly=True)
+        except Exception:  # noqa: BLE001 — 只读会话不可设时不阻断（SQL 本身只读）
+            pass
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(sql, params)
+            rows = [dict(item) for item in cur.fetchall()]
+            cur.execute(
+                "SELECT DISTINCT pool_date FROM %s ORDER BY pool_date DESC LIMIT 14"
+                % PG_TABLE
+            )
+            dates = [str(item["pool_date"]) for item in cur.fetchall()]
+            pool_dates = {}
+            for row in rows:
+                market = str(row.get("market") or "")
+                if market and market not in pool_dates:
+                    pool_dates[market] = str(row.get("pool_date") or "")
+            pool_date = max(pool_dates.values()) if pool_dates else (day or "")
+            review_verdict = None
+            if pool_date:
+                cur.execute(
+                    "SELECT verdict FROM %s WHERE review_date = %%s"
+                    " ORDER BY id DESC LIMIT 1" % PG_REVIEW_TABLE,
+                    (pool_date,),
+                )
+                got = cur.fetchone()
+                review_verdict = str(got["verdict"]) if got else None
+            stamps = [row.get("selected_at") for row in rows if row.get("selected_at")]
+            published_at = _iso(max(stamps)) if stamps else ""
+            return {
+                "rows": rows,
+                "dates": dates,
+                "pool_date": pool_date,
+                "pool_dates": dict(sorted(pool_dates.items())),
+                "published_at": published_at,
+                "review_verdict": review_verdict,
+                "aggregated": True,
+            }
+    finally:
+        try:
+            conn.close()
+        except Exception:  # noqa: BLE001
+            pass
+
+
+def fetch_pg_pool_full(pg_reader=None):
+    """PG 只读聚合读取（view=full；默认直连；测试可注入 pg_reader）。"""
+    if str(os.environ.get(PG_DISABLE_ENV, "")).strip() == "1":
+        return None, "pg_disabled_by_env"
+    try:
+        reader = pg_reader or default_pg_reader_full
+        payload = reader(None)
+    except Exception as exc:  # noqa: BLE001
+        return None, "pg_unavailable:%s" % str(exc)[:200]
+    if not isinstance(payload, dict) or not payload.get("rows"):
+        return None, "pg_no_rows"
+    return payload, None
+
+
 # ── 组装响应（旧字段兼容 + 新字段） ──────────────────────────────────
 def _legacy_items(pool, review):
     """旧 JSON 池 + 复盘记录 → items（保持 2026-10-30 页面契约）。"""
@@ -359,13 +467,15 @@ def _plan(rows, review, source_mode):
 
 
 def _response_base(source_mode, pool_id, pool_date, data_date, published_at,
-                   review_status, official, source_pool, degraded_reason):
+                   review_status, official, source_pool, degraded_reason,
+                   view=LOW_LEVEL_DEFAULT_VIEW):
     return {
         "ok": True,
         "schema": RESPONSE_SCHEMA,
         "mode": "acad1_pool_review",
         "trading_permitted": False,
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "view": view,
         "source_mode": source_mode,
         "official": official,
         "source_pool": source_pool,
@@ -378,8 +488,8 @@ def _response_base(source_mode, pool_id, pool_date, data_date, published_at,
     }
 
 
-def build_pg_response(payload, review):
-    """PG oofficial 官方池 → 兼容响应。"""
+def build_pg_response(payload, review, view=LOW_LEVEL_DEFAULT_VIEW):
+    """PG single-day 官方池 → 兼容响应（默认视图，行为与审计前一致）。"""
     rows = payload.get("rows") or []
     pool_date = str(payload.get("pool_date") or "")
     data_dates = [str(row.get("data_date") or "") for row in rows if row.get("data_date")]
@@ -396,11 +506,13 @@ def build_pg_response(payload, review):
         True,
         "pg",
         None,
+        view=view,
     )
     resp.update(
         {
             "date": pool_date,
             "owner": "ACAD1",
+            "count": len(items),
             "freshness_days": _freshness_days(data_date, pool_date),
             "stale": (_freshness_days(data_date, pool_date) or 0) > 1,
             "summary": _summary(items, review),
@@ -414,7 +526,67 @@ def build_pg_response(payload, review):
     return resp
 
 
-def build_projection_response(projection, review):
+def build_pg_aggregated_response(payload, review):
+    """PG view=full 只读聚合视图（每市场最新 pool_date → 当前 30 只）。
+
+    只读、不伪造：行全部来自 PG 只读聚合；跨日数据用 ``pool_dates`` 显式暴露，
+    ``freshness_days`` 取跨市场最大滞后，``stale`` 在任一市场滞后 > 1 天时为 true。
+    """
+    rows = payload.get("rows") or []
+    pool_dates = {
+        str(market): str(value)
+        for market, value in (payload.get("pool_dates") or {}).items()
+    }
+    pool_date = str(payload.get("pool_date") or "")
+    data_dates = [str(row.get("data_date") or "") for row in rows if row.get("data_date")]
+    data_date = max(data_dates) if data_dates else pool_date
+    review_status = "pool_reviewed" if payload.get("review_verdict") else "pool_published"
+    items = _new_items(rows, review, review_status)
+    freshness_by_market = {}
+    for row in rows:
+        market = str(row.get("market") or "NA")
+        # 相对「全池目标日(max pool_date)」计算各市场数据日滞后：
+        # 跨市场池日不一致时这里会显式 >0，页面 stale 徽标可见（不伪造新鲜）。
+        lag = _freshness_days(row.get("data_date"), pool_date)
+        current = freshness_by_market.get(market)
+        if lag is not None and (current is None or lag > current):
+            freshness_by_market[market] = lag
+    lags = [value for value in freshness_by_market.values() if value is not None]
+    freshness = max(lags) if lags else None
+    resp = _response_base(
+        AGGREGATED_SOURCE_MODE,
+        "ACAD1-POOL-PG-FULL-%s" % str(pool_date).replace("-", ""),
+        pool_date,
+        data_date,
+        str(payload.get("published_at") or ""),
+        review_status,
+        True,
+        "pg",
+        None,
+        view="full",
+    )
+    resp.update(
+        {
+            "date": pool_date,
+            "owner": "ACAD1",
+            "count": len(items),
+            "pool_dates": pool_dates,
+            "read_semantics": "market_latest_aggregated",
+            "freshness_days": freshness,
+            "freshness_by_market": dict(sorted(freshness_by_market.items())),
+            "stale": bool(freshness is not None and freshness > 1),
+            "summary": _summary(items, review),
+            "plan": _plan(rows, review, AGGREGATED_SOURCE_MODE),
+            "items": items,
+            "dates": list(payload.get("dates") or [pool_date]),
+            "review_verdict": payload.get("review_verdict"),
+            "pg_table": PG_TABLE,
+        }
+    )
+    return resp
+
+
+def build_projection_response(projection, review, view=LOW_LEVEL_DEFAULT_VIEW):
     """只读 PG→JSON 投影 → 兼容响应（source_mode=projection）。"""
     rows = list(projection.get("rows") or [])
     pool_date = str(projection.get("pool_date") or "")
@@ -433,11 +605,13 @@ def build_projection_response(projection, review):
         True,
         "projection",
         None,
+        view=view,
     )
     resp.update(
         {
             "date": pool_date,
             "owner": "ACAD1",
+            "count": len(items),
             "freshness_days": _freshness_days(data_date, pool_date),
             "stale": bool(projection.get("stale")),
             "summary": _summary(items, review),
@@ -451,7 +625,7 @@ def build_projection_response(projection, review):
     return resp
 
 
-def build_shadow_response(legacy, degraded_reason):
+def build_shadow_response(legacy, degraded_reason, view=LOW_LEVEL_DEFAULT_VIEW):
     """shadow 旧 JSON 池 → 响应（official=False，明确不是官方真源）。"""
     items = list(legacy.get("items") or [])
     day = str(legacy.get("date") or "")
@@ -466,11 +640,13 @@ def build_shadow_response(legacy, degraded_reason):
         False,
         "shadow",
         degraded_reason,
+        view=view,
     )
     resp.update(
         {
             "date": legacy.get("date") or "",
             "owner": legacy.get("owner") or "ACAD1",
+            "count": len(items),
             "freshness_days": legacy.get("freshness_days"),
             "stale": bool(legacy.get("stale")),
             "summary": legacy.get("summary") or _summary(items, {}),
@@ -541,36 +717,24 @@ def read_legacy_snapshot(day=None, pool_dir=None, review_dir=None):
 
 
 # ── 主入口（只读；供 pool_data / 自检 CLI 调用） ─────────────────────
-def load_pool_snapshot(
+def _load_single_snapshot(
     day=None,
     legacy_loader=None,
     pg_reader=None,
     projection_file=None,
     allow_pg=True,
     allow_projection=True,
+    view=LOW_LEVEL_DEFAULT_VIEW,
+    extra_reasons=None,
 ):
-    """官方池优先（PG→投影→shadow 兜底）的只读快照。
-
-    Parameters
-    ----------
-    day : str | None
-        池日 YYYY-MM-DD；None=最新。
-    legacy_loader : callable(day) -> dict | None
-        旧 JSON 兜底读取器（pool_data 注入；缺省用本模块默认目录）。
-    pg_reader : callable(day) -> dict | None
-        PG 只读读取器（测试注入；缺省直连）。
-    projection_file : str | None
-        投影文件路径（测试注入；缺省 env/默认 runtime 路径）。
-    allow_pg / allow_projection : bool
-        显式关闭某一级来源（测试/降级演练用）。
-    """
-    reasons = []
+    """单日视图（历史默认行为）：PG single-day → 投影 → shadow 兜底。"""
+    reasons = list(extra_reasons or [])
     reader = pg_reader or default_pg_reader
     if allow_pg:
         payload, reason = fetch_pg_pool(day, pg_reader=reader)
         if payload:
             if day is None or str(payload.get("pool_date")) == str(day):
-                return build_pg_response(payload, {})
+                return build_pg_response(payload, {}, view=view)
             reasons.append("pg_has_no_rows_for_day:%s" % day)
         elif reason:
             reasons.append(reason)
@@ -580,7 +744,7 @@ def load_pool_snapshot(
     if allow_projection:
         doc, errors = load_projection(projection_file)
         if doc and (day is None or str(doc.get("pool_date")) == str(day)):
-            return build_projection_response(doc, {})
+            return build_projection_response(doc, {}, view=view)
         reasons.extend(errors or ["projection_has_no_rows_for_day:%s" % day])
     else:
         reasons.append("projection_disabled_by_caller")
@@ -588,7 +752,9 @@ def load_pool_snapshot(
     legacy = (legacy_loader or read_legacy_snapshot)(day)
     if isinstance(legacy, dict) and legacy.get("ok"):
         if day is None or not legacy.get("date") or str(legacy.get("date")) == str(day):
-            return build_shadow_response(legacy, "; ".join(reasons) or "no_official_source")
+            return build_shadow_response(
+                legacy, "; ".join(reasons) or "no_official_source", view=view
+            )
         reasons.append("legacy_has_no_rows_for_day:%s" % day)
     return {
         "ok": False,
@@ -596,6 +762,7 @@ def load_pool_snapshot(
         "mode": "acad1_pool_review",
         "trading_permitted": False,
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "view": view,
         "source_mode": "shadow",
         "official": False,
         "source_pool": None,
@@ -607,6 +774,7 @@ def load_pool_snapshot(
         "degraded_reason": "; ".join(reasons) or "no_source_available",
         "date": day or "",
         "owner": "ACAD1",
+        "count": 0,
         "freshness_days": None,
         "stale": True,
         "summary": {"pool_total": 0, "reviewed": 0, "pending": 0,
@@ -618,37 +786,147 @@ def load_pool_snapshot(
     }
 
 
+def load_pool_snapshot(
+    day=None,
+    legacy_loader=None,
+    pg_reader=None,
+    pg_full_reader=None,
+    projection_file=None,
+    allow_pg=True,
+    allow_projection=True,
+    view=LOW_LEVEL_DEFAULT_VIEW,
+):
+    """官方池只读快照（低层兼容默认 ``single``；对外默认 ``full`` 见 pool_data/CLI）。
+
+    Parameters
+    ----------
+    day : str | None
+        池日 YYYY-MM-DD；None=最新。
+    legacy_loader : callable(day) -> dict | None
+        旧 JSON 兜底读取器（pool_data 注入；缺省用本模块默认目录）。
+    pg_reader : callable(day) -> dict | None
+        单日视图 PG 只读读取器（测试注入；缺省直连）。
+    pg_full_reader : callable(day) -> dict | None
+        full 视图 PG 只读聚合读取器（测试注入；缺省直连每市场最新聚合）。
+    projection_file : str | None
+        投影文件路径（测试注入；缺省 env/默认 runtime 路径）。
+    allow_pg / allow_projection : bool
+        显式关闭某一级来源（测试/降级演练用）。
+    view : str
+        ``full``（对外默认：每市场最新 pool_date 聚合，当前 30，
+        source_mode=``pg_official_aggregated``）或
+        ``single``（历史单日视图，当前 12；低层函数默认值，保持内部/旧调用兼容）。
+        未知值抛 ``ValueError``（fail-visible）。
+
+    注意：``/api/acad1/pool`` 的**对外默认**是 ``full``（由 ``pool_data`` 显式传入）；
+    本函数保留 ``single`` 作为低层兼容默认（`LOW_LEVEL_DEFAULT_VIEW`），
+    不改变既有内部调用/单测行为。
+
+    full 视图缺 PG 时不伪造 30：降级为单日视图（projection/shadow），
+    响应保留 ``view="full"`` 并在 ``degraded_reason`` 显式标注
+    ``full_view_requires_pg_aggregation``。
+    """
+    if view is None:
+        view = LOW_LEVEL_DEFAULT_VIEW
+    view = str(view).strip().lower()
+    if view not in VIEWS:
+        raise ValueError(
+            "未知 view: %r（允许: %s）" % (view, ", ".join(VIEWS))
+        )
+    if view == "full":
+        reasons = []
+        if allow_pg:
+            payload, reason = fetch_pg_pool_full(pg_full_reader)
+            if payload:
+                pool_dates = payload.get("pool_dates") or {}
+                if payload.get("aggregated") is not True or not pool_dates:
+                    # 聚合证据缺失（无 pool_dates/非聚合载荷）→ 不冒充 30，降级单日
+                    reasons.append("pg_full_payload_invalid:missing_pool_dates")
+                elif day is None or all(
+                    not value or str(value) <= str(day) for value in pool_dates.values()
+                ):
+                    return build_pg_aggregated_response(payload, {})
+                else:
+                    reasons.append("pg_full_no_rows_on_or_before:%s" % day)
+            elif reason:
+                reasons.append(reason)
+        else:
+            reasons.append("pg_disabled_by_caller")
+        snap = _load_single_snapshot(
+            day=day,
+            legacy_loader=legacy_loader,
+            pg_reader=pg_reader,
+            projection_file=projection_file,
+            allow_pg=allow_pg,
+            allow_projection=allow_projection,
+            view="full",
+            extra_reasons=reasons,
+        )
+        base_reason = snap.get("degraded_reason")
+        merged = ["full_view_requires_pg_aggregation"] + list(reasons)
+        if base_reason:
+            merged.extend(str(base_reason).split("; "))
+        deduped = list(dict.fromkeys(item.strip() for item in merged if item.strip()))
+        snap["degraded_reason"] = "; ".join(deduped)
+        return snap
+    return _load_single_snapshot(
+        day=day,
+        legacy_loader=legacy_loader,
+        pg_reader=pg_reader,
+        projection_file=projection_file,
+        allow_pg=allow_pg,
+        allow_projection=allow_projection,
+        view="single",
+    )
+
+
+
 def main(argv=None):
-    """只读自检 CLI：打印当前官方池来源与池数。"""
+    """只读自检 CLI：打印当前官方池来源与池数（支持 --view single|full）。"""
     import argparse
 
     parser = argparse.ArgumentParser(description="ACAD1 官方推荐池只读自检")
     parser.add_argument("--json", action="store_true")
     parser.add_argument("--day", default="")
     parser.add_argument("--no-pg", action="store_true")
+    parser.add_argument(
+        "--view", choices=VIEWS, default=DEFAULT_VIEW,
+        help="single=默认单日视图；full=每市场最新聚合只读视图",
+    )
     args = parser.parse_args(argv)
-    snap = load_pool_snapshot(day=args.day or None, allow_pg=not args.no_pg)
+    snap = load_pool_snapshot(
+        day=args.day or None,
+        allow_pg=not args.no_pg,
+        view=args.view,
+    )
     if args.json:
         print(json.dumps(snap, ensure_ascii=False, indent=1, default=str))
         return 0
     print(
-        "[acad1_pool] source_mode=%s official=%s review_status=%s"
-        % (snap.get("source_mode"), snap.get("official"), snap.get("review_status"))
+        "[acad1_pool] view=%s source_mode=%s official=%s review_status=%s"
+        % (snap.get("view"), snap.get("source_mode"), snap.get("official"),
+           snap.get("review_status"))
     )
     print(
         "[acad1_pool] pool_id=%s pool_date=%s data_date=%s published_at=%s"
         % (snap.get("pool_id"), snap.get("pool_date"),
            snap.get("data_date"), snap.get("published_at"))
     )
+    if snap.get("pool_dates"):
+        print("[acad1_pool] pool_dates=%s" % json.dumps(
+            snap.get("pool_dates"), ensure_ascii=False))
     print("[acad1_pool] count=%d degraded=%s"
           % (len(snap.get("items") or []), snap.get("degraded_reason")))
     return 0
 
 
 __all__ = [
+    "AGGREGATED_SOURCE_MODE",
     "DEFAULT_POOL_DIR",
     "DEFAULT_PROJECTION_PATH",
     "DEFAULT_REVIEW_DIR",
+    "DEFAULT_VIEW",
+    "LOW_LEVEL_DEFAULT_VIEW",
     "OFFICIAL_SOURCE_MODES",
     "PROJECTION_ENV",
     "PROJECTION_SCHEMA",
@@ -657,11 +935,15 @@ __all__ = [
     "RESPONSE_SCHEMA",
     "REVIEW_STATUSES",
     "SOURCE_MODES",
+    "VIEWS",
+    "build_pg_aggregated_response",
     "build_pg_response",
     "build_projection_response",
     "build_shadow_response",
     "default_pg_reader",
+    "default_pg_reader_full",
     "fetch_pg_pool",
+    "fetch_pg_pool_full",
     "load_pool_snapshot",
     "load_projection",
     "main",

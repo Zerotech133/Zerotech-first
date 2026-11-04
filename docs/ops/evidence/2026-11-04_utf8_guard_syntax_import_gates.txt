@@ -1,0 +1,10 @@
+﻿# 语法门 / 导入边界门（run in worktree, WO-MCP-UTF8-GUARD-20261104）
+
+# syntax: python tools/check_syntax.py --fail-on-warning
+语法门：4339 文件 / 错误 0 / 告警 0 / 45.42s
+result: PASS
+
+# import boundary: python tools/check_import_boundaries.py
+边界 agent_platform/gateway/osleg_consumer.py   imports=__future__,argparse,datetime,gateway,hashlib,json,logging,os,pathlib,re,sys,uuid extra=-
+  WARN unregistered_boundary_test:agent_platform/tests/test_execution_gate.py
+result: PASS

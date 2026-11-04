@@ -1,0 +1,11 @@
+﻿time_local: 2026-11-04 03:06:03 +08:00
+python: Python 3.11.9
+host_os: Microsoft Windows 11 专业版 10.0.26200
+8787_listen: 127.0.0.1:8787 pid=15920
+8787_pid_created: 2026-11-03 13:33:51（CIM Win32_Process）
+8796_listen: 127.0.0.1:8796 pid=28528
+worktree_branch: task/WO-MCP-8787-VERIFY-20261104
+worktree_head: c97106fc9
+webui_next_head: 6d517b7
+webui_next_repo: Hermes/hermes-webui-next (0 自定义改动: 0 个未提交文件)
+8787_health: status=ok uptime_seconds≈48604 accept_loop.requests_total=814（2026-11-04 03:05 快照，见 probe raw JSON）

@@ -31,7 +31,7 @@ spec:
       - ref: dataset/dir/knowledge_docs
         note: "学习派生文档根 knowledge_docs（inventory registered dir，117 文件/12.3MB，只读）；C:\\项目\\知识库 语料层见 yt_* corpus_layer（2026-11-02 校正：原 knowledge_base 根级聚合无 inventory 单条）"
       - ref: dataset/pg/v2_zhice_tables
-        note: "GAP：智策 83 张 v2_* 表未登记（pg_table 连接器缺）；整改期 2026-11-12，DWH-103"
+        note: "PG 聚合口径：wave1 已登记 7 表（registry PG_WAVE1_TABLES）；wave2 动态发现需 ZHICE_V2_DSN（CLI resolve-ref）；本 ref 非物理表 → soft warning 保留（ADR-019 P5，严格化后 block）"
       - ref: dataset/file/temp_contract
         note: "GAP（保持 planned）：C:\\Temp 契约产物聚合口径无单文件真实载体；单件白名单见 dataset_registry TEMP_CONTRACT_WHITELIST；整改期 2026-11-12 契约目录化（DWH-103）"
     contract: data-warehouse/v1

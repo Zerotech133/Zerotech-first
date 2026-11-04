@@ -76,6 +76,7 @@ def test_dispatch_creates_task_request(tmp_path):
                                     submit)
     assert code == 200 and out["ok"] and out["dispatch"]["id"] == "req-1"
     assert calls and calls[0][0] == "task_request" and calls[0][2] == "hq-meeting"
+    assert calls[0][1]["owner"] == "GUANYU"
     doc = json.loads((d / (env["meeting_id"] + ".json")).read_text(encoding="utf-8"))
     assert doc["status"] == "dispatched"
     assert doc["orders"][-1]["title"] == "修 flaky 根因"

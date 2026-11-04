@@ -2,7 +2,6 @@
 """服务端 Case orchestrator：5角色 → 会议 → 方案；审批/下发不自动做。"""
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 
@@ -18,7 +17,7 @@ def _fake(agent, system, user, timeout=180):
 
 def test_autorun_to_proposed(tmp_path, monkeypatch):
     monkeypatch.setattr(co, "_chat", _fake)
-    c = case_api.save_case({"case_id": "CASE-AUTO-001", "title": "自动编排",
+    case_api.save_case({"case_id": "CASE-AUTO-001", "title": "自动编排",
                             "materials": "材料", "status": "DRAFT", "opinions": [],
                             "meeting_id": "", "proposal": ""}, tmp_path / "cases")
     out = co.autorun("CASE-AUTO-001", case_root=tmp_path / "cases", meetings=tmp_path / "meetings")
@@ -45,3 +44,13 @@ def test_autorun_failure_is_visible(tmp_path, monkeypatch):
         assert "review_incomplete" in str(e)
     c = case_api.get_case("CASE-AUTO-002", tmp_path / "cases")
     assert c["orchestration"]["state"] == "error" and "review" in c["orchestration"]["phase"]
+
+
+def test_missing_case_does_not_leak_running(tmp_path):
+    try:
+        co.autorun("CASE-NOT-EXIST", case_root=tmp_path / "cases", meetings=tmp_path / "meetings")
+        assert False
+    except ValueError as e:
+        assert "case_not_found" in str(e)
+    with co._LOCK:
+        assert "CASE-NOT-EXIST" not in co._RUNNING

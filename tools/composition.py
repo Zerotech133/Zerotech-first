@@ -4,6 +4,7 @@
 
 能力（只读、不装载、不改运行时；**任何子命令都不写文件**）：
   validate  校验组合 manifest：schema + 引用解析（agent/skill 硬；strategy/dataset/page/job 软，--strict 时转错）
+            dataset/pg/* 以张松仓 registry 登记命中为证据（ADR-019 P5；未登记先 soft warning，严格化后 block）
   plan      compositions/registry.json 与 compositions/*/manifest.yaml 的漂移计划
             （缺失 manifest / registry 多余 / 版本 / 生命周期 / owner / tier / host / manifest 路径）
   diff      两个 manifest 的 metadata/spec/引用差异；或 manifest 与 registry.json 登记快照的差异
@@ -31,6 +32,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import datetime
 import json
 import sys
@@ -52,6 +54,10 @@ SCHEMA_PATH = COMP / "_schema" / "composition.schema.json"
 JOB_MAP_PATH = COMP / "_schema" / "job_map.yaml"
 PLANNED_REFS_PATH = COMP / "_schema" / "planned_refs.yaml"
 REGISTRY_PATH = COMP / "registry.json"
+# ADR-019 D5/P5：dataset/pg/* 以张松仓 registry 登记命中为证据（过渡期 soft warning，
+# 不立即 strict block；wave2 动态发现由 dataset registry CLI + ZHICE_V2_DSN 解析，本工具不连 PG）
+K5_REGISTRY_PATH = ROOT / "tools" / "datawarehouse" / "dataset_registry.py"
+DECLARED_REFS_PATH = ROOT / "tools" / "datawarehouse" / "dataset_refs_declared.json"
 
 # 与 composition.schema.json metadata.lifecycle enum 保持一致
 LIFECYCLES = ("draft", "validated", "registered", "active", "degraded", "retired")
@@ -117,10 +123,67 @@ def _walk_ids(obj, keys=("agent_id", "agents", "agent")):
     return out
 
 
+def _load_pg_registry() -> dict:
+    """读取 dataset/pg/* 登记证据（只读；不 import 99KB 注册模块、不连 PG）。
+
+    证据源（ADR-019 D5/P5）：
+    1. `tools/datawarehouse/dataset_registry.py` 的 `PG_WAVE1_TABLES`（wave1 已登记表，
+       AST 静态读取，避免注册模块重依赖/副作用）；
+    2. `tools/datawarehouse/dataset_refs_declared.json` 中 `canonical_ref=dataset/pg/*`
+       的显式映射（IFS-POOL 登记，如 recommendation_pool → v2_acad1_pool）；
+    wave2 动态发现（`public.v2_%` 全量）依赖 `ZHICE_V2_DSN`，由
+    `tools/datawarehouse/dataset_registry_cli.py resolve-ref` 解析；本工具不连 PG，
+    wave2 表在 registry CLI 侧可解析后再由严格化单接入（ADR-019 P5 时机）。
+    """
+    out = {}
+    try:
+        tree = ast.parse(K5_REGISTRY_PATH.read_text(encoding="utf-8"))
+        for node in getattr(tree, "body", []):
+            if not isinstance(node, ast.Assign):
+                continue
+            targets = [getattr(t, "id", "") for t in node.targets]
+            if "PG_WAVE1_TABLES" not in targets:
+                continue
+            for row in ast.literal_eval(node.value):
+                if not isinstance(row, dict):
+                    continue
+                table = str(row.get("table") or "").strip()
+                if not table:
+                    continue
+                out[table] = {
+                    "source": "tools/datawarehouse/dataset_registry.py#PG_WAVE1_TABLES",
+                    "wave": "wave1",
+                    "owner": row.get("owner"),
+                    "registered": bool(row.get("registered")),
+                    "exposed": bool(row.get("exposed")),
+                }
+    except (OSError, SyntaxError, ValueError):
+        pass
+    try:
+        declared = _load_json(DECLARED_REFS_PATH, {})
+        for item in declared.get("refs") or []:
+            if not isinstance(item, dict):
+                continue
+            canonical = str(item.get("canonical_ref") or "")
+            if not canonical.startswith("dataset/pg/"):
+                continue
+            table = canonical.split("/")[-1]
+            out.setdefault(table, {
+                "source": "tools/datawarehouse/dataset_refs_declared.json",
+                "wave": "declared",
+                "owner": item.get("owner"),
+                "registered": item.get("status") == "active",
+                "exposed": False,
+            })
+    except (OSError, ValueError, TypeError):
+        pass
+    return out
+
+
 def load_registries() -> dict:
     regs = {"agent": set(), "skill": set(), "strategy": set(),
             "dataset": set(), "page": set(), "job": set(), "job_planned": set(),
-            "planned": set()}
+            "planned": set(), "pg_registered": {}}
     # agents：hr 目录 + org/team
     hr = ROOT / "agent_platform" / "hr"
     if hr.exists():
@@ -178,6 +241,8 @@ def load_registries() -> dict:
                     regs["planned"].add(str(item["ref"]))
         except Exception:  # noqa: BLE001 — 坏 planned_refs 不阻断，但会保留 warning
             pass
+    # ADR-019 P5：dataset/pg/* 的 registry 登记证据（soft warning 判定用，仍不改 strict 语义）
+    regs["pg_registered"] = _load_pg_registry()
     return regs
 
 
@@ -199,7 +264,12 @@ def resolve_ref(ref: str, regs: dict, errors: list, warnings: list) -> None:
         if token not in regs["strategy"]:
             warnings.append(f"strategy 未在本地口径（v2_strategy 待 P1 解析）：{ref}")
     elif kind == "dataset":
-        if not _dataset_exists(rest, regs):
+        if rest.split("/")[0] == "pg" and token not in (regs.get("pg_registered") or {}):
+            # ADR-019 P5：未登记 PG 表先 soft warning；严格化时机=wave2 后 block
+            warnings.append(
+                "dataset/pg 未在 registry 登记（soft warning；ADR-019 P5 过渡期，"
+                "严格化后 block）：" + ref)
+        elif not _dataset_exists(rest, regs):
             warnings.append(f"dataset 未在登记/路径不存在：{ref}")
     elif kind == "page":
         variants = {rest.replace("/", "_"), rest.replace("/", "_").replace("-", "_")}
@@ -239,7 +309,8 @@ def _dataset_exists(rest: str, regs: dict) -> bool:
         candidates += [ROOT / "quant_backtest" / "data" / token,
                        Path(r"C:\项目") / "知识库" / token]
     elif kind == "pg":
-        return token.startswith("v2_")  # P1 软校验：v2_* 表按命名约定通过
+        # ADR-019 D5/P5：以 dataset registry 登记命中为证据（wave1 表 + declared canonical）
+        return token in (regs.get("pg_registered") or {})
     elif kind == "registry":
         return token in {"dataset_registry", "catalog"}
     return any(p.exists() for p in candidates)

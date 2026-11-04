@@ -1,0 +1,1103 @@
+{
+ "schema_version": "rag_hybrid.v1",
+ "date": "20261104",
+ "generated_at": "2026-11-04T04:04:40+08:00",
+ "task": "W10-RAG 混合检索（BM25 + bge-m3 + RRF）",
+ "dataset": {
+  "questions": 50,
+  "docs": 1727,
+  "source": "W6 rag_baseline_20261104（50 题/gold 复用）"
+ },
+ "method": {
+  "bm25": "纯 Python BM25 k1=1.5 b=0.75；CJK bigram + 拉丁词；top100",
+  "vector": "bge-m3（ollama /api/embed）余弦 top100",
+  "rrf": "RRF score=Σ w/(k+rank)，k=60，w_bm25=1.0, w_vec=1.0，top10",
+  "expansion": "融合 <0.85 时尝试 synonyms（concept_synonyms 簇）与 PRF（BM25 top5 文档高频词）",
+  "elapsed_s": 208.7
+ },
+ "sources": {
+  "baseline": "C:\\项目\\老田的AI助手\\research\\reports\\rag_baseline_20261104.json",
+  "synonyms": "C:\\项目\\老田的AI助手\\research\\reports\\concept_synonyms_20261103.json",
+  "baseline_sha256": "9f7ea183936b7a1c50e1b2ca61271cb6957fb5e1628b4a78c485eacba56a0964"
+ },
+ "baseline": {
+  "recall@5": 0.84,
+  "recall@10": 0.84,
+  "mrr": 0.774,
+  "note": "W6 纯 bge-m3 向量基线（全量 50 题）"
+ },
+ "comparison": {
+  "vector_only": {
+   "recall@5": 0.84,
+   "recall@10": 0.84,
+   "mrr": 0.774,
+   "diversity@5": 0.604
+  },
+  "hybrid": {
+   "recall@5": 0.88,
+   "recall@10": 0.92,
+   "mrr": 0.8308,
+   "diversity@5": 0.7
+  },
+  "hybrid_syn": {
+   "recall@5": 0.88,
+   "recall@10": 0.92,
+   "mrr": 0.8308,
+   "diversity@5": 0.7
+  },
+  "hybrid_prf": {
+   "recall@5": 0.86,
+   "recall@10": 0.92,
+   "mrr": 0.798,
+   "diversity@5": 0.644
+  }
+ },
+ "chosen": "hybrid",
+ "chosen_by_type": {
+  "unit_fact": {
+   "n": 12,
+   "recall@5": 0.6667,
+   "mrr": 0.5938
+  },
+  "unit_howto": {
+   "n": 13,
+   "recall@5": 0.8462,
+   "mrr": 0.8013
+  },
+  "card_evidence": {
+   "n": 12,
+   "recall@5": 1.0,
+   "mrr": 0.9167
+  },
+  "card_concept": {
+   "n": 13,
+   "recall@5": 1.0,
+   "mrr": 1.0
+  }
+ },
+ "target": {
+  "recall@5": 0.85,
+  "met": true
+ },
+ "expansion_effect": {
+  "synonyms_vs_hybrid": {
+   "recall@5_delta": 0.0,
+   "mrr_delta": 0.0
+  },
+  "prf_vs_hybrid": {
+   "recall@5_delta": -0.02,
+   "mrr_delta": -0.0328
+  },
+  "note": "若同义词/PRF 相对 hybrid 无增益，则最小有效改动=RFF（BM25+bge-m3）融合本身"
+ },
+ "results": [
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "qid": "Q001",
+   "type": "card_concept",
+   "ids": [
+    "C:009",
+    "U:learn_视频号学习_第二期_1099",
+    "U:learn_视频号学习_第二期_0008",
+    "U:learn_视频号学习_第二期_0027",
+    "U:learn_视频号学习_第二期_0040",
+    "U:learn_laomu_notes_0181",
+    "U:learn_视频号学习_第二期_0004",
+    "U:learn_视频号学习_第二期_0002",
+    "U:learn_视频号学习_第二期_0011",
+    "U:learn_视频号学习_第二期_0018"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 0.5,
+   "diversity@5": 0.8,
+   "qid": "Q002",
+   "type": "card_evidence",
+   "ids": [
+    "U:learn_视频号学习_8博主_0350",
+    "C:274",
+    "U:learn_视频号学习_8博主_0505",
+    "U:learn_视频号学习_8博主_0609",
+    "U:learn_视频号学习_8博主_1005",
+    "U:learn_视频号学习_8博主_0418",
+    "U:learn_视频号学习_8博主_1008",
+    "C:176",
+    "C:329",
+    "U:learn_视频号学习_8博主_0647"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.8,
+   "qid": "Q003",
+   "type": "card_concept",
+   "ids": [
+    "C:278",
+    "U:learn_视频号学习_8博主_0842",
+    "U:learn_视频号学习_8博主_0079",
+    "U:learn_视频号学习_8博主_0536",
+    "U:learn_视频号学习_8博主_0077",
+    "U:learn_视频号学习_8博主_0445",
+    "U:learn_视频号学习_8博主_0993",
+    "C:337",
+    "U:learn_视频号学习_8博主_0884",
+    "U:learn_视频号学习_8博主_0072"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 1.0,
+   "qid": "Q004",
+   "type": "card_evidence",
+   "ids": [
+    "C:288",
+    "C:287",
+    "C:388",
+    "U:learn_视频号学习_8博主_1005",
+    "U:learn_视频号学习_8博主_0447",
+    "U:learn_视频号学习_8博主_0299",
+    "C:211",
+    "U:learn_视频号学习_8博主_0595",
+    "U:learn_视频号学习_8博主_0288",
+    "U:learn_视频号学习_8博主_1006"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "qid": "Q005",
+   "type": "card_concept",
+   "ids": [
+    "C:124",
+    "C:103",
+    "C:090",
+    "C:057",
+    "C:122",
+    "U:learn_视频号学习_8博主_0445",
+    "U:learn_laomu_notes_0260",
+    "U:learn_视频号学习_8博主_1004",
+    "C:383",
+    "C:364"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 0.5,
+   "diversity@5": 0.6,
+   "qid": "Q006",
+   "type": "card_evidence",
+   "ids": [
+    "U:learn_视频号学习_8博主_0661",
+    "C:299",
+    "U:learn_视频号学习_8博主_0778",
+    "U:learn_视频号学习_第二期_1190",
+    "U:learn_视频号学习_8博主_0654",
+    "C:185",
+    "C:313",
+    "U:learn_视频号学习_8博主_0745",
+    "U:learn_视频号学习_8博主_0743",
+    "C:212"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "qid": "Q007",
+   "type": "card_concept",
+   "ids": [
+    "C:038",
+    "C:079",
+    "C:075",
+    "C:140",
+    "U:learn_视频号学习_第二期_1150",
+    "C:061",
+    "C:260",
+    "U:learn_视频号学习_第二期_0011",
+    "U:learn_视频号学习_第二期_1138",
+    "C:127"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 1.0,
+   "qid": "Q008",
+   "type": "card_evidence",
+   "ids": [
+    "C:304",
+    "C:328",
+    "C:207",
+    "U:learn_视频号学习_8博主_0263",
+    "C:326",
+    "U:learn_视频号学习_8博主_0157",
+    "U:learn_视频号学习_8博主_0135",
+    "U:learn_视频号学习_8博主_0094",
+    "U:learn_视频号学习_8博主_0091",
+    "U:learn_视频号学习_8博主_0769"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 1.0,
+   "qid": "Q009",
+   "type": "card_concept",
+   "ids": [
+    "C:073",
+    "C:259",
+    "U:learn_视频号学习_8博主_0476",
+    "U:learn_视频号学习_8博主_0027",
+    "C:346",
+    "C:253",
+    "U:learn_视频号学习_8博主_0343",
+    "C:032",
+    "C:038",
+    "U:learn_视频号学习_第二期_0025"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.4,
+   "qid": "Q010",
+   "type": "card_evidence",
+   "ids": [
+    "C:308",
+    "U:learn_视频号学习_8博主_0363",
+    "U:learn_视频号学习_8博主_0604",
+    "U:learn_视频号学习_8博主_0301",
+    "U:learn_视频号学习_8博主_0304",
+    "U:learn_视频号学习_8博主_0595",
+    "U:learn_视频号学习_8博主_1018",
+    "U:learn_视频号学习_8博主_0332",
+    "U:learn_laomu_notes_0211",
+    "U:learn_视频号学习_8博主_0585"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 1.0,
+   "qid": "Q011",
+   "type": "card_concept",
+   "ids": [
+    "C:171",
+    "U:learn_laomu_notes_0259",
+    "C:251",
+    "U:learn_视频号学习_8博主_0703",
+    "U:learn_视频号学习_8博主_0445",
+    "C:209",
+    "C:311",
+    "U:learn_视频号学习_8博主_0705",
+    "C:313",
+    "U:learn_视频号学习_第二期_1195"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.8,
+   "qid": "Q012",
+   "type": "card_evidence",
+   "ids": [
+    "C:164",
+    "U:learn_laomu_notes_0214",
+    "C:173",
+    "U:learn_视频号学习_8博主_0630",
+    "U:learn_视频号学习_8博主_0631",
+    "C:176",
+    "U:learn_视频号学习_8博主_0647",
+    "U:learn_视频号学习_第二期_1291",
+    "C:223",
+    "C:224"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "qid": "Q013",
+   "type": "card_concept",
+   "ids": [
+    "C:079",
+    "C:038",
+    "C:267",
+    "C:061",
+    "C:013",
+    "C:140",
+    "U:learn_视频号学习_第二期_0002",
+    "U:learn_视频号学习_第二期_0025",
+    "U:learn_视频号学习_8博主_0343",
+    "C:260"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "qid": "Q014",
+   "type": "card_evidence",
+   "ids": [
+    "C:093",
+    "C:029",
+    "C:063",
+    "C:035",
+    "C:071",
+    "C:139",
+    "C:074",
+    "C:105",
+    "C:092",
+    "C:128"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "qid": "Q015",
+   "type": "card_concept",
+   "ids": [
+    "C:236",
+    "U:learn_视频号学习_8博主_0445",
+    "U:learn_视频号学习_8博主_1000",
+    "U:learn_视频号学习_8博主_1018",
+    "U:learn_视频号学习_8博主_0504",
+    "C:383",
+    "U:learn_视频号学习_8博主_0536",
+    "U:learn_视频号学习_8博主_1004",
+    "U:learn_视频号学习_8博主_0559",
+    "U:learn_视频号学习_第二期_1151"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 1.0,
+   "qid": "Q016",
+   "type": "card_evidence",
+   "ids": [
+    "C:329",
+    "U:learn_视频号学习_8博主_0609",
+    "U:learn_视频号学习_8博主_1005",
+    "U:learn_视频号学习_第二期_1107",
+    "C:069",
+    "C:174",
+    "U:learn_视频号学习_8博主_1008",
+    "U:learn_视频号学习_8博主_0999",
+    "U:learn_视频号学习_8博主_0607",
+    "U:learn_视频号学习_8博主_1013"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.8,
+   "qid": "Q017",
+   "type": "card_concept",
+   "ids": [
+    "C:262",
+    "C:268",
+    "C:041",
+    "C:215",
+    "C:134",
+    "C:263",
+    "C:141",
+    "C:066",
+    "C:004",
+    "C:269"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "qid": "Q018",
+   "type": "card_evidence",
+   "ids": [
+    "C:255",
+    "U:learn_视频号学习_8博主_0711",
+    "U:learn_视频号学习_第二期_1101",
+    "U:learn_视频号学习_第二期_1237",
+    "U:learn_视频号学习_8博主_0658",
+    "U:learn_视频号学习_第二期_1147",
+    "U:learn_视频号学习_8博主_0660",
+    "U:learn_视频号学习_8博主_0712",
+    "C:246",
+    "U:learn_视频号学习_8博主_0655"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 1.0,
+   "qid": "Q019",
+   "type": "card_concept",
+   "ids": [
+    "C:349",
+    "C:183",
+    "C:315",
+    "U:learn_视频号学习_8博主_0003",
+    "U:learn_视频号学习_8博主_0641",
+    "U:learn_视频号学习_8博主_0877",
+    "C:316",
+    "U:learn_视频号学习_8博主_0648",
+    "U:learn_视频号学习_8博主_0631",
+    "U:learn_视频号学习_8博主_0879"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "qid": "Q020",
+   "type": "card_evidence",
+   "ids": [
+    "C:358",
+    "U:learn_视频号学习_8博主_0797",
+    "U:learn_视频号学习_8博主_0727",
+    "U:learn_视频号学习_第二期_1137",
+    "U:learn_视频号学习_第二期_1270",
+    "U:learn_视频号学习_第二期_0011",
+    "U:learn_视频号学习_第二期_0041",
+    "U:learn_视频号学习_第二期_1182",
+    "U:learn_视频号学习_第二期_0027",
+    "C:271"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 1.0,
+   "qid": "Q021",
+   "type": "card_concept",
+   "ids": [
+    "C:069",
+    "U:learn_视频号学习_8博主_1016",
+    "U:learn_laomu_notes_0218",
+    "C:127",
+    "U:learn_视频号学习_8博主_0504",
+    "U:learn_视频号学习_8博主_0351",
+    "C:383",
+    "U:learn_视频号学习_第二期_1269",
+    "U:learn_视频号学习_第二期_1100",
+    "C:367"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "qid": "Q022",
+   "type": "card_evidence",
+   "ids": [
+    "C:379",
+    "U:learn_视频号学习_8博主_0088",
+    "U:learn_laomu_notes_0165",
+    "U:learn_视频号学习_8博主_0092",
+    "U:learn_laomu_notes_0218",
+    "C:153",
+    "U:learn_视频号学习_8博主_0253",
+    "C:342",
+    "C:166",
+    "U:learn_视频号学习_8博主_0885"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.8,
+   "qid": "Q023",
+   "type": "card_concept",
+   "ids": [
+    "C:389",
+    "U:learn_视频号学习_8博主_0564",
+    "C:383",
+    "C:254",
+    "U:learn_视频号学习_8博主_0343",
+    "U:learn_视频号学习_8博主_0445",
+    "U:learn_视频号学习_8博主_0504",
+    "U:learn_视频号学习_8博主_0477",
+    "U:learn_视频号学习_8博主_0355",
+    "U:learn_视频号学习_8博主_0546"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "qid": "Q024",
+   "type": "card_evidence",
+   "ids": [
+    "C:117",
+    "C:094",
+    "C:039",
+    "C:126",
+    "C:038",
+    "C:127",
+    "C:133",
+    "C:061",
+    "U:learn_视频号学习_第二期_0041",
+    "C:116"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 1.0,
+   "qid": "Q025",
+   "type": "card_concept",
+   "ids": [
+    "C:086",
+    "C:371",
+    "C:264",
+    "U:learn_视频号学习_8博主_0181",
+    "C:032",
+    "C:290",
+    "U:learn_视频号学习_8博主_0096",
+    "U:learn_视频号学习_8博主_0088",
+    "C:136",
+    "U:learn_视频号学习_8博主_0245"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "qid": "Q026",
+   "type": "unit_howto",
+   "ids": [
+    "U:learn_laomu_notes_0001",
+    "U:learn_视频号学习_8博主_0701",
+    "U:learn_视频号学习_8博主_0670",
+    "U:learn_视频号学习_第二期_0032",
+    "U:learn_laomu_notes_0285",
+    "U:learn_视频号学习_8博主_0758",
+    "U:learn_视频号学习_第二期_1100",
+    "U:learn_视频号学习_第二期_1151",
+    "U:learn_视频号学习_第二期_1092",
+    "U:learn_视频号学习_8博主_0423"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.8,
+   "qid": "Q027",
+   "type": "unit_fact",
+   "ids": [
+    "U:learn_视频号学习_8博主_0001",
+    "U:learn_视频号学习_8博主_0013",
+    "U:learn_视频号学习_8博主_0187",
+    "C:046",
+    "C:232",
+    "U:learn_视频号学习_8博主_0259",
+    "U:learn_视频号学习_8博主_0239",
+    "U:learn_视频号学习_8博主_0275",
+    "U:learn_视频号学习_8博主_0217",
+    "U:learn_laomu_notes_0166"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.2,
+   "qid": "Q028",
+   "type": "unit_howto",
+   "ids": [
+    "U:learn_视频号学习_第二期_0001",
+    "U:learn_视频号学习_第二期_0022",
+    "U:learn_视频号学习_第二期_0023",
+    "U:learn_视频号学习_第二期_0026",
+    "U:learn_视频号学习_第二期_0021",
+    "U:learn_视频号学习_8博主_0259",
+    "U:learn_视频号学习_第二期_0027",
+    "U:learn_视频号学习_8博主_0394",
+    "U:learn_视频号学习_8博主_0236",
+    "U:learn_laomu_notes_0250"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "qid": "Q029",
+   "type": "unit_fact",
+   "ids": [
+    "U:learn_laomu_notes_0002",
+    "U:learn_laomu_notes_0008",
+    "U:learn_视频号学习_第二期_1097",
+    "C:144",
+    "U:learn_laomu_notes_0041",
+    "U:learn_视频号学习_第二期_0018",
+    "U:learn_视频号学习_第二期_0019",
+    "U:learn_视频号学习_第二期_0011",
+    "U:learn_视频号学习_第二期_1143",
+    "U:learn_视频号学习_第二期_0033"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 1.0,
+   "qid": "Q030",
+   "type": "unit_howto",
+   "ids": [
+    "U:learn_视频号学习_8博主_0002",
+    "U:learn_laomu_notes_0269",
+    "U:learn_视频号学习_8博主_0062",
+    "U:learn_视频号学习_第二期_1223",
+    "U:learn_视频号学习_第二期_0008",
+    "U:learn_视频号学习_第二期_1278",
+    "U:learn_视频号学习_第二期_0040",
+    "U:learn_视频号学习_第二期_1284",
+    "U:learn_视频号学习_第二期_1193",
+    "U:learn_视频号学习_8博主_0473"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "qid": "Q031",
+   "type": "unit_fact",
+   "ids": [
+    "U:learn_视频号学习_第二期_0002",
+    "U:learn_视频号学习_第二期_1097",
+    "C:032",
+    "U:learn_视频号学习_第二期_0003",
+    "U:learn_视频号学习_第二期_1175",
+    "C:144",
+    "U:learn_视频号学习_第二期_1102",
+    "U:learn_视频号学习_第二期_1143",
+    "C:011",
+    "U:learn_视频号学习_第二期_1111"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "qid": "Q032",
+   "type": "unit_howto",
+   "ids": [
+    "U:learn_laomu_notes_0003",
+    "U:learn_laomu_notes_0009",
+    "U:learn_视频号学习_第二期_0040",
+    "U:learn_视频号学习_8博主_0195",
+    "U:learn_视频号学习_8博主_0128",
+    "U:learn_视频号学习_8博主_0113",
+    "U:learn_视频号学习_8博主_0191",
+    "U:learn_视频号学习_8博主_0201",
+    "U:learn_视频号学习_8博主_0163",
+    "U:learn_laomu_notes_0015"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "qid": "Q033",
+   "type": "unit_fact",
+   "ids": [
+    "U:learn_视频号学习_8博主_0003",
+    "U:learn_视频号学习_8博主_1014",
+    "U:learn_视频号学习_8博主_0473",
+    "U:learn_视频号学习_8博主_1011",
+    "U:learn_视频号学习_8博主_0585",
+    "C:052",
+    "U:learn_视频号学习_8博主_0563",
+    "U:learn_视频号学习_8博主_0980",
+    "U:learn_视频号学习_8博主_1006",
+    "U:learn_视频号学习_8博主_0288"
+   ]
+  },
+  {
+   "recall@5": 0.0,
+   "recall@10": 0.0,
+   "mrr": 0.0,
+   "diversity@5": 0.4,
+   "qid": "Q034",
+   "type": "unit_howto",
+   "ids": [
+    "U:learn_视频号学习_8博主_0259",
+    "U:learn_视频号学习_8博主_0279",
+    "U:learn_视频号学习_8博主_0272",
+    "U:learn_laomu_notes_0266",
+    "U:learn_视频号学习_8博主_0255",
+    "U:learn_视频号学习_8博主_0234",
+    "U:learn_视频号学习_8博主_0071",
+    "U:learn_视频号学习_8博主_0981",
+    "U:learn_视频号学习_8博主_0073",
+    "U:learn_视频号学习_8博主_0129"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.4,
+   "qid": "Q035",
+   "type": "unit_fact",
+   "ids": [
+    "U:learn_laomu_notes_0004",
+    "U:learn_laomu_notes_0010",
+    "C:144",
+    "U:learn_laomu_notes_0041",
+    "U:learn_laomu_notes_0065",
+    "U:learn_laomu_notes_0023",
+    "U:learn_laomu_notes_0101",
+    "U:learn_laomu_notes_0034",
+    "U:learn_laomu_notes_0089",
+    "U:learn_laomu_notes_0077"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.8,
+   "qid": "Q036",
+   "type": "unit_howto",
+   "ids": [
+    "U:learn_视频号学习_8博主_0004",
+    "C:152",
+    "U:learn_laomu_notes_0164",
+    "U:learn_视频号学习_8博主_0645",
+    "U:learn_视频号学习_8博主_0632",
+    "U:learn_视频号学习_8博主_0021",
+    "U:learn_视频号学习_8博主_0295",
+    "U:learn_视频号学习_8博主_0009",
+    "U:learn_视频号学习_8博主_0355",
+    "U:learn_视频号学习_8博主_0607"
+   ]
+  },
+  {
+   "recall@5": 0.0,
+   "recall@10": 0.0,
+   "mrr": 0.0,
+   "diversity@5": 0.6,
+   "qid": "Q037",
+   "type": "unit_fact",
+   "ids": [
+    "U:learn_视频号学习_8博主_1014",
+    "U:learn_视频号学习_8博主_1009",
+    "U:learn_视频号学习_第二期_0041",
+    "U:learn_视频号学习_8博主_0281",
+    "U:learn_视频号学习_8博主_1004",
+    "U:learn_视频号学习_8博主_1013",
+    "U:learn_视频号学习_第二期_1107",
+    "U:learn_视频号学习_第二期_1129",
+    "U:learn_视频号学习_8博主_1011",
+    "U:learn_视频号学习_第二期_1242"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 0.25,
+   "diversity@5": 0.6,
+   "qid": "Q038",
+   "type": "unit_howto",
+   "ids": [
+    "U:learn_视频号学习_第二期_1284",
+    "U:learn_视频号学习_第二期_1151",
+    "U:learn_视频号学习_8博主_0348",
+    "U:learn_laomu_notes_0005",
+    "U:learn_视频号学习_第二期_1273",
+    "U:learn_视频号学习_第二期_1276",
+    "U:learn_视频号学习_8博主_1010",
+    "U:learn_视频号学习_8博主_1007",
+    "U:learn_视频号学习_第二期_1107",
+    "U:learn_视频号学习_8博主_1008"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 0.5,
+   "diversity@5": 0.6,
+   "qid": "Q039",
+   "type": "unit_fact",
+   "ids": [
+    "U:learn_laomu_notes_0153",
+    "U:learn_视频号学习_8博主_0005",
+    "C:148",
+    "U:learn_视频号学习_8博主_0019",
+    "U:learn_laomu_notes_0079",
+    "U:learn_laomu_notes_0166",
+    "U:learn_laomu_notes_0189",
+    "C:154",
+    "U:learn_laomu_notes_0050",
+    "U:learn_laomu_notes_0021"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "qid": "Q040",
+   "type": "unit_howto",
+   "ids": [
+    "U:learn_视频号学习_第二期_0005",
+    "U:learn_视频号学习_8博主_0674",
+    "U:learn_视频号学习_第二期_1143",
+    "U:learn_视频号学习_第二期_1176",
+    "U:learn_视频号学习_8博主_0745",
+    "U:learn_视频号学习_第二期_0011",
+    "C:185",
+    "U:learn_视频号学习_8博主_0432",
+    "U:learn_视频号学习_第二期_1090",
+    "U:learn_视频号学习_第二期_1252"
+   ]
+  },
+  {
+   "recall@5": 0.0,
+   "recall@10": 0.0,
+   "mrr": 0.0,
+   "diversity@5": 1.0,
+   "qid": "Q041",
+   "type": "unit_fact",
+   "ids": [
+    "C:069",
+    "C:107",
+    "U:learn_视频号学习_8博主_1016",
+    "C:041",
+    "U:learn_视频号学习_8博主_0577",
+    "C:098",
+    "C:146",
+    "U:learn_视频号学习_8博主_0087",
+    "C:054",
+    "U:learn_视频号学习_8博主_1005"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.8,
+   "qid": "Q042",
+   "type": "unit_howto",
+   "ids": [
+    "U:learn_视频号学习_8博主_0006",
+    "U:learn_视频号学习_8博主_0325",
+    "U:learn_视频号学习_8博主_0001",
+    "U:learn_视频号学习_第二期_1218",
+    "U:learn_视频号学习_8博主_0085",
+    "U:learn_视频号学习_8博主_0010",
+    "U:learn_视频号学习_8博主_0289",
+    "U:learn_视频号学习_8博主_0012",
+    "U:learn_视频号学习_8博主_0585",
+    "C:298"
+   ]
+  },
+  {
+   "recall@5": 0.0,
+   "recall@10": 0.0,
+   "mrr": 0.0,
+   "diversity@5": 0.8,
+   "qid": "Q043",
+   "type": "unit_fact",
+   "ids": [
+    "C:052",
+    "U:learn_laomu_notes_0065",
+    "C:046",
+    "U:learn_laomu_notes_0079",
+    "C:144",
+    "U:learn_视频号学习_8博主_0129",
+    "U:learn_视频号学习_第二期_1273",
+    "U:learn_laomu_notes_0285",
+    "C:032",
+    "U:learn_laomu_notes_0150"
+   ]
+  },
+  {
+   "recall@5": 0.0,
+   "recall@10": 1.0,
+   "mrr": 0.1667,
+   "diversity@5": 0.8,
+   "qid": "Q044",
+   "type": "unit_howto",
+   "ids": [
+    "U:learn_视频号学习_8博主_1001",
+    "U:learn_视频号学习_8博主_1000",
+    "U:learn_视频号学习_8博主_0333",
+    "U:learn_视频号学习_8博主_0073",
+    "U:learn_视频号学习_8博主_0067",
+    "U:learn_laomu_notes_0007",
+    "U:learn_视频号学习_8博主_0808",
+    "U:learn_视频号学习_8博主_0473",
+    "C:061",
+    "U:learn_laomu_notes_0027"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 0.5,
+   "diversity@5": 0.8,
+   "qid": "Q045",
+   "type": "unit_fact",
+   "ids": [
+    "C:324",
+    "U:learn_视频号学习_8博主_0007",
+    "C:378",
+    "U:learn_视频号学习_8博主_0824",
+    "U:learn_视频号学习_8博主_0865",
+    "U:learn_laomu_notes_0266",
+    "U:learn_视频号学习_8博主_0812",
+    "C:385",
+    "U:learn_laomu_notes_0218",
+    "U:learn_视频号学习_8博主_0885"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.4,
+   "qid": "Q046",
+   "type": "unit_howto",
+   "ids": [
+    "U:learn_视频号学习_第二期_0007",
+    "U:learn_视频号学习_第二期_0009",
+    "U:learn_视频号学习_第二期_0003",
+    "U:learn_视频号学习_第二期_0001",
+    "C:356",
+    "U:learn_视频号学习_8博主_0245",
+    "U:learn_视频号学习_第二期_0006",
+    "U:learn_视频号学习_8博主_0027",
+    "U:learn_视频号学习_8博主_0181",
+    "U:learn_视频号学习_第二期_0004"
+   ]
+  },
+  {
+   "recall@5": 0.0,
+   "recall@10": 1.0,
+   "mrr": 0.125,
+   "diversity@5": 0.4,
+   "qid": "Q047",
+   "type": "unit_fact",
+   "ids": [
+    "U:learn_视频号学习_第二期_1107",
+    "U:learn_视频号学习_第二期_1156",
+    "U:learn_视频号学习_第二期_1146",
+    "U:learn_视频号学习_第二期_1166",
+    "U:learn_laomu_notes_0041",
+    "U:learn_视频号学习_第二期_1133",
+    "C:069",
+    "U:learn_laomu_notes_0008",
+    "U:learn_laomu_notes_0063",
+    "U:learn_laomu_notes_0002"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "qid": "Q048",
+   "type": "unit_howto",
+   "ids": [
+    "U:learn_视频号学习_8博主_0008",
+    "U:learn_视频号学习_8博主_0981",
+    "U:learn_视频号学习_8博主_0346",
+    "U:learn_视频号学习_8博主_0973",
+    "U:learn_视频号学习_8博主_0526",
+    "U:learn_视频号学习_8博主_1005",
+    "U:learn_视频号学习_8博主_0987",
+    "U:learn_视频号学习_8博主_1012",
+    "U:learn_视频号学习_8博主_1008",
+    "U:learn_视频号学习_8博主_0338"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "qid": "Q049",
+   "type": "unit_fact",
+   "ids": [
+    "U:learn_视频号学习_第二期_0008",
+    "U:learn_laomu_notes_0041",
+    "U:learn_视频号学习_第二期_0015",
+    "C:144",
+    "U:learn_视频号学习_第二期_0034",
+    "U:learn_视频号学习_第二期_0018",
+    "U:learn_视频号学习_第二期_1154",
+    "U:learn_视频号学习_第二期_0002",
+    "U:learn_视频号学习_第二期_1173",
+    "U:learn_视频号学习_第二期_0014"
+   ]
+  },
+  {
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.8,
+   "qid": "Q050",
+   "type": "unit_howto",
+   "ids": [
+    "U:learn_laomu_notes_0009",
+    "U:learn_laomu_notes_0003",
+    "U:learn_视频号学习_第二期_0018",
+    "U:learn_视频号学习_8博主_1010",
+    "U:learn_视频号学习_8博主_0007",
+    "U:learn_视频号学习_8博主_1000",
+    "C:324",
+    "U:learn_视频号学习_第二期_0040",
+    "U:learn_视频号学习_8博主_1009",
+    "U:learn_视频号学习_8博主_1013"
+   ]
+  }
+ ],
+ "conclusion": "最优变体 hybrid：recall@5=0.88（基线 0.84），recall@10=0.92，MRR=0.8308（基线 0.774）；达标 ≥0.85。最小有效改动为 BM25+bge-m3 RRF 融合本身（同义词/PRF 相对无增益）。",
+ "limitations": [
+  "评测集为 W6 合成 50 题（源文档模板生成，非人工独立标注）；",
+  "BM25 分词为 CJK bigram 纯规则，未接中文分词器（避免新增依赖）；",
+  "同义词扩展仅使用 concept_synonyms 簇（研报概念域）与 PRF，覆盖有限；",
+  "检索只读：未写生产索引/知识库；仅本地 ollama。"
+ ],
+ "disclaimer": "研究输出，不构成投资建议。"
+}

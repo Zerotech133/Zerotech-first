@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+CONTRACT = ROOT / "docs" / "dev" / "legion_screen_contract.json"
 sys.path.insert(0, str(ROOT / "portal"))
 import api_dev_legion as A  # noqa: E402
 
@@ -68,3 +69,87 @@ def test_v2_extras_additive():
     assert p["v2"]["readonly"] is True
     for k in ("workorder_bus", "decisions", "events"):
         assert k in p["v2"]["extras"]
+
+
+# ---------- 2026-11-03 WP1：v2 extras 契约真源（ADR-020 修订） ----------
+
+
+def test_v2_extras_readonly_and_no_write_methods():
+    """live extras：只读 + 无写方法/写接口（契约复核）。"""
+    p = A.build_payload(A.ROOT)
+    assert p["readonly"] is True
+    assert isinstance(p["v2"], dict)
+    assert p["v2"]["readonly"] is True
+    assert set(p["v2"]["extras"]) == {"workorder_bus", "decisions", "events"}
+    # 模块不得暴露写方法（HTTP 出口只允许 GET）
+    for bad_attr in ("handle_post", "handle_put", "handle_delete", "handle_patch"):
+        assert not hasattr(A, bad_attr), bad_attr
+    src = Path(A.__file__).read_text(encoding="utf-8")
+    for bad_def in ("def handle_post(", "def handle_put(",
+                    "def handle_delete(", "def handle_patch("):
+        assert bad_def not in src, bad_def
+    json.dumps(p, ensure_ascii=False)
+
+
+def test_v2_extras_registered_in_contract():
+    """契约 JSON 已只增登记 v2 extras；v1 schema 不变。"""
+    c = json.loads(CONTRACT.read_text(encoding="utf-8"))
+    assert c["schema"] == "legion_screen_contract/v1"
+    assert c["readonly"] is True
+    v2 = c["optional_extensions"]["v2"]
+    assert v2["readonly"] is True
+    for k in ("workorder_bus", "decisions", "events", "v2"):
+        assert k in v2["fields"], k
+    assert ".worktrees/tasks.json" in v2["fields"]["workorder_bus"]["source"]
+    assert "dev_events.jsonl" in v2["fields"]["events"]["source"]
+    assert v2["fields"]["workorder_bus"]["max_items"] == 30
+    assert any(r.get("adr") == "ADR-020" for r in c.get("revisions") or [])
+
+
+def test_v2_extras_error_state_keeps_errors(tmp_path):
+    """错误态：缺源仍返回 v2 结构 + 非空 errors（不静默、不 500）。"""
+    p = A.build_payload(tmp_path)
+    assert p["schema"] == "legion_screen_contract/v1"
+    assert p["errors"], "缺数据源必须记 errors，不静默"
+    for k in ("workorder_bus", "decisions", "events"):
+        assert isinstance(p[k], list)
+    assert p["v2"]["readonly"] is True
+
+
+def test_v2_extras_shapes_and_limits():
+    """字段形状/上限与契约一致：bus≤30 且 status 受限；events≤10。"""
+    p = A.build_payload(A.ROOT)
+    bus = p["workorder_bus"]
+    assert isinstance(bus, list) and len(bus) <= 30
+    for row in bus:
+        assert set(("id", "owner", "status", "desc", "created")) <= set(row)
+        assert row["status"] in ("doing", "review")
+    ev = p["events"]
+    assert isinstance(ev, list) and len(ev) <= 10
+    for row in ev:
+        assert set(("ts", "kind", "agent", "task")) <= set(row)
+    for row in p["decisions"]:
+        assert isinstance(row, dict)
+
+
+def test_v2_decisions_synthetic_when_config_missing(tmp_path):
+    """P0 回归：decisions 配置缺失 + workorder_bus 非空 → 仍合成 1 条且 errors 非空。"""
+    import json as _json
+
+    wt = tmp_path / ".worktrees"
+    wt.mkdir(parents=True)
+    (wt / "tasks.json").write_text(_json.dumps({
+        "WO-TEST-P0-1": {"status": "doing", "owner": "ARCH1",
+                         "desc": "P0 回归样例", "created": "2026-11-03 00:00:00"},
+    }, ensure_ascii=False), encoding="utf-8")
+    p = A.build_payload(tmp_path)
+    # 契约：配置缺失 → 基础项 [] + errors[]（不静默）
+    assert any("dev_legion_decisions" in e for e in p["errors"]), p["errors"]
+    # 契约：bus 非空 → 仍追加 1 条 source=workorder_bus 合成项
+    assert p["workorder_bus"], "前置：workorder_bus 非空"
+    synth = [d for d in p["decisions"] if d.get("source") == "workorder_bus"]
+    assert len(synth) == 1
+    assert synth[0].get("title")
+    # 合成项计入扩展标志；只读保持不变
+    assert "v2_decisions" in p["extensions"]
+    assert p["v2"]["readonly"] is True

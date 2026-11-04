@@ -24,7 +24,6 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import importlib.util
 import json
 import re
 import shutil
@@ -34,7 +33,7 @@ from collections import Counter
 from datetime import datetime
 from pathlib import Path
 
-from safe_json import SafeJsonError, backup_then_atomic_write
+from safe_json import backup_then_atomic_write
 
 REPO = Path(__file__).resolve().parents[2]
 R = REPO / "research" / "reports"

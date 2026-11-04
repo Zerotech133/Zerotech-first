@@ -91,3 +91,11 @@ def test_exec_reports_failure_semantics(tmp_path):
     bad.write_text("def broken(:\n", encoding="utf-8")
     res = X.run(wt, "python -m py_compile agent_platform/bad.py")
     assert res["ok"] is True and res["exit_code"] != 0 and res["success"] is False
+
+
+def test_fresh_unparsed_lock_is_not_stolen(tmp_path):
+    wt = _wt(tmp_path)
+    # 模拟 O_CREAT 后、内容未写完的空窗：新鲜空文件必须被当作已锁
+    (wt / ".ide.lock").write_text("", encoding="utf-8")
+    r = G.acquire_lock(wt, "intruder")
+    assert r["ok"] is False and r["error"] == "locked"

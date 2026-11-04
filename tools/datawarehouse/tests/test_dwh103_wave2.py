@@ -195,6 +195,7 @@ def test_sample_only_discovered_identifiers(tmp_path):
 
 def test_no_dsn_keeps_wave1_behavior(tmp_path, monkeypatch):
     monkeypatch.delenv("ZHICE_V2_DSN", raising=False)
+    monkeypatch.setenv("DW_PG_DSN_FALLBACK", "0")  # DW-PG-DSN：显式关闭 fallback 锁定口径
     reg = _reg(tmp_path)
     assert reg.connector_status == "missing_dsn"
     assert reg.pg_discovered is None

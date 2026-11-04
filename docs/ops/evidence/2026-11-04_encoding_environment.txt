@@ -1,0 +1,13 @@
+# 定位环境（只读采集）
+
+采集时间: 2026-11-04T03:27:11+08:00
+
+8787_health: HTTP 200 status=ok uptime_seconds≈49934.9 requests_total=887
+8787_pid: 15920（127.0.0.1:8787，CIM CreationDate 2026-11-03 13:33:51；见 task-41 evidence）
+hermes_venv: C:\Users\t\.hermes\installs\4cc1a9b84685bce9\environments\<hex-redacted>\venv
+hermes_venv_python: Python 3.14.7
+hermes_agent: 0.0.0 (editable, workspace=C:\Users\t\.hermes\installs\4cc1a9b84685bce9\environments\<hex-redacted>\workspace)
+mcp_sdk: 2.0.0
+host: Windows 11 10.0.26200 / probe python: 3.11.9
+probe_child_stdout_encoding: {"hermes_like_env": "stdout=gbk preferred=cp936 utf8_mode=0", "+PYTHONIOENCODING=utf-8": "stdout=utf-8 preferred=cp936 utf8_mode=0", "+PYTHONUTF8=1": "stdout=utf-8 preferred=utf-8 utf8_mode=1"}
+probe_env_has_PYTHONIOENCODING: False  PYTHONUTF8: False

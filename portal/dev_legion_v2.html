@@ -8,7 +8,6 @@
 <script src="/static/nav.js" defer></script>
 <script src="/static/shortscreen.js" defer></script>
 <link rel="stylesheet" href="/static/dev_legion_v2.css">
-<link rel="stylesheet" href="/static/os_light.css">
 </head>
 <body>
 <main class="wrap">
@@ -17,7 +16,7 @@
     <div class="head-row">
       <div>
         <h1>曹操军团 · 研发指挥台</h1>
-        <p class="lede">兵、仗、门、令：一屏看清 11 席、在制工单、质量门和需要曹操拍板的事。<span class="demo-tag">只读 · API v1</span></p>
+        <p class="lede">决策优先：先看今日必须拍板的事，再看跨席工单与事件流；席位与 KPI 在后。只读 · API v1/v2。</p>
       </div>
       <div class="head-actions">
         <a class="btn" href="/hermes/" target="_blank" rel="noopener" title="Hermes 控制台 / 军团 IDE 扩展">Hermes 控制台 ↗</a>
@@ -34,6 +33,15 @@
   </section>
   <div class="error-banner" id="error-banner" hidden></div>
 
+  <!-- 首屏：决策优先。曹操 5 秒看到今天必须动什么（v1.1 批文 / 11 席回执 / 跨席回流）。 -->
+  <section class="panel today-board" id="today-board" aria-label="今日必须拍板">
+    <div class="panel-head">
+      <div><h2><span class="zone-kicker">令</span>今日必须拍板 <span class="count-pill warn" id="today-count">3</span></h2><p>先拍板再派工：v1.1 批文 / 11 席回执 / 跨席回流；来自 API decisions（v2，配置快照），无 API 时回退人工快照并标时点。</p></div>
+      <span class="panel-note" id="today-source">API v2 · decisions（配置快照）· 只读</span>
+    </div>
+    <div class="today-grid" id="today-list"><div class="empty-row">读取决策中…</div></div>
+  </section>
+
   <section class="kpi-row" aria-label="军团关键数字">
     <article class="kpi"><div class="kpi-top"><span>军团席位</span><i class="mini accent"></i></div><strong id="kpi-seats">—</strong><div class="kpi-foot"><span class="delta accent">在册</span><span>研发部</span></div></article>
     <article class="kpi"><div class="kpi-top"><span>近 7 日任务</span><i class="mini up"></i></div><strong id="kpi-tasks">—</strong><div class="kpi-foot"><span class="delta up">C6</span><span>dev_tasks_recent</span></div></article>
@@ -44,19 +52,33 @@
 
   <nav class="logic-strip" aria-label="四大指挥区">
     <a class="logic-item" href="#zone-bing"><span class="logic-char">兵</span><span class="logic-copy"><b id="logic-bing">—</b><small>在册席位 / 可派工</small></span><span class="logic-go">→</span></a>
-    <a class="logic-item" href="#zone-zhang"><span class="logic-char">仗</span><span class="logic-copy"><b id="logic-zhang">—</b><small>直属在制 · 跨席快照 16</small></span><span class="logic-go">→</span></a>
+    <a class="logic-item" href="#zone-zhang"><span class="logic-char">仗</span><span class="logic-copy"><b id="logic-zhang">—</b><small>直属在制 · 跨席 API 总线</small></span><span class="logic-go">→</span></a>
     <a class="logic-item" href="#zone-men"><span class="logic-char">门</span><span class="logic-copy"><b id="logic-men">—</b><small>审批覆盖 / 红线</small></span><span class="logic-go">→</span></a>
-    <a class="logic-item" href="#zone-ling"><span class="logic-char">令</span><span class="logic-copy"><b id="logic-ling">3 项</b><small>人工维护 · 待治理 API</small></span><span class="logic-go">→</span></a>
+    <a class="logic-item" href="#zone-ling"><span class="logic-char">令</span><span class="logic-copy"><b id="logic-ling">3 项</b><small>API v2 · 待拍板</small></span><span class="logic-go">→</span></a>
   </nav>
 
   <div class="layout-grid">
     <div class="left-stack">
+      <section class="panel work-panel" id="zone-zhang-work" aria-label="跨席工单总线">
+        <div class="panel-head"><div><h2><span class="zone-kicker">仗</span>跨席工单总线 <span class="count-pill" id="work-count">—</span></h2><p>真实 API <code>workorder_bus</code>（只读）；按状态筛选“在制/待复核”，不写库。</p></div><a class="link-btn" href="/devops">打开 devops →</a></div>
+        <div class="tabs" id="work-tabs" role="tablist" aria-label="工单状态筛选">
+          <button class="tab is-active" type="button" data-work-filter="all" role="tab" aria-selected="true">全部 <b id="tab-all-count">—</b></button>
+          <button class="tab" type="button" data-work-filter="doing" role="tab" aria-selected="false">在制 <b id="tab-doing-count">—</b></button>
+          <button class="tab" type="button" data-work-filter="review" role="tab" aria-selected="false">待复核 <b id="tab-review-count">—</b></button>
+        </div>
+        <div class="work-table">
+          <div class="work-header"><span>状态</span><span>工单</span><span>Owner</span><span>年龄</span><span>下一步</span></div>
+          <div id="work-rows"><div class="empty-row">读取中…</div></div>
+        </div>
+        <div class="pool-foot"><span id="work-foot">来源：/api/dev/legion workorder_bus</span><span class="audit-flag">只读 · 不写库</span></div>
+      </section>
+
       <section class="panel seats-panel" id="zone-bing" aria-label="军团席位">
-        <div class="panel-head"><div><h2><span class="zone-kicker">兵</span>军团席位 <span class="count-pill" id="seat-count">—</span></h2><p>来自 org.json；当前 WIP 来自 tasks.json；能力标签由岗位/专业派生。</p></div><a class="link-btn" href="/dev_legion.html">v1 组织视图 →</a></div>
+        <div class="panel-head"><div><h2><span class="zone-kicker">兵</span>军团席位 <span class="count-pill" id="seat-count">—</span></h2><p>来自 org.json；当前 WIP 来自 workorder_bus；能力标签由岗位/专业派生。</p></div><a class="link-btn" href="/dev_legion.html">v1 组织视图 →</a></div>
         <div class="seat-grid" id="seat-grid"><div class="empty-row">读取席位中…</div></div>
       </section>
 
-      <section class="panel flow-panel" id="zone-zhang" aria-label="军团动线">
+      <section class="panel flow-panel" aria-label="军团动线">
         <div class="panel-head"><div><h2><span class="zone-kicker">仗</span>军团动线</h2><p>有 API 指标显示数字；未接的阶段明确标“待接”，不凑数。</p></div><span class="panel-note">API v1 · 7 日</span></div>
         <div class="flow" id="flow">
           <div class="flow-step is-done"><span class="flow-index">01</span><strong>任务</strong><em id="flow-tasks">—</em><small>7 日</small></div><span class="flow-link"></span>
@@ -69,22 +91,19 @@
           <div class="flow-step is-warn"><span class="flow-index">08</span><strong>复盘</strong><em>待接</em><small>周复盘</small></div>
         </div>
       </section>
-
-      <section class="panel work-panel" aria-label="工单作战">
-        <div class="panel-head"><div><h2><span class="zone-kicker">仗</span>工单作战</h2><p>API v1 只返回研发部直属在制；跨席 16 单为人工快照，未伪装成实时。</p></div><a class="link-btn" href="/devops">打开 devops →</a></div>
-        <div class="work-table">
-          <div class="work-header"><span>状态</span><span>工单</span><span>Owner</span><span>年龄</span><span>下一步</span></div>
-          <div id="work-rows"><div class="empty-row">读取中…</div></div>
-        </div>
-        <div class="pool-foot"><span id="work-foot">来源：/api/dev/legion work_in_progress</span><span class="audit-flag">跨席 16 人工快照</span></div>
-      </section>
     </div>
 
     <aside class="right-rail">
       <section class="panel side-card decision-card" id="zone-ling">
-        <div class="side-head"><h2><span class="zone-kicker">令</span>曹操的决策队列</h2><span class="count-pill warn">3</span></div>
-        <p class="decision-help">静态配置 · as_of 2026-11-01 15:35；待治理 API 后改为实时。</p>
+        <div class="side-head"><h2><span class="zone-kicker">令</span>曹操的决策队列</h2><span class="count-pill warn" id="decision-count">3</span></div>
+        <p class="decision-help" id="decision-help">来源：API decisions（配置快照）；只读，不代签、不写库；非实时。</p>
         <div class="decision-list" id="decision-list"></div>
+      </section>
+
+      <section class="panel side-card event-card" id="events-card" aria-label="军团事件流">
+        <div class="side-head"><h2><span class="zone-kicker">仗</span>事件流</h2><span class="count-pill" id="event-count">—</span></div>
+        <p class="decision-help">来源：API <code>events</code>（v2）· 最近 8 条 · ts / kind / agent / task。</p>
+        <ul class="event-list" id="event-list"><li class="event-empty">读取事件中…</li></ul>
       </section>
 
       <section class="panel side-card gate-card" id="zone-men">
@@ -108,7 +127,7 @@
     </aside>
   </div>
 
-  <footer class="page-foot"><span>数据源：GET /api/dev/legion（ADR-009 契约 v1）· 只读 · 不写库</span><span>底座：零界 + Hermes（军团 IDE 执行层）· 页面只读</span><span>边界：不自动派单 / 不自动合并 / 不绕过质量门</span></footer>
+  <footer class="page-foot"><span>数据源：GET /api/dev/legion（ADR-020 契约 v1 · v2 extras：workorder_bus/decisions/events）· 只读 · 不写库</span><span>底座：零界 + Hermes（军团 IDE 执行层）· 页面只读</span><span>边界：不自动派单 / 不自动合并 / 不绕过质量门</span></footer>
 </main>
 
 <div class="scrim" id="scrim" hidden></div>

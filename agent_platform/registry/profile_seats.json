@@ -1,17 +1,27 @@
 {
- "schema": "profile_seats/v1",
- "note": "不占 org.json 部门编制的 profile 席位档案（D5-C 口径：治理席以 profile 角色存在、不占编）。仅参与绑定解析（engine/org_profiles.profile_index / fallbacks_index）与身份展示；不计入部门编制、日报并集与席位数统计。优先级：departments > chief > team_* > profile_seats（先到先得，profile_seats 不覆盖正式档案）。",
- "source_note": "ZHAOYUN 正式绑定=DSH 会话载体（deepseek/deepseek-v4-pro），见 legion_command/serve.py MEETING_BINDING_OVERRIDES 注释：该绑定不适配同步 /api/chat，会议场景仍用本地 ollama/qwen3.5:9b 覆盖发声。本档把「正式绑定」补进可解析真源（WO-HZ-ZY-PROFILE-20261030）；线上生效需重启 8796（绑定缓存随进程加载）。",
- "seats": [
-  {
-   "agent_id": "ZHAOYUN",
-   "cn_name": "赵云",
-   "display_name": "赵云·治理",
-   "role": "治理席（治理/审计/审批；不占编）",
-   "llm_binding": "deepseek/deepseek-v4-pro",
-   "llm_fallback": ["ollama/qwen3.5:9b"],
-   "binding_note": "DSH 会话载体；purpose=meeting 时 serve.py 覆盖为 ollama/qwen3.5:9b 不变（会议仅本地模型发声）。",
-   "owner_seat": true
-  }
- ]
+  "schema": "profile_seats/v1",
+  "note": "不占 org.json 部门编制的 profile 席位档案（D5-C 口径：治理席以 profile 角色存在、不占编）。仅参与绑定解析（engine/org_profiles.profile_index / fallbacks_index）与身份展示；不计入部门编制、日报并集与席位数统计。优先级：departments > chief > team_* > profile_seats（先到先得，profile_seats 不覆盖正式档案）。",
+  "source_note": "ZHAOYUN 正式绑定=DSH 会话载体（deepseek/deepseek-v4-pro），见 legion_command/serve.py MEETING_BINDING_OVERRIDES 注释：该绑定不适配同步 /api/chat，会议场景仍用本地 ollama/qwen3.5:9b 覆盖发声。本档把「正式绑定」补进可解析真源（WO-HZ-ZY-PROFILE-20261030）；线上生效需重启 8796（绑定缓存随进程加载）。",
+  "seats": [
+    {
+      "agent_id": "ZHAOYUN",
+      "cn_name": "赵云",
+      "display_name": "赵云·治理",
+      "role": "治理席（治理/审计/审批；不占编）",
+      "llm_binding": "deepseek/deepseek-v4-pro",
+      "llm_fallback": [
+        "ollama/qwen3.5:9b"
+      ],
+      "binding_note": "DSH 会话载体；purpose=meeting 时 serve.py 覆盖为 ollama/qwen3.5:9b 不变（会议仅本地模型发声）。",
+      "owner_seat": true,
+      "actual_position": "治理官",
+      "command_seat": "指挥部·治理官",
+      "department": "command_hq",
+      "reports_to": "A0",
+      "onboarded_at": "2026-11-04",
+      "office_title": "治理官",
+      "role_profile": "governance_seat",
+      "prompt_file": "agent_platform/prompts/zhaoyun_governance.md"
+    }
+  ]
 }

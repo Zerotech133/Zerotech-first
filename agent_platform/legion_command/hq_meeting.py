@@ -237,6 +237,7 @@ def dispatch_meeting(dirpath, req, submit) -> tuple[int, dict]:
         "title": title,
         "attendees": doc.get("attendees") or [],
         "host": "laotian",
+        "owner": owner,
         "note": "指挥部会议 %s（仅建任务申请，未执行；L2 不代批）" % mid,
     }
     try:

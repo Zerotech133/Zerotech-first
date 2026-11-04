@@ -30,7 +30,6 @@ import argparse
 import hashlib
 import importlib.util
 import json
-import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -388,7 +387,7 @@ def render_checklist_md(payload: dict) -> str:
         f"> 汇总：**AE {s['by_source'].get('AE', 0)} 张**（wave11）+ **AV {s['by_source'].get('AV', 0)} 张**"
         f"（wave16）= 共 **{s['total']}** 张候选 · 主题 {s['themes']} 个 · "
         f"可追溯 **{s['traceable']}/{s['total']}（{s['traceable_rate'] * 100:.0f}%）**",
-        f"> 状态：全部 `pending_review`；审核位：☐通过 / ☐修改 / ☐驳回",
+        "> 状态：全部 `pending_review`；审核位：☐通过 / ☐修改 / ☐驳回",
         "",
         "## 一、审核流程",
         "",

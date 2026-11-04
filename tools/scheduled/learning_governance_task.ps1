@@ -15,8 +15,11 @@ $rc1 = $LASTEXITCODE
 $outg = & $py -X utf8 tools/kb_corpus/knowledge_governance.py --write 2>&1 | Out-String
 $rcg = $LASTEXITCODE
 [System.IO.File]::AppendAllText($log, $outg + "`r`n", $utf8)
+$outga = & $py -X utf8 tools/kb_corpus/knowledge_governance_all.py 2>&1 | Out-String
+$rcga = $LASTEXITCODE
+[System.IO.File]::AppendAllText($log, $outga + "`r`n", $utf8)
 $tsg = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-[System.IO.File]::AppendAllText($log, "$tsg knowledge_governance rc=$rcg`r`n", $utf8)
+[System.IO.File]::AppendAllText($log, "$tsg knowledge_governance rc=$rcg rc_all=$rcga`r`n", $utf8)
 $out2 = & $py -X utf8 tools/kb_corpus/learning_gate.py check --stage candidates --write 2>&1 | Out-String
 $rc2 = $LASTEXITCODE
 [System.IO.File]::AppendAllText($log, $out2 + "`r`n", $utf8)

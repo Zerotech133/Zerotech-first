@@ -141,6 +141,16 @@ $paths = @{
         'agent_platform/tests/test_decision_outcomes_pit.py'
         'agent_platform/tests/test_approval_control.py'
         'agent_platform/tests/test_agent_policy.py'
+        'agent_platform/tests/test_a0_agent_p1.py'
+        'agent_platform/tests/test_a0_chief_evidence_fields.py'
+        'agent_platform/tests/test_acad1_pool_contract.py'
+        'agent_platform/tests/test_agent_sandbox.py'
+        'agent_platform/tests/test_anonymous_review.py'
+        'agent_platform/tests/test_approvals_registry.py'
+        'agent_platform/tests/test_approvals_store.py'
+        'agent_platform/tests/test_approval_card.py'
+        'agent_platform/tests/test_approval_control_m4_enforce.py'
+        'agent_platform/tests/test_approval_rollup.py'
         'agent_platform/tests/test_execution_gate.py'
         'agent_platform/tests/test_v11_m0_preflight.py'
     )
@@ -246,7 +256,11 @@ $paths = @{
         # ---- 黄忠工具测试纳管（WO-HZ-GATE-20261031，+1 聚合入口）----
         # 黄忠 15 个测试文件位于 tools/ 根与 agent_platform/tests（不在 tools/tests/ 约定内），
         # 由唯一聚合 gate 测试用子进程跑全套（独立 pytest 防 sys.path 污染）。
-        'tools/tests/test_huangzhong_tools_suite_gate.py'
+        'tools/tests/test_huangzhong_tools_suite_gate.py',
+        # ---- 学习线后置治理契约（2026-11-04 K-ORG-REVIEW，+2）----
+        # pipeline→curation→effective 幂等契约（修复每日重跑覆盖人工治理的 BUG）
+        'tools/tests/test_learning_curation.py',
+        'tools/tests/test_learning_pipeline_curation.py'
     )
 }
 
