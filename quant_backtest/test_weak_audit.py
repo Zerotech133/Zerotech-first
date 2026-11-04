@@ -9,6 +9,7 @@ T5 B 类全对：新案行+任务 Ready（滚动重启）→ 不报任务未停
 T6 任务未停：A 类任务 Ready → 报
 T7 B 类新案缺：B 类无新案行+任务 Ready → 双 issue
 T8 空目录 []；T9 真实 CLI 空态 rc=0
+T14/T15 新案行三态：已建/未立（合法）/生成失败（仍报）
 
 隔离：T1-T8 monkeypatch cases/reports 目录与任务表；全部 PASS 退出码 0。
 """
@@ -46,6 +47,9 @@ def check(name, cond, detail=""):
 
 # 坏日期串（月 68 / 日 91 越界），码点构造避免手写字面量歧义
 BAD = "".join(chr(c) for c in (50, 48, 50, 54, 45, 54, 56, 45, 57, 49))
+ARROW = chr(0x1F504)  # 🔄 用码点构造，避免源码编码歧义
+NC_SKIP = ARROW + " 新案未立"  # 声明不立新案（合法终态）
+NC_FAIL = ARROW + " 新案生成失败"  # 真异常，不得被豁免吞掉
 
 
 CHG_LINE = (
@@ -166,12 +170,35 @@ def main():
         ],
     )
 
+    # T14 B 类「声明不立新案」→ 合法终态，不报 B 类新案缺
+    put_close(
+        "000015",
+        "20260930",
+        "20260830",
+        "情景B立案·另起新案",
+        tail=NC_SKIP + "：结案结论不立新案（破位归档定性）\n",
+    )
+    put_arch("000015", "20260930")
+    put_review("000015", "20260830")
+
+    # T15 「生成失败」不等于「未立」→ 仍报 B 类新案缺（豁免不得泛化）
+    put_close(
+        "000016",
+        "20260930",
+        "20260830",
+        "情景B立案·另起新案",
+        tail=NC_FAIL + "（可手动跑命令块⑨）：无输出\n",
+    )
+    put_arch("000016", "20260930")
+    put_review("000016", "20260830")
+
     TM = {
         "WeakTrack600519": "Ready",  # T5 B 类滚动重启 → 合法
         "WeakTrack000002": "Ready",
+        "WeakTrack000016": "Ready",  # T15 生成失败 + 任务未停 → 双 issue
     }  # T7 B 类无新案 → 双 issue
     res = wa.audit_cases(CASES, REP, task_map=TM)
-    check("T0 共 7 例", len(res) == 7, str(len(res)))
+    check("T0 共 9 例", len(res) == 9, str(len(res)))
     g = lambda c6: next(c for c in res if c["c6"] == c6)
     check("T1 干净 A 类", g("301216")["issues"] == [], str(g("301216")["issues"]))
     check(
@@ -190,6 +217,16 @@ def main():
         "T7 B 类双 issue",
         g("000002")["issues"] == ["B 类新案缺", "任务未停"],
         str(g("000002")["issues"]),
+    )
+    check(
+        "T14 声明未立不报新案缺",
+        g("000015")["issues"] == [],
+        str(g("000015")["issues"]),
+    )
+    check(
+        "T15 生成失败仍报新案缺",
+        g("000016")["issues"] == ["B 类新案缺", "任务未停"],
+        str(g("000016")["issues"]),
     )
     i9 = g("000009")["issues"]
     check(
@@ -235,12 +272,12 @@ def main():
         "任务未停" in next(c for c in res2 if c["c6"] == "301216")["issues"],
     )
     f = wa.audit_fields(res)
-    check("T0 计数 7/6", (f["n"], f["n_bad"]) == (7, 6))
+    check("T0 计数 9/7", (f["n"], f["n_bad"]) == (9, 7))
     check(
         "T0 明细含修复", "Disable 每日任务" in f["detail"] and "命令块⑨" in f["detail"]
     )
     msg = wa.build_audit(f)
-    check("T0 文案头", "WEAK AUDIT" in msg and "异常 6 例" in msg)
+    check("T0 文案头", "WEAK AUDIT" in msg and "异常 7 例" in msg)
     check(
         "T8 空目录",
         wa.audit_cases(
@@ -249,7 +286,8 @@ def main():
         == [],
     )
 
-    # T9：真实 CLI（当前 0 结案 → 空态提示 rc=0）
+    # T9：真实 CLI 三种合法输出——空态 / 异常明细(AUDIT) / 全绿
+    # （原断言只认前两种，真实数据全绿时漏判，2026-11-04 修正）
     r = subprocess.run(
         [PY, "-X", "utf8", os.path.join(HERE, "weak_track_audit.py")],
         capture_output=True,
@@ -258,7 +296,11 @@ def main():
         timeout=120,
     )
     check("T9 CLI rc=0", r.returncode == 0, r.stdout[-200:] + r.stderr[-200:])
-    check("T9 空态提示", "暂无已结案案例" in r.stdout or "AUDIT" in r.stdout)
+    check(
+        "T9 空态提示",
+        any(k in r.stdout for k in ("暂无已结案案例", "AUDIT", "审计全绿")),
+        r.stdout[-200:],
+    )
 
     shutil.rmtree(TMP, ignore_errors=True)
     print(

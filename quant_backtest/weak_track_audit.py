@@ -8,7 +8,9 @@ weak_close_*.md 八项审计，发现 §9 走到一半或数据残缺：
   2. 归档缺失：声明的 weak_track_<c6>.closed_<ymd>.jsonl 不在 reports/；
   3. 档案缺失：案例档案 weak_review_<c6>_<open>.md 不在 weak_cases/；
   4. 任务未停：结案后每日任务仍 Ready（B 类滚动新案重启同任务除外）；
-  5. B 类新案缺：B 类结案但无「🔄 新案已建」行（生成失败/未生成）；
+  5. B 类新案缺：B 类结案但既无「🔄 新案已建」也无「🔄 新案未立」
+     （生成失败/未生成）；声明未立是合法终态，但须人写进报告，
+     机器不从结案结论自动推断；
   6. 日期坏点：状态流（含已归档流）里 ts/px_d 非法——坏串会让
      close 按 px_d 去重算的「跟踪 N 日」塌缩失真（写入端已由
      weak_track_check._guard_px_d 拦截，此项扫历史存量）；
@@ -53,7 +55,10 @@ _FIX = {
     "归档缺失": "检查 reports/ 归档改名是否执行（§9 第 3 步）",
     "档案缺失": "补案例档案或更正头部档案行",
     "任务未停": "Disable 每日任务（§9 第 2 步），或确认 B 类新案已建",
-    "B 类新案缺": "手动跑命令块⑨ 生成新案（或补 --newcase 重推）",
+    "B 类新案缺": (
+        "手动跑命令块⑨ 生成新案；结案已定性不立新案的，在结案报告补"
+        "「🔄 新案未立：<依据>」行"
+    ),
     "日期坏点": "行情源坏日期已入库：核对 px_d 是否多日塌成同一串，必要时修流重算时长",
     "非交易日": "px_d 落在周末/休市日（行情源把非交易日当交易日）——核当日行情是否未刷新，修流重算时长",
     "日期倒退": "px_d 序列回退：多半是行情缓存回滚/数据源陈旧，核当日行情是否未刷新",
@@ -139,7 +144,11 @@ def _task_ready(c6, tm):
 
 
 def _ncase_line(cases_dir, md):
-    """close md 尾部的 B 类新案行（🔄 新案已建 / 生成失败），无则空。"""
+    """close md 尾部的 B 类新案行（🔄 新案已建 / 新案未立 / 生成失败），无则空。
+
+    认三种：已建（滚动成功）、未立（结案即定性不立新案，合法终态）、
+    生成失败（真异常）。调用方按前缀区分，此处只取原文。
+    """
     try:
         txt = open(os.path.join(cases_dir, md), encoding="utf-8").read()
         for ln in reversed(txt.splitlines()):
@@ -172,8 +181,14 @@ def audit_cases(cases_dir=None, rep=None, task_map=None):
             issues.append("档案缺失")
         nc = _ncase_line(cases_dir, c["md"])
         nc_ok = nc.startswith("🔄 新案已建")
-        if c["type"] == "B" and not nc_ok:
+        # 「🔄 新案未立」是合法终态：结案结论已定性为破位归档/不立新案时，
+        # 本就不该有滚动新案。但这行必须由人写进报告——机器不从结案结论
+        # 里自动推断，否则「漏建新案」会被静默当成「不立新案」。
+        nc_skip = nc.startswith("🔄 新案未立")
+        if c["type"] == "B" and not (nc_ok or nc_skip):
             issues.append("B 类新案缺")
+        # 任务未停只认「已建新案」（滚动新案会重启同任务）；声明不立新案时
+        # 任务仍 Ready 属真异常，照报。
         if _task_ready(c6, tm) and not (c["type"] == "B" and nc_ok):
             issues.append("任务未停")
         ds = _bad_date_stats(rep, c6)
