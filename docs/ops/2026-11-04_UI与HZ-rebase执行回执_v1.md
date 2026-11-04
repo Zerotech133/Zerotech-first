@@ -49,3 +49,26 @@
 - UI 测试：`3 failed, 17 passed in 5.15s`（失败明细见 §二）；
 - HZ 测试：`79 passed in 3.84s`（rc=0）；
 - 两 worktree `git status --porcelain` = clean；`git rev-list --count *..master` = 0（behind）。
+
+---
+
+## 六、11:11 UI 修复回执（老田「修」指令追加）
+
+> 老田 2026-11-04 11:07 对话指令「修」→ DSH-Lead 在 UI worktree 内修复 rebase 后暴露的 manifest/route 基线漂移（仅分支内容修改，未合并）。
+
+- **修复提交**：`35f3a02ed`（分支 tip；3 files changed, +54/−32）
+  - `portal/config/page_manifest.json`：`--generate --refresh` → pages **130**（补 `portal/d1_training.html` 等）、`counts` 重算；
+  - `tools/portal_route_baseline.json`：`--write-baseline` → **298 routes**（对齐当前 master）；
+  - `portal/test_page_manifest.py`：去掉硬编码 `129`，改为按 `production_files()` 动态断言（防再漂移）。
+- **验收（全绿）**：
+  - `pytest portal/test_page_manifest.py -q` → **20 passed**；
+  - `page_manifest.py --check` → OK（pages=130 / violations=0）；
+  - `portal_route_inventory.py --check` → ✅ 298 条与基线零 diff；
+  - `test_gate.ps1 -Suite portal`（worktree 内）→ **rc=0 / GATE PASS：无新增失败**；
+  - 主仓 `merge_gated --dry-run` → **PIN OK**；`merge-tree` rc=0；worktree clean。
+- **状态**：UI 分支 `ahead=3 / behind=2`（落后的是 master 文档提交，未触门禁文件，PIN 仍 OK）；**可合候选**。
+- **回滚**：分支可回到修复前 `5bdc9e6b4`（`reset --keep`）；修复本身可按文件 revert `35f3a02ed`。
+
+### 16:30 窗口建议顺序（更新）
+
+1. **UI-UNIFY-MANIFEST（`35f3a02ed`）** → 2. **HZ-FINAL-DATE（`bc8568da5`）** → 3. **W1-PILOT-TOOLFIX（`1f679071f`）**；单指挥、串行、**失败即停**，16:58 未完成则剩余退 21:40；不合 `--train-force`、不绕 H5。
