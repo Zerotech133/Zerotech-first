@@ -9,9 +9,14 @@ window.HQ_PEOPLE = {
     GUANYU: "关羽", HUANGZHONG: "黄忠", LAOTIAN: "老田"
   },
   positions: {
-    DATA1: "数据资源主官（兰台令）",
-    A0: "幕府参谋长", AI1: "军师（反向军师/方法论）", ZHAOYUN: "治理官",
-    GUANYU: "整治官（代码审计/技术债）", HUANGZHONG: "验收官"
+    ACAD1: "研究院院长（太学·水镜）",
+    STRAT1: "策略研究员",
+    BACK1: "量化回测研究员",
+    COMM1: "商业化研究员",
+    INTEL1: "竞争情报研究员",
+    AI1: "军师（反向军师/方法论）",
+    PROD1: "策略产品经理",
+    STRAT2: "市场策略研究员（US/CRYPTO）",
   },
   depts: {
     invest: "量化交易部", dev: "研发部", data: "数据智能部",

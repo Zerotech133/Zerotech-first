@@ -133,6 +133,30 @@ _DATA1_PERSONA = {
     "seat": "数据智能部·兰台令", "name": "张松", "actual_position": "数据资源主官（兰台令）",
     "reports_to": "A0", "duties": ["资产目录", "血缘", "接入", "权限分级", "生命周期", "质量", "开放边界"],
 }
+_ACADEMY_TEAM_FILE = _PLATFORM / "registry" / "academy_team_onboard.json"
+_ACADEMY_CACHE = {"mtime": None, "map": {}}
+
+
+def academy_team_persona(agent: str) -> str:
+    """司马徽研究院 8 席岗位 persona；非团队成员返回空串。"""
+    try:
+        mt = _ACADEMY_TEAM_FILE.stat().st_mtime
+        if _ACADEMY_CACHE["mtime"] != mt:
+            data = json.loads(_ACADEMY_TEAM_FILE.read_text(encoding="utf-8"))
+            _ACADEMY_CACHE["map"] = {x["agent_id"]: x for x in data.get("members", [])}
+            _ACADEMY_CACHE["mtime"] = mt
+    except (OSError, ValueError):
+        return ""
+    rec = _ACADEMY_CACHE["map"].get(agent)
+    if not rec:
+        return ""
+    duties = "、".join(rec.get("duties") or [])
+    return ("你是零界%s的%s（%s），实际岗位：%s；汇报对象：%s；职责：%s。"
+            "必须以该实际岗位身份回答，不越权、不冒充其他席位。"
+            % (rec.get("seat", ""), rec.get("name", ""), agent,
+               rec.get("actual_position", ""), rec.get("reports_to", ""), duties))
+
+
 _FIVE_ROLES_FILE = _PLATFORM / "registry" / "five_roles_onboard.json"
 _FIVE_ROLE_CACHE = {"mtime": None, "map": {}}
 
@@ -150,6 +174,8 @@ def five_role_persona(agent: str) -> str:
     rec = _FIVE_ROLE_CACHE["map"].get(agent)
     if not rec and agent == "DATA1":
         rec = _DATA1_PERSONA
+    if not rec:
+        return academy_team_persona(agent)
     if not rec:
         return ""
     duties = "、".join(rec.get("duties") or [])
