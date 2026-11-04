@@ -46,6 +46,7 @@ MAX_CLUSTERS = 3
 MAX_UNITS_PER_CLUSTER = 3
 MAX_ANSWER_CHARS = 400
 REFUSAL_MARK = "没有足够依据"
+REFUSAL_ANSWER = "知识库中没有足够依据回答该问题。"
 
 
 class MultiError(RuntimeError):
@@ -320,9 +321,94 @@ def build_citation_retry_prompt(prompt: str) -> str:
     return f"{prompt}{CITATION_RETRY_HINT}"
 
 
+# ---------------------------------------------------------------------------
+# 多单元答案清洗（自检修正残留 → 干净拒答；重复事实/引用去重）
+# ---------------------------------------------------------------------------
+_SELF_CHECK_ECHO_MARKERS = ("自检修正", "重新作答如下")
+_FACT_LINE_RE = re.compile(r"^\s*(?:[-*]\s*)?(?:【(?:直接事实|事实|推断)】|\[(?:事实|推断)\])")
+_CITE_TOKEN_RE = re.compile(
+    r"[\[【][0-9a-fA-F]{8,12}[\]】]\s*(?:p\.\s*\d+(?:\s*[-–~]\s*\d+)?)?", re.I)
+_PAGE_ONLY_RE = re.compile(r"(?<![0-9A-Za-z])p\.\s*\d+(?:\s*[-–~]\s*\d+)?", re.I)
+_NORM_STRIP_RE = re.compile(r"[\s，。；;、,.:：!?！？\-–—]+")
+
+
+def _strip_retry_echo(answer: str) -> tuple[str, bool]:
+    """去掉自检修正提示行；返回 (清洗后文本, 是否命中提示残句)。"""
+    kept = []
+    echo = False
+    for line in str(answer or "").splitlines():
+        if any(marker in line for marker in _SELF_CHECK_ECHO_MARKERS):
+            echo = True
+            continue
+        kept.append(line)
+    return "\n".join(kept).strip(), echo
+
+
+def _normalize_fact_line(line: str) -> str:
+    """事实行归一化：去掉引用标记/页码/标点空白，用于判重。"""
+    text = _CITE_TOKEN_RE.sub("", str(line or ""))
+    text = _PAGE_ONLY_RE.sub("", text)
+    return _NORM_STRIP_RE.sub("", text)
+
+
+def _dedupe_inline_cites(line: str) -> str:
+    """同一括号组内重复的 [unit_id] p.n / p.n 只保留一次。"""
+    # 先消掉完全相同、以分隔符相连的引用串
+    line = re.sub(
+        r"(\[[0-9a-fA-F]{8,12}\]\s*p\.\s*\d+(?:\s*[-–~]\s*\d+)?)"
+        r"(?:\s*[、,，]\s*\1)+", r"\1", line)
+    # 再消掉同一组内重复的纯页码（例如「p.1、p.1」）
+    line = re.sub(r"(p\.\s*\d+)(?:\s*[、,，]\s*\1)+", r"\1", line,
+                  flags=re.I)
+    # 清理去重后留下的悬空分隔符
+    line = re.sub(r"[、,，]\s*(?=[）)])", "", line)
+    line = re.sub(r"[、,，]\s*[、,，]+", "、", line)
+    line = re.sub(r"([（(])\s*[、,，]", r"\1", line)
+    return line
+
+
+def clean_multi_answer(answer: str, clusters: list[dict] | None = None) -> str:
+    """清洗多单元答案，供 answer_multi 在非降级路径统一调用。
+
+    规则：
+    - 删除「【自检修正】…现重新作答如下」等提示残句；
+    - 去重重复事实/推断行（归一化后相同）；
+    - 去重同一括号组内重复引用/页码；
+    - 若清洗后为空，或只剩提示残句且无有效答案 → 统一干净拒答。
+    """
+    text = str(answer or "").strip()
+    if not text:
+        return REFUSAL_ANSWER
+    cleaned, echo = _strip_retry_echo(text)
+    lines = []
+    seen_facts = set()
+    for raw in cleaned.splitlines():
+        line = _dedupe_inline_cites(raw.strip())
+        if not line:
+            continue
+        norm = _normalize_fact_line(line)
+        if _FACT_LINE_RE.match(line) and norm:
+            if norm in seen_facts:
+                continue
+            seen_facts.add(norm)
+        lines.append(line)
+    cleaned = "\n".join(lines).strip()
+    if not cleaned:
+        return REFUSAL_ANSWER
+    if REFUSAL_MARK in cleaned:
+        return cleaned
+    # 仅有自检修正残句、重试后仍无有效引用 → 干净拒答（不再输出半句）
+    if echo and not _CITE_RE.search(cleaned):
+        return REFUSAL_ANSWER
+    if not re.search(r"[\u4e00-\u9fff]", cleaned):
+        return REFUSAL_ANSWER
+    return cleaned
+
+
+
 def rule_based_multi(clusters: list[dict]) -> str:
     if not clusters:
-        return "知识库中没有足够依据回答该问题。"
+        return REFUSAL_ANSWER
     parts = ["（规则降级：LLM 不可用，多单元摘录）"]
     for cluster in clusters[:2]:
         parts.append(f"【直接事实】{cluster.get('label') or ''}：")
@@ -357,7 +443,7 @@ def answer_multi(question: str, k: int = DEFAULT_K, clusters: list[dict] | None 
             "cluster_count": len(clusters), "units_provided": provided,
             "generated_at": datetime.now().astimezone().isoformat(timespec="seconds")}
     if not clusters:
-        base.update({"answer": "知识库中没有足够依据回答该问题。", "citations": [],
+        base.update({"answer": REFUSAL_ANSWER, "citations": [],
                      "confidence": {"level": "none", "reasons": ["检索无材料，按拒答处理"]},
                      "fallback": False, "refusal": True, "direct_fact_markers": 0,
                      "inference_markers": 0})
@@ -390,6 +476,8 @@ def answer_multi(question: str, k: int = DEFAULT_K, clusters: list[dict] | None 
             second_units = count_valid_cited_units(answer, clusters)
             retry_info.update({"second_units": second_units,
                                "improved": second_units > first_units})
+    if not fallback:
+        answer = clean_multi_answer(answer, clusters)
     check = validate_multi_answer(answer, clusters)
     confidence = assess_confidence(answer, check, clusters, fallback)
     base.update({"answer": answer, "citations": check["citations"],
