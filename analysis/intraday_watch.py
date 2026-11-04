@@ -57,8 +57,9 @@ SINA_URL = "https://hq.sinajs.cn/list=%s"
 SINA_HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
                 "Referer": "https://finance.sina.com.cn"}
 EM_STOCK_URL = ("https://push2.eastmoney.com/api/qt/stock/get?secid=%s"
-                "&fields=f43,f48,f50,f60,f168,f170&fltt=2&invt=2")
-EM_SECTOR_URL = ("https://push2.eastmoney.com/api/qt/clist/get?pn=1&pz=500&po=1&np=1"
+                "&fields=f43,f48,f50,f60,f168,f170,f127,f128,f129&fltt=2&invt=2")
+#: 东财行业板块榜；服务端 pz 上限 100（实测 pz=500 仍只回 100），必须分页取全量（约 496 个）
+EM_SECTOR_URL = ("https://push2.eastmoney.com/api/qt/clist/get?pn=%d&pz=100&po=1&np=1"
                  "&fltt=2&invt=2&fid=f3&fs=m:90+t:2&fields=f12,f14,f3,f62")
 HTTP_HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
                 "Referer": "https://quote.eastmoney.com/"}
@@ -88,6 +89,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "sector_stock_sync_pct": 1.0,
     "sector_fast_move_pct": 1.5,
     "sector_fast_window_sec": 180,
+    "sector_refresh_sec": 180,       # 板块榜刷新间隔（设计 3min，避免每 tick 拉 5 页）
     # 去重 / 冷却 / 限流
     "cooldown_min": {"default": 30, "pct_cross": 30, "fast_move": 15, "vol_ratio": 30,
                      "limit_open": 1440, "key_level": 60, "stop_hit": 1440,
@@ -421,7 +423,41 @@ def fetch_em_snapshot(code: str, timeout: int = 8) -> Dict[str, Any]:
         val = _to_float(data.get(field))
         return None if val is None else round(val, 2)
     return {"vol_ratio": num("f50"), "turnover": num("f168"), "pct": num("f170"),
-            "amount": _to_float(data.get("f48")), "price": num("f43")}
+            "amount": _to_float(data.get("f48")), "price": num("f43"),
+            # f127=东财行业板块名（如「家居用品」）、f128=地域、f129=概念（逗号分隔）
+            "em_industry": str(data.get("f127") or "").strip() or None,
+            "em_region": str(data.get("f128") or "").strip() or None,
+            "em_concepts": [c.strip() for c in str(data.get("f129") or "").split(",")
+                            if c.strip()]}
+
+def ensure_em_industries(quotes: List[Dict[str, Any]], store: "StateStore",
+                         limit: int = 0, timeout: int = 8) -> List[Dict[str, Any]]:
+    """给池内个股补东财行业板块名（f127），按「日期+代码」缓存，当日只拉一次。
+
+    f127 是东财自己的行业板块名（如 600337→「家居用品」），比申万行业名与东财
+    板块名的模糊匹配可靠；`limit>0` 时最多拉 limit 只（调试用）。
+    """
+    if not quotes:
+        return quotes
+    day = now_cst().strftime("%Y-%m-%d")
+    # 1) 先用当日缓存回填（同一交易日后续 tick 不再请求）
+    for quote in quotes:
+        if quote.get("em_industry"):
+            continue
+        cached = store.get_kv("em_ind:%s:%s" % (day, quote.get("code")))
+        if cached:
+            quote["em_industry"] = cached
+    todo = [q for q in quotes if not q.get("em_industry")]
+    if limit and limit > 0:
+        todo = todo[:limit]
+    for quote in todo:
+        snap = fetch_em_snapshot(str(quote.get("code") or ""), timeout=timeout)
+        if not snap.get("em_industry"):
+            continue
+        quote["em_industry"] = snap["em_industry"]
+        quote["em_concepts"] = snap.get("em_concepts") or []
+        store.set_kv("em_ind:%s:%s" % (day, quote.get("code")), snap["em_industry"])
+    return quotes
 
 def enrich_quotes(quotes: List[Dict[str, Any]], limit: int = 12) -> List[Dict[str, Any]]:
     """按 |涨跌幅| 取前 N 只补东财字段（控制请求量），失败静默跳过。"""
@@ -547,25 +583,48 @@ def fetch_news_incremental(watermark_ts: Optional[str], news_db: Optional[str] =
 
 # ---------------------------------------------------------------- 板块采集
 
-def fetch_sectors(timeout: int = 10) -> List[Dict[str, Any]]:
-    """东财行业板块榜（fs=m:90+t:2）：名称/涨幅/主力净流；失败返回 []。"""
-    try:
-        payload = json.loads(_http_get(EM_SECTOR_URL, timeout=timeout))
-    except Exception as exc:  # noqa: BLE001 - 降级路径
-        log("板块：拉取失败（%s）" % str(exc)[:100])
-        return []
-    diff = ((payload or {}).get("data") or {}).get("diff") or []
-    if isinstance(diff, dict):
-        diff = list(diff.values())
+def fetch_sectors(timeout: int = 10, max_pages: int = 8) -> List[Dict[str, Any]]:
+    """东财行业板块榜（fs=m:90+t:2）：名称/涨幅/主力净流；失败返回 []。
+
+    服务端 pz 硬上限 100（实测传 500 仍只回 100，且只含榜首 100 个），因此必须
+    按 pn 分页取全量（约 496 个）——否则「跌幅前 5」永远取不到、rank 也是错的。
+    任一页失败即返回已取到的部分，不抛异常。
+    """
     out: List[Dict[str, Any]] = []
-    for item in diff:
-        pct = _to_float(item.get("f3")) if isinstance(item, dict) else None
-        name = str(item.get("f14") or "").strip() if isinstance(item, dict) else ""
-        if pct is None or not name:
-            continue
-        out.append({"code": str(item.get("f12") or "").strip(), "name": name,
-                    "pct": pct, "net_inflow": _to_float(item.get("f62"))})
+    seen = set()
+    total = None
+    for page in range(1, max(1, int(max_pages)) + 1):
+        try:
+            payload = json.loads(_http_get(EM_SECTOR_URL % page, timeout=timeout))
+        except Exception as exc:  # noqa: BLE001 - 降级路径
+            log("板块：第 %d 页拉取失败（%s）" % (page, str(exc)[:80]))
+            break
+        data = (payload or {}).get("data") or {}
+        diff = data.get("diff") or []
+        if isinstance(diff, dict):
+            diff = list(diff.values())
+        if total is None:
+            total = _to_float(data.get("total"))
+        if not diff:
+            break
+        for item in diff:
+            if not isinstance(item, dict):
+                continue
+            pct = _to_float(item.get("f3"))
+            name = str(item.get("f14") or "").strip()
+            code = str(item.get("f12") or "").strip()
+            if pct is None or not name or (code, name) in seen:
+                continue
+            seen.add((code, name))
+            out.append({"code": code, "name": name, "pct": pct,
+                        "net_inflow": _to_float(item.get("f62"))})
+        if total is not None and len(out) >= int(total):
+            break
+        if len(diff) < 100:
+            break
     out.sort(key=lambda s: s["pct"], reverse=True)
+    if total is not None and len(out) < int(total):
+        log("板块：分页只取到 %d/%d 个（服务端限制或中途失败）" % (len(out), int(total)))
     return out
 
 _SW_CACHE: Dict[str, Dict[str, str]] = {}
@@ -1035,7 +1094,11 @@ def _eval_news(news: List[Dict[str, Any]], pool_codes: set, cfg: Dict[str, Any],
 def _eval_sectors(quotes: List[Dict[str, Any]], sectors: List[Dict[str, Any]],
                   store: StateStore, cfg: Dict[str, Any], now: datetime,
                   ts: str, trade_date: str) -> List[Signal]:
-    """C 组：板块前 5/后 5 + 个股同向 ≥1%；或板块 3 分钟 ±1.5% 急拉/跳水。"""
+    """C 组：板块前 5/后 5 + 个股同向 ≥1%；或板块 3 分钟 ±1.5% 急拉/跳水。
+
+    个股→板块优先用东财快照 f127（如 600337→家居用品），缺失才回退申万名匹配；
+    板块历史只记录池内个股实际所属板块（避免每 tick 写全量 496 个板块拖慢状态库）。
+    """
     out: List[Signal] = []
     if not sectors:
         return out
@@ -1044,11 +1107,12 @@ def _eval_sectors(quotes: List[Dict[str, Any]], sectors: List[Dict[str, Any]],
     sync, fast = float(cfg.get("sector_stock_sync_pct", 1.0)), \
         float(cfg.get("sector_fast_move_pct", 1.5))
     window = int(cfg.get("sector_fast_window_sec", 180))
+    hist_updates: Dict[str, str] = {}
     for quote in quotes:
         code, pct = quote.get("code") or "", _to_float(quote.get("pct"))
         if pct is None or not _is_a_share(code):
             continue
-        sector_name = sector_map_for(code, names)
+        sector_name = quote.get("em_industry") or sector_map_for(code, names)
         if not sector_name or sector_name not in ranks:
             continue
         info, rank = ranks[sector_name], ranks[sector_name]["rank"]
@@ -1076,10 +1140,12 @@ def _eval_sectors(quotes: List[Dict[str, Any]], sectors: List[Dict[str, Any]],
                        ts, "fast:%s" % ("up" if delta > 0 else "down"), trade_date)
             sig.sector = sector_doc
             out.append(sig)
-    store.set_json_many([
-        ("sector_hist:%s" % s["name"],
-         _hist_append(store.get_json("sector_hist:%s" % s["name"], []) or [],
-                      now, float(s["pct"]))) for s in sectors])
+        if hist_key not in hist_updates:
+            hist_updates[hist_key] = json.dumps(
+                _hist_append(store.get_json(hist_key, []) or [],
+                             now, float(info["pct"])), ensure_ascii=False)
+    if hist_updates:
+        store.set_json_many([(key, json.loads(raw)) for key, raw in hist_updates.items()])
     return out
 
 def evaluate(quotes: List[Dict[str, Any]], news: Optional[List[Dict[str, Any]]] = None,
@@ -1162,6 +1228,27 @@ def to_push_payload(signals: List[Signal],
 
 # ---------------------------------------------------------------- 单轮编排
 
+def _sectors_cached(store: "StateStore", now: datetime,
+                    refresh_sec: int = 180) -> List[Dict[str, Any]]:
+    """板块榜按 refresh_sec 节流：未到刷新点用状态库缓存，拉取失败退回旧缓存。"""
+    last = store.get_kv("sector_fetch_ts") or ""
+    cached = store.get_json("sector_cache", []) or []
+    due = True
+    if last and cached:
+        try:
+            last_dt = datetime.strptime(last, "%Y-%m-%d %H:%M:%S").replace(tzinfo=CST)
+            due = (now - last_dt).total_seconds() >= max(30, int(refresh_sec))
+        except (TypeError, ValueError):
+            due = True
+    if not due and cached:
+        return cached
+    fresh = fetch_sectors()
+    if fresh:
+        store.set_json("sector_cache", fresh)
+        store.set_kv("sector_fetch_ts", now.strftime("%Y-%m-%d %H:%M:%S"))
+        return fresh
+    return cached
+
 def run_once(dry_run: bool = False, cfg: Optional[Dict[str, Any]] = None,
              now: Optional[datetime] = None,
              fetch: bool = True) -> Dict[str, Any]:
@@ -1188,11 +1275,13 @@ def run_once(dry_run: bool = False, cfg: Optional[Dict[str, Any]] = None,
             len(quotes), len(pool), "" if not quotes else "；" + "，".join(
                 "%s %s %s%%" % (q["code"], _fmt_num(q.get("price")), _fmt_num(q.get("pct")))
                 for q in quotes[:5])))
+        # 东财行业板块名（f127）：当日首次拉取后缓存，供「板块轮动」规则精确映射
+        quotes = ensure_em_industries(quotes, store)
         news = fetch_news_incremental(store.get_kv("news_watermark"), limit=200, now=cur,
                                       lookback_min=int(conf.get("news_lookback_min", 30)))
         log("新闻：增量 %d 条，池内命中 %d 条" % (
             len(news), len([n for n in news if set(n["stocks_codes"]) & set(pool)])))
-        sectors = fetch_sectors()
+        sectors = _sectors_cached(store, cur, int(conf.get("sector_refresh_sec", 180)))
         log("板块：%d 个%s" % (len(sectors), "" if not sectors else "；前 3 " + "，".join(
             "%s %+.2f%%" % (s["name"], s["pct"]) for s in sectors[:3])))
     levels = load_key_levels([q["code"] for q in quotes]) if quotes else {}
