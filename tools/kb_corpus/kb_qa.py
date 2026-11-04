@@ -5,7 +5,8 @@
   ① 检索融合：复用 kb_read_api.py 的 `search`（知识单元，498 条含研报+书籍）与
      `corpus-search`（RAG chunks，C:/项目/知识库/50_RAG/rag_index_corpus.json，4926 条），
      两路 top-k 归一化融合打分、按 unit_id 与原文去重、排序取 topk；
-  ② 生成：本地 Ollama qwen3.5:9b（/api/chat，stream=false、think=false、timeout=300s），
+  ② 生成：默认本地 Ollama qwen3.5:9b（/api/chat，stream=false、think=false、timeout=300s）；
+     `KB_QA_LLM_PROVIDER=router` 时改走 llm_router 三级降级（百炼 v4d→v2→本地 ollama）；
      prompt 强制「只依据给定材料回答；每个结论引用 [unit_id] 与页码；无依据必须说不知道」；
   ③ 输出：answer + citations（unit_id/书名/章节/页码/原文片段）+ confidence 说明；
      并对 LLM 引用做校验（未知 unit_id 记 hallucinated、未引用材料记 citation_missing）；
@@ -37,6 +38,10 @@ OLLAMA_ENDPOINT = "http://127.0.0.1:11434/api/chat"
 DEFAULT_MODEL = "qwen3.5:9b"
 DEFAULT_TOPK = 8
 DEFAULT_TIMEOUT = 300
+# 生成提供方：ollama=生产旧口径（默认）；router=llm_router 三级降级（v4d→v2→ollama）
+LLM_PROVIDERS = ("ollama", "router")
+DEFAULT_LLM_PROVIDER = os.environ.get("KB_QA_LLM_PROVIDER", "ollama").strip().lower()
+ROUTER_ENDPOINT = "router(qwen2.5-14b-instruct-a57a3521e4e0→...-e383f32d42f2→ollama/qwen3.5:9b)"
 DEFAULT_MODE = "multi"          # 默认多单元聚合（A/B：可答率 33%→80%，回退 0）
 VALID_MODES = ("multi", "single")
 PROMPT_VERSIONS = ("v1", "v4")          # 聚合 prompt 版本（默认 v4 灰度；KB_QA_PROMPT_VERSION=v1 回滚）
@@ -254,6 +259,47 @@ def call_ollama(prompt: str, model: str = DEFAULT_MODEL, timeout: float = DEFAUL
     return content
 
 
+def _router_module():
+    """延迟导入 llm_router（同目录；脚本/包两种运行方式均可）。"""
+    _dir = str(Path(__file__).resolve().parent)
+    if _dir not in sys.path:
+        sys.path.insert(0, _dir)
+    import llm_router  # noqa: PLC0415
+    return llm_router
+
+
+def call_router(prompt: str, model: str | None = None, timeout: float = DEFAULT_TIMEOUT,
+                num_predict: int = 800) -> str:
+    """经 llm_router 三级降级生成（百炼 v4d→v2→本地 ollama），失败抛 KbQaError。"""
+    try:
+        res = _router_module().generate(
+            prompt, temperature=0.1, max_tokens=int(num_predict), purpose="kb_qa")
+    except Exception as exc:  # noqa: BLE001 - 路由内部异常统一降级为 KbQaError
+        raise KbQaError(f"LLM router 调用异常：{type(exc).__name__}: {exc}") from exc
+    if not res.get("ok"):
+        attempts = res.get("attempts") or []
+        raise KbQaError(f"LLM router 全部降级失败：{_clip(attempts, 160)}")
+    text = str(res.get("text") or "").strip()
+    if not text:
+        raise KbQaError("LLM router 返回空内容")
+    return text
+
+
+def llm_endpoint() -> str:
+    return ROUTER_ENDPOINT if DEFAULT_LLM_PROVIDER == "router" else OLLAMA_ENDPOINT
+
+
+def chat(prompt: str, model: str = DEFAULT_MODEL, timeout: float = DEFAULT_TIMEOUT,
+         num_predict: int = 800) -> str:
+    """生成入口：按 KB_QA_LLM_PROVIDER 分派 ollama / router（默认 ollama）。"""
+    provider = (DEFAULT_LLM_PROVIDER or "ollama").strip().lower()
+    if provider == "router":
+        return call_router(prompt, model=model, timeout=timeout, num_predict=num_predict)
+    if provider not in LLM_PROVIDERS:
+        raise KbQaError(f"KB_QA_LLM_PROVIDER 只能是 {'/'.join(LLM_PROVIDERS)}（收到 {provider!r}）")
+    return call_ollama(prompt, model=model, timeout=timeout, num_predict=num_predict)
+
+
 # ---------------------------------------------------------------------------
 # ③ 引用校验 + 置信说明
 # ---------------------------------------------------------------------------
@@ -357,7 +403,7 @@ def _ask_single(question: str, topk: int, model: str, timeout: float, search_fn,
             "prompt_version": (prompt_version or DEFAULT_PROMPT_VERSION).strip().lower(),
             "guard_marker_mode": (marker_mode or DEFAULT_MARKER_MODE).strip().lower(),
             "k": topk, "clusters": [],
-            "retrieved": retrieved, "llm": {"model": model, "endpoint": OLLAMA_ENDPOINT,
+            "retrieved": retrieved, "llm": {"model": model, "endpoint": llm_endpoint(),
                                             "think": False, "timeout_seconds": timeout,
                                             "fallback": False, "error": None},
             "generated_at": datetime.now().astimezone().isoformat(timespec="seconds")}
@@ -378,7 +424,7 @@ def _ask_single(question: str, topk: int, model: str, timeout: float, search_fn,
     fallback = False
     error = None
     try:
-        answer = (chat_fn or call_ollama)(prompt, model=model, timeout=timeout)
+        answer = (chat_fn or chat)(prompt, model=model, timeout=timeout)
     except (KbQaError, TimeoutError, OSError, ValueError) as exc:
         fallback = True
         error = _clip(exc, 160)
@@ -404,7 +450,7 @@ def _ask_multi(question: str, topk: int, model: str, timeout: float, search_fn, 
     clusters = multi.retrieve_clusters(question, k=k, search_fn=search_fn)
     multi_kwargs = {"k": k, "clusters": clusters, "search_fn": search_fn,
                     "citation_retry": bool(citation_retry),
-                    "chat_fn": chat_fn, "model": model, "timeout": timeout}
+                    "chat_fn": chat_fn or chat, "model": model, "timeout": timeout}
     if (prompt_version or DEFAULT_PROMPT_VERSION).strip().lower() != DEFAULT_PROMPT_VERSION:
         multi_kwargs["prompt_version"] = prompt_version
     result = multi.answer_multi(question, **multi_kwargs)
@@ -429,7 +475,7 @@ def _ask_multi(question: str, topk: int, model: str, timeout: float, search_fn, 
             "fallback": bool(result.get("fallback")),
             "citation_check": {"hallucinated_citations": check.get("hallucinated_ids") or [],
                                "citation_missing": check.get("citation_missing", False)},
-            "llm": result.get("llm") or {"model": model, "endpoint": OLLAMA_ENDPOINT,
+            "llm": result.get("llm") or {"model": model, "endpoint": llm_endpoint(),
                                          "think": False, "timeout_seconds": timeout,
                                          "fallback": bool(result.get("fallback")), "error": None},
             "direct_fact_markers": result.get("direct_fact_markers"),
@@ -639,6 +685,8 @@ def build_parser() -> argparse.ArgumentParser:
     ask_p.add_argument("--json", action="store_true", help="输出完整 JSON（含 citations/confidence）")
     ask_p.add_argument("--model", default=DEFAULT_MODEL, help="Ollama 模型")
     ask_p.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT, help="LLM 超时秒数")
+    ask_p.add_argument("--llm-provider", choices=list(LLM_PROVIDERS), default=DEFAULT_LLM_PROVIDER,
+                       help="生成提供方：ollama（默认）| router（llm_router 三级降级）")
     ask_p.add_argument("--retrieval-only", action="store_true", help="仅检索不生成（离线冒烟）")
     ask_p.add_argument("--no-guard", action="store_true", help="multi 输出不经质量守卫（灰度对比）")
     ask_p.add_argument("--citation-retry", dest="citation_retry", action="store_true", default=None,
@@ -682,9 +730,12 @@ def _print_human(result: dict) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    global DEFAULT_LLM_PROVIDER
     args = build_parser().parse_args(argv)
     if args.cmd == "ask":
         try:
+            if getattr(args, "llm_provider", None):
+                DEFAULT_LLM_PROVIDER = args.llm_provider
             mode = "single" if getattr(args, "single", False) else args.mode
             k = args.k if getattr(args, "topk", None) is None else args.topk
             result = ask(args.question, topk=k, model=args.model, timeout=args.timeout,

@@ -58,8 +58,10 @@ IS_A = re.compile(
     r"^\d{6}\.(SH|SZ|BJ)$"
 )  # 本清单为 A 股口径（cross/qpzm 多市场源入清单前过滤）
 QB = os.path.join(ROOT, "quant_backtest")
+ASHARE_DIR = os.path.join(QB, "data", "ashare")  # 收盘行情主库（TdpSync 16:0x 落盘）
 OUT = os.path.join(HERE, "data", "todays_picks.json")
 STALE_LAG_DAILY = 4  # 日扫源允许的最大滞后自然日（覆盖周末+小长假；五审闸门）
+BASIS_FAIL_RC = 4  # 基准新鲜度闸门失败退出码（与 0=正常 / 3=T1停挂 区分）
 # P5b 毒层过滤开关（2026-10-11 启用，用户拍板）：毒层买点不计 T1 共振。
 # 回退=改 False（cl_buy/载荷计数即刻恢复同权口径）。
 TOXIC_EXCLUDE = True
@@ -846,6 +848,55 @@ def _backfill_quotes(stocks):
         return None, 0
 
 
+def _ashare_latest_day(sample="000001_SZ.parquet"):
+    """读 ashare 单票 parquet 的最新 trade_date（收盘库落盘哨兵）。
+
+    只读一只样本，毫秒级；失败/缺文件返回 None（探测失败不阻断主链，
+    由调用方按「无法证明新鲜」处理——但当前只在拿到 ashare_day 时比较）。
+    """
+    try:
+        import pandas as pd  # noqa: PLC0415（延迟导入，与 _backfill_quotes 同口径）
+
+        fp = os.path.join(ASHARE_DIR, sample)
+        if not os.path.exists(fp):
+            return None
+        df = pd.read_parquet(fp, columns=["trade_date"])
+        if df.empty:
+            return None
+        return str(df["trade_date"].max())
+    except Exception as ex:  # noqa: BLE001
+        print("[picks] ashare 基准探测降级：%s" % str(ex)[:80])
+        return None
+
+
+def _basis_guard(basis_day, ashare_day=None):
+    """基准新鲜度闸门：行情湖基准日落后 ashare 收盘库 → 返回错误文案。
+
+    fail-closed（2026-11-04 立）：TodaysPicks 原 15:40 跑在 TdxSync_A_高频
+    17:35 之前，basis 恒为 D-1；2026-11-04 首次实测 17:35 同步后才写入
+    当日 ts_daily。本闸门只比较两个只读基准日：ashare 最新交易日 > 湖基准日
+    即判定「收盘库已有当日、湖未同步」，拒绝写盘（rc=4），避免旧基准清单
+    冒充当日盘后清单继续污染 picks_history 后验地基。
+    周末/节假日：两库同为最后交易日，比较相等，不误报。
+    PICKS_BASIS_GUARD=0 可临时关闭（仅回滚/调试，生产不设）。
+    """
+    if os.environ.get("PICKS_BASIS_GUARD", "1") == "0":
+        return None
+    if not basis_day:
+        return None  # 湖不可达保持设计内降级（原因已在 backfill 留痕）
+    ad = ashare_day if ashare_day is not None else _ashare_latest_day()
+    if not ad:
+        return None
+    b = _ymd(basis_day)
+    a = _ymd(ad)
+    if a and b and b < a:
+        return (
+            "行情湖基准 %s 落后 ashare 收盘库最新交易日 %s"
+            "（TdxSync_A_高频 17:35 未同步/失败）" % (b, a)
+        )
+    return None
+
+
 def _archive_once(hist_dir, basis_day, doc):
     """归档首写锁定（二十六审 2026-10-10）。
 
@@ -951,6 +1002,9 @@ def _push_source_alert(metas, veto_failed, basis_day):
     告警器不能反噬聚合主流程 rc（同 alert_fail 语义）。
     """
     if veto_failed:
+        return
+    if os.environ.get("PICKS_SKIP_PUSH") == "1":
+        print("  [PICKS 源级降级] PICKS_SKIP_PUSH=1 跳过飞书推送（验证/回放用）")
         return
     lines = []
     for sid, m in metas.items():
@@ -1059,6 +1113,17 @@ def main():
 
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     basis_day, n_backfill = _backfill_quotes(stocks)
+    # 基准新鲜度闸门（2026-11-04 立，fail-closed）：ashare 已有当日收盘而
+    # 行情湖仍停在 D-1 时拒绝写盘，避免旧基准清单冒充当日盘后清单。
+    guard_err = _basis_guard(basis_day)
+    if guard_err:
+        print(
+            "[picks] FAIL-CLOSED 基准新鲜度闸门：%s\n"
+            "  → 拒绝写入 %s（rc=%d）；检查 \\ZeroBound\\TdxSync_A_高频 17:35 任务"
+            % (guard_err, OUT, BASIS_FAIL_RC),
+            file=sys.stderr,
+        )
+        return BASIS_FAIL_RC
     # 基准日动态推导：行情湖最新日（硬编码 2026-10-07 时代已废——每天跑也是旧文案）
     if basis_day:
         basis_s = "%s-%s-%s" % (basis_day[:4], basis_day[4:6], basis_day[6:])
@@ -1197,4 +1262,6 @@ if __name__ == "__main__":
     _ap.parse_args()
     # 退出码口径（十一审）：0=正常；3=跑完但 T1 停挂（否决源 err，清单已
     # 落盘仅缺 T1 层）——start_todays_picks.ps1 透传给 alert_fail 推送。
-    sys.exit(0 if main() else 3)
+    # 4=基准新鲜度闸门拒绝写盘（2026-11-04 立，见 _basis_guard）。
+    _res = main()
+    sys.exit(0 if _res is True else (3 if _res is False else _res))
