@@ -60,10 +60,17 @@ def latest_report(pattern: str, reports_dir: Path = REPORTS):
 
 
 def latest_gate(reports_dir: Path = REPORTS):
-    """读取最新 learning_gate_*.json（v2 门禁报告）。"""
-    files = sorted(Path(reports_dir).glob("learning_gate_*.json"),
-                   key=lambda p: (not re.fullmatch(r"learning_gate_\d{8}\.json", p.name),
-                                  -p.stat().st_mtime))
+    """读取最新 learning_gate_*.json（v2 门禁报告）。
+
+    优先全量日报告；同类按报告内 generated_at 排序，而不是文件 mtime。
+    mtime 可能因补跑/复制而晚于日期文件名，曾导致 20261103 报告覆盖 20261104。
+    """
+    def _key(p: Path):
+        data = load_json(p) or {}
+        is_full = bool(re.fullmatch(r"learning_gate_\d{8}\.json", p.name))
+        return (is_full, str(data.get("generated_at") or ""), p.stat().st_mtime)
+
+    files = sorted(Path(reports_dir).glob("learning_gate_*.json"), key=_key, reverse=True)
     for f in files:
         data = load_json(f)
         if data:
