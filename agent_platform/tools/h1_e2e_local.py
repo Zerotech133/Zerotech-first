@@ -10,6 +10,7 @@
 """
 import json
 import os
+import secrets
 import subprocess
 import sys
 import threading
@@ -21,7 +22,8 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 if not os.path.isdir(os.path.join(ROOT, "portal")):
     ROOT = r"C:\项目\老田的AI助手"
 PORTAL = os.path.join(ROOT, "portal")
-TOKEN = "h1-e2e-test-token"
+# 不落任何固定 token：优先取环境变量，否则每次运行生成随机测试 token（仅本机进程内使用）
+TOKEN = os.environ.get("H1_E2E_TOKEN") or secrets.token_hex(16)
 os.environ["ANALYSIS_INTERNAL_TOKEN"] = TOKEN
 
 sys.path.insert(0, ROOT)
