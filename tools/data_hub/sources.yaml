@@ -1,0 +1,521 @@
+# 全网数据源登记表（data_hub 唯一事实来源）
+#
+# 定位：这是「能从哪里取数」的登记，不是「已经取到数」的登记。
+#      - 已接入的表由 quant_backtest/data/catalog.json 负责（物理事实）
+#      - 本文件负责来源侧：许可、频率、出口路径、探针、覆盖范围、状态
+#      - 两者由 govern.py 对账，缺口即工单
+#
+# 字段契约（registry.py 校验，缺字段即报错）：
+#   id            唯一标识，小写下划线
+#   name          中文名
+#   domain        quote|finance|disclosure|flow|macro|derivatives|overseas|crypto|alt
+#   home          站点主页
+#   license       public_api|public_page|open_license|paid|unknown
+#   freq          RT|D|W|M|Q|A|EVENT
+#   update_window 可得时间窗（自然语言，供调度参考）
+#   proxy_policy  direct|env|local|auto（见 net.py 实测说明）
+#   status        verified|reachable_guarded|unreachable|planned
+#                 verified          实测 2xx
+#                 reachable_guarded 实测 4xx 但站点可达，需特定头/参数/鉴权
+#                 unreachable       实测连接失败（可能是本机出口限制，非源消失）
+#                 planned           本次未测
+#   adapter       取数方式：tushare|http_json|http_csv|http_html|file|sdk
+#   covers        覆盖内容（中文要点）
+#   linked_tables catalog.json 里对应的表名前缀（可为空）
+#   probe         {url, expect, note}，expect 是期望状态码
+#   note          实测备注（写实测到的事实，不写猜测）
+
+meta:
+  version: 1
+  updated: "2026-11-05"
+  measured_by: "tools/data_hub/probe.py"
+  measured_at: "2026-11-05T07:4x+08:00"
+  egress_finding: >
+    国内 A 股源必须 direct：实测 api.tushare.pro 直连 1.1s / 走 env 代理 12.3s；
+    d.10jqka.com.cn 直连 0.96s / 走代理超时；push2.eastmoney.com 走代理 ProxyError。
+    akshare 默认 trust_env=True 会继承环境代理，是当前国内源慢/失败的主因。
+
+# catalog.json 里的 source 是「渠道」语义（实际落数的通道），sources 的 id 是
+# 「来源机构」语义。两者不是一一对应，必须显式声明，否则对账必然误报。
+# 值为空列表 = 已知无对应源（属于真实缺口，由 govern 报「有表无源」）。
+catalog_source_map:
+  xtcloud: [xtcloud]
+  tushare: [tushare]
+  xueqiu: [xueqiu]
+  cnopendata: [cnopendata]
+  guba: [guba]
+  crypto: [binance, okx]
+  factor_library: [tushare]
+  legacy: []
+  pg: []
+
+# 时效阈值（天）：catalog.freshness 距今天超过该值即判 stale
+freshness_sla_days:
+  RT: 3
+  D: 3
+  W: 10
+  M: 35
+  Q: 100
+  A: 400
+  EVENT: 15
+
+sources:
+  # ── A 股行情与交易 ───────────────────────────────────────────────
+  - id: sse
+    name: 上海证券交易所
+    domain: quote
+    home: https://www.sse.com.cn
+    license: public_page
+    freq: D
+    update_window: "交易日 15:30 后陆续披露，公告实时"
+    proxy_policy: direct
+    status: verified
+    adapter: http_json
+    covers: [A股日行情, 指数, 上市公司公告, 融资融券汇总, 交易公开信息]
+    linked_tables: []
+    probe: {url: "https://query.sse.com.cn/sseQuery/commonQuery.do?sqlId=COMMON_SSE_CP_GPJCTPZ_GPLB_GP_L&pageHelp.pageSize=5", expect: 200}
+    note: "实测直连 200/1.6s；接口需 Referer: https://www.sse.com.cn/"
+
+  - id: szse
+    name: 深圳证券交易所
+    domain: quote
+    home: https://www.szse.cn
+    license: public_page
+    freq: D
+    update_window: "交易日 15:30 后"
+    proxy_policy: direct
+    status: verified
+    adapter: http_json
+    covers: [深市日行情, 创业板, 公告, 融资融券]
+    linked_tables: []
+    probe:
+      url: "https://www.szse.cn/api/report/ShowReport/data?SHOWTYPE=JSON&CATALOGID=1110"
+      expect: 200
+      headers: {Referer: "https://www.szse.cn/"}
+    note: 实测带 Referer 200/1.2s，不带时 403
+
+  - id: bse
+    name: 北京证券交易所
+    domain: quote
+    home: https://www.bse.cn
+    license: public_page
+    freq: D
+    update_window: "交易日 15:30 后"
+    proxy_policy: direct
+    status: verified
+    adapter: http_json
+    covers: [北交所行情, 公告, 公开发行]
+    linked_tables: []
+    probe: {url: "https://www.bse.cn/", expect: 200}
+
+  - id: eastmoney
+    name: 东方财富
+    domain: quote
+    home: https://www.eastmoney.com
+    license: public_page
+    freq: RT
+    update_window: "盘中实时，盘后 16:00 全量"
+    proxy_policy: direct
+    status: verified
+    adapter: http_json
+    covers: [A股实时行情, K线历史, 板块与概念, 资金流, 龙虎榜, 研报, 财报数据]
+    linked_tables: []
+    probe: {url: "https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=1.600000&fields1=f1,f2&fields2=f51,f53&klt=101&fqt=1&end=20500101&lmt=5", expect: 200}
+    note: "K线域 push2his 直连 200/0.8s；实时域 push2.eastmoney.com 直连被 RESET、走代理 ProxyError，需换 UA/Referer 或降频重试"
+
+  - id: ths
+    name: 同花顺
+    domain: quote
+    home: https://www.10jqka.com.cn
+    license: public_page
+    freq: RT
+    update_window: "盘中实时"
+    proxy_policy: direct
+    status: verified
+    adapter: http_json
+    covers: [A股行情, 概念板块, 热榜, 资金流, 龙虎榜]
+    linked_tables: [ts_ths]
+    probe: {url: "https://d.10jqka.com.cn/v6/line/hs_600000/01/last.js", expect: 200}
+    note: "实测直连 200/0.96s；**必须 direct**，走代理 ReadTimeout 6.7s"
+
+  - id: sina_finance
+    name: 新浪财经
+    domain: quote
+    home: https://finance.sina.com.cn
+    license: public_page
+    freq: RT
+    update_window: "盘中实时"
+    proxy_policy: direct
+    status: verified
+    adapter: http_json
+    covers: [A股/港股/美股行情, 资金流, 新闻]
+    linked_tables: []
+    probe:
+      url: "https://hq.sinajs.cn/list=sh600000"
+      expect: 200
+      headers: {Referer: "https://finance.sina.com.cn/"}
+    note: 实测带 Referer 200/0.67s，不带 Referer 403；Referer 已固化进 probe
+
+  - id: tencent_finance
+    name: 腾讯财经
+    domain: quote
+    home: https://gu.qq.com
+    license: public_page
+    freq: RT
+    update_window: "盘中实时"
+    proxy_policy: direct
+    status: verified
+    adapter: http_json
+    covers: [A股/港股/美股行情, 分时]
+    linked_tables: []
+    probe: {url: "https://qt.gtimg.cn/q=sh600000", expect: 200}
+
+  - id: xueqiu
+    name: 雪球
+    domain: flow
+    home: https://xueqiu.com
+    license: public_page
+    freq: RT
+    update_window: "盘中实时，讨论流实时"
+    proxy_policy: direct
+    status: reachable_guarded
+    adapter: http_json
+    covers: [行情, 资金流, 北向, 业绩预告, 内部交易, 热帖讨论]
+    linked_tables: [xq_]
+    probe: {url: "https://stock.xueqiu.com/v5/stock/quote.json?symbol=SH600000", expect: 200}
+    note: "实测 400（需先取 xq_a_token Cookie），站点可达；项目内 xueqiu_sync.py 已实现登录态"
+
+  - id: xtcloud
+    name: 通达信行情云
+    domain: quote
+    home: https://www.tdx.com.cn
+    license: paid
+    freq: RT
+    update_window: "盘中实时，分钟线收盘后补齐"
+    proxy_policy: direct
+    status: verified
+    adapter: sdk
+    covers: [A股分钟线, 板块分类与成分, 快照]
+    linked_tables: [tdx_]
+    probe: {url: "", expect: 0, note: "私有协议，探针走本地客户端，不适用 HTTP"}
+    note: "catalog 中 170 张表来源，项目主行情底座"
+
+  # ── 财务、公告与披露 ────────────────────────────────────────────
+  - id: tushare
+    name: Tushare Pro
+    domain: finance
+    home: https://tushare.pro
+    license: paid
+    freq: D
+    update_window: "交易日 17:00-19:00 陆续入库，财务数据按披露节奏"
+    proxy_policy: direct
+    status: verified
+    adapter: tushare
+    covers: [行情, 财务三表, 指标, 分红, 股东, 融资融券, 龙虎榜, 期货, 期权, 基金, 港股, 美股, 宏观, 交易日历]
+    linked_tables: [ts_, trade_cal]
+    probe: {url: "https://api.tushare.pro", expect: 200}
+    note: "实测直连 200/1.1s，走 env 代理 12.3s（11 倍差）；catalog 中 66 张表来源"
+
+  - id: cninfo
+    name: 巨潮资讯
+    domain: disclosure
+    home: http://www.cninfo.com.cn
+    license: public_page
+    freq: EVENT
+    update_window: "公告发布即时，盘后 18:00 集中"
+    proxy_policy: direct
+    status: verified
+    adapter: http_json
+    covers: [上市公司公告全文, 招股书, 年报PDF, 问询函]
+    linked_tables: [anns_]
+    probe: {url: "https://webapi.cninfo.com.cn/api/stock/p_stock2110", expect: 200}
+    note: "实测 200/0.95s；接口需 mcode 头，空请求返回 75B 提示体"
+
+  - id: cnopendata
+    name: CnOpenData
+    domain: alt
+    home: https://www.cnopendata.com
+    license: open_license
+    freq: A
+    update_window: "按数据集发布，无固定节奏"
+    proxy_policy: env
+    status: planned
+    adapter: file
+    covers: [学术级微观数据, 企业注册, 专利, 裁判文书, 气候暴露, 金融情感词典]
+    linked_tables:
+      - fepu
+      - czyx
+      - yspl
+      - gjzfssfc
+      - chinese-dictionary-of-financial-sentiment
+      - firm-level-climate-change-exposure
+    probe: {url: "https://www.cnopendata.com", expect: 200}
+    note: "已有 408 条源档案 + 6 张入湖表，治理脚本在 data_sources/cnopendata/"
+
+  # ── 资金、情绪与舆情 ────────────────────────────────────────────
+  - id: guba
+    name: 东方财富股吧
+    domain: flow
+    home: https://guba.eastmoney.com
+    license: public_page
+    freq: EVENT
+    update_window: "实时"
+    proxy_policy: direct
+    status: verified
+    adapter: http_html
+    covers: [个股讨论帖, 人气排名, 情绪文本]
+    linked_tables: [guba]
+    probe: {url: "https://guba.eastmoney.com/list,600000.html", expect: 200}
+
+  # ── 宏观与产业 ──────────────────────────────────────────────────
+  - id: nbs
+    name: 国家统计局
+    domain: macro
+    home: https://data.stats.gov.cn
+    license: public_page
+    freq: M
+    update_window: "月度 15 日左右，季度滞后 20 天"
+    proxy_policy: direct
+    status: reachable_guarded
+    adapter: http_json
+    covers: [CPI, PPI, PMI, GDP, 工业增加值, 社零, 固定资产投资, 分省数据]
+    linked_tables: []
+    probe: {url: "https://data.stats.gov.cn/easyquery.htm?m=QueryData&dbcode=hgyd&rowcode=zb&colcode=sj&wds=[]&dfwds=[]", expect: 200}
+    note: "实测 403（接口需 time 参数与 Cookie），站点可达"
+
+  - id: pbc
+    name: 中国人民银行
+    domain: macro
+    home: http://www.pbc.gov.cn
+    license: public_page
+    freq: M
+    update_window: "金融统计数据月度 10-15 日"
+    proxy_policy: direct
+    status: verified
+    adapter: http_html
+    covers: [社融, M0/M1/M2, 存贷款, 汇率中间价, 公开市场操作]
+    linked_tables: []
+    probe: {url: "http://www.pbc.gov.cn/", expect: 200}
+
+  - id: customs
+    name: 海关总署
+    domain: macro
+    home: http://www.customs.gov.cn
+    license: public_page
+    freq: M
+    update_window: "月度 7-13 日"
+    proxy_policy: direct
+    status: verified
+    adapter: http_html
+    covers: [进出口, 重点商品, 国别贸易]
+    linked_tables: []
+    probe: {url: "http://www.customs.gov.cn/", expect: 200}
+
+  - id: worldbank
+    name: World Bank Open Data
+    domain: macro
+    home: https://data.worldbank.org
+    license: open_license
+    freq: A
+    update_window: "年度更新"
+    proxy_policy: direct
+    status: verified
+    adapter: http_json
+    covers: [各国宏观指标, 人口, 贸易, 发展指标]
+    linked_tables: []
+    probe: {url: "https://api.worldbank.org/v2/country/CHN?format=json", expect: 200}
+    note: "实测直连 200/0.84s，无需鉴权"
+
+  - id: fred
+    name: FRED (St. Louis Fed)
+    domain: macro
+    home: https://fred.stlouisfed.org
+    license: public_api
+    freq: M
+    update_window: "按指标发布"
+    proxy_policy: auto
+    status: reachable_guarded
+    adapter: http_json
+    covers: [美国宏观, 利率, 就业, 货币供应]
+    linked_tables: []
+    probe: {url: "https://api.stlouisfed.org/fred/series?series_id=GDP", expect: 200}
+    note: "实测 400（缺 api_key），站点可达；需免费注册 key"
+
+  # ── 衍生品、基金与债券 ──────────────────────────────────────────
+  - id: cffex
+    name: 中国金融期货交易所
+    domain: derivatives
+    home: http://www.cffex.com.cn
+    license: public_page
+    freq: D
+    update_window: "交易日 15:30 后"
+    proxy_policy: direct
+    status: verified
+    adapter: http_csv
+    covers: [股指期货, 国债期货, 期权, 持仓排名]
+    linked_tables: []
+    probe: {url: "http://www.cffex.com.cn/", expect: 200}
+
+  - id: shfe
+    name: 上海期货交易所
+    domain: derivatives
+    home: https://www.shfe.com.cn
+    license: public_page
+    freq: D
+    update_window: "交易日 15:30 后"
+    proxy_policy: direct
+    status: verified
+    adapter: http_json
+    covers: [有色金属, 贵金属, 能化, 库存仓单]
+    linked_tables: []
+    probe: {url: "https://www.shfe.com.cn/", expect: 200}
+
+  - id: chinamoney
+    name: 中国货币网
+    domain: derivatives
+    home: https://www.chinamoney.com.cn
+    license: public_page
+    freq: D
+    update_window: "交易日 17:00"
+    proxy_policy: direct
+    status: verified
+    adapter: http_json
+    covers: [Shibor, LPR, 回购定盘, 汇率中间价, 债券收益率曲线]
+    linked_tables: [ts_shibor, ts_]
+    probe: {url: "https://www.chinamoney.com.cn/", expect: 200}
+
+  - id: jisilu
+    name: 集思录
+    domain: derivatives
+    home: https://www.jisilu.cn
+    license: public_page
+    freq: D
+    update_window: "交易日盘后"
+    proxy_policy: direct
+    status: verified
+    adapter: http_json
+    covers: [可转债溢价率, 分级基金, 打新]
+    linked_tables: [ts_cb_]
+    probe: {url: "https://www.jisilu.cn/data/cbnew/cb_list/", expect: 200}
+
+  # ── 海外市场 ────────────────────────────────────────────────────
+  - id: yahoo_finance
+    name: Yahoo Finance
+    domain: overseas
+    home: https://finance.yahoo.com
+    license: public_page
+    freq: D
+    update_window: "美东收盘后"
+    proxy_policy: auto
+    status: reachable_guarded
+    adapter: http_json
+    covers: [美股/港股/全球指数行情, 财报日历]
+    linked_tables: [us_, hk_]
+    probe: {url: "https://query1.finance.yahoo.com/v8/finance/chart/AAPL?range=1d&interval=1d", expect: 200}
+    note: "实测 403（需 crumb+cookie 握手）"
+
+  - id: stooq
+    name: Stooq
+    domain: overseas
+    home: https://stooq.com
+    license: open_license
+    freq: D
+    update_window: "收盘后"
+    proxy_policy: direct
+    status: verified
+    adapter: http_csv
+    covers: [全球指数, 美股, 外汇, 大宗商品 日线 CSV]
+    linked_tables: [us_]
+    probe: {url: "https://stooq.com/q/d/l/?s=aapl.us&i=d", expect: 200}
+    note: "实测直连 200/1.3s，CSV 直出，无鉴权，是最省事的海外日线源"
+
+  - id: hkex
+    name: 香港交易所
+    domain: overseas
+    home: https://www.hkex.com.hk
+    license: public_page
+    freq: D
+    update_window: "港股收盘后"
+    proxy_policy: auto
+    status: verified
+    adapter: http_json
+    covers: [港股行情, 披露易公告, 互联互通持股]
+    linked_tables: [hk_]
+    probe: {url: "https://www.hkex.com.hk/", expect: 200}
+    note: "实测 200 但 3.3s，属慢源，日更可接受"
+
+  - id: sec_edgar
+    name: SEC EDGAR
+    domain: overseas
+    home: https://www.sec.gov/edgar
+    license: open_license
+    freq: EVENT
+    update_window: "申报即时"
+    proxy_policy: auto
+    status: verified
+    adapter: http_json
+    covers: [美股公司申报, 10-K/10-Q/8-K, 内部人交易]
+    linked_tables: [us_]
+    probe: {url: "https://data.sec.gov/submissions/CIK0000320193.json", expect: 200}
+    note: "SEC 要求 UA 带联络邮箱，否则 403"
+
+  # ── 加密资产 ────────────────────────────────────────────────────
+  - id: binance
+    name: Binance
+    domain: crypto
+    home: https://www.binance.com
+    license: public_api
+    freq: RT
+    update_window: "7x24"
+    proxy_policy: auto
+    status: reachable_guarded
+    adapter: http_json
+    covers: [现货/合约行情, K线, 成交]
+    linked_tables: [crypto]
+    probe: {url: "https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT", expect: 200}
+    note: 实测直连与 env 代理均不通，走本地 7890 代理 200/1.5s；内地网络须经本地代理
+
+  - id: okx
+    name: OKX
+    domain: crypto
+    home: https://www.okx.com
+    license: public_api
+    freq: RT
+    update_window: "7x24"
+    proxy_policy: auto
+    status: reachable_guarded
+    adapter: http_json
+    covers: [现货/合约行情, K线]
+    linked_tables: [crypto]
+    probe: {url: "https://www.okx.com/api/v5/market/ticker?instId=BTC-USDT", expect: 200}
+    note: 实测仅本地 7890 代理可达，200/6.2s（偏慢，批量拉取需限速）
+
+  # ── 另类与文本 ──────────────────────────────────────────────────
+  - id: gdelt
+    name: GDELT
+    domain: alt
+    home: https://www.gdeltproject.org
+    license: open_license
+    freq: D
+    update_window: "每 15 分钟滚动"
+    proxy_policy: auto
+    status: unreachable
+    adapter: http_csv
+    covers: [全球新闻事件图谱, 情绪, 地缘事件]
+    linked_tables: []
+    probe: {url: "https://api.gdeltproject.org/api/v2/doc/doc?query=china&mode=artlist&format=json", expect: 200}
+    note: "实测连接失败（19s 超时），本机出口限制；接口本身公开无需鉴权，需换出口后重测"
+
+  - id: arxiv
+    name: arXiv
+    domain: alt
+    home: https://arxiv.org
+    license: open_license
+    freq: D
+    update_window: "每日更新"
+    proxy_policy: auto
+    status: verified
+    adapter: http_json
+    covers: [论文元数据, 量化金融/机器学习前沿]
+    linked_tables: []
+    probe: {url: "http://export.arxiv.org/api/query?search_query=cat:q-fin.CP&max_results=1", expect: 200}
