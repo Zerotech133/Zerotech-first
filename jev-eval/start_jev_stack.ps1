@@ -171,8 +171,10 @@ if ($Force) {
 
 # 3) 9104 card-handler：默认不清理（2026-11-05 实测它仍在 serving，metric
 # jev_card_actions_total 有计数，taskkill 会打断飞书卡片按钮回调）。
-# 仅 -Force 或显式 -StopRetired 时才按旧 W4 口径停掉。
-if (($Force -or $StopRetired) -and (Test-Port 9104)) {
+# 2026-11-05 JEV-RESTART-A：-Force 不再连带 9104（原为 `-Force -or -StopRetired`，
+# 与文档「-Force 不含 9104」矛盾）；9104 只由显式 -StopRetired 清理。
+# 原因：JevRestart 任务用 -Force 重启三件套，若连带杀 9104 会让飞书按钮回调静默失效。
+if ($StopRetired -and (Test-Port 9104)) {
     $oldPid = Stop-TreeByPort 9104
     Write-Log ('retired card-handler(9104) stopped pid=' + $oldPid)
 }
