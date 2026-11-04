@@ -40,7 +40,7 @@ class TestInternalApi(unittest.TestCase):
         self._audit = mod._audit
         mod._submit = lambda codes, llm=False, push=False: [
             {"ok": True, "job_id": "20261103-120000-" + c.replace(".", "_")} for c in codes]
-        mod._audit = lambda *a, **k: None
+        mod._audit = lambda *a, **k: True
 
     def tearDown(self):
         mod._submit = self._submit
@@ -136,6 +136,40 @@ class TestInternalApi(unittest.TestCase):
         mod.handle_post(h, "/api/analysis/internal/batch", "")
         self.assertEqual(h.status, 202)
         self.assertEqual(h.obj["count"], 2)
+
+    # ---- P1（2026-11-04 代码审查）：反代 X-Real-IP 边界 ----
+    def test_deny_proxied_non_loopback_real_ip(self):
+        h = self._h("/api/analysis/internal/health",
+                    headers={"X-Portal-Proxy": "1", "X-Real-IP": "192.168.1.8"})
+        mod.handle_get(h, "/api/analysis/internal/health", "")
+        self.assertEqual(h.status, 403)
+
+    def test_allow_proxied_loopback_real_ip(self):
+        h = self._h("/api/analysis/internal/health",
+                    headers={"X-Portal-Proxy": "1", "X-Real-IP": "127.0.0.1"})
+        mod.handle_get(h, "/api/analysis/internal/health", "")
+        self.assertEqual(h.status, 200)
+
+    def test_deny_proxied_missing_real_ip(self):
+        h = self._h("/api/analysis/internal/health", headers={"X-Portal-Proxy": "1"})
+        mod.handle_get(h, "/api/analysis/internal/health", "")
+        self.assertEqual(h.status, 403)
+
+    # ---- P2（2026-11-04 代码审查）：审计失败 fail-closed ----
+    def test_analyze_audit_failure_503(self):
+        mod._audit = lambda *a, **k: False
+        h = self._h("/api/analysis/internal/analyze", body={"code": "600337.SH"})
+        mod.handle_post(h, "/api/analysis/internal/analyze", "")
+        self.assertEqual(h.status, 503)
+        self.assertFalse(h.obj["ok"])
+        self.assertIn("job_id", h.obj)
+
+    def test_batch_audit_failure_503(self):
+        mod._audit = lambda *a, **k: False
+        h = self._h("/api/analysis/internal/batch", body={"codes": ["600337.SH"]})
+        mod.handle_post(h, "/api/analysis/internal/batch", "")
+        self.assertEqual(h.status, 503)
+        self.assertFalse(h.obj["ok"])
 
 
 if __name__ == "__main__":

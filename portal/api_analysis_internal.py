@@ -2,7 +2,8 @@
 """个股分析 · 内部网关（H1）：供 Hermes MCP / 本地自动化调用。
 
 安全边界（fail-closed）：
-- 仅接受 loopback（127.0.0.1/::1）来源；
+- 仅接受 loopback（127.0.0.1/::1）来源；若带 `X-Portal-Proxy`（经 8734 反代），
+  还要求 `X-Real-IP` 为回环，防止 LAN 会话借反代绕过 loopback 边界；
 - 必须携带 `X-Analysis-Token`，token 读 `ANALYSIS_INTERNAL_TOKEN` 或 token 文件
   （默认 `C:\\项目\\commercial\\analysis_internal.token`，文件不存在 → 503）；
 - 只读端点 + 受控提交（analyze/batch 入文件队列），不新增执行能力；
@@ -69,14 +70,25 @@ def _deny(handler):
 
 
 def _authorized(handler) -> bool:
+    """loopback + 专属 token；反代来源还须 X-Real-IP 为回环（P1 修复）。
+
+    经 8734 的请求 client_address 恒为 127.0.0.1（nginx 容器反代），只判 peer
+    会让 LAN 会话绕过 loopback 边界；nginx 会注入 X-Portal-Proxy:1 与
+    X-Real-IP=$remote_addr，故与 portal_api._client_loopback 同口径复核。
+    """
     addr = getattr(handler, "client_address", None)
     ip = addr[0] if addr else ""
     if ip not in LOOPBACK:
         return False
+    headers = handler.headers
+    if (headers.get("X-Portal-Proxy") or "").strip():
+        real_ip = (headers.get("X-Real-IP") or "").strip()
+        if real_ip not in LOOPBACK:
+            return False
     expected = _token()
     if not expected:
         return False
-    provided = (handler.headers.get("X-Analysis-Token") or "").strip()
+    provided = (headers.get("X-Analysis-Token") or "").strip()
     return bool(provided) and hmac.compare_digest(provided, expected)
 
 
@@ -171,14 +183,16 @@ def _submit(codes, llm=False, push=False):
     return jobs
 
 
-def _audit(action, detail, result="ok"):
+def _audit(action, detail, result="ok") -> bool:
+    """写审计；成功 True / 失败 False（调用方 fail-closed 处理）。"""
     try:
         if ROOT not in sys.path:
             sys.path.insert(0, ROOT)
         from commercial import audit
         audit.append(action, tenant="", actor="hermes", resource="analysis", result=result, detail=detail)
+        return True
     except Exception:
-        pass
+        return False
 
 
 def _read_body(handler):
@@ -303,10 +317,14 @@ def handle_post(handler, path, qs):
             jobs = _submit([code], llm=llm, push=push)
         except Exception as e:
             return _json(handler, {"ok": False, "error": "入队失败: " + str(e)[:120]}, 500)
-        _audit("analysis_submit", {"code": code, "job_id": jobs[0].get("job_id") if jobs else None,
-                                   "source": "hermes_mcp"})
+        job_id = jobs[0].get("job_id") if jobs else None
+        if not _audit("analysis_submit", {"code": code, "job_id": job_id,
+                                          "source": "hermes_mcp"}):
+            # 审计失败 fail-closed：任务可能已入队，返回 job_id 供对账，但明确报错
+            return _json(handler, {"ok": False, "error": "审计写入失败（fail-closed），任务已入队待人工对账",
+                                   "code": code, "job_id": job_id}, 503)
         return _json(handler, {"ok": bool(jobs and jobs[0].get("ok")), "code": code,
-                               "job_id": jobs[0].get("job_id") if jobs else None,
+                               "job_id": job_id,
                                "llm": llm, "push": push,
                                "note": "已入队；由 analysis.batch --queue 或盘后批消费"}, 202)
     codes = body.get("codes") or []
@@ -323,6 +341,8 @@ def handle_post(handler, path, qs):
         jobs = _submit(codes, llm=llm, push=push)
     except Exception as e:
         return _json(handler, {"ok": False, "error": "入队失败: " + str(e)[:120]}, 500)
-    _audit("analysis_batch_submit", {"codes": codes, "count": len(codes),
-                                     "source": "hermes_mcp"})
+    if not _audit("analysis_batch_submit", {"codes": codes, "count": len(codes),
+                                            "source": "hermes_mcp"}):
+        return _json(handler, {"ok": False, "error": "审计写入失败（fail-closed），任务已入队待人工对账",
+                               "count": len(codes), "jobs": jobs}, 503)
     return _json(handler, {"ok": True, "count": len(codes), "jobs": jobs}, 202)

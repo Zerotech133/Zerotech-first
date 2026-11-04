@@ -92,6 +92,12 @@ class TestMcpProtocol(unittest.TestCase):
         self.assertFalse(r["ok"])
         self.assertIn("unreachable", r["error"])
 
+    # ---- P1（2026-11-04 代码审查）：默认网关必须直连 8091（8734 对 /api/analysis/ 启 auth_request） ----
+    def test_default_base_url_is_direct_8091(self):
+        self.assertEqual(m.DEFAULT_BASE_URL, "http://127.0.0.1:8091")
+        # 环境变量覆盖仍生效（模块级常量按 env 初始化）
+        self.assertTrue(m.BASE_URL.startswith("http://127.0.0.1:"))
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

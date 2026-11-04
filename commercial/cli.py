@@ -67,6 +67,10 @@ def main(argv=None) -> int:
     p.add_argument("--path", default="")
     p.add_argument("--json", action="store_true", help="输出 JSON")
 
+    p = sub.add_parser("audit-migrate", help="审计账本迁移为完整哈希链（备份+原子替换）")
+    p.add_argument("--path", default="")
+    p.add_argument("--json", action="store_true", help="输出 JSON")
+
     a = ap.parse_args(argv)
     if a.cmd == "license-gen":
         exp = 0 if a.days == 0 else time.time() + a.days * 86400
@@ -151,9 +155,22 @@ def main(argv=None) -> int:
         if a.json:
             print(json.dumps(r, ensure_ascii=False, indent=1))
         else:
-            print("审计哈希链: %s（records=%d hashed=%d legacy=%d last=%s）" % (
-                "OK" if r.get("ok") else "FAIL", r.get("total", 0), r.get("hashed", 0),
-                r.get("legacy", 0), str(r.get("last_hash") or "-")[:12]))
+            print("审计哈希链: %s（records=%d checked=%d hashed=%d legacy=%d last=%s）" % (
+                "OK" if r.get("ok") else "FAIL", r.get("total", 0), r.get("checked", 0),
+                r.get("hashed", 0), r.get("legacy", 0), str(r.get("last_hash") or "-")[:12]))
+            if r.get("error"):
+                print("错误: " + str(r["error"]))
+            if r.get("errors_truncated"):
+                print("（错误仅列前 %d 条，文件中仍有更多不一致）" % len(r.get("errors") or []))
+        return 0 if r.get("ok") else 1
+    if a.cmd == "audit-migrate":
+        r = audit.migrate(a.path or None)
+        if a.json:
+            print(json.dumps(r, ensure_ascii=False, indent=1))
+        else:
+            print("审计迁移: %s（migrated=%d backup=%s）" % (
+                "OK" if r.get("ok") else "FAIL", r.get("migrated", 0),
+                r.get("backup") or "-"))
             if r.get("error"):
                 print("错误: " + str(r["error"]))
         return 0 if r.get("ok") else 1

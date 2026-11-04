@@ -15,7 +15,7 @@ server:
   args:
     - "C:\\项目\\老田的AI助手\\agent_platform\\tools\\stock_analysis_mcp.py"
   env:
-    ANALYSIS_GATEWAY_URL: "http://127.0.0.1:8734"
+    ANALYSIS_GATEWAY_URL: "http://127.0.0.1:8091"
     ANALYSIS_INTERNAL_TOKEN_FILE: "C:\\项目\\commercial\\analysis_internal.token"
 gateway:
   base_path: /api/analysis/internal

@@ -22,7 +22,9 @@ import urllib.request
 SERVER_NAME = "stock-analysis"
 SERVER_VERSION = "0.1.0"
 PROTOCOL_VERSION = "2024-11-05"
-BASE_URL = os.environ.get("ANALYSIS_GATEWAY_URL", "http://127.0.0.1:8734").rstrip("/")
+# 默认直连 8091（内部网关）；8734 对 /api/analysis/ 启了 auth_request，token-only 会 401。
+DEFAULT_BASE_URL = "http://127.0.0.1:8091"
+BASE_URL = os.environ.get("ANALYSIS_GATEWAY_URL", DEFAULT_BASE_URL).rstrip("/")
 TOKEN_ENV = "ANALYSIS_INTERNAL_TOKEN"
 TOKEN_FILE = os.environ.get("ANALYSIS_INTERNAL_TOKEN_FILE") or r"C:\项目\commercial\analysis_internal.token"
 TIMEOUT = 30
