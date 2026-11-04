@@ -76,19 +76,26 @@ def check_archive(archive: dict | None, path: Path) -> list[str]:
     return errors
 
 
-def check_task(task: dict, expect_day: str) -> tuple[list[str], bool]:
-    """返回 (错误列表, 是否当日已运行)。"""
-    errors: list[str] = []
+def check_task(task: dict, expect_day: str) -> tuple[list[str], bool, list[str]]:
+    """返回 (错误列表, 是否当日已运行, 警告列表)。"""
+    warnings: list[str] = []
+    if task.get("error"):
+        # 任务不存在/查询失败不是「尚未运行」，必须按失败处理，避免 PENDING 掩盖故障。
+        return [f"任务: 快照失败（{task.get('error')}）"], False, warnings
     last_run = parse_ts(task.get("last_run") or "")
     if last_run is None:
-        return [f"任务: last_run 不可解析（{task.get('last_run')!r}）"], False
+        return [f"任务: last_run 不可解析（{task.get('last_run')!r}）"], False, warnings
     if last_run.strftime("%Y-%m-%d") != expect_day:
-        return [], False  # 当日尚未运行 → PENDING，不算失败
-    if int(task.get("last_result") or 0) != 0:
-        errors.append(f"任务: LastTaskResult={task.get('last_result')}（期望 0）")
+        return [], False, warnings  # 当日尚未运行 → PENDING，不算失败
+    errors: list[str] = []
+    last_result = int(task.get("last_result") or 0)
+    if last_result not in (0, 3):
+        errors.append(f"任务: LastTaskResult={last_result}（期望 0；3=T1 停挂但仍已落盘）")
+    elif last_result == 3:
+        warnings.append("任务 rc=3：否决源异常导致 T1 停挂（清单已落盘，属降级运行）")
     if str(task.get("state") or "").lower() not in ("ready", "running", "就绪"):
         errors.append(f"任务: state={task.get('state')!r}（期望 Ready/就绪）")
-    return errors, True
+    return errors, True, warnings
 
 
 def evaluate(picks: dict | None, archive: dict | None, task: dict,
@@ -120,10 +127,14 @@ def evaluate(picks: dict | None, archive: dict | None, task: dict,
             archive_errors.append(f"归档: trade_basis 不含 {expect_day}")
     add("picks_history 归档", not archive_errors, "; ".join(archive_errors))
 
-    task_errors, ran_today = check_task(task, expect_day)
+    task_errors, ran_today, warnings = check_task(task, expect_day)
     add("计划任务当日运行", ran_today and not task_errors, "; ".join(task_errors))
 
-    status = "PASS" if not errors else ("PENDING" if not ran_today else "FAIL")
+    snapshot_error = bool(task.get("error"))
+    if errors:
+        status = "FAIL" if (ran_today or snapshot_error) else "PENDING"
+    else:
+        status = "PASS"
     if status == "PENDING":
         errors.append("任务当日尚未运行完成（18:20 后重试）")
     return {
@@ -131,6 +142,7 @@ def evaluate(picks: dict | None, archive: dict | None, task: dict,
         "expect_day": expect_day,
         "status": status,
         "ok": status == "PASS",
+        "warnings": warnings,
         "generated_at": (picks or {}).get("generated_at"),
         "trade_basis": (picks or {}).get("trade_basis"),
         "counts": (picks or {}).get("counts") or {},

@@ -130,3 +130,16 @@ def test_env_model_override(tmp_path, monkeypatch):
     transport = lambda url, headers, payload, timeout: (200, BAILIAN_OK)
     r = lr.generate("问题", transport=transport, cost_log=_log(tmp_path))
     assert r["model"] == "custom-model-x"
+
+
+def test_default_cost_log_is_daily(tmp_path, monkeypatch):
+    """默认成本日志必须按本地日期分文件，而不是写死某一天。"""
+    from datetime import datetime
+    monkeypatch.delenv("LLM_COST_LOG", raising=False)
+    monkeypatch.setattr(lr, "REPORTS", tmp_path)
+    p = lr._cost_log_path(datetime(2026, 11, 5, 9, 0).astimezone())
+    assert p == tmp_path / "llm_cost_20261105.jsonl"
+    assert p != lr._cost_log_path(datetime(2026, 11, 6, 9, 0).astimezone())
+    # 显式 env 覆盖保持不变
+    monkeypatch.setenv("LLM_COST_LOG", str(tmp_path / "custom.jsonl"))
+    assert lr._cost_log_path() == tmp_path / "custom.jsonl"

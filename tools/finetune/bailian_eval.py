@@ -313,10 +313,14 @@ def aggregate_results(results: list[dict], baseline_agg: dict | None = None) -> 
         "citation_accuracy": round(sum(1 for r in results if r["citation_ok"]) / max(1, n), 4),
         "citation_valid_rate": round(sum(1 for r in results if r["citation_valid"]) / max(1, n), 4),
         "groundedness": round(sum(r["groundedness"] for r in results) / max(1, n), 4),
-        "gold_similarity": round(sum(r["gold_similarity"] for r in ans
-                                     if r["gold_similarity"] is not None) / max(1, len(ans)), 4),
+        "gold_similarity": (round(sum(r["gold_similarity"] for r in ans
+                                     if r["gold_similarity"] is not None)
+                                / max(1, sum(1 for r in ans if r["gold_similarity"] is not None)), 4)
+                           if any(r["gold_similarity"] is not None for r in ans) else None),
+        "gold_scored_n": sum(1 for r in ans if r["gold_similarity"] is not None),
         "refusal_rate": round(sum(1 for r in results if r["refused"]) / max(1, n), 4),
-        "correct_refusal_rate": round(sum(1 for r in unans if r["refused"]) / max(1, len(unans)), 4),
+        "correct_refusal_rate": round(sum(1 for r in unans
+                                         if r["refused"] and not r.get("error")) / max(1, len(unans)), 4),
         "over_refusal_rate": round(sum(1 for r in ans if r["refused"]) / max(1, len(ans)), 4),
         "overclaim_rate": round(sum(1 for r in results if r["overclaim"]) / max(1, n), 4),
         "length_anomaly_rate": round(sum(1 for r in results if r["length_anomaly"]) / max(1, n), 4),
@@ -516,7 +520,8 @@ def write_outputs(payload: dict, json_path: str | Path | None = None,
 # ================================================================ CLI
 def run(*, dry_run: bool = False, mock: bool = False, limit: int = 0, model: str = "",
         base_url: str = "", write: bool = False, key_file: str | Path | None = None,
-        w13_path: str | Path = W13_JSON, verify_citations: bool = False) -> dict:
+        w13_path: str | Path = W13_JSON, verify_citations: bool = False,
+        out_json: str | Path | None = None, out_md: str | Path | None = None) -> dict:
     payload_w13 = load_w13(w13_path)
     baseline_agg = payload_w13.get("aggregate") or {}
     dataset = build_dataset(payload_w13)
@@ -549,7 +554,7 @@ def run(*, dry_run: bool = False, mock: bool = False, limit: int = 0, model: str
                                                 has_key=bool(key)),
                                 key_source=key_source)
     if write:
-        jp, mp = write_outputs(payload)
+        jp, mp = write_outputs(payload, out_json, out_md)
         payload["_outputs"] = {"json": jp, "md": mp}
     return payload
 
@@ -568,6 +573,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--base-url", default="", help=f"OpenAI 兼容 base_url（默认北京 {DEFAULT_BASE}）")
     ap.add_argument("--key-file", default="", help="DASHSCOPE_API_KEY 本地文件路径")
     ap.add_argument("--write", action="store_true", help="写 research/reports/bailian_eval_20261104.{json,md}")
+    ap.add_argument("--out-json", default="", help="覆盖 --write 的 JSON 输出路径（周度复评按日期归档用）")
+    ap.add_argument("--out-md", default="", help="覆盖 --write 的 Markdown 输出路径")
     ap.add_argument("--prompt-profile", choices=["base", "strict"], default="base",
                     help="prompt 口径：base=W17 默认；strict=v4d 生产推荐（每句末引用/只引用支撑句）")
     ap.add_argument("--verify-citations", action="store_true",
@@ -578,7 +585,8 @@ def main(argv: list[str] | None = None) -> int:
     payload = run(dry_run=args.dry_run, mock=args.mock, limit=args.limit, model=args.model,
                   base_url=args.base_url, write=args.write,
                   key_file=Path(args.key_file) if args.key_file else None,
-                  verify_citations=args.verify_citations)
+                  verify_citations=args.verify_citations,
+                  out_json=args.out_json or None, out_md=args.out_md or None)
     agg = payload.get("aggregate") or {}
     print(f"[bailian_eval] mode={payload['mode']} model={payload['api']['model']} "
           f"base={payload['api']['base_url']} key={payload['api']['key_source']}")

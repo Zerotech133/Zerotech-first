@@ -33,7 +33,6 @@ SECRETS = Path(r"C:/项目/_vault/secrets")
 KEY_FILE = SECRETS / "dashscope_api_key.txt"
 BASE_FILE = SECRETS / "dashscope_base_url.txt"
 REPORTS = REPO / "research" / "reports"
-DEFAULT_COST_LOG = REPORTS / "llm_cost_20261104.jsonl"
 DEFAULT_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 OLLAMA_DEFAULT = "http://127.0.0.1:11434"
 
@@ -135,8 +134,13 @@ def _estimate_cost(prompt_tokens: int, completion_tokens: int) -> float:
     return round(prompt_tokens / 1000.0 * pin + completion_tokens / 1000.0 * pout, 6)
 
 
-def _cost_log_path() -> Path:
-    return Path(os.environ.get("LLM_COST_LOG", str(DEFAULT_COST_LOG)))
+def _cost_log_path(now: datetime | None = None) -> Path:
+    """成本日志路径：默认按本地日期分文件（llm_cost_YYYYMMDD.jsonl），LLM_COST_LOG 可覆盖。"""
+    override = os.environ.get("LLM_COST_LOG", "").strip()
+    if override:
+        return Path(override)
+    day = (now or datetime.now().astimezone()).strftime("%Y%m%d")
+    return REPORTS / f"llm_cost_{day}.jsonl"
 
 
 def load_cost_log(path: Path | None = None) -> list[dict]:

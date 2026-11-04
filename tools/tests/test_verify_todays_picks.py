@@ -74,6 +74,20 @@ def test_fail_archive_too_early(tmp_path):
     assert r["status"] == "FAIL" and any("旧运行首写" in e for e in r["errors"])
 
 
+def test_pass_with_t1_suspended_rc3(tmp_path):
+    # builder 契约：rc=3 = 已落盘但 T1 停挂；验收应 PASS 并给出警告，而不是 FAIL。
+    r = v.evaluate(make_picks(), make_archive(), make_task(last_result=3), DAY, tmp_path / "x.json")
+    assert r["status"] == "PASS" and r["ok"] is True
+    assert any("T1 停挂" in w for w in r["warnings"])
+
+
+def test_fail_when_task_snapshot_error(tmp_path):
+    # 任务被删/查询失败不是「尚未运行」，必须 FAIL，不能 PENDING 掩盖故障。
+    r = v.evaluate(make_picks(), make_archive(), {"error": "Get-ScheduledTask: not found"}, DAY,
+                   tmp_path / "x.json")
+    assert r["status"] == "FAIL" and r["ok"] is False
+
+
 def test_pending_when_task_not_run_today(tmp_path):
     r = v.evaluate(make_picks(), make_archive(), make_task(last_run="2026-11-04 18:20:31"), DAY,
                    tmp_path / "x.json")
