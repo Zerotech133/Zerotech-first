@@ -27,6 +27,8 @@ from typing import Any, Callable
 import numpy as np
 import pandas as pd
 
+from alpha101_engine import evaluate_formula, load_formulas
+
 SOURCE = "tushare.factor_list"
 
 BATCH_B1 = "B1_price_volume"
@@ -111,6 +113,11 @@ for _type, _names in TYPE_NAMES.items():
             "source": SOURCE,
             "note": "",
         }
+
+try:  # pragma: no cover - 公式文件缺失时退化为仅 B1
+    _ALPHA101_FORMULAS: dict[str, str] = load_formulas()
+except Exception:  # pragma: no cover
+    _ALPHA101_FORMULAS = {}
 
 # ---------------------------------------------------------------- 工具函数
 def _nan(panel) -> pd.DataFrame:
@@ -545,8 +552,31 @@ for _name, _entry in TUSHARE_FACTOR_MAP.items():
         _entry["note"] = "待 B3 PIT 财报加载（ann_date ≤ T 对齐）"
 
 
+# ---------------------------------------------------------------- Alpha101 注册
+def register_alpha101(register: Callable, existing: dict[str, Any] | None = None) -> int:
+    """把 B2 Alpha101 表达式因子注册进 factor_lib；返回新增数量。"""
+    existing = existing or {}
+    count = 0
+    for name, formula in _ALPHA101_FORMULAS.items():
+        if name in existing or name not in TUSHARE_FACTOR_MAP:
+            continue
+        register(name, "Tushare-Alpha101", "continuous", 1,
+                 f"Alpha101（Tushare factor_list 表达式）: {formula[:160]}",
+                 source=SOURCE,
+                 requires=("adj_close", "vol", "amount", "total_mv", "industry"))(
+            lambda p, f=formula: evaluate_formula(f, p))
+        TUSHARE_FACTOR_MAP[name].update({
+            "status": "implemented",
+            "requires": ("adj_close", "vol", "amount", "total_mv", "industry"),
+            "batch": BATCH_B2,
+            "note": "Alpha101 表达式引擎（alpha101_engine.py）",
+        })
+        count += 1
+    return count
+
+
 def register_batch(register: Callable, existing: dict[str, Any] | None = None) -> int:
-    """把 B1 已实现因子注册进 factor_lib；返回注册数量。"""
+    """把 B1 已实现因子 + B2 Alpha101 注册进 factor_lib；返回注册数量。"""
     existing = existing or {}
     count = 0
     for spec in _SPECS:
@@ -555,6 +585,7 @@ def register_batch(register: Callable, existing: dict[str, Any] | None = None) -
         register(spec["name"], spec["family"], spec["kind"], spec["direction"],
                  spec["description"], source=SOURCE, requires=spec["requires"])(spec["fn"])
         count += 1
+    count += register_alpha101(register, existing)
     return count
 
 

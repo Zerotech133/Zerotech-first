@@ -67,6 +67,8 @@ def make_panel(n_dates: int = 90, n_codes: int = 60, seed: int = 7) -> Panel:
     pe[rng.random(close.shape) < 0.05] = -5.0   # 含负 PE（pe 因子应剔除）
     turnover = rng.uniform(0.2, 8.0, size=close.shape)
     roe = rng.normal(8.0, 4.0, size=close.shape)
+    total_mv = close * rng.uniform(1e7, 1e9, size=close.shape)
+    industry = ["银行", "地产", "科技", "医药", "能源"]
 
     def frame(arr: np.ndarray) -> pd.DataFrame:
         return pd.DataFrame(arr, index=dates, columns=codes)
@@ -76,8 +78,11 @@ def make_panel(n_dates: int = 90, n_codes: int = 60, seed: int = 7) -> Panel:
         "close": frame(close), "pre_close": frame(pre_close), "pct_chg": frame(pct_chg),
         "vol": frame(vol), "amount": frame(amount), "adj_close": frame(close),
         "pe_ttm": frame(pe), "turnover_rate": frame(turnover), "roe": frame(roe),
+        "total_mv": frame(total_mv),
     }
-    return Panel(fields)
+    meta = {"industry": pd.Series([industry[i % len(industry)] for i in range(n_codes)],
+                                  index=codes)}
+    return Panel(fields, meta=meta)
 
 
 def craft_golden_pillar(panel: Panel, break_close_day: int | None = None,
@@ -127,7 +132,8 @@ def test_registry_complete():
         assert spec.kind in ("event", "continuous")
         assert spec.direction in (1, -1)
         assert spec.family in ("量学形态", "通用", "Tushare-动量", "Tushare-流动性",
-                               "Tushare-风险", "Tushare-反转", "Tushare-规模")
+                               "Tushare-风险", "Tushare-反转", "Tushare-规模",
+                               "Tushare-Alpha101")
         assert isinstance(spec.description, str) and spec.description.strip()
         assert isinstance(spec.requires, tuple)
     rows = factor_lib.factor_rows()

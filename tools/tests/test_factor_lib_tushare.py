@@ -37,7 +37,7 @@ def test_factor_map_complete():
     assert summary["by_batch"] == {
         ft.BATCH_B1: 86, ft.BATCH_B2: 101, ft.BATCH_B3: 85,
     }
-    assert summary["by_status"] == {"implemented": 86, "mapped": 186}
+    assert summary["by_status"] == {"implemented": 187, "mapped": 85}
     for name, entry in TUSHARE_FACTOR_MAP.items():
         assert entry["name"] == name
         assert entry["factor_type"] in ft.TYPE_NAMES
@@ -47,7 +47,8 @@ def test_factor_map_complete():
 
 
 def test_b1_implemented_registered_in_factor_lib():
-    implemented = {n for n, e in TUSHARE_FACTOR_MAP.items() if e["status"] == "implemented"}
+    implemented = {n for n, e in TUSHARE_FACTOR_MAP.items()
+                   if e["status"] == "implemented" and e["batch"] == ft.BATCH_B1}
     assert len(implemented) == 86
     assert implemented <= set(FACTORS)
     for name in implemented:
@@ -276,4 +277,4 @@ def test_cli_map_json():
     payload = json.loads(proc.stdout)
     summary = payload["summary"]
     assert summary["total"] == 272
-    assert summary["implemented"] == 86
+    assert summary["implemented"] == 187
