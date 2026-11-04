@@ -18,8 +18,16 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 NEWS_DIR = REPO / "news_collector"
 
+# ASCII aliases for Windows PowerShell 5.1 argv (Chinese literals can be mojibaked).
+TARGET_ALIASES = {
+    "internal_test": "内部测试",
+    "personal": "个人",
+    "quant_group": "量化群",
+}
+
 
 def _target_id(name):
+    name = TARGET_ALIASES.get(str(name or "").strip(), str(name or "").strip())
     if str(NEWS_DIR) not in sys.path:
         sys.path.insert(0, str(NEWS_DIR))
     import push_targets  # noqa: E402
