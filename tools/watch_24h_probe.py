@@ -22,6 +22,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 STATUS = REPO / "agent_platform" / "data" / "watch_engine" / "status.json"
 LOG = REPO / "agent_platform" / "data" / "watch_engine" / "observe_24h.jsonl"
+CLOSED = REPO / "agent_platform" / "data" / "watch_engine" / "observe_24h.closed"
 ALERT_STATE = REPO / "agent_platform" / "data" / "watch_engine" / "observe_alert_last.json"
 CHECK_URL = "http://127.0.0.1:8789/watch-admin"
 
@@ -102,6 +103,14 @@ def main(argv=None):
     p.add_argument("--json", action="store_true")
     p.add_argument("--no-alert", action="store_true")
     a = p.parse_args(argv)
+    if CLOSED.exists():
+        # 24h 观察窗口已由 tools/watch_24h_closeout.py 关闭：probe 变为 no-op，
+        # 避免 WatchEngineLoop 继续每 10 分钟追加观察记录。
+        if a.json:
+            print(json.dumps({"closed": True, "closed_marker": str(CLOSED)}, ensure_ascii=False))
+        else:
+            print("[watch_24h] closed: %s" % CLOSED)
+        return 0
     closed = _market_closed()
     watch_ok = _http_ok(CHECK_URL)
     admin_running = watch_ok  # 8789 HTTP is the authoritative WatchAdmin liveness
