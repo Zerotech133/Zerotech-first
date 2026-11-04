@@ -279,7 +279,7 @@ def learn_card(f):
                     _f2("剧本兑现", "A %s/%s（%s）" % (f["na"], f["n"], f["a_rate"])),
                     _f2(
                         "跟踪时长",
-                        "均 %s 天（%s~%s，可用 %s）"
+                        "均 %s 日历天（%s~%s，可用 %s）"
                         % (f["dur_avg"], f["dur_min"], f["dur_max"], f["ndays"]),
                     ),
                     _f2(

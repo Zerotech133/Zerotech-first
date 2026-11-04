@@ -125,8 +125,8 @@ def build_archive_md(cases, snap=None, watch=None):
     md = [
         "# weak 案例库 %s" % snap,
         "",
-        "> 结案 %s 例（A %s/B %s/C %s）· 命中率 %s · "
-        "时长均 %s 天 · 超额修复 %s/%s"
+        "> 结案 %s 例（A %s/B %s/C %s）· A 类兑现 %s · "
+        "时长均 %s 日历天（非交易日）· 超额修复 %s/%s"
         % (
             f["n"],
             f["na"],
@@ -146,7 +146,7 @@ def build_archive_md(cases, snap=None, watch=None):
     if watch:
         md += ["## 在案观察中", ""]
         md += [
-            "- %s %s：跟踪 %s 天·末次 %s 天前·任务 %s"
+            "- %s %s：跟踪 %s 日历天·末次 %s 天前·任务 %s"
             % (
                 w["code"],
                 w.get("name") or "",
@@ -168,7 +168,7 @@ def build_archive_md(cases, snap=None, watch=None):
             )
         )
         md += [
-            "- 结案：%s（立案 %s，跟踪 %s 天）"
+            "- 结案：%s（立案 %s，跟踪 %s 日历天）"
             % (
                 c["ts"],
                 c.get("open") or "—",

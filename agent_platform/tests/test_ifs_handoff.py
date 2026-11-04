@@ -36,6 +36,12 @@ EXPIRES_PAST = "2000-01-01T00:00:00+08:00"
 EXECUTION_KEYS = ("order", "qty", "quantity", "broker", "execute", "trade_id", "fill", "account")
 
 
+@pytest.fixture(autouse=True)
+def _isolate_trigger_ledger_env(monkeypatch):
+    """隔离宿主 WATCH_TRIGGER_LEDGER_PATH，测试不得触碰生产 trigger 账本。"""
+    monkeypatch.delenv(C.TRIGGER_LEDGER_ENV, raising=False)
+
+
 def _plan(plan_id="wp-001", seat="WA1", method="trend_pullback", conditions=None,
           expires_at=EXPIRES_FUTURE, status=None):
     plan = {

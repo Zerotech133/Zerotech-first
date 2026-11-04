@@ -43,7 +43,11 @@ MIN_N = 5  # 规律结论样本门槛
 
 
 def _days(c):
-    """单案跟踪天数：结案日期 - 立案日期（档案文件名）；坏数据 None。"""
+    """单案跟踪天数：结案日期 - 立案日期（档案文件名）；坏数据 None。
+
+    口径：**日历天**，非交易日。同日结案为 0。与结案报告里的
+    「跟踪 N 日/23 次」不是同一口径，后者按交易日/运行次数计。
+    """
     try:
         d1 = datetime.datetime.strptime(c["ts"], "%Y-%m-%d")
         d0 = datetime.datetime.strptime(c["open"], "%Y%m%d")
@@ -106,7 +110,7 @@ def learn_fields(cases):
         ]
         if days:
             L.append(
-                "跟踪时长：均 %s 天（%s~%s）｜≤2 周 %s｜半月-月 %s｜"
+                "跟踪时长：均 %s 日历天（%s~%s，非交易日）｜≤2 周 %s｜半月-月 %s｜"
                 ">1 月 %s（可用样本 %s）"
                 % (
                     f["dur_avg"],

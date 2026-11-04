@@ -424,7 +424,7 @@ def _new_items(rows, review, review_status):
     return items
 
 
-def _summary(items, review):
+def _summary(items, review, aggregate=False):
     by_action = {key: 0 for key in ("buy", "watch", "avoid", "pending_analysis")}
     by_market = {}
     reviewed = 0
@@ -436,6 +436,22 @@ def _summary(items, review):
         if item.get("decision_status") == "done":
             reviewed += 1
     summary = review.get("summary") if isinstance(review.get("summary"), dict) else None
+    if aggregate:
+        # full 聚合（30 行跨市场）：summary 必须以聚合行自身为准。
+        # review.summary 是“最新池日”单日 review 的总结（当前 12 行、无 by_market），
+        # 只能作为额外字段来源（by_tier/date/pool_id 等），不能覆盖聚合计数，否则
+        # summary.pool_total 回到 12 且 by_market 缺失（ACAD1-FULLVIEW 回归）。
+        merged = dict(summary) if summary else {}
+        merged.update(
+            {
+                "pool_total": len(items),
+                "reviewed": reviewed,
+                "pending": len(items) - reviewed,
+                "by_action": by_action,
+                "by_market": by_market,
+            }
+        )
+        return merged
     if summary:
         return summary
     return {
@@ -449,11 +465,26 @@ def _summary(items, review):
 
 def _plan(rows, review, source_mode):
     legacy_plan = review.get("plan") if isinstance(review.get("plan"), dict) else {}
-    if source_mode in OFFICIAL_SOURCE_MODES:
-        selected = sum(1 for row in rows if str(row.get("status") or "") == "selected")
+    selected_count = sum(1 for row in rows if str(row.get("status") or "") == "selected")
+    if source_mode == AGGREGATED_SOURCE_MODE:
+        # full 聚合以聚合行 status 计数为准；review.plan.selected 是单日
+        # legacy plan 的列表（当前为 []），不能作为 full 视图的 selected 计数。
         return {
-            "selected": legacy_plan.get("selected") if legacy_plan.get("selected") is not None
-            else selected,
+            "selected": selected_count,
+            "watch": len(legacy_plan.get("watch") or []) if legacy_plan else 0,
+            "avoid": len(legacy_plan.get("avoid") or []) if legacy_plan else 0,
+            "total_weight": legacy_plan.get("total_weight") if legacy_plan else None,
+        }
+    if source_mode in OFFICIAL_SOURCE_MODES:
+        legacy_selected = legacy_plan.get("selected")
+        if isinstance(legacy_selected, list):
+            selected = len(legacy_selected)
+        elif legacy_selected is not None:
+            selected = legacy_selected
+        else:
+            selected = selected_count
+        return {
+            "selected": selected,
             "watch": len(legacy_plan.get("watch") or []) if legacy_plan else 0,
             "avoid": len(legacy_plan.get("avoid") or []) if legacy_plan else 0,
             "total_weight": legacy_plan.get("total_weight") if legacy_plan else None,
@@ -590,7 +621,7 @@ def build_pg_aggregated_response(payload, review):
             "freshness_days": freshness,
             "freshness_by_market": dict(sorted(freshness_by_market.items())),
             "stale": bool(freshness is not None and freshness > 1),
-            "summary": _summary(items, review),
+            "summary": _summary(items, review, aggregate=True),
             "plan": _plan(rows, review, AGGREGATED_SOURCE_MODE),
             "items": items,
             "dates": list(payload.get("dates") or [pool_date]),

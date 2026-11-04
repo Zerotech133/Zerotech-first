@@ -30,6 +30,23 @@ sys.path.insert(0, str(PORTAL))
 import api_acad1_pool as api  # noqa: E402
 import pool_data  # noqa: E402
 
+
+@pytest.fixture(autouse=True)
+def _hermetic_acad1_dirs(tmp_path, monkeypatch):
+    """测试固定使用临时目录，不读主区 agent_platform/data 运行数据。
+
+    2026-11-04 主区 pool_review/2026-11-03.json 的 plan.selected=[]、
+    summary 缺 by_market，曾使聚合视图测试读到真实 review 数据而假红；
+    这里把 review/pool 目录都钉到 tmp_path（空目录 = 固定“无旧 review”）。
+    """
+    review_dir = tmp_path / "pool_review"
+    pool_dir = tmp_path / "recommendation_pool"
+    review_dir.mkdir()
+    pool_dir.mkdir()
+    monkeypatch.setattr(api, "DEFAULT_REVIEW_DIR", str(review_dir))
+    monkeypatch.setattr(api, "DEFAULT_POOL_DIR", str(pool_dir))
+
+
 MARKET_DATES = {"CN": "2026-11-03", "HK": "2026-10-30",
                 "US": "2026-10-29", "CRYPTO": "2026-10-31"}
 QUOTAS = {"CN": 12, "HK": 10, "US": 6, "CRYPTO": 2}
@@ -187,6 +204,35 @@ class TestFullView:
         # 缺 pool_dates 不是聚合证据 → 不冒充 aggregated，降级单日
         assert snap["source_mode"] != "pg_official_aggregated"
         assert snap["degraded_reason"].startswith("full_view_requires_pg_aggregation")
+
+    def test_aggregate_summary_ignores_legacy_single_day_review(self):
+        # 回归（ACAD1-FULLVIEW 2026-11-04）：最新单日 review 文件存在时，
+        # 其 summary 是单日 12 行口径（无 by_market），plan.selected 是 legacy
+        # 空列表；full 聚合必须仍以 30 行聚合结果为准，不能回退成单日口径。
+        review = {
+            "schema": "acad1_pool_review/v1",
+            "summary": {
+                "date": "2026-11-03",
+                "pool_id": "ACAD1-REC-20261103",
+                "pool_total": 12,
+                "reviewed": 0,
+                "pending": 12,
+                "by_action": {"buy": 0, "watch": 0, "avoid": 0,
+                              "pending_analysis": 12},
+                "by_tier": {"T1": 0, "T2": 12},
+            },
+            "records": [],
+            "plan": {"selected": [], "watch": [], "avoid": [], "total_weight": None},
+        }
+        snap = api.build_pg_aggregated_response(_full_payload(), review)
+        assert snap["count"] == 30
+        assert snap["summary"]["pool_total"] == 30
+        assert snap["summary"]["pending"] == 30
+        assert snap["summary"]["by_market"] == QUOTAS
+        # review 的额外字段（by_tier/date/pool_id）保留，不被聚合计数清掉
+        assert snap["summary"]["by_tier"] == {"T1": 0, "T2": 12}
+        assert snap["summary"]["date"] == "2026-11-03"
+        assert snap["plan"]["selected"] == 30
 
 
 # ── 2. 默认视图：对外 full / 低层单日兼容 ───────────────────────────

@@ -34,6 +34,12 @@ HANDOFF = "d1h-20261103120000-a1b2c3"
 PLAN = "wp-20261103-a1b2c3"
 
 
+@pytest.fixture(autouse=True)
+def _isolate_trigger_ledger_env(monkeypatch):
+    """隔离宿主 WATCH_TRIGGER_LEDGER_PATH，全链测试只写 tmp 账本。"""
+    monkeypatch.delenv("WATCH_TRIGGER_LEDGER_PATH", raising=False)
+
+
 # ---------------------------------------------------------------- 工具/夹具
 def _receipt(**overrides):
     row = {

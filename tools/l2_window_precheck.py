@@ -7,7 +7,7 @@
 覆盖项（A1–A7；与 `docs/ops/2026-11-03_11-05_L2窗口执行组织单_v1.md` 对齐）：
   A1  8091 `/health` 可达 + 端口属主 pid + 进程/代码新鲜度（HTTP 只读）
   A2  `portal/dw.html`（webroot 现页） vs `portal/static/dw.html`（候选新页）
-      size/sha256/title 对比 + 8734 `/dw.html` 实际返回（可选网络）
+      size/sha256/title 对比 + 容器内实际挂载 `/dw.html` 的 sha（docker exec）
   A3  Hermes 8787 `/health` 可达（A3 窗口只复核；只读 HTTP）
   A4  TDX 三表 `stock_news/stock_notice/stock_report` 最新日期与 stale 天数
       （`quant_backtest/data/tdx/tdx_info.db`，sqlite mode=ro）
@@ -58,6 +58,8 @@ PS_EXE = r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
 TDX_TABLES = (("stock_news", "pub_date"), ("stock_notice", "notice_date"),
               ("stock_report", "pub_date"))
 JEV_TASKS = (r"\JevQueueRefresh", r"\JevCalibDaily")
+CONTAINER = "ai-portal"
+CONTAINER_DW = "/usr/share/nginx/html/dw.html"
 NOW_FORMATS = ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M",
                "%Y-%m-%d")
 TITLE_RE = re.compile(r"<title[^>]*>(.*?)</title>", re.IGNORECASE | re.DOTALL)
@@ -183,6 +185,36 @@ def http_get(url: str, timeout: float = 5.0) -> dict:
         result["status"] = int(getattr(exc, "code", 0) or 0)
         result["error"] = "HTTP %s" % result["status"]
     except (urllib.error.URLError, OSError, ValueError) as exc:
+        result["error"] = "%s: %s" % (type(exc).__name__, str(exc)[:160])
+    return result
+
+
+def container_dw_meta(timeout: float = 5.0) -> dict:
+    """只读读取 nginx 容器内实际挂载的 dw.html sha256/size（不跟随 HTTP 302）。"""
+    result = {"container": CONTAINER, "path": CONTAINER_DW,
+              "sha256": None, "size": None, "error": ""}
+    try:
+        proc = subprocess.run(
+            ["docker", "exec", CONTAINER, "sha256sum", CONTAINER_DW],
+            capture_output=True, text=True, timeout=timeout,
+            encoding="utf-8", errors="replace")
+        if proc.returncode != 0:
+            detail = (proc.stderr or proc.stdout or "").strip().replace("\n", " ")
+            result["error"] = "docker exec sha256sum rc=%s: %s" % (
+                proc.returncode, detail[:160])
+            return result
+        match = re.search(r"\b([0-9a-fA-F]{64})\b", proc.stdout)
+        if not match:
+            result["error"] = "docker exec sha256sum 输出无法解析"
+            return result
+        result["sha256"] = match.group(1).lower()
+        stat = subprocess.run(
+            ["docker", "exec", CONTAINER, "stat", "-c", "%s", CONTAINER_DW],
+            capture_output=True, text=True, timeout=timeout,
+            encoding="utf-8", errors="replace")
+        if stat.returncode == 0 and stat.stdout.strip().isdigit():
+            result["size"] = int(stat.stdout.strip())
+    except (OSError, subprocess.SubprocessError) as exc:
         result["error"] = "%s: %s" % (type(exc).__name__, str(exc)[:160])
     return result
 
@@ -366,12 +398,12 @@ def check_a1(cfg: dict) -> dict:
 
 
 def check_a2(cfg: dict) -> dict:
-    ident, title = "A2", "dw.html 现页 vs 候选新页 + 8734 实际返回"
+    ident, title = "A2", "dw.html 现页 vs 候选新页 + 容器实际挂载 sha"
     portal_dir = Path(cfg["portal_dir"])
     deployed = file_meta(portal_dir / "dw.html", with_title=True)
     candidate = file_meta(portal_dir / "static" / "dw.html", with_title=True)
     evidence = {"deployed": deployed, "candidate": candidate,
-                "served": None, "swap_needed": None}
+                "container": None, "swap_needed": None}
     if not deployed["exists"]:
         return _blocked(ident, title,
                         "部署 webroot 的 portal/dw.html 缺失（docker bind mount 源）",
@@ -385,32 +417,33 @@ def check_a2(cfg: dict) -> dict:
         return _blocked(ident, title,
                         "候选新页无合法 <title>（非 HTML/损坏）", evidence)
     if cfg["skip_network"]:
-        return _unknown(ident, title, "网络检查被 --skip-network 跳过（8734 /dw.html 未探）",
+        return _unknown(ident, title,
+                        "容器 sha 检查被 --skip-network 跳过（ai-portal:/dw.html 未探）",
                         evidence)
-    served = http_get(cfg["base_8734"].rstrip("/") + "/dw.html", cfg["timeout"])
-    evidence["served"] = {"status": served["status"],
-                          "body_len": served["body_len"],
-                          "body_sha256": served["body_sha256"],
-                          "ok": served["ok"], "error": served["error"]}
-    if not served["ok"] or served["status"] != 200:
-        return _blocked(ident, title,
-                        "8734 /dw.html 不可达或非 200（status=%s error=%s）"
-                        % (served["status"], served["error"] or "-"), evidence)
-    served_sha = served["body_sha256"]
-    if served_sha == deployed["sha256"]:
+    container = container_dw_meta(cfg["timeout"])
+    evidence["container"] = container
+    if container["error"]:
+        return _unknown(ident, title,
+                        "容器内 /dw.html sha 读取失败（%s）→ 05:30 人工复核"
+                        % container["error"], evidence)
+    container_sha = container["sha256"]
+    if container_sha == deployed["sha256"]:
         return _ok(ident, title,
-                   "webroot 现页与 8734 实际返回一致（%sB/%s…）"
+                   "容器 webroot 现页与仓库旧页一致（%sB/%s…）；窗口动作=换页"
                    % (deployed["size"], (deployed["sha256"] or "")[:12]),
                    evidence,
-                   ["A2 窗口动作=把 static/dw.html 换到 webroot（候选 %sB/%s… 与现页不同）"
+                   ["候选新页 %sB/%s… 已就绪"
                     % (candidate["size"], (candidate["sha256"] or "")[:12])])
-    if served_sha == candidate["sha256"]:
+    if container_sha == candidate["sha256"]:
         return _ok(ident, title,
-                   "候选新页已在 webroot（A2 可视为 no-op/仅复核）", evidence)
+                   "候选新页已在容器 webroot（A2 可视为 no-op/仅复核）", evidence)
     return _blocked(ident, title,
-                    "8734 /dw.html 实际内容与仓库 webroot 文件不一致（served=%s… vs "
-                    "portal/dw.html=%s…）→ 疑似 bind mount/副本漂移，先确认 webroot 源"
-                    % ((served_sha or "")[:12], (deployed["sha256"] or "")[:12]),
+                    "容器内 /dw.html sha 与仓库旧页/候选页均不一致（container=%s… vs "
+                    "deployed=%s… / candidate=%s…）→ 疑似 bind mount/副本漂移，"
+                    "先确认 webroot 源"
+                    % ((container_sha or "")[:12],
+                       (deployed["sha256"] or "")[:12],
+                       (candidate["sha256"] or "")[:12]),
                     evidence)
 
 
@@ -747,13 +780,13 @@ def render_text(rep: dict) -> str:
         elif check["id"] == "A2":
             dep = ev.get("deployed") or {}
             cand = ev.get("candidate") or {}
-            served = ev.get("served") or {}
+            container = ev.get("container") or {}
             lines.append("    deployed=%sB/%s… ｜ candidate=%sB/%s… ｜ "
-                         "served=%sB/%s… ｜ swap_needed=%s"
+                         "container=%sB/%s… ｜ swap_needed=%s"
                          % (dep.get("size"), (dep.get("sha256") or "")[:10],
                             cand.get("size"), (cand.get("sha256") or "")[:10],
-                            served.get("body_len"),
-                            (served.get("body_sha256") or "")[:10],
+                            container.get("size"),
+                            (container.get("sha256") or "")[:10],
                             ev.get("swap_needed")))
         elif check["id"] == "A4":
             for table, meta in (ev.get("tables") or {}).items():
@@ -841,7 +874,7 @@ def render_md(rep: dict) -> str:
         elif check["id"] == "A2":
             deployed = evidence.get("deployed") or {}
             candidate = evidence.get("candidate") or {}
-            served = evidence.get("served") or {}
+            container = evidence.get("container") or {}
             lines.append("- 现页 `portal/dw.html`：%sB / sha256 `%s…` / title 《%s》"
                          % (deployed.get("size"),
                             (deployed.get("sha256") or "")[:16],
@@ -850,9 +883,11 @@ def render_md(rep: dict) -> str:
                          % (candidate.get("size"),
                             (candidate.get("sha256") or "")[:16],
                             candidate.get("title") or "-"))
-            lines.append("- 8734 `/dw.html`：status=%s bytes=%s sha256 `%s…`"
-                         % (served.get("status"), served.get("body_len"),
-                            (served.get("body_sha256") or "")[:16]))
+            lines.append("- 容器 `ai-portal:/usr/share/nginx/html/dw.html`："
+                         "bytes=%s sha256 `%s…` error=`%s`"
+                         % (container.get("size"),
+                            (container.get("sha256") or "")[:16],
+                            container.get("error") or "-"))
             lines.append("- 是否需换页（swap_needed）：%s"
                          % evidence.get("swap_needed"))
         elif check["id"] == "A3":

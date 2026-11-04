@@ -11,6 +11,7 @@
 全部在 tmp 隔离 git 仓库 / tmp token 目录上跑，不碰真实合并。
 """
 import json
+import os
 import subprocess
 import sys
 import time
@@ -160,11 +161,26 @@ def test_bare_env_cannot_skip(tmp_path, monkeypatch):
 
 
 def test_merge_head_sha_uses_githead_when_merge_head_missing(monkeypatch):
-    """pre-merge-commit 无 MERGE_HEAD 文件时，用 Git 注入的 GITHEAD_<sha> 对齐 token。"""
-    monkeypatch.setattr(mp, "_git_stdout", lambda args, timeout=30: (1, ""))
+    """pre-merge-commit 无 MERGE_HEAD 文件时，用 Git 注入的 GITHEAD_<sha> 对齐 token。
+
+    真实行为（Git 2.55.0.windows.5 实测）：`git rev-parse MERGE_HEAD` rc=128 但
+    stdout 返回字面量 "MERGE_HEAD"（非空），因此这里必须复刻 (128, "MERGE_HEAD")，
+    否则测不出 2026-11-04 21:40 窗口 token 永远 miss 的根因。
+    """
+    monkeypatch.setattr(mp, "_git_stdout", lambda args, timeout=30: (128, "MERGE_HEAD"))
+    monkeypatch.delenv("GITHEAD_" + ("e" * 40).upper(), raising=False)
     sha = "e" * 40
     monkeypatch.setenv("GITHEAD_" + sha.upper(), "refs/heads/task/T")
     assert mp.merge_head_sha() == sha
+
+
+def test_merge_head_sha_literal_merge_head_is_not_a_sha(monkeypatch):
+    """字面量 "MERGE_HEAD" 不得被当 sha 返回；读不到真 sha 时返回空（fail-closed）。"""
+    monkeypatch.setattr(mp, "_git_stdout", lambda args, timeout=30: (128, "MERGE_HEAD"))
+    for key in list(os.environ):
+        if key.startswith("GITHEAD_"):
+            monkeypatch.delenv(key, raising=False)
+    assert mp.merge_head_sha() == ""
 
 
 def test_devtask_wires_pin_and_token():

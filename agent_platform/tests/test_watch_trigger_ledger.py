@@ -30,6 +30,12 @@ EXECUTION_KEYS = ("order", "qty", "quantity", "broker", "execute", "trade_id", "
 PLAN_ID = "wp-trg-001"
 
 
+@pytest.fixture(autouse=True)
+def _isolate_trigger_ledger_env(monkeypatch):
+    """隔离宿主 WATCH_TRIGGER_LEDGER_PATH，避免测试读/写生产 trigger 账本。"""
+    monkeypatch.delenv(L.LEDGER_ENV, raising=False)
+
+
 def _handoff_payload(plan_id=PLAN_ID, receipt_id="d1h-20261104-abc123"):
     return {
         "schema": "d1_handoff/v2",
@@ -179,10 +185,11 @@ class TestEventLedger:
 
     def test_explicit_path_required_no_default_write(self, env, monkeypatch):
         monkeypatch.delenv(L.LEDGER_ENV, raising=False)
+        before = _sha(L.DEFAULT_LEDGER)
         with pytest.raises(L.TriggerLedgerError) as excinfo:
             L.record_trigger(watch_plan_id="wp-1", confirmation_id="CFM-0123456789AB")
         assert excinfo.value.code == "trigger_ledger_path_required"
-        assert not L.DEFAULT_LEDGER.exists()
+        assert _sha(L.DEFAULT_LEDGER) == before
         assert not env.triggers.exists()
         assert L.load_events(None) == []
 
