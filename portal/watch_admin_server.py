@@ -183,6 +183,12 @@ class _Handler(BaseHTTPRequestHandler):
             },
         )
 
+    # 2026-11-04 WO-WATCH-EXITBASELINE：补 HEAD 只读语义（与 GET 同路由，仅回 headers）。
+    # 原实现无 do_HEAD → BaseHTTPRequestHandler 回 501；HEAD 与 GET 等价且 _send() 已对
+    # HEAD 抑制 body，故委派 do_GET 即可，不改变任何业务/写语义。
+    def do_HEAD(self) -> None:  # noqa: N802
+        self.do_GET()
+
     # Silence the default request logging to keep the console clean.
     def log_message(self, *args: Any) -> None:  # noqa: D401
         return
