@@ -15,6 +15,7 @@ $triggerLedger = Join-Path $data "watch_triggers.jsonl"
 $alertLedger = Join-Path $data "watch_alerts.jsonl"
 $statusPath = Join-Path $engineDir "status.json"
 $autoarmStatus = Join-Path $engineDir "autoarm_status.json"
+$guardAlert = Join-Path $engineDir "guard_alerts.jsonl"
 $botDir = Join-Path $data "trading_bot"
 $log = "C:\Temp\watch_engine_loop.log"
 
@@ -50,6 +51,10 @@ while ($true) {
                 --data-dir $botDir `
                 --quote-source snapshot `
                 --status $statusPath `
+                --json *>> $log
+            & $python -X utf8 tools\watch_guard.py `
+                --status $statusPath `
+                --alert-file $guardAlert `
                 --json *>> $log
         }
     } catch {
