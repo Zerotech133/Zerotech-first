@@ -34,6 +34,35 @@ try {
         W ('P0 WARN env missing: ' + $envPs1 + ' (inherit environment)')
     }
 
+    # 0.1) 出口代理自举（2026-11-05 补）：typesafe.ai 对本机直连出口返回 451，
+    #      而计划任务里没有交互式 shell 的 $env:JEV_PROXY，导致预检必挂 → 每月静默 SKIP。
+    #      仅在 JEV_PROXY 未显式设置、且本机 7890（快安）在监听时补默认值；
+    #      端口不通则保持空，让预检如实报 451/不可达，不掩盖故障。
+    if (-not $env:JEV_PROXY) {
+        $proxyUp = $false
+        try {
+            $proxyUp = [bool](Get-NetTCPConnection -State Listen -LocalPort 7890 -ErrorAction Stop |
+                Select-Object -First 1)
+        } catch {
+            $proxyUp = $false
+        }
+        if (-not $proxyUp) {
+            try {
+                $tc = New-Object System.Net.Sockets.TcpClient
+                $proxyUp = $tc.ConnectAsync('127.0.0.1', 7890).Wait(800)
+                $tc.Close()
+            } catch { $proxyUp = $false }
+        }
+        if ($proxyUp) {
+            $env:JEV_PROXY = 'http://127.0.0.1:7890'
+            W 'P0.1 proxy: JEV_PROXY 未设置，7890 在监听 -> 自动设为 http://127.0.0.1:7890'
+        } else {
+            W 'P0.1 proxy: JEV_PROXY 未设置且 7890 未监听 -> 直连（预检可能 451）'
+        }
+    } else {
+        W ('P0.1 proxy: JEV_PROXY 已显式设置 -> ' + $env:JEV_PROXY)
+    }
+
     $py = 'C:\Program Files\Python311\python.exe'
     if (-not (Test-Path -LiteralPath $py)) {
         $py = (Get-Command python.exe -ErrorAction Stop).Source
