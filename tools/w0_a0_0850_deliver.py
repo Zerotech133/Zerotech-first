@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DEADLINE = datetime(2026, 11, 5, 8, 50, 0)
 DOC = "docs/ops/2026-11-05_W0_22doing处置建议_v1.md"
 TITLE = "W0 08:50 决策：22 doing 逐单处置（6 done/9 merge/3 review/4 keep）"
+TASK_NAME = "W0_A0_0850_Deliver"
 
 
 def _current_counts() -> tuple[int, int, int, bool]:
@@ -61,9 +62,45 @@ D5 CATALOG、W1 是否维持另批处理？
 未获书面口径前：不批量改 tasks.json，不把 doing/worktree/parked 写成达标。"""
 
 
+def _already_delivered() -> str | None:
+    """08:50 后按标题找本次投递记录，避免补跑/重复触发重复发。"""
+    base = ROOT / "agent_platform" / "bridge_inbox"
+    for path in base.rglob("*.json"):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError, UnicodeDecodeError):
+            continue
+        if data.get("source") != "w0-0850":
+            continue
+        payload = data.get("payload") or {}
+        title = payload.get("title") or data.get("title") or ""
+        submitted = data.get("submitted_at") or ""
+        if title == TITLE and submitted.startswith("2026-11-05"):
+            return str(path)
+    return None
+
+
+def _disable_task() -> None:
+    """投递成功后禁用一次性任务，避免次日登录再次补跑。"""
+    try:
+        proc = subprocess.run(
+            ["C:\\Windows\\System32\\schtasks.exe", "/Change", "/TN", TASK_NAME, "/DISABLE"],
+            capture_output=True, text=True, encoding="utf-8", timeout=30,
+        )
+        if proc.returncode != 0:
+            print("warn: disable task rc=%s %s" % (proc.returncode, (proc.stderr or "")[-200:]), file=sys.stderr)
+    except Exception as exc:  # noqa: BLE001 - 投递已成功，禁用失败只告警
+        print("warn: disable task failed: %s" % exc, file=sys.stderr)
+
+
 def main() -> int:
     if "--force" not in sys.argv and datetime.now() < DEADLINE:
         print("skip: before 2026-11-05 08:50 local time")
+        return 0
+
+    existing = _already_delivered()
+    if existing:
+        print("skip: already delivered %s" % existing)
         return 0
 
     sys.path.insert(0, str(ROOT / "agent_platform"))
@@ -78,7 +115,10 @@ def main() -> int:
         link=DOC, actor="lead",
     )
     print(json.dumps(env, ensure_ascii=False))
-    return 0 if env.get("ok") else 1
+    ok = bool(env.get("ok"))
+    if ok and "--no-disable" not in sys.argv:
+        _disable_task()
+    return 0 if ok else 1
 
 
 if __name__ == "__main__":
