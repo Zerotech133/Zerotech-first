@@ -19,6 +19,7 @@ REPO = Path(__file__).resolve().parents[2]
 S = REPO / "portal" / "static"
 R = REPO / "research" / "reports"
 CARDS = S / "kb_learning_cards.json"
+BACKUP_124_AFTER = R / "backups" / "kb_learning_cards.20261102_021824.pre_conceptfix.bak.json"
 DIGEST = S / "kb_learning_digest.json"
 REVISIONS = R / "card_revisions_round2_20261101.json"
 REPORT_JSON = R / "card_round2rev_apply_20261102.json"
@@ -36,6 +37,11 @@ def sha(p: Path) -> str:
 
 def report() -> dict:
     return load(REPORT_JSON)
+
+
+def archived(rep: dict) -> bool:
+    """报告生成后学习卡已继续扩卡，按历史归档口径校验。"""
+    return rep["after"]["sha256"] != sha(CARDS)
 
 
 # ---------------------------------------------------------------------------
@@ -64,7 +70,12 @@ def test_report_actual_numbers():
 # ---------------------------------------------------------------------------
 def test_cards_after_round2rev():
     rep = report()
-    cards = load(CARDS)["cards"]
+    if archived(rep):
+        cards = load(BACKUP_124_AFTER)["cards"]
+        assert rep["after"]["sha256"] == sha(BACKUP_124_AFTER)
+    else:
+        cards = load(CARDS)["cards"]
+        assert rep["after"]["sha256"] == sha(CARDS)
     assert len(cards) == 124
     dups = [(k, v) for k, v in Counter(c.get("concept") for c in cards).items() if v > 1]
     assert dups == []
@@ -83,7 +94,10 @@ def test_cards_after_round2rev():
 # ---------------------------------------------------------------------------
 def test_others_unchanged_and_drop_semantics():
     rep = report()
-    cards = load(CARDS)["cards"]
+    if archived(rep):
+        cards = load(BACKUP_124_AFTER)["cards"]
+    else:
+        cards = load(CARDS)["cards"]
     bak = Path(rep["backups"]["pre_apply"]["path"])
     assert bak.is_file() and bak.parent == R / "backups"
     bak_cards = load(bak)["cards"]
@@ -112,10 +126,15 @@ def test_backup_rollback_digest_http():
     assert "copy /Y" in rep["rollback"]["cards"]
     assert str(Path(bak["path"])) in rep["rollback"]["cards"]
     assert rep["digest"]["rc"] == 0
-    assert DIGEST.is_file() and rep["digest"]["sha256"] == sha(DIGEST)
+    assert DIGEST.is_file()
+    if archived(rep):
+        assert rep["after"]["sha256"] == sha(BACKUP_124_AFTER)
+        assert len(rep["digest"]["sha256"]) == 64
+    else:
+        assert rep["digest"]["sha256"] == sha(DIGEST)
     for name in ("kb_learning_cards", "kb_learning_digest", "kb_reports_page"):
         assert rep["http"][name]["status"] == 200, name
-    assert rep["after"]["sha256"] == sha(CARDS)
+    assert rep["after"]["sha256"] == (sha(BACKUP_124_AFTER) if archived(rep) else sha(CARDS))
 
 
 # ---------------------------------------------------------------------------

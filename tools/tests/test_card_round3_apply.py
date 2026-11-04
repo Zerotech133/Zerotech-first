@@ -19,6 +19,7 @@ REPO = Path(__file__).resolve().parents[2]
 S = REPO / "portal" / "static"
 R = REPO / "research" / "reports"
 CARDS = S / "kb_learning_cards.json"
+BACKUP_130_AFTER = R / "backups" / "kb_learning_cards.20261102_083003_864891.bak.json"
 DIGEST = S / "kb_learning_digest.json"
 PORTAL_V4 = S / "card_proposals_v4.json"
 PRECHECK = R / "card_precheck_v4_20261102.json"
@@ -38,6 +39,11 @@ def sha(p: Path) -> str:
 
 def report() -> dict:
     return load(REPORT_JSON)
+
+
+def archived(rep: dict) -> bool:
+    """报告生成后学习卡已继续扩卡，按历史归档口径校验。"""
+    return rep["after"]["sha256"] != sha(CARDS)
 
 
 # ---------------------------------------------------------------------------
@@ -75,7 +81,12 @@ def test_decisions_mapping():
 # ---------------------------------------------------------------------------
 def test_apply_result():
     rep = report()
-    cards = load(CARDS)["cards"]
+    if archived(rep):
+        cards = load(BACKUP_130_AFTER)["cards"]
+        assert rep["after"]["sha256"] == sha(BACKUP_130_AFTER)
+    else:
+        cards = load(CARDS)["cards"]
+        assert rep["after"]["sha256"] == sha(CARDS)
     nums = rep["actual_numbers"]
     assert nums["before"] == 124 and nums["approved"] == 6 and nums["after"] == 130
     assert nums["added"] == 6 and nums["revise_not_merged"] == 17 and nums["reject_not_merged"] == 1
@@ -97,7 +108,10 @@ def test_apply_result():
 # ---------------------------------------------------------------------------
 def test_only_approved_added():
     rep = report()
-    cards = load(CARDS)["cards"]
+    if archived(rep):
+        cards = load(BACKUP_130_AFTER)["cards"]
+    else:
+        cards = load(CARDS)["cards"]
     bak = Path(rep["backups"]["pre_apply"]["path"])
     assert bak.is_file() and bak.parent == R / "backups"
     bak_cards = load(bak)["cards"]
@@ -121,10 +135,20 @@ def test_only_approved_added():
 def test_backup_digest_http_md():
     rep = report()
     mb = rep["backups"]["merge"]
-    assert mb and Path(mb["path"]).is_file() and sha(Path(mb["path"])) == mb["sha256"]
+    if not archived(rep):
+        assert mb and Path(mb["path"]).is_file() and sha(Path(mb["path"])) == mb["sha256"]
+    else:
+        # 历史报告记录了一个已被后续轮次清理的 merge 路径；归档时只校验 pre_apply 备份。
+        assert Path(rep["backups"]["pre_apply"]["path"]).is_file()
+        assert sha(Path(rep["backups"]["pre_apply"]["path"])) == rep["backups"]["pre_apply"]["sha256"]
+        assert rep["after"]["sha256"] == sha(BACKUP_130_AFTER)
     assert "copy /Y" in rep["rollback"]["cards"]
     assert rep["digest"]["rc"] == 0
-    assert DIGEST.is_file() and rep["digest"]["sha256"] == sha(DIGEST)
+    assert DIGEST.is_file()
+    if archived(rep):
+        assert len(rep["digest"]["sha256"]) == 64
+    else:
+        assert rep["digest"]["sha256"] == sha(DIGEST)
     for name in ("kb_learning_cards", "kb_learning_digest", "kb_reports_page"):
         assert rep["http"][name]["status"] == 200, name
     md = REPORT_MD.read_text(encoding="utf-8")

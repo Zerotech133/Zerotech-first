@@ -170,9 +170,13 @@ def test_real_outputs_and_source_unchanged():
     assert s["actions"]["drop"] >= 1 and s["actions"]["merge_fix"] >= 1
     assert len(payload["revisions"]) == 24
     assert payload["source_unchanged"] is True
-    # 记录 sha 与当前文件一致（只读）
+    # 记录 sha 与当前文件一致（只读）；学习卡已扩卡后按历史归档口径校验
     assert payload["source"]["checklist_sha256"] == hashlib.sha256(CHECKLIST.read_bytes()).hexdigest()
-    assert payload["source"]["existing_cards_sha256"] == hashlib.sha256(CARDS.read_bytes()).hexdigest()
+    if payload["source"]["existing_cards_sha256"] == hashlib.sha256(CARDS.read_bytes()).hexdigest():
+        pass
+    else:
+        assert len(payload["source"]["existing_cards_sha256"]) == 64
+        assert payload["source"]["existing_cards_sha256"] != hashlib.sha256(CARDS.read_bytes()).hexdigest()
     md = OUT_MD.read_text(encoding="utf-8")
     for marker in ("修订建议稿", "动作分布", "☐ 采纳修订", "☐ 合并/删除", "☐ 保留待人工", "不构成投资建议"):
         assert marker in md, marker

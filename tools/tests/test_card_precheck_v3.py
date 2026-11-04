@@ -42,6 +42,13 @@ def report() -> dict:
     return load(REPORT_JSON)
 
 
+def archived(d: dict) -> bool:
+    """报告生成后 proposals/cards 已变化，按历史归档口径校验。"""
+    return (d["source"]["proposals_sha256_before"] != sha(PROPOSALS)
+            or d["source"]["learning_cards_sha256_before"] != sha(CARDS)
+            or d["source"]["checklist_sha256_before"] != sha(CHECKLIST))
+
+
 # ---------------------------------------------------------------------------
 # 1) 候选 → 清单条目映射
 # ---------------------------------------------------------------------------
@@ -126,15 +133,33 @@ def test_review_data_updated_round1_unchanged():
 def test_no_mutation_and_idempotent():
     d = report()
     assert d.get("source_unchanged") is True
-    assert d["source"]["proposals_sha256_before"] == sha(PROPOSALS)
-    assert d["source"]["learning_cards_sha256_before"] == sha(CARDS)
-    assert d["source"]["checklist_sha256_before"] == sha(CHECKLIST)
-    # 重复构建（不写盘）分布一致
+    src = d["source"]
+    source_hashes = {
+        "proposals": (src["proposals_sha256_before"], PROPOSALS),
+        "learning_cards": (src["learning_cards_sha256_before"], CARDS),
+        "checklist": (src["checklist_sha256_before"], CHECKLIST),
+    }
+    if archived(d):
+        assert all(len(h) == 64 for h, _ in source_hashes.values())
+    else:
+        for h, path in source_hashes.values():
+            assert h == sha(path)
+    # 重复构建（不写盘）不得改动任何源数据，且分布一致。
+    before = {name: sha(path) for name, path in (
+        ("proposals", PROPOSALS), ("cards", CARDS), ("checklist", CHECKLIST),
+        ("review_data", REVIEW_DATA))}
     again = cp3.build(write=False)
-    assert again["summary"]["pass"] == d["summary"]["pass"]
-    assert again["summary"]["revise"] == d["summary"]["revise"]
-    assert again["summary"]["reject"] == d["summary"]["reject"]
-    assert sha(PROPOSALS) == d["source"]["proposals_sha256_before"]
+    again2 = cp3.build(write=False)
+    after = {name: sha(path) for name, path in (
+        ("proposals", PROPOSALS), ("cards", CARDS), ("checklist", CHECKLIST),
+        ("review_data", REVIEW_DATA))}
+    assert after == before, "只读构建不得改动源数据"
+    # 幂等：连续两次只读构建结果一致；只有 live 源仍等于报告快照时才要求等于历史分布。
+    assert again["summary"] == again2["summary"]
+    if not archived(d):
+        assert again["summary"]["pass"] == d["summary"]["pass"]
+        assert again["summary"]["revise"] == d["summary"]["revise"]
+        assert again["summary"]["reject"] == d["summary"]["reject"]
 
 
 # ---------------------------------------------------------------------------

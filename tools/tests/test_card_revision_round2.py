@@ -23,6 +23,7 @@ S = REPO / "portal" / "static"
 DECISIONS = R / "card_review_decisions_suggested_round2_20261101.json"
 V2 = R / "card_review_checklist_20261101_v2.json"
 CARDS = S / "kb_learning_cards.json"
+BACKUP_104 = R / "backups" / "kb_learning_cards.20261102_003714.pre_round2rev.bak.json"
 REPORT_JSON = R / "card_revisions_round2_20261101.json"
 REPORT_MD = R / "card_revisions_round2_20261101.md"
 SCRIPT = REPO / "tools" / "kb_corpus" / "card_revision_round2.py"
@@ -43,6 +44,11 @@ def sha(p: Path) -> str:
 
 def report() -> dict:
     return load(REPORT_JSON)
+
+
+def archived(d: dict) -> bool:
+    """报告生成后学习卡已继续扩卡，按历史归档口径校验。"""
+    return d["sources"]["cards"]["sha256"] != sha(CARDS)
 
 
 # ---------------------------------------------------------------------------
@@ -119,13 +125,19 @@ def test_dry_run_preview():
     d = report()
     pv = d["preview"]
     cards = load(CARDS)["cards"]
-    assert pv["base_cards"] == len(cards) == 104
+    assert pv["base_cards"] == 104
     assert pv["merge_fix_count"] == d["summary"]["actions"]["merge_fix"] == 20
     assert pv["merge_fix_new_cards"] == 20
     assert pv["resulting_cards_if_all_merge_fix"] == 104 + 20 == 124
     assert "dry-run" in pv["mode"] and ("未执行" in pv["mode"] or "不执行" in pv["mode"])
     assert pv["drop_count"] == d["summary"]["actions"]["drop"] == 25
-    assert len(cards) == 104, "预览不得改学习卡"
+    if archived(d):
+        bak = load(BACKUP_104)["cards"]
+        assert len(bak) == 104
+        assert cards[:104] == bak, "历史 base 的 104 张应仍逐张不变"
+        assert len(cards) > 104, "预览不得回退已扩卡的学习卡"
+    else:
+        assert len(cards) == 104, "预览不得改学习卡"
 
 
 # ---------------------------------------------------------------------------
@@ -134,10 +146,14 @@ def test_dry_run_preview():
 def test_read_only_and_markdown():
     d = report()
     assert d["sources_unchanged"] is True
-    assert d["sources"]["cards"]["sha256"] == sha(CARDS)
+    if archived(d):
+        assert d["sources"]["cards"]["sha256"] == sha(BACKUP_104)
+        assert len(load(CARDS)["cards"]) > 104
+    else:
+        assert d["sources"]["cards"]["sha256"] == sha(CARDS)
     assert d["sources"]["checklist_v2"]["sha256"] == sha(V2)
     assert d["sources"]["decisions"]["sha256"] == sha(DECISIONS)
-    assert len(load(CARDS)["cards"]) == 104
+    assert len(load(CARDS)["cards"]) >= 104
     md = REPORT_MD.read_text(encoding="utf-8")
     for marker in ("第二轮 45 张 revise 修订建议稿", "动作分布", "dry-run 预览", "逐卡修订建议",
                    "☐ 采纳修订", "☐ 合并/删除", "☐ 保留待人工"):
