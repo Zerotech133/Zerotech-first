@@ -122,6 +122,56 @@ def push(text: str) -> None:
     print(f"推送 exit={r.returncode} {r.stdout.strip()[:120]}")
 
 
+def _pick_latest(files: list[Path]) -> tuple[Path, dict, list[str], bool]:
+    """按 summary.run_at 取最新结果，并优先正式跑（repeats>=3）。
+
+    2026-11-05 修：原实现取字典序最后一个 result-*.json，实测最新的是
+    `result-20261014-154128.json`（repeats=1、by_type 只有 score 的临时跑），
+    被当成正式结果判成 33.3% 准确率，制造假漂移告警。改为：
+      - 时间序以 run_at 为准（缺 run_at 退回文件 mtime）；
+      - 只在 repeats>=3 的正式跑里取最新；一份都没有 → 用最新一份并标注，
+        且跳过准确率/题型阈值判定（临时跑不构成基线）。
+    返回 (path, summary, notes, formal)。
+    """
+    loaded: list[tuple[datetime, Path, dict]] = []
+    for f in files:
+        try:
+            s = json.loads(f.read_text(encoding="utf-8")).get("summary") or {}
+        except (OSError, ValueError):
+            continue
+        ts = s.get("run_at") or ""
+        try:
+            key = datetime.fromisoformat(ts)
+        except (TypeError, ValueError):
+            try:
+                key = datetime.fromtimestamp(f.stat().st_mtime)
+            except OSError:
+                continue
+        loaded.append((key, f, s))
+    if not loaded:
+        # 全部不可解析：退回旧行为，保证不崩
+        f = files[-1]
+        return f, json.loads(f.read_text(encoding="utf-8"))["summary"], [], False
+
+    loaded.sort(key=lambda x: x[0])
+    formal_items = [x for x in loaded if (x[2].get("repeats") or 0) >= 3]
+    notes: list[str] = []
+    if formal_items:
+        key, path, summary = formal_items[-1]
+        skipped = len(loaded) - len(formal_items)
+        newest = loaded[-1]
+        if newest[0] > key:
+            notes.append(
+                f"忽略 {skipped} 份非正式结果（repeats<3），已取最近正式跑 "
+                f"{path.name}（{summary.get('run_at', '')[:16].replace('T', ' ')}）；"
+                f"目录内更新的 {newest[1].name} 为临时跑，不参与判定"
+            )
+        return path, summary, notes, True
+
+    key, path, summary = loaded[-1]
+    return path, summary, notes, False
+
+
 def check(
     results_dir: Path | str | None = None,
     cadence: str = DEFAULT_CADENCE,
@@ -151,8 +201,7 @@ def check(
             "latest": None,
         }
 
-    latest = files[-1]
-    summary = json.loads(latest.read_text(encoding="utf-8"))["summary"]
+    latest, summary, pick_notes, formal = _pick_latest(files)
     problems: list[str] = []
     age_days = None
     run_at = summary.get("run_at") or ""
@@ -169,12 +218,18 @@ def check(
             f"补救命令 {remedy_cmd()}"
         )
     accuracy = summary.get("accuracy")
-    if accuracy is not None and accuracy < ACC_MIN:
+    if not formal:
+        problems.append(
+            "results 目录无正式评测结果（repeats>=3）；最新一份 repeats=%s，"
+            "属临时跑，不参与基线判定。补救: %s"
+            % (summary.get("repeats"), remedy_cmd())
+        )
+    if formal and accuracy is not None and accuracy < ACC_MIN:
         problems.append(f"总准确率 {accuracy:.1%} < {ACC_MIN:.0%}")
     by_type = summary.get("by_type_accuracy") or {}
     for t in ("noul", "choice"):
         v = by_type.get(t)
-        if v is not None and v < TYPE_MIN:
+        if formal and v is not None and v < TYPE_MIN:
             problems.append(f"{t} 题型 {v:.1%} < {TYPE_MIN:.0%}（生产在用）")
 
     head = "⚠ [Jev评测] 基线漂移告警" if problems else f"[Jev评测] {label}回归正常"
@@ -191,6 +246,7 @@ def check(
     ]
     if summary.get("high_conf_wrong_ids"):
         lines.append(f"高置信答错: {summary['high_conf_wrong_ids']}")
+    lines += [f"  · {n}" for n in pick_notes]
     lines += [f"  - {p}" for p in problems]
     return {
         "code": 1 if problems else 0,

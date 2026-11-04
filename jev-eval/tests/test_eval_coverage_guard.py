@@ -75,7 +75,11 @@ def build_data(
 
 
 def fake_result(
-    rdir: Path, run_at: datetime, accuracy: float = 0.99, by_type: dict | None = None
+    rdir: Path,
+    run_at: datetime,
+    accuracy: float = 0.99,
+    by_type: dict | None = None,
+    repeats: int = 3,
 ) -> Path:
     rdir.mkdir(parents=True, exist_ok=True)
     p = rdir / f"result-{run_at:%Y%m%d-%H%M%S}.json"
@@ -84,7 +88,7 @@ def fake_result(
             {
                 "summary": {
                     "run_at": run_at.replace(microsecond=0).isoformat(),
-                    "repeats": 3,
+                    "repeats": repeats,
                     "accuracy": accuracy,
                     "self_consistency": 0.95,
                     "error_rate": 0.0,
@@ -399,3 +403,48 @@ def test_coverage_push_is_mocked(tmp_path, monkeypatch):
     ])
     assert rc == 1
     assert len(sent) == 1 and "回填覆盖率" in sent[0]
+
+
+# ── eval_guard：临时跑（repeats<3）不参与基线判定（2026-11-05 修） ──
+def test_guard_prefers_formal_run_over_newer_temp(tmp_path):
+    """目录里存在更新的 repeats=1 临时跑时，仍按最近正式跑判定，不误报。"""
+    rdir = tmp_path / "rmix"
+    fake_result(rdir, NOW - timedelta(days=21), accuracy=0.96)
+    temp = fake_result(
+        rdir, NOW - timedelta(days=1), accuracy=0.333, by_type={"score": 0.333}, repeats=1
+    )
+    r = eg.check(rdir, "monthly", now=NOW)
+    assert r["latest"] == "result-%s.json" % (NOW - timedelta(days=21)).strftime(
+        "%Y%m%d-%H%M%S"
+    ), r["latest"]
+    assert r["code"] == 0, r["problems"]
+    # 临时跑会被提及（说明为何忽略），但不得进入准确率判定
+    assert "33.3%" not in r["msg"]
+
+
+def test_guard_temp_only_flags_no_formal_result(tmp_path):
+    """只有临时跑 → 明确报「无正式结果」，而不是按 33.3% 判漂移。"""
+    rdir = tmp_path / "rtemp"
+    fake_result(
+        rdir, NOW - timedelta(days=1), accuracy=0.333, by_type={"score": 0.333}, repeats=1
+    )
+    r = eg.check(rdir, "monthly", now=NOW)
+    assert r["code"] == 1
+    assert any("无正式评测结果" in p for p in r["problems"]), r["problems"]
+    assert "33.3% < 90%" not in r["msg"]
+
+
+def test_guard_orders_by_run_at_not_filename(tmp_path):
+    """文件名时间戳与 run_at 不一致时，以 run_at 为准。"""
+    rdir = tmp_path / "rorder"
+    # 文件名更晚、run_at 更早（正式跑）
+    old = fake_result(rdir, NOW - timedelta(days=20), accuracy=0.95)
+    old.rename(rdir / "result-29991231-235959.json")
+    # 文件名更早、run_at 更晚（正式跑）
+    fake_result(rdir, NOW - timedelta(days=2), accuracy=0.97).rename(
+        rdir / "result-20000101-000000.json"
+    )
+    r = eg.check(rdir, "monthly", now=NOW)
+    assert r["age_days"] == 2, r
+    assert r["code"] == 0, r["problems"]
+
