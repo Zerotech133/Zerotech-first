@@ -56,7 +56,7 @@ while ($true) {
                 --plan-ledger $planLedger `
                 --trigger-ledger $triggerLedger `
                 --alert-ledger $alertLedger `
-                --alert-feishu-target "internal_test" `
+                --alert-feishu-target "quant_group" `
                 --data-dir $botDir `
                 --quote-source snapshot `
                 --status $statusPath `
