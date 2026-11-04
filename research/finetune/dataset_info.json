@@ -52,5 +52,12 @@
   "columns": {
    "messages": "messages"
   }
+ },
+ "quant_kb_sft_v4d": {
+  "file_name": "sft/quant_kb_sft_v4d_train.jsonl",
+  "formatting": "sharegpt",
+  "columns": {
+   "messages": "messages"
+  }
  }
 }

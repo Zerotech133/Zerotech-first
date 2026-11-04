@@ -98,7 +98,8 @@ def main() -> int:
     for rows, fn in ((train, "quant_kb_sft_v4_train.jsonl"), (val, "quant_kb_sft_v4_val.jsonl")):
         with (SFT / fn).open("w", encoding="utf-8") as f:
             for r in rows:
-                f.write(json.dumps(r, ensure_ascii=False) + "\n")
+                # 百炼导入只接受 messages（顶层其他字段会导致导入失败）
+                f.write(json.dumps({"messages": r["messages"]}, ensure_ascii=False) + "\n")
     for r in train + val:
         r.setdefault("category", "v1_existing")
     cats = Counter(r.get("category") for r in train + val)

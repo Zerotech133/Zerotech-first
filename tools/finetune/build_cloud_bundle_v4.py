@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """构建微调云训练上传包 v4（SFT v4 修正引用上下文 + 4090/A100 配置 + 一键脚本）。
 
 用途：绕开百炼数据集导入异常，在 AutoDL/PAI 等 GPU 云上直接训练，
@@ -32,7 +32,7 @@ lora_alpha: 128
 lora_dropout: 0.05
 lora_target: all
 
-dataset: quant_kb_sft_v4
+dataset: quant_kb_sft_v4d
 dataset_dir: .
 template: qwen
 cutoff_len: 2048
@@ -65,7 +65,7 @@ lora_alpha: 128
 lora_dropout: 0.05
 lora_target: all
 
-dataset: quant_kb_sft_v4
+dataset: quant_kb_sft_v4d
 dataset_dir: .
 template: qwen
 cutoff_len: 2048
@@ -92,7 +92,7 @@ quantization_method: bnb
 README = """# 微调云训练上传包 v4（SFT v4：引用上下文修正）
 
 > 原因：百炼数据集导入异常（v2 已知可用数据也失败），改用 GPU 云直接训练。
-> 数据：quant_kb_sft_v4（**4,039 条**：v1 2,678 + 拒答 182 + 引用 219【已注入上下文】+ 通用 960）
+> 数据：quant_kb_sft_v4（**3,769 条**：v1 2,678 + 拒答 182 + 引用 219【已注入上下文】+ 通用 960）
 > 训练：Qwen2.5-14B-Instruct QLoRA（LoRA rank 64），3 epoch
 
 ## 一、AutoDL 快速开始（推荐 4090 24G）
@@ -133,7 +133,7 @@ bash run_sft_a100.sh /root/autodl-tmp/models/Qwen2.5-14B-Instruct
 ## 五、数据完整性
 - 引用样本 user 含 `资料：[1..5] + 问题`，assistant 含 `[n]` 引用；
 - 与百炼 v2 同源，仅修复引用上下文丢失问题；
-- 校验：4,039 条；citation 219 / refusal 182 / F 通用 960 / v1 2,678。
+- 校验：3,769 条；citation 219 / refusal 182 / F 通用 960 / v1 2,678。
 
 ## 六、文件清单
 - `sft/quant_kb_sft_v4_{train,val}.jsonl`
@@ -158,8 +158,8 @@ def main() -> int:
         shutil.rmtree(BUNDLE)
     for d in ("sft", "configs"):
         (BUNDLE / d).mkdir(parents=True, exist_ok=True)
-    srcs = (("sft/quant_kb_sft_v4_train.jsonl", "sft/quant_kb_sft_v4_train.jsonl"),
-            ("sft/quant_kb_sft_v4_val.jsonl", "sft/quant_kb_sft_v4_val.jsonl"),
+    srcs = (("sft/quant_kb_sft_v4d_train.jsonl", "sft/quant_kb_sft_v4d_train.jsonl"),
+            ("sft/quant_kb_sft_v4d_val.jsonl", "sft/quant_kb_sft_v4d_val.jsonl"),
             ("dpo/quant_kb_dpo_v2.jsonl", "dpo/quant_kb_dpo_v2.jsonl"))
     for src, dst in srcs:
         sp = FT / src
@@ -167,9 +167,9 @@ def main() -> int:
             dp = BUNDLE / dst
             dp.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(sp, dp)
-    rows = (BUNDLE / "sft/quant_kb_sft_v4_train.jsonl").read_text(encoding="utf-8").splitlines()[:30]
+    rows = (BUNDLE / "sft/quant_kb_sft_v4d_train.jsonl").read_text(encoding="utf-8").splitlines()[:30]
     (BUNDLE / "sft/smoke_14b_v4.jsonl").write_text("\n".join(rows) + "\n", encoding="utf-8")
-    info = {"quant_kb_sft_v4": {"file_name": "sft/quant_kb_sft_v4_train.jsonl", "formatting": "sharegpt",
+    info = {"quant_kb_sft_v4": {"file_name": "sft/quant_kb_sft_v4d_train.jsonl", "formatting": "sharegpt",
                                 "columns": {"messages": "messages"}},
             "quant_kb_sft_smoke14b": {"file_name": "sft/smoke_14b_v4.jsonl", "formatting": "sharegpt",
                                       "columns": {"messages": "messages"}}}
@@ -192,8 +192,8 @@ def main() -> int:
     for p in sorted(BUNDLE.rglob("*")):
         if p.is_file() and p.name != "MANIFEST.json":
             files.append({"path": str(p.relative_to(BUNDLE)), "size": p.stat().st_size, "sha256": sha256(p)})
-    manifest = {"schema": "cloud_bundle.v4", "generated_at": NOW, "dataset": "quant_kb_sft_v4",
-                "total": 4039, "files": files}
+    manifest = {"schema": "cloud_bundle.v4", "generated_at": NOW, "dataset": "quant_kb_sft_v4d",
+                "total": 3769, "files": files}
     (BUNDLE / "MANIFEST.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=1), encoding="utf-8")
     with zipfile.ZipFile(ZIP, "w", zipfile.ZIP_DEFLATED) as z:
         for p in sorted(BUNDLE.rglob("*")):
@@ -201,7 +201,7 @@ def main() -> int:
                 z.write(p, arcname=f"cloud_bundle_v4/{p.relative_to(BUNDLE)}")
     zsha = sha256(ZIP)
     print(json.dumps({"zip": str(ZIP), "size": ZIP.stat().st_size, "sha256": zsha,
-                      "files": len(files), "total": 4039}, ensure_ascii=False))
+                      "files": len(files), "total": 3769}, ensure_ascii=False))
     return 0
 
 
