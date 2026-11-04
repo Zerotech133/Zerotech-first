@@ -10,9 +10,11 @@ $engineDir = Join-Path $data "watch_engine"
 New-Item -ItemType Directory -Force -Path $engineDir | Out-Null
 
 $planLedger = Join-Path $data "watch_plans.jsonl"
+$handoffLedger = Join-Path $data "d1_handoffs.jsonl"
 $triggerLedger = Join-Path $data "watch_triggers.jsonl"
 $alertLedger = Join-Path $data "watch_alerts.jsonl"
 $statusPath = Join-Path $engineDir "status.json"
+$autoarmStatus = Join-Path $engineDir "autoarm_status.json"
 $botDir = Join-Path $data "trading_bot"
 $log = "C:\Temp\watch_engine_loop.log"
 
@@ -32,6 +34,14 @@ while ($true) {
         if (In-Trading-Window) {
             $stamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
             "[$stamp] tick" | Out-File -FilePath $log -Append -Encoding utf8
+            if (Test-Path $handoffLedger) {
+                & $python -X utf8 -m agent_platform.watch_plan_autoarm `
+                    --once `
+                    --ledger $handoffLedger `
+                    --plans $planLedger `
+                    --status $autoarmStatus `
+                    --json *>> $log
+            }
             & $python -X utf8 -m agent_platform.watch_runner `
                 --once `
                 --plan-ledger $planLedger `
