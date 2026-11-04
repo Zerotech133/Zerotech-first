@@ -214,7 +214,9 @@ def test_overview_summary_output_health_fields(monkeypatch, tmp_path):
         "seed": {}, "classify": {"pending": 0, "log_tail": []},
         "report": {"posts_today": 1, "ingested_today": 1, "log_tail": []}})
     monkeypatch.setattr(dataops, "_daily_intake", lambda errors, days=14: {
-        "series": [{"股吧帖": 1}], "last_by_source": {"股吧帖": "2026-11-02"},
+        # 动态今日：GubaCrawl 的健康按真实当日计算；固定 2026-11-02 会在
+        # 2026-11-05 之后被判 stale/red，形成日期时间炸弹（非分支回归）。
+        "series": [{"股吧帖": 1}], "last_by_source": {"股吧帖": time.strftime("%Y-%m-%d")},
         "days": 14, "today": 1})
     monkeypatch.setattr(dataops, "_task_groups",
                         lambda errors: {"groups": [], "total": 0, "armed_total": 0})
