@@ -402,7 +402,8 @@ def run_once(plan_ledger=None, trigger_ledger=None, data_dir=None, provider=None
 
 def run(plan_ledger=None, trigger_ledger=None, data_dir=None, provider=None,
         once=True, interval=0.0, max_ticks=None, dry_run=False, status_path=None,
-        lock_path=None, sleep=time.sleep, now_fn=None, alert_ledger=None) -> dict:
+        lock_path=None, sleep=time.sleep, now_fn=None, alert_ledger=None,
+        alert_sink=None) -> dict:
     """运行 once 或 interval 循环；返回 runner summary（含 last_status 与 alert 计数）。
 
     ``sleep``/``now_fn`` 供测试注入（默认 time.sleep / 本地时间）；
@@ -437,6 +438,7 @@ def run(plan_ledger=None, trigger_ledger=None, data_dir=None, provider=None,
                 started_at=started_at,
                 interval_s=None if once else float(interval),
                 alert_ledger=alert_ledger,
+                alert_sink=alert_sink,
             )
             statuses.append(last)
             if max_ticks is not None and ticks >= max_ticks:
@@ -523,6 +525,8 @@ def main(argv=None) -> int:
     parser.add_argument("--alert-ledger", default="",
                         help="watch_alert 账本路径（可选；缺省读 env %s，不配置则事件 dry-run/not_sent 不写）"
                         % ALERT_LEDGER_ENV)
+    parser.add_argument("--alert-feishu-target", default="",
+                        help="触发时发飞书的目标名（默认空=不发；建议先用 内部测试；需同时配置 --alert-ledger）")
     parser.add_argument("--dry-run", action="store_true", help="只报告不写（不建确认/不写 status/ledger/alert）")
     parser.add_argument("--lock", default="", help="单实例锁文件路径（可选；已存在→失败，不自动杀进程）")
     parser.add_argument("--json", action="store_true", help="stdout 输出完整 runner summary JSON")
@@ -549,6 +553,18 @@ def main(argv=None) -> int:
         _print(payload, args.json)
         return 1
     try:
+        alert_sink = None
+        if args.alert_feishu_target:
+            if args.dry_run:
+                print("[watch_runner] WARN: --dry-run 时不发 Feishu，忽略 --alert-feishu-target",
+                      file=sys.stderr)
+            elif not resolve_alert_ledger(args.alert_ledger or None):
+                print("[watch_runner] ERROR: --alert-feishu-target 需要 --alert-ledger 或 %s"
+                      % ALERT_LEDGER_ENV, file=sys.stderr)
+                return 2
+            else:
+                from agent_platform.watch_alert_feishu import make_feishu_sink
+                alert_sink = make_feishu_sink(args.alert_feishu_target)
         summary = run(
             plan_ledger=args.plan_ledger or None,
             trigger_ledger=args.trigger_ledger or None,
@@ -561,6 +577,7 @@ def main(argv=None) -> int:
             status_path=args.status or None,
             lock_path=args.lock or None,
             alert_ledger=args.alert_ledger or None,
+            alert_sink=alert_sink,
         )
     except WatchRunnerError as exc:
         payload = {"schema": SCHEMA, "ok": False, "error": exc.code,
