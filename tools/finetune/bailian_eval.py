@@ -134,8 +134,24 @@ def build_dataset(payload: dict, *, docs: list[dict] | None = None,
     return dataset
 
 
+PROMPT_PROFILE = "base"
+
+
+def build_prompt_strict(question: str, ctx: list[dict]) -> str:
+    """严格引用口径（v4d 生产推荐）：每句末 [n]、仅引用支撑句、资料不足拒答。"""
+    lines = "\n".join(f"[{i+1}] {str(c.get('text') or '')[:220]}" for i, c in enumerate(ctx))
+    return ("你是量化知识库助手。规则：\n"
+            "1) 只依据下面编号资料回答，不得编造；\n"
+            "2) 每个事实句句末必须标注来源编号，如[1]；只能引用确实支撑该句的资料编号；\n"
+            "3) 若资料不足以回答，明确说「资料不足」，不要猜测；\n"
+            "4) 用 3-5 句话回答，不要投资建议。\n\n"
+            f"资料：\n{lines}\n\n问题：{question}\n回答：")
+
+
 def build_prompt(question: str, ctx: list[dict]) -> str:
     """与 W13 answer_prompt 同格式：资料 [1..5] + 引用/拒答要求 + 问题。"""
+    if PROMPT_PROFILE == "strict":
+        return build_prompt_strict(question, ctx)
     return ("你是投研知识助手。仅依据下列资料回答，不要编造；用 2-4 句话回答，"
             "并在末尾用 [1][2] 标注所依据资料编号；若资料不足以回答，请明确说「资料不足/资料未提及」。\n\n"
             + "\n".join(f"[{i+1}] ({c.get('doc_id', '')}) {str(c.get('text') or '')[:200]}"
@@ -258,6 +274,7 @@ def evaluate(dataset: list[dict], *, baseline_agg: dict, client, model: str,
     return {
         "mode": "mock" if mock else "api",
         "model": model,
+        "prompt_profile": PROMPT_PROFILE,
         "elapsed_s": round(time.monotonic() - t0, 2),
         "results": results,
         "aggregate": agg_bundle["aggregate"],
@@ -521,7 +538,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--base-url", default="", help=f"OpenAI 兼容 base_url（默认北京 {DEFAULT_BASE}）")
     ap.add_argument("--key-file", default="", help="DASHSCOPE_API_KEY 本地文件路径")
     ap.add_argument("--write", action="store_true", help="写 research/reports/bailian_eval_20261104.{json,md}")
+    ap.add_argument("--prompt-profile", choices=["base", "strict"], default="base",
+                    help="prompt 口径：base=W17 默认；strict=v4d 生产推荐（每句末引用/只引用支撑句）")
     args = ap.parse_args(argv)
+    global PROMPT_PROFILE
+    PROMPT_PROFILE = args.prompt_profile
     payload = run(dry_run=args.dry_run, mock=args.mock, limit=args.limit, model=args.model,
                   base_url=args.base_url, write=args.write,
                   key_file=Path(args.key_file) if args.key_file else None)
