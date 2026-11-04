@@ -167,9 +167,9 @@ def test_current_manifest_covers_production_pages():
     sources = {p["source"] for p in manifest["pages"]}
     disk = {p.relative_to(P.resolve_root()).as_posix() for p in P.production_files()}
     assert sources == disk
-    assert len(manifest["pages"]) == 129
+    assert len(manifest["pages"]) == len(disk)
     counts = manifest["counts"]["by_status"]
-    assert counts["active"] + counts["legacy"] + counts["review"] + counts["archived"] == 129
+    assert counts["active"] + counts["legacy"] + counts["review"] + counts["archived"] == len(disk)
     assert counts["review"] >= 1 and counts["legacy"] >= 1 and counts["active"] >= 1
     # static/ 4 个有 nginx 短路由的只读投影页已入清单（2026-11-03 复核结论）
     by_source = {p["source"]: p for p in manifest["pages"]}

@@ -1,6 +1,6 @@
 {
  "schema": "lingjie/page-manifest/v0",
- "generated_at": "2026-11-03T11:29:10+08:00",
+ "generated_at": "2026-11-04T11:10:43+08:00",
  "generator": "tools/page_manifest.py v0.2",
  "scan": {
   "root": "portal",
@@ -101,9 +101,9 @@
  "route_baseline": {
   "present": true,
   "path": "tools/portal_route_baseline.json",
-  "generated_at": "2026-11-03T08:40:23",
-  "total": 293,
-  "sha256": "4cedefa1021c3d0253e78d5ade2e92b2be6df695f11a991458f3050782ccbf60"
+  "generated_at": "2026-11-04T11:10:40",
+  "total": 298,
+  "sha256": "b559e30b1b8b3108c2d914e6f4a5986ff6c5fa6409675b013e5b62754efb170c"
  },
  "entry_map": [
   {
@@ -207,16 +207,16 @@
   }
  ],
  "counts": {
-  "total": 129,
+  "total": 130,
   "by_status": {
-   "active": 83,
+   "active": 84,
    "legacy": 16,
    "review": 30,
    "archived": 0
   },
   "by_family": {
    "cockpit": 1,
-   "os": 107,
+   "os": 108,
    "portal": 3,
    "h5": 17,
    "adapter": 1,
@@ -423,8 +423,13 @@
    "owner": "A0",
    "apis": [
     "/api/auth/me",
+    "/api/case/approve",
+    "/api/case/autorun",
+    "/api/case/dispatch",
+    "/api/case/get/",
+    "/api/case/latest",
+    "/api/case/save",
     "/api/chat",
-    "/api/hq/meeting/dispatch",
     "/api/hq/meeting/save"
    ],
    "note": "Case 决策流程页（WO-CASE-UI-20261103 七步：汇总/五角色/会议/方案/审批/下发；nginx /case OIDC 保护，审批绑定登录身份/角色）",
@@ -565,6 +570,23 @@
    ],
    "note": "生产页；静态直链 /d1_research.html；legacy-dark 基底，待 W2 迁 dark-os/light-cockpit；写操作走 X-Portal-Token",
    "source": "portal/d1_research.html"
+  },
+  {
+   "id": "page/d1_training",
+   "path": "/d1_training.html",
+   "family": "os",
+   "title": "D1 训练面板 · 只读 · 零界",
+   "theme": "legacy-dark",
+   "shell": "none",
+   "nav": "nav-js",
+   "auth": "none",
+   "status": "active",
+   "owner": "A0",
+   "apis": [
+    "/api/d1/training/episodes"
+   ],
+   "note": "生产页；静态直链 /d1_training.html；legacy-dark 基底，待 W2 迁 dark-os/light-cockpit",
+   "source": "portal/d1_training.html"
   },
   {
    "id": "page/d1_war_room",
@@ -2102,26 +2124,8 @@
    "source": "portal/protos/proto_tail_buy.html"
   },
   {
-   "id": "page/quant_drill",
-   "path": "/quant-drill",
-   "family": "os",
-   "title": "量化驾驶舱 · 零界",
-   "theme": "dark-os",
-   "shell": "os-shell",
-   "nav": "nav-js",
-   "auth": "none",
-   "status": "active",
-   "owner": "A0",
-   "apis": [
-    "/api/admission",
-    "/api/paper_status"
-   ],
-   "note": "生产页；nginx 路由 /quant-drill → 本页",
-   "source": "portal/quant_drill.html"
-  },
-  {
    "id": "page/quant",
-   "path": "/quant-full",
+   "path": "/quant",
    "family": "os",
    "title": "量化股票 · 零界",
    "theme": "dark-os",
@@ -2143,8 +2147,26 @@
     "/api/sixring",
     "/api/strategies"
    ],
-   "note": "生产页；nginx 路由 /quant-full → 本页",
+   "note": "生产页；nginx 路由 /quant → 本页",
    "source": "portal/quant.html"
+  },
+  {
+   "id": "page/quant_drill",
+   "path": "/quant-drill",
+   "family": "os",
+   "title": "量化驾驶舱 · 零界",
+   "theme": "dark-os",
+   "shell": "os-shell",
+   "nav": "nav-js",
+   "auth": "none",
+   "status": "active",
+   "owner": "A0",
+   "apis": [
+    "/api/admission",
+    "/api/paper_status"
+   ],
+   "note": "生产页；nginx 路由 /quant-drill → 本页",
+   "source": "portal/quant_drill.html"
   },
   {
    "id": "page/quant_index",
