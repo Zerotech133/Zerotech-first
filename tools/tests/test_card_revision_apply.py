@@ -13,10 +13,17 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 SCRIPT = REPO / "tools" / "kb_corpus" / "card_revision_apply.py"
+
+# 本测试用 spec loader 直接执行脚本；脚本内的 safe_json 与脚本同目录，
+# 需显式把该目录加入 sys.path，不能修改 deprecated 产品文件。
+_KB_CORPUS = str(REPO / "tools" / "kb_corpus")
+if _KB_CORPUS not in sys.path:
+    sys.path.insert(0, _KB_CORPUS)
 REVISIONS = REPO / "research" / "reports" / "card_revisions_20261101.json"
 CARDS = REPO / "portal" / "static" / "kb_learning_cards.json"
 
