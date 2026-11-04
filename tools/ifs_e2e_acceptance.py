@@ -106,6 +106,7 @@ PROD_ARTIFACTS = (
     "agent_platform/data/d1_decisions.jsonl",
     "agent_platform/data/d1_handoffs.jsonl",
     "agent_platform/data/watch_plans.jsonl",
+    "agent_platform/data/watch_triggers.jsonl",
     "agent_platform/data/paper/paper_ledger.jsonl",
     "agent_platform/data/training/episodes.jsonl",
     "agent_platform/data/trading_bot/receipts.jsonl",
@@ -258,6 +259,7 @@ def run_acceptance(pool_mode="live", pool_snapshot=None, code=None, tmp_root=Non
         "decisions": root / "d1_decisions.jsonl",
         "handoffs": root / "d1_handoffs.jsonl",
         "watch_plans": root / "watch_plans.jsonl",
+        "trigger_ledger": root / "watch_triggers.jsonl",
         "bot": root / "bot",
         "paper_state": root / "paper_state.json",
         "paper_ledger": root / "paper_ledger.jsonl",
@@ -418,7 +420,9 @@ def run_acceptance(pool_mode="live", pool_snapshot=None, code=None, tmp_root=Non
 
     def step_trigger():
         triggered = watch_plan_consumer.trigger_plan(
-            ctx["plan"]["plan_id"], path=paths["watch_plans"], data_dir=str(paths["bot"]))
+            ctx["plan"]["plan_id"], path=paths["watch_plans"],
+            data_dir=str(paths["bot"]),
+            trigger_ledger=str(paths["trigger_ledger"]))
         confirmation = triggered.get("confirmation") or {}
         if confirmation.get("status") != "pending":
             raise RuntimeError("trigger 未生成 pending confirmation: %r" % (confirmation,))
@@ -630,8 +634,8 @@ def run_acceptance(pool_mode="live", pool_snapshot=None, code=None, tmp_root=Non
 
         # 证据文件 + 禁止执行字段 + 隔离（confirmation 的 execution 为 paper 执行记录，非真实订单，单独披露）
         files = [paths[k] for k in ("decisions", "handoffs", "watch_plans",
-                                    "paper_ledger", "receipts", "outcomes",
-                                    "episode_json", "episodes")]
+                                    "trigger_ledger", "paper_ledger", "receipts",
+                                    "outcomes", "episode_json", "episodes")]
         blob = []
         for p in files:
             if Path(p).is_file():

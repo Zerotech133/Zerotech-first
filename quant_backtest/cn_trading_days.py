@@ -106,6 +106,35 @@ def needs_update(today=None, remind_from_month=11):
     return out
 
 
+def gap_deadline(today=None):
+    """缺口「第一个会判错的交易日」→ dict(year, first_gap_day, days_left)。
+
+    无缺口返回 None。标的是**首个降级判定的交易日**：从该日起 confidence()
+    只剩 weekday_only，节假日会被当成交易日（静默失真）。元旦由 FIXED 兜住
+    属 exact，故不会被算进来——真实例子：2027-01-01 判对，但 01-04 起降级。
+
+    days_left 为负表示已经进入缺口期（危害已发生，不是将要发生）。
+    """
+    t = _as_date(today) or date.today()
+    ys = needs_update(t)
+    if not ys:
+        return None
+    year = ys[0]
+    start = max(t, date(year, 1, 1))
+    end = date(year, 12, 31)
+    d = start
+    while d <= end:
+        if d.weekday() < 5 and confidence(d) == "weekday_only":
+            return {
+                "year": year,
+                "first_gap_day": d.isoformat(),
+                "days_left": (d - t).days,
+            }
+        d = date.fromordinal(d.toordinal() + 1)
+    # 整年都判不到缺口（该年余下全是周末/固定日），仍报年份但无具体日子
+    return {"year": year, "first_gap_day": None, "days_left": None}
+
+
 def in_holiday(d):
     """是否落在休市区间内（含固定休市日；其余未覆盖年份一律 False）。"""
     dt = _as_date(d)
