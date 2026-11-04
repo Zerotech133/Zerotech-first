@@ -22,7 +22,10 @@ def test_profiles_mapped():
     assert pm["profiles_count"] >= 5
     assert "A0" in pm["matched"]["tianfeng"]
     assert "HUANGZHONG" in pm["matched"]["huangzhong"]
-    assert "zhangsong" in pm["unmapped_profiles"]
+    # zhangsong 已映射到 DATA1；当前唯一未映射席位是 stock-analyst。
+    assert "zhangsong" not in pm["unmapped_profiles"]
+    assert "DATA1" in pm["matched"]["zhangsong"]
+    assert pm["unmapped_profiles"] == ["stock-analyst"]
 
 
 def test_composition_hermes_declaration_counted():
