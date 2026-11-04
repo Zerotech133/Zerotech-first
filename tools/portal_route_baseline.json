@@ -1,7 +1,7 @@
 {
- "generated_at": "2026-11-04T03:19:08",
+ "generated_at": "2026-11-04T10:30:50",
  "source": "C:\\项目\\老田的AI助手\\.worktrees\\K-STOCK-ANALYSIS-MONPAGE-20261104\\portal\\portal_api.py",
- "total": 301,
+ "total": 302,
  "signatures": [
   [
    "GET",
@@ -347,6 +347,11 @@
    "GET",
    "exact",
    "/api/learning/conclusions"
+  ],
+  [
+   "GET",
+   "exact",
+   "/api/learning/tool-intel"
   ],
   [
    "GET",
