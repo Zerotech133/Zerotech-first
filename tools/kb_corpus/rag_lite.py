@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import glob
 import json
+import os
 import sys
 import time
 import urllib.request
@@ -146,14 +147,30 @@ def retrieve(question: str, k: int = TOP_K) -> list[dict]:
              "score": float(scores[i]), "text": docs[i]["text"][:800]} for i in idx]
 
 
-def ask(question: str) -> dict:
-    hits = retrieve(question)
+PROMPT_PROFILE = os.environ.get("RAG_PROMPT_PROFILE", "strict").strip().lower()
+
+
+def build_prompt(question: str, hits: list[dict], profile: str | None = None) -> str:
+    """构造回答 prompt：strict=生产默认（每句末引用/只引用支撑句/不足拒答）；base=旧口径。"""
+    profile = (profile or PROMPT_PROFILE or "strict").strip().lower()
     ctx = []
     for i, h in enumerate(hits, 1):
         ctx.append(f"[S{i}] video={h['video_id']} kind={h['kind']} title={h['title'][:80]}\n{h['text'][:600]}")
-    prompt = ("你是量化研究助理。仅根据下面资料回答，资料不足时明确说“资料未覆盖”。\n"
-              "回答用中文，控制在 300 字内，并在关键结论后用 [S1]/[S2] 标注来源。\n\n"
-              "资料：\n" + "\n\n".join(ctx) + "\n\n问题：" + question + "\n回答：")
+    if profile == "base":
+        return ("你是量化研究助理。仅根据下面资料回答，资料不足时明确说“资料未覆盖”。\n"
+                "回答用中文，控制在 300 字内，并在关键结论后用 [S1]/[S2] 标注来源。\n\n"
+                "资料：\n" + "\n\n".join(ctx) + "\n\n问题：" + question + "\n回答：")
+    return ("你是量化知识库助手。规则：\n"
+            "1) 只依据下面编号资料回答，不得编造；\n"
+            "2) 每个事实句句末必须标注来源编号（如[S1]），只能引用确实支撑该句的资料；\n"
+            "3) 资料不足以回答时明确说「资料未覆盖」，不要猜测；\n"
+            "4) 用 3-5 句话回答，不构成投资建议。\n\n"
+            "资料：\n" + "\n\n".join(ctx) + "\n\n问题：" + question + "\n回答：")
+
+
+def ask(question: str) -> dict:
+    hits = retrieve(question)
+    prompt = build_prompt(question, hits)
     answer = chat(prompt)
     return {"question": question, "answer": answer.strip(),
             "sources": [{"sid": f"S{i+1}", "video_id": h["video_id"], "kind": h["kind"],
