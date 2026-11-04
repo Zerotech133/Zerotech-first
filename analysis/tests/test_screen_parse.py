@@ -86,5 +86,31 @@ class TestParse(unittest.TestCase):
         self.assertTrue(v["ok"], v["errors"])
 
 
+class TestReviewFixes(unittest.TestCase):
+    """2026-11-04 审查 P1 回归：行业不覆盖显式股票池 / 未消费条件不静默丢。"""
+
+    def test_industry_keeps_explicit_hs300(self):
+        r = screen_parse.parse("沪深300 里 医药生物 ROE 大于 10%")
+        self.assertTrue(r["ok"], r)
+        self.assertEqual(r["spec"]["universe"], "HS300")
+        f = _fields(r["spec"])
+        self.assertEqual(f["industry_l1"][1], "医药生物")
+
+    def test_industry_only_expands_to_a_share(self):
+        r = screen_parse.parse("帮我看看机械设备行业的股票，剔除 ST")
+        self.assertTrue(r["ok"], r)
+        self.assertEqual(r["spec"]["universe"], "A_SHARE")
+
+    def test_unconsumed_numeric_condition_blocks(self):
+        r = screen_parse.parse("剔除ST，PS分位在50%以下")
+        self.assertFalse(r["ok"], r)
+        self.assertTrue(any("PS" in u for u in r["unmatched"]), r)
+
+    def test_unconsumed_condition_does_not_block_non_numeric_question(self):
+        r = screen_parse.parse("轻工制造 PS 分位低于 50%、营收同比转正，另外帮我看看最近有什么新闻")
+        self.assertTrue(r["ok"], r)
+        self.assertTrue(any("新闻" in u for u in r["unmatched"]))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

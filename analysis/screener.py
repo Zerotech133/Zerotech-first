@@ -14,6 +14,7 @@
 
 DSL 示例见 `docs`/`contracts`；NL 解析见 `analysis/screen_parse.py`。
 """
+import datetime
 import math
 import os
 import time
@@ -25,24 +26,24 @@ CURATED = os.path.join(ROOT, "quant_backtest", "data", "tushare_curated")
 SW_CACHE = os.path.join(WORK, "cache", "sw")
 SCREEN_CACHE = os.path.join(WORK, "cache", "screener")
 
-# 字段白名单：kind = number/string/bool；source 仅文档用
+# 字段白名单：kind = number/string/bool；unit = ratio（小数，展示×100%）/ percent（本身即百分数）
 FIELDS: Dict[str, Dict[str, Any]] = {
     # 估值
     "ps": {"kind": "number", "label": "PS(TTM)"},
-    "ps_pct_hist": {"kind": "number", "label": "PS 历史分位", "fmt": "%"},
+    "ps_pct_hist": {"kind": "number", "label": "PS 历史分位", "fmt": "%", "unit": "percent"},
     "pe_ttm": {"kind": "number", "label": "PE(TTM)"},
-    "dv_ratio": {"kind": "number", "label": "股息率", "fmt": "%"},
+    "dv_ratio": {"kind": "number", "label": "股息率", "fmt": "%", "unit": "percent"},
     "total_mv_yi": {"kind": "number", "label": "总市值(亿)"},
     # 成长/质量
-    "revenue_yoy": {"kind": "number", "label": "营收同比", "fmt": "%"},
-    "net_profit_yoy": {"kind": "number", "label": "净利同比", "fmt": "%"},
-    "roe": {"kind": "number", "label": "ROE", "fmt": "%"},
-    "debt_ratio": {"kind": "number", "label": "资产负债率", "fmt": "%"},
+    "revenue_yoy": {"kind": "number", "label": "营收同比", "fmt": "%", "unit": "ratio"},
+    "net_profit_yoy": {"kind": "number", "label": "净利同比", "fmt": "%", "unit": "ratio"},
+    "roe": {"kind": "number", "label": "ROE", "fmt": "%", "unit": "ratio"},
+    "debt_ratio": {"kind": "number", "label": "资产负债率", "fmt": "%", "unit": "ratio"},
     # 行情/流动性
-    "ret_20": {"kind": "number", "label": "20日涨跌", "fmt": "%"},
-    "ret_60": {"kind": "number", "label": "60日涨跌", "fmt": "%"},
+    "ret_20": {"kind": "number", "label": "20日涨跌", "fmt": "%", "unit": "ratio"},
+    "ret_60": {"kind": "number", "label": "60日涨跌", "fmt": "%", "unit": "ratio"},
     "amount_20_yi": {"kind": "number", "label": "20日均额(亿)"},
-    "turnover_rate": {"kind": "number", "label": "换手率", "fmt": "%"},
+    "turnover_rate": {"kind": "number", "label": "换手率", "fmt": "%", "unit": "percent"},
     # 五维评分（仅已分析股票）
     "quality_score": {"kind": "number", "label": "质量分"},
     # 分类/事件
@@ -51,6 +52,14 @@ FIELDS: Dict[str, Dict[str, Any]] = {
     "flag_st": {"kind": "bool", "label": "ST"},
     "event_types": {"kind": "string", "label": "事件类别"},
 }
+
+# 申万一级行业白名单（与 analysis/screen_parse.DEFAULT_INDUSTRIES 一致；行业筛选只收白名单，防正则注入）
+INDUSTRIES_L1 = (
+    "农林牧渔", "基础化工", "钢铁", "有色金属", "电子", "汽车", "家用电器", "食品饮料",
+    "纺织服饰", "轻工制造", "医药生物", "公用事业", "交通运输", "房地产", "商贸零售",
+    "社会服务", "综合", "建筑材料", "建筑装饰", "电力设备", "国防军工", "计算机", "传媒",
+    "通信", "银行", "非银金融", "煤炭", "石油石化", "环保", "美容护理", "机械设备",
+)
 UNIVERSES = ("A_SHARE", "HS300", "WATCHLIST", "industry")
 NUM_OPS = ("=", "!=", ">", ">=", "<", "<=")
 STR_OPS = ("in", "notin", "contains", "contains_any")
@@ -67,11 +76,21 @@ def _fmt(field: str, value: Any) -> str:
     meta = FIELDS.get(field) or {}
     if value is None or (isinstance(value, float) and math.isnan(value)):
         return "—"
-    if meta.get("fmt") == "%":
-        return "%.1f%%" % (float(value) * 100 if abs(float(value)) <= 2 else float(value))
+    unit = meta.get("unit")
+    if unit is None and meta.get("fmt") == "%":
+        unit = "ratio"
+    if unit == "percent":
+        return "%.1f%%" % float(value)
+    if unit == "ratio":
+        return "%.1f%%" % (float(value) * 100)
     if isinstance(value, float):
         return ("%.2f" % value).rstrip("0").rstrip(".")
     return str(value)
+
+
+def units() -> Dict[str, str]:
+    """字段单位表（供前端展示；ratio=小数需×100，percent=本身即百分数）。"""
+    return {k: str(v["unit"]) for k, v in FIELDS.items() if v.get("unit")}
 
 
 def validate(spec: Optional[Dict[str, Any]]) -> Dict[str, Any]:
@@ -82,6 +101,10 @@ def validate(spec: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     uni_low = universe.lower()
     if universe not in UNIVERSES and not uni_low.startswith("industry:"):
         errors.append("universe 非法：%s（可选 A_SHARE/HS300/WATCHLIST/industry:<名称>）" % universe)
+    elif uni_low.startswith("industry:"):
+        ind_name = universe.split(":", 1)[1].strip()
+        if ind_name not in INDUSTRIES_L1:
+            errors.append("universe 行业非法：%s（仅支持申万一级行业白名单）" % (ind_name or "<空>"))
     filters = spec.get("filters") or []
     if not isinstance(filters, list) or not filters:
         errors.append("filters 必须为非空数组")
@@ -107,6 +130,11 @@ def validate(spec: Optional[Dict[str, Any]]) -> Dict[str, Any]:
             errors.append("filters[%d] 数值字段不支持算子 %s" % (i, op))
         if kind == "string" and op not in STR_OPS:
             errors.append("filters[%d] 字符串字段不支持算子 %s" % (i, op))
+        if field == "industry_l1":
+            vals = f.get("value") if isinstance(f.get("value"), list) else [f.get("value")]
+            bad = [str(v) for v in vals if str(v or "") not in INDUSTRIES_L1]
+            if bad:
+                errors.append("filters[%d] 行业值不在申万一级白名单：%s" % (i, ",".join(bad)))
         norm_filters.append({"field": field, "op": op, "value": f.get("value")})
     rank_by = spec.get("rank_by") or []
     norm_rank = []
@@ -131,8 +159,13 @@ def validate(spec: Optional[Dict[str, Any]]) -> Dict[str, Any]:
         limit = 20
     limit = max(1, min(limit, 200))
     as_of = str(spec.get("as_of") or time.strftime("%Y-%m-%d"))
-    if len(as_of) != 10 or as_of[4] != "-" or as_of[7] != "-":
-        errors.append("as_of 需为 YYYY-MM-DD")
+    try:
+        as_of_date = datetime.datetime.strptime(as_of, "%Y-%m-%d").date()
+    except ValueError:
+        as_of_date = None
+        errors.append("as_of 需为合法日期 YYYY-MM-DD（如 2026-11-03）")
+    if as_of_date is not None and as_of_date > datetime.date.today():
+        errors.append("as_of 不能晚于今天（%s）" % datetime.date.today().isoformat())
     norm = {
         "universe": universe,
         "filters": norm_filters,
@@ -504,8 +537,10 @@ def load_features(spec: Dict[str, Any]) -> Any:
     uni = spec["universe"]
     if uni.lower().startswith("industry:"):
         name = uni.split(":", 1)[1].strip()
-        if "industry_l1" in feat.columns:
-            feat = feat[feat["industry_l1"].astype(str).str.contains(name, na=False)]
+        # 白名单已在 validate 校验；此处用字面量匹配（regex=False），防正则注入（如 ".*"）
+        if "industry_l1" not in feat.columns:
+            raise ValueError("行业(L1)数据缺失（SW 成分未就绪），无法按行业筛选")
+        feat = feat[feat["industry_l1"].astype(str).str.contains(name, regex=False, na=False)]
     elif uni == "industry" and "industry_l1" in feat.columns:
         # universe=industry 需在 filters 里给 industry_l1
         pass
@@ -529,6 +564,11 @@ def run(spec: Dict[str, Any], provider: Optional[Callable] = None) -> Dict[str, 
                 "universe_size": 0, "matched": 0, "candidates": [],
                 "warnings": ["股票池为空或数据缺失（检查数据仓/日期）"]}
     warnings.extend(list(getattr(df, "attrs", {}).get("warnings") or []))
+    # 行业筛选依赖 industry_l1 列：缺列不静默返回全池，直接报错（数据未就绪）
+    need_industry = any(f["field"] in ("industry_l1", "industry_l2") for f in sp["filters"])
+    if need_industry and "industry_l1" not in df.columns:
+        return {"ok": False,
+                "errors": ["行业(L1)数据缺失（SW 成分未就绪），无法按行业筛选；请检查数据仓 sw/member.parquet"]}
     # 字段缺失提示
     need = {f["field"] for f in sp["filters"]} | {r["field"] for r in sp["rank_by"]}
     missing = sorted(need - set(df.columns))
@@ -552,6 +592,7 @@ def run(spec: Dict[str, Any], provider: Optional[Callable] = None) -> Dict[str, 
         "candidates": candidates,
         "warnings": warnings,
         "spec": sp,
+        "units": units(),
         "research_only": True,
         "disclaimer": "筛选结果仅供研究，不构成投资建议；历史数据不代表未来。",
     }

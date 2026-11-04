@@ -138,5 +138,58 @@ class TestDataHelpers(unittest.TestCase):
             td.cleanup()
 
 
+class TestReviewFixes(unittest.TestCase):
+    """2026-11-04 代码审查 P1 修复回归：单位口径/日期/行业白名单/缺列不静默。"""
+
+    def test_fmt_units_percent_vs_ratio(self):
+        self.assertEqual(screener._fmt("dv_ratio", 1.18), "1.2%")
+        self.assertEqual(screener._fmt("turnover_rate", 2.44), "2.4%")
+        self.assertEqual(screener._fmt("revenue_yoy", 0.062), "6.2%")
+        self.assertEqual(screener._fmt("ps_pct_hist", 92.0), "92.0%")
+        u = screener.units()
+        self.assertEqual(u["dv_ratio"], "percent")
+        self.assertEqual(u["revenue_yoy"], "ratio")
+
+    def test_reason_uses_unit(self):
+        sp = screener.validate({"universe": "WATCHLIST", "as_of": "2026-11-02",
+                                "filters": [{"field": "dv_ratio", "op": ">=", "value": 1.0}]})["spec"]
+        out = screener.apply_filters(pd.DataFrame([{"ts_code": "600000.SH", "dv_ratio": 1.18}]), sp)
+        reason = out.iloc[0]["_reasons"][0]
+        self.assertIn("1.2%", reason)
+        self.assertNotIn("117.8", reason)
+
+    def test_as_of_strict(self):
+        for bad in ("9999-99-99", "2026-13-45", "2026-02-30", "2999-01-01"):
+            v = screener.validate({"universe": "WATCHLIST", "as_of": bad,
+                                   "filters": [{"field": "ps", "op": ">", "value": 0}]})
+            self.assertFalse(v["ok"], bad)
+
+    def test_industry_whitelist_rejects_regex(self):
+        v = screener.validate({"universe": "industry:.*",
+                               "filters": [{"field": "ps", "op": ">", "value": 0}]})
+        self.assertFalse(v["ok"])
+        v = screener.validate({"universe": "WATCHLIST",
+                               "filters": [{"field": "industry_l1", "op": "contains", "value": ".*"}]})
+        self.assertFalse(v["ok"])
+        v = screener.validate({"universe": "industry:轻工制造",
+                               "filters": [{"field": "ps", "op": ">", "value": 0}]})
+        self.assertTrue(v["ok"], v["errors"])
+
+    def test_industry_filter_missing_column_not_silent(self):
+        df = _df().drop(columns=["industry_l1"])
+        r = screener.run({"universe": "WATCHLIST", "as_of": "2026-11-02",
+                          "filters": [{"field": "industry_l1", "op": "contains", "value": "轻工制造"}]},
+                         provider=lambda sp: df)
+        self.assertFalse(r["ok"])
+        self.assertIn("行业", r["errors"][0])
+
+    def test_run_has_units(self):
+        sp = {"universe": "A_SHARE", "as_of": "2026-11-02",
+              "filters": [{"field": "ps_pct_hist", "op": "<=", "value": 100}], "limit": 5}
+        r = screener.run(sp, provider=lambda s: _df())
+        self.assertTrue(r["ok"], r.get("errors"))
+        self.assertEqual(r["units"]["ps_pct_hist"], "percent")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
