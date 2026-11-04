@@ -57,7 +57,7 @@
       ],
       "llm_binding": "deepseek/deepseek-v4-pro",
       "role_profile": "governance_seat",
-      "prompt_file": "",
+      "prompt_file": "agent_platform/prompts/zhaoyun_governance.md",
       "status": "active",
       "onboarded_at": "2026-11-04"
     },

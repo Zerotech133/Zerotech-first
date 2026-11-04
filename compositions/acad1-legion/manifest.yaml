@@ -10,7 +10,7 @@ metadata:
   host: lingjie
   description: ACAD1 选股研究治理军团（11 席 + 策略研究/验证/复核；30 卡池 CN12/HK10/US6/CRYPTO2；SLA freshness 1d / pool 30 / evidence≤26h / data_date lag 1d）
   created: "2026-11-02"
-  updated: "2026-11-02"
+  updated: "2026-11-04"
 spec:
   kernel: ">=0.9 <2.0"
   seats:
@@ -44,6 +44,14 @@ spec:
         note: "PG 唯一真源（11-02 pool_date=30 selected，配额 CN12/HK10/US6/CRYPTO2）；JSON 池=shadow 投影（非官方）；/api/acad1/pool 优先 pg_official"
       - ref: dataset/pg/v2_stock_research
       - ref: dataset/pg/v2_selection_pool
+      - ref: dataset/pg/v2_selection_report
+        note: "ACAD1 选股报告表（PG wave1 registry 已登记 registered/exposed；dataset_registry.PG_WAVE1_TABLES）"
+      - ref: dataset/pg/v2_strategy_ownership
+        note: "策略归属表（PG wave1 registry 已登记；12 条策略 STRAT1=5/ST1=3/STRAT2=4）"
+      - ref: dataset/pg/v2_acad1_review
+        note: "ACAD1 池级复核（PG wave1 registry 已登记，owner=ACAD1，registered/exposed=true；research /reviews 数据源；JSON 复盘快照 dataset/file/pool_review 保留 file fallback，粒度不同不混用）"
+      - ref: dataset/pg/v2_lusu_decision
+        note: "D1 裁决读模型（PG wave1 registry 已登记，owner=D1；research /decisions 数据源；当前仅 1 行实验数据，不冒充正式账；正式账 file/d1_decisions 仍 planned）"
       - ref: dataset/file/acad1_evidence_bundle
         note: C:\Temp\acad1_evidence_bundle.json（2026-11-02 00:39，只读；P2 收敛为契约目录）
     contract: acad1-pool/v1
@@ -59,7 +67,13 @@ spec:
   interfaces:
     exposes:
       - http: /api/acad1/pool
-      - http: /quant-api/api/v1/acad1-research   # 8734 宿主入口→8105 原生 /api/v1/acad1-research（auth_request）
+      - http: /quant-api/api/v1/acad1-research   # 8734 nginx rewrite 反代→8105 原生 /api/v1/acad1-research；无 auth_request，401 来自 8105 JWT（Bearer）
+      - http: /quant-api/api/v1/acad1-research/pool
+      - http: /quant-api/api/v1/acad1-research/stats
+      - http: /quant-api/api/v1/acad1-research/reviews
+      - http: /quant-api/api/v1/acad1-research/decisions
+      - http: /quant-api/api/v1/acad1-research/evidence
+      - http: /quant-api/api/v1/acad1-research/calendar
       - page: /academy/shuijing
     consumes:
       - interface/hermes-control
@@ -73,6 +87,7 @@ spec:
       roles: [A0, ACAD1, ARCH1, D1]
   pages:
     - ref: page/academy/shuijing
+      note: 已加载 /static/acad1_client.js「军团接口 · 8105 SSO」面板（六接口只读；401 显式；token 仅内存）
     - ref: page/acad1/pool
   jobs:
     - ref: job/zhice-daily-research-ops
@@ -115,14 +130,15 @@ spec:
     - "人工复核不自动通过/否决；11-08 冻结前 13 张 review 卡需逐张复核。"
     - "ACL-102 v1.1 对齐（2026-11-02）：SLA 四字段唯一落 spec.data.sla（1/30/26/1），不双写 spec.slo；口径源=2026-10-31 老田 30 配额决策 + ACL-101 回归测试固化。"
     - "metadata.version 已同批升 1.1.0（registry+manifest，2026-11-02，ARCH1 抽检通过）；后续升版仍须 registry.json 同批，否则 plan --strict 漂移被 P1.2 组合门拒收。"
-    - "接口口径：/api/v1/acad1-research 是智策 8105 原生路径；8734 宿主入口实为 /quant-api/api/v1/acad1-research（auth_request，未登录 401）。"
-    - "页面/鉴权现状（2026-11-02 GET 实测）：/academy/shuijing=200、/api/acad1/pool=200（nginx H4-B 公开族 C，只读无 auth_request）；/acad1/pool 在 8734=404（8091=200，nginx 路由未登记）→ L2 待批（acad1_pool 包，11-05 窗口）。"
-    - "运行时双层：research API 走智策 8105（internal-service，经 /quant-api/ 反代）；pool API/页走 portal-api 8091（/api/acad1/pool、/academy/shuijing）；runtime.service=quant-api 为整合主服务，P2 单栈收口。"
+    - "接口口径（2026-11-04 live）：8105 原生=/api/v1/acad1-research/{pool,stats,reviews,decisions,evidence,calendar}（JWT Bearer，无 token→401）；8734=/quant-api/...（nginx rewrite 反代，无 auth_request；401 由 8105 JWT 返回）；registry auth=portal-token。"
+    - "页面/鉴权现状（2026-11-04 05:55 只读实测）：/academy/shuijing=200（已加载 acad1_client 面板）；/api/acad1/pool=200（公开只读族 C）；/acad1/pool 在 8734=200（旧台账 404 已过期）；8105 /api/v1/health=200；6 research 接口未登录 401（missing token）。"
+    - "运行时双层 + SSO：research API 走 8105（/quant-api/ 反代，无 auth_request）；SSO POST /quant-api/api/v1/auth/portal-sso（zb_session→JWT，Bearer 访问 6 接口，无 token 401）；pool API/页走 8091（/api/acad1/pool、/academy/shuijing）；P2 单栈收口。"
     - "W1 引用收口（2026-11-02）：5 条 strategy/v1-* 已按 PG v2_strategy 真源（ACTIVE/PUBLISHED）在 strategy_portfolio 增 planned 登记（本地组合层口径；不改 portal/strategies.json 展示），strategy ref 全部可解析。证据：deliverables/2026-11-02_W1引用收口证据_v1.md。"
     - "IFS-POOL（2026-11-03）：/api/acad1/pool 官方口径=PG v2_acad1_pool（source_mode=pg_official；不可直连读只读投影=projection；shadow 自建 latest.json 仅降级出现且 official=false）。D1 6 data ref 已登记 dataset registry（d1_decisions=planned，owner=D1，due=2026-11-16）。"
 status:
   phase: shadow
-  health: unknown
+  health: degraded
+  health_reason: "接口可用（8091/8734 pool=200、8105 health=200、8734 页面=200）；但池 freshness_days=5 > SLA 1d（stale=true，US=5/HK=4/CRYPTO=3 池日滞后 3~5d），不掩盖"
 
   rollback:
     steps:
@@ -132,21 +148,30 @@ status:
       - "验证：tools/q2_probe.py --composition acad1-legion 2/2 + composition.py validate --all --strict"
     last_drilled: "pending（需在 11-16 前演练一次）"
   health_probe:
-    tool: tools/q2_probe.py
+    tool: tools/q2_probe.py（acad1-legion 2 目标）+ 2026-11-04 live 只读探针（task-57 证据）
     endpoints:
-      - http://127.0.0.1:8091/api/acad1/pool
-      - http://127.0.0.1:8105/api/v1/health
-    last_checked: "2026-11-03T22:18:00+08:00"
-    last_result: ok
+      - http://127.0.0.1:8091/api/acad1/pool              # 200（stale=true / freshness_days=5）
+      - http://127.0.0.1:8105/api/v1/health               # 200（zhice-os-v2 0.1.0）
+      - http://127.0.0.1:8734/acad1/pool                  # 200（旧台账 404 已过期）
+      - http://127.0.0.1:8734/api/acad1/pool              # 200（shuijing.js 数据链路）
+      - http://127.0.0.1:8734/academy/shuijing            # 200（acad1_client 面板）
+      - http://127.0.0.1:8105/api/v1/acad1-research/pool  # 401 missing token（JWT 门，非故障）
+      - http://127.0.0.1:8734/quant-api/api/v1/acad1-research/pool  # 401 missing token（8105 返回）
+    last_checked: "2026-11-04T05:55:12+08:00"
+    last_result: partial（5 项 200 通过；6 research 未登录 401 为 JWT 门预期；池 stale/freshness 告警见 slo_alert）
   slo_alert:
     tool: tools/q2_slo_alert.py
-    owner: ARCH1
+    owner: ACAD1/ARCH1
     checks:
       - freshness_days<=1
       - stale=false
       - pool_total<=30
       - data_date_present
-    last_checked: "2026-11-03T22:45:51+08:00"
-    last_result: ok
+    last_checked: "2026-11-04T05:55:12+08:00"
+    last_result: alert
+    alerts:
+      - "freshness_days=5 > 1（US=5/HK=4/CRYPTO=3；SLA freshness_days=1 违约）"
+      - "stale=true（不掩盖）"
+      - "review pending=30/30（本轮未复盘）"
   validated: false
-  source: "2026-11-02 只读反推（研究报告 v1.2 §2/§3 + 审计子任务）；2026-11-02 ACL-102 校准（SLA/接口/页面/任务 vs 实测）"
+  source: "2026-11-02 只读反推（研究报告 v1.2 §2/§3 + 审计子任务）；2026-11-02 ACL-102 校准；2026-11-04 live 只读验收（task-57）+ 文档债修订（task-59：auth_request 注释、/acad1/pool 404→200、acad1_client、stale 5d）"

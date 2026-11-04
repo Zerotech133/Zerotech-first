@@ -1,0 +1,554 @@
+{
+ "tool": "asset_registration",
+ "mode": "apply",
+ "generated_at": "2026-11-04T03:41:27+08:00",
+ "task": "task-165",
+ "catalog_path": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\catalog.json",
+ "registry_path": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\warehouse_registry.json",
+ "draft_path": "C:\\项目\\老田的AI助手\\research\\reports\\data_asset_metadata_draft_20261104.json",
+ "pass": true,
+ "error": null,
+ "register_total": 48,
+ "auto_selected": 36,
+ "excluded_manual": [
+  {
+   "id": "research_shadow",
+   "label": "research_shadow",
+   "reason": "schema; freq; date_col; primary_key"
+  },
+  {
+   "id": "yt_raw_zip",
+   "label": "yt_raw_zip（948 ZIP/清单/sha256）",
+   "reason": "schema; date_col; primary_key"
+  },
+  {
+   "id": "yt_normalized",
+   "label": "yt_normalized（videos/comments/channel_map parquet）",
+   "reason": "date_col; primary_key"
+  },
+  {
+   "id": "yt_cleaned_comments",
+   "label": "yt_cleaned_comments（清洗+PII脱敏）",
+   "reason": "date_col; primary_key"
+  },
+  {
+   "id": "yt_knowledge_units",
+   "label": "yt_knowledge_units（知识单元）",
+   "reason": "date_col; primary_key"
+  },
+  {
+   "id": "yt_faq",
+   "label": "yt_faq（FAQ 语义归并 133 条）",
+   "reason": "date_col; primary_key"
+  },
+  {
+   "id": "yt_index",
+   "label": "yt_index（62,401 docs bge-m3）",
+   "reason": "date_col; primary_key"
+  },
+  {
+   "id": "yt_learning_cards",
+   "label": "yt_learning_cards（学习卡）",
+   "reason": "schema; freq; date_col; primary_key"
+  },
+  {
+   "id": "yt_briefs",
+   "label": "yt_briefs（简报）",
+   "reason": "schema; freq; date_col; primary_key"
+  },
+  {
+   "id": "yt_review",
+   "label": "yt_review（复核）",
+   "reason": "date_col; primary_key"
+  },
+  {
+   "id": "yt_reports",
+   "label": "yt_reports（报告）",
+   "reason": "date_col; primary_key"
+  },
+  {
+   "id": "yt_learning.db",
+   "label": "yt_learning.db（星型模型 9 表，统一取数入口）",
+   "reason": "schema; freq; date_col; primary_key"
+  }
+ ],
+ "before": {
+  "catalog_version": 35,
+  "catalog_tables": 256,
+  "catalog_sha256": "e13b6a08a5f16f0cfa41a98a30708f7a6e85a48898e7d1deecf54d9868274ba9",
+  "registry_sha256": "ba420615c696a6b2d25596f1cfc6c8c586a47380eef67711505ff583a53f3ab9",
+  "registry_physical": 256,
+  "registry_display": 258
+ },
+ "dry_run": {
+  "add_count": 36,
+  "conflicts": [],
+  "missing_store": [],
+  "empty_schema": [],
+  "duplicate_ids": [],
+  "clean": true,
+  "ids": [
+   "xq_xq_status_classified",
+   "research_hypotheses",
+   "paper_orders",
+   "paper_ledger",
+   "paper_positions",
+   "paper_equity_marks",
+   "paper_positions_snapshot",
+   "paper_decision_snapshots",
+   "quant_chanlun_pool",
+   "quant_nine_dim_rc",
+   "quant_nine_dim_rc_meta",
+   "quant_nine_dim_fina",
+   "quant_nine_dim_fc",
+   "quant_nine_dim_fc_meta",
+   "news_runs",
+   "news_ai_briefs",
+   "news_ai_reviews",
+   "news_quotes",
+   "news_jev_review_queue",
+   "automation_runs",
+   "yt_transcripts",
+   "yt_distill",
+   "yt_rag",
+   "yt_dim_channel",
+   "yt_dim_topic",
+   "yt_dim_video",
+   "yt_bridge_video_topic",
+   "yt_fact_comment",
+   "yt_fact_knowledge_unit",
+   "yt_fact_transcript",
+   "yt_fact_faq_semantic",
+   "yt_bridge_faq_comment",
+   "yt_meta_faq_build",
+   "yt_fact_transcript_seg",
+   "yt_meta_etl",
+   "yt_fact_transcript_signal"
+  ]
+ },
+ "kg_precheck": {
+  "ok": true,
+  "last": "registry_align date=2026-11-03T09:41:25+08:00 action=apply catalog=v35 sha=e13b6a08a5f16f0c physical=256 display=258 rebuild=ok exit=0",
+  "reason": ""
+ },
+ "backups": {
+  "catalog": {
+   "path": "C:\\项目\\老田的AI助手\\research\\reports\\backups\\catalog_before_task165_20261104-034127.json",
+   "sha256": "e13b6a08a5f16f0cfa41a98a30708f7a6e85a48898e7d1deecf54d9868274ba9",
+   "bytes": 299167
+  },
+  "registry": {
+   "path": "C:\\项目\\老田的AI助手\\research\\reports\\backups\\warehouse_registry_before_task165_20261104-034127.json",
+   "sha256": "ba420615c696a6b2d25596f1cfc6c8c586a47380eef67711505ff583a53f3ab9",
+   "bytes": 733323
+  }
+ },
+ "rollback_command": "Copy-Item 'C:\\项目\\老田的AI助手\\research\\reports\\backups\\catalog_before_task165_20261104-034127.json' 'C:\\项目\\老田的AI助手\\quant_backtest\\data\\catalog.json' -Force; Copy-Item 'C:\\项目\\老田的AI助手\\research\\reports\\backups\\warehouse_registry_before_task165_20261104-034127.json' 'C:\\项目\\老田的AI助手\\quant_backtest\\data\\warehouse_registry.json' -Force",
+ "after_catalog_write": {
+  "catalog_version": 36,
+  "catalog_tables": 292,
+  "catalog_sha256": "d1547c92fe470bd7e8cbe417772522982200e835171cc0d511ae0ed5c73cf2b8"
+ },
+ "registry_align_apply": {
+  "cmd": "C:\\项目\\py312\\python.exe -X utf8 C:\\项目\\老田的AI助手\\tools\\datawarehouse\\registry_align.py --apply --json",
+  "rc": 0,
+  "json": {
+   "tool": "registry_align",
+   "mode": "apply",
+   "generated_at": "2026-11-04T03:41:27+08:00",
+   "catalog": {
+    "path": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\catalog.json",
+    "version": 36,
+    "tables": 292,
+    "sha256": "d1547c92fe470bd7e8cbe417772522982200e835171cc0d511ae0ed5c73cf2b8"
+   },
+   "registry": {
+    "path": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\warehouse_registry.json",
+    "catalog_sha256": "e13b6a08a5f16f0cfa41a98a30708f7a6e85a48898e7d1deecf54d9868274ba9",
+    "physical_count": 256,
+    "display_count": 258,
+    "generated_at": "2026-11-03T09:41:25.652612+08:00"
+   },
+   "match_before": false,
+   "diffs_before": [
+    {
+     "kind": "catalog_sha256",
+     "registry": "e13b6a08a5f16f0cfa41a98a30708f7a6e85a48898e7d1deecf54d9868274ba9",
+     "catalog": "d1547c92fe470bd7e8cbe417772522982200e835171cc0d511ae0ed5c73cf2b8"
+    },
+    {
+     "kind": "catalog_tables_missing_from_registry",
+     "count": 36,
+     "tables": [
+      "automation_runs",
+      "news_ai_briefs",
+      "news_ai_reviews",
+      "news_jev_review_queue",
+      "news_quotes",
+      "news_runs",
+      "paper_decision_snapshots",
+      "paper_equity_marks",
+      "paper_ledger",
+      "paper_orders",
+      "paper_positions",
+      "paper_positions_snapshot",
+      "quant_chanlun_pool",
+      "quant_nine_dim_fc",
+      "quant_nine_dim_fc_meta",
+      "quant_nine_dim_fina",
+      "quant_nine_dim_rc",
+      "quant_nine_dim_rc_meta",
+      "research_hypotheses",
+      "xq_xq_status_classified"
+     ]
+    }
+   ],
+   "rebuild": {
+    "performed": true,
+    "backup": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\warehouse_registry.json.bak-20261104-034127",
+    "backup_rel": "quant_backtest/data/warehouse_registry.json.bak-20261104-034127",
+    "stats": {
+     "catalog_version": 36,
+     "catalog_tables": 292,
+     "old_physical_count": 256,
+     "added": 36,
+     "physical_count": 292,
+     "display_count": 258
+    },
+    "verify": {
+     "ok": true,
+     "checks": {
+      "json_valid": true,
+      "catalog_sha256_match": true,
+      "physical_count_match": true,
+      "display_count_match": true
+     }
+    }
+   },
+   "match_after": true,
+   "diffs_after": [],
+   "metadata": {
+    "tool": "metadata_consistency",
+    "code": 0,
+    "catalog_version": 36,
+    "tables": 292,
+    "physical_count": 292,
+    "issues": [],
+    "warnings": []
+   },
+   "kg_log": {
+    "ok": true,
+    "last": "registry_align date=2026-11-03T09:41:25+08:00 action=apply catalog=v35 sha=e13b6a08a5f16f0c physical=256 display=258 rebuild=ok exit=0",
+    "reason": "",
+    "appended": "registry_align date=2026-11-04T03:41:27+08:00 action=apply catalog=v36 sha=d1547c92fe470bd7 physical=292 display=258 rebuild=ok exit=0",
+    "path": "C:\\Temp\\kg_sync_task.log"
+   },
+   "lock": {
+    "acquired": true,
+    "path": "C:\\Temp\\registry_align.lock",
+    "pid": 39184,
+    "started": "2026-11-04T03:41:27+08:00"
+   },
+   "rolled_back": false,
+   "exit_code": 0,
+   "error": null,
+   "elapsed_s": 0.0,
+   "info_before": []
+  },
+  "stdout_tail": "8\"\n  },\n  {\n   \"kind\": \"catalog_tables_missing_from_registry\",\n   \"count\": 36,\n   \"tables\": [\n    \"automation_runs\",\n    \"news_ai_briefs\",\n    \"news_ai_reviews\",\n    \"news_jev_review_queue\",\n    \"news_quotes\",\n    \"news_runs\",\n    \"paper_decision_snapshots\",\n    \"paper_equity_marks\",\n    \"paper_ledger\",\n    \"paper_orders\",\n    \"paper_positions\",\n    \"paper_positions_snapshot\",\n    \"quant_chanlun_pool\",\n    \"quant_nine_dim_fc\",\n    \"quant_nine_dim_fc_meta\",\n    \"quant_nine_dim_fina\",\n    \"quant_nine_dim_rc\",\n    \"quant_nine_dim_rc_meta\",\n    \"research_hypotheses\",\n    \"xq_xq_status_classified\"\n   ]\n  }\n ],\n \"rebuild\": {\n  \"performed\": true,\n  \"backup\": \"C:\\\\项目\\\\老田的AI助手\\\\quant_backtest\\\\data\\\\warehouse_registry.json.bak-20261104-034127\",\n  \"backup_rel\": \"quant_backtest/data/warehouse_registry.json.bak-20261104-034127\",\n  \"stats\": {\n   \"catalog_version\": 36,\n   \"catalog_tables\": 292,\n   \"old_physical_count\": 256,\n   \"added\": 36,\n   \"physical_count\": 292,\n   \"display_count\": 258\n  },\n  \"verify\": {\n   \"ok\": true,\n   \"checks\": {\n    \"json_valid\": true,\n    \"catalog_sha256_match\": true,\n    \"physical_count_match\": true,\n    \"display_count_match\": true\n   }\n  }\n },\n \"match_after\": true,\n \"diffs_after\": [],\n \"metadata\": {\n  \"tool\": \"metadata_consistency\",\n  \"code\": 0,\n  \"catalog_version\": 36,\n  \"tables\": 292,\n  \"physical_count\": 292,\n  \"issues\": [],\n  \"warnings\": []\n },\n \"kg_log\": {\n  \"ok\": true,\n  \"last\": \"registry_align date=2026-11-03T09:41:25+08:00 action=apply catalog=v35 sha=e13b6a08a5f16f0c physical=256 display=258 rebuild=ok exit=0\",\n  \"reason\": \"\",\n  \"appended\": \"registry_align date=2026-11-04T03:41:27+08:00 action=apply catalog=v36 sha=d1547c92fe470bd7 physical=292 display=258 rebuild=ok exit=0\",\n  \"path\": \"C:\\\\Temp\\\\kg_sync_task.log\"\n },\n \"lock\": {\n  \"acquired\": true,\n  \"path\": \"C:\\\\Temp\\\\registry_align.lock\",\n  \"pid\": 39184,\n  \"started\": \"2026-11-04T03:41:27+08:00\"\n },\n \"rolled_back\": false,\n \"exit_code\": 0,\n \"error\": null,\n \"elapsed_s\": 0.0,\n \"info_before\": []\n}",
+  "stderr_tail": "",
+  "elapsed_s": 0.29
+ },
+ "verify": {
+  "ok": true,
+  "metadata_consistency": {
+   "cmd": "C:\\项目\\py312\\python.exe -X utf8 C:\\项目\\老田的AI助手\\tools\\datawarehouse\\metadata_consistency.py --json",
+   "rc": 0,
+   "json": {
+    "tool": "metadata_consistency",
+    "code": 0,
+    "catalog_version": 36,
+    "tables": 292,
+    "physical_count": 292,
+    "issues": [],
+    "warnings": []
+   },
+   "stdout_tail": "{\n \"tool\": \"metadata_consistency\",\n \"code\": 0,\n \"catalog_version\": 36,\n \"tables\": 292,\n \"physical_count\": 292,\n \"issues\": [],\n \"warnings\": []\n}",
+   "stderr_tail": "",
+   "elapsed_s": 0.25
+  },
+  "registry_align_check": {
+   "cmd": "C:\\项目\\py312\\python.exe -X utf8 C:\\项目\\老田的AI助手\\tools\\datawarehouse\\registry_align.py --check --json",
+   "rc": 0,
+   "json": {
+    "tool": "registry_align",
+    "mode": "check",
+    "generated_at": "2026-11-04T03:41:28+08:00",
+    "catalog": {
+     "path": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\catalog.json",
+     "version": 36,
+     "tables": 292,
+     "sha256": "d1547c92fe470bd7e8cbe417772522982200e835171cc0d511ae0ed5c73cf2b8"
+    },
+    "registry": {
+     "path": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\warehouse_registry.json",
+     "catalog_sha256": "d1547c92fe470bd7e8cbe417772522982200e835171cc0d511ae0ed5c73cf2b8",
+     "physical_count": 292,
+     "display_count": 258,
+     "generated_at": "2026-11-04T03:41:27.543302+08:00"
+    },
+    "match_before": true,
+    "diffs_before": [],
+    "rebuild": {
+     "performed": false
+    },
+    "match_after": null,
+    "diffs_after": [],
+    "metadata": {
+     "tool": "metadata_consistency",
+     "code": 0,
+     "catalog_version": 36,
+     "tables": 292,
+     "physical_count": 292,
+     "issues": [],
+     "warnings": []
+    },
+    "kg_log": null,
+    "lock": null,
+    "rolled_back": false,
+    "exit_code": 0,
+    "error": null,
+    "elapsed_s": 0.07,
+    "info_before": []
+   },
+   "stdout_tail": "{\n \"tool\": \"registry_align\",\n \"mode\": \"check\",\n \"generated_at\": \"2026-11-04T03:41:28+08:00\",\n \"catalog\": {\n  \"path\": \"C:\\\\项目\\\\老田的AI助手\\\\quant_backtest\\\\data\\\\catalog.json\",\n  \"version\": 36,\n  \"tables\": 292,\n  \"sha256\": \"d1547c92fe470bd7e8cbe417772522982200e835171cc0d511ae0ed5c73cf2b8\"\n },\n \"registry\": {\n  \"path\": \"C:\\\\项目\\\\老田的AI助手\\\\quant_backtest\\\\data\\\\warehouse_registry.json\",\n  \"catalog_sha256\": \"d1547c92fe470bd7e8cbe417772522982200e835171cc0d511ae0ed5c73cf2b8\",\n  \"physical_count\": 292,\n  \"display_count\": 258,\n  \"generated_at\": \"2026-11-04T03:41:27.543302+08:00\"\n },\n \"match_before\": true,\n \"diffs_before\": [],\n \"rebuild\": {\n  \"performed\": false\n },\n \"match_after\": null,\n \"diffs_after\": [],\n \"metadata\": {\n  \"tool\": \"metadata_consistency\",\n  \"code\": 0,\n  \"catalog_version\": 36,\n  \"tables\": 292,\n  \"physical_count\": 292,\n  \"issues\": [],\n  \"warnings\": []\n },\n \"kg_log\": null,\n \"lock\": null,\n \"rolled_back\": false,\n \"exit_code\": 0,\n \"error\": null,\n \"elapsed_s\": 0.07,\n \"info_before\": []\n}",
+   "stderr_tail": "",
+   "elapsed_s": 0.2
+  }
+ },
+ "after": {
+  "catalog_version": 37,
+  "catalog_tables": 292,
+  "catalog_sha256": "92fd2757bd69da451a4931b25c006ef4dfa46dbf49348f2e4758444c40ee20f6",
+  "registry_sha256": "43ff23b1d77614ebf5c19133ca48411bf5025b5b2f30d631dbfb4ac6fe9c746d",
+  "registry_physical": 292,
+  "registry_display": 258,
+  "added": [
+   "automation_runs",
+   "news_ai_briefs",
+   "news_ai_reviews",
+   "news_jev_review_queue",
+   "news_quotes",
+   "news_runs",
+   "paper_decision_snapshots",
+   "paper_equity_marks",
+   "paper_ledger",
+   "paper_orders",
+   "paper_positions",
+   "paper_positions_snapshot",
+   "quant_chanlun_pool",
+   "quant_nine_dim_fc",
+   "quant_nine_dim_fc_meta",
+   "quant_nine_dim_fina",
+   "quant_nine_dim_rc",
+   "quant_nine_dim_rc_meta",
+   "research_hypotheses",
+   "xq_xq_status_classified",
+   "yt_bridge_faq_comment",
+   "yt_bridge_video_topic",
+   "yt_dim_channel",
+   "yt_dim_topic",
+   "yt_dim_video",
+   "yt_distill",
+   "yt_fact_comment",
+   "yt_fact_faq_semantic",
+   "yt_fact_knowledge_unit",
+   "yt_fact_transcript",
+   "yt_fact_transcript_seg",
+   "yt_fact_transcript_signal",
+   "yt_meta_etl",
+   "yt_meta_faq_build",
+   "yt_rag",
+   "yt_transcripts"
+  ]
+ },
+ "kg_append": {
+  "appended": "asset_registration date=2026-11-04T03:41:28+08:00 action=apply catalog=v36 sha=d1547c92fe470bd7 added=36 tables=292 physical=292 display=258 PASS",
+  "path": "C:\\Temp\\kg_sync_task.log"
+ },
+ "elapsed_s": 0.87,
+ "corrections": {
+  "reason": "批次内元数据审计：6 个条目采样误推断 date_col/静态标记，经核对 sqlite PRAGMA 与样例行后修正并重建 registry",
+  "applied": [
+   {
+    "id": "xq_xq_status_classified",
+    "status": "fixed",
+    "before": {
+     "date_col": "sentiment",
+     "date_status": "registered",
+     "code_col": "status_id",
+     "primary_key": [
+      "status_id"
+     ],
+     "freq": "event",
+     "static_no_date": false,
+     "freshness": "neutral"
+    },
+    "after": {
+     "date_col": "labeled_at",
+     "date_status": "registered",
+     "code_col": null,
+     "primary_key": [
+      "status_id"
+     ],
+     "freq": "D",
+     "static_no_date": false,
+     "freshness": "2026-10-18 11:27:26"
+    }
+   },
+   {
+    "id": "quant_nine_dim_rc_meta",
+    "status": "fixed",
+    "before": {
+     "date_col": "value",
+     "date_status": "registered",
+     "code_col": null,
+     "primary_key": [
+      "key"
+     ],
+     "freq": "event",
+     "static_no_date": false,
+     "freshness": "20240701"
+    },
+    "after": {
+     "date_col": null,
+     "date_status": "not_applicable",
+     "code_col": null,
+     "primary_key": [],
+     "freq": "static",
+     "static_no_date": true,
+     "freshness": null
+    }
+   },
+   {
+    "id": "quant_nine_dim_fc_meta",
+    "status": "fixed",
+    "before": {
+     "date_col": "value",
+     "date_status": "registered",
+     "code_col": null,
+     "primary_key": [
+      "key"
+     ],
+     "freq": "event",
+     "static_no_date": false,
+     "freshness": "20240401"
+    },
+    "after": {
+     "date_col": null,
+     "date_status": "not_applicable",
+     "code_col": null,
+     "primary_key": [],
+     "freq": "static",
+     "static_no_date": true,
+     "freshness": null
+    }
+   },
+   {
+    "id": "yt_dim_channel",
+    "status": "fixed",
+    "before": {
+     "date_col": "total_views",
+     "date_status": "registered",
+     "code_col": "channel_id",
+     "primary_key": [
+      "channel_id"
+     ],
+     "freq": "static",
+     "static_no_date": false,
+     "freshness": "211061017"
+    },
+    "after": {
+     "date_col": null,
+     "date_status": "not_applicable",
+     "code_col": "channel_id",
+     "primary_key": [
+      "channel_id"
+     ],
+     "freq": "static",
+     "static_no_date": true,
+     "freshness": null
+    }
+   },
+   {
+    "id": "yt_meta_faq_build",
+    "status": "fixed",
+    "before": {
+     "date_col": "value",
+     "date_status": "registered",
+     "code_col": null,
+     "primary_key": [
+      "key"
+     ],
+     "freq": "static",
+     "static_no_date": false,
+     "freshness": "qwen3.5:9b"
+    },
+    "after": {
+     "date_col": null,
+     "date_status": "not_applicable",
+     "code_col": null,
+     "primary_key": [],
+     "freq": "static",
+     "static_no_date": true,
+     "freshness": null
+    }
+   },
+   {
+    "id": "automation_runs",
+    "status": "fixed",
+    "before": {
+     "date_col": "trade_date",
+     "date_status": "registered",
+     "code_col": "ts_code",
+     "primary_key": [
+      "ts_code",
+      "trade_date"
+     ],
+     "freq": "unknown",
+     "static_no_date": false,
+     "freshness": "2026-11-02"
+    },
+    "after": {
+     "date_col": null,
+     "date_status": "unknown",
+     "code_col": null,
+     "primary_key": [],
+     "freq": "event",
+     "static_no_date": false,
+     "freshness": "2026-11-02"
+    }
+   }
+  ],
+  "final": {
+   "ok": true,
+   "catalog_version": 37,
+   "catalog_tables": 292,
+   "catalog_sha256": "92fd2757bd69da451a4931b25c006ef4dfa46dbf49348f2e4758444c40ee20f6",
+   "registry_sha256": "43ff23b1d77614ebf5c19133ca48411bf5025b5b2f30d631dbfb4ac6fe9c746d",
+   "registry_catalog_sha_match": true,
+   "physical": 292,
+   "display": 258,
+   "metadata_code": 0,
+   "metadata_issues": [],
+   "align_match": true
+  },
+  "backups": {
+   "catalog": "C:\\项目\\老田的AI助手\\research\\reports\\backups\\catalog_before_correction_20261104-034244.json",
+   "registry": "C:\\项目\\老田的AI助手\\research\\reports\\backups\\warehouse_registry_before_correction_20261104-034244.json"
+  },
+  "registry_align_apply_rc": 0,
+  "metadata_consistency_rc": 0,
+  "registry_align_check_rc": 0
+ }
+}

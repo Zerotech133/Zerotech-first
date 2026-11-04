@@ -65,7 +65,9 @@ DEFAULT_INPUTS: list[tuple[str, Path]] = [
 ]
 
 VERSION = "1.1.0"
-SOURCE_TYPE_LABEL = {"blogger": "博主", "book": "书", "research_report": "研报", "other": "其他"}
+SOURCE_TYPE_LABEL = {"blogger": "博主", "book": "书", "research_report": "研报", "other": "其他",
+                     "official_edu": "官方投教", "broker_edu": "券商投教",
+                     "opensource_docs": "开源文档", "public_encyclopedia": "公开百科"}
 CONFIDENCE_ORDER = {"高": 0, "中": 1, "低": 2}
 # 一致性阈值（3-gram Jaccard；同义改写常见 0.35~0.55，同句复述 >0.6）
 SIM_CONSISTENT = 0.45
@@ -252,7 +254,14 @@ def _key_other(source: str) -> tuple[str, str, str]:
 
 
 def _source_from_unit(unit: dict) -> tuple[str, str, str]:
-    """知识单元（kb_units_all）来源：source 字段已分 研报/书籍/策略经典。"""
+    """知识单元来源：支持显式 source_type/source_key（W22 扩展：official_edu/broker_edu/opensource_docs），
+    否则按 source/book 字段推断（研报/书籍/策略经典/博主/其他）。"""
+    explicit_type = str(unit.get("source_type") or "").strip()
+    if explicit_type:
+        key = str(unit.get("source_key") or unit.get("url") or "").strip() or explicit_type
+        label = str(unit.get("source_label") or "").strip() or \
+            f"{SOURCE_TYPE_LABEL.get(explicit_type, explicit_type)}·{key[:60]}"
+        return explicit_type, key, label
     source = str(unit.get("source") or "")
     book = str(unit.get("book") or "")
     if source == "研报" or book.startswith("rp_"):
@@ -401,7 +410,7 @@ def _detect_conflicts(cluster: dict, sources: dict[tuple, dict]) -> list[dict]:
     items = [(key, src) for key, src in sources.items()]
     for i in range(len(items)):
         for j in range(i + 1, len(items)):
-            (ka, sa), (kb, sb) = items[i], items[j]
+            (_, sa), (_, sb) = items[i], items[j]
             text_a = " ".join(sa["answers"])
             text_b = " ".join(sb["answers"])
             up_a, down_a = len(UP_WORDS.findall(text_a)), len(DOWN_WORDS.findall(text_a))

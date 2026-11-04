@@ -1,0 +1,586 @@
+{
+ "tool": "acad1_live_accept_probe",
+ "task": "task-57 / WO-ACAD1-LIVE-ACCEPT-20261104",
+ "ts": "2026-11-04T05:29:41+08:00",
+ "read_only": true,
+ "notes": [
+  "未登录探测：不发送 Cookie/Authorization；不打印/落盘 cookie/token。",
+  "POST 仅用于 8105 /api/v1/auth/portal-sso 无 session 负例（服务端 401 前不写数据）。",
+  "200 响应只落摘要字段，不落全量业务数据。"
+ ],
+ "conclusion_hint": "",
+ "probes": [
+  {
+   "port": 8105,
+   "method": "GET",
+   "path": "/api/v1/health",
+   "status": 200,
+   "latency_ms": 8.5,
+   "body_len": 53,
+   "content_type": "application/json",
+   "location": "",
+   "www_authenticate": "",
+   "server": "uvicorn",
+   "body_sha256_12": "08d34a5889c2",
+   "body_keys": [
+    "status",
+    "app",
+    "version"
+   ]
+  },
+  {
+   "port": 8105,
+   "method": "GET",
+   "path": "/api/v1/auth/portal-sso",
+   "status": 405,
+   "latency_ms": 4.5,
+   "body_len": 31,
+   "content_type": "application/json",
+   "location": "",
+   "www_authenticate": "",
+   "server": "uvicorn",
+   "body_sha256_12": "83c09ba9a8da",
+   "body": {
+    "detail": "Method Not Allowed"
+   }
+  },
+  {
+   "port": 8105,
+   "method": "POST",
+   "path": "/api/v1/auth/portal-sso",
+   "status": 401,
+   "latency_ms": 5.2,
+   "body_len": 43,
+   "content_type": "application/json",
+   "location": "",
+   "www_authenticate": "",
+   "server": "uvicorn",
+   "body_sha256_12": "8d07a03575af",
+   "body": {
+    "detail": {
+     "code": "portal_sso.no_session"
+    }
+   }
+  },
+  {
+   "port": 8105,
+   "method": "GET",
+   "path": "/api/v1/acad1-research/pool",
+   "status": 401,
+   "latency_ms": 14.4,
+   "body_len": 26,
+   "content_type": "application/json",
+   "location": "",
+   "www_authenticate": "",
+   "server": "uvicorn",
+   "body_sha256_12": "7b97e04cadc0",
+   "body": {
+    "detail": "missing token"
+   }
+  },
+  {
+   "port": 8105,
+   "method": "GET",
+   "path": "/api/v1/hermes/acad1-comparison",
+   "status": 200,
+   "latency_ms": 66.4,
+   "body_len": 19587,
+   "content_type": "application/json",
+   "location": "",
+   "www_authenticate": "",
+   "server": "uvicorn",
+   "body_sha256_12": "fad8b3df8b5d",
+   "body_keys": [
+    "read_only",
+    "market",
+    "pool_date",
+    "total",
+    "selected",
+    "quota",
+    "expected_top_n",
+    "quota_shortfall",
+    "items"
+   ]
+  },
+  {
+   "port": 8734,
+   "method": "GET",
+   "path": "/quant-api/api/v1/acad1-research/pool",
+   "status": 401,
+   "latency_ms": 12.8,
+   "body_len": 26,
+   "content_type": "application/json",
+   "location": "",
+   "www_authenticate": "",
+   "server": "nginx/1.31.7",
+   "body_sha256_12": "7b97e04cadc0",
+   "body": {
+    "detail": "missing token"
+   }
+  },
+  {
+   "port": 8734,
+   "method": "GET",
+   "path": "/quant-api/api/v1/acad1-research/stats",
+   "status": 401,
+   "latency_ms": 34.8,
+   "body_len": 26,
+   "content_type": "application/json",
+   "location": "",
+   "www_authenticate": "",
+   "server": "nginx/1.31.7",
+   "body_sha256_12": "7b97e04cadc0",
+   "body": {
+    "detail": "missing token"
+   }
+  },
+  {
+   "port": 8734,
+   "method": "GET",
+   "path": "/quant-api/api/v1/acad1-research/reviews",
+   "status": 401,
+   "latency_ms": 10.6,
+   "body_len": 26,
+   "content_type": "application/json",
+   "location": "",
+   "www_authenticate": "",
+   "server": "nginx/1.31.7",
+   "body_sha256_12": "7b97e04cadc0",
+   "body": {
+    "detail": "missing token"
+   }
+  },
+  {
+   "port": 8734,
+   "method": "GET",
+   "path": "/quant-api/api/v1/acad1-research/decisions",
+   "status": 401,
+   "latency_ms": 21.0,
+   "body_len": 26,
+   "content_type": "application/json",
+   "location": "",
+   "www_authenticate": "",
+   "server": "nginx/1.31.7",
+   "body_sha256_12": "7b97e04cadc0",
+   "body": {
+    "detail": "missing token"
+   }
+  },
+  {
+   "port": 8734,
+   "method": "GET",
+   "path": "/quant-api/api/v1/acad1-research/evidence",
+   "status": 401,
+   "latency_ms": 29.2,
+   "body_len": 26,
+   "content_type": "application/json",
+   "location": "",
+   "www_authenticate": "",
+   "server": "nginx/1.31.7",
+   "body_sha256_12": "7b97e04cadc0",
+   "body": {
+    "detail": "missing token"
+   }
+  },
+  {
+   "port": 8734,
+   "method": "GET",
+   "path": "/quant-api/api/v1/acad1-research/calendar",
+   "status": 401,
+   "latency_ms": 28.9,
+   "body_len": 26,
+   "content_type": "application/json",
+   "location": "",
+   "www_authenticate": "",
+   "server": "nginx/1.31.7",
+   "body_sha256_12": "7b97e04cadc0",
+   "body": {
+    "detail": "missing token"
+   }
+  },
+  {
+   "port": 8734,
+   "method": "GET",
+   "path": "/quant-api/api/v1/hermes/acad1-comparison",
+   "status": 200,
+   "latency_ms": 83.8,
+   "body_len": 19587,
+   "content_type": "application/json",
+   "location": "",
+   "www_authenticate": "",
+   "server": "nginx/1.31.7",
+   "body_sha256_12": "fad8b3df8b5d",
+   "body_keys": [
+    "read_only",
+    "market",
+    "pool_date",
+    "total",
+    "selected",
+    "quota",
+    "expected_top_n",
+    "quota_shortfall",
+    "items"
+   ]
+  },
+  {
+   "port": 8734,
+   "method": "GET",
+   "path": "/api/acad1/pool",
+   "status": 200,
+   "latency_ms": 54.2,
+   "body_len": 24398,
+   "content_type": "application/json; charset=utf-8",
+   "location": "",
+   "www_authenticate": "",
+   "server": "nginx/1.31.7",
+   "body_sha256_12": "957cb8ced1cd",
+   "body_keys": [
+    "ok",
+    "schema",
+    "mode",
+    "trading_permitted",
+    "generated_at",
+    "view",
+    "source_mode",
+    "official",
+    "source_pool",
+    "pool_id",
+    "pool_date",
+    "data_date",
+    "published_at",
+    "review_status",
+    "degraded_reason",
+    "date",
+    "owner",
+    "count",
+    "pool_dates",
+    "read_semantics"
+   ]
+  },
+  {
+   "port": 8734,
+   "method": "GET",
+   "path": "/academy/shuijing",
+   "status": 200,
+   "latency_ms": 27.6,
+   "body_len": 12377,
+   "content_type": "text/html",
+   "location": "",
+   "www_authenticate": "",
+   "server": "nginx/1.31.7",
+   "body_sha256_12": "558b921afdd5",
+   "body_sample": "<!doctype html> <html lang=\"zh-CN\"> <head> <meta charset=\"utf-8\"> <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"> <title>司马徽研究台 · 今日决策台</title> <link rel=\"stylesheet\" href=\"/static/tokens.css\"> <script src=\"/static/nav.js\" defer></script> <script src=\"/static/shortscreen.js\" defe"
+  },
+  {
+   "port": 8734,
+   "method": "GET",
+   "path": "/acad1/pool",
+   "status": 200,
+   "latency_ms": 30.5,
+   "body_len": 11825,
+   "content_type": "text/html",
+   "location": "",
+   "www_authenticate": "",
+   "server": "nginx/1.31.7",
+   "body_sha256_12": "7ebe2842b8cf",
+   "body_sample": "<!DOCTYPE html> <html lang=\"zh-CN\"> <head> <meta charset=\"UTF-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"> <title>司马徽推荐池 · 全池复盘 · 零界</title> <link rel=\"stylesheet\" href=\"/static/tokens.css\"> <link rel=\"icon\" href=\"data:,\"> <style> body{margin:0;font-family:system-ui,-ap"
+  },
+  {
+   "port": 8091,
+   "method": "GET",
+   "path": "/api/acad1/pool",
+   "status": 200,
+   "latency_ms": 58.1,
+   "body_len": 24398,
+   "content_type": "application/json; charset=utf-8",
+   "location": "",
+   "www_authenticate": "",
+   "server": "BaseHTTP/0.6 Python/3.11.9",
+   "body_sha256_12": "957cb8ced1cd",
+   "body_keys": [
+    "ok",
+    "schema",
+    "mode",
+    "trading_permitted",
+    "generated_at",
+    "view",
+    "source_mode",
+    "official",
+    "source_pool",
+    "pool_id",
+    "pool_date",
+    "data_date",
+    "published_at",
+    "review_status",
+    "degraded_reason",
+    "date",
+    "owner",
+    "count",
+    "pool_dates",
+    "read_semantics"
+   ]
+  }
+ ],
+ "summaries": {
+  "8105_health": {
+   "status": 200,
+   "app": "zhice-os-v2",
+   "version": "0.1.0",
+   "service_status": "ok"
+  },
+  "8105_portal_sso_no_session": {
+   "status": 401,
+   "body": {
+    "detail": {
+     "code": "portal_sso.no_session"
+    }
+   }
+  },
+  "8105_hermes_acad1_comparison": {
+   "read_only": true,
+   "market": "CN",
+   "pool_date": "2026-11-03",
+   "total": 57,
+   "selected": 12,
+   "quota": 12,
+   "expected_top_n": 12,
+   "quota_shortfall": 0,
+   "items_len": 57,
+   "top3_codes": [
+    "601882.SH",
+    "002388.SZ",
+    "002445.SZ"
+   ]
+  },
+  "8734_hermes_acad1_comparison": {
+   "read_only": true,
+   "market": "CN",
+   "pool_date": "2026-11-03",
+   "total": 57,
+   "selected": 12,
+   "quota": 12,
+   "expected_top_n": 12,
+   "quota_shortfall": 0,
+   "items_len": 57,
+   "top3_codes": [
+    "601882.SH",
+    "002388.SZ",
+    "002445.SZ"
+   ]
+  },
+  "comparison_8105_vs_8734": {
+   "same_status": true,
+   "same_body_sha256_12": true,
+   "sha256_12": "fad8b3df8b5d",
+   "body_len": 19587,
+   "body_identical": true
+  },
+  "8734_api_acad1_pool": {
+   "status": 200,
+   "ok": true,
+   "count": 30,
+   "pool_dates": {
+    "CN": "2026-11-03",
+    "CRYPTO": "2026-10-31",
+    "HK": "2026-10-30",
+    "US": "2026-10-29"
+   },
+   "read_semantics": "market_latest_aggregated",
+   "freshness_by_market": {
+    "CN": 0,
+    "CRYPTO": 3,
+    "HK": 4,
+    "US": 5
+   },
+   "published_at": "2026-11-03T12:51:29.630818+00:00",
+   "review_status": "pool_reviewed",
+   "degraded_reason": null,
+   "plan": {
+    "selected": 30,
+    "watch": 0,
+    "avoid": 0,
+    "total_weight": null
+   },
+   "dates": [
+    "2026-11-03",
+    "2026-11-02",
+    "2026-10-31",
+    "2026-10-30",
+    "2026-10-29"
+   ],
+   "pg_table": "public.v2_acad1_pool",
+   "schema": "acad1_pool_api/v2",
+   "mode": "acad1_pool_review",
+   "source_mode": "pg_official_aggregated",
+   "official": true,
+   "source_pool": "pg",
+   "pool_id": "ACAD1-POOL-PG-FULL-20261103",
+   "pool_date": "2026-11-03",
+   "data_date": "2026-11-03",
+   "stale": true,
+   "freshness_days": 5,
+   "trading_permitted": false,
+   "view": "full",
+   "summary_pool_total": 30,
+   "summary_reviewed": 0,
+   "summary_pending": 30,
+   "items_len": 30,
+   "generated_at": "2026-11-04 05:29:41"
+  },
+  "8734_academy_shuijing": {
+   "status": 200,
+   "content_type": "text/html",
+   "html_len": 12377,
+   "title": "司马徽研究台 · 今日决策台",
+   "references_shuijing_js": true,
+   "references_quant_api": false,
+   "references_api_acad1_pool": true
+  },
+  "8091_api_acad1_pool": {
+   "status": 200,
+   "ok": true,
+   "count": 30,
+   "pool_dates": {
+    "CN": "2026-11-03",
+    "CRYPTO": "2026-10-31",
+    "HK": "2026-10-30",
+    "US": "2026-10-29"
+   },
+   "read_semantics": "market_latest_aggregated",
+   "freshness_by_market": {
+    "CN": 0,
+    "CRYPTO": 3,
+    "HK": 4,
+    "US": 5
+   },
+   "published_at": "2026-11-03T12:51:29.630818+00:00",
+   "review_status": "pool_reviewed",
+   "degraded_reason": null,
+   "plan": {
+    "selected": 30,
+    "watch": 0,
+    "avoid": 0,
+    "total_weight": null
+   },
+   "dates": [
+    "2026-11-03",
+    "2026-11-02",
+    "2026-10-31",
+    "2026-10-30",
+    "2026-10-29"
+   ],
+   "pg_table": "public.v2_acad1_pool",
+   "schema": "acad1_pool_api/v2",
+   "mode": "acad1_pool_review",
+   "source_mode": "pg_official_aggregated",
+   "official": true,
+   "source_pool": "pg",
+   "pool_id": "ACAD1-POOL-PG-FULL-20261103",
+   "pool_date": "2026-11-03",
+   "data_date": "2026-11-03",
+   "stale": true,
+   "freshness_days": 5,
+   "trading_permitted": false,
+   "view": "full",
+   "summary_pool_total": 30,
+   "summary_reviewed": 0,
+   "summary_pending": 30,
+   "items_len": 30,
+   "generated_at": "2026-11-04 05:29:41"
+  },
+  "pool_8734_vs_8091": {
+   "same_status": true,
+   "same_body_sha256_12": true,
+   "sha256_12": "957cb8ced1cd",
+   "body_len": 24398
+  },
+  "acad1_research_unauth": {
+   "paths": [
+    "/quant-api/api/v1/acad1-research/pool",
+    "/quant-api/api/v1/acad1-research/stats",
+    "/quant-api/api/v1/acad1-research/reviews",
+    "/quant-api/api/v1/acad1-research/decisions",
+    "/quant-api/api/v1/acad1-research/evidence",
+    "/quant-api/api/v1/acad1-research/calendar"
+   ],
+   "statuses": [
+    401,
+    401,
+    401,
+    401,
+    401,
+    401
+   ],
+   "body_sha256_12_set": [
+    "7b97e04cadc0"
+   ],
+   "all_same_401_body": true,
+   "body_sample": {
+    "detail": "missing token"
+   },
+   "native_8105_same_status": 401,
+   "native_8105_body_sha256_12": "7b97e04cadc0",
+   "servers_8734_401": [
+    "nginx/1.31.7"
+   ],
+   "server_8105_401": "uvicorn"
+  }
+ },
+ "openapi_routes": {
+  "openapi_status": 200,
+  "openapi_paths_total": 260,
+  "matched": {
+   "/api/v1/health": [
+    "GET"
+   ],
+   "/api/v1/health/ready": [
+    "GET"
+   ],
+   "/api/v1/acad1-research/pool": [
+    "GET"
+   ],
+   "/api/v1/acad1-research/reviews": [
+    "GET"
+   ],
+   "/api/v1/acad1-research/stats": [
+    "GET"
+   ],
+   "/api/v1/acad1-research/decisions": [
+    "GET"
+   ],
+   "/api/v1/acad1-research/evidence": [
+    "GET"
+   ],
+   "/api/v1/acad1-research/calendar": [
+    "GET"
+   ],
+   "/api/v1/hermes/acad1-comparison": [
+    "GET"
+   ],
+   "/api/v1/research/health": [
+    "GET"
+   ],
+   "/api/v1/auth/portal-sso": [
+    "POST"
+   ]
+  }
+ },
+ "probe_keys": [
+  "8091_api_acad1_pool",
+  "8105_acad1_research_pool_direct",
+  "8105_health",
+  "8105_hermes_acad1_comparison",
+  "8105_portal_sso_get_method_only",
+  "8105_portal_sso_no_session",
+  "8734_acad1_pool_page",
+  "8734_acad1_research_calendar_unauth",
+  "8734_acad1_research_decisions_unauth",
+  "8734_acad1_research_evidence_unauth",
+  "8734_acad1_research_pool_unauth",
+  "8734_acad1_research_reviews_unauth",
+  "8734_acad1_research_stats_unauth",
+  "8734_academy_shuijing",
+  "8734_api_acad1_pool",
+  "8734_hermes_acad1_comparison"
+ ]
+}

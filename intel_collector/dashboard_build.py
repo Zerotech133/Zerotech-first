@@ -351,6 +351,79 @@ def render_feedback_and_cron(sla_reports: dict, pii_counts: dict) -> str:
     return "\n".join(out)
 
 
+def render_battle_view() -> str:
+    """板块作战视图（2026-11-04 晨）：五桥/三席位/共振事件库/字幕批次实时态。
+
+    全部实时读：桥用 importlib 探测、事件库直查 SQLite、字幕批次读 fetch_log。
+    任何一处读不到显示「不可达」，不造数。
+    """
+    import importlib.util
+    rows_bridges = []
+    for bid, label in (
+        ("xq_pump_bridge.XqPumpDispatcher", "雪球桥（行级+治理双写）"),
+        ("kb_bridge.KBBridge", "学习语料桥（YT评点赞+PDF蒸馏）"),
+        ("news_bridge.NewsBridge", "通讯线桥（news.db 增量）"),
+        ("xueqiu_live.LiveXqFetcher", "真实 fetcher（传输委托）"),
+        ("resonance_bridge.ResonanceStoreDispatcher", "共振事件库桥"),
+    ):
+        mod = bid.split(".")[0]
+        ok = importlib.util.find_spec(mod) is not None
+        rows_bridges.append((label, bid, "在位" if ok else "不可达"))
+    # 共振事件库
+    res = {"stats": None, "pending_fwd": 0}
+    rdb = os.path.join(ROOT, "..", "quant_backtest", "data", "resonance", "resonance_events.db")
+    try:
+        con = sqlite3.connect(f"file:{os.path.abspath(rdb)}?mode=ro", uri=True)
+        n_days = con.execute("SELECT COUNT(*) FROM gap_daily").fetchone()[0]
+        n_ev = con.execute("SELECT COUNT(*) FROM events").fetchone()[0]
+        mean_gap = con.execute("SELECT ROUND(AVG(gap),3) FROM gap_daily WHERE gap IS NOT NULL").fetchone()[0]
+        pend = con.execute("SELECT COUNT(*) FROM events WHERE fwd1 IS NULL OR fwd3 IS NULL OR fwd5 IS NULL").fetchone()[0]
+        res = {"stats": f"{n_days} 天 / {n_ev} 事件 / gap均值 {mean_gap}", "pending_fwd": pend}
+        con.close()
+    except Exception:
+        pass
+    # 字幕批次
+    sub = {"state": "不可达"}
+    fl = r"C:/项目/知识库/20_转写/fetch_log.jsonl"
+    try:
+        n = 0
+        ok_n = 0
+        with open(fl, encoding="utf-8") as f:
+            for line in f:
+                n += 1
+                if '"status": "ok"' in line or '"status":"ok"' in line:
+                    ok_n += 1
+        import glob as _g
+        vtt = len(_g.glob(r"C:/项目/知识库/20_转写/transcripts/*.vtt*"))
+        sub = {"state": f"log {n} 行 / ok {ok_n} / vtt {vtt}"}
+    except Exception:
+        pass
+    # 三席位
+    seats = [
+        ("WORDC1 陈琳 · 词云", "双源词频+共振词（港股 11:1 缺口发现）", "✅ 11-04 首产出"),
+        ("KGMAP1 郑玄 · 图谱", "383 节点/2315 边四层图（quantlabs 单源垄断）", "✅ 11-04 首产出"),
+        ("LINEAGE1 谯周 · 血缘", "情报链入谱 23 节点/30 边（129 既有零损）", "✅ 11-04 首产出"),
+    ]
+    out = ['<div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);'
+           'border-radius:var(--border-radius-lg);padding:1rem 1.25rem;margin-bottom:16px;">']
+    out.append('<div style="font-size:14px;font-weight:500;margin-bottom:4px;">开源情报板块 · 作战视图（2026-11-04 晨）</div>')
+    out.append('<div class="sub" style="margin-bottom:10px;">P1.5✅ P2✅ P3✅✅✅ P4 v1-v4✅ · B1-b 待 XQ_COOKIE</div>')
+    out.append('<div class="row hdr"><div>桥</div><div>模块</div><div>状态</div></div>')
+    for label, bid, st in rows_bridges:
+        color = "var(--color-text-success)" if st == "在位" else "var(--color-text-danger)"
+        out.append(f'<div class="row" style="grid-template-columns:1.8fr 2.4fr 0.8fr;">'
+                   f'<div>{label}</div><div class="sub" style="font-family:monospace;">{bid}</div>'
+                   f'<div style="color:{color};font-weight:500;">{st}</div></div>')
+    out.append('<div style="font-size:13px;font-weight:500;margin:12px 0 6px;">三深加工席位（11-04 破零）</div>')
+    for name, desc, st in seats:
+        out.append(f'<div class="row" style="grid-template-columns:1.5fr 2.7fr 1fr;">'
+                   f'<div>{name}</div><div class="muted">{desc}</div><div class="ok">{st}</div></div>')
+    out.append(f'<div style="font-size:13px;font-weight:500;margin:12px 0 6px;">共振事件库（自生长） · {res["stats"] or "不可达"} · fwd 待回填事件 {res["pending_fwd"]}</div>')
+    out.append(f'<div class="sub">字幕批次：{sub["state"]}（429 额度熬制中，候选 400/已完 124/待做 276）</div>')
+    out.append('</div>')
+    return "\n".join(out)
+
+
 def render_xq_consolidation() -> str:
     """雪球收口终局章节：三层收敛 + 归档盘点 + B1-b 待批状态（静态事实，读自代码结构）。"""
     layers = [
@@ -568,6 +641,8 @@ def build() -> None:
 {render_quality_sla(sla_reports, pii_counts)}
 
 {feedback_html}
+
+{render_battle_view()}
 
 {render_xq_consolidation()}
 

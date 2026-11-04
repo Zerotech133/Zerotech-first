@@ -46,7 +46,10 @@ PROTECTED_PREFIXES_EXTRA = ("/api/xq/intel", "/api/case/")
 H4B_START = "    # ===== H4-B（K-ORG-20261101-H4HARDEN"
 H4B_END = "    # 未登记前缀默认拒绝（H4-B）"
 
-STATIC_API_RE = re.compile(r"/api/[A-Za-z0-9_\-/.%{}:?=&$]*")
+# 扫描静态页/JS 里的 /api 引用；负向后行断言排除 "/quant-api/api/..."：
+# /quant-api 是独立同源反代（→ 8105，自带 JWT 鉴权），不经门户 /api/ 默认拒绝白名单，
+# 不能把其路径误判为未登记 /api 前缀（WO-ACAD1-SSO-20261104 实锤误报）。
+STATIC_API_RE = re.compile(r"(?<![A-Za-z0-9_-])/api/[A-Za-z0-9_\-/.%{}:?=&$]*")
 
 
 def _text() -> str:
@@ -101,6 +104,8 @@ def _static_api_paths() -> list:
     files = (sorted((PORTAL_ROOT / "static").rglob("*.js"))
              + sorted((PORTAL_ROOT / "static").rglob("*.html"))
              + sorted(PORTAL_ROOT.glob("*.html")))
+    # static/proto 为设计原型/沙盘，非生产公开页；其未实现 API 不应阻塞 H4-B 门。
+    files = [p for p in files if "proto" not in p.parts]
     for p in files:
         try:
             text = p.read_text(encoding="utf-8", errors="ignore")

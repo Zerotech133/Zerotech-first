@@ -1,0 +1,92 @@
+{
+  "schema": "hq/daily_notification_repair/v1",
+  "date": "2026-11-04",
+  "root_cause": "daily-<date>-<lead> dedupe key reused across 06:15 smoke and 07:50 real run; changed payload => idempotency_conflict",
+  "fix": "dedupe key now content digest (internal_notify default)",
+  "original_failures": 16,
+  "repaired": 16,
+  "repaired_ids": [
+    {
+      "lead": "R3",
+      "id": "lg-0a8401ad0ca8",
+      "key": "nf-b1a6be9648ebe4f3fb5f9b8a2316"
+    },
+    {
+      "lead": "ZHAOYUN",
+      "id": "lg-0fa7fd2223f7",
+      "key": "nf-e60e61a624280b8378972eee4f8e"
+    },
+    {
+      "lead": "QA1",
+      "id": "lg-1acf822f978d",
+      "key": "nf-cb96bf99bdface95e26032244820"
+    },
+    {
+      "lead": "MKT1",
+      "id": "lg-2e48b6574ed8",
+      "key": "nf-c46faa510619867675f3fba9c283"
+    },
+    {
+      "lead": "DATA1",
+      "id": "lg-5ea364929e5e",
+      "key": "nf-7bf9953dabf431f02867d32e1485"
+    },
+    {
+      "lead": "ACAD1",
+      "id": "lg-8df509967503",
+      "key": "nf-948e1fe89c5e69e80392c323743c"
+    },
+    {
+      "lead": "HUANGZHONG",
+      "id": "lg-9608cca3c849",
+      "key": "nf-4c0e442e303c0ac7127f08161836"
+    },
+    {
+      "lead": "ARCH1",
+      "id": "lg-b03225cee26a",
+      "key": "nf-cfcaa0278372a1852c87a5f94e4c"
+    },
+    {
+      "lead": "D1",
+      "id": "lg-b8928bf99f4c",
+      "key": "nf-031d2b4be09fc86783d96a82b71d"
+    },
+    {
+      "lead": "A0A",
+      "id": "lg-b97014f33bda",
+      "key": "nf-e6bdbf23db797358907aa2657b91"
+    },
+    {
+      "lead": "DEV3",
+      "id": "lg-c9fe914d4e9b",
+      "key": "nf-6ef5038b06ded42f6a2e38f98921"
+    },
+    {
+      "lead": "LUSU1",
+      "id": "lg-ca87e61c2b72",
+      "key": "nf-21315fa9fb1287d18fa1bc0a6a99"
+    },
+    {
+      "lead": "INTEL0",
+      "id": "lg-e13b732ccaa5",
+      "key": "nf-0459a4e45080e9c5f4be9c14a461"
+    },
+    {
+      "lead": "PM1",
+      "id": "lg-e3fe668c05dd",
+      "key": "nf-55ff7a6bb91886e54d4870a9edda"
+    },
+    {
+      "lead": "AI1",
+      "id": "lg-fc24bc8dc6bd",
+      "key": "nf-cd06fe9e5d0f8d3c0149e8aedbc8"
+    },
+    {
+      "lead": "LEG1",
+      "id": "lg-fec58d1a5993",
+      "key": "nf-a459e70e176d1f4b27c0f33f19c1"
+    }
+  ],
+  "stale_archived": "C:\\Temp\\bridge_inbox_archive_20261104",
+  "repaired_at": "2026-11-04T08:38:35+0800"
+}

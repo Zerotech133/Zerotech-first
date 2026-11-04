@@ -138,3 +138,17 @@ def test_meeting_default_does_not_fallback_non_glm():
 
     env, attempts = srv._seat_chat(chat, "deepseek/deepseek-v4-pro", ["ollama/qwen3.5:9b"], "s", "u")
     assert env["ok"] is False and attempts == ["deepseek/deepseek-v4-pro"]
+
+
+def test_five_role_persona():
+    sys.path.insert(0, str(ROOT / "agent_platform"))
+    from legion_command import serve as srv
+    cases = {
+        "A0": "幕府参谋长", "AI1": "军师", "ZHAOYUN": "治理官",
+        "GUANYU": "整治官", "HUANGZHONG": "验收官",
+        "DATA1": "数据资源主官（兰台令）",
+    }
+    for aid, pos in cases.items():
+        text = srv.five_role_persona(aid)
+        assert text and pos in text and aid in text
+    assert srv.five_role_persona("DEV1") == ""

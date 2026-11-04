@@ -1,0 +1,340 @@
+FFFFFFFFFFFF..F                                                          [100%]
+================================== FAILURES ===================================
+_________ test_main_has_utf8_stderr_stdout_guard[d1_research_mcp.py] __________
+
+filename = 'd1_research_mcp.py'
+
+    @pytest.mark.parametrize("filename", GUARDED_SERVERS)
+    def test_main_has_utf8_stderr_stdout_guard(filename):
+        """静态锚点：main() 内、stdin 循环前，stdout+stderr 均 reconfigure 为 UTF-8。"""
+        src = (TOOLS_DIR / filename).read_text(encoding="utf-8")
+        main = _main_node(src)
+        found = _reconfigure_targets(main)
+>       assert set(found) == {"stdout", "stderr"}, (
+            "%s: main() 缺少 sys.stdout/sys.stderr UTF-8 守卫（判例 K-STOCK-428）" % filename
+        )
+E       AssertionError: d1_research_mcp.py: main() 缺少 sys.stdout/sys.stderr UTF-8 守卫（判例 K-STOCK-428）
+E       assert set() == {'stderr', 'stdout'}
+E         
+E         Extra items in the right set:
+E         'stdout'
+E         'stderr'
+E         Use -v to get more diff
+
+agent_platform\tests\test_mcp_stdio_utf8_guard.py:92: AssertionError
+________ test_main_has_utf8_stderr_stdout_guard[dw_governance_mcp.py] _________
+
+filename = 'dw_governance_mcp.py'
+
+    @pytest.mark.parametrize("filename", GUARDED_SERVERS)
+    def test_main_has_utf8_stderr_stdout_guard(filename):
+        """静态锚点：main() 内、stdin 循环前，stdout+stderr 均 reconfigure 为 UTF-8。"""
+        src = (TOOLS_DIR / filename).read_text(encoding="utf-8")
+        main = _main_node(src)
+        found = _reconfigure_targets(main)
+>       assert set(found) == {"stdout", "stderr"}, (
+            "%s: main() 缺少 sys.stdout/sys.stderr UTF-8 守卫（判例 K-STOCK-428）" % filename
+        )
+E       AssertionError: dw_governance_mcp.py: main() 缺少 sys.stdout/sys.stderr UTF-8 守卫（判例 K-STOCK-428）
+E       assert set() == {'stderr', 'stdout'}
+E         
+E         Extra items in the right set:
+E         'stdout'
+E         'stderr'
+E         Use -v to get more diff
+
+agent_platform\tests\test_mcp_stdio_utf8_guard.py:92: AssertionError
+__________ test_main_has_utf8_stderr_stdout_guard[dw_quality_mcp.py] __________
+
+filename = 'dw_quality_mcp.py'
+
+    @pytest.mark.parametrize("filename", GUARDED_SERVERS)
+    def test_main_has_utf8_stderr_stdout_guard(filename):
+        """静态锚点：main() 内、stdin 循环前，stdout+stderr 均 reconfigure 为 UTF-8。"""
+        src = (TOOLS_DIR / filename).read_text(encoding="utf-8")
+        main = _main_node(src)
+        found = _reconfigure_targets(main)
+>       assert set(found) == {"stdout", "stderr"}, (
+            "%s: main() 缺少 sys.stdout/sys.stderr UTF-8 守卫（判例 K-STOCK-428）" % filename
+        )
+E       AssertionError: dw_quality_mcp.py: main() 缺少 sys.stdout/sys.stderr UTF-8 守卫（判例 K-STOCK-428）
+E       assert set() == {'stderr', 'stdout'}
+E         
+E         Extra items in the right set:
+E         'stdout'
+E         'stderr'
+E         Use -v to get more diff
+
+agent_platform\tests\test_mcp_stdio_utf8_guard.py:92: AssertionError
+__________ test_main_has_utf8_stderr_stdout_guard[dw_catalog_mcp.py] __________
+
+filename = 'dw_catalog_mcp.py'
+
+    @pytest.mark.parametrize("filename", GUARDED_SERVERS)
+    def test_main_has_utf8_stderr_stdout_guard(filename):
+        """静态锚点：main() 内、stdin 循环前，stdout+stderr 均 reconfigure 为 UTF-8。"""
+        src = (TOOLS_DIR / filename).read_text(encoding="utf-8")
+        main = _main_node(src)
+        found = _reconfigure_targets(main)
+>       assert set(found) == {"stdout", "stderr"}, (
+            "%s: main() 缺少 sys.stdout/sys.stderr UTF-8 守卫（判例 K-STOCK-428）" % filename
+        )
+E       AssertionError: dw_catalog_mcp.py: main() 缺少 sys.stdout/sys.stderr UTF-8 守卫（判例 K-STOCK-428）
+E       assert set() == {'stderr', 'stdout'}
+E         
+E         Extra items in the right set:
+E         'stdout'
+E         'stderr'
+E         Use -v to get more diff
+
+agent_platform\tests\test_mcp_stdio_utf8_guard.py:92: AssertionError
+__________ test_main_has_utf8_stderr_stdout_guard[huangzhong_mcp.py] __________
+
+filename = 'huangzhong_mcp.py'
+
+    @pytest.mark.parametrize("filename", GUARDED_SERVERS)
+    def test_main_has_utf8_stderr_stdout_guard(filename):
+        """静态锚点：main() 内、stdin 循环前，stdout+stderr 均 reconfigure 为 UTF-8。"""
+        src = (TOOLS_DIR / filename).read_text(encoding="utf-8")
+        main = _main_node(src)
+        found = _reconfigure_targets(main)
+>       assert set(found) == {"stdout", "stderr"}, (
+            "%s: main() 缺少 sys.stdout/sys.stderr UTF-8 守卫（判例 K-STOCK-428）" % filename
+        )
+E       AssertionError: huangzhong_mcp.py: main() 缺少 sys.stdout/sys.stderr UTF-8 守卫（判例 K-STOCK-428）
+E       assert set() == {'stderr', 'stdout'}
+E         
+E         Extra items in the right set:
+E         'stdout'
+E         'stderr'
+E         Use -v to get more diff
+
+agent_platform\tests\test_mcp_stdio_utf8_guard.py:92: AssertionError
+__________ test_main_has_utf8_stderr_stdout_guard[kb_corpus_mcp.py] ___________
+
+filename = 'kb_corpus_mcp.py'
+
+    @pytest.mark.parametrize("filename", GUARDED_SERVERS)
+    def test_main_has_utf8_stderr_stdout_guard(filename):
+        """静态锚点：main() 内、stdin 循环前，stdout+stderr 均 reconfigure 为 UTF-8。"""
+        src = (TOOLS_DIR / filename).read_text(encoding="utf-8")
+        main = _main_node(src)
+        found = _reconfigure_targets(main)
+>       assert set(found) == {"stdout", "stderr"}, (
+            "%s: main() 缺少 sys.stdout/sys.stderr UTF-8 守卫（判例 K-STOCK-428）" % filename
+        )
+E       AssertionError: kb_corpus_mcp.py: main() 缺少 sys.stdout/sys.stderr UTF-8 守卫（判例 K-STOCK-428）
+E       assert set() == {'stderr', 'stdout'}
+E         
+E         Extra items in the right set:
+E         'stdout'
+E         'stderr'
+E         Use -v to get more diff
+
+agent_platform\tests\test_mcp_stdio_utf8_guard.py:92: AssertionError
+______ test_hermes_like_env_tools_list_is_valid_utf8[d1_research_mcp.py] ______
+
+filename = 'd1_research_mcp.py'
+
+    @pytest.mark.parametrize("filename", GUARDED_SERVERS)
+    def test_hermes_like_env_tools_list_is_valid_utf8(filename):
+        """行为锚点：Hermes 同构 env（无 PYTHONIOENCODING/PYTHONUTF8）下 stdout 必须是合法 UTF-8。"""
+        result = _run_server(filename)
+>       messages = _assert_utf8_stdio_messages(result, filename)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+agent_platform\tests\test_mcp_stdio_utf8_guard.py:188: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+result = CompletedProcess(args=['C:\\Program Files\\Python311\\python.exe', 'C:\\项目\\老田的AI助手\\.worktrees\\WO-MCP-UTF8-GUARD-202...xe0\xb7\xb5\xbb\xd8\xcc\xf5\xca\xfd\xa3\xac\xc4\xac\xc8\xcf 20"}}, "additionalProperties": false}}]}}\r\n', stderr=b'')
+filename = 'd1_research_mcp.py'
+
+    def _assert_utf8_stdio_messages(result, filename: str) -> list[dict]:
+        assert result.returncode == 0, (
+            "%s exited %s; stderr=%s"
+            % (filename, result.returncode,
+               result.stderr.decode("utf-8", "replace")[-500:])
+        )
+>       text = result.stdout.decode("utf-8")  # strict：GBK 字节会在这里抛异常
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       UnicodeDecodeError: 'utf-8' codec can't decode byte 0xcb in position 258: invalid continuation byte
+
+agent_platform\tests\test_mcp_stdio_utf8_guard.py:157: UnicodeDecodeError
+_____ test_hermes_like_env_tools_list_is_valid_utf8[dw_governance_mcp.py] _____
+
+filename = 'dw_governance_mcp.py'
+
+    @pytest.mark.parametrize("filename", GUARDED_SERVERS)
+    def test_hermes_like_env_tools_list_is_valid_utf8(filename):
+        """行为锚点：Hermes 同构 env（无 PYTHONIOENCODING/PYTHONUTF8）下 stdout 必须是合法 UTF-8。"""
+        result = _run_server(filename)
+>       messages = _assert_utf8_stdio_messages(result, filename)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+agent_platform\tests\test_mcp_stdio_utf8_guard.py:188: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+result = CompletedProcess(args=['C:\\Program Files\\Python311\\python.exe', 'C:\\项目\\老田的AI助手\\.worktrees\\WO-MCP-UTF8-GUARD-202...ac\xca\xb1\xb7\xb5\xbb\xd8\xd7\xdc\xca\xfd"}}, "required": ["id"], "additionalProperties": false}}]}}\r\n', stderr=b'')
+filename = 'dw_governance_mcp.py'
+
+    def _assert_utf8_stdio_messages(result, filename: str) -> list[dict]:
+        assert result.returncode == 0, (
+            "%s exited %s; stderr=%s"
+            % (filename, result.returncode,
+               result.stderr.decode("utf-8", "replace")[-500:])
+        )
+>       text = result.stdout.decode("utf-8")  # strict：GBK 字节会在这里抛异常
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       UnicodeDecodeError: 'utf-8' codec can't decode byte 0xca in position 252: invalid continuation byte
+
+agent_platform\tests\test_mcp_stdio_utf8_guard.py:157: UnicodeDecodeError
+______ test_hermes_like_env_tools_list_is_valid_utf8[dw_quality_mcp.py] _______
+
+filename = 'dw_quality_mcp.py'
+
+    @pytest.mark.parametrize("filename", GUARDED_SERVERS)
+    def test_hermes_like_env_tools_list_is_valid_utf8(filename):
+        """行为锚点：Hermes 同构 env（无 PYTHONIOENCODING/PYTHONUTF8）下 stdout 必须是合法 UTF-8。"""
+        result = _run_server(filename)
+>       messages = _assert_utf8_stdio_messages(result, filename)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+agent_platform\tests\test_mcp_stdio_utf8_guard.py:188: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+result = CompletedProcess(args=['C:\\Program Files\\Python311\\python.exe', 'C:\\项目\\老田的AI助手\\.worktrees\\WO-MCP-UTF8-GUARD-202... \xb1\xed\xc3\xfb\xa3\xac\xc8\xe7 daily"}}, "required": ["table"], "additionalProperties": false}}]}}\r\n', stderr=b'')
+filename = 'dw_quality_mcp.py'
+
+    def _assert_utf8_stdio_messages(result, filename: str) -> list[dict]:
+        assert result.returncode == 0, (
+            "%s exited %s; stderr=%s"
+            % (filename, result.returncode,
+               result.stderr.decode("utf-8", "replace")[-500:])
+        )
+>       text = result.stdout.decode("utf-8")  # strict：GBK 字节会在这里抛异常
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       UnicodeDecodeError: 'utf-8' codec can't decode byte 0xca in position 257: invalid continuation byte
+
+agent_platform\tests\test_mcp_stdio_utf8_guard.py:157: UnicodeDecodeError
+______ test_hermes_like_env_tools_list_is_valid_utf8[dw_catalog_mcp.py] _______
+
+filename = 'dw_catalog_mcp.py'
+
+    @pytest.mark.parametrize("filename", GUARDED_SERVERS)
+    def test_hermes_like_env_tools_list_is_valid_utf8(filename):
+        """行为锚点：Hermes 同构 env（无 PYTHONIOENCODING/PYTHONUTF8）下 stdout 必须是合法 UTF-8。"""
+        result = _run_server(filename)
+>       messages = _assert_utf8_stdio_messages(result, filename)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+agent_platform\tests\test_mcp_stdio_utf8_guard.py:188: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+result = CompletedProcess(args=['C:\\Program Files\\Python311\\python.exe', 'C:\\项目\\老田的AI助手\\.worktrees\\WO-MCP-UTF8-GUARD-202...\xc1\xa1\xa3", "inputSchema": {"type": "object", "properties": {}, "additionalProperties": false}}]}}\r\n', stderr=b'')
+filename = 'dw_catalog_mcp.py'
+
+    def _assert_utf8_stdio_messages(result, filename: str) -> list[dict]:
+        assert result.returncode == 0, (
+            "%s exited %s; stderr=%s"
+            % (filename, result.returncode,
+               result.stderr.decode("utf-8", "replace")[-500:])
+        )
+>       text = result.stdout.decode("utf-8")  # strict：GBK 字节会在这里抛异常
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       UnicodeDecodeError: 'utf-8' codec can't decode byte 0xbf in position 265: invalid start byte
+
+agent_platform\tests\test_mcp_stdio_utf8_guard.py:157: UnicodeDecodeError
+______ test_hermes_like_env_tools_list_is_valid_utf8[huangzhong_mcp.py] _______
+
+filename = 'huangzhong_mcp.py'
+
+    @pytest.mark.parametrize("filename", GUARDED_SERVERS)
+    def test_hermes_like_env_tools_list_is_valid_utf8(filename):
+        """行为锚点：Hermes 同构 env（无 PYTHONIOENCODING/PYTHONUTF8）下 stdout 必须是合法 UTF-8。"""
+        result = _run_server(filename)
+>       messages = _assert_utf8_stdio_messages(result, filename)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+agent_platform\tests\test_mcp_stdio_utf8_guard.py:188: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+result = CompletedProcess(args=['C:\\Program Files\\Python311\\python.exe', 'C:\\项目\\老田的AI助手\\.worktrees\\WO-MCP-UTF8-GUARD-202...\xaa\xa1\xa3", "inputSchema": {"type": "object", "properties": {}, "additionalProperties": false}}]}}\r\n', stderr=b'')
+filename = 'huangzhong_mcp.py'
+
+    def _assert_utf8_stdio_messages(result, filename: str) -> list[dict]:
+        assert result.returncode == 0, (
+            "%s exited %s; stderr=%s"
+            % (filename, result.returncode,
+               result.stderr.decode("utf-8", "replace")[-500:])
+        )
+>       text = result.stdout.decode("utf-8")  # strict：GBK 字节会在这里抛异常
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       UnicodeDecodeError: 'utf-8' codec can't decode byte 0xbb in position 176: invalid start byte
+
+agent_platform\tests\test_mcp_stdio_utf8_guard.py:157: UnicodeDecodeError
+_______ test_hermes_like_env_tools_list_is_valid_utf8[kb_corpus_mcp.py] _______
+
+filename = 'kb_corpus_mcp.py'
+
+    @pytest.mark.parametrize("filename", GUARDED_SERVERS)
+    def test_hermes_like_env_tools_list_is_valid_utf8(filename):
+        """行为锚点：Hermes 同构 env（无 PYTHONIOENCODING/PYTHONUTF8）下 stdout 必须是合法 UTF-8。"""
+        result = _run_server(filename)
+>       messages = _assert_utf8_stdio_messages(result, filename)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+agent_platform\tests\test_mcp_stdio_utf8_guard.py:188: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+result = CompletedProcess(args=['C:\\Program Files\\Python311\\python.exe', 'C:\\项目\\老田的AI助手\\.worktrees\\WO-MCP-UTF8-GUARD-202...": "\xd0\xd0\xca\xfd\xc9\xcf\xcf\xde 20"}}, "required": ["table"], "additionalProperties": false}}]}}\r\n', stderr=b'')
+filename = 'kb_corpus_mcp.py'
+
+    def _assert_utf8_stdio_messages(result, filename: str) -> list[dict]:
+        assert result.returncode == 0, (
+            "%s exited %s; stderr=%s"
+            % (filename, result.returncode,
+               result.stderr.decode("utf-8", "replace")[-500:])
+        )
+>       text = result.stdout.decode("utf-8")  # strict：GBK 字节会在这里抛异常
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       UnicodeDecodeError: 'utf-8' codec can't decode byte 0xbf in position 253: invalid start byte
+
+agent_platform\tests\test_mcp_stdio_utf8_guard.py:157: UnicodeDecodeError
+_____________________ test_selftest_fast_path_still_works _____________________
+
+    def test_selftest_fast_path_still_works():
+        """--selftest 快速分支在守卫插入后仍正常（真实读取仓内数据文件，只读）。
+    
+        注：devtask worktree 不携带未跟踪的数据根，``--selftest`` 可能以 rc=1
+        报 missing；这不影响本用例目标——验证守卫不破坏快速分支且输出为合法 UTF-8 JSON。
+        合入主仓（数据根齐全）后 rc=0。
+        """
+        result = subprocess.run(
+            [sys.executable, str(TOOLS_DIR / "dw_catalog_mcp.py"), "--selftest"],
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            env=_hermes_like_env(),
+            cwd=str(REPO),
+            timeout=120,
+        )
+        assert result.returncode in (0, 1), result.stderr.decode("utf-8", "replace")[-800:]
+>       text = result.stdout.decode("utf-8")  # strict
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       UnicodeDecodeError: 'utf-8' codec can't decode byte 0xcf in position 95: invalid continuation byte
+
+agent_platform\tests\test_mcp_stdio_utf8_guard.py:218: UnicodeDecodeError
+=========================== short test summary info ===========================
+FAILED agent_platform/tests/test_mcp_stdio_utf8_guard.py::test_main_has_utf8_stderr_stdout_guard[d1_research_mcp.py]
+FAILED agent_platform/tests/test_mcp_stdio_utf8_guard.py::test_main_has_utf8_stderr_stdout_guard[dw_governance_mcp.py]
+FAILED agent_platform/tests/test_mcp_stdio_utf8_guard.py::test_main_has_utf8_stderr_stdout_guard[dw_quality_mcp.py]
+FAILED agent_platform/tests/test_mcp_stdio_utf8_guard.py::test_main_has_utf8_stderr_stdout_guard[dw_catalog_mcp.py]
+FAILED agent_platform/tests/test_mcp_stdio_utf8_guard.py::test_main_has_utf8_stderr_stdout_guard[huangzhong_mcp.py]
+FAILED agent_platform/tests/test_mcp_stdio_utf8_guard.py::test_main_has_utf8_stderr_stdout_guard[kb_corpus_mcp.py]
+FAILED agent_platform/tests/test_mcp_stdio_utf8_guard.py::test_hermes_like_env_tools_list_is_valid_utf8[d1_research_mcp.py]
+FAILED agent_platform/tests/test_mcp_stdio_utf8_guard.py::test_hermes_like_env_tools_list_is_valid_utf8[dw_governance_mcp.py]
+FAILED agent_platform/tests/test_mcp_stdio_utf8_guard.py::test_hermes_like_env_tools_list_is_valid_utf8[dw_quality_mcp.py]
+FAILED agent_platform/tests/test_mcp_stdio_utf8_guard.py::test_hermes_like_env_tools_list_is_valid_utf8[dw_catalog_mcp.py]
+FAILED agent_platform/tests/test_mcp_stdio_utf8_guard.py::test_hermes_like_env_tools_list_is_valid_utf8[huangzhong_mcp.py]
+FAILED agent_platform/tests/test_mcp_stdio_utf8_guard.py::test_hermes_like_env_tools_list_is_valid_utf8[kb_corpus_mcp.py]
+FAILED agent_platform/tests/test_mcp_stdio_utf8_guard.py::test_selftest_fast_path_still_works
+13 failed, 2 passed in 2.24s

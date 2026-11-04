@@ -1,0 +1,12 @@
+# 司马徽军团接口 live 验收 · 证据清单（manifest）
+# 任务: task-57 / 工单 WO-ACAD1-LIVE-ACCEPT-20261104
+# 快照: 2026-11-04T05:29:41+08:00
+# 分支: task/WO-ACAD1-LIVE-ACCEPT-20261104
+# 边界: 只读未登录探测（未发送 Cookie/Authorization；POST 仅 portal-sso 无 session 负例）；未重启服务/未改配置/未写生产数据；200 仅摘要、401 仅 error body；无 cookie/token/密码
+# 文件清单（sha256  size  path）
+
+fce3019189a9bd044b82a3df218c8feb3f13c3882aa5ed01dca9656c1f5bb365  13983  docs/ops/evidence/2026-11-04_acad1_live_accept_raw.json
+996e6c6d465022f3f9428d16eec70844ef9560d4fc61cecc6549ffeff34b5f0c  6271  docs/ops/evidence/2026-11-04_acad1_live_accept_matrix.txt
+afd406eb1195295db580515d099067530b3d0fb014d3f843d7c33d4b1bd0d5aa  12395  docs/ops/evidence/2026-11-04_acad1_live_accept_probe.py
+ee433cfd5d09a12f963e9141324ee46073cb7376288c97abe103543f5a00cc3c  1265  docs/ops/evidence/2026-11-04_acad1_environment.txt
+794215f08e10c4ab1010b58371903fb9b1cac8a58a3c77dccef1fd735be2dbed  14905  docs/ops/2026-11-04_司马徽军团接口live验收_v1.md

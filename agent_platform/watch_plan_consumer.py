@@ -21,6 +21,8 @@ D1 交棒回执 v2 的 ``watch_plans[]`` → 持久化 watch_plan 状态机 → 
 ----
 plan store 默认 ``agent_platform/data/watch_plans.jsonl``；显式路径/环境变量
 ``D1_WATCH_PLAN_LEDGER`` 优先（测试全程用临时目录，不写真实账本）。
+trigger 独立账本（IFS F3c）由 ``watch_trigger_ledger`` 管理：仅显式 ``trigger_ledger``
+或 ``WATCH_TRIGGER_LEDGER_PATH`` 配置时写入，未配置不产生生产写入。
 """
 from __future__ import annotations
 
@@ -43,6 +45,7 @@ SCHEMA = "watch_plan/v1"
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_PLAN_LEDGER = ROOT / "agent_platform" / "data" / "watch_plans.jsonl"
 PLAN_LEDGER_ENV = "D1_WATCH_PLAN_LEDGER"
+TRIGGER_LEDGER_ENV = "WATCH_TRIGGER_LEDGER_PATH"
 PLAN_STATUS = ("planned", "armed", "expired", "triggered", "cancelled")
 TRIGGERABLE_STATUS = ("armed",)
 
@@ -317,8 +320,35 @@ def expire_due(path=None, now=None):
 
 
 # ── 触发 → pending 确认（绝不执行）──────────────────────────────────
-def trigger_plan(plan_id, path=None, data_dir=None, now=None):
-    """watch_plan（必须 armed 且未过期）→ pending 人工确认；不执行/不下单。"""
+def _trigger_ids(plan, confirmation=None):
+    """五 ID 链视图：decision → handoff → watch_plan → trigger → confirmation。"""
+    plan = plan if isinstance(plan, dict) else {}
+    source = plan.get("source") if isinstance(plan.get("source"), dict) else {}
+    conf = confirmation if isinstance(confirmation, dict) else {}
+    return {
+        "decision_id": source.get("decision_id") or None,
+        "handoff_id": source.get("receipt_id") or None,
+        "watch_plan_id": plan.get("plan_id") or None,
+        "trigger_id": conf.get("trigger_id") or plan.get("trigger_id") or None,
+        "confirmation_id": conf.get("confirmation_id") or plan.get("confirmation_id") or None,
+    }
+
+
+def _ledger_util(trigger_ledger=None):
+    """trigger 账本模块与显式路径（未接线 → (None, None)，不产生写入）。"""
+    try:
+        from agent_platform import watch_trigger_ledger as ledger
+    except ImportError:
+        return None, None
+    return ledger, ledger.ledger_path(trigger_ledger)
+
+
+def trigger_plan(plan_id, path=None, data_dir=None, now=None, trigger_ledger=None):
+    """watch_plan（必须 armed 且未过期）→ pending 人工确认；不执行/不下单。
+
+    IFS F3c：显式 ``trigger_ledger``/env 配置后落 trigger 独立账本并把 trigger_id
+    写回 confirmation；未配置时保持旧行为（不落 trigger 账本）。
+    """
     target = plan_ledger_path(path)
     store = _load_store(target)
     plan = None
@@ -328,6 +358,7 @@ def trigger_plan(plan_id, path=None, data_dir=None, now=None):
             break
     if plan is None:
         raise WatchPlanError("plan_not_found", "watch_plan 不存在: %s" % plan_id)
+    ledger_mod, ledger_target = _ledger_util(trigger_ledger)
     if plan.get("status") == "triggered":
         confirmation = None
         try:
@@ -339,11 +370,29 @@ def trigger_plan(plan_id, path=None, data_dir=None, now=None):
                     break
         except Exception:  # noqa: BLE001 - 只读取证失败不改变幂等结论
             confirmation = None
+        trigger_id = plan.get("trigger_id")
+        if ledger_mod is not None and ledger_target is not None:
+            existing = ledger_mod.find_by_plan(plan_id, path=ledger_target)
+            if existing is not None:
+                trigger_id = trigger_id or existing.get("trigger_id")
+                if not plan.get("trigger_id"):
+                    plan["trigger_id"] = trigger_id
+                    plan["updated_at"] = _now_iso(now)
+                    _write_store(target, store)
+                if confirmation is not None and trigger_id and not confirmation.get("trigger_id"):
+                    try:
+                        confirmation = ledger_mod.attach_to_confirmation(
+                            confirmation, trigger_id, data_dir=data_dir
+                        )
+                    except Exception:  # noqa: BLE001 - 幂等分支只读补齐失败不影响结论
+                        pass
         return {
             "schema": SCHEMA,
             "plan": plan,
             "confirmation": confirmation
             or {"confirmation_id": plan.get("confirmation_id"), "status": "already_triggered"},
+            "trigger_id": trigger_id,
+            "ids": _trigger_ids(plan, confirmation),
             "idempotent": True,
             "executes": False,
         }
@@ -361,12 +410,12 @@ def trigger_plan(plan_id, path=None, data_dir=None, now=None):
         plan["updated_at"] = stamp
         _write_store(target, store)
         raise WatchPlanError("plan_expired", "watch_plan %s 已过期，不再触发" % plan_id)
-    try:
-        confirmation = adapter.trigger_watch_plan(plan, data_dir=data_dir)
-    except adapter.WatchTriggerError:
-        raise
+    confirmation = adapter.trigger_watch_plan(
+        plan, data_dir=data_dir, trigger_ledger=trigger_ledger, now=now
+    )
     plan["status"] = "triggered"
     plan["confirmation_id"] = confirmation.get("confirmation_id")
+    plan["trigger_id"] = confirmation.get("trigger_id")
     plan["triggered_at"] = stamp
     plan["updated_at"] = stamp
     _write_store(target, store)
@@ -374,6 +423,8 @@ def trigger_plan(plan_id, path=None, data_dir=None, now=None):
         "schema": SCHEMA,
         "plan": plan,
         "confirmation": confirmation,
+        "trigger_id": plan.get("trigger_id"),
+        "ids": _trigger_ids(plan, confirmation),
         "idempotent": False,
         "executes": False,
     }
@@ -383,9 +434,10 @@ def trigger_plan(plan_id, path=None, data_dir=None, now=None):
 USAGE = """用法:
     python -m agent_platform.watch_plan_consumer --arm --ledger <d1_handoffs.jsonl> --plans <watch_plans.jsonl> [--json]
     python -m agent_platform.watch_plan_consumer --list [--status armed] --plans <plans.jsonl> [--json]
-    python -m agent_platform.watch_plan_consumer --trigger <plan_id> --plans <plans.jsonl> --bot-dir <trading_bot_dir> [--json]
+    python -m agent_platform.watch_plan_consumer --trigger <plan_id> --plans <plans.jsonl> --bot-dir <trading_bot_dir> [--trigger-ledger <watch_triggers.jsonl>] [--json]
 
 默认路径：回执 agent_platform/data/d1_handoffs.jsonl、plan 账本 agent_platform/data/watch_plans.jsonl。
+trigger 独立账本仅在 --trigger-ledger 或 env WATCH_TRIGGER_LEDGER_PATH 显式配置时写入。
 只登记/只建 pending 确认，不执行；退出码 0=ok / 1=业务失败 / 2=用法错误。"""
 
 
@@ -401,6 +453,8 @@ def main(argv=None):
     parser.add_argument("--plans", default="", help="plan 账本路径（默认 agent_platform/data/watch_plans.jsonl）")
     parser.add_argument("--status", default="", help="--list 过滤状态")
     parser.add_argument("--bot-dir", default="", help="trading_bot 数据目录（确认落盘位置，测试用临时目录）")
+    parser.add_argument("--trigger-ledger", default="",
+                        help="trigger 独立账本路径（显式 path；缺省读 WATCH_TRIGGER_LEDGER_PATH，不配置则不落账）")
     parser.add_argument("--json", action="store_true", help="输出 JSON")
     args = parser.parse_args(argv)
     actions = int(bool(args.arm)) + int(bool(args.list_plans_flag)) + int(bool(args.trigger))
@@ -415,10 +469,16 @@ def main(argv=None):
             payload = {"schema": SCHEMA, "plans": plans, "count": len(plans), "readonly": True}
         else:
             payload = trigger_plan(
-                args.trigger, path=args.plans or None, data_dir=args.bot_dir or None
+                args.trigger, path=args.plans or None, data_dir=args.bot_dir or None,
+                trigger_ledger=args.trigger_ledger or None,
             )
     except WatchPlanError as exc:
         payload = {"ok": False, "error": exc.code, "message": str(exc)[:300]}
+        print(json.dumps(payload, ensure_ascii=False, indent=2) if args.json else "[watch_plan] ERROR: %s" % exc, file=sys.stderr)
+        return 1
+    except Exception as exc:  # noqa: BLE001 - trigger/ledger 等业务错误统一 JSON 化（不吞栈外信息）
+        payload = {"ok": False, "error": getattr(exc, "code", "trigger_failed"),
+                   "message": str(exc)[:300]}
         print(json.dumps(payload, ensure_ascii=False, indent=2) if args.json else "[watch_plan] ERROR: %s" % exc, file=sys.stderr)
         return 1
     if args.json:
@@ -433,6 +493,7 @@ __all__ = [
     "PLAN_LEDGER_ENV",
     "PLAN_STATUS",
     "SCHEMA",
+    "TRIGGER_LEDGER_ENV",
     "WatchPlanError",
     "build_plan_record",
     "consume_handoff",

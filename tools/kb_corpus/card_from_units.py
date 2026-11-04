@@ -176,7 +176,7 @@ def process_drafts(units_dir: Path, *, cards_path: Path = CARDS, date: str = DAT
                 rejected += 1
         per_input.append({"draft": draft.name, "units": len(lines), "candidates": produced,
                           "rejected": rejected})
-    pid = cards_pid = None
+    pid = None
     if drafts:
         pid = drafts[0].name.split("_units_draft.jsonl")[0]
     payload = {

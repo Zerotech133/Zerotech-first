@@ -42,8 +42,40 @@ SLO_NAMES = list(A.D1_SLO)
 
 
 # ── 工具函数 ─────────────────────────────────────────────────────────
-def _ok_get(url, timeout=5.0):
-    return {"ok": True, "status": 200, "latency_ms": 10, "evidence": "{}"}
+def _ok_get(url, timeout=5.0, expected_status=None):
+    status = expected_status if expected_status is not None else 200
+    return {"ok": True, "status": status, "latency_ms": 10, "evidence": "{}"}
+
+
+def _acad1_probe_report(samples=1, public_status=200, auth_status=401, latency=10):
+    """构造 q2_probe 形态的 acad1-legion 探针报告（4 公开 + 6 预期 401，不联网）。"""
+    checks = []
+    for name in A.ACAD1_PUBLIC_TARGETS:
+        statuses = [public_status] * samples
+        checks.append({
+            "name": name, "url": "http://127.0.0.1/x", "ok": public_status == 200,
+            "status": statuses[0], "statuses": statuses, "samples": samples,
+            "latencies_ms": [latency] * samples, "latency_ms": latency,
+            "latency_ms_min": latency, "latency_ms_median": latency,
+            "latency_ms_max": latency, "evidence": "{}",
+            "auth_required": False, "expected_status": None,
+        })
+    for name in A.ACAD1_AUTH_TARGETS:
+        statuses = [auth_status] * samples
+        checks.append({
+            "name": name, "url": "http://127.0.0.1/x", "ok": auth_status == 401,
+            "status": statuses[0], "statuses": statuses, "samples": samples,
+            "latencies_ms": [latency] * samples, "latency_ms": latency,
+            "latency_ms_min": latency, "latency_ms_median": latency,
+            "latency_ms_max": latency, "evidence": "{}",
+            "auth_required": True, "expected_status": 401,
+        })
+    return {"schema": P.SCHEMA, "composition": "acad1-legion",
+            "checked_at": "2026-11-04T06:00:00+08:00",
+            "samples_per_target": samples,
+            "public_targets": len(A.ACAD1_PUBLIC_TARGETS),
+            "auth_required_targets": len(A.ACAD1_AUTH_TARGETS),
+            "ok": public_status == 200 and auth_status == 401, "checks": checks}
 
 
 def _d1_report(samples=5, latency=10, fail=0):
@@ -109,13 +141,20 @@ def test_probe_d1_defaults_five_samples(monkeypatch):
         assert check["latency_ms_max"] == 30
 
 
-def test_probe_acad1_backward_compatible(monkeypatch):
+def test_probe_acad1_four_public_six_auth_required(monkeypatch):
+    """WO-ACAD1-PROBE-20261104：acad1-legion = 4 公开 200 + 6 预期 401（不判失败）。"""
     monkeypatch.setattr(P, "_get", _ok_get)
     report = P.probe("acad1-legion")
     assert report["samples_per_target"] == 1
-    assert len(report["checks"]) == 2
-    assert report["checks"][0]["samples"] == 1
-    assert report["checks"][0]["latency_ms"] == 10
+    assert report["public_targets"] == 4
+    assert report["auth_required_targets"] == 6
+    assert len(report["checks"]) == 10
+    public = [c for c in report["checks"] if not c["auth_required"]]
+    auth = [c for c in report["checks"] if c["auth_required"]]
+    assert len(public) == 4 and len(auth) == 6
+    assert all(c["status"] == 200 and c["ok"] for c in public)
+    assert all(c["status"] == 401 and c["ok"] for c in auth)
+    assert all(c["expected_status"] == 401 and c["latency_ms"] == 10 for c in auth)
 
 
 def test_probe_alias_and_invalid(monkeypatch):
@@ -227,13 +266,23 @@ def test_slo_d1_no_samples_alert():
     assert any(alert.startswith("probe_no_samples:") for alert in result["alerts"])
 
 
-def test_slo_acad1_backward_compatible(monkeypatch):
-    monkeypatch.setattr(A, "_get", lambda url: {
-        "freshness_days": 0, "stale": False, "data_date": "2026-11-03",
-        "summary": {"pool_total": 12}})
-    result = A.evaluate("acad1-legion")
-    assert result["ok"] is True and not result["alerts"]
-    assert "slo_status" not in result  # 旧结构不变
+def test_slo_acad1_public_samples_auth_required_not_measured():
+    """WO-ACAD1-PROBE-20261104：公开端点算样本（1<窗口→not_measured），6×401 auth_required。"""
+    result = A.evaluate("acad1-legion", probe_report=_acad1_probe_report(),
+                        interface_payload=None)
+    assert result["ok"] is True
+    assert result["slo_status"] == "not_measured"
+    assert result["auth_required"] == 6
+    assert result["auth_required_targets"] == A.ACAD1_AUTH_TARGETS
+    assert result["not_measured"] == 4 + 6  # 4 公开窗口不足 + 6 预期鉴权
+    assert result["alerts"] == []
+    by_role = {}
+    for check in result["checks"]:
+        by_role.setdefault(check["role"], []).append(check)
+    assert len(by_role["public"]) == 4 and len(by_role["auth_required"]) == 6
+    assert all(c["status"] == "not_measured" for c in by_role["public"])
+    assert all(c["status"] == "auth_required" and c["ok"] is None for c in
+               by_role["auth_required"])
 
 
 def test_slo_d1_probe_seam_default(monkeypatch):

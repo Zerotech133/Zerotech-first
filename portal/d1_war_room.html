@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="/static/tokens.css">
 <script src="/static/nav.js" defer></script>
 <script src="/static/shortscreen.js" defer></script>
+<script src="/static/ifs_client.js"></script>
 <style>
 :root{--bg:#0b0f14;--panel:#121821;--panel2:#0f141b;--line:#25303d;--ink:#e8edf3;--muted:#8b97a7;--dim:#5d6878;--gold:#d6a94a;--green:#3fb950;--red:#f85149;--blue:#58a6ff;--warn:#d29922;--radius:12px;--shadow:0 10px 30px rgba(0,0,0,.25);--font:"Microsoft YaHei","PingFang SC",system-ui,sans-serif}
 *{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font)}body{min-height:100vh}
@@ -263,21 +264,42 @@ $('#pool-reset').addEventListener('click',()=>{$('#pool-source').value='';$('#po
 $('#mask').addEventListener('click',closeDrawer);$('#close').addEventListener('click',closeDrawer);$('#d-close2').addEventListener('click',closeDrawer);
 $('#d-arm').addEventListener('click',()=>{toast('已交盯盘（原型演示）');closeDrawer();});
 init();
-/* 实时数据：优先 /api/war-room/snapshot；失败时用页面内静态快照兜底 */
+/* 实时数据：优先 /api/war-room/snapshot（IFS envelope：data 优先 / 旧字段 fallback）；
+   失败时用页面内静态快照兜底（只读，无写接口） */
 (async function loadLive(){
+  var IFS = (typeof window!=='undefined' && window.IFSClient) ? window.IFSClient : null;
+  var dateEl = document.getElementById('data-date');
+  function setDate(text){ if (dateEl) dateEl.textContent = text; }
+  function metaSuffix(env){
+    if (!env || !env.isEnvelope) return '';
+    var bits = [];
+    if (env.requestId) bits.push(env.requestId);
+    if (env.warnings && env.warnings.length) bits.push('warnings ' + env.warnings.length);
+    if (env.stale) bits.push('stale');
+    return bits.length ? ' · ' + bits.join(' · ') : '';
+  }
   try {
-    const r = await fetch('/api/war-room/snapshot', {cache:'no-store'});
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const d = await r.json();
-    if (d && d.ok) {
-      DATA = Object.assign({}, DATA, d);
-      init();
-      const el = document.getElementById('data-date');
-      if (el) el.textContent = (d.data_date || d.date || '') + ' · live';
+    var res;
+    if (IFS && IFS.fetchJson) {
+      res = await IFS.fetchJson('/api/war-room/snapshot');
+    } else {
+      var r = await fetch('/api/war-room/snapshot', {cache:'no-store'});
+      var body = r.ok ? await r.json() : {};
+      res = {ok: r.ok, status: r.status, payload: body || {},
+             env: IFS ? IFS.unwrapEnvelope(body || {}) : {isEnvelope:false, data: body || {}, warnings: [], requestId: '', error: null}};
     }
+    var payload = res.payload || {};
+    var env = res.env || {isEnvelope:false, data: payload, warnings: [], requestId: '', error: null};
+    /* envelope data 优先；旧格式（无 data）回退旧顶层字段 */
+    var live = (env.data && typeof env.data === 'object') ? env.data : payload;
+    if (!res.ok || live.ok === false) {
+      throw new Error(IFS && IFS.errorText ? IFS.errorText(payload) : ('HTTP ' + res.status));
+    }
+    DATA = Object.assign({}, DATA, live);
+    init();
+    setDate((live.data_date || live.date || '') + ' · live' + metaSuffix(env));
   } catch (e) {
-    const el = document.getElementById('data-date');
-    if (el) el.textContent = (DATA.data_date || DATA.date || '') + ' · snapshot';
+    setDate((DATA.data_date || DATA.date || '') + ' · snapshot');
   }
 })();
 </script>

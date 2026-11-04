@@ -18,16 +18,26 @@
 
 响应契约（``acad1_pool_api/v2``）
 ---------------------------------
+默认视图（2026-11-04 ACAD1-FULLDEFAULT 起）：``view=full``，即**每市场最新
+``pool_date`` 只读聚合**（当前 = CN12/HK10/US6/CRYPTO2 = 30，
+``source_mode=pg_official_aggregated``、``pool_id=ACAD1-POOL-PG-FULL-<maxdate>``、
+``pool_dates={...}``）。显式 ``?view=single`` 仍返回历史单日视图（当前 CN12=12，
+``source_mode=pg_official``）。缺 PG 时 full 降级为单日并显式
+``degraded_reason=full_view_requires_pg_aggregation...``，**不伪造 30**。
+
 在旧字段（ok/mode/trading_permitted/generated_at/date/pool_id/owner/data_date/
 freshness_days/stale/summary/plan/items/dates）基础上新增：
 
-- ``source_mode``：pg_official / projection / shadow
-- ``pool_id``：官方池身份（PG: ``ACAD1-POOL-PG-<YYYYMMDD>``）
-- ``pool_date``：业务池日（非数据日）
+- ``view``：single / full（默认 full；显式 single 保留旧单日视图）
+- ``source_mode``：pg_official / pg_official_aggregated / projection / shadow
+- ``pool_id``：官方池身份（single: ``ACAD1-POOL-PG-<YYYYMMDD>``；
+  full: ``ACAD1-POOL-PG-FULL-<YYYYMMDD>``）
+- ``pool_date``：业务池日（full 取各市场最新池日中的最大日）
+- ``pool_dates``：full 视图各市场最新池日映射（single 无此字段）
 - ``data_date``：数据日（新鲜度判定基准）
 - ``published_at``：发布/落库时刻（PG max(selected_at)）
 - ``review_status``：pool_reviewed / pool_published / shadow_only / unavailable
-- ``official``：仅 pg_official/projection 为 True；shadow 显式为 False
+- ``official``：pg_official / pg_official_aggregated / projection 为 True；shadow 显式 False
 - ``source_pool``：pg / projection / shadow（数据来源标识）
 - ``degraded_reason``：降级原因（正常为 None）
 
@@ -58,12 +68,15 @@ PROJECTION_SCHEMA = "acad1_pool_projection/v1"
 SOURCE_MODES = ("pg_official", "pg_official_aggregated", "projection", "shadow")
 OFFICIAL_SOURCE_MODES = ("pg_official", "pg_official_aggregated", "projection")
 REVIEW_STATUSES = ("pool_reviewed", "pool_published", "shadow_only", "unavailable")
-# 视图口径（ACAD1-FULLVIEW，2026-11-04）：
-#   single = 历史默认：单日 max(pool_date)（审计确认当前 PG = CN12，默认行为保持不变）；
-#   full   = 显式只读聚合：每市场最新 pool_date 聚合（当前 = CN12/HK10/US6/CRYPTO2 = 30）；
-#            仅当显式 ?view=full 时启用，不改变默认返回。
+# 视图口径（ACAD1-FULLVIEW 2026-11-04 → ACAD1-FULLDEFAULT 2026-11-04）：
+#   full   = 默认（对外）：每市场最新 pool_date 只读聚合（当前 = CN12/HK10/US6/CRYPTO2 = 30）；
+#   single = 显式 ?view=single：历史单日 max(pool_date) 视图（当前 CN12 = 12）。
+# 分层说明：`DEFAULT_VIEW` 是对外默认（HTTP /api/acad1/pool 与 CLI）；
+#           `load_pool_snapshot` 低层函数保留 `LOW_LEVEL_DEFAULT_VIEW="single"` 兼容默认，
+#           避免内部调用/单测/旧消费方因默认切换被动改变（pool_data 显式传 view）。
 VIEWS = ("single", "full")
-DEFAULT_VIEW = "single"
+DEFAULT_VIEW = "full"                  # 对外默认：HTTP 端点 / CLI
+LOW_LEVEL_DEFAULT_VIEW = "single"      # 低层 load_pool_snapshot/builders 兼容默认
 AGGREGATED_SOURCE_MODE = "pg_official_aggregated"
 PG_TABLE = "public.v2_acad1_pool"
 PG_REVIEW_TABLE = "public.v2_acad1_review"
@@ -455,7 +468,7 @@ def _plan(rows, review, source_mode):
 
 def _response_base(source_mode, pool_id, pool_date, data_date, published_at,
                    review_status, official, source_pool, degraded_reason,
-                   view=DEFAULT_VIEW):
+                   view=LOW_LEVEL_DEFAULT_VIEW):
     return {
         "ok": True,
         "schema": RESPONSE_SCHEMA,
@@ -475,7 +488,7 @@ def _response_base(source_mode, pool_id, pool_date, data_date, published_at,
     }
 
 
-def build_pg_response(payload, review, view=DEFAULT_VIEW):
+def build_pg_response(payload, review, view=LOW_LEVEL_DEFAULT_VIEW):
     """PG single-day 官方池 → 兼容响应（默认视图，行为与审计前一致）。"""
     rows = payload.get("rows") or []
     pool_date = str(payload.get("pool_date") or "")
@@ -573,7 +586,7 @@ def build_pg_aggregated_response(payload, review):
     return resp
 
 
-def build_projection_response(projection, review, view=DEFAULT_VIEW):
+def build_projection_response(projection, review, view=LOW_LEVEL_DEFAULT_VIEW):
     """只读 PG→JSON 投影 → 兼容响应（source_mode=projection）。"""
     rows = list(projection.get("rows") or [])
     pool_date = str(projection.get("pool_date") or "")
@@ -612,7 +625,7 @@ def build_projection_response(projection, review, view=DEFAULT_VIEW):
     return resp
 
 
-def build_shadow_response(legacy, degraded_reason, view=DEFAULT_VIEW):
+def build_shadow_response(legacy, degraded_reason, view=LOW_LEVEL_DEFAULT_VIEW):
     """shadow 旧 JSON 池 → 响应（official=False，明确不是官方真源）。"""
     items = list(legacy.get("items") or [])
     day = str(legacy.get("date") or "")
@@ -711,7 +724,7 @@ def _load_single_snapshot(
     projection_file=None,
     allow_pg=True,
     allow_projection=True,
-    view=DEFAULT_VIEW,
+    view=LOW_LEVEL_DEFAULT_VIEW,
     extra_reasons=None,
 ):
     """单日视图（历史默认行为）：PG single-day → 投影 → shadow 兜底。"""
@@ -781,9 +794,9 @@ def load_pool_snapshot(
     projection_file=None,
     allow_pg=True,
     allow_projection=True,
-    view=DEFAULT_VIEW,
+    view=LOW_LEVEL_DEFAULT_VIEW,
 ):
-    """官方池只读快照（默认单日视图；``view="full"`` 为显式聚合视图）。
+    """官方池只读快照（低层兼容默认 ``single``；对外默认 ``full`` 见 pool_data/CLI）。
 
     Parameters
     ----------
@@ -800,16 +813,21 @@ def load_pool_snapshot(
     allow_pg / allow_projection : bool
         显式关闭某一级来源（测试/降级演练用）。
     view : str
-        ``single``（默认，行为与 2026-11-04 审计前一致：单日 12）或
-        ``full``（每市场最新 pool_date 聚合：当前 30，source_mode=
-        pg_official_aggregated）。未知值抛 ``ValueError``（fail-visible）。
+        ``full``（对外默认：每市场最新 pool_date 聚合，当前 30，
+        source_mode=``pg_official_aggregated``）或
+        ``single``（历史单日视图，当前 12；低层函数默认值，保持内部/旧调用兼容）。
+        未知值抛 ``ValueError``（fail-visible）。
+
+    注意：``/api/acad1/pool`` 的**对外默认**是 ``full``（由 ``pool_data`` 显式传入）；
+    本函数保留 ``single`` 作为低层兼容默认（`LOW_LEVEL_DEFAULT_VIEW`），
+    不改变既有内部调用/单测行为。
 
     full 视图缺 PG 时不伪造 30：降级为单日视图（projection/shadow），
     响应保留 ``view="full"`` 并在 ``degraded_reason`` 显式标注
     ``full_view_requires_pg_aggregation``。
     """
     if view is None:
-        view = DEFAULT_VIEW
+        view = LOW_LEVEL_DEFAULT_VIEW
     view = str(view).strip().lower()
     if view not in VIEWS:
         raise ValueError(
@@ -908,6 +926,7 @@ __all__ = [
     "DEFAULT_PROJECTION_PATH",
     "DEFAULT_REVIEW_DIR",
     "DEFAULT_VIEW",
+    "LOW_LEVEL_DEFAULT_VIEW",
     "OFFICIAL_SOURCE_MODES",
     "PROJECTION_ENV",
     "PROJECTION_SCHEMA",

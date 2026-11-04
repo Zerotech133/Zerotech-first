@@ -8,6 +8,8 @@
 
 单机（Windows）个人 AI 平台：**门户 8734 一个人口** + 多个本地服务 + 数字军团（agent_platform）+ 投研/量化/飞书 bot 四条产线，凭据统一进 `_vault`，数据根唯一在 `quant_backtest/data`。
 
+**产品定位（2026-11-04 A0 裁定 P5）**：零界 = 持续创业者的个人事业操作系统；量化/情报/学习是能力场景，不定义整个产品（产品定义唯一源见 `docs/plans/2026-10-24_PRODUCT_BASELINE_v1.md` v1.1）。
+
 ## 二、组件与端口（以 `tools/check_ports.py` REGISTRY 为唯一真源）
 
 | 组件 | 路径 | 入口/端口 | 说明 |

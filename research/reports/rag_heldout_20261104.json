@@ -1,0 +1,2004 @@
+{
+ "schema_version": "rag_heldout_eval.v1",
+ "date": "20261104",
+ "generated_at": "2026-11-04T04:04:52+08:00",
+ "task": "W12-RAG 真实 held-out 复评（纯向量基线；bge-m3 检索 + qwen3.5:9b 抽样生成）",
+ "method": {
+  "docs": "W6 同源索引：effective units + 400 卡，共 1727 文档；bge-m3 /api/embed；内存余弦 top-10；只读",
+  "questions": "真实 held-out 50 题：概念类 25（A_concept 10 + C_reading 15）+ 笔记类 25（50 条均匀抽样）",
+  "gold": "概念题=卡 concept 精确/源文件行号单元/概念文本匹配（≤3）；笔记题=源文件+行号精确对应知识单元 id",
+  "generation": "qwen3.5:9b /api/chat，think=false，temperature=0，num_predict=220，top5 上下文；均匀抽样 10 题（W6 为 20 题合成题，本次按任务要求 10 题）",
+  "embed_model": "bge-m3",
+  "chat_model": "qwen3.5:9b",
+  "elapsed_s": 238.4
+ },
+ "sources": {
+  "heldout": {
+   "path": "C:\\项目\\老田的AI助手\\research\\finetune\\heldout\\quant_kb_heldout_105.jsonl",
+   "sha256": "309a8bd1858c9d09545da7a4e0245d503c8bbe8e37d13cb8d3d5f191a85e106a",
+   "n": 105
+  },
+  "units_files": [
+   {
+    "path": "C:\\项目\\知识库\\30_知识单元\\laomu_notes_units_effective.jsonl",
+    "sha256": "a85cf4595485cc291239b2cbc8ff921c43bb321f892b1cc1aa8afb6e87f20e6c",
+    "lines": 286
+   },
+   {
+    "path": "C:\\项目\\知识库\\30_知识单元\\视频号学习_8博主_units_effective.jsonl",
+    "sha256": "2a38fc0531a74c3fb594e7bf94fcb43764d4681826105297b03b05ae959ac793",
+    "lines": 800
+   },
+   {
+    "path": "C:\\项目\\知识库\\30_知识单元\\视频号学习_第二期_units_effective.jsonl",
+    "sha256": "95bf8fa2a2570123aa5e43e3c42160cb3871b3f1346d5f4f5b7dff5f7812e719",
+    "lines": 245
+   }
+  ],
+  "cards": {
+   "path": "C:\\项目\\老田的AI助手\\portal\\static\\kb_learning_cards.json",
+   "sha256": "e8fc247bfa28038c10c9a88bf440350b960e9fbb3c4d0e539ed9ca4f3453e081",
+   "count": 400
+  }
+ },
+ "aggregate": {
+  "questions_total": 50,
+  "evaluated": 50,
+  "recall@5": 0.92,
+  "recall@10": 0.94,
+  "mrr": 0.8496,
+  "diversity@5": 0.512,
+  "generation_evaluated": 10,
+  "citation_rate": 1.0,
+  "consistency_avg": 0.2364,
+  "refusal_rate": 0.0,
+  "by_type": {
+   "concept_real": {
+    "n": 10,
+    "recall@5": 0.9,
+    "recall@10": 0.9,
+    "mrr": 0.82
+   },
+   "reading_comprehension": {
+    "n": 15,
+    "recall@5": 0.9333,
+    "recall@10": 0.9333,
+    "mrr": 0.7778
+   },
+   "note_reading": {
+    "n": 25,
+    "recall@5": 0.92,
+    "recall@10": 0.96,
+    "mrr": 0.9044
+   }
+  },
+  "gold_signals": {
+   "card_concept_exact": 7,
+   "concept_answer_overlap": 1,
+   "concept_text_match": 2,
+   "concept_source_line": 15,
+   "note_source_line_exact": 25
+  },
+  "gold_avg_count": 1.06,
+  "unresolved_gold": 0
+ },
+ "comparison": {
+  "w6_synthetic": {
+   "recall@5": 0.84,
+   "recall@10": 0.84,
+   "mrr": 0.774,
+   "citation_rate": 1.0,
+   "consistency_avg": 0.4435,
+   "by_type": {
+    "card_concept": {
+     "n": 13,
+     "recall@5": 1.0
+    },
+    "card_evidence": {
+     "n": 12,
+     "recall@5": 1.0
+    },
+    "unit_howto": {
+     "n": 13,
+     "recall@5": 0.6923
+    },
+    "unit_fact": {
+     "n": 12,
+     "recall@5": 0.6667
+    }
+   },
+   "source": "C:\\项目\\老田的AI助手\\research\\reports\\rag_baseline_20261104.json"
+  },
+  "real_heldout": {
+   "recall@5": 0.92,
+   "recall@10": 0.94,
+   "mrr": 0.8496
+  },
+  "delta": {
+   "recall@5": 0.08,
+   "recall@10": 0.1,
+   "mrr": 0.0756
+  },
+  "by_type": {
+   "real": {
+    "concept_real": {
+     "n": 10,
+     "recall@5": 0.9,
+     "recall@10": 0.9,
+     "mrr": 0.82
+    },
+    "reading_comprehension": {
+     "n": 15,
+     "recall@5": 0.9333,
+     "recall@10": 0.9333,
+     "mrr": 0.7778
+    },
+    "note_reading": {
+     "n": 25,
+     "recall@5": 0.92,
+     "recall@10": 0.96,
+     "mrr": 0.9044
+    }
+   },
+   "w6_synthetic": {
+    "card_concept": {
+     "n": 13,
+     "recall@5": 1.0
+    },
+    "card_evidence": {
+     "n": 12,
+     "recall@5": 1.0
+    },
+    "unit_howto": {
+     "n": 13,
+     "recall@5": 0.6923
+    },
+    "unit_fact": {
+     "n": 12,
+     "recall@5": 0.6667
+    }
+   }
+  }
+ },
+ "targets": {
+  "recall@5": 0.85,
+  "citation_rate": 0.9,
+  "note": "W6 建议基线阈值（与微调后对比）；真实题未达阈值属预期，见 difficulty_notes"
+ },
+ "difficulty_notes": [
+  "真实 held-out 50 题纯向量基线：recall@5=0.92、recall@10=0.94、MRR=0.8496；W6 合成题基线 recall@5=0.84、MRR=0.774（W6 报告：C:\\项目\\老田的AI助手\\research\\reports\\rag_baseline_20261104.json）→ Δrecall@5=+0.0800、ΔMRR=+0.0756，真实题**高于**合成题基线。",
+  "分题型对比：W6 合成题 recall@5 = 卡概念 1.0 / 卡依据 1.0 / 单元操作 0.6923 / 单元事实 0.6667；本次真实题 = 概念真实提问 0.9 / 阅读理解 0.9333 / 笔记阅读 0.92。W6 均值被 unit 类（0.6923/0.6667）拉低，而真实题三类均 ≥0.9，是本次整体反超的主因。",
+  "口径差异（重要）：① 笔记类 25 题的 gold 按「源文件+行号」精确对应知识单元（本批 50/50、line diff 全 0），且 query 由笔记原文构造 —— 笔记与单元同源于一行原文，向量/词面重叠高，note_reading 的 recall 属「源行检索」而非纯语义理解，存在上界偏差；② 概念类 gold 仅 1 个（卡 concept 精确 7 / 源行 15 / 文本或答案兜底 3），任务比 W6「模板问题→模板源文档」更严格，但仍保持了 0.90~0.93。",
+  "生成侧才是真实题的难点：引用率 1.0（10 题，与 W6 的 1.0 同口径），但闭卷一致性仅 0.2364（W6 20 题合成题为 0.4435）→ 回答虽引用规范，与 gold 文本的细粒度一致性明显更低；真实问题需要更长的上下文/更精确的引用定位。",
+  "结论：不能简单断言「真实题更难」——本次纯向量 recall 反超合成题，主要来自 gold 口径与题型分布；但真实题在**生成一致性**与**外部语境型问题（C_reading）**上更难。后续对比微调/RAG 优化时应同时报告（检索 recall + 生成一致性），并复核笔记题的源行重叠偏差（可用改写版笔记题做二次去偏）。"
+ ],
+ "results": [
+  {
+   "qid": "Q001",
+   "type": "concept_real",
+   "origin_category": "A_concept_qa",
+   "question": "什么是「频谱资源与许可」？",
+   "gold_doc_ids": [
+    "C:001"
+   ],
+   "gold_signal": "card_concept_exact",
+   "source": "《rp_AP202609301830015406》 供应链风险管理。现有的联邦网络安全框架可以为管理和控制空间和地面段的风险提供一个起点 。 p6-12",
+   "concept": "频谱资源与许可",
+   "top_ids": [
+    "C:001",
+    "U:learn_视频号学习_第二期_1156",
+    "C:116",
+    "U:learn_laomu_notes_0213",
+    "C:055",
+    "C:068",
+    "C:061",
+    "U:learn_视频号学习_第二期_1265",
+    "U:learn_视频号学习_8博主_0712",
+    "U:learn_laomu_notes_0117"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.8,
+   "answer": "「频谱资源与许可」是指可靠的频谱接入，它是轨道数据中心实现实用价值的关键资源。通过简化许可流程和明确规则，可以减少监管不确定性及交易成本，并消除缓慢流程带来的阻碍。[3]",
+   "citation": true,
+   "consistency": 0.4262,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q002",
+   "type": "concept_real",
+   "origin_category": "A_concept_qa",
+   "question": "什么是「东盟地区贸易地位」？",
+   "gold_doc_ids": [
+    "C:018"
+   ],
+   "gold_signal": "card_concept_exact",
+   "source": "《rp_AP202610061830165957》 一、贸易总体情况 p2-6",
+   "concept": "东盟地区贸易地位",
+   "top_ids": [
+    "C:018",
+    "C:112",
+    "C:031",
+    "C:017",
+    "C:040",
+    "C:120",
+    "C:075",
+    "C:135",
+    "U:learn_视频号学习_第二期_1129",
+    "C:132"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.8,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q003",
+   "type": "concept_real",
+   "origin_category": "A_concept_qa",
+   "question": "什么是「接力双阳密码」？",
+   "gold_doc_ids": [
+    "C:083"
+   ],
+   "gold_signal": "card_concept_exact",
+   "source": "《涨停密码(2)》 前言从“涨停基因”到“涨停密码 p11-14",
+   "concept": "接力双阳密码",
+   "top_ids": [
+    "C:083",
+    "C:005",
+    "C:007",
+    "U:learn_视频号学习_第二期_1183",
+    "U:learn_视频号学习_8博主_0646",
+    "U:learn_视频号学习_8博主_1000",
+    "U:learn_视频号学习_8博主_0068",
+    "U:learn_视频号学习_8博主_0084",
+    "U:learn_视频号学习_8博主_1013",
+    "U:learn_视频号学习_8博主_0978"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.8,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q004",
+   "type": "concept_real",
+   "origin_category": "A_concept_qa",
+   "question": "什么是「01 趋势失效条件——最后一条」？",
+   "gold_doc_ids": [
+    "C:157"
+   ],
+   "gold_signal": "card_concept_exact",
+   "source": "laomu_notes · 20261102_老木创业笔记_交易老木29条视频文案汇编.md · L354",
+   "concept": "趋势失效条件",
+   "top_ids": [
+    "C:157",
+    "U:learn_laomu_notes_0172",
+    "U:learn_laomu_notes_0160",
+    "U:learn_laomu_notes_0127",
+    "U:learn_laomu_notes_0137",
+    "U:learn_视频号学习_8博主_0980",
+    "U:learn_laomu_notes_0198",
+    "C:170",
+    "U:learn_laomu_notes_0118",
+    "C:344"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.4,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q005",
+   "type": "concept_real",
+   "origin_category": "A_concept_qa",
+   "question": "什么是「交易平台」？",
+   "gold_doc_ids": [
+    "C:191"
+   ],
+   "gold_signal": "card_concept_exact",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L1301",
+   "concept": "交易平台",
+   "top_ids": [
+    "C:191",
+    "C:185",
+    "C:361",
+    "U:learn_视频号学习_第二期_1097",
+    "U:learn_视频号学习_第二期_1167",
+    "C:194",
+    "U:learn_视频号学习_8博主_0027",
+    "U:learn_laomu_notes_0248",
+    "U:learn_视频号学习_8博主_0658",
+    "C:169"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.8,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q006",
+   "type": "concept_real",
+   "origin_category": "A_concept_qa",
+   "question": "什么是「愿意秒内交易超过300笔」？",
+   "gold_doc_ids": [
+    "C:240"
+   ],
+   "gold_signal": "card_concept_exact",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L231",
+   "concept": "愿意秒内交易超过300笔",
+   "top_ids": [
+    "C:240",
+    "U:learn_视频号学习_8博主_0660",
+    "C:246",
+    "U:learn_laomu_notes_0117",
+    "U:learn_视频号学习_8博主_0676",
+    "U:learn_视频号学习_第二期_1190",
+    "U:learn_视频号学习_8博主_0075",
+    "U:learn_视频号学习_第二期_1125",
+    "U:learn_视频号学习_第二期_0033",
+    "U:learn_视频号学习_第二期_1118"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.8,
+   "answer": "“愿意秒内交易超过 300 笔”是判定高频交易的两个标准条件之一，指单个账户在单个交易所的成交量。若满足此条件或全天交易超过 2 万笔，则被归类为高频交易，否则归为低频交易。[3][4]",
+   "citation": true,
+   "consistency": 0.281,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q007",
+   "type": "concept_real",
+   "origin_category": "A_concept_qa",
+   "question": "什么是「下跌加盘整加下跌」？",
+   "gold_doc_ids": [
+    "C:287"
+   ],
+   "gold_signal": "card_concept_exact",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L2571",
+   "concept": "下跌加盘整加下跌",
+   "top_ids": [
+    "C:287",
+    "C:288",
+    "U:learn_视频号学习_8博主_0985",
+    "C:325",
+    "C:366",
+    "C:337",
+    "U:learn_视频号学习_8博主_0446",
+    "U:learn_视频号学习_8博主_0595",
+    "U:learn_视频号学习_8博主_0972",
+    "U:learn_视频号学习_8博主_0447"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 1.0,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q008",
+   "type": "concept_real",
+   "origin_category": "A_concept_qa",
+   "question": "什么是「缠论级别逻辑」？",
+   "gold_doc_ids": [
+    "C:382",
+    "U:learn_视频号学习_8博主_0423"
+   ],
+   "gold_signal": "concept_answer_overlap",
+   "source": "视频号学习_8博主 · 20261103_乔木缠论ROEE.md · L1421",
+   "concept": "缠论级别逻辑",
+   "top_ids": [
+    "U:learn_视频号学习_8博主_0374",
+    "U:learn_视频号学习_8博主_0320",
+    "U:learn_视频号学习_8博主_0418",
+    "U:learn_视频号学习_8博主_0286",
+    "U:learn_视频号学习_8博主_0423",
+    "C:394",
+    "U:learn_视频号学习_8博主_0307",
+    "U:learn_视频号学习_8博主_0451",
+    "U:learn_视频号学习_8博主_0315",
+    "U:learn_视频号学习_8博主_0534"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 0.2,
+   "diversity@5": 0.2,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q009",
+   "type": "concept_real",
+   "origin_category": "A_concept_qa",
+   "question": "什么是「自动学习数据特征」？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_8博主_0727"
+   ],
+   "gold_signal": "concept_text_match",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L741",
+   "concept": "自动学习数据特征",
+   "top_ids": [
+    "U:learn_视频号学习_8博主_0727",
+    "U:learn_laomu_notes_0192",
+    "U:learn_laomu_notes_0024",
+    "U:learn_视频号学习_第二期_1129",
+    "U:learn_laomu_notes_0212",
+    "U:learn_视频号学习_第二期_1107",
+    "U:learn_laomu_notes_0213",
+    "U:learn_视频号学习_第二期_0014",
+    "U:learn_视频号学习_第二期_1215",
+    "U:learn_视频号学习_第二期_1133"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q010",
+   "type": "concept_real",
+   "origin_category": "A_concept_qa",
+   "question": "什么是「量化投资」？",
+   "gold_doc_ids": [
+    "C:219",
+    "U:learn_视频号学习_8博主_0672",
+    "U:learn_视频号学习_8博主_0673"
+   ],
+   "gold_signal": "concept_text_match",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L931",
+   "concept": "量化投资",
+   "top_ids": [
+    "U:learn_视频号学习_8博主_0654",
+    "U:learn_视频号学习_8博主_0667",
+    "U:learn_视频号学习_8博主_0674",
+    "C:313",
+    "U:learn_视频号学习_第二期_0011",
+    "U:learn_视频号学习_8博主_0700",
+    "U:learn_视频号学习_8博主_0691",
+    "U:learn_视频号学习_第二期_1134",
+    "U:learn_视频号学习_第二期_1147",
+    "C:299"
+   ],
+   "recall@5": 0.0,
+   "recall@10": 0.0,
+   "mrr": 0.0,
+   "diversity@5": 0.6,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q011",
+   "type": "reading_comprehension",
+   "origin_category": "C_reading_comprehension",
+   "question": "创业板指日线向下笔未跌破1740点时文中如何判断？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_8博主_0294"
+   ],
+   "gold_signal": "concept_source_line",
+   "source": "20261103_乔木缠论ROEE.md L131",
+   "concept": "创业板指缠论分析",
+   "top_ids": [
+    "U:learn_视频号学习_8博主_0294",
+    "U:learn_视频号学习_8博主_0024",
+    "U:learn_视频号学习_8博主_0386",
+    "U:learn_视频号学习_8博主_0383",
+    "U:learn_视频号学习_8博主_0040",
+    "U:learn_视频号学习_8博主_0377",
+    "U:learn_视频号学习_8博主_0025",
+    "U:learn_视频号学习_8博主_0413",
+    "U:learn_视频号学习_8博主_0395",
+    "U:learn_视频号学习_8博主_0394"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.4,
+   "answer": "当创业板指日线向下笔最低点运行至 1742 点但未跌破 1740 点的第二类买点时，文中认为完全没有必要紧张。在此情况下，市场后续完全有可能走出日线的向上一笔并创出新高。[3]",
+   "citation": true,
+   "consistency": 0.1787,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q012",
+   "type": "reading_comprehension",
+   "origin_category": "C_reading_comprehension",
+   "question": "文中如何描述当天上涨的成交量与资金意愿？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_8博主_0112"
+   ],
+   "gold_signal": "concept_source_line",
+   "source": "20261103_一修论市(1).md L261",
+   "concept": "价涨量缩",
+   "top_ids": [
+    "U:learn_laomu_notes_0166",
+    "U:learn_视频号学习_8博主_0001",
+    "U:learn_视频号学习_8博主_0902",
+    "U:learn_视频号学习_8博主_0617",
+    "C:148",
+    "U:learn_laomu_notes_0153",
+    "U:learn_视频号学习_8博主_0092",
+    "U:learn_laomu_notes_0094",
+    "U:learn_视频号学习_8博主_0091",
+    "U:learn_视频号学习_8博主_0020"
+   ],
+   "recall@5": 0.0,
+   "recall@10": 0.0,
+   "mrr": 0.0,
+   "diversity@5": 1.0,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q013",
+   "type": "reading_comprehension",
+   "origin_category": "C_reading_comprehension",
+   "question": "如何解决MACD、SKDJ和均线指标过多的问题？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_8博主_0647"
+   ],
+   "gold_signal": "concept_source_line",
+   "source": "20261103_指标公式入门(1).md L421",
+   "concept": "指标合并",
+   "top_ids": [
+    "U:learn_视频号学习_8博主_0647",
+    "C:176",
+    "U:learn_视频号学习_8博主_0607",
+    "U:learn_视频号学习_8博主_0606",
+    "U:learn_视频号学习_8博主_0609",
+    "U:learn_视频号学习_8博主_0622",
+    "U:learn_视频号学习_8博主_0630",
+    "U:learn_视频号学习_8博主_0629",
+    "U:learn_视频号学习_8博主_0616",
+    "U:learn_视频号学习_第二期_1260"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.4,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q014",
+   "type": "reading_comprehension",
+   "origin_category": "C_reading_comprehension",
+   "question": "1月7日上证大盘缠论分析结论是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_8博主_0428"
+   ],
+   "gold_signal": "concept_source_line",
+   "source": "20261103_乔木缠论ROEE.md L1471",
+   "concept": "缠论走势分析",
+   "top_ids": [
+    "U:learn_视频号学习_8博主_0428",
+    "U:learn_视频号学习_8博主_0413",
+    "U:learn_视频号学习_8博主_0426",
+    "U:learn_视频号学习_8博主_0382",
+    "U:learn_视频号学习_8博主_0410",
+    "U:learn_视频号学习_8博主_0409",
+    "U:learn_视频号学习_8博主_0399",
+    "U:learn_视频号学习_8博主_0383",
+    "U:learn_视频号学习_8博主_0412",
+    "U:learn_视频号学习_8博主_0394"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.2,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q015",
+   "type": "reading_comprehension",
+   "origin_category": "C_reading_comprehension",
+   "question": "买点正确但卖出不佳可能带来什么后果？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_8博主_1015"
+   ],
+   "gold_signal": "concept_source_line",
+   "source": "20261103_爱死磕-康康.md L481",
+   "concept": "卖点与止损",
+   "top_ids": [
+    "U:learn_视频号学习_8博主_0808",
+    "U:learn_视频号学习_8博主_0334",
+    "U:learn_视频号学习_8博主_1015",
+    "U:learn_视频号学习_8博主_0361",
+    "U:learn_视频号学习_8博主_1017",
+    "U:learn_视频号学习_8博主_0818",
+    "U:learn_视频号学习_8博主_1016",
+    "U:learn_laomu_notes_0262",
+    "U:learn_视频号学习_8博主_0862",
+    "C:204"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 0.3333,
+   "diversity@5": 0.6,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q016",
+   "type": "reading_comprehension",
+   "origin_category": "C_reading_comprehension",
+   "question": "QMT有哪些功能？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_8博主_0665"
+   ],
+   "gold_signal": "concept_source_line",
+   "source": "20261103_数据帝-量化开发.md L121",
+   "concept": "QMT量化功能",
+   "top_ids": [
+    "C:277",
+    "U:learn_视频号学习_8博主_0665",
+    "U:learn_视频号学习_8博主_0664",
+    "C:194",
+    "C:246",
+    "U:learn_视频号学习_第二期_1182",
+    "U:learn_视频号学习_第二期_1090",
+    "C:185",
+    "U:learn_视频号学习_第二期_1166",
+    "U:learn_视频号学习_第二期_1142"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 0.5,
+   "diversity@5": 0.8,
+   "answer": "QMT 是迅投研发的专业量化平台，具备全品种覆盖（股票、期权、期货）、提供行情数据、支持多语言策略编写与回测、实现毫秒级急速交易以及风险监控等六大核心功能。该平台集行情数据、策略制定和交易风控于一体，且主要在本地运行以保障策略安全与灵活性。[2][5]",
+   "citation": true,
+   "consistency": 0.1972,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q017",
+   "type": "reading_comprehension",
+   "origin_category": "C_reading_comprehension",
+   "question": "跳空预测有哪些限制？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_8博主_0793"
+   ],
+   "gold_signal": "concept_source_line",
+   "source": "20261103_数据帝-量化开发.md L1401",
+   "concept": "跳空预测限制",
+   "top_ids": [
+    "U:learn_视频号学习_8博主_0793",
+    "U:learn_视频号学习_8博主_0792",
+    "C:229",
+    "U:learn_视频号学习_8博主_0794",
+    "U:learn_laomu_notes_0150",
+    "U:learn_laomu_notes_0143",
+    "U:learn_laomu_notes_0174",
+    "U:learn_视频号学习_8博主_0994",
+    "U:learn_laomu_notes_0162",
+    "U:learn_laomu_notes_0252"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q018",
+   "type": "reading_comprehension",
+   "origin_category": "C_reading_comprehension",
+   "question": "文中认为今天市场普跌的主要原因是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_8博主_0261"
+   ],
+   "gold_signal": "concept_source_line",
+   "source": "20261103_一修论市(1).md L1751",
+   "concept": "市场普跌原因",
+   "top_ids": [
+    "U:learn_视频号学习_8博主_0250",
+    "U:learn_视频号学习_8博主_0268",
+    "U:learn_视频号学习_8博主_0261",
+    "U:learn_视频号学习_8博主_0115",
+    "U:learn_视频号学习_8博主_0274",
+    "U:learn_视频号学习_8博主_0170",
+    "U:learn_视频号学习_8博主_0231",
+    "U:learn_视频号学习_8博主_0254",
+    "U:learn_视频号学习_8博主_0177",
+    "U:learn_视频号学习_8博主_0235"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 0.3333,
+   "diversity@5": 0.2,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q019",
+   "type": "reading_comprehension",
+   "origin_category": "C_reading_comprehension",
+   "question": "转换方式算法如何确定底部？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_第二期_1151"
+   ],
+   "gold_signal": "concept_source_line",
+   "source": "20261103_爱吃折耳根的Ace.md L631",
+   "concept": "转换方式算法",
+   "top_ids": [
+    "U:learn_视频号学习_第二期_1161",
+    "U:learn_视频号学习_第二期_1151",
+    "U:learn_视频号学习_第二期_1107",
+    "U:learn_视频号学习_8博主_0595",
+    "U:learn_视频号学习_8博主_0982",
+    "U:learn_视频号学习_第二期_1133",
+    "U:learn_视频号学习_8博主_0653",
+    "U:learn_视频号学习_8博主_0078",
+    "U:learn_laomu_notes_0162",
+    "U:learn_视频号学习_8博主_0792"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 0.5,
+   "diversity@5": 0.6,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q020",
+   "type": "reading_comprehension",
+   "origin_category": "C_reading_comprehension",
+   "question": "创建backtest需要提供哪些内容？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_第二期_1146"
+   ],
+   "gold_signal": "concept_source_line",
+   "source": "20261103_爱吃折耳根的Ace.md L581",
+   "concept": "回测创建参数",
+   "top_ids": [
+    "U:learn_视频号学习_第二期_1146",
+    "U:learn_视频号学习_第二期_1153",
+    "U:learn_laomu_notes_0064",
+    "U:learn_视频号学习_第二期_1266",
+    "U:learn_视频号学习_第二期_1248",
+    "U:learn_laomu_notes_0201",
+    "U:learn_laomu_notes_0063",
+    "U:learn_laomu_notes_0231",
+    "U:learn_视频号学习_第二期_1118",
+    "U:learn_视频号学习_第二期_1186"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.4,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q021",
+   "type": "reading_comprehension",
+   "origin_category": "C_reading_comprehension",
+   "question": "韭菜盘GCP AI的核心组成是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_第二期_1104"
+   ],
+   "gold_signal": "concept_source_line",
+   "source": "20261103_爱吃折耳根的Ace.md L161",
+   "concept": "多agent投研团队",
+   "top_ids": [
+    "U:learn_视频号学习_第二期_1104",
+    "U:learn_视频号学习_第二期_1168",
+    "U:learn_视频号学习_第二期_1142",
+    "U:learn_视频号学习_第二期_1292",
+    "U:learn_视频号学习_第二期_1093",
+    "U:learn_视频号学习_第二期_1150",
+    "U:learn_视频号学习_8博主_0564",
+    "U:learn_视频号学习_第二期_1161",
+    "U:learn_视频号学习_第二期_1089",
+    "U:learn_视频号学习_第二期_1181"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.2,
+   "answer": "韭菜盘 GCP AI 的核心是由技术分析师、基本面分析师、情绪分析师和风控专家组成的多 Agent 投研团队。这些角色在开源桌面应用中实时讨论并互相验证，能够记住历史对话并动态刷新 K 线、盘口及热点舆情数据 [2]。",
+   "citation": true,
+   "consistency": 0.1965,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q022",
+   "type": "reading_comprehension",
+   "origin_category": "C_reading_comprehension",
+   "question": "Vibe Research是什么，能做什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_第二期_1226"
+   ],
+   "gold_signal": "concept_source_line",
+   "source": "20261103_爱吃折耳根的Ace.md L1381",
+   "concept": "个人投研工作台",
+   "top_ids": [
+    "U:learn_视频号学习_第二期_1226",
+    "U:learn_视频号学习_第二期_1242",
+    "U:learn_视频号学习_第二期_1207",
+    "U:learn_视频号学习_第二期_1109",
+    "U:learn_视频号学习_第二期_1166",
+    "U:learn_视频号学习_第二期_1234",
+    "U:learn_视频号学习_第二期_1174",
+    "U:learn_视频号学习_第二期_1138",
+    "U:learn_视频号学习_第二期_1135",
+    "U:learn_视频号学习_第二期_1237"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.2,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q023",
+   "type": "reading_comprehension",
+   "origin_category": "C_reading_comprehension",
+   "question": "Backtesting T5回测结果可返回哪些指标？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_第二期_1153"
+   ],
+   "gold_signal": "concept_source_line",
+   "source": "20261103_爱吃折耳根的Ace.md L651",
+   "concept": "Python量化回测框架",
+   "top_ids": [
+    "U:learn_视频号学习_第二期_1153",
+    "U:learn_视频号学习_第二期_1146",
+    "U:learn_视频号学习_第二期_1266",
+    "U:learn_laomu_notes_0064",
+    "U:learn_视频号学习_8博主_0023",
+    "C:253",
+    "U:learn_laomu_notes_0096",
+    "U:learn_视频号学习_第二期_1261",
+    "U:learn_laomu_notes_0203",
+    "U:learn_视频号学习_第二期_1127"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q024",
+   "type": "reading_comprehension",
+   "origin_category": "C_reading_comprehension",
+   "question": "2Sigma舞弊案暴露了量化行业什么风控问题？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_第二期_0011"
+   ],
+   "gold_signal": "concept_source_line",
+   "source": "20261103_刺猬投研.md L111",
+   "concept": "量化风控漏洞",
+   "top_ids": [
+    "U:learn_视频号学习_第二期_0011",
+    "U:learn_laomu_notes_0149",
+    "U:learn_视频号学习_第二期_1290",
+    "U:learn_视频号学习_第二期_1160",
+    "U:learn_视频号学习_第二期_0005",
+    "U:learn_视频号学习_第二期_1143",
+    "U:learn_视频号学习_第二期_1136",
+    "C:194",
+    "U:learn_视频号学习_第二期_1182",
+    "U:learn_视频号学习_8博主_0685"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q025",
+   "type": "reading_comprehension",
+   "origin_category": "C_reading_comprehension",
+   "question": "谢林提出的聚焦点指什么？",
+   "gold_doc_ids": [
+    "U:learn_laomu_notes_0272"
+   ],
+   "gold_signal": "concept_source_line",
+   "source": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L550",
+   "concept": "聚焦点理论",
+   "top_ids": [
+    "U:learn_laomu_notes_0272",
+    "U:learn_laomu_notes_0176",
+    "U:learn_视频号学习_8博主_1018",
+    "C:369",
+    "U:learn_视频号学习_第二期_1280",
+    "C:342",
+    "U:learn_视频号学习_第二期_1208",
+    "C:074",
+    "U:learn_视频号学习_第二期_1199",
+    "U:learn_laomu_notes_0202"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.8,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q026",
+   "type": "note_reading",
+   "origin_category": "C_heldout_note",
+   "question": "阅读下面这段真实笔记，判断知识库中哪份资料能支撑其核心观点：\n笔记原文：第 1 个，不做独立验证：别只盯着回测，让新数据来检验。先补流程，再谈模型。\n问题：这段笔记的核心观点/交易原则是什么？",
+   "gold_doc_ids": [
+    "U:learn_laomu_notes_0064"
+   ],
+   "gold_signal": "note_source_line_exact",
+   "source": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L183",
+   "concept": "第 1 个，不做独立验证：别只盯着回测，让新数据来检验。先补",
+   "top_ids": [
+    "U:learn_laomu_notes_0064",
+    "U:learn_laomu_notes_0249",
+    "U:learn_视频号学习_第二期_1153",
+    "U:learn_视频号学习_第二期_1266",
+    "U:learn_laomu_notes_0276",
+    "U:learn_laomu_notes_0219",
+    "U:learn_视频号学习_第二期_1235",
+    "U:learn_laomu_notes_0267",
+    "U:learn_laomu_notes_0173",
+    "U:learn_视频号学习_第二期_1199"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.4,
+   "answer": "该笔记强调不应仅依赖历史回测，而应引入新数据进行独立验证，并主张在完善研究流程后再构建或讨论模型。这一观点与资料 [1] 中“别只盯着回测，让新数据来检验。先补流程，再谈模型”的核心思想完全一致。同时，资料 [2] 也进一步阐述了通过多源数据（如情绪、链上、衍生品等）互相验证，使策略经得起检验的原则。[1][2]",
+   "citation": true,
+   "consistency": 0.1917,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q027",
+   "type": "note_reading",
+   "origin_category": "C_heldout_note",
+   "question": "阅读下面这段真实笔记，判断知识库中哪份资料能支撑其核心观点：\n笔记原文：如何降低因子失效风险?一、前瞻性测试，进行样本外测试，考虑经济环境变化。二、长期视角，根据因子周期性调整投资时间。三、多元化投资，多个因子组合或加入不同类型资产。4. 避免过度拟合。训练测试数据模型或简化模型。5. 监控评估，定期评估因子表现。6. 风险管理。设置止损点。根据市场环境或因子表现调整因子权重。\n问题：这段笔记的核心观点/交易原则是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_8博主_0717"
+   ],
+   "gold_signal": "note_source_line_exact",
+   "source": "20261103_数据帝-量化开发.md L641",
+   "concept": "如何降低因子失效风险?一、前瞻性测试，进行样本外测试，考虑经",
+   "top_ids": [
+    "C:311",
+    "U:learn_视频号学习_8博主_0717",
+    "C:182",
+    "U:learn_视频号学习_8博主_0779",
+    "U:learn_laomu_notes_0249",
+    "U:learn_视频号学习_8博主_0775",
+    "U:learn_视频号学习_8博主_0705",
+    "C:251",
+    "C:171",
+    "C:312"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 0.5,
+   "diversity@5": 0.8,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q028",
+   "type": "note_reading",
+   "origin_category": "C_heldout_note",
+   "question": "阅读下面这段真实笔记，判断知识库中哪份资料能支撑其核心观点：\n笔记原文：这个功能检查如果有一个所谓的顶部在现今的数据中确定了一个所谓的顶部。可能的顶部的数据是被所谓的顶部拖延，以防我们在未来看见。我们检查如果有一个比它更大的点在任何一边。如果没有，我们找到了一个顶部。底部是同样的，但用比较低的方式。所有地区高级可以被找到，通过每个灯光在数据中的标记，并检查如果有高低。如果有其他，我们会录制\n问题：这段笔记的核心观点/交易原则是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_第二期_1151"
+   ],
+   "gold_signal": "note_source_line_exact",
+   "source": "20261103_爱吃折耳根的Ace.md L631",
+   "concept": "这个功能检查如果有一个所谓的顶部在现今的数据中确定了一个所谓",
+   "top_ids": [
+    "U:learn_laomu_notes_0272",
+    "U:learn_视频号学习_第二期_1199",
+    "U:learn_视频号学习_8博主_0067",
+    "C:293",
+    "U:learn_laomu_notes_0191",
+    "C:160",
+    "U:learn_laomu_notes_0249",
+    "U:learn_视频号学习_第二期_1161",
+    "U:learn_视频号学习_第二期_1151",
+    "U:learn_视频号学习_8博主_0355"
+   ],
+   "recall@5": 0.0,
+   "recall@10": 1.0,
+   "mrr": 0.1111,
+   "diversity@5": 0.8,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q029",
+   "type": "note_reading",
+   "origin_category": "C_heldout_note",
+   "question": "阅读下面这段真实笔记，判断知识库中哪份资料能支撑其核心观点：\n笔记原文：显示显示了 vertical distance，但Euclidean和Perventicular distance 都是其他选择。在我的经验中，三个距离的计算机都经常选择同样的点。但它是值得测试的，如果一个计算机有一个特别的应用，它有出色的表现。无论如何，我们在Pips X和Y之间选择的点的数据和价格设定。我们将它们开\n问题：这段笔记的核心观点/交易原则是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_第二期_1151"
+   ],
+   "gold_signal": "note_source_line_exact",
+   "source": "20261103_爱吃折耳根的Ace.md L631",
+   "concept": "显示显示了 vertical distance，但Eucli",
+   "top_ids": [
+    "U:learn_视频号学习_第二期_1151",
+    "U:learn_视频号学习_第二期_1269",
+    "U:learn_视频号学习_第二期_1199",
+    "U:learn_视频号学习_第二期_1234",
+    "U:learn_视频号学习_第二期_1107",
+    "U:learn_视频号学习_第二期_1156",
+    "U:learn_视频号学习_第二期_1220",
+    "U:learn_laomu_notes_0202",
+    "U:learn_laomu_notes_0249",
+    "U:learn_视频号学习_第二期_1218"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.2,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q030",
+   "type": "note_reading",
+   "origin_category": "C_heldout_note",
+   "question": "阅读下面这段真实笔记，判断知识库中哪份资料能支撑其核心观点：\n笔记原文：还在用手动拉黄金分割线吗?高低点找不准，划线结果每次都不一样。这个黄金分割线自动划线指标，能自动识别波段高低点，一键划出比例线，省去反复寻找高低点划线的时间，提升效率。\n问题：这段笔记的核心观点/交易原则是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_8博主_0642"
+   ],
+   "gold_signal": "note_source_line_exact",
+   "source": "20261103_指标公式入门(1).md L371",
+   "concept": "还在用手动拉黄金分割线吗?高低点找不准，划线结果每次都不一样",
+   "top_ids": [
+    "U:learn_视频号学习_8博主_0642",
+    "U:learn_视频号学习_8博主_0643",
+    "U:learn_视频号学习_第二期_1199",
+    "U:learn_laomu_notes_0202",
+    "U:learn_视频号学习_8博主_0998",
+    "U:learn_视频号学习_第二期_1236",
+    "U:learn_视频号学习_8博主_1012",
+    "U:learn_视频号学习_8博主_0067",
+    "U:learn_视频号学习_8博主_1013",
+    "U:learn_视频号学习_8博主_0606"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.8,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q031",
+   "type": "note_reading",
+   "origin_category": "C_heldout_note",
+   "question": "阅读下面这段真实笔记，判断知识库中哪份资料能支撑其核心观点：\n笔记原文：AI 量化，从数据到决策：把机器学习放进可检验的研究流程。模型寻找规律，人定义边界。\n问题：这段笔记的核心观点/交易原则是什么？",
+   "gold_doc_ids": [
+    "U:learn_laomu_notes_0190"
+   ],
+   "gold_signal": "note_source_line_exact",
+   "source": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L390",
+   "concept": "AI 量化，从数据到决策：把机器学习放进可检验的研究流程。模",
+   "top_ids": [
+    "U:learn_laomu_notes_0190",
+    "U:learn_laomu_notes_0041",
+    "C:144",
+    "U:learn_laomu_notes_0274",
+    "U:learn_laomu_notes_0035",
+    "U:learn_laomu_notes_0022",
+    "U:learn_laomu_notes_0182",
+    "U:learn_laomu_notes_0181",
+    "U:learn_laomu_notes_0174",
+    "U:learn_laomu_notes_0019"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.4,
+   "answer": "这段笔记的核心观点是 AI 量化应遵循“从数据到决策”的路径，即将机器学习融入可检验的研究流程中。其具体原则在于明确分工：由模型负责寻找规律，而由人来定义边界。[3]",
+   "citation": true,
+   "consistency": 0.2949,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q032",
+   "type": "note_reading",
+   "origin_category": "C_heldout_note",
+   "question": "阅读下面这段真实笔记，判断知识库中哪份资料能支撑其核心观点：\n笔记原文：盘杆练习，你会在哪?B or S。日内节奏挑战，先看三天，再练一天。从200股底仓出发，观察节奏，尝试买卖，收盘，恢复底仓。趋势判断挑战，观察100日，练习200日。从空仓出发，分辨趋势与波动，建立自己的交易节奏。真实历史盘面，有效复盘。好友同练，实时监控收益，实力在最终排行见分晓。快来挑战吧!\n问题：这段笔记的核心观点/交易原则是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_第二期_0028"
+   ],
+   "gold_signal": "note_source_line_exact",
+   "source": "20261103_刺猬投研.md L281",
+   "concept": "盘杆练习，你会在哪?B or S。日内节奏挑战，先看三天，再",
+   "top_ids": [
+    "U:learn_视频号学习_第二期_0028",
+    "U:learn_视频号学习_8博主_0067",
+    "U:learn_视频号学习_8博主_0062",
+    "U:learn_视频号学习_8博主_0040",
+    "U:learn_视频号学习_8博主_0387",
+    "U:learn_视频号学习_8博主_0331",
+    "U:learn_视频号学习_8博主_0029",
+    "U:learn_视频号学习_8博主_0336",
+    "U:learn_laomu_notes_0202",
+    "U:learn_视频号学习_8博主_1011"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q033",
+   "type": "note_reading",
+   "origin_category": "C_heldout_note",
+   "question": "阅读下面这段真实笔记，判断知识库中哪份资料能支撑其核心观点：\n笔记原文：回彩放量还是缩量。一眼分清洗盘还是变盘上涨途中放量。资金高位主动接盘。良性拉伸回彩阶段缩量。筹码吸收抛压清。典型洗盘信号回彩如果放量。大量筹码出逃。大概率是变盘下跌。注意指示概率不是绝对完整三段条件。前期一波上涨。加回彩明显缩量。加守住关键支撑为回彩太深等于直接破位。缩量不足等于抛压没有释放。两个边界必须同时卡死缩量回\n问题：这段笔记的核心观点/交易原则是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_8博主_0019"
+   ],
+   "gold_signal": "note_source_line_exact",
+   "source": "20261103_AI量化工具手记(1).md L191",
+   "concept": "回彩放量还是缩量。一眼分清洗盘还是变盘上涨途中放量。资金高位",
+   "top_ids": [
+    "U:learn_视频号学习_8博主_0019",
+    "U:learn_视频号学习_8博主_0584",
+    "U:learn_视频号学习_8博主_0005",
+    "U:learn_视频号学习_8博主_0001",
+    "U:learn_laomu_notes_0153",
+    "U:learn_视频号学习_8博主_0079",
+    "U:learn_视频号学习_8博主_0829",
+    "U:learn_视频号学习_8博主_0808",
+    "U:learn_视频号学习_8博主_0259",
+    "U:learn_视频号学习_8博主_0020"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q034",
+   "type": "note_reading",
+   "origin_category": "C_heldout_note",
+   "question": "阅读下面这段真实笔记，判断知识库中哪份资料能支撑其核心观点：\n笔记原文：金叉只出现一天，大于能连十几天。你数的到底是哪一个?金叉判断的是穿越那一根，昨天还在下面，今天上去了，只算一次。大于就是一个状态，只要还在上面，每根都成立。能者叉的是次数，同一段行情，金叉出一回，大于连着12根，选股结果叉12倍。想招拐典用金叉，想做过利用大于，或者写，信号会一直响，一瞬间和一段时间，不能混用。本视频仅\n问题：这段笔记的核心观点/交易原则是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_8博主_0011"
+   ],
+   "gold_signal": "note_source_line_exact",
+   "source": "20261103_AI量化工具手记(1).md L111",
+   "concept": "金叉只出现一天，大于能连十几天。你数的到底是哪一个?金叉判断",
+   "top_ids": [
+    "U:learn_视频号学习_8博主_0011",
+    "U:learn_视频号学习_8博主_0062",
+    "U:learn_视频号学习_8博主_0013",
+    "U:learn_视频号学习_8博主_0332",
+    "U:learn_laomu_notes_0165",
+    "U:learn_laomu_notes_0155",
+    "U:learn_视频号学习_第二期_1199",
+    "U:learn_视频号学习_8博主_0446",
+    "U:learn_视频号学习_8博主_0333",
+    "U:learn_laomu_notes_0202"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.8,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q035",
+   "type": "note_reading",
+   "origin_category": "C_heldout_note",
+   "question": "阅读下面这段真实笔记，判断知识库中哪份资料能支撑其核心观点：\n笔记原文：一条漂亮的收益曲线不等于一个能投资的策略。真正困难的是把收益、回撤、风险和归因放进同一份证据里。Quant Invest Strats，也叫KIS，是一套用Python完成组合回测、绩效分析、风险研究和事实报告的开源工具。它不只告诉你赚了多少，累计收益、最大回撤、滚动下谱、换手率和交易成本，都能在同一张长报告里连续检查\n问题：这段笔记的核心观点/交易原则是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_第二期_1173"
+   ],
+   "gold_signal": "note_source_line_exact",
+   "source": "20261103_爱吃折耳根的Ace.md L851",
+   "concept": "一条漂亮的收益曲线不等于一个能投资的策略。真正困难的是把收益",
+   "top_ids": [
+    "U:learn_视频号学习_第二期_1173",
+    "U:learn_视频号学习_第二期_1202",
+    "U:learn_视频号学习_第二期_1199",
+    "U:learn_视频号学习_第二期_1149",
+    "U:learn_视频号学习_第二期_1157",
+    "U:learn_视频号学习_第二期_1240",
+    "U:learn_视频号学习_第二期_1153",
+    "U:learn_视频号学习_第二期_1184",
+    "U:learn_视频号学习_第二期_1132",
+    "U:learn_视频号学习_第二期_1207"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.2,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q036",
+   "type": "note_reading",
+   "origin_category": "C_heldout_note",
+   "question": "阅读下面这段真实笔记，判断知识库中哪份资料能支撑其核心观点：\n笔记原文：也就是说，这条视频的\"文案\"其实只有标题一句话：如果测试成功，就对该系统开源。\n问题：这段笔记的核心观点/交易原则是什么？",
+   "gold_doc_ids": [
+    "U:learn_laomu_notes_0285"
+   ],
+   "gold_signal": "note_source_line_exact",
+   "source": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L584",
+   "concept": "也就是说，这条视频的\"文案\"其实只有标题一句话：如果测试成功",
+   "top_ids": [
+    "U:learn_laomu_notes_0285",
+    "U:learn_视频号学习_8博主_0022",
+    "U:learn_视频号学习_第二期_1199",
+    "U:learn_视频号学习_第二期_1278",
+    "U:learn_视频号学习_第二期_1279",
+    "U:learn_视频号学习_第二期_1264",
+    "U:learn_视频号学习_第二期_1202",
+    "U:learn_视频号学习_第二期_1261",
+    "U:learn_视频号学习_第二期_1118",
+    "U:learn_laomu_notes_0249"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "answer": "该笔记的核心观点是确立了一个明确的交易原则：只有在系统测试成功后，才会将其进行开源。这一原则强调了在公开分享前必须经过严格的验证过程。[1]",
+   "citation": true,
+   "consistency": 0.069,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q037",
+   "type": "note_reading",
+   "origin_category": "C_heldout_note",
+   "question": "阅读下面这段真实笔记，判断知识库中哪份资料能支撑其核心观点：\n笔记原文：像这种KDJ出现金叉且叫上一次金叉，位置有所抬高。这种MACD出现金叉且叫上一次金叉，位置有所抬高的形态。同时出现时，如何用公式表达并快速筛选出来。\n问题：这段笔记的核心观点/交易原则是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_8博主_0614"
+   ],
+   "gold_signal": "note_source_line_exact",
+   "source": "20261103_指标公式入门(1).md L91",
+   "concept": "像这种KDJ出现金叉且叫上一次金叉，位置有所抬高。这种MAC",
+   "top_ids": [
+    "U:learn_视频号学习_8博主_0614",
+    "U:learn_视频号学习_8博主_0612",
+    "U:learn_视频号学习_8博主_0606",
+    "U:learn_视频号学习_8博主_0616",
+    "C:273",
+    "U:learn_视频号学习_8博主_0607",
+    "U:learn_视频号学习_8博主_0609",
+    "C:329",
+    "C:221",
+    "U:learn_laomu_notes_0211"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.4,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q038",
+   "type": "note_reading",
+   "origin_category": "C_heldout_note",
+   "question": "阅读下面这段真实笔记，判断知识库中哪份资料能支撑其核心观点：\n笔记原文：天才交易员 AI 量化十大等待场景——什么时候该先按下暂停？\n问题：这段笔记的核心观点/交易原则是什么？",
+   "gold_doc_ids": [
+    "U:learn_laomu_notes_0066"
+   ],
+   "gold_signal": "note_source_line_exact",
+   "source": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L189",
+   "concept": "天才交易员 AI 量化十大等待场景——什么时候该先按下暂停？",
+   "top_ids": [
+    "U:learn_laomu_notes_0066",
+    "U:learn_laomu_notes_0042",
+    "U:learn_laomu_notes_0078",
+    "U:learn_laomu_notes_0126",
+    "U:learn_laomu_notes_0090",
+    "U:learn_laomu_notes_0102",
+    "U:learn_laomu_notes_0138",
+    "U:learn_视频号学习_第二期_1175",
+    "C:145",
+    "U:learn_laomu_notes_0054"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.2,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q039",
+   "type": "note_reading",
+   "origin_category": "C_heldout_note",
+   "question": "阅读下面这段真实笔记，判断知识库中哪份资料能支撑其核心观点：\n笔记原文：板块联动——一只在涨，还是多数在涨。 统计板块内站在各自均线上方的成员占比，观察上涨是否从个别扩展到更多标的。板块成员应使用当时名单，避免幸存者偏差。\n问题：这段笔记的核心观点/交易原则是什么？",
+   "gold_doc_ids": [
+    "U:learn_laomu_notes_0169"
+   ],
+   "gold_signal": "note_source_line_exact",
+   "source": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L348",
+   "concept": "板块联动——一只在涨，还是多数在涨。 统计板块内站在各自均线",
+   "top_ids": [
+    "U:learn_laomu_notes_0169",
+    "U:learn_laomu_notes_0158",
+    "C:342",
+    "U:learn_laomu_notes_0202",
+    "C:286",
+    "U:learn_视频号学习_8博主_0563",
+    "U:learn_视频号学习_8博主_0355",
+    "U:learn_视频号学习_第二期_1199",
+    "U:learn_视频号学习_8博主_0091",
+    "U:learn_视频号学习_8博主_0020"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q040",
+   "type": "note_reading",
+   "origin_category": "C_heldout_note",
+   "question": "阅读下面这段真实笔记，判断知识库中哪份资料能支撑其核心观点：\n笔记原文：缠论工具见我置顶视频。做缠论交易，到底该盯哪个级别?今天给大家交个底。其实核心就一句话，级别取决于你交易的是哪个级别的中枢。在实战中，我们要分清两个概念，操作级别和判断级别。判断级别是辅助的，而真正的操作级别，我们建议锁定在日线、60分钟或30分钟这三个级别，绝对不能再小了。为什么?因为，如果你用一分钟级别去交易，走势\n问题：这段笔记的核心观点/交易原则是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_8博主_0534"
+   ],
+   "gold_signal": "note_source_line_exact",
+   "source": "20261103_乔木缠论ROEE.md L2531",
+   "concept": "缠论工具见我置顶视频。做缠论交易，到底该盯哪个级别?今天给大",
+   "top_ids": [
+    "U:learn_视频号学习_8博主_0534",
+    "C:333",
+    "U:learn_视频号学习_8博主_0517",
+    "C:397",
+    "U:learn_视频号学习_8博主_0387",
+    "U:learn_视频号学习_8博主_0343",
+    "U:learn_视频号学习_8博主_0335",
+    "U:learn_视频号学习_8博主_0367",
+    "U:learn_视频号学习_8博主_0286",
+    "U:learn_视频号学习_8博主_0374"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q041",
+   "type": "note_reading",
+   "origin_category": "C_heldout_note",
+   "question": "阅读下面这段真实笔记，判断知识库中哪份资料能支撑其核心观点：\n笔记原文：特征工程——把市场现象变成变量。 特征不等于有效信号；先提出假设，再把假设变成可测试的特征。\n问题：这段笔记的核心观点/交易原则是什么？",
+   "gold_doc_ids": [
+    "U:learn_laomu_notes_0192"
+   ],
+   "gold_signal": "note_source_line_exact",
+   "source": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L393",
+   "concept": "特征工程——把市场现象变成变量。 特征不等于有效信号；先提出",
+   "top_ids": [
+    "U:learn_laomu_notes_0192",
+    "U:learn_laomu_notes_0228",
+    "C:170",
+    "U:learn_laomu_notes_0251",
+    "U:learn_laomu_notes_0249",
+    "U:learn_视频号学习_第二期_1199",
+    "U:learn_laomu_notes_0202",
+    "U:learn_视频号学习_第二期_1196",
+    "U:learn_视频号学习_第二期_1271",
+    "U:learn_laomu_notes_0101"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.4,
+   "answer": "该笔记的核心观点是特征工程旨在将市场现象转化为变量，并强调特征本身不等于有效信号，需先提出假设再将其转化为可测试的特征。这一过程体现了从数据到特征、再到假设验证的严谨逻辑。[1][3]",
+   "citation": true,
+   "consistency": 0.2558,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q042",
+   "type": "note_reading",
+   "origin_category": "C_heldout_note",
+   "question": "阅读下面这段真实笔记，判断知识库中哪份资料能支撑其核心观点：\n笔记原文：月19日，缠论走势分析。今天的上证指数开盘，走出冲高回落后，见底后一路上扬，最终收出了光头扬。行情是要止跌反弹了吗?输入CLZZB，打开缠论。缠论工具，见我置顶视频。在缠论结构上，今天的上证指数走出了一个包含关系。今天的K线完全反包了昨天的K线，但是这个K线包含关系仍然是一个向下包含结构。从走势上仍然是走的从最高点42\n问题：这段笔记的核心观点/交易原则是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_8博主_0479"
+   ],
+   "gold_signal": "note_source_line_exact",
+   "source": "20261103_乔木缠论ROEE.md L1981",
+   "concept": "月19日，缠论走势分析。今天的上证指数开盘，走出冲高回落后，",
+   "top_ids": [
+    "U:learn_视频号学习_8博主_0479",
+    "U:learn_视频号学习_8博主_0368",
+    "U:learn_视频号学习_8博主_0369",
+    "U:learn_视频号学习_8博主_0409",
+    "U:learn_视频号学习_8博主_0428",
+    "U:learn_视频号学习_8博主_0395",
+    "U:learn_视频号学习_8博主_0468",
+    "U:learn_视频号学习_8博主_0394",
+    "U:learn_视频号学习_8博主_0381",
+    "U:learn_视频号学习_8博主_0383"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.2,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q043",
+   "type": "note_reading",
+   "origin_category": "C_heldout_note",
+   "question": "阅读下面这段真实笔记，判断知识库中哪份资料能支撑其核心观点：\n笔记原文：缠论工具见我置顶视频。做交易最怕的恐怕就是缠论里那个背了又背。信号明明出来了，你以为拐点到了，冲进去，结果价格接着往下砸，一破再破。跌到哪儿算完，什么时候是个头，心里完全没底。这到底是哪儿出了问题?根子在于，你对背驰的理解还停在表面。缠论讲的背驰，不是拿两段走势的力度比一比就完事，它的门槛比平时看到的要高，得把区间套一\n问题：这段笔记的核心观点/交易原则是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_8博主_0604"
+   ],
+   "gold_signal": "note_source_line_exact",
+   "source": "20261103_乔木缠论ROEE.md L3231",
+   "concept": "缠论工具见我置顶视频。做交易最怕的恐怕就是缠论里那个背了又背",
+   "top_ids": [
+    "U:learn_视频号学习_8博主_0604",
+    "U:learn_视频号学习_8博主_0512",
+    "U:learn_视频号学习_8博主_0565",
+    "U:learn_视频号学习_8博主_0473",
+    "U:learn_视频号学习_8博主_0602",
+    "U:learn_视频号学习_8博主_0585",
+    "U:learn_视频号学习_8博主_0295",
+    "C:292",
+    "U:learn_视频号学习_8博主_0343",
+    "U:learn_视频号学习_8博主_0546"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.2,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q044",
+   "type": "note_reading",
+   "origin_category": "C_heldout_note",
+   "question": "阅读下面这段真实笔记，判断知识库中哪份资料能支撑其核心观点：\n笔记原文：这个仓库收了5800多个交易策略，我挑出一个在同一段比特币K线上换不同的30天各回测一次，结果从亏31%一直到赚31%。这是GitHub上的FMZ策略库，6000星，5800多个策略文件，九成是PineScript写的。我把文件全部扫了一遍，九成回测用的是比特币，一半以上的回测窗口不超过30天。就挑1000多个策略，都\n问题：这段笔记的核心观点/交易原则是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_第二期_1288"
+   ],
+   "gold_signal": "note_source_line_exact",
+   "source": "20261103_爱吃折耳根的Ace.md L2001",
+   "concept": "这个仓库收了5800多个交易策略，我挑出一个在同一段比特币K",
+   "top_ids": [
+    "U:learn_视频号学习_第二期_1288",
+    "U:learn_视频号学习_第二期_1264",
+    "U:learn_视频号学习_第二期_1222",
+    "U:learn_视频号学习_第二期_1126",
+    "U:learn_视频号学习_第二期_1291",
+    "U:learn_视频号学习_第二期_1199",
+    "U:learn_视频号学习_第二期_1190",
+    "U:learn_视频号学习_第二期_1165",
+    "U:learn_视频号学习_第二期_1167",
+    "U:learn_视频号学习_第二期_1289"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.2,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q045",
+   "type": "note_reading",
+   "origin_category": "C_heldout_note",
+   "question": "阅读下面这段真实笔记，判断知识库中哪份资料能支撑其核心观点：\n笔记原文：下午的行情不用再猜了，盘中紧急提醒。在昨晚外围科技大展的情况下，A股三大指数开盘直接往下冲，一路回踩到3668点创阶段性新低。恐慌情绪就像阶梯似的，一个台阶一个台阶的往下踩。题材一地鸡毛，个股更像瀑布似的往下掉，超4800价下跌。那么这到底是新一波调整的开始呢?还是下午会有神秘力量护盘迎来深微反弹呢?如果你光看市场满屏\n问题：这段笔记的核心观点/交易原则是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_8博主_0274"
+   ],
+   "gold_signal": "note_source_line_exact",
+   "source": "20261103_一修论市(1).md L1881",
+   "concept": "下午的行情不用再猜了，盘中紧急提醒。在昨晚外围科技大展的情况",
+   "top_ids": [
+    "U:learn_视频号学习_8博主_0274",
+    "U:learn_视频号学习_8博主_0250",
+    "U:learn_视频号学习_8博主_0228",
+    "U:learn_视频号学习_8博主_0281",
+    "U:learn_视频号学习_8博主_0129",
+    "U:learn_视频号学习_8博主_0170",
+    "U:learn_视频号学习_8博主_0268",
+    "U:learn_视频号学习_8博主_0113",
+    "U:learn_视频号学习_8博主_0263",
+    "U:learn_视频号学习_8博主_0220"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.2,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q046",
+   "type": "note_reading",
+   "origin_category": "C_heldout_note",
+   "question": "阅读下面这段真实笔记，判断知识库中哪份资料能支撑其核心观点：\n笔记原文：趋势失效条件——最后一条，先定义何时看错。 示例：收盘跌破此前已确认的结构低点，撤销原先看多假设，进入重新评估。失效规则不是成交保证，真实执行仍有跳空和滑点。\n问题：这段笔记的核心观点/交易原则是什么？",
+   "gold_doc_ids": [
+    "U:learn_laomu_notes_0172"
+   ],
+   "gold_signal": "note_source_line_exact",
+   "source": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L354",
+   "concept": "趋势失效条件——最后一条，先定义何时看错。 示例：收盘跌破此",
+   "top_ids": [
+    "U:learn_laomu_notes_0172",
+    "C:157",
+    "U:learn_laomu_notes_0160",
+    "U:learn_laomu_notes_0127",
+    "U:learn_视频号学习_8博主_1011",
+    "U:learn_laomu_notes_0162",
+    "U:learn_视频号学习_8博主_1014",
+    "U:learn_视频号学习_8博主_0585",
+    "C:286",
+    "U:learn_视频号学习_第二期_1199"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "answer": "该笔记的核心观点是确立“趋势失效条件”为交易中的最后一条原则，强调必须先明确定义何时判断看错（如收盘跌破结构低点），随后撤销原有假设并重新评估。同时指出失效规则并非成交保证，实际执行中需考虑跳空和滑点等真实市场因素。[3][5]",
+   "citation": true,
+   "consistency": 0.2734,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q047",
+   "type": "note_reading",
+   "origin_category": "C_heldout_note",
+   "question": "阅读下面这段真实笔记，判断知识库中哪份资料能支撑其核心观点：\n笔记原文：如果一段指标公式能直接变成你自己的行情界面呢?写下计算逻辑，图表就有了新的观察方式。这个开源项目叫HQ Chart，把行情图形库和指标公式执行器放在了一起。网页、VOO和微信小程序都有对应的接入方式。这个演示页就能编辑公式，检测语法。再把结果放进主图或副图，把均线参数从5改成20，同一段行情就换了一个观察尺度。均线之外\n问题：这段笔记的核心观点/交易原则是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_第二期_1219"
+   ],
+   "gold_signal": "note_source_line_exact",
+   "source": "20261103_爱吃折耳根的Ace.md L1311",
+   "concept": "如果一段指标公式能直接变成你自己的行情界面呢?写下计算逻辑，",
+   "top_ids": [
+    "U:learn_视频号学习_第二期_1219",
+    "U:learn_视频号学习_第二期_1162",
+    "U:learn_视频号学习_第二期_1199",
+    "U:learn_视频号学习_第二期_1253",
+    "U:learn_视频号学习_第二期_1132",
+    "U:learn_视频号学习_第二期_1243",
+    "U:learn_视频号学习_第二期_1208",
+    "U:learn_laomu_notes_0202",
+    "U:learn_视频号学习_第二期_1196",
+    "U:learn_laomu_notes_0249"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.2,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q048",
+   "type": "note_reading",
+   "origin_category": "C_heldout_note",
+   "question": "阅读下面这段真实笔记，判断知识库中哪份资料能支撑其核心观点：\n笔记原文：很多没有时间操作的投资者，应该如何进行股票投资?禅师在本课中给出了一个非常好而且实用的操作方法，非常值得大家学习运用。许多投资者在股票市的交易时段，因为与工作时间相冲突，所以是没有办法进行股票交易的，要解决这个问题。禅师说，最好的办法就是去买基金。虽然禅师很肯定地说过对基金没有信心，但是禅师还是认为，对于指数基金还是可\n问题：这段笔记的核心观点/交易原则是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_8博主_0313"
+   ],
+   "gold_signal": "note_source_line_exact",
+   "source": "20261103_乔木缠论ROEE.md L321",
+   "concept": "很多没有时间操作的投资者，应该如何进行股票投资?禅师在本课中",
+   "top_ids": [
+    "U:learn_视频号学习_8博主_0313",
+    "U:learn_视频号学习_8博主_0314",
+    "U:learn_视频号学习_8博主_0029",
+    "U:learn_视频号学习_第二期_1199",
+    "U:learn_视频号学习_8博主_0295",
+    "U:learn_视频号学习_8博主_0285",
+    "U:learn_视频号学习_8博主_0244",
+    "U:learn_视频号学习_8博主_0045",
+    "U:learn_视频号学习_8博主_0309",
+    "U:learn_视频号学习_8博主_0470"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.6,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q049",
+   "type": "note_reading",
+   "origin_category": "C_heldout_note",
+   "question": "阅读下面这段真实笔记，判断知识库中哪份资料能支撑其核心观点：\n笔记原文：月8号明天周三开盘要不要跑，市场会不会大跌，甚至暴跌呢?来不及等周三开盘了，我直接说结论，您现在就把这个视频保存好，明天收盘后回来找我验证。A股3990点发出最后的警告，就在刚刚，经过我深度的六七个小时的盯盘复盘，已经把7月8号周三主力的走势剧本的底层逻辑扒了个一干二净。我相信所有的散户看到今天这盘面都倒吸了一口凉气，\n问题：这段笔记的核心观点/交易原则是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_8博主_0185"
+   ],
+   "gold_signal": "note_source_line_exact",
+   "source": "20261103_一修论市(1).md L991",
+   "concept": "月8号明天周三开盘要不要跑，市场会不会大跌，甚至暴跌呢?来不",
+   "top_ids": [
+    "U:learn_视频号学习_8博主_0185",
+    "U:learn_视频号学习_8博主_0113",
+    "U:learn_视频号学习_8博主_0191",
+    "U:learn_视频号学习_8博主_0145",
+    "U:learn_视频号学习_8博主_0215",
+    "U:learn_视频号学习_8博主_0120",
+    "U:learn_视频号学习_8博主_0201",
+    "U:learn_视频号学习_8博主_0192",
+    "U:learn_视频号学习_8博主_0187",
+    "U:learn_视频号学习_8博主_0195"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.2,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  },
+  {
+   "qid": "Q050",
+   "type": "note_reading",
+   "origin_category": "C_heldout_note",
+   "question": "阅读下面这段真实笔记，判断知识库中哪份资料能支撑其核心观点：\n笔记原文：这并不代表着能反转，所以还要控制好仓位，不亦过重。最后记住一句话，市场连续三天出现极致的缩量，这种调整就是洗盘，而不是出货。在上涨趋势里，调整不是风险，而是机会。那还没有留下518的呢，赶紧补上518,518我要发。祝大家一路往上发，账户呢点呱呱。\n问题：这段笔记的核心观点/交易原则是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_8博主_0185"
+   ],
+   "gold_signal": "note_source_line_exact",
+   "source": "20261103_一修论市(1).md L991",
+   "concept": "这并不代表着能反转，所以还要控制好仓位，不亦过重。最后记住一",
+   "top_ids": [
+    "U:learn_视频号学习_8博主_0062",
+    "U:learn_视频号学习_8博主_0040",
+    "U:learn_视频号学习_8博主_0584",
+    "U:learn_视频号学习_8博主_0067",
+    "U:learn_视频号学习_8博主_0577",
+    "U:learn_视频号学习_8博主_0019",
+    "C:197",
+    "U:learn_laomu_notes_0202",
+    "U:learn_视频号学习_第二期_1199",
+    "U:learn_视频号学习_8博主_0104"
+   ],
+   "recall@5": 0.0,
+   "recall@10": 0.0,
+   "mrr": 0.0,
+   "diversity@5": 0.4,
+   "answer": null,
+   "citation": null,
+   "consistency": null,
+   "refusal": null,
+   "generated": false
+  }
+ ],
+ "examples": [
+  {
+   "qid": "Q001",
+   "type": "concept_real",
+   "origin_category": "A_concept_qa",
+   "question": "什么是「频谱资源与许可」？",
+   "gold_doc_ids": [
+    "C:001"
+   ],
+   "gold_signal": "card_concept_exact",
+   "source": "《rp_AP202609301830015406》 供应链风险管理。现有的联邦网络安全框架可以为管理和控制空间和地面段的风险提供一个起点 。 p6-12",
+   "concept": "频谱资源与许可",
+   "top_ids": [
+    "C:001",
+    "U:learn_视频号学习_第二期_1156",
+    "C:116",
+    "U:learn_laomu_notes_0213",
+    "C:055",
+    "C:068",
+    "C:061",
+    "U:learn_视频号学习_第二期_1265",
+    "U:learn_视频号学习_8博主_0712",
+    "U:learn_laomu_notes_0117"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.8,
+   "answer": "「频谱资源与许可」是指可靠的频谱接入，它是轨道数据中心实现实用价值的关键资源。通过简化许可流程和明确规则，可以减少监管不确定性及交易成本，并消除缓慢流程带来的阻碍。[3]",
+   "citation": true,
+   "consistency": 0.4262,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q006",
+   "type": "concept_real",
+   "origin_category": "A_concept_qa",
+   "question": "什么是「愿意秒内交易超过300笔」？",
+   "gold_doc_ids": [
+    "C:240"
+   ],
+   "gold_signal": "card_concept_exact",
+   "source": "视频号学习_8博主 · 20261103_数据帝-量化开发.md · L231",
+   "concept": "愿意秒内交易超过300笔",
+   "top_ids": [
+    "C:240",
+    "U:learn_视频号学习_8博主_0660",
+    "C:246",
+    "U:learn_laomu_notes_0117",
+    "U:learn_视频号学习_8博主_0676",
+    "U:learn_视频号学习_第二期_1190",
+    "U:learn_视频号学习_8博主_0075",
+    "U:learn_视频号学习_第二期_1125",
+    "U:learn_视频号学习_第二期_0033",
+    "U:learn_视频号学习_第二期_1118"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.8,
+   "answer": "“愿意秒内交易超过 300 笔”是判定高频交易的两个标准条件之一，指单个账户在单个交易所的成交量。若满足此条件或全天交易超过 2 万笔，则被归类为高频交易，否则归为低频交易。[3][4]",
+   "citation": true,
+   "consistency": 0.281,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q011",
+   "type": "reading_comprehension",
+   "origin_category": "C_reading_comprehension",
+   "question": "创业板指日线向下笔未跌破1740点时文中如何判断？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_8博主_0294"
+   ],
+   "gold_signal": "concept_source_line",
+   "source": "20261103_乔木缠论ROEE.md L131",
+   "concept": "创业板指缠论分析",
+   "top_ids": [
+    "U:learn_视频号学习_8博主_0294",
+    "U:learn_视频号学习_8博主_0024",
+    "U:learn_视频号学习_8博主_0386",
+    "U:learn_视频号学习_8博主_0383",
+    "U:learn_视频号学习_8博主_0040",
+    "U:learn_视频号学习_8博主_0377",
+    "U:learn_视频号学习_8博主_0025",
+    "U:learn_视频号学习_8博主_0413",
+    "U:learn_视频号学习_8博主_0395",
+    "U:learn_视频号学习_8博主_0394"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.4,
+   "answer": "当创业板指日线向下笔最低点运行至 1742 点但未跌破 1740 点的第二类买点时，文中认为完全没有必要紧张。在此情况下，市场后续完全有可能走出日线的向上一笔并创出新高。[3]",
+   "citation": true,
+   "consistency": 0.1787,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q021",
+   "type": "reading_comprehension",
+   "origin_category": "C_reading_comprehension",
+   "question": "韭菜盘GCP AI的核心组成是什么？",
+   "gold_doc_ids": [
+    "U:learn_视频号学习_第二期_1104"
+   ],
+   "gold_signal": "concept_source_line",
+   "source": "20261103_爱吃折耳根的Ace.md L161",
+   "concept": "多agent投研团队",
+   "top_ids": [
+    "U:learn_视频号学习_第二期_1104",
+    "U:learn_视频号学习_第二期_1168",
+    "U:learn_视频号学习_第二期_1142",
+    "U:learn_视频号学习_第二期_1292",
+    "U:learn_视频号学习_第二期_1093",
+    "U:learn_视频号学习_第二期_1150",
+    "U:learn_视频号学习_8博主_0564",
+    "U:learn_视频号学习_第二期_1161",
+    "U:learn_视频号学习_第二期_1089",
+    "U:learn_视频号学习_第二期_1181"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.2,
+   "answer": "韭菜盘 GCP AI 的核心是由技术分析师、基本面分析师、情绪分析师和风控专家组成的多 Agent 投研团队。这些角色在开源桌面应用中实时讨论并互相验证，能够记住历史对话并动态刷新 K 线、盘口及热点舆情数据 [2]。",
+   "citation": true,
+   "consistency": 0.1965,
+   "refusal": false,
+   "generated": true
+  },
+  {
+   "qid": "Q026",
+   "type": "note_reading",
+   "origin_category": "C_heldout_note",
+   "question": "阅读下面这段真实笔记，判断知识库中哪份资料能支撑其核心观点：\n笔记原文：第 1 个，不做独立验证：别只盯着回测，让新数据来检验。先补流程，再谈模型。\n问题：这段笔记的核心观点/交易原则是什么？",
+   "gold_doc_ids": [
+    "U:learn_laomu_notes_0064"
+   ],
+   "gold_signal": "note_source_line_exact",
+   "source": "20261102_老木创业笔记_交易老木29条视频文案汇编.md L183",
+   "concept": "第 1 个，不做独立验证：别只盯着回测，让新数据来检验。先补",
+   "top_ids": [
+    "U:learn_laomu_notes_0064",
+    "U:learn_laomu_notes_0249",
+    "U:learn_视频号学习_第二期_1153",
+    "U:learn_视频号学习_第二期_1266",
+    "U:learn_laomu_notes_0276",
+    "U:learn_laomu_notes_0219",
+    "U:learn_视频号学习_第二期_1235",
+    "U:learn_laomu_notes_0267",
+    "U:learn_laomu_notes_0173",
+    "U:learn_视频号学习_第二期_1199"
+   ],
+   "recall@5": 1.0,
+   "recall@10": 1.0,
+   "mrr": 1.0,
+   "diversity@5": 0.4,
+   "answer": "该笔记强调不应仅依赖历史回测，而应引入新数据进行独立验证，并主张在完善研究流程后再构建或讨论模型。这一观点与资料 [1] 中“别只盯着回测，让新数据来检验。先补流程，再谈模型”的核心思想完全一致。同时，资料 [2] 也进一步阐述了通过多源数据（如情绪、链上、衍生品等）互相验证，使策略经得起检验的原则。[1][2]",
+   "citation": true,
+   "consistency": 0.1917,
+   "refusal": false,
+   "generated": true
+  }
+ ],
+ "limitations": [
+  "gold 映射为本批评测口径（概念=卡 concept/源文件行号；笔记=源文件+行号单元 id），非人工逐题标注；",
+  "笔记类问题由笔记原文构造（阅读理解形态），query 含原文节选，检索难度低于真实用户提问；",
+  "引用率 = 答案含 [1..5] 或命中上下文来源/概念（W6 同口径）；闭卷一致性 = 中文 bigram Jaccard；均为规则近似；",
+  "生成阶段抽样 10 题（任务要求；W6 为 20 题合成题），引用率/一致性样本量小；",
+  "只读：不写生产库/索引；bge-m3 与 qwen3.5:9b 均为本机 ollama，不联网。"
+ ]
+}

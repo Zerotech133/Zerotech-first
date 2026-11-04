@@ -122,7 +122,6 @@ def build(*, cards_path: str | Path = CARDS, units_path: str | Path = UNITS,
                    "depth_ok": card_themes.get(t, 0) >= GAP_LT} for t in themes]
     depth_rows.sort(key=lambda r: (r["cards"], -r["units"], r["theme"]))
     gaps = [r["theme"] for r in depth_rows if r["cards"] < GAP_LT and r["units"] > 0]
-    tier2 = [r["theme"] for r in depth_rows if GAP_LT <= r["cards"] < 5 and r["units"] > 0]
     # 2) 生成候选：缺口(<3卡)优先，不足 20 时按「深度 + 单元密度」补齐到 20-30
     card_concepts = {learn.normalize(c.get("concept")) for c in cards if learn.normalize(c.get("concept"))}
     seen = set(card_concepts)

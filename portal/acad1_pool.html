@@ -60,8 +60,8 @@ tr.detail td{padding:10px 12px;font-size:12px;color:var(--gray-6);line-height:1.
   </div>
   <div class="tools">
     <button class="btn" id="btn-refresh">刷新</button>
+    <button class="btn" id="btn-full">全池30（默认）</button>
     <button class="btn" id="btn-single">单日视图</button>
-    <button class="btn" id="btn-full">全池30</button>
     <span class="meta" id="gen-at"></span>
     <span class="meta" id="status"></span>
     <a class="btn" href="/quant_paper.html" style="text-decoration:none">paper 组合页</a>
@@ -74,6 +74,7 @@ tr.detail td{padding:10px 12px;font-size:12px;color:var(--gray-6);line-height:1.
   <table><thead><tr><th>代码</th><th>名称</th><th>tier</th><th>来源</th><th>D1裁决</th><th>置信</th><th>价格</th><th>动作</th></tr></thead>
   <tbody id="rows"><tr><td colspan="8" class="empty">加载中…</td></tr></tbody></table>
   <div class="note">本页只读：推荐池由 ACAD1（司马徽）按健康策略生成；池内全部逐票复盘，D1 通过≠下单。</div>
+  <div class="note">视图口径：默认「全池30」= 每市场最新池日只读聚合（CN/HK/US/CRYPTO 跨日，stale 显式标注）；「单日视图」= 单日 max(pool_date)（当前 12）。切换仅改读取视图，不改任何数据。</div>
 </div>
 <script>
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -119,7 +120,7 @@ function detailHtml(r){
 async function load(){
   const err=document.getElementById('err'); err.innerHTML='';
   try{
-    const url=currentView==='full' ? '/api/acad1/pool?view=full' : '/api/acad1/pool';
+    const url=currentView==='single' ? '/api/acad1/pool?view=single' : '/api/acad1/pool';
     const r=await fetch(url,{cache:'no-store'});
     if(!r.ok) throw new Error('HTTP '+r.status);
     const d=await r.json(); if(!d.ok) throw new Error(d.error||'bad payload');
@@ -164,9 +165,9 @@ function toggle(tr){
   const code=tr.getAttribute('data-code'); const d=document.getElementById('d-'+code);
   if(d) d.style.display = d.style.display==='table-row' ? 'none' : 'table-row';
 }
-let currentView='single';
+let currentView='full';
 function setView(v){
-  currentView=(v==='full')?'full':'single';
+  currentView=(v==='single')?'single':'full';
   document.getElementById('btn-single').classList.toggle('active',currentView==='single');
   document.getElementById('btn-full').classList.toggle('active',currentView==='full');
   load();
@@ -174,7 +175,7 @@ function setView(v){
 document.getElementById('btn-refresh').addEventListener('click',load);
 document.getElementById('btn-single').addEventListener('click',function(){setView('single');});
 document.getElementById('btn-full').addEventListener('click',function(){setView('full');});
-setView('single');
+setView('full');
 setInterval(load,60000);
 </script>
 

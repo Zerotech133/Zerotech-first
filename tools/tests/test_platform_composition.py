@@ -40,7 +40,7 @@ def comp_mod():
 def test_manifests_schema_pass():
     rc, out, err = _run(["tools/composition.py", "validate", "--all"])
     assert rc == 0, f"rc={rc}\n{out}\n{err}"
-    assert "6 个组合" in out or "组合" in out
+    assert "7 个组合" in out or "组合" in out
 
 
 def test_templates_schema_pass():
@@ -62,7 +62,7 @@ def test_validate_all_json_is_pure_json():
     rc, out, err = _run(["tools/composition.py", "validate", "--all", "--json"])
     assert rc == 0, f"rc={rc}\n{out}\n{err}"
     rows = json.loads(out)  # stdout 必须是可解析 JSON（人类汇总走 stderr）
-    assert len(rows) == 6
+    assert len(rows) == 7  # 2026-11-03 dev-legion 入册（6→7）
     assert all(r["ok"] for r in rows)
     assert "汇总" in err
 
@@ -124,8 +124,8 @@ def test_plan_json_clean():
     assert payload["strict"] is False
     assert payload["findings"] == []
     assert payload["summary"]["errors"] == 0
-    assert payload["registry_count"] == 6
-    assert payload["manifest_count"] == 6
+    assert payload["registry_count"] == 7  # 2026-11-03 dev-legion 入册（6→7）
+    assert payload["manifest_count"] == 7
 
 
 def test_plan_detects_drift(tmp_path, comp_mod):

@@ -23,6 +23,7 @@ import d1_data  # noqa: E402
 import paper_data  # noqa: E402
 import pool_data  # noqa: E402
 import sim_confirm  # noqa: E402
+import ifs_envelope  # noqa: E402  IFS F1d（WO-IFS-WARROOM-ENVELOPE-20261104）
 
 STRATEGIES = [
     {"id": "chanlun", "name": "缠论策略", "color": "#d6a94a", "desc": "缠论三类买卖点 / ST1"},
@@ -118,3 +119,30 @@ def war_room_snapshot():
         },
         "trading_permitted": False,
     }
+
+
+def snapshot_envelope(handler):
+    """IFS F1d：/api/war-room/snapshot 统一 envelope 响应，返回 (payload, http_status)。
+
+    只读聚合，复用 ``portal/ifs_envelope.py``（F1b）：
+    - 成功：ok/schema_version=war_room/v1/request_id/source/data/warnings + 旧顶层字段；
+    - 失败：fail-visible error/v1（不伪造快照；前端回落页面内静态快照）。
+
+    schema ``war_room/v1`` 为 F1d 本地契约（registry 暂无 war-room 条目，待登记）。
+    """
+    try:
+        return (
+            ifs_envelope.ok_payload(handler, "war_room.snapshot.get", war_room_snapshot()),
+            200,
+        )
+    except Exception as exc:  # noqa: BLE001 单接口失败不拖垮页面（前端回落静态快照）
+        return (
+            ifs_envelope.error_payload(
+                handler,
+                "war_room.snapshot.get",
+                {"ok": False, "error": "war_room_snapshot_failed",
+                 "message": str(exc)[:300]},
+                500,
+            ),
+            500,
+        )

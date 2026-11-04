@@ -324,7 +324,7 @@ def precheck_entry(entry: dict, existing_cards: list[dict], batch_index: dict,
     )
     if hard_reject:
         verdict = "reject"
-    elif reason_count := len([f for f in flags if not f.startswith("TRACE_MISSING:")]):
+    elif any(not f.startswith("TRACE_MISSING:") for f in flags):
         # 有任一软性 flag → revise（可修复）
         verdict = "revise"
     else:

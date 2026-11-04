@@ -20,7 +20,8 @@
       "reports_to": "A0",
       "onboarded_at": "2026-11-04",
       "office_title": "治理官",
-      "role_profile": "governance_seat"
+      "role_profile": "governance_seat",
+      "prompt_file": "agent_platform/prompts/zhaoyun_governance.md"
     }
   ]
 }

@@ -126,18 +126,30 @@ def test_repair_fills_pit_when_ledger_has_evidence(tmp_path):
 
 
 def test_repair_skips_legacy_ledger_without_evidence(tmp_path):
+    """无证据接线字段的 legacy 行：PIT 不凭空补；但 F5c 仍回填 outcome_id/六 ID。"""
     ledger = _write_jsonl(tmp_path / "ledger.jsonl",
                           [_ledger_row(run_id="r-old")])  # 无证据接线字段
     out = _write_jsonl(tmp_path / "out.jsonl", [{
         "run_id": "r-old", "date": "2026-10-27", "symbol": "600519",
         "decision_id": "keep-me", "model": "keep-model", "hit": None}])
-    before = out.read_bytes()
     rep = m.run_backfill(ledger, out, since="2026-10-30", write=True)
+    # 旧 repaired 语义（decision/model/PIT）不变：不补 PIT
     assert rep["repaired"] == 0 and rep["repaired_pit"] == 0
-    assert rep["written"] is False
-    assert out.read_bytes() == before  # 不为无证据旧行凭空补时点
+    # IFS F5c：ID 链回填单独计数并触发写盘（只补空值/不覆盖原字段）
+    assert rep["ids_repaired"] == 1
+    assert rep["id_fields"]["outcome_id"] == 1
+    assert rep["written"] is True
     row = m._load_jsonl(str(out))[0]
-    assert "pit_as_of" not in row
+    assert "pit_as_of" not in row  # 不为无证据旧行凭空补时点
+    assert row["decision_id"] == "keep-me" and row["model"] == "keep-model"
+    assert row["outcome_id"] and row["outcome_id"].startswith("out-20261027-")
+    for key in m.SIX_ID_KEYS:
+        assert key in row
+    # 补完再跑：ID 链已齐 → 零写、字节不变（幂等）
+    before = out.read_bytes()
+    again = m.run_backfill(ledger, out, since="2026-10-30", write=True)
+    assert again["ids_repaired"] == 0 and again["written"] is False
+    assert out.read_bytes() == before
 
 
 def test_existing_pit_values_not_overwritten(tmp_path):

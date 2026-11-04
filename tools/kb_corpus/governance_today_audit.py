@@ -171,7 +171,7 @@ report = {
 (R / f"governance_today_{STAMP}.json").write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
 
 # CSV
-csv_p = REPO / "deliverables" / f"2026-11-03_今日入库治理情况.csv"
+csv_p = REPO / "deliverables" / "2026-11-03_今日入库治理情况.csv"
 csv_p.parent.mkdir(parents=True, exist_ok=True)
 with csv_p.open("w", encoding="utf-8-sig", newline="") as fh:
     w = csv.writer(fh)
@@ -189,12 +189,12 @@ md += ["## 一、总览", "", "| 项 | 数值 |", "|---|---|",
        f"| 视频号一期单元（去重后） | **{units_by_project.get('视频号学习_8博主', 0)}** |",
        f"| 第二期单元（去重后） | **{units_by_project.get('视频号学习_第二期', 0)}** |",
        f"| **有效单元（剔除指标说明书）** | **{sum(r['effective_units'] for r in rows)}**（一期 800 + 第二期 245） |",
-       f"| 元数据行过滤（一期） | 2,795 行剔除（73.3%） |",
-       f"| 去重 | 一期 1018→800（-218）；第二期 1293→1116（-177） |",
-       f"| 核验（溯源） | 一期 100%；第二期除指标说明书 97.6% 外均 100% |",
-       f"| 学习卡 | 400 张（今日文件贡献 213；审计 0 问题 / 可追溯 100%） |",
-       f"| 候选池（去重后） | 一期 1,326 / 第二期 869（指标说明书 823 排除）→ **有效 1,372** |",
-       f"| 排除项 | 指标说明书 871 单元 / 823 候选（下游排除，文件保留可回滚） |",
+       "| 元数据行过滤（一期） | 2,795 行剔除（73.3%） |",
+       "| 去重 | 一期 1018→800（-218）；第二期 1293→1116（-177） |",
+       "| 核验（溯源） | 一期 100%；第二期除指标说明书 97.6% 外均 100% |",
+       "| 学习卡 | 400 张（今日文件贡献 213；审计 0 问题 / 可追溯 100%） |",
+       "| 候选池（去重后） | 一期 1,326 / 第二期 869（指标说明书 823 排除）→ **有效 1,372** |",
+       "| 排除项 | 指标说明书 871 单元 / 823 候选（下游排除，文件保留可回滚） |",
        f"| 多源概念 | **{multi.get('final_multi_source')}/30（人工双签）** |",
        f"| learning_gate | {gate.get('summary', {}).get('projects')} 项目 / {gate.get('summary', {}).get('checks')} 检查 / fail={gate.get('summary', {}).get('fail')} |",
        ""]

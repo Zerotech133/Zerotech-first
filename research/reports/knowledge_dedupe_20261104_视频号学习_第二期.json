@@ -1,0 +1,46 @@
+{
+ "schema_version": 1,
+ "date": "20261104",
+ "generated_at": "2026-11-04T03:14:43+08:00",
+ "generator": "tools/kb_corpus/knowledge_dedupe.py（W0-2 重复单元合并）",
+ "mode": "dry-run",
+ "dry_run": true,
+ "project": "视频号学习_第二期",
+ "source": {
+  "path": "C:\\项目\\知识库\\30_知识单元\\视频号学习_第二期_units_draft.jsonl",
+  "sha256": "e6e9845afb0040ee5fdd2c0528dbf956556960c1e424aab5946129a7bd5f1685",
+  "bytes": 897765
+ },
+ "policy": {
+  "key": "normalize_claim_first_14_cjk",
+  "skip_boilerplate": true,
+  "merge": "保留首条 + merged_count/merged_unit_ids/evidence_list",
+  "write": "--apply 才写；写前备份 research/reports/backups/"
+ },
+ "stats": {
+  "input": 1116,
+  "output": 1116,
+  "dup_groups": 0,
+  "duplicate_rows": 0,
+  "merged": 0,
+  "boilerplate": 28,
+  "by_group_size": {}
+ },
+ "duplicates": [],
+ "kept_sample": [
+  "learn_视频号学习_第二期_0001",
+  "learn_视频号学习_第二期_0002",
+  "learn_视频号学习_第二期_0003",
+  "learn_视频号学习_第二期_0004",
+  "learn_视频号学习_第二期_0005",
+  "learn_视频号学习_第二期_0006",
+  "learn_视频号学习_第二期_0007",
+  "learn_视频号学习_第二期_0008",
+  "learn_视频号学习_第二期_0009",
+  "learn_视频号学习_第二期_0010"
+ ],
+ "notes": [],
+ "backup": null,
+ "applied": false,
+ "disclaimer": "W0-2 重复单元合并：默认 dry-run；不修改知识卡/其他项目；不构成投资建议。"
+}

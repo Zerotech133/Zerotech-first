@@ -175,7 +175,6 @@ def _agg(rows: list[dict]) -> dict:
     if not n:
         return {"n": 0}
     answered = [r for r in rows if r["answered"]]
-    graded = [r for r in rows if r["supported_ratio"] is not None]
     total_cit = sum(r["n_citations"] for r in rows)
     exists_cit = sum(r["citations_exists"] for r in rows)
     flags = sum(r["hallucination_flags_count"] for r in rows)

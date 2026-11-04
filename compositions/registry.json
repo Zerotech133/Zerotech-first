@@ -1,6 +1,6 @@
 {
   "schema": "zerobound/composition-registry/v0.1",
-  "generated_at": "2026-11-02",
+  "generated_at": "2026-11-03",
   "status": "draft-shadow",
   "note": "P0 影子账本：只登记、不装载、不改变运行时。P1 起由 tools/composition.py 校验与维护。",
   "host": {
@@ -28,9 +28,9 @@
       "manifest": "compositions/acad1-legion/manifest.yaml",
       "status": {
         "phase": "shadow",
-        "health": "unknown",
+        "health": "degraded",
         "validated": false,
-        "evidence": "2026-11-02 只读反推；双池/寄居/临时 JSON 三项待 P2 净化"
+        "evidence": "2026-11-04 live 只读验收（task-57）：/acad1/pool 8734=200（旧台账 404 已过期）；/academy/shuijing=200（已加载 acad1_client 面板）；8105 /api/v1/health=200；6 research 接口未登录 401（8105 JWT，非 auth_request）；池 stale=true/freshness_days=5 > SLA 1d → health=degraded（不掩盖）；2026-11-02 双池/寄居/临时 JSON 三项 P2 待净化"
       }
     },
     {
@@ -111,6 +111,22 @@
         "health": "unknown",
         "validated": false,
         "evidence": "11-04 全链路彩排/复核；报告驱动、无 manifest、靠脚本与报告"
+      }
+    },
+    {
+      "id": "dev-legion",
+      "name": "曹操军团（研发军团）",
+      "tier": "legion",
+      "owner": "ARCH1",
+      "version": "0.1.0",
+      "lifecycle": "draft",
+      "host": "lingjie",
+      "manifest": "compositions/dev-legion/manifest.yaml",
+      "status": {
+        "phase": "shadow",
+        "health": "unknown",
+        "validated": false,
+        "evidence": "2026-11-03 WP1+WP3：/api/dev/legion v2 extras 已 live；契约（ADR-020 修订 + legion_screen_contract.json optional_extensions）只读登记，待 ARCH1 预审；影子清单不接运行时"
       }
     }
   ],

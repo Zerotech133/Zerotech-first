@@ -150,6 +150,16 @@ def handle(msg: dict) -> dict:
 
 
 def main(argv=None):
+    # WO-MCP-UTF8-GUARD-20261104（判例 K-STOCK-428；根因见 WO-MCP-ENCODING-AUDIT-20261104）：
+    # Hermes 以管道拉起 MCP server，且 spawn env 白名单不含 PYTHONIOENCODING/PYTHONUTF8，
+    # Windows 文本 stdout 默认 cp936/GBK → json.dumps(ensure_ascii=False) 的中文按 GBK 字节
+    # 写出，客户端按 UTF-8 + errors="replace" 解码 → U+FFFD 乱码。故显式 UTF-8；
+    # 流不可 reconfigure（如测试 CaptureIO）时无害跳过。
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
     if "--selftest" in (argv or sys.argv):
         print(json.dumps({"tools": len(TOOLS), "stats": _reg().stats()}, ensure_ascii=False, indent=1))
         return 0

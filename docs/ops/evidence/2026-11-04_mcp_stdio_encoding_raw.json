@@ -1,0 +1,322 @@
+{
+ "tool": "mcp_stdio_encoding_probe_v2",
+ "task": "task-44 / WO-MCP-ENCODING-AUDIT-20261104",
+ "ts": "2026-11-04T03:26:04+08:00",
+ "read_only": true,
+ "causal_chain": [
+  "Hermes tools/mcp_tool_config.py::_build_safe_env 白名单不含 PYTHONIOENCODING/PYTHONUTF8；mcp SDK get_default_environment() 同样不含",
+  "6 个 MCP server 用 sys.stdout.write(json.dumps(ensure_ascii=False)) 且未 reconfigure(utf-8)",
+  "Windows 子进程 stdout=pipe 且无 UTF-8 强制时 sys.stdout.encoding=gbk（cp936）→ 中文按 GBK 字节写出",
+  "Hermes mcp 2.0.0 TextReceiveStream(encoding='utf-8', errors='replace')（mcp_tool_transport.py L371-374）→ 非法 UTF-8 变 U+FFFD",
+  "WebUI /api/mcp/tools 把已损坏 str 原样 json.dumps → 合法 UTF-8 JSON 里携带乱码（渲染层无罪）"
+ ],
+ "child_stdout_encoding": {
+  "hermes_like_env": "stdout=gbk preferred=cp936 utf8_mode=0",
+  "+PYTHONIOENCODING=utf-8": "stdout=utf-8 preferred=cp936 utf8_mode=0",
+  "+PYTHONUTF8=1": "stdout=utf-8 preferred=utf-8 utf8_mode=1"
+ },
+ "servers": [
+  {
+   "label": "d1-research",
+   "spawn": [
+    "C:\\Program Files\\Python311\\python.exe",
+    "C:\\项目\\老田的AI助手\\agent_platform\\tools\\d1_research_mcp.py"
+   ],
+   "tools_count": 1,
+   "lines_valid_utf8": [
+    true,
+    false
+   ],
+   "decoded_by": [
+    "utf-8",
+    "gbk"
+   ],
+   "all_utf8": false,
+   "sample_tool": "d1_research",
+   "sample_desc_gbk_or_utf8": "D1 鲁肃投研快照：池内股票、已研究/可买/盯盘/pending 汇总；可按代码筛选。只读、paper-only。",
+   "error": null,
+   "duration_s": 0.19,
+   "sample_line_utf8_replace": "{\"jsonrpc\": \"2.0\", \"id\": 2, \"result\": {\"tools\": [{\"name\": \"d1_research\", \"description\": \"D1 ³��Ͷ�п��գ����ڹ�Ʊ�����о�/����/����/pending ���ܣ��ɰ�����ɸѡ��ֻ����paper-only��\", \"inputSchema\": {\"type\": \"object\", \"properties\": {\"code\": {\"type\": \"string\", \"description\": \"��ѡ��6λ��Ʊ����\"}, \"limit\": {\"type\": \"integer\", \"minimum\": 1, \"maximum\": 100, \"description\": \"��ѡ����෵��������Ĭ�� 20\"}}, \"additionalProperties\": false}}]}}",
+   "webui_compare": {
+    "webui_tool": "mcp__d1_research__d1_research",
+    "webui_desc_is_garbled": true,
+    "equals_server_utf8_replace": true,
+    "server_utf8_replace_reconstructed": "D1 ³��Ͷ�п��գ����ڹ�Ʊ�����о�/����/����/pending ���ܣ��ɰ�����ɸѡ��ֻ����paper-only��",
+    "webui_desc": "D1 ³��Ͷ�п��գ����ڹ�Ʊ�����о�/����/����/pending ���ܣ��ɰ�����ɸѡ��ֻ����paper-only��"
+   }
+  },
+  {
+   "label": "dw-governance",
+   "spawn": [
+    "C:\\Program Files\\Python311\\python.exe",
+    "C:\\项目\\老田的AI助手\\agent_platform\\tools\\dw_governance_mcp.py"
+   ],
+   "tools_count": 6,
+   "lines_valid_utf8": [
+    true,
+    false
+   ],
+   "decoded_by": [
+    "utf-8",
+    "gbk"
+   ],
+   "all_utf8": false,
+   "sample_tool": "dw_stats",
+   "sample_desc_gbk_or_utf8": "数据仓数据集统计：总量、登记数、有取数入口数、按域/类型分布。只读。",
+   "error": null,
+   "duration_s": 0.14,
+   "sample_line_utf8_replace": "{\"jsonrpc\": \"2.0\", \"id\": 2, \"result\": {\"tools\": [{\"name\": \"dw_stats\", \"description\": \"���ݲ����ݼ�ͳ�ƣ��������Ǽ�������ȡ�������������/���ͷֲ���ֻ����\", \"inputSchema\": {\"type\": \"object\", \"properties\": {}, \"additionalProperties\": false}}, {\"name\": \"dw_list\", \"description\": \"�г����ݼ���dataset_id/label/domain/kind/path/registered/exposed����ֻ����\", \"inputSchema\": {\"type\": \"object\", \"properties\": {\"domain\": {\"type\": \"string\", \"description\": \"�򣺽ӿ�����/��Դ�鱨/ѧϰ����/ƽ̨����\"}, \"q\": {\"type\": \"string\", \"description\": \"�ؼ��ʣ�label/path/id��\"}, \"registered\": {\"type\": \"boolean\", \"description\": \"�Ƿ��ѵǼ�\"}, \"exposed\": {\"type\": \"boolean\", \"description\": \"�Ƿ���ȡ�����\"}, \"limit\": {\"type\": \"integer\", \"minimum\": 1, \"maximum\": 200}}, \"additionalProperties\": false}}, {\"name\": \"dw_search\", \"description\": \"���ؼ��ʼ������ݼ����ȼ� list --q����ֻ����\", \"inputSchema\": {\"type\": \"object\", \"properties\": {\"q\": {\"type\": \"string\"}, \"limit\": {\"type\": \"integer\", \"minimum\": 1, \"maximum\": 200}}, \"required\": [\"q\"], \"additionalProperties\": false}}, {\"name\": \"dw_get\", \"description\": \"�� dataset_id ȡ���ݼ�Ԫ���ݡ�ֻ����\", \"inputSchema\": {\"type\": \"object\", \"properties\": {\"id\": {\"type\": \"string\"}}, \"required\": [\"id\"], \"additionalProperties\": false}}, {\"name\": \"dw_sample\", \"description\": \"�� dataset_id ȡ������sqlite ����/parquet ��/json ͷ/Ŀ¼�ļ��嵥����ֻ����\", \"inputSchema\": {\"type\": \"object\", \"properties\": {\"id\": {\"type\": \"string\"}, \"n\": {\"type\": \"integer\", \"minimum\": 1, \"maximum\": 20}}, \"required\": [\"id\"], \"additionalProperties\": false}}, {\"name\": \"dw_query\", \"description\": \"ͨ��ֻ����ѯ��S3-06 P1������ dataset_id ����/����/��ҳ/ͶӰ/������sqlite �߲����� WHERE��parquet �� pyarrow ����+��ͶӰ��jsonl/���Ŀ¼/��Լ����Ȳ�֧�����巵�� not_supported��fail-visible�������� sample����\", \"inputSchema\": {\"type\": \"object\", \"properties\": {\"id\": {\"type\": \"string\", \"description\": \"dataset_id\"}, \"where\": {\"description\": \"�ṹ��������[{field,op,value}]��op �� = != > >= < <= in like���ֶ�/���Ӱ�������������ԭʼ SQL\", \"type\": \"array\"}, \"order\": {\"description\": \"����[{field,desc}]����2 ����parquet ��С�����֧�֣�\", \"type\": \"array\"}, \"limit\": {\"type\": \"integer\", \"minimum\": 1, \"maximum\": 1000}, \"offset\": {\"type\": \"integer\", \"minimum\": 0, \"maximum\": 100000}, \"since\": {\"type\": \"string\", \"description\": \"ʱ���½� YYYY-MM-DD/YYYYMMDD\"}, \"columns\": {\"description\": \"��ͶӰ������򶺺Ŵ���\"}, \"count\": {\"type\": \"boolean\", \"description\": \"ͬʱ��������\"}}, \"required\": [\"id\"], \"additionalProperties\": false}}]}}",
+   "webui_compare": {
+    "webui_tool": "mcp__dw_governance__dw_get",
+    "webui_desc_is_garbled": true,
+    "equals_server_utf8_replace": true,
+    "server_utf8_replace_reconstructed": "�� dataset_id ȡ���ݼ�Ԫ���ݡ�ֻ����",
+    "webui_desc": "�� dataset_id ȡ���ݼ�Ԫ���ݡ�ֻ����"
+   }
+  },
+  {
+   "label": "dw-quality",
+   "spawn": [
+    "C:\\项目\\py312\\python.exe",
+    "C:\\项目\\老田的AI助手\\agent_platform\\tools\\dw_quality_mcp.py"
+   ],
+   "tools_count": 6,
+   "lines_valid_utf8": [
+    true,
+    false
+   ],
+   "decoded_by": [
+    "utf-8",
+    "gbk"
+   ],
+   "all_utf8": false,
+   "sample_tool": "quality_snapshot",
+   "sample_desc_gbk_or_utf8": "数据质量快照：聚合 freshness/quality/manifest/backup/metadata 五项检查的状态与摘要。只读。",
+   "error": null,
+   "duration_s": 0.12,
+   "sample_line_utf8_replace": "{\"jsonrpc\": \"2.0\", \"id\": 2, \"result\": {\"tools\": [{\"name\": \"quality_snapshot\", \"description\": \"�����������գ��ۺ� freshness/quality/manifest/backup/metadata �������״̬��ժҪ��ֻ����\", \"inputSchema\": {\"type\": \"object\", \"properties\": {}, \"additionalProperties\": false}}, {\"name\": \"freshness\", \"description\": \"���ʶȣ����� prod_max��parquet footer��+ 4 ��ͣ�ڣ���ѡ table ֻȡ������ֻ����\", \"inputSchema\": {\"type\": \"object\", \"properties\": {\"table\": {\"type\": \"string\", \"description\": \"catalog �������� daily��ʡ��=ȫ��\"}}, \"additionalProperties\": false}}, {\"name\": \"quality_checks\", \"description\": \"ȷ����������飺store ����/�շ�Ƭ/�����ظ�/��������ѡ��������ֻ����\", \"inputSchema\": {\"type\": \"object\", \"properties\": {\"table\": {\"type\": \"string\", \"description\": \"catalog �������� daily��ʡ��=��������\"}}, \"additionalProperties\": false}}, {\"name\": \"manifest\", \"description\": \"4 �� _manifest.json��tdx/tushare/xueqiu/cnopendata�������� catalog ������������ߡ�ֻ����\", \"inputSchema\": {\"type\": \"object\", \"properties\": {}, \"additionalProperties\": false}}, {\"name\": \"backup\", \"description\": \"���ݻ�ִ�˶ԣ����±��ݴ���������ȫ�ԡ�offsite_remote_receipt���ϵ�Сʱ����ֻ����\", \"inputSchema\": {\"type\": \"object\", \"properties\": {}, \"additionalProperties\": false}}, {\"name\": \"lineage_impact\", \"description\": \"�ı�Ӱ���棨��̬����catalog �� �� store �� alias �� �������ѷ��嵥��ֻ����\", \"inputSchema\": {\"type\": \"object\", \"properties\": {\"table\": {\"type\": \"string\", \"description\": \"catalog �������� daily\"}}, \"required\": [\"table\"], \"additionalProperties\": false}}]}}",
+   "webui_compare": {
+    "webui_tool": "mcp__dw_quality__backup",
+    "webui_desc_is_garbled": true,
+    "equals_server_utf8_replace": true,
+    "server_utf8_replace_reconstructed": "���ݻ�ִ�˶ԣ����±��ݴ���������ȫ�ԡ�offsite_remote_receipt���ϵ�Сʱ����ֻ����",
+    "webui_desc": "���ݻ�ִ�˶ԣ����±��ݴ���������ȫ�ԡ�offsite_remote_receipt���ϵ�Сʱ����ֻ����"
+   }
+  },
+  {
+   "label": "dw-catalog",
+   "spawn": [
+    "C:\\项目\\py312\\python.exe",
+    "C:\\项目\\老田的AI助手\\agent_platform\\tools\\dw_catalog_mcp.py"
+   ],
+   "tools_count": 5,
+   "lines_valid_utf8": [
+    true,
+    false
+   ],
+   "decoded_by": [
+    "utf-8",
+    "gbk"
+   ],
+   "all_utf8": false,
+   "sample_tool": "catalog_snapshot",
+   "sample_desc_gbk_or_utf8": "catalog 快照：版本/表数/sha256/登记一致性/漂移抽样（只读）。",
+   "error": null,
+   "duration_s": 0.32,
+   "sample_line_utf8_replace": "{\"jsonrpc\": \"2.0\", \"id\": 2, \"result\": {\"tools\": [{\"name\": \"catalog_snapshot\", \"description\": \"catalog ���գ��汾/����/sha256/�Ǽ�һ����/Ư�Ƴ�����ֻ������\", \"inputSchema\": {\"type\": \"object\", \"properties\": {\"limit\": {\"type\": \"integer\", \"minimum\": 1, \"maximum\": 200, \"description\": \"Ư�Ƴ���������Ĭ�� 25\"}}, \"additionalProperties\": false}}, {\"name\": \"registry_stats\", \"description\": \"warehouse_registry ͳ�ƣ�physical/display �������ʸ�ֲ����� catalog sha256 �Ƿ�һ�£�ֻ������\", \"inputSchema\": {\"type\": \"object\", \"properties\": {}, \"additionalProperties\": false}}, {\"name\": \"lifecycle\", \"description\": \"catalog lifecycle ��̬��active/planned/deprecated/archived��������ȱʧ�嵥��ֻ������\", \"inputSchema\": {\"type\": \"object\", \"properties\": {\"limit\": {\"type\": \"integer\", \"minimum\": 1, \"maximum\": 200, \"description\": \"ȱʧ��������������Ĭ�� 20\"}}, \"additionalProperties\": false}}, {\"name\": \"table_info\", \"description\": \"��������Ǽ�/����/·����warehouse_registry ��Ŀ + catalog �洢��Ϣ��֧�� catalog ������ֻ������\", \"inputSchema\": {\"type\": \"object\", \"properties\": {\"table\": {\"type\": \"string\", \"description\": \"���� / asset_id / catalog �������� adj_factor\"}}, \"required\": [\"table\"], \"additionalProperties\": false}}, {\"name\": \"qualification\", \"description\": \"�ʸ�ֲ�������unknown/evidence_partial/planned/deprecated����ռ�ȣ���ֻ����\", \"inputSchema\": {\"type\": \"object\", \"properties\": {}, \"additionalProperties\": false}}]}}",
+   "webui_compare": {
+    "webui_tool": "mcp__dw_catalog__catalog_snapshot",
+    "webui_desc_is_garbled": true,
+    "equals_server_utf8_replace": true,
+    "server_utf8_replace_reconstructed": "catalog ���գ��汾/����/sha256/�Ǽ�һ����/Ư�Ƴ�����ֻ������",
+    "webui_desc": "catalog ���գ��汾/����/sha256/�Ǽ�һ����/Ư�Ƴ�����ֻ������"
+   }
+  },
+  {
+   "label": "huangzhong",
+   "spawn": [
+    "C:\\Program Files\\Python311\\python.exe",
+    "C:\\项目\\老田的AI助手\\agent_platform\\tools\\huangzhong_mcp.py"
+   ],
+   "tools_count": 9,
+   "lines_valid_utf8": [
+    false,
+    true,
+    false
+   ],
+   "decoded_by": [
+    "gbk",
+    "utf-8",
+    "gbk"
+   ],
+   "all_utf8": false,
+   "sample_tool": "huangzhong_status",
+   "sample_desc_gbk_or_utf8": "黄忠验收现状聚合：六条复核（passed/total、各条 status/measured）、最新验收单（verdict/commit）、证据年龄（基线/红队）、④满窗/跟踪计数。只读。",
+   "error": null,
+   "duration_s": 0.13,
+   "sample_line_utf8_replace": "{\"jsonrpc\": \"2.0\", \"id\": 2, \"result\": {\"tools\": [{\"name\": \"huangzhong_status\", \"description\": \"����������״�ۺϣ��������ˣ�passed/total������ status/measured�����������յ���verdict/commit����֤�����䣨����/��ӣ���������/���ټ�����ֻ����\", \"inputSchema\": {\"type\": \"object\", \"properties\": {}, \"additionalProperties\": false}}, {\"name\": \"huangzhong_review_latest\", \"description\": \"���һ�λ����������˱�����ϸ��generated_at/items/kpi/���ǣ���ֻ����\", \"inputSchema\": {\"type\": \"object\", \"properties\": {}, \"additionalProperties\": false}}, {\"name\": \"huangzhong_evidence\", \"description\": \"��������֤�����ʶȣ����� test_baseline/latest.json �����º�ӱ���� generated_at/age_hours/�Ƿ� ��48h��R3 �ţ���ֻ����\", \"inputSchema\": {\"type\": \"object\", \"properties\": {}, \"additionalProperties\": false}}, {\"name\": \"huangzhong_acceptance_latest\", \"description\": \"���һ�Ż������յ���verdict/commit/sha/ʱ��/reasons/֤��ժҪ��ֻ����\", \"inputSchema\": {\"type\": \"object\", \"properties\": {}, \"additionalProperties\": false}}, {\"name\": \"huangzhong_weekly_kpi\", \"description\": \"���� 7 �촰�� KPI��ֻ�����㣩��runs��merge_done�������ʡ�PASS/REJECT/OBSERVE ������\", \"inputSchema\": {\"type\": \"object\", \"properties\": {\"window_days\": {\"type\": \"integer\", \"minimum\": 1, \"maximum\": 30, \"description\": \"����������Ĭ�� 7\"}}, \"additionalProperties\": false}}, {\"name\": \"huangzhong_tasks_health\", \"description\": \"���������ƻ�����HuangzhongDaily / HuangzhongEvidenceRefresh���� LastRunTime/LastTaskResult/NextRunTime��ֻ����ѯ Windows Scheduler����\", \"inputSchema\": {\"type\": \"object\", \"properties\": {}, \"additionalProperties\": false}}, {\"name\": \"huangzhong_health\", \"description\": \"���ҹ�����������P0��ֻ�������� tools/huangzhong_health.py --json������ status��ok/warn/fail����summary��ok/warn/fail ��������checks ժҪ��id/name/status/detail���� warnings����ʱ 180s����� ��8KB��\", \"inputSchema\": {\"type\": \"object\", \"properties\": {}, \"additionalProperties\": false}}, {\"name\": \"huangzhong_preflight\", \"description\": \"���� 11-04 ���� preflight��P1��ֻ�������� tools/huangzhong_1104_preflight.py --json������ ready��blockers/warnings����������checks ժҪ��id/name/status/result����ready=false ����ִ��ʧ�ܣ�������Ч����\", \"inputSchema\": {\"type\": \"object\", \"properties\": {}, \"additionalProperties\": false}}, {\"name\": \"huangzhong_brief\", \"description\": \"����ÿ�ռ򱨣�P1��ֻ�������� tools/huangzhong_brief.py --json������ conclusion��һ�н��ۣ���kpi��runs/merge_done/coverage �ȣ���events ������review/acceptance/push_state ժҪ��\", \"inputSchema\": {\"type\": \"object\", \"properties\": {}, \"additionalProperties\": false}}]}}",
+   "webui_compare": {
+    "webui_tool": "mcp__huangzhong__huangzhong_acceptance_latest",
+    "webui_desc_is_garbled": true,
+    "equals_server_utf8_replace": true,
+    "server_utf8_replace_reconstructed": "���һ�Ż������յ���verdict/commit/sha/ʱ��/reasons/֤��ժҪ��ֻ����",
+    "webui_desc": "���һ�Ż������յ���verdict/commit/sha/ʱ��/reasons/֤��ժҪ��ֻ����"
+   }
+  },
+  {
+   "label": "kb-corpus",
+   "spawn": [
+    "C:\\项目\\py312\\python.exe",
+    "C:\\项目\\老田的AI助手\\agent_platform\\tools\\kb_corpus_mcp.py"
+   ],
+   "tools_count": 5,
+   "lines_valid_utf8": [
+    true,
+    false
+   ],
+   "decoded_by": [
+    "utf-8",
+    "gbk"
+   ],
+   "all_utf8": false,
+   "sample_tool": "kb_status",
+   "sample_desc_gbk_or_utf8": "知识库状态：文档数/知识单元数/RAG 索引/抽检合规（调 kb_read_api.py status）。只读。",
+   "error": null,
+   "duration_s": 0.15,
+   "sample_line_utf8_replace": "{\"jsonrpc\": \"2.0\", \"id\": 2, \"result\": {\"tools\": [{\"name\": \"kb_status\", \"description\": \"֪ʶ��״̬���ĵ���/֪ʶ��Ԫ��/RAG ����/���Ϲ棨�� kb_read_api.py status����ֻ����\", \"inputSchema\": {\"type\": \"object\", \"properties\": {}, \"additionalProperties\": false}}, {\"name\": \"kb_search\", \"description\": \"֪ʶ��Ԫ����������/�½�/ҳ��/�۶�/֤�ݣ����������� kb_read_api.py search����ֻ����\", \"inputSchema\": {\"type\": \"object\", \"properties\": {\"q\": {\"type\": \"string\", \"description\": \"�����ʣ�����/Ӣ�ľ��ɣ�\"}, \"top\": {\"type\": \"integer\", \"minimum\": 1, \"maximum\": 50, \"description\": \"����������Ĭ�� 10\"}}, \"required\": [\"q\"], \"additionalProperties\": false}}, {\"name\": \"kb_books\", \"description\": \"��Ŀ�嵥��ͳ�ƣ��鼮/�б�/���Ծ����������ҳ�����½�����֪ʶ��Ԫ������ kb_read_api.py books����ֻ����\", \"inputSchema\": {\"type\": \"object\", \"properties\": {}, \"additionalProperties\": false}}, {\"name\": \"yt_tables\", \"description\": \"YouTube ѧϰ���ݲ� yt_learning.db �ı�/��ͼ�嵥��������sqlite mode=ro����ֻ����\", \"inputSchema\": {\"type\": \"object\", \"properties\": {}, \"additionalProperties\": false}}, {\"name\": \"yt_query\", \"description\": \"YouTube ѧϰ���ݲְ�������ֻ��ȡ����SELECT * LIMIT n��n��20��Ĭ�� 5���ı��нض� 500 �֣���\", \"inputSchema\": {\"type\": \"object\", \"properties\": {\"table\": {\"type\": \"string\", \"enum\": [\"bridge_faq_comment\", \"bridge_video_topic\", \"dim_channel\", \"dim_topic\", \"dim_topic_evidence\", \"dim_video\", \"fact_comment\", \"fact_faq_semantic\", \"fact_knowledge_unit\", \"fact_transcript\", \"fact_transcript_seg\", \"fact_transcript_signal\", \"meta_etl\", \"meta_faq_build\", \"meta_governance\"], \"description\": \"�������������� yt_tables��\"}, \"limit\": {\"type\": \"integer\", \"minimum\": 1, \"maximum\": 20, \"description\": \"�������� 20\"}}, \"required\": [\"table\"], \"additionalProperties\": false}}]}}",
+   "webui_compare": {
+    "webui_tool": "mcp__kb_corpus__kb_books",
+    "webui_desc_is_garbled": true,
+    "equals_server_utf8_replace": true,
+    "server_utf8_replace_reconstructed": "��Ŀ�嵥��ͳ�ƣ��鼮/�б�/���Ծ����������ҳ�����½�����֪ʶ��Ԫ������ kb_read_api.py books����ֻ����",
+    "webui_desc": "��Ŀ�嵥��ͳ�ƣ��鼮/�б�/���Ծ����������ҳ�����½�����֪ʶ��Ԫ������ kb_read_api.py books����ֻ����"
+   }
+  },
+  {
+   "label": "factor-tools[clean]",
+   "spawn": [
+    "C:\\项目\\py312\\python.exe",
+    "C:\\项目\\老田的AI助手\\agent_platform\\tools\\factor_tools_mcp.py"
+   ],
+   "tools_count": 4,
+   "lines_valid_utf8": [
+    true,
+    true
+   ],
+   "decoded_by": [
+    "utf-8",
+    "utf-8"
+   ],
+   "all_utf8": true,
+   "sample_tool": "factor_daily_latest",
+   "sample_desc_gbk_or_utf8": "最新因子日报（factor_daily_<日期>.json）摘要：生成时间/最新数据日/窗口/因子数/衰减告警数/提案数/各因子 IC 明细。可选 factor 参数精确查某因子 IC。只读。",
+   "error": null,
+   "duration_s": 0.12,
+   "webui_compare": {
+    "webui_tool": "mcp__factor_tools__factor_daily_latest",
+    "webui_desc_is_garbled": false,
+    "equals_server_utf8_replace": false,
+    "server_utf8_replace_reconstructed": null,
+    "webui_desc": "最新因子日报（factor_daily_<日期>.json）摘要：生成时间/最新数据日/窗口/因子数/衰减告警数/提案数/各因子 IC 明细。可选 factor 参数精确查某因子 IC。只读。"
+   }
+  },
+  {
+   "label": "stock-data[clean]",
+   "spawn": [
+    "C:\\Program Files\\Python311\\python.exe",
+    "C:\\项目\\zerobound-kg\\stock_data_mcp.py"
+   ],
+   "tools_count": 28,
+   "lines_valid_utf8": [
+    true,
+    true
+   ],
+   "decoded_by": [
+    "utf-8",
+    "utf-8"
+   ],
+   "all_utf8": true,
+   "sample_tool": "data_overview",
+   "sample_desc_gbk_or_utf8": "股票数据系统总览：Neo4j 图节点/边总量、情报件分源统计、最新情报时间。【无需参数，直接调用，不要传任何键】",
+   "error": null,
+   "duration_s": 0.33,
+   "webui_compare": {
+    "webui_tool": "mcp__stock_data__chain_alerts",
+    "webui_desc_is_garbled": false,
+    "equals_server_utf8_replace": false,
+    "server_utf8_replace_reconstructed": null,
+    "webui_desc": "晨链告警面：链路体检最新结论（overall 与 fail/stale 任务明细，如 XmapSync/KgDailySync/RiskGuardShadowDaily）与近 N 次历史。"
+   }
+  },
+  {
+   "label": "dw-catalog+PYTHONIOENCODING=utf-8",
+   "spawn": [
+    "C:\\项目\\py312\\python.exe",
+    "C:\\项目\\老田的AI助手\\agent_platform\\tools\\dw_catalog_mcp.py"
+   ],
+   "tools_count": 5,
+   "lines_valid_utf8": [
+    true,
+    true
+   ],
+   "decoded_by": [
+    "utf-8",
+    "utf-8"
+   ],
+   "all_utf8": true,
+   "sample_tool": "catalog_snapshot",
+   "sample_desc_gbk_or_utf8": "catalog 快照：版本/表数/sha256/登记一致性/漂移抽样（只读）。",
+   "error": null,
+   "duration_s": 0.14,
+   "webui_compare": {
+    "webui_tool": "mcp__dw_catalog__catalog_snapshot",
+    "webui_desc_is_garbled": true,
+    "equals_server_utf8_replace": false,
+    "server_utf8_replace_reconstructed": null,
+    "webui_desc": "catalog ���գ��汾/����/sha256/�Ǽ�һ����/Ư�Ƴ�����ֻ������"
+   }
+  },
+  {
+   "label": "dw-catalog+PYTHONUTF8=1",
+   "spawn": [
+    "C:\\项目\\py312\\python.exe",
+    "C:\\项目\\老田的AI助手\\agent_platform\\tools\\dw_catalog_mcp.py"
+   ],
+   "tools_count": 5,
+   "lines_valid_utf8": [
+    true,
+    true
+   ],
+   "decoded_by": [
+    "utf-8",
+    "utf-8"
+   ],
+   "all_utf8": true,
+   "sample_tool": "catalog_snapshot",
+   "sample_desc_gbk_or_utf8": "catalog 快照：版本/表数/sha256/登记一致性/漂移抽样（只读）。",
+   "error": null,
+   "duration_s": 0.14,
+   "webui_compare": {
+    "webui_tool": "mcp__dw_catalog__catalog_snapshot",
+    "webui_desc_is_garbled": true,
+    "equals_server_utf8_replace": false,
+    "server_utf8_replace_reconstructed": null,
+    "webui_desc": "catalog ���գ��汾/����/sha256/�Ǽ�һ����/Ư�Ƴ�����ֻ������"
+   }
+  }
+ ],
+ "webui": {
+  "status": 200,
+  "total": 98,
+  "source": "GET http://127.0.0.1:8787/api/mcp/tools (X-Portal-User, 只读)"
+ },
+ "compare": {},
+ "tools_call_impact": {
+  "valid_utf8": false,
+  "decoded_by": "gbk",
+  "result_text_gbk_decoded": "{\"tool\": \"catalog_snapshot\", \"code\": 1, \"catalog\": {\"version\": 35, \"updated\": \"2026-11-03T09:13:43\", \"tables\": 256, \"aliases\": 14, \"sha256\": \"<hex-redacted>\", \"by_source\": {\"xtcloud\": 170, \"tushare\": 66, \"xueqiu\": 10, \"cnopendata\": 6, \"legacy\": 1, \"crypto\": 1, \"guba\": 1, \"pg\": 1}, \"by_layout\": {\"by_code\": 26, \"part\": 192, \"single\": 2, \"sqlite\": 6, \"by_date\": 14, \"by_code_month\": 6, \"by_period\": 2, \"parquet\": 6, \"jsonl\": 1, \"pg\": 1}, \"verification_status\": {\"verified_stale\": 77, \"verified\": 154, \"static_no_date\": 16, \"placeholder_empty\": 8, \"verified_external\": 1}, \"manifest_status\": {\"closed\": 242, \"not_applicable\": 11, \"missing\": 1, \"open\": 2}}, \"registry\": {\"generated_at\": \"2026-11-03T09:41:25.652612+08:00\", \"physical_count\": 256, \"display_count\": 258, \"catalog_sha256_match\": true, \"qualification_status\": {\"evidence_partial\": 38, \"evidence_ok\": 187, \"deprecated\": 8, \"planned\": 9, \"unknown\": 14}}, \"drift_sample\": {\"tables\": 25, \"missing_stores\": [], \"file_count_mismatch\": [\"cb_basic\"], \"drift_warn\": [{\"table\": \"cb_basic\", \"layout\": \"part\", \"files_registered\": 39, \"files_on_disk\": 41, \"diff\": 2, \"reason\": null}], \"drift_info\": [{\"table\": \"adj_factor\", \"layout\": \"by_date\", \"files_registered\": 8745, \"files_on_disk\": 8746, \"diff\": 1, \"reason\": \"登记时点快照 vs 实时写（diff=+1）\"}, {\"table\": \"anns_d\", \"layout\": \"by_date\", \"files_registered\": 1898, \"files_on_disk\": 1899, \"diff\": 1, \"reason\": \"登记时点快照 vs 实时写（diff=+1）\"}, {\"table\": \"cyq_perf\", \"layout\": \"by_date\", \"files_registered\": 276, \"files_on_disk\": 277, \"diff\": 1, \"reason\": \"登记时点快照 vs 实时写（diff=+1）\"}, {\"table\": \"daily\", \"layout\": \"by_date\", \"files_registered\": 8745, \"files_on_disk\": 8746, \"diff\": 1, \"reason\": \"登记时点快照 vs 实时写（diff=+1）\"}, {\"table\": \"daily_basic\", \"layout\": \"by_date\", \"files_registered\": 926, \"files_on_disk\": 927, \"diff\": 1, \"reason\": \"登记时点快照 vs 实时写（diff=+1）\"}], \"files_na\": []}, \"issues\": [\"抽样中 1 张表文件数与登记差异 >1（drift_warn）\"], \"rc\": 1, \"read_only\": true, \"dry_run\": true}",
+  "result_text_utf8_replace": "{\"tool\": \"catalog_snapshot\", \"code\": 1, \"catalog\": {\"version\": 35, \"updated\": \"2026-11-03T09:13:43\", \"tables\": 256, \"aliases\": 14, \"sha256\": \"<hex-redacted>\", \"by_source\": {\"xtcloud\": 170, \"tushare\": 66, \"xueqiu\": 10, \"cnopendata\": 6, \"legacy\": 1, \"crypto\": 1, \"guba\": 1, \"pg\": 1}, \"by_layout\": {\"by_code\": 26, \"part\": 192, \"single\": 2, \"sqlite\": 6, \"by_date\": 14, \"by_code_month\": 6, \"by_period\": 2, \"parquet\": 6, \"jsonl\": 1, \"pg\": 1}, \"verification_status\": {\"verified_stale\": 77, \"verified\": 154, \"static_no_date\": 16, \"placeholder_empty\": 8, \"verified_external\": 1}, \"manifest_status\": {\"closed\": 242, \"not_applicable\": 11, \"missing\": 1, \"open\": 2}}, \"registry\": {\"generated_at\": \"2026-11-03T09:41:25.652612+08:00\", \"physical_count\": 256, \"display_count\": 258, \"catalog_sha256_match\": true, \"qualification_status\": {\"evidence_partial\": 38, \"evidence_ok\": 187, \"deprecated\": 8, \"planned\": 9, \"unknown\": 14}}, \"drift_sample\": {\"tables\": 25, \"missing_stores\": [], \"file_count_mismatch\": [\"cb_basic\"], \"drift_warn\": [{\"table\": \"cb_basic\", \"layout\": \"part\", \"files_registered\": 39, \"files_on_disk\": 41, \"diff\": 2, \"reason\": null}], \"drift_info\": [{\"table\": \"adj_factor\", \"layout\": \"by_date\", \"files_registered\": 8745, \"files_on_disk\": 8746, \"diff\": 1, \"reason\": \"�Ǽ�ʱ����� vs ʵʱд��diff=+1��\"}, {\"table\": \"anns_d\", \"layout\": \"by_date\", \"files_registered\": 1898, \"files_on_disk\": 1899, \"diff\": 1, \"reason\": \"�Ǽ�ʱ����� vs ʵʱд��diff=+1��\"}, {\"table\": \"cyq_perf\", \"layout\": \"by_date\", \"files_registered\": 276, \"files_on_disk\": 277, \"diff\": 1, \"reason\": \"�Ǽ�ʱ����� vs ʵʱд��diff=+1��\"}, {\"table\": \"daily\", \"layout\": \"by_date\", \"files_registered\": 8745, \"files_on_disk\": 8746, \"diff\": 1, \"reason\": \"�Ǽ�ʱ����� vs ʵʱд��diff=+1��\"}, {\"table\": \"daily_basic\", \"layout\": \"by_date\", \"files_registered\": 926, \"files_on_disk\": 927, \"diff\": 1, \"reason\": \"�Ǽ�ʱ����� vs ʵʱд��diff=+1��\"}], \"files_na\": []}, \"issues\": [\"������ 1 �ű��ļ�����Ǽǲ��� >1��drift_warn��\"], \"rc\": 1, \"read_only\": true, \"dry_run\": true}"
+ },
+ "child_env_has_pythonioencoding": false,
+ "child_env_has_pythonutf8": false
+}

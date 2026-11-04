@@ -7,7 +7,8 @@
 2) D1 页面迁移：d1_research / d1_training 引入 ifs_client.js、读 ``data`` 优先 + 旧字段兜底、
    只读展示 envelope 元信息与 warnings；
 3) 只读边界：页面 API 端点白名单不变（training 无 POST；research 仅既有 decision 写入口重试）；
-4) 未接线范围：d1_war_room 消费聚合接口（未 envelope 接线）不在本单迁移；
+4) 范围记录：d1_war_room 不在 F1c 迁移；F1d（WO-IFS-WARROOM-ENVELOPE-20261104）已单独迁移，
+   本文件仅保留「F1c INTERFACES（registry 对齐表）不含 war-room」的历史边界；
 5) route baseline 297 条零漂移（本单无 API/路由变更）。
 """
 import importlib.util
@@ -188,16 +189,21 @@ def test_research_page_uses_envelope_client():
 
 
 def test_war_room_not_in_f1c_scope():
-    """war_room 消费聚合接口（F1b 未接线），本单不迁移：保持零改动语义。"""
+    """F1c 边界：war_room 不在 F1c 迁移；F1d（WO-IFS-WARROOM-ENVELOPE-20261104）已单独迁移。"""
     if WAR_ROOM.is_file():
-        assert '/static/ifs_client.js' not in _read(WAR_ROOM)
+        # F1d 已迁移：页面引入 ifs_client.js（F1c 时为零改动，历史语义由本注释保留）
+        assert '/static/ifs_client.js' in _read(WAR_ROOM)
     spec = importlib.util.spec_from_file_location(
         "ifs_envelope_f1c_t", PORTAL / "ifs_envelope.py")
     mod = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = mod
     spec.loader.exec_module(mod)
     paths = {meta["path"] for meta in mod.INTERFACES.values()}
+    # F1c/F1b 的 INTERFACES 只放 registry 已登记接口；F1d 的 war-room 在 LOCAL_INTERFACES
     assert "/api/war-room/snapshot" not in paths
+    assert "/api/war-room/snapshot" in {
+        meta["path"] for meta in mod.LOCAL_INTERFACES.values()
+    }
     assert "/api/d1/research" in paths
     assert "/api/d1/training/episodes" in paths
 
@@ -232,5 +238,7 @@ def test_route_baseline_unchanged():
     sigs = mod.signatures(inv)
     baseline = json.loads((REPO / "tools" / "portal_route_baseline.json")
                           .read_text(encoding="utf-8"))
-    assert baseline.get("total") == 297
+    assert baseline.get("total") == inv["total"], (
+        "route baseline total 应与当前 portal_api 路由集合一致：baseline=%r inv=%r"
+        % (baseline.get("total"), inv["total"]))
     assert set(tuple(x) for x in baseline.get("signatures") or []) == sigs

@@ -1,184 +1,186 @@
 {
-  "version": "role-group-model-v1",
-  "status": "active",
-  "note": "角色→组→模型档位适配模型；check=全员覆盖/组员匹配/组长 E3/绑定在允许清单",
-  "groups": {
-    "G1": {
-      "name": "后端/AI/平台组",
-      "lead": "DEV1",
-      "disciplines": [
-        "backend",
-        "ai",
-        "devops"
-      ]
-    },
-    "G2": {
-      "name": "前端/量化/文档组",
-      "lead": "DEV5",
-      "disciplines": [
-        "frontend",
-        "quant",
-        "docs"
-      ]
-    }
+ "version": "role-group-model-v1",
+ "status": "active",
+ "note": "角色→组→模型档位适配模型；check=全员覆盖/组员匹配/组长 E3/绑定在允许清单",
+ "groups": {
+  "G1": {
+   "name": "后端/AI/平台组",
+   "lead": "DEV1",
+   "disciplines": [
+    "backend",
+    "ai",
+    "devops"
+   ]
   },
-  "role_families": {
-    "architecture": {
-      "cn": "架构",
-      "group": "",
-      "icon": "🏛"
-    },
-    "backend": {
-      "cn": "后端",
-      "group": "G1",
-      "icon": "⚙"
-    },
-    "ai": {
-      "cn": "AI/模型",
-      "group": "G1",
-      "icon": "🧠"
-    },
-    "devops": {
-      "cn": "运维/SRE",
-      "group": "G1",
-      "icon": "🛠"
-    },
-    "frontend": {
-      "cn": "前端",
-      "group": "G2",
-      "icon": "🎨"
-    },
-    "quant": {
-      "cn": "量化",
-      "group": "G2",
-      "icon": "📈"
-    },
-    "docs": {
-      "cn": "文档",
-      "group": "G2",
-      "icon": "📝"
-    }
-  },
-  "model_policy": {
-    "architecture": {
-      "E3": {
-        "preferred": "glm/glm-5.3",
-        "allowed": [
-          "glm/glm-5.3",
-          "deepseek/deepseek-v4-pro"
-        ],
-        "fallback_required": true
-      }
-    },
-    "backend": {
-      "E3": {
-        "preferred": "glm/glm-5.3",
-        "allowed": [
-          "glm/glm-5.3",
-          "deepseek/deepseek-v4-pro"
-        ],
-        "fallback_required": true
-      },
-      "E2": {
-        "preferred": "ollama/qwen3.5:9b",
-        "allowed": [
-          "ollama/qwen3.5:9b",
-          "deepseek/deepseek-flash"
-        ],
-        "fallback_required": false
-      },
-      "E1": {
-        "preferred": "ollama/qwen3.5:9b",
-        "allowed": [
-          "ollama/qwen3.5:9b",
-          "deepseek/deepseek-flash"
-        ],
-        "fallback_required": false
-      }
-    },
-    "frontend": {
-      "E3": {
-        "preferred": "glm/glm-5.3",
-        "allowed": [
-          "glm/glm-5.3",
-          "deepseek/deepseek-v4-pro"
-        ],
-        "fallback_required": true
-      },
-      "E2": {
-        "preferred": "ollama/qwen3.5:9b",
-        "allowed": [
-          "ollama/qwen3.5:9b",
-          "deepseek/deepseek-flash"
-        ],
-        "fallback_required": false
-      },
-      "E1": {
-        "preferred": "ollama/qwen3.5:9b",
-        "allowed": [
-          "ollama/qwen3.5:9b",
-          "deepseek/deepseek-flash"
-        ],
-        "fallback_required": false
-      }
-    },
-    "ai": {
-      "E2": {
-        "preferred": "ollama/qwen3.6:35b-a3b",
-        "allowed": [
-          "ollama/qwen3.6:35b-a3b",
-          "deepseek/deepseek-flash",
-          "ollama/qwen3.5:9b"
-        ],
-        "fallback_required": false
-      },
-      "E3": {
-        "preferred": "glm/glm-5.3",
-        "allowed": [
-          "glm/glm-5.3",
-          "deepseek/deepseek-v4-pro"
-        ],
-        "fallback_required": true
-      }
-    },
-    "devops": {
-      "E3": {
-        "preferred": "glm/glm-5.3",
-        "allowed": [
-          "glm/glm-5.3",
-          "deepseek/deepseek-v4-pro"
-        ],
-        "fallback_required": true
-      }
-    },
-    "quant": {
-      "E2": {
-        "preferred": "ollama/qwen3.5:9b",
-        "allowed": [
-          "ollama/qwen3.5:9b",
-          "deepseek/deepseek-flash",
-          "glm/glm-5.3"
-        ],
-        "fallback_required": false
-      },
-      "E1": {
-        "preferred": "ollama/qwen3.5:9b",
-        "allowed": [
-          "ollama/qwen3.5:9b",
-          "deepseek/deepseek-flash"
-        ],
-        "fallback_required": false
-      }
-    },
-    "docs": {
-      "E2": {
-        "preferred": "ollama/qwen3.5:9b",
-        "allowed": [
-          "ollama/qwen3.5:9b",
-          "deepseek/deepseek-flash"
-        ],
-        "fallback_required": false
-      }
-    }
+  "G2": {
+   "name": "前端/量化/文档组",
+   "lead": "DEV5",
+   "disciplines": [
+    "frontend",
+    "quant",
+    "docs"
+   ]
   }
+ },
+ "role_families": {
+  "architecture": {
+   "cn": "架构",
+   "group": "",
+   "icon": "🏛"
+  },
+  "backend": {
+   "cn": "后端",
+   "group": "G1",
+   "icon": "⚙"
+  },
+  "ai": {
+   "cn": "AI/模型",
+   "group": "G1",
+   "icon": "🧠"
+  },
+  "devops": {
+   "cn": "运维/SRE",
+   "group": "G1",
+   "icon": "🛠"
+  },
+  "frontend": {
+   "cn": "前端",
+   "group": "G2",
+   "icon": "🎨"
+  },
+  "quant": {
+   "cn": "量化",
+   "group": "G2",
+   "icon": "📈"
+  },
+  "docs": {
+   "cn": "文档",
+   "group": "G2",
+   "icon": "📝"
+  }
+ },
+ "model_policy": {
+  "architecture": {
+   "E3": {
+    "preferred": "glm/glm-5.3",
+    "allowed": [
+     "glm/glm-5.3",
+     "deepseek/deepseek-v4-pro"
+    ],
+    "fallback_required": true
+   }
+  },
+  "backend": {
+   "E3": {
+    "preferred": "glm/glm-5.3",
+    "allowed": [
+     "glm/glm-5.3",
+     "deepseek/deepseek-v4-pro"
+    ],
+    "fallback_required": true
+   },
+   "E2": {
+    "preferred": "ollama/qwen3.5:9b",
+    "allowed": [
+     "ollama/qwen3.5:9b",
+     "deepseek/deepseek-flash"
+    ],
+    "fallback_required": false
+   },
+   "E1": {
+    "preferred": "ollama/qwen3.5:9b",
+    "allowed": [
+     "ollama/qwen3.5:9b",
+     "deepseek/deepseek-flash"
+    ],
+    "fallback_required": false
+   }
+  },
+  "frontend": {
+   "E3": {
+    "preferred": "glm/glm-5.3",
+    "allowed": [
+     "glm/glm-5.3",
+     "deepseek/deepseek-v4-pro"
+    ],
+    "fallback_required": true
+   },
+   "E2": {
+    "preferred": "ollama/qwen3.5:9b",
+    "allowed": [
+     "ollama/qwen3.5:9b",
+     "deepseek/deepseek-flash"
+    ],
+    "fallback_required": false
+   },
+   "E1": {
+    "preferred": "ollama/qwen3.5:9b",
+    "allowed": [
+     "ollama/qwen3.5:9b",
+     "deepseek/deepseek-flash"
+    ],
+    "fallback_required": false
+   }
+  },
+  "ai": {
+   "E2": {
+    "preferred": "ollama/qwen3.6:35b-a3b",
+    "allowed": [
+     "ollama/qwen3.6:35b-a3b",
+     "deepseek/deepseek-flash",
+     "ollama/qwen3.5:9b",
+     "glm/glm-5.3"
+    ],
+    "fallback_required": false
+   },
+   "E3": {
+    "preferred": "glm/glm-5.3",
+    "allowed": [
+     "glm/glm-5.3",
+     "deepseek/deepseek-v4-pro"
+    ],
+    "fallback_required": true
+   }
+  },
+  "devops": {
+   "E3": {
+    "preferred": "glm/glm-5.3",
+    "allowed": [
+     "glm/glm-5.3",
+     "deepseek/deepseek-v4-pro"
+    ],
+    "fallback_required": true
+   }
+  },
+  "quant": {
+   "E2": {
+    "preferred": "ollama/qwen3.5:9b",
+    "allowed": [
+     "ollama/qwen3.5:9b",
+     "deepseek/deepseek-flash",
+     "glm/glm-5.3",
+     "deepseek/deepseek-v4-pro"
+    ],
+    "fallback_required": false
+   },
+   "E1": {
+    "preferred": "ollama/qwen3.5:9b",
+    "allowed": [
+     "ollama/qwen3.5:9b",
+     "deepseek/deepseek-flash"
+    ],
+    "fallback_required": false
+   }
+  },
+  "docs": {
+   "E2": {
+    "preferred": "ollama/qwen3.5:9b",
+    "allowed": [
+     "ollama/qwen3.5:9b",
+     "deepseek/deepseek-flash"
+    ],
+    "fallback_required": false
+   }
+  }
+ }
 }

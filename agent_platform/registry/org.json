@@ -1725,7 +1725,14 @@
               "llm_fallback": [
                 "deepseek/deepseek-flash",
                 "ollama/qwen3.5:9b"
-              ]
+              ],
+              "name": "张松",
+              "cn_name": "张松",
+              "actual_position": "数据资源主官（兰台令）",
+              "command_seat": "数据智能部·兰台令",
+              "reports_to": "A0",
+              "status": "active",
+              "onboarded_at": "2026-10-24"
             }
           ],
           "office_title": "兰台令 · 数据资源主官",
@@ -1735,7 +1742,14 @@
           "llm_fallback": [
             "deepseek/deepseek-flash",
             "ollama/qwen3.5:9b"
-          ]
+          ],
+          "name": "张松",
+          "cn_name": "张松",
+          "actual_position": "数据资源主官（兰台令）",
+          "command_seat": "数据智能部·兰台令",
+          "reports_to": "A0",
+          "status": "active",
+          "onboarded_at": "2026-10-24"
         },
         {
           "agent_id": "FACTOR1",
@@ -3369,7 +3383,7 @@
       "name": "情报部",
       "lead": "INTEL0",
       "status": "active",
-      "charter": "情报三线归口：舆情线（雪球社媒 14212 帖库）、通讯线（TDX 新闻/公告/研报三表 59 万行）、内务线（平台巡检告警四任务）；只采集只报实况不决策，情报裁决走 intel 域审批（Agent 建议权+人工裁决权）；K-ORG-165 收编 | 2026-10-23 曹操统筹首批下派（老田令）：舆情线=水镜XQ1/通讯线=韦昭TDX1/内务线=周泰BEACON1/受理=是仪INTEL0/治理+R03任峻位=满宠MANCHONG1/图谱=郑玄KGMAP1/词云=陈琳WORDC1/血缘=谯周LINEAGE1",
+      "charter": "情报三线归口：舆情线（雪球社媒 14212 帖库）、通讯线（TDX 新闻/公告/研报三表 59 万行）、内务线（平台巡检告警四任务）；只采集只报实况不决策，情报裁决走 intel 域审批（Agent 建议权+人工裁决权）；K-ORG-165 收编 | 2026-10-23 曹操统筹首批下派（老田令）：舆情线=水镜XQ1/通讯线=韦昭TDX1/内务线=周泰BEACON1/受理=马超INTEL0/治理+R03任峻位=满宠MANCHONG1/图谱=郑玄KGMAP1/词云=陈琳WORDC1/血缘=谯周LINEAGE1",
       "agents": [
         "XQ1",
         "TDX1",

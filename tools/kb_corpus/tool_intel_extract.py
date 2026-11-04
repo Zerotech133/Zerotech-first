@@ -21,7 +21,7 @@ import hashlib
 import json
 import re
 import sys
-from collections import Counter, defaultdict
+from collections import Counter
 from datetime import datetime
 from pathlib import Path
 
@@ -203,7 +203,6 @@ def build() -> dict:
     files = sorted(CLEAN.glob("*.md"))
     texts = {f.name: f.read_text(encoding="utf-8", errors="replace").splitlines() for f in files}
     units = load_units(UNITS)
-    unit_text = "\n".join(units)
     hype_hits = Counter()
     for fname, lines in texts.items():
         for line in lines:

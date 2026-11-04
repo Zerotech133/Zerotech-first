@@ -1,0 +1,1940 @@
+{
+ "schema_version": "tool_intel.v1",
+ "generated_at": "2026-11-03T16:43:32+08:00",
+ "date": "20261103",
+ "source": {
+  "path": "research/reports/tool_intel_20261103.json",
+  "task": "P1-第二期降级为工具情报库（3 份 clean + 二期 units）",
+  "generator": "tools/kb_corpus/tool_intel_extract.py（纯规则+人工筛选，不调模型/不联网）",
+  "sha256": "c5f2d4056036f700b0ed833dce490657a95aad78df3ee45f51a87d6ef7bc2e4f"
+ },
+ "count": 45,
+ "by_category": {
+  "行情": 12,
+  "绘图": 2,
+  "Agent": 17,
+  "研报": 3,
+  "量化": 7,
+  "回测": 4
+ },
+ "by_confidence": {
+  "高": 16,
+  "中": 29
+ },
+ "categories": [
+  "行情",
+  "研报",
+  "量化",
+  "回测",
+  "绘图",
+  "Agent"
+ ],
+ "tools": [
+  {
+   "name": "TradingView",
+   "category": "行情",
+   "aliases": [
+    "TV",
+    "TradingView 图表"
+   ],
+   "description": "项目叫TradingView MCP已经3.8K Star。",
+   "capabilities": [
+    "行情图表",
+    "指标",
+    "Pine脚本",
+    "图表",
+    "行情"
+   ],
+   "address": "tradingview.com",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 601
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1285
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1287
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1331
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1361
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1611
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1631
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1651
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1661
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1665
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1671
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1681
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1685
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1687
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1711
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1721
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1745
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1747
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1751
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1761
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 37,
+   "units_mentions": 24,
+   "confidence": "高"
+  },
+  {
+   "name": "Pine Script",
+   "category": "绘图",
+   "aliases": [
+    "PineScript",
+    "Pine"
+   ],
+   "description": "这个开源项目把 TradingView 的指标搜索、Pine Script 源码获取和策略采集接入了 AI Agent。",
+   "capabilities": [
+    "指标脚本",
+    "策略",
+    "指标",
+    "Agent"
+   ],
+   "address": "tradingview.com/pine-script-docs",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1501
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1505
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1511
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1525
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1531
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1655
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1657
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1661
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1675
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1755
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1757
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1775
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1777
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1781
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1791
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1895
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1897
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1901
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1945
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1947
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 26,
+   "units_mentions": 11,
+   "confidence": "高"
+  },
+  {
+   "name": "MCP",
+   "category": "Agent",
+   "aliases": [
+    "Model Context Protocol",
+    "TradingView MCP"
+   ],
+   "description": "热点舆情全自动更新，不用等静态结果，支持DeepSick Gemini Teami等模型，策略自由组合，还有智能记忆系统加MCP工具扩展。",
+   "capabilities": [
+    "协议",
+    "工具接入",
+    "数据"
+   ],
+   "address": "modelcontextprotocol.io",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 161
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 291
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 535
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 537
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 541
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 601
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 871
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 891
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1091
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1291
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1401
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1561
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1671
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1691
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1771
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1821
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1895
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1897
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1901
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1925
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 24,
+   "units_mentions": 17,
+   "confidence": "高"
+  },
+  {
+   "name": "Codex",
+   "category": "Agent",
+   "aliases": [
+    "OpenAI Codex",
+    "Codex CLI"
+   ],
+   "description": "而且专门做成了Skill，直接把Skill.md放到Cloud Codex或Cursor里就能用。",
+   "capabilities": [
+    "代码",
+    "AI编程"
+   ],
+   "address": "github.com/openai/codex",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 61
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 91
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 121
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 151
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 285
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 291
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 321
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 345
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 351
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 361
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 761
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 971
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1375
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1377
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1661
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1735
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1741
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1771
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1925
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1927
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 20,
+   "units_mentions": 13,
+   "confidence": "中"
+  },
+  {
+   "name": "刺猬投研",
+   "category": "研报",
+   "aliases": [
+    "刺猬投研AI"
+   ],
+   "description": "接下来，刺猬投研会持续帮大家看懂这些行业、头部公司和产业链背后的长期变量、技术路线怎么变、产业咽喉在哪里、资本最终流向谁。",
+   "capabilities": [
+    "AI投研",
+    "研究"
+   ],
+   "address": "",
+   "source_files": [
+    "20261103_刺猬投研.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_刺猬投研.md",
+     "line": 1
+    },
+    {
+     "file": "20261103_刺猬投研.md",
+     "line": 41
+    },
+    {
+     "file": "20261103_刺猬投研.md",
+     "line": 151
+    },
+    {
+     "file": "20261103_刺猬投研.md",
+     "line": 181
+    },
+    {
+     "file": "20261103_刺猬投研.md",
+     "line": 211
+    },
+    {
+     "file": "20261103_刺猬投研.md",
+     "line": 221
+    },
+    {
+     "file": "20261103_刺猬投研.md",
+     "line": 231
+    },
+    {
+     "file": "20261103_刺猬投研.md",
+     "line": 251
+    },
+    {
+     "file": "20261103_刺猬投研.md",
+     "line": 285
+    },
+    {
+     "file": "20261103_刺猬投研.md",
+     "line": 287
+    },
+    {
+     "file": "20261103_刺猬投研.md",
+     "line": 305
+    },
+    {
+     "file": "20261103_刺猬投研.md",
+     "line": 307
+    },
+    {
+     "file": "20261103_刺猬投研.md",
+     "line": 341
+    },
+    {
+     "file": "20261103_刺猬投研.md",
+     "line": 411
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 14,
+   "units_mentions": 9,
+   "confidence": "中"
+  },
+  {
+   "name": "Claude Code",
+   "category": "Agent",
+   "aliases": [
+    "Claude",
+    "Cloud Code",
+    "ClaudeCode"
+   ],
+   "description": "你可以在Claude Code里做到，但你会需要处理那些Crons和所有那些东西，因此我目前没有在Gbrain上运行，但我已经在和我的Hermes项目一起玩。",
+   "capabilities": [
+    "AI编程",
+    "终端Agent"
+   ],
+   "address": "",
+   "source_files": [
+    "20261103_刺猬投研.md",
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_刺猬投研.md",
+     "line": 81
+    },
+    {
+     "file": "20261103_刺猬投研.md",
+     "line": 191
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 65
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 121
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 181
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 971
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1375
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1377
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1661
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1691
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1925
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1927
+    }
+   ],
+   "sources_count": 2,
+   "mentions": 12,
+   "units_mentions": 8,
+   "confidence": "中"
+  },
+  {
+   "name": "通达信",
+   "category": "行情",
+   "aliases": [
+    "TDX"
+   ],
+   "description": "它通过通达信协议、直连市场数据、覆盖A股、港股、美股和期货、行情K线、资金流、板块轮动与主笔成交，都能直接交给Python。",
+   "capabilities": [
+    "行情",
+    "指标公式",
+    "选股",
+    "数据"
+   ],
+   "address": "",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 841
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 941
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1275
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1277
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1281
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1315
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1321
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1445
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1447
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1451
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 10,
+   "units_mentions": 5,
+   "confidence": "中"
+  },
+  {
+   "name": "yfinance",
+   "category": "行情",
+   "aliases": [
+    "Y-Finance",
+    "Yahoo Finance"
+   ],
+   "description": "我们叫它们Apple，就是YF,Yfinance library，我们可以下载它们。",
+   "capabilities": [
+    "行情数据",
+    "Python",
+    "数据"
+   ],
+   "address": "github.com/ranaroussi/yfinance",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 411
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 521
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 611
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 821
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 881
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 981
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1491
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 7,
+   "units_mentions": 7,
+   "confidence": "高"
+  },
+  {
+   "name": "ChatGPT",
+   "category": "Agent",
+   "aliases": [
+    "GPT",
+    "ChatGPT"
+   ],
+   "description": "初期的ChatGPT。",
+   "capabilities": [
+    "对话",
+    "LLM"
+   ],
+   "address": "chatgpt.com",
+   "source_files": [
+    "20261103_刺猬投研.md",
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_刺猬投研.md",
+     "line": 81
+    },
+    {
+     "file": "20261103_刺猬投研.md",
+     "line": 141
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 41
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 541
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1591
+    }
+   ],
+   "sources_count": 2,
+   "mentions": 5,
+   "units_mentions": 5,
+   "confidence": "中"
+  },
+  {
+   "name": "FinRL",
+   "category": "量化",
+   "aliases": [
+    "FinRL-Trading",
+    "FinRL-X",
+    "AI4Finance"
+   ],
+   "description": "FinRL Trading，也就是FinRLXIS，正要补上这条断链，一套AI原生量化交易基础设施。",
+   "capabilities": [
+    "强化学习",
+    "交易"
+   ],
+   "address": "github.com/AI4Finance-Foundation/FinRL",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 475
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 477
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 481
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 491
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 551
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 5,
+   "units_mentions": 3,
+   "confidence": "中"
+  },
+  {
+   "name": "Instock",
+   "category": "行情",
+   "aliases": [
+    "InStock",
+    "Me Hubstock",
+    "Instock Me Hubstock"
+   ],
+   "description": "这个项目叫Instock Me Hubstock，已经13.4K Stock。",
+   "capabilities": [
+    "A股数据",
+    "指标",
+    "选股",
+    "回测",
+    "数据"
+   ],
+   "address": "github.com",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 201
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1301
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 2045
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 2047
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 2051
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 5,
+   "units_mentions": 3,
+   "confidence": "高"
+  },
+  {
+   "name": "TradingView MCP",
+   "category": "Agent",
+   "aliases": [
+    "tradingview-mcp",
+    "TradingView MCP"
+   ],
+   "description": "项目叫TradingView MCP已经3.8K Star。",
+   "capabilities": [
+    "MCP",
+    "技术分析",
+    "AI接入"
+   ],
+   "address": "github.com",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 535
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 537
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 541
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1291
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1691
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 5,
+   "units_mentions": 3,
+   "confidence": "高"
+  },
+  {
+   "name": "Gemini",
+   "category": "Agent",
+   "aliases": [
+    "Google Gemini"
+   ],
+   "description": "说白了，就是因为大模型本身不够稳定，人类程序员就得用死代码写一个管理外壳，在外面强行规定死，第一步用GPT搞规划，第二步用Cloud写代码，第三步用Gemini做检查。",
+   "capabilities": [
+    "对话",
+    "LLM"
+   ],
+   "address": "gemini.google.com",
+   "source_files": [
+    "20261103_刺猬投研.md",
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_刺猬投研.md",
+     "line": 141
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 161
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1051
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1741
+    }
+   ],
+   "sources_count": 2,
+   "mentions": 4,
+   "units_mentions": 4,
+   "confidence": "中"
+  },
+  {
+   "name": "RDAgent",
+   "category": "Agent",
+   "aliases": [
+    "微软 RDAgent"
+   ],
+   "description": "内置大量SOTA模型，支持监督学习、市场动态建模和强化学习，还集成RDAgent实现AI自动挖因子和优化。",
+   "capabilities": [
+    "AI研究",
+    "因子挖掘",
+    "Agent",
+    "因子",
+    "强化学习"
+   ],
+   "address": "github.com/microsoft/RD-Agent",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 21
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1001
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1641
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 2021
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 4,
+   "units_mentions": 4,
+   "confidence": "中"
+  },
+  {
+   "name": "Cursor",
+   "category": "Agent",
+   "aliases": [
+    "Cursor IDE"
+   ],
+   "description": "而且专门做成了Skill，直接把Skill.md放到Cloud Codex或Cursor里就能用。",
+   "capabilities": [
+    "AI编程",
+    "IDE"
+   ],
+   "address": "cursor.com",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 61
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 91
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 801
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 3,
+   "units_mentions": 4,
+   "confidence": "中"
+  },
+  {
+   "name": "Finviz",
+   "category": "行情",
+   "aliases": [],
+   "description": "这个Python项目叫Finviz Finance，它从Finviz.iz获取股票资料和筛选结果，把网页里的内容整理成后续代码可以使用的数据。",
+   "capabilities": [
+    "筛选",
+    "行情",
+    "数据"
+   ],
+   "address": "finviz.com",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 825
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 827
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1171
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 3,
+   "units_mentions": 1,
+   "confidence": "高"
+  },
+  {
+   "name": "Qlib",
+   "category": "量化",
+   "aliases": [
+    "QLib",
+    "微软 Qlib"
+   ],
+   "description": "数据进入Qlib、因子、机器学习、组合优化和滚动训练开始工作。",
+   "capabilities": [
+    "量化研究",
+    "因子",
+    "回测",
+    "数据"
+   ],
+   "address": "github.com/microsoft/qlib",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 921
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 941
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 2021
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 3,
+   "units_mentions": 3,
+   "confidence": "中"
+  },
+  {
+   "name": "东方财富",
+   "category": "行情",
+   "aliases": [
+    "Choice"
+   ],
+   "description": "它直接给你整了一个A股权家桶，实时抓东方财富数据，赞30家技术指标，划筹码分布，识别61种K线形态，200家维度综合选股，多种策略回测验证，甚至还能自动打新交易。",
+   "capabilities": [
+    "行情",
+    "研报",
+    "资金流",
+    "回测",
+    "数据",
+    "指标"
+   ],
+   "address": "",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 201
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 241
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1401
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 3,
+   "units_mentions": 3,
+   "confidence": "中"
+  },
+  {
+   "name": "雪球",
+   "category": "行情",
+   "aliases": [],
+   "description": "滚轮缩放、拖拽平移、悬浮查看个股、双击跳转雪球，盘后还能一键生成快照，直接下载、复制或分享。",
+   "capabilities": [
+    "行情",
+    "社区"
+   ],
+   "address": "xueqiu.com",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 831
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 921
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1031
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 3,
+   "units_mentions": 3,
+   "confidence": "中"
+  },
+  {
+   "name": "飞书",
+   "category": "Agent",
+   "aliases": [
+    "Lark",
+    "Feishu"
+   ],
+   "description": "通知再分发到Telegram、企业、微信、丁丁、飞书、Bark或Webhook。",
+   "capabilities": [
+    "协作",
+    "推送提醒"
+   ],
+   "address": "feishu.cn",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 11
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 931
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1421
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 3,
+   "units_mentions": 3,
+   "confidence": "中"
+  },
+  {
+   "name": "Alpha Vantage",
+   "category": "行情",
+   "aliases": [
+    "AlphaVantage",
+    "alphavantage"
+   ],
+   "description": "所以，在Alpha Vantage中，它们基本上是为了下载。",
+   "capabilities": [
+    "行情API",
+    "基本面",
+    "数据",
+    "行情"
+   ],
+   "address": "alphavantage.co",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 411
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1151
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 2,
+   "units_mentions": 2,
+   "confidence": "中"
+  },
+  {
+   "name": "FreeStockDB",
+   "category": "量化",
+   "aliases": [
+    "FreeStockDB 本地量化引擎"
+   ],
+   "description": "FreeStockDB把行情放在本地，让查询和计算围着数据转。",
+   "capabilities": [
+    "本地数据",
+    "增量更新",
+    "回测数据",
+    "数据",
+    "行情"
+   ],
+   "address": "github.com",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 341
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1561
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 2,
+   "units_mentions": 2,
+   "confidence": "中"
+  },
+  {
+   "name": "GSQuant",
+   "category": "量化",
+   "aliases": [
+    "高盛 GSQuant"
+   ],
+   "description": "高盛把25年的量化经验放进了一个Python工具包，它叫GSQuant。",
+   "capabilities": [
+    "衍生品",
+    "风险",
+    "量化开发"
+   ],
+   "address": "github.com/goldmansachs/gsquant",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 101
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 2021
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 2,
+   "units_mentions": 2,
+   "confidence": "高"
+  },
+  {
+   "name": "OpenBB",
+   "category": "研报",
+   "aliases": [
+    "OpenBB Terminal"
+   ],
+   "description": "前四张先打数据基础，用OpenBB获取行情，用Pandas处理，再把数据存起来。",
+   "capabilities": [
+    "数据终端",
+    "研究",
+    "基本面",
+    "数据",
+    "行情"
+   ],
+   "address": "openbb.co",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1581
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1641
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 2,
+   "units_mentions": 2,
+   "confidence": "中"
+  },
+  {
+   "name": "Polygon.io",
+   "category": "行情",
+   "aliases": [
+    "Polygon"
+   ],
+   "description": "所以有另一个公司叫Polygon.io。",
+   "capabilities": [
+    "行情API",
+    "数据",
+    "行情"
+   ],
+   "address": "polygon.io",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 411
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 581
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 2,
+   "units_mentions": 2,
+   "confidence": "高"
+  },
+  {
+   "name": "QSTrader",
+   "category": "回测",
+   "aliases": [],
+   "description": "事件驱动回测框架（QSTrader）。",
+   "capabilities": [
+    "回测",
+    "事件驱动"
+   ],
+   "address": "github.com/mhallsmoore/qstrader",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 635
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 637
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 2,
+   "units_mentions": 0,
+   "confidence": "高"
+  },
+  {
+   "name": "Vela",
+   "category": "绘图",
+   "aliases": [
+    "LuxAlgo Vela"
+   ],
+   "description": "Vela把图表能力接近产品，把界面和数据的选择留给你。",
+   "capabilities": [
+    "金融图表",
+    "可视化",
+    "可嵌入",
+    "数据",
+    "指标",
+    "图表"
+   ],
+   "address": "github.com/luxalgo",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1501
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1511
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 2,
+   "units_mentions": 2,
+   "confidence": "中"
+  },
+  {
+   "name": "同花顺",
+   "category": "行情",
+   "aliases": [
+    "iFinD"
+   ],
+   "description": "同花顺行情/数据终端。",
+   "capabilities": [
+    "行情",
+    "研报",
+    "选股",
+    "数据"
+   ],
+   "address": "",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 795
+    },
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 797
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 2,
+   "units_mentions": 0,
+   "confidence": "中"
+  },
+  {
+   "name": "Composio",
+   "category": "Agent",
+   "aliases": [],
+   "description": "那就是你可以创建一个名字叫Composio的帐号，里面有几百几百几百的帐号。",
+   "capabilities": [
+    "Agent",
+    "工具集成"
+   ],
+   "address": "composio.dev",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 761
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 1,
+   "units_mentions": 1,
+   "confidence": "高"
+  },
+  {
+   "name": "DeepSeek",
+   "category": "Agent",
+   "aliases": [
+    "深度求索"
+   ],
+   "description": "然后是L2级初级分析师阶段，能把好几个步骤连起来，做点浅层的研究报告，调用工具的能力还有限，如DeepSeek、Manos。",
+   "capabilities": [
+    "对话",
+    "LLM",
+    "代码"
+   ],
+   "address": "deepseek.com",
+   "source_files": [
+    "20261103_刺猬投研.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_刺猬投研.md",
+     "line": 81
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 1,
+   "units_mentions": 1,
+   "confidence": "高"
+  },
+  {
+   "name": "EasyTDX",
+   "category": "行情",
+   "aliases": [],
+   "description": "EasyTDX想把它们重新接成一条线。",
+   "capabilities": [
+    "通达信协议",
+    "行情",
+    "Python",
+    "数据"
+   ],
+   "address": "github.com",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 841
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 1,
+   "units_mentions": 1,
+   "confidence": "中"
+  },
+  {
+   "name": "Gbrain",
+   "category": "Agent",
+   "aliases": [
+    "Gbrain AI 第二脑"
+   ],
+   "description": "然后第五层，我们有更多的常在的脑子软件，比如 Gbrain。",
+   "capabilities": [
+    "知识管理",
+    "AI"
+   ],
+   "address": "",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 121
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 1,
+   "units_mentions": 1,
+   "confidence": "中"
+  },
+  {
+   "name": "GrokBot",
+   "category": "Agent",
+   "aliases": [],
+   "description": "叫log grokbot work to click up.Hey, go ahead and create a quick project where I need you to research the top five best voice AI agent providers.Now what this doe",
+   "capabilities": [
+    "Agent",
+    "自动化"
+   ],
+   "address": "",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 761
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 1,
+   "units_mentions": 1,
+   "confidence": "中"
+  },
+  {
+   "name": "Notion",
+   "category": "Agent",
+   "aliases": [],
+   "description": "我认为，再一次，这不是一个问题是我们使用Google Drive，或Notion，或GitHub，或Cloud Plugins。",
+   "capabilities": [
+    "知识管理",
+    "协作",
+    "数据"
+   ],
+   "address": "notion.so",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 121
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 1,
+   "units_mentions": 1,
+   "confidence": "高"
+  },
+  {
+   "name": "Obsidian",
+   "category": "Agent",
+   "aliases": [
+    "Obsidian 笔记"
+   ],
+   "description": "所以，例如，这是我的Wiki的Obsidian View。",
+   "capabilities": [
+    "知识管理",
+    "笔记"
+   ],
+   "address": "obsidian.md",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 121
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 1,
+   "units_mentions": 1,
+   "confidence": "中"
+  },
+  {
+   "name": "Perplexity",
+   "category": "Agent",
+   "aliases": [],
+   "description": "你可以看到我能够连接到一些像是Perplexity、YouTube、其他我不能做的东西。",
+   "capabilities": [
+    "AI搜索",
+    "研究"
+   ],
+   "address": "perplexity.ai",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 761
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 1,
+   "units_mentions": 1,
+   "confidence": "中"
+  },
+  {
+   "name": "QuantConnect",
+   "category": "回测",
+   "aliases": [
+    "LEAN"
+   ],
+   "description": "最后是QuantConnect的Lin，覆盖多资产回测与石盘执行。",
+   "capabilities": [
+    "回测",
+    "实盘",
+    "多资产"
+   ],
+   "address": "quantconnect.com",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1641
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 1,
+   "units_mentions": 1,
+   "confidence": "中"
+  },
+  {
+   "name": "QuantQuester",
+   "category": "量化",
+   "aliases": [],
+   "description": "以前学量化得肯英文论文，翻QuantNet论坛，现在quant-wiki.com一个网站全整理了，GitHub开源可供建，内容持续更新，由社区共同维护，还配套QuantQuester刷题平台，帮助你系统学习并准备量化面试。",
+   "capabilities": [
+    "刷题",
+    "量化面试"
+   ],
+   "address": "",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 31
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 1,
+   "units_mentions": 1,
+   "confidence": "中"
+  },
+  {
+   "name": "QuantWiki",
+   "category": "研报",
+   "aliases": [
+    "quant-wiki",
+    "QuantWiki 中文量化百科"
+   ],
+   "description": "QuantWiki，一个剑桥牛津哈佛量化大佬联手打造的中文量化百科。",
+   "capabilities": [
+    "量化百科",
+    "知识库"
+   ],
+   "address": "quant-wiki.com",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 31
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 1,
+   "units_mentions": 1,
+   "confidence": "中"
+  },
+  {
+   "name": "Riskfolio-Lib",
+   "category": "量化",
+   "aliases": [
+    "Riskfolio"
+   ],
+   "description": "项目叫Riskfolio Libby，已经4.4K star的Python组合优化。",
+   "capabilities": [
+    "组合优化",
+    "风险"
+   ],
+   "address": "github.com/dcajasn/Riskfolio-Lib",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 331
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 1,
+   "units_mentions": 1,
+   "confidence": "高"
+  },
+  {
+   "name": "StockData",
+   "category": "行情",
+   "aliases": [],
+   "description": "这个项目叫StockData。",
+   "capabilities": [
+    "A股数据",
+    "多数据源",
+    "数据"
+   ],
+   "address": "github.com",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 61
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 1,
+   "units_mentions": 1,
+   "confidence": "高"
+  },
+  {
+   "name": "TA4J",
+   "category": "回测",
+   "aliases": [
+    "ta4j"
+   ],
+   "description": "它叫TA4J，专门给Java做技术分析和交易系统研究。",
+   "capabilities": [
+    "技术指标",
+    "Java",
+    "回测",
+    "指标"
+   ],
+   "address": "github.com/ta4j/ta4j",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 1731
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 1,
+   "units_mentions": 1,
+   "confidence": "高"
+  },
+  {
+   "name": "TensorTrade",
+   "category": "回测",
+   "aliases": [],
+   "description": "TensorTrade正在回答这个问题。",
+   "capabilities": [
+    "强化学习",
+    "回测"
+   ],
+   "address": "github.com/tensortrade-org/tensortrade",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 671
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 1,
+   "units_mentions": 1,
+   "confidence": "中"
+  },
+  {
+   "name": "TikFlow Stock Panel",
+   "category": "量化",
+   "aliases": [
+    "TikFlow"
+   ],
+   "description": "TikFlow Stock Panel，一个自托管的A股量化工作台，基于TikFlow数据。",
+   "capabilities": [
+    "自托管",
+    "选股",
+    "回测",
+    "监控",
+    "数据",
+    "LLM"
+   ],
+   "address": "",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 11
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 1,
+   "units_mentions": 1,
+   "confidence": "中"
+  },
+  {
+   "name": "韭菜盘GCP AI",
+   "category": "Agent",
+   "aliases": [],
+   "description": "这个叫韭菜盘GCP AI。",
+   "capabilities": [
+    "多Agent",
+    "投研桌面",
+    "Agent"
+   ],
+   "address": "",
+   "source_files": [
+    "20261103_爱吃折耳根的Ace.md"
+   ],
+   "source_lines": [
+    {
+     "file": "20261103_爱吃折耳根的Ace.md",
+     "line": 161
+    }
+   ],
+   "sources_count": 1,
+   "mentions": 1,
+   "units_mentions": 1,
+   "confidence": "中"
+  }
+ ],
+ "policy": {
+  "categories": [
+   "行情",
+   "研报",
+   "量化",
+   "回测",
+   "绘图",
+   "Agent"
+  ],
+  "method": "工具词典匹配（名称/别名）+ 定义句抽取 + 域名/行号来源；纯规则+人工筛选，不调模型、不联网",
+  "dedupe": "同名/别名合并为一个工具条目，记录来源数与提及数",
+  "confidence": {
+   "高": "明确介绍句（叫/是/开源/平台等）+（多来源或地址）",
+   "中": "明确提及但介绍信息有限",
+   "低": "仅顺带提及"
+  },
+  "marketing_removed": [
+   "卧槽",
+   "兄弟们",
+   "家人们",
+   "暴涨",
+   "翻倍",
+   "稳赚",
+   "躺赚",
+   "神器",
+   "割韭菜",
+   "免费领取",
+   "限时",
+   "扫码",
+   "私信",
+   "关注",
+   "点赞",
+   "评论区",
+   "福利",
+   "0 元",
+   "0元",
+   "必赚",
+   "上车",
+   "干货",
+   "暴富",
+   "AI 神器",
+   "AI神器",
+   "吃灰",
+   "狠角色",
+   "杀疯了",
+   "炸裂",
+   "王炸",
+   "财富自由"
+  ]
+ },
+ "credibility": {
+  "level": "中（规则抽取+人工筛选）",
+  "notes": [
+   "工具条目来自文本显式提及（名称/别名+定义句/域名/行号），非联网抓取，不保证工具当前可用性；",
+   "描述为原文句子清理营销话术后截断，未做事实核验；地址仅当原文出现域名/已知主页时才填；",
+   "同名/别名已合并；source_lines 记录前 20 处提及；units_mentions 为二期 units 中提及次数；",
+   "置信为『证据强度』而非工具质量评级；低置信条目建议人工复核后再用。"
+  ]
+ },
+ "disclaimer": "工具情报为原文结构化整理，不构成工具推荐或投资建议；使用前请自行核验。"
+}

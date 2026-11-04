@@ -1,0 +1,35 @@
+# MCP 工具描述 U+FFFD 乱码 · 8787 登录态 inventory 直播扫描
+# 数据源: GET http://127.0.0.1:8787/api/mcp/tools  (X-Portal-User, 只读)
+# 时间: 2026-11-04T03:27:11+08:00
+
+HTTP status=200  tools_total=98  description_with_U+FFFD=34  clean=64
+
+## 受影响 server（乱码工具数/该 server 工具总数）
+  d1-research              1/1
+  dw-catalog               5/5
+  dw-governance            6/6
+  dw-quality               6/6
+  huangzhong               11/11
+  kb-corpus                5/5
+
+## 未受影响 server
+  factor-tools             0/4
+  jev-news                 0/5
+  playwright               0/25
+  stock-data               0/28
+  stock-intel-readonly     0/2
+
+## 与字节级探针的逐字比对（WebUI 描述 == server 原始字节的 utf-8(replace) 解码）
+  d1-research                                  server_raw_utf8=False webui_desc==utf8replace=True tool=mcp__d1_research__d1_research
+  dw-governance                                server_raw_utf8=False webui_desc==utf8replace=True tool=mcp__dw_governance__dw_get
+  dw-quality                                   server_raw_utf8=False webui_desc==utf8replace=True tool=mcp__dw_quality__backup
+  dw-catalog                                   server_raw_utf8=False webui_desc==utf8replace=True tool=mcp__dw_catalog__catalog_snapshot
+  huangzhong                                   server_raw_utf8=False webui_desc==utf8replace=True tool=mcp__huangzhong__huangzhong_acceptance_latest
+  kb-corpus                                    server_raw_utf8=False webui_desc==utf8replace=True tool=mcp__kb_corpus__kb_books
+  factor-tools[clean]                          server_raw_utf8=True  webui_desc==utf8replace=False tool=mcp__factor_tools__factor_daily_latest
+  stock-data[clean]                            server_raw_utf8=True  webui_desc==utf8replace=False tool=mcp__stock_data__chain_alerts
+  dw-catalog+PYTHONIOENCODING=utf-8            server_raw_utf8=True  webui_desc==utf8replace=False tool=mcp__dw_catalog__catalog_snapshot
+  dw-catalog+PYTHONUTF8=1                      server_raw_utf8=True  webui_desc==utf8replace=False tool=mcp__dw_catalog__catalog_snapshot
+
+# 说明: webui_equals=True（6/6 乱码 server）证明 WebUI/渲染/JSON 层无罪——
+#       它只是把已经损坏的 str 原样放进合法 UTF-8 JSON。

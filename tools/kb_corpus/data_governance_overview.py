@@ -23,12 +23,16 @@ reg = json.loads((REPO / "agent_platform/registry/learning_projects.json").read_
 gov = json.loads((R / f"knowledge_governance_{STAMP}.json").read_text(encoding="utf-8"))
 today = json.loads((R / f"governance_today_{STAMP}.json").read_text(encoding="utf-8"))
 audit = json.loads((R / f"card_quality_audit_{STAMP}.json").read_text(encoding="utf-8"))
-multi = json.loads((R / "concept_merge_review_b_20261103.json").read_text(encoding="utf-8"))
-try:
-    _p1 = json.loads((R / "multi_source_final_p1_20261103.json").read_text(encoding="utf-8"))
-    multi = {**multi, "final_multi_source": _p1.get("final_multi_source")}
-except Exception:
-    pass
+# 多源概念唯一口径（frozen）：multi_source_canonical_20261104.json
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from multi_source_canonical import load_canonical  # noqa: E402
+_canon = load_canonical()
+multi = {"final_multi_source": int(_canon.get("count") or 0),
+         "canonical_version": _canon.get("version"),
+         "target": int(_canon.get("target") or 30),
+         "auto_not_counted": _canon.get("auto_not_counted"),
+         "definition": _canon.get("definition", {}).get("name"),
+         "source": "research/reports/multi_source_canonical_20261104.json"}
 gate = json.loads((R / f"learning_gate_{STAMP}.json").read_text(encoding="utf-8"))
 excl = json.loads((R / f"exclusions_today_{STAMP}.json").read_text(encoding="utf-8"))
 cards = json.loads((S / "kb_learning_cards.json").read_text(encoding="utf-8")).get("cards") or []
@@ -97,7 +101,7 @@ kpis = [
     ("有效知识单元（今日文件）", "—", "1,045（800+245）", "✅"),
     ("学习卡", "≥400", "400（审计 0 问题/可追溯 100%）", "✅"),
     ("有效候选", "—", "1,372（已排除 823 垃圾）", "✅"),
-    ("多源概念", "≥30", "29（人工签核；机器 30）", "⚠️ 差 1"),
+    ("多源概念", "≥30", f"{multi['final_multi_source']}（canonical {multi.get('canonical_version', '')} 签核口径）", "✅" if int(multi['final_multi_source']) >= 30 else "⚠️ 差 1"),
     ("第二期有效候选", "—", "46（已审：0 通过，工具推广为主）", "⚠️ 低价值"),
     ("数据仓质量检查", "8/8 PASS", "8/8 PASS（C6/C7/C8 复检 true）", "✅"),
     ("元数据一致性", "PASS", "PASS（catalog v35/256 表/registry 256）", "✅"),
