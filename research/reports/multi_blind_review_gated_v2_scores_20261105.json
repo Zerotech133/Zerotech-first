@@ -1,0 +1,28 @@
+{
+  "meta": {
+    "date": "2026-11-05",
+    "packet": "deliverables/2026-11-05_multi模型盲评_门控v2_20题_评测包.md",
+    "key": "deliverables/2026-11-05_multi模型盲评_门控v2_20题_答案key.json",
+    "source_eval": "research/reports/multi_pair_eval_gated_v2_domain_20261105.json",
+    "note": "独立盲评员只读评测包；原始逐题评分见盲评员回复，本文件记录汇总与揭盲胜负"
+  },
+  "raw_totals": {
+    "A": 325,
+    "B": 339
+  },
+  "preferences": {
+    "A": 3,
+    "B": 7,
+    "tie": 10
+  },
+  "unblinded": {
+    "ollama_wins": 9,
+    "v4d_wins": 1,
+    "tie": 10
+  },
+  "notes": [
+    "4 道不可答题双方均正确拒答",
+    "5 道可答题双方同时误拒：A13/A18/A24/heldout_011/citation_sft_0178",
+    "v4d 常见拼凑来源/推断越界；Ollama 引用逐条对应更稳"
+  ]
+}

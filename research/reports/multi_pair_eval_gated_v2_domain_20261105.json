@@ -1,0 +1,1476 @@
+{
+ "schema_version": 1,
+ "generated_at": "2026-11-05T03:44:35+08:00",
+ "meta": {
+  "limit": 20,
+  "k": 6,
+  "citation_retry": true,
+  "v4d_answerability_gate": true,
+  "generated_at": "2026-11-05T03:44:35+08:00"
+ },
+ "aggregate": {
+  "v4d": {
+   "n": 20,
+   "answerable_n": 16,
+   "unanswerable_n": 4,
+   "refusal_rate_all": 0.55,
+   "refusal_rate_answerable": 0.4375,
+   "refusal_rate_unanswerable": 1.0,
+   "guard_pass_rate": 0.15,
+   "guard_pass_rate_answerable": 0.1875,
+   "avg_citations": 0.65,
+   "avg_citation_valid": 0.65,
+   "avg_chars": 107.0,
+   "avg_elapsed": 7.94,
+   "p95_elapsed": 23.22,
+   "fallback_count": 0,
+   "error_count": 0,
+   "empty_count": 0,
+   "retry_used_count": 12,
+   "answerability_refusal_count": 7,
+   "total_cost_cny": 0.0793
+  },
+  "ollama": {
+   "n": 20,
+   "answerable_n": 16,
+   "unanswerable_n": 4,
+   "refusal_rate_all": 0.45,
+   "refusal_rate_answerable": 0.3125,
+   "refusal_rate_unanswerable": 1.0,
+   "guard_pass_rate": 0.5,
+   "guard_pass_rate_answerable": 0.625,
+   "avg_citations": 1.1,
+   "avg_citation_valid": 1.1,
+   "avg_chars": 168.4,
+   "avg_elapsed": 24.34,
+   "p95_elapsed": 68.01,
+   "fallback_count": 0,
+   "error_count": 0,
+   "empty_count": 0,
+   "retry_used_count": 2,
+   "answerability_refusal_count": 0,
+   "total_cost_cny": 0.0
+  },
+  "verdicts": {
+   "v4d": 0,
+   "ollama": 7,
+   "tie": 13
+  }
+ },
+ "rows": [
+  {
+   "id": "w13_U01",
+   "source": "w13",
+   "type": "unanswerable",
+   "answerable": false,
+   "question": "如何申请申根旅游签证？",
+   "retrieval_seconds": 1.8,
+   "clusters": 2,
+   "units": 2,
+   "v4d": {
+    "answer": "知识库中没有足够依据回答该问题。",
+    "answer_chars": 16,
+    "elapsed": 1.12,
+    "citations": 0,
+    "confidence": "none",
+    "refusal": true,
+    "fallback": false,
+    "retry_used": false,
+    "guard_passed": false,
+    "guard_issues": [
+     "citation_missing",
+     "insufficient_cited_units"
+    ],
+    "citation_valid_count": 0,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 0.0,
+    "distinct_cited_units": 0,
+    "inference_ratio": 0.0,
+    "usage": {
+     "prompt_tokens": 193,
+     "completion_tokens": 37
+    },
+    "cost_cny": 0.000608,
+    "error": null,
+    "answerability": {
+     "enabled": true,
+     "decision": "unanswerable",
+     "reason": "不可答。该问题涉及签证与出入境事务，不在研报知识库覆盖的金融/产业/公司/策略/市场/宏观/交易等研报知识范围内。",
+     "error": null,
+     "model": "qwen3.5:9b",
+     "raw": "不可答。该问题涉及签证与出入境事务，不在研报知识库覆盖的金融/产业/公司/策略/市场/宏观/交易等研报知识范围内。",
+     "elapsed_seconds": 1.12
+    }
+   },
+   "ollama": {
+    "answer": "知识库中没有足够依据回答该问题。",
+    "answer_chars": 16,
+    "elapsed": 44.28,
+    "citations": 0,
+    "confidence": "none",
+    "refusal": true,
+    "fallback": false,
+    "retry_used": false,
+    "guard_passed": false,
+    "guard_issues": [
+     "citation_missing",
+     "insufficient_cited_units"
+    ],
+    "citation_valid_count": 0,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 0.0,
+    "distinct_cited_units": 0,
+    "inference_ratio": 0.0,
+    "usage": {
+     "prompt_tokens": 0,
+     "completion_tokens": 0
+    },
+    "cost_cny": 0.0,
+    "error": null,
+    "answerability": null
+   },
+   "verdict": "tie"
+  },
+  {
+   "id": "w13_U04",
+   "source": "w13",
+   "type": "unanswerable",
+   "answerable": false,
+   "question": "2026 年世界杯的冠军是哪支球队？",
+   "retrieval_seconds": 0.06,
+   "clusters": 3,
+   "units": 4,
+   "v4d": {
+    "answer": "知识库中没有足够依据回答该问题。",
+    "answer_chars": 16,
+    "elapsed": 2.45,
+    "citations": 0,
+    "confidence": "none",
+    "refusal": true,
+    "fallback": false,
+    "retry_used": false,
+    "guard_passed": false,
+    "guard_issues": [
+     "citation_missing",
+     "insufficient_cited_units"
+    ],
+    "citation_valid_count": 0,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 0.0,
+    "distinct_cited_units": 0,
+    "inference_ratio": 0.0,
+    "usage": {
+     "prompt_tokens": 199,
+     "completion_tokens": 37
+    },
+    "cost_cny": 0.00062,
+    "error": null,
+    "answerability": {
+     "enabled": true,
+     "decision": "unanswerable",
+     "reason": "不可答。该问题属于体育赛事结果查询，不在研报知识库覆盖的金融/产业/公司/策略/市场/宏观/交易等研报知识范围内。",
+     "error": null,
+     "model": "qwen3.5:9b",
+     "raw": "不可答。该问题属于体育赛事结果查询，不在研报知识库覆盖的金融/产业/公司/策略/市场/宏观/交易等研报知识范围内。",
+     "elapsed_seconds": 2.45
+    }
+   },
+   "ollama": {
+    "answer": "知识库中没有足够依据回答该问题。",
+    "answer_chars": 16,
+    "elapsed": 17.36,
+    "citations": 0,
+    "confidence": "none",
+    "refusal": true,
+    "fallback": false,
+    "retry_used": false,
+    "guard_passed": false,
+    "guard_issues": [
+     "citation_missing",
+     "insufficient_cited_units"
+    ],
+    "citation_valid_count": 0,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 0.0,
+    "distinct_cited_units": 0,
+    "inference_ratio": 0.0,
+    "usage": {
+     "prompt_tokens": 0,
+     "completion_tokens": 0
+    },
+    "cost_cny": 0.0,
+    "error": null,
+    "answerability": null
+   },
+   "verdict": "tie"
+  },
+  {
+   "id": "w13_U07",
+   "source": "w13",
+   "type": "unanswerable",
+   "answerable": false,
+   "question": "高血压的一线用药有哪些？",
+   "retrieval_seconds": 0.05,
+   "clusters": 1,
+   "units": 1,
+   "v4d": {
+    "answer": "知识库中没有足够依据回答该问题。",
+    "answer_chars": 16,
+    "elapsed": 1.26,
+    "citations": 0,
+    "confidence": "none",
+    "refusal": true,
+    "fallback": false,
+    "retry_used": false,
+    "guard_passed": false,
+    "guard_issues": [
+     "citation_missing",
+     "insufficient_cited_units"
+    ],
+    "citation_valid_count": 0,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 0.0,
+    "distinct_cited_units": 0,
+    "inference_ratio": 0.0,
+    "usage": {
+     "prompt_tokens": 192,
+     "completion_tokens": 38
+    },
+    "cost_cny": 0.000612,
+    "error": null,
+    "answerability": {
+     "enabled": true,
+     "decision": "unanswerable",
+     "reason": "不可答：该问题属于医疗诊疗与用药咨询，不在研报知识库覆盖的金融/产业/公司/策略/市场/宏观/交易等研报知识范围内。",
+     "error": null,
+     "model": "qwen3.5:9b",
+     "raw": "不可答：该问题属于医疗诊疗与用药咨询，不在研报知识库覆盖的金融/产业/公司/策略/市场/宏观/交易等研报知识范围内。",
+     "elapsed_seconds": 1.26
+    }
+   },
+   "ollama": {
+    "answer": "知识库中没有足够依据回答该问题。",
+    "answer_chars": 16,
+    "elapsed": 17.91,
+    "citations": 0,
+    "confidence": "none",
+    "refusal": true,
+    "fallback": false,
+    "retry_used": false,
+    "guard_passed": false,
+    "guard_issues": [
+     "citation_missing",
+     "insufficient_cited_units"
+    ],
+    "citation_valid_count": 0,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 0.0,
+    "distinct_cited_units": 0,
+    "inference_ratio": 0.0,
+    "usage": {
+     "prompt_tokens": 0,
+     "completion_tokens": 0
+    },
+    "cost_cny": 0.0,
+    "error": null,
+    "answerability": null
+   },
+   "verdict": "tie"
+  },
+  {
+   "id": "w13_U10",
+   "source": "w13",
+   "type": "unanswerable",
+   "answerable": false,
+   "question": "量子纠缠实验的贝尔不等式推导？",
+   "retrieval_seconds": 0.05,
+   "clusters": 3,
+   "units": 3,
+   "v4d": {
+    "answer": "知识库中没有足够依据回答该问题。",
+    "answer_chars": 16,
+    "elapsed": 23.22,
+    "citations": 0,
+    "confidence": "none",
+    "refusal": true,
+    "fallback": false,
+    "retry_used": false,
+    "guard_passed": false,
+    "guard_issues": [
+     "citation_missing",
+     "insufficient_cited_units"
+    ],
+    "citation_valid_count": 0,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 0.0,
+    "distinct_cited_units": 0,
+    "inference_ratio": 0.0,
+    "usage": {
+     "prompt_tokens": 197,
+     "completion_tokens": 35
+    },
+    "cost_cny": 0.000604,
+    "error": null,
+    "answerability": {
+     "enabled": true,
+     "decision": "unanswerable",
+     "reason": "不可答。理由：该问题涉及量子力学与物理推导，明显不在研报知识库覆盖的金融/产业/公司/策略/市场等范围内。",
+     "error": null,
+     "model": "qwen3.5:9b",
+     "raw": "不可答。理由：该问题涉及量子力学与物理推导，明显不在研报知识库覆盖的金融/产业/公司/策略/市场等范围内。",
+     "elapsed_seconds": 23.22
+    }
+   },
+   "ollama": {
+    "answer": "知识库中没有足够依据回答该问题。",
+    "answer_chars": 16,
+    "elapsed": 7.2,
+    "citations": 0,
+    "confidence": "none",
+    "refusal": true,
+    "fallback": false,
+    "retry_used": false,
+    "guard_passed": false,
+    "guard_issues": [
+     "citation_missing",
+     "insufficient_cited_units"
+    ],
+    "citation_valid_count": 0,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 0.0,
+    "distinct_cited_units": 0,
+    "inference_ratio": 0.0,
+    "usage": {
+     "prompt_tokens": 0,
+     "completion_tokens": 0
+    },
+    "cost_cny": 0.0,
+    "error": null,
+    "answerability": null
+   },
+   "verdict": "tie"
+  },
+  {
+   "id": "w13_A01",
+   "source": "w13",
+   "type": "card_concept",
+   "answerable": true,
+   "question": "「AI 产业投资传导链条」的核心要点是什么？",
+   "retrieval_seconds": 0.06,
+   "clusters": 3,
+   "units": 4,
+   "v4d": {
+    "answer": "【事实摘录】\n【事实】当前 AI 产业投资线索正沿着“模型降价→应用放量→芯片需求→制造扩产”的链条自上而下传导，景气验证不断下沉（[efa0bece0085] p.2）。",
+    "answer_chars": 86,
+    "elapsed": 11.44,
+    "citations": 1,
+    "confidence": "medium",
+    "refusal": false,
+    "fallback": false,
+    "retry_used": true,
+    "guard_passed": false,
+    "guard_issues": [
+     "insufficient_cited_units"
+    ],
+    "citation_valid_count": 1,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 1,
+    "inference_ratio": 0.0,
+    "usage": {
+     "prompt_tokens": 2454,
+     "completion_tokens": 155
+    },
+    "cost_cny": 0.005838,
+    "error": null,
+    "answerability": {
+     "enabled": true,
+     "decision": "answerable",
+     "reason": "可答：该问题询问 AI 产业投资传导链条的核心要点，属于产业与投资分析范畴，符合研报知识库覆盖的金融、产业和策略类议题。",
+     "error": null,
+     "model": "qwen3.5:9b",
+     "raw": "可答：该问题询问 AI 产业投资传导链条的核心要点，属于产业与投资分析范畴，符合研报知识库覆盖的金融、产业和策略类议题。",
+     "elapsed_seconds": 2.31
+    }
+   },
+   "ollama": {
+    "answer": "【事实摘录】\n【事实】当前 AI 产业投资线索正沿“模型降价→应用放量→芯片需求→制造扩产”的链条自上而下传导（[efa0bece0085] p.2）。\n【事实】模型端价格战降低应用门槛，端侧与 AIoT 场景加速打开；芯片端新品周期临近，渗透率与单机价值量双升（[47f5ad80fdb7] p.1）。\n【推断】\n【推断】AI 产业投资逻辑呈现从上游模型成本下降向下游制造扩产传导的特征（依据：[efa0bece0085] p.2、[47f5ad80fdb7] p.1）。",
+    "answer_chars": 237,
+    "elapsed": 51.17,
+    "citations": 2,
+    "confidence": "high",
+    "refusal": false,
+    "fallback": false,
+    "retry_used": false,
+    "guard_passed": true,
+    "guard_issues": [],
+    "citation_valid_count": 2,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 2,
+    "inference_ratio": 0.5,
+    "usage": {
+     "prompt_tokens": 0,
+     "completion_tokens": 0
+    },
+    "cost_cny": 0.0,
+    "error": null,
+    "answerability": null
+   },
+   "verdict": "ollama"
+  },
+  {
+   "id": "w13_A07",
+   "source": "w13",
+   "type": "card_concept",
+   "answerable": true,
+   "question": "「多层级安全评估体系（ARIA）」的核心要点是什么？",
+   "retrieval_seconds": 0.06,
+   "clusters": 3,
+   "units": 3,
+   "v4d": {
+    "answer": "【事实摘录】\n【事实】NIST 的 ARIA 计划将测试分为 Model Testing、Red Teeming 和 Field Testing（[ae05187cc3bc] p.2）。\n【事实】Model Testing 用于确认模型或系统声明的能力和防护，Red Teeming 尝试诱发违规，Field Testing 观察真实环境影响（[ae05187cc3bc] p.2）。\n【推断】\n【推断】ARIA 把测试分为确认能力、诱发违规和观察真实环境影响三个阶段（依据：[ae05187cc3bc] p.2）。",
+    "answer_chars": 258,
+    "elapsed": 7.41,
+    "citations": 1,
+    "confidence": "medium",
+    "refusal": false,
+    "fallback": false,
+    "retry_used": true,
+    "guard_passed": false,
+    "guard_issues": [
+     "insufficient_cited_units"
+    ],
+    "citation_valid_count": 1,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 1,
+    "inference_ratio": 0.5,
+    "usage": {
+     "prompt_tokens": 2195,
+     "completion_tokens": 332
+    },
+    "cost_cny": 0.006382,
+    "error": null,
+    "answerability": {
+     "enabled": true,
+     "decision": "answerable",
+     "reason": "可答：该问题涉及安全评估体系 ARIA 的核心要点，属于产业/技术/标准类知识范围，与研报知识库内容高度相关。",
+     "error": null,
+     "model": "qwen3.5:9b",
+     "raw": "可答：该问题涉及安全评估体系 ARIA 的核心要点，属于产业/技术/标准类知识范围，与研报知识库内容高度相关。",
+     "elapsed_seconds": 1.16
+    }
+   },
+   "ollama": {
+    "answer": "【事实摘录】\n【事实】NIST 的 ARIA 计划将测试分为 Model Testing（确认能力）、Red Teaming（诱发违规）和 Field Testing（观察真实环境影响），单一分数难以替代完整证据链（[ae05187cc3bc] p.2）。\n【事实】安全评估需要回答三个不同问题，NIST 的 ARIA 计划把测试分为 Model Testing、Red Teaming 和 Field Testing（[ae05187cc3bc] p.2）。\n【推断】\n【推断】ARIA 体系强调通过多维度测试构建完整证据链，而非依赖单一分数来评估安全（依据：[ae05187cc3bc] p.2）。",
+    "answer_chars": 301,
+    "elapsed": 104.89,
+    "citations": 1,
+    "confidence": "medium",
+    "refusal": false,
+    "fallback": false,
+    "retry_used": true,
+    "guard_passed": false,
+    "guard_issues": [
+     "insufficient_cited_units"
+    ],
+    "citation_valid_count": 1,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 1,
+    "inference_ratio": 0.5,
+    "usage": {
+     "prompt_tokens": 0,
+     "completion_tokens": 0
+    },
+    "cost_cny": 0.0,
+    "error": null,
+    "answerability": null
+   },
+   "verdict": "tie"
+  },
+  {
+   "id": "w13_A13",
+   "source": "w13",
+   "type": "card_evidence",
+   "answerable": true,
+   "question": "关于「区间套运用」，资料中的依据/来源是什么？",
+   "retrieval_seconds": 0.05,
+   "clusters": 3,
+   "units": 3,
+   "v4d": {
+    "answer": "知识库中没有足够依据回答该问题。",
+    "answer_chars": 16,
+    "elapsed": 1.33,
+    "citations": 0,
+    "confidence": "none",
+    "refusal": true,
+    "fallback": false,
+    "retry_used": false,
+    "guard_passed": false,
+    "guard_issues": [
+     "citation_missing",
+     "insufficient_cited_units"
+    ],
+    "citation_valid_count": 0,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 0.0,
+    "distinct_cited_units": 0,
+    "inference_ratio": 0.0,
+    "usage": {
+     "prompt_tokens": 200,
+     "completion_tokens": 42
+    },
+    "cost_cny": 0.000652,
+    "error": null,
+    "answerability": {
+     "enabled": true,
+     "decision": "unanswerable",
+     "reason": "不可答。该问题涉及数学概念“区间套”的运用及依据来源，属于数学/逻辑推理范畴，不在研报知识库覆盖的金融、产业、公司等研报知识范围内。",
+     "error": null,
+     "model": "qwen3.5:9b",
+     "raw": "不可答。该问题涉及数学概念“区间套”的运用及依据来源，属于数学/逻辑推理范畴，不在研报知识库覆盖的金融、产业、公司等研报知识范围内。",
+     "elapsed_seconds": 1.33
+    }
+   },
+   "ollama": {
+    "answer": "知识库中没有足够依据回答该问题。",
+    "answer_chars": 16,
+    "elapsed": 19.2,
+    "citations": 0,
+    "confidence": "none",
+    "refusal": true,
+    "fallback": false,
+    "retry_used": false,
+    "guard_passed": false,
+    "guard_issues": [
+     "citation_missing",
+     "insufficient_cited_units"
+    ],
+    "citation_valid_count": 0,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 0.0,
+    "distinct_cited_units": 0,
+    "inference_ratio": 0.0,
+    "usage": {
+     "prompt_tokens": 0,
+     "completion_tokens": 0
+    },
+    "cost_cny": 0.0,
+    "error": null,
+    "answerability": null
+   },
+   "verdict": "tie"
+  },
+  {
+   "id": "w13_A18",
+   "source": "w13",
+   "type": "unit_howto",
+   "answerable": true,
+   "question": "关于「今天刺猬情报局的主题」，操作要点是什么？",
+   "retrieval_seconds": 0.05,
+   "clusters": 3,
+   "units": 3,
+   "v4d": {
+    "answer": "知识库中没有足够依据回答该问题。",
+    "answer_chars": 16,
+    "elapsed": 1.25,
+    "citations": 0,
+    "confidence": "none",
+    "refusal": true,
+    "fallback": false,
+    "retry_used": false,
+    "guard_passed": false,
+    "guard_issues": [
+     "citation_missing",
+     "insufficient_cited_units"
+    ],
+    "citation_valid_count": 0,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 0.0,
+    "distinct_cited_units": 0,
+    "inference_ratio": 0.0,
+    "usage": {
+     "prompt_tokens": 200,
+     "completion_tokens": 43
+    },
+    "cost_cny": 0.000658,
+    "error": null,
+    "answerability": {
+     "enabled": true,
+     "decision": "unanswerable",
+     "reason": "不可答。理由：该问题涉及节目主题与操作要点，属于内容运营/媒体节目的具体执行层面，不在研报知识库覆盖的金融/产业/公司/策略等研究范围内。",
+     "error": null,
+     "model": "qwen3.5:9b",
+     "raw": "不可答。理由：该问题涉及节目主题与操作要点，属于内容运营/媒体节目的具体执行层面，不在研报知识库覆盖的金融/产业/公司/策略等研究范围内。",
+     "elapsed_seconds": 1.25
+    }
+   },
+   "ollama": {
+    "answer": "知识库中没有足够依据回答该问题。",
+    "answer_chars": 16,
+    "elapsed": 1.92,
+    "citations": 0,
+    "confidence": "none",
+    "refusal": true,
+    "fallback": false,
+    "retry_used": false,
+    "guard_passed": false,
+    "guard_issues": [
+     "citation_missing",
+     "insufficient_cited_units"
+    ],
+    "citation_valid_count": 0,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 0.0,
+    "distinct_cited_units": 0,
+    "inference_ratio": 0.0,
+    "usage": {
+     "prompt_tokens": 0,
+     "completion_tokens": 0
+    },
+    "cost_cny": 0.0,
+    "error": null,
+    "answerability": null
+   },
+   "verdict": "tie"
+  },
+  {
+   "id": "w13_A24",
+   "source": "w13",
+   "type": "unit_fact",
+   "answerable": true,
+   "question": "「五天的成交量加起来还不如今天一天」的依据/事实是什么？",
+   "retrieval_seconds": 0.06,
+   "clusters": 3,
+   "units": 3,
+   "v4d": {
+    "answer": "知识库中没有足够依据回答该问题。",
+    "answer_chars": 16,
+    "elapsed": 4.64,
+    "citations": 0,
+    "confidence": "none",
+    "refusal": true,
+    "fallback": false,
+    "retry_used": true,
+    "guard_passed": false,
+    "guard_issues": [
+     "citation_missing",
+     "insufficient_cited_units"
+    ],
+    "citation_valid_count": 0,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 0.0,
+    "distinct_cited_units": 0,
+    "inference_ratio": 0.0,
+    "usage": {
+     "prompt_tokens": 2205,
+     "completion_tokens": 171
+    },
+    "cost_cny": 0.005436,
+    "error": null,
+    "answerability": {
+     "enabled": true,
+     "decision": "answerable",
+     "reason": "可答。问题讨论的是成交量比较与市场节奏观察，属于市场分析类研报知识范围。",
+     "error": null,
+     "model": "qwen3.5:9b",
+     "raw": "可答。问题讨论的是成交量比较与市场节奏观察，属于市场分析类研报知识范围。",
+     "elapsed_seconds": 0.84
+    }
+   },
+   "ollama": {
+    "answer": "知识库中没有足够依据回答该问题。",
+    "answer_chars": 16,
+    "elapsed": 1.67,
+    "citations": 0,
+    "confidence": "none",
+    "refusal": true,
+    "fallback": false,
+    "retry_used": false,
+    "guard_passed": false,
+    "guard_issues": [
+     "citation_missing",
+     "insufficient_cited_units"
+    ],
+    "citation_valid_count": 0,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 0.0,
+    "distinct_cited_units": 0,
+    "inference_ratio": 0.0,
+    "usage": {
+     "prompt_tokens": 0,
+     "completion_tokens": 0
+    },
+    "cost_cny": 0.0,
+    "error": null,
+    "answerability": null
+   },
+   "verdict": "tie"
+  },
+  {
+   "id": "w13_A30",
+   "source": "w13",
+   "type": "unit_fact",
+   "answerable": true,
+   "question": "「放量不等于有效放量」的依据/事实是什么？",
+   "retrieval_seconds": 0.05,
+   "clusters": 3,
+   "units": 4,
+   "v4d": {
+    "answer": "【事实摘录】\n【事实】大模型降价摊薄了终端智能化的边际成本，显著降低了端侧应用的普及门槛，使其进入放量通道[252c4dbe1667] p.1。",
+    "answer_chars": 72,
+    "elapsed": 4.12,
+    "citations": 1,
+    "confidence": "medium",
+    "refusal": false,
+    "fallback": false,
+    "retry_used": true,
+    "guard_passed": false,
+    "guard_issues": [
+     "insufficient_cited_units"
+    ],
+    "citation_valid_count": 1,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 1,
+    "inference_ratio": 0.0,
+    "usage": {
+     "prompt_tokens": 2701,
+     "completion_tokens": 127
+    },
+    "cost_cny": 0.006164,
+    "error": null,
+    "answerability": {
+     "enabled": true,
+     "decision": "answerable",
+     "reason": "可答：该问题讨论成交量判断与交易信号，属于研报知识库中的市场分析、交易策略范围。",
+     "error": null,
+     "model": "qwen3.5:9b",
+     "raw": "可答：该问题讨论成交量判断与交易信号，属于研报知识库中的市场分析、交易策略范围。",
+     "elapsed_seconds": 0.83
+    }
+   },
+   "ollama": {
+    "answer": "【事实摘录】\n【事实】近期海外大模型公司同步上新降价，Anthropic 发布 Claude Opus 5.5，运行成本比 Opus 5 低 40%（[252c4dbe1667] p.1）。\n【事实】OpenAI 推出 GPT-6 Sol 与 GPT-6 Luna，API 价格较上代接近砍半（[ed4b3dff7b4d] p.2）。\n【事实】大模型降价摊薄了终端智能化的边际成本，显著降低了端侧应用的普及门槛，使其进入放量通道（[252c4dbe1667] p.1）。\n【推断】\n【推断】尽管大模型降价推动端侧应用进入“放量通道”，但材料仅描述了价格下降与成本摊薄的逻辑，未提供关于“有效放量”的具体定义或验证标准（依据：[252c4dbe1667] p.1、[ed4b3dff7b4d] p.2）。\n【推断】材料中提到的\"Power Play\"形态规则强调“暴涨后横盘休整”及“放量突破”，暗示单纯的成交量放大（放量）若缺乏特定形态配合可能并非有效信号，但此逻辑未直接应用于端侧 AI 场景的验证（依据：[1f57e8719bd4] p.5）。",
+    "answer_chars": 474,
+    "elapsed": 14.09,
+    "citations": 3,
+    "confidence": "high",
+    "refusal": false,
+    "fallback": false,
+    "retry_used": false,
+    "guard_passed": true,
+    "guard_issues": [],
+    "citation_valid_count": 3,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 3,
+    "inference_ratio": 0.4,
+    "usage": {
+     "prompt_tokens": 0,
+     "completion_tokens": 0
+    },
+    "cost_cny": 0.0,
+    "error": null,
+    "answerability": null
+   },
+   "verdict": "ollama"
+  },
+  {
+   "id": "heldout_001",
+   "source": "heldout",
+   "type": "A_concept_qa",
+   "answerable": true,
+   "question": "什么是「频谱资源与许可」？",
+   "retrieval_seconds": 0.05,
+   "clusters": 3,
+   "units": 3,
+   "v4d": {
+    "answer": "【事实摘录】\n【事实】可靠的频谱接入是轨道数据中心实现实用价值的关键资源，需通过简化许可流程和明确规则来减少监管不确定性及交易成本[8032d4ff1c17] p.6。\n【事实】政策制定者需创造简化的监管环境，包括确保频谱资源充足、简化卫星牌照发放、明确网络安全要求及解决轨道可持续性问题，以支持新技术测试和部署[a3b062104586] p.1。\n【推断】\n【推断】现有材料把“频谱资源与许可”表述为轨道数据中心实用化中的关键环节，强调简化许可流程和明确规则以减少监管不确定性[8032d4ff1c17] p.6、[a3b062104586] p.1。",
+    "answer_chars": 278,
+    "elapsed": 12.83,
+    "citations": 2,
+    "confidence": "high",
+    "refusal": false,
+    "fallback": false,
+    "retry_used": true,
+    "guard_passed": false,
+    "guard_issues": [
+     "inference_heavy"
+    ],
+    "citation_valid_count": 2,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 2,
+    "inference_ratio": 1.0,
+    "usage": {
+     "prompt_tokens": 2015,
+     "completion_tokens": 268
+    },
+    "cost_cny": 0.005638,
+    "error": null,
+    "answerability": {
+     "enabled": true,
+     "decision": "answerable",
+     "reason": "可答：该问题涉及通信技术中的频谱资源与许可，属于产业/技术研报知识范围。",
+     "error": null,
+     "model": "qwen3.5:9b",
+     "raw": "可答：该问题涉及通信技术中的频谱资源与许可，属于产业/技术研报知识范围。",
+     "elapsed_seconds": 3.81
+    }
+   },
+   "ollama": {
+    "answer": "【事实摘录】\n【事实】可靠的频谱接入是轨道数据中心实现实用价值的关键资源（[8032d4ff1c17] p.6）。\n【事实】政策制定者需确保频谱资源充足，以支持新技术测试和部署（[a3b062104586] p.1）。\n【推断】\n【推断】简化的许可流程和明确的规则有助于减少监管不确定性及交易成本（依据：[8032d4ff1c17] p.6）。\n【推断】充足的频谱资源与简化的牌照发放是构建不阻碍测试部署的监管环境的核心要素（依据：[a3b062104586] p.1）。",
+    "answer_chars": 236,
+    "elapsed": 11.49,
+    "citations": 2,
+    "confidence": "high",
+    "refusal": false,
+    "fallback": false,
+    "retry_used": false,
+    "guard_passed": true,
+    "guard_issues": [],
+    "citation_valid_count": 2,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 2,
+    "inference_ratio": 0.5,
+    "usage": {
+     "prompt_tokens": 0,
+     "completion_tokens": 0
+    },
+    "cost_cny": 0.0,
+    "error": null,
+    "answerability": null
+   },
+   "verdict": "ollama"
+  },
+  {
+   "id": "heldout_011",
+   "source": "heldout",
+   "type": "A_concept_qa",
+   "answerable": true,
+   "question": "什么是「愿意秒内交易超过300笔」？",
+   "retrieval_seconds": 0.06,
+   "clusters": 3,
+   "units": 3,
+   "v4d": {
+    "answer": "知识库中没有足够依据回答该问题。",
+    "answer_chars": 16,
+    "elapsed": 3.89,
+    "citations": 0,
+    "confidence": "none",
+    "refusal": true,
+    "fallback": false,
+    "retry_used": false,
+    "guard_passed": false,
+    "guard_issues": [
+     "citation_missing",
+     "insufficient_cited_units"
+    ],
+    "citation_valid_count": 0,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 0.0,
+    "distinct_cited_units": 0,
+    "inference_ratio": 0.0,
+    "usage": {
+     "prompt_tokens": 199,
+     "completion_tokens": 25
+    },
+    "cost_cny": 0.000548,
+    "error": null,
+    "answerability": {
+     "enabled": true,
+     "decision": "unanswerable",
+     "reason": "不可答：该表述不是问题，且涉及的交易规则细节不在研报知识库范围内，无法据此判断。",
+     "error": null,
+     "model": "qwen3.5:9b",
+     "raw": "不可答：该表述不是问题，且涉及的交易规则细节不在研报知识库范围内，无法据此判断。",
+     "elapsed_seconds": 3.89
+    }
+   },
+   "ollama": {
+    "answer": "知识库中没有足够依据回答该问题。",
+    "answer_chars": 16,
+    "elapsed": 13.3,
+    "citations": 0,
+    "confidence": "none",
+    "refusal": true,
+    "fallback": false,
+    "retry_used": false,
+    "guard_passed": false,
+    "guard_issues": [
+     "citation_missing",
+     "insufficient_cited_units"
+    ],
+    "citation_valid_count": 0,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 0.0,
+    "distinct_cited_units": 0,
+    "inference_ratio": 0.0,
+    "usage": {
+     "prompt_tokens": 0,
+     "completion_tokens": 0
+    },
+    "cost_cny": 0.0,
+    "error": null,
+    "answerability": null
+   },
+   "verdict": "tie"
+  },
+  {
+   "id": "heldout_021",
+   "source": "heldout",
+   "type": "C_reading_comprehension",
+   "answerable": true,
+   "question": "创业板指日线向下笔未跌破1740点时文中如何判断？",
+   "retrieval_seconds": 0.08,
+   "clusters": 3,
+   "units": 3,
+   "v4d": {
+    "answer": "知识库中没有足够依据回答该问题。",
+    "answer_chars": 16,
+    "elapsed": 9.58,
+    "citations": 0,
+    "confidence": "none",
+    "refusal": true,
+    "fallback": false,
+    "retry_used": true,
+    "guard_passed": false,
+    "guard_issues": [
+     "citation_missing",
+     "insufficient_cited_units"
+    ],
+    "citation_valid_count": 0,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 0.0,
+    "distinct_cited_units": 0,
+    "inference_ratio": 0.0,
+    "usage": {
+     "prompt_tokens": 2184,
+     "completion_tokens": 127
+    },
+    "cost_cny": 0.00513,
+    "error": null,
+    "answerability": {
+     "enabled": true,
+     "decision": "answerable",
+     "reason": "可答：该问题讨论创业板指日线走势及1740点支撑位的判断依据，属于市场分析与技术分析范畴，落入研报知识库覆盖的金融/市场/策略范围。",
+     "error": null,
+     "model": "qwen3.5:9b",
+     "raw": "可答：该问题讨论创业板指日线走势及1740点支撑位的判断依据，属于市场分析与技术分析范畴，落入研报知识库覆盖的金融/市场/策略范围。",
+     "elapsed_seconds": 3.58
+    }
+   },
+   "ollama": {
+    "answer": "【事实摘录】\n【事实】当股价出现‘百日高量’且后续未跌破该高点时，表明主力战略堡垒稳固，投资者可逢低介入以获取收益（[7e665de0b2bd] p.7）。\n【事实】收盘跌破 200 日线退出年化 9.6%（回撤 38%），紧的 10% 止损版仅 7.1%（[bf0d264626b9] p.10）。\n【推断】\n【推断】若创业板指日线向下笔未跌破 1740 点，可参照“高量不破”逻辑判断为战略堡垒稳固，具备逢低介入机会（依据：[7e665de0b2bd] p.7）。\n【推断】若该点位被视为关键支撑失效信号，则需参考跌破重要均线后的退出规则进行风控（依据：[bf0d264626b9] p.10）。",
+    "answer_chars": 300,
+    "elapsed": 19.16,
+    "citations": 2,
+    "confidence": "high",
+    "refusal": false,
+    "fallback": false,
+    "retry_used": false,
+    "guard_passed": true,
+    "guard_issues": [],
+    "citation_valid_count": 2,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 2,
+    "inference_ratio": 0.5,
+    "usage": {
+     "prompt_tokens": 0,
+     "completion_tokens": 0
+    },
+    "cost_cny": 0.0,
+    "error": null,
+    "answerability": null
+   },
+   "verdict": "ollama"
+  },
+  {
+   "id": "heldout_030",
+   "source": "heldout",
+   "type": "C_reading_comprehension",
+   "answerable": true,
+   "question": "买点正确但卖出不佳可能带来什么后果？",
+   "retrieval_seconds": 0.06,
+   "clusters": 3,
+   "units": 3,
+   "v4d": {
+    "answer": "知识库中没有足够依据回答该问题。",
+    "answer_chars": 16,
+    "elapsed": 4.66,
+    "citations": 0,
+    "confidence": "none",
+    "refusal": true,
+    "fallback": false,
+    "retry_used": true,
+    "guard_passed": false,
+    "guard_issues": [
+     "citation_missing",
+     "insufficient_cited_units"
+    ],
+    "citation_valid_count": 0,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 0.0,
+    "distinct_cited_units": 0,
+    "inference_ratio": 0.0,
+    "usage": {
+     "prompt_tokens": 2393,
+     "completion_tokens": 149
+    },
+    "cost_cny": 0.00568,
+    "error": null,
+    "answerability": {
+     "enabled": true,
+     "decision": "answerable",
+     "reason": "可答：该问题讨论交易中的买卖点与盈亏后果，属于研报知识库覆盖的交易策略和市场分析范围。",
+     "error": null,
+     "model": "qwen3.5:9b",
+     "raw": "可答：该问题讨论交易中的买卖点与盈亏后果，属于研报知识库覆盖的交易策略和市场分析范围。",
+     "elapsed_seconds": 1.14
+    }
+   },
+   "ollama": {
+    "answer": "【事实摘录】\n【事实】若终端需求疲软，成本推升型涨价仅能带来脉冲式盈利改善，难以带动持续回升（[d572abdcc970] p.1）。\n【事实】买点叫枢轴点（最后最紧区间的顶部），突破时成交量要明显放大（[dae4cbf52fe3] p.8）。\n【推断】\n【推断】若仅关注买入时机而忽视卖出逻辑，在需求疲软背景下可能导致盈利无法持续兑现（依据：[d572abdcc970] p.1）。\n【推断】卖出不佳可能使投资者错失右侧放量突破后的主升浪收益（依据：[dae4cbf52fe3] p.8）。",
+    "answer_chars": 246,
+    "elapsed": 12.09,
+    "citations": 2,
+    "confidence": "high",
+    "refusal": false,
+    "fallback": false,
+    "retry_used": false,
+    "guard_passed": true,
+    "guard_issues": [],
+    "citation_valid_count": 2,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 2,
+    "inference_ratio": 0.6,
+    "usage": {
+     "prompt_tokens": 0,
+     "completion_tokens": 0
+    },
+    "cost_cny": 0.0,
+    "error": null,
+    "answerability": null
+   },
+   "verdict": "ollama"
+  },
+  {
+   "id": "heldout_040",
+   "source": "heldout",
+   "type": "C_reading_comprehension",
+   "answerable": true,
+   "question": "策略收益与高赚率的原因是什么？",
+   "retrieval_seconds": 0.05,
+   "clusters": 3,
+   "units": 3,
+   "v4d": {
+    "answer": "【事实摘录】\n【事实】未来网络安全的出海核心不只是产品出口，而是建立包含本地渠道、合规认证、交付服务和品牌信任的完整经营体系。（[070380b8404a] p.2）\n【事实】目前少数厂商已形成可验证的海外收入，但占总收入仍只有 7.45%。（[070380b8404a] p.2）\n【推断】\n【推断】网络安全出海的核心是本地化与合规闭环，而非单纯产品出口。（依据：[070380b8404a] p.2）\n【推断】现有海外收入规模较小，说明成熟本地化体系尚未广泛建立。（依据：[070380b8404a] p.2）",
+    "answer_chars": 257,
+    "elapsed": 9.31,
+    "citations": 1,
+    "confidence": "medium",
+    "refusal": false,
+    "fallback": false,
+    "retry_used": true,
+    "guard_passed": false,
+    "guard_issues": [
+     "insufficient_cited_units"
+    ],
+    "citation_valid_count": 1,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 1,
+    "inference_ratio": 0.5,
+    "usage": {
+     "prompt_tokens": 2131,
+     "completion_tokens": 272
+    },
+    "cost_cny": 0.005894,
+    "error": null,
+    "answerability": {
+     "enabled": true,
+     "decision": "answerable",
+     "reason": "可答：该问题涉及策略收益与高赚率原因，属于投资策略分析范畴，符合研报知识库中的策略研究范围。",
+     "error": null,
+     "model": "qwen3.5:9b",
+     "raw": "可答：该问题涉及策略收益与高赚率原因，属于投资策略分析范畴，符合研报知识库中的策略研究范围。",
+     "elapsed_seconds": 3.42
+    }
+   },
+   "ollama": {
+    "answer": "【事实摘录】\n【事实】未来网络安全的出海核心不只是产品出口，而是建立包含本地渠道、合规认证、交付服务和品牌信任的完整经营体系（[070380b8404a] p.2）。\n【事实】业主方普遍推行租金转扣点、长免租期等让利措施以应对供应放量压力（[74ecb023f851] p.2）。\n【推断】\n【推断】高利润率可能源于构建本地化完整经营体系带来的品牌溢价与合规壁垒（依据：[070380b8404a] p.2）。\n【推断】让利策略虽短期压低租金，但通过提升出租率与客流可能优化长期收益结构（依据：[74ecb023f851] p.2）。",
+    "answer_chars": 267,
+    "elapsed": 21.0,
+    "citations": 2,
+    "confidence": "high",
+    "refusal": false,
+    "fallback": false,
+    "retry_used": false,
+    "guard_passed": true,
+    "guard_issues": [],
+    "citation_valid_count": 2,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 2,
+    "inference_ratio": 0.6,
+    "usage": {
+     "prompt_tokens": 0,
+     "completion_tokens": 0
+    },
+    "cost_cny": 0.0,
+    "error": null,
+    "answerability": null
+   },
+   "verdict": "ollama"
+  },
+  {
+   "id": "citation_sft_0003",
+   "source": "citation_clean",
+   "type": "card_concept",
+   "answerable": true,
+   "question": "「钠电池核心机会环节」的核心要点是什么？",
+   "retrieval_seconds": 0.06,
+   "clusters": 3,
+   "units": 3,
+   "v4d": {
+    "answer": "【事实摘录】\n【事实】钠电池核心的机会集中在关键材料环节，尤其是硬碳负极和聚阴离子正极（[a44a13fbb69c] p.1）。\n【事实】聚阴离子正极安全性好、寿命长，适合长时间尺度储能场景（[a44a13fbb69c] p.1）。\n【推断】\n【推断】钠电池核心机会集中在关键材料环节，尤其是硬碳负极和聚阴离子正极，其中聚阴离子正极适合长时间尺度储能场景（依据：[a44a13fbb69c] p.1）。",
+    "answer_chars": 201,
+    "elapsed": 29.17,
+    "citations": 1,
+    "confidence": "medium",
+    "refusal": false,
+    "fallback": false,
+    "retry_used": true,
+    "guard_passed": false,
+    "guard_issues": [
+     "insufficient_cited_units"
+    ],
+    "citation_valid_count": 1,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 1,
+    "inference_ratio": 0.5,
+    "usage": {
+     "prompt_tokens": 2219,
+     "completion_tokens": 232
+    },
+    "cost_cny": 0.00583,
+    "error": null,
+    "answerability": {
+     "enabled": true,
+     "decision": "answerable",
+     "reason": "可答：该问题询问钠电池产业链中的核心机会环节，属于产业与技术分析范畴，符合研报知识库覆盖的金融/产业/公司/策略等范围。",
+     "error": null,
+     "model": "qwen3.5:9b",
+     "raw": "可答：该问题询问钠电池产业链中的核心机会环节，属于产业与技术分析范畴，符合研报知识库覆盖的金融/产业/公司/策略等范围。",
+     "elapsed_seconds": 23.42
+    }
+   },
+   "ollama": {
+    "answer": "【事实摘录】\n【事实】钠电池核心的机会集中在关键材料环节，尤其是硬碳负极和聚阴离子正极（[a44a13fbb69c] p.1）。\n【事实】聚阴离子正极安全性好、寿命长，适合长时间尺度储能场景（[a44a13fbb69c] p.1）。\n【事实】钠电池未来应用不会只局限在大型储能项目，还会走进工商业、低速电动车等领域（[d0df32b16bdd] p.1）。\n【推断】\n【推断】硬碳负极与聚阴离子正极是钠电池产业链中价值量最高且最具潜力的投资方向（依据：[a44a13fbb69c] p.1）。\n【推断】凭借原料充足及适配高倍率、低温场景的优势，钠电池将在工商业储能和低速电动车领域实现规模化渗透（依据：[d0df32b16bdd] p.1）。",
+    "answer_chars": 321,
+    "elapsed": 12.69,
+    "citations": 2,
+    "confidence": "high",
+    "refusal": false,
+    "fallback": false,
+    "retry_used": false,
+    "guard_passed": true,
+    "guard_issues": [],
+    "citation_valid_count": 2,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 2,
+    "inference_ratio": 0.5,
+    "usage": {
+     "prompt_tokens": 0,
+     "completion_tokens": 0
+    },
+    "cost_cny": 0.0,
+    "error": null,
+    "answerability": null
+   },
+   "verdict": "ollama"
+  },
+  {
+   "id": "citation_sft_0026",
+   "source": "citation_clean",
+   "type": "card_concept",
+   "answerable": true,
+   "question": "「行业评级定义」的核心要点是什么？",
+   "retrieval_seconds": 0.05,
+   "clusters": 3,
+   "units": 4,
+   "v4d": {
+    "answer": "【事实摘录】\n【事实】“看好”评级意味着预计未来 6~12 个月内，行业指数表现强于市场基准指数（沪深 300）[3a4eff67a995] p.1。\n【事实】大同证券对有色金属行业的“看好”评级定义为：预计未来 6~12 个月内，行业指数表现强于市场基准指数（沪深 300）[de5d7e7138f5] p.1。\n【推断】\n【推断】行业评级“看好”的核心是预计未来 6~12 个月内行业指数表现强于市场基准指数，且该定义可跨行业适用[3a4eff67a995] p.1、[de5d7e7138f5] p.1。",
+    "answer_chars": 255,
+    "elapsed": 9.53,
+    "citations": 2,
+    "confidence": "high",
+    "refusal": false,
+    "fallback": false,
+    "retry_used": true,
+    "guard_passed": true,
+    "guard_issues": [],
+    "citation_valid_count": 2,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 2,
+    "inference_ratio": 0.5,
+    "usage": {
+     "prompt_tokens": 2427,
+     "completion_tokens": 279
+    },
+    "cost_cny": 0.006528,
+    "error": null,
+    "answerability": {
+     "enabled": true,
+     "decision": "answerable",
+     "reason": "可答：该问题询问行业评级定义的核心要点，属于投资策略与评级解释范畴，符合研报知识库覆盖的金融/产业/公司/策略等范围。",
+     "error": null,
+     "model": "qwen3.5:9b",
+     "raw": "可答：该问题询问行业评级定义的核心要点，属于投资策略与评级解释范畴，符合研报知识库覆盖的金融/产业/公司/策略等范围。",
+     "elapsed_seconds": 1.62
+    }
+   },
+   "ollama": {
+    "answer": "【事实摘录】\n【事实】“看好”评级意味着预计未来 6~12 个月内，行业指数表现强于市场基准指数（沪深 300）（[3a4eff67a995] p.1）。\n【事实】证券投资评级的类别、级别定义中，“行业评级 - 看好：预计未来 6~12 个月内，行业指数表现强于市场基准指数”（[de5d7e7138f5] p.1）。\n【推断】\n【推断】行业评级“看好”的核心在于预测短期（6-12 个月）内行业指数跑赢沪深 300 基准（依据：[3a4eff67a995] p.1、[de5d7e7138f5] p.1）。\n【推断】该定义明确了评级的时间窗口为未来半年至一年，且比较对象为市场基准指数（依据：[3a4eff67a995] p.1、[de5d7e7138f5] p.1）。",
+    "answer_chars": 336,
+    "elapsed": 27.28,
+    "citations": 2,
+    "confidence": "high",
+    "refusal": false,
+    "fallback": false,
+    "retry_used": false,
+    "guard_passed": true,
+    "guard_issues": [],
+    "citation_valid_count": 2,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 2,
+    "inference_ratio": 0.6,
+    "usage": {
+     "prompt_tokens": 0,
+     "completion_tokens": 0
+    },
+    "cost_cny": 0.0,
+    "error": null,
+    "answerability": null
+   },
+   "verdict": "tie"
+  },
+  {
+   "id": "citation_sft_0013",
+   "source": "citation_clean",
+   "type": "card_evidence",
+   "answerable": true,
+   "question": "关于「北京零售市场现状」，资料中的依据/来源是什么？",
+   "retrieval_seconds": 0.06,
+   "clusters": 3,
+   "units": 3,
+   "v4d": {
+    "answer": "【事实摘录】\n【事实】截至2026年上半年，北京零售市场总存量为953万平方米，其中购物中心存量765万平方米，优质购物中心平均租金报价为883元/月/平方米，空置率为10.4%。（[dd02cab720e0] p.2）\n【事实】大中华区零售物业市场呈现以下七大发展趋势：下沉市场消费韧性强劲、体验经济重塑线下场景、演出市场热度持续、入境游与国内游双轮驱动消费增长等。（[bf663d3e998a] p.2）\n【推断】\n【推断】资料把北京零售市场现状与大中华区七大发展趋势放在一起讨论，但两者来源相同，均为rp_AP202609301830015453报告第06章内容。（依据：[dd02cab720e0] p.2、[bf663d3e998a] p.2）",
+    "answer_chars": 327,
+    "elapsed": 10.95,
+    "citations": 2,
+    "confidence": "high",
+    "refusal": false,
+    "fallback": false,
+    "retry_used": true,
+    "guard_passed": true,
+    "guard_issues": [],
+    "citation_valid_count": 2,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 2,
+    "inference_ratio": 0.5,
+    "usage": {
+     "prompt_tokens": 2283,
+     "completion_tokens": 446
+    },
+    "cost_cny": 0.007242,
+    "error": null,
+    "answerability": {
+     "enabled": true,
+     "decision": "answerable",
+     "reason": "可答：问题涉及北京零售市场现状及资料来源，属于市场分析类研报知识范围。",
+     "error": null,
+     "model": "qwen3.5:9b",
+     "raw": "可答：问题涉及北京零售市场现状及资料来源，属于市场分析类研报知识范围。",
+     "elapsed_seconds": 0.94
+    }
+   },
+   "ollama": {
+    "answer": "【事实摘录】\n【事实】截至 2026 年上半年，北京零售市场总存量为 953 万平方米（其中购物中心 765 万平方米），优质购物中心平均租金报价为 883 元/月/平方米，空置率为 10.4%（[dd02cab720e0] p.2）。\n【事实】大中华区零售物业市场呈现下沉市场消费韧性强劲、体验经济重塑线下场景等七大发展趋势（[bf663d3e998a] p.2）。\n【推断】\n【推断】北京作为大中华区核心城市，其“存量优化为主”的趋势与大中华区整体“存量资产盘活与场景升级”的核心路径相一致（依据：[dd02cab720e0] p.2、[bf663d3e998a] p.2）。",
+    "answer_chars": 290,
+    "elapsed": 68.01,
+    "citations": 2,
+    "confidence": "high",
+    "refusal": false,
+    "fallback": false,
+    "retry_used": true,
+    "guard_passed": true,
+    "guard_issues": [],
+    "citation_valid_count": 2,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 2,
+    "inference_ratio": 0.5,
+    "usage": {
+     "prompt_tokens": 0,
+     "completion_tokens": 0
+    },
+    "cost_cny": 0.0,
+    "error": null,
+    "answerability": null
+   },
+   "verdict": "tie"
+  },
+  {
+   "id": "citation_sft_0039",
+   "source": "citation_clean",
+   "type": "card_evidence",
+   "answerable": true,
+   "question": "关于「资本市场现存障碍」，资料中的依据/来源是什么？",
+   "retrieval_seconds": 0.06,
+   "clusters": 3,
+   "units": 5,
+   "v4d": {
+    "answer": "【事实摘录】\n【事实】非国有企业目前在科技创新债券市场中代表性不足，且缺乏有效的市场稳定长效机制。（[653a45d7f679] p.13）\n【事实】外国投资者在市场持仓中占比相对较小，国内证券公司参与国际市场的角色有限。（[918a6d233355] p.13）\n【推断】\n【推断】资料把“非国有企业代表性不足”和“外国投资者占比小、国内券商角色有限”列为现存市场障碍。（依据：[653a45d7f679] p.13、[918a6d233355] p.13）",
+    "answer_chars": 230,
+    "elapsed": 4.84,
+    "citations": 2,
+    "confidence": "high",
+    "refusal": false,
+    "fallback": false,
+    "retry_used": false,
+    "guard_passed": true,
+    "guard_issues": [],
+    "citation_valid_count": 2,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 2,
+    "inference_ratio": 0.5,
+    "usage": {
+     "prompt_tokens": 1191,
+     "completion_tokens": 188
+    },
+    "cost_cny": 0.00351,
+    "error": null,
+    "answerability": {
+     "enabled": true,
+     "decision": "answerable",
+     "reason": "可答：问题询问资料中关于“资本市场现存障碍”的依据/来源，属于研报知识库可回答的范围。",
+     "error": null,
+     "model": "qwen3.5:9b",
+     "raw": "可答：问题询问资料中关于“资本市场现存障碍”的依据/来源，属于研报知识库可回答的范围。",
+     "elapsed_seconds": 1.14
+    }
+   },
+   "ollama": {
+    "answer": "【事实摘录】\n【事实】非国有企业目前在科技创新债券市场中代表性不足，且缺乏有效的市场稳定长效机制（[653a45d7f679] p.13）。\n【事实】外国投资者在市场持仓中占比相对较小，国内证券公司参与国际市场的角色有限（[918a6d233355] p.13）。\n【推断】\n【推断】资本市场现存障碍主要体现为非国企融资代表性不足及外资参与度低（依据：[653a45d7f679] p.13、[918a6d233355] p.13）。",
+    "answer_chars": 217,
+    "elapsed": 20.31,
+    "citations": 2,
+    "confidence": "high",
+    "refusal": false,
+    "fallback": false,
+    "retry_used": false,
+    "guard_passed": true,
+    "guard_issues": [],
+    "citation_valid_count": 2,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 1.0,
+    "distinct_cited_units": 2,
+    "inference_ratio": 0.5,
+    "usage": {
+     "prompt_tokens": 0,
+     "completion_tokens": 0
+    },
+    "cost_cny": 0.0,
+    "error": null,
+    "answerability": null
+   },
+   "verdict": "tie"
+  },
+  {
+   "id": "citation_sft_0178",
+   "source": "citation_clean",
+   "type": "unit_fact",
+   "answerable": true,
+   "question": "「但先别忙着给他发年终奖」的依据/事实是什么？",
+   "retrieval_seconds": 0.06,
+   "clusters": 3,
+   "units": 3,
+   "v4d": {
+    "answer": "知识库中没有足够依据回答该问题。",
+    "answer_chars": 16,
+    "elapsed": 5.75,
+    "citations": 0,
+    "confidence": "none",
+    "refusal": true,
+    "fallback": false,
+    "retry_used": true,
+    "guard_passed": false,
+    "guard_issues": [
+     "citation_missing",
+     "insufficient_cited_units"
+    ],
+    "citation_valid_count": 0,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 0.0,
+    "distinct_cited_units": 0,
+    "inference_ratio": 0.0,
+    "usage": {
+     "prompt_tokens": 2202,
+     "completion_tokens": 218
+    },
+    "cost_cny": 0.005712,
+    "error": null,
+    "answerability": {
+     "enabled": true,
+     "decision": "answerable",
+     "reason": "可答。该表述位于《01 赚钱是一场反人性博弈》一文结尾处，是对前文观点“长线投资需控制贪婪与恐惧”的收束表达，讨论范围仍为投资心态与策略，属于研报知识库覆盖的金…",
+     "error": null,
+     "model": "qwen3.5:9b",
+     "raw": "可答。该表述位于《01 赚钱是一场反人性博弈》一文结尾处，是对前文观点“长线投资需控制贪婪与恐惧”的收束表达，讨论范围仍为投资心态与策略，属于研报知识库覆盖的金融/投资/市场范畴。",
+     "elapsed_seconds": 1.67
+    }
+   },
+   "ollama": {
+    "answer": "知识库中没有足够依据回答该问题。",
+    "answer_chars": 16,
+    "elapsed": 1.83,
+    "citations": 0,
+    "confidence": "none",
+    "refusal": true,
+    "fallback": false,
+    "retry_used": false,
+    "guard_passed": false,
+    "guard_issues": [
+     "citation_missing",
+     "insufficient_cited_units"
+    ],
+    "citation_valid_count": 0,
+    "citation_invalid_count": 0,
+    "citation_resolvable_rate": 0.0,
+    "distinct_cited_units": 0,
+    "inference_ratio": 0.0,
+    "usage": {
+     "prompt_tokens": 0,
+     "completion_tokens": 0
+    },
+    "cost_cny": 0.0,
+    "error": null,
+    "answerability": null
+   },
+   "verdict": "tie"
+  }
+ ]
+}
