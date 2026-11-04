@@ -36,6 +36,9 @@ StrategySpec v1（JSON dict）：
   `unit`（"native"|"pct"|"ratio"），显式归一才允许改值并出 warning。compile 不二次换算。
 - spec_hash 稳定性（P2）：未显式 as_of 时默认 as_of **不进入** spec_hash（跨日同 hash）；
   显式给出 as_of 才计入。hash 覆盖 normalized 用户字段（含 schema_version）。
+- 策略库持久化（P1-1）：未显式 as_of 时 **spec 不落 as_of**（默认值只记 meta.as_of +
+  meta.as_of_explicit=false），load 按该事实复原；否则重载后会被当显式 as_of 计入 hash，
+  导致 meta.spec_hash ≠ compile(load)。磁盘写用 flush+fsync 后再 os.replace。
 - screener 模块缺失 → validate 返回 {ok:false, errors:["选股引擎未就绪"]}，代理层转 503（§5.1）；
   业务校验失败（errors 非空）仍返回 HTTP 200 + {ok:false, errors}（规范 v1.1 口径）。
 - rebalance/cost_bps 不进入 ScreeningDSL，由 compile 顶层/策略库 meta 承载（§2.2）。
@@ -633,14 +636,27 @@ def _file_lock(d, timeout=None, stale=None):
 
 
 def _write_atomic(path, doc):
-    """原子写：`<slug>.json.tmp-<pid>-<uuid>` + O_EXCL → os.replace；失败不破坏旧文件。"""
+    """原子写：`<slug>.json.tmp-<pid>-<uuid>` + O_EXCL → flush/fsync → os.replace。
+
+    失败不破坏旧文件；fsync 保证掉电/崩溃后不会留下「已 rename 但内容未落盘」的空壳。
+    """
     tmp = "%s.tmp-%d-%s" % (path, os.getpid(), uuid.uuid4().hex[:12])
     fd = os.open(tmp, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
     try:
         with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as f:
             json.dump(doc, f, ensure_ascii=False, indent=1)
             f.write("\n")
+            f.flush()
+            os.fsync(f.fileno())
         os.replace(tmp, path)
+        try:  # 目录项也落盘（Windows 不支持目录 fsync，忽略即可）
+            dfd = os.open(os.path.dirname(path) or ".", os.O_RDONLY)
+            try:
+                os.fsync(dfd)
+            finally:
+                os.close(dfd)
+        except OSError:
+            pass
     except Exception:
         try:
             if os.path.exists(tmp):
@@ -674,11 +690,17 @@ def save_strategy(spec, slug=None, base=None):
                 "errors": errs, "warnings": v["warnings"],
                 "engine_missing": errs == [ENGINE_MISSING]}
     n = v["normalized"]
-    raw = json.dumps(n, ensure_ascii=False).encode("utf-8")
+    as_of_explicit = bool(v.get("as_of_explicit"))
+    # P1-1：未显式传 as_of 时，默认值只记 meta，不落 spec。
+    # 否则重载后会被 _as_of_explicit 当成显式 as_of → compile 把它计入 hash → meta.spec_hash 失配。
+    persisted = dict(n)
+    if not as_of_explicit:
+        persisted.pop("as_of", None)
+    raw = json.dumps(persisted, ensure_ascii=False).encode("utf-8")
     if len(raw) > SPEC_MAX_BYTES:
         return {"ok": False, "error": "spec 体积超过 %dKB" % (SPEC_MAX_BYTES // 1024),
                 "errors": ["spec 体积超限"]}
-    spec_hash = _spec_hash(n, bool(v.get("as_of_explicit")))
+    spec_hash = _spec_hash(n, as_of_explicit)
     now = time.strftime("%Y-%m-%dT%H:%M:%S")
     d = _strategies_dir(base)
     try:
@@ -725,7 +747,8 @@ def save_strategy(spec, slug=None, base=None):
 
             meta = {"name": n["name"], "spec_hash": spec_hash,
                     "rebalance": n["rebalance"], "cost_bps": n["cost_bps"],
-                    "as_of": n["as_of"], "cost_standard": "v1-bilateral-20bp"}
+                    "as_of": n["as_of"], "as_of_explicit": as_of_explicit,
+                    "cost_standard": "v1-bilateral-20bp"}
             changelog = []
             if not created:
                 old = _read_json(path) or {}
@@ -739,7 +762,7 @@ def save_strategy(spec, slug=None, base=None):
             meta["updated"] = now
             changelog.append({"ts": now, "note": "init" if created else "update",
                               "spec_hash": spec_hash})
-            doc = {"schema_version": SCHEMA_VERSION, "slug": slug, "spec": n,
+            doc = {"schema_version": SCHEMA_VERSION, "slug": slug, "spec": persisted,
                    "meta": meta, "changelog": changelog}
             _write_atomic(path, doc)
     except TimeoutError as e:  # noqa: BLE001
@@ -788,6 +811,21 @@ def load_strategy(slug, base=None):
     meta, spec = _meta_of(doc)
     if not spec:
         return {"ok": False, "error": "not found"}
+    # P1-1：按 meta.as_of_explicit 复原「默认 as_of」事实——旧文件无该字段时先用存量
+    # spec_hash 反推（排除 as_of 后能复算同一 hash ⇒ 该值是保存时补的默认值），
+    # 反推不了再按旧口径（spec 带 as_of 即视为显式），保证历史库 hash 也能对上。
+    explicit = meta.get("as_of_explicit")
+    if explicit is None:
+        explicit = "as_of" in spec
+        if explicit and meta.get("spec_hash"):
+            try:
+                if _spec_hash(spec, False) == meta.get("spec_hash"):
+                    explicit = False
+            except Exception:  # noqa: BLE001 旧文件字段不全时保持显式口径
+                pass
+    if not explicit and "as_of" in spec:
+        spec = dict(spec)
+        spec.pop("as_of", None)
     meta_out = {
         "created": meta.get("created"),
         "updated": meta.get("updated"),
@@ -795,5 +833,7 @@ def load_strategy(slug, base=None):
         "spec_hash": meta.get("spec_hash"),
         "rebalance": meta.get("rebalance"),
         "cost_bps": meta.get("cost_bps"),
+        "as_of": meta.get("as_of") or spec.get("as_of"),
+        "as_of_explicit": bool(explicit),
     }
     return {"ok": True, "slug": str(doc.get("slug") or slug), "spec": spec, "meta": meta_out}

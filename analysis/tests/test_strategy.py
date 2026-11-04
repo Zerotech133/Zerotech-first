@@ -438,7 +438,13 @@ class TestStrategyLibrary(_Base):
             self.assertEqual(row["limit"], 20)
             loaded = st.load_strategy(slug, base=td)
             self.assertTrue(loaded["ok"])
-            self.assertEqual(loaded["spec"], st.validate(copy.deepcopy(GOLDEN_A))["normalized"])
+            # P1-1：默认 as_of 不落 spec（只记 meta），load 按 meta.as_of_explicit=false 复原
+            expected = st.validate(copy.deepcopy(GOLDEN_A))["normalized"]
+            expected.pop("as_of", None)
+            self.assertEqual(loaded["spec"], expected)
+            self.assertNotIn("as_of", loaded["spec"])
+            self.assertFalse(loaded["meta"]["as_of_explicit"])
+            self.assertRegex(loaded["meta"]["as_of"], r"^\d{4}-\d{2}-\d{2}$")
             self.assertEqual(loaded["meta"]["schema_version"], "v1")
             self.assertTrue(loaded["meta"]["spec_hash"].startswith("sha256:"))
             self.assertTrue(loaded["meta"]["created"])
@@ -662,6 +668,127 @@ class TestConcurrencyAndAtomic(_Base):
             self.assertTrue(any(".tmp-" in p for p, _ in seen), seen)
             self.assertTrue(any(flags & os.O_EXCL for _, flags in seen))
             self.assertFalse([f for f in os.listdir(d) if ".tmp" in f])
+
+    def test_write_atomic_flushes_and_fsyncs(self):
+        """P1-1：rename 前必须 flush+fsync，避免掉电留下未落盘内容。"""
+        with tempfile.TemporaryDirectory() as td:
+            path = os.path.join(td, "x.json")
+            calls = []
+            real_fsync = os.fsync
+
+            def spy(fd):
+                calls.append(fd)
+                return real_fsync(fd)
+
+            st.os.fsync = spy
+            try:
+                st._write_atomic(path, {"a": 1})
+            finally:
+                st.os.fsync = real_fsync
+            self.assertTrue(calls, "fsync 未被调用")
+            self.assertTrue(os.path.isfile(path))
+
+
+class TestAsOfPersistence(_Base):
+    """P1-1：默认 as_of 不落 spec，重载后 compile 的 spec_hash 必须与 meta 一致。"""
+
+    class _FakeTime:
+        def __init__(self, day):
+            self.day = day
+
+        def strftime(self, fmt, *a, **k):
+            return self.day
+
+        def __getattr__(self, name):
+            return getattr(time, name)
+
+    def _with_today(self, day):
+        orig = st.time
+        st.time = self._FakeTime(day)
+        self.addCleanup(lambda: setattr(st, "time", orig))
+
+    def test_default_as_of_not_persisted_and_hash_roundtrips(self):
+        with tempfile.TemporaryDirectory() as td:
+            r = st.save_strategy(copy.deepcopy(GOLDEN_A), base=td)
+            self.assertTrue(r["ok"], r)
+            doc = json.load(open(r["path"], encoding="utf-8"))
+            self.assertNotIn("as_of", doc["spec"])
+            self.assertFalse(doc["meta"]["as_of_explicit"])
+            self.assertEqual(doc["meta"]["spec_hash"], r["spec_hash"])
+            loaded = st.load_strategy(r["slug"], base=td)
+            self.assertTrue(loaded["ok"], loaded)
+            self.assertNotIn("as_of", loaded["spec"])
+            comp = st.compile(loaded["spec"])
+            self.assertTrue(comp["ok"], comp)
+            self.assertEqual(comp["spec_hash"], loaded["meta"]["spec_hash"])
+            self.assertEqual(comp["spec_hash"], r["spec_hash"])
+
+    def test_default_as_of_hash_survives_next_day_load(self):
+        with tempfile.TemporaryDirectory() as td:
+            self._with_today("2026-11-04")
+            r = st.save_strategy(copy.deepcopy(GOLDEN_A), base=td)
+            self.assertTrue(r["ok"], r)
+            self._with_today("2026-11-05")
+            loaded = st.load_strategy(r["slug"], base=td)
+            self.assertTrue(loaded["ok"], loaded)
+            comp = st.compile(loaded["spec"])
+            self.assertEqual(comp["spec_hash"], r["spec_hash"])
+            self.assertEqual(comp["spec_hash"], loaded["meta"]["spec_hash"])
+            self.assertEqual(loaded["meta"]["as_of"], "2026-11-04")  # 保存时解析值仅作展示
+
+    def test_explicit_as_of_persisted_and_participates(self):
+        with tempfile.TemporaryDirectory() as td:
+            spec = _spec(as_of="2026-11-04")
+            r = st.save_strategy(copy.deepcopy(spec), base=td)
+            self.assertTrue(r["ok"], r)
+            doc = json.load(open(r["path"], encoding="utf-8"))
+            self.assertEqual(doc["spec"]["as_of"], "2026-11-04")
+            self.assertTrue(doc["meta"]["as_of_explicit"])
+            loaded = st.load_strategy(r["slug"], base=td)
+            self.assertEqual(loaded["spec"]["as_of"], "2026-11-04")
+            self.assertTrue(loaded["meta"]["as_of_explicit"])
+            comp = st.compile(loaded["spec"])
+            self.assertEqual(comp["spec_hash"], loaded["meta"]["spec_hash"])
+            self.assertEqual(comp["spec_hash"], r["spec_hash"])
+            default = st.save_strategy(copy.deepcopy(GOLDEN_A), base=td)
+            self.assertNotEqual(default["spec_hash"], r["spec_hash"])
+
+    def test_legacy_default_as_of_inferred_from_stored_hash(self):
+        """旧版落盘：spec 带默认 as_of、meta 无 as_of_explicit，但 hash 按「排除 as_of」算。"""
+        with tempfile.TemporaryDirectory() as td:
+            d = os.path.join(td, "strategies")
+            os.makedirs(d)
+            spec = st.validate(copy.deepcopy(GOLDEN_A))["normalized"]
+            doc = {"schema_version": "v1", "slug": "legacy", "spec": spec,
+                   "meta": {"name": spec["name"], "as_of": spec["as_of"],
+                            "spec_hash": st._spec_hash(spec, False)},
+                   "changelog": []}
+            with open(os.path.join(d, "legacy.json"), "w", encoding="utf-8") as f:
+                json.dump(doc, f, ensure_ascii=False)
+            loaded = st.load_strategy("legacy", base=td)
+            self.assertTrue(loaded["ok"], loaded)
+            self.assertNotIn("as_of", loaded["spec"])
+            self.assertFalse(loaded["meta"]["as_of_explicit"])
+            comp = st.compile(loaded["spec"])
+            self.assertEqual(comp["spec_hash"], loaded["meta"]["spec_hash"])
+
+    def test_legacy_explicit_as_of_kept(self):
+        with tempfile.TemporaryDirectory() as td:
+            d = os.path.join(td, "strategies")
+            os.makedirs(d)
+            spec = st.validate(_spec(as_of="2026-11-04"))["normalized"]
+            doc = {"schema_version": "v1", "slug": "legacy", "spec": spec,
+                   "meta": {"name": spec["name"], "as_of": spec["as_of"],
+                            "spec_hash": st._spec_hash(spec, True)},
+                   "changelog": []}
+            with open(os.path.join(d, "legacy.json"), "w", encoding="utf-8") as f:
+                json.dump(doc, f, ensure_ascii=False)
+            loaded = st.load_strategy("legacy", base=td)
+            self.assertTrue(loaded["ok"], loaded)
+            self.assertEqual(loaded["spec"]["as_of"], "2026-11-04")
+            self.assertTrue(loaded["meta"]["as_of_explicit"])
+            comp = st.compile(loaded["spec"])
+            self.assertEqual(comp["spec_hash"], loaded["meta"]["spec_hash"])
 
 
 if __name__ == "__main__":
