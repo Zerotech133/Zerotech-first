@@ -159,6 +159,14 @@ def test_bare_env_cannot_skip(tmp_path, monkeypatch):
         assert 'os.environ["DEVTOOL_PREFLIGHT_DONE"]' not in src
 
 
+def test_merge_head_sha_uses_githead_when_merge_head_missing(monkeypatch):
+    """pre-merge-commit 无 MERGE_HEAD 文件时，用 Git 注入的 GITHEAD_<sha> 对齐 token。"""
+    monkeypatch.setattr(mp, "_git_stdout", lambda args, timeout=30: (1, ""))
+    sha = "e" * 40
+    monkeypatch.setenv("GITHEAD_" + sha.upper(), "refs/heads/task/T")
+    assert mp.merge_head_sha() == sha
+
+
 def test_devtask_wires_pin_and_token():
     assert "gate_pin_check(tid)" in DEVTASK_SRC
     assert "H5 钉扎" in DEVTASK_SRC
