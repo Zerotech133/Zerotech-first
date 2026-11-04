@@ -146,14 +146,16 @@ class TestResolveRef:
         assert len(summary["active"]) + len(summary["planned"]) + len(
             summary["declared_missing"]
         ) == 6
-        # 2026-11-04 棘轮加固：d1_decisions 可能已由 D1 线交付而进入 active 桶；
-        # 校验声明属性（owner/due）时在 active+planned 两桶中查找，不僵化绑定桶位。
-        d1 = {item["ref"]: item for bucket in ("active", "planned")
-              for item in summary[bucket]}
-        assert "dataset/file/d1_decisions" in d1, "d1_decisions 应在 active 或 planned 桶"
-        assert d1["dataset/file/d1_decisions"]["owner"] == "D1"
-        if "due" in d1["dataset/file/d1_decisions"]:
-            assert d1["dataset/file/d1_decisions"]["due"] == "2026-11-16"
+        # 2026-11-04 棘轮加固：d1_decisions 可能已由 D1 线交付而进入 active 桶
+        # （active 桶是 ref 字符串列表，planned 桶才是带 owner/due 的 dict）；
+        # 声明属性只在 planned 桶可校验，active 时校验其确已登记。
+        planned = {item["ref"]: item for item in summary["planned"]}
+        active_refs = set(summary["active"])
+        assert "dataset/file/d1_decisions" in planned or \
+            "dataset/file/d1_decisions" in active_refs
+        if "dataset/file/d1_decisions" in planned:
+            assert planned["dataset/file/d1_decisions"]["owner"] == "D1"
+            assert planned["dataset/file/d1_decisions"]["due"] == "2026-11-16"
 
 
 # ── 3. CLI 验收（resolve-ref rc=0） ─────────────────────────────────
