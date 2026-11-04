@@ -1,4 +1,4 @@
-﻿# portal api launcher (ASCII only - SYSTEM-safe path via C:\aios junction)
+# portal api launcher (ASCII only - SYSTEM-safe path via C:\aios junction)
 # K98: Start-Process -PassThru ExitCode always EMPTY here (same fake-green
 # family as morning; "python exited code= " x5 today, alert argv collapsed:
 # log path shifted into code slot). Use & + $LASTEXITCODE instead.
@@ -91,6 +91,9 @@ try {
     ('starting ' + (Get-Date -Format s)) | Out-File $log -Append -Encoding utf8
     # P1-2 (2026-10-27): 启用 BM25 RAG（可在 zhuge_grounding 内回退关键词；去掉此行即回退）
     $env:ZHUGE_RAG = '1'
+    # W27 (2026-11-04): 生产 kb_qa 生成端走 llm_router（v4d→v2→ollama）；
+    # 回滚：删除本行并重启，或改为 'ollama'。L2 审批见 docs/ops/2026-11-04_W27_kb_qa_router_L2审批单.md
+    $env:KB_QA_LLM_PROVIDER = 'router'
     # K382 (10-14): append-mode for out/err - overwrite mode erased every bounce
     # scene (08:25/09:24 code=1 root cause unreadable). Session separator first.
     ('===== session start ' + (Get-Date -Format s) + ' =====') |

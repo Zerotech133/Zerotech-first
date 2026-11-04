@@ -66,3 +66,17 @@ Get-Content 'C:\项目\老田的AI助手\research\reports\llm_cost_*.jsonl' -Tai
 
 ---
 申请：Lead（W27）｜待批：老田｜建议窗口：低峰期（无自动任务排队时）
+
+## 7. 审批
+- 审批人：老田
+- 审批时间：2026-11-04 20:36
+- 结论：**批准**（选择「批准：现在重启并切 router」）
+
+## 8. 实际执行记录
+- 20:36:14 创建 flag + `schtasks /run`；20:36:18 脚本 killed `[32600,36832,37160,39268]`；
+- 20:36:36 cold-start guard OK；20:36:37 启动新进程；20:37:07 `/api/health` 200（pid 15772）；
+- 停机 **49s**（含导入冒烟 18s，正常）；首问 20:37:27 命中 `bailian_v4d`，
+  `tokens=1438 cost=0.003852 purpose=kb_qa`；API 问答 2 条可核验引用、confidence=high。
+- 详见 `deliverables/2026-11-04_W27_kb_qa_router_执行回执.md`。
+- 回滚：删除启动脚本中 `KB_QA_LLM_PROVIDER='router'` 行并再次受控重启。
+
