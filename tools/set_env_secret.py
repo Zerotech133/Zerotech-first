@@ -19,6 +19,10 @@
     # 只比对不落盘
     python tools/set_env_secret.py --key TUSHARE_TOKEN --from-dotenv ... --dry-run
 
+    # 回切：从历史 .enc 备份取回旧值（改错了/换错了用它退回去）
+    python tools/set_env_secret.py --key TUSHARE_TOKEN \
+        --from-enc jev-eval/jev-gate.env.enc.bak-20261105-052431 --probe
+
 安全纪律：
   · 全程不打印任何明文；只输出长度与 sha256 前 8 位
   · 原子写（tmp + os.replace）；默认留 .enc.bak-<时间戳>
@@ -119,10 +123,36 @@ def probe_tushare(token: str) -> tuple:
     return (d.get("code") == 0, d.get("code"), str(d.get("msg") or "")[:80])
 
 
+def probe_permissions(token: str) -> tuple:
+    """anns_d 权限体检（复用 tools/tushare_probe.py 的探测清单）。
+
+    为什么单独做：trade_cal 只证明令牌"活着"，不能证明 review 门能用；
+    2026-11-05 就踩过"令牌有效但 anns_d 无权限（40203）"仍照写盘的情况。
+    本函数只提示、不阻断 —— 有效令牌总比失效令牌好。
+    """
+    try:
+        if HERE not in sys.path:
+            sys.path.insert(0, HERE)
+        import tushare_probe as tp
+    except Exception as e:  # noqa: BLE001
+        return "SKIP", str(e)[:80]
+    for name, params, fields, _desc, _req in tp.PROBES:
+        if name != "anns_d":
+            continue
+        try:
+            r = tp.call(token, name, params, fields, timeout=20)
+            return tp.status_of(r["code"]), "code=%s %s" % (r["code"], r["msg"][:60])
+        except Exception as e:  # noqa: BLE001
+            return "NET_ERROR", "%s: %s" % (type(e).__name__, str(e)[:80])
+    return "SKIP", "探测清单里没有 anns_d"
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="jev-gate.env.enc 单键轮换")
     ap.add_argument("--key", required=True, help="要更新的键名，如 TUSHARE_TOKEN")
     ap.add_argument("--from-dotenv", help="从该 dotenv 文件读取同名键")
+    ap.add_argument("--from-enc",
+                    help="从另一份 .enc（如 .bak-时间戳 备份）读取同名键 —— 回切通道")
     ap.add_argument("--stdin", action="store_true", help="从标准输入读新值（不回显）")
     ap.add_argument("--probe", action="store_true", help="写盘前做只读有效性校验")
     ap.add_argument("--dry-run", action="store_true", help="只比对不写盘")
@@ -130,8 +160,8 @@ def main(argv=None) -> int:
     ap.add_argument("--enc", default=ENC_FILE, help=".enc 路径（默认生产路径）")
     a = ap.parse_args(argv)
 
-    if not a.from_dotenv and not a.stdin:
-        ap.error("必须指定 --from-dotenv 或 --stdin")
+    if not a.from_dotenv and not a.stdin and not a.from_enc:
+        ap.error("必须指定 --from-dotenv / --from-enc / --stdin 之一")
 
     enc = load_enc(a.enc)
     if a.key not in enc:
@@ -141,6 +171,16 @@ def main(argv=None) -> int:
     old = dpapi_unprotect(base64.b64decode(enc[a.key])).decode("utf-8")
     if a.stdin:
         new = getpass.getpass("请输入 %s 的新值（不回显）：" % a.key).strip()
+    elif a.from_enc:
+        try:
+            src = load_enc(a.from_enc)
+            if a.key not in src:
+                raise KeyError("键 %s 不在 %s 中" % (a.key, a.from_enc))
+            new = dpapi_unprotect(base64.b64decode(src[a.key])).decode("utf-8").strip()
+            print("source  %s（回切/跨库取值的键：%s）" % (os.path.basename(a.from_enc), a.key))
+        except Exception as e:  # noqa: BLE001
+            print("ABORT 从 %s 取值失败：%s: %s" % (a.from_enc, type(e).__name__, str(e)[:100]))
+            return 2
     else:
         try:
             new = read_from_dotenv(a.from_dotenv, a.key).strip()
@@ -171,6 +211,10 @@ def main(argv=None) -> int:
         if not ok:
             print("PROBE FAIL -> 中止，未写盘")
             return 3
+        st, detail = probe_permissions(new)
+        print("anns_d  %s %s" % (st, detail))
+        if st != "OK":
+            print("NOTE    令牌有效但公告接口不可用 → review 门仍会降级 none（不阻断写盘）")
     elif a.probe:
         print("probe   SKIP（仅 TUSHARE_TOKEN 支持）")
 

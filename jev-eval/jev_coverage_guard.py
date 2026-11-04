@@ -103,6 +103,9 @@ def parse_args(argv: list[str]) -> dict:
         raise ValueError(f"--min-coverage 需在 (0,1]，收到 {cfg['min_coverage']}")
     if cfg["streak_days"] < 1:
         raise ValueError(f"--streak-days 需 >=1，收到 {cfg['streak_days']}")
+    # 演练用：JEV_GUARD_NO_PUSH=1 抑制推送（计划任务正常跑时不设）
+    if os.environ.get("JEV_GUARD_NO_PUSH", "").lower() in ("1", "true", "yes"):
+        cfg["no_push"] = True
     return cfg
 
 

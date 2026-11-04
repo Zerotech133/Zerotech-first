@@ -31,9 +31,24 @@ try {
     & $py -X utf8 (Join-Path $here 'jev_coverage_guard.py') `
         1>> $jsonl `
         2>> (Join-Path $logDir 'coverage_daily_err.log')
-    $rc = $LASTEXITCODE
+    $rcCov = $LASTEXITCODE
     $last = Get-Content -LiteralPath $jsonl -Tail 1 -Encoding UTF8 -ErrorAction SilentlyContinue
-    W ('coverage exit=' + $rc + ' json=' + $last)
+    W ('coverage exit=' + $rcCov + ' json=' + $last)
+
+    # 2026-11-05 追加：公告源守卫（同一任务第二段，不新增计划任务）。
+    # 背景：review 门公告源失效只打 info 级日志，长期静默空转；此段把
+    # 「40101 令牌失效 / 40203 无接口权限 / review 停摆」变成可见告警。
+    # 两段独立判定，退出码取更严重的那个（0 正常 / 1 告警 / 2 严重）。
+    $srcJsonl = Join-Path $logDir 'source_daily.jsonl'
+    & $py -X utf8 (Join-Path $here 'jev_source_guard.py') `
+        1>> $srcJsonl `
+        2>> (Join-Path $logDir 'source_daily_err.log')
+    $rcSrc = $LASTEXITCODE
+    $srcLast = Get-Content -LiteralPath $srcJsonl -Tail 1 -Encoding UTF8 -ErrorAction SilentlyContinue
+    W ('source exit=' + $rcSrc + ' json=' + $srcLast)
+
+    $rc = [Math]::Max([int]$rcCov, [int]$rcSrc)
+    W ('combined exit=' + $rc)
     exit $rc
 } catch {
     try { W ('ERR ' + $_.Exception.Message) } catch {}
