@@ -3,6 +3,38 @@
 本文件记录面向运行的显著变更（Keep a Changelog 风格，日期 = Asia/Shanghai）。
 格式参考开源实践：版本（或 Unreleased）/ Added / Changed / Fixed / Removed / Security。
 
+## [2026-11-05] — SFT 206 主审 40 / holdout-027 参考修复
+
+### Added
+- `research/sft/v4_gated_20261104/holdout_027_reference_fix_v1.json`：记录 027 的
+  old/new reference、修复来源、源文件 SHA256 与 `rejudged=false`；原冻结评测文件未改。
+- 修复版独立文件：`holdout_eval_027_reference_fixed_v1.jsonl`（206 行）、
+  `main40_independent_review_packet_36_reference_fixed_v1.json`、
+  `main40_independent_review_36_excl027_v1.json`、
+  `manual_review_40_auto_filled_reference_fixed_v1.csv`（40 行）。
+- `research/reports/SFT_206_main40_independent_ai_plus4_v1.{md,json,csv}`：
+  36 条独立 AI 复核 + 4 条人工修正的主审 40 汇总，含 027 排除语义。
+- 行级工作簿：`C:\Users\t\Desktop\206人工抽检_40条_主审_独立AI复核加人工4条_v1.xlsx`
+  （027 标 `excluded`，新增“是否计入准确率”列与说明页）。
+- `research/reports/SFT_206_base_vs_RAG_excl027_sensitivity_v1.json`：
+  206 排除 027 的 n=205 敏感性结果（不替换原报告）。
+
+### Fixed
+- `holdout-027` 的 reference 是跨行串行错配；已按
+  `知识库/20_清洗/视频号学习_8博主/clean/20261103_指标公式入门(1).md`
+  第 265–271 行“20260912_2003 均线粘合”同源原文替换。
+- 027 标记 `EXCLUDED_REFERENCE_MISMATCH`，不重新判定 base/RAG，
+  **不计入准确率**；主审 40 分母由 40 改为 39，36 条由 36 改为 35。
+- 其余 39 条标签、reference 均未改；原 `holdout_eval.jsonl` 与 206 预测未改。
+
+### Changed
+- 主审 40 修正后：36 条 AI 复核 base 20/35、RAG 27/35；4 条人工修正
+  base 0/4、RAG 2/4；40 条合并 base 20/39、RAG 29/39（027 排除）。
+- `SFT_206_base_vs_RAG_v1.md` 顶部加 027 历史口径提示；AI-draft 旧汇总
+  加“含无效 027、不可作为准确率”说明。
+- 变更仅限评测/复核数据与报告，不涉及线上服务；未切 canonical、未上线、
+  未进影子盘，主审 40 仍非完整人工审阅。
+
 ## [Unreleased] — 2026-10-27
 
 ### Added
