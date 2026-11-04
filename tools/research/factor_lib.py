@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-"""因子库 v1.0 · 因子注册表 + PIT 特征 + 20 日 CAR 按日横截面 IC 评测。
+"""因子库 v1.1 · 因子注册表 + PIT 特征 + 20 日 CAR 按日横截面 IC 评测。
 
 本模块是「选股因子/量学形态 → 可复现评测」的统一底座：
-  - FACTORS（dict[str, FactorSpec]）注册表，共 17 个因子（9 个量学形态可计算版 + 8 个通用因子）；
+  - FACTORS（dict[str, FactorSpec]）注册表：内置 17 个因子（9 个量学形态可计算版 + 8 个通用因子），
+    启动时自动注册 Tushare factor_list B1 批次 86 个行情/估值因子（合计 103 个；映射全表见 `map` 子命令）；
   - 所有因子函数签名统一：fn(panel) -> DataFrame（日期 × 代码），只允许使用「当日及以前」的数据；
   - 20 日 CAR 口径：T 日收盘出信号 → T+1 收盘入场 → 持有 20 个交易日后（T+21 收盘）卖出，
     收益 = 个股区间涨跌幅 - 等权市场同期涨跌幅 - 单边 30bp 成本（与 H24/H26/H29 口径一致）；
@@ -67,7 +68,7 @@ if str(_HERE) not in sys.path:
     sys.path.insert(0, str(_HERE))
 import stat_utils  # noqa: E402
 
-LIB_VERSION = "1.0.0"
+LIB_VERSION = "1.1.0"  # 1.1.0: 接入 Tushare factor_list B1 行情因子（86 个）；loader 扩 daily_basic/index_daily
 DEFAULT_HORIZON = 20          # 持有期（交易日）：T+1 收盘入场，T+1+h 收盘卖出
 DEFAULT_COST = 0.003          # 单边成本 30bp（买卖各 15bp 近似为单边 30bp，与 H24/H29 同口径）
 DEFAULT_MIN_CROSS_SECTION = 50  # 单日横截面最少有效股票数（少于此不计 IC 日）
@@ -86,6 +87,11 @@ REQUIRED_FACTORS = (
 )
 
 DAILY_FIELDS = ("open", "high", "low", "close", "pre_close", "pct_chg", "vol", "amount")
+
+# daily_basic 扩展字段（Tushare factor_list B1 批次需要：换手/估值/股本/市值）
+DAILY_BASIC_FIELDS = ("pe_ttm", "pb", "ps_ttm", "dv_ratio", "turnover_rate",
+                      "total_share", "float_share", "free_share", "total_mv",
+                      "circ_mv", "volume_ratio")
 
 
 # ---------------------------------------------------------------- 数值小工具
@@ -300,13 +306,18 @@ class Panel:
         keep = self.dates[mask]
         fields = {k: v.loc[keep] for k, v in self.fields.items()}
         elig = self.eligible.loc[keep] if self.eligible is not None else None
-        return Panel(fields, eligible=elig, meta=dict(self.load_meta, subset_to=str(max_date)))
+        meta = dict(self.load_meta, subset_to=str(max_date))
+        # 指数收益/成交量等 meta 序列也截断到保留日期，保证 PIT 截断不变性
+        for key in ("index_returns", "index_volume"):
+            if isinstance(meta.get(key), dict):
+                meta[key] = {k: v.loc[v.index.intersection(keep)] for k, v in meta[key].items()}
+        return Panel(fields, eligible=elig, meta=meta)
 
     @classmethod
     def empty(cls) -> "Panel":
         idx = pd.Index([], dtype="str")
         cols = pd.Index([], dtype="str")
-        names = set(DAILY_FIELDS) | {"adj_close", "pe_ttm", "turnover_rate", "roe"}
+        names = set(DAILY_FIELDS) | {"adj_close", "roe"} | set(DAILY_BASIC_FIELDS)
         return cls({name: pd.DataFrame(index=idx, columns=cols, dtype=float) for name in names})
 
     def __repr__(self) -> str:  # pragma: no cover - 调试辅助
@@ -421,7 +432,7 @@ def _f_near_high_vol(p: Panel) -> pd.DataFrame:
           source="伏击涨停·第8章 黄金柱 / 判例 H29（确认型形态不得按形态日索引）")
 def _f_golden_pillar(p: Panel) -> pd.DataFrame:
     vr = _f_vol_ratio5(p)
-    base = (p.pct_chg > 0) & (vr >= 1.5)                       # 基柱（T-3）条件
+    base = (p.close > p.open) & (vr >= 1.5)                   # 基柱（T-3）必须是阳线，不能只用 pct_chg>0
     base3 = base.astype(float).shift(3) == 1.0                # 基柱信号平移到确认日窗口
     base_close = p.close.shift(3)
     base_vol = p.vol.shift(3)
@@ -777,6 +788,26 @@ def _eval_one_factor(spec: FactorSpec, fmat: pd.DataFrame, car_w: np.ndarray, el
     }
 
 
+def _json_safe_meta(meta: dict) -> dict:
+    """把 Panel.load_meta 转成可 JSON 序列化的摘要（不把 Series/大 dict 原样写进报告）。"""
+    out: dict = {}
+    for key, value in meta.items():
+        if value is None or isinstance(value, (str, int, float, bool)):
+            out[key] = value
+        elif isinstance(value, pd.Series):
+            head = []
+            for idx, item in value.head(5).items():
+                head.append([str(idx), None if pd.isna(item) else str(item)])
+            out[key] = {"len": int(len(value)), "nunique": int(value.nunique()), "head": head}
+        elif isinstance(value, dict):
+            out[key] = {"n": len(value), "keys": sorted(str(k) for k in value.keys())[:10]}
+        elif isinstance(value, (list, tuple)):
+            out[key] = [str(x) for x in list(value)[:10]]
+        else:
+            out[key] = str(value)
+    return out
+
+
 def evaluate_panel(panel: Panel, factor_names: list[str] | str | None = None,
                    horizon: int = DEFAULT_HORIZON, cost: float = DEFAULT_COST,
                    start: str | None = None, end: str | None = None,
@@ -817,7 +848,7 @@ def evaluate_panel(panel: Panel, factor_names: list[str] | str | None = None,
         "entry": "T+1 收盘入场", "exit": f"T+{1 + int(horizon)} 收盘卖出",
         "market": "equal_weight_daily_rebalanced（等权市场日收益复利，与 H24/H26/H29 同口径）",
         "seed": int(seed), "min_cross_section": int(min_cross_section), "block": DEFAULT_BLOCK,
-        "data": dict(panel.load_meta),
+        "data": _json_safe_meta(panel.load_meta),
         "notes": [
             "PIT：因子只用 T 日及以前数据；golden_pillar 等确认型形态信号索引=确认完成日，T+1 入场。",
             "CAR = 个股 T+1→T+1+h 复权买入持有收益 - 等权市场同期复利收益 - 30bp。",
@@ -916,6 +947,35 @@ def _load_stock_basic(root: Path) -> pd.DataFrame:
     return sb.drop_duplicates("ts_code")
 
 
+def _load_index_meta(root: Path, load_dates: list[str]) -> dict:
+    """指数日收益/成交量（000300.SH/000001.SH），供 beta/alpha/rsrs/量能因子使用。
+
+    返回 Series（index=trade_date）而不是 DataFrame，避免在 date×code 面板里广播
+    两个 5000 列的大矩阵（约 80MB）。
+    """
+    empty = {"index_returns": {}, "index_volume": {}}
+    frames = _read_frames(root, load_dates, "index_daily", ["ts_code", "close", "vol"])
+    if not frames:
+        return empty
+    long = pd.concat(frames, ignore_index=True)
+    long["ts_code"] = long["ts_code"].astype(str)
+    long = long[long["ts_code"].isin(("000300.SH", "000001.SH"))]
+    if long.empty:
+        return empty
+    long = long.drop_duplicates(["trade_date", "ts_code"])
+    close = long.pivot(index="trade_date", columns="ts_code", values="close")
+    vol = long.pivot(index="trade_date", columns="ts_code", values="vol")
+    dates = pd.Index(load_dates)
+    returns: dict[str, pd.Series] = {}
+    volumes: dict[str, pd.Series] = {}
+    for code in close.columns:
+        c = pd.to_numeric(close[code], errors="coerce").reindex(dates)
+        returns[str(code)] = c / c.shift(1) - 1.0
+        v = pd.to_numeric(vol[code], errors="coerce").reindex(dates)
+        volumes[str(code)] = v
+    return {"index_returns": returns, "index_volume": volumes}
+
+
 def _load_fina_roe(root: Path, panel_dates: pd.Index, codes: pd.Index) -> pd.DataFrame:
     """PIT ROE 矩阵：每个交易日取 ann_date ≤ 该日 的最新一期 ROE（同报告日多期取 end_date 最大）。"""
     files = sorted(glob.glob(str(root / "fina_indicator" / "*.parquet")))
@@ -1001,18 +1061,22 @@ def load_panel(start: str, end: str, horizon: int = DEFAULT_HORIZON, universe: s
     adj = adj.reindex(index=dates_idx, columns=codes)
     fields["adj_close"] = fields["close"] * adj
 
-    # 估值/换手（daily_basic；缺失日期留 NaN，不影响其他因子）
-    db_frames = _read_frames(root, load_dates, "daily_basic", ["ts_code", "pe_ttm", "turnover_rate"])
+    # 估值/换手/股本/市值（daily_basic；缺失日期留 NaN，不影响其他因子）
+    db_cols = ["ts_code", *DAILY_BASIC_FIELDS]
+    db_frames = _read_frames(root, load_dates, "daily_basic", db_cols)
     if db_frames:
         db_long = pd.concat(db_frames, ignore_index=True)
         db_long["ts_code"] = db_long["ts_code"].astype(str)
         db_long = db_long.drop_duplicates(["trade_date", "ts_code"])
-        for col in ("pe_ttm", "turnover_rate"):
-            fields[col] = (db_long.pivot(index="trade_date", columns="ts_code", values=col)
-                           .reindex(index=dates_idx, columns=codes))
+        for col in DAILY_BASIC_FIELDS:
+            if col in db_long.columns:
+                fields[col] = (db_long.pivot(index="trade_date", columns="ts_code", values=col)
+                               .reindex(index=dates_idx, columns=codes))
+            else:
+                fields[col] = pd.DataFrame(np.nan, index=dates_idx, columns=codes)
     else:
-        fields["pe_ttm"] = pd.DataFrame(np.nan, index=dates_idx, columns=codes)
-        fields["turnover_rate"] = pd.DataFrame(np.nan, index=dates_idx, columns=codes)
+        for col in DAILY_BASIC_FIELDS:
+            fields[col] = pd.DataFrame(np.nan, index=dates_idx, columns=codes)
 
     # 财务 ROE（PIT；只有 roe / quality_trap 需要时才加载，5586 个小文件约 10~15s）
     if load_roe:
@@ -1043,6 +1107,11 @@ def load_panel(start: str, end: str, horizon: int = DEFAULT_HORIZON, universe: s
     else:
         raise ValueError(f"未知 universe: {universe}（可选 tradable/all）")
 
+    index_meta = _load_index_meta(root, load_dates)
+    industry = None
+    if not sb.empty and "industry" in sb.columns:
+        industry = sb.set_index("ts_code")["industry"].reindex(codes)
+
     meta = {
         "data_root": str(root), "universe": universe,
         "load_dates": [load_dates[0], load_dates[-1]], "load_days": len(load_dates),
@@ -1051,6 +1120,8 @@ def load_panel(start: str, end: str, horizon: int = DEFAULT_HORIZON, universe: s
         "eligible_avg_per_day": _num(float(eligible.sum(axis=1).mean()), 1) if eligible is not None else None,
         "eligible_share": _num(float(eligible.to_numpy().mean()), 4) if eligible is not None else None,
         "load_sec": round(time.time() - t0, 2),
+        **index_meta,
+        "industry": industry,
     }
     return Panel(fields, eligible=eligible, meta=meta)
 
@@ -1170,14 +1241,45 @@ def cmd_eval(args) -> int:
     return 0
 
 
+def cmd_map(args) -> int:
+    """Tushare factor_list 272 因子的映射/批次/实现状态。"""
+    try:
+        from factor_lib_tushare import TUSHARE_FACTOR_MAP, factor_map_summary
+    except ImportError as exc:  # pragma: no cover
+        print(f"[factor_lib] map 失败: {exc}", file=sys.stderr)
+        return 2
+    summary = factor_map_summary()
+    rows = list(TUSHARE_FACTOR_MAP.values())
+    if args.batch:
+        rows = [r for r in rows if r["batch"] == args.batch]
+    if args.status:
+        rows = [r for r in rows if r["status"] == args.status]
+    if args.json:
+        print(json.dumps({"summary": summary, "factors": rows}, ensure_ascii=False, indent=1))
+        return 0
+    print(f"# Tushare factor_list 映射：{summary['total']} 因子 | "
+          f"已实现 {summary['implemented']} | 批次 {summary['by_batch']}")
+    print(f"# 类型分布: {summary['by_type']}")
+    print(f"# {'name':<26}{'type':<11}{'batch':<22}{'status':<12}requires")
+    for row in rows:
+        print(f"  {row['name']:<26}{row['factor_type']:<11}{row['batch']:<22}"
+              f"{row['status']:<12}{','.join(row['requires'])}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         prog="factor_lib.py",
-        description="因子库 v1.0：因子注册表 + PIT 特征 + 20 日 CAR IC/分组评测（研究用途）")
+        description="因子库 v1.1：因子注册表 + PIT 特征 + 20 日 CAR IC/分组评测（研究用途）")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     p_list = sub.add_parser("list", help="列出已注册因子")
     p_list.add_argument("--json", action="store_true", help="以 JSON 输出")
+
+    p_map = sub.add_parser("map", help="Tushare factor_list 272 因子映射/批次状态")
+    p_map.add_argument("--json", action="store_true", help="以 JSON 输出")
+    p_map.add_argument("--batch", default="", help="只看某批次（B1_price_volume / B2_alpha101_expression / B3_financial_pit）")
+    p_map.add_argument("--status", default="", choices=["", "implemented", "mapped"], help="按实现状态过滤")
 
     p_eval = sub.add_parser("eval", help="评测因子（真实数据）")
     p_eval.add_argument("--start", required=True, help="信号起始日 YYYYMMDD（含）")
@@ -1198,10 +1300,22 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     if args.cmd == "list":
         return cmd_list(args.json)
+    if args.cmd == "map":
+        return cmd_map(args)
     if args.cmd == "eval":
         return cmd_eval(args)
     ap.print_help()
     return 1
+
+
+# ---------------------------------------------------------------- 外部批次因子
+# Tushare factor_list B1 批次在 factor_lib 全部定义完成后注册（避免循环导入）。
+try:  # pragma: no cover - 导入失败时退化为内置 17 因子
+    from factor_lib_tushare import register_batch as _register_tushare_batch
+except ImportError:  # pragma: no cover
+    _register_tushare_batch = None
+if _register_tushare_batch is not None:
+    _register_tushare_batch(register, FACTORS)
 
 
 if __name__ == "__main__":
