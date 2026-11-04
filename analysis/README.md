@@ -287,6 +287,7 @@ python -X utf8 -m analysis.intraday_watch --once --dry-run --no-fetch
 ```
 
 参数：`--once` / `--loop` / `--dry-run` / `--print-pool` / `--tick N`（默认 60）/ `--config PATH` / `--no-fetch` /
+`--stop-at HH:MM`（常驻模式到点优雅退出，供 W4 计划任务 15:10 收工）/
 `--push`（L2 后：本轮触发发送飞书）/ `--push-test`（L2 后：发 1 张测试卡，需 `WATCH_PUSH_APPROVED=1`）。
 日志一律 `[MM-DD HH:MM:SS]` 前缀；`--loop` 异常自愈，非交易时段 sleep。
 

@@ -55,6 +55,7 @@ CONFIG_PATH = os.path.join(WORK, "intraday_watch_config.json")
 STATE_DIR = os.path.join(WORK, "intraday_watch")
 POOL_PATH = os.path.join(STATE_DIR, "pool.json")
 STATE_DB = os.path.join(STATE_DIR, "watchtower.db")
+HEARTBEAT_PATH = os.path.join(STATE_DIR, "heartbeat.json")
 #: W3 推送：8097 推送中台（唯一通路，带 kind 静默/配额/流水/卡片按钮校验）
 HUB_URL = os.environ.get("PUSH_HUB_URL", "http://127.0.0.1:8097").rstrip("/")
 PUSH_SECRETS_PATH = os.path.join(MAIN_ROOT, "portal", "work", "push_secrets.json")
@@ -1469,6 +1470,15 @@ def run_once(dry_run: bool = False, cfg: Optional[Dict[str, Any]] = None,
                 # 推送失败撤销触发，下一 tick 重试（避免 hub 短暂故障造成漏报）
                 store.forget_alert(sig.fingerprint)
     store.close()
+    if not dry_run:
+        # 心跳：供计划任务守护读取（3 分钟未更新即重启；含本轮计数便于排障）
+        _write_json(HEARTBEAT_PATH, {
+            "ts": cur.strftime("%Y-%m-%d %H:%M:%S"),
+            "pool": len(pool), "quotes": len(quotes), "news": len(news),
+            "sectors": len(sectors), "raw": len(raw), "accepted": len(accepted),
+            "pushed": len([r for r in push_results if r.get("ok")]),
+            "push_enabled": bool((conf.get("push") or {}).get("enabled")),
+        })
     if payload:
         print(json.dumps(payload, ensure_ascii=False, indent=1, default=str), flush=True)
     return {"pool": pool, "quotes": quotes, "news": news, "sectors": sectors,
@@ -1484,6 +1494,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--dry-run", action="store_true", help="不写 watchtower.db，只打印")
     parser.add_argument("--print-pool", action="store_true", help="打印盯盘池并退出")
     parser.add_argument("--tick", type=int, default=60, help="轮询间隔秒（默认 60）")
+    parser.add_argument("--stop-at", default=None, metavar="HH:MM",
+                        help="常驻模式到点优雅退出（供计划任务 15:10 收工；默认不退出）")
     parser.add_argument("--config", default=None, help="配置文件路径（默认 analysis_work/...json）")
     parser.add_argument("--no-fetch", action="store_true", help="跳过网络采集（自检/调试）")
     parser.add_argument("--push", action="store_true",
@@ -1508,8 +1520,13 @@ def main(argv: Optional[List[str]] = None) -> int:
         if not (args.once or args.loop):
             return 0
     if args.loop:
-        log("引擎：进入常驻循环 tick=%ds（交易时段 09:25–11:30 / 13:00–15:00）" % args.tick)
+        stop_at = _parse_hhmm(args.stop_at, dtime(15, 10)) if args.stop_at else None
+        log("引擎：进入常驻循环 tick=%ds（交易时段 09:25–11:30 / 13:00–15:00%s）" %
+            (args.tick, ("，%s 收工" % stop_at.strftime("%H:%M")) if stop_at else ""))
         while True:
+            if stop_at and now_cst().time() >= stop_at:
+                log("引擎：已到收工时间 %s，退出循环" % stop_at.strftime("%H:%M"))
+                return 0
             try:
                 if market_open(cfg=cfg):
                     run_once(dry_run=args.dry_run, cfg=cfg, fetch=not args.no_fetch)
