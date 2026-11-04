@@ -165,7 +165,6 @@ def audit(cards: list[dict], units: list[dict], learn) -> dict:
     length_anomalies = []
     traceable_rows = []
     for i, c in enumerate(cards):
-        cid = i + 1
         # 1) 必填字段
         for key in REQUIRED:
             if not str(c.get(key) or "").strip():
@@ -272,7 +271,7 @@ def audit(cards: list[dict], units: list[dict], learn) -> dict:
 def render_md(payload: dict) -> str:
     s = payload["summary"]
     lines = [
-        "# 105 张学习卡质量复核（2026-11-01）",
+        f"# {s['cards_total']} 张学习卡质量复核（{(payload.get('generated_at') or '')[:10]}）",
         "",
         f"> 来源：`{payload['sources']['cards']['path']}`（{s['cards_total']} 张，sha256 "
         f"`{str(payload['sources']['cards']['sha256'])[:16]}…`）· 知识单元 {s['units_total']} 个",

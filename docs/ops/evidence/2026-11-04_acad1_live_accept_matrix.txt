@@ -1,0 +1,74 @@
+# ACAD1 live 验收 · 只读探测矩阵（脱敏）
+# 任务: task-57 / WO-ACAD1-LIVE-ACCEPT-20261104
+# 快照: 2026-11-04T05:29:41+08:00
+# 说明: 未发送 Cookie/Authorization；POST 仅 portal-sso 无 session 负例；200 仅记摘要
+
+port  meth path                                               st   server         body_sha12   body_len
+8105  GET  /api/v1/health                                     200  uvicorn        08d34a5889c2 53
+8105  GET  /api/v1/auth/portal-sso                            405  uvicorn        83c09ba9a8da 31
+8105  POST /api/v1/auth/portal-sso                            401  uvicorn        8d07a03575af 43
+8105  GET  /api/v1/acad1-research/pool                        401  uvicorn        7b97e04cadc0 26
+8105  GET  /api/v1/hermes/acad1-comparison                    200  uvicorn        fad8b3df8b5d 19587
+8734  GET  /quant-api/api/v1/acad1-research/pool              401  nginx/1.31.7   7b97e04cadc0 26
+8734  GET  /quant-api/api/v1/acad1-research/stats             401  nginx/1.31.7   7b97e04cadc0 26
+8734  GET  /quant-api/api/v1/acad1-research/reviews           401  nginx/1.31.7   7b97e04cadc0 26
+8734  GET  /quant-api/api/v1/acad1-research/decisions         401  nginx/1.31.7   7b97e04cadc0 26
+8734  GET  /quant-api/api/v1/acad1-research/evidence          401  nginx/1.31.7   7b97e04cadc0 26
+8734  GET  /quant-api/api/v1/acad1-research/calendar          401  nginx/1.31.7   7b97e04cadc0 26
+8734  GET  /quant-api/api/v1/hermes/acad1-comparison          200  nginx/1.31.7   fad8b3df8b5d 19587
+8734  GET  /api/acad1/pool                                    200  nginx/1.31.7   957cb8ced1cd 24398
+8734  GET  /academy/shuijing                                  200  nginx/1.31.7   558b921afdd5 12377
+8734  GET  /acad1/pool                                        200  nginx/1.31.7   7ebe2842b8cf 11825
+8091  GET  /api/acad1/pool                                    200  BaseHTTP/0.6 P 957cb8ced1cd 24398
+
+## 关键摘要
+8105 health: {"status": 200, "app": "zhice-os-v2", "version": "0.1.0", "service_status": "ok"}
+8105 portal-sso 无 session: {"status": 401, "body": {"detail": {"code": "portal_sso.no_session"}}}
+acad1-research 未登录: {"paths": ["/quant-api/api/v1/acad1-research/pool", "/quant-api/api/v1/acad1-research/stats", "/quant-api/api/v1/acad1-research/reviews", "/quant-api/api/v1/acad1-research/decisions", "/quant-api/api/v1/acad1-research/evidence", "/quant-api/api/v1/acad1-research/calendar"], "statuses": [401, 401, 401, 401, 401, 401], "body_sha256_12_set": ["7b97e04cadc0"], "all_same_401_body": true, "body_sample": {"detail": "missing token"}, "native_8105_same_status": 401, "native_8105_body_sha256_12": "7b97e04cadc0", "servers_8734_401": ["nginx/1.31.7"], "server_8105_401": "uvicorn"}
+comparison（8105 vs 8734 同体）: {"same_status": true, "same_body_sha256_12": true, "sha256_12": "fad8b3df8b5d", "body_len": 19587, "body_identical": true}
+comparison 摘要: {"read_only": true, "market": "CN", "pool_date": "2026-11-03", "total": 57, "selected": 12, "quota": 12, "expected_top_n": 12, "quota_shortfall": 0, "items_len": 57, "top3_codes": ["601882.SH", "002388.SZ", "002445.SZ"]}
+pool（8734 vs 8091 同体）: {"same_status": true, "same_body_sha256_12": true, "sha256_12": "957cb8ced1cd", "body_len": 24398}
+8091_api_acad1_pool: {"status": 200, "ok": true, "count": 30, "pool_dates": {"CN": "2026-11-03", "CRYPTO": "2026-10-31", "HK": "2026-10-30", "US": "2026-10-29"}, "read_semantics": "market_latest_aggregated", "freshness_by_market": {"CN": 0, "CRYPTO": 3, "HK": 4, "US": 5}, "published_at": "2026-11-03T12:51:29.630818+00:00", "review_status": "pool_reviewed", "degraded_reason": null, "plan": {"selected": 30, "watch": 0, "avoid": 0, "total_weight": null}, "dates": ["2026-11-03", "2026-11-02", "2026-10-31", "2026-10-30", "2026-10-29"], "pg_table": "public.v2_acad1_pool", "schema": "acad1_pool_api/v2", "mode": "acad1_pool_review", "source_mode": "pg_official_aggregated", "official": true, "source_pool": "pg", "pool_id": "ACAD1-POOL-PG-FULL-20261103", "pool_date": "2026-11-03", "data_date": "2026-11-03", "stale": true, "freshness_days": 5, "trading_permitted": false, "view": "full", "summary_pool_total": 30, "summary_reviewed": 0, "summary_pending": 30, "items_len": 30, "generated_at": "2026-11-04 05:29:41"}
+8734_api_acad1_pool: {"status": 200, "ok": true, "count": 30, "pool_dates": {"CN": "2026-11-03", "CRYPTO": "2026-10-31", "HK": "2026-10-30", "US": "2026-10-29"}, "read_semantics": "market_latest_aggregated", "freshness_by_market": {"CN": 0, "CRYPTO": 3, "HK": 4, "US": 5}, "published_at": "2026-11-03T12:51:29.630818+00:00", "review_status": "pool_reviewed", "degraded_reason": null, "plan": {"selected": 30, "watch": 0, "avoid": 0, "total_weight": null}, "dates": ["2026-11-03", "2026-11-02", "2026-10-31", "2026-10-30", "2026-10-29"], "pg_table": "public.v2_acad1_pool", "schema": "acad1_pool_api/v2", "mode": "acad1_pool_review", "source_mode": "pg_official_aggregated", "official": true, "source_pool": "pg", "pool_id": "ACAD1-POOL-PG-FULL-20261103", "pool_date": "2026-11-03", "data_date": "2026-11-03", "stale": true, "freshness_days": 5, "trading_permitted": false, "view": "full", "summary_pool_total": 30, "summary_reviewed": 0, "summary_pending": 30, "items_len": 30, "generated_at": "2026-11-04 05:29:41"}
+shuijing 页面: {"status": 200, "content_type": "text/html", "html_len": 12377, "title": "司马徽研究台 · 今日决策台", "references_shuijing_js": true, "references_quant_api": false, "references_api_acad1_pool": true}
+
+## 8105 OpenAPI 相关路由（存在性/方法）
+{
+ "openapi_status": 200,
+ "openapi_paths_total": 260,
+ "matched": {
+  "/api/v1/health": [
+   "GET"
+  ],
+  "/api/v1/health/ready": [
+   "GET"
+  ],
+  "/api/v1/acad1-research/pool": [
+   "GET"
+  ],
+  "/api/v1/acad1-research/reviews": [
+   "GET"
+  ],
+  "/api/v1/acad1-research/stats": [
+   "GET"
+  ],
+  "/api/v1/acad1-research/decisions": [
+   "GET"
+  ],
+  "/api/v1/acad1-research/evidence": [
+   "GET"
+  ],
+  "/api/v1/acad1-research/calendar": [
+   "GET"
+  ],
+  "/api/v1/hermes/acad1-comparison": [
+   "GET"
+  ],
+  "/api/v1/research/health": [
+   "GET"
+  ],
+  "/api/v1/auth/portal-sso": [
+   "POST"
+  ]
+ }
+}

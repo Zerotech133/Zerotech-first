@@ -4,9 +4,14 @@ window.HQ_PEOPLE = {
   leads: {
     D1: "鲁肃", ARCH1: "曹操", DATA1: "张松", PM1: "吕蒙",
     QA1: "于禁", DEV3: "蒋济", MKT1: "简雍", LEG1: "诸葛瑾",
-    A0A: "董允", ACAD1: "司马徽", INTEL0: "是仪", LUSU1: "阚泽",
+    A0A: "董允", ACAD1: "司马徽", INTEL0: "马超", LUSU1: "阚泽",
     R3: "陆逊", A0: "田丰", AI1: "诸葛亮", ZHAOYUN: "赵云",
     GUANYU: "关羽", HUANGZHONG: "黄忠", LAOTIAN: "老田"
+  },
+  positions: {
+    DATA1: "数据资源主官（兰台令）",
+    A0: "幕府参谋长", AI1: "军师（反向军师/方法论）", ZHAOYUN: "治理官",
+    GUANYU: "整治官（代码审计/技术债）", HUANGZHONG: "验收官"
   },
   depts: {
     invest: "量化交易部", dev: "研发部", data: "数据智能部",

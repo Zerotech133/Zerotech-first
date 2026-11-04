@@ -1,0 +1,46 @@
+{
+ "schema_version": 1,
+ "date": "20261104",
+ "generated_at": "2026-11-04T03:14:43+08:00",
+ "generator": "tools/kb_corpus/knowledge_dedupe.py（W0-2 重复单元合并）",
+ "mode": "dry-run",
+ "dry_run": true,
+ "project": "laomu_notes",
+ "source": {
+  "path": "C:\\项目\\知识库\\30_知识单元\\laomu_notes_units_draft.jsonl",
+  "sha256": "a85cf4595485cc291239b2cbc8ff921c43bb321f892b1cc1aa8afb6e87f20e6c",
+  "bytes": 113683
+ },
+ "policy": {
+  "key": "normalize_claim_first_14_cjk",
+  "skip_boilerplate": true,
+  "merge": "保留首条 + merged_count/merged_unit_ids/evidence_list",
+  "write": "--apply 才写；写前备份 research/reports/backups/"
+ },
+ "stats": {
+  "input": 286,
+  "output": 286,
+  "dup_groups": 0,
+  "duplicate_rows": 0,
+  "merged": 0,
+  "boilerplate": 0,
+  "by_group_size": {}
+ },
+ "duplicates": [],
+ "kept_sample": [
+  "learn_laomu_notes_0001",
+  "learn_laomu_notes_0002",
+  "learn_laomu_notes_0003",
+  "learn_laomu_notes_0004",
+  "learn_laomu_notes_0005",
+  "learn_laomu_notes_0006",
+  "learn_laomu_notes_0007",
+  "learn_laomu_notes_0008",
+  "learn_laomu_notes_0009",
+  "learn_laomu_notes_0010"
+ ],
+ "notes": [],
+ "backup": null,
+ "applied": false,
+ "disclaimer": "W0-2 重复单元合并：默认 dry-run；不修改知识卡/其他项目；不构成投资建议。"
+}

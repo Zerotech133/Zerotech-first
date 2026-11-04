@@ -49,3 +49,13 @@ def test_concurrent_saves_do_not_corrupt(tmp_path):
     d = json.loads(p.read_text(encoding="utf-8"))
     assert d["case_id"] == "CASE-TEST-CONC" and d["revision"] >= 20
     assert ca.list_cases(tmp_path)[0]["case_id"] == "CASE-TEST-CONC"
+
+
+def test_save_does_not_downgrade_approved_or_dispatched(tmp_path):
+    ca.save_case({"case_id": "CASE-TEST-STATE", "title": "状态", "proposal": "方案"}, tmp_path)
+    ca.approve_case("CASE-TEST-STATE", "tf", "", "zero_bound:tf", tmp_path)
+    c = ca.save_case({"case_id": "CASE-TEST-STATE", "title": "状态", "status": "PROPOSED"}, tmp_path)
+    assert c["status"] == "APPROVED" and c["approval"]["approved"] is True
+    c = ca.mark_dispatched("CASE-TEST-STATE", "A0", {"id": "req"}, tmp_path)
+    c = ca.save_case({"case_id": "CASE-TEST-STATE", "title": "状态", "status": "PROPOSED"}, tmp_path)
+    assert c["status"] == "DISPATCHED"

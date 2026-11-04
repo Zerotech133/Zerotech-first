@@ -117,6 +117,9 @@ TOOLS_KEY = {
     "tools/tests/test_merge_lock_gated.py",
     # ---- 黄忠工具测试纳管（WO-HZ-GATE-20261031，+1 聚合入口）----
     "tools/tests/test_huangzhong_tools_suite_gate.py",
+    # ---- 学习线后置治理契约（2026-11-04 K-ORG-REVIEW，+2）----
+    "tools/tests/test_learning_curation.py",
+    "tools/tests/test_learning_pipeline_curation.py",
 }
 
 
@@ -136,9 +139,9 @@ def test_b1_b2_lists_frozen():
     assert set(_suite_files("agent_key")) == AGENT_KEY
     assert set(_suite_files("quant_key")) == QUANT_KEY
     assert set(_suite_files("tools_key")) == TOOLS_KEY
-    assert len(AGENT_KEY) == 52 and len(QUANT_KEY) == 23 and len(TOOLS_KEY) == 14
+    assert len(AGENT_KEY) == 52 and len(QUANT_KEY) == 23 and len(TOOLS_KEY) == 16
     all_files = AGENT_KEY | QUANT_KEY | TOOLS_KEY
-    assert len(all_files) == 89, "B1(57)+B2(31)+黄忠聚合入口(1) 应为 89 文件"
+    assert len(all_files) == 91, "B1(57)+B2(31)+黄忠聚合入口(1)+学习治理契约(2) 应为 91 文件"
 
 
 def test_b1_b2_files_exist_and_under_expected_dir():

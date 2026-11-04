@@ -65,11 +65,13 @@ def autorun(case_id: str, case_root: Path | None = None, meetings: Path | None =
         _RUNNING.add(case_id)
     case = case_api.get_case(case_id, case_root)
     if not case:
+        with _LOCK:
+            _RUNNING.discard(case_id)
         raise ValueError("case_not_found")
-    case["orchestration"] = {"state": "running", "phase": "aggregate", "done": 0,
-                             "total": 5, "started_at": _now(), "error": ""}
-    _update(case_id, case, case_root)
     try:
+        case["orchestration"] = {"state": "running", "phase": "aggregate", "done": 0,
+                                 "total": 5, "started_at": _now(), "error": ""}
+        _update(case_id, case, case_root)
         if not case.get("a0_summary"):
             case["orchestration"]["phase"] = "aggregate"
             _update(case_id, case, case_root)

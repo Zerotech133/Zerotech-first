@@ -17,11 +17,14 @@ if str(_REPO_ROOT) not in sys.path:
 
 import json
 
+import ifs_envelope
+import ifs_idempotency  # IFS G1 幂等重放（WO-IFS-IDEMP-20261104）
+
 MAX_BODY = 64 * 1024
 
 
 def _json(handler, obj, code=200):
-    handler._json(obj, code)
+    ifs_envelope.send(handler, obj, code, fallback_interface="d1.decision.create")
 
 
 def handle_post(handler):
@@ -45,14 +48,32 @@ def handle_post(handler):
         return
     try:
         from agent_platform import d1_decision as D
-        row = D.append_decision(payload)
-        _json(handler, {
-            "ok": True,
-            "decision": row,
-            "summary": D.summary(),
-            "not_a_trade": True,
-            "paper_only": True,
-        }, 200)
+        key, key_error = ifs_idempotency.resolve_key(handler, payload)
+        if key_error:
+            _json(handler, {"ok": False, "error": key_error,
+                            "message": "幂等键非法：Idempotent-Key 需 8-128 位"
+                                       "[A-Za-z0-9._:-]，以字母/数字开头"}, 400)
+            return
+        with ifs_idempotency.replay_guard(
+                "d1.decision.create", key, handler, payload) as ctx:
+            if ctx.replay is not None:
+                if ctx.conflict():
+                    _json(handler, {"ok": False, "error": "idempotency_conflict",
+                                    "message": "同一 Idempotent-Key 的请求体与首次不一致，"
+                                               "拒绝重复/改写写入"}, 409)
+                    return
+                _json(handler, ctx.replayed_payload(), 200)
+                return
+            row = D.append_decision(payload)
+            result = {
+                "ok": True,
+                "decision": row,
+                "summary": D.summary(),
+                "not_a_trade": True,
+                "paper_only": True,
+            }
+            ctx.remember(result)
+            _json(handler, result, 200)
     except Exception as exc:  # noqa: BLE001
         # D1DecisionError 走 400；其余失败 fail-visible，不把异常吞成成功。
         code = getattr(exc, "code", "") or "decision_failed"

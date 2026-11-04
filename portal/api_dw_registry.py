@@ -1,21 +1,33 @@
 # -*- coding: utf-8 -*-
 """数据仓统一取数 HTTP 入口（WP-I3，独立 handler 文件）。
 
-GET /api/dw/stats              → 数据集总量/登记/入口/分域
-GET /api/dw/list?domain=&q=&registered=0|1&exposed=0|1&limit=  → 数据集列表
-GET /api/dw/get?id=<dataset_id> → 数据集元数据
-GET /api/dw/sample?id=&n=      → 数据集样本（sqlite/parquet/json/目录；只读）
-GET /api/dw/search?q=&limit=   → 关键词检索数据集
+GET /api/dw/stats              → 数据集总量/登记/入口/分域（v1 字段不变）
+                                  + stats_v2（pg / contract_artifacts / connector_status）
+GET /api/dw/list?domain=&q=&registered=0|1&exposed=0|1&kind=&limit=  → 数据集列表
+                                  kind=pg_table / contract_artifact / all / file（逗号分隔可多选）
+GET /api/dw/get?id=<dataset_id> → 数据集元数据（pg_table 附 connector/physical/ref_aliases/status）
+GET /api/dw/sample?id=&n=      → 数据集样本（只读；pg_table 走只读 PG，
+                                  DSN 缺失/连接失败显式 connector_unavailable）
+GET /api/dw/search?q=&kind=&limit= → 关键词检索（默认含 pg/契约产物，kind 可收窄）
 GET/POST /api/dw/query         → 专用查询（S3-06 P1：sqlite/parquet 过滤+分页+投影+count）
-                                 参数：id（或 dataset）/where/order/since/columns/limit/offset/count
-                                 错误码：400 参数/字段非法、403 越权、404 未登记、409 载体不支持、503 内部错
-                                 注：POST 分派入口 handle_post 已实现；portal_api.do_POST 接线属 L2 重启批次
+                                  pg_table/contract_artifact 显式 409 not_supported
+                                  （不拼接任意 SQL；pg 只读 sample 可用）
+                                  参数：id（或 dataset）/where/order/since/columns/limit/offset/count
+                                  错误码：400 参数/字段非法、403 越权、404 未登记、409 载体不支持、
+                                          503 内部错/连接器不可用
+                                  注：POST 分派入口 handle_post 已实现；portal_api.do_POST 接线属 L2 重启批次
 
 DWH-105（2026-11-02）：响应显式带数据时点与空结果三态，避免"空结果被误读为无数据/无机会"。
 - data_date：盘点数据时点（dataset_inventory 文件 mtime 的日期，YYYY-MM-DD）；
 - state：ok / no_data（查询为空、样本无行、路径缺失）/ not_found（dataset_id 未登记）/ stale
-  （data_date 距今天数 > STALE_DAYS）；
+  （data_date 距今天数 > STALE_DAYS）/ not_supported / connector_unavailable；
 - 非 ok 时带 reason；错误体（4xx/5xx）也带 data_date + reason。
+
+DWH-103 pg_table（2026-11-04 DW-API-PG / WO-DW-API-PG-20261104）：
+- 只读：pg 表仅经 registry 白名单物理名 + 只读 SELECT LIMIT（registry 内核）；本 API 不拼 SQL、
+  不接受任意 SQL 参数（sql/raw_sql/statement/query → 400）；
+- DSN 不可用（missing_dsn/driver_missing/connector_unavailable）→ 503
+  `error=connector_unavailable` + `connector_status`（fail-visible，不假绿）。
 
 纪律：只读；路径白名单在 dataset_registry.ALLOWED_ROOTS；不写业务数据；
 注意：新增路由需重启 8091 才生效（重启属 L2，需批准）。
@@ -23,6 +35,7 @@ DWH-105（2026-11-02）：响应显式带数据时点与空结果三态，避免
 from __future__ import annotations
 
 import datetime
+import decimal
 import json
 import sys
 import urllib.parse
@@ -32,6 +45,8 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "tools" / "datawarehouse"))
 
 from dataset_registry import (  # noqa: E402
+    ConnectorUnavailable,
+    ContractArtifactUnavailable,
     DatasetRegistry,
     QueryNotSupported,
     QueryParamError,
@@ -48,6 +63,19 @@ def _reg() -> DatasetRegistry:
     return _REG
 
 
+def _jsonable(value):
+    """把 PG 样本中的 date/datetime/time/Decimal 转成 JSON 可序列化值。"""
+    if isinstance(value, (datetime.datetime, datetime.date, datetime.time)):
+        return value.isoformat()
+    if isinstance(value, decimal.Decimal):
+        return str(value)
+    if isinstance(value, dict):
+        return {k: _jsonable(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_jsonable(v) for v in value]
+    return value
+
+
 def _int(v, default: int, lo: int, hi: int) -> int:
     try:
         return max(lo, min(hi, int(v)))
@@ -59,6 +87,30 @@ def _bool(v):
     if v in (None, ""):
         return None
     return v in ("1", "true", "True", "yes")
+
+
+CATALOG_PATH = REPO / "quant_backtest" / "data" / "catalog.json"
+WAREHOUSE_REGISTRY_PATH = REPO / "quant_backtest" / "data" / "warehouse_registry.json"
+
+
+def _catalog_alignment() -> dict:
+    """把 catalog/registry 的当前口径显式挂到 /api/dw/stats，避免与 /api/dataops 的 304 表读数打架。"""
+    out = {}
+    try:
+        cat = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
+        out["catalog_version"] = cat.get("version")
+        out["catalog_updated"] = cat.get("updated")
+        out["catalog_tables"] = len(cat.get("tables") or {})
+    except (OSError, ValueError, TypeError):
+        pass
+    try:
+        reg = json.loads(WAREHOUSE_REGISTRY_PATH.read_text(encoding="utf-8"))
+        out["registry_physical"] = reg.get("physical_count")
+        out["registry_display"] = reg.get("display_count")
+        out["registry_catalog_sha256"] = reg.get("catalog_sha256")
+    except (OSError, ValueError, TypeError):
+        pass
+    return out
 
 
 def _data_date():
@@ -115,17 +167,98 @@ def _sample_empty_reason(obj) -> str:
     return ""
 
 
-def _empty_list_reason(q=None, domain=None, registered=None, exposed=None) -> str:
+def _empty_list_reason(q=None, domain=None, registered=None, exposed=None,
+                       kind=None) -> str:
     bits = []
     if q:
         bits.append("q=%r" % q)
     if domain:
         bits.append("domain=%r" % domain)
+    if kind:
+        bits.append("kind=%r" % kind)
     if registered is not None:
         bits.append("registered=%d" % int(registered))
     if exposed is not None:
         bits.append("exposed=%d" % int(exposed))
     return "no_data: 无匹配数据集（%s）" % ("，".join(bits) or "无过滤条件")
+
+
+# ── pg_table / kind 过滤（2026-11-04 DW-API-PG）──────────────────────
+FILE_KIND_ALIASES = ("file", "files", "file_level")
+
+
+def _parse_kinds(reg, get, default_raw: str = ""):
+    """解析 kind/kinds 参数 → (registry.list 的 kinds, 原始参数串)。
+
+    - 无参数：``(None, "")`` → 文件级（向后兼容 v1）；
+    - ``all``：含文件级 + pg_table + contract_artifact + declared；
+    - ``file``：展开为文件级 kind 集合（注册表 datasets 的实际 kind）；
+    - ``pg_table`` / ``contract_artifact``：单 kind；逗号分隔可多选。
+    """
+    raw = (get("kind") or get("kinds") or default_raw or "").strip()
+    if not raw:
+        return None, ""
+    if raw.lower() == "all":
+        return "all", raw
+    items = [x.strip() for x in raw.split(",") if x.strip()]
+    file_kinds = sorted({str(d.get("kind")) for d in getattr(reg, "datasets", [])
+                         if d.get("kind")})
+    expanded = []
+    for item in items:
+        if item.lower() in FILE_KIND_ALIASES:
+            expanded.extend(file_kinds)
+        else:
+            expanded.append(item)
+    return sorted(set(expanded)), raw
+
+
+def _pg_meta(d: dict, reg) -> dict:
+    """pg_table 元数据块（connector/physical/ref_aliases/status/可用性）。"""
+    return {
+        "connector": d.get("connector"),
+        "physical": d.get("physical"),
+        "ref": d.get("ref"),
+        "ref_aliases": list(d.get("ref_aliases") or []),
+        "status": d.get("status"),
+        "available": bool(d.get("available")),
+        "registered": bool(d.get("registered")),
+        "exposed": bool(d.get("exposed")),
+        "row_estimate": d.get("row_estimate"),
+        "relkind": d.get("relkind"),
+        "connector_status": getattr(reg, "connector_status", ""),
+        "connector_error": getattr(reg, "connector_error", ""),
+        "read_only": True,
+        "query_supported": False,   # P1/P2 显式不支持行级 query（不拼任意 SQL）
+        "sample_supported": True,
+    }
+
+
+def _connector_fail(handler, dataset_id: str, exc) -> None:
+    """pg 连接器不可用：显式 fail-visible（missing_dsn/driver_missing/connector_unavailable）。"""
+    status = getattr(exc, "status", "connector_unavailable") or "connector_unavailable"
+    reason = "connector_unavailable: %s" % str(exc)[:300]
+    payload = {
+        "ok": False,
+        "error": "connector_unavailable",
+        "dataset_id": dataset_id,
+        "connector_status": status,
+        "code": 503,
+        **_envelope("connector_unavailable", reason),
+    }
+    handler._json(payload, 503)
+
+
+def _artifact_fail(handler, dataset_id: str, exc) -> None:
+    """contract_artifact 不可用（缺失/漂移）：显式 fail-visible。"""
+    payload = {
+        "ok": False,
+        "error": "contract_artifact_unavailable",
+        "dataset_id": dataset_id,
+        "code": 503,
+        **_envelope("connector_unavailable", "contract_artifact_unavailable: %s"
+                    % str(exc)[:300]),
+    }
+    handler._json(payload, 503)
 
 
 def _query_fail(handler, error: str, code: int, reason: str,
@@ -137,12 +270,40 @@ def _query_fail(handler, error: str, code: int, reason: str,
     handler._json(payload, rc)
 
 
+def _query_not_supported(handler, dataset_id: str, exc) -> None:
+    """载体不支持行级 query：pg/契约产物显式 not_supported（不拼任意 SQL）。"""
+    detail = dict(getattr(exc, "detail", None) or {})
+    carrier = str(detail.get("carrier") or "")
+    payload, rc = _fail("载体不支持: %s" % str(exc)[:160], exc.code,
+                        reason="not_supported: %s" % str(exc)[:200],
+                        state="not_supported")
+    payload["code"] = rc
+    payload["dataset_id"] = dataset_id
+    if detail:
+        payload["detail"] = detail
+    if carrier:
+        payload["carrier"] = carrier
+        payload["query_supported"] = False
+        if carrier in ("pg_table", "contract_artifact"):
+            payload["hint"] = ("%s 只读；不支持任意 SQL/行级 query（pg_table 可用 sample/get）"
+                               % carrier)
+    handler._json(payload, rc)
+
+
 def _query_http(handler, get) -> None:
     """GET/POST /api/dw/query 共用处理：参数校验 + 错误码映射 + 三态 envelope。"""
     did = (get("id") or get("dataset") or "").strip()
     if not did:
         _query_fail(handler, "id 必填", 400, "missing_param: id 必填")
         return
+    # 安全护栏：本入口只接受结构化 where/order/columns，不接受任意 SQL 文本
+    for raw_key in ("sql", "raw_sql", "statement", "query"):
+        if get(raw_key):
+            _query_fail(
+                handler, "不接受任意 SQL", 400,
+                "unsupported: 不接受任意 SQL/参数 %r；只接受结构化 where/order/columns，"
+                "pg_table 不支持行级 query" % raw_key)
+            return
     try:
         obj = _reg().query(
             did,
@@ -163,9 +324,7 @@ def _query_http(handler, get) -> None:
                     "bad_param: %s" % str(exc)[:200], exc.detail)
         return
     except QueryNotSupported as exc:
-        _query_fail(handler, "载体不支持: %s" % str(exc)[:160], exc.code,
-                    "not_supported: %s" % str(exc)[:200], exc.detail,
-                    state="not_supported")
+        _query_not_supported(handler, did, exc)
         return
     except PermissionError as exc:
         _query_fail(handler, "路径越权: %s" % str(exc)[:120], 403,
@@ -224,24 +383,49 @@ def handle_get(handler, path: str, qs: str) -> None:
     get = lambda k, d="": (params.get(k) or [d])[0].strip()  # noqa: E731
     try:
         if path == "/api/dw/stats":
-            handler._json({"ok": True, **_ok_envelope(_data_date()), **_reg().stats()})
+            reg = _reg()
+            # v1 字段（total/registered/exposed/by_domain/by_kind）语义与数值不变；
+            # DATA1-ALIGN（711d97567）追加 catalog/registry/display 对齐字段，本单原样保留。
+            stats = reg.stats()
+            stats.update(_catalog_alignment())
+            payload = {"ok": True, **_ok_envelope(_data_date()), **stats}
+            try:
+                v2 = reg.stats_v2()
+            except Exception as exc:  # noqa: BLE001 — v2 附加失败不破坏 v1，但显式标注
+                v2 = None
+                payload["stats_v2_error"] = "%s: %s" % (type(exc).__name__, str(exc)[:160])
+            if isinstance(v2, dict):
+                payload["stats_version"] = "v2"
+                payload["stats_v2"] = v2
+                payload["connector_status"] = v2.get("connector_status")
+                payload["pg"] = v2.get("pg")
+                payload["contract_artifacts"] = v2.get("contract_artifacts")
+            else:
+                payload["stats_version"] = "v1"
+                payload["stats_v2"] = None
+            handler._json(payload)
             return
         if path == "/api/dw/list":
             domain = get("domain") or None
             q = get("q") or None
             registered = _bool(get("registered"))
             exposed = _bool(get("exposed"))
-            rows = _reg().list(domain=domain, q=q, registered=registered,
-                               exposed=exposed,
-                               limit=_int(get("limit"), 50, 1, 200))
+            reg = _reg()
+            kinds, raw_kind = _parse_kinds(reg, get)
+            rows = reg.list(domain=domain, q=q, registered=registered,
+                            exposed=exposed, kinds=kinds,
+                            limit=_int(get("limit"), 50, 1, 200))
             dd = _data_date()
+            base = {"ok": True, "count": len(rows), "datasets": rows}
+            if raw_kind:
+                base["kind"] = raw_kind
             if not rows:
-                handler._json({"ok": True, "count": 0, "datasets": [],
+                handler._json({**base,
                                **_envelope("no_data",
-                                           _empty_list_reason(q, domain, registered, exposed), dd)})
+                                           _empty_list_reason(q, domain, registered,
+                                                              exposed, raw_kind or None), dd)})
                 return
-            handler._json({"ok": True, "count": len(rows), "datasets": rows,
-                           **_ok_envelope(dd)})
+            handler._json({**base, **_ok_envelope(dd)})
             return
         if path == "/api/dw/search":
             q = get("q")
@@ -249,35 +433,56 @@ def handle_get(handler, path: str, qs: str) -> None:
                 handler._json(*_fail("q 必填", 400, reason="missing_param: q 必填"))
                 return
             limit = _int(get("limit"), 20, 1, 200)
-            rows = _reg().list(q=q, limit=limit)
+            reg = _reg()
+            # 默认含 pg/契约产物（kind=all），kind 参数可收窄（file/pg_table/...）
+            kinds, raw_kind = _parse_kinds(reg, get, default_raw="all")
+            rows = reg.list(q=q, limit=limit, kinds=kinds)
             dd = _data_date()
+            base = {"ok": True, "count": len(rows), "datasets": rows,
+                    "kind": raw_kind or "all"}
             if not rows:
-                handler._json({"ok": True, "count": 0, "datasets": [],
-                               **_envelope("no_data", _empty_list_reason(q=q), dd)})
+                handler._json({**base,
+                               **_envelope("no_data",
+                                           _empty_list_reason(q=q, kind=raw_kind or "all"),
+                                           dd)})
                 return
-            handler._json({"ok": True, "count": len(rows), "datasets": rows,
-                           **_ok_envelope(dd)})
+            handler._json({**base, **_ok_envelope(dd)})
             return
         if path == "/api/dw/get":
             did = get("id")
             if not did:
                 handler._json(*_fail("id 必填", 400, reason="missing_param: id 必填"))
                 return
-            d = _reg().get(did)
+            reg = _reg()
+            d = reg.get(did)
+            if d is None and hasattr(reg, "resolve_ref"):
+                d = reg.resolve_ref(did)  # 兼容 dataset/pg/<table>、<table> 等别名
             dd = _data_date()
             if d is None:
                 handler._json(*_fail("dataset 不存在", 404, state="not_found",
                                      reason="not_found: dataset_id=%r 未登记或未通过盘点过滤" % did))
                 return
-            handler._json({"ok": True, "dataset": d, **_ok_envelope(dd)})
+            payload = {"ok": True, "dataset": d, **_ok_envelope(dd)}
+            if d.get("kind") == "pg_table":
+                payload["pg"] = _pg_meta(d, reg)
+            handler._json(payload)
             return
         if path == "/api/dw/sample":
             did = get("id")
             if not did:
                 handler._json(*_fail("id 必填", 400, reason="missing_param: id 必填"))
                 return
-            obj = _reg().sample(did, n=_int(get("n"), 3, 1, 20))
+            try:
+                obj = _reg().sample(did, n=_int(get("n"), 3, 1, 20))
+            except ConnectorUnavailable as exc:
+                # DSN 缺失/驱动缺失/连接失败：显式 503 connector_unavailable（不假绿）
+                _connector_fail(handler, did, exc)
+                return
+            except ContractArtifactUnavailable as exc:
+                _artifact_fail(handler, did, exc)
+                return
             dd = _data_date()
+            obj = _jsonable(obj)
             empty = _sample_empty_reason(obj)
             if empty:
                 handler._json({"ok": True, **obj, **_envelope("no_data", empty, dd)})

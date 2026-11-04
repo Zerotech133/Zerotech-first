@@ -1,0 +1,27 @@
+{
+ "auth_method": "trusted-header X-Portal-User (nginx SSO) -> hermes_session cookie",
+ "unauth_tools_status": 401,
+ "unauth_tools_body": {
+  "error": "Authentication required"
+ },
+ "auth_tools_status": 200,
+ "tool_count": 98,
+ "server_count": 13,
+ "active_server_count": 11,
+ "unavailable_servers": [
+  "om-metadata",
+  "zhice-selection"
+ ],
+ "server_tool_count_sum": 98,
+ "tool_count_matches_server_sum": true,
+ "source": "tool_registry",
+ "runtime_scope": "profile",
+ "session_cookie_works_without_header": false,
+ "d1_research_server_present": true,
+ "d1_research_tool_count": 1,
+ "research_tool_hits": [
+  "mcp__d1_research__d1_research"
+ ],
+ "mcp_http_endpoint_on_8787": "none (/mcp is not a route; MCP tools inventory = GET /api/mcp/tools)"
+}
+[evidence] written: C:\项目\老田的AI助手\.worktrees\WO-MCP-8787-VERIFY-20261104\docs\ops\evidence\2026-11-04_mcp8787_probe_raw.json

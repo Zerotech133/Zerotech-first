@@ -361,7 +361,7 @@ def render_markdown(report: dict) -> str:
               f"**判定**：`{report['verdict']}` → **{report['recommendation']['action']}**", "",
               "### 前置条件（若执行真实合并）", ""]
     lines += [f"{i}. {x}" for i, x in enumerate(report["recommendation"]["preconditions"], 1)]
-    lines += ["", f"### 风险", "", report["recommendation"]["risk"],
+    lines += ["", "### 风险", "", report["recommendation"]["risk"],
               "", "## 五、可选 89 查询评测", "",
               f"- 未运行：{report['optional_89_eval']['reason']}",
               "", "## 六、说明与边界", "",

@@ -179,7 +179,7 @@ def render_md(payload: dict) -> str:
         "# 第二轮 40 候选机器预审建议（2026-11-01）",
         "",
         f"> 来源：`{payload['source']['proposals']}`（CP3-* 40 张 pending_review）",
-        f"> 规则复用 `tools/kb_corpus/card_precheck.py`（可追溯/答案质量/重复度/主题均衡/证据重叠）",
+        "> 规则复用 `tools/kb_corpus/card_precheck.py`（可追溯/答案质量/重复度/主题均衡/证据重叠）",
         f"> 建议分布：**pass {s['pass']} / revise {s['revise']} / reject {s['reject']}**（共 {s['total']}）· "
         f"置信 {json.dumps(s['confidence'], ensure_ascii=False)}",
         "> **仅辅助人工审核**；已回写审核页 `card_review_data.json` CP3 条目 precheck（第一轮 60 条不变）。",

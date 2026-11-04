@@ -1,4 +1,4 @@
-"""K-MDC-R00 (是仪): per-source rights matrix — honest audit, fail-closed.
+"""K-MDC-R00 (马超): per-source rights matrix — honest audit, fail-closed.
 
 Read-only registry of what each source's licensing state ACTUALLY is,
 verified against on-disk evidence (config presence, data provenance files),

@@ -243,7 +243,8 @@ def _subset_stats(report: dict, ids: set[str]) -> dict:
 def run_merge_eval(write: bool = True) -> dict:
     """v2 盲区 vs v3 覆盖 + 用 v3 重跑合并前后对比（直接复用 merge_sim_89 的视图/评测函数）。"""
     ms = _load_merge_mod()
-    freeze_report = freeze(write=True) if not V3_PATH.exists() else {"ok": True, "note": "existing"}
+    if not V3_PATH.exists():
+        freeze(write=True)  # 首次生成 v3 评测集（保留写盘副作用；返回值不参与后续计算）
     v3 = json.loads(V3_PATH.read_text(encoding="utf-8"))
     ev, e2, sv, merge_mod = ms.load_stack()
     units_json, _ = ms.read_json_tolerant(ms.UNITS_ALL)

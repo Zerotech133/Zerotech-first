@@ -18,6 +18,9 @@ if str(_REPO_ROOT) not in sys.path:
 
 import json
 
+import ifs_envelope
+import ifs_idempotency  # IFS G1 幂等重放（WO-IFS-IDEMP-20261104）
+
 MAX_BODY = 64 * 1024
 ERROR_CODES = {
     "missing_code", "bad_creator", "bad_meeting_id", "duplicate_meeting",
@@ -28,7 +31,7 @@ ERROR_CODES = {
 
 
 def _json(handler, obj, code=200):
-    handler._json(obj, code)
+    ifs_envelope.send(handler, obj, code, fallback_interface="d1.meeting.get")
 
 
 def _body(handler):
@@ -56,6 +59,7 @@ def _error(handler, exc):
 
 
 def handle_post(handler):
+    handler._ifs_method = "POST"  # IFS F1b：envelope source.interface_id 需区分 get/create
     path = handler.path.split("?", 1)[0]
     if path != "/api/d1/meeting":
         _json(handler, {"ok": False, "error": "not_found"}, 404)
@@ -71,14 +75,32 @@ def handle_post(handler):
     try:
         from agent_platform import d1_meeting as M
         if action == "create":
-            doc = M.create_meeting(
-                obj.get("code"), topic=obj.get("topic") or "",
-                asof=obj.get("asof") or "",
-                agenda=obj.get("agenda") or None,
-                created_by=obj.get("created_by") or M.CHAIR,
-            )
-            _json(handler, {"ok": True, "meeting": doc,
-                            "paper_only": True, "not_a_trade": True}, 200)
+            key, key_error = ifs_idempotency.resolve_key(handler, obj)
+            if key_error:
+                _json(handler, {"ok": False, "error": key_error,
+                                "message": "幂等键非法：Idempotent-Key 需 8-128 位"
+                                           "[A-Za-z0-9._:-]，以字母/数字开头"}, 400)
+                return
+            with ifs_idempotency.replay_guard(
+                    "d1.meeting.create", key, handler, obj) as ctx:
+                if ctx.replay is not None:
+                    if ctx.conflict():
+                        _json(handler, {"ok": False, "error": "idempotency_conflict",
+                                        "message": "同一 Idempotent-Key 的请求体与首次不一致，"
+                                                   "拒绝重复/改写写入"}, 409)
+                        return
+                    _json(handler, ctx.replayed_payload(), 200)
+                    return
+                doc = M.create_meeting(
+                    obj.get("code"), topic=obj.get("topic") or "",
+                    asof=obj.get("asof") or "",
+                    agenda=obj.get("agenda") or None,
+                    created_by=obj.get("created_by") or M.CHAIR,
+                )
+                result = {"ok": True, "meeting": doc,
+                          "paper_only": True, "not_a_trade": True}
+                ctx.remember(result)
+                _json(handler, result, 200)
             return
         mid = str(obj.get("meeting_id") or "").strip()
         if action == "vote":
@@ -109,6 +131,7 @@ def handle_post(handler):
 
 
 def handle_get(handler, qs):
+    handler._ifs_method = "GET"  # IFS F1b：envelope source.interface_id 需区分 get/create
     path = handler.path.split("?", 1)[0]
     if path != "/api/d1/meeting":
         _json(handler, {"ok": False, "error": "not_found"}, 404)

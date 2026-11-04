@@ -117,7 +117,6 @@ def run(pid: str, write: bool) -> dict:
     units = [json.loads(line) for line in units_p.open(encoding="utf-8") if line.strip()]
     cards_doc = json.loads(CARDS.read_text(encoding="utf-8"))
     existing = {norm(c.get("concept")) for c in cards_doc.get("cards") or []}
-    existing_answers = [str(c.get("a") or "") for c in cards_doc.get("cards") or []]
     stats = {"units": len(units), "skip_meta": 0, "skip_no_concept": 0,
              "skip_duplicate": 0, "skip_short_answer": 0, "candidates": 0}
     out, batch = [], set()

@@ -58,7 +58,7 @@
     "stage_updated_at": "2026-11-02T03:50:25+08:00",
     "gate": {
      "ok": true,
-     "checked_at": "2026-11-03T16:33:16+08:00"
+     "checked_at": "2026-11-04T02:43:33+08:00"
     },
     "history": [
      {
@@ -83,14 +83,14 @@
    "note": "源文件已入库（md，48KB，29 条视频文案）；S2 文本抽取完成，进入流水线",
    "manifest_path": "C:\\项目\\知识库\\05_学习源件\\laomu_notes\\manifest.json",
    "updated_at": "2026-11-02T04:11:50+08:00",
-   "stage_updated_at": "2026-11-03T10:14:29+08:00",
+   "stage_updated_at": "2026-11-04T04:47:28+08:00",
    "schema_version": "learning_project.v1",
    "lifecycle": {
     "stage": "distilling",
     "stage_updated_at": "2026-11-02T18:37:49+08:00",
     "gate": {
      "ok": true,
-     "checked_at": "2026-11-03T16:33:16+08:00"
+     "checked_at": "2026-11-04T02:43:33+08:00"
     },
     "history": [
      {
@@ -111,7 +111,7 @@
     "C:\\项目\\知识库\\05_学习源件\\视频号学习_8博主\\source"
    ],
    "manifest_path": "C:\\项目\\知识库\\05_学习源件\\视频号学习_8博主\\manifest.json",
-   "stage_updated_at": "2026-11-03T10:14:29+08:00",
+   "stage_updated_at": "2026-11-04T04:47:28+08:00",
    "lifecycle": {
     "stage": "distilling",
     "stage_updated_at": "2026-11-03T06:44:27+08:00",
@@ -123,7 +123,7 @@
     ],
     "gate": {
      "ok": true,
-     "checked_at": "2026-11-03T16:33:16+08:00"
+     "checked_at": "2026-11-04T02:43:33+08:00"
     }
    },
    "schema_version": "learning_project.v1"
@@ -138,14 +138,14 @@
     "C:\\项目\\知识库\\05_学习源件\\视频号学习_第二期\\source"
    ],
    "manifest_path": "C:\\项目\\知识库\\05_学习源件\\视频号学习_第二期\\manifest.json",
-   "stage_updated_at": "2026-11-03T10:14:29+08:00",
+   "stage_updated_at": "2026-11-04T04:47:28+08:00",
    "lifecycle": {
     "stage": "distilling",
     "stage_updated_at": null,
     "history": [],
     "gate": {
      "ok": true,
-     "checked_at": "2026-11-03T16:33:16+08:00"
+     "checked_at": "2026-11-04T02:43:33+08:00"
     }
    },
    "note": "内容以 AI 工具推广/营销文案为主（指标说明书为目录/图片引用）；46 有效候选中 17 预审通过项经人工抽检全部驳回，0 学习卡；建议降级为工具情报库",
@@ -155,8 +155,81 @@
     "effective_candidates": 46,
     "excluded_candidates": 823
    }
+  },
+  {
+   "project_id": "视频号学习_北斗股术1688",
+   "name": "视频号学习_北斗股术1688",
+   "type": "auto_intake",
+   "status": "distilling",
+   "owner": "DATA1",
+   "source": [
+    "C:\\项目\\知识库\\05_学习源件\\视频号学习_北斗股术1688\\source"
+   ],
+   "manifest_path": "C:\\项目\\知识库\\05_学习源件\\视频号学习_北斗股术1688\\manifest.json",
+   "stage_updated_at": "2026-11-04T05:32:22+08:00",
+   "schema_version": "learning_project.v1",
+   "lifecycle": {
+    "stage": "distilling",
+    "stage_updated_at": "2026-11-04T05:32:22+08:00",
+    "history": [
+     {
+      "stage": "intake_pending",
+      "at": "2026-11-04T04:48:05+08:00",
+      "source": "learning_intake.py ingest --write"
+     },
+     {
+      "stage": "distilling",
+      "at": "2026-11-04T04:48:05+08:00",
+      "source": "learning_ops.py pipeline --write + learning_curation.py --apply"
+     },
+     {
+      "stage": "distilling",
+      "at": "2026-11-04T05:32:22+08:00",
+      "source": "knowledge_extract (ollama qwen3.5:9b)"
+     }
+    ],
+    "gate": {
+     "ok": true,
+     "checked_at": "2026-11-04T04:48:05+08:00"
+    }
+   },
+   "note": "视频号博主「北斗股术1688」114 条视频转写汇编（faster-whisper）；S1–S4 已完成；S5 LLM 知识提炼已产出 315 条知识/262 张候选卡（预审 pass 225），**待人工抽审 + 发布门（S6/S7）**；学习卡 0 张未发布。"
+  },
+  {
+   "project_id": "公开投教_布林线",
+   "name": "公开投教·布林线（3 源短摘）",
+   "type": "public_edu",
+   "status": "distilling",
+   "owner": "DATA1",
+   "source": [
+    "C:\\项目\\知识库\\05_学习源件\\公开投教_布林线\\source"
+   ],
+   "sop": "docs/standards/2026-11-02_学习项目标准化流程_v1.md",
+   "note": "W22：中国投资者网(official_edu)/国泰君安(broker_edu)/Backtrader(opensource_docs) 3 源合规短摘入库；仅引用不转载",
+   "schema_version": "learning_project.v1",
+   "lifecycle": {
+    "stage": "distilling",
+    "stage_updated_at": "2026-11-04T06:18:07+08:00",
+    "gate": {
+     "ok": true,
+     "checked_at": "2026-11-04T06:18:07+08:00"
+    },
+    "history": [
+     {
+      "stage": "registered",
+      "at": "2026-11-04T06:18:07+08:00",
+      "source": "W22_task-182"
+     },
+     {
+      "stage": "distilling",
+      "at": "2026-11-04T06:18:07+08:00",
+      "source": "W22_pipeline"
+     }
+    ]
+   },
+   "updated_at": "2026-11-04T06:18:07+08:00"
   }
  ],
  "sop": "docs/standards/2026-11-02_学习项目标准化流程_v1.md",
- "updated_at": "2026-11-02T18:38:01+08:00"
+ "updated_at": "2026-11-04T06:18:07+08:00"
 }

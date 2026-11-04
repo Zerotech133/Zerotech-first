@@ -18,6 +18,7 @@ body{margin:0;font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei
 .tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}
 .btn{background:var(--gray-2);border:1px solid var(--gray-4);border-radius:7px;color:var(--gray-7);padding:5px 12px;font-size:12.5px;cursor:pointer}
 .btn:hover{border-color:var(--blu-500)}
+.btn.active{background:var(--blu-500);color:#fff;border-color:var(--blu-500)}
 .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
 .card{background:var(--gray-2);border:1px solid var(--gray-4);border-radius:9px;padding:9px 11px}
 .card .k{font-size:11.5px;color:var(--gray-5)}
@@ -59,6 +60,8 @@ tr.detail td{padding:10px 12px;font-size:12px;color:var(--gray-6);line-height:1.
   </div>
   <div class="tools">
     <button class="btn" id="btn-refresh">刷新</button>
+    <button class="btn" id="btn-full">全池30（默认）</button>
+    <button class="btn" id="btn-single">单日视图</button>
     <span class="meta" id="gen-at"></span>
     <span class="meta" id="status"></span>
     <a class="btn" href="/quant_paper.html" style="text-decoration:none">paper 组合页</a>
@@ -71,6 +74,7 @@ tr.detail td{padding:10px 12px;font-size:12px;color:var(--gray-6);line-height:1.
   <table><thead><tr><th>代码</th><th>名称</th><th>tier</th><th>来源</th><th>D1裁决</th><th>置信</th><th>价格</th><th>动作</th></tr></thead>
   <tbody id="rows"><tr><td colspan="8" class="empty">加载中…</td></tr></tbody></table>
   <div class="note">本页只读：推荐池由 ACAD1（司马徽）按健康策略生成；池内全部逐票复盘，D1 通过≠下单。</div>
+  <div class="note">视图口径：默认「全池30」= 每市场最新池日只读聚合（CN/HK/US/CRYPTO 跨日，stale 显式标注）；「单日视图」= 单日 max(pool_date)（当前 12）。切换仅改读取视图，不改任何数据。</div>
 </div>
 <script>
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -116,12 +120,17 @@ function detailHtml(r){
 async function load(){
   const err=document.getElementById('err'); err.innerHTML='';
   try{
-    const r=await fetch('/api/acad1/pool',{cache:'no-store'});
+    const url=currentView==='single' ? '/api/acad1/pool?view=single' : '/api/acad1/pool';
+    const r=await fetch(url,{cache:'no-store'});
     if(!r.ok) throw new Error('HTTP '+r.status);
     const d=await r.json(); if(!d.ok) throw new Error(d.error||'bad payload');
     document.getElementById('gen-at').textContent='更新：'+(d.generated_at||'—');
     const s=d.summary||{}, plan=d.plan||{}, act=s.by_action||{};
+    const viewBadge=d.source_mode==='pg_official_aggregated'
+      ? '<span class="badge ok">全池聚合 '+esc(d.source_mode)+'</span> '
+      : '<span class="badge">单日 '+esc(d.source_mode||'')+'</span> ';
     document.getElementById('status').innerHTML=
+      viewBadge+
       '<span class="badge '+(d.stale?'warn':'ok')+'">'+(d.stale?'stale '+d.freshness_days+'d':'fresh')+'</span> '+
       '<span class="badge">池 '+s.pool_total+' / 已复盘 '+s.reviewed+' / 待 '+s.pending+'</span>';
     document.getElementById('cards').innerHTML=
@@ -131,6 +140,12 @@ async function load(){
       card('组合入选',num(plan.selected,0),'BUY 才入选');
     document.getElementById('data-meta').textContent='池 owner='+(d.owner||'ACAD1')+'｜数据日 '+(d.data_date||'—')+
       '｜新鲜度 '+(d.freshness_days==null?'—':d.freshness_days+' 天')+'｜池ID '+(d.pool_id||'—');
+    if(d.view==='full'){
+      const pd=d.pool_dates?Object.keys(d.pool_dates).map(function(k){return k+'='+d.pool_dates[k];}).join(' · '):'—';
+      document.getElementById('data-meta').textContent+='｜view=full｜各市场池日 '+pd;
+    }else{
+      document.getElementById('data-meta').textContent+='｜view=single';
+    }
     const items=d.items||[];
     const rows=document.getElementById('rows');
     rows.innerHTML=items.length?items.map(function(r){
@@ -150,8 +165,18 @@ function toggle(tr){
   const code=tr.getAttribute('data-code'); const d=document.getElementById('d-'+code);
   if(d) d.style.display = d.style.display==='table-row' ? 'none' : 'table-row';
 }
+let currentView='full';
+function setView(v){
+  currentView=(v==='single')?'single':'full';
+  document.getElementById('btn-single').classList.toggle('active',currentView==='single');
+  document.getElementById('btn-full').classList.toggle('active',currentView==='full');
+  load();
+}
 document.getElementById('btn-refresh').addEventListener('click',load);
-load(); setInterval(load,60000);
+document.getElementById('btn-single').addEventListener('click',function(){setView('single');});
+document.getElementById('btn-full').addEventListener('click',function(){setView('full');});
+setView('full');
+setInterval(load,60000);
 </script>
 
 <!-- PAGE-SHELL-GEN:v2 -->

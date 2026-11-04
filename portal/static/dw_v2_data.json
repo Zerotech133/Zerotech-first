@@ -9074,7 +9074,7 @@
     "id": "intel",
     "name": "情报部",
     "cn_title": "军情司",
-    "lead": "是仪",
+    "lead": "马超",
     "lead_id": "INTEL0",
     "status": "active",
     "agent_count": 8,
@@ -9100,7 +9100,7 @@
      },
      {
       "id": "INTEL0",
-      "cn": "是仪",
+      "cn": "马超",
       "role": "军情司上行受理席",
       "binding": "glm/glm-5.3"
      },
@@ -9673,7 +9673,7 @@
    },
    {
     "id": "INTEL0",
-    "name": "是仪",
+    "name": "马超",
     "dept": "intel",
     "title": "情报部",
     "state": "idle"
@@ -9784,7 +9784,7 @@
    },
    {
     "time_cn": "08:51",
-    "caller_cn": "是仪",
+    "caller_cn": "马超",
     "action_cn": "催办",
     "detail_cn": "请催办：7人无任务活动、0单超期"
    },

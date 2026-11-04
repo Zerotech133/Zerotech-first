@@ -354,9 +354,7 @@ def render_markdown(report: dict) -> str:
     msum = report["results"]["merged"]["summary"] or {}
 
     def metric(summary: dict, key: str) -> str:
-        total = summary.get("n") or summary.get("total") or head.get("n_queries")
         value = summary.get(key)
-        k = {"precision_at_k": "@5", "coverage": "cov", "hit_rate": "hit", "ndcg_at_k": "NDCG@5"}.get(key, key)
         if value is None:
             return "—"
         return f"{value:.3f}" if isinstance(value, float) else str(value)
@@ -418,7 +416,7 @@ def render_markdown(report: dict) -> str:
               f"- 判定：`{report['verdict']}` → {report['recommendation']['action']}",
               "", "### 前置条件（若执行真实合并）", ""]
     lines += [f"{i}. {x}" for i, x in enumerate(report["recommendation"]["preconditions"], 1)]
-    lines += ["", f"### 风险", "", report["recommendation"]["risk"], "",
+    lines += ["", "### 风险", "", report["recommendation"]["risk"], "",
               "## 七、边界与说明", "",
               "1. 全程**内存模拟**：不写 kb_units_all.json、不写 eval_set 资产；只写本报告。",
               "2. 评测集来自 `research/reports/eval_sets/eval_set_20261101_v2.json`（wave10 冻结 89 查询，未重新标注）；"

@@ -1,0 +1,36 @@
+# 观察（非阻断）：/api/mcp/tools 返回的工具描述中文乱码扫描
+# 数据源: 2026-11-04_mcp8787_probe_raw.json（登录态 inventory 快照, ts=2026-11-04T03:05:00+08:00）
+tools_total=98  description_with_U+FFFD=34  clean=64
+
+## 受影响 server（乱码工具数/该 server 工具总数）
+  d1-research              1/1
+  dw-catalog               5/5
+  dw-governance            6/6
+  dw-quality               6/6
+  huangzhong               11/11
+  kb-corpus                5/5
+
+## 未受影响 server
+  factor-tools             0/4
+  jev-news                 0/5
+  playwright               0/25
+  stock-data               0/28
+  stock-intel-readonly     0/2
+
+## 样本（工具名正常，描述含替换符 U+FFFD；base64 存放原文避免终端编码二次污染）
+  mcp__d1_research__d1_research
+    desc_b64=[REDACTED len=232 sha256_12=ac9a26718686]
+  mcp__dw_catalog__catalog_snapshot
+    desc_b64=[REDACTED len=152 sha256_12=e34e5e3ce42c]
+  mcp__dw_catalog__lifecycle
+    desc_b64=[REDACTED len=168 sha256_12=7db292c3168f]
+
+## 交叉线索（不改配置、不重启、不重载；纯对照既有证据）
+  - 直连 stdio MCP server 的独立探针 research/reports/hermes_mcp_probe_20261103.json
+    对 dw-governance/dw-quality/dw-catalog 工具描述是**干净中文 UTF-8**（例：
+    数据仓数据集统计：总量、登记数、有取数入口数、按域/类型分布。只读。）
+  - 同一批 server 经 8787 WebUI inventory（本文件数据源）返回的中文描述乱码。
+  - 结论：乱码发生在 Hermes Agent MCP runtime / WebUI inventory 链路侧，
+    而非 MCP server 本身；与 2026-10-24 codex_bridge「子进程 stdout 按 cp936
+    写、父进程按 UTF-8 解码」判例同族，建议另开数据/平台线工单核实修复。
+  - 影响面：仅描述文本；工具名（ASCII）完整、tool_count=98、鉴权结果均不受影响。

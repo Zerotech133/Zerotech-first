@@ -12,9 +12,13 @@ Set-Location $repo
 $out1 = & $py -X utf8 tools/kb_corpus/learning_ops.py pipeline --write 2>&1 | Out-String
 $rc1 = $LASTEXITCODE
 [System.IO.File]::AppendAllText($log, $out1 + "`r`n", $utf8)
+$outc = & $py -X utf8 tools/kb_corpus/learning_curation.py --apply 2>&1 | Out-String
+$rcc = $LASTEXITCODE
+[System.IO.File]::AppendAllText($log, $outc + "`r`n", $utf8)
 $out2 = & $py -X utf8 tools/kb_corpus/learning_gate.py check --stage units --write 2>&1 | Out-String
 $rc2 = $LASTEXITCODE
 [System.IO.File]::AppendAllText($log, $out2 + "`r`n", $utf8)
-[System.IO.File]::AppendAllText($log, "$ts learning_pipeline_task.ps1 rc_pipeline=$rc1 rc_gate=$rc2`r`n", $utf8)
+[System.IO.File]::AppendAllText($log, "$ts learning_pipeline_task.ps1 rc_pipeline=$rc1 rc_curation=$rcc rc_gate=$rc2`r`n", $utf8)
 if ($rc1 -ne 0) { exit $rc1 }
+if ($rcc -ne 0) { exit $rcc }
 exit $rc2

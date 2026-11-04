@@ -1,0 +1,17 @@
+# MCP 工具描述 U+FFFD 乱码定位 · 证据清单（manifest）
+# 任务: task-44 / 工单 WO-MCP-ENCODING-AUDIT-20261104
+# 快照: 2026-11-04T03:2x+08:00
+# 分支: task/WO-MCP-ENCODING-AUDIT-20261104（基线 6d2998321）
+# 边界: 只读源码/配置/日志 + 一次性 stdio 探针（抓完即杀）；未改配置/代码/凭据；未启停 8787/8796/8091；未 reload-mcp；未打印 token
+# 说明: 本目录另有 task-41 已合入的 2026-11-04_* 证据文件（MCP-8787 登录验证），不在本 manifest 范围
+# 数据值 sha256 已脱敏为 <hex-redacted>（避免凭据扫描误报；不影响结论）
+# 文件清单（sha256  size  path）
+
+5d00cc098bc4b81aa984ac7abbfb45e5efd12f5d484f88bd2e428e575db60862  30810  docs/ops/evidence/2026-11-04_mcp_stdio_encoding_raw.json
+d8d0b99db710cbe1ed47b5f402af966429a147904ddbecd5fd485ee92e67a24c  2431  docs/ops/evidence/2026-11-04_mcp_stdio_encoding_rawlines.json
+fc6cc81e683c3870d3dabd0195612c02914ded8504f4a71b30ff486c87e17e99  15926  docs/ops/evidence/2026-11-04_mcp_stdio_encoding_probe.py
+b5d3420ba290aa0a879035b578a1a9818c881c795b93de22d4e5ab285a3a6b8c  2355  docs/ops/evidence/2026-11-04_live_webui_fffd_scan.txt
+0282c13c52711cd77e210fbc8dcba971dc7ba1382f99d980f9c691f2e2b03483  3659  docs/ops/evidence/2026-11-04_source_matrix.txt
+4afe543591f6f4bca6c7e1dc283a05993d4c84aedbed2f1e67bca9038264fc4c  878  docs/ops/evidence/2026-11-04_tools_call_impact_sample.txt
+985b9fd8f1b5743cc44fd784134b87441da7a4306409b6921a66ad957aa540c5  858  docs/ops/evidence/2026-11-04_encoding_environment.txt
+a4ee88fc4b3807355468309e51669e16f892a47bb54a2b0d8515212f37f9d7b6  15847  docs/ops/2026-11-04_MCP描述乱码定位_v1.md

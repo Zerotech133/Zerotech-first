@@ -295,7 +295,7 @@ def render_markdown(report: dict) -> str:
         f"| concept 归一化 | {report['policy']['normalization']} |",
         f"| 真重复阈值（不同来源） | claim 相似度 ≥ {report['policy']['true_duplicate_claim_sim']} |",
         f"| 近似重复阈值（不同来源） | claim 相似度 ≥ {report['policy']['near_duplicate_claim_sim']} |",
-        f"| 同书不同章节 | 可能合理 → 仅标注（repeated_discussion） |",
+        "| 同书不同章节 | 可能合理 → 仅标注（repeated_discussion） |",
         f"| 主单元选择 | {report['policy']['primary_selection']} |",
         f"| alias 格式 | `{report['policy']['alias_format']}` |",
         "| 修改知识单元数据 | 否（只读审计） |",

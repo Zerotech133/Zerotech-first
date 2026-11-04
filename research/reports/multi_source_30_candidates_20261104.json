@@ -1,0 +1,82 @@
+{
+ "schema_version": "multi_source_30_candidates.v1",
+ "task": "task-179 W19-多源第30候选调研",
+ "generated_at": "2026-11-04T06:30:00+08:00",
+ "mode": "readonly-webresearch（未下载全文、未入库、未改 canonical）",
+ "canonical_snapshot": {
+  "path": "research/reports/multi_source_canonical_20261104.json",
+  "count": 29,
+  "target": 30,
+  "meets": false,
+  "definition": "多源概念=(concept, ≥2 独立 (source_type, source_key))；语义/LLM 合并组需人工签核",
+  "existing_source_types": ["blogger", "research_report"],
+  "concepts_sample": ["中枢判断逻辑", "KDJ金叉", "仓位管理", "分形结构", "技术指标", "AI 量化", "贵金属", "主要原材料价格波动"]
+ },
+ "candidates": [
+  {
+   "id": "C1",
+   "title": "布林线的3大锦囊，小白也能秒懂的股市“波动风向标”",
+   "url": "https://www.investor.org.cn/xxzx/tzzkt/gp/jczs/xsrsbd/202507/t20250724_812013.shtml",
+   "issuer": "中国投资者网（证监会/中证协体系投资者教育平台）",
+   "source_type": "official_edu",
+   "theme": "布林线 BOLL（技术指标/波动范围）",
+   "verification": "web_search 命中标题与 URL（2025-07-24 发布）；未下载全文",
+   "license": "公开投资者教育内容：可引用标题/URL/短摘并注明来源；禁止全文转载或商业使用",
+   "overlap_with_canonical": "无（canonical 29 概念及成员中无“布林线/BOLL/布林带”）",
+   "can_produce_new_concept": true,
+   "confidence": 0.8,
+   "risk": "内容偏科普/教学，需人工确认定义条款可复用范围；引用须注明来源"
+  },
+  {
+   "id": "C2",
+   "title": "布林线｜概念百科-金融公开课-国泰君安证券",
+   "url": "https://ua.gtja.com/cos/open/baike/223.html",
+   "issuer": "国泰君安证券（券商公开投教/金融公开课）",
+   "source_type": "broker_edu",
+   "theme": "布林线 Bollinger Bands：统计标准差原理、三条轨道线",
+   "verification": "web_fetch 核验（标题/英文名 Bollinger Bands/定义/John Bollinger 1983/三条轨道；仅核验未存全文）",
+   "license": "券商公开投教页面：可引用链接+短摘注明出处；不得转载全文",
+   "overlap_with_canonical": "无直接重叠；与 canonical“技术指标”“KDJ金叉”存在语义邻近，需划清边界",
+   "can_produce_new_concept": true,
+   "confidence": 0.75,
+   "risk": "券商百科为通俗解释，公式/参数细节弱于 C3，需与 C3 交叉核对"
+  },
+  {
+   "id": "C3",
+   "title": "backtrader.indicators.bollinger — BollingerBands API 文档",
+   "url": "https://backtrader.readthedocs.io/en/latest/api/indicators/backtrader.indicators.bollinger.html",
+   "issuer": "Backtrader 开源项目（ReadTheDocs 文档）",
+   "source_type": "opensource_docs",
+   "theme": "布林线指标实现：period、devfactor 参数与上下轨计算口径",
+   "verification": "web_search 命中官方文档 URL 与模块名；未下载全文",
+   "license": "开源项目文档（Backtrader GPLv3；文档引用注明项目/版本，不复制大段代码）",
+   "overlap_with_canonical": "无；提供可计算定义（中轨=N 期均线，上下轨=中轨±devfactor×标准差）",
+   "can_produce_new_concept": true,
+   "confidence": 0.85,
+   "risk": "GPLv3 代码许可仅引用文档定义；文档条款需法务/许可复核"
+  }
+ ],
+ "proposed_concept": {
+  "concept": "布林线（Bollinger Bands / BOLL）",
+  "definition": "以 N 期移动平均为中轨，上下轨为中轨 ± k 倍标准差构成波带，用于描述价格波动范围、趋势与波动收敛/扩张的技术分析指标。",
+  "independent_sources": ["official_edu:investor.org.cn", "broker_edu:gtja.com", "opensource_docs:backtrader.readthedocs.io"],
+  "independent_source_count": 3,
+  "cross_source_meets_rule": true,
+  "canonical_comparison": "canonical v1 的 29 个概念中无布林线/BOLL/布林带；最近概念为“技术指标”“KDJ金叉”，需人工确认为新概念而非并入既有概念",
+  "expected_effect": "若 canonical owner 批准把上述 3 个来源登记为独立 source_key 并人工签核，canonical count 29→30（target 30，meets=true）",
+  "confidence": "中高（概念存在/定义证据充分 0.8；canonical 准入 0.5，取决于 source_type 扩展与签核）",
+  "requirements": [
+   "三源均只引用 URL/标题/短摘，不下载全文、不入库正文（本任务已遵守）",
+   "canonical 现仅有 blogger/research_report 两类来源；需 DATA4/A0 批准扩展 source_type（official_edu/broker_edu/opensource_docs）",
+   "需人工签核新概念并写清与“技术指标/KDJ金叉”的语义边界，防止误并",
+   "录入 manifest 需登记来源、许可、抓取时间、引用范围；禁止全文转载"
+  ]
+ },
+ "alternatives": [
+  {"concept": "均线（Moving Average / MA）", "status": "备选", "why": "canonical 无“均线”且公开投教/开源文档覆盖广（上交所投教、Backtrader docs）；但本次未锁定具体官方布林线同级的两篇官方页面，置信低于布林线", "confidence": 0.6},
+  {"concept": "RSI（相对强弱指标）", "status": "不推荐", "why": "未找到可明确定位的交易所/协会投教原文；仅有搜索指向低置信来源", "confidence": 0.3}
+ ],
+ "recommendation": "优先推进「布林线」作为第 30 个跨源多源概念候选：由 DATA2 合规采集 3 条来源元数据（仅引用/短摘）、DATA4 做概念归一与 source_type 扩展评审、A0/老田签核后更新 canonical v1.1；在签核前 canonical 保持 29/30，不自动入库。",
+ "no_ingestion": true,
+ "no_fulltext_download": true
+}

@@ -11,7 +11,7 @@ metadata:
   description: ACAD1 选股池 → D1 投研/裁决/会议/交棒 → 盯盘 → 人工门 → TR1 paper 执行 → outcome/训练（IFS
     v1 F6 组合登记）
   created: '2026-11-02'
-  updated: '2026-11-03'
+  updated: '2026-11-04'
 spec:
   kernel: '>=0.9 <2.0'
   seats:
@@ -39,6 +39,14 @@ spec:
     requires:
     - ref: dataset/file/recommendation_pool
       note: IFS F2 上游池；dataset_registry 登记由 task-27 完成（当前 planned）
+    - ref: dataset/pg/v2_acad1_pool
+      note: 官方池唯一真源（dataset_refs_declared canonical_ref=dataset/pg/v2_acad1_pool，IFS-POOL 已登记）；file/recommendation_pool 为 shadow fallback（非官方）
+    - ref: dataset/pg/v2_base_signal
+      note: D1 基础信号（PG wave1 registry 已登记，owner=D1）；只读消费，paper-only
+    - ref: dataset/pg/v2_acad1_review
+      note: ACAD1 池级复核（PG wave1 registry 已登记，owner=ACAD1，registered/exposed=true）；D1 复盘只读；file pool_review 保留 fallback
+    - ref: dataset/pg/v2_lusu_decision
+      note: D1 裁决读模型（PG wave1 registry 已登记，owner=D1）；当前仅 1 行实验数据，不冒充正式账；正式账 file/d1_decisions 仍 planned
     - ref: dataset/file/pool_review
       note: IFS F2 池复盘；dataset_registry 登记由 task-27 完成（当前 planned）
     - ref: dataset/file/team_exec
@@ -50,7 +58,7 @@ spec:
     - ref: dataset/file/d1_decisions
       note: IFS F1 裁决账；dataset_registry 登记由 task-27 完成（当前 planned）
     - ref: dataset/file/training_episode
-      note: IFS F5 训练 episode（planned，训练契约未定）
+      note: IFS F5 训练 episode 契约已落地（outcome_chain.py）；生产 episodes.jsonl 未生成（API 诚实 data_unavailable）；dataset_registry 登记 task-27 planned
     contract: trading-bot/v1
     sla:
       paper_only: true
@@ -66,8 +74,9 @@ spec:
     - http: /api/d1/meeting
     - http: /api/d1/handoffs
     - http: /api/d1/handoff
-    - http: /api/d1/training
+    - http: /api/d1/training/episodes
     - http: /api/d1/watch-plans
+    - http: /api/war-room/snapshot
     consumes:
     - interface/hermes-control
     - taskstore
@@ -87,7 +96,7 @@ spec:
   - ref: page/d1/research
   - ref: page/d1/war-room
   - ref: page/d1/training
-    note: planned：页面未建（IFS F6 / WO-IFS-ROUTE 待 Lead 接线）
+    note: active：portal/d1_training.html 只读页 2026-11-04 落地（F6b）；接 /api/d1/training/episodes，data_unavailable 诚实空态；入口=D1 研究页页头
   jobs:
   - ref: job/zhice-daily-research-ops
     note: ZhiceAcad1Pool 17:00 上游池（schtasks 2026-11-03 实测）
@@ -124,18 +133,22 @@ spec:
     watch_runtime: contract_only
     review_cadence: daily
     q_level: Q1
-    health_probe: planned（Q2 缺口）：未接 health/SLO 探针，见 docs/plans/2026-11-03_IFS-COMP_D1组合对接登记_v1.md
-    rollback: git revert WO-IFS-COMP-20261103 提交（6 文件声明层复原）；无运行态/数据变更
-    test_entry: python -m pytest tools/tests/test_candidate_generation_guard.py -q
-      && python tools/composition.py validate --all
+    health_probe: 已做只读探针 2026-11-04T02:25:51+08:00 8/8 GET 200（/api/health + /health + 6 D1 只读接口 + 8734 入口）；工具化（tools/q2_probe.py 暂无 d1 target）待接线
+    rollback: 四步回滚见 status.rollback；last_drilled=pending（静态前置已核，未真回滚生产）
+    test_entry: python -m pytest portal/tests/test_api_d1_*.py -q（21 passed，portal/tests 已入 fast gate）&& python -m pytest portal/tests/test_d1_training_page.py -q && python tools/composition.py validate --all
   notes:
-  - IFS v1 F6+WIRE 登记：8 API（7 active，/api/d1/training planned）、3 页面（2 active，/d1/training
-    planned）、4 任务。
+  - IFS v1 F6+WIRE 登记：9 API（9 active，含 F5 /api/d1/training/episodes 只读与 F1d /api/war-room/snapshot 聚合）、3 页面（3 active）、4 任务。
   - 数据：recommendation_pool/pool_review/team_exec/paper_ledger/shadow_ledger 已登记 active；d1_decisions
-    登记 planned；training_episode planned（F5）。
+    登记 planned；training_episode planned（F5 契约已落地，episodes.jsonl 未生成）。
+  - F5 训练：/api/d1/training/episodes（列表/详情）只读、paper_only、auto_training=false；缺数据诚实
+    data_unavailable 不造数；坏行 fail-visible 计数；route baseline 297 条同批。
+  - F6b 训练页：/d1/training 只读页 portal/d1_training.html 2026-11-04 落地（tokens/nav/shortscreen；接 episodes
+    API；data_unavailable 诚实空态；无写接口/POST/训练触发）；portal_api 仅加页面 dispatch，route baseline 297 零 diff。
+  - F1d 作战台快照：GET /api/war-room/snapshot 只读聚合已接 IFS envelope（war_room/v1，request_id/source/data/warnings）；INTERFACE_REGISTRY 2026-11-04 登记 war_room.snapshot.get（owner WATCH_TOWER，read_heavy，draft，32 接口）；本组合 exposes 登记该接口（与 /d1/war-room 页面配对）。
   - 接口 schema/envelope 以 docs/standards/INTERFACE_REGISTRY_v1.yaml 为准；handoff v2 /
     watch_plan 由任务 28 实现，四 ID 由任务 29 + WIRE 收口。
   - Q2 缺口（health/SLO 实测/rollback 演练/契约测试入 fast gate）与 Lead 接线请求见 docs/plans/2026-11-03_IFS-COMP_D1组合对接登记_v1.md。
+  - Q2 证据包（2026-11-04）：docs/plans/2026-11-04_D1_Q2验收证据_v1.md（探针原始结果 docs/plans/2026-11-04_D1_Q2探针原始结果_v1.json）；Q2 未成立，仍 draft/validated=false。
   - 不改运行时：不启停服务、不写数据；六段流水线见 agent_platform/registry/trading_bot.json。
 status:
   phase: shadow
@@ -143,16 +156,53 @@ status:
   validated: false
   q_level: Q1
   interfaces:
-    active: 7
-    planned:
-    - /api/d1/training
+    active: 9
+    planned: []
   pages:
-    active: 2
-    planned:
-    - /d1/training
+    active: 3
+    planned: []
   jobs:
     active: 4
     planned: []
   data_refs: 5 active + d1_decisions planned + training_episode planned
-  source: IFS v1 + WIRE 2026-11-03 集成 + schtasks + portal_api 实测
+  training_api: active（只读 /api/d1/training/episodes；缺数据 data_unavailable）
+  training_page: active（只读 /d1/training → portal/d1_training.html；2026-11-04 F6b；接线生效需维护窗口重启 portal_api 换血）
+  war_room_snapshot: active（只读 /api/war-room/snapshot；envelope war_room/v1；F1d 2026-11-04；registry 32 接口登记）
+  source: IFS v1 + WIRE 2026-11-03 集成 + schtasks + portal_api 实测 + Q2 证据 2026-11-04 + F5 training API 2026-11-04 + F6b training page 2026-11-04 + F1d war_room registry 2026-11-04
   gaps_doc: docs/plans/2026-11-03_IFS-COMP_D1组合对接登记_v1.md
+  q2_evidence: docs/plans/2026-11-04_D1_Q2验收证据_v1.md
+  health_probe:
+    tool: manual-readonly-probe（tools/q2_probe.py 暂无 d1 target，接线请求 R1）
+    endpoints:
+    - http://127.0.0.1:8091/api/health
+    - http://127.0.0.1:8091/health
+    - http://127.0.0.1:8091/api/d1/research
+    - http://127.0.0.1:8091/api/d1/decisions
+    - http://127.0.0.1:8091/api/d1/handoffs
+    - http://127.0.0.1:8091/api/d1/meeting
+    - http://127.0.0.1:8091/api/d1/watch-plans
+    - http://127.0.0.1:8734/api/d1/research
+    last_checked: '2026-11-04T02:25:51+08:00'
+    last_result: ok_8_of_8
+    evidence: docs/plans/2026-11-04_D1_Q2探针原始结果_v1.json
+  slo_alert:
+    tool: planned（tools/q2_slo_alert.py 暂无 d1 target；接线请求 R2）
+    owner: D1/ARCH1
+    targets_ref: docs/standards/INTERFACE_REGISTRY_v1.yaml（D1 接口 SLO：p95 100–1500ms / error 0.001–0.02 / availability 0.99–1.0）
+    last_checked: null
+    last_result: not_measured（仅 5 样本探针延迟，无窗口 p95/错误率/可用性）
+  rollback:
+    steps:
+    - 回退 manifest/registry 到上一版（git revert 本证据提交与 WO-IFS-WIRE/IFS-COMP 声明提交；registry 同批）
+    - 摘除入口：暂停 8091 /api/d1/* 对 8734 的暴露（Lead 接线层操作，不自行停服务），保留只读审计
+    - 恢复数据读取：D1 文件/账本只读快照为准，停止写；重跑 dataset resolve-ref 校验
+    - 验证：tools/q2_probe.py（待含 d1 target）+ composition.py validate --all --strict + D1 单测 21 passed
+    last_drilled: pending（2026-11-16 前需演练一次；本单未真回滚生产，仅静态前置核验）
+    static_prechecks: 目标提交存在（4788b1527/e15cc824b/HEAD b11cda7c2）/变更文件清单可列/回滚前 validate rc=0
+  contract_test:
+    unit: portal/tests/test_api_d1_{research,decision,meeting,handoff}.py + 2 UI = 21 passed（2026-11-04）
+    fast_gate: portal/tests 目录在 fast 门内 → D1 单测与 portal/tests/test_ifs_wire_chain.py（1 passed）已入闸
+    ifs_registry: docs/standards/INTERFACE_REGISTRY_v1.yaml 31 interfaces（d1.* 9，owner D1 12）；契约测试 109 passed
+    gaps: envelope/schema_version/request_id/幂等/auth/e2e 未覆盖；agent_platform/tests/test_ifs_{handoff,paper_chain}.py 与 tools/tests/test_interface_* 当前不在 fast 门（df25b0c13 回钉后未复原）
+    evidence: docs/plans/2026-11-04_D1_Q2验收证据_v1.md §四
+  last_verified: '2026-11-04'

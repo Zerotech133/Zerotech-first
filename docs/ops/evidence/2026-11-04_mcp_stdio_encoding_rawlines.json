@@ -1,0 +1,147 @@
+{
+ "note": "仅行级元数据；完整 payload 不落盘（避免熵/敏感误报）",
+ "servers": [
+  {
+   "label": "d1-research",
+   "lines": [
+    {
+     "line": 1,
+     "raw_len": 162,
+     "valid_utf8": true,
+     "decoded_by": "utf-8"
+    },
+    {
+     "line": 2,
+     "raw_len": 436,
+     "valid_utf8": false,
+     "decoded_by": "gbk"
+    }
+   ]
+  },
+  {
+   "label": "dw-governance",
+   "lines": [
+    {
+     "line": 1,
+     "raw_len": 164,
+     "valid_utf8": true,
+     "decoded_by": "utf-8"
+    },
+    {
+     "line": 2,
+     "raw_len": 2518,
+     "valid_utf8": false,
+     "decoded_by": "gbk"
+    }
+   ]
+  },
+  {
+   "label": "dw-quality",
+   "lines": [
+    {
+     "line": 1,
+     "raw_len": 161,
+     "valid_utf8": true,
+     "decoded_by": "utf-8"
+    },
+    {
+     "line": 2,
+     "raw_len": 1550,
+     "valid_utf8": false,
+     "decoded_by": "gbk"
+    }
+   ]
+  },
+  {
+   "label": "dw-catalog",
+   "lines": [
+    {
+     "line": 1,
+     "raw_len": 161,
+     "valid_utf8": true,
+     "decoded_by": "utf-8"
+    },
+    {
+     "line": 2,
+     "raw_len": 1419,
+     "valid_utf8": false,
+     "decoded_by": "gbk"
+    }
+   ]
+  },
+  {
+   "label": "huangzhong",
+   "lines": [
+    {
+     "line": 1,
+     "raw_len": 254,
+     "valid_utf8": false,
+     "decoded_by": "gbk"
+    },
+    {
+     "line": 2,
+     "raw_len": 115,
+     "valid_utf8": true,
+     "decoded_by": "utf-8"
+    },
+    {
+     "line": 3,
+     "raw_len": 2573,
+     "valid_utf8": false,
+     "decoded_by": "gbk"
+    }
+   ]
+  },
+  {
+   "label": "kb-corpus",
+   "lines": [
+    {
+     "line": 1,
+     "raw_len": 160,
+     "valid_utf8": true,
+     "decoded_by": "utf-8"
+    },
+    {
+     "line": 2,
+     "raw_len": 1768,
+     "valid_utf8": false,
+     "decoded_by": "gbk"
+    }
+   ]
+  },
+  {
+   "label": "factor-tools[clean]",
+   "lines": [
+    {
+     "line": 1,
+     "raw_len": 163,
+     "valid_utf8": true,
+     "decoded_by": "utf-8"
+    },
+    {
+     "line": 2,
+     "raw_len": 2106,
+     "valid_utf8": true,
+     "decoded_by": "utf-8"
+    }
+   ]
+  },
+  {
+   "label": "stock-data[clean]",
+   "lines": [
+    {
+     "line": 1,
+     "raw_len": 161,
+     "valid_utf8": true,
+     "decoded_by": "utf-8"
+    },
+    {
+     "line": 2,
+     "raw_len": 13629,
+     "valid_utf8": true,
+     "decoded_by": "utf-8"
+    }
+   ]
+  }
+ ]
+}

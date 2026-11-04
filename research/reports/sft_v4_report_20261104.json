@@ -1,0 +1,20 @@
+{
+ "generated_at": "2026-11-04T06:45:06+08:00",
+ "stats": {
+  "v1": 2678,
+  "refusal": 182,
+  "citation": 219,
+  "general": 960,
+  "bad_citation": 0,
+  "dup": 0
+ },
+ "total_train": 3769,
+ "total_val": 270,
+ "total": 4039,
+ "by_category": {
+  "v1_existing": 2678,
+  "F_general": 960,
+  "R_refusal": 182,
+  "Q_citation": 219
+ }
+}

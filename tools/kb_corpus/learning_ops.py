@@ -12,7 +12,6 @@ import json
 import re
 import subprocess
 import sys
-import shutil
 from datetime import datetime
 from pathlib import Path
 
@@ -280,7 +279,6 @@ def governance(kb: Path, write: bool = False) -> dict:
                         issues.append({"level": "high", "code": "DUPLICATE_ACROSS_PROJECTS",
                                        "projects": [hashes[h], pid], "file": f.get("name")})
                     hashes[h] = pid
-                src = Path(f.get("origin", ""))
                 if f.get("copied") and not (pdir / "source" / f.get("name", "")).exists():
                     issues.append({"level": "high", "code": "SOURCE_MISSING", "project": pid, "file": f.get("name")})
         units = kb / "30_知识单元" / f"{pid}_units_draft.jsonl"

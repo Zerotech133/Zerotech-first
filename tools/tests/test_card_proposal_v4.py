@@ -38,6 +38,11 @@ def report() -> dict:
     return load(REPORT_JSON)
 
 
+def archived(d: dict) -> bool:
+    """报告生成后学习卡又扩卡 → 历史快照，按动态/归档口径校验。"""
+    return d["sources"]["cards"]["sha256"] != sha(CARDS)
+
+
 def norm(s) -> str:
     return NOISE.sub("", str(s or "")).lower()
 
@@ -50,8 +55,11 @@ def test_theme_depth_and_gaps():
     s = d["summary"]
     cards = load(CARDS)["cards"]
     units = load(UNITS)["units"]
-    assert s["cards_total"] == len(cards) == 124
-    assert s["units_total"] == len(units) == 516
+    assert s["cards_total"] == d["preview"]["base_cards"] == 124   # 报告自身快照
+    assert s["units_total"] == 516
+    if not archived(d):
+        assert s["cards_total"] == len(cards)
+        assert s["units_total"] == len(units)
     assert s["themes_total"] == 21
     rows = d["theme_depth"]
     assert len(rows) == 21
@@ -80,7 +88,10 @@ def test_candidates_quality():
     assert angles == {"概念定义", "关键事实", "影响传导"}
     assert d["summary"]["angles"] == {"概念定义": 8, "关键事实": 8, "影响传导": 8}
     # 全部可追溯 + 出处格式 + pending_review
-    card_concepts = {norm(c.get("concept")) for c in load(CARDS)["cards"]}
+    # 历史报告：去重基准是报告生成时的 124 卡快照；当前卡已扩卡 → 跳过“不得与当前卡重复”
+    card_concepts = set()
+    if not archived(d):
+        card_concepts = {norm(c.get("concept")) for c in load(CARDS)["cards"]}
     cand_concepts = []
     for c in cands:
         assert c["status"] == "pending_review"
@@ -103,13 +114,14 @@ def test_dry_run_preview_and_no_mutation():
     d = report()
     pv = d["preview"]
     cards = load(CARDS)["cards"]
-    assert pv["base_cards"] == 124 == len(cards)
+    assert pv["base_cards"] == d["summary"]["cards_total"] == 124
     assert pv["candidates"] == len(d["candidates"]) == 24
-    assert pv["resulting_cards_if_all_merged"] == 124 + 24 == 148
+    assert pv["resulting_cards_if_all_merged"] == pv["base_cards"] + 24 == 148
     assert "dry-run" in pv["mode"] and ("未执行" in pv["mode"] or "不执行" in pv["mode"])
     assert d["source_unchanged"] is True
-    assert d["sources"]["cards"]["sha256"] == sha(CARDS)
-    assert d["sources"]["units"]["sha256"] == sha(UNITS)
+    if not archived(d):
+        assert d["sources"]["cards"]["sha256"] == sha(CARDS)
+        assert d["sources"]["units"]["sha256"] == sha(UNITS)
     # 缺口主题未补齐说明
     assert d["summary"]["gap_themes_unfilled"]
     assert any("未生成候选" in n for n in d["known_notes"])

@@ -1,0 +1,23 @@
+{
+ "generated_at": "2026-11-04T04:40:46+08:00",
+ "stats": {
+  "v1_train": 2545,
+  "v1_val": 133,
+  "refusal_raw": 182,
+  "citation_raw": 219,
+  "refusal_added": 182,
+  "citation_added": 219,
+  "dropped_dup": 0,
+  "dropped_bad": 0,
+  "dropped_leak": 0
+ },
+ "total_train": 2905,
+ "total_val": 174,
+ "total": 3079,
+ "by_category": {
+  "v1_existing": 2678,
+  "Q_citation": 219,
+  "R_refusal": 182
+ },
+ "dataset_info_key": "quant_kb_sft_v2"
+}

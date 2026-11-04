@@ -686,11 +686,11 @@ h1 { margin: 0; font-size: 25px; line-height: 1.25; letter-spacing: -.025em; col
 
 /* ==== 生产页包装 ==== */
 .wrap { max-width: 1280px; margin: 0 auto; }
-.wrap .main { padding: 20px 0 52px; }
+.main.wrap { padding: 20px 0 52px; }
 .page-head { margin-bottom: 13px; }
 #ss-bar { display: none !important; } /* 页面已有面包屑与分区，隐藏重复锚点条 */
 .wb-crumb, .wb-shell-head { display: none !important; }
-@media (max-width: 900px) { .wrap .main { padding: 14px 0 76px; } }
+@media (max-width: 900px) { .main.wrap { padding: 14px 0 76px; } }
 
 
 /* ==== 生产页自定义列 ==== */
@@ -704,3 +704,107 @@ h1 { margin: 0; font-size: 25px; line-height: 1.25; letter-spacing: -.025em; col
 .circ { display: grid; place-items: center; width: 30px; height: 30px; border: 1px solid var(--hair); border-radius: 50%; color: var(--text-dim); font-family: var(--mono); font-size: 9px; }
 .drawer .evidence-item p { margin: 3px 0 0; color: var(--text-dim); font-size: 9px; line-height: 1.5; white-space: pre-wrap; max-height: 170px; overflow: auto; }
 .pool-row .badge { font-size: 8px; padding: 1px 5px; }
+
+/* 诚实提示：设计上限 30 vs 实际 pool_total / stale 天数（不粉饰、不只写上限）。 */
+.pool-limit {
+  display: inline-block; margin-left: 4px; padding: 1px 7px;
+  border: 1px solid var(--hair); border-radius: 99px;
+  color: var(--text-dim); font-family: var(--mono); font-size: 9.5px; font-weight: 500;
+  white-space: nowrap; vertical-align: middle;
+}
+.pool-limit.warn {
+  color: var(--color-warn);
+  border-color: color-mix(in srgb, var(--color-warn) 42%, var(--hair));
+  background: color-mix(in srgb, var(--color-warn) 9%, transparent);
+}
+
+
+/* ==== 2026-11-03 修正：技术框架深屏（深色 Calm Command Center） ====
+   依据：双版本 UI 规范（2026-10-27，docs/design，深色深屏不做浅色卡片）+
+   UI UX Research v1（2026-11-03，docs/design：GitHub Dark + tokens + ui.css +
+   1210 宽 + 紧凑/细边框/低饱和，去掉 neon/玻璃拟态/多层渐变卡片）。
+   只换视觉基准：保留 ACAD1 池/只读/点击抽屉/风险/闭环，不改 API/功能/数据。 */
+:root {
+  --teal: var(--os-blue);
+  --teal-soft: color-mix(in srgb, var(--os-blue) 14%, transparent);
+  --teal-line: color-mix(in srgb, var(--os-blue) 38%, transparent);
+  --panel-bg: color-mix(in srgb, var(--bg-surface) 96%, transparent);
+  --panel-bg-2: color-mix(in srgb, var(--bg-raised) 76%, transparent);
+  --hair: color-mix(in srgb, var(--border) 68%, transparent);
+  --shadow: var(--shadow-1);
+}
+html { color-scheme: dark; }
+body {
+  background: var(--bg-page);
+  color: var(--text);
+  font-size: 13.2px;
+}
+body::before { background: none; }  /* 低饱和大面底：去掉多层渐变 */
+.wrap { max-width: 1210px; margin: 0 auto; }
+.main.wrap { padding: 18px 18px 46px; }
+.page-head { margin-bottom: 12px; }
+h1, .page-head h1 { font-size: 23px; line-height: 1.25; letter-spacing: -.02em; color: var(--text); }
+.lede { margin: 4px 0 0; color: var(--text-dim); font-size: 12.5px; }
+.crumb { color: var(--text-dim); font-size: 11px; }
+
+/* 卡片：深色面板 + 10px 圆角 + 细边框 + 低阴影；不做浅色卡片 */
+.panel, .side-card, .kpi, .run-banner, .logic-strip, .logic-item, .drawer,
+.pool-panel, .anomaly-card, .closure-card, .legion-card {
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--gray-0) 55%, transparent);
+  background: color-mix(in srgb, var(--bg-surface) 97%, transparent);
+}
+.pool-row, .run-card { background: color-mix(in srgb, var(--bg-raised) 60%, transparent); }
+.panel-head, .side-head, .pool-foot, .page-foot { border-color: var(--border); }
+.panel-head h2, .side-head h2 { color: var(--text); }
+
+/* 紧凑间距 */
+.layout-grid { gap: 10px; }
+.right-rail { gap: 10px; }
+.kpi-row { gap: 8px; margin-bottom: 10px; }
+.kpi { padding: 8px 10px; }
+.kpi strong { font-size: 21px; color: var(--text); }
+.kpi-foot, .panel-head p { font-size: 10.5px; }
+.logic-strip { gap: 8px; margin-bottom: 10px; }
+.logic-item { padding: 8px 10px; }
+
+/* 强调色：蓝（link/os-blue），状态仍用语义色+文字 */
+.btn-primary { border-color: color-mix(in srgb, var(--link) 55%, var(--border)); background: var(--link); color: var(--gray-0); box-shadow: none; }
+.btn-primary:hover { background: color-mix(in srgb, var(--link) 84%, white); border-color: var(--link); }
+.tab.is-active { color: var(--link); border-bottom-color: var(--link); }
+.tab.is-active b { color: var(--link); }
+.link-btn, a.link-btn, .pool-row:hover .row-go { color: var(--link); }
+.count-pill { background: var(--teal-soft); color: var(--link); }
+.count-pill.warn { background: color-mix(in srgb, var(--link) 12%, transparent); color: var(--link); border-color: color-mix(in srgb, var(--link) 36%, var(--border)); }
+.kpi-top .mini.accent, .kpi .delta.accent { color: var(--link); }
+.flow-step.is-active { border-color: color-mix(in srgb, var(--link) 52%, var(--border)); background: color-mix(in srgb, var(--link) 10%, var(--bg-raised)); }
+.flow-step.is-done em { color: var(--link); }
+.flow-link { background: var(--hair); }
+.flow-link::after { border-left-color: var(--hair); }
+
+/* 表格 12–12.5px；正文 13–13.5px */
+.pool-row { font-size: 12.2px; padding: 6px 7px; }
+.pool-row .code { font-size: 11.5px; }
+.pool-row .name { font-size: 11.5px; }
+.pool-row .src, .pool-row .src small, .pool-row .name small { font-size: 9.5px; }
+.pool-row .rec { font-size: 11px; }
+.pool-row .conf, .pool-row .price { font-size: 11px; }
+.tab { font-size: 12px; }
+
+/* 抽屉/提示保持深色低饱和 */
+.drawer { background: color-mix(in srgb, var(--bg-surface) 98%, transparent); }
+.drawer-note, .page-foot, .audit-flag { color: var(--text-dim); }
+.page-foot { font-size: 10px; }
+
+@media (max-width: 900px) {
+  .main.wrap { padding: 14px 12px 64px; }
+  .layout-grid, .right-rail { gap: 9px; }
+}
+@media (max-width: 560px) {
+  .main.wrap { padding: 12px 10px 58px; }
+  h1, .page-head h1 { font-size: 22px; }
+  .kpi strong { font-size: 19px; }
+  .pool-row { padding: 5px 7px; }
+}
+
