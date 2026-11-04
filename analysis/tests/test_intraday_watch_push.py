@@ -69,7 +69,7 @@ def test_to_push_payload_has_no_callback_buttons():
     assert len(payloads) == 1
     p = payloads[0]
     assert p["fingerprint"] == "fp-1"
-    assert p["url"].endswith("/sa?code=600337.SH")
+    assert p["url"].endswith("/sa?q=600337.SH")
     assert "buttons" not in p
 
 

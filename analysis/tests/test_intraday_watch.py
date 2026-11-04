@@ -164,10 +164,18 @@ def test_pct_cross_triggers_only_on_first_crossing():
 
 
 def test_pct_cross_limit_up_state():
+    """涨停改由独立 limit_up 规则（critical）发，不再混在 pct_cross 档位里。"""
     store = iw.StateStore(dry_run=True)
     out = iw._eval_price_rules(quote(pct=10.0, price=10.9, prev=9.91), store, flat_cfg(), NOW,
                                NOW.strftime("%Y-%m-%d %H:%M:%S"), "2026-11-05", {})
-    assert any("涨停" in s.title for s in out if s.rule == "pct_cross")
+    assert not any(s.rule == "pct_cross" for s in out)
+    hits = [s for s in out if s.rule == "limit_up"]
+    assert len(hits) == 1 and hits[0].critical is True and "涨停" in hits[0].title
+    # 当日只报一次
+    again = iw._eval_price_rules(quote(pct=10.0, price=10.9, prev=9.91), store, flat_cfg(),
+                                 NOW + timedelta(seconds=60),
+                                 NOW.strftime("%Y-%m-%d %H:%M:%S"), "2026-11-05", {})
+    assert not any(s.rule == "limit_up" for s in again)
 
 
 def test_halted_quote_emits_nothing():
@@ -202,22 +210,29 @@ def test_vol_ratio_threshold():
     assert [s.rule for s in high] == ["vol_ratio"]
 
 
-def test_amount_ratio_triggers_vol_ratio_rule():
+def test_amount_ratio_rule_removed():
+    """amount_ratio 曾是死代码（无写入点），已删除；仅 amount_ratio 不应再触发规则。"""
     store = iw.StateStore(dry_run=True)
     out = iw._eval_price_rules(quote(amount_ratio=2.3), store, flat_cfg(), NOW,
                                NOW.strftime("%Y-%m-%d %H:%M:%S"), "2026-11-05", {})
-    assert [s.rule for s in out] == ["vol_ratio"] and out[0].critical is False
+    assert out == []
 
 
 def test_limit_open_critical():
+    """limit_open 需连续 2 tick 贴板确认「封板」后，5 分钟内回落 ≥1% 才发 critical。"""
     store = iw.StateStore(dry_run=True)
     cfg = flat_cfg()
     ts = NOW.strftime("%Y-%m-%d %H:%M:%S")
-    sealed = iw._eval_price_rules(quote(price=10.9, prev=9.91, pct=9.99), store, cfg, NOW,
-                                  ts, "2026-11-05", {})
-    assert not any(s.rule == "limit_open" for s in sealed)
+    first = iw._eval_price_rules(quote(price=10.9, prev=9.91, pct=9.99), store, cfg, NOW,
+                                 ts, "2026-11-05", {})
+    assert not any(s.rule == "limit_open" for s in first)
+    # 第 2 个 tick 仍贴板 → 封板确认（sealed_at=ts），尚不开板
+    second = iw._eval_price_rules(quote(price=10.9, prev=9.91, pct=9.99), store, cfg,
+                                  NOW + timedelta(seconds=30), ts, "2026-11-05", {})
+    assert not any(s.rule == "limit_open" for s in second)
+    # 5 分钟内回落 ≥1% → 开板
     opened = iw._eval_price_rules(quote(price=10.5, prev=9.91, pct=5.95), store, cfg,
-                                  NOW + timedelta(seconds=60), ts, "2026-11-05", {})
+                                  NOW + timedelta(seconds=120), ts, "2026-11-05", {})
     hits = [s for s in opened if s.rule == "limit_open"]
     assert len(hits) == 1 and hits[0].critical is True
 
@@ -430,7 +445,7 @@ def test_to_push_payload_fields_and_no_send():
     # W3：payload 只带纯 URL 按钮（hub 的 card_actions 跳过 open_url），
     # 真正发送由 push_via_hub 负责（默认 push.enabled=false，不发送）。
     assert "buttons" not in card
-    assert card["url"].endswith("/sa?code=%s" % s.code)
+    assert card["url"].endswith("/sa?q=%s" % s.code)
 
 
 # ---------------------------------------------------------------- 采集（全 mock）

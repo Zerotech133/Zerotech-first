@@ -33,6 +33,7 @@ import sqlite3
 import sys
 import time
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import datetime, time as dtime, timedelta, timezone
 from typing import Any, Dict, Iterable, List, Optional, Tuple
@@ -45,6 +46,8 @@ ROOT = os.path.dirname(PKG)  # worktree 根
 MAIN_ROOT = os.environ.get("ANALYSIS_MAIN_ROOT", r"C:\项目\老田的AI助手")
 WORK = os.environ.get("ANALYSIS_WORK", r"C:\项目\analysis_work")
 DATA_ROOT = os.environ.get("KG_DATA_ROOT", os.path.join(MAIN_ROOT, "quant_backtest", "data"))
+#: 交易日历（tushare trade_cal：cal_date/is_open），用于节假日判断
+TRADE_CAL_PATH = os.path.join(DATA_ROOT, "tushare_curated", "trade_cal.parquet")
 
 WATCHLIST_PATH = os.path.join(PKG, "watchlist.txt")
 NEWS_DB = os.path.join(MAIN_ROOT, "news_collector", "news.db")
@@ -81,9 +84,13 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "fast_move_pct": 2.0,
     "fast_move_window_sec": 180,
     "vol_ratio_threshold": 2.5,
-    "amount_ratio_threshold": 2.0,
-    "limit_band_pct": 0.2,           # 距涨跌停 ≤0.2% 视为封板
+    "limit_band_pct": 0.2,           # 距涨跌停 ≤0.2% 视为触板
+    "limit_seal_band_pct": 0.05,     # 触板后再贴板 ≤0.05% 视为「封板确认」
+    "limit_seal_ticks": 2,           # 连续 N 个 tick 贴板才确认封板（防触板未封误报）
     "limit_open_drop_pct": 1.0,      # 封板后回落 ≥1% 视为开板
+    "limit_open_window_sec": 300,    # 开板信号只在此窗口内发（设计：封板后 5 分钟内）
+    "quote_max_age_sec": 120,        # 行情时间戳超过该秒数视为过期（防昨收/停牌旧价误报）
+    "max_collect_sec": 25,           # 单轮采集总预算（超时降级，避免 tick 越拖越长）
     "key_level_band_pct": 0.5,       # 距关键位 ±0.5%
     "key_level_min_amplitude": 2.0,  # 当日振幅 ≥2% 才看关键位
     "stops": {},                     # {code: 止损价}，另读订阅文件 stops
@@ -100,15 +107,15 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "sector_refresh_sec": 180,       # 板块榜刷新间隔（设计 3min，避免每 tick 拉 5 页）
     # 去重 / 冷却 / 限流
     "cooldown_min": {"default": 30, "pct_cross": 30, "fast_move": 15, "vol_ratio": 30,
-                     "limit_open": 1440, "key_level": 60, "stop_hit": 1440,
-                     "news": 0, "sector": 30},
+                     "limit_up": 1440, "limit_down": 1440, "limit_open": 1440,
+                     "key_level": 60, "stop_hit": 1440, "news": 0, "sector": 30},
     "max_per_code_day": 6,
     "max_global_day": 40,
     "critical_exempt": True,
     # 交易时段（09:25–11:30 / 13:00–15:00）
     "session": {"morning_open": "09:25", "morning_close": "11:30",
                 "afternoon_open": "13:00", "afternoon_close": "15:00"},
-    "em_enrich_limit": 12,
+    "em_enrich_limit": 40,
     "news_lookback_min": 30,
     "portal_base": "http://127.0.0.1:8734",
     "push": {"kind": "watch:realtime", "receiver": "个人", "enabled": False},
@@ -137,6 +144,26 @@ def _to_float(value: Any) -> Optional[float]:
 
 def _fmt_num(value: Optional[float], digits: int = 2) -> str:
     return "-" if value is None else ("%%.%df" % digits) % value
+
+def _fmt_amount(yuan: Optional[float]) -> str:
+    """成交额（元）→ 人类可读：≥1 亿按「亿」、≥1 万按「万」、否则「元」。
+
+    新浪 f9 / 东财 f48 单位都是元；旧卡片直接拼「万」导致放大 1e4 倍。
+    """
+    val = _to_float(yuan)
+    if val is None:
+        return "-"
+    if abs(val) >= 1e8:
+        return "%.2f 亿" % (val / 1e8)
+    if abs(val) >= 1e4:
+        return "%.0f 万" % (val / 1e4)
+    return "%.0f 元" % val
+
+_MD_CLEAN_RE = re.compile(r"[*_`\[\]\n\r]+")
+
+def _md_clean(text: Any, limit: int = 160) -> str:
+    """清洗插入 lark_md 的文本：压掉会破坏 Markdown 的字符、截断。"""
+    return _MD_CLEAN_RE.sub(" ", str(text or "")).strip()[:limit]
 
 def _ro_uri(path: str) -> str:
     """生成 sqlite 只读 URI（Windows 反斜杠→正斜杠；WAL 安全）。"""
@@ -207,11 +234,42 @@ def _parse_hhmm(text: str, fallback: dtime) -> dtime:
     except (ValueError, TypeError):
         return fallback
 
-def market_open(now: Optional[datetime] = None,
-                cfg: Optional[Dict[str, Any]] = None) -> bool:
-    """是否 A 股连续竞价时段：周一至周五 09:25–11:30、13:00–15:00（含端点）。"""
+_TRADE_DAYS_CACHE: Dict[str, Optional[set]] = {}
+
+def trading_days(path: Optional[str] = None) -> Optional[set]:
+    """读取 tushare trade_cal 的「交易日」集合（YYYY-MM-DD）；不可用时返回 None。"""
+    cal_path = path or TRADE_CAL_PATH
+    if cal_path in _TRADE_DAYS_CACHE:
+        return _TRADE_DAYS_CACHE[cal_path]
+    days: Optional[set] = None
+    try:
+        import pandas as pd  # 可选依赖：仅此处使用
+        frame = pd.read_parquet(cal_path, columns=["cal_date", "is_open"])
+        days = {str(int(d))[:4] + "-" + str(int(d))[4:6] + "-" + str(int(d))[6:8]
+                for d in frame.loc[frame["is_open"] == 1, "cal_date"].tolist()}
+        if not days:
+            days = None
+    except Exception as exc:  # noqa: BLE001 - 数据缺失时退回工作日判断
+        log("交易日历：不可用（%s），退回工作日判断" % str(exc)[:80])
+        days = None
+    _TRADE_DAYS_CACHE[cal_path] = days
+    return days
+
+def is_trading_day(now: Optional[datetime] = None) -> bool:
+    """是否 A 股交易日：优先 trade_cal（含节假日），缺失时退回「周一至周五」。"""
     cur = now or now_cst()
     if cur.weekday() >= 5:
+        return False
+    days = trading_days()
+    if days is None:
+        return True
+    return cur.strftime("%Y-%m-%d") in days
+
+def market_open(now: Optional[datetime] = None,
+                cfg: Optional[Dict[str, Any]] = None) -> bool:
+    """是否 A 股连续竞价时段：交易日且 09:25–11:30、13:00–15:00（含端点）。"""
+    cur = now or now_cst()
+    if not is_trading_day(cur):
         return False
     session = (cfg or DEFAULT_CONFIG).get("session", DEFAULT_CONFIG["session"])
     t = cur.time()
@@ -220,6 +278,30 @@ def market_open(now: Optional[datetime] = None,
     afternoon = (_parse_hhmm(session.get("afternoon_open", "13:00"), dtime(13, 0)),
                  _parse_hhmm(session.get("afternoon_close", "15:00"), dtime(15, 0)))
     return (morning[0] <= t <= morning[1]) or (afternoon[0] <= t <= afternoon[1])
+
+def filter_fresh_quotes(quotes: List[Dict[str, Any]], now: Optional[datetime] = None,
+                        max_age_sec: Optional[int] = None) -> List[Dict[str, Any]]:
+    """剔除过期行情：时间戳非当日、或与 now 相差超过 max_age_sec（防昨收/停牌旧价）。
+
+    行情缺 ts 视为未知新鲜度，同样剔除（fail-safe，宁可不报也不误报）。
+    """
+    cur = now or now_cst()
+    max_age = int(max_age_sec if max_age_sec is not None else
+                  DEFAULT_CONFIG.get("quote_max_age_sec", 120))
+    keep: List[Dict[str, Any]] = []
+    dropped = 0
+    for quote in quotes or []:
+        stamp = _parse_dt(quote.get("ts"))
+        if stamp is None or stamp.date() != cur.date():
+            dropped += 1
+            continue
+        if abs((cur - stamp).total_seconds()) > max_age:
+            dropped += 1
+            continue
+        keep.append(quote)
+    if dropped:
+        log("行情：剔除过期/非当日 %d 只（新鲜度阈值 %ds）" % (dropped, max_age))
+    return keep
 
 # ---------------------------------------------------------------- 配置
 
@@ -453,8 +535,42 @@ def fetch_em_snapshot(code: str, timeout: int = 8) -> Dict[str, Any]:
             "em_concepts": [c.strip() for c in str(data.get("f129") or "").split(",")
                             if c.strip()]}
 
+def _parallel_fetch(codes: List[str], fn, workers: int = 6,
+                    deadline_sec: Optional[float] = None) -> Dict[str, Dict[str, Any]]:
+    """并发拉取（东财快照），带整轮 deadline；超时/失败降级返回已取部分。
+
+    串行 50 只×8s 最坏 400s，会把 09:25 首轮拖死；这里 6 线程 + 总时限，
+    超时后放弃未完成请求（继续用新浪行情 + 申万映射兜底），不阻塞规则引擎。
+    """
+    out: Dict[str, Dict[str, Any]] = {}
+    if not codes:
+        return out
+    pool = ThreadPoolExecutor(max_workers=max(1, min(8, int(workers))), thread_name_prefix="em")
+    started = time.time()
+    futures = {pool.submit(fn, code): code for code in codes}
+    try:
+        for fut in as_completed(futures, timeout=deadline_sec):
+            code = futures.get(fut) or ""
+            try:
+                snap = fut.result() or {}
+            except Exception as exc:  # noqa: BLE001 - 单只失败不影响整轮
+                log("东财补采：%s 失败（%s）" % (code, str(exc)[:80]))
+                continue
+            if snap:
+                out[code] = snap
+            if deadline_sec is not None and time.time() - started > deadline_sec:
+                log("东财补采：到达整轮时限 %.0fs，放弃剩余 %d 只" % (
+                    deadline_sec, len(codes) - len(out)))
+                break
+    except Exception:  # noqa: BLE001 - futures.TimeoutError 等，降级
+        log("东财补采：整轮超时（>%ss），已取 %d/%d 只" % (deadline_sec, len(out), len(codes)))
+    finally:
+        pool.shutdown(wait=False, cancel_futures=True)
+    return out
+
 def ensure_em_industries(quotes: List[Dict[str, Any]], store: "StateStore",
-                         limit: int = 0, timeout: int = 8) -> List[Dict[str, Any]]:
+                         limit: int = 0, timeout: int = 8,
+                         deadline_sec: Optional[float] = None) -> List[Dict[str, Any]]:
     """给池内个股补东财行业板块名（f127），按「日期+代码」缓存，当日只拉一次。
 
     f127 是东财自己的行业板块名（如 600337→「家居用品」），比申万行业名与东财
@@ -473,8 +589,11 @@ def ensure_em_industries(quotes: List[Dict[str, Any]], store: "StateStore",
     todo = [q for q in quotes if not q.get("em_industry")]
     if limit and limit > 0:
         todo = todo[:limit]
+    snaps = _parallel_fetch([str(q.get("code") or "") for q in todo],
+                            lambda code: fetch_em_snapshot(code, timeout=timeout),
+                            workers=6, deadline_sec=deadline_sec)
     for quote in todo:
-        snap = fetch_em_snapshot(str(quote.get("code") or ""), timeout=timeout)
+        snap = snaps.get(str(quote.get("code") or "")) or {}
         if not snap.get("em_industry"):
             continue
         quote["em_industry"] = snap["em_industry"]
@@ -482,12 +601,15 @@ def ensure_em_industries(quotes: List[Dict[str, Any]], store: "StateStore",
         store.set_kv("em_ind:%s:%s" % (day, quote.get("code")), snap["em_industry"])
     return quotes
 
-def enrich_quotes(quotes: List[Dict[str, Any]], limit: int = 12) -> List[Dict[str, Any]]:
-    """按 |涨跌幅| 取前 N 只补东财字段（控制请求量），失败静默跳过。"""
+def enrich_quotes(quotes: List[Dict[str, Any]], limit: int = 12,
+                  deadline_sec: Optional[float] = None) -> List[Dict[str, Any]]:
+    """按 |涨跌幅| 取前 N 只并发补东财字段（控制请求量），失败静默跳过。"""
     ranked = sorted([q for q in quotes if q.get("pct") is not None],
                     key=lambda q: abs(q.get("pct") or 0.0), reverse=True)[:max(0, int(limit))]
+    snaps = _parallel_fetch([str(q.get("code") or "") for q in ranked],
+                            fetch_em_snapshot, workers=6, deadline_sec=deadline_sec)
     for quote in ranked:
-        snap = fetch_em_snapshot(quote["code"])
+        snap = snaps.get(str(quote.get("code") or "")) or {}
         for key in ("vol_ratio", "turnover", "amount"):
             if snap.get(key) is not None:
                 quote[key] = snap[key]
@@ -499,13 +621,24 @@ def _norm_stock_name(name: Any) -> str:
     return re.sub(r"[\s\u3000]+", "", str(name or "")).replace("＊", "*").lower()
 
 def build_name_index(rows: Iterable[Tuple[str, str]]) -> Dict[str, str]:
-    """公司名 → ts_code；去空白、全角星号归一；同名冲突取首个（精确匹配用）。"""
+    """公司名 → ts_code；去空白、全角星号归一。
+
+    同名冲突（20+ 组）不能 setdefault 取首个（可能把新闻挂到错误代码），
+    冲突时置空串，让 resolve_names 跳过该名称。
+    """
     index: Dict[str, str] = {}
+    conflict: set = set()
     for raw_name, raw_code in rows:
         code = normalize_code(raw_code)
         key = _norm_stock_name(raw_name)
-        if key and _is_a_share(code):
-            index.setdefault(key, code)
+        if not key or not _is_a_share(code):
+            continue
+        if key in index and index[key] != code:
+            conflict.add(key)
+            continue
+        index.setdefault(key, code)
+    for key in conflict:
+        index.pop(key, None)
     return index
 
 def _read_stock_basic_rows(path: str, columns: List[str]) -> List[Tuple[str, str]]:
@@ -559,17 +692,34 @@ def resolve_names(names: Iterable[Any],
             out.append(code)
     return out
 
+_TITLE_CODE_RE = re.compile(r"[\[【（(]\s*(\d{6})[\s\]】）)]")
+
+def _codes_from_title(title: str, name_index: Dict[str, str]) -> List[str]:
+    """从 `[600604 市北高新] ...` 形态标题提取 A 股代码（仅取名称索引内的代码）。"""
+    known = set(name_index.values())
+    for match in _TITLE_CODE_RE.finditer(title or ""):
+        code = normalize_code(match.group(1))
+        if code in known:
+            return [code]
+    return []
+
 def fetch_news_incremental(watermark_ts: Optional[str], news_db: Optional[str] = None,
                            limit: int = 200, name_index: Optional[Dict[str, str]] = None,
                            now: Optional[datetime] = None,
-                           lookback_min: Optional[int] = None) -> List[Dict[str, Any]]:
-    """只读 news.db 增量：ts > watermark 且 stocks 非空，映射到池内代码。
-    返回 `[{ts,title,source,stocks_codes,jev,content_snippet}]`；库缺失/忙时返回 []。
+                           lookback_min: Optional[int] = None,
+                           return_watermark: bool = False):
+    """只读 news.db 增量：ts > watermark；映射到 A 股代码（stocks 或标题前缀）。
+
+    P0 修复：不再用 `stocks IS NOT NULL` 过滤——真实库 7 日内有 704 条
+    `[600604 市北高新] ...` 形态的 A 股公告 stocks 为 NULL，会被整批丢弃；
+    同时**无条件**返回本批最大 ts，供调用方推进 watermark（否则最老 200 行
+    长期解析不出代码时 watermark 永不前进，新闻通道整天卡死）。
+    `return_watermark=True` 时返回 `(items, newest_ts|None)`。
     """
     path = news_db or NEWS_DB
     if not os.path.exists(path):
         log("新闻：news.db 缺失，跳过（%s）" % path)
-        return []
+        return ([], None) if return_watermark else []  # type: ignore[return-value]
     since = watermark_ts or ((now or now_cst()) - timedelta(
         minutes=int(lookback_min if lookback_min is not None else 30))
     ).strftime("%Y-%m-%d %H:%M:%S")
@@ -578,20 +728,23 @@ def fetch_news_incremental(watermark_ts: Optional[str], news_db: Optional[str] =
         try:
             rows = con.execute(
                 "SELECT ts, source, title, stocks, jev, content FROM news "
-                "WHERE ts > ? AND stocks IS NOT NULL AND stocks NOT IN ('', '[]') "
-                "ORDER BY ts ASC LIMIT ?", (since, int(limit))).fetchall()
+                "WHERE ts > ? ORDER BY ts ASC LIMIT ?", (since, int(limit))).fetchall()
         finally:
             con.close()
     except sqlite3.Error as exc:
         log("新闻：只读查询失败，跳过（%s）" % str(exc)[:100])
-        return []
+        return ([], None) if return_watermark else []  # type: ignore[return-value]
+    newest = str(rows[-1][0]) if rows else None
+    index = stock_name_index() if name_index is None else name_index
     out: List[Dict[str, Any]] = []
     for ts, source, title, stocks_raw, jev_raw, content in rows:
         try:
             names = json.loads(stocks_raw) if isinstance(stocks_raw, str) else stocks_raw
         except ValueError:
             names = [s for s in str(stocks_raw or "").split(",") if s.strip()]
-        codes = resolve_names(names if isinstance(names, list) else [], name_index)
+        codes = resolve_names(names if isinstance(names, list) else [], index)
+        if not codes:
+            codes = _codes_from_title(str(title or ""), index)
         if not codes:
             continue
         try:
@@ -602,6 +755,8 @@ def fetch_news_incremental(watermark_ts: Optional[str], news_db: Optional[str] =
                     "source": (source or "").strip(), "stocks_codes": codes,
                     "jev": jev if isinstance(jev, dict) else {},
                     "content_snippet": re.sub(r"\s+", " ", str(content or "")).strip()[:120]})
+    if return_watermark:
+        return out, newest
     return out
 
 # ---------------------------------------------------------------- 板块采集
@@ -828,10 +983,10 @@ class StateStore:
         return self.con.execute("SELECT 1 FROM alerts WHERE fingerprint = ? LIMIT 1",
                                 (fingerprint,)).fetchone() is not None
     def record_alert(self, sig: Signal, now: Optional[datetime] = None) -> bool:
-        """落一条触发；fingerprint 冲突返回 False（幂等）。"""
+        """落一条触发；fingerprint 冲突返回 False（幂等，仅 rowcount==1 算抢到）。"""
         cur = now or now_cst()
         try:
-            self.con.execute(
+            cursor = self.con.execute(
                 "INSERT OR IGNORE INTO alerts (ts, trade_date, code, rule, severity, "
                 "fingerprint, critical, title, detail, payload) VALUES (?,?,?,?,?,?,?,?,?,?)",
                 (sig.ts, cur.strftime("%Y-%m-%d"), sig.code, sig.rule, sig.severity,
@@ -841,7 +996,8 @@ class StateStore:
         except sqlite3.Error as exc:
             log("状态：alert 落库失败（%s）" % str(exc)[:100])
             return False
-        return True
+        # 并发双实例/重复触发：INSERT OR IGNORE 未插入时 rowcount=0，不得当作抢到
+        return cursor.rowcount == 1
     def forget_alert(self, fingerprint: str) -> bool:
         """推送失败时撤销触发记录，使下一 tick 能重新命中（避免 hub 故障漏报）。"""
         try:
@@ -910,27 +1066,37 @@ class StateStore:
             pass
 
 def _limit_pct(code: str, name: str = "") -> float:
-    """涨跌停幅度：ST 5%、科创/创业 20%、北交所 30%、主板 10%。"""
-    if "ST" in (name or "").upper():
-        return 5.0
+    """涨跌停幅度：按板块先定 10/20/30，ST 仅把主板 10% 降为 5%。
+
+    创业板/科创板 ST 仍为 20%、北交所 ST 仍为 30%（此前先判 ST=5% 会把
+    300027.SZ / 688622.SH / 920023.BJ 的涨停价算错，+5% 就误判涨停）。
+    """
     num = code.split(".")[0]
     if code.endswith(".BJ") or num.startswith(("92", "4", "8")):
-        return 30.0
-    if num.startswith(("300", "301", "688", "689")):
-        return 20.0
-    return 10.0
+        base = 30.0
+    elif num.startswith(("300", "301", "688", "689")):
+        base = 20.0
+    else:
+        base = 10.0
+    if base == 10.0 and "ST" in (name or "").upper():
+        return 5.0
+    return base
 
 def _hist_ref(hist: List[List[Any]], now: datetime,
               window_sec: int) -> Optional[Tuple[datetime, float]]:
-    """从历史里找 ≥0.65×窗口、≤2×窗口 的参考点（3min 急拉用）。"""
-    lo, hi = window_sec * 0.65, window_sec * 2.0
+    """从历史里找 ≥0.65×窗口、≤1.2×窗口 的最新参考点（3min 急拉用）。
+
+    旧实现上限 2×窗口且取最老一条 → 「3 分钟」实际是 117-360 秒、且用最旧点
+    与当前比较，既不够敏感也不符合口径；改为上限 1.2×窗口并取最新一条。
+    """
+    lo, hi = window_sec * 0.65, window_sec * 1.2
     best: Optional[Tuple[datetime, float]] = None
     for stamp, value in hist or []:
         dt = _parse_dt(stamp)
         if dt is None:
             continue
         age = (now - dt).total_seconds()
-        if lo <= age <= hi and (best is None or dt < best[0]):
+        if lo <= age <= hi and (best is None or dt > best[0]):
             best = (dt, float(value))
     return best
 
@@ -957,21 +1123,43 @@ def _sector_ranks(sectors: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
                                "top": idx <= 5, "bottom": idx > total - 5}
     return ranks
 
+def _news_scope_ok(jev: Dict[str, Any]) -> bool:
+    """新闻是否 A 股相关：scope 为 cn/a_share（缺省视为 cn），海外/港美股排除。"""
+    scope = str((jev or {}).get("scope") or "").lower()
+    return scope in ("", "cn", "a_share", "ashare", "china")
+
+def _news_keyword_hit(title: str, keywords: Iterable[str]) -> Optional[str]:
+    """标题关键词命中；ASCII 关键词加词边界（防 "FIRST"/"BEST" 命中 "ST"）。"""
+    text = str(title or "")
+    for word in keywords or []:
+        if not word:
+            continue
+        if re.fullmatch(r"[A-Za-z0-9+]+", str(word)):
+            if re.search(r"(?<![A-Za-z0-9])%s(?![A-Za-z0-9])" % re.escape(str(word)), text):
+                return str(word)
+        elif str(word) in text:
+            return str(word)
+    return None
+
 def _news_strong(item: Dict[str, Any], cfg: Dict[str, Any]) -> Tuple[bool, str]:
-    """新闻门槛：JEV high / medium+conf≥0.8+事件类型 / 标题强关键词。"""
+    """新闻门槛：JEV high / medium+conf≥0.8+事件类型 / 标题强关键词。
+
+    impact=high 也要求 A 股 scope（海外新闻撞名不得触发）；关键词命中也要求
+    scope 为 cn，避免海外稿命中中文词造成误报。
+    """
     jev = item.get("jev") or {}
     impact = str(jev.get("impact") or "").lower()
     conf = _to_float(jev.get("conf")) or 0.0
     event_type = str(jev.get("event_type") or "").lower()
-    if impact == "high":
+    scope_ok = _news_scope_ok(jev)
+    if impact == "high" and scope_ok and conf >= float(cfg.get("news_conf_min", 0.8)):
         return True, "JEV 高影响"
     if (impact == "medium" and conf >= float(cfg.get("news_conf_min", 0.8))
-            and event_type in set(cfg.get("news_event_types") or [])):
+            and event_type in set(cfg.get("news_event_types") or []) and scope_ok):
         return True, "JEV %s conf=%.2f" % (event_type, conf)
-    title = str(item.get("title") or "")
-    for word in cfg.get("news_keywords") or []:
-        if word and word in title:
-            return True, "标题命中「%s」" % word
+    hit = _news_keyword_hit(item.get("title") or "", cfg.get("news_keywords") or [])
+    if hit and scope_ok:
+        return True, "标题命中「%s」" % hit
     return False, ""
 
 # ---------------------------------------------------------------- 规则引擎
@@ -985,7 +1173,7 @@ def _sig(code: str, rule: str, severity: str, title: str, detail: str, ts: str,
 def _eval_price_rules(quote: Dict[str, Any], store: StateStore, cfg: Dict[str, Any],
                       now: datetime, ts: str, trade_date: str,
                       key_levels: Dict[str, Dict[str, float]]) -> List[Signal]:
-    """A 组：pct_cross / fast_move / vol_ratio / limit_open / key_level / stop_hit。"""
+    """A 组：pct_cross / limit_up/down / fast_move / vol_ratio / limit_open / key_level / stop_hit。"""
     out: List[Signal] = []
     code = quote.get("code") or ""
     price, pct = _to_float(quote.get("price")), _to_float(quote.get("pct"))
@@ -994,42 +1182,56 @@ def _eval_price_rules(quote: Dict[str, Any], store: StateStore, cfg: Dict[str, A
         return out  # 停牌/坏数据不出信号（fail-safe，不误报）
     limit, band = _limit_pct(code, name), float(cfg.get("limit_band_pct", 0.2))
     steps = sorted(float(s) for s in (cfg.get("pct_steps") or [3, 5, 7]))
-    # 1) pct_cross：按档位单向推进，只有推进到更高档才出信号（同档全天不重复）
+    # 1) pct_cross：按档位单向推进（涨停档由独立 limit_up 规则处理，避免被本规则冷却压掉）
     up_key = "tier_up:%s:%s" % (trade_date, code)
     dn_key = "tier_dn:%s:%s" % (trade_date, code)
-    up_tier = max([s for s in steps if pct >= s], default=0.0)
-    dn_tier = max([s for s in steps if pct <= -s], default=0.0)
-    if pct >= limit - band:
-        up_tier = limit + 1.0  # 涨停档，排在 +7% 之上
-    if pct <= -(limit - band):
-        dn_tier = limit + 1.0
+    up_tier = 0.0 if pct >= limit - band else max([s for s in steps if pct >= s], default=0.0)
+    dn_tier = 0.0 if pct <= -(limit - band) else max([s for s in steps if pct <= -s], default=0.0)
+    cross_cd = cooldown_minutes("pct_cross", cfg)
     if up_tier > (_to_float(store.get_kv(up_key)) or 0.0):
-        tag = "涨停" if up_tier > limit else "+%g%%" % up_tier
-        out.append(_sig(code, "pct_cross", "high",
-                        "⚡ %s %s 涨跌幅穿越 %s（现 %+.2f%%）" % (code, name, tag, pct),
-                        "现价 %.2f，涨幅 %+.2f%%，档位 %s" % (price, pct, tag),
-                        ts, "up:%g" % up_tier, trade_date))
-        store.set_kv(up_key, up_tier)
+        # 冷却期间不推进档位（否则被 filter 丢弃的档位会「烧掉」，见 P1-12）
+        if not store.in_cooldown(code, "pct_cross", now, cross_cd):
+            out.append(_sig(code, "pct_cross", "high",
+                            "⚡ %s %s 涨跌幅穿越 +%g%%（现 %+.2f%%）" % (code, name, up_tier, pct),
+                            "现价 %.2f，涨幅 %+.2f%%，档位 +%g%%" % (price, pct, up_tier),
+                            ts, "up:%g" % up_tier, trade_date))
+            store.set_kv(up_key, up_tier)
     if dn_tier > (_to_float(store.get_kv(dn_key)) or 0.0):
-        tag = "跌停" if dn_tier > limit else "-%g%%" % dn_tier
-        out.append(_sig(code, "pct_cross", "high",
-                        "⚡ %s %s 涨跌幅穿越 %s（现 %+.2f%%）" % (code, name, tag, pct),
-                        "现价 %.2f，跌幅 %+.2f%%，档位 %s" % (price, pct, tag),
-                        ts, "dn:%g" % dn_tier, trade_date))
-        store.set_kv(dn_key, dn_tier)
-    # 2) fast_move：3 分钟内 ±2%
+        if not store.in_cooldown(code, "pct_cross", now, cross_cd):
+            out.append(_sig(code, "pct_cross", "high",
+                            "⚡ %s %s 涨跌幅穿越 -%g%%（现 %+.2f%%）" % (code, name, dn_tier, pct),
+                            "现价 %.2f，跌幅 %+.2f%%，档位 -%g%%" % (price, pct, dn_tier),
+                            ts, "dn:%g" % dn_tier, trade_date))
+            store.set_kv(dn_key, dn_tier)
+    # 1b) 涨停/跌停：独立规则、critical（不受 pct_cross 冷却与日上限压制）
+    lim_up_key = "limit_up:%s:%s" % (trade_date, code)
+    lim_dn_key = "limit_dn:%s:%s" % (trade_date, code)
+    if pct >= limit - band and store.get_kv(lim_up_key) != "1":
+        out.append(_sig(code, "limit_up", "critical",
+                        "🚀 %s %s 涨停（%+.2f%%）" % (code, name, pct),
+                        "现价 %.2f，涨幅 %+.2f%%（涨停 %.0f%%）" % (price, pct, limit),
+                        ts, "up", trade_date, critical=True))
+        store.set_kv(lim_up_key, "1")
+    if pct <= -(limit - band) and store.get_kv(lim_dn_key) != "1":
+        out.append(_sig(code, "limit_down", "critical",
+                        "🛑 %s %s 跌停（%+.2f%%）" % (code, name, pct),
+                        "现价 %.2f，跌幅 %+.2f%%（跌停 -%.0f%%）" % (price, pct, limit),
+                        ts, "down", trade_date, critical=True))
+        store.set_kv(lim_dn_key, "1")
+    # 2) fast_move：3 分钟内 ±2%（状态按 5 分钟桶，避免「一天每方向只报一次」）
     window = int(cfg.get("fast_move_window_sec", 180))
     hist_key = "quote_hist:%s:%s" % (trade_date, code)
     ref = _hist_ref(store.get_json(hist_key, []) or [], now, window)
     if ref is not None and abs(pct - ref[1]) >= float(cfg.get("fast_move_pct", 2.0)):
         delta, direction = pct - ref[1], ("up" if pct > ref[1] else "down")
+        bucket = "%02d%02d" % (now.hour, (now.minute // 5) * 5)
         out.append(_sig(code, "fast_move", "high",
                         "⚡ %s %s 3 分钟%s %.2f%%" % (
                             code, name, "急拉" if delta > 0 else "跳水", abs(delta)),
                         "%d 秒内 %+.2f%% → %+.2f%%" % (window, ref[1], pct),
-                        ts, direction, trade_date))
+                        ts, "%s:%s" % (direction, bucket), trade_date))
     _push_hist(store, hist_key, now, pct)
-    # 3) vol_ratio：量比 ≥2.5 或 成交额/昨日同时段 ≥2.0
+    # 3) vol_ratio：量比 ≥2.5
     vol_ratio = _to_float(quote.get("vol_ratio"))
     if vol_ratio is not None and vol_ratio >= float(cfg.get("vol_ratio_threshold", 2.5)):
         out.append(_sig(code, "vol_ratio", "medium",
@@ -1037,37 +1239,36 @@ def _eval_price_rules(quote: Dict[str, Any], store: StateStore, cfg: Dict[str, A
                         "量比 %.2f ≥ 阈值 %.1f" % (
                             vol_ratio, float(cfg.get("vol_ratio_threshold", 2.5))),
                         ts, "", trade_date))
-    amt_ratio = _to_float(quote.get("amount_ratio"))
-    if amt_ratio is not None and amt_ratio >= float(cfg.get("amount_ratio_threshold", 2.0)):
-        out.append(_sig(code, "vol_ratio", "medium",
-                        "📊 %s %s 成交额放大 %.2f 倍" % (code, name, amt_ratio),
-                        "成交额/昨日同时段 %.2f ≥ %.1f" % (
-                            amt_ratio, float(cfg.get("amount_ratio_threshold", 2.0))),
-                        ts, "amount", trade_date))
-    # 4) limit_open：曾封板后开板（当日 1 次，critical）
-    sealed_key, opened_key = "sealed:%s:%s" % (trade_date, code), "opened:%s:%s" % (trade_date, code)
+    # 4) limit_open：连续 N tick 贴板确认为「封板」后，5 分钟内回落 ≥1% 才算开板
+    seal_band = float(cfg.get("limit_seal_band_pct", 0.05))
+    seal_ticks = int(cfg.get("limit_seal_ticks", 2))
+    open_window = int(cfg.get("limit_open_window_sec", 300))
     drop = float(cfg.get("limit_open_drop_pct", 1.0))
-    if pct >= limit - band:
-        store.set_kv(sealed_key, "1")
-    elif store.get_kv(sealed_key) == "1" and pct < limit - drop \
-            and store.get_kv(opened_key) != "1":
-        out.append(_sig(code, "limit_open", "high",
-                        "🚨 %s %s 涨停打开（现 %+.2f%%）" % (code, name, pct),
-                        "此前封板（涨停 %.0f%%），现回落至 %+.2f%%" % (limit, pct),
-                        ts, "up", trade_date, critical=True))
-        store.set_kv(opened_key, "1")
-        store.set_kv(sealed_key, "0")
-    sealed_dn = "sealed_dn:%s:%s" % (trade_date, code)
-    if pct <= -(limit - band):
-        store.set_kv(sealed_dn, "1")
-    elif store.get_kv(sealed_dn) == "1" and pct > -(limit - drop) \
-            and store.get_kv(opened_key) != "1":
-        out.append(_sig(code, "limit_open", "high",
-                        "🚨 %s %s 跌停打开（现 %+.2f%%）" % (code, name, pct),
-                        "此前跌停（跌停 -%.0f%%），现回升至 %+.2f%%" % (limit, pct),
-                        ts, "down", trade_date, critical=True))
-        store.set_kv(opened_key, "1")
-        store.set_kv(sealed_dn, "0")
+    sealed_key = "sealed:%s:%s" % (trade_date, code)
+    opened_key = "opened:%s:%s" % (trade_date, code)
+    for direction, key, label in (("up", sealed_key, "涨停"), ("down", sealed_key + ":dn", "跌停")):
+        near = (pct >= limit - seal_band) if direction == "up" else (pct <= -(limit - seal_band))
+        doc = store.get_json(key, {}) or {}
+        if near:
+            ticks = int(doc.get("ticks") or 0) + 1
+            doc = {"ticks": ticks, "last": ts,
+                   "sealed_at": doc.get("sealed_at") or (ts if ticks >= seal_ticks else None)}
+            store.set_json(key, doc)
+        elif doc.get("ticks"):
+            doc["ticks"] = 0
+            store.set_json(key, doc)
+        sealed_at = _parse_dt(doc.get("sealed_at"))
+        if (sealed_at is not None and store.get_kv(opened_key) != "1"
+                and (now - sealed_at).total_seconds() <= open_window):
+            opened = (pct < limit - drop) if direction == "up" else (pct > -(limit - drop))
+            if opened:
+                out.append(_sig(code, "limit_open", "high",
+                                "🚨 %s %s %s打开（现 %+.2f%%）" % (code, name, label, pct),
+                                "此前封%s（%s %.0f%%），现回落至 %+.2f%%" % (
+                                    label, label, limit, pct),
+                                ts, direction, trade_date, critical=True))
+                store.set_kv(opened_key, "1")
+                store.set_json(key, {"ticks": 0})
     # 5) key_level：MA20/MA60/前 20 日高低 ±0.5%，且当日振幅 ≥2%
     levels = key_levels.get(code) or {}
     high, low = _to_float(quote.get("high")), _to_float(quote.get("low"))
@@ -1084,10 +1285,12 @@ def _eval_price_rules(quote: Dict[str, Any], store: StateStore, cfg: Dict[str, A
                                     price, label, level,
                                     abs(price - level) / level * 100.0, amplitude),
                                 ts, key, trade_date))
-    # 6) stop_hit：止损位跌破/涨破（当日 1 次，critical，最高优先级）
-    stop = _to_float((cfg.get("stops") or {}).get(code))
+    # 6) stop_hit：止损位跌破/涨破（当日 1 次，critical；要求当日有成交，防停牌误触）
+    stops = cfg.get("stops") or {}
+    stop = _to_float(stops.get(code))
     stop_key = "stop:%s:%s" % (trade_date, code)
-    if stop and stop > 0 and store.get_kv(stop_key) != "1":
+    vol = _to_float(quote.get("vol"))
+    if stop and stop > 0 and (vol is None or vol > 0) and store.get_kv(stop_key) != "1":
         broke = (stop < (prev or price) and price <= stop) or \
                 (stop >= (prev or price) and price >= stop)
         if broke:
@@ -1099,10 +1302,19 @@ def _eval_price_rules(quote: Dict[str, Any], store: StateStore, cfg: Dict[str, A
             store.set_kv(stop_key, "1")
     return out
 
+_TITLE_STRIP_RE = re.compile(r"[\[\]【】（）()\s:：|｜,，.。!！?？\"'“”‘’*_`#-]+")
+
+def _norm_news_title(title: str) -> str:
+    """新闻标题归一：去掉来源前缀/括号/标点，用于跨源同稿去重。"""
+    text = _TITLE_STRIP_RE.sub("", str(title or ""))
+    text = re.sub(r"^(新浪财经|东方财富|证券时报|上海证券报|中国证券报|财联社|同花顺)", "", text)
+    return text[:80]
+
 def _eval_news(news: List[Dict[str, Any]], pool_codes: set, cfg: Dict[str, Any],
                ts: str, trade_date: str) -> List[Signal]:
-    """B 组：新闻命中池内个股（critical，不受冷却与日上限）。"""
+    """B 组：新闻命中池内个股；仅「高影响 + A 股 scope + conf≥阈值」为 critical。"""
     out: List[Signal] = []
+    conf_min = float(cfg.get("news_conf_min", 0.8))
     for item in news or []:
         codes = [c for c in (item.get("stocks_codes") or []) if c in pool_codes]
         if not codes:
@@ -1111,12 +1323,18 @@ def _eval_news(news: List[Dict[str, Any]], pool_codes: set, cfg: Dict[str, Any],
         if not strong:
             continue
         title = str(item.get("title") or "")[:60]
+        jev = item.get("jev") or {}
+        critical = (str(jev.get("impact") or "").lower() == "high"
+                    and _news_scope_ok(jev)
+                    and (_to_float(jev.get("conf")) or 0.0) >= conf_min)
+        title_key = _norm_news_title(item.get("title") or "")
         for code in codes:
-            state_key = hashlib.sha1(("%s|%s|%s" % (
-                code, item.get("ts"), title)).encode("utf-8")).hexdigest()[:16]
+            # 指纹按 code+归一标题（不含 ts/来源），跨源同稿只推一次
+            state_key = hashlib.sha1(("%s|%s" % (
+                code, title_key)).encode("utf-8")).hexdigest()[:16]
             sig = _sig(code, "news", "high", "📰 %s 新闻：%s" % (code, title),
                        "%s（%s）" % (title, item.get("source") or "news"),
-                       ts, state_key, trade_date, critical=True)
+                       ts, state_key, trade_date, critical=critical)
             sig.news = {"title": title, "source": item.get("source"),
                         "ts": item.get("ts"), "why": why,
                         "snippet": item.get("content_snippet")}
@@ -1128,48 +1346,69 @@ def _eval_sectors(quotes: List[Dict[str, Any]], sectors: List[Dict[str, Any]],
                   ts: str, trade_date: str) -> List[Signal]:
     """C 组：板块前 5/后 5 + 个股同向 ≥1%；或板块 3 分钟 ±1.5% 急拉/跳水。
 
-    个股→板块优先用东财快照 f127（如 600337→家居用品），缺失才回退申万名匹配；
-    板块历史只记录池内个股实际所属板块（避免每 tick 写全量 496 个板块拖慢状态库）。
+    P1 修复：同一板块按「板块」聚合只发 1 条（代表个股取涨幅最大者），
+    指纹用板块维度（rank/direction）而非个股+排名——否则同板块 N 只票
+    各发一条、且排名一变就当成新信号，一天可刷 ~8N 条并吃光全局额度。
+    个股→板块优先用东财快照 f127（如 600337→家居用品），缺失才回退申万名匹配。
     """
     out: List[Signal] = []
     if not sectors:
         return out
     top_n, total = int(cfg.get("sector_top_n", 5)), len(sectors)
-    ranks, names = _sector_ranks(sectors), [s["name"] for s in sectors]
+    ranks = _sector_ranks(sectors)
     sync, fast = float(cfg.get("sector_stock_sync_pct", 1.0)), \
         float(cfg.get("sector_fast_move_pct", 1.5))
     window = int(cfg.get("sector_fast_window_sec", 180))
-    hist_updates: Dict[str, str] = {}
+    members: Dict[str, List[Dict[str, Any]]] = {}
     for quote in quotes:
         code, pct = quote.get("code") or "", _to_float(quote.get("pct"))
         if pct is None or not _is_a_share(code):
             continue
-        sector_name = quote.get("em_industry") or sector_map_for(code, names)
+        sector_name = quote.get("em_industry") or sector_map_for(code, [s["name"] for s in sectors])
         if not sector_name or sector_name not in ranks:
             continue
+        members.setdefault(sector_name, []).append(quote)
+    hist_updates: Dict[str, str] = {}
+    for sector_name, group in members.items():
         info, rank = ranks[sector_name], ranks[sector_name]["rank"]
-        hit = (rank <= top_n and pct >= sync) or (rank > total - top_n and pct <= -sync)
-        hist_key = "sector_hist:%s" % sector_name
-        ref = _hist_ref(store.get_json(hist_key, []) or [], now, window)
-        sector_doc = {"name": sector_name, "pct": info["pct"], "rank": rank, "total": total}
-        if hit:
-            sig = _sig(code, "sector", "medium",
-                       "🧭 %s %s 板块轮动：%s %+.2f%%（行业第 %d）" % (
-                           code, quote.get("name") or code, sector_name, info["pct"], rank),
-                       "所属板块 %s 涨幅 %+.2f%%（第 %d/%d），个股 %+.2f%%" % (
-                           sector_name, info["pct"], rank, total, pct),
-                       ts, "rank:%d" % rank, trade_date)
+        rep = max(group, key=lambda q: (_to_float(q.get("pct")) or -999.0,
+                                        str(q.get("code") or "")))
+        rep_code = str(rep.get("code") or "")
+        rep_pct = _to_float(rep.get("pct")) or 0.0
+        sector_doc = {"name": sector_name, "pct": info["pct"], "rank": rank, "total": total,
+                      "codes": [str(q.get("code")) for q in group], "count": len(group)}
+        top, bottom = rank <= top_n, rank > total - top_n
+        if (top and any((_to_float(q.get("pct")) or 0.0) >= sync for q in group)) or \
+                (bottom and any((_to_float(q.get("pct")) or 0.0) <= -sync for q in group)):
+            direction = "top" if top else "bottom"
+            sig = Signal(code=rep_code, rule="sector", severity="medium",
+                         title="🧭 板块轮动：%s %+.2f%%（%s %d/%d，%d 只自选）" % (
+                             sector_name, info["pct"], "涨幅前" if top else "跌幅前",
+                             rank, total, len(group)),
+                         detail="板块 %s 涨幅 %+.2f%%（第 %d/%d）；自选 %d 只：%s" % (
+                             sector_name, info["pct"], rank, total, len(group),
+                             "，".join("%s %+.2f%%" % (q.get("code"), _to_float(q.get("pct")) or 0.0)
+                                      for q in group)),
+                         ts=ts, critical=False,
+                         fingerprint=make_fingerprint("sector:%s" % sector_name, "sector",
+                                                      direction, trade_date))
             sig.sector = sector_doc
             out.append(sig)
+        hist_key = "sector_hist:%s" % sector_name
+        ref = _hist_ref(store.get_json(hist_key, []) or [], now, window)
         if ref is not None and abs(info["pct"] - ref[1]) >= fast:
             delta = info["pct"] - ref[1]
-            sig = _sig(code, "sector", "medium",
-                       "🧭 %s %s 板块 3 分钟%s %.2f%%" % (
-                           code, quote.get("name") or code,
-                           "急拉" if delta > 0 else "跳水", abs(delta)),
-                       "%s %+.2f%% → %+.2f%%（现 %+.2f%%）" % (
-                           sector_name, ref[1], info["pct"], pct),
-                       ts, "fast:%s" % ("up" if delta > 0 else "down"), trade_date)
+            bucket = "%02d%02d" % (now.hour, (now.minute // 5) * 5)
+            sig = Signal(code=rep_code, rule="sector", severity="medium",
+                         title="🧭 板块 3 分钟%s %.2f%%：%s" % (
+                             "急拉" if delta > 0 else "跳水", abs(delta), sector_name),
+                         detail="%s %+.2f%% → %+.2f%%（自选 %d 只，代表 %s %+.2f%%）" % (
+                             sector_name, ref[1], info["pct"], len(group), rep_code, rep_pct),
+                         ts=ts, critical=False,
+                         fingerprint=make_fingerprint("sector:%s" % sector_name, "sector",
+                                                      "fast:%s:%s" % (
+                                                          "up" if delta > 0 else "down", bucket),
+                                                      trade_date))
             sig.sector = sector_doc
             out.append(sig)
         if hist_key not in hist_updates:
@@ -1253,7 +1492,8 @@ def to_push_payload(signals: List[Signal],
             "fingerprint": sig.fingerprint,
             # 只放纯 URL 按钮：hub 的 card_actions.check_card 会跳过 open_url，
             # callback 按钮需先注册动作（后续动作中心落地后再加「加池/静音」）。
-            "url": "%s/sa?code=%s" % (base, sig.code),
+            # /sa 页面只认 ?q=（见 api_backtest_pages_b2.py:_sa_page），用 ?code= 会丢参数。
+            "url": "%s/sa?q=%s" % (base, sig.code),
             "footer": "研究提示，不构成投资建议"})
     return out
 
@@ -1282,28 +1522,47 @@ def resolve_receiver(name: str = "个人",
     return rows[0] if rows else None
 
 def build_feishu_card(p: Dict[str, Any]) -> Dict[str, Any]:
-    """payload → 飞书 interactive 卡（A 股红涨绿跌；纯 URL 按钮，无回调动作）。"""
+    """payload → 飞书 interactive 卡（A 股红涨绿跌；纯 URL 按钮，无回调动作）。
+
+    修复：①成交额按元→亿/万格式化（原先 amount 是元却标「万」，放大约 1e4 倍）；
+    ②新闻/板块是 dict，不再直接 %s 插入 lark_md（否则卡片出现 {'title': ...}）；
+    ③critical 强制红头并补「时间」行；④按钮 URL 用 /sa?q=。
+    """
     try:
         pct = float(p.get("pct") or 0.0)
     except (TypeError, ValueError):
         pct = 0.0
-    color = "red" if pct >= 0 else "green"
+    critical = bool(p.get("critical"))
+    color = "red" if (critical or pct >= 0) else "green"
     name = p.get("name") or p.get("code") or ""
     title = "盘中异动 · %s（%s）" % (name, p.get("code") or "")
-    price_line = "**现价** %s　**涨跌** %+.2f%%　**成交额** %s 万　**量比** %s" % (
-        _fmt_num(p.get("price")), pct, _fmt_num(p.get("amount")),
+    price_line = "**现价** %s　**涨跌** %+.2f%%　**成交额** %s　**量比** %s" % (
+        _fmt_num(p.get("price")), pct, _fmt_amount(p.get("amount")),
         _fmt_num(p.get("vol_ratio")))
     elements: List[Dict[str, Any]] = [
+        {"tag": "div", "text": {"tag": "lark_md",
+                                "content": "**时间** %s" % _md_clean(p.get("ts") or "", 32)}},
         {"tag": "div", "text": {"tag": "lark_md", "content": price_line}},
         {"tag": "div", "text": {"tag": "lark_md",
-                                "content": "**触发**：%s" % (p.get("reason") or p.get("title") or "")}},
+                                "content": "**触发**：%s" % _md_clean(
+                                    p.get("reason") or p.get("title") or "", 200)}},
     ]
-    if p.get("news"):
+    news = p.get("news")
+    if isinstance(news, dict) and news.get("title"):
+        lines = [_md_clean(news.get("title"), 120)]
+        if news.get("source"):
+            lines.append("（%s）" % _md_clean(news.get("source"), 30))
+        if news.get("snippet"):
+            lines.append("：%s" % _md_clean(news.get("snippet"), 120))
         elements.append({"tag": "div", "text": {"tag": "lark_md",
-                                                "content": "**相关新闻**：%s" % p["news"]}})
-    if p.get("sector"):
-        elements.append({"tag": "div", "text": {"tag": "lark_md",
-                                                "content": "**板块**：%s" % p["sector"]}})
+                                                "content": "**相关新闻**：%s" % "".join(lines)}})
+    sector = p.get("sector")
+    if isinstance(sector, dict) and sector.get("name"):
+        elements.append({"tag": "div", "text": {"tag": "lark_md", "content":
+            "**板块**：%s %+.2f%%（第 %s/%s，自选 %s 只同板块）" % (
+                _md_clean(sector.get("name"), 40), float(sector.get("pct") or 0.0),
+                sector.get("rank") or "-", sector.get("total") or "-",
+                sector.get("count") or "-")}})
     elements.append({"tag": "hr"})
     elements.append({"tag": "div", "text": {"tag": "lark_md",
                                             "content": p.get("footer") or "研究提示，不构成投资建议"}})
@@ -1409,6 +1668,15 @@ def _sectors_cached(store: "StateStore", now: datetime,
         return fresh
     return cached
 
+def _write_heartbeat(**fields: Any) -> None:
+    """心跳：供计划任务守护读取（超 3 分钟未更新即拉起）；轮末用当前时间写。"""
+    doc = {"ts": now_cst().strftime("%Y-%m-%d %H:%M:%S")}
+    doc.update(fields)
+    try:
+        _write_json(HEARTBEAT_PATH, doc)
+    except OSError as exc:
+        log("心跳：写入失败（%s）" % str(exc)[:100])
+
 def run_once(dry_run: bool = False, cfg: Optional[Dict[str, Any]] = None,
              now: Optional[datetime] = None,
              fetch: bool = True) -> Dict[str, Any]:
@@ -1416,11 +1684,16 @@ def run_once(dry_run: bool = False, cfg: Optional[Dict[str, Any]] = None,
     conf = cfg or load_config()
     if not conf.get("enabled", True):
         log("引擎：配置 enabled=false，跳过本轮")
+        if not dry_run:
+            _write_heartbeat(pool=0, quotes=0, news=0, sectors=0, raw=0,
+                             accepted=0, pushed=0, push_enabled=False, enabled=False)
         return {"pool": [], "signals": [], "payload": []}
     cur = now or now_cst()
     conf = dict(conf)
-    conf["stops"] = dict(load_subscriptions().get("stops") or {},
-                         **(conf.get("stops") or {}))
+    # 订阅 stops 与配置 stops 合并后统一归一化代码（裸 600337 → 600337.SH）
+    merged_stops = dict(load_subscriptions().get("stops") or {},
+                        **(conf.get("stops") or {}))
+    conf["stops"] = {normalize_code(k): v for k, v in merged_stops.items() if k}
     pool = build_pool(write=not dry_run, now=cur)
     log("池：%d 只 %s" % (len(pool), ",".join(pool) if pool else "(空)"))
     if not pool:
@@ -1429,16 +1702,31 @@ def run_once(dry_run: bool = False, cfg: Optional[Dict[str, Any]] = None,
     quotes: List[Dict[str, Any]] = []
     news: List[Dict[str, Any]] = []
     sectors: List[Dict[str, Any]] = []
+    collect_deadline = max(5.0, float(conf.get("max_collect_sec", 25)))
     if fetch:
-        quotes = enrich_quotes(fetch_quotes(pool), int(conf.get("em_enrich_limit", 12)))
+        quotes = enrich_quotes(fetch_quotes(pool), int(conf.get("em_enrich_limit", 40)),
+                               deadline_sec=collect_deadline)
+        # P0-2：只保留「今日、且与 now 相差 ≤ quote_max_age_sec」的行情，
+        # 否则非交易时段/停牌旧价会拿昨收算涨跌幅，直接造成误报。
+        before = len(quotes)
+        quotes = filter_fresh_quotes(quotes, cur,
+                                     max_age_sec=int(conf.get("quote_max_age_sec", 120)))
+        if len(quotes) != before:
+            log("行情：剔除过期/非今日报价 %d 只（保留 %d）" % (before - len(quotes), len(quotes)))
         log("行情：%d/%d 只解析成功%s" % (
             len(quotes), len(pool), "" if not quotes else "；" + "，".join(
                 "%s %s %s%%" % (q["code"], _fmt_num(q.get("price")), _fmt_num(q.get("pct")))
                 for q in quotes[:5])))
         # 东财行业板块名（f127）：当日首次拉取后缓存，供「板块轮动」规则精确映射
-        quotes = ensure_em_industries(quotes, store)
-        news = fetch_news_incremental(store.get_kv("news_watermark"), limit=200, now=cur,
-                                      lookback_min=int(conf.get("news_lookback_min", 30)))
+        quotes = ensure_em_industries(quotes, store, deadline_sec=collect_deadline)
+        # P0-1：无论本批是否解析出个股代码，都把 watermark 推进到本批最新 ts，
+        # 否则「连续不可解析行」会把 watermark 永久卡死、新闻通道整天漏报。
+        news, newest_ts = fetch_news_incremental(
+            store.get_kv("news_watermark"), limit=200, now=cur,
+            lookback_min=int(conf.get("news_lookback_min", 30)), return_watermark=True)
+        old_wm = str(store.get_kv("news_watermark") or "")
+        if newest_ts and str(newest_ts) > old_wm:
+            store.set_kv("news_watermark", str(newest_ts))
         log("新闻：增量 %d 条，池内命中 %d 条" % (
             len(news), len([n for n in news if set(n["stocks_codes"]) & set(pool)])))
         sectors = _sectors_cached(store, cur, int(conf.get("sector_refresh_sec", 180)))
@@ -1449,10 +1737,6 @@ def run_once(dry_run: bool = False, cfg: Optional[Dict[str, Any]] = None,
     accepted = filter_signals(raw, store, cfg=conf, now=cur)
     payload = to_push_payload(accepted, cfg=conf)
     log("规则：原始 %d 条 → 去重/冷却/限流后 %d 条" % (len(raw), len(accepted)))
-    if news:
-        newest = max(n["ts"] for n in news)
-        if newest and newest > (store.get_kv("news_watermark") or ""):
-            store.set_kv("news_watermark", newest)
     push_results: List[Dict[str, Any]] = []
     if not dry_run:
         kind = (conf.get("push") or {}).get("kind", "watch:realtime")
@@ -1471,27 +1755,59 @@ def run_once(dry_run: bool = False, cfg: Optional[Dict[str, Any]] = None,
                 store.forget_alert(sig.fingerprint)
     store.close()
     if not dry_run:
-        # 心跳：供计划任务守护读取（3 分钟未更新即重启；含本轮计数便于排障）
-        _write_json(HEARTBEAT_PATH, {
-            "ts": cur.strftime("%Y-%m-%d %H:%M:%S"),
-            "pool": len(pool), "quotes": len(quotes), "news": len(news),
-            "sectors": len(sectors), "raw": len(raw), "accepted": len(accepted),
-            "pushed": len([r for r in push_results if r.get("ok")]),
-            "push_enabled": bool((conf.get("push") or {}).get("enabled")),
-        })
+        _write_heartbeat(pool=len(pool), quotes=len(quotes), news=len(news),
+                         sectors=len(sectors), raw=len(raw), accepted=len(accepted),
+                         pushed=len([r for r in push_results if r.get("ok")]),
+                         push_enabled=bool((conf.get("push") or {}).get("enabled")))
     if payload:
         print(json.dumps(payload, ensure_ascii=False, indent=1, default=str), flush=True)
     return {"pool": pool, "quotes": quotes, "news": news, "sectors": sectors,
             "signals": raw, "accepted": accepted, "payload": payload,
             "push": push_results}
 
+_INSTANCE_LOCK_PATH = os.path.join(STATE_DIR, "engine.lock")
+
+def acquire_instance_lock(path: Optional[str] = None):
+    """单实例锁：常驻循环只允许一个进程（防止计划任务与手动 --loop 双跑重复推送）。
+
+    返回文件句柄（需保持引用，进程退出自动释放）或 None（已被占用）。
+    """
+    lock_path = path or _INSTANCE_LOCK_PATH
+    try:
+        os.makedirs(os.path.dirname(lock_path), exist_ok=True)
+    except OSError:
+        pass
+    handle = open(lock_path, "a+", encoding="utf-8")
+    try:
+        if os.name == "nt":
+            import msvcrt
+            handle.seek(0)
+            msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+            handle.seek(0)
+            handle.truncate()
+            handle.write(str(os.getpid()))
+            handle.flush()
+        else:
+            import fcntl
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            handle.seek(0)
+            handle.truncate()
+            handle.write(str(os.getpid()))
+            handle.flush()
+        return handle
+    except OSError:
+        handle.close()
+        return None
+
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(
         prog="python -m analysis.intraday_watch",
-        description="盘中实时盯盘引擎 W1/W2（研究提示，不构成投资建议）")
+        description="盘中实时盯盘引擎 W1–W3（研究提示，不构成投资建议）")
     parser.add_argument("--once", action="store_true", help="跑一轮并打印拟推送 payload")
-    parser.add_argument("--loop", action="store_true", help="常驻（仅交易时段执行；W4 才启用）")
+    parser.add_argument("--loop", action="store_true", help="常驻（仅交易时段执行；W4 启用）")
     parser.add_argument("--dry-run", action="store_true", help="不写 watchtower.db，只打印")
+    parser.add_argument("--force", action="store_true",
+                        help="非交易时段也强制跑一轮（强制转 dry-run，防误报/误推）")
     parser.add_argument("--print-pool", action="store_true", help="打印盯盘池并退出")
     parser.add_argument("--tick", type=int, default=60, help="轮询间隔秒（默认 60）")
     parser.add_argument("--stop-at", default=None, metavar="HH:MM",
@@ -1499,7 +1815,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--config", default=None, help="配置文件路径（默认 analysis_work/...json）")
     parser.add_argument("--no-fetch", action="store_true", help="跳过网络采集（自检/调试）")
     parser.add_argument("--push", action="store_true",
-                        help="本轮触发发送到飞书（需 L2 批准；强制 push.enabled）")
+                        help="本轮触发发送到飞书（需 WATCH_PUSH_APPROVED=1；强制 push.enabled）")
     parser.add_argument("--push-test", action="store_true",
                         help="发送 1 张测试卡（需 WATCH_PUSH_APPROVED=1 人工批准）")
     args = parser.parse_args(argv)
@@ -1509,6 +1825,13 @@ def main(argv: Optional[List[str]] = None) -> int:
         print(json.dumps(res, ensure_ascii=False, indent=1), flush=True)
         return 0 if res.get("ok") else 2
     if args.push:
+        # P1-15：真发必须同时满足「代码开关 + 人工批准环境变量」，避免误操作把
+        # 非交易时段的旧行情推上飞书。
+        if (os.environ.get("WATCH_PUSH_APPROVED") or "").strip() != "1":
+            print(json.dumps({"ok": False, "error":
+                              "WATCH_PUSH_APPROVED!=1：--push 真发需人工批准（L2）"},
+                             ensure_ascii=False), flush=True)
+            return 2
         cfg = config_with_push_enabled(cfg)
         log("推送：--push 已显式启用（kind=%s）" %
             ((cfg.get("push") or {}).get("kind") or "watch:realtime"))
@@ -1520,12 +1843,17 @@ def main(argv: Optional[List[str]] = None) -> int:
         if not (args.once or args.loop):
             return 0
     if args.loop:
+        lock = acquire_instance_lock()
+        if lock is None:
+            log("引擎：已有实例在运行（engine.lock 被占用），本次退出")
+            return 3
         stop_at = _parse_hhmm(args.stop_at, dtime(15, 10)) if args.stop_at else None
         log("引擎：进入常驻循环 tick=%ds（交易时段 09:25–11:30 / 13:00–15:00%s）" %
             (args.tick, ("，%s 收工" % stop_at.strftime("%H:%M")) if stop_at else ""))
         while True:
             if stop_at and now_cst().time() >= stop_at:
                 log("引擎：已到收工时间 %s，退出循环" % stop_at.strftime("%H:%M"))
+                lock.close()
                 return 0
             try:
                 if market_open(cfg=cfg):
@@ -1534,10 +1862,19 @@ def main(argv: Optional[List[str]] = None) -> int:
                     log("引擎：非交易时段，休眠 %ds" % max(5, args.tick))
             except KeyboardInterrupt:
                 log("引擎：收到中断，退出")
+                lock.close()
                 return 0
             except Exception as exc:  # noqa: BLE001 - 常驻循环必须自愈
                 log("引擎：本轮异常（%s）" % str(exc)[:200])
             time.sleep(max(5, args.tick))
+    # P0-2：--once 也必须在交易时段内（节假日/收盘后跑会拿昨收算涨跌幅 → 误报）。
+    if not market_open(cfg=cfg):
+        if not args.force:
+            log("引擎：非交易时段（含节假日），--once 默认不执行；如需调试请加 --force")
+            return 0
+        log("引擎：非交易时段，--force 强制跑一轮（转为 dry-run，不写状态/不推送）")
+        run_once(dry_run=True, cfg=cfg, fetch=not args.no_fetch)
+        return 0
     run_once(dry_run=args.dry_run, cfg=cfg, fetch=not args.no_fetch)
     return 0
 
