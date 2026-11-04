@@ -41,7 +41,9 @@ S02_PICK_LIMIT = 30
 # ---------------------------------------------------------------------------
 def latest_date() -> str:
     """最新交易日：从 daily/d_YYYYMMDD.parquet 探测。"""
-    return scr.detect_latest_trade_date()
+    # 显式传入模块变量，保证测试 monkeypatch scr.DAILY_DIR 生效；
+    # detect_latest_trade_date 的默认参数在 import 时已绑定，无法被 patch。
+    return scr.detect_latest_trade_date(scr.DAILY_DIR)
 
 
 def _load_selection(date: str) -> dict:
