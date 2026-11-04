@@ -341,8 +341,8 @@ def _post_screen_run(handler, body):
         spec = dsl
     try:
         v = sc.validate(spec)
-    except Exception as e:  # noqa: BLE001
-        return _screen_error(handler, 500, "DSL 校验失败: " + str(e)[:120])
+    except Exception as e:  # noqa: BLE001 —— 校验异常按非法 DSL 处理（400，与门户同源代理一致）
+        return _screen_error(handler, 400, "DSL 校验失败: " + str(e)[:120])
     if not isinstance(v, dict) or not v.get("ok"):
         return _json(handler, {
             "ok": False, "error": "DSL 校验失败",
@@ -460,7 +460,11 @@ def handle_get(handler, path, qs):
         code = (q.get("code") or "").strip().upper()
         if code and not CODE_RE.match(code):
             return _json(handler, {"ok": False, "error": "非法代码"}, 400)
-        limit = max(1, min(int(q.get("limit", 30) or 30), 200))
+        try:
+            limit = int(q.get("limit", 30) or 30)
+        except (TypeError, ValueError):
+            return _json(handler, {"ok": False, "error": "非法 limit（需整数）"}, 400)
+        limit = max(1, min(limit, 200))
         status = q.get("status", "pending")
         if status not in ("all", "pending", "approved", "rejected"):
             status = "all"

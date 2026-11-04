@@ -333,6 +333,27 @@ class TestScreenApi(unittest.TestCase):
         self.assertEqual(h.status, 503)
         self.assertIn("未就绪", h.obj["error"])
 
+    def test_screen_run_validate_exception_400(self):
+        class _Boom:
+            @staticmethod
+            def validate(spec):
+                raise ValueError("unexpected spec shape")
+
+            @staticmethod
+            def run(spec):
+                raise AssertionError("validate 抛错后不得执行 run")
+
+        mod._load_screener = lambda: _Boom
+        h = self._post("/screen/run", {"dsl": {"universe": "WATCHLIST", "filters": []}})
+        self.assertEqual(h.status, 400)
+        self.assertIn("DSL 校验失败", h.obj["error"])
+        self.assertIn("unexpected spec shape", h.obj["error"])
+
+    def test_events_bad_limit_400(self):
+        h = self._get("/events", "limit=abc")
+        self.assertEqual(h.status, 400)
+        self.assertIn("非法 limit", h.obj["error"])
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
