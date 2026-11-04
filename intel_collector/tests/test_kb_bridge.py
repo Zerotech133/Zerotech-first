@@ -108,6 +108,32 @@ class TestKbBridgeYt:
         r3 = b.collect_source("youtube_corpus", NOW)
         assert r3["n"] == 2  # 只读增量
 
+    def test_cursor_semantics_truncation_and_resume(self, tmp_path):
+        """审计回归（2026-11-04 游标 bug 钉死）：
+        ① max_rows 截断时游标=已消费行数（不越界）；
+        ② 二次采集从断点续读不漏不重；
+        ③ 旧行为(offset+全文件行数)会把 offset=3 时 5 行文件推到 8 —— 现在必须等于 5。
+        """
+        reg = _make_reg(tmp_path)
+        store = ObservationStore(str(tmp_path / "obs.db"))
+        kb, norm = _make_kb(tmp_path)
+        lines = [json.dumps(_v(i)) for i in range(5)]
+        (norm / "videos.jsonl").write_text("\n".join(lines), encoding="utf-8")
+        b = KBBridge(reg, store, kb_root=kb, cursor_dir=tmp_path / "cursors")
+        b._save_cursor("videos", {"offset": 3})  # 预置游标：跳过前3行
+        rows, new_off, _ = b._read_increment(norm / "videos.jsonl", "videos", max_rows=100)
+        assert len(rows) == 2 and rows[0]["video_id"] == "v3"
+        assert new_off == 5, f"游标应=文件行数5, 实际{new_off}（旧行为bug会=8）"
+        # 截断场景：max_rows=1 只读1行，游标停在断点
+        b._save_cursor("videos", {"offset": 0})
+        rows2, off2, _ = b._read_increment(norm / "videos.jsonl", "videos", max_rows=1)
+        assert len(rows2) == 1 and off2 == 1
+        # 断点续读：下轮从1读到4
+        rows3, off3, _ = b._read_increment(norm / "videos.jsonl", "videos", max_rows=100)
+        b._save_cursor("videos", {"offset": off2})
+        rows3, off3, _ = b._read_increment(norm / "videos.jsonl", "videos", max_rows=100)
+        assert len(rows3) == 4 and off3 == 5
+
     def test_readonly_no_writeback(self, tmp_path):
         """只读性质：桥运行前后知识库文件字节不变。"""
         reg = _make_reg(tmp_path)

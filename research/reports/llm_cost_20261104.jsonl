@@ -1,0 +1,1 @@
+{"ts": "2026-11-04T13:51:52+08:00", "provider": "bailian_v4d", "model": "qwen2.5-14b-instruct-a57a3521e4e0", "tier": 1, "prompt_tokens": 17, "completion_tokens": 48, "total_tokens": 65, "cost_cny": 0.000322, "purpose": "smoke"}

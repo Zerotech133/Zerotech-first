@@ -1,0 +1,163 @@
+{
+  "schema": "hq/academy_team_onboard/v1",
+  "effective_date": "2026-11-04",
+  "team": "academy",
+  "note": "司马徽研究院 8 席入职台账。org.json 正式 7 席 + STRAT2（team_academy 8 席，org 未入册，标 team_only）；HR 档案为姓名/职责真源，本台账用于实际岗位与接口对齐。",
+  "members": [
+    {
+      "agent_id": "ACAD1",
+      "name": "司马徽",
+      "actual_position": "研究院院长（太学·水镜）",
+      "seat": "研究院·院长",
+      "department": "academy",
+      "reports_to": "A0",
+      "duties": [
+        "审题",
+        "立项",
+        "组织评审",
+        "跨部门研究协调",
+        "成果裁决"
+      ],
+      "llm_binding": "glm/glm-5.3",
+      "role_profile": "academy_director",
+      "org_profile": true,
+      "status": "active",
+      "onboarded_at": "2026-10-17"
+    },
+    {
+      "agent_id": "STRAT1",
+      "name": "徐庶",
+      "actual_position": "策略研究员",
+      "seat": "研究院·策略研究",
+      "department": "academy",
+      "reports_to": "ACAD1",
+      "duties": [
+        "可证伪策略假设",
+        "LCS-1 图形推演",
+        "策略研究台账",
+        "移交 BACK1 回测"
+      ],
+      "llm_binding": "glm/glm-5.3",
+      "role_profile": "strategy_researcher",
+      "org_profile": true,
+      "status": "active",
+      "onboarded_at": "2026-10-17"
+    },
+    {
+      "agent_id": "BACK1",
+      "name": "王粲",
+      "actual_position": "量化回测研究员",
+      "seat": "研究院·回测验证",
+      "department": "academy",
+      "reports_to": "ACAD1",
+      "duties": [
+        "冻结口径回测",
+        "样本外检验",
+        "成本/滑点压力测试",
+        "可追溯证据"
+      ],
+      "llm_binding": "glm/glm-5.3",
+      "role_profile": "backtest_researcher",
+      "org_profile": true,
+      "status": "active",
+      "onboarded_at": "2026-10-17"
+    },
+    {
+      "agent_id": "COMM1",
+      "name": "马良",
+      "actual_position": "商业化研究员",
+      "seat": "研究院·商业化研究",
+      "department": "academy",
+      "reports_to": "ACAD1",
+      "duties": [
+        "客户画像",
+        "交付边界",
+        "成本收益",
+        "试点方案"
+      ],
+      "llm_binding": "ollama/qwen3.5:9b",
+      "role_profile": "commercialization_researcher",
+      "org_profile": true,
+      "status": "active",
+      "onboarded_at": "2026-10-17"
+    },
+    {
+      "agent_id": "INTEL1",
+      "name": "郭嘉",
+      "actual_position": "竞争情报研究员",
+      "seat": "研究院·竞争情报",
+      "department": "academy",
+      "reports_to": "ACAD1",
+      "duties": [
+        "行业对标",
+        "开源社区跟踪",
+        "竞品拆解",
+        "证据分级"
+      ],
+      "llm_binding": "ollama/qwen3.5:9b",
+      "role_profile": "competitive_intelligence_researcher",
+      "org_profile": true,
+      "status": "active",
+      "onboarded_at": "2026-10-17"
+    },
+    {
+      "agent_id": "AI1",
+      "name": "诸葛亮",
+      "actual_position": "军师（反向军师/方法论）",
+      "seat": "指挥部·军师（研究院 AI 方法组）",
+      "department": "academy",
+      "reports_to": "ACAD1",
+      "command_reports_to": "A0",
+      "duties": [
+        "反向质询",
+        "pre-mortem",
+        "方法论研究",
+        "Prompt/路由升级"
+      ],
+      "llm_binding": "openai/gpt-6.0",
+      "role_profile": "ai_methodology_researcher",
+      "org_profile": true,
+      "status": "active",
+      "onboarded_at": "2026-10-17"
+    },
+    {
+      "agent_id": "PROD1",
+      "name": "黄月英",
+      "actual_position": "策略产品经理",
+      "seat": "研究院·策略产品化",
+      "department": "academy",
+      "reports_to": "ACAD1",
+      "duties": [
+        "研究成果产品化",
+        "需求定义",
+        "验收标准",
+        "试点与交付"
+      ],
+      "llm_binding": "glm/glm-5.3-flash",
+      "role_profile": "strategy_product_manager",
+      "org_profile": true,
+      "status": "active",
+      "onboarded_at": "2026-10-17"
+    },
+    {
+      "agent_id": "STRAT2",
+      "name": "庞统·策略",
+      "actual_position": "市场策略研究员（US/CRYPTO）",
+      "seat": "研究院·市场策略（US/CRYPTO）",
+      "department": "academy",
+      "reports_to": "ACAD1",
+      "duties": [
+        "v1-us-strat-6/7",
+        "v1-crypto-strat-9/11",
+        "日报/版本/评审材料",
+        "不自己研究自己验证"
+      ],
+      "llm_binding": "ollama/qwen3.5:9b",
+      "role_profile": "strategy_researcher",
+      "org_profile": false,
+      "status": "active_team_only",
+      "onboarded_at": "2026-11-01",
+      "note": "team_academy 正式第 8 席；org.json 仍 7 席（已知缺口），本台账不硬改 org formal_agents。"
+    }
+  ]
+}

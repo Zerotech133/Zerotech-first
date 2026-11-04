@@ -21,7 +21,9 @@ DEPT_LEADS = {"D1", "ARCH1", "DATA1", "PM1", "QA1", "DEV3",
 # UI 花名册中的观察/专业席：可上桌，不等于常任指挥席
 OBSERVER_SEATS = {"R2", "OPT1", "QS1", "ST1", "R1", "INTEL1", "JEV",
                   "HERMES_UI", "DEV1", "DEV2"}
-SEATS = COMMAND_SEATS | DEPT_LEADS | OBSERVER_SEATS
+# 司马徽研究院团队（2026-11-04 入职）：可参会/可被派单，但不是部门负责人池
+ACADEMY_TEAM = {"STRAT1", "BACK1", "COMM1", "PROD1", "STRAT2"}
+SEATS = COMMAND_SEATS | DEPT_LEADS | OBSERVER_SEATS | ACADEMY_TEAM
 MAX_ATTENDEES = 6
 KIND_MAP = {"work": "task_request", "trade": "task_request", "study": "question"}
 MID_RE = re.compile(r"hq-\d{8}-\d{6}")

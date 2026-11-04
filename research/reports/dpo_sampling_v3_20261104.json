@@ -1,0 +1,13 @@
+{
+ "generated_at": "2026-11-04T11:58:11+08:00",
+ "model": "qwen2.5-14b-instruct-a57a3521e4e0",
+ "k": 4,
+ "questions": 120,
+ "pairs": 74,
+ "skipped": {
+  "rejected_not_below_threshold": 4,
+  "gap_too_small": 36,
+  "chosen_not_eligible": 6
+ },
+ "elapsed_s": 710.2
+}

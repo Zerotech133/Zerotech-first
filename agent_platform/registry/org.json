@@ -925,7 +925,7 @@
           "agent_id": "DEV2",
           "role_profile": "model_trainer",
           "charter_detail": "模型训练/评估/版本登记 domain（版本化保护律：新版本登记 domain/model_registry）",
-          "llm_binding": "ollama/qwen3.6:35b-a3b",
+          "llm_binding": "glm/glm-5.3",
           "tools": [
             "ollama",
             "events"
@@ -973,7 +973,7 @@
               "danger": "deny"
             }
           },
-          "binding_note": "auto_assign 10-18：按分工定案自动适配（原 ollama/qwen3.5:9b）",
+          "binding_note": "Phase0 model_policy.yaml 20261104T061516",
           "matrix_assignments": [
             {
               "agent_id": "DEV2",
@@ -996,13 +996,18 @@
           "role_title": "AI/模型工程师",
           "group": "G1",
           "org_role": "G1组员",
-          "report_to": "DEV1"
+          "report_to": "DEV1",
+          "llm_fallback": [
+            "deepseek/deepseek-v4-pro",
+            "ollama/qwen3.5:9b"
+          ],
+          "binding_source": "registry/model_policy.yaml"
         },
         {
           "agent_id": "DEV3",
           "role_profile": "strategy_engineer",
           "charter_detail": "写策略：strategies.json 注册制新增→回测判据前置自检→影子账挂载申请。纪律=回测判据不过就终止留档（缠论联立/快枪手判例入册），禁止跳过影子期直上模拟仓",
-          "llm_binding": "glm/glm-5.3",
+          "llm_binding": "deepseek/deepseek-v4-pro",
           "tools": [
             "devtask",
             "events"
@@ -1085,15 +1090,17 @@
             "ollama/qwen3.5:9b"
           ],
           "llm_fallback": [
-            "deepseek/deepseek-flash",
+            "glm/glm-5.3",
             "ollama/qwen3.5:9b"
-          ]
+          ],
+          "binding_note": "Phase0 model_policy.yaml 20261104T061516",
+          "binding_source": "registry/model_policy.yaml"
         },
         {
           "agent_id": "DEV4",
           "role_profile": "backtest_engineer",
           "charter_detail": "回测执行/判据复核：跑 BacktestEngine→按冻结判据出 Go/No-Go 结论→结果登记 domain/backtest_registry。纪律=判据冻结期内不改判据，复核意见写 agent/DEV4/decision 供 DEV3 修订",
-          "llm_binding": "ollama/qwen3.5:9b",
+          "llm_binding": "deepseek/deepseek-flash",
           "tools": [
             "devtask",
             "events"
@@ -1164,7 +1171,13 @@
           "role_title": "回测/风控工程师",
           "group": "G2",
           "org_role": "G2组员",
-          "report_to": "DEV5"
+          "report_to": "DEV5",
+          "llm_fallback": [
+            "glm/glm-5.3",
+            "ollama/qwen3.5:9b"
+          ],
+          "binding_note": "Phase0 model_policy.yaml 20261104T061516",
+          "binding_source": "registry/model_policy.yaml"
         },
         {
           "agent_id": "DEV5",
@@ -1749,7 +1762,9 @@
           "command_seat": "数据智能部·兰台令",
           "reports_to": "A0",
           "status": "active",
-          "onboarded_at": "2026-10-24"
+          "onboarded_at": "2026-10-24",
+          "binding_note": "Phase0 model_policy.yaml 20261104T061516",
+          "binding_source": "registry/model_policy.yaml"
         },
         {
           "agent_id": "FACTOR1",
@@ -2989,7 +3004,7 @@
           "analysis_type": "academy_intake",
           "charter_detail": "研究院总负责人：审题、立项、组织评审、协调投研/数据/研发/产品/市场/法务，向田丰提交研究院日报与周报",
           "llm_binding": "glm/glm-5.3",
-          "binding_note": "由 org_enroll 补档（工单 WO-ORG-220 / 放行人 老田）",
+          "binding_note": "Phase0 model_policy.yaml 20261104T061516",
           "tools": [
             "events",
             "datamart_read",
@@ -3036,22 +3051,30 @@
             ]
           },
           "llm_fallback": [
-            "deepseek/deepseek-flash",
+            "deepseek/deepseek-v4-pro",
             "ollama/qwen3.5:9b"
           ],
           "reports_to": "A0",
           "parent_node_keys": [],
           "llm_fallbacks": [
             "ollama/qwen3.5:9b"
-          ]
+          ],
+          "binding_source": "registry/model_policy.yaml",
+          "name": "司马徽",
+          "cn_name": "司马徽",
+          "actual_position": "研究院院长（太学·水镜）",
+          "command_seat": "研究院·院长",
+          "status": "active",
+          "onboarded_at": "2026-10-17",
+          "office_title": "研究院院长（太学·水镜）"
         },
         {
           "agent_id": "STRAT1",
           "role_profile": "strategy_researcher",
           "analysis_type": "strategy_research",
           "charter_detail": "把投研部的市场问题转成可验证策略假设，维护策略研究台账，交由 BACK1 做回测",
-          "llm_binding": "ollama/qwen3.5:9b",
-          "binding_note": "由 org_enroll 补档（工单 WO-ORG-220 / 放行人 老田）",
+          "llm_binding": "glm/glm-5.3",
+          "binding_note": "Phase0 model_policy.yaml 20261104T061516",
           "tools": [
             "events",
             "datamart_read",
@@ -3072,15 +3095,27 @@
           "reports_to": "ACAD1",
           "parent_node_keys": [
             "acad1_core"
-          ]
+          ],
+          "llm_fallback": [
+            "deepseek/deepseek-v4-pro",
+            "ollama/qwen3.5:9b"
+          ],
+          "binding_source": "registry/model_policy.yaml",
+          "name": "徐庶",
+          "cn_name": "徐庶",
+          "actual_position": "策略研究员",
+          "command_seat": "研究院·策略研究",
+          "status": "active",
+          "onboarded_at": "2026-10-17",
+          "office_title": "策略研究员"
         },
         {
           "agent_id": "BACK1",
           "role_profile": "backtest_researcher",
           "analysis_type": "backtest_validation",
           "charter_detail": "接收策略假设，按冻结口径执行回测、样本外检验和成本压力测试，输出可追溯证据",
-          "llm_binding": "ollama/qwen3.5:9b",
-          "binding_note": "由 org_enroll 补档（工单 WO-ORG-220 / 放行人 老田）",
+          "llm_binding": "glm/glm-5.3",
+          "binding_note": "Phase0 model_policy.yaml 20261104T061516",
           "tools": [
             "events",
             "datamart_read",
@@ -3099,7 +3134,19 @@
           "reports_to": "ACAD1",
           "parent_node_keys": [
             "acad1_core"
-          ]
+          ],
+          "llm_fallback": [
+            "deepseek/deepseek-v4-pro",
+            "ollama/qwen3.5:9b"
+          ],
+          "binding_source": "registry/model_policy.yaml",
+          "name": "王粲",
+          "cn_name": "王粲",
+          "actual_position": "量化回测研究员",
+          "command_seat": "研究院·回测验证",
+          "status": "active",
+          "onboarded_at": "2026-10-17",
+          "office_title": "量化回测研究员"
         },
         {
           "agent_id": "COMM1",
@@ -3125,7 +3172,14 @@
           "reports_to": "ACAD1",
           "parent_node_keys": [
             "acad1_core"
-          ]
+          ],
+          "name": "马良",
+          "cn_name": "马良",
+          "actual_position": "商业化研究员",
+          "command_seat": "研究院·商业化研究",
+          "status": "active",
+          "onboarded_at": "2026-10-17",
+          "office_title": "商业化研究员"
         },
         {
           "agent_id": "INTEL1",
@@ -3151,7 +3205,14 @@
           "reports_to": "ACAD1",
           "parent_node_keys": [
             "acad1_core"
-          ]
+          ],
+          "name": "郭嘉",
+          "cn_name": "郭嘉",
+          "actual_position": "竞争情报研究员",
+          "command_seat": "研究院·竞争情报",
+          "status": "active",
+          "onboarded_at": "2026-10-17",
+          "office_title": "竞争情报研究员"
         },
         {
           "agent_id": "AI1",
@@ -3181,10 +3242,12 @@
             "acad1_core"
           ],
           "actual_position": "军师（反向军师/方法论）",
-          "command_seat": "指挥部·军师",
-          "onboarded_at": "2026-11-04",
+          "command_seat": "指挥部·军师（研究院 AI 方法组）",
+          "onboarded_at": "2026-10-17",
           "office_title": "军师（反向军师/方法论）",
-          "command_reports_to": "A0"
+          "command_reports_to": "A0",
+          "name": "诸葛亮",
+          "status": "active"
         },
         {
           "agent_id": "GUANYU",
@@ -3258,8 +3321,8 @@
           "role_profile": "strategy_product_manager",
           "analysis_type": "strategy_productization",
           "charter_detail": "将通过评审的策略或 AI 方法转成产品需求、交付形态、验收指标和试点计划，联接产品部与市场部",
-          "llm_binding": "ollama/qwen3.5:9b",
-          "binding_note": "由 org_enroll 补档（工单 WO-ORG-220 / 放行人 老田）",
+          "llm_binding": "glm/glm-5.3-flash",
+          "binding_note": "Phase0 model_policy.yaml 20261104T061516",
           "tools": [
             "events",
             "market_snapshot",
@@ -3277,7 +3340,19 @@
           "reports_to": "ACAD1",
           "parent_node_keys": [
             "acad1_core"
-          ]
+          ],
+          "llm_fallback": [
+            "deepseek/deepseek-flash",
+            "ollama/qwen3.5:9b"
+          ],
+          "binding_source": "registry/model_policy.yaml",
+          "name": "黄月英",
+          "cn_name": "黄月英",
+          "actual_position": "策略产品经理",
+          "command_seat": "研究院·策略产品化",
+          "status": "active",
+          "onboarded_at": "2026-10-17",
+          "office_title": "策略产品经理"
         },
         {
           "agent_id": "HUANGZHONG",
