@@ -136,3 +136,17 @@ def test_dept_morning_type_supported(tmp_path):
     leads = ["A0", "D1", "DATA1", "QA1", "INTEL0", "ARCH1"]
     code, env = hq.save_meeting(d, _valid(type="dept_morning", attendees=leads))
     assert code == 200 and env["ok"]
+
+
+def test_academy_team_seats_can_attend_and_own(tmp_path):
+    for seat in ("STRAT1", "BACK1", "COMM1", "PROD1", "STRAT2"):
+        assert seat in hq.SEATS
+    d = tmp_path / "hq"
+    _, env = hq.save_meeting(d, _valid(attendees=["ACAD1", "STRAT1", "BACK1"]))
+    assert env["ok"] is True
+    calls = []
+    code, out = hq.dispatch_meeting(d, {"meeting_id": env["meeting_id"],
+                                        "title": "研究院团队派单",
+                                        "order_type": "work", "owner": "STRAT1"},
+                                    lambda *a, **kw: calls.append(a) or {"ok": True, "id": "r"})
+    assert code == 200 and calls
