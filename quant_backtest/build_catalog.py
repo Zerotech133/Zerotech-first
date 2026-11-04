@@ -98,6 +98,10 @@ WAREHOUSES = [  # (source, 数据根, manifest 路径)
 ]
 LEGACY_US = os.path.join(HERE, "data", "us")  # 旧美股逐股（deprecated）
 CRYPTO_DIR = os.path.join(HERE, "data", "crypto")  # 加密货币日线
+# Tushare factor_list 静态因子清单（2026-11-05 接入）：元数据字典而非时序表，
+# 单独放 factor_library/，不进 data/tushare/ 的按表/按日扫描（避免污染 freshness）。
+FACTOR_LIBRARY_DIR = os.path.join(HERE, "data", "factor_library")
+FACTOR_LIST_DIR = os.path.join(FACTOR_LIBRARY_DIR, "tushare_factor_list")
 INFO_DB = os.path.join(HERE, "data", "tdx", "tdx_info.db")
 XQ_INFO_DB = os.path.join(HERE, "data", "xueqiu", "xueqiu_info.db")  # 雪球舆情库
 GUBA_DIR = os.path.join(
@@ -1060,6 +1064,74 @@ def _scan_dir(source, root, mpath, tbl, mf, store=None):
     }
 
 
+def _scan_factor_library(root=None):
+    """Tushare factor_list 静态因子清单 → catalog 条目（2026-11-05）。
+
+    factor_list 是元数据字典（272 因子/9 类），不是按日时序表：
+    - store=factor_library/tushare_factor_list，layout=parquet_snapshot；
+    - 无日期列 → static_no_date=true / date_status=not_applicable，豁免新鲜度；
+    - 行数/分类/快照 sha 取自同目录 manifest.json（工具 tushare_factor_list.py 生成）；
+    - 文件数含 latest.parquet + snapshots/*.parquet（历史快照不丢可见性）。
+    测试可传 root=临时目录，不触碰生产数据。
+    """
+    root = root or FACTOR_LIST_DIR
+    manifest_path = os.path.join(root, "manifest.json")
+    rec = _load_manifest(manifest_path)
+    latest = os.path.join(root, "latest.parquet")
+    snapshots = sorted(glob.glob(os.path.join(root, "snapshots", "*.parquet")))
+    files = ([latest] if os.path.exists(latest) else []) + snapshots
+    schema, schema_errors = [], []
+    if os.path.exists(latest):
+        try:
+            from pyarrow.parquet import ParquetFile
+
+            schema = list(ParquetFile(latest).schema_arrow.names)
+        except Exception:  # noqa: BLE001 - footer 损坏要可见，但不能拖垮整表
+            schema_errors.append(os.path.basename(latest))
+    rows = rec.get("rows")
+    if not isinstance(rows, int):
+        rows = None
+    done = bool(files) and (rows or 0) > 0 and not rec.get("errors")
+    desc = "Tushare factor_list 因子清单（272 因子/9 类；静态元数据）"
+    return {
+        "factor_list": {
+            "source": "factor_library",
+            "store": str(root).replace("\\", "/"),
+            "layout": "parquet_snapshot",
+            "schema": schema,
+            "date_col": None,
+            "code_col": None,
+            "schema_scope": "sampled" if schema else "unknown",
+            "schema_files_inspected": 1 if schema else 0,
+            "schema_errors": schema_errors,
+            "date_status": "not_applicable",
+            "static_no_date": True,
+            "future_ok": False,
+            "primary_key": ["factor_name"] if "factor_name" in schema else [],
+            "freq": "M",
+            "priority": 1,
+            "manifest": manifest_path.replace("\\", "/") if os.path.exists(manifest_path) else None,
+            "freshness": None,
+            "rows": rows,
+            "files": len(files),
+            "done": done,
+            "readiness_basis": "manifest" if rec else "file_presence",
+            "verification_status": "unknown",
+            "manifest_status": (
+                "closed" if done and rec else "open" if rec else "missing"
+            ),
+            "deprecated": False,
+            "desc": desc,
+            "factor_count": rows,
+            "by_type": rec.get("by_type") or {},
+            "by_asset": rec.get("by_asset") or {},
+            "sha256": rec.get("sha256"),
+            "fetched_at": rec.get("fetched_at"),
+            "token_sha8": rec.get("token_sha8"),
+        }
+    }
+
+
 def _load_manifest(path):
     """读仓库/包清单 → {表名: 表级记录}；缺失或损坏返回 {}。
 
@@ -1416,6 +1488,11 @@ def _changelog_note(prev_tables, new_tables):
     审计时不必再从 added 反推动因。
     """
     added = set(new_tables) - set(prev_tables)
+    if "factor_list" in added:
+        return (
+            "2026-11-05 Tushare factor_list 因子清单接入 catalog"
+            "（静态元数据 parquet_snapshot，272 因子/9 类；static_no_date/freq=M）"
+        )
     cnod_added = [t for t in CNOD_TABLES if t in added]
     if cnod_added:
         return (
@@ -1495,6 +1572,9 @@ def build(data_root=None, out_path=None):
             {},
             store=CRYPTO_DIR,
         )
+    # 2026-11-05：Tushare factor_list 静态因子清单（元数据字典，无日期列）
+    if data_root is None and os.path.isdir(FACTOR_LIST_DIR):
+        tables.update(_scan_factor_library())
     # 设计 §3：xq_* 10 表 + guba_posts 注册（空数据占位，不 fail）
     prev_tables = {}
     prev_version = 0

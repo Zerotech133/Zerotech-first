@@ -5,9 +5,11 @@
 # v3→v4 变更摘要（2026-10-31）：登记 report_rc（卖方研报评级/盈利预测历史，H34-H36 数据源）。
 # v4→v5 变更摘要（2026-10-31）：登记 research_reports_kb（研报知识库：100 份研报入库/498 知识单元/RAG 462 记录）。
 # v5→v6 变更摘要（2026-11-01）：登记 strategy_classics_kb（策略经典：米勒维尼 SEPA 18 条单元/回测证据/资源库）。
+# v7→v8 变更摘要（2026-11-05）：登记 tushare_factor_list（Tushare factor_list 因子清单元数据：272 因子/9 类，
+#   静态字典表；真实 API code=0 拉取，JSON+Parquet 快照 + manifest sha256；catalog v40 同步登记 factor_list）。
 # v1 种子出处：K-ORG-119 批1（2026-10-16 实战验证的真实位置）。
-version: 7
-updated: '2026-11-02'
+version: 8
+updated: '2026-11-05'
 registrar: DATA1（兰台令）/ DSH-Lead · v7 合并 2026-11-02（S2-01）
 resources:
   - id: ashare_kline
@@ -346,6 +348,21 @@ resources:
     verified: 2026-10-30（4,926 chunks 页面在线；全量 packed 62,401 rows/0 skipped）
     lifecycle: derived_rebuildable
     backup: jev-eval/backup_kb_corpus.ps1（原始包只备份 sha256 清单，派生层每日备份）
+
+  - id: tushare_factor_list
+    kind: parquet+json
+    uri: quant_backtest/data/factor_library/tushare_factor_list/
+    what: Tushare factor_list 因子清单元数据（272 因子/9 类：Alpha101 101、Growth 15、Liquidity 35、Momentum 20、Quality 59、Reversal 3、Risk 25、Size 3、Value 11；字段 factor_name/asset_type/factor_type/factor_desc，asset_type 当前全 STK）
+    layer: 元数据层（静态字典，非时序）
+    freshness: 手动/按需（因子库元数据变更时运行 tools/data_sources/tushare_factor_list.py fetch）；当前快照 2026-11-05 06:59:32
+    access: "只读；latest.parquet/latest.json + snapshots/ 历史快照 + manifest.json（sha256/行数/分类）；tools/data_sources/tushare_factor_list.py check/status/show"
+    owner: DATA1
+    steward: DATA1（张松）
+    grants: [invest, quality]
+    backup: snapshots/factor_list_YYYYMMDD.*（按日快照）+ manifest.json sha256
+    verify_period: 按需（Tushare 因子库扩容/换 token 后重拉）
+    fail_mode: 无因子库权限（Tushare 40203/40204）→ 拉取退出码 2；快照缺失时 catalog 条目 placeholder/manifest_missing，metadata_consistency 可检
+    verified: 2026-11-05（真实 API code=0/272 行；sha256 80892d70…；catalog v40 factor_list、registry physical 305）
 
 # ===== v7（2026-11-02 S2-01）：数据集级登记（314 条，来自 dataset_registry_v1.yaml）=====
 dataset_registry:

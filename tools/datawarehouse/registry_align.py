@@ -351,7 +351,12 @@ def run(mode: str = "check", lock_path=DEFAULT_LOCK, kg_log=DEFAULT_KG_LOG,
             res["diffs_after"] = after["diffs"]
             meta = mc.check()
             res["metadata"] = meta
-            expected_physical = len(catalog2.get("tables") or {})
+            # 2026-11-05 修复：registry_rebuild 按设计「保守保留 catalog 已不存在的孤儿条目」，
+            # physical_count 允许 > catalog 表数（metadata_consistency 仅记 warning）。
+            # 原判定用 catalog 表数当期望值，导致存在孤儿条目时 apply 永远回滚
+            # （kg 日志 06:42 registry_align exit=1 即此因）。期望值改为 registry 自身条数，
+            # 自洽性由 verify_written(physical_count_match) 保证。
+            expected_physical = len(registry2.get("physical_tables") or [])
             ok = (after["aligned"] and verify.get("ok") and meta.get("code") == 0
                   and meta.get("physical_count") == expected_physical)
             if ok:
