@@ -682,6 +682,7 @@ def event_loop() -> None:
 
 def main() -> None:
     set_module("gate")
+    jc.log_db_channel()  # JEV-DSN-20261105：启动自检（脱敏 DSN + 实际通道，不连库）
     args = sys.argv[1:]
     if "--once" in args or "--dry" in args:
         _trim_dead_letter()  # R12：一次性模式也顺带轮转（历史积压在此清理）
