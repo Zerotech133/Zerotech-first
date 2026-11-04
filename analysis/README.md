@@ -247,3 +247,80 @@ python -m analysis.reclass --dry-run     # 看差异（旧类别 → 当前规�
 python -m analysis.reclass --apply       # 落库（自动备份 DB；保留 reviewed/category_final）
 ```
 - 用途：清掉历史规则残留（如 2026-09 重整投资协议仍标"退市/ST"），避免报告事件表误导。
+
+## 盘中实时盯盘（W1/W2）
+
+> 设计：`C:\项目\deliverables\2026-11-05_盘中实时盯盘与飞书推送_设计方案_v1.md`（本阶段=W1 采集器 + W2 规则引擎）。
+> **研究提示，不构成投资建议**：只做异动提示，不下单、不给买卖指令。
+
+### 职责
+
+`analysis/intraday_watch.py`（单文件、纯 stdlib + pandas 可选、自包含；**不 import** `news_collector/quote_snapshot.py`）：
+
+| 层 | 函数 | 说明 |
+|---|---|---|
+| 池 | `build_pool()` | `watchlist.txt` ∪ 近 14 天 `analysis.db` runs ∪ `analysis_work/intraday_watch_subscriptions.json`；去重、上限 50，写 `analysis_work/intraday_watch/pool.json`（带 `generated_at`）；库缺失优雅降级 |
+| 行情 | `fetch_quotes()` / `fetch_em_snapshot()` | 新浪批量（≤50/次，GBK，Referer finance.sina.com.cn，失败重试 1 次）+ 东财 push2 补量比/换手（失败返回 `{}`，不影响主流程） |
+| 新闻 | `fetch_news_incremental()` | `news.db` 只读（`mode=ro`，WAL 安全），`ts>watermark` 且 `stocks` 非空；公司名→代码用 `stock_basic.parquet` 精确匹配（缺失退化 `data/tushare/stock_basic`） |
+| 板块 | `fetch_sectors()` / `sector_map_for()` | 东财行业榜（名称/涨幅/主力净流）；个股→板块用 `analysis_work/sector_alias.json`，缺省用申万一级行业名直接匹配，匹配不上返回 `None` |
+| 规则 | `evaluate()` | A 量价（pct_cross ±3/5/7/涨跌停、fast_move 3min±2%、vol_ratio≥2.5、limit_open、key_level MA20/MA60/前20日高低、stop_hit）+ B 新闻（JEV high / medium&conf≥0.8 / 标题强关键词）+ C 板块（前5/后5 且个股同向≥1%，或板块 3min ±1.5%） |
+| 状态 | `StateStore` | `analysis_work/intraday_watch/watchtower.db`（alerts/pushes/state）：fingerprint=sha1(code\|rule\|state\|date) 去重、同规则冷却、单票 ≤6/日、全局 ≤40/日、critical 豁免；跨进程重启保持 |
+| 推送 | `to_push_payload()` | 只生成卡片字段 dict（title/price/pct/amount/vol_ratio/reason/news/sector/ts/buttons），**不发送**；W3 才接 8097 `/api/send` |
+
+### CLI
+
+```bash
+# 只看盯盘池（不落库：--dry-run）
+python -X utf8 -m analysis.intraday_watch --print-pool --dry-run
+
+# 跑一轮并打印拟推送 payload（真实网络；--dry-run 不写 watchtower.db）
+python -X utf8 -m analysis.intraday_watch --once --dry-run
+
+# 跑一轮并落库（alerts/pushes/state + pool.json）
+python -X utf8 -m analysis.intraday_watch --once
+
+# 常驻 60s tick（仅交易时段执行；W4 计划任务才启用，本阶段不要启动）
+python -X utf8 -m analysis.intraday_watch --loop --tick 60
+
+# 自检：跳过网络采集
+python -X utf8 -m analysis.intraday_watch --once --dry-run --no-fetch
+```
+
+参数：`--once` / `--loop` / `--dry-run` / `--print-pool` / `--tick N`（默认 60）/ `--config PATH` / `--no-fetch`。
+日志一律 `[MM-DD HH:MM:SS]` 前缀；`--loop` 异常自愈，非交易时段 sleep。
+
+### 配置
+
+缺省用内置默认（与设计一致），可用 `analysis_work/intraday_watch_config.json` 深层覆盖；
+模板见 `analysis_work/intraday_watch_config.example.json`。主要键：
+
+| 键 | 默认 | 含义 |
+|---|---|---|
+| `pct_steps` | `[3, 5, 7]` | 涨跌幅穿越档位（%，另含涨跌停档） |
+| `fast_move_pct` / `fast_move_window_sec` | `2.0` / `180` | 3 分钟急拉/跳水阈值 |
+| `vol_ratio_threshold` / `amount_ratio_threshold` | `2.5` / `2.0` | 量比 / 成交额放大阈值 |
+| `limit_band_pct` / `limit_open_drop_pct` | `0.2` / `1.0` | 封板判定带宽 / 开板回落幅度 |
+| `key_level_band_pct` / `key_level_min_amplitude` | `0.5` / `2.0` | 关键位带宽 / 当日振幅门槛 |
+| `stops` | `{}` | 止损位 `{code: price}`（也读订阅文件 stops） |
+| `news_conf_min` / `news_event_types` / `news_keywords` | `0.8` / 事件白名单 / 强关键词 | 新闻门槛 |
+| `sector_top_n` / `sector_stock_sync_pct` / `sector_fast_move_pct` | `5` / `1.0` / `1.5` | 板块规则 |
+| `cooldown_min` | `default 30`（fast_move 15、limit_open/stop_hit 1440、news 0…） | 同规则冷却（分钟） |
+| `max_per_code_day` / `max_global_day` / `critical_exempt` | `6` / `40` / `true` | 限流与豁免 |
+| `session` | `09:25–11:30 / 13:00–15:00` | 交易时段（周一至周五） |
+| `em_enrich_limit` / `news_lookback_min` | `12` / `30` | 东财补充只数 / 新闻回看分钟 |
+
+### 测试
+
+```bash
+python -m pytest analysis/tests/test_intraday_watch.py -q -p no:cacheprovider
+```
+
+全部离线：`urllib` 打桩、新闻库/状态库落 tmp、构造 quote dict；**禁止测试访问真实网络**。
+覆盖新浪解析（停牌/缺字段）、交易时段、池构建降级、六类量价规则、新闻 JEV 与名称精确匹配、
+板块同向/急拉、去重/冷却/限流/豁免、状态持久化、配置覆盖、payload 字段。
+
+### 边界
+
+- 只读：`news.db`、`quant_backtest/data`、`analysis.db`；只写 `analysis_work/intraday_watch/` 与本模块产物。
+- 不 import/不改 `news_collector/`；不发送飞书、不建计划任务（W3/W4）。
+- 停牌（现价 0、昨收>0）以昨收计价且 `pct=None`，不出任何量价信号；坏数据一律 fail-safe 丢弃。

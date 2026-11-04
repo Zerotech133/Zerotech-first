@@ -1,0 +1,51 @@
+{
+  "_comment": "盘中实时盯盘 W1/W2 全局配置模板。复制到 C:\\项目\\analysis_work\\intraday_watch_config.json 后按需覆盖；未列出的键走 analysis/intraday_watch.py 内置默认。研究提示，不构成投资建议。",
+  "enabled": true,
+  "pool_limit": 50,
+  "pct_steps": [3, 5, 7],
+  "fast_move_pct": 2.0,
+  "fast_move_window_sec": 180,
+  "vol_ratio_threshold": 2.5,
+  "amount_ratio_threshold": 2.0,
+  "limit_band_pct": 0.2,
+  "limit_open_drop_pct": 1.0,
+  "key_level_band_pct": 0.5,
+  "key_level_min_amplitude": 2.0,
+  "stops": {},
+  "news_conf_min": 0.8,
+  "news_event_types": ["policy", "earnings", "mna", "litigation", "risk", "equity"],
+  "news_keywords": ["回购", "增持", "减持", "立案", "问询", "停牌", "ST",
+                    "业绩预告", "重大合同", "中标", "涨停", "跌停", "解禁"],
+  "sector_top_n": 5,
+  "sector_stock_sync_pct": 1.0,
+  "sector_fast_move_pct": 1.5,
+  "sector_fast_window_sec": 180,
+  "cooldown_min": {
+    "default": 30,
+    "pct_cross": 30,
+    "fast_move": 15,
+    "vol_ratio": 30,
+    "limit_open": 1440,
+    "key_level": 60,
+    "stop_hit": 1440,
+    "news": 0,
+    "sector": 30
+  },
+  "max_per_code_day": 6,
+  "max_global_day": 40,
+  "critical_exempt": true,
+  "session": {
+    "morning_open": "09:25",
+    "morning_close": "11:30",
+    "afternoon_open": "13:00",
+    "afternoon_close": "15:00"
+  },
+  "em_enrich_limit": 12,
+  "news_lookback_min": 30,
+  "portal_base": "http://127.0.0.1:8734",
+  "push": {
+    "kind": "watch:realtime",
+    "receiver": "个人",
+    "enabled": false
+  }
+}
