@@ -526,6 +526,21 @@ def build_pg_response(payload, review, view=LOW_LEVEL_DEFAULT_VIEW):
     return resp
 
 
+def _aggregate_review(payload):
+    """合并 full 聚合视图的 review records。
+
+    跨市场聚合时各市场 pool_date 可能不同；review 文件按“最新池日”存放，
+    记录以 code 对齐（`_new_items` 按 code 匹配）。文件缺失/坏 JSON 返回 {}，
+    保持原 pending 语义，不伪造 reviewed。
+    """
+    dates = [str(v) for v in (payload.get("pool_dates") or {}).values() if v]
+    if not dates:
+        return {}
+    latest = max(dates)
+    doc = _read_json(os.path.join(DEFAULT_REVIEW_DIR, latest + ".json"))
+    return doc if isinstance(doc, dict) else {}
+
+
 def build_pg_aggregated_response(payload, review):
     """PG view=full 只读聚合视图（每市场最新 pool_date → 当前 30 只）。
 
@@ -845,7 +860,7 @@ def load_pool_snapshot(
                 elif day is None or all(
                     not value or str(value) <= str(day) for value in pool_dates.values()
                 ):
-                    return build_pg_aggregated_response(payload, {})
+                    return build_pg_aggregated_response(payload, _aggregate_review(payload))
                 else:
                     reasons.append("pg_full_no_rows_on_or_before:%s" % day)
             elif reason:
