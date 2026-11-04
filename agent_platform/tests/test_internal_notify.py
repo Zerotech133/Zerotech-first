@@ -35,3 +35,11 @@ def test_emit_rejects_bad_target_and_title(tmp_path):
     inbox_gateway.set_store(tmp_path / "bridge")
     assert internal_notify.emit("bad target!", "t")["ok"] is False
     assert internal_notify.emit("A0", "")["ok"] is False
+
+
+def test_changed_content_creates_new_notification(tmp_path):
+    inbox_gateway.set_store(tmp_path / "bridge")
+    a = internal_notify.emit("A0", "标题", "内容 A", source="hq-daily", actor="DATA1")
+    b = internal_notify.emit("A0", "标题", "内容 B", source="hq-daily", actor="DATA1")
+    assert a["ok"] and b["ok"]
+    assert a["data"]["id"] != b["data"]["id"]

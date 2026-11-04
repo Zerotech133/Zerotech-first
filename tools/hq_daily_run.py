@@ -177,8 +177,7 @@ def _notify_daily(date: str, reports: list[dict]) -> list[dict]:
                 "[A0跑板] %s %s：需决策/卡点" % (lead, r.get("dept_name") or r.get("dept") or ""),
                 body, kind="question", source="hq-daily",
                 link="deliverables/daily_briefs/%s/rollup.json" % date,
-                actor=lead,
-                dedupe_key="daily-%s-%s" % (date, lead))
+                actor=lead)
             out.append({"lead": lead, "ok": bool(env.get("ok")), "env": env})
         return out
     except Exception as e:  # noqa: BLE001
