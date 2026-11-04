@@ -180,9 +180,27 @@ def main():
             ctd.needs_update(date(2026, 10, 1)) == [],
             str(ctd.needs_update(date(2026, 10, 1))),
         )
+        # --- H11 缺口倒计时：首个降级判定的交易日（元旦由 FIXED 兜住，不算缺口）---
+        g = ctd.gap_deadline(date(2026, 11, 4))
+        want = date(2027, 1, 4).isoformat()
+        check("H11 缺口年份", g and g["year"] == 2027, str(g))
+        check("H11 首个降级日", g and g["first_gap_day"] == want, str(g))
+        check(
+            "H11 剩余天数",
+            g and g["days_left"] == (date(2027, 1, 4) - date(2026, 11, 4)).days,
+            str(g),
+        )
+        # 已进入缺口期：days_left 不应为正数
+        g2 = ctd.gap_deadline(date(2027, 2, 1))
+        check("H11 已入缺口 days_left<=0", g2 and g2["days_left"] <= 0, str(g2))
     else:
         check("H8 2027 已登记，跳过 weekday_only 断言", True)
         check("H10 2027 已登记，跳过提醒断言", True)
+        check("H11 2027 已登记，跳过缺口断言", True)
+
+    # --- H12 无缺口 → None（10 月不提前提醒次年，2026 已登记）---
+    check("H12 无缺口返回 None", ctd.gap_deadline(date(2026, 10, 1)) is None,
+          str(ctd.gap_deadline(date(2026, 10, 1))))
 
 
     for p in (fp, empty, rev, hs):

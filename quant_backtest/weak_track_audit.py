@@ -278,8 +278,16 @@ def _cal_note():
     ys = ctd.needs_update()
     if not ys:
         return ""
-    return "⚠ 休市日历待补登：%s（cn_trading_days.HOLIDAYS，依上交所年度休市公告）" % (
-        "、".join(str(y) for y in ys)
+    tail = ""
+    g = ctd.gap_deadline()
+    if g and g.get("first_gap_day"):
+        tail = "；首个降级判定日 %s（距今 %d 天）" % (
+            g["first_gap_day"],
+            g["days_left"],
+        )
+    return "⚠ 休市日历待补登：%s（cn_trading_days.HOLIDAYS，依上交所年度休市公告%s）" % (
+        "、".join(str(y) for y in ys),
+        tail,
     )
 
 
