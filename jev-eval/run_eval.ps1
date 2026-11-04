@@ -21,7 +21,9 @@ $py = 'C:\Program Files\Python311\python.exe'
 $rc = $LASTEXITCODE
 
 # 2) 守卫判定 + 推送（评测失败也跑 guard：MAX_AGE 检查会提示结果过期）
-& $py -X utf8 (Join-Path $here 'jev_eval_guard.py') 1>$null 2>$null
+# JEV-EVALCOV-20261105: 显式声明月度口径（超龄 35 天）；不写则走 guard 默认值，
+# 未来默认值变更会静默改掉本脚本语义。
+& $py -X utf8 (Join-Path $here 'jev_eval_guard.py') --cadence monthly 1>$null 2>$null
 $grc = $LASTEXITCODE
 
 ("eval exit=" + $rc + " guard=" + $grc + ' ' + (Get-Date -Format s)) | Out-File $log -Append -Encoding utf8
