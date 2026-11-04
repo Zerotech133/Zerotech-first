@@ -9,7 +9,8 @@
   3. 合并复评 schema：merge_sim_v3 JSON 含 baseline/merged/comparison/new_queries_subset/
      affected_queries/coverage/conclusion；新增子集 n=13 且 before/after 指标齐全；
      结论 stance 合法、受影响查询有逐条 delta；
-  4. 真实数据未改：units 总数仍 498、v2 资产 hash 仍为冻结值。
+  4. 真实数据未改：当前 units 总数 516（2026-11-01 入库后；历史报告生成于 498 时点）、
+     v2 资产 hash 仍为冻结值。
 
 运行：C:\\项目\\py312\\python.exe -X utf8 -m pytest -q tools/tests/test_eval_v3_merge.py
 """
@@ -114,7 +115,8 @@ def test_merge_v3_schema_and_affected():
 def test_real_data_unchanged():
     _require_outputs()
     units = json.loads(v3.UNITS_PATH.read_text(encoding="utf-8"))
-    assert units.get("total") == 498
+    # 2026-11-01 15:14 知识库正式入库后 units=516；merge_sim_v3 报告是 498 时点的历史快照。
+    assert units.get("total") == 516
     merge = json.loads(v3.MERGE_V3_JSON.read_text(encoding="utf-8"))
     assert merge["real_data_unchanged"] is True
     # v2 资产 hash 仍是冻结值（v3 不动 v2）

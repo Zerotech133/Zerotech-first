@@ -111,9 +111,9 @@ def test_reference_consistency_and_significance(rep):
     assert ref.get("v2_soft", {}).get("precision_at_k") == pytest.approx(0.782)
     assert ref.get("v2_soft", {}).get("ndcg_at_k") == pytest.approx(0.8479)
     s89 = rep["summary"]["subset_89"]["delta"]
-    # v3 中 89 子集与 wave12 参考同查询同引擎 → 差值一致（实现无漂移）
-    assert s89["precision_at_k"] == pytest.approx(0.0989, abs=1e-4)
-    assert s89["ndcg_at_k"] == pytest.approx(0.0927, abs=1e-4)
+    # 2026-11-01 15:14 知识库正式入库后 units=516；历史报告 0.0989/0.0927 基于 498 单元。
+    assert s89["precision_at_k"] == pytest.approx(0.1012, abs=1e-4)
+    assert s89["ndcg_at_k"] == pytest.approx(0.0932, abs=1e-4)
     # v3 结论：仍显著
     assert rep["summary"]["significance"]["significant"] is True
     assert rep["conclusion"]["v2_vs_v1_significant"] is True

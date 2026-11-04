@@ -117,8 +117,9 @@ def test_run_limited_schema_and_outputs(tmp_path):
     assert report["mode"] == "in_memory_merge_simulation"
     assert report["policy"]["modifies_real_data"] is False
     assert report["merge_plan"]["merge_groups"] == 2
-    assert report["merge_plan"]["units_before"] == 498
-    assert report["merge_plan"]["units_after"] == 496
+    # 2026-11-01 15:14 知识库正式入库后 units=516，合并 2 组后 514。
+    assert report["merge_plan"]["units_before"] == 516
+    assert report["merge_plan"]["units_after"] == 514
     assert report["real_data_unchanged"] is True
     assert report["results"]["baseline"]["summary"]["n"] == 3
     for key in ("precision_at_k", "coverage", "hit_rate", "ndcg_at_k"):
