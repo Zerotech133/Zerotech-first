@@ -115,6 +115,14 @@ def _guard_px_d(px_d, fp):
         s = s[:10]
         why = ctd.why_not(s)
         if why:
+            if ctd.snapshot_stale():
+                # 快照过期（同步任务可能挂了）时，手里的日历是旧的，拿它拒写
+                # 会误拒真实交易日、破坏采集，故降级为「只告警、照写」。
+                print(
+                    "\n[warn] px_d 落在非交易日（%s），但休市日历快照已过期"
+                    "（超 7 天未刷新）：%s → 照写，不阻断" % (why, s)
+                )
+                return s, None
             print(
                 "\n[warn] px_d 落在非交易日（%s）：%s → %s"
                 % (why, s, "沿用上一交易日 %s" % last if last else "无可沿用值，落 ?")

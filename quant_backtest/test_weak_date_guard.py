@@ -109,6 +109,27 @@ def main():
     use, bad = guard(EARLY, rev)
     check("G13 倒退照写不阻断", use == EARLY and bad is None, "%r/%r" % (use, bad))
 
+    # --- G18 快照陈旧 / 新鲜 两种拒写行为 ---
+    # 陈旧（同步任务挂了）时手里的日历是旧的，拒写会误拒真实交易日 → 只告警照写；
+    # 新鲜（正常）时按原逻辑拒写。两条必须分开守，否则任一边退化都无人发现。
+    if ctd.snapshot_info():
+        prov = os.path.join(tmp, "weak_track_999993.jsonl")
+        orig = ctd.snapshot_stale
+        try:
+            ctd.snapshot_stale = lambda *a, **k: True  # 模拟陈旧
+            use3, bad3 = guard(HOLIDAY, prov)
+            check(
+                "G18 快照陈旧时照写不拒",
+                use3 == HOLIDAY and bad3 is None,
+                "%r/%r" % (use3, bad3),
+            )
+        finally:
+            ctd.snapshot_stale = orig
+        use4, bad4 = guard(HOLIDAY, prov)  # 恢复后按新鲜处置 → 拒写
+        check("G18 快照新鲜时照拒写", use4 == "?" and bad4 == HOLIDAY, "%r/%r" % (use4, bad4))
+    else:
+        check("G18 快照不可用，跳过", True)
+
     # --- G14 结案日数不计缺失值（"?" 不是交易日）---
     rows = [
         {"code": "999997.SZ", "px_d": GOOD, "px": 10.0, "ex250": 1.0, "trig": []},
@@ -163,8 +184,9 @@ def main():
     check(
         "H9 已登记年份置信度 exact", ctd.confidence(LASTTD) == "exact", ctd.confidence(LASTTD)
     )
-    if not ctd.covered(2027):
-        # 未登记年份只能按周末判断——必须诚实标 weekday_only 而不是假装可信
+    # 快照接入后 covered(2027) 恒为 True，降级路径改由 NoSnapshot 显式模拟
+    with ctd.snapshot_off():
+        # 无快照时未覆盖年份只能按周末判断——必须诚实标 weekday_only 而非假装可信
         check(
             "H8 未覆盖年份只到周末级",
             ctd.is_trading_day(NY_WD) and ctd.confidence(NY_WD) == "weekday_only",
@@ -193,10 +215,64 @@ def main():
         # 已进入缺口期：days_left 不应为正数
         g2 = ctd.gap_deadline(date(2027, 2, 1))
         check("H11 已入缺口 days_left<=0", g2 and g2["days_left"] <= 0, str(g2))
+
+    # --- S 组：Tushare 快照主路径（快照可用时）---
+    info = ctd.snapshot_info()
+    if info:
+        check(
+            "S1 快照覆盖 2027",
+            info["end"] >= date(2027, 12, 31),
+            "%s → %s" % (info["start"], info["end"]),
+        )
+        check("S2 快照有 2027 数据", ctd.covered(2027), str(ctd.covered(2027)))
+        check(
+            "S2 快照覆盖时不再报缺口",
+            ctd.needs_update(date(2026, 11, 4)) == []
+            and ctd.gap_deadline(date(2026, 11, 4)) is None,
+            "%s / %s" % (ctd.needs_update(date(2026, 11, 4)), ctd.gap_deadline(date(2026, 11, 4))),
+        )
+        # 2026 全年逐日：快照 vs **纯内置表口径**（不能拿 in_holiday 算，
+        # 它也走快照，那样等于快照比自己）。零差异才说明两源未分叉。
+        diffs = 0
+        for i in range((date(2026, 12, 31) - date(2026, 1, 1)).days + 1):
+            d = date.fromordinal(date(2026, 1, 1).toordinal() + i)
+            fast = ctd.is_trading_day(d)
+            table = d.weekday() < 5 and (d.month, d.day) not in ctd.FIXED
+            for m1, d1, m2, d2 in ctd.HOLIDAYS.get(2026, ()):
+                if date(2026, m1, d1) <= d <= date(2026, m2, d2):
+                    table = False
+            if fast != table:
+                diffs += 1
+        check("S3 2026 快照与内置表零差异", diffs == 0, "差异 %d 天" % diffs)
+        check(
+            "S4 国庆休市判据来自快照",
+            ctd.source_of(HOLIDAY) == "snapshot" and not ctd.is_trading_day(HOLIDAY),
+            "%s/%s" % (ctd.source_of(HOLIDAY), ctd.is_trading_day(HOLIDAY)),
+        )
+        check(
+            "S5 快照新鲜不算陈旧",
+            ctd.snapshot_stale(today=info["mtime"].date()) is False,
+            str(ctd.snapshot_stale()),
+        )
+        check(
+            "S5 超 7 天算陈旧",
+            ctd.snapshot_stale(
+                today=date.fromordinal(info["mtime"].date().toordinal() + 30)
+            )
+            is True,
+            str(info["mtime"]),
+        )
     else:
-        check("H8 2027 已登记，跳过 weekday_only 断言", True)
-        check("H10 2027 已登记，跳过提醒断言", True)
-        check("H11 2027 已登记，跳过缺口断言", True)
+        check("S1 快照不可用（环境无 pandas/快照缺失），跳过 S 组", True)
+
+    # --- S6 快照不可用时的降级行为（与 S 组互补，恒可跑）---
+    with ctd.snapshot_off():
+        check("S6 无快照 covered(2027) False", not ctd.covered(2027), str(ctd.covered(2027)))
+        check(
+            "S6 无快照退回内置表仍判 2026 国庆休市",
+            not ctd.is_trading_day(HOLIDAY) and ctd.source_of(HOLIDAY) == "holiday_table",
+            "%s/%s" % (ctd.is_trading_day(HOLIDAY), ctd.source_of(HOLIDAY)),
+        )
 
     # --- H12 无缺口 → None（10 月不提前提醒次年，2026 已登记）---
     check("H12 无缺口返回 None", ctd.gap_deadline(date(2026, 10, 1)) is None,
