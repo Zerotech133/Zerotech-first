@@ -35,6 +35,7 @@ HERE = Path(__file__).parent
 RESULTS = HERE / "results"
 ACC_MIN = 0.90  # 总准确率地板
 TYPE_MIN = 0.95  # noul/choice 分题型地板（生产只用这两种题型）
+INFRA_ERROR_RATE = 0.5  # 请求失败率 ≥50% 视为接口故障，不作漂移判定（2026-11-05）
 MAX_AGE_DAYS = 3  # 兼容旧名：weekly 口径阈值；实际取值见 CADENCE_MAX_AGE
 DEFAULT_CADENCE = "monthly"
 # 超龄阈值（天）：monthly 容忍 31 天月长 + 补跑；weekly 保持 3 天
@@ -218,18 +219,35 @@ def check(
             f"补救命令 {remedy_cmd()}"
         )
     accuracy = summary.get("accuracy")
+    # 2026-11-05：接口层故障（451 地区屏蔽 / 断网 / 5xx）会让准确率变成 0%，
+    # 这不是模型漂移，判成漂移会发假告警（当日实测：typesafe 直连全 30 题 451）。
+    err_rate = summary.get("error_rate")
+    infra = bool(
+        formal
+        and (
+            (err_rate is not None and err_rate >= INFRA_ERROR_RATE)
+            or (summary.get("total_tokens") == 0 and (accuracy or 0) == 0)
+        )
+    )
     if not formal:
         problems.append(
             "results 目录无正式评测结果（repeats>=3）；最新一份 repeats=%s，"
             "属临时跑，不参与基线判定。补救: %s"
             % (summary.get("repeats"), remedy_cmd())
         )
-    if formal and accuracy is not None and accuracy < ACC_MIN:
+    if infra:
+        problems.append(
+            f"评测未能完成：请求失败率 {err_rate if err_rate is not None else 1:.1%}"
+            f"（≥{INFRA_ERROR_RATE:.0%}）、token 用量 {summary.get('total_tokens')} —— "
+            f"属接口不可达/被屏蔽，**不作漂移判定**；先验端点 "
+            f"jev_eval.py --probe-endpoint，再重跑 {remedy_cmd()}"
+        )
+    elif formal and accuracy is not None and accuracy < ACC_MIN:
         problems.append(f"总准确率 {accuracy:.1%} < {ACC_MIN:.0%}")
     by_type = summary.get("by_type_accuracy") or {}
     for t in ("noul", "choice"):
         v = by_type.get(t)
-        if formal and v is not None and v < TYPE_MIN:
+        if formal and not infra and v is not None and v < TYPE_MIN:
             problems.append(f"{t} 题型 {v:.1%} < {TYPE_MIN:.0%}（生产在用）")
 
     head = "⚠ [Jev评测] 基线漂移告警" if problems else f"[Jev评测] {label}回归正常"
