@@ -2,13 +2,16 @@
 """§13 结案质量审计推送（weak 产线第 13 节 · K35-x 新增）。
 
 §12 盯在案失速（超龄/停滞/失联），§13 盯已结案侧完整性——对每个
-weak_close_*.md 五项审计，发现 §9 走到一半或数据残缺：
+weak_close_*.md 六项审计，发现 §9 走到一半或数据残缺：
 
   1. 字段缺失：头部 ts/open/chg 任一空（§10/§11 依赖的解析字段）；
   2. 归档缺失：声明的 weak_track_<c6>.closed_<ymd>.jsonl 不在 reports/；
   3. 档案缺失：案例档案 weak_review_<c6>_<open>.md 不在 weak_cases/；
   4. 任务未停：结案后每日任务仍 Ready（B 类滚动新案重启同任务除外）；
-  5. B 类新案缺：B 类结案但无「🔄 新案已建」行（生成失败/未生成）。
+  5. B 类新案缺：B 类结案但无「🔄 新案已建」行（生成失败/未生成）；
+  6. 日期坏点：状态流（含已归档流）里 ts/px_d 非法——坏串会让
+     close 按 px_d 去重算的「跟踪 N 日」塌缩失真（写入端已由
+     weak_track_check._guard_px_d 拦截，此项扫历史存量）。
 
 全部干净 → 打印提示 rc=0 不推送（不打扰）；有异常 → --send 推送
 turquoise 审计卡（🧾）。默认预览。文案外置 weak_track_audit_tpl.txt
@@ -45,7 +48,65 @@ _FIX = {
     "档案缺失": "补案例档案或更正头部档案行",
     "任务未停": "Disable 每日任务（§9 第 2 步），或确认 B 类新案已建",
     "B 类新案缺": "手动跑命令块⑨ 生成新案（或补 --newcase 重推）",
+    "日期坏点": "行情源坏日期已入库：核对 px_d 是否多日塌成同一串，必要时修流重算时长",
+    "日期倒退": "px_d 序列回退：多半是行情缓存回滚/数据源陈旧，核当日行情是否未刷新",
 }
+
+
+def _bad_date_stats(rep, c6):
+    """状态流日期契约体检 → dict(bad, bad_sample, back, back_sample)。
+
+    口径（K35-ad，2026-11-04 按真实流校准）：
+      * 坏点 = 字段存在且非缺失、但取值不是真实日期（月日越界等）。
+        **缺失（""/"?"/None）不算坏**——那是行情缺数，不是日期错。
+        历史曾把 px_d="?" 记成坏日期，属误判，此处显式排除。
+      * 倒退 = px_d 小于上一条非缺失 px_d。周末/休市重复合法，倒退则
+        多半是缓存回滚（真实案例：301216 第 6→7 行 10-02 退到 09-30）。
+
+    写入端 weak_track_check._guard_px_d 已拦坏值，此处专扫历史存量。
+    """
+    n, sample = 0, []
+    back, bsample = 0, []
+    prev = ""
+    for fp in sorted(glob.glob(os.path.join(rep, "weak_track_%s*.jsonl" % c6))):
+        try:
+            fh = open(fp, encoding="utf-8")
+        except OSError as exc:
+            logging.getLogger(__name__).warning(
+                "silent-except %s: %s", "quant_backtest/weak_track_audit.py", exc
+            )
+            continue
+        with fh:
+            for line in fh:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    r = json.loads(line)
+                except ValueError:
+                    continue
+                for k in ("ts", "px_d"):
+                    v = r.get(k)
+                    if v in (None, "", "?"):
+                        continue
+                    if not wts.valid_day(v):
+                        n += 1
+                        if len(sample) < 2:
+                            sample.append("%s=%s" % (k, v))
+                pd = str(r.get("px_d") or "")
+                if wts.valid_day(pd):
+                    pd = pd[:10]
+                    if prev and pd < prev:
+                        back += 1
+                        if len(bsample) < 2:
+                            bsample.append("%s→%s" % (prev, pd))
+                    prev = pd
+    return {
+        "bad": n,
+        "bad_sample": "、".join(sample),
+        "back": back,
+        "back_sample": "、".join(bsample),
+    }
 
 
 def _task_ready(c6, tm):
@@ -94,6 +155,11 @@ def audit_cases(cases_dir=None, rep=None, task_map=None):
             issues.append("B 类新案缺")
         if _task_ready(c6, tm) and not (c["type"] == "B" and nc_ok):
             issues.append("任务未停")
+        ds = _bad_date_stats(rep, c6)
+        if ds["bad"]:
+            issues.append("日期坏点:%d行(%s)" % (ds["bad"], ds["bad_sample"]))
+        if ds["back"]:
+            issues.append("日期倒退:%d处(%s)" % (ds["back"], ds["back_sample"]))
         out.append(
             {
                 "code": c["code"],
@@ -160,8 +226,8 @@ def main():
     f = audit_fields(cases)
     if not f["n_bad"]:
         print(
-            "结案质量审计全绿（%d 例，五项全过：字段/归档/档案/"
-            "任务停/B类新案）" % f["n"]
+            "结案质量审计全绿（%d 例，六项全过：字段/归档/档案/"
+            "任务停/B类新案/日期）" % f["n"]
         )
         return 0
     msg = build_audit(f)

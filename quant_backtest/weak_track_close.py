@@ -80,7 +80,10 @@ def close_fields(rows, ctype, note, arch, ncase=""):
     """
     r0, r1 = rows[0], rows[-1]
     trigs = [r for r in rows if r.get("trig")]
-    nd = len({str(r.get("px_d", "?"))[:10] for r in rows})
+    # 跟踪日数 = 不同行情日个数。缺失值（空/"?"）不是交易日，不计入
+    # （旧写法把 "?" 当成一个独立日期，会虚增 1 天）
+    _dset = {str(r.get("px_d") or "")[:10] for r in rows}
+    nd = len(_dset - {"", "?"})
     c6 = str(r1.get("code", "?")).split(".")[0]
     chg = ""  # 区间涨跌幅
     try:
@@ -159,6 +162,21 @@ from codes import normalize_code as _norm  # noqa: E402
 import logging
 
 
+def _close_ts(last):
+    """结案时刻取「状态流末条时间」，不取报告落盘时间（K35-ac 口径修正）。
+
+    历史版本头部写的是 time.strftime() 即报告生成时刻，比真实结案晚
+    1 个自然日（本机凌晨跑批），导致 §14 案例库台账的结案日偏后、
+    跟踪时长多算 1 天。末条 ts 缺失或非时间格式时回退当前时刻。
+    """
+    s = str(last or "").strip().replace("T", " ")
+    try:
+        time.strptime(s, "%Y-%m-%d %H:%M")
+        return s
+    except ValueError:
+        return time.strftime("%Y-%m-%d %H:%M")
+
+
 def write_archive(f, msg, rows, arch):
     """结案报告落盘 md（推送终版+全量状态流表）→ reports/weak_cases/。
 
@@ -187,7 +205,8 @@ def write_archive(f, msg, rows, arch):
         "# 结案报告 · %s（%s）"
         % (" ".join(x for x in [code, f.get("name") or ""] if x), f["ctype"]),
         "",
-        "- 结案时间：%s" % time.strftime("%Y-%m-%d %H:%M"),
+        "- 结案时间：%s" % _close_ts(f.get("last")),
+        "- 报告生成：%s" % time.strftime("%Y-%m-%d %H:%M"),
         "- 状态流：%s（已归档）" % arch,
         "- 案例档案：%s" % rev,
         "- 区间涨跌：%s → %s（%s）｜超额250：%s → %s（%s）"
@@ -253,9 +272,14 @@ def main():
     )
     ap.add_argument("--newcase-code", help="B 类新案的标的代码（缺省=本案同标的）")
     ap.add_argument("--text", action="store_true", help="文本版推送（默认飞书卡片）")
+    ap.add_argument(
+        "--stream",
+        help="状态流文件路径（默认 reports/weak_track_<code>.jsonl）；"
+        "供测试与历史数据回溯指定非默认位置",
+    )
     a = ap.parse_args()
     c6 = a.code.strip().upper().split(".")[0]
-    fp = os.path.join(REP, "weak_track_%s.jsonl" % c6)
+    fp = a.stream or os.path.join(REP, "weak_track_%s.jsonl" % c6)
     if not os.path.exists(fp):
         print("状态流不存在：%s（未跟踪过的案例无案可结）" % fp)
         return 1

@@ -13,6 +13,7 @@ T8 空目录 []；T9 真实 CLI 空态 rc=0
 隔离：T1-T8 monkeypatch cases/reports 目录与任务表；全部 PASS 退出码 0。
 """
 
+import json
 import os
 import shutil
 import subprocess
@@ -41,6 +42,10 @@ def check(name, cond, detail=""):
     )
     if not cond:
         fails.append(name)
+
+
+# 坏日期串（月 68 / 日 91 越界），码点构造避免手写字面量歧义
+BAD = "".join(chr(c) for c in (50, 48, 50, 54, 45, 54, 56, 45, 57, 49))
 
 
 CHG_LINE = (
@@ -74,6 +79,17 @@ def put_arch(c6, ymd):
         "w",
         encoding="utf-8",
     ).write('{"code":"x","ts":"2026-09-01"}\n')
+
+
+def put_arch_bad(c6, ymd, rows):
+    """归档流（自定义行）：用于坏日期用例。"""
+    with open(
+        os.path.join(REP, "weak_track_%s.closed_%s.jsonl" % (c6, ymd)),
+        "w",
+        encoding="utf-8",
+    ) as f:
+        for r in rows:
+            f.write(json.dumps(r, ensure_ascii=False) + "\n")
 
 
 def put_review(c6, ymd):
@@ -123,13 +139,37 @@ def main():
     put_close("000002", "20260920", "20260901", "情景B立案·另起新案")
     put_arch("000002", "20260920")
     put_review("000002", "20260901")
+    # T10 日期坏点：归档流含 2 行坏 px_d（其余字段齐、任务已停）
+    put_close("000009", "20260925", "20260825", "情景A兑现·修复")
+    put_review("000009", "20260825")
+    put_arch_bad(
+        "000009",
+        "20260925",
+        [
+            {"code": "000009.SZ", "ts": "2026-09-20T15:00:00", "px_d": "2026-09-20"},
+            {"code": "000009.SZ", "ts": "2026-09-21T15:00:00", "px_d": BAD},
+            {"code": "000009.SZ", "ts": "2026-09-22T15:00:00", "px_d": BAD},
+        ],
+    )
+
+    # T12 日期倒退：px_d 09-20 → 09-18（回退），其余字段齐
+    put_close("000010", "20260928", "20260828", "情景A兑现·修复")
+    put_review("000010", "20260828")
+    put_arch_bad(
+        "000010",
+        "20260928",
+        [
+            {"code": "000010.SZ", "ts": "2026-09-20T15:00:00", "px_d": "2026-09-20"},
+            {"code": "000010.SZ", "ts": "2026-09-21T15:00:00", "px_d": "2026-09-18"},
+        ],
+    )
 
     TM = {
         "WeakTrack600519": "Ready",  # T5 B 类滚动重启 → 合法
         "WeakTrack000002": "Ready",
     }  # T7 B 类无新案 → 双 issue
     res = wa.audit_cases(CASES, REP, task_map=TM)
-    check("T0 共 5 例", len(res) == 5, str(len(res)))
+    check("T0 共 7 例", len(res) == 7, str(len(res)))
     g = lambda c6: next(c for c in res if c["c6"] == c6)
     check("T1 干净 A 类", g("301216")["issues"] == [], str(g("301216")["issues"]))
     check(
@@ -149,6 +189,23 @@ def main():
         g("000002")["issues"] == ["B 类新案缺", "任务未停"],
         str(g("000002")["issues"]),
     )
+    i9 = g("000009")["issues"]
+    check(
+        "T10 日期坏点计 2 行",
+        len(i9) == 1 and i9[0].startswith("日期坏点:2行"),
+        str(i9),
+    )
+    check("T10 坏点样本带原值", BAD in (i9[0] if i9 else ""))
+    check(
+        "T11 无坏点的流不报",
+        not any("日期坏点" in x for c in res for x in c["issues"] if c["c6"] != "000009"),
+    )
+    i10 = g("000010")["issues"]
+    check(
+        "T12 日期倒退计 1 处",
+        len(i10) == 1 and i10[0].startswith("日期倒退:1处"),
+        str(i10),
+    )
     # T6 任务未停（A 类 + Ready）
     res2 = wa.audit_cases(CASES, REP, task_map={"WeakTrack301216": "Ready"})
     check(
@@ -156,12 +213,12 @@ def main():
         "任务未停" in next(c for c in res2 if c["c6"] == "301216")["issues"],
     )
     f = wa.audit_fields(res)
-    check("T0 计数 5/4", (f["n"], f["n_bad"]) == (5, 4))
+    check("T0 计数 7/6", (f["n"], f["n_bad"]) == (7, 6))
     check(
         "T0 明细含修复", "Disable 每日任务" in f["detail"] and "命令块⑨" in f["detail"]
     )
     msg = wa.build_audit(f)
-    check("T0 文案头", "WEAK AUDIT" in msg and "异常 4 例" in msg)
+    check("T0 文案头", "WEAK AUDIT" in msg and "异常 6 例" in msg)
     check(
         "T8 空目录",
         wa.audit_cases(

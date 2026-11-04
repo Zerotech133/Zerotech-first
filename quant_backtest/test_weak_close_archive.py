@@ -11,6 +11,7 @@ T5 预览无副作用：真实数据跑 close --type A 预览 → weak_cases 无
      测试标的 code6=999999（不存在冲突）。全部 PASS 退出码 0。
 """
 
+import json
 import os
 import shutil
 import subprocess
@@ -120,18 +121,30 @@ def t3_locate():
 
 
 def t5_preview_noside():
+    """预览无副作用：合成临时状态流跑 CLI 预览（--stream 指定）。
+
+    历史版本硬编码 301216：该标的 2026-10-20 已结案、状态流被归档成
+    .closed jsonl，预览必然「状态流不存在」返回 1——属测试夹具腐化，
+    不是产品缺陷。改为自建临时状态流，且不往真实 reports 目录落任何文件。
+    """
     before = set(os.listdir(REAL_CASES)) if os.path.isdir(REAL_CASES) else set()
+    stream = os.path.join(TMP, "weak_track_999998.jsonl")
+    with open(stream, "w", encoding="utf-8") as fh:
+        for r in ROWS:
+            fh.write(json.dumps(dict(r, code="999998.SZ"), ensure_ascii=False) + "\n")
     r = subprocess.run(
         [
             PY,
             "-X",
             "utf8",
             os.path.join(HERE, "weak_track_close.py"),
-            "301216",
+            "999998",
             "--type",
             "A",
             "--note",
             "测试预览",
+            "--stream",
+            stream,
         ],
         capture_output=True,
         text=True,
@@ -139,7 +152,7 @@ def t5_preview_noside():
         timeout=60,
     )
     after = set(os.listdir(REAL_CASES)) if os.path.isdir(REAL_CASES) else set()
-    check("T5 预览退出码0", r.returncode == 0)
+    check("T5 预览退出码0", r.returncode == 0, (r.stderr or "").strip()[-160:])
     check("T5 预览提示--send", "--send" in (r.stdout or ""))
     check("T5 预览零副作用", before == after, "新增：%s" % (after - before))
 
