@@ -16,6 +16,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DEADLINE = datetime(2026, 11, 5, 8, 50, 0)
+EXPIRE = datetime(2026, 11, 6, 0, 0, 0)
 DOC = "docs/ops/2026-11-05_W0_22doing处置建议_v1.md"
 TITLE = "W0 08:50 决策：22 doing 逐单处置（6 done/9 merge/3 review/4 keep）"
 TASK_NAME = "W0_A0_0850_Deliver"
@@ -94,7 +95,13 @@ def _disable_task() -> None:
 
 
 def main() -> int:
-    if "--force" not in sys.argv and datetime.now() < DEADLINE:
+    now = datetime.now()
+    if now >= EXPIRE:
+        print("skip: expired after 2026-11-05 23:59 local time")
+        if "--no-disable" not in sys.argv:
+            _disable_task()
+        return 0
+    if "--force" not in sys.argv and now < DEADLINE:
         print("skip: before 2026-11-05 08:50 local time")
         return 0
 
