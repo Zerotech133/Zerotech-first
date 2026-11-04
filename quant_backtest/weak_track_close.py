@@ -80,10 +80,13 @@ def close_fields(rows, ctype, note, arch, ncase=""):
     """
     r0, r1 = rows[0], rows[-1]
     trigs = [r for r in rows if r.get("trig")]
-    # 跟踪日数 = 不同行情日个数。缺失值（空/"?"）不是交易日，不计入
-    # （旧写法把 "?" 当成一个独立日期，会虚增 1 天）
+    # 跟踪日数 = 不同行情日个数。只数**真实交易日**：
+    #   * 缺失值（空/"?"）不是交易日，不计（旧写法把 "?" 当成一个独立日期）；
+    #   * 落在周末/休市日的 px_d 不算（历史实盘：2026 国庆休市 10-01~10-07，
+    #     流里出现过 px_d=2026-10-02，会把休市日算成一天；写入端已拦，
+    #     此处兜历史存量）。
     _dset = {str(r.get("px_d") or "")[:10] for r in rows}
-    nd = len(_dset - {"", "?"})
+    nd = len([d for d in _dset if d not in ("", "?") and not ctd.why_not(d)])
     c6 = str(r1.get("code", "?")).split(".")[0]
     chg = ""  # 区间涨跌幅
     try:
@@ -159,6 +162,7 @@ def build_close(rows, ctype, note, arch, ncase=""):
 
 
 from codes import normalize_code as _norm  # noqa: E402
+import cn_trading_days as ctd  # noqa: E402
 import logging
 
 

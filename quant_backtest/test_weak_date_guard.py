@@ -23,12 +23,17 @@ sys.path.insert(0, HERE)
 import weak_track_check as wc  # noqa: E402
 import weak_track_close as wcl  # noqa: E402
 import weak_track_summary as wts  # noqa: E402
+import cn_trading_days as ctd  # noqa: E402
 
 BAD = "".join(chr(c) for c in (50, 48, 50, 54, 45, 54, 56, 45, 57, 49))  # 月 68 / 日 91 越界（实盘存量坏串）
 BAD2 = "2026-02-30"  # 格式对但日期不存在
 GOOD = "".join(chr(c) for c in (50, 48, 50, 54, 45, 49, 48, 45, 49, 54))  # 正常交易日
 PREV = "2026-10-15"  # 坏串前一日（回退目标）
-EARLY = "".join(chr(c) for c in (50, 48, 50, 54, 45, 48, 57, 45, 50, 48))  # 早于 PREV 的合法日
+EARLY = "".join(chr(c) for c in (50, 48, 50, 54, 45, 49, 48, 45, 49, 52))  # 早于 PREV 的合法交易日
+# 2026 国庆休市 10-01~10-07（上交所上证公告〔2025〕45 号）：10-02 是休市日，
+# 但格式合法，曾被行情源当成交易日写进 px_d；09-30 才是节前真实最后交易日。
+HOLIDAY = "".join(chr(c) for c in (50, 48, 50, 54, 45, 49, 48, 45, 48, 50))
+LASTTD = "".join(chr(c) for c in (50, 48, 50, 54, 45, 48, 57, 45, 51, 48))
 
 fails = []
 
@@ -112,7 +117,40 @@ def main():
     cf = wcl.close_fields(rows, "A", "测试", "weak_track_999997.closed_x.jsonl")
     check("G14 日数不计缺失", cf["n_days"] == 2, str(cf.get("n_days")))
 
-    for p in (fp, empty, rev):
+    # --- G15 休市日拒写：10-02 法定休市，格式合法也不许入库 ---
+    hs = os.path.join(tmp, "weak_track_999993.jsonl")
+    write_stream(hs, [{"ts": PREV + "T15:00:00", "px_d": PREV}])
+    use, bad = guard(HOLIDAY, hs)
+    check("G15 休市日拒写回退", use == PREV and bad == HOLIDAY, "%r/%r" % (use, bad))
+
+    # --- G16 节前最后交易日（09-30）照写：休市前后不连续是正常的 ---
+    use, bad = guard(LASTTD, os.path.join(tmp, "weak_track_999992.jsonl"))
+    check("G16 真实交易日照写", use == LASTTD and bad is None, "%r/%r" % (use, bad))
+
+    # --- G17 结案日数不计休市日（历史存量兜底）---
+    rows2 = [
+        {"code": "999998.SZ", "px_d": LASTTD, "px": 10.0, "ex250": 1.0, "trig": []},
+        {"code": "999998.SZ", "px_d": HOLIDAY, "px": 10.1, "ex250": 1.5, "trig": []},
+        {"code": "999998.SZ", "px_d": "?", "px": 10.2, "ex250": 2.0, "trig": []},
+        {"code": "999998.SZ", "px_d": PREV, "px": 10.3, "ex250": 2.5, "trig": []},
+    ]
+    cf2 = wcl.close_fields(rows2, "A", "测试", "weak_track_999998.closed_x.jsonl")
+    check("G17 日数不计休市日", cf2["n_days"] == 2, str(cf2.get("n_days")))
+
+    # --- H1-H5 休市日历本身（判据来自上交所上证公告〔2025〕45 号）---
+    check("H1 国庆休市首日", not ctd.is_trading_day(HOLIDAY), ctd.why_not(HOLIDAY))
+    check("H2 节前最后交易日", ctd.is_trading_day(LASTTD), ctd.why_not(LASTTD))
+    check(
+        "H3 节后首日开市",
+        ctd.is_trading_day("".join(chr(c) for c in (50, 48, 50, 54, 45, 49, 48, 45, 48, 56))),
+    )
+    check(
+        "H4 调休周六休市",
+        ctd.why_not("".join(chr(c) for c in (50, 48, 50, 54, 45, 49, 48, 45, 49, 48))) == "周末",
+    )
+    check("H5 上一交易日回溯", ctd.prev_trading_day("2026-10-08") == LASTTD, str(ctd.prev_trading_day("2026-10-08")))
+
+    for p in (fp, empty, rev, hs):
         if os.path.exists(p):
             os.remove(p)
     os.rmdir(tmp)

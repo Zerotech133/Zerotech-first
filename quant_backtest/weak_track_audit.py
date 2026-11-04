@@ -2,7 +2,7 @@
 """§13 结案质量审计推送（weak 产线第 13 节 · K35-x 新增）。
 
 §12 盯在案失速（超龄/停滞/失联），§13 盯已结案侧完整性——对每个
-weak_close_*.md 六项审计，发现 §9 走到一半或数据残缺：
+weak_close_*.md 八项审计，发现 §9 走到一半或数据残缺：
 
   1. 字段缺失：头部 ts/open/chg 任一空（§10/§11 依赖的解析字段）；
   2. 归档缺失：声明的 weak_track_<c6>.closed_<ymd>.jsonl 不在 reports/；
@@ -11,7 +11,12 @@ weak_close_*.md 六项审计，发现 §9 走到一半或数据残缺：
   5. B 类新案缺：B 类结案但无「🔄 新案已建」行（生成失败/未生成）；
   6. 日期坏点：状态流（含已归档流）里 ts/px_d 非法——坏串会让
      close 按 px_d 去重算的「跟踪 N 日」塌缩失真（写入端已由
-     weak_track_check._guard_px_d 拦截，此项扫历史存量）。
+     weak_track_check._guard_px_d 拦截，此项扫历史存量）；
+  7. 非交易日：px_d 是合法日期但当天不开市（周末/已登记休市）——
+     多见于节假日行情缺数被补位，同样会把休市日算成交易日（判据见
+     cn_trading_days.py，来源上交所休市公告）；
+  8. 日期倒退：px_d 比上一条小（只在两侧都是交易日时才判——休市前后
+     px_d 本就不连续，把「休市日值 → 真实最后交易日」算倒退会误伤）。
 
 全部干净 → 打印提示 rc=0 不推送（不打扰）；有异常 → --send 推送
 turquoise 审计卡（🧾）。默认预览。文案外置 weak_track_audit_tpl.txt
@@ -33,6 +38,7 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import cn_trading_days as ctd  # noqa: E402
 import weak_track_summary as wts  # noqa: E402
 import weak_track_watch as ww  # noqa: E402
 import logging
@@ -49,23 +55,29 @@ _FIX = {
     "任务未停": "Disable 每日任务（§9 第 2 步），或确认 B 类新案已建",
     "B 类新案缺": "手动跑命令块⑨ 生成新案（或补 --newcase 重推）",
     "日期坏点": "行情源坏日期已入库：核对 px_d 是否多日塌成同一串，必要时修流重算时长",
+    "非交易日": "px_d 落在周末/休市日（行情源把非交易日当交易日）——核当日行情是否未刷新，修流重算时长",
     "日期倒退": "px_d 序列回退：多半是行情缓存回滚/数据源陈旧，核当日行情是否未刷新",
 }
 
 
 def _bad_date_stats(rep, c6):
-    """状态流日期契约体检 → dict(bad, bad_sample, back, back_sample)。
+    """状态流日期契约体检 → dict(bad, bad_sample, hol, hol_sample, back, back_sample)。
 
-    口径（K35-ad，2026-11-04 按真实流校准）：
+    口径（K35-ad，2026-11-04 按真实流 + 上交所休市公告校准）：
       * 坏点 = 字段存在且非缺失、但取值不是真实日期（月日越界等）。
         **缺失（""/"?"/None）不算坏**——那是行情缺数，不是日期错。
         历史曾把 px_d="?" 记成坏日期，属误判，此处显式排除。
-      * 倒退 = px_d 小于上一条非缺失 px_d。周末/休市重复合法，倒退则
-        多半是缓存回滚（真实案例：301216 第 6→7 行 10-02 退到 09-30）。
+      * 非交易日 = px_d 格式合法、但当天不开市（周末 / 已登记休市）。
+        真实案例：2026 国庆 10-01~10-07 休市，流里 px_d 被写成 2026-10-02。
+        这类值会让 weak_track_close.nd 把休市日算成交易日，虚增跟踪天数。
+      * 倒退 = px_d 小于上一条 px_d。**只在两侧都是交易日时才判**——休市
+        前后 px_d 本就不连续（10-08 早于 09-30 才是怪事），把「休市日值 → 真
+        实最后交易日」算成倒退会把正确的值一起算进异常（301216 就是这种）。
 
-    写入端 weak_track_check._guard_px_d 已拦坏值，此处专扫历史存量。
+    写入端 weak_track_check._guard_px_d 已拦坏值与非交易日，此处专扫历史存量。
     """
     n, sample = 0, []
+    hol, hsample = 0, []
     back, bsample = 0, []
     prev = ""
     for fp in sorted(glob.glob(os.path.join(rep, "weak_track_%s*.jsonl" % c6))):
@@ -94,16 +106,25 @@ def _bad_date_stats(rep, c6):
                         if len(sample) < 2:
                             sample.append("%s=%s" % (k, v))
                 pd = str(r.get("px_d") or "")
-                if wts.valid_day(pd):
-                    pd = pd[:10]
-                    if prev and pd < prev:
-                        back += 1
-                        if len(bsample) < 2:
-                            bsample.append("%s→%s" % (prev, pd))
-                    prev = pd
+                if not wts.valid_day(pd):
+                    continue
+                pd = pd[:10]
+                why = ctd.why_not(pd)
+                if why:
+                    hol += 1
+                    if len(hsample) < 2:
+                        hsample.append("%s(%s)" % (pd, why))
+                    continue  # 非交易日不参与倒退判定
+                if prev and pd < prev:
+                    back += 1
+                    if len(bsample) < 2:
+                        bsample.append("%s→%s" % (prev, pd))
+                prev = pd
     return {
         "bad": n,
         "bad_sample": "、".join(sample),
+        "hol": hol,
+        "hol_sample": "、".join(hsample),
         "back": back,
         "back_sample": "、".join(bsample),
     }
@@ -158,6 +179,8 @@ def audit_cases(cases_dir=None, rep=None, task_map=None):
         ds = _bad_date_stats(rep, c6)
         if ds["bad"]:
             issues.append("日期坏点:%d行(%s)" % (ds["bad"], ds["bad_sample"]))
+        if ds["hol"]:
+            issues.append("非交易日:%d行(%s)" % (ds["hol"], ds["hol_sample"]))
         if ds["back"]:
             issues.append("日期倒退:%d处(%s)" % (ds["back"], ds["back_sample"]))
         out.append(
@@ -226,8 +249,8 @@ def main():
     f = audit_fields(cases)
     if not f["n_bad"]:
         print(
-            "结案质量审计全绿（%d 例，六项全过：字段/归档/档案/"
-            "任务停/B类新案/日期）" % f["n"]
+            "结案质量审计全绿（%d 例，八项全过：字段/归档/档案/"
+            "任务停/B类新案/日期坏点/非交易日/日期倒退）" % f["n"]
         )
         return 0
     msg = build_audit(f)
