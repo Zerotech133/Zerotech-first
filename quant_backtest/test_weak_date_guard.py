@@ -17,6 +17,7 @@ import os
 import sys
 import tempfile
 from contextlib import redirect_stdout
+from datetime import date
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -149,6 +150,40 @@ def main():
         ctd.why_not("".join(chr(c) for c in (50, 48, 50, 54, 45, 49, 48, 45, 49, 48))) == "周末",
     )
     check("H5 上一交易日回溯", ctd.prev_trading_day("2026-10-08") == LASTTD, str(ctd.prev_trading_day("2026-10-08")))
+    # --- H6-H10 未覆盖年份 / 固定休市日 / 补登提醒 ---
+    # 用 date().isoformat() 生成，不写字面量
+    NY = date(2027, 1, 1).isoformat()  # 元旦（周五）
+    NY_WD = date(2027, 2, 8).isoformat()  # 普通工作日（周一）
+    check(
+        "H6 次年元旦固定休市",
+        not ctd.is_trading_day(NY) and ctd.why_not(NY) == "休市",
+        "%s/%s" % (ctd.is_trading_day(NY), ctd.why_not(NY)),
+    )
+    check("H7 固定日置信度 exact", ctd.confidence(NY) == "exact", ctd.confidence(NY))
+    check(
+        "H9 已登记年份置信度 exact", ctd.confidence(LASTTD) == "exact", ctd.confidence(LASTTD)
+    )
+    if not ctd.covered(2027):
+        # 未登记年份只能按周末判断——必须诚实标 weekday_only 而不是假装可信
+        check(
+            "H8 未覆盖年份只到周末级",
+            ctd.is_trading_day(NY_WD) and ctd.confidence(NY_WD) == "weekday_only",
+            ctd.confidence(NY_WD),
+        )
+        check(
+            "H10 11 月提醒补登次年",
+            2027 in ctd.needs_update(date(2026, 11, 4)),
+            str(ctd.needs_update(date(2026, 11, 4))),
+        )
+        check(
+            "H10 10 月不提前提醒",
+            ctd.needs_update(date(2026, 10, 1)) == [],
+            str(ctd.needs_update(date(2026, 10, 1))),
+        )
+    else:
+        check("H8 2027 已登记，跳过 weekday_only 断言", True)
+        check("H10 2027 已登记，跳过提醒断言", True)
+
 
     for p in (fp, empty, rev, hs):
         if os.path.exists(p):

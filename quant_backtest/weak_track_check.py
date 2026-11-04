@@ -122,6 +122,13 @@ def _guard_px_d(px_d, fp):
             return (last or "?"), s
         if last and s < last:  # 只告警不阻断：倒退多为缓存回滚
             print("\n[warn] px_d 倒退：%s → %s（行情缓存可能回滚/陈旧）" % (last, s))
+        if ctd.confidence(s) == "weekday_only":
+            # 该年份还没登记休市安排 → 只能按周末判，节假日会漏判。
+            # 不阻断采集（拒写会停掉整条跟踪），但必须让人看见盲区。
+            print(
+                "\n[warn] %s 的休市安排未登记（cn_trading_days.HOLIDAYS）："
+                "当日是否开市无法确认，只按周末判断" % s
+            )
         return s, None
     missing = s in ("", "?")
     print(

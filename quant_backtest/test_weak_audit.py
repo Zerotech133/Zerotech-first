@@ -20,10 +20,12 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from datetime import date
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import weak_track_audit as wa  # noqa: E402
+import cn_trading_days as ctd  # noqa: E402
 
 PY = r"C:\Program Files\Python311\python.exe"
 TMP = os.path.join(tempfile.gettempdir(), "weak_audit_test")
@@ -265,6 +267,40 @@ def main():
     check("T13 非交易日计 1 行", ds["hol"] == 1, str(ds))
     check("T13 休市样本带原因", "2026-10-02(休市)" in ds["hol_sample"], ds["hol_sample"])
     check("T13 休市日不判倒退", ds["back"] == 0, str(ds["back_sample"]))
+    # T16 日历未覆盖：某年未登记休市安排时，工作日 px_d 只能按周末判断，
+    # 节假日会漏判成交易日而不报警 → 必须单独报出来。
+    # 造未来年份的数据行不通（wts.valid_day 拒未来年份，2027 会被判成坏点），
+    # 故临时清空 HOLIDAYS 模拟「该年未登记」，用已发生的 2026 数据反证。
+    saved_hol = dict(ctd.HOLIDAYS)
+    ctd.HOLIDAYS.clear()
+    try:
+        gap_dir = os.path.join(TMP, "gap")
+        os.makedirs(gap_dir, exist_ok=True)
+        with open(
+            os.path.join(gap_dir, "weak_track_000012.closed_20261020.jsonl"),
+            "w",
+            encoding="utf-8",
+        ) as fh:
+            for dt in (date(2026, 9, 29), date(2026, 9, 30)):
+                v = dt.isoformat()
+                fh.write(
+                    json.dumps({"code": "000012.SZ", "ts": v + "T15:00:00", "px_d": v})
+                    + "\n"
+                )
+        dsg = wa._bad_date_stats(gap_dir, "000012")
+        check("T16 未覆盖年份计 2 行", dsg["gap"] == 2, str(dsg))
+        check("T16 样本带年份", "2026年未登记" in dsg["gap_sample"], dsg["gap_sample"])
+        check(
+            "T16 未覆盖时不误报坏点/非交易日",
+            dsg["bad"] == 0 and dsg["hol"] == 0,
+            str(dsg),
+        )
+    finally:
+        ctd.HOLIDAYS.update(saved_hol)
+    check(
+        "T16 恢复后 2026 重判为已覆盖",
+        wa._bad_date_stats(gap_dir, "000012")["gap"] == 0,
+    )
     # T6 任务未停（A 类 + Ready）
     res2 = wa.audit_cases(CASES, REP, task_map={"WeakTrack301216": "Ready"})
     check(

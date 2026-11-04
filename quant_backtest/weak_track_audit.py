@@ -2,7 +2,7 @@
 """§13 结案质量审计推送（weak 产线第 13 节 · K35-x 新增）。
 
 §12 盯在案失速（超龄/停滞/失联），§13 盯已结案侧完整性——对每个
-weak_close_*.md 八项审计，发现 §9 走到一半或数据残缺：
+weak_close_*.md 九项审计，发现 §9 走到一半或数据残缺：
 
   1. 字段缺失：头部 ts/open/chg 任一空（§10/§11 依赖的解析字段）；
   2. 归档缺失：声明的 weak_track_<c6>.closed_<ymd>.jsonl 不在 reports/；
@@ -18,7 +18,10 @@ weak_close_*.md 八项审计，发现 §9 走到一半或数据残缺：
      多见于节假日行情缺数被补位，同样会把休市日算成交易日（判据见
      cn_trading_days.py，来源上交所休市公告）；
   8. 日期倒退：px_d 比上一条小（只在两侧都是交易日时才判——休市前后
-     px_d 本就不连续，把「休市日值 → 真实最后交易日」算倒退会误伤）。
+     px_d 本就不连续，把「休市日值 → 真实最后交易日」算倒退会误伤）；
+  9. 日历未覆盖：px_d 落在尚未登记休市安排的年份（如 2027）——此时只能
+     按周末判断，节假日会被漏判成交易日。2027 元旦已由固定休市日兜住，
+     其余须等上交所年度公告后补登 cn_trading_days.HOLIDAYS。
 
 全部干净 → 打印提示 rc=0 不推送（不打扰）；有异常 → --send 推送
 turquoise 审计卡（🧾）。默认预览。文案外置 weak_track_audit_tpl.txt
@@ -61,6 +64,10 @@ _FIX = {
     ),
     "日期坏点": "行情源坏日期已入库：核对 px_d 是否多日塌成同一串，必要时修流重算时长",
     "非交易日": "px_d 落在周末/休市日（行情源把非交易日当交易日）——核当日行情是否未刷新，修流重算时长",
+    "日历未覆盖": (
+        "px_d 落在未登记休市安排的年份（如 2027），只能按周末判断、节假日会漏判"
+        "——补登 cn_trading_days.HOLIDAYS 该年公告区间"
+    ),
     "日期倒退": "px_d 序列回退：多半是行情缓存回滚/数据源陈旧，核当日行情是否未刷新",
 }
 
@@ -78,12 +85,16 @@ def _bad_date_stats(rep, c6):
       * 倒退 = px_d 小于上一条 px_d。**只在两侧都是交易日时才判**——休市
         前后 px_d 本就不连续（10-08 早于 09-30 才是怪事），把「休市日值 → 真
         实最后交易日」算成倒退会把正确的值一起算进异常（301216 就是这种）。
+      * 日历未覆盖 = px_d 落在**尚未登记休市安排的年份**（如 2027），此时
+        只能按周末判断，节假日会漏判成交易日。这类隐患不报错、只静默失真，
+        故单独列出。2027 元旦已由固定休市日兜住，其余待公告补登。
 
     写入端 weak_track_check._guard_px_d 已拦坏值与非交易日，此处专扫历史存量。
     """
     n, sample = 0, []
     hol, hsample = 0, []
     back, bsample = 0, []
+    gap, gsample = 0, []
     prev = ""
     for fp in sorted(glob.glob(os.path.join(rep, "weak_track_%s*.jsonl" % c6))):
         try:
@@ -120,6 +131,10 @@ def _bad_date_stats(rep, c6):
                     if len(hsample) < 2:
                         hsample.append("%s(%s)" % (pd, why))
                     continue  # 非交易日不参与倒退判定
+                if ctd.confidence(pd) == "weekday_only":
+                    gap += 1
+                    if len(gsample) < 2:
+                        gsample.append("%s(%s年未登记)" % (pd, pd[:4]))
                 if prev and pd < prev:
                     back += 1
                     if len(bsample) < 2:
@@ -132,6 +147,8 @@ def _bad_date_stats(rep, c6):
         "hol_sample": "、".join(hsample),
         "back": back,
         "back_sample": "、".join(bsample),
+        "gap": gap,
+        "gap_sample": "、".join(gsample),
     }
 
 
@@ -196,6 +213,8 @@ def audit_cases(cases_dir=None, rep=None, task_map=None):
             issues.append("日期坏点:%d行(%s)" % (ds["bad"], ds["bad_sample"]))
         if ds["hol"]:
             issues.append("非交易日:%d行(%s)" % (ds["hol"], ds["hol_sample"]))
+        if ds["gap"]:
+            issues.append("日历未覆盖:%d行(%s)" % (ds["gap"], ds["gap_sample"]))
         if ds["back"]:
             issues.append("日期倒退:%d处(%s)" % (ds["back"], ds["back_sample"]))
         out.append(
@@ -250,6 +269,20 @@ def build_audit(f):
     ).format(**f)
 
 
+def _cal_note():
+    """休市日历缺口提醒——不参与异常计数，只提示该补登哪几年。
+
+    未登记年份不会报错，只会把节假日漏判成交易日（静默失真），
+    所以单独提示，避免「全绿」被误解成「日历永远可信」。
+    """
+    ys = ctd.needs_update()
+    if not ys:
+        return ""
+    return "⚠ 休市日历待补登：%s（cn_trading_days.HOLIDAYS，依上交所年度休市公告）" % (
+        "、".join(str(y) for y in ys)
+    )
+
+
 def main():
     ap = argparse.ArgumentParser(description="§13 结案质量审计推送")
     ap.add_argument("--send", action="store_true", help="执行推送（默认仅预览）")
@@ -262,10 +295,13 @@ def main():
         )
         return 0
     f = audit_fields(cases)
+    note = _cal_note()
+    if note:
+        print(note)
     if not f["n_bad"]:
         print(
-            "结案质量审计全绿（%d 例，八项全过：字段/归档/档案/"
-            "任务停/B类新案/日期坏点/非交易日/日期倒退）" % f["n"]
+            "结案质量审计全绿（%d 例，九项全过：字段/归档/档案/"
+            "任务停/B类新案/日期坏点/非交易日/日历未覆盖/日期倒退）" % f["n"]
         )
         return 0
     msg = build_audit(f)
