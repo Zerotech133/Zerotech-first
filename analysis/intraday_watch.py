@@ -28,6 +28,7 @@ import hashlib
 import json
 import math
 import os
+import random
 import re
 import sqlite3
 import sys
@@ -74,6 +75,14 @@ EM_SECTOR_URL = ("https://push2.eastmoney.com/api/qt/clist/get?pn=%d&pz=100&po=1
                  "&fltt=2&invt=2&fid=f3&fs=m:90+t:2&fields=f12,f14,f3,f62")
 HTTP_HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
                 "Referer": "https://quote.eastmoney.com/"}
+#: 腾讯行情兜底（东财 RST 时用它补 量比/换手/成交额；单请求可批量 50 只，实测盘中稳定）
+TX_URL = "https://qt.gtimg.cn/q=%s"
+TX_HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+              "Referer": "https://gu.qq.com/"}
+#: 腾讯批量字段索引（实测 88 字段/只）：3 现价、4 昨收、30 时间、31 涨跌额、
+#: 32 涨跌幅%、36 成交量(手)、37 成交额(万)、38 换手率%、49 量比
+TX_FIELDS = {"price": 3, "prev_close": 4, "ts": 30, "chg": 31, "pct": 32,
+             "vol": 36, "amount_wan": 37, "turnover": 38, "vol_ratio": 49}
 
 #: 内置默认配置（与设计方案 §3.2/§六 一致，可由 analysis_work/intraday_watch_config.json 覆盖）
 DEFAULT_CONFIG: Dict[str, Any] = {
@@ -513,18 +522,33 @@ def fetch_quotes(codes: Iterable[str], retries: int = 1, chunk_size: int = 50,
                 out.append(rec)
     return out
 
-def fetch_em_snapshot(code: str, timeout: int = 8) -> Dict[str, Any]:
-    """东财 push2 单票补充：量比/换手/成交额/涨跌幅；失败返回 {}（不影响主流程）。"""
+def fetch_em_snapshot(code: str, timeout: int = 8, retries: int = 1) -> Dict[str, Any]:
+    """东财 push2 单票补充：量比/换手/成交额/涨跌幅；失败返回 {}（不影响主流程）。
+
+    实测盘中高频轮询时东财会大量 RST（`Remote end closed connection without
+    response`），单次失败即丢整只票的量比/换手，量价规则会漏报。这里对网络类
+    错误做 1 次短退避重试（0.35s + 0~0.25s 抖动），非 2xx/JSON 错误照旧降级。
+    """
     norm = normalize_code(code)
     m = re.fullmatch(r"(\d{6})\.(SH|SZ|BJ)", norm)
     if not m:
         return {}
     secid = "%s.%s" % ({"SH": "1", "SZ": "0", "BJ": "0"}[m.group(2)], m.group(1))
-    try:
-        payload = json.loads(_http_get(EM_STOCK_URL % secid, timeout=timeout))
-        data = (payload or {}).get("data") or {}
-    except Exception as exc:  # noqa: BLE001 - 降级路径
-        log("东财快照：%s 失败（%s）" % (norm, str(exc)[:80]))
+    last_exc: Optional[BaseException] = None
+    data: Dict[str, Any] = {}
+    for attempt in range(max(0, int(retries)) + 1):
+        try:
+            payload = json.loads(_http_get(EM_STOCK_URL % secid, timeout=timeout))
+            data = (payload or {}).get("data") or {}
+            last_exc = None
+            break
+        except Exception as exc:  # noqa: BLE001 - 降级路径
+            last_exc = exc
+            if attempt < int(retries):
+                time.sleep(0.35 + random.uniform(0.0, 0.25))
+                continue
+    if last_exc is not None:
+        log("东财快照：%s 失败（%s）" % (norm, str(last_exc)[:80]))
         return {}
     if not data:
         return {}
@@ -540,19 +564,89 @@ def fetch_em_snapshot(code: str, timeout: int = 8) -> Dict[str, Any]:
             "em_concepts": [c.strip() for c in str(data.get("f129") or "").split(",")
                             if c.strip()]}
 
+def _to_tx(code: str) -> str:
+    """600337.SH → sh600337（腾讯代码格式）。"""
+    norm = normalize_code(code)
+    m = re.fullmatch(r"(\d{6})\.(SH|SZ|BJ)", norm)
+    if not m:
+        return ""
+    return {"SH": "sh", "SZ": "sz", "BJ": "bj"}[m.group(2)] + m.group(1)
+
+def parse_tencent_payload(text: str) -> Dict[str, List[str]]:
+    """解析腾讯 `v_sh600337="1~ST美克~600337~3.37~...";` 多行响应。"""
+    out: Dict[str, List[str]] = {}
+    for line in (text or "").splitlines():
+        m = re.search(r'v_([a-z]{2}\d{6})="([^"]*)"', line)
+        if m:
+            out[m.group(1)] = m.group(2).split("~")
+    return out
+
+def fetch_tencent_snapshots(codes: Iterable[str], timeout: int = 10,
+                            chunk_size: int = 50) -> Dict[str, Dict[str, Any]]:
+    """腾讯批量行情：补 量比/换手/成交额/涨跌幅（东财不可靠时的主补充通道）。
+
+    返回 {标准代码: {vol_ratio, turnover, amount(元), pct, price, ts}}；
+    网络失败或字段不足的票直接跳过（调用方保留新浪行情）。
+    """
+    canonical = [c for c in (normalize_code(x) for x in codes) if _is_a_share(c)]
+    out: Dict[str, Dict[str, Any]] = {}
+    for start in range(0, len(canonical), chunk_size):
+        chunk = canonical[start:start + chunk_size]
+        keys = [k for k in (_to_tx(c) for c in chunk) if k]
+        if not keys:
+            continue
+        try:
+            text = _http_get(TX_URL % ",".join(keys), headers=TX_HEADERS,
+                             timeout=timeout, encoding="gbk")
+        except Exception as exc:  # noqa: BLE001 - 降级路径
+            log("腾讯行情：批次失败（%s）" % str(exc)[:80])
+            continue
+        fields_map = parse_tencent_payload(text)
+        for code, key in zip(chunk, keys):
+            fields = fields_map.get(key) or []
+            if len(fields) <= TX_FIELDS["vol_ratio"]:
+                continue
+            def pick(name: str) -> Optional[float]:
+                idx = TX_FIELDS[name]
+                return _to_float(fields[idx]) if idx < len(fields) else None
+            amount_wan = pick("amount_wan")
+            rec = {
+                "vol_ratio": pick("vol_ratio"),
+                "turnover": pick("turnover"),
+                "amount": None if amount_wan is None else round(amount_wan * 10000.0, 2),
+                "pct": pick("pct"),
+                "price": pick("price"),
+            }
+            ts_raw = fields[TX_FIELDS["ts"]] if len(fields) > TX_FIELDS["ts"] else ""
+            if re.fullmatch(r"\d{14}", ts_raw or ""):
+                rec["ts"] = "%s-%s-%s %s:%s:%s" % (
+                    ts_raw[0:4], ts_raw[4:6], ts_raw[6:8], ts_raw[8:10], ts_raw[10:12], ts_raw[12:14])
+            out[code] = rec
+    return out
+
 def _parallel_fetch(codes: List[str], fn, workers: int = 6,
-                    deadline_sec: Optional[float] = None) -> Dict[str, Dict[str, Any]]:
+                    deadline_sec: Optional[float] = None,
+                    stagger_sec: float = 0.0) -> Dict[str, Dict[str, Any]]:
     """并发拉取（东财快照），带整轮 deadline；超时/失败降级返回已取部分。
 
-    串行 50 只×8s 最坏 400s，会把 09:25 首轮拖死；这里 6 线程 + 总时限，
+    串行 50 只×8s 最坏 400s，会把 09:25 首轮拖死；这里多线程 + 总时限，
     超时后放弃未完成请求（继续用新浪行情 + 申万映射兜底），不阻塞规则引擎。
+
+    东财对「同一瞬间多连接」很敏感（实测并发 5–6 会成批 RST，`stagger_sec`
+    让每个请求在启动前随机错开 0~stagger_sec，显著降低成批失败率）。
     """
     out: Dict[str, Dict[str, Any]] = {}
     if not codes:
         return out
     pool = ThreadPoolExecutor(max_workers=max(1, min(8, int(workers))), thread_name_prefix="em")
     started = time.time()
-    futures = {pool.submit(fn, code): code for code in codes}
+
+    def _staggered(code: str) -> Dict[str, Any]:
+        if stagger_sec > 0:
+            time.sleep(random.uniform(0.0, float(stagger_sec)))
+        return fn(code)
+
+    futures = {pool.submit(_staggered, code): code for code in codes}
     try:
         for fut in as_completed(futures, timeout=deadline_sec):
             code = futures.get(fut) or ""
@@ -596,7 +690,7 @@ def ensure_em_industries(quotes: List[Dict[str, Any]], store: "StateStore",
         todo = todo[:limit]
     snaps = _parallel_fetch([str(q.get("code") or "") for q in todo],
                             lambda code: fetch_em_snapshot(code, timeout=timeout),
-                            workers=6, deadline_sec=deadline_sec)
+                            workers=1, deadline_sec=deadline_sec, stagger_sec=0.25)
     for quote in todo:
         snap = snaps.get(str(quote.get("code") or "")) or {}
         if not snap.get("em_industry"):
@@ -608,16 +702,21 @@ def ensure_em_industries(quotes: List[Dict[str, Any]], store: "StateStore",
 
 def enrich_quotes(quotes: List[Dict[str, Any]], limit: int = 12,
                   deadline_sec: Optional[float] = None) -> List[Dict[str, Any]]:
-    """按 |涨跌幅| 取前 N 只并发补东财字段（控制请求量），失败静默跳过。"""
+    """补 量比/换手/成交额：优先腾讯批量（稳定），东财仅保留给行业映射（见
+    `ensure_em_industries`）。限 `limit` 只（按 |涨跌幅| 降序），失败静默跳过。"""
     ranked = sorted([q for q in quotes if q.get("pct") is not None],
                     key=lambda q: abs(q.get("pct") or 0.0), reverse=True)[:max(0, int(limit))]
-    snaps = _parallel_fetch([str(q.get("code") or "") for q in ranked],
-                            fetch_em_snapshot, workers=6, deadline_sec=deadline_sec)
+    if not ranked:
+        return quotes
+    snaps = fetch_tencent_snapshots([str(q.get("code") or "") for q in ranked])
     for quote in ranked:
         snap = snaps.get(str(quote.get("code") or "")) or {}
         for key in ("vol_ratio", "turnover", "amount"):
             if snap.get(key) is not None:
                 quote[key] = snap[key]
+    if deadline_sec is not None:
+        # 腾讯单请求通常 <1s；此参数仅为接口兼容（保持 run_once 调用签名不变）
+        _ = deadline_sec
     return quotes
 
 # ---------------------------------------------------------------- 新闻采集
@@ -2030,3 +2129,4 @@ def main(argv: Optional[List[str]] = None) -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+
