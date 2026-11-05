@@ -5,6 +5,12 @@
   python tools/finetune/eval_regression_gate.py --payload research/reports/bailian_eval_20261104.json
   python tools/finetune/eval_regression_gate.py --payload new.json --baseline old.json --tolerance 0.02
 退出码：0=通过；1=未达标或退化。
+
+2026-11-05 审计修复：
+- citation_accuracy 阈值对齐评测目标 0.90（原 0.88 会放行评测判 ❌ 的结果）；
+- 纳入 gold_similarity（>=0.30），避免“引用高、答案不像金标”也通过；
+- 拒绝 dry-run/mock/小样本/含 error 的 payload 冒充 40 题真实评测；
+  mock 需显式 --allow-mock（仍记 warning）。
 """
 from __future__ import annotations
 
@@ -17,19 +23,50 @@ sys.stdout.reconfigure(encoding="utf-8")
 REPO = Path(__file__).resolve().parents[2]
 
 THRESHOLDS = {
-    "citation_accuracy": 0.88,
+    "citation_accuracy": 0.90,
     "groundedness": 0.60,
     "correct_refusal_rate": 0.80,
+    "gold_similarity": 0.30,
     "overclaim_rate": 0.05,
     "length_anomaly_rate": 0.10,
 }
-HIGHER_BETTER = {"citation_accuracy", "groundedness", "correct_refusal_rate"}
+HIGHER_BETTER = {"citation_accuracy", "groundedness", "correct_refusal_rate", "gold_similarity"}
+MIN_QUESTIONS = 40
+VALID_MODES = {"api"}
+MOCK_MODES = {"mock"}
 
 
-def evaluate(payload: dict, baseline: dict | None = None, tolerance: float = 0.02) -> dict:
+def _check_payload_mode(payload: dict, agg: dict, allow_mock: bool) -> tuple[bool, list[str], list[str]]:
+    """payload 必须是 40 题真实 API 评测；返回 (ok, errors, warnings)。"""
+    errors: list[str] = []
+    warnings: list[str] = []
+    mode = str(payload.get("mode") or "").strip().lower()
+    if mode in MOCK_MODES and allow_mock:
+        warnings.append("mode=mock：仅管道校验，不能作为上线达标证据")
+    elif mode not in VALID_MODES:
+        errors.append(f"payload.mode={mode!r}，只接受真实 API 评测（mock 需 --allow-mock）")
+    total = agg.get("questions_total")
+    if not isinstance(total, int) or total < MIN_QUESTIONS:
+        errors.append(f"questions_total={total!r} < {MIN_QUESTIONS}，小样本不能作为门禁证据")
+    err_n = agg.get("errors")
+    if not isinstance(err_n, int) or err_n > 0:
+        errors.append(f"aggregate.errors={err_n!r}，存在 API/评测错误")
+    return not errors, errors, warnings
+
+
+def evaluate(payload: dict, baseline: dict | None = None, tolerance: float = 0.02,
+             allow_mock: bool = False) -> dict:
     agg = payload.get("aggregate") or {}
     checks = []
+    warnings: list[str] = []
     ok = True
+
+    mode_ok, mode_errors, mode_warnings = _check_payload_mode(payload, agg, allow_mock)
+    warnings.extend(mode_warnings)
+    checks.append({"metric": "payload_validity", "pass": mode_ok,
+                   "detail": "; ".join(mode_errors), "kind": "validity"})
+    ok = ok and mode_ok
+
     for metric, target in THRESHOLDS.items():
         cur = agg.get(metric)
         passed = cur is not None and (cur >= target if metric in HIGHER_BETTER else cur <= target)
@@ -47,7 +84,7 @@ def evaluate(payload: dict, baseline: dict | None = None, tolerance: float = 0.0
             checks.append({"metric": metric, "current": cur, "baseline": base, "delta": delta,
                            "tolerance": tolerance, "pass": not degraded, "kind": "regression"})
             ok = ok and not degraded
-    return {"ok": ok, "checks": checks, "aggregate": agg,
+    return {"ok": ok, "warnings": warnings, "checks": checks, "aggregate": agg,
             "baseline_aggregate": (baseline or {}).get("aggregate")}
 
 
@@ -56,15 +93,17 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--payload", required=True, help="新评测 JSON")
     ap.add_argument("--baseline", default="", help="对比基线 JSON（可选）")
     ap.add_argument("--tolerance", type=float, default=0.02, help="退化容忍度（默认 0.02）")
+    ap.add_argument("--allow-mock", action="store_true", help="允许 mock payload（仅管道校验）")
     ap.add_argument("--json-out", default="", help="结果写入 JSON（可选）")
     args = ap.parse_args(argv)
     payload = json.loads(Path(args.payload).read_text(encoding="utf-8"))
     baseline = json.loads(Path(args.baseline).read_text(encoding="utf-8")) if args.baseline else None
-    result = evaluate(payload, baseline, args.tolerance)
+    result = evaluate(payload, baseline, args.tolerance, allow_mock=args.allow_mock)
     if args.json_out:
         Path(args.json_out).parent.mkdir(parents=True, exist_ok=True)
         Path(args.json_out).write_text(json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8")
-    print(json.dumps({"ok": result["ok"], "checks": result["checks"]}, ensure_ascii=False, indent=1))
+    print(json.dumps({"ok": result["ok"], "warnings": result["warnings"],
+                      "checks": result["checks"]}, ensure_ascii=False, indent=1))
     return 0 if result["ok"] else 1
 
 

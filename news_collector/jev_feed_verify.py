@@ -50,8 +50,10 @@ ERR_LOG = r"C:\Temp\jev_feed_err.log"
 AUDIT_LOG = os.path.join(HERE, "logs", "jev_verify.log")
 KIND = "jev_feed_verify"
 GROUP = "量化群"  # push_targets 注册名（K-STOCK-403 单一事实源）
-WAIT_RUNNING_MIN = 35  # 00:15 时任务仍在运行的轮询上限（分钟）
-# 10-17 实证：23:45 启动、02:16 落账（存量排水），Steady state ~11min
+WAIT_RUNNING_MIN = 35  # 校验时任务仍在运行的轮询上限（分钟）
+# 10-17 实证：23:45 启动、02:16 落账（存量排水），Steady state ~11min。
+# 2026-11-05：feed 已改为 21:00 启动；267009 是任务仍在运行，不能当 ❌。
+RUNNING_RC = 267009  # 0x41301 SCHED_S_TASK_RUNNING
 
 
 def run_cmd(args, timeout=30):
@@ -72,6 +74,11 @@ def _ps_info(task):
         "rc=$i.LastTaskResult;st=$t.State}|ConvertTo-Json -Compress" % (task, task)
     )
     return run_cmd(["powershell", "-NoProfile", "-Command", ps])
+
+
+def _is_running(info):
+    """任务仍在运行（State=Running 或 LastResult=267009）。"""
+    return info.get("state") == "Running" or info.get("last_result") == RUNNING_RC
 
 
 def task_info(task):
@@ -195,22 +202,23 @@ def build(now):
     yday = now - timedelta(days=1)
     d1 = yday.strftime("%m-%d")
     d1c = yday.strftime("%Y%m%d")  # 水位"满当日"基准
-    fresh_from = yday.strftime("%Y-%m-%d 23:40")
+    fresh_from = yday.strftime("%Y-%m-%d 20:30")
 
     ti = task_info(TASK)
     ran = bool(
         ti["last_run"]
         and ti["last_run"]
-        >= datetime.combine(yday, datetime.min.time()).replace(hour=23, minute=30)
+        >= datetime.combine(yday, datetime.min.time()).replace(hour=20, minute=30)
     )
 
-    # 任务 00:15 仍在运行（排水设计内）→ 轮询等待，超时降级 ⚠️
+    # 当前 JevFeed 21:00 启动、可能跨 2h；校验时仍在运行 → 轮询等待，
+    # 超时降级 ⚠️，绝不能把 267009 当失败。
     still_running = False
-    if ran and ti["state"] == "Running":
+    if ran and _is_running(ti):
         state = wait_finish(TASK)
-        if state == "Running":
-            still_running = True
+        still_running = state == "Running" or ti["last_result"] == RUNNING_RC
         ti = task_info(TASK)  # 完成后刷新 Last Result
+        still_running = still_running or _is_running(ti)
 
     exit_code, log_ts, log_err = task_log_exit()
     latest, prev = runs_latest()
@@ -226,7 +234,7 @@ def build(now):
     runs_fresh = bool(latest and latest[0] >= fresh_from)
     ok1 = bool(latest and latest[1] == 1)
     new_count = latest[2] if latest else None
-    log_fresh = log_ts >= yday.strftime("%Y-%m-%dT23:40")
+    log_fresh = log_ts >= yday.strftime("%Y-%m-%dT20:30")
 
     wm_txt = "/".join("%s=%s" % (k, wm_new.get(k, "-")) for k in ("news", "notice"))
     lag = [
@@ -258,7 +266,7 @@ def build(now):
     if still_running:
         return (
             "⚠️",
-            "[%s夜检⚠️] 00:15仍在运行(已轮询%d分钟,10-17排水曾至02:16属设计内)"
+            "[%s夜检⚠️] 校验时仍在运行(已轮询%d分钟,10-17排水曾至02:16属设计内)"
             "｜%s\n最终exit见C:\\Temp\\jev_feed_task.log尾行"
             % (d1, WAIT_RUNNING_MIN, nums),
             "still_running",

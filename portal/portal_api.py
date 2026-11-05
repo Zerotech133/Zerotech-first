@@ -157,9 +157,9 @@ _load_cainiao_env()
 # 变更类 POST 端点（逐一对照 do_POST 路由表；/feishu/event 为飞书回调，
 # 不走 portal token，改走 X-Lark-Signature 验签，见 _api_feishu_event）
 _MUTATION_POSTS = frozenset((
+    "/api/monitor/run",
+    "/api/monitor/pool",
     "/api/analysis/submit",  # K-STOCK-ANALYSIS-P0C2 个股分析入队（写队列文件）
-    "/api/monitor/run",      # 批量监控运行（写告警库）
-    "/api/monitor/pool",     # 监控股票池管理（写 pools.json）
     "/api/analysis/review",  # K-STOCK-ANALYSIS-P0F 事件人工复核（写复核状态）
     "/api/data/update-plan",
     "/api/data/update",
@@ -1051,6 +1051,13 @@ color:#fff;font-size:13.5px;cursor:pointer}
     def do_POST(self):
         """v2.5：标注保存（首个 POST 端点，其余页面均为只读 GET）。"""
         path = self.path.split("?", 1)[0]
+        # H1（2026-11-03）：个股分析内部网关（Hermes MCP 专用；loopback + 专属 token，
+        # 模块内 fail-closed 鉴权；不走 X-Portal-Token/session，保持工具面独立）。
+        if path.startswith('/api/analysis/internal/'):
+            import api_analysis_internal
+            api_analysis_internal.handle_post(
+                self, path, self.path.split("?", 1)[1] if "?" in self.path else "")
+            return
         # P142：早分支变更端点先过 token 闸门（本机直连/页面自动带 token；
         # 反代+局域网须 X-Portal-Token）。403 语义与 :1042 闸门保持一致。
         if path.startswith(_EARLY_TOKEN_PREFIXES) and not self._check_portal_token():
@@ -1149,8 +1156,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
         if path.startswith('/api/monitor/'):
             import api_monitor
             api_monitor.handle_post(
-                self, path,
-                self.path.split("?", 1)[1] if "?" in self.path else "")
+                self, path, self.path.split("?", 1)[1] if "?" in self.path else "")
             return
         try:
             if path == "/api/sim/confirm":
@@ -1649,6 +1655,13 @@ color:#fff;font-size:13.5px;cursor:pointer}
         raw = self.path
         path = raw.split("?", 1)[0]
         qs = raw.split("?", 1)[1] if "?" in raw else ""
+        if path.startswith('/api/data/catalog/'):
+            # 数据打通 2026-11-05：catalog 258 表实时元数据/样本只读通道。
+            # data 已在 nginx 公开族 B 白名单 → 无需改 nginx；8091 由 SYSTEM 托管，
+            # 代码落地后待宿主自然重启生效（WO-OS-09 判例），本轮不重启。
+            import api_catalog_data
+            api_catalog_data.handle_get(self, path, qs)
+            return
         if path == '/api/zhuge/review/status' or path.startswith('/api/zhuge/review/'):
             # P0：只读复核状态/结果（模块内校验 feature flag/session）
             api_zhuge_review.handle_get(self, path)
@@ -1707,8 +1720,12 @@ color:#fff;font-size:13.5px;cursor:pointer}
             import api_kb_qa
             api_kb_qa.handle_get(self, path, qs)
             return
+        if path.startswith('/api/analysis/internal/'):
+            # H1（2026-11-03）：个股分析内部只读网关（Hermes MCP；loopback + 专属 token）
+            import api_analysis_internal
+            api_analysis_internal.handle_get(self, path, qs)
+            return
         if path.startswith('/api/monitor/'):
-            # 2026-11-04：个股批量监控只读入口（独立文件 api_monitor.py）
             import api_monitor
             api_monitor.handle_get(self, path, qs)
             return
@@ -2996,10 +3013,8 @@ color:#fff;font-size:13.5px;cursor:pointer}
             jid = (parse_qs(qs).get("job") or [""])[0]
             self._sa_result(jid)
         elif path == "/sa/workbench":
-            # 2026-11-04：个股分析新版工作台（独立页；tokens/nav/shortscreen 三件套）
             self._html_file(os.path.join(ROOT, "sa_workbench.html"))
         elif path == "/sa/monitor":
-            # 2026-11-04：个股批量监控独立页（tokens/nav/shortscreen 三件套）
             self._html_file(os.path.join(ROOT, "sa_monitor.html"))
         elif path == "/bt-signals":
             # 飞书卡片「明日信号」按钮目标页：全池 4 策略持仓信号

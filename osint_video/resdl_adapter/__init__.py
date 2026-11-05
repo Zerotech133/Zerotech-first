@@ -7,12 +7,14 @@ from .adapter import (
     ServiceUnavailableError,
     HttpRequestError,
 )
+from .completion import MediaCompletionVerifier
 from .dto import MediaInfo
 from .security import PathPolicy, PathPolicyError
 
 __all__ = [
     "DownloadResult",
     "HttpRequestError",
+    "MediaCompletionVerifier",
     "MediaInfo",
     "PathPolicy",
     "PathPolicyError",

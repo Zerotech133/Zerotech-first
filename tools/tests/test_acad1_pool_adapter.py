@@ -248,6 +248,22 @@ def test_crypto_unsupported(tmp_path):
     assert report["verdict"] == "fail"
 
 
+def test_global_coverage_excludes_unsupported(tmp_path):
+    mod = _load()
+    cards = _cards(tmp_path, cards=[
+        {"candidate_id": "sh688004", "market": "CN"},
+        {"candidate_id": "NOSUCH", "market": "US"},
+        {"candidate_id": "ETH/USDT", "market": "CRYPTO"},
+    ])
+    report = _run(mod, tmp_path, cards_path=cards)
+    summary = report["summary"]
+    assert summary["cards_total"] == 3
+    assert summary["supported_total"] == 2
+    assert summary["daily_hit"] == 1
+    assert summary["daily_coverage_pct"] == 50.0
+    assert summary["all_cards_daily_coverage_pct"] == 33.3
+
+
 def test_data_lag_days(tmp_path):
     mod = _load()
     cards = _cards(tmp_path, pool_date="2026-11-02")

@@ -133,6 +133,29 @@ def test_10_sweep_not_overdue_fresh(inbox):
     assert cd.sweep_overdue() == []
 
 
+def test_10b_sweep_skips_internal_notify_reminders(inbox):
+    """ACAD1 安全默认通知/补发提醒是内部通知，不应触发派单进度巡视。"""
+    import time
+
+    old = time.strftime(
+        "%Y-%m-%dT%H:%M:%S", time.localtime(time.time() - 20 * 60)
+    )
+    for i, src in enumerate(sorted(cd.NON_DISPATCH_SOURCES)):
+        rec = {
+            "id": "lg-internal-%d" % i,
+            "kind": "task_request",
+            "state": "inbox",
+            "source": src,
+            "submitted_at": old,
+            "payload": {"title": "internal notice"},
+        }
+        (inbox / "inbox").mkdir(parents=True, exist_ok=True)
+        (inbox / "inbox" / ("lg-internal-%d.json" % i)).write_text(
+            json.dumps(rec, ensure_ascii=False), encoding="utf-8"
+        )
+    assert cd.sweep_overdue() == []
+
+
 # ── 开关与失败诚实 ────────────────────────────
 def test_11_dispatch_disabled_by_default(inbox, monkeypatch):
     monkeypatch.delenv("COMM_DISPATCH_ENABLED", raising=False)

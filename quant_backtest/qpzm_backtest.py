@@ -22,7 +22,8 @@ sector_effect.py；打分公式按产线逐条复刻（见 DESIGN 注释与单�
     breadth<0.40 或 med20<-3% → safe=False（rps_resonance.market_env）。
   · 信号后验: T 日收盘产生信号 → T+1 开盘价买入，持有 N 个交易日
     （T+1 起第 N 根 bar 收盘卖出）；N∈{5,10,20}。成本 = 往返一次性，
-    默认 0.15%。K254：全价后复权（pre_close 链）；T+1 一字板（开=高=收
+    默认 0.30%（单边 15bp×2，从 config.trade.by_market.CN 推导）。
+    K254：全价后复权（pre_close 链）；T+1 一字板（开=高=收
     且开盘涨幅达板）视为无法成交剔除；出场停牌按最后可得价结算并计数。
   · 参数网格: RPS 权重 3 组 × 买入/观察阈值 2 组 × 闸门开关 2 态。
 
@@ -65,6 +66,43 @@ JEV_REPLAY_PATH = os.path.join(HERE, "data", "jev_archive", "jev_replay_series.j
 JEV_MODES = ("missing", "neutral50", "w015", "replay")
 TH_CUR = (75, 50)  # 现行 买入/观察
 TH_ALT = (70, 50)
+DEFAULT_COST_FALLBACK = 0.0030  # CN 实盘往返（单边 15bp × 2），读 config 失败时回退
+
+
+def default_cost_roundtrip(market="CN"):
+    """从 config.json 的 trade.by_market 推导往返成本比例。
+
+    cost_bps / slippage_bps 为**单边**费率；回测的 cost 是逐笔往返扣一次
+    （trade_returns 里 ret = exit/entry - 1 - cost），故往返 = 2×(cost+slippage)/10000。
+    读不到 config 或市场缺失时回退 0.0030（CN 实盘口径），不静默用 0.0015。
+    """
+    try:
+        import backtest as _bt  # 复用既有 config 读取逻辑，不重复造 JSON 解析
+
+        cfg = _bt.load_trade_config(market)
+        cost_bps = float(cfg["cost_bps"])
+        slippage_bps = float(cfg["slippage_bps"])
+        val = 2.0 * (cost_bps + slippage_bps) / 10000.0
+        # load_trade_config 对未知市场静默回退 CN，这里探测并显式告警
+        probe = _bt.load_trade_config("__t8_unknown_market__")
+        if market != "CN" and (cost_bps, slippage_bps) == (
+            float(probe["cost_bps"]),
+            float(probe["slippage_bps"]),
+        ):
+            print(
+                "[cost] 警告：market=%s 不在 config.trade.by_market 中，"
+                "按 CN 保守口径推导为 %.6f（单边 %gbp×2）"
+                % (market, val, cost_bps + slippage_bps)
+            )
+        return val
+    except Exception as exc:
+        print(
+            "[cost] 警告：读取 config.trade.by_market[%s] 失败（%s: %s），"
+            "回退默认往返成本 %.4f" % (market, type(exc).__name__, exc, DEFAULT_COST_FALLBACK)
+        )
+        return DEFAULT_COST_FALLBACK
+
+
 MIN_BARS_ELIG = 55  # resonance_watchlist 最低 bar 数（缺则不参与打分）
 MIN_BARS_ENV = 21  # market_env 计入宽度要求
 STRAT_PARAMS = {  # config.json strategies（产线现行参数）
@@ -93,7 +131,8 @@ DESIGN = {
     "K254：出场日停牌按最后可得价结算（ffill）并计数"
     "(n_dropped 口径变更为 nobar+一字板)；T+1 一字板（开=高=收"
     "且开盘涨幅达板）视为无法成交剔除",
-    "cost": "往返一次性成本（佣金双边+印花税+滑点），默认 0.0015",
+    "cost": "往返一次性成本（佣金双边+印花税+滑点），默认 0.0030"
+    "（单边 12+3bp 由 config.trade.by_market.CN 推导 ×2；--cost 显式覆盖）",
     "price": "K254 起后复权口径：逐股 own-bar 因子链 "
     "f(t)=f(t-1)*close(t-1)/pre_close(t)，close/open 全乘因子；"
     "（K253 实证旧「未复权」口径近一年 2883 起除权、1131 起单次"
@@ -828,6 +867,7 @@ def run_backtest(args):
             },
             "holds": holds,
             "cost_roundtrip": args.cost,
+            "cost_source": getattr(args, "cost_source", "unknown"),
             "jev_mode": args.jev_mode,
             "jev_replay_meta": jev_meta,
             "sample_mode": bool(args.stocks_limit),
@@ -888,8 +928,12 @@ def build_summary(report, env_win):
         % (report["meta"]["n_stocks"], w["start"], w["end"], w["signal_days"], unsafe)
     )
     lines.append(
-        "- 成本: 往返 %.2f%%；口径: T+1 开盘买入，持有 N 日收盘卖出；"
-        "超额基准 = 同窗口全体可交易股票等权" % (report["meta"]["cost_roundtrip"] * 100)
+        "- 成本: 往返 %.2f%%（来源 %s）；口径: T+1 开盘买入，持有 N 日收盘卖出；"
+        "超额基准 = 同窗口全体可交易股票等权"
+        % (
+            report["meta"]["cost_roundtrip"] * 100,
+            report["meta"].get("cost_source", "unknown"),
+        )
     )
     lines.append("")
     lines.append("## 参数网格（hold=%s 日）" % h0)
@@ -1211,6 +1255,7 @@ def build_killed_payload(
             },
             "n_stocks": wide["close"].shape[1],
             "cost_roundtrip": cost,
+            "cost_source": getattr(args, "cost_source", "unknown"),
             "jev_mode": args.jev_mode,
             "weights": "w_cur",
             "thresholds": list(TH_CUR),
@@ -1324,7 +1369,11 @@ def parse_args(argv=None):
     ap.add_argument("--end", default=None, help="信号窗止 YYYYMMDD（默认数据尾）")
     ap.add_argument("--hold", default="5,10,20", help="持有交易日，逗号分隔")
     ap.add_argument(
-        "--cost", type=float, default=0.0015, help="往返成本比例，默认 0.0015"
+        "--cost",
+        type=float,
+        default=None,
+        help="往返成本比例；默认从 config.trade.by_market.CN 推导为 0.0030"
+        "（单边15bp×2）",
     )
     ap.add_argument("--data-dir", default=DATA_DIR)
     ap.add_argument("--out", default=os.path.join(REPORTS, "qpzm_backtest_report.json"))
@@ -1353,6 +1402,11 @@ def parse_args(argv=None):
         help="错杀清单 JSON 输出路径（--killed-details 时生效）",
     )
     args = ap.parse_args(argv)
+    if args.cost is None:
+        args.cost = default_cost_roundtrip("CN")
+        args.cost_source = "config:CN(往返)"
+    else:
+        args.cost_source = "cli(显式)"
     args.holds = sorted({int(x) for x in str(args.hold).split(",") if x})
     return args
 

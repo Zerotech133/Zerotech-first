@@ -14,6 +14,7 @@ import os
 import re
 import sys
 import time
+import urllib.request
 import requests
 import logging
 
@@ -23,6 +24,9 @@ TEXTS = os.path.join(DOCS, "doc_texts.jsonl")
 SHADOW = os.path.join(DOCS, "structure_shadow.jsonl")
 OLLAMA = "http://127.0.0.1:11434/api/chat"
 MODEL = "qwen3.5:9b"
+# num_ctx 全仓唯一口径（2026-10-24 收口，见 ask_ollama 注释）：主调用与探测共用，
+# 任一处写成别的值都会让 Ollama 整模型重载 15~46s。
+NUM_CTX = 16384
 
 PROMPT = """你是金融文档结构化引擎。输入一篇文档文本（公告/投关记录/研报/决议等），输出严格 JSON：
 {
@@ -270,12 +274,17 @@ def split_news_items(text):
 # 实测（2026-10-08 23:30 探针，8 条真实待判）：单判 5.5s/条，每条重复评估
 # ~650tok PROMPT 是纯开销；合批一次出 JSON 数组，探针实测 ~70-80tok/s 生成。
 # 输出预算按探针：单条实际 ~250tok（模型沿用基础 schema 带 key_numbers，
-# 不强省——销量/回购金额等确有价值）；K=6 → 输出 ~1500tok + prompt 800tok
-# + 组正文 ~1000tok ≈ 3300 < num_ctx 4096 ✓（K=8 实测 1800 截断翻车）。
+# 不强省——销量/回购金额等确有价值）；K=3 → 输出 ~750tok + prompt 800tok
+# + 组正文 ~500tok ≈ 2050 < num_ctx 16384 ✓（K=8 实测 1800 截断翻车）。
+# 2026-11-04 交互延迟优化：BATCH_K 6→3、num_predict 1700→900、CHAR_CAP 1100→600。
+# 依据：np=1 下请求串行，K=6 单次生成 1500tok≈45s（33tok/s），人类聊天插队
+# 平均要等半个 batch（~22s）；K=3 单请求≈23s，等待减半。代价仅 prompt 前缀
+# prefill 重复（800tok@2637tok/s≈0.3s/组，可忽略），总吞吐基本持平。
+# 回滚：k266_m3_structure.py.bak-batch3-20261104（原值 K=6 / 1700 / 1100）。
 # 解析带截断兜底：num_predict 仍不够时只丢尾部截断条目（回退单判），不废整组。
 # 影子记录带 batched:true 供人审抽样区分口径。
-BATCH_K = 6
-BATCH_CHAR_CAP = 1100
+BATCH_K = 3
+BATCH_CHAR_CAP = 600
 BATCH_ITEM_TRUNC = 400
 BATCH_PROMPT = (
     PROMPT
@@ -320,7 +329,7 @@ def ask_ollama(
             # + KV q8_0 后复测 16384 与 4096 吞吐相同（33.5 vs 33.8 tok/s）。
             # 正文截断（trunc/BATCH_CHAR_CAP）保持不变：加大 ctx 只放宽上限，
             # 不改批次口径。num_predict 仍防病态长生成。
-            "options": {"num_ctx": 16384, "num_predict": num_predict},
+            "options": {"num_ctx": NUM_CTX, "num_predict": num_predict},
             "messages": [
                 {
                     "role": "user",
@@ -515,6 +524,148 @@ def yield_to_classify_shifts(
                 heartbeat()
 
 
+# ── 闸门 3（2026-11-04 K266-PROBE-YIELD，默认关闭零风险）──
+# 依据（2026-11-04 20:20 实测）：k266 长跑期间人类交互被挤到 6.6~20.2s（空闲基线
+# 0.34~0.42s）。已有两层让位都盖不住这个场景——闸门 2 只挡 08/09/10 整点班；
+# ollama_lock 租约（300s）只管得住"拿锁的人"，而人类交互不拿锁，只有延迟探测
+# 能感知。故 K266_PROBE_YIELD=1 时：每 PROBE_YIELD_EVERY_S 至多探一次
+# （num_predict=1 ping，与主调用同 NUM_CTX，不触发重载），延迟超阈判 busy →
+# 交还锁（让 xq/JEV 能进）→ 睡 POLL 重探，累计让位超 BUDGET_S → 本轮收工
+# （k266_services 5 分钟一轮自愈，影子是增量的，收工不丢进度）。
+# BUDGET 取 900s 而非常用的 1800s：k266 是增量补积压，收工代价只是一轮重来；
+# 让位超过一刻钟等于把长跑挂死，不如交还调度、下一 tick 再抢。
+# 探测口径照抄 xq_classify.ollama_probe_busy（禁代理 opener / 异常按 busy）。
+PROBE_YIELD_FLAG = "K266_PROBE_YIELD"
+PROBE_YIELD_THRESH_S = 6.0  # busy 阈（秒）：与 xq / K-STOCK 守卫 6s 同源
+PROBE_YIELD_POLL_S = 60  # busy 后重探间隔
+PROBE_YIELD_BUDGET_S = 900  # 单轮累计让位上限：够骑过一轮人类对话，不把长跑挂死
+PROBE_YIELD_EVERY_S = 60  # 两次探测最小间隔：把探针开销摊到 ~1 次/分钟
+PROBE_YIELD_TIMEOUT_S = 10  # 单次探测超时
+PROBE_PING_URL = "http://127.0.0.1:11434/api/generate"
+_PROBE_STATE = {"last": -1e9, "used": 0.0}  # 进程级：上次探测时刻 / 已让位秒数
+_STOP = {"on": False}  # 闸门 3 判定本轮收工（退出判读循环，不写影子）
+
+
+def _probe_conf():
+    """延迟求值（_peak_shift_conf 判例）：调用时读 env；非法值回落默认。"""
+    on = os.environ.get(PROBE_YIELD_FLAG) == "1"
+    thresh, poll_s = PROBE_YIELD_THRESH_S, PROBE_YIELD_POLL_S
+    budget_s, every_s = PROBE_YIELD_BUDGET_S, PROBE_YIELD_EVERY_S
+    try:
+        thresh = float(os.environ.get("K266_PROBE_YIELD_THRESH_S") or thresh)
+        poll_s = int(os.environ.get("K266_PROBE_YIELD_POLL_S") or poll_s)
+        budget_s = int(os.environ.get("K266_PROBE_YIELD_BUDGET_S") or budget_s)
+        every_s = int(os.environ.get("K266_PROBE_YIELD_EVERY_S") or every_s)
+    except ValueError:
+        sys.stderr.write(
+            "[k266] WARN invalid K266_PROBE_YIELD_* env, fallback defaults\n"
+        )
+    return on, thresh, poll_s, budget_s, every_s
+
+
+def ollama_probe_busy(thresh_s, timeout_s=PROBE_YIELD_TIMEOUT_S):
+    """单次占用探测：最小推理 ping（num_predict=1，think 关），延迟超阈判 busy。
+    禁代理开 opener（A1 报告判例：环境代理会污染 127.0.0.1 探测）。
+    返回 (busy, latency_s)；探测异常（超时/拒绝）按 busy 计——fail-safe 不硬挤。"""
+    payload = json.dumps(
+        {
+            "model": MODEL,
+            "prompt": "ping",
+            "stream": False,
+            "think": False,
+            "options": {"num_ctx": NUM_CTX, "num_predict": 1},
+        }
+    ).encode("utf-8")
+    req = urllib.request.Request(
+        PROBE_PING_URL, data=payload, headers={"Content-Type": "application/json"}
+    )
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    t0 = time.time()
+    try:
+        opener.open(req, timeout=timeout_s).read()
+    except Exception:
+        return True, min(time.time() - t0, float(timeout_s))
+    latency = time.time() - t0
+    return latency > thresh_s, latency
+
+
+def probe_yield_gate(lock=None, probe=None, sleep=None, now=None, log=print, state=None):
+    """闸门 3（K266_PROBE_YIELD=1 才启用，默认直通零变化）。
+    返回 True=继续判读；False=让位预算耗尽，本轮收工（调度下轮自愈）。
+    节流：距上次探测不足 EVERY_S 直接放行，探针开销摊到 ~1 次/分钟。
+    busy：交还锁 → 睡 POLL → 重抢锁（抢不到说明别人在跑正式活，本轮收工）→ 重探。
+    依赖晚绑定解析（_peak_shift_conf 判例）：测试与长跑可注入替身。"""
+    state = _PROBE_STATE if state is None else state
+    probe = probe or ollama_probe_busy
+    sleep = sleep or time.sleep
+    now = now or time.time
+    on, thresh, poll_s, budget_s, every_s = _probe_conf()
+    if not on:
+        return True
+    if now() - state["last"] < every_s:
+        return True
+    while True:
+        state["last"] = now()
+        busy, latency = probe(thresh)
+        if not busy:
+            return True
+        if state["used"] + poll_s > budget_s:
+            log(
+                json.dumps(
+                    {
+                        "gate": "k266_probe_yield",
+                        "event": "wait_expired",
+                        "latency_s": round(latency, 2),
+                        "used_s": round(state["used"]),
+                        "budget_s": budget_s,
+                    },
+                    ensure_ascii=False,
+                )
+            )
+            return False
+        log(
+            json.dumps(
+                {
+                    "gate": "k266_probe_yield",
+                    "event": "busy_yield",
+                    "latency_s": round(latency, 2),
+                    "thresh_s": thresh,
+                    "poll_s": poll_s,
+                    "used_s": round(state["used"]),
+                    "budget_left_s": round(budget_s - state["used"]),
+                },
+                ensure_ascii=False,
+            )
+        )
+        if lock is not None:
+            try:
+                lock.release()
+            except Exception as exc:  # noqa: BLE001
+                logging.getLogger(__name__).warning(
+                    "silent-except %s: %s", "quant_backtest/k266_m3_structure.py", exc
+                )
+        sleep(poll_s)
+        state["used"] += poll_s
+        if lock is not None:
+            try:
+                if not lock.acquire("k266_m3", wait_s=600):
+                    log(
+                        json.dumps(
+                            {
+                                "gate": "k266_probe_yield",
+                                "event": "lock_lost",
+                                "used_s": round(state["used"]),
+                            },
+                            ensure_ascii=False,
+                        )
+                    )
+                    return False
+            except Exception as exc:  # noqa: BLE001
+                logging.getLogger(__name__).warning(
+                    "silent-except %s: %s", "quant_backtest/k266_m3_structure.py", exc
+                )
+
+
 def main():
     limit = 10**9
     if "--limit" in sys.argv:
@@ -540,6 +691,10 @@ def main():
         """判一篇（整文档或单条新闻）并落影子。"""
         nonlocal n_ok, n_err
         yield_to_classify_shifts(log=print, heartbeat=ollama_lock.heartbeat)
+        # 闸门 3：人类交互探测让位（默认关闭直通）；预算耗尽→本轮收工，不写影子
+        if not probe_yield_gate(lock=ollama_lock):
+            _STOP["on"] = True
+            return
         try:
             parsed = parse_json(ask_ollama(text))
             parsed["tags"] = norm_tags(parsed.get("tags", []))  # 源头归一，展示端兜底
@@ -592,6 +747,10 @@ def main():
         组失败/模型漏项逐条回退单判（ERR 纪律与单判完全一致）。"""
         nonlocal n_ok, n_err
         yield_to_classify_shifts(log=print, heartbeat=ollama_lock.heartbeat)
+        # 闸门 3：合批调用同口径让位（抢不到锁/预算耗尽→整组不判，下轮重来）
+        if not probe_yield_gate(lock=ollama_lock):
+            _STOP["on"] = True
+            return
         try:
             batch_text = "\n".join(
                 "[%d] %s" % (i, it[3][:BATCH_ITEM_TRUNC])
@@ -601,7 +760,7 @@ def main():
                 ask_ollama(
                     batch_text,
                     prompt=BATCH_PROMPT,
-                    num_predict=1700,
+                    num_predict=900,
                     trunc=BATCH_CHAR_CAP + BATCH_ITEM_TRUNC + 64,
                 )
             )
@@ -649,13 +808,14 @@ def main():
                 print("[lock] tick 未抢回锁（重试 6 次），继续跑并告警", flush=True)
 
     # 合批缓冲：攒够 BATCH_K 条或 BATCH_CHAR_CAP 字即冲一组（跨批次文件混组
-    # 无妨——每条自带 doc_id/name；极限 1100+最长一条 414 字，trunc 预算已留）
+    # 无妨——每条自带 doc_id/name；极限 600+末条最长 400(BATCH_ITEM_TRUNC)
+    # =1000 字 < trunc 1064，预算已留）
     news_buf, news_chars = [], 0
 
     def flush_news():
         nonlocal news_chars
-        if not news_buf:
-            return
+        if not news_buf or _STOP["on"]:
+            return  # 闸门 3 收工：残组不判（缓冲由 TEXTS 重建，幂等不丢）
         items = news_buf[:]
         news_buf.clear()
         news_chars = 0
@@ -663,7 +823,7 @@ def main():
 
     with open(TEXTS, encoding="utf-8") as f:
         for line in f:
-            if n_ok + n_err >= limit:
+            if _STOP["on"] or n_ok + n_err >= limit:
                 break
             try:
                 rec = json.loads(line)
@@ -676,7 +836,7 @@ def main():
             # （防 tags 双计）；doc_id=批次id+i序号，幂等口径不变
             if rec.get("src") == "news" or str(rec.get("name", "")).startswith("news_"):
                 for idx, item in enumerate(split_news_items(rec.get("text", "")), 1):
-                    if n_ok + n_err >= limit:
+                    if _STOP["on"] or n_ok + n_err >= limit:
                         break
                     did_i = f"{did}i{idx:02d}"
                     if did_i in done:
@@ -690,7 +850,10 @@ def main():
                 continue
             judge(did, rec.get("name"), rec, rec.get("text", ""))
     flush_news()  # 收尾残组
-    print(f"done ok={n_ok} err={n_err} shadow={SHADOW}")
+    print(
+        f"done ok={n_ok} err={n_err} shadow={SHADOW}"
+        + (" stop=probe_yield" if _STOP["on"] else "")
+    )
 
 
 if __name__ == "__main__":

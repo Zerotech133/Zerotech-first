@@ -157,3 +157,81 @@ def test_retry_not_triggered_when_already_two_units_or_refusal():
     r2 = _run(chat_refusal, citation_retry=True)
     assert len(calls2) == 1 and r2["citation_retry"]["used"] is False
     assert r2["refusal"] is True
+
+
+# ---------------------------------------------------------------------------
+# 5. 答案清洗：自检残留 → 干净拒答；重复事实/引用去重
+# ---------------------------------------------------------------------------
+ECHO_ONLY = ("【自检修正】上一条回答的有效引用不足 2 个不同知识单元。"
+             "现重新作答如下：")
+
+
+def test_clean_echo_only_to_refusal():
+    assert mm.clean_multi_answer(ECHO_ONLY, CLUSTERS) == mm.REFUSAL_ANSWER
+    assert mm.clean_multi_answer("", CLUSTERS) == mm.REFUSAL_ANSWER
+    assert mm.clean_multi_answer("   \n  ", CLUSTERS) == mm.REFUSAL_ANSWER
+
+
+def test_clean_echo_plus_valid_answer_strips_preamble():
+    out = mm.clean_multi_answer(ECHO_ONLY + "\n" + TWO_UNITS, CLUSTERS)
+    assert "自检修正" not in out
+    assert "重新作答如下" not in out
+    assert "aaaa1111bbbb" in out and "cccc2222dddd" in out
+    assert mm.count_valid_cited_units(out, CLUSTERS) == 2
+
+
+def test_clean_dedupes_duplicate_fact_lines():
+    dup = TWO_UNITS + "\n" + ONE_UNIT
+    out = mm.clean_multi_answer(dup, CLUSTERS)
+    assert out.count("M9 覆铜板支持 224Gbps") == 1
+    assert "cccc2222dddd" in out
+
+
+def test_clean_dedupes_inline_repeated_citations():
+    line = ("【事实】M9 覆铜板支持 224Gbps（[aaaa1111bbbb] p.2、"
+            "[aaaa1111bbbb] p.2、p.2）。")
+    out = mm.clean_multi_answer(line, CLUSTERS)
+    assert out.count("[aaaa1111bbbb]") == 1
+    assert out.count("p.2") == 1
+
+
+def test_clean_keeps_normal_answer_unchanged():
+    assert mm.clean_multi_answer(TWO_UNITS, CLUSTERS) == TWO_UNITS
+
+
+def test_answer_multi_retry_echo_only_returns_clean_refusal():
+    def chat(prompt, model=None, timeout=None):
+        return ONE_UNIT
+
+    def retry_chat(prompt, model=None, timeout=None):
+        return ECHO_ONLY
+
+    r = _run(chat, citation_retry=True, retry_chat_fn=retry_chat)
+    assert r["answer"] == mm.REFUSAL_ANSWER
+    assert r["refusal"] is True
+    assert r["citations"] == []
+    assert r["confidence"]["level"] == "none"
+    assert r["citation_retry"]["used"] is True
+    assert r["citation_retry"]["second_units"] == 0
+
+
+def test_answer_multi_retry_echo_with_valid_answer_is_clean():
+    def chat(prompt, model=None, timeout=None):
+        return ONE_UNIT
+
+    def retry_chat(prompt, model=None, timeout=None):
+        return ECHO_ONLY + "\n" + TWO_UNITS
+
+    r = _run(chat, citation_retry=True, retry_chat_fn=retry_chat)
+    assert "自检修正" not in r["answer"]
+    assert len(r["citations"]) == 2
+    assert r["refusal"] is False
+
+
+def test_answer_multi_dedupes_duplicate_facts_in_default_path():
+    def chat(prompt, model=None, timeout=None):
+        return TWO_UNITS + "\n" + ONE_UNIT
+
+    r = _run(chat, citation_retry=False)
+    assert r["answer"].count("M9 覆铜板支持 224Gbps") == 1
+    assert len(r["citations"]) == 2

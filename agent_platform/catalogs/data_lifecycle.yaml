@@ -48,15 +48,10 @@ tables:
       freshness=20261030，manifest 键 done=true）；data/us 仅读兼容，
       待下游消费方（chanlun US 扫描等）切换后停写。见
       docs/audit/2026-11-02_manifest缺失4表诊断.md §2.4
-  crypto_daily:
-    # 语义=暂停（paused）；供给层接线完成后删除本条恢复 active
-    lifecycle: deprecated
-    reason: >-
-      WO-QT-20261021-094：crypto_sync 默认停用，数据改走 zhice-db 统一供给层
-      export_us_hk --market CRYPTO；该任务接线未完成（CryptoSync 计划任务 Disabled），
-      data/crypto 冻结于 2026-10-21（SLA #14 P0 线）。恢复需 L2 新增导出任务后重跑
-      build_catalog + registry_rebuild 并删除本条。见
-      docs/audit/2026-11-02_manifest缺失4表诊断.md §2.2
+  # crypto_daily 已于 2026-11-05 恢复，按原约定删除本条转回 active：
+  # \CryptoSync 重新启用并改接 start_crypto_sync.ps1 -> export_us_hk.py
+  # --market CRYPTO（统一供给层 zhice-db v2_bar_daily），37 对已补到 20261105，
+  # 每日 09:00 自动导出。详见 docs/changes/20261105_k260_cainiao_crypto_closure.md
   # ── 2026-11-02 S3-01 unknown 非数据侧治理（task-47）：空目录/无数据表生命周期收口 ──
   # 依据：deliverables/2026-11-02_unknown非数据侧治理_回执.md §二（catalog files=0 / store 空目录实测）。
   # 生效：build_catalog + registry_rebuild 后 registry 标 planned/deprecated，不再计入 unknown 欠账。
@@ -98,3 +93,46 @@ tables:
     reason: >-
       仅 2 行；xq_quote_router 明示「两表长期 degraded 断供」，行情快照改走
       tushare/akshare，本表仅手动兜底；不参与资格台账。
+
+  # ── 2026-11-05 data_hub 对账：上游实证停更 >1 年，标 deprecated ──
+  # 依据：catalog freshness 实测（非估算），脚本 tools/data_hub/govern.py
+  ts_slb_sec:
+    lifecycle: deprecated
+    reason: >-
+      转融通标的表，数据止于 2024-09-30（滞后 766 天），上游接口实质停更；
+      转融通业务 2024 年后收紧，该表不再作为可用资产。恢复需上游复更。
+  ts_kpl_concept:
+    lifecycle: deprecated
+    reason: >-
+      开盘啦概念表，数据止于 2024-11-17（滞后 718 天），上游停更；
+      概念板块改走 ts_ths_index / ts_kpl_list。
+  ts_tdx_index:
+    lifecycle: deprecated
+    reason: >-
+      通达信指数表，数据止于 2025-04-17（滞后 567 天），仅 1000 行，上游停更。
+  ts_slb_len:
+    lifecycle: deprecated
+    reason: >-
+      转融通期限表，数据止于 2025-07-25（滞后 468 天），仅 1347 行，上游停更。
+
+  # ── 2026-11-05 长尾兜底批实证：远端已下架（tdx_sync "not in remote"）──
+  dknife_snap:
+    lifecycle: deprecated
+    reason: >-
+      数据 knife 快照表，xtcloud 远端 /api/data/status 已无此表（2026-11-05
+      tdx_tail_sync 实证 not in remote），本地止于 2026-10-13。上游下架，恢复需远端复挂。
+  tdx_sector_min_tail:
+    lifecycle: deprecated
+    reason: >-
+      板块分钟尾表，xtcloud 远端已下架（2026-11-05 not in remote 实证），
+      本地止于 2026-10-12。分钟深表改由 tdx_sector_min 单独开关承载。
+  ts_emotion_daily:
+    lifecycle: deprecated
+    reason: >-
+      情绪日表，xtcloud 远端已下架（2026-11-05 not in remote 实证），
+      本地止于 2026-10-14。情绪观测可由 tdx_sector_daily 衍生重建。
+  ts_emotion_ladder:
+    lifecycle: deprecated
+    reason: >-
+      情绪阶梯表，xtcloud 远端已下架（2026-11-05 not in remote 实证），
+      本地止于 2026-10-14。

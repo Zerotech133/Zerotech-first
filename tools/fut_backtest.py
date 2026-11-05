@@ -162,6 +162,10 @@ def main():
     render_html(out, od / ('fut_strat_%s.html'
                            % datetime.date.today().strftime('%Y%m%d')))
     print('[fut_backtest] saved', f.name, 'results=%d' % len(results))
+    if results and all(r.get('error') for r in results):
+        print('[fut_backtest] ALL %d symbols failed; F3 matrix unavailable'
+              % len(results), file=sys.stderr)
+        sys.exit(2)
 
 
 if __name__ == '__main__':

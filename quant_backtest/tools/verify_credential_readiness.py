@@ -57,6 +57,15 @@ DECOUPLED_SOURCES = {
     "Snowball": "XQ_A_TOKEN",  # 雪球：情报部门持有，量化经情报供给层读，不直接武装
 }
 
+# 可逐步丰富的数据源（老田裁定）：路径保留、凭证后续增量补齐，
+# 现阶段缺凭证属预期态，不算异常。
+ENRICHABLE_SOURCES = ("东财", "股吧")
+
+# 待裁数据源（老田裁定）：飞书性质待裁——FEISHU_APP_SECRET 是飞书开放平台
+# 应用密钥，用途为消息/审批卡/回执（通知链路），并非行情数据源；是否保留在
+# N5 数据源清单内待老田裁决。裁决前不计入量化 N5 缺项、单独标 [待裁]。
+PENDING_RULING_SOURCES = ("飞书",)
+
 ENV_LOCAL = Path(os.getcwd()) / ".env.local"
 
 
@@ -97,7 +106,15 @@ def main() -> int:
             alias = KEY_ALIASES[key]
             print(f"[在-别名] {src:<10} {key} ← {alias}（现有源先接通，待 N6 武装）")
             continue
-        print(f"[缺 ] {src:<10} {key}")
+        # 待裁数据源：不计入量化缺项，单独标注等裁决
+        if src in PENDING_RULING_SOURCES:
+            print(f"[待裁] {src:<10} {key}（飞书性质待裁：通知链路而非行情源，不计缺项）")
+            continue
+        # 缺失：区分「可不断丰富」（路径保留、增量补齐）与普通缺
+        if src in ENRICHABLE_SOURCES:
+            print(f"[缺-丰富] {src:<8} {key}（路径保留，凭证可后续增量补齐）")
+        else:
+            print(f"[缺 ] {src:<10} {key}")
         missing.append(key)
 
     print("-" * 56)

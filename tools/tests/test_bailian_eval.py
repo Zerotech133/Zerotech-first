@@ -169,3 +169,83 @@ def test_render_and_write_outputs(tmp_path):
     data = json.loads(Path(jp).read_text(encoding="utf-8"))
     assert data["mode"] == "dry-run" and data["dataset"]["total"] == 1
     assert Path(mp).exists() and "百炼部署后评测" in Path(mp).read_text(encoding="utf-8")
+
+
+# ------------------------------------------------------------------ 8. 聚合口径边界（审计 BUG 回归）
+def _result(**over):
+    base = {"qid": "A01", "type": "card_concept", "answerable": True, "answer": "x[1]",
+            "cited": [1], "citation_valid": True, "citation_gold": ["C:000"],
+            "citation_ok": True, "groundedness": 0.8, "gold_similarity": 0.6,
+            "refused": False, "overclaim": False, "length": 50, "length_anomaly": False,
+            "ctx_ids": ["C:000"], "error": None}
+    base.update(over)
+    return base
+
+
+def test_aggregate_gold_denominator_excludes_missing_gold():
+    # 2 道可答题，仅 1 道有 gold：均值应按有 gold 的 1 道算，而不是被 None 拉低
+    results = [_result(gold_similarity=0.8), _result(qid="A02", gold_similarity=None)]
+    agg = be.aggregate_results(results, W13_BASE_AGG)["aggregate"]
+    assert agg["gold_similarity"] == 0.8
+    assert agg["gold_scored_n"] == 1
+
+
+def test_aggregate_api_error_refusal_not_credited_as_correct():
+    # 不可答题 API 报错（空答案被判 refused）不能算「正确拒答」
+    results = [_result(qid="U01", answerable=False, answer="", cited=[], gold_similarity=None,
+                       citation_ok=True, refused=True, error="TimeoutError: mock timeout")]
+    agg = be.aggregate_results(results, W13_BASE_AGG)["aggregate"]
+    assert agg["errors"] == 1
+    assert agg["correct_refusal_rate"] == 0.0
+
+
+def test_write_outputs_custom_paths_weekly_archive(tmp_path):
+    """周度复评必须能写独立日期归档，不能覆盖 11-04 W17 基线报告。"""
+    jp = tmp_path / "bailian_eval_weekly_20261109.json"
+    mp = tmp_path / "bailian_eval_weekly_20261109.md"
+    payload = be.run(mock=True, limit=1, write=True, out_json=jp, out_md=mp)
+    assert Path(payload["_outputs"]["json"]) == jp
+    assert jp.exists() and mp.exists()
+    assert "百炼部署后评测" in mp.read_text(encoding="utf-8")
+
+
+def test_api_error_row_not_counted_as_citation_correct():
+    """审计回归：API 错误行（空答案）不得被 judge 当作合规拒答来抬高引用正确率。"""
+    payload = be.evaluate([_item("A01", True)], baseline_agg=W13_BASE_AGG,
+                          client=_BoomClient(), model="mock-instance", mock=True)
+    assert payload["aggregate"]["errors"] == 1
+    assert payload["aggregate"]["citation_accuracy"] == 0.0
+    assert payload["results"][0]["citation_ok"] is False
+    assert payload["results"][0]["refused"] is False
+
+
+def test_citation_verified_rate_excludes_no_citation_rows():
+    """审计回归：verified 分母只算真正带引用的回答，纯拒答行不摊薄等于 1.0 的比值。"""
+    results = [
+        _result(qid="A01", citation_verify={"citation_valid_rate": 1.0, "cited_sentences": 2,
+                                            "weak_rate": 0.0, "all_supported": True,
+                                            "unsupported_count": 0}),
+        _result(qid="U01", answerable=False, answer="资料不足", cited=[], gold_similarity=None,
+                citation_ok=True, refused=True,
+                citation_verify={"citation_valid_rate": 0.0, "cited_sentences": 0,
+                                 "weak_rate": 0.0, "all_supported": None,
+                                 "unsupported_count": 0}),
+    ]
+    agg = be.aggregate_results(results, W13_BASE_AGG)["aggregate"]
+    assert agg["citation_verified_rate"] == 1.0
+    assert agg["citation_verified_n"] == 1
+    assert agg["citation_verified_excluded_n"] == 1
+
+
+def test_payload_carries_prompt_profile():
+    """审计回归：报告必须能追溯到 strict/base prompt，否则周度对比混口径。"""
+    payload = be.evaluate([_item("A01", True)], baseline_agg=W13_BASE_AGG,
+                          client=be.MockClient(), model="mock-instance", mock=True)
+    assert payload["prompt_profile"] == be.PROMPT_PROFILE
+    dataset = [_item("A01", True)]
+    plan = be.build_plan(dataset, model="m", base_url=be.DEFAULT_BASE, limit=1, has_key=False)
+    built = be.build_payload(payload_mode="dry-run", model="m", base_url=be.DEFAULT_BASE,
+                             dataset=dataset, baseline_agg=W13_BASE_AGG, plan=plan,
+                             key_source="未找到 key",
+                             evaluation={"prompt_profile": "strict", "results": [], "aggregate": {}})
+    assert built["prompt_profile"] == "strict"

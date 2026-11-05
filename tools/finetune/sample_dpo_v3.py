@@ -81,11 +81,16 @@ def main() -> int:
         if i % 10 == 0:
             print(f"[{i}/{len(items)}] pairs={len(pairs)} skipped={skipped} elapsed={time.time()-t0:.0f}s", flush=True)
     # 百炼 DPO 格式（纯净 schema：messages + chosen/rejected）
+    # 2026-11-05 审计修复：messages 必须 >=2 条且以 user 结尾（W26 校验器只认
+    # system+user），此前只写 1 条 user 导致 74/74 全判 messages_too_short。
+    sys_msg = ("你是零界量化知识助手。只依据给定资料回答，并在每个事实句末用 [n] 标注来源；"
+               "资料不足时明确说明无法回答；不构成投资建议。")
     rows = []
     for p in pairs:
         prompt = be.build_prompt(p["item"]["question"], p["item"]["ctx"])
         rows.append({
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": [{"role": "system", "content": sys_msg},
+                         {"role": "user", "content": prompt}],
             "chosen": {"role": "assistant", "content": p["chosen"]["answer"]},
             "rejected": {"role": "assistant", "content": p["rejected"]["answer"]},
         })

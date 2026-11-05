@@ -1,0 +1,2118 @@
+{
+ "meta": {
+  "schema_version": "kb_qa_multi_eval.v1",
+  "generated_at": "2026-11-05T02:45:19+08:00",
+  "sources": {
+   "single": "research/reports/kb_qa_multi_eval_20261105_v3bank.json",
+   "multi_raw": "research/reports/kb_qa_multi_eval_20261105_multi.json",
+   "id_map": "research/reports/kb_qa_multi_eval_20261105_idmap.json",
+   "rows_meta": "research/reports/kb_qa_multi_eval_20261105_rows_meta.json"
+  },
+  "n_pairs": 20,
+  "note": "2026-11-05 20 题 v4d/Ollama 配对：脚本的 single 侧 = v4d（multi-mode 答案，引用元数据由答案标记重建），multi 侧 = Ollama（multi-mode 答案）；两模型使用同一批生产检索 clusters；脚本原生单测/口径未改。",
+  "effective_subset": "20 对（v4d vs Ollama；single/multi 列映射）",
+  "reuse": "kb_qa_eval_v2.eval_sample_v2（引用/支撑/幻觉 v2）+ kb_qa_schema_v2 schema v2；kb_qa_multi_eval.py eval 原样运行",
+  "ab_context": {
+   "total": 30,
+   "single": {
+    "success": 10,
+    "rate": 0.3333,
+    "no_evidence": 20,
+    "fallback": 0,
+    "avg_citations": 2.4,
+    "avg_elapsed_seconds": 8.35,
+    "reused_count": 12
+   },
+   "multi": {
+    "success": 24,
+    "rate": 0.8,
+    "no_evidence": 6,
+    "fallback": 0,
+    "avg_citations": 2.25,
+    "avg_elapsed_seconds": 8.61,
+    "avg_clusters": 3.0,
+    "direct_facts": 22,
+    "inferences": 32
+   },
+   "delta": {
+    "answerable_rate": 0.4667,
+    "avg_citations": -0.15,
+    "latency_ratio": 1.03
+   },
+   "paired": {
+    "a_both_success": 10,
+    "b_single_fail_multi_success": 14,
+    "c_single_success_multi_fail": 0,
+    "d_both_fail": 6,
+    "mcnemar_p": 0.000122
+   },
+   "by_category": [
+    {
+     "category": "风险限制",
+     "total": 4,
+     "single_success": 0,
+     "multi_success": 4,
+     "single_rate": 0.0,
+     "multi_rate": 1.0,
+     "delta": 1.0
+    },
+    {
+     "category": "如何识别",
+     "total": 5,
+     "single_success": 1,
+     "multi_success": 5,
+     "single_rate": 0.2,
+     "multi_rate": 1.0,
+     "delta": 0.8
+    },
+    {
+     "category": "影响如何",
+     "total": 4,
+     "single_success": 0,
+     "multi_success": 3,
+     "single_rate": 0.0,
+     "multi_rate": 0.75,
+     "delta": 0.75
+    },
+    {
+     "category": "关键数据",
+     "total": 4,
+     "single_success": 1,
+     "multi_success": 3,
+     "single_rate": 0.25,
+     "multi_rate": 0.75,
+     "delta": 0.5
+    },
+    {
+     "category": "驱动因素",
+     "total": 5,
+     "single_success": 2,
+     "multi_success": 3,
+     "single_rate": 0.4,
+     "multi_rate": 0.6,
+     "delta": 0.2
+    },
+    {
+     "category": "是什么",
+     "total": 4,
+     "single_success": 4,
+     "multi_success": 4,
+     "single_rate": 1.0,
+     "multi_rate": 1.0,
+     "delta": 0.0
+    },
+    {
+     "category": "竞争格局",
+     "total": 4,
+     "single_success": 2,
+     "multi_success": 2,
+     "single_rate": 0.5,
+     "multi_rate": 0.5,
+     "delta": 0.0
+    }
+   ],
+   "answer_types": {
+    "direct_fact+inference": 11,
+    "refusal": 6,
+    "inference": 7,
+    "answer": 5,
+    "direct_fact": 1
+   },
+   "improved_ids": [
+    "q2_b5a0a0e045",
+    "q2_aa49124184",
+    "q2_a593448ce5",
+    "q2_3d1abf0240",
+    "q2_ef78939178",
+    "q2_0d7db24320",
+    "q2_b74f8cebda",
+    "q2_5cb2ec9a7b",
+    "q2_960b202685",
+    "q2_9efedd1a83",
+    "q2_56b3d0673e",
+    "q2_a4026386c5",
+    "q2_764c00190b",
+    "q2_0e42bbf120"
+   ],
+   "regressed_ids": []
+  }
+ },
+ "summary": {
+  "single": {
+   "n": 20,
+   "answered": 11,
+   "answerable_rate": 0.55,
+   "avg_citations": 0.9,
+   "citation_exists_rate": 1.0,
+   "avg_supported_ratio_all": 0.2619,
+   "avg_supported_ratio_answered": 0.4762,
+   "hallucination_flags_total": 1,
+   "hallucination_flag_rate": 0.05,
+   "hallucination_samples": 1,
+   "avg_inference_markers": 0.5,
+   "avg_answer_length": 128.7,
+   "answer_type_counts": {
+    "refusal": 9,
+    "inference": 8,
+    "fact": 3
+   }
+  },
+  "multi": {
+   "n": 20,
+   "answered": 12,
+   "answerable_rate": 0.6,
+   "avg_citations": 1.2,
+   "citation_exists_rate": 1.0,
+   "avg_supported_ratio_all": 0.2569,
+   "avg_supported_ratio_answered": 0.4282,
+   "hallucination_flags_total": 1,
+   "hallucination_flag_rate": 0.05,
+   "hallucination_samples": 1,
+   "avg_inference_markers": 0.95,
+   "avg_answer_length": 133.7,
+   "answer_type_counts": {
+    "refusal": 8,
+    "inference": 12
+   }
+  },
+  "delta": {
+   "answerable_rate": 0.05,
+   "avg_citations": 0.3,
+   "citation_exists_rate": 0.0,
+   "avg_supported_ratio_all": -0.005,
+   "avg_supported_ratio_answered": -0.048,
+   "hallucination_flag_rate": 0.0,
+   "avg_answer_length": 5.0
+  },
+  "paired": {
+   "n_both_answered": 9,
+   "avg_supported_ratio_single": 0.463,
+   "avg_supported_ratio_multi": 0.4259,
+   "support_delta": -0.037,
+   "hallucination_flags_single": 1,
+   "hallucination_flags_multi": 0,
+   "avg_citations_single": 1.444,
+   "avg_citations_multi": 1.889
+  }
+ },
+ "pairs": [
+  {
+   "id": "w13_U01",
+   "question": "如何申请申根旅游签证？",
+   "category": "w13",
+   "theme": "w13",
+   "single": {
+    "id": "w13_U01__single",
+    "kind": "single",
+    "question": "如何申请申根旅游签证？",
+    "category": "w13",
+    "n_citations": 0,
+    "citations_exists": 0,
+    "citations_page_ok": 0,
+    "citation_exists_ratio": 0.0,
+    "citation_valid": false,
+    "n_sentences": 1,
+    "support_counts": {
+     "拒答": 1
+    },
+    "supported_ratio": null,
+    "supported_or_weak_ratio": null,
+    "hallucination_flags": [],
+    "citations": [],
+    "issues": [
+     "无引用"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": true,
+    "citations_required": false,
+    "answer_type": "refusal",
+    "schema_version": 2,
+    "page_available": true,
+    "inference_markers": 0,
+    "answer_length": 16,
+    "answered": false,
+    "hallucination_flags_count": 0
+   },
+   "multi": {
+    "id": "w13_U01__multi",
+    "kind": "multi",
+    "question": "如何申请申根旅游签证？",
+    "category": "w13",
+    "n_citations": 0,
+    "citations_exists": 0,
+    "citations_page_ok": null,
+    "citation_exists_ratio": 0.0,
+    "citation_valid": false,
+    "n_sentences": 1,
+    "support_counts": {
+     "拒答": 1
+    },
+    "supported_ratio": null,
+    "supported_or_weak_ratio": null,
+    "hallucination_flags": [],
+    "citations": [],
+    "issues": [
+     "无引用"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": true,
+    "citations_required": false,
+    "answer_type": "refusal",
+    "schema_version": 2,
+    "page_available": false,
+    "inference_markers": 0,
+    "answer_length": 16,
+    "answered": false,
+    "hallucination_flags_count": 0
+   },
+   "both_answered": false
+  },
+  {
+   "id": "w13_U04",
+   "question": "2026 年世界杯的冠军是哪支球队？",
+   "category": "w13",
+   "theme": "w13",
+   "single": {
+    "id": "w13_U04__single",
+    "kind": "single",
+    "question": "2026 年世界杯的冠军是哪支球队？",
+    "category": "w13",
+    "n_citations": 3,
+    "citations_exists": 3,
+    "citations_page_ok": 3,
+    "citation_exists_ratio": 1.0,
+    "citation_valid": true,
+    "n_sentences": 7,
+    "support_counts": {
+     "无支持": 2,
+     "支持": 4,
+     "弱支持": 1
+    },
+    "supported_ratio": 0.5714,
+    "supported_or_weak_ratio": 0.7143,
+    "hallucination_flags": [],
+    "citations": [
+     {
+      "unit_id": "5908d9b2a2af",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": true,
+      "id_known_in_map": true
+     },
+     {
+      "unit_id": "ebb18ca3da25",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": true,
+      "id_known_in_map": true
+     },
+     {
+      "unit_id": "f0aa3d2af1ef",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": true,
+      "id_known_in_map": true
+     }
+    ],
+    "issues": [
+     "无支持句 2/7"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "inference",
+    "schema_version": 2,
+    "page_available": true,
+    "inference_markers": 1,
+    "answer_length": 358,
+    "answered": true,
+    "hallucination_flags_count": 0
+   },
+   "multi": {
+    "id": "w13_U04__multi",
+    "kind": "multi",
+    "question": "2026 年世界杯的冠军是哪支球队？",
+    "category": "w13",
+    "n_citations": 0,
+    "citations_exists": 0,
+    "citations_page_ok": null,
+    "citation_exists_ratio": 0.0,
+    "citation_valid": false,
+    "n_sentences": 1,
+    "support_counts": {
+     "拒答": 1
+    },
+    "supported_ratio": null,
+    "supported_or_weak_ratio": null,
+    "hallucination_flags": [],
+    "citations": [],
+    "issues": [
+     "无引用"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": true,
+    "citations_required": false,
+    "answer_type": "refusal",
+    "schema_version": 2,
+    "page_available": false,
+    "inference_markers": 0,
+    "answer_length": 16,
+    "answered": false,
+    "hallucination_flags_count": 0
+   },
+   "both_answered": false
+  },
+  {
+   "id": "w13_U07",
+   "question": "高血压的一线用药有哪些？",
+   "category": "w13",
+   "theme": "w13",
+   "single": {
+    "id": "w13_U07__single",
+    "kind": "single",
+    "question": "高血压的一线用药有哪些？",
+    "category": "w13",
+    "n_citations": 0,
+    "citations_exists": 0,
+    "citations_page_ok": 0,
+    "citation_exists_ratio": 0.0,
+    "citation_valid": false,
+    "n_sentences": 1,
+    "support_counts": {
+     "拒答": 1
+    },
+    "supported_ratio": null,
+    "supported_or_weak_ratio": null,
+    "hallucination_flags": [],
+    "citations": [],
+    "issues": [
+     "无引用"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": true,
+    "citations_required": false,
+    "answer_type": "refusal",
+    "schema_version": 2,
+    "page_available": true,
+    "inference_markers": 0,
+    "answer_length": 16,
+    "answered": false,
+    "hallucination_flags_count": 0
+   },
+   "multi": {
+    "id": "w13_U07__multi",
+    "kind": "multi",
+    "question": "高血压的一线用药有哪些？",
+    "category": "w13",
+    "n_citations": 0,
+    "citations_exists": 0,
+    "citations_page_ok": null,
+    "citation_exists_ratio": 0.0,
+    "citation_valid": false,
+    "n_sentences": 1,
+    "support_counts": {
+     "拒答": 1
+    },
+    "supported_ratio": null,
+    "supported_or_weak_ratio": null,
+    "hallucination_flags": [],
+    "citations": [],
+    "issues": [
+     "无引用"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": true,
+    "citations_required": false,
+    "answer_type": "refusal",
+    "schema_version": 2,
+    "page_available": false,
+    "inference_markers": 0,
+    "answer_length": 16,
+    "answered": false,
+    "hallucination_flags_count": 0
+   },
+   "both_answered": false
+  },
+  {
+   "id": "w13_U10",
+   "question": "量子纠缠实验的贝尔不等式推导？",
+   "category": "w13",
+   "theme": "w13",
+   "single": {
+    "id": "w13_U10__single",
+    "kind": "single",
+    "question": "量子纠缠实验的贝尔不等式推导？",
+    "category": "w13",
+    "n_citations": 2,
+    "citations_exists": 2,
+    "citations_page_ok": 2,
+    "citation_exists_ratio": 1.0,
+    "citation_valid": true,
+    "n_sentences": 8,
+    "support_counts": {
+     "无支持": 4,
+     "支持": 4
+    },
+    "supported_ratio": 0.5,
+    "supported_or_weak_ratio": 0.5,
+    "hallucination_flags": [],
+    "citations": [
+     {
+      "unit_id": "52cfc0612e6b",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": true,
+      "id_known_in_map": true
+     },
+     {
+      "unit_id": "d780edf3ffbf",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": true,
+      "id_known_in_map": true
+     }
+    ],
+    "issues": [
+     "无支持句 4/8"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "inference",
+    "schema_version": 2,
+    "page_available": true,
+    "inference_markers": 1,
+    "answer_length": 301,
+    "answered": true,
+    "hallucination_flags_count": 0
+   },
+   "multi": {
+    "id": "w13_U10__multi",
+    "kind": "multi",
+    "question": "量子纠缠实验的贝尔不等式推导？",
+    "category": "w13",
+    "n_citations": 0,
+    "citations_exists": 0,
+    "citations_page_ok": null,
+    "citation_exists_ratio": 0.0,
+    "citation_valid": false,
+    "n_sentences": 1,
+    "support_counts": {
+     "拒答": 1
+    },
+    "supported_ratio": null,
+    "supported_or_weak_ratio": null,
+    "hallucination_flags": [],
+    "citations": [],
+    "issues": [
+     "无引用"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": true,
+    "citations_required": false,
+    "answer_type": "refusal",
+    "schema_version": 2,
+    "page_available": false,
+    "inference_markers": 0,
+    "answer_length": 16,
+    "answered": false,
+    "hallucination_flags_count": 0
+   },
+   "both_answered": false
+  },
+  {
+   "id": "w13_A01",
+   "question": "「AI 产业投资传导链条」的核心要点是什么？",
+   "category": "w13",
+   "theme": "w13",
+   "single": {
+    "id": "w13_A01__single",
+    "kind": "single",
+    "question": "「AI 产业投资传导链条」的核心要点是什么？",
+    "category": "w13",
+    "n_citations": 1,
+    "citations_exists": 1,
+    "citations_page_ok": 0,
+    "citation_exists_ratio": 1.0,
+    "citation_valid": false,
+    "n_sentences": 2,
+    "support_counts": {
+     "无支持": 1,
+     "支持": 1
+    },
+    "supported_ratio": 0.5,
+    "supported_or_weak_ratio": 0.5,
+    "hallucination_flags": [],
+    "citations": [
+     {
+      "unit_id": "efa0bece0085",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     }
+    ],
+    "issues": [
+     "页码超出单元区间: 1/1",
+     "无支持句 1/2"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "fact",
+    "schema_version": 2,
+    "page_available": true,
+    "inference_markers": 0,
+    "answer_length": 86,
+    "answered": true,
+    "hallucination_flags_count": 0
+   },
+   "multi": {
+    "id": "w13_A01__multi",
+    "kind": "multi",
+    "question": "「AI 产业投资传导链条」的核心要点是什么？",
+    "category": "w13",
+    "n_citations": 2,
+    "citations_exists": 2,
+    "citations_page_ok": null,
+    "citation_exists_ratio": 1.0,
+    "citation_valid": true,
+    "n_sentences": 6,
+    "support_counts": {
+     "无支持": 2,
+     "支持": 3,
+     "弱支持": 1
+    },
+    "supported_ratio": 0.5,
+    "supported_or_weak_ratio": 0.6667,
+    "hallucination_flags": [],
+    "citations": [
+     {
+      "unit_id": "efa0bece0085",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     },
+     {
+      "unit_id": "47f5ad80fdb7",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     }
+    ],
+    "issues": [
+     "页码超出单元区间: 2/2",
+     "无支持句 2/6"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "inference",
+    "schema_version": 2,
+    "page_available": false,
+    "inference_markers": 1,
+    "answer_length": 171,
+    "answered": true,
+    "hallucination_flags_count": 0
+   },
+   "both_answered": true
+  },
+  {
+   "id": "w13_A07",
+   "question": "「多层级安全评估体系（ARIA）」的核心要点是什么？",
+   "category": "w13",
+   "theme": "w13",
+   "single": {
+    "id": "w13_A07__single",
+    "kind": "single",
+    "question": "「多层级安全评估体系（ARIA）」的核心要点是什么？",
+    "category": "w13",
+    "n_citations": 1,
+    "citations_exists": 1,
+    "citations_page_ok": 1,
+    "citation_exists_ratio": 1.0,
+    "citation_valid": true,
+    "n_sentences": 5,
+    "support_counts": {
+     "无支持": 2,
+     "支持": 2,
+     "弱支持": 1
+    },
+    "supported_ratio": 0.4,
+    "supported_or_weak_ratio": 0.6,
+    "hallucination_flags": [
+     {
+      "type": "english_token",
+      "token": "Teeming",
+      "reason": "英文专名/术语（≥3 字母）未在引用单元文本中出现",
+      "rule": "v2.english_ge3letters"
+     }
+    ],
+    "citations": [
+     {
+      "unit_id": "ae05187cc3bc",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": true,
+      "id_known_in_map": true
+     }
+    ],
+    "issues": [
+     "无支持句 2/5",
+     "幻觉候选 1 项（v2）"
+    ],
+    "hallucination_flags_v1": [
+     {
+      "type": "english_token",
+      "token": "Teeming",
+      "reason": "英文专名/术语未在引用单元文本中出现"
+     }
+    ],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "inference",
+    "schema_version": 2,
+    "page_available": true,
+    "inference_markers": 1,
+    "answer_length": 262,
+    "answered": true,
+    "hallucination_flags_count": 1
+   },
+   "multi": {
+    "id": "w13_A07__multi",
+    "kind": "multi",
+    "question": "「多层级安全评估体系（ARIA）」的核心要点是什么？",
+    "category": "w13",
+    "n_citations": 1,
+    "citations_exists": 1,
+    "citations_page_ok": null,
+    "citation_exists_ratio": 1.0,
+    "citation_valid": true,
+    "n_sentences": 5,
+    "support_counts": {
+     "无支持": 2,
+     "支持": 2,
+     "弱支持": 1
+    },
+    "supported_ratio": 0.4,
+    "supported_or_weak_ratio": 0.6,
+    "hallucination_flags": [],
+    "citations": [
+     {
+      "unit_id": "ae05187cc3bc",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     }
+    ],
+    "issues": [
+     "页码超出单元区间: 1/1",
+     "无支持句 2/5"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "inference",
+    "schema_version": 2,
+    "page_available": false,
+    "inference_markers": 1,
+    "answer_length": 250,
+    "answered": true,
+    "hallucination_flags_count": 0
+   },
+   "both_answered": true
+  },
+  {
+   "id": "w13_A13",
+   "question": "关于「区间套运用」，资料中的依据/来源是什么？",
+   "category": "w13",
+   "theme": "w13",
+   "single": {
+    "id": "w13_A13__single",
+    "kind": "single",
+    "question": "关于「区间套运用」，资料中的依据/来源是什么？",
+    "category": "w13",
+    "n_citations": 0,
+    "citations_exists": 0,
+    "citations_page_ok": 0,
+    "citation_exists_ratio": 0.0,
+    "citation_valid": false,
+    "n_sentences": 1,
+    "support_counts": {
+     "拒答": 1
+    },
+    "supported_ratio": null,
+    "supported_or_weak_ratio": null,
+    "hallucination_flags": [],
+    "citations": [],
+    "issues": [
+     "无引用"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": true,
+    "citations_required": false,
+    "answer_type": "refusal",
+    "schema_version": 2,
+    "page_available": true,
+    "inference_markers": 0,
+    "answer_length": 16,
+    "answered": false,
+    "hallucination_flags_count": 0
+   },
+   "multi": {
+    "id": "w13_A13__multi",
+    "kind": "multi",
+    "question": "关于「区间套运用」，资料中的依据/来源是什么？",
+    "category": "w13",
+    "n_citations": 0,
+    "citations_exists": 0,
+    "citations_page_ok": null,
+    "citation_exists_ratio": 0.0,
+    "citation_valid": false,
+    "n_sentences": 1,
+    "support_counts": {
+     "拒答": 1
+    },
+    "supported_ratio": null,
+    "supported_or_weak_ratio": null,
+    "hallucination_flags": [],
+    "citations": [],
+    "issues": [
+     "无引用"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": true,
+    "citations_required": false,
+    "answer_type": "refusal",
+    "schema_version": 2,
+    "page_available": false,
+    "inference_markers": 0,
+    "answer_length": 16,
+    "answered": false,
+    "hallucination_flags_count": 0
+   },
+   "both_answered": false
+  },
+  {
+   "id": "w13_A18",
+   "question": "关于「今天刺猬情报局的主题」，操作要点是什么？",
+   "category": "w13",
+   "theme": "w13",
+   "single": {
+    "id": "w13_A18__single",
+    "kind": "single",
+    "question": "关于「今天刺猬情报局的主题」，操作要点是什么？",
+    "category": "w13",
+    "n_citations": 0,
+    "citations_exists": 0,
+    "citations_page_ok": 0,
+    "citation_exists_ratio": 0.0,
+    "citation_valid": false,
+    "n_sentences": 1,
+    "support_counts": {
+     "拒答": 1
+    },
+    "supported_ratio": null,
+    "supported_or_weak_ratio": null,
+    "hallucination_flags": [],
+    "citations": [],
+    "issues": [
+     "无引用"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": true,
+    "citations_required": false,
+    "answer_type": "refusal",
+    "schema_version": 2,
+    "page_available": true,
+    "inference_markers": 0,
+    "answer_length": 16,
+    "answered": false,
+    "hallucination_flags_count": 0
+   },
+   "multi": {
+    "id": "w13_A18__multi",
+    "kind": "multi",
+    "question": "关于「今天刺猬情报局的主题」，操作要点是什么？",
+    "category": "w13",
+    "n_citations": 3,
+    "citations_exists": 3,
+    "citations_page_ok": null,
+    "citation_exists_ratio": 1.0,
+    "citation_valid": true,
+    "n_sentences": 7,
+    "support_counts": {
+     "无支持": 2,
+     "支持": 4,
+     "弱支持": 1
+    },
+    "supported_ratio": 0.5714,
+    "supported_or_weak_ratio": 0.7143,
+    "hallucination_flags": [],
+    "citations": [
+     {
+      "unit_id": "708d6446d475",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     },
+     {
+      "unit_id": "f65c4e3b7835",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     },
+     {
+      "unit_id": "d22ef9aab17c",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     }
+    ],
+    "issues": [
+     "页码超出单元区间: 3/3",
+     "无支持句 2/7"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "inference",
+    "schema_version": 2,
+    "page_available": false,
+    "inference_markers": 1,
+    "answer_length": 297,
+    "answered": true,
+    "hallucination_flags_count": 0
+   },
+   "both_answered": false
+  },
+  {
+   "id": "w13_A24",
+   "question": "「五天的成交量加起来还不如今天一天」的依据/事实是什么？",
+   "category": "w13",
+   "theme": "w13",
+   "single": {
+    "id": "w13_A24__single",
+    "kind": "single",
+    "question": "「五天的成交量加起来还不如今天一天」的依据/事实是什么？",
+    "category": "w13",
+    "n_citations": 0,
+    "citations_exists": 0,
+    "citations_page_ok": 0,
+    "citation_exists_ratio": 0.0,
+    "citation_valid": false,
+    "n_sentences": 1,
+    "support_counts": {
+     "拒答": 1
+    },
+    "supported_ratio": null,
+    "supported_or_weak_ratio": null,
+    "hallucination_flags": [],
+    "citations": [],
+    "issues": [
+     "无引用"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": true,
+    "citations_required": false,
+    "answer_type": "refusal",
+    "schema_version": 2,
+    "page_available": true,
+    "inference_markers": 0,
+    "answer_length": 16,
+    "answered": false,
+    "hallucination_flags_count": 0
+   },
+   "multi": {
+    "id": "w13_A24__multi",
+    "kind": "multi",
+    "question": "「五天的成交量加起来还不如今天一天」的依据/事实是什么？",
+    "category": "w13",
+    "n_citations": 0,
+    "citations_exists": 0,
+    "citations_page_ok": null,
+    "citation_exists_ratio": 0.0,
+    "citation_valid": false,
+    "n_sentences": 1,
+    "support_counts": {
+     "拒答": 1
+    },
+    "supported_ratio": null,
+    "supported_or_weak_ratio": null,
+    "hallucination_flags": [],
+    "citations": [],
+    "issues": [
+     "无引用"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": true,
+    "citations_required": false,
+    "answer_type": "refusal",
+    "schema_version": 2,
+    "page_available": false,
+    "inference_markers": 0,
+    "answer_length": 16,
+    "answered": false,
+    "hallucination_flags_count": 0
+   },
+   "both_answered": false
+  },
+  {
+   "id": "w13_A30",
+   "question": "「放量不等于有效放量」的依据/事实是什么？",
+   "category": "w13",
+   "theme": "w13",
+   "single": {
+    "id": "w13_A30__single",
+    "kind": "single",
+    "question": "「放量不等于有效放量」的依据/事实是什么？",
+    "category": "w13",
+    "n_citations": 1,
+    "citations_exists": 1,
+    "citations_page_ok": 1,
+    "citation_exists_ratio": 1.0,
+    "citation_valid": true,
+    "n_sentences": 2,
+    "support_counts": {
+     "无支持": 1,
+     "支持": 1
+    },
+    "supported_ratio": 0.5,
+    "supported_or_weak_ratio": 0.5,
+    "hallucination_flags": [],
+    "citations": [
+     {
+      "unit_id": "252c4dbe1667",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": true,
+      "id_known_in_map": true
+     }
+    ],
+    "issues": [
+     "无支持句 1/2"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "fact",
+    "schema_version": 2,
+    "page_available": true,
+    "inference_markers": 0,
+    "answer_length": 72,
+    "answered": true,
+    "hallucination_flags_count": 0
+   },
+   "multi": {
+    "id": "w13_A30__multi",
+    "kind": "multi",
+    "question": "「放量不等于有效放量」的依据/事实是什么？",
+    "category": "w13",
+    "n_citations": 2,
+    "citations_exists": 2,
+    "citations_page_ok": null,
+    "citation_exists_ratio": 1.0,
+    "citation_valid": true,
+    "n_sentences": 7,
+    "support_counts": {
+     "无支持": 4,
+     "支持": 3
+    },
+    "supported_ratio": 0.4286,
+    "supported_or_weak_ratio": 0.4286,
+    "hallucination_flags": [],
+    "citations": [
+     {
+      "unit_id": "252c4dbe1667",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     },
+     {
+      "unit_id": "ed4b3dff7b4d",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     }
+    ],
+    "issues": [
+     "页码超出单元区间: 2/2",
+     "无支持句 4/7"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "inference",
+    "schema_version": 2,
+    "page_available": false,
+    "inference_markers": 3,
+    "answer_length": 346,
+    "answered": true,
+    "hallucination_flags_count": 0
+   },
+   "both_answered": true
+  },
+  {
+   "id": "heldout_001",
+   "question": "什么是「频谱资源与许可」？",
+   "category": "heldout",
+   "theme": "heldout",
+   "single": {
+    "id": "heldout_001__single",
+    "kind": "single",
+    "question": "什么是「频谱资源与许可」？",
+    "category": "heldout",
+    "n_citations": 2,
+    "citations_exists": 2,
+    "citations_page_ok": 2,
+    "citation_exists_ratio": 1.0,
+    "citation_valid": true,
+    "n_sentences": 6,
+    "support_counts": {
+     "无支持": 3,
+     "支持": 3
+    },
+    "supported_ratio": 0.5,
+    "supported_or_weak_ratio": 0.5,
+    "hallucination_flags": [],
+    "citations": [
+     {
+      "unit_id": "8032d4ff1c17",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": true,
+      "id_known_in_map": true
+     },
+     {
+      "unit_id": "a3b062104586",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": true,
+      "id_known_in_map": true
+     }
+    ],
+    "issues": [
+     "无支持句 3/6"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "inference",
+    "schema_version": 2,
+    "page_available": true,
+    "inference_markers": 1,
+    "answer_length": 292,
+    "answered": true,
+    "hallucination_flags_count": 0
+   },
+   "multi": {
+    "id": "heldout_001__multi",
+    "kind": "multi",
+    "question": "什么是「频谱资源与许可」？",
+    "category": "heldout",
+    "n_citations": 2,
+    "citations_exists": 2,
+    "citations_page_ok": null,
+    "citation_exists_ratio": 1.0,
+    "citation_valid": true,
+    "n_sentences": 5,
+    "support_counts": {
+     "无支持": 2,
+     "支持": 3
+    },
+    "supported_ratio": 0.6,
+    "supported_or_weak_ratio": 0.6,
+    "hallucination_flags": [],
+    "citations": [
+     {
+      "unit_id": "8032d4ff1c17",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     },
+     {
+      "unit_id": "a3b062104586",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     }
+    ],
+    "issues": [
+     "页码超出单元区间: 2/2",
+     "无支持句 2/5"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "inference",
+    "schema_version": 2,
+    "page_available": false,
+    "inference_markers": 1,
+    "answer_length": 122,
+    "answered": true,
+    "hallucination_flags_count": 0
+   },
+   "both_answered": true
+  },
+  {
+   "id": "heldout_011",
+   "question": "什么是「愿意秒内交易超过300笔」？",
+   "category": "heldout",
+   "theme": "heldout",
+   "single": {
+    "id": "heldout_011__single",
+    "kind": "single",
+    "question": "什么是「愿意秒内交易超过300笔」？",
+    "category": "heldout",
+    "n_citations": 0,
+    "citations_exists": 0,
+    "citations_page_ok": 0,
+    "citation_exists_ratio": 0.0,
+    "citation_valid": false,
+    "n_sentences": 1,
+    "support_counts": {
+     "拒答": 1
+    },
+    "supported_ratio": null,
+    "supported_or_weak_ratio": null,
+    "hallucination_flags": [],
+    "citations": [],
+    "issues": [
+     "无引用"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": true,
+    "citations_required": false,
+    "answer_type": "refusal",
+    "schema_version": 2,
+    "page_available": true,
+    "inference_markers": 0,
+    "answer_length": 16,
+    "answered": false,
+    "hallucination_flags_count": 0
+   },
+   "multi": {
+    "id": "heldout_011__multi",
+    "kind": "multi",
+    "question": "什么是「愿意秒内交易超过300笔」？",
+    "category": "heldout",
+    "n_citations": 0,
+    "citations_exists": 0,
+    "citations_page_ok": null,
+    "citation_exists_ratio": 0.0,
+    "citation_valid": false,
+    "n_sentences": 1,
+    "support_counts": {
+     "拒答": 1
+    },
+    "supported_ratio": null,
+    "supported_or_weak_ratio": null,
+    "hallucination_flags": [],
+    "citations": [],
+    "issues": [
+     "无引用"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": true,
+    "citations_required": false,
+    "answer_type": "refusal",
+    "schema_version": 2,
+    "page_available": false,
+    "inference_markers": 0,
+    "answer_length": 16,
+    "answered": false,
+    "hallucination_flags_count": 0
+   },
+   "both_answered": false
+  },
+  {
+   "id": "heldout_021",
+   "question": "创业板指日线向下笔未跌破1740点时文中如何判断？",
+   "category": "heldout",
+   "theme": "heldout",
+   "single": {
+    "id": "heldout_021__single",
+    "kind": "single",
+    "question": "创业板指日线向下笔未跌破1740点时文中如何判断？",
+    "category": "heldout",
+    "n_citations": 0,
+    "citations_exists": 0,
+    "citations_page_ok": 0,
+    "citation_exists_ratio": 0.0,
+    "citation_valid": false,
+    "n_sentences": 1,
+    "support_counts": {
+     "拒答": 1
+    },
+    "supported_ratio": null,
+    "supported_or_weak_ratio": null,
+    "hallucination_flags": [],
+    "citations": [],
+    "issues": [
+     "无引用"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": true,
+    "citations_required": false,
+    "answer_type": "refusal",
+    "schema_version": 2,
+    "page_available": true,
+    "inference_markers": 0,
+    "answer_length": 16,
+    "answered": false,
+    "hallucination_flags_count": 0
+   },
+   "multi": {
+    "id": "heldout_021__multi",
+    "kind": "multi",
+    "question": "创业板指日线向下笔未跌破1740点时文中如何判断？",
+    "category": "heldout",
+    "n_citations": 2,
+    "citations_exists": 2,
+    "citations_page_ok": null,
+    "citation_exists_ratio": 1.0,
+    "citation_valid": true,
+    "n_sentences": 6,
+    "support_counts": {
+     "无支持": 3,
+     "支持": 2,
+     "弱支持": 1
+    },
+    "supported_ratio": 0.3333,
+    "supported_or_weak_ratio": 0.5,
+    "hallucination_flags": [
+     {
+      "type": "number",
+      "token": "1740",
+      "reason": "数字未在引用单元文本中出现（非白名单小整数）",
+      "rule": "v2.number_whitelist"
+     }
+    ],
+    "citations": [
+     {
+      "unit_id": "7e665de0b2bd",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     },
+     {
+      "unit_id": "bf0d264626b9",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     }
+    ],
+    "issues": [
+     "页码超出单元区间: 2/2",
+     "无支持句 3/6",
+     "幻觉候选 1 项（v2）"
+    ],
+    "hallucination_flags_v1": [
+     {
+      "type": "number",
+      "token": "1740",
+      "reason": "数字未在引用单元文本中出现"
+     }
+    ],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "inference",
+    "schema_version": 2,
+    "page_available": false,
+    "inference_markers": 1,
+    "answer_length": 210,
+    "answered": true,
+    "hallucination_flags_count": 1
+   },
+   "both_answered": false
+  },
+  {
+   "id": "heldout_030",
+   "question": "买点正确但卖出不佳可能带来什么后果？",
+   "category": "heldout",
+   "theme": "heldout",
+   "single": {
+    "id": "heldout_030__single",
+    "kind": "single",
+    "question": "买点正确但卖出不佳可能带来什么后果？",
+    "category": "heldout",
+    "n_citations": 0,
+    "citations_exists": 0,
+    "citations_page_ok": 0,
+    "citation_exists_ratio": 0.0,
+    "citation_valid": false,
+    "n_sentences": 1,
+    "support_counts": {
+     "拒答": 1
+    },
+    "supported_ratio": null,
+    "supported_or_weak_ratio": null,
+    "hallucination_flags": [],
+    "citations": [],
+    "issues": [
+     "无引用"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": true,
+    "citations_required": false,
+    "answer_type": "refusal",
+    "schema_version": 2,
+    "page_available": true,
+    "inference_markers": 0,
+    "answer_length": 16,
+    "answered": false,
+    "hallucination_flags_count": 0
+   },
+   "multi": {
+    "id": "heldout_030__multi",
+    "kind": "multi",
+    "question": "买点正确但卖出不佳可能带来什么后果？",
+    "category": "heldout",
+    "n_citations": 2,
+    "citations_exists": 2,
+    "citations_page_ok": null,
+    "citation_exists_ratio": 1.0,
+    "citation_valid": true,
+    "n_sentences": 5,
+    "support_counts": {
+     "无支持": 2,
+     "支持": 2,
+     "弱支持": 1
+    },
+    "supported_ratio": 0.4,
+    "supported_or_weak_ratio": 0.6,
+    "hallucination_flags": [],
+    "citations": [
+     {
+      "unit_id": "d572abdcc970",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     },
+     {
+      "unit_id": "dae4cbf52fe3",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     }
+    ],
+    "issues": [
+     "页码超出单元区间: 2/2",
+     "无支持句 2/5"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "inference",
+    "schema_version": 2,
+    "page_available": false,
+    "inference_markers": 2,
+    "answer_length": 155,
+    "answered": true,
+    "hallucination_flags_count": 0
+   },
+   "both_answered": false
+  },
+  {
+   "id": "heldout_040",
+   "question": "策略收益与高赚率的原因是什么？",
+   "category": "heldout",
+   "theme": "heldout",
+   "single": {
+    "id": "heldout_040__single",
+    "kind": "single",
+    "question": "策略收益与高赚率的原因是什么？",
+    "category": "heldout",
+    "n_citations": 1,
+    "citations_exists": 1,
+    "citations_page_ok": 1,
+    "citation_exists_ratio": 1.0,
+    "citation_valid": true,
+    "n_sentences": 6,
+    "support_counts": {
+     "无支持": 3,
+     "支持": 2,
+     "弱支持": 1
+    },
+    "supported_ratio": 0.3333,
+    "supported_or_weak_ratio": 0.5,
+    "hallucination_flags": [],
+    "citations": [
+     {
+      "unit_id": "070380b8404a",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": true,
+      "id_known_in_map": true
+     }
+    ],
+    "issues": [
+     "无支持句 3/6"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "inference",
+    "schema_version": 2,
+    "page_available": true,
+    "inference_markers": 1,
+    "answer_length": 209,
+    "answered": true,
+    "hallucination_flags_count": 0
+   },
+   "multi": {
+    "id": "heldout_040__multi",
+    "kind": "multi",
+    "question": "策略收益与高赚率的原因是什么？",
+    "category": "heldout",
+    "n_citations": 2,
+    "citations_exists": 2,
+    "citations_page_ok": null,
+    "citation_exists_ratio": 1.0,
+    "citation_valid": true,
+    "n_sentences": 6,
+    "support_counts": {
+     "无支持": 3,
+     "支持": 2,
+     "弱支持": 1
+    },
+    "supported_ratio": 0.3333,
+    "supported_or_weak_ratio": 0.5,
+    "hallucination_flags": [],
+    "citations": [
+     {
+      "unit_id": "070380b8404a",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     },
+     {
+      "unit_id": "74ecb023f851",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     }
+    ],
+    "issues": [
+     "页码超出单元区间: 2/2",
+     "无支持句 3/6"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "inference",
+    "schema_version": 2,
+    "page_available": false,
+    "inference_markers": 2,
+    "answer_length": 195,
+    "answered": true,
+    "hallucination_flags_count": 0
+   },
+   "both_answered": true
+  },
+  {
+   "id": "citation_sft_0003",
+   "question": "「钠电池核心机会环节」的核心要点是什么？",
+   "category": "citation_clean",
+   "theme": "citation_clean",
+   "single": {
+    "id": "citation_sft_0003__single",
+    "kind": "single",
+    "question": "「钠电池核心机会环节」的核心要点是什么？",
+    "category": "citation_clean",
+    "n_citations": 1,
+    "citations_exists": 1,
+    "citations_page_ok": 1,
+    "citation_exists_ratio": 1.0,
+    "citation_valid": true,
+    "n_sentences": 2,
+    "support_counts": {
+     "无支持": 1,
+     "支持": 1
+    },
+    "supported_ratio": 0.5,
+    "supported_or_weak_ratio": 0.5,
+    "hallucination_flags": [],
+    "citations": [
+     {
+      "unit_id": "a44a13fbb69c",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": true,
+      "id_known_in_map": true
+     }
+    ],
+    "issues": [
+     "无支持句 1/2"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "fact",
+    "schema_version": 2,
+    "page_available": true,
+    "inference_markers": 0,
+    "answer_length": 64,
+    "answered": true,
+    "hallucination_flags_count": 0
+   },
+   "multi": {
+    "id": "citation_sft_0003__multi",
+    "kind": "multi",
+    "question": "「钠电池核心机会环节」的核心要点是什么？",
+    "category": "citation_clean",
+    "n_citations": 2,
+    "citations_exists": 2,
+    "citations_page_ok": null,
+    "citation_exists_ratio": 1.0,
+    "citation_valid": true,
+    "n_sentences": 7,
+    "support_counts": {
+     "无支持": 2,
+     "支持": 4,
+     "弱支持": 1
+    },
+    "supported_ratio": 0.5714,
+    "supported_or_weak_ratio": 0.7143,
+    "hallucination_flags": [],
+    "citations": [
+     {
+      "unit_id": "a44a13fbb69c",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     },
+     {
+      "unit_id": "d0df32b16bdd",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     }
+    ],
+    "issues": [
+     "页码超出单元区间: 2/2",
+     "无支持句 2/7"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "inference",
+    "schema_version": 2,
+    "page_available": false,
+    "inference_markers": 1,
+    "answer_length": 224,
+    "answered": true,
+    "hallucination_flags_count": 0
+   },
+   "both_answered": true
+  },
+  {
+   "id": "citation_sft_0026",
+   "question": "「行业评级定义」的核心要点是什么？",
+   "category": "citation_clean",
+   "theme": "citation_clean",
+   "single": {
+    "id": "citation_sft_0026__single",
+    "kind": "single",
+    "question": "「行业评级定义」的核心要点是什么？",
+    "category": "citation_clean",
+    "n_citations": 2,
+    "citations_exists": 2,
+    "citations_page_ok": 2,
+    "citation_exists_ratio": 1.0,
+    "citation_valid": true,
+    "n_sentences": 5,
+    "support_counts": {
+     "无支持": 2,
+     "支持": 3
+    },
+    "supported_ratio": 0.6,
+    "supported_or_weak_ratio": 0.6,
+    "hallucination_flags": [],
+    "citations": [
+     {
+      "unit_id": "3a4eff67a995",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": true,
+      "id_known_in_map": true
+     },
+     {
+      "unit_id": "de5d7e7138f5",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": true,
+      "id_known_in_map": true
+     }
+    ],
+    "issues": [
+     "无支持句 2/5"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "inference",
+    "schema_version": 2,
+    "page_available": true,
+    "inference_markers": 3,
+    "answer_length": 253,
+    "answered": true,
+    "hallucination_flags_count": 0
+   },
+   "multi": {
+    "id": "citation_sft_0026__multi",
+    "kind": "multi",
+    "question": "「行业评级定义」的核心要点是什么？",
+    "category": "citation_clean",
+    "n_citations": 2,
+    "citations_exists": 2,
+    "citations_page_ok": null,
+    "citation_exists_ratio": 1.0,
+    "citation_valid": true,
+    "n_sentences": 5,
+    "support_counts": {
+     "无支持": 2,
+     "支持": 2,
+     "弱支持": 1
+    },
+    "supported_ratio": 0.4,
+    "supported_or_weak_ratio": 0.6,
+    "hallucination_flags": [],
+    "citations": [
+     {
+      "unit_id": "3a4eff67a995",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     },
+     {
+      "unit_id": "de5d7e7138f5",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     }
+    ],
+    "issues": [
+     "页码超出单元区间: 2/2",
+     "无支持句 2/5"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "inference",
+    "schema_version": 2,
+    "page_available": false,
+    "inference_markers": 4,
+    "answer_length": 208,
+    "answered": true,
+    "hallucination_flags_count": 0
+   },
+   "both_answered": true
+  },
+  {
+   "id": "citation_sft_0013",
+   "question": "关于「北京零售市场现状」，资料中的依据/来源是什么？",
+   "category": "citation_clean",
+   "theme": "citation_clean",
+   "single": {
+    "id": "citation_sft_0013__single",
+    "kind": "single",
+    "question": "关于「北京零售市场现状」，资料中的依据/来源是什么？",
+    "category": "citation_clean",
+    "n_citations": 2,
+    "citations_exists": 2,
+    "citations_page_ok": 2,
+    "citation_exists_ratio": 1.0,
+    "citation_valid": true,
+    "n_sentences": 6,
+    "support_counts": {
+     "无支持": 3,
+     "支持": 2,
+     "弱支持": 1
+    },
+    "supported_ratio": 0.3333,
+    "supported_or_weak_ratio": 0.5,
+    "hallucination_flags": [],
+    "citations": [
+     {
+      "unit_id": "dd02cab720e0",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": true,
+      "id_known_in_map": true
+     },
+     {
+      "unit_id": "bf663d3e998a",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": true,
+      "id_known_in_map": true
+     }
+    ],
+    "issues": [
+     "无支持句 3/6"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "inference",
+    "schema_version": 2,
+    "page_available": true,
+    "inference_markers": 1,
+    "answer_length": 303,
+    "answered": true,
+    "hallucination_flags_count": 0
+   },
+   "multi": {
+    "id": "citation_sft_0013__multi",
+    "kind": "multi",
+    "question": "关于「北京零售市场现状」，资料中的依据/来源是什么？",
+    "category": "citation_clean",
+    "n_citations": 2,
+    "citations_exists": 2,
+    "citations_page_ok": null,
+    "citation_exists_ratio": 1.0,
+    "citation_valid": true,
+    "n_sentences": 5,
+    "support_counts": {
+     "无支持": 2,
+     "支持": 2,
+     "弱支持": 1
+    },
+    "supported_ratio": 0.4,
+    "supported_or_weak_ratio": 0.6,
+    "hallucination_flags": [],
+    "citations": [
+     {
+      "unit_id": "dd02cab720e0",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     },
+     {
+      "unit_id": "bf663d3e998a",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     }
+    ],
+    "issues": [
+     "页码超出单元区间: 2/2",
+     "无支持句 2/5"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "inference",
+    "schema_version": 2,
+    "page_available": false,
+    "inference_markers": 1,
+    "answer_length": 203,
+    "answered": true,
+    "hallucination_flags_count": 0
+   },
+   "both_answered": true
+  },
+  {
+   "id": "citation_sft_0039",
+   "question": "关于「资本市场现存障碍」，资料中的依据/来源是什么？",
+   "category": "citation_clean",
+   "theme": "citation_clean",
+   "single": {
+    "id": "citation_sft_0039__single",
+    "kind": "single",
+    "question": "关于「资本市场现存障碍」，资料中的依据/来源是什么？",
+    "category": "citation_clean",
+    "n_citations": 2,
+    "citations_exists": 2,
+    "citations_page_ok": 2,
+    "citation_exists_ratio": 1.0,
+    "citation_valid": true,
+    "n_sentences": 6,
+    "support_counts": {
+     "无支持": 3,
+     "支持": 3
+    },
+    "supported_ratio": 0.5,
+    "supported_or_weak_ratio": 0.5,
+    "hallucination_flags": [],
+    "citations": [
+     {
+      "unit_id": "653a45d7f679",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": true,
+      "id_known_in_map": true
+     },
+     {
+      "unit_id": "918a6d233355",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": true,
+      "id_known_in_map": true
+     }
+    ],
+    "issues": [
+     "无支持句 3/6"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "inference",
+    "schema_version": 2,
+    "page_available": true,
+    "inference_markers": 1,
+    "answer_length": 230,
+    "answered": true,
+    "hallucination_flags_count": 0
+   },
+   "multi": {
+    "id": "citation_sft_0039__multi",
+    "kind": "multi",
+    "question": "关于「资本市场现存障碍」，资料中的依据/来源是什么？",
+    "category": "citation_clean",
+    "n_citations": 2,
+    "citations_exists": 2,
+    "citations_page_ok": null,
+    "citation_exists_ratio": 1.0,
+    "citation_valid": true,
+    "n_sentences": 5,
+    "support_counts": {
+     "无支持": 3,
+     "支持": 1,
+     "弱支持": 1
+    },
+    "supported_ratio": 0.2,
+    "supported_or_weak_ratio": 0.4,
+    "hallucination_flags": [],
+    "citations": [
+     {
+      "unit_id": "653a45d7f679",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     },
+     {
+      "unit_id": "918a6d233355",
+      "exists": true,
+      "method": "id_map",
+      "page_ok": false,
+      "id_known_in_map": true
+     }
+    ],
+    "issues": [
+     "页码超出单元区间: 2/2",
+     "无支持句 3/5"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": false,
+    "citations_required": true,
+    "answer_type": "inference",
+    "schema_version": 2,
+    "page_available": false,
+    "inference_markers": 1,
+    "answer_length": 164,
+    "answered": true,
+    "hallucination_flags_count": 0
+   },
+   "both_answered": true
+  },
+  {
+   "id": "citation_sft_0178",
+   "question": "「但先别忙着给他发年终奖」的依据/事实是什么？",
+   "category": "citation_clean",
+   "theme": "citation_clean",
+   "single": {
+    "id": "citation_sft_0178__single",
+    "kind": "single",
+    "question": "「但先别忙着给他发年终奖」的依据/事实是什么？",
+    "category": "citation_clean",
+    "n_citations": 0,
+    "citations_exists": 0,
+    "citations_page_ok": 0,
+    "citation_exists_ratio": 0.0,
+    "citation_valid": false,
+    "n_sentences": 1,
+    "support_counts": {
+     "拒答": 1
+    },
+    "supported_ratio": null,
+    "supported_or_weak_ratio": null,
+    "hallucination_flags": [],
+    "citations": [],
+    "issues": [
+     "无引用"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": true,
+    "citations_required": false,
+    "answer_type": "refusal",
+    "schema_version": 2,
+    "page_available": true,
+    "inference_markers": 0,
+    "answer_length": 16,
+    "answered": false,
+    "hallucination_flags_count": 0
+   },
+   "multi": {
+    "id": "citation_sft_0178__multi",
+    "kind": "multi",
+    "question": "「但先别忙着给他发年终奖」的依据/事实是什么？",
+    "category": "citation_clean",
+    "n_citations": 0,
+    "citations_exists": 0,
+    "citations_page_ok": null,
+    "citation_exists_ratio": 0.0,
+    "citation_valid": false,
+    "n_sentences": 1,
+    "support_counts": {
+     "拒答": 1
+    },
+    "supported_ratio": null,
+    "supported_or_weak_ratio": null,
+    "hallucination_flags": [],
+    "citations": [],
+    "issues": [
+     "无引用"
+    ],
+    "hallucination_flags_v1": [],
+    "false_positives_removed": [],
+    "new_flags_added": [],
+    "expected_refusal": true,
+    "citations_required": false,
+    "answer_type": "refusal",
+    "schema_version": 2,
+    "page_available": false,
+    "inference_markers": 0,
+    "answer_length": 16,
+    "answered": false,
+    "hallucination_flags_count": 0
+   },
+   "both_answered": false
+  }
+ ],
+ "conclusion": {
+  "verdict": "multi 可答率提升有限，质量对比无显著差异",
+  "stance": "keep_retrieval_default",
+  "answerable_gain": 0.05,
+  "support_rate_delta_all": -0.005,
+  "hallucination_rate_delta": 0.0,
+  "quality_loss_detected": false,
+  "paired_support_delta": -0.037,
+  "reasons": [
+   "可答率 single 0.55 → multi 0.6（Δ=+0.0500）",
+   "支撑率（全样本）single 0.2619 → multi 0.2569（Δ=-0.0050）",
+   "幻觉 flag 率 single 0.05 → multi 0.05（Δ=+0.0000）",
+   "引用存在率 single 1.0 → multi 1.0",
+   "双方均有答案子集（n=9）支撑率 Δ=-0.037"
+  ],
+  "caveats": [
+   "multi 引用元数据（页码）未持久化，multi 侧页码校验 n/a，引用只验证 unit_id 存在性；",
+   "multi citation 从答案标记抽取，可能漏计未打标记的引用；",
+   "支撑度为字符 bigram 覆盖率，长答案（multi 平均更长）天然更易命中，需谨慎解读；",
+   "有效样本 12 对（AW 30 条中仅 12 条有原文可评估），结论为冒烟级；",
+   "不调 LLM、不改答案原文；评估为规则启发式。"
+  ]
+ }
+}

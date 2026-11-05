@@ -247,3 +247,14 @@ python -m analysis.reclass --dry-run     # 看差异（旧类别 → 当前规�
 python -m analysis.reclass --apply       # 落库（自动备份 DB；保留 reviewed/category_final）
 ```
 - 用途：清掉历史规则残留（如 2026-09 重整投资协议仍标"退市/ST"），避免报告事件表误导。
+
+### H2 选股引擎（2026-11-03）
+
+- `analysis/screener.py`：ScreeningDSL v1（字段/算子白名单、PIT、可解释）；`validate()` → `run()`；
+  - 股票池：WATCHLIST / HS300 / A_SHARE / industry:<名称>；
+  - 字段：ps/ps_pct_hist/pe_ttm/dv_ratio/total_mv_yi、revenue_yoy/net_profit_yoy/roe/debt_ratio、
+    ret_20/ret_60/amount_20_yi/turnover_rate、quality_score、industry_l1/l2、flag_st/event_types；
+  - 输出候选含 `reasons`（命中理由）/`risk_tags`/`disclaimer`（研究参考，不构成建议）。
+- `analysis/screen_parse.py`：自然语言→DSL 规则解析（确定性优先；未识别片段记录，交 Hermes 澄清/LLM 兜底）。
+- 测试：`analysis/tests/test_screener.py`（6）+ `test_screen_parse.py`（11），离线可跑。
+- 网关端点（/screen/parse、/screen/run）与 MCP `sa_screen` 待 H1 合并后接入。

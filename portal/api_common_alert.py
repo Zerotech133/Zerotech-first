@@ -86,6 +86,12 @@ def _alert_acceptable_days(today):
 ALERT_FRESH_WINDOW = datetime.timedelta(
     minutes=float(os.environ.get("ALERT_FRESH_WINDOW_MIN", "1080")))
 
+# 2026-11-05 OPS-COUNCIL-RETIRE-20261105：council（投委会影子源）自 2026-10-15
+# 起无生产者，最后数据停在 10-13；它本来只是 optional 影子源，不再作为活跃
+# 信号源参与 source_health/诸葛亮晨报告警。保留 /council 历史页面与 _council_stats，
+# 仅把健康状态固定为 retired，避免每天重复 P2“需回原账本核对”。
+COUNCIL_RETIRED = True
+
 # 2026-10-27 OS-FIX-WEAKFRESH：weak（弱于板块）是**周频源**（周一 15:35），
 # 日级 acceptable_days={今天,上一交易日} 会让它周二至周日恒 stale（实测 10-27
 # business_date=10-23 被判 stale）。周频源单独放宽到 8 天：business_date/anchor
@@ -311,16 +317,20 @@ def _alert_source_health():
         mark("cross", "error", "source_error")
 
     # Council is optional and is not one of the five mandatory signal feeds.
-    try:
-        council = _council_stats()
-        if not isinstance(council, dict):
-            mark("council", "error", "invalid_schema")
-        elif council.get("d"):
-            dated("council", council["d"], council.get("ts"))
-        else:
-            mark("council", "stale", "unproven_completion")
-    except Exception:
-        mark("council", "error", "source_error")
+    # 2026-11-05：生产者已停、影子源正式退役；固定 retired，不再产生 stale P2。
+    if COUNCIL_RETIRED:
+        mark("council", "retired", "producer_retired")
+    else:
+        try:
+            council = _council_stats()
+            if not isinstance(council, dict):
+                mark("council", "error", "invalid_schema")
+            elif council.get("d"):
+                dated("council", council["d"], council.get("ts"))
+            else:
+                mark("council", "stale", "unproven_completion")
+        except Exception:
+            mark("council", "error", "source_error")
     return {"version": 1, "checked_at": now.isoformat(timespec="seconds"),
             "sources": sources}
 
@@ -427,28 +437,30 @@ def build_alerts():
         log_exc("build_alerts:cross_poll 共振")  # C2批1
     # ⑥ 投委会（K61：最近跑批夜三会计数 + 影子转正进度，态势带卡；
     #    K62：管理预警计数 + 风格分桶分布上屏；K64d：待确认队列计数）
-    try:
-        cs = _council_stats()
-        if cs["d"]:
-            warn = (" · ⚠预警 %d" % cs["n_warn"]) if cs.get("n_warn") \
-                else ""
-            pend = (" · 待确认 %d" % cs["n_pend"]) if cs.get("n_pend") \
-                else ""
-            sty = cs.get("styles") or {}
-            sty_s = ""
-            if sty:
-                sty_s = " · 桶 %s/%s" % (sty.get("激进", 0),
-                                         sty.get("稳健", 0))
-            out.append({"name": "🏛 投委会",
-                        "value": "立案 %d" % cs["n_prop"],
-                        "sub": "盯盘需注意 %d · 复盘 %d · 影子 %d/%d%s%s%s" % (
-                            cs["n_watch"], cs["n_rev"],
-                            cs["shadow_n"], cs["shadow_need"],
-                            warn, pend, sty_s),
-                        "href": "/council", "delta": None,
-                        "level": "eng"})
-    except Exception:
-        log_exc("build_alerts:council_stats")  # C2批1
+    # 2026-11-05：投委会影子源退役，不再进入“今日预警速览”；历史页 /council 保留。
+    if not COUNCIL_RETIRED:
+        try:
+            cs = _council_stats()
+            if cs["d"]:
+                warn = (" · ⚠预警 %d" % cs["n_warn"]) if cs.get("n_warn") \
+                    else ""
+                pend = (" · 待确认 %d" % cs["n_pend"]) if cs.get("n_pend") \
+                    else ""
+                sty = cs.get("styles") or {}
+                sty_s = ""
+                if sty:
+                    sty_s = " · 桶 %s/%s" % (sty.get("激进", 0),
+                                             sty.get("稳健", 0))
+                out.append({"name": "🏛 投委会",
+                            "value": "立案 %d" % cs["n_prop"],
+                            "sub": "盯盘需注意 %d · 复盘 %d · 影子 %d/%d%s%s%s" % (
+                                cs["n_watch"], cs["n_rev"],
+                                cs["shadow_n"], cs["shadow_need"],
+                                warn, pend, sty_s),
+                            "href": "/council", "delta": None,
+                            "level": "eng"})
+        except Exception:
+            log_exc("build_alerts:council_stats")  # C2批1
     return {"ts": time.strftime("%Y-%m-%d %H:%M"), "alerts": out,
             "source_health": _alert_source_health()}
 

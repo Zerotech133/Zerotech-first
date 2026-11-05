@@ -23,7 +23,6 @@ PORTFOLIO = os.path.join(REPO, "agent_platform", "data", "academy", "strategy_po
 OUT_DIR = os.path.join(REPO, "agent_platform", "data", "recommendation_pool")
 DEFAULT_TIERS = ("T1", "T2")
 EXPIRY_DAYS = 3
-BLOCK_HEALTH = {"red", "maintenance"}
 INFRA_SOURCES = {"strong", "cross", "ninedim", "chanlun", "weak", "qpzm"}
 
 
@@ -57,8 +56,6 @@ def healthy_sources(health):
     for sid, h in (health or {}).items():
         # 只有明确 green/yellow 的策略才可进池；未知健康状态不猜“健康”
         if h.get("health") not in ("green", "yellow"):
-            continue
-        if h.get("health") in BLOCK_HEALTH:
             continue
         if h.get("launch_status") in ("maintenance", "no_go"):
             continue

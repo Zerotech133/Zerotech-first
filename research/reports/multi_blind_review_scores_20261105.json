@@ -1,0 +1,476 @@
+{
+ "schema_version": 1,
+ "generated_at": "2026-11-05T02:53:00+08:00",
+ "n_questions": 10,
+ "method": "10题随机A/B盲评；独立评审（fresh subagent）与Lead盲评各一轮；评分完成后揭盲",
+ "key_revealed": {
+  "1": {
+   "id": "w13_U01",
+   "A": "ollama",
+   "B": "v4d"
+  },
+  "2": {
+   "id": "w13_U04",
+   "A": "v4d",
+   "B": "ollama"
+  },
+  "3": {
+   "id": "w13_U10",
+   "A": "ollama",
+   "B": "v4d"
+  },
+  "4": {
+   "id": "w13_A01",
+   "A": "ollama",
+   "B": "v4d"
+  },
+  "5": {
+   "id": "w13_A13",
+   "A": "ollama",
+   "B": "v4d"
+  },
+  "6": {
+   "id": "w13_A18",
+   "A": "v4d",
+   "B": "ollama"
+  },
+  "7": {
+   "id": "heldout_001",
+   "A": "v4d",
+   "B": "ollama"
+  },
+  "8": {
+   "id": "heldout_021",
+   "A": "v4d",
+   "B": "ollama"
+  },
+  "9": {
+   "id": "citation_sft_0026",
+   "A": "ollama",
+   "B": "v4d"
+  },
+  "10": {
+   "id": "citation_sft_0039",
+   "A": "v4d",
+   "B": "ollama"
+  }
+ },
+ "reviewers": {
+  "independent_subagent": {
+   "rows": [
+    {
+     "no": 1,
+     "id": "w13_U01",
+     "A_model": "ollama",
+     "A_score": 5,
+     "B_model": "v4d",
+     "B_score": 5,
+     "ollama_score": 5,
+     "v4d_score": 5,
+     "winner": "tie"
+    },
+    {
+     "no": 2,
+     "id": "w13_U04",
+     "A_model": "v4d",
+     "A_score": 2,
+     "B_model": "ollama",
+     "B_score": 5,
+     "ollama_score": 5,
+     "v4d_score": 2,
+     "winner": "ollama"
+    },
+    {
+     "no": 3,
+     "id": "w13_U10",
+     "A_model": "ollama",
+     "A_score": 5,
+     "B_model": "v4d",
+     "B_score": 2,
+     "ollama_score": 5,
+     "v4d_score": 2,
+     "winner": "ollama"
+    },
+    {
+     "no": 4,
+     "id": "w13_A01",
+     "A_model": "ollama",
+     "A_score": 5,
+     "B_model": "v4d",
+     "B_score": 4,
+     "ollama_score": 5,
+     "v4d_score": 4,
+     "winner": "ollama"
+    },
+    {
+     "no": 5,
+     "id": "w13_A13",
+     "A_model": "ollama",
+     "A_score": 3,
+     "B_model": "v4d",
+     "B_score": 3,
+     "ollama_score": 3,
+     "v4d_score": 3,
+     "winner": "tie"
+    },
+    {
+     "no": 6,
+     "id": "w13_A18",
+     "A_model": "v4d",
+     "A_score": 3,
+     "B_model": "ollama",
+     "B_score": 1,
+     "ollama_score": 1,
+     "v4d_score": 3,
+     "winner": "v4d"
+    },
+    {
+     "no": 7,
+     "id": "heldout_001",
+     "A_model": "v4d",
+     "A_score": 5,
+     "B_model": "ollama",
+     "B_score": 4,
+     "ollama_score": 4,
+     "v4d_score": 5,
+     "winner": "v4d"
+    },
+    {
+     "no": 8,
+     "id": "heldout_021",
+     "A_model": "v4d",
+     "A_score": 3,
+     "B_model": "ollama",
+     "B_score": 1,
+     "ollama_score": 1,
+     "v4d_score": 3,
+     "winner": "v4d"
+    },
+    {
+     "no": 9,
+     "id": "citation_sft_0026",
+     "A_model": "ollama",
+     "A_score": 5,
+     "B_model": "v4d",
+     "B_score": 4,
+     "ollama_score": 5,
+     "v4d_score": 4,
+     "winner": "ollama"
+    },
+    {
+     "no": 10,
+     "id": "citation_sft_0039",
+     "A_model": "v4d",
+     "A_score": 5,
+     "B_model": "ollama",
+     "B_score": 5,
+     "ollama_score": 5,
+     "v4d_score": 5,
+     "winner": "tie"
+    }
+   ],
+   "totals": {
+    "ollama": 39,
+    "v4d": 36
+   },
+   "wins": {
+    "ollama": 4,
+    "v4d": 3,
+    "tie": 3
+   },
+   "mean": {
+    "ollama": 3.9,
+    "v4d": 3.6
+   }
+  },
+  "lead_blind_pass": {
+   "rows": [
+    {
+     "no": 1,
+     "id": "w13_U01",
+     "A_model": "ollama",
+     "A_score": 5,
+     "B_model": "v4d",
+     "B_score": 5,
+     "ollama_score": 5,
+     "v4d_score": 5,
+     "winner": "tie"
+    },
+    {
+     "no": 2,
+     "id": "w13_U04",
+     "A_model": "v4d",
+     "A_score": 2,
+     "B_model": "ollama",
+     "B_score": 5,
+     "ollama_score": 5,
+     "v4d_score": 2,
+     "winner": "ollama"
+    },
+    {
+     "no": 3,
+     "id": "w13_U10",
+     "A_model": "ollama",
+     "A_score": 5,
+     "B_model": "v4d",
+     "B_score": 2,
+     "ollama_score": 5,
+     "v4d_score": 2,
+     "winner": "ollama"
+    },
+    {
+     "no": 4,
+     "id": "w13_A01",
+     "A_model": "ollama",
+     "A_score": 5,
+     "B_model": "v4d",
+     "B_score": 4,
+     "ollama_score": 5,
+     "v4d_score": 4,
+     "winner": "ollama"
+    },
+    {
+     "no": 5,
+     "id": "w13_A13",
+     "A_model": "ollama",
+     "A_score": 1,
+     "B_model": "v4d",
+     "B_score": 1,
+     "ollama_score": 1,
+     "v4d_score": 1,
+     "winner": "tie"
+    },
+    {
+     "no": 6,
+     "id": "w13_A18",
+     "A_model": "v4d",
+     "A_score": 2,
+     "B_model": "ollama",
+     "B_score": 1,
+     "ollama_score": 1,
+     "v4d_score": 2,
+     "winner": "v4d"
+    },
+    {
+     "no": 7,
+     "id": "heldout_001",
+     "A_model": "v4d",
+     "A_score": 5,
+     "B_model": "ollama",
+     "B_score": 4,
+     "ollama_score": 4,
+     "v4d_score": 5,
+     "winner": "v4d"
+    },
+    {
+     "no": 8,
+     "id": "heldout_021",
+     "A_model": "v4d",
+     "A_score": 2,
+     "B_model": "ollama",
+     "B_score": 3,
+     "ollama_score": 3,
+     "v4d_score": 2,
+     "winner": "ollama"
+    },
+    {
+     "no": 9,
+     "id": "citation_sft_0026",
+     "A_model": "ollama",
+     "A_score": 5,
+     "B_model": "v4d",
+     "B_score": 5,
+     "ollama_score": 5,
+     "v4d_score": 5,
+     "winner": "tie"
+    },
+    {
+     "no": 10,
+     "id": "citation_sft_0039",
+     "A_model": "v4d",
+     "A_score": 5,
+     "B_model": "ollama",
+     "B_score": 5,
+     "ollama_score": 5,
+     "v4d_score": 5,
+     "winner": "tie"
+    }
+   ],
+   "totals": {
+    "ollama": 39,
+    "v4d": 33
+   },
+   "wins": {
+    "ollama": 4,
+    "v4d": 2,
+    "tie": 4
+   },
+   "mean": {
+    "ollama": 3.9,
+    "v4d": 3.3
+   }
+  }
+ },
+ "per_question": [
+  {
+   "no": 1,
+   "id": "w13_U01",
+   "question": "如何申请申根旅游签证？",
+   "answerable": false,
+   "A_model": "ollama",
+   "B_model": "v4d",
+   "independent": {
+    "A": 5,
+    "B": 5
+   },
+   "lead": {
+    "A": 5,
+    "B": 5
+   }
+  },
+  {
+   "no": 2,
+   "id": "w13_U04",
+   "question": "2026 年世界杯的冠军是哪支球队？",
+   "answerable": false,
+   "A_model": "v4d",
+   "B_model": "ollama",
+   "independent": {
+    "A": 2,
+    "B": 5
+   },
+   "lead": {
+    "A": 2,
+    "B": 5
+   }
+  },
+  {
+   "no": 3,
+   "id": "w13_U10",
+   "question": "量子纠缠实验的贝尔不等式推导？",
+   "answerable": false,
+   "A_model": "ollama",
+   "B_model": "v4d",
+   "independent": {
+    "A": 5,
+    "B": 2
+   },
+   "lead": {
+    "A": 5,
+    "B": 2
+   }
+  },
+  {
+   "no": 4,
+   "id": "w13_A01",
+   "question": "「AI 产业投资传导链条」的核心要点是什么？",
+   "answerable": true,
+   "A_model": "ollama",
+   "B_model": "v4d",
+   "independent": {
+    "A": 5,
+    "B": 4
+   },
+   "lead": {
+    "A": 5,
+    "B": 4
+   }
+  },
+  {
+   "no": 5,
+   "id": "w13_A13",
+   "question": "关于「区间套运用」，资料中的依据/来源是什么？",
+   "answerable": true,
+   "A_model": "ollama",
+   "B_model": "v4d",
+   "independent": {
+    "A": 3,
+    "B": 3
+   },
+   "lead": {
+    "A": 1,
+    "B": 1
+   }
+  },
+  {
+   "no": 6,
+   "id": "w13_A18",
+   "question": "关于「今天刺猬情报局的主题」，操作要点是什么？",
+   "answerable": true,
+   "A_model": "v4d",
+   "B_model": "ollama",
+   "independent": {
+    "A": 3,
+    "B": 1
+   },
+   "lead": {
+    "A": 2,
+    "B": 1
+   }
+  },
+  {
+   "no": 7,
+   "id": "heldout_001",
+   "question": "什么是「频谱资源与许可」？",
+   "answerable": true,
+   "A_model": "v4d",
+   "B_model": "ollama",
+   "independent": {
+    "A": 5,
+    "B": 4
+   },
+   "lead": {
+    "A": 5,
+    "B": 4
+   }
+  },
+  {
+   "no": 8,
+   "id": "heldout_021",
+   "question": "创业板指日线向下笔未跌破1740点时文中如何判断？",
+   "answerable": true,
+   "A_model": "v4d",
+   "B_model": "ollama",
+   "independent": {
+    "A": 3,
+    "B": 1
+   },
+   "lead": {
+    "A": 2,
+    "B": 3
+   }
+  },
+  {
+   "no": 9,
+   "id": "citation_sft_0026",
+   "question": "「行业评级定义」的核心要点是什么？",
+   "answerable": true,
+   "A_model": "ollama",
+   "B_model": "v4d",
+   "independent": {
+    "A": 5,
+    "B": 4
+   },
+   "lead": {
+    "A": 5,
+    "B": 5
+   }
+  },
+  {
+   "no": 10,
+   "id": "citation_sft_0039",
+   "question": "关于「资本市场现存障碍」，资料中的依据/来源是什么？",
+   "answerable": true,
+   "A_model": "v4d",
+   "B_model": "ollama",
+   "independent": {
+    "A": 5,
+    "B": 5
+   },
+   "lead": {
+    "A": 5,
+    "B": 5
+   }
+  }
+ ]
+}

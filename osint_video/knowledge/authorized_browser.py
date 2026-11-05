@@ -8,7 +8,7 @@ reads cookies, headers, storage state, tokens, or arbitrary browser paths.
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Protocol
 from urllib.parse import parse_qsl, urlparse
@@ -29,7 +29,7 @@ class VisiblePageHealthProbe(Protocol):
 
 
 class AuthorizedBrowserSession:
-    """Own a browser context in-process and expose only health/close operations."""
+    """Own a browser context in-process and expose health/read/close operations."""
 
     def __init__(
         self,
@@ -77,6 +77,21 @@ class AuthorizedBrowserSession:
             except (TypeError, ValueError):
                 return BrowserSessionHealth(status=BrowserSessionStatus.UNKNOWN)
         return health
+
+    def read_visible(self, reader: Callable[[Any], Any]) -> Any:
+        """Run one reader against the bound visible page and pass its value back.
+
+        The reader is invoked exactly once with the exact page this session owns
+        and its return value is neither copied nor coerced nor validated here.
+        The page object itself is never returned, so callers cannot retain or
+        rebind it. Errors raised by the reader propagate unchanged; only a
+        closed session or a discarded page is refused.
+        """
+        if not callable(reader):
+            raise ValueError("reader is required")
+        if self._closed or self._page is None:
+            raise RuntimeError("authorized browser session is closed")
+        return reader(self._page)
 
     def close(self) -> None:
         """Close the owned context and discard in-process references."""

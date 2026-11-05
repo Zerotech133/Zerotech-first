@@ -407,3 +407,175 @@ CREATE TABLE IF NOT EXISTS osint_index_task (
     CHECK (status IN ('pending', 'running', 'succeeded', 'failed'))
 );
 CREATE INDEX IF NOT EXISTS idx_index_task_status ON osint_index_task(status, updated_at);
+
+-- ============================================================
+-- ⑨ 事件层（story）：事实的横向聚合（P0 增量，向后兼容，不破坏既有契约）
+--
+-- 背景：resource → knowledge_unit(fact) → strategy_evidence 是一条"单文档"
+--   链路，能回答"这篇报道说了什么"，但回答不了"财联社/东财/雪球说的是
+--   不是同一件事"。缺了横向聚合层，下游（kg_brief / event_graph）只能
+--   消费散点事实，这正是 2026-10-17 报告 F2「采了没人吃」的物理成因。
+--
+-- 建模参照 AIHOT 的 article→fact→story 三层（MIT 许可，仅取表结构与判定
+--   口径，不引入其 Node/TypeScript 运行时）：article 对应
+--   osint_knowledge_resource，fact 对应 osint_knowledge_unit，本批补 story。
+-- ============================================================
+
+-- 事件主体：一个 story = 一件真实发生的事 + 它的直接进展。
+CREATE TABLE IF NOT EXISTS osint_story (
+    story_id            BIGSERIAL PRIMARY KEY,
+    story_key           TEXT NOT NULL UNIQUE,     -- 稳定业务键，供下游长期引用
+    title               TEXT NOT NULL,            -- 归一化后的中文标题
+    summary             TEXT,
+    first_seen_at       TIMESTAMPTZ NOT NULL,
+    last_seen_at        TIMESTAMPTZ NOT NULL,
+    -- 独立来源数：按媒体/账号去重后计数，是热度的分母。
+    -- 同一家媒体发 5 篇不等于 5 个来源，二者必须分开统计。
+    independent_sources INT NOT NULL DEFAULT 1,
+    source_names        JSONB NOT NULL DEFAULT '[]'::JSONB,
+    fact_count          INT NOT NULL DEFAULT 1,   -- 归属事实条数（含重复报道）
+    heat                DOUBLE PRECISION NOT NULL DEFAULT 0,  -- 独立来源数 + 时间衰减
+    stage               TEXT NOT NULL DEFAULT 'emerging',
+    entities            JSONB NOT NULL DEFAULT '[]'::JSONB,
+    topics              JSONB NOT NULL DEFAULT '[]'::JSONB,
+    confidence          DOUBLE PRECISION,
+    review_status       TEXT NOT NULL DEFAULT 'unreviewed',
+    model_version       TEXT,                     -- 判定所用模型，便于回溯
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CHECK (independent_sources >= 1),
+    CHECK (fact_count >= 1),
+    CHECK (independent_sources <= fact_count),
+    CHECK (confidence IS NULL OR (confidence >= 0 AND confidence <= 1)),
+    CHECK (stage IN ('emerging', 'developing', 'peak', 'fading', 'closed')),
+    CHECK (review_status IN ('unreviewed', 'reviewed', 'rejected'))
+);
+-- 消费侧主入口：按热度出日报
+CREATE INDEX IF NOT EXISTS idx_story_heat ON osint_story(heat DESC, last_seen_at DESC);
+-- 算子主入口：按时间窗召回
+CREATE INDEX IF NOT EXISTS idx_story_window ON osint_story(last_seen_at DESC, stage);
+CREATE INDEX IF NOT EXISTS idx_story_review ON osint_story(review_status, last_seen_at DESC);
+
+-- 归属边：(unit_key, unit_version) 作主键 = 一条事实只能属于一个事件。
+-- 该约束同时保证聚类算子可幂等重跑，且不会因重复归属把独立来源数算高。
+CREATE TABLE IF NOT EXISTS osint_story_member (
+    unit_key     TEXT NOT NULL,
+    unit_version INT NOT NULL DEFAULT 1,
+    story_id     BIGINT NOT NULL REFERENCES osint_story(story_id) ON DELETE CASCADE,
+    -- 来源身份（媒体域名优先，其次 blogger_key，兜底 'unknown'）。
+    -- 落库而非运行时计算，独立来源数才能用 SQL 聚合，且历史口径可复现。
+    source_id    TEXT,
+    relation     TEXT NOT NULL,
+        -- same_story 同一件事 / progress 同一事件的直接进展 / roundup 多话题盘点
+        -- （unrelated 不入表：不相关就不该产生归属边）
+    similarity   DOUBLE PRECISION,   -- 召回余弦，用于事后复核与阈值调优
+    decided_by   TEXT NOT NULL,
+        -- vector 直接由余弦判定 / llm 模型判定 / llm_recheck 低置信换模复核
+        -- rule 规则判定器（无 LLM 时的兜底）/ manual 人工
+        -- 标签必须指向真正下结论的一方：规则判的不能标成 llm_recheck，
+        -- 否则事后出误合并时无从追责（2026-11-04 由实测事故驱动补 rule）
+        -- 重算时 decided_by='manual' 的行必须跳过，人工优先于模型
+    rationale    TEXT,               -- 判定理由，供审计与争议复盘
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (unit_key, unit_version),
+    CHECK (relation IN ('same_story', 'progress', 'roundup')),
+    CONSTRAINT osint_story_member_decided_by_check
+        CHECK (decided_by IN ('vector', 'llm', 'llm_recheck', 'rule', 'manual')),
+    CHECK (similarity IS NULL OR (similarity >= -1 AND similarity <= 1)),
+    CHECK (unit_version >= 1)
+);
+CREATE INDEX IF NOT EXISTS idx_story_member_story ON osint_story_member(story_id);
+CREATE INDEX IF NOT EXISTS idx_story_member_manual ON osint_story_member(decided_by)
+    WHERE decided_by = 'manual';
+
+-- 存量库迁移：v1 的 CHECK 不含 'rule'，而规则判定器现在按实际判定方标记
+-- decided_by='rule'。旧库若不改约束，写入会直接被 CHECK 拒绝。
+-- DROP 后再 ADD 是幂等的（表为空时开销为零；十万级行也只是一次顺序扫描），
+-- 且不依赖 pg_constraint 的自动命名规则，避免"约束名猜错导致迁移静默跳过"。
+ALTER TABLE IF EXISTS osint_story_member
+    DROP CONSTRAINT IF EXISTS osint_story_member_decided_by_check;
+ALTER TABLE IF EXISTS osint_story_member
+    ADD CONSTRAINT osint_story_member_decided_by_check
+    CHECK (decided_by IN ('vector', 'llm', 'llm_recheck', 'rule', 'manual'));
+
+-- 日报消费视图：外部消费方（kg_brief / event_graph / 外部 BI）直接读它，
+-- 不必知道事件层的表结构。视图名与列名即为对外契约，改动需走版本化。
+-- 口径：近 24 小时、至少 2 家独立来源、排除已否决事件，按热度倒序。
+CREATE OR REPLACE VIEW v_story_brief AS
+SELECT s.story_key,
+       s.title,
+       s.summary,
+       s.first_seen_at,
+       s.last_seen_at,
+       s.independent_sources,
+       s.fact_count,
+       s.heat,
+       s.stage,
+       s.source_names,
+       s.topics
+  FROM osint_story s
+ WHERE s.last_seen_at >= now() - interval '24 hours'
+   AND s.independent_sources >= 2
+   AND s.review_status <> 'rejected'
+ ORDER BY s.heat DESC, s.last_seen_at DESC;
+
+-- ============================================================
+-- ⑳ 实体别名归一（P1-B）：把同一实体的多种写法收敛到一个 canonical_id。
+--
+-- 为什么需要：osint_knowledge_unit.entities 由 LLM/规则抽取，同一家公司在
+--   不同报道里可能写成 "宁德时代" / "CATL" / "宁德时代新能源科技股份有限
+--   公司"。事件层算子（knowledge/story_group.py）的候选召回是
+--   `pivot.entities & other.entities` 的集合交集，三种写法即三个不同实体，
+--   彼此选不中 → 同一件事被拆成三个事件 → 独立来源数被系统性低估，
+--   而独立来源数正是热度的分母。
+--
+-- 归一方向：只做「别名 → 唯一 canonical_id」的单向收敛。算子读取本表后在
+--   内存中把实体键映射为 canonical（见 knowledge/entity_alias.py），
+--   **不**回写 entities 列——原文是审计依据，改写会破坏可追溯性。
+--
+-- 二义性处置（本表的硬约束，务必不要放宽）：
+--   约束是 UNIQUE (alias)，而**不是** UNIQUE (alias, canonical_id)。
+--   后者允许同一别名同时挂到两个 canonical 上，归一会立刻变成二义：
+--   "苹果" 既可指水果也可指公司，一旦把它同时映射到 apple_inc 与
+--   apple_fruit，`resolve()` 的返回值就取决于读表顺序，独立来源数会被
+--   随机污染，且故障表现为"数字偶尔偏大"，极难定位。
+--   因此有歧义的别名**根本不允许入表**：宁可漏归一（事件仍旧拆开，
+--   可事后补录），不可错归一（错误合并不可逆地抬高热度）。
+--   同一 canonical 可以有多行（这是"反查全部别名"的正常形态）。
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS osint_entity_alias (
+    alias_id      BIGSERIAL PRIMARY KEY,
+    -- 别名原文。保留原样（大小写、全半角、法定后缀）便于人工核对；
+    -- 比较时由 knowledge/entity_alias.py 统一过 normalize_text()。
+    alias         TEXT NOT NULL,
+    -- 归一后 ID（slug，如 'catl'）。指向"实体"而非本表某一行，
+    -- 因此不需要自引用外键：一个 canonical 没有别名行时仍是合法实体。
+    canonical_id  TEXT NOT NULL,
+    alias_type    TEXT NOT NULL DEFAULT 'variant',
+        -- abbr 英文缩写 / en 英文全称 / cn_full 中文全称 / former_name 曾用名
+        -- / product 产品名 / variant 其他书写变体
+    source        TEXT NOT NULL DEFAULT 'manual',
+        -- manual 人工录入 / backfill 存量回填 / llm 模型推导。
+        -- 区分来源是为了让"机器推导错了"能批量回滚（WHERE source='llm'），
+        -- 也避免人工修正被下一轮回填覆盖。
+    confidence    DOUBLE PRECISION NOT NULL DEFAULT 1.0,
+        -- 人工录入默认 1.0；机器推导应 < 1.0，供审计时按阈值筛。
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    -- 别名全局唯一：一个写法只能有一个归属，从物理上排除二义（见上方说明）。
+    UNIQUE (alias),
+    CHECK (alias <> ''),
+    CHECK (canonical_id <> ''),
+    CHECK (alias_type IN ('abbr', 'en', 'cn_full', 'former_name', 'product', 'variant')),
+    CHECK (source IN ('manual', 'backfill', 'llm')),
+    CHECK (confidence >= 0 AND confidence <= 1)
+);
+
+-- 大小写变体也不允许并存：UNIQUE(alias) 是大小写敏感的，
+-- 'CATL' 与 'catl' 会同时通过校验，但读表归一后是同一个键，dict 会互相覆盖。
+-- 该唯一索引把这类冲突提前到写入阶段暴露（宁可插入失败，不可静默覆盖）。
+CREATE UNIQUE INDEX IF NOT EXISTS uq_entity_alias_lower ON osint_entity_alias (lower(alias));
+-- 反查入口：给定 canonical_id 列出它的全部写法（人工复核 / 前端展示）
+CREATE INDEX IF NOT EXISTS idx_entity_alias_canonical ON osint_entity_alias(canonical_id);

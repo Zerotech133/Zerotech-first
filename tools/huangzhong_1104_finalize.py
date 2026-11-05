@@ -22,7 +22,12 @@
 
 CLI：`--json` / `--summary <md|json>` / `--receipt <md>` / `--confirm <md>` /
      `--out-dir`（默认 C:\\项目\\deliverables）/ `--work-dir` / `--repo-root` /
-     `--now`（ISO，测试复算）/ `--force` / `--no-write`
+     `--now`（ISO，测试复算）/ `--target-date`（默认 2026-11-04；显式 2026-11-10
+     时输入/输出文件名与九段内日期引用切到目标日期）/ `--force` / `--no-write`
+
+目标日期参数化（HZ-FINAL-DATE-20261104）：默认 2026-11-04 行为与 v1 完全一致
+（终版文件名 2026-11-04_黄忠观察期复核回执.md、汇总 glob、签字位日期均不变）；
+显式 --target-date 2026-11-10 用于 11-10 最终验收复算（输出 11-10 同名结构）。
 """
 from __future__ import annotations
 
@@ -35,6 +40,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUT_DIR = Path(r"C:\项目\deliverables")
+DEFAULT_TARGET_DATE = "2026-11-04"
+TARGET_HOUR = 10
 FINAL_NAME = "2026-11-04_黄忠观察期复核回执.md"
 SUMMARY_GLOB = "2026-11-04_黄忠复核执行汇总_*.md"
 SUMMARY_JSON_GLOB = "2026-11-04_黄忠复核执行汇总_*.json"
@@ -78,6 +85,51 @@ def _parse_ts(raw) -> dt.datetime | None:
     except ValueError:
         return None
     return parsed if parsed.tzinfo else parsed.astimezone()
+
+
+def _target_date_text(raw=None) -> str:
+    """解析目标日期（默认 2026-11-04）→ 'YYYY-MM-DD'。
+
+    支持：None/空串（默认）、'2026-11-10'、ISO 日期时间（取日期部分）。
+    非法输入抛 ValueError（CLI 捕获后按参数错误 rc=2 处理）。
+    """
+    text = str(raw).strip() if raw is not None else ""
+    if not text:
+        return DEFAULT_TARGET_DATE
+    if "T" in text or " " in text:
+        iso = text[:-1] + "+00:00" if text.endswith("Z") else text
+        try:
+            return dt.datetime.fromisoformat(iso).date().isoformat()
+        except ValueError as exc:
+            raise ValueError(
+                "--target-date 无法解析：%r（支持 2026-11-10 或 ISO 日期时间）"
+                % text) from exc
+    try:
+        return dt.date.fromisoformat(text).isoformat()
+    except ValueError as exc:
+        raise ValueError(
+            "--target-date 无法解析：%r（支持 2026-11-10 或 ISO 日期时间）"
+            % text) from exc
+
+
+def _target_label(date_text: str) -> str:
+    """目标日期短标签：默认 '11-04'，显式 11-10 → '11-10'。"""
+    return date_text[5:] if len(date_text) >= 10 else date_text
+
+
+def _target_label_hm(date_text: str) -> str:
+    """目标日期+时刻标签：默认 '11-04 10:00'（复盘会标准时点）。"""
+    return "%s %02d:00" % (_target_label(date_text), TARGET_HOUR)
+
+
+def _sign_roles(date_text: str) -> tuple:
+    """签字表行：默认沿用 SIGN_ROLES；显式目标日期只替换「代执行（日期）」。"""
+    rows = []
+    for role, duty, slot in SIGN_ROLES:
+        if "代执行" in slot and "（" in slot:
+            slot = re.sub(r"（[^（）]*）\s*$", "（%s）" % date_text, slot)
+        rows.append((role, duty, slot))
+    return tuple(rows)
 
 
 def _num(value) -> bool:
@@ -412,7 +464,8 @@ def parse_receipt(path: Path) -> dict:
     body4 = sections.get("四") or ""
     maturity: dict = {}
     m = re.search(r"now 满窗：\*\*(\d+) 单\*\*；跟踪中：\*\*(\d+) 单\*\*；"
-                  r"11-04 10:00 预计满窗：\*\*(\d+) 单\*\*", body4)
+                  r"[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2} 预计满窗：\*\*(\d+) 单\*\*",
+                  body4)
     if m:
         maturity.update({"mature_count": int(m.group(1)),
                          "tracking_count": int(m.group(2)),
@@ -566,9 +619,13 @@ def _coverage_three(summary: dict, receipt: dict) -> dict:
                             "merges_total": s_val.get("merges_total"),
                             "source": "汇总 risk_coverage 步骤" if _num(risk_pct) else "缺失",
                             "pass": None}
+    r_target = _parse_ts(receipt.get("target_time"))
+    r_date_text = (r_target.date().isoformat()
+                   if isinstance(r_target, dt.datetime) else DEFAULT_TARGET_DATE)
     out["projected"] = {"pct": r_cov.get("projected_pct"),
                         "unique_pct": r_cov.get("projected_unique_pct"),
-                        "source": "草案 11-04 投影行" if _num(r_cov.get("projected_pct")) else "缺失"}
+                        "source": ("草案 %s 投影行" % _target_label(r_date_text)
+                                   if _num(r_cov.get("projected_pct")) else "缺失")}
     return out
 
 
@@ -623,9 +680,12 @@ def render_md(rep: dict) -> str:
     confirm = ctx["confirm"] or {}
     warnings = rep.get("warnings") or []
     now_text = rep.get("generated_at") or "—"
+    date_text = rep.get("target_date") or _target_date_text(None)
+    date_label = _target_label(date_text)
+    date_label_hm = _target_label_hm(date_text)
 
     lines: list[str] = []
-    lines.append("# 黄忠观察期复核回执（终版模板）· 2026-11-04")
+    lines.append("# 黄忠观察期复核回执（终版模板）· %s" % date_text)
     lines.append("")
     lines.append("> **本文件为终版模板，未签字前不生效**；数据来自 runner 汇总 + receipt 草案 + "
                  "incidents 人工确认，只搬运不改判。")
@@ -729,8 +789,9 @@ def render_md(rep: dict) -> str:
                     _fmt_num(risk.get("merges_total")), _cell(risk.get("source"))))
     proj = coverage.get("projected") or {}
     if _num(proj.get("pct")):
-        lines.append("| ④ 11-04 投影（参考） | %s（unique≈%s） | %s | 趋势工具投影，非实测 |"
-                     % (_fmt_pct(proj.get("pct")),
+        lines.append("| ④ %s 投影（参考） | %s（unique≈%s） | %s | 趋势工具投影，非实测 |"
+                     % (date_label,
+                        _fmt_pct(proj.get("pct")),
                         _fmt_pct(proj.get("unique_pct")),
                         _cell(proj.get("source"))))
     lines.append("")
@@ -743,9 +804,10 @@ def render_md(rep: dict) -> str:
     lines.append("## 四、④ 满窗核对（漏放=0 前置）")
     lines.append("")
     maturity = maturity_view = receipt.get("maturity") or {}
-    lines.append("- now 满窗：**%s 单**；跟踪中：**%s 单**；11-04 10:00 预计满窗：**%s 单**"
+    lines.append("- now 满窗：**%s 单**；跟踪中：**%s 单**；%s 预计满窗：**%s 单**"
                  % (_fmt_num(maturity.get("mature_count")),
                     _fmt_num(maturity.get("tracking_count")),
+                    date_label_hm,
                     _fmt_num(maturity.get("mature_at_1030"))))
     lines.append("- 最早满窗：`%s`；④ 当前状态：`%s`"
                  % (maturity.get("earliest_window_end") or "—",
@@ -876,27 +938,30 @@ def render_md(rep: dict) -> str:
     lines.append("")
     lines.append("| 角色 | 职责 | 签字位 | 签字时间 |")
     lines.append("|---|---|---|---|")
-    for role, duty, slot in SIGN_ROLES:
+    for role, duty, slot in _sign_roles(date_text):
         lines.append("| %s | %s | %s | — |" % (_cell(role), _cell(duty),
                                                 _cell(slot)))
     lines.append("")
     lines.append("- **本文件为终版模板，未签字前不生效**；签字后归档为 "
-                 "`deliverables/2026-11-04_黄忠观察期复核回执.md`（本文件即该路径）。")
+                 "`deliverables/%s_黄忠观察期复核回执.md`（本文件即该路径）。"
+                 % date_text)
     lines.append("- 关联：认证标准 v2、runbook v6 §十、一键流程 v1.1 §六、"
-                 "`deliverables/2026-11-04_黄忠复核_READ_ME_FIRST.md`。")
+                 "`deliverables/%s_黄忠复核_READ_ME_FIRST.md`。" % date_text)
     lines.append("")
     lines.append("---")
     lines.append("")
-    lines.append("版本：2026-11-04 终版模板 ｜ 生成器：`tools/%s` %s ｜ "
+    lines.append("版本：%s 终版模板 ｜ 生成器：`tools/%s` %s ｜ "
                  "工单：WO-HZ-1104FINAL-20261101 ｜ 状态：**未签字，不生效**"
-                 % (TOOL_NAME, VERSION))
+                 % (date_text, TOOL_NAME, VERSION))
     lines.append("")
     return "\n".join(lines)
 
 
 # ------------------------------------------------------------------ 编排
 
-def discover_inputs(dirs: list[Path]) -> dict:
+def discover_inputs(dirs: list[Path],
+                    date_text: str = DEFAULT_TARGET_DATE) -> dict:
+    """自动发现三类输入；date_text 决定汇总/草案文件名前缀（默认 11-04=v1 口径）。"""
     candidates = []
     seen = set()
     for directory in dirs:
@@ -907,8 +972,16 @@ def discover_inputs(dirs: list[Path]) -> dict:
             continue
         seen.add(key)
         candidates.append(Path(directory))
-    summary = _latest_in(candidates, (SUMMARY_GLOB, SUMMARY_JSON_GLOB))
-    receipt = _latest_in(candidates, (RECEIPT_GLOB,))
+    summary_globs = ("%s_黄忠复核执行汇总_*.md" % date_text,
+                     "%s_黄忠复核执行汇总_*.json" % date_text)
+    if date_text == DEFAULT_TARGET_DATE:
+        receipt_globs = (RECEIPT_GLOB,)   # 默认路径：保持 v1 glob 完全不变
+    else:
+        # 显式目标日期：优先同日草案，回退通用 glob（兼容历史命名）
+        receipt_globs = ("%s_黄忠观察期复核回执_草案_*.md" % date_text,
+                         RECEIPT_GLOB)
+    summary = _latest_in(candidates, summary_globs)
+    receipt = _latest_in(candidates, receipt_globs)
     confirm = _latest_in(candidates, CONFIRM_GLOBS)
     return {"summary": summary, "receipt": receipt, "confirm": confirm,
             "dirs": [str(d) for d in candidates]}
@@ -921,19 +994,26 @@ def run(summary_path: Path | str | None = None,
         work_dir: Path | str | None = None,
         repo_root: Path | str | None = None,
         now: dt.datetime | None = None,
+        target_date: str | None = None,
         force: bool = False,
         write: bool = True) -> dict:
-    """合并三类输入并生成终版回执模板（返回 JSON 摘要）。"""
+    """合并三类输入并生成终版回执模板（返回 JSON 摘要）。
+
+    target_date 缺省 = 2026-11-04（v1 行为：终版文件名/汇总 glob/签字位日期不变）；
+    显式 '2026-11-10' 时按目标日期发现输入并输出 11-10 终版回执模板（11-10 复算）。
+    """
     clock = now or _now()
+    date_text = _target_date_text(target_date)
     repo = Path(repo_root) if repo_root else ROOT
     work = Path(work_dir) if work_dir else repo / "work" / "huangzhong"
     out = Path(out_dir) if out_dir else DEFAULT_OUT_DIR
-    final_path = out / FINAL_NAME
+    final_path = out / ("%s_黄忠观察期复核回执.md" % date_text)
     rep: dict = {
         "ok": True,
         "tool": TOOL_NAME,
         "version": VERSION,
         "generated_at": _iso(clock),
+        "target_date": date_text,
         "repo_root": str(repo),
         "work_dir": str(work),
         "out_dir": str(out),
@@ -964,14 +1044,14 @@ def run(summary_path: Path | str | None = None,
     else:
         confirm_p = None
     if not (summary_p or receipt_p or confirm_p):
-        discovered = discover_inputs([out, DEFAULT_OUT_DIR, work])
+        discovered = discover_inputs([out, DEFAULT_OUT_DIR, work], date_text)
         summary_p = discovered["summary"]
         receipt_p = discovered["receipt"]
         confirm_p = discovered["confirm"]
         rep["inputs"]["discovered_from"] = discovered["dirs"]
     else:
         # 只补缺的（显式给的优先）
-        discovered = discover_inputs([out, DEFAULT_OUT_DIR, work])
+        discovered = discover_inputs([out, DEFAULT_OUT_DIR, work], date_text)
         if summary_p is None:
             summary_p = discovered["summary"]
         if receipt_p is None:
@@ -1000,7 +1080,8 @@ def run(summary_path: Path | str | None = None,
                             % (summary_p.name, summary_row.get("error")))
         inputs_meta["summary"] = summary_row.get("status")
     else:
-        warnings.append("未找到 runner 汇总（2026-11-04_黄忠复核执行汇总_*.md）")
+        warnings.append("未找到 runner 汇总（%s_黄忠复核执行汇总_*.md）"
+                        % date_text)
 
     if receipt_p is not None:
         if not receipt_p.is_file():
@@ -1145,7 +1226,8 @@ def _summary(rep: dict) -> dict:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(
-        description="黄忠 11-04 终版回执生成器（汇总+草案+确认 → 九段终版模板）")
+        description="黄忠终版回执生成器（汇总+草案+确认 → 九段终版模板；"
+                    "默认目标 2026-11-04）")
     ap.add_argument("--json", action="store_true", help="输出 JSON 摘要")
     ap.add_argument("--summary", default="",
                     help="runner 汇总文件（md 或 json；默认自动发现最新）")
@@ -1161,6 +1243,9 @@ def main(argv=None) -> int:
                     help="仓库根（默认工具所在仓库；worktree 内用主仓数据时显式指定）")
     ap.add_argument("--now", default="",
                     help="固定生成时钟（ISO；默认当前时间，测试/复算用）")
+    ap.add_argument("--target-date", default="",
+                    help="显式目标日期（默认 2026-11-04；支持 2026-11-10 或 "
+                         "ISO 日期时间；11-10 复算用）")
     ap.add_argument("--force", action="store_true",
                     help="终版回执已存在时覆盖（默认不覆盖）")
     ap.add_argument("--no-write", action="store_true",
@@ -1172,6 +1257,11 @@ def main(argv=None) -> int:
         if fixed_now is None:
             print("参数错误：--now 无法解析：%r" % args.now, file=sys.stderr)
             return 2
+    try:
+        target_date = _target_date_text(args.target_date)
+    except ValueError as exc:
+        print("参数错误：%s" % exc, file=sys.stderr)
+        return 2
     rep = run(summary_path=args.summary or None,
               receipt_path=args.receipt or None,
               confirm_path=args.confirm or None,
@@ -1179,6 +1269,7 @@ def main(argv=None) -> int:
               work_dir=args.work_dir or None,
               repo_root=args.repo_root or None,
               now=fixed_now,
+              target_date=target_date,
               force=args.force,
               write=not args.no_write)
     summary = _summary(rep)
@@ -1186,7 +1277,8 @@ def main(argv=None) -> int:
         print(json.dumps(summary, ensure_ascii=False, indent=1))
     else:
         if rep.get("ok"):
-            print("11-04 终版回执模板：%s" % (rep.get("final_path") or "—"))
+            print("%s 终版回执模板：%s"
+                  % (_target_label(target_date), rep.get("final_path") or "—"))
             print("  写入：%s｜六条：%s/%s｜三口径：runs/merge=%s unique=%s 风险加权=%s"
                   % (rep.get("written"),
                      (rep.get("six_overall") or {}).get("passed"),

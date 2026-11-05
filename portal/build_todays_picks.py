@@ -872,13 +872,15 @@ def _ashare_latest_day(sample="000001_SZ.parquet"):
 def _basis_guard(basis_day, ashare_day=None):
     """基准新鲜度闸门：行情湖基准日落后 ashare 收盘库 → 返回错误文案。
 
-    fail-closed（2026-11-04 立）：TodaysPicks 原 15:40 跑在 TdxSync_A_高频
-    17:35 之前，basis 恒为 D-1；2026-11-04 首次实测 17:35 同步后才写入
-    当日 ts_daily。本闸门只比较两个只读基准日：ashare 最新交易日 > 湖基准日
-    即判定「收盘库已有当日、湖未同步」，拒绝写盘（rc=4），避免旧基准清单
-    冒充当日盘后清单继续污染 picks_history 后验地基。
-    周末/节假日：两库同为最后交易日，比较相等，不误报。
-    PICKS_BASIS_GUARD=0 可临时关闭（仅回滚/调试，生产不设）。
+    fail-closed（2026-11-04 立；2026-11-05 审计加固）：TodaysPicks 原 15:40
+    跑在 TdxSync_A_高频 17:35 之前，basis 恒为 D-1；2026-11-04 首次实测
+    17:35 同步后才写入当日 ts_daily。本闸门比较两个只读基准日：
+    - ashare 最新交易日 > 湖基准日 → 拒绝写盘（rc=4）；
+    - ashare 哨兵探测失败 → 无法证明基准新鲜，同样拒绝写盘（rc=4）；
+      PICKS_BASIS_ALLOW_PROBE_FAIL=1 可临时放行（仅回滚/调试）。
+    - 两库同为最后交易日（周末/节假日/尚未开盘）→ 放行；若需进一步识别
+      「工作日双 D-1」，用 PICKS_BASIS_STRICT=1（需交易日历，默认关）。
+    PICKS_BASIS_GUARD=0 可整体关闭（仅回滚/调试，生产不设）。
     """
     if os.environ.get("PICKS_BASIS_GUARD", "1") == "0":
         return None
@@ -886,7 +888,12 @@ def _basis_guard(basis_day, ashare_day=None):
         return None  # 湖不可达保持设计内降级（原因已在 backfill 留痕）
     ad = ashare_day if ashare_day is not None else _ashare_latest_day()
     if not ad:
-        return None
+        if os.environ.get("PICKS_BASIS_ALLOW_PROBE_FAIL", "0") == "1":
+            return None
+        return (
+            "ashare 收盘库基准探测失败（%s 不可读/为空），无法证明行情湖基准 %s 新鲜"
+            % (ASHARE_DIR, _ymd(basis_day) or basis_day)
+        )
     b = _ymd(basis_day)
     a = _ymd(ad)
     if a and b and b < a:
@@ -894,6 +901,15 @@ def _basis_guard(basis_day, ashare_day=None):
             "行情湖基准 %s 落后 ashare 收盘库最新交易日 %s"
             "（TdxSync_A_高频 17:35 未同步/失败）" % (b, a)
         )
+    if os.environ.get("PICKS_BASIS_STRICT", "0") == "1" and a and b and b == a:
+        from datetime import date as _date
+        today = _date.today()
+        t = today.strftime("%Y%m%d")
+        if today.weekday() < 5 and t > b:
+            return (
+                "行情湖与 ashare 收盘库同为 %s，但今日 %s 为工作日（疑似双双未更新）"
+                % (b, t)
+            )
     return None
 
 

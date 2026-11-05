@@ -1,0 +1,73 @@
+{
+ "source": {
+  "level": "L2",
+  "member_dir": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\tushare\\sw_l2_member",
+  "classify_dir": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\tushare\\sw_classify_l1",
+  "n_members": 8195,
+  "n_codes": 5473,
+  "n_industries": 131,
+  "fallback": "index_member_all_snapshot",
+  "snapshot_dir": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\tushare\\index_member_all",
+  "n_fallback_rows": 4201,
+  "n_fallback_codes": 4201,
+  "fallback_note": "仅补历史成员表未覆盖的缺口（代码缺失，或快照 in_date 落在历史区间空隙）；in_date<=date 才生效；行业名取当前 L2 分类，若期间再分类仍有剩余前视"
+ },
+ "rows": [
+  {
+   "date": "2022-11-07",
+   "active": 4983,
+   "covered": 4934,
+   "coverage": 0.990167,
+   "missing": 49,
+   "industries": 131
+  },
+  {
+   "date": "2023-01-03",
+   "active": 5062,
+   "covered": 5018,
+   "coverage": 0.991308,
+   "missing": 44,
+   "industries": 131
+  },
+  {
+   "date": "2023-06-01",
+   "active": 5166,
+   "covered": 5133,
+   "coverage": 0.993612,
+   "missing": 33,
+   "industries": 131
+  },
+  {
+   "date": "2023-12-01",
+   "active": 5315,
+   "covered": 5309,
+   "coverage": 0.998871,
+   "missing": 6,
+   "industries": 131
+  },
+  {
+   "date": "2024-06-03",
+   "active": 5341,
+   "covered": 5335,
+   "coverage": 0.998877,
+   "missing": 6,
+   "industries": 131
+  },
+  {
+   "date": "2025-11-03",
+   "active": 5434,
+   "covered": 5431,
+   "coverage": 0.999448,
+   "missing": 3,
+   "industries": 131
+  },
+  {
+   "date": "2026-11-04",
+   "active": 5572,
+   "covered": 5569,
+   "coverage": 0.999462,
+   "missing": 3,
+   "industries": 131
+  }
+ ]
+}

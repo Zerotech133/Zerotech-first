@@ -215,7 +215,10 @@ def test_real_repo_high_risk_downgraded():
         assert rec["helper_based"] is True
         assert rec["risk"] == "low", (script, rec["risk"], rec["risk_reasons"])
     learn = by["tools/kb_corpus/learning_cards.py"]
-    assert learn["risk"] == "medium", learn["risk_reasons"]   # 有合并、缺备份/原子写
+    assert learn["risk"] == "low", learn["risk_reasons"]   # 已用 backup_then_atomic_write：备份+合并+原子写齐全
+    assert learn["helper_based"] is True
+    assert learn["protection"] == {"backup": True, "merge_existing": True,
+                                   "atomic_write": True}
     rep = swa.build_report(records)
     assert rep["summary"]["high"] == 0
     rv = rep["review_v1_v2"]
@@ -223,5 +226,5 @@ def test_real_repo_high_risk_downgraded():
                   for c in rv["downgraded"]}
     assert ("tools/kb_corpus/morning_brief_push.py", "high", "low") in downgraded
     assert ("tools/research/panel_export.py", "high", "low") in downgraded
-    assert ("tools/kb_corpus/learning_cards.py", "high", "medium") in downgraded
+    assert ("tools/kb_corpus/learning_cards.py", "high", "low") in downgraded
     assert rv["v2_high_scripts"] == []

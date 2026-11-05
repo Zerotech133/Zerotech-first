@@ -8,8 +8,9 @@ cn_fut_backtest）收尾标志 = C:\\Temp\\fut_daily_task.log 最后一行
 
 完成后汇总:
   · 四步 exit 码（非 0 标红提示）
-  · 产物在位: fut_scan/fut_backtest/fut_strat/fut_walkforward 当日 json
+  · 产物在位: fut_scan/fut_strat/fut_walkforward/cn_fut_backtest 当日 json
   · F3 矩阵读数: n 品种 / 错误数 / 跑赢 B&H 数 / 最佳品种策略
+  · F3 全错时显式标红（避免“四步全绿”掩盖矩阵不可用）
 经 news_collector/send_feishu.py 推飞书（outbox 临时文件+子进程，
 SEND_OK 口径，与 chanlun_scan._push_feishu_text 同通道）。
 
@@ -42,6 +43,9 @@ NEWS_DIR = os.path.abspath(os.path.join(HERE, "..", "news_collector"))
 POLL_SEC = 60  # 轮询间隔
 POLL_MAX = 60  # 最多 60 分钟
 CUTOFF = "09:30"  # 收尾行时间下限（计划任务启动时刻）
+# 实际产物名：fut_backtest.py 写 fut_strat_*.json；cn_fut 步骤写
+# cn_fut_backtest_*.json。不要再检查不存在的 fut_backtest_*.json。
+ARTIFACT_PREFIXES = ("fut_scan", "fut_strat", "fut_walkforward", "cn_fut_backtest")
 LINE_RE = re.compile(
     r"fut_scan exit=(\d+) fut_backtest exit=(\d+) "
     r"fut_walkforward exit=(\d+) cn_fut exit=(\d+) (\d{4}-\d{2}-\d{2}T"
@@ -85,7 +89,7 @@ def _done():
 def _today_artifacts():
     """当日产物清单 [(名, 存在)]。"""
     out = []
-    for pre in ("fut_scan", "fut_backtest", "fut_strat", "fut_walkforward"):
+    for pre in ARTIFACT_PREFIXES:
         hits = sorted(glob.glob(os.path.join(OUT_DIR, pre + "_*.json")))
         hit = hits[-1] if hits else None
         ok = (
@@ -109,6 +113,8 @@ def _matrix_readout():
         return None
     rows = j.get("results") or []
     ok = [r for r in rows if not r.get("error")]
+    erred = [r for r in rows if r.get("error")]
+    sample_error = str((erred[0].get("error") if erred else "") or "")[:140]
     beat, best = 0, None
     for r in ok:
         rk = [
@@ -127,14 +133,25 @@ def _matrix_readout():
                 "%s %s%s" % (r.get("symbol"), top["strategy"], tag),
                 top["total_return_pct"] - (bh or 0),
             )
-    return {"n": len(rows), "n_ok": len(ok), "beat": beat, "best": best}
+    return {
+        "n": len(rows),
+        "n_ok": len(ok),
+        "beat": beat,
+        "best": best,
+        "all_error": bool(rows) and not ok,
+        "sample_error": sample_error,
+    }
 
 
 def _summary(exits, ts):
     rc = exits[:4]
     arts = _today_artifacts()
+    m = _matrix_readout()
+    bad = any(v != 0 for v in rc) or any(not ok for _, ok in arts)
+    bad = bad or (m is None) or bool(m and m.get("all_error"))
     lines = [
-        "🛰 FutQuant 晨报哨兵 · %s（收尾 %s）" % (_today(), ts[11:16]),
+        "🛰 FutQuant 晨报哨兵 · %s（收尾 %s）%s"
+        % (_today(), ts[11:16], " ⚠️" if bad else ""),
         "四步 exit: scan=%d backtest=%d walkforward=%d cn_fut=%d %s"
         % (
             rc[0],
@@ -147,9 +164,13 @@ def _summary(exits, ts):
         ),
     ]
     lines += ["产物 %s: %s" % (name, "✅" if ok else "❌ 缺") for name, ok in arts]
-    m = _matrix_readout()
     if m is None:
         lines.append("F3 矩阵读数不可得（fut_strat json 缺/坏）")
+    elif m.get("all_error"):
+        lines.append(
+            "F3 矩阵: ❌ %d/%d 全部失败 · %s"
+            % (m["n"], m["n"], (m.get("sample_error") or "无错误详情")[:120])
+        )
     elif m.get("best"):
         lines.append(
             "F3 矩阵: %d 品种（错 %d）· 跑赢 B&H %d · 最佳 %s 超额 %+.1f%%"

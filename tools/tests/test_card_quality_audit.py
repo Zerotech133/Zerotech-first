@@ -24,9 +24,10 @@ SCRIPT = REPO / "tools" / "kb_corpus" / "card_quality_audit.py"
 
 
 def latest_report() -> tuple[Path, Path]:
-    """最新全量审计报告（排除历史 124 张快照）。"""
+    """最新全量审计报告（排除历史 124 张快照），按报告 generated_at 而非 mtime 选。"""
     js = [p for p in R.glob("card_quality_audit_*.json") if "_124_" not in p.name]
-    js.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+    js.sort(key=lambda p: json.loads(p.read_text(encoding="utf-8-sig")).get("generated_at", ""),
+            reverse=True)
     assert js, "缺少 card_quality_audit 全量报告"
     return js[0], js[0].with_suffix(".md")
 

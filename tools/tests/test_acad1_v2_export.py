@@ -85,12 +85,28 @@ def test_build_cards_pre_close_fallback():
     assert c["daily_return"] is not None
 
 
+def test_build_cards_ignores_non_numeric_low():
+    bars = _bars()
+    bars[-1]["low"] = ""
+    cards = ex.build_cards(_pool_rows()[:1], _selection(), {("CN", "000001.SZ"): bars}, {}, "2026-10-31")
+    assert cards[0]["dist_20d_low"] is not None
+
+
 def test_cli_missing_dsn():
     r = subprocess.run([sys.executable, "-X", "utf8", str(REPO / "tools" / "acad1_v2_export.py"),
                         "--json"], capture_output=True, text=True, encoding="utf-8",
                        env={"PYTHONIOENCODING": "utf-8"})
     assert r.returncode == 2
     assert "missing_env" in r.stdout
+
+
+def test_cli_out_creates_parent_dir(tmp_path, monkeypatch):
+    monkeypatch.setenv("ZHICE_V2_DSN", "test-dsn")
+    monkeypatch.setattr(ex, "fetch", lambda dsn, pool_date=None: ("2026-10-31", [], {}, {}, {}, {}))
+    monkeypatch.setattr(ex, "build_cards", lambda *args, **kwargs: [{"candidate_id": "x"}] * 30)
+    out = tmp_path / "nested" / "bridge.json"
+    assert ex.main(["--out", str(out)]) == 0
+    assert out.exists()
 
 
 def test_bar_symbol_aliases():

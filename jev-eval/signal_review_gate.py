@@ -1038,6 +1038,7 @@ def run_report() -> None:
 
 def main() -> None:
     set_module("review")
+    jc.log_db_channel()  # JEV-DSN-20261105：启动自检（脱敏 DSN + 实际通道，不连库）
     args = sys.argv[1:]
     if "--backfill" in args:
         run_backfill()

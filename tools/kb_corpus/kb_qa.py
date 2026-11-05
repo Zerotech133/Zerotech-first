@@ -554,6 +554,11 @@ def ask(question: str, topk: int = DEFAULT_TOPK, model: str = DEFAULT_MODEL,
     mode = (mode or DEFAULT_MODE).strip().lower()
     if mode not in VALID_MODES:
         raise KbQaError(f"mode 只能是 {'/'.join(VALID_MODES)}（收到 {mode!r}）")
+    # 2026-11-05 审计修复：非法 KB_QA_LLM_PROVIDER 曾在下游被当网络错误吞掉、
+    # 静默回退规则答案；配置类错误必须在入口 fail-fast。
+    provider = (DEFAULT_LLM_PROVIDER or "ollama").strip().lower()
+    if chat_fn is None and not retrieval_only and provider not in LLM_PROVIDERS:
+        raise KbQaError(f"KB_QA_LLM_PROVIDER 只能是 {'/'.join(LLM_PROVIDERS)}（收到 {provider!r}）")
     on_guard_fail = (on_guard_fail or "fallback").strip().lower()
     if on_guard_fail not in GUARD_ACTIONS:
         raise KbQaError(f"on_guard_fail 只能是 {'/'.join(GUARD_ACTIONS)}（收到 {on_guard_fail!r}）")

@@ -1,0 +1,338 @@
+{
+ "schema_version": 1,
+ "generated_at": "2026-11-05T02:43:51+08:00",
+ "note": "20 题 Ollama multi 答案（kb_qa_multi_eval multi 侧）",
+ "comparison": [
+  {
+   "id": "w13_U01",
+   "question": "如何申请申根旅游签证？",
+   "answer": "知识库中没有足够依据回答该问题。",
+   "category": "w13",
+   "theme": "w13",
+   "no_evidence": true,
+   "fallback": false,
+   "confidence": {
+    "level": "none",
+    "reasons": [
+     "模型判断材料不足以回答（拒答）"
+    ]
+   },
+   "status": "no_evidence"
+  },
+  {
+   "id": "w13_U04",
+   "question": "2026 年世界杯的冠军是哪支球队？",
+   "answer": "知识库中没有足够依据回答该问题。",
+   "category": "w13",
+   "theme": "w13",
+   "no_evidence": true,
+   "fallback": false,
+   "confidence": {
+    "level": "none",
+    "reasons": [
+     "模型判断材料不足以回答（拒答）"
+    ]
+   },
+   "status": "no_evidence"
+  },
+  {
+   "id": "w13_U07",
+   "question": "高血压的一线用药有哪些？",
+   "answer": "知识库中没有足够依据回答该问题。",
+   "category": "w13",
+   "theme": "w13",
+   "no_evidence": true,
+   "fallback": false,
+   "confidence": {
+    "level": "none",
+    "reasons": [
+     "模型判断材料不足以回答（拒答）"
+    ]
+   },
+   "status": "no_evidence"
+  },
+  {
+   "id": "w13_U10",
+   "question": "量子纠缠实验的贝尔不等式推导？",
+   "answer": "知识库中没有足够依据回答该问题。",
+   "category": "w13",
+   "theme": "w13",
+   "no_evidence": true,
+   "fallback": false,
+   "confidence": {
+    "level": "none",
+    "reasons": [
+     "模型判断材料不足以回答（拒答）"
+    ]
+   },
+   "status": "no_evidence"
+  },
+  {
+   "id": "w13_A01",
+   "question": "「AI 产业投资传导链条」的核心要点是什么？",
+   "answer": "【事实摘录】\n【事实】当前 AI 产业投资线索正沿“模型降价→应用放量→芯片需求→制造扩产”的链条自上而下传导（[efa0bece0085] p.2）。\n【事实】模型端价格战降低应用门槛，端侧与 AIoT 场景加速打开；芯片端新品周期临近，渗透率与单机价值量双升（[47f5ad80fdb7] p.1）。\n【推断】\n【推断】AI 产业投资逻辑呈现从上游模型成本优化向下游制造扩产传导的清晰路径（依据：[efa0bece0085] p.2、[47f5ad80fdb7] p.1）。",
+   "category": "w13",
+   "theme": "w13",
+   "no_evidence": false,
+   "fallback": false,
+   "confidence": {
+    "level": "high",
+    "reasons": [
+     "2 条可核验引用、3 个聚类",
+     "直接事实标记 0、推断标记 2"
+    ]
+   },
+   "status": "answered"
+  },
+  {
+   "id": "w13_A07",
+   "question": "「多层级安全评估体系（ARIA）」的核心要点是什么？",
+   "answer": "【事实摘录】\n【事实】NIST 的 ARIA 计划将测试分为 Model Testing（确认能力）、Red Teaming（诱发违规）和 Field Testing（观察真实环境影响），单一分数难以替代完整证据链（[ae05187cc3bc] p.2）。\n【事实】安全评估需要回答三个不同问题，NIST 的 ARIA 计划把测试分为 Model Testing、Red Teaming 和 Field Testing（[ae05187cc3bc] p.2）。\n【推断】\n【推断】ARIA 体系强调通过多维度测试构建完整证据链，而非依赖单一分数来评估安全（依据：[ae05187cc3bc] p.2）。",
+   "category": "w13",
+   "theme": "w13",
+   "no_evidence": false,
+   "fallback": false,
+   "confidence": {
+    "level": "medium",
+    "reasons": [
+     "1 条可核验引用"
+    ]
+   },
+   "status": "answered"
+  },
+  {
+   "id": "w13_A13",
+   "question": "关于「区间套运用」，资料中的依据/来源是什么？",
+   "answer": "知识库中没有足够依据回答该问题。",
+   "category": "w13",
+   "theme": "w13",
+   "no_evidence": true,
+   "fallback": false,
+   "confidence": {
+    "level": "none",
+    "reasons": [
+     "模型判断材料不足以回答（拒答）"
+    ]
+   },
+   "status": "no_evidence"
+  },
+  {
+   "id": "w13_A18",
+   "question": "关于「今天刺猬情报局的主题」，操作要点是什么？",
+   "answer": "【事实摘录】\n【事实】美联储于2025年12月起取消了常备回购便利（SRF）的总体操作规模上限，仅保留每个交易对手每次操作及每类合格证券的最高申报限额（[708d6446d475] p.7）。\n【事实】上海自 2026 年 9 月 28 日起实施现房销售优先、预售门槛提高等政策，新公告出让土地的商品住房项目优先现房销售（[f65c4e3b7835] p.1）。\n【事实】Meta 于9 月8 日推出的智能体Muse正在成为消费级AI 市场的新亮点，已具备全面能力并登顶免费应用榜（[d22ef9aab17c] p.1）。\n【推断】\n【推断】常备回购便利操作模式已从设限转向仅保留申报限额管理（依据：[708d6446d475] p.7）。\n【推断】上海房地产新政核心在于通过现房销售优先和预售门槛提高来加强市场调控（依据：[f65c4e3b7835] p.1）。",
+   "category": "w13",
+   "theme": "w13",
+   "no_evidence": false,
+   "fallback": false,
+   "confidence": {
+    "level": "high",
+    "reasons": [
+     "3 条可核验引用、3 个聚类",
+     "直接事实标记 0、推断标记 3"
+    ]
+   },
+   "status": "answered"
+  },
+  {
+   "id": "w13_A24",
+   "question": "「五天的成交量加起来还不如今天一天」的依据/事实是什么？",
+   "answer": "知识库中没有足够依据回答该问题。",
+   "category": "w13",
+   "theme": "w13",
+   "no_evidence": true,
+   "fallback": false,
+   "confidence": {
+    "level": "none",
+    "reasons": [
+     "模型判断材料不足以回答（拒答）"
+    ]
+   },
+   "status": "no_evidence"
+  },
+  {
+   "id": "w13_A30",
+   "question": "「放量不等于有效放量」的依据/事实是什么？",
+   "answer": "【事实摘录】\n【事实】近期海外大模型公司同步上新降价，Anthropic 发布 Claude Opus 5.5，运行成本比 Opus 5 低 40%（[252c4dbe1667] p.1）。\n【事实】OpenAI 推出 GPT-6 Sol 与 GPT-6 Luna，API 价格较上代接近砍半（[ed4b3dff7b4d] p.2）。\n【事实】大模型降价摊薄了终端智能化的边际成本，显著降低了端侧应用的普及门槛，使其进入放量通道（[252c4dbe1667] p.1）。\n【推断】\n【推断】虽然大模型降价推动了端侧应用进入“放量通道”，但需警惕单纯的价格下降或销量增长若未伴随技术壁垒提升或生态稳固，可能仅是短期市场波动而非有效需求释放（依据：[252c4dbe1667] p.1、[ed4b3dff7b4d] p.2）。\n【推断】“放量”现象需结合成本结构变化判断，若边际成本摊薄仅源于外部模型降价而非内部效率提升，则这种放量可能缺乏可持续性（依据：[252c4dbe1667] p.1、[ed4b3dff7b4d] p.2）。",
+   "category": "w13",
+   "theme": "w13",
+   "no_evidence": false,
+   "fallback": false,
+   "confidence": {
+    "level": "high",
+    "reasons": [
+     "2 条可核验引用、3 个聚类",
+     "直接事实标记 0、推断标记 3"
+    ]
+   },
+   "status": "answered"
+  },
+  {
+   "id": "heldout_001",
+   "question": "什么是「频谱资源与许可」？",
+   "answer": "【事实摘录】\n【事实】可靠的频谱接入是轨道数据中心实现实用价值的关键资源（[8032d4ff1c17] p.6）。\n【事实】政策制定者需确保频谱资源充足，简化卫星牌照发放流程（[a3b062104586] p.1）。\n【推断】\n【推断】简化的许可流程和明确的规则有助于减少监管不确定性及交易成本（依据：[8032d4ff1c17] p.6、[a3b062104586] p.1）。",
+   "category": "heldout",
+   "theme": "heldout",
+   "no_evidence": false,
+   "fallback": false,
+   "confidence": {
+    "level": "high",
+    "reasons": [
+     "2 条可核验引用、3 个聚类",
+     "直接事实标记 0、推断标记 2"
+    ]
+   },
+   "status": "answered"
+  },
+  {
+   "id": "heldout_011",
+   "question": "什么是「愿意秒内交易超过300笔」？",
+   "answer": "知识库中没有足够依据回答该问题。",
+   "category": "heldout",
+   "theme": "heldout",
+   "no_evidence": true,
+   "fallback": false,
+   "confidence": {
+    "level": "none",
+    "reasons": [
+     "模型判断材料不足以回答（拒答）"
+    ]
+   },
+   "status": "no_evidence"
+  },
+  {
+   "id": "heldout_021",
+   "question": "创业板指日线向下笔未跌破1740点时文中如何判断？",
+   "answer": "【事实摘录】\n【事实】当股价出现‘百日高量’且后续未跌破该高点时，表明主力战略堡垒稳固，投资者可逢低介入以获取收益（[7e665de0b2bd] p.7）。\n【事实】收盘跌破 200 日线退出年化 9.6%（回撤 38%），紧的 10% 止损版仅 7.1%（[bf0d264626b9] p.10）。\n【推断】\n【推断】若创业板指日线向下笔未跌破 1740 点，可参照“高量不破”逻辑视为战略堡垒稳固并逢低介入（依据：[7e665de0b2bd] p.7）。\n【推断】若跌破关键点位则需参考止损规则控制回撤风险（依据：[bf0d264626b9] p.10）。",
+   "category": "heldout",
+   "theme": "heldout",
+   "no_evidence": false,
+   "fallback": false,
+   "confidence": {
+    "level": "high",
+    "reasons": [
+     "2 条可核验引用、3 个聚类",
+     "直接事实标记 0、推断标记 3"
+    ]
+   },
+   "status": "answered"
+  },
+  {
+   "id": "heldout_030",
+   "question": "买点正确但卖出不佳可能带来什么后果？",
+   "answer": "【事实摘录】\n【事实】若终端需求疲软，成本推升型涨价仅能带来脉冲式盈利改善，难以带动持续回升（[d572abdcc970] p.1）。\n【事实】买点叫枢轴点（最后最紧区间的顶部），突破时成交量要明显放大（[dae4cbf52fe3] p.8）。\n【推断】\n【推断】若仅关注买入时机而忽视卖出逻辑，可能导致在需求疲软或价格回落时无法锁定利润，造成盈利持续性未兑现（依据：[d572abdcc970] p.1、[dae4cbf52fe3] p.8）。",
+   "category": "heldout",
+   "theme": "heldout",
+   "no_evidence": false,
+   "fallback": false,
+   "confidence": {
+    "level": "high",
+    "reasons": [
+     "2 条可核验引用、3 个聚类",
+     "直接事实标记 0、推断标记 2"
+    ]
+   },
+   "status": "answered"
+  },
+  {
+   "id": "heldout_040",
+   "question": "策略收益与高赚率的原因是什么？",
+   "answer": "【事实摘录】\n【事实】未来网络安全的出海核心不只是产品出口，而是建立包含本地渠道、合规认证、交付服务和品牌信任的完整经营体系（[070380b8404a] p.2）。\n【事实】业主方普遍推行租金转扣点、长免租期等让利措施以应对供应放量压力（[74ecb023f851] p.2）。\n【推断】\n【推断】高利润率可能源于构建本地化完整经营体系带来的品牌信任溢价（依据：[070380b8404a] p.2）。\n【推断】让利措施虽降低租金，但通过扩大出租率与扣点模式可维持整体收益水平（依据：[74ecb023f851] p.2）。",
+   "category": "heldout",
+   "theme": "heldout",
+   "no_evidence": false,
+   "fallback": false,
+   "confidence": {
+    "level": "high",
+    "reasons": [
+     "2 条可核验引用、3 个聚类",
+     "直接事实标记 0、推断标记 3"
+    ]
+   },
+   "status": "answered"
+  },
+  {
+   "id": "citation_sft_0003",
+   "question": "「钠电池核心机会环节」的核心要点是什么？",
+   "answer": "【事实摘录】\n【事实】钠电池核心的机会集中在关键材料环节，尤其是硬碳负极和聚阴离子正极（[a44a13fbb69c] p.1）。\n【事实】聚阴离子正极安全性好、寿命长，适合长时间尺度储能场景（[a44a13fbb69c] p.1）。\n【事实】钠电池未来应用不会只局限在大型储能项目，还会走进工商业、低速电动车等领域（[d0df32b16bdd] p.1）。\n【推断】\n【推断】硬碳负极与聚阴离子正极是钠电池产业链中价值量提升的关键环节（依据：[a44a13fbb69c] p.1）。\n【推断】凭借原料充足及适配高倍率、低温场景的优势，钠电池将拓展至工商业与低速电动车市场（依据：[d0df32b16bdd] p.1）。",
+   "category": "citation_clean",
+   "theme": "citation_clean",
+   "no_evidence": false,
+   "fallback": false,
+   "confidence": {
+    "level": "high",
+    "reasons": [
+     "2 条可核验引用、3 个聚类",
+     "直接事实标记 0、推断标记 3"
+    ]
+   },
+   "status": "answered"
+  },
+  {
+   "id": "citation_sft_0026",
+   "question": "「行业评级定义」的核心要点是什么？",
+   "answer": "【事实摘录】\n【事实】“看好”评级意味着预计未来 6~12 个月内，行业指数表现强于市场基准指数（沪深 300）（[3a4eff67a995] p.1）。\n【事实】证券投资评级的类别、级别定义中，“行业评级 - 看好：预计未来 6~12 个月内，行业指数表现强于市场基准指数”（[de5d7e7138f5] p.1）。\n【推断】\n【推断】“行业评级定义”的核心要点在于明确“看好”、“中性”等评级所对应的未来 6~12 个月行业指数相对于沪深 300 基准的表现预期（依据：[3a4eff67a995] p.1、[de5d7e7138f5] p.1）。",
+   "category": "citation_clean",
+   "theme": "citation_clean",
+   "no_evidence": false,
+   "fallback": false,
+   "confidence": {
+    "level": "high",
+    "reasons": [
+     "2 条可核验引用、3 个聚类",
+     "直接事实标记 0、推断标记 2"
+    ]
+   },
+   "status": "answered"
+  },
+  {
+   "id": "citation_sft_0013",
+   "question": "关于「北京零售市场现状」，资料中的依据/来源是什么？",
+   "answer": "【事实摘录】\n【事实】截至 2026 年上半年，北京零售市场总存量为 953 万平方米（其中购物中心 765 万平方米），优质购物中心平均租金报价为 883 元/月/平方米，空置率为 10.4%（[dd02cab720e0] p.2）。\n【事实】北京零售市场未来趋势为存量优化为主，新增供应为辅，项目分区域分阶段开业将成为长期趋势（[dd02cab720e0] p.2）。\n【推断】\n【推断】北京零售市场正从规模扩张转向以存量优化和场景升级为核心的发展阶段（依据：[dd02cab720e0] p.2、[bf663d3e998a] p.2）。",
+   "category": "citation_clean",
+   "theme": "citation_clean",
+   "no_evidence": false,
+   "fallback": false,
+   "confidence": {
+    "level": "high",
+    "reasons": [
+     "2 条可核验引用、3 个聚类",
+     "直接事实标记 0、推断标记 2"
+    ]
+   },
+   "status": "answered"
+  },
+  {
+   "id": "citation_sft_0039",
+   "question": "关于「资本市场现存障碍」，资料中的依据/来源是什么？",
+   "answer": "【事实摘录】\n【事实】非国有企业目前在科技创新债券市场中代表性不足，且缺乏有效的市场稳定长效机制（[653a45d7f679] p.13）。\n【事实】外国投资者在市场持仓中占比相对较小，国内证券公司参与国际市场的角色有限（[918a6d233355] p.13）。\n【推断】\n【推断】资本市场现存障碍主要体现在非国企融资代表性不足、市场稳定机制缺失以及外资参与度低和券商国际化能力弱（依据：[653a45d7f679] p.13、[918a6d233355] p.13）。",
+   "category": "citation_clean",
+   "theme": "citation_clean",
+   "no_evidence": false,
+   "fallback": false,
+   "confidence": {
+    "level": "high",
+    "reasons": [
+     "2 条可核验引用、3 个聚类",
+     "直接事实标记 0、推断标记 2"
+    ]
+   },
+   "status": "answered"
+  },
+  {
+   "id": "citation_sft_0178",
+   "question": "「但先别忙着给他发年终奖」的依据/事实是什么？",
+   "answer": "知识库中没有足够依据回答该问题。",
+   "category": "citation_clean",
+   "theme": "citation_clean",
+   "no_evidence": true,
+   "fallback": false,
+   "confidence": {
+    "level": "none",
+    "reasons": [
+     "模型判断材料不足以回答（拒答）"
+    ]
+   },
+   "status": "no_evidence"
+  }
+ ]
+}

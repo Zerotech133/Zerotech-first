@@ -12,6 +12,7 @@ from fastapi import APIRouter, Query
 
 from knowledge import repository
 from knowledge import creator_ops
+from knowledge import story_query
 from knowledge.browser_fetcher import (
     BrowserFetcherProtocol,
     BrowserSessionHealth,
@@ -300,6 +301,59 @@ def list_knowledge_units(
         "code": 0,
         "data": repository.list_units(
             q, topic, entity, target_id, status, unit_type, from_, to, cursor, size
+        ),
+        "message": "ok",
+    }
+
+
+# ------------------------------------------------------------------
+# 事件层（story）只读端点 —— F2「采了没人吃」的消费出口。
+# 下游 kg_brief / event_graph 直接读这里，不再自行聚合散点事实。
+# ------------------------------------------------------------------
+
+
+@router.get("/api/v1/stories")
+def list_stories(
+    hours: int = Query(default=168, ge=1, le=8760),
+    min_sources: int | None = Query(default=None, ge=1),
+    stage: str | None = None,
+    review_status: str | None = None,
+    size: int = Query(default=20, ge=1, le=200),
+) -> dict[str, Any]:
+    """Return hot events ranked by heat (independent-source weighted)."""
+    return {
+        "code": 0,
+        "data": story_query.list_stories(
+            hours=hours,
+            min_sources=min_sources,
+            stage=stage,
+            review_status=review_status,
+            limit=size,
+        ),
+        "message": "ok",
+    }
+
+
+@router.get("/api/v1/stories/{story_id}")
+def story_detail(story_id: int) -> dict[str, Any]:
+    """Return one event with its sanitized member facts."""
+    result = story_query.get_story_detail(story_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="事件不存在")
+    return {"code": 0, "data": result, "message": "ok"}
+
+
+@router.get("/api/v1/brief/daily")
+def daily_brief(
+    hours: int = Query(default=24, ge=1, le=720),
+    min_sources: int = Query(default=2, ge=1),
+    size: int = Query(default=10, ge=1, le=50),
+) -> dict[str, Any]:
+    """Return the daily brief: only events covered by >= min_sources outlets."""
+    return {
+        "code": 0,
+        "data": story_query.daily_brief(
+            hours=hours, min_sources=min_sources, limit=size
         ),
         "message": "ok",
     }
