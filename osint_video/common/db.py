@@ -93,7 +93,17 @@ def health() -> bool:
 
 
 def fetch_all(sql: str, params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
-    """执行查询，返回 ``[{列名: 值}, ...]``（自动提交的只读语义）。"""
+    """执行查询，返回 ``[{列名: 值}, ...]``。
+
+    **只读专用。** 内部用 ``engine.connect()``，退出时事务被 ROLLBACK——
+    拿它执行 INSERT/UPDATE/DELETE 会静默丢写：语句看似成功，行却没落库。
+    带 ``RETURNING`` 时更危险：序列的 ``nextval`` 不受事务回滚影响，于是能拿到
+    一个"看起来正常"的自增 ID，而对应的行根本不存在，故障会推迟到后续外键
+    校验时才炸，现场与真因相距很远。
+
+    写操作请用 :func:`execute` / :func:`execute_many`；写入同时要取回值时用
+    :func:`insert_returning`。
+    """
     try:
         with get_engine().connect() as conn:
             rows = conn.execute(text(sql), params or {}).mappings().all()
@@ -102,6 +112,28 @@ def fetch_all(sql: str, params: dict[str, Any] | None = None) -> list[dict[str, 
         raise
     except Exception as exc:  # noqa: BLE001
         raise DatabaseUnavailableError(f"PG 查询失败：{exc}\nSQL={sql}") from exc
+
+
+def insert_returning(
+    sql: str, params: dict[str, Any] | None = None
+) -> list[dict[str, Any]]:
+    """执行**写入型**语句并取回 ``RETURNING`` 结果，成功后提交。
+
+    存在理由：``INSERT ... RETURNING id`` 既要落库又要拿回生成值，
+    :func:`fetch_all` 会回滚、:func:`execute` 只给 rowcount，两者都做不到。
+    本函数在显式事务里执行并 COMMIT，是这类场景的唯一正确入口。
+
+    Returns:
+        返回行列表，结构与 ``fetch_all`` 一致（无 ``RETURNING`` 时为空列表）。
+    """
+    try:
+        with transaction() as conn:
+            rows = conn.execute(text(sql), params or {}).mappings().all()
+            return [dict(row) for row in rows]
+    except DatabaseUnavailableError:
+        raise
+    except Exception as exc:  # noqa: BLE001
+        raise DatabaseUnavailableError(f"PG 写入失败：{exc}\nSQL={sql}") from exc
 
 
 def execute(sql: str, params: dict[str, Any] | None = None) -> int:

@@ -229,7 +229,7 @@ _DAILY_TASKS = {
     "SubPushEod": os.path.join(STATION, "quant_backtest", "logs", "subscribe_task.out"),
     "MorningReport": None,
     "TushareSync": r"C:\Temp\tushare_sync_out.log",
-    "ChanlunRefill": None,
+    "ChanlunScan": None,  # 2026-11-05：原 ChanlunRefill 06:30 已由 \ChanlunScan 07:20 接管
     "RpsDaily": None,
     "WeakDailyHealth": None,
     "AI工作站每日备份": None,

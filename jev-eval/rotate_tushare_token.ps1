@@ -23,6 +23,18 @@ param(
 $GateLog = "$env:TEMP\zhice-jev-gate.log"
 $JevPy = "C:\Program Files\Python311\python.exe"   # 产线解释器（双 Python 治理：禁止裸 python）
 
+# 2026-11-05 停用闸门（JEV-ENVSEC-20261105）：
+# 本脚本的更新目标是 jev-gate.env.plain.ps1（明文副本），该文件在 W1-2 迁移后
+# 已被删除；继续运行会在仓库里重新落一份明文凭据 —— 安全回归。改为硬拦并指向新工具。
+$PlainTarget = Join-Path $PSScriptRoot 'jev-gate.env.plain.ps1'
+if (-not (Test-Path $PlainTarget)) {
+    Write-Output 'DEPRECATED: rotate_tushare_token.ps1 已停用（目标明文文件 jev-gate.env.plain.ps1 不存在）。'
+    Write-Output '请改用（DPAPI 单键轮换，带备份/回读校验/写前 probe）：'
+    Write-Output ('  & "' + $JevPy + '" "' + (Join-Path $PSScriptRoot '..\tools\set_env_secret.py') + '" --key TUSHARE_TOKEN --from-dotenv <dotenv路径> --probe')
+    Write-Output '详细说明见 docs/changes/20261105_env_secret_rotate.md'
+    exit 3
+}
+
 # ── 1. 获取新 token ────────────────────────────────────────
 if (-not $Token) {
     if (-not $SkipBrowser) {

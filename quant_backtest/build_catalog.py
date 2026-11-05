@@ -73,7 +73,9 @@ CNOD_TABLES = (
 #      {"Y": 400}（年度容忍档），未知值回落 Q，故 Y 无需改下游即可生效；
 #   ③ 全仓无「catalog freq ∈ 固定集合」的断言（test_kg_objectview 的
 #      D/M/Q/E/static 是 objectview 扇区静态配置，非 catalog 字段）。
-FREQ_ENUM = ("D", "W", "M", "Q", "Y", "1min")
+# A=年度（sources.yaml 的 freshness_sla_days 用的就是 A:400）。v33 把两张
+# 交易日历改成 A 之后，枚举里只有 Y，构建期一直报"freq 不在枚举内"。
+FREQ_ENUM = ("D", "W", "M", "Q", "A", "Y", "1min")
 
 WAREHOUSES = [  # (source, 数据根, manifest 路径)
     (
@@ -98,6 +100,10 @@ WAREHOUSES = [  # (source, 数据根, manifest 路径)
 ]
 LEGACY_US = os.path.join(HERE, "data", "us")  # 旧美股逐股（deprecated）
 CRYPTO_DIR = os.path.join(HERE, "data", "crypto")  # 加密货币日线
+# Tushare factor_list 静态因子清单（2026-11-05 接入）：元数据字典而非时序表，
+# 单独放 factor_library/，不进 data/tushare/ 的按表/按日扫描（避免污染 freshness）。
+FACTOR_LIBRARY_DIR = os.path.join(HERE, "data", "factor_library")
+FACTOR_LIST_DIR = os.path.join(FACTOR_LIBRARY_DIR, "tushare_factor_list")
 INFO_DB = os.path.join(HERE, "data", "tdx", "tdx_info.db")
 XQ_INFO_DB = os.path.join(HERE, "data", "xueqiu", "xueqiu_info.db")  # 雪球舆情库
 GUBA_DIR = os.path.join(
@@ -1060,6 +1066,74 @@ def _scan_dir(source, root, mpath, tbl, mf, store=None):
     }
 
 
+def _scan_factor_library(root=None):
+    """Tushare factor_list 静态因子清单 → catalog 条目（2026-11-05）。
+
+    factor_list 是元数据字典（272 因子/9 类），不是按日时序表：
+    - store=factor_library/tushare_factor_list，layout=parquet_snapshot；
+    - 无日期列 → static_no_date=true / date_status=not_applicable，豁免新鲜度；
+    - 行数/分类/快照 sha 取自同目录 manifest.json（工具 tushare_factor_list.py 生成）；
+    - 文件数含 latest.parquet + snapshots/*.parquet（历史快照不丢可见性）。
+    测试可传 root=临时目录，不触碰生产数据。
+    """
+    root = root or FACTOR_LIST_DIR
+    manifest_path = os.path.join(root, "manifest.json")
+    rec = _load_manifest(manifest_path)
+    latest = os.path.join(root, "latest.parquet")
+    snapshots = sorted(glob.glob(os.path.join(root, "snapshots", "*.parquet")))
+    files = ([latest] if os.path.exists(latest) else []) + snapshots
+    schema, schema_errors = [], []
+    if os.path.exists(latest):
+        try:
+            from pyarrow.parquet import ParquetFile
+
+            schema = list(ParquetFile(latest).schema_arrow.names)
+        except Exception:  # noqa: BLE001 - footer 损坏要可见，但不能拖垮整表
+            schema_errors.append(os.path.basename(latest))
+    rows = rec.get("rows")
+    if not isinstance(rows, int):
+        rows = None
+    done = bool(files) and (rows or 0) > 0 and not rec.get("errors")
+    desc = "Tushare factor_list 因子清单（272 因子/9 类；静态元数据）"
+    return {
+        "factor_list": {
+            "source": "factor_library",
+            "store": str(root).replace("\\", "/"),
+            "layout": "parquet_snapshot",
+            "schema": schema,
+            "date_col": None,
+            "code_col": None,
+            "schema_scope": "sampled" if schema else "unknown",
+            "schema_files_inspected": 1 if schema else 0,
+            "schema_errors": schema_errors,
+            "date_status": "not_applicable",
+            "static_no_date": True,
+            "future_ok": False,
+            "primary_key": ["factor_name"] if "factor_name" in schema else [],
+            "freq": "M",
+            "priority": 1,
+            "manifest": manifest_path.replace("\\", "/") if os.path.exists(manifest_path) else None,
+            "freshness": None,
+            "rows": rows,
+            "files": len(files),
+            "done": done,
+            "readiness_basis": "manifest" if rec else "file_presence",
+            "verification_status": "unknown",
+            "manifest_status": (
+                "closed" if done and rec else "open" if rec else "missing"
+            ),
+            "deprecated": False,
+            "desc": desc,
+            "factor_count": rows,
+            "by_type": rec.get("by_type") or {},
+            "by_asset": rec.get("by_asset") or {},
+            "sha256": rec.get("sha256"),
+            "fetched_at": rec.get("fetched_at"),
+            "token_sha8": rec.get("token_sha8"),
+        }
+    }
+
+
 def _load_manifest(path):
     """读仓库/包清单 → {表名: 表级记录}；缺失或损坏返回 {}。
 
@@ -1416,6 +1490,11 @@ def _changelog_note(prev_tables, new_tables):
     审计时不必再从 added 反推动因。
     """
     added = set(new_tables) - set(prev_tables)
+    if "factor_list" in added:
+        return (
+            "2026-11-05 Tushare factor_list 因子清单接入 catalog"
+            "（静态元数据 parquet_snapshot，272 因子/9 类；static_no_date/freq=M）"
+        )
     cnod_added = [t for t in CNOD_TABLES if t in added]
     if cnod_added:
         return (
@@ -1475,6 +1554,12 @@ def build(data_root=None, out_path=None):
             # 垃圾表（2026-10-17 实证 data/tushare/.git 被收为 228 表之一）
             if not os.path.isdir(os.path.join(root, tbl)) or tbl.startswith(("_", ".")):
                 continue
+            # 备份目录（refresh_snapshot 整表重刷时把旧目录改名成 <table>.bak-<ts>，
+            # 按设计保留 30 天）不是表：误收会产出一张 rows=null、date_col=null
+            # 的幽灵表，且名字永远对不上远端 → 上游健康度盘点里直接判"下架"。
+            # 2026-11-05 实证：ts_ths_member.bak-20261105_123343 被收成第 259 张表。
+            if ".bak-" in tbl or tbl.endswith("~"):
+                continue
             tables[tbl] = _scan_dir(source, root, mpath, tbl, mf)
         if data_root is None and source == "xtcloud":  # tdx 信息库三表
             tables.update(_scan_sqlite(mf))
@@ -1495,6 +1580,9 @@ def build(data_root=None, out_path=None):
             {},
             store=CRYPTO_DIR,
         )
+    # 2026-11-05：Tushare factor_list 静态因子清单（元数据字典，无日期列）
+    if data_root is None and os.path.isdir(FACTOR_LIST_DIR):
+        tables.update(_scan_factor_library())
     # 设计 §3：xq_* 10 表 + guba_posts 注册（空数据占位，不 fail）
     prev_tables = {}
     prev_version = 0
@@ -1607,6 +1695,47 @@ for _n, _f in _FREQ_FIX_V22.items():
         TABLE_DEFS.setdefault(_n, {})["freq"] = _f
 
 
+# ===== v33（2026-11-05 长尾补位）：周期表 freq 修正 D→W/M/Q/A =====
+# 证据不是"想让它变绿"，而是各表本地的实际最后一根周期 + 远端 all_dt：
+# 被测 25 张 xtcloud 长尾表里，7 张的 freshness 恰好停在 10-30/10-31（10 月
+# 最后交易日与 10 月最后一周），数据本身是齐的，只是 freq 被标成 D、SLA 3d
+# → 每月末必然误报。周/月线各一根的节律必须按 W/M 判。
+# 反例（不改，继续报警）：ts_index_weekly 同样是周线却停在 20261009，
+# 之后 10-16/10-23/10-30 三根缺——这是真断流，改 freq 会把它藏起来。
+_FREQ_FIX_V33 = {
+    # 周线/周频：10-31 为 10 月最后一周，10-30 为最后交易日 → 已到齐
+    "ts_weekly": "W",
+    "ts_fut_weekly_monthly": "W",
+    "ts_stk_week_month_adj": "W",
+    "ts_stk_weekly_monthly": "W",
+    "ts_pledge_stat": "W",
+    # 月线/月度：10-30 为 10 月最后交易日 → 已到齐
+    "ts_monthly": "M",
+    "ts_index_weight": "M",
+    # ts_ths_member（2026-11-05 改判，推翻 v33 当时的"D 级继续报警"）：
+    # 当时依据是"远端 all_dt 已到 11-04 说明数据在变、是我们抓取停了"——
+    # 这条被证伪：远端 all_dt 是**表被重写**的时间，不等于数据更新。
+    # 实测远端真实边界 382,731 行（total 声称 15,593,536 是虚报，
+    # offset=382,731 起返回 0），本地行数同为 382,731，且远端
+    # _fetched_at 全部落在 2026-10-13 04:04~18:27 → 上游就这一份快照。
+    # 该表无业务日期列（_fetched_at 是上游抓取时刻），只能整表刷新，
+    # 按"月度快照 + 每月全量刷一次"计，SLA 35d（M）。
+    # 不设 static_no_date：上游若真断供超过 35 天，报警是应该发生的。
+    "ts_ths_member": "M",
+    # 季度：top10 股东按报告期披露，end_date=20260930 已齐（远端 latest 同值）
+    "ts_top10_holders": "Q",
+    "ts_top10_floatholders": "Q",
+    # 年度：交易日历一年一版
+    "ts_hk_tradecal": "A",
+    "ts_us_tradecal": "A",
+}
+for _n, _f in _FREQ_FIX_V33.items():
+    if _n in TABLE_DEFS:
+        TABLE_DEFS[_n]["freq"] = _f
+    else:
+        TABLE_DEFS.setdefault(_n, {})["freq"] = _f
+
+
 # ===== v31（2026-11-02 S3-01 收口）：参照/基础表 static_no_date 声明 =====
 # 理由：这些表的 date_col=list_date（上市日），不是"数据新鲜度"日期；用 list_date
 # 判 stale 语义错误（新 ETF/基金/指数的 list_date 天然旧）。它们是参照字典表，
@@ -1615,6 +1744,10 @@ _CATALOG_STATIC_V31 = {
     "ts_etf_basic", "ts_fund_basic", "ts_index_basic", "ts_stock_basic",
     "ts_ths_index", "ts_bse_mapping", "ts_cb_basic", "ts_fut_basic",
     "ts_hk_basic", "ts_opt_basic", "ts_us_basic",
+    # 2026-11-05 长尾补位：tushare 侧 hk_basic 与 ts_hk_basic 同性质，
+    # date_col=list_date（上市日）不是数据水位，2781 只全量刷新也不会变新。
+    # 此前漏登记 → govern 长期报它滞后（10-28，8d），属口径误报而非欠采。
+    "hk_basic",
 }
 for _st_name in _CATALOG_STATIC_V31:
     # v32：部分表不在 TABLE_DEFS（构建期由 scan 生成），必须 setdefault 强制写入

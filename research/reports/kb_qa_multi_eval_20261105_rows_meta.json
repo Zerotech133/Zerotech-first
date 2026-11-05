@@ -1,0 +1,202 @@
+[
+ {
+  "id": "w13_U01",
+  "answerable": false,
+  "v4d_elapsed": 18.89,
+  "ollama_elapsed": 10.89,
+  "v4d_citations": 0,
+  "ollama_citations": 0,
+  "v4d_refusal": true,
+  "ollama_refusal": true
+ },
+ {
+  "id": "w13_U04",
+  "answerable": false,
+  "v4d_elapsed": 7.25,
+  "ollama_elapsed": 4.22,
+  "v4d_citations": 0,
+  "ollama_citations": 0,
+  "v4d_refusal": false,
+  "ollama_refusal": true
+ },
+ {
+  "id": "w13_U07",
+  "answerable": false,
+  "v4d_elapsed": 9.19,
+  "ollama_elapsed": 1.98,
+  "v4d_citations": 0,
+  "ollama_citations": 0,
+  "v4d_refusal": true,
+  "ollama_refusal": true
+ },
+ {
+  "id": "w13_U10",
+  "answerable": false,
+  "v4d_elapsed": 5.83,
+  "ollama_elapsed": 5.64,
+  "v4d_citations": 0,
+  "ollama_citations": 0,
+  "v4d_refusal": false,
+  "ollama_refusal": true
+ },
+ {
+  "id": "w13_A01",
+  "answerable": true,
+  "v4d_elapsed": 5.62,
+  "ollama_elapsed": 34.72,
+  "v4d_citations": 0,
+  "ollama_citations": 2,
+  "v4d_refusal": false,
+  "ollama_refusal": false
+ },
+ {
+  "id": "w13_A07",
+  "answerable": true,
+  "v4d_elapsed": 11.39,
+  "ollama_elapsed": 25.22,
+  "v4d_citations": 0,
+  "ollama_citations": 1,
+  "v4d_refusal": false,
+  "ollama_refusal": false
+ },
+ {
+  "id": "w13_A13",
+  "answerable": true,
+  "v4d_elapsed": 4.89,
+  "ollama_elapsed": 4.47,
+  "v4d_citations": 0,
+  "ollama_citations": 0,
+  "v4d_refusal": true,
+  "ollama_refusal": true
+ },
+ {
+  "id": "w13_A18",
+  "answerable": true,
+  "v4d_elapsed": 6.45,
+  "ollama_elapsed": 37.66,
+  "v4d_citations": 0,
+  "ollama_citations": 3,
+  "v4d_refusal": true,
+  "ollama_refusal": false
+ },
+ {
+  "id": "w13_A24",
+  "answerable": true,
+  "v4d_elapsed": 7.83,
+  "ollama_elapsed": 4.12,
+  "v4d_citations": 0,
+  "ollama_citations": 0,
+  "v4d_refusal": true,
+  "ollama_refusal": true
+ },
+ {
+  "id": "w13_A30",
+  "answerable": true,
+  "v4d_elapsed": 5.58,
+  "ollama_elapsed": 39.75,
+  "v4d_citations": 0,
+  "ollama_citations": 2,
+  "v4d_refusal": false,
+  "ollama_refusal": false
+ },
+ {
+  "id": "heldout_001",
+  "answerable": true,
+  "v4d_elapsed": 5.55,
+  "ollama_elapsed": 9.67,
+  "v4d_citations": 0,
+  "ollama_citations": 2,
+  "v4d_refusal": false,
+  "ollama_refusal": false
+ },
+ {
+  "id": "heldout_011",
+  "answerable": true,
+  "v4d_elapsed": 8.31,
+  "ollama_elapsed": 24.0,
+  "v4d_citations": 0,
+  "ollama_citations": 0,
+  "v4d_refusal": true,
+  "ollama_refusal": true
+ },
+ {
+  "id": "heldout_021",
+  "answerable": true,
+  "v4d_elapsed": 8.91,
+  "ollama_elapsed": 8.97,
+  "v4d_citations": 0,
+  "ollama_citations": 2,
+  "v4d_refusal": true,
+  "ollama_refusal": false
+ },
+ {
+  "id": "heldout_030",
+  "answerable": true,
+  "v4d_elapsed": 6.56,
+  "ollama_elapsed": 15.89,
+  "v4d_citations": 0,
+  "ollama_citations": 2,
+  "v4d_refusal": true,
+  "ollama_refusal": false
+ },
+ {
+  "id": "heldout_040",
+  "answerable": true,
+  "v4d_elapsed": 4.86,
+  "ollama_elapsed": 12.73,
+  "v4d_citations": 0,
+  "ollama_citations": 2,
+  "v4d_refusal": false,
+  "ollama_refusal": false
+ },
+ {
+  "id": "citation_sft_0003",
+  "answerable": true,
+  "v4d_elapsed": 2.8,
+  "ollama_elapsed": 16.7,
+  "v4d_citations": 0,
+  "ollama_citations": 2,
+  "v4d_refusal": false,
+  "ollama_refusal": false
+ },
+ {
+  "id": "citation_sft_0026",
+  "answerable": true,
+  "v4d_elapsed": 5.55,
+  "ollama_elapsed": 12.48,
+  "v4d_citations": 0,
+  "ollama_citations": 2,
+  "v4d_refusal": false,
+  "ollama_refusal": false
+ },
+ {
+  "id": "citation_sft_0013",
+  "answerable": true,
+  "v4d_elapsed": 8.06,
+  "ollama_elapsed": 8.34,
+  "v4d_citations": 0,
+  "ollama_citations": 2,
+  "v4d_refusal": false,
+  "ollama_refusal": false
+ },
+ {
+  "id": "citation_sft_0039",
+  "answerable": true,
+  "v4d_elapsed": 3.58,
+  "ollama_elapsed": 13.48,
+  "v4d_citations": 0,
+  "ollama_citations": 2,
+  "v4d_refusal": false,
+  "ollama_refusal": false
+ },
+ {
+  "id": "citation_sft_0178",
+  "answerable": true,
+  "v4d_elapsed": 6.81,
+  "ollama_elapsed": 1.97,
+  "v4d_citations": 0,
+  "ollama_citations": 0,
+  "v4d_refusal": true,
+  "ollama_refusal": true
+ }
+]

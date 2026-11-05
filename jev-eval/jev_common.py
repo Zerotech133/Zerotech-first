@@ -8,9 +8,11 @@
   原子写       atomic_write_text（tempfile + os.replace）
   重试         with_retry（指数退避）
   优雅退出     install_stop() → {"flag": bool}（SIGTERM/SIGINT 置位）
-  DB 直连      db_rows / db_execute（psycopg2 参数化查询，P1-7）：
-               连接进程内缓存、失联自动重连一次；psycopg2 缺失或直连不可达时
-               自动降级 docker exec psql（含 %s → :'pN' 变量绑定转换），四件套不停摆
+  DB 直连      db_rows / db_execute / db_run（psycopg2 参数化查询，P1-7）：
+               连接进程内缓存、失联自动重连一次；直连失败时按
+               JEV_DB_DOCKER_FALLBACK（默认 0=关闭）决定抛可诊断异常，
+               还是降级 docker exec psql（含 %s → :'pN' 变量绑定转换）
+               通道治理 JEV-DSN-20261105：db_channel_report()/log_db_channel()
   lark-cli     lark_env() / lark_cli_json()（统一信封 {"ok": true} 判定）
   指标         start_metrics(port) / 公共 Counter（P1-6，prometheus_client 可选）
 """
@@ -257,19 +259,28 @@ class _NoOp:  # noqa: D401
     def inc(self, *a, **k):
         pass
 
+    def set(self, *a, **k):
+        pass
+
 
 NOOP = _NoOp()
 
 try:
-    from prometheus_client import Counter, start_http_server
+    from prometheus_client import Counter, Gauge, start_http_server
 
     METRICS = True
-    C_DB = Counter("jev_db_queries_total", "DB 查询次数", ["mod", "ok"])
+    # JEV-DSN-20261105：C_DB 加 channel 维度（direct/docker），直连与降级
+    # 不再混在一个计数里；降级/被拒单独计数，便于 /metrics 一眼看出通道实况。
+    C_DB = Counter("jev_db_queries_total", "DB 查询次数", ["mod", "ok", "channel"])
+    C_DB_DEGRADED = Counter(
+        "jev_db_degraded_total", "DB 直连降级/被拒次数", ["mod", "reason"]
+    )
+    G_DB_CHANNEL = Gauge("jev_db_channel", "当前 DB 通道（1=生效中）", ["mode"])
     C_JEV = Counter("jev_calls_total", "Jev API 调用次数", ["mod", "ok"])
     C_LARK = Counter("jev_lark_total", "飞书 lark-cli 调用次数", ["mod", "kind", "ok"])
 except ImportError:  # 未安装时降级为 no-op，主流程不受影响
     METRICS = False
-    C_DB = C_JEV = C_LARK = NOOP
+    C_DB = C_JEV = C_LARK = G_DB_CHANNEL = C_DB_DEGRADED = NOOP
 
 
 def start_metrics(port: int) -> bool:
@@ -383,20 +394,252 @@ class DBFallbackError(RuntimeError):
         self.cmd = cmd  # 脱敏命令描述（含 user/db，不含口令）
 
 
-def _log_direct_failure(op: str, exc: BaseException) -> None:
-    """直连失败结构化日志（S1-04 F2）：补 DSN provenance，口令不打印。"""
-    log(
-        "DB 直连失败，降级 docker psql: %s" % (str(exc)[:100],),
-        level="warn",
-        op=op,
-        exc_type=type(exc).__name__,
-        errno=getattr(exc, "errno", None),
-        host=DB_DSN["host"],
-        port=DB_DSN["port"],
-        dbname=DB_DSN["dbname"],
-        user=DB_DSN["user"],
-        pw_source=PASSWORD_SOURCE,
+class DBChannelConfigError(RuntimeError):
+    """DB 通道配置错误（JEV-DSN-20261105）：启动即失败，不给静默降级的机会。
+
+    当前唯一场景：`ZHICE_PG_PORT=5432`，那是 infinity 容器，不是 zhice PG
+    （jev_common.py 里 5432 的坑即此）：误连后 psql 回
+    `Invalid command: syntax error, unexpected IDENTIFIER`，看着像 SQL 错，
+    实际是连错了库。属配置错误，必须在启动时炸掉而不是降级。
+    """
+
+
+class DBChannelDeniedError(RuntimeError):
+    """直连失败且 docker 降级未启用（`JEV_DB_DOCKER_FALLBACK` 默认 0）。
+
+    JEV-DSN-20261105：降级不再默认发生——静默降级会把「凭据错/端口错/
+    容器挂」的真实故障藏起来（历史 166 条 review WARN）。异常消息含
+    host/port/dbname/pw_source 与排障下一步，口令永不出现在消息里。
+    """
+
+
+# ── 通道策略（JEV-DSN-20261105） ─────────────────────────────
+_FALLBACK_ENV = "JEV_DB_DOCKER_FALLBACK"
+_INFINITY_PORT = 5432  # infinity 容器占位端口；zhice PG 在 5446
+_FALSY = ("", "0", "false", "no", "off")
+
+
+def docker_fallback_enabled() -> bool:
+    """docker exec psql 降级是否放行（默认关闭，见 `_FALLBACK_ENV`）。"""
+    raw = os.environ.get(_FALLBACK_ENV, "0").strip().lower()
+    return raw not in _FALSY
+
+
+def assert_pg_port(port=None) -> None:
+    """端口 fail-fast：5432 一律拒绝（infinity 容器），提示改用 5446。"""
+    val = DB_DSN["port"] if port is None else port
+    try:
+        val = int(val)
+    except (TypeError, ValueError):
+        return  # 非数字交给 psycopg2 自己报，不做额外拦截
+    if val != _INFINITY_PORT:
+        return
+    raise DBChannelConfigError(
+        "DB 通道配置错误：ZHICE_PG_PORT=%s 是 infinity 容器，不是 zhice PG；"
+        "zhice PG 在 5446。修法：设 ZHICE_PG_PORT=5446（或删掉该环境变量用默认 5446），"
+        "用 `docker port zhice-db` 核对宿主端口映射后重启进程。"
+        "当前 host=%s dbname=%s user=%s pw_source=%s [JEV-DSN-20261105]"
+        % (
+            val,
+            DB_DSN["host"],
+            DB_DSN["dbname"],
+            DB_DSN["user"],
+            PASSWORD_SOURCE,
+        )
     )
+
+
+assert_pg_port()  # 启动即自检：误连 5432 直接 ImportError/启动失败
+
+# 进程级通道状态（供 db_channel_report / 健康卡复用）
+_STATE = {
+    "channel": "",  # direct / docker / denied；空=尚未用通道
+    "degraded_total": 0,  # 直连失败后实际走 docker 的次数
+    "denied_total": 0,  # 直连失败且降级未开启（直接抛错）的次数
+    "last_failure": None,  # 最近一次直连失败的脱敏归因
+}
+_WARN_WINDOW_SEC = float(os.environ.get("JEV_DB_WARN_THROTTLE_SEC", "60"))
+_warn_seen: dict = {}  # key → (last_emit_monotonic, suppressed)
+_warn_lock = threading.Lock()
+
+
+def _warn_throttled(key: str, msg: str, **fields) -> bool:
+    """同类 WARN 限流：每 key 每 `_WARN_WINDOW_SEC` 秒最多 1 条（返回是否真发）。
+
+    review 一次回填曾刷 166 条「DB 直连失败」同一归因，日志被淹没；
+    被压掉的条数挂在 `suppressed` 字段里，不丢信息。
+    """
+    now = time.monotonic()
+    with _warn_lock:
+        last, suppressed = _warn_seen.get(key, (None, 0))
+        if last is not None and now - last < _WARN_WINDOW_SEC:
+            _warn_seen[key] = (last, suppressed + 1)
+            return False
+        _warn_seen[key] = (now, 0)
+    log(msg, level="warn", suppressed=suppressed, **fields)
+    return True
+
+
+def _set_channel(mode: str) -> None:
+    """记录通道并让 gauge 与实况一致（direct/docker 互斥；denied 两者归零）。"""
+    _STATE["channel"] = mode
+    for m in ("direct", "docker"):
+        G_DB_CHANNEL.labels(mode=m).set(1 if m == mode else 0)
+
+
+def _current_channel() -> str:
+    if _STATE["channel"]:
+        return _STATE["channel"]
+    if _conn.get("mode"):
+        return _conn["mode"]
+    return "unknown"
+
+
+def _log_direct_failure(op: str, exc: BaseException) -> dict:
+    """直连失败结构化日志（S1-04 F2）：补 DSN provenance，口令不打印。
+
+    JEV-DSN-20261105：改为限流 WARN（同 exc_type 每 `_WARN_WINDOW_SEC` 秒 1 条），
+    并把归因写入 `_STATE["last_failure"]` 供 `db_channel_report()` 复用。
+    """
+    attribution = {
+        "at": datetime.now().isoformat(timespec="seconds"),
+        "op": op,
+        "exc_type": type(exc).__name__,
+        "errno": getattr(exc, "errno", None),
+        "host": DB_DSN["host"],
+        "port": DB_DSN["port"],
+        "dbname": DB_DSN["dbname"],
+        "user": DB_DSN["user"],
+        "pw_source": PASSWORD_SOURCE,
+        "error": str(exc)[:200],
+    }
+    _STATE["last_failure"] = attribution
+    _warn_throttled(
+        type(exc).__name__,
+        "DB 直连失败: %s" % (str(exc)[:100],),
+        op=op,
+        exc_type=attribution["exc_type"],
+        errno=attribution["errno"],
+        host=attribution["host"],
+        port=attribution["port"],
+        dbname=attribution["dbname"],
+        user=attribution["user"],
+        pw_source=attribution["pw_source"],
+        fallback_enabled=docker_fallback_enabled(),
+    )
+    return attribution
+
+
+def _denied_error(op: str, exc: BaseException) -> "DBChannelDeniedError":
+    """直连失败且降级关闭 → 带 DSN/来源/下一步的可诊断异常（无口令）。"""
+    hint = (
+        "排障三步：1) 看 pw_source=%s 是否与 zhice 侧口令一致（口令轮换后 env/文件未同步）；"
+        "2) `docker ps --filter name=%s` 确认 5446 容器在跑；"
+        "3) 确认没把 ZHICE_PG_PORT 写成 5432（那是 infinity 容器）。"
+        "若确需临时走 docker psql，显式设 %s=1（结果全为字符串）。"
+        % (PASSWORD_SOURCE, PG_CONTAINER, _FALLBACK_ENV)
+    )
+    return DBChannelDeniedError(
+        "%s 直连失败且 docker 降级未启用（%s=0）: %s: %s | host=%s port=%s "
+        "dbname=%s user=%s pw_source=%s | %s [JEV-DSN-20261105]"
+        % (
+            op,
+            _FALLBACK_ENV,
+            type(exc).__name__,
+            str(exc)[:160],
+            DB_DSN["host"],
+            DB_DSN["port"],
+            DB_DSN["dbname"],
+            DB_DSN["user"],
+            PASSWORD_SOURCE,
+            hint,
+        )
+    )
+
+
+def _after_direct_failure(op: str, exc: BaseException, sql: str, params):
+    """直连失败统一出口：记归因 → 降级 opt-in 判定 → 返回 rows 或抛诊断异常。"""
+    _log_direct_failure(op, exc)
+    mod = _MOD["name"] or op
+    if not docker_fallback_enabled():
+        _STATE["denied_total"] += 1
+        _set_channel("denied")  # gauge 归零：既没直连也没降级
+        C_DB_DEGRADED.labels(mod, "denied:%s" % type(exc).__name__).inc()
+        raise _denied_error(op, exc) from exc
+    _STATE["degraded_total"] += 1
+    C_DB_DEGRADED.labels(mod, "docker:%s" % type(exc).__name__).inc()
+    rows = _docker_psql_rows(sql, params)
+    _set_channel("docker")
+    C_DB.labels(mod, "1", "docker").inc()
+    return rows
+
+
+def db_channel_report() -> dict:
+    """DB 通道健康面（JEV-DSN-20261105）：健康卡 / `--probe` / 启动自检共用。
+
+    字段：mode（direct/docker/denied/unknown）、fallback_enabled（降级是否放行）、
+    degraded_total / denied_total、last_failure（最近一次直连失败归因）、
+    provenance（dsn_provenance 脱敏）、port_error（5432 时的配置错误文本）。
+    只读本进程状态，不发起连接、不抛异常（端口错也只在 port_error 里体现）。
+    """
+    port_error = None
+    try:
+        assert_pg_port()
+    except DBChannelConfigError as e:
+        port_error = str(e)
+    report = {
+        "mode": _current_channel(),
+        "fallback_enabled": docker_fallback_enabled(),
+        "degraded_total": _STATE["degraded_total"],
+        "denied_total": _STATE["denied_total"],
+        "last_failure": _STATE["last_failure"],
+        "port_error": port_error,
+        "provenance": dsn_provenance(),
+    }
+    report["healthy"] = bool(port_error is None and report["mode"] != "denied")
+    return report
+
+
+def log_db_channel(probe: bool = True) -> dict:
+    """启动自检（一条 info 日志）：脱敏 provenance + 实际通道。各服务启动时调用。
+
+    probe=True（默认）时用一次 `SELECT 1` 判定直连实况：失败只记 WARN 与归因，
+    **绝不抛出**——启动自检不能变成新的单点。直连失败且降级已放行时 channel 记
+    "docker"（表示「接下来将走降级」；启动阶段不实际执行 docker 查询）。
+    probe=False 只报当前进程状态（不连库，供健康卡/`--probe` 用）。
+    """
+    probe_error = None
+    if probe:
+        try:
+            with _get_conn().cursor() as cur:
+                cur.execute("SELECT 1")
+                cur.fetchone()
+            _set_channel("direct")
+        except DBChannelConfigError:
+            raise  # 配置错（5432）依旧 fail-fast，不在这里被吞
+        except Exception as e:  # noqa: BLE001
+            probe_error = "%s: %s" % (type(e).__name__, str(e)[:120])
+            _log_direct_failure("startup_probe", e)
+            _set_channel("docker" if docker_fallback_enabled() else "denied")
+    report = db_channel_report()
+    prov = report["provenance"]
+    log(
+        "DB 通道自检",
+        channel=report["mode"],
+        fallback_enabled=report["fallback_enabled"],
+        healthy=report["healthy"],
+        host=prov["host"],
+        port=prov["port"],
+        dbname=prov["dbname"],
+        user=prov["user"],
+        container=prov["container"],
+        pw_source=prov["password_source"],
+        driver=prov["driver"],
+        env_overrides=prov["env_overrides"],
+        port_error=report["port_error"],
+        probe_error=probe_error,
+    )
+    return report
 
 
 _conn = {"c": None, "mode": ""}  # mode: "" 未定 / "direct" / "docker"
@@ -404,21 +647,23 @@ _conn = {"c": None, "mode": ""}  # mode: "" 未定 / "direct" / "docker"
 
 def _get_conn():
     """进程内缓存连接；首次连接成功后记住模式，失败自动重连一次。"""
+    assert_pg_port()  # 5432 fail-fast：不进降级链
     import psycopg2
 
     if _conn["c"] is None or _conn["c"].closed:
         _conn["c"] = psycopg2.connect(**DB_DSN)
         _conn["c"].autocommit = True  # 单语句读写，无需事务块
         _conn["mode"] = "direct"
+        _set_channel("direct")
     return _conn["c"]
 
 
-def _pg_ok(labels_mod: str) -> None:
-    C_DB.labels(_MOD["name"] or labels_mod, "1").inc()
+def _pg_ok(labels_mod: str, channel: str = "direct") -> None:
+    C_DB.labels(_MOD["name"] or labels_mod, "1", channel).inc()
 
 
 def _pg_fail(labels_mod: str) -> None:
-    C_DB.labels(_MOD["name"] or labels_mod, "0").inc()
+    C_DB.labels(_MOD["name"] or labels_mod, "0", "direct").inc()
 
 
 def _docker_psql_rows(sql: str, params) -> list[tuple]:
@@ -499,8 +744,11 @@ def _docker_psql_rows(sql: str, params) -> list[tuple]:
 def db_rows(sql: str, params=None) -> list[tuple]:
     """参数化 SELECT，返回 list[tuple]（真实类型，非字符串）。
 
-    直连失败或 psycopg2 缺失 → 自动降级 docker exec psql（结果全为字符串）。
+    直连失败时行为由 `JEV_DB_DOCKER_FALLBACK` 决定（默认 0）：
+      0 → 抛 `DBChannelDeniedError`（可诊断，含 DSN 与排障提示）；
+      1 → 降级 docker exec psql（结果全为字符串）。
     """
+    assert_pg_port()  # 5432 fail-fast，先于 try：不被下面的兜底吞掉
     try:
         try:
             c = _get_conn()
@@ -523,11 +771,7 @@ def db_rows(sql: str, params=None) -> list[tuple]:
             raise e
     except Exception as e:  # noqa: BLE001
         _pg_fail("")
-        if isinstance(e, ImportError):
-            pass
-        else:
-            _log_direct_failure("db_rows", e)
-        return _docker_psql_rows(sql, params)
+        return _after_direct_failure("db_rows", e, sql, params)
 
 
 def db_execute(sql: str, params=None) -> int:
@@ -539,7 +783,8 @@ def db_execute(sql: str, params=None) -> int:
 
 def db_run(sql: str, params=None) -> None:
     """执行 DDL/任意语句（不追加 RETURNING，CREATE/ALTER 等必须走此入口）。
-    直连 autocommit 即时生效；降级 docker psql 以 ON_ERROR_STOP 校验。"""
+    直连 autocommit 即时生效；降级判定与 db_rows 同源（`JEV_DB_DOCKER_FALLBACK`）。"""
+    assert_pg_port()  # 5432 fail-fast，与 db_rows 行为一致
     try:
         c = _get_conn()
         with c.cursor() as cur:
@@ -548,11 +793,8 @@ def db_run(sql: str, params=None) -> None:
         return
     except Exception as e:  # noqa: BLE001
         _pg_fail("")
-        if isinstance(e, ImportError):
-            pass
-        else:
-            _log_direct_failure("db_run", e)
-    _docker_psql_rows(sql, params)  # DDL 无结果集 → []；失败抛 DBFallbackError
+        # DDL 无结果集 → []；降级关闭则抛诊断异常（e 只在 except 块内可见）
+        _after_direct_failure("db_run", e, sql, params)
 
 
 def probe_connectivity(*, docker_probe: bool = True, timeout: int = 10) -> dict:
@@ -635,9 +877,21 @@ def probe_connectivity(*, docker_probe: bool = True, timeout: int = 10) -> dict:
         overall = "degraded"
     else:
         overall = "down"
+    # JEV-DSN-20261105：复用 db_channel_report() 的字段（不重复实现），
+    # overall 仍表示「通道可用性潜能」（直连不通但 docker 在 → degraded），
+    # effective_overall 才是本进程的真实结局：降级未开启时直连不通就是 down。
+    channel = db_channel_report()
+    if overall == "ok":
+        effective = "ok"
+    elif overall == "degraded" and channel["fallback_enabled"]:
+        effective = "degraded"
+    else:
+        effective = "down"
     return {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "overall": overall,
+        "effective_overall": effective,
+        "channel": channel,
         "provenance": dsn_provenance(),
         "segments": segments,
     }

@@ -60,25 +60,42 @@ _RESUME_PS = (
 )
 
 # 交易日无关子集：白名单底册（显式 expect，since=生效日）
+#
+# 2026-11-05 底册校准（老田指令"先找问题再修"）：一晚固定误报 10 条，
+# 核因是底册写的还是换机/改造前的任务名。逐条对过实际计划任务后改名如下；
+# 改不了的（真断供）留在册内继续报——宁可每晚吵，也不许静默断供。
+#   KG-TushareSync(00:10) → 旧名退役，实际为 TushareSync(23:30)，本册下方已有正确条目
+#   AIColAudit(06:10)     → 现名 \ColAudit，时刻不变
+#   CryptoSync            → 时刻写错 08:10，实际 09:00（任务当前 Disabled，见下方注）
+#   KG-TdxSync(17:40)     → 旧名退役，11-02 起拆 \ZeroBound\TdxSync_A/B/C/D 四片
+#   KG-Cl1Sync            → 现名 KgCl1Sync，时刻不变
+#   AI工作站每日备份(03:00) → 现名 BackupDaily，实际 07:45 起跑
+#   JevReviewBackfill     → 现名 \JevBackfill（整点轮），锚点仍取 20:30
 REGISTRY = {
-    "KG-TushareSync": {"expect": "00:10", "since": "2026-10-06"},
-    "AIColAudit": {"expect": "06:10", "since": "2026-09-01"},
+    "ColAudit": {"expect": "06:10", "since": "2026-09-01"},
     "TbeStats": {"expect": "06:45", "since": "2026-10-05"},
     "KgExtractShadow": {"expect": "06:50", "since": "2026-10-05"},
     "MorningReport": {"expect": "07:00", "since": "2026-09-28"},
     "KgResonanceNotify": {"expect": "08:05", "since": "2026-10-06"},
-    "CryptoSync": {"expect": "08:10", "since": "2026-09-20"},
-    "KG-TdxSync": {"expect": "17:40", "since": "2026-09-01"},
-    "KG-Cl1Sync": {"expect": "18:10", "since": "2026-10-05"},
+    # 2026-11-05 13:12 已恢复：\CryptoSync 仍叫原名，但 wrapper 改接
+    # export_us_hk --market CRYPTO（统一供给层），State=Ready、触发 rc=0、
+    # 下次 11-06 09:00。保留在册继续守，别再按"Disabled 真断供"读这条。
+    "CryptoSync": {"expect": "09:00", "since": "2026-09-20"},
+    "KgCl1Sync": {"expect": "18:10", "since": "2026-10-05"},
     # 10-08 补：JEV 20:30 曾被睡眠窗口静默吃掉，哨兵底册原缺此项——
-    # 手动守候才撞见；CainiaoPull 明晚首跑（R4 数据链）
+    # 手动守候才撞见
+    # 2026-11-05 复核：九表拉取脚本 cainiao_pull.py 已重写并全量跑通
+    # （9/9 rc=0、源/镜像行数 ALL_MATCH），但 19:00 任务仍未排班（需 L2 批准）
+    # → 调度层仍是真断供，保留在册继续报（不许静默退役）。
     "CainiaoPull": {"expect": "19:00", "since": "2026-10-09"},
-    "JevReviewBackfill": {"expect": "20:30", "since": "2026-10-07"},
+    "JevBackfill": {"expect": "20:30", "since": "2026-10-07"},
     # 10-09 补：晨间三连（06:20/06:30/06:40）原全不在册——恰处夜间睡眠
     # 窗口尾段，被静默吃掉将无人报（JEV 前车）；三任务已同批加
     # StartWhenAvailable，本册兜底「唤醒后也没补跑」的最后情形
     "KgDailySync": {"expect": "06:20", "since": "2026-10-09"},
     "StrongEod": {"expect": "06:30", "since": "2026-10-09"},
+    # 2026-11-05 12:29 已按批准重建，13:14 触发 rc=0（图谱 2 条漂移修复后
+    # 五断言全绿）。保留在册继续守，别再按"真断供"读这条。
     "K260RegressionDaily": {"expect": "06:40", "since": "2026-10-09"},
     # 10-09 凌晨整理补（项目全面整理役）：两大盲区入册——
     # TushareSync 23:30 老田侧全量（1.5~3.5h，10-09 误杀事故主角；
@@ -86,13 +103,20 @@ REGISTRY = {
     # 每日备份 03:00（B4 链核心，深睡高危时段，21:30 档当晚检出，
     # 08:30 晨档 3.8h 检出——晨档与 21:30 双跑位同批部署）
     "TushareSync": {"expect": "23:30", "since": "2026-10-09"},
-    "AI工作站每日备份": {"expect": "03:00", "since": "2026-10-09"},
+    # 2026-11-05：原 "AI工作站每日备份" 03:00 已不存在，现为 \BackupDaily
+    # （触发 07:45，实测 07:56 完成，产物 1 加密 DB dump + 4 tar + 镜像）。
+    "BackupDaily": {"expect": "07:45", "since": "2026-10-31"},
     # 10-10 补（八审 TodaysPicks 时序核查）：T1 聚合链四任务原全不在册。
     # 单日漏跑时 alert_fail 不推（没跑≠失败）、聚合闸门 4 天容差拦不住
-    # （lag=1<4），T1 错日共振整链静默。ChanlunRefill=聚合消费的早批
-    # （ChanlunScan 15:35 晚批在 15:10 聚合后落盘，不参与当日聚合）。
+    # （lag=1<4），T1 错日共振整链静默。原 ChanlunRefill 06:30 = 聚合消费的早批
+    # （当时 ChanlunScan 15:35 晚批在 15:10 聚合后落盘，不参与当日聚合）。
+    # 2026-11-05 复核：ChanlunRefill 任务已不存在，但同一份
+    # start_chanlun_scan.ps1 由 \ChanlunScan 自 10-26 起改到 07:20 每日跑
+    # （11-05 07:20 触发、07:48 完成、rc=0），已在 15:10 聚合前落盘，
+    # 早批职责实际由它承担。故不重建 06:30 任务（会变成一天两次全市场扫描），
+    # 底册改为监控真实任务名与真实触发时刻。
     # RpsDaily 仅交易日跑 → trade_only（非交易日跳过，见 _trade_today）。
-    "ChanlunRefill": {"expect": "06:30", "since": "2026-10-10"},
+    "ChanlunScan": {"expect": "07:20", "since": "2026-10-26"},
     "NineDimScan": {"expect": "06:40", "since": "2026-10-10"},
     "TodaysPicks": {"expect": "15:10", "since": "2026-10-10"},
     "RpsDaily": {"expect": "16:05", "since": "2026-10-10", "trade_only": True},
@@ -105,6 +129,27 @@ REGISTRY = {
         "since": "2026-10-10",
         "weekday": 0,
     },  # 0=周一（Python weekday 约定）
+    # 2026-11-05 补：\TdxSync 自 11-02 起拆成 \ZeroBound\ 下四分片，旧任务
+    # Disabled 属设计内（盲目启用会与四分片重复写库），但四分片本身一直不在册
+    # ——任一片静默死掉无人知。按实际触发时刻补哨兵。
+    # 任务在子路径且名称含中文，schtasks /tn 需完整路径，故用 "path" 指定；
+    # 查不到时 run() 回退短名。沙箱禁 schtasks，端到端由 21:30 首轮观察。
+    "TdxSync_A_高频": {
+        "expect": "17:35", "since": "2026-11-02",
+        "path": r"\ZeroBound\TdxSync_A_高频",
+    },
+    "TdxSync_B_财务": {
+        "expect": "17:45", "since": "2026-11-02",
+        "path": r"\ZeroBound\TdxSync_B_财务",
+    },
+    "TdxSync_C_低频": {
+        "expect": "17:55", "since": "2026-11-02",
+        "path": r"\ZeroBound\TdxSync_C_低频",
+    },
+    "TdxSync_D_缺口": {
+        "expect": "18:05", "since": "2026-11-02",
+        "path": r"\ZeroBound\TdxSync_D_缺口",
+    },
 }
 
 
@@ -249,14 +294,22 @@ def run(now=None):
         if cfg.get("weekday") is not None and now.weekday() != cfg["weekday"]:
             continue  # 周任务：仅指定星期检查（十三审）
         exp_h, exp_m = map(int, cfg["expect"].split(":"))
-        expect = now.replace(hour=exp_h, minute=exp_m, second=0)
+        # 2026-11-05 修：原来只 replace(second=0)，microsecond 仍带 now 的余数，
+        # 于是 expect = HH:MM:00.xxxxxx；任务恰好在整分整秒跑完（last=HH:MM:00.000000）
+        # 就判成 last < expect → 假 MISS。RpsDaily 因此连续误报（实际 16:05:00 已跑）。
+        expect = now.replace(hour=exp_h, minute=exp_m, second=0, microsecond=0)
         deadline = expect + timedelta(minutes=GRACE_MIN + wake_grace)
         if now < deadline:
             continue  # 未到宽限期不检
         checked += 1
         # 锚点是任务自己的「最后成功时间」（schtasks Last Run），不是 now；
         # now 只回答一个问题：过去够久了吗、现在能不能下结论。
-        last_success = _task_last_run(name)
+        # 子路径任务（如 \ZeroBound\TdxSync_*）用 schtasks /tn 查询时必须给
+        # 完整路径，否则查不到会假 MISS；查不到时再回退短名兜一层。
+        lookup = cfg.get("path") or name
+        last_success = _task_last_run(lookup)
+        if last_success is None and cfg.get("path"):
+            last_success = _task_last_run(name)
         if last_success is None or last_success < expect:
             stamp = last_success.strftime("%Y-%m-%d %H:%M") if last_success else "never"
             miss.append(

@@ -81,12 +81,18 @@ $bdScript = Join-Path $BaseDir 'jev-eval\backup_daily.ps1'
 if (Test-Path $bdScript) { Report ('[OK] backup_daily.ps1 on disk ' + ((Get-Item $bdScript).Length) + 'B') }
 else { Fail 'backup_daily.ps1 MISSING from disk (v1.8: no registry authority on new machine - restore from .v10.bak/MEMORY manually)' }
 
-# --- 1. today's backup set ---
+# --- 1. latest backup set ---
+# 2026-11-05 N1-STALE-FIX：N1 07:30 早于 BackupDaily 07:45，不能要求“今日”
+# 备份已经完成；改为检查最近一代备份的新鲜度（<=36h）与完成标记。
+$BackupMaxAgeH = 36
+$now = Get-Date
 $set = Get-ChildItem 'C:\backups_mirror' -Directory -ErrorAction SilentlyContinue |
-    Where-Object { $_.Name -like ($day + '_*') } | Sort-Object Name -Descending | Select-Object -First 1
+    Where-Object { $_.Name -match '^\d{4}-\d{2}-\d{2}_' } | Sort-Object Name -Descending | Select-Object -First 1
 if ($set) {
+    $setAgeH = [math]::Round(($now - $set.LastWriteTime).TotalHours, 1)
     $stat = Get-ChildItem $set.FullName -Recurse -File | Measure-Object -Sum Length
-    Report ('[OK] backup set ' + $set.Name + ' files=' + $stat.Count + ' MB=' + [math]::Round($stat.Sum/1MB,1))
+    Report ('[OK] latest backup set ' + $set.Name + ' files=' + $stat.Count + ' MB=' + [math]::Round($stat.Sum/1MB,1) + ' age=' + $setAgeH + 'h')
+    if ($setAgeH -gt $BackupMaxAgeH) { Fail ('latest mirror set ' + $set.Name + ' is ' + $setAgeH + 'h old (>' + $BackupMaxAgeH + 'h)') }
     if ($stat.Count -lt $MinFiles) { Fail ('mirror files=' + $stat.Count + ', expected >=' + $MinFiles) }
     # DONE 行由 backup_daily.ps1 在 MIRROR 复制之后才写入，mirror 副本永远不含
     # DONE —— DONE/quant_code 必须读原件（副本只用于上面的文件数核对）
@@ -112,42 +118,55 @@ $keyLost = @(Get-ChildItem $alertsDir -Filter 'BACKUP_KEY_LOST_*.flag' -File -Er
 if ($keyLost.Count -eq 0) { Report '[OK] v5 key guard silent (normal path)' }
 else { Fail 'BACKUP_KEY_LOST flag PENDING - key file issue, see flag' }
 
-# --- 3. offsite sync ---
-# v1.8: match both 'OffsiteSync' (task-name style) and 'offsite_sync.ps1'
-# (new-machine script path) - -match is substring, underscore breaks the old pattern
-$task = Get-ScheduledTask | Where-Object {
-    @($_.Actions | Where-Object { $_.Arguments -match 'OffsiteSync|offsite_sync' }).Count -gt 0
+# --- 3. offsite sync (vault path) ---
+# 2026-11-05 N1-STALE-FIX：旧 OffsiteSync -> OneDrive 任务自 2026-10-26 起 Disabled，
+# 已被 BackupDaily -VaultUpload -> aiosbackup@10.205.0.118:/home/aios-offsite/vault 取代。
+# 不再检查已退役任务/OneDrive；改为检查最新 _vault 日的远端回执（<=36h）。
+$VaultMaxAgeH = 36
+$baseItem = Get-Item -LiteralPath $BaseDir -Force -ErrorAction SilentlyContinue
+$repoPhysical = $BaseDir
+if ($baseItem -and $baseItem.LinkType -eq 'Junction' -and $baseItem.Target) {
+    $repoPhysical = [string](@($baseItem.Target)[0])
 }
-if ($task) {
-    $ti = $task | Get-ScheduledTaskInfo
-    if ($ti.LastTaskResult -eq 0 -and $ti.LastRunTime -ge [datetime]($day + ' 04:00')) {
-        Report ('[OK] offsite task RC=0 LastRun=' + $ti.LastRunTime)
-    } else { Fail ('offsite task RC=' + $ti.LastTaskResult + ' LastRun=' + $ti.LastRunTime) }
-} else { Fail 'offsite sync task not found' }
-
-$slog = 'C:\Temp\offsite_sync.log'
-if (Test-Path $slog) {
-    $okLine = Select-String -Path $slog -Pattern ('OK set=' + $day) -ErrorAction SilentlyContinue | Select-Object -First 1
-    if ($okLine) { Report ('[OK] offsite log: ' + $okLine.Line.Trim()) }
-    else { Fail ('offsite_sync.log has no "OK set=' + $day + '" line') }
-} else { Fail 'C:\Temp\offsite_sync.log missing' }
-
-$od = Join-Path $env:USERPROFILE 'OneDrive\backups_mirror'
-$odSet = Get-ChildItem $od -Directory -ErrorAction SilentlyContinue |
-    Where-Object { $_.Name -like ($day + '_*') } | Sort-Object Name -Descending | Select-Object -First 1
-if ($odSet) {
-    $ostat = Get-ChildItem $odSet.FullName -Recurse -File | Measure-Object -Sum Length
-    Report ('[OK] OneDrive set ' + $odSet.Name + ' files=' + $ostat.Count)
-    if ($ostat.Count -lt $MinFiles) { Fail ('OneDrive set files=' + $ostat.Count + ', expected >=' + $MinFiles) }
-} else { Fail ('OneDrive mirror has no set for ' + $day) }
-$odAll = @(Get-ChildItem $od -Directory -ErrorAction SilentlyContinue)
-if ($odAll.Count -gt 2) { Fail ('OneDrive mirror holds ' + $odAll.Count + ' sets, prune failed') }
-else { Report ('[OK] OneDrive sets=' + $odAll.Count + ' (prune to 2 works)') }
+$workspace = Split-Path -Parent $repoPhysical
+$vaultRoot = Join-Path $workspace '_vault'
+$vaultSet = Get-ChildItem $vaultRoot -Directory -ErrorAction SilentlyContinue |
+    Where-Object { $_.Name -match '^\d{4}-\d{2}-\d{2}$' } | Sort-Object Name -Descending | Select-Object -First 1
+if ($vaultSet) {
+    $receipt = Join-Path $vaultSet.FullName 'offsite_vault_receipt.txt'
+    $vaultAgeH = [math]::Round(($now - $vaultSet.LastWriteTime).TotalHours, 1)
+    if (-not (Test-Path -LiteralPath $receipt)) {
+        Fail ('offsite vault receipt missing: ' + $receipt)
+    } elseif ($vaultAgeH -gt $VaultMaxAgeH) {
+        Fail ('latest offsite vault set ' + $vaultSet.Name + ' is ' + $vaultAgeH + 'h old (>' + $VaultMaxAgeH + 'h)')
+    } else {
+        $rline = (Get-Content -LiteralPath $receipt -TotalCount 1 -ErrorAction SilentlyContinue)
+        Report ('[OK] offsite vault ' + $vaultSet.Name + ' receipt age=' + $vaultAgeH + 'h :: ' + $rline)
+    }
+} else {
+    Fail ('no offsite vault set under ' + $vaultRoot)
+}
 
 # --- 4. alert queue ---
+# 2026-11-05 N1-STALE-FIX：N1 07:30 早于 AlertPush 07:35；对刚生成、
+# 且 AlertPush 即将消费的 flag 判 WARN，不判 FAIL；>45min 仍滞留才 FAIL。
+$AlertGraceMin = 45
 $pend = @(Get-ChildItem $alertsDir -Filter '*.flag' -File -ErrorAction SilentlyContinue)
 if ($pend.Count -eq 0) { Report '[OK] alert queue empty' }
-else { Fail ('alert queue not empty: ' + (($pend | Select-Object -First 3 | ForEach-Object { $_.Name }) -join ',')) }
+else {
+    $newest = $pend | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    $ageMin = [math]::Round(($now - $newest.LastWriteTime).TotalMinutes, 1)
+    $ap = Get-ScheduledTask -TaskName 'AlertPush' -ErrorAction SilentlyContinue
+    $apNext = $null
+    if ($ap) { $apNext = (Get-ScheduledTaskInfo -TaskName 'AlertPush').NextRunTime }
+    $apReady = $ap -and $ap.State -in @('Ready','Running')
+    $inFlight = $apReady -and $apNext -and $apNext -le $now.AddMinutes(15) -and $ageMin -le $AlertGraceMin
+    if ($inFlight) {
+        Report ('[WARN] alert queue has ' + $pend.Count + ' in-flight flag(s); newest=' + $newest.Name + ' age=' + $ageMin + 'm; AlertPush next=' + $apNext)
+    } else {
+        Fail ('alert queue not empty: ' + (($pend | Select-Object -First 3 | ForEach-Object { $_.Name }) -join ',') + ' newest_age=' + $ageMin + 'm')
+    }
+}
 
 # --- 5. engine watchdog ---
 $eng = @(Get-ChildItem $alertsDir -Filter 'ENGINE_DOWN_*.flag' -File -ErrorAction SilentlyContinue)
@@ -221,7 +240,10 @@ Check-ExitLine 'daily' 'C:\Temp\daily_report_task.log'
 # deliberately loose: daytime collector inserts new rows continuously, so
 # left routinely oscillates; FAIL only on clear runaway.
 $MaxJevLeft = 150
-$JevLog = 'C:\jev_backfill_task.log'
+# 2026-11-05 N1-STALE-FIX：2026-10-16 起 wrapper 已把日志迁到 review_data，
+# N1 仍读 C:\ 根旧文件（10-16 之后永不更新）→ 误报 stale。优先新路径，旧路径仅兼容回退。
+$JevLog = Join-Path $BaseDir 'jev-eval\review_data\jev_backfill_task.log'
+if (-not (Test-Path -LiteralPath $JevLog)) { $JevLog = 'C:\jev_backfill_task.log' }
 $JevStaleH = 12
 if (-not (Test-Path $JevLog)) {
     Fail ('jev: ' + $JevLog + ' missing (JEVBackfill-Hourly never ran?)')

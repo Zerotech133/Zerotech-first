@@ -1,0 +1,692 @@
+{
+ "schema_version": 1,
+ "generated_at": "2026-11-05T03:02:00+08:00",
+ "n_questions": 20,
+ "method": "20题分两批（每批10题）随机A/B盲评；每批独立评审（fresh subagent）+ Lead 盲评；各批评分完成后才揭盲",
+ "batch_keys": {
+  "batch1": {
+   "1": {
+    "id": "w13_U01",
+    "A": "ollama",
+    "B": "v4d"
+   },
+   "2": {
+    "id": "w13_U04",
+    "A": "v4d",
+    "B": "ollama"
+   },
+   "3": {
+    "id": "w13_U10",
+    "A": "ollama",
+    "B": "v4d"
+   },
+   "4": {
+    "id": "w13_A01",
+    "A": "ollama",
+    "B": "v4d"
+   },
+   "5": {
+    "id": "w13_A13",
+    "A": "ollama",
+    "B": "v4d"
+   },
+   "6": {
+    "id": "w13_A18",
+    "A": "v4d",
+    "B": "ollama"
+   },
+   "7": {
+    "id": "heldout_001",
+    "A": "v4d",
+    "B": "ollama"
+   },
+   "8": {
+    "id": "heldout_021",
+    "A": "v4d",
+    "B": "ollama"
+   },
+   "9": {
+    "id": "citation_sft_0026",
+    "A": "ollama",
+    "B": "v4d"
+   },
+   "10": {
+    "id": "citation_sft_0039",
+    "A": "v4d",
+    "B": "ollama"
+   }
+  },
+  "batch2": {
+   "1": {
+    "id": "w13_U07",
+    "A": "v4d",
+    "B": "ollama"
+   },
+   "2": {
+    "id": "w13_A07",
+    "A": "ollama",
+    "B": "v4d"
+   },
+   "3": {
+    "id": "w13_A24",
+    "A": "v4d",
+    "B": "ollama"
+   },
+   "4": {
+    "id": "w13_A30",
+    "A": "ollama",
+    "B": "v4d"
+   },
+   "5": {
+    "id": "heldout_011",
+    "A": "v4d",
+    "B": "ollama"
+   },
+   "6": {
+    "id": "heldout_030",
+    "A": "ollama",
+    "B": "v4d"
+   },
+   "7": {
+    "id": "heldout_040",
+    "A": "v4d",
+    "B": "ollama"
+   },
+   "8": {
+    "id": "citation_sft_0003",
+    "A": "v4d",
+    "B": "ollama"
+   },
+   "9": {
+    "id": "citation_sft_0013",
+    "A": "ollama",
+    "B": "v4d"
+   },
+   "10": {
+    "id": "citation_sft_0178",
+    "A": "ollama",
+    "B": "v4d"
+   }
+  }
+ },
+ "reviewers": {
+  "independent_subagent": {
+   "rows": [
+    {
+     "no": 1,
+     "id": "w13_U01",
+     "A_model": "ollama",
+     "A_score": 5,
+     "B_model": "v4d",
+     "B_score": 5,
+     "ollama_score": 5,
+     "v4d_score": 5,
+     "winner": "tie",
+     "batch": 1
+    },
+    {
+     "no": 2,
+     "id": "w13_U04",
+     "A_model": "v4d",
+     "A_score": 2,
+     "B_model": "ollama",
+     "B_score": 5,
+     "ollama_score": 5,
+     "v4d_score": 2,
+     "winner": "ollama",
+     "batch": 1
+    },
+    {
+     "no": 3,
+     "id": "w13_U10",
+     "A_model": "ollama",
+     "A_score": 5,
+     "B_model": "v4d",
+     "B_score": 2,
+     "ollama_score": 5,
+     "v4d_score": 2,
+     "winner": "ollama",
+     "batch": 1
+    },
+    {
+     "no": 4,
+     "id": "w13_A01",
+     "A_model": "ollama",
+     "A_score": 5,
+     "B_model": "v4d",
+     "B_score": 4,
+     "ollama_score": 5,
+     "v4d_score": 4,
+     "winner": "ollama",
+     "batch": 1
+    },
+    {
+     "no": 5,
+     "id": "w13_A13",
+     "A_model": "ollama",
+     "A_score": 3,
+     "B_model": "v4d",
+     "B_score": 3,
+     "ollama_score": 3,
+     "v4d_score": 3,
+     "winner": "tie",
+     "batch": 1
+    },
+    {
+     "no": 6,
+     "id": "w13_A18",
+     "A_model": "v4d",
+     "A_score": 3,
+     "B_model": "ollama",
+     "B_score": 1,
+     "ollama_score": 1,
+     "v4d_score": 3,
+     "winner": "v4d",
+     "batch": 1
+    },
+    {
+     "no": 7,
+     "id": "heldout_001",
+     "A_model": "v4d",
+     "A_score": 5,
+     "B_model": "ollama",
+     "B_score": 4,
+     "ollama_score": 4,
+     "v4d_score": 5,
+     "winner": "v4d",
+     "batch": 1
+    },
+    {
+     "no": 8,
+     "id": "heldout_021",
+     "A_model": "v4d",
+     "A_score": 3,
+     "B_model": "ollama",
+     "B_score": 1,
+     "ollama_score": 1,
+     "v4d_score": 3,
+     "winner": "v4d",
+     "batch": 1
+    },
+    {
+     "no": 9,
+     "id": "citation_sft_0026",
+     "A_model": "ollama",
+     "A_score": 5,
+     "B_model": "v4d",
+     "B_score": 4,
+     "ollama_score": 5,
+     "v4d_score": 4,
+     "winner": "ollama",
+     "batch": 1
+    },
+    {
+     "no": 10,
+     "id": "citation_sft_0039",
+     "A_model": "v4d",
+     "A_score": 5,
+     "B_model": "ollama",
+     "B_score": 5,
+     "ollama_score": 5,
+     "v4d_score": 5,
+     "winner": "tie",
+     "batch": 1
+    },
+    {
+     "no": 1,
+     "id": "w13_U07",
+     "A_model": "v4d",
+     "A_score": 5,
+     "B_model": "ollama",
+     "B_score": 5,
+     "ollama_score": 5,
+     "v4d_score": 5,
+     "winner": "tie",
+     "batch": 2
+    },
+    {
+     "no": 2,
+     "id": "w13_A07",
+     "A_model": "ollama",
+     "A_score": 5,
+     "B_model": "v4d",
+     "B_score": 4,
+     "ollama_score": 5,
+     "v4d_score": 4,
+     "winner": "ollama",
+     "batch": 2
+    },
+    {
+     "no": 3,
+     "id": "w13_A24",
+     "A_model": "v4d",
+     "A_score": 2,
+     "B_model": "ollama",
+     "B_score": 2,
+     "ollama_score": 2,
+     "v4d_score": 2,
+     "winner": "tie",
+     "batch": 2
+    },
+    {
+     "no": 4,
+     "id": "w13_A30",
+     "A_model": "ollama",
+     "A_score": 2,
+     "B_model": "v4d",
+     "B_score": 2,
+     "ollama_score": 2,
+     "v4d_score": 2,
+     "winner": "tie",
+     "batch": 2
+    },
+    {
+     "no": 5,
+     "id": "heldout_011",
+     "A_model": "v4d",
+     "A_score": 2,
+     "B_model": "ollama",
+     "B_score": 2,
+     "ollama_score": 2,
+     "v4d_score": 2,
+     "winner": "tie",
+     "batch": 2
+    },
+    {
+     "no": 6,
+     "id": "heldout_030",
+     "A_model": "ollama",
+     "A_score": 3,
+     "B_model": "v4d",
+     "B_score": 2,
+     "ollama_score": 3,
+     "v4d_score": 2,
+     "winner": "ollama",
+     "batch": 2
+    },
+    {
+     "no": 7,
+     "id": "heldout_040",
+     "A_model": "v4d",
+     "A_score": 2,
+     "B_model": "ollama",
+     "B_score": 1,
+     "ollama_score": 1,
+     "v4d_score": 2,
+     "winner": "v4d",
+     "batch": 2
+    },
+    {
+     "no": 8,
+     "id": "citation_sft_0003",
+     "A_model": "v4d",
+     "A_score": 4,
+     "B_model": "ollama",
+     "B_score": 5,
+     "ollama_score": 5,
+     "v4d_score": 4,
+     "winner": "ollama",
+     "batch": 2
+    },
+    {
+     "no": 9,
+     "id": "citation_sft_0013",
+     "A_model": "ollama",
+     "A_score": 4,
+     "B_model": "v4d",
+     "B_score": 4,
+     "ollama_score": 4,
+     "v4d_score": 4,
+     "winner": "tie",
+     "batch": 2
+    },
+    {
+     "no": 10,
+     "id": "citation_sft_0178",
+     "A_model": "ollama",
+     "A_score": 2,
+     "B_model": "v4d",
+     "B_score": 2,
+     "ollama_score": 2,
+     "v4d_score": 2,
+     "winner": "tie",
+     "batch": 2
+    }
+   ],
+   "summary": {
+    "total": {
+     "ollama": 70,
+     "v4d": 65
+    },
+    "wins": {
+     "ollama": 7,
+     "v4d": 4,
+     "tie": 9
+    },
+    "mean": {
+     "ollama": 3.5,
+     "v4d": 3.25
+    }
+   },
+   "batch1": {
+    "total": {
+     "ollama": 39,
+     "v4d": 36
+    },
+    "wins": {
+     "ollama": 4,
+     "v4d": 3,
+     "tie": 3
+    },
+    "mean": {
+     "ollama": 3.9,
+     "v4d": 3.6
+    }
+   },
+   "batch2": {
+    "total": {
+     "ollama": 31,
+     "v4d": 29
+    },
+    "wins": {
+     "ollama": 3,
+     "v4d": 1,
+     "tie": 6
+    },
+    "mean": {
+     "ollama": 3.1,
+     "v4d": 2.9
+    }
+   }
+  },
+  "lead_blind_pass": {
+   "rows": [
+    {
+     "no": 1,
+     "id": "w13_U01",
+     "A_model": "ollama",
+     "A_score": 5,
+     "B_model": "v4d",
+     "B_score": 5,
+     "ollama_score": 5,
+     "v4d_score": 5,
+     "winner": "tie",
+     "batch": 1
+    },
+    {
+     "no": 2,
+     "id": "w13_U04",
+     "A_model": "v4d",
+     "A_score": 2,
+     "B_model": "ollama",
+     "B_score": 5,
+     "ollama_score": 5,
+     "v4d_score": 2,
+     "winner": "ollama",
+     "batch": 1
+    },
+    {
+     "no": 3,
+     "id": "w13_U10",
+     "A_model": "ollama",
+     "A_score": 5,
+     "B_model": "v4d",
+     "B_score": 2,
+     "ollama_score": 5,
+     "v4d_score": 2,
+     "winner": "ollama",
+     "batch": 1
+    },
+    {
+     "no": 4,
+     "id": "w13_A01",
+     "A_model": "ollama",
+     "A_score": 5,
+     "B_model": "v4d",
+     "B_score": 4,
+     "ollama_score": 5,
+     "v4d_score": 4,
+     "winner": "ollama",
+     "batch": 1
+    },
+    {
+     "no": 5,
+     "id": "w13_A13",
+     "A_model": "ollama",
+     "A_score": 1,
+     "B_model": "v4d",
+     "B_score": 1,
+     "ollama_score": 1,
+     "v4d_score": 1,
+     "winner": "tie",
+     "batch": 1
+    },
+    {
+     "no": 6,
+     "id": "w13_A18",
+     "A_model": "v4d",
+     "A_score": 2,
+     "B_model": "ollama",
+     "B_score": 1,
+     "ollama_score": 1,
+     "v4d_score": 2,
+     "winner": "v4d",
+     "batch": 1
+    },
+    {
+     "no": 7,
+     "id": "heldout_001",
+     "A_model": "v4d",
+     "A_score": 5,
+     "B_model": "ollama",
+     "B_score": 4,
+     "ollama_score": 4,
+     "v4d_score": 5,
+     "winner": "v4d",
+     "batch": 1
+    },
+    {
+     "no": 8,
+     "id": "heldout_021",
+     "A_model": "v4d",
+     "A_score": 2,
+     "B_model": "ollama",
+     "B_score": 3,
+     "ollama_score": 3,
+     "v4d_score": 2,
+     "winner": "ollama",
+     "batch": 1
+    },
+    {
+     "no": 9,
+     "id": "citation_sft_0026",
+     "A_model": "ollama",
+     "A_score": 5,
+     "B_model": "v4d",
+     "B_score": 5,
+     "ollama_score": 5,
+     "v4d_score": 5,
+     "winner": "tie",
+     "batch": 1
+    },
+    {
+     "no": 10,
+     "id": "citation_sft_0039",
+     "A_model": "v4d",
+     "A_score": 5,
+     "B_model": "ollama",
+     "B_score": 5,
+     "ollama_score": 5,
+     "v4d_score": 5,
+     "winner": "tie",
+     "batch": 1
+    },
+    {
+     "no": 1,
+     "id": "w13_U07",
+     "A_model": "v4d",
+     "A_score": 5,
+     "B_model": "ollama",
+     "B_score": 5,
+     "ollama_score": 5,
+     "v4d_score": 5,
+     "winner": "tie",
+     "batch": 2
+    },
+    {
+     "no": 2,
+     "id": "w13_A07",
+     "A_model": "ollama",
+     "A_score": 5,
+     "B_model": "v4d",
+     "B_score": 4,
+     "ollama_score": 5,
+     "v4d_score": 4,
+     "winner": "ollama",
+     "batch": 2
+    },
+    {
+     "no": 3,
+     "id": "w13_A24",
+     "A_model": "v4d",
+     "A_score": 2,
+     "B_model": "ollama",
+     "B_score": 2,
+     "ollama_score": 2,
+     "v4d_score": 2,
+     "winner": "tie",
+     "batch": 2
+    },
+    {
+     "no": 4,
+     "id": "w13_A30",
+     "A_model": "ollama",
+     "A_score": 3,
+     "B_model": "v4d",
+     "B_score": 2,
+     "ollama_score": 3,
+     "v4d_score": 2,
+     "winner": "ollama",
+     "batch": 2
+    },
+    {
+     "no": 5,
+     "id": "heldout_011",
+     "A_model": "v4d",
+     "A_score": 2,
+     "B_model": "ollama",
+     "B_score": 2,
+     "ollama_score": 2,
+     "v4d_score": 2,
+     "winner": "tie",
+     "batch": 2
+    },
+    {
+     "no": 6,
+     "id": "heldout_030",
+     "A_model": "ollama",
+     "A_score": 2,
+     "B_model": "v4d",
+     "B_score": 2,
+     "ollama_score": 2,
+     "v4d_score": 2,
+     "winner": "tie",
+     "batch": 2
+    },
+    {
+     "no": 7,
+     "id": "heldout_040",
+     "A_model": "v4d",
+     "A_score": 3,
+     "B_model": "ollama",
+     "B_score": 2,
+     "ollama_score": 2,
+     "v4d_score": 3,
+     "winner": "v4d",
+     "batch": 2
+    },
+    {
+     "no": 8,
+     "id": "citation_sft_0003",
+     "A_model": "v4d",
+     "A_score": 3,
+     "B_model": "ollama",
+     "B_score": 5,
+     "ollama_score": 5,
+     "v4d_score": 3,
+     "winner": "ollama",
+     "batch": 2
+    },
+    {
+     "no": 9,
+     "id": "citation_sft_0013",
+     "A_model": "ollama",
+     "A_score": 5,
+     "B_model": "v4d",
+     "B_score": 4,
+     "ollama_score": 5,
+     "v4d_score": 4,
+     "winner": "ollama",
+     "batch": 2
+    },
+    {
+     "no": 10,
+     "id": "citation_sft_0178",
+     "A_model": "ollama",
+     "A_score": 2,
+     "B_model": "v4d",
+     "B_score": 2,
+     "ollama_score": 2,
+     "v4d_score": 2,
+     "winner": "tie",
+     "batch": 2
+    }
+   ],
+   "summary": {
+    "total": {
+     "ollama": 72,
+     "v4d": 62
+    },
+    "wins": {
+     "ollama": 8,
+     "v4d": 3,
+     "tie": 9
+    },
+    "mean": {
+     "ollama": 3.6,
+     "v4d": 3.1
+    }
+   },
+   "batch1": {
+    "total": {
+     "ollama": 39,
+     "v4d": 33
+    },
+    "wins": {
+     "ollama": 4,
+     "v4d": 2,
+     "tie": 4
+    },
+    "mean": {
+     "ollama": 3.9,
+     "v4d": 3.3
+    }
+   },
+   "batch2": {
+    "total": {
+     "ollama": 33,
+     "v4d": 29
+    },
+    "wins": {
+     "ollama": 4,
+     "v4d": 1,
+     "tie": 5
+    },
+    "mean": {
+     "ollama": 3.3,
+     "v4d": 2.9
+    }
+   }
+  }
+ }
+}

@@ -42,6 +42,155 @@ class Settings(BaseSettings):
     qdrant_collection: str = "osint_knowledge_units_v1"
     qdrant_vector_size: int = 384
 
+    # ---------- Ollama 嵌入（bge-m3，1024 维；knowledge/embedder.py） ----------
+    # 注意：qdrant_vector_size=384 是旧 collection 的维度，新建 collection 时
+    # 由调用方显式传 embed_dim（1024），二者不得混用。
+    ollama_url: str = Field(
+        default="http://127.0.0.1:11434", description="Ollama 服务根地址"
+    )
+    embed_model: str = Field(default="bge-m3", description="嵌入模型名（Ollama）")
+    embed_dim: int = Field(default=1024, description="嵌入向量维度；bge-m3 为 1024")
+    embed_timeout_sec: float = Field(
+        default=30.0, description="单次嵌入请求超时秒数（首次加载模型可能较慢）"
+    )
+    embed_batch_size: int = Field(
+        default=32, description="单批嵌入文本条数，用于切分批量请求"
+    )
+
+    # ---------- 事件层聚类阈值（knowledge/story_group.py） ----------
+    # 高置信直判同阈值。低于它但超过 RECALL_SIMILARITY 的配对必须过第二层
+    # 判定器。**做成可覆盖配置而非只留常量**：阈值是"多报还是漏报"的口径
+    # 选择，不同语料下最优值不同，上线后需要能不改代码灰度回退。
+    story_recheck_similarity: float = Field(
+        default=0.75,
+        ge=0.0,
+        le=1.0,
+        description=(
+            "余弦直接判同阈值。0.75（2026-11-04 在 42 条真值语料上标定："
+            "0.85 拆散 5/误合并 0，0.75 拆散 1/误合并 1）；回退填 0.85"
+        ),
+    )
+    story_cross_window: bool = Field(
+        default=False,
+        description=(
+            "跨窗口召回开关：窗内两路都没挂上时，再到窗外 "
+            "window_days×3 天内**已归属**的锚点里找一次。"
+            "解决同一件事跨月发酵（立案→处罚间隔 18 天）被切成两个事件、"
+            "各自独立来源数只有一半的问题。"
+            "护栏是三重与（必须 vector 口径 + 必须有共同主体 + 余弦≥0.70），"
+            "其中 0.70 由 6 对跨窗高相似配对标定：真同事件最低 0.757、"
+            "唯一假阳 0.642，取中点。"
+            "**默认关**：放宽召回必然引入误合并，而误合并直接污染 "
+            "independent_sources 且事后几乎无法发现。生产开启前须先 "
+            "dry-run 比对 cross_window_merged 明细与误合并数"
+        ),
+    )
+
+    # ---------- Ollama 关系判定（事件层第二层，knowledge/llm_judge.py） ----------
+    # 模型锁死本机 iGPU 甜点 qwen3.5:9b：35B 级权重塞不进共享显存，会 OOM 或
+    # 回退 CPU 推理拖垮整机。需要更强判定力时改走云端 API，**不要**在本地换大模型。
+    judge_model: str = Field(
+        default="qwen3.5:9b", description="关系判定模型名（Ollama，本机 iGPU 甜点）"
+    )
+    judge_timeout_sec: float = Field(
+        default=120.0,
+        description=(
+            "单次判定请求超时秒数。iGPU 上 qwen3.5:9b 冷加载约 46 秒、"
+            "热推理约 1.5 秒，故默认留足冷启动余量；预热后不会用到这么多"
+        ),
+    )
+    judge_max_calls: int = Field(
+        default=120,
+        description=(
+            "单轮判定调用上限。生产机为纯 CPU（无 GPU），9B 模型单次约 20-30 秒，"
+            "120 次约 40-60 分钟已是 cron 轮次上限；超限熔断并按降级处理"
+        ),
+    )
+    judge_prompt_variant: str = Field(
+        default="v2",
+        description=(
+            "判定提示词版本（knowledge/llm_judge.py:PROMPT_VARIANTS 的键）。"
+            "版本会写进 osint_story.model_version，换版本后历史事件不可直接对比；"
+            "未知值回落默认并告警。改动默认值必须有真机标定数据支撑："
+            "v2 相对 v1 在同一主体硬负例上误合并 4→0，其余指标不变"
+        ),
+    )
+
+    # ---------- 临界带复核（knowledge/story_group.py:_decide_borderline） ----------
+    # 只作用于 [直判门槛-BORDERLINE_MARGIN, 直判门槛) 这条窄带。真机实测该带
+    # 仅 2 对，所以这里开 LLM 的调用量与全域开 LLM 差一个数量级：本机 iGPU
+    # 数秒、生产机纯 CPU 约 1 分钟，都付得起。
+    story_borderline_judge: str = Field(
+        default="off",
+        description=(
+            "临界带复核判定器开关：off=沿用主判定器结论（P0/P1 默认）；"
+            "llm=临界带改由 Ollama 复核，结论落 decided_by='llm_recheck'。"
+            "开之前先用 --dry-run 确认 borderline 规模"
+        ),
+    )
+    story_borderline_margin: float = Field(
+        default=0.05,
+        ge=0.0,
+        le=0.5,
+        description=(
+            "临界复核带宽：落在 [直判门槛-margin, 直判门槛) 的配对改由复核器判。"
+            "2026-11-04 在 42 条真值语料上标定（scripts/calibrate_borderline_margin.py）："
+            "0.05 是'漏合归零的最小带宽'——0.03 会漏掉 cos=0.7133 的唯一真同事件，"
+            "0.08 起每放宽 0.01 约多 1 对噪声而收益为 0。"
+            "**上限由召回门决定**：门槛-RECALL_SIMILARITY 以上的取值永远无效，"
+            "低于召回门的配对在进判定环节前就被拦掉了"
+        ),
+    )
+    story_borderline_queue: bool = Field(
+        default=True,
+        description=(
+            "是否把被 LLM 复核提升的配对写入待确认队列（供人工二审）。"
+            "关掉后仍会计数，但不会留下可复核的明细"
+        ),
+    )
+    story_borderline_overrides: str = Field(
+        default="data/story_borderline_overrides.json",
+        description=(
+            "人工裁决台账路径（相对项目根）。文件不存在=未启用；"
+            "存在但解析失败时会拒绝运行，不会静默当成空台账"
+        ),
+    )
+    story_borderline_pending: str = Field(
+        default="data/story_borderline_pending.jsonl",
+        description="待人工确认队列路径（只追加的 JSONL，按配对去重）",
+    )
+    story_review_backlog_max: int = Field(
+        default=20,
+        ge=0,
+        description=(
+            "待确认队列积压告警下限（条）。0=关闭该维度。"
+            "与滞留阈值分开：这个管'人跟不上机器产出'，下面那个管'人根本没在看'"
+        ),
+    )
+    story_review_max_age_days: float = Field(
+        default=14.0,
+        ge=0,
+        description=(
+            "待确认队列最老一条的滞留告警天数。0=关闭该维度。"
+            "超过说明 LLM 提升的合并在日报里生效两周仍无人复核——"
+            "提升会直接改变独立来源数，放着不看等于默认接受"
+        ),
+    )
+    story_run_ledger: str = Field(
+        default="data/story_run_ledger.jsonl",
+        description=(
+            "轮次台账路径（只追加的 JSONL，每轮一行）。"
+            "没有它，'事件数昨天 29 今天 31'与'积压是否持续上涨'都只能靠人记得上次输出"
+        ),
+    )
+    story_run_record: bool = Field(
+        default=True,
+        description=(
+            "是否默认把每轮结果写入台账。纯追加、不改聚类行为，因此默认开；"
+            "标定库演练等会产生噪声的场合用 --no-record 单轮关掉"
+        ),
+    )
+
     # ---------- 飞书机器人（未配置时降级为日志输出，不报错） ----------
     feishu_webhook_url: str = ""
 

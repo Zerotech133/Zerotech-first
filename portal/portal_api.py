@@ -1641,6 +1641,13 @@ color:#fff;font-size:13.5px;cursor:pointer}
         raw = self.path
         path = raw.split("?", 1)[0]
         qs = raw.split("?", 1)[1] if "?" in raw else ""
+        if path.startswith('/api/data/catalog/'):
+            # 数据打通 2026-11-05：catalog 258 表实时元数据/样本只读通道。
+            # data 已在 nginx 公开族 B 白名单 → 无需改 nginx；8091 由 SYSTEM 托管，
+            # 代码落地后待宿主自然重启生效（WO-OS-09 判例），本轮不重启。
+            import api_catalog_data
+            api_catalog_data.handle_get(self, path, qs)
+            return
         if path == '/api/zhuge/review/status' or path.startswith('/api/zhuge/review/'):
             # P0：只读复核状态/结果（模块内校验 feature flag/session）
             api_zhuge_review.handle_get(self, path)

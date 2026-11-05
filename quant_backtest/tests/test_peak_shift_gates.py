@@ -5,6 +5,9 @@
 busy 留痕 occupant PID，让位超时本轮跳过；默认关闭行为零变化。
 闸门 2（k266_m3_structure.yield_to_classify_shifts）：K266_PEAK_SHIFT=1 时
 避开雪球分类整点班窗口（08/09/10 ±20m），分片睡眠+心跳；默认关闭直通。
+闸门 3（k266_m3_structure.probe_yield_gate，2026-11-04）：K266_PROBE_YIELD=1 时
+每 60s 至多探一次延迟，busy（>6s，人类交互抢槽）→ 交还锁+睡 60s 重探，
+累计让位超 1800s 或抢不回锁 → 本轮收工；默认关闭直通。
 
 全部 mock 时间/busy 场景与 subprocess，不真调 Ollama、不碰真库、不真 sleep。
 跑法：python -m pytest quant_backtest/tests/test_peak_shift_gates.py -q
@@ -217,3 +220,158 @@ def test_gate2_invalid_buffer_falls_back(monkeypatch):
     monkeypatch.setenv("K266_PEAK_SHIFT", "1")
     monkeypatch.setenv("K266_PEAK_SHIFT_BUFFER_M", "abc")
     assert k266.classify_shift_wait_end(_st(8, 0, 0)) == pytest.approx(20 * 60, abs=1.0)
+
+
+# ── 闸门 3：k266_m3_structure.probe_yield_gate（2026-11-04 探测让位）──────
+
+class _FakeLock:
+    """假锁：记录交还与重抢，可配重抢失败。"""
+
+    def __init__(self, acquire_ok=True):
+        self.released = 0
+        self.acquired = []
+        self.acquire_ok = acquire_ok
+
+    def release(self):
+        self.released += 1
+
+    def acquire(self, purpose, wait_s=0):
+        self.acquired.append((purpose, wait_s))
+        return self.acquire_ok
+
+
+def _fresh_state():
+    return {"last": -1e9, "used": 0.0}
+
+
+def test_gate3_off_zero_change(monkeypatch):
+    """开关关闭（默认态）：直通放行，探测一次都不发。"""
+    monkeypatch.delenv("K266_PROBE_YIELD", raising=False)
+
+    def _no_probe(*a, **kw):
+        raise AssertionError("gate3 off must not probe")
+
+    assert k266.probe_yield_gate(probe=_no_probe, state=_fresh_state()) is True
+
+
+def test_gate3_throttle_skips_recent(monkeypatch):
+    """节流：距上次探测不足 EVERY_S 直接放行（探针开销摊薄）。"""
+    monkeypatch.setenv("K266_PROBE_YIELD", "1")
+    monkeypatch.setenv("K266_PROBE_YIELD_EVERY_S", "60")
+    st = {"last": 1000.0, "used": 0.0}
+
+    def _no_probe(*a, **kw):
+        raise AssertionError("within throttle window must not probe")
+
+    assert k266.probe_yield_gate(probe=_no_probe, now=lambda: 1030.0, state=st) is True
+
+
+def test_gate3_busy_yield_release_lock_then_free(monkeypatch):
+    """busy：交还锁 → 睡 POLL → 重抢锁 → 重探空闲放行，JSON 留痕。"""
+    monkeypatch.setenv("K266_PROBE_YIELD", "1")
+    monkeypatch.setenv("K266_PROBE_YIELD_POLL_S", "60")
+    lock, sleeps, lines = _FakeLock(), [], []
+    probes = [(True, 40.0), (False, 0.4)]
+    clock = {"t": 1000.0}
+
+    def fake_now():
+        return clock["t"]
+
+    def fake_sleep(s):
+        clock["t"] += s
+        sleeps.append(s)
+
+    ok = k266.probe_yield_gate(
+        lock=lock, probe=lambda th: probes.pop(0), sleep=fake_sleep, now=fake_now,
+        log=lines.append, state=_fresh_state())
+    assert ok is True
+    assert sleeps == [60]
+    assert lock.released == 1
+    assert lock.acquired == [("k266_m3", 600)]
+    js = [json.loads(l) for l in lines if l.startswith("{")]
+    assert len(js) == 1
+    assert js[0]["gate"] == "k266_probe_yield"
+    assert js[0]["event"] == "busy_yield"
+    assert js[0]["latency_s"] == 40.0
+    assert js[0]["thresh_s"] == k266.PROBE_YIELD_THRESH_S
+    assert js[0]["budget_left_s"] > 0
+
+
+def test_gate3_budget_exhausted_stops_round(monkeypatch):
+    """busy 持续到让位预算耗尽：返回 False（本轮收工），留 wait_expired。"""
+    monkeypatch.setenv("K266_PROBE_YIELD", "1")
+    monkeypatch.setenv("K266_PROBE_YIELD_POLL_S", "60")
+    monkeypatch.setenv("K266_PROBE_YIELD_BUDGET_S", "120")
+    lock, sleeps, lines = _FakeLock(), [], []
+    clock = {"t": 1000.0}
+
+    def fake_now():
+        return clock["t"]
+
+    def fake_sleep(s):
+        clock["t"] += s
+        sleeps.append(s)
+
+    ok = k266.probe_yield_gate(
+        lock=lock, probe=lambda th: (True, 50.0), sleep=fake_sleep, now=fake_now,
+        log=lines.append, state=_fresh_state())
+    assert ok is False
+    assert sum(sleeps) == 120                      # 让位不超预算
+    assert any("wait_expired" in l for l in lines)
+
+
+def test_gate3_lock_lost_stops_round(monkeypatch):
+    """让位期间锁被别人（xq/JEV）抢走且 600s 抢不回：本轮收工，留 lock_lost。"""
+    monkeypatch.setenv("K266_PROBE_YIELD", "1")
+    lock, lines = _FakeLock(acquire_ok=False), []
+    ok = k266.probe_yield_gate(
+        lock=lock, probe=lambda th: (True, 30.0), sleep=lambda s: None,
+        now=lambda: 1000.0, log=lines.append, state=_fresh_state())
+    assert ok is False
+    assert any("lock_lost" in l for l in lines)
+
+
+def test_gate3_invalid_env_falls_back(monkeypatch):
+    """非法 env 回落默认阈值/间隔，不抛异常。"""
+    monkeypatch.setenv("K266_PROBE_YIELD", "1")
+    monkeypatch.setenv("K266_PROBE_YIELD_THRESH_S", "abc")
+    on, thresh, poll_s, budget_s, every_s = k266._probe_conf()
+    assert on is True
+    assert thresh == k266.PROBE_YIELD_THRESH_S
+    assert poll_s == k266.PROBE_YIELD_POLL_S
+    assert budget_s == k266.PROBE_YIELD_BUDGET_S
+    assert every_s == k266.PROBE_YIELD_EVERY_S
+
+
+def test_probe_payload_shares_num_ctx(monkeypatch):
+    """探测与主调用同 num_ctx（16384）+ num_predict=1：否则探针本身触发模型重载。"""
+    seen = {}
+
+    class _Resp:
+        def read(self):
+            return b"{}"
+
+    class _Opener:
+        def open(self, req, timeout=None):
+            seen["body"] = json.loads(req.data.decode("utf-8"))
+            return _Resp()
+
+    monkeypatch.setattr(k266.urllib.request, "build_opener", lambda *a, **kw: _Opener())
+    busy, latency = k266.ollama_probe_busy(6.0)
+    assert busy is False
+    assert seen["body"]["options"]["num_ctx"] == k266.NUM_CTX == 16384
+    assert seen["body"]["options"]["num_predict"] == 1
+    assert seen["body"]["prompt"] == "ping"
+
+
+def test_probe_exception_failsafe_busy(monkeypatch):
+    """探测异常（超时/拒连）：按 busy 计，不硬挤。"""
+    class _Opener:
+        def open(self, req, timeout=None):
+            raise TimeoutError("probe timeout")
+
+    monkeypatch.setattr(k266.urllib.request, "build_opener", lambda *a, **kw: _Opener())
+    busy, latency = k266.ollama_probe_busy(6.0, timeout_s=10)
+    assert busy is True
+    assert latency <= 10
+

@@ -653,6 +653,51 @@ def _card_sender_id(ev):
     return ""
 
 
+def _card_ctx(ev):
+    """取卡片回调的定位坐标（message_id / token），供跨模块转发用。"""
+    ctx = getattr(ev, "context", None)
+    mid = getattr(ctx, "open_message_id", None) if ctx is not None else None
+    tok = getattr(ev, "token", None)
+    return {"message_id": mid or "", "token": tok or ""}
+
+
+# ── JEV 告警卡并轨转发（FB-A，2026-11-05） ──────────────────
+# JEV 原先自建第二个长连接消费者（lark_card_handler 走 lark-cli event consume），
+# 与本体争同一个 app 的唯一 WS，机器人一重启就把它顶死。改为：本 bot 独占 WS，
+# 把 value 带 alert_id 的 JEV 卡片动作转发到 JEV 本地 HTTP 接入（127.0.0.1:9106）。
+JEV_CARD_ACK_URL = os.environ.get(
+    "JEV_CARD_ACK_URL", "http://127.0.0.1:9106/card_action"
+)
+
+
+def _forward_jev_card(val, sender, ctx=None):
+    """转发 JEV 卡片动作。返回 (ok, 说明)。超时/不可达不抛，交调用方回执。"""
+    import urllib.request
+
+    ctx = ctx or {}
+    body = {
+        "source": val.get("source") or "jev",
+        "action": val.get("action") or "",
+        "alert_id": val.get("alert_id") or "",
+        "operator_id": sender or "",
+        "message_id": ctx.get("message_id") or "",
+        "token": ctx.get("token") or "",
+    }
+    data = json.dumps(body, ensure_ascii=False).encode("utf-8")
+    req = urllib.request.Request(
+        JEV_CARD_ACK_URL,
+        data=data,
+        headers={"Content-Type": "application/json; charset=utf-8"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            payload = json.loads(resp.read().decode("utf-8", "replace") or "{}")
+        return bool(payload.get("ok")), ""
+    except Exception as e:  # noqa: BLE001
+        log("jev card forward fail: %s" % str(e)[:160])
+        return False, str(e)[:100]
+
+
 # ── 发送 ────────────────────────────────────────────────────
 _cli_lock = threading.Lock()
 _cli_cache = {}  # {(app_id, app_secret): lark.Client}——凭证轮换自动重建
@@ -1356,7 +1401,7 @@ def _handle_approval_card(val, sender):
         signoff_roles=signoff_roles or None)
 
 
-def _handle_card(val, sender):
+def _handle_card(val, sender, ctx=None):
     """卡片动作执行体（线程侧）：tag 分发 + 回执。
     K-STOCK-137：lark_oapi ws 是 asyncio 单循环，on_card 若同步执行
     重动作（ctl:board 子进程 180s / er:set 120s / dim: 现抓 66s）会卡死
@@ -1366,6 +1411,26 @@ def _handle_card(val, sender):
     import（reply_card 同款模式）。"""
     try:
         from feishu_card_v2 import send_card  # K-STOCK-138：闭包平移补名
+
+        # 2026-11-05 FB-A 并轨：JEV 告警卡（value 带 alert_id，无 tag/action_id）
+        # 不在本进程内解释，转发给 JEV 本地接入（它持有 v2_alert / gate_ignored 语义）。
+        if (
+            isinstance(val, dict)
+            and val.get("alert_id")
+            and not val.get("tag")
+            and not val.get("action_id")
+        ):
+            fok, fwhy = _forward_jev_card(val, sender, ctx)
+            act = str(val.get("action") or "?")
+            if fok:
+                send_text("✅ 已记录：%s" % act)
+            else:
+                send_text("❌ 未记录（JEV 接入不可达）：%s" % (fwhy or act))
+            log(
+                "card jev forward action=%s ok=%s alert=%s"
+                % (act, fok, str(val.get("alert_id"))[:40])
+            )
+            return
 
         # K-PUSH-004：v3 统一注册表分发入口（value 带 action_id 字段即走
         # card_actions.dispatch：注册校验 + 审计流水 + handler 执行）。
@@ -1695,7 +1760,9 @@ def main():
                 % (str(val)[:80], _card_sender_id(ev) or "-")
             )
             threading.Thread(
-                target=_handle_card, args=(val, _card_sender_id(ev)), daemon=True
+                target=_handle_card,
+                args=(val, _card_sender_id(ev), _card_ctx(ev)),
+                daemon=True,
             ).start()
         except Exception:  # noqa: BLE001
             log("card err " + traceback.format_exc()[-300:])

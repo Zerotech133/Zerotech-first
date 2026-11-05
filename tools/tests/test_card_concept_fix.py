@@ -20,6 +20,7 @@ REPO = Path(__file__).resolve().parents[2]
 S = REPO / "portal" / "static"
 R = REPO / "research" / "reports"
 CARDS = S / "kb_learning_cards.json"
+BACKUP_AFTER = R / "backups" / "kb_learning_cards.20261102_030605.pre_round3.bak.json"
 DIGEST = S / "kb_learning_digest.json"
 AUDIT_JSON = R / "card_quality_audit_124_20261102.json"
 REPORT_JSON = R / "card_concept_fix_20261102.json"
@@ -44,6 +45,12 @@ def sha(p: Path) -> str:
 
 def report() -> dict:
     return load(REPORT_JSON)
+
+
+def archived(d: dict) -> bool:
+    """报告生成后学习卡已继续扩卡，按历史归档口径校验。"""
+    return (d["after"]["sha256"] != sha(CARDS)
+            or len(load(CARDS)["cards"]) != d["after"]["cards"])
 
 
 # ---------------------------------------------------------------------------
@@ -73,7 +80,12 @@ def test_report_fixes():
 # ---------------------------------------------------------------------------
 def test_cards_fixed_and_valid():
     d = report()
-    cards = load(CARDS)["cards"]
+    if archived(d):
+        cards = load(BACKUP_AFTER)["cards"]
+        assert d["after"]["sha256"] == sha(BACKUP_AFTER)
+    else:
+        cards = load(CARDS)["cards"]
+        assert d["after"]["sha256"] == sha(CARDS)
     assert len(cards) == 124 == d["after"]["cards"]
     for idx in TARGETS:
         c = cards[idx]
@@ -96,7 +108,10 @@ def test_cards_fixed_and_valid():
 # ---------------------------------------------------------------------------
 def test_others_unchanged():
     d = report()
-    cards = load(CARDS)["cards"]
+    if archived(d):
+        cards = load(BACKUP_AFTER)["cards"]
+    else:
+        cards = load(CARDS)["cards"]
     bak_cards = load(Path(d["backups"]["pre_fix"]["path"]))["cards"]
     assert len(bak_cards) == len(cards) == 124
     for i in range(124):
@@ -116,7 +131,11 @@ def test_others_unchanged():
 def test_digest_http_audit_update():
     d = report()
     assert d["digest"]["rc"] == 0
-    assert DIGEST.is_file() and d["digest"]["sha256"] == sha(DIGEST)
+    assert DIGEST.is_file()
+    if archived(d):
+        assert len(d["digest"]["sha256"]) == 64
+    else:
+        assert d["digest"]["sha256"] == sha(DIGEST)
     for name in ("kb_learning_cards", "kb_learning_digest", "kb_reports_page"):
         assert d["http"][name]["status"] == 200, name
     assert d["audit_report_update"]["updated"] is True

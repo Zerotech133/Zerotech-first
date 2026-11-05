@@ -139,6 +139,20 @@ const GOOD_SIX = {
   check('偏旧档 reason 含偏旧', s2 && s2.reason.indexOf('偏旧') !== -1);
 })();
 
+/* 7b. 2026-11-05 OPS-ZHUGE-EMPTY-WORDING：empty 是合法零警报、retired 是已下线，
+ * 都不能套 stale 的“需回原账本核对”；只有真正非 ok/empty 的源才报 P2。 */
+(function test_empty_and_retired_not_reported_as_stale() {
+  const raw = clone(GOOD_SIX);
+  raw.alerts = { ok: true, source_health: { sources: {
+    nine_dim: { status: 'empty', as_of: '2026-10-21T06:00:00+08:00' },
+    council: { status: 'retired', as_of: null },
+    premarket: { status: 'stale', as_of: '2026-10-20T08:00:00+08:00' } } } };
+  const out = A.buildBrief(raw, CLOCK);
+  check('empty 不产建议', !out.suggestions.some(s => s.id === 'alert:nine_dim'));
+  check('retired 不产建议', !out.suggestions.some(s => s.id === 'alert:council'));
+  check('真 stale 仍 P2', out.suggestions.some(s => s.id === 'alert:premarket' && s.priority === 2));
+})();
+
 /* 8. 坏时钟抛错（非 Date / 无效 Date） */
 (function test_bad_clock_raises() {
   let threw = false;

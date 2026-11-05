@@ -85,13 +85,15 @@ def main():
     check("R5 幂等无改动", rp._fix_one(fp, True)["fixed"] == 0)
 
     # --- R6 日历未覆盖年份不出手（防误杀）---
+    # 快照已覆盖 2027，故关掉快照模拟真正的降级态（快照缺失 + 该年未手写）。
     fp2 = os.path.join(tmp, "weak_track_999990.jsonl")
     with open(fp2, "w", encoding="utf-8") as f:
         f.write(json.dumps({"ts": "2027-10-04T15:00:00", "px_d": "2027-10-04"}) + "\n")
-    check(
-        "R6 未覆盖年份不误杀",
-        rp._fix_one(fp2, False)["fixed"] == 0 and ctd.covered(2027) is False,
-    )
+    with ctd.snapshot_off():
+        check(
+            "R6 未覆盖年份不误杀",
+            rp._fix_one(fp2, False)["fixed"] == 0 and ctd.covered(2027) is False,
+        )
 
     for p in os.listdir(tmp):
         os.remove(os.path.join(tmp, p))

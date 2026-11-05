@@ -18,7 +18,6 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
-import os
 import sys
 from pathlib import Path
 
@@ -38,7 +37,10 @@ def build_preflight(cards, asof=None, source=""):
         item = {"candidate_id": c["candidate_id"], "market": c["market"],
                 "strategy": c["strategy"], "status": c["surface_status"],
                 "checks": c["checks"]}
-        if c["surface_status"] == "pass" and not pool_blocking:
+        if pool_blocking:
+            # 池级 fail 时，所有卡都进入 blocked；unknown 也不能绕过池级阻断。
+            blocked.append(item)
+        elif c["surface_status"] == "pass":
             ready.append(item)
         elif c["surface_status"] == "unknown":
             external.append(item)

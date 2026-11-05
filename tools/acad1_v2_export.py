@@ -20,7 +20,6 @@ import json
 import os
 import re
 import sys
-from datetime import date
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -111,8 +110,8 @@ def build_cards(pool_rows, selection_by_key, bars_by_key, daily_by_key, pool_dat
             code = row.get("code")
             sel = selection_by_key.get((market, code)) or {}
             bars = list(bars_by_key.get((market, code)) or [])
-            highs = [b for b in bars if b.get("high") is not None]
-            lows = [b for b in bars if b.get("low") is not None]
+            lows = [_f(b.get("low")) for b in bars]
+            lows = [v for v in lows if v is not None]
             volumes = [_f(b.get("volume")) for b in bars]
             closes = [_f(b.get("close")) for b in bars]
             last = bars[-1] if bars else {}
@@ -183,7 +182,7 @@ def build_cards(pool_rows, selection_by_key, bars_by_key, daily_by_key, pool_dat
                 "rsi14_wilder": bfc.compute_rsi(closes, 14, "wilder") if closes else None,
                 "ma20": bfc.compute_ma(closes, 20) if closes else None,
                 "ret20": ((close / float(closes[-21]) - 1.0) * 100.0) if close and len(closes) >= 21 and closes[-21] else None,
-                "dist_20d_low": ((close / min(float(x["low"]) for x in lows[-20:]) - 1.0) * 100.0) if close and lows else None,
+                "dist_20d_low": ((close / min(lows[-20:]) - 1.0) * 100.0) if close and lows else None,
                 "trigger_ts": str(trig_ts)[:10] if trig_ts else None,
                 "trigger_ts_source": trig_source,
                 "trigger_close": trig_close,
@@ -283,7 +282,9 @@ def main(argv=None):
     }
     text = json.dumps(payload, ensure_ascii=False, indent=2, default=str)
     if args.out:
-        Path(args.out).write_text(text + "\n", encoding="utf-8")
+        out_path = Path(args.out)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(text + "\n", encoding="utf-8")
         print("wrote", args.out, "cards", len(cards))
     if args.json or not args.out:
         print(text)

@@ -51,6 +51,9 @@ try {
     # P5 (2026-10-30 JEVROTATE): jev-eval/logs 轮转（gate/card/review/qdbridge）。
     # jev_common 每条日志独立 open/append/close -> 外部重命名安全；保留 14 天，gzip 回收。
     # 失败不阻塞、不改本任务退出码（只留痕）。
+    # 2026-11-05 JEV-LOGROT：常驻服务的 .err/.out 句柄被子进程持有，rename 必然 WinError 32；
+    # rotate_logs.py 已改为三级策略（rename / copy_truncate / deferred），占用/延后都给 rc=0，
+    # 日志行里的 mode= 即判读依据：mode=rename 快路、mode=copy_truncate 占用降级、mode=deferred 延后。
     $rotPy = Join-Path (Split-Path $PSScriptRoot -Parent) 'tools\rotate_logs.py'
     if (Test-Path -LiteralPath $rotPy) {
         # 2026-10-31 DRIFTPLUS：native 程序的 stderr 在 Stop 偏好下会变成 ErrorRecord 直接 throw，
@@ -59,7 +62,10 @@ try {
         $rotOut = & $py -X utf8 -B $rotPy --execute --gzip --active-guard-min 1 --keep-days 14 2>&1
         $rotRc = $LASTEXITCODE
         $ErrorActionPreference = 'Stop'
-        W ('P5 rotate_logs exit=' + $rotRc + ' out=' + (($rotOut | Select-Object -Last 2) -join ' | '))
+        # 尾两行（模式汇总 + 退码行）都带 mode=；失败时补齐 mode= 摘要，保证判读不丢
+        $rotModeHit = @($rotOut | Where-Object { "$_" -match 'mode=' } | Select-Object -Last 1)
+        $rotModeText = if ($rotModeHit.Count -gt 0) { ([string]$rotModeHit[-1]).Trim() } else { 'mode=unknown' }
+        W ('P5 rotate_logs exit=' + $rotRc + ' ' + $rotModeText + ' out=' + (($rotOut | Select-Object -Last 2) -join ' | '))
     } else {
         W ('P5 rotate_logs SKIP: not found ' + $rotPy)
     }

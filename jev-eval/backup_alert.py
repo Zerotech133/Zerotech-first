@@ -139,21 +139,54 @@ def build_backup_card(fields, with_buttons=True):
     }
 
 
+def _cred_candidates():
+    """候选凭据路径（2026-11-05 与 news_collector/send_feishu.py 同修）。
+
+    无 profile 环境（S4U 计划任务）里 USERPROFILE/HOMEDRIVE/HOMEPATH 可能全缺，
+    os.path.expanduser("~") 原样返回 '~'，旧版拼出 "~/.lark-cli/config.json"
+    必然打不开 → 备份告警静默失效。
+    """
+    cands = []
+    envp = os.environ.get("LARK_CLI_CONFIG")
+    if envp:
+        cands.append(envp)
+    home = os.path.expanduser("~")
+    if home and home not in ("~", ""):
+        cands.append(os.path.join(home, ".lark-cli", "config.json"))
+    user = os.environ.get("USERNAME")
+    if user:
+        cands.append(os.path.join("C:\\Users", user, ".lark-cli", "config.json"))
+    try:
+        import glob
+
+        cands.extend(sorted(glob.glob(os.path.join("C:\\Users", "*", ".lark-cli", "config.json"))))
+    except Exception:  # noqa: BLE001
+        pass
+    seen, out = set(), []
+    for c in cands:
+        if c and c not in seen:
+            seen.add(c)
+            out.append(c)
+    return out
+
+
 def load_app_creds():
-    """Read app credentials from ~/.lark-cli/config.json (OPS-1001d followup:
+    """Read app credentials from the lark config.json (OPS-1001d followup:
     lark-cli 1.0.5 uses externally injected creds; scheduled tasks have none.
     OpenAPI direct calls with these static creds are unattended-safe)."""
-    cfg = os.path.join(os.path.expanduser("~"), ".lark-cli", "config.json")
-    try:
-        with open(cfg, encoding="utf-8") as f:
-            apps = json.load(f).get("apps") or []
-        if apps:
-            aid, sec = apps[0].get("appId"), apps[0].get("appSecret")
-            # 20261016换机：appSecret 非 str（1.0.5+ 外置引用 dict）即不可用
-            if aid and isinstance(sec, str):
-                return aid, sec
-    except Exception as exc:
-        logging.getLogger(__name__).warning("silent-except %s: %s", "jev-eval/backup_alert.py", exc)
+    for cfg in _cred_candidates():
+        try:
+            with open(cfg, encoding="utf-8") as f:
+                apps = json.load(f).get("apps") or []
+            if apps:
+                aid, sec = apps[0].get("appId"), apps[0].get("appSecret")
+                # 20261016换机：appSecret 非 str（1.0.5+ 外置引用 dict）即不可用
+                if aid and isinstance(sec, str):
+                    return aid, sec
+        except Exception as exc:
+            logging.getLogger(__name__).warning(
+                "silent-except %s: %s (%s)", "jev-eval/backup_alert.py", exc, cfg
+            )
     return None, None
 
 

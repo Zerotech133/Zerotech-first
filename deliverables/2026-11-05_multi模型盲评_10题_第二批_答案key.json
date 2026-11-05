@@ -1,0 +1,52 @@
+{
+ "1": {
+  "question_id": "w13_U07",
+  "A": "v4d",
+  "B": "ollama"
+ },
+ "2": {
+  "question_id": "w13_A07",
+  "A": "ollama",
+  "B": "v4d"
+ },
+ "3": {
+  "question_id": "w13_A24",
+  "A": "v4d",
+  "B": "ollama"
+ },
+ "4": {
+  "question_id": "w13_A30",
+  "A": "ollama",
+  "B": "v4d"
+ },
+ "5": {
+  "question_id": "heldout_011",
+  "A": "v4d",
+  "B": "ollama"
+ },
+ "6": {
+  "question_id": "heldout_030",
+  "A": "ollama",
+  "B": "v4d"
+ },
+ "7": {
+  "question_id": "heldout_040",
+  "A": "v4d",
+  "B": "ollama"
+ },
+ "8": {
+  "question_id": "citation_sft_0003",
+  "A": "v4d",
+  "B": "ollama"
+ },
+ "9": {
+  "question_id": "citation_sft_0013",
+  "A": "ollama",
+  "B": "v4d"
+ },
+ "10": {
+  "question_id": "citation_sft_0178",
+  "A": "ollama",
+  "B": "v4d"
+ }
+}
