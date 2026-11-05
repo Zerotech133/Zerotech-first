@@ -32,8 +32,10 @@ r"""W-06 · ops/backup_format_gate.py 单元测试（qa-tester 单写者落盘�
   BG-E07 P0 假绿：gate_entry 真值表 + main rc BG-E08 P0 apply=False 默认不落盘
   BG-E09 P0 flag 八字段严格对齐 / manifest_patch 不混入
   BG-E10 P0 FF11 夹具反向断言（AIOS-SELF-BUILT / 无生产明文 / 全在 tmp_path）
+  BG-N11 P0 BUG-04 坏档 sha256 必填         BG-N12 P0 BUG-04 单次 8B 读头（防 TOCTOU）
+  BG-N13 P0 BUG-05 apply 合并 files          BG-N14 P0 BUG-05 类型冲突拒绝覆盖
 
-异常流 10 条 ≥ 正常流 10 条的一半（5），满足 qa-testing.md 错误预防条款。
+异常流 10 条 ≥ 正常流 14 条的一半（7），满足 qa-testing.md 错误预防条款。
 """
 from __future__ import annotations
 
@@ -110,15 +112,16 @@ def _quiet_main(argv):
     ("truncated", "gzip", False, False),
     ("zero_byte", "empty", False, False),
     ("bad_crc", "gzip", False, False),
-    ("encrypted_aes", "unknown", False, False),
+    ("encrypted_aes", "encrypted-aes", False, False),
 ])
 def test_BG_N01_six_fixtures_verdict(artifacts, name, exp_fmt, exp_ok, exp_rec):
     """用例编号 BG-N01｜优先级 P0｜前置：六类自建夹具｜步骤：verify_artifact｜
     预期：format/ok/recoverable 逐类命中；**无一例外 ok=false 除非合法 gzip**｜
     溯源：AC-02 / FF06 §5.2 / 全栈《技术研发方案》§9.3。
-    备注：encrypted_aes 经 read_magic(n=2) 只读到 'Sa'(5361) → detect_format
-    返回 unknown（非 encrypted-aes），这是源码真实契约；encrypted-aes 由
-    BG-E05 用完整 magic 直接调 detect_format 覆盖。reason 为自由文本不断言枚举。"""
+    备注（ADR-30 后）：verify_artifact() 对外 v["magic"] 仍为 2 字节契约
+    （'Salted__' 前两字节 'Sa' → '5361'），但另读 8 字节头喂 detect_format()，
+    故 encrypted-aes 分支可达、format 应为 'encrypted-aes'。
+    BG-E05 用完整 magic 直接调 detect_format 交叉验证。reason 为自由文本不断言枚举。"""
     v = bfg.verify_artifact(str(artifacts[name]))
     assert v["format"] == exp_fmt, name
     assert v["ok"] is exp_ok and v["recoverable"] is exp_rec, name
@@ -203,8 +206,9 @@ def test_BG_N07_quarantine_flag_eight_fields(artifacts):
     write_quarantine_flag(apply=False) 取 flag_content｜预期：八字段齐备且对齐
     研发契约 C-1（type/date/files/format/recoverable/detected_magic/policy/
     decision_ref=D4），recoverable=false、detected_magic=2d2d｜溯源：AC-02 / C-1。
-    备注：policy 字面以源码产出为准（"mark-only, do-not-delete"），FF06 §5.2
-    散文写作 "mark-only-do-not-delete" 属文档措辞差异，不作硬断言、另报团长。"""
+    备注（ADR-28 终裁）：policy 权威值 = "mark-only, do-not-delete"（逗号+空格），
+    即 F2 write_quarantine_flag() 实现值、W-08 落盘实物值、W-10/11/12 写入值。
+    散文 "mark-only-do-not-delete" 只是行文，不是 JSON 值；此处按权威值硬断言。"""
     v = bfg.verify_artifact(str(artifacts["plain_sql_2d2d"]))
     day = artifacts["plain_sql_2d2d"].parent / "2026-10-29"
     r = bfg.write_quarantine_flag(str(day), "plain_sql_2d2d.gz", v, apply=False)
@@ -215,7 +219,7 @@ def test_BG_N07_quarantine_flag_eight_fields(artifacts):
     assert c["files"] == ["plain_sql_2d2d.gz"]
     assert c["format"] == "plain-sql" and c["recoverable"] is False
     assert c["detected_magic"] == "2d2d" and c["decision_ref"] == "D4"
-    assert "mark-only" in c["policy"] and "do-not-delete" in c["policy"]
+    assert c["policy"] == "mark-only, do-not-delete"
 
 
 def test_BG_N08_constants_and_probe_budget_are_design_only():
@@ -411,3 +415,65 @@ def test_BG_E10_ff11_fixture_provenance_reverse_assertion(artifacts, tmp_path):
     assert SELF_BUILT in gzip.decompress(artifacts["valid"].read_bytes())
     # encrypted_aes 是纯合成字节，不含任何 SQL 明文
     assert b"SELECT" not in artifacts["encrypted_aes"].read_bytes()
+
+
+# ---------------------------------------------------------------------------
+# 2026-11-06 代码审计回归（BUG-04 / BUG-05）
+# ---------------------------------------------------------------------------
+
+def test_BG_N11_bad_artifact_sha256_present_when_requested(artifacts):
+    """BG-N11 P0｜BUG-04 回归：坏档在 compute_sha256=True 时必须带指纹。
+
+    隔离留痕与 FF05 回滚取证恰恰最依赖坏档指纹；原实现 magic mismatch 分支
+    提前 return，sha256 恒为空串，违背函数契约。T-10 口径 A（产物压缩字节）。
+    """
+    p = artifacts["plain_sql_2d2d"]
+    v = bfg.verify_artifact(str(p))
+    assert v["ok"] is False and v["format"] == "plain-sql"
+    assert v["sha256"] == hashlib.sha256(p.read_bytes()).hexdigest()
+    # compute_sha256=False 的快速探针仍须留空（BG-N09 契约不回归）
+    assert bfg.verify_artifact(str(p), compute_sha256=False)["sha256"] == ""
+
+
+def test_BG_N12_verify_reads_header_once(monkeypatch, artifacts):
+    """BG-N12 P0｜BUG-04 回归：只读一次 8 字节头，杜绝双 open 的 TOCTOU 面。"""
+    calls = []
+    orig = bfg.read_magic
+
+    def spy(path, n=2):
+        calls.append(n)
+        return orig(path, n)
+
+    monkeypatch.setattr(bfg, "read_magic", spy)
+    v = bfg.verify_artifact(str(artifacts["encrypted_aes"]))
+    assert calls == [8], "verify_artifact 必须只读一次 8 字节头：%r" % (calls,)
+    assert v["magic"] == "5361" and v["format"] == "encrypted-aes"
+
+
+def test_BG_N13_apply_merges_existing_flag_files(tmp_path, artifacts):
+    """BG-N13 P0｜BUG-05 回归：apply=True 合并已有 flag，不静默覆盖留痕。"""
+    day = tmp_path / "2026-10-29"
+    v = bfg.verify_artifact(str(artifacts["plain_sql_2d2d"]))
+    bfg.write_quarantine_flag(str(day), "a.sql.gz", v, apply=True)
+    r = bfg.write_quarantine_flag(str(day), "b.sql.gz", v, apply=True)
+    flag = day / "INVALID_GZIP.flag"
+    c = json.loads(flag.read_text(encoding="utf-8"))
+    assert c["files"] == ["a.sql.gz", "b.sql.gz"]
+    assert c["policy"] == "mark-only, do-not-delete"
+    assert r["apply"] is True and r["written"] == str(flag)
+    # 重复同名去重；首档权威字段不被后一档覆盖
+    bfg.write_quarantine_flag(str(day), "a.sql.gz", v, apply=True)
+    c2 = json.loads(flag.read_text(encoding="utf-8"))
+    assert c2["files"] == ["a.sql.gz", "b.sql.gz"]
+
+
+def test_BG_N14_apply_refuses_type_conflict(tmp_path):
+    """BG-N14 P0｜BUG-05 回归：类型冲突拒绝覆盖，已有留痕字节不变。"""
+    day = tmp_path / "2026-11-06"
+    day.mkdir()
+    flag = day / "INVALID_GZIP.flag"
+    before = json.dumps({"type": "other_quarantine", "files": ["x"]})
+    flag.write_text(before, encoding="utf-8")
+    with pytest.raises(ValueError, match="类型冲突"):
+        bfg.write_quarantine_flag(str(day), "a.sql.gz", {}, apply=True)
+    assert json.loads(flag.read_text(encoding="utf-8"))["files"] == ["x"]

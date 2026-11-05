@@ -1,0 +1,187 @@
+{
+  "collected_at": "2026-11-06T04:18:36+08:00",
+  "files": [
+    {
+      "bytes": 20113,
+      "code": "W-01",
+      "exists": true,
+      "path": "ops/task_inventory.py",
+      "sha256": "22064c8296d06eae1a7ed08830ca91d79cc425d774b2b951d5687c5078d16792"
+    },
+    {
+      "bytes": 9822,
+      "code": "W-02",
+      "exists": true,
+      "path": "ops/backup_format_gate.py",
+      "sha256": "37dca0a967bb9ca02e89cd79d72fa9c4818290268ce709b1e80faa7ee9311488"
+    },
+    {
+      "bytes": 14575,
+      "code": "W-03",
+      "exists": true,
+      "path": "docs/plans/20261105_data_backup_and_task_governance_plan.md",
+      "sha256": "fea17ceb4fd4cb76117b32966822140c92a703acfb0dcbe146aa476083f46bfa"
+    },
+    {
+      "bytes": 27280,
+      "code": "W-04",
+      "exists": true,
+      "path": "docs/plans/20261105_governance_project_dossier.md",
+      "sha256": "0d014f96c8f7a029a79ab089d4d86d676fe9275b029497889442fc4872651798"
+    },
+    {
+      "bytes": 29596,
+      "code": "W-05",
+      "exists": true,
+      "path": "tests/test_task_inventory.py",
+      "sha256": "b21b5d1bfe4847df5b6a3b7e5fc87f75c11c1f7444e5bf943ebec5d46141a4e5"
+    },
+    {
+      "bytes": 25576,
+      "code": "W-06",
+      "exists": true,
+      "path": "tests/test_backup_format_gate.py",
+      "sha256": "9f523bb0f3df562544077f0e32e395cccf908fcadbe7260533df97a4369bc0a0"
+    },
+    {
+      "bytes": 60213,
+      "code": "W-07",
+      "exists": true,
+      "path": "tests/test_governance_acceptance.py",
+      "sha256": "22d596e4162d9416dc7432c153e54b9a24833551891fa52289b245578bb11bd1"
+    },
+    {
+      "bytes": 311,
+      "code": "W-08",
+      "exists": true,
+      "path": "backups/db/2026-10-29/INVALID_GZIP.flag",
+      "sha256": "e5d951d7c69f7a874818d53b2bdec0577e64299ac20af1c6d423d8cc4f51b8b1"
+    },
+    {
+      "bytes": 44960,
+      "code": "W-09",
+      "exists": true,
+      "path": "docs/changes/20261105_ff06_interface_hooks.md",
+      "sha256": "0a771618ed58714f70c963ad5b16a45ef3748642eaeae242ea7939307cbfc126"
+    },
+    {
+      "bytes": 8267,
+      "code": "W-10",
+      "exists": true,
+      "path": "docs/changes/20261105_governance_terminology.md",
+      "sha256": "ee6f791d3b76ef37bedda7b480be9392eee6c2a55d79fffb272f17c73eaf88a5"
+    },
+    {
+      "bytes": 15893,
+      "code": "W-11",
+      "exists": true,
+      "path": "docs/plans/20261105_governance_full_case.md",
+      "sha256": "00f81749c7c37ee02cf9277859f610c1a2ed61012065439595a4129015e84726"
+    },
+    {
+      "bytes": 55074,
+      "code": "W-12",
+      "exists": true,
+      "path": "docs/plans/20261105_release_plan.md",
+      "sha256": "a864e6af04be66b3f50e16ea6618648b576a7ed155dccc9e8a63e53100cd1f72"
+    },
+    {
+      "bytes": 38680,
+      "code": "W-13",
+      "excluded_from_drift": true,
+      "exists": true,
+      "note": "self-reference: value is the snapshot at collect time, not an acceptance fingerprint",
+      "path": "docs/plans/20261105_governance_acceptance_report.md",
+      "self_ref": true,
+      "sha256": "51ab6fa326773bec4c449ba74cadeaaa9d84a9145a743c025d15bf8cb27b3466"
+    },
+    {
+      "bytes": 86483,
+      "code": "W-14",
+      "exists": true,
+      "path": "docs/plans/20261105_ops_sre_plan.md",
+      "sha256": "5501e429fb11def599cf3d4083a38282a41c2f25fa845f6cfa0b1ee306af3663"
+    }
+  ],
+  "g09": {
+    "mode": "signed-snapshot (no re-verify)",
+    "rc": 0,
+    "report": {
+      "all_pass": true,
+      "attribution_policy": "ADR-29 分域：GOV-W 白名单 / 工具自动产物 / 外部并行作业（仅留痕、不参与放行）/ 未知（判 FAIL）",
+      "baseline_at": "2026-11-06T04:15:03+08:00",
+      "checks": {
+        "G-09a 计划任务底册 492 未变": true,
+        "G-09b 10-29 四件全量 sha256 未变": true,
+        "G-09b backups/db 新增均在允许集内（无越权新增）": true,
+        "G-09b backups/db 既有产物零删改": true,
+        "G-09c 关键既有源码零改动（外部已提交变更须逐条归因）": true,
+        "G-09c 新增 tracked 无未归因文件": true,
+        "G-09c 新增 untracked 无未归因文件": true,
+        "G-09c 白名单域新增 tracked 变更均可独立读盘验真": true,
+        "G-09d 外部并行作业域零静默丢弃": true
+      },
+      "detail": {
+        "db_fingerprint": {
+          "added": [],
+          "added_allowed": [],
+          "added_outside": [],
+          "changed": [],
+          "removed": []
+        },
+        "db_full_sha256": {
+          "added": [],
+          "added_allowed": [],
+          "added_outside": [],
+          "changed": [],
+          "removed": []
+        },
+        "external_job_evidence": [],
+        "external_job_new": [],
+        "gov_w_new": [],
+        "new_tracked": [],
+        "new_tracked_external": [],
+        "new_tracked_gov": [],
+        "new_tracked_unknown": {},
+        "reverted_tracked": [],
+        "system_files": {
+          "added": [],
+          "added_allowed": [],
+          "added_outside": [],
+          "changed": [],
+          "removed": []
+        },
+        "system_files_external": [],
+        "system_files_unattributed": [],
+        "tool_generated": [],
+        "tracked_sha256_after": "a9429548dc1192d9a00ffec597d1a5b2cb47a791c6ec6da125f1216926bce1f1",
+        "tracked_sha256_before": "a9429548dc1192d9a00ffec597d1a5b2cb47a791c6ec6da125f1216926bce1f1",
+        "unknown_new": []
+      },
+      "verified_at": "2026-11-06T04:15:13+08:00"
+    },
+    "verified_at": "2026-11-06T04:15:13+08:00"
+  },
+  "landed_codes": [
+    49,
+    52
+  ],
+  "pending": [],
+  "pytest": {
+    "rc": 0,
+    "stderr_tail": [],
+    "tail": [
+      "........................................................................ [ 63%]",
+      "..........................................                               [100%]",
+      "114 passed in 20.83s"
+    ]
+  },
+  "signing_round": "V4 (2026-11-06 D4 closure re-sign)",
+  "verdict": "GREEN",
+  "verdict_basis": {
+    "g09_all_pass": true,
+    "g09_rc": 0,
+    "landed_equals_14": true,
+    "pytest_rc": 0
+  }
+}

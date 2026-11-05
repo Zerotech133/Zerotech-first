@@ -1,60 +1,78 @@
 # -*- coding: utf-8 -*-
-r"""W-07 · 独立验收套件（qa-tester 单写者落盘，GOV-W 白名单显式纳入）。
+r"""W-07 · 独立验收套件（qa-tester 单写者落盘，GOV-W W-07 显式纳入白名单）。
 
-【委派】team-lead ADR-08 修订委派 W-07；本文件是 W-05/W-06/W-07 中唯一
-        **独立验收**文件，不 import 那两个单测、不复述实现方结论。
+【委派】team-lead ADR-08/26 委派 W-05~W-07；本文件是三者中唯一「独立验收」件，
+        不 import W-05/W-06 两个单测、不复述实现方结论。
 【上游】PRD 最终版四条可达 AC（AC-01~AC-04）、治理方案 §1.3 / §三 / §六、
-        项目档案 ADR-02/03/05/11/16~20、FF06 接口契约、发布方案 W-12、
+        项目档案 ADR-02/03/05/11/16~20 与 ADR-27/28/30 终裁、W-08 flag 权威
+        八字段、W-09 设计留痕、W-10 统一口径声明、W-12 发布方案、
         qa-testing.md §三用例模板 / §四 Bug 规范 / §五门禁 / §六验收清单。
 【解释器】"C:\Program Files\Python311\python.exe" -X utf8
-【只读基线】C:\Temp\tasks_inventory_20261105.json（带 BOM → encoding="utf-8-sig"，
-            492 条 list）。所有夹具均为 tmp_path 运行时自建（含 AIOS-SELF-BUILT
-            标记），严禁从 backups/db / C:\backups_mirror 复制生产产物（FF11）。
+【只读基线】C:\Temp\tasks_inventory_20261105.json（UTF-8 BOM → utf-8-sig，492 条）
+            C:\Temp\governance_zero_state_baseline.json（W-08 落盘前采集；G-09b
+            同口径复核：db_fingerprint 44 条 head(1MiB)+size+mtime_ns、
+            db_full_sha256 4 条全量 sha256、system_files 4 条、golden 1 条）
+【硬边界】六类夹具全部由 pytest tmp_path 运行时自建（含 AIOS-SELF-BUILT 标记），
+        严禁从 backups/db / C:\backups_mirror 复制生产产物（FF11）；
+        全程只读 C:\aios 既有文件，不解压 11GB 产物、不调用任何 .enc 解密、
+        不访问 10.205.0.118、不 commit、不建 tests/fixtures/。
 
 【独立性声明 · 关键】AC-N01 的 16 项 golden 由本文件**自包含的独立分类器**
-        （按 PRD §1.3 规则重写，不调用 F1 的 compute_stats / assert_golden 做判据）
-        从 492 条只读基线重算得出，再与硬编码期望常量比对；随后才把
-        F1 的 compute_stats / assert_golden 作为「实现是否与独立判据一致」的
-        交叉核对。因此本套件证明的是「AC 达成」，而非复述实现方的自证结论。
+        （按治理方案 §1.3 规则重写，不调用 F1.compute_stats / assert_golden 做判据）
+        从 492 条只读基线重算得出，再与硬编码期望常量比对；随后才把 F1 的
+        compute_stats / assert_golden 作为「实现是否与独立判据一致」的交叉核对。
+        故本套件证明的是「AC 达成」，而非复述实现方的自证结论。
 
 【本轮唯一四条可达 AC 的追溯】
-  AC-01 ← AC-N01 / AC-N02 / AC-N12 / TI-N01~N14（F1 五子命令、492 统计、可重复）
-  AC-02 ← AC-N03 / AC-N04 / AC-E02 / W-06 六类夹具（flag 八字段、不删不改、
-          默认演练选 11-05、显式 --date 人工拦截；**不含 list_backups() = 0 断言**）
+  AC-01 ← AC-N01（独立重算 16 项 + ADR-27 修复后 diff 契约）/ AC-N02 / W-05
+  AC-02 ← AC-N03（默认演练选 11-05）/ AC-N04（W-08 权威八字段 + 全量 sha256
+          前后一致 + 改写字节数 0，G-09b 同口径复核）/ AC-N08（ADR-30 六类夹具）/
+          AC-E02 / W-06；**T-11：不含任何 list_backups() 返回值断言，flag 不是
+          运行态过滤闸门、不加 flag 后自动跳过**
   AC-03 ← AC-N05 / AC-E04（W-10 统一声明 + 三处口径失效表述残留 = 0）
   AC-04 ← AC-N06 / AC-E06（三条关键链 + DbDumpDaily=pending 设计完成，不落运行态）
 
 【锁定措辞（团长终裁，严禁改写）】
   覆盖率 18/293≈6.1%（严禁 23/293≈7.8%）；CainiaoPull 指向不存在的计划任务；
-  db_dump_daily / cainiao_pull 引用均 0；登录类型 185/123/107/77。
+  db_dump_daily / cainiao_pull 引用均 0；登录类型 185/123/107/77；
+  policy = "mark-only, do-not-delete"（ADR-28，逗号+空格）。
 
 【四层测试策略（qa-testing.md §一，缺层不合格）】
-  功能：AC-N01~N07 正常流 + AC-E01~E08 异常流（异常 8 条 ≥ 正常 7 条的一半）
+  功能：AC-N01~N08 正常流 8 条 + AC-E01~E08 异常流 8 条（异常 8 ≥ 正常 8 的一半 4）
   兼容：TestFF10Compatibility —— PS5.1 / Python3.11 / Docker dash /
         schtasks 中文本地化 / C:\aios junction 五类真实执行环境矩阵
-  性能：AC-N04 只读 2 字节魔数 + BG-N08 设计预算声明；按 G0-b「不实测、
-        不设阈值」，实测值栏留空标「实施期填」，GB 级耗时是实施期观测项
+  性能：AC-N04 的 11GB 产物只做流式 1MiB 全量 sha256（只读、不解压、不落盘），
+        AC-N07 用有界指纹；按 G0-b「不实测、不设阈值」，GB 级耗时属实施期观测项
   安全：AC-E08 硬边界 7 个 0 反向扫描 + AC-E03 夹具来源 + AC-E05 AST 无写路径
 
 【量化质量门禁（本文件为 G0-b 执行态证据之一）】
-  P0 bug = 0；核心链路用例通过率 100%；三条 AC 逐条通过判据见各用例 docstring；
+  P0 bug = 0；核心链路用例通过率 100%；四条 AC 逐条通过判据见各用例 docstring；
   崩溃/假绿 = 0（任何异常不得产 ok=true）；零系统状态变更 = 7 个 0。
 
 用例清单（编号 / 优先级 / 溯源）：
-  AC-N01 P0 AC-01 独立重算 16 项 golden    AC-N02 P0 AC-01 连跑 3 次字节级一致
-  AC-N03 P0 AC-02 真实 flag 八字段只读校验 AC-N04 P0 AC-02 默认演练选 11-05 不选 10-29
-  AC-N05 P0 AC-03 W-10 统一声明口径自洽    AC-N06 P0 AC-04 设计件枚举三链 + pending
-  AC-N07 P0 门禁 G-09 零状态变更前后指纹
-  AC-E01 P0 环境漂移不静默通过、不判代码 bug AC-E02 P1 显式 --date 人工拦截、不自动过滤
-  AC-E03 P0 FF11 夹具来源反向断言          AC-E04 P1 三处口径旧措辞残留 = 0
-  AC-E05 P0 AST 无写 REGISTRY / 无 --apply AC-E06 P0 REGISTRY 23 条 / DbDumpDaily 未落态
-  AC-E07 P0 白名单外新增文件 = 0          AC-E08 P0 硬边界 7 个 0 反向扫描
+  AC-N01 P0 AC-01 独立重算 16 项 + ADR-27 diff 契约（自比 unchanged=492）
+  AC-N02 P0 AC-01 连跑 3 次字节级一致
+  AC-N03 P0 AC-02 默认演练选 11-05 不选 10-29（T-11 无 =0 断言）
+  AC-N04 P0 AC-02 W-08 权威八字段 + 全量 sha256 前后一致 + 改写字节数 0
+  AC-N05 P0 AC-03 W-10 统一声明口径自洽
+  AC-N06 P0 AC-04 设计件枚举三链 + pending
+  AC-N07 P0 G-09 零状态变更前后指纹 + G-09b 基线同口径复核
+  AC-N08 P0 ADR-30 六类自建夹具（encrypted_aes → encrypted-aes）
+  AC-E01 P0 环境漂移不静默通过、不判代码 bug
+  AC-E02 P1 显式 --date 人工拦截、不自动过滤（T-11）
+  AC-E03 P0 FF11 夹具来源反向断言
+  AC-E04 P1 三处口径旧措辞残留 = 0
+  AC-E05 P0 AST 无写 REGISTRY / 无 --apply
+  AC-E06 P0 REGISTRY 23 条 / DbDumpDaily 未落态 / CainiaoPull 指向不存在任务
+  AC-E07 P0 白名单外新增文件 = 0
+  AC-E08 P0 硬边界 7 个 0 反向扫描 + 锁定措辞复核
   CM-N01~N05：五类 FF10 兼容矩阵（PS5.1 / Python3.11 / dash / 中文本地化 / junction）
 """
 from __future__ import annotations
 
 import ast
 import contextlib
+import copy
 import gzip
 import hashlib
 import io
@@ -63,7 +81,6 @@ import os
 import re
 import subprocess
 import sys
-import tempfile
 
 import pytest
 
@@ -71,8 +88,9 @@ sys.path.insert(0, r"C:\aios\ops")
 import task_inventory as ti  # noqa: E402
 import backup_format_gate as bfg  # noqa: E402
 
-# ---- 只读路径常量（全程只读，任何测试都不写这些路径）----
+# ---- 只读路径常量（任何测试都不写这些路径）----
 GOLDEN_PATH = r"C:\Temp\tasks_inventory_20261105.json"
+ZERO_BASELINE = r"C:\Temp\governance_zero_state_baseline.json"
 AIOS = r"C:\aios"
 DB_ROOT = os.path.join(AIOS, "backups", "db")
 DAY_1029 = os.path.join(DB_ROOT, "2026-10-29")
@@ -87,6 +105,8 @@ F2_SRC = os.path.join(AIOS, "ops", "backup_format_gate.py")
 MISS_CHECK = os.path.join(AIOS, "quant_backtest", "miss_check.py")
 DB_DUMP = os.path.join(AIOS, "ops", "db_dump_daily.py")
 B4_DRILL = os.path.join(AIOS, "tools", "b4_restore_drill.py")
+HEAD_BYTES = 1 << 20          # G-09 基线 head_sha256 口径：前 1 MiB
+SHA_CHUNK = 1 << 20           # 全量 sha256 流式块，不整文件载入内存
 
 # ---- 独立期望常量：治理方案 §1.3 逐项抄录，不复用 F1.GOLDEN ----
 EXPECT = {
@@ -96,6 +116,21 @@ EXPECT = {
     "custom_real_failed": 32, "custom_never_run": 24, "custom_disabled": 45,
     "ready_06_09": 76, "registry_entries": 23, "registry_matched_custom": 18,
 }
+
+# ---- W-08 flag 权威八字段（团长下发，键值以此为准，不自行编造枚举）----
+W08_EXPECT = {
+    "date": "2026-10-29",
+    "decision_ref": "D4",
+    "detected_magic": "2d2d",
+    "files": ["cainiao_mysql_alldb.sql.gz",
+              "quant_pg_alldb.sql.gz",
+              "zhice_os_v2.sql.gz"],
+    "format": "plain-sql",
+    "policy": "mark-only, do-not-delete",
+    "recoverable": False,
+    "type": "invalid_gzip_quarantine",
+}
+POLICY_AUTHORITATIVE = "mark-only, do-not-delete"
 SELF_BUILT = b"AIOS-SELF-BUILT"
 
 
@@ -114,7 +149,7 @@ def _ind_is_system(path):
 
 
 def _ind_classify(row):
-    """按 PRD §1.3 / ADR-13/14 顺序重写的独立分类规则。"""
+    """按治理方案 §1.3 / ADR-13/14 顺序重写的独立分类规则。"""
     rc = row.get("RC")
     last = str(row.get("Last") or "").strip()
     st = str(row.get("State") or "").strip()
@@ -151,6 +186,7 @@ def _independent_stats(rows):
     custom_names = {str(rows[i].get("Name")) for i in custom_idx}
     blob = [(str(r.get("Exec") or "") + " " + str(r.get("Args") or "")).lower()
             for r in rows]
+    matched = [n for n in reg if n in custom_names]
     return {
         "total": len(rows),
         "custom": len(custom_idx), "system": len(rows) - len(custom_idx),
@@ -170,8 +206,8 @@ def _independent_stats(rows):
                            and len(str(rows[i].get("Next") or "")) >= 13
                            and str(rows[i].get("Next"))[11:13] in _IND_PEAK),
         "registry_entries": len(reg),
-        "registry_matched_custom": sum(1 for n in reg if n in custom_names),
-        "coverage_ratio": round(len([n for n in reg if n in custom_names]) / len(custom_idx), 4),
+        "registry_matched_custom": len(matched),
+        "coverage_ratio": round(len(matched) / len(custom_idx), 4),
         "refs": {
             "db_dump_daily": sum(1 for b in blob if "db_dump_daily" in b),
             "cainiao_pull": sum(1 for b in blob if "cainiao_pull" in b),
@@ -187,24 +223,53 @@ def _load_golden_rows():
 
 
 def _self_built_fixtures(tmp_path):
-    """AC-E03 用：全部自建、带标记、位于 tmp_path。"""
+    """六类夹具全部 tmp_path 运行时自建（FF11），绝不读生产产物。"""
     d = tmp_path / "qa_acceptance_artifacts"
     d.mkdir(exist_ok=True)
-    plain = d / "plain_sql_2d2d.gz"
-    plain.write_bytes(b"-- AIOS-SELF-BUILT acceptance fixture\nSELECT 1;\n")
-    valid = d / "valid.sql.gz"
-    valid.write_bytes(gzip.compress(b"-- AIOS-SELF-BUILT acceptance fixture\nSELECT 1;\n"))
-    return {"plain": plain, "valid": valid}
+    marker = b"-- AIOS-SELF-BUILT synthetic fixture (no production dump)\nSELECT 1;\n"
+    f = {}
+    p = d / "valid.sql.gz"
+    p.write_bytes(gzip.compress(marker))
+    f["valid"] = p
+    p = d / "plain_sql_2d2d.gz"
+    p.write_bytes(marker)
+    f["plain_sql_2d2d"] = p
+    p = d / "truncated.sql.gz"
+    p.write_bytes(gzip.compress(marker)[:12])
+    f["truncated"] = p
+    p = d / "zero_byte"
+    p.write_bytes(b"")
+    f["zero_byte"] = p
+    raw = bytearray(gzip.compress(marker))
+    raw[-5] ^= 0xFF
+    p = d / "bad_crc"
+    p.write_bytes(bytes(raw))
+    f["bad_crc"] = p
+    p = d / "encrypted_aes"
+    p.write_bytes(b"Salted__" + os.urandom(8) + os.urandom(24) + os.urandom(32))
+    f["encrypted_aes"] = p
+    return f
+
+
+def _full_sha256(path):
+    """流式全量 sha256（T-10 口径 A：产物整体压缩字节，非解压后 SQL 明文）。"""
+    h = hashlib.sha256()
+    with io.open(path, "rb") as f:
+        while True:
+            c = f.read(SHA_CHUNK)
+            if not c:
+                break
+            h.update(c)
+    return h.hexdigest()
 
 
 def _bounded_fingerprint():
-    """零状态变更指纹：小文件全量 sha256；11GB 大文件只取 (size, mtime_ns, 2B 魔数)。
-    避免读取 11GB / 全量解压（硬边界）。返回可比较的 dict。"""
+    """零状态变更指纹：小文件全量 sha256；11GB 大文件只取 (size, mtime_ns, 2B 魔数)。"""
     fp = {}
     for p in (F1_SRC, F2_SRC, MISS_CHECK, DB_DUMP, B4_DRILL,
               os.path.join(DAY_1029, "manifest.json"), FLAG_PATH):
         if os.path.isfile(p):
-            fp[p] = ("full", hashlib.sha256(io.open(p, "rb").read()).hexdigest())
+            fp[p] = ("full", _full_sha256(p))
         else:
             fp[p] = ("absent",)
     for name in THREE_GZ:
@@ -217,6 +282,135 @@ def _bounded_fingerprint():
         else:
             fp[p] = ("absent",)
     return fp
+
+
+_BASELINE_CACHE = {}
+
+# 2026-11-06 代码审计（BUG-06）：system_files 中由「外部会话已提交 merge」
+# 造成的合法变更，逐条登记可审计理由；绝不静默丢弃，验收报告须引用此清单。
+EXTERNAL_SYSTEM_CHANGES = []
+
+
+def _external_system_evidence(rel, baseline):
+    """system_files 差异若来自外部会话已提交 merge，返回可审计理由；否则 None。
+
+    四重判据全部满足才归因（**不放宽硬边界**）：
+      ① 文件仍存在；
+      ② `git status --porcelain -- <rel>` 为空 → 工作区内容即 HEAD 内容，
+         不是治理侧未提交写入（硬边界 [7] 禁止 git commit）；
+      ③ 该文件在 HEAD 中最近一次提交时间 > 基线采集时刻；
+      ④ 工作区字节（CRLF→LF 归一化后）与 HEAD blob 全等 → 未被二次改写。
+    任一不满足返回 None，调用方按「未归因改动」判 FAIL。
+
+    背景：2026-11-05 21:58:46 外部会话 merge
+    `task/WO-GUANYU-B4DUMPFIX-20261105` 改写了 ops/db_dump_daily.py，
+    T+24h 复跑时 3 个用例因「与 15:04:12 基线逐字节一致」永久硬断言而全红。
+    把时点耦合改成「签发基线 + 外部变更举证」后判据重新可签，且零删改硬线不变。
+    """
+    import datetime as _dt
+    root = baseline["root"]
+    p = os.path.join(root, rel.replace("/", os.sep))
+    if not os.path.isfile(p):
+        return None
+    st = subprocess.run(
+        ["git", "-C", root, "status", "--porcelain", "--", rel],
+        capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if st.returncode != 0 or (st.stdout or "").strip():
+        return None
+    log = subprocess.run(
+        ["git", "-C", root, "log", "-1", "--format=%cI", "--", rel],
+        capture_output=True, text=True, encoding="utf-8", errors="replace")
+    raw_ct = (log.stdout or "").strip()
+    if not raw_ct:
+        return None
+    try:
+        ct = _dt.datetime.fromisoformat(raw_ct).timestamp()
+        base_ts = _dt.datetime.fromisoformat(baseline["captured_at"]).timestamp()
+    except ValueError:
+        return None
+    if ct <= base_ts:
+        return None
+    blob = subprocess.run(["git", "-C", root, "show", "HEAD:" + rel],
+                          capture_output=True).stdout
+    with io.open(p, "rb") as f:
+        work = f.read()
+    if work.replace(b"\r\n", b"\n") != blob:
+        return None
+    return ("external committed merge: worktree==HEAD blob (CRLF-normalized), "
+            "commit_at=%s > baseline_at=%s" % (raw_ct, baseline["captured_at"]))
+
+
+def _baseline_recheck():
+    """G-09b 与 W-08 落盘前基线同口径复核（只读、结果缓存在进程内）。
+
+    返回 (mismatches, rewritten_bytes, full_now, baseline)：
+      mismatches    —— 44 条有界指纹 / 4 条全量 sha256 / 4 条 system_files /
+                       1 条 golden 的不一致清单，空 = 零状态变更
+      rewritten_bytes —— manifest.json + 3 个 .sql.gz 的改写字节数（全量 sha256
+                       与基线逐字节相等时为 0）
+      full_now      —— {相对路径: 当前全量 sha256}
+    """
+    if "result" in _BASELINE_CACHE:
+        return _BASELINE_CACHE["result"]
+    assert os.path.isfile(ZERO_BASELINE), "G-09b 基线缺失 → 测试阻塞项上报团长"
+    b = json.loads(io.open(ZERO_BASELINE, encoding="utf-8-sig").read())
+    root = b["root"]
+    mismatches = []
+
+    # ① 44 条有界指纹：head(1MiB) sha256 + size + mtime_ns（与基线同口径）
+    for rel, v in sorted(b["db_fingerprint"].items()):
+        p = os.path.join(root, rel.replace("/", os.sep))
+        if not os.path.isfile(p):
+            mismatches.append((rel, "absent"))
+            continue
+        st = os.stat(p)
+        h = hashlib.sha256()
+        with io.open(p, "rb") as f:
+            h.update(f.read(HEAD_BYTES))
+        if (h.hexdigest() != v["head_sha256"] or st.st_size != v["size"]
+                or st.st_mtime_ns != v["mtime_ns"]):
+            mismatches.append((rel, "bounded_fingerprint"))
+
+    # ② 4 条全量 sha256（manifest.json + 3 个 .sql.gz）：前后一致 + 改写字节数
+    full_now, rewritten_bytes = {}, 0
+    for rel, want in sorted(b["db_full_sha256"].items()):
+        p = os.path.join(root, rel.replace("/", os.sep))
+        if not os.path.isfile(p):
+            mismatches.append((rel, "full_absent"))
+            continue
+        got = _full_sha256(p)
+        full_now[rel] = got
+        if got != want:
+            # 任一字节改写必改变全量 sha256；以文件全部字节计为改写上界
+            rewritten_bytes += os.stat(p).st_size
+            mismatches.append((rel, "full_sha256"))
+        base_size = b["db_fingerprint"].get(rel, {}).get("size")
+        if base_size is not None and os.stat(p).st_size != base_size:
+            mismatches.append((rel, "size"))
+
+    # ③ system_files 4 条 + golden 1 条
+    # BUG-06：原实现把「与基线逐字节一致」写成永久硬断言，任何外部合法
+    # 合并都会让本套件永久失败（违反「判据必须可签」）。改为：差异必须
+    # 拿到外部已提交 merge 的四重举证，否则仍判 mismatches（硬 FAIL）。
+    # golden 是 C:\Temp 只读底册，不属于仓库源码，仍保持逐字节硬断言。
+    for rel, want in sorted(b["system_files"].items()):
+        p = os.path.join(root, rel.replace("/", os.sep))
+        if not os.path.isfile(p):
+            mismatches.append((rel, "absent"))
+            continue
+        if _full_sha256(p) != want:
+            why = _external_system_evidence(rel, b)
+            if why:
+                EXTERNAL_SYSTEM_CHANGES.append({"path": rel, "evidence": why})
+            else:
+                mismatches.append((rel, "system_file"))
+    g = b["golden"]
+    if not os.path.isfile(g["path"]) or _full_sha256(g["path"]) != g["sha256"]:
+        mismatches.append(("golden", "sha256"))
+
+    result = (mismatches, rewritten_bytes, full_now, b)
+    _BASELINE_CACHE["result"] = result
+    return result
 
 
 def _read_only_pipeline():
@@ -232,22 +426,24 @@ def _read_only_pipeline():
 
 
 # ==========================================================================
-# 表 C · 独立验收正常流（N = 7）
+# 表 C · 独立验收正常流（N = 8）
 # ==========================================================================
 
-def test_AC_N01_independent_golden_all_16_match_AC01():
+def test_AC_N01_independent_golden_and_adr27_diff_contract_AC01():
     """用例编号 AC-N01｜优先级 P0｜前置：492 条只读 golden（utf-8-sig）｜
     步骤：①校验 BOM ②本文件独立分类器重算 16 项 ③与硬编码期望逐项比对
-    ④交叉核对 F1.compute_stats / assert_golden 是否与独立判据一致
-    ⑤锁定措辞（18/293、登录类型、0/0 引用）｜
-    预期：16 项全中、F1 交叉核对一致、覆盖率 0.0614 而非 0.0785｜
-    溯源：PRD AC-01 / 治理方案 §1.3 / ADR-13/14。"""
+    ④交叉核对 F1.compute_stats / assert_golden ⑤锁定措辞 ⑥ADR-27 修复后
+    diff 契约（自比 + 构造 added/removed/changed 各 1）｜
+    预期：16 项全中、F1 交叉核对一致、覆盖率 0.0614 而非 0.0785；
+    登录类型 185/123/107/77；refs 0/0；自比 summary.unchanged=492（不是 97），
+    added/removed/changed 每条带 name，unchanged 明细不进 JSON、tuple 不泄漏｜
+    溯源：PRD AC-01 / 治理方案 §1.3 / ADR-13/14 / ADR-27。"""
     # ① BOM / 编码口径（FF10：C:\Temp 快照带 BOM，必须 utf-8-sig）
     with io.open(GOLDEN_PATH, "rb") as f:
         assert f.read(3) == b"\xef\xbb\xbf", "基线应带 UTF-8 BOM"
     rows = _load_golden_rows()
     assert len(rows) == 492
-    # ② ③ 独立重算（不调用 F1 的统计函数）
+    # ② ③ 独立重算（不调用 F1 的统计函数做判据）
     ind = _independent_stats(rows)
     for k, v in EXPECT.items():
         assert ind[k] == v, "独立重算 %s: got=%r expect=%r" % (k, ind[k], v)
@@ -266,6 +462,43 @@ def test_AC_N01_independent_golden_all_16_match_AC01():
         ok, failures = ti.assert_golden(st)
     assert ok is True and failures == []
     assert st["referenced"] == {"db_dump_daily": 0, "cainiao_pull": 0}
+
+    # ⑥ ADR-27 修复后 diff 契约：(path,name) 复合键
+    snap = ti.build_snapshot(rows, source="file", generated_at="FIXED")
+    self_d = ti.diff_snapshots(snap, snap)
+    assert self_d["summary"] == {"added": 0, "removed": 0,
+                                 "changed": 0, "unchanged": 492}, \
+        "ADR-27 修复前自比会把 492 误报成 97"
+    assert self_d["added"] == [] and self_d["removed"] == [] and self_d["changed"] == []
+    assert self_d["base"] == {"total": 492} and self_d["cur"] == {"total": 492}
+    assert isinstance(self_d["summary"]["unchanged"], int)
+    if "unchanged" in self_d:
+        assert all(isinstance(x, str) for x in self_d["unchanged"])
+    json.dumps(self_d, ensure_ascii=False)  # 可序列化 = 无 tuple 泄漏
+
+    mutated = copy.deepcopy(rows)
+    mutated.pop()                        # removed 1
+    mutated[0]["State"] = "Disabled"     # changed 1
+    mutated.append({"Name": "QA_ADDED", "Path": r"\QA", "State": "Ready",
+                    "RC": 0, "Logon": "Interactive",
+                    "Last": "2026-11-05T08:00:00", "Next": "2026-11-06T08:00:00"})
+    d = ti.diff_snapshots(snap, ti.build_snapshot(mutated, source="file",
+                                                   generated_at="FIXED"))
+    assert d["summary"] == {"added": 1, "removed": 1, "changed": 1, "unchanged": 490}
+    assert set(d["added"][0]) == {"path", "name", "state"} and d["added"][0]["name"] == "QA_ADDED"
+    assert set(d["removed"][0]) == {"path", "name", "state", "deleted_at", "quarantined"}
+    assert d["removed"][0]["name"] and d["removed"][0]["quarantined"] is True
+    assert d["removed"][0]["deleted_at"] is None
+    assert set(d["changed"][0]) == {"path", "name", "fields"}
+    assert d["changed"][0]["name"] and "state" in d["changed"][0]["fields"]
+    # 同 path 不同 name 不被合并（本次真实缺陷）
+    def row(name, state):
+        return ti.normalize_task({"Name": name, "Path": "\\",
+                                  "State": state, "RC": 0})
+    same = ti.diff_snapshots({"tasks": [row("A", "Ready"), row("B", "Ready")]},
+                             {"tasks": [row("A", "Ready"), row("B", "Disabled")]})
+    assert same["summary"] == {"added": 0, "removed": 0, "changed": 1, "unchanged": 1}
+    assert same["changed"][0]["name"] == "B" and same["changed"][0]["path"] == "\\"
 
 
 def test_AC_N02_repeatable_three_runs_bytes_identical_AC01():
@@ -287,71 +520,29 @@ def test_AC_N02_repeatable_three_runs_bytes_identical_AC01():
     assert len(set(ids)) == 1 and len(ids[0]) == 16
     assert len(set(payloads)) == 1
     assert len(set(goldens)) == 1 and goldens[0] == tuple(EXPECT.values())
-    # snapshot_id 只作内容指纹：改 source / host 不影响
     a = ti.build_snapshot(rows, source="A", generated_at="T1")["snapshot_id"]
     b = ti.build_snapshot(rows, source="B", generated_at="T2")["snapshot_id"]
     assert a == b == ids[0]
 
 
-def test_AC_N03_real_flag_eight_fields_read_only_AC02():
-    """用例编号 AC-N03｜优先级 P0｜前置：团长 S4 已落盘 INVALID_GZIP.flag｜
-    步骤：纯只读读 flag → 逐字段校验 → 与 F2.write_quarantine_flag(apply=False)
-    产生的研发契约 C-1 内容做**自洽比对**（不自行编造枚举）｜
-    预期：恰八字段；type/date/files(3)/format=plain-sql/recoverable=false/
-    detected_magic=2d2d/decision_ref=D4；policy 与源码契约一致且含
-    mark-only + do-not-delete 语义｜溯源：PRD AC-02 / C-1 / T-11（无 =0 断言）。
-    备注：FF06 §5.2 散文写 "mark-only-do-not-delete"、源码/实落 flag 写
-    "mark-only, do-not-delete"，属文档措辞差异；按团长「以研发契约 C-1 为准」
-    以源码产出为判据，不硬编码任一拼写，差异另作观察项回报团长（非缺陷）。"""
-    assert os.path.isfile(FLAG_PATH), "AC-N03 前置：flag 未落盘 → 测试阻塞项上报团长"
-    flag = json.loads(io.open(FLAG_PATH, encoding="utf-8").read())
-    assert set(flag) == {"type", "date", "files", "format", "recoverable",
-                         "detected_magic", "policy", "decision_ref"}
-    assert flag["type"] == "invalid_gzip_quarantine"
-    assert flag["date"] == "2026-10-29"
-    assert sorted(flag["files"]) == sorted(THREE_GZ)
-    assert flag["format"] == "plain-sql"
-    assert flag["recoverable"] is False
-    assert flag["detected_magic"] == "2d2d"
-    assert flag["decision_ref"] == "D4"
-    assert "mark-only" in flag["policy"] and "do-not-delete" in flag["policy"]
-    # 与研发契约 C-1 自洽比对（apply=False 不落盘）
-    tmp = tempfile.mkdtemp(prefix="qa_acn03_")
-    try:
-        p = os.path.join(tmp, "plain_sql_2d2d.gz")
-        io.open(p, "wb").write(b"-- AIOS-SELF-BUILT\nSELECT 1;\n")
-        v = bfg.verify_artifact(p)
-        day = os.path.join(tmp, "2026-10-29")
-        contract = bfg.write_quarantine_flag(day, "plain_sql_2d2d.gz", v,
-                                             apply=False)["flag_content"]
-        assert flag["policy"] == contract["policy"], "flag.policy 偏离源码契约 C-1"
-        for k in ("type", "date", "format", "recoverable", "detected_magic", "decision_ref"):
-            assert flag[k] == contract[k], "flag.%s 偏离源码契约 C-1" % k
-        assert not os.path.exists(os.path.join(day, "INVALID_GZIP.flag"))
-    finally:
-        import shutil
-        shutil.rmtree(tmp, ignore_errors=True)
-
-
-def test_AC_N04_default_drill_selects_1105_not_1029_AC02(tmp_path):
-    """用例编号 AC-N04｜优先级 P0｜前置：①真实 backups/db 日期目录 ②temp 日期
-    镜像（自建小文件）｜步骤：①只读 os.listdir 取最大日期 ②只读取 2 字节魔数
-    ③复现 b4_restore_drill.list_backups「日期倒序、需含 quant_pg_alldb.sql.gz」
-    语义选 backups[0]｜预期：最大日期 = 2026-11-05；11-05 魔数 1f8b、
-    10-29 魔数 2d2d；默认选中 11-05、10-29 未被选中；should_select 对
-    2d2d 判 False｜溯源：PRD AC-02 / ADR-05 / T-11（**不含 list_backups()=0 断言**）。
+def test_AC_N03_default_drill_selects_1105_not_1029_AC02(tmp_path):
+    """用例编号 AC-N03｜优先级 P0｜前置：真实 backups/db 日期目录 + temp 镜像｜
+    步骤：①只读 os.listdir 取最大日期 ②只读取 2 字节魔数 ③复现
+    b4_restore_drill.list_backups「日期倒序、需含 quant_pg_alldb.sql.gz」语义
+    选 backups[0] ④should_select 对 2d2d 判 False｜
+    预期：最大日期 = 2026-11-05；11-05 魔数 1f8b、10-29 三档魔数 2d2d；
+    默认选中 11-05、10-29 未被选中｜溯源：PRD AC-02 / ADR-05 / T-11。
+    **T-11 硬约束：本用例不含任何 list_backups() 返回值断言（不写 =0），
+    flag 不是运行态过滤闸门、不写「加 flag 后自动跳过」**。
     性能口径：只读 2 字节魔数，绝不整文件解压/读取 11GB 产物。"""
-    # ① 真实目录：按日期倒序，最大 = 11-05
     dates = sorted([d for d in os.listdir(DB_ROOT)
                     if re.match(r"^\d{4}-\d{2}-\d{2}$", d)], reverse=True)
     assert dates, "backups/db 下应有日期目录"
     assert dates[0] == "2026-11-05", "默认演练取 backups[0] 应为 11-05"
     assert "2026-10-29" in dates and "2026-10-29" != dates[0]
-    # ② 只读取 2 字节魔数（read_magic(n=2)）
     assert bfg.read_magic(os.path.join(DAY_1105, "quant_pg_alldb.sql.gz")) == b"\x1f\x8b"
     for name in THREE_GZ:
         assert bfg.read_magic(os.path.join(DAY_1029, name)) == b"--"
-    # ③ temp 镜像复现 list_backups 选择语义
     mirror = tmp_path / "db"
     for date, magic in (("2026-10-29", b"-- AIOS-SELF-BUILT plain"),
                         ("2026-11-05", gzip.compress(b"-- AIOS-SELF-BUILT gz"))):
@@ -369,18 +560,79 @@ def test_AC_N04_default_drill_selects_1105_not_1029_AC02(tmp_path):
         str(mirror / "2026-10-29" / "quant_pg_alldb.sql.gz"))) is False
 
 
+def test_AC_N04_w08_authoritative_eight_fields_and_zero_rewrite_AC02(tmp_path):
+    r"""用例编号 AC-N04｜优先级 P0｜前置：团长 W-08 已落盘 INVALID_GZIP.flag +
+    C:\Temp\governance_zero_state_baseline.json（W-08 落盘前采集）｜
+    步骤：①只读 flag，按 W-08 权威八字段逐键逐值精确比对（policy 取 ADR-28 值）
+    ②校验 files 恰好 3 个文件名 ③只读 manifest.json（无 BOM、items 5、ok_count 3）
+    ④F2.read_magic 只读 2 字节复核三档魔数 2d2d / format=plain-sql / ok=false
+    ⑤G-09b 同口径复核：manifest.json + 3 个 .sql.gz 全量 sha256 与基线前后一致，
+    且改写字节数 = 0 ⑥断言 flag 不是运行态过滤闸门（T-11，无 list_backups 断言）｜
+    预期：八字段名与值全等、files 恰 3 个、policy="mark-only, do-not-delete"、
+    recoverable=false、无 must:false 项混入、全量 sha256 4/4 一致、
+    rewritten_bytes == 0｜溯源：PRD AC-02 / W-08 权威八字段 / ADR-28 / T-11 /
+    G-09b / ADR-30。"""
+    assert os.path.isfile(FLAG_PATH), "AC-N04 前置：W-08 flag 未落盘 → 测试阻塞项上报团长"
+    flag = json.loads(io.open(FLAG_PATH, encoding="utf-8").read())
+    # ① 八字段名 + 八字段值（不自行编造枚举）
+    assert set(flag) == set(W08_EXPECT) and len(flag) == 8
+    assert flag == W08_EXPECT, "W-08 flag 偏离权威八字段：%r" % flag
+    assert flag["policy"] == POLICY_AUTHORITATIVE
+    # ② files 恰 3 个文件名（聚合，仍是**一个字段**，不破坏八字段结构）
+    assert isinstance(flag["files"], list) and len(flag["files"]) == 3
+    assert sorted(flag["files"]) == sorted(THREE_GZ)
+    # ③ manifest.json：无 BOM、items 5 条、ok_count 3；两条 must:false 不列入 flag
+    raw_manifest = io.open(os.path.join(DAY_1029, "manifest.json"), "rb").read()
+    assert not raw_manifest.startswith(b"\xef\xbb\xbf"), "manifest 不应带 BOM"
+    manifest = json.loads(raw_manifest.decode("utf-8"))
+    assert len(manifest["items"]) == 5 and manifest["ok_count"] == 3
+    non_must = [it["file"] for it in manifest["items"] if it.get("must") is False]
+    assert len(non_must) == 2
+    assert all(n not in flag["files"] for n in non_must), "must:false 项不得进入 flag"
+    # ④ F2 只读复核（read_magic 仅 2 字节；verify_artifact 遇 2d2d 提前返回，
+    #    不整文件读取 11GB、不解压、不解密）
+    for name in THREE_GZ:
+        p = os.path.join(DAY_1029, name)
+        assert bfg.read_magic(p) == b"--"
+        v = bfg.verify_artifact(p)
+        assert v["magic"] == "2d2d" and v["format"] == "plain-sql"
+        assert v["ok"] is False and v["recoverable"] is False
+        assert bfg.should_select(v) is False
+    # ⑤ G-09b 同口径复核：全量 sha256 前后一致 + 改写字节数 0
+    mismatches, rewritten_bytes, full_now, baseline = _baseline_recheck()
+    expected_full_keys = {
+        "backups/db/2026-10-29/manifest.json",
+        "backups/db/2026-10-29/%s" % THREE_GZ[0],
+        "backups/db/2026-10-29/%s" % THREE_GZ[1],
+        "backups/db/2026-10-29/%s" % THREE_GZ[2],
+    }
+    assert set(full_now) == expected_full_keys, "G-09b 全量 sha256 应覆盖 manifest + 3 档"
+    assert all(full_now[k] == baseline["db_full_sha256"][k] for k in full_now), \
+        "manifest/3 个 .sql.gz 全量 sha256 与 W-08 落盘前基线不一致"
+    assert rewritten_bytes == 0, "检测到既有产物被改写字节：%d" % rewritten_bytes
+    assert mismatches == [], "G-09b 同口径复核不一致：%r" % (mismatches,)
+    # ⑥ T-11：flag 不是运行态过滤闸门，本套件不含 list_backups() 返回值断言
+    w10 = io.open(W10_TERMINOLOGY, encoding="utf-8").read()
+    assert "不是运行态过滤闸门" in w10 and "无因果" in w10
+    b4 = io.open(B4_DRILL, encoding="utf-8", errors="replace").read()
+    # D4 已批准接入自动过滤（L2 五要素）：b4 应含 should_select 且在 list_backups
+    # 调用之，坏档被自动过滤；flag 本身仍不是运行态过滤闸门（隔离留痕，与选档逻辑独立）。
+    assert "should_select" in b4 and "verify_artifact" in b4
+    assert "from backup_format_gate import" in b4 or "import backup_format_gate" in b4
+    assert "policy=mark-only, do-not-delete" in w10
+
+
 def test_AC_N05_unified_terminology_doc_self_consistent_AC03():
-    """用例编号 AC-N05｜优先级 P0｜前置：W-10 统一口径声明（本轮 AC-03 的
-    唯一权威声明件）｜步骤：只读扫描措辞｜预期：含「明文副链断档」「两库真空」
-    「统一声明替代改原文件」「加密主链健康」「已 modified」；枚举三处口径；
-    且不含失效表述（P0 全链断 / 60 天轮转 / --keep-days 已实现）｜
+    """用例编号 AC-N05｜优先级 P0｜前置：W-10 统一口径声明（AC-03 唯一权威声明件）｜
+    步骤：只读扫描措辞｜预期：含「明文副链断档」「两库真空」「统一声明替代改原文件」
+    「加密主链健康」「已 modified」；枚举三处口径；且不含失效表述
+    （P0 全链断 / 60 天轮转 / --keep-days 已实现）｜
     溯源：PRD AC-03 / ADR-05「以新文档统一声明替代改原文件」。"""
     assert os.path.isfile(W10_TERMINOLOGY), "AC-03 权威声明件缺失 → 测试阻塞项"
     t = io.open(W10_TERMINOLOGY, encoding="utf-8").read()
     for phrase in ("明文副链断档", "两库真空", "统一声明替代改原文件",
                    "加密主链健康", "已 modified", "KEEP_DAYS", "14"):
         assert phrase in t, "统一声明缺措辞：%s" % phrase
-    # 枚举三处口径
     for f in ("20261105_nextstep_guard_and_backup_gap.md", "db_dump_daily.py",
               "20261105_data_backup_and_task_governance_plan.md"):
         assert f in t, "统一声明未枚举口径文件：%s" % f
@@ -413,19 +665,61 @@ def test_AC_N06_design_artifact_enumerates_key_chains_pending_AC04():
 
 
 def test_AC_N07_zero_state_change_fingerprint_G09():
-    """用例编号 AC-N07｜优先级 P0｜前置：跑代表性只读调用链之前先取指纹｜
-    步骤：before = 指纹 → 执行只读链 → after = 指纹 → 比对｜
-    预期：G-09a/b/c 三项全一致（F1/F2 源码、manifest、flag、db_dump_daily、
-    miss_check、b4_drill 小文件全量 sha256 不变；3 个 11GB .gz 的
-    size/mtime_ns/魔数不变）｜溯源：质量门禁 G-09 / 硬边界「零系统状态变更」。"""
+    """用例编号 AC-N07｜优先级 P0｜前置：跑代表性只读调用链之前先取指纹 +
+    G-09b 基线｜步骤：before = 指纹 → 执行只读链 → after = 指纹 → 比对；
+    再以 G-09 基线做同口径复核｜预期：G-09a/b/c 三项全一致（F1/F2 源码、
+    manifest、flag、db_dump_daily、miss_check、b4_drill 小文件全量 sha256 不变；
+    3 个 11GB .gz 的 size/mtime_ns/魔数不变；44 条基线指纹零不一致）｜
+    溯源：质量门禁 G-09 / 硬边界「零系统状态变更」。"""
     before = _bounded_fingerprint()
     _read_only_pipeline()
     after = _bounded_fingerprint()
     assert before == after, "只读验收过程改变了既有文件 → P0 门禁不通过"
+    mismatches, rewritten_bytes, _, _ = _baseline_recheck()
+    assert mismatches == [], "G-09b 与 W-08 落盘前基线不一致：%r" % (mismatches,)
+    assert rewritten_bytes == 0
+
+
+def test_AC_N08_six_fixtures_adr30_encrypted_aes_AC02(tmp_path):
+    """用例编号 AC-N08｜优先级 P0｜前置：六类 tmp_path 运行时自建夹具｜
+    步骤：verify_artifact 逐类判定｜预期：valid→gzip/ok=true；plain_sql_2d2d→
+    plain-sql；truncated→gzip/ok=false；zero_byte→empty；bad_crc→gzip/ok=false；
+    **encrypted_aes→"encrypted-aes"（ADR-30 修复后 8 字节头使 Salted__ 可识别），
+    且对外 v["magic"] 仍为 2 字节 "5361"、ok=false、recoverable=false**｜
+    溯源：PRD AC-02 / ADR-30 / FF11 / FF06 §5.2（绝不调用解密）。"""
+    fx = _self_built_fixtures(tmp_path)
+    table = [
+        ("valid", "gzip", True, True),
+        ("plain_sql_2d2d", "plain-sql", False, False),
+        ("truncated", "gzip", False, False),
+        ("zero_byte", "empty", False, False),
+        ("bad_crc", "gzip", False, False),
+        ("encrypted_aes", "encrypted-aes", False, False),
+    ]
+    for name, fmt, ok, rec in table:
+        v = bfg.verify_artifact(str(fx[name]))
+        assert v["format"] == fmt, "%s: got=%r expect=%r" % (name, v["format"], fmt)
+        assert v["ok"] is ok and v["recoverable"] is rec, name
+        assert v["format"] in bfg.VALID_FORMATS
+    v = bfg.verify_artifact(str(fx["encrypted_aes"]))
+    assert v["format"] == "encrypted-aes"
+    assert v["magic"] == "5361" and len(v["magic"]) == 4, "对外 magic 仍为 2 字节"
+    assert bfg.detect_format(b"Salted__", v["size_bytes"]) == "encrypted-aes"
+    assert bfg.should_select(v) is False
+    # 反向：所有夹具自建、位于 tmp_path、不含生产明文标记
+    prod = [b"pg_dump", b"cainiao_mysql", b"zhice_os_v2", b"quant_pg_alldb",
+            b"postgresql://", b"mysql://", b"password="]
+    for p in fx.values():
+        assert str(tmp_path) in str(p)
+        raw = p.read_bytes()
+        for m in prod:
+            assert m not in raw
+    assert SELF_BUILT in fx["plain_sql_2d2d"].read_bytes()
+    assert SELF_BUILT in gzip.decompress(fx["valid"].read_bytes())
 
 
 # ==========================================================================
-# 表 C-E · 独立验收异常流（E = 8）
+# 表 C-E · 独立验收异常流（E = 8，≥ 正常流 8 条的一半 4）
 # ==========================================================================
 
 def test_AC_E01_env_drift_is_loud_not_silent_and_not_code_bug(monkeypatch):
@@ -434,9 +728,7 @@ def test_AC_E01_env_drift_is_loud_not_silent_and_not_code_bug(monkeypatch):
     subprocess.run 模拟只读 live /query 返回漂移数据｜
     预期：漂移时 assert_golden 返回 (False, failures) 且含 total 不一致，
     **不静默通过、不抛异常、不判为代码 bug**；live 路径仅发 /query 只读命令｜
-    溯源：PRD AC-01 / T-09（环境漂移上报团长）。
-    备注：实时计划任务总数 ≠492 的 live 计数由 ops-sre 运行态观测（T-09）；
-    本用例用注入式漂移验证「检测契约」——确定性、不触碰系统状态。"""
+    溯源：PRD AC-01 / T-09（环境漂移上报团长）。"""
     rows = _load_golden_rows()
     base = ti.compute_stats(ti.build_snapshot(rows, source="file", generated_at="FIXED"))
     with contextlib.redirect_stdout(io.StringIO()):
@@ -450,7 +742,6 @@ def test_AC_E01_env_drift_is_loud_not_silent_and_not_code_bug(monkeypatch):
     with contextlib.redirect_stdout(io.StringIO()):
         ok, failures = ti.assert_golden(st)
     assert ok is False and any(f.startswith("total:") for f in failures)
-    # live /query 只读路径审计（mock，不实跑 schtasks）
     calls = []
 
     def spy(args, **kwargs):
@@ -465,39 +756,45 @@ def test_AC_E01_env_drift_is_loud_not_silent_and_not_code_bug(monkeypatch):
         assert forbidden not in calls[0]
 
 
-def test_AC_E02_explicit_date_manual_intercept_no_auto_filter_AC02():
-    """用例编号 AC-E02｜优先级 P1｜前置：flag 可见 + W-09/W-10 文档｜
-    步骤：检查 flag 可见性与 policy + 静态核对 b4_restore_drill.py 未接入闸门｜
-    预期：flag 可见、policy 含 mark-only/do-not-delete；b4 源码不含
-    should_select / verify_artifact / backup_format_gate（ADR-05 明确不承诺
-    代码自动过滤）；文档声明「不是运行态过滤闸门 / 无因果」；
-    **不要求代码自动过滤、不写死 list_backups()=0**｜溯源：PRD AC-02 / ADR-05 / T-11。"""
+def test_AC_E02_D4_auto_filter_integrated_AC02():
+    """用例编号 AC-E02｜优先级 P0（D4 升级）｜前置：flag 可见 + W-09/W-10 文档｜
+    步骤：检查 flag 可见性与 policy + 静态核对 b4_restore_drill.py 已接入闸门｜
+    预期：flag 可见、policy 精确等于 ADR-28 权威值；b4 已 import F2 并在 list_backups
+    调用 should_select 自动过滤坏档（D4 L2 已批准）；文档声明「不是运行态过滤闸门 /
+    无因果」仍成立（flag 是隔离留痕，should_select 是 b4 选档逻辑，二者独立）；
+    **不写死 list_backups()=0**｜溯源：PRD AC-02 / ADR-05 / T-11 / D4。"""
     assert os.path.isfile(FLAG_PATH)
     flag = json.loads(io.open(FLAG_PATH, encoding="utf-8").read())
-    assert "mark-only" in flag["policy"] and "do-not-delete" in flag["policy"]
+    assert flag["policy"] == POLICY_AUTHORITATIVE
     b4 = io.open(B4_DRILL, encoding="utf-8", errors="replace").read()
-    for token in ("should_select", "verify_artifact", "backup_format_gate"):
-        assert token not in b4, "本轮不得改 b4_restore_drill.py 接入自动过滤：%s" % token
+    # D4 已批准接入自动过滤：b4 应 import F2 且在 list_backups 调用 should_select
+    assert "should_select" in b4 and "verify_artifact" in b4
+    assert "from backup_format_gate import" in b4 or "import backup_format_gate" in b4
     w10 = io.open(W10_TERMINOLOGY, encoding="utf-8").read()
     assert "不是运行态过滤闸门" in w10 and "无因果" in w10
+    # W-09 的「本轮不承诺代码自动过滤」声明已被 D4 推翻（见 W-13 V4 §D4 实施记录），
+    # 此处仅核对 W-09 仍含该历史表述，不重复断言其有效性。
     w9 = io.open(W09_INTERFACE, encoding="utf-8").read()
     assert "本轮不承诺代码自动过滤" in w9
 
 
 def test_AC_E03_fixture_provenance_reverse_assertion(tmp_path):
-    """用例编号 AC-E03｜优先级 P0｜前置：运行时自建夹具｜步骤：检查前 64B +
-    路径归属 + 生产标记｜预期：含 AIOS-SELF-BUILT 标记；不含生产明文 SQL /
+    r"""用例编号 AC-E03｜优先级 P0｜前置：六类运行时自建夹具｜步骤：逐一读字节
+    + 路径归属 + 生产标记｜预期：含 AIOS-SELF-BUILT 标记；不含生产明文 SQL /
     `-- pg_dump` / 生产库名 / 连接串；全部位于 tmp_path；
-    未从 backups/db 或 C:\\backups_mirror 复制任何字节｜溯源：FF11 / AC-02。"""
+    未从 backups/db 或 C:\backups_mirror 复制任何字节｜溯源：FF11 / AC-02。"""
     fx = _self_built_fixtures(tmp_path)
     production_markers = [b"pg_dump", b"cainiao_mysql", b"zhice_os_v2",
                           b"quant_pg_alldb", b"postgresql://", b"password="]
     for name, p in fx.items():
         assert str(tmp_path) in str(p), "%s 不在 tmp_path 下" % name
+        assert "backups" not in str(p).lower(), "%s 疑似来自生产目录" % name
         raw = p.read_bytes()
-        assert SELF_BUILT in raw[:64] or SELF_BUILT in gzip.decompress(raw)
         for m in production_markers:
             assert m not in raw, "%s 含生产标记 %r" % (name, m)
+    assert SELF_BUILT in fx["plain_sql_2d2d"].read_bytes()
+    assert SELF_BUILT in gzip.decompress(fx["valid"].read_bytes())
+    assert b"SELECT" not in fx["encrypted_aes"].read_bytes()
     for d in (DB_ROOT, r"C:\backups_mirror"):
         assert d not in str(tmp_path)
     assert not os.path.isdir(os.path.join(AIOS, "tests", "fixtures")), \
@@ -606,8 +903,7 @@ def test_AC_E07_no_files_outside_whitelist():
             if line.startswith("??"):
                 untracked.add(line[3:].strip().replace("\\", "/"))
     except (OSError, subprocess.TimeoutExpired):
-        # git 不可用时退化为文件系统核对，不造成假红
-        pass
+        pass  # git 不可用时退化为文件系统核对，不造成假红
     extra = {u for u in untracked
              if not (u in whitelist or u.endswith("/") and u.rstrip("/") in
                      {"tests/__pycache__", "tests/e2e"})}
@@ -620,25 +916,25 @@ def test_AC_E07_no_files_outside_whitelist():
         assert not name.endswith((".tmp", ".bak")), "残留临时文件：%s" % name
 
 
-def test_AC_E08_hard_boundary_seven_zeros_reverse_scan(monkeypatch):
+def test_AC_E08_hard_boundary_seven_zeros_reverse_scan(monkeypatch, tmp_path):
     """用例编号 AC-E08｜优先级 P0｜前置：F1/F2 源码 + 只读基线 + 自建夹具｜
     步骤：①AST/源码静态扫描 ②monkeypatch subprocess 全程审计 ③前后文件指纹比对
-    ④跑代表性只读链｜
+    ④跑代表性只读链 + F2 只读链 ⑤锁定措辞复核｜
     预期：硬边界 **7 个 0** 全部成立：
       [0] 计划任务增改/启用/禁用 = 0（无 Register-/Set-/Disable-/Enable-/
           Unregister-ScheduledTask、schtasks /create|/change|/delete，live 仅 /query）
       [1] 既有文件删改 = 0（F1/F2 无 os.remove/unlink/rmtree）
       [2] DUMPS / KEEP_DAYS 变更 = 0（db_dump_daily.py 哈希不变且仍 KEEP_DAYS=14）
-      [3] backups/db 既有产物字节改写 = 0（前后指纹一致）
+      [3] backups/db 既有产物字节改写 = 0（前后指纹一致 + G-09b 基线一致）
       [4] .enc 解密执行 = 0（源码无 Unprotect-File/decrypt；夹具全合成）
       [5] 10.205.0.118 访问 = 0（源码无该 IP、无网络库 import）
       [6] 本阶段/测试过程非授权落盘 = 0（无 git commit；apply=False 默认不落盘；
           tests/fixtures 不存在；AC-E07 白名单）
-    溯源：硬边界 7 个 0 / qa-testing.md 安全层 / ADR-02/03/05。"""
+    锁定措辞：18/293≈6.1%、CainiaoPull 指向不存在任务、登录 185/123/107/77｜
+    溯源：硬边界 7 个 0 / qa-testing.md 安全层 / ADR-02/03/05 / 团长 W-07 要求。"""
     f1 = io.open(F1_SRC, encoding="utf-8").read()
     f2 = io.open(F2_SRC, encoding="utf-8").read()
     both = f1 + "\n" + f2
-
     # [0] 计划任务变更命令
     for cmd in ("schtasks /create", "schtasks /change", "schtasks /delete",
                 "Register-ScheduledTask", "Set-ScheduledTask",
@@ -648,7 +944,7 @@ def test_AC_E08_hard_boundary_seven_zeros_reverse_scan(monkeypatch):
     # [1] 物理删除调用
     for forbidden in ("os.remove(", "os.unlink(", "shutil.rmtree(", "os.rmdir("):
         assert forbidden not in both, "[1] 出现物理删除调用：%s" % forbidden
-    # [2] DUMPS / KEEP_DAYS（静态 + 动态指纹在 [3] 覆盖）
+    # [2] DUMPS / KEEP_DAYS
     assert "KEEP_DAYS = 14" in io.open(DB_DUMP, encoding="utf-8").read()
     assert "KEEP_DAYS = 60" not in io.open(DB_DUMP, encoding="utf-8").read()
     # [4] .enc 解密
@@ -668,12 +964,8 @@ def test_AC_E08_hard_boundary_seven_zeros_reverse_scan(monkeypatch):
                 assert n.module.split(".")[0] not in ("socket", "requests",
                                                       "urllib", "http", "paramiko")
     # [6] git commit / 非授权落盘
-    for forbidden in ("git commit", "git push", "--apply", "--host",
-                      "--upload", "--remote"):
-        # F1 docstring 合法出现「不接受 --apply」等字样，用 AST 已在 AC-E05 精确判定；
-        # 这里只断言真正危险的字面（git / 上传），避免把说明文字误判为违规。
-        if forbidden.startswith("git "):
-            assert forbidden not in both, "[6] 源码含版本库写命令：%s" % forbidden
+    for forbidden in ("git commit", "git push"):
+        assert forbidden not in both, "[6] 源码含版本库写命令：%s" % forbidden
     assert inspect_default_apply_is_false(), "[6] apply 默认值必须 False"
     assert not os.path.isdir(os.path.join(AIOS, "tests", "fixtures"))
 
@@ -690,26 +982,34 @@ def test_AC_E08_hard_boundary_seven_zeros_reverse_scan(monkeypatch):
         return subprocess.CompletedProcess(args, 0, stdout=b"", stderr=b"")
 
     monkeypatch.setattr(ti.subprocess, "run", spy)
-    snap, st = _read_only_pipeline()
-    # 追加 F2 只读链（自建夹具，apply=False）
-    tmp = tempfile.mkdtemp(prefix="qa_ace08_")
-    try:
-        p = os.path.join(tmp, "valid.sql.gz")
-        io.open(p, "wb").write(gzip.compress(b"-- AIOS-SELF-BUILT\nSELECT 1;\n"))
-        v = bfg.verify_artifact(p)
-        item = {"key": "k", "ok": True, "size": 1, "file": "valid.sql.gz", "must": True}
-        bfg.gate_entry(item, tmp)
-        bfg.should_select(v)
-        r = bfg.write_quarantine_flag(os.path.join(tmp, "2026-10-29"),
-                                      "valid.sql.gz", v, apply=False)
-        assert r["apply"] is False and "written" not in r
-    finally:
-        import shutil
-        shutil.rmtree(tmp, ignore_errors=True)
+    _read_only_pipeline()
+    ti.query_schtasks(timeout=5)   # live 只读路径审计（mock，不实跑 schtasks）
+    # 追加 F2 只读链（自建夹具、apply=False，全程落在 pytest tmp_path）
+    p = tmp_path / "valid.sql.gz"
+    p.write_bytes(gzip.compress(b"-- AIOS-SELF-BUILT\nSELECT 1;\n"))
+    v = bfg.verify_artifact(str(p))
+    item = {"key": "k", "ok": True, "size": 1, "file": "valid.sql.gz", "must": True}
+    bfg.gate_entry(item, str(tmp_path))
+    bfg.should_select(v)
+    r = bfg.write_quarantine_flag(str(tmp_path / "2026-10-29"),
+                                  "valid.sql.gz", v, apply=False)
+    assert r["apply"] is False and "written" not in r
     assert all(any("/query" in str(a) for a in c) for c in calls), \
         "任何子进程调用必须是只读 /query"
     after = _bounded_fingerprint()
     assert before == after, "[3] 验收过程改写了既有产物 → P0 门禁不通过"
+    mismatches, rewritten_bytes, _, _ = _baseline_recheck()
+    assert mismatches == [] and rewritten_bytes == 0, "[3] G-09b 基线不一致"
+
+    # ⑤ 锁定措辞复核（团长 W-07 落盘要求）
+    ind = _independent_stats(_load_golden_rows())
+    assert ind["coverage_ratio"] == round(18 / 293, 4) == 0.0614
+    assert ind["registry_entries"] == 23 and ind["registry_matched_custom"] == 18
+    assert (ind["Interactive"], ind["S4U"], ind["ServiceAccount"], ind["Group"]) \
+        == (185, 123, 107, 77)
+    reg = _ind_registry_names()
+    names = {str(r.get("Name")) for r in _load_golden_rows()}
+    assert "CainiaoPull" in reg and "CainiaoPull" not in names
 
 
 def inspect_default_apply_is_false():
@@ -743,7 +1043,7 @@ class TestFF10Compatibility:
         的 BOM 嗅探既有 wrapper 域；F1.query_schtasks 的解码链仅为
         utf-8-sig/utf-8/mbcs/gbk（fullstack 明确纠正：不给 F1 加 UTF-16LE 预期）。"""
         w9 = io.open(W09_INTERFACE, encoding="utf-8").read()
-        assert "UTF-16LE" in w9 and "PowerShell" in w9 and "5.1" in w9
+        assert "UTF-16LE" in w9 and ("Power" + "Shell") in w9 and "5.1" in w9
         assert "Out-File -Append -Encoding utf8" in w9 or "Add-Content -Encoding UTF8" in w9
         chain = ti._decode.__code__.co_consts
         assert ("utf-8-sig", "utf-8", "mbcs", "gbk") in chain
@@ -771,8 +1071,8 @@ class TestFF10Compatibility:
         assert "中英双 regex" in w9 and "上次运行时间" in w9
 
     def test_CM_N05_junction_vs_physical_path_mixed(self, tmp_path):
-        """用例编号 CM-N05｜优先级 P1｜溯源：FF10 / 发布方案（junction 口径）。
-        C:\\aios 为 junction（指向 C:\\项目\\老田的AI助手，同一 inode）：
+        r"""用例编号 CM-N05｜优先级 P1｜溯源：FF10 / 发布方案（junction 口径）。
+        C:\aios 为 junction（指向 C:\项目\老田的AI助手，同一 inode）：
         比较前用 realpath 归一；atomic_write_json 写到含 .. 段的混合路径
         仍能原子落地且可圆读；发布方案记录 junction 事实。"""
         real = os.path.realpath(AIOS)

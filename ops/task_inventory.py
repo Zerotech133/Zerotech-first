@@ -124,9 +124,14 @@ def normalize_task(raw):
     out["category"] = classify(out)
     out["noise"] = out["category"] == "scheduled_noise"
     out["never_run"] = out["category"] == "never_run"
-    out["quarantined"] = False
-    out["deleted_at"] = None
-    out["notes"] = ""
+    # BUG-02（2026-11-06 审计）：这三个是「外部标注字段」，不是可重算的派生
+    # 字段。原实现无条件清零，导致 build_snapshot() 非幂等——把已导出快照
+    # 再导出一次，软删除标记 / 审计备注会静默丢失。无该字段时取值与旧版
+    # 完全一致，故 snapshot_id 与既有 108 条断言不受影响。
+    q = raw.get("quarantined", False)
+    out["quarantined"] = q if isinstance(q, bool) else False
+    out["deleted_at"] = raw.get("deleted_at", None)
+    out["notes"] = raw.get("notes") or ""
     return out
 
 
@@ -214,9 +219,22 @@ def _read_registry_names():
 
 
 def _tasks_of(snap):
+    """统一规范化：三种输入形态走同一条路径。
+
+    BUG-01（2026-11-06 审计）：原实现只对 list 形态 normalize，对
+    {"tasks": [...]} / 已导出快照 dict 直接原样返回。若其中装的是 PowerShell
+    原始大写字段（Name/Path/State），_task_key() 取不到小写 path/name，
+    492 条任务会全部塌缩成 ("\\", "") 单键，diff 静默误报「无变化」。
+    修复后 diff / stats / suggest_registry 无论输入形态都得到同一键空间。
+    BUG-02 修好后重复 normalize 不会丢失外部标注字段，故此路径是幂等的。
+    """
     if isinstance(snap, dict) and "tasks" in snap:
-        return snap["tasks"]
-    return [normalize_task(t) for t in snap]
+        rows = snap["tasks"]
+    elif isinstance(snap, (list, tuple)):
+        rows = snap
+    else:
+        raise ValueError("快照形态不支持：%s" % type(snap).__name__)
+    return [normalize_task(t) for t in rows]
 
 
 def compute_stats(snap):
@@ -393,8 +411,11 @@ def _emit(obj, out, as_json):
     if out:
         atomic_write_json(out, obj)
         print("written: %s" % out)
-    elif as_json or True:
-        print(text)
+        return
+    # BUG-03（2026-11-06 审计）：原为 `elif as_json or True` 恒真分支，
+    # --json 参数被吞掉、else 永不可达。CLI stdout 契约恒为 JSON 文本，
+    # 这里改为显式无条件输出；as_json 仅为兼容旧调用签名而保留。
+    print(text)
 
 
 def main(argv=None):

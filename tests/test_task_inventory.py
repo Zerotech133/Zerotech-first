@@ -26,13 +26,17 @@ r"""W-05 · ops/task_inventory.py 单元测试（qa-tester 单写者落盘）。
   TI-N09 P0 ADR-14 classify 顺序               TI-N10 P0 ADR-13 两套统计口径分离
   TI-N11 P0 §5.4 snapshot_id 排除生成侧元数据  TI-N12 P0 AC-01 连跑 3 次字节级一致
   TI-N13 P0 AC-01 覆盖率 18/293（禁 23/293）  TI-N14 P0 AC-01 五子命令 rc=0
+  TI-N15 P0 ADR-27 同 path 不同 name 不被合并（97/291/492 复合键回归）
+  TI-N16 P0 BUG-01 dict 快照原始 CSV 字段归一化   TI-N17 P0 BUG-02 重复导出保留标注字段
   TI-E01 P0 FF10 中文本地化 / utf-8·mbcs 双解   TI-E02 P0 噪声 RC 与真实失败码混排
   TI-E03 P0 序列化失败不产半截 JSON            TI-E04 P0 0 任务不静默通过
   TI-E05 P0 权限/环境不可用 rc=2 不产半成品    TI-E06 P1 diff 新增/变更检测
   TI-E07 P0 Ready/Disabled 且 rc!=0 仍真实失败 TI-E08 P0 AST 无写 REGISTRY / 无 --apply
   TI-E09 P1 非法 RC 输入不抛异常               TI-E10 P1 基线缺失/坏 JSON 显式报错
 
-异常流 10 条 ≥ 正常流 14 条的一半（7），满足 qa-testing.md 错误预防条款。
+异常流 10 条 ≥ 正常流 15 条的一半（8），满足 qa-testing.md 错误预防条款。
+ADR-27 同步：diff 改用 (path,name) 复合键，added/removed/changed 每条新增 name
+字段；TI-N15 为「同 path 不同 name 不被合并」缺陷回归用例（实测 97/291/492）。
 """
 from __future__ import annotations
 
@@ -142,7 +146,10 @@ def test_TI_N05_diff_removed_marks_soft_delete():
     d = ti.diff_snapshots(base, cur)
     assert d["summary"]["removed"] == 1
     r = d["removed"][0]
-    assert r["path"] == r"\P" and r["deleted_at"] is None and r["quarantined"] is True
+    # ADR-27 新契约：removed 每条为 {path, name, state, deleted_at, quarantined}
+    assert set(r) == {"path", "name", "state", "deleted_at", "quarantined"}
+    assert r["path"] == r"\P" and r["name"] == "P" and r["state"] == "Ready"
+    assert r["deleted_at"] is None and r["quarantined"] is True
     # 反向：源码中不存在任何物理删除调用
     src = io.open(r"C:\aios\ops\task_inventory.py", encoding="utf-8").read()
     for forbidden in ("os.remove(", "os.unlink(", "shutil.rmtree(", "os.rmdir("):
@@ -280,6 +287,49 @@ def test_TI_N14_cli_five_subcommands_rc0(tmp_path, argv, expect_rc):
         assert json.loads(io.open(out, encoding="utf-8").read())
 
 
+def test_TI_N15_same_path_different_names_not_merged_adr27():
+    """用例编号 TI-N15｜优先级 P0｜前置：492 条只读 golden 基线｜
+    步骤：①分别按 path 单键与 (path,name) 复合键统计基数 ②构造同 path（根目录
+    `\\`）下不同 name 的两任务，改其一 state ③diff_snapshots ④自比 492 条基线｜
+    预期：仅有 97 个不同 path、根目录聚集 291 条 → 单键必合并；复合键 492 个
+    不同值、零重复 → 不合并；同 path 下只有 B 被标记 changed 且带 name；
+    自比 summary.unchanged=492（不是 97）；tuple 只作内部键、不进 JSON | 
+    溯源：AC-01 / ADR-27（团长实测缺陷修复的回归用例）。"""
+    rows = _load_golden()
+    norm = [ti.normalize_task(r) for r in rows]
+    paths = [t["path"] for t in norm]
+    keys = [(t["path"], t["name"]) for t in norm]
+    assert len(norm) == 492
+    assert len(set(paths)) == 97, "golden 应仅 97 个不同 path（单键会静默合并）"
+    assert paths.count("\\") == 291, "根目录 `\\` 应聚集 291 条"
+    assert len(set(keys)) == 492, "(path,name) 复合键应有 492 个不同值、零重复"
+
+    def row(name, state):
+        return ti.normalize_task({"Name": name, "Path": "\\",
+                                  "State": state, "RC": 0})
+
+    base = {"tasks": [row("A", "Ready"), row("B", "Ready")]}
+    cur = {"tasks": [row("A", "Ready"), row("B", "Disabled")]}
+    d = ti.diff_snapshots(base, cur)
+    # 单键实现会把两条合并成 1 个 key，无法识别到 name；复合键必须精确识别 B
+    assert d["summary"] == {"added": 0, "removed": 0, "changed": 1, "unchanged": 1}
+    assert len(d["changed"]) == 1
+    assert d["changed"][0]["name"] == "B" and d["changed"][0]["path"] == "\\"
+    assert "state" in d["changed"][0]["fields"]
+    # tuple 仅在模块内部做字典键，绝不进入 JSON 输出；unchanged 明细不发到顶层，
+    # 只以 summary.unchanged 的 len() 计数对外（顶层恰 9 键，含 added/removed/changed）
+    assert set(d) == {"schema_version", "kind", "generated_at", "base", "cur",
+                      "added", "removed", "changed", "summary"}
+    assert isinstance(d["summary"]["unchanged"], int)
+    json.dumps(d, ensure_ascii=False)  # 可序列化 = 无 tuple 泄漏（否则 TypeError）
+
+    snap = ti.build_snapshot(rows, source="file", generated_at="FIXED")
+    self_d = ti.diff_snapshots(snap, snap)
+    assert self_d["summary"] == {"added": 0, "removed": 0,
+                                 "changed": 0, "unchanged": 492}, \
+        "ADR-27 修复前自比会把 492 误报成 97"
+
+
 # --------------------------------------------------------------------------
 # 异常流（E）
 # --------------------------------------------------------------------------
@@ -370,7 +420,11 @@ def test_TI_E06_diff_added_and_changed_detection():
     cur = {"tasks": [row("A", "Ready", 0), row("B", "Disabled", 3), row("C", "Ready", 0)]}
     d = ti.diff_snapshots(base, cur)
     assert d["summary"] == {"added": 1, "removed": 0, "changed": 1, "unchanged": 1}
-    assert d["changed"][0]["path"] == r"\B"
+    # ADR-27 新契约：added/changed 每条带 name 字段；unchanged 仍是 path 字符串列表
+    assert set(d["added"][0]) == {"path", "name", "state"}
+    assert d["added"][0]["name"] == "C" and d["added"][0]["path"] == r"\C"
+    assert set(d["changed"][0]) == {"path", "name", "fields"}
+    assert d["changed"][0]["name"] == "B" and d["changed"][0]["path"] == r"\B"
     assert "state" in d["changed"][0]["fields"] and "last_rc" in d["changed"][0]["fields"]
 
 
@@ -440,3 +494,43 @@ def test_TI_E10_missing_or_bad_baseline_raises_loudly(tmp_path):
     good = tmp_path / "good.json"
     good.write_text(json.dumps({"tasks": [{"Name": "X"}]}), encoding="utf-8-sig")
     assert len(ti._load_rows(str(good))) == 1
+
+
+# ---------------------------------------------------------------------------
+# 2026-11-06 代码审计回归（BUG-01 / BUG-02）
+# ---------------------------------------------------------------------------
+
+def test_TI_N16_dict_snapshot_with_raw_csv_fields_normalized():
+    """TI-N16 P0｜BUG-01 回归：dict-with-tasks 装原始 CSV 大写法时不得塌缩键空间。
+
+    修复前 _tasks_of() 对 {"tasks": [...]} 直接原样返回，_task_key() 取不到
+    小写 path/name，同目录两条任务会合并成 ("\\", "") 单键，diff 静默误报
+    「零变化」。本用例同时验证「删一条必须精确识别」，防止合并掩盖漏报。
+    """
+    rows = [
+        {"Name": "Alpha", "Path": "\\", "State": "Ready", "RC": 0},
+        {"Name": "Beta", "Path": "\\", "State": "Ready", "RC": 0},
+    ]
+    snap = ti.build_snapshot(rows, source="file", generated_at="FIXED")
+    d = ti.diff_snapshots({"tasks": rows}, snap)
+    assert d["summary"] == {"added": 0, "removed": 0,
+                            "changed": 0, "unchanged": 2}
+    d2 = ti.diff_snapshots({"tasks": rows}, {"tasks": rows[:1]})
+    assert d2["summary"]["removed"] == 1
+    assert d2["removed"][0]["name"] == "Beta"
+
+
+def test_TI_N17_build_snapshot_idempotent_keeps_annotations():
+    """TI-N17 P0｜BUG-02 回归：重复导出不得丢失软删除标记与审计备注。"""
+    rows = [{"Name": "Alpha", "Path": "\\", "State": "Ready", "RC": 0}]
+    first = ti.build_snapshot(rows, source="file", generated_at="FIXED")
+    t = dict(first["tasks"][0])
+    t.update(notes="KEEP-ME", quarantined=True, deleted_at="2026-11-06")
+    again = ti.build_snapshot([t], source="file", generated_at="FIXED")["tasks"][0]
+    assert again["notes"] == "KEEP-ME"
+    assert again["quarantined"] is True
+    assert again["deleted_at"] == "2026-11-06"
+    # 无标注字段时行为与旧版完全一致：snapshot_id 不变式（ADR-15 / 补丁 10）
+    # 不因本次修复而改变，生成侧元数据仍被排除。
+    assert ti.build_snapshot(first["tasks"], source="other",
+                             generated_at="OTHER")["snapshot_id"] == first["snapshot_id"]

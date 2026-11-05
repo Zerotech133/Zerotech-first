@@ -96,8 +96,11 @@ def verify_artifact(path, *, compute_sha256=True, probe=PROBE_BYTES,
         # 需要更长的头：detect_format 的 "Salted__" 是 8 字节，若只喂 2 字节
         # 会把合法 .enc 误判成 unknown（VALID_FORMATS 里的 encrypted-aes
         # 分支永远不可达）。ADR-30：两处读头，互不干扰，不改变 v["magic"]。
-        magic = read_magic(path)
+        # BUG-04（2026-11-06 审计）：只读一次 8 字节头，对外 magic 由同一次
+        # 读取切片得到。原实现两次独立 open()，若两次之间产物被写入侧替换，
+        # 会出现「magic 取自 A 文件、format 取自 B 文件」的 TOCTOU 错判。
         head = read_magic(path, 8)
+        magic = head[:2]
         v["magic"] = magic.hex()
         v["format"] = detect_format(head, size)
         if not magic.startswith(expect_magic):
@@ -105,6 +108,11 @@ def verify_artifact(path, *, compute_sha256=True, probe=PROBE_BYTES,
             # 绝不删除、绝不改写、绝不尝试重压缩。
             v["reason"] = ("magic mismatch: expected 1f8b got %s "
                            "(non-gzip payload)" % magic.hex())
+            # BUG-04：坏档恰恰最需要指纹做隔离留痕与回滚取证。原实现在此
+            # 分支提前 return，compute_sha256=True 时 sha256 仍为空串，违背
+            # 函数契约。合法 gzip 分支不受影响；compute_sha256=False 仍留空。
+            if compute_sha256:
+                v["sha256"] = sha256_of(path)
             return v
         ok, why = stream_probe(path, probe)
         v["probe_bytes"] = min(probe, size)
@@ -178,6 +186,24 @@ def write_quarantine_flag(day_dir, filename, verdict, *, apply=False):
     }
     if apply:
         os.makedirs(day_dir, exist_ok=True)
+        # BUG-05（2026-11-06 审计）：原实现用 os.replace 静默覆盖已有 flag，
+        # 同一天逐个调用会只留下最后一个 filename。W-08 实物是 3 文件聚合，
+        # 说明实现与交付物不一致，且存在留痕数据丢失。改为合并去重，
+        # 并保留首档判定的权威字段；类型冲突或不可解析时拒绝覆盖。
+        if os.path.isfile(flag_path):
+            try:
+                with open(flag_path, "r", encoding="utf-8") as f:
+                    prev = json.load(f)
+            except (OSError, ValueError) as exc:
+                raise ValueError("flag 已存在但不可解析，拒绝覆盖：%s" % exc)
+            if prev.get("type") != content["type"]:
+                raise ValueError("flag 类型冲突，拒绝覆盖：%r" % prev.get("type"))
+            content["files"] = sorted(
+                set(prev.get("files") or []) | set(content["files"]))
+            for k in ("format", "detected_magic", "policy",
+                      "decision_ref", "recoverable", "date"):
+                if k in prev:
+                    content[k] = prev[k]
         fd, tmp = tempfile.mkstemp(prefix=".flag_", suffix=".tmp", dir=day_dir)
         try:
             with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as f:
@@ -201,8 +227,9 @@ def main(argv=None):
     ap.add_argument("--no-sha256", action="store_true")
     a = ap.parse_args(argv)
     v = verify_artifact(a.path, compute_sha256=not a.no_sha256)
-    if a.json or True:
-        print(json.dumps(v, ensure_ascii=False, indent=2, sort_keys=True))
+    # BUG-03：去掉 `or True` 恒真分支；verify 的 stdout 契约恒为 JSON 文本，
+    # --json 仅作兼容参数保留，不再制造不可达分支。
+    print(json.dumps(v, ensure_ascii=False, indent=2, sort_keys=True))
     return 0 if v["ok"] else 1
 
 

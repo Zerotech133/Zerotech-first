@@ -40,6 +40,13 @@ import sys
 import tempfile
 from pathlib import Path
 
+# D4 (2026-11-06, L2 已批准)：接入 F2 的 should_select 自动过滤坏档，
+# 无需人工 --date 拦截。F2 位于 ops/，路径注入后直接导入。
+_AIOS_OPS = Path(__file__).resolve().parent.parent / "ops"
+if str(_AIOS_OPS) not in sys.path:
+    sys.path.insert(0, str(_AIOS_OPS))
+from backup_format_gate import verify_artifact, should_select
+
 BACKUP_ROOT = Path(r"C:\项目\老田的AI助手\backups\db")
 KG_LOG = Path(r"C:\Temp\kg_sync_task.log")
 TASK_LOG = Path(r"C:\Temp\b4_restore_drill_task.log")
@@ -85,7 +92,12 @@ def docker(*args, **kw):
 
 
 def list_backups():
-    """返回 [(date_str, sql_gz_path)]，按日期倒序。"""
+    """返回 [(date_str, sql_gz_path)]，按日期倒序；D4：坏档（verify 失败）自动过滤。
+
+    坏档判定复用 F2 的 should_select(verify_artifact(p))：魔数非 1f8b 或 gzip 流
+    损坏即 ok=False，自动排除出可选列表，无需人工 --date 拦截；好档（gzip 且
+    可恢复）保留。flag 仍只是隔离留痕，与选档逻辑无因果。
+    """
     out = []
     if not BACKUP_ROOT.is_dir():
         return out
@@ -93,8 +105,13 @@ def list_backups():
         if not d.is_dir() or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", d.name):
             continue
         p = d / "quant_pg_alldb.sql.gz"
-        if p.is_file():
-            out.append((d.name, p))
+        if not p.is_file():
+            continue
+        # D4：接入 should_select —— 坏档自动过滤（compute_sha256=False 跳过全文件
+        # 指纹，仅坏档路径才补算，性能可控）。
+        if not should_select(verify_artifact(str(p), compute_sha256=False)):
+            continue
+        out.append((d.name, p))
     return sorted(out, key=lambda x: x[0], reverse=True)
 
 
