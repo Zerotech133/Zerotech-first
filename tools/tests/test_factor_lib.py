@@ -133,7 +133,7 @@ def test_registry_complete():
         assert spec.direction in (1, -1)
         assert spec.family in ("量学形态", "通用", "Tushare-动量", "Tushare-流动性",
                                "Tushare-风险", "Tushare-反转", "Tushare-规模",
-                               "Tushare-Alpha101")
+                               "Tushare-Alpha101", "Tushare-财务")
         assert isinstance(spec.description, str) and spec.description.strip()
         assert isinstance(spec.requires, tuple)
     rows = factor_lib.factor_rows()

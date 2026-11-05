@@ -3,7 +3,8 @@
 
 本模块是「选股因子/量学形态 → 可复现评测」的统一底座：
   - FACTORS（dict[str, FactorSpec]）注册表：内置 17 个因子（9 个量学形态可计算版 + 8 个通用因子），
-    启动时自动注册 Tushare factor_list B1 批次 86 个行情/估值因子（合计 103 个；映射全表见 `map` 子命令）；
+    启动时自动注册 Tushare factor_list 的 B1 行情 86 / B2 Alpha101 101 / B3 财报 84 个因子
+    （合计 288 个；映射全表见 `map` 子命令，B3 的 dividend_yield_3y_avg 因无数据源标记 blocked）；
   - 所有因子函数签名统一：fn(panel) -> DataFrame（日期 × 代码），只允许使用「当日及以前」的数据；
   - 20 日 CAR 口径：T 日收盘出信号 → T+1 收盘入场 → 持有 20 个交易日后（T+21 收盘）卖出，
     收益 = 个股区间涨跌幅 - 等权市场同期涨跌幅 - 单边 30bp 成本（与 H24/H26/H29 口径一致）；
@@ -68,7 +69,7 @@ if str(_HERE) not in sys.path:
     sys.path.insert(0, str(_HERE))
 import stat_utils  # noqa: E402
 
-LIB_VERSION = "1.1.0"  # 1.1.0: 接入 Tushare factor_list B1 行情因子（86 个）；loader 扩 daily_basic/index_daily
+LIB_VERSION = "1.2.0"  # 1.2.0: B2 Alpha101 + B3 PIT 财报因子接入；B1 行情因子 86 个
 DEFAULT_HORIZON = 20          # 持有期（交易日）：T+1 收盘入场，T+1+h 收盘卖出
 DEFAULT_COST = 0.003          # 单边成本 30bp（买卖各 15bp 近似为单边 30bp，与 H24/H29 同口径）
 DEFAULT_MIN_CROSS_SECTION = 50  # 单日横截面最少有效股票数（少于此不计 IC 日）
@@ -1279,7 +1280,7 @@ def main(argv: list[str] | None = None) -> int:
     p_map = sub.add_parser("map", help="Tushare factor_list 272 因子映射/批次状态")
     p_map.add_argument("--json", action="store_true", help="以 JSON 输出")
     p_map.add_argument("--batch", default="", help="只看某批次（B1_price_volume / B2_alpha101_expression / B3_financial_pit）")
-    p_map.add_argument("--status", default="", choices=["", "implemented", "mapped"], help="按实现状态过滤")
+    p_map.add_argument("--status", default="", choices=["", "implemented", "mapped", "blocked_missing_data"], help="按实现状态过滤")
 
     p_eval = sub.add_parser("eval", help="评测因子（真实数据）")
     p_eval.add_argument("--start", required=True, help="信号起始日 YYYYMMDD（含）")

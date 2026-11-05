@@ -8,8 +8,9 @@
 - ``TUSHARE_FACTOR_MAP``：272 条映射（factor_type / batch / status / requires / note）。
 - **B1 行情量价批次**：本模块实现 86 个非 Alpha101 因子（Momentum 20 / Liquidity 35 /
   Risk 25 / Reversal 3 / Size 3），依赖日行情 + adj_factor + daily_basic + index_daily。
-- **B2 Alpha101 批次**：101 条已映射（status=mapped），待表达式引擎实现（同一批行情数据）。
-- **B3 财务 PIT 批次**：85 条 Growth/Quality/Value 已映射（status=mapped），待 PIT 财报加载。
+- **B2 Alpha101 批次**：101 条已实现（alpha101_engine.py 表达式引擎）。
+- **B3 财务 PIT 批次**：85 条 Growth/Quality/Value 已注册（84 条实现；dividend_yield_3y_avg
+  因 dividend 表缺失标记 blocked_missing_data）。
 
 约定
 ----
@@ -28,6 +29,7 @@ import numpy as np
 import pandas as pd
 
 from alpha101_engine import evaluate_formula, load_formulas
+from factor_lib_financial import B3_FACTORS, register_financial
 
 SOURCE = "tushare.factor_list"
 
@@ -575,8 +577,28 @@ def register_alpha101(register: Callable, existing: dict[str, Any] | None = None
     return count
 
 
+# ---------------------------------------------------------------- B3 注册
+def register_b3(register: Callable, existing: dict[str, Any] | None = None) -> int:
+    """把 B3 PIT 财报因子注册进 factor_lib；返回新增数量（不含 blocked）。"""
+    existing = existing or {}
+    count = register_financial(register, existing)
+    for name, spec in B3_FACTORS.items():
+        entry = TUSHARE_FACTOR_MAP.get(name)
+        if entry is None:
+            continue
+        blocked = "blocked" in (spec.get("note") or "")
+        entry.update({
+            "status": "blocked_missing_data" if blocked else "implemented",
+            "requires": tuple(spec.get("requires") or (
+                "income", "balancesheet", "cashflow", "fina_indicator", "ann_date", "total_mv")),
+            "batch": BATCH_B3,
+            "note": spec.get("note") or "PIT 财报因子（factor_lib_financial.py）",
+        })
+    return count
+
+
 def register_batch(register: Callable, existing: dict[str, Any] | None = None) -> int:
-    """把 B1 已实现因子 + B2 Alpha101 注册进 factor_lib；返回注册数量。"""
+    """把 B1/B2/B3 已实现因子注册进 factor_lib；返回注册数量。"""
     existing = existing or {}
     count = 0
     for spec in _SPECS:
@@ -586,6 +608,7 @@ def register_batch(register: Callable, existing: dict[str, Any] | None = None) -
                  spec["description"], source=SOURCE, requires=spec["requires"])(spec["fn"])
         count += 1
     count += register_alpha101(register, existing)
+    count += register_b3(register, existing)
     return count
 
 
@@ -607,4 +630,5 @@ def factor_map_summary() -> dict[str, Any]:
 
 
 __all__ = ["TUSHARE_FACTOR_MAP", "TYPE_NAMES", "SOURCE", "BATCH_B1", "BATCH_B2",
-           "BATCH_B3", "register_batch", "factor_map_summary"]
+           "BATCH_B3", "register_batch", "register_alpha101", "register_b3",
+           "factor_map_summary"]

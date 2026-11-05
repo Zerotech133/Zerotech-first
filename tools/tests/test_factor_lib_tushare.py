@@ -37,11 +37,11 @@ def test_factor_map_complete():
     assert summary["by_batch"] == {
         ft.BATCH_B1: 86, ft.BATCH_B2: 101, ft.BATCH_B3: 85,
     }
-    assert summary["by_status"] == {"implemented": 187, "mapped": 85}
+    assert summary["by_status"] == {"implemented": 271, "blocked_missing_data": 1}
     for name, entry in TUSHARE_FACTOR_MAP.items():
         assert entry["name"] == name
         assert entry["factor_type"] in ft.TYPE_NAMES
-        assert entry["status"] in ("implemented", "mapped")
+        assert entry["status"] in ("implemented", "mapped", "blocked_missing_data")
         assert isinstance(entry["requires"], tuple)
         assert entry["source"] == ft.SOURCE
 
@@ -106,7 +106,9 @@ def _synthetic_panel(days: int = 90, codes: int = 6) -> Panel:
 
 def test_all_b1_factors_compute_and_shape():
     panel = _synthetic_panel()
-    for name in (n for n, e in TUSHARE_FACTOR_MAP.items() if e["status"] == "implemented"):
+    names = (n for n, e in TUSHARE_FACTOR_MAP.items()
+             if e["status"] == "implemented" and e["batch"] in (ft.BATCH_B1, ft.BATCH_B2))
+    for name in names:
         out = FACTORS[name].compute(panel)
         assert isinstance(out, pd.DataFrame), name
         assert out.shape == panel.shape, name
@@ -277,4 +279,4 @@ def test_cli_map_json():
     payload = json.loads(proc.stdout)
     summary = payload["summary"]
     assert summary["total"] == 272
-    assert summary["implemented"] == 187
+    assert summary["implemented"] == 271

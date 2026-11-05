@@ -98,9 +98,9 @@ def test_register_alpha101_idempotent():
 
     first = ft.register_batch(register, registry)
     second = ft.register_batch(register, registry)
-    assert first == 187
+    assert first == 271
     assert second == 0
-    assert len(registry) == 187
+    assert len(registry) == 271
     assert {"alpha101_1", "alpha101_101"} <= set(registry)
     assert registry["alpha101_1"]["family"] == "Tushare-Alpha101"
     assert registry["alpha101_1"]["kind"] == "continuous"
@@ -108,7 +108,7 @@ def test_register_alpha101_idempotent():
 
 def test_global_registry_contains_alpha101():
     assert {"alpha101_1", "alpha101_101"} <= set(FACTORS)
-    assert len(FACTORS) == 204
+    assert len(FACTORS) == 288
     spec = FACTORS["alpha101_1"]
     assert spec.family == "Tushare-Alpha101"
     assert spec.source == ft.SOURCE
