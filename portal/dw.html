@@ -150,6 +150,20 @@ tr.clickable{cursor:pointer}tr.clickable:hover td{background:var(--panel2)}
   </div>
 </div>
 
+<details id="catalogPanel" style="margin:16px 0">
+  <summary style="cursor:pointer;color:var(--acc);font-size:14px;font-weight:600;padding:8px 0">▸ 表清单（实时 catalog · 点击展开 / 折叠）</summary>
+  <div class="filters" style="margin-top:10px">
+    <input id="catSearch" placeholder="按表名 / 描述搜索…" style="min-width:220px">
+    <select id="catSource"><option value="">全部源</option></select>
+    <span class="muted" id="catCount"></span>
+    <span class="muted" id="catState"></span>
+  </div>
+  <div id="catNotice" class="muted" style="margin:8px 0">实时通道未就绪（待 8091 自然重启）</div>
+  <div id="catTableWrap" class="hidden">
+    <table><thead><tr><th>表名</th><th>源</th><th>频率</th><th>新鲜度</th><th class="num">行数</th><th>状态</th></tr></thead><tbody id="catBody"></tbody></table>
+  </div>
+</details>
+
 <div class="foot"><span id="gen"></span><span class="muted">数据源：资产目录 / 注册表 / 假设台账 / 工单 / 备份 / 审批台账</span></div>
 
 <div id="mask" onclick="closeModal()"></div>
@@ -174,6 +188,8 @@ async function load(){
     const el=document.getElementById('err');el.classList.remove('hidden');
     el.textContent='快照加载失败：'+e.message+'（先运行 python tools/dw_dashboard.py）';
   }
+  /* 实时 catalog 双通道探测：独立于快照主体，失败静默回落，不阻塞/不弹错/不白屏 */
+  try{ await probeCatalog(); }catch(e){ /* 双保险：探测异常绝不影响已渲染页面 */ }
 }
 /* ===== KPI cards 可下钻 ===== */
 const CARD_DEFS=[
@@ -357,6 +373,181 @@ function dlCSV(kind){
   dl('dw_'+kind+'_'+SNAP.today+'.csv',csv);
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+/* ================= 实时 catalog 双通道（T2 新增；不触碰任何 SNAP.xxx 渲染函数 / CARD_DEFS / render() 顺序） ================= */
+/* CATALOG_LIVE：探测成功(ok && total>0)时为实时响应对象，否则为 null。
+   CATALOG_STATE：'unknown' | 'live' | 'snapshot'，双通道状态机。 */
+let CATALOG_LIVE=null;
+let CATALOG_STATE='unknown';
+
+/* AbortSignal 兼容兜底：
+   1) 现代浏览器直接用 AbortSignal.timeout(3000)（spec §5.1 口径）；
+   2) 无该静态方法的老浏览器，用 AbortController + setTimeout 模拟 3s 超时；
+   3) 两者皆无则返回 undefined，fetch 会忽略 signal（不报错、不白屏），已在注释中明确说明。 */
+function timeoutSignal(){
+  if(typeof AbortSignal!=='undefined' && typeof AbortSignal.timeout==='function') return AbortSignal.timeout(3000);
+  if(typeof AbortController!=='undefined'){const ac=new AbortController();setTimeout(()=>ac.abort(),3000);return ac.signal;}
+  return undefined;
+}
+
+/* 副标题标记：与 render() 内副标题表达式同构；覆盖 SNAP.catalog 后刷新文本并追加通道标记，
+   不修改 render() 本身，也不改 renderCards/renderToday/... 的调用顺序。 */
+function setCatalogFlag(txt){
+  const el=document.getElementById('sub');
+  if(!el||!SNAP) return;
+  let base;
+  try{
+    const c=SNAP.cockpit;
+    base='catalog v'+(SNAP.catalog.version||'?')+' · '+SNAP.catalog.tables+' 表 · registry '+
+      (SNAP.catalog.registry.physical||'?')+' 物理/'+(SNAP.catalog.registry.display||'?')+' 展示 · 来源 '+c.sources_total+
+      ' · 数据契约 '+(SNAP.catalog.contracts||0)+' 份 · 快照 '+SNAP.generated_at;
+  }catch(e){
+    base=el.textContent.replace(/（catalog (实时|静态快照)）$/,'');
+  }
+  el.textContent=base+txt;
+}
+
+/* 实时探测：成功覆盖 SNAP.catalog.version/tables 消除 v39→v43 漂移并标『实时』；
+   404 / 401 / 超时 / 网络异常 / JSON 错一律静默回落，标『静态快照』，页面其余表现与改造前一致。 */
+async function probeCatalog(){
+  CATALOG_STATE='unknown';
+  CATALOG_LIVE=null;
+  try{
+    const r=await fetch('/api/data/catalog/tables?detail=brief',{cache:'no-store',signal:timeoutSignal()});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const live=await r.json();
+    if(!live || live.ok!==true || !(live.total>0)) throw new Error('bad payload');
+    CATALOG_LIVE=live; CATALOG_STATE='live';
+    if(SNAP && SNAP.catalog){
+      SNAP.catalog.version=live.version;
+      SNAP.catalog.tables=live.total;
+    }
+    setCatalogFlag('（catalog 实时）');
+  }catch(e){
+    /* 静默：不写 #err、不弹 modal、不抛未捕获异常 */
+  }
+  if(CATALOG_STATE!=='live'){
+    CATALOG_STATE='snapshot';
+    CATALOG_LIVE=null;
+    setCatalogFlag('（catalog 静态快照）');
+  }
+  renderTableList();
+  return CATALOG_STATE==='live';
+}
+
+/* ===== 可折叠「表清单」：列 表名 / 源 / 频率 / 新鲜度 / 行数 / 状态 ===== */
+function renderTableList(){
+  const wrap=document.getElementById('catTableWrap'),body=document.getElementById('catBody'),
+        notice=document.getElementById('catNotice'),sel=document.getElementById('catSource'),
+        count=document.getElementById('catCount'),state=document.getElementById('catState');
+  if(!wrap||!body||!notice||!sel) return;
+  const live=CATALOG_LIVE;
+  if(!live || !Array.isArray(live.items) || !live.items.length){
+    wrap.classList.add('hidden');
+    notice.classList.remove('hidden');
+    notice.textContent='实时通道未就绪（待 8091 自然重启）';
+    if(count) count.textContent='';
+    if(state) state.textContent=CATALOG_STATE==='snapshot'?'catalog 静态快照':'';
+    return;
+  }
+  notice.classList.add('hidden');
+  wrap.classList.remove('hidden');
+  if(state) state.textContent='catalog 实时';
+  /* 源下拉由 CATALOG_LIVE.by_source 动态生成 */
+  const sources=Object.keys(live.by_source||{}).sort();
+  const cur=sel.value;
+  const stamp=String(live.version)+':'+sources.length;
+  if(sel.dataset.built!==stamp){
+    sel.innerHTML='<option value="">全部源</option>'+
+      sources.map(s=>'<option value="'+esc(s)+'">'+esc(s)+' ('+Number(live.by_source[s]||0)+')</option>').join('');
+    sel.dataset.built=stamp;
+    if(sources.indexOf(cur)>=0) sel.value=cur;
+  }
+  applyCatFilter();
+}
+function applyCatFilter(){
+  const live=CATALOG_LIVE,body=document.getElementById('catBody'),count=document.getElementById('catCount');
+  if(!live||!body) return;
+  const q=String((document.getElementById('catSearch')||{}).value||'').trim().toLowerCase();
+  const src=String((document.getElementById('catSource')||{}).value||'');
+  const items=Array.isArray(live.items)?live.items:[];
+  const rows=items.filter(it=>{
+    if(src && it.source!==src) return false;
+    if(q && !(String(it.name||'').toLowerCase().includes(q)||String(it.desc||'').toLowerCase().includes(q))) return false;
+    return true;
+  });
+  if(count) count.textContent='共 '+rows.length+' / '+items.length+' 表';
+  body.innerHTML=rows.map(it=>{
+    const name=String(it.name||'');
+    const st=it.deprecated?'已废弃':(it.verification_status||it.lifecycle||'—');
+    return '<tr class="clickable" data-tname="'+esc(name)+'">'+
+      '<td><b>'+esc(name)+'</b></td>'+
+      '<td class="muted">'+esc(it.source||'—')+'</td>'+
+      '<td>'+esc(it.freq||'—')+'</td>'+
+      '<td class="mono">'+esc(it.freshness==null?'—':it.freshness)+'</td>'+
+      '<td class="num">'+esc(it.rows==null?'—':it.rows)+'</td>'+
+      '<td>'+esc(st)+'</td></tr>';
+  }).join('');
+  body.querySelectorAll('tr[data-tname]').forEach(tr=>tr.onclick=()=>openTableDetail(tr.dataset.tname));
+}
+
+/* 点击表清单某行 → 单表端点 → 复用 openModal 展示 schema + 前 20 行样本；失败显示 reason。 */
+async function openTableDetail(name){
+  const title='表详情 · '+name;
+  openModal(title,'<div class="muted">加载中…</div>');
+  try{
+    const r=await fetch('/api/data/catalog/table?name='+encodeURIComponent(name)+'&limit=20',{cache:'no-store',signal:timeoutSignal()});
+    let d=null;
+    try{ d=await r.json(); }catch(e){ d=null; }
+    if(!r.ok || !d || d.ok!==true){
+      const reason=(d&&(d.reason||d.message||d.error))||('HTTP '+r.status);
+      openModal(title,'<div class="err">'+esc(reason)+'</div>');
+      return;
+    }
+    openModal(title,tableDetailHtml(d));
+  }catch(e){
+    openModal(title,'<div class="err">'+esc(e&&e.message?e.message:String(e))+'</div>');
+  }
+}
+function tableDetailHtml(d){
+  const meta=d.meta||{},cols=Array.isArray(d.columns)?d.columns:[],rows=Array.isArray(d.rows)?d.rows:[];
+  let h='<div class="muted" style="margin-bottom:6px">catalog v'+esc(CATALOG_LIVE?CATALOG_LIVE.version:'?')+
+    ' · '+esc(d.name)+' · 返回 '+esc(d.row_count==null?rows.length:d.row_count)+' 行'+(d.truncated?'（已截断）':'')+
+    (d.clamped?' · limit 已截断至 '+esc(d.limit_applied)+' 行':'')+'</div>';
+  h+='<table><tbody>'+
+    row('解析',esc(d.name)+' → '+esc(d.resolved||d.name))+
+    row('源',esc(meta.source||'—'))+
+    row('频率',esc(meta.freq||'—'))+
+    row('新鲜度',esc(meta.freshness==null?'—':meta.freshness))+
+    row('行数',esc(meta.rows==null?'—':meta.rows))+
+    row('日期列',esc(meta.date_col||'—'))+
+    row('代码列',esc(meta.code_col||'—'))+
+    row('可用',d.available===false?'否':'是')+'</tbody></table>';
+  const schema=Array.isArray(meta.schema)?meta.schema:[];
+  h+='<h3 style="font-size:14px;color:var(--acc);margin:14px 0 6px">Schema（'+schema.length+' 列）</h3>';
+  h+=schema.length?('<table><thead><tr><th>#</th><th>列名</th><th>类型</th><th>说明</th></tr></thead><tbody>'+
+    schema.map((c,i)=>typeof c==='string'
+      ? '<tr><td class="num">'+i+'</td><td class="mono">'+esc(c)+'</td><td class="muted">—</td><td class="muted">—</td></tr>'
+      : '<tr><td class="num">'+i+'</td><td class="mono">'+esc(c.name||c.column||'')+'</td><td class="muted">'+esc(c.type||c.dtype||'—')+'</td><td class="muted">'+esc(c.desc||c.comment||'—')+'</td></tr>').join('')+
+    '</tbody></table>'):'<div class="muted">schema 未返回</div>';
+  h+='<h3 style="font-size:14px;color:var(--acc);margin:14px 0 6px">样本数据（前 '+Math.min(20,rows.length)+' 行）</h3>';
+  /* 样本按存储顺序取，ts_daily 首行可能是 2023 年；必须明示，否则会被误读成断更。
+     同时给出 catalog 记录的新鲜度，让「样本旧」与「数据旧」两件事分开。 */
+  if(d.sample_note){h+='<div class="muted" style="margin-bottom:6px">'+esc(d.sample_note)+
+    '（catalog 新鲜度：'+esc(meta.freshness==null?'—':meta.freshness)+'）</div>';}
+  if(d.available===false){
+    h+='<div class="err">'+esc(d.reason||'该表当前不可读')+'</div>';
+  }else if(!rows.length){
+    h+='<div class="muted">无样本数据</div>';
+  }else{
+    const headCols=cols.length?cols:Object.keys(rows[0]||{});
+    h+='<div style="overflow:auto"><table><thead><tr>'+headCols.map(c=>'<th>'+esc(c)+'</th>').join('')+'</tr></thead><tbody>'+
+      rows.slice(0,20).map(r=>'<tr>'+headCols.map((c,i)=>'<td class="mono">'+esc(Array.isArray(r)?(r[i]==null?'':r[i]):(r&&r[c]!=null?r[c]:''))+'</td>').join('')+'</tr>').join('')+
+      '</tbody></table></div>';
+  }
+  return h;
+}
+/* 表清单：关键词搜索 + 源下拉筛选 */
+['catSearch','catSource'].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener(el.tagName==='INPUT'?'input':'change',applyCatFilter);});
 load();
 </script>
 <script>

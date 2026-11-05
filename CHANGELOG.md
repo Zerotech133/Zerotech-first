@@ -3,6 +3,40 @@
 本文件记录面向运行的显著变更（Keep a Changelog 风格，日期 = Asia/Shanghai）。
 格式参考开源实践：版本（或 Unreleased）/ Added / Changed / Fixed / Removed / Security。
 
+## [2026-11-05] — 前后端数据打通（catalog 表名 → 数据 HTTP 通道）
+
+### Added
+- `portal/api_catalog_data.py`：只读端点 `GET /api/data/catalog/tables`（258 表元数据，
+  source/freq/q 过滤、分页、brief/full、全量 by_source/by_freq）与
+  `GET /api/data/catalog/table?name=`（schema + 样本行），复用 `quant_backtest/datamart.read`。
+  name 严格白名单（catalog tables/aliases）、limit 上限 200、DataFrame 类型安全转换、
+  所有异常收敛为结构化 JSON，不外泄 `store`/`manifest` 绝对路径。
+- `portal/dw.html`：实时 catalog 优先 + 静态快照兜底双通道（3s 超时、失败静默），
+  新增 258 表可搜索/可筛选清单与单表样本弹窗；`SNAP` 结构与既有 30+ 渲染函数逐字未改。
+- 单测 `portal/tests/test_catalog_data_api.py`(33)、`test_dw_catalog_fallback.py`(13)。
+
+### Changed
+- `portal/portal_api.py`：`do_GET` 前缀早分支区 **+7 行 / 0 删除**挂载 `/api/data/catalog/`。
+  `data` 已在 nginx 公开族 B 白名单 → **无需改 nginx.conf、无需 reload**；8091 由 SYSTEM 托管，
+  按 WO-OS-09 判例代码先落地、待宿主自然重启生效，本轮不重启任何服务。
+- 唯一表清单口径固定为 `catalog.json` 258 表；306(warehouse physical)/314(dataset_inventory)
+  退为物理资产视图。
+
+### Fixed
+- 集成实测抓到别名查询把原名传给 `datamart.read` 触发跨源 concat 全表扫描（60s 超时）
+  → 改按 `aliases[].primary` 取数，响应用 `name`/`resolved` 明示；原有 fake 测试用
+  `lambda *a` 吞参数所以没抓到，已补实参断言。
+- `limit>200` 曾静默截断 → 响应补 `limit_applied`/`clamped`；样本按存储顺序返回
+  （`ts_daily` 首行是 2023-07-31）易被误读成断更 → 补 `sample_note` 并在弹窗并列
+  catalog 新鲜度。
+
+### Notes
+- 全程零 L2 动作：`portal/nginx.conf` 原件 sha256/mtime/内容零变化，未 reload、未重启、
+  未杀进程、未动计划任务。第 1 步需 reload 的配置（补 learning/kb、修 301 丢端口）
+  只产出待批副本与五要素报批单（`reports/l2_approval_20261105.md`），待老田批准。
+- 验收：新增 46 项 + nginx 白名单契约 14 项 + data_hub 43 项全过；临时 HTTP 实例
+  端到端 10/10 用例符合预期；`node --check` 通过。
+
 ## [2026-11-05] — 上游健康度盘点：把"停更/下架/我们没拉"分开
 
 ### Added
