@@ -99,13 +99,93 @@ def build_alert_text(payload: dict) -> str:
     return "\n".join(lines)
 
 
-def _send_feishu(text: str) -> dict:
+def _status_title(status: str) -> tuple[str, str]:
+    """(Feishu header template, header title)."""
+    if status == "critical":
+        return "red", "🚨 成本预警 · CRITICAL"
+    return "orange", "⚠ 成本预警 · WARNING"
+
+
+def build_alert_card(payload: dict) -> dict | None:
+    """Build a Feishu interactive card using the project v3 card convention.
+
+    This intentionally reuses ``portal/feishu_card_v2.build_v3`` so the
+    header colour/typography, key-value rows and grey footer stay consistent
+    with the other 零界 notifications. Returns ``None`` when the portal card
+    module is unavailable (caller falls back to plain text).
+    """
+    try:
+        portal = str(REPO / "portal")
+        if portal not in sys.path:
+            sys.path.insert(0, portal)
+        from feishu_card_v2 import build_v3  # noqa: PLC0415
+
+        template, header_title = _status_title(payload["status"])
+        cost = float(payload["cost_bp"])
+        color = "red" if payload["status"] == "critical" else "orange"
+        rows = [
+            ("实盘成本", "<font color='%s'>**%.1fbp**</font>" % (color, cost)),
+            (
+                "阈值 / 盈亏平衡",
+                "%.0fbp / %.0fbp"
+                % (payload["threshold_bp"], payload["breakeven_bp"]),
+            ),
+            ("距盈亏平衡", "%.1fbp" % payload["headroom_bp"]),
+        ]
+        if payload.get("estimated_ann_return") is not None:
+            rows.append(
+                ("60d 插值年化", "%.2f%%" % (payload["estimated_ann_return"] * 100))
+            )
+        else:
+            rows.append(("60d 插值年化", "超出已测 0–250bp"))
+        card, _audit = build_v3(
+            "alert",
+            "60日策略成本阈值告警",
+            source="strategy_cost_guard · 研究口径",
+            rows=rows,
+            md="**结论**\n%s\n\n本告警仅研究口径，不构成投资建议，不自动暂停策略。"
+            % payload["message"],
+            tags="#cost_alert #strategy_60d",
+            subtitle="零界 · 中性化 book_to_market 60日",
+        )
+        card["header"]["template"] = template
+        card["header"]["title"]["content"] = header_title
+        return card
+    except Exception:  # noqa: BLE001 - a card failure must not block fallback text
+        return None
+
+
+def _send_feishu(text: str, card: dict | None = None) -> dict:
     try:
         sys.path.insert(0, str(REPO / "news_collector"))
-        from send_feishu import send_text  # noqa: PLC0415
+        from send_feishu import send_content, send_text  # noqa: PLC0415
 
-        ok = bool(send_text(text))
-        return {"ok": ok, "sent": ok, "channel": "feishu"}
+        card_result = None
+        if card:
+            try:
+                card_ok = bool(
+                    send_content(json.dumps(card, ensure_ascii=False), "interactive")
+                )
+                card_result = {"ok": card_ok, "mode": "interactive"}
+                if card_ok:
+                    return {
+                        "ok": True,
+                        "sent": True,
+                        "channel": "feishu",
+                        "mode": "interactive",
+                    }
+            except Exception as exc:  # noqa: BLE001
+                card_result = {"ok": False, "mode": "interactive", "error": str(exc)}
+        text_ok = bool(send_text(text))
+        result = {
+            "ok": text_ok,
+            "sent": text_ok,
+            "channel": "feishu",
+            "mode": "text",
+        }
+        if card_result is not None:
+            result["card_fallback"] = card_result
+        return result
     except Exception as exc:  # pragma: no cover - 网络/配置异常不应让监控崩
         return {"ok": False, "sent": False, "channel": "feishu", "error": str(exc)}
 
@@ -142,7 +222,8 @@ def main(argv: list[str] | None = None) -> int:
         payload["report_path"] = None
 
     if args.send and payload["status"] != "ok":
-        payload["send"] = _send_feishu(payload["alert_text"])
+        payload["feishu_card"] = build_alert_card(payload)
+        payload["send"] = _send_feishu(payload["alert_text"], payload["feishu_card"])
 
     if args.json:
         print(json.dumps(payload, ensure_ascii=False, indent=2))

@@ -101,20 +101,83 @@ def test_cli_missing_input_returns_4(monkeypatch):
     assert guard.main(["--no-write"]) == 4
 
 
+def test_alert_card_uses_project_v3_style():
+    payload = guard.build_payload(
+        type("A", (), {
+            "cost_bp": 120.0, "from_file": None, "threshold_bp": 100.0,
+            "breakeven_bp": 198.0,
+        })()
+    )
+    card = guard.build_alert_card(payload)
+    assert card is not None
+    assert card["schema"] == "2.0"
+    assert card["header"]["template"] == "orange"
+    assert "WARNING" in card["header"]["title"]["content"]
+    body = json.dumps(card["body"], ensure_ascii=False)
+    assert "120.0bp" in body
+    assert "100bp" in body and "198bp" in body
+    assert "#cost_alert" in body
+
+
+def test_alert_card_critical_uses_red_header():
+    payload = guard.build_payload(
+        type("A", (), {
+            "cost_bp": 220.0, "from_file": None, "threshold_bp": 100.0,
+            "breakeven_bp": 198.0,
+        })()
+    )
+    card = guard.build_alert_card(payload)
+    assert card is not None
+    assert card["header"]["template"] == "red"
+    assert "CRITICAL" in card["header"]["title"]["content"]
+
+
 def test_send_feishu_only_on_warning(monkeypatch):
     calls = []
 
-    def fake_send(text):
-        calls.append(text)
+    def fake_send_card(content, msg_type):
+        calls.append((content, msg_type))
+        return True
+
+    def fake_send_text(text):
+        calls.append((text, "text"))
         return True
 
     fake = type(sys)("send_feishu")
-    fake.send_text = fake_send
+    fake.USER_ID = "ou_test"
+    fake.send_content = fake_send_card
+    fake.send_text = fake_send_text
     monkeypatch.setitem(sys.modules, "send_feishu", fake)
 
     assert guard.main(["--cost-bp", "120", "--send", "--no-write"]) == 2
     assert len(calls) == 1
-    assert "WARNING" in calls[0]
+    assert calls[0][1] == "interactive"
+    card = json.loads(calls[0][0])
+    assert "WARNING" in card["header"]["title"]["content"]
+    assert "120.0bp" in json.dumps(card["body"], ensure_ascii=False)
 
     assert guard.main(["--cost-bp", "80", "--send", "--no-write"]) == 0
     assert len(calls) == 1
+
+
+def test_send_feishu_card_falls_back_to_text(monkeypatch):
+    calls = []
+
+    def fake_send_card(content, msg_type):
+        return False
+
+    def fake_send_text(text):
+        calls.append(text)
+        return True
+
+    fake = type(sys)("send_feishu")
+    fake.USER_ID = "ou_test"
+    fake.send_content = fake_send_card
+    fake.send_text = fake_send_text
+    monkeypatch.setitem(sys.modules, "send_feishu", fake)
+
+    result = guard._send_feishu("fallback text", {"schema": "2.0"})
+    assert result["ok"] is True
+    assert result["mode"] == "text"
+    assert calls == ["fallback text"]
+    assert result["card_fallback"]["ok"] is False
