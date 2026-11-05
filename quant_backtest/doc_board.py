@@ -41,7 +41,7 @@ def build_md(led, alerts_md=None):
         "> 更新：%s（北京）· 盘中异动即时刷新 · 16:00 收盘记账整体刷新 · 纸面模拟，不构成投资建议"
         % now,
         "",
-        "## 待买入（pending %d）" % len(led.get("pending") or []),
+        "## 待执行（pending %d）" % len(led.get("pending") or []),
         "",
         "| 标的 | 市场 | 策略 | 信号日 |",
         "| --- | --- | --- | --- |",

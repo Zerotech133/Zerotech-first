@@ -962,7 +962,7 @@ table{border-collapse:collapse;width:100%%;font-size:13px}
 <h1>💼 纸面持仓跟踪（量化信号实战）</h1>
 <div class="meta">账本更新于 %s · %s</div>
 %s
-<details class="sec" open><summary><h2>🛒 待买入（次日开盘执行）</h2>
+<details class="sec" open><summary><h2>🛒 待执行（纸面模拟·非投资建议）</h2>
 <span class="dim">%d 笔</span></summary><div class="sec-body">
 <table class="sticky"><tr><th>标的</th><th>市场</th><th>策略</th><th>信号日</th>
 <th>信号日收盘</th></tr>%s</table></div></details>
