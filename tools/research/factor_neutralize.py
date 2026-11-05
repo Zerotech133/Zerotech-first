@@ -47,12 +47,18 @@ def _design_for_day(industry: pd.Series | None, ind_dummies: pd.DataFrame | None
 
 
 def neutralize_matrix(panel, values: pd.DataFrame, *, industry: bool = True, size: bool = True,
-                      min_obs: int = 30, eligible: bool = True) -> tuple[pd.DataFrame, dict]:
-    """对单因子矩阵做逐日行业/市值中性化，返回残差矩阵与统计信息。"""
+                      min_obs: int = 30, eligible: bool = True,
+                      industry_map=None) -> tuple[pd.DataFrame, dict]:
+    """对单因子矩阵做逐日行业/市值中性化，返回残差矩阵与统计信息。
+
+    ``industry_map`` 可选：实现 ``at(date) -> pd.Series`` 的 PIT 行业映射（如
+    :class:`tools.research.pit_industry.PITIndustryMap`）。提供时逐日取当日有效行业，
+    避免用当前行业快照回填历史；否则退回 ``panel.load_meta["industry"]`` 快照。
+    """
     vals = values.reindex(index=panel.dates, columns=panel.codes)
     if not isinstance(vals, pd.DataFrame):
         vals = pd.DataFrame(vals, index=panel.dates, columns=panel.codes)
-    ind = _industry_series(panel) if industry else None
+    ind = _industry_series(panel) if (industry and industry_map is None) else None
     size_df = _size_frame(panel) if size else None
     elig = panel.eligible_mask() if eligible else None
     if isinstance(elig, pd.DataFrame):
@@ -79,7 +85,14 @@ def neutralize_matrix(panel, values: pd.DataFrame, *, industry: bool = True, siz
         size_s = None
         if size_df is not None:
             size_s = size_df.iloc[i]
-        X = _design_for_day(ind, dummies, size_s, panel.codes, rows)
+        day_ind = ind
+        day_dummies = dummies
+        if industry and industry_map is not None:
+            day_ind = industry_map.at(panel.dates[i]).reindex(panel.codes)
+            day_ind = day_ind.fillna("UNKNOWN").astype(str)
+            day_dummies = pd.get_dummies(day_ind, prefix="ind", drop_first=True, dtype=float)
+            day_dummies = day_dummies.reindex(columns=sorted(day_dummies.columns)).fillna(0.0)
+        X = _design_for_day(day_ind, day_dummies, size_s, panel.codes, rows)
         yv = y[rows]
         try:
             beta, *_ = np.linalg.lstsq(X, yv, rcond=None)
@@ -95,15 +108,23 @@ def neutralize_matrix(panel, values: pd.DataFrame, *, industry: bool = True, siz
         "n_days": int(n_days),
         "n_obs": int(n_obs),
         "size_available": size_df is not None,
-        "industry_available": ind is not None,
+        "industry_available": (ind is not None) or bool(industry and industry_map is not None),
+        "industry_source": (
+            "pit_sw_l1" if (industry and industry_map is not None)
+            else ("snapshot" if ind is not None else None)
+        ),
     }
     return out, info
 
 
 def build_neutralized_specs(panel, names: list[str] | tuple[str, ...], *,
                             industry: bool = True, size: bool = True,
-                            min_obs: int = 30) -> tuple[dict, dict]:
-    """计算原始因子并构造中性化后的临时 FactorSpec（供 evaluate_panel 使用）。"""
+                            min_obs: int = 30,
+                            industry_map=None) -> tuple[dict, dict]:
+    """计算原始因子并构造中性化后的临时 FactorSpec（供 evaluate_panel 使用）。
+
+    ``industry_map`` 传入 PIT 映射时，行业中性化逐日使用历史行业；否则用当前快照。
+    """
     from factor_lib import FACTORS, FactorSpec
 
     result = {}
@@ -114,7 +135,8 @@ def build_neutralized_specs(panel, names: list[str] | tuple[str, ...], *,
             raise KeyError(f"未注册因子: {name}")
         raw[name] = FACTORS[name].compute(panel)
     for name, mat in raw.items():
-        neut, info = neutralize_matrix(panel, mat, industry=industry, size=size, min_obs=min_obs)
+        neut, info = neutralize_matrix(panel, mat, industry=industry, size=size, min_obs=min_obs,
+                                       industry_map=industry_map)
         base = FACTORS[name]
         result[name] = FactorSpec(
             name=base.name,
@@ -128,7 +150,9 @@ def build_neutralized_specs(panel, names: list[str] | tuple[str, ...], *,
         )
         infos[name] = info
     return result, {"factors": infos, "industry": bool(industry), "size": bool(size),
-                    "min_obs": int(min_obs)}
+                    "min_obs": int(min_obs),
+                    "industry_source": "pit_sw_l1" if (industry and industry_map is not None)
+                    else ("snapshot" if industry else None)}
 
 
 def parse_modes(text: str | None) -> tuple[bool, bool]:

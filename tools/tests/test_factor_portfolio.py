@@ -184,3 +184,38 @@ def test_constrained_simulation_records_low_exposures():
     assert out["metrics"]["avg_max_industry_net"] is not None
     assert out["metrics"]["avg_max_industry_net"] < 0.01
     assert out["metrics"]["avg_abs_size_net"] is not None
+
+
+class _FakePITMap:
+    """按日期返回不同行业，并记录 simulate 实际查询的日期。"""
+
+    def __init__(self, panel: Panel):
+        self.panel = panel
+        self.calls: list[str] = []
+
+    def at(self, date):
+        self.calls.append(str(date))
+        # 前半段与后半段行业互换，确保信号日/建仓日取到不同映射
+        half = len(self.panel.dates) // 2
+        pos = list(self.panel.dates).index(str(date)) if str(date) in list(self.panel.dates) else 0
+        labels = ["A", "B"] if pos < half else ["B", "A"]
+        return pd.Series(
+            [labels[i % 2] for i in range(len(self.panel.codes))],
+            index=self.panel.codes,
+            name="industry",
+        )
+
+
+def test_simulate_uses_pit_industry_map_at_signal_and_entry():
+    panel, names = _panel(n_days=80)
+    pit = _FakePITMap(panel)
+    factor = pd.DataFrame(
+        np.tile(np.arange(60, dtype=float), (80, 1)), index=panel.dates, columns=panel.codes
+    )
+    cfg = PortfolioConfig(rebalance_days=60, industry_neutral=True)
+    out = simulate(panel, factor, cfg, names=names, industry_map=pit)
+    assert out["industry_source"] == "pit_sw_l1"
+    assert pit.calls[0] == panel.dates[0]   # 信号日
+    assert pit.calls[1] == panel.dates[1]   # 建仓日
+    assert out["metrics"]["avg_max_industry_net"] is not None
+

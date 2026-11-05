@@ -300,8 +300,12 @@ def _drift_weights(w: pd.Series, rets: pd.DataFrame, start: int, end: int) -> pd
 
 def simulate(panel, factor: pd.DataFrame, cfg: PortfolioConfig | None = None,
              names: dict[str, str] | None = None, start: str | None = None,
-             end: str | None = None) -> dict:
-    """执行组合回测，返回净值、交易、指标与配置。"""
+             end: str | None = None, industry_map=None) -> dict:
+    """执行组合回测，返回净值、交易、指标与配置。
+
+    ``industry_map`` 可选：实现 ``at(date) -> pd.Series`` 的 PIT 行业映射；提供时
+    选股/约束用信号日行业，暴露统计用建仓日行业，避免当前行业快照的前视偏差。
+    """
     cfg = cfg or PortfolioConfig()
     names = names or {}
     factor = factor.reindex(index=panel.dates, columns=panel.codes)
@@ -311,6 +315,12 @@ def simulate(panel, factor: pd.DataFrame, cfg: PortfolioConfig | None = None,
     idxs = rebalance_indices(panel, start, end, cfg.rebalance_days)
     cost_rate = float(cfg.cost_bp) / 10000.0
     industry = panel.load_meta.get("industry") if hasattr(panel, "load_meta") else None
+
+    def _industry_at(date):
+        if industry_map is not None:
+            return industry_map.at(date)
+        return industry
+
     log_mv = None
     if "total_mv" in panel.fields:
         log_mv = np.log(panel.fields["total_mv"].where(panel.fields["total_mv"] > 0))
@@ -332,10 +342,12 @@ def simulate(panel, factor: pd.DataFrame, cfg: PortfolioConfig | None = None,
             prior = pd.Series(0.0, index=panel.codes, dtype=float)
         else:
             prior = _drift_weights(w, rets, prev_entry + 1, entry)
+        ind_signal = _industry_at(panel.dates[i])
+        ind_entry = _industry_at(panel.dates[entry])
         target = _target_weights_constrained(
             factor.iloc[i], sel_mask.iloc[i] & trade_mask.iloc[entry], cfg,
             prior=None if w.empty else prior,
-            industry=industry,
+            industry=ind_signal,
             size_values=None if log_mv is None else log_mv.iloc[i],
         ) if (cfg.industry_neutral or cfg.size_neutral) else _target_weights(
             factor.iloc[i], sel_mask.iloc[i] & trade_mask.iloc[entry], cfg,
@@ -355,7 +367,7 @@ def simulate(panel, factor: pd.DataFrame, cfg: PortfolioConfig | None = None,
         actual_turn = float(0.5 * (traded - base_w).abs().sum())
         cost = actual_turn * cost_rate
         expo = _portfolio_exposures(
-            traded, industry,
+            traded, ind_entry,
             None if log_mv is None else log_mv.iloc[entry],
         )
         trades.append({
@@ -388,7 +400,11 @@ def simulate(panel, factor: pd.DataFrame, cfg: PortfolioConfig | None = None,
     metrics = summarize(nav_ser, ret_ser, bench, trades, cfg)
     return {"config": cfg.to_dict(), "metrics": metrics,
             "trades": trades, "nav": nav_ser, "daily_returns": ret_ser,
-            "benchmark": bench}
+            "benchmark": bench,
+            "industry_source": (
+                "pit_sw_l1" if industry_map is not None
+                else ("snapshot" if industry is not None else None)
+            )}
 
 
 def summarize(nav: pd.Series, rets: pd.Series, bench: pd.Series, trades: list[dict],
