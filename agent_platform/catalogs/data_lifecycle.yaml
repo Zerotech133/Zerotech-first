@@ -119,3 +119,25 @@ tables:
     lifecycle: deprecated
     reason: >-
       转融通期限表，数据止于 2025-07-25（滞后 468 天），仅 1347 行，上游停更。
+
+  # ── 2026-11-05 长尾兜底批实证：远端已下架（tdx_sync "not in remote"）──
+  dknife_snap:
+    lifecycle: deprecated
+    reason: >-
+      数据 knife 快照表，xtcloud 远端 /api/data/status 已无此表（2026-11-05
+      tdx_tail_sync 实证 not in remote），本地止于 2026-10-13。上游下架，恢复需远端复挂。
+  tdx_sector_min_tail:
+    lifecycle: deprecated
+    reason: >-
+      板块分钟尾表，xtcloud 远端已下架（2026-11-05 not in remote 实证），
+      本地止于 2026-10-12。分钟深表改由 tdx_sector_min 单独开关承载。
+  ts_emotion_daily:
+    lifecycle: deprecated
+    reason: >-
+      情绪日表，xtcloud 远端已下架（2026-11-05 not in remote 实证），
+      本地止于 2026-10-14。情绪观测可由 tdx_sector_daily 衍生重建。
+  ts_emotion_ladder:
+    lifecycle: deprecated
+    reason: >-
+      情绪阶梯表，xtcloud 远端已下架（2026-11-05 not in remote 实证），
+      本地止于 2026-10-14。
