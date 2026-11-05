@@ -483,9 +483,10 @@ def _event_from_payload(body: dict) -> dict:
     }
 
 
-def serve_http() -> int:
-    """本地 HTTP 接入：POST /card_action 处理按钮动作，GET /health 探活。
-    只绑 127.0.0.1（动作由同机下钻机器人转发，永不对外）。"""
+def _build_server(port: int):
+    """构造（不启动）HTTP 接入服务器：POST /card_action 处理按钮动作，GET /health 探活。
+    只绑 127.0.0.1（动作由同机下钻机器人转发，永不对外）。
+    port=0 取随机空闲端口（供测试用）。"""
     from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
     class _Handler(BaseHTTPRequestHandler):
@@ -504,7 +505,11 @@ def serve_http() -> int:
 
         def do_GET(self):  # noqa: N802 — BaseHTTPRequestHandler 约定
             if self.path.rstrip("/") in ("/health", "/healthz"):
-                self._reply(200, {"ok": True, "mode": "http", "port": ACK_PORT})
+                # 报实际绑定端口（port=0 时与 ACK_PORT 不同，别报错端口误导排障）
+                self._reply(
+                    200,
+                    {"ok": True, "mode": "http", "port": self.server.server_address[1]},
+                )
             else:
                 self._reply(404, {"ok": False, "error": "not found"})
 
@@ -538,10 +543,16 @@ def serve_http() -> int:
                 return
             self._reply(200, {"ok": True})
 
-    srv = ThreadingHTTPServer(("127.0.0.1", ACK_PORT), _Handler)
+    srv = ThreadingHTTPServer(("127.0.0.1", port), _Handler)
     srv.daemon_threads = True
+    return srv
+
+
+def serve_http() -> int:
+    """启动 HTTP 接入并常驻，直到收到停止信号。"""
+    srv = _build_server(ACK_PORT)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
-    log("卡片动作 HTTP 接入已启动（并轨模式）", port=ACK_PORT)
+    log("卡片动作 HTTP 接入已启动（并轨模式）", port=srv.server_address[1])
     jc.start_metrics(METRICS_PORT)
     flush_pending()
 
