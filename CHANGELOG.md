@@ -3,6 +3,38 @@
 本文件记录面向运行的显著变更（Keep a Changelog 风格，日期 = Asia/Shanghai）。
 格式参考开源实践：版本（或 Unreleased）/ Added / Changed / Fixed / Removed / Security。
 
+## [2026-11-05] — 上游健康度盘点：把"停更/下架/我们没拉"分开
+
+### Added
+- `quant_backtest/upstream_health.py`：只读盘点工具，258 张表逐张判 11 类结论
+  （OK/BEHIND/STALLED/STALLED_WEAK/GONE/CALIBER/FUTURE/NO_LINK/NO_REMOTE/STATIC/UNDECIDABLE）。
+  证据三级：远端 `latest` → 6 点分层抽样 → `all_dt` 存活旁证；结果落
+  `reports/data_hub/xt_probe_cache.json`（按表+远端 rows 校验），复跑 `probed=0/hits=22`。
+- `quant_backtest/test_upstream_health.py`（23 项）+ `test_build_catalog_backup.py`（1 项）。
+- `reports/data_hub/upstream_health_20261105.md`：换源决策版（11 张需处置、三个假欠账坑、
+  两件真要动的事）；同名 `_1317.md/.json` 为逐表明细。
+
+### Changed
+- `quant_backtest/build_catalog.py`：`FREQ_ENUM` 补 `A`（年度）——v33 把两张交易日历改成 A 后，
+  构建期一直告警"freq 不在枚举内"，而 sources.yaml 的 SLA 表本来就用 `A:400`。
+- 首版"offset=rows-300 读表尾=最新"被实测否掉：`tdx_sector_daily` 尾页是 2005-06-08、
+  `ts_stk_rewards` 是 1993-04-14（xtcloud 不按时间序存储）→ 改 6 点分层抽样，
+  抽不到更新时判 `STALLED_WEAK` 而非 `STALLED`。
+
+### Fixed
+- `quant_backtest/build_catalog.py`：`<table>.bak-<ts>` 备份目录被扫成幽灵表
+  （`ts_ths_member.bak-20261105_123343`，rows/date_col 全空、永远对不上远端，盘点里被判"下架"）。
+  扫描跳过 `.bak-`/`~`，catalog 259 → 258。
+
+### 盘点结论（供换源决策）
+- xtcloud 170 张：停更 6（ts_slb_sec/ts_slb_len/ts_kpl_concept/ts_tdx_index/ts_index_weekly/
+  ts_tdx_member）、下架 4（dknife_snap/tdx_sector_min_tail/ts_emotion_daily/ts_emotion_ladder）、
+  疑似停更 1（tdx_sector_daily，抽样 6 点 = 10-22，同族 tdx_sector_min latest 同为 20261022）。
+- 唯一日频真欠账：`ts_namechange`（本地 10-29 / 远端 11-04）——tdx 兜底批按 `trade_date`
+  找日期列而该表只有 `ann_date`，SKIP 不计失败数。
+- 已知盲区：`govern.parse_freshness` 只认 8 位日期，月/季/年周期列（`202609`）一律 None，
+  23 张表因此不参与时效监测。
+
 ## [2026-11-05] — HermesBriefPush 401 修复与 P0 假红收口
 
 ### Fixed

@@ -73,7 +73,9 @@ CNOD_TABLES = (
 #      {"Y": 400}（年度容忍档），未知值回落 Q，故 Y 无需改下游即可生效；
 #   ③ 全仓无「catalog freq ∈ 固定集合」的断言（test_kg_objectview 的
 #      D/M/Q/E/static 是 objectview 扇区静态配置，非 catalog 字段）。
-FREQ_ENUM = ("D", "W", "M", "Q", "Y", "1min")
+# A=年度（sources.yaml 的 freshness_sla_days 用的就是 A:400）。v33 把两张
+# 交易日历改成 A 之后，枚举里只有 Y，构建期一直报"freq 不在枚举内"。
+FREQ_ENUM = ("D", "W", "M", "Q", "A", "Y", "1min")
 
 WAREHOUSES = [  # (source, 数据根, manifest 路径)
     (
@@ -1551,6 +1553,12 @@ def build(data_root=None, out_path=None):
             # 点前缀=隐藏目录（.git 等 VCS 残留），误收会产出 placeholder
             # 垃圾表（2026-10-17 实证 data/tushare/.git 被收为 228 表之一）
             if not os.path.isdir(os.path.join(root, tbl)) or tbl.startswith(("_", ".")):
+                continue
+            # 备份目录（refresh_snapshot 整表重刷时把旧目录改名成 <table>.bak-<ts>，
+            # 按设计保留 30 天）不是表：误收会产出一张 rows=null、date_col=null
+            # 的幽灵表，且名字永远对不上远端 → 上游健康度盘点里直接判"下架"。
+            # 2026-11-05 实证：ts_ths_member.bak-20261105_123343 被收成第 259 张表。
+            if ".bak-" in tbl or tbl.endswith("~"):
                 continue
             tables[tbl] = _scan_dir(source, root, mpath, tbl, mf)
         if data_root is None and source == "xtcloud":  # tdx 信息库三表
