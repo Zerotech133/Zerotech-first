@@ -1,0 +1,9 @@
+# 换行符规则（2026-11-06 加入）
+#
+# 背景：本机 core.autocrlf=true，检出时会把文本文件转成 CRLF。
+# shell 脚本一旦带 CRLF，Git Bash / sh 执行会报 "\r: command not found"，
+# git hook 更会直接失效（hook 由 sh 解析）。
+#
+# 这里只给「被 shell 解析」的文件强制 LF，不动其他文件的既有行为。
+*.sh    text eol=lf
+*.bash  text eol=lf
