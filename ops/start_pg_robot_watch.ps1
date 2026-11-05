@@ -13,6 +13,31 @@ $logPath = 'C:\Temp\pg_robot_watch.log'
 # Skip the launch and log once per "state change" instead of hammering.
 $hasAppId = -not [string]::IsNullOrWhiteSpace($env:LARKSUITE_CLI_APP_ID)
 $hasSecret = -not [string]::IsNullOrWhiteSpace($env:LARKSUITE_CLI_APP_SECRET)
+
+# 2026-11-06: scheduler does not inherit the operator env. Load the QA bot
+# credential from the local secret file when the environment is missing.
+# Never print the secret. File is owned by the portal work dir.
+if (-not ($hasAppId -and $hasSecret)) {
+    $secretPath = 'C:\aios\portal\work\feishu_secrets\zb.quant.qa.json'
+    if (Test-Path -LiteralPath $secretPath) {
+        try {
+            $qa = Get-Content -LiteralPath $secretPath -Raw -ErrorAction Stop | ConvertFrom-Json
+            if (-not [string]::IsNullOrWhiteSpace($qa.app_id) -and
+                -not [string]::IsNullOrWhiteSpace($qa.app_secret)) {
+                $env:LARKSUITE_CLI_APP_ID = $qa.app_id
+                $env:LARKSUITE_CLI_APP_SECRET = $qa.app_secret
+                $hasAppId = $true
+                $hasSecret = $true
+                $stamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+                ("[{0}] loaded QA credentials from secret file (env was empty)" -f $stamp) |
+                    Out-File $logPath -Append -Encoding utf8 -ErrorAction SilentlyContinue
+            }
+        } catch {
+            # fall through to the SKIP branch below
+        }
+    }
+}
+
 if (-not ($hasAppId -and $hasSecret)) {
     $stamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
     $last = ''
