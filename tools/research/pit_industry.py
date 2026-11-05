@@ -43,6 +43,8 @@ LEVELS = ("L1", "L2", "L3")
 
 REQUIRED_MEMBER_COLS = {"index_code", "con_code", "in_date"}
 REQUIRED_CLASSIFY_COLS = {"index_code", "industry_name"}
+REQUIRED_SNAPSHOT_COLS = {"ts_code", "l2_code", "in_date"}
+DEFAULT_INDEX_MEMBER_ALL_DIR = DEFAULT_TUSHARE_DIR / "index_member_all"
 
 
 def _normalize_date(value) -> pd.Timestamp:
@@ -141,6 +143,22 @@ class PITIndustryMap:
         }
 
 
+def _classify_mapping(level: str, classify_dir: Path | str | None = None) -> dict[str, str]:
+    """读取 ``index_code -> industry_name`` 映射（按 ``level`` 过滤）。"""
+    classify_dir = Path(classify_dir) if classify_dir else DEFAULT_CLASSIFY_DIR
+    classify = _read_partitioned_parquet(classify_dir, REQUIRED_CLASSIFY_COLS)
+    if "level" in classify.columns:
+        sub = classify[classify["level"].astype(str).str.upper() == level]
+        if len(sub):
+            classify = sub
+    return (
+        classify.drop_duplicates("index_code")
+        .set_index("index_code")["industry_name"]
+        .astype(str)
+        .to_dict()
+    )
+
+
 def load_sw_industry(level: str = "L1",
                      member_dir: Path | str | None = None,
                      classify_dir: Path | str | None = None) -> PITIndustryMap:
@@ -151,17 +169,7 @@ def load_sw_industry(level: str = "L1",
     member_dir = Path(member_dir) if member_dir else default_member_dir(level)
     classify_dir = Path(classify_dir) if classify_dir else DEFAULT_CLASSIFY_DIR
     members = _read_partitioned_parquet(member_dir, REQUIRED_MEMBER_COLS)
-    classify = _read_partitioned_parquet(classify_dir, REQUIRED_CLASSIFY_COLS)
-    if "level" in classify.columns:
-        sub = classify[classify["level"].astype(str).str.upper() == level]
-        if len(sub):
-            classify = sub
-    mapping = (
-        classify.drop_duplicates("index_code")
-        .set_index("index_code")["industry_name"]
-        .astype(str)
-        .to_dict()
-    )
+    mapping = _classify_mapping(level, classify_dir)
     members["index_code"] = members["index_code"].astype(str)
     members["industry_name"] = members["index_code"].map(mapping).fillna(UNKNOWN_INDUSTRY)
     if "is_new" not in members.columns:
@@ -189,3 +197,89 @@ def load_sw_l2_industry(member_dir: Path | str | None = None,
                         classify_dir: Path | str | None = None) -> PITIndustryMap:
     """从本地 Tushare 落盘加载申万二级行业 PIT 映射。"""
     return load_sw_industry("L2", member_dir=member_dir, classify_dir=classify_dir)
+
+
+def load_sw_l2_industry_with_snapshot_fallback(
+    member_dir: Path | str | None = None,
+    classify_dir: Path | str | None = None,
+    snapshot_dir: Path | str | None = None,
+) -> PITIndustryMap:
+    """加载 SW L2 历史成员，并用当前 ``index_member_all`` 快照补齐缺失代码。
+
+    背景：``sw_l2_member`` 由 Tushare ``index_member`` 逐指数拉取，2023 上半年
+    科创板/北交所大量股票未出现在历史成员表中。``index_member_all`` 是当前
+    快照（``is_new=Y``、无 ``out_date``），但带有 ``in_date``。对完全缺失于历史
+    成员表的代码，若 ``in_date <= date``，说明其在目标日已经是成员，可以作为
+    兜底；行业名取当前 L2 分类映射，若期间发生再分类仍有前视，报告须标注。
+
+    该映射的 ``source`` 会记录 ``fallback`` 与 ``n_fallback_codes``，便于报告
+    区分纯 PIT 与 snapshot-assisted 口径；默认的 ``load_sw_l2_industry`` 不受影响。
+    """
+    base = load_sw_industry("L2", member_dir=member_dir, classify_dir=classify_dir)
+    snapshot_dir = Path(snapshot_dir) if snapshot_dir else DEFAULT_INDEX_MEMBER_ALL_DIR
+    snapshot = _read_partitioned_parquet(snapshot_dir, REQUIRED_SNAPSHOT_COLS)
+    l2_names = _classify_mapping("L2", classify_dir)
+
+    snap = pd.DataFrame({
+        "con_code": snapshot["ts_code"].astype(str),
+        "index_code": snapshot["l2_code"].astype(str),
+        "in_date": pd.to_datetime(snapshot["in_date"], errors="coerce").dt.normalize(),
+        "out_date": pd.to_datetime(snapshot["out_date"], errors="coerce").dt.normalize()
+        if "out_date" in snapshot.columns else pd.Series(pd.NaT, index=snapshot.index),
+        "is_new": snapshot["is_new"].astype(str) if "is_new" in snapshot.columns else "Y",
+    })
+    snap["industry_name"] = snap["index_code"].map(l2_names).fillna(UNKNOWN_INDUSTRY)
+    snap = snap.dropna(subset=["con_code", "in_date", "index_code"])
+    snap["_is_new_rank"] = (snap["is_new"].str.upper() == "Y").astype(int)
+    # 同一代码在当前快照里只应有一条；若结构异常则按 in_date 最新、is_new 优先。
+    snap = (
+        snap.sort_values(["con_code", "in_date", "_is_new_rank", "index_code"])
+        .drop_duplicates("con_code", keep="last")
+    )
+
+    # 只补“历史成员表没有覆盖到的缺口”：
+    # - 代码完全不在历史成员表；或
+    # - 快照 in_date 落在该代码所有历史区间的空隙中（不是某个区间的内部），
+    #   此时快照区间从 in_date 起开放，后续历史区间若 in_date 更晚会自然覆盖它。
+    # 若快照 in_date 落在某个历史区间内部，则跳过，避免用当前 L2 标签覆盖历史分类。
+    spans: dict[str, list[tuple[pd.Timestamp, pd.Timestamp | pd.NaT]]] = {}
+    for code, group in base.members.groupby("con_code", sort=False):
+        spans[str(code)] = list(zip(group["in_date"], group["out_date"]))
+    add_rows = []
+    for row in snap.itertuples(index=False):
+        code = str(row.con_code)
+        start = row.in_date
+        intervals = spans.get(code)
+        if intervals:
+            inside = any(
+                (start >= begin) and (pd.isna(end) or start <= end)
+                for begin, end in intervals
+            )
+            if inside:
+                continue
+        add_rows.append({
+            "index_code": str(row.index_code),
+            "con_code": code,
+            "in_date": start,
+            "out_date": row.out_date,
+            "is_new": row.is_new,
+            "industry_name": row.industry_name,
+        })
+    extra = pd.DataFrame(add_rows)
+    columns = ["index_code", "con_code", "in_date", "out_date", "is_new", "industry_name"]
+    if extra.empty:
+        extra = pd.DataFrame(columns=columns)
+    members = pd.concat([base.members[columns], extra[columns]], ignore_index=True)
+
+    source = dict(base.source)
+    source.update({
+        "fallback": "index_member_all_snapshot",
+        "snapshot_dir": str(snapshot_dir),
+        "n_fallback_rows": int(len(extra)),
+        "n_fallback_codes": int(extra["con_code"].nunique()),
+        "fallback_note": (
+            "仅补历史成员表未覆盖的缺口（代码缺失，或快照 in_date 落在历史区间空隙）；"
+            "in_date<=date 才生效；行业名取当前 L2 分类，若期间再分类仍有剩余前视"
+        ),
+    })
+    return PITIndustryMap(members=members, source=source)
