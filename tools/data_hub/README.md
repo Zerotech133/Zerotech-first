@@ -123,21 +123,24 @@ cffex、shfe、chinamoney、jisilu、hkex(6.6s)、okx(5.3s)、binance(经本地�
   HTTP 状态是 200，最初被误判为 ok。已加 `probe.contains` 判据（响应体必须包含指定串），
   缺失即降级 guarded。tushare / eastmoney / ths / sse / sina 均已配判据并复测通过。
 
-## 六、治理对账（2026-11-05 07:48 实测）
+## 六、治理对账（2026-11-06 03:53 现算）
 
 | 项 | 数量 | 说明 |
 |---|---|---|
-| 目录表 | 257 | `quant_backtest/data/catalog.json` |
-| 物理表 | 305 | `warehouse_registry.json` 登记 |
-| 无日期表 | 24 | 静态表，不参与时效判定 |
-| **时效欠账** | **94 张** | 超频率 SLA |
+| 目录表 | 258 | `quant_backtest/data/catalog.json` |
+| 物理表 | 306 | `warehouse_registry.json` 登记 |
+| 无日期表 | 25 | 静态表，不参与时效判定 |
+| **时效欠账** | **9 张** | 超频率 SLA |
 | 　A 停产 | 0 | 4 张已写 lifecycle deprecated，自动退出统计 |
 | 　B 断更 | 1 | `tdx_sector_min` 滞后 42 天 |
-| 　C 滞后 | 93 | SLA 至 36 天 |
-| 生命周期跳过 | 19 | planned/deprecated/archived，按契约不计欠账 |
+| 　C 滞后 | 8 | SLA 至 36 天 |
+| 生命周期跳过 | 22 | planned/deprecated/archived，按契约不计欠账 |
 | 未登记物理表 | 48 | `news_*`、`paper_*` 有数据但目录看不见 |
 | 有表无源 | 2 | `us_legacy`(legacy)、`v2_bar_daily`(pg) |
 | 有源无表 | 0 | cnopendata 6 张表已正确挂上 |
+
+> 本表为 `govern.audit()` 现算快照。**2026-11-05 07:48 历史值：无日期表 24、时效欠账 94（A0/B1/C93）、生命周期跳过 19**；欠账 94 → 9 主要来自 11-04~11-05 长尾补数与 tdx/tushare 兜底批调度，不是口径放水。
+> 需最新值请现算：`python -c "import sys; sys.path.insert(0, '.'); from tools.data_hub import govern; a = govern.audit(); print(a['scale'], len(a['stale']))"`
 
 ### 降噪过程（115 → 94 是修口径，不是掩盖问题）
 
