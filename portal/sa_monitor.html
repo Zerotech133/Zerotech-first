@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>批量监控 · 个股分析 · 零界</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<script src="/static/nav.js" defer></script>
+<script src="/static/shortscreen.js" defer></script>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg-page);color:var(--text);font:14px/1.6 "Microsoft YaHei",system-ui,sans-serif}
+  main{max-width:1160px;margin:0 auto;padding:20px 22px 70px}
+  .crumbs{font-size:12px;color:var(--text-dim);margin:4px 0 12px}
+  h1{font-size:23px;margin:0 0 6px}
+  .sub{color:var(--text-dim);font-size:13px;margin:0 0 16px}
+  .card{background:var(--bg-surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:14px}
+  .card h2{font-size:14.5px;margin:0 0 10px;display:flex;align-items:center;gap:8px;justify-content:space-between}
+  .card h2 .hint{font-size:11.5px;color:var(--text-dim);font-weight:400}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .grid-kpi{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+  .kpi{background:var(--bg-surface);border:1px solid var(--border);border-radius:12px;padding:11px 13px}
+  .kpi .k{font-size:11.5px;color:var(--text-dim)}
+  .kpi .v{font-size:20px;font-weight:800;margin-top:2px;font-variant-numeric:tabular-nums}
+  .kpi .d{font-size:11px;color:var(--text-dim);margin-top:2px}
+  .btn{cursor:pointer;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--bg-raised);color:var(--text);border-radius:9px;padding:8px 14px;font-size:13px;font-family:inherit}
+  .btn:hover{border-color:var(--blu-500);color:var(--blu-500)}
+  .btn.primary{background:var(--blu-600);border-color:var(--blu-600);color:#fff;font-weight:700}
+  .btn.primary:hover{background:#2b7fff;color:#fff}
+  .btn.sm{padding:5px 10px;font-size:12px}
+  .input,.select{border:1px solid var(--border);background:var(--bg-raised);color:var(--text);border-radius:9px;padding:8px 12px;font:inherit;font-size:13px;outline:none}
+  .input:focus,.select:focus{border-color:var(--blu-500)}
+  .input{min-width:180px}
+  .badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;border:1px solid var(--border);color:var(--text-dim);white-space:nowrap}
+  .badge.high{color:var(--red-500);border-color:rgba(248,81,73,.45);background:rgba(248,81,73,.08)}
+  .badge.medium{color:var(--ylw-500);border-color:rgba(210,153,34,.45);background:rgba(210,153,34,.08)}
+  .badge.low{color:var(--blu-500);border-color:rgba(88,166,255,.45);background:rgba(88,166,255,.08)}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--border-weak);vertical-align:top}
+  th{color:var(--text-dim);font-weight:600;font-size:11.5px}
+  tbody tr:hover{background:rgba(88,166,255,.05)}
+  td.code{font-family:"Cascadia Mono",Consolas,monospace;font-size:12px;color:var(--blu-500)}
+  .muted{color:var(--text-dim)}
+  .small{font-size:12px}
+  .empty{text-align:center;color:var(--text-dim);padding:30px 10px;font-size:13px}
+  .notice{display:flex;gap:10px;align-items:flex-start;padding:10px 13px;border-radius:10px;font-size:12.5px;border:1px solid var(--border);background:var(--bg-raised);color:var(--text-dim);margin:10px 0}
+  .notice.info{border-color:rgba(88,166,255,.3);background:rgba(88,166,255,.06);color:#a9cdf6}
+  .notice.warn{border-color:rgba(210,153,34,.35);background:rgba(210,153,34,.06);color:#e3c173}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#12303f;color:#e6f6ff;border:1px solid rgba(88,166,255,.35);border-radius:10px;padding:9px 18px;font-size:13px;box-shadow:0 10px 28px rgba(0,0,0,.45);display:none;z-index:200}
+  footer{border-top:1px solid var(--border-weak);margin-top:24px;padding-top:14px;color:var(--text-dim);font-size:11.5px;display:flex;gap:16px;flex-wrap:wrap}
+  @media(max-width:1000px){.grid-kpi{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:760px){.grid-kpi{grid-template-columns:1fr 1fr}main{padding:14px 12px 60px}}
+</style>
+</head>
+<body>
+<main>
+  <div class="crumbs"><a href="/">零界</a> / <a href="/sa">个股分析</a> / 批量监控</div>
+  <h1>批量监控</h1>
+  <p class="sub">对股票池批量评估价格异动、量能、涨跌停、事件、评级变化与数据滞后，告警去重持久化。研究监控，不构成投资建议。</p>
+
+  <div class="card">
+    <h2><span>监控控制台</span><span class="hint">规则引擎 · 去重 · 可复盘</span></h2>
+    <div class="row">
+      <label class="small muted">股票池</label>
+      <select class="select" id="pool"></select>
+      <label class="small muted">严重度</label>
+      <select class="select" id="sev">
+        <option value="">全部</option><option value="high">高</option>
+        <option value="medium">中</option><option value="low">低</option>
+      </select>
+      <label class="small muted">条数</label>
+      <select class="select" id="limit">
+        <option value="20">20</option><option value="50" selected>50</option><option value="100">100</option>
+      </select>
+      <button class="btn primary" id="runBtn">立即运行监控</button>
+      <button class="btn" id="refreshBtn">刷新告警</button>
+      <span class="spacer" style="flex:1"></span>
+      <span class="badge" id="lastRun">最近运行：—</span>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <input class="input" id="addCode" placeholder="代码，如 600337.SH（可逗号分隔多个）">
+      <input class="input" id="poolName" placeholder="目标池（默认 watchlist）" style="min-width:150px">
+      <button class="btn sm" id="addBtn">加入池</button>
+      <button class="btn sm" id="removeBtn">移出池</button>
+      <span class="muted small">池管理：watchlist 为默认观察池</span>
+    </div>
+    <div class="notice info" id="engineNote" style="display:none">
+      <span>ℹ️</span><div>监控引擎尚未合并（PR 待窗口），当前展示演示数据；合并并重启 8091 后自动接真实数据。</div>
+    </div>
+  </div>
+
+  <div class="grid-kpi">
+    <div class="kpi"><div class="k">股票池</div><div class="v" id="kPools">—</div><div class="d">命名池数量</div></div>
+    <div class="kpi"><div class="k">监控股票</div><div class="v" id="kStocks">—</div><div class="d">当前池代码数</div></div>
+    <div class="kpi"><div class="k">告警总数</div><div class="v" id="kAlerts">—</div><div class="d">持久化去重</div></div>
+    <div class="kpi"><div class="k">高严重度</div><div class="v" id="kHigh" style="color:var(--red-500)">—</div><div class="d">事件/涨跌停等</div></div>
+    <div class="kpi"><div class="k">最近运行</div><div class="v" id="kLast" style="font-size:14px;font-weight:700">—</div><div class="d">扫描/新增告警</div></div>
+  </div>
+
+  <div class="card">
+    <h2><span>告警列表</span><span class="hint" id="alertHint">去重持久化 · 最新在前</span></h2>
+    <div style="overflow:auto">
+    <table>
+      <thead><tr><th>时间</th><th>代码</th><th>规则</th><th>严重度</th><th>标题</th><th>详情</th><th>交易日</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    </div>
+    <div class="empty" id="empty" style="display:none"><b>暂无告警</b>点击「立即运行监控」生成，或调整股票池/筛选条件。</div>
+  </div>
+
+  <footer>
+    <span>规则：价格异动｜量能放大｜涨跌停｜新事件｜评级变化｜数据滞后</span>
+    <span>数据：本地数据仓 + 分析库</span>
+    <span>研究分析，不构成投资建议</span>
+  </footer>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id);};
+  function toast(t){var e=$('toast');e.textContent=t;e.style.display='block';clearTimeout(window.__t);window.__t=setTimeout(function(){e.style.display='none';},2600);}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function api(path,opts){
+    return fetch(path,opts||{}).then(function(r){return r.json().then(function(j){return {ok:r.ok,status:r.status,body:j};});});
+  }
+  function fmtTs(s){return s?String(s).slice(0,19):'—';}
+  var demo=false;
+  var demoData={
+    pools:{watchlist:['600337.SH','605258.SH','688023.SH','603667.SH']},
+    summary:{pools:{watchlist:4},alerts_total:6,by_severity:{high:2,medium:3,low:1},last_run:{run_id:'demo-1',ts:'2026-11-04 09:30:00'}},
+    alerts:[
+      {ts:'2026-11-04 09:30:00',code:'600337.SH',rule:'new_event',severity:'high',title:'新事件：回购进展/重整',detail:'2026-11-03 回购进展公告',trade_date:'20261103'},
+      {ts:'2026-11-04 09:30:00',code:'688023.SH',rule:'price_move',severity:'medium',title:'价格异动 -16.08%',detail:'20日跌幅超阈值',trade_date:'20261103'},
+      {ts:'2026-11-04 09:30:00',code:'603667.SH',rule:'rating_change',severity:'medium',title:'评级变化：观察→事件观察',detail:'最近两次运行评级不同',trade_date:'20261103'}
+    ]
+  };
+  function loadPools(){
+    return api('/api/monitor/pools').then(function(r){
+      if(!r.ok||!r.body||!r.body.ok){ throw new Error((r.body&&r.body.error)||('HTTP '+r.status)); }
+      return {pools:r.body.pools||{},summary:r.body.summary||{}};
+    }).catch(function(e){
+      demo=true; $('engineNote').style.display='flex';
+      return demoData;
+    });
+  }
+  function renderPools(data){
+    var sel=$('pool'); sel.innerHTML='';
+    var pools=data.pools||{};
+    Object.keys(pools).forEach(function(k){
+      var o=document.createElement('option'); o.value=k; o.textContent=k+' ('+(pools[k]||[]).length+')'; sel.appendChild(o);
+    });
+    if(!Object.keys(pools).length){var o=document.createElement('option');o.value='watchlist';o.textContent='watchlist';sel.appendChild(o);}
+    var s=data.summary||{};
+    $('kPools').textContent=Object.keys(pools).length;
+    var cur=(pools[sel.value]||[]).length;
+    $('kStocks').textContent=cur;
+    if(s.alerts_total!=null) $('kAlerts').textContent=s.alerts_total;
+    if(s.by_severity&&s.by_severity.high!=null) $('kHigh').textContent=s.by_severity.high;
+    if(s.last_run){$('kLast').textContent=fmtTs(s.last_run.ts);$('lastRun').textContent='最近运行：'+fmtTs(s.last_run.ts);}
+  }
+  function renderAlerts(list){
+    var tb=$('rows'); tb.innerHTML='';
+    if(!list.length){$('empty').style.display='block';$('alertHint').textContent='去重持久化 · 暂无数据';return;}
+    $('empty').style.display='none';$('alertHint').textContent='去重持久化 · 共 '+list.length+' 条';
+    list.forEach(function(a){
+      var tr=document.createElement('tr');
+      tr.innerHTML='<td class="muted small">'+esc(fmtTs(a.ts))+'</td>'+
+        '<td class="code">'+esc(a.code||'')+'</td>'+
+        '<td>'+esc(a.rule||'')+'</td>'+
+        '<td><span class="badge '+(a.severity||'low')+'">'+esc(a.severity||'low')+'</span></td>'+
+        '<td>'+esc(a.title||'')+'</td>'+
+        '<td class="muted small">'+esc(a.detail||'')+'</td>'+
+        '<td class="muted small">'+esc(a.trade_date||'—')+'</td>';
+      tb.appendChild(tr);
+    });
+  }
+  function loadAlerts(){
+    var pool=$('pool').value, sev=$('sev').value, limit=$('limit').value;
+    var qs='?limit='+encodeURIComponent(limit)+(pool?'&pool='+encodeURIComponent(pool):'')+(sev?'&severity='+encodeURIComponent(sev):'');
+    return api('/api/monitor/alerts'+qs).then(function(r){
+      if(!r.ok||!r.body||!r.body.ok){ throw new Error((r.body&&r.body.error)||('HTTP '+r.status)); }
+      return r.body.alerts||[];
+    }).catch(function(e){
+      demo=true; $('engineNote').style.display='flex';
+      return demoData.alerts.filter(function(a){return !sev||a.severity===sev;});
+    }).then(renderAlerts);
+  }
+  function refresh(){ loadAlerts(); }
+  function runMonitor(){
+    $('runBtn').disabled=true;
+    var body={pool:$('pool').value||'watchlist'};
+    api('/api/monitor/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+      .then(function(r){
+        if(!r.body||!r.body.ok){ toast('运行失败：'+((r.body||{}).error||r.status)); return; }
+        toast('扫描 '+(r.body.scanned||0)+' 只，新增告警 '+(r.body.new_alerts||0)+' 条');
+        return loadPools().then(renderPools).then(loadAlerts);
+      }).catch(function(e){ toast('运行失败：'+e); })
+      .finally(function(){ $('runBtn').disabled=false; });
+  }
+  function manage(action){
+    var raw=($('addCode').value||'').trim();
+    var codes=raw.split(/[,，\s]+/).filter(Boolean);
+    if(!codes.length){ toast('请输入代码'); return; }
+    var body={action:action,name:($('poolName').value||'watchlist').trim()||'watchlist',codes:codes};
+    api('/api/monitor/pool',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+      .then(function(r){
+        if(!r.body||!r.body.ok){ toast('池更新失败：'+((r.body||{}).error||r.status)); return; }
+        toast((action==='add'?'已加入':'已移出')+' '+codes.length+' 只');
+        loadPools().then(function(d){renderPools(d);return loadAlerts();});
+      }).catch(function(e){ toast('池更新失败：'+e); });
+  }
+  $('runBtn').addEventListener('click',runMonitor);
+  $('refreshBtn').addEventListener('click',refresh);
+  $('addBtn').addEventListener('click',function(){manage('add');});
+  $('removeBtn').addEventListener('click',function(){manage('remove');});
+  $('sev').addEventListener('change',refresh);
+  $('limit').addEventListener('change',refresh);
+  $('pool').addEventListener('change',function(){
+    var sel=$('pool');
+    loadPools().then(function(d){renderPools(d);loadAlerts();});
+  });
+  loadPools().then(renderPools).then(loadAlerts);
+})();
+</script>
+</body>
+</html>

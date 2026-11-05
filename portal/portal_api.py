@@ -157,6 +157,8 @@ _load_cainiao_env()
 # 变更类 POST 端点（逐一对照 do_POST 路由表；/feishu/event 为飞书回调，
 # 不走 portal token，改走 X-Lark-Signature 验签，见 _api_feishu_event）
 _MUTATION_POSTS = frozenset((
+    "/api/monitor/run",
+    "/api/monitor/pool",
     "/api/analysis/submit",  # K-STOCK-ANALYSIS-P0C2 个股分析入队（写队列文件）
     "/api/analysis/review",  # K-STOCK-ANALYSIS-P0F 事件人工复核（写复核状态）
     "/api/data/update-plan",
@@ -1151,6 +1153,11 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 self, path,
                 self.path.split("?", 1)[1] if "?" in self.path else "")
             return
+        if path.startswith('/api/monitor/'):
+            import api_monitor
+            api_monitor.handle_post(
+                self, path, self.path.split("?", 1)[1] if "?" in self.path else "")
+            return
         try:
             if path == "/api/sim/confirm":
                 # IFS F4 唯一 A 路径：确认 v2（四 ID 链），执行仍走 trading_bot_flow
@@ -1717,6 +1724,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # H1（2026-11-03）：个股分析内部只读网关（Hermes MCP；loopback + 专属 token）
             import api_analysis_internal
             api_analysis_internal.handle_get(self, path, qs)
+            return
+        if path.startswith('/api/monitor/'):
+            import api_monitor
+            api_monitor.handle_get(self, path, qs)
             return
         if path.startswith('/api/analysis/'):
             # K-STOCK-ANALYSIS-P0C2 个股分析只读入口（独立文件 api_analysis.py）
@@ -3001,6 +3012,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
             from urllib.parse import parse_qs
             jid = (parse_qs(qs).get("job") or [""])[0]
             self._sa_result(jid)
+        elif path == "/sa/workbench":
+            self._html_file(os.path.join(ROOT, "sa_workbench.html"))
+        elif path == "/sa/monitor":
+            self._html_file(os.path.join(ROOT, "sa_monitor.html"))
         elif path == "/bt-signals":
             # 飞书卡片「明日信号」按钮目标页：全池 4 策略持仓信号
             self._html_file(os.path.join(STATION, "quant_backtest",

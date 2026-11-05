@@ -84,6 +84,8 @@ SECTIONS = [
 DOMAIN_NAV_GROUPS = {
     "stock": (
         ("📊 分析工作台", (
+            ("🧪 新版工作台", "/sa/workbench", "sa-workbench"),
+            ("🛰️ 批量监控", "/sa/monitor", "sa-monitor"),
             ("🔍 单股分析", "/sa", "sa"),
             ("🧾 事件复核", "/sa#review", "sareview"),
             ("📚 方法说明", "/sa#method", "samethod"),
