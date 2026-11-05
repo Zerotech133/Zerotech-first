@@ -19,6 +19,12 @@
   GET  /api/analysis/internal/job/<job_id>
   POST /api/analysis/internal/analyze   {"code": "...", "llm": false, "push": false}
   POST /api/analysis/internal/batch     {"codes": ["..."], "llm": false, "push": false}
+
+H2b 条件选股（只读计算，不自动批量分析；引擎 = analysis.screen_parse / analysis.screener，
+H2a 未合并前缺失 → 503 fail-closed）：
+  POST /api/analysis/internal/screen/parse  {"text": "自然语言筛选条件"}
+  POST /api/analysis/internal/screen/run    {"dsl": {...}} 或 {"text": "..."}
+  GET  /api/analysis/internal/screen/fields
 """
 import hmac
 import json
@@ -39,6 +45,8 @@ CODE_RE = re.compile(r"^(60[0-9]{4}|68[0-9]{4}|00[0-9]{4}|30[0-9]{4}|8[0-9]{6})\
 RUN_RE = re.compile(r"^[A-Za-z0-9_\-]{6,80}$")
 JOB_RE = re.compile(r"^[A-Za-z0-9_\-]{6,80}$")
 MAX_BODY = 64 * 1024
+SCREEN_MAX_TEXT = 2000
+SCREEN_DISCLAIMER = "筛选结果仅供研究，不构成投资建议；历史数据不代表未来。"
 LOOPBACK = ("127.0.0.1", "::1", "localhost")
 
 
@@ -203,6 +211,196 @@ def _read_body(handler):
     return json.loads(raw or "{}")
 
 
+# ---------------- H2b 条件选股（惰性加载，缺失 fail-closed） ----------------
+def _import_analysis(name):
+    """按标准路径导入 analysis.<name>；生产进程以 ROOT 为准。"""
+    import importlib
+    if ROOT not in sys.path:
+        sys.path.insert(0, ROOT)
+    return importlib.import_module("analysis." + name)
+
+
+def _load_screen_parse():
+    """返回 analysis.screen_parse 模块；缺失/导入失败 → None（端点回 503）。"""
+    try:
+        return _import_analysis("screen_parse")
+    except Exception:
+        return None
+
+
+def _load_screener():
+    """返回 analysis.screener 模块；缺失/导入失败 → None（端点回 503）。"""
+    try:
+        return _import_analysis("screener")
+    except Exception:
+        return None
+
+
+def _screen_error(handler, status, error, **extra):
+    obj = {"ok": False, "error": error}
+    obj.update(extra)
+    return _json(handler, obj, status)
+
+
+def _screen_text(body):
+    """提取并校验 text；非法返回 (None, 错误说明)。"""
+    text = body.get("text")
+    if not isinstance(text, str) or not text.strip():
+        return None, "text 不能为空"
+    text = text.strip()
+    if len(text) > SCREEN_MAX_TEXT:
+        return None, "text 过长（≤%d 字）" % SCREEN_MAX_TEXT
+    return text, ""
+
+
+def _screen_industries(body):
+    inds = body.get("industries")
+    if not isinstance(inds, list):
+        return None
+    out = [str(x).strip() for x in inds if str(x or "").strip()]
+    return out[:60] or None
+
+
+def _post_screen_parse(handler, body):
+    sp = _load_screen_parse()
+    if sp is None:
+        return _screen_error(handler, 503, "选股解析引擎未就绪（analysis.screen_parse 缺失）")
+    text, err = _screen_text(body)
+    if err:
+        return _screen_error(handler, 400, err)
+    kw = {}
+    inds = _screen_industries(body)
+    if inds:
+        kw["industries"] = inds
+    try:
+        r = sp.parse(text, **kw)
+    except Exception as e:  # noqa: BLE001
+        return _screen_error(handler, 500, "解析失败: " + str(e)[:120])
+    if not isinstance(r, dict):
+        return _screen_error(handler, 500, "解析器返回非对象")
+    if r.get("ok") is False:
+        return _json(handler, {
+            "ok": False,
+            "error": str(r.get("error") or "无法解析为筛选条件"),
+            "errors": r.get("errors") or [],
+            "notes": r.get("notes") or [],
+            "unmatched": r.get("unmatched") or [],
+            "spec": r.get("spec"),
+        }, 400)
+    return _json(handler, {
+        "ok": True,
+        "spec": r.get("spec"),
+        "notes": r.get("notes") or [],
+        "unmatched": r.get("unmatched") or [],
+        "source": r.get("source") or "rule",
+        "text": text,
+    })
+
+
+def _post_screen_run(handler, body):
+    sc = _load_screener()
+    if sc is None:
+        return _screen_error(handler, 503, "选股引擎未就绪（analysis.screener 缺失）")
+    dsl = body.get("dsl")
+    raw_text = body.get("text")
+    has_dsl = isinstance(dsl, dict)
+    has_text = isinstance(raw_text, str) and bool(raw_text.strip())
+    if dsl is not None and not has_dsl:
+        return _screen_error(handler, 400, "dsl 必须为对象")
+    if has_dsl and has_text:
+        return _screen_error(handler, 400, "dsl 与 text 只能二选一")
+    if not has_dsl and not has_text:
+        return _screen_error(handler, 400, "需要 dsl 或 text")
+    parse_meta = None
+    if has_text:
+        sp = _load_screen_parse()
+        if sp is None:
+            return _screen_error(handler, 503, "选股解析引擎未就绪（analysis.screen_parse 缺失）")
+        text, err = _screen_text(body)
+        if err:
+            return _screen_error(handler, 400, err)
+        try:
+            pr = sp.parse(text)
+        except Exception as e:  # noqa: BLE001
+            return _screen_error(handler, 500, "解析失败: " + str(e)[:120])
+        if not isinstance(pr, dict):
+            return _screen_error(handler, 500, "解析器返回非对象")
+        if pr.get("ok") is False:
+            return _json(handler, {
+                "ok": False,
+                "error": str(pr.get("error") or "无法解析为筛选条件"),
+                "errors": pr.get("errors") or [],
+                "notes": pr.get("notes") or [],
+                "unmatched": pr.get("unmatched") or [],
+            }, 400)
+        spec = pr.get("spec")
+        parse_meta = {"source": pr.get("source") or "rule",
+                      "notes": pr.get("notes") or [],
+                      "unmatched": pr.get("unmatched") or []}
+    else:
+        spec = dsl
+    try:
+        v = sc.validate(spec)
+    except Exception as e:  # noqa: BLE001 —— 校验异常按非法 DSL 处理（400，与门户同源代理一致）
+        return _screen_error(handler, 400, "DSL 校验失败: " + str(e)[:120])
+    if not isinstance(v, dict) or not v.get("ok"):
+        return _json(handler, {
+            "ok": False, "error": "DSL 校验失败",
+            "errors": (v or {}).get("errors") or ["validate 返回非法结果"],
+        }, 400)
+    spec = v.get("spec") or spec
+    try:
+        r = sc.run(spec)
+    except Exception as e:  # noqa: BLE001
+        return _screen_error(handler, 500, "筛选执行失败: " + str(e)[:160])
+    if not isinstance(r, dict):
+        return _screen_error(handler, 500, "筛选引擎返回非对象")
+    if r.get("ok") is False:
+        return _screen_error(handler, 500, "筛选执行失败",
+                             errors=r.get("errors") or [], warnings=r.get("warnings") or [])
+    out = {
+        "ok": True,
+        "as_of": r.get("as_of"),
+        "universe": r.get("universe"),
+        "universe_size": r.get("universe_size"),
+        "matched": r.get("matched"),
+        "returned": r.get("returned", len(r.get("candidates") or [])),
+        "candidates": r.get("candidates") or [],
+        "warnings": r.get("warnings") or [],
+        "disclaimer": r.get("disclaimer") or SCREEN_DISCLAIMER,
+        "research_only": True,
+        "spec": r.get("spec") or spec,
+        "auto_batch": False,
+    }
+    if parse_meta is not None:
+        out["parse"] = parse_meta
+    return _json(handler, out)
+
+
+def _get_screen_fields(handler):
+    sc = _load_screener()
+    if sc is None:
+        return _screen_error(handler, 503, "选股引擎未就绪（analysis.screener 缺失）")
+    raw = getattr(sc, "FIELDS", None)
+    if not isinstance(raw, dict) or not raw:
+        return _screen_error(handler, 503, "字段白名单不可用（screener.FIELDS 缺失）")
+    fields = []
+    for name in sorted(raw):
+        meta = raw.get(name)
+        meta = meta if isinstance(meta, dict) else {}
+        fields.append({"name": name,
+                       "label": str(meta.get("label") or name),
+                       "kind": str(meta.get("kind") or "number")})
+    return _json(handler, {
+        "ok": True,
+        "count": len(fields),
+        "fields": fields,
+        "universes": list(getattr(sc, "UNIVERSES", []) or []),
+        "ops": list(getattr(sc, "OPS", []) or []),
+        "disclaimer": SCREEN_DISCLAIMER,
+    })
+
+
 def handle_get(handler, path, qs):
     if not _token():
         return _json(handler, {"ok": False, "error": "internal token 未配置（fail-closed）"}, 503)
@@ -262,7 +460,11 @@ def handle_get(handler, path, qs):
         code = (q.get("code") or "").strip().upper()
         if code and not CODE_RE.match(code):
             return _json(handler, {"ok": False, "error": "非法代码"}, 400)
-        limit = max(1, min(int(q.get("limit", 30) or 30), 200))
+        try:
+            limit = int(q.get("limit", 30) or 30)
+        except (TypeError, ValueError):
+            return _json(handler, {"ok": False, "error": "非法 limit（需整数）"}, 400)
+        limit = max(1, min(limit, 200))
         status = q.get("status", "pending")
         if status not in ("all", "pending", "approved", "rejected"):
             status = "all"
@@ -276,6 +478,8 @@ def handle_get(handler, path, qs):
                 "category_final": e.get("category_final"), "title": e.get("title"),
                 "reviewed": e.get("reviewed")} for e in items]
         return _json(handler, {"ok": True, "events": out, "stats": st})
+    if sub == "/screen/fields":
+        return _get_screen_fields(handler)
     if sub.startswith("/job/"):
         job_id = sub[len("/job/"):].strip()
         if not JOB_RE.match(job_id):
@@ -298,7 +502,7 @@ def handle_post(handler, path, qs):
     if not _authorized(handler):
         return _deny(handler)
     sub = path[len(BASE):] if path.startswith(BASE) else path
-    if sub not in ("/analyze", "/batch"):
+    if sub not in ("/analyze", "/batch", "/screen/parse", "/screen/run"):
         return _json(handler, {"ok": False, "error": "unknown internal post: " + sub}, 404)
     try:
         body = _read_body(handler)
@@ -306,6 +510,12 @@ def handle_post(handler, path, qs):
         return _json(handler, {"ok": False, "error": str(e)}, 413)
     except Exception:
         return _json(handler, {"ok": False, "error": "bad json"}, 400)
+    if not isinstance(body, dict):
+        return _json(handler, {"ok": False, "error": "body 必须为 JSON 对象"}, 400)
+    if sub == "/screen/parse":
+        return _post_screen_parse(handler, body)
+    if sub == "/screen/run":
+        return _post_screen_run(handler, body)
 
     llm = bool(body.get("llm", False))
     push = bool(body.get("push", False))
