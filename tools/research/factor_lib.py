@@ -814,11 +814,15 @@ def evaluate_panel(panel: Panel, factor_names: list[str] | str | None = None,
                    start: str | None = None, end: str | None = None,
                    is_end: str | None = None, seed: int = DEFAULT_SEED,
                    min_cross_section: int = DEFAULT_MIN_CROSS_SECTION,
-                   n_boot: int = 300, universe: str = "") -> dict:
+                   n_boot: int = 300, universe: str = "",
+                   factor_specs: dict[str, "FactorSpec"] | None = None,
+                   neutralization: dict | None = None) -> dict:
     """在给定面板上评测因子（纯计算，不做数据 IO，便于单测与复现）。
 
     factor_names: 因子名列表 / 逗号分隔字符串 / None（全部）。
     is_end: IS/OOS 切分日（含 IS）；None 时自动取信号窗口交易日中点，并在 meta 标注 source。
+    factor_specs: 可选的临时因子定义（如中性化残差）；同名时优先于 FACTORS。
+    neutralization: 可选的中性化元数据，原样写入报告 meta。
     """
     t0 = time.time()
     if factor_names is None:
@@ -827,7 +831,8 @@ def evaluate_panel(panel: Panel, factor_names: list[str] | str | None = None,
         names = [x.strip() for x in factor_names.split(",") if x.strip()]
     else:
         names = [str(x) for x in factor_names]
-    unknown = [x for x in names if x not in FACTORS]
+    extra_specs = factor_specs or {}
+    unknown = [x for x in names if x not in FACTORS and x not in extra_specs]
     if unknown:
         raise KeyError(f"未注册因子: {unknown}；可用: {list(FACTORS)}")
     if not names:
@@ -862,6 +867,8 @@ def evaluate_panel(panel: Panel, factor_names: list[str] | str | None = None,
         ],
         "runtime_sec": None,
     }
+    if neutralization is not None:
+        meta["neutralization"] = neutralization
     window = _resolve_window(panel.dates, start, end, horizon)
     empty_report = {"meta": meta, "factors": {}}
     if window is None or panel.shape[0] == 0:
@@ -873,7 +880,7 @@ def evaluate_panel(panel: Panel, factor_names: list[str] | str | None = None,
         meta["baseline"] = {"n_obs": 0, "mean_pct": None, "median_pct": None}
         meta["runtime_sec"] = round(time.time() - t0, 3)
         for name in names:
-            empty_report["factors"][name] = _empty_factor_entry(FACTORS[name])
+            empty_report["factors"][name] = _empty_factor_entry(extra_specs.get(name) or FACTORS[name])
         return empty_report
 
     car = forward_car(panel, horizon=horizon, cost=cost)
@@ -907,7 +914,7 @@ def evaluate_panel(panel: Panel, factor_names: list[str] | str | None = None,
     }
 
     for name in names:
-        spec = FACTORS[name]
+        spec = extra_specs.get(name) or FACTORS[name]
         try:
             fmat = spec.compute(panel)
         except Exception as exc:  # 单因子失败不影响其他因子，但显式报错（研究可复现优先）
@@ -1131,8 +1138,12 @@ def run_eval(start: str, end: str, factor_names: list[str] | str | None = None,
              horizon: int = DEFAULT_HORIZON, cost: float = DEFAULT_COST,
              is_end: str | None = None, universe: str = "tradable",
              data_root: str | Path | None = None, seed: int = DEFAULT_SEED,
-             min_cross_section: int = DEFAULT_MIN_CROSS_SECTION, n_boot: int = 300) -> dict:
-    """加载真实数据并评测（CLI eval 的实现；返回可直接落盘的 JSON dict）。"""
+             min_cross_section: int = DEFAULT_MIN_CROSS_SECTION, n_boot: int = 300,
+             neutralize: str = "") -> dict:
+    """加载真实数据并评测（CLI eval 的实现；返回可直接落盘的 JSON dict）。
+
+    neutralize: ""/"none" 不中性化；"industry,size" 对因子做逐日行业+市值残差化。
+    """
     if factor_names is None:
         names = list(FACTORS)
     elif isinstance(factor_names, str):
@@ -1145,10 +1156,18 @@ def run_eval(start: str, end: str, factor_names: list[str] | str | None = None,
     need_roe = any("roe" in FACTORS[name].requires for name in names)
     panel = load_panel(start, end, horizon=horizon, universe=universe,
                        data_root=data_root, load_roe=need_roe)
+    factor_specs = None
+    neutralization = None
+    if neutralize and neutralize.strip().lower() not in ("", "none", "off"):
+        from factor_neutralize import build_neutralized_specs, parse_modes
+        by_industry, by_size = parse_modes(neutralize)
+        factor_specs, neutralization = build_neutralized_specs(
+            panel, names, industry=by_industry, size=by_size, min_obs=min_cross_section)
     return evaluate_panel(panel, factor_names=names, horizon=horizon, cost=cost,
                           start=start, end=end, is_end=is_end, seed=seed,
                           min_cross_section=min_cross_section, n_boot=n_boot,
-                          universe=universe)
+                          universe=universe, factor_specs=factor_specs,
+                          neutralization=neutralization)
 
 
 # ---------------------------------------------------------------- CLI
@@ -1227,7 +1246,8 @@ def cmd_eval(args) -> int:
                           horizon=args.horizon, cost=cost,
                           is_end=(args.is_end or None), universe=args.universe,
                           data_root=(args.data_root or None), seed=args.seed,
-                          min_cross_section=args.min_cross_section, n_boot=args.n_boot)
+                          min_cross_section=args.min_cross_section, n_boot=args.n_boot,
+                          neutralize=args.neutralize)
     except (FileNotFoundError, ValueError, KeyError) as exc:
         print(f"[factor_lib] eval 失败: {exc}", file=sys.stderr)
         return 2
@@ -1296,6 +1316,7 @@ def main(argv: list[str] | None = None) -> int:
                         help="单日横截面最少有效股票数")
     p_eval.add_argument("--n-boot", type=int, default=300, help="block bootstrap 次数")
     p_eval.add_argument("--seed", type=int, default=DEFAULT_SEED, help="bootstrap 随机种子")
+    p_eval.add_argument("--neutralize", default="", help="中性化：industry,size / industry / size / none")
     p_eval.add_argument("--json", action="store_true", help="stdout 打印完整 JSON")
 
     args = ap.parse_args(argv)
