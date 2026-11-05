@@ -129,10 +129,19 @@ def _read_table(root: Path, table: str, columns: Iterable[str],
 
 
 def _add_flow_metrics(df: pd.DataFrame, cols: Iterable[str]) -> pd.DataFrame:
-    """为累计流量科目补单季（_q）、TTM（_ttm）、年度（_y）。"""
+    """为累计流量科目补单季（_q）、TTM（_ttm）、年度（_y）。
+
+    注意：不能每列都把 merge 结果写回 df。全市场财报里同一
+    (ts_code, _year) 偶尔有多个 Q4 报告期（更正/重述），写回后再做
+    下一列 merge 会按重复键笛卡尔放大，最终内存爆炸。这里改为：
+    每列先在原始唯一行上算出 q/y/ttm 三列，最后一次性 concat。
+    """
     df = df.sort_values(["ts_code", "end_date"]).reset_index(drop=True).copy()
+    # 上游 merge 可能带出同一报告期的重复行；不先去重会让后续映射倍增。
+    df = df.drop_duplicates(["ts_code", "end_date"], keep="last").reset_index(drop=True)
     df["_year"] = df["end_date"].dt.year
     df["_quarter"] = df["end_date"].dt.quarter
+    new_cols: dict[str, pd.Series] = {}
     for col in cols:
         if col not in df.columns:
             continue
@@ -140,25 +149,45 @@ def _add_flow_metrics(df: pd.DataFrame, cols: Iterable[str]) -> pd.DataFrame:
         df[col] = v
         # 单季：Q1=累计；其余=本期累计-同年上一季累计
         prev = df.groupby(["ts_code", "_year"])[col].shift(1)
-        df[f"{col}_q"] = v.where(df["_quarter"] == 1, v - prev)
+        new_cols[f"{col}_q"] = v.where(df["_quarter"] == 1, v - prev)
         # 年度：12-31 的值，按股票前向填充
         annual = v.where(df["_quarter"] == 4)
-        df[f"{col}_y"] = annual.groupby(df["ts_code"]).ffill()
+        new_cols[f"{col}_y"] = annual.groupby(df["ts_code"]).ffill()
         # TTM：年报=年度；中报/季报=本期+上年年报-上年同期
-        annual_map = df.loc[df["_quarter"] == 4, ["ts_code", "_year", col]].copy()
-        annual_map = annual_map.rename(columns={col: "_annual"})
+        annual_map = (
+            df.loc[df["_quarter"] == 4, ["ts_code", "_year", col]]
+            .rename(columns={col: "_annual"})
+            .drop_duplicates(["ts_code", "_year"], keep="last")
+        )
         annual_map["_year"] = annual_map["_year"] + 1
-        df = df.merge(annual_map[["ts_code", "_year", "_annual"]],
-                      on=["ts_code", "_year"], how="left")
-        prior = df[["ts_code", "_year", "_quarter", col]].copy()
+        prior = (
+            df[["ts_code", "_year", "_quarter", col]]
+            .rename(columns={col: "_prior"})
+            .drop_duplicates(["ts_code", "_year", "_quarter"], keep="last")
+        )
         prior["_year"] = prior["_year"] + 1
-        df = df.merge(prior, on=["ts_code", "_year", "_quarter"],
-                      how="left", suffixes=("", "_ps"))
-        v2 = pd.to_numeric(df[col], errors="coerce")
-        ttm = v2.where(df["_quarter"] == 4, v2 + df["_annual"] - df[f"{col}_ps"])
-        df[f"{col}_ttm"] = ttm
-        df = df.drop(columns=["_annual", f"{col}_ps"])
-        df = df.sort_values(["ts_code", "end_date"]).reset_index(drop=True)
+        # 只取映射结果，不把中间列写回 df；index 与 df 对齐。
+        annual_series = (
+            df[["ts_code", "_year"]]
+            .merge(annual_map[["ts_code", "_year", "_annual"]],
+                   on=["ts_code", "_year"], how="left")
+            ["_annual"]
+            .to_numpy()
+        )
+        prior_series = (
+            df[["ts_code", "_year", "_quarter"]]
+            .merge(prior[["ts_code", "_year", "_quarter", "_prior"]],
+                   on=["ts_code", "_year", "_quarter"], how="left")
+            ["_prior"]
+            .to_numpy()
+        )
+        ttm = v.where(
+            df["_quarter"] == 4,
+            v + pd.Series(annual_series, index=df.index) - pd.Series(prior_series, index=df.index),
+        )
+        new_cols[f"{col}_ttm"] = ttm
+    if new_cols:
+        df = pd.concat([df, pd.DataFrame(new_cols, index=df.index)], axis=1)
     return df
 
 

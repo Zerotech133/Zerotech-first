@@ -122,6 +122,28 @@ def test_flow_metrics_quarter_ttm_annual():
     assert row_y["revenue_y"] == 1200
 
 
+def test_flow_metrics_dedupes_reports_before_merging():
+    """全市场回归：重复报告行/同年多个 Q4 不能让 merge 逐列放大。"""
+    reports = _make_reports(codes=("000001.SZ",))
+    extra = reports.iloc[[3, 7]].copy()  # 同 ts_code/end_date 的重复行
+    extra["ann_date"] = extra["ann_date"] + pd.Timedelta(days=1)
+    # 同一财年出现两个 Q4 报告期（12-30 重述 + 12-31 正式）
+    restated = reports.iloc[[7]].copy()
+    restated["end_date"] = pd.Timestamp("2024-12-30")
+    reports = pd.concat([reports, extra, restated], ignore_index=True)
+    n_unique = reports.drop_duplicates(["ts_code", "end_date"]).shape[0]
+
+    merged = ff._add_flow_metrics(
+        reports, ff.FLOW_INCOME + ff.FLOW_CASH + ("profit_dedt",))
+
+    assert len(merged) == n_unique
+    row = merged[merged["end_date"] == pd.Timestamp("2025-03-31")].iloc[0]
+    assert row["revenue_ttm"] == 1260
+    # 同年两个 Q4 时 annual 取排序后的最后一个（12-31 正式值）
+    row_y = merged[merged["end_date"] == pd.Timestamp("2024-12-31")].iloc[0]
+    assert row_y["revenue_ttm"] == 1200
+
+
 def test_derived_metrics_and_value_scale():
     d = _derived()
     assert "gross_margin_ttm" in d.columns
