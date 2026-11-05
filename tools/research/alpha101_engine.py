@@ -227,37 +227,89 @@ class _Engine:
 
     def _fn_ts_rank(self, d: pd.DataFrame, w: int) -> pd.DataFrame:
         w = int(w)
+        if w <= 0 or d.empty:
+            return pd.DataFrame(np.nan, index=d.index, columns=d.columns)
+        min_periods = min(w, max(2, w // 2))
+        arr = d.to_numpy(dtype=float, copy=False)
+        out = np.full(arr.shape, np.nan, dtype=float)
+        from numpy.lib.stride_tricks import sliding_window_view
 
-        def last_rank(a: np.ndarray) -> float:
-            v = a[np.isfinite(a)]
-            if v.size == 0:
-                return np.nan
-            last = a[-1]
-            if not np.isfinite(last):
-                return np.nan
-            return float((v <= last).sum() / v.size)
-        return self._rolling(d, w).apply(last_rank, raw=True)
+        # Vectorized per column: time-series rank of the *last* point in each
+        # rolling window. Pad the left with w-1 NaNs so early partial windows
+        # still honour min_periods (same as pandas rolling with min_periods).
+        # This is the same semantics as
+        # ``rolling(w, min_periods=min_periods).apply(last_rank)`` but avoids
+        # one Python call per window (the old path was the B2 runtime bottleneck).
+        for j in range(arr.shape[1]):
+            x = arr[:, j]
+            if not np.isfinite(x).any():
+                continue
+            padded = np.concatenate((np.full(w - 1, np.nan), x))
+            win = sliding_window_view(padded, w)  # shape (n, w)
+            finite = np.isfinite(win)
+            n = finite.sum(axis=1)
+            cnt = (finite & (win <= x[:, None])).sum(axis=1)
+            ok = (n >= min_periods) & np.isfinite(x)
+            vals = np.full(x.shape[0], np.nan, dtype=float)
+            vals[ok] = cnt[ok] / n[ok]
+            out[:, j] = vals
+        return pd.DataFrame(out, index=d.index, columns=d.columns)
 
     def _fn_arg(self, d: pd.DataFrame, w: int, which: str) -> pd.DataFrame:
         w = int(w)
+        if w <= 0 or d.empty:
+            return pd.DataFrame(np.nan, index=d.index, columns=d.columns)
+        min_periods = min(w, max(2, w // 2))
+        arr = d.to_numpy(dtype=float, copy=False)
+        out = np.full(arr.shape, np.nan, dtype=float)
+        from numpy.lib.stride_tricks import sliding_window_view
 
-        def arg(a: np.ndarray) -> float:
-            if not np.isfinite(a).any():
-                return np.nan
-            return float(np.nanargmax(a) if which == "max" else np.nanargmin(a))
-        return self._rolling(d, w).apply(arg, raw=True)
+        # Vectorized per column: same semantics as pandas rolling.apply(arg)
+        # but without one Python call per window. Padded left NaNs are removed
+        # from the returned position for early partial windows.
+        for j in range(arr.shape[1]):
+            x = arr[:, j]
+            if not np.isfinite(x).any():
+                continue
+            padded = np.concatenate((np.full(w - 1, np.nan), x))
+            win = sliding_window_view(padded, w)
+            finite = np.isfinite(win)
+            n = finite.sum(axis=1)
+            fill = np.where(finite, win, -np.inf if which == "max" else np.inf)
+            pos = np.argmax(fill, axis=1) if which == "max" else np.argmin(fill, axis=1)
+            # Early rows carry pad = w - (t + 1) leading NaNs that pandas does
+            # not include in the shorter rolling window.
+            pad = np.maximum(0, w - (np.arange(x.shape[0]) + 1))
+            ok = (n >= min_periods) & (n > 0)
+            vals = np.full(x.shape[0], np.nan, dtype=float)
+            vals[ok] = pos[ok] - pad[ok]
+            out[:, j] = vals
+        return pd.DataFrame(out, index=d.index, columns=d.columns)
 
     def _fn_decay_linear(self, d: pd.DataFrame, w: int) -> pd.DataFrame:
         w = int(w)
-
-        def weighted(a: np.ndarray) -> float:
-            mask = np.isfinite(a)
-            if not mask.any():
-                return np.nan
-            # 滚动窗口未满时，a 的长度可能小于 w，按实际长度取「最近优先」权重
-            ww = np.arange(len(a), 0, -1, dtype=float)
-            return float(np.dot(a[mask], ww[mask]) / ww[mask].sum())
-        return self._rolling(d, w).apply(weighted, raw=True)
+        if w <= 0 or d.empty:
+            return pd.DataFrame(np.nan, index=d.index, columns=d.columns)
+        min_periods = min(w, max(2, w // 2))
+        arr = d.to_numpy(dtype=float, copy=False)
+        out = np.full(arr.shape, np.nan, dtype=float)
+        from numpy.lib.stride_tricks import sliding_window_view
+        weights = np.arange(w, 0, -1, dtype=float)
+        for j in range(arr.shape[1]):
+            x = arr[:, j]
+            if not np.isfinite(x).any():
+                continue
+            padded = np.concatenate((np.full(w - 1, np.nan), x))
+            win = sliding_window_view(padded, w)
+            finite = np.isfinite(win)
+            n = finite.sum(axis=1)
+            num = np.sum(np.where(finite, win, 0.0) * weights, axis=1)
+            den = np.sum(finite * weights, axis=1)
+            ok = (n >= min_periods) & (den > 0)
+            vals = np.full(x.shape[0], np.nan, dtype=float)
+            vals[ok] = num[ok] / den[ok]
+            out[:, j] = vals
+        return pd.DataFrame(out, index=d.index, columns=d.columns)
 
     def _roll_moments(self, x: pd.DataFrame, y: pd.DataFrame, w: int):
         mx = self._rolling(x, w).mean()

@@ -125,3 +125,72 @@ def test_empty_panel_formula_returns_empty():
     empty = Panel.empty()
     out = ae.evaluate_formula("Rank(Close)", empty)
     assert out.empty
+
+
+def test_ts_rank_vectorized_matches_reference():
+    """Optimized Ts_Rank must equal pandas rolling.apply semantics incl. NaNs/partial windows."""
+    panel = _synth_panel(days=40, codes=3)
+    eng = ae._Engine(panel)
+    d = panel.fields["close"].copy()
+    d.iloc[3:6, 0] = np.nan
+    d.iloc[20, 1] = np.nan
+    for w in (2, 5, 20):
+        got = eng._fn_ts_rank(d, w)
+        minp = min(w, max(2, w // 2))
+
+        def last_rank(a):
+            v = a[np.isfinite(a)]
+            if v.size == 0 or not np.isfinite(a[-1]):
+                return np.nan
+            return float((v <= a[-1]).sum() / v.size)
+
+        ref = d.rolling(w, min_periods=minp).apply(last_rank, raw=True)
+        assert np.array_equal(np.isnan(got.to_numpy()), np.isnan(ref.to_numpy()))
+        np.testing.assert_allclose(got.to_numpy(), ref.to_numpy(), equal_nan=True)
+
+
+def test_ts_arg_vectorized_matches_reference():
+    """Optimized Ts_ArgMax/Ts_ArgMin must match pandas rolling.apply semantics."""
+    panel = _synth_panel(days=40, codes=3)
+    eng = ae._Engine(panel)
+    d = panel.fields["close"].copy()
+    d.iloc[3:6, 0] = np.nan
+    d.iloc[20, 1] = np.nan
+    for which in ("max", "min"):
+        for w in (2, 5, 20):
+            got = eng._fn_arg(d, w, which)
+            minp = min(w, max(2, w // 2))
+
+            def last_arg(a):
+                if not np.isfinite(a).any():
+                    return np.nan
+                return float(np.nanargmax(a) if which == "max" else np.nanargmin(a))
+
+            ref = d.rolling(w, min_periods=minp).apply(last_arg, raw=True)
+            assert np.array_equal(np.isnan(got.to_numpy()), np.isnan(ref.to_numpy()))
+            np.testing.assert_allclose(got.to_numpy(), ref.to_numpy(), equal_nan=True)
+
+
+def test_decay_linear_vectorized_matches_reference():
+    """Optimized Decay_Linear must match pandas rolling.apply semantics."""
+    panel = _synth_panel(days=40, codes=3)
+    eng = ae._Engine(panel)
+    d = panel.fields["close"].copy()
+    d.iloc[3:6, 0] = np.nan
+    d.iloc[20, 1] = np.nan
+    for w in (2, 5, 20):
+        got = eng._fn_decay_linear(d, w)
+        minp = min(w, max(2, w // 2))
+
+        def weighted(a):
+            mask = np.isfinite(a)
+            if not mask.any():
+                return np.nan
+            ww = np.arange(len(a), 0, -1, dtype=float)
+            return float(np.dot(a[mask], ww[mask]) / ww[mask].sum())
+
+        ref = d.rolling(w, min_periods=minp).apply(weighted, raw=True)
+        assert np.array_equal(np.isnan(got.to_numpy()), np.isnan(ref.to_numpy()))
+        np.testing.assert_allclose(got.to_numpy(), ref.to_numpy(), equal_nan=True)
+
+
