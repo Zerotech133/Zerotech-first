@@ -105,7 +105,7 @@ DOMAIN_NAV_GROUPS = {
         ("🚀 指挥", (
             ("🚀 驾驶舱", "/bridge", "bridge"),
             ("🦸 超级助手", "/hermes/", "hermes"),
-            ("🐴 CowAgent", "/cowagent/", "cowagent"),  # 同源 /cowagent/，需 nginx 反代（L2 副本已备，原件未应用）
+            ("🐴 CowAgent 🚧", "#cowagent-off", "cowagent"),  # 未启用：CowAgent 后端未启动（端口无监听）+ nginx 反代未应用（L2 未批）。href 以 # 开头 → nav 渲染为灰色不可点
             ("🧠 智策 OS", "/quant/", "zhice"),
             ("🤖 AI 市场", "/aim", "aim"),
             ("🛒 算法市场", "/algo", "algo"),
@@ -321,6 +321,9 @@ def pill_nav(page=None):
         links = "".join(
             "<span style='color:#e6edf3;font-weight:600'>%s</span>" % lb
             if key == page else
+            "<span title='未启用' style='color:#6e7681;opacity:.6;"
+            "cursor:not-allowed'>%s</span>" % lb
+            if href.startswith("#") else
             "<a href='%s' style='color:#58a6ff;text-decoration:none'>%s</a>"
             % (href, lb) for lb, href, key in items)
         head = ("<div style='color:#8b949e;font-size:10px;"

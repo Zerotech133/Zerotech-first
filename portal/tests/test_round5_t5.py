@@ -17,8 +17,12 @@
 static/dw_snapshot.json）。
 
 口径约定：
-  * D3 的「8096 归零」只对 legion.html 成立；academy.html 按契约条件**必须**
-    仍保留 8096 直连，故断言方向相反（测试表达真实决策，不写死成「一定换」）。
+  * D3 的「8096 归零」只对 legion.html 成立；academy.html 按 R5 契约条件**当时**
+    保留 8096 直连，故断言方向相反（测试表达真实决策，不写死成「一定换」）。
+    **[R6 2026-11-06 更正]** 实测 8096 根路径返回「军团作战大屏 LEGION-OPS」，
+    与「教材与进度」语义无关，且 127.0.0.1 对远程用户恒不可达 → 老田批准摘链接。
+    本文件的 D3/F1 两处 academy 断言已随 R6 翻转为「已摘除」，R6 口径见
+    test_round6_zeroL2.py；保留此注记以便回溯「为什么 R5 保留、R6 摘除」。
   * E1「恰好 1 处 /screen.html」= FAV_ALIAS 的旧 key（迁移用，必须保留）。
 """
 import ast
@@ -111,21 +115,29 @@ def test_d3_legion_keeps_token_injection():
     assert 'sessionStorage.getItem("legionToken")' in LEGION
 
 
-# ------------------------------------------- D3 academy.html（按条件不换，仅注释）
-def test_d3_academy_8096_kept_on_purpose():
-    """academy.html 无 token 注入逻辑 ⇒ 契约要求「不换」，直连必须保留。"""
+# ------------------------------------------- D3 academy.html（R6 已摘除链接）
+def test_d3_academy_8096_href_removed_after_r6():
+    """R6：8096 实为军团大屏 ≠ 教材页，href 已摘为禁用态文本。
+
+    R5 时因「无 token 注入」保留直连；R6 实测语义错位 + 127.0.0.1 对远程不可达，
+    老田批准摘除。本断言随之翻转（原 test_d3_academy_8096_kept_on_purpose 已废弃）。
+    """
     assert not re.search(r"h\[\"X-Portal-Token\"\]", ACADEMY), "academy 不应有 token 注入"
-    assert ACADEMY.count('href="http://127.0.0.1:8096/"') == 1
-    assert "/legion-api/" not in ACADEMY.replace(
-        "<!-- D3 待办：换 /legion-api/", ""), "academy 不得出现真实 /legion-api 调用"
+    assert ACADEMY.count('href="http://127.0.0.1:8096/"') == 0, "8096 链接必须已摘除"
+    assert "教材与进度 · 未开放" in ACADEMY
+    assert "/legion-api/" not in re.sub(r"<!--.*?-->", "", ACADEMY, flags=re.S), \
+        "academy 不得出现真实 /legion-api 调用（注释里提到属正常）"
 
 
-def test_d3_academy_has_todo_comment():
-    line = [ln for ln in ACADEMY.splitlines() if "D3 待办" in ln]
+def test_d3_academy_has_disposition_comment():
+    """R6 把 R5 的「D3 待办」注释改为「D3 已处置」，须写明实测依据。"""
+    line = [ln for ln in ACADEMY.splitlines() if "D3 已处置" in ln]
     assert len(line) == 1
     assert line[0].strip().startswith("<!--") and line[0].strip().endswith("-->")
-    assert "X-Portal-Token" in line[0]
-    assert "855-863" in line[0]
+    assert "8096" in line[0] and "军团作战大屏" in line[0]
+    assert "127.0.0.1" in line[0]
+    # R5 的待办注释必须已不存在（避免两套口径并存）
+    assert "D3 待办" not in ACADEMY
 
 
 # ------------------------------------------------------------- D4 dev.html
@@ -153,13 +165,15 @@ def test_d4_dev_no_probe_subpath_links():
 # ------------------------------------------------------------- D7 nav 单一源
 def test_d7_api_common_9899_gone():
     assert "9899" not in API_COMMON
-    assert '"/cowagent/"' in API_COMMON
-    assert "需 nginx 反代" in API_COMMON
+    # [R6 2026-11-06 更正] 9899 实测无 LISTEN、nginx /cowagent/ 反代仅在 pending 副本，
+    # 入口从「裸端口」改为「不可点灰态」（href 以 # 开头），不再指向 /cowagent/。
+    assert '"#cowagent-off"' in API_COMMON
+    assert "未启用" in API_COMMON
 
 
 def test_d7_nav_js_regenerated():
     assert "9899" not in NAV_JS
-    assert NAV_JS.count("/cowagent/") == 1
+    assert NAV_JS.count('"#cowagent-off"') == 1
     assert "自动生成：tools/export_nav.py" in NAV_JS, "nav.js 必须是导出器产物"
 
 
@@ -236,8 +250,13 @@ def test_f1_academy_marked_nonproduction():
 
 
 def test_f1_no_nav_entry_removed():
-    """F1 只标注：任何入口链接都不得被摘（摘导航需老田单独裁定）。"""
-    assert ACADEMY.count('href="http://127.0.0.1:8096/"') == 1   # 教材与进度入口仍在
+    """F1 只标注：任何入口链接都不得被摘（摘导航需老田单独裁定）。
+
+    [R6 2026-11-06] 唯一例外：hero「教材与进度」8096 链接经老田批准摘除
+    （实测指向军团大屏、语义错位），见 test_round6_zeroL2.py。其余入口必须原样。
+    """
+    assert ACADEMY.count('href="http://127.0.0.1:8096/"') == 0   # R6 已摘（唯一例外）
+    assert 'data-nonprod="1"' in ACADEMY, "非生产标注须带统一标记"
     for key in ("data-view=\"home\"", "data-view=\"teaching\"",
                 "data-view=\"market\"", "ac-btn major"):
         assert key in ACADEMY, key

@@ -177,6 +177,34 @@ const SIG_CN={"1买":["一买（底背驰·异动）","up"],"2买":["二买（�
 "1卖":["一卖（顶背驰）","dn"],"2卖":["二卖","dn"],"3卖":["三卖（中枢下移）","dn"]};
 let CURJID=null, DATA=null;
 
+// ── 写入端点 token（R6 2026-11-06）──
+// /api/bt2_run、/api/bt2_nl 在 8091 的 _MUTATION_POSTS 内，经 8734 反代后
+// 源地址不是回环（_is_local_req 为假），无 X-Portal-Token 一律 403。
+// 门户的 _token_tag() 自动注入在本仓只有定义、零调用点，故本页自行带 token：
+// 先无 token 试一次，403 再提示录入并重试一次（token 只存 sessionStorage）。
+function bt2Headers(extra){
+  const h=Object.assign({}, extra||{});
+  const t=sessionStorage.getItem("bt2Token");
+  if(t) h["X-Portal-Token"]=t;
+  return h;
+}
+function promptBt2Token(){
+  const t=(prompt("回测写入需门户 token（PORTAL_API_TOKEN 或 C:/Temp/portal_api_token 的内容）。仅存本页会话。","")||"").trim();
+  if(t) sessionStorage.setItem("bt2Token",t);
+  return !!t;
+}
+function bt2Err(r,dflt){
+  const e=String((r&&r.error)||"");
+  if(e.indexOf("X-Portal-Token")>=0) return "写入被拒：需门户 token（已取消录入，本次未提交）";
+  return e||dflt;
+}
+async function bt2Post(url, body){
+  const opt=()=>({method:"POST",headers:bt2Headers({"Content-Type":"application/json"}),body:JSON.stringify(body)});
+  let res=await fetch(url,opt());
+  if(res.status===403 && promptBt2Token()) res=await fetch(url,opt());
+  return res.json();
+}
+
 // ── 表单联动 ──
 const capMode=document.getElementById("cap-mode");
 function capSync(){
@@ -210,8 +238,8 @@ document.getElementById("f").onsubmit=async e=>{
   const PCT=new Set(["slot_pct","runup_cap","stop_pct","fail_buffer","cap_high","cap_mid","cap_low","cap_fixed","slot_min","slot_max","trail_activate","trail_drawdown"]);
   const INT=new Set(["top_n","top_n_mid","holding_max_days","sig_expiry","min_score"]);
   fd.forEach((v,k)=>{o[k]= PCT.has(k)?(+v)/100 : INT.has(k)?+v : v;});
-  const r=await fetch("/api/bt2_run",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(o)}).then(x=>x.json()).catch(err=>({ok:false,error:String(err)}));
-  if(!r.ok){document.getElementById("ferr").textContent=r.error||"提交失败";return;}
+  const r=await bt2Post("/api/bt2_run",o).catch(err=>({ok:false,error:String(err)}));
+  if(!r.ok){document.getElementById("ferr").textContent=bt2Err(r,"提交失败");return;}
   document.getElementById("ferr").textContent="";
   poll();
 };
@@ -393,9 +421,8 @@ document.getElementById("nl-go").onclick=async()=>{
   const st=document.getElementById("nl-status");
   if(!txt){st.textContent="先输入一句话描述";return;}
   st.textContent="解析中…";
-  const r=await fetch("/api/bt2_nl",{method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({text:txt,use_llm:document.getElementById("nl-llm").checked})}).then(x=>x.json()).catch(e=>({ok:false,error:String(e)}));
-  if(!r.ok){st.textContent="";document.getElementById("nl-unknown").textContent=r.error||"解析失败";document.getElementById("nl-notes").textContent="";return;}
+  const r=await bt2Post("/api/bt2_nl",{text:txt,use_llm:document.getElementById("nl-llm").checked}).catch(e=>({ok:false,error:String(e)}));
+  if(!r.ok){st.textContent="";document.getElementById("nl-unknown").textContent=bt2Err(r,"解析失败");document.getElementById("nl-notes").textContent="";return;}
   // 回填表单（键名=name；select 按 value 匹配；百分比类值×100 显示）
   const PCT_SHOW=new Set(["slot_pct","slot_min","slot_max","cap_high","cap_mid","cap_low","cap_fixed","runup_cap","fail_buffer"]);
   const NEG_SHOW=new Set(["stop_pct"]);

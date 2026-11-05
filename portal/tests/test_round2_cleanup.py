@@ -166,8 +166,10 @@ def test_g2_quant_html_left_untouched():
 
 # ---------------------------------------------------------------- F1-标注
 def test_f1_non_production_marker_and_nav_intact():
-    assert "非生产标注" in D1_WAR_ROOM
-    assert D1_WAR_ROOM.count("非生产标注") == 1
+    """[R6 2026-11-06] 本页在 R6 又追加了一条页尾统一角标，故由 ==1 放宽为
+    「首部原始标注仍在」（原文案不动）+ 统一标记存在；导航引用守卫不变。"""
+    assert "非生产标注：本页为「产品原型 / 静态快照」" in D1_WAR_ROOM
+    assert 'data-nonprod="1"' in D1_WAR_ROOM
     # 严禁摘除任何导航引用
     assert '<script src="/static/nav.js" defer></script>' in D1_WAR_ROOM
     assert '<script src="/static/shortscreen.js" defer></script>' in D1_WAR_ROOM
