@@ -1,5 +1,12 @@
 $ErrorActionPreference = 'Stop'
 
+try {
+    [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+    $OutputEncoding = [System.Text.Encoding]::UTF8
+} catch {
+    # Non-fatal if the host cannot change its console encoding.
+}
+
 $TaskName = 'W0_A0_0850_Deliver'
 $Log = 'C:\Temp\w0_a0_0850_deliver.log'
 $Root = Split-Path -Parent $PSScriptRoot
