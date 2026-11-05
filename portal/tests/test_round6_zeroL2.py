@@ -20,9 +20,28 @@
 守卫：本轮未动 quant.html 他人未提交改动（「多维加权」特征串仍在）。
 """
 import re
+import subprocess
 from pathlib import Path
 
 PORTAL = Path(__file__).resolve().parents[1]
+
+
+def _wip_present(rel):
+    """该 worktree 里 rel 是否存在未提交改动（被守卫的本地 WIP 是否存在）。
+
+    R6 的 quant.html 守卫针对「他人未提交改动」——只存在于主工作区；分支/linked
+    worktree 按定义 clean，无物可守。主区照常断言，分支 gate 自动跳过，避免假红。
+    """
+    try:
+        out = subprocess.run(
+            ["git", "status", "--porcelain", "--", rel],
+            cwd=str(PORTAL), capture_output=True, text=True, timeout=10,
+        )
+    except Exception:
+        return True
+    if out.returncode != 0:
+        return True
+    return bool(out.stdout.strip())
 
 
 def _src(rel):
@@ -45,8 +64,11 @@ NONPROD_PAGES = (
     "sandbox.html",
     "academy.html",
     "quant_v2_demo.html",
-    "agent_board.html",
 )
+# 说明（2026-11-06 GATE-HOTFIX）：agent_board.html 是 .gitignore 的运行时生成页
+# （ops/refresh_agent_board.ps1 产物，不入清单/不跟仓），clean checkout（分支 worktree/CI）
+# 里不存在，无法作为静态契约测试对象；原 ten 页口径改为 9 个 tracked 页，
+# 生成页的非生产标注由生成器/运维承接，不在此静态断言。
 
 
 # ------------------------------------------------------ ③ academy 摘除 8096
@@ -151,7 +173,7 @@ def test_nav_export_still_complete():
 
 
 # ------------------------------------------------ ④ 非生产标注统一
-def test_ten_pages_have_nonprod_marker():
+def test_nonprod_pages_have_marker():
     missing = [p for p in NONPROD_PAGES if 'data-nonprod="1"' not in _src(p)]
     assert not missing, "缺非生产标记：%s" % missing
 
@@ -178,6 +200,8 @@ def test_nonprod_badge_is_fixed_and_click_through():
 
 # ------------------------------------------------------------------ 守卫
 def test_guard_quant_untouched():
+    if not _wip_present("quant.html"):
+        return  # 分支/linked worktree 无此本地 WIP，跳过（主区照常断言）
     assert "多维加权" in _src("quant.html")
 
 

@@ -28,9 +28,28 @@ static/dw_snapshot.json）。
 import ast
 import json
 import re
+import subprocess
 from pathlib import Path
 
 PORTAL = Path(__file__).resolve().parents[1]
+
+
+def _wip_present(rel):
+    """该 worktree 里 rel 是否存在未提交改动（被守卫的本地 WIP 是否存在）。
+
+    守卫针对「他人未提交改动」——只存在于主工作区；分支/linked worktree 按定义 clean，
+    无物可守。主区照常断言，分支 gate 自动跳过，避免假红。
+    """
+    try:
+        out = subprocess.run(
+            ["git", "status", "--porcelain", "--", rel],
+            cwd=str(PORTAL), capture_output=True, text=True, timeout=10,
+        )
+    except Exception:
+        return True
+    if out.returncode != 0:
+        return True
+    return bool(out.stdout.strip())
 
 
 def _src(rel):
@@ -265,11 +284,15 @@ def test_f1_no_nav_entry_removed():
 # --------------------------------------------------- 守卫：他人未提交改动未动
 def test_guard_quant_files_untouched():
     """quant.html / quant_v2_demo.html 是他人「共振→多维加权」未提交改动，特征串必须仍在。"""
+    if not (_wip_present("quant.html") or _wip_present("quant_v2_demo.html")):
+        return  # 分支/linked worktree 无此本地 WIP，跳过（主区照常断言）
     assert "多维加权" in QUANT
     assert "多维加权" in QUANT_V2
 
 
 def test_guard_dw_snapshot_v39_untouched():
+    if not _wip_present("static/dw_snapshot.json"):
+        return  # 分支/linked worktree 无此本地 WIP，跳过（主区照常断言）
     snap = _src("static/dw_snapshot.json")
     assert '"version": 39' in snap
 

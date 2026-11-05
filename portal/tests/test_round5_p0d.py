@@ -19,9 +19,29 @@
 风格对齐 `portal/tests/test_round2_p1c.py`：pytest 直接收集的纯 assert 函数，不 import pytest；
 断言一律做**函数头切片**（不用整文件 grep），避免别处的巧合数字造成误判 / 误伤。
 """
+import subprocess
 from pathlib import Path
 
 PORTAL = Path(__file__).resolve().parents[1]
+
+
+def _wip_present(rel):
+    """该 worktree 里 rel 是否存在未提交改动（被守卫的本地 WIP 是否存在）。
+
+    守卫针对的是「他人未提交改动」——只存在于主工作区；分支/linked worktree 按定义
+    clean，无物可守。此函数让同一份测试在主工作区照常断言、在分支 gate 中自动跳过，
+    避免分支快检因主区 WIP 不可见而假红。
+    """
+    try:
+        out = subprocess.run(
+            ["git", "status", "--porcelain", "--", rel],
+            cwd=str(PORTAL), capture_output=True, text=True, timeout=10,
+        )
+    except Exception:
+        return True
+    if out.returncode != 0:
+        return True
+    return bool(out.stdout.strip())
 DATAOPS = (PORTAL / "api_dataops.py").read_text(encoding="utf-8")
 DWREG = (PORTAL / "api_dw_registry.py").read_text(encoding="utf-8")
 BRIEF = (PORTAL / "briefing.html").read_text(encoding="utf-8")
@@ -148,6 +168,8 @@ def test_briefing_other_placeholders_untouched():
 # ── 5. 冻结文件守卫（证明没碰他人未提交改动 / 原型页）─────────────────────────
 
 def test_dw_snapshot_frozen_v39():
+    if not _wip_present("static/dw_snapshot.json"):
+        return  # 分支/linked worktree 无此本地 WIP，跳过（主区照常断言）
     raw = (PORTAL / "static" / "dw_snapshot.json").read_bytes()
     assert b'"version": 39' in raw, "dw_snapshot.json 的 v39 不见了（他人 M 状态被破坏）"
     assert raw.count(b'"version"') == 1
