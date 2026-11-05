@@ -1,0 +1,1693 @@
+{
+ "generated_at": "2026-11-05T21:02:36+08:00",
+ "panel": {
+  "shape": [
+   969,
+   5741
+  ],
+  "first": "20221107",
+  "last": "20261105",
+  "runtime_sec": 640.3
+ },
+ "prior": {
+  "directions": {
+   "MACD": 1,
+   "dif": 1,
+   "dea": 1,
+   "ma_20d": 1,
+   "return_5d": -1,
+   "return_21d": -1,
+   "return_42d": 1,
+   "return_63d": 1,
+   "return_126d": 1,
+   "return_252d": 1,
+   "days_down_up": 1,
+   "price_position_ir_60d": 1,
+   "rsrs": 1,
+   "alpha_125d_000300": 1,
+   "alpha_250d_000300": 1,
+   "alpha_500d_000300": 1,
+   "alpha_1000d_000300": 1,
+   "alpha_528d_000001": 1,
+   "alpha_792d_000001": 1,
+   "alpha_1320d_000001": 1,
+   "amount_ma_20d": -1,
+   "avg_turnover_5d": -1,
+   "avg_turnover_10d": -1,
+   "avg_turnover_20d": -1,
+   "avg_turnover_21d": -1,
+   "avg_turnover_42d": -1,
+   "avg_turnover_63d": -1,
+   "avg_turnover_126d": -1,
+   "avg_turnover_252d": -1,
+   "std_turnover_21d": -1,
+   "std_turnover_42d": -1,
+   "std_turnover_63d": -1,
+   "std_turnover_126d": -1,
+   "std_turnover_252d": -1,
+   "bias_turn_21d_252d": -1,
+   "bias_std_turn_21d_252d": -1,
+   "bias_turn_21d_504d": -1,
+   "bias_std_turn_21d_504d": -1,
+   "bias_turn_42d_252d": -1,
+   "bias_std_turn_42d_252d": -1,
+   "bias_turn_42d_504d": -1,
+   "bias_std_turn_42d_504d": -1,
+   "bias_turn_63d_252d": -1,
+   "bias_std_turn_63d_252d": -1,
+   "bias_turn_63d_504d": -1,
+   "bias_std_turn_63d_504d": -1,
+   "bias_turn_126d_252d": -1,
+   "bias_std_turn_126d_252d": -1,
+   "bias_turn_126d_504d": -1,
+   "bias_std_turn_126d_504d": -1,
+   "turnover_ma_20d": 1,
+   "turnover_ma_20d_120d": 1,
+   "sum_abs_rtn_amount_20d": 1,
+   "volume_alpha_300d_000001": 1,
+   "volume_alpha_300d_000300": 1,
+   "adjusted_sharpe_750d": 1,
+   "beta_60d_000300": -1,
+   "beta_125d_000300": -1,
+   "beta_250d_000300": -1,
+   "beta_500d_000300": -1,
+   "beta_1000d_000300": -1,
+   "beta_1320d_000001": -1,
+   "beta_consistency_1320d_000300": -1,
+   "days_beyond_upper_lower_21d": -1,
+   "high_low_21d": -1,
+   "high_low_42d": -1,
+   "high_low_63d": -1,
+   "high_low_126d": -1,
+   "high_low_252d": -1,
+   "log_price": -1,
+   "return_std_21d": -1,
+   "return_std_42d": -1,
+   "return_std_63d": -1,
+   "return_std_126d": -1,
+   "return_std_252d": -1,
+   "sharpe_60d": 1,
+   "sharpe_750d": 1,
+   "sigma_1320d_000001": -1,
+   "sigma_1320d_000300": -1,
+   "volume_beta_120d_000300": -1,
+   "price_dist": 1,
+   "rsi": -1,
+   "small_cap_reversal_21d": 1,
+   "float_size": 1,
+   "size": 1,
+   "nl_size": 1
+  },
+  "rationale": {
+   "MACD": "趋势动量先验正",
+   "dif": "趋势动量先验正",
+   "dea": "趋势动量先验正",
+   "ma_20d": "价格站上均线视为趋势先验正",
+   "return_5d": "短周期反转：1 个月内涨幅高者未来收益低",
+   "return_21d": "短周期反转：1 个月内涨幅高者未来收益低",
+   "return_42d": "中期动量先验正（标准 3–12 个月动量）",
+   "return_63d": "中期动量先验正（标准 3–12 个月动量）",
+   "return_126d": "长期动量先验正",
+   "return_252d": "长期动量先验正",
+   "days_down_up": "方向无稳定先验，策略 composite 排除",
+   "price_position_ir_60d": "趋势/动量先验正（短周期 return 已单独改为反转）",
+   "rsrs": "趋势/动量先验正（短周期 return 已单独改为反转）",
+   "alpha_125d_000300": "趋势/动量先验正（短周期 return 已单独改为反转）",
+   "alpha_250d_000300": "趋势/动量先验正（短周期 return 已单独改为反转）",
+   "alpha_500d_000300": "趋势/动量先验正（短周期 return 已单独改为反转）",
+   "alpha_1000d_000300": "趋势/动量先验正（短周期 return 已单独改为反转）",
+   "alpha_528d_000001": "趋势/动量先验正（短周期 return 已单独改为反转）",
+   "alpha_792d_000001": "趋势/动量先验正（短周期 return 已单独改为反转）",
+   "alpha_1320d_000001": "趋势/动量先验正（短周期 return 已单独改为反转）",
+   "amount_ma_20d": "成交额/关注度越高，未来收益越低（流动性/关注度溢价反向）",
+   "avg_turnover_5d": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+   "avg_turnover_10d": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+   "avg_turnover_20d": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+   "avg_turnover_21d": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+   "avg_turnover_42d": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+   "avg_turnover_63d": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+   "avg_turnover_126d": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+   "avg_turnover_252d": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+   "std_turnover_21d": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+   "std_turnover_42d": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+   "std_turnover_63d": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+   "std_turnover_126d": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+   "std_turnover_252d": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+   "bias_turn_21d_252d": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+   "bias_std_turn_21d_252d": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+   "bias_turn_21d_504d": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+   "bias_std_turn_21d_504d": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+   "bias_turn_42d_252d": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+   "bias_std_turn_42d_252d": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+   "bias_turn_42d_504d": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+   "bias_std_turn_42d_504d": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+   "bias_turn_63d_252d": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+   "bias_std_turn_63d_252d": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+   "bias_turn_63d_504d": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+   "bias_std_turn_63d_504d": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+   "bias_turn_126d_252d": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+   "bias_std_turn_126d_252d": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+   "bias_turn_126d_504d": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+   "bias_std_turn_126d_504d": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+   "turnover_ma_20d": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+   "turnover_ma_20d_120d": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+   "sum_abs_rtn_amount_20d": "单位成交额绝对收益高=价格冲击/流动性溢价，先验正",
+   "volume_alpha_300d_000001": "方向无稳定先验，策略 composite 排除",
+   "volume_alpha_300d_000300": "方向无稳定先验，策略 composite 排除",
+   "adjusted_sharpe_750d": "低风险异象：高波动/高 beta 先验负",
+   "beta_60d_000300": "低风险异象：高波动/高 beta 先验负",
+   "beta_125d_000300": "低风险异象：高波动/高 beta 先验负",
+   "beta_250d_000300": "低风险异象：高波动/高 beta 先验负",
+   "beta_500d_000300": "低风险异象：高波动/高 beta 先验负",
+   "beta_1000d_000300": "低风险异象：高波动/高 beta 先验负",
+   "beta_1320d_000001": "低风险异象：高波动/高 beta 先验负",
+   "beta_consistency_1320d_000300": "低风险异象：高波动/高 beta 先验负",
+   "days_beyond_upper_lower_21d": "近期上轨突破天数多=超买，先验负",
+   "high_low_21d": "低风险异象：高波动/高 beta 先验负",
+   "high_low_42d": "低风险异象：高波动/高 beta 先验负",
+   "high_low_63d": "低风险异象：高波动/高 beta 先验负",
+   "high_low_126d": "低风险异象：高波动/高 beta 先验负",
+   "high_low_252d": "低风险异象：高波动/高 beta 先验负",
+   "log_price": "低价股溢价：价格越高未来收益越低",
+   "return_std_21d": "低风险异象：高波动/高 beta 先验负",
+   "return_std_42d": "低风险异象：高波动/高 beta 先验负",
+   "return_std_63d": "低风险异象：高波动/高 beta 先验负",
+   "return_std_126d": "低风险异象：高波动/高 beta 先验负",
+   "return_std_252d": "低风险异象：高波动/高 beta 先验负",
+   "sharpe_60d": "低风险异象：高波动/高 beta 先验负",
+   "sharpe_750d": "低风险异象：高波动/高 beta 先验负",
+   "sigma_1320d_000001": "低风险异象：高波动/高 beta 先验负",
+   "sigma_1320d_000300": "低风险异象：高波动/高 beta 先验负",
+   "volume_beta_120d_000300": "低风险异象：高波动/高 beta 先验负",
+   "price_dist": "方向无稳定先验，策略 composite 排除",
+   "rsi": "高 RSI 超买先验负",
+   "small_cap_reversal_21d": "小市值+短期超跌先验正",
+   "float_size": "小市值溢价先验正",
+   "size": "小市值溢价先验正",
+   "nl_size": "方向无稳定先验，策略 composite 排除"
+  },
+  "unknown": [
+   "days_down_up",
+   "nl_size",
+   "price_dist",
+   "volume_alpha_300d_000001",
+   "volume_alpha_300d_000300"
+  ],
+  "strategy_factors": [
+   "MACD",
+   "dif",
+   "dea",
+   "ma_20d",
+   "return_5d",
+   "return_21d",
+   "return_42d",
+   "return_63d",
+   "return_126d",
+   "return_252d",
+   "price_position_ir_60d",
+   "rsrs",
+   "alpha_125d_000300",
+   "alpha_250d_000300",
+   "alpha_500d_000300",
+   "alpha_1000d_000300",
+   "alpha_528d_000001",
+   "alpha_792d_000001",
+   "alpha_1320d_000001",
+   "amount_ma_20d",
+   "avg_turnover_5d",
+   "avg_turnover_10d",
+   "avg_turnover_20d",
+   "avg_turnover_21d",
+   "avg_turnover_42d",
+   "avg_turnover_63d",
+   "avg_turnover_126d",
+   "avg_turnover_252d",
+   "std_turnover_21d",
+   "std_turnover_42d",
+   "std_turnover_63d",
+   "std_turnover_126d",
+   "std_turnover_252d",
+   "bias_turn_21d_252d",
+   "bias_std_turn_21d_252d",
+   "bias_turn_21d_504d",
+   "bias_std_turn_21d_504d",
+   "bias_turn_42d_252d",
+   "bias_std_turn_42d_252d",
+   "bias_turn_42d_504d",
+   "bias_std_turn_42d_504d",
+   "bias_turn_63d_252d",
+   "bias_std_turn_63d_252d",
+   "bias_turn_63d_504d",
+   "bias_std_turn_63d_504d",
+   "bias_turn_126d_252d",
+   "bias_std_turn_126d_252d",
+   "bias_turn_126d_504d",
+   "bias_std_turn_126d_504d",
+   "turnover_ma_20d",
+   "turnover_ma_20d_120d",
+   "sum_abs_rtn_amount_20d",
+   "adjusted_sharpe_750d",
+   "beta_60d_000300",
+   "beta_125d_000300",
+   "beta_250d_000300",
+   "beta_500d_000300",
+   "beta_1000d_000300",
+   "beta_1320d_000001",
+   "beta_consistency_1320d_000300",
+   "days_beyond_upper_lower_21d",
+   "high_low_21d",
+   "high_low_42d",
+   "high_low_63d",
+   "high_low_126d",
+   "high_low_252d",
+   "log_price",
+   "return_std_21d",
+   "return_std_42d",
+   "return_std_63d",
+   "return_std_126d",
+   "return_std_252d",
+   "sharpe_60d",
+   "sharpe_750d",
+   "sigma_1320d_000001",
+   "sigma_1320d_000300",
+   "volume_beta_120d_000300",
+   "rsi",
+   "small_cap_reversal_21d",
+   "float_size",
+   "size"
+  ],
+  "family_counts": {
+   "Tushare-动量": 19,
+   "Tushare-流动性": 33,
+   "Tushare-风险": 25,
+   "Tushare-反转": 2,
+   "Tushare-规模": 2
+  }
+ },
+ "composite": {
+  "diagnostics": [
+   {
+    "name": "MACD",
+    "family": "Tushare-动量",
+    "direction": 1,
+    "rationale": "趋势动量先验正",
+    "valid_cells": 5238010
+   },
+   {
+    "name": "dif",
+    "family": "Tushare-动量",
+    "direction": 1,
+    "rationale": "趋势动量先验正",
+    "valid_cells": 5243739
+   },
+   {
+    "name": "dea",
+    "family": "Tushare-动量",
+    "direction": 1,
+    "rationale": "趋势动量先验正",
+    "valid_cells": 5238010
+   },
+   {
+    "name": "ma_20d",
+    "family": "Tushare-动量",
+    "direction": 1,
+    "rationale": "价格站上均线视为趋势先验正",
+    "valid_cells": 5136188
+   },
+   {
+    "name": "return_5d",
+    "family": "Tushare-动量",
+    "direction": -1,
+    "rationale": "短周期反转：1 个月内涨幅高者未来收益低",
+    "valid_cells": 5146948
+   },
+   {
+    "name": "return_21d",
+    "family": "Tushare-动量",
+    "direction": -1,
+    "rationale": "短周期反转：1 个月内涨幅高者未来收益低",
+    "valid_cells": 5052869
+   },
+   {
+    "name": "return_42d",
+    "family": "Tushare-动量",
+    "direction": 1,
+    "rationale": "中期动量先验正（标准 3–12 个月动量）",
+    "valid_cells": 4933551
+   },
+   {
+    "name": "return_63d",
+    "family": "Tushare-动量",
+    "direction": 1,
+    "rationale": "中期动量先验正（标准 3–12 个月动量）",
+    "valid_cells": 4814620
+   },
+   {
+    "name": "return_126d",
+    "family": "Tushare-动量",
+    "direction": 1,
+    "rationale": "长期动量先验正",
+    "valid_cells": 4459383
+   },
+   {
+    "name": "return_252d",
+    "family": "Tushare-动量",
+    "direction": 1,
+    "rationale": "长期动量先验正",
+    "valid_cells": 3760833
+   },
+   {
+    "name": "price_position_ir_60d",
+    "family": "Tushare-动量",
+    "direction": 1,
+    "rationale": "趋势/动量先验正（短周期 return 已单独改为反转）",
+    "valid_cells": 5021528
+   },
+   {
+    "name": "rsrs",
+    "family": "Tushare-动量",
+    "direction": 1,
+    "rationale": "趋势/动量先验正（短周期 return 已单独改为反转）",
+    "valid_cells": 4576058
+   },
+   {
+    "name": "alpha_125d_000300",
+    "family": "Tushare-动量",
+    "direction": 1,
+    "rationale": "趋势/动量先验正（短周期 return 已单独改为反转）",
+    "valid_cells": 4640760
+   },
+   {
+    "name": "alpha_250d_000300",
+    "family": "Tushare-动量",
+    "direction": 1,
+    "rationale": "趋势/动量先验正（短周期 return 已单独改为反转）",
+    "valid_cells": 4288894
+   },
+   {
+    "name": "alpha_500d_000300",
+    "family": "Tushare-动量",
+    "direction": 1,
+    "rationale": "趋势/动量先验正（短周期 return 已单独改为反转）",
+    "valid_cells": 3603359
+   },
+   {
+    "name": "alpha_1000d_000300",
+    "family": "Tushare-动量",
+    "direction": 1,
+    "rationale": "趋势/动量先验正（短周期 return 已单独改为反转）",
+    "valid_cells": 2232489
+   },
+   {
+    "name": "alpha_528d_000001",
+    "family": "Tushare-动量",
+    "direction": 1,
+    "rationale": "趋势/动量先验正（短周期 return 已单独改为反转）",
+    "valid_cells": 3526731
+   },
+   {
+    "name": "alpha_792d_000001",
+    "family": "Tushare-动量",
+    "direction": 1,
+    "rationale": "趋势/动量先验正（短周期 return 已单独改为反转）",
+    "valid_cells": 2796058
+   },
+   {
+    "name": "alpha_1320d_000001",
+    "family": "Tushare-动量",
+    "direction": 1,
+    "rationale": "趋势/动量先验正（短周期 return 已单独改为反转）",
+    "valid_cells": 1374045
+   },
+   {
+    "name": "amount_ma_20d",
+    "family": "Tushare-流动性",
+    "direction": -1,
+    "rationale": "成交额/关注度越高，未来收益越低（流动性/关注度溢价反向）",
+    "valid_cells": 5136188
+   },
+   {
+    "name": "avg_turnover_5d",
+    "family": "Tushare-流动性",
+    "direction": -1,
+    "rationale": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+    "valid_cells": 4976971
+   },
+   {
+    "name": "avg_turnover_10d",
+    "family": "Tushare-流动性",
+    "direction": -1,
+    "rationale": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+    "valid_cells": 4960370
+   },
+   {
+    "name": "avg_turnover_20d",
+    "family": "Tushare-流动性",
+    "direction": -1,
+    "rationale": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+    "valid_cells": 4935217
+   },
+   {
+    "name": "avg_turnover_21d",
+    "family": "Tushare-流动性",
+    "direction": -1,
+    "rationale": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+    "valid_cells": 4935475
+   },
+   {
+    "name": "avg_turnover_42d",
+    "family": "Tushare-流动性",
+    "direction": -1,
+    "rationale": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+    "valid_cells": 4873020
+   },
+   {
+    "name": "avg_turnover_63d",
+    "family": "Tushare-流动性",
+    "direction": -1,
+    "rationale": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+    "valid_cells": 4817956
+   },
+   {
+    "name": "avg_turnover_126d",
+    "family": "Tushare-流动性",
+    "direction": -1,
+    "rationale": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+    "valid_cells": 4640948
+   },
+   {
+    "name": "avg_turnover_252d",
+    "family": "Tushare-流动性",
+    "direction": -1,
+    "rationale": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+    "valid_cells": 4289262
+   },
+   {
+    "name": "std_turnover_21d",
+    "family": "Tushare-流动性",
+    "direction": -1,
+    "rationale": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+    "valid_cells": 4935475
+   },
+   {
+    "name": "std_turnover_42d",
+    "family": "Tushare-流动性",
+    "direction": -1,
+    "rationale": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+    "valid_cells": 4873020
+   },
+   {
+    "name": "std_turnover_63d",
+    "family": "Tushare-流动性",
+    "direction": -1,
+    "rationale": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+    "valid_cells": 4817956
+   },
+   {
+    "name": "std_turnover_126d",
+    "family": "Tushare-流动性",
+    "direction": -1,
+    "rationale": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+    "valid_cells": 4640948
+   },
+   {
+    "name": "std_turnover_252d",
+    "family": "Tushare-流动性",
+    "direction": -1,
+    "rationale": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+    "valid_cells": 4289262
+   },
+   {
+    "name": "bias_turn_21d_252d",
+    "family": "Tushare-流动性",
+    "direction": -1,
+    "rationale": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+    "valid_cells": 4276884
+   },
+   {
+    "name": "bias_std_turn_21d_252d",
+    "family": "Tushare-流动性",
+    "direction": -1,
+    "rationale": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+    "valid_cells": 4276884
+   },
+   {
+    "name": "bias_turn_21d_504d",
+    "family": "Tushare-流动性",
+    "direction": -1,
+    "rationale": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+    "valid_cells": 3576270
+   },
+   {
+    "name": "bias_std_turn_21d_504d",
+    "family": "Tushare-流动性",
+    "direction": -1,
+    "rationale": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+    "valid_cells": 3576270
+   },
+   {
+    "name": "bias_turn_42d_252d",
+    "family": "Tushare-流动性",
+    "direction": -1,
+    "rationale": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+    "valid_cells": 4277435
+   },
+   {
+    "name": "bias_std_turn_42d_252d",
+    "family": "Tushare-流动性",
+    "direction": -1,
+    "rationale": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+    "valid_cells": 4277435
+   },
+   {
+    "name": "bias_turn_42d_504d",
+    "family": "Tushare-流动性",
+    "direction": -1,
+    "rationale": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+    "valid_cells": 3576781
+   },
+   {
+    "name": "bias_std_turn_42d_504d",
+    "family": "Tushare-流动性",
+    "direction": -1,
+    "rationale": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+    "valid_cells": 3576781
+   },
+   {
+    "name": "bias_turn_63d_252d",
+    "family": "Tushare-流动性",
+    "direction": -1,
+    "rationale": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+    "valid_cells": 4278938
+   },
+   {
+    "name": "bias_std_turn_63d_252d",
+    "family": "Tushare-流动性",
+    "direction": -1,
+    "rationale": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+    "valid_cells": 4278938
+   },
+   {
+    "name": "bias_turn_63d_504d",
+    "family": "Tushare-流动性",
+    "direction": -1,
+    "rationale": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+    "valid_cells": 3578243
+   },
+   {
+    "name": "bias_std_turn_63d_504d",
+    "family": "Tushare-流动性",
+    "direction": -1,
+    "rationale": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+    "valid_cells": 3578243
+   },
+   {
+    "name": "bias_turn_126d_252d",
+    "family": "Tushare-流动性",
+    "direction": -1,
+    "rationale": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+    "valid_cells": 4282882
+   },
+   {
+    "name": "bias_std_turn_126d_252d",
+    "family": "Tushare-流动性",
+    "direction": -1,
+    "rationale": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+    "valid_cells": 4282882
+   },
+   {
+    "name": "bias_turn_126d_504d",
+    "family": "Tushare-流动性",
+    "direction": -1,
+    "rationale": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+    "valid_cells": 3582063
+   },
+   {
+    "name": "bias_std_turn_126d_504d",
+    "family": "Tushare-流动性",
+    "direction": -1,
+    "rationale": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+    "valid_cells": 3582063
+   },
+   {
+    "name": "turnover_ma_20d",
+    "family": "Tushare-流动性",
+    "direction": 1,
+    "rationale": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+    "valid_cells": 4935217
+   },
+   {
+    "name": "turnover_ma_20d_120d",
+    "family": "Tushare-流动性",
+    "direction": 1,
+    "rationale": "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反",
+    "valid_cells": 4649742
+   },
+   {
+    "name": "sum_abs_rtn_amount_20d",
+    "family": "Tushare-流动性",
+    "direction": 1,
+    "rationale": "单位成交额绝对收益高=价格冲击/流动性溢价，先验正",
+    "valid_cells": 5127625
+   },
+   {
+    "name": "adjusted_sharpe_750d",
+    "family": "Tushare-风险",
+    "direction": 1,
+    "rationale": "低风险异象：高波动/高 beta 先验负",
+    "valid_cells": 3116586
+   },
+   {
+    "name": "beta_60d_000300",
+    "family": "Tushare-风险",
+    "direction": -1,
+    "rationale": "低风险异象：高波动/高 beta 先验负",
+    "valid_cells": 4817356
+   },
+   {
+    "name": "beta_125d_000300",
+    "family": "Tushare-风险",
+    "direction": -1,
+    "rationale": "低风险异象：高波动/高 beta 先验负",
+    "valid_cells": 4640760
+   },
+   {
+    "name": "beta_250d_000300",
+    "family": "Tushare-风险",
+    "direction": -1,
+    "rationale": "低风险异象：高波动/高 beta 先验负",
+    "valid_cells": 4288894
+   },
+   {
+    "name": "beta_500d_000300",
+    "family": "Tushare-风险",
+    "direction": -1,
+    "rationale": "低风险异象：高波动/高 beta 先验负",
+    "valid_cells": 3603359
+   },
+   {
+    "name": "beta_1000d_000300",
+    "family": "Tushare-风险",
+    "direction": -1,
+    "rationale": "低风险异象：高波动/高 beta 先验负",
+    "valid_cells": 2232489
+   },
+   {
+    "name": "beta_1320d_000001",
+    "family": "Tushare-风险",
+    "direction": -1,
+    "rationale": "低风险异象：高波动/高 beta 先验负",
+    "valid_cells": 1374045
+   },
+   {
+    "name": "beta_consistency_1320d_000300",
+    "family": "Tushare-风险",
+    "direction": -1,
+    "rationale": "低风险异象：高波动/高 beta 先验负",
+    "valid_cells": 0
+   },
+   {
+    "name": "days_beyond_upper_lower_21d",
+    "family": "Tushare-风险",
+    "direction": -1,
+    "rationale": "近期上轨突破天数多=超买，先验负",
+    "valid_cells": 5511360
+   },
+   {
+    "name": "high_low_21d",
+    "family": "Tushare-风险",
+    "direction": -1,
+    "rationale": "低风险异象：高波动/高 beta 先验负",
+    "valid_cells": 5130443
+   },
+   {
+    "name": "high_low_42d",
+    "family": "Tushare-风险",
+    "direction": -1,
+    "rationale": "低风险异象：高波动/高 beta 先验负",
+    "valid_cells": 5068020
+   },
+   {
+    "name": "high_low_63d",
+    "family": "Tushare-风险",
+    "direction": -1,
+    "rationale": "低风险异象：高波动/高 beta 先验负",
+    "valid_cells": 5012851
+   },
+   {
+    "name": "high_low_126d",
+    "family": "Tushare-风险",
+    "direction": -1,
+    "rationale": "低风险异象：高波动/高 beta 先验负",
+    "valid_cells": 4835547
+   },
+   {
+    "name": "high_low_252d",
+    "family": "Tushare-风险",
+    "direction": -1,
+    "rationale": "低风险异象：高波动/高 beta 先验负",
+    "valid_cells": 4486004
+   },
+   {
+    "name": "log_price",
+    "family": "Tushare-风险",
+    "direction": -1,
+    "rationale": "低价股溢价：价格越高未来收益越低",
+    "valid_cells": 5180425
+   },
+   {
+    "name": "return_std_21d",
+    "family": "Tushare-风险",
+    "direction": -1,
+    "rationale": "低风险异象：高波动/高 beta 先验负",
+    "valid_cells": 5130443
+   },
+   {
+    "name": "return_std_42d",
+    "family": "Tushare-风险",
+    "direction": -1,
+    "rationale": "低风险异象：高波动/高 beta 先验负",
+    "valid_cells": 5068020
+   },
+   {
+    "name": "return_std_63d",
+    "family": "Tushare-风险",
+    "direction": -1,
+    "rationale": "低风险异象：高波动/高 beta 先验负",
+    "valid_cells": 5012851
+   },
+   {
+    "name": "return_std_126d",
+    "family": "Tushare-风险",
+    "direction": -1,
+    "rationale": "低风险异象：高波动/高 beta 先验负",
+    "valid_cells": 4835547
+   },
+   {
+    "name": "return_std_252d",
+    "family": "Tushare-风险",
+    "direction": -1,
+    "rationale": "低风险异象：高波动/高 beta 先验负",
+    "valid_cells": 4486004
+   },
+   {
+    "name": "sharpe_60d",
+    "family": "Tushare-风险",
+    "direction": 1,
+    "rationale": "低风险异象：高波动/高 beta 先验负",
+    "valid_cells": 5018205
+   },
+   {
+    "name": "sharpe_750d",
+    "family": "Tushare-风险",
+    "direction": 1,
+    "rationale": "低风险异象：高波动/高 beta 先验负",
+    "valid_cells": 3116586
+   },
+   {
+    "name": "sigma_1320d_000001",
+    "family": "Tushare-风险",
+    "direction": -1,
+    "rationale": "低风险异象：高波动/高 beta 先验负",
+    "valid_cells": 1374045
+   },
+   {
+    "name": "sigma_1320d_000300",
+    "family": "Tushare-风险",
+    "direction": -1,
+    "rationale": "低风险异象：高波动/高 beta 先验负",
+    "valid_cells": 1374045
+   },
+   {
+    "name": "volume_beta_120d_000300",
+    "family": "Tushare-风险",
+    "direction": -1,
+    "rationale": "低风险异象：高波动/高 beta 先验负",
+    "valid_cells": 4646848
+   },
+   {
+    "name": "rsi",
+    "family": "Tushare-反转",
+    "direction": -1,
+    "rationale": "高 RSI 超买先验负",
+    "valid_cells": 5191263
+   },
+   {
+    "name": "small_cap_reversal_21d",
+    "family": "Tushare-反转",
+    "direction": 1,
+    "rationale": "小市值+短期超跌先验正",
+    "valid_cells": 4958078
+   },
+   {
+    "name": "float_size",
+    "family": "Tushare-规模",
+    "direction": 1,
+    "rationale": "小市值溢价先验正",
+    "valid_cells": 4979659
+   },
+   {
+    "name": "size",
+    "family": "Tushare-规模",
+    "direction": 1,
+    "rationale": "小市值溢价先验正",
+    "valid_cells": 4979659
+   }
+  ],
+  "ic_raw": {
+   "meta": {
+    "effective": {
+     "start": "20230103",
+     "end": "20260930",
+     "signal_days": 908,
+     "panel_dates": 969,
+     "codes": 5741,
+     "panel_first": "20221107",
+     "panel_last": "20261105",
+     "requested_start": "20230101",
+     "requested_end": "20261104"
+    },
+    "is_end": "20250101",
+    "split_source": null,
+    "factors_evaluated": 1,
+    "runtime_sec": 2.623
+   },
+   "aggregate": {},
+   "baseline": null,
+   "factor": {
+    "name": "b1_composite_prior",
+    "family": "B1-先验复合",
+    "kind": "continuous",
+    "direction": 1,
+    "description": "B1 先验方向族平衡复合（未知方向因子排除）",
+    "source": "b1_prior_composite",
+    "n_obs": 3226753,
+    "n_days": 908,
+    "signal": null,
+    "ic": {
+     "n_days": 908,
+     "mean": 0.104337,
+     "std": 0.167832,
+     "ir": 0.6217,
+     "t": 18.733,
+     "positive_rate": 0.7236
+    },
+    "ic_directed": {
+     "n_days": 908,
+     "mean": 0.104337,
+     "std": 0.167832,
+     "ir": 0.6217,
+     "t": 18.733,
+     "positive_rate": 0.7236
+    },
+    "by_year": {
+     "2023": {
+      "n_days": 242,
+      "mean": 0.146323,
+      "std": 0.126382,
+      "ir": 1.1578,
+      "t": 18.011,
+      "positive_rate": 0.8802
+     },
+     "2024": {
+      "n_days": 242,
+      "mean": 0.08846,
+      "std": 0.18114,
+      "ir": 0.4883,
+      "t": 7.597,
+      "positive_rate": 0.719
+     },
+     "2025": {
+      "n_days": 243,
+      "mean": 0.074523,
+      "std": 0.152389,
+      "ir": 0.489,
+      "t": 7.623,
+      "positive_rate": 0.6379
+     },
+     "2026": {
+      "n_days": 181,
+      "mean": 0.109457,
+      "std": 0.203617,
+      "ir": 0.5376,
+      "t": 7.232,
+      "positive_rate": 0.6354
+     }
+    },
+    "is_oos": {
+     "split_date": "20250101",
+     "source": "arg",
+     "IS": {
+      "n_days": 484,
+      "mean": 0.117391,
+      "std": 0.158683,
+      "ir": 0.7398,
+      "t": 16.275,
+      "positive_rate": 0.7996
+     },
+     "OOS": {
+      "n_days": 424,
+      "mean": 0.089436,
+      "std": 0.176713,
+      "ir": 0.5061,
+      "t": 10.421,
+      "positive_rate": 0.6368
+     }
+    },
+    "bootstrap": {
+     "ic_directed": {
+      "series": "directed_daily_ic",
+      "block": 5,
+      "n_boot": 50,
+      "mean_pct": 10.585,
+      "p_le_0": 0.0
+     },
+     "long_short_spread": {
+      "series": "daily_top_minus_bottom",
+      "block": 5,
+      "n_boot": 50,
+      "mean_pct": 1.767,
+      "p_le_0": 0.0
+     }
+    },
+    "quintiles": {
+     "method": "quantile",
+     "n_groups": 5,
+     "tie_break": "ts_code_order",
+     "groups": {
+      "Q1": {
+       "n_days": 908,
+       "mean_car_pct": -3.274,
+       "std_car_pct": 4.3116,
+       "t": -22.881,
+       "positive_rate": 0.2059,
+       "ann_pct": -41.25,
+       "n_obs": 644990,
+       "avg_members_per_day": 710.3
+      },
+      "Q2": {
+       "n_days": 908,
+       "mean_car_pct": -2.8383,
+       "std_car_pct": 1.6694,
+       "t": -51.231,
+       "positive_rate": 0.0286,
+       "ann_pct": -35.76,
+       "n_obs": 645348,
+       "avg_members_per_day": 710.7
+      },
+      "Q3": {
+       "n_days": 908,
+       "mean_car_pct": -2.3546,
+       "std_car_pct": 1.4698,
+       "t": -48.272,
+       "positive_rate": 0.0474,
+       "ann_pct": -29.67,
+       "n_obs": 645355,
+       "avg_members_per_day": 710.7
+      },
+      "Q4": {
+       "n_days": 908,
+       "mean_car_pct": -1.9484,
+       "std_car_pct": 1.6929,
+       "t": -34.681,
+       "positive_rate": 0.0815,
+       "ann_pct": -24.55,
+       "n_obs": 645348,
+       "avg_members_per_day": 710.7
+      },
+      "Q5": {
+       "n_days": 908,
+       "mean_car_pct": -1.5997,
+       "std_car_pct": 2.6491,
+       "t": -18.196,
+       "positive_rate": 0.2357,
+       "ann_pct": -20.16,
+       "n_obs": 645712,
+       "avg_members_per_day": 711.1
+      }
+     },
+     "top_minus_bottom": {
+      "n_days": 908,
+      "mean_car_pct": 1.6742,
+      "std_car_pct": 6.5374,
+      "t": 7.717,
+      "positive_rate": 0.6531,
+      "ann_pct": 21.1,
+      "directed_ann_pct": 21.1
+     },
+     "n_obs": 3226753
+    },
+    "event_split": null
+   }
+  },
+  "ic_neutral": {
+   "meta": {
+    "effective": {
+     "start": "20230103",
+     "end": "20260930",
+     "signal_days": 908,
+     "panel_dates": 969,
+     "codes": 5741,
+     "panel_first": "20221107",
+     "panel_last": "20261105",
+     "requested_start": "20230101",
+     "requested_end": "20261104"
+    },
+    "is_end": "20250101",
+    "split_source": null,
+    "factors_evaluated": 1,
+    "runtime_sec": 2.572
+   },
+   "aggregate": {},
+   "baseline": null,
+   "factor": {
+    "name": "b1_composite_prior_neutral",
+    "family": "B1-先验复合",
+    "kind": "continuous",
+    "direction": 1,
+    "description": "B1 先验方向族平衡复合（未知方向因子排除）",
+    "source": "b1_prior_composite",
+    "n_obs": 3226753,
+    "n_days": 908,
+    "signal": null,
+    "ic": {
+     "n_days": 908,
+     "mean": 0.098209,
+     "std": 0.105302,
+     "ir": 0.9326,
+     "t": 28.103,
+     "positive_rate": 0.8205
+    },
+    "ic_directed": {
+     "n_days": 908,
+     "mean": 0.098209,
+     "std": 0.105302,
+     "ir": 0.9326,
+     "t": 28.103,
+     "positive_rate": 0.8205
+    },
+    "by_year": {
+     "2023": {
+      "n_days": 242,
+      "mean": 0.126301,
+      "std": 0.077469,
+      "ir": 1.6304,
+      "t": 25.362,
+      "positive_rate": 0.9339
+     },
+     "2024": {
+      "n_days": 242,
+      "mean": 0.090892,
+      "std": 0.110648,
+      "ir": 0.8215,
+      "t": 12.779,
+      "positive_rate": 0.8099
+     },
+     "2025": {
+      "n_days": 243,
+      "mean": 0.073668,
+      "std": 0.08558,
+      "ir": 0.8608,
+      "t": 13.419,
+      "positive_rate": 0.7737
+     },
+     "2026": {
+      "n_days": 181,
+      "mean": 0.10338,
+      "std": 0.140098,
+      "ir": 0.7379,
+      "t": 9.928,
+      "positive_rate": 0.7459
+     }
+    },
+    "is_oos": {
+     "split_date": "20250101",
+     "source": "arg",
+     "IS": {
+      "n_days": 484,
+      "mean": 0.108596,
+      "std": 0.097043,
+      "ir": 1.1191,
+      "t": 24.619,
+      "positive_rate": 0.8719
+     },
+     "OOS": {
+      "n_days": 424,
+      "mean": 0.086352,
+      "std": 0.112954,
+      "ir": 0.7645,
+      "t": 15.742,
+      "positive_rate": 0.7618
+     }
+    },
+    "bootstrap": {
+     "ic_directed": {
+      "series": "directed_daily_ic",
+      "block": 5,
+      "n_boot": 50,
+      "mean_pct": 9.882,
+      "p_le_0": 0.0
+     },
+     "long_short_spread": {
+      "series": "daily_top_minus_bottom",
+      "block": 5,
+      "n_boot": 50,
+      "mean_pct": 1.548,
+      "p_le_0": 0.0
+     }
+    },
+    "quintiles": {
+     "method": "quantile",
+     "n_groups": 5,
+     "tie_break": "ts_code_order",
+     "groups": {
+      "Q1": {
+       "n_days": 908,
+       "mean_car_pct": -3.3478,
+       "std_car_pct": 2.8139,
+       "t": -35.85,
+       "positive_rate": 0.1013,
+       "ann_pct": -42.18,
+       "n_obs": 644990,
+       "avg_members_per_day": 710.3
+      },
+      "Q2": {
+       "n_days": 908,
+       "mean_car_pct": -2.5963,
+       "std_car_pct": 1.3097,
+       "t": -59.733,
+       "positive_rate": 0.0275,
+       "ann_pct": -32.71,
+       "n_obs": 645348,
+       "avg_members_per_day": 710.7
+      },
+      "Q3": {
+       "n_days": 908,
+       "mean_car_pct": -2.2388,
+       "std_car_pct": 1.2352,
+       "t": -54.615,
+       "positive_rate": 0.0308,
+       "ann_pct": -28.21,
+       "n_obs": 645355,
+       "avg_members_per_day": 710.7
+      },
+      "Q4": {
+       "n_days": 908,
+       "mean_car_pct": -1.9965,
+       "std_car_pct": 1.5455,
+       "t": -38.928,
+       "positive_rate": 0.0793,
+       "ann_pct": -25.16,
+       "n_obs": 645348,
+       "avg_members_per_day": 710.7
+      },
+      "Q5": {
+       "n_days": 908,
+       "mean_car_pct": -1.8355,
+       "std_car_pct": 1.9546,
+       "t": -28.296,
+       "positive_rate": 0.1278,
+       "ann_pct": -23.13,
+       "n_obs": 645712,
+       "avg_members_per_day": 711.1
+      }
+     },
+     "top_minus_bottom": {
+      "n_days": 908,
+      "mean_car_pct": 1.5123,
+      "std_car_pct": 4.3013,
+      "t": 10.594,
+      "positive_rate": 0.685,
+      "ann_pct": 19.05,
+      "directed_ann_pct": 19.05
+     },
+     "n_obs": 3226753
+    },
+    "event_split": null
+   }
+  },
+  "neutralization": {
+   "modes": [
+    "industry",
+    "size"
+   ],
+   "min_obs": 30,
+   "eligible": true,
+   "n_days": 929,
+   "n_obs": 3313749,
+   "size_available": true,
+   "industry_available": true,
+   "industry_source": "pit_sw_l2"
+  }
+ },
+ "portfolio": [
+  {
+   "label": "neut_long",
+   "days": 20,
+   "cost_bp": 30,
+   "start": "20230403",
+   "end": "20261031",
+   "constrained": true,
+   "metrics": {
+    "days": 868,
+    "years": 3.4444,
+    "ann_return": 0.018707,
+    "ann_vol": 0.048938,
+    "sharpe": 0.3823,
+    "max_drawdown": -0.124906,
+    "bench_ann_return": 0.331863,
+    "excess_ann_return": -0.313156,
+    "win_rate": 0.5104,
+    "rebalances": 44,
+    "avg_one_way_turnover": 0.2992,
+    "ann_one_way_turnover": 3.8226,
+    "total_cost": 0.0395,
+    "cost_bp": 30,
+    "max_one_way_turnover": 0.3,
+    "quantile": 0.2,
+    "buffer_quantile": 0.3,
+    "turnover_penalty": 0.5,
+    "industry_neutral": true,
+    "size_neutral": true,
+    "size_buckets": 3,
+    "rebalance_days": 20,
+    "gross": 1.0,
+    "avg_max_industry_net": 0.002365,
+    "avg_abs_size_net": 0.107651
+   },
+   "exposures": {}
+  },
+  {
+   "label": "neut_long",
+   "days": 40,
+   "cost_bp": 30,
+   "start": "20230403",
+   "end": "20261031",
+   "constrained": true,
+   "metrics": {
+    "days": 868,
+    "years": 3.4444,
+    "ann_return": 0.019371,
+    "ann_vol": 0.048609,
+    "sharpe": 0.3985,
+    "max_drawdown": -0.122059,
+    "bench_ann_return": 0.331863,
+    "excess_ann_return": -0.312492,
+    "win_rate": 0.5138,
+    "rebalances": 22,
+    "avg_one_way_turnover": 0.3,
+    "ann_one_way_turnover": 1.9161,
+    "total_cost": 0.0198,
+    "cost_bp": 30,
+    "max_one_way_turnover": 0.3,
+    "quantile": 0.2,
+    "buffer_quantile": 0.3,
+    "turnover_penalty": 0.5,
+    "industry_neutral": true,
+    "size_neutral": true,
+    "size_buckets": 3,
+    "rebalance_days": 40,
+    "gross": 1.0,
+    "avg_max_industry_net": 0.004242,
+    "avg_abs_size_net": 0.112239
+   },
+   "exposures": {}
+  },
+  {
+   "label": "neut_long",
+   "days": 60,
+   "cost_bp": 30,
+   "start": "20230403",
+   "end": "20261031",
+   "constrained": true,
+   "metrics": {
+    "days": 868,
+    "years": 3.4444,
+    "ann_return": 0.011883,
+    "ann_vol": 0.062287,
+    "sharpe": 0.1908,
+    "max_drawdown": -0.161609,
+    "bench_ann_return": 0.331863,
+    "excess_ann_return": -0.31998,
+    "win_rate": 0.53,
+    "rebalances": 15,
+    "avg_one_way_turnover": 0.3,
+    "ann_one_way_turnover": 1.3065,
+    "total_cost": 0.0135,
+    "cost_bp": 30,
+    "max_one_way_turnover": 0.3,
+    "quantile": 0.2,
+    "buffer_quantile": 0.3,
+    "turnover_penalty": 0.5,
+    "industry_neutral": true,
+    "size_neutral": true,
+    "size_buckets": 3,
+    "rebalance_days": 60,
+    "gross": 1.0,
+    "avg_max_industry_net": 0.009167,
+    "avg_abs_size_net": 0.27129
+   },
+   "exposures": {}
+  },
+  {
+   "label": "raw_long",
+   "days": 60,
+   "cost_bp": 30,
+   "start": "20230403",
+   "end": "20261031",
+   "constrained": false,
+   "metrics": {
+    "days": 868,
+    "years": 3.4444,
+    "ann_return": 0.010757,
+    "ann_vol": 0.097272,
+    "sharpe": 0.1106,
+    "max_drawdown": -0.254054,
+    "bench_ann_return": 0.331863,
+    "excess_ann_return": -0.321106,
+    "win_rate": 0.5265,
+    "rebalances": 15,
+    "avg_one_way_turnover": 0.3,
+    "ann_one_way_turnover": 1.3065,
+    "total_cost": 0.0135,
+    "cost_bp": 30,
+    "max_one_way_turnover": 0.3,
+    "quantile": 0.2,
+    "buffer_quantile": 0.3,
+    "turnover_penalty": 0.5,
+    "industry_neutral": false,
+    "size_neutral": false,
+    "size_buckets": 3,
+    "rebalance_days": 60,
+    "gross": 1.0,
+    "avg_max_industry_net": 0.052341,
+    "avg_abs_size_net": 1.083079
+   },
+   "exposures": {}
+  },
+  {
+   "label": "neut_long",
+   "days": 60,
+   "cost_bp": 0,
+   "start": "20230403",
+   "end": "20261031",
+   "constrained": true,
+   "metrics": {
+    "days": 868,
+    "years": 3.4444,
+    "ann_return": 0.015858,
+    "ann_vol": 0.062287,
+    "sharpe": 0.2546,
+    "max_drawdown": -0.156308,
+    "bench_ann_return": 0.331863,
+    "excess_ann_return": -0.316005,
+    "win_rate": 0.53,
+    "rebalances": 15,
+    "avg_one_way_turnover": 0.3,
+    "ann_one_way_turnover": 1.3065,
+    "total_cost": 0.0,
+    "cost_bp": 0,
+    "max_one_way_turnover": 0.3,
+    "quantile": 0.2,
+    "buffer_quantile": 0.3,
+    "turnover_penalty": 0.5,
+    "industry_neutral": true,
+    "size_neutral": true,
+    "size_buckets": 3,
+    "rebalance_days": 60,
+    "gross": 1.0,
+    "avg_max_industry_net": 0.009167,
+    "avg_abs_size_net": 0.27129
+   },
+   "exposures": {}
+  },
+  {
+   "label": "neut_long",
+   "days": 60,
+   "cost_bp": 50,
+   "start": "20230403",
+   "end": "20261031",
+   "constrained": true,
+   "metrics": {
+    "days": 868,
+    "years": 3.4444,
+    "ann_return": 0.009239,
+    "ann_vol": 0.062287,
+    "sharpe": 0.1483,
+    "max_drawdown": -0.165127,
+    "bench_ann_return": 0.331863,
+    "excess_ann_return": -0.322624,
+    "win_rate": 0.53,
+    "rebalances": 15,
+    "avg_one_way_turnover": 0.3,
+    "ann_one_way_turnover": 1.3065,
+    "total_cost": 0.0225,
+    "cost_bp": 50,
+    "max_one_way_turnover": 0.3,
+    "quantile": 0.2,
+    "buffer_quantile": 0.3,
+    "turnover_penalty": 0.5,
+    "industry_neutral": true,
+    "size_neutral": true,
+    "size_buckets": 3,
+    "rebalance_days": 60,
+    "gross": 1.0,
+    "avg_max_industry_net": 0.009167,
+    "avg_abs_size_net": 0.27129
+   },
+   "exposures": {}
+  },
+  {
+   "label": "neut_fresh",
+   "days": 20,
+   "cost_bp": 30,
+   "start": "20250102",
+   "end": "20260929",
+   "constrained": true,
+   "metrics": {
+    "days": 443,
+    "years": 1.7579,
+    "ann_return": 0.005261,
+    "ann_vol": 0.057229,
+    "sharpe": 0.0919,
+    "max_drawdown": -0.109679,
+    "bench_ann_return": 0.385584,
+    "excess_ann_return": -0.380324,
+    "win_rate": 0.4944,
+    "rebalances": 22,
+    "avg_one_way_turnover": 0.2987,
+    "ann_one_way_turnover": 3.7379,
+    "total_cost": 0.019713,
+    "cost_bp": 30,
+    "max_one_way_turnover": 0.3,
+    "quantile": 0.2,
+    "buffer_quantile": 0.3,
+    "turnover_penalty": 0.5,
+    "industry_neutral": true,
+    "size_neutral": true,
+    "size_buckets": 3,
+    "rebalance_days": 20,
+    "gross": 1.0,
+    "avg_max_industry_net": 0.002723,
+    "avg_abs_size_net": 0.115214
+   },
+   "exposures": {}
+  },
+  {
+   "label": "neut_fresh",
+   "days": 40,
+   "cost_bp": 30,
+   "start": "20250102",
+   "end": "20260929",
+   "constrained": true,
+   "metrics": {
+    "days": 443,
+    "years": 1.7579,
+    "ann_return": -0.000896,
+    "ann_vol": 0.062875,
+    "sharpe": -0.0143,
+    "max_drawdown": -0.120545,
+    "bench_ann_return": 0.385584,
+    "excess_ann_return": -0.386481,
+    "win_rate": 0.4898,
+    "rebalances": 11,
+    "avg_one_way_turnover": 0.3,
+    "ann_one_way_turnover": 1.8772,
+    "total_cost": 0.0099,
+    "cost_bp": 30,
+    "max_one_way_turnover": 0.3,
+    "quantile": 0.2,
+    "buffer_quantile": 0.3,
+    "turnover_penalty": 0.5,
+    "industry_neutral": true,
+    "size_neutral": true,
+    "size_buckets": 3,
+    "rebalance_days": 40,
+    "gross": 1.0,
+    "avg_max_industry_net": 0.005664,
+    "avg_abs_size_net": 0.115232
+   },
+   "exposures": {}
+  },
+  {
+   "label": "neut_fresh",
+   "days": 60,
+   "cost_bp": 30,
+   "start": "20250102",
+   "end": "20260929",
+   "constrained": true,
+   "metrics": {
+    "days": 443,
+    "years": 1.7579,
+    "ann_return": 0.01979,
+    "ann_vol": 0.059378,
+    "sharpe": 0.3333,
+    "max_drawdown": -0.083806,
+    "bench_ann_return": 0.385584,
+    "excess_ann_return": -0.365794,
+    "win_rate": 0.5079,
+    "rebalances": 8,
+    "avg_one_way_turnover": 0.3,
+    "ann_one_way_turnover": 1.3652,
+    "total_cost": 0.0072,
+    "cost_bp": 30,
+    "max_one_way_turnover": 0.3,
+    "quantile": 0.2,
+    "buffer_quantile": 0.3,
+    "turnover_penalty": 0.5,
+    "industry_neutral": true,
+    "size_neutral": true,
+    "size_buckets": 3,
+    "rebalance_days": 60,
+    "gross": 1.0,
+    "avg_max_industry_net": 0.012168,
+    "avg_abs_size_net": 0.22961
+   },
+   "exposures": {}
+  },
+  {
+   "label": "raw_fresh",
+   "days": 60,
+   "cost_bp": 30,
+   "start": "20250102",
+   "end": "20260929",
+   "constrained": false,
+   "metrics": {
+    "days": 443,
+    "years": 1.7579,
+    "ann_return": 0.01231,
+    "ann_vol": 0.113916,
+    "sharpe": 0.1081,
+    "max_drawdown": -0.236792,
+    "bench_ann_return": 0.385584,
+    "excess_ann_return": -0.373275,
+    "win_rate": 0.5214,
+    "rebalances": 8,
+    "avg_one_way_turnover": 0.3,
+    "ann_one_way_turnover": 1.3652,
+    "total_cost": 0.0072,
+    "cost_bp": 30,
+    "max_one_way_turnover": 0.3,
+    "quantile": 0.2,
+    "buffer_quantile": 0.3,
+    "turnover_penalty": 0.5,
+    "industry_neutral": false,
+    "size_neutral": false,
+    "size_buckets": 3,
+    "rebalance_days": 60,
+    "gross": 1.0,
+    "avg_max_industry_net": 0.06635,
+    "avg_abs_size_net": 1.248717
+   },
+   "exposures": {}
+  },
+  {
+   "label": "neut_fresh",
+   "days": 60,
+   "cost_bp": 0,
+   "start": "20250102",
+   "end": "20260929",
+   "constrained": true,
+   "metrics": {
+    "days": 443,
+    "years": 1.7579,
+    "ann_return": 0.023978,
+    "ann_vol": 0.059378,
+    "sharpe": 0.4038,
+    "max_drawdown": -0.082155,
+    "bench_ann_return": 0.385584,
+    "excess_ann_return": -0.361607,
+    "win_rate": 0.5079,
+    "rebalances": 8,
+    "avg_one_way_turnover": 0.3,
+    "ann_one_way_turnover": 1.3652,
+    "total_cost": 0.0,
+    "cost_bp": 0,
+    "max_one_way_turnover": 0.3,
+    "quantile": 0.2,
+    "buffer_quantile": 0.3,
+    "turnover_penalty": 0.5,
+    "industry_neutral": true,
+    "size_neutral": true,
+    "size_buckets": 3,
+    "rebalance_days": 60,
+    "gross": 1.0,
+    "avg_max_industry_net": 0.012168,
+    "avg_abs_size_net": 0.22961
+   },
+   "exposures": {}
+  },
+  {
+   "label": "neut_fresh",
+   "days": 60,
+   "cost_bp": 50,
+   "start": "20250102",
+   "end": "20260929",
+   "constrained": true,
+   "metrics": {
+    "days": 443,
+    "years": 1.7579,
+    "ann_return": 0.017006,
+    "ann_vol": 0.059378,
+    "sharpe": 0.2864,
+    "max_drawdown": -0.084907,
+    "bench_ann_return": 0.385584,
+    "excess_ann_return": -0.368578,
+    "win_rate": 0.5079,
+    "rebalances": 8,
+    "avg_one_way_turnover": 0.3,
+    "ann_one_way_turnover": 1.3652,
+    "total_cost": 0.012,
+    "cost_bp": 50,
+    "max_one_way_turnover": 0.3,
+    "quantile": 0.2,
+    "buffer_quantile": 0.3,
+    "turnover_penalty": 0.5,
+    "industry_neutral": true,
+    "size_neutral": true,
+    "size_buckets": 3,
+    "rebalance_days": 60,
+    "gross": 1.0,
+    "avg_max_industry_net": 0.012168,
+    "avg_abs_size_net": 0.22961
+   },
+   "exposures": {}
+  }
+ ],
+ "meta": {
+  "pit_source": {
+   "level": "L2",
+   "member_dir": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\tushare\\sw_l2_member",
+   "classify_dir": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\tushare\\sw_classify_l1",
+   "n_members": 8195,
+   "n_codes": 5473,
+   "n_industries": 131,
+   "fallback": "index_member_all_snapshot",
+   "snapshot_dir": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\tushare\\index_member_all",
+   "n_fallback_rows": 4201,
+   "n_fallback_codes": 4201,
+   "fallback_note": "仅补历史成员表未覆盖的缺口（代码缺失，或快照 in_date 落在历史区间空隙）；in_date<=date 才生效；行业名取当前 L2 分类，若期间再分类仍有剩余前视"
+  },
+  "note": "先验方向硬编码；复合权重不基于 IC；20日CAR IC 与组合回测口径见报告"
+ }
+}

@@ -531,6 +531,70 @@ _add("size", "Tushare-规模", 1, _size, ("total_share", "close"))
 _add("nl_size", "Tushare-规模", 1, _nl_size, ("total_share", "close"))
 
 
+# ---------------------------------------------------------------- 先验方向
+# 先验方向必须在查看任何 IC/回测结果之前固定；这里只依据因子定义与资产定价
+# 先验（短期反转、低风险异象、低流动性溢价、小市值溢价等）覆盖少数原方向，
+# 其余沿用 _add 时按因子族设定的先验方向。未知方向的因子不进入策略 composite，
+# 避免用全样本 IC 反推方向。
+B1_PRIOR_OVERRIDES: dict[str, tuple[int, str]] = {
+    "return_5d": (-1, "短周期反转：1 个月内涨幅高者未来收益低"),
+    "return_21d": (-1, "短周期反转：1 个月内涨幅高者未来收益低"),
+    "amount_ma_20d": (-1, "成交额/关注度越高，未来收益越低（流动性/关注度溢价反向）"),
+    "sum_abs_rtn_amount_20d": (1, "单位成交额绝对收益高=价格冲击/流动性溢价，先验正"),
+    "log_price": (-1, "低价股溢价：价格越高未来收益越低"),
+    "days_beyond_upper_lower_21d": (-1, "近期上轨突破天数多=超买，先验负"),
+}
+
+B1_PRIOR_UNKNOWN = frozenset({
+    "days_down_up",
+    "volume_alpha_300d_000001",
+    "volume_alpha_300d_000300",
+    "nl_size",
+    "price_dist",
+})
+
+_FAMILY_PRIOR = {
+    "Tushare-动量": (1, "趋势/动量先验正（短周期 return 已单独改为反转）"),
+    "Tushare-流动性": (-1, "高换手/高流动性先验负（流动性溢价）；负换手类因子已取反"),
+    "Tushare-风险": (-1, "低风险异象：高波动/高 beta 先验负"),
+    "Tushare-反转": (1, "反转/超跌先验正（RSI 已单独取反）"),
+    "Tushare-规模": (1, "小市值溢价先验正"),
+}
+
+B1_PRIOR_RATIONALE: dict[str, str] = {}
+for _spec in _SPECS:
+    _name = _spec["name"]
+    if _name in B1_PRIOR_OVERRIDES:
+        _spec["direction"], B1_PRIOR_RATIONALE[_name] = B1_PRIOR_OVERRIDES[_name]
+    elif _name in B1_PRIOR_UNKNOWN:
+        B1_PRIOR_RATIONALE[_name] = "方向无稳定先验，策略 composite 排除"
+    else:
+        # 其余沿用 _add 时按因子定义/公式符号设定的先验方向；因子族说明只作解释，
+        # 不覆盖公式里已经带符号的方向（例如 turnover_ma_20d、sharpe）。
+        _fam_dir, _fam_note = _FAMILY_PRIOR[_spec["family"]]
+        B1_PRIOR_RATIONALE[_name] = _fam_note
+
+# 显式补充个别因子的先验说明（方向沿因子族默认）
+B1_PRIOR_RATIONALE.update({
+    "return_42d": "中期动量先验正（标准 3–12 个月动量）",
+    "return_63d": "中期动量先验正（标准 3–12 个月动量）",
+    "return_126d": "长期动量先验正",
+    "return_252d": "长期动量先验正",
+    "MACD": "趋势动量先验正",
+    "dif": "趋势动量先验正",
+    "dea": "趋势动量先验正",
+    "ma_20d": "价格站上均线视为趋势先验正",
+    "rsi": "高 RSI 超买先验负",
+    "small_cap_reversal_21d": "小市值+短期超跌先验正",
+})
+
+B1_PRIOR_DIRECTIONS: dict[str, int] = {s["name"]: int(s["direction"]) for s in _SPECS}
+B1_STRATEGY_FACTORS: tuple[str, ...] = tuple(
+    n for n in B1_PRIOR_DIRECTIONS if n not in B1_PRIOR_UNKNOWN
+)
+
+
+
 def _beta_consistency(panel, code, window):
     x = _ret(panel)
     y = _index_ret(panel, code)
@@ -631,4 +695,5 @@ def factor_map_summary() -> dict[str, Any]:
 
 __all__ = ["TUSHARE_FACTOR_MAP", "TYPE_NAMES", "SOURCE", "BATCH_B1", "BATCH_B2",
            "BATCH_B3", "register_batch", "register_alpha101", "register_b3",
-           "factor_map_summary"]
+           "B1_PRIOR_OVERRIDES", "B1_PRIOR_UNKNOWN", "B1_PRIOR_RATIONALE",
+           "B1_PRIOR_DIRECTIONS", "B1_STRATEGY_FACTORS", "factor_map_summary"]
