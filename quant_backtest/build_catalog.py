@@ -1687,6 +1687,39 @@ for _n, _f in _FREQ_FIX_V22.items():
         TABLE_DEFS.setdefault(_n, {})["freq"] = _f
 
 
+# ===== v33（2026-11-05 长尾补位）：周期表 freq 修正 D→W/M/Q/A =====
+# 证据不是"想让它变绿"，而是各表本地的实际最后一根周期 + 远端 all_dt：
+# 被测 25 张 xtcloud 长尾表里，7 张的 freshness 恰好停在 10-30/10-31（10 月
+# 最后交易日与 10 月最后一周），数据本身是齐的，只是 freq 被标成 D、SLA 3d
+# → 每月末必然误报。周/月线各一根的节律必须按 W/M 判。
+# 反例（不改，继续报警）：ts_index_weekly 同样是周线却停在 20261009，
+# 之后 10-16/10-23/10-30 三根缺——这是真断流，改 freq 会把它藏起来。
+_FREQ_FIX_V33 = {
+    # 周线/周频：10-31 为 10 月最后一周，10-30 为最后交易日 → 已到齐
+    "ts_weekly": "W",
+    "ts_fut_weekly_monthly": "W",
+    "ts_stk_week_month_adj": "W",
+    "ts_stk_weekly_monthly": "W",
+    "ts_pledge_stat": "W",
+    # 月线/月度：10-30 为 10 月最后交易日 → 已到齐
+    "ts_monthly": "M",
+    "ts_index_weight": "M",
+    # 注意：ts_ths_member 的 date_col 是 _fetched_at（抓取时间），远端 all_dt
+    # 已到 11-04 说明数据在变、是我们的抓取停了 → 不放宽，继续按 D 报警。
+    # 季度：top10 股东按报告期披露，end_date=20260930 已齐（远端 latest 同值）
+    "ts_top10_holders": "Q",
+    "ts_top10_floatholders": "Q",
+    # 年度：交易日历一年一版
+    "ts_hk_tradecal": "A",
+    "ts_us_tradecal": "A",
+}
+for _n, _f in _FREQ_FIX_V33.items():
+    if _n in TABLE_DEFS:
+        TABLE_DEFS[_n]["freq"] = _f
+    else:
+        TABLE_DEFS.setdefault(_n, {})["freq"] = _f
+
+
 # ===== v31（2026-11-02 S3-01 收口）：参照/基础表 static_no_date 声明 =====
 # 理由：这些表的 date_col=list_date（上市日），不是"数据新鲜度"日期；用 list_date
 # 判 stale 语义错误（新 ETF/基金/指数的 list_date 天然旧）。它们是参照字典表，

@@ -54,6 +54,12 @@ SKIP_DEFAULT = {
 }  # K53: ts_moneyflow 移出（done 表走增量续拉，不再全量翻页）
 
 SESS = requests.Session()
+# 2026-11-05 补位修复：xtcloud 是直连可达的公网域名（实测 0.2s/页），
+# 但 Session 默认 trust_env=True 会继承宿主 http(s)_proxy，经代理被拒
+# 403 或挂到 60s 超时 ×3 重试 → 表现为「无输出卡死 5 分钟」。
+# 计划任务以 SYSTEM 跑本无代理变量，此改动不影响夜批；人工在带代理的
+# 终端里补数时才不会被代理劫持。与 ts_tail_sync 的处理一致。
+SESS.trust_env = False
 
 DNS_HOST = "rookie.xtcloud-tech.com"  # 10-17 实证该域名 DNS 间歇故障
 
@@ -147,11 +153,45 @@ def _parquet_latest_date(tbl):
         return None
 
 
+def _infer_date_col(tbl):
+    """按 parquet footer 实测列名推断日期列（2026-11-05 长尾补位）。
+
+    起因：`_date_col_of` 返回 trade_date 时，一大批表因无该列被
+    `sync_parquet_table` 判成「done=true 但无可解析日期列」→ 静默 SKIP，
+    这就是 35 张 xtcloud 表长期停在 10-13~10-31 的共同根因
+    （ts_namechange 用 ann_date、ts_stk_surv 用 surv_date、
+     ts_cctv_news 用 date、ts_report_rc 用 report_date……）。
+
+    显式映射仍优先（财报 end_date 等语义特殊）；仅未命中时走这里。
+    优先"发布/公告日"而非 end_date：水位要反映更新节奏，不是数据覆盖期。
+    """
+    files = sorted(glob.glob(os.path.join(OUT, tbl, "*.parquet")))
+    if not files:
+        return None
+    names = None
+    for f in reversed(files):
+        try:
+            from pyarrow.parquet import ParquetFile
+
+            names = ParquetFile(f).schema.names
+            break
+        except Exception:  # noqa: BLE001
+            continue
+    if not names:
+        return None
+    for c in ("trade_date", "ann_date", "pub_time", "publish_date", "report_date",
+              "surv_date", "ipo_date", "issue_date", "date", "datetime",
+              "cal_date", "end_date", "list_date"):
+        if c in names:
+            return c
+    return None
+
+
 def _date_col_of(tbl):
     # 2026-11-02 修复：新接入表的业务日期列并非 trade_date（此前一律回退
     # trade_date → _parquet_latest_date 返回 None → 误走"全量"且沿用旧
     # offset，导致 HTTP200 零行假失败）。按各表 footer 实测列补齐映射。
-    return {
+    explicit = {
         "ts_income": "end_date",
         "ts_balancesheet": "end_date",
         "ts_cashflow": "end_date",
@@ -185,7 +225,33 @@ def _date_col_of(tbl):
         "ts_cn_ppi": "month",
         "ts_cn_pmi": "MONTH",
         "ts_cn_gdp": "quarter",
-    }.get(tbl, "trade_date")
+    }
+    if tbl in explicit:
+        return explicit[tbl]
+    return _infer_date_col(tbl) or "trade_date"
+
+
+def _filter_incremental(rows, cols, latest, date_col, *, filtered):
+    """增量页过滤 → (保留下来的行, 是否终止翻页)。纯函数，便于回归测试。
+
+    2026-11-05 判例：ts_new_share 远端不认 start_date（total=全表 2072 行），
+    每页客户端过滤后只剩 2 行；原实现把 offset 按 len(过滤后) 推进 → 每次
+    只前进 2 行，2072 行要 1000+ 次请求（表现为"无输出卡死 5 分钟"，而单
+    请求实测 0.5s）。现由调用方按远端原始行数推进 offset，本函数只决定
+    "要哪些行、是否该停"。
+
+    filtered=False（远端没过滤）时**不能因首屏全旧就停**：后续页里仍可能有
+    新行，必须翻到 offset 追上 total。只有确认远端确实按日期过滤过
+    （广告 total < 全表行数），首屏全旧才等价于"没有新增"。
+    """
+    if not latest or not date_col or date_col not in cols:
+        return rows, False
+    di = cols.index(date_col)
+    ld = latest.replace("-", "").split(" ")[0]
+    kept = [r for r in rows if str(r[di]).replace("-", "")[:8] > ld]
+    if not kept and filtered:
+        return [], True
+    return kept, False
 
 
 def sync_parquet_table(tbl, meta, m, missing_keys=None):
@@ -244,16 +310,23 @@ def sync_parquet_table(tbl, meta, m, missing_keys=None):
             cols = d2.get("columns", cols)
             if not rows:
                 break
-        if latest:
-            # 增量去重：丢掉本地已有的最新日（重叠窗口内）
-            di = cols.index(date_col) if date_col in cols else None
-            if di is not None:
-                ld = latest.replace("-", "").split(" ")[0]
-                rows = [r for r in rows if str(r[di]).replace("-", "")[:8] > ld]
-                if not rows:
-                    break
+        raw_n = len(rows)  # 远端本次返回的原始行数：offset 必须按它推进
+        # 远端是否真按 start_date 过滤：比对广告 total 与全表行数。
+        # 相等 → 没过滤（返回的是全表，只是本地过滤后剩得少），此时
+        # 「首屏全旧就 break」会漏掉后续页里的新行，必须翻完再判。
+        filtered = bool(total) and d.get("total") is not None and d["total"] < total
+        if latest and not filtered and st["offset"] == 0:
+            print("[%s] 远端未按 start_date 过滤（total=%s=全表），转全表翻页 + 本地过滤"
+                  % (tbl, d.get("total")), flush=True)
+        rows, stop = _filter_incremental(rows, cols, latest, date_col, filtered=filtered)
+        if stop:
+            break
         buf.extend(dict(zip(cols, r)) for r in rows)
-        st["offset"] += len(rows)
+        # 2026-11-05 修复：offset 必须按远端原始行数推进，不能用过滤后的
+        # len(rows)。ts_new_share 实证：total=2072，每页过滤后只剩 2 行 →
+        # offset 每次只 +2，2072 行要 1000+ 次请求，表现为「无输出卡死
+        # 5 分钟」，而单请求实测仅 0.5s。修好后同一表 1 次请求完成。
+        st["offset"] += raw_n
         st["rows"] += len(rows)
         if len(buf) >= FLUSH_PAGES * PAGE:
             flush()

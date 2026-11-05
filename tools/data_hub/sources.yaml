@@ -74,6 +74,17 @@ freshness_sla_overrides:
   express: 45               # 业绩快报：2026Q3 全市场仅 11 家，Q2 仅 66 家
   forecast: 45              # 业绩预告：披露季集中出数，日常零星
   index_weight: 40          # 指数成分权重：按月发布，当月空片属未发布
+  # 2026-11-05 xtcloud 长尾补位实测：以下为"事件发生才有新行"的表。
+  # 证据：补数后本地 max 日期未变，且远端 all_dt 只是表被重写、内容无新增
+  # （ts_pledge_detail 停 10-10 / ts_fund_manager 10-12 / ts_cb_price_chg 10-13
+  #  / ts_namechange 10-29 / ts_share_float 10-27），按 D(3d) 判必然天天误报。
+  ts_fund_manager: 45       # 基金经理变动
+  ts_stk_managers: 45       # 董监高变动
+  ts_pledge_detail: 45      # 股权质押明细（事件驱动）
+  ts_cb_price_chg: 45       # 转债转股价调整（事件驱动）
+  ts_cb_issue: 45           # 转债发行（事件驱动）
+  ts_namechange: 45         # 股票曾用名变更（事件驱动）
+  ts_share_float: 45        # 限售解禁（解禁日在前，公告日早于此）
 
 # 不参与时效判定（探针表/一次性快照，本身不代表覆盖）
 freshness_exempt:
