@@ -6,6 +6,9 @@
     python -m tools.data_hub probe --live     # 真探活，出报告
     python -m tools.data_hub govern [--report]
     python -m tools.data_hub check            # 登记表校验，非零退出即不合格
+    python -m tools.data_hub collect --adapter guba --dataset 600519
+    python -m tools.data_hub sentiment        # 社区情绪日表（按 watchlist.yaml）
+    python -m tools.data_hub sentiment --codes 600519,301216 --dry-run
 
 退出码：0 正常；1 校验/治理发现阻断级问题；2 参数或加载错误。
 """
@@ -16,7 +19,7 @@ import argparse
 import json
 import sys
 
-from . import collect, govern, probe, registry
+from . import collect, govern, probe, registry, sentiment
 
 
 def cmd_sources(args) -> int:
@@ -130,6 +133,36 @@ def cmd_collect(args) -> int:
     return 0 if res.get("status") in {"written", "dry_run_ok", "no_new"} else 1
 
 
+def cmd_sentiment(args) -> int:
+    cfg = sentiment.load_watchlist(args.watchlist)
+    if args.codes:
+        codes = [c.strip() for c in args.codes.split(",") if c.strip()]
+    else:
+        codes = [c["code"] if isinstance(c, dict) else str(c) for c in cfg["codes"]]
+    res = sentiment.run(
+        codes,
+        fetch=not args.no_fetch,
+        dry_run=args.dry_run,
+        bull=tuple(cfg.get("bull_words") or sentiment.DEFAULT_BULL),
+        bear=tuple(cfg.get("bear_words") or sentiment.DEFAULT_BEAR),
+        pages=args.pages,
+    )
+    if args.json:
+        out = {k: v for k, v in res.items() if k != "frames"}
+        print(json.dumps(out, ensure_ascii=False, indent=1, default=str))
+    else:
+        print("监控名单：", ", ".join(codes))
+        for code, info in res["fetched"].items():
+            print("  取数 %-8s %s" % (code, info))
+        frames = [f for f in res["frames"].values() if not f.empty]
+        if frames:
+            import pandas as pd  # noqa: PLC0415
+
+            print(sentiment.summary(pd.concat(frames, ignore_index=True)))
+        print("落盘：", res.get("path") or ("dry-run" if args.dry_run else "无数据未落盘"))
+    return 0 if res.get("rows") else 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="data_hub", description="全网数据源接入与治理")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -153,6 +186,15 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("govern", help="三方对账")
     p.add_argument("--report", action="store_true", help="落报告文件")
     p.set_defaults(func=cmd_govern)
+
+    p = sub.add_parser("sentiment", help="社区情绪日表（帖子流 → 每票每日一行）")
+    p.add_argument("--codes", help="逗号分隔的 6 位代码，默认读 watchlist.yaml")
+    p.add_argument("--watchlist", help="名单文件路径，默认 tools/data_hub/watchlist.yaml")
+    p.add_argument("--no-fetch", action="store_true", help="只聚合已落盘数据，不出网")
+    p.add_argument("--pages", type=int, default=2, help="股吧翻页数，每页约 80 帖（默认 2）")
+    p.add_argument("--dry-run", action="store_true", help="只打印不落盘")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_sentiment)
 
     p = sub.add_parser("collect", help="取一个数据集并落地（不写主仓）")
     p.add_argument("--adapter", required=True, choices=sorted(collect.ADAPTERS))

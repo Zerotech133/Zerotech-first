@@ -236,3 +236,140 @@ def test_check_frame_feed_allows_dup_timestamps_with_key():
     )
     verdict = collect.check_frame(df, date_col="publish_time", key_cols=("post_id",))
     assert verdict["ok"] is True  # 帖子流同分钟多帖是常态，主键唯一即可
+
+# ── sentiment：社区情绪日表 ────────────────────────────────────────────
+class _FakeCal:
+    """只按周末判交易日（不读快照，保证单测确定性与离线）。"""
+
+    def is_trading_day(self, d):
+        return d.weekday() < 5
+
+
+def test_keyword_score_three_way():
+    from data_hub import sentiment
+
+    assert sentiment.keyword_score("明天涨停") == 1
+    assert sentiment.keyword_score("彻底破位了") == -1
+    assert sentiment.keyword_score("今天天气不错") == 0
+    # 多空都命中 → 判中性，不猜方向
+    assert sentiment.keyword_score("涨停后破位") == 0
+
+
+def test_trade_date_maps_weekend_forward():
+    from data_hub import sentiment
+
+    cal = _FakeCal()
+    # 2026-10-17 是周六 → 归到 10-19 周一
+    assert sentiment.next_trading_day(date(2026, 10, 17), cal) == date(2026, 10, 19)
+    assert sentiment.next_trading_day(date(2026, 10, 19), cal) == date(2026, 10, 19)
+
+
+def test_aggregate_counts_and_ratio():
+    import pandas as pd
+
+    from data_hub import sentiment
+
+    df = pd.DataFrame(
+        {
+            "post_id": ["1", "2", "3", "4"],
+            "code": ["600519"] * 4,
+            "user": ["a", "a", "b", "c"],
+            "title": ["涨停", "突破新高", "破位下跌", "随便看看"],
+            "publish_time": pd.to_datetime(
+                ["2026-10-17 10:00", "2026-10-19 09:31", "2026-10-19 10:00", "2026-10-19 11:00"]
+            ),
+            "comments": [1, 2, 3, 4],
+            "clicks": [10, 20, 30, 40],
+        }
+    )
+    out = sentiment.aggregate(df, cal=_FakeCal())
+    assert list(out["trade_date"].dt.date) == [date(2026, 10, 19)]
+    row = out.iloc[0]
+    assert row["posts"] == 4
+    assert row["authors"] == 3
+    assert row["comments"] == 10 and row["clicks"] == 100
+    assert row["heat"] == 110
+    assert (row["bull"], row["bear"], row["neutral"]) == (2, 1, 1)
+    assert row["bull_ratio"] == pytest.approx(0.667, abs=1e-3)
+    assert row["top_author_share"] == pytest.approx(0.5)  # a 发 2/4 → 顶号特征
+    assert row["cal"] == "trading_day"
+
+
+def test_aggregate_no_direction_hits_gives_null_ratio():
+    import pandas as pd
+
+    from data_hub import sentiment
+
+    df = pd.DataFrame(
+        {
+            "post_id": ["1"],
+            "code": ["000001"],
+            "user": ["x"],
+            "title": ["今天无事"],
+            "publish_time": pd.to_datetime(["2026-10-19 10:00"]),
+        }
+    )
+    out = sentiment.aggregate(df, cal=_FakeCal())
+    assert out.iloc[0]["bull_ratio"] is None  # 不许用 0.5 假装中性
+
+
+def test_aggregate_falls_back_to_natural_day_without_calendar():
+    import pandas as pd
+
+    from data_hub import sentiment
+
+    df = pd.DataFrame(
+        {
+            "post_id": ["1"],
+            "code": ["000001"],
+            "user": ["x"],
+            "title": ["涨停"],
+            "publish_time": pd.to_datetime(["2026-10-17 10:00"]),  # 周六
+        }
+    )
+    out = sentiment.aggregate(df, cal=None, strict_cal=False)
+    assert out.iloc[0]["trade_date"].date() == date(2026, 10, 17)
+    assert out.iloc[0]["cal"] == "natural"
+
+
+def test_aggregate_empty_returns_empty_frame():
+    import pandas as pd
+
+    from data_hub import sentiment
+
+    out = sentiment.aggregate(pd.DataFrame())
+    assert out.empty and "trade_date" in out.columns
+
+def test_read_daily_missing_returns_empty(tmp_path):
+    from data_hub import sentiment
+
+    assert sentiment.read_daily(tmp_path / "nope.parquet").empty
+
+
+def test_run_without_landing_data_writes_nothing(tmp_path, monkeypatch):
+    import pandas as pd
+
+    from data_hub import sentiment
+
+    monkeypatch.setattr(sentiment, "OUT", tmp_path / "sd")
+    monkeypatch.setattr(sentiment, "read_landing", lambda a, d: pd.DataFrame())
+    res = sentiment.run(["600519"], fetch=False)
+    assert res["written"] is False and res["rows"] == 0
+    assert not (tmp_path / "sd").exists()
+
+def test_read_daily_missing_returns_empty(tmp_path):
+    from data_hub import sentiment
+
+    assert sentiment.read_daily(tmp_path / "nope.parquet").empty
+
+
+def test_run_without_landing_data_writes_nothing(tmp_path, monkeypatch):
+    import pandas as pd
+
+    from data_hub import sentiment
+
+    monkeypatch.setattr(sentiment, "OUT", tmp_path / "sd")
+    monkeypatch.setattr(sentiment, "read_landing", lambda a, d: pd.DataFrame())
+    res = sentiment.run(["600519"], fetch=False)
+    assert res["written"] is False and res["rows"] == 0
+    assert not (tmp_path / "sd").exists()

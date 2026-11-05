@@ -72,6 +72,13 @@ $PY -m tools.data_hub probe --live --only tushare,eastmoney,ths
 
 # 三方对账（只读，出缺口；--report 落文件）
 $PY -m tools.data_hub govern --report
+
+# 取数落地（东财 K 线 / 新浪快照 / 股吧帖子流）
+$PY -m tools.data_hub collect --adapter guba --dataset 600519
+
+# 社区情绪日表（帖子流 → 每票每日一行，见第七之二节）
+$PY -m tools.data_hub sentiment
+$PY -m tools.data_hub sentiment --codes 600519,301216 --dry-run
 ```
 
 退出码：`0` 正常；`1` 校验/体检有问题；`2` 参数或加载错误。
@@ -197,6 +204,55 @@ $PY -m tools.data_hub collect --adapter eastmoney --dataset 1.600000 --dry-run
 `stooq` 适配器保留但当前不可用：该站返回 796B "This site requires JavaScript"
 挑战页且状态码是 200，需要浏览器 cookie 才能取，已在 sources.yaml 降级为
 `reachable_guarded`。
+
+## 七之二、sentiment：社区情绪日表（帖子流 → 每票每日一行）
+
+```bash
+# 按 watchlist.yaml 的名单跑（默认 2 页/票，约 160 帖余量）
+$PY -m tools.data_hub sentiment
+
+# 临时换名单 / 只看不写 / 只聚合已落盘数据
+$PY -m tools.data_hub sentiment --codes 600519,301216
+$PY -m tools.data_hub sentiment --dry-run
+$PY -m tools.data_hub sentiment --no-fetch
+```
+
+产物是**单文件** `data_hub_landing/sentiment_daily/sentiment_daily.parquet`
+（每次从全部已落盘帖子重算后覆盖写）。
+
+**为什么单文件而不是追加分片**：每次跑都是全量重算，写成分片会让同一天出现
+两行（09:45 的 46 帖 + 14:30 的 120 帖各占一行），下游必须先规整才能用——
+这种"看起来有数据、其实得先去重"的表等于没做。单文件覆盖 + 原子替换
+（`os.replace`）没有这个坑。
+
+字段与口径：
+
+| 字段 | 说明 |
+|---|---|
+| `code` / `trade_date` | 6 位代码 / **归属交易日** |
+| `posts` / `authors` | 当日帖量 / 独立作者数 |
+| `top_author_share` | 单作者最多发帖占当日比例，**>0.5 基本是刷屏/机器人** |
+| `comments` / `clicks` / `heat` | 评论合计 / 点击合计 / 两者之和 |
+| `bull` / `bear` / `neutral` | 标题关键词命中数（词表在 watchlist.yaml） |
+| `bull_ratio` | `bull/(bull+bear)`，**无命中时为 null，不填 0.5 假装中性** |
+| `cal` | `trading_day`（非交易日归到下一交易日）/ `natural`（日历不可用时降级） |
+
+三条必须知道的口径：
+
+1. **非交易日帖子归到下一个交易日**（周末发的算周一），这样才能和
+   K 线/px_d 对齐。日历不可用时退回自然日并把 `cal` 标成 `natural`，
+   不假装对齐。
+2. **股吧的 `bullish_bearish` 字段是空的**（实测 85 帖：80 个 0、5 个 NaN），
+   所以多空方向必须自己从标题算，不能假设上游给了标签。
+3. **帖量受采集频次影响，跨日不可比**。日表里的 `posts` 是"我抓到了多少帖"，
+   不是"当天真实发生多少帖"。当前口径下只有 08:20 一次采集 + 单票两页，
+   **日内分时不可信、跨日比较要等固定频次攒够样本**。要拿它做因子，
+   先按固定时点（如 11:35 / 15:35）跑两周再说。
+
+雪球状态（2026-11-05 实测）：无 cookie 直连 400，带 token 403
+`Seek IP Blacklisted`，**当前拿不到数据**，所以本模块只吃股吧。
+xq_pump 的链路是好的，等 IP/ token 解封后按同一套字段接进来即可
+（`xq_hot_post` 有 `title/time/comment_count`，映射成本很低）。
 
 ## 八、加一个新源要改什么
 

@@ -154,47 +154,66 @@ def _extract_balanced_json(text: str, marker: str) -> dict:
 def fetch_guba(code: str, *, since: str | None = None, pages: int = 1) -> tuple[pd.DataFrame, str, str]:
     """股吧帖子流。code 形如 600519。必须带 Referer（不带 403/风控）。
 
-    数据锚点：list 页内嵌 `var article_list={...}`（实测 84 帖/页，
+    数据锚点：list 页内嵌 `var article_list={...}`（实测 80-85 帖/页，
     含 post_id/标题/作者/发布时间/评论数/点击数/多空倾向）。
-    只解析第一页；增量靠 since 水位（帖子时间戳），页内按 post_id 去重。
+
+    翻页（2026-11-05 实测）：第 1 页 `list,<code>.html`，第 n 页
+    `list,<code>,f_<n>.html`，每页约 80 帖、按时间倒序。**单页不够用**：
+    热门票一天 80+ 帖，只抓一页会把当日帖量顶到 84 的天花板，情绪指标
+    就失真了，所以 pages 参数是真翻页而不是摆设。
+    带 since 时早于水位的页直接停（按时间倒序，后面只会更旧）。
     """
-    url = f"https://guba.eastmoney.com/list,{code}.html"
-    res = net.fetch(
-        url,
-        policy="direct",
-        timeout=(6.0, 15.0),
-        headers={"Referer": "https://guba.eastmoney.com/"},
-        max_text=500000,
-        source_id="collect:guba",
-    )
-    if not res.get("ok"):
-        raise RuntimeError(f"guba 取数失败: {res.get('error') or res.get('status')}")
-    payload = _extract_balanced_json(res["text"], "var article_list=")
-    rows = []
-    for it in payload.get("re") or []:
-        rows.append(
-            {
-                "post_id": str(it.get("post_id") or ""),
-                "code": code,
-                "bar_name": payload.get("bar_name") or it.get("stockbar_name"),
-                "title": it.get("post_title"),
-                "user": it.get("user_nickname"),
-                "publish_time": it.get("post_publish_time"),
-                "comments": it.get("post_comment_count"),
-                "clicks": it.get("post_click_count"),
-                "bullish_bearish": it.get("bullish_bearish"),
-                "post_type": it.get("post_type"),
-                "post_url": it.get("art_unique_url"),
-            }
+    last_url = ""
+    policy_used = "direct"
+    frames = []
+    for page in range(1, max(1, pages) + 1):
+        url = f"https://guba.eastmoney.com/list,{code}.html" if page == 1 \
+            else f"https://guba.eastmoney.com/list,{code},f_{page}.html"
+        res = net.fetch(
+            url,
+            policy="direct",
+            timeout=(6.0, 15.0),
+            headers={"Referer": "https://guba.eastmoney.com/"},
+            max_text=500000,
+            source_id="collect:guba",
         )
-    df = pd.DataFrame(rows)
-    if df.empty:
+        if not res.get("ok"):
+            if page == 1:
+                raise RuntimeError(f"guba 取数失败: {res.get('error') or res.get('status')}")
+            break  # 后续页失败不至于丢已取到的首页
+        last_url, policy_used = url, res.get("policy", "direct")
+        payload = _extract_balanced_json(res["text"], "var article_list=")
+        rows = []
+        for it in payload.get("re") or []:
+            rows.append(
+                {
+                    "post_id": str(it.get("post_id") or ""),
+                    "code": code,
+                    "bar_name": payload.get("bar_name") or it.get("stockbar_name"),
+                    "title": it.get("post_title"),
+                    "user": it.get("user_nickname"),
+                    "publish_time": it.get("post_publish_time"),
+                    "comments": it.get("post_comment_count"),
+                    "clicks": it.get("post_click_count"),
+                    "bullish_bearish": it.get("bullish_bearish"),
+                    "post_type": it.get("post_type"),
+                    "post_url": it.get("art_unique_url"),
+                }
+            )
+        if not rows:
+            break
+        part = pd.DataFrame(rows)
+        part["publish_time"] = pd.to_datetime(part["publish_time"], errors="coerce")
+        frames.append(part)
+        if since and part["publish_time"].min() < pd.Timestamp(since):
+            break  # 本页已翻到水位以前，后面的页只会更旧
+    if not frames:
         raise RuntimeError("guba 返回 0 帖（可能触发风控，检查 Referer）")
-    df["publish_time"] = pd.to_datetime(df["publish_time"], errors="coerce")
+    df = pd.concat(frames, ignore_index=True)
     df = df.dropna(subset=["publish_time"]).drop_duplicates(subset=["post_id"])
     if since:
         df = df[df["publish_time"] >= pd.Timestamp(since)]
-    return df.sort_values("publish_time").reset_index(drop=True), url, res.get("policy", "direct")
+    return df.sort_values("publish_time").reset_index(drop=True), last_url, policy_used
 
 
 def fetch_binance_square(dataset: str, *, since: str | None = None) -> tuple[pd.DataFrame, str, str]:
