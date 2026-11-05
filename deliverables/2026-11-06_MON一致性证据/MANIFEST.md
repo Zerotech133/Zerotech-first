@@ -12,6 +12,8 @@
 
 ## 二、可直接打开的复核顺序
 
+> **入库对应关系（审计口径）**：本目录 tracked **30** = payload **29**（§五 清单 29 行）+ `MANIFEST.md` 自身；其中 3 个 `*.log` 被 `.gitignore` 忽略、经 `git add -f` 强制入库（force-add，见 §五、§八）。
+
 1. `tests_sim.log`（83 passed 日志）+ `tests_sim.rc`（rc=0）
 2. `merge_tree_predicted_master_vs_mon.txt`（Stage1 预测输出）+ `predicted_tree_blobs.txt`
 3. `merge_tree_predicted_current_20261106_0305.txt`（Stage2 当前无冲突预测）
@@ -58,8 +60,9 @@ git merge-tree --write-tree master task/K-STOCK-ANALYSIS-MON-20261104
 
 说明：目录内文本均为 UTF-8（部分 JSON/日志含 BOM，可直接用 VS Code/记事本/PowerShell `Get-Content -Encoding UTF8` 打开）；
 `monitor_master.py` / `monitor_monbranch.py` 为 Python 源文件快照，大小 46,836B / 53,035B。
+本目录 tracked **30** = payload **29** + `MANIFEST.md` 自身；其中 3 个 `*.log` 被 `.gitignore` 忽略、经 `git add -f` 强制入库（force-add，见 §五、§八）。
 
-## 五、文件清单（SHA-256）
+## 五、文件清单（payload 29 + MANIFEST.md 自身 = tracked 30；SHA-256）
 
 | 文件 | 大小(B) | SHA-256 | 用途 |
 |---|---:|---|---|
@@ -88,10 +91,12 @@ git merge-tree --write-tree master task/K-STOCK-ANALYSIS-MON-20261104
 | `test_api_monitor_master.py` | 4962 | `1DB1A7701CEC60DC667BCBB52DDA7A2D917DAAA8D433BF7F0A47DEBA947BBA78` | master 门户 portal/tests/test_api_monitor.py 快照 |
 | `test_monitor_master.py` | 29259 | `9D97E54BE168CE25C95FD08F1FB4E3063938D05D937817761294D058E934C54D` | master 版 analysis/tests/test_monitor.py 快照 |
 | `test_monitor_monbranch.py` | 34951 | `7B1C9E405292B3A3A460089C85321582840DF09D734CABAB0EE7BD7BEE02E914` | MON 版 analysis/tests/test_monitor.py 快照（较 master 基座 +130 行） |
-| `tests_baseline_master.log` | 204 | `A5B54AAD390D3520D00D7746DEA6ECB40408BC01491D96F3F469DEF0F9BA5BAA` | master 基线测试日志：43 passed |
-| `tests_mon_worktree_current_20261106_0305.log` | 204 | `8316928D459CA2242BDF5BFE011E53A6CDA609245BFBF22B5E121A71B002F2F4` | Stage2 在已同步 MON worktree 的接口测试：49 passed |
-| `tests_sim.log` | 366 | `99ED887626B2E4EAA0ECD82097DF1D79AE82CF70FF15AE16F90542169B90B661` | 合并模拟（master 树 + MON 引擎/测试）测试日志：83 passed |
+| `tests_baseline_master.log` | 204 | `A5B54AAD390D3520D00D7746DEA6ECB40408BC01491D96F3F469DEF0F9BA5BAA` | master 基线测试日志：43 passed（**force-add**：`.gitignore` 忽略 `*.log`，`git add -f`） |
+| `tests_mon_worktree_current_20261106_0305.log` | 204 | `8316928D459CA2242BDF5BFE011E53A6CDA609245BFBF22B5E121A71B002F2F4` | Stage2 在已同步 MON worktree 的接口测试：49 passed（**force-add**：`.gitignore` 忽略 `*.log`，`git add -f`） |
+| `tests_sim.log` | 366 | `99ED887626B2E4EAA0ECD82097DF1D79AE82CF70FF15AE16F90542169B90B661` | 合并模拟（master 树 + MON 引擎/测试）测试日志：83 passed（**force-add**：`.gitignore` 忽略 `*.log`，`git add -f`） |
 | `tests_sim.rc` | 6 | `5C26234D431079B7BE42D1B71D7CA849FC2BDAF901D9E32751CD99DF20A79E0F` | 合并模拟测试返回码：rc=0 |
+
+说明：§五 表格 **29 行 = payload**；`MANIFEST.md` 未列入该表，自身也被 git 跟踪（+1 → tracked 30）。其中 `tests_baseline_master.log`、`tests_mon_worktree_current_20261106_0305.log`、`tests_sim.log` 三个 `*.log` 被 `.gitignore` 忽略，经 `git add -f` 强制入库（force-add）。
 
 ## 六、核对时的版本钉扎
 
@@ -105,3 +110,20 @@ git merge-tree --write-tree master task/K-STOCK-ANALYSIS-MON-20261104
 - 两阶段证据均保留；Stage1 的“冲突”是当时分支未同步的真实状态，Stage2 已由并发会话 rebase 消除。
 - 本轮只读核对，未修改 MON 分支、未合入；MON 分支的同步提交 `c9d57be50` 由并发会话完成。
 - `/api/monitor/*` 接口字段：`summary` keys=`alerts_total,by_severity,last_run,pools`；`run_monitor` keys=`ok,pool,as_of,scanned,alerts,new_alerts,by_severity,items,run_id,dry_run`；alert 条目 keys=`code,rule,severity,title,detail,trade_date,dedupe_key`。
+
+## 八、入库与 tracked 对应（审计用）
+
+- 口径：**tracked 30 = payload 29 + `MANIFEST.md` 自身 1**；磁盘文件数同为 30，无多余、无未跟踪、无忽略残留。
+- force-add：`tests_baseline_master.log`、`tests_mon_worktree_current_20261106_0305.log`、`tests_sim.log` 三个文件被 `.gitignore` 忽略（`*.log`），经 `git add -f` 强制入库；其余 26 个 payload 为常规入库。
+- 提交：`2f9759a44`（27 文件，payload 主体）+ `3dffd52a2`（+3 个 `.log`，force-add）；`MANIFEST.md` 随 `2f9759a44` 提交。
+- 复核命令（仓库根运行，期望输出见注释）：
+
+```powershell
+$dir = 'deliverables/2026-11-06_MON一致性证据'
+git ls-files -- $dir | Measure-Object -Line                                  # 30
+git ls-files -- $dir | Where-Object { $_ -notmatch 'MANIFEST.md' } | Measure-Object -Line  # 29
+git ls-files -- $dir | Where-Object { $_ -match '\.log$' } | Measure-Object -Line          # 3
+git status --porcelain -- $dir                                               # 空
+git status --porcelain --ignored -- $dir                                     # 空（无 !! 行）
+git check-ignore -- "$dir/*"                                                 # rc=1（无输出）
+```

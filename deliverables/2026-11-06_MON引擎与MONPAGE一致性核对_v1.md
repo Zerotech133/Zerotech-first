@@ -56,7 +56,7 @@
 
 ### 2.5 证据文件路径
 
-**正式归档（随仓库永久保留，审计用）**：`deliverables/2026-11-06_MON一致性证据/`（含 `MANIFEST.md`：结论、两阶段版本钉扎、29 个文件的 SHA-256 清单、复跑命令、保留期限）。
+**正式归档（随仓库永久保留，审计用；入库口径 tracked 30 = payload 29 + `MANIFEST.md`，其中 3 个测试 `.log` 经 `git add -f` force-add）**：`deliverables/2026-11-06_MON一致性证据/`（含 `MANIFEST.md`：结论、两阶段版本钉扎、29 个 payload 文件的 SHA-256 清单（+`MANIFEST.md` 自身 = tracked 30；其中 3 个 `*.log` 被 `.gitignore` 忽略、经 `git add -f` 强制入库）、复跑命令、保留期限）。
 **临时工作副本**：`C:\Temp\mon_consistency_20261106\`（保留至 2026-11-13；C:\Temp 可能被系统/人工清理，审计请用正式归档）。
 
 归档内文件（两阶段）：
