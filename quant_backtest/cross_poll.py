@@ -211,6 +211,30 @@ def _src_sig4():
     return out
 
 
+_DD_FALLBACK = {"n": 0}
+
+
+def _dd_of(r):
+    """池行「最新检出日」——优先 detect_date，缺失才回退 dt。
+
+    为什么保留回退而不改成断言（v7 §1 结论，2026-11-05）：
+    detect_date 是确认日、dt 是结构端点日，回退会让该行看起来更旧，只把
+    结果推向「更保守（更可能判 stale）」一侧，不会掩盖断档；而断言会在数据
+    缺列时让整个轮询崩掉，代价远大于收益。当前全量 fill rate 100%，回退不
+    触发。此处加一次性告警，使「回退真的发生了」可观测而不是静默。
+    """
+    dd = r.get("detect_date")
+    if not dd:
+        if _DD_FALLBACK["n"] == 0:
+            logging.getLogger("cross_poll").warning(
+                "chanlun 池存在缺 detect_date 的行，已回退 dt：code=%s",
+                r.get("code"),
+            )
+        _DD_FALLBACK["n"] += 1
+        dd = r.get("dt") or ""
+    return str(dd)
+
+
 def _src_chanlun():
     # 数据源：优先 SQLite，fallback JSONL（双写期过渡）
     pool = _src_chanlun_load()
@@ -219,7 +243,7 @@ def _src_chanlun():
     )
     latest = {}
     for r in pool:
-        dd = str(r.get("detect_date") or r.get("dt") or "")
+        dd = _dd_of(r)
         if dd < cutoff:
             continue
         code = norm_code(r.get("code"))
@@ -600,7 +624,7 @@ def source_health(now=None):
     try:
         pool = _src_chanlun_load()
         for r in pool:
-            dd = str(r.get("detect_date") or r.get("dt") or "")
+            dd = _dd_of(r)
             if dd > ch_anchor:
                 ch_anchor = dd[:10] if len(dd) >= 10 else dd
     except Exception as ex:
