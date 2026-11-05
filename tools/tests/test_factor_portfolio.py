@@ -16,6 +16,7 @@ from factor_lib import Panel  # noqa: E402
 from factor_portfolio import (  # noqa: E402
     PortfolioConfig,
     _target_weights,
+    _target_weights_constrained,
     investable_masks,
     rebalance_indices,
     simulate,
@@ -143,3 +144,43 @@ def test_60_day_rebalance_indices_and_simulation():
     out = simulate(panel, factor, PortfolioConfig(rebalance_days=60), names=names)
     assert out["metrics"]["rebalances"] == 2
     assert out["metrics"]["rebalance_days"] == 60
+
+
+def test_industry_and_size_constrained_weights_are_neutral():
+    panel, _ = _panel(n_days=80, n_codes=60)
+    industries = pd.Series(
+        {c: ["A", "B", "C"][i % 3] for i, c in enumerate(panel.codes)}, name="industry"
+    )
+    panel.load_meta["industry"] = industries
+    size_values = pd.Series(np.arange(1, len(panel.codes) + 1, dtype=float) * 1e6,
+                            index=panel.codes)
+    factor = pd.Series(np.arange(len(panel.codes), 0, -1, dtype=float), index=panel.codes)
+    mask = pd.Series(True, index=panel.codes)
+    cfg = PortfolioConfig(quantile=0.2, industry_neutral=True, size_neutral=True,
+                          size_buckets=3, buffer_quantile=0.3, turnover_penalty=0.5)
+    target = _target_weights_constrained(factor, mask, cfg, prior=None,
+                                         industry=industries, size_values=size_values)
+    assert abs(float(target.abs().sum()) - 1.0) < 1e-9
+    ind_net = target.groupby(industries.reindex(target.index)).sum()
+    assert float(ind_net.abs().max()) < 1e-9
+    # 按市值分组也应多空匹配
+    ranks = size_values.rank(method="first")
+    buckets = pd.qcut(ranks, 3, labels=False, duplicates="drop")
+    bucket_net = target.groupby(pd.Series(buckets, index=target.index)).sum()
+    assert float(bucket_net.abs().max()) < 1e-9
+
+
+def test_constrained_simulation_records_low_exposures():
+    panel, names = _panel(n_days=80)
+    industries = pd.Series("ind0", index=panel.codes)
+    panel.load_meta["industry"] = industries
+    factor = pd.DataFrame(
+        np.tile(np.arange(60, dtype=float), (80, 1)), index=panel.dates, columns=panel.codes
+    )
+    cfg = PortfolioConfig(rebalance_days=60, max_one_way_turnover=0.3,
+                          buffer_quantile=0.3, turnover_penalty=0.5,
+                          industry_neutral=True, size_neutral=True)
+    out = simulate(panel, factor, cfg, names=names)
+    assert out["metrics"]["avg_max_industry_net"] is not None
+    assert out["metrics"]["avg_max_industry_net"] < 0.01
+    assert out["metrics"]["avg_abs_size_net"] is not None

@@ -11,6 +11,8 @@
   最极端分位（默认 20%）。
 - 换手惩罚：对目标权重与当前权重的差异做收缩（partial adjustment），再按多空两腿
   归一化回 gross，降低无谓换手。
+- 行业/市值约束：按「行业 × 市值分组」做分层匹配，多头与空头在每个单元内分配相同
+  gross，使组合对行业和市值分组的净暴露接近 0。
 - 成本按单边换手 × 费率扣除；支持 0/10/30/50bp 敏感性。
 """
 
@@ -27,6 +29,9 @@ class PortfolioConfig:
     quantile: float = 0.2
     buffer_quantile: float | None = None  # 已有持仓保留的扩展分位（如 0.3）
     turnover_penalty: float = 0.0         # 0~1，越大越向当前权重收缩
+    industry_neutral: bool = False        # 多头/空头行业权重匹配
+    size_neutral: bool = False            # 多头/空头市值分组权重匹配
+    size_buckets: int = 3                 # 市值分组数
     cost_bp: float = 30.0
     max_one_way_turnover: float | None = 1.0  # None/>=1 表示不约束
     min_amount: float = 5e7
@@ -176,6 +181,114 @@ def _apply_turnover_penalty(target: pd.Series, prior: pd.Series, cfg: PortfolioC
     return (pos + neg).reindex(target.index).fillna(0.0)
 
 
+def _normalize_sleeves(w: pd.Series, gross: float) -> pd.Series:
+    """把多空两腿分别缩放回 gross/2；用于约束匹配后的轻微缺口。"""
+    pos = w.clip(lower=0.0)
+    neg = w.clip(upper=0.0)
+    if float(pos.sum()) > 1e-12:
+        pos = pos * (gross / 2.0) / float(pos.sum())
+    if float(neg.abs().sum()) > 1e-12:
+        neg = neg * (gross / 2.0) / float(neg.abs().sum())
+    return pos + neg
+
+
+def _target_weights_constrained(factor_row: pd.Series, mask_row: pd.Series,
+                                cfg: PortfolioConfig, prior: pd.Series | None = None,
+                                industry: pd.Series | None = None,
+                                size_values: pd.Series | None = None) -> pd.Series:
+    """按行业/市值分组匹配多空权重：每个单元内多头与空头 gross 相同。
+
+    分组为 industry（可选）× size bucket（可选）；每组内取因子最高/最低
+    ``quantile`` 比例，组内等权，组权重按该组在有效池中的数量占比分配。
+    """
+    valid = factor_row[mask_row.reindex(factor_row.index).fillna(False)]
+    valid = valid[np.isfinite(valid.astype(float))]
+    n = len(valid)
+    if n < max(10, int(2 / cfg.quantile)):
+        return pd.Series(dtype=float)
+
+    idx = valid.index
+    if cfg.industry_neutral and industry is not None:
+        ind = industry.reindex(idx).fillna("UNKNOWN").astype(str)
+    else:
+        ind = pd.Series("ALL", index=idx, dtype=object)
+
+    if cfg.size_neutral and size_values is not None:
+        sv = size_values.reindex(idx).astype(float)
+        med = float(sv.median())
+        if np.isfinite(med):
+            sv = sv.fillna(med)
+        else:
+            sv = pd.Series(0.0, index=idx)
+        ranks = sv.rank(method="first")
+        size_grp = pd.qcut(ranks, int(max(2, cfg.size_buckets)), labels=False, duplicates="drop")
+        size_grp = pd.Series(size_grp, index=idx).fillna(0).astype(int)
+    else:
+        size_grp = pd.Series(0, index=idx, dtype=int)
+
+    df = pd.DataFrame({"f": valid.astype(float), "ind": ind, "sz": size_grp})
+    gcols = []
+    if cfg.industry_neutral and industry is not None:
+        gcols.append("ind")
+    if cfg.size_neutral and size_values is not None:
+        gcols.append("sz")
+    if not gcols:
+        return _target_weights(factor_row, mask_row, cfg, prior=prior)
+
+    total = len(df)
+    w = pd.Series(0.0, index=factor_row.index, dtype=float)
+    for _, g in df.groupby(gcols, sort=False):
+        cells = len(g)
+        if cells <= 0:
+            continue
+        b = cells / total
+        k = max(1, int(np.floor(cells * cfg.quantile)))
+        ordered = g["f"].sort_values(ascending=False)
+        longs = list(ordered.index[:k])
+        shorts = list(ordered.index[-k:])
+
+        if prior is not None and cfg.buffer_quantile:
+            rank_pct = ordered.rank(pct=True, method="first")
+            p = prior.reindex(ordered.index).fillna(0.0)
+            for code in p[p > 0].index:
+                if rank_pct.loc[code] >= 1.0 - cfg.buffer_quantile:
+                    longs.append(code)
+            for code in p[p < 0].index:
+                if rank_pct.loc[code] <= cfg.buffer_quantile:
+                    shorts.append(code)
+
+        longs = list(dict.fromkeys(longs))
+        shorts = list(dict.fromkeys(shorts))
+        overlap = set(longs) & set(shorts)
+        for code in overlap:
+            if ordered.loc[code] >= ordered.median():
+                shorts.remove(code)
+            else:
+                longs.remove(code)
+        if longs:
+            w.loc[longs] += (cfg.gross / 2.0 * b) / len(longs)
+        if shorts:
+            w.loc[shorts] -= (cfg.gross / 2.0 * b) / len(shorts)
+    return _normalize_sleeves(w, cfg.gross)
+
+
+def _portfolio_exposures(w: pd.Series, industry: pd.Series | None,
+                         log_mv: pd.Series | None) -> dict:
+    """计算组合的行业净暴露（max abs）与市值暴露（权重×log 市值，净）。"""
+    out = {"max_industry_net": 0.0, "size_net": 0.0}
+    if w.empty:
+        return out
+    if industry is not None:
+        ind = industry.reindex(w.index).fillna("UNKNOWN").astype(str)
+        net = w.groupby(ind).sum()
+        if len(net):
+            out["max_industry_net"] = float(net.abs().max())
+    if log_mv is not None:
+        mv = log_mv.reindex(w.index).astype(float).fillna(0.0)
+        out["size_net"] = float((w * mv).sum())
+    return out
+
+
 def _drift_weights(w: pd.Series, rets: pd.DataFrame, start: int, end: int) -> pd.Series:
     """从 start 到 end（不含 end）按日收益漂移权重。"""
     cur = w.copy()
@@ -197,6 +310,10 @@ def simulate(panel, factor: pd.DataFrame, cfg: PortfolioConfig | None = None,
     sel_mask, trade_mask = investable_masks(panel, names, cfg)
     idxs = rebalance_indices(panel, start, end, cfg.rebalance_days)
     cost_rate = float(cfg.cost_bp) / 10000.0
+    industry = panel.load_meta.get("industry") if hasattr(panel, "load_meta") else None
+    log_mv = None
+    if "total_mv" in panel.fields:
+        log_mv = np.log(panel.fields["total_mv"].where(panel.fields["total_mv"] > 0))
 
     nav = 1.0
     nav_dates: list[str] = []
@@ -215,7 +332,12 @@ def simulate(panel, factor: pd.DataFrame, cfg: PortfolioConfig | None = None,
             prior = pd.Series(0.0, index=panel.codes, dtype=float)
         else:
             prior = _drift_weights(w, rets, prev_entry + 1, entry)
-        target = _target_weights(
+        target = _target_weights_constrained(
+            factor.iloc[i], sel_mask.iloc[i] & trade_mask.iloc[entry], cfg,
+            prior=None if w.empty else prior,
+            industry=industry,
+            size_values=None if log_mv is None else log_mv.iloc[i],
+        ) if (cfg.industry_neutral or cfg.size_neutral) else _target_weights(
             factor.iloc[i], sel_mask.iloc[i] & trade_mask.iloc[entry], cfg,
             prior=None if w.empty else prior,
         )
@@ -232,12 +354,18 @@ def simulate(panel, factor: pd.DataFrame, cfg: PortfolioConfig | None = None,
         traded = base_w + alpha * (tgt - base_w)
         actual_turn = float(0.5 * (traded - base_w).abs().sum())
         cost = actual_turn * cost_rate
+        expo = _portfolio_exposures(
+            traded, industry,
+            None if log_mv is None else log_mv.iloc[entry],
+        )
         trades.append({
             "signal_date": str(panel.dates[i]), "entry_date": str(panel.dates[entry]),
             "target_turnover": one_way, "actual_turnover": actual_turn,
             "alpha": alpha, "cost": cost,
             "n_long": int((traded > 0).sum()), "n_short": int((traded < 0).sum()),
             "gross": float(traded.abs().sum()),
+            "max_industry_net": expo["max_industry_net"],
+            "size_net": expo["size_net"],
         })
         w = traded
         nav *= (1.0 - cost)
@@ -293,6 +421,11 @@ def summarize(nav: pd.Series, rets: pd.Series, bench: pd.Series, trades: list[di
         "quantile": cfg.quantile,
         "buffer_quantile": cfg.buffer_quantile,
         "turnover_penalty": cfg.turnover_penalty,
+        "industry_neutral": cfg.industry_neutral,
+        "size_neutral": cfg.size_neutral,
+        "size_buckets": cfg.size_buckets,
         "rebalance_days": cfg.rebalance_days,
         "gross": cfg.gross,
+        "avg_max_industry_net": round(float(np.mean([t.get("max_industry_net", 0.0) for t in trades])), 6) if trades else None,
+        "avg_abs_size_net": round(float(np.mean([abs(t.get("size_net", 0.0)) for t in trades])), 6) if trades else None,
     }
