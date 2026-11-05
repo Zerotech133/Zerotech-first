@@ -189,7 +189,9 @@ function bt2Headers(extra){
   return h;
 }
 function promptBt2Token(){
-  const t=(prompt("回测写入需门户 token（PORTAL_API_TOKEN 或 C:/Temp/portal_api_token 的内容）。仅存本页会话。","")||"").trim();
+  const t=(prompt("回测写入需门户 token。取 C:/项目/_vault/secrets/portal_api_token 的内容"
+    +"（服务端按 PORTAL_API_TOKEN 环境变量 → 该文件 → 旧 C:/Temp/portal_api_token 的优先级读取；"
+    +"旧文件内容可能与实际生效值不一致，照它输入会一直 403）。仅存本页会话。","")||"").trim();
   if(t) sessionStorage.setItem("bt2Token",t);
   return !!t;
 }
