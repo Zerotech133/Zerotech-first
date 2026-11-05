@@ -295,10 +295,15 @@ def build_brief(raw: Dict[str, Any], clock: datetime) -> Dict[str, Any]:
                 as_of = _parse_as_of(row.get("as_of"))
                 bucket = _freshness_bucket(as_of, clock)
                 sid = f"alert:{name}"
-                if row.get("status") != "ok":
+                status = row.get("status")
+                if status in ("retired", "disabled"):
+                    # 2026-11-05 OPS-COUNCIL-RETIRE-20261105：已退役源不再参与
+                    # 晨报建议；历史页仍可访问，避免每天重复“需回原账本核对”。
+                    continue
+                if status not in ("ok", "empty"):
                     suggestions.append(_suggestion(
                         sid, "情报", 2,
-                        f"信号源 {name} 状态 {row.get('status', 'unknown')}，需回原账本核对",
+                        f"信号源 {name} 状态 {status or 'unknown'}，需回原账本核对",
                         "/api/alerts", as_of))
                 elif bucket != "ok":
                     label = "偏旧(>48h)" if bucket == "stale" else "未知/过期"
