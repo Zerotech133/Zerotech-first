@@ -1049,6 +1049,13 @@ color:#fff;font-size:13.5px;cursor:pointer}
     def do_POST(self):
         """v2.5：标注保存（首个 POST 端点，其余页面均为只读 GET）。"""
         path = self.path.split("?", 1)[0]
+        # H1（2026-11-03）：个股分析内部网关（Hermes MCP 专用；loopback + 专属 token，
+        # 模块内 fail-closed 鉴权；不走 X-Portal-Token/session，保持工具面独立）。
+        if path.startswith('/api/analysis/internal/'):
+            import api_analysis_internal
+            api_analysis_internal.handle_post(
+                self, path, self.path.split("?", 1)[1] if "?" in self.path else "")
+            return
         # P142：早分支变更端点先过 token 闸门（本机直连/页面自动带 token；
         # 反代+局域网须 X-Portal-Token）。403 语义与 :1042 闸门保持一致。
         if path.startswith(_EARLY_TOKEN_PREFIXES) and not self._check_portal_token():
@@ -1705,6 +1712,11 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # 知识库问答 HTTP（L2 批准 2026-11-01；独立文件 api_kb_qa.py，预接线已测试）
             import api_kb_qa
             api_kb_qa.handle_get(self, path, qs)
+            return
+        if path.startswith('/api/analysis/internal/'):
+            # H1（2026-11-03）：个股分析内部只读网关（Hermes MCP；loopback + 专属 token）
+            import api_analysis_internal
+            api_analysis_internal.handle_get(self, path, qs)
             return
         if path.startswith('/api/analysis/'):
             # K-STOCK-ANALYSIS-P0C2 个股分析只读入口（独立文件 api_analysis.py）
