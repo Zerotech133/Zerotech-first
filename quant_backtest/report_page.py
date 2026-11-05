@@ -475,12 +475,13 @@ def _strategy_docs_html():
             )
             first = False
     return (
-        "<section><h2>策略参数说明 <span class='mu' style='font-size:12px'>"
-        "· 默认 vs 当前生效（季度自动调参）</span></h2><table><tr>"
+        "<section><h2>策略参数说明（回测口径 <span class='mu' style='font-size:12px'>"
+        "· 默认 vs 当前生效（季度自动调参）· 非交易建议</span>）</h2><table><tr>"
         "<th style='width:27%'>策略 / 逻辑</th><th>参数</th><th>含义</th>"
         "<th>默认</th><th>当前</th></tr>" + "".join(trs) + "</table>"
         "<p class='leg'>信号均为次日开盘生效（T+1，避免未来函数）· 仅做多策略"
-        " · ★调参 = 当前值来自全池寻优，与代码默认不同</p></section>"
+        " · ★调参 = 当前值来自全池寻优，与代码默认不同"
+        " · 以上规则描述仅说明回测引擎如何撮合，不构成交易建议</p></section>"
     )
 
 
