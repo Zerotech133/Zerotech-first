@@ -36,6 +36,11 @@ STATE = os.path.join(HERE, "data", "morning_report_state.json")
 NEWS_DIR = os.path.abspath(os.path.join(HERE, "..", "news_collector"))
 SEND_PY = os.path.join(NEWS_DIR, "send_feishu.py")
 DISCLAIMER = "个人研究晨报·非投资建议"
+# 仓位档块开关（v8 文案治理，老田 11-06 03:2x 裁定）：
+# 系统定位=结构标注工具，研判卡不输出仓位建议，故默认关闭「💼 仓位档／分批／
+# 调仓／🔄 动态调仓」四行。POS_SIZE/POS_MGMT/dynamic_pos 数据与逻辑一律保留
+# （chanlun_market 内不动），置 True 即整块恢复，无需改其他任何文件。
+SHOW_POS_BLOCK = False
 # K-STOCK-357/358 晨报群同步目标（判例同 K-STOCK-355 速报同步）
 # K-STOCK-403：id 改由 push_targets 单一事实源按名解析
 sys.path.insert(0, NEWS_DIR)
@@ -105,15 +110,17 @@ def _sec_market():
     )
     _plan = CM.trade_plan(brief)
     if _plan:
-        _m = _plan["mgmt"]
-        lines.append("  💼 仓位档：%s（%s）" % (_plan["size"], _plan["ladder"]))
-        lines.append("     分批：%s ｜ 上限：%s" % (_m["steps"], _m["cap"]))
-        lines.append("     调仓：%s" % _m["rebalance"])
-        _dyn = CM.dynamic_pos(brief)
-        lines.append(
-            "     🔄 动态调仓：目标 %s（≤%d%%）｜ 动作：%s"
-            % (_dyn["name"], _dyn["pct"], _dyn["action"])
-        )
+        # 仓位建议块：默认关（见文件头 SHOW_POS_BLOCK 说明）。卡片只留结构触发位。
+        if SHOW_POS_BLOCK:
+            _m = _plan["mgmt"]
+            lines.append("  💼 仓位档：%s（%s）" % (_plan["size"], _plan["ladder"]))
+            lines.append("     分批：%s ｜ 上限：%s" % (_m["steps"], _m["cap"]))
+            lines.append("     调仓：%s" % _m["rebalance"])
+            _dyn = CM.dynamic_pos(brief)
+            lines.append(
+                "     🔄 动态调仓：目标 %s（≤%d%%）｜ 动作：%s"
+                % (_dyn["name"], _dyn["pct"], _dyn["action"])
+            )
         if _plan["buy"]:
             lines.append("     结构偏多：%s" % " ｜ ".join(_plan["buy"]))
         if _plan["sell"]:
