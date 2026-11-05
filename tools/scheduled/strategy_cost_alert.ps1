@@ -12,11 +12,24 @@ param(
 # -AnyDay bypasses the trading-day check.
 
 $ErrorActionPreference = "Continue"
+# Python emits UTF-8; make Windows PowerShell 5.1 decode native output as UTF-8
+# instead of the ANSI code page, otherwise the log is mojibake.
+try {
+    [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
+    $OutputEncoding = [Console]::OutputEncoding
+} catch {
+    # Keep running even if the host refuses console encoding changes.
+}
 $Repo = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 $Py = Join-Path (Split-Path $Repo -Parent) "py312\python.exe"
-$Guard = Join-Path $Repo "tools\research\strategy_cost_guard.py"
-$TradingDay = Join-Path $Repo "tools\research\trading_day.py"
+# Use ASCII relative paths for Python args: Windows PowerShell 5.1 converts
+# native-process arguments through the ANSI code page, which corrupts the
+# Chinese repo path before Python sees it. Run from the repo root instead.
+Set-Location -LiteralPath $Repo
+$Guard = "tools\research\strategy_cost_guard.py"
+$TradingDay = "tools\research\trading_day.py"
 $Live = Join-Path $Repo "research\reports\strategy_live_cost.json"
+$LiveArg = "research\reports\strategy_live_cost.json"
 $Log = "C:\Temp\strategy_cost_alert.log"
 $Today = Get-Date
 
@@ -41,7 +54,7 @@ if ($CostBp -ne "") {
 } elseif ($CostFile -ne "") {
     $argList += @("--from-file", $CostFile)
 } elseif (Test-Path $Live) {
-    $argList += @("--from-file", $Live)
+    $argList += @("--from-file", $LiveArg)
     $usingLiveFile = $true
 } else {
     Write-Log "SKIP: no cost input (use -CostBp / -CostFile or write $Live)"

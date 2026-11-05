@@ -34,7 +34,8 @@ from factor_portfolio import (  # noqa: E402
 
 
 def _load_cost_file(path: Path) -> tuple[float, str]:
-    text = path.read_text(encoding="utf-8").strip()
+    # utf-8-sig accepts both plain UTF-8 and Windows PowerShell BOM output.
+    text = path.read_text(encoding="utf-8-sig").strip()
     keys = ("cost_bp", "live_cost_bp", "estimated_cost_bp", "all_in_cost_bp")
     try:
         data = json.loads(text)

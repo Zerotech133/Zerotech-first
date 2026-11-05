@@ -90,6 +90,31 @@ def test_cli_from_file_json(tmp_path):
     assert guard.main(["--from-file", str(p), "--json", "--no-write"]) == 2
 
 
+def test_cli_from_file_utf8_bom(tmp_path):
+    p = tmp_path / "live_cost_bom.json"
+    p.write_bytes(b"\xef\xbb\xbf" + json.dumps({"live_cost_bp": 130}).encode("utf-8"))
+    assert guard.main(["--from-file", str(p), "--no-write"]) == 2
+
+
 def test_cli_missing_input_returns_4(monkeypatch):
     monkeypatch.delenv("STRATEGY_COST_BP", raising=False)
     assert guard.main(["--no-write"]) == 4
+
+
+def test_send_feishu_only_on_warning(monkeypatch):
+    calls = []
+
+    def fake_send(text):
+        calls.append(text)
+        return True
+
+    fake = type(sys)("send_feishu")
+    fake.send_text = fake_send
+    monkeypatch.setitem(sys.modules, "send_feishu", fake)
+
+    assert guard.main(["--cost-bp", "120", "--send", "--no-write"]) == 2
+    assert len(calls) == 1
+    assert "WARNING" in calls[0]
+
+    assert guard.main(["--cost-bp", "80", "--send", "--no-write"]) == 0
+    assert len(calls) == 1
