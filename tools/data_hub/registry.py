@@ -23,6 +23,7 @@ DOMAINS = {
     "overseas",
     "crypto",
     "alt",
+    "community",
 }
 LICENSES = {"public_api", "public_page", "open_license", "paid", "unknown"}
 STATUSES = {"verified", "reachable_guarded", "unreachable", "planned"}

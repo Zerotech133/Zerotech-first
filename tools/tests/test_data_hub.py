@@ -213,3 +213,26 @@ def test_collect_rejects_unknown_adapter():
 
     with pytest.raises(ValueError):
         collect.collect("不存在", "x")
+
+def test_extract_balanced_json_guba_shape():
+    from data_hub import collect
+
+    html = '<script>var article_list={"re":[{"post_id":1,"post_title":"a","post_publish_time":"2026-11-05 09:00:00"}],"count":1,"bar_name":"x"};more</script>'
+    payload = collect._extract_balanced_json(html, "var article_list=")
+    assert payload["re"][0]["post_id"] == 1
+    assert payload["bar_name"] == "x"
+
+
+def test_check_frame_feed_allows_dup_timestamps_with_key():
+    import pandas as pd
+
+    from data_hub import collect
+
+    df = pd.DataFrame(
+        {
+            "post_id": ["1", "2", "3"],
+            "publish_time": pd.to_datetime(["2026-11-05 09:00:00"] * 3),
+        }
+    )
+    verdict = collect.check_frame(df, date_col="publish_time", key_cols=("post_id",))
+    assert verdict["ok"] is True  # 帖子流同分钟多帖是常态，主键唯一即可

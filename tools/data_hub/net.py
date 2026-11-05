@@ -113,6 +113,7 @@ def fetch(
     params: dict | None = None,
     method: str = "GET",
     expect_json: bool = False,
+    max_text: int = 20000,
     source_id: str | None = None,
 ) -> FetchResult:
     """单次取数。policy='auto' 时实测择优并记忆。
@@ -158,7 +159,8 @@ def fetch(
                     result["ok"] = False
                     result["error"] = "invalid_json"
             else:
-                result["text"] = body[:20000]
+                # max_text 只是给探针省内存；适配器传大值拿全量正文
+                result["text"] = body[:max_text] if max_text else body
             if result["ok"] and policy == "auto" and source_id:
                 remember_egress(source_id, pol, latency_ms=latency)
             if result["ok"]:

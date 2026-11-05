@@ -8,9 +8,14 @@
 - 落盘前必须过 check_frame：行数、日期列、主键唯一、空行。不过就拒绝落盘。
 
 已实测可用的适配器（2026-11-05）：
-  stooq      海外日线 CSV，无鉴权，直连 200
-  eastmoney  A 股 K 线 JSON，直连 200（K 线域 push2his）
-  sina       A 股实时快照，必须带 Referer
+  stooq          海外日线 CSV，无鉴权，直连 200
+  eastmoney      A 股 K 线 JSON，直连 200（K 线域 push2his）
+  sina           A 股实时快照，必须带 Referer
+  guba           股吧帖子流（嵌入 JSON var article_list），必须带 Referer
+  binance_square 币安广场帖子流，必须走本地代理；代理未开时报错退出（脚手架，
+                 端点未实测——2026-11-05 实测时 7890 未监听）
+社区数据的正式批量采集仍以既有管道为准：雪球走 xq_pump（5 类抽取 +
+游标增量），news_collector 承担快讯。本文件适配器定位是探针级最小闭环。
 """
 
 from __future__ import annotations
@@ -117,10 +122,134 @@ def fetch_sina_quote(codes: str) -> tuple[pd.DataFrame, str, str]:
     return pd.DataFrame(records), url, res.get("policy", "direct")
 
 
+# 帖子流适配器：日期列/主键不同，且水位要保留时分秒（日粒度会重复落同一日帖子）
+FEED_META = {
+    "guba": {"date_col": "publish_time", "key_cols": ("post_id",), "wm_full": True},
+    "binance_square": {"date_col": "publish_time", "key_cols": ("post_id",), "wm_full": True},
+}
+
+
+def _extract_balanced_json(text: str, marker: str) -> dict:
+    """从 HTML 里抠 `var xxx={...}` 的完整 JSON（平衡括号，防正则截断）。"""
+    i = text.find(marker)
+    if i < 0:
+        raise RuntimeError(f"页面无 {marker!r} 锚点")
+    j = text.find("{", i)
+    depth = 0
+    end = None
+    for k in range(j, len(text)):
+        c = text[k]
+        if c == "{":
+            depth += 1
+        elif c == "}":
+            depth -= 1
+            if depth == 0:
+                end = k + 1
+                break
+    if end is None:
+        raise RuntimeError(f"{marker!r} JSON 未闭合")
+    return json.loads(text[j:end])
+
+
+def fetch_guba(code: str, *, since: str | None = None, pages: int = 1) -> tuple[pd.DataFrame, str, str]:
+    """股吧帖子流。code 形如 600519。必须带 Referer（不带 403/风控）。
+
+    数据锚点：list 页内嵌 `var article_list={...}`（实测 84 帖/页，
+    含 post_id/标题/作者/发布时间/评论数/点击数/多空倾向）。
+    只解析第一页；增量靠 since 水位（帖子时间戳），页内按 post_id 去重。
+    """
+    url = f"https://guba.eastmoney.com/list,{code}.html"
+    res = net.fetch(
+        url,
+        policy="direct",
+        timeout=(6.0, 15.0),
+        headers={"Referer": "https://guba.eastmoney.com/"},
+        max_text=500000,
+        source_id="collect:guba",
+    )
+    if not res.get("ok"):
+        raise RuntimeError(f"guba 取数失败: {res.get('error') or res.get('status')}")
+    payload = _extract_balanced_json(res["text"], "var article_list=")
+    rows = []
+    for it in payload.get("re") or []:
+        rows.append(
+            {
+                "post_id": str(it.get("post_id") or ""),
+                "code": code,
+                "bar_name": payload.get("bar_name") or it.get("stockbar_name"),
+                "title": it.get("post_title"),
+                "user": it.get("user_nickname"),
+                "publish_time": it.get("post_publish_time"),
+                "comments": it.get("post_comment_count"),
+                "clicks": it.get("post_click_count"),
+                "bullish_bearish": it.get("bullish_bearish"),
+                "post_type": it.get("post_type"),
+                "post_url": it.get("art_unique_url"),
+            }
+        )
+    df = pd.DataFrame(rows)
+    if df.empty:
+        raise RuntimeError("guba 返回 0 帖（可能触发风控，检查 Referer）")
+    df["publish_time"] = pd.to_datetime(df["publish_time"], errors="coerce")
+    df = df.dropna(subset=["publish_time"]).drop_duplicates(subset=["post_id"])
+    if since:
+        df = df[df["publish_time"] >= pd.Timestamp(since)]
+    return df.sort_values("publish_time").reset_index(drop=True), url, res.get("policy", "direct")
+
+
+def fetch_binance_square(dataset: str, *, since: str | None = None) -> tuple[pd.DataFrame, str, str]:
+    """币安广场帖子流（脚手架，端点未实测：2026-11-05 代理 7890 未监听）。
+
+    dataset 目前忽略（全站 feed）。必须走本地代理（直连被 RESET）。
+    端点为公开抓取实践中的候选，首个返回可解析列表的胜出；
+    代理未开时 net.fetch 直接报错，属预期失败。
+    """
+    candidates = [
+        "https://www.binance.com/bapi/composite/v1/public/cms/article/catalog/list/query?catalogId=all&pageNo=1&pageSize=30",
+        "https://www.binance.com/bapi/composite/v1/public/community/post/feed?page=1&pageSize=30",
+    ]
+    last_err = None
+    for url in candidates:
+        res = net.fetch(url, policy="local", timeout=(8.0, 20.0), expect_json=True,
+                        source_id="collect:binance_square")
+        if not res.get("ok"):
+            last_err = f"{url} -> {res.get('error') or res.get('status')}"
+            continue
+        data = res.get("json") or {}
+        items = data.get("data") or data.get("list") or data.get("articles") or []
+        if isinstance(items, dict):
+            items = items.get("list") or items.get("items") or []
+        if not items:
+            last_err = f"{url} -> 200 但无可解析列表"
+            continue
+        rows = []
+        for it in items:
+            rows.append(
+                {
+                    "post_id": str(it.get("id") or it.get("articleId") or ""),
+                    "title": it.get("title"),
+                    "author": (it.get("user") or {}).get("nickName") or it.get("author"),
+                    "publish_time": it.get("publishDate") or it.get("createTime"),
+                    "likes": it.get("likeCount"),
+                    "comments": it.get("commentCount"),
+                    "post_url": it.get("shareUrl") or it.get("url"),
+                }
+            )
+        df = pd.DataFrame(rows)
+        df["publish_time"] = pd.to_datetime(df["publish_time"], errors="coerce", format="mixed")
+        df = df.dropna(subset=["publish_time"]).drop_duplicates(subset=["post_id"])
+        if since:
+            df = df[df["publish_time"] >= pd.Timestamp(since)]
+        return df.sort_values("publish_time").reset_index(drop=True), url, "local"
+    raise RuntimeError(f"binance_square 无可用端点（检查本地代理 7890）：{last_err}")
+
+
 ADAPTERS = {
     "stooq": fetch_stooq,
     "eastmoney": fetch_eastmoney_kline,
     "sina": fetch_sina_quote,
+    "guba": fetch_guba,
+    "binance_square": fetch_binance_square,
 }
 
 
@@ -133,7 +262,8 @@ def check_frame(df: pd.DataFrame, *, date_col: str = "date", key_cols: tuple[str
     if date_col in df.columns:
         if df[date_col].isna().any():
             issues.append(f"{date_col} 含无法解析的值 {int(df[date_col].isna().sum())} 行")
-        else:
+        elif not key_cols:
+            # 有主键列的帖子流里时间重复是常态（多人同分钟发帖），主键去重即可
             dup = int(df[date_col].duplicated().sum())
             if dup:
                 issues.append(f"{date_col} 重复 {dup} 行")
@@ -173,7 +303,8 @@ def collect(adapter: str, dataset: str, *, since: str | None = None, dry_run: bo
     fn = ADAPTERS[adapter]
     df, url, policy = fn(dataset, since=since, **kw) if adapter != "sina" else fn(dataset, **kw)
 
-    date_col = "quote_time" if adapter == "sina" else "date"
+    meta = FEED_META.get(adapter, {})
+    date_col = meta.get("date_col") or ("quote_time" if adapter == "sina" else "date")
     if since and (df is None or df.empty):
         # 增量拉取常见结果：上游没有新行。这不是故障，不落盘也不算失败。
         return {
@@ -183,7 +314,7 @@ def collect(adapter: str, dataset: str, *, since: str | None = None, dry_run: bo
             "status": "no_new",
             "check": {"ok": True, "issues": []},
         }
-    verdict = check_frame(df, date_col=date_col)
+    verdict = check_frame(df, date_col=date_col, key_cols=meta.get("key_cols", ()))
     result = {
         "dataset": key,
         "rows": int(len(df)),
@@ -232,7 +363,10 @@ def collect(adapter: str, dataset: str, *, since: str | None = None, dry_run: bo
     last = df[date_col].max()
     wm_value = None
     try:
-        wm_value = pd.Timestamp(last).date().isoformat()
+        if meta.get("wm_full"):
+            wm_value = pd.Timestamp(last).isoformat(timespec="seconds")
+        else:
+            wm_value = pd.Timestamp(last).date().isoformat()
     except (TypeError, ValueError):
         wm_value = None
     if wm_value:

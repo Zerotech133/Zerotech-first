@@ -197,9 +197,13 @@ sources:
     proxy_policy: direct
     status: reachable_guarded
     adapter: http_json
-    covers: [行情, 资金流, 北向, 业绩预告, 内部交易, 热帖讨论]
-    linked_tables: [xq_]
+    covers: [行情, 资金流, 北向, 业绩预告, 内部交易, 热帖讨论, 公开帖, 用户时间线]
+    linked_tables: [xq_status, xq_hot_post, xq_quote_snap]
     probe: {url: "https://stock.xueqiu.com/v5/stock/quote.json?symbol=SH600000", expect: 200}
+    note: >-
+      社区数据由 quant_backtest/xq_pump 承载（posts/hot/quotes/kline/timeline
+      5 类抽取 + 游标增量 + 403 熔断），token 注入走 xq_tokens。探针 403 属
+      预期（需 cookie），业务链路已验证，不要因为探针 guarded 就判源不可用。
     note: "实测 400（需先取 xq_a_token Cookie），站点可达；项目内 xueqiu_sync.py 已实现登录态"
 
   - id: xtcloud
@@ -272,17 +276,21 @@ sources:
   # ── 资金、情绪与舆情 ────────────────────────────────────────────
   - id: guba
     name: 东方财富股吧
-    domain: flow
+    domain: community
     home: https://guba.eastmoney.com
     license: public_page
-    freq: EVENT
-    update_window: "实时"
+    freq: RT
+    update_window: "7x24 帖子流"
     proxy_policy: direct
     status: verified
     adapter: http_html
-    covers: [个股讨论帖, 人气排名, 情绪文本]
+    covers: [个股帖子流, 帖子标题/作者/时间/评论数/点击数, 多空倾向]
     linked_tables: [guba]
-    probe: {url: "https://guba.eastmoney.com/list,600000.html", expect: 200}
+    probe: {url: "https://guba.eastmoney.com/list,600519.html", expect: 200, contains: "article_list"}
+    note: >-
+      实测（2026-11-05）：list 页 200/1.0s，内嵌 var article_list JSON
+      84 帖/页全字段；必须带 Referer。gbapi Articlelist 接口返回空列表
+      （风控），勿走 API 通道。适配器 tools/data_hub/collect.py:guba。
 
   # ── 宏观与产业 ──────────────────────────────────────────────────
   - id: nbs
@@ -491,6 +499,24 @@ sources:
     linked_tables: [crypto]
     probe: {url: "https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT", expect: 200}
     note: 实测直连与 env 代理均不通，走本地 7890 代理 200/1.5s；内地网络须经本地代理
+  - id: binance_square
+    name: 币安广场（Binance Square）
+    domain: community
+    home: https://www.binance.com/en/square
+    license: public_page
+    freq: RT
+    update_window: "7x24"
+    proxy_policy: local
+    status: reachable_guarded
+    adapter: http_json
+    covers: [加密社区帖子流, 热帖, 作者互动数]
+    linked_tables: []
+    probe: {url: "https://www.binance.com/bapi/composite/v1/public/cms/article/catalog/list/query?catalogId=all&pageNo=1&pageSize=5", expect: 200}
+    note: >-
+      必须走本地代理 127.0.0.1:7890（直连 RESET）。2026-11-05 实测时代理未
+      监听（快安未开），端点未完成验证，status=pending_proxy；代理开启后
+      跑 collect --adapter binance_square 验证并翻转状态。
+
 
   - id: okx
     name: OKX
