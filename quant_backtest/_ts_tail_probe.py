@@ -69,6 +69,7 @@ for api, params in CASES:
     tag = "OK n=%s" % r.get("n") if r.get("ok") else "FAIL %s" % r.get("err")
     print("%-16s %-52s %s" % (api, json.dumps(params, ensure_ascii=False), tag))
 
-with io.open(os.path.join(HERE, "_ts_tail_probe.json"), "w", encoding="utf-8") as fh:
+with io.open(os.path.join(HERE, "..", "reports", "data_hub", "ts_tail_probe_20261105.json"),
+             "w", encoding="utf-8") as fh:
     json.dump(out, fh, ensure_ascii=False, indent=1)
-print("written _ts_tail_probe.json")
+print("written reports/data_hub/ts_tail_probe_20261105.json")
