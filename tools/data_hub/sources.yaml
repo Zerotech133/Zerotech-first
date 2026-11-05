@@ -69,6 +69,11 @@ freshness_sla_overrides:
   stk_managers: 45          # 管理层变动，低频
   ts_index_monthly: 45      # 指数月线
   ts_index_member_all: 45   # 指数成分，按月调整
+  # 2026-11-05 长尾补位实测：以下三张标 D 但实际是季/月频，按 D(3d) 判定
+  # 会天天误报，且逼着兜底批每天白拉（实测见 ts_tail_sync 文件头）
+  express: 45               # 业绩快报：2026Q3 全市场仅 11 家，Q2 仅 66 家
+  forecast: 45              # 业绩预告：披露季集中出数，日常零星
+  index_weight: 40          # 指数成分权重：按月发布，当月空片属未发布
 
 # 不参与时效判定（探针表/一次性快照，本身不代表覆盖）
 freshness_exempt:
@@ -232,10 +237,11 @@ sources:
     proxy_policy: direct
     status: verified
     adapter: tushare
-    covers: [行情, 财务三表, 指标, 分红, 股东, 融资融券, 龙虎榜, 期货, 期权, 基金, 港股, 美股, 宏观, 交易日历]
-    linked_tables: [ts_, trade_cal]
+    covers: [行情, 财务三表, 指标, 分红, 股东, 融资融券, 龙虎榜, 期货, 期权, 基金, 港股, 美股, 宏观, 交易日历, 互动易问答, 业绩快报/预告]
+    linked_tables: [ts_, trade_cal, irm_qa_sh, irm_qa_sz, express, forecast,
+                    hk_basic, hk_daily, hk_hold, moneyflow_hsgt, top_inst, index_weight]
     probe: {url: "https://api.tushare.pro", expect: 200, contains: "code"}
-    note: "实测直连 200/1.1s，走 env 代理 12.3s（11 倍差）；catalog 中 66 张表来源"
+    note: "实测直连 200/1.1s，走 env 代理 12.3s（11 倍差）；catalog 中 66 张表来源。2026-11-05 补位：10 张长尾表有 7 张原不在 linked_tables（无 ts_ 前缀），已逐表登记"
 
   - id: cninfo
     name: 巨潮资讯

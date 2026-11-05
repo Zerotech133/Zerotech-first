@@ -1695,6 +1695,10 @@ _CATALOG_STATIC_V31 = {
     "ts_etf_basic", "ts_fund_basic", "ts_index_basic", "ts_stock_basic",
     "ts_ths_index", "ts_bse_mapping", "ts_cb_basic", "ts_fut_basic",
     "ts_hk_basic", "ts_opt_basic", "ts_us_basic",
+    # 2026-11-05 长尾补位：tushare 侧 hk_basic 与 ts_hk_basic 同性质，
+    # date_col=list_date（上市日）不是数据水位，2781 只全量刷新也不会变新。
+    # 此前漏登记 → govern 长期报它滞后（10-28，8d），属口径误报而非欠采。
+    "hk_basic",
 }
 for _st_name in _CATALOG_STATIC_V31:
     # v32：部分表不在 TABLE_DEFS（构建期由 scan 生成），必须 setdefault 强制写入

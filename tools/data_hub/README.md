@@ -254,6 +254,53 @@ $PY -m tools.data_hub sentiment --no-fetch
 xq_pump 的链路是好的，等 IP/ token 解封后按同一套字段接进来即可
 （`xq_hot_post` 有 `title/time/comment_count`，映射成本很低）。
 
+## 七之三、长尾兜底批（tdx / tushare）：漂移检测，不复制清单
+
+批次化采集一定有长尾：表被分进 A/B/C/D 四批，批次表单里没有的表就永远
+轮不到。2026-11-05 对账实证两处：xtcloud 侧 84 张滞后 5-7 天，tushare 侧
+10 张停在 10-14~10-30——而 **TushareSync 任务夜夜 exit=0、当晚跑满 6695s**。
+
+**核心原则：兜底批不维护第二份表清单**。复制一份表名维护，两份必然漂移
+（原 owner 改批次，兜底批不知道）。改成"谁落后补谁"：
+
+| | tdx（`quant_backtest/tdx_tail_sync.py`） | tushare（`quant_backtest/ts_tail_sync.py`） |
+|---|---|---|
+| 判据 | 最新分片 mtime 落后 >36h | **数据水位**（读日期列取 max）落后 |
+| 为什么不同 | 分片按日命名，读数据贵 | 逐码/按日/按月混合，mtime 会被修复与空片污染 |
+| 执行 | `tdx_sync.py --tables` | 按表配方（api + 粒度 + 落盘方式）直拉 |
+| 幂等 | tdx_sync 自身幂等 | 已有分片跳过；0 行不落盘；part 去重追加 |
+
+**为什么 tushare 不用 mtime**：`index_weight/000906_202611.parquet` 是 0 行空片，
+mtime 是今晨 01:21（增量任务写的），文件名日期还是 11 月——三个信号都"新鲜"，
+数据其实是 10-30。按 mtime 判会永远漏掉它。空片还会让 freshness 假绿，
+`build_catalog` 的 K99/K100 已经踩过这个坑，兜底批沿用同一口径：**0 行不算水位**。
+
+**日频 vs 季频必须分开判**：
+
+- `daily`：有缺口交易日就补（行情/问答/持股/龙虎榜/北向）。
+- `periodic`：滞后超 SLA(45d) 才补（业绩快报/预告）。
+
+后者是实测逼出来的：`express` 2026Q3 全市场只有 **11 家**发快报
+（ann_date 20261009~20261021，本地已齐全），Q2 只有 66 家。按日频判欠账，
+兜底批会每天白拉 14 天、每天 0 行，然后把"上游没发"记成"采集漏了"。
+
+```bash
+cd quant_backtest
+$PY ts_tail_sync.py --dry-run      # 只看水位与缺口
+$PY ts_tail_sync.py                # 实跑（2026-11-05 首跑：8 表 / 25936 行 / 0 失败）
+$PY ts_tail_sync.py --tables top_inst --max-backfill-days 60
+```
+
+跑完必须 `build_catalog.py` → `govern --report` 才可见：govern 读的是
+catalog.freshness，不是磁盘 mtime（"补了数但对账没变"多半是忘了重建）。
+
+配套的口径修正（不是刷绿，是改错判）：
+
+- `express` / `forecast` → SLA 45d；`index_weight` → 40d（见 sources.yaml
+  `freshness_sla_overrides`）。
+- tushare `hk_basic` → `build_catalog._CATALOG_STATIC_V31` 加 static_no_date：
+  date_col 是 `list_date`（上市日），不是数据水位，刷新也不会变新。
+
 ## 八、加一个新源要改什么
 
 只改 `sources.yaml` 一条，不改代码：
