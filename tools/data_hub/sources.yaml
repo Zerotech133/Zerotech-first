@@ -59,6 +59,10 @@ freshness_sla_days:
   M: 35
   Q: 150
   A: 400
+  # 2026-11-05：catalog 里年度频率存在两套写法（A 2 张、Y 6 张）。
+  # 这里只登记 A，Y 的 6 张表会回落到默认 3 天——现在它们恰好都无日期列
+  # 未触发，但一旦补上 date_col 就会集体误报。两种写法都给年度档。
+  Y: 400
   EVENT: 15
 
 # 按表覆盖 SLA：catalog 的 freq 有相当一部分标错（低频表标成 D），
@@ -69,6 +73,22 @@ freshness_sla_overrides:
   stk_managers: 45          # 管理层变动，低频
   ts_index_monthly: 45      # 指数月线
   ts_index_member_all: 45   # 指数成分，按月调整
+  # 2026-11-05 长尾补位实测：以下三张标 D 但实际是季/月频，按 D(3d) 判定
+  # 会天天误报，且逼着兜底批每天白拉（实测见 ts_tail_sync 文件头）
+  express: 45               # 业绩快报：2026Q3 全市场仅 11 家，Q2 仅 66 家
+  forecast: 45              # 业绩预告：披露季集中出数，日常零星
+  index_weight: 40          # 指数成分权重：按月发布，当月空片属未发布
+  # 2026-11-05 xtcloud 长尾补位实测：以下为"事件发生才有新行"的表。
+  # 证据：补数后本地 max 日期未变，且远端 all_dt 只是表被重写、内容无新增
+  # （ts_pledge_detail 停 10-10 / ts_fund_manager 10-12 / ts_cb_price_chg 10-13
+  #  / ts_namechange 10-29 / ts_share_float 10-27），按 D(3d) 判必然天天误报。
+  ts_fund_manager: 45       # 基金经理变动
+  ts_stk_managers: 45       # 董监高变动
+  ts_pledge_detail: 45      # 股权质押明细（事件驱动）
+  ts_cb_price_chg: 45       # 转债转股价调整（事件驱动）
+  ts_cb_issue: 45           # 转债发行（事件驱动）
+  ts_namechange: 45         # 股票曾用名变更（事件驱动）
+  ts_share_float: 45        # 限售解禁（解禁日在前，公告日早于此）
 
 # 不参与时效判定（探针表/一次性快照，本身不代表覆盖）
 freshness_exempt:
@@ -232,10 +252,11 @@ sources:
     proxy_policy: direct
     status: verified
     adapter: tushare
-    covers: [行情, 财务三表, 指标, 分红, 股东, 融资融券, 龙虎榜, 期货, 期权, 基金, 港股, 美股, 宏观, 交易日历]
-    linked_tables: [ts_, trade_cal]
+    covers: [行情, 财务三表, 指标, 分红, 股东, 融资融券, 龙虎榜, 期货, 期权, 基金, 港股, 美股, 宏观, 交易日历, 互动易问答, 业绩快报/预告]
+    linked_tables: [ts_, trade_cal, irm_qa_sh, irm_qa_sz, express, forecast,
+                    hk_basic, hk_daily, hk_hold, moneyflow_hsgt, top_inst, index_weight]
     probe: {url: "https://api.tushare.pro", expect: 200, contains: "code"}
-    note: "实测直连 200/1.1s，走 env 代理 12.3s（11 倍差）；catalog 中 66 张表来源"
+    note: "实测直连 200/1.1s，走 env 代理 12.3s（11 倍差）；catalog 中 66 张表来源。2026-11-05 补位：10 张长尾表有 7 张原不在 linked_tables（无 ts_ 前缀），已逐表登记"
 
   - id: cninfo
     name: 巨潮资讯

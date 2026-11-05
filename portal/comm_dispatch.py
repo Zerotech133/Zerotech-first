@@ -50,6 +50,18 @@ SOURCE = "feishu_comm"
 DEFAULT_DEADLINE_MIN = 5
 ESCALATE_AFTER_MIN = 15
 
+# 2026-11-04 TICKET-PATROL-NOISE：hq-daily 是「A0 每日跑板」内部通知，不是客户派单。
+# 它由 tools/hq_daily_run.py 每日批量写入 bridge_inbox，若进入本巡视，会在 15 分钟阈值
+# 同时触发 10+ 张 stage2 卡（实测 06:31 一次 17 条），对 A0 形成卡片 burst。
+# 2026-11-05：ACAD1 S1–S5 安全默认通知及其 12:52 补发提醒也是内部通知（发给席位，
+# 不是客户派单），被误计入进度巡视后对 A0 反复催办；同样按 source 排除，内容仍留 inbox。
+# 这里按 source 排除；内容仍保留在 inbox，供 A0 通过日报/收件箱查看。
+NON_DISPATCH_SOURCES = frozenset({
+    "hq-daily",
+    "acad1-s1s5-safe-default-20261105",
+    "acad1-s1s5-safe-default-reminder-20261105",
+})
+
 _KIND_MAP = {
     "stock_consult": "task_request",
     "watch_setup": "task_request",
@@ -179,6 +191,8 @@ def sweep_overdue(now=None):
         try:
             rec = __import__("json").loads(f.read_text(encoding="utf-8"))
         except (OSError, ValueError):
+            continue
+        if str(rec.get("source") or "") in NON_DISPATCH_SOURCES:
             continue
         ts = _parse_ts(rec.get("submitted_at"))
         if ts is None:

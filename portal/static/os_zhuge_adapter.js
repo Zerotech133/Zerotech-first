@@ -231,7 +231,10 @@
           var asOf = parseAsOf(srow.as_of);
           var bucket = freshnessBucket(asOf, clock);
           var ssid = 'alert:' + name;
-          if (srow.status !== 'ok') {
+          // 2026-11-05 OPS-ZHUGE-EMPTY-WORDING：retired/disabled 是已下线的
+          // source，empty 是“合法的零警报”，都不能套 stale 的“需回原账本核对”。
+          if (srow.status === 'retired' || srow.status === 'disabled') continue;
+          if (srow.status !== 'ok' && srow.status !== 'empty') {
             suggestions.push(suggestion(
               ssid, '情报', 2,
               '信号源 ' + name + ' 状态 ' + (srow.status !== undefined ? srow.status : 'unknown') + '，需回原账本核对',

@@ -135,3 +135,48 @@ def test_run_eval_neutralize_integration(monkeypatch):
     assert report["meta"]["neutralization"]["industry"] is True
     assert report["meta"]["neutralization"]["size"] is True
     assert report["factors"]["mom20"]["family"].endswith("中性化")
+
+
+class _FakePITIndustry:
+    def __init__(self, panel: Panel):
+        self.panel = panel
+        self.calls: list[str] = []
+
+    def at(self, date):
+        self.calls.append(str(date))
+        half = len(self.panel.dates) // 2
+        pos = list(self.panel.dates).index(str(date)) if str(date) in list(self.panel.dates) else 0
+        labels = ["A", "B"] if pos < half else ["B", "A"]
+        return pd.Series([labels[i % 2] for i in range(len(self.panel.codes))],
+                         index=self.panel.codes, name="industry")
+
+
+def test_neutralize_uses_pit_industry_per_day():
+    panel = _panel(n_days=6, n_codes=12)
+    pit = _FakePITIndustry(panel)
+    # 构造与 PIT 行业强相关的原始因子
+    raw = pd.DataFrame(np.nan, index=panel.dates, columns=panel.codes)
+    for dt in panel.dates:
+        ind = pit.at(dt)
+        code = ind.map({"A": 1.0, "B": -1.0}).to_numpy(dtype=float)
+        raw.loc[dt] = code * 10.0 + np.linspace(0, 0.1, len(panel.codes))
+    out, info = neutralize_matrix(panel, raw, industry=True, size=False, min_obs=5,
+                                  industry_map=pit)
+    assert info["industry_source"] == "pit_sw_l1"
+    assert info["industry_available"] is True
+    for dt in panel.dates:
+        y = out.loc[dt]
+        ind = pit.at(dt)
+        means = y.groupby(ind).mean()
+        assert means.abs().max() < 1e-8
+    # 快照行业与 PIT 不同，说明确实没有用 snapshot
+    assert panel.load_meta["industry"].nunique() >= 2
+
+
+def test_build_neutralized_specs_records_pit_source():
+    panel = _panel(n_days=10, n_codes=12)
+    pit = _FakePITIndustry(panel)
+    specs, meta = build_neutralized_specs(panel, ["mom20"], industry=True, size=True,
+                                          min_obs=5, industry_map=pit)
+    assert meta["industry_source"] == "pit_sw_l1"
+    assert "mom20" in specs

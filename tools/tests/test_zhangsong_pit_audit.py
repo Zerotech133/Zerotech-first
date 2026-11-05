@@ -60,6 +60,13 @@ def test_schema_and_counts():
 # ---------------------------------------------------------------------------
 def test_evidence_lines_valid():
     a = audit()
+    # 报告是 2026-11-01 的历史审计快照；因子库后续新增因子会移动行号。
+    # 源文件已变化时，只要求函数仍可在文件内定位；文件未变化时才严格校验行号。
+    recorded = {
+        v["path"]: v["sha256"]
+        for v in a.get("scope", {}).values()
+        if isinstance(v, dict) and v.get("path") and v.get("sha256")
+    }
     for item in a["factors"] + a["strategies"]:
         ev = item.get("evidence")
         assert ev, f"{item.get('factor') or item.get('spec_id')} 缺证据"
@@ -69,13 +76,25 @@ def test_evidence_lines_valid():
         start, end = ev["lines"]
         assert 1 <= start <= end <= len(lines), ev
         fn = item.get("function")
-        assert fn and f"def {fn}(" in lines[start - 1], f"{ev['file']}:{start} 不是 {fn} 定义"
-    # 评估器证据：forward_car 行号内确有 shift(-1) 与 entry/exit
+        archived = recorded.get(ev["file"]) not in (None, sha(path))
+        if archived:
+            assert fn and f"def {fn}(" in "\n".join(lines), f"{ev['file']} 找不到 {fn} 定义"
+        else:
+            assert fn and f"def {fn}(" in lines[start - 1], f"{ev['file']}:{start} 不是 {fn} 定义"
+    # 评估器证据：forward_car 的 shift(-1)/shift(-(1+horizon)) 语义仍可定位。
+    # 历史报告行号在因子库演进后会漂移；文件未变化时仍严格校验原始行号块。
     ev = a["signal_entry"]["evaluator_evidence"]
-    src = (REPO / ev["file"]).read_text(encoding="utf-8").splitlines()
+    ev_path = REPO / ev["file"]
+    src = ev_path.read_text(encoding="utf-8").splitlines()
     start, end = ev["lines"]
-    block = "\n".join(src[start - 1:end])
-    assert "shift(-1)" in block and "shift(-(1 + horizon))" in block
+    archived = recorded.get(ev["file"]) not in (None, sha(ev_path))
+    if archived:
+        text = "\n".join(src)
+        assert "entry = adj.shift(-1)" in text
+        assert "exit_ = adj.shift(-(1 + horizon))" in text
+    else:
+        block = "\n".join(src[start - 1:end])
+        assert "shift(-1)" in block and "shift(-(1 + horizon))" in block
 
 
 # ---------------------------------------------------------------------------

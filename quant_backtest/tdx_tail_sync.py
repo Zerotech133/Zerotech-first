@@ -31,7 +31,14 @@ MANIFEST = OUT / "_manifest.json"
 SYNC_SCRIPT = HERE / "tdx_sync.py"
 
 # 与 tdx_sync.py 同口径：深表单独开关，兜底批永不碰
-SKIP_DEFAULT = {"ts_rt_min", "tdx_sector_min"}
+SKIP_DEFAULT = {
+    "ts_rt_min",        # 分钟深表 7167 万行
+    "tdx_sector_min",   # 分钟深表 3625 万行
+    # 2026-11-05：无业务日期列（只有 ts_code/con_code/con_name/_fetched_at），
+    # 1559 万行"当前成分快照"，增量无从判定 → 每天被选进来只会 SKIP 刷日志。
+    # 正确做法是月级全量快照刷新（3119 页/次），见 reports/data_hub/xtcloud_tail_20261105.md
+    "ts_ths_member",
+}
 
 LOG = Path(r"C:\Temp\tdx_tail_sync.log")
 
