@@ -402,8 +402,8 @@ def simulate(panel, factor: pd.DataFrame, cfg: PortfolioConfig | None = None,
             "trades": trades, "nav": nav_ser, "daily_returns": ret_ser,
             "benchmark": bench,
             "industry_source": (
-                "pit_sw_l1" if industry_map is not None
-                else ("snapshot" if industry is not None else None)
+                "pit_sw_" + str((getattr(industry_map, "source", None) or {}).get("level", "L1")).lower()
+                if industry_map is not None else "snapshot"
             )}
 
 

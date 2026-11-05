@@ -1,19 +1,25 @@
-"""PIT（point-in-time）申万一级行业映射。
+"""PIT（point-in-time）申万行业映射（L1/L2）。
 
 数据来源（Tushare 本地落盘）：
 
-- ``sw_l1_member``：``index_code, con_code, in_date, out_date, is_new``，记录每只
-  股票在申万一级行业指数中的纳入/剔除区间；``out_date`` 为空表示当前仍在。
+- ``sw_l1_member`` / ``sw_l2_member``：``index_code, con_code, in_date, out_date,
+  is_new``，记录每只股票在申万 L1/L2 行业指数中的纳入/剔除区间；
+  ``out_date`` 为空表示当前仍在。
 - ``sw_classify_l1``：``index_code, industry_name, level, ...``，指数代码到行业名。
 
 本模块只使用 ``in_date <= date <= out_date``（或 out_date 为空）的区间，并按
 ``in_date`` 取最新的一条，避免用当前行业快照回填历史（前视/幸存偏差）。
 
+申万 L2 历史成员由 ``tools/data_sources/tushare_sw_member.py`` 逐指数拉取：
+``sw_l2_member`` 覆盖 131 个当前/历史 L2 指数；少数已停用指数（2014 版分类）
+无成员数据，缺失代码由调用方按 ``UNKNOWN`` 处理。
+
 典型用法::
 
-    from pit_industry import load_sw_l1_industry
-    industry_map = load_sw_l1_industry()
-    ind = industry_map.at("2025-06-30")  # pd.Series(index=ts_code, values=行业名)
+    from pit_industry import load_sw_l1_industry, load_sw_l2_industry
+    l1 = load_sw_l1_industry()
+    l2 = load_sw_l2_industry()
+    ind = l2.at("2025-06-30")  # pd.Series(index=ts_code, values=行业名)
 
 研究用途，不依赖 factor_lib。
 """
@@ -28,9 +34,12 @@ import pandas as pd
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_TUSHARE_DIR = REPO_ROOT / "quant_backtest" / "data" / "tushare"
-DEFAULT_MEMBER_DIR = DEFAULT_TUSHARE_DIR / "sw_l1_member"
+DEFAULT_L1_MEMBER_DIR = DEFAULT_TUSHARE_DIR / "sw_l1_member"
+DEFAULT_L2_MEMBER_DIR = DEFAULT_TUSHARE_DIR / "sw_l2_member"
+DEFAULT_MEMBER_DIR = DEFAULT_L1_MEMBER_DIR
 DEFAULT_CLASSIFY_DIR = DEFAULT_TUSHARE_DIR / "sw_classify_l1"
 UNKNOWN_INDUSTRY = "UNKNOWN"
+LEVELS = ("L1", "L2", "L3")
 
 REQUIRED_MEMBER_COLS = {"index_code", "con_code", "in_date"}
 REQUIRED_CLASSIFY_COLS = {"index_code", "industry_name"}
@@ -63,9 +72,18 @@ def _read_partitioned_parquet(directory: Path | str, required: set[str]) -> pd.D
     return df
 
 
+def default_member_dir(level: str = "L1") -> Path:
+    level = str(level).upper()
+    if level == "L1":
+        return DEFAULT_L1_MEMBER_DIR
+    if level == "L2":
+        return DEFAULT_L2_MEMBER_DIR
+    return DEFAULT_TUSHARE_DIR / f"sw_{level.lower()}_member"
+
+
 @dataclass
 class PITIndustryMap:
-    """按交易日查询申万一级行业的 PIT 映射。"""
+    """按交易日查询申万行业的 PIT 映射。"""
 
     members: pd.DataFrame  # con_code, index_code, in_date, out_date, is_new, industry_name
     source: dict
@@ -123,17 +141,21 @@ class PITIndustryMap:
         }
 
 
-def load_sw_l1_industry(member_dir: Path | str | None = None,
-                        classify_dir: Path | str | None = None) -> PITIndustryMap:
-    """从本地 Tushare 落盘加载申万一级行业 PIT 映射。"""
-    member_dir = Path(member_dir) if member_dir else DEFAULT_MEMBER_DIR
+def load_sw_industry(level: str = "L1",
+                     member_dir: Path | str | None = None,
+                     classify_dir: Path | str | None = None) -> PITIndustryMap:
+    """从本地 Tushare 落盘加载申万 ``level`` 行业 PIT 映射。"""
+    level = str(level).upper()
+    if level not in LEVELS:
+        raise ValueError(f"level 必须是 {LEVELS} 之一")
+    member_dir = Path(member_dir) if member_dir else default_member_dir(level)
     classify_dir = Path(classify_dir) if classify_dir else DEFAULT_CLASSIFY_DIR
     members = _read_partitioned_parquet(member_dir, REQUIRED_MEMBER_COLS)
     classify = _read_partitioned_parquet(classify_dir, REQUIRED_CLASSIFY_COLS)
     if "level" in classify.columns:
-        l1 = classify[classify["level"].astype(str).str.upper() == "L1"]
-        if len(l1):
-            classify = l1
+        sub = classify[classify["level"].astype(str).str.upper() == level]
+        if len(sub):
+            classify = sub
     mapping = (
         classify.drop_duplicates("index_code")
         .set_index("index_code")["industry_name"]
@@ -147,6 +169,7 @@ def load_sw_l1_industry(member_dir: Path | str | None = None,
     return PITIndustryMap(
         members=members,
         source={
+            "level": level,
             "member_dir": str(member_dir),
             "classify_dir": str(classify_dir),
             "n_members": int(len(members)),
@@ -154,3 +177,15 @@ def load_sw_l1_industry(member_dir: Path | str | None = None,
             "n_industries": int(members["industry_name"].nunique()),
         },
     )
+
+
+def load_sw_l1_industry(member_dir: Path | str | None = None,
+                        classify_dir: Path | str | None = None) -> PITIndustryMap:
+    """从本地 Tushare 落盘加载申万一级行业 PIT 映射。"""
+    return load_sw_industry("L1", member_dir=member_dir, classify_dir=classify_dir)
+
+
+def load_sw_l2_industry(member_dir: Path | str | None = None,
+                        classify_dir: Path | str | None = None) -> PITIndustryMap:
+    """从本地 Tushare 落盘加载申万二级行业 PIT 映射。"""
+    return load_sw_industry("L2", member_dir=member_dir, classify_dir=classify_dir)

@@ -46,6 +46,14 @@ def _design_for_day(industry: pd.Series | None, ind_dummies: pd.DataFrame | None
     return np.hstack(parts) if len(parts) > 1 else parts[0]
 
 
+def _industry_source_name(industry: bool, industry_map, snapshot: bool) -> str | None:
+    """稳定标记行业来源：snapshot / pit_sw_l1 / pit_sw_l2。"""
+    if industry and industry_map is not None:
+        level = str((getattr(industry_map, "source", None) or {}).get("level", "L1")).lower()
+        return f"pit_sw_{level}"
+    return "snapshot" if snapshot else None
+
+
 def neutralize_matrix(panel, values: pd.DataFrame, *, industry: bool = True, size: bool = True,
                       min_obs: int = 30, eligible: bool = True,
                       industry_map=None) -> tuple[pd.DataFrame, dict]:
@@ -109,9 +117,8 @@ def neutralize_matrix(panel, values: pd.DataFrame, *, industry: bool = True, siz
         "n_obs": int(n_obs),
         "size_available": size_df is not None,
         "industry_available": (ind is not None) or bool(industry and industry_map is not None),
-        "industry_source": (
-            "pit_sw_l1" if (industry and industry_map is not None)
-            else ("snapshot" if ind is not None else None)
+        "industry_source": _industry_source_name(
+            industry, industry_map, ind is not None
         ),
     }
     return out, info
@@ -151,8 +158,7 @@ def build_neutralized_specs(panel, names: list[str] | tuple[str, ...], *,
         infos[name] = info
     return result, {"factors": infos, "industry": bool(industry), "size": bool(size),
                     "min_obs": int(min_obs),
-                    "industry_source": "pit_sw_l1" if (industry and industry_map is not None)
-                    else ("snapshot" if industry else None)}
+                    "industry_source": _industry_source_name(industry, industry_map, industry)}
 
 
 def parse_modes(text: str | None) -> tuple[bool, bool]:

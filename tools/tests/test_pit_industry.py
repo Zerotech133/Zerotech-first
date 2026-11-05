@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import pandas as pd
 
-from tools.research.pit_industry import PITIndustryMap, load_sw_l1_industry
+from tools.research.pit_industry import (
+    PITIndustryMap,
+    load_sw_industry,
+    load_sw_l1_industry,
+    load_sw_l2_industry,
+)
 
 
 def _map(rows: list[dict]) -> PITIndustryMap:
@@ -84,6 +89,36 @@ def test_load_from_partitioned_parquet(tmp_path):
     assert got.loc["000001.SZ"] == "农林牧渔"
     assert got.loc["000002.SZ"] == "电子"
     assert m.source["n_codes"] == 2
+
+
+def test_load_sw_l2_uses_level_filter(tmp_path):
+    member_dir = tmp_path / "sw_l2_member"
+    classify_dir = tmp_path / "sw_classify_l1"
+    member_dir.mkdir()
+    classify_dir.mkdir()
+    pd.DataFrame([
+        {"index_code": "801011.SI", "con_code": "000001.SZ", "in_date": "20200101",
+         "out_date": None, "is_new": "Y"},
+    ]).to_parquet(member_dir / "801011.SI.parquet", index=False)
+    pd.DataFrame([
+        {"index_code": "801010.SI", "industry_name": "农林牧渔", "level": "L1"},
+        {"index_code": "801011.SI", "industry_name": "林业", "level": "L2"},
+    ]).to_parquet(classify_dir / "part_0000.parquet", index=False)
+
+    m = load_sw_l2_industry(member_dir=member_dir, classify_dir=classify_dir)
+    assert m.at("20250101").loc["000001.SZ"] == "林业"
+    assert m.source["level"] == "L2"
+    assert m.source["n_industries"] == 1
+    assert load_sw_industry("L2", member_dir=member_dir, classify_dir=classify_dir).source["level"] == "L2"
+
+
+def test_invalid_level_rejected():
+    try:
+        load_sw_industry("L9")
+    except ValueError as exc:
+        assert "level" in str(exc)
+    else:  # pragma: no cover - 防御性断言
+        raise AssertionError("L9 应报错")
 
 
 def test_missing_industry_maps_to_unknown(tmp_path):
