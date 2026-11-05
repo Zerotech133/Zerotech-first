@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import shutil
 import sys
 from datetime import datetime
@@ -23,6 +24,86 @@ REG = REPO / "agent_platform/registry/learning_projects.json"
 REPORTS = REPO / "research/reports"
 SUPPORTED = {".docx", ".pdf", ".md", ".txt"}
 SKIP_NAMES = {"README.txt", "readme.txt", "说明.txt", "00_目录与交付说明.txt"}
+
+_PII_MODULE = None
+_PII_RULES: dict = {}
+PII_ENV = "INTEL_KG_PII_CLEAN"
+
+
+def _find_intel_kg_root() -> Path | None:
+    """定位 intel-kg 根（pii_policy 唯一来源）。"""
+    env = os.environ.get("INTEL_KG_ROOT")
+    here = Path(__file__).resolve()
+    cands: list[Path] = []
+    if env:
+        cands.append(Path(env))
+    for up in (2, 3, 4):
+        try:
+            base = here.parents[up]
+        except IndexError:
+            continue
+        cands += [base.parent / "intel-kg", base / "intel-kg"]
+    cands.append(Path(r"C:\项目\intel-kg"))
+    seen: set[Path] = set()
+    for c in cands:
+        try:
+            c = c.resolve()
+        except OSError:
+            continue
+        if c in seen:
+            continue
+        seen.add(c)
+        if (c / "tools" / "pii_policy" / "policy.py").is_file():
+            return c
+    return None
+
+
+def load_pii_policy():
+    """加载 pii_policy；返回 (module, rules) 或 (None, {})。"""
+    root = _find_intel_kg_root()
+    if root is None:
+        return None, {}
+    tools = str(root / "tools")
+    if tools not in sys.path:
+        sys.path.insert(0, tools)
+    from pii_policy import policy  # type: ignore
+    return policy, policy.load_rules()
+
+
+def _pii_enabled_by_env() -> bool:
+    value = (os.environ.get(PII_ENV) or "1").strip().lower()
+    return value not in {"0", "false", "no", "off"}
+
+
+def new_pii_stats(enabled: bool) -> dict:
+    return {
+        "enabled": enabled,
+        "policy_version": "",
+        "rules_digest": "",
+        "files_scanned": 0,
+        "files_changed": 0,
+        "chars_before": 0,
+        "chars_after": 0,
+        "hit_rules": {},
+    }
+
+
+def clean_pii_text(text: str, stats: dict) -> tuple[str, dict]:
+    """单文件文本清洗；返回 (新文本, 文件级统计)。"""
+    info = {"scanned": False, "changed": False, "hits": {}}
+    if not stats.get("enabled") or _PII_MODULE is None or not text:
+        return text, info
+    stats["files_scanned"] += 1
+    stats["chars_before"] += len(text)
+    new, hits = _PII_MODULE.closed_clean(text, rules=_PII_RULES)
+    stats["chars_after"] += len(new)
+    for key, value in hits.items():
+        stats["hit_rules"][key] = stats["hit_rules"].get(key, 0) + value
+    info["hits"] = dict(sorted(hits.items()))
+    info["changed"] = new != text
+    if info["changed"]:
+        stats["files_changed"] += 1
+    return new, info
 
 
 class SafetyError(RuntimeError):
@@ -118,13 +199,30 @@ def existing_hashes(reg: dict, kb_root: Path | None = None) -> dict:
 
 
 def ingest(files: list[dict], kb_root: Path, project: str | None = None,
-           write: bool = False) -> dict:
+           write: bool = False, no_pii_clean: bool = False) -> dict:
+    global _PII_MODULE, _PII_RULES
     reg = load_reg()
     seen = existing_hashes(reg, kb_root)
     pid = project_id_for(project or (files[0]["name"] if files else "learning_project"))
     pdir = kb_root / "05_学习源件" / pid
     receipt = {"generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
                "project_id": pid, "write": write, "items": []}
+    pii_stats = new_pii_stats(False)
+    if write:
+        use_pii = _pii_enabled_by_env() and not no_pii_clean
+        if use_pii:
+            if _PII_MODULE is None:
+                _PII_MODULE, _PII_RULES = load_pii_policy()
+            if _PII_MODULE is None:
+                raise SafetyError(
+                    "PII 清洗策略不可用（intel-kg/tools/pii_policy 缺失或损坏）；"
+                    "仅排障时可使用 --no-pii-clean")
+            pii_stats = new_pii_stats(True)
+            pii_stats["policy_version"] = getattr(_PII_MODULE, "POLICY_VERSION", "")
+            pii_stats["rules_digest"] = _PII_MODULE.rules_digest(_PII_RULES)
+        else:
+            pii_stats["disabled"] = "flag" if no_pii_clean else "env"
+    receipt["pii"] = pii_stats
     for f in files:
         item = {"name": f["name"], "sha256": f["sha256"], "size": f["size"]}
         if f["sha256"] in seen:
@@ -152,11 +250,19 @@ def ingest(files: list[dict], kb_root: Path, project: str | None = None,
         if src.suffix.lower() == ".docx":
             item["extract"] = extract_docx(src, text_md)
             item["text_md"] = str(text_md)
+            text = text_md.read_text(encoding="utf-8", errors="replace")
+            clean, pinfo = clean_pii_text(text, pii_stats)
+            if pinfo["changed"]:
+                text_md.write_text(clean, encoding="utf-8")
+            item["pii"] = pinfo
         elif src.suffix.lower() in (".md", ".txt"):
             text_md.parent.mkdir(parents=True, exist_ok=True)
-            text_md.write_text(src.read_text(encoding="utf-8", errors="replace"), encoding="utf-8")
-            item["extract"] = {"chars": text_md.stat().st_size}
+            text = src.read_text(encoding="utf-8", errors="replace")
+            clean, pinfo = clean_pii_text(text, pii_stats)
+            text_md.write_text(clean, encoding="utf-8")
+            item["extract"] = {"chars": len(clean)}
             item["text_md"] = str(text_md)
+            item["pii"] = pinfo
         else:
             item["extract"] = {"deferred": "pdf→pdf_ingest OCR 流水线"}
         item["action"] = "ingested"
@@ -167,7 +273,8 @@ def ingest(files: list[dict], kb_root: Path, project: str | None = None,
         manifest = json.loads(manifest_p.read_text(encoding="utf-8")) if manifest_p.exists() else {"files": [], "project_id": pid}
         manifest["files"].append({"name": f["name"], "sha256": f["sha256"], "size": f["size"],
                                   "origin": str(src), "copied": item["copy"],
-                                  "text_md": item.get("text_md"), "ingested_at": receipt["generated_at"]})
+                                  "text_md": item.get("text_md"), "pii": item.get("pii"),
+                                  "ingested_at": receipt["generated_at"]})
         manifest_p.write_text(json.dumps(manifest, ensure_ascii=False, indent=1), encoding="utf-8")
         seen[f["sha256"]] = f["name"]
         receipt["items"].append(item)
@@ -205,6 +312,7 @@ def main(argv=None) -> int:
     ap.add_argument("--write", action="store_true")
     ap.add_argument("--project", default=None)
     ap.add_argument("--root", default=str(DEFAULT_KB))
+    ap.add_argument("--no-pii-clean", action="store_true", help="仅排障：跳过入仓前 PII 清洗")
     args = ap.parse_args(argv)
     kb = Path(args.root)
     files = scan(kb)
@@ -212,7 +320,8 @@ def main(argv=None) -> int:
         print(json.dumps({"inbox": str(kb / '05_学习源件' / '_inbox'), "files": files,
                           "count": len(files)}, ensure_ascii=False, indent=1))
         return 0
-    rep = ingest(files, kb, project=args.project, write=args.write)
+    rep = ingest(files, kb, project=args.project, write=args.write,
+                 no_pii_clean=args.no_pii_clean)
     print(json.dumps(rep, ensure_ascii=False, indent=1))
     return 0
 
