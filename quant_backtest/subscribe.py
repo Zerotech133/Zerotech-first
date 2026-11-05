@@ -394,7 +394,7 @@ def _sub_daily_batch(sub, mode):
         % (dstr, latest.get("source", "—"), env.get("state", "—"))
     )
     if buy:
-        bl = ["**✅ 买入建议（%d）**" % len(buy)]
+        bl = ["**结构偏多观察（%d）**" % len(buy)]
         for p in buy[:10]:
             bl.append(
                 "%s %s  score %s"

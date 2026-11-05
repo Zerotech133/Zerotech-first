@@ -276,46 +276,46 @@ def trade_plan(brief):
     buy, sell = [], []
     if ck == "up":
         if dzg:
-            buy.append("回踩不破 %.0f（日线三买观察）分批做多" % dzg)
+            buy.append("回踩不破 %.0f（日线三买观察）" % dzg)
         if m5g:
-            buy.append("日内 %.0f 上沿放量突破做短多" % m5g)
+            buy.append("日内 %.0f 上沿放量突破（结构确认）" % m5g)
         if p30d:
-            sell.append("30m 失守 %.0f → 减一档" % p30d)
+            sell.append("30m 失守 %.0f（结构转弱）" % p30d)
         if dzd:
-            sell.append("失守 %.0f（日线破位）→ 清仓复盘" % dzd)
+            sell.append("失守 %.0f（日线破位·结构失效）" % dzd)
     elif ck == "warn" and d["trend"] == "上升":
         # 回踩确认期/蓄势：收复节奏线试多，站稳上沿加仓，破位降档
         if p30d:
-            buy.append("放量收复 %.0f（30m重回中枢）→ 试多首笔" % p30d)
+            buy.append("放量收复 %.0f（30m 重回中枢）" % p30d)
         if dzg:
-            buy.append("站稳 %.0f（日线收复=回踩确认）→ 加仓档" % dzg)
+            buy.append("站稳 %.0f（日线收复=回踩确认）" % dzg)
         if m5g and m5d:
-            buy.append("日内 %.0f 上沿突破做短多，破 %.0f 当日离" % (m5g, m5d))
+            buy.append("日内 %.0f 上沿突破（破 %.0f 结构失效）" % (m5g, m5d))
         if p30d and m5d:
-            sell.append("反抽不回 %.0f 且失守 %.0f（三卖确认）→ 止损" % (p30d, m5d))
+            sell.append("反抽不回 %.0f 且失守 %.0f（三卖确认）" % (p30d, m5d))
         if dzd:
-            sell.append("失守 %.0f（日线破位=升势存疑）→ 底仓/清仓" % dzd)
+            sell.append("失守 %.0f（日线破位=升势存疑）" % dzd)
     elif ck == "warn" and d["trend"] == "下降":
         if p30g:
             sell.append("反抽承压 %.0f（30m中枢上沿）→ 风险位" % p30g)
         if dzg:
-            buy.append("收复 %.0f（日线中枢上沿）才谈右侧" % dzg)
+            buy.append("收复 %.0f（日线中枢上沿=右侧结构成立条件）" % dzg)
         if dzd:
             sell.append("失守 %.0f → 下一中枢寻找支撑" % dzd)
     elif ck == "warn":  # 日线盘整
         if dzd:
-            buy.append("回踩 %.0f（日线中枢下沿）企稳做区间多" % dzd)
+            buy.append("回踩 %.0f（日线中枢下沿）企稳（区间结构）" % dzd)
         if dzg:
-            sell.append("承压 %.0f（日线中枢上沿）区间减仓" % dzg)
+            sell.append("承压 %.0f（日线中枢上沿·区间上沿）" % dzg)
         if dzd:
-            sell.append("失守 %.0f → 区间破坏降档" % dzd)
+            sell.append("失守 %.0f（区间破坏）" % dzd)
     else:  # down
         if dzg:
-            buy.append("等收复 %.0f（日线中枢上沿）或日线三买再谈多" % dzg)
+            buy.append("收复 %.0f（日线中枢上沿）或日线三买（右侧条件）" % dzg)
         if p30g:
-            sell.append("反抽 %.0f（30m中枢上沿）承压减仓" % p30g)
+            sell.append("反抽 %.0f（30m 中枢上沿承压）" % p30g)
         if dzd:
-            sell.append("失守 %.0f → 加速段严格空仓" % dzd)
+            sell.append("失守 %.0f（加速段）" % dzd)
     if not gkey and buy:
         buy.append("（闸门收紧期以上为触发观察位，非开仓许可）")
     mgmt = POS_MGMT.get((ck, gkey)) or POS_MGMT[("warn", False)]

@@ -115,9 +115,9 @@ def _sec_market():
             % (_dyn["name"], _dyn["pct"], _dyn["action"])
         )
         if _plan["buy"]:
-            lines.append("     买：%s" % " ｜ ".join(_plan["buy"]))
+            lines.append("     结构偏多：%s" % " ｜ ".join(_plan["buy"]))
         if _plan["sell"]:
-            lines.append("     卖：%s" % " ｜ ".join(_plan["sell"]))
+            lines.append("     结构偏空：%s" % " ｜ ".join(_plan["sell"]))
     return "\n".join(lines)
 
 
