@@ -111,11 +111,12 @@ def test_alert_card_uses_project_v3_style():
     card = guard.build_alert_card(payload)
     assert card is not None
     assert card["schema"] == "2.0"
-    assert card["header"]["template"] == "orange"
-    assert "WARNING" in card["header"]["title"]["content"]
+    assert card["header"]["template"] == "wathet"
     body = json.dumps(card["body"], ensure_ascii=False)
     assert "120.0bp" in body
     assert "100bp" in body and "198bp" in body
+    assert "口径说明" in body
+    assert "1bp = 0.01%" in body
     assert "#cost_alert" in body
 
 
@@ -129,7 +130,7 @@ def test_alert_card_critical_uses_red_header():
     card = guard.build_alert_card(payload)
     assert card is not None
     assert card["header"]["template"] == "red"
-    assert "CRITICAL" in card["header"]["title"]["content"]
+    assert "CRITICAL" in json.dumps(card, ensure_ascii=False)
 
 
 def test_send_feishu_only_on_warning(monkeypatch):
@@ -153,7 +154,7 @@ def test_send_feishu_only_on_warning(monkeypatch):
     assert len(calls) == 1
     assert calls[0][1] == "interactive"
     card = json.loads(calls[0][0])
-    assert "WARNING" in card["header"]["title"]["content"]
+    assert "WARNING" in json.dumps(card, ensure_ascii=False)
     assert "120.0bp" in json.dumps(card["body"], ensure_ascii=False)
 
     assert guard.main(["--cost-bp", "80", "--send", "--no-write"]) == 0

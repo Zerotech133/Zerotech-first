@@ -100,56 +100,132 @@ def build_alert_text(payload: dict) -> str:
 
 
 def _status_title(status: str) -> tuple[str, str]:
-    """(Feishu header template, header title)."""
+    """(Feishu header template, status text)."""
     if status == "critical":
-        return "red", "🚨 成本预警 · CRITICAL"
-    return "orange", "⚠ 成本预警 · WARNING"
+        return "red", "CRITICAL"
+    return "wathet", "WARNING"
+
+
+def _metric_column(label: str, value: str, color: str | None = None) -> dict:
+    shown = "<font color='%s'>**%s**</font>" % (color, value) if color else "**%s**" % value
+    return {
+        "tag": "column",
+        "width": "weighted",
+        "weight": 1,
+        "elements": [
+            {
+                "tag": "markdown",
+                "content": "<font color='grey'>%s</font>\n%s" % (label, shown),
+            }
+        ],
+    }
 
 
 def build_alert_card(payload: dict) -> dict | None:
-    """Build a Feishu interactive card using the project v3 card convention.
+    """Build a 零界简报-style Feishu 2.0 card.
 
-    This intentionally reuses ``portal/feishu_card_v2.build_v3`` so the
-    header colour/typography, key-value rows and grey footer stay consistent
-    with the other 零界 notifications. Returns ``None`` when the portal card
-    module is unavailable (caller falls back to plain text).
+    Visual direction: the 2026-11-05 简报 UI — light-blue header, white body,
+    big-number metric blocks, small grey labels, pill-like tags in the footer.
+    This is a self-contained card so the monitor has no dependency on the
+    portal runtime; card failure falls back to plain text in ``_send_feishu``.
     """
     try:
-        portal = str(REPO / "portal")
-        if portal not in sys.path:
-            sys.path.insert(0, portal)
-        from feishu_card_v2 import build_v3  # noqa: PLC0415
-
-        template, header_title = _status_title(payload["status"])
+        status = payload["status"]
+        template, status_text = _status_title(status)
+        color = "red" if status == "critical" else "orange"
         cost = float(payload["cost_bp"])
-        color = "red" if payload["status"] == "critical" else "orange"
-        rows = [
-            ("实盘成本", "<font color='%s'>**%.1fbp**</font>" % (color, cost)),
-            (
-                "阈值 / 盈亏平衡",
-                "%.0fbp / %.0fbp"
-                % (payload["threshold_bp"], payload["breakeven_bp"]),
-            ),
-            ("距盈亏平衡", "%.1fbp" % payload["headroom_bp"]),
-        ]
+        threshold = float(payload["threshold_bp"])
+        breakeven = float(payload["breakeven_bp"])
+        headroom = float(payload["headroom_bp"])
         if payload.get("estimated_ann_return") is not None:
-            rows.append(
-                ("60d 插值年化", "%.2f%%" % (payload["estimated_ann_return"] * 100))
-            )
+            est = "%.2f%%" % (payload["estimated_ann_return"] * 100)
+            est_note = "<font color='grey'>60d 成本曲线线性插值</font>"
         else:
-            rows.append(("60d 插值年化", "超出已测 0–250bp"))
-        card, _audit = build_v3(
-            "alert",
-            "60日策略成本阈值告警",
-            source="strategy_cost_guard · 研究口径",
-            rows=rows,
-            md="**结论**\n%s\n\n本告警仅研究口径，不构成投资建议，不自动暂停策略。"
-            % payload["message"],
-            tags="#cost_alert #strategy_60d",
-            subtitle="零界 · 中性化 book_to_market 60日",
-        )
-        card["header"]["template"] = template
-        card["header"]["title"]["content"] = header_title
+            est = "超出曲线"
+            est_note = "<font color='grey'>已测区间 0–250bp</font>"
+
+        metrics_1 = {
+            "tag": "column_set",
+            "flex_mode": "none",
+            "columns": [
+                _metric_column("实盘成本", "%.1fbp" % cost, color),
+                _metric_column("重评阈值", "%.0fbp" % threshold),
+            ],
+        }
+        metrics_2 = {
+            "tag": "column_set",
+            "flex_mode": "none",
+            "columns": [
+                _metric_column("盈亏平衡", "%.0fbp" % breakeven),
+                _metric_column("剩余空间", "%.1fbp" % headroom),
+            ],
+        }
+        metrics_3 = {
+            "tag": "column_set",
+            "flex_mode": "none",
+            "columns": [
+                _metric_column("60d 插值年化", est, color),
+                _metric_column("状态", status_text, color),
+            ],
+        }
+
+        now = datetime.now().strftime("%m-%d %H:%M")
+        card = {
+            "schema": "2.0",
+            "config": {"update_multi": True},
+            "header": {
+                "template": template,
+                "title": {"tag": "plain_text", "content": "零界 · 成本阈值告警"},
+                "subtitle": {
+                    "tag": "plain_text",
+                    "content": "中性化 book_to_market 60日 · 研究口径",
+                },
+            },
+            "body": {
+                "elements": [
+                    {
+                        "tag": "markdown",
+                        "content": "<font color='%s'>**⚠ %s**</font>　实盘成本超过 %.0fbp 重评阈值\n"
+                        "<font color='grey'>数据快照 · %s · 成本来源 %s</font>"
+                        % (color, status_text, threshold, now, payload["cost_source"]),
+                    },
+                    {"tag": "hr"},
+                    metrics_1,
+                    metrics_2,
+                    metrics_3,
+                    {"tag": "hr"},
+                    {
+                        "tag": "markdown",
+                        "content": "**结论**\n%s" % payload["message"],
+                    },
+                    {"tag": "hr"},
+                    {
+                        "tag": "markdown",
+                        "content": "**口径说明**\n"
+                        "• **bp**：1bp = 0.01%%；%.1fbp 即单边成本 %.2f%%。\n"
+                        "• **100bp 阈值**：超过后重评容量/换手/执行方式；不是自动停策略。\n"
+                        "• **%0.fbp 盈亏平衡**：按 150/200/250bp 成本曲线线性插值，60d 净年化≈0。\n"
+                        "• **本次 %.1fbp**：60d 插值年化 %s，较 30bp 基线 1.95%% 少约 %.2fpp。\n"
+                        "• **成本口径**：含价差、冲击与换手成本，不只是佣金；研究输出，不构成投资建议。"
+                        % (
+                            cost,
+                            cost / 100.0,
+                            breakeven,
+                            cost,
+                            est,
+                            (1.9538 - (payload.get("estimated_ann_return") or 0) * 100)
+                            if payload.get("estimated_ann_return") is not None
+                            else 1.9538,
+                        ),
+                    },
+                    {
+                        "tag": "markdown",
+                        "content": "<font color='grey'>#cost_alert #strategy_60d · strategy_cost_guard · "
+                        "研究口径 · %s</font>" % now,
+                    },
+                ]
+            },
+        }
         return card
     except Exception:  # noqa: BLE001 - a card failure must not block fallback text
         return None
