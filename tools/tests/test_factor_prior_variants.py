@@ -118,9 +118,47 @@ def test_p2_meta_serializable():
     assert len(pv.prior_meta("p1")["strategy_factors"]) == 81
 
 
+def test_p3_keeps_p1_sleeve_and_adds_tilt_only():
+    p3 = pv.get_prior("p3")
+    p1 = pv.get_prior("p1")
+    assert p3.version == "p3"
+    assert p3.directions == p1.directions
+    assert p3.strategy_factors == p1.strategy_factors == pv.B1_P1_STRATEGY_FACTORS
+    assert p3.momentum_weights is None
+    assert p3.tilt_factor == pv.P3_TILT_FACTOR == "b1_mom_21d"
+    assert p3.tilt_weight == pv.P3_TILT_WEIGHT == 0.075
+    assert pv.P3_TILT_CANDIDATES == (0.05, 0.075, 0.10)
+    # tilt 因子是 overlay，不进入方向表/策略因子表
+    assert "b1_mom_21d" not in p3.directions
+    assert "b1_mom_21d" not in p3.strategy_factors
+    assert set(p3.directions) == set(ft.B1_PRIOR_DIRECTIONS)
+
+
+def test_p3_tilt_candidate_and_meta():
+    assert pv.get_prior("p3", tilt_weight=0.05).tilt_weight == 0.05
+    assert pv.get_prior("p3", tilt_weight=0.10).tilt_weight == 0.10
+    with pytest.raises(ValueError):
+        pv.get_prior("p3", tilt_weight=0.20)
+    meta = pv.prior_meta("p3", tilt_weight=0.075)
+    assert meta["version"] == "p3"
+    assert meta["tilt_weight"] == 0.075
+    assert meta["tilt_factor"] == "b1_mom_21d"
+    assert meta["tilt_candidates"] == [0.05, 0.075, 0.10]
+    assert meta["p3_tilt_sha256"] == pv.P3_TILT_WEIGHTS_SHA256
+    assert len(meta["strategy_factors"]) == 81
+
+
+def test_p3_tilt_spec_is_21d_reversal():
+    spec = pv.p3_tilt_spec()
+    assert spec.name == "b1_mom_21d"
+    assert spec.direction == -1
+    assert spec.family == "Tushare-动量"
+    assert spec.requires == ("adj_close",)
+
+
 def test_invalid_version_raises():
     with pytest.raises(ValueError):
-        pv.get_prior("p3")
+        pv.get_prior("p4")
 
 
 def test_prior_meta_serializable():

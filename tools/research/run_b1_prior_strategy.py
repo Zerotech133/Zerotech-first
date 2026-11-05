@@ -80,11 +80,14 @@ def build_composite(
     factor_names: list[str] | None = None,
     momentum_weights: dict[str, float] | None = None,
     extra_specs: dict | None = None,
+    tilt_weight: float | None = None,
+    tilt_factor: str | None = None,
 ) -> tuple[pd.DataFrame, list[dict]]:
     """按指定先验方向构建族平衡复合因子；返回 (composite, diagnostics)。
 
     P0/P1 使用每族等权；P2 传入 `momentum_weights` 时，动量族内部按预注册
-    周期权重合成 sleeve，其余族仍等权。
+    周期权重合成 sleeve，其余族仍等权。P3 传入 `tilt_weight`/`tilt_factor`
+    时，只在动量 sleeve 内部叠加 21 日 tilt，族间权重保持不变。
     """
     family_mats: dict[str, list[pd.DataFrame]] = {fam: [] for fam in FAMILIES}
     momentum_mats: list[pd.DataFrame] = []
@@ -158,6 +161,38 @@ def build_composite(
             f"weights={dict(zip(momentum_used, weights))}",
             flush=True,
         )
+    if tilt_weight is not None:
+        if tilt_factor is None:
+            raise ValueError("P3 tilt 需要同时提供 tilt_factor")
+        if abs(float(tilt_weight)) > 1e-12:
+            if "Tushare-动量" not in fam_composites:
+                raise RuntimeError("P3 tilt 需要可用的动量 sleeve")
+            tilt_spec = pv.p2_momentum_specs()[tilt_factor]
+            tilt_values = tilt_spec.compute(panel)
+            if not isinstance(tilt_values, pd.DataFrame):
+                raise TypeError(f"tilt 因子 {tilt_factor} 返回 {type(tilt_values)}")
+            tilt_values = tilt_values.replace([np.inf, -np.inf], np.nan)
+            tilt_rank = (tilt_values * float(tilt_spec.direction)).rank(axis=1, pct=True) - 0.5
+            tilt_rank = tilt_rank.reindex(index=panel.dates, columns=panel.codes)
+            fam_composites["Tushare-动量"] = _weighted_mean_frames(
+                [fam_composites["Tushare-动量"], tilt_rank],
+                [1.0 - float(tilt_weight), float(tilt_weight)],
+                panel.dates,
+                panel.codes,
+            )
+            diag.append({
+                "name": tilt_factor,
+                "family": "Tushare-动量",
+                "direction": int(tilt_spec.direction),
+                "p0_direction": None,
+                "weight": float(tilt_weight),
+                "rationale": "P3: 仅动量 sleeve 内部 21 日 tilt，族间权重不变",
+                "valid_cells": int(tilt_rank.notna().sum().sum()),
+            })
+            print(
+                f"[composite] momentum_tilt factor={tilt_factor} weight={float(tilt_weight):.3f}",
+                flush=True,
+            )
 
     if len(fam_composites) < MIN_FAMILIES:
         raise RuntimeError(f"可用因子族不足: {list(fam_composites)}")
@@ -225,9 +260,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
     parser.add_argument("--start", default="20230101")
     parser.add_argument("--end", default="20261104")
+    parser.add_argument(
+        "--tilt-weight",
+        type=float,
+        default=None,
+        help="P3 动量 sleeve 内的 21 日 tilt 权重；仅 p3 可用，必须在预注册候选内",
+    )
     args = parser.parse_args(argv)
+    if args.tilt_weight is not None and args.prior_version != "p3":
+        parser.error("--tilt-weight 只适用于 --prior-version p3")
 
-    prior = pv.get_prior(args.prior_version)
+    prior = pv.get_prior(args.prior_version, tilt_weight=args.tilt_weight)
     t0 = time.time()
     print(f"[start] prior={prior.version} suite={args.suite} out={args.out}", flush=True)
     print("[start] load_panel", flush=True)
@@ -249,6 +292,8 @@ def main(argv: list[str] | None = None) -> int:
         factor_names=list(prior.strategy_factors),
         momentum_weights=prior.momentum_weights,
         extra_specs=extra_specs,
+        tilt_weight=prior.tilt_weight,
+        tilt_factor=prior.tilt_factor,
     )
     print(f"[composite] built {time.time()-t0:.1f}s", flush=True)
 
@@ -356,12 +401,14 @@ def main(argv: list[str] | None = None) -> int:
         "prior": {
             "version": prior.version,
             "label": prior.label,
-            "meta": pv.prior_meta(prior.version),
+            "meta": pv.prior_meta(prior.version, tilt_weight=prior.tilt_weight),
             "directions": prior.directions,
             "rationale": ft.B1_PRIOR_RATIONALE,
             "unknown": sorted(ft.B1_PRIOR_UNKNOWN),
             "strategy_factors": list(prior.strategy_factors),
             "momentum_weights": prior.momentum_weights,
+            "tilt_weight": prior.tilt_weight,
+            "tilt_factor": prior.tilt_factor,
             "family_counts": {fam: sum(1 for n in prior.strategy_factors if all_specs[n].family == fam) for fam in FAMILIES},
         },
         "panel": {
