@@ -15,6 +15,7 @@ sys.path.insert(0, str(ROOT / "tools" / "research"))
 from factor_lib import Panel  # noqa: E402
 from factor_portfolio import (  # noqa: E402
     PortfolioConfig,
+    _target_weights,
     investable_masks,
     rebalance_indices,
     simulate,
@@ -102,3 +103,43 @@ def test_weights_gross_and_target_quantiles():
     first = out["trades"][0]
     assert first["n_long"] == first["n_short"] == 12
     assert abs(first["target_turnover"] - 0.5) < 1e-9  # 首次建仓 0.5 单边
+
+
+def test_buffer_keeps_existing_positions_within_extended_quantile():
+    codes = pd.Index([f"{i:06d}.SZ" for i in range(100)])
+    factor = pd.Series(np.arange(100, 0, -1, dtype=float), index=codes)  # code0 最高
+    mask = pd.Series(True, index=codes)
+    prior = pd.Series(0.0, index=codes)
+    prior.iloc[24] = 0.025   # rank 25，处于 top 20%~30% 之间
+    prior.iloc[75] = -0.025  # rank 76，处于 bottom 20%~30% 之间
+    target = _target_weights(factor, mask, PortfolioConfig(buffer_quantile=0.3), prior=prior)
+    assert target.iloc[24] > 0          # 原多头保留
+    assert target.iloc[75] < 0          # 原空头保留
+    assert target.iloc[22] == 0         # 新标的仍只允许 top 20%
+    assert abs(float(target.abs().sum()) - 1.0) < 1e-9
+
+
+def test_turnover_penalty_reduces_turnover_and_keeps_gross():
+    panel, names = _panel(n_days=80)
+    factor = pd.DataFrame(
+        np.tile(np.arange(60, dtype=float), (80, 1)), index=panel.dates, columns=panel.codes
+    )
+    plain = simulate(panel, factor, PortfolioConfig(rebalance_days=20, turnover_penalty=0.0),
+                     names=names)
+    penalized = simulate(panel, factor, PortfolioConfig(rebalance_days=20, turnover_penalty=0.6),
+                         names=names)
+    plain_turn = sum(t["actual_turnover"] for t in plain["trades"])
+    pen_turn = sum(t["actual_turnover"] for t in penalized["trades"])
+    assert pen_turn <= plain_turn + 1e-9
+    assert all(abs(t["gross"] - 1.0) < 1e-6 for t in penalized["trades"])
+
+
+def test_60_day_rebalance_indices_and_simulation():
+    panel, names = _panel(n_days=80)
+    assert rebalance_indices(panel, None, None, 60) == [0, 60]
+    factor = pd.DataFrame(
+        np.tile(np.arange(60, dtype=float), (80, 1)), index=panel.dates, columns=panel.codes
+    )
+    out = simulate(panel, factor, PortfolioConfig(rebalance_days=60), names=names)
+    assert out["metrics"]["rebalances"] == 2
+    assert out["metrics"]["rebalance_days"] == 60
