@@ -13,6 +13,13 @@
   返回值不可信 → 删除后逐个 os.path.exists 复核
 - 幂等：同日重跑覆盖当日目录
 
+B4 修复（2026-11-05 首次季度恢复演练发现）：K-STOCK-414 的
+`gzip.open(dst, "wb")` + `subprocess.run(cmd, stdout=f)` 在 Windows 上会让子进程
+直接写未缓冲的底层 fd，GzipFile 头直到 close() 才落盘 → 产物是「明文 SQL + 尾部
+空 gzip 头」，严格恢复（gzip -dc / ON_ERROR_STOP）报错。现改为
+Popen(stdout=PIPE) + 后台线程流式 gzip.write，落盘先写 .part，校验 gzip 魔数/
+可解压/非空后再原子替换；manifest 增加 sha256。
+
 用法：python ops/db_dump_daily.py
       （无 CLI 参数：main() 不解析 sys.argv，轮转天数 KEEP_DAYS=14 是源码常量；
        旧 docstring 写过的 --keep-days 从未实现，传了会被静默忽略）
@@ -31,16 +38,23 @@ backups/db 目录（走回收站、可逆，但 10-09~10-15 / 10-29 这批换机
 import ctypes
 import datetime
 import gzip
+import hashlib
 import json
 import os
 import subprocess
 import sys
+import tempfile
+import threading
 import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT_BASE = os.path.join(ROOT, "backups", "db")
 LOG_PATH = os.path.join(OUT_BASE, "dump_latest.log")
 KEEP_DAYS = 14
+
+GZIP_MAGIC = b"\x1f\x8b"
+CHUNK = 1024 * 1024
+DUMP_RUNNER = ["docker", "exec"]
 
 # 容器内执行的 dump 命令（引用容器 env，零明文）。
 # K-STOCK-414：原 `... 2>/dev/null | gzip` 管道形态下 rc 是 gzip 的，
@@ -79,29 +93,115 @@ def log(msg):
         LOG_FP.flush()
 
 
-def dump_one(item, out_dir, timeout=900):
-    """单库 dump：容器内纯 dump，宿主 gzip 收流落文件（长跑纪律）。
+def _dump_command(item):
+    """构造 docker exec 命令（测试可 monkeypatch 此处避开真实 docker）。"""
+    return DUMP_RUNNER + [item["container"], "sh", "-c", item["cmd"]]
 
-    K-STOCK-414：rc 直接来自容器内 dump 工具（无中间管道），stderr 保留
-    供 FAIL 日志；压缩在宿主侧完成（gzip 模块，无需容器/宿主装 gzip）。
+
+def _pump_stdout(proc, gz, digest, state):
+    """后台线程：把子进程 stdout 流式写入 gzip（避免 Windows fd 直写回归）。"""
+    try:
+        while True:
+            chunk = proc.stdout.read(CHUNK)
+            if not chunk:
+                break
+            gz.write(chunk)
+            digest.update(chunk)
+            state["bytes"] += len(chunk)
+    finally:
+        try:
+            proc.stdout.close()
+        except OSError:
+            pass
+
+
+def _gzip_payload(cmd, dst, timeout=900):
+    """执行 dump 命令并流式压缩写 dst。
+
+    返回 (rc, written_bytes, sha256hex, stderr_bytes)；超时 rc=-1。
+    stderr 落临时文件而非 PIPE，避免 8GB 级 dump 时管道写满死锁。
+    """
+    digest = hashlib.sha256()
+    state = {"bytes": 0}
+    stderr = b""
+    timed_out = False
+    with tempfile.TemporaryFile() as errf:
+        with gzip.open(dst, "wb") as gz:
+            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=errf)
+            pump = threading.Thread(target=_pump_stdout,
+                                    args=(proc, gz, digest, state), daemon=True)
+            pump.start()
+            try:
+                rc = proc.wait(timeout=timeout)
+            except subprocess.TimeoutExpired:
+                timed_out = True
+                proc.kill()
+                rc = proc.wait()
+            pump.join()
+        errf.seek(0)
+        stderr = errf.read()
+    if timed_out:
+        rc = -1
+    return rc, state["bytes"], digest.hexdigest(), stderr
+
+
+def _validate_gzip(path):
+    """校验产物：gzip 魔数 + 可解压首块 + 非空。返回 (ok, reason)。"""
+    if not os.path.exists(path):
+        return False, "missing"
+    size = os.path.getsize(path)
+    if size < 32:  # 空 gzip 流约 21B；真实 dump 远大于此
+        return False, f"too_small({size}B)"
+    try:
+        with open(path, "rb") as f:
+            if f.read(2) != GZIP_MAGIC:
+                return False, "bad_magic"
+    except OSError as e:  # noqa: BLE001
+        return False, f"read_error:{e}"
+    try:
+        with gzip.open(path, "rb") as gz:
+            first = gz.read(64)
+        if not first:
+            return False, "empty_payload"
+    except (OSError, EOFError) as e:  # noqa: BLE001
+        return False, f"gzip_read_error:{e}"
+    return True, "ok"
+
+
+def dump_one(item, out_dir, timeout=900):
+    """单库 dump：容器内纯 dump → 宿主侧流式 gzip → 校验 → 原子替换。
+
+    返回 (ok, compressed_size, sha256hex)。失败不留 .part/半成品。
     """
     dst = os.path.join(out_dir, item["file"])
+    tmp = dst + ".part"
     t0 = time.time()
-    cmd = ["docker", "exec", item["container"], "sh", "-c", item["cmd"]]
+    cmd = _dump_command(item)
     try:
-        with gzip.open(dst, "wb") as f:
-            p = subprocess.run(cmd, stdout=f, stderr=subprocess.PIPE,
-                               timeout=timeout)
-        size = os.path.getsize(dst)
-        ok = p.returncode == 0 and size > 200  # gzip 头+非空内容；>200B 防空壳
-        log(f"{'OK ' if ok else 'FAIL'} {item['key']} rc={p.returncode} "
-            f"size={size:,}B 用时{time.time()-t0:.0f}s")
-        if not ok and p.stderr:
-            log(f"     stderr: {p.stderr.decode(errors='replace')[:200]}")
-        return ok, size
+        rc, written, sha, stderr = _gzip_payload(cmd, tmp, timeout=timeout)
+        valid, reason = _validate_gzip(tmp)
+        size = os.path.getsize(tmp) if os.path.exists(tmp) else 0
+        ok = valid and rc == 0 and written > 0
+        if not ok:
+            if os.path.exists(tmp):
+                os.remove(tmp)
+            log(f"FAIL {item['key']} rc={rc} raw={written:,}B reason={reason} "
+                f"用时{time.time()-t0:.0f}s")
+            if stderr:
+                log(f"     stderr: {stderr.decode(errors='replace')[:200]}")
+            return False, 0, ""
+        os.replace(tmp, dst)
+        log(f"OK  {item['key']} rc=0 raw={written:,}B gz={size:,}B "
+            f"sha256={sha[:16]} 用时{time.time()-t0:.0f}s")
+        return True, size, sha
     except Exception as e:  # noqa: BLE001
+        if os.path.exists(tmp):
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
         log(f"FAIL {item['key']} 异常: {e}")
-        return False, 0
+        return False, 0, ""
 
 
 def recycle_delete(paths):
@@ -161,9 +261,10 @@ def main():
     manifest = {"date": day, "items": []}
     n_ok = n_must_fail = 0
     for item in DUMPS:
-        ok, size = dump_one(item, out_dir)
+        ok, size, sha = dump_one(item, out_dir)
         manifest["items"].append({"key": item["key"], "ok": ok, "size": size,
-                                  "file": item["file"], "must": item["must"]})
+                                  "sha256": sha, "file": item["file"],
+                                  "must": item["must"]})
         n_ok += ok
         if not ok and item["must"]:
             n_must_fail += 1
