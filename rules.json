@@ -1,0 +1,26 @@
+{
+  "version": "yt-clean-rules.v1",
+  "description": "yt_learning 离线清洗：规范化 + 规则化脱敏 + 低质量打标（只输出补丁，不改源库）",
+  "scrub_pii": true,
+  "normalize": true,
+  "noise_min_chars": 2,
+  "flag_language": true,
+  "fields": {
+    "dim_video": ["title", "description"],
+    "fact_comment": ["text"],
+    "fact_transcript": ["transcript"],
+    "fact_transcript_seg": ["text"],
+    "fact_transcript_signal": ["context"],
+    "fact_knowledge_unit": ["evidence", "content_basis"],
+    "fact_knowledge_unit_ext": ["claim", "evidence"],
+    "fact_strategy_card": ["seg_text", "reject_reason", "ai_suggest"],
+    "fact_faq_semantic": ["faq_en", "faq_zh", "answer_hint", "top_comment"]
+  },
+  "retained_ids": "公开内容 ID（video_id/comment_id）仅用于补丁定位",
+  "do_not_touch": ["author_hash", "channel_id", "channel_name"],
+  "pii_gate": {
+    "enabled": true,
+    "types": ["email", "url", "phone", "contact", "handle"],
+    "note": "E 路线守门：清洗端不再变换 pii，仅只读检测原始 pii；命中即中止。schema 待 M1 导出端确认后可能调整。"
+  }
+}

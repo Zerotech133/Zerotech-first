@@ -1,0 +1,25 @@
+name: governance-upgrade-ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  contract-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: 契约校验 governance_upgrade 升级包
+        run: python scripts/contract_check.py --repo .
+      - name: 触发本机 sync-back（占位）
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          echo "远端升级包已发布（version 见 governance_upgrade/version）。"
+          echo "本机 sync_watch 将检测到新 version 并触发 sync-back 回归门禁（pull 模式，无需本机暴露端口）。"
+          # 可选：若本机有公网 webhook 端点，可在此 curl 触发
+          # curl -X POST "${{ secrets.GOVERN_WEBHOOK }}"
