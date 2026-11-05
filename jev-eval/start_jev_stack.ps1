@@ -1,16 +1,17 @@
-# JEV service stack watchdog (restored 2026-10-26, K-ORG-20261026-JEVSTACK)
+﻿# JEV service stack watchdog (restored 2026-10-26, K-ORG-20261026-JEVSTACK)
 # ASCII only. Pull-up-if-missing for the Jev triplet, port-based liveness.
-# 2026-10-26 OS-FIX-W4FINAL：card-handler(9104) 已随 W3 统一分发退役，JevStack
-# 不再拉起它；若外部仍有残留监听则尽力停掉（W4 验收要求 9104=down）。
+# 2026-10-26 OS-FIX-W4FINAL：card-handler 曾随 W3 统一分发退役。
+# 2026-11-05 FB-A 并轨后重新纳入：改为 HTTP ack 模式（监听 9106，/metrics 仍 9104），
+# 不再自建 lark-cli 长连接消费者。历史遗留的 9104 lark-cli 消费者仅在 -StopRetired 时清理。
 # Scheduled task: \JevStack (every 10 min, S4U). Log: logs\jev-stack.log
 # Status snapshot: logs\jev-stack-status.json
 # Exit: 0 = all up OR only externally-blocked components; 1 = internal start failure.
 param(
     [switch]$Status,
     [switch]$Force,
-    # 2026-11-05：9104 card-handler 实际仍在服务中（jev_card_actions_total 有计数），
-    # 每次拉起都无脑 taskkill 会让飞书卡片「已处理/忽略」回调失效。改为显式开关，
-    # 默认不动 9104；-Force 仍会连带清理（等价旧行为）。
+    # 2026-11-05：9104 现为 card-handler 的 /metrics 端点（与 9106 同进程），
+    # 每次拉起都无脑 taskkill 会连 ack 服务一起杀掉。改为显式开关，默认不动；
+    # 且只有 9104 归属的 PID 与 9106 不同（真正的旧 lark-cli 消费者）才清理。
     [switch]$StopRetired
 )
 $ErrorActionPreference = 'Continue'
@@ -127,10 +128,13 @@ function Get-CardRestartReason {
 $Components = @(
     @{ Name = 'jev-gate'; Port = 9101; Script = 'jev_gate.py'; Args = @() },
     @{ Name = 'review-gate'; Port = 9102; Script = 'signal_review_gate.py'; Args = @('--loop') },
-    @{ Name = 'qd-bridge'; Port = 9103; Script = 'jev_qd_bridge.py'; Args = @('--loop') }
-    # W3 退役（2026-10-26 OS-FIX-W4FINAL）：card-handler(9104) 由统一分发替代，
-    # 不再随 JevStack 拉起；保留注释便于回滚。
-    # @{ Name = 'card-handler'; Port = 9104; Script = 'lark_card_handler.py'; Args = @() }
+    @{ Name = 'qd-bridge'; Port = 9103; Script = 'jev_qd_bridge.py'; Args = @('--loop') },
+    # 2026-11-05 FB-A merge: card-handler no longer opens its own lark-cli long
+    # connection (it kept fighting the portal drill-down bot for the single WS of
+    # app cli_aa3e4f1b58f85cdd, and lost every time that bot restarted).
+    # It now serves a local HTTP ack endpoint on 9106; feishu_bot_ws.py forwards
+    # card actions to it. Prometheus /metrics stays on 9104.
+    @{ Name = 'card-handler'; Port = 9106; Script = 'lark_card_handler.py'; Args = @() }
 )
 
 if ($Status) {
@@ -175,8 +179,17 @@ if ($Force) {
 # 与文档「-Force 不含 9104」矛盾）；9104 只由显式 -StopRetired 清理。
 # 原因：JevRestart 任务用 -Force 重启三件套，若连带杀 9104 会让飞书按钮回调静默失效。
 if ($StopRetired -and (Test-Port 9104)) {
-    $oldPid = Stop-TreeByPort 9104
-    Write-Log ('retired card-handler(9104) stopped pid=' + $oldPid)
+    # 2026-11-05 FB-A: 9104 is now the metrics port of the HTTP-mode card handler
+    # (same PID as 9106). Only kill it when it is a genuinely different process
+    # (legacy lark-cli consumer), otherwise we would kill the ack service itself.
+    $p9104 = Get-PortPid 9104
+    $p9106 = Get-PortPid 9106
+    if ($p9104 -gt 0 -and $p9104 -ne $p9106) {
+        $oldPid = Stop-TreeByPort 9104
+        Write-Log ('legacy card-handler(9104) stopped pid=' + $oldPid)
+    } else {
+        Write-Log 'retired cleanup skipped: 9104 belongs to card-handler(9106)'
+    }
 }
 
 # 4) External-block backoff (2026-10-26 JEVSTACK3, ASCII only).
@@ -206,6 +219,10 @@ foreach ($c in $Components) {
         }
     }
 }
+
+# 2026-11-05 FB-A merge: card handler runs in HTTP mode (no lark-cli event consume).
+$env:JEV_CARD_MODE = 'http'
+$env:JEV_CARD_ACK_PORT = '9106'
 
 # 5) Pull up missing components.
 $started = @()

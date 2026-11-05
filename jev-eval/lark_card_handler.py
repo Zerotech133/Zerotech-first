@@ -52,6 +52,11 @@ READY_TIMEOUT_SEC = 15  # ready 标记等待上限，超时判定启动失败
 CARD_RETRY = 3  # 卡片更新重试次数
 DEDUP_MAX = 1000  # 事件去重窗口（飞书重投间隔在分钟级，内存集合足够）
 METRICS_PORT = 9104  # P1-6 Prometheus /metrics 端点
+# 2026-11-05 FB-A 并轨：本进程改由下钻机器人 feishu_bot_ws.py 转发卡片动作
+# （它独占 app cli_aa3e4f1b58f85cdd 的唯一长连接），不再自己 consume。
+# 默认 HTTP 模式；JEV_CARD_MODE=ws 可回滚到旧的 lark-cli 长连接消费。
+CARD_MODE = os.environ.get("JEV_CARD_MODE", "http").strip().lower()
+ACK_PORT = int(os.environ.get("JEV_CARD_ACK_PORT", "9106"))  # 本地回调接入端口（仅 127.0.0.1）
 
 # 优雅退出（P1-1：收敛到 jev_common）
 _STOP = install_stop()
@@ -433,9 +438,127 @@ def _looks_like_event(line: str) -> dict | None:
     return None
 
 
+# ── HTTP 接入模式（FB-A 并轨，2026-11-05） ──────────────────
+def fetch_card_content(message_id: str) -> str:
+    """按 message_id 取回卡片原文供终态染色。失败返回 ''（不影响 ack）。"""
+    if not message_id:
+        return ""
+    try:
+        obj = jc.lark_cli_json(
+            [
+                "api",
+                "GET",
+                f"/open-apis/im/v1/messages/{message_id}",
+                "--as",
+                "bot",
+            ],
+            timeout=10,
+            kind="card_fetch",
+        )
+    except Exception as e:  # noqa: BLE001
+        log("取回卡片原文失败（跳过染色）", message_id=message_id, err=str(e)[:120])
+        return ""
+    items = ((obj or {}).get("data") or {}).get("items") or []
+    if not items:
+        return ""
+    content = (items[0].get("body") or {}).get("content") or ""
+    return content if isinstance(content, str) else ""
+
+
+def _event_from_payload(body: dict) -> dict:
+    """把下钻机器人转发来的动作体拼成 handle_event 认识的事件结构。
+    bot 侧 value 与 JEV 卡片原生一致：{"source","action","alert_id"}。"""
+    value = {
+        "source": body.get("source") or "jev",
+        "action": body.get("action") or "",
+        "alert_id": body.get("alert_id") or "",
+    }
+    return {
+        "action_tag": "button",
+        "action_value": json.dumps(value, ensure_ascii=False),
+        "token": body.get("token") or body.get("message_id") or "",
+        "message_id": body.get("message_id") or "",
+        "operator_id": body.get("operator_id") or "",
+        "card_content": body.get("card_content") or "",
+    }
+
+
+def serve_http() -> int:
+    """本地 HTTP 接入：POST /card_action 处理按钮动作，GET /health 探活。
+    只绑 127.0.0.1（动作由同机下钻机器人转发，永不对外）。"""
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+    class _Handler(BaseHTTPRequestHandler):
+        server_version = "jev-card/1.0"
+
+        def log_message(self, fmt, *args):  # 静音 BaseHTTPRequestHandler 的 stderr 噪音
+            return
+
+        def _reply(self, code: int, payload: dict) -> None:
+            raw = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+            self.send_response(code)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(raw)))
+            self.end_headers()
+            self.wfile.write(raw)
+
+        def do_GET(self):  # noqa: N802 — BaseHTTPRequestHandler 约定
+            if self.path.rstrip("/") in ("/health", "/healthz"):
+                self._reply(200, {"ok": True, "mode": "http", "port": ACK_PORT})
+            else:
+                self._reply(404, {"ok": False, "error": "not found"})
+
+        def do_POST(self):  # noqa: N802
+            if self.path.rstrip("/") not in ("/card_action", "/ack"):
+                self._reply(404, {"ok": False, "error": "not found"})
+                return
+            try:
+                n = int(self.headers.get("Content-Length") or 0)
+            except ValueError:
+                n = 0
+            raw = self.rfile.read(n) if n > 0 else b"{}"
+            try:
+                body = json.loads(raw.decode("utf-8", "replace"))
+            except Exception:  # noqa: BLE001
+                self._reply(400, {"ok": False, "error": "bad json"})
+                return
+            if not isinstance(body, dict):
+                self._reply(400, {"ok": False, "error": "body must be object"})
+                return
+            event = _event_from_payload(body)
+            if not event["card_content"]:
+                # bot 侧拿不到卡片原文时由本进程回捞（取不到就只 ack 不染色）
+                event["card_content"] = fetch_card_content(event["message_id"])
+            try:
+                with new_trace("card"):
+                    handle_event(event)
+            except Exception as e:  # noqa: BLE001
+                log(f"HTTP 事件处理异常: {e}", level="error")
+                self._reply(500, {"ok": False, "error": str(e)[:120]})
+                return
+            self._reply(200, {"ok": True})
+
+    srv = ThreadingHTTPServer(("127.0.0.1", ACK_PORT), _Handler)
+    srv.daemon_threads = True
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    log("卡片动作 HTTP 接入已启动（并轨模式）", port=ACK_PORT)
+    jc.start_metrics(METRICS_PORT)
+    flush_pending()
+
+    while not _STOP["flag"]:
+        time.sleep(1.0)
+    srv.shutdown()
+    log("HTTP 接入已停止")
+    return 0
+
+
 def main() -> int:
     set_module("card")
-    log("飞书卡片回调监听器启动")
+    log("飞书卡片回调监听器启动", mode=CARD_MODE)
+
+    if CARD_MODE != "ws":
+        return serve_http()
+
 
     proc = subprocess.Popen(
         [
