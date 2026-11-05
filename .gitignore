@@ -330,3 +330,6 @@ agent_platform/agent_platform/data/
 # 生成；ops/rebake_ide_bundle.ps1 刷新 _vault 部署副本），不再入库、不产生提交。
 # 历史提交保留可 git show 追溯；干净 clone 缺该文件时由 rebake/start 流程生成。
 /portal/agent_ide_bundle.json
+
+# 探针输出（一次性证据，落 reports/ 不入库；含数值字段易被凭据扫描误报）
+quant_backtest/_ts_tail_probe.json

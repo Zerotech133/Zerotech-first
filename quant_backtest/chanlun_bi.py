@@ -19,6 +19,8 @@ analyze(bars) 在 P2 结果基础上追加（所有 dt 均为分型 dt，前端�
   "pivots":   [{"s_dt","e_dt","zg","zd","n_bi"}]
 """
 
+SIGNALS_DEPRECATED = True  # True=本模块 signals 为对照口径，勿用于生产，权威口径见 chanlun_signal
+
 from chanlun_fractal import _merge_inclusion as _mi, find_fractals as _ff
 
 BI_MIN_GAP = 4  # 笔最小跨度：两分型中点处理后索引差（>=4 即至少 5 根）
@@ -200,7 +202,21 @@ def _macd_area(macd, s_dt, e_dt):
 
 
 def find_signals(bis, pivots, macd=None):
-    """三类买卖点（简化判据，页面口径同步标注「简化」）：
+    """【废弃口径 · 禁止用于生产/回测】
+
+    ★ 本函数输出的 signals 为对照口径（research-only），不可用于生产策略或
+      回测结论。权威买卖点口径见 chanlun_signal.find_signals，全仓所有
+      .signals 消费点均走 chanlun_signal，无一消费本函数。
+    ★ 实测（100 只票）：与 chanlun_signal.find_signals 的整体 Jaccard 一致率
+      仅 5.4%（1卖最差 0.8%），零只票完全一致；逐日截断重放（20 只 ×
+      14,961 日）显示 44% 的信号在截断后消失——依赖随行情修正的笔终点与
+      MACD 面积，属前视幻觉（look-ahead），没有任何一条信号能在自己的 dt
+      当天被在线看到。
+    ★ 唯一正确用法：chanlun_bi.analyze 的 bis / pivots / segments 是结构层
+      权威（chanlun_signal 亦直接复用同一份），结构可用，signals 不要用。
+    ★ 审计依据：deliverables/2026-11-05_三线并行_v6_口径审计与跨市场判定.md
+
+    三类买卖点（简化判据，页面口径同步标注「简化」）：
 
     结构口径（K153 三轮实证定案）：中枢终点笔 bis[k-1] 即破沿离开笔
     （起点在区间内被 find_pivots 计入中枢、终点破沿）；bis[k]（首支与

@@ -145,8 +145,12 @@ class BrowserVisiblePagePoc:
                 "DOM_MISMATCH", "visible extractor returned no mapping"
             )
         fields = self._project(raw, source_link)
+        # ``media_status`` defaults to ``"unavailable"``. Counting that default
+        # as an observation would leave this emptiness gate permanently open.
         if not any(
-            value for key, value in fields.as_dict().items() if key != "source_link"
+            value
+            for key, value in fields.as_dict().items()
+            if key != "source_link" and value != "unavailable"
         ):
             raise VisiblePocError("DOM_MISMATCH", "visible fields are empty")
         return VisiblePocReport(

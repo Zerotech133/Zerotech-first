@@ -60,6 +60,21 @@ def test_pool_blocking_marks_no_ready():
     assert rep["summary"]["review_ready"] == 0
 
 
+def test_pool_blocking_also_blocks_unknown():
+    """池级 fail 必须覆盖 unknown 卡，不能把 unknown 归到 need_external。"""
+    cards = [
+        {"candidate_id": "x", "market": "CN"},
+        _clean(candidate_id="a", score=100.0),
+        _clean(candidate_id="b", score=100.0),
+    ]
+    rep = p.build_preflight(cards, asof="2026-10-30")
+    assert rep["summary"]["pool_blocking"] >= 1
+    blocked_ids = {q["candidate_id"] for q in rep["review_queue"]["blocked"]}
+    external_ids = {q["candidate_id"] for q in rep["review_queue"]["need_external"]}
+    assert "x" in blocked_ids
+    assert "x" not in external_ids
+
+
 def test_cli_stdout_clean(tmp_path):
     f = tmp_path / "cards.json"
     f.write_text(json.dumps({"cards": [_clean()]}), encoding="utf-8")

@@ -99,8 +99,21 @@ def test_distribution_matches_precheck():
 # ---------------------------------------------------------------------------
 # 3) dry-run decide 集成
 # ---------------------------------------------------------------------------
-def test_dryrun_decide_integration():
-    report = cr.decide(decisions_path=DECISIONS, checklist_path=CHECKLIST, base_path=EXISTING,
+def test_dryrun_decide_integration(tmp_path):
+    # 当前卡池已扩到 400；用“不含 36 张 approved concept 的 20 张历史基线”复现当时的 dry-run 语义。
+    decisions = load(DECISIONS)["decisions"]
+    checklist = {e["review_id"]: e for e in load(CHECKLIST)["entries"]}
+    approved = {checklist[rid]["concept"] for rid, v in decisions.items()
+                if v["verdict"] == "pass"}
+    payload = load(EXISTING)
+    base = [c for c in payload["cards"] if c.get("concept") not in approved][:20]
+    assert len(base) >= 20, "当前卡池不足以构造 20 张历史基线"
+    base_payload = dict(payload)
+    base_payload["cards"] = base
+    base_path = tmp_path / "base20.json"
+    base_path.write_text(json.dumps(base_payload, ensure_ascii=False), encoding="utf-8")
+
+    report = cr.decide(decisions_path=DECISIONS, checklist_path=CHECKLIST, base_path=base_path,
                        apply=False, merge=False)
     assert report["ok"] is True, report.get("errors")
     assert report["mode"] == "dry-run" and report["apply"] is False
@@ -111,7 +124,7 @@ def test_dryrun_decide_integration():
     assert mp["approved_cards"] == 36
     assert mp["plan_stats"]["would_add"] == 36
     assert mp["plan_stats"]["skipped_concept_exists"] == 0
-    assert mp["plan_stats"]["resulting_cards"] == 56
+    assert mp["plan_stats"]["resulting_cards"] == len(base) + 36
     assert mp["validation"]["ok"] is True
 
 

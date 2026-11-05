@@ -28,6 +28,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import sys
 from datetime import datetime, timedelta, timezone
@@ -90,32 +91,105 @@ def derive_business_columns(entry: dict) -> list | None:
     return cols or None
 
 
+# ---- kg 日志行判定（v2）----------------------------------------------------
+# 带结论的行有两种形态：显式退出码（exit=N / rc=N）、独立成败标记（OK/FAIL/WARN）。
+_RE_KG_EXIT = re.compile(r"\bexit=(\d+)\b")
+_RE_KG_RC = re.compile(r"\brc=(\d+)\b")
+_RE_KG_WORD = re.compile(r"(?<![A-Za-z])(OK|FAIL|WARN)(?![A-Za-z])")
+# 无退出码但带异常痕迹的行同样算失败（旧口径的 bad_marks，不能因为改版就丢掉）
+_RE_KG_ERROR = re.compile(r"(\berror=|ERROR\b|Traceback)")
+# 辅助作业：会写自己的结论行，但不碰数据根（备份演练恢复的是快照副本）。
+# 它们的失败**不阻塞** registry 重建，但要作为告警带出去，不许静默吞掉。
+AUX_JOB_PATTERN = re.compile(r"^(b4_[a-z_]+|restore_drill)\b")
+
+
+def _kg_verdict(line: str):
+    """判定单行是否带操作结论。
+
+    返回 True（成功）/ False（失败）/ None（注释行，无结论）。
+    """
+    code = None
+    hit = _RE_KG_EXIT.search(line) or _RE_KG_RC.search(line)
+    if hit:
+        code = int(hit.group(1))
+    word_hit = _RE_KG_WORD.search(line)
+    word = word_hit.group(1) if word_hit else None
+    if word in ("FAIL", "WARN"):
+        return False
+    if code is not None:
+        return code == 0
+    if word == "OK":
+        return True
+    if _RE_KG_ERROR.search(line):
+        return False
+    return None
+
+
+def _kg_job(line: str) -> str:
+    """取结论行的作业名（首 token），用于区分数据根作业与辅助作业。"""
+    return line.split(None, 1)[0] if line.strip() else ""
+
+
 def find_kg_log_state() -> dict:
     """读 kg_sync_task.log 尾部，判断是否有异常/进行中操作。
 
-    返回 {"ok": bool, "last": str, "reason": str}。
-    判定规则（保守）：最后一条非空行必须带成功标志（OK 或 exit=0），
-    且最后 20 行内不得出现进行中/失败标记，否则拒跑。
+    返回 {"ok": bool, "last": str, "verdict": str, "skipped": int, "aux": list, "reason": str}。
+    ``last`` 仍是物理最后一行（审计留痕用），``verdict`` 是实际据以判定的那行。
+
+    判定规则 v2（2026-11-05 修订）：尾部 20 行里**从后往前找第一条带结论的行**
+    （显式 ``exit=N`` / ``rc=N``，或独立的 OK/FAIL/WARN 标记），只看它成败；
+    不带任何结论的行（备份演练 ``b4_restore_drill``、人工 ``manual-precheck``
+    备注、``fx_fill ... dry=False`` 这类信息行）一律视为注释行跳过并计数。
+
+    为什么改：旧规则要求"最后一行必须带 OK/exit=0"。日志里只要落一条非数据操作
+    行（演练、手工备注），前置检查就永久判失败，直到下一次 kg_sync 成功；2026-11-05
+    10:06 的 ``b4_restore_drill`` 把 09:51 那次 ``registry_align ... exit=0`` 盖住，
+    表现为"数据明明对齐却拒跑"，只能靠人工往日志里补一行带 OK 的备注来解锁。
+
+    仍然保守的部分：尾部 3 行出现进行中标记一律拒跑；整段存量里找不到结论行也拒跑。
+    辅助作业（``b4_*`` 备份演练一类）的结论行不参与判定，但其失败会放进 ``aux``
+    字段带出去——跳过不等于掩盖。
     """
     if not KG_LOG.is_file():
-        return {"ok": False, "last": "", "reason": "日志不存在：%s" % KG_LOG}
+        return {"ok": False, "last": "", "verdict": "", "skipped": 0,
+                "reason": "日志不存在：%s" % KG_LOG}
     try:
         lines = [ln.strip() for ln in KG_LOG.read_text(encoding="utf-8", errors="replace").splitlines()]
     except OSError as exc:
-        return {"ok": False, "last": "", "reason": "日志不可读：%s" % exc}
+        return {"ok": False, "last": "", "verdict": "", "skipped": 0,
+                "reason": "日志不可读：%s" % exc}
     tail = [ln for ln in lines if ln][-20:]
     if not tail:
-        return {"ok": False, "last": "", "reason": "日志为空"}
+        return {"ok": False, "last": "", "verdict": "", "skipped": 0, "reason": "日志为空"}
     last = tail[-1]
     busy_marks = ("in_progress", "进行中", "running", "started", "START", "开始")
-    bad_marks = (" FAIL", "FAIL ", "exit=1", "exit=2", " exit=1", " error=", "ERROR")
     if any(m in last for m in busy_marks) or any(m in ln for ln in tail[-3:] for m in busy_marks):
-        return {"ok": False, "last": last, "reason": "日志尾部疑似有其他会话操作进行中"}
-    if any(m in last for m in bad_marks):
-        return {"ok": False, "last": last, "reason": "日志尾部存在异常退出记录"}
-    if not (" OK" in last or last.endswith("OK") or "exit=0" in last):
-        return {"ok": False, "last": last, "reason": "日志尾部不是成功收尾，无法确认无进行中操作"}
-    return {"ok": True, "last": last, "reason": ""}
+        return {"ok": False, "last": last, "verdict": "", "skipped": 0,
+                "reason": "日志尾部疑似有其他会话操作进行中"}
+
+    # 先在整个窗口里收集辅助作业的失败——不能因为判定提前返回就漏报。
+    # 反面教材：2026-11-05 10:27 那次 apply 在 b4_restore_drill(rc=1) 之后追加了一条
+    # exit=0，倒序扫到它即返回，演练的 P1 就被"顺便"掩盖了。
+    aux = [ln[:600] for ln in tail
+           if AUX_JOB_PATTERN.match(_kg_job(ln)) and _kg_verdict(ln) is False]
+
+    skipped = 0
+    for line in reversed(tail):
+        verdict = _kg_verdict(line)
+        if verdict is None:
+            skipped += 1
+            continue
+        if AUX_JOB_PATTERN.match(_kg_job(line)):
+            # 辅助作业（备份演练等）：成败不参与数据根互斥判定，失败已在 aux 里
+            skipped += 1
+            continue
+        if verdict:
+            return {"ok": True, "last": last, "verdict": line, "skipped": skipped,
+                    "aux": aux, "reason": ""}
+        return {"ok": False, "last": last, "verdict": line, "skipped": skipped,
+                "aux": aux, "reason": "最近一条数据操作未成功：%s" % line[:120]}
+    return {"ok": False, "last": last, "verdict": "", "skipped": skipped, "aux": aux,
+            "reason": "尾部 %d 行内没有可判定的数据操作结果" % len(tail)}
 
 
 def make_new_entry(table: str, entry: dict) -> dict:
@@ -314,6 +388,7 @@ def _summary(stats: dict, error: str = "") -> dict:
         "registry_path": common.rel(common.REGISTRY),
         "catalog_path": common.rel(common.CATALOG),
         "kg_log_last_before": "",
+        "kg_log_aux_warnings": [],
     }
     if stats.get("lifecycle_warning"):
         out["warning"] = stats["lifecycle_warning"]
@@ -343,6 +418,7 @@ def run(apply_mode: bool, as_json: bool) -> int:
     # mode 值 100 只是内部占位，下面统一改回真实退出码
     log_state = find_kg_log_state()
     payload["kg_log_last_before"] = log_state["last"]
+    payload["kg_log_aux_warnings"] = log_state.get("aux") or []
     if not log_state["ok"]:
         payload["code"] = common.EXIT_NOT_READY
         payload["error"] = "拒跑：kg_sync_task.log 前置检查未通过（%s）" % log_state["reason"]

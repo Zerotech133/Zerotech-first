@@ -270,12 +270,22 @@ def build_audit(f):
 
 
 def _cal_note():
-    """休市日历缺口提醒——不参与异常计数，只提示该补登哪几年。
+    """休市日历的数据源、时效与缺口——不参与异常计数。
 
-    未登记年份不会报错，只会把节假日漏判成交易日（静默失真），
-    所以单独提示，避免「全绿」被误解成「日历永远可信」。
+    快照可用时显示来源与新鲜度（可追溯）；快照不可用或未覆盖某年才报警，
+    避免「全绿」被误解成「日历永远可信」。
     """
+    info = ctd.snapshot_info()
     ys = ctd.needs_update()
+    if info:
+        line = "休市日历：Tushare trade_cal 快照 %s 止（%s 更新，%d 行）" % (
+            info["end"].isoformat(),
+            info["mtime"].strftime("%m-%d %H:%M"),
+            info["rows"],
+        )
+        if ys:
+            line += "｜⚠ 快照未覆盖：%s" % "、".join(str(y) for y in ys)
+        return line
     if not ys:
         return ""
     tail = ""
@@ -285,9 +295,10 @@ def _cal_note():
             g["first_gap_day"],
             g["days_left"],
         )
-    return "⚠ 休市日历待补登：%s（cn_trading_days.HOLIDAYS，依上交所年度休市公告%s）" % (
-        "、".join(str(y) for y in ys),
-        tail,
+    return (
+        "⚠ 休市日历无快照可用，退回内置表：待补登 %s"
+        "（恢复 data/tushare/trade_cal/ 快照即可，无需手改）%s"
+        % ("、".join(str(y) for y in ys), tail)
     )
 
 

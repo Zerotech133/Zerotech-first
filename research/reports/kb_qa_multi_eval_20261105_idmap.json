@@ -1,0 +1,471 @@
+{
+ "schema_version": 1,
+ "kind": "kb_qa_question_bank",
+ "generated_at": "2026-11-05T02:43:51+08:00",
+ "questions": [
+  {
+   "source_unit_id": "e123e3fd3204",
+   "book": "rp_AP202609301830023754",
+   "chapter": "房地产行业点评报告 京沪现房销售细则落地，贴息支持需求释放",
+   "page_start": 1,
+   "page_end": 1,
+   "concept": "土地出让价款缴纳政策"
+  },
+  {
+   "source_unit_id": "e1131cfc538a",
+   "book": "rp_AP202609301830015454",
+   "chapter": "通过人工智能采 纳实现财富来源转型",
+   "page_start": 1,
+   "page_end": 1,
+   "concept": "AI治理与人类问责"
+  },
+  {
+   "source_unit_id": "5908d9b2a2af",
+   "book": "rp_AP202609301830034708",
+   "chapter": "太 平 洋 证 券 股 份 有 限 公 司 证 券 研 究 报 告",
+   "page_start": 1,
+   "page_end": 1,
+   "concept": "安费诺（Ampere）2026财年第二季度业绩"
+  },
+  {
+   "source_unit_id": "ebb18ca3da25",
+   "book": "rp_AP202609301830054738",
+   "chapter": "中性",
+   "page_start": 1,
+   "page_end": 1,
+   "concept": "房地产行业板块表现"
+  },
+  {
+   "source_unit_id": "083bf5c69ee9",
+   "book": "rp_AP202610021830105332",
+   "chapter": "看好",
+   "page_start": 1,
+   "page_end": 1,
+   "concept": "国防军工行业周度表现"
+  },
+  {
+   "source_unit_id": "f0aa3d2af1ef",
+   "book": "rp_AP202610021830105365",
+   "chapter": "看好",
+   "page_start": 1,
+   "page_end": 1,
+   "concept": "国防军工行业周度表现"
+  },
+  {
+   "source_unit_id": "22b53a4c3055",
+   "book": "rp_AP202610021830111904",
+   "chapter": "从特斯拉Cybercab看EMB+SBW",
+   "page_start": 1,
+   "page_end": 1,
+   "concept": "线控转向响应优势"
+  },
+  {
+   "source_unit_id": "52cfc0612e6b",
+   "book": "rp_AP202610071830184407",
+   "chapter": "图表目录",
+   "page_start": 2,
+   "page_end": 2,
+   "concept": "AI4S 商业模式"
+  },
+  {
+   "source_unit_id": "d780edf3ffbf",
+   "book": "rp_AP202610031830126598",
+   "chapter": "替代方案",
+   "page_start": 1,
+   "page_end": 1,
+   "concept": "AI4S 竞争范式转变"
+  },
+  {
+   "source_unit_id": "f3707231f400",
+   "book": "伏击涨停(2)",
+   "chapter": "第一节",
+   "page_start": 13,
+   "page_end": 13,
+   "concept": "量学核心逻辑"
+  },
+  {
+   "source_unit_id": "efa0bece0085",
+   "book": "rp_AP202609301830016191",
+   "chapter": "目录",
+   "page_start": 2,
+   "page_end": 2,
+   "concept": "AI 产业投资传导链条"
+  },
+  {
+   "source_unit_id": "47f5ad80fdb7",
+   "book": "rp_AP202609301830016191",
+   "chapter": "强于大市",
+   "page_start": 1,
+   "page_end": 1,
+   "concept": "AI 产业投资传导链条"
+  },
+  {
+   "source_unit_id": "8459f20f0e6f",
+   "book": "rp_AP202610011830075766",
+   "chapter": "阿鲁普与处于变革前沿的客户及合作伙伴 并肩工作，助力将全球雄心与本地机遇相 连接。",
+   "page_start": 2,
+   "page_end": 2,
+   "concept": "中国“新三样”产业"
+  },
+  {
+   "source_unit_id": "6519a0ca6074",
+   "book": "rp_AP202609301830054135",
+   "chapter": "模型降本、智能体生态演进，持续关注AI 应用板块机会",
+   "page_start": 1,
+   "page_end": 1,
+   "concept": "传媒行业投资主线"
+  },
+  {
+   "source_unit_id": "ae05187cc3bc",
+   "book": "rp_AP202610061830170460",
+   "chapter": "图表目录",
+   "page_start": 2,
+   "page_end": 2,
+   "concept": "多层级安全评估体系（ARIA）"
+  },
+  {
+   "source_unit_id": "fcb258598685",
+   "book": "rp_AP202610071830188839",
+   "chapter": "电子行业跟踪周报 海外算力周跟踪：AI 硬件产业链持续高景 气，看好Q4 业绩高增",
+   "page_start": 1,
+   "page_end": 1,
+   "concept": "高端 ABF 载板产能瓶颈"
+  },
+  {
+   "source_unit_id": "36cf43429e2b",
+   "book": "rp_AP202609301830015420",
+   "chapter": "引言",
+   "page_start": 4,
+   "page_end": 4,
+   "concept": "酒精营销传播的核心原则"
+  },
+  {
+   "source_unit_id": "098fe0e25205",
+   "book": "rp_AP202610061830167967",
+   "chapter": "一、贸易总体情况",
+   "page_start": 2,
+   "page_end": 2,
+   "concept": "中国粮食贸易主要进口来源国"
+  },
+  {
+   "source_unit_id": "6978d89cc3a4",
+   "book": "rp_AP202609301830015454",
+   "chapter": "通过人工智能采 纳实现财富来源转型",
+   "page_start": 1,
+   "page_end": 1,
+   "concept": "财富来源审查转型"
+  },
+  {
+   "source_unit_id": "739f205b7427",
+   "book": "rp_AP202610061830165866",
+   "chapter": "一、贸易总体情况",
+   "page_start": 2,
+   "page_end": 2,
+   "concept": "主要进口来源国格局"
+  },
+  {
+   "source_unit_id": "708d6446d475",
+   "book": "rp_AP202610031830124602",
+   "chapter": "100 《金融市场研究》2026.09 VOL.172",
+   "page_start": 7,
+   "page_end": 7,
+   "concept": "常备回购便利（SRF）操作规模上限调整"
+  },
+  {
+   "source_unit_id": "f65c4e3b7835",
+   "book": "rp_AP202609301830054738",
+   "chapter": "中性",
+   "page_start": 1,
+   "page_end": 1,
+   "concept": "上海房地产新政"
+  },
+  {
+   "source_unit_id": "d22ef9aab17c",
+   "book": "rp_AP202610031830126605",
+   "chapter": "Meta 发布新款智能眼镜，关注端侧AI",
+   "page_start": 1,
+   "page_end": 1,
+   "concept": "Muse 智能体"
+  },
+  {
+   "source_unit_id": "7d4c73681304",
+   "book": "rp_AP202610021830112214",
+   "chapter": "大模型系列深度（一）：国产大模型竞争重心转向效",
+   "page_start": 1,
+   "page_end": 1,
+   "concept": "开源生态构建竞争壁垒"
+  },
+  {
+   "source_unit_id": "a40483ae776e",
+   "book": "伏击涨停(2)",
+   "chapter": "序言1",
+   "page_start": 5,
+   "page_end": 5,
+   "concept": "量柱完全分类"
+  },
+  {
+   "source_unit_id": "381811df2585",
+   "book": "rp_AP202609301830015454",
+   "chapter": "通过人工智能采 纳实现财富来源转型",
+   "page_start": 1,
+   "page_end": 1,
+   "concept": "知识图谱与叙事一致性"
+  },
+  {
+   "source_unit_id": "252c4dbe1667",
+   "book": "rp_AP202609301830016191",
+   "chapter": "强于大市",
+   "page_start": 1,
+   "page_end": 1,
+   "concept": "端侧 AI 放量"
+  },
+  {
+   "source_unit_id": "ed4b3dff7b4d",
+   "book": "rp_AP202609301830016191",
+   "chapter": "目录",
+   "page_start": 2,
+   "page_end": 2,
+   "concept": "端侧 AI 放量"
+  },
+  {
+   "source_unit_id": "1f57e8719bd4",
+   "book": "米勒维尼_趋势交易体系",
+   "chapter": "五、强势股形态 Power Play（02:29–03:00）",
+   "page_start": 5,
+   "page_end": 5,
+   "concept": "Power Play"
+  },
+  {
+   "source_unit_id": "929b83f903a8",
+   "book": "rp_AP202609301830015836",
+   "chapter": "太 平 洋 证 券 股 份 有 限 公 司 证 券 研 究 报 告",
+   "page_start": 1,
+   "page_end": 1,
+   "concept": "AI 算力建设对迈威尔数据中心业务的影响"
+  },
+  {
+   "source_unit_id": "8032d4ff1c17",
+   "book": "rp_AP202609301830015406",
+   "chapter": "供应链风险管理。现有的联邦网络安全框架可以为管理和控制空间和地面段的风险提供一个起点 。",
+   "page_start": 6,
+   "page_end": 6,
+   "concept": "频谱资源与许可"
+  },
+  {
+   "source_unit_id": "a3b062104586",
+   "book": "rp_AP202609301830015406",
+   "chapter": "轨道数据中心的政策考量",
+   "page_start": 1,
+   "page_end": 1,
+   "concept": "政策监管环境要求"
+  },
+  {
+   "source_unit_id": "bc46cbc09681",
+   "book": "rp_AP202609301830035720",
+   "chapter": "新华传媒拟收购界面财联社，关注出版行业并购整 合机遇 ⚫ 事件",
+   "page_start": 1,
+   "page_end": 1,
+   "concept": "传媒主体投资并购策略"
+  },
+  {
+   "source_unit_id": "3a9b69ec2a50",
+   "book": "rp_AP202610021830111904",
+   "chapter": "从特斯拉Cybercab看EMB+SBW",
+   "page_start": 1,
+   "page_end": 1,
+   "concept": "自动驾驶责任认定标准"
+  },
+  {
+   "source_unit_id": "1028fea5409a",
+   "book": "rp_AP202609301830015422",
+   "chapter": "成本压力之下，国内智能手机在售产品、新品价格纷纷上涨，导致需求疲软，销量双双下滑",
+   "page_start": 2,
+   "page_end": 2,
+   "concept": "二手市场用户痛点"
+  },
+  {
+   "source_unit_id": "bf0d264626b9",
+   "book": "米勒维尼_趋势交易体系",
+   "chapter": "十、回测证据：退出规则比入场更重要（TSX 25 年）",
+   "page_start": 10,
+   "page_end": 10,
+   "concept": "Trend Template 退出规则"
+  },
+  {
+   "source_unit_id": "7e665de0b2bd",
+   "book": "伏击涨停(2)",
+   "chapter": "序言1量学理论的七大贡献",
+   "page_start": 7,
+   "page_end": 7,
+   "concept": "高量不破"
+  },
+  {
+   "source_unit_id": "dae4cbf52fe3",
+   "book": "米勒维尼_趋势交易体系",
+   "chapter": "八、波动收缩形态 VCP（03:59–04:26）",
+   "page_start": 8,
+   "page_end": 8,
+   "concept": "VCP 波动收缩"
+  },
+  {
+   "source_unit_id": "d572abdcc970",
+   "book": "rp_AP202610021830105528",
+   "chapter": "摘要：",
+   "page_start": 1,
+   "page_end": 1,
+   "concept": "化工行业周期传导机制"
+  },
+  {
+   "source_unit_id": "e67f4a1dac56",
+   "book": "米勒维尼_趋势交易体系",
+   "chapter": "一、趋势模板（00:00–00:26）",
+   "page_start": 1,
+   "page_end": 1,
+   "concept": "趋势模板"
+  },
+  {
+   "source_unit_id": "070380b8404a",
+   "book": "rp_AP202609301830015419",
+   "chapter": "目录",
+   "page_start": 2,
+   "page_end": 2,
+   "concept": "网络安全出海策略"
+  },
+  {
+   "source_unit_id": "74ecb023f851",
+   "book": "rp_AP202609301830015453",
+   "chapter": "06",
+   "page_start": 2,
+   "page_end": 2,
+   "concept": "广州零售市场策略"
+  },
+  {
+   "source_unit_id": "166feee8b922",
+   "book": "rp_AP202609301830034656",
+   "chapter": "阿里发布SNPO 光互连超节点，开放生态",
+   "page_start": 1,
+   "page_end": 1,
+   "concept": "SNPO 开放生态策略"
+  },
+  {
+   "source_unit_id": "a44a13fbb69c",
+   "book": "rp_AP202609301830042382",
+   "chapter": "太 平 洋 证 券 股 份 有 限 公 司 证 券 研 究 报 告",
+   "page_start": 1,
+   "page_end": 1,
+   "concept": "钠电池核心机会环节"
+  },
+  {
+   "source_unit_id": "4815d1b2b3d7",
+   "book": "rp_AP202609301830042382",
+   "chapter": "太 平 洋 证 券 股 份 有 限 公 司 证 券 研 究 报 告",
+   "page_start": 1,
+   "page_end": 1,
+   "concept": "钠电池行业生命周期"
+  },
+  {
+   "source_unit_id": "d0df32b16bdd",
+   "book": "rp_AP202609301830042382",
+   "chapter": "太 平 洋 证 券 股 份 有 限 公 司 证 券 研 究 报 告",
+   "page_start": 1,
+   "page_end": 1,
+   "concept": "钠电池应用场景拓展"
+  },
+  {
+   "source_unit_id": "3a4eff67a995",
+   "book": "rp_AP202609301830023858",
+   "chapter": "行业评级：看好",
+   "page_start": 1,
+   "page_end": 1,
+   "concept": "行业评级定义"
+  },
+  {
+   "source_unit_id": "de5d7e7138f5",
+   "book": "rp_AP202609301830053954",
+   "chapter": "行业评级：看好",
+   "page_start": 1,
+   "page_end": 1,
+   "concept": "行业评级定义"
+  },
+  {
+   "source_unit_id": "78824393df60",
+   "book": "rp_AP202610021830111912",
+   "chapter": "太 平 洋 证 券 股 份 有 限 公 司 证 券 研 究 报 告",
+   "page_start": 1,
+   "page_end": 1,
+   "concept": "光伏行业反内卷治理"
+  },
+  {
+   "source_unit_id": "5cd71dccf4ef",
+   "book": "rp_AP202609301830023858",
+   "chapter": "行业评级：看好",
+   "page_start": 1,
+   "page_end": 1,
+   "concept": "建筑装饰行业估值水平"
+  },
+  {
+   "source_unit_id": "dd02cab720e0",
+   "book": "rp_AP202609301830015453",
+   "chapter": "06",
+   "page_start": 2,
+   "page_end": 2,
+   "concept": "北京零售市场现状"
+  },
+  {
+   "source_unit_id": "bf663d3e998a",
+   "book": "rp_AP202609301830015453",
+   "chapter": "06",
+   "page_start": 2,
+   "page_end": 2,
+   "concept": "大中华区零售市场趋势"
+  },
+  {
+   "source_unit_id": "afef8065108b",
+   "book": "rp_AP202609301830015453",
+   "chapter": "06",
+   "page_start": 2,
+   "page_end": 2,
+   "concept": "上海零售市场动态"
+  },
+  {
+   "source_unit_id": "653a45d7f679",
+   "book": "rp_AP202610031830124601",
+   "chapter": "VOL.172 2026.09《金融市场研究》13",
+   "page_start": 13,
+   "page_end": 13,
+   "concept": "资本市场现存障碍"
+  },
+  {
+   "source_unit_id": "918a6d233355",
+   "book": "rp_AP202610031830124601",
+   "chapter": "VOL.172 2026.09《金融市场研究》13",
+   "page_start": 13,
+   "page_end": 13,
+   "concept": "资本市场现存障碍"
+  },
+  {
+   "source_unit_id": "53952f833012",
+   "book": "rp_AP202610031830124601",
+   "chapter": "金融图强：中国资本市场改革的成效与展望",
+   "page_start": 1,
+   "page_end": 1,
+   "concept": "资本市场改革成效"
+  },
+  {
+   "source_unit_id": "376311f05598",
+   "book": "rp_AP202610031830124601",
+   "chapter": "VOL.172 2026.09《金融市场研究》13",
+   "page_start": 13,
+   "page_end": 13,
+   "concept": "资本市场改革成效"
+  },
+  {
+   "source_unit_id": "fc151b2839d5",
+   "book": "rp_AP202610071830191034",
+   "chapter": "2026 年10 月06 日",
+   "page_start": 1,
+   "page_end": 1,
+   "concept": "AI 资本开支"
+  }
+ ]
+}

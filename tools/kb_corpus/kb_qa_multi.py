@@ -46,6 +46,13 @@ MAX_CLUSTERS = 3
 MAX_UNITS_PER_CLUSTER = 3
 MAX_ANSWER_CHARS = 400
 REFUSAL_MARK = "没有足够依据"
+REFUSAL_ANSWER = "知识库中没有足够依据回答该问题。"
+# 可答性门控（answerability gate）：生成前先判断问题主题是否属于研报知识库领域。
+# 默认关闭，仅 v4d/router 路径按需开启；Ollama 生产 multi 保持原行为。
+# v2：只做领域范围判断，不把检索材料交给判定器（避免 v1 因材料缺失而过度拒答）。
+ANSWERABILITY_PROMPT_VERSION = "v2"
+ANSWERABILITY_TIMEOUT_CAP = 30.0
+ANSWERABILITY_DECISIONS = ("answerable", "unanswerable", "unknown")
 
 
 class MultiError(RuntimeError):
@@ -320,9 +327,161 @@ def build_citation_retry_prompt(prompt: str) -> str:
     return f"{prompt}{CITATION_RETRY_HINT}"
 
 
+# ---------------------------------------------------------------------------
+# 多单元答案清洗（自检修正残留 → 干净拒答；重复事实/引用去重）
+# ---------------------------------------------------------------------------
+_SELF_CHECK_ECHO_MARKERS = ("自检修正", "重新作答如下")
+_FACT_LINE_RE = re.compile(r"^\s*(?:[-*]\s*)?(?:【(?:直接事实|事实|推断)】|\[(?:事实|推断)\])")
+_CITE_TOKEN_RE = re.compile(
+    r"[\[【][0-9a-fA-F]{8,12}[\]】]\s*(?:p\.\s*\d+(?:\s*[-–~]\s*\d+)?)?", re.I)
+_PAGE_ONLY_RE = re.compile(r"(?<![0-9A-Za-z])p\.\s*\d+(?:\s*[-–~]\s*\d+)?", re.I)
+_NORM_STRIP_RE = re.compile(r"[\s，。；;、,.:：!?！？\-–—]+")
+
+
+def _strip_retry_echo(answer: str) -> tuple[str, bool]:
+    """去掉自检修正提示行；返回 (清洗后文本, 是否命中提示残句)。"""
+    kept = []
+    echo = False
+    for line in str(answer or "").splitlines():
+        if any(marker in line for marker in _SELF_CHECK_ECHO_MARKERS):
+            echo = True
+            continue
+        kept.append(line)
+    return "\n".join(kept).strip(), echo
+
+
+def _normalize_fact_line(line: str) -> str:
+    """事实行归一化：去掉引用标记/页码/标点空白，用于判重。"""
+    text = _CITE_TOKEN_RE.sub("", str(line or ""))
+    text = _PAGE_ONLY_RE.sub("", text)
+    return _NORM_STRIP_RE.sub("", text)
+
+
+def _dedupe_inline_cites(line: str) -> str:
+    """同一括号组内重复的 [unit_id] p.n / p.n 只保留一次。"""
+    # 先消掉完全相同、以分隔符相连的引用串
+    line = re.sub(
+        r"(\[[0-9a-fA-F]{8,12}\]\s*p\.\s*\d+(?:\s*[-–~]\s*\d+)?)"
+        r"(?:\s*[、,，]\s*\1)+", r"\1", line)
+    # 再消掉同一组内重复的纯页码（例如「p.1、p.1」）
+    line = re.sub(r"(p\.\s*\d+)(?:\s*[、,，]\s*\1)+", r"\1", line,
+                  flags=re.I)
+    # 清理去重后留下的悬空分隔符
+    line = re.sub(r"[、,，]\s*(?=[）)])", "", line)
+    line = re.sub(r"[、,，]\s*[、,，]+", "、", line)
+    line = re.sub(r"([（(])\s*[、,，]", r"\1", line)
+    return line
+
+
+def clean_multi_answer(answer: str, clusters: list[dict] | None = None) -> str:
+    """清洗多单元答案，供 answer_multi 在非降级路径统一调用。
+
+    规则：
+    - 删除「【自检修正】…现重新作答如下」等提示残句；
+    - 去重重复事实/推断行（归一化后相同）；
+    - 去重同一括号组内重复引用/页码；
+    - 若清洗后为空，或只剩提示残句且无有效答案 → 统一干净拒答。
+    """
+    text = str(answer or "").strip()
+    if not text:
+        return REFUSAL_ANSWER
+    cleaned, echo = _strip_retry_echo(text)
+    lines = []
+    seen_facts = set()
+    for raw in cleaned.splitlines():
+        line = _dedupe_inline_cites(raw.strip())
+        if not line:
+            continue
+        norm = _normalize_fact_line(line)
+        if _FACT_LINE_RE.match(line) and norm:
+            if norm in seen_facts:
+                continue
+            seen_facts.add(norm)
+        lines.append(line)
+    cleaned = "\n".join(lines).strip()
+    if not cleaned:
+        return REFUSAL_ANSWER
+    if REFUSAL_MARK in cleaned:
+        return cleaned
+    # 仅有自检修正残句、重试后仍无有效引用 → 干净拒答（不再输出半句）
+    if echo and not _CITE_RE.search(cleaned):
+        return REFUSAL_ANSWER
+    if not re.search(r"[\u4e00-\u9fff]", cleaned):
+        return REFUSAL_ANSWER
+    return cleaned
+
+
+# ---------------------------------------------------------------------------
+# 可答性门控（answerability gate，默认关闭；仅 v4d/router 路径按需开启）
+# ---------------------------------------------------------------------------
+ANSWERABILITY_PROMPT = """你是检索增强问答的可答性判定器。判断**问题本身是否属于该研报知识库可回答的范围**，只做领域范围判断，不要求当前资料一定命中答案。
+判定标准：
+- 若问题主题属于金融/产业/公司/策略/市场/宏观/交易等研报知识范围 → 判「可答」（即使资料未直接覆盖，也由生成模型按材料决定是否拒答）；
+- 若问题主题明显不属于知识库范围（体育、娱乐、医疗诊断、物理/数学推导、签证旅行、生活常识等）→ 判「不可答」；
+- 不要因为资料里出现相关领域词汇就改变判断，只看问题主题是否属于研报知识范围。
+只输出一行：可答 或 不可答，后跟不超过20字的理由。
+
+问题：{question}"""
+
+
+def build_answerability_prompt(question: str, clusters: list[dict] | None = None) -> str:
+    """构造可答性判定 prompt；只判问题主题的领域范围，不把检索材料交给判定器（避免材料偏置）。"""
+    del clusters  # 保留参数以兼容调用方；判定仅依据问题本身
+    return ANSWERABILITY_PROMPT.format(question=(question or "").strip())
+
+
+def parse_answerability(text: str) -> tuple[str, str]:
+    """解析判定器输出：返回 (answerable|unanswerable|unknown, 理由/原文片段)。"""
+    raw = str(text or "").strip()
+    if not raw:
+        return "unknown", "空响应"
+    head = raw[:12]
+    if head.startswith("不可答"):
+        return "unanswerable", _clip(raw, 80)
+    if head.startswith("可答"):
+        return "answerable", _clip(raw, 80)
+    window = raw[:200]
+    idx_un = window.find("不可答")
+    idx_yes = window.find("可答")
+    if idx_un >= 0 and (idx_yes < 0 or idx_un <= idx_yes):
+        return "unanswerable", _clip(window, 80)
+    if idx_yes >= 0:
+        return "answerable", _clip(window, 80)
+    return "unknown", _clip(window, 80)
+
+
+def assess_answerability(question: str, clusters: list[dict], chat_fn,
+                         model: str = DEFAULT_MODEL,
+                         timeout: float = DEFAULT_TIMEOUT) -> dict:
+    """调用一次轻量判定，返回可答性元数据；调用失败 fail-open 为 unknown。"""
+    started = time.monotonic()
+    info = {"enabled": True, "decision": "unknown", "reason": "", "error": None,
+            "model": model, "raw": "", "elapsed_seconds": 0.0}
+    if not clusters:
+        info.update({"decision": "unanswerable", "reason": "检索无材料"})
+        info["elapsed_seconds"] = round(time.monotonic() - started, 2)
+        return info
+    if chat_fn is None:
+        info.update({"reason": "未提供判定函数（fail-open）"})
+        info["elapsed_seconds"] = round(time.monotonic() - started, 2)
+        return info
+    prompt = build_answerability_prompt(question, clusters)
+    try:
+        raw = chat_fn(prompt, model=model,
+                      timeout=max(5.0, min(float(timeout), ANSWERABILITY_TIMEOUT_CAP)))
+    except Exception as exc:  # noqa: BLE001 - 门控失败不阻断生成
+        info.update({"reason": "判定调用失败（fail-open）", "error": _clip(exc, 160)})
+        info["elapsed_seconds"] = round(time.monotonic() - started, 2)
+        return info
+    decision, reason = parse_answerability(raw)
+    info.update({"decision": decision, "reason": reason, "raw": _clip(raw, 160)})
+    info["elapsed_seconds"] = round(time.monotonic() - started, 2)
+    return info
+
+
 def rule_based_multi(clusters: list[dict]) -> str:
     if not clusters:
-        return "知识库中没有足够依据回答该问题。"
+        return REFUSAL_ANSWER
     parts = ["（规则降级：LLM 不可用，多单元摘录）"]
     for cluster in clusters[:2]:
         parts.append(f"【直接事实】{cluster.get('label') or ''}：")
@@ -335,13 +494,17 @@ def answer_multi(question: str, k: int = DEFAULT_K, clusters: list[dict] | None 
                  search_fn=None, chat_fn=None, model: str = DEFAULT_MODEL,
                  timeout: float = DEFAULT_TIMEOUT,
                  prompt_version: str = DEFAULT_PROMPT_VERSION,
-                 citation_retry: bool = False, retry_chat_fn=None) -> dict:
+                 citation_retry: bool = False, retry_chat_fn=None,
+                 answerability_gate: bool = False) -> dict:
     """多单元聚合回答（单问题）：检索+聚类 → 聚合 prompt → 引用校验/置信。
 
     prompt_version：v1（默认）/ v4（可选版本，事实行/推断行分段格式；未扩样前不切默认）。
     citation_retry：v4 引用自检重试（默认 False，不改默认行为）。答案有效引用单元 <2 且未拒答时，
       追加一次强化指令重试；仍不足则由上游 guard fallback。
     retry_chat_fn：重试专用 chat 函数（默认复用 chat_fn/call_ollama，便于测试 mock）。
+    answerability_gate：可答性门控（默认 False）。开启时先用 chat_fn 做一次轻量判定；
+      判为不可答直接返回 REFUSAL_ANSWER，不调用生成模型；判定失败 fail-open 继续生成。
+      仅建议 v4d/router 路径开启，Ollama 生产 multi 保持关闭。
     """
     started = time.monotonic()
     question = (question or "").strip()
@@ -356,18 +519,34 @@ def answer_multi(question: str, k: int = DEFAULT_K, clusters: list[dict] | None 
                           "max_score": c.get("max_score")} for c in clusters],
             "cluster_count": len(clusters), "units_provided": provided,
             "generated_at": datetime.now().astimezone().isoformat(timespec="seconds")}
+    retry_info = {"used": False, "first_units": None, "second_units": None,
+                  "improved": False, "error": None}
     if not clusters:
-        base.update({"answer": "知识库中没有足够依据回答该问题。", "citations": [],
+        base.update({"answer": REFUSAL_ANSWER, "citations": [],
                      "confidence": {"level": "none", "reasons": ["检索无材料，按拒答处理"]},
                      "fallback": False, "refusal": True, "direct_fact_markers": 0,
                      "inference_markers": 0})
         base["elapsed_seconds"] = round(time.monotonic() - started, 2)
         return base
+    if answerability_gate:
+        answerability = assess_answerability(question, clusters, chat_fn,
+                                             model=model, timeout=timeout)
+        base["answerability"] = answerability
+        if answerability["decision"] == "unanswerable":
+            base.update({"answer": REFUSAL_ANSWER, "citations": [],
+                         "confidence": {"level": "none", "reasons": [
+                             f"可答性门控：{answerability.get('reason') or '材料不足'}"]},
+                         "fallback": False, "refusal": True,
+                         "direct_fact_markers": 0, "inference_markers": 0,
+                         "citation_check": {"hallucinated_ids": [], "citation_missing": False},
+                         "citation_retry": retry_info,
+                         "llm": {"model": model, "fallback": False, "error": None,
+                                 "retries": 0}})
+            base["elapsed_seconds"] = round(time.monotonic() - started, 2)
+            return base
     prompt = build_multi_prompt(question, clusters, prompt_version=prompt_version)
     fallback = False
     error = None
-    retry_info = {"used": False, "first_units": None, "second_units": None,
-                  "improved": False, "error": None}
     try:
         answer = (chat_fn or call_ollama)(prompt, model=model, timeout=timeout)
     except (MultiError, TimeoutError, OSError, ValueError) as exc:
@@ -390,6 +569,8 @@ def answer_multi(question: str, k: int = DEFAULT_K, clusters: list[dict] | None 
             second_units = count_valid_cited_units(answer, clusters)
             retry_info.update({"second_units": second_units,
                                "improved": second_units > first_units})
+    if not fallback:
+        answer = clean_multi_answer(answer, clusters)
     check = validate_multi_answer(answer, clusters)
     confidence = assess_confidence(answer, check, clusters, fallback)
     base.update({"answer": answer, "citations": check["citations"],
@@ -660,6 +841,8 @@ def build_parser() -> argparse.ArgumentParser:
     ask_p.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT)
     ask_p.add_argument("--prompt-version", default=DEFAULT_PROMPT_VERSION, choices=PROMPT_VERSIONS,
                        help="聚合 prompt 版本（默认 v1；v4 为可选版本）")
+    ask_p.add_argument("--answerability-gate", action="store_true",
+                       help="生成前先判可答性；不可答直接拒答（建议仅 v4d/router 使用）")
     ev = sub.add_parser("eval", help="对 v3 抽验问题做单单元 vs 多单元对比")
     ev.add_argument("--n", type=int, default=12, help="对比问题数（默认 12）")
     ev.add_argument("--k", type=int, default=DEFAULT_K)
@@ -678,7 +861,8 @@ def main(argv: list[str] | None = None) -> int:
         try:
             if args.multi:
                 result = answer_multi(args.q, k=args.k, model=args.model, timeout=args.timeout,
-                                      prompt_version=args.prompt_version)
+                                      prompt_version=args.prompt_version,
+                                      answerability_gate=args.answerability_gate)
             else:
                 result = kb_qa().ask(args.q, topk=max(MIN_K, min(MAX_K, args.k)),
                                      model=args.model, timeout=args.timeout)

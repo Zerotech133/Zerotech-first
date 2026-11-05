@@ -87,8 +87,8 @@
       "name": "HermesWebUI-Next-Guard",
       "cadence_minutes": 30,
       "grace_minutes": 30,
-      "enabled": true,
-      "note": "每 30 分钟（rep=PT30M 实测）"
+      "enabled": false,
+      "note": "8788 已下线；Windows 计划任务 Disabled 为预期状态（2026-10-26 后 Next 不再使用）；8787 由 HermesWebUI-Guard2 守护。禁用本监控条目，避免 stale 假红（2026-11-05 P0 告警 T-20261105-151）。"
     },
     {
       "name": "AI工作站门户API",

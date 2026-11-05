@@ -470,7 +470,14 @@ def build_report(cards_path: Path, data_root: Path, cards, pool_date: str | None
     summary["supported_total"] = summary["cards_total"] - sum(
         bucket["total"] for market, bucket in summary["by_market"].items()
         if market not in SUPPORTED_MARKETS)
+    supported_hit = sum(
+        bucket["daily_hit"] for market, bucket in summary["by_market"].items()
+        if market in SUPPORTED_MARKETS)
     summary["daily_coverage_pct"] = (
+        round(100.0 * supported_hit / summary["supported_total"], 1)
+        if summary["supported_total"] else None)
+    # 保留含 unsupported 的全卡分母，避免历史调用方拿不到旧口径。
+    summary["all_cards_daily_coverage_pct"] = (
         round(100.0 * summary["daily_hit"] / summary["cards_total"], 1)
         if summary["cards_total"] else None)
     report = {
@@ -487,6 +494,8 @@ def build_report(cards_path: Path, data_root: Path, cards, pool_date: str | None
         "notes": [
             "只读：不写数据仓/DB/任务板/生产；池源=本仓数据仓，不依赖外部 dw_adapter PG 旧池。",
             "CRYPTO 无本仓行情/基础表 → unsupported（不伪造数据）。",
+            "daily_coverage_pct 的分母是 supported_total（不含 unsupported 市场）；"
+            "all_cards_daily_coverage_pct 保留含 unsupported 的全卡口径。",
             "is_st 仅 CN 判定（当前名/namechange ST 期）；HK/US 无 ST 口径 → null。",
             "data_lag_days = pool_date - 该票行情最新交易日（日历日）。",
         ],

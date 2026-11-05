@@ -386,6 +386,8 @@ class TestQueryParsing:
             ("view=", "full"),
             ({"view": ["full"]}, "full"),
             ({"view": ["single"]}, "single"),
+            ({"view": "single"}, "single"),
+            ({"view": 123}, "full"),
         ],
     )
     def test_view_from_query(self, query, expected):

@@ -163,6 +163,33 @@ class TestRegistryAlign(unittest.TestCase):
             self.assertTrue(list(Path(td).glob("registry.json.bak-*")))
             self.assertIn("已回滚", res["error"])
 
+    def test_apply_succeeds_with_retained_orphan_entries(self):
+        """registry_rebuild 保守保留孤儿条目 → physical_count > catalog 表数时仍应成功。
+
+        回归 2026-11-05：原实现把 catalog 表数当期望 physical_count，导致
+        factor_list 登记后 apply 永远回滚（aligned=True/verify=True/metadata=0）。
+        """
+        with tempfile.TemporaryDirectory() as td:
+            cp, rp, kg = _make_env(Path(td), stale=True)
+            reg = json.loads(rp.read_text(encoding="utf-8"))
+            reg["physical_tables"].append({
+                "asset_id": "renamed_old_asset", "physical_tables": ["t1"],
+                "qualification_status": "unknown"})
+            reg["physical_count"] = len(reg["physical_tables"])  # 2（t1 + 孤儿）
+            rp.write_text(json.dumps(reg, ensure_ascii=False), encoding="utf-8")
+            res = ra.run("apply", lock_path=Path(td) / "lock", kg_log=kg,
+                         catalog_path=cp, registry_path=rp)
+            self.assertEqual(res["exit_code"], 0, res)
+            self.assertTrue(res["match_after"])
+            data = json.loads(rp.read_text(encoding="utf-8"))
+            self.assertEqual(data["physical_count"], 3)  # t1 保留 + t2 新增 + 孤儿
+            ids = {e.get("asset_id") for e in data["physical_tables"]}
+            self.assertIn("renamed_old_asset", ids)  # 孤儿未被丢弃
+            self.assertEqual(data["catalog_sha256"], res["catalog"]["sha256"])
+            self.assertEqual(res["metadata"]["code"], 0)
+            self.assertIn("registry_vs_catalog_table_count_diff:3/2",
+                          res["metadata"]["warnings"])
+
     def test_apply_kg_log_precondition_blocks(self):
         with tempfile.TemporaryDirectory() as td:
             cp, rp, kg = _make_env(Path(td), stale=True)
