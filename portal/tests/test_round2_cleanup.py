@@ -175,11 +175,17 @@ def test_f1_non_production_marker_and_nav_intact():
 
 # ---------------------------------------------------------------- 不做项守卫
 def test_guard_explicitly_not_done_items_untouched():
-    assert "127.0.0.1:8796" in _src("ide.html"), "D2 被误改（会新增登录要求）"
-    assert "8096" in _src("legion.html"), "D3 被误改（需 X-Portal-Token）"
-    assert "9899" in _src("static/nav.js"), "D7 被误改（nav.js 自动生成）"
-    assert "/screen.html" in INDEX and "/audit.html" in INDEX, "E1 被误改（收藏 key 失配）"
-    assert "localhost:3000" in _src("dev.html"), "D4 被误改（/probe/* 不能当入口）"
+    """R5（2026-11-06）老田批准执行 T5 六类后，原「不做项」翻转为「已执行」。
+
+    函数名保留以维持引用稳定；断言方向已反转，完整验证见
+    portal/tests/test_round5_t5.py。
+    """
+    assert "127.0.0.1:8796" not in _src("ide.html"), "D2 未执行（应已改 /openhands）"
+    assert "127.0.0.1:8096" not in _src("legion.html"), "D3 未执行（legion 应已改 /legion-api）"
+    assert "9899" not in _src("static/nav.js"), "D7 未执行（nav.js 应已含 /cowagent/）"
+    assert INDEX.count("/screen.html") == 1, "E1 旧路径应只剩 FAV_ALIAS 的 key 一处"
+    assert INDEX.count("/audit.html") == 1, "E1 旧路径应只剩 FAV_ALIAS 的 key 一处"
+    assert "localhost:3000" not in _src("dev.html"), "D4 未执行（应已改 /probe/webui）"
     assert "localhost:4100" in QUANT and "localhost:8888" in QUANT, "D4 工具外链被误改"
 
 
@@ -284,10 +290,14 @@ def test_r3b_quant_drill_comments_updated():
 
 
 def test_r3b_global_guard_five_intentional_noops():
-    """R3-B 全局守卫：本轮 5 个「刻意不做项」现状未被误改（只读文件现场读盘复核）。"""
-    assert "127.0.0.1:8796" in _src("ide.html"), "ide.html 8796 被误改"
-    assert "8096" in _src("legion.html"), "legion.html 8096 被误改"
-    assert "9899" in _src("static/nav.js"), "nav.js 9899 被误改"
+    """R3-B 原「5 个刻意不做项」守卫 —— R5 已被老田批准执行，断言方向反转。
+
+    改为「已执行」正向校验；完整验证见 portal/tests/test_round5_t5.py。
+    """
+    assert "127.0.0.1:8796" not in _src("ide.html"), "ide.html 8796 未清理"
+    assert "127.0.0.1:8096" not in _src("legion.html"), "legion.html 8096 未清理"
+    assert "9899" not in _src("static/nav.js"), "nav.js 9899 未清理"
     _index = _src("index.html")
-    assert "/screen.html" in _index and "/audit.html" in _index, "index.html 导航被误改"
-    assert "localhost:3000" in _src("dev.html"), "dev.html localhost:3000 被误改"
+    assert _index.count("/screen.html") == 1, "index.html 旧路径应只剩 FAV_ALIAS key"
+    assert _index.count("/audit.html") == 1, "index.html 旧路径应只剩 FAV_ALIAS key"
+    assert "localhost:3000" not in _src("dev.html"), "dev.html localhost:3000 未清理"

@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-11-05T21:41:55",
+  "generated_at": "2026-11-06T04:35:00",
   "source": "C:\\项目\\老田的AI助手\\portal\\portal_api.py",
-  "total": 305,
+  "total": 306,
   "signatures": [
     [
       "GET",
@@ -1117,6 +1117,11 @@
       "GET",
       "prefix",
       "/api/data/catalog/"
+    ],
+    [
+      "GET",
+      "prefix",
+      "/api/data/governance/"
     ],
     [
       "GET",

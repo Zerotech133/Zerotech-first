@@ -207,12 +207,15 @@ def test_existing_chains_lineage_untouched():
 
 
 def test_caliber_note_258_vs_233():
-    """口径说明文案：258 唯一口径 / 233 是历史写死值（消除 233/258 展示层漂移）。"""
+    """口径说明文案：258 唯一口径；拓扑节点已去硬编码数字。
+
+    R5（2026-11-06）执行 P0-D A2 后，api_dataops.py 的 `pool:warehouse` 节点名
+    已由「行情仓 233 表」改为「行情仓（catalog 池）」，注记同步改为「不标表数」。
+    """
     frag = added(DATAOPS)
     assert "逻辑表唯一口径 = catalog.json 258 表" in frag
-    assert "233 表" in frag
-    assert "历史写死值" in frag
-    assert "不代表当前表数" in frag
+    assert "不标表数" in frag
+    assert "全表数以本卡片为准" in frag
 
 
 def test_dataops_card_markup_and_distributions():

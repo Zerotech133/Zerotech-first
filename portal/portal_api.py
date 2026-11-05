@@ -1662,6 +1662,12 @@ color:#fff;font-size:13.5px;cursor:pointer}
             import api_catalog_data
             api_catalog_data.handle_get(self, path, qs)
             return
+        if path.startswith("/api/data/governance/"):
+            # P0-E 2026-11-06：治理数据只读通道（SLA/上游健康度/lifecycle/源登记）。
+            # data 已在 nginx 公开族 B 白名单 → 无需改 nginx；待 8091 自然重启生效（WO-OS-09）。
+            from api_data_governance import handle_get as _gov_get
+            _gov_get(self, path, qs)
+            return
         if path == '/api/zhuge/review/status' or path.startswith('/api/zhuge/review/'):
             # P0：只读复核状态/结果（模块内校验 feature flag/session）
             api_zhuge_review.handle_get(self, path)

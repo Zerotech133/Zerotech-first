@@ -645,7 +645,7 @@
   const FAV_GROUPS = [
     { g: '📈 量化交易', subs: [
       { s: '盘前与驾驶', items: [
-        ['📺', '数据大屏', '/screen.html', '全市场盘面影院式总览，开盘前一眼扫全局。'],
+        ['📺', '数据大屏', '/screen', '全市场盘面影院式总览，开盘前一眼扫全局。'],
         ['🌅', '盘前', '/premarket', '开盘前驾驶舱：竞价、隔夜消息与今日作战要点。'],
         ['🌇', '盘后复盘', '/afterhours', '收盘后自动复盘：涨跌归因、板块轮动与明日预案。'],
         ['💰', '金融驾驶舱', '/fin', '多账本绩效总览：模拟仓与策略收益一目了然。'],
@@ -722,12 +722,12 @@
     { g: '⚙️ 系统', subs: [
       { s: '底座', items: [
         ['🎛', 'OS 控制台', '/ops', '计划任务矩阵、备份磁盘、告警收件箱全量。'],
-        ['🛡️', '审计状态', '/audit.html', '安全审计与合规状态总览。'],
+        ['🛡️', '审计状态', '/audit', '安全审计与合规状态总览。'],
         ['🖥️', '系统自检', '/sys-health', '关键端口与服务探活自检。']] },
     ]},
   ];
   const FAV_POOL = FAV_GROUPS.flatMap(g => g.subs.flatMap(s => s.items.map(([ic, t, href, d]) => ({ ic, t, href, g: g.g, s: s.s, d }))));
-  const FAV_ALIAS = { '/market.html': '/fin', '/market_strategy.html': '/market-strategy' }; // 旧存档别名归一
+  const FAV_ALIAS = { '/market.html': '/fin', '/market_strategy.html': '/market-strategy', '/screen.html': '/screen', '/audit.html': '/audit' }; // 旧存档别名归一
   const FAV_DEFAULT = ['/quant', '/intel', '/creator', '/dev'];
   const favBoard = document.getElementById('favBoard');
   const favPanel = document.getElementById('favPanel');
@@ -738,10 +738,10 @@
       const out = [];
       v.forEach(h => { h = FAV_ALIAS[h] || h; if (!out.includes(h)) out.push(h); });
       // K-STOCK-258：大屏横幅撤出置顶 → 一次性迁移进个人应用区首位
-      if (!out.includes('/screen.html')) { out.unshift('/screen.html'); favSave(out); }
+      if (!out.includes('/screen')) { out.unshift('/screen'); favSave(out); }
       return out;
     }
-    return ['/screen.html'].concat(FAV_DEFAULT); // 新装默认：大屏在个人应用区首位
+    return ['/screen'].concat(FAV_DEFAULT); // 新装默认：大屏在个人应用区首位
   }
   function favSave(l) { try { localStorage.setItem(FAV_KEY, JSON.stringify(l)); } catch {} }
   function favBindX(el, href) {

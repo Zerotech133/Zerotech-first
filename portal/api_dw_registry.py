@@ -94,7 +94,7 @@ WAREHOUSE_REGISTRY_PATH = REPO / "quant_backtest" / "data" / "warehouse_registry
 
 
 def _catalog_alignment() -> dict:
-    """把 catalog/registry 的当前口径显式挂到 /api/dw/stats，避免与 /api/dataops 的 304 表读数打架。"""
+    """把 catalog/registry 的当前口径显式挂到 /api/dw/stats，避免与 /api/dataops 的 306 表读数打架。"""
     out = {}
     try:
         cat = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))

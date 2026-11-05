@@ -377,7 +377,7 @@ def _task_groups(errors):
 
 
 def _catalog_summary(errors):
-    """行情仓 catalog.json 聚合（233 表 × source × layout，登记真源）。"""
+    """行情仓 catalog.json 聚合（258 表 × source × layout，登记真源）。"""
     try:
         cat = json.load(open(os.path.join(DATA, "catalog.json"), encoding="utf-8"))
         tables = cat.get("tables", {})
@@ -848,7 +848,7 @@ NODES = [
     {"id": "tg:其他",          "layer": "采集", "name": "其余 8 组×63",    "x": 1105, "y": 250},
     # 数据池层
     {"id": "pool:xueqiu",    "layer": "数据池", "name": "雪球库 3 表",    "x": 90,  "y": 300},
-    {"id": "pool:warehouse", "layer": "数据池", "name": "行情仓 233 表",  "x": 400, "y": 300},
+    {"id": "pool:warehouse", "layer": "数据池", "name": "行情仓（catalog 池）",  "x": 400, "y": 300},
     {"id": "pool:quant",     "layer": "数据池", "name": "量化库 6 表",    "x": 650, "y": 300},
     {"id": "pool:parquet",   "layer": "数据池", "name": "Parquet 行情",   "x": 870, "y": 300},
     # 管道层

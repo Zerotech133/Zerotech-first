@@ -105,7 +105,7 @@ DOMAIN_NAV_GROUPS = {
         ("🚀 指挥", (
             ("🚀 驾驶舱", "/bridge", "bridge"),
             ("🦸 超级助手", "/hermes/", "hermes"),
-            ("🐴 CowAgent", "http://127.0.0.1:9899", "cowagent"),
+            ("🐴 CowAgent", "/cowagent/", "cowagent"),  # 同源 /cowagent/，需 nginx 反代（L2 副本已备，原件未应用）
             ("🧠 智策 OS", "/quant/", "zhice"),
             ("🤖 AI 市场", "/aim", "aim"),
             ("🛒 算法市场", "/algo", "algo"),

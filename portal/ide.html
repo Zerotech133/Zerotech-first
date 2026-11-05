@@ -290,6 +290,7 @@ try{
     <span style="font-size:11px;color:var(--dim2);align-self:center" id="gen">bundle 生成于 —</span>
     <button onclick="openStandalone()" style="background:#13233a;border:1px solid #2b4b70;color:#cfe3ff;border-radius:6px;padding:4px 9px;font-size:11px;cursor:pointer" title="在独立无浏览器导航的窗口中打开">⧉ 独立窗口</button>
     <a href="/hermes/" title="新版 Hermes 原生工作台：Agent / 会话 / OH 执行 / LDE 施工台" style="border-color:#2b6a3f;color:#9fe3ae">→ 新版工作台</a>
+    <span style="font-size:10.5px;color:var(--dim2);align-self:center" title="/openhands/ 经门户反代，带登录校验（未登录跳登录页）">需登录后使用</span>
     <a href="/sandbox">研发沙盘</a>
     <a href="/index.html">← 门户</a>
   </div>
@@ -1099,7 +1100,7 @@ async function toggleMic(){
       try{
         const blob=new Blob(_micChunks,{type:rec.mimeType||"audio/webm"});
         const b64=await new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=rej;fr.readAsDataURL(blob)});
-        const r=await fetch("http://127.0.0.1:8796/api/stt",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({audio_b64:String(b64).split(",")[1]||"",mime:blob.type||"audio/webm"})});
+        const r=await fetch("/openhands/api/stt",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({audio_b64:String(b64).split(",")[1]||"",mime:blob.type||"audio/webm"})});
         const d=await r.json();
         if(d.ok && (d.text||"").trim()){
           const q=document.getElementById("q");
@@ -1220,7 +1221,7 @@ function setModel(v){
 let MCP_TOOLS=[], MCP_PICK=null;
 async function mcpLoad(){
   try{
-    const j=await fetch("http://127.0.0.1:8796/api/mcp/tushare/tools",{cache:"no-store"}).then(r=>r.json());
+    const j=await fetch("/openhands/api/mcp/tushare/tools",{cache:"no-store"}).then(r=>r.json());
     if(!j.ok)throw new Error(j.error||"mcp_failed");
     MCP_TOOLS=j.tools||[];
     document.getElementById("mcp-count").textContent=String(j.count||MCP_TOOLS.length);
@@ -1248,7 +1249,7 @@ document.getElementById("mcp-run").onclick=async()=>{
   try{args=JSON.parse(document.getElementById("mcp-args").value||"{}")}catch(e){document.getElementById("mcp-status").textContent="参数不是合法 JSON";return}
   const st=document.getElementById("mcp-status");st.textContent="执行中…";
   try{
-    const j=await fetch("http://127.0.0.1:8796/api/mcp/tushare/call",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({tool:MCP_PICK,args})}).then(r=>r.json());
+    const j=await fetch("/openhands/api/mcp/tushare/call",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({tool:MCP_PICK,args})}).then(r=>r.json());
     st.textContent=j.ok?"完成":"失败";
     document.getElementById("mcp-result").textContent=j.ok?JSON.stringify(j.result,null,2):("错误："+(j.error||"")+"\n"+(j.detail||""));
   }catch(e){st.textContent="请求失败";document.getElementById("mcp-result").textContent=String(e)}
@@ -1257,8 +1258,8 @@ mcpLoad();
 async function loadModelPicker(){
   try{
     const [ks,ms]=await Promise.all([
-      fetch("http://127.0.0.1:8796/api/keys/state",{cache:"no-store"}).then(r=>r.json()),
-      fetch("http://127.0.0.1:8796/api/models/status",{cache:"no-store"}).then(r=>r.json())
+      fetch("/openhands/api/keys/state",{cache:"no-store"}).then(r=>r.json()),
+      fetch("/openhands/api/models/status",{cache:"no-store"}).then(r=>r.json())
     ]);
     MODEL_STATUS={keys:ks,models:ms};
   }catch(e){ MODEL_STATUS={}; }
@@ -1461,7 +1462,7 @@ async function fetchJsonTimeout(url, opts, timeoutMs, retries, onRetry, external
 
 async function fsTool(tool, args){
   const p = new URLSearchParams();
-  let url = "http://127.0.0.1:8796/api/ide/fs/";
+  let url = "/openhands/api/ide/fs/";
   if(tool === "list_dir"){ url += "list"; p.set("path", (args&&args.path)||"."); }
   else if(tool === "read_file"){ url += "read"; p.set("path", (args&&args.path)||""); }
   else if(tool === "search"){ url += "search"; p.set("q", (args&&args.query)||""); p.set("glob", (args&&args.glob)||""); }
@@ -1764,7 +1765,7 @@ async function send(){
     for(let round=0; round<3; round++){
       steps.push("调用模型 " + m + " · 第 " + (round+1) + " 轮");
       renderProc("⏳ 运行中…");
-      const {r, d} = await fetchJsonTimeout("http://127.0.0.1:8796/v1/chat/completions", {
+      const {r, d} = await fetchJsonTimeout("/openhands/v1/chat/completions", {
         method:"POST",
         headers:{"Content-Type":"application/json", "X-DSH-Agent":aid},
         body: JSON.stringify({ model: m, stream:false, max_tokens: 4000, messages })
@@ -1833,7 +1834,7 @@ async function send(){
           ...messages.slice(1),
           {role:"user", content:"工具读取阶段已结束。不要再输出 JSON；请直接总结已获得的信息，并明确说明受只读工具/轮次限制未能覆盖的内容。"}
         ];
-        const {r: fr, d: fd} = await fetchJsonTimeout("http://127.0.0.1:8796/v1/chat/completions", {
+        const {r: fr, d: fd} = await fetchJsonTimeout("/openhands/v1/chat/completions", {
           method:"POST",
           headers:{"Content-Type":"application/json", "X-DSH-Agent":aid},
           body: JSON.stringify({ model: m, stream:false, max_tokens: 4000, messages: finalMessages })
@@ -1857,7 +1858,7 @@ async function send(){
           {role:"assistant", content: finalText},
           {role:"user", content:"上一条答复明显被截断（缺少正文/收尾）。请完整重写最终结论：结论、依据、风险、下一步；不要只给标题，不要输出 JSON。"}
         ];
-        const {r: rr, d: rd} = await fetchJsonTimeout("http://127.0.0.1:8796/v1/chat/completions", {
+        const {r: rr, d: rd} = await fetchJsonTimeout("/openhands/v1/chat/completions", {
           method:"POST",
           headers:{"Content-Type":"application/json", "X-DSH-Agent":aid},
           body: JSON.stringify({ model: m, stream:false, max_tokens: 4000, messages: retryMsgs })
@@ -1899,7 +1900,7 @@ async function send(){
     steps.push(stopped ? "用户停止" : "请求失败："+(e && e.message ? e.message : "unknown"));
     const html = procHtml(steps, (stopped ? "⏹ 已停止 · " : "❌ 失败 · ")+sec+"s")
       + (stopped ? "" : '<div style="margin-top:6px;color:#ffb0b0">' + esc(e && e.message ? e.message : "调用失败")
-      + '（检查 8796 或稍后重试）</div>');
+      + '（检查 /openhands/ 或稍后重试）</div>');
     r1.el.innerHTML = html;
     if(r1.whoEl) r1.whoEl.textContent = aid+" · "+(stopped?"⏹ 已停止":"❌ 失败")+" · "+sec+"s";
     if(r1.rec){ r1.rec.who = aid+" · "+(stopped?"⏹ 已停止":"❌ 失败")+" · "+sec+"s"; r1.rec.html = html; r1.rec.raw = ""; sessSave(aid); }
