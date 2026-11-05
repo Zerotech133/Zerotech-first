@@ -313,7 +313,7 @@
     try {
       const ctl = new AbortController();
       setTimeout(() => ctl.abort(), 3000);
-      const r = await fetch('http://localhost:11434/api/tags', { signal: ctl.signal, cache: 'no-store' });
+      const r = await fetch('/ollama/api/tags', { signal: ctl.signal, cache: 'no-store' });
       const j = await r.json();
       document.getElementById('m-ollama').textContent = j.models.length + ' 个';
     } catch { document.getElementById('m-ollama').textContent = '就绪'; }

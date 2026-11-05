@@ -17,6 +17,8 @@
 #   正确做法：i0 = idx.get(j["detect_date"])，entry = opens[i0+1]。
 #   当前未改的理由：任务已停用、样本为 0，改动无法被任何数据验证；
 #   留待重启影子期时连同标的更换一并修改。
+#   已加防线（不改口径）：结算前若 dt != detect_date 直接 raise，任务重启后
+#   第一笔样本即崩，避免带着前视继续产出「漂亮」面板。journal 为空，当前不触发。
 # =============================================================================
 """gold_signal_shadow: 沪金 3买/3卖 影子标注（K227，structure-signal-shadow-eval
 流程第二阶段）。
@@ -126,6 +128,16 @@ def main():
         # TODO(前视): 下方用 j["dt"]（结构端点日）定位后按 i0+1 入场，忽略确认滞后，
         # 属前视口径（实测虚增 d20 0.80pp）。重启影子期前应改为 j["detect_date"]。
         # 详见文件头「已知缺陷·未修」段与 v7 报告。
+        # 前视守卫（2026-11-05 加）：任务已停用、journal 为空，此守卫当前不触发。
+        # 一旦重启影子期且有样本进来，dt != detect_date 会立即报错，而不是继续
+        # 产出一份偏乐观的面板。宁可崩，不可静默虚增。
+        _dd = j.get("detect_date")
+        if _dd and _dd != j["dt"]:
+            raise RuntimeError(
+                "gold_signal_shadow 结算前视拦截：dt=%s detect_date=%s（滞后 %s 日）。"
+                "请先把结算改为按 j['detect_date'] 定位入场（见文件头「已知缺陷·未修」）。"
+                % (j["dt"], _dd, j.get("lag", "?"))
+            )
         i0 = idx.get(j["dt"])
         e["status"] = "pending_entry"
         if i0 is not None and i0 + 1 < len(opens) and opens[i0 + 1]:

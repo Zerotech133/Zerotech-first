@@ -40,6 +40,18 @@ td a:hover{text-decoration:underline}
 .err{background:#b6232433;border:1px solid #f85149;border-radius:8px;color:#f85149;padding:10px 14px;font-size:12.5px;margin-bottom:10px}
 .backlink{font-size:11.5px;color:#8b949e}
 .backlink a{color:#58a6ff}
+/* R3-C CATALOG BEGIN · CSS（可折叠「表级 schema / 主键」区块；默认隐藏，404 时页面表现与改造前一致） */
+.r3c-box{background:#161b22;border:1px solid #21262d;border-radius:10px;margin:12px 0}
+.r3c-box>summary{cursor:pointer;padding:10px 14px;font-size:13px;font-weight:600;list-style:none}
+.r3c-box>summary::-webkit-details-marker{display:none}
+.r3c-box>summary::before{content:'▸ ';color:#58a6ff}
+.r3c-box[open]>summary::before{content:'▾ '}
+.r3c-flag{font:600 11px Consolas,monospace;color:#d29922;margin-left:12px}
+.r3c-body{padding:0 14px 14px}
+.r3c-note{border:1px dashed #30363d;border-radius:8px;padding:10px 12px;color:#8b949e;font-size:12.5px;margin-bottom:10px}
+.r3c-hidden{display:none}
+.r3c-scroll{overflow:auto;max-height:320px}
+/* R3-C CATALOG END */
 </style></head>
 <body>
 <div class="wrap">
@@ -58,6 +70,15 @@ td a:hover{text-decoration:underline}
   </div>
   <div id="errbox"></div>
   <div id="main"><div class="empty">加载中…</div></div>
+<!-- R3-C CATALOG BEGIN · 可折叠「表级 schema / 主键」区块：URN 解析出的逻辑表名 → table?name= 只读补「表→字段」血缘；解析失败/404/available:false 静默收起，不改 /api/kg/lineage 主链 -->
+<details class="r3c-box r3c-hidden" id="r3cSchemaBox">
+  <summary>表级 schema / 主键（catalog 逻辑表口径）<span class="r3c-flag" id="r3cState">catalog 静态快照</span></summary>
+  <div class="r3c-body">
+    <div class="r3c-note" id="r3cNotice">实时通道未就绪（待 8091 自然重启）</div>
+    <div id="r3cSchemaBody"></div>
+  </div>
+</details>
+<!-- R3-C CATALOG END -->
 </div>
 <script src="/static/nav.js" defer></script>
 <script>
@@ -121,6 +142,114 @@ function render(j){
 function doSearch(){load()}
 $('#tbl').addEventListener('keydown',e=>{if(e.key==='Enter')load()});
 setTab('breaks');
+/* R3-C CATALOG BEGIN · 双通道状态机 + URN→表→字段血缘（照 T2 / R2-A 模板；静默回落，不改 /api/kg/lineage 主链） */
+var CATALOG_LIVE=null;
+var CATALOG_STATE='unknown';
+function timeoutSignal(){
+  if(typeof AbortSignal!=='undefined' && typeof AbortSignal.timeout==='function') return AbortSignal.timeout(3000);
+  if(typeof AbortController!=='undefined'){var ac=new AbortController();setTimeout(function(){ac.abort();},3000);return ac.signal;}
+  return undefined;
+}
+function r3cSetState(t){var el=document.getElementById('r3cState');if(el)el.textContent=t;}
+/* 从逻辑表 URN 解析 catalog 表名：取冒号后路径的末段（parquet:tdx/ts_top_inst → ts_top_inst；neo4j:TRADED_ON → TRADED_ON）；解析不出返回空串，不猜 */
+function parseLogicalTable(urn){
+  var s=String(urn==null?'':urn).trim();
+  if(!s) return '';
+  var i=s.indexOf(':');
+  if(i<0) return '';
+  var rest=s.slice(i+1).trim();
+  if(!rest) return '';
+  var segs=rest.split('/').filter(function(x){return x.length>0;});
+  if(!segs.length) return '';
+  var name=segs[segs.length-1].trim();
+  if(!/^[A-Za-z0-9_]+$/.test(name)) return '';
+  return name;
+}
+async function probeCatalog(){
+  CATALOG_STATE='unknown'; CATALOG_LIVE=null;
+  try{
+    var r=await fetch('/api/data/catalog/tables?detail=brief',{cache:'no-store',signal:timeoutSignal()});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    var live=await r.json();
+    if(!live || live.ok!==true || !(live.total>0)) throw new Error('bad payload');
+    CATALOG_LIVE=live; CATALOG_STATE='live';
+    r3cSetState('catalog 实时');
+  }catch(e){
+    /* 静默失败：不写错误日志、不弹窗、不抛未捕获异常；404 时页面表现与改造前一致 */
+  }
+  if(CATALOG_STATE!=='live'){
+    CATALOG_STATE='snapshot'; CATALOG_LIVE=null;
+    r3cSetState('catalog 静态快照');
+  }
+  if(CATALOG_LIVE){ try{ r3cProbeTable(); }catch(e){} }
+  return CATALOG_STATE==='live';
+}
+/* 表级 schema / 主键：URN 解析成功且单表端点 200 才展开；解析失败/404/available:false/超时一律静默收起，不碰 #errbox、不干扰主链 */
+async function r3cProbeTable(){
+  var box=document.getElementById('r3cSchemaBox');
+  if(!box) return;
+  var urn=(document.getElementById('tbl')||{}).value||'';
+  var name=parseLogicalTable(urn);
+  if(!name){ box.classList.add('r3c-hidden'); return; }
+  try{
+    var r=await fetch('/api/data/catalog/table?name='+encodeURIComponent(name)+'&limit=20',{cache:'no-store',signal:timeoutSignal()});
+    var d=null; try{ d=await r.json(); }catch(e){ d=null; }
+    if(!r.ok || !d || d.ok!==true || d.available===false){
+      box.classList.add('r3c-hidden');
+      return;
+    }
+    box.classList.remove('r3c-hidden');
+    var body=document.getElementById('r3cSchemaBody');
+    if(body) body.innerHTML=r3cSchemaHtml(d,name);
+  }catch(e){
+    box.classList.add('r3c-hidden');
+  }
+}
+/* 详情正文：meta.schema[] / primary_key / columns / meta.freshness / sample_note / clamped / limit_applied / 前 20 行，全部经 esc() */
+function r3cSchemaHtml(d,name){
+  var meta=d.meta||{},cols=Array.isArray(d.columns)?d.columns:[],rows=Array.isArray(d.rows)?d.rows:[];
+  var pk=meta.primary_key==null?'—':(Array.isArray(meta.primary_key)?meta.primary_key.join(', '):meta.primary_key);
+  var h='<div class="muted" style="font-size:12px;margin-bottom:6px">逻辑表 '+esc(name)+' → '+esc(d.resolved||d.name)+
+    ' · catalog v'+esc(CATALOG_LIVE?CATALOG_LIVE.version:'?')+' · 返回 '+esc(d.row_count==null?rows.length:d.row_count)+' 行'+
+    (d.truncated?'（已截断）':'')+(d.clamped?' · limit 已截断至 '+esc(d.limit_applied)+' 行':'')+'</div>';
+  h+='<table><tbody>'+
+    '<tr><th>源</th><td>'+esc(meta.source||'—')+'</td></tr>'+
+    '<tr><th>频率</th><td>'+esc(meta.freq||'—')+'</td></tr>'+
+    '<tr><th>新鲜度 freshness</th><td>'+esc(meta.freshness==null?'—':meta.freshness)+'</td></tr>'+
+    '<tr><th>行数</th><td>'+esc(meta.rows==null?'—':meta.rows)+'</td></tr>'+
+    '<tr><th>主键 primary_key</th><td>'+esc(pk)+'</td></tr>'+
+    '<tr><th>columns</th><td>'+esc(cols.length?cols.join(', '):'—')+'</td></tr></tbody></table>';
+  var schema=Array.isArray(meta.schema)?meta.schema:[];
+  h+='<h3 style="font-size:13px;color:#58a6ff;margin:10px 0 6px">表级 Schema（'+schema.length+' 列）</h3>';
+  h+=schema.length?('<table><thead><tr><th>#</th><th>列名</th><th>类型</th><th>说明</th></tr></thead><tbody>'+
+    schema.map(function(c,i){return typeof c==='string'
+      ? '<tr><td>'+i+'</td><td>'+esc(c)+'</td><td>—</td><td>—</td></tr>'
+      : '<tr><td>'+i+'</td><td>'+esc(c.name||c.column||'')+'</td><td>'+esc(c.type||c.dtype||'—')+'</td><td>'+esc(c.desc||c.comment||'—')+'</td></tr>';}).join('')+
+    '</tbody></table>'):'<div class="muted">schema 未返回</div>';
+  h+='<h3 style="font-size:13px;color:#58a6ff;margin:10px 0 6px">样本数据（前 '+Math.min(20,rows.length)+' 行）</h3>';
+  /* 样本按存储顺序返回，非按日期倒序；并列 sample_note 与 catalog 新鲜度，避免把「样本旧行」误读成「数据断更」 */
+  if(d.sample_note){h+='<div class="r3c-note">'+esc(d.sample_note)+'（catalog 新鲜度：'+esc(meta.freshness==null?'—':meta.freshness)+'）</div>';}
+  /* clamped / limit_applied 一并披露，不静默截断 */
+  if(d.clamped||d.limit_applied){h+='<div class="r3c-note">注意：limit 已截断（clamped='+esc(!!d.clamped)+' · limit_applied='+esc(d.limit_applied==null?'—':d.limit_applied)+'），样本非全量。</div>';}
+  if(!rows.length){h+='<div class="muted">无样本数据</div>';}
+  else{
+    var headCols=cols.length?cols:Object.keys(rows[0]||{});
+    h+='<div class="r3c-scroll"><table><thead><tr>'+headCols.map(function(c){return '<th>'+esc(c)+'</th>';}).join('')+'</tr></thead><tbody>'+
+      rows.slice(0,20).map(function(rr){return '<tr>'+headCols.map(function(c,i){return '<td>'+esc(Array.isArray(rr)?(rr[i]==null?'':rr[i]):(rr&&rr[c]!=null?rr[c]:''))+'</td>';}).join('')+'</tr>';}).join('')+
+      '</tbody></table></div>';
+  }
+  return h;
+}
+/* 触发点：新增监听（不改既有 doSearch()/load()/jump()/setTab() 与 /api/kg/lineage 请求），与既有查询链并行 */
+try{
+  var r3cBtn=document.querySelector('#searchbar button');
+  if(r3cBtn) r3cBtn.addEventListener('click',function(){ try{ r3cProbeTable(); }catch(e){} });
+  var r3cInput=document.getElementById('tbl');
+  if(r3cInput) r3cInput.addEventListener('keydown',function(e){ if(e.key==='Enter'){ try{ r3cProbeTable(); }catch(e2){} } });
+}catch(e){}
+/* R3-C：实时 catalog 探测与原有 setTab/load 链并行，不 await、不阻塞；404 静默回落 */
+try{ probeCatalog(); }catch(e){}
+/* R3-C CATALOG END */
 </script>
 <script src="/static/dataops_link.js" data-entity="pool:warehouse" defer></script>
 <!-- OS-UI-UNIFY:theme -->
