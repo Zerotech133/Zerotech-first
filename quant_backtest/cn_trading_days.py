@@ -75,12 +75,19 @@ FIXED = ((1, 1),)
 
 
 def _as_date(v):
-    """str/date/datetime → date；非法返回 None（不抛，调用方自行降级）。"""
+    """str/date/datetime → date；非法返回 None（不抛，调用方自行降级）。
+
+    同时接受 8 位紧凑格式 `20260928`：那是 Tushare trade_cal 的原生写法
+    （本模块的快照数据源就是它），曾经只认 `%Y-%m-%d`，导致外部拿快照格式
+    回查时被静默判成「非交易日」——写入闸会把合法交易日回退掉且不留痕。
+    """
     if isinstance(v, datetime):
         return v.date()
     if isinstance(v, date):
         return v
     s = str(v or "").strip()[:10]
+    if len(s) == 8 and s.isdigit():
+        s = "%s-%s-%s" % (s[:4], s[4:6], s[6:])
     try:
         return datetime.strptime(s, "%Y-%m-%d").date()
     except ValueError:
@@ -338,10 +345,14 @@ def is_trading_day(d):
 
 
 def why_not(d):
-    """非交易日原因（'周末' / '休市' / 空串），交易日返回空串。"""
+    """非交易日原因（'周末' / '休市' / '无法解析'），交易日返回空串。
+
+    解析失败必须给非空原因：曾经返回空串，调用方会读成「这是一天交易日」
+    （weak_track_close 的 nd 就是按 why_not 是否为空来计天数的）。
+    """
     dt = _as_date(d)
     if dt is None:
-        return ""
+        return "无法解析"
     if dt.weekday() >= 5:
         return "周末"
     return "休市" if in_holiday(dt) else ""

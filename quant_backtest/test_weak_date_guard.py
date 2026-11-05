@@ -171,6 +171,20 @@ def main():
         ctd.why_not("".join(chr(c) for c in (50, 48, 50, 54, 45, 49, 48, 45, 49, 48))) == "周末",
     )
     check("H5 上一交易日回溯", ctd.prev_trading_day("2026-10-08") == LASTTD, str(ctd.prev_trading_day("2026-10-08")))
+    # --- H15-H17 8 位紧凑格式（Tushare trade_cal 的 cal_date 原生写法）---
+    # 曾经只认 %Y-%m-%d，8 位串静默判非交易日且 why_not 为空 —— 写入闸会把
+    # 合法交易日回退到上一交易日，写错 px_d 还不留痕。
+    check("H15 8位格式识别为交易日", ctd.is_trading_day(LASTTD.replace("-", "")), LASTTD)
+    check(
+        "H16 8位休市日给原因",
+        ctd.why_not(HOLIDAY.replace("-", "")) == "休市",
+        str(ctd.why_not(HOLIDAY.replace("-", ""))),
+    )
+    check(
+        "H17 非法日期不返回空原因",
+        ctd.why_not("2026-13-01") == "无法解析",
+        str(ctd.why_not("2026-13-01")),
+    )
     # --- H6-H10 未覆盖年份 / 固定休市日 / 补登提醒 ---
     # 用 date().isoformat() 生成，不写字面量
     NY = date(2027, 1, 1).isoformat()  # 元旦（周五）
