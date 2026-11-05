@@ -23,6 +23,78 @@ import numpy as np
 import pandas as pd
 
 
+# 60 日主基线的成本阈值与已测成本曲线（覆盖修复口径，2023-04..2026-10，30bp 基准）。
+# 曲线来源：research/reports/portfolio_bm_pit_l2_cost200_covfix_20261105.json
+COST_ALERT_THRESHOLD_BP = 100.0
+COST_BREAKEVEN_BP = 198.0
+COST_CURVE_60D = (
+    (0.0, 0.023061),
+    (10.0, 0.021886),
+    (30.0, 0.019538),
+    (50.0, 0.017194),
+    (100.0, 0.011353),
+    (150.0, 0.005537),
+    (200.0, -0.000253),
+    (250.0, -0.006017),
+)
+
+
+def _interp_cost_return_60d(cost_bp: float) -> float | None:
+    """在已测 60d 成本曲线上线性插值年化收益；超出 [0,250]bp 返回 None。"""
+    points = COST_CURVE_60D
+    if cost_bp < points[0][0] or cost_bp > points[-1][0]:
+        return None
+    for (x0, y0), (x1, y1) in zip(points, points[1:]):
+        if x0 <= cost_bp <= x1:
+            if x1 == x0:
+                return float(y0)
+            return float(y0 + (y1 - y0) * (cost_bp - x0) / (x1 - x0))
+    return float(points[-1][1])
+
+
+def assess_cost(cost_bp: float, threshold_bp: float = COST_ALERT_THRESHOLD_BP,
+                breakeven_bp: float = COST_BREAKEVEN_BP) -> dict:
+    """对 60 日主基线做实盘成本阈值判定（研究口径，不下单、不自动停策略）。
+
+    返回 status: ok（<=阈值）/ warning（阈值~盈亏平衡）/ critical（>盈亏平衡）。
+    `capacity_review_required` 仅在超过阈值时为 True。
+    """
+    cost = float(cost_bp)
+    if cost < 0:
+        raise ValueError("cost_bp 不能为负")
+    if threshold_bp < 0 or breakeven_bp <= threshold_bp:
+        raise ValueError("需满足 0 <= threshold_bp < breakeven_bp")
+    est = _interp_cost_return_60d(cost)
+    if cost <= threshold_bp:
+        status, severity = "ok", "ok"
+        message = (f"实盘成本 {cost:.1f}bp ≤ {threshold_bp:.0f}bp 阈值，"
+                   f"60 日基线无需重评容量。")
+    elif cost <= breakeven_bp:
+        status, severity = "warning", "warning"
+        message = (f"实盘成本 {cost:.1f}bp 超过 {threshold_bp:.0f}bp 阈值，"
+                   f"距 60 日盈亏平衡约 {breakeven_bp - cost:.1f}bp；"
+                   "建议重评容量/换手/执行方式。")
+    else:
+        status, severity = "critical", "critical"
+        message = (f"实盘成本 {cost:.1f}bp 已超过 60 日盈亏平衡约 {breakeven_bp:.0f}bp，"
+                   "策略无经济性；建议暂停或重新设计。")
+    return {
+        "period_days": 60,
+        "cost_bp": round(cost, 4),
+        "threshold_bp": float(threshold_bp),
+        "breakeven_bp": float(breakeven_bp),
+        "headroom_bp": round(breakeven_bp - cost, 2),
+        "status": status,
+        "severity": severity,
+        "capacity_review_required": bool(cost > threshold_bp),
+        "estimated_ann_return": None if est is None else round(est, 6),
+        "estimated_ann_return_note": (
+            "outside_tested_curve_0_250bp" if est is None else "linear_interpolation"
+        ),
+        "message": message,
+    }
+
+
 @dataclass
 class PortfolioConfig:
     rebalance_days: int = 20
