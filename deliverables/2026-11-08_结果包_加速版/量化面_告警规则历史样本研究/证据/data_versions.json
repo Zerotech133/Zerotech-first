@@ -1,0 +1,36 @@
+{
+  "catalog": {
+    "path": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\catalog.json",
+    "bytes": 302675,
+    "mtime": "2026-11-05T13:19:31",
+    "sha256": "fe885e8ae4657fb8b2940a7900c6948687f6f1d9cadcaae6120d22d791fcffd2"
+  },
+  "registry": {
+    "path": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\warehouse_registry.json",
+    "bytes": 789679,
+    "mtime": "2026-11-05T13:19:47",
+    "sha256": "29876408da2317703e03bc19d7012efb471f75574baa262170e0e12d2800b750"
+  },
+  "xueqiu_db": {
+    "path": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\xueqiu\\xueqiu_info.db",
+    "bytes": 30486528,
+    "mtime": "2026-11-05T18:32:15",
+    "sha256": "ded562f4e9a7b9d2b6e6963ee6e19b1c310d0b3d9183861625ce4e356861693a"
+  },
+  "monitor_db": {
+    "path": "C:\\项目\\analysis_work\\monitor\\monitor.db",
+    "exists": false
+  },
+  "monitor_pools": {
+    "path": "C:\\项目\\analysis_work\\monitor\\pools.json",
+    "bytes": 80,
+    "mtime": "2026-11-04T03:20:18",
+    "sha256": "b526d25a773542d9b250949ec55801ad2325b0404505b89424fedca80cea3752"
+  },
+  "watchlist": {
+    "path": "C:\\项目\\老田的AI助手\\analysis\\watchlist.txt",
+    "bytes": 160,
+    "mtime": "2026-11-02T03:25:26",
+    "sha256": "a4c966bd21ea6eb93ff04a44171d96f4318a397fd80793d701f7d0513b1ae79e"
+  }
+}
