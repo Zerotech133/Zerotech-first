@@ -104,7 +104,7 @@ def verdict(brief):
             return (
                 "多头共振 · 顺势",
                 "up",
-                "大级别与中级别同向——回调看回踩不破关键位的三买机会",
+                "大级别与中级别同向——回调至关键位上方的三买结构位",
             )
         if t30 == "下降" or "下方" in p30:
             return (
@@ -121,9 +121,9 @@ def verdict(brief):
     if dt == "下降":
         if t30 == "下降" or "下方" in p30:
             return (
-                "空头共振 · 规避",
+                "空头共振 · 下行延续",
                 "down",
-                "大级别与中级别同向向下——反弹不接、破位不抄",
+                "大级别与中级别同向向下——反弹承压于关键位、破位未修复",
             )
         if t30 == "上升" or "上方" in p30:
             return (
@@ -162,13 +162,23 @@ def key_levels(brief):
 
 
 def action_hint(ck):
-    """判定颜色键 → 今晨操作倾向（判定矩阵派生文本，零幻觉；
-    研究视角呈现，不构成推送触发/拦截口径）。"""
+    """判定颜色键 → 结构状态描述（判定矩阵派生文本，零幻觉）。
+
+    v8-b3 口径（K-STOCK 结构标注工具定位）：本函数只描述**结构处于什么状态、
+    什么条件下会改判**，不输出任何交易动作（开仓/减仓/止损/观望等）。
+    判定矩阵本身（ck 的取值逻辑）未改，改的只是渲染措辞。
+
+    三态语义与判据一一对应，改文案时不要破坏这层对应：
+      up   = 日线趋势向上且 30m 未破中枢下沿 → 升势延续
+      warn = 多周期方向不一致 / 现价在中枢内 → 结构未定型，方向待突破
+      down = 日线趋势向下或 30m 破位 → 下行延续
+    依据 deliverables/2026-11-05_对外文案合规审计_v8.md §11。
+    """
     return {
-        "up": "顺势 · 可开新仓，回调看三买",
-        "warn": "观察 · 不追不砍，收复节奏线再定",
-        "down": "防守 · 不接反弹，破位不抄",
-    }.get(ck, "观望——读数不足")
+        "up": "结构偏多 · 升势延续，回调位看三买成立与否",
+        "warn": "结构中性 · 中枢内震荡，方向待突破确认",
+        "down": "结构偏空 · 下行延续，破位结构未修复",
+    }.get(ck, "读数不足 · 结构未定型")
 
 
 # 仓位档位表（策略配置参数，非引擎读数；键=(判定颜色键, A股闸门safe)。
@@ -276,48 +286,48 @@ def trade_plan(brief):
     buy, sell = [], []
     if ck == "up":
         if dzg:
-            buy.append("回踩不破 %.0f（日线三买观察）分批做多" % dzg)
+            buy.append("回踩不破 %.0f（日线三买观察）" % dzg)
         if m5g:
-            buy.append("日内 %.0f 上沿放量突破做短多" % m5g)
+            buy.append("日内 %.0f 上沿放量突破（结构确认）" % m5g)
         if p30d:
-            sell.append("30m 失守 %.0f → 减一档" % p30d)
+            sell.append("30m 失守 %.0f（结构转弱）" % p30d)
         if dzd:
-            sell.append("失守 %.0f（日线破位）→ 清仓复盘" % dzd)
+            sell.append("失守 %.0f（日线破位·结构失效）" % dzd)
     elif ck == "warn" and d["trend"] == "上升":
         # 回踩确认期/蓄势：收复节奏线试多，站稳上沿加仓，破位降档
         if p30d:
-            buy.append("放量收复 %.0f（30m重回中枢）→ 试多首笔" % p30d)
+            buy.append("放量收复 %.0f（30m 重回中枢）" % p30d)
         if dzg:
-            buy.append("站稳 %.0f（日线收复=回踩确认）→ 加仓档" % dzg)
+            buy.append("站稳 %.0f（日线收复=回踩确认）" % dzg)
         if m5g and m5d:
-            buy.append("日内 %.0f 上沿突破做短多，破 %.0f 当日离" % (m5g, m5d))
+            buy.append("日内 %.0f 上沿突破（破 %.0f 结构失效）" % (m5g, m5d))
         if p30d and m5d:
-            sell.append("反抽不回 %.0f 且失守 %.0f（三卖确认）→ 止损" % (p30d, m5d))
+            sell.append("反抽不回 %.0f 且失守 %.0f（三卖确认）" % (p30d, m5d))
         if dzd:
-            sell.append("失守 %.0f（日线破位=升势存疑）→ 底仓/清仓" % dzd)
+            sell.append("失守 %.0f（日线破位=升势存疑）" % dzd)
     elif ck == "warn" and d["trend"] == "下降":
         if p30g:
             sell.append("反抽承压 %.0f（30m中枢上沿）→ 风险位" % p30g)
         if dzg:
-            buy.append("收复 %.0f（日线中枢上沿）才谈右侧" % dzg)
+            buy.append("收复 %.0f（日线中枢上沿=右侧结构成立条件）" % dzg)
         if dzd:
             sell.append("失守 %.0f → 下一中枢寻找支撑" % dzd)
     elif ck == "warn":  # 日线盘整
         if dzd:
-            buy.append("回踩 %.0f（日线中枢下沿）企稳做区间多" % dzd)
+            buy.append("回踩 %.0f（日线中枢下沿）企稳（区间结构）" % dzd)
         if dzg:
-            sell.append("承压 %.0f（日线中枢上沿）区间减仓" % dzg)
+            sell.append("承压 %.0f（日线中枢上沿·区间上沿）" % dzg)
         if dzd:
-            sell.append("失守 %.0f → 区间破坏降档" % dzd)
+            sell.append("失守 %.0f（区间破坏）" % dzd)
     else:  # down
         if dzg:
-            buy.append("等收复 %.0f（日线中枢上沿）或日线三买再谈多" % dzg)
+            buy.append("收复 %.0f（日线中枢上沿）或日线三买（右侧条件）" % dzg)
         if p30g:
-            sell.append("反抽 %.0f（30m中枢上沿）承压减仓" % p30g)
+            sell.append("反抽 %.0f（30m 中枢上沿承压）" % p30g)
         if dzd:
-            sell.append("失守 %.0f → 加速段严格空仓" % dzd)
+            sell.append("失守 %.0f（加速段）" % dzd)
     if not gkey and buy:
-        buy.append("（闸门收紧期以上为触发观察位，非开仓许可）")
+        buy.append("（闸门收紧期以上为触发观察位，不构成执行依据）")
     mgmt = POS_MGMT.get((ck, gkey)) or POS_MGMT[("warn", False)]
     return {
         "size": size,

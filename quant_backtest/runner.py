@@ -697,7 +697,7 @@ def _today_open():
 
 
 def morning_push():
-    """盘前作战计划卡（08:15 计划任务）：今日应买入 + 持仓概览。"""
+    """盘前结构清单卡（08:15 计划任务）：待执行清单 + 持仓概览。口径=结构标注工具，非买入指令。"""
     if not _today_open():
         print("MORNING skip：今日非 A 股交易日（休市，不产卡不推送）")
         return
@@ -705,11 +705,11 @@ def morning_push():
     pend = led.get("pending") or []
     open_ = led.get("open") or []
     if not pend and not open_:
-        print("MORNING skip: 无待买且无持仓")
+        print("MORNING skip: 无待执行项且无持仓")
         return
     blocks = []
     if pend:
-        lines = ["**今日应买入（开盘执行）**"]
+        lines = ["**今日待执行清单（结构标注·非买入指令）**"]
         for e in pend:
             lines.append(
                 "· [%s] %s · %s · 昨收 %.4g"
@@ -798,7 +798,7 @@ def morning_push():
         footer=footer,
         use_schema2=True,
         columns=[
-            ("待买入", str(len(pend)), "blue-50"),
+            ("待执行", str(len(pend)), "blue-50"),
             ("持仓中", str(len(open_)), "wathet-50"),
             ("平仓累计", str(n_c), "grey-50"),
         ],
