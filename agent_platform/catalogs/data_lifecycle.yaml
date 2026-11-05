@@ -98,3 +98,24 @@ tables:
     reason: >-
       仅 2 行；xq_quote_router 明示「两表长期 degraded 断供」，行情快照改走
       tushare/akshare，本表仅手动兜底；不参与资格台账。
+
+  # ── 2026-11-05 data_hub 对账：上游实证停更 >1 年，标 deprecated ──
+  # 依据：catalog freshness 实测（非估算），脚本 tools/data_hub/govern.py
+  ts_slb_sec:
+    lifecycle: deprecated
+    reason: >-
+      转融通标的表，数据止于 2024-09-30（滞后 766 天），上游接口实质停更；
+      转融通业务 2024 年后收紧，该表不再作为可用资产。恢复需上游复更。
+  ts_kpl_concept:
+    lifecycle: deprecated
+    reason: >-
+      开盘啦概念表，数据止于 2024-11-17（滞后 718 天），上游停更；
+      概念板块改走 ts_ths_index / ts_kpl_list。
+  ts_tdx_index:
+    lifecycle: deprecated
+    reason: >-
+      通达信指数表，数据止于 2025-04-17（滞后 567 天），仅 1000 行，上游停更。
+  ts_slb_len:
+    lifecycle: deprecated
+    reason: >-
+      转融通期限表，数据止于 2025-07-25（滞后 468 天），仅 1347 行，上游停更。

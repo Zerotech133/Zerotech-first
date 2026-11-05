@@ -85,6 +85,16 @@ def probe_one(src: dict, *, slow_ms: int = SLOW_MS, timeout: tuple[float, float]
         source_id=f"probe:{src.get('id')}",
     )
     verdict = _verdict(result, slow_ms)
+    # 只看状态码会漏掉"200 但返回 JS 挑战页/登录页"——实测 stooq 返回 796B
+    # "This site requires JavaScript" 却是 200，之前被误判为可用。
+    # probe.contains 给出"响应体必须出现"的判据，缺失即降级为 guarded。
+    contains = probe.get("contains")
+    detail = None
+    if verdict in {"ok", "slow"} and contains:
+        body = result.get("text") or ""
+        if contains not in body:
+            verdict = "guarded"
+            detail = f"content_mismatch: 响应体未包含 {contains!r}（可能是挑战页/登录页）"
     return dict(
         base,
         verdict=verdict,
@@ -92,7 +102,7 @@ def probe_one(src: dict, *, slow_ms: int = SLOW_MS, timeout: tuple[float, float]
         latency_ms=result.get("latency_ms"),
         bytes=result.get("bytes"),
         policy_used=result.get("policy"),
-        error=result.get("error"),
+        error=result.get("error") or detail,
         url=url,
         elapsed_ms=int((time.time() - started) * 1000),
     )

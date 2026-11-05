@@ -1,34 +1,34 @@
 # data_hub · 全网数据源接入与治理
 
-> 2026-11-05 起用。解决两件事：**全网数据从哪取、出口怎么走**；**取来的东西对不对得上账**。
+> 2026-11-05 起用。解决两件事：**全网数据从哪取、出口怎么走**；**取来的东西对不对得上账**。  
 > 一句话定位：这是"来源侧"的登记与体检，不是"数据侧"的仓库。
 
 ## 一、为什么要有这一层（实测驱动，不是设计洁癖）
 
 国内源和海外源不能用同一条出网路径。2026-11-05 在本机做的对照实验：
 
-| 源 | 直连 | 走环境变量代理 |
-|---|---|---|
-| `api.tushare.pro` | **1.1s** | 12.3s |
-| `d.10jqka.com.cn` | **0.96s** | ReadTimeout 6.7s |
-| `push2.eastmoney.com` | 连接重置 | ProxyError |
-| `api.binance.com` | 不通 | 不通（环境代理），**本地 7890 通** |
+| 源                     | 直连        | 走环境变量代理                |
+| --------------------- | --------- | ---------------------- |
+| `api.tushare.pro`     | **1.1s**  | 12.3s                  |
+| `d.10jqka.com.cn`     | **0.96s** | ReadTimeout 6.7s       |
+| `push2.eastmoney.com` | 连接重置      | ProxyError             |
+| `api.binance.com`     | 不通        | 不通（环境代理），**本地 7890 通** |
 
-`akshare` / `requests` 默认 `trust_env=True`，会继承宿主注入的 `http(s)_proxy`，
+`akshare` / `requests` 默认 `trust_env=True`，会继承宿主注入的 `http(s)_proxy`，  
 把国内 A 股源也塞进代理——这是当前国内源"慢、偶发失败"的根因。
 
 **结论：出口路径是数据质量的一部分，必须按源声明、实测择优、落盘记忆，不能靠全局环境变量。**
 
 `net.py` 因此提供四条策略：
 
-| 策略 | 行为 | 适用 |
-|---|---|---|
-| `direct` | `trust_env=False`，清空 proxies | 国内 A 股源（默认） |
-| `env` | 跟随环境变量 | 企业/沙箱统一出口 |
-| `local` | 强制 `127.0.0.1:7890`（可用 `DATA_HUB_LOCAL_PROXY` 覆盖） | 海外源 |
-| `auto` | direct → env → local 实测择优，胜出路径写 `state/egress.json`（24h 有效） | 不确定的源 |
+| 策略       | 行为                                                          | 适用          |
+| -------- | ----------------------------------------------------------- | ----------- |
+| `direct` | `trust_env=False`，清空 proxies                                | 国内 A 股源（默认） |
+| `env`    | 跟随环境变量                                                      | 企业/沙箱统一出口   |
+| `local`  | 强制 `127.0.0.1:7890`（可用 `DATA_HUB_LOCAL_PROXY` 覆盖）           | 海外源         |
+| `auto`   | direct → env → local 实测择优，胜出路径写 `state/egress.json`（24h 有效） | 不确定的源       |
 
-`auto` 只在首次试错，之后直接命中缓存；且它在单条路上**不重试**——三条路各重试 2 次
+`auto` 只在首次试错，之后直接命中缓存；且它在单条路上**不重试**——三条路各重试 2 次  
 会把单源耗时推到 60s（实测 gdelt 就是 60.8s），这是踩过的坑。
 
 ## 二、三层职责与边界
@@ -78,64 +78,127 @@ $PY -m tools.data_hub govern --report
 
 ## 四、判定口径（写死，避免各判各的）
 
-| 结论 | 含义 | 处置 |
-|---|---|---|
-| `ok` | 2xx/3xx 且 ≤3000ms | 可用 |
-| `slow` | 2xx/3xx 但 >3000ms | 可用但需限速/错峰 |
-| `guarded` | 4xx，站点可达，缺头/参数/鉴权 | **不是故障**，补 header 或 key |
-| `unreachable` | 连接层失败（超时/DNS/重置） | 先怀疑出口，再怀疑源 |
-| `skipped` | 无 HTTP 入口（私有协议） | 走客户端探针 |
+| 结论            | 含义                | 处置                      |
+| ------------- | ----------------- | ----------------------- |
+| `ok`          | 2xx/3xx 且 ≤3000ms | 可用                      |
+| `slow`        | 2xx/3xx 但 >3000ms | 可用但需限速/错峰               |
+| `guarded`     | 4xx，站点可达，缺头/参数/鉴权 | **不是故障**，补 header 或 key |
+| `unreachable` | 连接层失败（超时/DNS/重置）  | 先怀疑出口，再怀疑源              |
+| `skipped`     | 无 HTTP 入口（私有协议）   | 走客户端探针                  |
 
-登记状态只有四值：`verified` / `reachable_guarded` / `unreachable` / `planned`。
-**`unreachable` 必须写 `note` 说明是"出口限制"还是"源消失"**，否则静态体检报错——
+登记状态只有四值：`verified` / `reachable_guarded` / `unreachable` / `planned`。  
+**`unreachable` 必须写 `note` 说明是"出口限制"还是"源消失"**，否则静态体检报错——  
 这条规则来自实测：binance 一开始被判死，实际只是本机出口不通，换本地代理就 200。
 
 ## 五、首次实测结论（2026-11-05 07:35）
 
 30 个登记源，真探活结果：**ok 22 / slow 2 / guarded 3 / unreachable 2 / skipped 1**。
 
-可用清单（ok/slow）：sse、szse、bse、eastmoney（K线域）、ths、sina、tencent、
-tushare、cninfo、cnopendata、guba、pbc、customs、worldbank、stooq、sec_edgar、
+可用清单（ok/slow）：sse、szse、bse、eastmoney（K线域）、ths、sina、tencent、  
+tushare、cninfo、cnopendata、guba、pbc、customs、worldbank、stooq、sec_edgar、  
 cffex、shfe、chinamoney、jisilu、hkex(6.6s)、okx(5.3s)、binance(经本地代理)。
 
 受阻清单与原因：
 
-| 源 | 结论 | 真实原因 |
-|---|---|---|
-| nbs 国家统计局 | 403 | 接口需 `time` 参数 + Cookie，站点本身可达 |
-| xueqiu 雪球 | 400 | 需先取 `xq_a_token`（项目内 `xueqiu_sync.py` 已实现登录态） |
-| yahoo_finance | 403 | 需 crumb + cookie 握手 |
-| fred | 超时/400 | 需免费 api_key；出口不稳 |
-| gdelt | 超时 | 本机出口限制，非源消失 |
+| 源             | 结论     | 真实原因                                          |
+| ------------- | ------ | --------------------------------------------- |
+| nbs 国家统计局     | 403    | 接口需 `time` 参数 + Cookie，站点本身可达                 |
+| xueqiu 雪球     | 400    | 需先取 `xq_a_token`（项目内 `xueqiu_sync.py` 已实现登录态） |
+| yahoo_finance | 403    | 需 crumb + cookie 握手                           |
+| fred          | 超时/400 | 需免费 api_key；出口不稳                              |
+| gdelt         | 超时     | 本机出口限制，非源消失                                   |
 
-两项探针级发现，已固化进 yaml：
+三项探针级发现，已固化进 yaml：
 
 - 新浪 `hq.sinajs.cn`、深交所 `szse.cn` **必须带 Referer**，不带一律 403；带上前者 0.67s 200
 - 东财实时域 `push2.eastmoney.com` 直连被 RESET、走代理 ProxyError；K线域 `push2his` 正常
+- **只看状态码会漏判**：stooq 返回 796B "This site requires JavaScript" 挑战页，
+  HTTP 状态是 200，最初被误判为 ok。已加 `probe.contains` 判据（响应体必须包含指定串），
+  缺失即降级 guarded。tushare / eastmoney / ths / sse / sina 均已配判据并复测通过。
 
-## 六、治理对账（同一时点）
+## 六、治理对账（2026-11-05 07:48 实测）
 
 | 项 | 数量 | 说明 |
 |---|---|---|
 | 目录表 | 257 | `quant_backtest/data/catalog.json` |
 | 物理表 | 305 | `warehouse_registry.json` 登记 |
-| **时效欠账** | **115 张** | 超过频率 SLA（D 类 3 天、M 类 35 天） |
-| 未登记物理表 | 48 张 | `news_*`、`paper_*` 等有数据但目录看不见 |
-| 有表无源 | 2 张 | `us_legacy`(legacy)、`v2_bar_daily`(pg) 来源不可追溯 |
-| 有源无表 | 0 | cnopendata 的 6 张表已正确挂上 |
+| 无日期表 | 24 | 静态表，不参与时效判定 |
+| **时效欠账** | **94 张** | 超频率 SLA |
+| 　A 停产 | 0 | 4 张已写 lifecycle deprecated，自动退出统计 |
+| 　B 断更 | 1 | `tdx_sector_min` 滞后 42 天 |
+| 　C 滞后 | 93 | SLA 至 36 天 |
+| 生命周期跳过 | 19 | planned/deprecated/archived，按契约不计欠账 |
+| 未登记物理表 | 48 | `news_*`、`paper_*` 有数据但目录看不见 |
+| 有表无源 | 2 | `us_legacy`(legacy)、`v2_bar_daily`(pg) |
+| 有源无表 | 0 | cnopendata 6 张表已正确挂上 |
 
-时效欠账最狠的几张（数据早已不能用，但仍在目录里当资产）：
+### 降噪过程（115 → 94 是修口径，不是掩盖问题）
 
-- `ts_slb_sec` 滞后 **766 天**
-- `ts_kpl_concept` 滞后 **718 天**
-- `ts_tdx_index` 滞后 **567 天**
-- `ts_slb_len` 滞后 **468 天**
-- 港股财务四表（`hk_income`/`hk_balancesheet`/`hk_cashflow`/`hk_fina_indicator`）滞后 128 天
+第一次跑出 115 张，其中不少是误报，逐条核过后做了三处修正：
 
-这批是下一轮该处理的工单，处理方式二选一：**补采** 或 **从目录下线并标记 deprecated**。
-不处理的话，任何"按目录挑表"的策略都会踩空。
+1. `shibor_lpr`、`irm_qa_*_probe` 等 19 张**早已**在 `data_lifecycle.yaml` 标了
+   deprecated，但 govern 没读 lifecycle → 重复报警。现已接入 `lifecycle.skipped()`。
+2. Q 类 SLA 100 天不符合财报披露节律（季末到入库本就 3-4 个月），改 150 天，
+   港股财务四表从"欠账"回归正常。
+3. 部分低频表在 catalog 里被标成 `D`（日更），加了 `freshness_sla_overrides` 按表覆盖。
 
-## 七、加一个新源要改什么
+### 真实问题：日更批次覆盖不足，不是采集停摆
+
+先看一个容易得出的错误结论——"xtcloud 采集挂了"：
+
+- catalog 显示 64 张 xtcloud 表数据止于 10-29/10-30
+- 但 `data/tdx` 目录里 11-02/11-03/11-04 分别写入了 21/30/25 个 parquet
+
+**所以采集在跑，只是每日批次只覆盖约 30 张表**，其余 64 张表不在日更清单内。
+`batch_profile` 这张表回答的是"哪些表没被最近批次覆盖"，**不能读成"采集挂了"**。
+（这条口径 2026-11-05 实证修正过：初版注释写成"该批次没跑"，是错的。）
+
+### A 类：4 张上游已停产，已走 deprecate
+
+`ts_slb_sec`（止于 2024-09-30，766 天）、`ts_kpl_concept`（2024-11-17，718 天）、
+`ts_tdx_index`（2025-04-17，567 天）、`ts_slb_len`（2025-07-25，468 天）。
+处理方式是写 `agent_platform/catalogs/data_lifecycle.yaml` 标 `deprecated` + 写明上游停更证据，
+**不是"补采"**——补也补不回来，只会一直报错。
+
+### 已知局限（别当成没问题）
+
+- SLA 用**自然日**，周末/节假日会放大滞后天数。精确做法是按交易日计缺口，
+  `quant_backtest/cn_trading_days.py` 已具备能力，但 govern 尚未接入。
+- `freshness` 取自 catalog，而 catalog 由 `build_catalog.py` 重建；catalog 不重建，
+  govern 看到的就是旧快照。对账前若刚采集过，应先生成 catalog。
+
+
+## 七、collect：登记 → 取数 → 校验 → 落地（最小闭环）
+
+```bash
+# 东财日 K（secid: 1.=沪 0.=深）
+$PY -m tools.data_hub collect --adapter eastmoney --dataset 1.600000 --limit 30
+
+# 新浪实时快照（必须带 Referer，适配器已内置）
+$PY -m tools.data_hub collect --adapter sina --dataset "sh600000,sz000001"
+
+# 只取数校验，不落盘
+$PY -m tools.data_hub collect --adapter eastmoney --dataset 1.600000 --dry-run
+```
+
+落盘位置：`data_hub_landing/<adapter>/<dataset>/part_NNNN.parquet` + `_manifest.json`。
+**故意不写 `quant_backtest/data/`**：那是受控采集框架的地盘，进 catalog 有主从问题。
+这里只证明"登记即取数"这条路通，正式入仓仍需走受控框架。
+
+三道闸门（不过就拒绝落盘，宁可不写也不留脏数据）：
+
+1. `check_frame`：空表、日期列不可解析、日期重复、缺主键列、全空行 → `rejected`
+2. 增量语义：`since` 有值且上游无新行 → `no_new`（不算失败，退出码 0）
+3. 清单留痕：每片 parquet 记 rows / sha256_16 / 取数 URL / 出口 / 列名 / 时间
+
+水位存在 `state/watermarks.json`，下次不带 `--since` 时自动用它做增量。
+实测（2026-11-05）：首次东财拉 30 行写入；第二次带水位只回 1 行（新增当日），符合预期。
+
+`stooq` 适配器保留但当前不可用：该站返回 796B "This site requires JavaScript"
+挑战页且状态码是 200，需要浏览器 cookie 才能取，已在 sources.yaml 降级为
+`reachable_guarded`。
+
+## 八、加一个新源要改什么
 
 只改 `sources.yaml` 一条，不改代码：
 
@@ -158,12 +221,14 @@ cffex、shfe、chinamoney、jisilu、hkex(6.6s)、okx(5.3s)、binance(经本地�
 
 然后 `check` → `probe --live --only my_source` → 按实测改 `status` 与 `note`。
 
-**这条流水线就是"全网获取"的接入协议**：登记 → 探活 → 定性 → 挂表。
+**这条流水线就是"全网获取"的接入协议**：登记 → 探活 → 定性 → 挂表。  
 每接一个源，成本是填 12 个字段，不是写一个 sync 脚本。
 
-## 八、状态文件
+## 九、状态文件
 
-- `state/egress.json` — auto 策略实测记忆（源 → 胜出出口 + 延迟 + 时间戳），24h 过期
+- `state/egress.json` — auto 策略实测记忆（源 → 胜出出口 + 延迟 + 时间戳），24h 过期  
+  |  |  |  
+  | --- | --- |
 - `reports/data_hub/probe_<ts>.jsonl|md` — 每次探活的原始事实与汇总
 - `reports/data_hub/govern_<ts>.json|md` — 每次对账的完整缺口清单
 

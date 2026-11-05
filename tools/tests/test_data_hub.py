@@ -165,3 +165,51 @@ def test_static_checks_filter_by_only():
     data = {"sources": [_src(status="verified", probe={}), _src(id="other", status="verified", probe={})]}
     rows = probe.static_checks(data, only=["other"])
     assert {r.get("source") for r in rows if r.get("source")} == {"other"}
+
+
+# ── collect：质量校验闸门（不出网） ──────────────────────────────────
+def test_check_frame_rejects_empty():
+    import pandas as pd
+
+    from data_hub import collect
+
+    assert collect.check_frame(pd.DataFrame())["ok"] is False
+
+
+def test_check_frame_rejects_duplicate_dates():
+    import pandas as pd
+
+    from data_hub import collect
+
+    df = pd.DataFrame({"date": ["2026-11-03", "2026-11-03"], "close": [1.0, 2.0]})
+    df["date"] = pd.to_datetime(df["date"])
+    verdict = collect.check_frame(df)
+    assert not verdict["ok"]
+    assert any("重复" in i for i in verdict["issues"])
+
+
+def test_check_frame_rejects_missing_key_column():
+    import pandas as pd
+
+    from data_hub import collect
+
+    df = pd.DataFrame({"date": pd.to_datetime(["2026-11-03"]), "close": [1.0]})
+    verdict = collect.check_frame(df, key_cols=("ts_code",))
+    assert not verdict["ok"]
+    assert any("主键" in i for i in verdict["issues"])
+
+
+def test_check_frame_accepts_clean_frame():
+    import pandas as pd
+
+    from data_hub import collect
+
+    df = pd.DataFrame({"date": pd.to_datetime(["2026-11-03", "2026-11-04"]), "close": [1.0, 2.0]})
+    assert collect.check_frame(df)["ok"] is True
+
+
+def test_collect_rejects_unknown_adapter():
+    from data_hub import collect
+
+    with pytest.raises(ValueError):
+        collect.collect("不存在", "x")

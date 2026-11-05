@@ -16,7 +16,7 @@ import argparse
 import json
 import sys
 
-from . import govern, probe, registry
+from . import collect, govern, probe, registry
 
 
 def cmd_sources(args) -> int:
@@ -90,8 +90,20 @@ def cmd_govern(args) -> int:
     for item in rep["matched_none"]:
         print(f"  - {item['source']} {item['prefixes']}")
     print(f"时效欠账：{len(rep['stale'])} 张")
-    for row in rep["stale"][:10]:
-        print(f"  - {row['table']} 滞后 {row['lag_days']}d（SLA {row['sla_days']}d）")
+    grades: dict[str, list[dict]] = {}
+    for row in rep["stale"]:
+        grades.setdefault(row.get("grade", "lagging"), []).append(row)
+    for grade, label in (("stopped", "A 停产"), ("broken", "B 断更"), ("lagging", "C 滞后")):
+        rows = grades.get(grade) or []
+        print(f"  [{label}] {len(rows)} 张")
+        for row in rows[:5]:
+            print(f"    - {row['table']} 滞后 {row['lag_days']}d（{row['freshness']}）")
+    print(f"生命周期已跳过：{len(rep.get('skipped_by_lifecycle') or [])} 张")
+    profile = rep.get("batch_profile") or []
+    if profile:
+        print(f"批次画像（同源同日期 ≥3 张）：{len(profile)} 个未被最近批次覆盖的表群")
+        for row in profile[:6]:
+            print(f"    - {row['source']} 止于 {row['freshness']}：{row['count']} 张，如 {', '.join(row['sample'][:3])}")
     print(f"未登记物理表：{len(rep['unregistered'])} 张")
     if rep["unregistered"]:
         print("  样例：", ", ".join(rep["unregistered"][:10]))
@@ -101,6 +113,21 @@ def cmd_govern(args) -> int:
         print("报告：", md)
         print("明细：", js)
     return 0
+
+
+def cmd_collect(args) -> int:
+    extra = {}
+    if args.adapter == "eastmoney":
+        extra["limit"] = args.limit
+    res = collect.collect(
+        args.adapter,
+        args.dataset,
+        since=args.since,
+        dry_run=args.dry_run,
+        **extra,
+    )
+    print(json.dumps(res, ensure_ascii=False, indent=1))
+    return 0 if res.get("status") in {"written", "dry_run_ok", "no_new"} else 1
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -126,6 +153,14 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("govern", help="三方对账")
     p.add_argument("--report", action="store_true", help="落报告文件")
     p.set_defaults(func=cmd_govern)
+
+    p = sub.add_parser("collect", help="取一个数据集并落地（不写主仓）")
+    p.add_argument("--adapter", required=True, choices=sorted(collect.ADAPTERS))
+    p.add_argument("--dataset", required=True, help="stooq: aapl.us / eastmoney: 1.600000 / sina: sh600000")
+    p.add_argument("--since", help="起始日期 YYYY-MM-DD，缺省用上次水位")
+    p.add_argument("--limit", type=int, default=5000, help="eastmoney 取多少根 K 线")
+    p.add_argument("--dry-run", action="store_true", dest="dry_run", help="只取数校验，不落盘")
+    p.set_defaults(func=cmd_collect)
     return ap
 
 
