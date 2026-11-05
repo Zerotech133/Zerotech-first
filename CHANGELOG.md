@@ -3,6 +3,17 @@
 本文件记录面向运行的显著变更（Keep a Changelog 风格，日期 = Asia/Shanghai）。
 格式参考开源实践：版本（或 Unreleased）/ Added / Changed / Fixed / Removed / Security。
 
+## [2026-11-05] — HermesBriefPush 401 修复与 P0 假红收口
+
+### Fixed
+- `zerobound-kg/hermes_push.py`：8787 已切 trusted-header 认证，HermesBriefPush 的
+  POST/SSE 未带 `X-Portal-User` → HTTP 401；新增 `_auth_headers()` 并用于两类请求，
+  新增 3 个测试。09:15 手动补推 `ok=True`，09:16 计划任务 `Last Result=0`。
+  关联 zerobound-kg `3d7a6fb`、告警单 `T-20261105-152`。
+- `portal/execution_manifest.json`：`HermesWebUI-Next-Guard` 对应的 8788 已退役，
+  Windows 计划任务 Disabled 为预期；监控条目改为 `enabled: false`，避免 stale 假红。
+  关联 `df0bfa1d3`、告警单 `T-20261105-151`。
+
 ## [2026-11-05] — SFT 206 主审 40 / holdout-027 参考修复
 
 ### Added
