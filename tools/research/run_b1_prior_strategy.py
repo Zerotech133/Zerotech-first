@@ -54,6 +54,17 @@ def _mean_frames(frames: list[pd.DataFrame], index, columns) -> pd.DataFrame:
     return pd.DataFrame(out, index=index, columns=columns)
 
 
+def _weighted_mean_frames(frames: list[pd.DataFrame], weights: list[float], index, columns) -> pd.DataFrame:
+    """按元素加权平均；每个格子只对非 NaN 的因子重新归一化权重。"""
+    arr = np.stack([df.reindex(index=index, columns=columns).to_numpy(dtype=float) for df in frames], axis=0)
+    w = np.asarray(weights, dtype=float).reshape((-1, 1, 1))
+    mask = np.isfinite(arr)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        wsum = np.sum(np.where(mask, w, 0.0), axis=0)
+        out = np.sum(np.where(mask, arr * w, 0.0), axis=0) / wsum
+    return pd.DataFrame(out, index=index, columns=columns)
+
+
 def load_names() -> dict[str, str]:
     import glob
     names: dict[str, str] = {}
@@ -63,14 +74,32 @@ def load_names() -> dict[str, str]:
     return names
 
 
-def build_composite(panel: f.Panel, directions: dict[str, int]) -> tuple[pd.DataFrame, list[dict]]:
-    """按指定先验方向构建族平衡复合因子；返回 (composite, diagnostics)。"""
+def build_composite(
+    panel: f.Panel,
+    directions: dict[str, int],
+    factor_names: list[str] | None = None,
+    momentum_weights: dict[str, float] | None = None,
+    extra_specs: dict | None = None,
+) -> tuple[pd.DataFrame, list[dict]]:
+    """按指定先验方向构建族平衡复合因子；返回 (composite, diagnostics)。
+
+    P0/P1 使用每族等权；P2 传入 `momentum_weights` 时，动量族内部按预注册
+    周期权重合成 sleeve，其余族仍等权。
+    """
     family_mats: dict[str, list[pd.DataFrame]] = {fam: [] for fam in FAMILIES}
+    momentum_mats: list[pd.DataFrame] = []
+    momentum_used: list[str] = []
     diag: list[dict] = []
     t0 = time.time()
-    factor_names = list(pv.B1_P1_STRATEGY_FACTORS)
+    specs = dict(f.FACTORS)
+    if extra_specs:
+        specs.update(extra_specs)
+    if factor_names is None:
+        factor_names = list(pv.B1_P1_STRATEGY_FACTORS)
     for i, name in enumerate(factor_names, 1):
-        spec = f.FACTORS[name]
+        if name not in specs:
+            raise KeyError(f"未注册因子: {name}")
+        spec = specs[name]
         direction = int(directions[name])
         values = spec.compute(panel)
         if not isinstance(values, pd.DataFrame):
@@ -79,17 +108,28 @@ def build_composite(panel: f.Panel, directions: dict[str, int]) -> tuple[pd.Data
         signed = values * float(direction)
         ranked = signed.rank(axis=1, pct=True) - 0.5
         ranked = ranked.reindex(index=panel.dates, columns=panel.codes)
-        family_mats[spec.family].append(ranked)
+        is_weighted_momentum = spec.family == "Tushare-动量" and momentum_weights is not None
+        if is_weighted_momentum:
+            momentum_mats.append(ranked)
+            momentum_used.append(name)
+        else:
+            family_mats[spec.family].append(ranked)
         valid_n = int(ranked.notna().sum().sum())
+        p0_direction = ft.B1_PRIOR_DIRECTIONS.get(name)
         diag.append({
             "name": name,
             "family": spec.family,
             "direction": direction,
-            "p0_direction": int(ft.B1_PRIOR_DIRECTIONS[name]),
+            "p0_direction": int(p0_direction) if p0_direction is not None else None,
+            "weight": float(momentum_weights[name]) if is_weighted_momentum else None,
             "rationale": (
                 "P1: A 股反转先验，动量族整体反向"
-                if direction != int(ft.B1_PRIOR_DIRECTIONS[name])
-                else ft.B1_PRIOR_RATIONALE.get(name, "")
+                if p0_direction is not None and direction != int(p0_direction)
+                else (
+                    "P2: 21 日核心动量 sleeve 的预注册周期权重"
+                    if is_weighted_momentum
+                    else ft.B1_PRIOR_RATIONALE.get(name, "")
+                )
             ),
             "valid_cells": valid_n,
         })
@@ -102,6 +142,22 @@ def build_composite(panel: f.Panel, directions: dict[str, int]) -> tuple[pd.Data
             continue
         fam_composites[fam] = _mean_frames(mats, panel.dates, panel.codes)
         print(f"[composite] family={fam} factors={len(mats)}", flush=True)
+    if momentum_weights is not None:
+        if len(momentum_mats) < MIN_FAMILY_FACTORS:
+            raise RuntimeError("P2 动量 sleeve 可用因子不足")
+        weights = [float(momentum_weights.get(name, 0.0)) for name in momentum_used]
+        total = float(sum(weights))
+        if total <= 0:
+            raise ValueError("P2 动量 sleeve 权重和必须为正")
+        weights = [w / total for w in weights]
+        fam_composites["Tushare-动量"] = _weighted_mean_frames(
+            momentum_mats, weights, panel.dates, panel.codes
+        )
+        print(
+            f"[composite] family=Tushare-动量 weighted factors={len(momentum_mats)} "
+            f"weights={dict(zip(momentum_used, weights))}",
+            flush=True,
+        )
 
     if len(fam_composites) < MIN_FAMILIES:
         raise RuntimeError(f"可用因子族不足: {list(fam_composites)}")
@@ -183,7 +239,17 @@ def main(argv: list[str] | None = None) -> int:
     names = load_names()
     print(f"[start] pit={pit.source}", flush=True)
 
-    composite, diag = build_composite(panel, prior.directions)
+    extra_specs = pv.p2_momentum_specs() if prior.version == "p2" else None
+    all_specs = dict(f.FACTORS)
+    if extra_specs:
+        all_specs.update(extra_specs)
+    composite, diag = build_composite(
+        panel,
+        prior.directions,
+        factor_names=list(prior.strategy_factors),
+        momentum_weights=prior.momentum_weights,
+        extra_specs=extra_specs,
+    )
     print(f"[composite] built {time.time()-t0:.1f}s", flush=True)
 
     t1 = time.time()
@@ -294,8 +360,9 @@ def main(argv: list[str] | None = None) -> int:
             "directions": prior.directions,
             "rationale": ft.B1_PRIOR_RATIONALE,
             "unknown": sorted(ft.B1_PRIOR_UNKNOWN),
-            "strategy_factors": list(pv.B1_P1_STRATEGY_FACTORS),
-            "family_counts": {fam: sum(1 for n in pv.B1_P1_STRATEGY_FACTORS if f.FACTORS[n].family == fam) for fam in FAMILIES},
+            "strategy_factors": list(prior.strategy_factors),
+            "momentum_weights": prior.momentum_weights,
+            "family_counts": {fam: sum(1 for n in prior.strategy_factors if all_specs[n].family == fam) for fam in FAMILIES},
         },
         "panel": {
             "shape": list(panel.shape),

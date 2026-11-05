@@ -48,10 +48,50 @@ B1_PRIOR_CHANGED_P1: dict[str, dict[str, int]] = {
     if int(B1_PRIOR_DIRECTIONS[name]) != int(B1_P1_PRIOR_DIRECTIONS[name])
 }
 
-PRIOR_VERSIONS = ("p0", "p1")
+# ---------------------------------------------------------------------------
+# P2：21 日反转核心的动量 sleeve（2026-11-06）
+#
+# P2 不覆盖 P0/P1。它只替换「动量族」内部构造：用 5/21/60/120 四个精确回看
+# 周期因子按预注册权重合成 sleeve，族间仍等权。权重来自 5/21/60/120 周期
+# 拆分结果（21d 最强 → 0.60；5d 辅助 → 0.20；60/120 成本约束 → 0.15/0.05），
+# 在跑 P2 之前冻结，不按 P2 结果回调。
+# ---------------------------------------------------------------------------
+P2_MOMENTUM_HORIZONS: dict[str, int] = {
+    "b1_mom_5d": 5,
+    "b1_mom_21d": 21,
+    "b1_mom_60d": 60,
+    "b1_mom_120d": 120,
+}
+P2_MOMENTUM_FACTORS: tuple[str, ...] = tuple(P2_MOMENTUM_HORIZONS)
+P2_MOMENTUM_DIRECTION = -1
+# 按周期键冻结；与预注册文档中的 JSON 完全一致。
+P2_MOMENTUM_HORIZON_WEIGHTS: dict[int, float] = {5: 0.20, 21: 0.60, 60: 0.15, 120: 0.05}
+P2_MOMENTUM_WEIGHTS: dict[str, float] = {
+    name: P2_MOMENTUM_HORIZON_WEIGHTS[horizon]
+    for name, horizon in P2_MOMENTUM_HORIZONS.items()
+}
+P2_WEIGHTS_CANONICAL = '{"120":0.05,"21":0.6,"5":0.2,"60":0.15}'
+P2_WEIGHTS_SHA256 = "67646c0ae425d735fc1b5dfc689d91522a6f394fb5fbf17887ff9625bdf33edb"
+
+
+def _non_momentum_names() -> tuple[str, ...]:
+    """P1 策略因子中不属于动量族的因子（方向与 P0 相同）。"""
+    return tuple(
+        name for name in B1_P1_STRATEGY_FACTORS
+        if (TUSHARE_FACTOR_MAP.get(name) or {}).get("factor_type") != MOMENTUM_FACTOR_TYPE
+    )
+
+
+B1_P2_STRATEGY_FACTORS: tuple[str, ...] = _non_momentum_names() + P2_MOMENTUM_FACTORS
+B1_P2_PRIOR_DIRECTIONS: dict[str, int] = dict(B1_P1_PRIOR_DIRECTIONS)
+for _name in P2_MOMENTUM_FACTORS:
+    B1_P2_PRIOR_DIRECTIONS[_name] = P2_MOMENTUM_DIRECTION
+
+PRIOR_VERSIONS = ("p0", "p1", "p2")
 PRIOR_LABELS = {
     "p0": "P0 · 资产定价混合先验（研究基线）",
     "p1": "P1 · A 股反转先验（动量族全反向，独立假设）",
+    "p2": "P2 · 21 日反转核心（动量 sleeve 5/21/60/120 加权）",
 }
 
 
@@ -61,16 +101,19 @@ class PriorVersion:
     label: str
     directions: dict[str, int]
     changed_vs_p0: dict[str, dict[str, int]]
+    strategy_factors: tuple[str, ...]
+    momentum_weights: dict[str, float] | None = None
 
 
 def get_prior(version: str = "p0") -> PriorVersion:
-    """返回指定版本的先验；P0 为默认，P1 不覆盖 P0。"""
+    """返回指定版本的先验；P0 为默认，P1/P2 不覆盖 P0。"""
     if version == "p0":
         return PriorVersion(
             version="p0",
             label=PRIOR_LABELS["p0"],
             directions=dict(B1_PRIOR_DIRECTIONS),
             changed_vs_p0={},
+            strategy_factors=B1_P1_STRATEGY_FACTORS,
         )
     if version == "p1":
         return PriorVersion(
@@ -78,8 +121,40 @@ def get_prior(version: str = "p0") -> PriorVersion:
             label=PRIOR_LABELS["p1"],
             directions=dict(B1_P1_PRIOR_DIRECTIONS),
             changed_vs_p0=dict(B1_PRIOR_CHANGED_P1),
+            strategy_factors=B1_P1_STRATEGY_FACTORS,
+        )
+    if version == "p2":
+        return PriorVersion(
+            version="p2",
+            label=PRIOR_LABELS["p2"],
+            directions=dict(B1_P2_PRIOR_DIRECTIONS),
+            changed_vs_p0=dict(B1_PRIOR_CHANGED_P1),
+            strategy_factors=B1_P2_STRATEGY_FACTORS,
+            momentum_weights=dict(P2_MOMENTUM_WEIGHTS),
         )
     raise ValueError(f"未知先验版本: {version!r}；可选 {PRIOR_VERSIONS}")
+
+
+def p2_momentum_specs() -> dict:
+    """P2 的四个周期动量因子 spec；不注册进全局 FACTORS，仅回测时注入。"""
+    import factor_lib as fl
+
+    specs: dict = {}
+    for name, horizon in P2_MOMENTUM_HORIZONS.items():
+        def _compute(panel, _h: int = horizon):
+            return panel.optional("adj_close").pct_change(_h)
+
+        specs[name] = fl.FactorSpec(
+            name=name,
+            family="Tushare-动量",
+            kind="continuous",
+            direction=P2_MOMENTUM_DIRECTION,
+            description=f"P2 动量 sleeve {name}：{horizon} 日反转（adj_close/adj_close.shift({horizon})-1）",
+            source="b1_p2_horizon",
+            requires=("adj_close",),
+            compute=_compute,
+        )
+    return specs
 
 
 def prior_meta(version: str = "p0") -> dict:
@@ -92,7 +167,9 @@ def prior_meta(version: str = "p0") -> dict:
         "n_changed_vs_p0": len(prior.changed_vs_p0),
         "changed_vs_p0": prior.changed_vs_p0,
         "unknown": sorted(B1_PRIOR_UNKNOWN),
-        "strategy_factors": list(B1_P1_STRATEGY_FACTORS),
+        "strategy_factors": list(prior.strategy_factors),
+        "momentum_weights": prior.momentum_weights,
+        "p2_weights_sha256": P2_WEIGHTS_SHA256 if prior.version == "p2" else None,
     }
 
 
@@ -102,7 +179,16 @@ __all__ = [
     "B1_P1_PRIOR_DIRECTIONS",
     "B1_P1_STRATEGY_FACTORS",
     "B1_PRIOR_CHANGED_P1",
+    "B1_P2_PRIOR_DIRECTIONS",
+    "B1_P2_STRATEGY_FACTORS",
+    "P2_MOMENTUM_FACTORS",
+    "P2_MOMENTUM_HORIZONS",
+    "P2_MOMENTUM_HORIZON_WEIGHTS",
+    "P2_MOMENTUM_WEIGHTS",
+    "P2_WEIGHTS_CANONICAL",
+    "P2_WEIGHTS_SHA256",
     "PriorVersion",
     "get_prior",
+    "p2_momentum_specs",
     "prior_meta",
 ]

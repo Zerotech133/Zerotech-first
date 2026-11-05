@@ -69,9 +69,58 @@ def test_strategy_changed_factor_count():
     assert len(changed_strategy) == 17  # 18 个动量反转 - days_down_up（unknown）
 
 
+def test_p2_weights_are_frozen():
+    assert pv.P2_MOMENTUM_HORIZON_WEIGHTS == {5: 0.20, 21: 0.60, 60: 0.15, 120: 0.05}
+    assert pv.P2_MOMENTUM_WEIGHTS == {
+        "b1_mom_5d": 0.20,
+        "b1_mom_21d": 0.60,
+        "b1_mom_60d": 0.15,
+        "b1_mom_120d": 0.05,
+    }
+    assert abs(sum(pv.P2_MOMENTUM_WEIGHTS.values()) - 1.0) < 1e-12
+    assert pv.P2_WEIGHTS_SHA256 == "67646c0ae425d735fc1b5dfc689d91522a6f394fb5fbf17887ff9625bdf33edb"
+
+
+def test_p2_only_replaces_momentum_sleeve():
+    p2 = pv.get_prior("p2")
+    assert p2.strategy_factors == pv.B1_P2_STRATEGY_FACTORS
+    assert len(pv.P2_MOMENTUM_FACTORS) == 4
+    assert len([n for n in p2.strategy_factors if n.startswith("b1_mom_")]) == 4
+    assert len([n for n in p2.strategy_factors if n in MOMENTUM]) == 0
+    for name in p2.strategy_factors:
+        if name.startswith("b1_mom_"):
+            assert p2.directions[name] == -1
+        else:
+            # 非动量方向沿用 P1/P0
+            assert p2.directions[name] == ft.B1_PRIOR_DIRECTIONS[name]
+    assert pv.get_prior("p0").directions == ft.B1_PRIOR_DIRECTIONS
+    assert pv.get_prior("p1").directions == pv.B1_P1_PRIOR_DIRECTIONS
+
+
+def test_p2_specs_are_horizon_factors():
+    specs = pv.p2_momentum_specs()
+    assert set(specs) == set(pv.P2_MOMENTUM_FACTORS)
+    for name, spec in specs.items():
+        assert spec.direction == -1
+        assert spec.family == "Tushare-动量"
+        assert spec.requires == ("adj_close",)
+        assert name in spec.description
+
+
+def test_p2_meta_serializable():
+    meta = pv.prior_meta("p2")
+    assert meta["version"] == "p2"
+    assert meta["momentum_weights"] == pv.P2_MOMENTUM_WEIGHTS
+    assert meta["p2_weights_sha256"] == pv.P2_WEIGHTS_SHA256
+    assert len(meta["strategy_factors"]) == len(pv.B1_P2_STRATEGY_FACTORS)
+    # P0/P1 元数据仍为 81 个策略因子
+    assert len(pv.prior_meta("p0")["strategy_factors"]) == 81
+    assert len(pv.prior_meta("p1")["strategy_factors"]) == 81
+
+
 def test_invalid_version_raises():
     with pytest.raises(ValueError):
-        pv.get_prior("p2")
+        pv.get_prior("p3")
 
 
 def test_prior_meta_serializable():
