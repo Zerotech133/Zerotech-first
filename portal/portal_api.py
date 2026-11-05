@@ -3084,7 +3084,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
             self._bt_news(qs)
         elif path == "/bt":
             # K237 选股中心总目录：三产线选股中心导航——青萍之末的池子
-            # 已迁 /bt-qpzm（共振选股工作台，四市场模块卡同源注入），
+            # 已迁 /bt-qpzm（多维加权选股工作台，四市场模块卡同源注入），
             # 本页只做产线导航与池子摘要
             import html as _h_bt
             e = _h_bt.escape
@@ -3115,7 +3115,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
                         % (href, border, icon, name, desc, stat, border))
             cards = "".join([
                 _card("/bt-qpzm", "#58a6ff", "🌊", "青萍之末 · 选股中心",
-                      "四市场自选池 · 四法门共振评分（技术.35/JEV.25/"
+                      "四市场自选池 · 多维加权评分（技术.35/JEV.25/"
                       "RPS.25/环境.15）· 环境闸门一票否决",
                       "%d 只在池 · 买入 %d · 观察 %d" % (n, nb, nw)),
                 _card("/bt-chanlun", "#e3b341", "🧭", "缠论 · 选股中心",
@@ -3542,7 +3542,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # K-STOCK-087 算法商品市场：试看样例+本地卡密订阅解锁
             self._algo_market_page(qs)
         elif path == "/bt-qpzm" or path.startswith("/bt-qpzm/"):
-            # 策略市场 1 号工作台：青萍之末 · 共振选股
+            # 策略市场 1 号工作台：青萍之末 · 多维加权选股
             # K-STOCK-032 多页面联动：/bt-qpzm 主页驾驶舱 +
             # /bt-qpzm/{res,rps,hub,batch,spec} 子页
             self._qpzm_page(path[len("/bt-qpzm"):].strip("/"))
