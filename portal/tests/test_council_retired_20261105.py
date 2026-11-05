@@ -80,3 +80,11 @@ def test_zhuge_skips_retired_and_accepts_empty_as_healthy():
     assert "alert:council" not in ids
     assert "alert:nine_dim" not in ids
     assert "alert:weak" in ids
+    # Only a genuinely abnormal source may use the "回原账本核对" wording.
+    # empty is a legitimate zero-alert state and must not be turned into a
+    # stale-source/manual-review suggestion.
+    weak = next(row for row in out["suggestions"] if row["id"] == "alert:weak")
+    assert "需回原账本核对" in weak["reason"]
+    assert all("需回原账本核对" not in row["reason"]
+               for row in out["suggestions"]
+               if row["id"] in ("alert:nine_dim", "alert:council"))
