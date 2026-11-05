@@ -1,6 +1,6 @@
 {
  "schema": "lingjie/page-manifest/v0",
- "generated_at": "2026-11-04T16:39:08+08:00",
+ "generated_at": "2026-11-05T15:45:42+08:00",
  "generator": "tools/page_manifest.py v0.2",
  "scan": {
   "root": "portal",
@@ -101,9 +101,9 @@
  "route_baseline": {
   "present": true,
   "path": "tools/portal_route_baseline.json",
-  "generated_at": "2026-11-04T03:13:51",
-  "total": 298,
-  "sha256": "7cbfed3fa9fc11676eb63e43c991994fc3441fdc643cab9035e91ce26130bd28"
+  "generated_at": "2026-11-05T15:43:41",
+  "total": 299,
+  "sha256": "f9c6bceed6ee9bf166c483f82d56b4e7ad51a26faffd13bebb104d5e06b9a419"
  },
  "entry_map": [
   {
