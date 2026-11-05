@@ -90,7 +90,7 @@ def test_ingest_md_pii_cleaned_and_receipted(tmp_path, monkeypatch):
     assert "[EMAIL]" in text and "[PHONE]" in text and "[URL]" in text
     assert item["pii"]["changed"] is True and item["pii"]["hits"]
     assert rep["pii"]["enabled"] is True and rep["pii"]["files_changed"] == 1
-    assert rep["pii"]["policy_version"] == "pii-policy.v1"
+    assert rep["pii"]["policy_version"] == "pii-policy.v1.1"
     manifest = json.loads((kb / "05_学习源件" / "PII项目" / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["files"][0]["pii"]["changed"] is True
 
