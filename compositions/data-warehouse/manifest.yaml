@@ -10,7 +10,7 @@ metadata:
   host: lingjie
   description: 全域数据集登记/取数/血缘/契约（314 数据集：registered 265/314=84.4%、exposed 72/314=22.9%；文件级 + PG/C:\Temp 待补）
   created: "2026-11-02"
-  updated: "2026-11-02"
+  updated: "2026-11-05"
 spec:
   kernel: ">=0.9 <2.0"
   seats:
@@ -30,8 +30,20 @@ spec:
         note: "接口数据域数据根 quant_backtest/data 的主数据子树 tushare/（真实目录，只读）；根级 241 数据集聚合口径见 inventory summary（W1 引用收口 2026-11-02：原 ref quant_backtest_data 根级聚合无 inventory 单条，校正到真实子树）"
       - ref: dataset/dir/knowledge_docs
         note: "学习派生文档根 knowledge_docs（inventory registered dir，117 文件/12.3MB，只读）；C:\\项目\\知识库 语料层见 yt_* corpus_layer（2026-11-02 校正：原 knowledge_base 根级聚合无 inventory 单条）"
-      - ref: dataset/pg/v2_zhice_tables
-        note: "PG 聚合口径：wave1 已登记 7 表（registry PG_WAVE1_TABLES）；wave2 动态发现需 ZHICE_V2_DSN（CLI resolve-ref）；本 ref 非物理表 → soft warning 保留（ADR-019 P5，严格化后 block）"
+      # 2026-11-05 W1-PILOT-TOOLFIX：原 dataset/pg/v2_zhice_tables 是「PG 聚合口径」
+      # （wave1 表 + wave2 动态发现），非物理表、不可按物理 dataset/pg 登记
+      # （resolve-ref rc=2，catalog/inventory 均无）。按 docs/ops/2026-11-04_数据登记决策建议_v1.md
+      # 选项 B：移出 requires，改指向 wave1 已登记物理表；聚合口径与 wave2 计划见 spec.notes。
+      - ref: dataset/pg/v2_acad1_pool
+        note: "wave1 已登记 PG 物理表（owner=ACAD1）；PG 聚合口径/wave2 说明见 spec.notes"
+      - ref: dataset/pg/v2_selection_pool
+      - ref: dataset/pg/v2_stock_research
+      - ref: dataset/pg/v2_selection_report
+      - ref: dataset/pg/v2_strategy_ownership
+      - ref: dataset/pg/v2_acad1_review
+      - ref: dataset/pg/v2_base_signal
+      - ref: dataset/pg/v2_score_component
+      - ref: dataset/pg/v2_lusu_decision
       - ref: dataset/file/temp_contract
         note: "GAP（保持 planned）：C:\\Temp 契约产物聚合口径无单文件真实载体；单件白名单见 dataset_registry TEMP_CONTRACT_WHITELIST；整改期 2026-11-12 契约目录化（DWH-103）"
     contract: data-warehouse/v1
@@ -115,6 +127,7 @@ spec:
     - "口径双写（2026-11-02 抽检 P3-1）：spec.slo 与 spec.data.sla.baseline 同组数字双写；DWH-103 收口为单一真源。"
     - "metadata.version 已同批升 1.1.0（registry+manifest，2026-11-02，ARCH1 抽检通过）；后续升版仍须 registry.json 同批。"
     - "W1 引用收口（2026-11-02）：dataset/dir 两条校正到真实载体（quant_backtest_data→tushare 子树、knowledge_base→knowledge_docs inventory dir）；dataset/file/temp_contract 无单文件真实载体，保持 planned 缺口（不伪造）。证据：deliverables/2026-11-02_W1引用收口证据_v1.md。"
+    - "W1 收口 2026-11-05（W1-PILOT-TOOLFIX）：v2_zhice_tables 聚合口径非物理表（rc=2）按 docs/ops 决策选项 B 移出 requires，改指 wave1 已登记 9 表；wave2 动态发现需 ZHICE_V2_DSN（ADR-019 D3/P5，DATA1 补登记）；缺口仍见 slo.pg_table_covered=false / DWH-103 整改期 2026-11-12。"
 status:
   phase: shadow
   health: unknown

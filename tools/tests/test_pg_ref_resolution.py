@@ -2,11 +2,12 @@
 """ADR-019 P5：dataset/pg/* 以张松仓 registry 登记命中为证据（soft warning）。
 
 覆盖：
-1. registry 证据加载：wave1 7 表（dataset_registry.PG_WAVE1_TABLES）+ declared canonical_ref；
+1. registry 证据加载：wave1 9 表（dataset_registry.PG_WAVE1_TABLES）+ declared canonical_ref
+   （v2_bar_daily，2026-11-05 W1-PILOT-TOOLFIX 补登记）；
 2. 已登记 pg 引用 resolve 无 warning；未登记 pg 引用 → 显式 soft warning（非 error）；
 3. file refs 解析逻辑不被 pg 改动误杀；
-4. 各组合 manifest 的 `dataset/pg/*` 与 registry 对账（映射数/未登记项显式）；
-5. `composition.py validate --all` errors=0；soft warning 可被 strict 提升（严格化时机）。
+4. 各组合 manifest 的 `dataset/pg/*` 与 registry 对账（2026-11-05 收口后未登记项应为空）；
+5. `composition.py validate --all` errors=0 且无未登记 pg soft warning；strict 提升机制保留。
 
 只读：不连 PG、不写生产数据、不改 manifest。
 """
@@ -25,18 +26,20 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 import composition as c  # noqa: E402
 
-#: ADR-019 wave1 已登记 PG 表（dataset_registry.PG_WAVE1_TABLES，7 张）
+#: ADR-019 wave1 已登记 PG 表（dataset_registry.PG_WAVE1_TABLES；2026-11-05 共 9 张）
 WAVE1_TABLES = (
     "v2_acad1_pool",
     "v2_selection_pool",
     "v2_stock_research",
     "v2_selection_report",
     "v2_strategy_ownership",
+    "v2_acad1_review",
     "v2_base_signal",
     "v2_score_component",
+    "v2_lusu_decision",
 )
 
-#: 本单要求映射的组合 → 至少包含的 pg 表
+#: 组合 → 至少包含的 pg 表（映射对账，防止静默增删）
 PG_MANIFEST_EXPECTED = {
     "acad1-legion": {
         "v2_acad1_pool",
@@ -44,13 +47,20 @@ PG_MANIFEST_EXPECTED = {
         "v2_stock_research",
         "v2_selection_report",
         "v2_strategy_ownership",
+        "v2_acad1_review",
+        "v2_lusu_decision",
     },
-    "lusu-d1-flow": {"v2_acad1_pool", "v2_base_signal"},
-    "data-warehouse": {"v2_zhice_tables"},
+    "lusu-d1-flow": {"v2_acad1_pool", "v2_base_signal",
+                     "v2_acad1_review", "v2_lusu_decision"},
+    # 2026-11-05 W1-PILOT-TOOLFIX：原聚合口径 v2_zhice_tables 移出，改指 wave1 物理表
+    "data-warehouse": set(WAVE1_TABLES),
+    "quant-domain": {"v2_bar_daily", "v2_acad1_pool",
+                     "v2_selection_pool", "v2_stock_research"},
 }
 
-#: 未登记项（soft warning；映射表/文档对账目标，不允许静默新增）
-UNREGISTERED_PG_TABLES = {"v2_bar_daily", "v2_zhice_tables"}
+#: 未登记项：2026-11-05 收口后应为空（v2_bar_daily 已按 declared 证据登记；
+#: v2_zhice_tables 聚合口径不可按物理表登记，已移出 manifest requires）。
+UNREGISTERED_PG_TABLES = set()
 
 
 def _regs():
@@ -85,10 +95,16 @@ def test_wave1_registry_evidence_loaded():
         assert pg[table]["source"].endswith("#PG_WAVE1_TABLES")
         assert pg[table]["registered"] is True
     assert pg["v2_acad1_pool"]["owner"] == "ACAD1"
+    assert pg["v2_acad1_review"]["owner"] == "ACAD1"
     assert pg["v2_base_signal"]["owner"] == "D1"
-    # 非物理聚合口径不计入 registry
+    assert pg["v2_lusu_decision"]["owner"] == "D1"
+    # 聚合口径仍不冒充物理表登记（2026-11-05：移出 manifest 而非伪造登记）
     assert "v2_zhice_tables" not in pg
-    assert "v2_bar_daily" not in pg
+    # v2_bar_daily 经 dataset_refs_declared 只读证据登记（wave=declared）
+    bar = pg["v2_bar_daily"]
+    assert bar["wave"] == "declared"
+    assert bar["registered"] is True and bar["owner"] == "DATA1"
+    assert bar["source"] == "tools/datawarehouse/dataset_refs_declared.json"
 
 
 def test_declared_canonical_ref_evidence():
@@ -98,8 +114,10 @@ def test_declared_canonical_ref_evidence():
     canonical = {str(item.get("canonical_ref")) for item in declared.get("refs") or []
                  if str(item.get("canonical_ref") or "").startswith("dataset/pg/")}
     assert "dataset/pg/v2_acad1_pool" in canonical
+    assert "dataset/pg/v2_bar_daily" in canonical  # W1-PILOT-TOOLFIX 补登记
     pg = _regs()["pg_registered"]
     assert pg["v2_acad1_pool"]["wave"] == "wave1"  # wave1 优先去重
+    assert pg["v2_bar_daily"]["wave"] == "declared"
 
 
 # ── 2. resolve：登记命中 / 未登记 soft warning ─────────────────────
@@ -165,16 +183,21 @@ def test_unregistered_items_reconciled_across_compositions():
         "未登记项漂移：%r（期望 %r）" % (unregistered, sorted(UNREGISTERED_PG_TABLES)))
 
 
-def test_data_warehouse_ref_note_marks_wave_status():
+def test_data_warehouse_aggregate_ref_moved_with_note():
+    """2026-11-05：非物理聚合 ref 移出 requires，聚合口径在 spec.notes 显式说明。"""
     data = yaml.safe_load(
         (ROOT / "compositions" / "data-warehouse" / "manifest.yaml")
         .read_text(encoding="utf-8"))
-    requires = ((data.get("spec") or {}).get("data") or {}).get("requires") or []
-    item = next(i for i in requires
-                if isinstance(i, dict) and i.get("ref") == "dataset/pg/v2_zhice_tables")
-    note = str(item.get("note") or "")
-    for keyword in ("wave1", "wave2", "ZHICE_V2_DSN", "ADR-019"):
-        assert keyword in note, "v2_zhice_tables note 缺 %s: %r" % (keyword, note)
+    spec = data.get("spec") or {}
+    requires = ((spec.get("data") or {}).get("requires") or [])
+    refs = [i.get("ref") if isinstance(i, dict) else i for i in requires]
+    assert "dataset/pg/v2_zhice_tables" not in refs, (
+        "聚合口径不得按物理 dataset/pg 登记（ADR-019 P5；选项 B 已移出）")
+    notes = " ".join(str(x) for x in spec.get("notes") or [])
+    for keyword in ("v2_zhice_tables", "wave1", "wave2", "ZHICE_V2_DSN", "ADR-019"):
+        assert keyword in notes, "spec.notes 缺聚合口径说明 %s: %r" % (keyword, notes)
+    # 改指向的 wave1 物理表必须全部出现在 requires
+    assert {"dataset/pg/%s" % t for t in WAVE1_TABLES} <= set(refs)
 
 
 # ── 4. validate --all：errors=0 + soft warning 显式 + strict 时机 ──
@@ -193,20 +216,20 @@ def test_validate_all_errors_zero():
     assert "errors=0" in out, out
 
 
-def test_validate_all_json_soft_warnings_explicit():
+def test_validate_all_json_no_unregistered_pg_warning():
+    """2026-11-05 收口：全组合不再有「dataset/pg 未在 registry 登记」soft warning。"""
     rc, out, err = _run("validate", "--all", "--json")
     assert rc == 0, err
     rows = json.loads(out)
-    by_id = {row["id"]: row for row in rows}
-    dw = by_id["data-warehouse"]
-    assert any("dataset/pg 未在 registry 登记" in warning for warning in dw["warnings"]), \
-        dw["warnings"]
-    quant = by_id["quant-domain"]
-    assert any("dataset/pg 未在 registry 登记" in warning for warning in quant["warnings"]), \
-        quant["warnings"]
-    # 已登记表不产生 pg warning
-    assert not any("dataset/pg 未在 registry 登记" in w
-                   for w in by_id["lusu-d1-flow"]["warnings"])
+    leaked = {}
+    for row in rows:
+        bad = [w for w in row["warnings"] if "dataset/pg 未在 registry 登记" in w]
+        if bad:
+            leaked[row["id"]] = bad
+    assert leaked == {}, "仍有未登记 pg soft warning: %r" % leaked
+    # 量化域 v2_bar_daily 已登记后不得再有软告警
+    quant = {row["id"]: row for row in rows}["quant-domain"]
+    assert not any("dataset/pg 未在 registry 登记" in w for w in quant["warnings"])
 
 
 def test_pg_soft_warning_would_promote_to_error_under_strict():
