@@ -146,6 +146,27 @@ def test_60_day_rebalance_indices_and_simulation():
     assert out["metrics"]["rebalance_days"] == 60
 
 
+def test_simulate_capture_weights_returns_daily_positions():
+    panel, names = _panel(n_days=80)
+    factor = pd.DataFrame(
+        np.tile(np.arange(60, dtype=float), (80, 1)), index=panel.dates, columns=panel.codes
+    )
+    out = simulate(
+        panel, factor, PortfolioConfig(rebalance_days=60, industry_neutral=True,
+                                       size_neutral=True, buffer_quantile=0.3,
+                                       turnover_penalty=0.5),
+        names=names, capture_weights=True,
+    )
+    assert len(out["daily_weights"]) == len(out["daily_returns"]) > 0
+    first = out["daily_weights"][0]
+    assert first["date"] == out["daily_returns"].index[0]
+    assert first["weights"]
+    assert abs(sum(abs(v) for v in first["weights"].values()) - 1.0) < 1e-6
+    # 默认不记录持仓，避免给常规回测增加开销
+    default = simulate(panel, factor, PortfolioConfig(rebalance_days=60), names=names)
+    assert default["daily_weights"] == []
+
+
 def test_industry_and_size_constrained_weights_are_neutral():
     panel, _ = _panel(n_days=80, n_codes=60)
     industries = pd.Series(

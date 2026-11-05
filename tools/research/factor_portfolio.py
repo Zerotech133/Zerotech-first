@@ -372,11 +372,15 @@ def _drift_weights(w: pd.Series, rets: pd.DataFrame, start: int, end: int) -> pd
 
 def simulate(panel, factor: pd.DataFrame, cfg: PortfolioConfig | None = None,
              names: dict[str, str] | None = None, start: str | None = None,
-             end: str | None = None, industry_map=None) -> dict:
+             end: str | None = None, industry_map=None,
+             capture_weights: bool = False) -> dict:
     """执行组合回测，返回净值、交易、指标与配置。
 
     ``industry_map`` 可选：实现 ``at(date) -> pd.Series`` 的 PIT 行业映射；提供时
     选股/约束用信号日行业，暴露统计用建仓日行业，避免当前行业快照的前视偏差。
+
+    ``capture_weights`` 为 True 时额外返回 ``daily_weights``，用于研究归因；
+    默认关闭，避免给常规回测增加内存开销。
     """
     cfg = cfg or PortfolioConfig()
     names = names or {}
@@ -401,6 +405,7 @@ def simulate(panel, factor: pd.DataFrame, cfg: PortfolioConfig | None = None,
     nav_dates: list[str] = []
     nav_values: list[float] = []
     daily_rets: list[float] = []
+    daily_weights: list[dict] = []
     trades: list[dict] = []
     w = pd.Series(dtype=float)
     prev_entry: int | None = None
@@ -459,6 +464,15 @@ def simulate(panel, factor: pd.DataFrame, cfg: PortfolioConfig | None = None,
                 break
             r = rets.iloc[d - 1].reindex(w.index).fillna(0.0)
             port_r = float((w * r).sum())
+            if capture_weights:
+                daily_weights.append({
+                    "date": str(panel.dates[d]),
+                    "weights": {
+                        str(code): float(val)
+                        for code, val in w.items()
+                        if abs(float(val)) > 1e-12
+                    },
+                })
             w = w * (1.0 + r.to_numpy(dtype=float))
             nav *= (1.0 + port_r)
             nav_dates.append(str(panel.dates[d]))
@@ -472,6 +486,7 @@ def simulate(panel, factor: pd.DataFrame, cfg: PortfolioConfig | None = None,
     metrics = summarize(nav_ser, ret_ser, bench, trades, cfg)
     return {"config": cfg.to_dict(), "metrics": metrics,
             "trades": trades, "nav": nav_ser, "daily_returns": ret_ser,
+            "daily_weights": daily_weights,
             "benchmark": bench,
             "industry_source": (
                 "pit_sw_" + str((getattr(industry_map, "source", None) or {}).get("level", "L1")).lower()

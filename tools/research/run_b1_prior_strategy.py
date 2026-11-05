@@ -82,12 +82,14 @@ def build_composite(
     extra_specs: dict | None = None,
     tilt_weight: float | None = None,
     tilt_factor: str | None = None,
-) -> tuple[pd.DataFrame, list[dict]]:
+    return_families: bool = False,
+) -> tuple[pd.DataFrame, list[dict]] | tuple[pd.DataFrame, list[dict], dict[str, pd.DataFrame]]:
     """按指定先验方向构建族平衡复合因子；返回 (composite, diagnostics)。
 
     P0/P1 使用每族等权；P2 传入 `momentum_weights` 时，动量族内部按预注册
     周期权重合成 sleeve，其余族仍等权。P3 传入 `tilt_weight`/`tilt_factor`
     时，只在动量 sleeve 内部叠加 21 日 tilt，族间权重保持不变。
+    `return_families=True` 时额外返回 `fam_composites`，供归因/敏感性研究复用。
     """
     family_mats: dict[str, list[pd.DataFrame]] = {fam: [] for fam in FAMILIES}
     momentum_mats: list[pd.DataFrame] = []
@@ -204,6 +206,8 @@ def build_composite(
     composite_arr[coverage < MIN_FAMILIES] = np.nan
     composite = pd.DataFrame(composite_arr, index=panel.dates, columns=panel.codes)
     print(f"[composite] families={len(fam_composites)} coverage_median={float(np.median(coverage)):.1f}", flush=True)
+    if return_families:
+        return composite, diag, fam_composites
     return composite, diag
 
 
