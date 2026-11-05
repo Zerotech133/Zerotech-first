@@ -155,7 +155,7 @@
    L2 票:     /data/todays_picks.json            stocks[{code,name,close,pct_chg,tier,sources[{s,tag,dt,entry_px,tbe}]}]
    L3 信号:   同上 stocks[].sources（每个 s = 一个板块的一条结果）
    L4 点:     /data/pick_details/<code>.json     chanlun/entry_signal/chips/sectors/vol_events/lhb/notices
-   L0 准入:   /api/admission → 8791（fetchFirst 降级链，未落地灰态） */
+   L0 准入:   同源 /api/admission；8791 直连已退役，缺源走 null 灰态 */
 var S = { adm:null, wall:null, picks:null, cache:{}, sector:"all", stock:null, filter:"all", market:"A", q:"" };
 var SECNAME = {}; /* id → 板块名 */
 
@@ -179,7 +179,7 @@ function f2(v){ return (v==null||isNaN(v))?"—":Number(v).toFixed(2); }
 function pct(v){ if(v==null||isNaN(v)) return "—"; var n=Number(v); return (n>0?"+":"")+n.toFixed(2)+"%"; }
 function updn(v){ return (v==null||isNaN(v)||v===0)?"":(v>0?"up":"dn"); }
 
-/* ── 降级链取数：同源 → 直连 8791（CORS）→ null 灰态 ── */
+/* ── 同源取数 → 缺源 null 灰态 ── */
 function fetchFirst(urls){ 
   var i=0;
   function try1(){
@@ -189,7 +189,7 @@ function fetchFirst(urls){
   return try1();
 }
 function loadAdmission(){
-  fetchFirst(["/api/admission","http://127.0.0.1:8791/api/admission"]).then(function(a){
+  fetchFirst(["/api/admission"]).then(function(a){
     var el=document.getElementById("adm");
     var ad=a&&a.admission?a.admission:null;
     if(!ad){ el.className="admission unknown"; el.innerHTML='<span class="vd">— —</span><span class="sub">准入缺源 · 灰态不猜值</span>'; return; }

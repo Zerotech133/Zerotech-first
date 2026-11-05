@@ -175,8 +175,65 @@ tbody tr:last-child td{border-bottom:none}
       <tbody id="api-rows"></tbody>
     </table>
   </div>
+<!-- R2-A CATALOG BEGIN · catalog 实时目录：实时优先 + 失败静默回落（spec §4）；端点 404 时显示未就绪提示，不报错不空白 -->
+<style>
+.r2a-box{margin:22px 0 0;border:1px solid var(--border,#2a3342);border-radius:var(--r-m,10px);background:var(--bg-surface,#12161f)}
+.r2a-box>summary{cursor:pointer;padding:12px 15px;font-size:13px;font-weight:600;list-style:none;color:var(--text,#e6edf3)}
+.r2a-box>summary::-webkit-details-marker{display:none}
+.r2a-box>summary::before{content:"▸ ";color:var(--text-dim,#96a0af)}
+.r2a-box[open]>summary::before{content:"▾ "}
+.r2a-flag{font:600 11px var(--font-mono,Consolas,monospace);color:var(--color-warn,#d29922);margin-left:12px}
+.r2a-body{padding:2px 15px 15px}
+.r2a-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0 10px}
+.r2a-bar input,.r2a-bar select{font:12.5px var(--font-ui,system-ui,sans-serif);color:var(--text,#e6edf3);background:var(--bg-raised,#161b26);border:1px solid var(--border,#2a3342);border-radius:var(--r-s,6px);padding:5px 8px}
+.r2a-bar input{min-width:200px}
+.r2a-count{font:11px var(--font-mono,Consolas,monospace);color:var(--text-dim,#96a0af)}
+.r2a-notice{border:1px dashed var(--border,#2a3342);border-radius:var(--r-s,6px);padding:12px;color:var(--text-dim,#96a0af);font-size:12.5px}
+.r2a-hidden{display:none}
+.r2a-wrap{border:1px solid var(--border,#2a3342);border-radius:var(--r-m,10px);overflow:auto}
+.r2a-wrap table{width:100%;border-collapse:collapse;font-size:12.5px}
+.r2a-wrap th,.r2a-wrap td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--border-weak,#222a38);color:var(--text,#e6edf3)}
+.r2a-wrap th{position:sticky;top:0;background:var(--bg-raised,#161b26);color:var(--text-dim,#96a0af);font:600 11px var(--font-mono,Consolas,monospace);white-space:nowrap}
+.r2a-wrap tbody tr:hover td{background:var(--bg-raised,#161b26)}
+.r2a-row{cursor:pointer}
+.r2a-muted{color:var(--text-dim,#96a0af);font-size:12px}
+.r2a-err{color:var(--color-err,#e05555);font-size:12.5px}
+.r2a-note{border-left:3px solid var(--color-warn,#d29922);background:var(--bg-raised,#161b26);border-radius:var(--r-s,6px);padding:8px 12px;font-size:12px;color:var(--text-dim,#96a0af);line-height:1.7;margin:8px 0}
+.r2a-h4{font-size:13px;color:var(--link,#58a6ff);margin:14px 0 6px}
+.r2a-kv{width:100%;border-collapse:collapse;font-size:12.5px;margin:6px 0}
+.r2a-kv th,.r2a-kv td{text-align:left;padding:5px 8px;border-bottom:1px solid var(--border-weak,#222a38);vertical-align:top;color:var(--text,#e6edf3)}
+.r2a-kv th{color:var(--text-dim,#96a0af);white-space:nowrap;font-weight:600}
+.r2a-scroll{overflow:auto;max-height:44vh}
+.r2a-modal{position:fixed;inset:0;background:rgba(2,7,17,.72);display:none;align-items:flex-start;justify-content:center;z-index:300;padding:7vh 14px;overflow:auto}
+.r2a-modal.open{display:flex}
+.r2a-card{width:min(920px,100%);background:var(--bg-surface,#12161f);border:1px solid var(--border,#2a3342);border-radius:var(--r-m,10px);box-shadow:0 18px 50px rgba(0,0,0,.5)}
+.r2a-head{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border,#2a3342)}
+.r2a-head h3{margin:0;font-size:14px;word-break:break-all;color:var(--text,#e6edf3)}
+.r2a-head .sub{color:var(--text-dim,#96a0af);font:11px var(--font-mono,Consolas,monospace);margin-top:2px;word-break:break-all}
+.r2a-x{margin-left:auto;background:transparent;border:1px solid var(--border,#2a3342);border-radius:var(--r-s,6px);color:var(--text-dim,#96a0af);padding:4px 10px;cursor:pointer}
+.r2a-content{padding:14px 16px 18px;max-height:68vh;overflow:auto}
+</style>
+<details class="r2a-box" id="r2a-catalog">
+  <summary>catalog 逻辑表目录（实时通道）<span class="r2a-flag" id="r2a-flag">检测中…</span></summary>
+  <div class="r2a-body">
+    <div class="r2a-bar">
+      <input type="search" id="r2a-search" placeholder="按表名 / 说明检索…" autocomplete="off">
+      <select id="r2a-source"><option value="">全部源</option></select>
+      <span class="r2a-count" id="r2a-count"></span>
+    </div>
+    <div class="r2a-notice" id="r2a-notice">实时通道未就绪（待 8091 自然重启）</div>
+    <div class="r2a-wrap r2a-hidden" id="r2a-wrap">
+      <table>
+        <thead><tr><th>表名</th><th>源</th><th>频率</th><th>新鲜度</th><th>行数</th><th>状态</th></tr></thead>
+        <tbody id="r2a-body"></tbody>
+      </table>
+    </div>
+    <div class="r2a-muted" style="margin-top:8px">点击表行查看 schema / 主键与按存储顺序返回的前 20 行样本；样本顺序说明（sample_note）、catalog 新鲜度与 limit 截断均在弹窗内明示。</div>
+  </div>
+</details>
+<!-- R2-A CATALOG END -->
   <div class="foot">
-    <div>口径：<code>total / registered / exposed</code> 来自数据集级盘点（<code>research/reports/dataset_inventory_*.json</code>）；断流/漂移/快照兜底来自 <code>/static/dw_snapshot.json</code>（数据仓驾驶舱快照）与公开运营接口 <code>/api/dataops/overview</code>；本页不写任何数据。</div>
+    <div>口径：<code>total / registered / exposed</code> 来自数据集级盘点（<code>research/reports/dataset_inventory_*.json</code>）；断流/漂移/快照兜底来自 <code>/static/dw_snapshot.json</code>（数据仓驾驶舱快照）与公开运营接口 <code>/api/dataops/overview</code>；本页不写任何数据。逻辑表唯一口径 = catalog.json 258 表（物理资产视图 314 仍成立，二者不可混用）。</div>
     <div>状态：<span id="foot-mode">探测中</span> · 页面渲染 <span id="foot-at">—</span> · 入口 8734 · 只读 · 中文 UI · 前端三件套 tokens.css / nav.js 已接入。</div>
   </div>
 </div>
@@ -444,7 +501,11 @@ tbody tr:last-child td{border-bottom:none}
     }
     return "<pre>"+esc(JSON.stringify(d,null,2)).slice(0,8000)+"</pre>";
   }
+  /* dataset_id 是 314 物理资产 slug，不是 catalog 表名，不能走 /api/data/catalog/table；catalog 表名样本只从『逻辑表目录』行点击经 openTableDetail 进入。两条链路分开。 */
   function showSample(id){
+    showSampleOriginal(id);
+  }
+  function showSampleOriginal(id){
     openModal("数据集样本","请求中…","<div class='empty'>加载中…</div>");
     getJSON(DW+"/sample?id="+encodeURIComponent(id)+"&n=5").then(function(r){
       if(r.ok&&r.data){var note=(r.data.state&&r.data.state!=="ok")?('<div class="note">['+esc(r.data.state)+'] '+esc(r.data.reason||"")+' · 数据时点 '+esc(r.data.data_date||"—")+'</div>'):"";$("#modal-sub").textContent="dataset_id = "+id+" · 只读采样 n=5";$("#modal-body").innerHTML=note+renderSampleData(r.data);return}
@@ -548,8 +609,176 @@ tbody tr:last-child td{border-bottom:none}
     });
   }
 
+/* R2-A CATALOG BEGIN · 双通道状态机（照 portal/dw.html:377-535 的 T2 模板）
+   CATALOG_LIVE：探测成功(ok && total>0)为实时响应对象，否则 null；任何失败静默回落。 */
+var CATALOG_LIVE=null;
+var CATALOG_STATE='unknown';
+
+/* 3s 硬超时：AbortSignal.timeout 优先，老浏览器 AbortController 兜底，皆无则静默降级 */
+function timeoutSignal(){
+  if(typeof AbortSignal!=='undefined' && typeof AbortSignal.timeout==='function') return AbortSignal.timeout(3000);
+  if(typeof AbortController!=='undefined'){var ac=new AbortController();setTimeout(function(){ac.abort();},3000);return ac.signal;}
+  return undefined;
+}
+
+/* 实时优先 + 失败静默回落：成功存 CATALOG_LIVE 标『catalog 实时』；
+   404/401/超时/网络/JSON 错一律置 null 标『catalog 静态快照』，不 console.error、不 alert、不抛未捕获异常。 */
+async function probeCatalog(){
+  CATALOG_STATE='unknown'; CATALOG_LIVE=null;
+  try{
+    var r=await fetch('/api/data/catalog/tables?detail=brief',{cache:'no-store',signal:timeoutSignal()});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    var live=await r.json();
+    if(!live || live.ok!==true || !(live.total>0)) throw new Error('bad payload');
+    CATALOG_LIVE=live; CATALOG_STATE='live';
+    r2aOnLive(live);
+    r2aSetFlag('catalog 实时');
+  }catch(e){
+    /* 静默：端点 404 时页面表现与改造前逐像素一致，不白屏、不报错、不刷屏 */
+  }
+  if(CATALOG_STATE!=='live'){
+    CATALOG_STATE='snapshot'; CATALOG_LIVE=null;
+    r2aSetFlag('catalog 静态快照');
+  }
+  renderTableList();
+  return CATALOG_STATE==='live';
+}
+
+function r2aSetFlag(txt){var el=document.getElementById('r2a-flag');if(el)el.textContent=txt;}
+
+/* 实时成功钩子：各页覆盖（dw_v2 覆盖 DW_DATA.meta 展示字段）；默认空实现 */
+function r2aOnLive(live){ /* 本页无需覆盖 meta */ }
+
+/* 可折叠 catalog 逻辑表目录：表名/源/频率/新鲜度/行数/状态 + 关键词搜索 + 由 by_source 动态生成的源下拉 */
+function renderTableList(){
+  var wrap=document.getElementById('r2a-wrap'),body=document.getElementById('r2a-body'),
+      notice=document.getElementById('r2a-notice'),sel=document.getElementById('r2a-source'),
+      count=document.getElementById('r2a-count');
+  if(!wrap||!body||!notice||!sel) return;
+  var live=CATALOG_LIVE;
+  if(!live || !Array.isArray(live.items) || !live.items.length){
+    wrap.classList.add('r2a-hidden');
+    notice.classList.remove('r2a-hidden');
+    notice.textContent='实时通道未就绪（待 8091 自然重启）';
+    if(count) count.textContent='';
+    return;
+  }
+  notice.classList.add('r2a-hidden');
+  wrap.classList.remove('r2a-hidden');
+  var sources=Object.keys(live.by_source||{}).sort();
+  var cur=sel.value, stamp=String(live.version)+':'+sources.length;
+  if(sel.getAttribute('data-built')!==stamp){
+    sel.innerHTML='<option value="">全部源</option>'+
+      sources.map(function(s){return '<option value="'+esc(s)+'">'+esc(s)+' ('+Number(live.by_source[s]||0)+')</option>';}).join('');
+    sel.setAttribute('data-built',stamp);
+    if(sources.indexOf(cur)>=0) sel.value=cur;
+  }
+  applyCatFilter();
+}
+function applyCatFilter(){
+  var live=CATALOG_LIVE,body=document.getElementById('r2a-body'),count=document.getElementById('r2a-count');
+  if(!live||!body) return;
+  var q=String((document.getElementById('r2a-search')||{}).value||'').trim().toLowerCase();
+  var src=String((document.getElementById('r2a-source')||{}).value||'');
+  var items=Array.isArray(live.items)?live.items:[];
+  var rows=items.filter(function(it){
+    if(src && it.source!==src) return false;
+    if(q && !(String(it.name||'').toLowerCase().indexOf(q)>=0||String(it.desc||'').toLowerCase().indexOf(q)>=0)) return false;
+    return true;
+  });
+  if(count) count.textContent='共 '+rows.length+' / '+items.length+' 表';
+  body.innerHTML=rows.map(function(it){
+    var name=String(it.name||'');
+    var st=it.deprecated?'已废弃':(it.verification_status||it.lifecycle||'—');
+    return '<tr class="r2a-row" data-tname="'+esc(name)+'">'+
+      '<td><b>'+esc(name)+'</b></td>'+
+      '<td>'+esc(it.source||'—')+'</td>'+
+      '<td>'+esc(it.freq||'—')+'</td>'+
+      '<td>'+esc(it.freshness==null?'—':it.freshness)+'</td>'+
+      '<td>'+esc(it.rows==null?'—':it.rows)+'</td>'+
+      '<td>'+esc(st)+'</td></tr>';
+  }).join('');
+  Array.prototype.forEach.call(body.querySelectorAll('tr[data-tname]'),function(tr){
+    tr.onclick=function(){openTableDetail(tr.getAttribute('data-tname'));};
+  });
+}
+
+/* 点击目录行 → 单表端点 → 弹 schema/主键 + 前 20 行样本；失败显示 reason，或静默回落原采样链路 */
+async function openTableDetail(name, onFail){
+  var title='表详情 · '+name;
+  if(!onFail) r2aShowModal(title,'加载中…','<div class="r2a-muted">加载中…</div>');
+  try{
+    var r=await fetch('/api/data/catalog/table?name='+encodeURIComponent(name)+'&limit=20',{cache:'no-store',signal:timeoutSignal()});
+    var d=null; try{ d=await r.json(); }catch(e){ d=null; }
+    if(!r.ok || !d || d.ok!==true){
+      if(onFail){ onFail(); return; }
+      var reason=(d&&(d.reason||d.message||d.error))||('HTTP '+r.status);
+      r2aShowModal(title,esc(name),'<div class="r2a-err">'+esc(reason)+'</div>');
+      return;
+    }
+    r2aShowModal(title,esc(d.resolved||d.name),tableDetailHtml(d));
+  }catch(e){
+    if(onFail){ onFail(); return; }
+    r2aShowModal(title,esc(name),'<div class="r2a-err">'+esc(e&&e.message?e.message:String(e))+'</div>');
+  }
+}
+
+/* 弹窗正文：meta.schema[] / primary_key / sample_note / meta.freshness / clamped / limit_applied / 前 20 行，全部经 esc() */
+function tableDetailHtml(d){
+  var meta=d.meta||{},cols=Array.isArray(d.columns)?d.columns:[],rows=Array.isArray(d.rows)?d.rows:[];
+  var pk=meta.primary_key==null?'—':(Array.isArray(meta.primary_key)?meta.primary_key.join(', '):meta.primary_key);
+  var h='<div class="r2a-muted">catalog v'+esc(CATALOG_LIVE?CATALOG_LIVE.version:'?')+
+    ' · '+esc(d.name)+' → '+esc(d.resolved||d.name)+' · 返回 '+esc(d.row_count==null?rows.length:d.row_count)+' 行'+
+    (d.truncated?'（已截断）':'')+(d.clamped?' · limit 已截断至 '+esc(d.limit_applied)+' 行':'')+
+    (d.limit_applied?' · limit_applied='+esc(d.limit_applied):'')+'</div>';
+  h+='<table class="r2a-kv"><tbody>'+
+    r2aKv('源',esc(meta.source||'—'))+r2aKv('频率',esc(meta.freq||'—'))+
+    r2aKv('新鲜度',esc(meta.freshness==null?'—':meta.freshness))+r2aKv('行数',esc(meta.rows==null?'—':meta.rows))+
+    r2aKv('日期列',esc(meta.date_col||'—'))+r2aKv('代码列',esc(meta.code_col||'—'))+
+    r2aKv('主键 primary_key',esc(pk))+r2aKv('状态',esc(meta.verification_status||meta.lifecycle||'—'))+
+    r2aKv('可用',d.available===false?'否':'是')+'</tbody></table>';
+  var schema=Array.isArray(meta.schema)?meta.schema:[];
+  h+='<h4 class="r2a-h4">Schema（'+schema.length+' 列）</h4>';
+  h+=schema.length?('<table class="r2a-kv"><thead><tr><th>#</th><th>列名</th><th>类型</th><th>说明</th></tr></thead><tbody>'+
+    schema.map(function(c,i){return typeof c==='string'
+      ? '<tr><td>'+i+'</td><td>'+esc(c)+'</td><td>—</td><td>—</td></tr>'
+      : '<tr><td>'+i+'</td><td>'+esc(c.name||c.column||'')+'</td><td>'+esc(c.type||c.dtype||'—')+'</td><td>'+esc(c.desc||c.comment||'—')+'</td></tr>';}).join('')+
+    '</tbody></table>'):'<div class="r2a-muted">schema 未返回</div>';
+  h+='<h4 class="r2a-h4">样本数据（前 '+Math.min(20,rows.length)+' 行）</h4>';
+  /* 样本按存储顺序返回，非按日期倒序；并列 sample_note 与 catalog 新鲜度，避免把「样本旧行」误读成「数据断更」 */
+  if(d.sample_note){h+='<div class="r2a-note">'+esc(d.sample_note)+'（catalog 新鲜度：'+esc(meta.freshness==null?'—':meta.freshness)+'）</div>';}
+  /* clamped / limit_applied 一并披露，不静默截断 */
+  if(d.clamped||d.limit_applied){h+='<div class="r2a-note">注意：limit 已截断（clamped='+esc(!!d.clamped)+' · limit_applied='+esc(d.limit_applied==null?'—':d.limit_applied)+'），样本非全量。</div>';}
+  if(d.available===false){h+='<div class="r2a-err">'+esc(d.reason||'该表当前不可读')+'</div>';}
+  else if(!rows.length){h+='<div class="r2a-muted">无样本数据</div>';}
+  else{
+    var headCols=cols.length?cols:Object.keys(rows[0]||{});
+    h+='<div class="r2a-scroll"><table class="r2a-kv"><thead><tr>'+headCols.map(function(c){return '<th>'+esc(c)+'</th>';}).join('')+'</tr></thead><tbody>'+
+      rows.slice(0,20).map(function(rr){return '<tr>'+headCols.map(function(c,i){return '<td>'+esc(Array.isArray(rr)?(rr[i]==null?'':rr[i]):(rr&&rr[c]!=null?rr[c]:''))+'</td>';}).join('')+'</tr>';}).join('')+
+      '</tbody></table></div>';
+  }
+  return h;
+}
+function r2aKv(k,v){return '<tr><th>'+k+'</th><td>'+v+'</td></tr>';}
+
+/* 弹窗适配：static/dw.html 复用既有 openModal(title,sub,html)；dw_v2/picks 用独立 #r2a-modal */
+function r2aShowModal(t,s,h){ openModal(t,s,h); }
+function r2aCloseModal(){ closeModal(); }
+function r2aBind(){
+  var s=document.getElementById('r2a-search');if(s)s.addEventListener('input',applyCatFilter);
+  var sel=document.getElementById('r2a-source');if(sel)sel.addEventListener('change',applyCatFilter);
+  var m=document.getElementById('r2a-modal');
+  if(m){
+    var x=document.getElementById('r2a-close');if(x)x.onclick=r2aCloseModal;
+    m.addEventListener('click',function(e){if(e.target===m)r2aCloseModal();});
+    document.addEventListener('keydown',function(e){if(e.key==='Escape')r2aCloseModal();});
+  }
+}
+/* R2-A CATALOG END */
   function boot(){
     bind();
+    /* R2-A：实时 catalog 探测与原有加载链并行，不 await、不阻塞；404 静默回落 */
+    try{ r2aBind(); probeCatalog(); }catch(e){}
     Promise.allSettled([loadSnapshot(),loadOps()]).then(function(){
       return probeApi();
     }).then(function(){
