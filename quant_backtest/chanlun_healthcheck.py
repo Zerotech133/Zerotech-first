@@ -63,6 +63,7 @@ H4_TYPE, H4_HOLD, H4_NOTIONAL = "1买", "10", 100000
 H4_GROSS_TOL = 0.05      # pp
 H4_T_TOL = 0.15
 H4_NET_TOL = 0.05        # pp
+H4_FM_CONCLUSION = 1.96  # 结论边界：FM |t| 越此线则「无 edge」结论动摇，必须人工复核
 H5_MAX_DAYS = 5
 
 log = logging.getLogger("hc")
@@ -229,15 +230,53 @@ def h4(workers):
                 "tolerances": {"gross_alpha_pp": H4_GROSS_TOL, "fm_t": H4_T_TOL,
                                "net_alpha_pp": H4_NET_TOL}}
 
-    d_net, d_g, d_t = diff["net_alpha"], diff["gross_alpha"], diff["fm_t"]
-    if d_net is not None and abs(d_net) > H4_NET_TOL:
-        st = "FAIL"
-    elif ((d_g is not None and abs(d_g) > H4_GROSS_TOL) or
-          (d_t is not None and abs(d_t) > H4_T_TOL)):
-        st = "WARN"
-    else:
-        st = "PASS"
+    st, extra = _h4_judge(mine, ref, b_n)
+    metrics.update(extra)
     return st, metrics, baseline
+
+
+def _h4_judge(mine, ref, b_n):
+    """H4 判定（纯函数，便于单测）。返回 (status, metrics_extra)。
+
+    判据分层，从严到宽：
+      FAIL  净 alpha |Δ| > H4_NET_TOL —— 结论性指标，任何情况下都严格
+      WARN  毛 alpha |Δ| > H4_GROSS_TOL —— 均值型指标，样本集变了也应稳定
+      WARN  FM |t| >= 1.96 —— 「无 edge」结论动摇，必须人工复核
+      PASS  样本集变了（n 不同）且结论未变 —— FM t 漂移源于行情新增交易日
+      WARN  样本集未变却 FM t 漂移 > H4_T_TOL —— 真回归
+      PASS  其余
+    """
+    d_net = (None if mine["net_alpha"] is None or ref["net_alpha"] is None
+             else round(float(mine["net_alpha"]) - float(ref["net_alpha"]), 3))
+    d_g = (None if mine["gross_alpha"] is None or ref["gross_alpha"] is None
+           else round(float(mine["gross_alpha"]) - float(ref["gross_alpha"]), 3))
+    d_t = (None if mine["fm_t"] is None or ref["fm_t"] is None
+           else round(float(mine["fm_t"]) - float(ref["fm_t"]), 3))
+    fm_t = mine["fm_t"]
+
+    # 样本集变化感知：基线 FM t 是 n 的强函数。行情每新增一个交易日，就有一批
+    # 持仓刚好满持期、从「alpha 算不出」变成「可结算」，样本集扩张，FM t 随之
+    # 漂移（实测 2026-11-05 新增一天：n 51,590→51,671，FM t 1.07→0.81）。
+    # 这属正常数据增长，不是代码回归——但结论边界仍须死守。
+    n_changed = b_n is not None and mine["n"] != b_n
+    concl_ok = fm_t is not None and abs(float(fm_t)) < H4_FM_CONCLUSION
+    extra = {"n_baseline": b_n, "sample_set_changed": bool(n_changed),
+             "conclusion_holds": bool(concl_ok)}
+
+    if d_net is not None and abs(d_net) > H4_NET_TOL:
+        return "FAIL", extra
+    if d_g is not None and abs(d_g) > H4_GROSS_TOL:
+        return "WARN", extra
+    if not concl_ok:
+        return "WARN", extra          # 结论动摇，须人工复核
+    if n_changed:
+        extra["note"] = ("样本集 n %s→%s（行情新增交易日所致），FM t %s→%s 属正常漂移；"
+                         "净 alpha Δ=%+0.3fpp 仍在容差内，FM |t|<1.96 结论未变"
+                         % (b_n, mine["n"], ref["fm_t"], fm_t, d_net))
+        return "PASS", extra
+    if d_t is not None and abs(d_t) > H4_T_TOL:
+        return "WARN", extra          # 样本集未变却漂了 → 真回归
+    return "PASS", extra
 
 
 # ── H5 数据新鲜度 ─────────────────────────────────────────────

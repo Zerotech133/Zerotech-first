@@ -78,8 +78,10 @@ def test_handoff_to_paper_receipt_has_four_ids(tmp_path):
     plan = consumed["plans"][0]
     assert plan["status"] == "armed"
 
+    trigger_ledger = tmp_path / "watch_triggers.jsonl"
     triggered = C.trigger_plan("wp-e2e-001", path=plan_ledger,
-                               data_dir=str(bot_dir))
+                               data_dir=str(bot_dir),
+                               trigger_ledger=str(trigger_ledger))
     confirmation = triggered["confirmation"]
     assert confirmation["status"] == "pending"
     cid = confirmation["confirmation_id"]
