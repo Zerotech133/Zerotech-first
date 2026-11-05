@@ -136,10 +136,32 @@ def consume_preflight_token(head: str, token_dir=None,
 
 
 def changed_files() -> list[str]:
+    """本次合并真正引入的文件集。
+
+    2026-11-06 修复：原实现用 `git diff HEAD <MERGE_HEAD>` 取文件集，对落后多次
+    merge 的旧分支是错的——它算的是「HEAD 与分支分叉之后的全部差异」，把 HEAD 那边
+    自己的改动全算成「本次合并改动」。实测合并 task/WO-ZHICE-API-8105-20261031
+    （实际只改 1 个文件）时算出 3,764 个文件，随后以 `--files a,b,c,...` 传入
+    kernel_guard，命令行超长 → CreateProcess 失败（Windows errno 206「文件名或
+    扩展名太长」），表现为「组合/内核门未过」而拒绝合并。这批悬空旧分支因此
+    一直合不进去。
+
+    正确口径是「分支相对分叉点改了什么」= merge-base..MERGE_HEAD。
+    merge-base 取不到时退回暂存区 diff（merge 结果 vs HEAD），同样是本次引入集，
+    且语义与无 MERGE_HEAD 时一致。
+    """
     mh = merge_head_sha()
+    base = ""
     if mh:
+        try:
+            rc, mb = _git_stdout(["merge-base", "HEAD", mh])
+            if rc == 0 and re.fullmatch(r"[0-9a-fA-F]{40}|[0-9a-fA-F]{64}", mb or ""):
+                base = mb
+        except Exception:  # noqa: BLE001 —— 取不到就退回暂存区 diff
+            base = ""
+    if base:
         r = subprocess.run(["git", "-C", str(REPO), "-c", "core.quotepath=false",
-                            "diff", "--name-only", "HEAD", mh],
+                            "diff", "--name-only", base, mh],
                            capture_output=True, text=True, encoding="utf-8", errors="replace")
     else:
         r = subprocess.run(["git", "-C", str(REPO), "-c", "core.quotepath=false",
