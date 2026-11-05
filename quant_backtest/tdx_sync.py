@@ -41,6 +41,9 @@ MANIFEST = os.path.join(OUT, "_manifest.json")
 
 PAGE = 5000  # API 单次上限
 FLUSH_PAGES = 40  # 每 40 页（20 万行）落一个 parquet 分片
+# 尾部回溯上限（页）：200×5000=100 万行。远端不认 start_date 时靠它把
+# "全表翻页"降为"只翻增量"，上限只用于防退化挂死，正常日增量 1~3 页。
+MAX_TAIL_PAGES = 200
 RETRY = 3  # 单页失败重试
 RETRY_DELAYS = (2, 8)  # 重试间隔秒（T-I4：2s/8s 退避，覆盖 DNS
 # 抖动窗口——10-17 实证 1.5s/3s 太短，
@@ -135,22 +138,52 @@ def _part_path(tbl, idx):
     return os.path.join(d, "part_%04d.parquet" % idx)
 
 
+def _norm_date(v):
+    """任意值 → YYYYMMDD；不可解析返回 None。纯函数。
+
+    2026-11-05 判例（假 SKIP 第三变种）：`ts_dividend/ts_fina_audit/ts_stk_rewards`
+    的 ann_date 含少量 NaN，pandas 把整列读成 float64 → 值是 `20261008.0`
+    这种 float，直接 `.replace("-","")` 抛 `'float' object has no attribute
+    'replace'` → `_parquet_latest_date` 整体 except 返回 None → 表被判
+    「无可解析日期列」永久 SKIP（这三张表 ann_date 其实都有值，最大
+    20261008/20260930）。所以统一先 str 再规整，兼容 float / 横杠 / 时间戳 / NaN。
+    """
+    if v is None:
+        return None
+    s = str(v).strip()
+    if not s or s.lower() in ("nan", "none", "nat", "null"):
+        return None
+    s = s.replace("-", "").replace("/", "")
+    for sep in (" ", "T"):
+        if sep in s:
+            s = s.split(sep)[0]
+    if "." in s:
+        s = s.split(".")[0]
+    return s[:8] if len(s) >= 8 and s[:8].isdigit() else None
+
+
 def _parquet_latest_date(tbl):
     """本地最新日期（增量起点）：全分片取日期列 max（分片不保证按日期
-    有序，如 sector_daily 窗口补齐分片存放更早数据）。"""
+    有序，如 sector_daily 窗口补齐分片存放更早数据）。
+
+    逐分片、逐值容错：单个分片列缺失或单值脏数据不得让整表水位归零
+    （原实现一处异常就 return None，是"假 SKIP"的来源）。
+    """
     parts = sorted(glob.glob(os.path.join(OUT, tbl, "part_*.parquet")))
     if not parts:
         return None
-    try:
-        dcol = _date_col_of(tbl)
-        vals = []
-        for p in parts:
-            vals.extend(pd.read_parquet(p, columns=[dcol])[dcol].astype(str))
-        vals = [v.replace("-", "").split(" ")[0][:8] for v in vals]
-        vals = [v for v in vals if len(v) == 8 and v.isdigit()]
-        return max(vals) if vals else None
-    except Exception:
-        return None
+    dcol = _date_col_of(tbl)
+    vals = []
+    for p in parts:
+        try:
+            s = pd.read_parquet(p, columns=[dcol])[dcol]
+        except Exception:  # noqa: BLE001  分片缺列/损坏 → 跳过该分片
+            continue
+        for v in s.tolist():
+            nd = _norm_date(v)
+            if nd:
+                vals.append(nd)
+    return max(vals) if vals else None
 
 
 def _infer_date_col(tbl):
@@ -254,6 +287,109 @@ def _filter_incremental(rows, cols, latest, date_col, *, filtered):
     return kept, False
 
 
+def _page_bounds(rows, cols, date_col):
+    """一页数据的日期极值 → (min, max)，规范成 YYYYMMDD；解析不出返回 (None, None)。"""
+    if not rows or not date_col or date_col not in cols:
+        return None, None
+    di = cols.index(date_col)
+    vals = []
+    for r in rows:
+        v = str(r[di]).replace("-", "").split(" ")[0][:8]
+        if len(v) == 8 and v.isdigit():
+            vals.append(v)
+    if not vals:
+        return None, None
+    return min(vals), max(vals)
+
+
+def decide_incremental_mode(head_min, head_max, tail_min, tail_max, latest):
+    """远端不支持日期过滤时，用「首屏 + 尾页」两页定策略 → (mode, 原因)。纯函数。
+
+    2026-11-05 判例：xtcloud 的 /api/data/table 对多数表既不支持 start_date
+    也不支持 order/sort（实测 10 组参数 total 恒等），offset=0 是最旧数据。
+    但实测 offset=2495283 仅 2.6s（非线性扫描），且 ts_news 首行 2020-01-01、
+    尾页 2026-11-04 —— 即表按时间升序存储、尾部就是最新。
+    于是「从尾部往回翻到本地水位」的请求数只与增量有关，与全表规模无关：
+    ts_news 250 万行原本要 500 次请求 ≈ 25 分钟，修后 1~3 次请求。
+
+    mode:
+      tail    升序表且尾部有新行 → 从尾部回溯
+      stop    头尾都已到本地水位 → 无新增（不再空翻全表）
+      forward 序性无法判定或本地落后整表 → 沿用全表翻页（保守，不漏行）
+    """
+    ld = (latest or "").replace("-", "").split(" ")[0][:8]
+    if not ld:
+        return "forward", "无本地水位"
+    if tail_max and tail_max > ld:
+        if head_max and head_max <= ld:
+            return "tail", "升序表：尾 %s > 本地 %s，头部已到水位" % (tail_max, ld)
+        return "forward", "头尾都有新行（头 %s > 本地 %s，落后整表）" % (head_max, ld)
+    # 降序表（头部最新，如 tdx_sector_daily 头 20261022 / 尾 2005）：首屏已
+    # 收下新行，尾部已到水位 → 后续页只会更旧，必须停，否则要空翻 748 页。
+    if tail_max and tail_max <= ld and head_min and head_min > tail_max:
+        return "stop", "降序表：头 %s、尾 %s ≤ 本地 %s（新行已收，后续页更旧）" % (
+            head_max, tail_max, ld)
+    if head_max and head_max <= ld:
+        asc = bool(head_max and tail_min) and head_max <= tail_min
+        desc = bool(head_min and tail_max) and head_min > tail_max
+        if asc or desc:
+            return "stop", "%s表：头 %s / 尾 %s 均 ≤ 本地 %s" % (
+                "升序" if asc else "降序", head_max, tail_max, ld)
+        # 无序表（如 tdx_sector_daily 尾部是 2005 年）：头尾都旧不代表中间没新行
+        return "forward", "头尾均旧但序性不明（头 %s~%s 尾 %s~%s）" % (
+            head_min, head_max, tail_min, tail_max)
+    return "forward", "序性不明（头 %s~%s 尾 %s~%s）" % (
+        head_min, head_max, tail_min, tail_max)
+
+
+def _backfill_from_tail(tbl, cols, date_col, latest, total, buf, flush, m):
+    """从尾部按页回溯，收日期 > latest 的行（升序表专路径）。返回新增行数。
+
+    终止条件：本页最小日期已 <= 本地水位（覆盖到了），或退到 offset 0。
+    """
+    ld = latest.replace("-", "").split(" ")[0][:8]
+    off = max(0, (total or 0) - PAGE)
+    got = 0
+    pages = 0
+    seen = set()
+    while off >= 0 and pages < MAX_TAIL_PAGES:
+        d = _get("/api/data/table/" + tbl, {"limit": PAGE, "offset": off})
+        rows = d.get("rows") or []
+        if not rows:
+            break
+        pcols = d.get("columns") or cols
+        if date_col not in pcols:
+            break
+        di = pcols.index(date_col)
+        fresh = []
+        for r in rows:
+            if str(r[di]).replace("-", "").split(" ")[0][:8] <= ld:
+                continue
+            try:
+                key = tuple(map(str, r))
+            except Exception:  # noqa: BLE001
+                key = None
+            if key is not None:
+                if key in seen:
+                    continue
+                seen.add(key)
+            fresh.append(r)
+        if fresh:
+            buf.extend(dict(zip(pcols, r)) for r in fresh)
+            got += len(fresh)
+        pages += 1
+        mn, _ = _page_bounds(rows, pcols, date_col)
+        if len(buf) >= FLUSH_PAGES * PAGE:
+            flush()
+            _save_manifest(m)
+        if mn is not None and mn <= ld:
+            break
+        off = max(0, off - PAGE)
+        time.sleep(SLEEP)
+    print("[%s] 尾部回溯 %d 页 → 补 %d 行" % (tbl, pages, got), flush=True)
+    return got
+
+
 def sync_parquet_table(tbl, meta, m, missing_keys=None):
     """分页拉全量 → 分片 parquet；done 后重跑按最新日期增量续拉。"""
     if missing_keys is not None:
@@ -295,6 +431,8 @@ def sync_parquet_table(tbl, meta, m, missing_keys=None):
     if latest:
         st["offset"] = 0
     print("[%s] %s rows=%s" % (tbl, mode, total))
+    head_bounds = None
+    tail_probed = False
     while True:
         p = dict(params)
         p["limit"] = PAGE
@@ -311,14 +449,38 @@ def sync_parquet_table(tbl, meta, m, missing_keys=None):
             if not rows:
                 break
         raw_n = len(rows)  # 远端本次返回的原始行数：offset 必须按它推进
+        raw_rows = rows
+        if head_bounds is None:
+            head_bounds = _page_bounds(raw_rows, cols, date_col)
         # 远端是否真按 start_date 过滤：比对广告 total 与全表行数。
         # 相等 → 没过滤（返回的是全表，只是本地过滤后剩得少），此时
         # 「首屏全旧就 break」会漏掉后续页里的新行，必须翻完再判。
         filtered = bool(total) and d.get("total") is not None and d["total"] < total
         if latest and not filtered and st["offset"] == 0:
-            print("[%s] 远端未按 start_date 过滤（total=%s=全表），转全表翻页 + 本地过滤"
+            print("[%s] 远端未按 start_date 过滤（total=%s=全表），转序性探测"
                   % (tbl, d.get("total")), flush=True)
         rows, stop = _filter_incremental(rows, cols, latest, date_col, filtered=filtered)
+        # 2026-11-05：不认 start_date 时，首屏全旧不再无脑翻全表，先花 1 次
+        # 请求看尾页定策略（升序→尾部回溯 / 已覆盖→停 / 不明→全表翻页）。
+        if (not rows) and latest and not filtered and total and not tail_probed:
+            tail_probed = True
+            tr = _get("/api/data/table/" + tbl,
+                      {"limit": PAGE, "offset": max(0, total - PAGE)})
+            trows = tr.get("rows") or []
+            tcols = tr.get("columns") or cols
+            tb = _page_bounds(trows, tcols, date_col)
+            hmode, why = decide_incremental_mode(
+                head_bounds[0] if head_bounds else None,
+                head_bounds[1] if head_bounds else None,
+                tb[0], tb[1], latest)
+            if hmode != "forward":
+                print("[%s] 序性探测 → %s（%s）" % (tbl, hmode, why), flush=True)
+            if hmode == "stop":
+                break
+            if hmode == "tail":
+                st["rows"] += _backfill_from_tail(
+                    tbl, tcols, date_col, latest, total, buf, flush, m)
+                break
         if stop:
             break
         buf.extend(dict(zip(cols, r)) for r in rows)

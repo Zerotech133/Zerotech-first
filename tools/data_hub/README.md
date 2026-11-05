@@ -301,6 +301,51 @@ catalog.freshness，不是磁盘 mtime（"补了数但对账没变"多半是忘�
 - tushare `hk_basic` → `build_catalog._CATALOG_STATIC_V31` 加 static_no_date：
   date_col 是 `list_date`（上市日），不是数据水位，刷新也不会变新。
 
+### 七之四、远端不认 start_date 时怎么增量：尾部回溯
+
+xtcloud 的 `/api/data/table/<tbl>` 对多数表**既不认 `start_date`，也不认
+`order/sort/order_by/desc/reverse`**（10 组参数 total 恒等，offset=0 永远是最旧
+行）。于是"增量"只能退化成"全表翻页"：`ts_news` 250 万行 = 500 页，实测跑
+24 分钟没完成；`tdx_sector_daily` 374 万行 = 748 页。
+
+2026-11-05 实测到两个关键事实，让这件事不必求人改接口：
+
+| 实测 | 结果 |
+|---|---|
+| `ts_news` offset=2495283（接近尾部） | **2.6s**，与 offset=0 的 1.1s 同量级 → 服务端非线性扫描 |
+| `ts_news` 尾部 5000 行 | 2026-11-03~11-04（最新）；offset=0 是 2020-01-01 → **按时间升序存储** |
+
+所以增量改成：**首屏过滤后为空时，先花 1 次请求看尾页，用头尾两页判定序性**
+（`decide_incremental_mode`，纯函数）：
+
+| 判定 | 动作 | 例 |
+|---|---|---|
+| `tail` 升序表且尾部有新行 | 从 `total-PAGE` 往回翻到水位 | ts_news 250 万行 → **2 页 14 秒** |
+| `stop` 升序表尾部已到水位 | 停（不再空翻全表） | — |
+| `stop` 降序表头部已收新行、尾部更旧 | 停 | tdx_sector_daily 头 20261022 / 尾 2005 |
+| `forward` 头尾都有新 / 序性不明 | 全表翻页（保守，不漏行） | 无序表如 sector 系列 |
+
+`MAX_TAIL_PAGES=200`（100 万行）是防退化上限，正常日增量 1~3 页。
+效果：`ts_news` 24 分钟未完成 → **14 秒补 6243 行**。
+
+### 七之五、调度（2026-11-05 注册）
+
+| 任务 | 时间 | 脚本 | 说明 |
+|---|---|---|---|
+| `TushareTailSync` | 每日 02:10 | `start_ts_tail_sync.ps1` | TushareSync 23:30 起、实测 1.86h → 01:22 结束 |
+| `TdxTailSync` | 每日 04:30 | `start_tdx_tail_sync.ps1` | 四批 17:35~18:05 启动，留足缓冲 |
+
+两个任务都是 `Limited + Interactive`（与既有 `TdxSync_A_高频` 同款，普通权限可注册；
+`S4U` 需管理员，实测被拒）、`StartWhenAvailable`（错过补跑）、
+`MultipleInstances=IgnoreNew`、`ExecutionTimeLimit=6h`。
+日志：`C:\Temp\{ts,tdx}_tail_task.log` + `_out.log`（UTF-8，读要带 `-Encoding UTF8`）。
+
+**不挂调度就等于没做**：欠账 SLA 3d，停三天就重新积压。首跑实测
+`TushareTailSync` rc=0/7s/picked=0（幂等成立）、`TdxTailSync` rc=0/76 表/约 2 分钟。
+
+已知噪音：兜底批每天会选入 ~25 张静态表（`list_date`/宏观 `month` 类），
+它们必然打一行 `[SKIP] done=true 但无可解析日期列`，0 次请求、无成本，属预期。
+
 ## 八、加一个新源要改什么
 
 只改 `sources.yaml` 一条，不改代码：
