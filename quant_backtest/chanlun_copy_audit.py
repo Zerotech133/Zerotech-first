@@ -54,12 +54,35 @@ RED_WORDS = [
     "目标价", "建议买", "推荐买", "必涨", "翻倍", "满仓", "抄底", "逃顶",
     # 变体（同义、更口语）
     "全仓", "梭哈", "杀进去", "无脑买", "闭眼买", "稳赚", "包赚",
+    # v8-b3 补入：首轮全仓扫描漏了「开仓/平仓」——它们是最常用的两个动作词，
+    # 却因为「建仓/加仓/减仓/清仓」已覆盖八成语境而被漏掉。发现路径：
+    # morning_report 卡片上出现「非开仓许可」，扫描器当时判 NONE，人工复核才发现。
+    "开仓", "平仓",
 ]
 
 AMBER_WORDS = [
     "机会", "布局", "介入", "上车", "潜伏", "低吸", "高抛",
     "看多", "看空", "牛股", "强势股推荐",
 ]
+
+# 反式指令（禁令式措辞）：不含任何交易动词，但语义上仍是操作指示，
+# 例如「观察 · 不追不砍，收复节奏线再定」——读者读到的是"别动手"，
+# 与「观望」等价。首轮扫描判 NONE（因为既无 RED 动词也无 AMBER 词），
+# 靠人工复核才在 action_hint 三态里发现，故 v8-b3 单列一级。
+# 判级：AMBER（暗示性），不计入 RED。
+PROHIBITION_WORDS = [
+    "不追", "别追", "勿追", "莫追",
+    "不砍", "不接", "不抄", "不碰", "别碰",
+    "回避", "规避", "不参与", "忍住",
+]
+
+# 反式指令的良性误报：技术语境里「不接」是"不接入/不接受"，不是劝退。
+# 命中前先剥离这些复合词，剥离记录在报告的抑制明细里。
+PROHIBITION_BENIGN_COMPOUNDS = (
+    "不接入", "不接收", "不接受", "不接口", "不接地",
+    "不参与计算", "不参与排序", "不参与回测", "不参与统计", "不参与聚合",
+    "克制", "忍耐度",
+)
 
 GREEN_WORDS = ["标注", "结构", "观察", "中枢", "背驰", "分型", "笔", "线段", "买卖点"]
 
@@ -254,8 +277,26 @@ def _strip_benign(text: str) -> str:
     return out
 
 
+def prohibition_hits(text: str) -> list[str]:
+    """反式指令命中词（已剥离技术语境良性复合词）。
+
+    剥离是"先删后查"：把「不接入」整体从串里移除再匹配「不接」，
+    避免「不接入生产库」被判成劝退话术。
+    """
+    src = text
+    for compound in PROHIBITION_BENIGN_COMPOUNDS:
+        src = src.replace(compound, "")
+    return [w for w in PROHIBITION_WORDS if w in src]
+
+
 def classify(text: str) -> tuple[str, list[str]]:
-    """返回 (级别, 命中词)。RED > AMBER > GREEN。"""
+    """返回 (级别, 命中词)。RED > AMBER > GREEN。
+
+    反式指令（「不追不砍」这类）**不参与分级**，只作为 `prohibition` 字段
+    附加在记录上，由报告单列一节呈现。原因：实测把它提成 AMBER 会引入
+    24 条技术文本误报（「不参与对拍」「规避绝对阈值」「变更不追踪」），
+    信噪比反而下降。它需要的是"能被看见"，不是"被当成交易指令"。
+    """
     hits_red = [w for w in RED_WORDS if w in text]
     if hits_red:
         return "RED", hits_red
@@ -500,6 +541,13 @@ def _benign(text: str) -> list[str]:
     for suf in BENIGN_QUAN_CANG:
         if f"全仓{suf}" in text:
             out.append(f"全仓{suf}")
+    # 「已平仓 / 未平仓 / 累计平仓」是纸面台账的状态标签，不是动作指令。
+    # v8-b3 实测：把「平仓」补进 RED 词表后新增 19 条可见命中，其中 18 条
+    # 落在这一族（doc_board 的「已平仓（近 N 笔）」、runner 的「未平仓」），
+    # 若不打良性标，核心数会凭 17 条台账事实虚涨。
+    for p in ("已平仓", "未平仓", "累计平仓", "平仓累计", "平仓笔"):
+        if p in text:
+            out.append(p)
     return out
 
 
@@ -578,6 +626,7 @@ def scan_file(path: Path, root: Path) -> tuple[list[dict], dict]:
             "is_archive": is_archive,
             "negated": _negated(text, hits),
             "benign_phrase": _benign(text),
+            "prohibition": prohibition_hits(text),
             "surface": _surface(rel, j["key"], j["kind"]),
         })
     return records, {"strings": n_strings, "parse_error": 0,
@@ -823,9 +872,14 @@ def write_markdown(result: dict, out_path: Path) -> None:
     w("|---|---|---|")
     w(f"| RED | 直接交易指令 | {' / '.join(RED_WORDS[:16])} 等 {len(RED_WORDS)} 个 |")
     w(f"| AMBER | 暗示性措辞 | {' / '.join(AMBER_WORDS)} |")
+    w(f"| AMBER(反式) | 禁令式措辞：无交易动词但仍是操作指示 | "
+      f"{' / '.join(PROHIBITION_WORDS)} |")
     w(f"| GREEN | 结构描述（用于确认合规覆盖面） | {' / '.join(GREEN_WORDS)} |")
     w("")
     w("「笔」为单字，单独命中率高，仅在串内同时出现 分型/中枢/线段/缠论/背驰/结构/标注/买卖点 时计 GREEN。")
+    w("")
+    w(f"反式指令剥离的技术语境良性词（先删后查，避免「不接入」被判劝退）："
+      f"{'、'.join(PROHIBITION_BENIGN_COMPOUNDS)}。")
     w("")
     w("## 2. 汇总表（文件 × 级别）")
     w("")
@@ -941,6 +995,28 @@ def write_markdown(result: dict, out_path: Path) -> None:
     w("AMBER 的逻辑词「机会」在 `机会成本` 语境已剥离；`低吸/高抛` 多见于研究脚本臂名，"
       "真正落在卡片正文的极少。**AMBER 不是本次的重点**，重点在 RED。")
     w("")
+    _proh_all = [r for r in recs if r.get("prohibition")]
+    _proh_vis = [r for r in _proh_all if r["user_visible"] and not r["suppressed_reason"]]
+    w("## 5b. 反式指令补充扫描（禁令式措辞）")
+    w("")
+    w(f"全仓命中 **{len(_proh_all)}** 条，其中用户可见 **{len(_proh_vis)}** 条。")
+    w("")
+    w("这类串**不含任何交易动词**，传统 RED 词表抓不到，但语义上仍是操作指示——"
+      "「不追不砍」读者读到的是「别动手」，与「观望」等价。"
+      "v8-b3 起因：`morning_report` 研判卡上的「观察 · 不追不砍，收复节奏线再定」"
+      "首轮扫描判 NONE，靠人工复核才发现。")
+    w("")
+    w("**本项不升级级别**：实测把反式指令提成 AMBER 会涌进 24 条技术文本"
+      "（「不参与对拍」「规避绝对阈值」「变更不追踪」），信噪比反而下降。"
+      "它需要的是「能被看见」，不是「被当成交易指令」。")
+    w("")
+    if _proh_vis:
+        w("| file:line | 函数 | 命中词 | 原文 |")
+        w("|---|---|---|---|")
+        for r in sorted(_proh_vis, key=lambda x: (x["file"], x["line"])):
+            w(f"| `{r['file']}:{r['line']}` | `{r['func']}` | {'/'.join(r['prohibition'])} "
+              f"| {_md_cell(r['text'])} |")
+        w("")
     w("## 6. 被抑制明细（可复核）")
     w("")
     w("### 6.1 按原因计数")

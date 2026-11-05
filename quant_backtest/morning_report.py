@@ -102,11 +102,11 @@ def _sec_market():
     keys = CM.key_levels(brief)
     if keys:
         lines.append("  🔑 %s" % " ｜ ".join(keys))
-    # 🎯 综合研判块：判定+读数+语义+关键位之外的增量=操作倾向+环境闸门
+    # 🎯 综合研判块：判定+读数+语义+关键位之外的增量=结构状态+环境闸门
     lines.append("  ── 🎯 综合研判 ──")
     _gate = CM.gate_line()
     lines.append(
-        "  倾向：%s%s" % (CM.action_hint(_ck), " ｜ %s" % _gate if _gate else "")
+        "  研判：%s%s" % (CM.action_hint(_ck), " ｜ %s" % _gate if _gate else "")
     )
     _plan = CM.trade_plan(brief)
     if _plan:
