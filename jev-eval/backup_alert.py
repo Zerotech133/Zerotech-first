@@ -203,6 +203,39 @@ def send_openapi(msg_type, content, user_id, receive_id_type="open_id"):
     return ok
 
 
+def _target_app_guard(user_id):
+    """Reject a target that is unregistered or belongs to another app domain.
+
+    2026-11-06 事故：JEV 环境里的旧 LARK_ALERT_OPEN_ID 指向 zb.ops.notify
+    app 的 open_id，而实际发送凭证是 news app，导致 99992361 cross app，
+    死信重投 8 次。这里在发送前按 push_targets 的 app 域做强校验；无法
+    确认时一律拒绝，避免再次落死信。
+
+    Returns (ok: bool, why: str).
+    """
+    target = str(user_id or "").strip()
+    if not target:
+        return False, "empty target"
+    expected_app = ""
+    for t in push_targets.targets():
+        if str(t.get("id") or "").strip() == target:
+            expected_app = str(t.get("app") or "").strip()
+            break
+    if not expected_app:
+        return False, "target not registered in push_targets"
+    try:
+        from feishu_client import load_app_creds
+
+        app_id, _ = load_app_creds()
+    except Exception as exc:  # noqa: BLE001
+        return False, "credential load failed: %s" % type(exc).__name__
+    if not app_id:
+        return False, "no static app credentials"
+    if app_id != expected_app:
+        return False, "target app %s != sender app %s" % (expected_app, app_id)
+    return True, expected_app
+
+
 def load_webhook():
     """Read alert_webhook.txt next to this script: line1=url, line2=secret(opt)."""
     cfg = os.path.join(os.path.dirname(os.path.abspath(__file__)), "alert_webhook.txt")
@@ -259,6 +292,27 @@ def main():
         text = "(empty alert)"
     fields = parse_fields(text)
     user_id = os.environ.get("LARK_ALERT_OPEN_ID", DEFAULT_USER_ID)
+    guard_ok, guard_why = _target_app_guard(user_id)
+    if not guard_ok:
+        print("ALERT_TARGET_APP_MISMATCH " + guard_why)
+        # 配置类拒绝也要报警，但绝不能发回原目标（避免再触发 cross app）。
+        # 安全回退到 push_targets 的“个人”目标；失败只记录，不再重试。
+        if DEFAULT_USER_ID and DEFAULT_USER_ID != user_id:
+            try:
+                send_openapi(
+                    "text",
+                    json.dumps(
+                        {
+                            "text": "⚠ JEV 告警未发送：收件人配置异常（%s）。"
+                            "已拒绝跨 app 发送；请修 LARK_ALERT_OPEN_ID。" % guard_why
+                        },
+                        ensure_ascii=False,
+                    ),
+                    DEFAULT_USER_ID,
+                )
+            except Exception as exc:  # noqa: BLE001
+                print("ALERT_TARGET_APP_NOTIFY_ERROR " + str(exc)[:150])
+        sys.exit(2)
     if fields.get("type") == "ai_workstation_backup_failed":
         msg_type = "interactive"
     else:
