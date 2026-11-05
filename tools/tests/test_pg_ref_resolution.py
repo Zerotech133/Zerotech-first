@@ -3,7 +3,8 @@
 
 覆盖：
 1. registry 证据加载：wave1 9 表（dataset_registry.PG_WAVE1_TABLES）+ declared canonical_ref
-   （v2_bar_daily，2026-11-05 W1-PILOT-TOOLFIX 补登记）；
+   （v2_bar_daily 物理表只读证据；v2_zhice_tables 非物理聚合口径、由 9 张 wave1 表支撑，
+   2026-11-05 W1-PILOT-TOOLFIX 补登记，data-warehouse manifest 契约未改）；
 2. 已登记 pg 引用 resolve 无 warning；未登记 pg 引用 → 显式 soft warning（非 error）；
 3. file refs 解析逻辑不被 pg 改动误杀；
 4. 各组合 manifest 的 `dataset/pg/*` 与 registry 对账（2026-11-05 收口后未登记项应为空）；
@@ -52,14 +53,14 @@ PG_MANIFEST_EXPECTED = {
     },
     "lusu-d1-flow": {"v2_acad1_pool", "v2_base_signal",
                      "v2_acad1_review", "v2_lusu_decision"},
-    # 2026-11-05 W1-PILOT-TOOLFIX：原聚合口径 v2_zhice_tables 移出，改指 wave1 物理表
-    "data-warehouse": set(WAVE1_TABLES),
+    # 2026-11-05 W1-PILOT-TOOLFIX：manifest 契约未改；聚合口径以 declared 声明登记
+    "data-warehouse": {"v2_zhice_tables"},
     "quant-domain": {"v2_bar_daily", "v2_acad1_pool",
                      "v2_selection_pool", "v2_stock_research"},
 }
 
-#: 未登记项：2026-11-05 收口后应为空（v2_bar_daily 已按 declared 证据登记；
-#: v2_zhice_tables 聚合口径不可按物理表登记，已移出 manifest requires）。
+#: 未登记项：2026-11-05 收口后应为空（v2_bar_daily 物理表按 declared 只读证据登记；
+#: v2_zhice_tables 聚合口径按 declared 声明登记、由 9 张 wave1 表支撑）。
 UNREGISTERED_PG_TABLES = set()
 
 
@@ -98,8 +99,12 @@ def test_wave1_registry_evidence_loaded():
     assert pg["v2_acad1_review"]["owner"] == "ACAD1"
     assert pg["v2_base_signal"]["owner"] == "D1"
     assert pg["v2_lusu_decision"]["owner"] == "D1"
-    # 聚合口径仍不冒充物理表登记（2026-11-05：移出 manifest 而非伪造登记）
-    assert "v2_zhice_tables" not in pg
+    # 聚合口径 v2_zhice_tables 不冒充 wave1 物理表，但经 declared 声明登记（wave=declared）
+    assert "v2_zhice_tables" not in WAVE1_TABLES
+    agg = pg["v2_zhice_tables"]
+    assert agg["wave"] == "declared"
+    assert agg["registered"] is True and agg["owner"] == "DATA1"
+    assert agg["source"] == "tools/datawarehouse/dataset_refs_declared.json"
     # v2_bar_daily 经 dataset_refs_declared 只读证据登记（wave=declared）
     bar = pg["v2_bar_daily"]
     assert bar["wave"] == "declared"
@@ -114,10 +119,12 @@ def test_declared_canonical_ref_evidence():
     canonical = {str(item.get("canonical_ref")) for item in declared.get("refs") or []
                  if str(item.get("canonical_ref") or "").startswith("dataset/pg/")}
     assert "dataset/pg/v2_acad1_pool" in canonical
-    assert "dataset/pg/v2_bar_daily" in canonical  # W1-PILOT-TOOLFIX 补登记
+    assert "dataset/pg/v2_bar_daily" in canonical  # W1-PILOT-TOOLFIX 补登记（物理表证据）
+    assert "dataset/pg/v2_zhice_tables" in canonical  # 聚合口径 declared 声明
     pg = _regs()["pg_registered"]
     assert pg["v2_acad1_pool"]["wave"] == "wave1"  # wave1 优先去重
     assert pg["v2_bar_daily"]["wave"] == "declared"
+    assert pg["v2_zhice_tables"]["wave"] == "declared"
 
 
 # ── 2. resolve：登记命中 / 未登记 soft warning ─────────────────────
@@ -126,6 +133,13 @@ def test_registered_pg_refs_resolve_without_warning():
         errors, warnings = _resolve("dataset/pg/%s" % table)
         assert errors == [], "%s errors=%r" % (table, errors)
         assert warnings == [], "%s warnings=%r" % (table, warnings)
+
+
+def test_aggregate_declared_ref_resolves_without_warning():
+    """非物理聚合口径以 declared 声明为登记证据（不冒充物理表，但解析不告警）。"""
+    errors, warnings = _resolve("dataset/pg/v2_zhice_tables")
+    assert errors == [], errors
+    assert warnings == [], warnings
 
 
 def test_unregistered_pg_ref_emits_soft_warning():
@@ -183,21 +197,31 @@ def test_unregistered_items_reconciled_across_compositions():
         "未登记项漂移：%r（期望 %r）" % (unregistered, sorted(UNREGISTERED_PG_TABLES)))
 
 
-def test_data_warehouse_aggregate_ref_moved_with_note():
-    """2026-11-05：非物理聚合 ref 移出 requires，聚合口径在 spec.notes 显式说明。"""
+def test_data_warehouse_aggregate_ref_declared():
+    """2026-11-05：聚合口径留在 requires（契约未改），以 declared 声明消除 soft warning。"""
     data = yaml.safe_load(
         (ROOT / "compositions" / "data-warehouse" / "manifest.yaml")
         .read_text(encoding="utf-8"))
     spec = data.get("spec") or {}
     requires = ((spec.get("data") or {}).get("requires") or [])
-    refs = [i.get("ref") if isinstance(i, dict) else i for i in requires]
-    assert "dataset/pg/v2_zhice_tables" not in refs, (
-        "聚合口径不得按物理 dataset/pg 登记（ADR-019 P5；选项 B 已移出）")
-    notes = " ".join(str(x) for x in spec.get("notes") or [])
-    for keyword in ("v2_zhice_tables", "wave1", "wave2", "ZHICE_V2_DSN", "ADR-019"):
-        assert keyword in notes, "spec.notes 缺聚合口径说明 %s: %r" % (keyword, notes)
-    # 改指向的 wave1 物理表必须全部出现在 requires
-    assert {"dataset/pg/%s" % t for t in WAVE1_TABLES} <= set(refs)
+    item = next(i for i in requires
+                if isinstance(i, dict) and i.get("ref") == "dataset/pg/v2_zhice_tables")
+    note = str(item.get("note") or "")
+    for keyword in ("wave1", "wave2", "ZHICE_V2_DSN", "ADR-019"):
+        assert keyword in note, "v2_zhice_tables note 缺 %s: %r" % (keyword, note)
+    # 声明证据：非物理聚合、owner=DATA1、由 9 张 wave1 表支撑、ADR-019 P5 过渡期
+    declared = json.loads(
+        (ROOT / "tools" / "datawarehouse" / "dataset_refs_declared.json")
+        .read_text(encoding="utf-8"))
+    entry = {i["ref"]: i for i in declared["refs"]}["dataset/pg/v2_zhice_tables"]
+    assert entry["owner"] == "DATA1" and entry["status"] == "active"
+    assert entry["canonical_ref"] == "dataset/pg/v2_zhice_tables"
+    assert entry["declared_at"] == "2026-11-05"
+    declared_note = str(entry["note"])
+    for keyword in ("非物理", "聚合", "wave1", "ADR-019"):
+        assert keyword in declared_note, "declared note 缺 %s: %r" % (keyword, declared_note)
+    errors, warnings = _resolve("dataset/pg/v2_zhice_tables")
+    assert errors == [] and warnings == []
 
 
 # ── 4. validate --all：errors=0 + soft warning 显式 + strict 时机 ──

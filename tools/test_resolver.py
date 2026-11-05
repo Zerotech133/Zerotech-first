@@ -6,9 +6,11 @@ G7 分母锁演进（2026-11-05 W1-PILOT-TOOLFIX-20261104）：
 - 之后合法并入 dev-legion（WO-CAOCAO-FRAME）与 ACAD1-DATAREFS 等，旧单值分母无法
   区分「合法演进 vs 静默漂移」。改为**组合级台账**：每个组合的引用数逐一锁定，
   同时锁组合集合，任何增删都必须显式更新本表（审计可见），保留防扩/缩分母语义。
-- 2026-11-05 审计后基线 = 7 组合 / 161 引用；data-warehouse 的 v2_zhice_tables
-  聚合口径移出 requires、改指 wave1 已登记物理表（11→+8 refs），v2_bar_daily 补
-  declared 登记（DB 证据见 dataset_refs_declared.json）。
+- 2026-11-05 审计后基线 = 7 组合 / 153 引用。data-warehouse manifest 契约未改
+  （仍引用聚合口径 dataset/pg/v2_zhice_tables，refs 计 15）；两个 dataset/pg 改在
+  dataset_refs_declared.json 补 declared 登记：v2_bar_daily（物理表，只读证据）、
+  v2_zhice_tables（非物理聚合口径，由 9 张 wave1 表支撑，ADR-019 P5 过渡期声明），
+  使 strict warnings=0。
 """
 from __future__ import annotations
 
@@ -23,7 +25,7 @@ import resolver as R  # noqa: E402
 #: G7 分母锁台账（组合 id → 引用数）；新增/删除组合或引用必须同步改这里。
 EXPECTED_COMPOSITIONS = {
     "acad1-legion": 34,
-    "data-warehouse": 23,
+    "data-warehouse": 15,
     "dev-legion": 14,
     "huangzhong-acceptance": 11,
     "lusu-d1-flow": 33,
@@ -39,7 +41,7 @@ def test_all_compositions_resolve():
     assert counts == EXPECTED_COMPOSITIONS, (
         "分母锁漂移：实际 %r 期望 %r" % (counts, EXPECTED_COMPOSITIONS))
     assert s["manifests"] == len(EXPECTED_COMPOSITIONS) == 7
-    assert s["refs"] == sum(EXPECTED_COMPOSITIONS.values()) == 161
+    assert s["refs"] == sum(EXPECTED_COMPOSITIONS.values()) == 153
     assert s["errors"] == 0 and s["warnings"] == 0
     assert s["ok"] is True
 
