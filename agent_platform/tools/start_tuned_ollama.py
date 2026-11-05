@@ -114,8 +114,16 @@ TUNED_ENV = {
     # 2026-10-24 收口：本启动器此前缺 MAX_LOADED_MODELS / DEBUG，且 KEEP_ALIVE 与
     # 看门狗不一致（2h vs 30m）——同一个服务换个入口拉起就是另一套参数，
     # 重启一次丢两项（当天实际丢了 MAX_LOADED_MODELS=3 与 DEBUG=1）。现全部对齐看门狗。
-    "OLLAMA_MAX_LOADED_MODELS": "3",  # 35b + 9b + 轻量层三班（10-18 架构调优）
-    "OLLAMA_KEEP_ALIVE": "30m",  # 与 watchdog 同值（原 2h，不合理地长）
+    # 2026-11-04 二次收口：08-24 那次只对齐了其中一个入口，启动文件夹的
+    # ollama-serve-tuned.bat 仍是 65536/2/30m，于是"谁先抢到 11434 谁的配置生效"。
+    # 本次把四处（用户级环境变量 / bat / ollama_watchdog.py / 本文件）统一为
+    # 16384 / NUM_PARALLEL=1 / KEEP_ALIVE=2h / MAX_LOADED_MODELS=2。
+    # 原 MAX_LOADED_MODELS=3 的依据是"35b+9b+轻量层三班"，35b 已于 11-02 物理
+    # 删除，三班前提消失；现役 9b(5.9G)+bge-m3(1.16G) 双常驻即够，且与用户级一致。
+    "OLLAMA_MAX_LOADED_MODELS": "2",
+    # 原 30m 的依据是"35b 空闲常驻 22G 不划算"，35b 删除后该顾虑不成立，
+    # 对齐用户级 2h，避免 watchdog / bat / 本启动器三档跳变。
+    "OLLAMA_KEEP_ALIVE": "2h",
     # 2026-10-24 并行度 2 → 1：qwen35 架构明确不支持并行请求（服务日志 423 条
     # "model architecture does not currently support parallel requests"）。
     # 并行度 2 等于把 KV 槽翻倍、只占内存不提升吞吐，还会诱发 runner 重建。

@@ -1,5 +1,7 @@
 # K213 tbe/pbe stats daily refresh (atomic json+html for portal /bt-tbe)
-# Slot: daily 06:45 (after ChanlunRefill 06:30, before MorningReport 07:00)
+# Slot: daily 06:45 (before MorningReport 07:00). Reads A-share parquet bars only;
+# 2026-11-05: ChanlunRefill 06:30 is gone, early batch is \ChanlunScan 07:20
+# (same start_chanlun_scan.ps1). No ordering dependency on the scan.
 # Full-market run ~2.5 min. ASCII only - junction path.
 # NOTE (K213): python stdout/err go to SEPARATE files (fut_daily pattern) -
 # never `>>` the status log itself: a concurrent reader of the status log

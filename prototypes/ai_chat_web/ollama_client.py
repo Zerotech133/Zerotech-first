@@ -65,7 +65,11 @@ class OllamaClient:
         texts 为单个字符串时返回单个向量，为列表时返回向量列表。
         """
         single = isinstance(texts, str)
-        payload = {"model": model, "input": [texts] if single else texts}
+        # num_ctx 必须显式下发：服务级 OLLAMA_CONTEXT_LENGTH=16384 会被套到
+        # bge-m3（n_ctx_train=8192）上，首次加载触发 "requested context size
+        # too large" 告警并被静默钳制。显式 8192 与模型训练长度对齐。
+        payload = {"model": model, "input": [texts] if single else texts,
+                   "options": {"num_ctx": 8192}}
         with self._request("/api/embed", payload, method="POST") as resp:
             result = json.loads(resp.read().decode("utf-8"))
         if "error" in result:

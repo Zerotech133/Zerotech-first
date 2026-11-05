@@ -58,3 +58,26 @@
 - `tools/verify_credential_readiness.py` 运行退出码 2（缺 6 类，符合预期）。
 - `tools/liudu_trial_smoke.py`（全 trial/合成，零生产触碰）保持通过。
 - `tests/test_data_source_adapter.py` 8 例保持通过（未改动适配器常量/开关）。
+
+## 七、老田裁定落码（记录于 2026-11-04）
+
+老田就 N5 八类凭证给出三分裁定，AI 已落码到自检器：
+
+1. **数据不全的源：留在原地**——路径/类别保留，不删不撤。
+2. **东财、股吧：可不断丰富**——标 `[缺-丰富]`，缺凭证属预期态，后续增量补齐，不计异常。
+3. **飞书：性质待裁**——老田明确「不知道是什么样的数据、有待思考」。AI 摸底结论：`FEISHU_APP_SECRET` 是**飞书开放平台应用密钥**，用途为消息/审批卡/回执（**通知/交付链路**），**不是行情数据源**，inbound 不了任何选股数据。建议（待裁决，未擅自改门定义）：将飞书从 N5 数据源清单**移出**，归位 N9 上行链/回执通知链。裁决前自检器标 `[待裁]`、**不计入量化缺项**。
+
+**裁定后自检输出（退出码 2，量化缺 5 类）**：
+
+```
+[缺 ]     Tushare    TUSHARE_TOKEN
+[在-别名] xtcloud    XTCLOUD_KEY ← XT_DATA_KEY（现有源先接通，待 N6 武装）
+[脱钩]    Snowball   SNOWBALL_COOKIE ← XQ_A_TOKEN（WO-085 归情报）
+[缺-丰富] 东财       EASTMONEY_TOKEN（路径保留，增量补齐）
+[缺-丰富] 股吧       GUBA_COOKIE（路径保留，增量补齐）
+[缺 ]     akshare    AKSHARE_TOKEN
+[缺 ]     crypto     CRYPTO_API_KEY
+[待裁]    飞书       FEISHU_APP_SECRET（通知链路而非行情源，不计缺项）
+```
+
+**N5 现实就绪口径（裁定后）**：量化 N5 真实武装的最小集 = xtcloud（候选已就位，待 N6）+ Tushare/东财/股吧/akshare/crypto 五类增量补齐；雪球经情报供给层；飞书待裁（大概率归通知链，不属 N5）。

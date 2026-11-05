@@ -31,6 +31,8 @@ _TABLES = [
     "osint_retry_idempotency",
     "osint_credential",
     "osint_target",
+    "osint_creator_run",
+    "osint_creator_summary",
     "osint_comment",
     "osint_video",
     "osint_knowledge_unit",
@@ -40,6 +42,9 @@ _TABLES = [
     "osint_knowledge_resource",
     "osint_media_asset",
     "osint_index_task",
+    "osint_story",
+    "osint_story_member",
+    "osint_entity_alias",
 ]
 
 _DROP_SQL = "DROP TABLE IF EXISTS {name} CASCADE"

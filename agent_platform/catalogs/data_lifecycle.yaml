@@ -48,15 +48,10 @@ tables:
       freshness=20261030，manifest 键 done=true）；data/us 仅读兼容，
       待下游消费方（chanlun US 扫描等）切换后停写。见
       docs/audit/2026-11-02_manifest缺失4表诊断.md §2.4
-  crypto_daily:
-    # 语义=暂停（paused）；供给层接线完成后删除本条恢复 active
-    lifecycle: deprecated
-    reason: >-
-      WO-QT-20261021-094：crypto_sync 默认停用，数据改走 zhice-db 统一供给层
-      export_us_hk --market CRYPTO；该任务接线未完成（CryptoSync 计划任务 Disabled），
-      data/crypto 冻结于 2026-10-21（SLA #14 P0 线）。恢复需 L2 新增导出任务后重跑
-      build_catalog + registry_rebuild 并删除本条。见
-      docs/audit/2026-11-02_manifest缺失4表诊断.md §2.2
+  # crypto_daily 已于 2026-11-05 恢复，按原约定删除本条转回 active：
+  # \CryptoSync 重新启用并改接 start_crypto_sync.ps1 -> export_us_hk.py
+  # --market CRYPTO（统一供给层 zhice-db v2_bar_daily），37 对已补到 20261105，
+  # 每日 09:00 自动导出。详见 docs/changes/20261105_k260_cainiao_crypto_closure.md
   # ── 2026-11-02 S3-01 unknown 非数据侧治理（task-47）：空目录/无数据表生命周期收口 ──
   # 依据：deliverables/2026-11-02_unknown非数据侧治理_回执.md §二（catalog files=0 / store 空目录实测）。
   # 生效：build_catalog + registry_rebuild 后 registry 标 planned/deprecated，不再计入 unknown 欠账。

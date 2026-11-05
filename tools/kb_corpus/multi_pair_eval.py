@@ -30,6 +30,8 @@ import llm_router  # noqa: E402
 EVAL_SET = REPO / "research" / "reports" / "eval_set_120_20261104.json"
 OUT_JSON = REPO / "research" / "reports" / "multi_pair_eval_20261105.json"
 OUT_MD = REPO / "research" / "reports" / "multi_pair_eval_20261105.md"
+GATED_OUT_JSON = REPO / "research" / "reports" / "multi_pair_eval_gated_20261105.json"
+GATED_OUT_MD = REPO / "research" / "reports" / "multi_pair_eval_gated_20261105.md"
 
 DEFAULT_LIMIT = 20
 DEFAULT_K = 6
@@ -96,7 +98,8 @@ def _ollama_chat(collector: list[dict]):
     return chat
 
 
-def run_one(item: dict, *, k: int, citation_retry: bool) -> dict:
+def run_one(item: dict, *, k: int, citation_retry: bool,
+            v4d_answerability_gate: bool = False) -> dict:
     question = item.get("question") or ""
     t0 = time.monotonic()
     clusters = mm.retrieve_clusters(question, k)
@@ -115,10 +118,12 @@ def run_one(item: dict, *, k: int, citation_retry: bool) -> dict:
         calls: list[dict] = []
         started = time.monotonic()
         try:
-            result = mm.answer_multi(question, k=k, clusters=clusters,
-                                     chat_fn=chat_factory(calls),
-                                     citation_retry=citation_retry,
-                                     prompt_version="v4")
+            result = mm.answer_multi(
+                question, k=k, clusters=clusters,
+                chat_fn=chat_factory(calls),
+                citation_retry=citation_retry,
+                prompt_version="v4",
+                answerability_gate=(v4d_answerability_gate and provider == "v4d"))
             error = None
         except Exception as exc:  # 保留失败证据，不中断整批评测
             result = {"answer": "", "citations": [], "confidence": {"level": "none"},
@@ -150,6 +155,7 @@ def run_one(item: dict, *, k: int, citation_retry: bool) -> dict:
             "distinct_cited_units": metrics.get("distinct_cited_units"),
             "inference_ratio": metrics.get("inference_ratio"),
             "usage": usage, "cost_cny": round(cost, 6), "error": error,
+            "answerability": result.get("answerability"),
         }
     row["verdict"] = _verdict(row)
     return row
@@ -208,6 +214,8 @@ def _agg(rows: list[dict], provider: str) -> dict:
         "error_count": sum(1 for r in rs if r["error"]),
         "empty_count": sum(1 for r in rs if not r["answer_chars"]),
         "retry_used_count": sum(1 for r in rs if r["retry_used"]),
+        "answerability_refusal_count": sum(
+            1 for r in rs if (r.get("answerability") or {}).get("decision") == "unanswerable"),
         "total_cost_cny": round(sum(float(r["cost_cny"] or 0) for r in rs), 4),
     }
 
@@ -231,11 +239,12 @@ def write_md(report: dict) -> str:
     agg = report["aggregate"]
     v, o = agg["v4d"], agg["ollama"]
     lines = [
-        "# v4d vs Ollama multi 配对评测（20 题）",
+        "# v4d vs Ollama multi 配对评测（20 题）" + ("（v4d 可答性门控）" if report["meta"].get("v4d_answerability_gate") else ""),
         "",
         f"- 生成时间：{report['generated_at']}",
         f"- 检索：生产 RAG，k={report['meta']['k']}，每组问题只检索一次，两模型使用同一材料",
-        f"- 生成：prompt_version=v4，citation_retry={report['meta']['citation_retry']}",
+        f"- 生成：prompt_version=v4，citation_retry={report['meta']['citation_retry']}，"
+        f"v4d_answerability_gate={report['meta'].get('v4d_answerability_gate')}",
         f"- 问题：{report['meta']['limit']} 题（4 不可答 + 6 W13 + 5 held-out + 5 citation）",
         "",
         "## 聚合对比",
@@ -252,6 +261,7 @@ def write_md(report: dict) -> str:
         f"| 平均耗时（秒） | {v['avg_elapsed']:.1f} | {o['avg_elapsed']:.1f} |",
         f"| 降级次数 | {v['fallback_count']} | {o['fallback_count']} |",
         f"| 空答案数 | {v['empty_count']} | {o['empty_count']} |",
+        f"| 可答性门控拒答数 | {v.get('answerability_refusal_count', 0)} | - |",
         f"| 成本（元） | {v['total_cost_cny']:.4f} | 0（本地） |",
         "",
         f"启发式偏好：**v4d {agg['verdicts']['v4d']} / Ollama {agg['verdicts']['ollama']} / 平 {agg['verdicts']['tie']}**（仅自动汇总，需人工抽检）。",
@@ -284,9 +294,10 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(prog="multi_pair_eval")
     parser.add_argument("--limit", type=int, default=DEFAULT_LIMIT)
     parser.add_argument("--k", type=int, default=DEFAULT_K)
-    parser.add_argument("--out-json", default=str(OUT_JSON))
-    parser.add_argument("--out-md", default=str(OUT_MD))
+    parser.add_argument("--out-json", default=None)
+    parser.add_argument("--out-md", default=None)
     parser.add_argument("--no-citation-retry", action="store_true")
+    parser.add_argument("--v4d-answerability-gate", action="store_true")
     args = parser.parse_args(argv)
 
     items = json.loads(EVAL_SET.read_text(encoding="utf-8"))["items"]
@@ -294,7 +305,9 @@ def main(argv=None) -> int:
     rows = []
     for i, item in enumerate(questions, 1):
         print(f"[{i}/{len(questions)}] {item['id']} {item.get('question','')[:30]} ...", flush=True)
-        rows.append(run_one(item, k=args.k, citation_retry=not args.no_citation_retry))
+        rows.append(run_one(item, k=args.k,
+                            citation_retry=not args.no_citation_retry,
+                            v4d_answerability_gate=args.v4d_answerability_gate))
         r = rows[-1]
         print(f"    v4d {r['v4d']['elapsed']:.1f}s c={r['v4d']['citations']} "
               f"guard={'PASS' if r['v4d']['guard_passed'] else 'FAIL'} | "
@@ -302,10 +315,13 @@ def main(argv=None) -> int:
               f"guard={'PASS' if r['ollama']['guard_passed'] else 'FAIL'} | {r['verdict']}", flush=True)
     meta = {"limit": len(questions), "k": args.k,
             "citation_retry": not args.no_citation_retry,
+            "v4d_answerability_gate": bool(args.v4d_answerability_gate),
             "generated_at": datetime.now().astimezone().isoformat(timespec="seconds")}
     report = build_report(rows, meta)
-    out_json = Path(args.out_json)
-    out_md = Path(args.out_md)
+    default_json = GATED_OUT_JSON if args.v4d_answerability_gate else OUT_JSON
+    default_md = GATED_OUT_MD if args.v4d_answerability_gate else OUT_MD
+    out_json = Path(args.out_json) if args.out_json else default_json
+    out_md = Path(args.out_md) if args.out_md else default_md
     out_json.parent.mkdir(parents=True, exist_ok=True)
     out_json.write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
     out_md.write_text(write_md(report), encoding="utf-8")
