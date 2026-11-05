@@ -439,3 +439,108 @@ def test_collect_issues_dedupes_by_section(tmp_path):
     blockers, warnings = mod._collect_issues(sections)
     assert blockers == [{"check": "evidence", "message": "b1"}]
     assert [w["check"] for w in warnings] == ["evidence", "incidents"]
+
+
+# ------------------------------------- 目标日期参数化（HZ-FINAL-DATE-20261104）
+
+def test_default_target_is_1104_unchanged(tmp_path):
+    """默认（不传 target）逐字保持 v1 11-04 口径：target_time/报告名/标题/满窗。"""
+    _, rep, repo, work, out, calls, _ = _run(tmp_path)
+    assert rep["target_time"] == "2026-11-04T10:00:00+08:00"
+    report = Path(rep["report_md"])
+    assert report.name.startswith("2026-11-04_黄忠复核preflight_")
+    md = report.read_text(encoding="utf-8")
+    assert md.startswith("# 黄忠 11-04 复核 Preflight 报告")
+    assert "- 目标时点：2026-11-04T10:00:00+08:00（11-04 复盘会 10:00）" in md
+    assert "11-04 10:00 预计满窗：**1** 单" in md
+    assert "本报告为 11-04 复核前置自检" in md
+    # 默认复跑命令不带 --target-date（v1 行为不变）
+    assert "--target-date" not in md
+    assert rep["maturity"]["mature_at_1030"] == 1
+    assert rep["maturity"]["target_time"] == "2026-11-04T10:00:00+08:00"
+
+
+def test_target_date_default_equals_explicit_1104(tmp_path):
+    """不传 target 与显式 target=2026-11-04 完全等价（同 now → 报告逐字一致）。"""
+    repo, work, _, _, fake_run, _ = _fixture(tmp_path)
+    mod = _load()
+    mod._run = fake_run
+    mod._log = lambda *a, **k: None
+    rep1 = mod.run(repo_root=repo, work_dir=work, out_dir=tmp_path / "out1",
+                   now=NOW)
+    rep2 = mod.run(repo_root=repo, work_dir=work, out_dir=tmp_path / "out2",
+                   now=NOW, target="2026-11-04")
+    p1, p2 = Path(rep1["report_md"]), Path(rep2["report_md"])
+    assert p1.name == p2.name
+    assert p1.read_text(encoding="utf-8") == p2.read_text(encoding="utf-8")
+    assert rep1["target_time"] == rep2["target_time"]
+    assert rep1["maturity"]["mature_at_1030"] == rep2["maturity"]["mature_at_1030"]
+
+
+def test_explicit_target_1110_generates_and_validates(tmp_path):
+    """2026-11-10 目标日期可生成（文件名/标题/复跑命令）并按 11-10 重算 ④ 满窗。"""
+    repo, work, out, _, fake_run, _ = _fixture(tmp_path)
+    mod = _load()
+    mod._run = fake_run
+    mod._log = lambda *a, **k: None
+    rep = mod.run(repo_root=repo, work_dir=work, out_dir=out, now=NOW,
+                  target="2026-11-10")
+    assert rep["target_time"] == "2026-11-10T10:00:00+08:00"
+    report = Path(rep["report_md"])
+    assert report.name.startswith("2026-11-10_黄忠复核preflight_")
+    md = report.read_text(encoding="utf-8")
+    assert md.startswith("# 黄忠 11-10 复核 Preflight 报告")
+    assert "- 目标时点：2026-11-10T10:00:00+08:00（11-10 复盘会 10:00）" in md
+    assert "11-10 10:00 预计满窗：**2** 单" in md
+    assert "本报告为 11-10 复核前置自检" in md
+    assert "--target-date 2026-11-10" in md
+    # ④ 满窗按 11-10 目标重算：3 天前单 window_end=2026-11-04T12:00
+    # 已过 11-04 10:00 但未过 11-10 10:00 → 预计满窗由 1 变 2（口径不变，仅目标日变）
+    mt = rep["maturity"]
+    assert mt["mature_at_1030"] == 2
+    assert mt["target_time"] == "2026-11-10T10:00:00+08:00"
+    assert "11-10 10:00 预计满窗 2 单" in mt["note"]
+    # 验收口径/GO 门不变：ready/blockers 判定逻辑不动
+    assert rep["ok"] is True
+    assert rep["ready"] is True
+    assert rep["blockers"] == []
+
+
+def test_cli_target_date_and_now(tmp_path, capsys):
+    repo, work, out, _, fake_run, _ = _fixture(tmp_path)
+    mod = _load()
+    mod._run = fake_run
+    mod._log = lambda *a, **k: None
+    rc = mod.main(["--repo-root", str(repo), "--work-dir", str(work),
+                   "--out-dir", str(out), "--json",
+                   "--now", _iso(NOW), "--target-date", "2026-11-10"])
+    data = json.loads(capsys.readouterr().out)
+    assert rc == 0
+    assert data["target_time"].startswith("2026-11-10T10:00:00")
+    assert Path(data["report_md"]).name.startswith(
+        "2026-11-10_黄忠复核preflight_")
+    assert data["maturity"]["mature_at_1030"] == 2
+
+
+def test_cli_default_json_still_1104(tmp_path, capsys):
+    repo, work, out, _, fake_run, _ = _fixture(tmp_path)
+    mod = _load()
+    mod._run = fake_run
+    mod._log = lambda *a, **k: None
+    rc = mod.main(["--repo-root", str(repo), "--work-dir", str(work),
+                   "--out-dir", str(out), "--json", "--now", _iso(NOW)])
+    data = json.loads(capsys.readouterr().out)
+    assert rc == 0
+    assert data["target_time"] == "2026-11-04T10:00:00+08:00"
+    assert Path(data["report_md"]).name.startswith(
+        "2026-11-04_黄忠复核preflight_")
+
+
+def test_cli_invalid_target_date_rc2(tmp_path, capsys):
+    repo, work, out, *_ = _fixture(tmp_path)
+    mod = _load()
+    rc = mod.main(["--repo-root", str(repo), "--work-dir", str(work),
+                   "--out-dir", str(out), "--target-date", "2026/11/10"])
+    assert rc == 2
+    assert "参数错误" in capsys.readouterr().err
+

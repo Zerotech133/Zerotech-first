@@ -12,6 +12,11 @@
   · review/go_no_go 的 rc=1 属业务正常（六条未全过/建议 NO-GO），不算执行失败；
   · preflight blockers>0 / 子进程 rc=2 / 关键步骤失败 → 汇总 fail（rc=2）；
   · 非关键步骤 warn（rc=1/ok=False）→ 汇总 warn（rc=1）；全绿 → ok（rc=0）。
+
+目标日期参数化（HZ-FINAL-DATE-20261104）：默认 2026-11-04 行为与 v1 完全一致
+（不加任何新参数、汇总文件名/标题不变）；显式 `--target-date 2026-11-10` 时把
+目标日期转发给支持该参数的子工具（preflight / receipt），汇总标题与文件名切到
+目标日期；`--now` 固定当前时钟（同时转发给 preflight/receipt），用于 11-10 复算。
 """
 import argparse
 import datetime as dt
@@ -22,17 +27,22 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 PY = sys.executable
+TZ_CN = dt.timezone(dt.timedelta(hours=8))
+DEFAULT_TARGET_DATE = "2026-11-04"
+TARGET_HOUR = 10
+TARGET_TIME = dt.datetime(2026, 11, 4, 10, 0, tzinfo=TZ_CN)  # 11-04 复盘会时点（默认目标）
 
 # name, argv（相对仓库根）, critical, 可接受的返回码
+# now/target_date=True 表示该子工具支持 --now / --target-date（仅显式传参时才追加）
 STEPS = [
     {"name": "preflight", "argv": ["tools/huangzhong_1104_preflight.py", "--json"],
-     "critical": True, "accept_rc": (0, 1)},
+     "critical": True, "accept_rc": (0, 1), "now": True, "target_date": True},
     {"name": "review", "argv": ["tools/huangzhong_review.py", "--json"],
      "critical": True, "accept_rc": (0, 1)},
     {"name": "weekly", "argv": ["tools/huangzhong_daily.py", "--weekly", "--json"],
      "critical": True, "accept_rc": (0,)},
     {"name": "receipt", "argv": ["tools/huangzhong_1104_receipt.py", "--json"],
-     "critical": False, "accept_rc": (0,)},
+     "critical": False, "accept_rc": (0,), "now": True, "target_date": True},
     {"name": "risk_coverage", "argv": ["tools/huangzhong_risk_coverage.py", "--days", "7", "--json"],
      "critical": False, "accept_rc": (0,)},
     {"name": "corpus", "argv": ["tools/huangzhong_corpus.py", "--json"],
@@ -58,6 +68,58 @@ def _now() -> dt.datetime:
 
 def _iso(ts: dt.datetime) -> str:
     return ts.isoformat(timespec="seconds")
+
+
+def _parse_ts(raw) -> dt.datetime | None:
+    """解析时间戳（ISO8601/空格格式）；无时区按本机时区解释。"""
+    if isinstance(raw, dt.datetime):
+        return raw if raw.tzinfo else raw.astimezone()
+    if not isinstance(raw, str) or not raw.strip():
+        return None
+    text = raw.strip()
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        parsed = dt.datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    return parsed if parsed.tzinfo else parsed.astimezone()
+
+
+def _parse_target_date(raw=None) -> dt.datetime:
+    """解析目标日期/时刻（默认 TARGET_TIME = 2026-11-04 10:00）。
+
+    支持：None/空串（默认）、'2026-11-10'（补 TARGET_HOUR 10:00）、ISO 日期时间。
+    非法输入抛 ValueError（CLI 捕获后按参数错误 rc=2 处理）。
+    """
+    if isinstance(raw, dt.datetime):
+        return raw if raw.tzinfo else raw.replace(tzinfo=TZ_CN)
+    text = str(raw).strip() if raw is not None else ""
+    if not text:
+        return TARGET_TIME
+    try:
+        if "T" in text or " " in text:
+            parsed = dt.datetime.fromisoformat(text.replace("Z", "+00:00"))
+        else:
+            day = dt.date.fromisoformat(text)
+            parsed = dt.datetime(day.year, day.month, day.day,
+                                 TARGET_HOUR, 0, tzinfo=TZ_CN)
+    except ValueError as exc:
+        raise ValueError(
+            "--target-date 无法解析：%r（支持 2026-11-10 或 ISO 日期时间）" % text
+        ) from exc
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=TZ_CN)
+
+
+def _target_label(target: dt.datetime) -> str:
+    """目标日期短标签：默认 '11-04'，显式 11-10 → '11-10'。"""
+    return target.strftime("%m-%d")
+
+
+def _target_label_from_iso(raw) -> str:
+    """从 rep 的 target_time（ISO）反推短标签；解析失败回退默认 '11-04'。"""
+    target = _parse_ts(raw)
+    return _target_label(target if isinstance(target, dt.datetime) else TARGET_TIME)
 
 
 def _run(cmd: list, cwd: Path | None = None, timeout: int = 600):
@@ -130,13 +192,27 @@ def _summarize(name: str, d: dict) -> dict:
 
 
 def run_pipeline(out_dir: Path, timeout: int = 600, write: bool = True,
-                 run_fn=None) -> dict:
+                 run_fn=None, now: dt.datetime | None = None,
+                 target_date=None) -> dict:
+    """执行 12 步只读流水线并（可选）落汇总 md。
+
+    now/target_date 为 None 时 = v1 默认行为（当前时钟 + 2026-11-04）：
+    不向任何子工具追加参数、汇总文件名/标题保持 2026-11-04 前缀。
+    显式传入时：目标日期转发给 preflight/receipt（--target-date），now 转发
+    （--now），汇总标题/文件名切到目标日期（11-10 复算用）。
+    """
     run_fn = run_fn or _run
-    now = _now()
+    clock = now or _now()
+    target = _parse_target_date(target_date)
+    target_text = target.strftime("%Y-%m-%dT%H:%M")
     steps = []
     for spec in STEPS:
         name = spec["name"]
         cmd = [PY, "-X", "utf8", *spec["argv"]]
+        if target_date is not None and spec.get("target_date"):
+            cmd += ["--target-date", target_text]
+        if now is not None and spec.get("now"):
+            cmd += ["--now", _iso(now)]
         rc, stdout, stderr, err = None, "", "", None
         try:
             r = run_fn(cmd, cwd=ROOT, timeout=timeout)
@@ -173,7 +249,8 @@ def run_pipeline(out_dir: Path, timeout: int = 600, write: bool = True,
         "ok": status != "fail",
         "tool": "huangzhong_1104_run.py",
         "version": "v1 (2026-10-31)",
-        "generated_at": _iso(now),
+        "generated_at": _iso(clock),
+        "target_time": _iso(target),
         "status": status,
         "repo_root": str(ROOT),
         "steps": steps,
@@ -184,7 +261,10 @@ def run_pipeline(out_dir: Path, timeout: int = 600, write: bool = True,
     }
     if write:
         out_dir.mkdir(parents=True, exist_ok=True)
-        md = out_dir / ("2026-11-04_黄忠复核执行汇总_%s.md" % now.strftime("%Y%m%d_%H%M%S"))
+        # 默认（2026-11-04）与 v1 命名完全一致；显式目标日期只替换前缀日期
+        md = out_dir / ("%s_黄忠复核执行汇总_%s.md"
+                        % (target.date().isoformat(),
+                           clock.strftime("%Y%m%d_%H%M%S")))
         md.write_text(_render_md(rep), encoding="utf-8")
         rep["report_md"] = str(md)
     return rep
@@ -195,8 +275,12 @@ def _fmt(v):
 
 
 def _render_md(rep: dict) -> str:
+    label = _target_label_from_iso(rep.get("target_time"))
+    date_text = _parse_ts(rep.get("target_time"))
+    date_text = (date_text.date().isoformat() if isinstance(date_text, dt.datetime)
+                 else DEFAULT_TARGET_DATE)
     lines = [
-        "# 黄忠 11-04 复核执行汇总（%s）" % rep["generated_at"],
+        "# 黄忠 %s 复核执行汇总（%s）" % (label, rep["generated_at"]),
         "",
         "> 工具：`tools/huangzhong_1104_run.py` v1（只读编排）｜状态：**%s**" % rep["status"],
         "> 说明：本汇总只搬运子工具结果，不改变任何判定；Go/No-Go 由老田 L3 决策。",
@@ -252,26 +336,51 @@ def _render_md(rep: dict) -> str:
     lines += ["", "## 三、复核动作提示", "",
               "1. 核对 receipt 草案的六条/三口径覆盖率/L3 提示；",
               "2. ④ 满窗：preflight.mature_at_1030 与最早满窗时间；",
-              "3. 人工签字后写 `deliverables/2026-11-04_黄忠观察期复核回执.md`；",
+              "3. 人工签字后写 `deliverables/%s_黄忠观察期复核回执.md`；" % date_text,
               "4. Go = 六条 6/6 + 覆盖率达标；Go 需老田 L3 单独批。", ""]
     return "\n".join(lines)
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="黄忠 11-04 复核一键执行器（只读编排）")
+    ap = argparse.ArgumentParser(
+        description="黄忠观察期复核一键执行器（只读编排；默认目标 2026-11-04）")
     ap.add_argument("--json", action="store_true", help="输出完整 JSON")
     ap.add_argument("--out-dir", default=str(Path(r"C:\项目\deliverables")),
                     help="汇总 md 输出目录（默认 C:\\项目\\deliverables）")
     ap.add_argument("--no-write", action="store_true", help="不写 md（纯只读）")
     ap.add_argument("--timeout", type=int, default=600, help="单步超时秒（默认 600）")
+    ap.add_argument("--now", default="",
+                    help="固定当前时钟（ISO；默认当前时间，测试/11-10 复算用）")
+    ap.add_argument("--target-date", default="",
+                    help="显式目标日期/时刻（默认 2026-11-04 10:00；"
+                         "支持 2026-11-10 或 ISO 日期时间；转发给 preflight/receipt）")
     args = ap.parse_args(argv)
+    fixed_now = None
+    if args.now:
+        fixed_now = _parse_ts(args.now)
+        if fixed_now is None:
+            print("参数错误：--now 无法解析：%r" % args.now, file=sys.stderr)
+            return 2
+    target_text = args.target_date.strip()
+    try:
+        target = _parse_target_date(target_text)
+    except ValueError as exc:
+        print("参数错误：%s" % exc, file=sys.stderr)
+        return 2
+    extra = {}
+    if target_text:
+        extra["target_date"] = target_text
+    if fixed_now is not None:
+        extra["now"] = fixed_now
     rep = run_pipeline(Path(args.out_dir), timeout=args.timeout,
-                       write=not args.no_write)
+                       write=not args.no_write, **extra)
     if args.json:
         print(json.dumps(rep, ensure_ascii=False, indent=1))
     else:
-        print("黄忠 11-04 一键执行：status=%s rc=%s"
-              % (rep["status"], 0 if rep["status"] == "ok" else (1 if rep["status"] == "warn" else 2)))
+        print("黄忠 %s 一键执行：status=%s rc=%s"
+              % (_target_label(target), rep["status"],
+                 0 if rep["status"] == "ok"
+                 else (1 if rep["status"] == "warn" else 2)))
         for s in rep["steps"]:
             print("  %-16s rc=%-3s %s" % (s["name"], _fmt(s["rc"]), "✓" if s["ok"] else "✗"))
         if rep.get("report_md"):

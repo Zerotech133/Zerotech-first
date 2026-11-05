@@ -421,3 +421,139 @@ def test_cli_invalid_now_rc2(env, capsys):
                    "--out-dir", str(env["out"]), "--now", "bad-time"])
     assert rc == 2
     assert "参数错误" in capsys.readouterr().err
+
+
+# ------------------------------------- 目标日期参数化（HZ-FINAL-DATE-20261104）
+
+RECEIPT_1110_NAME = "2026-11-10_黄忠观察期复核回执_草案_20261101_050913.md"
+SUMMARY_1110_NAME = "2026-11-10_黄忠复核执行汇总_20261101_050912.md"
+
+
+def _target_1110_texts():
+    """把 11-04 夹具改造成 11-10 批次（文件名与九段内日期引用同步）。"""
+    summary = SUMMARY_MD.replace("2026-11-04_黄忠复核执行汇总",
+                                 "2026-11-10_黄忠复核执行汇总")
+    receipt = (RECEIPT_MD
+               .replace("# 黄忠观察期复核回执（草案）· 2026-11-04",
+                        "# 黄忠观察期复核回执（草案）· 2026-11-10")
+               .replace("目标复核：2026-11-04T10:00:00+08:00",
+                        "目标复核：2026-11-10T10:00:00+08:00")
+               .replace("（当前 / 11-04 投影 / unique 补充）",
+                        "（当前 / 11-10 投影 / unique 补充）")
+               .replace("| 11-04 投影（趋势工具） |",
+                        "| 11-10 投影（趋势工具） |")
+               .replace("11-04 10:00 预计满窗：**2 单**",
+                        "11-10 10:00 预计满窗：**2 单**")
+               .replace("DSH-Lead 代执行（2026-11-04）",
+                        "DSH-Lead 代执行（2026-11-10）"))
+    return summary, receipt
+
+
+def write_inputs_1110(env, *, both_batches: bool = False):
+    dlv, work = env["dlv"], env["work"]
+    summary_text, receipt_text = _target_1110_texts()
+    if both_batches:
+        write_inputs(env)          # 同时放 11-04 旧批次，验证不串批
+    (dlv / RECEIPT_1110_NAME).write_text(receipt_text, encoding="utf-8")
+    (dlv / SUMMARY_1110_NAME).write_text(
+        summary_text.replace("{receipt_name}", RECEIPT_1110_NAME),
+        encoding="utf-8")
+    (work / "incidents_confirm_20261031.md").write_text(CONFIRM_MD,
+                                                        encoding="utf-8")
+
+
+def test_default_target_is_1104_unchanged(env):
+    """默认（不传 target_date）= v1 11-04：终版文件名/标题/签字位/归档路径不变。"""
+    mod = env["mod"]
+    write_inputs(env)
+    rep = _run(mod, env)
+    assert rep["ok"] is True
+    final = Path(rep["final_path"])
+    assert final.name == "2026-11-04_黄忠观察期复核回执.md"
+    assert Path(rep["inputs"]["summary"]).name.startswith(
+        "2026-11-04_黄忠复核执行汇总_")
+    text = final.read_text(encoding="utf-8")
+    assert text.startswith("# 黄忠观察期复核回执（终版模板）· 2026-11-04")
+    assert "11-04 10:00 预计满窗：**2 单**" in text
+    assert "版本：2026-11-04 终版模板" in text
+    assert "DSH-Lead 代执行（2026-11-04）" in text
+    assert "`deliverables/2026-11-04_黄忠观察期复核回执.md`" in text
+
+
+def test_target_date_1110_generates_and_validates(env):
+    """显式 2026-11-10：按 11-10 批次发现输入 + 生成 11-10 终版模板（可自校验）。"""
+    mod = env["mod"]
+    write_inputs_1110(env)
+    rep = _run(mod, env, target_date="2026-11-10")
+    assert rep["ok"] is True
+    assert rep["written"] is True
+    assert rep["target_date"] == "2026-11-10"
+    final = Path(rep["final_path"])
+    assert final.name == "2026-11-10_黄忠观察期复核回执.md"
+    text = final.read_text(encoding="utf-8")
+    assert text.startswith("# 黄忠观察期复核回执（终版模板）· 2026-11-10")
+    assert "④ 11-10 投影（参考）" in text
+    assert "11-10 10:00 预计满窗：**2 单**" in text
+    assert "版本：2026-11-10 终版模板" in text
+    assert "DSH-Lead 代执行（2026-11-10）" in text
+    assert "`deliverables/2026-11-10_黄忠观察期复核回执.md`" in text
+    # 解析自校验：11-10 草案的满窗行被正确解析（口径不变，只换目标日）
+    assert rep["maturity"]["mature_at_1030"] == 2
+    assert rep["six_overall"]["passed"] == 5
+    assert rep["three_coverage"]["run_merge"]["pct"] == pytest.approx(0.0545)
+    # 输入发现锁定 11-10 批次
+    assert Path(rep["inputs"]["summary"]).name.startswith(
+        "2026-11-10_黄忠复核执行汇总_")
+    assert Path(rep["inputs"]["receipt"]).name.startswith(
+        "2026-11-10_黄忠观察期复核回执_草案_")
+    assert not (env["out"] / "2026-11-04_黄忠观察期复核回执.md").exists()
+
+
+def test_target_date_1110_does_not_mix_1104_batch(env):
+    """11-04 与 11-10 两批输入并存时，11-10 复算只取 11-10 批次。"""
+    mod = env["mod"]
+    write_inputs_1110(env, both_batches=True)
+    rep = _run(mod, env, target_date="2026-11-10")
+    assert rep["ok"] is True
+    assert Path(rep["inputs"]["summary"]).name == SUMMARY_1110_NAME
+    assert Path(rep["inputs"]["receipt"]).name == RECEIPT_1110_NAME
+    text = Path(rep["final_path"]).read_text(encoding="utf-8")
+    assert "2026-11-10" in text and "11-10 10:00 预计满窗" in text
+
+
+def test_target_date_default_equals_explicit_1104(env):
+    """不传 target_date 与 --target-date 2026-11-04 终版产物逐字一致。"""
+    mod = env["mod"]
+    write_inputs(env)
+    rep1 = _run(mod, env)
+    text1 = Path(rep1["final_path"]).read_text(encoding="utf-8")
+    rep2 = _run(mod, env, target_date="2026-11-04", force=True)
+    text2 = Path(rep2["final_path"]).read_text(encoding="utf-8")
+    assert text1 == text2
+    assert rep1["final_path"] == rep2["final_path"]
+
+
+def test_cli_target_date_1110(env, capsys):
+    mod = env["mod"]
+    write_inputs_1110(env)
+    rc = mod.main(["--json", "--repo-root", str(env["work"].parent.parent),
+                   "--work-dir", str(env["work"]),
+                   "--out-dir", str(env["out"]),
+                   "--now", NOW_ISO,
+                   "--target-date", "2026-11-10"])
+    assert rc == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["written"] is True
+    assert out["final_path"].endswith("2026-11-10_黄忠观察期复核回执.md")
+    assert out["target_time"].startswith("2026-11-10T10:00:00")
+    text = Path(out["final_path"]).read_text(encoding="utf-8")
+    assert "· 2026-11-10" in text
+
+
+def test_cli_invalid_target_date_rc2(env, capsys):
+    mod = env["mod"]
+    rc = mod.main(["--json", "--work-dir", str(env["work"]),
+                   "--out-dir", str(env["out"]),
+                   "--target-date", "2026/11/10"])
+    assert rc == 2
+    assert "参数错误" in capsys.readouterr().err
