@@ -240,3 +240,109 @@ def test_event_from_payload_shape():
 def test_event_from_payload_keeps_source():
     ev = ch._event_from_payload({"source": "backup", "action": "ignore", "alert_id": "A2"})
     assert json.loads(ev["action_value"])["source"] == "backup"
+
+
+# ── 卡片染色：旧布局卡格式兼容（2026-11-05）────────────────────
+LEGACY_CARD = json.dumps(
+    {
+        "title": "【测试】旧布局卡",
+        "elements": [
+            [{"tag": "text", "text": "第一行"}, {"tag": "text", "text": "续"},],
+            [{"tag": "button", "text": "确认", "type": "primary"},
+             {"tag": "button", "text": "忽略", "type": "default"}],
+        ],
+    },
+    ensure_ascii=False,
+)
+
+
+def test_is_legacy_layout_detects_row_x_col():
+    assert ch._is_legacy_layout(json.loads(LEGACY_CARD)) is True
+    new = {"header": {"template": "blue"}, "elements": [{"tag": "div"}]}
+    assert ch._is_legacy_layout(new) is False
+
+
+def test_legacy_card_converted_before_patch():
+    """旧布局卡能发出但 PATCH 恒报 200621；改造后必须是新格式。
+
+    实测依据：同一 message_id 转新格式后 PATCH 返回 ok:true。
+    """
+    out = ch._mutate_card(LEGACY_CARD, "✓ 已处理", "green", "ou_op")
+    card = json.loads(out)
+    assert "header" in card, "必须补出 header，否则 PATCH 仍会 200621"
+    assert card["header"]["template"] == "green"
+    assert card["header"]["title"]["content"] == "【测试】旧布局卡"
+    assert all(isinstance(e, dict) for e in card["elements"]), "elements 必须扁平化"
+    assert card["elements"][-1]["tag"] == "markdown"
+    assert "✓ 已处理" in card["elements"][-1]["content"]
+    # 原内容不能丢
+    texts = [e.get("text", {}).get("content", "") for e in card["elements"] if e.get("tag") == "div"]
+    assert "第一行" in texts
+
+
+def test_new_format_card_untouched():
+    """新格式卡不该被转换逻辑改写结构。"""
+    new = json.dumps(
+        {"config": {"wide_screen_mode": True},
+         "header": {"template": "red", "title": {"tag": "plain_text", "content": "告警"}},
+         "elements": [{"tag": "div", "text": {"tag": "plain_text", "content": "x"}},
+                      {"tag": "action", "actions": []}]},
+        ensure_ascii=False,
+    )
+    card = json.loads(ch._mutate_card(new, "✓ 已处理", "green", "ou_op"))
+    assert card["header"]["template"] == "green"
+    assert card["elements"][0]["tag"] == "div"
+    assert card["elements"][-1]["tag"] == "markdown"
+
+
+# ── 卡片染色：旧布局卡格式兼容（2026-11-05）────────────────────
+LEGACY_CARD = json.dumps(
+    {
+        "title": "【测试】旧布局卡",
+        "elements": [
+            [{"tag": "text", "text": "第一行"}, {"tag": "text", "text": "续"},],
+            [{"tag": "button", "text": "确认", "type": "primary"},
+             {"tag": "button", "text": "忽略", "type": "default"}],
+        ],
+    },
+    ensure_ascii=False,
+)
+
+
+def test_is_legacy_layout_detects_row_x_col():
+    assert ch._is_legacy_layout(json.loads(LEGACY_CARD)) is True
+    new = {"header": {"template": "blue"}, "elements": [{"tag": "div"}]}
+    assert ch._is_legacy_layout(new) is False
+
+
+def test_legacy_card_converted_before_patch():
+    """旧布局卡能发出但 PATCH 恒报 200621；改造后必须是新格式。
+
+    实测依据：同一 message_id 转新格式后 PATCH 返回 ok:true。
+    """
+    out = ch._mutate_card(LEGACY_CARD, "✓ 已处理", "green", "ou_op")
+    card = json.loads(out)
+    assert "header" in card, "必须补出 header，否则 PATCH 仍会 200621"
+    assert card["header"]["template"] == "green"
+    assert card["header"]["title"]["content"] == "【测试】旧布局卡"
+    assert all(isinstance(e, dict) for e in card["elements"]), "elements 必须扁平化"
+    assert card["elements"][-1]["tag"] == "markdown"
+    assert "✓ 已处理" in card["elements"][-1]["content"]
+    # 原内容不能丢
+    texts = [e.get("text", {}).get("content", "") for e in card["elements"] if e.get("tag") == "div"]
+    assert "第一行" in texts
+
+
+def test_new_format_card_untouched():
+    """新格式卡不该被转换逻辑改写结构。"""
+    new = json.dumps(
+        {"config": {"wide_screen_mode": True},
+         "header": {"template": "red", "title": {"tag": "plain_text", "content": "告警"}},
+         "elements": [{"tag": "div", "text": {"tag": "plain_text", "content": "x"}},
+                      {"tag": "action", "actions": []}]},
+        ensure_ascii=False,
+    )
+    card = json.loads(ch._mutate_card(new, "✓ 已处理", "green", "ou_op"))
+    assert card["header"]["template"] == "green"
+    assert card["elements"][0]["tag"] == "div"
+    assert card["elements"][-1]["tag"] == "markdown"

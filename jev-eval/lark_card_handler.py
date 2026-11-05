@@ -168,18 +168,70 @@ def ack_alert_in_db(alert_id: str) -> bool:
 
 
 # ── 卡片更新（带重试） ──────────────────────────────────────
+def _is_legacy_layout(card: dict) -> bool:
+    """旧布局卡：顶层 title 且 elements 是「行×列」的嵌套数组。
+
+    2026-11-05 实测：这种卡能正常发出，但用 im/v1/messages PATCH 更新恒报
+    230099/200621（Failed to create card content）。同一个 message_id 转成
+    新格式（header + 扁平 elements）后 PATCH 返回 ok:true —— 纯格式兼容问题。
+    """
+    els = card.get("elements")
+    return isinstance(els, list) and bool(els) and isinstance(els[0], list)
+
+
+def _legacy_to_new(card: dict) -> dict:
+    """旧布局卡转新格式，只为让 PATCH 能更新；内容原样保留。"""
+    out: list = []
+    for row in card.get("elements") or []:
+        for el in row if isinstance(row, list) else [row]:
+            if not isinstance(el, dict):
+                continue
+            tag = el.get("tag")
+            if tag == "text":
+                out.append(
+                    {
+                        "tag": "div",
+                        "text": {"tag": "plain_text", "content": el.get("text", "")},
+                    }
+                )
+            elif tag == "button":
+                out.append(
+                    {
+                        "tag": "button",
+                        "text": {"tag": "plain_text", "content": el.get("text", "")},
+                        "type": el.get("type", "default"),
+                    }
+                )
+            else:
+                out.append(el)  # 未识别的元素原样带过去，不猜
+    new_card: dict = {
+        "config": card.get("config") or {"wide_screen_mode": True},
+        "elements": out,
+    }
+    title = card.get("title")
+    if title:
+        new_card["header"] = {
+            "template": "blue",
+            "title": {"tag": "plain_text", "content": str(title)},
+        }
+    return new_card
+
+
 def _mutate_card(
     card_content: str, status_text: str, template: str, operator_id: str
 ) -> str | None:
     """把原始卡片 JSON 改为终态（header 变色 + 按钮区替换为状态文本）。
     K-STOCK-370：双格式兼容——v1 卡（elements）与 2.0 卡（body.elements）
-    的按钮区都是最后一个元素，替换逻辑同构。"""
+    的按钮区都是最后一个元素，替换逻辑同构。
+    2026-11-05：旧布局卡先转新格式，否则 PATCH 必报 200621。"""
     try:
         card = json.loads(card_content)
     except Exception:  # noqa: BLE001
         return (
             None  # 豁免（C2批2）：调用方 update_card 已落日志（card_content 解析失败）
         )
+    if isinstance(card, dict) and _is_legacy_layout(card):
+        card = _legacy_to_new(card)
     if "header" in card:
         card["header"]["template"] = template
     elements = card.get("elements") or card.get("body", {}).get("elements") or []
