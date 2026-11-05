@@ -1,0 +1,36 @@
+﻿{
+ "cwd": "C:\\Temp\\mon_merge_sim",
+ "module_file": "C:\\Temp\\mon_merge_sim\\analysis\\monitor.py",
+ "module_sha256": "ea316335bdf2f96806324ddaafe356daffd3cc2271890aa39fc42c95d9f90335",
+ "summary_keys": [
+  "alerts_total",
+  "by_severity",
+  "last_run",
+  "pools"
+ ],
+ "load_pools_type": "dict",
+ "load_pools_keys": [
+  "watchlist"
+ ],
+ "list_pools_type": "dict",
+ "list_pools": {
+  "watchlist": 3
+ },
+ "list_alerts_type": "list",
+ "list_alerts_len": 0,
+ "alert_item_keys": null,
+ "run_monitor_keys": [
+  "alerts",
+  "as_of",
+  "by_severity",
+  "dry_run",
+  "items",
+  "new_alerts",
+  "ok",
+  "pool",
+  "run_id",
+  "scanned"
+ ],
+ "run_monitor_ok": true,
+ "evaluate_keys": null
+}

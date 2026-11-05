@@ -1,0 +1,22 @@
+﻿{
+ "only_master": [],
+ "only_monbranch": [
+  "POOLS_LOCK_POLL",
+  "POOLS_LOCK_TIMEOUT",
+  "_POOLS_THREAD_LOCK",
+  "_fsync_dir",
+  "_pools_file_lock",
+  "_pools_lock_path",
+  "_update_pools"
+ ],
+ "signature_changed": {
+  "_read_market_latest": [
+   "def()",
+   "def(as_of_iso)"
+  ],
+  "_read_runs": [
+   "def(codes)",
+   "def(codes,as_of_iso)"
+  ]
+ }
+}

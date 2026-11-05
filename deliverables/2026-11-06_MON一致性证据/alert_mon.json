@@ -1,0 +1,23 @@
+﻿{
+ "count": 1,
+ "items": [
+  {
+   "code": "600337.SH",
+   "rule": "new_event",
+   "severity": "medium",
+   "title": "新增事件 2 条",
+   "detail": "近 4 个自然日新增事件 2 条：业绩预警；股东减持",
+   "trade_date": "2026-11-05",
+   "dedupe_key": "600337.SH|new_event|2026-11-05"
+  }
+ ],
+ "keys": [
+  "code",
+  "dedupe_key",
+  "detail",
+  "rule",
+  "severity",
+  "title",
+  "trade_date"
+ ]
+}

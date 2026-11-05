@@ -56,26 +56,32 @@
 
 ### 2.5 证据文件路径
 
-目录 `C:\Temp\mon_consistency_20261106\`：
+**正式归档（随仓库永久保留，审计用）**：`deliverables/2026-11-06_MON一致性证据/`（含 `MANIFEST.md`：结论、两阶段版本钉扎、29 个文件的 SHA-256 清单、复跑命令、保留期限）。
+**临时工作副本**：`C:\Temp\mon_consistency_20261106\`（保留至 2026-11-13；C:\Temp 可能被系统/人工清理，审计请用正式归档）。
+
+归档内文件（两阶段）：
 - `monitor_master.py` / `monitor_monbranch.py` / `monitor_diff_master_vs_monbranch.diff`（引擎全文与 187+/43− diff）
-- `test_monitor_master.py` / `test_monitor_monbranch.py`
-- `api_monitor_master.py` / `test_api_monitor_master.py`
+- `test_monitor_master.py` / `test_monitor_monbranch.py`；`api_monitor_master.py` / `test_api_monitor_master.py`
 - `ast_diff.py` / `ast_diff_result.json`（公共 API/签名对比）
 - `field_probe.py` + `probe_master.json` / `probe_mon_engine.json`（运行时字段探针）
 - `alert_field_probe.py` + `alert_master.json` / `alert_mon.json`（合成告警字段对比；仅 detail 文案差异）
-- `route_compare.py` / `route_total.py`（route baseline 基线）
+- `route_compare.py` / `route_total.py` / `route_compare_result.txt` / `route_total_result.txt`（Stage1）/ `route_total_result_current_20261106_0305.txt`（Stage2）
 - `tests_baseline_master.log`（43 passed）/ `tests_sim.log` + `tests_sim.rc`（83 passed）
-- `merge_tree_predicted_master_vs_mon.txt` / `predicted_tree_blobs.txt`
+- `merge_tree_predicted_master_vs_mon.txt` / `predicted_tree_blobs.txt`（Stage1）
+- `blobs_mon_current_20261106_0305.txt` / `merge_tree_predicted_current_20261106_0305.txt` / `tests_mon_worktree_current_20261106_0305.log`（Stage2：当前 tip 无冲突 + 49 passed）
+- `gen_manifest.py`（清单生成脚本）/ `MANIFEST.md`（本清单）
 
 ## 三、B 批执行条件（11-06 16:30）
 
-1. **20:30 前置**：在 MON worktree 内 `git rebase master`（behind 277 → 0）；唯一冲突 `tools/portal_route_baseline.json` 按 master 端基线（305 路由）重生成；`analysis/monitor.py` 保持 MON 版（`9026585b…`），确认 `portal/api_monitor.py` 未被改动；`analysis/tests/test_monitor.py` 保持 MON 版。
-2. **验证**：定向 `portal/tests/test_api_monitor.py` + `analysis/tests/test_monitor.py` 通过；PIN dry-run OK；`git merge-tree master task/…` rc=0；分支 fast 门 GATE PASS。
+> **Stage2 更新（03:05）**：并发会话已把 MON 同步到当窗 master——tip `c9d57be50`、behind 0、ahead 13、worktree clean；route baseline 305 已对齐；merge-tree 无冲突（树 `00f4ef3b7`）；MON worktree 接口测试 49 passed。以下条件按新状态调整。
+
+1. **15:50 前置**：确认 MON 仍领先于当窗 master（若 master 再推进则 rebase；当前 `c9d57be50` behind 0）；刷新三数据硬链；`analysis/monitor.py` 保持 MON 版（`9026585b…`）、`portal/api_monitor.py` 保持 master 版、`analysis/tests/test_monitor.py` 保持 MON 版（`faaf06a1…`）；route baseline 应保持 305 且与 master 一致。
+2. **验证**：定向 `portal/tests/test_api_monitor.py` + `analysis/tests/test_monitor.py` 通过；PIN dry-run OK；`git merge-tree master task/…` rc=0；分支 fast 门 GATE PASS（rebase/同步后须重跑，旧 PASS 不算数）。
 3. **窗口内**：devtask merge（单一执行器；记录 rc/merge SHA；钩子 token 命中证据）；合入后 smoke `/api/monitor/pools`、`/api/monitor/summary`（必要时 `/api/monitor/alerts`），并复核 `analysis/monitor.py` 实际 blob 为 `9026585b…`。
-4. 若 rebase 中出现 `portal/api_monitor.py` 被改、公共函数缺失或测试失败 → **退出 B 批转 REVIEW**，记录证据路径并更新本文件与队列文档 §六。
+4. 若同步/验证中出现 `portal/api_monitor.py` 被改、公共函数缺失、接口测试失败或 PIN/门禁失败 → **退出 B 批转 REVIEW**，记录证据路径并更新本文件与队列文档 §六。
 
 ## 四、风险与备注
 
 - 生产引擎版本切换：master 当前运行 MONPAGE 版引擎，MON 合入后将切换为 MON 版（PIT 更严格、detail 文案「近 3」→「近 4」）；schema 不变，前端/接口无需改动。
-- MON 分支基线较旧（ahead 12 基于 11-04 15:46），rebase 后须重跑完整 fast 门，旧 PASS 不算数。
+- 分支基线：Stage1 时 MON `0f2865065`（behind 277）；Stage2 已被并发会话同步为 `c9d57be50`（behind 0，含 master `3c2a3a9d2` 及 route baseline 重生成），本核对的两阶段证据均已归档；窗口前仍须重跑 fast 门。
 - 分支自身测试文件较 master 基座 +130 行，合入后 master 测试文件将被 MON 版替换（模拟验证已覆盖）。
