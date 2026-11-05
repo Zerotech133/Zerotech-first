@@ -618,7 +618,7 @@ function tableDetailHtml(d){
   /* 样本按存储顺序返回，非按日期倒序；并列 sample_note 与 catalog 新鲜度，避免把「样本旧行」误读成「数据断更」 */
   if(d.sample_note){h+='<div class="r3c-note">'+esc(d.sample_note)+'（catalog 新鲜度：'+esc(meta.freshness==null?'—':meta.freshness)+'）</div>';}
   /* clamped / limit_applied 一并披露，不静默截断 */
-  if(d.clamped||d.limit_applied){h+='<div class="r3c-note">注意：limit 已截断（clamped='+esc(!!d.clamped)+' · limit_applied='+esc(d.limit_applied==null?'—':d.limit_applied)+'），样本非全量。</div>';}
+  if(d.clamped||d.limit_applied){h+='<div class="r3c-note">样本说明：'+(d.clamped?'请求的 limit 超过上限，已夹至 '+esc(d.limit_applied==null?'—':d.limit_applied)+' 行；':'')+'limit_applied='+esc(d.limit_applied==null?'—':d.limit_applied)+' · clamped='+esc(!!d.clamped)+'。仅返回样本行，不代表全表数据。</div>';}
   if(d.available===false){h+='<div class="r3c-err">'+esc(d.reason||'该表当前不可读')+'</div>';}
   else if(!rows.length){h+='<div class="muted">无样本数据</div>';}
   else{

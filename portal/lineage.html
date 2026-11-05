@@ -150,7 +150,8 @@ function timeoutSignal(){
   if(typeof AbortController!=='undefined'){var ac=new AbortController();setTimeout(function(){ac.abort();},3000);return ac.signal;}
   return undefined;
 }
-function r3cSetState(t){var el=document.getElementById('r3cState');if(el)el.textContent=t;}
+function r3cSetState(t){var el=document.getElementById('r3cState');if(el)el.textContent=t;
+  var n=document.getElementById('r3cNotice');if(n){if(t==='catalog 实时')n.classList.add('r3c-hidden');else n.classList.remove('r3c-hidden');}}
 /* 从逻辑表 URN 解析 catalog 表名：取冒号后路径的末段（parquet:tdx/ts_top_inst → ts_top_inst；neo4j:TRADED_ON → TRADED_ON）；解析不出返回空串，不猜 */
 function parseLogicalTable(urn){
   var s=String(urn==null?'':urn).trim();
@@ -230,7 +231,7 @@ function r3cSchemaHtml(d,name){
   /* 样本按存储顺序返回，非按日期倒序；并列 sample_note 与 catalog 新鲜度，避免把「样本旧行」误读成「数据断更」 */
   if(d.sample_note){h+='<div class="r3c-note">'+esc(d.sample_note)+'（catalog 新鲜度：'+esc(meta.freshness==null?'—':meta.freshness)+'）</div>';}
   /* clamped / limit_applied 一并披露，不静默截断 */
-  if(d.clamped||d.limit_applied){h+='<div class="r3c-note">注意：limit 已截断（clamped='+esc(!!d.clamped)+' · limit_applied='+esc(d.limit_applied==null?'—':d.limit_applied)+'），样本非全量。</div>';}
+  if(d.clamped||d.limit_applied){h+='<div class="r3c-note">样本说明：'+(d.clamped?'请求的 limit 超过上限，已夹至 '+esc(d.limit_applied==null?'—':d.limit_applied)+' 行；':'')+'limit_applied='+esc(d.limit_applied==null?'—':d.limit_applied)+' · clamped='+esc(!!d.clamped)+'。仅返回样本行，不代表全表数据。</div>';}
   if(!rows.length){h+='<div class="muted">无样本数据</div>';}
   else{
     var headCols=cols.length?cols:Object.keys(rows[0]||{});
