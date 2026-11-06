@@ -285,12 +285,22 @@ def test_route_baseline_unchanged():
 
 
 # ── 3. live 只读契约（不可达 skip，不依赖服务） ─────────────────────
+# nginx 应返回 502/503/504 表示「上游不可达」（本用例的上游是 8105 智策 API）。
+# 这属于本文件第 5 条所述「不可达则 skip」的范围：本用例校验的是**鉴权语义**
+# （未登录不得拿到数据），不是上游存活。上游存活由 ZhiceAPI8105Guard 与
+# portal_health 负责，不该让 fast 门依赖 live 服务健康度。
+_UPSTREAM_DOWN = (502, 503, 504)
+
+
 def _http_status(req):
     try:
         with urllib.request.urlopen(req, timeout=5) as resp:
             return resp.status, resp.read()[:500]
     except urllib.error.HTTPError as exc:
-        return exc.code, (exc.read() or b"")[:500]
+        code, body = exc.code, (exc.read() or b"")[:500]
+        if code in _UPSTREAM_DOWN:
+            pytest.skip("8734 上游不可达（HTTP %s），跳过 live 契约校验" % code)
+        return code, body
     except Exception as exc:  # noqa: BLE001 — 服务不可达 → skip
         pytest.skip("8734 不可达，跳过 live 契约校验：%s" % str(exc)[:120])
 
