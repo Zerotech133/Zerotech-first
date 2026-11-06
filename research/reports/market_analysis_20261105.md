@@ -1,10 +1,12 @@
 # 市场结构分析（数据日 20261105）
 
-> 生成 2026-11-06T10:11:32+08:00｜脚本 `tools/research/market_analysis.py`｜**研究输出，不构成投资建议**
+> 生成 2026-11-06T12:27:14+08:00｜脚本 `tools/research/market_analysis.py`｜**研究输出，不构成投资建议**
 
 ## ⚠ 数据降级
 
-以下表缺失或为空，相关结论不可用或为推算值：**index_daily、limit_list_d**
+已登记缺口（限期内，见 `tools/research/known_degraded.json`）：index_daily、limit_list_d
+
+相关结论不可用或为推算值，不得当作完整数据使用。
 
 ## 一、宽度
 

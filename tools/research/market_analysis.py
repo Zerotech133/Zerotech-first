@@ -21,9 +21,19 @@ daily_screening 管「选哪些票」；本脚本管「市场处在什么状态�
 
 退出码
 ------
-0 = 产出完整（可能含 degraded 项）
-1 = --strict 且存在 degraded 项，或必需表缺失
+0 = 产出完整（可能含**已登记**的限期降级项）
+1 = --strict 且存在未登记 / 登记已过期的 degraded 项
 2 = 参数错误 / 数据根不可读
+
+已知降级登记（`tools/research/known_degraded.json`）
+----------------------------------------------------
+按表名登记「已知、有人在跟」的数据缺口，每条必须带 `since` + `until`：
+这是**限期豁免**，不是永久免死金牌。`--strict` 下：
+
+  · 在清单内 且 since <= date <= until  → 放行（报告标"已登记"）
+  · 不在清单 / 日期早于 since / 晚于 until → rc=1
+
+过期即重新变红，逼着人回来收口；续期必须改文件，留下 diff 痕迹。
 
 用法
 ----
@@ -52,6 +62,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_DATA = ROOT / "quant_backtest" / "data" / "tushare"
 OUT_DIR = ROOT / "research" / "reports"
+KNOWN_DEGRADED = ROOT / "tools" / "research" / "known_degraded.json"
 SCHEMA = "market_analysis/v1"
 
 DIST_BINS = [-101, -9.9, -7, -5, -3, -1, 0, 1, 3, 5, 7, 9.9, 101]
@@ -180,6 +191,41 @@ def latest_date(data_root: Path) -> str | None:
     return max(days) if days else None
 
 
+def load_known(path: Path) -> dict:
+    """读已知降级登记。文件缺失/损坏一律返回空 dict —— 宁可全红，不可默认放行。"""
+    if not path.is_file():
+        return {}
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    tables = raw.get("tables")
+    return tables if isinstance(tables, dict) else {}
+
+
+def split_degraded(degraded: list[str], date: str, known: dict) -> tuple[list[str], list[str]]:
+    """把 degraded 拆成 (已登记且在有效期内, 未登记或已过期)。
+
+    登记条目必须同时给 since / until 才算有效；缺任一项视为无效登记 ——
+    只写表名不给窗口的"永久豁免"是本次设计明确要挡住的形态。
+    """
+    ok, bad = [], []
+    for t in degraded:
+        e = known.get(t)
+        if not isinstance(e, dict):
+            bad.append(t)
+            continue
+        since, until = str(e.get("since") or ""), str(e.get("until") or "")
+        if not (since and until):
+            bad.append(t)
+            continue
+        if since <= date <= until:
+            ok.append(t)
+        else:
+            bad.append(t)
+    return ok, bad
+
+
 def quality(data_root: Path, date: str) -> tuple[list[dict], list[str]]:
     """逐表体检。返回 (明细, degraded 项名)。空表也算 degraded —— 空壳比缺失更危险。"""
     rows, degraded = [], []
@@ -206,8 +252,10 @@ def quality(data_root: Path, date: str) -> tuple[list[dict], list[str]]:
 # ---------------------------------------------------------------------------
 # 主流程
 # ---------------------------------------------------------------------------
-def build(date: str, data_root: Path) -> dict:
+def build(date: str, data_root: Path, known: dict | None = None) -> dict:
     qrows, degraded = quality(data_root, date)
+    known = known if known is not None else load_known(KNOWN_DEGRADED)
+    registered, unregistered = split_degraded(degraded, date, known)
     if "daily" in degraded:
         raise SystemExit("★必需表 daily 缺失/为空：%s（date=%s）" % (data_root, date))
 
@@ -224,6 +272,8 @@ def build(date: str, data_root: Path) -> dict:
         "date": date,
         "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
         "degraded": degraded,
+        "degraded_registered": registered,
+        "degraded_unregistered": unregistered,
         "quality": qrows,
         "breadth": breadth(daily),
         "distribution": distribution(daily["pct_chg"]),
@@ -281,7 +331,14 @@ def to_md(r: dict) -> str:
     if r["degraded"]:
         L.append("## ⚠ 数据降级")
         L.append("")
-        L.append("以下表缺失或为空，相关结论不可用或为推算值：**%s**" % "、".join(r["degraded"]))
+        if r.get("degraded_unregistered"):
+            L.append("**未登记缺口（阻断项）**：%s" % "、".join(r["degraded_unregistered"]))
+            L.append("")
+        if r.get("degraded_registered"):
+            L.append("已登记缺口（限期内，见 `tools/research/known_degraded.json`）：%s"
+                     % "、".join(r["degraded_registered"]))
+            L.append("")
+        L.append("相关结论不可用或为推算值，不得当作完整数据使用。")
         L.append("")
     L.append("## 一、宽度")
     L.append("")
@@ -349,7 +406,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--date", default="", help="交易日 YYYYMMDD，默认最新")
     ap.add_argument("--data-root", default=str(DEFAULT_DATA), help="tushare 数据根")
     ap.add_argument("--out-dir", default=str(OUT_DIR), help="产物目录")
-    ap.add_argument("--strict", action="store_true", help="存在 degraded 即返回 1")
+    ap.add_argument("--strict", action="store_true",
+                    help="存在未登记/已过期的 degraded 即返回 1")
+    ap.add_argument("--known-degraded", default=str(KNOWN_DEGRADED), help="已知降级登记文件")
     ap.add_argument("--print-json", action="store_true", help="stdout 打印完整 JSON")
     ap.add_argument("--no-write", action="store_true", help="只算不写文件（试跑）")
     args = ap.parse_args(argv)
@@ -363,7 +422,7 @@ def main(argv: list[str] | None = None) -> int:
         print("★找不到任何 daily/d_*.parquet", file=sys.stderr)
         return 2
 
-    res = build(date, data_root)
+    res = build(date, data_root, load_known(Path(args.known_degraded)))
 
     if not args.no_write:
         out = Path(args.out_dir)
@@ -383,9 +442,14 @@ def main(argv: list[str] | None = None) -> int:
               % (date, b["n"], b["up"] / b["n"] * 100 if b["n"] else 0, b["median_pct"],
                  b["limit_up"], b["limit_down"], b["amount_yi"], ",".join(res["degraded"]) or "-"))
 
-    if args.strict and res["degraded"]:
-        print("★strict: degraded=%s" % ",".join(res["degraded"]), file=sys.stderr)
+    if args.strict and res["degraded_unregistered"]:
+        print("★strict: 未登记降级=%s（已登记放行=%s）"
+              % (",".join(res["degraded_unregistered"]),
+                 ",".join(res["degraded_registered"]) or "-"), file=sys.stderr)
         return 1
+    if res["degraded_registered"]:
+        print("已知降级（限期内，放行）：%s" % ",".join(res["degraded_registered"]),
+              file=sys.stderr)
     return 0
 
 

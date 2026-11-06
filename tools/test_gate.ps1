@@ -260,7 +260,10 @@ $paths = @{
         # ---- 学习线后置治理契约（2026-11-04 K-ORG-REVIEW，+2）----
         # pipeline→curation→effective 幂等契约（修复每日重跑覆盖人工治理的 BUG）
         'tools/tests/test_learning_curation.py',
-        'tools/tests/test_learning_pipeline_curation.py'
+        'tools/tests/test_learning_pipeline_curation.py',
+        # ---- 盘后分析工程（2026-11-06 POSTMARKET-ENG，+1）----
+        # 宽度/涨跌停/分桶/限期降级登记共 16 条；纯合成数据，无生产依赖，5s。
+        'tools/tests/test_market_analysis.py'
     )
 }
 

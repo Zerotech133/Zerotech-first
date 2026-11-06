@@ -1,11 +1,16 @@
 {
  "schema": "market_analysis/v1",
  "date": "20261105",
- "generated_at": "2026-11-06T10:11:32+08:00",
+ "generated_at": "2026-11-06T12:27:14+08:00",
  "degraded": [
   "index_daily",
   "limit_list_d"
  ],
+ "degraded_registered": [
+  "index_daily",
+  "limit_list_d"
+ ],
+ "degraded_unregistered": [],
  "quality": [
   {
    "table": "daily",
