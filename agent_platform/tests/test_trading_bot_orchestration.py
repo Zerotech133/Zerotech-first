@@ -41,10 +41,13 @@ def test_watch_layer_exists():
     projects = {p["project_id"]: p for p in _j(PROJECTS)["projects"]}
     assert d["watch_layer"]["engineering_project"].startswith("watchbot")
     assert "watchbot" in projects
-    # 2026-10-30 检查结论：三层均为离线契约/仅登记，实时入口未启用
+    # 2026-11-06 P0-01：组合 watch 运行态已启用（paper-only）；watchbot 项目本身仍离线契约
     assert projects["watchbot"]["runtime_status"] == "offline_contract"
     assert projects["watchbot"]["live_entry"] is False
-    assert d["watch_runtime"]["enabled_live"] is False
+    assert d["watch_runtime"]["enabled_live"] is True
+    assert d["watch_runtime"]["mode"] == "paper_only"
+    assert d["watch_runtime"]["real_exchange"] is False
+    assert d["watch_runtime"]["human_confirm_required"] == "external_test"
 
 
 def test_human_gate_present():
