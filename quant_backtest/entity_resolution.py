@@ -106,8 +106,11 @@ def parse_seat(name: str) -> Dict[str, str]:
             broker = h
             break
     if not broker:
-        # 未命中头词表: 取到第一个 分公司/营业部/总部/公司 为止
-        m = re.match(r"^(.*?(?:证券|期货|基金|投资|资管)(?:股份)?有限公司?)", base)
+        # 未命中头词表: 在第一个公司后缀处完整截断(人工复核教训 B116/B126:
+        # 旧正则匹配不了"证券有限责任公司"句式, 跌进 split 分支残留
+        # "北京"/"成都人民南路证券"。主体必须在"公司"处完整结束)
+        m = re.match(r"^(.*?(?:有限责任公司|股份有限公司|有限公司|证券公司))",
+                     base)
         broker = m.group(1) if m else re.split(r"(?:分公司|营业部|总部)", base)[0]
     branch_type = "other"
     if "总部" in base:
@@ -133,12 +136,18 @@ _BRANCH_VARIANTS = [("证券营业部", "营业部"), ("营业部", "营业部")
 
 def seat_variant_key(name: str) -> str:
     """安全变体键: 去括号备注 + 公司后缀归一 + 分支词归一.
-    两名 variant_key 相等 → 结构等价, 可安全折叠."""
-    base, _ = _strip_parens(normalize_name(name))
+    两名 variant_key 相等 → 结构等价, 可安全折叠.
+
+    人工复核教训(L075): 括号内为纯数字编号(交易单元 001777/258000)时
+    编号参与键——编号不同即不同席位; 文字括号(公司名备注如"(山东)")
+    仍视为可剥离备注."""
+    n = normalize_name(name)
+    nums = tuple(re.findall(r"\(([0-9０-９]+)\)", n))
+    base, _ = _strip_parens(n)
     for suf, rep in _SUFFIX_VARIANTS:
         base = base.replace(suf, rep)
     base = base.replace("证券营业部", "营业部")
-    return base
+    return base + ("#" + ",".join(nums) if nums else "")
 
 
 # 短名编辑距离才可信: 长名(>12字)的路名差异会被高 ratio 掩盖(误折叠国泰君安"九江路"/"佳杰路"教训)
@@ -152,6 +161,16 @@ _FUZZY_MIN_SIM = 0.85
 
 def is_ascii_name(s: str) -> bool:
     return bool(s) and all(ord(c) < 128 for c in s)
+
+
+def _parens_sig(s: str) -> Tuple:
+    """括号内容签名(排序元组): 签名不同 → 不同实体, 禁止折叠.
+
+    比对口径与折叠规则一致: 大小写/空格不敏感(教训: "(HONGKONG)" 与
+    "(HongKong)" 是同一括号备注, 不能因大小写差异误拦合法折叠);
+    括号内实际内容差异(天津/济南、A股/沪股通、001777/258000)仍拦截。"""
+    return tuple(sorted(x.replace(" ", "").upper()
+                        for x in re.findall(r"\((.*?)\)", s or "")))
 
 
 def classify_holder(name: str) -> str:
@@ -286,7 +305,11 @@ def resolve_legal(raw_names: List[str]) -> Tuple[Dict[str, Tuple[str, str, float
         n = normalize_name(raw)
         if not n:
             continue
-        key = _strip_parens(n)[0].upper() if is_ascii_name(n) else _strip_parens(n)[0]
+        # 人工复核教训(200 组, L065/L072/L075/L090/L091): 分组键不得剥括号
+        # ——括号内是地区/市场/账户/交易单元编号, 不同即不同实体
+        # (清津厚德(天津)≠(济南), 香港中央结算(A股)≠(沪股通))。
+        key = n.replace(" ", "").upper() if is_ascii_name(n) \
+            else n.replace(" ", "")
         by_key[key].append(raw)
 
     # 二级: 同 key 内 ASCII 无空格折叠 / 中文编辑距离
@@ -309,6 +332,11 @@ def resolve_legal(raw_names: List[str]) -> Tuple[Dict[str, Tuple[str, str, float
         for i in range(len(uniq)):
             for j in range(i + 1, len(uniq)):
                 a, b = uniq[i], uniq[j]
+                # 括号签名守卫: 括号内容不同绝不折叠(复核负例回归)
+                if _parens_sig(a) != _parens_sig(b):
+                    audit.append({"a": a, "b": b, "sim": None,
+                                  "verdict": "paren_blocked"})
+                    continue
                 sa, sb = a.replace(" ", "").upper(), b.replace(" ", "").upper()
                 if sa == sb:
                     union(a, b)

@@ -27,6 +27,25 @@ combine_score，保证打分与信号集与引擎**逐格一致**；本文件只
   python portfolio_sim.py --batch m2 --out-dir _qpzm_rd_20261106/portfolio_sim
 """
 
+# ── 口径注记 v2（2026-11-07，QPZM_RD_PLAN.md v2，纯注释、不含任何逻辑）──
+# 1) 本文件是收益/回撤的唯一裁判：引擎虚拟净值连符号都可能错（12m −4.72%
+#    vs 真组合 +14.21%，3m 虚拟回撤 −42.76% vs 真 −19.45%）。
+# 2) 三重计数：3m 的 26246 个信号单元只能建仓 8267 笔（重叠 3.17x）——逐笔
+#    均值把「相邻信号日重复买同一票」当独立样本，禁止与真组合混用。
+# 3) 真回撤变浅 ≠ 更安全：cash 口径资金利用率仅 39%~46%（闸门 60 天关 31 天），
+#    满仓折算后 3m/top30 仍约 −35%，报告须并列满仓折算口径。
+# 4) 已验改造开关（默认全关、strict 路径逐位不变）：
+#    · --weight-scheme equal|inv_vol：inv_vol 是唯一过五窗口判据的改造
+#      （5/5 收益不降、10/10 回撤更浅）；
+#    · --lot-fill strict|recycle：预算回收再分配，排序不变；
+#    · 终裁主线 = inv_vol + recycle 叠加档（36m 117.71% vs equal 73.37%，
+#      夏普 1.22 vs 0.80）。增益真因是填单通道（skip_lot 4794→2210、
+#      填单率 55.9%→79.2%，36m 归因占 116%），「低波 alpha」已证伪。
+#    · 已否决：--rank rps / score_resid、--dynamic-n env，勿重开。
+# 5) 待办优先级：NA 桶核查（停牌复牌笔占 24m equal 盈亏 38%）> 五窗口全量
+#    复跑+50bp 双成本终验 > 叠加档冲击成本压测（笔数 +41%，3bp 常数需替换）。
+# 6) 已知高估方向：跌停无法卖出未建模、冲击成本按常数、集合竞价必成假设。
+
 import argparse
 import json
 import os
@@ -672,6 +691,18 @@ def batch_configs(name):
                     note="干净对照：等权 + 回收预算修复填单（选股/排序/总预算不变）",
                 )
             )
+            cfgs.append(
+                _cfg(
+                    "attr_%s_h5_top30_inv_vol_fixlot" % win,
+                    w,
+                    5,
+                    30,
+                    weight_scheme="inv_vol",
+                    lot_fill="recycle",
+                    trade_diag=True,
+                    note="叠加档：1/vol20 加权 + 回收预算（检验两条通道是否互斥）",
+                )
+            )
         return cfgs
     raise ValueError("unknown batch: %s" % name)
 
@@ -944,9 +975,9 @@ def _write_attr_outputs(out_dir, rows, results, args, t0, cost, limit_meta):
         "d_trade_bp",
         "d_fill_pp",
     ]
-    rest = [k for k in sorted(rows[0].keys()) if k not in head]
+    rest = sorted({k for r in rows for k in r.keys()} - set(head))
     with open(mat, "w", encoding="utf-8", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=head + rest)
+        w = csv.DictWriter(f, fieldnames=head + rest, extrasaction="ignore")
         w.writeheader()
         for r in rows:
             w.writerow(r)

@@ -37,6 +37,27 @@ sector_effect.py；打分公式按产线逐条复刻（见 DESIGN 注释与单�
   ... --stocks-limit 80                         # 冒烟：只取部分股票
 """
 
+# ── 口径注记 v2（2026-11-07，QPZM_RD_PLAN.md v2，纯注释、不含任何逻辑）──
+# 1) M1 三重修复已入本文件，历史数字一律以 v2 基线锁为准：
+#    · 掩码：unfill.shift(-1).fillna(False) 在 pandas 3.x 退化为 object dtype，
+#      `~` 按位取反恒真 → 一字板剔除在修复前从未生效；三处掩码链尾已加
+#      .astype(bool)。贡献审计窗口 2.2~2.8bp（占三重修复 85%）。
+#    · --limit-mode exact：走 data/tdx_api/ts_stk_limit/ 交易所精确涨跌停价，
+#      缺失日自动回退 approx 并在 meta.limit_exact_meta.fallback_dates 留痕。
+#    · 数据池含 M1 补入的 83 只退市股（只增不改），缓解幸存者偏差；
+#      2020-2023 退市 127 只、2020 前 111 只仍未补齐，旧五窗口数字视为上界。
+# 2) 本引擎是「逐笔独立模型」，其净值是每日信号平均收益的算术累乘，
+#    12m 曾出现虚拟 −4.72% 而真组合 +14.21%（符号相反）。任何对外收益/
+#    回撤结论必须以 portfolio_sim.py 的真组合净值为准，禁止引用本文件净值。
+# 3) 红线：成本 30bp 往返、主持有期 hold10、审计窗口固定 20251015~20261014、
+#    阈值 75/50 不动；JEV 历史恒缺维，实际三维归一 0.4667/0.3333/0.2，
+#    对外称「多维加权（技术/RPS/环境）」，不称「四维共振」。
+# 4) PIT：禁用 qfq 系追溯指标；一律 hfq 或 bfq+adj_factor。既有池 2025 年中
+#    以前为前复权，同股收益链安全但跨股价格不可比（路径 B 另立项）。
+# 5) 基线锁：本文件被 t7_lock/baseline_lock.json 按 md5 锚定，
+#    **任何改动（包括只加注释）都必须重冻引擎指纹并跑 verify_baseline.py**，
+#    且只动引擎项、绝不碰 data 指纹。
+
 import argparse
 import json
 import os
