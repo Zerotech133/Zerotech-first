@@ -317,6 +317,9 @@ bin/SECVAULT-TOOLS.json
 !research/hypotheses.db
 !research/reports/
 !research/reports/**
+# 2026-11-06：研究备份目录是运行态证据，不纳入版本控制；
+# 必须放在上面的 !research/reports/** 之后，否则会被重新包含。
+research/reports/backups/
 
 # ===== 2026-10-30 审计 P0：repo junction 下的敏感/运行态目录防误提交 =====
 # C:\aios 是仓库 junction；Pocket ID 密钥/数据必须放 repo 外 C:\项目\_vault\pocket-id。
