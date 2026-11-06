@@ -29,6 +29,18 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+# 回环禁代理：Ollama 在 127.0.0.1:11434，系统代理会接管回环请求（见 tools/safe_urlopen.py）
+import sys as _sys
+from pathlib import Path as _Path
+for _p in _Path(__file__).resolve().parents:
+    if (_p / "safe_urlopen.py").exists():
+        _sys.path.insert(0, str(_p))
+        break
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包/仓库根导入时
+    from tools.safe_urlopen import safe_urlopen
+
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 DEFAULT_PDF_DIR = Path(r"C:/项目/PDF")
@@ -266,7 +278,7 @@ def chat(prompt: str, num: int = 1600, timeout: int = 300) -> str:
             "options": {"temperature": 0.1, "num_predict": num}}
     req = urllib.request.Request(OLLAMA + "/api/chat", data=json.dumps(body).encode(),
                                  headers={"Content-Type": "application/json"}, method="POST")
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    with safe_urlopen(req, timeout=timeout) as r:
         return ((json.loads(r.read().decode()).get("message") or {}).get("content") or "").strip()
 
 
@@ -493,7 +505,7 @@ def cmd_index(args) -> int:
                     req = urllib.request.Request("http://127.0.0.1:11434/api/generate", data=body,
                                                  headers={"Content-Type": "application/json"}, method="POST")
                     try:
-                        urllib.request.urlopen(req, timeout=120).read()
+                        safe_urlopen(req, timeout=120).read()
                         log(f"rag rebuild preflight: 已卸载 {model}")
                     except Exception:  # noqa: BLE001
                         pass

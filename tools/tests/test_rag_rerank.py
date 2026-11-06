@@ -114,7 +114,9 @@ def test_empty_candidates_and_aggregate():
 def test_reranker_degrade_rule_only(monkeypatch):
     def _no_net(*a, **k):
         raise OSError("no network")
-    monkeypatch.setattr("urllib.request.urlopen", _no_net)
+    # 被测代码走 safe_urlopen（回环禁代理，见 tools/safe_urlopen.py），
+    # 只 patch urllib.request.urlopen 已拦不住回环请求，必须 patch 模块实际使用的符号。
+    monkeypatch.setattr(rre, "safe_urlopen", _no_net)
     st = rre.reranker_status()
     assert st["available"] is False and st["mode"] == "rule_only"
     assert "reason" in st and "ollama" in st["reason"]

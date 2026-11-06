@@ -39,6 +39,18 @@ from collections import Counter
 from datetime import datetime
 from pathlib import Path
 
+# 回环禁代理：Ollama 在 127.0.0.1:11434，系统代理会接管回环请求（见 tools/safe_urlopen.py）
+import sys as _sys
+from pathlib import Path as _Path
+for _p in _Path(__file__).resolve().parents:
+    if (_p / "safe_urlopen.py").exists():
+        _sys.path.insert(0, str(_p))
+        break
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包/仓库根导入时
+    from tools.safe_urlopen import safe_urlopen
+
 REPO = Path(__file__).resolve().parents[2]
 R = REPO / "research" / "reports"
 OUT_JSON = R / "rag_rerank_20261104.json"
@@ -267,8 +279,7 @@ def load_heldout_cases() -> dict:
 def reranker_status() -> dict:
     """本批不联网下载模型：仅检测本地 ollama 是否有 rerank 模型（bge-reranker 等）。"""
     try:
-        import urllib.request
-        with urllib.request.urlopen("http://127.0.0.1:11434/api/tags", timeout=3) as resp:
+        with safe_urlopen("http://127.0.0.1:11434/api/tags", timeout=3) as resp:
             models = [m.get("name", "") for m in json.loads(resp.read().decode("utf-8")).get("models") or []]
     except Exception as exc:  # noqa: BLE001
         return {"available": False, "mode": "rule_only", "models": [],
