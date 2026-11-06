@@ -25,6 +25,9 @@ def test_send_calls_channel_and_writes_result(tmp_path, monkeypatch):
     out = kp.send_payload(_payload(), send_fn=fake_send)
     assert out["ok"] is True and out["sent"] is True and seen["msg_type"] == "interactive"
     assert seen["kind"] == kp.SEND_KIND
+    sent = json.loads(seen["content"])
+    assert isinstance(sent, dict) and "schema" in sent, "interactive content 必须是卡片本体"
+    assert "feishu_payload" not in sent and "msg_type" not in sent, "不得发送外层信封（230099）"
     saved = json.loads(Path(out["result_file"]).read_text(encoding="utf-8"))
     assert saved["ok"] is True and saved["date"] == "20261101"
 
@@ -104,7 +107,7 @@ def test_send_group_card_success_mock(monkeypatch):
 
     def fake_send_group(receive_id, receive_id_type, content, msg_type, kind=None):
         seen.update({"id": receive_id, "type": receive_id_type, "msg_type": msg_type,
-                     "kind": kind, "content_len": len(content)})
+                     "kind": kind, "content": content})
         return True
 
     out = kp.send_group_card(
@@ -113,7 +116,9 @@ def test_send_group_card_success_mock(monkeypatch):
         send_group_fn=fake_send_group,
     )
     assert out["ok"] is True and out["channel"] == "group_card" and out["target"]["id"] == "oc_test_123"
-    assert seen["msg_type"] == "interactive" and seen["type"] == "chat_id" and seen["content_len"] > 0
+    assert seen["msg_type"] == "interactive" and seen["type"] == "chat_id"
+    sent = json.loads(seen["content"])
+    assert "schema" in sent and "feishu_payload" not in sent and "msg_type" not in sent
 
 
 def test_send_group_card_failure_and_exception(monkeypatch):
