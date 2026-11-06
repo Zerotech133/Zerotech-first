@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>情报体系 · 事件层看板</title>
+<style>
+:root{
+  --bg:#0b1017; --panel:#121c27; --panel-2:#0f1822; --line:#233242; --line-soft:#1b2734;
+  --text:#d7e0eb; --text-strong:#ecf4fc; --muted:#7c8fa3; --dim:#5a6f85;
+  --accent:#4f9ce8; --accent-dim:#2c4f74;
+  --ok:#6cc08f; --warn:#d8a254; --bad:#d3707a; --violet:#b184cf;
+  --mono:"JetBrains Mono","Cascadia Mono",Consolas,"Courier New",monospace;
+  --sans:"Noto Sans SC","Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font:13px/1.6 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}
+button{font:inherit;cursor:pointer}
+.app{max-width:1680px;margin:0 auto;padding:0 26px 60px}
+
+/* ---------- header ---------- */
+.top{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:20px 0 18px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:12px}
+.mark{display:grid;place-items:center;width:36px;height:36px;border:1px solid var(--accent);background:#122742;color:#63a6ff;font:600 12px var(--mono);letter-spacing:-1px}
+.brand strong{display:block;color:var(--text-strong);font-size:16px;letter-spacing:.3px}
+.brand small{display:block;margin-top:2px;color:var(--dim);font:10px var(--mono)}
+.topmeta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.pill{border:1px solid var(--line);background:var(--panel-2);color:var(--dim);padding:4px 9px;font:10px var(--mono);white-space:nowrap}
+.pill b{color:#a9bdcf;font-weight:500}
+.pill.ghost{border-style:dashed;color:#4d6279}
+.badge{border:1px solid var(--accent-dim);background:#122742;color:#6fb0f2;padding:4px 9px;font:600 10px var(--mono);letter-spacing:1px}
+
+/* ---------- provenance banner ---------- */
+.banner{display:flex;gap:12px;align-items:flex-start;margin-top:14px;padding:10px 14px;border:1px solid #6b5330;border-left:2px solid var(--warn);background:#1d1913;color:#c9a262;font-size:11.5px;line-height:1.6}
+.banner.live{border-color:#2f5f47;border-left-color:var(--ok);background:#111d17;color:#8fc9a9}
+.banner b{flex:0 0 auto;color:#e8c186;font-weight:600;padding-right:12px;border-right:1px solid #4a3b23;white-space:nowrap}
+.banner.live b{color:#a6d9bd;border-right-color:#2f5f47}
+.banner.live b{color:#a6d9bd}
+.banner span{color:#a98b5c}
+.banner.live span{color:#7fa891}
+.banner code{color:#d6b379;font:10.5px var(--mono)}
+.banner.live code{color:#9dc9b1}
+
+/* ---------- kpi ---------- */
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-top:16px}
+.kpi{position:relative;min-height:96px;padding:13px 15px 11px;border:1px solid var(--line);background:var(--panel);overflow:hidden}
+.kpi::before{position:absolute;inset:0 auto 0 0;width:2px;content:"";background:var(--accent-dim)}
+.kpi.ok::before{background:var(--ok)} .kpi.warn::before{background:var(--warn)}
+.kpi.bad::before{background:var(--bad)} .kpi.violet::before{background:var(--violet)}
+.kpi .k{color:var(--muted);font-size:11px}
+.kpi .v{margin-top:8px;color:var(--text-strong);font:600 26px var(--mono);letter-spacing:-1px;line-height:1.1}
+.kpi .v small{margin-left:4px;color:var(--dim);font:10px var(--mono);letter-spacing:0}
+.kpi .f{margin-top:6px;color:var(--dim);font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ---------- tabs ---------- */
+.tabs{display:flex;gap:2px;margin-top:18px;border-bottom:1px solid var(--line)}
+.tab{border:0;background:transparent;color:var(--muted);padding:10px 16px;font-size:12px;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab:hover{color:var(--text)}
+.tab.active{color:#e8f3ff;border-bottom-color:var(--accent)}
+.tab i{color:var(--dim);font:10px var(--mono);font-style:normal;margin-left:6px}
+
+.view{display:none}
+.view.active{display:block}
+
+/* ---------- events ---------- */
+.events{display:grid;grid-template-columns:minmax(380px,.85fr) minmax(520px,1.4fr);gap:10px;margin-top:12px;align-items:stretch}
+.panel{border:1px solid var(--line);background:var(--panel)}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;padding:0 14px;border-bottom:1px solid var(--line-soft)}
+.panel-head h2{margin:0;color:var(--text-strong);font-size:13px;font-weight:600}
+.panel-head .sub{color:var(--dim);font:10px var(--mono)}
+
+.filters{display:flex;gap:6px;padding:10px 10px 6px;flex-wrap:wrap;border-bottom:1px solid var(--line-soft)}
+.chip{border:1px solid var(--line);background:transparent;color:var(--muted);padding:3px 8px;font-size:10px}
+.chip.active{border-color:var(--accent);background:#152a40;color:#9ccbf4}
+.chip i{font-style:normal;color:var(--dim);margin-left:5px;font-family:var(--mono)}
+.chip-gap{margin-left:auto}
+.chip.sorter{color:#6d8298}
+.search{display:flex;align-items:center;gap:7px;margin:9px 10px 4px;padding:0 9px;height:30px;border:1px solid var(--line);background:#0e1721;color:var(--dim)}
+.search input{flex:1;border:0;outline:0;background:transparent;color:var(--text);font-size:11px}
+.search input::placeholder{color:#4f657c}
+.list{max-height:calc(100vh - 300px);overflow:auto;padding:4px 8px 8px}
+.list::-webkit-scrollbar{width:8px} .list::-webkit-scrollbar-thumb{background:#1e2d3d}
+.row{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line-soft);background:transparent;color:inherit;padding:11px 8px}
+.row:hover{background:#152231}
+.row.sel{background:#16283a;box-shadow:inset 2px 0 var(--accent)}
+.row .t{color:#dbe7f4;font-size:12.5px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.row .m{display:flex;align-items:center;gap:8px;margin-top:6px;color:var(--dim);font:10px var(--mono);flex-wrap:wrap}
+.row .heat{height:2px;margin-top:8px;background:#1b2836}
+.row .heat i{display:block;height:2px;background:linear-gradient(90deg,#2f5f8f,#4f9ce8)}
+.tag{display:inline-block;border:1px solid #2c4157;color:#7fa6c8;padding:1px 5px;font:9px var(--mono);white-space:nowrap}
+.tag.emerging{border-color:#2f5b7d;color:#79b6e2}
+.tag.developing{border-color:#2c6357;color:#79c2a5}
+.tag.peak{border-color:#5a4470;color:#b48fd0}
+.tag.fading{border-color:#3a4a5c;color:#8ea1b5}
+.tag.closed{border-color:#2c3642;color:#6b7d90}
+.tag.warn{border-color:#6b5330;color:#d0a465}
+.tag.llm{border-color:#5a4470;color:#b48fd0}
+.tag.cross{border-color:#2f5b7d;color:#79b6e2}
+.tag.manual{border-color:#2c6357;color:#8cc9aa}
+
+/* detail */
+.detail{min-height:520px}
+.detail-empty{display:grid;place-items:center;min-height:520px;color:var(--dim);font-size:12px}
+.d-head{padding:16px 18px 13px;border-bottom:1px solid var(--line-soft)}
+.d-title{margin:0 0 8px;color:var(--text-strong);font-size:16px;line-height:1.45;font-weight:600}
+.d-sub{display:flex;gap:8px;flex-wrap:wrap;align-items:center;color:var(--dim);font:10px var(--mono)}
+.d-summary{margin:0;padding:13px 18px;border-bottom:1px solid var(--line-soft);color:#b8c7d6;font-size:12px;line-height:1.75}
+.d-meta{display:grid;grid-template-columns:repeat(2,1fr);gap:7px 22px;padding:13px 18px;border-bottom:1px solid var(--line-soft);color:var(--dim);font-size:10.5px}
+.d-meta b{color:#a9bdcf;font-weight:500;font-family:var(--mono);margin-left:7px}
+.d-sec{padding:13px 18px 16px}
+.d-sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+.d-sec-head h3{margin:0;color:#cfdeec;font-size:12px}
+.d-sec-head span{color:var(--dim);font:10px var(--mono)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+table.members{width:100%;border-collapse:collapse}
+table.members th{text-align:left;color:#5f7488;font:9.5px var(--mono);font-weight:400;letter-spacing:.6px;text-transform:uppercase;padding:0 8px 7px 0;border-bottom:1px solid var(--line-soft)}
+table.members td{padding:9px 8px 9px 0;border-bottom:1px solid #19242f;vertical-align:top;font-size:11px;color:#b3c3d3}
+table.members tr:last-child td{border-bottom:0}
+table.members td.tl{color:#cddbe9;line-height:1.5}
+table.members code{color:#6d8ba5;font:9.5px var(--mono)}
+.rat{display:block;margin-top:3px;color:#5f7488;font-size:9.5px;line-height:1.5;word-break:break-all}
+
+/* ---------- health ---------- */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.stamp{padding:15px 17px;border:1px solid var(--line);background:var(--panel)}
+.stamp.ok::before,.stamp.stale::before,.stamp.missing::before,.stamp.corrupt::before{content:"";display:block;height:2px;margin:-15px -17px 13px;background:var(--dim)}
+.stamp.ok::before{background:var(--ok)} .stamp.stale::before{background:var(--warn)}
+.stamp.missing::before{background:#3d5064} .stamp.corrupt::before{background:var(--violet)}
+.stamp h3{display:flex;align-items:center;justify-content:space-between;margin:0 0 3px;color:var(--text-strong);font-size:12.5px}
+.state{font:600 9.5px var(--mono);letter-spacing:1px;padding:2px 7px;border:1px solid}
+.state.ok{color:var(--ok);border-color:#2f5f47;background:#12241b}
+.state.stale{color:var(--warn);border-color:#5f4a2a;background:#241d13}
+.state.missing{color:#8ea1b5;border-color:#3a4a5c;background:#151f29}
+.state.corrupt{color:var(--violet);border-color:#4e3a60;background:#1e1726}
+.stamp p{margin:8px 0 0;color:#8fa3b7;font-size:11px;line-height:1.6}
+.stamp .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin-top:11px;color:var(--dim);font:10px var(--mono)}
+.stamp .kv b{color:#c3d3e2;font-weight:400;word-break:break-all;font-size:10.5px}
+.queue-item{padding:13px 16px;border-bottom:1px solid var(--line-soft)}
+.queue-item:last-child{border-bottom:0}
+.q-head{display:flex;align-items:center;gap:8px;margin-bottom:7px;color:var(--dim);font:9.5px var(--mono)}
+.q-pair{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:7px 0}
+.q-side{padding:8px 10px;border:1px solid #26384a;background:#0f1a25}
+.q-side small{display:block;color:#5a6f85;font:9px var(--mono);margin-bottom:3px}
+.q-side span{color:#c3d2e0;font-size:11px;line-height:1.5}
+.gauge{position:relative;height:22px;margin:9px 0 6px;background:#101a25;border:1px solid #1f2d3b}
+.gauge .fill{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#2b4a68,#3f7db3)}
+.gauge .thr{position:absolute;top:-3px;bottom:-3px;width:1px;background:var(--warn)}
+.gauge .lbl{position:absolute;right:6px;top:3px;color:#c8d6e4;font:9.5px var(--mono)}
+.q-why{margin:0;color:#7f94a9;font-size:10.5px;line-height:1.65}
+.q-how{margin:8px 0 0;color:#5f7488;font-size:10px}
+.dist{display:grid;gap:8px;padding:14px 17px}
+.dist-row{display:grid;grid-template-columns:110px 1fr 34px;align-items:center;gap:10px;color:var(--muted);font:10.5px var(--mono)}
+.dist-row.knobs{grid-template-columns:minmax(150px,1fr) auto}
+.knobs .kv-val{color:#c3d3e2;text-align:right;white-space:nowrap}
+.knobs .kv-desc{color:#4d6379;font-size:9px;font-style:normal;margin-left:14px}
+.dist-bar{height:6px;background:#16232f;border:1px solid #1e2d3b}
+.dist-bar i{display:block;height:100%;background:#3d6f9e}
+
+/* ---------- ledger ---------- */
+.findings{margin:0;padding:6px 0 2px;list-style:none}
+.findings li{display:flex;gap:10px;padding:9px 16px;border-bottom:1px solid #19242f;font-size:11px;line-height:1.6}
+.findings li:last-child{border-bottom:0}
+.lv{flex:0 0 46px;font:600 9.5px var(--mono);letter-spacing:.5px;padding-top:2px}
+.lv.ok{color:var(--ok)} .lv.warn{color:var(--warn)} .lv.error{color:var(--bad)} .lv.info{color:#7fa6c8}
+.findings b{color:#c9d8e6;font-weight:500}
+.findings p{margin:3px 0 0;color:#6d8298;font-size:10px}
+table.ledger{width:100%;border-collapse:collapse;font-size:11px}
+table.ledger th{position:sticky;top:0;text-align:left;background:#0f1822;color:#5f7488;font:9.5px var(--mono);font-weight:400;letter-spacing:.5px;padding:9px 10px;border-bottom:1px solid var(--line)}
+table.ledger td{padding:9px 10px;border-bottom:1px solid #19242f;color:#b3c3d3;font-family:var(--mono);font-size:10.5px;white-space:nowrap}
+table.ledger td.n{color:#dbe7f4}
+.empty{padding:34px 18px;text-align:center;color:var(--dim);font-size:11.5px}
+.empty b{display:block;color:#96a9bc;font-size:12px;margin-bottom:5px;font-weight:500}
+
+/* ---------- notes ---------- */
+.notes{margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.note{padding:15px 18px;border:1px solid var(--line);background:var(--panel)}
+.note h3{margin:0 0 9px;color:var(--text-strong);font-size:12.5px}
+.note dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:7px 14px;font-size:11px;color:#8fa3b7}
+.note dt{color:#6d8ba5;font-family:var(--mono);font-size:10px;white-space:nowrap}
+.note dd{margin:0;line-height:1.6}
+.note code{background:#0e1721;border:1px solid #1f2d3b;padding:0 4px;color:#8fb2cf;font:10px var(--mono)}
+.note.wide{grid-column:1/-1}
+.note ul{margin:0;padding-left:16px;color:#8fa3b7;font-size:11px;line-height:1.75}
+.note li b{color:#c3d2e0;font-weight:500}
+.foot{margin-top:22px;padding-top:14px;border-top:1px solid var(--line);color:#4d6279;font:10px var(--mono);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+
+@media (max-width:1320px){
+  .kpis{grid-template-columns:repeat(3,1fr)}
+  .events{grid-template-columns:1fr}
+  .list{max-height:none}
+  .notes{grid-template-columns:1fr}
+}
+@media (max-width:820px){
+  .app{padding:0 14px 40px}
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  .grid2{grid-template-columns:1fr}
+  .top{flex-direction:column;align-items:flex-start}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <div class="mark">OS</div>
+      <div>
+        <strong>事件层看板</strong>
+        <small>osint_story / osint_story_member · 只读快照</small>
+      </div>
+    </div>
+    <div class="topmeta" id="topmeta"></div>
+  </header>
+
+  <div class="banner" id="banner" hidden></div>
+
+  <section class="kpis" id="kpis"></section>
+
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-tab="events">事件<i id="n-events"></i></button>
+    <button class="tab" data-tab="health">判定健康<i id="n-health"></i></button>
+    <button class="tab" data-tab="ledger">轮次台账<i id="n-ledger"></i></button>
+    <button class="tab" data-tab="notes">口径说明</button>
+  </nav>
+
+  <section class="view active" id="view-events">
+    <div class="events">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>事件列表</h2>
+          <span class="sub" id="list-sub"></span>
+        </div>
+        <div class="filters" id="stage-filters"></div>
+        <div class="search">
+          <span>⌕</span>
+          <input id="q" type="search" placeholder="搜索标题 / 摘要 / 主体 / 话题">
+          <span id="q-note" class="sub"></span>
+        </div>
+        <div class="list" id="list"></div>
+      </div>
+      <div class="panel detail" id="detail"></div>
+    </div>
+  </section>
+
+  <section class="view" id="view-health">
+    <div class="grid2" id="stamps"></div>
+    <div class="grid2">
+      <div class="panel">
+        <div class="panel-head"><h2>临界带待裁队列</h2><span class="sub" id="queue-sub"></span></div>
+        <div id="queue"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>归属判定来源分布</h2><span class="sub">osint_story_member.decided_by</span></div>
+        <div class="dist" id="dist"></div>
+        <div class="panel-head" style="border-top:1px solid var(--line-soft);border-bottom:0"><h2>判定层当前口径</h2><span class="sub">config/settings.py</span></div>
+        <div class="dist" id="knobs"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="view-ledger">
+    <div class="grid2" style="grid-template-columns:1fr 1fr">
+      <div class="panel">
+        <div class="panel-head"><h2>最新一轮体检</h2><span class="sub" id="round-sub"></span></div>
+        <ul class="findings" id="findings"></ul>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>台账概况</h2><span class="sub">data/story_run_ledger.jsonl</span></div>
+        <div class="dist" id="ledger-summary"></div>
+      </div>
+    </div>
+    <div class="panel" style="margin-top:10px">
+      <div class="panel-head"><h2>轮次明细</h2><span class="sub" id="ledger-sub"></span></div>
+      <div style="overflow:auto;max-height:460px">
+        <table class="ledger" id="ledger-table"></table>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="view-notes">
+    <div class="notes">
+      <div class="note wide" id="provenance">
+        <h3>数据来源 · 本页每个数字从哪来</h3>
+        <dl id="prov-body"></dl>
+      </div>
+      <div class="note">
+        <h3>三层判定（为什么会有"临界带"）</h3>
+        <dl>
+          <dt>人工台账</dt><dd>最高优先。<code>decided_by='manual'</code> 的归属边重算时一律跳过，不会被向量再改回去。</dd>
+          <dt>临界带复核</dt><dd>仅作用于 <code>[threshold-0.05, threshold)</code> 这条窄带；带内先问 LLM，结论写进 <code>rationale</code>，否则退回主判定器。</dd>
+          <dt>主判定器</dt><dd>带外的配对直接按余弦相似度定案，不产生额外调用。</dd>
+        </dl>
+      </div>
+      <div class="note">
+        <h3>跨窗口召回</h3>
+        <dl>
+          <dt>触发</dt><dd>窗内两路都没挂上，再到窗外已归属锚点找一次；没有锚点就没有作用。</dd>
+          <dt>护栏</dt><dd><code>cross_window_admit</code> 要求余弦 ≥ 0.70 且实体交集非空，两者缺一不合并。</dd>
+          <dt>标记</dt><dd>合并后的成员 <code>rationale</code> 以 <code>cross_window[channel]:cosine=…</code> 开头，列表里显示为"跨窗"标签。</dd>
+        </dl>
+      </div>
+      <div class="note">
+        <h3>轮次台账怎么读</h3>
+        <dl>
+          <dt>前提先行</dt><dd>每条记录都带 db / window_days / limit / dry_run / 两个开关。前提不同的两轮<b>不可比</b>，趋势只在前提全同的轮次间算。</dd>
+          <dt>空转轮</dt><dd><code>noop=true</code> 表示窗内无待归属事实、本轮没做任何计算。空转不是故障，但会掩盖"上游没在灌数据"。</dd>
+          <dt>只判矛盾</dt><dd>体检判结构性矛盾（拆散、误合并、队列积压、调用失败），不判"事件数应该等于几"。</dd>
+        </dl>
+      </div>
+      <div class="note">
+        <h3>读这份数据时的三个坑</h3>
+        <ul>
+          <li><b>dry-run 数字不能推断真实执行。</b><code>stories_reused</code> 只在"新建失败走复用"时累加，"第一路挂到已有事件"走另一条路径不计入（技术债 #28）。</li>
+          <li><b>独立来源数 ≠ 来源标签数。</b>前者是去重后的来源计数，后者只保留代表源，两者不必相等。</li>
+          <li><b>标定戳过期要重标。</b>语料指纹变了，旧的 margin / prompt 结论就不再适用，自检会直接判 stale。</li>
+        </ul>
+      </div>
+      <div class="note wide">
+        <h3>页面边界</h3>
+        <ul>
+          <li>本页是<b>只读快照</b>：数据在生成时刻固化进 HTML，不连库、不发请求、不改任何文件。要看最新状态就重新生成。</li>
+          <li>不展示正文（<code>content</code> 可能含个人信息），只展示标题、来源、时间与判定元数据。</li>
+          <li>页面不参与任何判定，所有状态都来自后端模块（<code>calibration_stamp.verify</code> / <code>run_ledger.check_round</code>），避免"看板自己算一套口径"。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span id="foot-left"></span>
+    <span id="foot-right"></span>
+  </footer>
+</div>
+
+<script id="payload" type="application/json">__PAYLOAD__</script>
+<script>
+(function(){
+  var D = JSON.parse(document.getElementById('payload').textContent);
+  var S = {tab:'events', q:'', stage:'', sel:null};
+
+  var STAGE = {emerging:'萌芽', developing:'发展', peak:'高峰', fading:'退潮', closed:'收尾'};
+  var DECIDED = {vector:'向量', llm_recheck:'临界带 LLM', manual:'人工'};
+  var REVIEW = {unreviewed:'未复核', reviewed:'已复核', published:'已发布'};
+  var STATUS_TXT = {ok:'有效', stale:'已过期', missing:'未标定', corrupt:'损坏'};
+
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function pad(n){ return n<10?'0'+n:''+n; }
+  function dt(iso){
+    if(!iso) return '—';
+    var d = new Date(iso);
+    if(isNaN(d)) return String(iso).slice(0,16);
+    return (d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes());
+  }
+  function ago(iso){
+    if(!iso) return '';
+    var d = new Date(iso); if(isNaN(d)) return '';
+    var h = (Date.now()-d.getTime())/3600000;
+    if(h<1) return Math.max(1,Math.round(h*60))+' 分钟前';
+    if(h<48) return Math.round(h)+' 小时前';
+    return Math.round(h/24)+' 天前';
+  }
+  function num(v){ return (v==null||v==='')?'—':v; }
+  function days(v){
+    if(v==null) return '—';
+    var n = Number(v);
+    if(!isFinite(n)) return String(v);
+    return String(Math.round(n*100)/100).replace(/\.0+$/,'')+'d';
+  }
+
+  var stories = D.stories || [];
+  var maxHeat = stories.reduce(function(a,s){ return Math.max(a, s.heat||0); }, 0) || 1;
+  if(S.sel == null && stories.length) S.sel = stories[0].story_id;
+
+  /* ---------- header ---------- */
+  var m = D.meta;
+  document.getElementById('topmeta').innerHTML = [
+    '<span class="pill">库 <b>'+esc(m.db_name)+'</b></span>',
+    '<span class="pill">快照 <b>'+esc(dt(m.generated_at))+'</b></span>',
+    '<span class="pill">阈值 <b>'+esc(m.threshold)+'</b></span>',
+    '<span class="pill ghost">跨窗 <b>'+(m.cross_window?'开':'关')+'</b></span>',
+    '<span class="pill ghost">临界带 <b>'+esc(m.borderline_judge)+'</b></span>',
+    '<span class="badge">READ ONLY</span>'
+  ].join('');
+
+  /* ---------- kpi ---------- */
+  var stampWorst = (D.stamp && D.stamp.worst) || 'missing';
+  var stampCls = {ok:'ok', stale:'warn', missing:'', corrupt:'violet'}[stampWorst] || '';
+  var latest = (D.ledger && D.ledger.summary && D.ledger.summary.latest) || null;
+  var isNoop = D.ledger && D.ledger.latest_noop;
+  var pendingN = (D.pending||[]).length;
+  var totalSources = stories.reduce(function(a,s){ return a+(s.independent_sources||0); },0);
+  var multi = stories.filter(function(s){ return (s.independent_sources||0) >= 2; }).length;
+
+  var kpis = [
+    {k:'事件总数', v:stories.length, f:'模型 '+esc(m.model_version||'—'), cls:''},
+    {k:'归属事实', v:D.meta.member_total, f:'平均 '+(stories.length? (D.meta.member_total/stories.length).toFixed(1):'0')+' 条/事件', cls:''},
+    {k:'多源事件', v:multi, f:'独立来源 ≥ 2 · 合计 '+totalSources+' 源次', cls: multi? 'ok':''},
+    {k:'临界带待裁', v:pendingN, f: pendingN? '已有 LLM 建议，待人工落锤':'队列为空', cls: pendingN? 'warn':''},
+    {k:'标定戳', v:STATUS_TXT[stampWorst]||stampWorst, f:'语料 '+num(D.stamp? D.stamp.units:'')+' 条', cls:stampCls},
+    {k:'最近一轮', v:isNoop?'空转':'已计算', f: latest? ('耗时 '+num(latest.elapsed_ms)+' ms · 新增 '+num(latest.stories_created)) : '台账无记录', cls: isNoop? 'warn':'ok'}
+  ];
+  document.getElementById('kpis').innerHTML = kpis.map(function(x){
+    return '<div class="kpi '+x.cls+'"><div class="k">'+x.k+'</div><div class="v">'+esc(x.v)+'</div><div class="f">'+x.f+'</div></div>';
+  }).join('');
+
+  document.getElementById('n-events').textContent = stories.length;
+  document.getElementById('n-health').textContent = pendingN ? pendingN : '';
+  document.getElementById('n-ledger').textContent = D.ledger && D.ledger.health ? D.ledger.health.lines : 0;
+
+  /* ---------- provenance ---------- */
+  function code(s){ return '<code>'+esc(s)+'</code>'; }
+  (function renderProvenance(){
+    var P = D.provenance || {};
+    if(!P.units_total) return;
+    var seed = P.units_seed || 0, tot = P.units_total, manual = P.manual_units || 0;
+    var mostlySeed = (P.seed_ratio || 0) >= 0.5;
+    var banner = document.getElementById('banner');
+    banner.hidden = false;
+    banner.className = 'banner' + (mostlySeed ? '' : ' live');
+    banner.innerHTML = mostlySeed
+      ? '<b>验收语料，非线上数据</b><span>库内 ' + tot + ' 条事实中 ' + seed + ' 条由 '
+        + code('scripts/seed_verify_corpus.py') + ' 灌入'
+        + (manual === tot ? '（全部走 ' + code('source_channel=manual') + '）' : '')
+        + '，其中 ' + (P.truth_units || 0) + ' 条带 ' + code('extension.truth_story') + ' 真值，覆盖 '
+        + (P.truth_stories || 0) + ' 个真值故事；事件由 ' + esc(dt(P.story_created_at))
+        + ' 的一次 ' + code('story_group_run') + ' 生成。本页用于验收判定逻辑，不是读当日情报。</span>'
+      : '<b>线上采集数据</b><span>库内 ' + tot + ' 条事实，其中验收语料 ' + seed + ' 条（'
+        + Math.round((P.seed_ratio || 0) * 100) + '%）。</span>';
+
+    var tables = (P.tables || []).map(code).join('、');
+    var rows = [
+      ['事件 / 归属边', 'PG ' + code(P.db) + ' · 表 ' + tables],
+      ['标定戳状态', '现算：' + code('calibration_stamp.verify') + '；戳文件 ' + code('data/story_calibration_stamp.json')
+        + '；语料指纹取自 ' + code("osint_knowledge_unit.extension->>'truth_story'")],
+      ['临界带待裁', code('data/story_borderline_pending.jsonl') + '（只取 status=pending）'],
+      ['轮次台账', code('data/story_run_ledger.jsonl') + '；体检结论现算：' + code('run_ledger.check_round')],
+      ['阈值 / 开关', code('config/settings.py') + ' + 项目根 ' + code('.env')],
+      ['语料构成', tot + ' 条事实 · seed ' + seed + ' · 带真值 ' + (P.truth_units || 0)
+        + ' · 真值故事 ' + (P.truth_stories || 0) + ' · manual 通道 ' + manual],
+      ['生成时刻', esc(dt(D.meta.generated_at)) + ' 的快照，数据已固化进本文件，不连库不发请求']
+    ];
+    var T = D.truth_check || {};
+    if(T.available){
+      rows.push(['真值对照', '真值组 ' + T.groups + ' · 事件 ' + T.events
+        + ' · 拆散 ' + (T.split||[]).length + ' 组 · 误合并 ' + (T.merged||[]).length + ' 处']);
+      if((T.split||[]).length || (T.merged||[]).length){
+        var bits = [];
+        (T.split||[]).slice(0,3).forEach(function(s){
+          bits.push(esc(s.truth) + ' 的 ' + s.units + ' 条事实被分到 ' + s.stories.length + ' 个事件（'
+            + s.stories.map(function(i){ return '#' + i; }).join(' / ') + '）');
+        });
+        (T.merged||[]).slice(0,3).forEach(function(mm){
+          bits.push('#' + mm.story_id + ' 一个事件里混了 ' + (mm.truths||[]).length + ' 组真值'
+            + ((mm.solos||[]).length ? ' + ' + mm.solos.length + ' 条独立事实' : ''));
+        });
+        rows.push(['真值异常', '<span style="color:#d0a465">' + bits.join('；') + '</span>']);
+      }
+    }
+    document.getElementById('prov-body').innerHTML = rows.map(function(r){
+      return '<dt>'+esc(r[0])+'</dt><dd>'+r[1]+'</dd>';
+    }).join('');
+  })();
+
+  /* ---------- tabs ---------- */
+  Array.prototype.forEach.call(document.querySelectorAll('.tab'), function(btn){
+    btn.addEventListener('click', function(){
+      S.tab = btn.getAttribute('data-tab');
+      Array.prototype.forEach.call(document.querySelectorAll('.tab'), function(b){ b.classList.toggle('active', b===btn); });
+      Array.prototype.forEach.call(document.querySelectorAll('.view'), function(v){
+        v.classList.toggle('active', v.id === 'view-'+S.tab);
+      });
+    });
+  });
+
+  /* ---------- filters ---------- */
+  var counts = {};
+  stories.forEach(function(s){ counts[s.stage||'?'] = (counts[s.stage||'?']||0)+1; });
+  var chips = ['<button class="chip" data-stage="">全部<i>'+stories.length+'</i></button>'];
+  Object.keys(STAGE).forEach(function(k){
+    if(!counts[k]) return;
+    chips.push('<button class="chip" data-stage="'+k+'">'+STAGE[k]+'<i>'+counts[k]+'</i></button>');
+  });
+  chips.push('<span class="chip-gap"></span>');
+  chips.push('<button class="chip sorter active" data-sort="heat">热度</button>');
+  chips.push('<button class="chip sorter" data-sort="recent">最近</button>');
+  document.getElementById('stage-filters').innerHTML = chips.join('');
+  Array.prototype.forEach.call(document.querySelectorAll('.chip'), function(c){
+    c.addEventListener('click', function(){
+      if(c.hasAttribute('data-sort')){
+        S.sort = c.getAttribute('data-sort');
+        Array.prototype.forEach.call(document.querySelectorAll('.chip[data-sort]'), function(x){ x.classList.toggle('active', x===c); });
+      } else {
+        S.stage = c.getAttribute('data-stage');
+        Array.prototype.forEach.call(document.querySelectorAll('.chip[data-stage]'), function(x){ x.classList.toggle('active', x===c); });
+      }
+      renderList();
+    });
+  });
+  document.getElementById('q').addEventListener('input', function(e){ S.q = e.target.value.trim().toLowerCase(); renderList(); });
+
+  function visible(){
+    var rows = stories.filter(function(s){
+      if(S.stage && s.stage !== S.stage) return false;
+      if(!S.q) return true;
+      var hay = [s.title, s.summary, (s.topics||[]).join(' '), (s.entities||[]).join(' '), (s.source_names||[]).join(' ')].join(' ').toLowerCase();
+      return hay.indexOf(S.q) >= 0;
+    });
+    if(S.sort === 'recent'){
+      rows = rows.slice().sort(function(a,b){
+        return String(b.last_seen_at||'').localeCompare(String(a.last_seen_at||''));
+      });
+    }
+    return rows;
+  }
+
+  function renderList(){
+    var rows = visible();
+    document.getElementById('list-sub').textContent = rows.length + ' / ' + stories.length + ' 条 · ' + (S.sort==='recent'?'按最近':'按热度');
+    document.getElementById('q-note').textContent = S.q ? (rows.length+' 命中') : '';
+    if(!rows.length){
+      document.getElementById('list').innerHTML = '<div class="empty"><b>没有匹配的事件</b>换个关键词，或清空阶段筛选</div>';
+      return;
+    }
+    document.getElementById('list').innerHTML = rows.map(function(s){
+      var single = (s.independent_sources||0) < 2;
+      var tags = [];
+      if(s.stage) tags.push('<span class="tag '+esc(s.stage)+'">'+esc(STAGE[s.stage]||s.stage)+'</span>');
+      if(single) tags.push('<span class="tag warn">单源</span>');
+      if((s.member_count||0) >= 2) tags.push('<span class="tag">'+s.member_count+' 事实</span>');
+      return '<button class="row'+(S.sel===s.story_id?' sel':'')+'" data-id="'+s.story_id+'">'
+        + '<div class="t">'+esc(s.title||'(无标题)')+'</div>'
+        + '<div class="m"><span>'+esc(s.independent_sources||0)+' 源</span><span>'+esc(dt(s.last_seen_at))+'</span>'
+        + '<span>'+(s.heat==null?'—':Number(s.heat).toFixed(2))+'</span>'+tags.join('')+'</div>'
+        + '<div class="heat"><i style="width:'+Math.max(2, Math.min(100,(s.heat||0)/maxHeat*100))+'%"></i></div>'
+        + '</button>';
+    }).join('');
+    Array.prototype.forEach.call(document.querySelectorAll('.row'), function(r){
+      r.addEventListener('click', function(){ S.sel = +r.getAttribute('data-id'); renderList(); renderDetail(); });
+    });
+  }
+
+  function renderDetail(){
+    var s = stories.filter(function(x){ return x.story_id === S.sel; })[0];
+    var box = document.getElementById('detail');
+    if(!s){
+      box.innerHTML = '<div class="detail-empty">← 从左侧选择一个事件，查看归属事实与判定依据</div>';
+      return;
+    }
+    var members = s.members || [];
+    var rows = members.map(function(mb, i){
+      var decided = mb.decided_by || '';
+      var isCross = (mb.rationale||'').indexOf('cross_window[') === 0;
+      var isLlm = decided === 'llm_recheck';
+      var tag = isCross ? '<span class="tag cross">跨窗</span>'
+              : isLlm ? '<span class="tag llm">LLM</span>'
+              : decided === 'manual' ? '<span class="tag manual">人工</span>' : '<span class="tag">'+(DECIDED[decided]||esc(decided||'—'))+'</span>';
+      var sim = (mb.similarity==null)?'—':Number(mb.similarity).toFixed(4);
+      var rat = (mb.rationale && mb.rationale !== 'seed') ? '<span class="rat">'+esc(mb.rationale)+'</span>' : '';
+      return '<tr>'
+        + '<td class="tl">'+(i===0?'<span class="tag" style="margin-right:6px">锚</span>':'')+esc(mb.title||mb.unit_key||'')
+        + '<br><code>'+esc(mb.unit_key||'')+' v'+esc(mb.unit_version||1)+'</code>'+rat+'</td>'
+        + '<td>'+esc(mb.source_id||mb.source_channel||'—')+'</td>'
+        + '<td>'+tag+'</td>'
+        + '<td>'+sim+'</td>'
+        + '<td>'+esc(dt(mb.published_at || mb.ingested_at || mb.linked_at))+'</td>'
+        + '</tr>';
+    }).join('');
+
+    box.innerHTML =
+      '<div class="d-head">'
+      + '<h2 class="d-title">'+esc(s.title||'(无标题)')+'</h2>'
+      + '<div class="d-sub"><span class="tag '+(s.review_status==='unreviewed'?'warn':'')+'">'+esc(REVIEW[s.review_status]||s.review_status||'—')+'</span>'
+      + (s.stage? '<span class="tag '+esc(s.stage)+'">'+esc(STAGE[s.stage]||s.stage)+'</span>':'')
+      + '<span>'+esc(s.story_key||'')+'</span><span>·</span><span>'+esc(s.model_version||'')+'</span></div>'
+      + '</div>'
+      + '<p class="d-summary">'+esc(s.summary||'（无摘要）')+'</p>'
+      + '<div class="d-meta">'
+      + '<div>独立来源 <b>'+esc(s.independent_sources||0)+'</b></div>'
+      + '<div>归属事实 <b>'+esc(s.member_count||members.length)+'</b></div>'
+      + '<div>热度 <b>'+(s.heat==null?'—':Number(s.heat).toFixed(4))+'</b></div>'
+      + '<div>来源 <b>'+esc((s.source_names||[]).join(', ')||'—')+'</b></div>'
+      + '<div>首次 <b>'+esc(dt(s.first_seen_at))+'</b></div>'
+      + '<div>最近 <b>'+esc(dt(s.last_seen_at))+' '+esc(ago(s.last_seen_at))+'</b></div>'
+      + '</div>'
+      + '<div class="d-sec">'
+      + '<div class="d-sec-head"><h3>话题 / 主体</h3><span>'+(s.topics||[]).length+' 话题 · '+(s.entities||[]).length+' 主体</span></div>'
+      + '<div class="chips">'
+      + (s.topics||[]).map(function(t){ return '<span class="tag">'+esc(t)+'</span>'; }).join('')
+      + (s.entities||[]).map(function(t){ return '<span class="tag cross">'+esc(t)+'</span>'; }).join('')
+      + '</div></div>'
+      + '<div class="d-sec">'
+      + '<div class="d-sec-head"><h3>归属事实</h3><span>按关联时间 · '+members.length+' 条</span></div>'
+      + (members.length
+          ? '<table class="members"><thead><tr><th style="width:46%">事实</th><th>来源</th><th>判定</th><th>相似度</th><th>时间</th></tr></thead><tbody>'+rows+'</tbody></table>'
+          : '<div class="empty"><b>暂无归属事实</b>事件由单条事实建立，或成员已被重算剥离</div>')
+      + '</div>';
+  }
+
+  /* ---------- health ---------- */
+  var DETAIL_LABEL = {
+    pairs:'候选对', pairs_same:'真同对', reason:'标定口径', recall_gate:'召回门限',
+    recommended_margin:'建议带宽', threshold:'阈值', truth_units:'真值单元',
+    errors:'错误数', false_merge:'误合并', label_flips:'标签翻转', missed_merge:'漏合并',
+    probe_size:'探针条数', repeat:'重复次数', variant:'变体', probe_fingerprint:'探针指纹'
+  };
+  function stampCard(kind, title, hint){
+    var st = (D.stamp.items||{})[kind] || {status:'missing', message:'无记录'};
+    var status = st.status || 'missing';
+    var d = st.detail || {};
+    var kv = [];
+    if(st.at) kv.push(['标定时间', esc(st.at)]);
+    if(st.units!=null) kv.push(['标定语料', esc(st.units)+' 条']);
+    Object.keys(d).forEach(function(k){
+      if(k==='probe_fingerprint'){ kv.push([DETAIL_LABEL[k], esc(String(d[k]).slice(0,18))+'…']); return; }
+      kv.push([DETAIL_LABEL[k]||k, esc(d[k])]);
+    });
+    if(st.fingerprint) kv.push(['语料指纹', '<span title="'+esc(st.fingerprint)+'">'+esc(String(st.fingerprint).replace('sha256:','').slice(0,18))+'…</span>']);
+    return '<div class="stamp '+status+'">'
+      + '<h3>'+esc(title)+'<span class="state '+status+'">'+esc(STATUS_TXT[status]||status)+'</span></h3>'
+      + '<p>'+esc(st.message||'')+'</p>'
+      + (kv.length? '<div class="kv">'+kv.map(function(x){ return '<span>'+esc(x[0])+'</span><b>'+x[1]+'</b>'; }).join('')+'</div>' : '')
+      + '</div>';
+  }
+  document.getElementById('stamps').innerHTML =
+      stampCard('borderline_margin','临界带带宽标定（margin）')
+    + stampCard('judge_prompt','LLM 判官提示词标定（prompt）');
+
+  var q = D.pending || [];
+  document.getElementById('queue-sub').textContent = q.length ? q.length+' 条待人工落锤' : '无待办';
+  document.getElementById('queue').innerHTML = q.length ? q.map(function(x){
+    var sim = Number(x.similarity||0), thr = Number(x.threshold||1);
+    var pct = Math.max(2, Math.min(100, sim*100));
+    var thrPct = Math.max(0, Math.min(100, thr*100));
+    return '<div class="queue-item">'
+      + '<div class="q-head"><span class="tag llm">'+(esc(x.decided_by)||'llm_recheck')+'</span>'
+      + '<span>gap '+(x.gap==null?'—':Number(x.gap).toFixed(4))+'</span><span>·</span><span>'+esc(dt(x.queued_at))+'</span></div>'
+      + '<div class="q-pair"><div class="q-side"><small>'+esc(x.left)+'</small><span>'+esc(x.left_title||'')+'</span></div>'
+      + '<div class="q-side"><small>'+esc(x.right)+'</small><span>'+esc(x.right_title||'')+'</span></div></div>'
+      + '<div class="gauge"><div class="fill" style="width:'+pct+'%"></div><div class="thr" style="left:'+thrPct+'%"></div>'
+      + '<span class="lbl">cos '+sim.toFixed(4)+' / 阈值 '+thr.toFixed(2)+'</span></div>'
+      + '<p class="q-why">'+esc(x.rationale||'')+'</p>'
+      + '<p class="q-how">处置：人工裁定后写 <code>data/story_borderline_overrides.json</code>，下次重算按 manual 优先，不再被向量改回。</p>'
+      + '</div>';
+  }).join('') : '<div class="empty"><b>队列为空</b>本轮没有落在临界带且未被判官定案的配对</div>';
+
+  var dist = {};
+  stories.forEach(function(s){ (s.members||[]).forEach(function(mb){
+    var k = (mb.rationale||'').indexOf('cross_window[') === 0 ? 'cross_window' : (mb.decided_by||'—');
+    dist[k] = (dist[k]||0)+1;
+  }); });
+  var distMax = Object.keys(dist).reduce(function(a,k){ return Math.max(a, dist[k]); }, 1);
+  var distLabel = {vector:'向量相似度', llm_recheck:'临界带 LLM', manual:'人工裁定', cross_window:'跨窗召回'};
+  var keys = Object.keys(dist);
+  document.getElementById('dist').innerHTML = keys.length ? keys.map(function(k){
+    return '<div class="dist-row"><span>'+esc(distLabel[k]||k)+'</span>'
+      + '<span class="dist-bar"><i style="width:'+Math.max(4,dist[k]/distMax*100)+'%"></i></span>'
+      + '<span style="text-align:right">'+dist[k]+'</span></div>';
+  }).join('') : '<div class="empty" style="padding:10px 0">无归属边</div>';
+
+  var knobs = [
+    ['STORY_RECHECK_SIMILARITY', m.threshold, '事件归并主阈值'],
+    ['STORY_BORDERLINE_MARGIN', m.borderline_margin, '临界带宽度'],
+    ['STORY_BORDERLINE_JUDGE', m.borderline_judge, '临界带判官'],
+    ['STORY_CROSS_WINDOW', m.cross_window? 'true':'false', '跨窗口召回'],
+    ['模型版本', m.model_version||'—', '写入 osint_story.model_version']
+  ];
+  document.getElementById('knobs').innerHTML = knobs.map(function(x){
+    return '<div class="dist-row knobs"><span>'+esc(x[0])+'</span>'
+      + '<span class="kv-val">'+esc(x[1])+'<em class="kv-desc">'+esc(x[2])+'</em></span></div>';
+  }).join('');
+
+  /* ---------- ledger ---------- */
+  var L = D.ledger || {};
+  var findings = L.findings || [];
+  document.getElementById('round-sub').textContent = L.latest_at ? ('最后记录 '+dt(L.latest_at)) : '无记录';
+  document.getElementById('findings').innerHTML = findings.length ? findings.map(function(f){
+    var lv = (f.level||'ok').toLowerCase();
+    var map = {ok:'正常', info:'提示', warn:'注意', fail:'异常', error:'异常'};
+    return '<li><span class="lv '+esc(lv)+'">'+esc(map[lv]||lv)+'</span>'
+      + '<div><b>'+esc(f.message)+'</b>'+(f.hint? '<p>'+esc(f.hint)+'</p>':'')
+      + '<p style="color:#42566a">'+esc(f.code||'')+'</p></div></li>';
+  }).join('') : '<li><span class="lv ok">正常</span><div><b>台账为空或未做体检</b><p>还没有落过轮次记录，先跑一轮 story_group_run.py 再回来看</p></div></li>';
+
+  var h = L.health || {lines:0, parsed:0, corrupt:0};
+  var sm = L.summary || {};
+  document.getElementById('ledger-summary').innerHTML = [
+    ['记录轮次', h.lines, '可解析 '+h.parsed+' · 坏行 '+h.corrupt],
+    ['时间跨度', sm.first_at? dt(sm.first_at)+' → '+dt(sm.last_at) : '—', ''],
+    ['最新前提', (sm.latest_context? ('窗 '+sm.latest_context.window_days+' 天 · limit '+sm.latest_context.limit) : '—'), ''],
+    ['dry-run', (sm.latest_context? (sm.latest_context.dry_run? 'true（仅模拟）':'false（真实写入）') : '—'), ''],
+    ['开关', (sm.latest_context? ('跨窗 '+(sm.latest_context.cross_window?'开':'关')+' · 判官 '+sm.latest_context.borderline_judge) : '—'), '']
+  ].map(function(x){
+    return '<div class="dist-row" style="grid-template-columns:110px 1fr auto"><span>'+esc(x[0])+'</span>'
+      + '<span style="color:#a9bdcf;text-align:right">'+esc(x[1])+'</span>'
+      + '<span style="color:#42566a;font-size:9.5px">'+esc(x[2])+'</span></div>';
+  }).join('');
+
+  var rounds = (L.rounds||[]).slice().reverse();
+  document.getElementById('ledger-sub').textContent = rounds.length+' 轮 · 时间倒序';
+  if(!rounds.length){
+    document.getElementById('ledger-table').innerHTML = '<tbody><tr><td><div class="empty"><b>暂无轮次记录</b>每次真实运行会追加一行</div></td></tr></tbody>';
+  } else {
+    var head = '<thead><tr><th>时间</th><th>库</th><th>窗口</th><th>扫描</th><th>新增</th><th>复用</th><th>成员</th><th>跨窗</th><th>LLM</th><th>耗时</th><th>空转</th><th>dry</th></tr></thead>';
+    var body = rounds.map(function(r){
+      var c = r.context||{}, mm = r.metrics||{};
+      return '<tr><td class="n">'+esc(dt(r.recorded_at))+'</td>'
+        + '<td>'+esc(c.db_name||'—')+'</td>'
+        + '<td>'+esc(days(c.window_days))+'</td>'
+        + '<td>'+esc(num(mm.units_scanned))+'</td>'
+        + '<td class="n">'+esc(num(mm.stories_created))+'</td>'
+        + '<td>'+esc(num(mm.stories_reused))+'</td>'
+        + '<td>'+esc(num(mm.members_added))+'</td>'
+        + '<td>'+esc(num(mm.cross_window_merged))+'</td>'
+        + '<td>'+esc(num(mm.judge_calls))+'</td>'
+        + '<td>'+esc(num(mm.elapsed_ms))+'</td>'
+        + '<td>'+(r.noop? '<span class="tag warn">空转</span>':'—')+'</td>'
+        + '<td>'+(c.dry_run? '<span class="tag">是</span>':'—')+'</td></tr>';
+    }).join('');
+    document.getElementById('ledger-table').innerHTML = head+'<tbody>'+body+'</tbody>';
+  }
+
+  /* ---------- footer ---------- */
+  document.getElementById('foot-left').textContent = '生成于 '+(D.meta.generated_at||'')+' · 快照不含正文';
+  document.getElementById('foot-right').textContent = '事件 '+stories.length+' · 归属边 '+D.meta.member_total+' · 台账 '+h.lines+' 轮';
+
+  renderList();
+  renderDetail();
+})();
+</script>
+</body>
+</html>

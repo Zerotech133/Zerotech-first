@@ -1070,8 +1070,8 @@ def write_pages(env_by_key, res, latest, tops, wl_by_mkt):
     """选股中心：hub + 四市场页（五块结构）+ 快照。"""
     os.makedirs(REPORTS, exist_ok=True)
     foot = (
-        "<div class='dim' style='margin-top:26px'>数据截至 %s · 共振四维"
-        "=技术/JEV消息面/RPS/环境（缺维降权，青萍结构）· 环境闸门="
+        "<div class='dim' style='margin-top:26px'>数据截至 %s · 多维加权"
+        "=技术/RPS/环境三维（JEV 缺维时归一，缺维降权，青萍结构）· 环境闸门="
         "全市场宽度 · A股=tushare 美港加密=zhice-db · JEV 情绪来自 "
         "news.db 近7天已判断新闻 · 纸面研究不构成投资建议</div>" % latest
     )
@@ -1145,8 +1145,8 @@ def write_pages(env_by_key, res, latest, tops, wl_by_mkt):
                 for r in mres
             )
             parts.append(
-                "<h2>③ 自选池共振（%d 只 · 四维：技术/JEV/RPS/"
-                "环境，缺维降权）</h2>"
+                "<h2>③ 自选池多维加权（%d 只 · 技术/RPS/环境三维，"
+                "缺维降权）</h2>"
                 "<table><tr><th>标的</th><th>现价</th><th>技术"
                 "</th><th>JEV</th><th>RPS</th><th>环境</th>"
                 "<th>综合</th><th>建议</th><th>维度</th>"
@@ -1234,7 +1234,7 @@ def write_pages(env_by_key, res, latest, tops, wl_by_mkt):
     hub = [
         _mkt_nav(None),
         "<h1>🎯 选股中心</h1>",
-        "<h2>四市场模块 · 自选池共振（点「进入模块」看全量与五块全景）</h2>",
+        "<h2>四市场模块 · 自选池多维加权（点「进入模块」看全量与五块全景）</h2>",
     ]
     for k, meta in MARKETS.items():
         lb, e = env_by_key.get(k, ("—", {}))
@@ -1463,9 +1463,9 @@ def write_strategy_pages(strat_data, res, latest):
             for r in rows
         )
         parts.append(
-            "<h2>② 自选池状态（%d 只，按信号+共振排序）</h2>"
+            "<h2>② 自选池状态（%d 只，按信号+综合分排序）</h2>"
             "<table><tr><th>标的</th><th>市场</th><th>现价</th>"
-            "<th>本策略</th><th>共振分</th><th>共振建议</th></tr>"
+            "<th>本策略</th><th>综合分</th><th>建议</th></tr>"
             "%s</table>" % (len(rows), trs)
         )
 
@@ -1624,7 +1624,7 @@ def push_daily_card(snap):
         1 for e in snap.get("envs", []) if e.get("safe") is False
     )  # S6: None(缺数据)不计收紧
     jn = sum(1 for r in res if r.get("jev") is not None)
-    jev_line = "· JEV 消息面：%d/%d 只进入四维打分（无判断自动缺维降权）" % (
+    jev_line = "· JEV 消息面：%d/%d 只有判断（其余缺维→按 技术/RPS/环境 三维归一）" % (
         jn,
         len(res),
     )
@@ -1668,7 +1668,7 @@ def push_daily_card(snap):
             {
                 "tag": "markdown",
                 "text_size": "notation",
-                "content": "<font color='grey'>分数为原始共振分（右偏分布），"
+                "content": "<font color='grey'>分数为原始多维加权分（右偏分布），"
                 "括号内为当日全市场分位</font>",
             }
         ]
@@ -1678,7 +1678,7 @@ def push_daily_card(snap):
     card = {
         "config": {"update_multi": True, "width_mode": "default"},
         "header": {
-            "title": {"tag": "plain_text", "content": "📊 RPS 强度榜 × 共振（四市场）"},
+            "title": {"tag": "plain_text", "content": "📊 RPS 强度榜 × 多维加权（四市场）"},
             "subtitle": {
                 "tag": "plain_text",
                 "content": "环境闸门 %d/%d 开启 · %s"
@@ -1701,7 +1701,7 @@ def push_daily_card(snap):
             {"tag": "hr"},
             {"tag": "markdown", "content": "**跨市场最强**\n%s" % cross},
             {"tag": "hr"},
-            {"tag": "markdown", "content": "**自选池共振 ≥50**\n%s" % res_lines},
+            {"tag": "markdown", "content": "**自选池综合分 ≥50**\n%s" % res_lines},
             {"tag": "hr"},
             {
                 "tag": "action",

@@ -141,6 +141,10 @@ DESIGN = {
     "收盘出、全体可交易股票等权）限制在同一批信号日内的逐笔均值",
     "gate_veto": "闸门开 = env safe=False 时买入/观察信号全部否决；"
     "闸门关 = 不否决（env 分仍计入打分），用于隔离否决贡献",
+    "universe": "load_wide 按 os.listdir 全量读 data/ashare/，其中含 4 只指数"
+    "（000001.SH/000688.SH/399001.SZ/399006.SZ，仓库既有约定：指数住 ashare，"
+    "作大盘基准）；审计 T13 实测其占买入单元 0.128%，剔除后 n_buy −133、"
+    "均值 Δ≤0.0015pp（噪声以下）——故不修，仅此注记（R3，2026-11-05 审计）",
 }
 
 
@@ -444,7 +448,15 @@ def trade_returns(buy, open_px, close_px, n, cost, unfill=None):
     ret_vals = exit_px / entry - 1.0 - cost
     ok = open_px.shift(-1).notna() & close_px.ffill().shift(-n).notna()
     if unfill is not None:
-        unf = unfill.shift(-1).fillna(False).reindex_like(open_px).fillna(False)
+        # pandas 3.x：bool DF shift() 退化为 object，~ 会变成 int 按位取反
+        # （~True=-2 恒真值）导致掩码失效——必须 astype(bool) 恢复 K254 语义
+        unf = (
+            unfill.shift(-1)
+            .fillna(False)
+            .reindex_like(open_px)
+            .fillna(False)
+            .astype(bool)
+        )
         ok = ok & ~unf
     valid = buy & ok
     n_dropped = int((buy & ~ok).sum().sum())
@@ -476,7 +488,14 @@ def bench_returns(eligible, open_px, close_px, n, cost, unfill=None):
     exit_px = close_px.ffill().shift(-n)
     valid = eligible & entry.notna() & exit_px.notna()
     if unfill is not None:
-        unf = unfill.shift(-1).fillna(False).reindex_like(open_px).fillna(False)
+        # 同 trade_returns：astype(bool) 防 pandas 3.x object-shift 掩码失效
+        unf = (
+            unfill.shift(-1)
+            .fillna(False)
+            .reindex_like(open_px)
+            .fillna(False)
+            .astype(bool)
+        )
         valid = valid & ~unf
     ret_vals = (exit_px / entry - 1.0 - cost).to_numpy(dtype=float)
     return _flat_series(valid, ret_vals, eligible.index, eligible.columns)
@@ -552,7 +571,7 @@ def stock_positions(close):
     return pos_ma + pos_rsi + pos_boll + pos_tf
 
 
-def load_wide(data_dir, stocks_limit=0, log_every=1000):
+def load_wide(data_dir, stocks_limit=0, log_every=1000, keep_raw=False):
     """读全部 parquet → union 交易日索引的 wide 矩阵集合。
 
     逐股在自身 bar 序列上算指标（与产线 own-bar 语义一致），再 scatter。
@@ -560,6 +579,8 @@ def load_wide(data_dir, stocks_limit=0, log_every=1000):
     n_bars(float32 DataFrame), above20(计闸门槛 ≥MIN_BARS_ENV),
     eligible(≥MIN_BARS_ELIG bool), unfill(K254 一字板 bool)；
     K254 起 close/open 为后复权口径（own-bar pre_close 链因子）。
+    keep_raw=True 时额外保留原始价 _raw_open/_raw_high/_raw_close
+    （--limit-mode exact 精确一字板判定用；默认 False，行为不变）。
     """
     files = sorted(
         f
@@ -619,6 +640,7 @@ def load_wide(data_dir, stocks_limit=0, log_every=1000):
     }
     above_buf = np.zeros((D, S), dtype=bool)
     unfill_buf = np.zeros((D, S), dtype=bool)  # K254 一字板(T+1 无法成交)
+    raw_buf = {k: blank() for k in ("open", "high", "close")} if keep_raw else None
     for j, df in enumerate(per):
         rows = np.array([dpos[int(d)] for d in df["trade_date"].to_numpy()])
         c = df["close"].astype(float)
@@ -654,6 +676,10 @@ def load_wide(data_dir, stocks_limit=0, log_every=1000):
             & (rg >= lim - 0.005)
             & rg.notna()
         ).to_numpy()
+        if keep_raw:
+            raw_buf["open"][rows, j] = o_raw.to_numpy()
+            raw_buf["high"][rows, j] = h_raw.to_numpy()
+            raw_buf["close"][rows, j] = df["close"].astype(float).to_numpy()
 
     wide = {"dates": union, "codes": codes}
     for k, a in arr.items():
@@ -668,7 +694,94 @@ def load_wide(data_dir, stocks_limit=0, log_every=1000):
         arr["n_bars"] >= MIN_BARS_ELIG, index=union, columns=codes
     )
     wide["unfill"] = pd.DataFrame(unfill_buf, index=union, columns=codes)
+    if keep_raw:
+        for k in ("open", "high", "close"):
+            wide["_raw_%s" % k] = pd.DataFrame(raw_buf[k], index=union, columns=codes)
     return wide
+
+
+def apply_exact_unfill(wide, start=None, end=None):
+    """--limit-mode exact：用交易所精确涨跌停价覆盖一字板判定（p0_limit 20261106）。
+
+    精确判定：当日 open==high==close 且 open>=up_limit（一字封死涨停，
+    T+1 无法买入）。缓存缺失的日期保留 approx 值（自动回退）。
+    就地替换 wide["unfill"]，返回 meta dict（覆盖/回退统计）。
+    """
+    import tdx_api_client as tdx
+
+    union, codes = wide["dates"], wide["codes"]
+    raw_o, raw_h, raw_c = wide["_raw_open"], wide["_raw_high"], wide["_raw_close"]
+    cache = tdx.load_cache(union[0], union[-1])
+    unf = wide["unfill"].copy()
+    meta = {
+        "mode": "exact",
+        "cache_dir": tdx.CACHE_DIR,
+        "cache_dates": 0,
+        "exact_dates": 0,
+        "fallback_dates": 0,
+        "fallback_dates_in_window": 0,
+        "exact_flips_vs_approx": None,
+    }
+    if cache is None or not len(cache):
+        meta["fallback_dates"] = int(len(union))
+        if start:
+            meta["fallback_dates_in_window"] = int(((union >= int(start)) & (union <= int(end or union[-1]))).sum())
+        print("[exact-unfill] cache empty, all %d dates fallback approx" % meta["fallback_dates"], flush=True)
+        wide["unfill"] = unf
+        return meta
+
+    cache_by_date = {int(d): g.set_index("ts_code")["up_limit"] for d, g in cache.groupby("trade_date")}
+    approx_vals = unf.to_numpy().copy()
+    flips = 0
+    n_exact = 0
+    win_mask = np.ones(len(union), dtype=bool)
+    if start:
+        win_mask &= union >= int(start)
+    if end:
+        win_mask &= union <= int(end)
+    for t, d in enumerate(union):
+        lim = cache_by_date.get(int(d))
+        if lim is None:
+            meta["fallback_dates"] += 1
+            if win_mask[t]:
+                meta["fallback_dates_in_window"] += 1
+            continue
+        meta["cache_dates"] += 1
+        # 只覆盖窗口内日期：窗外历史 K254 语义保留 approx（买入侧 shift(-1) 只关心窗内 T+1）
+        if not win_mask[t]:
+            continue
+        meta["exact_dates"] += 1
+        lim_v = lim.reindex(codes).to_numpy(dtype=float)
+        o = raw_o.iloc[t].to_numpy(dtype=float)
+        h = raw_h.iloc[t].to_numpy(dtype=float)
+        c = raw_c.iloc[t].to_numpy(dtype=float)
+        exact = (
+            (np.abs(o - h) <= 1e-6)
+            & (np.abs(o - c) <= 1e-6)
+            & (o >= lim_v - 1e-6)
+            & np.isfinite(lim_v)
+            & np.isfinite(o)
+        )
+        has_lim = np.isfinite(lim_v)
+        new_vals = np.where(has_lim, exact, unf.iloc[t].to_numpy(dtype=bool))
+        flips += int((new_vals.astype(bool) != unf.iloc[t].to_numpy(dtype=bool)).sum())
+        n_exact += int(has_lim.sum())
+        unf.iloc[t] = new_vals
+    meta["exact_flips_vs_approx"] = int(flips)
+    meta["exact_overridden_cells"] = int(n_exact)
+    print(
+        "[exact-unfill] cache_dates %d, exact %d, fallback %d (in-window %d), flips %d"
+        % (
+            meta["cache_dates"],
+            meta["exact_dates"],
+            meta["fallback_dates"],
+            meta["fallback_dates_in_window"],
+            flips,
+        ),
+        flush=True,
+    )
+    wide["unfill"] = unf
+    return meta
 
 
 # ── 网格与报告 ──────────────────────────────────────────────
@@ -679,8 +792,13 @@ GRID_GATE = [("gate_on", True), ("gate_off", False)]
 
 def run_backtest(args):
     t0 = time.time()
-    wide = load_wide(args.data_dir, args.stocks_limit)
+    wide = load_wide(
+        args.data_dir, args.stocks_limit, keep_raw=(getattr(args, "limit_mode", "approx") == "exact")
+    )
     union, codes = wide["dates"], wide["codes"]
+    limit_exact_meta = {}
+    if getattr(args, "limit_mode", "approx") == "exact":
+        limit_exact_meta = apply_exact_unfill(wide, args.start, args.end)
 
     chg = {p: wide["chg%d" % p] for p in PERIODS}
     env_df = env_gate(wide["above20"], wide["ret20"])
@@ -870,6 +988,8 @@ def run_backtest(args):
             "cost_source": getattr(args, "cost_source", "unknown"),
             "jev_mode": args.jev_mode,
             "jev_replay_meta": jev_meta,
+            "limit_mode": getattr(args, "limit_mode", "approx"),
+            "limit_exact_meta": limit_exact_meta,
             "sample_mode": bool(args.stocks_limit),
             "elapsed_sec": round(time.time() - t0, 1),
         },
@@ -1173,7 +1293,9 @@ def build_killed_payload(
     br, md, _uf = env_df["breadth"], env_df["med20"], env_df["upfrac"]
     veto_w = (buy_off & ~buy_on).loc[in_win]
     on_w = buy_on.loc[in_win]
-    unf_t1 = wide["unfill"].shift(-1).fillna(False).loc[in_win]
+    unf_t1 = (
+        wide["unfill"].shift(-1).fillna(False).loc[in_win].astype(bool)
+    )  # astype(bool) 防 pandas 3.x object-shift 掩码失效（同 trade_returns）
     entry_na = open_px.shift(-1).isna().loc[in_win]
     safe_w = env_df["safe"].loc[in_win]
     hr_ok = mix_cur.notna().loc[in_win]
@@ -1388,6 +1510,14 @@ def parse_args(argv=None):
         "neutral50=50 中性分进权重；w015=权重重组 "
         "tech.40/rps.30/jev.15/env.15；replay=消费 "
         "jev_replay_series.json 逐日截面（覆盖外日期自然缺维）",
+    )
+    ap.add_argument(
+        "--limit-mode",
+        default="approx",
+        choices=("approx", "exact"),
+        help="一字板判定口径：approx=K254 近似（开=高=收触板，默认，"
+        "行为不变）；exact=交易所精确涨跌停价（tdx_api 缓存，缺失日期"
+        "自动回退 approx 并记录 meta.limit_exact_meta.fallback_dates）",
     )
     ap.add_argument(
         "--killed-details",
