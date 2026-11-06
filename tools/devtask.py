@@ -3,6 +3,11 @@
 
 一单一线程：每个任务单 = 独立 git worktree + 独立分支，worker 互不踩脚。
 
+安全提示：
+  不要用 `--help` 建单；帮助请用 `devtask.py --help` 或
+  `devtask.py <命令> --help`。`--help` 不是 TID，会被 TID 校验拒绝，
+  不会生成 aborted 空单。
+
 命令：
   new <TID> <一句话描述> [--project <pid>] [--dept <部门>] [--acceptance "<命令串>"]
                             [--approver <席位>] [--expected-output <格式>]
@@ -1223,7 +1228,36 @@ def _recycle_worktree(tid, task):
     return True, "worktree + 分支已回收"
 
 
-def cmd_new(tid, *desc):
+_TID_MAX_LEN = 64
+
+
+def _validate_tid(tid):
+    """校验新建工单的 TID，必须发生在任何副作用之前。
+
+    历史事故：``devtask.py new --help`` 曾把 ``--help`` 当 TID 建单，留下
+    ``--help-aborted-*`` 空单。这里同时挡住空串、选项形态、路径分隔符、
+    空白/控制字符、``..``、超长等非法值；合法值保持原样返回。
+    """
+    if not isinstance(tid, str) or not tid:
+        raise SystemExit("非法 TID：TID 不能为空")
+    if tid != tid.strip():
+        raise SystemExit("非法 TID %r：不能包含首尾空白" % tid)
+    if len(tid) > _TID_MAX_LEN:
+        raise SystemExit("非法 TID %r：长度不能超过 %d 字符" % (tid, _TID_MAX_LEN))
+    if tid[0] in ("-", "."):
+        raise SystemExit("非法 TID %r：不能以 '-' 或 '.' 开头" % tid)
+    if ".." in tid or tid.endswith("."):
+        raise SystemExit("非法 TID %r：不能包含 '..' 或以 '.' 结尾" % tid)
+    if any(ch in "/\\:*?\"<>|" or ch.isspace() or ord(ch) < 32 for ch in tid):
+        raise SystemExit("非法 TID %r：不能包含路径分隔符、空白或控制字符" % tid)
+    if not all(ch.isalnum() or ch in "-_." for ch in tid):
+        raise SystemExit("非法 TID %r：只允许字母/数字/中文、'_'、'.'、'-'" % tid)
+    return tid
+
+
+def cmd_new(tid=None, *desc):
+    # 2026-11-06 FIX-DEVTASK-HELP：TID 校验必须先于 worktree cap/写盘/建分支。
+    tid = _validate_tid(tid)
     # 2026-10-31 WO-WORKTREE-MECH：并发上限闸（在任何副作用之前，达上限直接拒单）
     _enforce_worktree_cap()
     # K-ORG-057：--project <pid> 可选参数；缺省归 general 线（显式提示，不拒收——
