@@ -50,16 +50,27 @@ class EventDef:
     lag_days: Optional[int] = None     # None → 按 kind 默认
     select: Optional[Callable[[pd.DataFrame], pd.DataFrame]] = None
     desc: str = ""
+    cols: Optional[List[str]] = None   # 指定后按最小列集读表(省内存/提速)
 
 
 def _ev_lhb(df: pd.DataFrame) -> pd.DataFrame:
     return df  # 上榜即事件
 
 
+_DL_CACHE: Dict[str, pd.DataFrame] = {}
+
+
+def _get_daily_close() -> pd.DataFrame:
+    """ts_daily 收盘价模块级缓存(大宗折价 join 用, 避免变体重复读 427 万行)."""
+    if "dl" not in _DL_CACHE:
+        _DL_CACHE["dl"] = WarehouseReader().read(
+            "ts_daily", columns=["ts_code", "trade_date", "close"])
+    return _DL_CACHE["dl"]
+
+
 def _ev_block_discount(df: pd.DataFrame, threshold: float = -0.09):
     """大宗折价: price / 当日收盘 - 1 < threshold. 收盘价 join ts_daily."""
-    r = WarehouseReader()
-    dl = r.read("ts_daily", columns=["ts_code", "trade_date", "close"])
+    dl = _get_daily_close()
     m = df.merge(dl.rename(columns={"trade_date": "trade_date_px"}),
                  left_on=["ts_code", "trade_date"],
                  right_on=["ts_code", "trade_date_px"], how="left")
@@ -82,8 +93,75 @@ def _ev_tp_upgrade(df: pd.DataFrame, threshold: float = 0.05):
     return out
 
 
+# ---- 外资投行名单(保守: ASCII 外资行名 + 明确中文别名) ----
+_FOREIGN_PAT = ("UBS", "HSBC", "Morgan", "Macquarie", "CREDIT SUISSE",
+                "CITI", "JPMorgan", "NOMURA", "BERNSTEIN", "DBS",
+                "Bank of America", "Jefferies", "KGI", "Deutsche",
+                "UOBKayHian", "chinaknowledge", "Goldman", "Daiwa",
+                "高盛", "摩根", "瑞银", "野村", "汇丰", "里昂", "美林",
+                "大和", "麦格理", "星展", "渣打", "瑞信")
+
+
+def _is_foreign_org(s: pd.Series) -> pd.Series:
+    """外资投行判定(大小写不敏感)."""
+    up = s.fillna("").astype(str).str.strip().str.upper()
+    mask = pd.Series(False, index=s.index)
+    for pat in _FOREIGN_PAT:
+        mask |= up.str.contains(pat.upper(), regex=False)
+    return mask
+
+
+def _ev_tp_upgrade_org(df: pd.DataFrame, threshold: float = 0.05,
+                       org_filter: Optional[pd.Series] = None):
+    """目标价上修·同机构自身口径: 机构 X 对标的 S 的 tp 相对该机构上一条 tp 上修.
+
+    与基础版 tp_upgrade5(跨机构上一条)的区别: 修复第17轮"研报修正率 97.3%
+    假信号"问题——相邻两条不同机构比较会把 A 机构 60 / B 机构 50 误判为
+    "上修"。变体版 prev 按分组计算, 阈值语义才成立。
+    """
+    d = df.sort_values(["ts_code", "org_name", "report_date"]).copy()
+    d["tp"] = pd.to_numeric(d["tp"], errors="coerce")
+    if org_filter is not None:
+        d = d[org_filter.reindex(d.index).fillna(False)]
+    prev = d.groupby(["ts_code", "org_name"])["tp"].shift(1)
+    d["tp_prev"] = prev
+    m = (d["tp"].notna() & d["tp_prev"].notna() & (d["tp_prev"] > 0))
+    out = d[m & (d["tp"] / d["tp_prev"] - 1 > threshold)].copy()
+    out["tp_change"] = out["tp"] / out["tp_prev"] - 1
+    return out
+
+
+def _ev_block_discount_sell(df: pd.DataFrame, threshold: float = -0.09,
+                            inst_only: bool = True):
+    """大宗折价 + 卖方类型拆分: 机构专用 / 营业部(非机构专用).
+
+    第16轮发现: 卖方"机构专用"折价≈0%, 营业部间大宗折价≈-5.07%——
+    同一折价阈值下两类卖方的信息含量完全不同, 须拆开检验。
+    """
+    dl = _get_daily_close()
+    m = df.merge(dl.rename(columns={"trade_date": "trade_date_px"}),
+                 left_on=["ts_code", "trade_date"],
+                 right_on=["ts_code", "trade_date_px"], how="left")
+    with np.errstate(all="ignore"):
+        disc = m["price"] / m["close"] - 1
+    seller = m["seller"].fillna("").astype(str).str.strip()
+    is_inst = seller.str.contains("机构专用", regex=False)
+    keep = is_inst if inst_only else ~is_inst & (seller != "")
+    sel = keep & (disc < threshold)
+    out = m[sel].copy()
+    out["discount"] = disc[sel]
+    return out
+
+
 def _ev_suspend(df: pd.DataFrame) -> pd.DataFrame:
     return df  # 停牌起始即事件
+
+
+def _ev_tp_upgrade_top20(df: pd.DataFrame, threshold: float = 0.05):
+    """目标价上修·覆盖量 Top20 头部券商(按 report_rc 全表覆盖笔数动态取)."""
+    org = df["org_name"].fillna("").astype(str).str.strip()
+    top20 = set(org.value_counts().head(20).index)
+    return _ev_tp_upgrade_org(df, threshold, org.isin(top20))
 
 
 BUILTIN_EVENTS: Dict[str, EventDef] = {
@@ -97,10 +175,39 @@ BUILTIN_EVENTS: Dict[str, EventDef] = {
     "tp_upgrade5": EventDef("tp_upgrade5", "目标价上修>5%", "report_rc",
                             "report_date", "publish", 1,
                             lambda df: _ev_tp_upgrade(df, 0.05),
-                            "研报目标价较上一条有效目标价上修超5%"),
+                            "研报目标价较上一条有效目标价上修超5%(跨机构口径)"),
     "suspend_start": EventDef("suspend_start", "停牌起始", "ts_suspend_d",
                               "trade_date", "publish", 1, _ev_suspend,
                               "个股停牌起始日"),
+    # ---- 变体(第二十二轮扩展): 拆维度看信息含量 ----
+    "tp_up_org": EventDef("tp_up_org", "目标价上修>5%·同机构口径", "report_rc",
+                          "report_date", "publish", 1,
+                          lambda df: _ev_tp_upgrade_org(df, 0.05),
+                          "机构自身 tp 较自身上一条 tp 上修(修复跨机构假修正)",
+                          cols=["ts_code", "report_date", "org_name", "tp"]),
+    "tp_up_org_foreign": EventDef("tp_up_org_foreign", "外资投行上修>5%",
+                                  "report_rc", "report_date", "publish", 1,
+                                  lambda df: _ev_tp_upgrade_org(
+                                      df, 0.05, _is_foreign_org(df["org_name"])),
+                                  "外资投行(UBS/MS/HSBC等)同机构口径上修",
+                                  cols=["ts_code", "report_date", "org_name", "tp"]),
+    "tp_up_org_top20": EventDef("tp_up_org_top20", "头部券商Top20上修>5%",
+                                "report_rc", "report_date", "publish", 1,
+                                _ev_tp_upgrade_top20,
+                                "覆盖量Top20券商同机构口径上修",
+                                cols=["ts_code", "report_date", "org_name", "tp"]),
+    "block_discount9_sellinst": EventDef(
+        "block_discount9_sellinst", "大宗折价<-9%·卖方机构专用", "ts_block_trade",
+        "trade_date", "publish", 1,
+        lambda df: _ev_block_discount_sell(df, -0.09, inst_only=True),
+        "卖方为机构专用(机构出清)的深折价大宗",
+        cols=["ts_code", "trade_date", "price", "seller"]),
+    "block_discount9_sellbranch": EventDef(
+        "block_discount9_sellbranch", "大宗折价<-9%·卖方营业部", "ts_block_trade",
+        "trade_date", "publish", 1,
+        lambda df: _ev_block_discount_sell(df, -0.09, inst_only=False),
+        "卖方为营业部(非机构专用)的深折价大宗",
+        cols=["ts_code", "trade_date", "price", "seller"]),
 }
 
 
@@ -115,6 +222,15 @@ class EventStudy:
         self._stock_days: Optional[pd.DataFrame] = None   # ts_code → 交易日序列
         self._stock_px: Optional[Dict[str, pd.Series]] = None
         self._bench_ret: Optional[pd.Series] = None       # date → 市场等权日收益
+        self._table_cache: Dict[Tuple[str, Optional[tuple]], pd.DataFrame] = {}
+
+    def _read_event_table(self, table: str,
+                          cols: Optional[List[str]]) -> pd.DataFrame:
+        """按 (table, cols) 缓存读表: 多变体共用同一事件表不重复 IO."""
+        key = (table, tuple(cols) if cols else None)
+        if key not in self._table_cache:
+            self._table_cache[key] = self.reader.read(table, columns=cols)
+        return self._table_cache[key]
 
     # ---- 行情底座 ----
     def _load_px(self):
@@ -200,7 +316,7 @@ class EventStudy:
         self._load_px()
         lag = resolve_lag_days(ev.kind, ev.lag_days)
 
-        df = self.reader.read(ev.table)
+        df = self._read_event_table(ev.table, ev.cols)
         n_total = len(df)
         sel = ev.select(df) if ev.select else df
         cols_keep = [c for c in (ev.date_col, "ts_code") if c in sel.columns]
