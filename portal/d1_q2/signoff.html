@@ -1,0 +1,701 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>D1 Q2 阶段验收 · 角色联署确认页（可签版）</title>
+<style>
+  :root {
+    --bg: #0b1020;
+    --panel: rgba(17, 25, 45, .92);
+    --panel-2: #121c33;
+    --line: rgba(148, 163, 184, .18);
+    --line-strong: rgba(148, 163, 184, .32);
+    --text: #e8eefc;
+    --muted: #95a3bd;
+    --faint: #6b7a96;
+    --gold: #d8b56a;
+    --gold-soft: rgba(216, 181, 106, .12);
+    --green: #55d6a8;
+    --green-soft: rgba(85, 214, 168, .10);
+    --amber: #f0c46a;
+    --amber-soft: rgba(240, 196, 106, .10);
+    --red: #ff8e8e;
+    --blue: #83b7ff;
+    --shadow: 0 24px 80px rgba(0, 0, 0, .38);
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--bg); }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--text);
+    font: 14px/1.65 "Segoe UI", "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+    background:
+      radial-gradient(900px 500px at 12% -8%, rgba(79, 114, 190, .22), transparent 60%),
+      radial-gradient(800px 520px at 96% 0%, rgba(216, 181, 106, .10), transparent 58%),
+      linear-gradient(180deg, #090e1b 0%, #0b1020 55%, #080c17 100%);
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 1180px; margin: 0 auto; padding: 34px 24px 64px; }
+  .hero {
+    position: relative;
+    overflow: hidden;
+    padding: 28px 30px 26px;
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    background: linear-gradient(145deg, rgba(20, 31, 56, .96), rgba(10, 17, 33, .96));
+    box-shadow: var(--shadow);
+  }
+  .hero::after {
+    content: "";
+    position: absolute;
+    width: 360px; height: 360px;
+    right: -120px; top: -190px;
+    border: 1px solid rgba(216, 181, 106, .18);
+    border-radius: 50%;
+    box-shadow: 0 0 0 38px rgba(216, 181, 106, .025), 0 0 0 80px rgba(216, 181, 106, .018);
+    pointer-events: none;
+  }
+  .eyebrow {
+    color: var(--gold);
+    font-size: 11px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  h1 {
+    margin: 10px 0 8px;
+    font-size: clamp(26px, 4.3vw, 40px);
+    line-height: 1.15;
+    letter-spacing: -.02em;
+    font-weight: 720;
+  }
+  h1 span { color: var(--gold); display: block; font-size: .48em; letter-spacing: .06em; margin-top: 8px; font-weight: 600; }
+  .lede { margin: 0; max-width: 780px; color: var(--muted); font-size: 13.5px; }
+  .hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 20px; }
+  .status {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 7px 12px; border-radius: 999px;
+    border: 1px solid var(--line-strong);
+    background: rgba(255, 255, 255, .035);
+    font-size: 12px; color: var(--muted);
+  }
+  .status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 12px var(--amber); }
+  .status.ok { color: var(--green); border-color: rgba(85, 214, 168, .35); background: var(--green-soft); }
+  .status.ok::before { background: var(--green); box-shadow: 0 0 12px var(--green); }
+  .status.ready { color: var(--gold); border-color: rgba(216, 181, 106, .35); background: var(--gold-soft); }
+  .status.ready::before { background: var(--gold); box-shadow: 0 0 12px var(--gold); }
+  .btn {
+    appearance: none; border: 1px solid var(--line-strong); border-radius: 10px;
+    background: rgba(255, 255, 255, .035); color: var(--text);
+    padding: 8px 13px; font: inherit; font-size: 12px; cursor: pointer;
+    transition: .18s ease;
+  }
+  .btn:hover { border-color: rgba(216, 181, 106, .55); background: rgba(216, 181, 106, .08); }
+  .btn.gold { border-color: rgba(216, 181, 106, .45); color: var(--gold); background: var(--gold-soft); }
+  .btn.ghost { background: transparent; }
+  .btn:disabled { opacity: .38; cursor: not-allowed; }
+
+  .notice {
+    display: grid; grid-template-columns: 18px 1fr; gap: 10px;
+    margin: 14px 2px 0; padding: 12px 14px;
+    border-left: 2px solid var(--gold);
+    background: linear-gradient(90deg, rgba(216, 181, 106, .08), transparent);
+    color: #c9d4e7; font-size: 12.5px;
+    border-radius: 0 10px 10px 0;
+  }
+  .notice b { color: var(--gold); }
+  .notice .mark { color: var(--gold); font-weight: 800; text-align: center; }
+
+  .grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 14px; margin-top: 16px; }
+  .panel {
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--panel);
+    box-shadow: 0 18px 50px rgba(0,0,0,.20);
+  }
+  .panel-head {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 14px;
+    padding: 16px 18px 12px; border-bottom: 1px solid var(--line);
+  }
+  .panel-head h2 { margin: 0; font-size: 13px; letter-spacing: .08em; color: var(--muted); text-transform: uppercase; font-weight: 700; }
+  .panel-head .hint { color: var(--faint); font-size: 11.5px; }
+  .panel-body { padding: 16px 18px 18px; }
+  .meta-list { display: grid; grid-template-columns: 120px 1fr; gap: 8px 12px; font-size: 12.5px; }
+  .meta-list dt { color: var(--faint); }
+  .meta-list dd { margin: 0; color: #d6e0f1; overflow-wrap: anywhere; }
+  .mono { font-family: "Cascadia Code", Consolas, monospace; font-size: 11.5px; color: #c6d4ec; }
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; }
+  .chip { border: 1px solid var(--line); border-radius: 999px; padding: 4px 9px; color: var(--muted); font-size: 11px; }
+  .chip.warn { border-color: rgba(240,196,106,.35); color: var(--amber); background: var(--amber-soft); }
+  .chip.ok { border-color: rgba(85,214,168,.30); color: var(--green); background: var(--green-soft); }
+  .chip.info { border-color: rgba(131,183,255,.28); color: var(--blue); }
+
+  .evidence { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+  .evidence li { display: grid; grid-template-columns: 8px 1fr; gap: 9px; color: #c5d1e4; font-size: 12.2px; }
+  .evidence li::before { content: ""; width: 6px; height: 6px; margin-top: 7px; border-radius: 50%; background: var(--gold); opacity: .8; }
+  .evidence .path { color: var(--faint); }
+
+  .section-title { display: flex; align-items: end; justify-content: space-between; gap: 14px; margin: 28px 2px 12px; }
+  .section-title h2 { margin: 0; font-size: 18px; letter-spacing: -.01em; }
+  .section-title p { margin: 0; color: var(--muted); font-size: 12px; }
+  .progress { color: var(--gold); font-size: 12px; font-weight: 700; white-space: nowrap; }
+
+  .role-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+  .role-card {
+    position: relative; padding: 14px 13px 12px;
+    border: 1px solid var(--line); border-radius: 14px;
+    background: linear-gradient(180deg, rgba(22, 33, 57, .95), rgba(13, 21, 39, .95));
+    transition: .18s ease;
+  }
+  .role-card.required { border-top-color: rgba(216, 181, 106, .42); }
+  .role-card.optional { opacity: .93; }
+  .role-card.signed { border-color: rgba(85, 214, 168, .42); background: linear-gradient(180deg, rgba(22, 45, 45, .62), rgba(12, 25, 29, .95)); }
+  .role-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .role-code {
+    min-width: 38px; height: 26px; padding: 0 7px; display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid rgba(216, 181, 106, .32); border-radius: 7px;
+    color: var(--gold); background: var(--gold-soft); font-family: "Cascadia Code", Consolas, monospace; font-size: 10.5px; font-weight: 700;
+  }
+  .role-name { margin: 9px 0 1px; font-size: 15px; font-weight: 700; letter-spacing: .02em; }
+  .role-title { color: var(--muted); font-size: 11px; min-height: 17px; }
+  .role-desc { margin: 10px 0 12px; color: #aebbd0; font-size: 11.5px; min-height: 58px; }
+  .tag { font-size: 10px; border-radius: 999px; padding: 2px 6px; border: 1px solid var(--line-strong); color: var(--faint); white-space: nowrap; }
+  .tag.req { color: var(--gold); border-color: rgba(216,181,106,.3); background: var(--gold-soft); }
+  .tag.opt { color: var(--muted); }
+  .check {
+    display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;
+    padding: 8px 9px; border-radius: 9px; border: 1px solid var(--line);
+    background: rgba(255,255,255,.018); color: #c9d5e8; font-size: 11.5px;
+  }
+  .check input { position: absolute; opacity: 0; pointer-events: none; }
+  .check .box {
+    width: 15px; height: 15px; border: 1px solid var(--line-strong); border-radius: 4px;
+    display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
+    background: rgba(0,0,0,.18);
+  }
+  .check input:checked + .box { background: var(--gold); border-color: var(--gold); }
+  .check input:checked + .box::after { content: "✓"; color: #131313; font-size: 11px; font-weight: 900; }
+  .check input:disabled ~ span { opacity: .45; }
+  .role-state { margin-top: 9px; font-size: 10.5px; color: var(--faint); }
+  .role-card.signed .role-state { color: var(--green); }
+  .role-card.signed .role-name { color: #e9fff7; }
+
+  .final-card {
+    display: grid; grid-template-columns: 1.2fr .8fr; gap: 18px;
+    margin-top: 14px; padding: 18px;
+    border: 1px solid rgba(216, 181, 106, .25);
+    border-radius: 16px;
+    background:
+      radial-gradient(420px 170px at 15% 0%, rgba(216,181,106,.12), transparent 70%),
+      linear-gradient(180deg, rgba(26, 31, 49, .96), rgba(13, 19, 33, .96));
+  }
+  .final-left h3 { margin: 0 0 4px; font-size: 16px; color: var(--gold); letter-spacing: .02em; }
+  .final-left p { margin: 0 0 13px; color: var(--muted); font-size: 12px; }
+  .final-check { border-color: rgba(216,181,106,.28); background: rgba(216,181,106,.05); }
+  .final-check.ready { border-color: rgba(85,214,168,.42); background: var(--green-soft); }
+  .final-note { margin-top: 10px; color: var(--faint); font-size: 10.5px; }
+  .final-right { border-left: 1px solid var(--line); padding-left: 18px; }
+  .final-right .label { color: var(--faint); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; }
+  .final-right .value { margin-top: 5px; color: #dce7f7; font-size: 12.5px; }
+  .final-right .value.warn { color: var(--amber); }
+  .final-right .value.ok { color: var(--green); }
+
+  .signatures { margin-top: 14px; }
+  .sig-list { display: grid; gap: 8px; }
+  .empty { padding: 18px; border: 1px dashed var(--line-strong); border-radius: 12px; color: var(--faint); font-size: 12px; text-align: center; }
+  .sig-row {
+    display: grid; grid-template-columns: 220px 158px minmax(220px, 1fr) 158px;
+    gap: 12px; align-items: center;
+    padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px;
+    background: rgba(255,255,255,.022);
+  }
+  .sig-role { font-size: 12px; color: #d9e5f6; }
+  .sig-role b { color: var(--gold); font-family: "Cascadia Code", Consolas, monospace; font-size: 10.5px; }
+  .sig-role span { color: var(--faint); font-size: 10.5px; margin-left: 4px; }
+  .sig-decision { color: var(--green); font-size: 11.5px; font-weight: 700; }
+  .sig-time { color: var(--muted); font-family: "Cascadia Code", Consolas, monospace; font-size: 10.5px; }
+  .sig-hash { color: var(--faint); font-family: "Cascadia Code", Consolas, monospace; font-size: 10px; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sig-row.final { border-color: rgba(216,181,106,.3); background: var(--gold-soft); }
+  .sig-row.final .sig-decision { color: var(--gold); }
+  .sig-row.final .sig-role b { color: var(--gold); }
+  .revoke { color: var(--faint); background: none; border: 0; font: inherit; font-size: 10.5px; text-decoration: underline; cursor: pointer; padding: 0; margin-left: 8px; }
+  .revoke:hover { color: var(--red); }
+
+  footer { margin-top: 26px; padding-top: 16px; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; color: var(--faint); font-size: 10.5px; }
+  .footer-mark { color: var(--gold); letter-spacing: .1em; }
+  .toast {
+    position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(10px);
+    opacity: 0; pointer-events: none; transition: .2s ease;
+    background: #0e1729; border: 1px solid rgba(216,181,106,.35); color: #e8eefc;
+    border-radius: 10px; padding: 9px 14px; font-size: 12px; box-shadow: var(--shadow); z-index: 30;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.err { border-color: rgba(255,142,142,.4); color: #ffd0d0; }
+
+  @media (max-width: 960px) {
+    .grid { grid-template-columns: 1fr; }
+    .role-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .final-card { grid-template-columns: 1fr; }
+    .final-right { border-left: 0; border-top: 1px solid var(--line); padding-left: 0; padding-top: 12px; }
+    .sig-row { grid-template-columns: 1fr 1fr; }
+    .sig-hash { text-align: left; grid-column: 1 / -1; }
+    .sig-time { text-align: right; }
+  }
+  @media (max-width: 560px) {
+    .page { padding: 18px 12px 42px; }
+    .hero { padding: 20px 17px; border-radius: 16px; }
+    .role-grid { grid-template-columns: 1fr; }
+    .meta-list { grid-template-columns: 92px 1fr; }
+    .sig-row { grid-template-columns: 1fr; gap: 3px; }
+    .sig-time, .sig-hash { text-align: left; }
+    .sig-decision { font-size: 11px; }
+  }
+  @media print {
+    :root { --bg: #fff; --text: #111; --muted: #444; --faint: #666; --line: #ddd; --line-strong: #bbb; --panel: #fff; --panel-2: #fff; --gold: #7a5714; --gold-soft: #f7f0df; --green: #176b4e; --green-soft: #edf7f2; --amber: #7a5714; --amber-soft: #f7f0df; --shadow: none; }
+    body { background: #fff; }
+    .page { max-width: 100%; padding: 0; }
+    .hero, .panel, .role-card, .final-card { box-shadow: none; break-inside: avoid; }
+    .hero-actions, .toast, .revoke, .btn { display: none !important; }
+    .role-grid { grid-template-columns: repeat(5, 1fr); }
+    .notice { background: none; }
+    .sig-row { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="hero">
+    <div class="eyebrow">零界 · D1 鲁肃军团 · Q2 验收</div>
+    <h1>D1 Q2 阶段验收<span>角色联署确认页 · P0-00 / P0-01 / P0-02</span></h1>
+    <p class="lede">本页用于记录 D1 Q2 准备阶段的角色复核与本人最终确认。勾选角色即自动生成签字行、上海时间与记录指纹；不设手写字段。本页不是 Q2 通过证书。</p>
+    <div class="hero-actions">
+      <span id="statusBadge" class="status">待角色复核</span>
+      <button id="printBtn" class="btn" type="button">打印 / 另存 PDF</button>
+      <button id="downloadBtn" class="btn" type="button">下载签署记录 JSON</button>
+      <button id="resetBtn" class="btn ghost" type="button">清空重签</button>
+    </div>
+  </header>
+
+  <div class="notice">
+    <div class="mark">!</div>
+    <div><b>签字边界：</b>A0/AI1 等为 AI 角色，页面勾选是流程内的角色联署记录，由本人在页面代录，<b>不构成自然人签名，不替代老田本人最终确认</b>。任何真实资金、外部交易或生产变更仍需按现有制度另行人工审批。</div>
+  </div>
+
+  <div class="grid">
+    <section class="panel" aria-labelledby="scopeTitle">
+      <div class="panel-head"><h2 id="scopeTitle">验收对象</h2><span class="hint">D1 Q2 · P0 阶段</span></div>
+      <div class="panel-body">
+        <dl class="meta-list">
+          <dt>组合</dt><dd><span class="mono">lusu-d1-flow</span> v1.1.0 · owner D1 · lifecycle draft</dd>
+          <dt>基线快照</dt><dd class="mono">git 1596e633c32a0ad52271f2b6508feaf8fb991c33<br>plan 11aeb4cc9 · P0-01 5296aaab3 · P0-02 37a060743</dd>
+          <dt>阶段状态</dt><dd>Q1 / shadow / validated=false / q2_complete=false</dd>
+          <dt>健康口径</dt><dd>单次探针 8/8 200；持续窗口 <b class="mono">not_measured</b></dd>
+          <dt>SLO</dt><dd><b class="mono">not_measured</b>；7d 窗口 2026-11-07 00:00 → 2026-11-14 00:00</dd>
+          <dt>回滚</dt><dd>dry-run ok；实测 <b class="mono">last_drilled=pending</b></dd>
+          <dt>账本</dt><dd>13 席 / 9 HR / 4 缺；9 HTTP / 3 页面 / 4 job；meeting 0；training 空</dd>
+        </dl>
+        <div class="chips">
+          <span class="chip ok">paper-only</span>
+          <span class="chip ok">human_gate_external_only</span>
+          <span class="chip warn">SLO 未测</span>
+          <span class="chip warn">回滚待演练</span>
+          <span class="chip info">Q2 未通过</span>
+          <span class="chip ok">可签版 · 记录前缀 SIG</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="evidenceTitle">
+      <div class="panel-head"><h2 id="evidenceTitle">证据索引</h2><span class="hint">签署前可逐项核对</span></div>
+      <div class="panel-body">
+        <ul class="evidence">
+          <li><div><b>P0-00 基线</b>：<span class="path">deliverables/d1_q2/20261106/baseline.json</span> + <span class="path">SHA256SUMS</span></div></li>
+          <li><div><b>P0-01 状态口径</b>：<span class="path">deliverables/d1_q2/20261106/P0-01_回执.md</span> + <span class="path">state_check_raw.json</span></div></li>
+          <li><div><b>P0-02 SLO 布设</b>：<span class="path">deliverables/d1_q2/20261106/P0-02_回执.md</span> + 7d 采样/收窗任务</div></li>
+          <li><div><b>接口/注册</b>：<span class="path">docs/standards/INTERFACE_REGISTRY_v1.yaml</span> 38 interfaces / d1.* 9</div></li>
+          <li><div><b>安全边界</b>：paper_only=true；trading_permitted=false；real_exchange_adapter=disabled</div></li>
+        </ul>
+      </div>
+    </section>
+  </div>
+
+  <section aria-labelledby="rolesTitle">
+    <div class="section-title">
+      <div><h2 id="rolesTitle">角色复核与联署</h2><p>勾选即生成签字行；必签角色完成后才可进入本人最终确认。</p></div>
+      <span id="progress" class="progress">0 / 4 必签</span>
+    </div>
+    <div id="roleGrid" class="role-grid"></div>
+
+    <div class="final-card">
+      <div class="final-left">
+        <h3>老田 · 本人最终确认</h3>
+        <p>仅在 4 个必签角色全部完成后可勾选；勾选后自动生成最终签字行并锁定本页。</p>
+        <label class="check final-check" id="finalCheckLabel">
+          <input id="finalCheck" type="checkbox" disabled>
+          <span class="box"></span>
+          <span>本人已审阅角色联署与证据，同意按当前状态进入 Q2 终验准备</span>
+        </label>
+        <div class="final-note">最终 GO/NO_GO 以 2026-11-14 SLO 收窗报告与回滚演练结果为准；本页不触发任何交易或生产写入。</div>
+      </div>
+      <div class="final-right">
+        <div class="label">Final gate</div>
+        <div id="finalGate" class="value warn">等待必签角色完成</div>
+        <div class="label" style="margin-top:13px">签署记录</div>
+        <div id="finalMeta" class="value">尚未生成</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="signatures" aria-labelledby="sigTitle">
+    <div class="section-title">
+      <div><h2 id="sigTitle">签字行</h2><p>自动生成：角色 / 姓名 / 结论 / 上海时间 / SHA-256 记录指纹。</p></div>
+      <span id="sigCount" class="progress">0 行</span>
+    </div>
+    <div id="sigList" class="sig-list">
+      <div class="empty">尚未签署。请从上方角色卡开始勾选。</div>
+    </div>
+  </section>
+
+  <footer>
+    <div><span class="footer-mark">D1 Q2 SIGNOFF · 可签版</span> · 记录前缀 D1Q2-SIG · 本页为流程记录，不是电子签章证书</div>
+    <div>只读副本：<span class="mono">/d1/q2/signoff/readonly</span> · 记录仅保存在本机浏览器 · 不写生产账本</div>
+  </footer>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  const PAGE_META = {
+    schema: "zerobound/d1_q2_signoff/v1",
+    page: "D1 Q2 阶段验收 · 角色联署确认页",
+    stage: "P0-00/P0-01/P0-02 布设完成；Q2 终验待 SLO 7d 与回滚演练",
+    composition: "lusu-d1-flow",
+    version: "1.1.0",
+    baseline_commit: "1596e633c32a0ad52271f2b6508feaf8fb991c33",
+    plan_commit: "11aeb4cc9",
+    p0_01_commit: "5296aaab3",
+    p0_02_commit: "37a060743",
+    q2_status: "Q1 / shadow / validated=false / q2_complete=false",
+    health: "single-probe 8/8 200; window not_measured",
+    slo: "not_measured; window 2026-11-07 00:00 -> 2026-11-14 00:00",
+    rollback: "dry-run ok; last_drilled=pending",
+    record_prefix: "D1Q2-SIG",
+    readonly_route: "/d1/q2/signoff/readonly",
+    evidence: [
+      "deliverables/d1_q2/20261106/baseline.json",
+      "deliverables/d1_q2/20261106/P0-01_回执.md",
+      "deliverables/d1_q2/20261106/P0-02_回执.md",
+      "deliverables/d1_q2/20261106/SHA256SUMS"
+    ]
+  };
+
+  const ROLES = [
+    {
+      id: "a0", code: "A0", name: "田丰", title: "验收主持", required: true,
+      decision: "同意进入 Q2 终验准备",
+      line: "同意 D1 Q2 P0 阶段交付进入验收；最终 GO/NO_GO 以 SLO 7d 与回滚演练结果为准。"
+    },
+    {
+      id: "d1", code: "D1", name: "鲁肃", title: "交付 Owner", required: true,
+      decision: "确认交付与缺口如实登记",
+      line: "确认 P0-00 基线、P0-01 状态口径、P0-02 采样任务已交付；SLO 未测不宣称通过。"
+    },
+    {
+      id: "qa1", code: "QA1", name: "黄忠", title: "质量证据", required: true,
+      decision: "证据完整，保留已知缺口",
+      line: "确认基线/兼容性/测试证据完整；SLO 未测、回滚未演练不视为通过。"
+    },
+    {
+      id: "arch1", code: "ARCH1", name: "曹操", title: "架构与接口", required: true,
+      decision: "接口/注册对齐，无相反字段",
+      line: "确认 9 HTTP / 3 页面 / 4 job 与 registry 对齐；P0 不新增功能。"
+    },
+    {
+      id: "ai1", code: "AI1", name: "诸葛亮", title: "方法论复核（可选）", required: false,
+      decision: "方法论复核通过（可选）",
+      line: "复核状态口径与证据分级方法；AI 联署为流程记录，不替代人类签字。"
+    }
+  ];
+
+  const REQUIRED = ROLES.filter(r => r.required);
+  const LS_KEY = "d1_q2_signoff_v1";
+  const FINAL_ID = "laotian";
+  const finalRole = { id: FINAL_ID, code: "HUMAN", name: "老田", title: "本人最终确认" };
+
+  let state = loadState() || { signatures: {}, final: null };
+  let busy = false;
+
+  const $ = (sel) => document.querySelector(sel);
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (!raw) return null;
+      const obj = JSON.parse(raw);
+      if (!obj || typeof obj !== "object" || !obj.signatures) return null;
+      return obj;
+    } catch (_) { return null; }
+  }
+  function saveState() {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (_) {}
+  }
+  function esc(v) {
+    return String(v == null ? "" : v).replace(/[&<>"']/g, c => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[c]));
+  }
+  function nowShanghai() {
+    const fmt = new Intl.DateTimeFormat("zh-CN", {
+      timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false
+    });
+    const p = {};
+    for (const part of fmt.formatToParts(new Date())) {
+      if (part.type !== "literal") p[part.type] = part.value;
+    }
+    return (p.year || "0000") + "-" + (p.month || "00") + "-" + (p.day || "00") +
+      " " + (p.hour || "00") + ":" + (p.minute || "00") + ":" + (p.second || "00") + " +08:00";
+  }
+  function fallbackHash(str) {
+    let h1 = 0x811c9dc5, h2 = 0x01000193;
+    for (let i = 0; i < str.length; i++) {
+      const c = str.charCodeAt(i);
+      h1 ^= c; h1 = Math.imul(h1, 0x01000193) >>> 0;
+      h2 ^= (c + i); h2 = Math.imul(h2, 0x85ebca6b) >>> 0;
+    }
+    return (h1.toString(16).padStart(8, "0") + h2.toString(16).padStart(8, "0")).slice(0, 16);
+  }
+  async function fingerprint(obj) {
+    const text = JSON.stringify(obj);
+    try {
+      if (window.crypto && window.crypto.subtle) {
+        const buf = await window.crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+        return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 16);
+      }
+    } catch (_) {}
+    return fallbackHash(text);
+  }
+  function roleById(id) { return ROLES.find(r => r.id === id); }
+  function requiredDone() {
+    return REQUIRED.every(r => !!state.signatures[r.id]);
+  }
+  function statusText() {
+    if (state.final) return "已形成阶段验收签署记录";
+    if (requiredDone()) return "必签角色已完成，待老田最终确认";
+    return "待角色复核 · " + REQUIRED.filter(r => state.signatures[r.id]).length + "/" + REQUIRED.length;
+  }
+
+  function renderRoles() {
+    const grid = $("#roleGrid");
+    grid.innerHTML = ROLES.map(r => {
+      const signed = !!state.signatures[r.id];
+      return '<article class="role-card ' + (r.required ? "required" : "optional") + (signed ? " signed" : "") + '" data-role="' + r.id + '">' +
+        '<div class="role-top"><span class="role-code">' + esc(r.code) + '</span>' +
+        '<span class="tag ' + (r.required ? "req" : "opt") + '">' + (r.required ? "必签" : "可选") + '</span></div>' +
+        '<div class="role-name">' + esc(r.name) + '</div>' +
+        '<div class="role-title">' + esc(r.title) + '</div>' +
+        '<p class="role-desc">' + esc(r.line) + '</p>' +
+        '<label class="check"><input type="checkbox" data-sign="' + r.id + '" ' +
+          (signed ? "checked " : "") + (state.final ? "disabled " : "") + '>' +
+          '<span class="box"></span><span>同意并签署</span></label>' +
+        '<div class="role-state">' + (signed ? "已签署 · " + esc(state.signatures[r.id].signedAt) : "待签署") + '</div>' +
+        '</article>';
+    }).join("");
+    const n = REQUIRED.filter(r => state.signatures[r.id]).length;
+    $("#progress").textContent = n + " / " + REQUIRED.length + " 必签";
+  }
+
+  function renderSignatures() {
+    const list = $("#sigList");
+    const rows = [];
+    for (const role of ROLES) {
+      const sig = state.signatures[role.id];
+      if (!sig) continue;
+      rows.push('<div class="sig-row" data-sig="' + role.id + '">' +
+        '<div class="sig-role"><b>' + esc(role.code) + '</b> ' + esc(role.name) +
+        '<span>' + esc(role.title) + '</span></div>' +
+        '<div class="sig-decision">' + esc(sig.decision) + '</div>' +
+        '<div class="sig-time">' + esc(sig.signedAt) + '</div>' +
+        '<div class="sig-hash" title="' + esc(sig.fingerprint) + '">指纹 SIG-' + esc(sig.fingerprint) + '</div>' +
+        '</div>');
+    }
+    if (state.final) {
+      rows.push('<div class="sig-row final" data-sig="final">' +
+        '<div class="sig-role"><b>HUMAN</b> 老田<span>本人最终确认</span></div>' +
+        '<div class="sig-decision">' + esc(state.final.decision) + '</div>' +
+        '<div class="sig-time">' + esc(state.final.signedAt) + '</div>' +
+        '<div class="sig-hash" title="' + esc(state.final.fingerprint) + '">指纹 SIG-' + esc(state.final.fingerprint) + '</div>' +
+        '</div>');
+    }
+    list.innerHTML = rows.length ? rows.join("") : '<div class="empty">尚未签署。请从上方角色卡开始勾选。</div>';
+    $("#sigCount").textContent = rows.length + " 行";
+  }
+
+  function renderFinal() {
+    const ready = requiredDone();
+    const finalCheck = $("#finalCheck");
+    const label = $("#finalCheckLabel");
+    finalCheck.disabled = !ready || !!state.final || busy;
+    finalCheck.checked = !!state.final;
+    label.classList.toggle("ready", ready && !state.final);
+    if (state.final) {
+      $("#finalGate").textContent = "已签署 · 页面已锁定";
+      $("#finalGate").className = "value ok";
+      $("#finalMeta").textContent = state.final.signedAt + " · 指纹 SIG-" + state.final.fingerprint;
+    } else if (ready) {
+      $("#finalGate").textContent = "必签角色已完成";
+      $("#finalGate").className = "value ok";
+      $("#finalMeta").textContent = "待本人勾选最终确认";
+    } else {
+      $("#finalGate").textContent = "等待必签角色完成";
+      $("#finalGate").className = "value warn";
+      $("#finalMeta").textContent = "尚未生成";
+    }
+  }
+
+  function render() {
+    const badge = $("#statusBadge");
+    const st = statusText();
+    badge.textContent = st;
+    badge.className = "status" + (state.final ? " ok" : requiredDone() ? " ready" : "");
+    renderRoles();
+    renderSignatures();
+    renderFinal();
+    saveState();
+  }
+
+  function toast(msg, err) {
+    const el = $("#toast");
+    el.textContent = msg;
+    el.className = "toast show" + (err ? " err" : "");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => { el.className = "toast"; }, 2600);
+  }
+
+  async function signRole(id) {
+    if (busy || state.final) return;
+    const role = roleById(id);
+    if (!role) return;
+    busy = true;
+    try {
+      const signedAt = nowShanghai();
+      const base = {
+        page: PAGE_META.schema,
+        role: role.code,
+        name: role.name,
+        title: role.title,
+        decision: role.decision,
+        signedAt,
+        baseline: PAGE_META.baseline_commit,
+        plan: PAGE_META.plan_commit
+      };
+      const fp = await fingerprint(base);
+      state.signatures[id] = Object.assign({}, base, { fingerprint: fp, required: role.required });
+      render();
+      toast(role.code + " " + role.name + " 签字行已生成");
+    } finally {
+      busy = false;
+      renderFinal();
+      renderRoles();
+    }
+  }
+
+  function unsignedRole(id) {
+    if (busy || state.final) return;
+    delete state.signatures[id];
+    render();
+    toast("已撤回 " + (roleById(id) ? roleById(id).code : id) + " 的签字行");
+  }
+
+  async function signFinal() {
+    if (busy || state.final) return;
+    if (!requiredDone()) { toast("请先完成 4 个必签角色", true); return; }
+    busy = true;
+    try {
+      const signedAt = nowShanghai();
+      const signatures = ROLES.filter(r => state.signatures[r.id]).map(r => {
+        const s = state.signatures[r.id];
+        return { role: s.role, name: s.name, title: s.title, decision: s.decision, signedAt: s.signedAt, fingerprint: s.fingerprint };
+      });
+      const base = {
+        page: PAGE_META.schema,
+        signer: "老田",
+        role: "HUMAN",
+        decision: "本人最终确认：同意按当前状态进入 Q2 终验准备",
+        signedAt,
+        baseline: PAGE_META.baseline_commit,
+        plan: PAGE_META.plan_commit,
+        roleSignatures: signatures
+      };
+      const fp = await fingerprint(base);
+      state.final = Object.assign({}, base, { fingerprint: fp });
+      render();
+      toast("最终签字行已生成，页面已锁定");
+    } finally {
+      busy = false;
+      renderFinal();
+    }
+  }
+
+  function revokeFinal() {
+    if (!state.final) return;
+    if (!window.confirm("撤回最终确认会清除最终签字行并解锁角色卡，是否继续？")) return;
+    state.final = null;
+    render();
+    toast("最终确认已撤回");
+  }
+
+  function resetAll() {
+    if (!window.confirm("清空本页全部签字记录？此操作不可撤销。")) return;
+    state = { signatures: {}, final: null };
+    try { localStorage.removeItem(LS_KEY); } catch (_) {}
+    render();
+    toast("已清空");
+  }
+
+  function download() {
+    const payload = {
+      schema: PAGE_META.schema,
+      record_prefix: PAGE_META.record_prefix,
+      generatedAt: nowShanghai(),
+      meta: PAGE_META,
+      signatures: ROLES.filter(r => state.signatures[r.id]).map(r => state.signatures[r.id]),
+      final: state.final,
+      note: "AI 角色联署为流程记录，不替代人类签字；本文件不构成电子签章证书。"
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = PAGE_META.record_prefix + "_signoff_" + new Date().toISOString().slice(0, 10) + ".json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    toast("签署记录 JSON 已导出");
+  }
+
+  document.addEventListener("change", function (ev) {
+    const input = ev.target.closest("input[data-sign]");
+    if (input) {
+      if (input.checked) signRole(input.getAttribute("data-sign"));
+      else unsignedRole(input.getAttribute("data-sign"));
+      return;
+    }
+    if (ev.target.id === "finalCheck") {
+      if (ev.target.checked) signFinal();
+      else revokeFinal();
+    }
+  });
+  $("#printBtn").addEventListener("click", () => window.print());
+  $("#downloadBtn").addEventListener("click", download);
+  $("#resetBtn").addEventListener("click", resetAll);
+
+  render();
+})();
+</script>
+</body>
+</html>
