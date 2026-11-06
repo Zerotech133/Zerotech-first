@@ -25,7 +25,12 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from safe_json import backup_then_atomic_write
+# Python 3.12 safe_path 模式不把脚本目录加入 sys.path；helper 与本文件同目录。
+_HERE = Path(__file__).resolve().parent
+if str(_HERE) not in sys.path:
+    sys.path.insert(0, str(_HERE))
+
+from safe_json import backup_then_atomic_write  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[2]
 DEFAULT_QUESTIONS = REPO / "research" / "reports" / "kb_qa_questions_20261101.json"
