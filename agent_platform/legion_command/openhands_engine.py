@@ -28,6 +28,12 @@ except ImportError:  # 作为包导入时
 
 # 方案 A 第二阶段：默认走 Docker sandbox（Linux 容器内执行工具，绕开 Windows
 # FileEditor 挂起；worktree 通过 C:\legion-worktrees -> /workspaces 绑定挂载）。
+# 注意：本常量必须在 BASE_URL = _resolve_sandbox_base() 之前定义。
+# 2026-11-07 判例：原先定义在模块末尾，本机 8771 探活成功会提前 return 故不报错；
+# 服务器 8771 不可达时会走到 docker inspect 分支，触发 NameError 导致 import 失败。
+SANDBOX_CONTAINER = os.environ.get("OH_SANDBOX_CONTAINER", "legion-openhands-sandbox")
+
+
 def _resolve_sandbox_base() -> str:
     explicit = str(os.environ.get("OPENHANDS_SANDBOX_URL") or "").strip()
     if explicit:
@@ -72,7 +78,7 @@ DEFAULT_CONTAINER_WORKDIR = CONTAINER_WORKTREE_ROOT + "/_default"
 LOCAL_ROOTS = (WORKTREE_ROOT, Path(r"C:\legion-oh-worktrees"))
 DEFAULT_TIMEOUT = 600
 TASK_RE = re.compile(r"^[A-Za-z0-9_.\-]{3,80}$")
-SANDBOX_CONTAINER = os.environ.get("OH_SANDBOX_CONTAINER", "legion-openhands-sandbox")
+# SANDBOX_CONTAINER 已上移至 _resolve_sandbox_base() 之前定义（见文件上半部注释）
 # 2026-11-01 H1 沙箱试点（WO-H1-SANDBOX-PILOT-20261101）：默认镜像钉 digest，
 # 防 :latest-python 漂移；仍可用 OH_SANDBOX_IMAGE 覆盖（升级走显式变更）。
 SANDBOX_IMAGE = os.environ.get(
