@@ -19,6 +19,7 @@
 风格对齐 `portal/tests/test_round2_p1c.py`：pytest 直接收集的纯 assert 函数，不 import pytest；
 断言一律做**函数头切片**（不用整文件 grep），避免别处的巧合数字造成误判 / 误伤。
 """
+import json
 import subprocess
 from pathlib import Path
 
@@ -167,12 +168,29 @@ def test_briefing_other_placeholders_untouched():
 
 # ── 5. 冻结文件守卫（证明没碰他人未提交改动 / 原型页）─────────────────────────
 
-def test_dw_snapshot_frozen_v39():
+def test_dw_snapshot_structure_intact():
+    """冻结文件守卫（R9 2026-11-06 更正）。
+
+    原断言写死 `'"version": 39'`。但 `portal/static/dw_snapshot.json` 是计划任务
+    `ZeroBound\\DataWarehouseSnapshot` 每日 **06:40** 自动刷新的产物
+    （今日 2026-11-06 06:41:24 已刷到 catalog v43 / 258 表），写死版本号 →
+    **每次快照刷新必红**，与「本轮有没有碰这个文件」无关（实测与 R9 改动无关，
+    上一轮全量 06:24 跑时它还是 v39，06:41 才被自动任务覆盖）。
+
+    改为守「结构完好 + 与 live catalog 同源」：被写坏 / 版本键重复 / 落后于 catalog 才红。
+    """
     if not _wip_present("static/dw_snapshot.json"):
         return  # 分支/linked worktree 无此本地 WIP，跳过（主区照常断言）
     raw = (PORTAL / "static" / "dw_snapshot.json").read_bytes()
-    assert b'"version": 39' in raw, "dw_snapshot.json 的 v39 不见了（他人 M 状态被破坏）"
-    assert raw.count(b'"version"') == 1
+    assert raw.count(b'"version"') == 1, "版本键重复，快照结构被破坏"
+    snap = json.loads(raw.decode("utf-8"))
+    assert snap.get("generated_at"), "快照缺 generated_at"
+    cat = snap.get("catalog") or {}
+    live = json.loads((PORTAL.parent / "quant_backtest" / "data" / "catalog.json")
+                      .read_text(encoding="utf-8"))
+    assert cat.get("version") == live.get("version"), (
+        "快照 catalog.version=%r 落后于 live catalog.json v%r；应重跑 "
+        "tools/dw_snapshot_daily.py" % (cat.get("version"), live.get("version")))
 
 
 def test_dw_v2_prototype_untouched():

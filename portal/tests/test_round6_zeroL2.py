@@ -15,7 +15,12 @@
   * GET /api/bt2_jobs、/api/bt2_job?id= 均 200；POST /api/bt2_run、/api/bt2_nl 均 403
     （8091 _MUTATION_POSTS 鉴权），页面原无任何 token 注入 → 补 bt2Post。
   * 9899 无 LISTEN；nginx /cowagent/ 反代仅存在于 pending 副本（原件未应用）→ 不可点。
-  * portal_api.py 的 _token_tag() 只有定义、零调用点，故「本机页面自动携带 token」不成立。
+  * _token_tag() 是**活路径**：api_pages_portal.py:36 在 _html() 内调用它，
+    而 _html() 有 98 个服务端渲染调用点 → 「本机页面自动携带 token」对 8091 渲染页成立。
+    但 bt2_view.html 是 nginx 直出的**静态文件**，不经 _html() → 零注入，
+    这才是 R6 必须手工补 bt2Post 的真实原因（不是「_token_tag 零调用」）。
+    2026-11-06 R9 更正：旧文档此处曾写「只有定义、零调用点」，与实码相反，
+    曾据此误判「403 文案过期需重启 8091」，见 test_round9_six_items_closeout.py。
 
 守卫：本轮未动 quant.html 他人未提交改动（「多维加权」特征串仍在）。
 """
@@ -210,3 +215,23 @@ def test_guard_no_new_l2_dependency():
     for rel in ("academy.html", "bt2_view.html"):
         txt = _src(rel)
         assert "auth_request" not in txt
+
+
+# ------------------------------------------------- 事实更正守卫（R9 追加）
+def test_token_tag_is_live_not_dead_code():
+    """R9 更正：_token_tag() 有活调用点，凡「零调用」表述都是错的事实陈述。
+
+    实码证据：api_pages_portal.py 的 _html() 第一段就 `self._token_tag()`，
+    而 _html() 全站 98 个服务端渲染调用点。静态直出页（bt2_view.html 等）
+    才是不注入的那一类，这两件事不能混为一谈。
+    """
+    src = (PORTAL / "api_pages_portal.py").read_text(encoding="utf-8", errors="replace")
+    assert "self._token_tag()" in src, "_token_tag 必须在 _html() 内被调用"
+    assert src.count("self._token_tag()") == 1, "调用点应恰好一处，多处即重复注入"
+
+    doc = (PORTAL / "tests" / "test_round6_zeroL2.py").read_text(
+        encoding="utf-8", errors="replace")
+    # 本文件已写明正确事实；旧错误原句由两段拼接检测（避免断言串自指命中）
+    assert "R9 更正" in doc, "更正说明必须留在原地，供后人查证"
+    stale = "零调用点" + "，故「本机页面自动携带 token」不成立"
+    assert stale not in doc, "错误陈述必须已更正，不得回潮"

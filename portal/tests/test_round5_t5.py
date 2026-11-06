@@ -290,11 +290,25 @@ def test_guard_quant_files_untouched():
     assert "多维加权" in QUANT_V2
 
 
-def test_guard_dw_snapshot_v39_untouched():
+def test_guard_dw_snapshot_untouched():
+    """冻结文件守卫（R9 2026-11-06 更正：原断言写死 `'"version": 39'`）。
+
+    该文件由计划任务 `ZeroBound\\DataWarehouseSnapshot` 每日 06:40 自动刷新，
+    写死版本号会每次刷新后必红（今日 06:41:24 已刷到 v43）。改为守
+    「结构完好 + 与 live catalog 同源」，口径与 test_round5_p0d.py 同名用例一致。
+    """
     if not _wip_present("static/dw_snapshot.json"):
         return  # 分支/linked worktree 无此本地 WIP，跳过（主区照常断言）
-    snap = _src("static/dw_snapshot.json")
-    assert '"version": 39' in snap
+    raw = _src("static/dw_snapshot.json")
+    assert raw.count('"version"') == 1, "版本键重复，快照结构被破坏"
+    snap = json.loads(raw)
+    assert snap.get("generated_at"), "快照缺 generated_at"
+    cat = snap.get("catalog") or {}
+    live = json.loads((PORTAL.parent / "quant_backtest" / "data" / "catalog.json")
+                      .read_text(encoding="utf-8"))
+    assert cat.get("version") == live.get("version"), (
+        "快照 catalog.version=%r 落后于 live catalog.json v%r；应重跑 "
+        "tools/dw_snapshot_daily.py" % (cat.get("version"), live.get("version")))
 
 
 def test_guard_no_direct_port_left_in_touched_pages():
