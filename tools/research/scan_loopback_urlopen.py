@@ -59,33 +59,69 @@ def is_urlopen_call(node: ast.Call) -> tuple[bool, str]:
     return False, name
 
 
+MODULE_SCOPE = "<module>"
+
+
 class Collector:
-    """收集模块级名字 -> 源码片段，供表达式溯源。"""
+    """收集「作用域名 -> 变量 -> 源码片段」，供表达式溯源。
+
+    作用域感知（2026-11-07 修）：原实现按变量名平铺收集，结果 `_get_price` 里的
+    `req` 被 `_hub_call` 里的 `req` 覆盖 —— 打外网 hq.sinajs.cn 的那行被误判成
+    回环 VICTIM。现在按限定名（`func.nested`）记录，解析时只沿**自身 + 词法外层
+    + 模块级**查找，兄弟函数之间不再串名。
+    """
 
     def __init__(self, src: str, tree: ast.AST):
         self.src = src
-        self.assigns: dict[str, list[str]] = {}
-        self.calls: dict[str, list[str]] = {}  # 函数名 -> 返回表达式（简单 return 单表达式）
-        for n in ast.walk(tree):
-            if isinstance(n, (ast.Assign, ast.AnnAssign)):
-                val = n.value
-                if val is None:
-                    continue
-                seg = ast.get_source_segment(src, val) or ""
-                targets = []
-                if isinstance(n, ast.Assign):
-                    for t in n.targets:
-                        if isinstance(t, ast.Name):
-                            targets.append(t.id)
-                elif isinstance(n.target, ast.Name):
-                    targets.append(n.target.id)
-                for t in targets:
-                    self.assigns.setdefault(t, []).append(seg)
-            elif isinstance(n, ast.Return) and n.value is not None:
-                seg = ast.get_source_segment(src, n.value) or ""
-                self._last_return = seg
+        self.assigns: dict[str, list[str]] = {}                 # 兼容旧接口：全局并集
+        self.scoped: dict[tuple[str, str], list[str]] = {}      # (作用域, 名字) -> 片段
+        self.line_scope: dict[int, str] = {}                    # 行号 -> 最内层作用域
+        self._walk(tree, MODULE_SCOPE)
 
-    def resolve(self, seg: str, depth: int = 4, seen: set | None = None) -> str:
+    def _walk(self, node: ast.AST, scope: str) -> None:
+        for child in ast.iter_child_nodes(node):
+            inner = scope
+            if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                inner = child.name if scope == MODULE_SCOPE else scope + "." + child.name
+            ln = getattr(child, "lineno", None)
+            if ln is not None:
+                self.line_scope[ln] = inner      # 后写覆盖：更内层的作用域胜出
+            if isinstance(child, (ast.Assign, ast.AnnAssign)):
+                val = child.value
+                if val is not None:
+                    seg = ast.get_source_segment(self.src, val) or ""
+                    targets = []
+                    if isinstance(child, ast.Assign):
+                        targets = [t.id for t in child.targets if isinstance(t, ast.Name)]
+                    elif isinstance(child.target, ast.Name):
+                        targets = [child.target.id]
+                    for t in targets:
+                        self.scoped.setdefault((inner, t), []).append(seg)
+                        self.assigns.setdefault(t, []).append(seg)
+            self._walk(child, inner)
+
+    def scope_at(self, lineno: int) -> str:
+        return self.line_scope.get(lineno, MODULE_SCOPE)
+
+    def _chain(self, scope: str) -> list[str]:
+        """由内到外的查找链：a.b.c -> [a.b.c, a.b, a, <module>]。"""
+        if scope == MODULE_SCOPE:
+            return [MODULE_SCOPE]
+        parts = scope.split(".")
+        out = [".".join(parts[:i]) for i in range(len(parts), 0, -1)]
+        out.append(MODULE_SCOPE)
+        return out
+
+    def _lookup(self, ident: str, scope: str) -> list[str]:
+        found: list[str] = []
+        for s in self._chain(scope):
+            found.extend(self.scoped.get((s, ident), []))
+            if found:
+                break          # 内层命中就不再向外找，避免父层同名覆盖
+        return found
+
+    def resolve(self, seg: str, depth: int = 4, seen: set | None = None,
+                scope: str = MODULE_SCOPE) -> str:
         """把表达式片段里的标识符 BFS 展开成源码集合（有界，线性）。
 
         用 visited 去重 + 深度上限 + 片段数上限，避免指数级爆炸
@@ -105,7 +141,7 @@ class Collector:
                 if ident in visited:
                     continue
                 visited.add(ident)
-                for v in self.assigns.get(ident, [])[:3]:
+                for v in self._lookup(ident, scope)[:3]:
                     queue.append((v, d - 1))
         return "\n".join(parts)
 
@@ -138,7 +174,7 @@ def scan_file(p: Path, root: Path) -> list[dict]:
                 if kw.arg in ("url", "req", "request", "fullurl"):
                     arg_seg = ast.get_source_segment(src, kw.value) or ""
                     break
-        expanded = col.resolve(arg_seg) if arg_seg else ""
+        expanded = col.resolve(arg_seg, scope=col.scope_at(n.lineno)) if arg_seg else ""
         strict = bool(LOOPBACK_STRICT_RE.search(expanded))
         loose = bool(LOOPBACK_RE.search(expanded))
         hits.append({
