@@ -1,23 +1,24 @@
 {
-  "generated_at": "2026-11-06T09:49:46+08:00",
-  "doing": 21,
-  "worktrees": 43,
+  "generated_at": "2026-11-06T23:58:27+08:00",
+  "doing": 22,
+  "worktrees": 50,
   "worktree_actions": {
-    "active_task_review": 21,
-    "stale_review": 21,
+    "active_task_review": 22,
+    "stale_review": 27,
     "merged_cleanup": 1
   },
   "doing_owners": {
     "DEV2": 2,
     "DEV3": 3,
-    "DOC1": 2,
     "DEV1": 4,
+    "DOC1": 1,
     "DEV6": 2,
     "ARCH1": 2,
     "DEV7": 2,
-    "DSH-Lead": 2,
-    "exec-devtask": 1,
-    "T1": 1
+    "DSH-Lead": 1,
+    "T1": 1,
+    "GUANYU": 1,
+    "A0A": 3
   },
   "targets": {
     "doing": 8,
