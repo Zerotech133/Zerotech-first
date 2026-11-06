@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """青萍之末分析师报告引擎（portal_report）—— K244。
 
-把门户个股页现有全部维度（行情/共振四维/缠论结论与操作方案/筹码/
+把门户个股页现有全部维度（行情/多维加权/缠论结论与操作方案/筹码/
 板块联动/公告后验/量能事件/龙虎榜/4策略信号）聚合成「事实包」，
 再交给本地 Ollama（qwen3.5:9b，2026-10-07 随本机 Ollama 模型升级从 qwen3:8b-8k 切换，同 nl_query.py 修复）以「青萍之末分析师」口吻写成
 一份大白话图文报告；同时产出结构化飞书卡片 JSON，供一键发送。
@@ -97,7 +97,7 @@ def _facts_quote(code, name):
 
 
 def _facts_resonance(code, name):
-    """自选池四维共振快照（rps_latest.json 的 res 行）。"""
+    """自选池多维加权快照（rps_latest.json 的 res 行）。"""
     snap = _load_json(os.path.join(REPORTS, "rps_latest.json")) or {}
     for r in snap.get("res") or []:
         if r.get("code") == code or (name and r.get("name") == name):
@@ -1014,7 +1014,7 @@ def _fallback_md(facts):
             facts.get("px") or "—",
             ("（%+.2f%%）" % q["pct"]) if q.get("pct") is not None else "",
             (
-                "自选池共振 %s 分 · %s" % (rs.get("score"), rs.get("action"))
+                "自选池综合分 %s · %s" % (rs.get("score"), rs.get("action"))
                 if rs.get("in_pool")
                 else "未在自选池"
             ),
@@ -1117,7 +1117,7 @@ def build_card(facts, md):
     if q.get("pct") is not None:
         sub.append("%+.2f%%" % q["pct"])
     if rs.get("in_pool"):
-        sub.append("共振 %s" % rs.get("score"))
+        sub.append("综合分 %s" % rs.get("score"))
     # 卡片正文限长（飞书 markdown 元素上限较宽松，取 3500 字保护）
     body = md[:3500]
     tpl = "blue"

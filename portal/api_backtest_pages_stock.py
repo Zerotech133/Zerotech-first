@@ -16,7 +16,7 @@ from api_common import (
 from api_backtest import _bt_jev_news, _bt_resolve
 
 def _bt_stock_page(self, qs):
-        """个股全景页：行情 + 4策略信号 + 共振分解 + JEV下钻 + AI展望。"""
+        """个股全景页：行情 + 4策略信号 + 综合分分解 + JEV下钻 + AI展望。"""
         from urllib.parse import parse_qs, unquote as _uq
         import html as _h
         qp = parse_qs(qs)
@@ -247,7 +247,7 @@ def _bt_stock_page(self, qs):
                     "<b style='color:#3fb950'>%.2f</b> %s<span class='dim'>"
                     "（%s）</span>"
                     "<br>📋 <b>操作方案</b> %s"
-                    "%s%s　<span class='dim'>四维共振结论见③</span>"
+                    "%s%s　<span class='dim'>多维加权结论见③</span>"
                     "<div style='margin-top:6px'><a class='kpb' href="
                     "'/bt/analyst-report?c=%s' style='text-decoration:"
                     "none;display:inline-block'>🌊 青萍之末分析师报告"
@@ -275,7 +275,7 @@ def _bt_stock_page(self, qs):
         except Exception:
             qt = None
 
-        # 共振快照（rr = 本票在自选池的共振结果）
+        # 综合分快照（rr = 本票在自选池的打分结果）
         snap, rr = {}, None
         try:
             snap = json.load(open(os.path.join(
@@ -864,8 +864,8 @@ def _bt_stock_page(self, qs):
             "注册表自动扩展）</span></h2>"
             "<div class='mgrid'>%s</div>" % "".join(mcards))
 
-        # ③ 共振分解（rps_latest 快照；rr/snap 已在数据收集阶段加载）
-        # K235 扩容：四维丢分明细——每维得分/权重/对综合贡献/丢分缺失点
+        # ③ 综合分分解（rps_latest 快照；rr/snap 已在数据收集阶段加载）
+        # K235 扩容：维度丢分明细——每维得分/权重/对综合贡献/丢分缺失点
         if rr:
             cls = ("buy" if "买入" in rr["action"] else
                    "watch" if "观察" in rr["action"] else "avoid")
@@ -906,7 +906,7 @@ def _bt_stock_page(self, qs):
                      _e_note if rr.get("env") is not None
                      else "闸门数据缺失（缺维降权）")])
             body.append(
-                "<h2>③ 共振分解（%s 更新 · 四维缺维降权）"
+                "<h2>③ 综合分分解（%s 更新 · 多维加权缺维降权）"
                 "<span style='font-size:11px;color:#58a6ff;border:1px solid "
                 "#58a6ff;border-radius:10px;padding:1px 8px;margin-left:8px;"
                 "vertical-align:2px'>🌊 青萍之末产线</span>"
@@ -919,12 +919,12 @@ def _bt_stock_page(self, qs):
                 % (snap.get("latest", ""), cls, rr["score"], cls,
                    rr["action"], rr["dims"], _rows))
         else:
-            body.append("<h2>③ 共振分解"
+            body.append("<h2>③ 综合分分解"
                         "<span style='font-size:11px;color:#58a6ff;border:"
                         "1px solid #58a6ff;border-radius:10px;padding:1px "
                         "8px;margin-left:8px;vertical-align:2px'>🌊 青萍之末"
                         "产线</span></h2><div class='card dim'>不在"
-                        "自选池（共振仅覆盖自选标的），全市场 RPS 见"
+                        "自选池（打分仅覆盖自选标的），全市场 RPS 见"
                         "对应市场页 · <a href='/bt-qpzm'>青萍之末 →</a>"
                         "</div>")
 

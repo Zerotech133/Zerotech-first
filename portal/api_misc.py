@@ -1193,7 +1193,7 @@ transition:.3s;z-index:9}
     def _analyst_report_page(self, qs):
         """K244 青萍之末分析师报告页：/bt/analyst-report?c=sz000993
 
-        事实聚合（行情/共振/缠论/筹码/板块/公告后验/量能事件/龙虎榜）
+        事实聚合（行情/打分/缠论/筹码/板块/公告后验/量能事件/龙虎榜）
         → 本地 Ollama 大白话报告 → 一键推飞书。生成较慢（10~20s），
         前端异步拉 /api/analyst-report?c=，避免页首阻塞。"""
         from urllib.parse import parse_qs, unquote as _uq
@@ -1442,7 +1442,7 @@ transition:.3s;z-index:9}
                 + flow + rows8 + more + "</div>"
                 + "</body></html>")
         self._html(body)
-    # ── K238 每日选股批次回测（挂在自选池共振信号后面） ──
+    # ── K238 每日选股批次回测（挂在自选池打分信号后面） ──
     def _qpzm_batch_blk(self, snap):
         import html as _h
         e = _h.escape
@@ -2387,7 +2387,7 @@ transition:.3s;z-index:9}
                 "tasks": tasks, "recent": today[-30:][::-1]}
     def _qpzm_page(self, sub=""):
         """K-STOCK-032 多页面联动：主页=驾驶舱一屏（""），子页=
-        res 共振信号 / rps RPS榜 / hub 四市场模块 / batch 批次回测 /
+        res 打分信号 / rps RPS榜 / hub 四市场模块 / batch 批次回测 /
         spec 说明书——子页顶部页面级导航条互相联动。"""
         import html as _h
         e = _h.escape
@@ -2421,7 +2421,7 @@ transition:.3s;z-index:9}
         gates_html = ("<div class='gates'>%s</div>" % "".join(gates)
                       if gates else "<div class='dim'>暂无快照</div>")
 
-        # ② 自选池共振信号（按 建议 → 共振分 排序，全量展示）
+        # ② 自选池打分信号（按 建议 → 综合分 排序，全量展示）
         # K-STOCK-031：全市场混排一张表 → 按 A股/美股/港股/虚拟币
         # 四市场 Tab 切换（长页治理续，与 RPS 榜/hub 模块同款交互）
         act_c = {"买入": "#f85149", "观察": "#d29922", "回避": "#3fb950"}
@@ -2457,8 +2457,8 @@ transition:.3s;z-index:9}
                    ("%.2f" % r["px"]) if r.get("px") else "—",
                    e(str(r.get("date", "")))))
 
-        _res_th = ("<tr><th>标的</th><th>建议</th><th>共振分</th>"
-                   "<th>四维得分</th><th>现价</th><th>日期</th></tr>")
+        _res_th = ("<tr><th>标的</th><th>建议</th><th>综合分</th>"
+                   "<th>维度得分</th><th>现价</th><th>日期</th></tr>")
         _res_mkt = [("🇨🇳 A股", "CN"), ("🇺🇸 美股", "US"),
                     ("🇭🇰 港股", "HK"), ("🪙 虚拟币", "CRYPTO")]
         if res:
@@ -2477,7 +2477,7 @@ transition:.3s;z-index:9}
                 % (len(res), n_b, n_w, n_a))
             res_blk += _tabs_html("ressig", res_tabs)
             res_blk += (
-                "<div class='dim' style='margin-top:6px'>四维：技=4策略多头占比"
+                "<div class='dim' style='margin-top:6px'>维度：技=4策略多头占比"
                 "±MA20修正 · J=近7天关联新闻多空 · R=全市场RPS · 环=市场闸门分"
                 "；score≥70 买入 / 60-69 观察 / 其余回避；闸门收紧强制「回避（"
                 "环境闸门）」；缺维自动降权（如无JEV：技.467 / R.333 / 环.20）"
@@ -2523,8 +2523,8 @@ transition:.3s;z-index:9}
         spec = (
             "<div class='dim' style='font-size:13px;line-height:2.1'>"
             "一句话：<b style='color:#e6edf3'>全市场动量分层 → RPS 强度筛选"
-            " → 自选池四维共振打分 → 环境闸门一票否决</b><br>"
-            "共振公式：技术×0.35 + JEV消息面×0.25 + RPS×0.25 + 环境×0.15"
+            " → 自选池多维加权打分 → 环境闸门一票否决</b><br>"
+            "加权公式：技术×0.35 + JEV消息面×0.25 + RPS×0.25 + 环境×0.15"
             "（缺维按比例自动降权）<br>"
             "RPS 口径：全市场 N 日涨幅百分位(0-100)；A股 50/120/250 复合"
             "(0.4/0.3/0.3)，美股/加密 RPS50，港股 RPS50+120<br>"
@@ -2545,10 +2545,10 @@ transition:.3s;z-index:9}
             ])
 
         # ── K-STOCK-032 多页面联动（老田：不要长图，拆多页互相跳转）──
-        # 主页=驾驶舱一屏（闸门+统计+模块入口卡）；共振/RPS/四市场模块/
+        # 主页=驾驶舱一屏（闸门+统计+模块入口卡）；打分/RPS/四市场模块/
         # 批次回测/说明书各自独立子页；子页顶部页面级导航条联动。
         _SUBS = [("🌊 工作台", "/bt-qpzm", ""),
-                 ("🎯 共振信号", "/bt-qpzm/res", "res"),
+                 ("🎯 打分信号", "/bt-qpzm/res", "res"),
                  ("📈 RPS 强势榜", "/bt-qpzm/rps", "rps"),
                  ("🗂 四市场模块", "/bt-qpzm/hub", "hub"),
                  ("📊 批次回测", "/bt-qpzm/batch", "batch"),
@@ -2578,7 +2578,7 @@ transition:.3s;z-index:9}
                     + inner
                     + "<div class='dim' style='margin-top:20px'>纸面研究不"
                     "构成投资建议 · 方法论源自青萍之末2（RPS：全市场N日涨幅"
-                    "百分位；共振：四维加权、缺维降权、环境一票否决）"
+                    "百分位；打分：多维加权、缺维降权、环境一票否决）"
                     "</div></body></html>")
 
         def _card(href, border, icon, name, desc, stat):
@@ -2596,9 +2596,9 @@ transition:.3s;z-index:9}
                     % (href, border, icon, name, desc, stat, border))
 
         if sub == "res":
-            inner = ("<div class='sec'><h2>🎯 自选池共振信号</h2>" + res_blk
+            inner = ("<div class='sec'><h2>🎯 自选池打分信号</h2>" + res_blk
                      + "</div>")
-            self._html(_shell("🌊 共振信号 · 四市场", "res", inner))
+            self._html(_shell("🌊 打分信号 · 四市场", "res", inner))
             return
         if sub == "rps":
             inner = ("<div class='sec'><h2>📈 全市场 RPS 强势榜"
@@ -2607,7 +2607,7 @@ transition:.3s;z-index:9}
             return
         if sub == "hub":
             inner = self._hub_market_tabs()
-            self._html(_shell("🗂 四市场模块 · 自选池共振", "hub", inner))
+            self._html(_shell("🗂 四市场模块 · 自选池多维加权", "hub", inner))
             return
         if sub == "batch":
             inner = self._qpzm_batch_blk(snap)
@@ -2621,8 +2621,8 @@ transition:.3s;z-index:9}
         # 主页 = 驾驶舱一屏：闸门 → 核心统计 → 模块入口卡（联动枢纽）
         hub_txt = "跨市场 RPS · 策略库 · 策略工具"
         cards = "".join([
-            _card("/bt-qpzm/res", "#f85149", "🎯", "共振信号",
-                  "自选池四维共振 · 建议→共振分排序 · 四市场 Tab",
+            _card("/bt-qpzm/res", "#f85149", "🎯", "打分信号",
+                  "自选池多维加权 · 建议→综合分排序 · 四市场 Tab",
                   "买入 %d · 观察 %d · 回避 %d" % (n_b, n_w, n_a)),
             _card("/bt-qpzm/rps", "#58a6ff", "📈", "RPS 强势榜",
                   "策略的选股漏斗出口 · 四市场各 Top8",
@@ -2634,7 +2634,7 @@ transition:.3s;z-index:9}
                   "K238 每日选股批次的历史回放对照",
                   "随每日任务积累"),
             _card("/bt-qpzm/spec", "#8b949e", "📖", "策略说明书",
-                  "共振公式 · RPS 口径 · 与原版差异",
+                  "加权公式 · RPS 口径 · 与原版差异",
                   "评分权重一览"),
         ])
         inner = (
@@ -2650,10 +2650,10 @@ transition:.3s;z-index:9}
             "<span style='color:#f85149'>买入 <b>%d</b></span> · "
             "<span style='color:#d29922'>观察 <b>%d</b></span> · "
             "<span style='color:#3fb950'>回避 <b>%d</b></span>"
-            "（明细见「共振信号」子页）</div></div>"
+            "（明细见「打分信号」子页）</div></div>"
             % (len(res), n_b, n_w, n_a)
             # 模块入口卡（联动枢纽）
             + "<h2 style='margin:16px 0 10px'>🧭 板块入口 · 多页联动</h2>"
             + "<div style='display:grid;grid-template-columns:repeat("
             "auto-fit,minmax(260px,1fr));gap:12px'>" + cards + "</div>")
-        self._html(_shell("🌊 青萍之末 · 共振选股工作台", "", inner))
+        self._html(_shell("🌊 青萍之末 · 多维加权选股工作台", "", inner))

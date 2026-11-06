@@ -3396,7 +3396,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
                            "建设中：数据层已就绪（/api/paper_status）。</div>"
                            "</body></html>")
         elif path == "/bt/stock":
-            # 个股全景页（行情+策略信号+共振分解+JEV下钻+AI展望）
+            # 个股全景页（行情+策略信号+综合分分解+JEV下钻+AI展望）
             self._bt_stock_page(qs)
         elif path == "/bt/report":
             # 研报本地全文页（结构化库直读，零外链）
