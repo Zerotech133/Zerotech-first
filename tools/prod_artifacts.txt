@@ -1,0 +1,34 @@
+# 每日自动产物清单（R12 T-F A 类）
+#
+# 这些文件由定时任务每日重写，内容变化属常态。为保持 `git status` 干净且**不破坏
+# "静态产物入库"的既有约定**（新克隆/新环境仍能拿到页面所需 JSON，否则 404），
+# 用 `git update-index --skip-worktree` 而非 gitignore/移出版本控制。
+#
+# skip-worktree 标记**不随仓库传播**，新克隆后必须执行一次：
+#     python tools/mark_prod_artifacts.py
+# 只检查不写：  python tools/mark_prod_artifacts.py --check
+# 取消标记：    python tools/mark_prod_artifacts.py --clear
+#
+# 维护规则：新增/重命名每日产物时同步本清单，否则它会在门禁里长期显示为脏。
+# 判据：由 schtasks 定时任务或 KgDailySync 链写出的 portal/static/*.json
+#
+# ---- 17 个已入库产物 ----
+portal/static/card_candidates_视频号学习_8博主_llm.json
+portal/static/card_candidates_视频号学习_8博主_v2.json
+portal/static/card_proposals_v3.json
+portal/static/dw_snapshot.json
+portal/static/factor_daily.json
+portal/static/h18_watch.json
+portal/static/kb_corpus_gov.json
+portal/static/kb_daily_push.json
+portal/static/kb_ingest.json
+portal/static/kb_learning_digest.json
+portal/static/learning_capability.json
+portal/static/learning_projects_dashboard.json
+portal/static/report_panel.json
+portal/static/selection_daily.json
+portal/static/sepa_scan.json
+portal/static/sepa_scan_daily.json
+portal/static/sepa_scan_nofund.json
+# ---- 首轮尚未入库的同类产物（需 --include-untracked 才会 add 后标记）----
+portal/static/card_candidates_视频号学习_北斗股术1688_llm.json
