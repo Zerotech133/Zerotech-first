@@ -64,3 +64,65 @@ def test_pdf_no_copy_over_40mb(tmp_path, monkeypatch):
     files[0]["size"] = 50 * 1024 * 1024
     rep = li.ingest(files, kb, project="PDF项目", write=True)
     assert rep["items"][0]["copy"] is False
+
+
+PII_MD = (
+    "# 测试\n\n联系邮箱 teacher@example.com，手机 13800138000，"
+    "网址 https://example.com/path?q=1 ，微信 @laomu1688。\n"
+)
+
+
+def test_ingest_md_pii_cleaned_and_receipted(tmp_path, monkeypatch):
+    kb = tmp_path / "kb"
+    inbox = kb / "05_学习源件" / "_inbox"
+    inbox.mkdir(parents=True)
+    (inbox / "pii_样例.md").write_text(PII_MD, encoding="utf-8")
+    monkeypatch.setattr(li, "REG", tmp_path / "lp.json")
+    monkeypatch.setattr(li, "REPORTS", tmp_path / "reports")
+    monkeypatch.setattr(li, "_PII_MODULE", None)
+    files = li.scan(kb)
+    rep = li.ingest(files, kb, project="PII项目", write=True)
+    item = rep["items"][0]
+    text = Path(item["text_md"]).read_text(encoding="utf-8")
+    assert "teacher@example.com" not in text
+    assert "13800138000" not in text
+    assert "https://example.com" not in text
+    assert "[EMAIL]" in text and "[PHONE]" in text and "[URL]" in text
+    assert item["pii"]["changed"] is True and item["pii"]["hits"]
+    assert rep["pii"]["enabled"] is True and rep["pii"]["files_changed"] == 1
+    assert rep["pii"]["policy_version"] == "pii-policy.v1.1"
+    manifest = json.loads((kb / "05_学习源件" / "PII项目" / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["files"][0]["pii"]["changed"] is True
+
+
+def test_missing_pii_policy_fails_closed(tmp_path, monkeypatch):
+    kb = tmp_path / "kb"
+    inbox = kb / "05_学习源件" / "_inbox"
+    inbox.mkdir(parents=True)
+    (inbox / "普通.md").write_text("正常内容", encoding="utf-8")
+    monkeypatch.setattr(li, "REG", tmp_path / "lp.json")
+    monkeypatch.setattr(li, "REPORTS", tmp_path / "reports")
+    monkeypatch.setattr(li, "_PII_MODULE", None)
+    monkeypatch.setattr(li, "_find_intel_kg_root", lambda: None)
+    files = li.scan(kb)
+    try:
+        li.ingest(files, kb, project="缺策略", write=True)
+    except li.SafetyError as exc:
+        assert "PII 清洗策略不可用" in str(exc)
+        return
+    raise AssertionError("策略缺失时应 fail-closed")
+
+
+def test_no_pii_clean_escape_keeps_text(tmp_path, monkeypatch):
+    kb = tmp_path / "kb"
+    inbox = kb / "05_学习源件" / "_inbox"
+    inbox.mkdir(parents=True)
+    (inbox / "pii_逃生.md").write_text(PII_MD, encoding="utf-8")
+    monkeypatch.setattr(li, "REG", tmp_path / "lp.json")
+    monkeypatch.setattr(li, "REPORTS", tmp_path / "reports")
+    files = li.scan(kb)
+    rep = li.ingest(files, kb, project="逃生项目", write=True, no_pii_clean=True)
+    text = Path(rep["items"][0]["text_md"]).read_text(encoding="utf-8")
+    assert "teacher@example.com" in text
+    assert rep["pii"]["enabled"] is False and rep["pii"]["disabled"] == "flag"
+
