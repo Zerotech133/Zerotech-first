@@ -1,0 +1,657 @@
+{
+  "schema": "zhice.w2_factor_screen/v1",
+  "generated_at": "2026-11-04T02:30:00+08:00",
+  "read_only": true,
+  "scope": "factor_screen_only_no_strategy_promotion",
+  "definition": {
+    "W2-1": "MA5/10/20/60 粘合度；方向 +1",
+    "W2-2": "MA5/10/20/60 多头排列归一化强度；方向 +1",
+    "horizon_days": 20,
+    "cost_bp": 30
+  },
+  "data": {
+    "data_root": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\tushare",
+    "universe": "tradable",
+    "load_dates": [
+      "20241106",
+      "20261103"
+    ],
+    "load_days": 483,
+    "warmup_days": 40,
+    "horizon": 20,
+    "panel_dates": 483,
+    "codes": 5662,
+    "eligible_avg_per_day": 4194.3,
+    "eligible_share": 0.7408,
+    "load_sec": 70.98
+  },
+  "splits": {
+    "20250430": {
+      "ma_convergence": {
+        "ic": {
+          "n_days": 422,
+          "mean": 0.017652,
+          "std": 0.166965,
+          "ir": 0.1057,
+          "t": 2.172,
+          "positive_rate": 0.5569
+        },
+        "is_oos": {
+          "split_date": "20250430",
+          "source": "arg",
+          "IS": {
+            "n_days": 78,
+            "mean": -0.007909,
+            "std": 0.23726,
+            "ir": -0.0333,
+            "t": -0.294,
+            "positive_rate": 0.4487
+          },
+          "OOS": {
+            "n_days": 344,
+            "mean": 0.023448,
+            "std": 0.146279,
+            "ir": 0.1603,
+            "t": 2.973,
+            "positive_rate": 0.5814
+          }
+        },
+        "quintiles": {
+          "method": "quantile",
+          "n_groups": 5,
+          "tie_break": "ts_code_order",
+          "groups": {
+            "Q1": {
+              "n_days": 422,
+              "mean_car_pct": -1.3092,
+              "std_car_pct": 3.3553,
+              "t": -8.015,
+              "positive_rate": 0.3033,
+              "ann_pct": -16.5,
+              "n_obs": 353558,
+              "avg_members_per_day": 837.8
+            },
+            "Q2": {
+              "n_days": 422,
+              "mean_car_pct": -1.6248,
+              "std_car_pct": 1.3261,
+              "t": -25.17,
+              "positive_rate": 0.0782,
+              "ann_pct": -20.47,
+              "n_obs": 353740,
+              "avg_members_per_day": 838.2
+            },
+            "Q3": {
+              "n_days": 422,
+              "mean_car_pct": -1.8529,
+              "std_car_pct": 1.0995,
+              "t": -34.619,
+              "positive_rate": 0.0379,
+              "ann_pct": -23.35,
+              "n_obs": 353730,
+              "avg_members_per_day": 838.2
+            },
+            "Q4": {
+              "n_days": 422,
+              "mean_car_pct": -2.1008,
+              "std_car_pct": 1.5852,
+              "t": -27.225,
+              "positive_rate": 0.0592,
+              "ann_pct": -26.47,
+              "n_obs": 353740,
+              "avg_members_per_day": 838.2
+            },
+            "Q5": {
+              "n_days": 422,
+              "mean_car_pct": -2.3404,
+              "std_car_pct": 2.4731,
+              "t": -19.44,
+              "positive_rate": 0.1493,
+              "ann_pct": -29.49,
+              "n_obs": 353901,
+              "avg_members_per_day": 838.6
+            }
+          },
+          "top_minus_bottom": {
+            "n_days": 422,
+            "mean_car_pct": -1.0312,
+            "std_car_pct": 5.4672,
+            "t": -3.875,
+            "positive_rate": 0.4502,
+            "ann_pct": -12.99,
+            "directed_ann_pct": -12.99
+          },
+          "n_obs": 1768669
+        },
+        "event_split": null
+      },
+      "ma_bull_alignment": {
+        "ic": {
+          "n_days": 422,
+          "mean": -0.092389,
+          "std": 0.16855,
+          "ir": -0.5481,
+          "t": -11.26,
+          "positive_rate": 0.2867
+        },
+        "is_oos": {
+          "split_date": "20250430",
+          "source": "arg",
+          "IS": {
+            "n_days": 78,
+            "mean": -0.179828,
+            "std": 0.150652,
+            "ir": -1.1937,
+            "t": -10.542,
+            "positive_rate": 0.1795
+          },
+          "OOS": {
+            "n_days": 344,
+            "mean": -0.072562,
+            "std": 0.166257,
+            "ir": -0.4364,
+            "t": -8.095,
+            "positive_rate": 0.311
+          }
+        },
+        "quintiles": {
+          "method": "quantile",
+          "n_groups": 5,
+          "tie_break": "ts_code_order",
+          "groups": {
+            "Q1": {
+              "n_days": 422,
+              "mean_car_pct": -1.3054,
+              "std_car_pct": 2.9453,
+              "t": -9.105,
+              "positive_rate": 0.2464,
+              "ann_pct": -16.45,
+              "n_obs": 353531,
+              "avg_members_per_day": 837.8
+            },
+            "Q2": {
+              "n_days": 422,
+              "mean_car_pct": -1.5628,
+              "std_car_pct": 2.2015,
+              "t": -14.583,
+              "positive_rate": 0.1256,
+              "ann_pct": -19.69,
+              "n_obs": 353698,
+              "avg_members_per_day": 838.1
+            },
+            "Q3": {
+              "n_days": 422,
+              "mean_car_pct": -1.806,
+              "std_car_pct": 1.8366,
+              "t": -20.2,
+              "positive_rate": 0.0995,
+              "ann_pct": -22.76,
+              "n_obs": 353695,
+              "avg_members_per_day": 838.1
+            },
+            "Q4": {
+              "n_days": 422,
+              "mean_car_pct": -2.1927,
+              "std_car_pct": 1.5824,
+              "t": -28.466,
+              "positive_rate": 0.045,
+              "ann_pct": -27.63,
+              "n_obs": 353698,
+              "avg_members_per_day": 838.1
+            },
+            "Q5": {
+              "n_days": 422,
+              "mean_car_pct": -2.3604,
+              "std_car_pct": 5.1566,
+              "t": -9.403,
+              "positive_rate": 0.2227,
+              "ann_pct": -29.74,
+              "n_obs": 353870,
+              "avg_members_per_day": 838.6
+            }
+          },
+          "top_minus_bottom": {
+            "n_days": 422,
+            "mean_car_pct": -1.0551,
+            "std_car_pct": 7.7132,
+            "t": -2.81,
+            "positive_rate": 0.4716,
+            "ann_pct": -13.29,
+            "directed_ann_pct": -13.29
+          },
+          "n_obs": 1768492
+        },
+        "event_split": null
+      },
+      "meta": {
+        "start": "20250102",
+        "end": "20260928",
+        "signal_days": 422,
+        "panel_dates": 483,
+        "codes": 5662,
+        "panel_first": "20241106",
+        "panel_last": "20261103",
+        "requested_start": "20250101",
+        "requested_end": "20261031"
+      }
+    },
+    "20251031": {
+      "ma_convergence": {
+        "ic": {
+          "n_days": 422,
+          "mean": 0.017652,
+          "std": 0.166965,
+          "ir": 0.1057,
+          "t": 2.172,
+          "positive_rate": 0.5569
+        },
+        "is_oos": {
+          "split_date": "20251031",
+          "source": "arg",
+          "IS": {
+            "n_days": 200,
+            "mean": 0.042866,
+            "std": 0.167829,
+            "ir": 0.2554,
+            "t": 3.612,
+            "positive_rate": 0.65
+          },
+          "OOS": {
+            "n_days": 222,
+            "mean": -0.005063,
+            "std": 0.163247,
+            "ir": -0.031,
+            "t": -0.462,
+            "positive_rate": 0.473
+          }
+        },
+        "quintiles": {
+          "method": "quantile",
+          "n_groups": 5,
+          "tie_break": "ts_code_order",
+          "groups": {
+            "Q1": {
+              "n_days": 422,
+              "mean_car_pct": -1.3092,
+              "std_car_pct": 3.3553,
+              "t": -8.015,
+              "positive_rate": 0.3033,
+              "ann_pct": -16.5,
+              "n_obs": 353558,
+              "avg_members_per_day": 837.8
+            },
+            "Q2": {
+              "n_days": 422,
+              "mean_car_pct": -1.6248,
+              "std_car_pct": 1.3261,
+              "t": -25.17,
+              "positive_rate": 0.0782,
+              "ann_pct": -20.47,
+              "n_obs": 353740,
+              "avg_members_per_day": 838.2
+            },
+            "Q3": {
+              "n_days": 422,
+              "mean_car_pct": -1.8529,
+              "std_car_pct": 1.0995,
+              "t": -34.619,
+              "positive_rate": 0.0379,
+              "ann_pct": -23.35,
+              "n_obs": 353730,
+              "avg_members_per_day": 838.2
+            },
+            "Q4": {
+              "n_days": 422,
+              "mean_car_pct": -2.1008,
+              "std_car_pct": 1.5852,
+              "t": -27.225,
+              "positive_rate": 0.0592,
+              "ann_pct": -26.47,
+              "n_obs": 353740,
+              "avg_members_per_day": 838.2
+            },
+            "Q5": {
+              "n_days": 422,
+              "mean_car_pct": -2.3404,
+              "std_car_pct": 2.4731,
+              "t": -19.44,
+              "positive_rate": 0.1493,
+              "ann_pct": -29.49,
+              "n_obs": 353901,
+              "avg_members_per_day": 838.6
+            }
+          },
+          "top_minus_bottom": {
+            "n_days": 422,
+            "mean_car_pct": -1.0312,
+            "std_car_pct": 5.4672,
+            "t": -3.875,
+            "positive_rate": 0.4502,
+            "ann_pct": -12.99,
+            "directed_ann_pct": -12.99
+          },
+          "n_obs": 1768669
+        },
+        "event_split": null
+      },
+      "ma_bull_alignment": {
+        "ic": {
+          "n_days": 422,
+          "mean": -0.092389,
+          "std": 0.16855,
+          "ir": -0.5481,
+          "t": -11.26,
+          "positive_rate": 0.2867
+        },
+        "is_oos": {
+          "split_date": "20251031",
+          "source": "arg",
+          "IS": {
+            "n_days": 200,
+            "mean": -0.110295,
+            "std": 0.131873,
+            "ir": -0.8364,
+            "t": -11.828,
+            "positive_rate": 0.225
+          },
+          "OOS": {
+            "n_days": 222,
+            "mean": -0.076257,
+            "std": 0.194699,
+            "ir": -0.3917,
+            "t": -5.836,
+            "positive_rate": 0.3423
+          }
+        },
+        "quintiles": {
+          "method": "quantile",
+          "n_groups": 5,
+          "tie_break": "ts_code_order",
+          "groups": {
+            "Q1": {
+              "n_days": 422,
+              "mean_car_pct": -1.3054,
+              "std_car_pct": 2.9453,
+              "t": -9.105,
+              "positive_rate": 0.2464,
+              "ann_pct": -16.45,
+              "n_obs": 353531,
+              "avg_members_per_day": 837.8
+            },
+            "Q2": {
+              "n_days": 422,
+              "mean_car_pct": -1.5628,
+              "std_car_pct": 2.2015,
+              "t": -14.583,
+              "positive_rate": 0.1256,
+              "ann_pct": -19.69,
+              "n_obs": 353698,
+              "avg_members_per_day": 838.1
+            },
+            "Q3": {
+              "n_days": 422,
+              "mean_car_pct": -1.806,
+              "std_car_pct": 1.8366,
+              "t": -20.2,
+              "positive_rate": 0.0995,
+              "ann_pct": -22.76,
+              "n_obs": 353695,
+              "avg_members_per_day": 838.1
+            },
+            "Q4": {
+              "n_days": 422,
+              "mean_car_pct": -2.1927,
+              "std_car_pct": 1.5824,
+              "t": -28.466,
+              "positive_rate": 0.045,
+              "ann_pct": -27.63,
+              "n_obs": 353698,
+              "avg_members_per_day": 838.1
+            },
+            "Q5": {
+              "n_days": 422,
+              "mean_car_pct": -2.3604,
+              "std_car_pct": 5.1566,
+              "t": -9.403,
+              "positive_rate": 0.2227,
+              "ann_pct": -29.74,
+              "n_obs": 353870,
+              "avg_members_per_day": 838.6
+            }
+          },
+          "top_minus_bottom": {
+            "n_days": 422,
+            "mean_car_pct": -1.0551,
+            "std_car_pct": 7.7132,
+            "t": -2.81,
+            "positive_rate": 0.4716,
+            "ann_pct": -13.29,
+            "directed_ann_pct": -13.29
+          },
+          "n_obs": 1768492
+        },
+        "event_split": null
+      },
+      "meta": {
+        "start": "20250102",
+        "end": "20260928",
+        "signal_days": 422,
+        "panel_dates": 483,
+        "codes": 5662,
+        "panel_first": "20241106",
+        "panel_last": "20261103",
+        "requested_start": "20250101",
+        "requested_end": "20261031"
+      }
+    },
+    "20260430": {
+      "ma_convergence": {
+        "ic": {
+          "n_days": 422,
+          "mean": 0.017652,
+          "std": 0.166965,
+          "ir": 0.1057,
+          "t": 2.172,
+          "positive_rate": 0.5569
+        },
+        "is_oos": {
+          "split_date": "20260430",
+          "source": "arg",
+          "IS": {
+            "n_days": 320,
+            "mean": 0.024971,
+            "std": 0.148003,
+            "ir": 0.1687,
+            "t": 3.018,
+            "positive_rate": 0.5813
+          },
+          "OOS": {
+            "n_days": 102,
+            "mean": -0.005309,
+            "std": 0.21521,
+            "ir": -0.0247,
+            "t": -0.249,
+            "positive_rate": 0.4804
+          }
+        },
+        "quintiles": {
+          "method": "quantile",
+          "n_groups": 5,
+          "tie_break": "ts_code_order",
+          "groups": {
+            "Q1": {
+              "n_days": 422,
+              "mean_car_pct": -1.3092,
+              "std_car_pct": 3.3553,
+              "t": -8.015,
+              "positive_rate": 0.3033,
+              "ann_pct": -16.5,
+              "n_obs": 353558,
+              "avg_members_per_day": 837.8
+            },
+            "Q2": {
+              "n_days": 422,
+              "mean_car_pct": -1.6248,
+              "std_car_pct": 1.3261,
+              "t": -25.17,
+              "positive_rate": 0.0782,
+              "ann_pct": -20.47,
+              "n_obs": 353740,
+              "avg_members_per_day": 838.2
+            },
+            "Q3": {
+              "n_days": 422,
+              "mean_car_pct": -1.8529,
+              "std_car_pct": 1.0995,
+              "t": -34.619,
+              "positive_rate": 0.0379,
+              "ann_pct": -23.35,
+              "n_obs": 353730,
+              "avg_members_per_day": 838.2
+            },
+            "Q4": {
+              "n_days": 422,
+              "mean_car_pct": -2.1008,
+              "std_car_pct": 1.5852,
+              "t": -27.225,
+              "positive_rate": 0.0592,
+              "ann_pct": -26.47,
+              "n_obs": 353740,
+              "avg_members_per_day": 838.2
+            },
+            "Q5": {
+              "n_days": 422,
+              "mean_car_pct": -2.3404,
+              "std_car_pct": 2.4731,
+              "t": -19.44,
+              "positive_rate": 0.1493,
+              "ann_pct": -29.49,
+              "n_obs": 353901,
+              "avg_members_per_day": 838.6
+            }
+          },
+          "top_minus_bottom": {
+            "n_days": 422,
+            "mean_car_pct": -1.0312,
+            "std_car_pct": 5.4672,
+            "t": -3.875,
+            "positive_rate": 0.4502,
+            "ann_pct": -12.99,
+            "directed_ann_pct": -12.99
+          },
+          "n_obs": 1768669
+        },
+        "event_split": null
+      },
+      "ma_bull_alignment": {
+        "ic": {
+          "n_days": 422,
+          "mean": -0.092389,
+          "std": 0.16855,
+          "ir": -0.5481,
+          "t": -11.26,
+          "positive_rate": 0.2867
+        },
+        "is_oos": {
+          "split_date": "20260430",
+          "source": "arg",
+          "IS": {
+            "n_days": 320,
+            "mean": -0.085842,
+            "std": 0.124586,
+            "ir": -0.689,
+            "t": -12.326,
+            "positive_rate": 0.2313
+          },
+          "OOS": {
+            "n_days": 102,
+            "mean": -0.112926,
+            "std": 0.262359,
+            "ir": -0.4304,
+            "t": -4.347,
+            "positive_rate": 0.4608
+          }
+        },
+        "quintiles": {
+          "method": "quantile",
+          "n_groups": 5,
+          "tie_break": "ts_code_order",
+          "groups": {
+            "Q1": {
+              "n_days": 422,
+              "mean_car_pct": -1.3054,
+              "std_car_pct": 2.9453,
+              "t": -9.105,
+              "positive_rate": 0.2464,
+              "ann_pct": -16.45,
+              "n_obs": 353531,
+              "avg_members_per_day": 837.8
+            },
+            "Q2": {
+              "n_days": 422,
+              "mean_car_pct": -1.5628,
+              "std_car_pct": 2.2015,
+              "t": -14.583,
+              "positive_rate": 0.1256,
+              "ann_pct": -19.69,
+              "n_obs": 353698,
+              "avg_members_per_day": 838.1
+            },
+            "Q3": {
+              "n_days": 422,
+              "mean_car_pct": -1.806,
+              "std_car_pct": 1.8366,
+              "t": -20.2,
+              "positive_rate": 0.0995,
+              "ann_pct": -22.76,
+              "n_obs": 353695,
+              "avg_members_per_day": 838.1
+            },
+            "Q4": {
+              "n_days": 422,
+              "mean_car_pct": -2.1927,
+              "std_car_pct": 1.5824,
+              "t": -28.466,
+              "positive_rate": 0.045,
+              "ann_pct": -27.63,
+              "n_obs": 353698,
+              "avg_members_per_day": 838.1
+            },
+            "Q5": {
+              "n_days": 422,
+              "mean_car_pct": -2.3604,
+              "std_car_pct": 5.1566,
+              "t": -9.403,
+              "positive_rate": 0.2227,
+              "ann_pct": -29.74,
+              "n_obs": 353870,
+              "avg_members_per_day": 838.6
+            }
+          },
+          "top_minus_bottom": {
+            "n_days": 422,
+            "mean_car_pct": -1.0551,
+            "std_car_pct": 7.7132,
+            "t": -2.81,
+            "positive_rate": 0.4716,
+            "ann_pct": -13.29,
+            "directed_ann_pct": -13.29
+          },
+          "n_obs": 1768492
+        },
+        "event_split": null
+      },
+      "meta": {
+        "start": "20250102",
+        "end": "20260928",
+        "signal_days": 422,
+        "panel_dates": 483,
+        "codes": 5662,
+        "panel_first": "20241106",
+        "panel_last": "20261103",
+        "requested_start": "20250101",
+        "requested_end": "20261031"
+      }
+    }
+  }
+}

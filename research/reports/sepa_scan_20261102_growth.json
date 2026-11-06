@@ -1,0 +1,284 @@
+{
+ "generated_at": "2026-11-03T18:12:38+08:00",
+ "scan_date": "20261102",
+ "universe": 5259,
+ "tt_pass": 63,
+ "fund_pass": 8,
+ "vcp": 0,
+ "funnel": {
+  "A_已突破": 0,
+  "B_接近枢轴": 0,
+  "C_设置中": 0,
+  "D_仅TT+基本面": 8
+ },
+ "breakout": [],
+ "near": [],
+ "setup": [],
+ "only_tt_fund": [
+  {
+   "code": "002832.SZ",
+   "name": "比音勒芬",
+   "industry": "服饰",
+   "close": 167.95,
+   "rs": 96,
+   "fund": {
+    "netprofit_yoy": 20.5,
+    "revenue_yoy": 27.4,
+    "roe": 13.5
+   },
+   "pivot": null,
+   "last_low": null,
+   "vol_dry": null
+  },
+  {
+   "code": "600428.SH",
+   "name": "中远海特",
+   "industry": "水运",
+   "close": 85.47,
+   "rs": 95,
+   "fund": {
+    "netprofit_yoy": 96.9,
+    "revenue_yoy": 36.3,
+    "roe": 15.0
+   },
+   "pivot": null,
+   "last_low": null,
+   "vol_dry": null
+  },
+  {
+   "code": "688222.SH",
+   "name": "成都先导",
+   "industry": "化学制药",
+   "close": 38.25,
+   "rs": 95,
+   "fund": {
+    "netprofit_yoy": 50.1,
+    "revenue_yoy": 48.7,
+    "roe": 9.0
+   },
+   "pivot": null,
+   "last_low": null,
+   "vol_dry": null
+  },
+  {
+   "code": "603129.SH",
+   "name": "春风动力",
+   "industry": "摩托车",
+   "close": 328.63,
+   "rs": 89,
+   "fund": {
+    "netprofit_yoy": 42.8,
+    "revenue_yoy": 40.6,
+    "roe": 24.5
+   },
+   "pivot": null,
+   "last_low": null,
+   "vol_dry": null
+  },
+  {
+   "code": "002948.SZ",
+   "name": "青岛银行",
+   "industry": "银行",
+   "close": 9.02,
+   "rs": 88,
+   "fund": {
+    "netprofit_yoy": 15.7,
+    "revenue_yoy": 15.0,
+    "roe": 8.7
+   },
+   "pivot": null,
+   "last_low": null,
+   "vol_dry": null
+  },
+  {
+   "code": "688131.SH",
+   "name": "皓元医药",
+   "industry": "化学制药",
+   "close": 262.48,
+   "rs": 88,
+   "fund": {
+    "netprofit_yoy": 30.5,
+    "revenue_yoy": 28.5,
+    "roe": 9.4
+   },
+   "pivot": null,
+   "last_low": null,
+   "vol_dry": null
+  },
+  {
+   "code": "300488.SZ",
+   "name": "恒锋工具",
+   "industry": "机械基件",
+   "close": 101.62,
+   "rs": 83,
+   "fund": {
+    "netprofit_yoy": 46.6,
+    "revenue_yoy": 14.8,
+    "roe": 8.4
+   },
+   "pivot": null,
+   "last_low": null,
+   "vol_dry": null
+  },
+  {
+   "code": "688213.SH",
+   "name": "思特威",
+   "industry": "半导体",
+   "close": 103.28,
+   "rs": 76,
+   "fund": {
+    "netprofit_yoy": 20.0,
+    "revenue_yoy": 19.7,
+    "roe": 11.9
+   },
+   "pivot": null,
+   "last_low": null,
+   "vol_dry": null
+  }
+ ],
+ "tt_top": [
+  {
+   "code": "301218.SZ",
+   "name": "华是科技",
+   "industry": "软件服务",
+   "close": 123.19,
+   "rs": 98
+  },
+  {
+   "code": "688137.SH",
+   "name": "近岸蛋白",
+   "industry": "生物制药",
+   "close": 158.58,
+   "rs": 98
+  },
+  {
+   "code": "301529.SZ",
+   "name": "福赛科技",
+   "industry": "汽车配件",
+   "close": 231.42,
+   "rs": 98
+  },
+  {
+   "code": "301234.SZ",
+   "name": "五洲医疗",
+   "industry": "医疗保健",
+   "close": 130.82,
+   "rs": 98
+  },
+  {
+   "code": "002242.SZ",
+   "name": "九阳股份",
+   "industry": "家用电器",
+   "close": 132.4,
+   "rs": 98
+  },
+  {
+   "code": "301273.SZ",
+   "name": "瑞晨环保",
+   "industry": "机械基件",
+   "close": 63.55,
+   "rs": 98
+  },
+  {
+   "code": "300006.SZ",
+   "name": "莱美药业",
+   "industry": "化学制药",
+   "close": 79.38,
+   "rs": 97
+  },
+  {
+   "code": "300234.SZ",
+   "name": "开尔新材",
+   "industry": "陶瓷",
+   "close": 69.99,
+   "rs": 97
+  },
+  {
+   "code": "603303.SH",
+   "name": "得邦照明",
+   "industry": "家用电器",
+   "close": 73.35,
+   "rs": 97
+  },
+  {
+   "code": "002832.SZ",
+   "name": "比音勒芬",
+   "industry": "服饰",
+   "close": 167.95,
+   "rs": 96
+  },
+  {
+   "code": "601857.SH",
+   "name": "中国石油",
+   "industry": "石油开采",
+   "close": 26.53,
+   "rs": 96
+  },
+  {
+   "code": "603838.SH",
+   "name": "四通股份",
+   "industry": "家居用品",
+   "close": 26.44,
+   "rs": 95
+  },
+  {
+   "code": "688222.SH",
+   "name": "成都先导",
+   "industry": "化学制药",
+   "close": 38.25,
+   "rs": 95
+  },
+  {
+   "code": "600428.SH",
+   "name": "中远海特",
+   "industry": "水运",
+   "close": 85.47,
+   "rs": 95
+  },
+  {
+   "code": "603727.SH",
+   "name": "博迈科",
+   "industry": "石油开采",
+   "close": 24.33,
+   "rs": 95
+  },
+  {
+   "code": "301081.SZ",
+   "name": "严牌股份",
+   "industry": "环境保护",
+   "close": 22.56,
+   "rs": 95
+  },
+  {
+   "code": "001326.SZ",
+   "name": "联域股份",
+   "industry": "电气设备",
+   "close": 88.05,
+   "rs": 94
+  },
+  {
+   "code": "002708.SZ",
+   "name": "光洋股份",
+   "industry": "汽车配件",
+   "close": 64.5,
+   "rs": 94
+  },
+  {
+   "code": "603466.SH",
+   "name": "风语筑",
+   "industry": "文教休闲",
+   "close": 60.53,
+   "rs": 93
+  },
+  {
+   "code": "002293.SZ",
+   "name": "罗莱生活",
+   "industry": "纺织",
+   "close": 125.05,
+   "rs": 93
+  }
+ ],
+ "vcp_lite": [],
+ "rule": "TT 8条 + PIT 基本面(净利yoy≥15/营收yoy≥10/ROE≥8) + VCP",
+ "disclaimer": "研究扫描，不构成投资建议；次日交易需自行复核"
+}

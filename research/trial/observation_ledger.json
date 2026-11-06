@@ -1,0 +1,93 @@
+{
+  "version": "1.0",
+  "days": {
+    "2026-11-04": {
+      "preliminary": {
+        "generated_at": "2026-11-04T20:35:22+08:00",
+        "overall_status": "PRELIMINARY_AT_RISK",
+        "checks": {
+          "data_dates": "PASS",
+          "reports_on_time": "PENDING",
+          "feedback_lusu": "FAIL",
+          "supervision_acad1": "FAIL",
+          "observations_t1": "PASS"
+        },
+        "report_total": 7,
+        "report_on_time": 7,
+        "feedback_target": 0,
+        "supervision_target": 0,
+        "obs_with_t1": 12,
+        "obs_total": 12,
+        "obs_negative": 1,
+        "day_number": null
+      },
+      "final": null
+    },
+    "2026-11-03": {
+      "preliminary": null,
+      "final": {
+        "generated_at": "2026-11-04T20:33:11+08:00",
+        "overall_status": "FAIL",
+        "checks": {
+          "data_dates": "PASS",
+          "reports_on_time": "FAIL",
+          "feedback_lusu": "FAIL",
+          "supervision_acad1": "FAIL",
+          "observations_t1": "FAIL"
+        },
+        "report_total": 9,
+        "report_on_time": 3,
+        "feedback_target": 0,
+        "supervision_target": 0,
+        "obs_with_t1": 13,
+        "obs_total": 31,
+        "obs_negative": 11,
+        "day_number": null
+      }
+    },
+    "2026-11-05": {
+      "preliminary": {
+        "generated_at": "2026-11-05T18:10:11+08:00",
+        "overall_status": "PRELIMINARY_AT_RISK",
+        "checks": {
+          "data_dates": "PASS",
+          "reports_on_time": "PENDING",
+          "feedback_lusu": "FAIL",
+          "supervision_acad1": "FAIL",
+          "observations_t1": "FAIL"
+        },
+        "report_total": 0,
+        "report_on_time": 0,
+        "feedback_target": 0,
+        "supervision_target": 0,
+        "obs_with_t1": 12,
+        "obs_total": 24,
+        "obs_negative": 4,
+        "day_number": 1
+      },
+      "final": {
+        "generated_at": "2026-11-06T10:05:08+08:00",
+        "overall_status": "FAIL",
+        "checks": {
+          "data_dates": "PASS",
+          "reports_on_time": "FAIL",
+          "feedback_lusu": "FAIL",
+          "supervision_acad1": "FAIL",
+          "observations_t1": "FAIL"
+        },
+        "report_total": 3,
+        "report_on_time": 3,
+        "feedback_target": 0,
+        "supervision_target": 0,
+        "obs_with_t1": 12,
+        "obs_total": 24,
+        "obs_negative": 4,
+        "day_number": 1
+      }
+    }
+  },
+  "consecutive_fail_days": 1,
+  "max_consecutive_fail_days": 1,
+  "stop_recommended": false,
+  "updated_at": "2026-11-06T10:05:09+08:00"
+}

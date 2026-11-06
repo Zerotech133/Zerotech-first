@@ -1,0 +1,88 @@
+{
+ "schema_version": 1,
+ "date": "20261102",
+ "generated_at": "2026-11-03T16:37:09+08:00",
+ "generator": "tools/kb_corpus/learning_release.py（统一发布器，发布门强制）",
+ "project": "视频号学习_第二期",
+ "apply": false,
+ "mode": "dry-run",
+ "proposals": {
+  "path": "research/reports/card_proposals_第二期_effective_20261103.json",
+  "sha256": "598ae776545026fcf3423fcc61ea341d59ad2e2344352e04cd74f0ed826482e7",
+  "total": 46,
+  "approved": 17
+ },
+ "steps": [
+  {
+   "name": "gate_publish_precheck",
+   "ok": true,
+   "detail": "fail=0 summary={\"projects\": 4, \"checks\": 4, \"fail\": 0}",
+   "gate": {
+    "ok": true,
+    "fail": 0,
+    "summary": {
+     "projects": 4,
+     "checks": 4,
+     "fail": 0
+    },
+    "projects": 4
+   }
+  },
+  {
+   "name": "validate_approved",
+   "ok": true,
+   "detail": "17/46 approved"
+  },
+  {
+   "name": "card_merge_dry_run",
+   "ok": true,
+   "detail": "rc=0 would_add=17 resulting=417 backup=None",
+   "command": [
+    "C:\\项目\\py312\\python.exe",
+    "-X",
+    "utf8",
+    "C:\\项目\\老田的AI助手\\tools\\kb_corpus\\card_merge.py",
+    "merge",
+    "--proposals",
+    "research/reports/card_proposals_第二期_effective_20261103.json",
+    "--no-preview",
+    "--json"
+   ],
+   "stdout_tail": "pt\": \"锤子线、吞没、十字线还在一根根找\",\n      \"reason\": \"rejected\"\n    },\n    {\n      \"proposal_id\": null,\n      \"concept\": \"高盛把25年的量化经验放进了一个Pyth\",\n      \"reason\": \"rejected\"\n    }\n  ],\n  \"conflicts\": [],\n  \"validation\": {\n    \"ok\": true,\n    \"errors\": []\n  },\n  \"warnings\": [\n    \"learning_cards.py 重跑会覆盖 kb_learning_cards.json；合并卡需在其后运行本工具或改造生成器保留人工卡。\"\n  ],\n  \"disclaimer\": \"合并工具仅做本地文件合并；卡片内容为研究/学习候选，不构成投资建议。\"\n}\n",
+   "stderr_tail": ""
+  }
+ ],
+ "merge_stats": {
+  "base_cards": 400,
+  "proposal_cards": 46,
+  "approved": 17,
+  "would_add": 17,
+  "skipped_total": 29,
+  "skipped_not_reviewed": 0,
+  "skipped_rejected": 29,
+  "skipped_needs_revision": 0,
+  "skipped_concept_exists": 0,
+  "skipped_duplicate_in_batch": 0,
+  "resulting_cards": 417
+ },
+ "digest": null,
+ "cards": {
+  "before": {
+   "count": 400,
+   "sha256": "e8fc247bfa28038c10c9a88bf440350b960e9fbb3c4d0e539ed9ca4f3453e081"
+  },
+  "after": {
+   "count": 400,
+   "sha256": "e8fc247bfa28038c10c9a88bf440350b960e9fbb3c4d0e539ed9ca4f3453e081"
+  }
+ },
+ "ok": true,
+ "stopped_at": null,
+ "reason": null,
+ "rollback": null,
+ "disclaimer": "统一发布器：dry-run 默认；--apply 需人工审核后执行；不构成投资建议。",
+ "receipt": {
+  "json": "C:\\项目\\老田的AI助手\\research\\reports\\learning_release_视频号学习_第二期_20261102.json",
+  "md": "C:\\项目\\老田的AI助手\\research\\reports\\learning_release_视频号学习_第二期_20261102.md"
+ }
+}

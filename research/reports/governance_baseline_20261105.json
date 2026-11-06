@@ -1,0 +1,18 @@
+{
+ "generated_at": "2026-11-05T02:00:01+08:00",
+ "metrics": {
+  "units": 1018,
+  "knowledge_units": 1018,
+  "meta_units": 0,
+  "verified": 1018,
+  "verified_pct": 100.0,
+  "unverifiable": 0,
+  "exact_dup_units": 218,
+  "near_dup_pairs": 1,
+  "dup_ratio_pct": 21.5,
+  "card_concept_dup": 0,
+  "candidate_pool": 259,
+  "multi_source_concepts": 0,
+  "conflicts": 0
+ }
+}

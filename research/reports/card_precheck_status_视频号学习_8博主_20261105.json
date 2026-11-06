@@ -1,0 +1,3971 @@
+{
+ "generated_at": "2026-11-05T06:30:24+08:00",
+ "pid": "视频号学习_8博主",
+ "source": "card_candidates_视频号学习_8博主_v2_20261105.json",
+ "stats": {
+  "candidates": 690,
+  "pass": 181,
+  "reject": 509,
+  "revise": 0
+ },
+ "status": {
+  "RX-0013": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0003": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0006": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0005": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0017": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0080": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0123": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0113": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0093": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0118": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0414": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0526": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0531": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0639": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0558": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0619": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0628": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0638": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0575": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0583": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0612": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0584": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0600": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0559": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0615": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0577": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0543": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0616": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0601": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0589": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0580": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0565": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0557": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0571": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0538": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0547": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0604": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0546": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0602": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0551": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0567": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0607": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0603": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0549": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0552": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0012": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0015": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0014": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0070": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0059": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0069": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0061": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0068": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0071": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0065": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0056": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0072": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0064": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0048": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0021": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0244": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0122": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0202": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0146": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0085": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0137": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0138": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0241": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0135": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0076": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0104": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0144": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0177": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0185": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0183": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0168": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0174": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0193": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0191": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0187": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0176": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0222": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0134": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0169": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0160": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0217": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0120": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0078": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0216": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0133": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0228": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0136": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0105": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0198": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0233": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0251": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0147": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0214": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0108": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0246": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0121": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0153": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0155": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0219": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0156": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0196": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0206": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0107": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0234": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0079": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0242": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0150": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0190": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0170": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0141": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0084": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0200": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0142": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0116": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0117": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0171": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0248": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0151": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0077": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0082": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0090": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0166": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0325": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0484": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0406": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0503": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0497": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0511": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0488": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0513": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0407": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0286": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0454": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0490": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0508": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0376": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0428": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0305": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0476": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0515": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0493": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0495": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0445": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0582": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0568": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0592": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0566": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0553": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0610": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0574": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0560": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0537": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0564": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0548": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0675": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0677": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0647": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0684": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0645": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0649": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0685": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0644": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0674": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0669": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0659": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0646": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0676": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0666": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0683": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0655": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0670": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0658": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0662": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0642": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0653": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0657": {
+   "action": "pass",
+   "issues": []
+  },
+  "RX-0002": {
+   "action": "reject",
+   "issues": [
+    "concept_question_like",
+    "concept_answer_mismatch"
+   ]
+  },
+  "RX-0004": {
+   "action": "reject",
+   "issues": [
+    "concept_non_noun_ending"
+   ]
+  },
+  "RX-0008": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0007": {
+   "action": "reject",
+   "issues": [
+    "concept_answer_mismatch"
+   ]
+  },
+  "RX-0001": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0011": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term",
+    "concept_answer_mismatch"
+   ]
+  },
+  "RX-0010": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0009": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0060": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0073": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0057": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0063": {
+   "action": "reject",
+   "issues": [
+    "concept_non_noun_ending"
+   ]
+  },
+  "RX-0066": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0062": {
+   "action": "reject",
+   "issues": [
+    "concept_action_phrase"
+   ]
+  },
+  "RX-0058": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0074": {
+   "action": "reject",
+   "issues": [
+    "concept_meta_or_person",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0067": {
+   "action": "reject",
+   "issues": [
+    "concept_answer_mismatch"
+   ]
+  },
+  "RX-0019": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_meta_or_person",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0055": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0040": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0053": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0020": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0024": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0050": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0049": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0046": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0016": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_meta_or_person",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0027": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0032": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0039": {
+   "action": "reject",
+   "issues": [
+    "concept_meta_or_person",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0033": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0043": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0022": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0018": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0045": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0051": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0047": {
+   "action": "reject",
+   "issues": [
+    "concept_action_phrase",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0044": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0023": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_answer_mismatch"
+   ]
+  },
+  "RX-0025": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_answer_mismatch"
+   ]
+  },
+  "RX-0026": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_answer_mismatch"
+   ]
+  },
+  "RX-0028": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_answer_mismatch"
+   ]
+  },
+  "RX-0029": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_answer_mismatch"
+   ]
+  },
+  "RX-0031": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0030": {
+   "action": "reject",
+   "issues": [
+    "concept_answer_mismatch"
+   ]
+  },
+  "RX-0038": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0041": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0037": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_question_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0035": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0042": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0052": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0036": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0034": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0054": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0218": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0106": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0224": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_ending"
+   ]
+  },
+  "RX-0237": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_ending"
+   ]
+  },
+  "RX-0157": {
+   "action": "reject",
+   "issues": [
+    "concept_question_like"
+   ]
+  },
+  "RX-0126": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0213": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_ending"
+   ]
+  },
+  "RX-0154": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0115": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0201": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0161": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_ending"
+   ]
+  },
+  "RX-0102": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0223": {
+   "action": "reject",
+   "issues": [
+    "concept_action_phrase"
+   ]
+  },
+  "RX-0172": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0092": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0098": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term",
+    "concept_answer_mismatch"
+   ]
+  },
+  "RX-0215": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_non_noun_ending"
+   ]
+  },
+  "RX-0211": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0119": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_meta_or_person"
+   ]
+  },
+  "RX-0094": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0099": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0103": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0205": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term",
+    "concept_sentence_ending"
+   ]
+  },
+  "RX-0086": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0087": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0129": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term",
+    "concept_answer_mismatch"
+   ]
+  },
+  "RX-0225": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0152": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0186": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0203": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0221": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term",
+    "concept_sentence_ending"
+   ]
+  },
+  "RX-0227": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0226": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0149": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0158": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_meta_or_person"
+   ]
+  },
+  "RX-0164": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0179": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0181": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0207": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0245": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0209": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0159": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0240": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0091": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0111": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_ending"
+   ]
+  },
+  "RX-0247": {
+   "action": "reject",
+   "issues": [
+    "concept_question_like"
+   ]
+  },
+  "RX-0165": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0243": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0112": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0238": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0232": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0127": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_question_like"
+   ]
+  },
+  "RX-0229": {
+   "action": "reject",
+   "issues": [
+    "concept_question_like"
+   ]
+  },
+  "RX-0143": {
+   "action": "reject",
+   "issues": [
+    "concept_question_like"
+   ]
+  },
+  "RX-0175": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0231": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0096": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0110": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_ending"
+   ]
+  },
+  "RX-0249": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_ending"
+   ]
+  },
+  "RX-0124": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_ending"
+   ]
+  },
+  "RX-0128": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_ending",
+    "concept_answer_mismatch"
+   ]
+  },
+  "RX-0180": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0162": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0212": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0197": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term",
+    "concept_answer_mismatch"
+   ]
+  },
+  "RX-0101": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0148": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0182": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0208": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0195": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0204": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0230": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0083": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0199": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0145": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0125": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0097": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0132": {
+   "action": "reject",
+   "issues": [
+    "concept_meta_or_person"
+   ]
+  },
+  "RX-0114": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0194": {
+   "action": "reject",
+   "issues": [
+    "concept_meta_or_person"
+   ]
+  },
+  "RX-0188": {
+   "action": "reject",
+   "issues": [
+    "concept_meta_or_person"
+   ]
+  },
+  "RX-0192": {
+   "action": "reject",
+   "issues": [
+    "concept_meta_or_person"
+   ]
+  },
+  "RX-0178": {
+   "action": "reject",
+   "issues": [
+    "concept_meta_or_person"
+   ]
+  },
+  "RX-0163": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_meta_or_person"
+   ]
+  },
+  "RX-0167": {
+   "action": "reject",
+   "issues": [
+    "concept_meta_or_person"
+   ]
+  },
+  "RX-0173": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0235": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0140": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0089": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0220": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0081": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0250": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_meta_or_person",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0184": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0236": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0130": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0189": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0075": {
+   "action": "reject",
+   "issues": [
+    "concept_meta_or_person",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0109": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_meta_or_person"
+   ]
+  },
+  "RX-0139": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0095": {
+   "action": "reject",
+   "issues": [
+    "concept_too_short"
+   ]
+  },
+  "RX-0100": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0131": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0088": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0210": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0239": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0506": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0456": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0271": {
+   "action": "reject",
+   "issues": [
+    "concept_question_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0380": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0338": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0408": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0331": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0379": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0393": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0359": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_non_noun_ending",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0398": {
+   "action": "reject",
+   "issues": [
+    "concept_non_noun_ending",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0491": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0258": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0324": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0435": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0322": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0460": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0394": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0265": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0477": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0276": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0448": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0458": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0450": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_meta_or_person",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0453": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0280": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0480": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0354": {
+   "action": "reject",
+   "issues": [
+    "concept_non_noun_ending",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0404": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0434": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0367": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0313": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_non_noun_ending",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0418": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0496": {
+   "action": "reject",
+   "issues": [
+    "concept_meta_or_person",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0375": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0475": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0345": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0360": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0387": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0355": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0481": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0294": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0296": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0420": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0330": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_action_phrase",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0439": {
+   "action": "reject",
+   "issues": [
+    "concept_question_like",
+    "concept_action_phrase",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0451": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0417": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0502": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0292": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0327": {
+   "action": "reject",
+   "issues": [
+    "concept_non_noun_ending",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0371": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0377": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term",
+    "concept_answer_mismatch"
+   ]
+  },
+  "RX-0372": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0316": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0266": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0423": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0416": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0326": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0312": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0348": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0431": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0436": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0421": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0383": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_question_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0368": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0323": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0446": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0457": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0492": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0336": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0412": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0346": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0411": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0260": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0403": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0347": {
+   "action": "reject",
+   "issues": [
+    "concept_action_phrase",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0303": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0507": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0482": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0424": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0501": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0337": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0290": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0267": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0320": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0427": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0467": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0402": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0443": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0254": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0341": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0388": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0357": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0425": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0487": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0349": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0351": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0396": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0391": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0378": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0282": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_non_noun_ending",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0319": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0365": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0389": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0339": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0366": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0278": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0486": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0478": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_ending"
+   ]
+  },
+  "RX-0505": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0381": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0285": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0295": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0459": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0392": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0509": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0259": {
+   "action": "reject",
+   "issues": [
+    "concept_non_noun_ending",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0363": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0438": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0419": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0328": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0437": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0430": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0361": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0370": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0390": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0504": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0261": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0466": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0464": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0499": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0442": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0344": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0386": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0253": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0409": {
+   "action": "reject",
+   "issues": [
+    "concept_non_noun_ending"
+   ]
+  },
+  "RX-0350": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0304": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0310": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0332": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0463": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0399": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0356": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0441": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0429": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0281": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0498": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0469": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0263": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0334": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term",
+    "concept_answer_mismatch"
+   ]
+  },
+  "RX-0309": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0500": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0289": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0514": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0432": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0353": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0405": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0397": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0256": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0401": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0297": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0472": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0426": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0474": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0473": {
+   "action": "reject",
+   "issues": [
+    "concept_non_noun_ending",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0333": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0317": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0395": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0433": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0279": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0273": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0489": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0275": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_action_phrase",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0257": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_action_phrase"
+   ]
+  },
+  "RX-0447": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0471": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0415": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0369": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0422": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0329": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0510": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0373": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0462": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0410": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0307": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0252": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0283": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0299": {
+   "action": "reject",
+   "issues": [
+    "concept_non_noun_ending",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0364": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0452": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0343": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0302": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0270": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0272": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0470": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0318": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0449": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_non_noun_ending",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0321": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0479": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0358": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0485": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0287": {
+   "action": "reject",
+   "issues": [
+    "concept_non_noun_ending",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0362": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term",
+    "concept_answer_mismatch"
+   ]
+  },
+  "RX-0314": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_answer_mismatch"
+   ]
+  },
+  "RX-0288": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0293": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0291": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0268": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term",
+    "concept_answer_mismatch"
+   ]
+  },
+  "RX-0301": {
+   "action": "reject",
+   "issues": [
+    "concept_answer_mismatch"
+   ]
+  },
+  "RX-0311": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0306": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0455": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0483": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0465": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0277": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0255": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0512": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0468": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0308": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0274": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0262": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0352": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0335": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0385": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0298": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0342": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0374": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0340": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0461": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0400": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0264": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0440": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0315": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0384": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0382": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0269": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0284": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0444": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0494": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0300": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0413": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0521": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0517": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0518": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0525": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0534": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0523": {
+   "action": "reject",
+   "issues": [
+    "concept_too_short",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0529": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0524": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0533": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0535": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0532": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0522": {
+   "action": "reject",
+   "issues": [
+    "concept_too_short"
+   ]
+  },
+  "RX-0519": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0528": {
+   "action": "reject",
+   "issues": [
+    "concept_non_noun_ending",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0520": {
+   "action": "reject",
+   "issues": [
+    "concept_question_like",
+    "concept_action_phrase",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0527": {
+   "action": "reject",
+   "issues": [
+    "concept_action_phrase"
+   ]
+  },
+  "RX-0516": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0530": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0629": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0635": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0625": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0627": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0572": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0591": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0637": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0550": {
+   "action": "reject",
+   "issues": [
+    "concept_meta_or_person"
+   ]
+  },
+  "RX-0540": {
+   "action": "reject",
+   "issues": [
+    "concept_question_like"
+   ]
+  },
+  "RX-0590": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_question_like"
+   ]
+  },
+  "RX-0570": {
+   "action": "reject",
+   "issues": [
+    "concept_action_phrase"
+   ]
+  },
+  "RX-0562": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0579": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0587": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0630": {
+   "action": "reject",
+   "issues": [
+    "concept_question_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0594": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0614": {
+   "action": "reject",
+   "issues": [
+    "concept_meta_or_person",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0555": {
+   "action": "reject",
+   "issues": [
+    "concept_answer_mismatch"
+   ]
+  },
+  "RX-0632": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0623": {
+   "action": "reject",
+   "issues": [
+    "concept_action_phrase",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0606": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_meta_or_person"
+   ]
+  },
+  "RX-0593": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0556": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0622": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0596": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0631": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0618": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0561": {
+   "action": "reject",
+   "issues": [
+    "concept_generic_or_header"
+   ]
+  },
+  "RX-0581": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0633": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0620": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0624": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0578": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0585": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0544": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0595": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0554": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0626": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_question_like",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0634": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0640": {
+   "action": "reject",
+   "issues": [
+    "concept_action_phrase",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0599": {
+   "action": "reject",
+   "issues": [
+    "concept_action_phrase"
+   ]
+  },
+  "RX-0608": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_action_phrase"
+   ]
+  },
+  "RX-0613": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0563": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0605": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0576": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0569": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0542": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0609": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0621": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0586": {
+   "action": "reject",
+   "issues": [
+    "concept_action_phrase"
+   ]
+  },
+  "RX-0541": {
+   "action": "reject",
+   "issues": [
+    "concept_question_like"
+   ]
+  },
+  "RX-0611": {
+   "action": "reject",
+   "issues": [
+    "concept_meta_or_person"
+   ]
+  },
+  "RX-0539": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0536": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0545": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0588": {
+   "action": "reject",
+   "issues": [
+    "concept_non_noun_ending"
+   ]
+  },
+  "RX-0636": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0598": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0597": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0573": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0617": {
+   "action": "reject",
+   "issues": [
+    "concept_non_noun_ending"
+   ]
+  },
+  "RX-0689": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term",
+    "concept_sentence_ending"
+   ]
+  },
+  "RX-0661": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0650": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0668": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0664": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_ending"
+   ]
+  },
+  "RX-0652": {
+   "action": "reject",
+   "issues": [
+    "concept_too_short",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0648": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0686": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like",
+    "concept_question_like"
+   ]
+  },
+  "RX-0660": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_like"
+   ]
+  },
+  "RX-0681": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0672": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term",
+    "concept_sentence_ending"
+   ]
+  },
+  "RX-0690": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0687": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term",
+    "concept_sentence_ending"
+   ]
+  },
+  "RX-0651": {
+   "action": "reject",
+   "issues": [
+    "concept_too_short"
+   ]
+  },
+  "RX-0671": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0679": {
+   "action": "reject",
+   "issues": [
+    "concept_meta_or_person",
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0688": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0673": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0678": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term",
+    "concept_sentence_ending"
+   ]
+  },
+  "RX-0682": {
+   "action": "reject",
+   "issues": [
+    "concept_generic_or_header"
+   ]
+  },
+  "RX-0680": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0667": {
+   "action": "reject",
+   "issues": [
+    "concept_too_short"
+   ]
+  },
+  "RX-0643": {
+   "action": "reject",
+   "issues": [
+    "concept_sentence_ending"
+   ]
+  },
+  "RX-0641": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0654": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0656": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0665": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  },
+  "RX-0663": {
+   "action": "reject",
+   "issues": [
+    "concept_no_domain_term"
+   ]
+  }
+ }
+}

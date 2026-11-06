@@ -1,0 +1,10 @@
+{
+  "model": "qwen3.5:9b+rag_train",
+  "n": 20,
+  "ok": 20,
+  "mean_char_f1": 0.2364,
+  "mean_bigram_f1": 0.1124,
+  "mean_number_hit": 0.2917,
+  "errors": 0,
+  "note": "retrieval corpus = gated train; not production RAG; baseline only"
+}

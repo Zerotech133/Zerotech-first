@@ -1,0 +1,287 @@
+{
+ "schema_version": 1,
+ "kind": "qa_quality_daily",
+ "generated_at": "2026-11-04T18:20:14+08:00",
+ "date": "2026-11-04",
+ "config": {
+  "base_url": "http://127.0.0.1:8091",
+  "n": 2,
+  "llm_calls": 2,
+  "history_path": "C:\\项目\\老田的AI助手\\research\\reports\\qa_quality_history.json",
+  "thresholds": {
+   "answerable_min": 0.8,
+   "guard_min": 0.8,
+   "fallback_max": 0.2,
+   "trend_drop_max": 0.15
+  },
+  "rolling_window": 7,
+  "send_requested": true
+ },
+ "day": {
+  "n": 2,
+  "http_200": 2,
+  "success": 2,
+  "fallback": 0,
+  "answerable_rate": 1.0,
+  "guard_pass_rate": 1.0,
+  "fallback_rate": 0.0,
+  "avg_citations": 2.0,
+  "avg_citation_resolvable_rate": 1.0,
+  "avg_inference_ratio": 0.0,
+  "avg_elapsed_seconds": 5.845,
+  "avg_completeness_score": 4.0
+ },
+ "alerts": [],
+ "alert_text": "【问答质量日报 2026-11-04】正常：可答率 100%、guard 100%、fallback 0%",
+ "rolling_7d": {
+  "n_days": 3,
+  "answerable_rate": 1.0,
+  "guard_pass_rate": 1.0,
+  "fallback_rate": 0.0,
+  "avg_citations": 2.3333,
+  "avg_elapsed_seconds": 8.9117,
+  "window": 7,
+  "date_from": "2026-11-02",
+  "date_to": "2026-11-04"
+ },
+ "history_entries": 3,
+ "history_snapshot": {
+  "schema_version": 1,
+  "kind": "qa_quality_history",
+  "entries": [
+   {
+    "date": "2026-11-02",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.5,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.45,
+    "avg_elapsed_seconds": 12.06,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_b5a0a0e045",
+     "q2_aa49124184"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-03",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.5,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.4166,
+    "avg_elapsed_seconds": 8.83,
+    "avg_completeness_score": 5.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_3d1abf0240",
+     "q2_1e95f989df"
+    ],
+    "alerts": []
+   },
+   {
+    "date": "2026-11-04",
+    "n": 2,
+    "answerable_rate": 1.0,
+    "guard_pass_rate": 1.0,
+    "fallback_rate": 0.0,
+    "avg_citations": 2.0,
+    "avg_citation_resolvable_rate": 1.0,
+    "avg_inference_ratio": 0.0,
+    "avg_elapsed_seconds": 5.845,
+    "avg_completeness_score": 4.0,
+    "guard_pass_count": 2,
+    "sample_ids": [
+     "q2_bcbfd79337",
+     "q2_a593448ce5"
+    ],
+    "alerts": []
+   }
+  ],
+  "rolling_7d": {
+   "n_days": 3,
+   "answerable_rate": 1.0,
+   "guard_pass_rate": 1.0,
+   "fallback_rate": 0.0,
+   "avg_citations": 2.3333,
+   "avg_elapsed_seconds": 8.9117,
+   "window": 7,
+   "date_from": "2026-11-02",
+   "date_to": "2026-11-04"
+  },
+  "updated_at": "2026-11-04T18:20:14+08:00"
+ },
+ "samples": [
+  {
+   "id": "q2_bcbfd79337",
+   "category": "驱动因素",
+   "theme": "AI算力/半导体",
+   "question": "智能算力规模占比的核心驱动因素是什么？",
+   "http_status": 200,
+   "elapsed_seconds": 9.61,
+   "meta": {
+    "mode": "multi",
+    "k": 8,
+    "clusters": 3,
+    "topk": 8,
+    "llm_called": false,
+    "prompt_version": "v4",
+    "guard_marker": "segment",
+    "citation_retry": true,
+    "citation_retry_info": {
+     "used": false,
+     "first_units": null,
+     "second_units": null,
+     "improved": false,
+     "error": null
+    },
+    "cache_hit": false
+   },
+   "guard_meta": {
+    "enabled": true,
+    "applicable": true,
+    "applied": true,
+    "on_fail": "fallback",
+    "guard_passed": true,
+    "guard_action": "pass",
+    "guard_issues": [],
+    "citation_valid": [
+     "776f36408a89",
+     "9ab889268ce2"
+    ],
+    "citation_invalid": [],
+    "citation_total": 2,
+    "citation_valid_count": 2,
+    "citation_invalid_count": 0,
+    "support_rate": 1.0,
+    "inference_ratio": 0.0,
+    "distinct_cited_units": 2,
+    "marker_mode": "segment"
+   },
+   "answer": "（规则降级：LLM 不可用，多单元摘录）\n【直接事实】智能算力规模占比：\n  - [776f36408a89] p.1 2024 年智能算力规模占全国算力总规模的 32%，带动用电需求加深增长。 2024 年，全国算力总规模达到 280 EFLOPS，其中八大国家枢纽节点算力规模达到 175 EFLOPS；智能算力规模占全国算力总规模的 32%。\n【直接事实】国产算力适配与成本优势：\n  - [9ab889268ce2] p.1 智谱已完成与多家国产算力平台的深度适配，实现 10 万级国产芯片规模化推理，单位 Token 推理成本较年初下降 80%。 智谱已兼容 40 多款主流芯片，并完成与多家国产算力平台的深度适配，实现 10 万级国产芯片规模化推理，单位 Token 推理成本较年初下降 80%。",
+   "answer_length": 354,
+   "citations": [
+    {
+     "unit_id": "776f36408a89",
+     "book": "rp_AP202610031830126544",
+     "chapter": "太 平 洋 证 券 股 份 有 限 公 司 证 券 研 究 报 告",
+     "page": 1,
+     "text": "2024 年智能算力规模占全国算力总规模的 32%，带动用电需求加深增长。 2024 年，全国算力总规模达到 280 EFLOPS，其中八大国家枢纽节点算力规模达到 175 EFLOPS；智能算力规模占全国算力总规模的 32%。"
+    },
+    {
+     "unit_id": "9ab889268ce2",
+     "book": "rp_AP202610021830112214",
+     "chapter": "大模型系列深度（一）：国产大模型竞争重心转向效",
+     "page": 1,
+     "text": "智谱已完成与多家国产算力平台的深度适配，实现 10 万级国产芯片规模化推理，单位 Token 推理成本较年初下降 80%。 智谱已兼容 40 多款主流芯片，并完成与多家国产算力平台的深度适配，实现 10 万级国产芯片规模化推理，单位 Token 推理成本较年初下降 80%。"
+    }
+   ],
+   "citation_count": 2,
+   "citation_resolvable_rate": 1.0,
+   "distinct_cited_units": 2,
+   "support_rate": 1.0,
+   "inference_ratio": 0.0,
+   "guard_passed_recomputed": true,
+   "guard_issues": [],
+   "fallback": false,
+   "refusal": false,
+   "status": "success",
+   "completeness_score": 4,
+   "human_score": null,
+   "verdict": "☐通过 ☐需修改"
+  },
+  {
+   "id": "q2_a593448ce5",
+   "category": "如何识别",
+   "theme": "宏观/策略/贸易",
+   "question": "北京市货物贸易净出口需要跟踪哪些指标或事件？",
+   "http_status": 200,
+   "elapsed_seconds": 2.08,
+   "meta": {
+    "mode": "multi",
+    "k": 8,
+    "clusters": 3,
+    "topk": 8,
+    "llm_called": false,
+    "prompt_version": "v4",
+    "guard_marker": "segment",
+    "citation_retry": true,
+    "citation_retry_info": {
+     "used": false,
+     "first_units": null,
+     "second_units": null,
+     "improved": false,
+     "error": null
+    },
+    "cache_hit": false
+   },
+   "guard_meta": {
+    "enabled": true,
+    "applicable": true,
+    "applied": true,
+    "on_fail": "fallback",
+    "guard_passed": true,
+    "guard_action": "pass",
+    "guard_issues": [],
+    "citation_valid": [
+     "61bca6c6d825",
+     "854f9973bb5d"
+    ],
+    "citation_invalid": [],
+    "citation_total": 2,
+    "citation_valid_count": 2,
+    "citation_invalid_count": 0,
+    "support_rate": 1.0,
+    "inference_ratio": 0.0,
+    "distinct_cited_units": 2,
+    "marker_mode": "segment"
+   },
+   "answer": "（规则降级：LLM 不可用，多单元摘录）\n【直接事实】北京市货物贸易净出口：\n  - [61bca6c6d825] p.2 2025 年 8 月北京市货物贸易净出口额为 -258.6 亿美元，较上年同期下降 1.9%。 注：2. 净出口额同比变化为绝对额数据，即 2026 年 8 月（或 1-8 月）的净出口额减去 2025 年 8 月（或 1-8 月）的净出口额。\n【直接事实】北京市矿产品贸易：\n  - [854f9973bb5d] p.2 2025 年 8 月当月，北京市矿产品出口额为 31.6 亿美元，同比大幅增长 88.6%。 文本表格显示：8 月当月 矿产品 出口额 31.6 贸易份额（%）36.9 同比变化（%）88.6",
+   "answer_length": 320,
+   "citations": [
+    {
+     "unit_id": "61bca6c6d825",
+     "book": "rp_AP202610061830165957",
+     "chapter": "一、贸易总体情况",
+     "page": 2,
+     "text": "2025 年 8 月北京市货物贸易净出口额为 -258.6 亿美元，较上年同期下降 1.9%。 注：2. 净出口额同比变化为绝对额数据，即 2026 年 8 月（或 1-8 月）的净出口额减去 2025 年 8 月（或 1-8 月）的净出口额。"
+    },
+    {
+     "unit_id": "854f9973bb5d",
+     "book": "rp_AP202610061830165957",
+     "chapter": "一、贸易总体情况",
+     "page": 2,
+     "text": "2025 年 8 月当月，北京市矿产品出口额为 31.6 亿美元，同比大幅增长 88.6%。 文本表格显示：8 月当月 矿产品 出口额 31.6 贸易份额（%）36.9 同比变化（%）88.6"
+    }
+   ],
+   "citation_count": 2,
+   "citation_resolvable_rate": 1.0,
+   "distinct_cited_units": 2,
+   "support_rate": 1.0,
+   "inference_ratio": 0.0,
+   "guard_passed_recomputed": true,
+   "guard_issues": [],
+   "fallback": false,
+   "refusal": false,
+   "status": "success",
+   "completeness_score": 4,
+   "human_score": null,
+   "verdict": "☐通过 ☐需修改"
+  }
+ ],
+ "history_date": "C:\\项目\\老田的AI助手\\research\\reports\\qa_quality_history.json",
+ "send": {
+  "sent": false,
+  "error": null,
+  "attempted": false
+ },
+ "out_json_expected": "C:\\项目\\老田的AI助手\\research\\reports\\qa_quality_20261104.json",
+ "elapsed_seconds": 11.8,
+ "disclaimer": "每日质量抽检仅供运维监控参考，不构成投资建议。"
+}

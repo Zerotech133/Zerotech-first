@@ -1,0 +1,12 @@
+{
+  "model": "glm/glm-5.3",
+  "n": 20,
+  "ok": 20,
+  "exact": 0.0,
+  "contains_reference": 0.0,
+  "mean_char_f1": 0.1494,
+  "mean_bigram_f1": 0.053,
+  "mean_number_hit": 0.35,
+  "errors": 0,
+  "note": "baseline only; not a pass/fail of SFT; holdout references are dataset answers"
+}

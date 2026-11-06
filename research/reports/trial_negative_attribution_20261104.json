@@ -1,0 +1,201 @@
+{
+  "generated_at": "2026-11-04T19:06:08",
+  "source": "v2_strategy_observation where ret_t1 not null",
+  "n": 55,
+  "negative": 25,
+  "negative_rate": 0.45454545454545453,
+  "avg_ret": 0.003800036363636364,
+  "avg_excess": -0.000400327071889121,
+  "market_proxy": "全 A 当日 close/pre_close-1 横截面中位数（非指数）",
+  "by_strategy": [
+    {
+      "strategy_id": "chanlun",
+      "n": 12,
+      "neg": 10,
+      "avg_ret": -0.0351795,
+      "avg_excess": -0.010123419173881166,
+      "neg_excess": 8,
+      "worst": -0.1002
+    },
+    {
+      "strategy_id": "v1-cn-strat-2",
+      "n": 18,
+      "neg": 9,
+      "avg_ret": 0.01574011111111111,
+      "avg_excess": 0.007974046114793971,
+      "neg_excess": 9,
+      "worst": -0.1
+    },
+    {
+      "strategy_id": "v1-cn-strat-4",
+      "n": 16,
+      "neg": 3,
+      "avg_ret": 0.01626975,
+      "avg_excess": -0.00222864662641006,
+      "neg_excess": 9,
+      "worst": -0.030547
+    },
+    {
+      "strategy_id": "v1-cn-strat-4-v7",
+      "n": 9,
+      "neg": 3,
+      "avg_ret": 0.009724222222222221,
+      "avg_excess": -0.0009346047678953624,
+      "neg_excess": 5,
+      "worst": -0.104114
+    }
+  ],
+  "by_signal_date": [
+    {
+      "signal_date": "2026-10-29",
+      "n": 10,
+      "neg": 9,
+      "avg_ret": -0.040074,
+      "mkt_ret": -0.03129346314325454,
+      "avg_excess": -0.00878053685674546
+    },
+    {
+      "signal_date": "2026-10-30",
+      "n": 20,
+      "neg": 4,
+      "avg_ret": 0.0231503,
+      "mkt_ret": 0.020168067226890685,
+      "avg_excess": 0.002982232773109315
+    },
+    {
+      "signal_date": "2026-11-02",
+      "n": 13,
+      "neg": 11,
+      "avg_ret": -0.04849061538461538,
+      "mkt_ret": -0.006546662380799317,
+      "avg_excess": -0.04194395300381607
+    },
+    {
+      "signal_date": "2026-11-03",
+      "n": 12,
+      "neg": 1,
+      "avg_ret": 0.0647595,
+      "mkt_ret": 0.01880832389991871,
+      "avg_excess": 0.04595117610008129
+    }
+  ],
+  "negative_categories": {
+    "个股显著弱于市场": 18,
+    "市场系统性下跌": 7
+  },
+  "negative_market_down_days": 20,
+  "negative_excess_below_-2pct": 18,
+  "negative_gap_down_2pct": 5,
+  "negative_intraday_down_2pct": 18,
+  "extreme_negative_le_-8pct": 6,
+  "extreme_examples": [
+    {
+      "strategy_id": "v1-cn-strat-4-v7",
+      "signal_date": "2026-11-02",
+      "entry_date": "20261103",
+      "code": "688265.SH",
+      "name": "南模生物",
+      "signal": "CHAN_V7",
+      "score": 100.0,
+      "ret_t1": -0.104114,
+      "gap": -0.01060220525869382,
+      "intraday": -0.09451350192884689,
+      "mkt_ret": -0.006546662380799317,
+      "excess": -0.09756733761920068,
+      "max_dd": -0.104114,
+      "negative": true,
+      "excess_neg": true,
+      "category": "个股显著弱于市场"
+    },
+    {
+      "strategy_id": "chanlun",
+      "signal_date": "2026-10-29",
+      "entry_date": "20261030",
+      "code": "002712.SZ",
+      "name": "思美传媒",
+      "signal": "1买",
+      "score": NaN,
+      "ret_t1": -0.1002,
+      "gap": -0.02605210420841686,
+      "intraday": -0.0761316872427984,
+      "mkt_ret": -0.03129346314325454,
+      "excess": -0.06890653685674546,
+      "max_dd": -0.1002,
+      "negative": true,
+      "excess_neg": true,
+      "category": "个股显著弱于市场"
+    },
+    {
+      "strategy_id": "v1-cn-strat-2",
+      "signal_date": "2026-11-02",
+      "entry_date": "20261103",
+      "code": "603757.SH",
+      "name": "大元泵业",
+      "signal": "均值回归",
+      "score": 76.9,
+      "ret_t1": -0.1,
+      "gap": -0.014955357142857006,
+      "intraday": -0.0863358259687288,
+      "mkt_ret": -0.006546662380799317,
+      "excess": -0.09345333761920069,
+      "max_dd": -0.1,
+      "negative": true,
+      "excess_neg": true,
+      "category": "个股显著弱于市场"
+    },
+    {
+      "strategy_id": "v1-cn-strat-2",
+      "signal_date": "2026-11-02",
+      "entry_date": "20261103",
+      "code": "603067.SH",
+      "name": "振华股份",
+      "signal": "均值回归",
+      "score": 100.0,
+      "ret_t1": -0.099834,
+      "gap": -0.00041597337770371556,
+      "intraday": -0.0994590095713691,
+      "mkt_ret": -0.006546662380799317,
+      "excess": -0.09328733761920069,
+      "max_dd": -0.099834,
+      "negative": true,
+      "excess_neg": true,
+      "category": "个股显著弱于市场"
+    },
+    {
+      "strategy_id": "chanlun",
+      "signal_date": "2026-10-29",
+      "entry_date": "20261030",
+      "code": "002112.SZ",
+      "name": "三变科技",
+      "signal": "2买",
+      "score": NaN,
+      "ret_t1": -0.099707,
+      "gap": -0.06891495601173026,
+      "intraday": -0.03307086614173227,
+      "mkt_ret": -0.03129346314325454,
+      "excess": -0.06841353685674546,
+      "max_dd": -0.099707,
+      "negative": true,
+      "excess_neg": true,
+      "category": "个股显著弱于市场"
+    },
+    {
+      "strategy_id": "v1-cn-strat-2",
+      "signal_date": "2026-11-02",
+      "entry_date": "20261103",
+      "code": "688678.SH",
+      "name": "福立旺",
+      "signal": "均值回归",
+      "score": 92.3,
+      "ret_t1": -0.083861,
+      "gap": -0.013713080168776481,
+      "intraday": -0.07112299465240635,
+      "mkt_ret": -0.006546662380799317,
+      "excess": -0.07731433761920069,
+      "max_dd": -0.083861,
+      "negative": true,
+      "excess_neg": true,
+      "category": "个股显著弱于市场"
+    }
+  ]
+}

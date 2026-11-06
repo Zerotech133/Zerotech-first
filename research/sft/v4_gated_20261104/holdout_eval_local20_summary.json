@@ -1,0 +1,12 @@
+{
+  "model": "qwen3.5:9b",
+  "n": 20,
+  "ok": 20,
+  "exact": 0.0,
+  "contains_reference": 0.0,
+  "mean_char_f1": 0.1624,
+  "mean_bigram_f1": 0.0609,
+  "mean_number_hit": 0.3,
+  "errors": 0,
+  "note": "baseline only; not a pass/fail of SFT; holdout references are dataset answers"
+}

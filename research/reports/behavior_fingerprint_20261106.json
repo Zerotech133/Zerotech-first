@@ -1,0 +1,176 @@
+{
+ "data_boundary": {
+  "individual_tick": false,
+  "individual_minute_bar": false,
+  "sector_minute_rows": 5469600,
+  "available": [
+   "moneyflow 四档(日频)",
+   "daily_basic 换手/量比/市值",
+   "cyq_perf 筹码分布"
+  ],
+  "missing": [
+   "逐笔成交(tick)",
+   "个股分钟线",
+   "委托队列(level2)"
+  ],
+  "verdict": "「每笔多少手 / 分时线上方下方」不可计算；只能做日频结构指纹"
+ },
+ "join_rate_pct": 86.1,
+ "market_baseline": {
+  "sh_sm_p50": 0.449,
+  "sh_md_p50": 0.335,
+  "sh_lg_p50": 0.17,
+  "sh_elg_p50": 0.023,
+  "turnover_p50": 1.86,
+  "circ_mv_p50_yi": 47.1
+ },
+ "profiles": {
+  "陈小群": {
+   "n": 903,
+   "amt_median_yi": 0.346,
+   "amt_p90_yi": 1.498,
+   "sh_sm": {
+    "median": 0.27,
+    "market_pct": 7.0
+   },
+   "sh_md": {
+    "median": 0.28,
+    "market_pct": 18.0
+   },
+   "sh_lg": {
+    "median": 0.21,
+    "market_pct": 68.0
+   },
+   "sh_elg": {
+    "median": 0.22,
+    "market_pct": 98.0
+   },
+   "turnover_rate": {
+    "median": 15.47,
+    "market_pct": 97.0
+   },
+   "volume_ratio": {
+    "median": 1.31,
+    "market_pct": 81.0
+   },
+   "circ_mv_yi": {
+    "median": 55.77,
+    "market_pct": 56.0
+   }
+  },
+  "章建平(章盟主)": {
+   "n": 1293,
+   "amt_median_yi": 0.289,
+   "amt_p90_yi": 1.356,
+   "sh_sm": {
+    "median": 0.27,
+    "market_pct": 7.0
+   },
+   "sh_md": {
+    "median": 0.29,
+    "market_pct": 23.0
+   },
+   "sh_lg": {
+    "median": 0.21,
+    "market_pct": 71.0
+   },
+   "sh_elg": {
+    "median": 0.18,
+    "market_pct": 97.0
+   },
+   "turnover_rate": {
+    "median": 13.5,
+    "market_pct": 96.0
+   },
+   "volume_ratio": {
+    "median": 1.32,
+    "market_pct": 81.0
+   },
+   "circ_mv_yi": {
+    "median": 59.2,
+    "market_pct": 58.0
+   }
+  },
+  "方新侠": {
+   "n": 899,
+   "amt_median_yi": 0.366,
+   "amt_p90_yi": 1.014,
+   "sh_sm": {
+    "median": 0.26,
+    "market_pct": 6.0
+   },
+   "sh_md": {
+    "median": 0.3,
+    "market_pct": 26.0
+   },
+   "sh_lg": {
+    "median": 0.22,
+    "market_pct": 74.0
+   },
+   "sh_elg": {
+    "median": 0.19,
+    "market_pct": 98.0
+   },
+   "turnover_rate": {
+    "median": 15.83,
+    "market_pct": 97.0
+   },
+   "volume_ratio": {
+    "median": 1.29,
+    "market_pct": 80.0
+   },
+   "circ_mv_yi": {
+    "median": 75.17,
+    "market_pct": 66.0
+   }
+  },
+  "赵强(赵老哥)": {
+   "n": 937,
+   "amt_median_yi": 0.141,
+   "amt_p90_yi": 0.504,
+   "sh_sm": {
+    "median": 0.28,
+    "market_pct": 9.0
+   },
+   "sh_md": {
+    "median": 0.29,
+    "market_pct": 20.0
+   },
+   "sh_lg": {
+    "median": 0.21,
+    "market_pct": 68.0
+   },
+   "sh_elg": {
+    "median": 0.18,
+    "market_pct": 97.0
+   },
+   "turnover_rate": {
+    "median": 11.58,
+    "market_pct": 95.0
+   },
+   "volume_ratio": {
+    "median": 1.49,
+    "market_pct": 87.0
+   },
+   "circ_mv_yi": {
+    "median": 36.26,
+    "market_pct": 39.0
+   }
+  }
+ },
+ "auc": {
+  "全市场随机": 0.9527,
+  "同市值同换手邻域": 0.954,
+  "feature_importance": {
+   "p_turnover_rate": 0.1069,
+   "p_sh_elg": 0.0896,
+   "p_volume_ratio": 0.0114,
+   "p_sh_md": 0.0072,
+   "p_sh_lg": 0.0059,
+   "p_buy_tot": 0.0056,
+   "p_circ_mv_yi": 0.0044,
+   "p_sh_sm": 0.0036,
+   "p_elg_net": 0.002
+  }
+ }
+}

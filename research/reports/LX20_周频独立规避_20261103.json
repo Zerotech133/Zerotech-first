@@ -1,0 +1,391 @@
+{
+  "schema": "zhice.strategy_four_gates/v1",
+  "strategy": "LX20_BULL_STOCK_THREE_ABSOLUTES",
+  "mode": "independent_avoid_weekly",
+  "generated_at": "2026-11-03T22:30:00+08:00",
+  "read_only": true,
+  "pre_registration": "deliverables/2026-11-03_LX20_降换手预注册_v1.md",
+  "data": {
+    "data_root": "C:\\项目\\老田的AI助手\\quant_backtest\\data\\tushare",
+    "universe": "tradable",
+    "load_dates": [
+      "20221107",
+      "20261103"
+    ],
+    "load_days": 967,
+    "warmup_days": 40,
+    "horizon": 20,
+    "panel_dates": 967,
+    "codes": 5741,
+    "eligible_avg_per_day": 3531.3,
+    "eligible_share": 0.6151,
+    "load_sec": 30.51
+  },
+  "coverage_pct": {
+    "mean": 24.705,
+    "median": 24.047,
+    "p95": 38.489
+  },
+  "variants": {
+    "rebal5_gross": {
+      "rebalance_every": 5,
+      "cost_bp": 0,
+      "baseline": {
+        "days": 925,
+        "ann_ret_pct": 1.709,
+        "vol_ann_pct": 24.552,
+        "mdd_pct": -36.39,
+        "sharpe": 0.192,
+        "win_rate": 0.533
+      },
+      "avoid": {
+        "days": 925,
+        "ann_ret_pct": 4.27,
+        "vol_ann_pct": 24.817,
+        "mdd_pct": -35.859,
+        "sharpe": 0.293,
+        "win_rate": 0.5341
+      },
+      "excess": {
+        "days": 925,
+        "ann_excess_pct": 2.551,
+        "cum_excess_pct": 9.365,
+        "te_ann_pct": 1.862,
+        "t": 2.63,
+        "info_ratio": 1.37
+      },
+      "avg_turnover_pct": 26.01,
+      "avg_holdings": 2610.8
+    },
+    "rebal5_30bp": {
+      "rebalance_every": 5,
+      "cost_bp": 30,
+      "baseline": {
+        "days": 925,
+        "ann_ret_pct": -2.691,
+        "vol_ann_pct": 24.516,
+        "mdd_pct": -40.814,
+        "sharpe": 0.012,
+        "win_rate": 0.5276
+      },
+      "avoid": {
+        "days": 925,
+        "ann_ret_pct": -3.604,
+        "vol_ann_pct": 24.755,
+        "mdd_pct": -41.369,
+        "sharpe": -0.024,
+        "win_rate": 0.5211
+      },
+      "excess": {
+        "days": 925,
+        "ann_excess_pct": -0.884,
+        "cum_excess_pct": -3.245,
+        "te_ann_pct": 1.89,
+        "t": -0.9,
+        "info_ratio": -0.468
+      },
+      "avg_turnover_pct": 26.01,
+      "avg_holdings": 2610.8
+    },
+    "rebal5_50bp": {
+      "rebalance_every": 5,
+      "cost_bp": 50,
+      "baseline": {
+        "days": 925,
+        "ann_ret_pct": -5.52,
+        "vol_ann_pct": 24.5,
+        "mdd_pct": -43.988,
+        "sharpe": -0.109,
+        "win_rate": 0.5168
+      },
+      "avoid": {
+        "days": 925,
+        "ann_ret_pct": -8.526,
+        "vol_ann_pct": 24.737,
+        "mdd_pct": -46.24,
+        "sharpe": -0.236,
+        "win_rate": 0.5146
+      },
+      "excess": {
+        "days": 925,
+        "ann_excess_pct": -3.174,
+        "cum_excess_pct": -11.651,
+        "te_ann_pct": 1.976,
+        "t": -3.08,
+        "info_ratio": -1.607
+      },
+      "avg_turnover_pct": 26.01,
+      "avg_holdings": 2610.8
+    },
+    "rebal5_80bp": {
+      "rebalance_every": 5,
+      "cost_bp": 80,
+      "baseline": {
+        "days": 925,
+        "ann_ret_pct": -9.614,
+        "vol_ann_pct": 24.488,
+        "mdd_pct": -48.435,
+        "sharpe": -0.29,
+        "win_rate": 0.5114
+      },
+      "avoid": {
+        "days": 925,
+        "ann_ret_pct": -15.452,
+        "vol_ann_pct": 24.747,
+        "mdd_pct": -52.808,
+        "sharpe": -0.554,
+        "win_rate": 0.5059
+      },
+      "excess": {
+        "days": 925,
+        "ann_excess_pct": -6.61,
+        "cum_excess_pct": -24.261,
+        "te_ann_pct": 2.191,
+        "t": -5.78,
+        "info_ratio": -3.017
+      },
+      "avg_turnover_pct": 26.01,
+      "avg_holdings": 2610.8
+    },
+    "rebal5_50bp+10bp": {
+      "rebalance_every": 5,
+      "cost_bp": 60,
+      "baseline": {
+        "days": 925,
+        "ann_ret_pct": -6.904,
+        "vol_ann_pct": 24.494,
+        "mdd_pct": -45.511,
+        "sharpe": -0.169,
+        "win_rate": 0.5146
+      },
+      "avoid": {
+        "days": 925,
+        "ann_ret_pct": -10.895,
+        "vol_ann_pct": 24.735,
+        "mdd_pct": -48.524,
+        "sharpe": -0.342,
+        "win_rate": 0.5114
+      },
+      "excess": {
+        "days": 925,
+        "ann_excess_pct": -4.319,
+        "cum_excess_pct": -15.855,
+        "te_ann_pct": 2.037,
+        "t": -4.06,
+        "info_ratio": -2.12
+      },
+      "avg_turnover_pct": 26.01,
+      "avg_holdings": 2610.8
+    },
+    "rebal5_80bp+10bp": {
+      "rebalance_every": 5,
+      "cost_bp": 90,
+      "baseline": {
+        "days": 925,
+        "ann_ret_pct": -10.94,
+        "vol_ann_pct": 24.488,
+        "mdd_pct": -49.839,
+        "sharpe": -0.35,
+        "win_rate": 0.5103
+      },
+      "avoid": {
+        "days": 925,
+        "ann_ret_pct": -17.645,
+        "vol_ann_pct": 24.759,
+        "mdd_pct": -54.816,
+        "sharpe": -0.659,
+        "win_rate": 0.5005
+      },
+      "excess": {
+        "days": 925,
+        "ann_excess_pct": -7.755,
+        "cum_excess_pct": -28.465,
+        "te_ann_pct": 2.281,
+        "t": -6.51,
+        "info_ratio": -3.399
+      },
+      "avg_turnover_pct": 26.01,
+      "avg_holdings": 2610.8
+    },
+    "rebal10_gross": {
+      "rebalance_every": 10,
+      "cost_bp": 0,
+      "baseline": {
+        "days": 925,
+        "ann_ret_pct": 2.515,
+        "vol_ann_pct": 24.513,
+        "mdd_pct": -35.475,
+        "sharpe": 0.225,
+        "win_rate": 0.5341
+      },
+      "avoid": {
+        "days": 925,
+        "ann_ret_pct": 4.44,
+        "vol_ann_pct": 24.794,
+        "mdd_pct": -35.542,
+        "sharpe": 0.3,
+        "win_rate": 0.5351
+      },
+      "excess": {
+        "days": 925,
+        "ann_excess_pct": 1.929,
+        "cum_excess_pct": 7.081,
+        "te_ann_pct": 1.757,
+        "t": 2.1,
+        "info_ratio": 1.098
+      },
+      "avg_turnover_pct": 34.078,
+      "avg_holdings": 2605.0
+    },
+    "rebal10_30bp": {
+      "rebalance_every": 10,
+      "cost_bp": 30,
+      "baseline": {
+        "days": 925,
+        "ann_ret_pct": -0.116,
+        "vol_ann_pct": 24.486,
+        "mdd_pct": -37.328,
+        "sharpe": 0.118,
+        "win_rate": 0.5308
+      },
+      "avoid": {
+        "days": 925,
+        "ann_ret_pct": -0.827,
+        "vol_ann_pct": 24.766,
+        "mdd_pct": -38.883,
+        "sharpe": 0.091,
+        "win_rate": 0.5297
+      },
+      "excess": {
+        "days": 925,
+        "ann_excess_pct": -0.646,
+        "cum_excess_pct": -2.371,
+        "te_ann_pct": 1.823,
+        "t": -0.68,
+        "info_ratio": -0.354
+      },
+      "avg_turnover_pct": 34.078,
+      "avg_holdings": 2605.0
+    },
+    "rebal10_50bp": {
+      "rebalance_every": 10,
+      "cost_bp": 50,
+      "baseline": {
+        "days": 925,
+        "ann_ret_pct": -1.833,
+        "vol_ann_pct": 24.475,
+        "mdd_pct": -39.274,
+        "sharpe": 0.047,
+        "win_rate": 0.5308
+      },
+      "avoid": {
+        "days": 925,
+        "ann_ret_pct": -4.195,
+        "vol_ann_pct": 24.769,
+        "mdd_pct": -41.326,
+        "sharpe": -0.049,
+        "win_rate": 0.5265
+      },
+      "excess": {
+        "days": 925,
+        "ann_excess_pct": -2.362,
+        "cum_excess_pct": -8.672,
+        "te_ann_pct": 1.949,
+        "t": -2.32,
+        "info_ratio": -1.212
+      },
+      "avg_turnover_pct": 34.078,
+      "avg_holdings": 2605.0
+    },
+    "rebal10_80bp": {
+      "rebalance_every": 10,
+      "cost_bp": 80,
+      "baseline": {
+        "days": 925,
+        "ann_ret_pct": -4.357,
+        "vol_ann_pct": 24.468,
+        "mdd_pct": -42.099,
+        "sharpe": -0.059,
+        "win_rate": 0.5254
+      },
+      "avoid": {
+        "days": 925,
+        "ann_ret_pct": -9.043,
+        "vol_ann_pct": 24.808,
+        "mdd_pct": -45.982,
+        "sharpe": -0.257,
+        "win_rate": 0.5189
+      },
+      "excess": {
+        "days": 925,
+        "ann_excess_pct": -4.937,
+        "cum_excess_pct": -18.124,
+        "te_ann_pct": 2.233,
+        "t": -4.24,
+        "info_ratio": -2.211
+      },
+      "avg_turnover_pct": 34.078,
+      "avg_holdings": 2605.0
+    },
+    "rebal10_50bp+10bp": {
+      "rebalance_every": 10,
+      "cost_bp": 60,
+      "baseline": {
+        "days": 925,
+        "ann_ret_pct": -2.682,
+        "vol_ann_pct": 24.471,
+        "mdd_pct": -40.23,
+        "sharpe": 0.012,
+        "win_rate": 0.5297
+      },
+      "avoid": {
+        "days": 925,
+        "ann_ret_pct": -5.838,
+        "vol_ann_pct": 24.777,
+        "mdd_pct": -42.92,
+        "sharpe": -0.118,
+        "win_rate": 0.5222
+      },
+      "excess": {
+        "days": 925,
+        "ann_excess_pct": -3.221,
+        "cum_excess_pct": -11.822,
+        "te_ann_pct": 2.033,
+        "t": -3.04,
+        "info_ratio": -1.585
+      },
+      "avg_turnover_pct": 34.078,
+      "avg_holdings": 2605.0
+    },
+    "rebal10_80bp+10bp": {
+      "rebalance_every": 10,
+      "cost_bp": 90,
+      "baseline": {
+        "days": 925,
+        "ann_ret_pct": -5.185,
+        "vol_ann_pct": 24.468,
+        "mdd_pct": -43.012,
+        "sharpe": -0.095,
+        "win_rate": 0.5243
+      },
+      "avoid": {
+        "days": 925,
+        "ann_ret_pct": -10.606,
+        "vol_ann_pct": 24.83,
+        "mdd_pct": -47.452,
+        "sharpe": -0.327,
+        "win_rate": 0.5157
+      },
+      "excess": {
+        "days": 925,
+        "ann_excess_pct": -5.796,
+        "cum_excess_pct": -21.274,
+        "te_ann_pct": 2.347,
+        "t": -4.73,
+        "info_ratio": -2.47
+      },
+      "avg_turnover_pct": 34.078,
+      "avg_holdings": 2605.0
+    }
+  }
+}

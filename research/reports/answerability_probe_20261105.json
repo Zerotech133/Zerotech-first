@@ -1,0 +1,162 @@
+[
+  {
+    "id": "w13_U01",
+    "answerable": false,
+    "decision": "不可答",
+    "raw": "不可答：资料未涉及申根签证申请流程或所需材料。",
+    "ok": true,
+    "cost": 0.001068
+  },
+  {
+    "id": "w13_U04",
+    "answerable": false,
+    "decision": "不可答",
+    "raw": "不可答：资料仅记录2026年部分行业板块表现和公司财报信息，未涉及任何体育赛事、世界杯或冠军球队",
+    "ok": true,
+    "cost": 0.002052
+  },
+  {
+    "id": "w13_U07",
+    "answerable": false,
+    "decision": "不可答",
+    "raw": "不可答：资料只讨论汽车制动技术与响应时间，未涉及高血压或药物治疗信息。",
+    "ok": true,
+    "cost": 0.000778
+  },
+  {
+    "id": "w13_U10",
+    "answerable": false,
+    "decision": "不可答",
+    "raw": "不可答：资料未涉及量子纠缠、贝尔不等式或相关物理实验内容。",
+    "ok": true,
+    "cost": 0.001272
+  },
+  {
+    "id": "w13_A01",
+    "answerable": true,
+    "decision": "可答",
+    "raw": "可答。资料直接列出核心链条为“模型降价→应用放量→芯片需求→制造扩产”，并说明景气验证不断",
+    "ok": true,
+    "cost": 0.001774
+  },
+  {
+    "id": "w13_A07",
+    "answerable": true,
+    "decision": "可答",
+    "raw": "可答：资料直接描述ARIA计划将测试分为Model Testing、Red Teaming和Field Testing，分别用于确认能力、诱发违规和",
+    "ok": true,
+    "cost": 0.001512
+  },
+  {
+    "id": "w13_A13",
+    "answerable": true,
+    "decision": "不可答",
+    "raw": "不可答：资料未出现“区间套”或其运用的相关描述，无法确认依据/来源。",
+    "ok": true,
+    "cost": 0.001342
+  },
+  {
+    "id": "w13_A18",
+    "answerable": true,
+    "decision": "不可答",
+    "raw": "不可答：资料只记录了不同主题的原文摘要，没有给出「今天刺猬情报局主题」的操作要点或流程说明。",
+    "ok": true,
+    "cost": 0.001526
+  },
+  {
+    "id": "w13_A24",
+    "answerable": true,
+    "decision": "不可答",
+    "raw": "不可答：资料未出现成交量、五天对比或任何行情描述，无法核实该说法的依据。",
+    "ok": true,
+    "cost": 0.001478
+  },
+  {
+    "id": "w13_A30",
+    "answerable": true,
+    "decision": "不可答",
+    "raw": "不可答。资料仅讨论大模型降价如何摊薄边际成本、降低端侧应用普及门槛，并提到“放量”和“放",
+    "ok": true,
+    "cost": 0.002018
+  },
+  {
+    "id": "heldout_001",
+    "answerable": true,
+    "decision": "可答",
+    "raw": "可答。资料指出频谱接入是轨道数据中心实现实用价值的关键资源，需简化许可流程、明确规则以减少监管不确定性及交易",
+    "ok": true,
+    "cost": 0.001344
+  },
+  {
+    "id": "heldout_011",
+    "answerable": true,
+    "decision": "不可答",
+    "raw": "不可答：资料未出现“愿意秒内交易超过300笔”这一表述，也未涉及类似指标或定义，无法据此",
+    "ok": true,
+    "cost": 0.001482
+  },
+  {
+    "id": "heldout_021",
+    "answerable": true,
+    "decision": "不可答",
+    "raw": "不可答。资料未涉及创业板指日线、向下笔、1740点及判断逻辑，无法据此回答。",
+    "ok": true,
+    "cost": 0.00148
+  },
+  {
+    "id": "heldout_030",
+    "answerable": true,
+    "decision": "不可答",
+    "raw": "不可答。资料只讨论买点识别、成交量变化及化工行业周期传导，未覆盖卖出环节、风险后果或操作建议，无法",
+    "ok": true,
+    "cost": 0.001714
+  },
+  {
+    "id": "heldout_040",
+    "answerable": true,
+    "decision": "不可答",
+    "raw": "不可答：资料未说明策略收益或高赚率的原因。",
+    "ok": true,
+    "cost": 0.001358
+  },
+  {
+    "id": "citation_sft_0003",
+    "answerable": true,
+    "decision": "可答",
+    "raw": "可答。资料直接指出钠电池核心机会集中在关键材料环节，尤其是硬碳负极和聚阴离子正极，并说明聚阴",
+    "ok": true,
+    "cost": 0.00154
+  },
+  {
+    "id": "citation_sft_0026",
+    "answerable": true,
+    "decision": "可答",
+    "raw": "可答：资料直接给出“看好”评级对应预计未来6~12个月内行业指数表现强于市场基准指数，并区分“中",
+    "ok": true,
+    "cost": 0.00175
+  },
+  {
+    "id": "citation_sft_0013",
+    "answerable": true,
+    "decision": "可答",
+    "raw": "可答。资料《rp_AP202609301830015453》“p.2",
+    "ok": true,
+    "cost": 0.0016
+  },
+  {
+    "id": "citation_sft_0039",
+    "answerable": true,
+    "decision": "可答",
+    "raw": "可答。资料把「现存障碍」放在[653a45d7f679]和[918a",
+    "ok": true,
+    "cost": 0.001598
+  },
+  {
+    "id": "citation_sft_0178",
+    "answerable": true,
+    "decision": "不可答",
+    "raw": "不可答：资料未出现「但先别忙着给他发年终奖」这一表述，也未给出相关依据或事实。",
+    "ok": true,
+    "cost": 0.0015
+  }
+]

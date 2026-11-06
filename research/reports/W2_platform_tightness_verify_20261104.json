@@ -1,0 +1,78 @@
+{
+  "factor": "platform_tightness",
+  "definition": "1-(20日最高-最低)/20日均值",
+  "direction": "+1",
+  "window": {
+    "start": "20241106",
+    "end": "20261103",
+    "horizon": 20,
+    "cost_bp": 30
+  },
+  "ic": {
+    "n": 453,
+    "mean_pct": 6.1477,
+    "ann_pct": 77.46,
+    "t": 6.14,
+    "positive_rate": 0.6137,
+    "bootstrap_p": 0.0633
+  },
+  "groups": {
+    "Q1": {
+      "n": 453,
+      "mean_pct": -1.9513,
+      "ann_pct": -24.586,
+      "t": -10.21,
+      "positive_rate": 0.2781,
+      "bootstrap_p": 1.0
+    },
+    "Q2": {
+      "n": 453,
+      "mean_pct": -1.6622,
+      "ann_pct": -20.944,
+      "t": -21.54,
+      "positive_rate": 0.1435,
+      "bootstrap_p": 1.0
+    },
+    "Q3": {
+      "n": 453,
+      "mean_pct": -1.7264,
+      "ann_pct": -21.752,
+      "t": -38.15,
+      "positive_rate": 0.0309,
+      "bootstrap_p": 1.0
+    },
+    "Q4": {
+      "n": 453,
+      "mean_pct": -1.8618,
+      "ann_pct": -23.459,
+      "t": -19.42,
+      "positive_rate": 0.1082,
+      "bootstrap_p": 1.0
+    },
+    "Q5": {
+      "n": 453,
+      "mean_pct": -2.0569,
+      "ann_pct": -25.917,
+      "t": -10.89,
+      "positive_rate": 0.2561,
+      "bootstrap_p": 1.0
+    }
+  },
+  "q5_minus_q1": {
+    "n": 453,
+    "mean_pct": -0.1056,
+    "ann_pct": -1.331,
+    "t": -0.29,
+    "positive_rate": 0.4857,
+    "bootstrap_p": 0.69
+  },
+  "q5_minus_q1_nonoverlap": {
+    "n": 23,
+    "mean_pct": 0.4505,
+    "ann_pct": 5.677,
+    "t": 0.36,
+    "positive_rate": 0.6087,
+    "bootstrap_p": null
+  },
+  "n_days": 453
+}

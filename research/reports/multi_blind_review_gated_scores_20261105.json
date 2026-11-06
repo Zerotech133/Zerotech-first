@@ -1,0 +1,26 @@
+{
+  "rows": [
+    {"id": "w13_U01", "answerable": false, "A": {"fact": 5, "support": 5, "complete": 4, "refusal": 5, "overall": 5}, "B": {"fact": 5, "support": 5, "complete": 4, "refusal": 5, "overall": 5}, "preference": "tie", "note": "两版均正确拒答，无差异"},
+    {"id": "w13_U04", "answerable": false, "A": {"fact": 5, "support": 5, "complete": 4, "refusal": 5, "overall": 5}, "B": {"fact": 5, "support": 5, "complete": 4, "refusal": 5, "overall": 5}, "preference": "tie", "note": "两版均正确拒答"},
+    {"id": "w13_U07", "answerable": false, "A": {"fact": 5, "support": 5, "complete": 4, "refusal": 5, "overall": 5}, "B": {"fact": 5, "support": 5, "complete": 4, "refusal": 5, "overall": 5}, "preference": "tie", "note": "两版均正确拒答"},
+    {"id": "w13_U10", "answerable": false, "A": {"fact": 5, "support": 5, "complete": 4, "refusal": 5, "overall": 5}, "B": {"fact": 5, "support": 5, "complete": 4, "refusal": 5, "overall": 5}, "preference": "tie", "note": "两版均正确拒答"},
+    {"id": "w13_A01", "answerable": true, "A": {"fact": 5, "support": 5, "complete": 5, "refusal": 5, "overall": 5}, "B": {"fact": 4, "support": 5, "complete": 3, "refusal": 5, "overall": 4}, "preference": "A", "note": "A双源成链，B单源单点"},
+    {"id": "w13_A07", "answerable": true, "A": {"fact": 4, "support": 5, "complete": 4, "refusal": 5, "overall": 4}, "B": {"fact": 5, "support": 5, "complete": 4, "refusal": 5, "overall": 5}, "preference": "B", "note": "B证据链更完整，A有术语拼写错"},
+    {"id": "w13_A13", "answerable": true, "A": {"fact": 2, "support": 1, "complete": 1, "refusal": 2, "overall": 2}, "B": {"fact": 2, "support": 1, "complete": 1, "refusal": 2, "overall": 2}, "preference": "tie", "note": "双方均误拒可答题"},
+    {"id": "w13_A18", "answerable": true, "A": {"fact": 2, "support": 1, "complete": 1, "refusal": 2, "overall": 2}, "B": {"fact": 2, "support": 3, "complete": 3, "refusal": 5, "overall": 2}, "preference": "B", "note": "B答非所问，A无故误拒"},
+    {"id": "w13_A24", "answerable": true, "A": {"fact": 2, "support": 1, "complete": 1, "refusal": 2, "overall": 2}, "B": {"fact": 2, "support": 1, "complete": 1, "refusal": 2, "overall": 2}, "preference": "tie", "note": "双方均误拒可答题"},
+    {"id": "w13_A30", "answerable": true, "A": {"fact": 2, "support": 1, "complete": 1, "refusal": 2, "overall": 2}, "B": {"fact": 3, "support": 4, "complete": 4, "refusal": 5, "overall": 3}, "preference": "B", "note": "B切中有效放量之辨，A误拒"},
+    {"id": "heldout_001", "answerable": true, "A": {"fact": 5, "support": 5, "complete": 5, "refusal": 5, "overall": 5}, "B": {"fact": 5, "support": 5, "complete": 4, "refusal": 5, "overall": 4}, "preference": "A", "note": "同双源，A覆盖更全，B较简"},
+    {"id": "heldout_011", "answerable": true, "A": {"fact": 2, "support": 1, "complete": 1, "refusal": 3, "overall": 2}, "B": {"fact": 2, "support": 1, "complete": 1, "refusal": 3, "overall": 2}, "preference": "tie", "note": "问句残缺，双方均拒"},
+    {"id": "heldout_021", "answerable": true, "A": {"fact": 2, "support": 1, "complete": 1, "refusal": 2, "overall": 2}, "B": {"fact": 2, "support": 3, "complete": 3, "refusal": 5, "overall": 2}, "preference": "B", "note": "B仅类比迁移，未答原文判断"},
+    {"id": "heldout_030", "answerable": true, "A": {"fact": 3, "support": 3, "complete": 3, "refusal": 5, "overall": 3}, "B": {"fact": 2, "support": 1, "complete": 1, "refusal": 2, "overall": 2}, "preference": "A", "note": "A间接作答，B误拒"},
+    {"id": "heldout_040", "answerable": true, "A": {"fact": 2, "support": 2, "complete": 2, "refusal": 4, "overall": 2}, "B": {"fact": 2, "support": 1, "complete": 1, "refusal": 2, "overall": 2}, "preference": "A", "note": "A材料相关性弱，仅胜于误拒"},
+    {"id": "citation_sft_0003", "answerable": true, "A": {"fact": 5, "support": 5, "complete": 5, "refusal": 5, "overall": 5}, "B": {"fact": 5, "support": 5, "complete": 3, "refusal": 5, "overall": 4}, "preference": "A", "note": "A双源覆盖应用面，B单点"},
+    {"id": "citation_sft_0026", "answerable": true, "A": {"fact": 5, "support": 5, "complete": 5, "refusal": 5, "overall": 4}, "B": {"fact": 5, "support": 5, "complete": 5, "refusal": 5, "overall": 4}, "preference": "tie", "note": "定义与引用基本等价"},
+    {"id": "citation_sft_0013", "answerable": true, "A": {"fact": 4, "support": 5, "complete": 4, "refusal": 5, "overall": 4}, "B": {"fact": 5, "support": 5, "complete": 5, "refusal": 5, "overall": 5}, "preference": "B", "note": "B聚焦北京现状与趋势，A偏题"},
+    {"id": "citation_sft_0039", "answerable": true, "A": {"fact": 5, "support": 5, "complete": 4, "refusal": 5, "overall": 5}, "B": {"fact": 5, "support": 5, "complete": 4, "refusal": 5, "overall": 5}, "preference": "tie", "note": "双源障碍并列，A归纳稍进"},
+    {"id": "citation_sft_0178", "answerable": true, "A": {"fact": 2, "support": 1, "complete": 1, "refusal": 2, "overall": 2}, "B": {"fact": 2, "support": 1, "complete": 1, "refusal": 2, "overall": 2}, "preference": "tie", "note": "双方均误拒可答题"}
+  ],
+  "totals": {"A": 349, "B": 357},
+  "summary": "4道不可答题两版均正确拒答、同分；可答题误拒普遍是主要失分点。差异在B答出A18/A30/heldout_021，A答出heldout_030/040；A在A01/heldout_001引用覆盖更全，B在A18/A30更贴题。总分B略高（357:349）。"
+}

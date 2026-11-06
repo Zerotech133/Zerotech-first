@@ -1,0 +1,56 @@
+{
+  "source": "C:\\Temp\\sft_v4_train_chatml.jsonl",
+  "source_sha256": "f34c7fc0058a3e748a702928d115ea21c12600a34cf0b849dd32770e5a6df559",
+  "canonical_system": "你是零界量化知识助手。优先依据知识库/给定资料回答；事实性内容尽量给出处；资料不足时明确说明；不构成投资建议。",
+  "rows": 3769,
+  "excluded": 0,
+  "groups": 2280,
+  "split_rows": {
+    "train": 3169,
+    "val": 394,
+    "holdout": 206
+  },
+  "split_groups": {
+    "train": 1927,
+    "val": 229,
+    "holdout": 124
+  },
+  "group_overlap": [],
+  "category_alloc": {
+    "A_concept_qa": {
+      "train": 436,
+      "val": 51,
+      "holdout": 27
+    },
+    "B_conclusion_rewrite": {
+      "train": 58,
+      "val": 24,
+      "holdout": 9
+    },
+    "C_reading_comprehension": {
+      "train": 565,
+      "val": 67,
+      "holdout": 35
+    },
+    "D_multi_source": {
+      "train": 10,
+      "val": 2,
+      "holdout": 2
+    },
+    "E_variant": {
+      "train": 1063,
+      "val": 128,
+      "holdout": 68
+    },
+    "unknown": {
+      "train": 1037,
+      "val": 122,
+      "holdout": 65
+    }
+  },
+  "files": {
+    "train": "4d6012a801e8403055bda23eb140f50a618956479eab9f56269e3ae48eab26b0",
+    "val": "06ca1e1abe7cc679e427fcba6ca3c3a2b461c027cd82964e23c3917c7d03dacf",
+    "holdout": "30b4dad4d9cb9444c7e42f04455bb69fd6807010f67b0f823ba7c368c7f655bf"
+  }
+}

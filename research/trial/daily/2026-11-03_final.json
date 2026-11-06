@@ -1,0 +1,390 @@
+{
+  "version": "1.0",
+  "generated_at": "2026-11-04T20:33:11+08:00",
+  "date": "2026-11-03",
+  "mode": "final",
+  "day_number": null,
+  "in_observation_window": false,
+  "observation_dates": [
+    "2026-11-05",
+    "2026-11-06",
+    "2026-11-09",
+    "2026-11-10",
+    "2026-11-11"
+  ],
+  "report_deadline": "2026-11-04T09:30:00+08:00",
+  "final_due": true,
+  "overall_status": "FAIL",
+  "checks": {
+    "data_dates": {
+      "status": "PASS",
+      "detail_short": "bar 全部达到期望"
+    },
+    "reports_on_time": {
+      "status": "FAIL",
+      "detail_short": "on_time=3（阈值10），total=9"
+    },
+    "feedback_lusu": {
+      "status": "FAIL",
+      "detail_short": "0 条"
+    },
+    "supervision_acad1": {
+      "status": "FAIL",
+      "detail_short": "0 条"
+    },
+    "observations_t1": {
+      "status": "FAIL",
+      "detail_short": "13/31 已实现 T+1，coverage=41.94%；未覆盖市场：CRYPTO、HK、US"
+    }
+  },
+  "data_dates": {
+    "ok": true,
+    "bar_all_ok": true,
+    "pool_all_ok": true,
+    "acad1_all_ok": true,
+    "expected": {
+      "CN": "2026-11-03",
+      "HK": "2026-11-03",
+      "US": "2026-11-02",
+      "CRYPTO": "2026-11-03"
+    },
+    "detail": {
+      "CN": {
+        "expected": "2026-11-03",
+        "bar": "2026-11-04",
+        "pool": "2026-11-04",
+        "acad1": "2026-11-04",
+        "bar_ok": true,
+        "pool_ok": true,
+        "acad1_ok": true
+      },
+      "HK": {
+        "expected": "2026-11-03",
+        "bar": "2026-11-04",
+        "pool": "2026-11-04",
+        "acad1": "2026-11-04",
+        "bar_ok": true,
+        "pool_ok": true,
+        "acad1_ok": true
+      },
+      "US": {
+        "expected": "2026-11-02",
+        "bar": "2026-11-03",
+        "pool": "2026-11-03",
+        "acad1": "2026-11-03",
+        "bar_ok": true,
+        "pool_ok": true,
+        "acad1_ok": true
+      },
+      "CRYPTO": {
+        "expected": "2026-11-03",
+        "bar": "2026-11-04",
+        "pool": "2026-11-04",
+        "acad1": "2026-11-04",
+        "bar_ok": true,
+        "pool_ok": true,
+        "acad1_ok": true
+      }
+    }
+  },
+  "reports": {
+    "threshold": 10,
+    "by_market": {
+      "CN": {
+        "total": 5,
+        "on_time": 3,
+        "strategies": [
+          "chanlun",
+          "qpzm",
+          "v1-cn-strat-2",
+          "v1-cn-strat-4",
+          "v1-cn-strat-4-v7"
+        ]
+      },
+      "CRYPTO": {
+        "total": 1,
+        "on_time": 0,
+        "strategies": [
+          "qpzm"
+        ]
+      },
+      "HK": {
+        "total": 1,
+        "on_time": 0,
+        "strategies": [
+          "qpzm"
+        ]
+      },
+      "US": {
+        "total": 2,
+        "on_time": 0,
+        "strategies": [
+          "v1-us-strat-6",
+          "v1-us-strat-7"
+        ]
+      }
+    },
+    "total": 9,
+    "on_time": 3,
+    "strategies": [
+      "chanlun",
+      "qpzm",
+      "v1-cn-strat-2",
+      "v1-cn-strat-4",
+      "v1-cn-strat-4-v7",
+      "v1-us-strat-6",
+      "v1-us-strat-7"
+    ]
+  },
+  "feedback": {
+    "total": 0,
+    "target": 0,
+    "consumers": [],
+    "target_consumer": "鲁肃"
+  },
+  "supervision": {
+    "total": 0,
+    "target": 0,
+    "supervisors": [],
+    "target_supervisor": "ACAD1"
+  },
+  "observations": {
+    "signal_date": "2026-11-02",
+    "total": 31,
+    "with_t1": 13,
+    "negative": 11,
+    "coverage": 0.41935483870967744,
+    "status_counts": {
+      "partial": 13,
+      "pending": 18
+    },
+    "by_market": {
+      "CN": {
+        "total": 13,
+        "with_t1": 13,
+        "negative": 11
+      },
+      "CRYPTO": {
+        "total": 2,
+        "with_t1": 0,
+        "negative": 0
+      },
+      "HK": {
+        "total": 10,
+        "with_t1": 0,
+        "negative": 0
+      },
+      "US": {
+        "total": 6,
+        "with_t1": 0,
+        "negative": 0
+      }
+    },
+    "coverage_by_market": {
+      "CN": {
+        "total": 13,
+        "with_t1": 13,
+        "negative": 11,
+        "coverage": 1.0
+      },
+      "CRYPTO": {
+        "total": 2,
+        "with_t1": 0,
+        "negative": 0,
+        "coverage": 0.0
+      },
+      "HK": {
+        "total": 10,
+        "with_t1": 0,
+        "negative": 0,
+        "coverage": 0.0
+      },
+      "US": {
+        "total": 6,
+        "with_t1": 0,
+        "negative": 0,
+        "coverage": 0.0
+      }
+    },
+    "pending_markets": [
+      "CRYPTO",
+      "HK",
+      "US"
+    ],
+    "negatives": [
+      {
+        "strategy_id": "chanlun",
+        "market": "CN",
+        "signal_date": "2026-11-02",
+        "entry_date": "2026-11-03",
+        "code": "601882.SH",
+        "name": "海天精工",
+        "signal": "3买,CHAN",
+        "ret_t1": -0.03066,
+        "max_dd": -0.03066,
+        "market_ret": -0.006535947712418277,
+        "excess": -0.024124052287581722,
+        "draft_category": "个股显著弱于市场"
+      },
+      {
+        "strategy_id": "v1-cn-strat-2",
+        "market": "CN",
+        "signal_date": "2026-11-02",
+        "entry_date": "2026-11-03",
+        "code": "001216.SZ",
+        "name": "华瓷股份",
+        "signal": "均值回归",
+        "ret_t1": -0.046574,
+        "max_dd": -0.046574,
+        "market_ret": -0.006535947712418277,
+        "excess": -0.04003805228758172,
+        "draft_category": "个股显著弱于市场"
+      },
+      {
+        "strategy_id": "v1-cn-strat-2",
+        "market": "CN",
+        "signal_date": "2026-11-02",
+        "entry_date": "2026-11-03",
+        "code": "001368.SZ",
+        "name": "通达创智",
+        "signal": "均值回归",
+        "ret_t1": -0.037158,
+        "max_dd": -0.037158,
+        "market_ret": -0.006535947712418277,
+        "excess": -0.03062205228758172,
+        "draft_category": "个股显著弱于市场"
+      },
+      {
+        "strategy_id": "v1-cn-strat-2",
+        "market": "CN",
+        "signal_date": "2026-11-02",
+        "entry_date": "2026-11-03",
+        "code": "002388.SZ",
+        "name": "新亚制程",
+        "signal": "均值回归",
+        "ret_t1": -0.036538,
+        "max_dd": -0.036538,
+        "market_ret": -0.006535947712418277,
+        "excess": -0.030002052287581724,
+        "draft_category": "个股显著弱于市场"
+      },
+      {
+        "strategy_id": "v1-cn-strat-2",
+        "market": "CN",
+        "signal_date": "2026-11-02",
+        "entry_date": "2026-11-03",
+        "code": "002849.SZ",
+        "name": "威星智能",
+        "signal": "均值回归",
+        "ret_t1": -0.061111,
+        "max_dd": -0.061111,
+        "market_ret": -0.006535947712418277,
+        "excess": -0.05457505228758172,
+        "draft_category": "个股显著弱于市场"
+      },
+      {
+        "strategy_id": "v1-cn-strat-2",
+        "market": "CN",
+        "signal_date": "2026-11-02",
+        "entry_date": "2026-11-03",
+        "code": "300765.SZ",
+        "name": "石药创新",
+        "signal": "均值回归",
+        "ret_t1": -0.068317,
+        "max_dd": -0.068317,
+        "market_ret": -0.006535947712418277,
+        "excess": -0.061781052287581725,
+        "draft_category": "个股显著弱于市场"
+      },
+      {
+        "strategy_id": "v1-cn-strat-2",
+        "market": "CN",
+        "signal_date": "2026-11-02",
+        "entry_date": "2026-11-03",
+        "code": "603067.SH",
+        "name": "振华股份",
+        "signal": "均值回归",
+        "ret_t1": -0.099834,
+        "max_dd": -0.099834,
+        "market_ret": -0.006535947712418277,
+        "excess": -0.09329805228758173,
+        "draft_category": "个股显著弱于市场"
+      },
+      {
+        "strategy_id": "v1-cn-strat-2",
+        "market": "CN",
+        "signal_date": "2026-11-02",
+        "entry_date": "2026-11-03",
+        "code": "603757.SH",
+        "name": "大元泵业",
+        "signal": "均值回归",
+        "ret_t1": -0.1,
+        "max_dd": -0.1,
+        "market_ret": -0.006535947712418277,
+        "excess": -0.09346405228758173,
+        "draft_category": "个股显著弱于市场"
+      },
+      {
+        "strategy_id": "v1-cn-strat-2",
+        "market": "CN",
+        "signal_date": "2026-11-02",
+        "entry_date": "2026-11-03",
+        "code": "688678.SH",
+        "name": "福立旺",
+        "signal": "均值回归",
+        "ret_t1": -0.083861,
+        "max_dd": -0.083861,
+        "market_ret": -0.006535947712418277,
+        "excess": -0.07732505228758173,
+        "draft_category": "个股显著弱于市场"
+      },
+      {
+        "strategy_id": "v1-cn-strat-4-v7",
+        "market": "CN",
+        "signal_date": "2026-11-02",
+        "entry_date": "2026-11-03",
+        "code": "002860.SZ",
+        "name": "星帅尔",
+        "signal": "CHAN_V7",
+        "ret_t1": -0.066261,
+        "max_dd": -0.066261,
+        "market_ret": -0.006535947712418277,
+        "excess": -0.05972505228758172,
+        "draft_category": "个股显著弱于市场"
+      },
+      {
+        "strategy_id": "v1-cn-strat-4-v7",
+        "market": "CN",
+        "signal_date": "2026-11-02",
+        "entry_date": "2026-11-03",
+        "code": "688265.SH",
+        "name": "南模生物",
+        "signal": "CHAN_V7",
+        "ret_t1": -0.104114,
+        "max_dd": -0.104114,
+        "market_ret": -0.006535947712418277,
+        "excess": -0.09757805228758172,
+        "draft_category": "个股显著弱于市场"
+      }
+    ],
+    "worksheet": "C:\\项目\\老田的AI助手\\research\\reports\\trial_negative_review_20261102.csv"
+  },
+  "operators": {
+    "feedback": "鲁肃",
+    "supervision": "ACAD1",
+    "feedback_entry": "选股中台 → 统一池 + 反馈（人工填写）",
+    "supervision_entry": "选股中台 → 日报经验与督导（人工填写）"
+  },
+  "no_production": true,
+  "notes": [
+    "反馈/督导必须由真实责任人填写；本脚本只读检查，不代填。",
+    "负向草稿自动归类，仅作 ACAD1 复核材料，不是人工签署结论。",
+    "报告数按 report_date=数据日、次一交易日 09:30 截止口径。",
+    "当前 calc_observations.py 只覆盖 TDX/CN；HK/US/CRYPTO 的 T+1 未接入，验收会如实 FAIL，不代算、不伪造。",
+    "本检查不写业务表、不交易、不批准、不改池/权重/索引。"
+  ],
+  "json_path": "C:\\Temp\\trial_observation_2026-11-03_final.json",
+  "consecutive_fail_days": 0,
+  "stop_recommended": false,
+  "markdown_path": "C:\\项目\\deliverables\\2026-11-03_五日观察_基线检查_final_v1.md"
+}

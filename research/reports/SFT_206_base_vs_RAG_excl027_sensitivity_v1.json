@@ -1,0 +1,33 @@
+{
+  "scope": "206 base vs production KB v2 RAG, holdout-027 excluded",
+  "n": 205,
+  "excluded_ids": [
+    "holdout-027"
+  ],
+  "reason": "REFERENCE_MISMATCH_NO_VALID_GROUND_TRUTH",
+  "base": {
+    "char_f1": 0.1889,
+    "bigram_f1": 0.0741,
+    "number_hit": 0.1933
+  },
+  "rag": {
+    "char_f1": 0.2261,
+    "bigram_f1": 0.1109,
+    "number_hit": 0.2239
+  },
+  "delta": {
+    "char_f1": 0.0372,
+    "bigram_f1": 0.0368,
+    "number_hit": 0.0306
+  },
+  "paired_char": {
+    "wins": 134,
+    "losses": 71,
+    "ties": 0,
+    "ci95": [
+      0.0223,
+      0.0527
+    ]
+  },
+  "note": "只排除 027；不重跑模型。历史 n=206 报告仍包含 027，不能与 n=205 混淆。"
+}
