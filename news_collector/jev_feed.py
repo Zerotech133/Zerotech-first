@@ -193,20 +193,82 @@ def feed_source(alias, kind, wm_date, days, cap, dryrun=False):
     return n_ins, len(df), max_date, None
 
 
+# ── 2026-11-07 RFC-20261107 §11-A-FIX：夜窗守卫内补纯规则粗筛 ──────────
+# 根因：judge_pending() 命中 _in_night_window() 时直接 return，21:45–07:05
+# （约 16/24 轮）完全不经过 prefilter → 方案 A 公告白名单在生产
+# notice_skip=0、new_code_effective_in_prod=False，一周影子观测拿不到样本。
+# 修法：夜窗仍严格不调 Ollama（保住 OS-FIX-JEVFEEDNIGHT 的独占语义），
+# 只做零算力规则粗筛，命中写 src=prefilter 的 neutral；判读仍归 JevNight。
+# 开关关闭或任何异常都静默回退，绝不新增告警噪声、绝不改变夜批行为。
+_PREFILTER_ON_VALUES = ("1", "safe", "on", "true", "yes")
+
+
+def _night_prefilter(kind, cap):
+    """夜窗专属第一段粗筛：只跑规则、只写 neutral，不碰 Ollama。
+
+    UPDATE 带 AND (jev IS NULL OR jev='')，保证不覆盖 JevNight 已判结果；
+    src=prefilter / pref.reason 证据可按 RFC §7 SQL 精确回退。
+    """
+    if str(os.environ.get("JEV_PREFILTER", "0")).strip().lower() not in _PREFILTER_ON_VALUES:
+        return 0
+    source = "xd_%s" % kind
+    db = None
+    n = 0
+    try:
+        import jev_prefilter
+
+        db = sqlite3.connect(DB, timeout=5.0)
+        rows = db.execute(
+            "SELECT id, title FROM news "
+            "WHERE source=? AND (jev IS NULL OR jev='') "
+            "ORDER BY ts DESC LIMIT ?",
+            (source, cap),
+        ).fetchall()
+        skipped = []
+        for nid, title in rows:
+            j = jev_prefilter.prefilter_jev(title or "", source, mode="safe")
+            if j is not None:
+                skipped.append((nid, j))
+        for nid, j in skipped:
+            cur = db.execute(
+                "UPDATE news SET jev=? WHERE id=? AND (jev IS NULL OR jev='')",
+                (json.dumps(j, ensure_ascii=False), nid),
+            )
+            n += int(cur.rowcount or 0)
+        if n:
+            db.commit()
+    except Exception as e:  # noqa: BLE001 —— 纯增益逻辑，失败一律静默回退给夜批
+        if db is not None:
+            try:
+                db.rollback()
+            except Exception:
+                pass
+        print("  NIGHT-PREFILTER FAIL %r（留待 JevNight，不告警）" % (e,), file=sys.stderr)
+        n = 0
+    finally:
+        if db is not None:
+            db.close()
+    if n:
+        print("  NIGHT-PREFILTER %s skip=%d（不调 Ollama）" % (kind, n))
+    return n
+
+
 def judge_pending(kind, cap, dryrun=False):
     """对本轮 xd_ 来源未判行过 JEV 模型（每批 8 条，内部 0.8s 防限流）。
 
     返回 {"judged": 实际判成条数, "missing": 判定失败条数, "error": 阶段错误或 None}。
     夜批独占窗口（21:45–07:05 / 暂停旗 / 夜锁）内跳过判读，返回
     {"judged":0,...,"skipped_night":True}——数据留待 JevNight 判，不丢。
+    2026-11-07：夜窗仍不调 Ollama，但先跑零算力规则粗筛（见 _night_prefilter）。
     """
-    res = {"judged": 0, "missing": 0, "error": None}
+    res = {"judged": 0, "missing": 0, "error": None, "pref_skipped": 0}
     if not dryrun and _in_night_window():
         res["skipped_night"] = True
         print(
             "  SKIP judge %s: JevNight 独占窗口（21:45–07:05 / 暂停旗）；"
             "留待夜批判读" % kind
         )
+        res["pref_skipped"] += _night_prefilter(kind, cap)
         return res
     db = sqlite3.connect(DB)
     try:
@@ -228,7 +290,38 @@ def judge_pending(kind, cap, dryrun=False):
                     st = json.loads(stocks) if stocks else []
                 except Exception:
                     st = []
-                items.append({"id": nid, "title": title, "stocks": st})
+                items.append({
+                    "id": nid, "title": title, "stocks": st,
+                    "source": "xd_%s" % kind,
+                })
+            # 2026-11-07 RFC-20261107 方案 A：三入口统一第一段规则粗筛。
+            # 与 jev_backfill.py 的 prefilter 段同口径（JEV_PREFILTER=safe 才启用），
+            # skip 直接写带 src=prefilter / pref.reason 证据的 neutral，可 SQL 回退。
+            _mode = str(os.environ.get("JEV_PREFILTER", "0")).strip().lower()
+            if _mode in _PREFILTER_ON_VALUES:
+                import jev_prefilter
+
+                kept, skipped = [], []
+                for it in items:
+                    j = jev_prefilter.prefilter_jev(
+                        it.get("title") or "", it.get("source") or "", mode="safe"
+                    )
+                    if j is None:
+                        kept.append(it)
+                    else:
+                        skipped.append((it["id"], j))
+                for nid, j in skipped:
+                    db.execute(
+                        "UPDATE news SET jev=? WHERE id=? AND (jev IS NULL OR jev='')",
+                        (json.dumps(j, ensure_ascii=False), nid),
+                    )
+                if skipped:
+                    db.commit()
+                    res["pref_skipped"] += len(skipped)
+                    print("  PREFILTER %s skip=%d keep=%d" % (kind, len(skipped), len(kept)))
+                items = kept
+                if not items:
+                    continue
             try:
                 got = news_ai.jev_judge_batch(items) or {}
             except Exception as e:  # noqa: BLE001
@@ -313,6 +406,8 @@ def main(argv=None):
         if jr["judged"]:
             summary["src"][kind]["judged"] = jr["judged"]
             print("  %s judged=%d" % (kind, jr["judged"]))
+        if jr.get("pref_skipped"):
+            summary["src"][kind]["pref_skipped"] = jr["pref_skipped"]
         if jr["missing"]:
             # 单条判定失败不硬失败（避免个别坏条让整轮红），但留明细可追
             summary["src"][kind]["judge_missing"] = jr["missing"]

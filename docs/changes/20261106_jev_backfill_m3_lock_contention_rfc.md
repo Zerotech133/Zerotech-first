@@ -1,6 +1,10 @@
 # RFC 20261106 · JEV 回填与 M3 的锁互斥死锁
 
-- 状态：**待批准**（未改任何生产代码）
+- 状态：**已实施（2026-11-06 晚，经批准）**——`jev_backfill.py` 落地 `_backlog_left()` +
+  `_decide_skip()`，main() 仅在「确认 M3 持锁」分支内探测积压（保住 OS-FIX-JEVLOCK 契约）；
+  单测 `test_jev_backfill_contend.py` 11 项 + 既有回归 15 项全过。
+  实施前手工预演（17:14 竞争模式 round 1）已验证：能拿锁、能判（25min/120 条）、无锁协议破坏。
+  回滚开关不变：`JEV_M3_CONTEND_MIN_BACKLOG=999999` 即恢复旧行为。
 - 提出：2026-11-06 17:10
 - 关联：K266-PROBE-YIELD（闸门3）、M3SKIP（2026-10-30）、OS-FIX-JEVLOCK（2026-10-26）
 - 影响组件：`news_collector/jev_backfill.py`、`jev-eval/jev_backfill_task.ps1`

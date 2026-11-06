@@ -69,6 +69,38 @@ LOCK_YIELD_PAUSED_ENV = "JEV_LOCK_YIELD_PAUSED"
 _JEV_BATCH_MAX = 8
 
 
+def _env_int(name, default):
+    """env 整数读取；空/非法回落默认（RFC-20261106 回滚开关依赖它）。"""
+    try:
+        return int(os.environ.get(name) or default)
+    except (TypeError, ValueError):
+        return default
+
+
+# 2026-11-06 RFC-20261106（老田批准）：M3 锁互斥死锁出口。
+# 背景：_m3_active_skip 见 M3 活着就整轮让位，而闸门3（K266_PROBE_YIELD）靠
+# "judge 请求延迟>6s"判 busy——回填不发请求 → 闸门3 永不触发 → M3 一直持锁，
+# 白天整点轮连续空转（11-06 实测 5 轮 skip，积压 146→883）。
+# 出口：积压 >= JEV_M3_CONTEND_MIN_BACKLOG（默认 150）时参与锁竞争，抢 M3
+# LEASE_S=300 的让位窗口（YIELD_S=20s，11-06 17:12 实测窗口真实存在）。
+# 竞争模式 acquire 等待降为 JEV_CONTEND_WAIT_S（默认 600s）防整轮空耗。
+# 回滚：设 JEV_M3_CONTEND_MIN_BACKLOG=999999 恢复"见 M3 就让位"旧行为。
+M3_CONTEND_MIN_BACKLOG = _env_int("JEV_M3_CONTEND_MIN_BACKLOG", 150)
+JEV_CONTEND_WAIT_S = _env_int("JEV_CONTEND_WAIT_S", 600)
+
+# 2026-11-07 RFC-20261107 方案 C：高价值口径分离 + 取批降权。
+# _backlog_left() 是裸 COUNT，同时驱动飞书告警与方案 B 的 150 竞争阈值；
+# 500 条例行公告足以让两者长期处于触发态。新增 high 口径（排除公告源）供这两处使用，
+# 原 _backlog_left 保持全量语义不变；两个 env 均可一键退回旧行为。
+SCOPE_ALERT_ENV = "JEV_SCOPE_ALERT"
+PRIORITY_BATCH_ENV = "JEV_PRIORITY_BATCH"
+LOW_PRIORITY_SOURCES = ("xd_notice", "announcement")
+HIGH_LEFT_SQL = (
+    "SELECT COUNT(*) FROM news WHERE (jev IS NULL OR jev='') "
+    "AND (source IS NULL OR source NOT IN (?,?))"
+)
+
+
 def _item_sleep_seconds() -> float:
     """条间 sleep 秒数：JEV_ITEM_SLEEP_S（默认 0.2；非法值回落默认；夹在 [0,5]）。"""
     raw = os.environ.get("JEV_ITEM_SLEEP_S")
@@ -209,8 +241,12 @@ def _alert_mark():
         logging.getLogger(__name__).warning("silent-except %s: %s", "news_collector/jev_backfill.py", exc)
 
 
-def alert_backlog(left, judged, deadline_hit):
-    """积压超阈值告警：飞书推送（失败静默，不影响退出码）。"""
+def alert_backlog(left, judged, deadline_hit, left_total=None):
+    """积压超阈值告警：飞书推送（失败静默，不影响退出码）。
+
+    left_total 可选（RFC-20261107 双口径灰度）：传入时在消息里注明口径与全量值，
+    不传则与旧行为逐字一致，避免破坏既有告警消费方。
+    """
     try:
         msg = (
             "【JEV 判断积压告警】\n"
@@ -221,6 +257,12 @@ def alert_backlog(left, judged, deadline_hit):
             "news_collector\\logs\\ai.log 与 C:\\jev_backfill_task.log"
             % (left, judged, "，deadline 提前收工" if deadline_hit else "")
         )
+        if left_total is not None:
+            msg = msg.replace(
+                "（超过阈值）\n",
+                "（超过阈值，高价值口径；全量积压 %d 条）\n" % left_total,
+                1,
+            )
         news_ai.push_message(msg)
         _alert_mark()
         return True
@@ -242,6 +284,75 @@ def _m3_active_skip(lock_mod) -> bool:
         return False
     purpose = str(info.get("purpose") or "").lower()
     return "k266" in purpose or "m3" in purpose
+
+
+def _backlog_left(db_path=None):
+    """当前 JEV 待判积压（jev IS NULL OR ''）；异常由调用方兜底（RFC-20261106）。"""
+    path = db_path or os.path.join(HERE, "news.db")
+    con = sqlite3.connect(path, timeout=3)
+    try:
+        return con.execute(
+            "SELECT COUNT(*) FROM news WHERE jev IS NULL OR jev=''"
+        ).fetchone()[0]
+    finally:
+        con.close()
+
+
+def _env_on(name, default="1"):
+    """布尔 env 开关：0/off/false/no/空 → 关，其余 → 开。"""
+    return str(os.environ.get(name, default)).strip().lower() not in (
+        "0", "off", "false", "no", "",
+    )
+
+
+def _scope_alert_enabled():
+    return _env_on(SCOPE_ALERT_ENV)
+
+
+def _priority_batch_enabled():
+    return _env_on(PRIORITY_BATCH_ENV)
+
+
+def _backlog_left_high(db_path=None):
+    """高价值口径积压（排除例行公告源）；JEV_SCOPE_ALERT=0 时等价旧行为。
+
+    与 _backlog_left 一样只在「确认 M3 持锁」分支内调用，不破坏
+    OS-FIX-JEVLOCK 的「先抢锁再连库」契约。
+    """
+    if not _scope_alert_enabled():
+        return _backlog_left(db_path)
+    path = db_path or os.path.join(HERE, "news.db")
+    con = sqlite3.connect(path, timeout=3)
+    try:
+        return con.execute(HIGH_LEFT_SQL, LOW_PRIORITY_SOURCES).fetchone()[0]
+    finally:
+        con.close()
+
+
+def _batch_order_clause():
+    """返回 (ORDER BY ... LIMIT ?, 前缀参数元组)；高价值源优先，公告类排后。"""
+    if not _priority_batch_enabled():
+        return "ORDER BY ts DESC LIMIT ?", ()
+    return (
+        "ORDER BY CASE WHEN source IN (?,?) THEN 1 ELSE 0 END, ts DESC LIMIT ?",
+        LOW_PRIORITY_SOURCES,
+    )
+
+
+def _decide_skip(lock_mod, left):
+    """2026-11-06 RFC-20261106：在 _m3_active_skip 之上加积压出口。
+
+    返回 (skip, contend)：
+      (False, False)  正常——非 M3 持锁 / skip 被关闭 / holder 不存活
+      (True,  False)  M3 持锁且积压低于阈值 → 维持整轮让位（旧行为）
+      (False, True)   M3 持锁但积压 >= M3_CONTEND_MIN_BACKLOG → 参与锁竞争
+    left=None（库不可用/无 jev 列）时退回保守旧行为。
+    """
+    if not _m3_active_skip(lock_mod):
+        return (False, False)
+    if left is not None and left >= M3_CONTEND_MIN_BACKLOG:
+        return (False, True)
+    return (True, False)
 
 
 def main():
@@ -285,20 +396,42 @@ def main():
     import ollama_lock
     # 2026-10-30 M3SKIP：M3 活跃时小时轮直接让位，不再“抢到再丢/只判 8 条”。
     # 夜跑可设 JEV_SKIP_IF_M3=0 保留原竞争行为（由 jev_night 显式设置）。
+    # 2026-11-06 RFC-20261106：加积压出口——M3 持锁且积压高时参与锁竞争。
+    # 注意顺序：积压 COUNT 只在「确认 M3 持锁」分支内执行，锁空闲路径不碰库，
+    # 保住 OS-FIX-JEVLOCK 的「先抢锁再连库（取批）」契约与既有测试假设。
+    contend = False
     if _m3_active_skip(ollama_lock):
-        info = ollama_lock.holder_info()
+        # 积压 COUNT 只在「确认 M3 持锁」分支内执行，锁空闲路径不碰库
+        # （保住 OS-FIX-JEVLOCK 的先抢锁再连库契约与既有测试假设）。
+        try:
+            left_probe = _backlog_left_high(args.db or None)
+        except Exception:  # noqa: BLE001  库不可用/无 jev 列时退回保守旧行为
+            left_probe = None
+        skip, contend = _decide_skip(ollama_lock, left_probe)
+        if skip:
+            info = ollama_lock.holder_info()
+            print(
+                "BACKFILL skip: m3_active holder=%s pid=%s alive=%s"
+                % (info.get("purpose"), info.get("pid"), info.get("alive")),
+                flush=True,
+            )
+            return
+    if contend:
         print(
-            "BACKFILL skip: m3_active holder=%s pid=%s alive=%s"
-            % (info.get("purpose"), info.get("pid"), info.get("alive")),
+            "BACKFILL contend: backlog_high=%s >= %d, 参与锁竞争（M3 租约让位窗口，JEV_SCOPE_ALERT=0 为全量口径）"
+            % (left_probe, M3_CONTEND_MIN_BACKLOG),
             flush=True,
         )
-        return
 
     atexit.register(ollama_lock.release)
+    _acquire_wait = JEV_CONTEND_WAIT_S if contend else 900
     if not ollama_lock.acquire(
-        "jev_backfill", wait_s=900
-    ):  # K-ORG-20261025-LOCK 覆盖 M3 一个租约周期
-        print("BACKFILL skip: ollama 锁被 M3 持有超 900s，本轮让位（小时轮自愈）")
+        "jev_backfill", wait_s=_acquire_wait
+    ):  # K-ORG-20261025-LOCK 覆盖 M3 一个租约周期；contend 模式 600s 防空耗
+        print(
+            "BACKFILL skip: ollama 锁被 M3 持有超 %ds，本轮让位（小时轮自愈）"
+            % _acquire_wait
+        )
         return
     # 2026-10-16 审计：timeout=30 防与速报链写库竞争立刻抛 locked
     # （默认 5s 偏短；配合下方组级回滚兜底）
@@ -324,10 +457,11 @@ def main():
             % (batch_n, args.deadline, remaining, jev_batch.median_item_s()),
             flush=True,
         )
+    order_sql, order_args = _batch_order_clause()
     rows = db.execute(
         "SELECT id, title, stocks, source FROM news "
-        "WHERE (jev IS NULL OR jev='') ORDER BY ts DESC LIMIT ?",
-        (batch_n,),
+        "WHERE (jev IS NULL OR jev='') " + order_sql,
+        tuple(order_args) + (batch_n,),
     ).fetchall()
     if not rows:
         print("BACKFILL done: no pending")
@@ -475,13 +609,20 @@ def main():
     left = db.execute(
         "SELECT COUNT(*) FROM news WHERE jev IS NULL OR jev=''"
     ).fetchone()[0]
+    left_high = (
+        db.execute(HIGH_LEFT_SQL, LOW_PRIORITY_SOURCES).fetchone()[0]
+        if _scope_alert_enabled()
+        else left
+    )
+    # 灰度期双口径对照日志（RFC-20261107 §8 用例 5）
+    print("BACKFILL scope left_total=%d left_high=%d" % (left, left_high), flush=True)
     alerted = 0
     if (
         args.alert_threshold
-        and left > args.alert_threshold
+        and left_high > args.alert_threshold
         and _alert_ok(throttle=True)
     ):
-        alerted = 1 if alert_backlog(left, judged, deadline_hit) else 0
+        alerted = 1 if alert_backlog(left_high, judged, deadline_hit, left_total=left) else 0
     print(
         "BACKFILL judged=%d/%d left=%d %.1fs deadline_hit=%d alerted=%d "
         "cloud_fail=%d item_sleep=%.2f lease_yield=%s dup_skip=%d pref_skip=%d pref_keep=%d"

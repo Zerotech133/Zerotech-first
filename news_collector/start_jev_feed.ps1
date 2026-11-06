@@ -1,6 +1,10 @@
 # jev_feed launcher (ASCII only, junction path)
 # P1-2 20261016: datamart news/notice -> news.db xd_ rows + JEV judge, watermark incremental.
-# Scheduled daily 23:45 after TushareSync (23:30) refreshes datamart.
+# Scheduled daily 21:00 (Task Scheduler trigger; older comment said 23:45 - stale).
+# 2026-11-07 RFC-20261107 s14.6 (approved by laotian): enable prefilter for the
+# feed entry; matches jev_backfill_task.ps1 / start_jev_night.ps1 / night_batch.py.
+# Rollback: change 'safe' to '0' (data-level revert: RFC s7 prefilter SQL).
+$env:JEV_PREFILTER = 'safe'
 $log = 'C:\Temp\jev_feed_task.log'
 try {
     $p = Start-Process -FilePath 'C:\Program Files\Python311\python.exe' `
