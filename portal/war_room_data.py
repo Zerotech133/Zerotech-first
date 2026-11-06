@@ -9,7 +9,6 @@ from __future__ import annotations
 import json
 import os
 import sys
-import urllib.request
 from datetime import datetime
 
 PORTAL = os.path.dirname(os.path.abspath(__file__))
@@ -24,6 +23,11 @@ import paper_data  # noqa: E402
 import pool_data  # noqa: E402
 import sim_confirm  # noqa: E402
 import ifs_envelope  # noqa: E402  IFS F1d（WO-IFS-WARROOM-ENVELOPE-20261104）
+
+try:  # 与 portal_api 原样一致的导入兜底（包内/脚本两种入口）
+    from safe_urlopen import safe_urlopen  # noqa: E402
+except ImportError:  # pragma: no cover
+    from portal.safe_urlopen import safe_urlopen  # noqa: E402
 
 STRATEGIES = [
     {"id": "chanlun", "name": "缠论策略", "color": "#d6a94a", "desc": "缠论三类买卖点 / ST1"},
@@ -47,7 +51,7 @@ def _watch_summary(armed):
         out.update(cached)
         return out
     try:
-        with urllib.request.urlopen(WATCH_ADMIN, timeout=6) as r:
+        with safe_urlopen(WATCH_ADMIN, timeout=6) as r:
             out["snapshot"] = json.loads(r.read())
         out["source"] = "watch_admin"
     except Exception as exc:  # noqa: BLE001 8789 未启不阻塞页面
