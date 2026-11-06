@@ -1,0 +1,1530 @@
+{
+  "generated_at": "2026-11-06T07:44:15+08:00",
+  "panel": {
+    "start": "20230101",
+    "end": "20261104",
+    "shape": [
+      1069,
+      5777
+    ],
+    "first_date": "20220610",
+    "last_date": "20261105",
+    "eligible_mean": 0.598945886019736
+  },
+  "definitions": {
+    "b1_mom_21d": "adj_close/adj_close.shift(21)-1，direction=-1",
+    "return_21d": "factor_lib_tushare return_21d，direction=-1",
+    "p1_mom_sleeve": "P1 动量族 19 因子等权 directed rank",
+    "momentum_names": [
+      "MACD",
+      "dif",
+      "dea",
+      "ma_20d",
+      "return_5d",
+      "return_21d",
+      "return_42d",
+      "return_63d",
+      "return_126d",
+      "return_252d",
+      "price_position_ir_60d",
+      "rsrs",
+      "alpha_125d_000300",
+      "alpha_250d_000300",
+      "alpha_500d_000300",
+      "alpha_1000d_000300",
+      "alpha_528d_000001",
+      "alpha_792d_000001",
+      "alpha_1320d_000001"
+    ],
+    "orthogonalization": "逐日截面对 directed rank 做 OLS（含截距），取残差；残差方向 +1"
+  },
+  "diagnostics": {
+    "raw_exact_equal": true,
+    "raw_max_abs_diff": 0.0,
+    "rank_corr_b1_vs_return21": {
+      "n_days": 1048,
+      "mean": 1.0,
+      "median": 1.0,
+      "min": 1.0,
+      "max": 1.0,
+      "positive_rate": 1.0
+    },
+    "b1_sleeve_resid_var_ratio": {
+      "mean": 0.5912975870670077,
+      "median": 0.5844234569893634,
+      "min": 0.16657289922412272,
+      "max": 1.1711555474233215
+    },
+    "resid_vs_return21": {
+      "n_days": 1048,
+      "n_obs": 3633433,
+      "max_abs_residual": 1.1657341758564144e-15,
+      "mean_abs_residual": 1.1982003738406711e-16,
+      "mean_coef": [
+        -1.2471788125616358e-18,
+        1.0
+      ],
+      "degenerate": true
+    },
+    "resid_vs_sleeve": {
+      "n_days": 1048,
+      "n_obs": 3633433,
+      "max_abs_residual": 0.9228267861617517,
+      "mean_abs_residual": 0.17923644660372162,
+      "mean_coef": [
+        0.010142950146577437,
+        1.1588649227429737
+      ]
+    }
+  },
+  "evaluations": {
+    "20": {
+      "dev": {
+        "start": "20230403",
+        "end": "20241231",
+        "runtime_sec": 13.785,
+        "effective": {
+          "start": "20230403",
+          "end": "20241231",
+          "signal_days": 425,
+          "panel_dates": 1069,
+          "codes": 5777,
+          "panel_first": "20220610",
+          "panel_last": "20261105",
+          "requested_start": "20230403",
+          "requested_end": "20241231"
+        },
+        "baseline": {
+          "n_obs": 1283516,
+          "mean_pct": -2.815,
+          "median_pct": -4.234,
+          "note": "无条件下（全部合格股票等权）20日 CAR 均值；含 30bp 成本与等权市场再平衡差"
+        },
+        "factors": {
+          "b1_mom_21d": {
+            "n_obs": 1282497,
+            "n_days": 425,
+            "ic": {
+              "n_days": 425,
+              "mean": 0.09566,
+              "std": 0.15936,
+              "ir": 0.6003,
+              "t": 12.375,
+              "positive_rate": 0.7247
+            },
+            "ic_directed": {
+              "n_days": 425,
+              "mean": 0.09566,
+              "std": 0.15936,
+              "ir": 0.6003,
+              "t": 12.375,
+              "positive_rate": 0.7247
+            },
+            "by_year": {
+              "2023": {
+                "n_days": 183,
+                "mean": 0.068955,
+                "std": 0.130259,
+                "ir": 0.5294,
+                "t": 7.161,
+                "positive_rate": 0.6557
+              },
+              "2024": {
+                "n_days": 242,
+                "mean": 0.115855,
+                "std": 0.175825,
+                "ir": 0.6589,
+                "t": 10.25,
+                "positive_rate": 0.7769
+              }
+            }
+          },
+          "return_21d": {
+            "n_obs": 1282497,
+            "n_days": 425,
+            "ic": {
+              "n_days": 425,
+              "mean": 0.09566,
+              "std": 0.15936,
+              "ir": 0.6003,
+              "t": 12.375,
+              "positive_rate": 0.7247
+            },
+            "ic_directed": {
+              "n_days": 425,
+              "mean": 0.09566,
+              "std": 0.15936,
+              "ir": 0.6003,
+              "t": 12.375,
+              "positive_rate": 0.7247
+            },
+            "by_year": {
+              "2023": {
+                "n_days": 183,
+                "mean": 0.068955,
+                "std": 0.130259,
+                "ir": 0.5294,
+                "t": 7.161,
+                "positive_rate": 0.6557
+              },
+              "2024": {
+                "n_days": 242,
+                "mean": 0.115855,
+                "std": 0.175825,
+                "ir": 0.6589,
+                "t": 10.25,
+                "positive_rate": 0.7769
+              }
+            }
+          },
+          "p1_mom_sleeve": {
+            "n_obs": 1283516,
+            "n_days": 425,
+            "ic": {
+              "n_days": 425,
+              "mean": 0.099484,
+              "std": 0.156229,
+              "ir": 0.6368,
+              "t": 13.128,
+              "positive_rate": 0.7224
+            },
+            "ic_directed": {
+              "n_days": 425,
+              "mean": 0.099484,
+              "std": 0.156229,
+              "ir": 0.6368,
+              "t": 13.128,
+              "positive_rate": 0.7224
+            },
+            "by_year": {
+              "2023": {
+                "n_days": 183,
+                "mean": 0.086717,
+                "std": 0.160422,
+                "ir": 0.5406,
+                "t": 7.313,
+                "positive_rate": 0.6667
+              },
+              "2024": {
+                "n_days": 242,
+                "mean": 0.109139,
+                "std": 0.152607,
+                "ir": 0.7152,
+                "t": 11.125,
+                "positive_rate": 0.7645
+              }
+            }
+          },
+          "b1_mom21_resid_vs_return21": {
+            "n_obs": 0,
+            "n_days": 0,
+            "ic": {
+              "n_days": 0,
+              "mean": null,
+              "std": null,
+              "ir": null,
+              "t": null,
+              "positive_rate": null
+            },
+            "ic_directed": {
+              "n_days": 0,
+              "mean": null,
+              "std": null,
+              "ir": null,
+              "t": null,
+              "positive_rate": null
+            },
+            "by_year": {
+              "2023": {
+                "n_days": 0,
+                "mean": null,
+                "std": null,
+                "ir": null,
+                "t": null,
+                "positive_rate": null
+              },
+              "2024": {
+                "n_days": 0,
+                "mean": null,
+                "std": null,
+                "ir": null,
+                "t": null,
+                "positive_rate": null
+              }
+            }
+          },
+          "b1_mom21_resid_vs_p1_mom_sleeve": {
+            "n_obs": 1282497,
+            "n_days": 425,
+            "ic": {
+              "n_days": 425,
+              "mean": 0.029323,
+              "std": 0.160537,
+              "ir": 0.1827,
+              "t": 3.766,
+              "positive_rate": 0.52
+            },
+            "ic_directed": {
+              "n_days": 425,
+              "mean": 0.029323,
+              "std": 0.160537,
+              "ir": 0.1827,
+              "t": 3.766,
+              "positive_rate": 0.52
+            },
+            "by_year": {
+              "2023": {
+                "n_days": 183,
+                "mean": -0.002038,
+                "std": 0.135344,
+                "ir": -0.0151,
+                "t": -0.204,
+                "positive_rate": 0.4372
+              },
+              "2024": {
+                "n_days": 242,
+                "mean": 0.053038,
+                "std": 0.173772,
+                "ir": 0.3052,
+                "t": 4.748,
+                "positive_rate": 0.5826
+              }
+            }
+          }
+        }
+      },
+      "holdout": {
+        "start": "20250102",
+        "end": "20260929",
+        "runtime_sec": 13.546,
+        "effective": {
+          "start": "20250102",
+          "end": "20260929",
+          "signal_days": 423,
+          "panel_dates": 1069,
+          "codes": 5777,
+          "panel_first": "20220610",
+          "panel_last": "20261105",
+          "requested_start": "20250102",
+          "requested_end": "20260929"
+        },
+        "baseline": {
+          "n_obs": 1773242,
+          "mean_pct": -1.809,
+          "median_pct": -4.048,
+          "note": "无条件下（全部合格股票等权）20日 CAR 均值；含 30bp 成本与等权市场再平衡差"
+        },
+        "factors": {
+          "b1_mom_21d": {
+            "n_obs": 1770106,
+            "n_days": 423,
+            "ic": {
+              "n_days": 423,
+              "mean": 0.083733,
+              "std": 0.164365,
+              "ir": 0.5094,
+              "t": 10.477,
+              "positive_rate": 0.695
+            },
+            "ic_directed": {
+              "n_days": 423,
+              "mean": 0.083733,
+              "std": 0.164365,
+              "ir": 0.5094,
+              "t": 10.477,
+              "positive_rate": 0.695
+            },
+            "by_year": {
+              "2025": {
+                "n_days": 243,
+                "mean": 0.096322,
+                "std": 0.136518,
+                "ir": 0.7056,
+                "t": 10.999,
+                "positive_rate": 0.786
+              },
+              "2026": {
+                "n_days": 180,
+                "mean": 0.066738,
+                "std": 0.194908,
+                "ir": 0.3424,
+                "t": 4.594,
+                "positive_rate": 0.5722
+              }
+            }
+          },
+          "return_21d": {
+            "n_obs": 1770106,
+            "n_days": 423,
+            "ic": {
+              "n_days": 423,
+              "mean": 0.083733,
+              "std": 0.164365,
+              "ir": 0.5094,
+              "t": 10.477,
+              "positive_rate": 0.695
+            },
+            "ic_directed": {
+              "n_days": 423,
+              "mean": 0.083733,
+              "std": 0.164365,
+              "ir": 0.5094,
+              "t": 10.477,
+              "positive_rate": 0.695
+            },
+            "by_year": {
+              "2025": {
+                "n_days": 243,
+                "mean": 0.096322,
+                "std": 0.136518,
+                "ir": 0.7056,
+                "t": 10.999,
+                "positive_rate": 0.786
+              },
+              "2026": {
+                "n_days": 180,
+                "mean": 0.066738,
+                "std": 0.194908,
+                "ir": 0.3424,
+                "t": 4.594,
+                "positive_rate": 0.5722
+              }
+            }
+          },
+          "p1_mom_sleeve": {
+            "n_obs": 1773242,
+            "n_days": 423,
+            "ic": {
+              "n_days": 423,
+              "mean": 0.109079,
+              "std": 0.189205,
+              "ir": 0.5765,
+              "t": 11.857,
+              "positive_rate": 0.7116
+            },
+            "ic_directed": {
+              "n_days": 423,
+              "mean": 0.109079,
+              "std": 0.189205,
+              "ir": 0.5765,
+              "t": 11.857,
+              "positive_rate": 0.7116
+            },
+            "by_year": {
+              "2025": {
+                "n_days": 243,
+                "mean": 0.10476,
+                "std": 0.133232,
+                "ir": 0.7863,
+                "t": 12.257,
+                "positive_rate": 0.7572
+              },
+              "2026": {
+                "n_days": 180,
+                "mean": 0.11491,
+                "std": 0.24564,
+                "ir": 0.4678,
+                "t": 6.276,
+                "positive_rate": 0.65
+              }
+            }
+          },
+          "b1_mom21_resid_vs_return21": {
+            "n_obs": 0,
+            "n_days": 0,
+            "ic": {
+              "n_days": 0,
+              "mean": null,
+              "std": null,
+              "ir": null,
+              "t": null,
+              "positive_rate": null
+            },
+            "ic_directed": {
+              "n_days": 0,
+              "mean": null,
+              "std": null,
+              "ir": null,
+              "t": null,
+              "positive_rate": null
+            },
+            "by_year": {
+              "2025": {
+                "n_days": 0,
+                "mean": null,
+                "std": null,
+                "ir": null,
+                "t": null,
+                "positive_rate": null
+              },
+              "2026": {
+                "n_days": 0,
+                "mean": null,
+                "std": null,
+                "ir": null,
+                "t": null,
+                "positive_rate": null
+              }
+            }
+          },
+          "b1_mom21_resid_vs_p1_mom_sleeve": {
+            "n_obs": 1770106,
+            "n_days": 423,
+            "ic": {
+              "n_days": 423,
+              "mean": 0.022204,
+              "std": 0.149671,
+              "ir": 0.1484,
+              "t": 3.051,
+              "positive_rate": 0.461
+            },
+            "ic_directed": {
+              "n_days": 423,
+              "mean": 0.022204,
+              "std": 0.149671,
+              "ir": 0.1484,
+              "t": 3.051,
+              "positive_rate": 0.461
+            },
+            "by_year": {
+              "2025": {
+                "n_days": 243,
+                "mean": 0.039549,
+                "std": 0.144894,
+                "ir": 0.2729,
+                "t": 4.255,
+                "positive_rate": 0.5021
+              },
+              "2026": {
+                "n_days": 180,
+                "mean": -0.001211,
+                "std": 0.153196,
+                "ir": -0.0079,
+                "t": -0.106,
+                "positive_rate": 0.4056
+              }
+            }
+          }
+        }
+      },
+      "full": {
+        "start": "20230403",
+        "end": "20260929",
+        "runtime_sec": 21.487,
+        "effective": {
+          "start": "20230403",
+          "end": "20260929",
+          "signal_days": 848,
+          "panel_dates": 1069,
+          "codes": 5777,
+          "panel_first": "20220610",
+          "panel_last": "20261105",
+          "requested_start": "20230403",
+          "requested_end": "20260929"
+        },
+        "baseline": {
+          "n_obs": 3056758,
+          "mean_pct": -2.231,
+          "median_pct": -4.13,
+          "note": "无条件下（全部合格股票等权）20日 CAR 均值；含 30bp 成本与等权市场再平衡差"
+        },
+        "factors": {
+          "b1_mom_21d": {
+            "n_obs": 3052603,
+            "n_days": 848,
+            "ic": {
+              "n_days": 848,
+              "mean": 0.089711,
+              "std": 0.16189,
+              "ir": 0.5541,
+              "t": 16.137,
+              "positive_rate": 0.7099
+            },
+            "ic_directed": {
+              "n_days": 848,
+              "mean": 0.089711,
+              "std": 0.16189,
+              "ir": 0.5541,
+              "t": 16.137,
+              "positive_rate": 0.7099
+            },
+            "by_year": {
+              "2023": {
+                "n_days": 183,
+                "mean": 0.068955,
+                "std": 0.130259,
+                "ir": 0.5294,
+                "t": 7.161,
+                "positive_rate": 0.6557
+              },
+              "2024": {
+                "n_days": 242,
+                "mean": 0.115855,
+                "std": 0.175825,
+                "ir": 0.6589,
+                "t": 10.25,
+                "positive_rate": 0.7769
+              },
+              "2025": {
+                "n_days": 243,
+                "mean": 0.096322,
+                "std": 0.136518,
+                "ir": 0.7056,
+                "t": 10.999,
+                "positive_rate": 0.786
+              },
+              "2026": {
+                "n_days": 180,
+                "mean": 0.066738,
+                "std": 0.194908,
+                "ir": 0.3424,
+                "t": 4.594,
+                "positive_rate": 0.5722
+              }
+            }
+          },
+          "return_21d": {
+            "n_obs": 3052603,
+            "n_days": 848,
+            "ic": {
+              "n_days": 848,
+              "mean": 0.089711,
+              "std": 0.16189,
+              "ir": 0.5541,
+              "t": 16.137,
+              "positive_rate": 0.7099
+            },
+            "ic_directed": {
+              "n_days": 848,
+              "mean": 0.089711,
+              "std": 0.16189,
+              "ir": 0.5541,
+              "t": 16.137,
+              "positive_rate": 0.7099
+            },
+            "by_year": {
+              "2023": {
+                "n_days": 183,
+                "mean": 0.068955,
+                "std": 0.130259,
+                "ir": 0.5294,
+                "t": 7.161,
+                "positive_rate": 0.6557
+              },
+              "2024": {
+                "n_days": 242,
+                "mean": 0.115855,
+                "std": 0.175825,
+                "ir": 0.6589,
+                "t": 10.25,
+                "positive_rate": 0.7769
+              },
+              "2025": {
+                "n_days": 243,
+                "mean": 0.096322,
+                "std": 0.136518,
+                "ir": 0.7056,
+                "t": 10.999,
+                "positive_rate": 0.786
+              },
+              "2026": {
+                "n_days": 180,
+                "mean": 0.066738,
+                "std": 0.194908,
+                "ir": 0.3424,
+                "t": 4.594,
+                "positive_rate": 0.5722
+              }
+            }
+          },
+          "p1_mom_sleeve": {
+            "n_obs": 3056758,
+            "n_days": 848,
+            "ic": {
+              "n_days": 848,
+              "mean": 0.10427,
+              "std": 0.173427,
+              "ir": 0.6012,
+              "t": 17.508,
+              "positive_rate": 0.717
+            },
+            "ic_directed": {
+              "n_days": 848,
+              "mean": 0.10427,
+              "std": 0.173427,
+              "ir": 0.6012,
+              "t": 17.508,
+              "positive_rate": 0.717
+            },
+            "by_year": {
+              "2023": {
+                "n_days": 183,
+                "mean": 0.086717,
+                "std": 0.160422,
+                "ir": 0.5406,
+                "t": 7.313,
+                "positive_rate": 0.6667
+              },
+              "2024": {
+                "n_days": 242,
+                "mean": 0.109139,
+                "std": 0.152607,
+                "ir": 0.7152,
+                "t": 11.125,
+                "positive_rate": 0.7645
+              },
+              "2025": {
+                "n_days": 243,
+                "mean": 0.10476,
+                "std": 0.133232,
+                "ir": 0.7863,
+                "t": 12.257,
+                "positive_rate": 0.7572
+              },
+              "2026": {
+                "n_days": 180,
+                "mean": 0.11491,
+                "std": 0.24564,
+                "ir": 0.4678,
+                "t": 6.276,
+                "positive_rate": 0.65
+              }
+            }
+          },
+          "b1_mom21_resid_vs_return21": {
+            "n_obs": 0,
+            "n_days": 0,
+            "ic": {
+              "n_days": 0,
+              "mean": null,
+              "std": null,
+              "ir": null,
+              "t": null,
+              "positive_rate": null
+            },
+            "ic_directed": {
+              "n_days": 0,
+              "mean": null,
+              "std": null,
+              "ir": null,
+              "t": null,
+              "positive_rate": null
+            },
+            "by_year": {
+              "2023": {
+                "n_days": 0,
+                "mean": null,
+                "std": null,
+                "ir": null,
+                "t": null,
+                "positive_rate": null
+              },
+              "2024": {
+                "n_days": 0,
+                "mean": null,
+                "std": null,
+                "ir": null,
+                "t": null,
+                "positive_rate": null
+              },
+              "2025": {
+                "n_days": 0,
+                "mean": null,
+                "std": null,
+                "ir": null,
+                "t": null,
+                "positive_rate": null
+              },
+              "2026": {
+                "n_days": 0,
+                "mean": null,
+                "std": null,
+                "ir": null,
+                "t": null,
+                "positive_rate": null
+              }
+            }
+          },
+          "b1_mom21_resid_vs_p1_mom_sleeve": {
+            "n_obs": 3052603,
+            "n_days": 848,
+            "ic": {
+              "n_days": 848,
+              "mean": 0.025772,
+              "std": 0.155161,
+              "ir": 0.1661,
+              "t": 4.837,
+              "positive_rate": 0.4906
+            },
+            "ic_directed": {
+              "n_days": 848,
+              "mean": 0.025772,
+              "std": 0.155161,
+              "ir": 0.1661,
+              "t": 4.837,
+              "positive_rate": 0.4906
+            },
+            "by_year": {
+              "2023": {
+                "n_days": 183,
+                "mean": -0.002038,
+                "std": 0.135344,
+                "ir": -0.0151,
+                "t": -0.204,
+                "positive_rate": 0.4372
+              },
+              "2024": {
+                "n_days": 242,
+                "mean": 0.053038,
+                "std": 0.173772,
+                "ir": 0.3052,
+                "t": 4.748,
+                "positive_rate": 0.5826
+              },
+              "2025": {
+                "n_days": 243,
+                "mean": 0.039549,
+                "std": 0.144894,
+                "ir": 0.2729,
+                "t": 4.255,
+                "positive_rate": 0.5021
+              },
+              "2026": {
+                "n_days": 180,
+                "mean": -0.001211,
+                "std": 0.153196,
+                "ir": -0.0079,
+                "t": -0.106,
+                "positive_rate": 0.4056
+              }
+            }
+          }
+        }
+      }
+    },
+    "60": {
+      "dev": {
+        "start": "20230403",
+        "end": "20241231",
+        "runtime_sec": 13.058,
+        "effective": {
+          "start": "20230403",
+          "end": "20241231",
+          "signal_days": 425,
+          "panel_dates": 1069,
+          "codes": 5777,
+          "panel_first": "20220610",
+          "panel_last": "20261105",
+          "requested_start": "20230403",
+          "requested_end": "20241231"
+        },
+        "baseline": {
+          "n_obs": 1283484,
+          "mean_pct": -8.213,
+          "median_pct": -10.783,
+          "note": "无条件下（全部合格股票等权）20日 CAR 均值；含 30bp 成本与等权市场再平衡差"
+        },
+        "factors": {
+          "b1_mom_21d": {
+            "n_obs": 1282466,
+            "n_days": 425,
+            "ic": {
+              "n_days": 425,
+              "mean": 0.088307,
+              "std": 0.117529,
+              "ir": 0.7514,
+              "t": 15.49,
+              "positive_rate": 0.7412
+            },
+            "ic_directed": {
+              "n_days": 425,
+              "mean": 0.088307,
+              "std": 0.117529,
+              "ir": 0.7514,
+              "t": 15.49,
+              "positive_rate": 0.7412
+            },
+            "by_year": {
+              "2023": {
+                "n_days": 183,
+                "mean": 0.113213,
+                "std": 0.123346,
+                "ir": 0.9178,
+                "t": 12.416,
+                "positive_rate": 0.7869
+              },
+              "2024": {
+                "n_days": 242,
+                "mean": 0.069474,
+                "std": 0.109476,
+                "ir": 0.6346,
+                "t": 9.872,
+                "positive_rate": 0.7066
+              }
+            }
+          },
+          "return_21d": {
+            "n_obs": 1282466,
+            "n_days": 425,
+            "ic": {
+              "n_days": 425,
+              "mean": 0.088307,
+              "std": 0.117529,
+              "ir": 0.7514,
+              "t": 15.49,
+              "positive_rate": 0.7412
+            },
+            "ic_directed": {
+              "n_days": 425,
+              "mean": 0.088307,
+              "std": 0.117529,
+              "ir": 0.7514,
+              "t": 15.49,
+              "positive_rate": 0.7412
+            },
+            "by_year": {
+              "2023": {
+                "n_days": 183,
+                "mean": 0.113213,
+                "std": 0.123346,
+                "ir": 0.9178,
+                "t": 12.416,
+                "positive_rate": 0.7869
+              },
+              "2024": {
+                "n_days": 242,
+                "mean": 0.069474,
+                "std": 0.109476,
+                "ir": 0.6346,
+                "t": 9.872,
+                "positive_rate": 0.7066
+              }
+            }
+          },
+          "p1_mom_sleeve": {
+            "n_obs": 1283484,
+            "n_days": 425,
+            "ic": {
+              "n_days": 425,
+              "mean": 0.097577,
+              "std": 0.113448,
+              "ir": 0.8601,
+              "t": 17.731,
+              "positive_rate": 0.8047
+            },
+            "ic_directed": {
+              "n_days": 425,
+              "mean": 0.097577,
+              "std": 0.113448,
+              "ir": 0.8601,
+              "t": 17.731,
+              "positive_rate": 0.8047
+            },
+            "by_year": {
+              "2023": {
+                "n_days": 183,
+                "mean": 0.12614,
+                "std": 0.116461,
+                "ir": 1.0831,
+                "t": 14.652,
+                "positive_rate": 0.8361
+              },
+              "2024": {
+                "n_days": 242,
+                "mean": 0.075977,
+                "std": 0.106361,
+                "ir": 0.7143,
+                "t": 11.112,
+                "positive_rate": 0.781
+              }
+            }
+          },
+          "b1_mom21_resid_vs_return21": {
+            "n_obs": 0,
+            "n_days": 0,
+            "ic": {
+              "n_days": 0,
+              "mean": null,
+              "std": null,
+              "ir": null,
+              "t": null,
+              "positive_rate": null
+            },
+            "ic_directed": {
+              "n_days": 0,
+              "mean": null,
+              "std": null,
+              "ir": null,
+              "t": null,
+              "positive_rate": null
+            },
+            "by_year": {
+              "2023": {
+                "n_days": 0,
+                "mean": null,
+                "std": null,
+                "ir": null,
+                "t": null,
+                "positive_rate": null
+              },
+              "2024": {
+                "n_days": 0,
+                "mean": null,
+                "std": null,
+                "ir": null,
+                "t": null,
+                "positive_rate": null
+              }
+            }
+          },
+          "b1_mom21_resid_vs_p1_mom_sleeve": {
+            "n_obs": 1282466,
+            "n_days": 425,
+            "ic": {
+              "n_days": 425,
+              "mean": 0.019802,
+              "std": 0.113461,
+              "ir": 0.1745,
+              "t": 3.598,
+              "positive_rate": 0.5671
+            },
+            "ic_directed": {
+              "n_days": 425,
+              "mean": 0.019802,
+              "std": 0.113461,
+              "ir": 0.1745,
+              "t": 3.598,
+              "positive_rate": 0.5671
+            },
+            "by_year": {
+              "2023": {
+                "n_days": 183,
+                "mean": 0.024467,
+                "std": 0.097639,
+                "ir": 0.2506,
+                "t": 3.39,
+                "positive_rate": 0.6066
+              },
+              "2024": {
+                "n_days": 242,
+                "mean": 0.016275,
+                "std": 0.124178,
+                "ir": 0.1311,
+                "t": 2.039,
+                "positive_rate": 0.5372
+              }
+            }
+          }
+        }
+      },
+      "holdout": {
+        "start": "20250102",
+        "end": "20260929",
+        "runtime_sec": 13.126,
+        "effective": {
+          "start": "20250102",
+          "end": "20260804",
+          "signal_days": 384,
+          "panel_dates": 1069,
+          "codes": 5777,
+          "panel_first": "20220610",
+          "panel_last": "20261105",
+          "requested_start": "20250102",
+          "requested_end": "20260929"
+        },
+        "baseline": {
+          "n_obs": 1621981,
+          "mean_pct": -4.711,
+          "median_pct": -9.818,
+          "note": "无条件下（全部合格股票等权）20日 CAR 均值；含 30bp 成本与等权市场再平衡差"
+        },
+        "factors": {
+          "b1_mom_21d": {
+            "n_obs": 1619034,
+            "n_days": 384,
+            "ic": {
+              "n_days": 384,
+              "mean": 0.078413,
+              "std": 0.124412,
+              "ir": 0.6303,
+              "t": 12.351,
+              "positive_rate": 0.7214
+            },
+            "ic_directed": {
+              "n_days": 384,
+              "mean": 0.078413,
+              "std": 0.124412,
+              "ir": 0.6303,
+              "t": 12.351,
+              "positive_rate": 0.7214
+            },
+            "by_year": {
+              "2025": {
+                "n_days": 243,
+                "mean": 0.077384,
+                "std": 0.095554,
+                "ir": 0.8098,
+                "t": 12.624,
+                "positive_rate": 0.786
+              },
+              "2026": {
+                "n_days": 141,
+                "mean": 0.080186,
+                "std": 0.162962,
+                "ir": 0.4921,
+                "t": 5.843,
+                "positive_rate": 0.6099
+              }
+            }
+          },
+          "return_21d": {
+            "n_obs": 1619034,
+            "n_days": 384,
+            "ic": {
+              "n_days": 384,
+              "mean": 0.078413,
+              "std": 0.124412,
+              "ir": 0.6303,
+              "t": 12.351,
+              "positive_rate": 0.7214
+            },
+            "ic_directed": {
+              "n_days": 384,
+              "mean": 0.078413,
+              "std": 0.124412,
+              "ir": 0.6303,
+              "t": 12.351,
+              "positive_rate": 0.7214
+            },
+            "by_year": {
+              "2025": {
+                "n_days": 243,
+                "mean": 0.077384,
+                "std": 0.095554,
+                "ir": 0.8098,
+                "t": 12.624,
+                "positive_rate": 0.786
+              },
+              "2026": {
+                "n_days": 141,
+                "mean": 0.080186,
+                "std": 0.162962,
+                "ir": 0.4921,
+                "t": 5.843,
+                "positive_rate": 0.6099
+              }
+            }
+          },
+          "p1_mom_sleeve": {
+            "n_obs": 1621981,
+            "n_days": 384,
+            "ic": {
+              "n_days": 384,
+              "mean": 0.124825,
+              "std": 0.154819,
+              "ir": 0.8063,
+              "t": 15.799,
+              "positive_rate": 0.8125
+            },
+            "ic_directed": {
+              "n_days": 384,
+              "mean": 0.124825,
+              "std": 0.154819,
+              "ir": 0.8063,
+              "t": 15.799,
+              "positive_rate": 0.8125
+            },
+            "by_year": {
+              "2025": {
+                "n_days": 243,
+                "mean": 0.112236,
+                "std": 0.095462,
+                "ir": 1.1757,
+                "t": 18.328,
+                "positive_rate": 0.9136
+              },
+              "2026": {
+                "n_days": 141,
+                "mean": 0.146519,
+                "std": 0.221518,
+                "ir": 0.6614,
+                "t": 7.854,
+                "positive_rate": 0.6383
+              }
+            }
+          },
+          "b1_mom21_resid_vs_return21": {
+            "n_obs": 0,
+            "n_days": 0,
+            "ic": {
+              "n_days": 0,
+              "mean": null,
+              "std": null,
+              "ir": null,
+              "t": null,
+              "positive_rate": null
+            },
+            "ic_directed": {
+              "n_days": 0,
+              "mean": null,
+              "std": null,
+              "ir": null,
+              "t": null,
+              "positive_rate": null
+            },
+            "by_year": {
+              "2025": {
+                "n_days": 0,
+                "mean": null,
+                "std": null,
+                "ir": null,
+                "t": null,
+                "positive_rate": null
+              },
+              "2026": {
+                "n_days": 0,
+                "mean": null,
+                "std": null,
+                "ir": null,
+                "t": null,
+                "positive_rate": null
+              }
+            }
+          },
+          "b1_mom21_resid_vs_p1_mom_sleeve": {
+            "n_obs": 1619034,
+            "n_days": 384,
+            "ic": {
+              "n_days": 384,
+              "mean": 0.002245,
+              "std": 0.090392,
+              "ir": 0.0248,
+              "t": 0.487,
+              "positive_rate": 0.4896
+            },
+            "ic_directed": {
+              "n_days": 384,
+              "mean": 0.002245,
+              "std": 0.090392,
+              "ir": 0.0248,
+              "t": 0.487,
+              "positive_rate": 0.4896
+            },
+            "by_year": {
+              "2025": {
+                "n_days": 243,
+                "mean": 0.010966,
+                "std": 0.09195,
+                "ir": 0.1193,
+                "t": 1.859,
+                "positive_rate": 0.4774
+              },
+              "2026": {
+                "n_days": 141,
+                "mean": -0.012783,
+                "std": 0.085898,
+                "ir": -0.1488,
+                "t": -1.767,
+                "positive_rate": 0.5106
+              }
+            }
+          }
+        }
+      },
+      "full": {
+        "start": "20230403",
+        "end": "20260929",
+        "runtime_sec": 23.563,
+        "effective": {
+          "start": "20230403",
+          "end": "20260804",
+          "signal_days": 809,
+          "panel_dates": 1069,
+          "codes": 5777,
+          "panel_first": "20220610",
+          "panel_last": "20261105",
+          "requested_start": "20230403",
+          "requested_end": "20260929"
+        },
+        "baseline": {
+          "n_obs": 2905465,
+          "mean_pct": -6.258,
+          "median_pct": -10.269,
+          "note": "无条件下（全部合格股票等权）20日 CAR 均值；含 30bp 成本与等权市场再平衡差"
+        },
+        "factors": {
+          "b1_mom_21d": {
+            "n_obs": 2901500,
+            "n_days": 809,
+            "ic": {
+              "n_days": 809,
+              "mean": 0.083611,
+              "std": 0.120871,
+              "ir": 0.6917,
+              "t": 19.675,
+              "positive_rate": 0.7318
+            },
+            "ic_directed": {
+              "n_days": 809,
+              "mean": 0.083611,
+              "std": 0.120871,
+              "ir": 0.6917,
+              "t": 19.675,
+              "positive_rate": 0.7318
+            },
+            "by_year": {
+              "2023": {
+                "n_days": 183,
+                "mean": 0.113213,
+                "std": 0.123346,
+                "ir": 0.9178,
+                "t": 12.416,
+                "positive_rate": 0.7869
+              },
+              "2024": {
+                "n_days": 242,
+                "mean": 0.069474,
+                "std": 0.109476,
+                "ir": 0.6346,
+                "t": 9.872,
+                "positive_rate": 0.7066
+              },
+              "2025": {
+                "n_days": 243,
+                "mean": 0.077384,
+                "std": 0.095554,
+                "ir": 0.8098,
+                "t": 12.624,
+                "positive_rate": 0.786
+              },
+              "2026": {
+                "n_days": 141,
+                "mean": 0.080186,
+                "std": 0.162962,
+                "ir": 0.4921,
+                "t": 5.843,
+                "positive_rate": 0.6099
+              }
+            }
+          },
+          "return_21d": {
+            "n_obs": 2901500,
+            "n_days": 809,
+            "ic": {
+              "n_days": 809,
+              "mean": 0.083611,
+              "std": 0.120871,
+              "ir": 0.6917,
+              "t": 19.675,
+              "positive_rate": 0.7318
+            },
+            "ic_directed": {
+              "n_days": 809,
+              "mean": 0.083611,
+              "std": 0.120871,
+              "ir": 0.6917,
+              "t": 19.675,
+              "positive_rate": 0.7318
+            },
+            "by_year": {
+              "2023": {
+                "n_days": 183,
+                "mean": 0.113213,
+                "std": 0.123346,
+                "ir": 0.9178,
+                "t": 12.416,
+                "positive_rate": 0.7869
+              },
+              "2024": {
+                "n_days": 242,
+                "mean": 0.069474,
+                "std": 0.109476,
+                "ir": 0.6346,
+                "t": 9.872,
+                "positive_rate": 0.7066
+              },
+              "2025": {
+                "n_days": 243,
+                "mean": 0.077384,
+                "std": 0.095554,
+                "ir": 0.8098,
+                "t": 12.624,
+                "positive_rate": 0.786
+              },
+              "2026": {
+                "n_days": 141,
+                "mean": 0.080186,
+                "std": 0.162962,
+                "ir": 0.4921,
+                "t": 5.843,
+                "positive_rate": 0.6099
+              }
+            }
+          },
+          "p1_mom_sleeve": {
+            "n_obs": 2905465,
+            "n_days": 809,
+            "ic": {
+              "n_days": 809,
+              "mean": 0.11051,
+              "std": 0.13528,
+              "ir": 0.8169,
+              "t": 23.235,
+              "positive_rate": 0.8084
+            },
+            "ic_directed": {
+              "n_days": 809,
+              "mean": 0.11051,
+              "std": 0.13528,
+              "ir": 0.8169,
+              "t": 23.235,
+              "positive_rate": 0.8084
+            },
+            "by_year": {
+              "2023": {
+                "n_days": 183,
+                "mean": 0.12614,
+                "std": 0.116461,
+                "ir": 1.0831,
+                "t": 14.652,
+                "positive_rate": 0.8361
+              },
+              "2024": {
+                "n_days": 242,
+                "mean": 0.075977,
+                "std": 0.106361,
+                "ir": 0.7143,
+                "t": 11.112,
+                "positive_rate": 0.781
+              },
+              "2025": {
+                "n_days": 243,
+                "mean": 0.112236,
+                "std": 0.095462,
+                "ir": 1.1757,
+                "t": 18.328,
+                "positive_rate": 0.9136
+              },
+              "2026": {
+                "n_days": 141,
+                "mean": 0.146519,
+                "std": 0.221518,
+                "ir": 0.6614,
+                "t": 7.854,
+                "positive_rate": 0.6383
+              }
+            }
+          },
+          "b1_mom21_resid_vs_return21": {
+            "n_obs": 0,
+            "n_days": 0,
+            "ic": {
+              "n_days": 0,
+              "mean": null,
+              "std": null,
+              "ir": null,
+              "t": null,
+              "positive_rate": null
+            },
+            "ic_directed": {
+              "n_days": 0,
+              "mean": null,
+              "std": null,
+              "ir": null,
+              "t": null,
+              "positive_rate": null
+            },
+            "by_year": {
+              "2023": {
+                "n_days": 0,
+                "mean": null,
+                "std": null,
+                "ir": null,
+                "t": null,
+                "positive_rate": null
+              },
+              "2024": {
+                "n_days": 0,
+                "mean": null,
+                "std": null,
+                "ir": null,
+                "t": null,
+                "positive_rate": null
+              },
+              "2025": {
+                "n_days": 0,
+                "mean": null,
+                "std": null,
+                "ir": null,
+                "t": null,
+                "positive_rate": null
+              },
+              "2026": {
+                "n_days": 0,
+                "mean": null,
+                "std": null,
+                "ir": null,
+                "t": null,
+                "positive_rate": null
+              }
+            }
+          },
+          "b1_mom21_resid_vs_p1_mom_sleeve": {
+            "n_obs": 2901500,
+            "n_days": 809,
+            "ic": {
+              "n_days": 809,
+              "mean": 0.011469,
+              "std": 0.103467,
+              "ir": 0.1108,
+              "t": 3.153,
+              "positive_rate": 0.5303
+            },
+            "ic_directed": {
+              "n_days": 809,
+              "mean": 0.011469,
+              "std": 0.103467,
+              "ir": 0.1108,
+              "t": 3.153,
+              "positive_rate": 0.5303
+            },
+            "by_year": {
+              "2023": {
+                "n_days": 183,
+                "mean": 0.024467,
+                "std": 0.097639,
+                "ir": 0.2506,
+                "t": 3.39,
+                "positive_rate": 0.6066
+              },
+              "2024": {
+                "n_days": 242,
+                "mean": 0.016275,
+                "std": 0.124178,
+                "ir": 0.1311,
+                "t": 2.039,
+                "positive_rate": 0.5372
+              },
+              "2025": {
+                "n_days": 243,
+                "mean": 0.010966,
+                "std": 0.09195,
+                "ir": 0.1193,
+                "t": 1.859,
+                "positive_rate": 0.4774
+              },
+              "2026": {
+                "n_days": 141,
+                "mean": -0.012783,
+                "std": 0.085898,
+                "ir": -0.1488,
+                "t": -1.767,
+                "positive_rate": 0.5106
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
