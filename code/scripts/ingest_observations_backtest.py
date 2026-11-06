@@ -24,17 +24,82 @@ def _engine():
     return sa.create_engine(url, pool_pre_ping=True)
 
 
+def _market_for_strategy(strategy_id: str, code: str = "") -> str | None:
+    """推断 observation 所属市场；无法可靠判断时返回 None（不猜）。"""
+    sid = (strategy_id or "").strip().lower()
+    if sid.startswith("v1-cn") or sid in {"chanlun", "dk"}:
+        return "CN"
+    if sid.startswith("v1-hk"):
+        return "HK"
+    if sid.startswith("v1-us"):
+        return "US"
+    if sid.startswith("v1-crypto"):
+        return "CRYPTO"
+    # qpzm 是跨市场策略，只能从代码格式判断
+    if sid == "qpzm":
+        c = (code or "").strip().upper()
+        if c.startswith(("SH", "SZ", "BJ")) or c.endswith((".SH", ".SZ", ".BJ")):
+            return "CN"
+        if c.isdigit() and len(c) == 5:
+            return "HK"
+        if "/" in c:
+            return "CRYPTO"
+    return None
+
+
+def _is_market_open(conn, market: str, trade_date: date) -> bool:
+    """市场日历优先；无日历行时回退 profile；未知市场 fail-closed。"""
+    market = (market or "").strip().upper()
+    if not market:
+        return False
+    row = conn.execute(sa.text(
+        "SELECT is_open FROM v2_market_calendar "
+        "WHERE market=:m AND trade_date=:d"
+    ), {"m": market, "d": trade_date}).first()
+    if row is not None:
+        return bool(row[0])
+    try:
+        from zhice_os_v2.domain.market.registry import get_profile
+        return bool(get_profile(market).fallback_is_open(trade_date))
+    except Exception:  # noqa: BLE001 - 未知市场/日历缺失时不写入
+        return False
+
+
+def _filter_trading_day_pending(conn, rows: list[dict]) -> tuple[list[dict], dict[str, int]]:
+    """只保留 signal_date 对所属市场为交易日的 observation 行。"""
+    pending: list[dict] = []
+    skipped: dict[str, int] = {}
+    for r in rows:
+        market = (r.get("market") or _market_for_strategy(
+            str(r.get("strategy_id") or ""), str(r.get("code") or "")) or "").upper()
+        if not market or not _is_market_open(conn, market, r["signal_date"]):
+            key = market or "UNKNOWN"
+            skipped[key] = skipped.get(key, 0) + 1
+            continue
+        pending.append(dict(
+            strategy_id=r["strategy_id"], signal_date=r["signal_date"],
+            code=r["code"], name=r["name"], signal=r["signal"], status="pending",
+        ))
+    return pending, skipped
+
+
 def main() -> int:
     engine = _engine()
     with engine.begin() as c:
-        # 1) pending observations for ACAD1 pool
+        # 1) pending observations for ACAD1 pool；仅生成交易日 observation
         pool = c.execute(sa.text(
-            "SELECT pool_date, strategy_id, code, name, signal FROM v2_acad1_pool "
+            "SELECT pool_date, market, strategy_id, code, name, signal FROM v2_acad1_pool "
             "WHERE pool_date = (SELECT max(pool_date) FROM v2_acad1_pool)"
         )).mappings().all()
-        pending = [dict(strategy_id=r["strategy_id"], signal_date=r["pool_date"],
-                        code=r["code"], name=r["name"], signal=r["signal"],
-                        status="pending") for r in pool]
+        raw = [dict(strategy_id=r["strategy_id"], signal_date=r["pool_date"],
+                    code=r["code"], name=r["name"], signal=r["signal"],
+                    market=r["market"]) for r in pool]
+        pending, skipped = _filter_trading_day_pending(c, raw)
+        if skipped:
+            print("skipped_non_trading=%d %s" % (
+                sum(skipped.values()),
+                ",".join("%s:%d" % (k, v) for k, v in sorted(skipped.items())),
+            ))
         if pending:
             t = sa.table("v2_strategy_observation", *[sa.column(x) for x in (
                 "strategy_id", "signal_date", "code", "name", "signal", "status")])
