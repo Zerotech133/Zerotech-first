@@ -84,10 +84,32 @@
         "obs_negative": 4,
         "day_number": 1
       }
+    },
+    "2026-11-06": {
+      "preliminary": {
+        "generated_at": "2026-11-06T23:48:57+08:00",
+        "overall_status": "PRELIMINARY_AT_RISK",
+        "checks": {
+          "data_dates": "PASS",
+          "reports_on_time": "PENDING",
+          "feedback_lusu": "FAIL",
+          "supervision_acad1": "FAIL",
+          "observations_t1": "FAIL"
+        },
+        "report_total": 0,
+        "report_on_time": 0,
+        "feedback_target": 0,
+        "supervision_target": 0,
+        "obs_with_t1": 0,
+        "obs_total": 0,
+        "obs_negative": 0,
+        "day_number": 2
+      },
+      "final": null
     }
   },
   "consecutive_fail_days": 1,
   "max_consecutive_fail_days": 1,
   "stop_recommended": false,
-  "updated_at": "2026-11-06T10:05:09+08:00"
+  "updated_at": "2026-11-06T23:48:59+08:00"
 }

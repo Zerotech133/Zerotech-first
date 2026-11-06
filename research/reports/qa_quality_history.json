@@ -73,18 +73,36 @@
     "q2_f93ae02b9d"
    ],
    "alerts": []
+  },
+  {
+   "date": "2026-11-06",
+   "n": 2,
+   "answerable_rate": 1.0,
+   "guard_pass_rate": 1.0,
+   "fallback_rate": 0.0,
+   "avg_citations": 2.5,
+   "avg_citation_resolvable_rate": 1.0,
+   "avg_inference_ratio": 0.2,
+   "avg_elapsed_seconds": 21.9,
+   "avg_completeness_score": 5.0,
+   "guard_pass_count": 2,
+   "sample_ids": [
+    "q2_ef78939178",
+    "q2_87eff8d7a3"
+   ],
+   "alerts": []
   }
  ],
  "rolling_7d": {
-  "n_days": 4,
+  "n_days": 5,
   "answerable_rate": 1.0,
   "guard_pass_rate": 1.0,
   "fallback_rate": 0.0,
-  "avg_citations": 2.25,
-  "avg_elapsed_seconds": 9.965,
+  "avg_citations": 2.3,
+  "avg_elapsed_seconds": 12.352,
   "window": 7,
   "date_from": "2026-11-02",
-  "date_to": "2026-11-05"
+  "date_to": "2026-11-06"
  },
- "updated_at": "2026-11-05T18:20:31+08:00"
+ "updated_at": "2026-11-06T23:49:02+08:00"
 }

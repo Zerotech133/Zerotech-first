@@ -15,7 +15,7 @@
 ## 说明
 
 - 预计变化：114 → 108（-6）
-- 备份：C:\项目\老田的AI助手\research\reports\backups\视频号学习_北斗股术1688_units_draft.jsonl.20261105_200008.v1bak
+- 备份：C:\项目\老田的AI助手\research\reports\backups\视频号学习_北斗股术1688_units_draft.jsonl.20261106_234819.v1bak
 - 默认 dry-run；--apply 才写回并先备份；重复为 0 时 apply 不写（幂等）。
 - 本工具不修改知识卡/其他项目；仅作用于输入 units 文件。
 

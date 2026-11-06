@@ -1,14 +1,14 @@
 {
  "schema_version": 1,
  "date": "20261103",
- "generated_at": "2026-11-05T20:00:08+08:00",
+ "generated_at": "2026-11-06T23:48:18+08:00",
  "generator": "tools/kb_corpus/knowledge_dedupe.py（W0-2 重复单元合并）",
  "mode": "apply",
  "dry_run": false,
  "project": "视频号学习_第二期",
  "source": {
   "path": "C:\\项目\\知识库\\30_知识单元\\视频号学习_第二期_units_draft.jsonl",
-  "sha256": "6bfeabef2e5d399539856fcf0a97dd6618d099d9caddbdb4b674cf84c7709285",
+  "sha256": "d6e6083684a05a56336e3940572cde3e6af0b720bedfcaa0dc8ba26c046d2f14",
   "bytes": 929485
  },
  "policy": {
@@ -32,7 +32,7 @@
    "25": 1,
    "2": 6
   },
-  "output_sha256": "1731841552e2616f07ecf3571136d339919e3f3511b824af29eabc9b396811e9"
+  "output_sha256": "eaf9a24fff17ae7eb257b6a2a4045d2b5b6619ed1d9cc5a6722e4b1ed2d93ce0"
  },
  "duplicates": [
   {
@@ -361,7 +361,7 @@
   "learn_视频号学习_第二期_0010"
  ],
  "notes": [],
- "backup": "C:\\项目\\老田的AI助手\\research\\reports\\backups\\视频号学习_第二期_units_draft.jsonl.20261105_200008.v1bak",
+ "backup": "C:\\项目\\老田的AI助手\\research\\reports\\backups\\视频号学习_第二期_units_draft.jsonl.20261106_234818.v1bak",
  "applied": true,
  "disclaimer": "W0-2 重复单元合并：默认 dry-run；不修改知识卡/其他项目；不构成投资建议。",
  "idempotent_noop": false
