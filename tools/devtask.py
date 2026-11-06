@@ -2911,8 +2911,10 @@ def _git_health_autofix(repo=None):
 
 def main():
     a = sys.argv[1:]
-    # 2026-11-02 P1.2：--help/-h 只读打印用法（不触发 core.bare 自愈等写动作）。
-    if a and a[0] in ("-h", "--help", "help"):
+    # 2026-11-02 P1.2 / 2026-11-06：--help/-h 只读打印用法，绝不进入命令分发。
+    # 兼容 ``new --help`` / ``list -h`` 等子命令后置帮助，避免被 cmd_new 当成 TID
+    # 误建空单（历史上已产生多个 --help-aborted-* 脏单）。
+    if (a and a[0] == "help") or any(x in ("-h", "--help") for x in a):
         print(__doc__)
         return 0
     _git_health_autofix()
