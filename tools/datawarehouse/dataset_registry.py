@@ -149,6 +149,54 @@ TEMP_CONTRACT_WHITELIST = (
 
 _TABLE_RE = re.compile(r"^[a-z_][a-z0-9_]{0,62}$")
 
+# ---------- R12 D4：契约产物 sha256 基线外置 ----------
+# 原实现把 sha256 写死成源码常量，而四个产物的 produced_by_job 全是定时任务，
+# 每次重跑字节必变 → 常量一过期就永久报红（实测 3/4 常量为更早一次生成的字节，
+# 文件两天没动仍不匹配）。基线外置后：源码常量降为「出厂默认」，可被基线覆盖；
+# 定时产物 hash 变化登记 drift（info，不告警），只有静态产物（produced_by_job 为空）
+# hash 不符才算真 mismatch。
+CONTRACT_BASELINE_PATH = Path(__file__).resolve().parent / "contract_baseline.json"
+CONTRACT_BASELINE_ENV = "DW_CONTRACT_BASELINE"
+CONTRACT_BASELINE_SCHEMA = "contract_baseline/v1"
+CONTRACT_DRIFT_STATUSES = ("drift",)
+
+
+def load_contract_baseline(path=None) -> dict:
+    """读基线文件；缺失/损坏一律返回空基线（退回出厂常量），**不抛异常**。
+
+    基线是运维状态而非业务数据，不允许因它缺失让整个注册表崩掉。
+    """
+    p = Path(path or os.environ.get(CONTRACT_BASELINE_ENV) or CONTRACT_BASELINE_PATH)
+    out = {"schema": CONTRACT_BASELINE_SCHEMA, "path": str(p),
+           "loaded": False, "baselines": {}}
+    try:
+        obj = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return out
+    raw = obj.get("baselines") if isinstance(obj, dict) else None
+    if not isinstance(raw, dict):
+        return out
+    for aid, rec in raw.items():
+        if not isinstance(rec, dict):
+            continue
+        sha = str(rec.get("sha256") or "").strip().lower()
+        if len(sha) != 64 or not re.fullmatch(r"[0-9a-f]{64}", sha):
+            continue  # 非法基线忽略，避免把坏值当期望值（宁可退回出厂常量）
+        out["baselines"][str(aid)] = {
+            "sha256": sha,
+            "confirmed_at": rec.get("confirmed_at"),
+            "confirmed_by": rec.get("confirmed_by"),
+        }
+    out["loaded"] = bool(out["baselines"])
+    return out
+
+
+def _mtime_iso(p: Path) -> str:
+    try:
+        return datetime.datetime.fromtimestamp(p.stat().st_mtime).strftime("%Y-%m-%dT%H:%M:%S")
+    except OSError:
+        return ""
+
 # ---------- S3-06 P1：通用 query 能力（2026-11-02 task-50）----------
 QUERY_DEFAULT_LIMIT = 100
 QUERY_MAX_LIMIT = 1000
@@ -769,7 +817,8 @@ class DatasetRegistry:
                  pg_connect=None,
                  temp_whitelist=None,
                  temp_root: Path | str | None = None,
-                 declared_refs_path: Path | str | None = None):
+                 declared_refs_path: Path | str | None = None,
+                 contract_baseline=None):
         if inventory_path is None:
             cands = sorted((REPO / "research/reports").glob("dataset_inventory_*.json"))
             if not cands:
@@ -825,10 +874,14 @@ class DatasetRegistry:
         self._pg_connect = pg_connect
         self.pg_discovered = None  # wave2：动态发现集合（DSN 可用时）；None=wave1/缺 DSN 口径
         self.temp_root = Path(temp_root) if temp_root is not None else TEMP_ROOT
-        self.temp_whitelist = [
-            dict(x) for x in (temp_whitelist if temp_whitelist is not None
-                              else TEMP_CONTRACT_WHITELIST)
-        ]
+        self.contract_baseline = (contract_baseline if contract_baseline is not None
+                                  else load_contract_baseline())
+        if temp_whitelist is not None:
+            # 调用方显式给的清单视为「测试/临时口径」，不套运维基线，避免隐式改写期望值
+            self.temp_whitelist = [dict(x) for x in temp_whitelist]
+        else:
+            self.temp_whitelist = [self._apply_baseline(dict(x))
+                                   for x in TEMP_CONTRACT_WHITELIST]
         self.connector_status = "unprobed"
         self.connector_error = ""
         self._disc_cache: dict = {}
@@ -902,6 +955,8 @@ class DatasetRegistry:
                 "missing": sum(1 for d in self.contract_artifacts if d.get("status") == "missing"),
                 "mismatch": sum(1 for d in self.contract_artifacts
                                 if d.get("status") == "sha256_mismatch"),
+                "drift": sum(1 for d in self.contract_artifacts
+                             if d.get("status") in CONTRACT_DRIFT_STATUSES),
                 "by_status": _count_by(self.contract_artifacts, "status"),
             },
             "all": {
@@ -1222,6 +1277,18 @@ class DatasetRegistry:
                 "columns": cols, "sample": rows, "row_estimate": d.get("row_estimate")}
 
     # ---------- DWH-103：contract_artifact 构建/白名单/取样 ----------
+    def _apply_baseline(self, spec: dict) -> dict:
+        """用运维基线覆盖出厂 sha256；未登记的 artifact 保持源码常量。"""
+        aid = str(spec.get("artifact_id") or "")
+        rec = (self.contract_baseline.get("baselines") or {}).get(aid)
+        if not rec:
+            return spec
+        spec["sha256_factory"] = spec.get("sha256")
+        spec["sha256"] = rec["sha256"]
+        spec["baseline_confirmed_at"] = rec.get("confirmed_at")
+        spec["baseline_confirmed_by"] = rec.get("confirmed_by")
+        return spec
+
     def _build_contract_artifacts(self) -> list[dict]:
         rows = []
         for spec in self.temp_whitelist:
@@ -1267,6 +1334,15 @@ class DatasetRegistry:
             actual = _sha256_file(p)
             expected = row.get("sha256")
             if expected and actual != expected:
+                if row.get("produced_by_job"):
+                    # 定时产物字节每次重跑都变，与基线不同属常态 → drift（info），不告警、仍可读
+                    return {"status": "drift", "available": True,
+                            "sha256_expected": expected, "sha256_actual": actual,
+                            "drift_since": _mtime_iso(p),
+                            "baseline_confirmed_at": row.get("baseline_confirmed_at"),
+                            "size_bytes": p.stat().st_size,
+                            "reason": ("定时产物字节变动（%s）；非篡改，登记 drift 不告警"
+                                       % row.get("produced_by_job"))}
                 return {"status": "sha256_mismatch", "available": False,
                         "reason": "sha256 漂移：expected %s actual %s" % (expected, actual)}
             return {"status": "active", "available": True,
@@ -1308,14 +1384,24 @@ class DatasetRegistry:
             raise ContractArtifactUnavailable("契约产物缺失（fail-visible）: %s" % p)
         actual = _sha256_file(p)
         expected = d.get("sha256")
+        drift = None
         if expected and actual != expected:
-            raise ContractArtifactUnavailable(
-                "契约产物 sha256 漂移（fail-visible；可能被改写）: %s" % p)
+            if not d.get("produced_by_job"):
+                raise ContractArtifactUnavailable(
+                    "契约产物 sha256 漂移（fail-visible；可能被改写）: %s" % p)
+            # 定时产物：字节变动属常态，取样仍放行，但把 drift 一并带回调用方（可审计）
+            drift = {"sha256_expected": expected, "sha256_actual": actual,
+                     "drift_since": _mtime_iso(p),
+                     "produced_by_job": d.get("produced_by_job")}
         base = {"dataset_id": d["dataset_id"], "kind": "contract_artifact",
                 "artifact_id": d.get("artifact_id"), "path": str(p),
                 "schema_ref": d.get("schema_ref"), "owner": d.get("owner"),
-                "status": "active", "sha256": actual,
+                "status": "drift" if drift else "active", "sha256": actual,
                 "size_bytes": p.stat().st_size}
+        if drift:
+            base["drift"] = drift
+            base["note_drift"] = ("定时产物字节已变动（非篡改）：expected≠actual，"
+                                  "登记 drift 不告警；需人工确认时跑 refresh_contract_baseline.py")
         if p.stat().st_size > self.max_json_bytes:
             base["preview_head"] = p.read_text(encoding="utf-8", errors="ignore")[:2000]
             base["note"] = "大 JSON：仅预览头部（>max_json_bytes）"

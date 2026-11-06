@@ -69,3 +69,30 @@ def test_catalog_registry_mismatch_is_red():
     b = H.build_brief(dw, ops, factor, selection, learning, now="2026-11-04T07:10:00+08:00")
     assert any(a["code"] == "catalog_registry_mismatch" and a["severity"] == "red" for a in b["alarms"])
     assert any(q["to"] == "DATA1" and "registry" in q["q"] for q in b["questions"])
+
+
+# ---------- R12 D2：catalog / registry 必须同单位比较（物理表 vs 资产全量） ----------
+
+def test_catalog_registry_same_scope_no_red_alarm():
+    """catalog 258 == display 258，physical 306 是资产全量 → 不得再报红（原假红根因）。"""
+    dw, ops, factor, selection, learning = _inputs()
+    dw.update({"catalog_tables": 258, "registry_physical": 306, "registry_display": 258})
+    b = H.build_brief(dw, ops, factor, selection, learning, now="2026-11-06T10:40:00+08:00")
+    assert not any(a["code"] == "catalog_registry_mismatch" for a in b["alarms"])
+    drift = [a for a in b["alarms"] if a["code"] == "catalog_registry_drift"]
+    assert drift and drift[0]["severity"] == "info"
+    assert drift[0]["evidence"]["physical_minus_display"] == 48
+    assert b["data_health"]["registry"]["drift"]["registry_physical"] == 306
+    assert not any("registry" in q["q"] for q in b["questions"])
+
+
+def test_catalog_registry_display_mismatch_is_red():
+    """同口径（display）真不一致时必须报红——防未来真漂移。"""
+    dw, ops, factor, selection, learning = _inputs()
+    dw.update({"catalog_tables": 258, "registry_physical": 306, "registry_display": 260})
+    b = H.build_brief(dw, ops, factor, selection, learning, now="2026-11-06T10:40:00+08:00")
+    red = [a for a in b["alarms"] if a["code"] == "catalog_registry_mismatch"]
+    assert red and red[0]["severity"] == "red"
+    assert red[0]["evidence"]["registry_display"] == 260
+    assert not any(a["code"] == "catalog_registry_drift" for a in b["alarms"])
+    assert any(q["to"] == "DATA1" and "registry display" in q["q"] for q in b["questions"])

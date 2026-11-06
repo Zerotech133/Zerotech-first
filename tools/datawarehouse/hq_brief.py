@@ -82,15 +82,37 @@ def build_brief(dw: dict, ops: dict, factor: dict, selection: dict, learning: di
         alarms.append({"severity": "amber", "code": "today_zero",
                        "summary": "当日增量为 0（可能是时点/断流），勿把存量当今日新增",
                        "evidence": zero_sources})
+    # 口径（R12 D2 修正）：catalog 与 registry 的可比单位是「物理表」= registry_display。
+    # registry_physical 是资产全量（含外部/非物理表资产），拿它与 catalog 表数相比属
+    # **不同单位相减**——原实现据此报红，导致 9 席每天读到一个永不消失的假红。
     cat_tables = dw.get("catalog_tables")
     reg_physical = dw.get("registry_physical")
-    if isinstance(cat_tables, int) and isinstance(reg_physical, int) and cat_tables != reg_physical:
+    reg_display = dw.get("registry_display")
+    comparable = isinstance(cat_tables, int) and isinstance(reg_display, int)
+    catalog_registry_drift = None
+    catalog_registry_mismatch = False
+    if comparable and cat_tables != reg_display:
+        catalog_registry_mismatch = True
         alarms.append({"severity": "red", "code": "catalog_registry_mismatch",
-                       "summary": "catalog %s 表 != registry physical %s；数据资产口径不一致，先修 catalog/registry 再验收" % (
-                           cat_tables, reg_physical),
+                       "summary": "catalog %s 表 != registry display %s 表；同为物理表口径却不一致，先修 catalog/registry 再验收" % (
+                           cat_tables, reg_display),
                        "evidence": {"catalog_tables": cat_tables,
+                                    "registry_display": reg_display,
                                     "registry_physical": reg_physical,
                                     "catalog_version": dw.get("catalog_version")}})
+    elif comparable and isinstance(reg_physical, int):
+        catalog_registry_drift = {
+            "catalog_tables": cat_tables,
+            "registry_display": reg_display,
+            "registry_physical": reg_physical,
+            "physical_minus_display": reg_physical - reg_display,
+            "note": ("physical 为资产全量（含外部/非物理表资产），display 与 catalog 同为物理表口径；"
+                     "差值属正常，逐项明细见 P3-1 对账表"),
+        }
+        alarms.append({"severity": "info", "code": "catalog_registry_drift",
+                       "summary": "catalog/display 同为 %s 表已对齐；physical 资产全量 %s（含 %s 项非物理表资产）" % (
+                           cat_tables, reg_physical, reg_physical - reg_display),
+                       "evidence": catalog_registry_drift})
     mismatch = (dw.get("contract_artifacts") or {}).get("mismatch", 0)
     if mismatch:
         alarms.append({"severity": "amber", "code": "contract_mismatch",
@@ -152,8 +174,8 @@ def build_brief(dw: dict, ops: dict, factor: dict, selection: dict, learning: di
         questions.append({"to": "DATA1", "q": "哪几条采集/表先修复？给出 ETA 与替代数据源"})
     if age_days is not None and age_days >= 1:
         questions.append({"to": "DATA1", "q": "dataset inventory 仍为 %s（距今天 %d 天），何时刷新到今日盘点？" % (dw.get("data_date"), age_days)})
-    if isinstance(cat_tables, int) and isinstance(reg_physical, int) and cat_tables != reg_physical:
-        questions.append({"to": "DATA1", "q": "catalog %s 表与 registry physical %s 表不一致：哪边是真源？何时对齐？" % (cat_tables, reg_physical)})
+    if catalog_registry_mismatch:
+        questions.append({"to": "DATA1", "q": "catalog %s 表与 registry display %s 表不一致（同为物理表口径）：哪边是真源？何时对齐？" % (cat_tables, reg_display)})
     if s and not (s.get("picks") or []):
         questions.append({"to": "A0/ACAD1", "q": "当前无可执行 picks，今天指挥部按“研究/观察”还是“空仓”处理？"})
     if f and (f.get("decay_alerts") or []):
@@ -176,7 +198,8 @@ def build_brief(dw: dict, ops: dict, factor: dict, selection: dict, learning: di
                         "tables": dw.get("catalog_tables"),
                         "updated": dw.get("catalog_updated")},
             "registry": {"physical": dw.get("registry_physical"),
-                         "display": dw.get("registry_display")},
+                         "display": dw.get("registry_display"),
+                         "drift": catalog_registry_drift},
             "freshness": {"data_date": dw.get("data_date"), "age_days": age_days,
                           "state": dw.get("state")},
             "collectors": {"red": red_sources, "today_zero": zero_sources},
