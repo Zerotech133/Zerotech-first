@@ -340,3 +340,25 @@ agent_platform/agent_platform/data/
 
 # 探针输出（一次性证据，落 reports/ 不入库；含数值字段易被凭据扫描误报）
 quant_backtest/_ts_tail_probe.json
+
+# ===== 2026-11-06 全仓收口 P1：可再生成/运行态产物不纳入版本控制 =====
+# 以下目录/文件保留在磁盘作为审计证据，但不入库；历史已跟踪文件不受影响。
+# 审计/研发实验目录（一次性回测与中间 json/html，含大批量输出）
+quant_backtest/_qpzm_audit_20261105/
+quant_backtest/_qpzm_rd_20261106/
+# 训练运行记录/快照（可再生成，体积大）
+research/training_snapshots/
+research/training_runs/
+# 训练数据 JSONL（数据资产走导出包，不入代码仓）
+research/sft/**/*.jsonl
+# OSINT 测试媒体与 pytest 临时目录
+osint_video/.pytest_tmp*/
+# 运行态状态目录（任务/心跳等，由服务重建）
+state/
+# 云训练上传包中的大数据（配置与脚本仍入库）
+deliverables/cloud_bundle/sft/
+deliverables/cloud_bundle/dpo/
+deliverables/cloud_bundle_v4/sft/
+deliverables/cloud_bundle_v4/dpo/
+# 已治理数据导出的 CSV 包（交付物，走压缩包/交付目录）
+deliverables/已治理数据_*/*.csv
