@@ -569,11 +569,15 @@ def cmd_build(args) -> int:
         except Exception as e:  # noqa: BLE001 单条失败不拖垮整批
             print(f"[warn] 断言建图失败 {a.get('assertion_id')}: {e}", file=sys.stderr)
 
-    n_req = gb.infer_requires(recs)
+    # REQUIRES 规则推断默认关闭：上轮 11 条 + 本轮 3 条经人工复核 0/14 成立，
+    # 保留 --enable-requires 开关仅供复现/研究，默认不写边。详见交付报告 v6 第 6 节。
+    n_req = gb.infer_requires(recs) if getattr(args, "enable_requires", False) else 0
     n_con = gb.infer_contradicts(recs)
     n_pol = gb.infer_polarity(recs)
     meta = gb.finalize(",".join(srcs), len(rows))
 
+    if not getattr(args, "enable_requires", False):
+        print("  [gate] REQUIRES 规则推断默认关闭（0/14 命中率，--enable-requires 可启用）")
     print(f"\n=== 建图完成：{args.db} ===")
     for k, v in meta.items():
         print(f"  {k:<22} {v}")
@@ -598,6 +602,8 @@ def main(argv=None) -> int:
     b = sub.add_parser("build", help="从断言 jsonl 建影子图")
     b.add_argument("--input", required=True)
     b.add_argument("--db", required=True)
+    b.add_argument("--enable-requires", action="store_true",
+                   help="启用规则推断 REQUIRES（默认关闭：两轮人工复核 0/14 成立，只产假边）")
     b.set_defaults(func=cmd_build)
 
     q = sub.add_parser("query", help="跑能力查询验证")
