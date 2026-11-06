@@ -15,6 +15,7 @@ import json
 import os
 import socket
 import subprocess
+import tempfile
 import sys
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -109,9 +110,13 @@ print(json.dumps(out, ensure_ascii=False))
     aux = json.loads((p.stdout or "{}").strip().splitlines()[-1]) if p.stdout.strip() else {}
     print("\n[环境事实] %s" % json.dumps(aux, ensure_ascii=False))
 
-    outdir = Path(__file__).parent
-    (outdir / "proof_loopback_proxy.json").write_text(
+    # 证据落系统临时目录，别污染仓库（脚本会被反复重跑）
+    outdir = Path(tempfile.gettempdir()) / "loopback_proof"
+    outdir.mkdir(parents=True, exist_ok=True)
+    ev = outdir / "proof_loopback_proxy.json"
+    ev.write_text(
         json.dumps({"cases": results, "env_facts": aux}, ensure_ascii=False, indent=2), encoding="utf-8")
+    print("[证据] %s" % ev)
     return 0
 
 
