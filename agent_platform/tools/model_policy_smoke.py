@@ -17,6 +17,22 @@ from pathlib import Path
 
 import yaml
 
+# 回环禁代理：本机服务（Ollama 11434 等）的请求不走系统代理（见 tools/safe_urlopen.py）
+import sys as _sys
+from pathlib import Path as _Path
+for _base in _Path(__file__).resolve().parents:
+    for _cand in (_base, _base / "tools"):
+        if (_cand / "safe_urlopen.py").exists():
+            _sys.path.insert(0, str(_cand))
+            break
+    else:
+        continue
+    break
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包/仓库根导入时
+    from tools.safe_urlopen import safe_urlopen
+
 PLATFORM = Path(__file__).resolve().parents[1]
 if str(PLATFORM) not in sys.path:
     sys.path.insert(0, str(PLATFORM))
@@ -52,7 +68,7 @@ def _ollama_chat(model: str, prompt: str = "只回复 OK") -> dict:
     try:
         req = urllib.request.Request(OLLAMA + "/api/chat", data=body,
                                      headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=240) as r:
+        with safe_urlopen(req, timeout=240) as r:
             d = json.load(r)
         text = str(((d.get("message") or {}).get("content") or "")).strip()
         return {"binding": f"ollama/{model}", "ok": bool(text), "status": "normal",
