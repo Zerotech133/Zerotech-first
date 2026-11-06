@@ -23,6 +23,8 @@ r"""nginx 收口累积契约（R7 + R8，2026-11-06）：三处 + 两个 nav 入
 应用记录：
   · R7（05:38）c67da534 / 58501B / 1220 CRLF → 7e0ce85b / 58811B / 1226 CRLF
   · R8（06:07）7e0ce85b → 8ef88f26 / 59484B / 1242 CRLF
+  · D1 Q2 签收路由（2026-11-06）8ef88f26 → 07c6d5d7 / 60955B / 1275 CRLF
+    （受控静态路由 +33 行，纯加法；本测试基线随之更新，避免旧断言误红）
   · 均为「原地覆盖保 inode」（容器单文件 bind mount，mv 会断挂载）
   · 每轮均 覆盖 → 容器内 nginx -t → nginx -s reload（master PID 1 未重启）
   · 回滚：bak-r7 = R7 前字节；bak-r8 = R8 前字节（即 R7 已应用态）
@@ -31,7 +33,7 @@ r"""nginx 收口累积契约（R7 + R8，2026-11-06）：三处 + 两个 nav 入
 
 本测试锁五件事：
   · 前端 token 提示指向真正生效的文件（vault 优先）；
-  · 原件为 R8 累积态，且相对 R7 前基线是**纯加法**（+22 / -0，无删除无改写）；
+  · 原件为当前累积态，且相对 R7 前基线是**纯加法**（+55 / -0，无删除无改写）；
   · 三处改动语义正确（server 级 off、bt 精确匹配在前缀前、capability/perf 转发）；
   · 回滚备份各自对应正确的历史状态，回滚链可信；
   · nav 入口数不减少（禁止用「删入口」来消灭 404）。
@@ -57,7 +59,7 @@ BAK_R8 = os.path.join(ROOT, "reports", "nginx.conf.bak-r8")   # R8 前 = R7 已�
 # 三级基线（sha256 前 16 位），若变化说明有人动过，先确认是否经批准
 BASE_SHA256 = "c67da53437ffa964"     # 初始（58501 B / 1220 CRLF）
 R7_SHA256 = "7e0ce85bf922d052"       # R7 后（58811 B / 1226 CRLF）
-CUR_SHA256 = "8ef88f266f8cbc9a"      # R8 后（59484 B / 1242 CRLF）
+CUR_SHA256 = "07c6d5d7a806af7e"      # R8 + D1 Q2 签收路由（60955 B / 1275 CRLF）
 
 
 def _lines(b):
@@ -92,13 +94,13 @@ def test_bt2_token_not_in_plain_prompt_string_only():
 def test_nginx_is_r8_applied():
     got = hashlib.sha256(NGINX).hexdigest()
     assert got.startswith(CUR_SHA256), \
-        "portal/nginx.conf 非 R8 累积态（sha256 %s），先确认是否被回滚或再改" % got[:16]
-    assert NGINX.count(b"\r\n") == 1242, "应为 1220 原行 + R7 六行 + R8 十六行"
+        "portal/nginx.conf 非当前累积态（sha256 %s），先确认是否被回滚或再改" % got[:16]
+    assert NGINX.count(b"\r\n") == 1275, "应为 R8 后 1242 行 + D1 Q2 签收路由 33 行"
     assert NGINX.count(b"\n") == NGINX.count(b"\r\n"), "不得出现裸 LF"
 
 
 def test_cumulative_diff_is_pure_addition():
-    """相对初始基线只增不删：22 行新增（R7 六行 + R8 十六行），0 行删除。
+    """相对初始基线只增不删：55 行新增（R7 六行 + R8 十六行 + D1 Q2 三十三行），0 行删除。
 
     纯加法是本轮的核心安全性主张——任何 -行 都意味着改写了既有规则，
     必须重新评估影响面。"""
@@ -110,7 +112,7 @@ def test_cumulative_diff_is_pure_addition():
             add += 1
         elif ln.startswith("-") and not ln.startswith("---"):
             rem += 1
-    assert (add, rem) == (22, 0), "累积改动应为 +22/-0，实得 +%d/-%d" % (add, rem)
+    assert (add, rem) == (55, 0), "累积改动应为 +55/-0，实得 +%d/-%d" % (add, rem)
 
 
 # ---------------------------------------------------------------- R7 语义
