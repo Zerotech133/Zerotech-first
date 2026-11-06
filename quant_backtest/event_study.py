@@ -176,7 +176,9 @@ class EventStudy:
             if r is not None and not np.isnan(r):
                 acc += np.log1p(r)
             out[h] = float(np.expm1(acc))
-        for h in range(window[0], 0, -1):
+        # 负窗: range(window[0], 0, -1) 为空（负 start/负 step 的 stop 语义），
+        # 改用正步长生成负列表，避免负窗缺失。详见 event_study_selftest.py 契约项。
+        for h in [-k for k in range(1, -window[0] + 1)]:
             j = i0 + h
             if j < 0:
                 break

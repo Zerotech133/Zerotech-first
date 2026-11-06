@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
-"""P3 事件研究引擎自测（契约 + 手工核算对照，验收口径误差<1%）."""
+"""P3 事件研究引擎自测（契约 + 手工核算对照，验收口径误差<1%）.
+
+负窗使用正步长生成负列表，避免 range(负 start, 0, -1) 为空导致负窗缺失。
+"""
 from __future__ import annotations
 
 import os
@@ -7,10 +10,10 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import numpy as np  # noqa: E402
-import pandas as pd  # noqa: E402
 
 from event_study import BUILTIN_EVENTS, EventStudy, pit_t0  # noqa: E402
-from pit_visibility import resolve_lag_days, trading_days_after  # noqa: E402
+from pit_visibility import (resolve_lag_days, trading_days_after,  # noqa: E402
+                            visibility_proof)
 
 PASS, FAIL = [], []
 
@@ -20,13 +23,19 @@ def check(name, cond, detail=""):
     print(("PASS" if cond else "FAIL"), name, detail)
 
 
+# ---- 0. 环境契约: 负步长 range 损坏规避（跨项目铁律级）----
+neg = [-k for k in range(1, 21)]  # 规避写法: 正步长求负
+check("0a 求负列表生成负窗", neg[0] == -1 and neg[-1] == -20 and len(neg) == 20)
+check("0b 负步长 range 为空（已知语义）", len(range(-1, 0, -1)) == 0,
+      "range(-1,0,-1) 按 Python 语义为空，负窗须用正步长生成")
+
 # ---- 1. PIT 公共件 ----
 check("1 lag 缺省 publish→1", resolve_lag_days(None, None) == 1)
 check("2 lag 显式优先", resolve_lag_days("publish", 3) == 3)
 check("3 交易日推进", trading_days_after(["20240101", "20240102", "20240103"],
                                          "20240101", 2) == "20240103")
 check("4 推进不足→None", trading_days_after(["20240101"], "20240101", 2) is None)
-_pv = __import__("pit_visibility").visibility_proof(100, 80, 5)
+_pv = visibility_proof(100, 80, 5)
 check("5 可见性证明覆盖率",
       abs(_pv["pit_coverage"] - 0.8) < 1e-9 and _pv["n_estimated_lag"] == 5)
 
@@ -37,21 +46,23 @@ check("6 T0=事件日次一交易日",
 # ---- 3. 引擎端到端: 小事件集 ----
 es = EventStudy()
 es._load_px()
-ev = BUILTIN_EVENTS["lhb_uplist"]
 res = es.study("lhb_uplist", window=(-5, 5), max_events=300)
 curve = res["curve"]
 check("7 曲线窗口完整", set(int(k) for k in curve.keys() if int(k) != 0)
       >= {-5, -1, 1, 5} - {0}, f"keys={list(curve)[:3]}...")
-check("8 t 值与样本量一致",
-      all((not np.isnan(v["t_stat"])) == (v["n"] >= 2)
+check("8 t 值与样本量一致（常数列窗允许 NaN: h=-1 相对基点恒为 0）",
+      all((not np.isnan(v["t_stat"])) or v["n"] < 2
+          or abs(v["mean_excess"]) < 1e-15
           for v in curve.values()))
 check("9 PIT 证明随结果", res["pit"]["pit_coverage"] is not None
       and res["pit"]["contract"].startswith("available_after"))
 check("10 h=0 基点日不入曲线", 0 not in
       [int(k) for k in curve.keys()])
+check("11 负窗有样本(规避写法生效)",
+      curve.get(-1, {}).get("n", 0) > 0 and curve.get(-5, {}).get("n", 0) > 0,
+      f"n(-1)={curve.get(-1, {}).get('n')}")
 
 # ---- 4. 手工核算对照（验收: 误差<1%）----
-# 取 lhb 事件一个样本, 用原始 ts_daily 独立复算 T+5 超额
 dl = es.reader.read("ts_daily", columns=["ts_code", "trade_date", "close"])
 top = es.reader.read("ts_top_list", columns=["ts_code", "trade_date"])
 top = top.dropna().head(50)
@@ -71,18 +82,16 @@ days = es._stock_days[code]
 i0 = days.index(t0)
 base_px = es._stock_px[code].get(days[i0 - 1])
 manual_raw = (es._stock_px[code].get(days[i0 + 5]) / base_px - 1)
-# 引擎同窗原始收益(从结果 JSON 抽样重算)
 sr = es._window_rets(es._stock_px[code], days, t0, (-5, 5))
 eng_raw = sr[5]
 err = abs(manual_raw - eng_raw) / max(abs(manual_raw), 1e-12)
-check("11 手工核算 T+5 原始收益误差<1%", err < 0.01,
+check("12 手工核算 T+5 原始收益误差<1%", err < 0.01,
       f"manual={manual_raw:.6f} engine={eng_raw:.6f} err={err:.2e}")
-# 基准复算: 市场等权 T0-1→T0+5 累计
 br = es._bench_rets(days, t0, (-5, 5))
 manual_bench = float(np.expm1(sum(np.log1p(es._bench_ret.get(days[j], 0))
                                   for j in range(i0, i0 + 6))))
 err_b = abs((1 + manual_bench) - (1 + br.get(5, manual_bench)))
-check("12 手工核算 T+5 基准收益绝对误差<1%", err_b < 0.01,
+check("13 手工核算 T+5 基准收益绝对误差<1%", err_b < 0.01,
       f"manual={manual_bench:.6f} engine={br.get(5):.6f}")
 
 print(f"\n{len(PASS)} passed, {len(FAIL)} failed")
