@@ -156,5 +156,14 @@ def test_report_archive_contains_raw_and_report(tmp_path):
 
 
 def test_sample_outside_window_requires_force(tmp_path):
+    # 不依赖“当前时间是否已进入默认窗口”：显式给一个未来窗口，任何时刻都在窗口外。
+    future_start = W.DEFAULT_WINDOW_END + timedelta(days=1)
+    future_end = future_start + timedelta(days=1)
     with pytest.raises(RuntimeError):
-        W.sample_once(tmp_path, force=False, http_get=lambda url: (200, None))
+        W.sample_once(
+            tmp_path,
+            force=False,
+            window_start=future_start,
+            window_end=future_end,
+            http_get=lambda url: (200, None),
+        )
