@@ -50,6 +50,13 @@ DATE_COL = {
 }
 # tdx_sector_daily 用 code 而非 ts_code
 CODE_COL_DEFAULT = "ts_code"
+# 未显式登记的表：按此顺序在首片 schema 里探测业务日期列（与 tdx_sync 的
+# _date_col_of 口径一致，避免读写两侧不对称导致静默空读）
+_DATE_COL_CANDIDATES = (
+    "trade_date", "ann_date", "end_date", "list_date", "publish_date",
+    "pub_date", "in_date", "month", "quarter", "MONTH",
+)
+_DATE_COL_CACHE = {}
 
 
 @guarded_read(lambda *args, **kwargs: [Path(MANIFEST).parent])
@@ -103,7 +110,45 @@ def fresh(tbl, day):
 
 
 def date_col_of(tbl):
-    return DATE_COL.get(tbl, "trade_date")
+    """表的业务日期列名。
+
+    2026-11-06 修复：此前只认 DATE_COL 里的 4 张表，其余一律回退 trade_date，
+    而 ts_anns_d 等表的日期列是 ann_date/list_date/end_date —— 于是
+    read_day/read_range 在这些表上**静默返回空**（写入端 tdx_sync 有完整映射，
+    读取端没有，两边不对称）。改为：显式映射 → 首片 schema 探测 → 回退 trade_date。
+    """
+    col = DATE_COL.get(tbl)
+    if col:
+        return col
+    cached = _DATE_COL_CACHE.get(tbl)
+    if cached:
+        return cached
+    col = "trade_date"
+    parts = _parts(tbl)
+    if parts:
+        names = _part_columns(parts[0])
+        for cand in _DATE_COL_CANDIDATES:
+            if cand in names:
+                col = cand
+                break
+    _DATE_COL_CACHE[tbl] = col
+    return col
+
+
+def _part_columns(path):
+    """首片列名（只读 schema，不加载数据）。"""
+    try:
+        import pyarrow.parquet as pq
+
+        return list(pq.ParquetFile(path).schema_arrow.names)
+    except Exception:  # noqa: BLE001 - 无 pyarrow 时退回 pandas 探测
+        try:
+            return list(pd.read_parquet(path).columns)
+        except Exception as exc:  # noqa: BLE001
+            logging.getLogger(__name__).warning(
+                "silent-except %s: %s", "quant_backtest/tdx_read.py", exc
+            )
+            return []
 
 
 def _parts(tbl):

@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-"""利空明细查询（K35-b §2① 命令块）：龙虎榜上榜史 + 席位动向。
+"""利空明细查询（K35-b §2① 命令块）：龙虎榜上榜史 + 席位动向 + 公告文本。
 
 数据源：ts_top_list（龙虎榜每日，金额元）、ts_top_inst（席位明细，元）、
-ts_daily（上榜后走势对照）。
-公告/新闻文本本地未入库（notice/news rows=0），脚本尾部给人工核查指引。
+ts_daily（上榜后走势对照）、公告文本走 notice_lookup（stock_notice + ts_anns_d）。
+公告结论由数据本身给出；只有两条通道都不可用/为空时才降级到人工核查指引。
 
 用法:
   python badnews_lookup.py 301216            # 默认近 365 自然日
@@ -18,6 +18,7 @@ from datetime import datetime, timedelta
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import tdx_read as tdxr
+import notice_lookup as nl
 
 
 from codes import normalize_code as _norm  # noqa: E402
@@ -27,6 +28,7 @@ def main():
     ap = argparse.ArgumentParser(description="利空明细查询（龙虎榜+席位）")
     ap.add_argument("code")
     ap.add_argument("--days", type=int, default=365, help="回看自然日窗口，默认 365")
+    ap.add_argument("--notice-limit", type=int, default=15, help="公告展示条数，默认 15")
     a = ap.parse_args()
     code = _norm(a.code)
     start = (datetime.now() - timedelta(days=a.days)).strftime("%Y-%m-%d")
@@ -103,23 +105,37 @@ def main():
                 )
                 print("    机构专用 %d 席，合计净 %+.0f 万" % (n_org, net_org / 1e4))
 
-    # --- C. 公告文本声明 + 人工指引 ---
-    print("\n=== C. 公告/新闻文本 ===")
-    print("  本地 notice / news 表未入库（rows=0），文本利空无法机查。人工核查：")
-    print(
-        "  - 巨潮资讯 http://www.cninfo.com.cn 搜「%s」：看近 3 月是否"
-        "有 减持/质押/问询函/业绩预告下调/大宗交易 公告" % code
-    )
-    print("  - 东方财富 F10 → 股东研究（增减持/质押）/ 分红融资")
+    # --- C. 公告文本（本地库双通道；结论由数据给出，不写死） ---
+    notice = nl.collect(code, days=a.days)
+    for line in nl.format_section(notice, view_limit=a.notice_limit):
+        print(line)
+    if not notice["hits"] and notice["degraded"]:
+        print("  - 巨潮资讯 http://www.cninfo.com.cn 搜「%s」：减持/质押/问询函 人工复核" % code)
+
+    # --- D. §2① 判读 ---
     print("\n=== D. §2① 判读 ===")
+    risk = [h for h in notice["hits"] if nl.has_risk(h)]
     if len(tl):
         print(
             "  龙虎榜有记录：结合 A 段「榜后至今」走势读——上榜后大幅回撤"
             "多为游资一日游/情绪顶，属资金行为利空而非基本面利空；"
             "机构席位净卖方向才指向基本面分歧。"
         )
+        if risk:
+            print("  另有 %d 条带风险标签的公告，需与资金行为分开定性。" % len(risk))
+    elif risk:
+        print(
+            "  龙虎榜无记录，但公告侧有 %d 条风险标签（%s）：按文本利空定性，"
+            "核对 C 段原文后再判。"
+            % (
+                len(risk),
+                "/".join(sorted({t for h in risk for t in h["tags"] if t in nl.RISK_TAGS})),
+            )
+        )
+    elif notice["degraded"]:
+        print("  龙虎榜无记录 + 公告通道不可用：① 暂无机查证据，保持「待人工」状态。")
     else:
-        print("  龙虎榜无记录 + 文本未入库：① 暂无机查证据，保持「待人工」状态。")
+        print("  龙虎榜无记录 + 公告侧无风险标签：① 暂无机查证据，保持「观察」状态。")
     return 0
 
 
