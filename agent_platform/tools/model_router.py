@@ -20,12 +20,16 @@ from __future__ import annotations
 import json
 import sys
 import time
+import uuid
 from pathlib import Path
 import logging
 
 PLATFORM = Path(__file__).resolve().parents[1]
 REPO = PLATFORM.parent
 USAGE_LOG = PLATFORM / "data" / "zhaoyun_capability_usage.jsonl"
+# 测试重定向开关：非 None 时 _record_llm 把 llm.call 写到此库（而非生产 traces.sqlite），
+# 同时给 span 打 zhaoyun.test=true 标记，供 summary() 排除。生产保持 None。
+LLM_TRACE_DB = None
 
 ROUTES = {
     "governance": [
@@ -130,6 +134,7 @@ def invoke(
     adapters = adapters or _default_adapters()
     plan = route(purpose, prefer)
     attempts = []
+    request_id = uuid.uuid4().hex[:16]  # 关联同一次 invoke 的多次尝试，供请求级度量
     for item in plan:
         model = item["model"]
         t0 = time.time()
@@ -154,7 +159,8 @@ def invoke(
                 "usage": tokens,
             }
             _log_usage("model-routing", purpose, model, True)
-            _record_llm(model, purpose, True, t0, tokens=tokens, text=text)
+            _record_llm(model, purpose, True, t0, tokens=tokens, text=text,
+                        request_id=request_id)
             return rec
         except Exception as e:  # noqa: BLE001
             attempts.append(
@@ -165,7 +171,7 @@ def invoke(
                 }
             )
             _log_usage("model-routing", purpose, model, False)
-            _record_llm(model, purpose, False, t0, err=str(e))
+            _record_llm(model, purpose, False, t0, err=str(e), request_id=request_id)
     return {"ok": False, "model": None, "used": False, "attempts": attempts}
 
 
@@ -177,16 +183,26 @@ def _record_llm(
     err: str = "",
     tokens: dict | None = None,
     text: str = "",
+    request_id: str = "",
+    db: str | None = None,
 ) -> None:
-    """LLM 调用留证（trace span，OTel GenAI 字段；成本由 usage 估算）。"""
+    """LLM 调用留证（trace span，OTel GenAI 字段；成本由 usage 估算）。
+
+    db=None 走模块默认 LLM_TRACE_DB（生产库）；测试传临时库隔离。
+    request_id 关联同一次 invoke 的多次尝试，供 summary 计算请求级失败率。
+    """
     try:
         sys.path.insert(0, str(PLATFORM))
         from observability import trace as tr  # noqa: WPS433
 
+        target_db = db if db is not None else LLM_TRACE_DB
+        is_test = bool(target_db)
         attrs = {
             "gen_ai.operation.name": "chat",
             "gen_ai.request.model": model,
             "zhaoyun.purpose": purpose,
+            "zhaoyun.request_id": str(request_id or ""),
+            "zhaoyun.test": "true" if is_test else "false",
             "error": str(err or "")[:120],
         }
         if tokens:
@@ -206,6 +222,7 @@ def _record_llm(
             end=time.time(),
             status="ok" if ok else "error",
             attrs=attrs,
+            db=target_db,
         )
     except Exception as exc:
         logging.getLogger(__name__).warning("silent-except %s: %s", "agent_platform/tools/model_router.py", exc)
