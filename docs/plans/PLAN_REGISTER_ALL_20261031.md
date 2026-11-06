@@ -3,15 +3,16 @@
 > 只读扫描；原计划不改。生成物（`PLAN_REGISTER*`，本台账自身）单列 `generated`，不参与计划状态统计。
 > 非生成计划 unspecified 需 owner 在 2026-11-07 前补状态。
 
-总数：297（其中生成物 generated 2，不计入计划状态统计）
+总数：408（其中生成物 generated 2，不计入计划状态统计）
 
 | 状态 | 数量 |
 |---|---|
-| declared | 133 |
-| frozen | 98 |
+| declared | 198 |
+| frozen | 112 |
 | generated | 2 |
-| pending_approval | 48 |
+| pending_approval | 62 |
 | superseded | 16 |
+| unspecified | 18 |
 
 ## 计划清单
 
@@ -298,19 +299,22 @@
 | 2026-10-31 | declared | 8788 staging 去留决策 v1（2026-10-31） | `docs\plans\2026-10-31_8788_staging去留决策_v1.md` |
 | 2026-10-31 | declared | portal_api 路由清单（A5 B0） | `docs\plans\2026-10-31_A5_B0路由清单_v1.md` |
 | 2026-10-31 | declared | A5 B4/B5 路由表化 · 设计与测试方案 v1（2026-10-31 · 关羽） | `docs\plans\2026-10-31_A5_B4B5_路由表化设计_v1.md` |
-| 2026-10-31 | declared | L4 / M4 强制政策 v1（建议稿，待 A0 签署生效） | `docs\plans\2026-10-31_L4_M4_强制政策_v1.md` |
+| 2026-10-31 | pending_approval | L4 / M4 强制政策 v1（建议稿，待 A0 签署生效） | `docs\plans\2026-10-31_L4_M4_强制政策_v1.md` |
 | 2026-10-31 | frozen | portal_api 拆分提案 v1（A5 · 2026-10-31 · 关羽） | `docs\plans\2026-10-31_portal_api拆分提案_v1.md` |
 | 2026-10-31 | declared | 情报板块研发方案 v1（2026-10-31） | `docs\plans\2026-10-31_情报板块研发方案_v1.md` |
 | 2026-10-31 | declared | 情报板块研发计划 v1（2026-10-31 → 2026-11-28） | `docs\plans\2026-10-31_情报板块研发计划_v1.md` |
+| 2026-10-31 | declared | 研报知识库 · 使用场景与 Agent/人类支持方案 v1 | `docs\plans\2026-10-31_研报知识库场景与Agent支持_v1.md` |
 | 2026-10-31 | declared | 身份拓扑决策 v2：SSO 已启用（2026-10-31 09:15） | `docs\plans\2026-10-31_身份拓扑决策_v1.md` |
 | 2026-10-31 | declared | 零界研发计划 v2：收口与闭环（2026-10-31 → 2026-11-28） | `docs\plans\2026-10-31_零界研发计划_v2_收口与闭环.md` |
 | 2026-10-31 | declared | 黄忠 11-04 观察期复核「一键流程」v1（2026-10-31） | `docs\plans\2026-10-31_黄忠11-04复核一键流程_v1.md` |
 | 2026-10-31 | declared | 黄忠 × Hermes 底层结合方案 v1（2026-10-31） | `docs\plans\2026-10-31_黄忠Hermes底层结合方案_v1.md` |
 | 2026-10-31 | declared | 黄忠事故台账口径 v1（incidents.jsonl） | `docs\plans\2026-10-31_黄忠事故台账口径_v1.md` |
 | 2026-10-31 | declared | 黄忠受控演练复演 SOP v1（2026-10-31） | `docs\plans\2026-10-31_黄忠受控演练复演SOP_v1.md` |
-| 2026-11-02 | pending_approval | P5c 形态 B 复验报告（预定 2026-11-02 执行） | `docs\plans\2026-11-02_P5c形态B_复验报告.md` |
-| 2026-11-02 | declared | 11-02 关键窗口 Runbook v1（2026-10-31 制定） | `docs\plans\2026-11-02_关键窗口runbook_v1.md` |
-| - | superseded | 计划全集索引（docs/plans/ 全量 91 份） | `docs\plans\INDEX_计划全集索引.md` |
-| - | generated | 计划台账（PLAN_REGISTER） | `docs\plans\PLAN_REGISTER_20261031.md` |
-| - | generated | 计划台账（全量，含子目录）2026-10-31 | `docs\plans\PLAN_REGISTER_ALL_20261031.md` |
-| - | declared | docs/plans/ · 现行方案与计划归置区 | `docs\plans\README.md` |
+| 2026-11-01 | declared | H0 互操作与观测：落地说明 v1（2026-11-01） | `docs\plans\2026-11-01_H0互操作与观测_v1.md` |
+| 2026-11-01 | declared | H37/H38/H39 策略假设卡 v1（研究假设 · 未验证 · 不进选股） | `docs\plans\2026-11-01_H37_H39策略假设_v1.md` |
+| 2026-11-01 | pending_approval | 从「数据仓学到的策略」到「选股能力」v1 | `docs\plans\2026-11-01_从策略到选股能力_v1.md` |
+| 2026-11-01 | declared | 学习卡与简报门户化 v1 | `docs\plans\2026-11-01_学习卡与简报门户化_v1.md` |
+| 2026-11-01 | pending_approval | 学习卡审核工作流 v1（60 候选 → decisions → 合并） | `docs\plans\2026-11-01_学习卡审核工作流.md` |
+| 2026-11-01 | pending_approval | 学习卡审核页 v1（点选 → 导出 decisions） | `docs\plans\2026-11-01_学习卡审核页.md` |
+| 2026-11-01 | declared | 指挥部五角色智能体与验收闭环研发计划 v1 | `docs\plans\2026-11-01_指挥部五角色智能体与验收闭环研发计划_v1.md` |
+| 2026-11-01 | declared | 每日筛选流水线 v1（可手动运行，dry-run 安全） | `docs\plans\2026-11-01_每日筛选流水线_v1.md` |
