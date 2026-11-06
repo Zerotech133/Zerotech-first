@@ -25,6 +25,28 @@ DEFAULT_OPS = "http://127.0.0.1:8091/api/dataops/overview"
 SCHEMA = "hq/data_brief/v1"
 TZ = dt.timezone(dt.timedelta(hours=8))
 
+# 采集窗口：各采集器的当日增量在 18:00 之后才可比。窗口前查当日增量必为 0，
+# 这是时点问题不是断流（R12 D3 修正：原实现把二者混为一谈，7 席据此误判）。
+COLLECT_WINDOW_HOUR = 18
+
+
+def _now_dt(now=None) -> dt.datetime:
+    """把 now 参数（None / ISO 字符串 / datetime）归一成 +08 的 datetime。"""
+    if now is None:
+        return dt.datetime.now(TZ)
+    if isinstance(now, str):
+        try:
+            now = dt.datetime.fromisoformat(now)
+        except ValueError:
+            return dt.datetime.now(TZ)
+    if not isinstance(now, dt.datetime):
+        return dt.datetime.now(TZ)
+    return now.astimezone(TZ) if now.tzinfo else now.replace(tzinfo=TZ)
+
+
+def _collect_window_open(now=None) -> bool:
+    return _now_dt(now).hour >= COLLECT_WINDOW_HOUR
+
 
 def _get(url: str) -> dict:
     with urllib.request.urlopen(url, timeout=30) as r:
@@ -79,9 +101,14 @@ def build_brief(dw: dict, ops: dict, factor: dict, selection: dict, learning: di
                        "summary": "采集/表级延时报红，需 DATA1 先修数",
                        "evidence": {"collectors": red_sources, "tables": red_pools}})
     if zero_sources:
-        alarms.append({"severity": "amber", "code": "today_zero",
-                       "summary": "当日增量为 0（可能是时点/断流），勿把存量当今日新增",
-                       "evidence": zero_sources})
+        if _collect_window_open(now):
+            alarms.append({"severity": "amber", "code": "today_zero",
+                           "summary": "采集窗口（%d:00）已过，当日增量仍为 0（可能是断流），勿把存量当今日新增" % COLLECT_WINDOW_HOUR,
+                           "evidence": zero_sources})
+        else:
+            alarms.append({"severity": "info", "code": "today_pending",
+                           "summary": "采集窗口（%d:00）未到，当日增量为 0 属时点常态，不作为断流" % COLLECT_WINDOW_HOUR,
+                           "evidence": zero_sources})
     # 口径（R12 D2 修正）：catalog 与 registry 的可比单位是「物理表」= registry_display。
     # registry_physical 是资产全量（含外部/非物理表资产），拿它与 catalog 表数相比属
     # **不同单位相减**——原实现据此报红，导致 9 席每天读到一个永不消失的假红。
@@ -162,18 +189,21 @@ def build_brief(dw: dict, ops: dict, factor: dict, selection: dict, learning: di
             "decision_hint": "语料产能不等于可用知识；先看领域覆盖与卡片通过率",
         })
 
-    age_days = None
-    try:
-        d = dt.date.fromisoformat(str(dw.get("data_date")))
-        age_days = (dt.datetime.now(TZ).date() - d).days
-    except (TypeError, ValueError):
-        pass
+    # 时点语义（R12 D3）：data_date 是**盘点文件 mtime**，不是数据最新交易日。
+    # 两者必须分开报，否则「盘点没刷新」会被读成「数据断流」。
+    age_days = dw.get("inventory_age_days")
+    if not isinstance(age_days, int):
+        try:
+            d = dt.date.fromisoformat(str(dw.get("data_date")))
+            age_days = (_now_dt(now).date() - d).days
+        except (TypeError, ValueError):
+            age_days = None
 
     questions = []
     if red_sources or red_pools:
         questions.append({"to": "DATA1", "q": "哪几条采集/表先修复？给出 ETA 与替代数据源"})
     if age_days is not None and age_days >= 1:
-        questions.append({"to": "DATA1", "q": "dataset inventory 仍为 %s（距今天 %d 天），何时刷新到今日盘点？" % (dw.get("data_date"), age_days)})
+        questions.append({"to": "DATA1", "q": "数据集盘点（dataset_inventory）仍是 %s 那一版（距今 %d 天）：它只反映盘点时刻，不代表数据断流；何时重跑盘点？" % (dw.get("data_date"), age_days)})
     if catalog_registry_mismatch:
         questions.append({"to": "DATA1", "q": "catalog %s 表与 registry display %s 表不一致（同为物理表口径）：哪边是真源？何时对齐？" % (cat_tables, reg_display)})
     if s and not (s.get("picks") or []):
@@ -200,7 +230,13 @@ def build_brief(dw: dict, ops: dict, factor: dict, selection: dict, learning: di
             "registry": {"physical": dw.get("registry_physical"),
                          "display": dw.get("registry_display"),
                          "drift": catalog_registry_drift},
-            "freshness": {"data_date": dw.get("data_date"), "age_days": age_days,
+            "freshness": {"data_date": dw.get("data_date"),
+                          "data_date_source": dw.get("data_date_source") or "unknown",
+                          "age_days": age_days,
+                          "inventory_age_days": dw.get("inventory_age_days"),
+                          "latest_trade_date": dw.get("latest_trade_date"),
+                          "latest_trade_date_source": dw.get("latest_trade_date_source"),
+                          "collect_window_open": _collect_window_open(now),
                           "state": dw.get("state")},
             "collectors": {"red": red_sources, "today_zero": zero_sources},
             "contracts": dw.get("contract_artifacts") or {},

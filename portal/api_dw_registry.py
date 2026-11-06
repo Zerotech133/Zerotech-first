@@ -114,12 +114,74 @@ def _catalog_alignment() -> dict:
 
 
 def _data_date():
-    """盘点数据时点：dataset_inventory 文件 mtime 的日期（YYYY-MM-DD）。"""
+    """盘点数据时点：dataset_inventory 文件 mtime 的日期（YYYY-MM-DD）。
+
+    注意：这是**盘点文件被写入的日期**，不是数据最新交易日。两者混用会把
+    「盘点没重跑」误读成「数据断流」（R12 D3）。需要交易口径请看 freshness 的
+    latest_trade_date / latest_trade_date_source。
+    """
     try:
         return datetime.date.fromtimestamp(
             Path(str(_reg().inventory_path)).stat().st_mtime).isoformat()
     except (AttributeError, OSError, TypeError, ValueError):
         return None
+
+
+_FRESHNESS_CACHE: dict = {"key": None, "val": None}
+
+
+def _freshness() -> dict:
+    """数据时点三元组：盘点日期 / 盘点年龄 / 盘点时看到的最新数据日期。
+
+    三个字段各自带来源标注，消费方不得把 data_date 当交易日期用。
+    """
+    out = {
+        "data_date": _data_date(),
+        "data_date_source": "inventory_mtime",
+        "inventory_age_days": None,
+        "latest_trade_date": None,
+        "latest_trade_date_source": "unavailable",
+    }
+    try:
+        inv_path = Path(str(_reg().inventory_path))
+        st = inv_path.stat()
+    except (AttributeError, OSError, TypeError, ValueError):
+        return out
+    if out["data_date"]:
+        try:
+            out["inventory_age_days"] = (
+                datetime.date.today()
+                - datetime.date.fromisoformat(out["data_date"])).days
+        except ValueError:
+            pass
+    key = (str(inv_path), st.st_mtime)
+    if _FRESHNESS_CACHE.get("key") == key:
+        cached = dict(_FRESHNESS_CACHE.get("val") or {})
+        out["latest_trade_date"] = cached.get("latest_trade_date")
+        out["latest_trade_date_source"] = cached.get("latest_trade_date_source",
+                                                    "unavailable")
+        return out
+    latest, source = None, "unavailable"
+    try:
+        inv = json.loads(inv_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        inv = {}
+    for d in inv.get("datasets") or []:
+        path = str(d.get("path") or "").lower().replace("\\", "/")
+        # 只认行情数据目录；代码目录/.git 的 mtime 不是交易日期
+        if ".git" in path or not any(k in path for k in ("/tushare", "/tdx")):
+            continue
+        v = str(d.get("latest") or "")[:10]
+        if len(v) == 10 and v[4] == "-" and v > (latest or ""):
+            latest = v
+    if latest:
+        source = "inventory_max_latest（盘点时点口径，非实时）"
+    out["latest_trade_date"] = latest
+    out["latest_trade_date_source"] = source
+    _FRESHNESS_CACHE["key"] = key
+    _FRESHNESS_CACHE["val"] = {"latest_trade_date": latest,
+                               "latest_trade_date_source": source}
+    return out
 
 
 def _stale_reason(data_date) -> str:
@@ -134,8 +196,11 @@ def _stale_reason(data_date) -> str:
 
 
 def _envelope(state: str, reason: str = "", data_date=None) -> dict:
-    out = {"data_date": data_date if data_date is not None else _data_date(),
-           "state": state}
+    fresh = _freshness()
+    if data_date is not None:
+        fresh["data_date"] = data_date
+    out = {"data_date": fresh.pop("data_date"), "state": state}
+    out.update(fresh)  # data_date_source / inventory_age_days / latest_trade_date(+source)
     if reason:
         out["reason"] = reason
     return out

@@ -42,7 +42,8 @@ def _inputs():
 
 
 def test_data_brief_has_health_alarms_signals_questions():
-    b = H.build_brief(*_inputs(), now="2026-11-04T05:15:00+08:00")
+    # 19:15 是采集窗口（18:00）之后：当日增量为 0 才应报 today_zero
+    b = H.build_brief(*_inputs(), now="2026-11-04T19:15:00+08:00")
     assert b["schema"] == H.SCHEMA and b["owner"]["name"] == "张松"
     assert b["data_health"]["assets"]["all"] == 399
     assert b["data_health"]["catalog"]["tables"] == 304
@@ -96,3 +97,39 @@ def test_catalog_registry_display_mismatch_is_red():
     assert red[0]["evidence"]["registry_display"] == 260
     assert not any(a["code"] == "catalog_registry_drift" for a in b["alarms"])
     assert any(q["to"] == "DATA1" and "registry display" in q["q"] for q in b["questions"])
+
+
+# ---------- R12 D3：当日增量必须区分「窗口未到」与「断流」 ----------
+
+def test_today_zero_before_collect_window_is_pending_not_alarm():
+    """10:40 查当日增量必为 0——属时点常态，不得报 amber today_zero（原实现天天误报）。"""
+    b = H.build_brief(*_inputs(), now="2026-11-06T10:40:00+08:00")
+    assert not any(a["code"] == "today_zero" for a in b["alarms"])
+    pend = [a for a in b["alarms"] if a["code"] == "today_pending"]
+    assert pend and pend[0]["severity"] == "info"
+    assert b["data_health"]["freshness"]["collect_window_open"] is False
+
+
+def test_today_zero_after_collect_window_is_amber():
+    b = H.build_brief(*_inputs(), now="2026-11-06T18:30:00+08:00")
+    z = [a for a in b["alarms"] if a["code"] == "today_zero"]
+    assert z and z[0]["severity"] == "amber"
+    assert not any(a["code"] == "today_pending" for a in b["alarms"])
+    assert b["data_health"]["freshness"]["collect_window_open"] is True
+
+
+def test_freshness_separates_inventory_date_from_trade_date():
+    """data_date 是盘点文件 mtime，不是交易日期——两者必须各自带来源标注。"""
+    dw, ops, factor, selection, learning = _inputs()
+    dw.update({"data_date": "2026-11-02", "data_date_source": "inventory_mtime",
+               "inventory_age_days": 4, "latest_trade_date": "2026-11-05",
+               "latest_trade_date_source": "inventory_max_latest（盘点时点口径，非实时）"})
+    b = H.build_brief(dw, ops, factor, selection, learning, now="2026-11-06T10:40:00+08:00")
+    fr = b["data_health"]["freshness"]
+    assert fr["data_date"] == "2026-11-02" and fr["data_date_source"] == "inventory_mtime"
+    assert fr["inventory_age_days"] == 4 and fr["age_days"] == 4
+    assert fr["latest_trade_date"] == "2026-11-05"
+    assert "盘点时点口径" in fr["latest_trade_date_source"]
+    # 提问措辞必须说清是「盘点版本」而非「数据断流」
+    q = [x["q"] for x in b["questions"] if x["to"] == "DATA1" and "盘点" in x["q"]]
+    assert q and "不代表数据断流" in q[0]
