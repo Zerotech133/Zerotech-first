@@ -362,3 +362,7 @@ deliverables/cloud_bundle_v4/sft/
 deliverables/cloud_bundle_v4/dpo/
 # 已治理数据导出的 CSV 包（交付物，走压缩包/交付目录）
 deliverables/已治理数据_*/*.csv
+
+# 运行态缓存/事件（2026-11-06 全仓收口）
+quant_backtest/.reader_cache.json
+agent_platform/legion_command/portal/data/dev_events.jsonl
