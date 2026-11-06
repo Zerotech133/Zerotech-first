@@ -51,7 +51,7 @@ EPS = 1e-9
 
 
 # ── 数据准备（一次 load_wide，窗口复用）───────────────────────────
-def build_matrices(wide, i0, i1, buy_th=75.0, obs_th=50.0, gate_on=True, log=print):
+def build_matrices(wide, i0, i1, buy_th=75.0, obs_th=50.0, gate_on=True, log=print, want_vq=False):
     """从 wide 切出 [i0, i1] 行区间并算好打分矩阵，返回 numpy 视图字典。
 
     截面 rank / env 宽度 / tech 全为逐行运算，行切不影响取值，因此一个
@@ -149,6 +149,21 @@ def build_matrices(wide, i0, i1, buy_th=75.0, obs_th=50.0, gate_on=True, log=pri
             envpct[t] = (float((h < es[t]).sum()) + 0.5 * float((h == es[t]).sum())) / len(h)
     out["ENVS"] = es
     out["ENVPCT"] = envpct
+    # VQ: 当日**全市场截面**的 vol20 五分位标签（1=最低波 … 5=最高波，0=缺失）。
+    #     仅用于逐笔归因打标（attr 批），默认不计算、不参与任何决策路径。
+    if want_vq:
+        vq = np.zeros(out["VOL20"].shape, dtype="uint8")
+        for t in range(vq.shape[0]):
+            v = vo[t]
+            ok = np.isfinite(v) & (v > 0)
+            n_ok = int(ok.sum())
+            if n_ok < 200:  # 截面样本太少（早期）→ 不打标
+                continue
+            sv = np.sort(v[ok])
+            cuts = sv[[int(0.2 * n_ok), int(0.4 * n_ok), int(0.6 * n_ok), int(0.8 * n_ok)]]
+            lab = 1 + (v[:, None] > cuts[None, :]).sum(axis=1)
+            vq[t] = np.where(ok, lab, 0).astype("uint8")
+        out["VQ"] = vq
     log(
         "  risk-budget matrices: vol20 finite %.1f%%, resid days %d, env pct range %.2f~%.2f"
         % (
@@ -173,6 +188,62 @@ def _inv_vol_weights(vol):
     w[ok] = inv
     s = float(w.sum())
     return w / s if s > 0 else np.full(n, 1.0 / max(n, 1))
+
+
+def _plan_shares(budget, px, half, lot_fill="strict", st=None, max_budget=None):
+    """把「单票预算」换成「整手股数」。
+
+    strict （默认，与改前逐位一致）：sh = floor(budget / (px*(1+half)*LOT)) * LOT，
+             买不起 1 手 → 0（调用方记为 skip_lot，钱留现金）。
+    recycle：预算不足 1 手的票把预算**回收**成当日资金池，先把最接近够 1 手的
+             票补到刚好 1 手（按其 1 手成本升序，即「谁能成交就先救谁」），
+             剩余池再均摊给当日其余可成交票；最多 3 轮直到无新增饿死票。
+             选股池 / 排序 / 当日总预算三项完全不变（只做池内搬运，Σbudget 不变），
+             唯一变化是「同样一笔钱怎么装进整手」。不使用任何 vol / 价格先验。
+    """
+    b = np.asarray(budget, dtype="float64").copy()
+    px = np.asarray(px, dtype="float64")
+    with np.errstate(invalid="ignore", divide="ignore"):
+        lot_cost = px * (1.0 + half) * LOT
+        ok_px = np.isfinite(px) & (px > 0) & np.isfinite(b)
+        if lot_fill != "recycle":
+            sh = np.floor(b / lot_cost) * LOT
+            return np.nan_to_num(sh, nan=0.0, posinf=0.0, neginf=0.0).astype(np.int64)
+        for rnd in range(3):
+            good = ok_px & (b > 0)
+            aff = good & (b >= lot_cost)
+            starved = good & ~aff
+            if not starved.any():
+                break
+            pool = float(b[starved].sum())
+            if pool <= 0:
+                break
+            b[starved] = 0.0
+            if st is not None:
+                st["recycle_rounds"] += 1
+                st["recycle_pool"] += pool
+            # ① 先补最接近 1 手的票：1 手成本升序，够则补到刚好 1 手（多出的钱留给 ②）
+            cand = np.flatnonzero(starved)
+            cand = cand[np.argsort(lot_cost[cand], kind="stable")]
+            for j in cand:
+                c = float(lot_cost[j])
+                if pool + 1e-9 >= c:
+                    b[j] = c
+                    pool -= c
+                    if st is not None:
+                        st["recycle_filled"] += 1
+            # ② 剩余均摊给当日全部可成交票（价格有效），不给死票留残钱
+            alive = ok_px & (b > 0)
+            m = int(alive.sum())
+            if m and pool > 0:
+                b[alive] += pool / m
+        if max_budget is not None:
+            cap = np.minimum(b, np.asarray(max_budget, dtype="float64"))
+            if st is not None:
+                st["recycle_capped"] += int((cap < b - 1e-9).sum())
+            b = cap
+        sh = np.floor(b / lot_cost) * LOT
+        return np.nan_to_num(sh, nan=0.0, posinf=0.0, neginf=0.0).astype(np.int64)
 
 
 def simulate(M, cfg, log=print):
@@ -200,8 +271,11 @@ def simulate(M, cfg, log=print):
     rank = cfg.get("rank", "score")
     weight_scheme = cfg.get("weight_scheme", "equal")
     dynamic_n = cfg.get("dynamic_n", "off")
+    lot_fill = cfg.get("lot_fill", "strict")
+    trade_diag = bool(cfg.get("trade_diag", False))
     RESID = M.get("RESID")
     VOL20 = M.get("VOL20")
+    VQ = M.get("VQ")
     ENVPCT = M.get("ENVPCT")
 
     cash = capital
@@ -242,6 +316,16 @@ def simulate(M, cfg, log=print):
                 "entry_px": px,
                 "entry_t": t,
             }
+            if trade_diag:
+                # 归因打标：买入日（成交日 t）与信号日（t-1）的 vol20 / 当日截面五分位
+                pos[j]["v_e"] = float(VOL20[t, j]) if VOL20 is not None else np.nan
+                pos[j]["q_e"] = int(VQ[t, j]) if VQ is not None else 0
+                if t > 0:
+                    pos[j]["v_s"] = float(VOL20[t - 1, j]) if VOL20 is not None else np.nan
+                    pos[j]["q_s"] = int(VQ[t - 1, j]) if VQ is not None else 0
+                else:
+                    pos[j]["v_s"] = np.nan
+                    pos[j]["q_s"] = 0
             by_exit.setdefault(exit_t, []).append(j)
             st["n_buy"] += 1
             st["buy_gross"] += gross
@@ -257,17 +341,23 @@ def simulate(M, cfg, log=print):
             gross = p["shares"] * px
             fee = gross * half
             cash += gross - fee
-            trades.append(
-                {
-                    "code": codes[j],
-                    "entry_date": int(dates[p["entry_t"]]),
-                    "exit_date": int(dates[t]),
-                    "entry_px": round(p["entry_px"], 4),
-                    "exit_px": round(px, 4),
-                    "ret": round((gross - fee) / p["basis"] - 1.0, 6),
-                    "shares": p["shares"],
-                }
-            )
+            rec = {
+                "code": codes[j],
+                "entry_date": int(dates[p["entry_t"]]),
+                "exit_date": int(dates[t]),
+                "entry_px": round(p["entry_px"], 4),
+                "exit_px": round(px, 4),
+                "ret": round((gross - fee) / p["basis"] - 1.0, 6),
+                "shares": p["shares"],
+            }
+            if trade_diag:
+                rec["pnl"] = round(gross - fee - p["basis"], 2)
+                rec["basis"] = round(p["basis"], 2)
+                rec["vol20_entry"] = round(p["v_e"], 6) if np.isfinite(p["v_e"]) else None
+                rec["volq_entry"] = int(p["q_e"])
+                rec["vol20_sig"] = round(p["v_s"], 6) if np.isfinite(p["v_s"]) else None
+                rec["volq_sig"] = int(p["q_s"])
+            trades.append(rec)
 
         # ② 收盘估值
         mv = 0.0
@@ -328,8 +418,14 @@ def simulate(M, cfg, log=print):
                         budget = np.minimum(n_sel * per * w, max_w * eq)
                     else:
                         budget = np.full(n_sel, per)
-                    sh = np.floor(budget / (px_n * (1.0 + half)) / LOT) * LOT
-                    sh = np.nan_to_num(sh, nan=0.0, posinf=0.0, neginf=0.0)
+                    sh = _plan_shares(
+                        budget,
+                        px_n,
+                        half,
+                        lot_fill=lot_fill,
+                        st=st,
+                        max_budget=np.full(n_sel, max_w * eq),
+                    )
                     for j, s in zip(sel, sh):
                         s = int(s)
                         if s <= 0:
@@ -393,6 +489,12 @@ def simulate(M, cfg, log=print):
     }
     if weight_scheme != "equal":
         metrics["weight_scheme"] = weight_scheme
+    if lot_fill != "strict":
+        metrics["lot_fill"] = lot_fill
+        metrics["recycle_pool"] = round(float(st["recycle_pool"]), 2)
+        metrics["recycle_rounds"] = int(st["recycle_rounds"])
+        metrics["recycle_filled"] = int(st["recycle_filled"])
+        metrics["recycle_capped"] = int(st["recycle_capped"])
     if dynamic_n != "off":
         metrics["dynamic_n"] = dynamic_n
         metrics["dyn_n_days"] = {
@@ -441,6 +543,8 @@ def _cfg(
     note="",
     weight_scheme="equal",
     dynamic_n="off",
+    lot_fill="strict",
+    trade_diag=False,
 ):
     return {
         "tag": tag,
@@ -456,6 +560,8 @@ def _cfg(
         "note": note,
         "weight_scheme": weight_scheme,
         "dynamic_n": dynamic_n,
+        "lot_fill": lot_fill,
+        "trade_diag": trade_diag,
     }
 
 
@@ -526,6 +632,47 @@ def batch_configs(name):
                 )
             )
         return cfgs
+    if name == "attr":  # 归因批：5 窗 × {equal, inv_vol, equal_fixlot}，全部带逐笔明细
+        cfgs = []
+        for win, s, e in W5:
+            w = (s, e)
+            cfgs.append(
+                _cfg(
+                    "attr_%s_h5_top30_equal" % win,
+                    w,
+                    5,
+                    30,
+                    weight_scheme="equal",
+                    lot_fill="strict",
+                    trade_diag=True,
+                    note="归因基线：等权 + 严格整手（与 m3b 同配置）",
+                )
+            )
+            cfgs.append(
+                _cfg(
+                    "attr_%s_h5_top30_inv_vol" % win,
+                    w,
+                    5,
+                    30,
+                    weight_scheme="inv_vol",
+                    lot_fill="strict",
+                    trade_diag=True,
+                    note="归因对照：1/vol20 加权 + 严格整手（与 m3b 同配置）",
+                )
+            )
+            cfgs.append(
+                _cfg(
+                    "attr_%s_h5_top30_equal_fixlot" % win,
+                    w,
+                    5,
+                    30,
+                    weight_scheme="equal",
+                    lot_fill="recycle",
+                    trade_diag=True,
+                    note="干净对照：等权 + 回收预算修复填单（选股/排序/总预算不变）",
+                )
+            )
+        return cfgs
     raise ValueError("unknown batch: %s" % name)
 
 
@@ -543,13 +690,24 @@ def parse_args(argv=None):
     p.add_argument("--rank", choices=["score", "rps", "score_resid"], default="score")
     p.add_argument("--weight-scheme", choices=["equal", "inv_vol"], default="equal")
     p.add_argument("--dynamic-n", choices=["off", "env"], default="off")
+    p.add_argument(
+        "--lot-fill",
+        choices=["strict", "recycle"],
+        default="strict",
+        help="strict=现状（买不起 1 手即跳过）；recycle=回收不足 1 手的预算按当日候选均摊后重判（最多 3 轮）",
+    )
     p.add_argument("--limit-mode", choices=["exact", "approx"], default="exact")
     p.add_argument("--stocks-limit", type=int, default=0, help="调试：只读前 N 只")
     p.add_argument("--out", default=None)
     p.add_argument("--out-dir", default=OUT_DIR)
-    p.add_argument("--batch", default=None, choices=["m1", "m2", "m3b"])
+    p.add_argument("--batch", default=None, choices=["m1", "m2", "m3b", "attr"])
     p.add_argument("--tag", default=None)
     p.add_argument("--no-trades", action="store_true", help="JSON 不写逐笔明细")
+    p.add_argument(
+        "--trade-diag",
+        action="store_true",
+        help="逐笔明细追加 vol20/volq/pnl/basis 归因字段（默认关闭，保持输出逐位不变）",
+    )
     return p.parse_args(argv)
 
 
@@ -769,6 +927,92 @@ def _write_m3b_outputs(out_dir, rows, results, args, t0, cost, limit_meta, overl
         raise SystemExit("[m3b] 回归校验未通过，已停止（见 regression_check.json）")
 
 
+def _write_attr_outputs(out_dir, rows, results, args, t0, cost, limit_meta):
+    """attr 批产物：attr_matrix.csv / attr_index.json / attr_regression_check.json。"""
+    import csv
+
+    mat = os.path.join(out_dir, "attr_matrix.csv")
+    head = [
+        "window",
+        "scheme",
+        "lot_fill",
+        "weight_scheme",
+        "top_n",
+        "d_ret_pp",
+        "d_dd_pp",
+        "d_sharpe",
+        "d_trade_bp",
+        "d_fill_pp",
+    ]
+    rest = [k for k in sorted(rows[0].keys()) if k not in head]
+    with open(mat, "w", encoding="utf-8", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=head + rest)
+        w.writeheader()
+        for r in rows:
+            w.writerow(r)
+    print("[attr] wrote %s (%d rows)" % (mat, len(rows)), flush=True)
+
+    # ── 回归校验 1：strict 路径 vs m3b 逐键 Δ=0（10 个 equal/inv_vol 格子）──
+    ref_dir = os.path.join(HERE, "_qpzm_rd_20261106", "risk_budget")
+    checks = []
+    for c, m, _ in results:
+        win = next((w for w, s, e in W5 if s == c["start"] and e == c["end"]), None)
+        if win is None or c["lot_fill"] != "strict":
+            continue
+        fn = "m3b_%s_h5_top30_%s.json" % (win, c["weight_scheme"])
+        p = os.path.join(ref_dir, fn)
+        if not os.path.exists(p):
+            checks.append({"reference": fn, "status": "missing", "tag": c["tag"]})
+            continue
+        old = json.load(open(p, encoding="utf-8"))["metrics"]
+        d, mx, bad = _metrics_delta(m, old)
+        checks.append(
+            {
+                "tag": c["tag"],
+                "reference": fn,
+                "status": "identical" if not bad else "MISMATCH",
+                "max_abs_delta": mx,
+                "mismatched_keys": bad,
+                "delta_new_minus_old": {k: v for k, v in d.items() if v not in (0, 0.0, None)},
+                "n_keys_compared": len(old),
+            }
+        )
+    ok = bool(checks) and all(x.get("status") == "identical" for x in checks)
+    _atomic_write(
+        os.path.join(out_dir, "attr_regression_check.json"),
+        {
+            "generated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "criterion": "lot_fill=strict 的 equal/inv_vol 五窗口 metrics 与 m3b_*.json 逐键 Δ=0",
+            "passed": ok,
+            "n_compared": len(checks),
+            "checks": checks,
+        },
+    )
+    print("[attr] strict-parity vs m3b: %d cells, passed=%s" % (len(checks), ok), flush=True)
+
+    _atomic_write(
+        os.path.join(out_dir, "attr_index.json"),
+        {
+            "generated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "batch": "attr",
+            "cost_roundtrip": cost,
+            "alloc": "cash",
+            "hold": 5,
+            "top_n": 30,
+            "capital": CAP,
+            "limit_meta": limit_meta,
+            "elapsed_sec": round(time.time() - t0, 1),
+            "strict_parity_passed": ok,
+            "runs": [
+                {"tag": c["tag"], "scheme": c["weight_scheme"], "lot_fill": c["lot_fill"], "file": os.path.basename(f)}
+                for c, m, f in results
+            ],
+        },
+    )
+    if not ok:
+        raise SystemExit("[attr] strict 回归校验未通过，已停止（见 attr_regression_check.json）")
+
+
 def main(argv=None):
     args = parse_args(argv)
     t0 = time.time()
@@ -791,6 +1035,8 @@ def main(argv=None):
                 "rank": args.rank,
                 "weight_scheme": args.weight_scheme,
                 "dynamic_n": args.dynamic_n,
+                "lot_fill": args.lot_fill,
+                "trade_diag": args.trade_diag,
                 "note": "",
             }
         ]
@@ -798,7 +1044,8 @@ def main(argv=None):
         c["cost"] = cost
 
     is_m3b = args.batch == "m3b"
-    if is_m3b and args.out_dir == OUT_DIR:
+    is_attr = args.batch == "attr"
+    if (is_m3b or is_attr) and args.out_dir == OUT_DIR:
         args.out_dir = RISK_DIR
     os.makedirs(args.out_dir, exist_ok=True)
 
@@ -823,7 +1070,7 @@ def main(argv=None):
     pos_lo = max(int(np.searchsorted(all_d, lo, side="left")) - 30, 0)
     pos_hi = int(np.searchsorted(all_d, hi, side="right")) - 1
     print("[sim] slice rows %d..%d (%d dates), t=%.0fs" % (pos_lo, pos_hi, pos_hi - pos_lo + 1, time.time() - t0), flush=True)
-    M = build_matrices(wide, pos_lo, pos_hi)
+    M = build_matrices(wide, pos_lo, pos_hi, want_vq=is_attr)
     del wide
 
     results = []
@@ -873,6 +1120,18 @@ def main(argv=None):
             payload["meta"]["dynamic_n_rule"] = (
                 "env score expanding 分位（截至当日，min 20 obs）：≥0.7→30，≤0.3→200，其余→top_n"
             )
+        if c.get("lot_fill", "strict") != "strict":
+            payload["meta"]["lot_fill"] = c["lot_fill"]
+            payload["meta"]["semantics"]["sizing"] = (
+                "现金等权，整手 100 股；预算不足 1 手的票回收预算、当日候选均摊后重判（≤3 轮），"
+                "选股池/排序/总预算不变"
+            )
+        if c.get("trade_diag"):
+            payload["meta"]["trade_diag"] = True
+            payload["meta"]["trade_diag_fields"] = (
+                "pnl/basis/vol20_entry/volq_entry（买入日 t）/vol20_sig/volq_sig（信号日 t-1）；"
+                "volq = 当日全市场截面 vol20 五分位，1=最低波"
+            )
         if is_m3b:
             payload["meta"]["beta_corr_vs_mkt"] = None if beta is None else round(beta, 4)
             payload["meta"]["beta_corr_n_obs"] = int(n_obs)
@@ -904,6 +1163,62 @@ def main(argv=None):
             ),
             flush=True,
         )
+
+    if is_attr:
+        base = {}
+        for c, m, _ in results:
+            if c["weight_scheme"] == "equal" and c["lot_fill"] == "strict":
+                base[(c["start"], c["end"])] = m
+        for c, m, f in results:
+            win = next((w for w, s, e in W5 if s == c["start"] and e == c["end"]), "?")
+            scheme = (
+                "equal_fixlot"
+                if c["lot_fill"] == "recycle"
+                else ("inv_vol" if c["weight_scheme"] == "inv_vol" else "equal")
+            )
+            bm = base.get((c["start"], c["end"]))
+            d_ret = d_dd = d_shp = d_tr = d_fill = None
+            if bm is not None:
+                d_ret = round((m["total_return"] - bm["total_return"]) * 100, 3)
+                d_dd = round((m["max_drawdown"] - bm["max_drawdown"]) * 100, 3)
+                d_shp = (
+                    round(m["sharpe"] - bm["sharpe"], 3)
+                    if m["sharpe"] is not None and bm["sharpe"] is not None
+                    else None
+                )
+                d_tr = (
+                    round((m["avg_trade_return"] - bm["avg_trade_return"]) * 1e4, 2)
+                    if m["avg_trade_return"] is not None and bm["avg_trade_return"] is not None
+                    else None
+                )
+                d_fill = round(
+                    100.0
+                    * (
+                        m["n_buys"] / max(m["n_selected"], 1)
+                        - bm["n_buys"] / max(bm["n_selected"], 1)
+                    ),
+                    3,
+                )
+            row = dict(m)
+            row.pop("dyn_n_days", None)
+            row.update(
+                {
+                    "window": win,
+                    "scheme": scheme,
+                    "lot_fill": c["lot_fill"],
+                    "weight_scheme": c["weight_scheme"],
+                    "top_n": c["top_n"],
+                    "d_ret_pp": "" if d_ret is None else d_ret,
+                    "d_dd_pp": "" if d_dd is None else d_dd,
+                    "d_sharpe": "" if d_shp is None else d_shp,
+                    "d_trade_bp": "" if d_tr is None else d_tr,
+                    "d_fill_pp": "" if d_fill is None else d_fill,
+                }
+            )
+            rows.append(row)
+        _write_attr_outputs(args.out_dir, rows, results, args, t0, cost, limit_meta)
+        print("[sim] done %.0fs" % (time.time() - t0), flush=True)
+        return 0
 
     if is_m3b:
         # 相对同窗同 N 的 equal 基线差值
