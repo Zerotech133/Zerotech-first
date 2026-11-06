@@ -1,0 +1,18 @@
+﻿task_id,owner,created,worktree,desc
+K-STOCK-ANALYSIS-MON-20261104,DSH-Lead,2026-11-04 02:48:46,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-MON-20261104,批量监控引擎：规则评估/池管理/告警持久化/CLI/测试（analysis/monitor.py）
+UI-MOBILE-RESIDUAL-20261104,DSH-Lead,2026-11-04 02:51:17,C:\项目\老田的AI助手\.worktrees\UI-MOBILE-RESIDUAL-20261104,UI残余收口：学习项目/回测页短屏化+methods/screening等390横向溢出修复
+UI-GATECHECK-20261104,DSH-Lead,2026-11-04 02:51:23,C:\项目\老田的AI助手\.worktrees\UI-GATECHECK-20261104,UI门禁聚合器：standalone ui_gate_checks.py（tokens/page_manifest/page_shell changed/visual）不接merge闸
+K-STOCK-ANALYSIS-F2-20261104,DSH-Lead,2026-11-04 03:00:57,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-F2-20261104,F2 条件选股前端页 /sa/screen：NL输入→条件预览→结果表→批量分析（栈在 MONPAGE 分支）
+K-STOCK-ANALYSIS-NORTH-20261104,DSH-Lead,2026-11-04 03:01:05,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-NORTH-20261104,数据P1 北向资金维度：analysis/northbound.py 接入 extras/snapshot/报告（栈在 P2.9 分支）
+K-STOCK-ANALYSIS-MONSCHED-20261104,DSH-Lead,2026-11-04 03:01:14,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-MONSCHED-20261104,批量监控运营化：15:40 批后自动跑监控 + 飞书告警推送（栈在 MONPAGE 分支）
+K-STOCK-ANALYSIS-H3-20261104,DSH-Lead,2026-11-04 03:44:29,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-H3-20261104,H3 策略工作室后端：StrategySpec v1 schema/validate/compile + 策略库注册 + 门户代理 + 测试（栈 H2B）
+K-STOCK-ANALYSIS-F3-20261104,DSH-Lead,2026-11-04 03:44:36,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-F3-20261104,F3 策略工作室前端页 /sa/strategy：Spec 编辑→校验→预览→保存，演示降级（栈 F2）
+K-STOCK-ANALYSIS-MONCFG-20261104,DSH-Lead,2026-11-04 03:44:42,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-MONCFG-20261104,监控规则配置化：阈值/规则按池配置 + /api/monitor/config + 页面规则面板（栈 MONSCHED）
+K-STOCK-ANALYSIS-DATA2-20261104,DSH-Lead,2026-11-04 03:44:49,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-DATA2-20261104,数据P1续：limit_list_d 上游空分区诊断修复 + 龙虎榜 top_list/top_inst extras 接入（栈 NORTH）
+UI-A11Y2-20261104,DSH-Lead,2026-11-04 03:49:09,C:\项目\老田的AI助手\.worktrees\UI-A11Y2-20261104,a11y第三波：10个未触碰active页focus/aria/表格语义深修（无视觉变化）
+W1-PILOT-TOOLFIX-20261104,ARCH1,2026-11-04 03:52:50,C:\项目\老田的AI助手\.worktrees\W1-PILOT-TOOLFIX-20261104,修composition裸id/resolver --manifest --strict，锁131分母
+CATALOG-PERSIST-20261104,arch1-catalog-p0,2026-11-04 14:03:36,C:\项目\老田的AI助手\.worktrees\CATALOG-PERSIST-20261104,Catalog外部资产持久化修复(方案A):external_assets_registry+build_catalog合并+回归测试 [UNOWNED]
+WO-WEAK-CLOSE-DATE-20261105,DSH-Lead,2026-11-04 23:54:48,C:\项目\老田的AI助手\.worktrees\WO-WEAK-CLOSE-DATE-20261105,修复 weak_track_close.close_fields 跟踪日数把非法 px_d 当交易日：加 valid_day 守卫并补回归测试；不改其他逻辑，不重启/不部署
+WO-DATAOPS-TESTDATE-20261105,exec-devtask,2026-11-05 00:52:23,C:\项目\老田的AI助手\.worktrees\WO-DATAOPS-TESTDATE-20261105,修 dataops_v3 GubaCrawl 日期漂移假红（只改测试） [UNOWNED]
+WATCH-INTRADAY-20261105,DSH-Lead,2026-11-05 05:18:40,C:\项目\老田的AI助手\.worktrees\WATCH-INTRADAY-20261105,盘中实时盯盘引擎（量价/新闻/板块三路信号→飞书推送，设计见 deliverables 2026-11-05_盘中实时盯盘与飞书推送_设计方案_v1.md W1/W2）
+legion-1105093009,T1,2026-11-05 09:30:21,C:\项目\老田的AI助手\.worktrees\legion-1105093009,[T1] 盘前 weak 池三线扫描

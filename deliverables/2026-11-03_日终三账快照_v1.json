@@ -1,0 +1,997 @@
+{
+ "schema": "daily-three-ledger/v1",
+ "generated_at": "2026-11-03T18:00:54+08:00",
+ "date": "2026-11-03",
+ "duration_ms": 16677,
+ "repo": "C:\\项目\\老田的AI助手",
+ "host": {
+  "os": "nt",
+  "python": "3.12.10"
+ },
+ "commit": {
+  "commit": "9d3efd729",
+  "branch": "master",
+  "known": true
+ },
+ "verdict": "fail",
+ "passed": false,
+ "counts": {
+  "ledgers_total": 3,
+  "pass": 1,
+  "fail": 2,
+  "unknown": 0
+ },
+ "ledgers": {
+  "task": {
+   "ledger": "task",
+   "status": "fail",
+   "counts": {
+    "tasks_total": 2081,
+    "by_status": {
+     "aborted": 135,
+     "done": 1904,
+     "parked": 8,
+     "review": 10,
+     "doing": 24
+    },
+    "doing": 24,
+    "review": 10,
+    "open_doing_review": 34,
+    "done": 1904,
+    "aborted": 135,
+    "missing_owner": 307
+   },
+   "drift": {
+    "by_category": {
+     "ahead_unmerged": 33,
+     "merged_but_open": 1
+    },
+    "drift_total": 34,
+    "rows_total": 34
+   },
+   "gaps": [
+    {
+     "tid": "K-STOCK-ANALYSIS-P2-7-20261030",
+     "status": "review",
+     "owner": "DSH-Lead",
+     "category": "ahead_unmerged",
+     "ahead": 6,
+     "worktree_exists": true,
+     "dirty": false
+    },
+    {
+     "tid": "K-STOCK-ANALYSIS-P2-8-20261030",
+     "status": "doing",
+     "owner": "DSH-Lead",
+     "category": "ahead_unmerged",
+     "ahead": 6,
+     "worktree_exists": true,
+     "dirty": false
+    },
+    {
+     "tid": "K-STOCK-ANALYSIS-P2-9-20261030",
+     "status": "doing",
+     "owner": "DSH-Lead",
+     "category": "ahead_unmerged",
+     "ahead": 6,
+     "worktree_exists": true,
+     "dirty": false
+    },
+    {
+     "tid": "WO-CAOCAO-FRAME-20261103",
+     "status": "review",
+     "owner": "DSH-Lead",
+     "category": "ahead_unmerged",
+     "ahead": 2,
+     "worktree_exists": true,
+     "dirty": false
+    },
+    {
+     "tid": "WO-CAOCAO-PAGE-20261103",
+     "status": "doing",
+     "owner": "DSH-Lead",
+     "category": "ahead_unmerged",
+     "ahead": 3,
+     "worktree_exists": true,
+     "dirty": false
+    },
+    {
+     "tid": "WO-ACAD1-DARK-20261103",
+     "status": "doing",
+     "owner": "DSH-Lead",
+     "category": "ahead_unmerged",
+     "ahead": 2,
+     "worktree_exists": true,
+     "dirty": false
+    },
+    {
+     "tid": "WO-UI-CONSIST-20261103",
+     "status": "review",
+     "owner": "DSH-Lead",
+     "category": "ahead_unmerged",
+     "ahead": 1,
+     "worktree_exists": true,
+     "dirty": false
+    },
+    {
+     "tid": "WO-ACAD1-NAV-20261103",
+     "status": "doing",
+     "owner": "DSH-Lead",
+     "category": "ahead_unmerged",
+     "ahead": 6,
+     "worktree_exists": true,
+     "dirty": false
+    },
+    {
+     "tid": "WO-IFS-STD-20261103",
+     "status": "review",
+     "owner": "DSH-Lead",
+     "category": "ahead_unmerged",
+     "ahead": 1,
+     "worktree_exists": true,
+     "dirty": false
+    },
+    {
+     "tid": "WO-IFS-POOL-20261103",
+     "status": "doing",
+     "owner": "DSH-Lead",
+     "category": "ahead_unmerged",
+     "ahead": 2,
+     "worktree_exists": true,
+     "dirty": false
+    },
+    {
+     "tid": "WO-IFS-HANDOFF-20261103",
+     "status": "doing",
+     "owner": "DSH-Lead",
+     "category": "ahead_unmerged",
+     "ahead": 2,
+     "worktree_exists": true,
+     "dirty": false
+    },
+    {
+     "tid": "WO-IFS-PAPER-20261103",
+     "status": "doing",
+     "owner": "DSH-Lead",
+     "category": "ahead_unmerged",
+     "ahead": 2,
+     "worktree_exists": true,
+     "dirty": false
+    },
+    {
+     "tid": "WO-IFS-COMP-20261103",
+     "status": "doing",
+     "owner": "DSH-Lead",
+     "category": "ahead_unmerged",
+     "ahead": 2,
+     "worktree_exists": true,
+     "dirty": false
+    },
+    {
+     "tid": "WO-IFS-WIRE-20261103",
+     "status": "review",
+     "owner": "DSH-Lead",
+     "category": "ahead_unmerged",
+     "ahead": 11,
+     "worktree_exists": true,
+     "dirty": false
+    },
+    {
+     "tid": "WO-ACAD1-NAV2-20261103",
+     "status": "doing",
+     "owner": "DSH-Lead",
+     "category": "ahead_unmerged",
+     "ahead": 1,
+     "worktree_exists": true,
+     "dirty": false
+    },
+    {
+     "tid": "WO-INTEL-ENTITY-20261103",
+     "status": "doing",
+     "owner": "intel-entity-dev(DSH)",
+     "category": "ahead_unmerged",
+     "ahead": 2,
+     "worktree_exists": true,
+     "dirty": false
+    },
+    {
+     "tid": "WO-HERMES-CONTRACT-20261103",
+     "status": "review",
+     "owner": "hermes-contract-dev",
+     "category": "ahead_unmerged",
+     "ahead": 3,
+     "worktree_exists": true,
+     "dirty": false
+    },
+    {
+     "tid": "WO-JEV-OPS-20261103",
+     "status": "doing",
+     "owner": "jev-ops-dev",
+     "category": "ahead_unmerged",
+     "ahead": 2,
+     "worktree_exists": true,
+     "dirty": false
+    },
+    {
+     "tid": "K-STOCK-ANALYSIS-H1-20261103",
+     "status": "doing",
+     "owner": "DSH-Lead",
+     "category": "ahead_unmerged",
+     "ahead": 5,
+     "worktree_exists": true,
+     "dirty": true
+    },
+    {
+     "tid": "WO-ACAD1-POOLROUTE-20261103",
+     "status": "doing",
+     "owner": "DSH-Lead",
+     "category": "ahead_unmerged",
+     "ahead": 1,
+     "worktree_exists": true,
+     "dirty": false
+    },
+    {
+     "tid": "WO-IFS-SCHEMA-20261103",
+     "status": "doing",
+     "owner": "DSH-Lead",
+     "category": "ahead_unmerged",
+     "ahead": 10,
+     "worktree_exists": true,
+     "dirty": false
+    },
+    {
+     "tid": "WO-IFS-TRAIN-20261103",
+     "status": "doing",
+     "owner": "DSH-Lead",
+     "category": "ahead_unmerged",
+     "ahead": 10,
+     "worktree_exists": true,
+     "dirty": false
+    },
+    {
+     "tid": "K-STOCK-ANALYSIS-H2-20261103",
+     "status": "doing",
+     "owner": "DSH-Lead",
+     "category": "ahead_unmerged",
+     "ahead": 3,
+     "worktree_exists": true,
+     "dirty": false
+    },
+    {
+     "tid": "UI-UNIFY-P0FIX-20261103",
+     "status": "review",
+     "owner": "DSH-Lead",
+     "category": "ahead_unmerged",
+     "ahead": 1,
+     "worktree_exists": true,
+     "dirty": false
+    },
+    {
+     "tid": "UI-UNIFY-TOKENS-20261103",
+     "status": "review",
+     "owner": "DSH-Lead",
+     "category": "ahead_unmerged",
+     "ahead": 2,
+     "worktree_exists": true,
+     "dirty": false
+    },
+    {
+     "tid": "UI-UNIFY-SHELL-20261103",
+     "status": "doing",
+     "owner": "DSH-Lead",
+     "category": "ahead_unmerged",
+     "ahead": 1,
+     "worktree_exists": true,
+     "dirty": false
+    },
+    {
+     "tid": "UI-UNIFY-MANIFEST-20261103",
+     "status": "review",
+     "owner": "DSH-Lead",
+     "category": "ahead_unmerged",
+     "ahead": 2,
+     "worktree_exists": true,
+     "dirty": false
+    },
+    {
+     "tid": "UI-UNIFY-SHRTSCREEN-20261103",
+     "status": "doing",
+     "owner": "DSH-Lead",
+     "category": "ahead_unmerged",
+     "ahead": 1,
+     "worktree_exists": true,
+     "dirty": false
+    },
+    {
+     "tid": "UI-UNIFY-VISUAL-20261103",
+     "status": "doing",
+     "owner": "DSH-Lead",
+     "category": "ahead_unmerged",
+     "ahead": 1,
+     "worktree_exists": true,
+     "dirty": false
+    },
+    {
+     "tid": "UI-UNIFY-TOOLFIX-20261103",
+     "status": "doing",
+     "owner": "DSH-Lead",
+     "category": "ahead_unmerged",
+     "ahead": 1,
+     "worktree_exists": true,
+     "dirty": false
+    },
+    {
+     "tid": "UI-UNIFY-A11Y-20261103",
+     "status": "doing",
+     "owner": "DSH-Lead",
+     "category": "ahead_unmerged",
+     "ahead": 1,
+     "worktree_exists": true,
+     "dirty": false
+    },
+    {
+     "tid": "UI-UNIFY-BATCH-20261103",
+     "status": "review",
+     "owner": "DSH-Lead",
+     "category": "ahead_unmerged",
+     "ahead": 23,
+     "worktree_exists": true,
+     "dirty": false
+    },
+    {
+     "tid": "WO-MERGE-HOOK-MERGEHEAD-20261103",
+     "status": "doing",
+     "owner": "DSH-Lead",
+     "category": "ahead_unmerged",
+     "ahead": 1,
+     "worktree_exists": true,
+     "dirty": false
+    },
+    {
+     "tid": "legion-1103175009",
+     "status": "doing",
+     "owner": "A0A",
+     "category": "merged_but_open",
+     "ahead": 0,
+     "worktree_exists": true,
+     "dirty": false
+    }
+   ],
+   "source": {
+    "tasks_path": "C:\\项目\\老田的AI助手\\.worktrees\\tasks.json",
+    "audit": {
+     "name": "task_board_audit",
+     "mode": "subprocess",
+     "path": "C:\\项目\\老田的AI助手\\tools\\task_board_audit.py",
+     "ok": true,
+     "error": "",
+     "exit_code": 0,
+     "duration_ms": 9962,
+     "schema": null
+    }
+   },
+   "error": ""
+  },
+  "plan": {
+   "ledger": "plan",
+   "status": "fail",
+   "counts": {
+    "files_total": 365,
+    "plan_docs": 362,
+    "with_status": 344,
+    "unspecified": 18,
+    "unspecified_files": [
+     "2026-11-03_HQ-02_任务板与原子领取_v1.md",
+     "2026-11-03_HQ-03-04_审批与预算_v1.md",
+     "2026-11-03_HQ-05_heartbeat合并_v1.md",
+     "2026-11-03_HQ-06_统一UI与manifest_v1.md",
+     "2026-11-03_HQ_Morning_Meeting_Runbook_v1.md",
+     "2026-11-03_Meeting_Record_Runner_v1.md",
+     "2026-11-03_Morning_Meeting_Prep_v1.md",
+     "2026-11-03_RND_Plan_v1.md",
+     "2026-11-03_下一步工作计划与问题清单_v1.md",
+     "2026-11-03_会话复盘总结_v1.md",
+     "2026-11-03_收口作战计划_v1.md",
+     "2026-11-03_数据仓研发计划_v4_历史数据前移版.md",
+     "2026-11-03_每日0800部门早会制度_v1.md",
+     "2026-11-03_知识能力与治理研发计划_v1.md",
+     "2026-11-03_研发计划v1_执行状态_20261103.md",
+     "2026-11-03_研发计划复盘_v1.md",
+     "2026-11-03_研发计划复盘_v2.md",
+     "2026-11-03_量化投资知识库垂域模型微调训练方案_v1.md"
+    ],
+    "coverage_pct": 95.03,
+    "by_status": {
+     "done": 60,
+     "superseded": 16,
+     "pending_approval": 61,
+     "frozen": 98,
+     "declared": 107,
+     "proposed": 2,
+     "unspecified": 18
+    }
+   },
+   "gaps": [
+    {
+     "file": "2026-11-03_HQ-02_任务板与原子领取_v1.md"
+    },
+    {
+     "file": "2026-11-03_HQ-03-04_审批与预算_v1.md"
+    },
+    {
+     "file": "2026-11-03_HQ-05_heartbeat合并_v1.md"
+    },
+    {
+     "file": "2026-11-03_HQ-06_统一UI与manifest_v1.md"
+    },
+    {
+     "file": "2026-11-03_HQ_Morning_Meeting_Runbook_v1.md"
+    },
+    {
+     "file": "2026-11-03_Meeting_Record_Runner_v1.md"
+    },
+    {
+     "file": "2026-11-03_Morning_Meeting_Prep_v1.md"
+    },
+    {
+     "file": "2026-11-03_RND_Plan_v1.md"
+    },
+    {
+     "file": "2026-11-03_下一步工作计划与问题清单_v1.md"
+    },
+    {
+     "file": "2026-11-03_会话复盘总结_v1.md"
+    },
+    {
+     "file": "2026-11-03_收口作战计划_v1.md"
+    },
+    {
+     "file": "2026-11-03_数据仓研发计划_v4_历史数据前移版.md"
+    },
+    {
+     "file": "2026-11-03_每日0800部门早会制度_v1.md"
+    },
+    {
+     "file": "2026-11-03_知识能力与治理研发计划_v1.md"
+    },
+    {
+     "file": "2026-11-03_研发计划v1_执行状态_20261103.md"
+    },
+    {
+     "file": "2026-11-03_研发计划复盘_v1.md"
+    },
+    {
+     "file": "2026-11-03_研发计划复盘_v2.md"
+    },
+    {
+     "file": "2026-11-03_量化投资知识库垂域模型微调训练方案_v1.md"
+    }
+   ],
+   "source": {
+    "plans_dir": "C:\\项目\\老田的AI助手\\docs\\plans"
+   },
+   "error": ""
+  },
+  "evidence": {
+   "ledger": "evidence",
+   "status": "pass",
+   "pack": {
+    "verdict": "pass",
+    "counts": {
+     "pass": 6,
+     "fail": 0,
+     "unknown": 0,
+     "total": 6,
+     "required_total": 3,
+     "required_pass": 3,
+     "required_fail": 0,
+     "required_unknown": 0
+    },
+    "verdict_reasons": {
+     "required_fail": [],
+     "required_unknown": [],
+     "advisory_not_pass": []
+    },
+    "criteria": [
+     {
+      "id": "M1-KPI",
+      "required": true,
+      "status": "pass",
+      "detail": "verdict=pass pass=9 fail=0 unknown=0（共 9 项）"
+     },
+     {
+      "id": "W1-DRILL",
+      "required": true,
+      "status": "pass",
+      "detail": "ok=True 场景 5/5 · 检查失败 0"
+     },
+     {
+      "id": "W2-INVARIANT",
+      "required": true,
+      "status": "pass",
+      "detail": "verdict=PASS 阻断违规=0 已知欠账=34 工单=2081"
+     },
+     {
+      "id": "M4-SIGNOFF",
+      "required": false,
+      "status": "pass",
+      "detail": "approve=1 required=A0 signed=A0 missing=- supervisor=A0/老田(done)"
+     },
+     {
+      "id": "FAST-GATE",
+      "required": false,
+      "status": "pass",
+      "detail": "result=pass age=7.2h · GATE PASS: 无新增失败"
+     },
+     {
+      "id": "EVIDENCE",
+      "required": false,
+      "status": "pass",
+      "detail": "patchset=252 run=321 最新=patchset-rollback-T-BOOT-1398063f.json"
+     }
+    ],
+    "kpi_summary": {
+     "m1_kpi": "verdict=pass pass=9 fail=0 unknown=0（共 9 项）",
+     "m4_signoff": "pass",
+     "m4_detail": "approve=1 required=A0 signed=A0 missing=- supervisor=A0/老田(done)"
+    },
+    "gaps": []
+   },
+   "gaps": [],
+   "source": {
+    "name": "m1_evidence_pack",
+    "mode": "subprocess",
+    "path": "C:\\项目\\老田的AI助手\\tools\\m1_evidence_pack.py",
+    "ok": true,
+    "error": "",
+    "exit_code": 0,
+    "duration_ms": 6534,
+    "schema": "m1-evidence-pack/v1"
+   },
+   "error": ""
+  }
+ },
+ "gaps": [
+  {
+   "ledger": "task",
+   "status": "review",
+   "tid": "K-STOCK-ANALYSIS-P2-7-20261030",
+   "owner": "DSH-Lead",
+   "category": "ahead_unmerged",
+   "ahead": 6,
+   "worktree_exists": true,
+   "dirty": false
+  },
+  {
+   "ledger": "task",
+   "status": "doing",
+   "tid": "K-STOCK-ANALYSIS-P2-8-20261030",
+   "owner": "DSH-Lead",
+   "category": "ahead_unmerged",
+   "ahead": 6,
+   "worktree_exists": true,
+   "dirty": false
+  },
+  {
+   "ledger": "task",
+   "status": "doing",
+   "tid": "K-STOCK-ANALYSIS-P2-9-20261030",
+   "owner": "DSH-Lead",
+   "category": "ahead_unmerged",
+   "ahead": 6,
+   "worktree_exists": true,
+   "dirty": false
+  },
+  {
+   "ledger": "task",
+   "status": "review",
+   "tid": "WO-CAOCAO-FRAME-20261103",
+   "owner": "DSH-Lead",
+   "category": "ahead_unmerged",
+   "ahead": 2,
+   "worktree_exists": true,
+   "dirty": false
+  },
+  {
+   "ledger": "task",
+   "status": "doing",
+   "tid": "WO-CAOCAO-PAGE-20261103",
+   "owner": "DSH-Lead",
+   "category": "ahead_unmerged",
+   "ahead": 3,
+   "worktree_exists": true,
+   "dirty": false
+  },
+  {
+   "ledger": "task",
+   "status": "doing",
+   "tid": "WO-ACAD1-DARK-20261103",
+   "owner": "DSH-Lead",
+   "category": "ahead_unmerged",
+   "ahead": 2,
+   "worktree_exists": true,
+   "dirty": false
+  },
+  {
+   "ledger": "task",
+   "status": "review",
+   "tid": "WO-UI-CONSIST-20261103",
+   "owner": "DSH-Lead",
+   "category": "ahead_unmerged",
+   "ahead": 1,
+   "worktree_exists": true,
+   "dirty": false
+  },
+  {
+   "ledger": "task",
+   "status": "doing",
+   "tid": "WO-ACAD1-NAV-20261103",
+   "owner": "DSH-Lead",
+   "category": "ahead_unmerged",
+   "ahead": 6,
+   "worktree_exists": true,
+   "dirty": false
+  },
+  {
+   "ledger": "task",
+   "status": "review",
+   "tid": "WO-IFS-STD-20261103",
+   "owner": "DSH-Lead",
+   "category": "ahead_unmerged",
+   "ahead": 1,
+   "worktree_exists": true,
+   "dirty": false
+  },
+  {
+   "ledger": "task",
+   "status": "doing",
+   "tid": "WO-IFS-POOL-20261103",
+   "owner": "DSH-Lead",
+   "category": "ahead_unmerged",
+   "ahead": 2,
+   "worktree_exists": true,
+   "dirty": false
+  },
+  {
+   "ledger": "task",
+   "status": "doing",
+   "tid": "WO-IFS-HANDOFF-20261103",
+   "owner": "DSH-Lead",
+   "category": "ahead_unmerged",
+   "ahead": 2,
+   "worktree_exists": true,
+   "dirty": false
+  },
+  {
+   "ledger": "task",
+   "status": "doing",
+   "tid": "WO-IFS-PAPER-20261103",
+   "owner": "DSH-Lead",
+   "category": "ahead_unmerged",
+   "ahead": 2,
+   "worktree_exists": true,
+   "dirty": false
+  },
+  {
+   "ledger": "task",
+   "status": "doing",
+   "tid": "WO-IFS-COMP-20261103",
+   "owner": "DSH-Lead",
+   "category": "ahead_unmerged",
+   "ahead": 2,
+   "worktree_exists": true,
+   "dirty": false
+  },
+  {
+   "ledger": "task",
+   "status": "review",
+   "tid": "WO-IFS-WIRE-20261103",
+   "owner": "DSH-Lead",
+   "category": "ahead_unmerged",
+   "ahead": 11,
+   "worktree_exists": true,
+   "dirty": false
+  },
+  {
+   "ledger": "task",
+   "status": "doing",
+   "tid": "WO-ACAD1-NAV2-20261103",
+   "owner": "DSH-Lead",
+   "category": "ahead_unmerged",
+   "ahead": 1,
+   "worktree_exists": true,
+   "dirty": false
+  },
+  {
+   "ledger": "task",
+   "status": "doing",
+   "tid": "WO-INTEL-ENTITY-20261103",
+   "owner": "intel-entity-dev(DSH)",
+   "category": "ahead_unmerged",
+   "ahead": 2,
+   "worktree_exists": true,
+   "dirty": false
+  },
+  {
+   "ledger": "task",
+   "status": "review",
+   "tid": "WO-HERMES-CONTRACT-20261103",
+   "owner": "hermes-contract-dev",
+   "category": "ahead_unmerged",
+   "ahead": 3,
+   "worktree_exists": true,
+   "dirty": false
+  },
+  {
+   "ledger": "task",
+   "status": "doing",
+   "tid": "WO-JEV-OPS-20261103",
+   "owner": "jev-ops-dev",
+   "category": "ahead_unmerged",
+   "ahead": 2,
+   "worktree_exists": true,
+   "dirty": false
+  },
+  {
+   "ledger": "task",
+   "status": "doing",
+   "tid": "K-STOCK-ANALYSIS-H1-20261103",
+   "owner": "DSH-Lead",
+   "category": "ahead_unmerged",
+   "ahead": 5,
+   "worktree_exists": true,
+   "dirty": true
+  },
+  {
+   "ledger": "task",
+   "status": "doing",
+   "tid": "WO-ACAD1-POOLROUTE-20261103",
+   "owner": "DSH-Lead",
+   "category": "ahead_unmerged",
+   "ahead": 1,
+   "worktree_exists": true,
+   "dirty": false
+  },
+  {
+   "ledger": "task",
+   "status": "doing",
+   "tid": "WO-IFS-SCHEMA-20261103",
+   "owner": "DSH-Lead",
+   "category": "ahead_unmerged",
+   "ahead": 10,
+   "worktree_exists": true,
+   "dirty": false
+  },
+  {
+   "ledger": "task",
+   "status": "doing",
+   "tid": "WO-IFS-TRAIN-20261103",
+   "owner": "DSH-Lead",
+   "category": "ahead_unmerged",
+   "ahead": 10,
+   "worktree_exists": true,
+   "dirty": false
+  },
+  {
+   "ledger": "task",
+   "status": "doing",
+   "tid": "K-STOCK-ANALYSIS-H2-20261103",
+   "owner": "DSH-Lead",
+   "category": "ahead_unmerged",
+   "ahead": 3,
+   "worktree_exists": true,
+   "dirty": false
+  },
+  {
+   "ledger": "task",
+   "status": "review",
+   "tid": "UI-UNIFY-P0FIX-20261103",
+   "owner": "DSH-Lead",
+   "category": "ahead_unmerged",
+   "ahead": 1,
+   "worktree_exists": true,
+   "dirty": false
+  },
+  {
+   "ledger": "task",
+   "status": "review",
+   "tid": "UI-UNIFY-TOKENS-20261103",
+   "owner": "DSH-Lead",
+   "category": "ahead_unmerged",
+   "ahead": 2,
+   "worktree_exists": true,
+   "dirty": false
+  },
+  {
+   "ledger": "task",
+   "status": "doing",
+   "tid": "UI-UNIFY-SHELL-20261103",
+   "owner": "DSH-Lead",
+   "category": "ahead_unmerged",
+   "ahead": 1,
+   "worktree_exists": true,
+   "dirty": false
+  },
+  {
+   "ledger": "task",
+   "status": "review",
+   "tid": "UI-UNIFY-MANIFEST-20261103",
+   "owner": "DSH-Lead",
+   "category": "ahead_unmerged",
+   "ahead": 2,
+   "worktree_exists": true,
+   "dirty": false
+  },
+  {
+   "ledger": "task",
+   "status": "doing",
+   "tid": "UI-UNIFY-SHRTSCREEN-20261103",
+   "owner": "DSH-Lead",
+   "category": "ahead_unmerged",
+   "ahead": 1,
+   "worktree_exists": true,
+   "dirty": false
+  },
+  {
+   "ledger": "task",
+   "status": "doing",
+   "tid": "UI-UNIFY-VISUAL-20261103",
+   "owner": "DSH-Lead",
+   "category": "ahead_unmerged",
+   "ahead": 1,
+   "worktree_exists": true,
+   "dirty": false
+  },
+  {
+   "ledger": "task",
+   "status": "doing",
+   "tid": "UI-UNIFY-TOOLFIX-20261103",
+   "owner": "DSH-Lead",
+   "category": "ahead_unmerged",
+   "ahead": 1,
+   "worktree_exists": true,
+   "dirty": false
+  },
+  {
+   "ledger": "task",
+   "status": "doing",
+   "tid": "UI-UNIFY-A11Y-20261103",
+   "owner": "DSH-Lead",
+   "category": "ahead_unmerged",
+   "ahead": 1,
+   "worktree_exists": true,
+   "dirty": false
+  },
+  {
+   "ledger": "task",
+   "status": "review",
+   "tid": "UI-UNIFY-BATCH-20261103",
+   "owner": "DSH-Lead",
+   "category": "ahead_unmerged",
+   "ahead": 23,
+   "worktree_exists": true,
+   "dirty": false
+  },
+  {
+   "ledger": "task",
+   "status": "doing",
+   "tid": "WO-MERGE-HOOK-MERGEHEAD-20261103",
+   "owner": "DSH-Lead",
+   "category": "ahead_unmerged",
+   "ahead": 1,
+   "worktree_exists": true,
+   "dirty": false
+  },
+  {
+   "ledger": "task",
+   "status": "doing",
+   "tid": "legion-1103175009",
+   "owner": "A0A",
+   "category": "merged_but_open",
+   "ahead": 0,
+   "worktree_exists": true,
+   "dirty": false
+  },
+  {
+   "ledger": "plan",
+   "status": "fail",
+   "file": "2026-11-03_HQ-02_任务板与原子领取_v1.md"
+  },
+  {
+   "ledger": "plan",
+   "status": "fail",
+   "file": "2026-11-03_HQ-03-04_审批与预算_v1.md"
+  },
+  {
+   "ledger": "plan",
+   "status": "fail",
+   "file": "2026-11-03_HQ-05_heartbeat合并_v1.md"
+  },
+  {
+   "ledger": "plan",
+   "status": "fail",
+   "file": "2026-11-03_HQ-06_统一UI与manifest_v1.md"
+  },
+  {
+   "ledger": "plan",
+   "status": "fail",
+   "file": "2026-11-03_HQ_Morning_Meeting_Runbook_v1.md"
+  },
+  {
+   "ledger": "plan",
+   "status": "fail",
+   "file": "2026-11-03_Meeting_Record_Runner_v1.md"
+  },
+  {
+   "ledger": "plan",
+   "status": "fail",
+   "file": "2026-11-03_Morning_Meeting_Prep_v1.md"
+  },
+  {
+   "ledger": "plan",
+   "status": "fail",
+   "file": "2026-11-03_RND_Plan_v1.md"
+  },
+  {
+   "ledger": "plan",
+   "status": "fail",
+   "file": "2026-11-03_下一步工作计划与问题清单_v1.md"
+  },
+  {
+   "ledger": "plan",
+   "status": "fail",
+   "file": "2026-11-03_会话复盘总结_v1.md"
+  },
+  {
+   "ledger": "plan",
+   "status": "fail",
+   "file": "2026-11-03_收口作战计划_v1.md"
+  },
+  {
+   "ledger": "plan",
+   "status": "fail",
+   "file": "2026-11-03_数据仓研发计划_v4_历史数据前移版.md"
+  },
+  {
+   "ledger": "plan",
+   "status": "fail",
+   "file": "2026-11-03_每日0800部门早会制度_v1.md"
+  },
+  {
+   "ledger": "plan",
+   "status": "fail",
+   "file": "2026-11-03_知识能力与治理研发计划_v1.md"
+  },
+  {
+   "ledger": "plan",
+   "status": "fail",
+   "file": "2026-11-03_研发计划v1_执行状态_20261103.md"
+  },
+  {
+   "ledger": "plan",
+   "status": "fail",
+   "file": "2026-11-03_研发计划复盘_v1.md"
+  },
+  {
+   "ledger": "plan",
+   "status": "fail",
+   "file": "2026-11-03_研发计划复盘_v2.md"
+  },
+  {
+   "ledger": "plan",
+   "status": "fail",
+   "file": "2026-11-03_量化投资知识库垂域模型微调训练方案_v1.md"
+  }
+ ],
+ "paths": {
+  "tasks_json": "C:\\项目\\老田的AI助手\\.worktrees\\tasks.json",
+  "plans_dir": "C:\\项目\\老田的AI助手\\docs\\plans",
+  "evidence_source": "C:\\项目\\老田的AI助手\\tools\\m1_evidence_pack.py"
+ },
+ "notes": [
+  "只读聚合：不写任务板/计划/approvals/tasks.json、不重启服务、不代签、不跑生产回填",
+  "失败项（工具缺失/超时/输出非 JSON/文件不可读）一律标 unknown 并保留错误原文，不伪造数值",
+  "任务账=任务账本统计+漂移分类；计划账=docs/plans STATUS 覆盖；证据账=M1 证据包派生",
+  "本快照不替代 owner 的关单/补状态动作；缺口需按 owner 清单人工处理"
+ ]
+}

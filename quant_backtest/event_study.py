@@ -156,47 +156,36 @@ class EventStudy:
 
     def _bench_rets(self, days: List[str], t0: str,
                     window: Tuple[int, int]) -> Dict[int, float]:
-        """基准同口径: 以 T0 前一交易日为基点的累计收益."""
+        """基准同口径(基点=市场 T0-1 收盘):
+        正窗 h>=0: 市场(T0+h 收盘)/市场(T0-1 收盘)-1 = T0..T0+h 日收益累计
+                  (教训: 必须含 T0 当日, 自测手工对照曾抓出漏算首日 bug);
+        负窗 h<0: 市场(T0+h)/市场(T0-1)-1 = (T0+h+1)..(T0-1) 日收益累计."""
         br = self._bench_ret
         if t0 not in days:
             return {}
         i0 = days.index(t0)
         if i0 == 0:
             return {}
-        base = br.get(days[i0 - 1])
-        if base is None or np.isnan(base):
-            return {}
-        out, cum = {}, 1.0
-        # 基准用市场交易日推进(与标的窗口日历对齐: 取标的窗口日的市场收益)
-        base_cum = {0: 0.0}
+        out: Dict[int, float] = {}
         acc = 0.0
-        for h in range(1, window[1] + 1):
+        for h in range(0, window[1] + 1):
             j = i0 + h
             if j >= len(days):
                 break
             r = br.get(days[j])
             if r is not None and not np.isnan(r):
                 acc += np.log1p(r)
-            base_cum[h] = float(np.expm1(acc))
-        for h in range(window[0], window[1] + 1):
-            if h != 0:
-                out[h] = base_cum.get(min(max(h, 0), max(base_cum)),
-                                      np.nan) if h in base_cum else np.nan
-        # 负窗: 基准回看
-        acc_neg, neg = {}, 0.0
-        for h in range(-1, window[0] - 1, -1):
+            out[h] = float(np.expm1(acc))
+        for h in range(window[0], 0, -1):
             j = i0 + h
             if j < 0:
                 break
-            r = br.get(days[j])
-            if r is not None and not np.isnan(r):
-                neg -= np.log1p(r)
-            neg_cum = float(np.expm1(neg))
-            acc_neg[h] = -neg_cum if h != 0 else 0.0
-        for h in range(window[0], 0, -1):
-            if h in acc_neg:
-                out[h] = acc_neg[h]
-        out[0] = 0.0
+            acc2 = 0.0
+            for k in range(i0 + h + 1, i0):
+                r = br.get(days[k])
+                if r is not None and not np.isnan(r):
+                    acc2 += np.log1p(r)
+            out[h] = float(np.expm1(acc2))
         return out
 
     # ---- 主入口 ----
@@ -222,7 +211,8 @@ class EventStudy:
         if len(sel) > max_events:
             sel = sel.sample(max_events, random_state=42)
 
-        hs = list(range(window[0], window[1] + 1))
+        # h=0 是基点日(无收益语义), 不进曲线
+        hs = [h for h in range(window[0], window[1] + 1) if h != 0]
         rows = []
         skipped = {"no_t0": 0, "no_px_base": 0}
         for _, e in sel.iterrows():

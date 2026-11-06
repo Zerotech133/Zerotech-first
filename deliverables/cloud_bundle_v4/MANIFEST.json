@@ -1,0 +1,58 @@
+{
+ "schema": "cloud_bundle.v4",
+ "generated_at": "2026-11-04T09:09:58+08:00",
+ "dataset": "quant_kb_sft_v4d",
+ "total": 3769,
+ "files": [
+  {
+   "path": "configs\\sft_14b_4090_v4.yaml",
+   "size": 733,
+   "sha256": "bbf4289ae2c0bb515d018aa9f1101c85f2ccaefa045041ad8c7917f75a0915fc"
+  },
+  {
+   "path": "configs\\sft_14b_a100_v4.yaml",
+   "size": 651,
+   "sha256": "14e68d5ad2374a3645ec362df2e5609ca79ca702296d87eeb73f1fdc75a9ba59"
+  },
+  {
+   "path": "dataset_info.json",
+   "size": 535,
+   "sha256": "c03f57e673e16512b2bd1d97b30c82eabafc2a9523992f8b30747235a6d0755d"
+  },
+  {
+   "path": "dpo\\quant_kb_dpo_v2.jsonl",
+   "size": 63673,
+   "sha256": "3d96097bb707a3936d7e377bc6d23eb45ba0ad874284eebe5ef87c9b573d7127"
+  },
+  {
+   "path": "README.md",
+   "size": 2706,
+   "sha256": "43da9ae9369e02773523dbb10ed68baa3fc2b5874b47a19e51cef61524e5e078"
+  },
+  {
+   "path": "run_sft_4090.sh",
+   "size": 237,
+   "sha256": "5bfdab0361dc30262efd6b98ad1675fc63f4e6b68aa42de580784e686e854d33"
+  },
+  {
+   "path": "run_sft_a100.sh",
+   "size": 237,
+   "sha256": "a61a31414f0b8bb77a59ff0d9116ae841804471f421ff4b81cefcac7f981faaf"
+  },
+  {
+   "path": "sft\\quant_kb_sft_v4d_train.jsonl",
+   "size": 3127897,
+   "sha256": "11f771c726529bac5631ce456175634066910ad5edf6a6225208d95166fe731c"
+  },
+  {
+   "path": "sft\\quant_kb_sft_v4d_val.jsonl",
+   "size": 248086,
+   "sha256": "4a45c87e48c1b3ef3df85f5ce8f6043e6dbd41ce3205f81ff28450666758d31d"
+  },
+  {
+   "path": "sft\\smoke_14b_v4.jsonl",
+   "size": 17511,
+   "sha256": "719055ed727f8d376784942339ba7adf000ed2cf7f39c95a1cdde5499eba8cb4"
+  }
+ ]
+}

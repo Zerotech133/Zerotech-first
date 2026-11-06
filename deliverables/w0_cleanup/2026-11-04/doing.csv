@@ -1,0 +1,23 @@
+﻿task_id,owner,created,worktree,desc
+K-STOCK-ANALYSIS-P2-8-20261030,DSH-Lead,2026-11-02 15:56:25,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-P2-8-20261030,P2.8 批处理韧性：run_id 跨日同时刻冲突修复(retry suffix)+watchlist 恢复 603667+测试
+K-STOCK-ANALYSIS-P2-9-20261030,DSH-Lead,2026-11-03 05:50:37,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-P2-9-20261030,P0补数：研报/一致预期维度(report_rc月分区)+curated日更扩展(cyq/margin/anns/limit从数据根增量)+测试
+K-STOCK-ANALYSIS-H2-20261103,DSH-Lead,2026-11-03 08:40:17,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-H2-20261103,H2 选股引擎：ScreeningDSL(schema校验/PIT/可解释)+NL规则解析+筛选执行+测试（网关端点待H1合并后接）
+K-STOCK-ANALYSIS-PROTO-20261104,DSH-Lead,2026-11-04 02:41:21,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-PROTO-20261104,原型发布：个股分析前端原型四页发布到 /static/proto/（静态展示，示例数据）
+K-STOCK-ANALYSIS-WORKBENCH-20261104,DSH-Lead,2026-11-04 02:44:40,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-WORKBENCH-20261104,个股分析新版工作台独立页：/sa/workbench + 导航入口 + 静态页（tokens/nav/shortscreen）
+K-STOCK-ANALYSIS-MON-20261104,DSH-Lead,2026-11-04 02:48:46,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-MON-20261104,批量监控引擎：规则评估/池管理/告警持久化/CLI/测试（analysis/monitor.py）
+K-STOCK-ANALYSIS-MONPAGE-20261104,DSH-Lead,2026-11-04 02:48:52,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-MONPAGE-20261104,批量监控门户：/api/monitor/* + /sa/monitor 页面 + 导航入口（依赖 MON 引擎）
+UI-MOBILE-RESIDUAL-20261104,DSH-Lead,2026-11-04 02:51:17,C:\项目\老田的AI助手\.worktrees\UI-MOBILE-RESIDUAL-20261104,UI残余收口：学习项目/回测页短屏化+methods/screening等390横向溢出修复
+UI-GATECHECK-20261104,DSH-Lead,2026-11-04 02:51:23,C:\项目\老田的AI助手\.worktrees\UI-GATECHECK-20261104,UI门禁聚合器：standalone ui_gate_checks.py（tokens/page_manifest/page_shell changed/visual）不接merge闸
+K-STOCK-ANALYSIS-H2B-20261104,DSH-Lead,2026-11-04 03:00:48,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-H2B-20261104,H2b 选股服务端：/api/analysis/internal/screen/parse|run + MCP sa_screen + profile skill（栈在 H1 分支）
+K-STOCK-ANALYSIS-F2-20261104,DSH-Lead,2026-11-04 03:00:57,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-F2-20261104,F2 条件选股前端页 /sa/screen：NL输入→条件预览→结果表→批量分析（栈在 MONPAGE 分支）
+K-STOCK-ANALYSIS-NORTH-20261104,DSH-Lead,2026-11-04 03:01:05,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-NORTH-20261104,数据P1 北向资金维度：analysis/northbound.py 接入 extras/snapshot/报告（栈在 P2.9 分支）
+K-STOCK-ANALYSIS-MONSCHED-20261104,DSH-Lead,2026-11-04 03:01:14,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-MONSCHED-20261104,批量监控运营化：15:40 批后自动跑监控 + 飞书告警推送（栈在 MONPAGE 分支）
+WO-INTEL-EVID-API-20261104,DSH-Lead,2026-11-04 03:11:02,C:\项目\老田的AI助手\.worktrees\WO-INTEL-EVID-API-20261104,IL-13 portal 只读 API 模块 v1（新文件，不接线 portal_api）
+K-STOCK-ANALYSIS-H3-20261104,DSH-Lead,2026-11-04 03:44:29,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-H3-20261104,H3 策略工作室后端：StrategySpec v1 schema/validate/compile + 策略库注册 + 门户代理 + 测试（栈 H2B）
+K-STOCK-ANALYSIS-F3-20261104,DSH-Lead,2026-11-04 03:44:36,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-F3-20261104,F3 策略工作室前端页 /sa/strategy：Spec 编辑→校验→预览→保存，演示降级（栈 F2）
+K-STOCK-ANALYSIS-MONCFG-20261104,DSH-Lead,2026-11-04 03:44:42,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-MONCFG-20261104,监控规则配置化：阈值/规则按池配置 + /api/monitor/config + 页面规则面板（栈 MONSCHED）
+K-STOCK-ANALYSIS-DATA2-20261104,DSH-Lead,2026-11-04 03:44:49,C:\项目\老田的AI助手\.worktrees\K-STOCK-ANALYSIS-DATA2-20261104,数据P1续：limit_list_d 上游空分区诊断修复 + 龙虎榜 top_list/top_inst extras 接入（栈 NORTH）
+UI-A11Y2-20261104,DSH-Lead,2026-11-04 03:49:09,C:\项目\老田的AI助手\.worktrees\UI-A11Y2-20261104,a11y第三波：10个未触碰active页focus/aria/表格语义深修（无视觉变化）
+W1-PILOT-TOOLFIX-20261104,ARCH1,2026-11-04 03:52:50,C:\项目\老田的AI助手\.worktrees\W1-PILOT-TOOLFIX-20261104,修composition裸id/resolver --manifest --strict，锁131分母
+CATALOG-PERSIST-20261104,arch1-catalog-p0,2026-11-04 14:03:36,C:\项目\老田的AI助手\.worktrees\CATALOG-PERSIST-20261104,Catalog外部资产持久化修复(方案A):external_assets_registry+build_catalog合并+回归测试 [UNOWNED]
+K-INTEL-P7D-20261105,DSH-Lead,2026-11-04 22:42:46,C:\项目\老田的AI助手\.worktrees\K-INTEL-P7D-20261105,P7-D 消费端4端点登记：更新 tools/check_ports.py 端口8110注释为18只读接口(14 core+4 P7-D)+health+meta，仅注释无功能改动

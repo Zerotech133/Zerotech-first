@@ -957,15 +957,6 @@ def main(argv=None):
                     "d_sharpe": "" if d_shp is None else d_shp,
                     "d_trade_bp": "" if d_tr is None else d_tr,
                     "sample_ok": int(m["n_trades_closed"] >= 800),
-                    # m3_matrix.csv 同名兼容列
-                    "cum_ret": m["total_return"],
-                    "ann_ret": m["annualized"],
-                    "max_dd": m["max_drawdown"],
-                    "win_days": m["daily_win_rate"],
-                    "n_trades": m["n_trades_closed"],
-                    "avg_trade_ret": m["avg_trade_return"],
-                    "avg_holdings": m["avg_positions"],
-                    "util": m["avg_utilization"],
                 }
             )
             rows.append(row)

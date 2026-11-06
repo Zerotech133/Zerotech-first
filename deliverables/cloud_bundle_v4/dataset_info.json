@@ -1,0 +1,26 @@
+{
+ "quant_kb_sft_v4": {
+  "file_name": "sft/quant_kb_sft_v4d_train.jsonl",
+  "formatting": "sharegpt",
+  "columns": {
+   "messages": "messages"
+  }
+ },
+ "quant_kb_sft_smoke14b": {
+  "file_name": "sft/smoke_14b_v4.jsonl",
+  "formatting": "sharegpt",
+  "columns": {
+   "messages": "messages"
+  }
+ },
+ "quant_kb_dpo_v2": {
+  "file_name": "dpo/quant_kb_dpo_v2.jsonl",
+  "formatting": "sharegpt",
+  "ranking": true,
+  "columns": {
+   "messages": "messages",
+   "chosen": "chosen",
+   "rejected": "rejected"
+  }
+ }
+}

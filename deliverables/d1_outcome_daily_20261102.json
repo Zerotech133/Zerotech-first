@@ -1,0 +1,51 @@
+{
+  "schema": "d1_outcome_daily/v1",
+  "date": "2026-11-02",
+  "generated_at": "2026-11-02T16:00:20+0800",
+  "report_path": "C:\\项目\\老田的AI助手\\deliverables\\d1_outcome_daily_20261102.json",
+  "since": "2026-10-26",
+  "network": true,
+  "outcome_backfill": {
+    "new": 0,
+    "dates": {},
+    "repaired": 0,
+    "repaired_fields": {
+      "decision_id": 0,
+      "model": 0
+    },
+    "written": false,
+    "ledger": "C:\\项目\\老田的AI助手\\agent_platform\\data\\shadow\\shadow_ledger.jsonl",
+    "outcomes_file": "C:\\项目\\老田的AI助手\\agent_platform\\data\\shadow\\decision_outcomes.jsonl"
+  },
+  "calibration": {
+    "schema": "d1_calibration/v1",
+    "n_directional": 9,
+    "min_n": 30,
+    "brier": 0.3751,
+    "ece": 0.3811,
+    "can_expand": false,
+    "reasons": [
+      "方向性样本 9 < 30"
+    ]
+  },
+  "n": 9,
+  "brier": 0.3751,
+  "ece": 0.3811,
+  "can_expand": false,
+  "reasons": [
+    "方向性样本 9 < 30"
+  ],
+  "coverage": 1.0,
+  "ledger_done": 106,
+  "outcome_rows": 106,
+  "hit_rate": 0.444,
+  "missing_outcomes": 0,
+  "warnings": [
+    "校准门未达扩容条件：方向性样本 9 < 30"
+  ],
+  "trading": {
+    "auto_trade": false,
+    "orders_placed": 0,
+    "trading_permitted": "unchanged"
+  }
+}

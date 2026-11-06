@@ -1,0 +1,198 @@
+{
+  "schema": "hq/data_brief/v1",
+  "as_of": "2026-11-06T07:50:13+08:00",
+  "owner": {
+    "agent_id": "DATA1",
+    "name": "张松",
+    "position": "数据资源主官（兰台令）"
+  },
+  "data_health": {
+    "assets": {
+      "all": 315,
+      "registered": 266,
+      "exposed": 73,
+      "file": {
+        "total": 314,
+        "registered": 265,
+        "exposed": 72
+      },
+      "pg": {
+        "total": 9,
+        "registered": 9,
+        "available": 0
+      }
+    },
+    "catalog": {
+      "version": 43,
+      "tables": 258,
+      "updated": "2026-11-06T06:24:32"
+    },
+    "registry": {
+      "physical": 306,
+      "display": 258
+    },
+    "freshness": {
+      "data_date": "2026-11-02",
+      "age_days": 4,
+      "state": "ok"
+    },
+    "collectors": {
+      "red": [],
+      "today_zero": [
+        {
+          "name": "雪球同步",
+          "last_output_at": "2026-11-05 18:00:16"
+        },
+        {
+          "name": "雪球日采集",
+          "last_output_at": "2026-11-05 18:00:16"
+        }
+      ]
+    },
+    "contracts": {
+      "total": 4,
+      "active": 1,
+      "missing": 0,
+      "mismatch": 3,
+      "by_status": {
+        "sha256_mismatch": 3,
+        "active": 1
+      }
+    }
+  },
+  "alarms": [
+    {
+      "severity": "amber",
+      "code": "today_zero",
+      "summary": "当日增量为 0（可能是时点/断流），勿把存量当今日新增",
+      "evidence": [
+        {
+          "name": "雪球同步",
+          "last_output_at": "2026-11-05 18:00:16"
+        },
+        {
+          "name": "雪球日采集",
+          "last_output_at": "2026-11-05 18:00:16"
+        }
+      ]
+    },
+    {
+      "severity": "red",
+      "code": "catalog_registry_mismatch",
+      "summary": "catalog 258 表 != registry physical 306；数据资产口径不一致，先修 catalog/registry 再验收",
+      "evidence": {
+        "catalog_tables": 258,
+        "registry_physical": 306,
+        "catalog_version": 43
+      }
+    },
+    {
+      "severity": "amber",
+      "code": "contract_mismatch",
+      "summary": "数据契约产物 3 个 sha256 不一致",
+      "evidence": {
+        "mismatch": 3
+      }
+    }
+  ],
+  "mining_signals": [
+    {
+      "id": "factor.decay",
+      "kind": "risk",
+      "summary": "因子日更：6 个因子，3 个四关 PASS(LS)，1 个 FAIL，1 个衰减告警",
+      "evidence": {
+        "as_of": "20261102",
+        "owner": "FACTOR1/蒋琬（数据智能部·张松团队）",
+        "pass_ls": [
+          "mom_20",
+          "vol_20",
+          "mom_120"
+        ],
+        "fail": [
+          "rev_5"
+        ],
+        "decay": [
+          "rev_5"
+        ]
+      },
+      "decision_hint": "PASS 不等于可交易；FAIL/衰减因子不得进策略或需重新验证"
+    },
+    {
+      "id": "selection.executability",
+      "kind": "decision",
+      "summary": "选股库 11 策略，0 获批，picks=0；当前无自动可执行 alpha",
+      "evidence": {
+        "date": "20261102",
+        "statuses": {
+          "S01_H14_quality_trap_guard": "validated_filter_no_alpha",
+          "S02_composite_mvp": "paused_shadow_breaker",
+          "S03_H18_forecast_revision_watch": "validated_event_ambiguous_direction",
+          "S04_AH_premium_pair": "validated_pair_planned",
+          "S05_LX20_AVOID_DEWEIGHT": "closed_both_directions_fail",
+          "S06_reversal_combo_mom20_120": "rejected_regime_dependent",
+          "S07_mom20_long_only": "rejected_long_only_no_excess",
+          "S08_mom120_long_only": "shadow_observing_pending_pit_recheck",
+          "S09_MOM120_V2_IND_NEUTRAL": "research_candidate_pending_review",
+          "S10_EVIDENCE_BASELINE_NEUTRAL": "invalidated_pit_bug",
+          "S11_MOM120_REGIME_LONG": "shadow_observing_small"
+        },
+        "approved": []
+      },
+      "decision_hint": "没有获批策略时，指挥部不应把研究候选当交易信号"
+    },
+    {
+      "id": "learning.yield",
+      "kind": "coverage",
+      "summary": "学习语料：8 文件，800 单元，候选池 539，卡片 370",
+      "evidence": {
+        "units_with_domain": 258,
+        "unusable_reasons": {
+          "生成阶段拒绝": {
+            "duplicate_batch_concept": 3020,
+            "answer_too_long": 583,
+            "duplicate_existing_answer": 27,
+            "duplicate_existing_concept": 6
+          },
+          "预审阶段驳回": {
+            "concept_no_domain_term": 382,
+            "concept_sentence_like": 190,
+            "concept_meta_or_person": 23,
+            "concept_answer_mismatch": 21,
+            "other": 70
+          }
+        }
+      },
+      "decision_hint": "语料产能不等于可用知识；先看领域覆盖与卡片通过率"
+    }
+  ],
+  "questions": [
+    {
+      "to": "DATA1",
+      "q": "dataset inventory 仍为 2026-11-02（距今天 4 天），何时刷新到今日盘点？"
+    },
+    {
+      "to": "DATA1",
+      "q": "catalog 258 表与 registry physical 306 表不一致：哪边是真源？何时对齐？"
+    },
+    {
+      "to": "A0/ACAD1",
+      "q": "当前无可执行 picks，今天指挥部按“研究/观察”还是“空仓”处理？"
+    },
+    {
+      "to": "A0/FACTOR1",
+      "q": "衰减因子是否暂停相关策略？需给 A/B 口径"
+    }
+  ],
+  "boundaries": [
+    "DATA1 只提供数据资源/证据，不裁决业务口径",
+    "挖掘信号不是交易建议；无获批策略时不得当信号执行",
+    "不得把 today=0 的存量当当日新增"
+  ],
+  "sources": [
+    "http://127.0.0.1:8091/api/dw/stats",
+    "http://127.0.0.1:8091/api/dataops/overview",
+    "portal/static/factor_daily.json",
+    "portal/static/selection_daily.json",
+    "portal/static/learning_capability.json"
+  ]
+}
