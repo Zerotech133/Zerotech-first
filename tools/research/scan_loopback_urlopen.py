@@ -43,6 +43,10 @@ BYPASS_RE = re.compile(
 )
 
 
+# 已知内建回环旁路的包装器（实现在各自 safe_urlopen.py：ProxyHandler({})）
+SAFE_WRAPPERS = frozenset({"safe_urlopen"})
+
+
 def is_urlopen_call(node: ast.Call) -> tuple[bool, str]:
     f = node.func
     name = ""
@@ -175,9 +179,13 @@ def main() -> int:
         hits.extend(scan_file(p, root))
 
     for h in hits:
-        if h["loopback_strict"] and not (h["file_has_bypass"] or h["arg_inline_bypass"]):
+        # 已知内建回环旁路的包装器：调用它们即等于已有旁路（实现在各自 safe_urlopen.py）。
+        # 不认这一条，修好共享入口后所有引用文件仍会被报成 VICTIM —— 扫描结论会失真。
+        # 注意 auth_urlopen 不在此列：它只加认证头，不做代理处理。
+        wrapper = h.get("call") in SAFE_WRAPPERS
+        if h["loopback_strict"] and not (h["file_has_bypass"] or h["arg_inline_bypass"] or wrapper):
             h["verdict"] = "VICTIM"          # 确认受害：回环 + 无旁路
-        elif h["loopback_loose"] and not (h["file_has_bypass"] or h["arg_inline_bypass"]):
+        elif h["loopback_loose"] and not (h["file_has_bypass"] or h["arg_inline_bypass"] or wrapper):
             h["verdict"] = "SUSPECT"         # 0.0.0.0 或间接，可疑
         elif h["loopback_strict"] or h["loopback_loose"]:
             h["verdict"] = "GUARDED"         # 回环但已有旁路
