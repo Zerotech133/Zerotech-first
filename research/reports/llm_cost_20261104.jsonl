@@ -1,1 +1,4 @@
 {"ts": "2026-11-04T13:51:52+08:00", "provider": "bailian_v4d", "model": "qwen2.5-14b-instruct-a57a3521e4e0", "tier": 1, "prompt_tokens": 17, "completion_tokens": 48, "total_tokens": 65, "cost_cny": 0.000322, "purpose": "smoke"}
+{"ts": "2026-11-04T20:33:01+08:00", "provider": "bailian_v4d", "model": "qwen2.5-14b-instruct-a57a3521e4e0", "tier": 1, "prompt_tokens": 869, "completion_tokens": 140, "total_tokens": 1009, "cost_cny": 0.002578, "purpose": "kb_qa"}
+{"ts": "2026-11-04T20:37:24+08:00", "provider": "bailian_v4d", "model": "qwen2.5-14b-instruct-a57a3521e4e0", "tier": 1, "prompt_tokens": 1096, "completion_tokens": 115, "total_tokens": 1211, "cost_cny": 0.002882, "purpose": "kb_qa"}
+{"ts": "2026-11-04T20:37:27+08:00", "provider": "bailian_v4d", "model": "qwen2.5-14b-instruct-a57a3521e4e0", "tier": 1, "prompt_tokens": 1194, "completion_tokens": 244, "total_tokens": 1438, "cost_cny": 0.003852, "purpose": "kb_qa"}

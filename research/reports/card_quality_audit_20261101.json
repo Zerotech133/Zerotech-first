@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "date": "20261101",
- "generated_at": "2026-11-02T17:24:11+08:00",
+ "generated_at": "2026-11-03T08:05:06+08:00",
  "generator": "tools/kb_corpus/card_quality_audit.py（只读审计）",
  "mode": "read_only_audit（不修改学习卡）",
  "policy": {
@@ -24,9 +24,9 @@
  },
  "sources": {
   "cards": {
-   "path": "C:\\项目\\老田的AI助手\\portal\\static\\kb_learning_cards.json",
-   "sha256": "c4450a99d25d26d5daed88fd5f6afed3a31d6f7e662b1983fe11c43fa0e3a782",
-   "count": 144
+   "path": "portal/static/kb_learning_cards.json",
+   "sha256": "2b5ac3db224e4367a22a5c4d74b1eb5bb901c981f8764e60a45adeb15cb2666f",
+   "count": 256
   },
   "units": {
    "path": "C:\\项目\\老田的AI助手\\portal\\static\\kb_units_all.json",
@@ -35,38 +35,2060 @@
   }
  },
  "summary": {
-  "cards_total": 144,
+  "cards_total": 256,
   "units_total": 516,
-  "issues_total": 0,
+  "issues_total": 224,
   "by_severity": {
-   "high": 0,
-   "medium": 0,
+   "high": 112,
+   "medium": 112,
    "low": 0
   },
-  "by_check": {},
+  "by_check": {
+   "source_parse": 112,
+   "unit_trace": 112
+  },
   "fields_missing": {},
-  "source_unparseable": 0,
+  "source_unparseable": 112,
   "answer_length_anomalies": 0,
   "concept_duplicate_groups": 0,
   "concept_duplicate_cards": 0,
   "traceable_cards": 144,
-  "traceable_rate": 1.0,
+  "traceable_rate": 0.5625,
   "trace_methods": {
-   "concept+book+page": 144
+   "concept+book+page": 144,
+   "none": 112
   },
   "themes_total": 21,
   "themes_with_cards": 21,
   "low_coverage_themes": [],
   "source_kinds": {
    "研报": 132,
-   "书籍": 12
+   "书籍": 12,
+   "未知": 112
   },
   "book_vs_report": {
    "书籍": 12,
    "研报": 132
   }
  },
- "issues": [],
+ "issues": [
+  {
+   "issue_id": "Q-001",
+   "card_index": 144,
+   "concept": "AI 量化",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-002",
+   "card_index": 144,
+   "concept": "AI 量化",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-003",
+   "card_index": 145,
+   "concept": "天才交易员的十大风控防线",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-004",
+   "card_index": 145,
+   "concept": "天才交易员的十大风控防线",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-005",
+   "card_index": 146,
+   "concept": "突破幅度",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-006",
+   "card_index": 146,
+   "concept": "突破幅度",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-007",
+   "card_index": 147,
+   "concept": "收盘位置",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-008",
+   "card_index": 147,
+   "concept": "收盘位置",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-009",
+   "card_index": 148,
+   "concept": "成交量",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-010",
+   "card_index": 148,
+   "concept": "成交量",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-011",
+   "card_index": 149,
+   "concept": "大周期压力",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-012",
+   "card_index": 149,
+   "concept": "大周期压力",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-013",
+   "card_index": 150,
+   "concept": "流动性",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-014",
+   "card_index": 150,
+   "concept": "流动性",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-015",
+   "card_index": 151,
+   "concept": "识别假突破",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-016",
+   "card_index": 151,
+   "concept": "识别假突破",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-017",
+   "card_index": 152,
+   "concept": "均线向上",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-018",
+   "card_index": 152,
+   "concept": "均线向上",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-019",
+   "card_index": 153,
+   "concept": "关键位突破",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-020",
+   "card_index": 153,
+   "concept": "关键位突破",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-021",
+   "card_index": 154,
+   "concept": "成交量配合",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-022",
+   "card_index": 154,
+   "concept": "成交量配合",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-023",
+   "card_index": 155,
+   "concept": "多周期一致性",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-024",
+   "card_index": 155,
+   "concept": "多周期一致性",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-025",
+   "card_index": 156,
+   "concept": "波动扩张",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-026",
+   "card_index": 156,
+   "concept": "波动扩张",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-027",
+   "card_index": 157,
+   "concept": "趋势失效条件",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-028",
+   "card_index": 157,
+   "concept": "趋势失效条件",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-029",
+   "card_index": 158,
+   "concept": "条件风险价值",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-030",
+   "card_index": 158,
+   "concept": "条件风险价值",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-031",
+   "card_index": 159,
+   "concept": "最优执行轨迹",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-032",
+   "card_index": 159,
+   "concept": "最优执行轨迹",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-033",
+   "card_index": 160,
+   "concept": "数据边界",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-034",
+   "card_index": 160,
+   "concept": "数据边界",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-035",
+   "card_index": 161,
+   "concept": "模型学习",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-036",
+   "card_index": 161,
+   "concept": "模型学习",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-037",
+   "card_index": 162,
+   "concept": "交易成本",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-038",
+   "card_index": 162,
+   "concept": "交易成本",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-039",
+   "card_index": 163,
+   "concept": "仓位与风险",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-040",
+   "card_index": 163,
+   "concept": "仓位与风险",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-041",
+   "card_index": 164,
+   "concept": "均线 MA/EMA",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-042",
+   "card_index": 164,
+   "concept": "均线 MA/EMA",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-043",
+   "card_index": 165,
+   "concept": "成交量／订单流",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-044",
+   "card_index": 165,
+   "concept": "成交量／订单流",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-045",
+   "card_index": 166,
+   "concept": "价格行为 PA/SMC",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-046",
+   "card_index": 166,
+   "concept": "价格行为 PA/SMC",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-047",
+   "card_index": 167,
+   "concept": "链上成本指标",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-048",
+   "card_index": 167,
+   "concept": "链上成本指标",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-049",
+   "card_index": 168,
+   "concept": "交易所资金流",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-050",
+   "card_index": 168,
+   "concept": "交易所资金流",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-051",
+   "card_index": 169,
+   "concept": "交易所原生行情 API",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-052",
+   "card_index": 169,
+   "concept": "交易所原生行情 API",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-053",
+   "card_index": 170,
+   "concept": "特征向量",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-054",
+   "card_index": 170,
+   "concept": "特征向量",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-055",
+   "card_index": 171,
+   "concept": "因子分解",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-056",
+   "card_index": 171,
+   "concept": "因子分解",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-057",
+   "card_index": 172,
+   "concept": "AI土雄策略",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-058",
+   "card_index": 172,
+   "concept": "AI土雄策略",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-059",
+   "card_index": 173,
+   "concept": "MACD号称指标之王",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-060",
+   "card_index": 173,
+   "concept": "MACD号称指标之王",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-061",
+   "card_index": 174,
+   "concept": "MACD指标的D0轴之上",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-062",
+   "card_index": 174,
+   "concept": "MACD指标的D0轴之上",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-063",
+   "card_index": 175,
+   "concept": "RSI等技术指标",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-064",
+   "card_index": 175,
+   "concept": "RSI等技术指标",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-065",
+   "card_index": 176,
+   "concept": "SKDJ和均线指标",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-066",
+   "card_index": 176,
+   "concept": "SKDJ和均线指标",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-067",
+   "card_index": 177,
+   "concept": "XM等指标时",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-068",
+   "card_index": 177,
+   "concept": "XM等指标时",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-069",
+   "card_index": 178,
+   "concept": "一些常见的套利策略",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-070",
+   "card_index": 178,
+   "concept": "一些常见的套利策略",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-071",
+   "card_index": 179,
+   "concept": "三均线形成",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-072",
+   "card_index": 179,
+   "concept": "三均线形成",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-073",
+   "card_index": 180,
+   "concept": "下午看416年支撑位",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-074",
+   "card_index": 180,
+   "concept": "下午看416年支撑位",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-075",
+   "card_index": 181,
+   "concept": "与特定股票相关的期货合约",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-076",
+   "card_index": 181,
+   "concept": "与特定股票相关的期货合约",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-077",
+   "card_index": 182,
+   "concept": "与风险因子低相关",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-078",
+   "card_index": 182,
+   "concept": "与风险因子低相关",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-079",
+   "card_index": 183,
+   "concept": "且短期均线多头排列",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-080",
+   "card_index": 183,
+   "concept": "且短期均线多头排列",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-081",
+   "card_index": 184,
+   "concept": "个人开通量化的资金要多少",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-082",
+   "card_index": 184,
+   "concept": "个人开通量化的资金要多少",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-083",
+   "card_index": 185,
+   "concept": "个人量化平台",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-084",
+   "card_index": 185,
+   "concept": "个人量化平台",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-085",
+   "card_index": 186,
+   "concept": "个人量化软件门槛低",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-086",
+   "card_index": 186,
+   "concept": "个人量化软件门槛低",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-087",
+   "card_index": 187,
+   "concept": "也要及时止盈或止损",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-088",
+   "card_index": 187,
+   "concept": "也要及时止盈或止损",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-089",
+   "card_index": 188,
+   "concept": "买卖点完备性",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-090",
+   "card_index": 188,
+   "concept": "买卖点完备性",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-091",
+   "card_index": 189,
+   "concept": "五日均线",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-092",
+   "card_index": 189,
+   "concept": "五日均线",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-093",
+   "card_index": 190,
+   "concept": "交易周期划分",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-094",
+   "card_index": 190,
+   "concept": "交易周期划分",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-095",
+   "card_index": 191,
+   "concept": "交易平台",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-096",
+   "card_index": 191,
+   "concept": "交易平台",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-097",
+   "card_index": 192,
+   "concept": "交易策略和模型公开",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-098",
+   "card_index": 192,
+   "concept": "交易策略和模型公开",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-099",
+   "card_index": 193,
+   "concept": "交易级别口径",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-100",
+   "card_index": 193,
+   "concept": "交易级别口径",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-101",
+   "card_index": 194,
+   "concept": "交易风控于一体",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-102",
+   "card_index": 194,
+   "concept": "交易风控于一体",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-103",
+   "card_index": 195,
+   "concept": "仓位管理也就是资金管理",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-104",
+   "card_index": 195,
+   "concept": "仓位管理也就是资金管理",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-105",
+   "card_index": 196,
+   "concept": "仓位管理重要性",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-106",
+   "card_index": 196,
+   "concept": "仓位管理重要性",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-107",
+   "card_index": 197,
+   "concept": "仓位要注意适当的做作检法",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-108",
+   "card_index": 197,
+   "concept": "仓位要注意适当的做作检法",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-109",
+   "card_index": 198,
+   "concept": "优化策略参数改进模型",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-110",
+   "card_index": 198,
+   "concept": "优化策略参数改进模型",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-111",
+   "card_index": 199,
+   "concept": "但并没有跌破关键支撑位",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-112",
+   "card_index": 199,
+   "concept": "但并没有跌破关键支撑位",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-113",
+   "card_index": 200,
+   "concept": "但量化代码没有预知能力",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-114",
+   "card_index": 200,
+   "concept": "但量化代码没有预知能力",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-115",
+   "card_index": 201,
+   "concept": "低换手量低迷",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-116",
+   "card_index": 201,
+   "concept": "低换手量低迷",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-117",
+   "card_index": 202,
+   "concept": "使用多个因子的投资组合",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-118",
+   "card_index": 202,
+   "concept": "使用多个因子的投资组合",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-119",
+   "card_index": 203,
+   "concept": "假期虽然不开盘",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-120",
+   "card_index": 203,
+   "concept": "假期虽然不开盘",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-121",
+   "card_index": 204,
+   "concept": "克服性格缺点",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-122",
+   "card_index": 204,
+   "concept": "克服性格缺点",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-123",
+   "card_index": 205,
+   "concept": "全球金融定价权",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-124",
+   "card_index": 205,
+   "concept": "全球金融定价权",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-125",
+   "card_index": 206,
+   "concept": "六大量化交易模块",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-126",
+   "card_index": 206,
+   "concept": "六大量化交易模块",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-127",
+   "card_index": 207,
+   "concept": "冲高回落",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-128",
+   "card_index": 207,
+   "concept": "冲高回落",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-129",
+   "card_index": 208,
+   "concept": "分形结构",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-130",
+   "card_index": 208,
+   "concept": "分形结构",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-131",
+   "card_index": 209,
+   "concept": "利用机器学习优化因子权重",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-132",
+   "card_index": 209,
+   "concept": "利用机器学习优化因子权重",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-133",
+   "card_index": 210,
+   "concept": "包头皮策略信息",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-134",
+   "card_index": 210,
+   "concept": "包头皮策略信息",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-135",
+   "card_index": 211,
+   "concept": "单波结构",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-136",
+   "card_index": 211,
+   "concept": "单波结构",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-137",
+   "card_index": 212,
+   "concept": "去量化交易平台进行回测",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-138",
+   "card_index": 212,
+   "concept": "去量化交易平台进行回测",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-139",
+   "card_index": 213,
+   "concept": "双底形态",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-140",
+   "card_index": 213,
+   "concept": "双底形态",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-141",
+   "card_index": 214,
+   "concept": "双底洗盘",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-142",
+   "card_index": 214,
+   "concept": "双底洗盘",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-143",
+   "card_index": 215,
+   "concept": "发展新制生产力",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-144",
+   "card_index": 215,
+   "concept": "发展新制生产力",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-145",
+   "card_index": 216,
+   "concept": "周二市场走势",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-146",
+   "card_index": 216,
+   "concept": "周二市场走势",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-147",
+   "card_index": 217,
+   "concept": "周期配合",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-148",
+   "card_index": 217,
+   "concept": "周期配合",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-149",
+   "card_index": 218,
+   "concept": "回测换一个均线函数",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-150",
+   "card_index": 218,
+   "concept": "回测换一个均线函数",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-151",
+   "card_index": 219,
+   "concept": "国内外量化发展对比",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-152",
+   "card_index": 219,
+   "concept": "国内外量化发展对比",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-153",
+   "card_index": 220,
+   "concept": "国家队操作逻辑",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-154",
+   "card_index": 220,
+   "concept": "国家队操作逻辑",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-155",
+   "card_index": 221,
+   "concept": "在支撑位有背离",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-156",
+   "card_index": 221,
+   "concept": "在支撑位有背离",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-157",
+   "card_index": 222,
+   "concept": "地量进地价",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-158",
+   "card_index": 222,
+   "concept": "地量进地价",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-159",
+   "card_index": 223,
+   "concept": "均线上行过程中的背离形态",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-160",
+   "card_index": 223,
+   "concept": "均线上行过程中的背离形态",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-161",
+   "card_index": 224,
+   "concept": "均线是使用最广泛的指标",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-162",
+   "card_index": 224,
+   "concept": "均线是使用最广泛的指标",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-163",
+   "card_index": 225,
+   "concept": "均线老丫头是一种中继形态",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-164",
+   "card_index": 225,
+   "concept": "均线老丫头是一种中继形态",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-165",
+   "card_index": 226,
+   "concept": "复利产品更有效",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-166",
+   "card_index": 226,
+   "concept": "复利产品更有效",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-167",
+   "card_index": 227,
+   "concept": "多因子模型",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-168",
+   "card_index": 227,
+   "concept": "多因子模型",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-169",
+   "card_index": 228,
+   "concept": "大涨后只剩风险",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-170",
+   "card_index": 228,
+   "concept": "大涨后只剩风险",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-171",
+   "card_index": 229,
+   "concept": "对策略进行回测",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-172",
+   "card_index": 229,
+   "concept": "对策略进行回测",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-173",
+   "card_index": 230,
+   "concept": "导致止损信号错误",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-174",
+   "card_index": 230,
+   "concept": "导致止损信号错误",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-175",
+   "card_index": 231,
+   "concept": "左翼技术",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-176",
+   "card_index": 231,
+   "concept": "左翼技术",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-177",
+   "card_index": 232,
+   "concept": "市场情绪冰点",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-178",
+   "card_index": 232,
+   "concept": "市场情绪冰点",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-179",
+   "card_index": 233,
+   "concept": "市场拐头向下",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-180",
+   "card_index": 233,
+   "concept": "市场拐头向下",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-181",
+   "card_index": 234,
+   "concept": "市场有多个支撑或阻力",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-182",
+   "card_index": 234,
+   "concept": "市场有多个支撑或阻力",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-183",
+   "card_index": 235,
+   "concept": "开盘半小时快速跳水",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-184",
+   "card_index": 235,
+   "concept": "开盘半小时快速跳水",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-185",
+   "card_index": 236,
+   "concept": "形中有形",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-186",
+   "card_index": 236,
+   "concept": "形中有形",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-187",
+   "card_index": 237,
+   "concept": "待执行的订单数量",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-188",
+   "card_index": 237,
+   "concept": "待执行的订单数量",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-189",
+   "card_index": 238,
+   "concept": "情绪周期比新电图更难捉摸",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-190",
+   "card_index": 238,
+   "concept": "情绪周期比新电图更难捉摸",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-191",
+   "card_index": 239,
+   "concept": "愿意承担高风险的投资者",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-192",
+   "card_index": 239,
+   "concept": "愿意承担高风险的投资者",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-193",
+   "card_index": 240,
+   "concept": "愿意秒内交易超过300笔",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-194",
+   "card_index": 240,
+   "concept": "愿意秒内交易超过300笔",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-195",
+   "card_index": 241,
+   "concept": "成交量柱状图",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-196",
+   "card_index": 241,
+   "concept": "成交量柱状图",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-197",
+   "card_index": 242,
+   "concept": "技术指标",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-198",
+   "card_index": 242,
+   "concept": "技术指标",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-199",
+   "card_index": 243,
+   "concept": "探底回升",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-200",
+   "card_index": 243,
+   "concept": "探底回升",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-201",
+   "card_index": 244,
+   "concept": "攻击性顶分形",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-202",
+   "card_index": 244,
+   "concept": "攻击性顶分形",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-203",
+   "card_index": 245,
+   "concept": "敞布冷堵",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-204",
+   "card_index": 245,
+   "concept": "敞布冷堵",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-205",
+   "card_index": 246,
+   "concept": "数据QMT",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-206",
+   "card_index": 246,
+   "concept": "数据QMT",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-207",
+   "card_index": 247,
+   "concept": "无量拉升",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-208",
+   "card_index": 247,
+   "concept": "无量拉升",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-209",
+   "card_index": 248,
+   "concept": "日内120天均线上拐",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-210",
+   "card_index": 248,
+   "concept": "日内120天均线上拐",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-211",
+   "card_index": 249,
+   "concept": "日内缩量涨停",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-212",
+   "card_index": 249,
+   "concept": "日内缩量涨停",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-213",
+   "card_index": 250,
+   "concept": "更大周期均线",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-214",
+   "card_index": 250,
+   "concept": "更大周期均线",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-215",
+   "card_index": 251,
+   "concept": "更有效的因子挖掘方法",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-216",
+   "card_index": 251,
+   "concept": "更有效的因子挖掘方法",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-217",
+   "card_index": 252,
+   "concept": "最大回撤对交易的影响",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-218",
+   "card_index": 252,
+   "concept": "最大回撤对交易的影响",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-219",
+   "card_index": 253,
+   "concept": "最大回测",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-220",
+   "card_index": 253,
+   "concept": "最大回测",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-221",
+   "card_index": 254,
+   "concept": "最大资金回撤加凯利公式",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-222",
+   "card_index": 254,
+   "concept": "最大资金回撤加凯利公式",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  },
+  {
+   "issue_id": "Q-223",
+   "card_index": 255,
+   "concept": "最适合量化交易的编程语言",
+   "check": "source_parse",
+   "severity": "high",
+   "detail": "source 不可解析：无法匹配《书名》…pX-Y 格式",
+   "suggestion": "规范为《书名》 章节 p起始-结束"
+  },
+  {
+   "issue_id": "Q-224",
+   "card_index": 255,
+   "concept": "最适合量化交易的编程语言",
+   "check": "unit_trace",
+   "severity": "medium",
+   "detail": "无法匹配到知识单元（concept/证据均未命中）",
+   "suggestion": "人工核对来源或标注为人工原创卡"
+  }
+ ],
  "traceable_cards": [
   {
    "card_index": 0,
@@ -1219,44 +3241,940 @@
    "method": "concept+book+page",
    "unit_book": "rp_AP202609301830015410",
    "unit_pages": "1-13"
+  },
+  {
+   "card_index": 144,
+   "concept": "AI 量化",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 145,
+   "concept": "天才交易员的十大风控防线",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 146,
+   "concept": "突破幅度",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 147,
+   "concept": "收盘位置",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 148,
+   "concept": "成交量",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 149,
+   "concept": "大周期压力",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 150,
+   "concept": "流动性",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 151,
+   "concept": "识别假突破",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 152,
+   "concept": "均线向上",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 153,
+   "concept": "关键位突破",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 154,
+   "concept": "成交量配合",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 155,
+   "concept": "多周期一致性",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 156,
+   "concept": "波动扩张",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 157,
+   "concept": "趋势失效条件",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 158,
+   "concept": "条件风险价值",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 159,
+   "concept": "最优执行轨迹",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 160,
+   "concept": "数据边界",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 161,
+   "concept": "模型学习",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 162,
+   "concept": "交易成本",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 163,
+   "concept": "仓位与风险",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 164,
+   "concept": "均线 MA/EMA",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 165,
+   "concept": "成交量／订单流",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 166,
+   "concept": "价格行为 PA/SMC",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 167,
+   "concept": "链上成本指标",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 168,
+   "concept": "交易所资金流",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 169,
+   "concept": "交易所原生行情 API",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 170,
+   "concept": "特征向量",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 171,
+   "concept": "因子分解",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 172,
+   "concept": "AI土雄策略",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 173,
+   "concept": "MACD号称指标之王",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 174,
+   "concept": "MACD指标的D0轴之上",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 175,
+   "concept": "RSI等技术指标",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 176,
+   "concept": "SKDJ和均线指标",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 177,
+   "concept": "XM等指标时",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 178,
+   "concept": "一些常见的套利策略",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 179,
+   "concept": "三均线形成",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 180,
+   "concept": "下午看416年支撑位",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 181,
+   "concept": "与特定股票相关的期货合约",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 182,
+   "concept": "与风险因子低相关",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 183,
+   "concept": "且短期均线多头排列",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 184,
+   "concept": "个人开通量化的资金要多少",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 185,
+   "concept": "个人量化平台",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 186,
+   "concept": "个人量化软件门槛低",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 187,
+   "concept": "也要及时止盈或止损",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 188,
+   "concept": "买卖点完备性",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 189,
+   "concept": "五日均线",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 190,
+   "concept": "交易周期划分",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 191,
+   "concept": "交易平台",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 192,
+   "concept": "交易策略和模型公开",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 193,
+   "concept": "交易级别口径",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 194,
+   "concept": "交易风控于一体",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 195,
+   "concept": "仓位管理也就是资金管理",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 196,
+   "concept": "仓位管理重要性",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 197,
+   "concept": "仓位要注意适当的做作检法",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 198,
+   "concept": "优化策略参数改进模型",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 199,
+   "concept": "但并没有跌破关键支撑位",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 200,
+   "concept": "但量化代码没有预知能力",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 201,
+   "concept": "低换手量低迷",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 202,
+   "concept": "使用多个因子的投资组合",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 203,
+   "concept": "假期虽然不开盘",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 204,
+   "concept": "克服性格缺点",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 205,
+   "concept": "全球金融定价权",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 206,
+   "concept": "六大量化交易模块",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 207,
+   "concept": "冲高回落",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 208,
+   "concept": "分形结构",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 209,
+   "concept": "利用机器学习优化因子权重",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 210,
+   "concept": "包头皮策略信息",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 211,
+   "concept": "单波结构",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 212,
+   "concept": "去量化交易平台进行回测",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 213,
+   "concept": "双底形态",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 214,
+   "concept": "双底洗盘",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 215,
+   "concept": "发展新制生产力",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 216,
+   "concept": "周二市场走势",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 217,
+   "concept": "周期配合",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 218,
+   "concept": "回测换一个均线函数",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 219,
+   "concept": "国内外量化发展对比",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 220,
+   "concept": "国家队操作逻辑",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 221,
+   "concept": "在支撑位有背离",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 222,
+   "concept": "地量进地价",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 223,
+   "concept": "均线上行过程中的背离形态",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 224,
+   "concept": "均线是使用最广泛的指标",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 225,
+   "concept": "均线老丫头是一种中继形态",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 226,
+   "concept": "复利产品更有效",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 227,
+   "concept": "多因子模型",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 228,
+   "concept": "大涨后只剩风险",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 229,
+   "concept": "对策略进行回测",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 230,
+   "concept": "导致止损信号错误",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 231,
+   "concept": "左翼技术",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 232,
+   "concept": "市场情绪冰点",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 233,
+   "concept": "市场拐头向下",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 234,
+   "concept": "市场有多个支撑或阻力",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 235,
+   "concept": "开盘半小时快速跳水",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 236,
+   "concept": "形中有形",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 237,
+   "concept": "待执行的订单数量",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 238,
+   "concept": "情绪周期比新电图更难捉摸",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 239,
+   "concept": "愿意承担高风险的投资者",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 240,
+   "concept": "愿意秒内交易超过300笔",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 241,
+   "concept": "成交量柱状图",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 242,
+   "concept": "技术指标",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 243,
+   "concept": "探底回升",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 244,
+   "concept": "攻击性顶分形",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 245,
+   "concept": "敞布冷堵",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 246,
+   "concept": "数据QMT",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 247,
+   "concept": "无量拉升",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 248,
+   "concept": "日内120天均线上拐",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 249,
+   "concept": "日内缩量涨停",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 250,
+   "concept": "更大周期均线",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 251,
+   "concept": "更有效的因子挖掘方法",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 252,
+   "concept": "最大回撤对交易的影响",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 253,
+   "concept": "最大回测",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 254,
+   "concept": "最大资金回撤加凯利公式",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
+  },
+  {
+   "card_index": 255,
+   "concept": "最适合量化交易的编程语言",
+   "traceable": false,
+   "method": "none",
+   "unit_book": null,
+   "unit_pages": "None-None"
   }
  ],
  "theme_distribution": [
   {
    "theme": "AI算力/硬件",
    "units": 116,
-   "cards": 19,
-   "per_100_units": 16.38
+   "cards": 27,
+   "per_100_units": 23.28
   },
   {
    "theme": "其他",
    "units": 104,
-   "cards": 19,
-   "per_100_units": 18.27
+   "cards": 103,
+   "per_100_units": 99.04
   },
   {
    "theme": "新能源/电力",
    "units": 71,
-   "cards": 13,
-   "per_100_units": 18.31
+   "cards": 14,
+   "per_100_units": 19.72
   },
   {
    "theme": "宏观/政策",
    "units": 37,
-   "cards": 10,
-   "per_100_units": 27.03
+   "cards": 13,
+   "per_100_units": 35.14
   },
   {
    "theme": "量学/交易",
    "units": 34,
-   "cards": 8,
-   "per_100_units": 23.53
+   "cards": 12,
+   "per_100_units": 35.29
   },
   {
    "theme": "金融/地产",
    "units": 34,
-   "cards": 7,
-   "per_100_units": 20.59
+   "cards": 11,
+   "per_100_units": 32.35
   },
   {
    "theme": "消费/零售",
@@ -1267,8 +4185,8 @@
   {
    "theme": "机械/制造",
    "units": 17,
-   "cards": 6,
-   "per_100_units": 35.29
+   "cards": 10,
+   "per_100_units": 58.82
   },
   {
    "theme": "军工/航天",
@@ -1279,8 +4197,8 @@
   {
    "theme": "化工/材料",
    "units": 12,
-   "cards": 3,
-   "per_100_units": 25.0
+   "cards": 4,
+   "per_100_units": 33.33
   },
   {
    "theme": "交运/物流",
@@ -1309,8 +4227,8 @@
   {
    "theme": "半导体/电子",
    "units": 4,
-   "cards": 5,
-   "per_100_units": 125.0
+   "cards": 7,
+   "per_100_units": 175.0
   },
   {
    "theme": "建筑/建材",
@@ -1321,8 +4239,8 @@
   {
    "theme": "有色/金属",
    "units": 4,
-   "cards": 6,
-   "per_100_units": 150.0
+   "cards": 7,
+   "per_100_units": 175.0
   },
   {
    "theme": "评级/研报方法论",

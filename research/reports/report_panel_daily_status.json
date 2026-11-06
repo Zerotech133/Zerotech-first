@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "updated_at": "2026-11-01T09:21:33+08:00",
+ "updated_at": "2026-11-06T08:35:04+08:00",
  "runs": [
   {
    "run_at": "2026-11-01T08:50:07+08:00",
@@ -356,10 +356,320 @@
     },
     "source_generated_at_changed": false
    }
+  },
+  {
+   "run_at": "2026-11-02T08:35:05+08:00",
+   "mode": "run",
+   "ok": true,
+   "errors": [],
+   "source": "C:\\项目\\老田的AI助手\\research\\reports\\report_panel_v3_20261101.json",
+   "source_meta": {
+    "path": "C:\\项目\\老田的AI助手\\research\\reports\\report_panel_v3_20261101.json",
+    "exists": true,
+    "mtime": "2026-11-01T08:09:36+08:00",
+    "mtime_epoch": 1793491776.693,
+    "size": 90207
+   },
+   "portal": "C:\\项目\\老田的AI助手\\portal\\static\\report_panel.json",
+   "portal_meta": {
+    "path": "C:\\项目\\老田的AI助手\\portal\\static\\report_panel.json",
+    "exists": true,
+    "mtime": "2026-11-02T08:35:05+08:00",
+    "mtime_epoch": 1793579705.846,
+    "size": 13722
+   },
+   "elapsed_seconds": 0.046,
+   "candidates": 1,
+   "candidate_ids": [
+    "rp_AP202610071830182729"
+   ],
+   "rejected": 2,
+   "reports": 3,
+   "page_invalid_facts": 1,
+   "legacy_union_invalid_facts": 0,
+   "review_checkboxes": 68,
+   "disclaimer_ok": true,
+   "source_generated_at": "2026-11-01T08:09:36+08:00",
+   "dry_run": false,
+   "validation": {
+    "ok": true,
+    "errors": [],
+    "checked_at": "2026-11-02T08:35:05+08:00"
+   },
+   "change": {
+    "has_prev": true,
+    "prev_run_at": "2026-11-01T09:21:33+08:00",
+    "candidates": {
+     "prev": 1,
+     "cur": 1,
+     "delta": 0,
+     "added": [],
+     "removed": []
+    },
+    "page_invalid_facts": {
+     "prev": 1,
+     "cur": 1,
+     "delta": 0
+    },
+    "rejected": {
+     "prev": 2,
+     "cur": 2,
+     "delta": 0
+    },
+    "source_generated_at_changed": false
+   }
+  },
+  {
+   "run_at": "2026-11-03T08:35:02+08:00",
+   "mode": "run",
+   "ok": true,
+   "errors": [],
+   "source": "C:\\项目\\老田的AI助手\\research\\reports\\report_panel_v3_20261101.json",
+   "source_meta": {
+    "path": "C:\\项目\\老田的AI助手\\research\\reports\\report_panel_v3_20261101.json",
+    "exists": true,
+    "mtime": "2026-11-01T08:09:36+08:00",
+    "mtime_epoch": 1793491776.693,
+    "size": 90207
+   },
+   "portal": "C:\\项目\\老田的AI助手\\portal\\static\\report_panel.json",
+   "portal_meta": {
+    "path": "C:\\项目\\老田的AI助手\\portal\\static\\report_panel.json",
+    "exists": true,
+    "mtime": "2026-11-03T08:35:02+08:00",
+    "mtime_epoch": 1793666102.952,
+    "size": 13722
+   },
+   "elapsed_seconds": 0.062,
+   "candidates": 1,
+   "candidate_ids": [
+    "rp_AP202610071830182729"
+   ],
+   "rejected": 2,
+   "reports": 3,
+   "page_invalid_facts": 1,
+   "legacy_union_invalid_facts": 0,
+   "review_checkboxes": 68,
+   "disclaimer_ok": true,
+   "source_generated_at": "2026-11-01T08:09:36+08:00",
+   "dry_run": false,
+   "validation": {
+    "ok": true,
+    "errors": [],
+    "checked_at": "2026-11-03T08:35:02+08:00"
+   },
+   "change": {
+    "has_prev": true,
+    "prev_run_at": "2026-11-02T08:35:05+08:00",
+    "candidates": {
+     "prev": 1,
+     "cur": 1,
+     "delta": 0,
+     "added": [],
+     "removed": []
+    },
+    "page_invalid_facts": {
+     "prev": 1,
+     "cur": 1,
+     "delta": 0
+    },
+    "rejected": {
+     "prev": 2,
+     "cur": 2,
+     "delta": 0
+    },
+    "source_generated_at_changed": false
+   }
+  },
+  {
+   "run_at": "2026-11-04T08:35:03+08:00",
+   "mode": "run",
+   "ok": true,
+   "errors": [],
+   "source": "C:\\项目\\老田的AI助手\\research\\reports\\report_panel_v3_20261101.json",
+   "source_meta": {
+    "path": "C:\\项目\\老田的AI助手\\research\\reports\\report_panel_v3_20261101.json",
+    "exists": true,
+    "mtime": "2026-11-01T08:09:36+08:00",
+    "mtime_epoch": 1793491776.693,
+    "size": 90207
+   },
+   "portal": "C:\\项目\\老田的AI助手\\portal\\static\\report_panel.json",
+   "portal_meta": {
+    "path": "C:\\项目\\老田的AI助手\\portal\\static\\report_panel.json",
+    "exists": true,
+    "mtime": "2026-11-04T08:35:03+08:00",
+    "mtime_epoch": 1793752503.295,
+    "size": 13722
+   },
+   "elapsed_seconds": 0.047,
+   "candidates": 1,
+   "candidate_ids": [
+    "rp_AP202610071830182729"
+   ],
+   "rejected": 2,
+   "reports": 3,
+   "page_invalid_facts": 1,
+   "legacy_union_invalid_facts": 0,
+   "review_checkboxes": 68,
+   "disclaimer_ok": true,
+   "source_generated_at": "2026-11-01T08:09:36+08:00",
+   "dry_run": false,
+   "validation": {
+    "ok": true,
+    "errors": [],
+    "checked_at": "2026-11-04T08:35:03+08:00"
+   },
+   "change": {
+    "has_prev": true,
+    "prev_run_at": "2026-11-03T08:35:02+08:00",
+    "candidates": {
+     "prev": 1,
+     "cur": 1,
+     "delta": 0,
+     "added": [],
+     "removed": []
+    },
+    "page_invalid_facts": {
+     "prev": 1,
+     "cur": 1,
+     "delta": 0
+    },
+    "rejected": {
+     "prev": 2,
+     "cur": 2,
+     "delta": 0
+    },
+    "source_generated_at_changed": false
+   }
+  },
+  {
+   "run_at": "2026-11-05T08:35:03+08:00",
+   "mode": "run",
+   "ok": true,
+   "errors": [],
+   "source": "C:\\项目\\老田的AI助手\\research\\reports\\report_panel_v3_20261101.json",
+   "source_meta": {
+    "path": "C:\\项目\\老田的AI助手\\research\\reports\\report_panel_v3_20261101.json",
+    "exists": true,
+    "mtime": "2026-11-01T08:09:36+08:00",
+    "mtime_epoch": 1793491776.693,
+    "size": 90207
+   },
+   "portal": "C:\\项目\\老田的AI助手\\portal\\static\\report_panel.json",
+   "portal_meta": {
+    "path": "C:\\项目\\老田的AI助手\\portal\\static\\report_panel.json",
+    "exists": true,
+    "mtime": "2026-11-05T08:35:03+08:00",
+    "mtime_epoch": 1793838903.415,
+    "size": 13722
+   },
+   "elapsed_seconds": 0.046,
+   "candidates": 1,
+   "candidate_ids": [
+    "rp_AP202610071830182729"
+   ],
+   "rejected": 2,
+   "reports": 3,
+   "page_invalid_facts": 1,
+   "legacy_union_invalid_facts": 0,
+   "review_checkboxes": 68,
+   "disclaimer_ok": true,
+   "source_generated_at": "2026-11-01T08:09:36+08:00",
+   "dry_run": false,
+   "validation": {
+    "ok": true,
+    "errors": [],
+    "checked_at": "2026-11-05T08:35:03+08:00"
+   },
+   "change": {
+    "has_prev": true,
+    "prev_run_at": "2026-11-04T08:35:03+08:00",
+    "candidates": {
+     "prev": 1,
+     "cur": 1,
+     "delta": 0,
+     "added": [],
+     "removed": []
+    },
+    "page_invalid_facts": {
+     "prev": 1,
+     "cur": 1,
+     "delta": 0
+    },
+    "rejected": {
+     "prev": 2,
+     "cur": 2,
+     "delta": 0
+    },
+    "source_generated_at_changed": false
+   }
+  },
+  {
+   "run_at": "2026-11-06T08:35:04+08:00",
+   "mode": "run",
+   "ok": true,
+   "errors": [],
+   "source": "C:\\项目\\老田的AI助手\\research\\reports\\report_panel_v3_20261101.json",
+   "source_meta": {
+    "path": "C:\\项目\\老田的AI助手\\research\\reports\\report_panel_v3_20261101.json",
+    "exists": true,
+    "mtime": "2026-11-01T08:09:36+08:00",
+    "mtime_epoch": 1793491776.693,
+    "size": 90207
+   },
+   "portal": "C:\\项目\\老田的AI助手\\portal\\static\\report_panel.json",
+   "portal_meta": {
+    "path": "C:\\项目\\老田的AI助手\\portal\\static\\report_panel.json",
+    "exists": true,
+    "mtime": "2026-11-06T08:35:04+08:00",
+    "mtime_epoch": 1793925304.882,
+    "size": 13722
+   },
+   "elapsed_seconds": 0.047,
+   "candidates": 1,
+   "candidate_ids": [
+    "rp_AP202610071830182729"
+   ],
+   "rejected": 2,
+   "reports": 3,
+   "page_invalid_facts": 1,
+   "legacy_union_invalid_facts": 0,
+   "review_checkboxes": 68,
+   "disclaimer_ok": true,
+   "source_generated_at": "2026-11-01T08:09:36+08:00",
+   "dry_run": false,
+   "validation": {
+    "ok": true,
+    "errors": [],
+    "checked_at": "2026-11-06T08:35:04+08:00"
+   },
+   "change": {
+    "has_prev": true,
+    "prev_run_at": "2026-11-05T08:35:03+08:00",
+    "candidates": {
+     "prev": 1,
+     "cur": 1,
+     "delta": 0,
+     "added": [],
+     "removed": []
+    },
+    "page_invalid_facts": {
+     "prev": 1,
+     "cur": 1,
+     "delta": 0
+    },
+    "rejected": {
+     "prev": 2,
+     "cur": 2,
+     "delta": 0
+    },
+    "source_generated_at_changed": false
+   }
   }
  ],
  "latest": {
-  "run_at": "2026-11-01T09:21:33+08:00",
+  "run_at": "2026-11-06T08:35:04+08:00",
   "mode": "run",
   "ok": true,
   "errors": [],
@@ -375,11 +685,11 @@
   "portal_meta": {
    "path": "C:\\项目\\老田的AI助手\\portal\\static\\report_panel.json",
    "exists": true,
-   "mtime": "2026-11-01T09:21:33+08:00",
-   "mtime_epoch": 1793496093.426,
-   "size": 14281
+   "mtime": "2026-11-06T08:35:04+08:00",
+   "mtime_epoch": 1793925304.882,
+   "size": 13722
   },
-  "elapsed_seconds": 0.031,
+  "elapsed_seconds": 0.047,
   "candidates": 1,
   "candidate_ids": [
    "rp_AP202610071830182729"
@@ -395,11 +705,11 @@
   "validation": {
    "ok": true,
    "errors": [],
-   "checked_at": "2026-11-01T09:21:33+08:00"
+   "checked_at": "2026-11-06T08:35:04+08:00"
   },
   "change": {
    "has_prev": true,
-   "prev_run_at": "2026-11-01T09:21:32+08:00",
+   "prev_run_at": "2026-11-05T08:35:03+08:00",
    "candidates": {
     "prev": 1,
     "cur": 1,

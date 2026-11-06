@@ -13,9 +13,9 @@
 | **项目名称与一句话定位** | AIOS 数据资产与计划任务治理子系统 —— 把「职责重叠 + 手写底册 + 缺格式闸门 + 数据无分层」收敛为单机可审计的单一事实来源与质量闸门 |
 | **平台选型** | **候选 A（锁定）**：本机 Windows 桌面 CLI/脚本 + JSON 文件台账 + 既有飞书告警。三维打分 A 15/15、B 8/15、C 4/15；B（本地 FastAPI 只读看板）仅作对比项、C（云端托管）不推荐。零新增组件、零新增端、零系统状态变更（FF02） |
 | **技术栈** | Python 3.11 标准库（统一 `"C:\Program Files\Python311\python.exe" -X utf8`；**禁用 `/c/项目/py312/python.exe`，其 `safe_path=True` 导致 `build_catalog.py` 无法 import 同目录 `linreg`**）+ JSON 台账 + pytest 9.0.2 + 既有飞书链路。**零新增组件、零新增端、零常驻服务、零系统状态变更**。PowerShell 5.1 写日志须显式 `-Encoding utf8`；中文路径文件操作走 Bash+Python，不用 PS `Test-Path` |
-| **当前阶段** | **Phase 5 收口 / B 方案落盘与验收**：Phase 1~5 五份方案全部交付；GOV-W 白名单 14 条中 W-01~W-04、W-08~W-10、W-12 已落盘，W-05~W-07 / W-14 在途；待跑全量 pytest + G-09 零状态变更复核 + 全案整合 W-11 / 验收报告 W-13 |
-| **已完成产出清单** | ① `[需求与平台选型报告]`（product-scout）；② `[产品定义方案]`（product-manager，AC-01~AC-11 定位为未来退出条件）；③ `[技术研发方案]`（fullstack-engineer，F1/F2 契约 + 17 条单测）；④ `[测试保障方案]`（qa-tester v1.4，四层测试 + G-01~G-09 门禁）；⑤ `[上线发布方案 v1.3]`（release-manager，W-12 落盘）；⑥ `[运维保障方案 v1.1]`（ops-sre）；⑦ `[运营增长方案]`（growth-operator，5 项补强）；⑧ 团长终裁 ADR-01~26（§三）；⑨ 落盘 W-01~W-04 / W-08~W-10 / W-12；⑩ G-09 零状态变更基线（`C:\Temp\governance_zero_state_baseline.json`，W-08 落盘前采集） |
-| **下一步计划** | 收齐 W-05~W-07 / W-14 → 跑 `pytest` 全绿 + `governance_zero_state_baseline.py verify` 七项门禁 → 落 W-11 全案整合与 W-13 验收报告 → 交付给老田审阅 → **D0~D6 仍待 L2/业务裁定，不自动生效** |
+| **当前阶段** | **Phase 5 收口 / G0-b 执行态门禁签发**：Phase 1~5 五份方案 100% 交付；GOV-W 白名单 **13/14 已落盘**（W-01~W-12、W-14），仅 W-13 验收报告待团长写；F1/F2 两处真实实现缺陷（ADR-27 / ADR-30）已修并回归；三文件 pytest **106 passed**、G-09 分域门禁 **9 项全 PASS**。本卡为 16:2x 时点快照，**最终交付状态一律以 W-13 为准，本卡不再二次 Edit** |
+| **已完成产出清单** | ① `[需求与平台选型报告]`；② `[产品定义方案]`；③ `[技术研发方案]`；④ `[测试保障方案 v1.4]`；⑤ `[上线发布方案 v1.3]`（W-12）；⑥ `[运维保障方案 v1.1]`（W-14）；⑦ `[运营增长方案]`；⑧ 团长终裁 **ADR-01~34**（§三）；⑨ 落盘 **W-01~W-12 / W-14 共 13 条**（含 W-09 接入点、W-10 统一口径、W-11 全案整合）；⑩ G-09 零状态变更基线（W-08 落盘前采集，T-10=A 全量 sha256）；⑪ W-08 10-29 隔离 flag（八字段、纯新增）；⑫ F1 复合键、F2 魔数读头两处实现修复；⑬ 团长兜底契约测试 `C:\Temp\gov_fallback_tests.py` **22 passed**；⑭ 三文件 pytest **106 passed** 与 G-09 **9/9 PASS** |
+| **下一步计划** | 冻结 14 条 GOV-W → 统一采集最终逐文件 sha256（`C:\Temp\governance_final_collect.py collect`）→ 落 W-13 验收报告与 G0-b 执行态门禁 → `drift` 复核 `DRIFT=0` → 交付老田 → 团队 shutdown。**D0~D6 七项 L2/业务裁定全部未批准，不自动生效** |
 
 ### 扩展字段
 
@@ -82,6 +82,8 @@
 | ADR-30 | **F2 `verify_artifact()` 魔数读头真实缺陷（团长兜底测试发现）** | `read_magic()` 默认只读 2 字节，而 `detect_format()` 的 `b"Salted__"` 是 **8 字节** → `VALID_FORMATS` 声明的 `encrypted-aes` 分支**永远不可达**，合法 `.enc` 被误判 `unknown`。修法：`verify_artifact()` 读两处头，对外 `v["magic"]` 仍保持 2 字节（`1f8b`/`2d2d`/`5361` 契约不变），另读 8 字节只喂 `detect_format()`。qa-tester 在 W-06 备注里已准确抓到该缺陷（「read_magic(n=2) 只读到 Sa」），但把缺陷当契约断言；团长裁定**修源码 + 改测试断言为 `encrypted-aes`**，非回归。团长兜底契约测试 **22 passed** 全绿 | 落点（release-manager 补强）：**W-12 §2.2 S2 退出判据**（1f8b ok=true / 2d2d ok=false）、**§4.2 G1·G2**、**§6 风险 2 六类夹具 `encrypted_aes`**、**G0-b 证据① pytest 全过**；域属 W-02（F2）v0.2 质量闸门 |
 | ADR-31 | G1 前置修复汇总 | 两条实现修复须在 G1 前完成并回归：ADR-27（W-01 复合键）、ADR-30（W-02 魔数读头）。两者均**已修实现**，故 W-01 / W-02 内容为修复后版本，W-13 逐文件 sha256 清单必须取最终版，否则 G6③ / B2 会误判哈希漂移、误触发 FF05 全量回滚 | 与 W-12 补写、W-14 三次修订同一机理 |
 | ADR-32 | **落盘回执必须经磁盘复核（团队纪律）** | qa-tester 首次回报「3 个测试文件已落盘、84 passed / 1 failed」，团长两次独立读盘 + 全盘定向搜索 5 个根均为 `FOUND_CODES=[48]`=0 → 回执与磁盘不符，**判定未交付**，要求重落并给 `os.path.exists` + sha12 证据。第二次核验 W-05 / W-06 确已落盘（`85b92ce8c60b` / `d9ccdc8a9fa5`），实跑 85 passed / 1 failed。确立纪律：**任何「已落盘」回报一律以团长独立读盘为准，纸面交付不计入验收** | 防止挂载视图差异导致全案虚假达标 |
+| ADR-33 | **G-09 为签发时点门禁 + 外部作业动态归因** | 16:17 复核时门禁由 9/9 退化为 2 FAIL，取证为外部并行作业又新增 3 个产物：`research/reports/learning_gate_20261105_intake.md`（`stage=intake`）、`research/reports/factor_b1_full_eval_20261105.json`（`factor_lib v1.2.0` / py3.12 / pandas 3.0.5）、`quant_backtest/deliverables/2026-11-05_沪金b3信号_实时可见性_v7_边际证据判定.md`（`gold_signal_shadow.py` / `cross_poll.py`），mtime 均晚于基线 15:04:12，内容可独立核实、与本轮治理无关。终裁：① 按 ADR-29 **内容指纹举证**归类，逐文件写入 `external_job_evidence` 理由，**不新增目录前缀白名单、未知仍判 FAIL**；② G-09 是**时点门禁**，`verified_at` 即签发时刻，签发后外部作业新增归运行态观测（ops-sre T-09 / AL-22~26），不追溯推翻；但每次重跑 verify 必须重新归因，不允许一次归因永久放行；③ 修复后 **9 项全 PASS，ALL_PASS=True** | 在并行作业机器上让门禁既严格又可签，不靠放宽判据换绿灯 |
+| ADR-34 | **G-09d 判据自身缺陷 + W-06 兜底接管** | `G-09d 外部并行作业域零静默丢弃` 原判据只认可 `EXTERNAL_JOB_PREFIXES` 路径前缀，不认可 ADR-29 允许的内容指纹举证 → ADR-33 新增指纹后反把本项判 FAIL（真实缺陷）。修为「外部域每个文件都必须取到可审计归因理由」（空集为真），并新增 `external_job_evidence` 明细字段。同时 qa-tester 多次下发后仍未改 W-06 第 113 行 `("encrypted_aes","unknown",...)`，团长按已声明的 **B 方案**接管：仅改该断言为 `encrypted-aes` + 同步 ADR-30 后 docstring 备注，**不动 F2 源码**，随即三文件 `pytest -q` **106 passed**。白名单自此冻结，qa-tester 停止写盘。**追加（16:26 复核）**：`G-09c 本轮未在 GOV-W 域产生新 tracked 变更` 同为错误命题——本轮正是要写白名单内文件，团长更新 W-04/W-11/W-06 后三条被算作 `new_tracked_gov` 而判 FAIL（git 口径：非 `??` 条目均入 `tracked_changes`）。修为「**白名单域新增 tracked 变更均可独立读盘验真**」（终表内 + `os.path.isfile` 为真）；G6③ 的真实命题「终表外新增 = 0」仍由 `new_tracked_unknown` 硬判 FAIL 保留，未放宽。另 `quant_backtest/chanlun_healthcheck.py`（16:23:53，缠论系统体检、`chanlun_conformance`）按内容指纹举证归入外部并行作业域 | 消除判据自相矛盾导致的假红；避免写者竞态，收口可交付 |
 
 ### GOV-W 白名单终表（唯一有效，14 条）
 
@@ -121,8 +123,8 @@ W-14  docs/plans/20261105_ops_sre_plan.md
 
 ```
 📊 阶段复盘卡（Phase 1 → Phase 5 → B 方案落盘）
-- 本阶段完成度：Phase 1~5 五份方案 100% 交付；GOV-W 14 条中 10 条已落盘
-  （W-01~W-04 / W-08~W-10 / W-12），W-05~W-07 / W-14 在途；W-11 / W-13 团长待写
+- 本阶段完成度：Phase 1~5 五份方案 100% 交付；GOV-W **13/14 已落盘**
+  （W-01~W-12 / W-14），仅 W-13 验收报告待团长写（时点快照，最终以 W-13 为准）
 - 已消解阻塞（共 8 类）：① ADR-01 四期路线口径；② ADR-02 目标态不得作本轮验收；
   ③ ADR-10 CLI 五子命令 vs PRD flag 式；④ ADR-13 三前缀实测纠错（单前缀得 180/312/36，
   与 golden 不符）；⑤ ADR-14 classify 顺序；⑥ T-10 哈希口径 A；⑦ T-02 白名单 GOV-W 终表
@@ -131,8 +133,9 @@ W-14  docs/plans/20261105_ops_sre_plan.md
   b)「加 flag 后自动跳过 10-29」→ flag 非运行态闸门，默认选中 11-05 是日期倒序既有行为；
   c) 档案「25+ 处 modified」→ 实测 110 tracked + 803 untracked（码点复核）
 - 未解阻塞：无技术阻塞。D0~D6 七项 L2/业务裁定全部未批准，属有意挂起，不是阻塞
-- 零状态变更基线：已于 W-08 落盘前采集（C:\Temp\governance_zero_state_baseline.json），
-  T-10=A 全量 sha256 同口径；verify 七项门禁待跑
-- 下阶段计划：收齐 W-05~W-07 / W-14 → pytest 全绿 + G-09 verify 七项 PASS →
-  落 W-11 全案 + W-13 验收报告 → 交付老田 → 团队 shutdown
+- 零状态变更基线：W-08 落盘前采集（C:\Temp\governance_zero_state_baseline.json），
+  T-10=A 全量 sha256 同口径；**verify 九项门禁 9/9 PASS，ALL_PASS=True**（ADR-29/33/34 分域）
+- 测试状态：三文件 `pytest -q` **106 passed**（ADR-30 断言收口后）；团长兜底契约测试 22 passed
+- 下阶段计划：冻结 14 条 → 统一采集最终 sha256 → 落 W-13 + G0-b 执行态门禁 →
+  `drift` 复核 DRIFT=0 → 交付老田 → 团队 shutdown
 ```

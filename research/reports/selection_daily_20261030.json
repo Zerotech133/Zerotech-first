@@ -9,7 +9,7 @@
   "discipline": "策略上架需通过数据/PIT、统计、成本容量、影子盘、人工批准五关；未过影子盘仅供研究"
  },
  "date": "20261030",
- "generated_at": "2026-11-01T09:10:55+08:00",
+ "generated_at": "2026-11-02T08:30:07+08:00",
  "strategies": [
   {
    "id": "S01_H14_quality_trap_guard",
@@ -26,7 +26,21 @@
     "cost": "仅作风险/工程过滤，不产生收益"
    },
    "approved": false,
-   "effective_from": "2026-11-01"
+   "effective_from": "2026-11-01",
+   "strict_verdict": {
+    "verdict": "close",
+    "audited_at": "2026-11-01T16:48:33+08:00",
+    "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+    "rationale": "非张松；status=validated_filter_no_alpha（仅过滤器、无 alpha）。严格复核：无正向假设通过 G1；无独立 walk-forward/安慰剂/成本敏感性证据。作为策略关闭；过滤逻辑仅可作为其他策略的辅助风控（不含 alpha 承诺）。",
+    "next_actions": [
+     "保留过滤器代码供叠加使用（需另测叠加净效应）"
+    ],
+    "evidence": [
+     "agent_platform/catalogs/strategy_registry.json",
+     "research/reports/factor_lib_demo_20261101.json"
+    ],
+    "gates": "见审计报告 strategies 明细（G1-G8）"
+   }
   },
   {
    "id": "S02_composite_mvp",
@@ -44,7 +58,19 @@
     "action": "S02 暂停（paused_shadow_breaker），等待因子重做"
    },
    "approved": false,
-   "effective_from": "2026-11-01"
+   "effective_from": "2026-11-01",
+   "strict_verdict": {
+    "verdict": "close",
+    "audited_at": "2026-11-01T16:48:33+08:00",
+    "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+    "rationale": "status=paused_shadow_breaker；影子盘 20 日 -9.6% 熔断。G1 无显著正向假设、G2 单次切分、G3 无 50bp 敏感性 → close。",
+    "next_actions": [],
+    "evidence": [
+     "agent_platform/catalogs/strategy_registry.json",
+     "research/reports/screening_20261030.json"
+    ],
+    "gates": "见审计报告 strategies 明细（G1-G8）"
+   }
   },
   {
    "id": "S03_H18_forecast_revision_watch",
@@ -61,7 +87,22 @@
     "cost": "事件型换手低，30bp 已计；容量极小（493 事件/3.8年）"
    },
    "approved": false,
-   "effective_from": "2026-11-01"
+   "effective_from": "2026-11-01",
+   "strict_verdict": {
+    "verdict": "needs-more",
+    "audited_at": "2026-11-01T16:48:33+08:00",
+    "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+    "rationale": "事件方向 ambiguous：只可观察、不可交易。G2/G4/G6 证据缺口大；需先做方向确认（预告修订分组 OOS 符号）+ 置换检验，再决定是否升级为事件策略。",
+    "next_actions": [
+     "补方向确认与安慰剂 1000 次置换",
+     "仅保留观察名单，不进入影子盘"
+    ],
+    "evidence": [
+     "research/reports/screening_20261030.json",
+     "agent_platform/catalogs/strategy_registry.json"
+    ],
+    "gates": "见审计报告 strategies 明细（G1-G8）"
+   }
   },
   {
    "id": "S04_AH_premium_pair",
@@ -78,7 +119,20 @@
     "cost": "双边成本/汇率基差待评估"
    },
    "approved": false,
-   "effective_from": "待建（phase2）"
+   "effective_from": "待建（phase2）",
+   "strict_verdict": {
+    "verdict": "needs-more",
+    "audited_at": "2026-11-01T16:48:33+08:00",
+    "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+    "rationale": "status=validated_pair_planned：规划中、未跑完整四关，无 G1-G7 证据 → needs-more。",
+    "next_actions": [
+     "补齐配对回测（T+1/成本 50bp/容量/分层）后再裁决"
+    ],
+    "evidence": [
+     "agent_platform/catalogs/strategy_registry.json"
+    ],
+    "gates": "见审计报告 strategies 明细（G1-G8）"
+   }
   },
   {
    "id": "S05_LX20_AVOID_DEWEIGHT",
@@ -99,7 +153,145 @@
     "final": "S05 关闭（仅保留 research_only 知识结论）：规避在等权全市场有效但换手成本高；在 S01 大市值内规避/超配均无效。"
    },
    "approved": false,
-   "effective_from": "待验证（candidate）"
+   "effective_from": "待验证（candidate）",
+   "strict_verdict": {
+    "verdict": "close",
+    "gates": {
+     "G1": "fail",
+     "G2": "fail",
+     "G3": "fail",
+     "G4": "fail",
+     "G5": "pass",
+     "G6": "not-met",
+     "G7": "pass",
+     "G8": "done"
+    },
+    "audited_at": "2026-11-01T16:48:33+08:00",
+    "audit_report": "research/reports/simahui_strict_audit_20261101.json",
+    "rationale": "注册表已 closed_both_directions_fail；严格复核再次确认（G1/G2/G3 fail）。与 LX20 反向规避研究不矛盾：S05 是叠加在既有组合上的覆盖层，覆层后 OOS 为负；LX20 的独立规避口径（等权全市场前 5 日事件股剔除）才有正超额，两者口径不同。",
+    "next_actions": []
+   }
+  },
+  {
+   "id": "S06_reversal_combo_mom20_120",
+   "name": "S06 反转组合（mom_20 + mom_120，top20 等权月频）",
+   "type": "ranking",
+   "owner": "司马微",
+   "source_hypothesis": "H38/H39（四关候选组合）",
+   "status": "rejected_regime_dependent",
+   "executable": false,
+   "rule": "z(-ret20)+z(-ret120) 等权分数取 top20 等权；月频调仓；宇宙=非ST/上市≥250日/价≥2",
+   "validation": {
+    "stats": "2019-2026/93月：CAGR 17.6% vs 市场 13.44%，MDD -36.3%，IC 0.0761(t=4.38)",
+    "gates": "G1=True G2=True G3=True G4=False（up regime 月均超额 -0.172%，down 1.63%）",
+    "shadow": "未启动（G4 未过，按纪律不影子）",
+    "cost": "单边0.15%×换手已计；月均换手 0.911；容量中位 1.7 亿（5% 参与率）",
+    "caveat": "8 年中 5 年跑输市场；收益高度集中在 2024/2025；高换手+小容量；研究价值=验证反转因子 regime 依赖",
+    "final": "rejected_regime_dependent：不作为影子候选；单因子（H38/H39）四关 PASS 但组合多头 G4 未过 → 需 regime 过滤/成本优化后才可重提"
+   },
+   "approved": false,
+   "effective_from": "2026-11-01（未启用）"
+  },
+  {
+   "id": "S07_mom20_long_only",
+   "name": "S07 短期反转（-20日收益）多头 top50",
+   "type": "ranking",
+   "owner": "司马微",
+   "source_hypothesis": "H38",
+   "status": "rejected_long_only_no_excess",
+   "executable": false,
+   "rule": "月频取 -ret20 分数 top50 等权（多头）；宇宙=非ST/上市≥250日/价≥2",
+   "validation": {
+    "stats": "PIT修正后：CAGR 10.77%、MDD -36.01%、月均超额 0.004%（t=0.01）、换手 0.969、容量 5.92 亿",
+    "caveat": "top50 集中后超额消失（top-decile 多头薄利不可移植）；换手 97%/月成本吞噬；不启动影子",
+    "final": "rejected：long-only top50 无超额（t≈0），仅保留 LS 四关证据",
+    "pit_note": "已按 PIT 重算；结论不变（无超额 t≈0），rejected"
+   },
+   "approved": false,
+   "effective_from": "2026-11-01（未启用）"
+  },
+  {
+   "id": "S08_mom120_long_only",
+   "name": "S08 长期反转（-120日收益）多头 top50（小仓位影子）",
+   "type": "ranking",
+   "owner": "司马微",
+   "source_hypothesis": "H39",
+   "status": "shadow_observing_pending_pit_recheck",
+   "executable": false,
+   "rule": "月频取 -ret120 分数 top50 等权（多头）；宇宙=非ST/上市≥250日/价≥2",
+   "validation": {
+    "stats": "2019-2026/93月：CAGR 19.59%、MDD -37.03%、月均超额 0.687%（t=1.3）、容量 4.13 亿（PIT 修正+代码审查后重算）",
+    "shadow": "2026-10-30 初始持仓已生成（50 只等权），逐月跟踪",
+    "cost": "0.15%单边×换手已计；换手 62%/月",
+    "caveat": "t=1.4 未达显著；MDD -37%；收益集中于少数年份；小仓位观察，不实盘",
+    "final": "shadow_observing_weak：小仓位影子验证，3 个月后复核",
+    "pit_note": "历史指标已按 PIT 重算（修正前后差异小：t 1.4→1.3）；影子继续观察，2027-02 复核"
+   },
+   "approved": false,
+   "effective_from": "2026-11-01（影子观察）"
+  },
+  {
+   "id": "S09_MOM120_V2_IND_NEUTRAL",
+   "name": "S09 mom_120 多头 v2（行业中性化 K20 分数加权 月频）",
+   "type": "ranking",
+   "owner": "司马微",
+   "source_hypothesis": "H39 改进研究（S08 research）",
+   "status": "research_candidate_pending_review",
+   "executable": false,
+   "rule": "月频调仓；-ret120 在行业内 z 分数（行业中性化）；取 top20，按分数排名加权；宇宙=非ST/上市≥250日/价≥2",
+   "validation": {
+    "stats": "2019-2026/93月：CAGR 28.38%、MDD -23.62%、月均超额 1.289%（t=1.9）、容量 1.62 亿；v2 raw：CAGR 30.15%、MDD -43.79%、t=1.97（仍未过 G1）",
+    "gates": "G1 未过（t<2）｜G2/G3/G4 过；回撤显著优于基线（-23.1% vs -37.4%）",
+    "shadow": "未启动（研究候选，待复核）",
+    "cost": "0.15%单边×换手已计",
+    "caveat": "2024 年 +100.9% 驱动收益集中；容量降至 1.5 亿（K20 集中）；t=1.89 未达显著；需人工复核/更长样本",
+    "final": "research_candidate_pending_review：风险调整后明显优于 S08 基线，但未过 G1(t) 且容量小；是否替换 S08 配置或新开影子由司马微团队复核",
+    "pit_note": "PIT 修正后重算：CAGR 28.21%/MDD -23.14%/t=1.89（2019+ 受次新股影响小，数字基本不变）；仍未过 G1(t<2)，维持 research_candidate",
+    "code_review": "2026-11-02 代码审查修正 s08_v2_verify 的 NameError 后重算（此前数字为旧文件缓存）"
+   },
+   "approved": false,
+   "effective_from": "2026-11-01（研究候选）"
+  },
+  {
+   "id": "S10_EVIDENCE_BASELINE_NEUTRAL",
+   "name": "S10 证据基准：低波+反转+低换手（行业中性 top20）",
+   "type": "ranking",
+   "owner": "司马微",
+   "source_hypothesis": "H49 基准审查 / H50 四关",
+   "status": "invalidated_pit_bug",
+   "executable": false,
+   "rule": "月频；z(-vol20)+z(-ret20)+z(-ret120)+z(-turnover20) 均值；行业内 z 中性化；top20 等权；宇宙=非ST/上市≥250日/价≥2；turnover 仅 2023+（缺失时用其余因子均值）",
+   "validation": {
+    "stats": "**原报告作废**：修正「上市≥250日」PIT bug 后，C2 CAGR 19.85%、MDD -25.99%、月均超额 0.526%、t=1.24、正收益年 6/8 → **G1 未过（t<2）**",
+    "bug": "所有历史月使用「到最新日的上市天数」，导致次新股（上市<250日）被纳入历史信号 → 原结果被前视污染",
+    "shadow": "已停止并归档 research/reports/research_only/s10_invalidated/",
+    "corrected": "四关未过：G1 ❌；C2 t=1.24",
+    "final": "invalidated：修复 bug 后四关不成立，回滚；其它脚本同类 bug 待修复后全流程重跑"
+   },
+   "approved": false,
+   "effective_from": "2026-11-01（影子观察）"
+  },
+  {
+   "id": "S11_MOM120_REGIME_LONG",
+   "name": "S11 mom_120 反转 · 下行 regime 多头（稳健候选）",
+   "type": "ranking",
+   "owner": "司马微",
+   "source_hypothesis": "H39 / H52",
+   "status": "shadow_observing_small",
+   "executable": false,
+   "rule": "仅在市场等权 60 日收益 < -2% 时交易：-ret120 分数 top20，按分数排名加权；月频；宇宙=非ST/按信号日上市≥250日/价≥2/**排除北交所**；非下行月空仓",
+   "validation": {
+    "stats": "2019-2026/93月（排除BJ）：CAGR 23.89%、MDD -22.36%、月均超额 1.485%（t=2.15）、容量 1.47 亿",
+    "variants": "行业中性版：CAGR 20.73%、MDD -17.74%、t=1.99；无 regime 过滤版：CAGR 30.16%、MDD -43.79%、t=1.97",
+    "pit": "已按 PIT 修正（上市天数按信号日）",
+    "caveat": "活跃月仅 28%（大部分时间空仓）；容量 1.5 亿级小资金；t≈2.3 边际；2019-2026 单一市场样本",
+    "final": "shadow_observing_small：阈值敏感性通过 + 小仓位影子观察；待司马微团队复核",
+    "sensitivity": "18 组 regime 阈值 t 全部≥1.5（1.81~2.57）→ 非刀锋（排除BJ后复算）",
+    "shadow": "2026-10-30 建仓（regime active，20 仓非BJ，容量实算 5.52 亿；容量上限 1.5 亿）；每月 1 日 08:30",
+    "selected": "60日/-2%：活跃 26 月（28.0%）、CAGR 26.48%、MDD -24.13%、t=2.35、容量 1.5 亿"
+   },
+   "approved": false,
+   "effective_from": "2026-11-01（研究候选）"
   }
  ],
  "active": {

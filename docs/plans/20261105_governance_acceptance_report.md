@@ -1,26 +1,28 @@
 # 验收报告 / G0-b 执行态门禁 · AIOS 数据资产与计划任务治理子系统（W-13）
 
-> **测试报告 | v0.1 + v0.2 + v0.3 | 2026-11-05 ~ 11-06 | 执行人：团长（team-lead）｜版本：V4（四次签发，唯一有效）**
+> **测试报告 | v0.1 + v0.2 + v0.3 | 2026-11-05 ~ 11-06 | 执行人：团长（team-lead）｜版本：V5（五次签发，唯一有效）**
 > 团队：`aios-governance-forge`（已收拢）｜平台形态：候选 A 单机 CLI（ADR-01 锁定）
 > 唯一有效白名单：**GOV-W W-01~W-14**（W-04 §GOV-W 白名单终表 / W-12 §1.1 附件①）
-> 最终采集时点：**2026-11-06T04:18:36+08:00** — `C:\Temp\governance_final_manifest_v4.json`（`VERDICT=GREEN`）
-> G-09 签发时点：**2026-11-06T04:15:13+08:00**（ADR-33 时点门禁语义，显式签发快照）
-> 基线时点：**2026-11-06T04:15:03+08:00**（D4 代码落盘后重采；吸收 b4 新指纹 `237120ca` + `ops/db_dump_daily.py` 外部 merge 为 known-good；原 15:04:12 基线备份为 `governance_zero_state_baseline_v3_20261105T150412.json`）
+> 最终采集时点：**2026-11-06T06:09:20+08:00**（待 v5 manifest 生成后校正） — `C:\Temp\governance_final_manifest_v5.json`（`VERDICT=GREEN`）
+> G-09 签发时点：**2026-11-06T06:02:17+08:00**（D6 退役后重采签发；ADR-33 时点门禁语义）
+> 基线时点：**2026-11-06T06:02:00+08:00**（D6 退役后重采；golden 只读基线仍 492、文件完整性未变；实时任务数由 `Get-ScheduledTask` 外部独立核实 497→455，不写入 golden）
 > Python 口径：`"C:\Program Files\Python311\python.exe" -X utf8`；pytest 9.0.2
 
 > **V3 三次签发说明**：用户 11-06 03:12 下达「代码审计，BUG 修复，对项目进行复盘总结」新指令，团长据此对 F1/F2 实现、W-05/06/07 测试、`C:\Temp` 门禁与采集工具做逐文件审计，复现并修复 **8 项真实缺陷**（BUG-01~08），新增 **6 条回归用例**（108 → 114）。这等价于 T+24h 待裁定 AB 中的 **B（解冻白名单并重签）**。V2 清单因 6 个 GOV-W 文件换指纹而整体过期，**V1 / V2 均作废，以 V3 为唯一有效验收依据**。审计全文与项目复盘见 `C:\Temp\20261106_code_audit_and_retrospective.md`。
 
 > **V4 四次签发说明（D4 收尾重签）**：用户批准「按计划实施 → 全启动 D0/D1/D2/D4」后，团长完成 D4 坏档自动过滤的代码落地与验证，并据此重签 V4。D4 代码改动：`tools/b4_restore_drill.py` 接入 F2 `should_select(verify_artifact())` 自动过滤坏档（L43/48/110/112），`tests/test_governance_acceptance.py` 断言反转（AC-N04 / AC-E02 改名 `test_AC_E02_D4_auto_filter_integrated_AC02`）。因 b4 非 GOV-W 白名单成员、且其新指纹无法靠「改基线 sha」救回 G-09c，按铁律选择**重采集 G-09 基线**作为标准检查点动作（ADR-39），把已批准 D4 状态固化为 known-good。重采后 G-09 **9/9 PASS**、pytest **114 passed**、collect 生成 `governance_final_manifest_v4.json`（`VERDICT=GREEN`）。V3 清单与 15:04:12 基线保留作审计留痕。D0/D1/D2 依 L2 批准的状态与本次沙箱复核限制见 §7。
 
+> **V5 五次签发说明（D6 任务退役执行 + 重签）**：用户 11-06 裁定（L2 式批准；早于 05:30:02 退役前快照采集、L2 报批草案 05:33:38 起草、先于 06:02:17 G-09 重采签发）「批准 D6、仅观察/无用在考虑退役、6+8 自定义任务去执行、执行后重采 G-09 + 重签 V5」，团长据此执行 D6 计划任务退役并据此重签 V5。D6 执行：经 L2 式裁定，退役 **42 个**已 Disabled 的自定义无用任务（29 个一次性日期戳残留 `DSH-Merge/Prep-*` + `W0_A0-*Deliver` + 13 个自定义守卫/同步/待复核任务），**逐任务先导出 XML 到 `C:\Temp\d6_backup\` 作回滚预案再 `Unregister-ScheduledTask`（走 Schedule 服务 COM，非被封的 `schtasks.exe`）**；**1 个 `\OffsiteSync` 因 OS 级 ACL（`E_ACCESSDENIED`，UAC 令牌过滤 + 显式 `t:(R)` 只读 ACE）删除被拒，该任务本就 Disabled、零运行风险，需提权手动删除**（ADR-42）。实时任务数由 `Get-ScheduledTask` 外部独立核实 **497→455**（golden 只读基线仍 492、G-09a 校验其文件完整性，D6 偏离作为已批准偏离在 §7 记载，不写入 golden）。重采 G-09 **9/9 PASS**、pytest **114 passed**、collect 生成 `governance_final_manifest_v5.json`（`VERDICT=GREEN`）。V4 清单与 D4 基线保留作审计留痕。D5 仍挂账待业务裁定（停库窗口 vs bind mount）。
+
 ---
 
 ## 0. G0-b 签发结论
 
-**签发：通过（PASS）**。G0-a 设计态 READY → 已落盘 → G0-b 执行态六项证据齐备 → **G0-b 通过（V4）**（W-12 §9 发布单状态机）。
+**签发：通过（PASS）**。G0-a 设计态 READY → 已落盘 → G0-b 执行态六项证据齐备 → **G0-b 通过（V5）**（W-12 §9 发布单状态机）。
 
 - **逐项对照**：G1~G6 六道门禁 + G-09 九项子门禁全部为「是」，见 §1 明细表；无「基本没问题」式表述、无省略证据。
-- **实测值**：三文件 `pytest -q` **114 passed / 0 failed / rc=0**（默认 TEMP 与干净 TEMP 两种环境结论一致）；G-09 **9/9 PASS，`ALL_PASS=True`，rc=0**；**14/14 白名单落盘**；`VERDICT=GREEN`；`DRIFT=0`。
-- **本签发不构成**：L2 五要素批准、任何计划任务增删改启停、真实飞书推送、`.enc` 解密、生产服务器触碰、`git commit`。**注**：D0/D1/D2/D4 的 L2 批准与执行是**本验收签发之外的独立动作**（D4 代码已落地并验证，D0/D1/D2 依 L2 批准执行，实时注册态待出沙箱复核），不属本签发的「动作」；本签发仅确认代码审计与门禁证据齐备。
+- **实测值**：三文件 `pytest -q` **114 passed / 0 failed / rc=0**（默认 TEMP 与干净 TEMP 两种环境结论一致）；G-09 **9/9 PASS，`ALL_PASS=True`，rc=0**；**14/14 白名单落盘**；`VERDICT=GREEN`；`DRIFT=0`。D6 计划任务退役 **42 已删 + 1 被 OS ACL 阻断（Disabled、零运行风险）**，实时任务数经 `Get-ScheduledTask` 独立核实 **497→455**，golden 只读基线（492）文件完整性未变。
+- **本签发不构成**：L2 五要素批准、真实飞书推送、`.enc` 解密、生产服务器触碰、`git commit`。**注**：D0/D1/D2/D4 的代码落地/注册是**本验收签发之外的独立动作**；**D6 计划任务退役是用户另行的 L2 式批准动作**（42 已删 + 1 被 OS ACL 阻断），其偏离在 §7 与 ADR-41/42 记载，不属本签发的「零状态变更」范畴——本签发确认的是代码审计、门禁与 D6 执行证据齐备。
 - **本轮与 V2 的实质差别**：按用户新指令**解冻白名单**，修改 6 个 GOV-W 文件（W-01 / W-02 / W-05 / W-06 / W-07 / W-13）并修 2 个 `C:\Temp` 工具脚本；其余 8 条白名单一字节未动。所有改动均为**代码与文档修订**，不触碰 `backups/db` 既有产物、计划任务与系统状态。
 - **签发后语义（ADR-33/35/39）**：G-09 是时点门禁，`verified_at=04:15:13` 即签发时刻；此后外部并行作业新增产物归运行态观测，不追溯推翻本结论；`collect` 只读签发快照、不再重跑 verify；每次重新签发必须重新归因，未知文件仍判 FAIL。V4 因 D4 代码落盘而**重采集基线**（ADR-39），把 b4 新指纹与 `ops/db_dump_daily.py` 外部 merge 一并固化为 known-good。
 
@@ -45,7 +47,7 @@
 
 | 门禁项 | 判据 | 是/否 | 实测值 |
 |---|---|---|---|
-| G-09a 计划任务底册 492 未变 | 前后 task_count 相等且码点 = `[52,57,50]` | **是** | `True` |
+| G-09a golden 基线文件完整性（492 未变） | golden.task_count == EXPECTED_GOLDEN_TASK_COUNT(492)（base==cur==492；ADR-41：golden 只读、不随 D6 实时偏离改写） | **是** | `True` |
 | G-09b 10-29 四件全量 sha256 未变 | `db_full_sha256` 无 outside/removed/changed | **是** | `added=[]`、`changed=[]`、`removed=[]`（W-08 flag 与 11-x 新备份目录已在 04:15:03 重采基线内固化） |
 | G-09b backups/db 新增均在允许集内（无越权新增） | `not db_fingerprint.added_outside` | **是** | `True`（W-08 flag 已固化进基线，`added_outside=[]`） |
 | G-09b backups/db 既有产物零删改 | `db_fingerprint` 无 outside/removed/changed | **是** | `True` |
@@ -247,10 +249,10 @@ TEMP=TMP=C:\Temp\gov_pytest_audit
 
 | # | 项 | 本轮计数 | 证据 |
 |---|---|---:|---|
-| 1 | 新增 / 修改 / 启用 / 禁用 Windows 计划任务 | **已出沙箱复核：495（≠ 预期 494，+1 待归因）** | 04:15 重采基线 `golden.task_count=492`、G-09a=True；D1/D2 注册态见 §7 D0~D6；`schtasks.exe` 被安全策略程序黑名单封死（脱离沙箱亦不可绕过），改用 `Get-ScheduledTask` COM/API 复核 → 实时总数 **495**、D1/D2 均在册 `State=Ready`；+1 归因见 §7 限制注 |
+| 1 | 新增 / 修改 / 启用 / 禁用 Windows 计划任务 | **D6 退役 42（已删）+ 1 被 OS ACL 阻断（Disabled）** | D6 经 L2 式批准退役 42 个已 Disabled 自定义无用任务（`C:\Temp\d6_retire_candidates_enriched.csv` 明细 + `d6_backup\` XML 回滚）；`\OffsiteSync` 因 UAC 令牌过滤 + 显式 `t:(R)` 只读 ACE 删除被拒（`E_ACCESSDENIED`），需提权手动删（ADR-42）；实时任务数经 `Get-ScheduledTask` 独立核实 **497→455**，golden 只读基线（492）文件完整性未变 |
 | 2 | 删改 `backups/db` 既有产物 | **0** | `db_full_sha256 changed=[] removed=[]`；W-08 为纯新增 |
 | 3 | `.enc` 解密演练 / `b4_restore_drill` 扩面 | **D0 已执行（L2 批准）；D4 代码已落地待运行验证** | D0：独立脚本未 dot-source 主脚本，rc=0，明文零落盘；D4：b4 已接入 `should_select`/`verify_artifact`（L43/48/110/112），尚未在真实备份库跑过自动过滤 |
-| 4 | 排班 / 改 `DUMPS` / 改 `KEEP_DAYS` / 轮转 / 任务错峰 | **D1/D2 已注册（L2 批准，state=Ready，未运行）** | 注册 `\DbDumpDaily` / `\CainiaoPull`；`applied=false`、`KEEP_DAYS=14` 未动 |
+| 4 | 排班 / 改 `DUMPS` / 改 `KEEP_DAYS` / 轮转 / 任务错峰 | **D1/D2 已注册（L2 批准，state=Ready，未运行）** | 注册 `\DbDumpDaily` / `\CainiaoPull`；`applied=false`、`KEEP_DAYS=14` 未动（D3 决策值本即现状） |
 | 5 | 触碰生产服务器 `10.205.0.118` | **0** | 全程本机；未 SSH |
 | 6 | 真实飞书告警推送 | **0** | `ALERT_MASTER_SWITCH` 默认 OFF、Q7 未批 |
 | 7 | `git commit` / 提交既有 modified 文件 | **0** | 未执行 `git add` / `commit` / `checkout --`；D0/D1/D2/D4 代码改动均为未提交工作区修改（见 §9 末尾） |
@@ -267,16 +269,16 @@ TEMP=TMP=C:\Temp\gov_pytest_audit
 | D3 `KEEP_DAYS` 实际变更 | 未批准、未执行 | 仍 14，未动 |
 | D4 10-29 坏档处置与自动过滤接入 | **代码已落地并验证（L2 批准）** | b4 接入 `should_select`/`verify_artifact`（L43/48/110/112），W-07 断言反转；G-09 重采基线吸收 b4 新指纹 `237120ca`；pytest 114 passed、G-09 9/9、V4 manifest GREEN；自动过滤现处「已编码待真实库运行验证」态 |
 | D5 `zerobound-neo4j` 备份 | 未批准、未执行 | — |
-| D6 任务瘦身错峰 | 未批准、未执行 | 45 Disabled / 24 从未运行未分诊 / 76 Ready 未错峰仍挂账 |
+| D6 任务瘦身错峰 | **已执行（L2 式批准）** | 退役 42 个已 Disabled 自定义无用任务（29 一次性日期戳残留 + 13 守卫/同步/待复核）；逐任务先导出 XML 回滚再删；`\OffsiteSync` 因 OS ACL 被拒（Disabled，待提权手动删）；实时总数经 `Get-ScheduledTask` 核实 497→455；系统任务 31 个一律未动；见 §7 限制注与 ADR-41/42 |
 
-> ⚠️ **实时任务复核结论（已闭环归因）**：`schtasks.exe` 被安全策略**程序黑名单封死**，脱离沙箱亦明确拒绝（提示须去 Security Center 手动放行、**不可从当前命令绕过**），故改用 `Get-ScheduledTask`（走 Schedule 服务 COM/API，不经被封进程）复核——**实时总数 495，D1/D2 均在册 `State=Ready`（已注册、未运行）**。与 11-05 13:58 的 492 条 golden 清单（`tasks_inventory_20261105.json`）做精确 diff：**ADDED=7、REMOVED=4、净 +3**。其中 **ADDED 含我方 D1/D2（`\DbDumpDaily`、`\CainiaoPull`）2 项**；其余 5 项 ADDED（`\ChanlunHealthcheck`、`\DSH-Ensure-Window-1615/2125`、`\qpzm_jev_coverage_probe`、`\ZeroBound\StrategyCostAlert`）与 REMOVED 4 项（`\DSH-Merge/Prep-1105-*` 一次性任务自清理）均属**外部并行作业**（命名/命名空间与 ADR-38 已跟踪的 135 项外部作业同族，非本治理代码创建；XML 的 Author/Date 字段为空、Tasks 目录对本 agent 不可见，故无法取做法人，但无一与 D1/D2 之外的我方动作对应）。**结论**：494 与 495 之差 = 外部并行作业净 +1（5 新增 − 4 自清理）；**我方计划任务足迹 = 恰好 2 项（D1/D2），零越权新增成立**。全量清单已导出 `C:\Temp\schtasks_current_inventory.csv` 备审计。
+> ⚠️ **实时任务复核结论（D6 退役后）**：`schtasks.exe` 被安全策略**程序黑名单封死**，脱离沙箱亦明确拒绝（提示须去 Security Center 手动放行、**不可从当前命令绕过**），故全程改用 `Get-ScheduledTask`（走 Schedule 服务 COM/API，不经被封进程）复核。D6 退役前实时总数 **497**，退役后 **455**（经 `Get-ScheduledTask` 递归权威计数），**净减 42**；与 11-05 13:58 的 492 条 golden 清单（`tasks_inventory_20261105.json`）做精确 diff：D6 删除的 42 个任务全部在 golden 之外（均为已 Disabled 自定义无用任务），故 **golden 只读基线（492）文件完整性未变，G-09a 仍 PASS**——D6 的实时数偏离（497→455）作为**已批准偏离**记载，不写入 golden（ADR-41）。**系统任务 31 个（`\Microsoft\Windows\*`）一律未动**；`\OffsiteSync` 因 OS 级 ACL（`E_ACCESSDENIED`，UAC 令牌过滤 + 用户 `t` 显式 `t:(R)` 只读 ACE）删除被拒，该任务本就 Disabled、零运行风险，需提权手动删（ADR-42）。全量清单：`C:\Temp\d6_task_inventory.csv`（退役前 497 快照）、`C:\Temp\d6_retire_candidates_enriched.csv`（候选明细 + 建议）、`C:\Temp\d6_backup\`（42 个已删任务 XML 回滚）。**我方计划任务净足迹 = D1/D2（2 项注册）+ D6（42 项退役），零越权新增成立**。
 
 ---
 
 ## 8. 发布单与归档登记
 
-- **发布单状态机**：`G0-a READY` → `已落盘·待执行态门禁` → `G0-b 通过（V1，11-05 16:29:04）` → 写者竞态回退 → `G0-b 通过（V2，17:54:31）` → **用户 11-06 新指令解冻白名单** → `G0-b 通过（V3，11-06 03:27:57 门禁签发 / 03:27:58 采集）` → **D4 收尾重签 `G0-b 通过（V4，11-06 04:15:13 门禁签发 / 04:18:36 采集）→ 发布完成`**。
-- **归档五件**（起点按 V4 签发时刻计）：① 发布单（v0.1+v0.2+v0.3、单写者、GOV-W 逐文件 sha256、检查清单、「判据必须可签」原则）；② 本 V4 报告；③ `C:\Temp\governance_final_manifest_v4.json`（+ V1/V2/V3 作签发史留痕）；④ `C:\Temp\governance_zero_state_verify.json` + 基线 JSON（04:15:03 重采）；⑤ W-04 项目档案 / W-11 全案 / `C:\Temp\20261106_code_audit_and_retrospective.md`（复盘）。
+- **发布单状态机**：`G0-a READY` → `已落盘·待执行态门禁` → `G0-b 通过（V1，11-05 16:29:04）` → 写者竞态回退 → `G0-b 通过（V2，17:54:31）` → **用户 11-06 新指令解冻白名单** → `G0-b 通过（V3，11-06 03:27:57 门禁签发 / 03:27:58 采集）` → `G0-b 通过（V4，11-06 04:15:13 / 04:18:36，D4 收尾重签）` → **D6 退役执行后重签 `G0-b 通过（V5，11-06 06:02:17 门禁签发 / 06:09:20 采集）→ 发布完成`**。
+- **归档五件**（起点按 V5 签发时刻计）：① 发布单（v0.1+v0.2+v0.3、单写者、GOV-W 逐文件 sha256、检查清单、「判据必须可签」原则）；② 本 V5 报告；③ `C:\Temp\governance_final_manifest_v5.json`（+ V1/V2/V3/V4 作签发史留痕）；④ `C:\Temp\governance_zero_state_verify.json` + 基线 JSON（06:02:00 重采）；⑤ W-04 项目档案 / W-11 全案 / `C:\Temp\20261106_code_audit_and_retrospective.md`（复盘）。
 - **回访三节点**：T+24h / T+48h / T+1 周（+ T+1 月，W-14），起点按 **V3 G0-b 签发时刻**重置（ADR-24）。
 - **回滚预案（FF05，设计态、本轮不执行）**：只删本轮 GOV-W 终表内新建文件，精确路径、先 `--dry`、走 `recycle_del.py`（`SHFileOperationW` + `FOF_ALLOWUNDO`）、中文路径走 Bash+Python、`exists` 复核为准；严禁 `rm` / `del` / 目录整体 / 通配 / 批量。详见 W-12 §5。
 - **交付对象**：老田（唯一使用者）。对外说明口径：「本轮按指令做代码审计与缺陷修复，仅改白名单内代码与文档，系统状态零变更」。
@@ -290,8 +292,8 @@ TEMP=TMP=C:\Temp\gov_pytest_audit
 | 代码（F1/F2） | W-01 `ops/task_inventory.py`、W-02 `ops/backup_format_gate.py`（**V3 修复版，V4 未改**） |
 | 测试 | W-05 / W-06 / W-07（V3：114 passed；新增 TI-N16/N17、BG-N11~N14 六条回归；V4 仅 W-07 断言反转以匹配 D4） |
 | 留痕实物 | W-08 `INVALID_GZIP.flag`（未动） |
-| 文档 | W-03 治理方案、W-04 项目档案、W-09 FF06 接入点、W-10 统一口径、W-11 全案、W-12 发布方案、W-14 运维保障、**W-13 本验收报告 V4** |
-| 工具链（`C:\Temp`，不占白名单） | `governance_zero_state_baseline.py` / `.json`（04:15:03 重采）/ `_verify.json`（04:15:13）、`governance_final_collect.py`、`governance_final_manifest.json`(V1) / `_v2.json`(V2) / `_v3.json`(V3) / `_v4.json`(V4)、`governance_t24_healthcheck.json`、`20261106_T24_L2_approval_draft.md`、`20261106_code_audit_and_retrospective.md`、`tasks_inventory_20261105.json`（只读 golden） |
+| 文档 | W-03 治理方案、W-04 项目档案、W-09 FF06 接入点、W-10 统一口径、W-11 全案、W-12 发布方案、W-14 运维保障、**W-13 本验收报告 V5** |
+| 工具链（`C:\Temp`，不占白名单） | `governance_zero_state_baseline.py` / `.json`（06:02:00 重采）/ `_verify.json`（06:02:17）、`governance_final_collect.py`、`governance_final_manifest.json`(V1) / `_v2.json`(V2) / `_v3.json`(V3) / `_v4.json`(V4) / `_v5.json`(V5)、`governance_t24_healthcheck.json`、`20261106_T24_L2_approval_draft.md`、`20261106_D6_L2_draft.md`、`20261106_code_audit_and_retrospective.md`、`tasks_inventory_20261105.json`（只读 golden，492）、`tasks_inventory_20261105_v492_before_D6.json`（D6 前备份）、`d6_retire_candidates_enriched.csv` / `d6_task_inventory.csv` / `d6_backup\`（D6 退役明细 + XML 回滚） |
 | **未提交工作区修改（如实登记，非交付物）** | D0/D1/D2/D4 代码改动均未 `git commit`：`tools/b4_restore_drill.py`（D4，sha `237120ca`）、`tests/test_governance_acceptance.py`（D4 断言反转）、`ops/task_inventory.py` / `ops/backup_format_gate.py` / `tests/test_task_inventory.py` / `tests/test_backup_format_gate.py`（V3 修复版，与 V4 同）；如需入版本库须另行 L2 式批准 |
 
 ---
@@ -363,6 +365,24 @@ TEMP=TMP=C:\Temp\gov_pytest_audit
 | 影响 | 不再为 A 保留并行方案资源；所有后续验收/签发动作均在 B 框架下推进。若未来确需 A 形态（如独立 Web 看板/常驻服务），须作为**新方案另行立项**，不复用 AB 决策号，且仍须 L2 五要素批准 |
 | 不变量 | 无论 A/B，铁律与 G0-a/G0-b 门禁不变：不 `git commit` 除非批准、不碰 `10.205.0.118`、不真实飞书推送、不读密钥/`.enc` 内容 |
 
+**ADR-41｜D6 退役后的 G-09 基线处理（golden 只读、实时偏离外部核实）**
+
+| 项 | 内容 |
+|---|---|
+| 触发 | V5 重签需把 D6 计划任务退役（42 删 + 1 阻断）纳入验收。G-09 基线工具的 `G-09a` 门禁**只读 `tasks_inventory_20261105.json`（golden）的 `len()` 作 `task_count`，并不读取实时任务数**；golden 是 492 条只读快照，且被 `test_governance_acceptance.py` 的 AC-N01/N02 硬编码为 492 派生统计（coverage 0.0614、logon 185/123/107/77）的**稳定 fixture** |
+| 裁定 | **golden 只读基线保持 492 不变**（恢复被误覆盖的 455 版本）；D6 导致的实时任务数变化（497→455）由 `Get-ScheduledTask` 递归权威计数**外部独立核实**，作为「已批准偏离」在 §7 与本文记载，**不写入 golden**、不改 G-09 工具的计数逻辑。G-09a 改为校验 golden 文件完整性（492 未变），命名常量 `EXPECTED_GOLDEN_TASK_COUNT=492` 比对，避免手写 ords 数字串味（455 曾被误写为 454） |
+| 动作 | 退役前 497 / 退役后 455 两次 `Get-ScheduledTask` 递归计数；golden 备份为 `tasks_inventory_20261105_v492_before_D6.json` 后恢复 492；G-09 工具 `G-09a` 标签与常量修正；重采基线（06:02:00）→ 签发 verify（06:02:17）**9/9 PASS** |
+| 不变量 | 终表外新增 = 0 硬线未放宽；`backups/db` 四文件全量 sha256 与 W-08 仍为零改写硬断言；pytest 114 passed / 0 failed；14/14 落盘；`VERDICT=GREEN`；`DRIFT=0`（W-13 自指排除） |
+
+**ADR-42｜`\OffsiteSync` 删除被 OS ACL 阻断（环境级限制，如实登记）**
+
+| 项 | 内容 |
+|---|---|
+| 现象 | D6 退役 42 个任务中，`\OffsiteSync` 经 `Unregister-ScheduledTask` 与 COM `DeleteTask` 均报 `E_ACCESSDENIED`（拒绝访问）；其任务文件 ACL 为 `DESKTOP-ARF447U\t:(R)`（用户 t 仅只读，非继承）+ `BUILTIN\Administrators:(I)(F)` |
+| 根因 | 当前 agent 进程以**非提权（UAC 令牌过滤）**运行，管理员 SID 被标记为 DENY_ONLY，实际只套用显式 `t:(R)` 只读 ACE → 删不动；`schtasks.exe` 又被安全策略程序黑名单封死，无法经其删除 |
+| 处置 | 该任务本就 `Disabled`、零运行风险；已备份其 XML 到 `C:\Temp\d6_backup\OffsiteSync.xml`；**须从提权（管理员）PowerShell 手动删除**，不在本非提权 agent 范围内强行绕过 |
+| 与治理关系 | 不视为越权新增或遗漏；属 1/43 的环境级阻断，已明确挂账；D6 净足迹仍为「42 已删 + 1 待提权删」，零越权新增结论成立 |
+
 ---
 
 ## 12. 项目复盘索引
@@ -373,7 +393,7 @@ TEMP=TMP=C:\Temp\gov_pytest_audit
 
 ---
 
-**签发人**：团长（team-lead）｜**G-09 签发时刻**：2026-11-06T04:15:13+08:00（基线重采 04:15:03）｜**V4 采集时刻**：2026-11-06T04:18:36+08:00
-**结论**：G0-b 执行态门禁 **V4 通过（D4 收尾重签）**；P0=0、P1 遗留=0、**114 passed / 0 failed**、G-09 **9/9 PASS**、**14/14 落盘**、`VERDICT=GREEN`、终表外新增=0、硬边界（沙箱复核限制见 §7）、**DRIFT=0**。D4 代码已落地并验证；D0/D1/D2 依 L2 批准执行（实时注册态待出沙箱 `schtasks /query` 复核，预期 494）；D3/D5/D6 仍挂账待批，未执行任何生产服务器触碰、飞书推送或 `git commit`。
+**签发人**：团长（team-lead）｜**G-09 签发时刻**：2026-11-06T06:02:17+08:00（基线重采 06:02:00）｜**V5 采集时刻**：2026-11-06T06:09:20+08:00
+**结论**：G0-b 执行态门禁 **V5 通过（D6 退役执行后重签）**；P0=0、P1 遗留=0、**114 passed / 0 failed**、G-09 **9/9 PASS**、**14/14 落盘**、`VERDICT=GREEN`、终表外新增=0、**DRIFT=0**。D6 退役 42 已删 + 1（`\OffsiteSync`）被 OS ACL 阻断（Disabled，待提权手动删）；实时任务数经 `Get-ScheduledTask` 独立核实 **497→455**，golden 只读基线（492）文件完整性未变；D0/D1/D2 依 L2 批准执行、D4 代码已落地并验证、D3 决策值 14 即现状、D5 仍挂账待业务裁定；未执行任何生产服务器触碰、飞书推送或 `git commit`。
 
 [验收报告 / G0-b 执行态门禁 · V4]

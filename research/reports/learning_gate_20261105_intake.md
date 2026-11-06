@@ -1,6 +1,6 @@
 # 学习门禁报告
 
-> 2026-11-05T15:33:16+08:00｜stage=intake｜项目 6｜检查 6｜失败 0
+> 2026-11-05T23:33:16+08:00｜stage=intake｜项目 6｜检查 6｜失败 0
 
 ## learnpdf_liangxue（archived）
 - ✅ archive

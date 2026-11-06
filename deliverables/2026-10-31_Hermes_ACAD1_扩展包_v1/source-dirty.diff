@@ -1,214 +1,995 @@
+diff --git a/code/frontend/index.html b/code/frontend/index.html
+index c755eb0..7be56d1 100644
+--- a/code/frontend/index.html
++++ b/code/frontend/index.html
+@@ -5,7 +5,7 @@
+     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+-    <title>老田的量化决策</title>
++    <title>司马徽 · 零界量化</title>
+   </head>
+   <body>
+     <div id="root"></div>
 diff --git a/code/frontend/src/App.tsx b/code/frontend/src/App.tsx
-index e8f9806..920b62f 100644
+index 74d8aab..c125d5f 100644
 --- a/code/frontend/src/App.tsx
 +++ b/code/frontend/src/App.tsx
-@@ -5,8 +5,6 @@ import CommandPalette from './components/CommandPalette';
- import BigscreenLayout from './layouts/BigscreenLayout';
- import WorkspaceLayout from './layouts/WorkspaceLayout';
- import { GROUP_KEYS, LEGACY_REDIRECTS, MARKET_ROUTES } from './config/navigation';
--import LoginPage from './pages/LoginPage';
--import RegisterPage from './pages/RegisterPage';
- import ProfilePage from './pages/ProfilePage';
- import BillingPage from './pages/BillingPage';
- import HomeBigscreen from './pages/home/HomeBigscreen';
-@@ -124,9 +122,9 @@ export default function App() {
+@@ -1,3 +1,4 @@
++import { useEffect } from 'react';
+ import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
+ import ProtectedRoute from './components/ProtectedRoute';
+ import { Toast } from './components/Toast';
+@@ -21,6 +22,17 @@ import BaseSignalsPage from './pages/BaseSignalsPage';
+ import Acad1ComparePage from './pages/Acad1ComparePage';
+ import AgentWorkbenchPage from './pages/AgentWorkbenchPage';
+ import SystemGroup from './pages/groups/SystemGroup';
++import LoginPage from './pages/LoginPage';
++import { portalLoginUrl } from './services/portalAuth';
++import RegisterPage from './pages/RegisterPage';
++
++/** 单点登录：量化 app 不再显示第二套登录页，直接回门户登录。 */
++function PortalLoginRedirect() {
++  const loc = useLocation();
++  const from = (loc.state as { from?: string } | null)?.from;
++  useEffect(() => { window.location.replace(portalLoginUrl(from)); }, [from]);
++  return null;
++}
+ 
+ /* ============ 路由段合法性 ============ */
+ 
+@@ -117,7 +129,7 @@ export default function App() {
+         </Route>
+ 
+         {/* 首页 = 选股全景动线（工作区壳），作为复盘/回测/策略逻辑/智能体的引导页 */}
+-        <Route path="/" element={<ProtectedRoute><Navigate to="/cn/replay?tab=flow" replace /></ProtectedRoute>} />
++        <Route path="/" element={<ProtectedRoute><Navigate to="/cn/overview" replace /></ProtectedRoute>} />
+ 
+         {/* ACAD1 候选横向比较：/:market/acad1-compare */}
+         <Route path="/:market/acad1-compare" element={<ProtectedRoute><WorkspaceLayout /></ProtectedRoute>}>
+@@ -153,9 +165,9 @@ export default function App() {
          </Route>
          <Route path="/:market" element={<MarketIndexRedirect />} />
  
--        {/* 登录/注册（公开，不进 ProtectedRoute） */}
--        <Route path="/login" element={<LoginPage />} />
--        <Route path="/register" element={<RegisterPage />} />
-+        {/* 不展示登录/注册页：旧地址直接回首页（本地自动会话） */}
-+        <Route path="/login" element={<Navigate to="/" replace />} />
-+        <Route path="/register" element={<Navigate to="/" replace />} />
+-        {/* 不展示登录/注册页：旧地址直接回首页（本地自动会话） */}
+-        <Route path="/login" element={<Navigate to="/" replace />} />
+-        <Route path="/register" element={<Navigate to="/" replace />} />
++        {/* 登录/注册：不再重定向到 /，避免无 token 时 /login ↔ / 无限循环 */}
++        <Route path="/login" element={<PortalLoginRedirect />} />
++        <Route path="/register" element={<RegisterPage />} />
          {/* 个人中心（需登录） */}
          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
          <Route path="/billing" element={<ProtectedRoute><BillingPage /></ProtectedRoute>} />
 diff --git a/code/frontend/src/components/ProtectedRoute.tsx b/code/frontend/src/components/ProtectedRoute.tsx
-index 221b500..80e44e1 100644
+index 221b500..f6a6b4e 100644
 --- a/code/frontend/src/components/ProtectedRoute.tsx
 +++ b/code/frontend/src/components/ProtectedRoute.tsx
-@@ -1,4 +1,5 @@
+@@ -1,45 +1,51 @@
  import { useState, useEffect } from 'react';
-+import { ensureAutoSession } from '../services/autoSession';
  import { Navigate, useLocation } from 'react-router-dom';
  import type { ReactNode } from 'react';
++import { bootstrapPortalSession } from '../services/portalAuth';
++import { authHeaders } from '../services/api';
  
-@@ -9,7 +10,10 @@ export default function ProtectedRoute({ children }: { children: ReactNode }) {
+ export default function ProtectedRoute({ children }: { children: ReactNode }) {
+   const [status, setStatus] = useState<'checking' | 'valid' | 'invalid'>('checking');
+   const location = useLocation();
+-  const token = localStorage.getItem('zhice_token');
  
    useEffect(() => {
-     if (!token) {
+-    if (!token) {
 -      setStatus('invalid');
-+      // 本地直入：首次访问自动注册/登录，不再展示登录页
-+      ensureAutoSession()
-+        .then((newToken) => setStatus(newToken ? 'valid' : 'invalid'))
-+        .catch(() => setStatus('invalid'));
-       return;
-     }
-     // 向后端验证 token 真实性
-@@ -38,8 +42,12 @@ export default function ProtectedRoute({ children }: { children: ReactNode }) {
+-      return;
+-    }
+-    // 向后端验证 token 真实性
+-    fetch('/api/v1/auth/me', {
+-      headers: { 'Authorization': `Bearer ${token}` },
+-    })
+-      .then(async res => {
++    let alive = true;
++    (async () => {
++      let token = localStorage.getItem('zhice_token');
++      // 单点登录：先用门户 zb_session 换量化 token；失败则回门户登录。
++      if (!token) {
++        await bootstrapPortalSession();
++        token = localStorage.getItem('zhice_token');
++      }
++      if (!token) {
++        if (alive) setStatus('invalid');
++        return;
++      }
++      try {
++        const res = await fetch('/quant-api/api/v1/auth/me', { headers: authHeaders() });
+         if (res.ok) {
+-          if (typeof res.json === 'function') {
+-            const currentUser = await res.json() as { role?: string };
+-            if (currentUser.role) localStorage.setItem('zhice_role', currentUser.role);
+-          }
+-          setStatus('valid');
++          const currentUser = await res.json() as { role?: string };
++          if (currentUser.role) localStorage.setItem('zhice_role', currentUser.role);
++          if (alive) setStatus('valid');
+         } else {
+-          // token 无效或已过期，清除本地缓存并跳转登录
+           localStorage.removeItem('zhice_token');
+           localStorage.removeItem('zhice_role');
+-          setStatus('invalid');
++          await bootstrapPortalSession();
++          if (localStorage.getItem('zhice_token')) {
++            if (alive) setStatus('valid');
++          } else if (alive) {
++            setStatus('invalid');
++          }
+         }
+-      })
+-      .catch(() => {
+-        // 网络故障时放行，避免因网络抖动强制退出
+-        setStatus('valid');
+-      });
+-  }, [token]);
++      } catch {
++        // 网络抖动不强制退出
++        if (alive) setStatus('valid');
++      }
++    })();
++    return () => { alive = false; };
++  }, []);
  
-   if (status === 'checking') return null; // 验证期间不渲染，避免闪跳
-   if (status === 'invalid') {
+-  if (status === 'checking') return null; // 验证期间不渲染，避免闪跳
+-  if (status === 'invalid') {
 -    // 将来源路径传给登录页，登录成功后可跳回
 -    return <Navigate to="/login" state={{ from: location.pathname + location.search }} replace />;
-+    // 不出现登录页：自动会话失败时给出明确错误，不跳登录
-+    return (
-+      <div style={{ padding: 24, color: '#ff7b72' }}>
-+        本地会话建立失败，请检查后端服务后刷新页面（已禁用登录页）
-+      </div>
-+    );
-   }
+-  }
++  if (status === 'checking') return null;
++  if (status === 'invalid') return <Navigate to="/login" state={{ from: location.pathname + location.search }} replace />;
    return <>{children}</>;
  }
-diff --git a/code/frontend/src/main.tsx b/code/frontend/src/main.tsx
-index 0f6686e..9282700 100644
---- a/code/frontend/src/main.tsx
-+++ b/code/frontend/src/main.tsx
-@@ -1,7 +1,7 @@
- import { ConfigProvider, theme } from 'antd';
- import React from 'react';
- import ReactDOM from 'react-dom/client';
--import { BrowserRouter } from 'react-router-dom';
-+import { BrowserRouter, HashRouter } from 'react-router-dom';
+diff --git a/code/frontend/src/components/admin-entitlements/EntitlementDrawer.tsx b/code/frontend/src/components/admin-entitlements/EntitlementDrawer.tsx
+index 10593b5..d3adf09 100644
+--- a/code/frontend/src/components/admin-entitlements/EntitlementDrawer.tsx
++++ b/code/frontend/src/components/admin-entitlements/EntitlementDrawer.tsx
+@@ -21,6 +21,7 @@ import {
+   type EffectiveStatus, type UserDetail, type SubscriptionDetail,
+   type AuditView, type GrantableStrategy, type EntitlementMode,
+ } from './entitlementModel';
++import { goPortalLogin } from '../../services/portalAuth';
  
- import App from './App';
- import { LanguageProvider, useLang } from './contexts/LanguageContext';
-@@ -29,12 +29,20 @@ function AppShell() {
-         },
-       }}
-     >
--      <BrowserRouter>
-+      {import.meta.env.VITE_ROUTER === 'hash' ? (
-+      <HashRouter>
-+        <MarketProvider>
-+          <App />
-+        </MarketProvider>
-+      </HashRouter>
-+    ) : (
-+    <BrowserRouter basename={(import.meta.env.BASE_URL || '/').replace(/\/$/, '') || '/'}>
-         {/* MarketProvider 需在 Router 内（market 由 useParams 派生） */}
-         <MarketProvider>
-           <App />
-         </MarketProvider>
-       </BrowserRouter>
-+    )}
-     </ConfigProvider>
-   );
- }
+ const ALL_ROLES = ['ADMIN', 'USER', 'TRADER', 'RESEARCHER', 'RISK_MANAGER', 'VIEWER'];
+ const ROLE_LABEL_KEYS: Record<string, string> = {
+@@ -130,7 +131,7 @@ export default function EntitlementDrawer({ userId, open, onClose, onChanged, ac
+   const logoutSelf = () => {
+     localStorage.removeItem('zhice_token');
+     localStorage.removeItem('zhice_role');
+-    window.location.href = '/login';
++    goPortalLogin();
+   };
+ 
+   /** 写操作统一执行：成功→（自定义 onSuccess 或 默认 reload+onChanged）；
+diff --git a/code/frontend/src/components/strategy/EnableStrategyWizard.tsx b/code/frontend/src/components/strategy/EnableStrategyWizard.tsx
+index 28df167..307f33d 100644
+--- a/code/frontend/src/components/strategy/EnableStrategyWizard.tsx
++++ b/code/frontend/src/components/strategy/EnableStrategyWizard.tsx
+@@ -69,6 +69,10 @@ export default function EnableStrategyWizard({ open, strategy, onClose, onDone }
+   };
+ 
+   const submit = async () => {
++    if (strategy.is_research) {
++      setError('该策略是研究条目，不可启用；请查看策略市场的研究结论。');
++      return;
++    }
+     setSubmitting(true);
+     try {
+       const created = await createMyInstance(buildCreateBody(state));
+diff --git a/code/frontend/src/i18n/locales/en/errors.json b/code/frontend/src/i18n/locales/en/errors.json
+index 75e2989..bb93059 100644
+--- a/code/frontend/src/i18n/locales/en/errors.json
++++ b/code/frontend/src/i18n/locales/en/errors.json
+@@ -76,6 +76,7 @@
+     "invalid": "Invalid market code (must be CN/US/HK/CRYPTO)"
+   },
+   "strategy": {
++    "research_not_tradable": "Research strategy cannot be enabled; see its market verdict",
+     "spec_invalid": "Invalid strategy spec",
+     "market_mismatch": "market does not match spec.market",
+     "not_found": "Strategy not found",
+diff --git a/code/frontend/src/i18n/locales/zh/errors.json b/code/frontend/src/i18n/locales/zh/errors.json
+index 98dc93c..5465134 100644
+--- a/code/frontend/src/i18n/locales/zh/errors.json
++++ b/code/frontend/src/i18n/locales/zh/errors.json
+@@ -76,6 +76,7 @@
+     "invalid": "市场代码非法（须为 CN/US/HK/CRYPTO）"
+   },
+   "strategy": {
++    "research_not_tradable": "研究策略不可启用；请查看策略市场的研究结论",
+     "spec_invalid": "策略 spec 校验失败",
+     "market_mismatch": "market 与 spec.market 不一致",
+     "not_found": "策略不存在",
+diff --git a/code/frontend/src/i18n/locales/zh/p_ops.json b/code/frontend/src/i18n/locales/zh/p_ops.json
+index 1db5805..e7966d3 100644
+--- a/code/frontend/src/i18n/locales/zh/p_ops.json
++++ b/code/frontend/src/i18n/locales/zh/p_ops.json
+@@ -403,8 +403,8 @@
+   "strategiesGroup": {
+     "title": "策略管理",
+     "detail": "详情 {{id}}",
+-    "meta": "策略广场 · 策略版本 · 策略绩效 · AI研究 · 回测 · 模型与实验 · 基本面 · 市场状态",
+-    "tabCatalog": "策略广场",
++    "meta": "策略市场 · 策略版本 · 策略绩效 · AI研究 · 回测 · 模型与实验 · 基本面 · 市场状态",
++    "tabCatalog": "策略市场",
+     "tabMine": "我的策略",
+     "tabRunning": "运行实例",
+     "tabAccounts": "我的账户",
+diff --git a/code/frontend/src/i18n/locales/zh/p_strategy.json b/code/frontend/src/i18n/locales/zh/p_strategy.json
+index 8a7b6f6..c8e6074 100644
+--- a/code/frontend/src/i18n/locales/zh/p_strategy.json
++++ b/code/frontend/src/i18n/locales/zh/p_strategy.json
+@@ -459,7 +459,7 @@
+     "msgDeleted": "策略已删除"
+   },
+   "strategyCatalog": {
+-    "title": "策略广场",
++    "title": "策略市场",
+     "hint": "从公共目录挑选策略，一键启用到本人账户",
+     "useBtn": "使用策略",
+     "msgEnabled": "策略已启用"
+diff --git a/code/frontend/src/layouts/WorkspaceLayout.tsx b/code/frontend/src/layouts/WorkspaceLayout.tsx
+index 18c9b66..a91de1e 100644
+--- a/code/frontend/src/layouts/WorkspaceLayout.tsx
++++ b/code/frontend/src/layouts/WorkspaceLayout.tsx
+@@ -2,6 +2,7 @@ import { Dropdown } from 'antd';
+ import { useEffect, useState } from 'react';
+ import { useTranslation } from 'react-i18next';
+ import { Outlet, useNavigate, useParams } from 'react-router-dom';
++import { portalLogout } from '../services/portalAuth';
+ import { NAV_GROUPS, MARKET_ROUTES } from '../config/navigation';
+ import { useMarket, type Market } from '../contexts/MarketContext';
+ import { openCommandPalette, MODK_HINT } from '../components/CommandPalette';
+@@ -100,7 +101,7 @@ export default function WorkspaceLayout() {
+ 
+       <header className="ws-top">
+         <button className="ws-logo" onClick={() => navigate('/')} title={t('shell.backToBigscreen')}>
+-          <span>司马徽研究院</span>
++          <span>司马徽 · 零界量化</span>
+         </button>
+ 
+         <nav className="mk-tabs">
+@@ -140,9 +141,7 @@ export default function WorkspaceLayout() {
+                 { key: 'billing', label: t('shell.billing'), onClick: () => navigate('/billing') },
+                 { type: 'divider' },
+                 { key: 'logout', label: t('shell.logout'), onClick: () => {
+-                  localStorage.removeItem('zhice_token');
+-                  localStorage.removeItem('zhice_role');
+-                  navigate('/login');
++                  void portalLogout();
+                 } },
+               ],
+             }}
+diff --git a/code/frontend/src/pages/LoginPage.tsx b/code/frontend/src/pages/LoginPage.tsx
+index 645655a..861903a 100644
+--- a/code/frontend/src/pages/LoginPage.tsx
++++ b/code/frontend/src/pages/LoginPage.tsx
+@@ -57,7 +57,7 @@ export default function LoginPage() {
+       <div className="bg-glow g3" />
+ 
+       <section className="auth-brand">
+-        <div style={{ fontSize: 38, fontWeight: 700, letterSpacing: 4, color: '#e8c27a' }}>司马徽研究院</div>
++        <div style={{ fontSize: 38, fontWeight: 700, letterSpacing: 4, color: '#e8c27a' }}>司马徽 · 零界量化</div>
+         <div className="auth-brand-sub">
+           {t('login.brandSub', { markets: MARKETS.map((m) => t('market.' + m, { ns: 'common' })).join(' · ') })}
+         </div>
+diff --git a/code/frontend/src/pages/MyStrategyInstancesPage.tsx b/code/frontend/src/pages/MyStrategyInstancesPage.tsx
+index 8107c9c..742b7ec 100644
+--- a/code/frontend/src/pages/MyStrategyInstancesPage.tsx
++++ b/code/frontend/src/pages/MyStrategyInstancesPage.tsx
+@@ -24,17 +24,23 @@
+ import { useCallback, useEffect, useMemo, useState } from 'react';
+ import { useTranslation } from 'react-i18next';
+ import {
+-  Alert, Button, Modal, Popconfirm, Select, Space, Switch, Table, Tag, Typography, message,
++  Alert, Button, Card, Col, Modal, Popconfirm, Row, Select, Space, Statistic, Switch,
++  Table, Tag, Typography, message,
+ } from 'antd';
+ import type { ColumnsType } from 'antd/es/table';
+ import {
+   deleteMyInstance,
+   disableMyInstance,
+   enableMyInstance,
++  getAdminInstanceOverview,
++  getInstanceOverview,
+   listMyInstances,
+   listMyStrategies,
+   requestUpgrade,
+   updateMyInstance,
++  type AdminInstanceOverview,
++  type AdminInstanceOverviewItem,
++  type InstanceOverview,
+   type MyStrategy,
+   type MyStrategyInstance,
+   type MyStrategyVersionBrief,
+@@ -63,10 +69,12 @@ interface VersionRef {
+ export default function MyStrategyInstancesPage() {
+   const { t } = useTranslation('pages');
+   const { market } = useMarket();
+-  const { canManageOwn } = useRole();
++  const { canManageOwn, canManagePlatform } = useRole();
+   const [rows, setRows] = useState<MyStrategyInstance[]>([]);
+   const [accounts, setAccounts] = useState<MyAccount[]>([]);
+   const [strategies, setStrategies] = useState<MyStrategy[]>([]);
++  const [overview, setOverview] = useState<InstanceOverview | null>(null);
++  const [adminOverview, setAdminOverview] = useState<AdminInstanceOverview | null>(null);
+   const [loading, setLoading] = useState(false);
+ 
+   // 升级确认弹窗
+@@ -80,19 +88,23 @@ export default function MyStrategyInstancesPage() {
+ 
+   const load = useCallback(() => {
+     setLoading(true);
+-    Promise.all([listMyInstances(market), listMyAccounts(market), listMyStrategies(market)])
+-      .then(([insts, accs, ss]) => {
++    // 每个请求独立降级：admin 全局总览失败不能把 owner 车位清空。
++    Promise.all([
++      listMyInstances(market).catch(() => []),
++      listMyAccounts(market).catch(() => []),
++      listMyStrategies(market).catch(() => []),
++      getInstanceOverview(market).catch(() => null),
++      canManagePlatform ? getAdminInstanceOverview(market).catch(() => null) : Promise.resolve(null),
++    ])
++      .then(([insts, accs, ss, ov, adminOv]) => {
+         setRows(insts);
+         setAccounts(accs);
+         setStrategies(ss);
+-      })
+-      .catch(() => {
+-        setRows([]);
+-        setAccounts([]);
+-        setStrategies([]);
++        setOverview(ov);
++        setAdminOverview(adminOv);
+       })
+       .finally(() => setLoading(false));
+-  }, [market]);
++  }, [market, canManagePlatform]);
+ 
+   useEffect(() => { load(); }, [load]);
+ 
+@@ -246,6 +258,29 @@ export default function MyStrategyInstancesPage() {
+     { title: t('runningInstances.colQuota'), dataIndex: 'capital_quota', key: 'capital_quota', width: 100, align: 'right',
+       render: (v: string | null) => (v === null ? '—' : v) },
+     { title: t('runningInstances.colMaxRatio'), dataIndex: 'max_position_ratio', key: 'max_position_ratio', width: 90, align: 'right' },
++    { title: '最近运行', key: 'last_run_at', width: 145,
++      render: (_: unknown, r) => {
++        const it = overview?.items.find(x => x.user_strategy_id === r.user_strategy_id);
++        return it?.last_run_at ? <Text style={{ fontSize: 12 }}>{fmtRequestTime(it.last_run_at)}</Text> : <Text type="secondary">—</Text>;
++      } },
++    { title: '选股', key: 'selected_count', width: 80, align: 'right',
++      render: (_: unknown, r) => {
++        const it = overview?.items.find(x => x.user_strategy_id === r.user_strategy_id);
++        return it ? `${it.selected_count} 只` : '—';
++      } },
++    { title: '模拟交易', key: 'sim', width: 125,
++      render: (_: unknown, r) => {
++        const it = overview?.items.find(x => x.user_strategy_id === r.user_strategy_id);
++        if (!it) return <Text type="secondary">—</Text>;
++        return (
++          <Space direction="vertical" size={0}>
++            <Tag color={it.has_simulated_trades ? 'green' : 'default'}>
++              {it.has_simulated_trades ? `已交易 ${it.sim_order_count} 单` : '无模拟单'}
++            </Tag>
++            <Text type="secondary" style={{ fontSize: 11 }}>持仓 {it.sim_position_count} 只</Text>
++          </Space>
++        );
++      } },
+     { title: t('runningInstances.colUpgrade'), key: 'upgrade', width: 320, render: (_: unknown, r) => {
+       // pending 优先：已确认升级则只展示等待平仓切换，不再提供确认按钮
+       if (r.pending_upgrade_version_id) {
+@@ -306,6 +341,24 @@ export default function MyStrategyInstancesPage() {
+     ) },
+   ];
+ 
++  const display = adminOverview
++    ? {
++        running: adminOverview.summary.running_slots,
++        total: adminOverview.summary.total_slots,
++        selected: adminOverview.items.filter(x => x.enabled).reduce((n, x) => n + x.selected_count, 0),
++        withSim: adminOverview.summary.slots_with_sim_trades,
++        withoutSim: adminOverview.summary.slots_without_sim_trades,
++        label: '全平台',
++      }
++    : {
++        running: overview?.summary.running_slots ?? 0,
++        total: overview?.summary.total_slots ?? 0,
++        selected: overview?.summary.selected_latest ?? 0,
++        withSim: overview?.summary.slots_with_sim_trades ?? 0,
++        withoutSim: overview?.summary.slots_without_sim_trades ?? 0,
++        label: '我的',
++      };
++
+   return (
+     <div>
+       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+@@ -318,13 +371,73 @@ export default function MyStrategyInstancesPage() {
+         <Button onClick={load}>{t('strategies.refresh')}</Button>
+       </div>
+ 
++      {(overview || adminOverview) && (
++        <Row gutter={12} style={{ marginBottom: 12 }}>
++          <Col xs={12} md={6}><Card size="small"><Statistic title={`${display.label}在跑车位`} value={display.running} suffix={`/ ${display.total}`} /></Card></Col>
++          <Col xs={12} md={6}><Card size="small"><Statistic title={`${display.label}最新选股`} value={display.selected} suffix="只" /></Card></Col>
++          <Col xs={12} md={6}><Card size="small"><Statistic title={`${display.label}有模拟交易车位`} value={display.withSim} /></Card></Col>
++          <Col xs={12} md={6}><Card size="small"><Statistic title={`${display.label}无模拟交易车位`} value={display.withoutSim} /></Card></Col>
++        </Row>
++      )}
++
++      {!rows.length && !adminOverview && (
++        <Alert
++          type="info"
++          showIcon
++          style={{ marginBottom: 12 }}
++          message="当前账号没有自有运行车位"
++          description="运行实例按登录账户隔离；全平台明细需要管理员权限，若已开通管理员请刷新重试。"
++        />
++      )}
++      {!rows.length && adminOverview && (
++        <Alert
++          type="info"
++          showIcon
++          style={{ marginBottom: 12 }}
++          message="当前账号没有自有车位"
++          description="下方为全平台车位；你的选股与模拟执行仍按账户隔离。"
++        />
++      )}
++
++      {adminOverview && (
++        <Card
++          size="small"
++          title={`全平台车位（在跑 ${adminOverview.summary.running_slots} / 总 ${adminOverview.summary.total_slots}）`}
++          style={{ marginBottom: 12 }}
++        >
++          <Table<AdminInstanceOverviewItem>
++            rowKey="user_strategy_id"
++            size="small"
++            dataSource={adminOverview.items}
++            pagination={{ pageSize: 10, showSizeChanger: false }}
++            scroll={{ x: 1200 }}
++            columns={[
++              { title: '策略', dataIndex: 'strategy_name', width: 220, ellipsis: true },
++              { title: '用户', dataIndex: 'user_id', width: 210, ellipsis: true },
++              { title: '市场', dataIndex: 'market', width: 70 },
++              { title: '状态', dataIndex: 'enabled', width: 80, render: (v: boolean) => <Tag color={v ? 'green' : 'default'}>{v ? '运行' : '停止'}</Tag> },
++              { title: '最近运行', dataIndex: 'last_run_at', width: 145, render: (v: string | null) => v ? fmtRequestTime(v) : '—' },
++              { title: '选股', dataIndex: 'selected_count', width: 70, align: 'right', render: (v: number) => `${v} 只` },
++              { title: '模拟交易', width: 140, render: (_: unknown, r) => (
++                <Space direction="vertical" size={0}>
++                  <Tag color={r.has_simulated_trades ? 'green' : 'default'}>{r.has_simulated_trades ? `已交易 ${r.sim_order_count} 单` : '无模拟单'}</Tag>
++                  <Text type="secondary" style={{ fontSize: 11 }}>持仓 {r.sim_position_count} 只</Text>
++                </Space>
++              ) },
++              { title: '仓位上限', dataIndex: 'max_position_ratio', width: 90, align: 'right' },
++            ]}
++          />
++        </Card>
++      )}
++
+       <Table<MyStrategyInstance>
+         rowKey="user_strategy_id"
+         size="small"
+         loading={loading}
+         dataSource={rows}
+         columns={columns}
+-        pagination={{ pageSize: 20, showSizeChanger: true }}
++        scroll={{ x: 1600 }}
++        pagination={{ pageSize: 20, showSizeChanger: false }}
+       />
+ 
+       {/* 确认升级：目标版本下拉（默认 upgrade_available_version_id） */}
 diff --git a/code/frontend/src/pages/StrategyCatalogPage.tsx b/code/frontend/src/pages/StrategyCatalogPage.tsx
-index 00b699f..5d65bef 100644
+index d729ed4..a9f6e92 100644
 --- a/code/frontend/src/pages/StrategyCatalogPage.tsx
 +++ b/code/frontend/src/pages/StrategyCatalogPage.tsx
-@@ -63,16 +63,20 @@ export default function StrategyCatalogPage() {
+@@ -7,7 +7,7 @@
+ import { useCallback, useEffect, useState } from 'react';
+ import { useTranslation } from 'react-i18next';
+ import {
+-  Button, Space, Table, Tag, Typography,
++  Button, Space, Table, Tag, Tooltip, Typography,
+ } from 'antd';
+ import type { ColumnsType } from 'antd/es/table';
+ import type { TFunction } from 'i18next';
+@@ -16,6 +16,7 @@ import { useMarket } from '../contexts/MarketContext';
+ import { strategyLabel } from '../i18n/strategyName';
+ import { useRole } from '../hooks/useRole';
+ import EnableStrategyWizard from '../components/strategy/EnableStrategyWizard';
++import W2FactorPanel from '../components/W2FactorPanel';
+ 
+ const { Text } = Typography;
+ 
+@@ -27,6 +28,9 @@ const STATUS_META: Record<string, { labelKey: string; color: string }> = {
+   PENDING_REVIEW: { labelKey: 'strategies.statusPendingReview', color: 'gold' },
+   REJECTED: { labelKey: 'strategies.statusRejected', color: 'red' },
+   DISABLED: { labelKey: 'strategies.statusDisabled', color: 'default' },
++  RESEARCH_CLOSED: { labelKey: '关闭/不交易', color: 'red' },
++  RESEARCH_NEEDS_MORE: { labelKey: '待补验', color: 'gold' },
++  RESEARCH_UNTESTED: { labelKey: '未测', color: 'default' },
+ };
+ 
+ function statusTag(status: string, t: TFunction) {
+@@ -53,21 +57,24 @@ export default function StrategyCatalogPage() {
+   useEffect(() => { load(); }, [load]);
+ 
+   const columns: ColumnsType<CatalogStrategy> = [
+-    { title: t('strategies.colName'), dataIndex: 'strategy_name', key: 'strategy_name', width: 180,
+-      render: (v: string) => <b>{strategyLabel(v)}</b> },
+-    { title: t('strategies.colDesc'), dataIndex: 'description', key: 'description', ellipsis: true,
+-      render: (v: string) => v || <Text type="secondary">—</Text> },
++    { title: t('strategies.colName'), dataIndex: 'strategy_name', key: 'strategy_name', width: 250,
++      ellipsis: true,
++      render: (v: string, r) => <Tooltip title={r.description || v}><b>{strategyLabel(v)}</b></Tooltip> },
+     { title: t('strategies.colMarket'), dataIndex: 'market', key: 'market', width: 80,
+       render: (v: string) => t(`market.${v}`, { ns: 'common' }) },
+     { title: t('strategies.colType'), dataIndex: 'strategy_type', key: 'strategy_type', width: 140,
        render: (v: string, r) => (
          <Space size={4}>
            <Text>{v}</Text>
--          {r.is_builtin
--            ? <Tag color="purple">{t('strategies.builtin')}</Tag>
--            : <Tag color="cyan">{t('strategies.external')}</Tag>}
-+          {r.is_sidecar
-+            ? <Tag color="geekblue">研究策略</Tag>
-+            : (r.is_builtin
-+              ? <Tag color="purple">{t('strategies.builtin')}</Tag>
-+              : <Tag color="cyan">{t('strategies.external')}</Tag>)}
+-          {r.is_sidecar
+-            ? <Tag color="geekblue">研究策略</Tag>
+-            : (r.is_builtin
+-              ? <Tag color="purple">{t('strategies.builtin')}</Tag>
+-              : <Tag color="cyan">{t('strategies.external')}</Tag>)}
++          {r.is_research
++            ? <Tag color="orange">张松研究</Tag>
++            : (r.is_sidecar
++              ? (r.execution_status?.includes('接入')
++                ? <Tag color="green">已接入</Tag>
++                : <Tag color="geekblue">研究策略</Tag>)
++              : (r.is_builtin
++                ? <Tag color="purple">{t('strategies.builtin')}</Tag>
++                : <Tag color="cyan">{t('strategies.external')}</Tag>))}
          </Space>
        ) },
      { title: t('strategies.colStatus'), dataIndex: 'status', key: 'status', width: 90,
-       render: (v: string) => statusTag(v, t) },
-     { title: t('strategies.colVersion'), dataIndex: 'version_count', key: 'version_count', width: 60 },
-     { title: t('strategies.colAction'), key: 'action', width: 120, render: (_: unknown, r) => (
--      canManageOwn ? (
-+      r.is_sidecar ? (
-+        <Tag>仅供研究</Tag>
-+      ) : canManageOwn ? (
+@@ -77,9 +84,63 @@ export default function StrategyCatalogPage() {
+       render: (v: string | null, r) => <Text>{v || r.owner_user_id || '—'}</Text> },
+     { title: t('strategies.colLifecycle', { defaultValue: '生命周期' }), dataIndex: 'lifecycle_status', key: 'lifecycle_status', width: 100,
+       render: (v: string | null) => v ? <Tag color={v === 'active' || v === 'live' ? 'green' : v === 'research' ? 'red' : 'blue'}>{v}</Tag> : <Text type="secondary">—</Text> },
+-    { title: t('strategies.colAction'), key: 'action', width: 120, render: (_: unknown, r) => (
+-      r.is_sidecar ? (
+-        <Tag>仅供研究</Tag>
++    { title: '门槛 G1-G8', key: 'gate_summary', width: 125,
++      render: (_: unknown, r) => {
++        if (!r.is_research || !r.gate_summary) return <Text type="secondary">—</Text>;
++        const entries = Object.entries(r.gate_summary);
++        const passed = entries.filter(([, st]) => st === 'pass' || st === 'done').length;
++        const failed = entries.some(([, st]) => st === 'fail');
++        return (
++          <Tooltip
++            title={
++              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, auto)', gap: 4 }}>
++                {entries.map(([g, st]) => (
++                  <span key={g}>{g}: {st || '—'}</span>
++                ))}
++              </div>
++            }
++          >
++            <Tag color={failed ? 'red' : passed === entries.length ? 'green' : 'default'}>
++              {passed}/{entries.length} 通过
++            </Tag>
++          </Tooltip>
++        );
++      } },
++    { title: '四关', key: 'four_gate', width: 95,
++      render: (_: unknown, r) => {
++        if (!r.is_research || !r.four_gate_status) return <Text type="secondary">—</Text>;
++        const label: Record<string, string> = {
++          rejected: '不通过', closed: '已关闭', 'needs-more': '待补验', pass: '通过',
++        };
++        const color: Record<string, string> = {
++          rejected: 'red', closed: 'red', 'needs-more': 'gold', pass: 'green',
++        };
++        return (
++          <Tooltip title={r.four_gate_report || r.four_gate_scope || ''}>
++            <Tag color={color[r.four_gate_status] ?? 'default'}>
++              {label[r.four_gate_status] ?? r.four_gate_status}
++            </Tag>
++          </Tooltip>
++        );
++      } },
++    { title: '执行/入池', key: 'execution_status', width: 150,
++      render: (_: unknown, r) => r.is_research
++        ? <Tag color="default">{r.decision || '研究'}</Tag>
++        : r.execution_status
++          ? <Tag color={r.execution_status.includes('入池') ? 'green' : 'gold'}>{r.execution_status}</Tag>
++          : <Text type="secondary">—</Text> },
++    { title: t('strategies.colAction'), key: 'action', width: 110, fixed: 'right', render: (_: unknown, r) => (
++      r.is_research ? (
++        <Space direction="vertical" size={2}>
++          <Tag color="orange">{r.decision || '研究'}</Tag>
++          {r.verdict_conflict && (
++            <Tag color={r.conflict_status === 'resolved_strict_verdict' ? 'green' : 'red'}>
++              {r.conflict_status === 'resolved_strict_verdict' ? '已收口' : '裁决冲突'}
++            </Tag>
++          )}
++        </Space>
++      ) : r.is_sidecar ? (
++        <Tag color={r.execution_status?.includes('接入') ? 'green' : 'default'}>{r.execution_status || '仅供研究'}</Tag>
+       ) : canManageOwn ? (
          <Button size="small" type="primary" onClick={() => setWizardTarget(r)}>
            {t('strategyCatalog.useBtn')}
-         </Button>
-diff --git a/code/frontend/src/pages/groups/ReplayGroup.tsx b/code/frontend/src/pages/groups/ReplayGroup.tsx
-index 7cd2e28..0dafbe6 100644
---- a/code/frontend/src/pages/groups/ReplayGroup.tsx
-+++ b/code/frontend/src/pages/groups/ReplayGroup.tsx
-@@ -7,6 +7,10 @@ import PnlCalendarPage from '../PnlCalendarPage';
- import KnowledgePage from '../KnowledgePage';
- import LearningReportPage from '../LearningReportPage';
- import DailyReportPage from '../DailyReportPage';
-+import Acad1ResearchPage from '../Acad1ResearchPage';
-+import LusuDeskPage from '../LusuDeskPage';
-+import SelectionDeskPage from '../SelectionDeskPage';
-+import SimFactorPage from '../SimFactorPage';
- import { useRole } from '../../hooks/useRole';
+@@ -93,7 +154,7 @@ export default function StrategyCatalogPage() {
+   return (
+     <div>
+       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+-        <h1 style={{ fontSize: 20, margin: 0 }}>{t('strategyCatalog.title')}</h1>
++        <h1 style={{ fontSize: 20, margin: 0 }}>策略市场</h1>
+         <Tag color="blue" style={{ fontSize: 13, padding: '2px 10px' }}>
+           {t(`market.${market}`, { ns: 'common' })}（{market}）
+         </Tag>
+@@ -108,9 +169,17 @@ export default function StrategyCatalogPage() {
+         loading={loading}
+         dataSource={rows}
+         columns={columns}
++        tableLayout="fixed"
++        scroll={{ x: 1100 }}
+         pagination={{ pageSize: 20, showSizeChanger: true }}
+       />
  
- /**
-@@ -25,6 +29,10 @@ export default function ReplayGroup() {
-     { key: 'knowledge', label: t('replayGroup.tabKnowledge'), children: <KnowledgePage /> },
-     { key: 'learning', label: t('replayGroup.tabLearning'), children: <LearningReportPage /> },
-     { key: 'report', label: t('replayGroup.tabReport'), children: <DailyReportPage /> },
-+    { key: 'acad1', label: '司马徽研究院', children: <Acad1ResearchPage /> },
-+    { key: 'selection', label: '选股中台', children: <SelectionDeskPage /> },
-+    { key: 'sim', label: '模拟盘/因子', children: <SimFactorPage /> },
-+    { key: 'lusu', label: '鲁肃台', children: <LusuDeskPage /> },
-   ];
-   // VIEWER 只读：只留 盈亏日历 + 复盘报告，隐藏 复盘/知识库/学习报告。
-   const items = isViewer ? allItems.filter(i => ['calendar', 'report'].includes(i.key)) : allItems;
++      {market === 'CN' && (
++        <div style={{ marginTop: 16 }}>
++          <W2FactorPanel />
++        </div>
++      )}
++
+       {/* 使用策略 → 启用向导（key 保证每行打开都重置向导状态） */}
+       {wizardTarget && (
+         <EnableStrategyWizard
 diff --git a/code/frontend/src/pages/groups/StrategiesGroup.tsx b/code/frontend/src/pages/groups/StrategiesGroup.tsx
-index 6130d65..60392f4 100644
+index 60392f4..deb81f3 100644
 --- a/code/frontend/src/pages/groups/StrategiesGroup.tsx
 +++ b/code/frontend/src/pages/groups/StrategiesGroup.tsx
-@@ -14,6 +14,7 @@ import ModelOpsPage from '../ModelOpsPage';
+@@ -1,6 +1,7 @@
+ import { useSearchParams } from 'react-router-dom';
+ import { useTranslation } from 'react-i18next';
+-import { Tabs } from 'antd';
++import { Button, Dropdown, Tabs } from 'antd';
++import { DownOutlined } from '@ant-design/icons';
+ import PageHeader from '../../components/PageHeader';
+ import StrategyCatalogPage from '../StrategyCatalogPage';
+ import MyStrategiesPage from '../MyStrategiesPage';
+@@ -13,6 +14,10 @@ import BacktestPage from '../BacktestPage';
+ import ModelOpsPage from '../ModelOpsPage';
  import FundamentalsPage from '../FundamentalsPage';
  import RegimePage from '../RegimePage';
++import ZeroBoundPage from '../ZeroBoundPage';
++import TeamGovernancePage from '../TeamGovernancePage';
++import ResearchSimPage from '../ResearchSimPage';
++import TrainingWorkbenchPage from '../TrainingWorkbenchPage';
  import StrategyDetailPage from '../StrategyDetailPage';
-+import StrategyWorkspacePage from '../StrategyWorkspacePage';
+ import StrategyWorkspacePage from '../StrategyWorkspacePage';
  import { useRole } from '../../hooks/useRole';
+@@ -28,9 +33,9 @@ import { useRole } from '../../hooks/useRole';
+  */
+ export default function StrategiesGroup() {
+   const { t } = useTranslation('pages');
+-  const { isViewer, canManageOwn } = useRole();
++  const { isViewer, canManageOwn, canManagePlatform } = useRole();
+   const [sp, setSp] = useSearchParams();
+-  const tab = sp.get('tab') ?? 'strategies';
++  const tab = sp.get('tab') ?? 'catalog';
+   const strategyId = sp.get('id');
  
- /**
-@@ -55,6 +56,7 @@ export default function StrategiesGroup() {
-         ]
-       : []),
-     { key: 'strategies', label: t('strategiesGroup.tabStrategies'), children: <StrategiesPage /> },
-+    { key: 'workspace', label: '策略工作台', children: <StrategyWorkspacePage /> },
-     { key: 'perf', label: t('strategiesGroup.tabPerf'), children: <StrategyPerformancePage /> },
-     { key: 'ai', label: t('strategiesGroup.tabAi'), children: <ResearchPage /> },
-     { key: 'backtest', label: t('strategiesGroup.tabBacktest'), children: <BacktestPage /> },
+   if (strategyId) {
+@@ -45,6 +50,8 @@ export default function StrategiesGroup() {
+   const allItems = [
+     // 策略广场（公共目录→启用向导）对所有角色只读可见；"使用策略"按钮按 canManageOwn 裁剪。
+     { key: 'catalog', label: t('strategiesGroup.tabCatalog'), children: <StrategyCatalogPage /> },
++    // 零界只读情报：所有人可见，不提供写入/触发入口。
++    { key: 'zerobound', label: '零界情报', children: <ZeroBoundPage /> },
+     // 我的策略（Phase D T4）：本人私有策略（编辑/新版本/发布申请），仅 canManageOwn 可见。
+     // 运行实例（Phase D T5）：启停/升级横幅/通知偏好，仅 canManageOwn 可见。
+     // 我的账户（Phase D T5）：账户列表/可用资金/新建账户，仅 canManageOwn 可见。
+@@ -63,11 +70,35 @@ export default function StrategiesGroup() {
+     { key: 'models', label: t('strategiesGroup.tabModels'), children: <ModelOpsPage /> },
+     { key: 'fund', label: t('strategiesGroup.tabFund'), children: <FundamentalsPage /> },
+     { key: 'regime', label: t('strategiesGroup.tabRegime'), children: <RegimePage /> },
++    ...(canManagePlatform
++      ? [
++          { key: 'team', label: '团队治理', children: <TeamGovernancePage /> },
++          { key: 'research-sim', label: '研究模拟', children: <ResearchSimPage /> },
++          { key: 'strategy-tuning', label: '训练调校', children: <TrainingWorkbenchPage /> },
++        ]
++      : []),
+   ];
+   // VIEWER 只读：只留 策略广场 + 策略列表 + 绩效，隐藏 ai/回测/模型/基本面/regime。
+-  const items = isViewer ? allItems.filter(i => ['catalog', 'strategies', 'perf'].includes(i.key)) : allItems;
+-  // 兜底：VIEWER/无 canManageOwn 直连隐藏 tab 时落到第一个可见 tab。
++  const visible = isViewer ? allItems.filter(i => ['catalog', 'zerobound', 'strategies', 'perf'].includes(i.key)) : allItems;
++  // 一级只保留高频 6 项；其余收进“更多”，避免顶部 16 个 Tab 横向溢出。
++  const primaryKeys = [
++    'catalog',
++    ...(canManageOwn ? ['running', 'mine', 'accounts'] : []),
++    ...(canManagePlatform ? ['research-sim'] : []),
++    'strategies',
++    ...(canManagePlatform ? ['team'] : []),
++  ];
++  const primaryItems = primaryKeys
++    .map(k => visible.find(i => i.key === k))
++    .filter((i): i is (typeof visible)[number] => Boolean(i));
++  const secondaryItems = visible.filter(i => !primaryKeys.includes(i.key));
++  const selectedSecondary = secondaryItems.find(i => i.key === tab);
++  const items = selectedSecondary ? [...primaryItems, selectedSecondary] : primaryItems;
+   const activeKey = items.some(i => i.key === tab) ? tab : items[0].key;
++  const moreMenu = {
++    items: secondaryItems.map(i => ({ key: i.key, label: i.label })),
++    onClick: ({ key }: { key: string }) => setSp({ tab: key }, { replace: true }),
++  };
+ 
+   return (
+     <div>
+@@ -81,6 +112,13 @@ export default function StrategiesGroup() {
+         onChange={k => setSp({ tab: k }, { replace: true })}
+         destroyOnHidden
+         items={items}
++        tabBarExtraContent={
++          secondaryItems.length ? (
++            <Dropdown menu={moreMenu} trigger={['click']}>
++              <Button type="text" size="small">更多 <DownOutlined /></Button>
++            </Dropdown>
++          ) : undefined
++        }
+       />
+     </div>
+   );
 diff --git a/code/frontend/src/services/api.ts b/code/frontend/src/services/api.ts
-index 6c078cf..7724ae1 100644
+index 7724ae1..5a53623 100644
 --- a/code/frontend/src/services/api.ts
 +++ b/code/frontend/src/services/api.ts
-@@ -1,7 +1,7 @@
+@@ -1,5 +1,6 @@
  import { showToast } from '../components/Toast';
  import i18n from '../i18n';
++import { goPortalLogin } from './portalAuth';
  
--const BASE = '/api/v1';
-+const BASE = import.meta.env.VITE_API_BASE || '/api/v1';
+ const BASE = import.meta.env.VITE_API_BASE || '/api/v1';
  
- /**
-  * 401 不触发全局登出跳转的认证端点（deep-test C2）：
+@@ -53,7 +54,7 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
+       ) {
+         localStorage.removeItem('zhice_token');
+         localStorage.removeItem('zhice_role');
+-        window.location.href = '/login';
++        goPortalLogin();
+         return Promise.reject(new Error('未授权，请重新登录'));
+       }
+       const text = await resp.text();
 diff --git a/code/frontend/src/services/myStrategiesApi.ts b/code/frontend/src/services/myStrategiesApi.ts
-index d058d9b..50d7487 100644
+index 26545e7..ddb8ac8 100644
 --- a/code/frontend/src/services/myStrategiesApi.ts
 +++ b/code/frontend/src/services/myStrategiesApi.ts
-@@ -34,6 +34,7 @@ export interface CatalogStrategy {
-   owner_user_id: string | null; // 平台策略为 null（可订阅）
+@@ -41,6 +41,28 @@ export interface CatalogStrategy {
    version_count: number;
    versions: CatalogVersion[];
-+  is_sidecar?: boolean;
+   is_sidecar?: boolean;
++  is_research?: boolean;
++  tradable?: boolean;
++  implemented?: boolean;
++  execution_status?: string;
++  data_date?: string | null;
++  latest_signal_count?: number;
++  pool_count?: number;
++  decision?: string;
++  grade?: string;
++  evidence_ref?: string;
++  source?: string;
++  strict_verdict?: string;
++  market_decision?: string;
++  verdict_conflict?: boolean;
++  conflict_status?: string;
++  resolved_by?: string | null;
++  resolution?: string | null;
++  gate_summary?: Record<string, string | null>;
++  four_gate_status?: string;
++  four_gate_report?: string;
++  four_gate_scope?: string;
++  four_gate_pre_registration?: string;
  }
  
  /** 我的策略项（后端 my_strategies.py _serialize；公共+本人私有）。 */
-diff --git a/code/frontend/vite.config.ts b/code/frontend/vite.config.ts
-index 7d8d88d..e407807 100644
---- a/code/frontend/vite.config.ts
-+++ b/code/frontend/vite.config.ts
-@@ -1,9 +1,10 @@
- import { defineConfig } from 'vite';
- import react from '@vitejs/plugin-react';
+@@ -100,6 +122,79 @@ export interface MyStrategyInstance {
+   upgrade_requested_at?: string | null;
+ }
  
--const target = process.env.VITE_PROXY_TARGET || 'http://localhost:8102';
-+const target = process.env.VITE_PROXY_TARGET || 'http://127.0.0.1:8105';
++export interface InstanceOverviewItem {
++  user_strategy_id: string;
++  strategy_id: string | null;
++  strategy_name: string;
++  version_no: string | null;
++  market: string | null;
++  account_id: string;
++  initial_capital: string | null;
++  cash_balance: string | null;
++  enabled: boolean;
++  execution_mode: string;
++  auto_execute: boolean;
++  max_position_ratio: string;
++  capital_quota: string | null;
++  last_run_at: string | null;
++  last_report_date: string | null;
++  selected_count: number;
++  selection_scope: string;
++  sim_order_count: number;
++  sim_position_count: number;
++  sim_last_at: string | null;
++  sim_scope: string;
++  has_simulated_trades: boolean;
++  position_policy: string;
++}
++
++export interface AdminInstanceOverviewItem {
++  user_strategy_id: string;
++  user_id: string;
++  strategy_id: string | null;
++  strategy_name: string;
++  version_no: string | null;
++  market: string | null;
++  enabled: boolean;
++  execution_mode: string;
++  auto_execute: boolean;
++  max_position_ratio: string;
++  initial_capital: string | null;
++  cash_balance: string | null;
++  last_report_date: string | null;
++  last_run_at: string | null;
++  selected_count: number;
++  sim_order_count: number;
++  sim_position_count: number;
++  has_simulated_trades: boolean;
++}
++
++export interface AdminInstanceOverview {
++  market: string | null;
++  summary: {
++    total_slots: number;
++    running_slots: number;
++    stopped_slots: number;
++    slots_with_sim_trades: number;
++    slots_without_sim_trades: number;
++  };
++  items: AdminInstanceOverviewItem[];
++}
++
++export interface InstanceOverview {
++  market: string | null;
++  summary: {
++    total_slots: number;
++    running_slots: number;
++    stopped_slots: number;
++    selected_latest: number;
++    slots_with_sim_trades: number;
++    slots_without_sim_trades: number;
++  };
++  items: InstanceOverviewItem[];
++  notes: string[];
++}
++
+ // ---------- DTO（请求体；金额为 number，后端 pydantic float） ----------
  
- export default defineConfig({
-+  base: process.env.VITE_BASE || '/',
-   plugins: [react()],
-   server: {
-     // 固定 5175 且禁止漂移：5173/5174 已被本机其他项目的 Docker 容器长期占用
+ export interface CreatePrivateStrategyBody {
+@@ -233,6 +328,16 @@ export function listMyInstances(
+   return api<MyStrategyInstance[]>(`/my/strategy-instances${qs}`);
+ }
+ 
++export function getInstanceOverview(market?: string): Promise<InstanceOverview> {
++  const qs = market ? `?market=${encodeURIComponent(market)}` : '';
++  return api<InstanceOverview>(`/my/strategy-instances/overview${qs}`);
++}
++
++export function getAdminInstanceOverview(market?: string): Promise<AdminInstanceOverview> {
++  const qs = market ? `?market=${encodeURIComponent(market)}` : '';
++  return api<AdminInstanceOverview>(`/admin/strategy-instances/overview${qs}`);
++}
++
+ export function createMyInstance(body: CreateMyInstanceBody): Promise<MyStrategyInstance> {
+   return api<MyStrategyInstance>('/my/strategy-instances', {
+     method: 'POST',
+diff --git a/code/frontend/src/services/selectionRunApi.ts b/code/frontend/src/services/selectionRunApi.ts
+index 71cab5e..e66db43 100644
+--- a/code/frontend/src/services/selectionRunApi.ts
++++ b/code/frontend/src/services/selectionRunApi.ts
+@@ -6,6 +6,7 @@ export interface SelectionRunRequest {
+   trade_date?: string;
+   strategy_type?: string;
+   max_candidates?: number;
++  mode?: 'workflow' | 'strategies';
+   idempotency_key?: string;
+ }
+ 
+@@ -49,6 +50,7 @@ export function runSelection(
+     market: req.market,
+     strategy_type: req.strategy_type ?? 'TREND',
+     max_candidates: req.max_candidates ?? 10,
++    mode: req.mode ?? 'strategies',
+   };
+   if (req.trade_date) body.trade_date = req.trade_date;
+   if (req.idempotency_key) body.idempotency_key = req.idempotency_key;
+diff --git a/code/frontend/src/test/EntitlementDrawer.test.tsx b/code/frontend/src/test/EntitlementDrawer.test.tsx
+index 50cdbc3..66e27a8 100644
+--- a/code/frontend/src/test/EntitlementDrawer.test.tsx
++++ b/code/frontend/src/test/EntitlementDrawer.test.tsx
+@@ -261,7 +261,7 @@ describe('EntitlementDrawer 写操作', () => {
+     const payload = mockRevokeSubscriptions.mock.calls[0][1];
+     expect(payload.strategyIds).toEqual(['st-active']);
+     expect(payload.versions['st-active']).toBe(1);
+-  }, 15000);
++  }, 30000);
+ });
+ 
+ // ---------- 写可靠性：未知结果重试 + 自降级登出（B3-5） ----------
+@@ -295,7 +295,7 @@ describe('EntitlementDrawer 写可靠性', () => {
+       expect(localStorage.getItem('zhice_token')).toBeNull();
+       expect(localStorage.getItem('zhice_role')).toBeNull();
+     });
+-    expect(hrefs).toContain('/login');
++    expect(hrefs.some(h => h.startsWith('/login?next='))).toBe(true);
+   });
+ 
+   it('未知结果（retryable）提供"重试原操作"，复用同一幂等键', async () => {
+diff --git a/code/frontend/src/test/LoginPage.test.tsx b/code/frontend/src/test/LoginPage.test.tsx
+index b135a47..5a5a11f 100644
+--- a/code/frontend/src/test/LoginPage.test.tsx
++++ b/code/frontend/src/test/LoginPage.test.tsx
+@@ -59,9 +59,9 @@ describe('LoginPage', () => {
+     expect(screen.getByRole('button', { name: '登录' })).toBeInTheDocument();
+   });
+ 
+-  it('品牌区展示司马徽研究院', () => {
++  it('品牌区展示司马徽 · 零界量化', () => {
+     renderLoginPage();
+-    expect(screen.getByText('司马徽研究院')).toBeInTheDocument();
++    expect(screen.getByText('司马徽 · 零界量化')).toBeInTheDocument();
+     expect(screen.queryByText('量化交易系统')).not.toBeInTheDocument();
+   });
+ 
+diff --git a/code/frontend/src/test/MultiUserStrategyFlow.test.tsx b/code/frontend/src/test/MultiUserStrategyFlow.test.tsx
+index de99cc6..2aa19cc 100644
+--- a/code/frontend/src/test/MultiUserStrategyFlow.test.tsx
++++ b/code/frontend/src/test/MultiUserStrategyFlow.test.tsx
+@@ -330,7 +330,7 @@ describe('StrategiesGroup 集成（?tab=catalog）', () => {
+         </MarketProvider>
+       </MemoryRouter>,
+     );
+-    expect(screen.getByRole('tab', { name: '策略广场' })).toBeInTheDocument();
++    expect(screen.getByRole('tab', { name: '策略市场' })).toBeInTheDocument();
+     expect(screen.getByRole('tab', { name: '策略版本' })).toBeInTheDocument();
+     // catalog tab 激活并渲染目录数据
+     await screen.findByText('MACD 趋势');
+@@ -528,7 +528,7 @@ describe('StrategiesGroup 集成（?tab=mine）', () => {
+     mockListMy.mockResolvedValue([myPrivateRow]);
+     renderMine(true);
+     expect(screen.getByRole('tab', { name: '我的策略' })).toBeInTheDocument();
+-    expect(screen.getByRole('tab', { name: '策略广场' })).toBeInTheDocument();
++    expect(screen.getByRole('tab', { name: '策略市场' })).toBeInTheDocument();
+     await screen.findByText('alpha 私有');
+     expect(mockListMy).toHaveBeenCalledWith('CN');
+   });
+diff --git a/code/frontend/src/test/adminEntitlementsApi.test.ts b/code/frontend/src/test/adminEntitlementsApi.test.ts
+index 50ae2e3..18767b6 100644
+--- a/code/frontend/src/test/adminEntitlementsApi.test.ts
++++ b/code/frontend/src/test/adminEntitlementsApi.test.ts
+@@ -224,7 +224,7 @@ describe('401 会话失效清理', () => {
+     await expect(getUserDetail('u-1')).rejects.toThrow();
+     expect(localStorage.getItem('zhice_token')).toBeNull();
+     expect(localStorage.getItem('zhice_role')).toBeNull();
+-    expect(hrefSpy).toContain('/login');
++    expect(hrefSpy.some(h => h.startsWith('/login?next='))).toBe(true);
+   });
+ });
+ 
+diff --git a/code/frontend/vitest.config.ts b/code/frontend/vitest.config.ts
+index e26ac5d..a7b3899 100644
+--- a/code/frontend/vitest.config.ts
++++ b/code/frontend/vitest.config.ts
+@@ -6,6 +6,7 @@ export default defineConfig({
+   test: {
+     environment: 'jsdom',
+     globals: true,
++    testTimeout: 30000,
+     setupFiles: ['./src/test/setup.ts'],
+     // 限定单测范围到 src，避免 vitest 误抓 e2e/*.spec.ts（那是 Playwright 用例）。
+     include: ['src/**/*.{test,spec}.{ts,tsx}'],

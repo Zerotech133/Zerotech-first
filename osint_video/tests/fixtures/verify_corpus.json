@@ -1,0 +1,307 @@
+{
+  "note": "P1 验收用合成语料（2026-11-04）。truth_story 同值应聚为一个事件；null 表示独立事件。实体刻意混用中英文/全称/简称多种写法，用于驱动别名归一。day_offset 为相对 now() 的天数偏移（负数为过去），跨窗口的用例特意把同一故事的事实拉开到 18-35 天。",
+  "stories": [
+    {
+      "story_id": "S01",
+      "topics": ["新能源汽车", "动力电池"],
+      "units": [
+        {
+          "title": "宁德时代发布麒麟电池，整车续航突破一千公里",
+          "content": "宁德时代今日发布第三代麒麟电池，系统能量密度提升至255Wh/kg，搭载车型续航里程突破一千公里，计划明年批量装车。",
+          "domain": "cls.cn", "day_offset": -3,
+          "entities": ["宁德时代"]
+        },
+        {
+          "title": "宁德时代麒麟电池亮相，能量密度255Wh/kg",
+          "content": "在今日的技术发布会上，宁德时代展示了麒麟电池的量产版本，整包能量密度达到255Wh/kg，多家车企已确认采购意向。",
+          "domain": "eastmoney.com", "day_offset": -3,
+          "entities": [{"name": "宁德时代新能源科技股份有限公司"}]
+        },
+        {
+          "title": "CATL unveils third-gen Qilin battery with 1000km range",
+          "content": "CATL 发布第三代麒麟电池，宣称可使电动车续航超过一千公里，明年开始量产供货。",
+          "domain": "d1ev.com", "day_offset": -2,
+          "entities": ["CATL"]
+        }
+      ]
+    },
+    {
+      "story_id": "S02",
+      "topics": ["上市公司", "监管处罚"],
+      "units": [
+        {
+          "title": "华信科技因涉嫌信息披露违法违规被证监会立案调查",
+          "content": "华信科技公告称，公司收到证监会立案告知书，因涉嫌信息披露违法违规，证监会决定对公司立案调查。",
+          "domain": "stcn.com", "day_offset": -20,
+          "entities": ["华信科技"]
+        },
+        {
+          "title": "华信科技信披违规案落地，公司被罚三千万元",
+          "content": "证监会公布对华信科技的行政处罚决定，认定其年报存在重大虚假记载，对公司责令改正、给予警告并处以三千万元罚款。",
+          "domain": "yicai.com", "day_offset": -2,
+          "entities": ["华信科技"]
+        },
+        {
+          "title": "华信科技：收到行政处罚决定书，罚款3000万元",
+          "content": "华信科技晚间公告，公司收到证监会行政处罚决定书，被罚款三千万元，相关责任人同时被处以市场禁入。",
+          "domain": "cnstock.com", "day_offset": -1,
+          "entities": ["华信科技"]
+        }
+      ]
+    },
+    {
+      "story_id": "S03",
+      "topics": ["新能源汽车", "车型上市"],
+      "units": [
+        {
+          "title": "比亚迪海豹07正式上市，起售价18.98万元",
+          "content": "比亚迪海豹07今日上市，共推出四个版本，起售价18.98万元，全系标配高阶智驾。",
+          "domain": "autohome.com", "day_offset": -6,
+          "entities": ["比亚迪"]
+        },
+        {
+          "title": "比亚迪新车型海豹07开售，18.98万元起",
+          "content": "比亚迪宣布海豹07正式开售，入门版售价18.98万元，顶配23.98万元，交付将于本月底启动。",
+          "domain": "d1ev.com", "day_offset": -6,
+          "entities": ["比亚迪"]
+        },
+        {
+          "title": "海豹07上市：比亚迪补齐中型轿车产品线",
+          "content": "随着海豹07上市，比亚迪在中型纯电轿车市场完成布局，起售价18.98万元直接对标合资燃油车。",
+          "domain": "gasgoo.com", "day_offset": -5,
+          "entities": ["比亚迪股份有限公司"]
+        }
+      ]
+    },
+    {
+      "story_id": "S04",
+      "topics": ["半导体", "显卡"],
+      "units": [
+        {
+          "title": "英伟达发布新一代显卡，算力较上代提升三成",
+          "content": "英伟达发布新一代数据中心显卡，官方称训练算力较上代提升约30%，功耗持平。",
+          "domain": "ithome.com", "day_offset": -4,
+          "entities": ["英伟达"]
+        },
+        {
+          "title": "NVIDIA 新一代 GPU 亮相，训练性能提升30%",
+          "content": "NVIDIA 在开发者大会上公布新一代 GPU，训练性能提升三成，首批供货预计下季度。",
+          "domain": "techweb.com.cn", "day_offset": -4,
+          "entities": ["NVIDIA"]
+        }
+      ]
+    },
+    {
+      "story_id": "S05",
+      "topics": ["货币政策", "宏观经济"],
+      "units": [
+        {
+          "title": "央行宣布下调存款准备金率0.5个百分点",
+          "content": "中国人民银行宣布，自下周起下调金融机构存款准备金率0.5个百分点，释放长期资金约一万亿元。",
+          "domain": "xinhuanet.com", "day_offset": -8,
+          "entities": ["中国人民银行"]
+        },
+        {
+          "title": "央行降准0.5个百分点，释放长期资金约万亿",
+          "content": "央行公告称，此次降准0.5个百分点，预计释放长期资金约一万亿元，旨在保持流动性合理充裕。",
+          "domain": "yicai.com", "day_offset": -8,
+          "entities": ["央行"]
+        },
+        {
+          "title": "降准落地：央行下调存准率半个百分点",
+          "content": "中国人民银行下调存款准备金率0.5个百分点，为年内第二次降准。",
+          "domain": "cls.cn", "day_offset": -7,
+          "entities": ["人民银行"]
+        }
+      ]
+    },
+    {
+      "story_id": "S06",
+      "topics": ["新能源汽车", "储能"],
+      "units": [
+        {
+          "title": "特斯拉上海储能超级工厂正式投产",
+          "content": "特斯拉上海储能超级工厂今日投产，初期年产能一万台Megapack。",
+          "domain": "sina.com.cn", "day_offset": -10,
+          "entities": ["特斯拉"]
+        },
+        {
+          "title": "特斯拉上海储能工厂投产，年产能一万台",
+          "content": "特斯拉宣布其上海储能超级工厂建成投产，规划年产能一万台商用储能电池。",
+          "domain": "eastmoney.com", "day_offset": -9,
+          "entities": ["Tesla"]
+        }
+      ]
+    },
+    {
+      "story_id": "S07",
+      "topics": ["光伏", "硅片"],
+      "units": [
+        {
+          "title": "隆基绿能上调硅片报价，涨幅约5%",
+          "content": "隆基绿能公布最新硅片价格，各尺寸报价上调约5%，公司称系上游成本推动。",
+          "domain": "cnstock.com", "day_offset": -25,
+          "entities": ["隆基绿能"]
+        },
+        {
+          "title": "隆基绿能再度提价，硅片价格上调5%",
+          "content": "隆基绿能月内第二次上调硅片报价，涨幅约5%，行业其他厂商跟随的可能性较大。",
+          "domain": "stcn.com", "day_offset": -3,
+          "entities": ["隆基绿能股份有限公司"]
+        }
+      ]
+    },
+    {
+      "story_id": "S08",
+      "topics": ["半导体", "晶圆代工"],
+      "units": [
+        {
+          "title": "台积电亚利桑那厂开始量产四纳米芯片",
+          "content": "台积电位于亚利桑那州的晶圆厂开始量产四纳米制程芯片，首批客户为美国本土芯片设计公司。",
+          "domain": "technews.tw", "day_offset": -7,
+          "entities": ["台积电"]
+        },
+        {
+          "title": "台积电美国工厂量产4nm，良率接近台湾厂",
+          "content": "台积电亚利桑那厂四纳米产线已进入量产阶段，初期良率与台湾厂差距缩小至个位数百分点。",
+          "domain": "ithome.com", "day_offset": -6,
+          "entities": ["TSMC"]
+        }
+      ]
+    },
+    {
+      "story_id": "S09",
+      "topics": ["消费电子", "操作系统"],
+      "units": [
+        {
+          "title": "华为发布鸿蒙5，全栈自研内核全面替换",
+          "content": "华为在开发者大会发布鸿蒙5，宣布系统内核与应用框架全面自研，不再兼容安卓应用。",
+          "domain": "ithome.com", "day_offset": -5,
+          "entities": ["华为"]
+        },
+        {
+          "title": "鸿蒙5正式发布：不再兼容安卓应用",
+          "content": "华为正式发布鸿蒙5操作系统，全栈自研，原生应用数量已超过一万五千款。",
+          "domain": "techweb.com.cn", "day_offset": -4,
+          "entities": ["华为技术有限公司"]
+        }
+      ]
+    },
+    {
+      "story_id": "S10",
+      "topics": ["医药", "集采"],
+      "units": [
+        {
+          "title": "第十批药品集采开标，恒瑞医药主力品种落标",
+          "content": "第十批国家药品集中采购今日开标，恒瑞医药参与投标的主力品种因报价过高未能中选。",
+          "domain": "yicai.com", "day_offset": -12,
+          "entities": ["恒瑞医药"]
+        },
+        {
+          "title": "恒瑞医药集采落标，相关品种市场规模约二十亿",
+          "content": "恒瑞医药在第十批集采中落标，涉及品种去年销售额约二十亿元，公司称影响可控。",
+          "domain": "stcn.com", "day_offset": -11,
+          "entities": ["恒瑞医药"]
+        }
+      ]
+    },
+    {
+      "story_id": "S11",
+      "topics": ["光伏", "组件"],
+      "units": [
+        {
+          "title": "光伏组件价格跌破成本线，行业协会呼吁自律",
+          "content": "组件招标价格持续走低，部分报价已跌破现金成本，中国光伏行业协会呼吁企业停止低价竞争。",
+          "domain": "cnstock.com", "day_offset": -9,
+          "entities": ["光伏行业协会"]
+        },
+        {
+          "title": "组件价格战延续，协会召集头部企业座谈",
+          "content": "针对组件价格持续下跌，行业协会召集多家头部企业座谈，讨论产能自律与价格底线。",
+          "domain": "solarbe.com", "day_offset": -8,
+          "entities": ["中国光伏行业协会"]
+        },
+        {
+          "_migrated_from": "singletons[18] / verify-solo-18（2026-11-04 真值复核：原标为独立事件，经证据复核应属 S11，详见 deliverables/2026-11-04_情报体系P1_solo-18真值复核_v1.md）",
+          "title": "光伏行业协会发布行业自律倡议书",
+          "content": "中国光伏行业协会发布倡议书，呼吁企业避免低于成本价投标，维护行业秩序。",
+          "domain": "solarbe.com", "day_offset": -3,
+          "entities": ["中国光伏行业协会"]
+        }
+      ]
+    },
+    {
+      "story_id": "S12",
+      "topics": ["半导体", "晶圆代工"],
+      "units": [
+        {
+          "title": "中芯国际产能利用率回升至九成",
+          "content": "中芯国际公布季度数据，产能利用率回升至九成以上，成熟制程订单明显回暖。",
+          "domain": "cnstock.com", "day_offset": -35,
+          "entities": ["中芯国际"]
+        },
+        {
+          "title": "中芯国际产能利用率超90%，成熟制程订单回暖",
+          "content": "中芯国际最新季报显示产能利用率超过90%，公司称消费电子与工业类订单同步改善。",
+          "domain": "eastmoney.com", "day_offset": -2,
+          "entities": ["SMIC"]
+        }
+      ]
+    },
+    {
+      "story_id": "S13",
+      "topics": ["白酒", "消费"],
+      "units": [
+        {
+          "title": "贵州茅台宣布上调出厂价，幅度约两成",
+          "content": "贵州茅台公告，自下月起上调53度飞天茅台出厂价，平均上调幅度约20%。",
+          "domain": "cls.cn", "day_offset": -14,
+          "entities": ["贵州茅台"]
+        },
+        {
+          "title": "茅台提价20%，飞天出厂价上调",
+          "content": "贵州茅台发布公告称上调飞天茅台出厂价格，平均幅度约20%，为近六年首次。",
+          "domain": "yicai.com", "day_offset": -13,
+          "entities": ["贵州茅台酒股份有限公司"]
+        }
+      ]
+    },
+    {
+      "story_id": "S14",
+      "topics": ["新能源汽车", "国际贸易"],
+      "units": [
+        {
+          "title": "欧盟决定对中国电动汽车加征反补贴税",
+          "content": "欧盟委员会宣布对中国产电动汽车加征反补贴税，税率区间为7.8%至35.3%。",
+          "domain": "reuters.com", "day_offset": -30,
+          "entities": ["欧盟委员会"]
+        },
+        {
+          "title": "欧盟对华电动车加征关税落地，最高35.3%",
+          "content": "欧盟成员国投票通过对中国电动汽车加征反补贴税，最高税率35.3%，为期五年。",
+          "domain": "caixin.com", "day_offset": -1,
+          "entities": ["欧盟"]
+        }
+      ]
+    }
+  ],
+  "singletons": [
+    {"title": "宁德时代三季度净利润同比增长两成", "content": "宁德时代发布三季报，净利润同比增长两成，储能业务收入占比提升。", "domain": "stcn.com", "day_offset": -3, "entities": ["宁德时代"], "topics": ["新能源汽车"]},
+    {"title": "宁德时代公告：董事兼副总经理因个人原因辞职", "content": "宁德时代公告，公司董事兼副总经理因个人原因申请辞职，辞职后不再担任公司任何职务。", "domain": "cnstock.com", "day_offset": -2, "entities": ["宁德时代"], "topics": ["新能源汽车"]},
+    {"title": "比亚迪三季度销量创单季新高", "content": "比亚迪公布产销快报，三季度销量创单季新高，海外销量占比提升至两成。", "domain": "eastmoney.com", "day_offset": -5, "entities": ["比亚迪"], "topics": ["新能源汽车"]},
+    {"title": "比亚迪回购公司股份，金额不超过四十亿元", "content": "比亚迪公告回购方案，拟以集中竞价方式回购股份，金额不超过四十亿元。", "domain": "cls.cn", "day_offset": -4, "entities": ["比亚迪"], "topics": ["新能源汽车"]},
+    {"title": "英伟达三季度财报超预期，数据中心收入翻倍", "content": "英伟达公布三季度财报，营收与利润均超市场预期，数据中心业务收入同比翻倍。", "domain": "techweb.com.cn", "day_offset": -4, "entities": ["英伟达"], "topics": ["半导体"]},
+    {"title": "英伟达遭反垄断调查，法国监管机构启动程序", "content": "法国竞争管理局确认已对英伟达启动反垄断调查，涉及其显卡市场地位。", "domain": "reuters.com", "day_offset": -6, "entities": ["英伟达"], "topics": ["半导体"]},
+    {"title": "央行开展中期借贷便利操作，利率保持不变", "content": "中国人民银行开展中期借贷便利操作，中标利率与上期持平。", "domain": "xinhuanet.com", "day_offset": -7, "entities": ["中国人民银行"], "topics": ["货币政策"]},
+    {"title": "央行发布三季度货币政策执行报告", "content": "中国人民银行发布三季度货币政策执行报告，强调保持流动性合理充裕。", "domain": "yicai.com", "day_offset": -9, "entities": ["中国人民银行"], "topics": ["货币政策"]},
+    {"title": "特斯拉召回部分进口车型，涉及三万辆车", "content": "特斯拉向市场监管总局备案召回计划，召回部分进口车型共计三万辆。", "domain": "autohome.com", "day_offset": -8, "entities": ["特斯拉"], "topics": ["新能源汽车"]},
+    {"title": "特斯拉CEO减持公司股票，套现约十亿美元", "content": "监管文件显示，特斯拉CEO近期减持公司股票，套现约十亿美元。", "domain": "sina.com.cn", "day_offset": -11, "entities": ["特斯拉"], "topics": ["新能源汽车"]},
+    {"title": "隆基绿能公告董事长增持公司股份", "content": "隆基绿能公告，董事长通过二级市场增持公司股份，增持金额约五千万元。", "domain": "cnstock.com", "day_offset": -6, "entities": ["隆基绿能"], "topics": ["光伏"]},
+    {"title": "台积电上调全年资本开支指引", "content": "台积电在法说会上上调全年资本开支指引，主要用于先进制程扩产。", "domain": "technews.tw", "day_offset": -13, "entities": ["台积电"], "topics": ["半导体"]},
+    {"title": "华为发布三季度经营业绩，营收同比增长", "content": "华为公布三季度经营业绩，营收同比增长，终端业务恢复增长。", "domain": "ithome.com", "day_offset": -15, "entities": ["华为"], "topics": ["消费电子"]},
+    {"title": "华为与多家车企签署智能驾驶合作协议", "content": "华为与多家车企签署智能驾驶解决方案合作协议，相关车型将于明年上市。", "domain": "gasgoo.com", "day_offset": -10, "entities": ["华为"], "topics": ["消费电子"]},
+    {"title": "恒瑞医药创新药获批上市，适应症为肺癌", "content": "恒瑞医药公告，公司自主研发的创新药获国家药监局批准上市，适应症为非小细胞肺癌。", "domain": "yicai.com", "day_offset": -14, "entities": ["恒瑞医药"], "topics": ["医药"]},
+    {"title": "中芯国际公告拟新建十二英寸晶圆产线", "content": "中芯国际公告，拟在现有厂区新建十二英寸晶圆产线，总投资约两百亿元。", "domain": "cnstock.com", "day_offset": -16, "entities": ["中芯国际"], "topics": ["半导体"]},
+    {"title": "贵州茅台前三季度营收增长一成", "content": "贵州茅台披露三季报，前三季度营收同比增长约一成，直营渠道占比继续提升。", "domain": "cls.cn", "day_offset": -12, "entities": ["贵州茅台"], "topics": ["白酒"]}
+  ]
+}

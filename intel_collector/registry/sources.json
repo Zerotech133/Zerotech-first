@@ -95,7 +95,10 @@
       "max_failures": 5
     },
     "enabled": true,
-    "health": {},
+    "health": {
+      "consecutive_failures": 0,
+      "last_success_at": "2026-11-03T19:46:53Z"
+    },
     "note": "老田 2026-11-01 override 田丰归口登记"
   },
   "youtube_envelope": {

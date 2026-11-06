@@ -1,5 +1,5 @@
 {
- "measured_at": "2026-11-02T15:47:52+08:00",
+ "measured_at": "2026-11-02T17:00:52+08:00",
  "date": "2026-11-02",
  "generated_by": "tools/datawarehouse/kpi_report.py",
  "definitions_source": "docs/plans/2026-11-02_数据仓研发计划_v3_执行版.md §三",

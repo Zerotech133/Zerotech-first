@@ -1,0 +1,207 @@
+{
+  "_meta": {
+    "purpose": "判定器关系标签标定探针集。衡量的是**合并决策**对不对，不是标签名对不对：same_story/progress/roundup 三者都落库为成员边，对独立来源数的影响完全相同，只有 unrelated 才是不合并。因此每条只标 expected_merge。",
+    "why_this_shape": "全部取自真机验证语料 verify-s01~s14，且**刻意以'同一主体'为主**：主体不同的对靠实体交集就能拦掉，测不出判定器的边界。硬样本是'主体相同、事件不同'。",
+    "categories": {
+      "same_true": "同一事件的同一阶段，不同媒体报道（应合并）",
+      "progress_true": "同一具体事项的阶段推进（应合并）",
+      "parallel_false": "同一主体在同一时期的两项并列事项（不得合并）——本项目误合并的唯一来源",
+      "other_false": "同一主体的其他不同事件（不得合并）"
+    },
+    "note": "新增样本必须来自真语料或独立域外构造，**不接受**为通过某版提示词而改编的样本；反例写进提示词后必须从本集剔除，否则标定变成背答案。"
+  },
+  "cases": [
+    {
+      "id": "same-s02-penalty",
+      "left": "verify-s02-02",
+      "right": "verify-s02-03",
+      "expected_merge": true,
+      "category": "same_true",
+      "why": "同一起处罚落地的两篇报道"
+    },
+    {
+      "id": "same-s01-qilin",
+      "left": "verify-s01-01",
+      "right": "verify-s01-02",
+      "expected_merge": true,
+      "category": "same_true",
+      "why": "同一起麒麟电池发布的两篇报道"
+    },
+    {
+      "id": "same-s03-seal07",
+      "left": "verify-s03-01",
+      "right": "verify-s03-03",
+      "expected_merge": true,
+      "category": "same_true",
+      "why": "同一起海豹07上市的两篇报道"
+    },
+    {
+      "id": "same-s09-harmony",
+      "left": "verify-s09-01",
+      "right": "verify-s09-02",
+      "expected_merge": true,
+      "category": "same_true",
+      "why": "同一起鸿蒙5发布的两篇报道"
+    },
+    {
+      "id": "progress-s02-case",
+      "left": "verify-s02-01",
+      "right": "verify-s02-02",
+      "expected_merge": true,
+      "category": "progress_true",
+      "why": "立案调查 → 行政处罚落地，同一事项的两个阶段"
+    },
+    {
+      "id": "progress-s14-tariff",
+      "left": "verify-s14-01",
+      "right": "verify-s14-02",
+      "expected_merge": true,
+      "category": "progress_true",
+      "why": "决定加征 → 关税正式落地"
+    },
+    {
+      "id": "progress-s05-rrr",
+      "left": "verify-s05-01",
+      "right": "verify-s05-03",
+      "expected_merge": true,
+      "category": "progress_true",
+      "why": "宣布降准 → 降准落地实施"
+    },
+    {
+      "id": "progress-s11-selfdiscipline",
+      "left": "verify-s11-01",
+      "right": "verify-s11-03",
+      "expected_merge": true,
+      "category": "progress_true",
+      "why": "协会呼吁自律 → 协会发布自律倡议书"
+    },
+    {
+      "id": "parallel-pboc-report-mlf",
+      "left": "verify-solo-08",
+      "right": "verify-solo-07",
+      "expected_merge": false,
+      "category": "parallel_false",
+      "why": "同一时期央行发布季度报告 与 开展MLF操作：两件并列事项，不是一件事的两个阶段（技术债 #16 的原始样本）"
+    },
+    {
+      "id": "parallel-moutai-revenue-price",
+      "left": "verify-solo-17",
+      "right": "verify-s13-01",
+      "expected_merge": false,
+      "category": "parallel_false",
+      "why": "同一时期茅台发财报 与 上调出厂价：两件并列事项"
+    },
+    {
+      "id": "parallel-catl-profit-battery",
+      "left": "verify-solo-01",
+      "right": "verify-s01-01",
+      "expected_merge": false,
+      "category": "parallel_false",
+      "why": "同一时期宁德发季报 与 发布麒麟电池：两件并列事项"
+    },
+    {
+      "id": "parallel-nvidia-earnings-gpu",
+      "left": "verify-solo-05",
+      "right": "verify-s04-01",
+      "expected_merge": false,
+      "category": "parallel_false",
+      "why": "同一时期英伟达发财报 与 发新显卡：两件并列事项"
+    },
+    {
+      "id": "other-nvidia-probe-gpu",
+      "left": "verify-solo-06",
+      "right": "verify-s04-01",
+      "expected_merge": false,
+      "category": "other_false",
+      "why": "英伟达反垄断调查 与 发布新显卡"
+    },
+    {
+      "id": "other-catl-resign-battery",
+      "left": "verify-solo-02",
+      "right": "verify-s01-01",
+      "expected_merge": false,
+      "category": "other_false",
+      "why": "宁德高管辞职 与 发布麒麟电池"
+    },
+    {
+      "id": "other-tesla-recall-factory",
+      "left": "verify-solo-09",
+      "right": "verify-s06-01",
+      "expected_merge": false,
+      "category": "other_false",
+      "why": "特斯拉召回 与 储能工厂投产"
+    },
+    {
+      "id": "other-tesla-stake-factory",
+      "left": "verify-solo-10",
+      "right": "verify-s06-01",
+      "expected_merge": false,
+      "category": "other_false",
+      "why": "特斯拉CEO减持 与 储能工厂投产"
+    },
+    {
+      "id": "other-longi-buyback-price",
+      "left": "verify-solo-11",
+      "right": "verify-s07-01",
+      "expected_merge": false,
+      "category": "other_false",
+      "why": "隆基董事长增持 与 上调硅片报价"
+    },
+    {
+      "id": "other-tsmc-capex-fab",
+      "left": "verify-solo-12",
+      "right": "verify-s08-01",
+      "expected_merge": false,
+      "category": "other_false",
+      "why": "台积电上调资本开支 与 亚利桑那厂量产"
+    },
+    {
+      "id": "other-byd-sales-launch",
+      "left": "verify-solo-03",
+      "right": "verify-s03-01",
+      "expected_merge": false,
+      "category": "other_false",
+      "why": "比亚迪季度销量 与 海豹07上市"
+    },
+    {
+      "id": "other-byd-repo-launch",
+      "left": "verify-solo-04",
+      "right": "verify-s03-01",
+      "expected_merge": false,
+      "category": "other_false",
+      "why": "比亚迪回购 与 海豹07上市"
+    },
+    {
+      "id": "other-huawei-results-harmony",
+      "left": "verify-solo-13",
+      "right": "verify-s09-01",
+      "expected_merge": false,
+      "category": "other_false",
+      "why": "华为三季度业绩 与 鸿蒙5发布"
+    },
+    {
+      "id": "other-huawei-ad-harmony",
+      "left": "verify-solo-14",
+      "right": "verify-s09-01",
+      "expected_merge": false,
+      "category": "other_false",
+      "why": "华为与车企签智驾协议 与 鸿蒙5发布"
+    },
+    {
+      "id": "other-hengrui-approval-procure",
+      "left": "verify-solo-15",
+      "right": "verify-s10-01",
+      "expected_merge": false,
+      "category": "other_false",
+      "why": "恒瑞创新药获批 与 集采落标"
+    },
+    {
+      "id": "other-smic-line-utilization",
+      "left": "verify-solo-16",
+      "right": "verify-s12-01",
+      "expected_merge": false,
+      "category": "other_false",
+      "why": "中芯新建产线 与 产能利用率回升"
+    }
+  ]
+}

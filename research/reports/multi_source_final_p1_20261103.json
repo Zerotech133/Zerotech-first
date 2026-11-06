@@ -2,8 +2,10 @@
  "base_synonyms": 19,
  "applied_v2_groups": 11,
  "applied_v4_groups": 10,
- "final_multi_source": 29,
+ "final_multi_source": 30,
  "target": 30,
- "meets": false,
- "note": "人工签核口径：v4 同义词基线 + v2 已批 21 组（成员存在）+ v4 已批 10 组 + 原材料组；房地产/计算机组驳回"
+ "meets": true,
+ "note": "v1.1 签核后 30/30；含布林线（3 公开投教源）",
+ "gap": 0,
+ "canonical_version": "1.1.0"
 }

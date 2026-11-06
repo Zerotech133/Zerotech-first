@@ -660,7 +660,7 @@ def _write_m3b_outputs(out_dir, rows, results, args, t0, cost, limit_meta, overl
     import csv
 
     mat = os.path.join(out_dir, "m3b_matrix.csv")
-    cols = [
+    head = [
         "window",
         "group",
         "scheme",
@@ -668,24 +668,18 @@ def _write_m3b_outputs(out_dir, rows, results, args, t0, cost, limit_meta, overl
         "rank_key",
         "weight_scheme",
         "dynamic_n",
-        "cum_ret",
-        "ann_ret",
-        "max_dd",
-        "sharpe",
-        "win_days",
-        "n_trades",
-        "avg_trade_ret",
-        "avg_holdings",
-        "util",
         "beta_corr",
         "n_obs",
         "n_signal_days",
+        "dyn_n_mix",
         "d_ret_pp",
         "d_dd_pp",
         "d_sharpe",
         "d_trade_bp",
         "sample_ok",
     ]
+    rest = [k for k in sorted(rows[0].keys()) if k not in head]
+    cols = head + rest
     with open(mat, "w", encoding="utf-8", newline="") as f:
         w = csv.DictWriter(f, fieldnames=cols)
         w.writeheader()
@@ -942,7 +936,8 @@ def main(argv=None):
                     if m["avg_trade_return"] is not None and bm["avg_trade_return"] is not None
                     else None
                 )
-            rows.append(
+            row = {k: v for k, v in m.items() if k != "dyn_n_days"}
+            row.update(
                 {
                     "window": win,
                     "group": grp,
@@ -951,26 +946,29 @@ def main(argv=None):
                     "rank_key": c["rank"],
                     "weight_scheme": c["weight_scheme"],
                     "dynamic_n": c["dynamic_n"],
-                    "cum_ret": m["total_return"],
-                    "ann_ret": m["annualized"],
-                    "max_dd": m["max_drawdown"],
-                    "sharpe": m["sharpe"],
-                    "win_days": m["daily_win_rate"],
-                    "n_trades": m["n_trades_closed"],
-                    "avg_trade_ret": m["avg_trade_return"],
-                    "avg_holdings": m["avg_positions"],
-                    "util": m["avg_utilization"],
                     "beta_corr": run_meta[c["tag"]]["beta_corr"],
                     "n_obs": run_meta[c["tag"]]["n_obs"],
-                    "n_obs": run_meta[c["tag"]]["n_obs"],
                     "n_signal_days": m["n_signal_days"],
+                    "dyn_n_mix": "|".join(
+                        "%s:%s" % (k, v) for k, v in sorted(m.get("dyn_n_days", {}).items())
+                    ),
                     "d_ret_pp": "" if d_ret is None else d_ret,
                     "d_dd_pp": "" if d_dd is None else d_dd,
                     "d_sharpe": "" if d_shp is None else d_shp,
                     "d_trade_bp": "" if d_tr is None else d_tr,
                     "sample_ok": int(m["n_trades_closed"] >= 800),
+                    # m3_matrix.csv 同名兼容列
+                    "cum_ret": m["total_return"],
+                    "ann_ret": m["annualized"],
+                    "max_dd": m["max_drawdown"],
+                    "win_days": m["daily_win_rate"],
+                    "n_trades": m["n_trades_closed"],
+                    "avg_trade_ret": m["avg_trade_return"],
+                    "avg_holdings": m["avg_positions"],
+                    "util": m["avg_utilization"],
                 }
             )
+            rows.append(row)
         for win, s, e in W5:
             if not any(c["start"] == s for c, _, _ in results):
                 continue

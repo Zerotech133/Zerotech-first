@@ -4,3 +4,5 @@
 {"ts": "2026-11-02T06:40:04+08:00", "dataset_id": "xueqiu_info_xq_status", "action": "refresh_sample", "dry_run_only": true, "error": "'dataset_id 不存在: xueqiu_info_xq_status'"}
 {"ts": "2026-11-02T06:40:24+08:00", "dataset_id": "yt_learning_db", "action": "staging_clean", "dry_run_only": true, "executed": false, "approval_required": true, "planned_writes": ["staging/<dataset_id>/（仅计划，不写）"]}
 {"ts": "2026-11-02T06:40:24+08:00", "dataset_id": "xq_xq_status", "action": "refresh_sample", "dry_run_only": true, "executed": false, "approval_required": true, "planned_writes": []}
+{"ts": "2026-11-03T06:40:05+08:00", "dataset_id": "yt_learning_db", "action": "staging_clean", "dry_run_only": true, "executed": false, "approval_required": true, "planned_writes": ["staging/<dataset_id>/（仅计划，不写）"]}
+{"ts": "2026-11-03T06:40:05+08:00", "dataset_id": "xq_xq_status", "action": "refresh_sample", "dry_run_only": true, "executed": false, "approval_required": true, "planned_writes": []}

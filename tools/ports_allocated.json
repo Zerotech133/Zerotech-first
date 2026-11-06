@@ -1,4 +1,5 @@
 {
  "intel-review": 8101,
- "legion-ide": 8103
+ "legion-ide": 8103,
+ "--help": 8106
 }

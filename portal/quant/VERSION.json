@@ -1,7 +1,7 @@
 {
  "schema": "hermes-acad1-zhice-build/v1",
- "version": "20261102_145511_f8bfac91",
- "built_at": "2026-11-02T14:55:27+08:00",
+ "version": "20261104_072940_f8bfac91",
+ "built_at": "2026-11-04T07:29:57+08:00",
  "task": "P2-3 Hermes 司马徽扩展构建流水线/版本化",
  "source": {
   "path": "C:\\项目\\zhice-os-v2-windows-20260920\\code\\frontend",
@@ -10,29 +10,110 @@
    "repo": "C:\\项目\\zhice-os-v2-windows-20260920",
    "head": "f8bfac91c8eeca8be9271cb7b2a4a783931f67ea",
    "branch": "master",
-   "dirty": false,
-   "dirty_count": 0,
-   "dirty_files": []
+   "dirty": true,
+   "dirty_count": 122,
+   "dirty_files": [
+    " M code/frontend/index.html",
+    " M code/frontend/src/App.tsx",
+    " M code/frontend/src/components/ProtectedRoute.tsx",
+    " M code/frontend/src/components/admin-entitlements/EntitlementDrawer.tsx",
+    " M code/frontend/src/components/strategy/EnableStrategyWizard.tsx",
+    " M code/frontend/src/i18n/locales/en/errors.json",
+    " M code/frontend/src/i18n/locales/zh/errors.json",
+    " M code/frontend/src/i18n/locales/zh/p_ops.json",
+    " M code/frontend/src/i18n/locales/zh/p_strategy.json",
+    " M code/frontend/src/layouts/WorkspaceLayout.tsx",
+    " M code/frontend/src/pages/LoginPage.tsx",
+    " M code/frontend/src/pages/MyStrategyInstancesPage.tsx",
+    " M code/frontend/src/pages/StrategyCatalogPage.tsx",
+    " M code/frontend/src/pages/groups/StrategiesGroup.tsx",
+    " M code/frontend/src/services/api.ts",
+    " M code/frontend/src/services/myStrategiesApi.ts",
+    " M code/frontend/src/services/selectionRunApi.ts",
+    " M code/frontend/src/test/EntitlementDrawer.test.tsx",
+    " M code/frontend/src/test/LoginPage.test.tsx",
+    " M code/frontend/src/test/MultiUserStrategyFlow.test.tsx",
+    " M code/frontend/src/test/adminEntitlementsApi.test.ts",
+    " M code/frontend/vitest.config.ts",
+    " M code/scripts/adapt_platform_cn.py",
+    " M code/scripts/adapt_platform_global.py",
+    " M code/scripts/build_base_signals.py",
+    " M code/scripts/ingest_strategy_workspace.py",
+    " M code/scripts/run_daily_research_ops.py",
+    " M code/scripts/run_daily_research_ops_task.ps1",
+    " M code/scripts/seed_selection_desk.py",
+    " M code/scripts/sync_candidate_to_acad1.py",
+    " M code/scripts/trial_daily_check.py",
+    " M code/scripts/trial_morning_check.py",
+    " M code/scripts/trial_preflight.py",
+    " M code/src/zhice_os_v2/api/main.py",
+    " M code/src/zhice_os_v2/api/routers/admin_oversight.py",
+    " M code/src/zhice_os_v2/api/routers/auth.py",
+    " M code/src/zhice_os_v2/api/routers/my_strategy_instances.py",
+    " M code/src/zhice_os_v2/api/routers/selection_run.py",
+    " M code/src/zhice_os_v2/api/routers/strategy.py",
+    " M code/src/zhice_os_v2/application/services/risk_service.py",
+    " M code/src/zhice_os_v2/application/services/user_instance_execution_service.py",
+    " M code/src/zhice_os_v2/domain/execution/runtime_context.py",
+    " M code/tests/test_owned_execution_pipeline.py",
+    "?? code/config/contracts/strategy_research.odcs.yaml",
+    "?? code/config/research_artifact_manifest.json",
+    "?? code/config/strategy_four_gate_results.json",
+    "?? code/config/strategy_gate_matrix.json",
+    "?? code/config/strategy_market_research.json",
+    "?? code/config/strategy_oos_results.json",
+    "?? code/config/strategy_signal_adapters.yaml",
+    "?? code/config/w2_factor_screen_results.json",
+    "?? code/frontend/src/components/W2FactorPanel.tsx",
+    "?? code/frontend/src/pages/ResearchSimPage.tsx",
+    "?? code/frontend/src/pages/StrategyTuningPage.tsx",
+    "?? code/frontend/src/pages/TeamGovernancePage.tsx",
+    "?? code/frontend/src/pages/TrainingWorkbenchPage.tsx",
+    "?? code/frontend/src/pages/ZeroBoundPage.tsx",
+    "?? code/frontend/src/services/authRedirect.ts",
+    "?? code/frontend/src/services/portalAuth.ts",
+    "?? code/frontend/src/services/researchSimApi.ts",
+    "?? code/frontend/src/services/trainingWorkbenchApi.ts",
+    "?? code/frontend/src/services/w2FactorsApi.ts",
+    "?? code/frontend/src/services/zeroBoundApi.ts",
+    "?? code/frontend/src/test/TrainingWorkbenchPage.test.tsx",
+    "?? code/frontend/src/test/W2FactorPanel.test.tsx",
+    "?? code/migrations/versions/0050_training_workbench.py",
+    "?? code/scripts/adapt_dk.py",
+    "?? code/scripts/audit_v3_annotations.py",
+    "?? code/scripts/build_b_annotation_candidates.py",
+    "?? code/scripts/build_strategy_market.py",
+    "?? code/scripts/cyq_daily_backfill.py",
+    "?? code/scripts/ingest_ashare_bars.py",
+    "?? code/scripts/merge_b_annotations.py",
+    "?? code/scripts/prepare_b_annotation_workpapers.py",
+    "?? code/scripts/research_lx03_general_pillar.py",
+    "?? code/scripts/research_lx05_golden_line.py",
+    "?? code/scripts/research_lx10_3121.py",
+    "?? code/scripts/research_lx12_double_yin.py",
+    "?? code/scripts/research_lx14_relay.py",
+    "?? code/scripts/research_lx20_weekly.py"
+   ]
   },
   "head": "f8bfac91c8eeca8be9271cb7b2a4a783931f67ea",
   "branch": "master",
-  "dirty": false,
-  "dirty_count": 0,
+  "dirty": true,
+  "dirty_count": 122,
   "repo": "C:\\项目\\zhice-os-v2-windows-20260920",
   "digest": {
-   "digest": "8d8742099262a1d4e736edb705527f1852a656af3c76ceca8deb007d1976cb0e",
-   "file_count": 178,
-   "bytes": 1780850
+   "digest": "2f607c24d0f6abff381a6d493e61a87c4021cbfb8580805ab097b91537ecf364",
+   "file_count": 192,
+   "bytes": 1878194
   }
  },
  "build": {
-  "out_dir": "C:\\项目\\老田的AI助手\\tmp\\hermes_acad1_build\\20261102_145511_f8bfac91\\zhice",
+  "out_dir": "C:\\项目\\老田的AI助手\\tmp\\hermes_acad1_build\\20261104_072940_f8bfac91\\zhice",
   "typecheck": "pass",
   "typecheck_rc": 0,
   "vite_rc": 0,
   "assets": [
-   "index-Bfo9dQYu.js",
-   "index-Dl42rMEp.css"
+   "index-C6kbIZQH.js",
+   "index-DOvcpv-r.css"
   ],
   "tools": {
    "node": "node.EXE",
@@ -50,8 +131,8 @@
   "command": [
    "node node_modules/vite/bin/vite.js build --outDir <tmp> --emptyOutDir"
   ],
-  "built_at": "2026-11-02T14:55:27+08:00",
-  "duration_s": 15.6
+  "built_at": "2026-11-04T07:29:57+08:00",
+  "duration_s": 16.7
  },
  "same_origin": {
   "enabled": true,
@@ -65,7 +146,7 @@
    "zhice_auto_password"
   ],
   "initial_counts": {
-   "api_prefix_hits": 18,
+   "api_prefix_hits": 19,
    "bare_api_remaining": 0,
    "forbidden_token_hits": 0,
    "forbidden_hits": {},
@@ -73,7 +154,7 @@
    "relative_logo_remaining": 0
   },
   "counts": {
-   "api_prefix_hits": 18,
+   "api_prefix_hits": 19,
    "bare_api_remaining": 0,
    "forbidden_token_hits": 0,
    "forbidden_hits": {},
@@ -81,37 +162,37 @@
    "relative_logo_remaining": 0
   },
   "clean": {
-   "dirty_count": 0,
+   "dirty_count": 122,
    "auto_session_hits": 0,
    "legacy_port_hits": 0,
    "bare_api_remaining": 0,
-   "api_prefix_hits": 18
+   "api_prefix_hits": 19
   }
  },
  "output": {
-  "root": "C:\\项目\\deliverables\\_tmp_quant_build_sameorigin",
+  "root": "C:\\aios\\portal\\quant",
   "file_count": 8,
-  "total_bytes": 2430202,
+  "total_bytes": 2474910,
   "files": {
    "apple-touch-icon.png": {
     "sha256": "3495cab7606f62196f7bd5d7bd8c24f5f2987fd16afbf7642ea1f34ce10cd907",
     "bytes": 24068
    },
-   "assets/index-Bfo9dQYu.js": {
-    "sha256": "2cf6c176372c7e19b44808a742782b35a1b03228516756ccf0bbfb0455eeee1d",
-    "bytes": 1984478
+   "assets/index-C6kbIZQH.js": {
+    "sha256": "603c729d9ff01a73fb8bcda4ad54a19dba9f093c2e9cdf5c05d1a781f4be79d3",
+    "bytes": 2025924
    },
-   "assets/index-Dl42rMEp.css": {
-    "sha256": "1948d2a4ae5b63a8a34443775411e612eb8f1c886db89949a2b8f98420f53a84",
-    "bytes": 16229
+   "assets/index-DOvcpv-r.css": {
+    "sha256": "bac97a5952e6c73de40eac2d945d1bd1230a8b4875fcb31e882fcaa1469c5b89",
+    "bytes": 19473
    },
    "favicon-32.png": {
     "sha256": "bbd3795f5d8104a80ec23fc6647fd6f8b6eaf2d16009d4319dce4eb2b4b39e91",
     "bytes": 1570
    },
    "index.html": {
-    "sha256": "be994d1c275b6577b92cd3039486b5e2ed7cae0225caaa8fc96734d732578a9c",
-    "bytes": 576
+    "sha256": "1f56b510c5cb4421e3c6874aa0040615a587f07c0bd133c3b5016adebc439de4",
+    "bytes": 594
    },
    "logo-icon.png": {
     "sha256": "8ea7de811a2f5190e3af54232c698e004a4404ee0fa62489bd683f6148480dc4",
@@ -150,27 +231,27 @@
    }
   ],
   "files": {
-   "index-Bfo9dQYu.js": {
-    "bytes_before": 1984328,
-    "bytes_after": 1984478,
+   "index-C6kbIZQH.js": {
+    "bytes_before": 2025784,
+    "bytes_after": 2025924,
     "ws_replaced": 1,
-    "api_replaced": 14,
+    "api_replaced": 13,
     "logo_replaced": {
      "logo-icon.png": 0,
      "logo.png": 0
     },
-    "sha256": "2cf6c176372c7e19b44808a742782b35a1b03228516756ccf0bbfb0455eeee1d"
+    "sha256": "603c729d9ff01a73fb8bcda4ad54a19dba9f093c2e9cdf5c05d1a781f4be79d3"
    }
   },
   "counts": {
    "ws_replaced": 1,
-   "api_replaced": 14,
+   "api_replaced": 13,
    "logo_replaced": 0
   },
   "css_files": {
-   "index-Dl42rMEp.css": {
-    "bytes_before": 16229,
-    "bytes_after": 16229,
+   "index-DOvcpv-r.css": {
+    "bytes_before": 19473,
+    "bytes_after": 19473,
     "logo_replaced": 0
    }
   },
@@ -182,7 +263,7 @@
     "ref_prefix": "/quant/"
    },
    "counts": {
-    "api_prefix_hits": 18,
+    "api_prefix_hits": 19,
     "bare_api_remaining": 0,
     "forbidden_token_hits": 0,
     "forbidden_hits": {},
@@ -190,7 +271,7 @@
     "relative_logo_remaining": 0
    }
   },
-  "duration_s": 1.0
+  "duration_s": 0.6
  },
  "boundaries": {
   "hermes_core_changed": false,
@@ -198,11 +279,14 @@
   "hermes_8787_restarted": false,
   "port_8796_touched": false
  },
+ "promote": {
+  "backup": "C:\\项目\\老田的AI助手\\Hermes\\extensions\\legion-ide\\_build_backup\\zhice_20261104_072957_prev"
+ },
  "verify": {
-  "verified_at": "2026-11-02T14:55:28+08:00",
+  "verified_at": "2026-11-04T07:29:58+08:00",
   "file_hashes_match": true,
   "file_count": 8,
-  "total_bytes": 2430202,
+  "total_bytes": 2474910,
   "assert_patched": {
    "ok": true,
    "same_origin": true,
@@ -211,7 +295,7 @@
     "ref_prefix": "/quant/"
    },
    "counts": {
-    "api_prefix_hits": 18,
+    "api_prefix_hits": 19,
     "bare_api_remaining": 0,
     "forbidden_token_hits": 0,
     "forbidden_hits": {},
@@ -226,5 +310,5 @@
   }
  },
  "live_probe": {},
- "finished_at": "2026-11-02T14:55:28+08:00"
+ "finished_at": "2026-11-04T07:29:58+08:00"
 }

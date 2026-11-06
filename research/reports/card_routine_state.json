@@ -1,13 +1,13 @@
 {
  "pid": "视频号学习_8博主",
- "units_fingerprint": "2891817|1793653467|93c09c7519ad9def",
- "last_run": "2026-11-03T05:46:57+08:00",
+ "units_fingerprint": "1548366|1793880008|ebaa990864e4dfa0",
+ "last_run": "2026-11-06T06:30:18+08:00",
  "last_status": "ok",
  "stats": {
-  "candidates": 772,
-  "pass": 259,
-  "reject": 513,
+  "candidates": 497,
+  "pass": 144,
+  "reject": 353,
   "revise": 0
  },
- "candidate_file": "card_candidates_视频号学习_8博主_v2_20261103.json"
+ "candidate_file": "card_candidates_视频号学习_8博主_v2_20261106.json"
 }

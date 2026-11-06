@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-03T06:44:27+08:00",
+ "generated_at": "2026-11-03T20:00:02+08:00",
  "write": true,
  "projects": [
   {
@@ -16,9 +16,9 @@
    "units_audit": {
     "path": "C:\\项目\\知识库\\30_知识单元\\laomu_notes_units_draft.jsonl",
     "exists": true,
-    "total": 288,
+    "total": 286,
     "meta_skipped": 0,
-    "kept": 288,
+    "kept": 286,
     "meta_ratio": 0.0,
     "samples": [],
     "rewritten": false
@@ -46,17 +46,11 @@
    "units_audit": {
     "path": "C:\\项目\\知识库\\30_知识单元\\视频号学习_8博主_units_draft.jsonl",
     "exists": true,
-    "total": 3813,
-    "meta_skipped": 2795,
-    "kept": 1018,
-    "meta_ratio": 0.733,
-    "samples": [
-     "> 共 23 条 · 由 faster-whisper 转写，可能有个别同音字错误",
-     "- 文件：`20261010_1835_缩量后放量 AI 把它翻译成公式.mp4`",
-     "- 时长：1:16",
-     "- 字数：405",
-     "- 文件：`20261011_2005_AI 到底能不能预判行情？.mp4`"
-    ],
+    "total": 800,
+    "meta_skipped": 0,
+    "kept": 800,
+    "meta_ratio": 0.0,
+    "samples": [],
     "rewritten": false
    },
    "action": "pipelined",
@@ -73,6 +67,38 @@
    "units": 1018,
    "meta_skipped": 2795,
    "units_raw": 3813,
+   "concepts_top": 30
+  },
+  {
+   "project_id": "视频号学习_第二期",
+   "status": "distilling",
+   "pdf_ocr": {
+    "stage": "skip_no_pdf",
+    "pdfs": 0,
+    "ran": 0,
+    "skipped": 0,
+    "failed": 0
+   },
+   "texts": 3,
+   "units_audit": {
+    "path": "C:\\项目\\知识库\\30_知识单元\\视频号学习_第二期_units_draft.jsonl",
+    "exists": true,
+    "total": 1116,
+    "meta_skipped": 0,
+    "kept": 1116,
+    "meta_ratio": 0.0,
+    "samples": [],
+    "rewritten": false
+   },
+   "action": "pipelined",
+   "clean_files": [
+    "C:\\项目\\知识库\\20_清洗\\视频号学习_第二期\\clean\\20261103_刺猬投研.md",
+    "C:\\项目\\知识库\\20_清洗\\视频号学习_第二期\\clean\\20261103_指标说明书.md",
+    "C:\\项目\\知识库\\20_清洗\\视频号学习_第二期\\clean\\20261103_爱吃折耳根的Ace.md"
+   ],
+   "units": 1293,
+   "meta_skipped": 734,
+   "units_raw": 2027,
    "concepts_top": 30
   }
  ]

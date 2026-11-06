@@ -1,47 +1,77 @@
 {
- "generated_at": "2026-10-31T13:49:17+08:00",
+ "generated_at": "2026-11-04T07:29:58+08:00",
  "repo": "C:\\项目\\zhice-os-v2-windows-20260920",
- "head": "f4230a892e2da0650eea78bcb819fc680fe3eb8d",
+ "head": "f8bfac91c8eeca8be9271cb7b2a4a783931f67ea",
  "files": [
   {
-   "path": "code/frontend/src/components/ProtectedRoute.tsx.bak_20261030",
-   "sha256": "18699567b293538d4b1d1d15eeb2cb445461cf8d54962b20755ebae500f64f52",
-   "bytes": 1607
+   "path": "code/frontend/src/components/W2FactorPanel.tsx",
+   "sha256": "626ac78cf0fd45886c38ff86573dfe8f905e666d681798390b956d7b4d37fafc",
+   "bytes": 20585
   },
   {
-   "path": "code/frontend/src/pages/Acad1ResearchPage.tsx",
-   "sha256": "5406a78dcf6d834be4c466a68054fa7ec55e29ae1ae8ec0f84001396745f4072",
-   "bytes": 16241
+   "path": "code/frontend/src/pages/ResearchSimPage.tsx",
+   "sha256": "47be87633d4eb07aa82efecab5a11533304fde96ecba87d21b2b602e1d198712",
+   "bytes": 4393
   },
   {
-   "path": "code/frontend/src/pages/LusuDeskPage.tsx",
-   "sha256": "6694fa5748cb7981c87c31bfd831367fe4f84f789881451140885d072e0242ad",
-   "bytes": 5833
+   "path": "code/frontend/src/pages/StrategyTuningPage.tsx",
+   "sha256": "bc5b90cd49af0e8cc13f44b56ed3eb5d9dade50f45851df94277e9b9beeeb12c",
+   "bytes": 7090
   },
   {
-   "path": "code/frontend/src/pages/SelectionDeskPage.tsx",
-   "sha256": "5bdeeca9147633be825d31b051470ced1ab7f72150920e26290e3fbb8619a438",
-   "bytes": 13195
+   "path": "code/frontend/src/pages/TeamGovernancePage.tsx",
+   "sha256": "53739ed52966a58cca7a84aef365d6aa05bbff2bf6b2a06cf7f8be1043f9284c",
+   "bytes": 8804
   },
   {
-   "path": "code/frontend/src/pages/SimFactorPage.tsx",
-   "sha256": "09aa64d202d023448a59e2d7ee7fba34f5048530734c6804b2baf6ec1dcaea26",
-   "bytes": 12140
+   "path": "code/frontend/src/pages/TrainingWorkbenchPage.tsx",
+   "sha256": "7871e0611e564bb3b1e0497b93ea3a63466bf12a4afeb4257582784c9df52e58",
+   "bytes": 8044
   },
   {
-   "path": "code/frontend/src/pages/StrategyWorkspacePage.tsx",
-   "sha256": "0b051d00be84821c8e86cb1b2e9f0ed503cbe4a6aab75638bf2f4eb23b8767ba",
-   "bytes": 5970
+   "path": "code/frontend/src/pages/ZeroBoundPage.tsx",
+   "sha256": "8b73d03459c090c24179aaf0a4e034c10ccfc430ff5893779d0c7cf9872065b1",
+   "bytes": 4824
   },
   {
-   "path": "code/frontend/src/services/autoSession.ts",
-   "sha256": "70eb0d38c9b28289563cf0d754fd9755f19b55e0de4bb7dfe660ee3c44f58e0a",
-   "bytes": 2515
+   "path": "code/frontend/src/services/authRedirect.ts",
+   "sha256": "fa8b618affdad6b703a1d32e06b98a303428ba13cf4be4729d6eeeb16cf37084",
+   "bytes": 426
   },
   {
-   "path": "code/frontend/src/services/strategyWorkspaceApi.ts",
-   "sha256": "d3f9f97203aeedaf6bdee42c94d5d8632e7d1726eba6e7fd363c098dc6a41ad7",
-   "bytes": 4679
+   "path": "code/frontend/src/services/portalAuth.ts",
+   "sha256": "80f696921eaf238fcf9e258f81cb326a759f2ba05834528709a054a1883099ff",
+   "bytes": 2345
+  },
+  {
+   "path": "code/frontend/src/services/researchSimApi.ts",
+   "sha256": "f3f0e0efe1ae1f910b7534c262d84b420e594c40562105f8daf3f506309671a2",
+   "bytes": 1133
+  },
+  {
+   "path": "code/frontend/src/services/trainingWorkbenchApi.ts",
+   "sha256": "25ce8046bd4830d44fa233943129f00e92fafee4cedf3d61ffc8bdbb69e31f51",
+   "bytes": 1696
+  },
+  {
+   "path": "code/frontend/src/services/w2FactorsApi.ts",
+   "sha256": "3d5084814dcc96f5f2efaa3feab4fe5ab248f962cf97fa3e19ab79e75dcd8364",
+   "bytes": 4358
+  },
+  {
+   "path": "code/frontend/src/services/zeroBoundApi.ts",
+   "sha256": "efbcc6b033ca3d84649d28c891224ecb7319f1625378cbfab49d7bab36ecf7dc",
+   "bytes": 1030
+  },
+  {
+   "path": "code/frontend/src/test/TrainingWorkbenchPage.test.tsx",
+   "sha256": "c4d4c13dff95d4bad0464df687d1f38e3cfe60cccdcd5ae56a8b6e0fd925deb7",
+   "bytes": 969
+  },
+  {
+   "path": "code/frontend/src/test/W2FactorPanel.test.tsx",
+   "sha256": "dd63f4369a01cc0612aba21fdc7644d223c12879b708a8a74864053f40e2dc26",
+   "bytes": 13704
   }
  ]
 }
