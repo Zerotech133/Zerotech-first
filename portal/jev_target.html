@@ -210,7 +210,9 @@
       }
 
       $("post").textContent=post.available?("该股累计判定 "+post.judged_total+" 条，其中 "+post.verified+" 条已按 T+1 回填收益"+(post.hit_rate!=null?("，命中率 "+(post.hit_rate*100).toFixed(1)+"%"):"")):"后验库暂不可用";
-      $("jn").textContent=(j.items||[]).length+" / "+(j.total||0);
+      var _jn=(j.items||[]).length, _jt=(j.total||0);
+      $("jn").textContent="最近 "+_jn+" / 共 "+_jt+" 条";
+      $("jn").title="列表按时间倒序只展示前 "+_jn+" 条；上方「判定净倾向」与「多/空/中」统计的是窗口内全部 "+_jt+" 条";
       $("j-body").innerHTML=(j.items||[]).map(function(it){
         return "<tr><td class='mini' style='white-space:nowrap'>"+esc(it.ts)+"</td>"
           +"<td><span class='bias-chip "+esc(it.bias||"neutral")+"'>"+(BIAS_CN[it.bias]||it.bias||"—")+"</span></td>"

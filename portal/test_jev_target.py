@@ -134,6 +134,21 @@ def test_compute_aggregates_four_blocks(env):
     assert "e" not in ids and "d" not in ids  # 无关行 / 未判定行都不进判定面
 
 
+def test_limit_truncates_items_only_not_stats(env):
+    """limit 只截「展示」不截「统计」。
+
+    原实现把 items 截断与 dist 累加写在同一个 break 里，导致 total 恒等于
+    len(items)：页面「50 / 50」永远自证，且「多34·空8·中8」只是前 50 条的分布，
+    与左侧情绪面（全窗口）不可比。这条测试锁住修正后的契约。
+    """
+    d = at.compute("600519", 30, 1)
+    j = d["judgments"]
+    assert len(j["items"]) == 1, "items 应被 limit 截到 1"
+    assert j["total"] == 2, "total 被 limit 截断 → 页面会显示 n/n，统计失去意义"
+    assert j["dist"] == {"bull": 1, "bear": 1, "neutral": 0}, "方向分布须覆盖全窗口"
+    assert j["net_bias"] == 0.0
+
+
 def test_block_status_all_true(env):
     d = at.compute("600519", 30, 10)
     assert d["block_status"] == {"profile": True, "quotes": True,

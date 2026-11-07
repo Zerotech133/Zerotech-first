@@ -8,7 +8,8 @@
     GET /api/jev/target/600519?days=30&limit=20
         code   6 位代码（或带后缀 ts_code）
         days   判定/行情回看窗，1..180，默认 30
-        limit  判定条数上限，1..100，默认 20
+        limit  判定明细返回条数，1..100，默认 20（**只影响 items 长度**：
+               total/dist/net_bias 始终覆盖整个窗口，不受 limit 截断）
 
 聚合四块 + 形态量价（全只读，60s 进程内缓存）：
   profile    基本面快照：stock_basic（名称/行业/地域/上市日）× datamart
@@ -19,6 +20,8 @@
              极性结构；极性来自 JEV 判定 bias，故称「判定口径情绪」
   judgments  判定面：该股相关 JEV 判定明细（带 evidence_item 溯源路径）
              + T+1 后验（dec_audit 联查），带方向分布
+             口径：total/dist/net_bias = 窗口内**全部**命中判定；
+             items 只是按时间倒序的前 limit 条（limit 不改变统计）
 
 v2 变更（2026-11-07）：情绪面由「judgments.dist 改名」升级为独立取数块；
 quotes 新增 form 派生块；新增 block_status 逐块可用性。v1 字段名全部保留。
@@ -330,7 +333,7 @@ def _judgments(code6: str, days: int, limit: int) -> dict:
             "AND (stocks LIKE ? OR jev LIKE ?) "
             "ORDER BY ts DESC LIMIT ?",
             (since, "%" + code6 + "%", "%" + code6 + "%",
-             max(limit * 10, 80)),
+             max(limit * 50, 5000)),
         ).fetchall()
         db.close()
     except sqlite3.Error as e:
@@ -348,16 +351,15 @@ def _judgments(code6: str, days: int, limit: int) -> dict:
             continue  # LIKE 命中的误配精确过滤
         bias = j.get("bias") if j.get("bias") in dist else "neutral"
         dist[bias] += 1
-        items.append({
-            "id": nid, "ts": ts, "title": (title or "")[:80],
-            "bias": bias, "conf": j.get("conf"),
-            "event_type": j.get("event_type"),
-            "companies": comps,
-            "src": j.get("src") or ("prefilter" if j.get("pref") else "model"),
-            "evidence_item": "/api/jev/evidence/item?id=%s&code=%s" % (nid, code6),
-        })
-        if len(items) >= limit:
-            break
+        if len(items) < limit:      # 只截「展示」不截「统计」：total/dist/net_bias 覆盖全窗口
+            items.append({
+                "id": nid, "ts": ts, "title": (title or "")[:80],
+                "bias": bias, "conf": j.get("conf"),
+                "event_type": j.get("event_type"),
+                "companies": comps,
+                "src": j.get("src") or ("prefilter" if j.get("pref") else "model"),
+                "evidence_item": "/api/jev/evidence/item?id=%s&code=%s" % (nid, code6),
+            })
 
     # T+1 后验（有 trade_day 的判定占比 + 命中率）
     posterior = {"available": False}
@@ -382,7 +384,7 @@ def _judgments(code6: str, days: int, limit: int) -> dict:
     except Exception:  # noqa: BLE001
         pass
 
-    total = sum(dist.values())
+    total = sum(dist.values())   # 窗口内全部精确命中的判定数；不是 len(items)
     return {
         "available": True,
         "window_days": days,
