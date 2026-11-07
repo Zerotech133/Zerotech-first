@@ -1814,6 +1814,18 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 api_jev_access.wrap_dispatch(
                     self, path, qs, "GET", api_jev_target.handle_get, path, qs)
                 return
+            # AI 解读结论（2026-11-07：老田令——数据要出结论告知人）
+            if path == '/api/jev/interpret':
+                import api_jev_access, api_jev_interpret
+                api_jev_access.wrap_dispatch(
+                    self, path, qs, "GET", api_jev_interpret.handle_get, path, qs)
+                return
+            # 日内 5 分钟回溯（2026-11-07：老田令盘中反应量化）
+            if path.startswith('/api/jev/intraday/'):
+                import api_jev_access, api_jev_intraday
+                api_jev_access.wrap_dispatch(
+                    self, path, qs, "GET", api_jev_intraday.handle_get, path, qs)
+                return
             # 个股叙事线（2026-11-07：判定串联+信源战绩+变化验证）
             if path.startswith('/api/jev/story/'):
                 import api_jev_access, api_jev_story
@@ -2558,6 +2570,39 @@ color:#fff;font-size:13.5px;cursor:pointer}
                     except Exception as _e:
                         r2["mt_warn"] = str(_e)[:100]
                 self._json(r2)
+        elif path == "/api/chanlun/pool/heat":
+            # K-ORG-20261107-CHANDECK：市场信号热度（只读扫 chanlun_pool.jsonl
+            # 最新 detect_date，六类买卖点计数；流式逐行，不整库载入）
+            import json as _jheat
+            from collections import Counter as _Cnt
+            _pool_p = os.path.join(QBT_DIR, "data", "chanlun_pool.jsonl")
+            _det, _cnt = None, _Cnt()
+            try:
+                with open(_pool_p, encoding="utf-8") as _f:
+                    for _ln in _f:
+                        try:
+                            _r = _jheat.loads(_ln)
+                        except ValueError:
+                            continue
+                        _d = _r.get("detect_date")
+                        if _d and (not _det or _d > _det):
+                            _det = _d
+            except OSError:
+                pass
+            if _det:
+                try:
+                    with open(_pool_p, encoding="utf-8") as _f:
+                        for _ln in _f:
+                            try:
+                                _r = _jheat.loads(_ln)
+                            except ValueError:
+                                continue
+                            if _r.get("detect_date") == _det:
+                                _cnt[_r.get("type") or "?"] += 1
+                except OSError:
+                    pass
+            self._json({"ok": True, "detect_date": _det,
+                        "counts": dict(_cnt)})
         elif path == "/api/chanlun/backtest":
             # 缠论 P4：三类买卖点事件统计 + 策略回测（理论价口径）
             from urllib.parse import parse_qs as _pqst
