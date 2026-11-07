@@ -1,0 +1,311 @@
+{
+  "schema": "d1_p0_03_full_result/v1",
+  "started_at": "2026-11-07T20:29:49+08:00",
+  "applied": true,
+  "restored": true,
+  "aborted": false,
+  "host_sha256_during": "2ddf3db16fd7ec0d297769e194920d09c16cc9f686c5fc400880cc2441621c3c",
+  "container_sha256_during": "2ddf3db16fd7ec0d297769e194920d09c16cc9f686c5fc400880cc2441621c3c",
+  "nginx_test_during": {
+    "rc": 0,
+    "stdout": "",
+    "stderr": "nginx: the configuration file /etc/nginx/nginx.conf syntax is ok\nnginx: configuration file /etc/nginx/nginx.conf test is successful"
+  },
+  "nginx_reload_during": {
+    "rc": 0,
+    "stdout": "",
+    "stderr": "2026/11/07 12:29:49 [notice] 89#89: signal process started"
+  },
+  "route_matrix_during": {
+    "d1": {
+      "url": "http://127.0.0.1:8734/d1",
+      "method": "GET",
+      "status": 503,
+      "body_prefix": "<html>\r\n<head><title>503 Service Temporarily Unavailable</title></head>\r\n<body>\r\n<center><h1>503 Ser",
+      "error": ""
+    },
+    "d1_slash": {
+      "url": "http://127.0.0.1:8734/d1/",
+      "method": "GET",
+      "status": 503,
+      "body_prefix": "<html>\r\n<head><title>503 Service Temporarily Unavailable</title></head>\r\n<body>\r\n<center><h1>503 Ser",
+      "error": ""
+    },
+    "d1_research": {
+      "url": "http://127.0.0.1:8734/d1/research",
+      "method": "GET",
+      "status": 503,
+      "body_prefix": "<html>\r\n<head><title>503 Service Temporarily Unavailable</title></head>\r\n<body>\r\n<center><h1>503 Ser",
+      "error": ""
+    },
+    "d1_war_room": {
+      "url": "http://127.0.0.1:8734/d1/war-room",
+      "method": "GET",
+      "status": 503,
+      "body_prefix": "<html>\r\n<head><title>503 Service Temporarily Unavailable</title></head>\r\n<body>\r\n<center><h1>503 Ser",
+      "error": ""
+    },
+    "d1_training": {
+      "url": "http://127.0.0.1:8734/d1/training",
+      "method": "GET",
+      "status": 503,
+      "body_prefix": "<html>\r\n<head><title>503 Service Temporarily Unavailable</title></head>\r\n<body>\r\n<center><h1>503 Ser",
+      "error": ""
+    },
+    "d1_signoff": {
+      "url": "http://127.0.0.1:8734/d1/q2/signoff",
+      "method": "GET",
+      "status": 503,
+      "body_prefix": "<html>\r\n<head><title>503 Service Temporarily Unavailable</title></head>\r\n<body>\r\n<center><h1>503 Ser",
+      "error": ""
+    },
+    "d1_signoff_readonly": {
+      "url": "http://127.0.0.1:8734/d1/q2/signoff/readonly",
+      "method": "GET",
+      "status": 503,
+      "body_prefix": "<html>\r\n<head><title>503 Service Temporarily Unavailable</title></head>\r\n<body>\r\n<center><h1>503 Ser",
+      "error": ""
+    },
+    "d1_query": {
+      "url": "http://127.0.0.1:8734/d1?x=1",
+      "method": "GET",
+      "status": 503,
+      "body_prefix": "<html>\r\n<head><title>503 Service Temporarily Unavailable</title></head>\r\n<body>\r\n<center><h1>503 Ser",
+      "error": ""
+    },
+    "d1_q2_direct": {
+      "url": "http://127.0.0.1:8734/d1_q2/signoff.html",
+      "method": "GET",
+      "status": 404,
+      "body_prefix": "<html>\r\n<head><title>404 Not Found</title></head>\r\n<body>\r\n<center><h1>404 Not Found</h1></center>\r\n",
+      "error": ""
+    },
+    "api_d1_research": {
+      "url": "http://127.0.0.1:8734/api/d1/research",
+      "method": "GET",
+      "status": 503,
+      "body_prefix": "<html>\r\n<head><title>503 Service Temporarily Unavailable</title></head>\r\n<body>\r\n<center><h1>503 Ser",
+      "error": ""
+    },
+    "api_d1_decision": {
+      "url": "http://127.0.0.1:8734/api/d1/decision",
+      "method": "GET",
+      "status": 503,
+      "body_prefix": "<html>\r\n<head><title>503 Service Temporarily Unavailable</title></head>\r\n<body>\r\n<center><h1>503 Ser",
+      "error": ""
+    },
+    "api_d1_decisions": {
+      "url": "http://127.0.0.1:8734/api/d1/decisions",
+      "method": "GET",
+      "status": 503,
+      "body_prefix": "<html>\r\n<head><title>503 Service Temporarily Unavailable</title></head>\r\n<body>\r\n<center><h1>503 Ser",
+      "error": ""
+    },
+    "api_d1_meeting": {
+      "url": "http://127.0.0.1:8734/api/d1/meeting",
+      "method": "GET",
+      "status": 503,
+      "body_prefix": "<html>\r\n<head><title>503 Service Temporarily Unavailable</title></head>\r\n<body>\r\n<center><h1>503 Ser",
+      "error": ""
+    },
+    "api_d1_handoff": {
+      "url": "http://127.0.0.1:8734/api/d1/handoff",
+      "method": "GET",
+      "status": 503,
+      "body_prefix": "<html>\r\n<head><title>503 Service Temporarily Unavailable</title></head>\r\n<body>\r\n<center><h1>503 Ser",
+      "error": ""
+    },
+    "api_d1_handoffs": {
+      "url": "http://127.0.0.1:8734/api/d1/handoffs",
+      "method": "GET",
+      "status": 503,
+      "body_prefix": "<html>\r\n<head><title>503 Service Temporarily Unavailable</title></head>\r\n<body>\r\n<center><h1>503 Ser",
+      "error": ""
+    },
+    "api_d1_watch_plans": {
+      "url": "http://127.0.0.1:8734/api/d1/watch-plans",
+      "method": "GET",
+      "status": 503,
+      "body_prefix": "<html>\r\n<head><title>503 Service Temporarily Unavailable</title></head>\r\n<body>\r\n<center><h1>503 Ser",
+      "error": ""
+    },
+    "api_d1_training": {
+      "url": "http://127.0.0.1:8734/api/d1/training/episodes",
+      "method": "GET",
+      "status": 503,
+      "body_prefix": "<html>\r\n<head><title>503 Service Temporarily Unavailable</title></head>\r\n<body>\r\n<center><h1>503 Ser",
+      "error": ""
+    },
+    "api_health": {
+      "url": "http://127.0.0.1:8091/api/health",
+      "method": "GET",
+      "status": 200,
+      "body_prefix": "{\"ok\": true, \"ts\": \"2026-11-07 20:29:52\", \"services\": [{\"name\": \"portal api\", \"port\": 8091, \"ok\": tr",
+      "error": ""
+    },
+    "api_d1_direct_8091": {
+      "url": "http://127.0.0.1:8091/api/d1/decisions",
+      "method": "GET",
+      "status": 200,
+      "body_prefix": "{\"ok\": true, \"summary\": {\"schema\": \"d1_decision_summary/v1\", \"total\": 4, \"by_tier\": {\"STRONG_BUY\": 0",
+      "error": ""
+    }
+  },
+  "held_seconds": 60,
+  "restored_at": "2026-11-07T20:30:53+08:00",
+  "host_sha256_after": "5f80ffa665d06b474e9acac651312dbcb0e53ba8e7d8f35fd33d4a879c1378ac",
+  "container_sha256_after": "5f80ffa665d06b474e9acac651312dbcb0e53ba8e7d8f35fd33d4a879c1378ac",
+  "nginx_test_after": {
+    "rc": 0,
+    "stdout": "",
+    "stderr": "nginx: the configuration file /etc/nginx/nginx.conf syntax is ok\nnginx: configuration file /etc/nginx/nginx.conf test is successful"
+  },
+  "nginx_reload_after": {
+    "rc": 0,
+    "stdout": "",
+    "stderr": "2026/11/07 12:30:53 [notice] 140#140: signal process started"
+  },
+  "route_matrix_after": {
+    "d1": {
+      "url": "http://127.0.0.1:8734/d1",
+      "method": "GET",
+      "status": 302,
+      "body_prefix": "<html>\r\n<head><title>302 Found</title></head>\r\n<body>\r\n<center><h1>302 Found</h1></center>\r\n<hr><cen",
+      "error": ""
+    },
+    "d1_slash": {
+      "url": "http://127.0.0.1:8734/d1/",
+      "method": "GET",
+      "status": 302,
+      "body_prefix": "<html>\r\n<head><title>302 Found</title></head>\r\n<body>\r\n<center><h1>302 Found</h1></center>\r\n<hr><cen",
+      "error": ""
+    },
+    "d1_research": {
+      "url": "http://127.0.0.1:8734/d1/research",
+      "method": "GET",
+      "status": 302,
+      "body_prefix": "<html>\r\n<head><title>302 Found</title></head>\r\n<body>\r\n<center><h1>302 Found</h1></center>\r\n<hr><cen",
+      "error": ""
+    },
+    "d1_war_room": {
+      "url": "http://127.0.0.1:8734/d1/war-room",
+      "method": "GET",
+      "status": 302,
+      "body_prefix": "<html>\r\n<head><title>302 Found</title></head>\r\n<body>\r\n<center><h1>302 Found</h1></center>\r\n<hr><cen",
+      "error": ""
+    },
+    "d1_training": {
+      "url": "http://127.0.0.1:8734/d1/training",
+      "method": "GET",
+      "status": 302,
+      "body_prefix": "<html>\r\n<head><title>302 Found</title></head>\r\n<body>\r\n<center><h1>302 Found</h1></center>\r\n<hr><cen",
+      "error": ""
+    },
+    "d1_signoff": {
+      "url": "http://127.0.0.1:8734/d1/q2/signoff",
+      "method": "GET",
+      "status": 302,
+      "body_prefix": "<html>\r\n<head><title>302 Found</title></head>\r\n<body>\r\n<center><h1>302 Found</h1></center>\r\n<hr><cen",
+      "error": ""
+    },
+    "d1_signoff_readonly": {
+      "url": "http://127.0.0.1:8734/d1/q2/signoff/readonly",
+      "method": "GET",
+      "status": 302,
+      "body_prefix": "<html>\r\n<head><title>302 Found</title></head>\r\n<body>\r\n<center><h1>302 Found</h1></center>\r\n<hr><cen",
+      "error": ""
+    },
+    "d1_query": {
+      "url": "http://127.0.0.1:8734/d1?x=1",
+      "method": "GET",
+      "status": 302,
+      "body_prefix": "<html>\r\n<head><title>302 Found</title></head>\r\n<body>\r\n<center><h1>302 Found</h1></center>\r\n<hr><cen",
+      "error": ""
+    },
+    "d1_q2_direct": {
+      "url": "http://127.0.0.1:8734/d1_q2/signoff.html",
+      "method": "GET",
+      "status": 404,
+      "body_prefix": "<html>\r\n<head><title>404 Not Found</title></head>\r\n<body>\r\n<center><h1>404 Not Found</h1></center>\r\n",
+      "error": ""
+    },
+    "api_d1_research": {
+      "url": "http://127.0.0.1:8734/api/d1/research",
+      "method": "GET",
+      "status": 200,
+      "body_prefix": "{\"items\": [{\"code\": \"000001.SZ\", \"name\": \"平安银行\", \"industry\": \"\", \"tier\": \"\", \"sources\": [\"chanlun\"],",
+      "error": ""
+    },
+    "api_d1_decision": {
+      "url": "http://127.0.0.1:8734/api/d1/decision",
+      "method": "GET",
+      "status": 404,
+      "body_prefix": "{\"error\": \"not found\"}",
+      "error": ""
+    },
+    "api_d1_decisions": {
+      "url": "http://127.0.0.1:8734/api/d1/decisions",
+      "method": "GET",
+      "status": 200,
+      "body_prefix": "{\"ok\": true, \"summary\": {\"schema\": \"d1_decision_summary/v1\", \"total\": 4, \"by_tier\": {\"STRONG_BUY\": 0",
+      "error": ""
+    },
+    "api_d1_meeting": {
+      "url": "http://127.0.0.1:8734/api/d1/meeting",
+      "method": "GET",
+      "status": 200,
+      "body_prefix": "{\"ok\": true, \"summary\": {\"schema\": \"d1_meeting_summary/v1\", \"total\": 0, \"open\": 0, \"finalized\": 0, \"",
+      "error": ""
+    },
+    "api_d1_handoff": {
+      "url": "http://127.0.0.1:8734/api/d1/handoff",
+      "method": "GET",
+      "status": 404,
+      "body_prefix": "{\"error\": \"not found\"}",
+      "error": ""
+    },
+    "api_d1_handoffs": {
+      "url": "http://127.0.0.1:8734/api/d1/handoffs",
+      "method": "GET",
+      "status": 200,
+      "body_prefix": "{\"ok\": true, \"schema_version\": \"d1_handoff/v2\", \"summary\": {\"schema\": \"d1_handoff_summary/v1\", \"sche",
+      "error": ""
+    },
+    "api_d1_watch_plans": {
+      "url": "http://127.0.0.1:8734/api/d1/watch-plans",
+      "method": "GET",
+      "status": 200,
+      "body_prefix": "{\"ok\": true, \"schema_version\": \"watch_plan/v1\", \"count\": 4, \"watch_plans\": [{\"armed_at\": \"2026-11-04",
+      "error": ""
+    },
+    "api_d1_training": {
+      "url": "http://127.0.0.1:8734/api/d1/training/episodes",
+      "method": "GET",
+      "status": 200,
+      "body_prefix": "{\"ok\": true, \"api_schema\": \"d1_training_api/v1\", \"schema_version\": \"training_episode/v1\", \"readonly\"",
+      "error": ""
+    },
+    "api_health": {
+      "url": "http://127.0.0.1:8091/api/health",
+      "method": "GET",
+      "status": 200,
+      "body_prefix": "{\"ok\": true, \"ts\": \"2026-11-07 20:30:56\", \"services\": [{\"name\": \"portal api\", \"port\": 8091, \"ok\": tr",
+      "error": ""
+    },
+    "api_d1_direct_8091": {
+      "url": "http://127.0.0.1:8091/api/d1/decisions",
+      "method": "GET",
+      "status": 200,
+      "body_prefix": "{\"ok\": true, \"summary\": {\"schema\": \"d1_decision_summary/v1\", \"total\": 4, \"by_tier\": {\"STRONG_BUY\": 0",
+      "error": ""
+    }
+  },
+  "data_hashes_after": {
+    "d1_decisions": "32b57ebef63524b6baac11b976cb99e0c4c938d3636a76c313a08c80a404762c",
+    "d1_handoffs": "f036704e7716779caeb8c740ec1fe854ef53838d50128ad29b59d20a819fb2a6",
+    "paper_state": "ff5195ea0df580513e1f27d47b986eccaa016cd0bba017941368bc529327f9cb"
+  },
+  "finished_at": "2026-11-07T20:30:56+08:00",
+  "elapsed_seconds": 66.9,
+  "ok": true
+}

@@ -196,10 +196,20 @@ def check(root: Path = ROOT, strict: bool = False) -> dict:
         and "2026-11-14" in str(sa.get("window") or ""),
         f"last={sa.get('last_result')} window={sa.get('window')}")
     rb = status.get("rollback") or {}
-    add("manifest.rollback",
-        str(rb.get("last_drilled") or "").startswith("pending")
-        and "dry-run" in str(rb.get("last_result") or ""),
-        f"last_drilled={rb.get('last_drilled')} last_result={rb.get('last_result')}")
+    full = rb.get("full_drill") or {}
+    rollback_ok = (
+        str(rb.get("last_drilled") or "").startswith("2026-11-07T20:30")
+        and "full drill pass" in str(rb.get("last_result") or "")
+        and full.get("result") == "pass"
+        and full.get("restored") is True
+        and full.get("data_unchanged") is True
+        and full.get("ui_routes_503") == 8
+        and full.get("api_routes_503") == 8
+        and full.get("direct_8091_api_200") is True
+        and float(full.get("elapsed_seconds") or 9999) <= 600
+    )
+    add("manifest.rollback", rollback_ok,
+        f"last_drilled={rb.get('last_drilled')} elapsed={full.get('elapsed_seconds')} result={full.get('result')}")
     ct = status.get("contract_test") or {}
     state_ck = ct.get("state_check") or status.get("state_check") or {}
     p04 = ct.get("p0_04") or {}

@@ -134,7 +134,7 @@ spec:
     review_cadence: daily
     q_level: Q1
     health_probe: 单次只读探针 2026-11-06T07:38:00+08:00 8/8 GET 200（tools/q2_probe.py --composition lusu-d1-flow）；持续窗口未测
-    rollback: 四步回滚见 status.rollback；last_drilled=pending（静态前置已核，未真回滚生产）
+    rollback: 四步回滚见 status.rollback；last_drilled=2026-11-07T20:30:56+08:00（完整 8734 UI+/api/d1 入口摘除演练 PASS，66.9s；8091 内部 API 未摘）
     test_entry: python -X utf8 tools/d1_q2_state_check.py --json && python -m pytest portal/tests/test_api_d1_*.py portal/tests/test_d1_training_page.py -q（45 passed，portal/tests 已入 fast gate）&& python tools/composition.py validate --all
   notes:
   - IFS v1 F6+WIRE 登记：9 API（9 active，含 F5 /api/d1/training/episodes 只读与 F1d /api/war-room/snapshot 聚合）、3 页面（3 active）、4 任务。
@@ -217,10 +217,10 @@ status:
     - 摘除入口：暂停 8091 /api/d1/* 对 8734 的暴露（Lead 接线层操作，不自行停服务），保留只读审计
     - 恢复数据读取：D1 文件/账本只读快照为准，停止写；重跑 dataset resolve-ref 校验
     - 验证：tools/q2_probe.py --composition lusu-d1-flow + composition.py validate --all --strict + D1 单测 45 passed
-    last_result: dry-run ok（仅计划和静态前置，未真回滚生产）；2026-11-07T19:00 UI-only 入口摘除演练 PASS（非完整 API 摘除）
+    last_result: 'full drill pass（2026-11-07T20:30:56+08:00：8734 上 /d1 UI + /api/d1/* 全入口摘除；8091 直连 API 保持 200；66.9s 恢复；非生产故障演练，不重启服务）'
     last_dryrun: '2026-11-06T07:24:47+08:00'
-    last_drilled: 'pending（2026-11-16 前需完整 API 摘除演练；2026-11-07T19:00:12+08:00 UI-only 入口摘除演练 PASS，68.5s 恢复）'
-    evidence: deliverables/d1_q2/20261107/P0-03_UI入口演练_回执.md + deliverables/d1_q2/20261107/P0-03_drill_20261107_1900/drill_result.json
+    last_drilled: '2026-11-07T20:30:56+08:00'
+    evidence: deliverables/d1_q2/20261107/P0-03_完整入口演练_回执.md + deliverables/d1_q2/20261107/P0-03_full_drill_20261107_2030/drill_result.json + .../timeline.log
     static_prechecks: 目标提交存在（4788b1527/e15cc824b/HEAD b11cda7c2）/变更文件清单可列/回滚前 validate rc=0
     ui_drill:
       window: '2026-11-07T19:00:12+08:00/2026-11-07T19:01:20+08:00'
@@ -234,6 +234,26 @@ status:
       console_log: deliverables/d1_q2/20261107/P0-03_drill_20261107_1900/execute_console.log
       approval: deliverables/d1_q2/20261107/P0-03_drill_approval_1900.md
       approval_file_sha256: 72a11cf6fa2c675c6fdb547bb05b97f69ca9d92e1df4e702a276c7cdbbfe9f33
+    full_drill:
+      window: '2026-11-07T20:29:49+08:00/2026-11-07T20:30:56+08:00'
+      scope: '8734：/d1 UI 8 条 + /api/d1/* 8 条；8091 内部 API 不摘'
+      result: pass
+      elapsed_seconds: 66.9
+      restored: true
+      data_unchanged: true
+      api_untouched: true
+      nginx_sha256_after: 5f80ffa665d06b474e9acac651312dbcb0e53ba8e7d8f35fd33d4a879c1378ac
+      ui_routes_503: 8
+      api_routes_503: 8
+      direct_8091_api_200: true
+      health_200: true
+      evidence: deliverables/d1_q2/20261107/P0-03_full_drill_20261107_2030/drill_result.json
+      baseline: deliverables/d1_q2/20261107/P0-03_full_drill_20261107_2030/baseline_before.json
+      timeline: deliverables/d1_q2/20261107/P0-03_full_drill_20261107_2030/timeline.log
+      approval: deliverables/d1_q2/20261107/P0-03_drill_approval_2030.md
+      approval_file_sha256: 1bb0faa83be775337d10b56a01a9ef623e70b5c9e4ad07840d953ef4bdd83aea
+      result_file_sha256: c5ecbe1bfb443d9dde2daa664e0d13802cc6705ced05c33d0f9e00f1d18f120e
+      note: '仅 8734 暴露摘除；未停 8091/8789/Watch，不写数据；完整 API 摘除验收以此窗口为准'
   contract_test:
     unit: 'portal/tests D1 契约/幂等/e2e/UI 共 15 文件 = 161 collected: 158 passed, 2 xfailed strict, 1 skipped（2026-11-07 P0-04 复跑；9 接口，含 war-room 契约测试）'
     fast_gate: portal/tests 目录在 fast 门内 → D1 契约/幂等/e2e/UI 随 portal 套件入闸；P0-04 守卫 portal/tests/test_p0_04_contract_gate.py（5 用例，1 个受控负控正常 skip）；fast gate rc=0（2026-11-07T14:55:46+08:00，worktree HEAD 2c7f4a6de + 本单未提交变更；提交后以提交号绑定）
@@ -260,6 +280,6 @@ status:
   state_check:
     tool: tools/d1_q2_state_check.py --json
     status: pass
-    last_run: '2026-11-07T15:52:26+08:00'
+    last_run: '2026-11-07T20:42:12+08:00'
     acceptance: P0-01
   last_verified: '2026-11-07'

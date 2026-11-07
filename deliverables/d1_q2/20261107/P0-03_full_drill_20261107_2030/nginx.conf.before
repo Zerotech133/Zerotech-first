@@ -1,0 +1,1340 @@
+# 健康探测代理：浏览器同源请求，nginx 转发到各系统
+# 上游活着 → 返回其实际状态码（200/307/404 等）；上游挂 → 502
+#
+# 动态解析：用变量 proxy_pass + resolver 实现运行时 DNS 解析，
+# 避免 Docker Desktop 升级后宿主机网关 IP 变化导致全部探测失效。
+# resolver 取容器 /etc/resolv.conf 中的 nameserver（当前 192.168.65.7），
+# 若日后变化，更新此行即可（仅 1 处，不再需要改 5 处 IP）。
+# 验证：docker exec ai-portal getent hosts host.docker.internal
+
+# ── P3 旧页移动端收口（2026-10-25）────────────────────────────
+# 仅手机 UA 302 到 /m 对应页；桌面浏览器继续原页面（零破坏）。
+map $http_user_agent $m_mobile {
+    default 0;
+    "~*iphone" 1;
+    "~*ipad" 1;
+    "~*android" 1;
+    "~*mobile" 1;
+}
+
+server {
+    listen 80;
+    server_name _;
+    absolute_redirect off;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # ── P0-1b（2026-10-08）：portal_api 写端点 token 鉴权联动 ──
+    # 8091 已绑 127.0.0.1（P0-1a），局域网只能经本反代进入。两条头由
+    # nginx 覆写注入（客户端伪造无效），portal_api 据此区分本机/局域网：
+    #   X-Portal-Proxy  标记「来自反代」；无标记 = 本机直连 8091 = 可信
+    #   X-Real-IP       真实客户端 IP；局域网来源的变更类 POST 须带
+    #                   X-Portal-Token（token 不经网络分发，存宿主机
+    #                   C:\Temp\portal_api_token 或环境变量 PORTAL_API_TOKEN）
+    # 作用域：server 级，被下方所有 8091 反代 location 继承
+    #（/qd/api、/qd 两个 location 自带 proxy_set_header，但上游是
+    #  QuantDinger 15000/8888，不经 portal_api，不受影响）。
+    proxy_set_header X-Portal-Proxy "1";
+    proxy_set_header X-Real-IP $remote_addr;
+
+    # ipv6=off：DNS 曾返回 IPv6（fdc4::…）导致 host 转发不通 502，强制走 IPv4
+    resolver 192.168.65.7 valid=30s ipv6=off;
+
+    # ── B-06（2026-10-27 执行包）：webroot 运行时 json 泄露面收口 ──
+# 9 个运行时 json（ai_market/algo_market/audit_ai_config/licenses/mixin_baseline/
+# qd_replay_verify/qd_scan_cache/route_baseline/strategies）一律 404；
+# 页面/前端代码 0 引用（2026-10-27 grep 核）；生成器仍可直接写盘，不受影响。
+# 静态资产（/static/*.json 如 china_geo.json）用 ^~ 前缀豁免直出。
+location ^~ /static/ { try_files $uri =404; }
+
+    # ── /picks.html 数据白名单（2026-10-27 P2）：B-06 统一 JSON 404 误伤页面必需
+    # 的公开研究数据（选股/后验/荀攸），这些文件无凭据、无账本；精确放行，其余 JSON 仍 404。
+    location = /data/todays_picks.json { try_files $uri =404; }
+    location = /data/pick_verdicts.json { try_files $uri =404; }
+    location = /data/xunyou_latest.json { try_files $uri =404; }
+    location ^~ /data/pick_details/ { try_files $uri =404; }
+
+# ── C1b（研发计划 v2）：webroot 源码/密钥类后缀一律 404 ──
+    # portal/ 整目录挂为本 server 的 web root，此前 portal_api.py、
+    # portal_report.py、start_portal_api.ps1、nginx.conf、__pycache__/*.pyc
+    # 及三份 *.md 文档均可被局域网从 8080 直接下载（源码泄露 = token 文件
+    # 路径、内网拓扑、业务逻辑全暴露）。
+    # 优先级核对：nginx 正则 location 高于普通前缀（/api/ 等），但低于
+    # ^~ 前缀与 = 精确匹配——本文件全部路由均为 ^~ 或 = 或普通前缀，
+    # 且没有任何受保护路由的 URI 以这些后缀结尾，确认零误伤
+    #（/api/*、/bt* 等动态端点均不带文件后缀，不受影响）。
+    # .enc/.key/.token/.env 为防御性后缀（当前 webroot 无此类文件）；
+    # 注意：2026-10-27 B-06 起 strategies.json 已由下方「location = /strategies.json」
+    # 精确规则单独封为 404（内容改由 /api/strategies 提供），故本正则段不再需要
+    # 为其开例外；此处历史上「不拦/放行 200」的旧注释已作废，勿据此写验收断言。
+    # 2026-10-17 审计加固：追加 bak 类后缀（*.bak、*.bak_20261014_atomic 等
+    # 带时间戳变体的源码备份），防止 webroot 残留备份文件被局域网下载。
+    location ~* \.(py|pyc|ps1|md|conf|enc|key|token|env|bak|bak[-_a-z0-9.]*|jsonl|log|txt|csv|db|sqlite|sqlite3|sql|cjs|mjs|bat|ya?ml|genie|json)$ { return 404; }
+
+    # ── P0 安全封口（2026-10-25 体检执行 · 见 全面体检与修复计划_2026-10-25.md P0-01）──
+    # 背景：容器把整个 portal/ 目录挂为 webroot（start_portal_nginx.ps1:23-24），
+    # 2026-10-25 实测：audit_ai_config.json / work/* / data/m/auth.json / logs/feishu_bot_out.log
+    # 可经 8080 与 8734 无鉴权下载（含 LLM Key、分享 token、飞书 WSS 凭据）。
+    # 2026-10-25 追加实测：/data/portal.db（36KB SQLite）、/work/comm_interest.sqlite3、
+    # portal_api.py.bak-20261019（229KB 源码）、test_*.cjs 同样可下载。
+    # 处置：运行数据目录与凭据文件一律 404；页面所需 JSON 保持放行（strategies.json 等）。
+    # 验收：GET /audit_ai_config.json /work/share_tokens.jsonl /data/portal.db /data/m/auth.json
+    #       /logs/feishu_bot_out.log /portal_api.py.bak-20261019 均 404；
+    #       GET /、/picks.html、/persona_registry.json、/data/wall.json 均 200；
+    #       GET /strategies.json 自 2026-10-27 B-06 起为 404（见下方精确规则）。
+    location ~* ^/(work|logs)(/|$) { return 404; }
+    location = /audit_ai_config.json { return 404; }
+    location = /push_subscribers.json { return 404; }
+location = /ai_market.json { return 404; }
+location = /algo_market.json { return 404; }
+location = /licenses.json { return 404; }
+location = /mixin_baseline.json { return 404; }
+location = /qd_replay_verify.json { return 404; }
+location = /qd_scan_cache.json { return 404; }
+location = /route_baseline.json { return 404; }
+location = /strategies.json { return 404; }
+    location ~* ^/data/m(/|$) { return 404; }
+
+    # nav.js 是全站导航数据载体，export_nav.py 重生成后必须让浏览器立即
+    # 拿到新版（P4 判例：内存缓存旧版导致下拉菜单直连残留）。no-cache =
+    # 每次回源 revalidate（ETag/Last-Modified 未变时 304，代价极低）。
+    location = /static/nav.js {
+        add_header Cache-Control "no-cache";
+    }
+
+    # ── P1 移动端 /m 家族（2026-10-25）──────────────────────────
+    # 美化路由：/m/picks → /m/picks.html；静态资源直出；HTML no-cache。
+    # 页面令牌校验在 /api/m/data（8091）完成，前端只透传 t。
+    location = /m/ {
+        try_files /m/index.html =404;
+        add_header Cache-Control "no-cache";
+    }
+    # 2026-10-26 详情页路由（B4）：/m/strategy/<id>、/m/feed/<ticket> → 对应页面
+    location ~ ^/m/(strategy|feed)/([^/]+)/?$ {
+        rewrite ^/m/(strategy|feed)/[^/]+/?$ /m/$1.html last;
+        add_header Cache-Control "no-cache";
+    }
+
+    location /m/ {
+        try_files $uri $uri.html =404;
+        add_header Cache-Control "no-cache";
+    }
+
+    # ── P2 外部分享短链 /s/<share_token>（2026-10-25）──────────
+    # 由 8091 校验令牌（过期/越权/范围）后 302 到 /m 页面。
+    location ^~ /s/ {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 15s;
+    }
+
+    # ── P3 旧页移动端收口（2026-10-25）─────────────────────────
+    # 手机 UA → /m 对应页（302）；桌面 UA 继续静态原页，零破坏。
+    location = /picks.html { if ($m_mobile) { return 302 /m/picks; } }
+    location = /picks { absolute_redirect off; return 302 /picks.html; }
+    location = /paper.html { if ($m_mobile) { return 302 /m/position; } }
+    location = /notify_command.html { if ($m_mobile) { return 302 /m/notify; } }
+
+    # K-QUANT-20261030-OHENGINE：OpenHands 执行引擎适配网关（本机 8796）
+    # 同源 /openhands/ → 8796；8799 过渡网关退役。
+    location ^~ /openhands/ {
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        set $h host.docker.internal;
+        rewrite ^/openhands/(.*)$ /$1 break;
+        proxy_pass http://$h:8796;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 900s;
+        proxy_send_timeout 900s;
+        proxy_buffering off;
+    }
+
+    # LDE 施工台（8103）：文件写预览/确认、工单锁、白名单 exec、审计。
+    # 同源 /lde/ → 8103；8103 自己校验 Origin + ide_session cookie。
+    location ^~ /lde/ {
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        set $h host.docker.internal;
+        rewrite ^/lde/(.*)$ /$1 break;
+        proxy_pass http://$h:8103;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 60s;
+        proxy_send_timeout 60s;
+    }
+
+    # ===== H4（K-ORG-20261031-PORTALAUTH，审计 v2）：/api/ 鉴权子集 =====
+    # 背景：审计实测未登录 GET 8734 /api/platform/approvals=200、/api/org/tasks=200。
+    # 本轮只对**高敏子集**启用 auth_request（有效 zb_session → 200，否则 401 JSON）：
+    #   /api/platform/（审批/平台面）、/api/org/（组织/工单）、/api/analysis/（入队/复核写面）、
+    #   /api/os/（OS 控制台）、/api/jev/（JEV 查询/复核）。
+    # 未覆盖（explicitly NOT protected，后续白名单专项收敛）：通用 /api/ 读面（/api/health、
+    # /api/overview、picks/quant 等匿名页数据 API）、/api/auth/*（登录必需）、/api/bff/*、
+    # /api/m/*（手机侧自带 token 校验）。**不假装全护**：通用 /api/ 保持现状，白名单补齐前
+    # 不整体加锁，避免把 8091 全站锁死。
+    location ^~ /api/platform/ {
+        auth_request /_auth_guard;
+        error_page 401 = @api_unauthorized;
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 40s;
+    }
+    location ^~ /api/org/ {
+        auth_request /_auth_guard;
+        error_page 401 = @api_unauthorized;
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 40s;
+    }
+    location ^~ /api/analysis/ {
+        auth_request /_auth_guard;
+        error_page 401 = @api_unauthorized;
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 40s;
+    }
+    # 2026-11-04：批量监控读写面（/sa/monitor 页面数据；未登录 401 JSON）
+    location ^~ /api/monitor/ {
+        auth_request /_auth_guard;
+        error_page 401 = @api_unauthorized;
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 40s;
+    }
+    location ^~ /api/os/ {
+        auth_request /_auth_guard;
+        error_page 401 = @api_unauthorized;
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 60s;
+    }
+    # 2026-11-07 B 方案（老田批）：JEV 只读 GET 族本机免登录（大屏/分享）。
+    # satisfy any = 本机来源(allow) 或有效会话(auth_request) 任一过；
+    # 非本机未登录仍 401；写方法仍需会话（8091 各 API 会话校验兜底）。
+    # AI 解读：本地模型推理 30~90s，单独提读超时（2026-11-07）
+    location = /api/jev/interpret {
+        allow 127.0.0.1;
+        allow ::1;
+        allow 172.17.0.1;
+        deny all;
+        auth_request /_auth_guard;
+        satisfy any;
+        error_page 401 = @api_unauthorized;
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 5s;
+        proxy_read_timeout 200s;  # jev_interpret_timeout
+    }
+    location ^~ /api/jev/ {
+        allow 127.0.0.1;
+        allow ::1;
+        allow 172.17.0.1;  # docker 端口映射后本机来源=NAT 网关（access log 实证）
+        deny all;
+        auth_request /_auth_guard;
+        satisfy any;
+        error_page 401 = @api_unauthorized;
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 40s;
+    }
+
+    # L2（2026-11-02 A0 批准）：/api/dw/ 数据仓受保护前缀（未登录 401 JSON；登录 200）
+    location ^~ /api/dw/ {
+        auth_request /_auth_guard;
+        error_page 401 = @api_unauthorized;
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 40s;
+    }
+    # 2026-11-03：会议室五席发言通道（meeting.html 调用 /api/chat）
+    location = /api/chat {
+        auth_request /_auth_guard;
+        error_page 401 = @api_unauthorized;
+        set $h host.docker.internal;
+        proxy_pass http://$h:8796;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 120s;
+        proxy_send_timeout 120s;
+        proxy_buffering off;
+    }
+    # 2026-11-03：Case 服务端状态 API 走 8796（登录保护）
+    location ^~ /api/case/ {
+        auth_request /_auth_guard;
+        auth_request_set $case_auth_sub $upstream_http_x_auth_sub;
+        auth_request_set $case_auth_roles $upstream_http_x_auth_roles;
+        error_page 401 = @api_unauthorized;
+        set $h host.docker.internal;
+        proxy_set_header X-Auth-Sub $case_auth_sub;
+        proxy_set_header X-Auth-Roles $case_auth_roles;
+        proxy_pass http://$h:8796;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 40s;
+    }
+    # 2026-11-03：HQ Meeting v2 API 走 8796（longest prefix 优先于 /api/hq/）
+    location ^~ /api/hq/meeting/ {
+        auth_request /_auth_guard;
+        error_page 401 = @api_unauthorized;
+        set $h host.docker.internal;
+        rewrite ^/api/hq/meeting/agenda/message$ /api/hq/agenda/message break;
+        rewrite ^/api/hq/meeting/agenda$ /api/hq/agenda break;
+        proxy_pass http://$h:8796;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 40s;
+    }
+    # W3（2026-11-03）：HQ/A2A 控制面 API 纳入受保护前缀（登录可用，未登录 401 JSON）
+    location ^~ /api/hq/ {
+        auth_request /_auth_guard;
+        error_page 401 = @api_unauthorized;
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 40s;
+    }
+    location ^~ /api/a2a/ {
+        auth_request /_auth_guard;
+        error_page 401 = @api_unauthorized;
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 40s;
+    }
+
+    # ===== H4-B（K-ORG-20261101-H4HARDEN，审计 v2 H4）：/api/ 公开白名单 + 默认拒绝 =====
+    # 背景：H4 首轮只对高敏子集启用 auth_request（上方 ^~ 块），通用 /api/ 仍是"公开基线"
+    # （任何未登记前缀都匿名可达）。本轮把通用公开基线**收敛为显式白名单**：
+    #   · 公开（匿名）：health/auth/bff/m + 匿名页数据族，逐项列于下方明细注释与 regex；
+    #   · 受保护：/api/platform|org|analysis|os|jev（上方 ^~ 块）+ 既有专项保护
+    #     （/api/news/intel、/api/xq/intel、/api/jev/query、/api/jev/review/、
+    #       /api/intel/bus、/api/intel/evidence-targets 等，见下方既有 location）；
+    #     news/xq/intel 三个一级族**不整族公开**，intel 只放行 brief/policy/sources 三个只读子路径；
+    #   · 未登记前缀：**默认拒绝**（location /api/ → 401 JSON），新增公开 API 必须在本白名单
+    #     显式登记并同提交更新 portal/tests/test_nginx_api_auth_subset.py；禁止恢复通用公开基线。
+    #   · 白名单只登记"匿名前缀"；写入类仍由 8091 `_MUTATION_POSTS` X-Portal-Token/会话鉴权兜底。
+    #
+    # 公开白名单明细（一级路由名 141 个 + intel 3 子路径；与 tests 双向校验）：
+    #   acad1 admission agent agents ai_duty alert
+    #   alerts alerts.source_health analyst-report audit_chat audit_recent audit_status
+    #   auth auto_assign batch-backtest bff binding bridge
+    #   brief bt2_job bt2_jobs bt2_nl bt2_run bt_daily_ledger
+    #   capability chanlun chat chips combo_backtest combo_backtest_jobs
+    #   comm commercial contacts content council ctl
+    #   customer d1 daily data dataops debate
+    #   dev devops duty_brief env evolution execution
+    #   flow gate guojia health home home.org
+    #   huangzhong ide intel-graph issues jev-stack kb_corpus
+    #   keys kg kline kline_qy legion logistics
+    #   m manager_fire manager_hire manager_roster market_performance mcp
+    #   minutes_inbox models my_strategies nlquery notify onboard
+    #   ops_today osint overview paper_direct_open paper_hire paper_history
+    #   paper_order paper_status paper_status.curve paper_stop perf plan_review
+    #   portfolio_adjust portfolio_close portfolio_csv portfolio_hire portfolio_market portfolio_open
+    #   portfolio_set portfolio_status portfolio_status.portfolios portfolio_subscribe portfolio_undo portfolios
+    #   preview project ps public quant reception
+    #   recv_add regime register report_push research review_minutes
+    #   risk route screen service services signals
+    #   sim sixring state strategies strategy_detail strategy_market
+    #   stt sub_del sub_test sub_toggle subscription tags
+    #   tech trader_detail trader_fire trader_roster unified war-room
+    #   watch-admin watch-tower zhuge
+    #   intel/brief intel/policy intel/sources（intel 公开子路径；其余 intel 受保护）
+
+    # 本机只读预览（2026-11-03 A0 选定）：仅四类只读数据，免登录；正式 /hq 仍鉴权
+    location ~ ^/api/preview/hq/(roles|agenda|directives|reports)$ {
+        limit_except GET { deny all; }
+        set $h host.docker.internal;
+        rewrite ^/api/preview/hq/(.*)$ /api/hq/$1 break;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 40s;
+    }
+
+    # 本机只读预览：看护驾驶舱（K-ORG-20261107-GUARDDECK）：summary/log 两个只读端点，
+    # 免登录（limit_except GET 限死只读，非 GET 一律 deny）；正式 /api/monitor/guard/ 仍走 SSO
+    location ~ ^/api/preview/guard/(summary|log)$ {
+        limit_except GET { deny all; }
+        set $h host.docker.internal;
+        rewrite ^/api/preview/guard/(.*)$ /api/monitor/guard/$1 break;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 40s;
+    }
+
+    # 公开族 A（系统/身份/首页/告警）
+    location ~ ^/api/(?:admission|ai_duty|analyst-report|audit_chat|audit_recent|audit_status|auth|bff|binding|brief|chat|comm|contacts|content|duty_brief|env|health|huangzhong|issues|keys|m|mcp|minutes_inbox|models|notify|onboard|ops_today|overview|preview|project|ps|reception|register|route|service|services|state|subscription|tags|tech|sub_[a-z_]+|home(?:\.org)?|alerts(?:\.source_health)?)(?:/|$) {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 40s;
+    }
+
+    # 公开族 B（量化/回测/组合/策略/行情）
+    location ~ ^/api/(?:batch-backtest|bt_daily_ledger|chips|daily|data|dataops|kg|kline|kline_qy|market_performance|my_strategies|quant|regime|screen|signals|sim|sixring|strategies|strategy_detail|strategy_market|war-room|watch-admin|watch-tower|paper_[a-z._]+|portfolios?|portfolio_[a-z._]+|trader_[a-z_]+|bt2_[a-z_]+|combo_backtest(?:_jobs)?)(?:/|$) {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 40s;
+    }
+
+    # 公开族 C（治理/军团/情报/研究/其他）
+    location ~ ^/api/(?:acad1|agent|agents|alert|auto_assign|bridge|capability|chanlun|commercial|council|ctl|customer|d1|debate|dev|devops|evolution|execution|flow|gate|guojia|ide|intel-graph|jev-stack|kb_corpus|legion|logistics|nlquery|osint|perf|plan_review|public|recv_add|report_push|research|review_minutes|risk|stt|unified|zhuge|manager_[a-z_]+|intel/(?:brief|policy|sources))(?:/|$) {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 40s;
+    }
+
+    # 未登记前缀默认拒绝（H4-B）：401 JSON（不 302 登录页，避免前端 fetch 拿到 HTML）。
+    location /api/ {
+        default_type application/json;
+        add_header X-Content-Type-Options nosniff always;
+        return 401 '{"ok":false,"error":"api_not_in_whitelist","message":"/api 前缀未在 H4 公开白名单登记，默认拒绝（见 portal/nginx.conf H4-B 段）"}';
+    }
+
+    # WO-OS-09（2026-10-21 老田签准）：/api/zhuge/brief 路由已进 portal_api 代码基线，
+    # 但宿主 8091 现役实例为 SYSTEM 会话计划任务进程（用户态不可终止重启），
+    # 并存 8094 方案实测被环境回收（DETACHED 孤儿 ~40-90s 必死）。
+    # 定案：本 location 暂移除，/api/zhuge/brief 回落全局 /api/ → 8091 → 旧实例 404
+    # → 前端 WO-OS-11 已验证自动走本地引擎兜底（行为正确）。待 8091 随宿主自然
+    # 重启加载新代码后，此路由自动生效，无需任何配置变更。回滚=无事可做。
+
+    # 量化域页面统一转发（/bt /bt/m/* /bt/stock /bt-report[/<快照>] /bt-signals
+    # /bt-opt /bt-news /bt-rps重定向 /bt-report/img/<png>）
+    # /bt/stock 实时算策略信号（pandas），读超时放宽
+    # （120s：门户重启后首个加密/美股标的冷加载可能超 60s）
+    # R7: /bt_view.html、/bt2_view.html 与下方 ^~ /bt 反代前缀撞车（/bt* 全被吞→404）。
+    #     精确匹配优先级高于 ^~ 前缀，故单列在此；root 继承 server 级 webroot。
+    location = /bt_view.html  { }
+    location = /bt2_view.html { }
+
+    location ^~ /bt {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 120s;
+    }
+
+    # 量子双刀 · 选股中心（K-STOCK-023/024：portal_api /qd/ 工作台页）。
+    # 旧 /qd 为 QuantDinger 前端路由（8888），前端改造后无此路由，裸 /qd/
+    # 落 SPA index 未登录被踢 #/user/login（10-09 老田报「跳转不对」根因）。
+    # 现语义=portal_api 双刀工作台，反代对齐 /bt。
+    location ^~ /qd {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 120s;
+    }
+
+    # 缠论当日结构图（K72：PNG 直出，现场兜底生成最长 60s）
+    location ^~ /chanlun-png {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 90s;
+    }
+
+    # 缠论图手工标注 API（K77：GET 列表 / POST 增删）
+    location ^~ /chanlun-anno {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 15s;
+    }
+
+    # 标注总结报告（K77b：冷启动 import 慢，放宽读超时）
+    location = /chanlun-anno-report {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 120s;
+    }
+
+    # 内容生产域：公众号草稿库（/gzh /gzh/view/<preview>）
+    location ^~ /gzh {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 10s;
+    }
+
+    # 内容生产域：短视频成片库（/vd /vd/file/<dir>/<mp4|wav|srt|json>）
+    location ^~ /vd {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 20s;
+    }
+
+    # 个股分析域：本地极简入口（/sa /sa/start?q= /sa/result?job=）
+    location ^~ /sa {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 15s;
+    }
+
+    # 知识图谱域（M3-W1）：JSON 端点 + 展示页（portal_api → kg_portal.py 纯查询）
+    #   /kg/stats /kg/stock/<code> /kg/hotmoney/<name> /kg/trace/<code>?days=N
+    # 读超时放宽：Neo4j 首次会话 + 多条 Cypher 聚合
+    location ^~ /kg {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 60s;
+    }
+
+    # ── 数据仓读层（K-STOCK-415）：datamart_api 8100，只读 JSON 门面 ──
+    #   /dm/health  /dm/latest?table=  /dm/read?table=&limit=  /dm/freshness
+    #   剥前缀反代（服务端点无 /dm 前缀），判例同 /hermes、/ollama。
+    #   读超时 60s 同 /kg：read 大表与 freshness 现算可能较慢。
+    location = /dm { return 302 /dm/; }
+    location ^~ /dm/ {
+        set $h host.docker.internal;
+        rewrite ^/dm(/.*)$ $1 break;
+        proxy_pass http://$h:8100;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 60s;
+    }
+
+    # 板块驾驶舱（portal_api 动态渲染：金融/情报 L1 页）
+    # R8: nav 上「能力看板」「投研绩效」两个入口点开 404 — nginx 无对应 location，
+    #     请求落到静态 webroot 找不到同名文件。上游 8091 有动态页（_html_file 注入
+    #     nav/登录态，17967B vs 静态 8743B），按 /fin、/approvals、/portal 同构转发。
+    location = /capability {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 20s;
+    }
+    location = /perf {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 20s;
+    }
+
+    location = /fin {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 20s;
+    }
+
+    # K-STOCK-035 总入口门户（哪里是什么、我的入口在哪里）
+    location = /portal {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 20s;
+    }
+
+    # L2 页面真保护（Phase A auth-gateway，2026-10-30 老田批准）
+    location = /_auth_guard {
+        internal;
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091/api/auth/guard;
+        proxy_pass_request_body off;
+        proxy_set_header Content-Length "";
+        proxy_set_header Cookie $http_cookie;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 10s;
+    }
+    location @login_required {
+        absolute_redirect off;
+        return 302 /login?next=$uri;
+    }
+    # H4（K-ORG-20261031-PORTALAUTH）：API 鉴权失败返回 401 JSON（不 302 到登录页，
+    # 避免前端 fetch 把 HTML 登录页当响应体）；页面路由仍走 @login_required 302。
+    location @api_unauthorized {
+        absolute_redirect off;
+        default_type application/json;
+        return 401 '{"ok":false,"error":"unauthorized","message":"需要登录（SSO）：/api 敏感子集已启用 auth_request"}';
+    }
+
+    # K-STOCK-113 开发指挥台（多 IDE 统一调度态势，只读页）
+    location = /devops {
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 15s;
+    }
+
+    # 2026-11-04 盯盘 P0.3-B：watch-admin 只读管理台（8789）经 8734 同源反代；
+    # 与 /devops 同口径：必须有效 zb_session（auth_request），不公开裸奔。
+    location = /watch-admin {
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        set $h host.docker.internal;
+        proxy_pass http://$h:8789/watch-admin;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 30s;
+    }
+    location ^~ /watch-admin/ {
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        set $h host.docker.internal;
+        proxy_pass http://$h:8789/;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 30s;
+    }
+    location ^~ /api/watch-admin/ {
+        auth_request /_auth_guard;
+        error_page 401 = @api_unauthorized;
+        set $h host.docker.internal;
+        proxy_pass http://$h:8789;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 30s;
+    }
+
+    # K-STOCK-114e 独立安全审计 AI：对话页 + POST 审计接口（last_commit 大 diff 推理慢）
+    location = /audit-ai {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 180s;
+    }
+    location = /api/audit_chat {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 180s;
+    }
+
+    # K-STOCK-037 组织架构图（A0 → 部门 → 岗位树形图）
+    location = /org {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 15s;
+    }
+
+    # K-STOCK-057 期货量化 / SellPoint AI / 对外快照档案（portal_api 动态渲染）
+    location = /fut {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 15s;
+    }
+    location = /sellpoint {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 15s;
+    }
+    location = /deliverables {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 15s;
+    }
+
+    # K-STOCK-033 AI 市场（可聘 AI 岗位货架）
+    location = /aim {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 15s;
+    }
+
+    # K-STOCK-087 算法商品市场（试看+卡密激活；K-STOCK-122 补注册——
+    # 087 上线时漏加本条，/algo 经 8734/8080 入口从未可达，仅 8091 直连通）
+    location = /algo {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 15s;
+    }
+
+    # 策略中心（K36：策略资产注册表记分卡，portal_api 动态渲染）
+    location = /strategies {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 15s;
+    }
+
+    # K37 领域专项页（静态，nginx 直接 serve；扩展模式：新领域 = 一张静态页）
+    # 老田批主页切流（2026-10-19，H4 方案 B 判例）：/quant 302 → 下钻版；长版保留 /quant-full
+    # 2026-11-03：/quant = 零界量化首页；司马徽是其中一个板块（/quant/app.html）
+    location = /quant       { try_files /quant.html =404; add_header Cache-Control "no-cache"; }
+    location = /quant-full  { try_files /quant.html =404; add_header Cache-Control "no-cache"; }
+    location = /creator { try_files /creator.html =404; }
+    location = /dev     { try_files /dev.html =404; }
+    location = /preview/hq {
+        # 本机只读预览：不做 auth_request；8734 仅监听 127.0.0.1
+        try_files /preview_hq.html =404;
+        add_header Cache-Control "no-store";
+        add_header X-Robots-Tag "noindex, nofollow";
+    }
+    # 2026-11-03：指挥部会议系统唯一入口（8796 war room / HQ Meeting v2）
+    location = /meeting {
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        set $h host.docker.internal;
+        proxy_pass http://$h:8796/static/meeting.html;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 60s;
+        add_header Cache-Control "no-cache";
+    }
+    location = /dept-chat {
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        try_files /dept_chat.html =404;
+        add_header Cache-Control "no-cache";
+    }
+    location = /case {
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        try_files /case.html =404;
+        add_header Cache-Control "no-cache";
+    }
+    location = /briefing {
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        try_files /briefing.html =404;
+        add_header Cache-Control "no-cache";
+    }
+    location = /special {
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        try_files /special.html =404;
+        add_header Cache-Control "no-cache";
+    }
+    location = /hq {
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        try_files /hq.html =404;
+        add_header Cache-Control "no-cache";
+    }
+    location = /hq.html {
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        try_files /hq.html =404;
+        add_header Cache-Control "no-cache";
+    }
+    # F17 PC 控制台：飞书域管理面，复用 portal auth guard；仅 exact 路由，不外露子路径
+    location = /feishu/admin {
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        try_files /feishu_admin.html =404;
+        add_header Cache-Control "no-cache";
+    }
+    location = /dw {
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        try_files /dw.html =404;
+        add_header Cache-Control "no-cache";
+    }
+    location = /dataops {
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        try_files /dataops.html =404;
+        add_header Cache-Control "no-cache";
+    }
+    location = /ops     { if ($m_mobile) { return 302 /m/ops; } try_files /ops.html =404; }
+    # H4 方案 B：/os 转向实况大屏；Demo 仍保留 os_demo.html 直连存档。
+    location = /os       { absolute_redirect off; return 302 /os-board; }
+    location = /os-board {
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        try_files /os.html =404;
+        add_header Cache-Control "no-cache";
+    }
+    # K-ORG-229d S5 收口（2026-10-19）：8791 数据总览仪表盘下钻目标落地。
+    # 页面零外部引用但用绝对路径 fetch /api/*（前缀反代会打到 8091 错后端），
+    # 故 /dashboard 走 302 外跳本机真实服务（同 /hermes 外跳判例）；
+    # /probe/dash 同源代理 8791 健康端点——真实路径是 /health（/api/health 404 已实证，
+    # H1-a 聚合探针也须用 /health，勿再沿用 8091 口径）
+    location = /dashboard { return 302 http://127.0.0.1:8791/; }
+    location = /probe/dash {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8791/health;
+    }
+
+    # E2（2026-10-19 老田批）：策源/六环同源代理——驾驶舱单一数据源契约
+    # （docs/dashboard_contracts.md §7）。精确匹配优先于通用 /api/ 前缀，
+    # 避免打到 8091；同 /probe/dash 判例用 host.docker.internal 进宿主。
+    location = /api/regime {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8791/api/regime;
+    }
+    location = /api/sixring {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8791/api/sixring;
+    }
+    # F3（2026-10-19 老田批 F 批）：市场准入判定同源代理——契约总账 §9。
+    # 同 E2 判例精确匹配避免打到 8091；8791 /api/admission 已带 CORS+no-store。
+    location = /api/admission {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8791/api/admission;
+    }
+
+    # K-ORG-229c 规划位专页补齐（2026-10-19 并行线）：/radar 开源助理雷达 + /methods 量化方法库，
+    # 均由子代理并行新建（additive 零撞面），主代理统一挂路由（互斥协议：共享文件仅主代理改）
+    location = /radar   { try_files /radar.html =404; add_header Cache-Control "no-cache"; }
+    location = /methods { try_files /methods.html =404; add_header Cache-Control "no-cache"; }
+    # F 批追加（2026-10-19）：量化下钻驾驶舱——单屏三栏板块联动下钻（L1板块→L2票→L3结果→L4点）
+    location = /quant-drill { try_files /quant_drill.html =404; add_header Cache-Control "no-cache"; }
+
+    # K-ORG-229b 学习成长板块页（2026-10-19 S2+）：/learn 静态页；
+    # 学习产物 chanlun-learn-report/ 与 czsc-eval/ 已于同日入 webroot
+    # （1.1M + 60K，6 文件，纯静态），按 K37 静态页模式补精确路由
+    location = /learn { try_files /learn.html =404; add_header Cache-Control "no-cache"; }
+    location = /chanlun-learn-report { return 302 /chanlun-learn-report/; }
+    location ^~ /chanlun-learn-report/ { try_files $uri =404; add_header Cache-Control "no-cache"; }
+    location = /czsc-eval { return 302 /czsc-eval/; }
+    location ^~ /czsc-eval/ { try_files $uri =404; add_header Cache-Control "no-cache"; }
+
+    # K-ORG-229 个人 OS 入口层（S2 落位 2026-10-19）：总览 + 板块全貌下钻 + 重大预警区；
+    # 板块数据为静态演示值，状态灯走同源 /api/health（8091/8787/8097 真实，余 unk 不假绿）；
+    # H4 保持 /os-entry 为唯一入口板；/os-board 为实况深页，/os 302 跳转。
+    location = /os-entry {
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        try_files /os_entry_v9_prod.html =404;
+        add_header Cache-Control "no-cache";
+    }
+    # Phase A auth-gateway 登录页（2026-10-30，附加式；login.html 在 webroot）
+    location = /login { try_files /login.html =404; add_header Cache-Control "no-store"; }
+    # 下钻目标准确化（2026-10-19 S2）：/legion /model_admin 页面文件已在 webroot，
+    # 仅缺短路由致 OS 入口下钻卡 404——按 K37 静态页模式补精确路由（附加式，零改动现有规则）
+    location = /legion {
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        try_files /legion.html =404;
+        add_header Cache-Control "no-cache";
+    }
+    location = /model_admin {
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        try_files /model_admin.html =404;
+        add_header Cache-Control "no-cache";
+    }
+
+    # 2026-11-06 D1 Q2 验收签字页（受控静态路由）
+    # 只改 nginx 路由，不改 8091 静态白名单、不重启 8091。
+    # 精确 location 优先于下方 ^~ /d1/；页面文件在 webroot/d1_q2/ 下，
+    # 下面的 ^~ /d1_q2/ 显式 404，禁止绕过受控路由直取源文件。
+    location = /d1/q2/signoff {
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        default_type text/html;
+        charset utf-8;
+        add_header Cache-Control "no-store, no-cache, must-revalidate" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        try_files /d1_q2/signoff.html =404;
+    }
+    location = /d1/q2/signoff/ {
+        return 302 /d1/q2/signoff;
+    }
+    location = /d1/q2/signoff/readonly {
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        default_type text/html;
+        charset utf-8;
+        add_header Cache-Control "no-store, no-cache, must-revalidate" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        try_files /d1_q2/signoff_readonly.html =404;
+    }
+    location = /d1/q2/signoff/readonly/ {
+        return 302 /d1/q2/signoff/readonly;
+    }
+    # 禁止绕过受控路由直取 webroot 文件（两页只有精确受控入口）
+    location = /d1_q2/signoff.html { return 404; }
+    location = /d1_q2/signoff_readonly.html { return 404; }
+    location ^~ /d1_q2/ { return 404; }
+
+    # 2026-11-07 P0-07：D1 投研裁决台总览（受控静态入口）
+    # 只改 nginx 路由，不改 8091 静态白名单、不重启 8091。
+    # 精确 location = /d1 优先于下方 ^~ /d1/；页面静态文件在 webroot/d1/index.html。
+    location = /d1 {
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        default_type text/html;
+        charset utf-8;
+        add_header Cache-Control "no-store, no-cache, must-revalidate" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        try_files /d1/index.html =404;
+    }
+    location = /d1/ {
+        return 302 /d1;
+    }
+
+    # 2026-11-01 WO-D1-UI-20261101：D1 投研工作台在 8091，但 8734 缺 /d1/ 路由
+    # → 补反代；需登录（与 /legion 同 auth 口径）。API 仍由 /api/ 白名单正则处理。
+    # 注意：/d1 总览走上面的静态精确路由；/d1/<子页> 仍走本反代。
+    location ^~ /d1/ {
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        proxy_pass http://$h:8091;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Portal-Proxy 1;
+        proxy_read_timeout 60s;
+    }
+
+    # M6 最小接线（2026-10-08 拍板）：审计线状态页（静态壳，数据走
+    # /api/audit_status 反代 8091；全体条目 unverified 为拍板要求）
+    location = /audit   { try_files /audit.html =404; add_header Cache-Control "no-cache"; }
+    # K-STOCK 模拟仓（2026-10-09 前端规划）：数据 /api/paper_status 反代 8091
+    location = /paper   { try_files /paper.html =404; add_header Cache-Control "no-cache"; }
+    # K-STOCK-122 M1 策略市场独立页：数据 /api/strategy_market|detail 反代 8091
+    location = /market-strategy { try_files /market_strategy.html =404; add_header Cache-Control "no-cache"; }
+    # K-STOCK-132 绩效市场：只读消费 performance_ledger
+    location = /market { try_files /market.html =404; add_header Cache-Control "no-cache"; }
+    # 058 统一入口：strong/academy 静态页（文件在 portal 根，此前无路由 404）
+    location = /strong  { try_files /strong.html =404; add_header Cache-Control "no-cache"; }
+    location = /academy { try_files /academy.html =404; add_header Cache-Control "no-cache"; }
+    # 2026-11-01 司马徽研究台：只读总览（数据源 /api/acad1/pool；不接实盘）
+    location = /academy/shuijing {
+        try_files /shuijing.html =404;
+        add_header Cache-Control "no-cache";
+    }
+
+    # L2（2026-11-02 A0 批准）：/acad1/pool 页面路由（公开只读页，修复公开页断链）
+    location = /acad1/pool {
+        try_files /acad1_pool.html =404;
+        add_header Cache-Control "no-cache";
+    }
+
+    # K-ORG-021 研发沙盘：并行工程线一屏 + 原型下钻（sandbox.html 数据源
+    # 为 /projects_registry.json 纯静态注册表，零后端）。必须用 = 精确短路由：
+    # 裸 /sandbox.html 与 /sandbox_projects.json 均会被 ^~ /sa 前缀劫持
+    # 去 8091 返回 404（2026-10-13 实测判例：文件名/注册表名都要避开 /sa 前缀）
+    location = /sandbox { try_files /sandbox.html =404; add_header Cache-Control "no-cache"; }
+
+    # K-ORG-022 Agent IDE：24 在编岗开发台（部门树/人设档案+prompt/调试台）。
+    # 数据源 /agent_ide_bundle.json（tools/build_agent_ide_bundle.py 烘制）。
+    # /ide 短路由同款 = 精确匹配纪律；bundle 文件名 /a 前缀无 ^~ 劫持面
+    location = /ide {
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        try_files /ide.html =404;
+        add_header Cache-Control "no-cache";
+    }
+    # 静态直链 /ide.html 不能绕过 /ide 的认证；统一回受保护短路由。
+    location = /ide.html {
+        absolute_redirect off;
+        return 302 /ide;
+    }
+    # C1b 全局 .json 404 规则会误伤 IDE 数据源；精确白名单（= 高于正则）
+    location = /agent_ide_bundle.json {
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        try_files $uri =404;
+        add_header Cache-Control "no-cache";
+        types { } default_type application/json; charset utf-8;
+    }
+
+    # Agent IDE 调试台：浏览器直连本地 Ollama(11434)。
+    # 前缀剥离用 rewrite+break（⚠️ 带变量时 proxy_pass 的 URI 不做前缀替换，
+    # 写尾斜杠会把所有请求打到 11434/ 根路径只回 "Ollama is running"——
+    # 2026-10-13 实测判例，同 K-STOCK-054 /cai/api 的 rewrite 判例）。
+    # 读超时放宽：qwen3.5:9b 带全长人设 system 推理 10-60s；关缓冲流式友好。
+    # ⚠️ ^~ 前缀占位：portal 根目录不得新增以 /ollama 开头的静态文件（判例同 /sa）
+    location ^~ /ollama/ {
+        set $h host.docker.internal;
+        rewrite ^/ollama(/.*)$ $1 break;
+        proxy_pass http://$h:11434;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 180s;
+        proxy_buffering off;
+    }
+
+    # K-STOCK-054 C1-3：菜鸟驾驶舱同源反代（8094 home_server）
+    #   /cai/api/chat /cai/api/home → 剥掉 /cai 前缀后透传为 /api/chat /api/home
+    #   （home_server 路由就是 /api/*；proxy_pass 不带 URI 时 URI 原样透传，
+    #   直接透传 /cai/api/chat 会对不上路由，故用 rewrite 剥前缀。
+    #   /cai/ 前缀用于隔开本站 API 命名空间，避免与 8091 的 /api/ 冲突）
+    #   跨源方案（CORS）保留为回退；同源优先
+    location ^~ /cai/api/ {
+        set $h host.docker.internal;
+        rewrite ^/cai(/api/.*)$ $1 break;
+        proxy_pass http://$h:8094;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 35s;
+    }
+
+    # K-ORG-121 LEGION-OPS 军团作战大屏 API（8096 同源反代，前端相对路径调用）
+    # ⚠️ ^~ 前缀占位：portal 根不得新增以 /legion-api 开头的静态文件（判例同 /sa）
+    location ^~ /legion-api/ {
+        # 2026-10-30 P0 安全：军团 API 纳入登录保护（与 /model_admin 对齐）
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        set $h host.docker.internal;
+        proxy_set_header X-Portal-Proxy "1";
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Portal-Token $http_x_portal_token;
+        rewrite ^/legion-api(/.*)$ $1 break;
+        proxy_pass http://$h:8096;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 30s;
+    }
+
+    # K44 数据大屏（静态 echarts 大屏页；数据走 /api/screen 已覆盖）
+    location = /screen  { try_files /screen.html =404; add_header Cache-Control "no-cache"; }
+
+    # ── 2026-10-31 情报全私有（老田拍板1，WO-INTEL-PRIVATE-20261031）──
+    # 情报页面/静态页未登录 → 302 /login；情报 API 未登录 → 401（不 302，
+    # 前端按 JSON/错误态处理）。仅收紧情报域，/api/health 等公开白名单不变。
+    location = /intel {
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 20s;
+    }
+    location = /intel/stream {
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 20s;
+    }
+    # 静态情报页直链同受保护，防绕过 auth_request 直取原文（全私有）
+    location = /xq_intel.html {
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        try_files $uri =404;
+        add_header Cache-Control "no-cache";
+    }
+    location = /news_intel.html {
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        try_files $uri =404;
+        add_header Cache-Control "no-cache";
+    }
+    # 2026-11-04 SEC-INTEL-AUTH-20261104：漏网静态情报页补鉴权（实测未登录 200）
+    location = /intel_workbench.html {
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        try_files $uri =404;
+        add_header Cache-Control "no-cache";
+    }
+    # 2026-11-04 代码审查发现：Windows bind-mount 大小写不敏感，精确 location
+    # 只匹配小写文件名，攻击者可用 /HQ.HTML 等大小写变体直取受保护页。
+    # 该正则覆盖「路由已鉴权、但 HTML 文件可被直链/大小写绕过」的全部页面。
+    location ~* ^/(?:briefing|case|dataops|dept_chat|dw|feishu_admin|hq|ide|legion|model_admin|os|os_entry_v9_prod|special|intel_workbench|xq_intel|news_intel)\.html$ {
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        try_files $uri =404;
+        add_header Cache-Control "no-cache";
+    }
+    # 情报 API：未登录 401（规划矩阵口径；不加 error_page 302，避免前端把
+    # 登录页 HTML 当 JSON）
+    location = /api/news/intel {
+        auth_request /_auth_guard;
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 40s;
+    }
+    location ^~ /api/xq/intel {
+        auth_request /_auth_guard;
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 40s;
+    }
+    location = /api/jev/query {
+        allow 127.0.0.1;
+        allow ::1;
+        allow 172.17.0.1;  # B 方案：本机免登录（同 ^~ /api/jev/ 块）
+        deny all;
+        auth_request /_auth_guard;
+        satisfy any;
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 40s;
+    }
+    location ^~ /api/jev/review/ {
+        auth_request /_auth_guard;
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 40s;
+    }
+    location = /api/intel/bus {
+        auth_request /_auth_guard;
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 40s;
+    }
+    location = /api/intel/evidence-targets {
+        auth_request /_auth_guard;
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 40s;
+    }
+
+    # 通知指挥只读投影页（2026-10-19 飞书板块联动）：FB-C 新建静态页，
+    # 数据走 /api/notify/queue 反代 8091；K37 静态页模式（同 /radar /methods）
+    location = /notify-command { try_files /static/notify_command.html =404; add_header Cache-Control "no-cache"; }
+
+    # 运维对账面（2026-10-20 飞书中台 P1 · FB-M）：只读投影静态页，
+    # 数据走 /api/notify/queue（→8091）与 /api/state（→8097）。
+    # K37 静态页模式（同 /notify-command 判例）。
+    location = /ops-board { try_files /static/ops_board.html =404; add_header Cache-Control "no-cache"; }
+
+    # 商务运营面（2026-10-20 飞书中台 P2.5 · FD-B）：第四张管理面只读投影静态页，
+    # 数据走 /api/subscription/status（→8091）与 /api/notify/queue（→8091）。
+    # K37 静态页模式（同 /notify-command /ops-board 判例）。
+    location = /sub-admin { try_files /static/sub_admin.html =404; add_header Cache-Control "no-cache"; }
+
+    # 客户订阅面（2026-10-20 飞书中台 P2.5 · FD-A/收编补齐）：第三张管理面只读投影
+    # 静态页，数据走 /api/subscription/status（→8091）。K37 静态页模式（同上判例）。
+    # 收编补齐（主会话）：FD-A 挂账项，portal_api :8091 branch 已有（6845149f），
+    # 此处补 nginx 前门入口保持四页一致。
+    location = /my-subscription { if ($m_mobile) { return 302 /m/subscription; } try_files /static/my_subscription.html =404; add_header Cache-Control "no-cache"; }
+    # 只读 GET 反代：8097 观测段（dead_letters 死信计数等）。精确匹配优先于
+    # 上方全局 location /api/ → 8091，无同名冲突（加行前 grep count==0）。
+    # ⚠ 8097 侧 /api/state 需 X-Push-Admin-Key，未授权返回 403——页面降级
+    # 展示，不造数。带变量 proxy_pass 判例同 /push 块（nginx 容器内 127.0.0.1 不可达）。
+    location = /api/state {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8097;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 15s;
+    }
+
+    # 自然语言查数（portal_api 表单页；查询走 /api/nlquery 已覆盖）
+    location = /nl {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 15s;
+    }
+
+    # 盘前分析域：六层因子页（/premarket，portal_api 读静态快照）
+    location = /premarket {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 15s;
+    }
+
+    # 盘后复盘域：收盘全景/赚钱效应/预判对照（/afterhours 静态快照）
+    location = /afterhours {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 15s;
+    }
+
+    # 投委会域（K55~K73）：/council 影子留痕 /sim 操盘锦标赛（含 K73 预演账）
+    # /debate 模拟辩论室 /bridge 数据桥（portal_api 动态渲染，只读 reports）
+    location ^~ /council {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 20s;
+    }
+    location = /sim {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 20s;
+    }
+    location ^~ /debate {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 20s;
+    }
+    location ^~ /bridge {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 20s;
+    }
+
+    # 系统自检页（portal_api 实时探活 + 执行健康总线投影；ops/health_latest.json
+    # 已退役（2026-10-18），后继数据源 GET :8091/api/execution/health（R1 总线））
+    location = /sys-health {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 15s;
+    }
+    # 动作流中心（8091 动态页，nav.js ops 组成员——设计稿原漏配，P1 补）
+    location = /flow {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 15s;
+    }
+
+    # 审批注册表（运维域只读页，/approvals 8091 直连通，8080 漏配）
+    # 安全热修：受保护页的静态 HTML 直链必须回到受保护路由（防绕过 auth_request）
+    location ~* ^/os_entry[^/]*\.html$ {
+        absolute_redirect off;
+        return 302 /os-entry;
+    }
+    location ~* ^/os\.html$ {
+        absolute_redirect off;
+        return 302 /os-board;
+    }
+    location ~* ^/model_admin\.html$ {
+        absolute_redirect off;
+        return 302 /model_admin;
+    }
+    location ~* ^/approvals\.html$ {
+        absolute_redirect off;
+        return 302 /approvals;
+    }
+
+    location = /approvals {
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 15s;
+    }
+
+    # ── P1 总览门户（2026-10-17 前端重规划）────────────────────────
+    # / 直出新门面 home.html（健康七口+快捷入口+当日摘要，数据走
+    # /api/health 与 /api/overview 反代 8091）；旧「AI 听堂」index.html
+    # 零丢失保留为 /hall。
+    # W4：0 字节重复页收口（旧 picks_index → 今日选股）
+    location = /picks_index.html { absolute_redirect off; return 301 /picks.html; add_header Cache-Control no-cache; }
+    location = / {
+        try_files /home_v3.html =404;  # 2026-10-28 根入口统一首页 v1（旧 home.html 保留 /home.html；/zero_proto.html 仍可直达）
+        add_header Cache-Control "no-cache";
+    }
+    location = /hall {
+        try_files /index.html =404;
+        add_header Cache-Control "no-cache";
+    }
+    # ── P2 挂载：Jev 四件套观测页（数据源 8091 /api/jev-stack）──
+    location = /stack {
+        try_files /stack.html =404;
+        add_header Cache-Control "no-cache";
+    }
+
+    # ── P1 挂载：Hermes(8787) ──
+    # 首页为 114KB 全内联单文件（零外部引用，已实证），剥前缀反代零风险；
+    # 带变量 proxy_pass 不做 URI 替换，rewrite+break 判例同 /ollama。
+    # 2026-10-30 HERMESPANEL：Hermes 扩展的脚本/CSS 固定从 /extensions/ 加载，
+    # 经 8734 访问时必须同源反代到 8787，否则 PWA 入口下扩展 404。
+    location ^~ /extensions/ {
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        set $h host.docker.internal;
+        # WO-LEGION-AUTH-20261031：门户 auth_request 通过后注入 Hermes 原生
+        # trusted-header 身份（单用户常量），消除 8734→8787 的第二道密码登录。
+        # 客户端自带的同名头会被本行覆盖（proxy_set_header 语义=改写，不可伪造）。
+        # 注意：本块一旦声明 proxy_set_header，server 级 X-Portal-Proxy/X-Real-IP
+        # 不再继承（nginx 非合并语义），故显式重声明，保持与其它反代 location 同口径。
+        proxy_set_header X-Portal-Proxy "1";
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Portal-User "laotian";
+        proxy_pass http://$h:8787;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 60s;
+    }
+    location = /hermes { return 302 /hermes/; }
+    location ^~ /hermes/ {
+        auth_request /_auth_guard;
+        error_page 401 = @login_required;
+        set $h host.docker.internal;
+        # WO-LEGION-AUTH-20261031：同 /extensions/，注入 Hermes trusted-header 身份。
+        # 直连 8787（不经本反代）没有该头 → Hermes 原生 302/401，不再二次密码登录。
+        proxy_set_header X-Portal-Proxy "1";
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Portal-User "laotian";
+        rewrite ^/hermes(/.*)$ $1 break;
+        proxy_pass http://$h:8787;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 60s;
+    }
+    # mission-control / console 均在 8787 /static/ 下（服务只 serve / 与
+    # /static/*，裸 /mission-control.html 404 已实证），精确短路由直指
+    location = /mission {
+        set $h host.docker.internal;
+        rewrite ^/mission$ /static/mission-control.html break;
+        proxy_pass http://$h:8787;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 15s;
+    }
+    location = /console {
+        set $h host.docker.internal;
+        rewrite ^/console$ /static/console.html break;
+        proxy_pass http://$h:8787;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 15s;
+    }
+    # 推送中台(8097)：P3 反代收编（同 /hermes 判例：带变量 proxy_pass 不做
+    # URI 替换，rewrite+break 剥前缀）。前提已满足——内嵌页两处 fetch 已
+    # 相对化（api/act、api/state），经 /push/ 下解析为 /push/api/* → 本块
+    # 剥前缀直达 8097；绝对路径 /api/*（如观测面板 fetch /api/health）仍走
+    # 上方全局 /api/ → 8091，最长前缀 ^~ /push/ 胜出无冲突。
+    location = /push { return 302 /push/; }
+    location ^~ /push/ {
+        set $h host.docker.internal;
+        rewrite ^/push(/.*)$ $1 break;
+        proxy_pass http://$h:8097;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 60s;
+    }
+
+    # K64 当日买卖点全量页（大屏"全屏 »"下钻，portal_api 渲染）
+    location = /screen-sig {
+        set $h host.docker.internal;
+        proxy_pass http://$h:8091;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 20s;
+    }
+
+    # 旧 QuantDinger /qd 规则组（K236: 302/15000/8888）已移除——
+    # 双刀选股中心现由 portal_api /qd/ 工作台承载（见上方 ^~ /qd）
+
+    # ── L1（2026-11-02 老田批准执行）：智策页面包 + API 同源反代 ──
+    # 页面包：portal/quant/ 静态（VITE_BASE=/quant/）；未登录 302 /login
+    # API：8105 仅本机，经此反代对外；未登录 401 JSON（不 302）
+    # 2026-11-03: 旧 index 被浏览器缓存导致导航风暴；根路径 302 到版本化 app.html
+    location = /quant/ { absolute_redirect off; return 302 /quant; }
+    location ^~ /quant/ {
+        # 2026-11-03: 去掉门户登录拦截，量化页面直接进入应用（应用内自带登录页）
+        add_header Cache-Control "no-store" always;
+        try_files $uri $uri/ /quant/index.html;
+    }
+    location ^~ /quant-api/ {
+        # 2026-11-03: 去掉门户 session 前置校验；8105 自身仍校验 JWT/角色
+        rewrite ^/quant-api/(.*)$ /$1 break;
+        proxy_pass http://host.docker.internal:8105;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_connect_timeout 3s;
+        proxy_read_timeout 60s;
+    }
+
+    # 健康探测代理：浏览器同源请求，nginx 转发到各系统
+    # 上游活着 → 返回其实际状态码（200/307/404 等）；上游挂 → 502
+    # OPS-1007/K126：dify 栈已于 2026-10-05 退役（15 容器 compose down，执行日志全 0），探测移除
+    location = /probe/webui      { set $h host.docker.internal; proxy_pass http://$h:3000/; }
+    location = /probe/quant      { set $h host.docker.internal; proxy_pass http://$h:4100/; }
+    location = /probe/zhice      { set $h host.docker.internal; proxy_pass http://$h:8105/api/v1/health; }
+    location = /probe/quantdinger{ set $h host.docker.internal; proxy_pass http://$h:8888/; }
+    location ^~ /probe/          { return 502; }
+
+    proxy_connect_timeout 3s;
+    proxy_read_timeout 6s;
+}
+
+
