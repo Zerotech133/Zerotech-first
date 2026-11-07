@@ -217,11 +217,23 @@ status:
     - 摘除入口：暂停 8091 /api/d1/* 对 8734 的暴露（Lead 接线层操作，不自行停服务），保留只读审计
     - 恢复数据读取：D1 文件/账本只读快照为准，停止写；重跑 dataset resolve-ref 校验
     - 验证：tools/q2_probe.py --composition lusu-d1-flow + composition.py validate --all --strict + D1 单测 45 passed
-    last_result: dry-run ok（仅计划和静态前置，未真回滚生产）
+    last_result: dry-run ok（仅计划和静态前置，未真回滚生产）；2026-11-07T19:00 UI-only 入口摘除演练 PASS（非完整 API 摘除）
     last_dryrun: '2026-11-06T07:24:47+08:00'
-    last_drilled: pending（2026-11-16 前需演练一次；本单未真回滚生产）
-    evidence: deliverables/d1_q2/20261106/q2_rollback_raw.json
+    last_drilled: 'pending（2026-11-16 前需完整 API 摘除演练；2026-11-07T19:00:12+08:00 UI-only 入口摘除演练 PASS，68.5s 恢复）'
+    evidence: deliverables/d1_q2/20261107/P0-03_UI入口演练_回执.md + deliverables/d1_q2/20261107/P0-03_drill_20261107_1900/drill_result.json
     static_prechecks: 目标提交存在（4788b1527/e15cc824b/HEAD b11cda7c2）/变更文件清单可列/回滚前 validate rc=0
+    ui_drill:
+      window: '2026-11-07T19:00:12+08:00/2026-11-07T19:01:20+08:00'
+      scope: 'UI-only：/d1、/d1/、/d1/research、/d1/war-room、/d1/training、/d1/q2/signoff；/api/d1/* 未摘'
+      result: pass
+      elapsed_seconds: 68.5
+      restored: true
+      data_unchanged: true
+      api_untouched: true
+      evidence: deliverables/d1_q2/20261107/P0-03_drill_20261107_1900/drill_result.json
+      console_log: deliverables/d1_q2/20261107/P0-03_drill_20261107_1900/execute_console.log
+      approval: deliverables/d1_q2/20261107/P0-03_drill_approval_1900.md
+      approval_file_sha256: 72a11cf6fa2c675c6fdb547bb05b97f69ca9d92e1df4e702a276c7cdbbfe9f33
   contract_test:
     unit: 'portal/tests D1 契约/幂等/e2e/UI 共 15 文件 = 161 collected: 158 passed, 2 xfailed strict, 1 skipped（2026-11-07 P0-04 复跑；9 接口，含 war-room 契约测试）'
     fast_gate: portal/tests 目录在 fast 门内 → D1 契约/幂等/e2e/UI 随 portal 套件入闸；P0-04 守卫 portal/tests/test_p0_04_contract_gate.py（5 用例，1 个受控负控正常 skip）；fast gate rc=0（2026-11-07T14:55:46+08:00，worktree HEAD 2c7f4a6de + 本单未提交变更；提交后以提交号绑定）
