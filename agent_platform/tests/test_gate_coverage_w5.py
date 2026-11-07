@@ -244,6 +244,11 @@ def test_baseline_suite_key_fallback_ready():
 PORTAL_ROOT_REGRESSIONS = {
     "portal/test_bot_ws_backoff.py",
     "portal/test_km_card_kind.py",
+    # 2026-11-08 P1-6 分层落地：portal/conftest.py 把 portal/ append 进 sys.path 后，
+    # 两个 watch_tower 根级测试由「收集即错」变为 2 + 6 条全绿，纳入 fast 防回退。
+    # 同批 alerts_level / alert_source_health 实测红、整模块 skip 挂起，不进套件。
+    "portal/test_watch_tower_linkage.py",
+    "portal/test_watch_tower_snapshot.py",
 }
 
 
@@ -257,7 +262,7 @@ def _portal_suite_targets(gate: str) -> list:
 
 
 def test_portal_root_regressions_gated():
-    """portal 根级两个回归测试必须显式在 fast portal 套件内。"""
+    """portal 根级四个可达回归测试必须显式在 fast portal 套件内。"""
     gate = _gate_text()
     targets = _portal_suite_targets(gate)
     assert "portal/tests" in targets, (

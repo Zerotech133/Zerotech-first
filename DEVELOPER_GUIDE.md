@@ -295,6 +295,8 @@ timeout = 120                          ; 兜「挂死」，命令行可覆盖
 
 **没有 `testpaths` 的裸跑会捞到更多目录**，口径会变；改 `testpaths` 属于门禁口径变更，要单独说明。
 
+**`portal/conftest.py` 另外把 `portal/` 追加进 `sys.path`**（用 `append` 不用 `insert(0)`：只在「原本找不到」时命中，不会顶掉仓库根的同名包）。原因是上面那行 `--import-mode=importlib`：pytest 只把 rootdir 放进 `sys.path`，`portal/` 自身不在其中，于是根级测试里 `import api_common` / `from watch_tower_linkage import ...` 这类裸 import 必然 `ModuleNotFoundError`。这就是「收集即错」的机械成因，不是测试写坏了（P1-6，2026-11-08）。
+
 ### 7.2 `test_gate.ps1` 套件
 
 | 套件 | 内容 | 何时用 |
@@ -310,7 +312,7 @@ timeout = 120                          ; 兜「挂死」，命令行可覆盖
 | 数字 | 范围 | 含义 |
 |---|---|---|
 | **3,881 passed / 0 failed** | `agent_platform/tests`（`tools/test_baseline.py`） | 军团全量，约 393 s |
-| **1,319 passed / 0 failed** | portal 门禁套件（`portal/tests` + 2 个根级文件） | 门户口径，约 96 s |
+| **1,330 passed / 2 failed** | portal 门禁套件（`portal/tests` + 4 个根级文件） | 门户口径，约 93 s（并发负载下实测到 161 s）。那 2 红与本批改动无关：`portal/index.html` 工作区字节是纯 LF（865 行），换行守卫读原始字节就红；转 CRLF 后两条立刻绿（已实测并还原），而 `core.autocrlf=true` 下 `git status` 一直认为它没改 —— 见 §9 判例 #19 |
 | **11,187 collected / 0 error** | 仓库根 `--collect-only` | **只是能收集，不代表执行过** |
 
 **三者不可相加，也不构成「全仓 PASS」。** 全仓真正执行过一次这件事，目前是**未完成项**（遗留清单 P3-5）。任何汇报里写「全仓 0 failed」都必须先跑完 `pytest -q`。
@@ -334,6 +336,36 @@ timeout = 120                          ; 兜「挂死」，命令行可覆盖
 这次自测**当场咬出一个真漏洞**：初版按「词元子集」判扩面，`/api/x/` 被删后 `/api/y/` 因共享 `api` 词元被当成「扩面后代」放过了。收紧为「仅正则 + 同骨架 + 词元超集」才拦住。
 
 **规范**：新增守卫类测试，必须自带「坏变体必红」用例，否则不予合并。
+
+### 7.6 不在门禁里的测试：manual 清单（P1-6 分层落地，2026-11-08）
+
+`portal/` 根级有 163 个 `test_*.py`，全都不在 `testpaths` 里。其中 147 个可收集、共 1,663 条用例**从未进过任何套件**——这是「测试被遮蔽」的第二现场。2026-11-08 按层处理，**不是一键全标 manual**（那会把真红永久沉底）：
+
+| 层 | 文件 | 处理 | 理由 |
+|---|---|---|---|
+| 入口可达且全绿 | `test_watch_tower_linkage.py`、`test_watch_tower_snapshot.py` | **已纳入 fast**（2 + 6 条） | 补路径后实跑全绿，是现成的回归价值 |
+| 入口可达但红 | `test_alerts_level.py`（4/4 红）、`test_alert_source_health.py`（14 个方法中 13 个含失败） | 模块级 `pytestmark = pytest.mark.skip(reason="stale: … 见 P1-6")` | 红因是「产品变了、测试没跟上」（分级少一档 5≠6、分区整体换名），定性归 owner。**不删、不改口径、不静默** |
+| 顶层 `sys.exit` | `test_portal_key_rotation.py`、`test_publish_allowlist.py` | 已在 `collect_ignore` | 收集即 INTERNALERROR，设计如此，别统计成「导入错误」 |
+| 脚本式自检 | 见下表 10 个 | 登记为 **manual**，不进 pytest | module 体直跑 + 自写 `check()`，0 个 pytest 用例 |
+
+**manual 清单（改到相关模块时必须手动跑一次）**：
+
+| 文件 | 跑法 | 为什么不能用 pytest 收 |
+|---|---|---|
+| `test_feishu_event_guard.py` | `python portal/test_feishu_event_guard.py` | module 级把 `api_misc.subprocess.run` 打桩且不恢复 → 收集即污染全进程（82 文件连带 AttributeError） |
+| `test_inbound_gateway.py` | 同上 | module 体直跑，断言走自写 `check()` |
+| `test_intel_bus.py` | 同上；真库对账段由 `__main__` 触发 | 单测与 `news.db` 对账混在一个脚本，结果用 `sys.exit` 表达 |
+| `test_legion_auth_p0.py` | 同上 | 需本机拉起议事厅 HTTP 实例 |
+| `test_legion_room_api_live.py` | 同上（临时端口 18096） | 起真实 HTTP 全链路，`sys.exit` |
+| `test_legion_room_unit.py` | 同上 | module 体直跑 |
+| `test_org_e2e.py` | 同上（OS 分配随机高位端口） | 拉隔离 `portal_api` 实例做端到端，绝不碰 8080/8091 |
+| `test_org_guard_p1.py` | 同上 | 起服务 + `sys.exit` |
+| `test_qd_multisource.py` | 同上（mock HTTP，不联网） | module 体直跑 |
+| `test_voice_ingest.py` | 同上（无网络、无凭证、无 lark SDK） | module 体直跑 |
+
+**口径提醒（最容易误判的一处）**：对这 10 个脚本式文件跑 `pytest --collect-only` 会返回 **rc=5（no tests collected）**。这是「收集成功但没有用例」，**不是错误**。把它们计入「16 个收集失败」是误读——真实收集错误只有 4 个 sys.path 型，且已修完（现在 163 个文件里 0 个因 import 失败）。
+
+**红了怎么办**：`skip` 只用于「等 owner 定性」。定性结论出来必须二选一——修测试对齐新契约，或修实现对齐旧契约；**把 skip 改成删文件、把红用例清掉，是同一条病的复发**。
 
 ---
 
@@ -416,6 +448,7 @@ git commit -F <msgfile> -- <同样两个路径>   # ②commit 也带路径（见
 | 16 | **`position:fixed` 的全局浮层压住内容**（`.wb-palette-trigger` 钉死 `right:18px;bottom:18px`，窗口一窄就压到内容栏里，`jev_target` 情绪面末行被盖） | 换个窗口宽度就出现，截图看是「差一点」，实测重叠 300~2400 px² | **按实测边线分级收窄**，不要用视口宽度做算术（有无经典滚动条会差 15px）：先改样式，再 `getBoundingClientRect().left >= 内容右边线 + 2` 判定，逐级 full→mini→corner→dot→hidden；内容右边线取 `['.ui-page','main','#app','.wrap','.container','#root']` 里最宽者再扣它自身 `padding-right` |
 | 17 | **同角两个浮层可以同为 `z-index:900`**（`#ai-orb` 与 ⌘K 按钮） | 后注入者压在球上，谁也没报错，只有肉眼可见 | 浮层要么约定各自层级，要么显式互斥：`ui_palette.js` 检测 `#ai-orb` 贴近右下角时把按钮抬到球上方（`bottom = 视口高 − 球 top + 10`），球被拖走后自动回落 |
 | 18 | **`os_theme.css` 给 `button` 设了 `min-height:40px`** | 局部写 `height:30px` 静默失效，实测仍是 40（截图像「多出 10px」） | 收紧控件高度时同时写 `min-height:0; min-width:0`，不要只写 `height` |
+| 19 | **`core.autocrlf=true` 下 `git status` 干净 ≠ 工作区字节合规**（`portal/index.html` 工作区是纯 LF，换行守卫读原始字节必红，`git diff` 却一行都不显示） | 追换行问题的人会反复怀疑自己刚改的文件，因为凶手在 `git status` 里根本不存在 | 判「换行被破坏」只读磁盘字节（`b.count(b"\n") == b.count(b"\r\n")`），不要拿 `git status`/`git diff` 当证据；修法是把该文件按 CRLF 重写，提交后 blob 仍是 LF、diff 规模不变 |
 
 ---
 
@@ -469,14 +502,14 @@ git commit -F <msgfile> -- <同样两个路径>   # ②commit 也带路径（见
 |---|---|---|
 | P0-2 | 20 项验收 20/20 UNVERIFIED，PASS=0 | 治理门未签，代码通过 ≠ 验收通过 |
 | P1-5 | `gold_signal_shadow` 前视（结算用 `dt` 而非 `detect_date`） | 改口径需重签，否则 d20 虚增 0.80pp |
-| P1-6 | portal 根级 **163** 个 `test_*.py` 全不在 `testpaths`；其中 147 个可收集、共 **1,663 条**用例从未进过门禁；16 个连收集都过不去（4 个 sys.path 型，路径修好后 **28 条红**；10 个脚本式自检，0 用例；2 个顶层 `sys.exit` 已被 `portal/conftest.py` 的 `collect_ignore` 排除） | 第二个「测试被遮蔽」温床：红灯与死代码一起沉底 |
+| P1-6 | portal 根级 **163** 个 `test_*.py` 全不在 `testpaths`（147 个可收集、**1,663 条**用例从未进过门禁） | **已按分层落地（2026-11-08）**：`conftest.py` 补 `sys.path.append` 修掉 4 个 sys.path 型收集错误；2 个全绿文件（watch_tower linkage/snapshot，2+6 条）纳入 fast；2 个实测红的（alerts_level 4/4、alert_source_health 13/14 方法）整模块 skip 挂起；10 个脚本式登记 manual（清单见 §7.6）。**剩余**：2 个红文件的「测试过时 or 实现退化」定性归 owner |
 | P2-5 | 5 文件 6 处函数内 `from tools import` | 与「导入遮蔽」同源，未证实失败前不批改 |
 | P3-5 | 全仓从未做过一次真执行全量回归 | 所有「全仓绿」结论都缺这一跑 |
 
 ### 11.3 建议顺序
 
 1. ~~窗口内提交 P0-5 两文件~~ → **已闭合**（`a65063496` / `f5c5e375b`，HEAD 复跑绿，见 §11.1）；
-2. P1-6 决策：进套件 or 显式 `manual`；
+2. ~~P1-6 决策：进套件 or 显式 `manual`~~ → **已按分层落地（2026-11-08）**，剩 2 个红文件等 owner 定性（见 §7.6）；
 3. P3-5：P1-6 之后跑首轮全仓执行，落 JSON 基线；
 4. P1-5 口径重签后再改结算定位。
 

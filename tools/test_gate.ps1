@@ -92,12 +92,19 @@ $paths = @{
     # 2026-10-31 WO-QUAL-GATE-PORTAL-20261031：portal 根级回归测试显式纳入 fast 门。
     # 背景：fast 只收 portal/tests 目录，导致 portal/ 根级 test_bot_ws_backoff.py /
     # test_km_card_kind.py 长期失败不被门拦（2026-10-31 task-16 修复时才暴露）。
-    # 只显式加这两条，不全量纳入 portal 根 140 个测试（性能）；覆盖守卫见
-    # agent_platform/tests/test_gate_coverage_w5.py::test_portal_root_regressions_gated。
+    # 只显式加入口可达的根级回归，不全量纳入 portal 根 163 个测试（性能）；
+    # 覆盖守卫见 agent_platform/tests/test_gate_coverage_w5.py::test_portal_root_regressions_gated。
+    # 2026-11-08 P1-6 分层落地：test_watch_tower_{linkage,snapshot} 原是「收集即错」的
+    # 根级测试（--import-mode=importlib 下 portal/ 不入 sys.path），portal/conftest.py
+    # 补 append 后实测 2 + 6 条全绿，纳入 fast 防回退；同批 test_alerts_level /
+    # test_alert_source_health 实测红（13/14 方法含失败），整模块 skip 挂起待 owner
+    # 定性，故不进套件——「挂起」不等于「纳入」。
     'portal' = @(
         'portal/tests',
         'portal/test_bot_ws_backoff.py',
-        'portal/test_km_card_kind.py'
+        'portal/test_km_card_kind.py',
+        'portal/test_watch_tower_linkage.py',
+        'portal/test_watch_tower_snapshot.py'
     )
     'kstock' = 'k_stock/tests'
     'agent'  = 'agent_platform/tests'; 'quant' = 'quant_backtest/tests'
