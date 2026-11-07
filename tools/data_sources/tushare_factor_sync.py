@@ -366,8 +366,13 @@ def _rel(path: Path) -> str:
 
 
 def run_diff(args: argparse.Namespace) -> int:
+    if args.baseline and args.old:
+        raise SyncError("--baseline 与 --old 只能二选一")
     new_path = Path(args.new).resolve() if args.new else (SNAP_DIR / "latest.json")
-    old_path = Path(args.old).resolve() if args.old else _default_old()
+    if args.baseline:
+        old_path = Path(args.baseline).resolve()
+    else:
+        old_path = Path(args.old).resolve() if args.old else _default_old()
     source_path = Path(args.source).resolve() if args.source else DEFAULT_SOURCE
     out_dir = Path(args.out_dir).resolve() if args.out_dir else DEFAULT_OUT
 
@@ -399,6 +404,7 @@ def run_diff(args: argparse.Namespace) -> int:
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "old_snapshot": _snapshot_meta(old_payload, old_rows),
         "new_snapshot": _snapshot_meta(new_payload, new_rows),
+        "baseline_mode": bool(args.baseline),
         "diff": diff,
         "type_names_patch": {
             "changed": patch_meta["changed"],
@@ -479,6 +485,10 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", required=True)
     p_diff = sub.add_parser("diff", help="diff 快照并生成 TYPE_NAMES.patch.diff")
     p_diff.add_argument("--old", help="旧快照 JSON/parquet；默认自动取第二新")
+    p_diff.add_argument(
+        "--baseline",
+        help="CI 基线快照（通常从 main 导出）；显式指定时优先于 --old，二者互斥",
+    )
     p_diff.add_argument("--new", help="新快照 JSON/parquet；默认 latest.json")
     p_diff.add_argument("--source", help="factor_lib_tushare.py 路径")
     p_diff.add_argument("--out-dir", help="输出目录")

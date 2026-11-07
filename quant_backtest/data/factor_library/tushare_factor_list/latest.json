@@ -1,0 +1,1671 @@
+{
+ "api": "factor_list",
+ "source": "https://api.tushare.pro",
+ "asset_type": "STK",
+ "factor_type": "",
+ "factor_name": "",
+ "fields": [
+  "factor_name",
+  "asset_type",
+  "factor_type",
+  "factor_desc"
+ ],
+ "api_params": {},
+ "token_sha8": "0fd89b25",
+ "fetched_at": "2026-11-05 06:59:32",
+ "elapsed_seconds": 0.953,
+ "note": "Tushare factor_list 静态元数据快照；不参与 catalog 时序扫描。",
+ "warnings": [],
+ "errors": [],
+ "total": 272,
+ "unique_factor_name": 272,
+ "by_type": {
+  "Alpha101": 101,
+  "Growth": 15,
+  "Liquidity": 35,
+  "Momentum": 20,
+  "Quality": 59,
+  "Reversal": 3,
+  "Risk": 25,
+  "Size": 3,
+  "Value": 11
+ },
+ "by_asset": {
+  "STK": 272
+ },
+ "rows": [
+  {
+   "factor_name": "alpha101_1",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "基于负收益时段波动放大的极值位置排名因子。\n\n数学表达式:\nAlpha = Rank(Ts_ArgMax(SignedPower(IF(Returns < 0, StdDev(Returns, 20), Close), 2), 5)) - 0.5"
+  },
+  {
+   "factor_name": "alpha101_10",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 10 号因子。\n\n数学表达式:\nAlpha = Rank((0 < Ts_Min(Delta(Close, 1), 4)) ? Delta(Close, 1)\n             : ((Ts_Max(Delta(Close, 1), 4) < 0) ? Delta(Close, 1) : -1 * Delta(Close, 1)))"
+  },
+  {
+   "factor_name": "alpha101_100",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 100 号因子。\n\n数学表达式:\nAlpha = -((1.5 * Scale(IndNeutralize(IndNeutralize(Rank((Close - Low - (High - Close)) / (High - Low) * Volume), SubIndustry), SubIndustry))\n        - Scale(IndNeutralize(Correlation(Close, Rank(ADV20), 5) - Rank(Ts_ArgMin(Close, 30)), SubIndustry)))\n        * (Volume / ADV20))"
+  },
+  {
+   "factor_name": "alpha101_101",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 101 号因子。\n\n数学表达式:\nAlpha = (Close - Open) / ((High - Low) + 0.001)"
+  },
+  {
+   "factor_name": "alpha101_11",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 11 号因子。\n\n数学表达式:\nAlpha = (Rank(Ts_Max(VWAP - Close, 3)) + Rank(Ts_Min(VWAP - Close, 3))) * Rank(Delta(Volume, 3))"
+  },
+  {
+   "factor_name": "alpha101_12",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 12 号因子。\n\n数学表达式:\nAlpha = Sign(Delta(Volume, 1)) * (-1 * Delta(Close, 1))"
+  },
+  {
+   "factor_name": "alpha101_13",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 13 号因子。\n\n数学表达式:\nAlpha = -1 * Rank(Covariance(Rank(Close), Rank(Volume), 5))"
+  },
+  {
+   "factor_name": "alpha101_14",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 14 号因子。\n\n数学表达式:\nAlpha = -1 * Rank(Delta(Returns, 3)) * Correlation(Open, Volume, 10)"
+  },
+  {
+   "factor_name": "alpha101_15",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 15 号因子。\n\n数学表达式:\nAlpha = -1 * Sum(Rank(Correlation(Rank(High), Rank(Volume), 3)), 3)"
+  },
+  {
+   "factor_name": "alpha101_16",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 16 号因子。\n\n数学表达式:\nAlpha = -1 * Rank(Covariance(Rank(High), Rank(Volume), 5))"
+  },
+  {
+   "factor_name": "alpha101_17",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 17 号因子。\n\n数学表达式:\nAlpha = (-1 * Rank(Ts_Rank(Close, 10))) * Rank(Delta(Delta(Close, 1), 1)) * Rank(Ts_Rank(Volume / ADV20, 5))"
+  },
+  {
+   "factor_name": "alpha101_18",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 18 号因子。\n\n数学表达式:\nAlpha = -1 * Rank(StdDev(Abs(Close - Open), 5) + (Close - Open) + Correlation(Close, Open, 10))"
+  },
+  {
+   "factor_name": "alpha101_19",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 19 号因子。\n\n数学表达式:\nAlpha = (-1 * Sign((Close - Delay(Close, 7)) + Delta(Close, 7))) * (1 + Rank(1 + Sum(Returns, 250)))"
+  },
+  {
+   "factor_name": "alpha101_2",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 2 号因子。\n\n数学表达式:\nAlpha = -1 * Correlation(Rank(Delta(Log(Volume), 2)), Rank((Close - Open) / Open), 6)"
+  },
+  {
+   "factor_name": "alpha101_20",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 20 号因子。\n\n数学表达式:\nAlpha = -1 * Rank(Open - Delay(High, 1)) * Rank(Open - Delay(Close, 1)) * Rank(Open - Delay(Low, 1))"
+  },
+  {
+   "factor_name": "alpha101_21",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 21 号因子。\n\n数学表达式:\nAlpha = (Sum(Close, 8) / 8 + StdDev(Close, 8) < Sum(Close, 2) / 2) ? -1\n        : ((Sum(Close, 2) / 2 < Sum(Close, 8) / 8 - StdDev(Close, 8)) ? 1\n           : ((1 < Volume / ADV20 || Volume / ADV20 == 1) ? 1 : -1))"
+  },
+  {
+   "factor_name": "alpha101_22",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 22 号因子。\n\n数学表达式:\nAlpha = -1 * Delta(Correlation(High, Volume, 5), 5) * Rank(StdDev(Close, 20))"
+  },
+  {
+   "factor_name": "alpha101_23",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 23 号因子。\n\n数学表达式:\nAlpha = (Sum(High, 20) / 20 < High) ? -1 * Delta(High, 2) : 0"
+  },
+  {
+   "factor_name": "alpha101_24",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 24 号因子。\n\n数学表达式:\nAlpha = (Delta(Sum(Close, 100) / 100, 100) / Delay(Close, 100) <= 0.05)\n        ? -1 * (Close - Ts_Min(Close, 100)) : -1 * Delta(Close, 3)"
+  },
+  {
+   "factor_name": "alpha101_25",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 25 号因子。\n\n数学表达式:\nAlpha = Rank(-1 * Returns * ADV20 * VWAP * (High - Close))"
+  },
+  {
+   "factor_name": "alpha101_26",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 26 号因子。\n\n数学表达式:\nAlpha = -1 * Ts_Max(Correlation(Ts_Rank(Volume, 5), Ts_Rank(High, 5), 5), 3)"
+  },
+  {
+   "factor_name": "alpha101_27",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 27 号因子。\n\n数学表达式:\nAlpha = (0.5 < Rank(Sum(Correlation(Rank(Volume), Rank(VWAP), 6), 2) / 2.0)) ? -1 : 1"
+  },
+  {
+   "factor_name": "alpha101_28",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 28 号因子。\n\n数学表达式:\nAlpha = Scale(Correlation(ADV20, Low, 5) + (High + Low) / 2 - Close)"
+  },
+  {
+   "factor_name": "alpha101_29",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 29 号因子。\n\n数学表达式:\nAlpha = Min(Product(Rank(Rank(Scale(Log(Sum(Ts_Min(\n        Rank(Rank(-1 * Rank(Delta(Close - 1, 5)))), 2), 1))))), 1), 5)\n        + Ts_Rank(Delay(-1 * Returns, 6), 5)"
+  },
+  {
+   "factor_name": "alpha101_3",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "开盘价排名与成交量排名相关性的负值。\n\n数学表达式:\nAlpha = -1 * Correlation(Rank(Open), Rank(Volume), 10)"
+  },
+  {
+   "factor_name": "alpha101_30",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 30 号因子。\n\n数学表达式:\nAlpha = (1 - Rank(Sign(Close - Delay(Close, 1)) + Sign(Delay(Close, 1) - Delay(Close, 2))\n        + Sign(Delay(Close, 2) - Delay(Close, 3))) * Sum(Volume, 5)) / Sum(Volume, 20)"
+  },
+  {
+   "factor_name": "alpha101_31",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 31 号因子。\n\n数学表达式:\nAlpha = Rank(Rank(Rank(Decay_Linear(-1 * Rank(Rank(Delta(Close, 10))), 10))))\n        + Rank(-1 * Delta(Close, 3))\n        + Sign(Scale(Correlation(ADV20, Low, 12)))"
+  },
+  {
+   "factor_name": "alpha101_32",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 32 号因子。\n\n数学表达式:\nAlpha = Scale(Sum(Close, 7) / 7 - Close) + 20 * Scale(Correlation(VWAP, Delay(Close, 5), 230))"
+  },
+  {
+   "factor_name": "alpha101_33",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 33 号因子。\n\n数学表达式:\nAlpha = Rank(-1 * (1 - Open / Close))"
+  },
+  {
+   "factor_name": "alpha101_34",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 34 号因子。\n\n数学表达式:\nAlpha = Rank(1 - Rank(StdDev(Returns, 2) / StdDev(Returns, 5)) + 1 - Rank(Delta(Close, 1)))"
+  },
+  {
+   "factor_name": "alpha101_35",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 35 号因子。\n\n数学表达式:\nAlpha = Ts_Rank(Volume, 32) * (1 - Ts_Rank((Close + High) - Low, 16)) * (1 - Ts_Rank(Returns, 32))"
+  },
+  {
+   "factor_name": "alpha101_36",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 36 号因子。\n\n数学表达式:\nAlpha = 2.21 * Rank(Correlation(Close - Open, Delay(Volume, 1), 15))\n        + 0.7 * Rank(Open - Close)\n        + 0.73 * Rank(Ts_Rank(Delay(-1 * Returns, 6), 5))\n        + Rank(Abs(Correlation(VWAP, ADV20, 6)))\n        + 0.6 * Rank((Sum(Close, 200) / 200 - Open) * (Close - Open))"
+  },
+  {
+   "factor_name": "alpha101_37",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 37 号因子。\n\n数学表达式:\nAlpha = Rank(Correlation(Delay(Open - Close, 1), Close, 200)) + Rank(Open - Close)"
+  },
+  {
+   "factor_name": "alpha101_38",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 38 号因子。\n\n数学表达式:\nAlpha = -1 * Rank(Ts_Rank(Close, 10)) * Rank(Close / Open)"
+  },
+  {
+   "factor_name": "alpha101_39",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 39 号因子。\n\n数学表达式:\nAlpha = -1 * Rank(Delta(Close, 7) * (1 - Rank(Decay_Linear(Volume / ADV20, 9))))\n        * (1 + Rank(Sum(Returns, 250)))"
+  },
+  {
+   "factor_name": "alpha101_4",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "最低价排名的 9 日时间序列排名的负值。\n\n数学表达式:\nAlpha = -1 * Ts_Rank(Rank(Low), 9)"
+  },
+  {
+   "factor_name": "alpha101_40",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 40 号因子。\n\n数学表达式:\nAlpha = -1 * Rank(StdDev(High, 10)) * Correlation(High, Volume, 10)"
+  },
+  {
+   "factor_name": "alpha101_41",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 41 号因子。\n\n数学表达式:\nAlpha = (High * Low) ^ 0.5 - VWAP"
+  },
+  {
+   "factor_name": "alpha101_42",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 42 号因子。\n\n数学表达式:\nAlpha = Rank(VWAP - Close) / Rank(VWAP + Close)"
+  },
+  {
+   "factor_name": "alpha101_43",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 43 号因子。\n\n数学表达式:\nAlpha = Ts_Rank(Volume / ADV20, 20) * Ts_Rank(-1 * Delta(Close, 7), 8)"
+  },
+  {
+   "factor_name": "alpha101_44",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 44 号因子。\n\n数学表达式:\nAlpha = -1 * Correlation(High, Rank(Volume), 5)"
+  },
+  {
+   "factor_name": "alpha101_45",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 45 号因子。\n\n数学表达式:\nAlpha = -1 * Rank(Sum(Delay(Close, 5), 20) / 20) * Correlation(Close, Volume, 2)\n        * Rank(Correlation(Sum(Close, 5), Sum(Close, 20), 2))"
+  },
+  {
+   "factor_name": "alpha101_46",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 46 号因子。\n\n数学表达式:\nAlpha = (0.25 < (Delay(Close, 20) - Delay(Close, 10)) / 10 - (Delay(Close, 10) - Close) / 10) ? -1\n        : ((((Delay(Close, 20) - Delay(Close, 10)) / 10 - (Delay(Close, 10) - Close) / 10) < 0)\n           ? 1 : -1 * (Close - Delay(Close, 1)))"
+  },
+  {
+   "factor_name": "alpha101_47",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 47 号因子。\n\n数学表达式:\nAlpha = (Rank(1 / Close) * Volume / ADV20) * (High * Rank(High - Close) / (Sum(High, 5) / 5))\n        - Rank(VWAP - Delay(VWAP, 5))"
+  },
+  {
+   "factor_name": "alpha101_48",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 48 号因子。\n\n数学表达式:\nAlpha = IndNeutralize(Correlation(Delta(Close, 1), Delta(Delay(Close, 1), 1), 250) * Delta(Close, 1) / Close)\n        / Sum((Delta(Close, 1) / Delay(Close, 1)) ^ 2, 250)"
+  },
+  {
+   "factor_name": "alpha101_49",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 49 号因子。\n\n数学表达式:\nAlpha = ((Delay(Close, 20) - Delay(Close, 10)) / 10 - (Delay(Close, 10) - Close) / 10 < -0.1)\n        ? 1 : -1 * (Close - Delay(Close, 1))"
+  },
+  {
+   "factor_name": "alpha101_5",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "开盘价偏离 VWAP 排名与收盘价偏离 VWAP 排名绝对值的组合。\n\n数学表达式:\nAlpha = Rank(Open - (Sum(VWAP, 10) / 10)) * (-1 * Abs(Rank(Close - VWAP)))"
+  },
+  {
+   "factor_name": "alpha101_50",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 50 号因子。\n\n数学表达式:\nAlpha = -1 * Ts_Max(Rank(Correlation(Rank(Volume), Rank(VWAP), 5)), 5)"
+  },
+  {
+   "factor_name": "alpha101_51",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 51 号因子。\n\n数学表达式:\nAlpha = ((Delay(Close, 20) - Delay(Close, 10)) / 10 - (Delay(Close, 10) - Close) / 10 < -0.05)\n        ? 1 : -1 * (Close - Delay(Close, 1))"
+  },
+  {
+   "factor_name": "alpha101_52",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 52 号因子。\n\n数学表达式:\nAlpha = ((-1 * Ts_Min(Low, 5) + Delay(Ts_Min(Low, 5), 5)) * Rank((Sum(Returns, 240) - Sum(Returns, 20)) / 220))\n        * Ts_Rank(Volume, 5)"
+  },
+  {
+   "factor_name": "alpha101_53",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 53 号因子。\n\n数学表达式:\nAlpha = -1 * Delta(((Close - Low) - (High - Close)) / (Close - Low), 9)"
+  },
+  {
+   "factor_name": "alpha101_54",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 54 号因子。\n\n数学表达式:\nAlpha = (-1 * (Low - Close) * Open^5) / ((Low - High) * Close^5)"
+  },
+  {
+   "factor_name": "alpha101_55",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 55 号因子。\n\n数学表达式:\nAlpha = -1 * Correlation(Rank((Close - Ts_Min(Low, 12)) / (Ts_Max(High, 12) - Ts_Min(Low, 12))),\n                        Rank(Volume), 6)"
+  },
+  {
+   "factor_name": "alpha101_56",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 56 号因子。\n\n数学表达式:\nAlpha = -1 * Rank(Sum(Returns, 10) / Sum(Sum(Returns, 2), 3)) * Rank(Returns * Cap)"
+  },
+  {
+   "factor_name": "alpha101_57",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 57 号因子。\n\n数学表达式:\nAlpha = -(Close - VWAP) / Decay_Linear(Rank(Ts_ArgMax(Close, 30)), 2)"
+  },
+  {
+   "factor_name": "alpha101_58",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 58 号因子。\n\n数学表达式:\nAlpha = -1 * Ts_Rank(Decay_Linear(Correlation(IndNeutralize(VWAP), Volume, 4), 8), 6)"
+  },
+  {
+   "factor_name": "alpha101_59",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 59 号因子。\n\n数学表达式:\nAlpha = -1 * Ts_Rank(Decay_Linear(Correlation(IndNeutralize(VWAP), Volume, 4), 16), 8)"
+  },
+  {
+   "factor_name": "alpha101_6",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 6 号因子。\n\n数学表达式:\nAlpha = -1 * Correlation(Open, Volume, 10)"
+  },
+  {
+   "factor_name": "alpha101_60",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 60 号因子。\n\n数学表达式:\nAlpha = -(2 * Scale(Rank((Close - Low - (High - Close)) / (High - Low) * Volume))\n        - Scale(Rank(Ts_ArgMax(Close, 10))))"
+  },
+  {
+   "factor_name": "alpha101_61",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 61 号因子。\n\n数学表达式:\nAlpha = Rank(VWAP - Ts_Min(VWAP, 16)) < Rank(Correlation(VWAP, ADV180, 18))"
+  },
+  {
+   "factor_name": "alpha101_62",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 62 号因子。\n\n数学表达式:\nAlpha = (Rank(Correlation(VWAP, Sum(ADV20, 22), 10))\n        < Rank(Rank(Open) + Rank(Open) < Rank((High + Low) / 2) + Rank(High))) * -1"
+  },
+  {
+   "factor_name": "alpha101_63",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 63 号因子。\n\n数学表达式:\nAlpha = (Rank(Decay_Linear(Delta(IndNeutralize(Close), 2), 8))\n        - Rank(Decay_Linear(Correlation(0.318108 * VWAP + 0.681892 * Open,\n                                         Sum(ADV180, 37), 14), 12))) * -1"
+  },
+  {
+   "factor_name": "alpha101_64",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 64 号因子。\n\n数学表达式:\nAlpha = (Rank(Correlation(Sum(Open, 13), Sum(ADV120, 13), 17))\n        < Rank(Delta(Delta_Mix, 4))) * -1"
+  },
+  {
+   "factor_name": "alpha101_65",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 65 号因子。\n\n数学表达式:\nAlpha = (Rank(Correlation(Open, Sum(ADV60, 9), 6)) < Rank(Open - Ts_Min(Open, 14))) * -1"
+  },
+  {
+   "factor_name": "alpha101_66",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 66 号因子。\n\n数学表达式:\nAlpha = (Rank(Decay_Linear(Delta(VWAP, 4), 7))\n        + Ts_Rank(Decay_Linear((Low - VWAP) / (Open - (High + Low) / 2), 11), 7)) * -1"
+  },
+  {
+   "factor_name": "alpha101_67",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 67 号因子。\n\n数学表达式:\nAlpha = Rank(High - Ts_Min(High, 2)) ^ Rank(Correlation(IndNeutralize(VWAP), IndNeutralize(ADV20), 6)) * -1"
+  },
+  {
+   "factor_name": "alpha101_68",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 68 号因子。\n\n数学表达式:\nAlpha = (Ts_Rank(Correlation(Rank(High), Rank(ADV15), 9), 14) < Rank(Delta(Close, 1))) * -1"
+  },
+  {
+   "factor_name": "alpha101_69",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 69 号因子。\n\n数学表达式:\nAlpha = Rank(Ts_Max(Delta(IndNeutralize(VWAP), 3), 5)) ^ Ts_Rank(Correlation(Close, ADV20, 5), 9) * -1"
+  },
+  {
+   "factor_name": "alpha101_7",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 7 号因子。\n\n数学表达式:\nAlpha = (ADV20 < Volume) ? (-1 * Ts_Rank(Abs(Delta(Close, 7)), 60) * Sign(Delta(Close, 7))) : -1\n\n说明: 当日成交量 ≤ 20 日均量（缩量或停牌）时输出 -1，\n为公式定义的哨兵值，非数据缺失；截面排序使用时应剔除或单独分组。"
+  },
+  {
+   "factor_name": "alpha101_70",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 70 号因子。\n\n数学表达式:\nAlpha = Rank(Delta(VWAP, 1)) ^ Ts_Rank(Correlation(IndNeutralize(Close), ADV50, 18), 18) * -1"
+  },
+  {
+   "factor_name": "alpha101_71",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 71 号因子。\n\n数学表达式:\nAlpha = Max(Ts_Rank(Decay_Linear(Correlation(Ts_Rank(Close, 3), Ts_Rank(ADV180, 12), 18), 4), 16),\n            Ts_Rank(Decay_Linear(Rank(Low + Open - 2 * VWAP) ^ 2, 16), 4))"
+  },
+  {
+   "factor_name": "alpha101_72",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 72 号因子。\n\n数学表达式:\nAlpha = Rank(Decay_Linear(Correlation((High + Low) / 2, ADV40, 9), 10))\n        / Rank(Decay_Linear(Correlation(Ts_Rank(VWAP, 4), Ts_Rank(Volume, 19), 7), 3))"
+  },
+  {
+   "factor_name": "alpha101_73",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 73 号因子。\n\n数学表达式:\nAlpha = (Max(Rank(Decay_Linear(Delta(VWAP, 5), 3)),\n             Ts_Rank(Decay_Linear(-Delta(Open, 2) / Open, 3), 17)) * -1"
+  },
+  {
+   "factor_name": "alpha101_74",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 74 号因子。\n\n数学表达式:\nAlpha = (Rank(Correlation(Close, Sum(ADV30, 37), 15))\n        < Rank(Correlation(Rank(0.0261661 * High + 0.9738339 * VWAP),\n                           Rank(Volume), 11))) * -1"
+  },
+  {
+   "factor_name": "alpha101_75",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 75 号因子。\n\n数学表达式:\nAlpha = Rank(Correlation(VWAP, Volume, 4)) < Rank(Correlation(Rank(Low), Rank(ADV50), 12))"
+  },
+  {
+   "factor_name": "alpha101_76",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 76 号因子。\n\n数学表达式:\nAlpha = (Max(Rank(Decay_Linear(Delta(VWAP, 1), 12)),\n             Ts_Rank(Decay_Linear(Ts_Rank(Correlation(IndNeutralize(Low), ADV81, 8), 20), 17), 19)) * -1"
+  },
+  {
+   "factor_name": "alpha101_77",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 77 号因子。\n\n数学表达式:\nAlpha = Min(Rank(Decay_Linear((High + Low) / 2 + High - VWAP - High, 20)),\n            Rank(Decay_Linear(Correlation((High + Low) / 2, ADV40, 3), 6)))"
+  },
+  {
+   "factor_name": "alpha101_78",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 78 号因子。\n\n数学表达式:\nAlpha = Rank(Correlation(Sum(Low, 20), Sum(ADV40, 20), 7)) ^ Rank(Correlation(Rank(VWAP), Rank(Volume), 6))"
+  },
+  {
+   "factor_name": "alpha101_79",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 79 号因子。\n\n数学表达式:\nAlpha = Rank(\n            Delta(\n                IndNeutralize(\n                    0.60733 * Close + 0.39267 * Open,\n                    IndClass.sector,\n                ),\n                1,\n            )\n        ) < Rank(\n            Correlation(\n                Ts_Rank(VWAP, 4),\n                Ts_Rank(ADV150, 9),\n                15,\n            )\n        )\n\n实现说明:\n- 行业中性化使用申万一级行业分类映射。\n- 原公式中的非整数窗口在当前实现中取整为 1、4、9、15。\n- 相关系数窗口为常量时，相关系数未定义，结果保留为缺失值。"
+  },
+  {
+   "factor_name": "alpha101_8",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "5 日开盘价与收益率乘积和相对其 10 日延迟值之差的排名负值。\n\n数学表达式:\nAlpha = -1 * Rank((Sum(Open, 5) * Sum(Returns, 5)) - Delay((Sum(Open, 5) * Sum(Returns, 5)), 10))"
+  },
+  {
+   "factor_name": "alpha101_80",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 80 号因子。\n\n数学表达式:\nAlpha = Rank(Sign(Delta(IndNeutralize(Open), 4))) ^ Ts_Rank(Correlation(High, ADV10, 5), 6) * -1"
+  },
+  {
+   "factor_name": "alpha101_81",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 81 号因子。\n\n数学表达式:\nAlpha = (Rank(Log(Product(Rank(Rank(Correlation(VWAP, Sum(ADV10, 50), 8)) ^ 4), 15)))\n        < Rank(Correlation(Rank(VWAP), Rank(Volume), 5))) * -1"
+  },
+  {
+   "factor_name": "alpha101_82",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 82 号因子。\n\n数学表达式:\nAlpha = (Min(Rank(Decay_Linear(Delta(Open, 1), 15)),\n             Ts_Rank(Decay_Linear(Correlation(IndNeutralize(Volume), Open, 17), 7), 13)) * -1"
+  },
+  {
+   "factor_name": "alpha101_83",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 83 号因子。\n\n数学表达式:\nAlpha = Rank(Delay((High - Low) / (Sum(Close, 5) / 5), 2)) * Rank(Rank(Volume))\n        / ((High - Low) / (Sum(Close, 5) / 5) / (VWAP - Close))"
+  },
+  {
+   "factor_name": "alpha101_84",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 84 号因子。\n\n数学表达式:\nAlpha = SignedPower(Ts_Rank(VWAP - Ts_Max(VWAP, 15), 21), Delta(Close, 5))\nSignedPower(x, a) = Sign(x) * |x| ^ a"
+  },
+  {
+   "factor_name": "alpha101_85",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 85 号因子。\n\n数学表达式:\nAlpha = Rank(Correlation(High, ADV30, 10)) ^ Rank(Correlation(Ts_Rank((High + Low) / 2, 4), Ts_Rank(Volume, 10), 7))"
+  },
+  {
+   "factor_name": "alpha101_86",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 86 号因子。\n\n数学表达式:\nAlpha = (Ts_Rank(Correlation(Close, Sum(ADV20, 15), 6), 20) < Rank(Open + Close - VWAP - Open)) * -1"
+  },
+  {
+   "factor_name": "alpha101_87",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 87 号因子。\n\n数学表达式:\nAlpha = (Max(Rank(Decay_Linear(Delta(Close, 2), 3)),\n             Ts_Rank(Decay_Linear(Abs(Correlation(IndNeutralize(ADV81), Close, 13)), 5), 14)) * -1"
+  },
+  {
+   "factor_name": "alpha101_88",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 88 号因子。\n\n数学表达式:\nAlpha = Min(Rank(Decay_Linear(Rank(Open) + Rank(Low) - Rank(High) - Rank(Close), 8)),\n            Ts_Rank(Decay_Linear(Correlation(Ts_Rank(Close, 8), Ts_Rank(ADV60, 21), 8), 7), 3))"
+  },
+  {
+   "factor_name": "alpha101_89",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 89 号因子。\n\n数学表达式:\nAlpha = Ts_Rank(Decay_Linear(Correlation(Low, ADV10, 7), 6), 4)\n        - Ts_Rank(Decay_Linear(Delta(IndNeutralize(VWAP), 3), 10), 15)"
+  },
+  {
+   "factor_name": "alpha101_9",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 9 号因子。\n\n数学表达式:\nAlpha = (0 < Ts_Min(Delta(Close, 1), 5)) ? Delta(Close, 1)\n        : ((Ts_Max(Delta(Close, 1), 5) < 0) ? Delta(Close, 1) : -1 * Delta(Close, 1))"
+  },
+  {
+   "factor_name": "alpha101_90",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 90 号因子。\n\n数学表达式:\nAlpha = Rank(Close - Ts_Max(Close, 5)) ^ Ts_Rank(Correlation(IndNeutralize(ADV40), Low, 5), 3) * -1"
+  },
+  {
+   "factor_name": "alpha101_91",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 91 号因子。\n\n数学表达式:\nAlpha = (Ts_Rank(Decay_Linear(Decay_Linear(Correlation(IndNeutralize(Close), Volume, 10), 16), 4), 5)\n        - Rank(Decay_Linear(Correlation(VWAP, ADV30, 4), 3))) * -1"
+  },
+  {
+   "factor_name": "alpha101_92",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 92 号因子。\n\n数学表达式:\nAlpha = Min(Ts_Rank(Decay_Linear((High + Low) / 2 + Close < Low + Open, 15), 19),\n            Ts_Rank(Decay_Linear(Correlation(Rank(Low), Rank(ADV30), 8), 7), 7))"
+  },
+  {
+   "factor_name": "alpha101_93",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 93 号因子。\n\n数学表达式:\nAlpha = Ts_Rank(Decay_Linear(Correlation(IndNeutralize(VWAP), ADV81, 17), 20), 8)\n        / Rank(Decay_Linear(Delta(Close, 3), 16))"
+  },
+  {
+   "factor_name": "alpha101_94",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 94 号因子。\n\n数学表达式:\nAlpha = Rank(VWAP - Ts_Min(VWAP, 12)) ^ Ts_Rank(Correlation(Ts_Rank(VWAP, 20), Ts_Rank(ADV60, 4), 18), 3) * -1"
+  },
+  {
+   "factor_name": "alpha101_95",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 95 号因子。\n\n数学表达式:\nAlpha = Rank(Open - Ts_Min(Open, 12)) < Ts_Rank(Rank(Correlation(Sum((High + Low) / 2, 19), Sum(ADV40, 19), 13)) ^ 5, 12)"
+  },
+  {
+   "factor_name": "alpha101_96",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 96 号因子。\n\n数学表达式:\nAlpha = (Max(Ts_Rank(Decay_Linear(Correlation(Rank(VWAP), Rank(Volume), 4), 4), 8),\n             Ts_Rank(Decay_Linear(Ts_ArgMax(Correlation(Ts_Rank(Close, 7), Ts_Rank(ADV60, 4), 4), 13), 14), 13)) * -1"
+  },
+  {
+   "factor_name": "alpha101_97",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 97 号因子。\n\n数学表达式:\nAlpha = (Rank(Decay_Linear(Delta(IndNeutralize(0.721001 * Low + 0.278999 * VWAP), 3), 20))\n        - Ts_Rank(Decay_Linear(Ts_Rank(Correlation(Ts_Rank(Low, 8), Ts_Rank(ADV60, 17), 5), 19), 16), 7)) * -1"
+  },
+  {
+   "factor_name": "alpha101_98",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 98 号因子。\n\n数学表达式:\nAlpha = Rank(Decay_Linear(Correlation(VWAP, Sum(ADV5, 26), 5), 7))\n        - Rank(Decay_Linear(Ts_Rank(Ts_ArgMin(Correlation(Rank(Open), Rank(ADV15), 21), 9), 7), 8))"
+  },
+  {
+   "factor_name": "alpha101_99",
+   "asset_type": "STK",
+   "factor_type": "Alpha101",
+   "factor_desc": "世坤 alpha101 第 99 号因子。\n\n数学表达式:\nAlpha = (Rank(Correlation(Sum((High + Low) / 2, 20), Sum(ADV60, 20), 9))\n        < Rank(Correlation(Low, Volume, 6))) * -1"
+  },
+  {
+   "factor_name": "asset_growth_qoq",
+   "asset_type": "STK",
+   "factor_type": "Growth",
+   "factor_desc": "总资产环比增速，截面排名。\n\n总资产为存量科目，财报披露日计算环比（本期/上期-1），其余交易日前向填充最近披露的环比值（PIT 口径）。\n资产负债表无 _q 字段，使用 _pri（季度报告索引，披露时更新）。\n\n数学表达式:\nGrowth = TotalAssets_t / TotalAssets_{prev_report} - 1   # 财报披露日计算\nFactor = CrossSectionalRank(Growth_filled)"
+  },
+  {
+   "factor_name": "eaa",
+   "asset_type": "STK",
+   "factor_type": "Growth",
+   "factor_desc": "EPS增长加速度因子，截面排名。\n\nEPS增长率的变化量，衡量增长动能的变化趋势。\n\nMathematical expression:\n1. EGA = EPS_Q / EPS_Q_{t-252} - 1\n2. EAA = EGA - EGA_{t-63}\nFactor = CrossSectionalRank(EAA)"
+  },
+  {
+   "factor_name": "eap",
+   "asset_type": "STK",
+   "factor_type": "Growth",
+   "factor_desc": "EPS相对于价格的增长加速度因子，截面排名。\n\n使用收盘价作为分母，标准化EPS增量。\n\nMathematical expression:\n1. EGP = (EPS_Q_t - EPS_Q_{t-252}) / Close\n2. EAP = EGP - EGP_{t-63}\nFactor = CrossSectionalRank(EAP)"
+  },
+  {
+   "factor_name": "gross_margin_qoq",
+   "asset_type": "STK",
+   "factor_type": "Growth",
+   "factor_desc": "毛利率TTM环比增长率因子，截面排名。\n\n对应原faclib/growth/GPR1因子。\n财报披露日计算毛利率 TTM 环比（本期/上期-1），其余交易日前向填充最近披露的环比值（PIT 口径）。\n\nMathematical expression:\n1. GrossMargin = (Revenue_TTM - Cost_TTM) / Revenue_TTM\n2. Growth = GrossMargin_t / GrossMargin_{prev_report} - 1   # 财报披露日计算\nFactor = CrossSectionalRank(Growth_filled)"
+  },
+  {
+   "factor_name": "np_ttm_qoq",
+   "asset_type": "STK",
+   "factor_type": "Growth",
+   "factor_desc": "净利润（TTM）环比增速，截面排名。\n\n财报披露日计算 TTM 净利润环比（本期/上期-1），其余交易日前向填充最近披露的环比值（PIT 口径）。\n\n数学表达式:\nGrowth = NetProfit_TTM_t / NetProfit_TTM_{prev_report} - 1   # 财报披露日计算\nFactor = CrossSectionalRank(Growth_filled)"
+  },
+  {
+   "factor_name": "pa",
+   "asset_type": "STK",
+   "factor_type": "Growth",
+   "factor_desc": "ROA增长加速度因子，截面排名。\n\nROA变化量的变化，衡量盈利能力加速改善的趋势。\n\nMathematical expression:\n1. PG = ROA_t - ROA_{t-252}\n2. PA = PG - PG_{t-63}\nFactor = CrossSectionalRank(PA)"
+  },
+  {
+   "factor_name": "peg_252d",
+   "asset_type": "STK",
+   "factor_type": "Growth",
+   "factor_desc": "PEG因子\n\nPEG = PE / (EPS增长率 * 100)。用于衡量估值与成长性的匹配。\nPE由收盘价/基本每股收益(TTM)计算得到。\n\n数学表达式:\n1. PE = Close / EPS_TTM\n2. EPS_Growth = ts_returns(EPS, window, mode='simple')\n3. PEG = PE / (EPS_Growth * 100)\n\n参数:\n    window: EPS增长率计算窗口，默认 252天"
+  },
+  {
+   "factor_name": "sa",
+   "asset_type": "STK",
+   "factor_type": "Growth",
+   "factor_desc": "每股销售收入增长加速度因子，截面排名。\n\n每股销售收入增长率的变化量。\n\nMathematical expression:\n1. SPS = OperatingRevenue_Q / TotalShares\n2. SG = SPS_t / SPS_{t-252} - 1\n3. SA = SG - SG_{t-63}\nFactor = CrossSectionalRank(SA)"
+  },
+  {
+   "factor_name": "yoy_net_asset",
+   "asset_type": "STK",
+   "factor_type": "Growth",
+   "factor_desc": "净资产同比增长率因子，截面排名。\n\nMathematical expression:\nYoY = NetAsset_t / NetAsset_{t-252} - 1\nFactor = CrossSectionalRank(YoY)"
+  },
+  {
+   "factor_name": "yoy_net_profit",
+   "asset_type": "STK",
+   "factor_type": "Growth",
+   "factor_desc": "净利润同比增长因子\n\nMathematical expression:\nYoY = Value_t / Value_{t-252} - 1"
+  },
+  {
+   "factor_name": "yoy_ocf",
+   "asset_type": "STK",
+   "factor_type": "Growth",
+   "factor_desc": "经营现金流同比增长率因子，截面排名。\n\nMathematical expression:\nYoY = OCF_TTM_t / OCF_TTM_{t-252} - 1\nFactor = CrossSectionalRank(YoY)"
+  },
+  {
+   "factor_name": "yoy_revenue",
+   "asset_type": "STK",
+   "factor_type": "Growth",
+   "factor_desc": "营业收入同比增长因子\n\nMathematical expression:\nYoY = Value_t / Value_{t-252} - 1"
+  },
+  {
+   "factor_name": "yoy_roa",
+   "asset_type": "STK",
+   "factor_type": "Growth",
+   "factor_desc": "ROA同比增长率因子，截面排名。\n\nMathematical expression:\nYoY = ROA_TTM_t / ROA_TTM_{t-252} - 1\nFactor = CrossSectionalRank(YoY)"
+  },
+  {
+   "factor_name": "yoy_roe",
+   "asset_type": "STK",
+   "factor_type": "Growth",
+   "factor_desc": "ROE同比增长率因子，截面排名。\n\nMathematical expression:\nYoY = ROE_TTM_t / ROE_TTM_{t-252} - 1\nFactor = CrossSectionalRank(YoY)"
+  },
+  {
+   "factor_name": "yoy_total_asset",
+   "asset_type": "STK",
+   "factor_type": "Growth",
+   "factor_desc": "总资产同比增长率因子，截面排名。\n\nMathematical expression:\nYoY = TotalAsset_t / TotalAsset_{t-252} - 1\nFactor = CrossSectionalRank(YoY)"
+  },
+  {
+   "factor_name": "amount_ma_20d",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "计算 20 日成交额移动平均。\n\n该因子衡量市场的活跃程度和流动性。\n\n数学表达式:\nAmountMA = Mean(TurnoverAmount, 20)\n\n参数:\n    window: 移动平均窗口，默认为 20"
+  },
+  {
+   "factor_name": "avg_turnover_10d",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "平均换手率因子\n\n计算过去10天的平均换手率。\n\n数学表达式:\n1. DailyTurnoverRate = Volume / AShares\n2. Factor = ts_mean(DailyTurnoverRate, 10)\n\n参数:\n    window: 窗口天数"
+  },
+  {
+   "factor_name": "avg_turnover_126d",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "计算过去6个月（w=6*21个交易日）的平均换手率。\n换手率是衡量股票流动性和市场活跃度的重要指标。\n\n数学表达式:\n1. DailyTurnoverRate = TurnoverVolume / AShares\n2. Factor = MA(DailyTurnoverRate, w=6*21)"
+  },
+  {
+   "factor_name": "avg_turnover_20d",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "平均换手率因子\n\n计算过去20天的平均换手率。\n\n数学表达式:\n1. DailyTurnoverRate = Volume / AShares\n2. Factor = ts_mean(DailyTurnoverRate, 20)\n\n参数:\n    window: 窗口天数"
+  },
+  {
+   "factor_name": "avg_turnover_21d",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "计算过去1个月（w=1*21个交易日）的平均换手率。\n换手率是衡量股票流动性和市场活跃度的重要指标。\n\n数学表达式:\n1. DailyTurnoverRate = TurnoverVolume / AShares\n2. Factor = MA(DailyTurnoverRate, w=1*21)"
+  },
+  {
+   "factor_name": "avg_turnover_252d",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "计算过去12个月（w=12*21个交易日）的平均换手率。\n换手率是衡量股票流动性和市场活跃度的重要指标。\n\n数学表达式:\n1. DailyTurnoverRate = TurnoverVolume / AShares\n2. Factor = MA(DailyTurnoverRate, w=12*21)"
+  },
+  {
+   "factor_name": "avg_turnover_42d",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "计算过去2个月（w=2*21个交易日）的平均换手率。\n换手率是衡量股票流动性和市场活跃度的重要指标。\n\n数学表达式:\n1. DailyTurnoverRate = TurnoverVolume / AShares\n2. Factor = MA(DailyTurnoverRate, w=2*21)"
+  },
+  {
+   "factor_name": "avg_turnover_5d",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "平均换手率因子\n\n计算过去5天的平均换手率。\n\n数学表达式:\n1. DailyTurnoverRate = Volume / AShares\n2. Factor = ts_mean(DailyTurnoverRate, 5)\n\n参数:\n    window: 窗口天数"
+  },
+  {
+   "factor_name": "avg_turnover_63d",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "计算过去3个月（w=3*21个交易日）的平均换手率。\n换手率是衡量股票流动性和市场活跃度的重要指标。\n\n数学表达式:\n1. DailyTurnoverRate = TurnoverVolume / AShares\n2. Factor = MA(DailyTurnoverRate, w=3*21)"
+  },
+  {
+   "factor_name": "bias_std_turn_126d_252d",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "计算6个月换手率标准差与12个月换手率标准差的乖离率。\n衡量近期换手率波动性相对于长期的偏离程度。\n\n数学表达式:\n1. DailyTurnoverRate = TurnoverVolume / AShares\n2. Std_short = StdDev(DailyTurnoverRate, w=6*21)\n3. Std_long = StdDev(DailyTurnoverRate, w=12*21)\n4. Factor = Std_short / Std_long - 1"
+  },
+  {
+   "factor_name": "bias_std_turn_126d_504d",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "计算6个月换手率标准差与24个月换手率标准差的乖离率。\n衡量近期换手率波动性相对于长期的偏离程度。\n\n数学表达式:\n1. DailyTurnoverRate = TurnoverVolume / AShares\n2. Std_short = StdDev(DailyTurnoverRate, w=6*21)\n3. Std_long = StdDev(DailyTurnoverRate, w=24*21)\n4. Factor = Std_short / Std_long - 1"
+  },
+  {
+   "factor_name": "bias_std_turn_21d_252d",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "计算1个月换手率标准差与12个月换手率标准差的乖离率。\n衡量近期换手率波动性相对于长期的偏离程度。\n\n数学表达式:\n1. DailyTurnoverRate = TurnoverVolume / AShares\n2. Std_short = StdDev(DailyTurnoverRate, w=1*21)\n3. Std_long = StdDev(DailyTurnoverRate, w=12*21)\n4. Factor = Std_short / Std_long - 1"
+  },
+  {
+   "factor_name": "bias_std_turn_21d_504d",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "计算1个月换手率标准差与24个月换手率标准差的乖离率。\n衡量近期换手率波动性相对于长期的偏离程度。\n\n数学表达式:\n1. DailyTurnoverRate = TurnoverVolume / AShares\n2. Std_short = StdDev(DailyTurnoverRate, w=1*21)\n3. Std_long = StdDev(DailyTurnoverRate, w=24*21)\n4. Factor = Std_short / Std_long - 1"
+  },
+  {
+   "factor_name": "bias_std_turn_42d_252d",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "计算2个月换手率标准差与12个月换手率标准差的乖离率。\n衡量近期换手率波动性相对于长期的偏离程度。\n\n数学表达式:\n1. DailyTurnoverRate = TurnoverVolume / AShares\n2. Std_short = StdDev(DailyTurnoverRate, w=2*21)\n3. Std_long = StdDev(DailyTurnoverRate, w=12*21)\n4. Factor = Std_short / Std_long - 1"
+  },
+  {
+   "factor_name": "bias_std_turn_42d_504d",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "计算2个月换手率标准差与24个月换手率标准差的乖离率。\n衡量近期换手率波动性相对于长期的偏离程度。\n\n数学表达式:\n1. DailyTurnoverRate = TurnoverVolume / AShares\n2. Std_short = StdDev(DailyTurnoverRate, w=2*21)\n3. Std_long = StdDev(DailyTurnoverRate, w=24*21)\n4. Factor = Std_short / Std_long - 1"
+  },
+  {
+   "factor_name": "bias_std_turn_63d_252d",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "计算3个月换手率标准差与12个月换手率标准差的乖离率。\n衡量近期换手率波动性相对于长期的偏离程度。\n\n数学表达式:\n1. DailyTurnoverRate = TurnoverVolume / AShares\n2. Std_short = StdDev(DailyTurnoverRate, w=3*21)\n3. Std_long = StdDev(DailyTurnoverRate, w=12*21)\n4. Factor = Std_short / Std_long - 1"
+  },
+  {
+   "factor_name": "bias_std_turn_63d_504d",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "计算3个月换手率标准差与24个月换手率标准差的乖离率。\n衡量近期换手率波动性相对于长期的偏离程度。\n\n数学表达式:\n1. DailyTurnoverRate = TurnoverVolume / AShares\n2. Std_short = StdDev(DailyTurnoverRate, w=3*21)\n3. Std_long = StdDev(DailyTurnoverRate, w=24*21)\n4. Factor = Std_short / Std_long - 1"
+  },
+  {
+   "factor_name": "bias_turn_126d_252d",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "计算6个月平均换手率与12个月平均换手率的乖离率（BIAS）。\n衡量近期换手率相对于长期的偏离程度。\n\n数学表达式:\n1. DailyTurnoverRate = TurnoverVolume / AShares\n2. MA_short = MA(DailyTurnoverRate, w=6*21)\n3. MA_long = MA(DailyTurnoverRate, w=12*21)\n4. Factor = MA_short / MA_long - 1"
+  },
+  {
+   "factor_name": "bias_turn_126d_504d",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "计算6个月平均换手率与24个月平均换手率的乖离率（BIAS）。\n衡量近期换手率相对于长期的偏离程度。\n\n数学表达式:\n1. DailyTurnoverRate = TurnoverVolume / AShares\n2. MA_short = MA(DailyTurnoverRate, w=6*21)\n3. MA_long = MA(DailyTurnoverRate, w=24*21)\n4. Factor = MA_short / MA_long - 1"
+  },
+  {
+   "factor_name": "bias_turn_21d_252d",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "计算1个月平均换手率与12个月平均换手率的乖离率（BIAS）。\n衡量近期换手率相对于长期的偏离程度。\n\n数学表达式:\n1. DailyTurnoverRate = TurnoverVolume / AShares\n2. MA_short = MA(DailyTurnoverRate, w=1*21)\n3. MA_long = MA(DailyTurnoverRate, w=12*21)\n4. Factor = MA_short / MA_long - 1"
+  },
+  {
+   "factor_name": "bias_turn_21d_504d",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "计算1个月平均换手率与24个月平均换手率的乖离率（BIAS）。\n衡量近期换手率相对于长期的偏离程度。\n\n数学表达式:\n1. DailyTurnoverRate = TurnoverVolume / AShares\n2. MA_short = MA(DailyTurnoverRate, w=1*21)\n3. MA_long = MA(DailyTurnoverRate, w=24*21)\n4. Factor = MA_short / MA_long - 1"
+  },
+  {
+   "factor_name": "bias_turn_42d_252d",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "计算2个月平均换手率与12个月平均换手率的乖离率（BIAS）。\n衡量近期换手率相对于长期的偏离程度。\n\n数学表达式:\n1. DailyTurnoverRate = TurnoverVolume / AShares\n2. MA_short = MA(DailyTurnoverRate, w=2*21)\n3. MA_long = MA(DailyTurnoverRate, w=12*21)\n4. Factor = MA_short / MA_long - 1"
+  },
+  {
+   "factor_name": "bias_turn_42d_504d",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "计算2个月平均换手率与24个月平均换手率的乖离率（BIAS）。\n衡量近期换手率相对于长期的偏离程度。\n\n数学表达式:\n1. DailyTurnoverRate = TurnoverVolume / AShares\n2. MA_short = MA(DailyTurnoverRate, w=2*21)\n3. MA_long = MA(DailyTurnoverRate, w=24*21)\n4. Factor = MA_short / MA_long - 1"
+  },
+  {
+   "factor_name": "bias_turn_63d_252d",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "计算3个月平均换手率与12个月平均换手率的乖离率（BIAS）。\n衡量近期换手率相对于长期的偏离程度。\n\n数学表达式:\n1. DailyTurnoverRate = TurnoverVolume / AShares\n2. MA_short = MA(DailyTurnoverRate, w=3*21)\n3. MA_long = MA(DailyTurnoverRate, w=12*21)\n4. Factor = MA_short / MA_long - 1"
+  },
+  {
+   "factor_name": "bias_turn_63d_504d",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "计算3个月平均换手率与24个月平均换手率的乖离率（BIAS）。\n衡量近期换手率相对于长期的偏离程度。\n\n数学表达式:\n1. DailyTurnoverRate = TurnoverVolume / AShares\n2. MA_short = MA(DailyTurnoverRate, w=3*21)\n3. MA_long = MA(DailyTurnoverRate, w=24*21)\n4. Factor = MA_short / MA_long - 1"
+  },
+  {
+   "factor_name": "std_turnover_126d",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "计算过去6个月（w=6*21个交易日）的换手率滚动标准差。\n衡量换手率的波动性，反映交易活跃度的稳定性。\n\n数学表达式:\n1. DailyTurnoverRate = TurnoverVolume / AShares\n2. Factor = StdDev(DailyTurnoverRate, w=6*21)"
+  },
+  {
+   "factor_name": "std_turnover_21d",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "计算过去1个月（w=1*21个交易日）的换手率滚动标准差。\n衡量换手率的波动性，反映交易活跃度的稳定性。\n\n数学表达式:\n1. DailyTurnoverRate = TurnoverVolume / AShares\n2. Factor = StdDev(DailyTurnoverRate, w=1*21)"
+  },
+  {
+   "factor_name": "std_turnover_252d",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "计算过去12个月（w=12*21个交易日）的换手率滚动标准差。\n衡量换手率的波动性，反映交易活跃度的稳定性。\n\n数学表达式:\n1. DailyTurnoverRate = TurnoverVolume / AShares\n2. Factor = StdDev(DailyTurnoverRate, w=12*21)"
+  },
+  {
+   "factor_name": "std_turnover_42d",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "计算过去2个月（w=2*21个交易日）的换手率滚动标准差。\n衡量换手率的波动性，反映交易活跃度的稳定性。\n\n数学表达式:\n1. DailyTurnoverRate = TurnoverVolume / AShares\n2. Factor = StdDev(DailyTurnoverRate, w=2*21)"
+  },
+  {
+   "factor_name": "std_turnover_63d",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "计算过去3个月（w=3*21个交易日）的换手率滚动标准差。\n衡量换手率的波动性，反映交易活跃度的稳定性。\n\n数学表达式:\n1. DailyTurnoverRate = TurnoverVolume / AShares\n2. Factor = StdDev(DailyTurnoverRate, w=3*21)"
+  },
+  {
+   "factor_name": "sum_abs_rtn_amount_20d",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "计算 20 日累计绝对收益率与累计成交额的比值。\n\n该因子衡量\"单位成交额所产生的波动性\"，\n可以看作是一种流动性调整后的波动率指标。\n值越高，代表在相对较小的成交量下产生了较大的价格波动。\n\n数学表达式:\nFactor = Sum(|Return|, 20) / Sum(TurnoverAmount, 20) * 1e8\n\n注: 结果放大 1e8 倍（等价于成交额以亿元计），使因子量级落在 1e-4 ~ 1 区间，\n避免入库时 10 位小数舍入摧毁小量级值。仅改变量纲，不影响截面排序与 IC 计算。\n\n参数:\n    window: 滚动窗口，默认为 20"
+  },
+  {
+   "factor_name": "turnover_ma_20d",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "计算成交量与流通市值比率的移动平均。\n当 long>0 时，计算短期/长期均值比值；否则仅计算短期均值。\n结果取负值，符合原始因子设计。\n\n数学表达式:\n1. VolCapRatio = TurnoverVolume / FloatMarketCap\n2. FloatMarketCap = ClosePrice × FloatShares\n3. If long > 0:\n     Factor = -MA(VolCapRatio, short) / MA(VolCapRatio, long)\n   Else:\n     Factor = -MA(VolCapRatio, short)"
+  },
+  {
+   "factor_name": "turnover_ma_20d_120d",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "计算成交量与流通市值比率的移动平均。\n当 long>0 时，计算短期/长期均值比值；否则仅计算短期均值。\n结果取负值，符合原始因子设计。\n\n数学表达式:\n1. VolCapRatio = TurnoverVolume / FloatMarketCap\n2. FloatMarketCap = ClosePrice × FloatShares\n3. If long > 0:\n     Factor = -MA(VolCapRatio, short) / MA(VolCapRatio, long)\n   Else:\n     Factor = -MA(VolCapRatio, short)"
+  },
+  {
+   "factor_name": "volume_alpha_300d_000001",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "计算个股成交量变化率相对于上证指数成交量变化率的300日滚动 Alpha。\n成交量 Alpha 衡量个股成交量中无法被市场成交量解释的部分。\n\n数学表达式:\nVolMomentum = (RollingSum(Volume, 5) - Lag(RollingSum(Volume, 5), 1)) / Lag(RollingSum(Volume, 5), 1)\nStockVolMomentum = Alpha + Beta * IndexVolMomentum + Epsilon\nVolumeAlpha = Alpha from OLS(StockVolMomentum ~ IndexVolMomentum, 300)\n\n参数:\n    window: 回归窗口天数 (默认 300)\n    sum_window: 成交量滚动求和窗口 (默认 5)"
+  },
+  {
+   "factor_name": "volume_alpha_300d_000300",
+   "asset_type": "STK",
+   "factor_type": "Liquidity",
+   "factor_desc": "计算个股成交量变化率相对于沪深300指数成交量变化率的300日滚动 Alpha。\n成交量 Alpha 衡量个股成交量中无法被市场成交量解释的部分。\n\n数学表达式:\nVolMomentum = (RollingSum(Volume, 5) - Lag(RollingSum(Volume, 5), 1)) / Lag(RollingSum(Volume, 5), 1)\nStockVolMomentum = Alpha + Beta * IndexVolMomentum + Epsilon\nVolumeAlpha = Alpha from OLS(StockVolMomentum ~ IndexVolMomentum, 300)\n\n参数:\n    window: 回归窗口天数 (默认 300)\n    sum_window: 成交量滚动求和窗口 (默认 5)"
+  },
+  {
+   "factor_name": "MACD",
+   "asset_type": "STK",
+   "factor_type": "Momentum",
+   "factor_desc": "计算 MACD (Moving Average Convergence Divergence) 指标。\n\nMACD 是一种趋势跟踪动量指标，显示两条移动平均线之间的关系。\n本因子使用 12 日快线、26 日慢线和 9 日信号线。\n\n数学表达式:\n1. DIF = EMA(Close, 12) - EMA(Close, 26)\n2. DEA = EMA(DIF, 9)\n3. MACD = 2 × (DIF - DEA)\n\n参数:\n    fast: 快线周期，默认为 12\n    slow: 慢线周期，默认为 26\n    signal: 信号线周期，默认为 9"
+  },
+  {
+   "factor_name": "alpha_1000d_000300",
+   "asset_type": "STK",
+   "factor_type": "Momentum",
+   "factor_desc": "Alpha因子 (日频版本，对标沪深300指数)\n\n使用日频数据计算滚动回归的截距项（alpha）。\n原周度版本使用周频数据，现改为日频数据，窗口调整为等价交易日数。\n\n数学表达式:\nAlpha_t = Intercept from OLS(DailyStockReturn_{t-d+1:t} ~ DailyIndexReturn_{t-d+1:t})\nFactor = Alpha_t\n\n参数:\n    window: 回归窗口天数"
+  },
+  {
+   "factor_name": "alpha_125d_000300",
+   "asset_type": "STK",
+   "factor_type": "Momentum",
+   "factor_desc": "Alpha因子 (日频版本，对标沪深300指数)\n\n使用日频数据计算滚动回归的截距项（alpha）。\n原周度版本使用周频数据，现改为日频数据，窗口调整为等价交易日数。\n\n数学表达式:\nAlpha_t = Intercept from OLS(DailyStockReturn_{t-d+1:t} ~ DailyIndexReturn_{t-d+1:t})\nFactor = Alpha_t\n\n参数:\n    window: 回归窗口天数"
+  },
+  {
+   "factor_name": "alpha_1320d_000001",
+   "asset_type": "STK",
+   "factor_type": "Momentum",
+   "factor_desc": "Alpha因子 (日频版本，对标上证指数)\n\n使用日频数据计算滚动回归的截距项（alpha）。\n\n数学表达式:\nAlpha_t = Intercept from OLS(DailyStockReturn_{t-d+1:t} ~ DailyIndexReturn_{t-d+1:t})\nFactor = Alpha_t\n\n参数:\n    window: 回归窗口天数"
+  },
+  {
+   "factor_name": "alpha_250d_000300",
+   "asset_type": "STK",
+   "factor_type": "Momentum",
+   "factor_desc": "Alpha因子 (日频版本，对标沪深300指数)\n\n使用日频数据计算滚动回归的截距项（alpha）。\n原周度版本使用周频数据，现改为日频数据，窗口调整为等价交易日数。\n\n数学表达式:\nAlpha_t = Intercept from OLS(DailyStockReturn_{t-d+1:t} ~ DailyIndexReturn_{t-d+1:t})\nFactor = Alpha_t\n\n参数:\n    window: 回归窗口天数"
+  },
+  {
+   "factor_name": "alpha_500d_000300",
+   "asset_type": "STK",
+   "factor_type": "Momentum",
+   "factor_desc": "Alpha因子 (日频版本，对标沪深300指数)\n\n使用日频数据计算滚动回归的截距项（alpha）。\n原周度版本使用周频数据，现改为日频数据，窗口调整为等价交易日数。\n\n数学表达式:\nAlpha_t = Intercept from OLS(DailyStockReturn_{t-d+1:t} ~ DailyIndexReturn_{t-d+1:t})\nFactor = Alpha_t\n\n参数:\n    window: 回归窗口天数"
+  },
+  {
+   "factor_name": "alpha_528d_000001",
+   "asset_type": "STK",
+   "factor_type": "Momentum",
+   "factor_desc": "Alpha因子 (日频版本，对标上证指数)\n\n使用日频数据计算滚动回归的截距项（alpha）。\n\n数学表达式:\nAlpha_t = Intercept from OLS(DailyStockReturn_{t-d+1:t} ~ DailyIndexReturn_{t-d+1:t})\nFactor = Alpha_t\n\n参数:\n    window: 回归窗口天数"
+  },
+  {
+   "factor_name": "alpha_792d_000001",
+   "asset_type": "STK",
+   "factor_type": "Momentum",
+   "factor_desc": "Alpha因子 (日频版本，对标上证指数)\n\n使用日频数据计算滚动回归的截距项（alpha）。\n\n数学表达式:\nAlpha_t = Intercept from OLS(DailyStockReturn_{t-d+1:t} ~ DailyIndexReturn_{t-d+1:t})\nFactor = Alpha_t\n\n参数:\n    window: 回归窗口天数"
+  },
+  {
+   "factor_name": "days_down_up",
+   "asset_type": "STK",
+   "factor_type": "Momentum",
+   "factor_desc": "连续涨跌天数因子\n\n计算连续上涨天数与连续下跌天数之差的绝对值减1。\n该因子衡量当前价格趋势的持续性。\n\n数学表达式:\nFactor = |ConsecutiveUp - ConsecutiveDown - 1|"
+  },
+  {
+   "factor_name": "dea",
+   "asset_type": "STK",
+   "factor_type": "Momentum",
+   "factor_desc": "计算 DEA (Signal Line) 指标，即 DIF 的指数移动平均。\n\nDEA 是 MACD 指标的信号线，用于生成交易信号。\n本因子使用 12 日快线、26 日慢线和 9 日信号线。\n\n数学表达式:\n1. DIF = EMA(Close, 12) - EMA(Close, 26)\n2. DEA = EMA(DIF, 9)\n\n参数:\n    fast: 快线周期，默认为 12\n    slow: 慢线周期，默认为 26\n    signal: 信号线周期，默认为 9"
+  },
+  {
+   "factor_name": "dif",
+   "asset_type": "STK",
+   "factor_type": "Momentum",
+   "factor_desc": "计算 DIF (Difference) 指标，即快慢速指数移动平均线的差值。\n\nDIF 是 MACD 指标的组成部分，用于判断趋势方向。\n本因子使用 12 日快线和 26 日慢线。\n\n数学表达式:\nDIF = EMA(Close, 12) - EMA(Close, 26)\n\n参数:\n    fast: 快线周期，默认为 12\n    slow: 慢线周期，默认为 26"
+  },
+  {
+   "factor_name": "ma_20d",
+   "asset_type": "STK",
+   "factor_type": "Momentum",
+   "factor_desc": "计算 20 日移动平均线 (Simple Moving Average)。\n\nMA 是最基础的趋势指标，通过平滑价格波动来识别趋势方向。\n\n数学表达式:\nMA = Mean(Close, 20)\n\n参数:\n    window: 移动平均窗口，默认为 20"
+  },
+  {
+   "factor_name": "price_position_ir_60d",
+   "asset_type": "STK",
+   "factor_type": "Momentum",
+   "factor_desc": "价格位置动量因子。\n\n计算过去60日 (收盘-开盘)/(最高-最低) 比率的信息比率（均值/标准差）。\n衡量价格在日内区间的相对位置及其稳定性。\n\n数学表达式:\nRatio = (Close - Open) / (High - Low)\nFactor = Mean(Ratio, 60) / StdDev(Ratio, 60)\n\n参数:\n    window: 窗口天数，默认 60"
+  },
+  {
+   "factor_name": "return_126d",
+   "asset_type": "STK",
+   "factor_type": "Momentum",
+   "factor_desc": "N期收益率 (N-Period Return)\n\n计算过去126个交易日的累计收益率。\n\n数学表达式:\nReturn = Product(1 + DailyReturn, window=126) - 1\n\n参数:\n    window: 窗口天数"
+  },
+  {
+   "factor_name": "return_21d",
+   "asset_type": "STK",
+   "factor_type": "Momentum",
+   "factor_desc": "N期收益率 (N-Period Return)\n\n计算过去21个交易日的累计收益率。\n\n数学表达式:\nReturn = Product(1 + DailyReturn, window=21) - 1\n\n参数:\n    window: 窗口天数"
+  },
+  {
+   "factor_name": "return_252d",
+   "asset_type": "STK",
+   "factor_type": "Momentum",
+   "factor_desc": "N期收益率 (N-Period Return)\n\n计算过去252个交易日的累计收益率。\n\n数学表达式:\nReturn = Product(1 + DailyReturn, window=252) - 1\n\n参数:\n    window: 窗口天数"
+  },
+  {
+   "factor_name": "return_42d",
+   "asset_type": "STK",
+   "factor_type": "Momentum",
+   "factor_desc": "N期收益率 (N-Period Return)\n\n计算过去42个交易日的累计收益率。\n\n数学表达式:\nReturn = Product(1 + DailyReturn, window=42) - 1\n\n参数:\n    window: 窗口天数"
+  },
+  {
+   "factor_name": "return_5d",
+   "asset_type": "STK",
+   "factor_type": "Momentum",
+   "factor_desc": "N期收益率 (N-Period Return)\n\n计算过去5个交易日的累计收益率。\n\n数学表达式:\nReturn = Product(1 + DailyReturn, window=5) - 1\n\n参数:\n    window: 窗口天数"
+  },
+  {
+   "factor_name": "return_63d",
+   "asset_type": "STK",
+   "factor_type": "Momentum",
+   "factor_desc": "N期收益率 (N-Period Return)\n\n计算过去63个交易日的累计收益率。\n\n数学表达式:\nReturn = Product(1 + DailyReturn, window=63) - 1\n\n参数:\n    window: 窗口天数"
+  },
+  {
+   "factor_name": "rsrs",
+   "asset_type": "STK",
+   "factor_type": "Momentum",
+   "factor_desc": "计算 RSRS (Resistance Support Relative Strength) 指标。\n\nRSRS 通过回归最高价和最低价得到斜率，再对斜率进行标准化，\n以判断趋势强度。该指标常用于识别市场阻力与支撑的相对强度。\n本因子使用 18 日回归窗口和 200 日标准化窗口。\n\n数学表达式:\n1. Slope_t = Beta from OLS(Low_{t-N+1:t} ~ High_{t-N+1:t}), N=18\n2. RSRS_t = Z-Score(Slope_{t-M+1:t}), M=200\n\n参数:\n    regress_window: 回归窗口，默认为 18\n    zscore_window: Z-Score 标准化窗口，默认为 200"
+  },
+  {
+   "factor_name": "ar_ap_to_revenue",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "（预收-预付）/ 营业收入，截面排名。\n\n数学表达式:\nRatio = (AdvanceReceipts - AdvancePayment) / OperatingRevenue\nFactor = CrossSectionalRank(Ratio)"
+  },
+  {
+   "factor_name": "asset_turnover",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "总资产周转率因子，截面排名。\n\nMathematical expression:\nAssetTurnover = OperatingRevenue_TTM / TotalAssets\nFactor = CrossSectionalRank(AssetTurnover)"
+  },
+  {
+   "factor_name": "cash_profit_ratio",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "利润现金比率，截面排名。\n\n数学表达式:\nRatio = (NetOperateCashFlow_TTM - NetProfit_TTM) / NetProfit_TTM\nFactor = CrossSectionalRank(Ratio)"
+  },
+  {
+   "factor_name": "cash_ratio",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "现金比率因子，截面排名。\n\nMathematical expression:\nCashRatio = (CashEquivalents + TradingAssets) / TotalCurrentLiability\nFactor = CrossSectionalRank(CashRatio)"
+  },
+  {
+   "factor_name": "cfcr",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "现金流利息保障倍数因子，截面排名。\n\nMathematical expression:\nCFCR = NetOperateCashFlow_TTM / InterestExpense_TTM\nFactor = CrossSectionalRank(CFCR)"
+  },
+  {
+   "factor_name": "current_ratio",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "流动比率因子\n\n直接使用预计算字段 lake.financial_derivative.fin_current_ratio_y。\n\nMathematical expression:\nCurrentRatio = CurrentAssets / CurrentLiabilities"
+  },
+  {
+   "factor_name": "de",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "DE因子 (Debt-to-Equity)\n\n计算负债权益比：总负债/股东权益。\n\nMathematical expression:\nDE = TotalDebt / Equity"
+  },
+  {
+   "factor_name": "debt_asset_ratio",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "资产负债率因子\n\n直接使用预计算字段 lake.financial_derivative.fin_debt_asset_ratio_y。\n\nMathematical expression:\nDebtAssetRatio = TotalDebt / TotalAssets"
+  },
+  {
+   "factor_name": "delta_asset_turnover",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "总资产周转率同比变化因子，截面排名。\n\nMathematical expression:\nAT = Revenue_TTM / TotalAssets\nDelta = AT_t - AT_{t-252}\nFactor = CrossSectionalRank(Delta)"
+  },
+  {
+   "factor_name": "delta_cash_ratio",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "现金比率同比变化因子，截面排名。\n\nMathematical expression:\nCashRatio = (Cash + TradingAssets) / CurrentLiability\nDelta = CashRatio_t - CashRatio_{t-252}\nFactor = CrossSectionalRank(Delta)"
+  },
+  {
+   "factor_name": "delta_current_ratio",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "流动比率同比变化因子，截面排名。\n\nMathematical expression:\nDelta = CurrentRatio_t - CurrentRatio_{t-252}\nFactor = CrossSectionalRank(Delta)"
+  },
+  {
+   "factor_name": "delta_de",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "DE同比变化因子，截面排名。\n\nMathematical expression:\nDE = TotalLiability / TotalShareholderEquity\nDelta = DE_t - DE_{t-252}\nFactor = CrossSectionalRank(Delta)"
+  },
+  {
+   "factor_name": "delta_gpm",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "毛利率同比变化因子，截面排名。\n\nMathematical expression:\nDelta = GPM_t - GPM_{t-252}\nFactor = CrossSectionalRank(Delta)"
+  },
+  {
+   "factor_name": "delta_inventory_turnover",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "存货周转率同比变化因子，截面排名。\n\nMathematical expression:\nIT = Cost_TTM / Inventories\nDelta = IT_t - IT_{t-252}\nFactor = CrossSectionalRank(Delta)"
+  },
+  {
+   "factor_name": "delta_npm",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "净利率同比变化因子，截面排名。\n\nMathematical expression:\nDelta = NPM_t - NPM_{t-252}\nFactor = CrossSectionalRank(Delta)"
+  },
+  {
+   "factor_name": "delta_opm",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "营业利润率同比变化因子，截面排名。\n\nMathematical expression:\nOPM = OperatingProfit / OperatingRevenue\nDelta = OPM_t - OPM_{t-252}\nFactor = CrossSectionalRank(Delta)"
+  },
+  {
+   "factor_name": "delta_quick_ratio",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "速动比率同比变化因子，截面排名。\n\nMathematical expression:\nDelta = QuickRatio_t - QuickRatio_{t-252}\nFactor = CrossSectionalRank(Delta)"
+  },
+  {
+   "factor_name": "delta_roa",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "ROA同比变化因子，截面排名。\n\nMathematical expression:\nDelta = ROA_t - ROA_{t-252}\nFactor = CrossSectionalRank(Delta)"
+  },
+  {
+   "factor_name": "delta_roe",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "ROE同比变化因子，截面排名。\n\nMathematical expression:\nDelta = ROE_t - ROE_{t-252}\nFactor = CrossSectionalRank(Delta)"
+  },
+  {
+   "factor_name": "eps_q",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "基本每股收益因子，截面排名。\n\nMathematical expression:\nFactor = CrossSectionalRank(BasicEPS)"
+  },
+  {
+   "factor_name": "eps_ttm",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "基本每股收益因子，截面排名。\n\nMathematical expression:\nFactor = CrossSectionalRank(BasicEPS)"
+  },
+  {
+   "factor_name": "eps_y",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "基本每股收益因子，截面排名。\n\nMathematical expression:\nFactor = CrossSectionalRank(BasicEPS)"
+  },
+  {
+   "factor_name": "equity_turnover",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "股东权益周转率因子，截面排名。\n\nMathematical expression:\nEquityTurnover = OperatingRevenue_TTM / TotalShareholderEquity\nFactor = CrossSectionalRank(EquityTurnover)"
+  },
+  {
+   "factor_name": "expenses_to_equity_yoy",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "三费占净资产比率同比增速，截面排名。\n\n财报披露日计算同比（本期/去年同期），其余交易日前向填充最近披露的同比值（PIT 口径）。\n\n数学表达式:\nTotalExpenses = OperatingExpense_Q + AdministrationExpense_Q + FinancialExpense_Q\nRatio = TotalExpenses / SEWithoutMI\nGrowth = Ratio_t / Ratio_{4披露前} - 1   # 财报披露日计算（前第4个披露日=去年同期）\nFactor = CrossSectionalRank(Growth_filled)"
+  },
+  {
+   "factor_name": "financial_leverage",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "财务杠杆因子，截面排名。\n\nMathematical expression:\nFinancialLeverage = TotalAssets / TotalShareholderEquity\nFactor = CrossSectionalRank(FinancialLeverage)"
+  },
+  {
+   "factor_name": "fixed_asset_turnover",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "固定资产周转率因子，截面排名。\n\nMathematical expression:\nFixedAssetTurnover = OperatingRevenue_TTM / FixedAssets\nFactor = CrossSectionalRank(FixedAssetTurnover)"
+  },
+  {
+   "factor_name": "gpm_q",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "毛利率因子（q 口径），截面排名。\n\n按 period 参数选取对应口径的营业收入与营业成本：ttm 用预计算 TTM 字段，y 用年度，q 用累计单季。\n\nMathematical expression:\nGPM = (Revenue - Cost) / Revenue\nFactor = CrossSectionalRank(GPM)"
+  },
+  {
+   "factor_name": "gpm_qoq",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "毛利率（TTM）环比增速，截面排名。\n\n直接使用预计算字段 lake.financial_derivative.fin_gpm_ttm。\n财报披露日计算毛利率 TTM 环比（本期/上期-1），其余交易日前向填充最近披露的环比值（PIT 口径）。\n\nMathematical expression:\nGPM = (Revenue_TTM - Cost_TTM) / Revenue_TTM\nGrowth = GPM_t / GPM_{prev_report} - 1   # 财报披露日计算\nFactor = CrossSectionalRank(Growth_filled)"
+  },
+  {
+   "factor_name": "gpm_ttm",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "毛利率因子（ttm 口径），截面排名。\n\n按 period 参数选取对应口径的营业收入与营业成本：ttm 用预计算 TTM 字段，y 用年度，q 用累计单季。\n\nMathematical expression:\nGPM = (Revenue - Cost) / Revenue\nFactor = CrossSectionalRank(GPM)"
+  },
+  {
+   "factor_name": "gpm_y",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "毛利率因子（y 口径），截面排名。\n\n按 period 参数选取对应口径的营业收入与营业成本：ttm 用预计算 TTM 字段，y 用年度，q 用累计单季。\n\nMathematical expression:\nGPM = (Revenue - Cost) / Revenue\nFactor = CrossSectionalRank(GPM)"
+  },
+  {
+   "factor_name": "icr",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "利息保障倍数因子，截面排名。\n\nMathematical expression:\nICR = EBIT_TTM / InterestExpense_TTM\nFactor = CrossSectionalRank(ICR)"
+  },
+  {
+   "factor_name": "income_tax_yoy",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "所得税费用TTM同比增速，截面排名。\n\n财报披露日计算同比（本期/去年同期），其余交易日前向填充最近披露的同比值（PIT 口径）。\n\n数学表达式:\nGrowth = IncomeTaxCost_TTM_t / IncomeTaxCost_TTM_{4披露前} - 1   # 财报披露日计算（前第4个披露日=去年同期）\nFactor = CrossSectionalRank(Growth_filled)"
+  },
+  {
+   "factor_name": "inventory_turnover",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "存货周转率因子，截面排名。\n\nMathematical expression:\nInventoryTurnover = OperatingCost_TTM / Inventories\nFactor = CrossSectionalRank(InventoryTurnover)"
+  },
+  {
+   "factor_name": "lra_yoy",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "长期应收账款同比增速，截面排名。\n\n财报披露日计算同比（本期/去年同期），其余交易日前向填充最近披露的同比值（PIT 口径）。\n\n数学表达式:\nGrowth = LongtermReceivableAccount_t / LongtermReceivableAccount_{4披露前} - 1   # 财报披露日计算（前第4个披露日=去年同期）\nFactor = CrossSectionalRank(Growth_filled)"
+  },
+  {
+   "factor_name": "market_value_leverage",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "市值杠杆因子，截面排名。\n\nMathematical expression:\nMkvLev = (MarketCap - NonCurrentLiability) / MarketCap\nFactor = CrossSectionalRank(MkvLev)"
+  },
+  {
+   "factor_name": "np_to_deferred_tax_yoy",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "单位递延所得税资产创造的净利润同比增速，截面排名。\n\n财报披露日计算同比（本期/去年同期），其余交易日前向填充最近披露的同比值（PIT 口径）。\n\n数学表达式:\nRatio = NetProfit_Q / DeferredTaxAssets\nGrowth = Ratio_t / Ratio_{4披露前} - 1   # 财报披露日计算（前第4个披露日=去年同期）\nFactor = CrossSectionalRank(Growth_filled)"
+  },
+  {
+   "factor_name": "np_to_fixed_assets_yoy",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "单位固定资产创造的净利润同比增速，截面排名。\n\n财报披露日计算同比（本期/去年同期），其余交易日前向填充最近披露的同比值（PIT 口径）。\n\n数学表达式:\nRatio = NetProfit_Q / FixedAssets\nGrowth = Ratio_t / Ratio_{4披露前} - 1   # 财报披露日计算（前第4个披露日=去年同期）\nFactor = CrossSectionalRank(Growth_filled)"
+  },
+  {
+   "factor_name": "np_to_inventory_yoy",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "单位存货创造的净利润同比增速，截面排名。\n\n财报披露日计算同比（本期/去年同期），其余交易日前向填充最近披露的同比值（PIT 口径）。\n\n数学表达式:\nRatio = NetProfit_Q / Inventories\nGrowth = Ratio_t / Ratio_{4披露前} - 1   # 财报披露日计算（前第4个披露日=去年同期）\nFactor = CrossSectionalRank(Growth_filled)"
+  },
+  {
+   "factor_name": "np_to_salary_yoy",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "单位薪酬创造的净利润同比增速，截面排名。\n\n财报披露日计算同比（本期/去年同期），其余交易日前向填充最近披露的同比值（PIT 口径）。\n\n数学表达式:\nRatio = NetProfit_TTM / StaffBehalfPaid_TTM\nGrowth = Ratio_t / Ratio_{4披露前} - 1   # 财报披露日计算（前第4个披露日=去年同期）\nFactor = CrossSectionalRank(Growth_filled)"
+  },
+  {
+   "factor_name": "np_to_total_expenses_yoy",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "单位三费创造的净利润同比增速，截面排名。\n\n财报披露日计算同比（本期/去年同期），其余交易日前向填充最近披露的同比值（PIT 口径）。\n\n数学表达式:\nTotalExpenses = OperatingExpense_Q + AdministrationExpense_Q + FinancialExpense_Q\nRatio = NetProfit_Q / TotalExpenses\nGrowth = Ratio_t / Ratio_{4披露前} - 1   # 财报披露日计算（前第4个披露日=去年同期）\nFactor = CrossSectionalRank(Growth_filled)"
+  },
+  {
+   "factor_name": "npm_q",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "净利率因子，截面排名。\n\nMathematical expression:\nNPM = NetProfit / OperatingRevenue\nFactor = CrossSectionalRank(NPM)"
+  },
+  {
+   "factor_name": "npm_q_qoq",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "净利润率（单季）环比增速，截面排名。\n\n财报披露日计算单季净利率环比（本期/上期-1），其余交易日前向填充最近披露的环比值（PIT 口径）。\n\n数学表达式:\nNPM = NetProfit_Q / OperatingRevenue_Q\nGrowth = NPM_t / NPM_{prev_report} - 1   # 财报披露日计算\nFactor = CrossSectionalRank(Growth_filled)"
+  },
+  {
+   "factor_name": "npm_tsh",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "归母净利润/总股本因子，截面排名。\n\nMathematical expression:\nRatio = NPParentCompanyOwners_TTM / TotalShares\nFactor = CrossSectionalRank(Ratio)"
+  },
+  {
+   "factor_name": "npm_ttm",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "净利率因子，截面排名。\n\nMathematical expression:\nNPM = NetProfit / OperatingRevenue\nFactor = CrossSectionalRank(NPM)"
+  },
+  {
+   "factor_name": "npm_ttm_qoq",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "净利润率（TTM）环比增速，截面排名。\n\n直接使用预计算字段 lake.financial_derivative.fin_npm_ttm。\n财报披露日计算净利润率 TTM 环比（本期/上期-1），其余交易日前向填充最近披露的环比值（PIT 口径）。\n\nMathematical expression:\nNPM = NetProfit_TTM / OperatingRevenue_TTM\nGrowth = NPM_t / NPM_{prev_report} - 1   # 财报披露日计算\nFactor = CrossSectionalRank(Growth_filled)"
+  },
+  {
+   "factor_name": "npm_y",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "净利率因子，截面排名。\n\nMathematical expression:\nNPM = NetProfit / OperatingRevenue\nFactor = CrossSectionalRank(NPM)"
+  },
+  {
+   "factor_name": "opm_ttm",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "营业利润率因子，截面排名。\n\nMathematical expression:\nOPM = OperatingProfit / OperatingRevenue\nFactor = CrossSectionalRank(OPM)"
+  },
+  {
+   "factor_name": "opm_y",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "营业利润率因子，截面排名。\n\nMathematical expression:\nOPM = OperatingProfit / OperatingRevenue\nFactor = CrossSectionalRank(OPM)"
+  },
+  {
+   "factor_name": "opt_tpro",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "营业利润/利润总额比率因子，截面排名。\n\nMathematical expression:\nRatio = OperatingProfit_Q / TotalProfit_Q\nFactor = CrossSectionalRank(Ratio)"
+  },
+  {
+   "factor_name": "quality_composite",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "AQR Quality-Minus-Junk 质量综合因子。\n\n计算6项盈利能力指标之和。\nop.add 使用 filter=True 处理 FinMatrix 层面 NaN 和除零产生的 ±inf。\n\n1. OperatingProfit / TotalAssets\n2. NetProfit / TotalShareholderEquity\n3. NetProfit / TotalAssets\n4. (OpCashInflow + InvCashInflow) / TotalAssets\n5. OperatingProfit / TotalOperatingRevenue\n6. NetProfit / (OpCashInflow + InvCashInflow)\n\n数学表达式:\nRatio_i = Numerator_i / Denominator_i\nFactor = Sum(Ratio_i, filter=True), i = 1..6"
+  },
+  {
+   "factor_name": "quick_ratio",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "速动比率因子\n\n直接使用预计算字段 lake.financial_derivative.fin_quick_ratio_y。\n\nMathematical expression:\nQuickRatio = (CurrentAssets - Inventory) / CurrentLiabilities"
+  },
+  {
+   "factor_name": "receivable_turnover",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "应收账款周转率因子，截面排名。\n\nMathematical expression:\nReceivableTurnover = OperatingRevenue_TTM / AccountsReceivable\nFactor = CrossSectionalRank(ReceivableTurnover)"
+  },
+  {
+   "factor_name": "roa_q",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "总资产收益率因子，截面排名。\n\nMathematical expression:\nROA = NetProfit / TotalAssets\nFactor = CrossSectionalRank(ROA)"
+  },
+  {
+   "factor_name": "roa_ttm",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "总资产收益率因子，截面排名。\n\nMathematical expression:\nROA = NetProfit / TotalAssets\nFactor = CrossSectionalRank(ROA)"
+  },
+  {
+   "factor_name": "roa_y",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "总资产收益率因子，截面排名。\n\nMathematical expression:\nROA = NetProfit / TotalAssets\nFactor = CrossSectionalRank(ROA)"
+  },
+  {
+   "factor_name": "roe_ttm",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "ROE因子 (净资产收益率, TTM口径)\n\n直接使用预计算字段 lake.financial_derivative.fin_roe_ttm。\n\nMathematical expression:\nROE = NetProfit_Parent / TotalEquity\n\n参数:\n    lag: 交易日滞后天数"
+  },
+  {
+   "factor_name": "roe_ttm_lag63d",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "ROE因子 (净资产收益率, TTM口径)\n\n直接使用预计算字段 lake.financial_derivative.fin_roe_ttm。\n\nMathematical expression:\nROE = NetProfit_Parent / TotalEquity\n\n参数:\n    lag: 交易日滞后天数"
+  },
+  {
+   "factor_name": "roe_y",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "ROE因子 (净资产收益率, 年度口径)\n\n直接使用预计算字段 lake.financial_derivative.fin_roe_y。\n\nMathematical expression:\nROE = NetProfit_Parent / TotalEquity\n\n参数:\n    lag: 交易日滞后天数"
+  },
+  {
+   "factor_name": "tax_surcharge_yoy",
+   "asset_type": "STK",
+   "factor_type": "Quality",
+   "factor_desc": "营业税金及附加TTM同比增速，截面排名。\n\n财报披露日计算同比（本期/去年同期），其余交易日前向填充最近披露的同比值（PIT 口径）。\n\n数学表达式:\nGrowth = OperatingTaxSurcharges_TTM_t / OperatingTaxSurcharges_TTM_{4披露前} - 1   # 财报披露日计算（前第4个披露日=去年同期）\nFactor = CrossSectionalRank(Growth_filled)"
+  },
+  {
+   "factor_name": "price_dist",
+   "asset_type": "STK",
+   "factor_type": "Reversal",
+   "factor_desc": "计算股价与其下一个整数（或10、100的倍数）的距离。\n\n该因子捕捉价格的心理整数关口效应。\n当 window > 0 时，计算 0 日移动平均。\n\n计算逻辑:\n- 价格 < 10: 距离下一个整数的距离\n- 10 <= 价格 < 100: 价格/10 后，距离下一个整数的距离\n- 价格 >= 100: 价格/100 后，距离下一个整数的距离\n\n参数:\n    window: 移动平均窗口，默认为 0（不计算移动平均）\n            设置为正整数时计算 N 日移动平均"
+  },
+  {
+   "factor_name": "rsi",
+   "asset_type": "STK",
+   "factor_type": "Reversal",
+   "factor_desc": "计算 RSI (Relative Strength Index) 相对强弱指标。\n\nRSI 是一种动量振荡器，衡量价格变动的速度和变化，\n用于识别超买或超卖条件。本因子使用 14 日周期。\n\n数学表达式:\n1. Gain = Max(Close - PrevClose, 0)\n2. Loss = Max(PrevClose - Close, 0)\n3. AvgGain = EMA(Gain, 14)  [使用 Wilder's Smoothing]\n4. AvgLoss = EMA(Loss, 14)  [使用 Wilder's Smoothing]\n5. RS = AvgGain / AvgLoss\n6. RSI = 100 - 100 / (1 + RS)\n\n其中 Wilder's Smoothing 等价于 EMA with com = period - 1\n\n参数:\n    period: RSI 周期"
+  },
+  {
+   "factor_name": "small_cap_reversal_21d",
+   "asset_type": "STK",
+   "factor_type": "Reversal",
+   "factor_desc": "小盘反转因子。\n\n选市值最小的股票，取过去21日累计收益的反转信号。\n市值越小、前期涨幅越低的股票得分越高。\n\n数学表达式:\nCumReturn = Product(1 + DailyReturn, 21) - 1\nReversal = -CumReturn\nSmallCap = CrossSectionalRank(-MarketCap)\nFactor = CrossSectionalRank(Reversal) × SmallCap\n\n参数:\n    window: 累计收益窗口天数"
+  },
+  {
+   "factor_name": "adjusted_sharpe_750d",
+   "asset_type": "STK",
+   "factor_type": "Risk",
+   "factor_desc": "调整夏普率因子。\n\n计算过去750天收益率的 mean / std^4，用于衡量风险调整后收益。\n与标准夏普率(mean/std)相比，对高波动性惩罚更重。\n\n数学表达式:\nAdjustedSharpe = Mean(DailyReturn, 750) / StdDev(DailyReturn, 750)^4\n\n参数:\n    window: 窗口天数，默认 750"
+  },
+  {
+   "factor_name": "beta_1000d_000300",
+   "asset_type": "STK",
+   "factor_type": "Risk",
+   "factor_desc": "计算个股相对于沪深300指数的1000日滚动 Beta 值。\nBeta 值衡量了股票相对于整个市场的系统性风险。\n\n标准数学表达式:\nStockReturn = Alpha + Beta * IndexReturn + Epsilon\nBeta = Cov(StockReturn, IndexReturn) / Var(IndexReturn) over a rolling window.\n\n参数:\n    window: 滚动窗口天数"
+  },
+  {
+   "factor_name": "beta_125d_000300",
+   "asset_type": "STK",
+   "factor_type": "Risk",
+   "factor_desc": "计算个股相对于沪深300指数的125日滚动 Beta 值。\nBeta 值衡量了股票相对于整个市场的系统性风险。\n\n标准数学表达式:\nStockReturn = Alpha + Beta * IndexReturn + Epsilon\nBeta = Cov(StockReturn, IndexReturn) / Var(IndexReturn) over a rolling window.\n\n参数:\n    window: 滚动窗口天数"
+  },
+  {
+   "factor_name": "beta_1320d_000001",
+   "asset_type": "STK",
+   "factor_type": "Risk",
+   "factor_desc": "计算个股相对于上证指数的1320日滚动 Beta 值。\nBeta 值衡量了股票相对于整个市场的系统性风险。\n\n标准数学表达式:\nStockReturn = Alpha + Beta * IndexReturn + Epsilon\nBeta = Cov(StockReturn, IndexReturn) / Var(IndexReturn) over a rolling window.\n\n参数:\n    window: 滚动窗口天数"
+  },
+  {
+   "factor_name": "beta_250d_000300",
+   "asset_type": "STK",
+   "factor_type": "Risk",
+   "factor_desc": "计算个股相对于沪深300指数的250日滚动 Beta 值。\nBeta 值衡量了股票相对于整个市场的系统性风险。\n\n标准数学表达式:\nStockReturn = Alpha + Beta * IndexReturn + Epsilon\nBeta = Cov(StockReturn, IndexReturn) / Var(IndexReturn) over a rolling window.\n\n参数:\n    window: 滚动窗口天数"
+  },
+  {
+   "factor_name": "beta_500d_000300",
+   "asset_type": "STK",
+   "factor_type": "Risk",
+   "factor_desc": "计算个股相对于沪深300指数的500日滚动 Beta 值。\nBeta 值衡量了股票相对于整个市场的系统性风险。\n\n标准数学表达式:\nStockReturn = Alpha + Beta * IndexReturn + Epsilon\nBeta = Cov(StockReturn, IndexReturn) / Var(IndexReturn) over a rolling window.\n\n参数:\n    window: 滚动窗口天数"
+  },
+  {
+   "factor_name": "beta_60d_000300",
+   "asset_type": "STK",
+   "factor_type": "Risk",
+   "factor_desc": "计算个股相对于沪深300指数的60日滚动 Beta 值。\nBeta 值衡量了股票相对于整个市场的系统性风险。\n\n标准数学表达式:\nStockReturn = Alpha + Beta * IndexReturn + Epsilon\nBeta = Cov(StockReturn, IndexReturn) / Var(IndexReturn) over a rolling window.\n\n参数:\n    window: 滚动窗口天数"
+  },
+  {
+   "factor_name": "beta_consistency_1320d_000300",
+   "asset_type": "STK",
+   "factor_type": "Risk",
+   "factor_desc": "计算个股相对于沪深300指数 Beta 的稳定性/一致性指标，1320日滚动窗口。\n衡量 Beta 调整后特质性收益的波动程度，反映 Beta 的可靠性。\n\n数学表达式:\nStockReturn = Alpha + Beta * IndexReturn + Residual\nBetaConsistency = StdDev(Beta * Residual) over 1320 days\n\n参数:\n    window: 回归和滚动窗口天数 (默认 1320，约60个月)"
+  },
+  {
+   "factor_name": "days_beyond_upper_lower_21d",
+   "asset_type": "STK",
+   "factor_type": "Risk",
+   "factor_desc": "计算过去 21 日内，价格（后复权）超越均值+标准差的天数与超越均值-标准差的天数之差。\n\n该因子衡量价格偏离均值的程度和频率，可用于识别异常波动。\n\n数学表达式:\n1. Z = (Close_hfq - MA(Close_hfq, 21)) / Std(Close_hfq, 21)\n2. Upper = 统计 Z > 1 的天数\n3. Lower = 统计 Z < -1 的天数\n4. Factor = Upper - Lower\n\n参数:\n    window: 计算窗口"
+  },
+  {
+   "factor_name": "high_low_126d",
+   "asset_type": "STK",
+   "factor_type": "Risk",
+   "factor_desc": "计算过去6个月（w=6*21个交易日）内，净值曲线的最高点与最低点的比值。\n这个因子衡量了近期价格走势的波动范围或趋势强度。\n\n数学表达式:\n1. NetValue_t = CumulativeProduct(1 + DailyReturn_i) from a fixed start point.\n2. Factor = Max(NetValue_{t-w+1:t}) / Min(NetValue_{t-w+1:t})"
+  },
+  {
+   "factor_name": "high_low_21d",
+   "asset_type": "STK",
+   "factor_type": "Risk",
+   "factor_desc": "计算过去1个月（w=1*21个交易日）内，净值曲线的最高点与最低点的比值。\n这个因子衡量了近期价格走势的波动范围或趋势强度。\n\n数学表达式:\n1. NetValue_t = CumulativeProduct(1 + DailyReturn_i) from a fixed start point.\n2. Factor = Max(NetValue_{t-w+1:t}) / Min(NetValue_{t-w+1:t})"
+  },
+  {
+   "factor_name": "high_low_252d",
+   "asset_type": "STK",
+   "factor_type": "Risk",
+   "factor_desc": "计算过去12个月（w=12*21个交易日）内，净值曲线的最高点与最低点的比值。\n这个因子衡量了近期价格走势的波动范围或趋势强度。\n\n数学表达式:\n1. NetValue_t = CumulativeProduct(1 + DailyReturn_i) from a fixed start point.\n2. Factor = Max(NetValue_{t-w+1:t}) / Min(NetValue_{t-w+1:t})"
+  },
+  {
+   "factor_name": "high_low_42d",
+   "asset_type": "STK",
+   "factor_type": "Risk",
+   "factor_desc": "计算过去2个月（w=2*21个交易日）内，净值曲线的最高点与最低点的比值。\n这个因子衡量了近期价格走势的波动范围或趋势强度。\n\n数学表达式:\n1. NetValue_t = CumulativeProduct(1 + DailyReturn_i) from a fixed start point.\n2. Factor = Max(NetValue_{t-w+1:t}) / Min(NetValue_{t-w+1:t})"
+  },
+  {
+   "factor_name": "high_low_63d",
+   "asset_type": "STK",
+   "factor_type": "Risk",
+   "factor_desc": "计算过去3个月（w=3*21个交易日）内，净值曲线的最高点与最低点的比值。\n这个因子衡量了近期价格走势的波动范围或趋势强度。\n\n数学表达式:\n1. NetValue_t = CumulativeProduct(1 + DailyReturn_i) from a fixed start point.\n2. Factor = Max(NetValue_{t-w+1:t}) / Min(NetValue_{t-w+1:t})"
+  },
+  {
+   "factor_name": "log_price",
+   "asset_type": "STK",
+   "factor_type": "Risk",
+   "factor_desc": "计算收盘价（后复权）的自然对数。\n这是一种常用的价格转换方式，可以使数据更接近正态分布。\n\n数学表达式:\nFactor = log(ClosePrice_hfq)"
+  },
+  {
+   "factor_name": "return_std_126d",
+   "asset_type": "STK",
+   "factor_type": "Risk",
+   "factor_desc": "计算过去6个月的日收益率滚动标准差。\n收益率标准差衡量股票价格变动的剧烈程度。\n\n数学表达式:\nReturnStd = StdDev(DailyReturn) over 6*21 trading days\n\n参数:\n    month: 月数 (如 1 表示 21 个交易日)"
+  },
+  {
+   "factor_name": "return_std_21d",
+   "asset_type": "STK",
+   "factor_type": "Risk",
+   "factor_desc": "计算过去1个月的日收益率滚动标准差。\n收益率标准差衡量股票价格变动的剧烈程度。\n\n数学表达式:\nReturnStd = StdDev(DailyReturn) over 1*21 trading days\n\n参数:\n    month: 月数 (如 1 表示 21 个交易日)"
+  },
+  {
+   "factor_name": "return_std_252d",
+   "asset_type": "STK",
+   "factor_type": "Risk",
+   "factor_desc": "计算过去12个月的日收益率滚动标准差。\n收益率标准差衡量股票价格变动的剧烈程度。\n\n数学表达式:\nReturnStd = StdDev(DailyReturn) over 12*21 trading days\n\n参数:\n    month: 月数 (如 1 表示 21 个交易日)"
+  },
+  {
+   "factor_name": "return_std_42d",
+   "asset_type": "STK",
+   "factor_type": "Risk",
+   "factor_desc": "计算过去2个月的日收益率滚动标准差。\n收益率标准差衡量股票价格变动的剧烈程度。\n\n数学表达式:\nReturnStd = StdDev(DailyReturn) over 2*21 trading days\n\n参数:\n    month: 月数 (如 1 表示 21 个交易日)"
+  },
+  {
+   "factor_name": "return_std_63d",
+   "asset_type": "STK",
+   "factor_type": "Risk",
+   "factor_desc": "计算过去3个月的日收益率滚动标准差。\n收益率标准差衡量股票价格变动的剧烈程度。\n\n数学表达式:\nReturnStd = StdDev(DailyReturn) over 3*21 trading days\n\n参数:\n    month: 月数 (如 1 表示 21 个交易日)"
+  },
+  {
+   "factor_name": "sharpe_60d",
+   "asset_type": "STK",
+   "factor_type": "Risk",
+   "factor_desc": "Sharpe比率因子\n\n计算过去60天的Sharpe比率（风险调整收益）。\n\n数学表达式:\nSharpe = ts_mean(Return, 60) / ts_std_dev(Return, 60)\n\n参数:\n    window: 窗口天数"
+  },
+  {
+   "factor_name": "sharpe_750d",
+   "asset_type": "STK",
+   "factor_type": "Risk",
+   "factor_desc": "Sharpe比率因子\n\n计算过去750天的Sharpe比率（风险调整收益）。\n\n数学表达式:\nSharpe = ts_mean(Return, 750) / ts_std_dev(Return, 750)\n\n参数:\n    window: 窗口天数"
+  },
+  {
+   "factor_name": "sigma_1320d_000001",
+   "asset_type": "STK",
+   "factor_type": "Risk",
+   "factor_desc": "计算个股相对于上证指数的特质性风险（Idiosyncratic Risk），1320日滚动窗口。\n特质性风险衡量个股收益中无法被市场解释的部分的波动程度。\n\n数学表达式:\nStockReturn = Alpha + Beta * IndexReturn + Residual\nSigma = StdDev(Residual) over 1320 days\n\n参数:\n    window: 回归和滚动窗口天数"
+  },
+  {
+   "factor_name": "sigma_1320d_000300",
+   "asset_type": "STK",
+   "factor_type": "Risk",
+   "factor_desc": "计算个股相对于沪深300指数的特质性风险（Idiosyncratic Risk），1320日滚动窗口。\n特质性风险衡量个股收益中无法被市场解释的部分的波动程度。\n\n数学表达式:\nStockReturn = Alpha + Beta * IndexReturn + Residual\nSigma = StdDev(Residual) over 1320 days\n\n参数:\n    window: 回归和滚动窗口天数"
+  },
+  {
+   "factor_name": "volume_beta_120d_000300",
+   "asset_type": "STK",
+   "factor_type": "Risk",
+   "factor_desc": "计算个股成交量变化率相对于沪深300指数成交量变化率的120日滚动 Beta。\n成交量 Beta 衡量个股成交量对市场成交量的敏感度。\n\n数学表达式:\nVolMomentum = (RollingSum(Volume, 5) - RollingSum(Volume, 5)[t-1]) / RollingSum(Volume, 5)[t-1]\nVolumeBeta = Cov(StockVolMomentum, IndexVolMomentum) / Var(IndexVolMomentum) over 120 days\n\n参数:\n    window: 回归窗口天数 (默认 120)\n    sum_window: 成交量滚动求和窗口 (默认 5)"
+  },
+  {
+   "factor_name": "float_size",
+   "asset_type": "STK",
+   "factor_type": "Size",
+   "factor_desc": "流通市值因子\n\n计算流通市值的负对数，用于衡量公司可交易部分的规模。\n\n数学表达式:\nFloatSize = -log(FloatShares * ClosePrice / 1e6)\n\n该因子值为负对数形式，值越小表示流通市值越大。"
+  },
+  {
+   "factor_name": "nl_size",
+   "asset_type": "STK",
+   "factor_type": "Size",
+   "factor_desc": "市值非线性因子\n\n对市值进行非线性中性化处理，通过截面回归去除线性市值成分。\n\n数学表达式:\nnlSize = Residual(Size^3 ~ Size)\n\n该因子是size^3对size截面回归后的残差，代表市值非线性部分，\n用于捕捉市值效应中的非线性成分。\n\nNotes\n---------------\n* 该因子通过截面回归计算残差，每个截面上回归一次\n* 因子值与size的正交，消除了线性市值的影响"
+  },
+  {
+   "factor_name": "size",
+   "asset_type": "STK",
+   "factor_type": "Size",
+   "factor_desc": "总市值因子\n\n计算总市值的负对数，用于衡量公司规模。\n\n数学表达式:\nSize = -log(TotalShares * ClosePrice / 1e6)\n\n该因子值为负对数形式，值越小表示市值越大。"
+  },
+  {
+   "factor_name": "book_to_market",
+   "asset_type": "STK",
+   "factor_type": "Value",
+   "factor_desc": "账面市值比 (Book-to-Market Ratio)\n\n计算公式: book_to_market = 账面价值 / 市值\n         = (归母股东权益 + 递延所得税资产) / (收盘价 × 总股本)\n         = (SE_without_MI + DeferredTaxAssets) / MarketCap\n\n这是一个经典的价值因子，反映每单位市值对应的账面价值。\nbook_to_market越高，说明股票越\"便宜\"（价值越高）。\n注意：这里使用归母股东权益，与原版Afactors保持一致。\n\n数学表达式:\nbook_to_market = (SE_without_MI_pri + DeferredTaxAssets_pri) / (ClosePrice × TotalShares)"
+  },
+  {
+   "factor_name": "dividend_yield_3y_avg",
+   "asset_type": "STK",
+   "factor_type": "Value",
+   "factor_desc": "股息率_3年平均 (Dividend Yield - 3 Year Average)\n\n计算公式: 近3年平均现金红利 / 最新股价\n         = SUM(ActualCashDiviRMB, 245×3日) / (3 × 收盘价)\n\n这是一个长期股息价值因子，反映近3年现金分红的平均水平与当前股价的关系。\n使用每股实派分红数据。\n时间窗口为245×3个交易日（约3年）。\n\n数学表达式:\ndividend_yield_3y_avg = (SUM(ActualCashDiviRMB, 735) / 3) / ClosePrice\n                      = AVG(ActualCashDiviRMB, 3年) / ClosePrice\nFactor = CrossSectionalRank(dividend_yield_3y_avg)\n\n参考: Afactors faclib/value/div_p_3y"
+  },
+  {
+   "factor_name": "earnings_cut_to_market",
+   "asset_type": "STK",
+   "factor_type": "Value",
+   "factor_desc": "扣非净利润市值比 (Earnings Cut-to-Market Ratio)\n\n计算公式: 扣非净利润TTM / 市值\n         = 扣除非经常性损益后净利润TTM / (收盘价 × 总股本)\n\n这是一个价值因子，反映每单位市值对应的扣非净利润。\n与earnings_to_price类似，但排除了非经常性损益的影响，更能反映公司主营业务的盈利能力。\n\n使用归母净利润作为扣非净利润的替代（如果缺少专门的扣非字段）。\n\n数学表达式:\nearnings_cut_to_market = NetProfitCut_TTM / (ClosePrice × TotalShares)\nFactor = CrossSectionalRank(earnings_cut_to_market)\n\n参考: 华泰价值因子"
+  },
+  {
+   "factor_name": "earnings_to_price",
+   "asset_type": "STK",
+   "factor_type": "Value",
+   "factor_desc": "市盈率倒数 (Earnings-to-Price Ratio)\n\n计算公式: earnings_to_price = 归母净利润TTM / 市值\n         = 归母净利润TTM / (收盘价 × 总股本)\n         = EPS_TTM / 收盘价\n\n这是一个经典的价值因子，反映每单位价格所能获得的收益。\nearnings_to_price越高，说明股票越\"便宜\"（价值越高）。\n\n数学表达式:\nearnings_to_price = NPParentCompanyOwners_TTM / (ClosePrice × TotalShares)\n                  = BasicEPS_TTM / ClosePrice"
+  },
+  {
+   "factor_name": "ebitda_to_market",
+   "asset_type": "STK",
+   "factor_type": "Value",
+   "factor_desc": "EBITDA市值比 (EBITDA-to-Market Ratio)\n\n计算公式: EBITDA / 市值\n         = 息税折旧摊销前利润 / (收盘价 × 总股本)\n\n这是一个价值因子，反映每单位市值对应的经营性现金流能力。\nEBITDA越高，说明公司的经营现金流创造能力越强。\n\n数学表达式:\nebitda_to_market = EBITDA / (ClosePrice × TotalShares)\nFactor = CrossSectionalRank(ebitda_to_market)"
+  },
+  {
+   "factor_name": "etp5",
+   "asset_type": "STK",
+   "factor_type": "Value",
+   "factor_desc": "五年平均净利润 / 五年平均年末市值因子，截面排名。\n\n使用5年滚动均值近似：净利润(年度口径)的5年滚动均值除以总市值的5年滚动均值。\n\nMathematical expression:\nETP5 = RollingMean(NetProfit_Y, 1260) / RollingMean(MarketCap, 1260)\nFactor = CrossSectionalRank(ETP5)"
+  },
+  {
+   "factor_name": "fcf_to_market",
+   "asset_type": "STK",
+   "factor_type": "Value",
+   "factor_desc": "自由现金流市值比 (Free Cash Flow-to-Market Ratio)\n\n计算公式: fcf_to_market = 自由现金流TTM / 市值\n         = (经营现金流净额TTM - 投资现金流出TTM) / (收盘价 × 总股本)\n         = (NetOperateCashFlow_TTM - SubtotalInvestCashOutflow_TTM) / MarketCap\n\n这是一个经典的价值因子，反映每单位市值能获得的自由现金流。\nfcf_to_market越高，说明公司的自由现金流创造能力越强，股票越\"便宜\"。\n\n自由现金流定义：经营性现金净流入 - 投资性现金流出\n\n数学表达式:\nfcf_to_market = (NOCF_TTM - SICO_TTM) / (ClosePrice × TotalShares)"
+  },
+  {
+   "factor_name": "ncf_to_market",
+   "asset_type": "STK",
+   "factor_type": "Value",
+   "factor_desc": "净现金流市值比 (Net Cash Flow-to-Market Ratio)\n\n计算公式: 净现金流 / 市值\n         = (筹资净现金流 + 投资净现金流 + 经营净现金流) / (收盘价 × 总股本)\n\n其中:\n- 筹资净现金流 = 筹资现金流入 - 筹资现金流出\n- 投资净现金流 = 投资现金流入 - 投资现金流出\n- 经营净现金流 = 经营现金流入 - 经营现金流出\n\n这是一个价值因子，反映每单位市值对应的整体净现金流。\n与fcf_to_market、ocf_to_market不同，ncf_to_market包含筹资活动的影响。\n\n数学表达式:\nncf_to_market = (FCF_TTM + ICF_TTM + OCF_TTM) / MarketCap\nFactor = CrossSectionalRank(ncf_to_market)\n\n参考: 华泰价值因子，Afactors faclib/value/ncfm"
+  },
+  {
+   "factor_name": "ocf_to_market",
+   "asset_type": "STK",
+   "factor_type": "Value",
+   "factor_desc": "经营现金流市值比 (Operating Cash Flow-to-Market Ratio)\n\n计算公式: 经营现金流净额 / 市值\n         = NetOperateCashFlow_TTM / (收盘价 × 总股本)\n\n这是一个经典的价值因子，反映每单位市值对应的经营活动现金流。\n与fcf_to_market不同，ocf_to_market不包含投资活动的影响，更能反映主营业务的现金创造能力。\n\n数学表达式:\nocf_to_market = NetOperateCashFlow_TTM / MarketCap\nFactor = CrossSectionalRank(ocf_to_market)\n\n参考: 华泰价值因子"
+  },
+  {
+   "factor_name": "pegh5",
+   "asset_type": "STK",
+   "factor_type": "Value",
+   "factor_desc": "PEG历史因子 (5年EPS增长, 取负值)。\n\n使用5年EPS复合增长率计算PEG。PEG越低（估值相对于成长性越便宜）得分越高。\n\nMathematical expression:\n1. EPS_Growth_5Y = (BasicEPS_Y_t / BasicEPS_Y_{t-1260})^(1/5) - 1\n2. PEGH5 = ClosePrice / (EPS_Growth_5Y * BasicEPS_TTM)\nFactor = CrossSectionalRank(-PEGH5)"
+  },
+  {
+   "factor_name": "sales_to_market",
+   "asset_type": "STK",
+   "factor_type": "Value",
+   "factor_desc": "营业总收入市值比 (Sales-to-Market Ratio)\n\n计算公式: 营业总收入 / 市值\n         = 营业总收入Q / (收盘价 × 总股本)\n\n这是一个价值因子，反映每单位市值对应的营业总收入。\n适用于收入驱动型行业的估值，如零售、制造业等。\n\n数学表达式:\nsales_to_market = TotalOperatingRevenue_Q / (ClosePrice × TotalShares)\nFactor = CrossSectionalRank(sales_to_market)\n\n参考: 华泰价值因子"
+  }
+ ],
+ "schema_version": 1
+}

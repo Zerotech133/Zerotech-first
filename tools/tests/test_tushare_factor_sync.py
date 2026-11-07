@@ -115,3 +115,7 @@ def test_no_change_returns_source_unchanged():
     patched, meta = sync.build_type_names_patch(SOURCE, old, old)
     assert meta["changed"] is False
     assert patched == SOURCE
+
+
+def test_baseline_and_old_are_mutually_exclusive():
+    assert sync.main(["diff", "--baseline", "main.json", "--old", "previous.json"]) == 2

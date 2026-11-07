@@ -1,0 +1,53 @@
+{
+ "api": "factor_list",
+ "source": "https://api.tushare.pro",
+ "asset_type": "STK",
+ "factor_type": "Size",
+ "factor_name": "",
+ "fields": [
+  "factor_name",
+  "asset_type",
+  "factor_type",
+  "factor_desc"
+ ],
+ "api_params": {
+  "factor_type": "Size"
+ },
+ "token_sha8": "0fd89b25",
+ "fetched_at": "2026-11-05 06:59:34",
+ "elapsed_seconds": 0.5,
+ "note": "Tushare factor_list 静态元数据快照；不参与 catalog 时序扫描。",
+ "warnings": [
+  "已知分类缺失：['Alpha101', 'Growth', 'Liquidity', 'Momentum', 'Quality', 'Reversal', 'Risk', 'Value']"
+ ],
+ "errors": [],
+ "total": 3,
+ "unique_factor_name": 3,
+ "by_type": {
+  "Size": 3
+ },
+ "by_asset": {
+  "STK": 3
+ },
+ "rows": [
+  {
+   "factor_name": "float_size",
+   "asset_type": "STK",
+   "factor_type": "Size",
+   "factor_desc": "流通市值因子\n\n计算流通市值的负对数，用于衡量公司可交易部分的规模。\n\n数学表达式:\nFloatSize = -log(FloatShares * ClosePrice / 1e6)\n\n该因子值为负对数形式，值越小表示流通市值越大。"
+  },
+  {
+   "factor_name": "nl_size",
+   "asset_type": "STK",
+   "factor_type": "Size",
+   "factor_desc": "市值非线性因子\n\n对市值进行非线性中性化处理，通过截面回归去除线性市值成分。\n\n数学表达式:\nnlSize = Residual(Size^3 ~ Size)\n\n该因子是size^3对size截面回归后的残差，代表市值非线性部分，\n用于捕捉市值效应中的非线性成分。\n\nNotes\n---------------\n* 该因子通过截面回归计算残差，每个截面上回归一次\n* 因子值与size的正交，消除了线性市值的影响"
+  },
+  {
+   "factor_name": "size",
+   "asset_type": "STK",
+   "factor_type": "Size",
+   "factor_desc": "总市值因子\n\n计算总市值的负对数，用于衡量公司规模。\n\n数学表达式:\nSize = -log(TotalShares * ClosePrice / 1e6)\n\n该因子值为负对数形式，值越小表示市值越大。"
+  }
+ ],
+ "schema_version": 1
+}

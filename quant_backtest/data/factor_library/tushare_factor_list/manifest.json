@@ -1,0 +1,44 @@
+{
+ "api": "factor_list",
+ "source": "https://api.tushare.pro",
+ "asset_type": "STK",
+ "factor_type": "",
+ "factor_name": "",
+ "fields": [
+  "factor_name",
+  "asset_type",
+  "factor_type",
+  "factor_desc"
+ ],
+ "api_params": {},
+ "token_sha8": "0fd89b25",
+ "fetched_at": "2026-11-05 06:59:32",
+ "elapsed_seconds": 0.953,
+ "note": "Tushare factor_list 静态元数据快照；不参与 catalog 时序扫描。",
+ "warnings": [],
+ "errors": [],
+ "total": 272,
+ "unique_factor_name": 272,
+ "by_type": {
+  "Alpha101": 101,
+  "Growth": 15,
+  "Liquidity": 35,
+  "Momentum": 20,
+  "Quality": 59,
+  "Reversal": 3,
+  "Risk": 25,
+  "Size": 3,
+  "Value": 11
+ },
+ "by_asset": {
+  "STK": 272
+ },
+ "schema_version": 1,
+ "snapshot_json": "snapshots\\factor_list_20261105.json",
+ "snapshot_parquet": "snapshots\\factor_list_20261105.parquet",
+ "latest_json": "latest.json",
+ "latest_parquet": "latest.parquet",
+ "sha256": "80892d701a0ff737c9817c2ca8877cc037beb325e8fbcbc3fb909f38315a7f6f",
+ "bytes": 101008,
+ "rows": 272
+}

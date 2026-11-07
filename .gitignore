@@ -24,7 +24,18 @@ reports/
 *.sqlite3
 
 # 量化产线数据与产出
-quant_backtest/data/
+quant_backtest/data/*
+# Tushare factor_list 是 272 行静态元数据快照，不是时序行情；CI 门禁需要版本化。
+# 只放行 latest/manifest/snapshots 的 JSON，parquet 与其余 data 仍不入库。
+!quant_backtest/data/factor_library/
+quant_backtest/data/factor_library/*
+!quant_backtest/data/factor_library/tushare_factor_list/
+quant_backtest/data/factor_library/tushare_factor_list/*
+!quant_backtest/data/factor_library/tushare_factor_list/latest.json
+!quant_backtest/data/factor_library/tushare_factor_list/manifest.json
+!quant_backtest/data/factor_library/tushare_factor_list/snapshots/
+quant_backtest/data/factor_library/tushare_factor_list/snapshots/*
+!quant_backtest/data/factor_library/tushare_factor_list/snapshots/*.json
 quant_backtest/logs/
 quant_backtest/outbox/
 quant_backtest/reports/
