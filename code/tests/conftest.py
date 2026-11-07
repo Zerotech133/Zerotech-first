@@ -72,6 +72,40 @@ def _guard_real_pg(request, monkeypatch):
     monkeypatch.setattr(sess_mod, "get_session", _blocked)
 
 
+class _EmptyMappings:
+    """空查询结果，供策略目录路由的 ownership/sidecar 可选查询使用。"""
+
+    def mappings(self):
+        return self
+
+    def all(self):
+        return []
+
+    def __iter__(self):
+        return iter(())
+
+
+class _EmptySession:
+    def execute(self, *args, **kwargs):
+        return _EmptyMappings()
+
+    def close(self):
+        pass
+
+
+@pytest.fixture
+def strategy_router_empty_session(monkeypatch):
+    """隔离策略目录路由里的硬编码 get_session() 直连。
+
+    `api/routers/strategy.py:list_strategies` 为读取 ownership/sidecar 侧车数据直接
+    import 了 get_session；这些是可选的展示字段，测试可安全用空结果代替，避免测试
+    依赖 psycopg/真实 PG。该 patch 只作用于本 fixture 的测试。
+    """
+    from zhice_os_v2.api.routers import strategy as strategy_router
+
+    monkeypatch.setattr(strategy_router, "get_session", lambda: _EmptySession())
+
+
 @pytest.fixture
 def auth_headers():
     """生成有效的 admin JWT，供需要鉴权的测试使用。"""

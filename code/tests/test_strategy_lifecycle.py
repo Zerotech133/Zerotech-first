@@ -513,7 +513,9 @@ def test_create_empty_spec_422_not_silently_defaulted():
     assert r.json()["detail"] == {"code": "strategy.spec_invalid"}
 
 
-def test_catalog_filters_draft_public_and_blank_names():
+def test_catalog_filters_draft_public_and_blank_names(
+    strategy_router_empty_session,
+):
     """公共目录 GET /strategies：滤公共 DRAFT 与空名/纯空白名行（只滤展示不删数据）。"""
     from fastapi.testclient import TestClient
 

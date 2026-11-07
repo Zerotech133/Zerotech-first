@@ -360,7 +360,9 @@ def test_create_version_endpoint_owner_creates_next_version(strategy_catalog, us
         app.dependency_overrides.pop(get_strategy_service, None)
 
 
-def test_list_strategies_editable_reflects_ownership(strategy_catalog, users):
+def test_list_strategies_editable_reflects_ownership(
+    strategy_catalog, users, strategy_router_empty_session
+):
     """GET /strategies 的 editable：本人私有=True、内置/公共(owner None)=False、ADMIN 恒 True。
 
     修复"USER 能编辑内置策略"：前端据 editable 隐藏编辑/删除入口。
@@ -484,7 +486,9 @@ def test_list_my_strategies_serializes_versions(strategy_catalog, users):
 # ---------- 全局读端点可见性（Phase D T4 复核发现的 Phase A 遗留泄露修复） ----------
 
 
-def test_global_list_hides_others_private(strategy_catalog, users):
+def test_global_list_hides_others_private(
+    strategy_catalog, users, strategy_router_empty_session
+):
     """全局 GET /strategies：bob 视角不得出现 alice 私有；PUBLIC 可见；ADMIN 全见。"""
     from fastapi.testclient import TestClient
 
