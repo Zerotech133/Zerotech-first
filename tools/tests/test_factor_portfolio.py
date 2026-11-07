@@ -51,6 +51,15 @@ def test_rebalance_indices():
     assert idx == [0, 20, 40]
 
 
+def test_rebalance_indices_end_on_non_trading_day_does_not_spill_forward():
+    """end 落在两个交易日之间时，信号日只能 <= end，不能顺延到下一个交易日。"""
+    panel, _ = _panel(n_days=5)
+    dates = [str(d) for d in panel.dates]
+    idx = rebalance_indices(panel, None, f"{dates[2]} 12:00", every=1)
+    assert idx == [0, 1, 2]
+    assert rebalance_indices(panel, None, "2000-01-01", every=1) == []
+
+
 def test_investable_masks_excludes_st_limit_suspend_low_amount_low_turnover():
     panel, names = _panel(n_days=5, n_codes=10)
     names[panel.codes[0]] = "ST测试"
@@ -67,6 +76,20 @@ def test_investable_masks_excludes_st_limit_suspend_low_amount_low_turnover():
     assert bool(trade.iloc[1, 2]) is False
 
 
+def test_simulate_stops_at_end():
+    panel, names = _panel(n_days=80, n_codes=60)
+    cfg = PortfolioConfig(rebalance_days=20, quantile=0.2, max_one_way_turnover=0.10,
+                          cost_bp=30.0)
+    factor = pd.DataFrame(
+        np.tile(np.arange(60, dtype=float), (80, 1)), index=panel.dates, columns=panel.codes
+    )
+    end = panel.dates[50]
+    out = simulate(panel, factor, cfg, names=names, end=end)
+    assert out["nav"].index[-1] <= end
+    assert all(str(t["entry_date"]) <= str(end) for t in out["trades"])
+
+
+
 def test_simulate_respects_turnover_cap_and_costs():
     panel, names = _panel(n_days=80, n_codes=60)
     cfg = PortfolioConfig(rebalance_days=20, quantile=0.2, max_one_way_turnover=0.10,
@@ -76,7 +99,10 @@ def test_simulate_respects_turnover_cap_and_costs():
     )
     out = simulate(panel, factor, cfg, names=names)
     assert out["metrics"]["rebalances"] >= 2
-    assert all(t["actual_turnover"] <= 0.10 + 1e-12 for t in out["trades"])
+    # 首次建仓不受单边换手上限约束（否则只能建出 10% gross），后续调仓才受 cap。
+    assert out["trades"]
+    assert out["trades"][0]["actual_turnover"] > 0.10
+    assert all(t["actual_turnover"] <= 0.10 + 1e-12 for t in out["trades"][1:])
     assert out["metrics"]["total_cost"] > 0
     assert len(out["nav"]) > 0
     assert np.isfinite(out["nav"]).all()

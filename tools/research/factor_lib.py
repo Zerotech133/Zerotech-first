@@ -74,12 +74,12 @@ DEFAULT_HORIZON = 20          # 持有期（交易日）：T+1 收盘入场，T+
 DEFAULT_COST = 0.003          # 单边成本 30bp（买卖各 15bp 近似为单边 30bp，与 H24/H29 同口径）
 DEFAULT_MIN_CROSS_SECTION = 50  # 单日横截面最少有效股票数（少于此不计 IC 日）
 DEFAULT_SEED = 42
-DEFAULT_BLOCK = 5             # block bootstrap 块长（≥ 持有期重叠修正的最低要求，见 MEETING.md）
+DEFAULT_BLOCK = 20            # block bootstrap 块长（≥ 持有期，修正重叠窗口自相关）
 WARMUP_DAYS = 40              # 载入面板时多载入的历史交易日数（供 20 日滚动窗口使用）
 AMOUNT_UNIT = 1000.0          # tushare daily.amount 单位为千元 → 元
 MIN_PRICE = 2.0               # 可交易股票池：股价下限（元）
 MIN_AMOUNT_YUAN = 5e7         # 可交易股票池：成交额下限（元）
-MIN_LIST_DAYS = 250           # 可交易股票池：上市天数下限
+MIN_LIST_DAYS = 365           # 可交易股票池：上市日历天数下限（≈250 个交易日）
 REQUIRED_FACTORS = (
     # 任务验收点名必须存在的因子（≥15 个中的硬性清单）
     "vol_ratio5", "double_vol", "shrink_vol", "up_vol_down", "yin_yang",
@@ -173,8 +173,30 @@ def _spearman_ic(x: np.ndarray, y: np.ndarray, min_n: int) -> np.ndarray:
     return np.where(ok, ic, np.nan)
 
 
-def _series_stats(x: pd.Series) -> dict:
-    """日频序列的均值/标准差/IR/t/胜率（IC 用）。"""
+def _newey_west_t(s: pd.Series, lags: int) -> float | None:
+    """Newey-West HAC t 值（Bartlett 核），修正 h 日重叠收益导致的自相关。"""
+    n = int(len(s))
+    if n < 3:
+        return None
+    x = np.asarray(s, dtype=float)
+    mean = float(np.nanmean(x))
+    e = x - mean
+    gamma0 = float(np.dot(e, e) / n)
+    var = gamma0
+    for k in range(1, min(int(lags), n - 1) + 1):
+        gamma = float(np.dot(e[k:], e[:-k]) / n)
+        var += 2.0 * (1.0 - k / float(lags + 1)) * gamma
+    if var <= 0:
+        return None
+    se = math.sqrt(var / n)
+    return mean / se if se > 0 else None
+
+
+def _series_stats(x: pd.Series, hac_lags: int = 0) -> dict:
+    """日频序列的均值/标准差/IR/t/胜率（IC 用）。
+
+    hac_lags>0 时 t 用 Newey-West HAC；重叠 h 日前瞻 IC 应传 hac_lags=h。
+    """
     s = pd.Series(x, dtype=float).dropna()
     n = int(len(s))
     if n == 0:
@@ -182,12 +204,14 @@ def _series_stats(x: pd.Series) -> dict:
     mean = float(s.mean())
     std = float(s.std(ddof=1)) if n > 1 else 0.0
     ir = mean / std if std > 0 else None
-    t = ir * math.sqrt(n) if ir is not None else None
+    t_iid = ir * math.sqrt(n) if ir is not None else None
+    t = _newey_west_t(s, hac_lags) if hac_lags and n > 1 else t_iid
     return {"n_days": n,
             "mean": _num(mean, 6),
             "std": _num(std, 6) if n > 1 else None,
             "ir": _num(ir, 4),
             "t": _num(t, 3),
+            "t_iid": _num(t_iid, 3),
             "positive_rate": _num(float((s > 0).mean()), 4)}
 
 
@@ -613,12 +637,11 @@ def _resolve_window(dates: pd.Index, start: str | None, end: str | None,
 
 # ---------------------------------------------------------------- 单因子评测
 def _quantile_stats(f: np.ndarray, car: np.ndarray, elig: np.ndarray, dates: list[str],
-                    direction: int, ann_factor: float, kind: str, n_groups: int = 5) -> dict:
+                    direction: int, ann_factor: float, kind: str, n_groups: int = 5,
+                    cost: float = 0.0) -> dict:
     """分组收益：连续因子按日横截面五分组；0/1 事件因子用「信号组(Q5) vs 非信号组(Q1)」。
 
-    事件因子为二值时，按秩五分组会因同值并列而只能靠代码顺序破并列（会引入板块/代码顺序偏差，
-    实证中 Q5−Q1 甚至与信号组超额反号），因此事件因子明确采用二值分组，Q2~Q4 无定义（空），
-    多空口径 = 信号组 − 非信号组；事件组明细另见 event_split。
+    car 已逐票扣单边成本；多空价差还须再扣两腿 2×cost，否则报告的是毛价差。
     """
     pair = elig & np.isfinite(f) & np.isfinite(car)
     if kind == "event":
@@ -640,6 +663,8 @@ def _quantile_stats(f: np.ndarray, car: np.ndarray, elig: np.ndarray, dates: lis
         }
         groups = dict(sorted(groups.items(), key=lambda kv: int(kv[0][1:])))
         spread = (daily_sig - daily_non).dropna()
+        if cost:
+            spread = spread - 2.0 * float(cost)
         tb_stat = _return_stats(spread, ann_factor)
         tb_stat["directed_ann_pct"] = _num((tb_stat.get("ann_pct") or 0.0) * direction, 2) \
             if tb_stat.get("ann_pct") is not None else None
@@ -664,6 +689,8 @@ def _quantile_stats(f: np.ndarray, car: np.ndarray, elig: np.ndarray, dates: lis
     top = daily.get(n_groups, pd.Series(dtype=float))
     bottom = daily.get(1, pd.Series(dtype=float))
     spread = (top - bottom).dropna()
+    if cost:
+        spread = spread - 2.0 * float(cost)
     tb_stat = _return_stats(spread, ann_factor)
     tb_stat["directed_ann_pct"] = _num((tb_stat.get("ann_pct") or 0.0) * direction, 2) \
         if tb_stat.get("ann_pct") is not None else None
@@ -673,14 +700,14 @@ def _quantile_stats(f: np.ndarray, car: np.ndarray, elig: np.ndarray, dates: lis
 
 
 def _event_split(f: np.ndarray, car: np.ndarray, elig: np.ndarray, dates: list[str],
-                 ann_factor: float) -> dict:
-    """事件因子（0/1）：信号组 vs 非信号组的按日 CAR 与超额。"""
+                 ann_factor: float, cost: float = 0.0) -> dict:
+    """事件因子（0/1）：信号组 vs 非信号组的按日 CAR 与净超额。"""
     pair = elig & np.isfinite(f) & np.isfinite(car)
     sig = pair & (f == 1.0)
     non = pair & (f == 0.0)
     daily_sig = _daily_mean(car, sig, dates)
     daily_non = _daily_mean(car, non, dates)
-    excess = (daily_sig - daily_non).dropna()
+    excess = (daily_sig - daily_non - 2.0 * float(cost)).dropna()
     sig_stat = _return_stats(daily_sig, ann_factor)
     non_stat = _return_stats(daily_non, ann_factor)
     exc_stat = _return_stats(excess, ann_factor)
@@ -742,30 +769,31 @@ def _eval_one_factor(spec: FactorSpec, fmat: pd.DataFrame, car_w: np.ndarray, el
     ic = _spearman_ic(np.where(elig_w, f, np.nan), car_w, min_cross_section)
     ic_series = pd.Series(ic, index=pd.Index(dates_w))
     directed = ic_series * spec.direction
-    raw_stats = _series_stats(ic_series)
-    dir_stats = _series_stats(directed)
+    raw_stats = _series_stats(ic_series, hac_lags=horizon)
+    dir_stats = _series_stats(directed, hac_lags=horizon)
 
     years = sorted({d[:4] for d in dates_w})
     by_year = {}
     for year in years:
         sub = directed[[d[:4] == year for d in dates_w]]
-        by_year[year] = _series_stats(sub)
+        by_year[year] = _series_stats(sub, hac_lags=horizon)
 
     if split_date is None:
         is_mask = np.zeros(len(dates_w), dtype=bool)
     else:
         is_mask = np.asarray([d <= split_date for d in dates_w])
     is_oos = {"split_date": split_date, "source": split_source,
-              "IS": _series_stats(directed.iloc[is_mask]),
-              "OOS": _series_stats(directed.iloc[~is_mask])}
+              "IS": _series_stats(directed.iloc[is_mask], hac_lags=horizon),
+              "OOS": _series_stats(directed.iloc[~is_mask], hac_lags=horizon)}
 
-    quant = _quantile_stats(f, car_w, elig_w, dates_w, spec.direction, ann_factor, spec.kind)
+    quant = _quantile_stats(f, car_w, elig_w, dates_w, spec.direction, ann_factor,
+                            spec.kind, cost=cost)
     spread_series = quant.pop("_spread_series")
 
     signal = None
     event_split = None
     if spec.kind == "event":
-        ev = _event_split(f, car_w, elig_w, dates_w, ann_factor)
+        ev = _event_split(f, car_w, elig_w, dates_w, ann_factor, cost=cost)
         event_split = ev
         signal = {"n_events": ev["n_signal_obs"], "n_signal_days": ev["n_signal_days"],
                   "avg_signals_per_day": ev["avg_signals_per_day"],
@@ -781,8 +809,10 @@ def _eval_one_factor(spec: FactorSpec, fmat: pd.DataFrame, car_w: np.ndarray, el
         "by_year": by_year,
         "is_oos": is_oos,
         "bootstrap": {
-            "ic_directed": _bootstrap(directed, n_boot, seed, "directed_daily_ic"),
-            "long_short_spread": _bootstrap(spread_series, n_boot, seed, "daily_top_minus_bottom"),
+            "ic_directed": _bootstrap(directed, n_boot, seed, "directed_daily_ic",
+                                      block=max(int(horizon), DEFAULT_BLOCK)),
+            "long_short_spread": _bootstrap(spread_series, n_boot, seed, "daily_top_minus_bottom",
+                                            block=max(int(horizon), DEFAULT_BLOCK)),
         },
         "quintiles": quant,
         "event_split": event_split,
@@ -985,17 +1015,33 @@ def _load_index_meta(root: Path, load_dates: list[str]) -> dict:
 
 
 def _load_fina_roe(root: Path, panel_dates: pd.Index, codes: pd.Index) -> pd.DataFrame:
-    """PIT ROE 矩阵：每个交易日取 ann_date ≤ 该日 的最新一期 ROE（同报告日多期取 end_date 最大）。"""
+    """PIT ROE 矩阵：取 ann_date ≤ 该日的最新一期 **年化** ROE（fina_indicator.roe_yearly）。
+
+    原始 `roe` 是报告期累计值；披露季内 Q1/H1/Q3/FY 混排会让截面排名反映披露时点。
+    优先 roe_yearly，缺失时才回退到 roe；同报告日多期取 end_date 最大。
+    """
     files = sorted(glob.glob(str(root / "fina_indicator" / "*.parquet")))
     if not files:
         return pd.DataFrame(np.nan, index=panel_dates, columns=codes)
+    roe_col = "roe"
     rows = []
     for f in files:
-        rows.append(pq.read_table(f, columns=["ts_code", "ann_date", "end_date", "roe"]).to_pandas())
+        names = set(pq.read_schema(f).names)
+        cols = ["ts_code", "ann_date", "end_date",
+                "roe_yearly" if "roe_yearly" in names else "roe"]
+        rows.append(pq.read_table(f, columns=cols).to_pandas())
+        if "roe_yearly" in names:
+            roe_col = "roe_yearly"
     fin = pd.concat(rows, ignore_index=True)
     fin["ts_code"] = fin["ts_code"].astype(str)
     fin["ann_date"] = fin["ann_date"].astype(str)
     fin["end_date"] = fin["end_date"].astype(str)
+    fin = fin.rename(columns={roe_col: "roe"})
+    # 某文件缺 roe_yearly 时，该文件的行在 concat 后由 roe_yearly 列承载；统一回退。
+    if "roe_yearly" in fin.columns and "roe" not in fin.columns:
+        fin = fin.rename(columns={"roe_yearly": "roe"})
+    elif "roe_yearly" in fin.columns:
+        fin["roe"] = fin["roe"].where(fin["roe"].notna(), fin["roe_yearly"])
     fin = fin[(fin["ann_date"].str.len() == 8) & fin["roe"].notna()].copy()
     fin = fin[fin["ts_code"].isin(set(codes))]
     if fin.empty:
@@ -1095,8 +1141,13 @@ def load_panel(start: str, end: str, horizon: int = DEFAULT_HORIZON, universe: s
     # 可交易股票池（只用 T 日可知信息 + 静态上市日期）
     sb = _load_stock_basic(root)
     list_date = None
+    list_date_missing = 0
     if not sb.empty:
         list_date = pd.to_numeric(sb.set_index("ts_code")["list_date"].reindex(codes), errors="coerce")
+        list_date_missing = int(list_date.isna().sum())
+        # stock_basic 只含在市股票；退市股在 daily 中仍可能有历史行情。
+        # 缺失 list_date 视为“上市已久”，避免把退市股整段历史剔出样本（幸存者偏差）。
+        list_date = list_date.fillna(0)
     if universe == "all":
         eligible = None
     elif universe == "tradable":
@@ -1125,6 +1176,7 @@ def load_panel(start: str, end: str, horizon: int = DEFAULT_HORIZON, universe: s
         "load_dates": [load_dates[0], load_dates[-1]], "load_days": len(load_dates),
         "warmup_days": int(warmup), "horizon": int(horizon),
         "panel_dates": int(len(dates_idx)), "codes": int(len(codes)),
+        "list_date_missing_codes": int(list_date_missing),
         "eligible_avg_per_day": _num(float(eligible.sum(axis=1).mean()), 1) if eligible is not None else None,
         "eligible_share": _num(float(eligible.to_numpy().mean()), 4) if eligible is not None else None,
         "load_sec": round(time.time() - t0, 2),
@@ -1161,8 +1213,20 @@ def run_eval(start: str, end: str, factor_names: list[str] | str | None = None,
     if neutralize and neutralize.strip().lower() not in ("", "none", "off"):
         from factor_neutralize import build_neutralized_specs, parse_modes
         by_industry, by_size = parse_modes(neutralize)
+        industry_map = None
+        if by_industry:
+            # 通用 CLI 原先默默使用 stock_basic 当前行业快照（前视/幸存偏差）；
+            # 改为默认加载 PIT L2（含快照 fallback），失败则 fail-visible。
+            try:
+                from pit_industry import load_sw_l2_industry_with_snapshot_fallback
+                industry_map = load_sw_l2_industry_with_snapshot_fallback()
+            except Exception as exc:  # noqa: BLE001 - 明确暴露数据/口径问题
+                raise RuntimeError(
+                    "行业中性化需要 PIT 行业映射（sw_l2 + snapshot fallback），加载失败: "
+                    f"{type(exc).__name__}: {exc}") from exc
         factor_specs, neutralization = build_neutralized_specs(
-            panel, names, industry=by_industry, size=by_size, min_obs=min_cross_section)
+            panel, names, industry=by_industry, size=by_size, min_obs=min_cross_section,
+            industry_map=industry_map)
     return evaluate_panel(panel, factor_names=names, horizon=horizon, cost=cost,
                           start=start, end=end, is_end=is_end, seed=seed,
                           min_cross_section=min_cross_section, n_boot=n_boot,

@@ -41,15 +41,17 @@ def _nav_series(returns) -> dict:
 
 # ------------------------------------------------------------------ 1. regime 状态
 def test_regime_state_series():
-    # 30 天平盘 + 40 天 +1%/日 + 30 天 -1%/日 → 末段应标「下跌」、中段「上涨」
-    rets = [0.0] * 30 + [0.01] * 40 + [-0.01] * 30
+    # 80 天平盘 + 40 天 +1%/日 + 40 天 -1%/日 → 扩展窗口足够后中段「上涨」、末段「下跌」
+    rets = [0.0] * 80 + [0.01] * 40 + [-0.01] * 40
     nav = _nav_series(rets)
     states = la.regime_state_series(nav, lookback=20)
     dates = sorted(nav)
-    assert len(states) == len(dates) - 21  # 前 lookback+1 天不贴标签
+    # 扩展窗口至少需要 max(60, lookback+1)=60 个 trailing 样本才贴标签。
+    assert len(states) == len(dates) - 80
     assert states[dates[-1]] == "下跌"      # 下跌段末（trailing 20 日持续为负）
-    assert states[dates[70]] == "上涨"      # 上涨段内（trailing 20 日全为 +1%）
-    assert states[dates[25]] == "震荡"      # 平盘段内（trailing 20 日收益=0）
+    assert states[dates[100]] == "上涨"     # 上涨段内（trailing 20 日持续为正）
+    assert dates[70] not in states          # 样本不足 60，不贴标签
+    assert dates[25] not in states
     assert dates[0] not in states
     # 空/过短输入安全
     assert la.regime_state_series({}) == {}

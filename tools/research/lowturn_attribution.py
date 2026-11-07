@@ -84,11 +84,11 @@ DEFAULT_VARIANTS = tuple(VARIANTS)
 # --------------------------------------------------------------------------- #
 def regime_state_series(market_nav: dict, lookback: int = REGIME_LOOKBACK,
                         states: tuple[str, ...] = STATES) -> dict[str, str]:
-    """按「过去 lookback 日等权市场收益」的全样本三分位，给每个交易日打状态标签。
+    """按「过去 lookback 日等权市场收益」的**扩展窗口**三分位，给每个交易日打状态标签。
 
     market_nav: {date: 等权市场累计净值}（升序）。
-    标签用 t−1 收盘可知的过去 lookback 日收益 → 当日收益可归因（无未来函数）。
-    上涨=trailing > 2/3 分位；下跌=trailing < 1/3 分位；其余=震荡。
+    每个交易日 i 只用 i 之前已实现的 trailing 样本估计分位阈值，再用 t−1 的 trailing
+    收益判断状态；当日收益可归因，无未来函数。样本不足 max(60, lookback+1) 时不打标签。
     """
     dates = sorted(str(d) for d in market_nav)
     if len(dates) <= lookback:
@@ -98,15 +98,17 @@ def regime_state_series(market_nav: dict, lookback: int = REGIME_LOOKBACK,
     # trailing[i] = nav[i]/nav[i-lookback]-1（第 i 日收盘可知的过去 lookback 日收益）
     for i in range(lookback, len(dates)):
         trailing[i] = nav[i] / nav[i - lookback] - 1.0
-    valid = trailing[np.isfinite(trailing)]
-    if len(valid) == 0:
-        return {}
-    q_low, q_high = np.quantile(valid, [1.0 / 3.0, 2.0 / 3.0])
+    min_hist = max(60, lookback + 1)
     out: dict[str, str] = {}
     for i in range(lookback + 1, len(dates)):
+        hist = trailing[lookback:i]  # 只用到 i−1 收盘为止的样本
+        hist = hist[np.isfinite(hist)]
+        if len(hist) < min_hist:
+            continue
         t = trailing[i - 1]
         if not np.isfinite(t):
             continue
+        q_low, q_high = np.quantile(hist, [1.0 / 3.0, 2.0 / 3.0])
         out[dates[i]] = states[0] if t > q_high else (states[2] if t < q_low else states[1])
     return out
 
@@ -521,7 +523,8 @@ def analyze_variant(name: str, fmat: np.ndarray, elig: np.ndarray, panel,
         "by_year": year_contrib_ind,
     }
     # 平均持仓权重（行业）与市场股票数占比 → 主动暴露
-    n_days = max(1, run["weights"].shape[0])
+    # load_panel 会多载 warmup 与 horizon 尾部，权重为 0 的行不能计入分母。
+    n_days = max(1, int((run["weights"].sum(axis=1) > 0).sum()))
     avg_ind_w = weight_sum_by_group(run["weights"], ind_idx, len(ind_list)) / n_days
     mkt_ind_share = np.bincount(ind_idx, minlength=len(ind_list)) / float(len(codes))
     active = avg_ind_w - mkt_ind_share
@@ -710,9 +713,10 @@ def write_md(rep: dict) -> str:
     L.append("")
 
     # 2. regime
-    L.append("## 2) 市场状态分段（等权市场过去 20 日收益三分位）")
+    L.append("## 2) 市场状态分段（等权市场过去 20 日收益的扩展窗口三分位）")
     L.append("")
-    L.append(f"状态定义：{meta['regime_rule']}；标签用 t−1 收盘可知的 trailing 收益 → 无未来函数。")
+    L.append(f"状态定义：{meta['regime_rule']}；阈值只用当日之前已实现的 trailing 样本估计，"
+             f"标签用 t−1 收盘可知的 trailing 收益 → 无未来函数。")
     L.append("")
     L.append("| 变体 | 状态 | 天数 | 毛超额累计 | 毛超额日均(bp) | 毛 t | 胜率 | 净超额累计 |")
     L.append("|---|---|---|---|---|---|---|---|")
@@ -870,9 +874,9 @@ def build_notes() -> list[str]:
         "IC = 逐日截面 Spearman(signed factor=−turnover_rate, 20 日 forward CAR)，"
         "CAR 未扣成本（成本为统一平移不影响排序，与 factor_validate 的扣 30bp 口径等价）；"
         "信号日 IC 用全部交易日计算（不限于调仓日），日频重叠 CAR 的 t 偏大（仅作量级参考）。",
-        "市场状态 = 过去 20 日等权市场收益的全样本 1/3、2/3 分位（上涨>2/3、下跌<1/3、其余震荡）；"
-        "状态标签用 t−1 收盘可知信息、收益按 t 日归因，无未来函数；但分位阈值用了全样本 → "
-        "属描述性归因（不是可交易 regime 择时信号）。",
+        "市场状态 = 过去 20 日等权市场收益的扩展窗口 1/3、2/3 分位（上涨>2/3、下跌<1/3、其余震荡）；"
+        "阈值只用当日之前已实现的 trailing 样本估计，状态标签用 t−1 收盘可知信息、收益按 t 日归因，"
+        "无未来函数；早期样本不足 60 个 trailing 观测的日期不打标签。",
         "贡献拆解为逐日 Brinson 式：Σ holdings_t ×(个股日收益 − 等权市场日收益)，按行业/市值十分位"
         "累计（算术）；与组合官方日频毛超额口径（等权基准净值）存在基准构造细节差异，合计值近似相等。",
         "市值十分位按调仓信号日 circ_mv 分桶，调仓间沿用最近一次映射；行业取 stock_basic.industry。",

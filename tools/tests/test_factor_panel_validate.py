@@ -169,6 +169,7 @@ def test_build_factor_panel_filters_and_forward():
     assert stats["skipped_limit_signal"] == 1
     assert stats["skipped_limit_entry"] == 1
     assert stats["rows"] == len(df)
+    assert stats["limit_check"]["available"] is False
     # PIT：因子只含 T 日换手，不含未来；把未来换手改掉不影响该日因子
     assert df["date"].max() < dates[-1]
 
