@@ -191,31 +191,6 @@ def fetch_snapshot(detail_sid: str = "LX20") -> dict[str, Any]:
                 )
                 pool_sids = {r["sid"] for r in pool}
 
-                pick_counts = {
-                    r["sid"]: r["n"]
-                    for r in _rows(
-                        cur,
-                        (
-                            "select sid,count(*) n from qg_pending "
-                            "where signal_date=%s and vetoed=0 group by sid"
-                        ),
-                        (asof,),
-                    )
-                }
-                top_picks = {
-                    r["sid"]: r
-                    for r in _rows(
-                        cur,
-                        (
-                            """select sid,ts_code,name,seq as rank_in,gap_pct,
-                                      stop_px,ref_px,score
-                               from qg_pending
-                               where signal_date=%s and vetoed=0
-                               order by sid,seq nulls last"""
-                        ),
-                        (asof,),
-                    )
-                }
                 latest_picks = _rows(
                     cur,
                     (
@@ -228,6 +203,26 @@ def fetch_snapshot(detail_sid: str = "LX20") -> dict[str, Any]:
                     ),
                     (asof,),
                 )
+                # 复用同一批最新候选，不再分别查 pick_counts / top_picks。
+                # 旧查询按 sid,seq nulls last 排序，dict 后写覆盖先写；这里保持同样语义。
+                pick_counts: dict[str, int] = {}
+                top_picks: dict[str, dict[str, Any]] = {}
+                top_pick_keys = (
+                    "sid",
+                    "ts_code",
+                    "name",
+                    "rank_in",
+                    "gap_pct",
+                    "stop_px",
+                    "ref_px",
+                    "score",
+                )
+                for row in latest_picks:
+                    sid = row["sid"]
+                    pick_counts[sid] = pick_counts.get(sid, 0) + 1
+                    top_picks[sid] = {
+                        key: row.get(key) for key in top_pick_keys
+                    }
                 nav = _rows(cur, ("select * from qg_nav order by date"))
                 days = _rows(cur, ("select * from qg_day order by signal_date"))
                 issues = _rows(
@@ -241,21 +236,30 @@ def fetch_snapshot(detail_sid: str = "LX20") -> dict[str, Any]:
                 )
                 latest_day = days[-1] if days else {}
 
+                # strategy/day/pool/issue/latest_picks 已在上方加载，直接取长度；
+                # 其余 4 张表用一条标量子查询合并，避免 5 次单独 count。
+                count_row = _one(
+                    cur,
+                    (
+                        "select "
+                        "(select count(*) from qg_pick) as pick, "
+                        "(select count(*) from qg_trade) as trade, "
+                        "(select count(*) from qg_pool_candidate) "
+                        "as pool_candidate, "
+                        "(select count(*) from qg_pending) as pending"
+                    ),
+                ) or {}
                 counts = {
-                    "strategy": _one(
-                        cur, ("select count(*) n from qg_strategy")
-                    )["n"],
+                    "strategy": len(strategies),
                     "pool_strategy": len(pool),
                     "day": len(days),
-                    "pick": _one(cur, ("select count(*) n from qg_pick"))["n"],
-                    "trade": _one(cur, ("select count(*) n from qg_trade"))["n"],
-                    "pool_candidate": _one(
-                        cur, ("select count(*) n from qg_pool_candidate")
-                    )["n"],
+                    "pick": int(count_row.get("pick") or 0),
+                    "trade": int(count_row.get("trade") or 0),
+                    "pool_candidate": int(
+                        count_row.get("pool_candidate") or 0
+                    ),
                     "issue": len(issues),
-                    "pending": _one(
-                        cur, ("select count(*) n from qg_pending")
-                    )["n"],
+                    "pending": int(count_row.get("pending") or 0),
                     "latest_picks": len(latest_picks),
                 }
                 grade_counts: dict[str, int] = {}
@@ -325,7 +329,14 @@ def fetch_strategy_detail(
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             strategy = _one(
                 cur,
-                ("select * from qg_strategy where sid=%s"),
+                (
+                    """select s.*,
+                              exists(
+                                  select 1 from qg_pool_strategy p
+                                  where p.sid=s.sid
+                              ) as in_pool
+                       from qg_strategy s where s.sid=%s"""
+                ),
                 (sid,),
             )
             if not strategy:
@@ -362,26 +373,31 @@ def fetch_strategy_detail(
                 ),
                 (sid,),
             )
-            best = _one(
+            extreme_rows = _rows(
                 cur,
                 (
-                    """select signal_date,ts_code,name,status,ret_net_pct,
-                              excess,hold_days
+                    """(select 'best' as kind,signal_date,ts_code,name,
+                              status,ret_net_pct,excess,hold_days
                        from qg_pick where sid=%s and ret_net_pct is not null
-                       order by ret_net_pct desc limit 1"""
+                       order by ret_net_pct desc limit 1)
+                       union all
+                       (select 'worst' as kind,signal_date,ts_code,name,
+                               status,ret_net_pct,excess,hold_days
+                        from qg_pick where sid=%s and ret_net_pct is not null
+                        order by ret_net_pct asc limit 1)"""
                 ),
-                (sid,),
+                (sid, sid),
             )
-            worst = _one(
-                cur,
-                (
-                    """select signal_date,ts_code,name,status,ret_net_pct,
-                              excess,hold_days
-                       from qg_pick where sid=%s and ret_net_pct is not null
-                       order by ret_net_pct asc limit 1"""
-                ),
-                (sid,),
-            )
+            extreme_by_kind = {
+                row["kind"]: {
+                    key: value
+                    for key, value in row.items()
+                    if key != "kind"
+                }
+                for row in extreme_rows
+            }
+            best = extreme_by_kind.get("best")
+            worst = extreme_by_kind.get("worst")
             issues = _rows(
                 cur,
                 (
@@ -392,13 +408,6 @@ def fetch_strategy_detail(
                        order by sev desc, hits desc nulls last"""
                 ),
                 (sid, sid),
-            )
-            strategy["in_pool"] = bool(
-                _one(
-                    cur,
-                    ("select sid from qg_pool_strategy where sid=%s"),
-                    (sid,),
-                )
             )
             return {
                 "sid": sid,

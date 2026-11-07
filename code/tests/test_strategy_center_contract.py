@@ -163,6 +163,49 @@ def test_contract_snapshot_matches_database(contract_dsn, monkeypatch):
     }
     assert all(p["signal_date"] == str(run["asof"]) for p in snapshot["latest_picks"])
     assert all(int(p["vetoed"]) == 0 for p in snapshot["latest_picks"])
+    # 快照查询合并后必须保持原有顶层字段，且 latest_pick_count /
+    # latest_top_pick 由同一批 latest_picks 推导，值需与旧 SQL 语义一致。
+    assert set(snapshot) == {
+        "meta",
+        "counts",
+        "grade_counts",
+        "lx_count",
+        "nav",
+        "latest_nav",
+        "days",
+        "latest_day",
+        "pool",
+        "pool_day",
+        "strategies",
+        "latest_picks",
+        "issues",
+        "detail",
+    }
+    expected_pick_count: dict[str, int] = {}
+    expected_top_pick: dict[str, dict] = {}
+    for pick in snapshot["latest_picks"]:
+        sid = pick["sid"]
+        expected_pick_count[sid] = expected_pick_count.get(sid, 0) + 1
+        expected_top_pick[sid] = pick
+    for strategy in snapshot["strategies"]:
+        sid = strategy["sid"]
+        assert strategy["latest_pick_count"] == expected_pick_count.get(sid, 0)
+        if sid in expected_top_pick:
+            top = strategy["latest_top_pick"]
+            assert top is not None
+            for key in (
+                "sid",
+                "ts_code",
+                "name",
+                "rank_in",
+                "gap_pct",
+                "stop_px",
+                "ref_px",
+                "score",
+            ):
+                assert top[key] == expected_top_pick[sid].get(key)
+        else:
+            assert strategy["latest_top_pick"] is None
 
 
 def test_contract_strategy_detail_is_consistent(contract_dsn, monkeypatch):
