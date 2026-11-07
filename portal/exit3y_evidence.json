@@ -8,7 +8,7 @@
   "source": "chanlun_pool_ext_daily_full.jsonl",
   "window": [
    "20240102",
-   "20261027"
+   "20261106"
   ]
  },
  "summary": [
@@ -312,66 +312,94 @@
  "portfolio": [
   {
    "rule": "A 持满20日",
-   "n_batch": 673,
-   "total": 1.13,
-   "ann": 0.41,
-   "mdd": -28.14,
-   "sharpe": 0.09,
-   "util": 98.3
+   "n_batch": 675,
+   "total": -4.46,
+   "cagr": -1.6,
+   "mdd": -31.47,
+   "sharpe": 0.07,
+   "vol": 26.23,
+   "util": 97.4,
+   "n_skip": 0,
+   "n_drop": 0,
+   "left_open": 0
   },
   {
    "rule": "B 分型低点止损",
-   "n_batch": 674,
-   "total": -0.76,
-   "ann": -0.28,
-   "mdd": -19.94,
-   "sharpe": -0.01,
-   "util": 73.4
+   "n_batch": 675,
+   "total": -1.99,
+   "cagr": -0.71,
+   "mdd": -21.08,
+   "sharpe": 0.04,
+   "vol": 17.03,
+   "util": 66.9,
+   "n_skip": 0,
+   "n_drop": 0,
+   "left_open": 0
   },
   {
    "rule": "C 固定-5%",
-   "n_batch": 674,
-   "total": 6.64,
-   "ann": 2.35,
-   "mdd": -16.28,
-   "sharpe": 0.48,
-   "util": 58.6
+   "n_batch": 675,
+   "total": 5.86,
+   "cagr": 2.04,
+   "mdd": -16.0,
+   "sharpe": 0.22,
+   "vol": 13.25,
+   "util": 54.2,
+   "n_skip": 0,
+   "n_drop": 0,
+   "left_open": 0
   },
   {
    "rule": "D 固定-8%",
-   "n_batch": 674,
-   "total": 5.43,
-   "ann": 1.93,
-   "mdd": -20.43,
-   "sharpe": 0.32,
-   "util": 75.1
+   "n_batch": 675,
+   "total": 3.92,
+   "cagr": 1.37,
+   "mdd": -20.99,
+   "sharpe": 0.16,
+   "vol": 17.31,
+   "util": 70.2,
+   "n_skip": 0,
+   "n_drop": 0,
+   "left_open": 0
   },
   {
    "rule": "E 移动止损8%",
-   "n_batch": 674,
-   "total": 10.79,
-   "ann": 3.77,
-   "mdd": -14.01,
-   "sharpe": 0.41,
-   "util": 50.0
+   "n_batch": 675,
+   "total": 9.68,
+   "cagr": 3.33,
+   "mdd": -14.18,
+   "sharpe": 0.38,
+   "vol": 10.01,
+   "util": 44.6,
+   "n_skip": 0,
+   "n_drop": 0,
+   "left_open": 0
   },
   {
    "rule": "F 时间止损5日",
-   "n_batch": 674,
-   "total": -4.87,
-   "ann": -1.79,
-   "mdd": -10.95,
-   "sharpe": -0.54,
-   "util": 33.2
+   "n_batch": 675,
+   "total": -4.19,
+   "cagr": -1.51,
+   "mdd": -11.21,
+   "sharpe": -0.2,
+   "vol": 6.6,
+   "util": 24.5,
+   "n_skip": 0,
+   "n_drop": 0,
+   "left_open": 0
   },
   {
    "rule": "G 分型+止盈12%",
-   "n_batch": 674,
-   "total": 4.51,
-   "ann": 1.61,
-   "mdd": -12.81,
-   "sharpe": 0.3,
-   "util": 57.9
+   "n_batch": 675,
+   "total": 2.83,
+   "cagr": 0.99,
+   "mdd": -13.86,
+   "sharpe": 0.15,
+   "vol": 9.9,
+   "util": 48.6,
+   "n_skip": 0,
+   "n_drop": 0,
+   "left_open": 0
   }
  ],
  "stop_diag": [

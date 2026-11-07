@@ -1,0 +1,364 @@
+# -*- coding: utf-8 -*-
+"""入场择时诊断：-26% 回撤到底能不能靠入场择时救（K-RES-20261108-TIMING）。
+
+问题
+----
+出场规则全试过（持满/固定止损/移动止损/分型止损/止盈），选股规则也试过
+（剔3买、限只数、type 排序），**没有任何方案把最大回撤压到 -20% 以内**。
+用户判断：入场择时才是瓶颈，不是出场止损。
+
+这个脚本分三步回答，不预设结论：
+
+A. 回撤归因
+   最大回撤区间在哪？区间内开仓的笔贡献多少？同期上证跌多少？
+   → 如果回撤 80% 来自 2 个月的系统性暴跌，那就是 beta，不是选股错。
+
+B. 事前可见的择时因子分档
+   每个因子都只用「开仓日之前」的信息（严格 PIT）：
+     ma20gap / ma60gap  上证收盘相对均线
+     idxvol20           上证 20 日已实现波动（事前）
+     breadth            前一交易日全市场上涨家数占比
+     sigdens            前一交易日信号数 / 前 20 日信号数均值（拥挤度）
+     drawdown           上证相对前 60 日高点的回撤（事前）
+   按分档看下一批（开仓批）的日组均收益、命中率、同期指数。
+
+C. 叠加过滤后的组合层
+   只保留高档（或不剔低档）的开仓日，跑共用引擎，看回撤与年化。
+   判据：回撤改善 > 5pp 且年化损失 < 3pp 才算"择时有效"。
+"""
+import argparse
+import glob
+import json
+import os
+import sys
+from collections import defaultdict
+
+import numpy as np
+import pandas as pd
+
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from portfolio_mtm import Engine, Pick, build_ratio, load_price_panel  # noqa: E402
+
+TDX = os.path.join(ROOT, "quant_backtest", "data", "tdx")
+POOL = os.path.join(ROOT, "quant_backtest", "data", "chanlun_pool_ext_daily_full.jsonl")
+OUT = os.path.join(ROOT, "portal", "entry_timing_evidence.json")
+
+BUY = ("1买", "2买", "3买")
+HOLD = 20
+TYPE_RANK = {"1买": 0, "2买": 1, "3买": 2}
+SEED2 = 20261108
+
+
+def _norm(s):
+    return (pd.Series(s).astype(str).str.replace("-", "", regex=False)
+            .str.slice(0, 8))
+
+
+def load_pool(drop3=True):
+    rows = []
+    for line in open(POOL, encoding="utf-8"):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            r = json.loads(line)
+        except ValueError:
+            continue
+        if r.get("type") not in BUY or r.get("status") != "closed":
+            continue
+        if not (r.get("entry_px") and r.get("price") and r.get("entry_date")):
+            continue
+        if drop3 and r["type"] == "3买":
+            continue
+        rows.append({
+            "code": r["code"], "type": r["type"],
+            "d": r["entry_date"].replace("-", "")[:8],
+            "x": (r.get("exit_date") or "").replace("-", "")[:8],
+            "entry_px": float(r["entry_px"]), "exit_px": float(r["exit_px"]),
+            "ret": float(r["ret"]), "alpha": r.get("alpha"), "idx": r.get("idx_ret"),
+        })
+    return rows
+
+
+def load_index():
+    out = []
+    for p in sorted(glob.glob(os.path.join(TDX, "ts_index_daily", "part_*.parquet"))):
+        d = pd.read_parquet(p, columns=["ts_code", "trade_date", "close"])
+        d = d[d["ts_code"] == "000001.SH"]
+        if len(d):
+            d["trade_date"] = _norm(d["trade_date"])
+            out.append(d)
+    idx = (pd.concat(out, ignore_index=True).drop_duplicates("trade_date")
+           .sort_values("trade_date"))
+    return idx.reset_index(drop=True)
+
+
+def load_breadth(dates):
+    """每日上涨家数占比（收盘后可得，所以用时必须前移一天）。"""
+    up, tot = defaultdict(int), defaultdict(int)
+    for p in sorted(glob.glob(os.path.join(TDX, "ts_daily", "part_*.parquet"))):
+        d = pd.read_parquet(p, columns=["ts_code", "trade_date", "close"])
+        d["trade_date"] = _norm(d["trade_date"])
+        d = d.sort_values(["ts_code", "trade_date"])
+        d["chg"] = d.groupby("ts_code", sort=False)["close"].pct_change()
+        g = d.dropna(subset=["chg"]).groupby("trade_date")["chg"]
+        for dt, s in g:
+            up[dt] += int((s > 0).sum())
+            tot[dt] += int(len(s))
+    return {d: up[d] / tot[d] for d in tot if tot[d] > 50}
+
+
+def build_axis(rows, idx):
+    d0, d1 = min(r["d"] for r in rows), max(r["x"] for r in rows)
+    ax = [d for d in idx["trade_date"].tolist() if d0 <= d <= d1]
+    return ax
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--json", action="store_true")
+    ap.add_argument("--boot", type=int, default=50)
+    a = ap.parse_args()
+    say = (lambda *x, **k: None) if a.json else print
+
+    rows = load_pool()
+    idx = load_index()
+    axis = build_axis(rows, idx)
+    ap_ = {d: i for i, d in enumerate(axis)}
+    icl = dict(zip(idx["trade_date"], idx["close"].astype(float)))
+    say("池 %d 笔（已剔3买）/ 日历 %d 日 %s~%s" % (len(rows), len(axis), axis[0], axis[-1]))
+
+    # 日组均与指数
+    by = defaultdict(list)
+    for r in rows:
+        by[r["d"]].append(r)
+    days = sorted(by)
+    day_mean = {d: float(np.mean([r["ret"] for r in by[d]])) for d in days}
+    day_n = {d: len(by[d]) for d in days}
+
+    # ---------- 引擎：基线（全买，剔3买） ----------
+    P = load_price_panel({r["code"] for r in rows}, TDX)
+    for r in rows:
+        p = P.get(r["code"])      # 池里混了指数代码（399001.SZ 等）
+        if p is None:
+            r["ratio"] = None
+            continue
+        ei, xi = p["pos"].get(r["d"]), p["pos"].get(r["x"])
+        r["ratio"] = (build_ratio(p, ei, xi, r["entry_px"], r["exit_px"], axis, ap_)
+                      if ei is not None and xi is not None and xi > ei else None)
+    rows = [r for r in rows if r["ratio"] is not None]
+    days = sorted({r["d"] for r in rows})
+    by = defaultdict(list)
+    for r in rows:
+        by[r["d"]].append(r)
+
+    eng = Engine(axis, hold=HOLD)
+
+    def run_dayfilter(keep_days, label=""):
+        picks = {d: [Pick(r["code"], ap_[r["d"]], ap_[r["x"]], r["ratio"], r["ret"])
+                     for r in by[d]] for d in keep_days}
+        v = eng.run(picks)
+        return v
+
+    v0 = run_dayfilter(days, "baseline")
+    say("\n基线（剔3买全买）: 累计 %.2f%%  年化 %.2f%%  回撤 %.2f%%  夏普 %.2f  波动 %.2f%%"
+        % (v0["total"], v0["cagr"] or 0, v0["mdd"], v0["sharpe"], v0["vol"]))
+    res = {"meta": {"n": len(rows), "days": len(days), "axis": len(axis),
+                    "window": [axis[0], axis[-1]]}, "baseline": v0}
+
+    # ---------- A. 回撤归因 ----------
+    cur = np.array(v0["curve"] or [], dtype=float)
+    # curve 在 Engine 里超过 4000 点会置 None，axis 约 660 点，正常有值
+    dd = cur / np.maximum.accumulate(cur) - 1.0
+    t = int(np.argmin(dd))
+    pk = int(np.argmax(cur[:t + 1])) if t > 0 else 0
+    seg = axis[pk:t + 1]
+    say("\n" + "=" * 100)
+    say("A. 最大回撤归因")
+    say("=" * 100)
+    say("  峰值 %s → 谷底 %s（%d 个交易日）  回撤 %.2f%%"
+        % (axis[pk], axis[t], len(seg) - 1, dd[t] * 100))
+    say("  同期上证 %+.2f%%" % ((icl[axis[t]] / icl[axis[pk]] - 1) * 100))
+    seg_rows = [r for r in rows if axis[pk] <= r["d"] <= axis[t]]
+    n_all = len(rows)
+    say("  区间内开仓 %d 笔（占全部 %.1f%%），日均 %d 笔"
+        % (len(seg_rows), len(seg_rows) / n_all * 100,
+           len(seg_rows) / max(1, len({r["d"] for r in seg_rows}))))
+    if seg_rows:
+        say("  区间内笔均 %+.2f%%，区间外笔均 %+.2f%%"
+            % (np.mean([r["ret"] for r in seg_rows]) * 100,
+               np.mean([r["ret"] for r in rows if r not in seg_rows]) * 100))
+    # 逐月净值变化
+    say("\n  逐月净值（找亏损集中月）")
+    say("  %-8s %10s %10s %10s" % ("月份", "净值变动%", "上证%", "开仓笔数"))
+    mv = []
+    months = sorted({axis[i][:6] for i in range(pk + 1, t + 1)})
+    for m in months:
+        ii = [i for i in range(pk + 1, t + 1) if axis[i][:6] == m]
+        if not ii:
+            continue
+        r0, r1 = cur[ii[0] - 1], cur[ii[-1]]
+        ix0, ix1 = icl[axis[ii[0] - 1]], icl[axis[ii[-1]]]
+        nn = sum(1 for r in seg_rows if r["d"][:6] == m)
+        mv.append({"month": m, "nav": round((r1 / r0 - 1) * 100, 2),
+                   "idx": round((ix1 / ix0 - 1) * 100, 2), "n": nn})
+        say("  %-8s %+9.2f%% %+9.2f%% %10d" % (m, mv[-1]["nav"], mv[-1]["idx"], nn))
+    res["drawdown_attr"] = {"peak": axis[pk], "trough": axis[t], "mdd": round(float(dd[t]) * 100, 2),
+                            "idx_same": round(float((icl[axis[t]] / icl[axis[pk]] - 1) * 100), 2),
+                            "n_in_seg": len(seg_rows), "months": mv}
+
+    # ---------- B. 事前可见择时因子 ----------
+    say("\n" + "=" * 100)
+    say("B. 事前可见因子分档（全部 PIT：只用开仓日之前的数据）")
+    say("=" * 100)
+
+    ic = idx.set_index("trade_date")["close"].astype(float)
+    ic = ic.reindex(axis)
+    ma20 = ic.rolling(20).mean()
+    ma60 = ic.rolling(60).mean()
+    gap20 = ic / ma20 - 1.0
+    gap60 = ic / ma60 - 1.0
+    rvol = ic.pct_change().rolling(20).std()
+    hi60 = ic.rolling(60).max()
+    dd60 = ic / hi60 - 1.0
+    # 全部前移一格：开仓日用的是「昨日收盘」为止的信息
+    F = {"ma20gap": gap20.shift(1), "ma60gap": gap60.shift(1),
+         "idxvol20": rvol.shift(1), "dd60": dd60.shift(1)}
+    say("  算宽度（全市场上涨家数占比）…")
+    br = load_breadth(axis)
+    bser = pd.Series({d: br.get(d, np.nan) for d in axis})
+    F["breadth"] = bser.shift(1)
+    # 信号密度：前一日信号数 / 前 20 日信号数均值
+    sn = pd.Series({d: day_n.get(d, 0) for d in axis}, dtype=float)
+    F["sigdens"] = (sn.shift(1) / sn.shift(1).rolling(20).mean())
+
+    day_ret = pd.Series({d: day_mean.get(d, np.nan) for d in axis})
+    res["factors"] = {}
+    for name, ser in F.items():
+        sub = pd.DataFrame({"f": ser, "y": day_ret, "d": axis}).dropna()
+        if len(sub) < 100:
+            continue
+        q = pd.qcut(sub["f"], 5, labels=False, duplicates="drop")
+        rec = []
+        say("\n  [%s]  覆盖 %d 个开仓日" % (name, len(sub)))
+        say("    %-8s %6s %10s %10s %10s" % ("分位", "日数", "日组均%", "胜率%", "同期上证%"))
+        for qi in sorted(set(q.dropna().astype(int))):
+            s2 = sub[q == qi]
+            y = s2["y"].dropna()
+            ix = [r["idx"] for d in s2["d"] for r in by.get(d, []) if r["idx"] is not None]
+            rec.append({"q": int(qi) + 1, "days": len(s2),
+                        "day_mean": round(float(y.mean()) * 100, 3),
+                        "win": round(float((y > 0).mean()) * 100, 1),
+                        "idx": round(float(np.mean(ix)) * 100, 2) if ix else None,
+                        "lo": round(float(s2["f"].min()), 4),
+                        "hi": round(float(s2["f"].max()), 4)})
+            say("    %-8d %6d %+9.3f%% %9.1f%% %+9.2f%%"
+                % (rec[-1]["q"], rec[-1]["days"], rec[-1]["day_mean"],
+                   rec[-1]["win"], rec[-1]["idx"] or 0))
+        # 单调性：Q1 与 Q5 差 + Spearman
+        if len(rec) >= 5:
+            hi_q, lo_q = rec[-1], rec[0]
+            rho = float(pd.Series(sub["f"]).corr(pd.Series(sub["y"]), method="spearman"))
+            rec_note = {"q_hi": hi_q["day_mean"], "q_lo": lo_q["day_mean"],
+                        "diff": round(hi_q["day_mean"] - lo_q["day_mean"], 3),
+                        "rho": round(rho, 3)}
+            say("    Q5-Q1 = %+.3f%%   Spearman rho = %+.3f"
+                % (rec_note["diff"], rec_note["rho"]))
+            res["factors"][name] = {"bins": rec, **rec_note}
+        else:
+            res["factors"][name] = {"bins": rec}
+
+    # ---------- C. 叠加过滤后的组合层 ----------
+    say("\n" + "=" * 100)
+    say("C. 把择时因子做成开仓日过滤器（组合层）")
+    say("     判据：回撤改善 > 5pp 且年化损失 < 3pp")
+    say("=" * 100)
+    say("  %-28s %6s %9s %9s %9s %8s"
+        % ("过滤器", "开仓日", "累计", "年化", "最大回撤", "夏普"))
+    cands = []
+    for name, ser in F.items():
+        s = ser.dropna()
+        if len(s) < 200:
+            continue
+        qs = s.quantile([0.2, 0.4, 0.6, 0.8]).tolist()
+        # 两个方向都试：高档留 / 低档留
+        for direction, keep_side in (("high", "hi"), ("low", "lo")):
+            for cut_lab, thr in (("P20", qs[0]), ("P50", s.median()), ("P80", qs[3])):
+                if keep_side == "hi":
+                    kd = [d for d in days if d in s.index and s[d] >= thr]
+                else:
+                    kd = [d for d in days if d in s.index and s[d] <= thr]
+                if len(kd) < 60:
+                    continue
+                v = run_dayfilter(kd, name)
+                lab = "%s %s>=%s" % (name, direction, cut_lab) if keep_side == "hi" \
+                    else "%s %s<=%s" % (name, direction, cut_lab)
+                cands.append({"filter": lab, "days": len(kd), "total": v["total"],
+                              "cagr": v["cagr"], "mdd": v["mdd"], "sharpe": v["sharpe"],
+                              "vol": v["vol"]})
+                say("  %-28s %6d %8.2f%% %8.2f%% %8.2f%% %7.2f"
+                    % (lab, len(kd), v["total"], v["cagr"] or 0, v["mdd"], v["sharpe"]))
+    res["filters"] = cands
+
+    # 汇总判据
+    ok = [c for c in cands
+          if (c["mdd"] - v0["mdd"]) > 5.0
+          and (c["cagr"] is not None and v0["cagr"] is not None
+               and c["cagr"] > v0["cagr"] - 3.0)]
+    ok.sort(key=lambda c: -c["mdd"])
+    res["pass"] = ok
+    say("\n  满足「回撤改善>5pp 且年化损失<3pp」：%d 个" % len(ok))
+    for c in ok[:8]:
+        say("    %-28s 回撤 %+.2fpp  年化 %+.2fpp"
+            % (c["filter"], c["mdd"] - v0["mdd"], (c["cagr"] or 0) - (v0["cagr"] or 0)))
+    if not ok:
+        say("    无 —— 入场择时救不了回撤，-%.0f%% 是 beta 风险" % abs(v0["mdd"]))
+
+    # ---------- D. 随机对照：保留同样天数，看回撤的零分布 ----------
+    # 这是本脚本最重要的一节。所有"降回撤"的过滤器都在减少开仓日数，
+    # 而**少交易本身就会机械性降低回撤**（在场时间短 = 暴露少）。
+    # 必须证明真实过滤器的回撤好于"随机抽同样天数"，否则它没有择时能力。
+    say("\n" + "=" * 100)
+    say("D. 随机对照：只保留同样天数、随机抽（%d 次），看回撤零分布" % a.boot)
+    say("     若真实回撤落在随机分布内，说明降回撤只是「少交易」，不是择时")
+    say("=" * 100)
+    say("  %-24s %5s %10s %10s %10s %s"
+        % ("过滤器", "天数", "真实回撤", "随机中位", "随机95%", "判定"))
+    rng2 = np.random.default_rng(SEED2)
+    res["null"] = []
+    for c in sorted(ok, key=lambda z: -c["mdd"])[:10]:
+        n_d = c["days"]
+        mdds = []
+        for _ in range(a.boot):
+            kd = list(rng2.choice(days, n_d, replace=False))
+            mdds.append(run_dayfilter(kd)["mdd"])
+        p95 = float(np.percentile(mdds, 95))
+        p50 = float(np.percentile(mdds, 50))
+        # 判据必须严：真实回撤要优于「随机抽同样天数」里最好的 5%，
+        # 才算真有择时能力。宽松地用 p5（优于最差 5%）会把「少交易」
+        # 误判成「择时有效」——实测 ma20gap low<=P20 真实 -8.91% 比随机
+        # 中位 -6.90% 还差，却会因 >p5 被判有效。
+        if c["mdd"] > p95:
+            verdict = "有效"
+        elif c["mdd"] > p50:
+            verdict = "弱（略优于随机中位，未过 5% 显著性）"
+        else:
+            verdict = "无效（不如随机，纯属少交易）"
+        rec = {"filter": c["filter"], "days": n_d, "real": c["mdd"],
+               "null_p50": round(p50, 2), "null_p95": round(p95, 2),
+               "cagr": c["cagr"], "verdict": verdict}
+        res["null"].append(rec)
+        say("  %-24s %5d %9.2f%% %9.2f%% %9.2f%% %s"
+            % (c["filter"], n_d, c["mdd"], p50, p95, verdict))
+    n_ok = sum(1 for r in res["null"] if r["verdict"].startswith("有效"))
+    say("\n  通过随机对照的过滤器：%d / %d" % (n_ok, len(res["null"])))
+    if n_ok == 0:
+        say("  → 入场择时没有证据支持：所有降回撤都可由「随机少开仓」复现")
+
+    json.dump(res, open(OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    say("\n落盘 %s" % OUT)
+
+
+if __name__ == "__main__":
+    main()

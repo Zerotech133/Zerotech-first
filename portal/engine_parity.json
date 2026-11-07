@@ -1,0 +1,54 @@
+{
+ "meta": {
+  "n": 35807,
+  "axis": 686,
+  "hold": 20,
+  "window": [
+   "20240102",
+   "20261104"
+  ]
+ },
+ "M0_arith": {
+  "total": 25.12,
+  "cagr": 8.3,
+  "mdd": -25.24,
+  "vol": 7.37,
+  "sharpe": 1.12
+ },
+ "M1_cash_only": {
+  "total": 9.97,
+  "cagr": 3.44,
+  "mdd": -26.91,
+  "vol": 7.17,
+  "sharpe": 0.51,
+  "n_skip": 0
+ },
+ "M2_engine": {
+  "total": 4.21,
+  "cagr": 1.48,
+  "mdd": -30.96,
+  "vol": 25.72,
+  "sharpe": 0.19,
+  "n_skip": 0
+ },
+ "M3_mtm_nocash": {
+  "total": 4.23,
+  "cagr": 1.49,
+  "mdd": -30.96,
+  "vol": 25.73,
+  "sharpe": 0.19
+ },
+ "M4_fixed_stake": {
+  "total": 16.38,
+  "cagr": 5.54,
+  "mdd": -28.3,
+  "vol": 25.11,
+  "sharpe": 0.34
+ },
+ "decomp": {
+  "mtm": -20.89,
+  "stake": -12.17,
+  "cash": -0.02,
+  "total": -20.91
+ }
+}

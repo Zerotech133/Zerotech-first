@@ -30,6 +30,9 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from portfolio_mtm import Engine, Pick, build_ratio  # noqa: E402
+
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 TDX = os.path.join(ROOT, "quant_backtest", "data", "tdx")
 IDX = os.path.join(ROOT, "quant_backtest", "data", "tdx", "ts_index_daily")
@@ -142,13 +145,20 @@ def stat(vals):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--hold", type=int, default=20)
+    ap.add_argument("--drop3", action="store_true",
+                    help="剔除 3买（3买占池 54%%、单笔 -1.47%%，会淹没出场规则的差异）")
     ap.add_argument("--out", default=OUT)
     ap.add_argument("--csv", default=os.path.join(ROOT, "quant_backtest",
                                                   "reports", "exit3y_rows.csv"))
     a = ap.parse_args()
 
     rows = load_rows()
-    print("已结算买点 %d 笔" % len(rows))
+    if a.drop3:
+        n0 = len(rows)
+        rows = [r for r in rows if r["type"] != "3买"]
+        print("已结算买点 %d 笔（剔3买后 %d 笔）" % (n0, len(rows)))
+    else:
+        print("已结算买点 %d 笔" % len(rows))
     codes = sorted({r["code"] for r in rows})
     bars = load_bars(codes)
     idxc = load_index()
@@ -232,8 +242,16 @@ def main():
             n_noscale += 1
             continue
         p["k"] = entry_px / c0     # 把该票整条路径归一到池标度
+        # 池的 exit_px 是该笔到期日的复权收盘价（原始记录）。用它比用
+        # close[xi]*k 重算更准：重算的中位差 0.0000%，但均值差 -0.1208%，
+        # 因为 4.3% 的笔在尾部（除权残差），而尾部笔集中在极端批，
+        # 会被协方差放大成组合层 11pp 的差。到期日与池一致时直接用池价。
+        pool_xi = p["pos"].get(str(r.get("exit_date", "")).replace("-", "")[:8])
+        pool_xpx = float(r["exit_px"]) if r.get("exit_px") else None
         for name, rc in RULES.items():
             xj, xpx, why, _ = sim(code, ei, entry_px, frac, rc, a.hold)
+            if xj == pool_xi and pool_xpx:
+                xpx = pool_xpx
             if not (np.isfinite(xpx) and xpx > 0):
                 continue
             net = (xpx * (1 - COST_SELL)) / (entry_px * (1 + COST_BUY)) - 1.0
@@ -245,6 +263,8 @@ def main():
             recs.append({"rule": name, "code": code, "type": r["type"],
                          "dt": r.get("dt"), "entry": ed, "exit": xd,
                          "days": xj - ei, "reason": why,
+                         "entry_i": ei, "exit_i": xj, "exit_px": xpx,
+                         "entry_px": entry_px,
                          "ret": net, "alpha": (net - bm) if bm is not None else None})
     df = pd.DataFrame(recs)
     df.to_csv(a.csv, index=False, encoding="utf-8")
@@ -344,73 +364,49 @@ def main():
     print("  （其余持有期请用 --hold 参数分别运行）")
 
     # ---------------------------------------------------------------- 组合
+    # 旧实现（已废弃）把净值轴设成「买点日集合」，只在 exit == 前一买点日 时结算，
+    # 且 eq_now = cash + Σ建仓成本。三处叠加：结算日收益被静默丢弃（虚高 7pp）、
+    # 1.9% 的笔资金永久死锁、浮盈不参与复利。改用共用引擎（全交易日历 + 盯市）。
     print("\n" + "=" * 116)
-    print("组合净值（每日信号等权一批，每日投入权益 1/%d）" % a.hold)
+    print("组合净值（全交易日历 + 逐日盯市 + 现金约束，每日投入权益 1/%d）" % a.hold)
     print("=" * 116)
-    print("  %-22s %7s %9s %9s %9s %8s %7s"
-          % ("规则", "建仓日", "累计", "年化", "最大回撤", "夏普", "在场率"))
-    cal = sorted({x for x in df["entry"]})
-    pos = {d: i for i, d in enumerate(cal)}
+    print("  %-22s %7s %9s %9s %9s %8s %7s %7s"
+          % ("规则", "建仓日", "累计", "年化", "最大回撤", "夏普", "年化波动", "在场率"))
+    axis = [d for d in sorted(idxc) if d >= min(df["entry"]) and d <= max(df["exit"])]
+    ap_ = {d: i for i, d in enumerate(axis)}
+    eng = Engine(axis, hold=a.hold, buy_cost=COST_BUY, sell_cost=COST_SELL)
     port = []
+    pkl = {}
     for name in RULES:
         if name.startswith("~"):
             continue
         sub = df[df["rule"] == name]
-        if not len(sub):
+        if not len(sub) or not axis:
             continue
-        by = defaultdict(list)
+        picks = defaultdict(list)
         for r in sub.itertuples(index=False):
-            by[r.entry].append(r)
-        slot = 1.0 / a.hold
-        cash, openp, hist, util = 1.0, [], [], []
-        n_batch = 0
-        for i, d in enumerate(cal):
-            prev = cal[i - 1] if i > 0 else None
-            if prev:
-                keep = []
-                for q in openp:
-                    if q["exit"] == prev:
-                        cash += q["amt"] * (1 + q["ret"])
-                    else:
-                        keep.append(q)
-                openp = keep
-            cands = by.get(d) or []
-            if cands and i < len(cal) - 1:
-                eq_now = cash + sum(q["amt"] for q in openp)
-                amt = min(slot * eq_now, cash)
-                if amt > 1e-9:
-                    per = amt / len(cands)
-                    for r in cands:
-                        openp.append({"amt": per, "exit": r.exit, "ret": r.ret})
-                        cash -= per
-                    n_batch += 1
-            eq = cash + sum(q["amt"] for q in openp)
-            hist.append(eq)
-            util.append((eq - cash) / eq if eq > 0 else 0.0)
-        e = np.array(hist)
-        if len(e) < 10:
-            continue
-        dret = np.diff(e) / e[:-1]
-        sd = dret.std(ddof=1)
-        peak = np.maximum.accumulate(e)
-        rec = {"rule": name, "n_batch": n_batch,
-               "total": round((e[-1] - 1) * 100, 2),
-               "ann": round((e[-1] ** (244.0 / len(e)) - 1) * 100, 2),
-               "mdd": round(float((e / peak - 1).min() * 100), 2),
-               "sharpe": round(float(dret.mean() / sd * np.sqrt(244)), 2) if sd else 0,
-               "util": round(float(np.mean(util)) * 100, 1)}
-        port.append(rec)
-        print("  %-22s %7d %8.2f%% %8.2f%% %8.2f%% %7.2f %6.0f%%"
-              % (name, n_batch, rec["total"], rec["ann"], rec["mdd"],
-                 rec["sharpe"], rec["util"]))
-    # 基准
-    if idxc:
-        ds = [d for d in sorted(idxc) if cal[0] <= d <= cal[-1] and idxc[d]]
-        if len(ds) > 5:
-            bm = idxc[ds[-1]] / idxc[ds[0]] - 1
-            print("  %-22s %7s %8.2f%% %8.2f%% %8s %8s %6s"
-                  % ("参考·上证", "—", bm * 100,
-                     ((1 + bm) ** (244.0 / len(ds)) - 1) * 100, "—", "—", "—"))
+            p = P.get(r.code)
+            if p is None:
+                continue
+            ratio = build_ratio(p, int(r.entry_i), int(r.exit_i),
+                                float(r.entry_px), float(r.exit_px), axis, ap_)
+            picks[r.entry].append(Pick(r.code, ap_[r.entry], ap_[r.exit],
+                                       ratio, float(r.ret)))
+        v = eng.run(picks)
+        v["rule"] = name
+        port.append({k: v[k] for k in ("rule", "n_batch", "total", "cagr", "mdd",
+                                       "sharpe", "vol", "util", "n_skip", "n_drop",
+                                       "left_open")})
+        pkl[name] = picks
+        print("  %-22s %7d %8.2f%% %8.2f%% %8.2f%% %7.2f %7.2f%% %6.0f%%"
+              % (name, v["n_batch"], v["total"], v["cagr"] or 0, v["mdd"],
+                 v["sharpe"], v["vol"], v["util"]))
+    # 基准：上证同期买入持有（同一 axis，可直接比年化）
+    if axis:
+        bm = idxc[axis[-1]] / idxc[axis[0]] - 1
+        print("  %-22s %7s %8.2f%% %8.2f%% %8s %8s %8s %6s"
+              % ("参考·上证买入持有", "—", bm * 100,
+                 ((1 + bm) ** (244.0 / len(axis)) - 1) * 100, "—", "—", "—", "—"))
 
     # ---------------------------------------------------------------- 砍对率
     print("\n" + "=" * 116)
@@ -447,8 +443,9 @@ def main():
                         "hold": a.hold, "cost_buy": COST_BUY,
                         "cost_sell": COST_SELL,
                         "source": "chanlun_pool_ext_daily_full.jsonl",
-                        "window": [cal[0], cal[-1]] if cal else None},
+                        "window": [axis[0], axis[-1]] if axis else None},
                "summary": summary, "best": best, "by_type": by_type,
+               "drop3": bool(a.drop3),
                "yearly": yearly, "portfolio": port, "stop_diag": diag}
     with open(a.out, "w", encoding="utf-8") as f:
         json.dump(payload, f, ensure_ascii=False, indent=1)
