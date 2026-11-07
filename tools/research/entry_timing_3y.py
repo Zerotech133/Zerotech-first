@@ -109,6 +109,87 @@ def load_breadth(dates):
     return {d: up[d] / tot[d] for d in tot if tot[d] > 50}
 
 
+def _lim_pct(code):
+    """按板块返回涨跌停幅度。ST 单独 5%，但缺 ST 标记，只能按板块近似——
+    影响面有限：ST 只在极端恐慌日贡献跌停家数，且因子用的是「家数」不是名单。"""
+    c = str(code)
+    if c.startswith(("688", "689")):
+        return 0.20          # 科创板
+    if c.startswith(("300", "301")):
+        return 0.20          # 创业板
+    if c.startswith(("8", "4", "920")):
+        return 0.30          # 北交所
+    return 0.10
+
+
+def load_market_struct(axis):
+    """市场结构类事前因子：涨跌停家数、连板高度、成交额分位。
+
+    与前 6 个因子（全是「大盘状态」：均线位置、波动、宽度）的根本区别：
+    这些量描述的是**投机资金的行为**，不是价格水平。三年回撤期上证只跌 7.78%，
+    策略跌 27.99%，说明下跌市里选股失效——失效机制更可能藏在情绪结构里
+    （涨停家数塌缩、连板高度断裂），而不是指数位置里。
+    """
+    want = set(axis)
+
+    # (a) 涨停家数 + 最高连板高度：同花顺涨停池（2023-11 起，覆盖 729 日）
+    zt, mboard = defaultdict(int), {}
+    for p in sorted(glob.glob(os.path.join(TDX, "ts_limit_list_ths", "part_*.parquet"))):
+        d = pd.read_parquet(p, columns=["trade_date", "limit_type", "tag"])
+        d["trade_date"] = _norm(d["trade_date"])
+        d = d[d["trade_date"].isin(want)]
+        if not len(d):
+            continue
+        for dt, g in d.groupby("trade_date"):
+            zt[dt] += int((g["limit_type"] == "涨停池").sum())
+            mx = 1
+            for t in g["tag"].dropna():
+                # tag 形如「3天5板」/「首板」；取「板」前面的数字
+                tt = str(t)
+                if tt == "首板":
+                    continue
+                if "板" in tt:
+                    num = tt.split("板")[0].split("天")[-1]
+                    if num.isdigit():
+                        mx = max(mx, int(num))
+            mboard[dt] = mx
+
+    # (b) 跌停家数 + 全市场成交额：ts_daily 原始涨跌幅按板块幅度判
+    dt_cnt, amt = defaultdict(int), defaultdict(float)
+    for p in sorted(glob.glob(os.path.join(TDX, "ts_daily", "part_*.parquet"))):
+        d = pd.read_parquet(p, columns=["ts_code", "trade_date", "pct_chg", "amount"])
+        d["trade_date"] = _norm(d["trade_date"])
+        d = d[d["trade_date"].isin(want)]
+        if not len(d):
+            continue
+        lim = d["ts_code"].map(_lim_pct).to_numpy(float) * 100.0 - 0.5
+        down = (d["pct_chg"].to_numpy(float) <= -lim)
+        d = d.assign(_dn=down)
+        g = d.groupby("trade_date")
+        for dt, sub in g:
+            dt_cnt[dt] += int(sub["_dn"].sum())
+            amt[dt] += float(np.nansum(sub["amount"].to_numpy(float)))
+
+    zt_s = pd.Series({d: float(zt.get(d, np.nan)) for d in axis})
+    dt_s = pd.Series({d: float(dt_cnt.get(d, np.nan)) for d in axis})
+    mb_s = pd.Series({d: float(mboard.get(d, np.nan)) for d in axis})
+    am_s = pd.Series({d: amt.get(d, np.nan) for d in axis}, dtype=float)
+    out = {
+        "zt_cnt": zt_s,
+        # 涨停家数密度：当日 / 前 20 日均值（与 sigdens 同型，但用全市场情绪而非自家信号）
+        "zt_dens": zt_s / zt_s.rolling(20).mean().shift(1),
+        "dt_cnt": dt_s,
+        "board_max": mb_s,
+        "amt_pct": am_s.rolling(61).apply(
+            lambda w: float((w[:-1] <= w[-1]).mean()) if len(w) > 1 else np.nan, raw=True),
+        "zt_dt": zt_s / (zt_s + dt_s).replace(0, np.nan),
+    }
+    for k, v in out.items():
+        print("    [struct] %-9s 可算 %d 日，非空 %d"
+              % (k, int(v.notna().sum()), int(v.notna().sum())))
+    return out
+
+
 def build_axis(rows, idx):
     d0, d1 = min(r["d"] for r in rows), max(r["x"] for r in rows)
     ax = [d for d in idx["trade_date"].tolist() if d0 <= d <= d1]
@@ -119,6 +200,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--boot", type=int, default=50)
+    ap.add_argument("--only", default="",
+                    help="只跑名字含该子串的因子（逗号分隔），空=全部")
+    ap.add_argument("--out", default=OUT, help="证据 JSON 输出路径")
     a = ap.parse_args()
     say = (lambda *x, **k: None) if a.json else print
 
@@ -229,9 +313,19 @@ def main():
     br = load_breadth(axis)
     bser = pd.Series({d: br.get(d, np.nan) for d in axis})
     F["breadth"] = bser.shift(1)
+    say("  算市场结构（涨跌停 / 连板 / 成交额）…")
+    for k, v in load_market_struct(axis).items():
+        # 涨停家数等是「当日收盘后可算」，但开仓也在收盘，为了不留任何当日
+        # 内信息渗漏（比如尾盘涨停是否封住），统一再前移一格。
+        F[k] = v.shift(1)
     # 信号密度：前一日信号数 / 前 20 日信号数均值
     sn = pd.Series({d: day_n.get(d, 0) for d in axis}, dtype=float)
     F["sigdens"] = (sn.shift(1) / sn.shift(1).rolling(20).mean())
+
+    if a.only:
+        keep = [x.strip() for x in a.only.split(",") if x.strip()]
+        F = {k: v for k, v in F.items() if any(t in k for t in keep)}
+        say("  只跑因子：%s" % ", ".join(sorted(F)))
 
     day_ret = pd.Series({d: day_mean.get(d, np.nan) for d in axis})
     res["factors"] = {}
@@ -356,8 +450,10 @@ def main():
     if n_ok == 0:
         say("  → 入场择时没有证据支持：所有降回撤都可由「随机少开仓」复现")
 
-    json.dump(res, open(OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
-    say("\n落盘 %s" % OUT)
+    if a.only:
+        res["only"] = a.only
+    json.dump(res, open(a.out, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    say("\n落盘 %s" % a.out)
 
 
 if __name__ == "__main__":

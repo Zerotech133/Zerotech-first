@@ -38,8 +38,11 @@ BUY_COST = 0.00075
 SELL_COST = 0.00125
 
 
-def load_price_panel(codes, tdx_dir, start=None, end=None):
+def load_price_panel(codes, tdx_dir, start=None, end=None, ohlc=False):
     """加载 ts_daily + ts_adj_factor，返回 {code: {"d", "c", "pos"}}。
+
+    ohlc=True 时额外返回 "o"/"h"/"l"（同为复权口径），供止损类规则用。
+    默认 False 是为了不把 5000+ 只的全量 OHLC 常驻内存。
 
     **c 必须是复权价 close*adj_factor。** 池的 entry_px/exit_px/ret 都是复权口径，
     用原始 close 建路径会在分红除权日跳空：实测 ratio[exit] 与池 ret 恒差约 1%
@@ -57,9 +60,12 @@ def load_price_panel(codes, tdx_dir, start=None, end=None):
                 .str.slice(0, 8))
 
     cs = set(codes)
+    cols = ["ts_code", "trade_date", "close"]
+    if ohlc:
+        cols += ["open", "high", "low"]
     price, adj = [], []
     for p in sorted(glob.glob(os.path.join(tdx_dir, "ts_daily", "part_*.parquet"))):
-        d = pd.read_parquet(p, columns=["ts_code", "trade_date", "close"])
+        d = pd.read_parquet(p, columns=cols)
         d["trade_date"] = _n(d["trade_date"])
         d = d[d["ts_code"].isin(cs)]
         if start:
@@ -89,12 +95,20 @@ def load_price_panel(codes, tdx_dir, start=None, end=None):
     else:
         af = np.ones(len(bars))
     bars["cp"] = bars["close"].to_numpy(float) * af
+    if ohlc:
+        for src, dst in (("open", "op"), ("high", "hp"), ("low", "lp")):
+            bars[dst] = bars[src].to_numpy(float) * af
     bars = bars.sort_values(["ts_code", "trade_date"])
     out = {}
     for code, g in bars.groupby("ts_code", sort=False):
         dts = g["trade_date"].tolist()
-        out[code] = {"d": dts, "c": g["cp"].to_numpy(float),
-                     "pos": {d: i for i, d in enumerate(dts)}}
+        rec = {"d": dts, "c": g["cp"].to_numpy(float),
+               "pos": {d: i for i, d in enumerate(dts)}}
+        if ohlc:
+            rec["o"] = g["op"].to_numpy(float)
+            rec["h"] = g["hp"].to_numpy(float)
+            rec["l"] = g["lp"].to_numpy(float)
+        out[code] = rec
     return out
 
 
