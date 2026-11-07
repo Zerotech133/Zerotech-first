@@ -432,10 +432,12 @@ def replay(n_days=250):
             for t in ts:
                 ind_days[(n, m)].add((d, t["industry"]))
     for n, m in sorted(grid):
-        len(ind_days[(n, m)])
+        # 2026-11-07 审计修复：原 `len(ind_days[(n, m)])` 结果被丢弃（无副作用），
+        # 读者会误以为已用上"去重行业日"口径；改为随同输出，口径可见。
         print(
-            "  n_min=%d m_min=%d → 触发 %d 单（日均 %.2f）"
-            % (n, m, hit[(n, m)], hit[(n, m)] / max(1, len(ds)))
+            "  n_min=%d m_min=%d → 触发 %d 单（日均 %.2f，去重行业日 %d）"
+            % (n, m, hit[(n, m)], hit[(n, m)] / max(1, len(ds)),
+               len(ind_days[(n, m)]))
         )
     # TODO：输出按行业分布 top、月份分布，辅助窗口选择
 
