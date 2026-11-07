@@ -558,6 +558,8 @@ def main():
             print(
                 "  过滤非 Security 标的 %d 条（转债/B股/北交所/次新）" % (n0 - len(evs))
             )
+        for _e in evs:
+            _e["data_source"] = "ts_top_list"  # F2-P2-b
         n1 = cli.upsert_nodes(S.LBL_MARKET_EVENT, ["evt_id"], evs)
         n2 = cli.upsert_edge(
             S.LBL_SECURITY,

@@ -304,6 +304,8 @@ def build(cli, ym=None, dryrun=False):
             by[e["type"]] = by.get(e["type"], 0) + 1
         print("  %s: 事件 %d 条 %s" % (y, len(evs), by))
         if not dryrun and evs:
+            for _e in evs:
+                _e["data_source"] = "tdx_minute"  # F2-P2-b
             cli.upsert_nodes(S.LBL_MARKET_EVENT, ["evt_id"], evs)
             cli.upsert_edge(
                 S.LBL_SECURITY,
