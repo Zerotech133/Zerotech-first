@@ -52,6 +52,7 @@ import api_misc  # 模块名绑定（多继承基类引用）
 from api_misc import (build_overview,
     build_brief, build_home_cockpit, build_os_cockpit)
 import api_chanlun_pages  # 模块名绑定（多继承基类引用）
+import api_chanlun_buy  # 🛒 买点实战台（/bt-buy，K-ORG-20261107-BUYDESK）
 import api_pages_portal  # B1 页面渲染族 Mixin（A5，2026-10-31）
 import api_health_portal  # B2 健康/观测族 Mixin（A5，2026-10-31）
 from api_health_portal import _lock  # B2b：锁对象与健康模块共享同一实例
@@ -570,7 +571,7 @@ def _read_dw_body(handler, max_bytes=None):
     return True, body, ""
 
 
-class Handler(api_data.Handler, api_chanlun_pages.Handler, api_pages_portal.Handler, api_health_portal.Handler, api_manager_portal.Handler, api_backtest.Handler, api_kg.Handler, api_bridge.Handler, api_portfolio.Handler, api_screen.Handler, api_misc.Handler, api_flow.Handler, api_lineage.Handler, api_intel_evidence.Handler, api_intel_bus.Handler, api_unified.Handler, api_replay.Handler, api_approvals.Handler, api_capability.Handler, api_perf.Handler, api_xq_intel.Handler, api_dataops.Handler, api_daily_data.Handler, api_guojia.Handler, api_execution.Handler, api_huangzhong.Handler, api_tickets.Handler, api_notify.Handler, api_news_intel.Handler, api_zhuge_route.Handler, api_os_goal.Handler, http.server.BaseHTTPRequestHandler):
+class Handler(api_data.Handler, api_chanlun_pages.Handler, api_chanlun_buy.Handler, api_pages_portal.Handler, api_health_portal.Handler, api_manager_portal.Handler, api_backtest.Handler, api_kg.Handler, api_bridge.Handler, api_portfolio.Handler, api_screen.Handler, api_misc.Handler, api_flow.Handler, api_lineage.Handler, api_intel_evidence.Handler, api_intel_bus.Handler, api_unified.Handler, api_replay.Handler, api_approvals.Handler, api_capability.Handler, api_perf.Handler, api_xq_intel.Handler, api_dataops.Handler, api_daily_data.Handler, api_guojia.Handler, api_execution.Handler, api_huangzhong.Handler, api_tickets.Handler, api_notify.Handler, api_news_intel.Handler, api_zhuge_route.Handler, api_os_goal.Handler, http.server.BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         # K82 访问日志：一行式留痕（判断「用户是否看过页面」的唯一取证
         # 通道）；独立文件，不与 stderr 错误日志混写；失败不阻断请求。
@@ -2570,6 +2571,9 @@ color:#fff;font-size:13.5px;cursor:pointer}
                     except Exception as _e:
                         r2["mt_warn"] = str(_e)[:100]
                 self._json(r2)
+        elif path == "/api/chanlun/buy/sectors":
+            # 🛒 买点实战台：今日买点按板块归并（只读，进程内 1 小时缓存）
+            self._chanlun_buy_sectors(qs)
         elif path == "/api/chanlun/pool/heat":
             # K-ORG-20261107-CHANDECK：市场信号热度（只读扫 chanlun_pool.jsonl
             # 最新 detect_date，六类买卖点计数；流式逐行，不整库载入）
@@ -3256,6 +3260,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
                         "12.5px'>进入选股中心 →</span></div></a>"
                         % (href, border, icon, name, desc, stat, border))
             cards = "".join([
+                _card("/bt-buy", "#f85149", "🛒", "买点实战台 · 决策流",
+                      "只做 1买/2买/3买（三卖不碰）· 环境分子决定动不动手 ·"
+                      " 板块聚集 · 持仓盯市 · 绝对/超额双口径战绩",
+                      "实战入口 · 一屏走完买入决策"),
                 _card("/bt-qpzm", "#58a6ff", "🌊", "青萍之末 · 选股中心",
                       "四市场自选池 · 多维加权评分（技术.35/JEV.25/"
                       "RPS.25/环境.15）· 环境闸门一票否决",
@@ -3690,6 +3698,9 @@ color:#fff;font-size:13.5px;cursor:pointer}
             self._qpzm_page(path[len("/bt-qpzm"):].strip("/"))
         elif path in route_table._GET_EXACT_13:
             getattr(self, route_table._GET_EXACT_13[path])()
+        elif path == "/bt-buy":
+            # 🛒 买点实战台：只做 1买/2买/3买（三卖不碰），实战决策流一屏到底
+            self._chanlun_buy_page(qs)
         elif path == "/bt-chanlun-pool":
             # 缠论扫描 → 预警池 → 模拟交易（影子观察；?m=US|HK 切市场池链）
             self._chanlun_pool_page(qs)

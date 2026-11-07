@@ -110,7 +110,7 @@ class Handler(_ChanlunSlTpMixin):  # Mixin 壳：经基座多继承并入
         tools = "".join(
             "<a class='tp' href='%s'>%s</a>" % (href, lb) for lb, href in [
                 ("🛟 当日信号池", "/bt-chanlun-pool"),
-                ("🌊 青萍之末工作台", "/bt-qpzm"),
+                ("🛒 买点实战台", "/bt-buy"),
                 ("🧪 基础策略库", "/bt"),
                 ("🚦 明日信号", "/bt-signals")])
         tools += (" <a class='tp' id='ck-png' "

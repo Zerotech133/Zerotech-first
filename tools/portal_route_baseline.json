@@ -1,7 +1,7 @@
 {
- "generated_at": "2026-11-07T18:13:15",
+ "generated_at": "2026-11-07T18:42:20",
  "source": "C:\\项目\\老田的AI助手\\portal\\portal_api.py",
- "total": 319,
+ "total": 322,
  "signatures": [
   [
    "GET",
@@ -127,6 +127,11 @@
    "GET",
    "exact",
    "/api/chanlun/backtest"
+  ],
+  [
+   "GET",
+   "exact",
+   "/api/chanlun/buy/sectors"
   ],
   [
    "GET",
@@ -337,6 +342,11 @@
    "GET",
    "exact",
    "/api/jev/evidence"
+  ],
+  [
+   "GET",
+   "exact",
+   "/api/jev/evidence/item"
   ],
   [
    "GET",
@@ -672,6 +682,11 @@
    "GET",
    "exact",
    "/bt-brief"
+  ],
+  [
+   "GET",
+   "exact",
+   "/bt-buy"
   ],
   [
    "GET",
