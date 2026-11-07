@@ -16,8 +16,10 @@ manifest（4dc69546 预批准模式通道化）。
   4. manifest：仅发布 stats.mismatch==0 且 missing==0 时更新（否则 DEGRADED
      留人工）；rows 累加新合格单元、file 指最新分片、note 追加通道记录（滚动
      保留最近 3 条）
-  5. git：git add _manifest.json + 内联身份提交（laotian@local，判例不改
-     全局 config），有 diff 才提交
+  5. 账本留痕：manifest 写回后**只记实际写入量**（path/tables/units/rows_added），
+     不做 git 提交——`data/` 被 .gitignore 整体忽略，manifest 非版本化账本
+     （2026-11-07 K-ORG-20261107-S3 裁决；原「git add + 内联身份提交」从未
+     生效且恒输出假 no_diff，详见第 5 步注释）
   6. 报告：work/increment_guard_YYYYMMDDTHHMMSS.json（status: OK/NO_GAP/
      HELD_ONLY/DEGRADED/FAIL，供例行检查与告警）
 
@@ -84,7 +86,9 @@ MIN_ROWS = {
     "ts_moneyflow": 4500,
 }
 CHANNEL_TAG = "K-STOCK-211 增量通道"
-GIT_ID = ["-c", "user.name=laotian", "-c", "user.email=laotian@local"]
+# 注：原 GIT_ID = ["-c","user.name=laotian","-c","user.email=laotian@local"]
+# 已随「manifest 不入库」裁决（2026-11-07 K-ORG-20261107-S3）停用并删除，
+# 便于检索时一眼看出「本脚本不再调 git」。
 
 
 def run(cmd, **kw):
@@ -116,6 +120,41 @@ def prod_max_date(dir_name: str) -> str:
         else []
     )
     return fs[-1].stem[2:] if fs else "-"
+
+
+def _record_manifest(report, mp, per_tbl):
+    """第 5 步：账本留痕（K-ORG-20261107-S3 裁决 2026-11-07，manifest 不入库）。
+
+    原设计（2026-10-17「通道化自动提交」）为 git add + 内联身份提交，但两条
+    硬事实使该步从未生效、且恒产出假信号：
+      a) 路径错：run() 的 cwd 是 quant_backtest/，"_manifest.json" 解析到
+         quant_backtest/_manifest.json（不存在）→ git add rc=128；
+      b) 即便路径改对，data/ 被 .gitignore:27 整体忽略、该文件从未被跟踪，
+         git add rc=1、`git status --short -- data/tushare/_manifest.json`
+         恒空 → 恒走「manifest 无变更」分支。
+    判例：2026-11-07 13:09:11 那次真补 5573 行（DATAGAP 补跑）的报告仍写
+    git_commit="no_diff"——数据写了却对外声称无变更，假信号实证。
+
+    故改为只记「实际写了什么」，不再声称提交；git_commit 字段保留（下游解析
+    不破），取值显式标注跳过原因，禁止再回落到无法证伪的措辞。
+    """
+    report["manifest"] = {
+        "path": str(mp),
+        "tables": sorted(per_tbl),
+        "units": sum(len(a["dates"]) for a in per_tbl.values()),
+        "rows_added": sum(a["rows"] for a in per_tbl.values()),
+    }
+    report["git_commit"] = "skipped:untracked_by_design"
+    print(
+        "[git] 跳过提交（manifest 位于 .gitignore 的 data/ 下，非版本化账本）；"
+        "本次写入 +%d 单元 +%d 行 → %s"
+        % (
+            report["manifest"]["units"],
+            report["manifest"]["rows_added"],
+            mp.name,
+        )
+    )
+    return report
 
 
 def main() -> int:
@@ -265,28 +304,8 @@ def main() -> int:
         )
     mp.write_text(json.dumps(man, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    # 5. git（内联身份，有 diff 才提交）
-    run(["git", *GIT_ID, "add", "_manifest.json"])
-    st = run(["git", "status", "--short", "--", "_manifest.json"])
-    if st.stdout.strip():
-        c = run(
-            [
-                "git",
-                *GIT_ID,
-                "commit",
-                "-m",
-                f"chore(data): {CHANNEL_TAG} {dt.date.today().isoformat()} "
-                f"增量 +{len(passed)} 单元",
-                "-m",
-                "increment_guard 自动提交（用户 2026-10-17 裁决通道化）；"
-                "单元明细见 work/increment_guard_*.json",
-            ]
-        )
-        report["git_commit"] = (c.returncode, (c.stdout or c.stderr)[-200:])
-        print(f"[git] commit rc={c.returncode}")
-    else:
-        report["git_commit"] = "no_diff"
-        print("[git] manifest 无变更")
+    # 5. 账本留痕（K-ORG-20261107-S3 裁决 2026-11-07：manifest 不入库）
+    _record_manifest(report, mp, per_tbl)
 
     report["status"] = "OK"
     print(f"[done] status=OK passed={len(passed)} held={len(held)}")
