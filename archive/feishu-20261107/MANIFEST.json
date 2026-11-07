@@ -4,6 +4,18 @@
   "scope": "军机驿/飞书域旧研发计划（先归档可恢复，不硬删）",
   "effective_plan": "docs/plans/2026-11-07_军机驿飞书域研发计划_最终版_v1.md",
   "restore": "Move the archived file back to its original path; hashes are recorded below.",
+  "confirmation": {
+    "confirmed_at": "2026-11-07T11:37:38+08:00",
+    "confirmed_by": "A0",
+    "reference": "m12057",
+    "scope": "清理清单 9.4 / feishu-20261107 归档",
+    "decision": "已归档的 31 份计划和旧站点副本保留在归档区，不硬删；其余保留项按计划维持不动。",
+    "hard_delete_authorized": false,
+    "second_confirmation_required": [
+      "删除归档区（archive/feishu-20261107）",
+      "清理活动代码或运行数据"
+    ]
+  },
   "moved": [
     {
       "original": "docs/plans/2026-10-13_推送联动收口_K-STOCK-304.md",
