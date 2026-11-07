@@ -58,7 +58,9 @@ from portfolio_mtm import (BUY_COST, SELL_COST, Engine, Pick,  # noqa: E402
 QBT = os.path.join(ROOT, "quant_backtest")
 TDX = os.path.join(QBT, "data", "tdx")
 PAPER = os.path.join(QBT, "data", "chanlun_paper.json")
-EXT_POOL = os.path.join(QBT, "data", "chanlun_pool_ext_daily_full.jsonl")
+# 密度源必须是「同一口径、全历史重跑」的扩展池。默认指权威池 v2
+# （2026-11-08 重建：修了 _find_lag 的 MIN_BARS 下限，见 chanlun_ext_backfill）。
+EXT_POOL = os.path.join(QBT, "data", "chanlun_pool_ext_v2.jsonl")
 SHADOW = os.environ.get("COMBO_OUT", os.path.join(QBT, "data", "combo_shadow.jsonl"))
 STATS = os.environ.get("COMBO_STATS",
                        os.path.join(ROOT, "portal", "combo_shadow_stats.json"))
@@ -67,9 +69,20 @@ BUY = ("1买", "2买")          # 剔 3买
 HOLD = 20
 TRAIL = 0.08
 SIG_WIN = 20
-SIG_TH = 0.4886              # 三年扩展池 sigdens P30（全部记录口径，见 --show-th）
-SIG_TH_REF = {"p20": 0.3828, "p30": 0.4886, "p50": 0.7234, "p70": 1.0950}
+# sigdens 阈值：冻结常数（不让它随池子漂移），但来源必须可复现——`--show-th`
+# 会从当前池子实时重算分位。
+#
+# 2026-11-08 重标：0.4886 → 0.4852。旧值是在 chanlun_pool_ext_daily_full 上标的，
+# 那个池子有两处污染（since 字符串比较 bug 把 2023 记录全推到 2024-01-02；
+# fast 模式缺 MIN_BARS 下限让上市早期的信号也"可见"），数字不可复现。
+# 新值来自权威池 chanlun_pool_ext_v2（1,724 笔门限堆叠已于 2023-09-25 剔除后
+# 取 2023-11 起，730 个交易日）。敏感度：全历史 0.4830 / 2023-11 起 0.4852 /
+# 2024 起 0.4853 —— 三者相差 0.002，判定不随窗口选择翻转。
+SIG_TH = 0.4843
+SIG_TH_REF = {"p20": 0.3659, "p30": 0.4843, "p50": 0.7254, "p70": 1.0972}
+SIG_TH_POOL = "chanlun_pool_ext_v2.jsonl|axis=000001.SH|since=2023-11-01"
 MIN_SETTLED_DAYS = 120       # 低于此值不给仓位建议（与 env_shadow 同标准）
+SEED = 20261108              # 随机对照种子（固定，保证可复现）
 
 
 def _n(s):
@@ -192,17 +205,43 @@ def load_jsonl(path):
 
 
 def main():
+    global EXT_POOL, SHADOW
     ap = argparse.ArgumentParser()
     ap.add_argument("--rebuild", action="store_true", help="忽略已有清单，全量重建")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--show-th", action="store_true", help="打印 sigdens 分位参考")
+    ap.add_argument("--pool", default="", help="密度源扩展池（默认权威池 v2）")
+    ap.add_argument("--shadow", default="", help="影子清单落盘路径（默认 data/combo_shadow.jsonl）")
     a = ap.parse_args()
+    if a.pool:
+        EXT_POOL = a.pool
+    if a.shadow:
+        SHADOW = a.shadow
     say = (lambda *x, **k: None) if a.json else print
 
+    if not os.path.exists(EXT_POOL):
+        say("密度源池不存在：%s" % EXT_POOL)
+        return 2
+
     if a.show_th:
-        say("sigdens 分位（三年扩展池标定，固定常数用 P30=%.4f）:" % SIG_TH)
+        say("冻结常数 SIG_TH = %.4f（标定来源 %s）" % (SIG_TH, SIG_TH_POOL))
         for k, v in SIG_TH_REF.items():
             say("  %s = %.4f" % (k.upper(), v))
+        # 实时重算：同一池子上必须能复现上面的常数，否则说明池子换了/口径漂了
+        ax = [d for d in load_axis() if d >= "20230101"]
+        c = load_ext_counts(ax)
+        pv = c.shift(1)
+        dn = (pv / pv.rolling(SIG_WIN).mean()).replace([np.inf, -np.inf], np.nan)
+        for lo, lab in (("20231101", "2023-11 起（默认）"), ("20240102", "2024 起"),
+                        (None, "全历史")):
+            x = dn.dropna()
+            if lo:
+                x = x[[d for d in x.index if d >= lo]]
+            say("  [实时] %-16s n=%4d  P20=%.4f P30=%.4f P50=%.4f P70=%.4f"
+                % (lab, len(x), *[float(np.quantile(x.values, p))
+                                  for p in (0.2, 0.3, 0.5, 0.7)]))
+        say("  池 %s：1买+2买 日均 %.1f 笔，最大 %d 笔"
+            % (os.path.basename(EXT_POOL), c.mean(), int(c.max())))
         return
 
     picks0 = load_ledger()
@@ -374,7 +413,9 @@ def main():
                  "n_settled": len(settled), "n_pending": len(recs) - len(settled)},
         "window": [d_lo, d_hi],
         "params": {"sig_th": SIG_TH, "trail": TRAIL, "hold": HOLD, "drop3": True,
-                   "sig_th_ref": SIG_TH_REF, "min_settled_days": MIN_SETTLED_DAYS},
+                   "sig_th_ref": SIG_TH_REF, "min_settled_days": MIN_SETTLED_DAYS,
+                   # 池子版本必须落盘：跨版本账户层绝对数字不可比（见 2026-11-08 根因报告）
+                   "pool": os.path.basename(EXT_POOL)},
         "batch": batches,
         "views": views,
         "note_views": ("主判据是 batch（日批均，与暴露/复利无关）；views 是账户层参考值，"
@@ -390,6 +431,72 @@ def main():
             "hold": sum(1 for r in settled if r["trail_why"] == "hold"),
         },
     }
+
+    # ---- 日内配对：同一天里 pass 组 vs fail 组 ----
+    # 为什么必须做这个：`by_pass` 的笔均是全样本混算，pass 的日子本身就可能是
+    # 更好的行情日（拥挤度低 = 市场不亢奋）。那样「过档更好」会混入选日效应。
+    # 只在「同一天既有过档又有未过档记录」的日子里配对，选日效应被完全消掉，
+    # 剩下的就是 sigdens 的纯选股增量。
+    def paired_by_day(rows, field):
+        by = defaultdict(lambda: {"p": [], "f": []})
+        for r in rows:
+            by[r["entry_date"]]["p" if r["pass"] else "f"].append(r[field])
+        d = [np.mean(v["p"]) - np.mean(v["f"])
+             for v in by.values() if v["p"] and v["f"]]
+        if not d:
+            return None
+        a = np.array(d, float)
+        sd = a.std(ddof=1) if len(a) > 1 else 0.0
+        return {"days": len(a),
+                "diff": round(float(a.mean()) * 100, 3),
+                "win": round(float((a > 0).mean()) * 100, 1),
+                "t": (round(float(a.mean() / (sd / np.sqrt(len(a)))), 2)
+                      if sd > 0 else None)}
+
+    sent["by_pass"]["paired_trail"] = paired_by_day(settled, "trail_ret")
+    sent["by_pass"]["paired_hold"] = paired_by_day(settled, "hold_ret")
+    sent["by_pass"]["note_paired"] = (
+        "同一开仓日内 pass 组均值 - fail 组均值，只取两组都非空的日子；"
+        "已消掉选日效应，是 sigdens 的纯选股增量。"
+        "**实测返回 None 是结构性的**：sigdens 是全市场同日同值的日级因子，"
+        "同一天里所有票的 pass 完全相同，不存在横截面差异 → 只能做「日与日」比较，"
+        "选时假设检验见 null（随机抽同样天数）")
+
+    # ---- 随机对照：sigdens 只是「少交易」还是真择时 ----
+    # sigdens 是日级因子，pass 天数(75) < 全部有信号天数(98)。而**少交易本身
+    # 就会改变日批均的分布**，必须证明真实选出的日子优于「随机抽同样天数」，
+    # 否则「组合最优」只是把仓位压到少数几天。判据同 entry_timing_3y：
+    # 真实值要优于随机分布的 95% 分位。
+    def null_test(rows, rule, boot=200):
+        f = "trail_ret" if rule == "trail" else "hold_ret"
+        by = defaultdict(list)
+        for r in rows:
+            by[r["entry_date"]].append(r[f])
+        all_days = np.array([np.mean(v) for v in by.values()], float)
+        pass_days = [d for d in {r["entry_date"] for r in rows if r["pass"]}]
+        n = len(pass_days)
+        if n == 0 or n >= len(all_days):
+            return None
+        real = float(np.mean([np.mean(by[d]) for d in pass_days]))
+        rng = np.random.default_rng(SEED)
+        draws = np.array([all_days[rng.choice(len(all_days), n, replace=False)].mean()
+                          for _ in range(boot)], float)
+        p95 = float(np.percentile(draws, 95))
+        p50 = float(np.percentile(draws, 50))
+        return {"days": n, "universe": int(len(all_days)),
+                "real": round(real * 100, 3),
+                "null_p50": round(p50 * 100, 3),
+                "null_p95": round(p95 * 100, 3),
+                "p_value": round(float((draws >= real).mean()), 4),
+                "verdict": ("有效（优于随机 95% 分位）" if real > p95 else
+                            ("弱（优于中位但未过 5%）" if real > p50 else
+                             "无效（不如随机，纯属少交易）"))}
+
+    sent["null"] = {"trail": null_test(settled, "trail"),
+                    "hold": null_test(settled, "hold")}
+    sent["null"]["note"] = (
+        "随机抽同样天数的被动组合，看日批均零分布；sigdens 是日级因子，"
+        "这一节才是它唯一有效的检验")
 
     # ---- 判定 ----
     # 判定用「日批均」，与仓位、复利、在场率全都无关，是这批信号最干净的效力指标
@@ -423,6 +530,12 @@ def main():
     say("  未过档 笔均 止损 %+.3f%% 持满 %+.3f%%（n=%d）"
         % (sent["by_pass"]["fail"]["trail"]["avg"],
            sent["by_pass"]["fail"]["hold"]["avg"], sent["by_pass"]["fail"]["trail"]["n"]))
+    for k in ("trail", "hold"):
+        v = sent["null"].get(k)
+        if v:
+            say("  随机对照[%s] %d/%d 日  真实 %+.3f%%  随机中位 %+.3f%%  随机95%% %+.3f%%  p=%.3f  %s"
+                % (k, v["days"], v["universe"], v["real"], v["null_p50"],
+                   v["null_p95"], v["p_value"], v["verdict"]))
     say("  判定：%s" % verdict)
     say("落盘 %s" % STATS)
 

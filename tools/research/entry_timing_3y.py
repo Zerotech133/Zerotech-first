@@ -41,7 +41,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from portfolio_mtm import Engine, Pick, build_ratio, load_price_panel  # noqa: E402
 
 TDX = os.path.join(ROOT, "quant_backtest", "data", "tdx")
-POOL = os.path.join(ROOT, "quant_backtest", "data", "chanlun_pool_ext_daily_full.jsonl")
+# 权威池 v2（2026-11-08 重建：修 _find_lag 的 MIN_BARS 下限）。
+# 账户层绝对数字跨池版本不可比，任何结论都要标注池子版本。
+POOL = os.path.join(ROOT, "quant_backtest", "data", "chanlun_pool_ext_v2.jsonl")
 OUT = os.path.join(ROOT, "portal", "entry_timing_evidence.json")
 
 BUY = ("1买", "2买", "3买")
@@ -55,7 +57,13 @@ def _norm(s):
             .str.slice(0, 8))
 
 
-def load_pool(drop3=True):
+def load_pool(drop3=True, since=None):
+    """since: 开仓日下限（8 位）。默认剔掉 2023-09-25 门限堆叠段。
+
+    为什么要下限：扩展池数据从 2023-04-03 截断，MIN_BARS=120 让「所有票首个可
+    扫描日」收敛到 2023-09-25，当天堆了 1,724 笔（占 2.6%）。这是数据截断 +
+    门限的合成伪影（真实市场里这些票有长历史，信号不会推到 9-25），不是行情。
+    """
     rows = []
     for line in open(POOL, encoding="utf-8"):
         line = line.strip()
@@ -71,9 +79,12 @@ def load_pool(drop3=True):
             continue
         if drop3 and r["type"] == "3买":
             continue
+        d8 = r["entry_date"].replace("-", "")[:8]
+        if since and d8 < since:
+            continue
         rows.append({
             "code": r["code"], "type": r["type"],
-            "d": r["entry_date"].replace("-", "")[:8],
+            "d": d8,
             "x": (r.get("exit_date") or "").replace("-", "")[:8],
             "entry_px": float(r["entry_px"]), "exit_px": float(r["exit_px"]),
             "ret": float(r["ret"]), "alpha": r.get("alpha"), "idx": r.get("idx_ret"),
@@ -197,21 +208,28 @@ def build_axis(rows, idx):
 
 
 def main():
+    global POOL
     ap = argparse.ArgumentParser()
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--boot", type=int, default=50)
     ap.add_argument("--only", default="",
                     help="只跑名字含该子串的因子（逗号分隔），空=全部")
     ap.add_argument("--out", default=OUT, help="证据 JSON 输出路径")
+    ap.add_argument("--pool", default="", help="扩展池路径（默认权威池 v2）")
+    ap.add_argument("--since", default="20231009",
+                    help="开仓日下限 YYYYMMDD（默认 20231009：剔 2023-09-25 门限堆叠）")
     a = ap.parse_args()
+    if a.pool:
+        POOL = a.pool
     say = (lambda *x, **k: None) if a.json else print
 
-    rows = load_pool()
+    rows = load_pool(since=(a.since.replace("-", "")[:8] or None))
     idx = load_index()
     axis = build_axis(rows, idx)
     ap_ = {d: i for i, d in enumerate(axis)}
     icl = dict(zip(idx["trade_date"], idx["close"].astype(float)))
-    say("池 %d 笔（已剔3买）/ 日历 %d 日 %s~%s" % (len(rows), len(axis), axis[0], axis[-1]))
+    say("池 %s：%d 笔（已剔3买）/ 日历 %d 日 %s~%s"
+        % (os.path.basename(POOL), len(rows), len(axis), axis[0], axis[-1]))
 
     # 日组均与指数
     by = defaultdict(list)
@@ -249,7 +267,9 @@ def main():
     say("\n基线（剔3买全买）: 累计 %.2f%%  年化 %.2f%%  回撤 %.2f%%  夏普 %.2f  波动 %.2f%%"
         % (v0["total"], v0["cagr"] or 0, v0["mdd"], v0["sharpe"], v0["vol"]))
     res = {"meta": {"n": len(rows), "days": len(days), "axis": len(axis),
-                    "window": [axis[0], axis[-1]]}, "baseline": v0}
+                    "window": [axis[0], axis[-1]],
+                    # 池子版本必须落盘：跨版本账户层绝对数字不可比
+                    "pool": os.path.basename(POOL)}, "baseline": v0}
 
     # ---------- A. 回撤归因 ----------
     cur = np.array(v0["curve"] or [], dtype=float)
@@ -359,6 +379,26 @@ def main():
                         "rho": round(rho, 3)}
             say("    Q5-Q1 = %+.3f%%   Spearman rho = %+.3f"
                 % (rec_note["diff"], rec_note["rho"]))
+            # 分年拆解：**必须落盘**。全样本 Q5-Q1 看着漂亮、拆开却逐年翻转，
+            # 是判定「结构类因子无效」的决定性证据（2026-11-08 复核时发现
+            # 上一轮这组数字是临时算的、没进证据文件，等于不可复现）。
+            # 分档沿用全样本 qcut 的边界（同一定义跨年可比），不按年重切。
+            sub2 = sub.assign(qq=q.values)
+            byy = {}
+            for y, g in sub2.groupby(sub2["d"].str[:4]):
+                m = {int(qi): round(float(g[g["qq"] == qi]["y"].mean()) * 100, 2)
+                     for qi in g["qq"].dropna().unique()}
+                if 0 in m and 4 in m:
+                    byy[y] = {"q1": m[0], "q5": m[4],
+                              "diff": round(m[4] - m[0], 2), "days": int(len(g))}
+            if len(byy) >= 2:
+                flips = len({1 if v["diff"] > 0 else -1 for v in byy.values()}) > 1
+                rec_note["by_year"] = byy
+                rec_note["sign_flip"] = bool(flips)
+                say("    分年 Q5-Q1: " + "  ".join(
+                    "%s %+.2f(%dd)" % (y, v["diff"], v["days"])
+                    for y, v in sorted(byy.items()))
+                    + ("   ← 方向翻转" if flips else "   （方向一致）"))
             res["factors"][name] = {"bins": rec, **rec_note}
         else:
             res["factors"][name] = {"bins": rec}
@@ -421,7 +461,14 @@ def main():
         % ("过滤器", "天数", "真实回撤", "随机中位", "随机95%", "判定"))
     rng2 = np.random.default_rng(SEED2)
     res["null"] = []
-    for c in sorted(ok, key=lambda z: -c["mdd"])[:10]:
+    # 候选来源改成「回撤改善 > 5pp」的 top10，**不再叠加年化门槛**。
+    # 原因：v2 池基线年化 19.82%，任何减仓过滤器的年化损失都在 8pp 以上，
+    # 若按「年化损失<3pp」筛候选，ok 恒为空 → 这一节退化成 0/0，白跑。
+    # 随机对照本身就是为了判「降回撤是否只是少交易」，跟年化门槛无关，
+    # 所以这里放宽到只看回撤改善，判据（真实值须优于随机 95% 分位）不变。
+    null_cands = [c for c in cands if (c["mdd"] - v0["mdd"]) > 5.0]
+    res["null_note"] = ("候选=回撤改善>5pp 的 top10（不叠加年化门槛，见代码注释）")
+    for c in sorted(null_cands, key=lambda z: z["mdd"])[:10]:
         n_d = c["days"]
         mdds = []
         for _ in range(a.boot):

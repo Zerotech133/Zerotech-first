@@ -92,11 +92,22 @@ def _find_lag(bars, i0, sig, win, max_lag, cache=None):
 
     cache: {L: set((type, dt))} 票内截断长度→可见信号集。多信号常共用同一
     截断长度（同日确认），命中缓存可省掉重复 analyze（实测量级 30~50%）。
+
+    ⚠ MIN_BARS 下限（2026-11-08 修）：起始 m 不得让决策时可用根数 L 少于
+    `MIN_BARS`。产线 `work()` 里有 `if len(bars) < MIN_BARS: return`，即上市
+    不足 120 根的票**根本不出信号**。原来从 `m=1`（L=i0+2）起试，会在窗口
+    才几十根时就判定「可见」，给出产线永远执行不到的确认日——实测污染 4.10%
+    的记录（2,777/67,716，其中 2023 年 2,572 笔），并伪造出一个「2023-07~09
+    有信号」的假样本层（真因不是数据不全，就是缺这个下限）。与 `_rows_daily`
+    的 `range(MIN_BARS, ...)` 对齐后，fast 与 daily 两口径才可互证。
     """
     from chanlun_signal import analyze
 
     t, dt = sig["type"], sig["dt"]
-    for m in range(1, max_lag + 1):
+    m0 = max(1, MIN_BARS - 1 - i0)  # L = i0+1+m >= MIN_BARS
+    if m0 > max_lag:
+        return None  # 满 120 根时已过可见窗，产线同样不会有这条入场
+    for m in range(m0, max_lag + 1):
         L = i0 + 1 + m
         if L > len(bars):
             break

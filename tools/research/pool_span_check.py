@@ -133,7 +133,7 @@ def net_ret(ep, xp):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--pool", default=os.path.join(
-        QBT, "data", "chanlun_pool_ext_2023h2.jsonl"))
+        QBT, "data", "chanlun_pool_ext_v2.jsonl"))
     ap.add_argument("--out", default=OUT)
     a = ap.parse_args()
 
