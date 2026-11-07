@@ -46,6 +46,8 @@ os.environ["PORTAL_NO_WARMUP"] = "1"
 os.chdir(HERE)
 sys.path.insert(0, HERE)
 sys.path.insert(0, STATION)
+# 本文件只打本机自启服务：回环请求禁代理（safe_urlopen 内含 127.0.0.1 豁免）
+from safe_urlopen import safe_urlopen  # noqa: E402
 
 import portal_api as pa  # noqa: E402
 import logging
@@ -97,7 +99,7 @@ def http_req(path, method="GET", body=None, timeout=60):
                                  headers={"Content-Type": "application/json"}
                                  if data else {})
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
+        with safe_urlopen(req, timeout=timeout) as r:
             return r.status, r.read().decode("utf-8", "replace")
     except urllib.error.HTTPError as e:
         return e.code, e.read().decode("utf-8", "replace")

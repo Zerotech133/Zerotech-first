@@ -20,6 +20,9 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO / "tools"))
+# 本文件只打本机自启服务：回环请求禁代理（safe_urlopen 内含 127.0.0.1 豁免）
+from safe_urlopen import safe_urlopen  # noqa: E402
 PAGE = REPO / "portal" / "card_review.html"
 DATA = REPO / "portal" / "static" / "card_review_data.json"
 NAVJS = REPO / "portal" / "static" / "nav.js"
@@ -151,11 +154,11 @@ def test_inline_js_syntax(tmp_path):
 # ---------------------------------------------------------------------------
 def test_http_served():
     try:
-        r = urllib.request.urlopen(f"{BASE_URL}/card_review.html", timeout=5)
+        r = safe_urlopen(f"{BASE_URL}/card_review.html", timeout=5)
         assert r.status == 200
         body = r.read().decode("utf-8", "replace")
         assert "学习卡审核" in body
-        r2 = urllib.request.urlopen(f"{BASE_URL}/static/card_review_data.json", timeout=5)
+        r2 = safe_urlopen(f"{BASE_URL}/static/card_review_data.json", timeout=5)
         assert r2.status == 200
         payload = json.loads(r2.read().decode("utf-8"))
         assert len(payload["items"]) == 100

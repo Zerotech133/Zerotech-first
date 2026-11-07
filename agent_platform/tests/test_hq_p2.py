@@ -3,11 +3,12 @@
 import json
 import sys
 import threading
-import urllib.request
 from pathlib import Path
 
 WT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(WT / "agent_platform"))
+# 本文件只打本机自启服务：回环请求禁代理（safe_urlopen 内含 127.0.0.1 豁免）
+from safe_urlopen import safe_urlopen  # noqa: E402
 
 from legion_command import hq_stats  # noqa: E402
 from legion_command import serve as srv  # noqa: E402
@@ -75,7 +76,7 @@ def test_http_stats(tmp_path, monkeypatch):
     th = threading.Thread(target=srvr.serve_forever, daemon=True)
     th.start()
     try:
-        rep = json.loads(urllib.request.urlopen(
+        rep = json.loads(safe_urlopen(
             "http://127.0.0.1:%d/api/hq/meeting/stats" % srvr.server_address[1], timeout=10).read())
         assert rep["ok"] and rep["total"] == 2
     finally:

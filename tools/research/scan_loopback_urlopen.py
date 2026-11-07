@@ -44,7 +44,12 @@ BYPASS_RE = re.compile(
 
 
 # 已知内建回环旁路的包装器（实现在各自 safe_urlopen.py：ProxyHandler({})）
-SAFE_WRAPPERS = frozenset({"safe_urlopen"})
+# auth_urlopen（legion_command/hermes_auth.py）2026-11-07 复核后加入：它的 5 个
+# return 分支全部落到 safe_urlopen（enabled 关 / 非 hermes 域 / 取 cookie 失败 /
+# 正常带 cookie / 401-403 重取），自己不碰 urlopen，属真旁路。
+# 收录门槛：**每个分支都必须以 safe_urlopen 收口**，只加认证头而直连 urlopen 的
+# 包装器不能进这张表（那只是把代理问题藏起来）。
+SAFE_WRAPPERS = frozenset({"safe_urlopen", "auth_urlopen"})
 
 
 def is_urlopen_call(node: ast.Call) -> tuple[bool, str]:
@@ -217,7 +222,6 @@ def main() -> int:
     for h in hits:
         # 已知内建回环旁路的包装器：调用它们即等于已有旁路（实现在各自 safe_urlopen.py）。
         # 不认这一条，修好共享入口后所有引用文件仍会被报成 VICTIM —— 扫描结论会失真。
-        # 注意 auth_urlopen 不在此列：它只加认证头，不做代理处理。
         wrapper = h.get("call") in SAFE_WRAPPERS
         if h["loopback_strict"] and not (h["file_has_bypass"] or h["arg_inline_bypass"] or wrapper):
             h["verdict"] = "VICTIM"          # 确认受害：回环 + 无旁路

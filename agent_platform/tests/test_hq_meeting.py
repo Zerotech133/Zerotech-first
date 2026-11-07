@@ -8,6 +8,8 @@ from pathlib import Path
 
 WT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(WT / "agent_platform"))
+# 本文件只打本机自启服务：回环请求禁代理（safe_urlopen 内含 127.0.0.1 豁免）
+from safe_urlopen import safe_urlopen  # noqa: E402
 
 from legion_command import hq_meeting as hq  # noqa: E402
 from legion_command import serve as srv  # noqa: E402
@@ -108,11 +110,11 @@ def test_http_routes(tmp_path, monkeypatch):
         body = json.dumps(_valid()).encode("utf-8")
         req = urllib.request.Request(base + "/api/hq/meeting/save", data=body,
                                      headers={"Content-Type": "application/json"})
-        env = json.loads(urllib.request.urlopen(req, timeout=10).read())
+        env = json.loads(safe_urlopen(req, timeout=10).read())
         assert env["ok"] and env["meeting_id"].startswith("hq-")
-        assert json.loads(urllib.request.urlopen(
+        assert json.loads(safe_urlopen(
             base + "/api/hq/meeting/list", timeout=10).read())["ok"] is True
-        got = json.loads(urllib.request.urlopen(
+        got = json.loads(safe_urlopen(
             base + "/api/hq/meeting/" + env["meeting_id"], timeout=10).read())
         assert got["ok"] and got["meeting"]["type"] == "morning"
     finally:

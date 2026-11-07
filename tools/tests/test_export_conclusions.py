@@ -14,11 +14,13 @@ import hashlib
 import importlib.util
 import json
 import sys
-import urllib.request
 from collections import Counter
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO / "tools"))
+# 本文件只打本机自启服务：回环请求禁代理（safe_urlopen 内含 127.0.0.1 豁免）
+from safe_urlopen import safe_urlopen  # noqa: E402
 SRC = REPO / "research" / "reports" / "learning_conclusions_lib_20261103.json"
 STATIC = REPO / "portal" / "static" / "learning_conclusions.json"
 SCRIPT = REPO / "tools" / "kb_corpus" / "export_conclusions.py"
@@ -124,7 +126,7 @@ def test_read_only_source_and_http():
     assert payload["source_unchanged"] is True
     assert sha(SRC) == before, "导出不得改源库"
     try:
-        r = urllib.request.urlopen(URL, timeout=5)
+        r = safe_urlopen(URL, timeout=5)
         assert r.status == 200
         body = json.loads(r.read().decode("utf-8"))
         assert body["schema_version"] == "learning_conclusions.v1"
