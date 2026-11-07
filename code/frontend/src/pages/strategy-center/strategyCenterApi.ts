@@ -28,9 +28,11 @@ export async function fetchStrategyCenterSnapshot(
 
 export async function fetchStrategyCenterDetail(
   sid: string,
+  signal?: AbortSignal,
 ): Promise<StrategyCenterDetail> {
   return api<StrategyCenterDetail>(
     `/strategy-center/strategies/${encodeURIComponent(sid)}`,
+    { signal },
   );
 }
 

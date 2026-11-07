@@ -1,4 +1,6 @@
 {
+  "qengine_sync_unavailable": "Strategy Center test database is unavailable; ask an administrator to check the qengine_sync configuration",
+  "service_unavailable": "Service temporarily unavailable; please retry later",
   "billing": {
     "membership_required": "This action requires a paid membership. Please subscribe first.",
     "invalid_product_type": "Invalid product type",

@@ -48,6 +48,7 @@ def test_strategy_center_unavailable_is_503(monkeypatch, auth_headers):
         resp = client.get("/api/v1/strategy-center/snapshot", headers=auth_headers)
     assert resp.status_code == 503
     assert resp.json()["detail"]["code"] == "qengine_sync_unavailable"
+    assert resp.json()["detail"]["message"] == "qengine_sync 测试库不可连接"
 
 
 def test_strategy_center_detail_404(monkeypatch, auth_headers):

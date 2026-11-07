@@ -1,4 +1,6 @@
 {
+  "qengine_sync_unavailable": "策略中台测试库暂不可用，请联系管理员检查 qengine_sync 配置",
+  "service_unavailable": "服务暂不可用，请稍后重试",
   "billing": {
     "membership_required": "该操作需要付费会员，请先开通会员",
     "invalid_product_type": "非法的商品类型",

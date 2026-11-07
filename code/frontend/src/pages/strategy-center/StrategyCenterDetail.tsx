@@ -1,5 +1,5 @@
 import { Button, Empty, Table, Tag } from 'antd';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   fmtDate,
   fmtNumber,
@@ -105,30 +105,49 @@ export default function StrategyCenterDetail({
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { data: snapshot } = useStrategyCenterSnapshot();
+  const requestSeq = useRef(0);
+  const abortRef = useRef<AbortController | null>(null);
 
-  useEffect(() => {
-    if (!sid) {
-      setDetail(null);
-      return;
-    }
-    let alive = true;
+  const loadDetail = useCallback((id: string) => {
+    const seq = ++requestSeq.current;
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     setLoading(true);
     setError('');
     setDetail(null);
-    fetchStrategyCenterDetail(sid)
+    fetchStrategyCenterDetail(id, controller.signal)
       .then((next) => {
-        if (alive) setDetail(next);
+        if (seq === requestSeq.current) setDetail(next);
       })
       .catch((err: unknown) => {
-        if (alive) setError(err instanceof Error ? err.message : String(err));
+        // 主动取消不是错误；过期请求也不能覆盖新详情。
+        if (controller.signal.aborted || seq !== requestSeq.current) return;
+        setError(err instanceof Error ? err.message : String(err));
       })
       .finally(() => {
-        if (alive) setLoading(false);
+        if (seq === requestSeq.current) setLoading(false);
       });
+  }, []);
+
+  useEffect(() => {
+    if (!sid) {
+      requestSeq.current += 1;
+      abortRef.current?.abort();
+      abortRef.current = null;
+      setDetail(null);
+      setError('');
+      setLoading(false);
+      return;
+    }
+    loadDetail(sid);
     return () => {
-      alive = false;
+      // 卸载/切 sid 时同时让旧请求失效，防止 mock/真实请求在 abort 后回调覆盖。
+      requestSeq.current += 1;
+      abortRef.current?.abort();
+      abortRef.current = null;
     };
-  }, [sid]);
+  }, [sid, loadDetail]);
 
   const strategy = detail?.strategy;
   const status = strategy ? strategyStatus(strategy) : null;
@@ -161,15 +180,7 @@ export default function StrategyCenterDetail({
     return (
       <PreviewUnavailable
         message={error || `策略 ${sid} 暂无详情`}
-        onRetry={() => {
-          setLoading(true);
-          setError('');
-          setDetail(null);
-          fetchStrategyCenterDetail(sid)
-            .then(setDetail)
-            .catch((err: unknown) => setError(String(err)))
-            .finally(() => setLoading(false));
-        }}
+        onRetry={() => loadDetail(sid)}
       />
     );
   }

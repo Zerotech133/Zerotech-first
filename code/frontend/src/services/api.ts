@@ -57,17 +57,34 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
         return Promise.reject(new Error('未授权，请重新登录'));
       }
       const text = await resp.text();
-      let errorMsg = getErrorMessage(resp.status, text);
+      // 503 默认就是通用人话，避免后端未返回 detail 时把原始 JSON 暴露给用户。
+      let errorMsg = resp.status === 503
+        ? i18n.t('service_unavailable', { ns: 'errors' })
+        : getErrorMessage(resp.status, text);
       let code: string | undefined;
-      // 方案A：后端返回 {detail:{code}} 时按当前语言翻译（errors 命名空间）
+      let detailMessage = '';
+      // 兼容两种后端错误体：
+      //   {detail: "..."} / {detail: {code, message}}
+      // code 优先走 errors 命名空间翻译；无词条时用 detail.message；
+      // 503 永远不把内部配置细节或裸错误码直接展示给用户。
       try {
-        const parsed = (JSON.parse(text) as { detail?: { code?: string } })?.detail?.code;
-        if (typeof parsed === 'string') {
-          code = parsed;
-          errorMsg = i18n.t(parsed, { ns: 'errors' });
+        const detail = (JSON.parse(text) as { detail?: unknown })?.detail;
+        if (typeof detail === 'string') {
+          detailMessage = detail.trim();
+        } else if (detail && typeof detail === 'object') {
+          const d = detail as { code?: unknown; message?: unknown };
+          if (typeof d.code === 'string') code = d.code;
+          if (typeof d.message === 'string') detailMessage = d.message.trim();
+        }
+        if (code && i18n.exists(code, { ns: 'errors' })) {
+          errorMsg = i18n.t(code, { ns: 'errors' });
+        } else if (resp.status === 503) {
+          errorMsg = i18n.t('service_unavailable', { ns: 'errors' });
+        } else if (detailMessage) {
+          errorMsg = detailMessage;
         }
       } catch {
-        /* 非 JSON code，保留默认消息 */
+        /* 非 JSON 错误体，保留默认消息 */
       }
       showToast(errorMsg, 'error');
       // 附 status/code 供上层（如 adminEntitlementsApi）归一化分类；任何 HTTP 状态

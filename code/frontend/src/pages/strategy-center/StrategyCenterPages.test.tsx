@@ -89,6 +89,25 @@ const DETAIL: StrategyCenterDetailPayload = {
   }],
 };
 
+const DETAIL_B: StrategyCenterDetailPayload = {
+  ...DETAIL,
+  sid: 'LX16',
+  strategy: STRATEGY_B,
+  days: [],
+  picks: [],
+  trades: [],
+  extremes: { best: null, worst: null },
+  issues: [],
+};
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((res) => {
+    resolve = res;
+  });
+  return { promise, resolve };
+}
+
 function snapshotReturn(data: StrategyCenterData | null, error = '') {
   return { data, error, loading: !data, reload: vi.fn() };
 }
@@ -133,10 +152,33 @@ describe('策略中台组件', () => {
     render(<StrategyCenterDetail sid="LX20" onBack={onBack} />);
     expect(screen.getByText('正在读取 LX20 详情…')).toBeInTheDocument();
     await waitFor(() => expect(screen.getByText('牛股三绝')).toBeInTheDocument());
-    expect(detailMock).toHaveBeenCalledWith('LX20');
+    expect(detailMock).toHaveBeenCalledWith('LX20', expect.any(AbortSignal));
     expect(screen.getByText('极阴次阳在弱市不稳')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /返回策略货架/ }));
     expect(onBack).toHaveBeenCalledTimes(1);
+  });
+
+  it('Detail 快速切换时丢弃旧响应并取消旧请求', async () => {
+    const first = deferred<StrategyCenterDetailPayload>();
+    const second = deferred<StrategyCenterDetailPayload>();
+    detailMock.mockReset();
+    detailMock.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
+
+    const { rerender } = render(<StrategyCenterDetail sid="LX20" onBack={vi.fn()} />);
+    await waitFor(() => expect(detailMock).toHaveBeenCalledTimes(1));
+    const firstSignal = detailMock.mock.calls[0][1] as AbortSignal;
+
+    rerender(<StrategyCenterDetail sid="LX16" onBack={vi.fn()} />);
+    await waitFor(() => expect(detailMock).toHaveBeenCalledTimes(2));
+    expect(firstSignal.aborted).toBe(true);
+
+    second.resolve(DETAIL_B);
+    await waitFor(() => expect(screen.getByText('平斜交叉')).toBeInTheDocument());
+
+    // 旧请求即使不理会 abort 并在新请求之后返回，也不能覆盖新详情。
+    first.resolve(DETAIL);
+    await waitFor(() => expect(screen.queryByText('牛股三绝')).not.toBeInTheDocument());
+    expect(screen.getByText('平斜交叉')).toBeInTheDocument();
   });
 
   it('Detail 无 sid 时不请求接口', () => {
