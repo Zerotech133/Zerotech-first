@@ -350,7 +350,7 @@ def main():
     for h in (1, 3, 5, 10, 20, 40):
         sub_h = df[(df["rule"] == "A 持满20日")]
         # 用基线明细里的路径重算：直接按 hold 截断收益
-        vals, alps = [], []
+        vals = []
         for r in rows[:0]:
             pass
         # 简化：用 A 规则在 h 日的收益需重跑，这里以 daily 明细重算代价高，
