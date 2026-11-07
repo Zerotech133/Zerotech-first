@@ -75,7 +75,6 @@ def main():
             out.append(d)
     idx = pd.concat(out, ignore_index=True).drop_duplicates("trade_date")
     idx = idx.sort_values("trade_date")
-    icl = dict(zip(idx["trade_date"], idx["close"].astype(float)))
 
     days = sorted({r["d"] for r in rows})
     axis = [k for k in idx["trade_date"].tolist()
