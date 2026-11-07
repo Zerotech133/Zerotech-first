@@ -33,6 +33,14 @@ def test_expected_indexes_matches_ddl_count():
     assert len(O._expected_indexes()) == len(O.bitemporal_ddl())
 
 
+def test_ddl_uses_variable_prefixed_props():
+    """2026-11-07 dry-run 实证钉子：Neo4j 5.x 索引属性必须带变量前缀
+    （n./r.），裸属性全量 SyntaxError（服务器 5.26.32 实测 56/56 失败）。"""
+    for s in O.bitemporal_ddl():
+        assert "ON (n." in s or "ON (r." in s, s
+        assert "ON (`" not in s, s  # 裸属性写法禁止回归
+
+
 def test_backfill_idempotent_shape():
     """回填语句全部带 IS NULL 守卫（只补缺失，不覆盖）。"""
     for desc, s in O.bitemporal_backfill_cypher():
