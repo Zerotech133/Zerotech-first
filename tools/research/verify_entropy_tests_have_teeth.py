@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
 """证明第9轮新增的正例用例在改动前确实会红（不是空转测试）。
 
-读 HEAD 版 scan_secrets.py → old 模块；工作区那份 → new 模块。
-对同一 (候选, 行) 调 is_high_entropy_candidate：旧 True 且新 False 才算"测试有牙"。
+拿「V4 判据落地前」那一版 scan_secrets.py 当 old，工作区那份当 new：
+对同一 (候选, 行) 调 is_high_entropy_candidate，旧 True 且新 False 才算"测试有牙"。
+
+注意：**不能用 HEAD**——V4 提交之后 HEAD 就是新版本，old==new 会让本检查恒失效
+（踩过一次）。基准固定到 V4 提交的父提交，可用 --before 覆盖。
 """
+import argparse
 import importlib.util
 import pathlib
 import subprocess
@@ -11,6 +15,8 @@ import sys
 import tempfile
 
 REPO = pathlib.Path(__file__).resolve().parents[2]
+# 5347ea5a7 = fix(scan): HIGH_ENTROPY 豁免「带扩展名路径成分」；其父提交即改动前
+DEFAULT_BEFORE = "5347ea5a7^"
 
 
 def load(path, name):
@@ -21,12 +27,19 @@ def load(path, name):
 
 
 def main() -> int:
-    src = subprocess.run(["git", "show", "HEAD:tools/scan_secrets.py"],
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--before", default=DEFAULT_BEFORE,
+                    help="改动前的 revision（默认 V4 提交的父提交）")
+    args = ap.parse_args()
+
+    src = subprocess.run(["git", "show", "%s:tools/scan_secrets.py" % args.before],
                          cwd=str(REPO), capture_output=True).stdout
+    assert src, "取不到 %s 版 scan_secrets.py" % args.before
     p = pathlib.Path(tempfile.mkdtemp()) / "old.py"
     p.write_bytes(src)
     old = load(p, "ss_old")
     new = load(REPO / "tools" / "scan_secrets.py", "ss_new")
+    print("基准 revision：%s" % args.before)
 
     cand = "test_legion_live_boot_p0"
     cases = [
@@ -43,11 +56,11 @@ def main() -> int:
         print("  old=%-5s new=%-5s %s | %s" % (a, b, "OK" if ok else "UNEXPECTED", c))
 
     # 反向：边界三条在 old 里也必须是 True（否则"边界仍须命中"是空转）
-    tok = "Xk9mQ2pL7vR4wZ8bN3tY"
+    tok = "Xk9mQ2pL7vR4wZ8bN3tY"  # fake 夹具（非真实凭据）
     bounds = [
         (cand, "见 %s 的 token" % cand),
         (cand, "见 portal/%s 的 token" % cand),
-        ("abcdef1234567890abcd", "token abcdef1234567890abcd.py 待查"),
+        ("abcdef1234567890abcd", "token abcdef1234567890abcd.py 待查"),  # fake 夹具（非真实凭据）
         (tok, "token: /%s.py 待查" % tok),
     ]
     print("\n反向（边界在 old/new 都应为 True）：")
