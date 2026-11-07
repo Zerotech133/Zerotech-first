@@ -11,6 +11,7 @@ import argparse
 import json
 import re
 import sys
+import time
 import urllib.request
 from collections import Counter
 from datetime import datetime
@@ -132,7 +133,7 @@ SOURCE_CN = {"xtcloud": "证券数据接口", "tushare": "数据接口", "xq": "
 STATE_CN = {"Ready": "就绪", "Running": "运行中", "Disabled": "已停用",
             "Queued": "排队中", "Unknown": "未知"}
 RESULT_CN = {"0": "正常", "267011": "尚未运行", "267014": "已终止",
-             "267009": "运行中", "267009": "运行中", "2147946720": "异常"}
+             "267009": "运行中", "2147946720": "异常"}
 SERVER_CN = {"dw-governance": "数据查询服务", "dw-quality": "数据质量服务",
              "dw-catalog": "数据目录服务", "factor-tools": "因子工具服务",
              "kb-corpus": "知识库服务", "stock-data": "行情数据服务",
@@ -159,10 +160,6 @@ TASK_CN = {
     "GlobalFutSync": "外盘期货同步", "GubaCrawl_B": "社区采集（夜间）",
     "GubaCrawl_C": "社区采集（深夜）", "TdxSyncProbe": "同步看门狗",
     "ShipinhaoCards": "视频号学习卡流水线",
-    "TdxSyncProbe": "同步看门狗", "DataWarehouseSnapshot": "数据快照刷新",
-    "KgDailySync": "知识库日同步", "XmapSync": "数据映射同步",
-    "TushareSync": "数据接口同步", "NoticeBackfill": "公告补采",
-    "GlobalFutSync": "外盘期货同步", "SentimentBT": "情绪回测",
 }
 COL_CN = {
     "ts_code": "证券代码", "trade_date": "交易日期", "open": "开盘价",
