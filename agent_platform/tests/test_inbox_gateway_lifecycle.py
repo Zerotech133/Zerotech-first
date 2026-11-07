@@ -390,3 +390,44 @@ def test_crash_window_processed_wins_over_inbox(store):
     )
     assert replay["data"]["state"] == "processed"
     assert replay["data"]["id"] == mid
+
+
+# ---- 锁文件 open 的瞬时 Errno 13 重试（2026-11-07 K-ORG-20261107-INBOXLOCK）----
+# 背景：4 个进程并发 submit 时 open(lock, "a+b") 会以约 16% 抛 PermissionError
+# （25 轮 4 轮，见 tools/research/repro_inbox_lock_race.py）。该异常原本直接穿过
+# submit()，调用方看到的是"投递失败"——生产侧等于丢消息。
+# 修复见 inbox_gateway._open_lock_file；这里锁住"会重试"与"不无限等"两条语义。
+
+_LOCK_NAME = ".inbox_gateway.lock"
+
+
+def _patch_lock_open(monkeypatch, fail_times):
+    """只干扰锁文件路径的 Path.open，其余路径透传；返回调用计数。"""
+    real_open = Path.open
+    calls = {"n": 0}
+
+    def flaky(self, *a, **kw):
+        if self.name == _LOCK_NAME:
+            calls["n"] += 1
+            if calls["n"] <= fail_times:
+                raise PermissionError(13, "Permission denied", str(self))
+        return real_open(self, *a, **kw)
+
+    monkeypatch.setattr(Path, "open", flaky)
+    return calls
+
+
+def test_store_lock_retries_transient_open_permission_error(store, monkeypatch):
+    """前两次 open 报 Errno 13 → 第三次成功，submit 正常落盘（不抛给调用方）。"""
+    calls = _patch_lock_open(monkeypatch, fail_times=2)
+    env = inbox_gateway.submit("question", {"q": 1}, idempotency_key="retry-key")
+    assert env["ok"] is True
+    assert calls["n"] >= 3, calls
+
+
+def test_store_lock_open_gives_up_after_deadline(store, monkeypatch):
+    """持续拒绝必须抛错，不能无限等待——把真故障变成 hang 更糟。"""
+    monkeypatch.setattr(inbox_gateway, "_LOCK_OPEN_DEADLINE_S", 0.05)
+    _patch_lock_open(monkeypatch, fail_times=10 ** 9)
+    with pytest.raises(PermissionError):
+        inbox_gateway.submit("question", {"q": 2}, idempotency_key="denied-key")

@@ -100,6 +100,34 @@ def _digest_key(payload: dict, source: str, kind: str) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:32]
 
 
+_LOCK_OPEN_DEADLINE_S = 5.0
+_LOCK_OPEN_BACKOFF_S = 0.01
+
+
+def _open_lock_file(path: Path):
+    """打开锁文件；遇到瞬时 Errno 13 重试。
+
+    Windows 上多个进程并发创建/打开同一把锁文件时，``open(path, "a+b")`` 会以
+    可观概率抛 PermissionError（实测 4 进程并发 25 轮中 4 轮失败 ≈16%，复现脚本
+    tools/research/repro_inbox_lock_race.py）。成因是打开瞬间的共享模式竞争 /
+    安全软件持有扫描句柄，属"等一下就好"的瞬时态。
+
+    本函数的重试与下方 ``msvcrt.locking`` 的重试同语义：锁本来就是等待语义，
+    open 失败也必须等。不重试时异常会直接穿过 ``submit()``，调用方看到的是
+    "投递失败"（生产侧等于丢消息），而不是等几十毫秒后成功。
+
+    上限 5s 后仍失败则原样抛出——持续拒绝是真故障，不能无限等成 hang。
+    """
+    deadline = time.monotonic() + _LOCK_OPEN_DEADLINE_S
+    while True:
+        try:
+            return path.open("a+b")
+        except PermissionError:
+            if time.monotonic() >= deadline:
+                raise
+            time.sleep(_LOCK_OPEN_BACKOFF_S)
+
+
 @contextmanager
 def _store_lock(store: _Store):
     """线程与跨进程互斥；进程退出时 OS 自动释放，锁文件不删除。"""
@@ -107,7 +135,7 @@ def _store_lock(store: _Store):
     with _THREAD_LOCKS_GUARD:
         thread_lock = _THREAD_LOCKS.setdefault(path, threading.Lock())
     with thread_lock:
-        with path.open("a+b") as lock:
+        with _open_lock_file(path) as lock:
             if os.name == "nt":
                 lock.seek(0)
                 while True:
