@@ -164,5 +164,70 @@ class TestScreenTool(unittest.TestCase):
         self.assertTrue(r["result"]["isError"])
 
 
+class TestScreenTool(unittest.TestCase):
+    """H2b sa_screen 工具：注册/预览/候选/二选一/fail-visible。"""
+
+    def _call(self, args, fake_http=None):
+        calls = []
+
+        def default_http(path, method="GET", body=None):
+            calls.append((path, method, body))
+            return {"ok": True, "as_of": "2026-11-03", "matched": 3,
+                    "candidates": [{"code": "600337.SH"}], "warnings": [],
+                    "spec": {"universe": "WATCHLIST"}}
+
+        orig = m._http
+        m._http = fake_http or default_http
+        try:
+            r = m.handle_message({"jsonrpc": "2.0", "id": 9, "method": "tools/call",
+                                  "params": {"name": "sa_screen", "arguments": args}})
+        finally:
+            m._http = orig
+        return r, calls
+
+    def test_tools_list_has_sa_screen(self):
+        r = m.handle_message({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
+        names = [t["name"] for t in r["result"]["tools"]]
+        self.assertIn("sa_screen", names)
+        self.assertEqual(len(names), len(m.TOOLS))
+        self.assertGreaterEqual(len(names), 10)
+        tool = [t for t in r["result"]["tools"] if t["name"] == "sa_screen"][0]
+        props = tool["inputSchema"]["properties"]
+        self.assertIn("text", props)
+        self.assertIn("dsl", props)
+
+    def test_screen_text_preview_uses_parse(self):
+        r, calls = self._call({"text": "PS 历史分位低于 30%"})
+        self.assertFalse(r["result"]["isError"])
+        self.assertEqual(calls[0][0], "/api/analysis/internal/screen/parse")
+        self.assertEqual(calls[0][1], "POST")
+        self.assertEqual(calls[0][2], {"text": "PS 历史分位低于 30%"})
+
+    def test_screen_dsl_uses_run(self):
+        dsl = {"universe": "WATCHLIST", "filters": [{"field": "ps", "op": "<=", "value": 0.3}]}
+        r, calls = self._call({"dsl": dsl})
+        self.assertFalse(r["result"]["isError"])
+        self.assertEqual(calls[0][0], "/api/analysis/internal/screen/run")
+        self.assertEqual(calls[0][1], "POST")
+        self.assertEqual(calls[0][2], {"dsl": dsl})
+
+    def test_screen_requires_text_or_dsl(self):
+        r, calls = self._call({})
+        self.assertTrue(r["result"]["isError"])
+        self.assertEqual(calls, [])
+
+    def test_screen_rejects_both(self):
+        r, calls = self._call({"text": "x", "dsl": {"universe": "WATCHLIST"}})
+        self.assertTrue(r["result"]["isError"])
+        self.assertEqual(calls, [])
+
+    def test_screen_gateway_error_flagged(self):
+        def fake_http(path, method="GET", body=None):
+            return {"ok": False, "error": "internal gateway unreachable: boom"}
+
+        r, _ = self._call({"text": "PS 低于 30%"}, fake_http=fake_http)
+        self.assertTrue(r["result"]["isError"])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
