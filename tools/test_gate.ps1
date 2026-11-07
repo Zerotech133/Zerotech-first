@@ -268,7 +268,12 @@ $paths = @{
         # 每份 safe_urlopen.py 必须含 is_loopback/_open_no_proxy；legion_command/safe_http.py
         # 必须委派。第 7 份退化副本曾静默存在半个月，扫描器按「调的是 safe_urlopen」判
         # GUARDED，看不见它。8 条纯离线，约 1s。
-        'tools/tests/test_safe_urlopen.py'
+        'tools/tests/test_safe_urlopen.py',
+        # ---- 凭据扫描器误报回归（2026-11-07 K-ORG-20261107-SCANFPGATE，+1）----
+        # scan_secrets.py 是每次 commit 都跑的 pre-commit 闸门，也是 devtask merge
+        # 硬门的引擎；但它自己的检测逻辑此前零自动覆盖（-Suite tools 无人自动调）。
+        # 退化方向是「少报」，假阴性不报错、只会让硬门变纸门。42 条全合成夹具，0.6s。
+        'tools/tests/test_scan_secrets_fp.py'
     )
 }
 
