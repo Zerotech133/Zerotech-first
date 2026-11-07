@@ -1,0 +1,242 @@
+{
+  "archive_id": "feishu-20261107",
+  "created_at": "2026-11-07T11:16:48+08:00",
+  "scope": "军机驿/飞书域旧研发计划（先归档可恢复，不硬删）",
+  "effective_plan": "docs/plans/2026-11-07_军机驿飞书域研发计划_最终版_v1.md",
+  "restore": "Move the archived file back to its original path; hashes are recorded below.",
+  "moved": [
+    {
+      "original": "docs/plans/2026-10-13_推送联动收口_K-STOCK-304.md",
+      "archived": "archive/feishu-20261107/plans/2026-10-13_推送联动收口_K-STOCK-304.md",
+      "sha256": "8faf4373c2b5995553b44975574dd17b0826a08a3c51ee2a9e9a7887393006bc",
+      "size": 6291,
+      "status": "archived"
+    },
+    {
+      "original": "docs/plans/2026-10-14_飞书自建底座与Lark插件分工边界_K-STOCK-395.md",
+      "archived": "archive/feishu-20261107/plans/2026-10-14_飞书自建底座与Lark插件分工边界_K-STOCK-395.md",
+      "sha256": "694dfe4b573abdb0ce8d0da063390f65bac12f06e1e72c1aef96cb752e376447",
+      "size": 8557,
+      "status": "archived"
+    },
+    {
+      "original": "docs/plans/2026-10-18_K-PUSH-012_通知决策与闸门鉴权_收口拍板.md",
+      "archived": "archive/feishu-20261107/plans/2026-10-18_K-PUSH-012_通知决策与闸门鉴权_收口拍板.md",
+      "sha256": "372d37f6031a8d8418c6e55315bb37d3a23bac4419c7671969eaa874fc35b7d2",
+      "size": 3996,
+      "status": "archived"
+    },
+    {
+      "original": "docs/plans/2026-10-20_飞书中台研发总纲_v1.md",
+      "archived": "archive/feishu-20261107/plans/2026-10-20_飞书中台研发总纲_v1.md",
+      "sha256": "cecc86da615693e19674e72232008b2fc108f8fd5d0b5acd8ec264684be51b02",
+      "size": 11989,
+      "status": "archived"
+    },
+    {
+      "original": "docs/plans/2026-10-20_飞书中台商业化_收件人分域与订阅闸门立项方案.md",
+      "archived": "archive/feishu-20261107/plans/2026-10-20_飞书中台商业化_收件人分域与订阅闸门立项方案.md",
+      "sha256": "6600f406a5af8fc6921b44cf883145994b05fa118a4c8288a54f8ee652e4ad46",
+      "size": 9131,
+      "status": "archived"
+    },
+    {
+      "original": "docs/plans/2026-10-20_飞书中台实施对账_2026-10-20.md",
+      "archived": "archive/feishu-20261107/plans/2026-10-20_飞书中台实施对账_2026-10-20.md",
+      "sha256": "7b8026ab685a65054f4686d1af93da3ffb096daea40634ebd4ad9aa6584b70b3",
+      "size": 25911,
+      "status": "archived"
+    },
+    {
+      "original": "docs/plans/2026-10-20_飞书中台重启前就绪自查_2026-10-20.md",
+      "archived": "archive/feishu-20261107/plans/2026-10-20_飞书中台重启前就绪自查_2026-10-20.md",
+      "sha256": "aa529a1147e8d42e3d63f755b12644cf8fed280036f0fbf50c68f60d09491b4c",
+      "size": 8237,
+      "status": "archived"
+    },
+    {
+      "original": "docs/plans/2026-10-20_卡片模板覆盖审计_2026-10-20.md",
+      "archived": "archive/feishu-20261107/plans/2026-10-20_卡片模板覆盖审计_2026-10-20.md",
+      "sha256": "c448402acf097847067706f6659b5f8cdfb4c6909d595b75625f4dbdd57b11b7",
+      "size": 7193,
+      "status": "archived"
+    },
+    {
+      "original": "docs/plans/2026-10-20_入向回调通道取证与预案_2026-10-20.md",
+      "archived": "archive/feishu-20261107/plans/2026-10-20_入向回调通道取证与预案_2026-10-20.md",
+      "sha256": "6f9ceff6adb52b2e897e9d9e4ed1fc33b6e92228ba605524ec58f1ca2aaa4c5a",
+      "size": 22270,
+      "status": "archived"
+    },
+    {
+      "original": "docs/plans/2026-10-20_商业化上线检查清单_v0.md",
+      "archived": "archive/feishu-20261107/plans/2026-10-20_商业化上线检查清单_v0.md",
+      "sha256": "68d267a5259c271ae2929708c436d55b78a3e5c10172a82daa5f927b488154ba",
+      "size": 42011,
+      "status": "archived"
+    },
+    {
+      "original": "docs/plans/2026-10-20_收银台技术方案_v0.md",
+      "archived": "archive/feishu-20261107/plans/2026-10-20_收银台技术方案_v0.md",
+      "sha256": "0b344843842e524567c9b60d4da93f88a79b2afb619bd1b2e369c0780a057764",
+      "size": 42724,
+      "status": "archived"
+    },
+    {
+      "original": "docs/plans/2026-10-20_撤销订阅决策卡_v1.md",
+      "archived": "archive/feishu-20261107/plans/2026-10-20_撤销订阅决策卡_v1.md",
+      "sha256": "28832c56f865fb297ad90e9713def937a7595cf5988f96436f048d62eb157e10",
+      "size": 3714,
+      "status": "archived"
+    },
+    {
+      "original": "docs/plans/2026-10-20_撤销订阅设计_v0.md",
+      "archived": "archive/feishu-20261107/plans/2026-10-20_撤销订阅设计_v0.md",
+      "sha256": "7a3487a7cb5b2ac41db66975721f45bfb1047931764c98bb8ea34d3ad0d4390b",
+      "size": 7367,
+      "status": "archived"
+    },
+    {
+      "original": "docs/plans/2026-10-20_订阅OAuth免登录设计_v0.md",
+      "archived": "archive/feishu-20261107/plans/2026-10-20_订阅OAuth免登录设计_v0.md",
+      "sha256": "b676d8a005e7394a019f0d7adaaed7c8a6a6a3b58e02f961f7a36bac6a3196d6",
+      "size": 7542,
+      "status": "archived"
+    },
+    {
+      "original": "docs/plans/2026-10-20_重启五要素操作单_待批稿.md",
+      "archived": "archive/feishu-20261107/plans/2026-10-20_重启五要素操作单_待批稿.md",
+      "sha256": "b76c4bcceec66afb047e0dda7e00e906fe99f45166b8511d921d65ea72b52a2c",
+      "size": 11563,
+      "status": "archived"
+    },
+    {
+      "original": "docs/plans/2026-10-20_邓芝席位松耦合扩展设计_v0.md",
+      "archived": "archive/feishu-20261107/plans/2026-10-20_邓芝席位松耦合扩展设计_v0.md",
+      "sha256": "edc15f351d5a0d2e56700517aa2f0d5c24d2a20296db57aa6d9db09b61afff11",
+      "size": 4068,
+      "status": "archived"
+    },
+    {
+      "original": "docs/plans/2026-10-21_订阅提醒与勾稽日跑排程操作单_待批.md",
+      "archived": "archive/feishu-20261107/plans/2026-10-21_订阅提醒与勾稽日跑排程操作单_待批.md",
+      "sha256": "8b2db63f6f3e00873f6fc5a98fb1c002d5d72ed3017b75fa8d98bd326d20799f",
+      "size": 4132,
+      "status": "archived"
+    },
+    {
+      "original": "docs/plans/2026-10-21_订阅管理面开key后取数交互设计_v0.md",
+      "archived": "archive/feishu-20261107/plans/2026-10-21_订阅管理面开key后取数交互设计_v0.md",
+      "sha256": "f485f9d63b24ad701a47ea356c851a9569f074360183108462ddebb7a56a5b2a",
+      "size": 14956,
+      "status": "archived"
+    },
+    {
+      "original": "docs/plans/2026-10-21_飞书中台开发文档_v1.md",
+      "archived": "archive/feishu-20261107/plans/2026-10-21_飞书中台开发文档_v1.md",
+      "sha256": "afe2d6cb918bfd64af1941f5761ff4ea159fb6ee3eefc5283f8d39be3cd3b35b",
+      "size": 9182,
+      "status": "archived"
+    },
+    {
+      "original": "docs/plans/2026-10-21_飞书中台智能体化研究报告与对接方案_v1.md",
+      "archived": "archive/feishu-20261107/plans/2026-10-21_飞书中台智能体化研究报告与对接方案_v1.md",
+      "sha256": "bd6e1c30911da86713b6ff2420325f69321a970596a0e059edd8ef508d387d10",
+      "size": 10247,
+      "status": "archived"
+    },
+    {
+      "original": "docs/plans/2026-10-21_飞书中台研发计划_v1.md",
+      "archived": "archive/feishu-20261107/plans/2026-10-21_飞书中台研发计划_v1.md",
+      "sha256": "c1fbfed4266d41d3cc08df26c3b419b29a013be9a9500a33ddb32eb43f9269f2",
+      "size": 8078,
+      "status": "archived"
+    },
+    {
+      "original": "docs/plans/2026-10-21_飞书回调开通操作单_待批稿v2.md",
+      "archived": "archive/feishu-20261107/plans/2026-10-21_飞书回调开通操作单_待批稿v2.md",
+      "sha256": "170af9a67f517397a3e3ff3fb46cc76dcac0fda274af4b6a31da441772d24b60",
+      "size": 5715,
+      "status": "archived"
+    },
+    {
+      "original": "docs/plans/2026-10-21_客户入口智能化方案_客问路由与查询反推_v2.md",
+      "archived": "archive/feishu-20261107/plans/2026-10-21_客户入口智能化方案_客问路由与查询反推_v2.md",
+      "sha256": "5135b6b176e9694c2d72f9e69eaa4ccc11a2232d08f388f23f8467bae07fa5d4",
+      "size": 7090,
+      "status": "archived"
+    },
+    {
+      "original": "docs/plans/2026-10-21_阚泽通信部研发计划_v2.md",
+      "archived": "archive/feishu-20261107/plans/2026-10-21_阚泽通信部研发计划_v2.md",
+      "sha256": "8e6eb5ad92eb240330aa62d02e6e44c57ceaf8b07764bae67ac28eadbf3944a3",
+      "size": 5390,
+      "status": "archived"
+    },
+    {
+      "original": "docs/plans/2026-10-21_阚泽部K1-K3实施说明.md",
+      "archived": "archive/feishu-20261107/plans/2026-10-21_阚泽部K1-K3实施说明.md",
+      "sha256": "110edf3a2bb8c6f0c872cc85428a99f1986cc351aca56cc552a595a00aa22941",
+      "size": 7467,
+      "status": "archived"
+    },
+    {
+      "original": "docs/plans/2026-10-21_阚泽部K1-K6实施总说明.md",
+      "archived": "archive/feishu-20261107/plans/2026-10-21_阚泽部K1-K6实施总说明.md",
+      "sha256": "8d03cb9ddfb2021f096f710815728e635ff49b9234704506c80f27632f08bee2",
+      "size": 6372,
+      "status": "archived"
+    },
+    {
+      "original": "docs/plans/2026-10-21_阚泽部智能层开闸操作单_待批.md",
+      "archived": "archive/feishu-20261107/plans/2026-10-21_阚泽部智能层开闸操作单_待批.md",
+      "sha256": "376fc6753969ec40549424e31d7b72f5b9d528c80437f2ce28d2f34deb6f0ae1",
+      "size": 6740,
+      "status": "archived"
+    },
+    {
+      "original": "docs/plans/2026-10-21_阚泽部智能层开闸验收报告.md",
+      "archived": "archive/feishu-20261107/plans/2026-10-21_阚泽部智能层开闸验收报告.md",
+      "sha256": "8eaecce83fc17abcabbee341254934206435f7af702aa44ae0a491d3c7a2f6a7",
+      "size": 6692,
+      "status": "archived"
+    },
+    {
+      "original": "docs/plans/2026-10-21_鲁肃通信与客户服务部_编制方案_v1.md",
+      "archived": "archive/feishu-20261107/plans/2026-10-21_鲁肃通信与客户服务部_编制方案_v1.md",
+      "sha256": "47776774183b1511a52ee0df10c36649a2941631f6bdbfef9c8f858ba763a9e4",
+      "size": 8543,
+      "status": "archived"
+    },
+    {
+      "original": "docs/plans/2026-10-20_P3.8lite_派工单_四工位.md",
+      "archived": "archive/feishu-20261107/plans/2026-10-20_P3.8lite_派工单_四工位.md",
+      "sha256": "59db480f63b938e504154d7dda5e0bb0f5116625680fa1f7a41f83e216c2a572",
+      "size": 4520,
+      "status": "archived"
+    },
+    {
+      "original": "docs/plans/2026-10-20_P3.9lite_派工单_四工位.md",
+      "archived": "archive/feishu-20261107/plans/2026-10-20_P3.9lite_派工单_四工位.md",
+      "sha256": "0970bfff8692675041703d68b0cc270c5b79179289c94640456973c99edf5f72",
+      "size": 4555,
+      "status": "archived"
+    }
+  ],
+  "missing": [],
+  "kept_examples": [
+    "docs/plans/2026-11-02_ROADMAP_v4_唯一战略与主排期.md",
+    "docs/plans/2026-11-05_11-16前收口计划_v1.md",
+    "docs/plans/2026-10-24_PRODUCT_BASELINE_v1.md",
+    "docs/plans/2026-11-01_知识库每日推送准备_v1.md"
+  ],
+  "legacy_copies": [
+    {
+      "original": "C:\\项目\\feishu-rd-plan\\feishu-rd-plan.html",
+      "archived": "archive/feishu-20261107/legacy-site/feishu-rd-plan.html",
+      "sha256": "4852a9124d0e7c3c0009e33e875e17c9123a72ceb61cb017b8ffb9d4c422aa03",
+      "size": 29732,
+      "status": "copied"
+    }
+  ]
+}
