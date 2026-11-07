@@ -413,6 +413,9 @@ git commit -F <msgfile> -- <同样两个路径>   # ②commit 也带路径（见
 | 13 | **数字并列被当成「全仓 PASS」** | 3881 + 1319 被相加 | 见 §7.3，口径必须带范围 |
 | 14 | **服务器 git 1.8.3.1 不支持 `git -C`** | 不报错，只打 usage 并返回非 0，`$(...)` 静默变空串 | 用 `( cd dir && git ... )` |
 | 15 | **用 `python` 跑长任务不落文件** | 输出丢失、无法判断进度 | 长跑输出重定向到文件，判进度看进程 + 产物 mtime |
+| 16 | **`position:fixed` 的全局浮层压住内容**（`.wb-palette-trigger` 钉死 `right:18px;bottom:18px`，窗口一窄就压到内容栏里，`jev_target` 情绪面末行被盖） | 换个窗口宽度就出现，截图看是「差一点」，实测重叠 300~2400 px² | **按实测边线分级收窄**，不要用视口宽度做算术（有无经典滚动条会差 15px）：先改样式，再 `getBoundingClientRect().left >= 内容右边线 + 2` 判定，逐级 full→mini→corner→dot→hidden；内容右边线取 `['.ui-page','main','#app','.wrap','.container','#root']` 里最宽者再扣它自身 `padding-right` |
+| 17 | **同角两个浮层可以同为 `z-index:900`**（`#ai-orb` 与 ⌘K 按钮） | 后注入者压在球上，谁也没报错，只有肉眼可见 | 浮层要么约定各自层级，要么显式互斥：`ui_palette.js` 检测 `#ai-orb` 贴近右下角时把按钮抬到球上方（`bottom = 视口高 − 球 top + 10`），球被拖走后自动回落 |
+| 18 | **`os_theme.css` 给 `button` 设了 `min-height:40px`** | 局部写 `height:30px` 静默失效，实测仍是 40（截图像「多出 10px」） | 收紧控件高度时同时写 `min-height:0; min-width:0`，不要只写 `height` |
 
 ---
 

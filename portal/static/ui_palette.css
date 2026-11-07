@@ -44,15 +44,37 @@
   border-top: 1px solid var(--border);
   color: var(--text-dim); font-size: var(--fs-xs);
 }
+/* 触发器：钉在内容栏右侧留白里，不压内容。宽度分级见 ui_palette.js 的 dock() */
 .wb-palette-trigger {
   position: fixed; right: 18px; bottom: 18px; z-index: 900;
+  display: inline-flex; align-items: center; justify-content: center;
+  box-sizing: border-box; white-space: nowrap;
   padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--bg-raised); color: var(--text-dim);
   font: inherit; font-size: var(--fs-s); cursor: pointer;
+  transition: opacity .16s ease, color .16s ease, border-color .16s ease;
 }
-.wb-palette-trigger:hover { color: var(--text); border-color: var(--color-focus); }
+.wb-palette-trigger:hover,
+.wb-palette-trigger:focus-visible { color: var(--text); border-color: var(--color-focus); }
+/* 留白不足：先收成图标，再收成角标（半透明，不挡阅读），实在放不下就收起 */
+.wb-palette-trigger[data-dock="mini"] {
+  padding: 0; width: 44px; height: 44px; min-width: 0; font-size: var(--fs-s);
+}
+.wb-palette-trigger[data-dock="corner"] {
+  padding: 0; width: 30px; height: 30px; min-width: 0; min-height: 0;
+  font-size: 11px; opacity: .55;
+}
+.wb-palette-trigger[data-dock="dot"] {
+  padding: 0; width: 24px; height: 24px; min-width: 0; min-height: 0;
+  font-size: 10px; opacity: .55;
+}
+.wb-palette-trigger[data-dock="corner"]:hover,
+.wb-palette-trigger[data-dock="corner"]:focus-visible,
+.wb-palette-trigger[data-dock="dot"]:hover,
+.wb-palette-trigger[data-dock="dot"]:focus-visible { opacity: 1; }
+.wb-palette-trigger[data-dock="hidden"] { display: none; }
 
 /* 密度：舒适（默认）/紧凑；表格与列表共用 */
 [data-wb-density="compact"] table th,
