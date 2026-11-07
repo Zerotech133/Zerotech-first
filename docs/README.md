@@ -10,7 +10,7 @@
 |---|---|---|
 | **Tutorials** | 第一次上手，跟着做就会 | `docs/tutorials/`（待建；当前用 `README.md` 快速开始） |
 | **How-to** | 解决具体任务/故障 | `docs/ops/`（操作单）、`docs/runbooks/`（排障）、`docs/migration/` |
-| **Reference** | 查准确事实（端口/契约/标准/决策） | `docs/specs/`、`docs/standards/`、`docs/adr/`、`docs/architecture/principles.md`、`ARCHITECTURE.md`、`AGENTS.md` |
+| **Reference** | 查准确事实（端口/契约/标准/决策） | `docs/specs/`、`docs/standards/`、`docs/adr/`、`docs/architecture/principles.md`、`ARCHITECTURE.md`、`AGENTS.md`、`DEVELOPER_GUIDE.md`（开发全貌，新开发者入口） |
 | **Explanation** | 理解为什么这样设计 | `docs/design/`、`docs/plans/`、`docs/audit/`、`docs/governance/`、`docs/legion/` |
 
 ## 二、目录职责与更新规则
