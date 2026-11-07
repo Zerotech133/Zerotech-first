@@ -120,7 +120,6 @@ import glob
 import hmac
 import http.server
 import json
-import getpass
 import os
 import re
 import subprocess

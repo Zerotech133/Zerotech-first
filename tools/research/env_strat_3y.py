@@ -35,7 +35,6 @@ import argparse
 import glob
 import json
 import os
-import statistics as st
 from collections import defaultdict
 
 import numpy as np
@@ -582,7 +581,6 @@ def main():
         if not by:
             return None
         days = sorted(by)
-        d8 = {d.replace("-", "")[:8] for d in days}
 
         # 批次 → (结算日, 该批次对权益的贡献)
         ev = defaultdict(float)
