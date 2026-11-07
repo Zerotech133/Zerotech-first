@@ -341,6 +341,9 @@
     "watch": {
       "lead": "WA1",
       "members": [
+        "WA1"
+      ],
+      "observer": [
         "WA2",
         "WA3"
       ],
@@ -355,6 +358,9 @@
     "trading": {
       "lead": "TR1",
       "members": [
+        "TR1"
+      ],
+      "observer": [
         "TR2",
         "TR3"
       ],

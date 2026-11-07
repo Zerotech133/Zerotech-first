@@ -11,7 +11,7 @@ metadata:
   description: ACAD1 选股池 → D1 投研/裁决/会议/交棒 → 盯盘 → 人工门 → TR1 paper 执行 → outcome/训练（IFS
     v1 F6 组合登记）
   created: '2026-11-02'
-  updated: '2026-11-06'
+  updated: '2026-11-07'
 spec:
   kernel: '>=0.9 <2.0'
   seats:
@@ -24,14 +24,14 @@ spec:
   - ref: agent/QS1
   - ref: agent/WA1
   - ref: agent/WA2
-    note: org 声明在册；hr 目录缺（审计在案）
+    note: observer/备用；hr 已登记（2026-11-07 P0-06），active=false，不进入 active 调度
   - ref: agent/WA3
-    note: 同上
+    note: observer/备用；hr 已登记（2026-11-07 P0-06），active=false，不进入 active 调度
   - ref: agent/TR1
   - ref: agent/TR2
-    note: org 声明在册；hr 目录缺（审计在案）
+    note: observer/备用；hr 已登记（2026-11-07 P0-06），active=false，不进入 active 调度
   - ref: agent/TR3
-    note: 同上
+    note: observer/备用；hr 已登记（2026-11-07 P0-06），active=false，不进入 active 调度
   skills:
   - ref: skill/events
   - ref: skill/paper_positions
