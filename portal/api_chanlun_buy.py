@@ -35,6 +35,9 @@ from api_common import QBT_DIR, pill_nav
 
 BUY_TYPES = ("1买", "2买", "3买")
 HOLD_DAYS = 20
+# 环境分硬门槛（K-RES-20261107-ENVSTRAT 回测断点，勿随手改：
+# 改阈值等于改策略，必须重跑 tools/research/env_strat_backtest.py）
+ENV_GATE = 75
 _SFX = {"CN": "", "US": "_us", "HK": "_hk"}
 _MKT_LABEL = {"CN": "🇨🇳 A股", "US": "🇺🇸 美股", "HK": "🇭🇰 港股"}
 _LOG = logging.getLogger(__name__)
@@ -162,20 +165,26 @@ def _env(buys, open_buys, hist, per_type):
     s_pnl = max(0.0, min(1.0, (avg + 5.0) / 10.0)) * 30.0
 
     score = int(round(s_up + s_vol + s_pnl))
-    if score >= 60:
+    # 阈值来自 K-RES-20261107-ENVSTRAT 回测（1829 笔 / 126 日，11/11 检验通过）：
+    # >=75 高分段 alpha +2.38% / 胜率 54.4%；60-74 仅 +0.7~1.4%；<60 为负。
+    # 断点在 70→75（+1.37 → +2.38 跳升），75 以上走平（2.38/2.49/2.19），
+    # 故 75 是"机会 30% 换质量翻倍"的最优切点，60 太松等于没门槛。
+    if score >= ENV_GATE:
         band, tone = "可试仓", "ok"
-        tip = ("环境偏暖：顺风买点 %d/%d，量能 %.1f×均值，持仓浮盈 %+.2f%%。"
-               "可小仓试单，优先 1买/2买（这两类 alpha 为正）。"
-               % (up_n, n, ratio, avg))
-    elif score >= 40:
+        tip = ("环境达标（%d ≥ 硬门槛 %d）：顺风买点 %d/%d，量能 %.1f×均值，"
+               "持仓浮盈 %+.2f%%。回测此段 alpha +2.4%%、胜率 54%%，"
+               "可正常出手，优先 1买/2买；3买 仍需三条件齐备。"
+               % (score, ENV_GATE, up_n, n, ratio, avg))
+    elif score >= 60:
         band, tone = "轻仓精选", "mid"
-        tip = ("环境中性偏冷：只做「顺风 + 高置信」交集，单票半仓以下；"
-               "名单照常出，但不追量。")
+        tip = ("环境中性（60-74，未达硬门槛 %d）：回测此段 alpha 仅 +0.7~1.4%%、"
+               "胜率约 50%%，只做「顺风 + 高置信」交集，单票半仓以下，不追量。"
+               % ENV_GATE)
     else:
         band, tone = "只看不动", "bad"
-        tip = ("环境逆风：顺风买点仅 %d/%d，量能 %.1f×均值，持仓浮盈 %+.2f%%。"
-               "买点在下跌段本来就掉胜率——今天记录下来，不动手。"
-               % (up_n, n, ratio, avg))
+        tip = ("环境未达标（%d < 60）：顺风买点仅 %d/%d，量能 %.1f×均值，"
+               "持仓浮盈 %+.2f%%。回测此段 alpha 为负、胜率不足 45%%，"
+               "今天只记录，不动手。" % (score, up_n, n, ratio, avg))
     # 3买 负 alpha 的额外提示（研究结论，始终显示）
     p3 = per_type.get("3买") or {}
     if (p3.get("alpha_avg") or 0) < 0:
@@ -190,6 +199,183 @@ def _esc(s):
     return (str("" if s is None else s)
             .replace("&", "&amp;").replace("<", "&lt;")
             .replace(">", "&gt;").replace('"', "&quot;"))
+
+
+def _cls(v):
+    """数值 → 红涨绿跌着色类（A 股习惯：正=红=up）。"""
+    if v is None:
+        return "dim"
+    return "up" if v > 0 else ("dn" if v < 0 else "dim")
+
+
+def _num(v, suffix="%", sign=True, nd=2):
+    if v is None:
+        return "—"
+    return ("%+.*f" % (nd, v) if sign else "%.*f" % (nd, v)) + suffix
+
+
+# 环境分回测证据缓存：(mtime, html)
+_EVBT_CACHE = {"mt": None, "html": ""}
+
+
+def _env_bt_block():
+    """①b 环境分回测证据块（读 portal/env_strat_evidence.json，按 mtime 缓存）。
+
+    该 JSON 由 tools/research/env_strat_backtest.py 生成，随代码入库
+    （quant_backtest/reports/ 被 gitignore，放那里生产部署会丢）。
+    没有产出文件就不渲染——不编造数字。
+    """
+    global _EVBT_CACHE
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        "env_strat_evidence.json")
+    try:
+        mt = os.path.getmtime(path)
+    except OSError:
+        return ""
+    if _EVBT_CACHE["mt"] == mt and _EVBT_CACHE["html"]:
+        return _EVBT_CACHE["html"]
+    try:
+        with open(path, encoding="utf-8") as f:
+            bt = json.load(f)
+    except (OSError, ValueError) as exc:
+        _LOG.warning("silent-except env-bt: %s", exc)
+        return ""
+
+    meta = bt.get("meta") or {}
+    chk = bt.get("checks") or {}
+    ok_n = sum(1 for v in chk.values() if v)
+    tot = len(chk) or 1
+    dc = (bt.get("day_cluster") or {}).get("alpha") or {}
+    dcr = (bt.get("day_cluster") or {}).get("ret") or {}
+    lag = bt.get("lag1") or {}
+    conc = bt.get("concentration") or {}
+    b3 = bt.get("band_q3") or []
+    verdict = bt.get("verdict") or ""
+
+    def band_rows(bands):
+        out = []
+        for b in bands:
+            al = b.get("alpha") or {}
+            rt = b.get("ret") or {}
+            out.append(
+                '<tr><td>%s</td><td class="dim">%d</td>'
+                '<td class="%s">%s</td><td class="%s">%s</td>'
+                '<td class="%s">%s</td><td class="%s">%s</td></tr>'
+                % (_esc(b.get("label")), b.get("n") or 0,
+                   _cls(al.get("avg")), _num(al.get("avg")),
+                   _cls(rt.get("avg")), _num(rt.get("avg")),
+                   _cls((al.get("win") or 0) - 50) if al.get("win") is not None
+                   else "dim", _num(al.get("win"), sign=False, nd=1),
+                   _cls((rt.get("win") or 0) - 50) if rt.get("win") is not None
+                   else "dim", _num(rt.get("win"), sign=False, nd=1)))
+        return "".join(out)
+
+    head = ('<thead><tr><th>档位</th><th>笔数</th><th>alpha 均值</th>'
+            '<th>收益均值</th><th>alpha 胜率</th><th>收益胜率</th></tr></thead>')
+
+    chain = "  →  ".join(
+        '<span class="%s">%s</span>'
+        % (_cls((b.get("alpha") or {}).get("avg")),
+           _num((b.get("alpha") or {}).get("avg")))
+        for b in b3[:3])
+
+    scan = bt.get("threshold_scan") or []
+    scan_rows = "".join(
+        '<tr%s><td>≥%d</td><td class="dim">%d</td><td class="dim">%.0f%%</td>'
+        '<td class="%s">%s</td><td class="%s">%s</td></tr>'
+        % (' style="background:rgba(227,179,65,.10)"' if s["th"] == ENV_GATE else "",
+           s["th"], s["n"], s["cover"],
+           _cls(s.get("alpha_avg")), _num(s.get("alpha_avg")),
+           _cls((s.get("alpha_win") or 0) - 50) if s.get("alpha_win") is not None
+           else "dim", _num(s.get("alpha_win"), sign=False, nd=1))
+        for s in scan)
+
+    chk_rows = "".join(
+        '<div class="ebt-chk"><span class="%s">%s</span> %s</div>'
+        % ("up" if v else "dn", "PASS" if v else "FAIL", _esc(k))
+        for k, v in chk.items())
+
+    segs = bt.get("segments") or {}
+    seg_html = "".join(
+        '<div class="ebt-sub">%s</div><table class="ebt-t">%s<tbody>%s</tbody></table>'
+        % (_esc(lab), head, band_rows(rows)) for lab, rows in segs.items())
+    ex3 = bt.get("excl_3buy") or []
+    if ex3:
+        seg_html += ('<div class="ebt-sub">剔除 3买 后（只剩 1买/2买）</div>'
+                     '<table class="ebt-t">%s<tbody>%s</tbody></table>'
+                     % (head, band_rows(ex3)))
+
+    gate_cover = next((s["cover"] for s in scan if s["th"] == ENV_GATE), 0) or 0
+    gate_alpha = next((s["alpha_avg"] for s in scan if s["th"] == ENV_GATE), None)
+
+    html = (
+        '<div class="sec"><h2>①b 环境分凭什么可信 '
+        '<span class="tag g">%d/%d 项检验通过</span>'
+        '<span class="tag">%s 笔 · %s 日 · %s</span></h2>'
+        % (ok_n, tot, meta.get("sample"), meta.get("days"),
+           _esc("~".join(meta.get("window") or [])))
+        + '<div class="ebt">'
+        + '<div class="ebt-line"><b>三档 alpha</b>（%s）%s　'
+          '低中高单调递增，高段是唯一为正的一档</div>'
+        % (_esc(" / ".join(b.get("label", "") for b in b3[:3])), chain)
+        + '<div class="ebt-line"><b>日级聚类检验</b> 高 %s 日 vs 低 %s 日：'
+          '差 <span class="%s">%s</span>，Welch t=%.2f，p=%.4f，'
+          'bootstrap 95%%CI [%+.2f, %+.2f]</div>'
+        % (dc.get("hi_days"), dc.get("lo_days"), _cls(dc.get("diff")),
+           _num(dc.get("diff")), dc.get("t") or 0, dc.get("p") or 1,
+           (dc.get("boot") or {}).get("lo") or 0,
+           (dc.get("boot") or {}).get("hi") or 0)
+        + '<div class="ebt-line"><b>绝对收益也同向</b> 高 %s vs 低 %s'
+          '（差 %s，p=%.4f）——不是只靠 alpha 口径撑场面</div>'
+        % (_num(dcr.get("hi_avg")), _num(dcr.get("lo_avg")),
+           _num(dcr.get("diff")), dcr.get("p") or 1)
+        + '<div class="ebt-line"><b>不是 beta 探测器</b> 高分日的指数收益反而更低'
+          '（%s vs %s），说明它选的是相对强度而不是大盘方向</div>'
+        % (_num((bt.get("beta_check") or {}).get("hi_idx")),
+           _num((bt.get("beta_check") or {}).get("lo_idx")))
+        + '<div class="ebt-line"><b>可执行性折损</b> 环境分收盘后才算得出，'
+          '滞后一日（次日入场）后：日级差 %s（p=%.4f），'
+          '但高分段日级 alpha 从 %s 掉到 %s —— '
+          '<em>硬门槛能少亏，不等于能赚</em></div>'
+        % (_num(lag.get("diff")), lag.get("p") or 1,
+           _num(dc.get("hi_avg")), _num(lag.get("hi_day_alpha")))
+        + '<div class="ebt-line"><b>结论</b> %s，硬门槛定为 <b>≥%d</b>'
+          '（保留 %.0f%% 机会，换 alpha %s）；60 分太松，等同没有门槛</div>'
+        % (_esc(verdict), ENV_GATE, gate_cover, _num(gate_alpha))
+        + '</div>'
+        + '<details class="ebt-d"><summary>展开完整证据：三档明细 / 分段 / '
+          '门槛扫描 / 集中度 / 检验清单</summary>'
+        + '<div class="ebt-sub">三分位（全因子 score）</div>'
+        + ('<table class="ebt-t">%s<tbody>%s</tbody></table>'
+           % (head, band_rows(b3)))
+        + seg_html
+        + '<div class="ebt-sub">门槛扫描（把环境分当硬门槛：机会 vs 质量）</div>'
+        + ('<table class="ebt-t"><thead><tr><th>门槛</th><th>笔数</th>'
+           '<th>机会占比</th><th>alpha 均值</th><th>alpha 胜率</th>'
+           '</tr></thead><tbody>%s</tbody></table>' % scan_rows)
+        + '<div class="ebt-sub">高档日集中度（前 3 大日占 %s%% 笔数，'
+          '剔除后 alpha 差仍 %s，p=%.4f）</div>'
+        % (_num(conc.get("top3_share"), suffix="", sign=False),
+           _num(conc.get("diff_after_drop")), conc.get("p_after_drop") or 1)
+        + '<div class="ebt-note">拥挤日（信号扎堆）alpha %s（%d 日）vs 稀疏日 %s'
+          '（%d 日）——扎堆不额外加价，但也不失效。</div>'
+        % (_num(conc.get("crowded_alpha")), conc.get("crowded_days") or 0,
+           _num(conc.get("sparse_alpha")), conc.get("sparse_days") or 0)
+        + ('<div class="ebt-sub">检验清单</div><div class="ebt-chks">%s</div>'
+           % chk_rows)
+        + '<div class="ebt-note">数据窗口自 %s 起：此前池每日买点仅 1-5 只'
+          '（覆盖度突变），量能因子基数过小会虚假满分；该窗口仅损失 %s 笔。</div>'
+        % (meta.get("stable_from"), meta.get("dropped"))
+        + '</details>'
+        + '<div class="legend">'
+          '<b>与页面口径的差异</b>：回测里第三因子（持仓浮盈）用「截至当日的'
+          '最近 30 笔已平仓买点均值」代理——没有每日持仓快照，这是最接近且严格因果的'
+          '替代；另两项（顺风占比、量能比）与页面完全一致。<br>'
+          '<b>alpha 口径</b>：个股 20 日收益 − β×同期全A等权基准（已扣大盘）。'
+          '样本期市场整体下跌，绝对收益为负是常态，衡量信号质量看 alpha。</div>'
+        + '</div>')
+    _EVBT_CACHE.update({"mt": mt, "html": html})
+    return html
 
 
 _CSS = """
@@ -268,6 +454,28 @@ opacity:.85}
 .dim{color:var(--dim)}
 .legend{font-size:11.5px;color:var(--dim);margin-top:8px;line-height:1.7}
 .legend b{color:#c9d1d9}
+.ebt{background:var(--card2);border:1px solid var(--line);border-radius:8px;
+padding:12px 14px}
+.ebt-line{font-size:12.5px;color:#b9c3cd;line-height:2}
+.ebt-line b{color:var(--text);margin-right:6px}
+.ebt-line em{color:var(--gold);font-style:normal}
+.ebt-d{margin-top:10px}
+.ebt-d summary{cursor:pointer;font-size:12px;color:var(--brand);
+padding:8px 0 4px;list-style:none;user-select:none}
+.ebt-d summary::-webkit-details-marker{display:none}
+.ebt-d summary:before{content:"▸ ";color:var(--dim)}
+.ebt-d[open] summary:before{content:"▾ "}
+.ebt-sub{font-size:11.5px;color:var(--gold);margin:12px 0 5px}
+.ebt-t{width:auto;min-width:520px;border-collapse:collapse;font-size:12px}
+.ebt-t th{text-align:left;color:var(--dim);font-weight:400;
+border-bottom:1px solid var(--line);padding:4px 22px 4px 8px;white-space:nowrap}
+.ebt-t td{padding:4px 22px 4px 8px;border-bottom:1px solid rgba(48,54,61,.4);
+font-variant-numeric:tabular-nums;white-space:nowrap}
+.ebt-chks{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
+gap:2px 14px;font-size:11.5px}
+.ebt-chk{color:var(--dim)}
+.ebt-chk span{font-weight:600;margin-right:5px}
+.ebt-note{font-size:11.5px;color:var(--dim);margin-top:6px;line-height:1.65}
 .sec-list{display:flex;flex-direction:column;gap:6px}
 .sec-row{display:grid;grid-template-columns:180px 1fr 74px 74px 62px;
 gap:10px;align-items:center;font-size:12.5px}
@@ -510,6 +718,9 @@ class Handler:  # Mixin 壳：经基座多继承并入 Handler
                env["s_pnl"], env["up_share"] * 100, env["ratio"]))
         add("</div>")
 
+        # ①b 环境分回测证据（无产出文件则不渲染）
+        add(_env_bt_block())
+
         # KPI
         add('<div class="grid kpis">')
         add('<div class="kpi"><div class="v">%d</div><div class="l">'
@@ -521,7 +732,7 @@ class Handler:  # Mixin 壳：经基座多继承并入 Handler
         add('<div class="kpi"><div class="v">%d</div><div class="l">'
             '高置信 conf≥0.5</div></div>' % hi_n)
         add('<div class="kpi"><div class="v %s">%s</div><div class="l">'
-            '买点仓 %d 只 · 浮盈 %d</div></div>'
+            '买点仓 %d 只 · 浮盈 %d 只</div></div>'
             % ("up" if (op_stat["avg"] or 0) > 0 else "dn",
                ("%+.2f%%" % op_stat["avg"]) if op_stat["avg"] is not None else "—",
                len(open_buys), gain_n))
@@ -600,17 +811,19 @@ class Handler:  # Mixin 壳：经基座多继承并入 Handler
         # ⑥ 纪律卡
         add('<div class="sec"><h2>⑥ 纪律卡 <span class="tag">照做，别临场改</span></h2>')
         add('<div class="rules">'
-            '<b>1 入场</b>：只做 1买/2买/3买 三类买点，<em>三卖一律不碰</em>；'
+            '<b>1 入场</b>：<em>环境分 ≥%d 才开新仓</em>（1829 笔回测的唯一断点，'
+            '低于它 alpha 转负）；只做 1买/2买/3买，<em>三卖一律不碰</em>；'
             '参考入价取检出日收盘，次日开盘可跟，不追高。<br>'
             '<b>2 持有</b>：<em>%d 个交易日</em>，中途不看盘不做 T，不加仓不摊平。<br>'
             '<b>3 离场</b>：到期收盘出，不设盘中止损（与回测口径一致，'
             '改了就不是同一套战绩）。<br>'
-            '<b>4 仓位</b>：单票等权，环境分 &lt;40 时总仓位 ≤2 成；'
-            '40-60 时 ≤5 成；≥60 才可上 7 成。<br>'
+            '<b>4 仓位</b>：单票等权。<em>环境分 &lt;60 → 空仓</em>（回测该段 alpha 为负、'
+            '胜率 &lt;45%%）；60-74 → 总仓位 ≤3 成且只做顺风+高置信；≥%d → 可上 7 成。<br>'
             '<b>5 取舍</b>：<em>3买 超额为负</em>，只在顺风 + 高置信 + 强板块三者'
             '同时满足时做，否则跳过；1买/2买 是主力。<br>'
-            '<b>6 停手</b>：环境分连续 3 日 &lt;40 → 整周只看不动，'
-            '不要用「再试一次」跟市场讲道理。</div></div>' % HOLD_DAYS)
+            '<b>6 停手</b>：环境分连续 3 日 &lt;60 → 整周只看不动，'
+            '不要用「再试一次」跟市场讲道理。</div></div>'
+            % (ENV_GATE, HOLD_DAYS, ENV_GATE))
 
         add('<div class="dim" style="font-size:11.5px;margin-top:14px">'
             '数据源 chanlun_pool%s.jsonl + chanlun_paper%s.json（只读）· '
