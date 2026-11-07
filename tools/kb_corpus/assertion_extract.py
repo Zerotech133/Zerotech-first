@@ -443,6 +443,11 @@ def extract_one(cand: dict, schema: dict) -> dict:
             "extracted_at": datetime.now().astimezone().isoformat(timespec="seconds"),
         }
         rec["completeness_score"] = sum(rec["completeness"].values())
+        # P2: invalidator 降为加分项，核心三要素才是完整度判据；
+        # completeness_score 保留四要素统计和以兼容历史数据，不作通过门槛。
+        rec["completeness_core_score"] = sum(
+            bool(rec["completeness"].get(k)) for k in ("condition", "action", "target"))
+        rec["completeness_bonus"] = bool(rec["completeness"].get("invalidator"))
         if passed:
             # 同一段里抽出两条完全等价的断言（aid 由 kind/verb/action/condition/scope
             # 内容寻址，全同即重复）。实测全库仅 1 对，主要用于防未来复发，零误杀。
@@ -533,8 +538,10 @@ def main(argv=None) -> int:
         from collections import Counter
         print(f"kind 分布      {dict(Counter(a['kind'] for a in all_a))}")
         print(f"verb 分布      {dict(Counter(a['action']['verb'] for a in all_a).most_common(8))}")
-        full = sum(1 for a in all_a if a["completeness_score"] == 4)
-        print(f"四要素齐全     {full}/{len(all_a)} = {full/len(all_a)*100:.1f}%")
+        full = sum(1 for a in all_a if (a.get("completeness_core_score") or 0) == 3)
+        bonus = sum(1 for a in all_a if a.get("completeness_bonus"))
+        print(f"核心三要素齐全 {full}/{len(all_a)} = {full/len(all_a)*100:.1f}%")
+        print(f"含失效条件(加分) {bonus}/{len(all_a)} = {bonus/len(all_a)*100:.1f}%")
     if errors:
         print("\n失败样例（前 3）：")
         for e in errors[:3]:
