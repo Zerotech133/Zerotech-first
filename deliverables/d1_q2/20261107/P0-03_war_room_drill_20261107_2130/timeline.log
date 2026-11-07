@@ -1,0 +1,11 @@
+2026-11-07T21:19:03+08:00 PREFLIGHT ok; host=5f80ffa665d06b474e9acac651312dbcb0e53ba8e7d8f35fd33d4a879c1378ac temp=1c44bc9a5fb7d4dae91bc68a7f8bbc09a9737827ca3b33ae75b7763bc831794e
+2026-11-07T21:29:40+08:00 APPLY begin
+2026-11-07T21:29:40+08:00 APPLY nginx -t rc=0 nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+2026-11-07T21:29:40+08:00 APPLY nginx reload rc=0 2026/11/07 13:29:40 [notice] 89#89: signal process started
+2026-11-07T21:29:47+08:00 APPLY verified: 8734 war-room 503; 8091 direct + d1/health unaffected
+2026-11-07T21:30:47+08:00 RESTORE bytes written: window restore; host=5f80ffa665d06b474e9acac651312dbcb0e53ba8e7d8f35fd33d4a879c1378ac
+2026-11-07T21:30:48+08:00 RESTORE nginx -t rc=0 nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+2026-11-07T21:30:48+08:00 RESTORE nginx reload rc=0 2026/11/07 13:30:48 [notice] 139#139: signal process started
+2026-11-07T21:30:55+08:00 FINISH ok=True restored=True elapsed=75.1s
