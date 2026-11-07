@@ -28,13 +28,18 @@
 # USAGE (elevated PowerShell)
 #   powershell -NoProfile -ExecutionPolicy Bypass -File C:\aios\ops\fix_watchdog_8099_20261107.ps1 -DryRun
 #   powershell -NoProfile -ExecutionPolicy Bypass -File C:\aios\ops\fix_watchdog_8099_20261107.ps1 -Apply
+#   powershell -NoProfile -ExecutionPolicy Bypass -File C:\aios\ops\fix_watchdog_8099_20261107.ps1 -Verify
 #   powershell -NoProfile -ExecutionPolicy Bypass -File C:\aios\ops\fix_watchdog_8099_20261107.ps1 -Rollback
+# -Verify kills the 8095 listener on purpose and waits up to 7 min for the next
+# periodic tick to revive it (the only real proof that the guard is armed).
+# It needs elevation too, for the same reason -Apply does.
 param(
     [switch]$DryRun,
     [switch]$Apply,
     [switch]$Rollback,
     [switch]$SelfTest,
-    [switch]$NoCow
+    [switch]$NoCow,
+    [switch]$Verify
 )
 $ErrorActionPreference = 'Stop'
 
@@ -77,6 +82,132 @@ if ($SelfTest) {
     Write-Host ('stdout: ' + $out.Trim())
     if ($err.Trim()) { Write-Host ('stderr: ' + $err.Trim()) -ForegroundColor Red }
     exit $p.ExitCode
+}
+
+# ---- 0a. reverse verification: kill 8095, wait for the PERIODIC tick --------
+# Why this exists: "port came up once" only proves the spawn path works once.
+# What has to be proven is "if 8095 dies at an arbitrary time, the next 5-minute
+# task tick notices and revives it" -- i.e. the guard is actually armed.
+#
+# Why -Verify also needs elevation: the 8095 child is spawned by an S4U task
+# instance (different logon session), so a non-elevated token gets
+# ERROR_ACCESS_DENIED on terminate -- measured: OpenProcess lasterr=5,
+# Stop-Process "access denied", WMI Terminate rc=2.
+#
+# Design: kill, prove the port is really DOWN, then WAIT for the natural
+# trigger instead of calling Start-ScheduledTask. Calling the task ourselves
+# would prove the action string, not the schedule.
+if ($Verify) {
+    $id = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $pr = New-Object Security.Principal.WindowsPrincipal($id)
+    if (-not $pr.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+        Write-Host 'BLOCKED: -Verify terminates the 8095 listener, which needs elevation.' -ForegroundColor Red
+        Write-Host '  (non-elevated: OpenProcess ERROR_ACCESS_DENIED / WMI Terminate rc=2)' -ForegroundColor Red
+        exit 2
+    }
+    $vTask = @(Get-ScheduledTask | Where-Object { $_.TaskName -like '*8099*' })
+    if ($vTask.Count -ne 1) { Write-Host ('BLOCKED: expect 1 task matching *8099*, got ' + $vTask.Count) -ForegroundColor Red; exit 2 }
+    $vName = $vTask[0].TaskName
+    $vArgs = $vTask[0].Actions[0].Arguments
+    Write-Host ('task = ' + $vName)
+    Write-Host ('  action guards picks = ' + (($vArgs -like '*m.main()*') -or ($vArgs -like '*guard_picks_sched*')))
+    if (-not (($vArgs -like '*m.main()*') -or ($vArgs -like '*guard_picks_sched*'))) {
+        Write-Host 'ABORT: the task does not guard 8095 yet -- run -Apply first.' -ForegroundColor Red
+        exit 3
+    }
+
+    $VLOG = 'C:\Temp\watchdog_9899.log'
+    $vBefore = 0
+    if (Test-Path -LiteralPath $VLOG) { $vBefore = @(Get-Content -LiteralPath $VLOG).Count }
+    Write-Host ('log baseline = ' + $vBefore + ' lines  now=' + (Get-Date).ToString('HH:mm:ss'))
+
+    $vc = Get-NetTCPConnection -LocalPort 8095 -State Listen -ErrorAction SilentlyContinue
+    $vOld = 0
+    if ($vc) { $vOld = $vc[0].OwningProcess; Write-Host ('8095 before = LISTEN pid=' + $vOld) }
+    else { Write-Host '8095 before = DOWN (verify becomes: was it revived by the next tick)' -ForegroundColor Yellow }
+
+    if ($vOld -ne 0) {
+        # identity gate: never kill a port just because it is listening
+        $body = (& curl.exe -s -m 5 http://127.0.0.1:8095/) -join ''
+        $isPicks = $body -like '*picks*'
+        Write-Host ('identity = page mentions picks: ' + $isPicks)
+        if (-not $isPicks) {
+            Write-Host 'ABORT: 8095 does not look like publish_schedule_server; refusing to kill.' -ForegroundColor Red
+            exit 4
+        }
+        try {
+            Stop-Process -Id $vOld -Force -ErrorAction Stop
+            Write-Host ('killed pid=' + $vOld) -ForegroundColor Yellow
+        } catch {
+            Write-Host ('KILL FAILED: ' + $_.Exception.Message) -ForegroundColor Red
+            exit 5
+        }
+        Start-Sleep -Seconds 3
+        $vc2 = Get-NetTCPConnection -LocalPort 8095 -State Listen -ErrorAction SilentlyContinue
+        if ($vc2) {
+            # a forked child can hold the port; kill the actual listener too
+            Write-Host ('port re-held by pid=' + $vc2[0].OwningProcess + ' -> killing it as well') -ForegroundColor Yellow
+            try { Stop-Process -Id $vc2[0].OwningProcess -Force -ErrorAction Stop } catch { }
+            Start-Sleep -Seconds 3
+            $vc2 = Get-NetTCPConnection -LocalPort 8095 -State Listen -ErrorAction SilentlyContinue
+        }
+        if ($vc2) {
+            Write-Host ('FAIL: 8095 still listening (pid=' + $vc2[0].OwningProcess + ')') -ForegroundColor Red
+            exit 6
+        }
+        Write-Host 'port 8095 = DOWN (kill confirmed)' -ForegroundColor Green
+    }
+
+    $vi = Get-ScheduledTaskInfo -TaskName $vName
+    Write-Host ('next_run = ' + $vi.NextRunTime + '  (polling up to 7 min: 5 min interval + one 100s budget)')
+    $deadline = (Get-Date).AddMinutes(7)
+    $vNew = 0
+    $elapsed = 0
+    $t0 = Get-Date
+    while ((Get-Date) -lt $deadline) {
+        Start-Sleep -Seconds 10
+        $vn = Get-NetTCPConnection -LocalPort 8095 -State Listen -ErrorAction SilentlyContinue
+        if ($vn) {
+            $cand = $vn[0].OwningProcess
+            if ($cand -ne $vOld) {
+                $vNew = $cand
+                $elapsed = [int]((Get-Date) - $t0).TotalSeconds
+                break
+            }
+        }
+    }
+
+    Write-Host ''
+    if ($vNew -eq 0) {
+        Write-Host ('VERIFY FAILED: 8095 did not come back within 7 min (old pid=' + $vOld + ')') -ForegroundColor Red
+        Write-Host '  manual fallback:'
+        Write-Host ('    & "' + $PY + '" "' + $PORTAL + '\publish_schedule_server.py" --bg')
+        Write-Host '  then look at C:\Temp\picks_sched_wd.log and the log delta below'
+    } else {
+        $code = & curl.exe -s -m 5 -o NUL -w "%{http_code}" http://127.0.0.1:8095/
+        Write-Host ('VERIFY OK: revived pid=' + $vNew + ' after ~' + $elapsed + 's, HTTP ' + $code) -ForegroundColor Green
+        if ($code -ne '200') { Write-Host '  WARNING: port listens but HTTP is not 200' -ForegroundColor Yellow }
+    }
+    Write-Host ('task last_run=' + (Get-ScheduledTaskInfo -TaskName $vName).LastRunTime)
+
+    Write-Host '--- watchdog log delta ---'
+    if (Test-Path -LiteralPath $VLOG) {
+        $all = @(Get-Content -LiteralPath $VLOG)
+        $delta = @($all | Select-Object -Skip $vBefore)
+        if ($delta.Count -eq 0) {
+            Write-Host '  (no new lines -- guard never ran, or it ran and found the port alive)' -ForegroundColor Yellow
+        } else {
+            $delta | ForEach-Object { Write-Host ('  ' + $_) }
+        }
+        $joined = $delta -join "`n"
+        Write-Host ('  has "picks_sched:8095 DOWN x2 -> spawn" = ' + ($joined -like '*picks_sched:8095 DOWN*'))
+        Write-Host ('  has "picks_sched REVIVED"              = ' + ($joined -like '*picks_sched REVIVED*'))
+    } else {
+        Write-Host '  NO LOG FILE' -ForegroundColor Red
+    }
+
+    if ($vNew -eq 0) { exit 1 }
+    exit 0
 }
 
 # ---- 0b. resolve task by pattern (ASCII-safe) -------------------------------
