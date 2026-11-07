@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>D1 投研裁决台 · 零界</title>
+<style>
+:root{
+  --bg:#0a0d12; --panel:#11161f; --panel2:#151b25; --line:#253040;
+  --text:#e7edf7; --muted:#8d9bb0; --cyan:#22d3ee; --green:#34d399;
+  --amber:#fbbf24; --red:#f87171; --violet:#a78bfa;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{
+  background:
+    radial-gradient(900px 420px at 80% -10%,rgba(34,211,238,.13),transparent 62%),
+    radial-gradient(760px 380px at -10% 10%,rgba(167,139,250,.10),transparent 60%),
+    var(--bg);
+  color:var(--text);
+  font:14px/1.65 "Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;
+}
+a{color:var(--cyan);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1240px;margin:0 auto;padding:26px 22px 40px}
+.top{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:18px}
+.brand{display:flex;gap:12px;align-items:center}
+.mark{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#22d3ee,#6366f1);box-shadow:0 0 24px rgba(34,211,238,.25)}
+.brand small{display:block;color:var(--muted);letter-spacing:.14em;font-size:10px}
+.brand h1{font-size:23px;line-height:1.25;margin:2px 0 0}
+.nav{display:flex;gap:8px;flex-wrap:wrap}
+.nav a,.nav span{
+  border:1px solid var(--line);background:var(--panel);border-radius:999px;
+  padding:7px 12px;color:var(--muted);font-size:12px
+}
+.nav a.active{border-color:rgba(34,211,238,.55);color:var(--cyan);background:rgba(34,211,238,.07)}
+.hero{
+  border:1px solid var(--line);border-radius:16px;padding:20px 22px;
+  background:linear-gradient(180deg,rgba(21,27,37,.95),rgba(13,18,26,.95));
+  display:grid;grid-template-columns:1.5fr 1fr;gap:18px;margin-bottom:16px
+}
+.hero h2{margin:0 0 7px;font-size:20px}
+.hero p{margin:0;color:var(--muted);max-width:760px}
+.hero .stamp{font:11px/1.5 ui-monospace,Consolas,monospace;color:var(--muted);text-align:right}
+.hero .stamp b{display:block;color:var(--text);font-size:12px;margin-bottom:4px}
+.badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}
+.badge{font-size:11px;border:1px solid var(--line);border-radius:999px;padding:4px 9px;color:var(--muted)}
+.badge.ok{color:var(--green);border-color:rgba(52,211,153,.35);background:rgba(52,211,153,.07)}
+.badge.warn{color:var(--amber);border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.07)}
+.badge.bad{color:var(--red);border-color:rgba(248,113,113,.35);background:rgba(248,113,113,.07)}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.card{border:1px solid var(--line);border-radius:13px;background:var(--panel);padding:15px 16px;min-height:112px}
+.card .k{color:var(--muted);font-size:11px;letter-spacing:.04em}
+.card .v{font-size:24px;font-weight:700;margin:6px 0 2px;font-variant-numeric:tabular-nums}
+.card .s{color:var(--muted);font-size:11px}
+.card.loading .v{color:var(--muted);font-size:16px}
+.card .err{color:var(--red);font-size:11px;margin-top:6px}
+.q2{border-color:rgba(251,191,36,.38);background:linear-gradient(180deg,rgba(251,191,36,.06),var(--panel))}
+.panel{border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:18px;margin-bottom:16px}
+.panel h3{margin:0 0 10px;font-size:16px;display:flex;align-items:center;gap:8px}
+.panel h3 .dot{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
+.panel p{margin:0;color:var(--muted)}
+.links{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.link{border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--panel2);display:block;transition:.15s}
+.link:hover{border-color:rgba(34,211,238,.5);transform:translateY(-1px);text-decoration:none}
+.link b{display:block;color:var(--text);font-size:14px;margin-bottom:3px}
+.link span{color:var(--muted);font-size:11px}
+.two{display:grid;grid-template-columns:1.1fr .9fr;gap:16px}
+.evidence{margin:0;padding-left:18px;color:var(--muted);font-size:12px}
+.evidence li{margin:5px 0}
+.note{border-left:2px solid var(--amber);padding:8px 12px;color:var(--muted);background:rgba(251,191,36,.045);border-radius:0 8px 8px 0;font-size:12px;margin-top:12px}
+.foot{color:var(--muted);font-size:11px;border-top:1px solid var(--line);padding-top:14px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.mono{font-family:ui-monospace,Consolas,monospace}
+@media (max-width:980px){
+  .hero,.two{grid-template-columns:1fr}
+  .grid{grid-template-columns:repeat(2,1fr)}
+  .links{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:560px){
+  .wrap{padding:18px 14px 30px}
+  .grid,.links{grid-template-columns:1fr}
+  .brand h1{font-size:20px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="mark" aria-hidden="true"></div>
+      <div>
+        <small>零界 · D1 鲁肃军团</small>
+        <h1>D1 投研裁决台</h1>
+      </div>
+    </div>
+    <nav class="nav" aria-label="D1 导航">
+      <span class="active">总览</span>
+      <a href="/d1/research">研究</a>
+      <a href="/d1/war-room">作战室</a>
+      <a href="/d1/training">训练</a>
+      <a href="/d1/q2/signoff">Q2 验收</a>
+    </nav>
+  </header>
+
+  <section class="hero" aria-label="D1 总览">
+    <div>
+      <h2>单页查看 Q2 状态、研究、决策、交接与待办</h2>
+      <p>本页只读聚合，不产生交易、不写账本、不改任何状态。所有数字均来自现有 8091 API；失败时保留错误提示，不伪造数据。</p>
+      <div class="badges">
+        <span class="badge warn">Q2：Q1 / draft</span>
+        <span class="badge">validated=false</span>
+        <span class="badge bad">SLO not_measured</span>
+        <span class="badge ok">paper-only</span>
+      </div>
+    </div>
+    <div class="stamp">
+      <b>P0-07 · 总览骨架</b>
+      数据刷新：<span id="refresh-time">加载中…</span><br>
+      入口：<span class="mono">/d1</span> · 登录后可见<br>
+      边界：只读 / 不接实盘 / 不下单
+    </div>
+  </section>
+
+  <section class="grid" aria-label="核心计数">
+    <div class="card q2">
+      <div class="k">Q2 阶段</div>
+      <div class="v" style="font-size:20px;color:var(--amber)">Q1 / draft</div>
+      <div class="s">validated=false；SLO 未测量；回滚待演练</div>
+    </div>
+    <div class="card" id="card-health">
+      <div class="k">门户健康（8091）</div>
+      <div class="v loading">加载中…</div>
+      <div class="s">单次探针 · /api/health</div>
+    </div>
+    <div class="card" id="card-pending">
+      <div class="k">待确认（paper）</div>
+      <div class="v">—</div>
+      <div class="s">/api/sim/confirmations?status=pending</div>
+    </div>
+    <div class="card">
+      <div class="k">席位 / 页面 / job</div>
+      <div class="v">13 <span style="font-size:13px;color:var(--muted)">/ 3 / 4</span></div>
+      <div class="s">13 席定编；4 席 observer/备用</div>
+    </div>
+  </section>
+
+  <section class="grid" aria-label="研究决策交接计划">
+    <div class="card" id="card-research">
+      <div class="k">研究记录</div>
+      <div class="v">—</div>
+      <div class="s">/api/d1/research</div>
+    </div>
+    <div class="card" id="card-decisions">
+      <div class="k">决策记录</div>
+      <div class="v">—</div>
+      <div class="s">/api/d1/decisions</div>
+    </div>
+    <div class="card" id="card-handoffs">
+      <div class="k">交接 · 待确认</div>
+      <div class="v">—</div>
+      <div class="s">/api/d1/handoffs</div>
+    </div>
+    <div class="card" id="card-plans">
+      <div class="k">盯盘计划</div>
+      <div class="v">—</div>
+      <div class="s">/api/d1/watch-plans</div>
+    </div>
+  </section>
+
+  <div class="two">
+    <section class="panel">
+      <h3><span class="dot"></span>进入 D1 各工作区</h3>
+      <div class="links">
+        <a class="link" href="/d1/research"><b>研究台</b><span>研究记录 / 证据 / 结论</span></a>
+        <a class="link" href="/d1/war-room"><b>作战室</b><span>快照 / 计划 / 确认</span></a>
+        <a class="link" href="/d1/training"><b>训练</b><span>episode / 校准</span></a>
+        <a class="link" href="/d1/q2/signoff"><b>Q2 验收</b><span>角色复核 / 签字页</span></a>
+      </div>
+      <p class="note">P0 阶段只补证据与稳定，不新增交易功能。页面不展示或写入任何真实资金账户。</p>
+    </section>
+
+    <section class="panel">
+      <h3><span class="dot"></span>证据与边界</h3>
+      <ul class="evidence">
+        <li>组合：<span class="mono">lusu-d1-flow v1.1.0</span>，13 席；9 HTTP / 3 页面 / 4 job。</li>
+        <li>当前阶段：<span class="mono">Q1 / shadow / validated=false / q2_complete=false</span>。</li>
+        <li>健康：单次探针 8/8；持续窗口 <span class="mono">not_measured</span>。</li>
+        <li>SLO：7d 窗口 2026-11-07 00:00 → 2026-11-14 00:00。</li>
+        <li>安全：<span class="mono">paper_only=true</span>、<span class="mono">trading_permitted=false</span>、<span class="mono">real_exchange_adapter=disabled</span>。</li>
+      </ul>
+    </section>
+  </div>
+
+  <footer class="foot">
+    <span>D1 总览 · 只读聚合页 · 不写生产账本</span>
+    <span>数据源：8091 API；页面骨架 P0-07</span>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var cards = {
+    health: document.getElementById("card-health"),
+    pending: document.getElementById("card-pending"),
+    research: document.getElementById("card-research"),
+    decisions: document.getElementById("card-decisions"),
+    handoffs: document.getElementById("card-handoffs"),
+    plans: document.getElementById("card-plans")
+  };
+
+  function unwrap(json) {
+    if (json && typeof json === "object" && json.data !== undefined) return json.data;
+    return json;
+  }
+
+  function asArray(value) {
+    if (Array.isArray(value)) return value;
+    if (value && Array.isArray(value.items)) return value.items;
+    if (value && Array.isArray(value.records)) return value.records;
+    if (value && Array.isArray(value.list)) return value.list;
+    return [];
+  }
+
+  function asNumber(value) {
+    if (typeof value === "number" && isFinite(value)) return value;
+    if (typeof value === "string" && value.trim() !== "" && isFinite(Number(value))) return Number(value);
+    return null;
+  }
+
+  function countOf(value, keys) {
+    var n = asNumber(value);
+    if (n !== null) return n;
+    if (!value || typeof value !== "object") return null;
+    for (var i = 0; i < keys.length; i++) {
+      var k = keys[i];
+      var v = k.split(".").reduce(function (o, p) { return o && o[p] !== undefined ? o[p] : undefined; }, value);
+      n = asNumber(v);
+      if (n !== null) return n;
+    }
+    if (Array.isArray(value)) return value.length;
+    var arrayKeys = ["items", "records", "list", "data"];
+    for (var j = 0; j < arrayKeys.length; j++) {
+      if (Array.isArray(value[arrayKeys[j]])) return value[arrayKeys[j]].length;
+    }
+    return null;
+  }
+
+  function setValue(card, text, detail, err) {
+    if (!card) return;
+    card.classList.remove("loading");
+    var v = card.querySelector(".v");
+    if (v) v.textContent = text;
+    var s = card.querySelector(".s");
+    if (s && detail) s.textContent = detail;
+    var e = card.querySelector(".err");
+    if (e) e.remove();
+    if (err) {
+      var div = document.createElement("div");
+      div.className = "err";
+      div.textContent = err;
+      card.appendChild(div);
+    }
+  }
+
+  function fetchJson(url) {
+    return fetch(url, {
+      method: "GET",
+      credentials: "same-origin",
+      headers: { "Accept": "application/json" },
+      cache: "no-store"
+    }).then(function (r) {
+      return r.json().then(function (j) {
+        return { ok: r.ok, status: r.status, json: j };
+      }).catch(function () {
+        return { ok: r.ok, status: r.status, json: null };
+      });
+    });
+  }
+
+  function load(name, url, apply) {
+    return fetchJson(url).then(function (res) {
+      if (!res.ok) {
+        setValue(cards[name], "不可用", url.replace(/^\/api\//, "/api/"), "HTTP " + res.status);
+        return;
+      }
+      var data = unwrap(res.json);
+      try {
+        apply(data);
+      } catch (err) {
+        setValue(cards[name], "解析失败", url, "数据格式变化");
+      }
+    }).catch(function () {
+      setValue(cards[name], "不可用", url, "请求失败");
+    });
+  }
+
+  function loadHealth() {
+    return fetchJson("/api/health").then(function (res) {
+      var data = unwrap(res.json);
+      var status = (data && (data.status || data.health || data.state)) || (res.ok ? "ok" : "down");
+      var detail = "/api/health · HTTP " + res.status;
+      var checks = data && (data.checks || data.services);
+      if (Array.isArray(checks)) {
+        var ok = checks.filter(function (v) { return v && v.ok === true; }).length;
+        if (checks.length) detail = "/api/health · " + ok + "/" + checks.length + " 服务通过";
+      } else if (checks && typeof checks === "object") {
+        var vals = Object.keys(checks).map(function (k) { return checks[k]; });
+        var okObj = vals.filter(function (v) {
+          return v === true || v === "ok" || (v && (v.status === "ok" || v.ok === true));
+        }).length;
+        if (vals.length) detail = "/api/health · " + okObj + "/" + vals.length + " 通过";
+      }
+      var text = String(status);
+      if (data && data.latency_ms !== undefined) text += " · " + data.latency_ms + "ms";
+      setValue(cards.health, text, detail);
+      var v = cards.health && cards.health.querySelector(".v");
+      if (v) v.style.color = res.ok ? "var(--green)" : "var(--red)";
+    }).catch(function () {
+      setValue(cards.health, "不可用", "/api/health", "请求失败");
+    });
+  }
+
+  function loadPending() {
+    var urls = [
+      "/api/sim/confirmations?status=pending",
+      "/api/sim/confirmations"
+    ];
+    function attempt(i) {
+      if (i >= urls.length) {
+        setValue(cards.pending, "—", "确认 API 不可用", "无可用响应");
+        return Promise.resolve();
+      }
+      return fetchJson(urls[i]).then(function (res) {
+        if (!res.ok) return attempt(i + 1);
+        var data = unwrap(res.json);
+        var n = countOf(data, ["summary.pending", "pending", "total", "count"]);
+        if (n === null) return attempt(i + 1);
+        setValue(cards.pending, String(n), "paper 确认 · 只读");
+      }).catch(function () { return attempt(i + 1); });
+    }
+    return attempt(0);
+  }
+
+  function simpleCount(name, url, keys, label) {
+    return load(name, url, function (data) {
+      var n = countOf(data, keys);
+      setValue(cards[name], n === null ? "—" : String(n), label);
+    });
+  }
+
+  var tasks = [
+    loadHealth(),
+    loadPending(),
+    simpleCount("research", "/api/d1/research", ["summary.total", "total", "count"], "研究记录"),
+    simpleCount("decisions", "/api/d1/decisions", ["summary.total", "total", "count"], "决策记录"),
+    simpleCount("handoffs", "/api/d1/handoffs", ["summary.pending_ack", "summary.pending", "pending_ack", "pending"], "交接 · 待确认 / 只读"),
+    simpleCount("plans", "/api/d1/watch-plans", ["summary.total", "total", "count"], "盯盘计划")
+  ];
+
+  Promise.allSettled(tasks).then(function () {
+    var el = document.getElementById("refresh-time");
+    if (el) {
+      el.textContent = new Date().toLocaleString("zh-CN", { hour12: false });
+    }
+  });
+})();
+</script>
+</body>
+</html>

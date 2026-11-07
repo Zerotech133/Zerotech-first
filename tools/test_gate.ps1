@@ -273,7 +273,9 @@ $paths = @{
         # scan_secrets.py 是每次 commit 都跑的 pre-commit 闸门，也是 devtask merge
         # 硬门的引擎；但它自己的检测逻辑此前零自动覆盖（-Suite tools 无人自动调）。
         # 退化方向是「少报」，假阴性不报错、只会让硬门变纸门。42 条全合成夹具，0.6s。
-        'tools/tests/test_scan_secrets_fp.py'
+        'tools/tests/test_scan_secrets_fp.py',
+        # ---- 看护预算契约（2026-11-07 K-ORG-20261107-WATCHDOG，+1） ----
+        'tools/tests/test_keepalive_budget.py'
     )
 }
 

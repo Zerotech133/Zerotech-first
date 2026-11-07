@@ -350,8 +350,12 @@ def write_report(result: dict, out_md: Path) -> None:
     lines.append("")
     lines.append("- 所有因子矩阵均为 directed rank，IC 正值表示反转信号方向正确；"
                  "t 值为日度 IC 序列的 t 统计量。")
-    lines.append("- b1_mom_21d 与 return_21d 原始值完全相等，因此对 return_21d 的残差恒为 0，"
-                 "不存在“超出 return_21d 的独立 IC”。")
+    if diag["raw_exact_equal"]:
+        lines.append("- b1_mom_21d 与 return_21d 原始值完全相等，因此对 return_21d 的残差恒为 0，"
+                     "不存在“超出 return_21d 的独立 IC”。")
+    else:
+        lines.append(f"- b1_mom_21d 与 return_21d 原始最大绝对差 {diag['raw_max_abs_diff']:.3e}，"
+                     "两者并非同源。")
     lines.append("- 对 P1 动量 sleeve 的残差仍有非零 IC，来源是 b1_mom_21d 与 sleeve 内"
                  "其他动量因子的差异；它等价于对 sleeve 里已有 return_21d 的重新加权，"
                  "不是新 alpha。")

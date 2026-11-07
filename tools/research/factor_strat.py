@@ -119,6 +119,7 @@ def run(days: int = 760, split: float = 0.6, cost_bps: int = 15) -> dict:
     split_idx = int(len(dates) * split)
     ic = {k: {"IS": [], "OOS": []} for k in FACTORS}
     q_ret = {k: {"IS": {q: [] for q in "12345"}, "OOS": {q: [] for q in "12345"}} for k in FACTORS}
+    ls_series = {k: {"IS": [], "OOS": []} for k in FACTORS}
     for i, T in rebal:
         fwd = dates[i + 1: i + 21]
         if len(fwd) < 20:
@@ -143,7 +144,7 @@ def run(days: int = 760, split: float = 0.6, cost_bps: int = 15) -> dict:
                 acc += rr - nn
             if not ok:
                 continue
-            fwd_ret[code] = acc - cost_pct
+            fwd_ret[code] = acc
             if last[2] is not None:
                 vals["quality"][code] = last[2]  # roe
             if last[3] is not None:
@@ -155,8 +156,9 @@ def run(days: int = 760, split: float = 0.6, cost_bps: int = 15) -> dict:
             for c, v in zip(tb.column("ts_code").to_pylist(), tb.column("pe_ttm").to_pylist()):
                 if v and float(v) > 0 and c in fwd_ret:
                     vals["value"][c] = 1.0 / float(v)
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as exc:  # noqa: BLE001
+            print(f"[factor_strat] value 因子在 {T} 不可用: {type(exc).__name__}: {exc}",
+                  file=sys.stderr)
         codes = [c for c in fwd_ret if c in vals["value"] or c in vals["quality"] or c in vals["growth"]]
         if len(codes) < 50:
             continue
@@ -168,10 +170,16 @@ def run(days: int = 760, split: float = 0.6, cost_bps: int = 15) -> dict:
             ys = [fwd_ret[c] for c, _ in sub]
             ic[k][seg].append(spearman(xs, ys))
             order = sorted(range(len(sub)), key=lambda j: xs[j])
+            q_means = {}
             for q in range(5):
                 lo = int(len(order) * q / 5)
                 hi = int(len(order) * (q + 1) / 5)
-                q_ret[k][seg][str(q + 1)].extend(ys[j] for j in order[lo:hi])
+                vals = [ys[j] for j in order[lo:hi]]
+                q_ret[k][seg][str(q + 1)].extend(vals)
+                if vals:
+                    q_means[str(q + 1)] = sum(vals) / len(vals)
+            if "5" in q_means and "1" in q_means:
+                ls_series[k][seg].append(q_means["5"] - q_means["1"])
     res = {"ok": True, "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
            "window": {"start": dates[0], "end": dates[-1], "trading_days": len(dates)},
            "rebalance_months": len(rebal), "cost_pct": cost_pct, "factors": {},
@@ -183,10 +191,17 @@ def run(days: int = 760, split: float = 0.6, cost_bps: int = 15) -> dict:
             r["ic"][seg] = {"n_months": len(ic[k][seg]), "mean": s["mean"], "t": s["t"]}
             for q in "12345":
                 r["q5_minus_q1"].setdefault(seg, {})["q" + q] = stats(q_ret[k][seg][q])["mean"]
-            ls = stats(q_ret[k][seg]["5"])["mean"] - stats(q_ret[k][seg]["1"])["mean"]
+            ls_stat = stats(ls_series[k][seg])
+            ls = ls_stat["mean"]
+            ls_t = ls_stat["t"]
             r["q5_minus_q1"][seg]["ls"] = round(ls, 4)
+            r["q5_minus_q1"][seg]["ls_net"] = round(ls - cost_pct, 4)
+            r["q5_minus_q1"][seg]["ls_t"] = ls_t
+        # 成本只在组合层扣一次；此前从每只股票扣成本会被多空相减抵消。
+        oos_ls_net = r["q5_minus_q1"]["OOS"]["ls_net"]
+        oos_ls_t = r["q5_minus_q1"]["OOS"]["ls_t"]
         passes = (r["ic"]["OOS"]["mean"] > 0.02 and r["ic"]["OOS"]["t"] > 2) or \
-                 (r["q5_minus_q1"]["OOS"]["ls"] > 0.3 and r["ic"]["OOS"]["t"] > 1.5)
+                 (oos_ls_net > 0.3 and oos_ls_t > 1.5)
         r["pass"] = passes
         res["pass"] = res["pass"] or passes
         res["factors"][k] = r
@@ -201,16 +216,18 @@ def render(res: dict) -> str:
         res["window"]["start"], res["window"]["end"], res["window"]["trading_days"],
         res["rebalance_months"], res["cost_pct"]))
     lines.append("")
-    lines.append("| 因子 | IS IC | IS t | OOS IC | OOS t | IS Q5−Q1 | OOS Q5−Q1 | 判定 |")
-    lines.append("|---|---|---|---|---|---|---|---|")
+    lines.append("| 因子 | IS IC | IS t | OOS IC | OOS t | IS Q5−Q1(毛) | OOS Q5−Q1(毛) | OOS 净(30bp) | OOS LS t | 判定 |")
+    lines.append("|---|---|---|---|---|---|---|---|---|---|")
     for k, v in res["factors"].items():
-        lines.append("| %s | %s | %s | %s | %s | %s%% | %s%% | %s |" % (
+        lines.append("| %s | %s | %s | %s | %s | %s%% | %s%% | %s%% | %s | %s |" % (
             k, v["ic"]["IS"]["mean"], v["ic"]["IS"]["t"], v["ic"]["OOS"]["mean"],
             v["ic"]["OOS"]["t"], v["q5_minus_q1"]["IS"]["ls"], v["q5_minus_q1"]["OOS"]["ls"],
+            v["q5_minus_q1"]["OOS"].get("ls_net"), v["q5_minus_q1"]["OOS"].get("ls_t"),
             "✅" if v["pass"] else "❌"))
     lines += ["", "## 口径",
               "- 时点：月末 T 取 ann_date≤T 的最新一期财务指标（PIT）；",
-              "- 收益：T+1..T+20 行业×规模中性 AR 累计 − 双边成本 30bp；",
+              "- 收益：T+1..T+20 行业×规模中性 AR 累计；Q5−Q1 毛值，净收益在组合层扣双边成本 30bp；",
+              "- 判定：IC 分支看 OOS IC/t；多空分支看 OOS 净 Q5−Q1>0.3% 且 LS 月度 t>1.5（不再用 IC 的 t 代替 LS t）；",
               "- 因子：价值=1/pe_ttm，质量=roe，成长=netprofit_yoy；",
               "- 局限：未做行业中性化因子（收益已中性）、未剔除 ST/停牌；IS/OOS 仅一次切分。"]
     return "\n".join(lines) + "\n"

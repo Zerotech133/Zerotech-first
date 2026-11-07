@@ -8,12 +8,13 @@
   结论分三级：通过 / 观察 / 不通过（阈值见 THRESHOLDS，可解释、先定后用）；
   post_limit_behavior 使用未来 N 日数据（非 PIT），单列描述、**不参与 IC/分层**（判例 H29）。
 
-产出：research/reports/factor_prescreen_20261103.{json,md}
+产出：research/reports/factor_prescreen_<tag>.{json,md}（默认 tag=运行日；--tag/--out-dir 可覆盖）
 运行：C:\\项目\\py312\\python.exe -X utf8 tools/research/factor_prescreen.py
 约束：只读数据根；不改策略/因子实现；不 commit。
 """
 from __future__ import annotations
 
+import argparse
 import glob
 import json
 import math
@@ -317,7 +318,14 @@ def forward_returns(adj_close: pd.DataFrame, window_dates: list[str]) -> dict[in
 
 
 # ============================================================ 主流程
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description="学习因子四关前筛（动态输出名）")
+    ap.add_argument("--tag", default="", help="输出名后缀，默认运行日 YYYYMMDD")
+    ap.add_argument("--out-dir", default="", help="输出目录，默认 research/reports")
+    args = ap.parse_args(argv)
+    out_dir = Path(args.out_dir).expanduser() if args.out_dir else OUT
+    tag = args.tag or datetime.now().strftime("%Y%m%d")
+    stem = f"factor_prescreen_{tag}"
     t0 = time.time()
     sample = lf.load_sample_data(n_days=N_DAYS, n_codes=N_CODES, warmup=WARMUP, seed=SEED)
     window_dates = list(sample["window_dates"])
@@ -460,8 +468,8 @@ def main() -> int:
     if rep["schema_check"]:
         print(f"[prescreen] WARN schema: {rep['schema_check']}", flush=True)
 
-    OUT.mkdir(parents=True, exist_ok=True)
-    (OUT / "factor_prescreen_20261103.json").write_text(
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / f"{stem}.json").write_text(
         json.dumps(rep, ensure_ascii=False, indent=1), encoding="utf-8")
 
     # ---- MD
@@ -529,7 +537,7 @@ def main() -> int:
         L.append(f"- 建议：{f.get('next_action', '')}")
         L.append("")
     L += ["## 六、局限", ""] + [f"- {x}" for x in rep["limitations"]]
-    (OUT / "factor_prescreen_20261103.md").write_text("\n".join(L) + "\n", encoding="utf-8")
+    (out_dir / f"{stem}.md").write_text("\n".join(L) + "\n", encoding="utf-8")
     print(json.dumps({"summary": summary, "schema_check": rep["schema_check"],
                       "pit_pass": pit_all_pass,
                       "runtime": rep["meta"]["runtime_sec"]}, ensure_ascii=False), flush=True)

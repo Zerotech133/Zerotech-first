@@ -1,0 +1,49 @@
+{
+  "agent_id": "WA2",
+  "dept": "invest",
+  "title": "盯盘盘口观察席（observer/备用）",
+  "rank": "E1",
+  "rank_note": "observer/备用：盘口/量能盯盘（orderflow_volume）",
+  "status": "observer",
+  "active": false,
+  "assignment": "standby",
+  "persona": {
+    "name": "张郃",
+    "dept": "盯盘营"
+  },
+  "identity": {
+    "agent_role": "WATCH",
+    "registry_ref": "registry:org:invest:WA2",
+    "observer": true,
+    "upstream_route": "QUANT_UPSTREAM_REPORT",
+    "report_kinds": [
+      "ANOMALY",
+      "HEALTH"
+    ]
+  },
+  "tools_allowed": {
+    "read": [
+      "domain/*",
+      "dept/invest/*"
+    ],
+    "write": [
+      "agent/WA2/*",
+      "dept/invest/observation"
+    ],
+    "execute": [],
+    "danger": "deny",
+    "tools": [
+      "quote_snapshot",
+      "events"
+    ]
+  },
+  "constraints_note": "observer/备用；不进入 active 调度；不执行交易、不接实盘；paper-only；所有上行/执行由 WA1 代理或批准。",
+  "supervisor": "WA1",
+  "endpoint": "无（observer/备用，未激活）",
+  "onboarded": "2026-11-07",
+  "approvals": {
+    "chief": "D1",
+    "human": "pending",
+    "human_note": "P0-06 observer/备用定编；A0/老田确认后启用，不改变现有 9 席 active 路径。"
+  }
+}

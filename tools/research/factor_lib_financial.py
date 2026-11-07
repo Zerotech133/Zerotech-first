@@ -309,7 +309,7 @@ def _build_derived(df: pd.DataFrame) -> pd.DataFrame:
     df["quality_5"] = _safe_div(op_ttm, revenue_ttm)
     df["quality_6"] = _safe_div(ni_ttm, op_in_ttm + inv_in_ttm)
     df["quality_composite"] = df[["quality_1", "quality_2", "quality_3",
-                                 "quality_4", "quality_5", "quality_6"]].sum(axis=1, min_count=1)
+                                 "quality_4", "quality_5", "quality_6"]].sum(axis=1, min_count=6)
     df["ar_ap_to_revenue"] = _safe_div(g("adv_receipts") - g("prepayment"), revenue_q)
     df["cash_profit_ratio"] = _safe_div(ocf_ttm - ni_ttm, ni_ttm)
     df["cfcr"] = _safe_div(ocf_ttm, interest_ttm)
@@ -396,7 +396,11 @@ class FinancialData:
     # -- 日频化
     def daily(self, column: str, panel: Any, agg: str = "last") -> pd.DataFrame:
         if column in self.cache:
-            return self.cache[column]
+            cached = self.cache[column]
+            # 同一进程可能先用不同日期区间评估；index/columns 不一致时必须重算。
+            if (list(cached.index) == list(panel.dates)
+                    and list(cached.columns) == list(panel.codes)):
+                return cached
         reports = self.reports
         if column not in reports.columns:
             out = pd.DataFrame(np.nan, index=panel.dates, columns=panel.codes)
@@ -524,8 +528,9 @@ _add("pa", "Growth", lambda fd, p: _ranked_daily(
     fd, p, lambda: (_f(fd, p, "roa_ttm") - _f(fd, p, "roa_ttm").shift(252))
     - (_f(fd, p, "roa_ttm") - _f(fd, p, "roa_ttm").shift(252)).shift(63)))
 _add("peg_252d", "Growth", lambda fd, p: _ranked_daily(
-    fd, p, lambda: _safe_div(_safe_div(_price(p, "close"), _f(fd, p, "eps_ttm")),
-                             (_safe_div(_f(fd, p, "eps_ttm"), _f(fd, p, "eps_ttm").shift(252)) - 1) * 100)))
+    fd, p, lambda: -_safe_div(_safe_div(_price(p, "close"), _f(fd, p, "eps_ttm")),
+                              (_safe_div(_f(fd, p, "eps_ttm"), _f(fd, p, "eps_ttm").shift(252)) - 1) * 100)),
+     note="PEG 越低越好（取负后方向 +1；与 pegh5 一致）")
 _add("sa", "Growth", lambda fd, p: _ranked_daily(
     fd, p, lambda: ((_safe_div(_f(fd, p, "revenue_q"), _f(fd, p, "total_share")))
                     / _safe_div(_f(fd, p, "revenue_q"), _f(fd, p, "total_share")).shift(252) - 1)
@@ -550,8 +555,9 @@ _add("cash_profit_ratio", "Quality", lambda fd, p: _rank_of(fd, p, "cash_profit_
 _add("cash_ratio", "Quality", lambda fd, p: _rank_of(fd, p, "cash_ratio"))
 _add("cfcr", "Quality", lambda fd, p: _rank_of(fd, p, "cfcr"))
 _add("current_ratio", "Quality", lambda fd, p: _rank_of(fd, p, "current_ratio"))
-_add("de", "Quality", lambda fd, p: _rank_of(fd, p, "de"))
-_add("debt_asset_ratio", "Quality", lambda fd, p: _rank_of(fd, p, "debt_asset_ratio"))
+_add("de", "Quality", lambda fd, p: _rank_of(fd, p, "de"), direction=-1,
+     note="资产负债率类，越高越差")
+_add("debt_asset_ratio", "Quality", lambda fd, p: _rank_of(fd, p, "debt_asset_ratio"), direction=-1)
 for _name, _col in (("delta_asset_turnover", "asset_turnover_ttm"),
                     ("delta_cash_ratio", "cash_ratio"),
                     ("delta_current_ratio", "current_ratio"),
@@ -561,12 +567,13 @@ for _name, _col in (("delta_asset_turnover", "asset_turnover_ttm"),
                     ("delta_quick_ratio", "quick_ratio"), ("delta_roa", "roa_ttm"),
                     ("delta_roe", "roe_ttm")):
     _add(_name, "Quality", (lambda c: lambda fd, p: _ranked_daily(fd, p, lambda: _delta_daily(fd, p, c)))(_col))
+B3_FACTORS["delta_de"]["direction"] = -1   # 杠杆上升为负向
 _add("eps_q", "Quality", lambda fd, p: _rank_of(fd, p, "eps_q"))
 _add("eps_ttm", "Quality", lambda fd, p: _rank_of(fd, p, "eps_ttm"))
 _add("eps_y", "Quality", lambda fd, p: _rank_of(fd, p, "eps_y"))
 _add("equity_turnover", "Quality", lambda fd, p: _rank_of(fd, p, "equity_turnover_ttm"))
-_add("expenses_to_equity_yoy", "Quality", lambda fd, p: _rank_of(fd, p, "expenses_ratio_yoy"))
-_add("financial_leverage", "Quality", lambda fd, p: _rank_of(fd, p, "financial_leverage"))
+_add("expenses_to_equity_yoy", "Quality", lambda fd, p: _rank_of(fd, p, "expenses_ratio_yoy"), direction=-1)
+_add("financial_leverage", "Quality", lambda fd, p: _rank_of(fd, p, "financial_leverage"), direction=-1)
 _add("fixed_asset_turnover", "Quality", lambda fd, p: _rank_of(fd, p, "fixed_asset_turnover_ttm"))
 _add("gpm_q", "Quality", lambda fd, p: _rank_of(fd, p, "gross_margin_q"))
 _add("gpm_qoq", "Quality", lambda fd, p: _rank_of(fd, p, "gross_margin_ttm_qoq"))
@@ -575,7 +582,7 @@ _add("gpm_y", "Quality", lambda fd, p: _rank_of(fd, p, "gross_margin_y"))
 _add("icr", "Quality", lambda fd, p: _rank_of(fd, p, "icr"))
 _add("income_tax_yoy", "Quality", lambda fd, p: _rank_of(fd, p, "income_tax_ttm_yoy"))
 _add("inventory_turnover", "Quality", lambda fd, p: _rank_of(fd, p, "inventory_turnover_ttm"))
-_add("lra_yoy", "Quality", lambda fd, p: _rank_of(fd, p, "lt_rec_yoy"))
+_add("lra_yoy", "Quality", lambda fd, p: _rank_of(fd, p, "lt_rec_yoy"), direction=-1)
 _add("market_value_leverage", "Quality", lambda fd, p: _ranked_daily(
     fd, p, lambda: _safe_div(_price(p, "total_mv") - _f(fd, p, "total_ncl"), _price(p, "total_mv"))))
 _add("np_to_deferred_tax_yoy", "Quality", lambda fd, p: _rank_of(fd, p, "np_to_deferred_tax_yoy"))

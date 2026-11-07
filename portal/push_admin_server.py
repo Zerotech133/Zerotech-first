@@ -435,6 +435,68 @@ def source_health():
     return out
 
 
+def _readiness(budget=0.3):
+    """数据面就绪探针（K-ORG-20261107-S3，2026-11-07 裁决落地）。
+
+    分层理由：`/health` 只表达「进程活着」= liveness；数据面健康 = readiness，
+    两者混同的典型事故是「DB 抖一下 → 上游判服务死 → 重启风暴」。故 readiness
+    单独立口为 `/ready`，失败回 503，由消费者（门户健康聚合器）决定怎么处置。
+
+    判据（全部只读、单次短超时，探针自身异常也必须降级上报——否则 503 会变
+    500，上游看到的错误类型就错了）：
+      · decision_db    ：通知决策库可只读打开且 decisions 表可查。
+        这是唯一会「静默腐坏」的存储：库锁死/损坏时 /api/decisions 仍能回
+        200 空列表，肉眼不可见。
+      · subscribers_cfg：授权名单 JSON 可解析。**文件缺失不判红**（与
+        load_biz 同哲学：缺省即默认，非故障），仅解析失败判红。
+    """
+    import sqlite3 as _sq
+
+    checks = {}
+    ok = True
+
+    dec_db = os.path.join(WORK, "notification_decisions.sqlite3")
+    t0 = time.time()
+    try:
+        con = _sq.connect(
+            "file:%s?mode=ro" % dec_db.replace("\\", "/"), uri=True, timeout=budget
+        )
+        try:
+            con.execute("SELECT 1 FROM decisions LIMIT 1").fetchone()
+        finally:
+            con.close()
+        checks["decision_db"] = {
+            "ok": True,
+            "path": "work/notification_decisions.sqlite3",
+            "ms": int((time.time() - t0) * 1000),
+        }
+    except Exception as exc:  # noqa: BLE001 — 探针只报告，不中断
+        ok = False
+        checks["decision_db"] = {
+            "ok": False,
+            "path": "work/notification_decisions.sqlite3",
+            "error": type(exc).__name__,
+            "ms": int((time.time() - t0) * 1000),
+        }
+
+    t0 = time.time()
+    if not os.path.exists(SUBSCRIBERS_PATH):
+        checks["subscribers_cfg"] = {"ok": True, "note": "absent:defaults"}
+    else:
+        try:
+            with open(SUBSCRIBERS_PATH, encoding="utf-8") as f:
+                json.load(f)
+            checks["subscribers_cfg"] = {"ok": True,
+                                         "ms": int((time.time() - t0) * 1000)}
+        except (OSError, ValueError) as exc:
+            ok = False
+            checks["subscribers_cfg"] = {"ok": False,
+                                         "error": type(exc).__name__,
+                                         "ms": int((time.time() - t0) * 1000)}
+
+    return checks, ok
+
+
 def today_str():
     return datetime.now().strftime("%Y-%m-%d")
 
@@ -800,6 +862,20 @@ class Handler(BaseHTTPRequestHandler):
             if not admin_authorized(self.headers.get("X-Push-Admin-Key")):
                 return self._json({"ok": False, "error": "未授权"}, 403)
             return self._json(targets_view())
+        elif p == "/ready":
+            # K-ORG-20261107-S3（2026-11-07 裁决）：liveness(/health) 与
+            # readiness(/ready) 分层。只读 + 短超时；依赖不可用回 503（不用
+            # 500——500 会被上游当程序错，503 才表达「现在不能服务」）。
+            # 无鉴权：只回布尔/路径/耗时，不含任何 open_id/target 明文。
+            checks, _ok = _readiness()
+            self._json(
+                {
+                    "ok": _ok,
+                    "checks": checks,
+                    "ts": datetime.now().isoformat(timespec="seconds"),
+                },
+                200 if _ok else 503,
+            )
         elif p == "/health":
             self._json({"ok": True, "ts": datetime.now().isoformat(timespec="seconds")})
         elif p == "/":

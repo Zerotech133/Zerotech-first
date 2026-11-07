@@ -1,0 +1,46 @@
+{
+  "agent_id": "TR3",
+  "dept": "invest",
+  "title": "交易组·ETF/对账观察席（observer/备用）",
+  "rank": "E1",
+  "rank_note": "observer/备用：ETF/对账风控（etf_reconcile）",
+  "status": "observer",
+  "active": false,
+  "assignment": "standby",
+  "persona": {
+    "name": "丁奉",
+    "dept": "交易组"
+  },
+  "identity": {
+    "agent_role": "TRADE",
+    "registry_ref": "registry:org:invest:TR3",
+    "observer": true,
+    "upstream_route": null,
+    "report_kinds": null
+  },
+  "tools_allowed": {
+    "read": [
+      "domain/*",
+      "dept/invest/*"
+    ],
+    "write": [
+      "agent/TR3/*",
+      "dept/invest/feedback"
+    ],
+    "execute": [],
+    "danger": "deny",
+    "tools": [
+      "paper_bridge",
+      "events"
+    ]
+  },
+  "constraints_note": "observer/备用；不进入 active 调度；不执行交易、不接实盘；paper-only；所有上行/执行由 TR1 代理或批准。",
+  "supervisor": "TR1",
+  "endpoint": "无（observer/备用，未激活）",
+  "onboarded": "2026-11-07",
+  "approvals": {
+    "chief": "D1",
+    "human": "pending",
+    "human_note": "P0-06 observer/备用定编；A0/老田确认后启用，不改变现有 9 席 active 路径。"
+  }
+}

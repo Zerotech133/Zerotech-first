@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import datetime as dt
 import json
 import sys
 from pathlib import Path
@@ -36,7 +37,8 @@ EXPECTED_SEATS = {
     "D1", "T1", "T2", "N1", "F1", "ST1", "QS1",
     "WA1", "WA2", "WA3", "TR1", "TR2", "TR3",
 }
-EXPECTED_HR_MISSING = {"WA2", "WA3", "TR2", "TR3"}
+EXPECTED_HR_MISSING = set()
+OBSERVER_SEATS = {"WA2", "WA3", "TR2", "TR3"}
 EXPECTED_INTERFACES = {
     "/api/d1/research",
     "/api/d1/decisions",
@@ -294,9 +296,20 @@ def check(root: Path = ROOT, strict: bool = False) -> dict:
     add("staffing.seats",
         len(seats) == 13 and set(seats) == EXPECTED_SEATS and set(seats) <= org_agents,
         f"seats={len(seats)} missing_in_org={sorted(set(seats) - org_agents)}")
+    observer_bad = []
+    for seat in sorted(EXPECTED_SEATS):
+        appt_path = root / HR_DIR / seat / "appointment.yaml"
+        if not appt_path.is_file():
+            continue
+        appt = _load_yaml(appt_path) or {}
+        if seat in OBSERVER_SEATS:
+            if appt.get("status") != "observer" or appt.get("active") is not False:
+                observer_bad.append(seat)
+        elif appt.get("status") == "observer":
+            observer_bad.append(seat)
     add("staffing.hr",
-        hr_missing == EXPECTED_HR_MISSING,
-        f"hr_missing={sorted(hr_missing)}")
+        hr_missing == EXPECTED_HR_MISSING and observer_bad == [],
+        f"hr_missing={sorted(hr_missing)} observer_bad={observer_bad}")
 
     # 9. Q2 不完整时不冒充完成
     if status.get("q2_complete") is True:
@@ -316,7 +329,7 @@ def check(root: Path = ROOT, strict: bool = False) -> dict:
         "schema": SCHEMA,
         "ok": not errors,
         "root": str(root),
-        "checked_at": "2026-11-06T07:38:00+08:00",
+        "checked_at": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
         "references": {
             "manifest": MANIFEST,
             "registry": REGISTRY,

@@ -74,7 +74,7 @@ def test_budget_strict_currently_passes():
 
 def test_b1_b2_not_regressed():
     import re
-    for name, count in (("agent_key", 52), ("quant_key", 23), ("tools_key", 19)):
+    for name, count in (("agent_key", 52), ("quant_key", 23), ("tools_key", 20)):
         m = re.search(r"'%s'\s*=\s*@\((.*?)\n    \)" % name, GATE, re.S)
         assert m, "缺 %s 文件清单" % name
         assert len(re.findall(r"'([^']+\.py)'", m.group(1))) == count, "%s 清单应 %d 文件" % (

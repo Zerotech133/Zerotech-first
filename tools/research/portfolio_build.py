@@ -29,8 +29,11 @@ sys.path.insert(0, str(REPO / "tools" / "research"))
 import selection_engine  # noqa: E402
 
 
-def trade_dates(n: int = 30) -> list[str]:
+def trade_dates(n: int = 30, end: str | None = None) -> list[str]:
     fs = sorted(glob.glob(str(DATA / "daily" / "d_*.parquet")))
+    if end:
+        end = str(end).replace("-", "")
+        fs = [f for f in fs if Path(f).stem[2:] <= end]
     return [Path(f).stem[2:] for f in fs[-n:]]
 
 
@@ -56,7 +59,7 @@ def build(date: str, target_vol: float = 0.15, top: int = 20, single_cap: float 
     sel = selection_engine.build(date, top)
     picks = sel["picks"]
     codes = [p["ts_code"] for p in picks]
-    dates = trade_dates(25)
+    dates = trade_dates(25, end=date)
     px = adj_close_panel(dates, codes)
     rets = px.pct_change().iloc[1:]
     vol = rets.std(ddof=1) * np.sqrt(252)  # Series: index=股票
