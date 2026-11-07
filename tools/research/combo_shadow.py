@@ -218,7 +218,6 @@ def main():
     # 直接 KeyError（实测卡在 20261106）。未到期的笔由 mature 标记排除，不靠日历截断。
     axis = [d for d in axis_all if d_lo <= d <= last_bar0]
     ap_ = {d: i for i, d in enumerate(axis)}
-    last_bar = axis[-1]
 
     # ---- sigdens（密度取扩展池，严格用「昨日为止」） ----
     # 不用产线台账的笔数：那是管线成熟度曲线，不是市场拥挤度（见 load_ext_counts）
