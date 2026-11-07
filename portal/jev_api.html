@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>JEV 能力目录 · 零界</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/tokens.css">
+  <link rel="stylesheet" href="/static/os_theme.css">
+  <link rel="stylesheet" href="/static/ui/ui.css">
+  <script src="/static/nav.js" defer></script>
+  <script src="/static/jev_nav.js" defer></script>
+  <style>
+    .crumb{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 14px;margin-bottom:14px;font-size:12px}
+    .crumb .c{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--border-weak);border-radius:999px;padding:3px 11px;color:var(--gray-6);text-decoration:none}
+    .crumb .c:hover{border-color:var(--accent);color:var(--link)}
+    .crumb .c.here{border-color:var(--accent);color:var(--text);background:var(--bg-raised);cursor:default}
+    .crumb .sep{color:var(--gray-5);font-size:11px}
+    .caps{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px}
+    .ep{font-family:var(--font-mono);font-size:11.5px;color:var(--blu-500);word-break:break-all}
+    .kv{display:grid;grid-template-columns:64px 1fr;gap:4px 10px;font-size:12px;margin-top:8px}
+    .kv b{color:var(--gray-5);font-weight:400}
+    .mini{font-size:12px;color:var(--gray-6)}
+    .trace-form{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}
+    .trace-form input{background:var(--bg-raised);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:4px 8px;font-size:12px;font-family:var(--font-mono)}
+    .failrow td{color:var(--color-err)}
+    .cls{font-size:10.5px;border:1px solid;border-radius:999px;padding:1px 7px;white-space:nowrap}
+    .cls.client{color:var(--color-warn);border-color:var(--color-warn)}
+    .cls.upstream{color:var(--blu-500);border-color:var(--blu-500)}
+    .cls.internal{color:var(--color-err);border-color:var(--color-err)}
+    .cls.unknown{color:var(--gray-5);border-color:var(--gray-5)}
+
+    .cgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0}
+    @media (max-width:860px){.cgrid{grid-template-columns:1fr}}
+    .capbox{border:1px solid var(--border-weak);border-radius:10px;padding:12px 14px;position:relative}
+    .capbox .no{position:absolute;top:10px;right:14px;font-family:var(--font-mono);font-size:22px;color:var(--gray-5);opacity:.45}
+    .capbox b{font-size:14px}
+    .capbox p{margin:6px 0 8px;font-size:12px;color:var(--gray-6);line-height:1.8}
+    .capbox .flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 10px;font-size:11px;color:var(--gray-6)}
+    .capbox .flow i{font-style:normal;border:1px solid var(--border-weak);border-radius:999px;padding:1px 8px}
+    .capbox .flow s{text-decoration:none;color:var(--gray-5)}
+    .gsec{margin:16px 0 8px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+    .gsec b{font-size:13.5px}
+    .gsec span{font-size:12px;color:var(--gray-6)}
+    .gsec .ln{flex:1;height:1px;background:var(--border-weak)}
+    .step3{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border-weak);font-size:11.5px;color:var(--gray-6)}
+    .step3 a{color:var(--link);text-decoration:none}
+  </style>
+</head>
+<body data-wb-shell="adopted">
+  <main class="ui-page">
+    <header class="ui-page-head">
+      <div>
+        <span class="ui-eyebrow">JEV PLATFORM · 能力目录</span>
+        <h1>JEV 多维判读中台 · 能力目录</h1>
+        <p>这个板块只做两件事：<b>① 可追溯的证据链</b>——每条结论都能一路追到原文 → 判定 → 后验 → 归组，缺环如实标注、不编造；<b>② 叙事解读</b>——把一段行情的形态、量价关系、消息归因讲明白，并给出 AI 结论（本地算力不足自动切云端）。动线三步：全景输入 → 证据溯源 → 叙事解读，每步都能返回。下面 14 个接口按这两条主线分组，调用自动留痕，凭 <code>X-JEV-Req-Id</code> 秒级溯源。</p>
+      </div>
+      <div class="ui-actions">
+        <a class="ui-btn" href="/jev_platform.html">🛰 中台总览</a>
+        <a class="ui-btn" href="/">← 返回今日工作台</a>
+      </div>
+    </header>
+
+    <!-- JEV 族动线条：总览 → 判断 → 词云 → 复核 → 对接台 → 能力目录 -->
+    <div class="ui-card crumb">
+      <a class="c" href="/jev_platform.html">🛰 01 总览</a><span class="sep">→</span>
+      <a class="c" href="/bt-jev">⚖ 02 判断</a><span class="sep">→</span>
+      <a class="c" href="/jev_wordcloud.html">☁ 03 词云</a><span class="sep">→</span>
+      <a class="c" href="/static/jev_review.html">🧾 04 复核</a><span class="sep">→</span>
+      <a class="c" href="/jev_integration.html">🔗 05 对接台</a><span class="sep">→</span>
+      <span class="c here">📡 06 能力目录</span>
+      <span style="margin-left:auto;color:var(--gray-5);font-size:11px">对外供给面：目录 + 留痕 + 溯源</span>
+    </div>
+
+    <div class="ui-card" id="cap-read" style="margin-bottom:12px">
+      <h3 style="margin:0 0 2px;font-size:13.5px">能力解读：两条主线，三步走完</h3>
+      <div class="cgrid">
+        <div class="capbox">
+          <span class="no">①</span>
+          <b>可追溯的证据链</b>
+          <p>结论不是黑箱。任何一条判定都能下钻到<b>原文本体</b>（哪家媒体、几点的稿、正文），再看<b>谁判的、凭什么判</b>（模型、置信、事件类型、判定理由），再看<b>判完之后价格怎么走</b>（T+1 官方后验；没有就走行情次日兜底，口径标 ≈），最后看这条在<b>同期同类里的位置</b>。缺哪一环就说缺哪一环。</p>
+          <div class="flow"><i>原文</i><s>→</s><i>判定</i><s>→</s><i>后验</i><s>→</s><i>归组</i></div>
+          <a class="ui-btn ui-btn--sm ui-btn--primary" href="/jev_evidence.html">去做一次举证</a>
+        </div>
+        <div class="capbox">
+          <span class="no">②</span>
+          <b>叙事解读</b>
+          <p>一段行情能用一句话讲明白：<b>形态</b>（上行/冲高回落/震荡，带高低点与振幅）、<b>量价关系</b>（放量上攻还是量价背离，最大量能日发生了什么）、<b>消息归因</b>（期间哪些财报/利好利空在驱动、消息可信度多少），最后给<b>可执行结论</b>。当天再叠一层 5 分钟回溯，看盘中认不认。</p>
+          <div class="flow"><i>形态</i><s>+</s><i>量价</i><s>+</s><i>消息</i><s>+</s><i>AI 结论</i></div>
+          <a class="ui-btn ui-btn--sm ui-btn--primary" href="/jev_story.html#300750">看一条叙事</a>
+        </div>
+      </div>
+      <div class="step3">
+        <span>三步动线：</span>
+        <a href="/jev_pano.html">① 全景（输代码或关键词）</a><span>→</span>
+        <a href="/jev_evidence.html">② 证据溯源（点样本展开四级）</a><span>→</span>
+        <a href="/jev_story.html">③ 叙事解读（含 AI 结论）</a>
+        <span style="margin-left:auto">每页左上「← 返回」，任意一步退回；AI 结论页内直接生成，本地算力不足自动切云端。</span>
+      </div>
+    </div>
+
+    <div class="ui-card" style="margin-bottom:12px">
+      <h3 style="margin:0 0 4px;font-size:13.5px">可调能力（<span id="cap-n">…</span> 项）</h3>
+      <p class="mini" style="margin:0">接入方式：浏览器/服务端同源走门户 8080（会话鉴权）；Agent 走 MCP stdio。建议请求带 <code>X-JEV-Ref: 团队名/用途</code> 便于分摊排查。</p>
+      <div class="caps" id="caps" style="margin-top:10px"></div>
+    </div>
+
+    <div class="ui-card" style="margin-bottom:12px">
+      <h3 style="margin:0 0 8px;font-size:13.5px">权限分层（谁能干什么）</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div style="border:1px solid var(--border-weak);border-radius:8px;padding:12px">
+          <b style="font-size:13px">👤 用户端（只读看能力）</b>
+          <ul class="mini" style="margin:8px 0 0;padding-left:18px;line-height:1.9">
+            <li>本机（127.0.0.1）直接看全部页面与只读接口，免登录</li>
+            <li>局域网/外网：登录普通账号即可看</li>
+            <li>可做：查判定 / 下钻标的 / 举证消息 / 看叙事线</li>
+            <li>不可做：裁决写回、改配置、调通道</li>
+          </ul>
+        </div>
+        <div style="border:1px solid var(--color-warn);border-radius:8px;padding:12px">
+          <b style="font-size:13px;color:var(--color-warn)">🛡 管理端（高权调控）</b>
+          <ul class="mini" style="margin:8px 0 0;padding-left:18px;line-height:1.9">
+            <li>复核裁决写回（POST，需会话）</li>
+            <li>通道治理 / 契约变更（RFC 流程）</li>
+            <li>哨兵阈值与放行门（门 A/B/C）</li>
+            <li>留痕库与溯源查询的治理口径</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="ui-card">
+      <h3 style="margin:0 0 4px;font-size:13.5px">调用溯源（近 24h）</h3>
+      <p class="mini" style="margin:0 0 4px">分级口径：<span class="cls client">client 调用方问题</span> <span class="cls upstream">upstream 中台依赖故障</span> <span class="cls internal">internal 中台缺陷</span> <span class="cls unknown">unknown 无响应</span></p>
+      <div class="trace-form">
+        <input id="q-rid" placeholder="req_id 前缀" style="width:150px">
+        <input id="q-actor" placeholder="消费方 / 团队标识" style="width:150px">
+        <select id="q-status" style="background:var(--bg-raised);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:4px 8px;font-size:12px">
+          <option value="fail">仅失败</option><option value="all">全部</option><option value="ok">仅成功</option>
+        </select>
+        <button class="ui-btn ui-btn--sm ui-btn--primary" id="q-go">查询</button>
+        <span id="q-meta" class="mini" style="margin-left:auto"></span>
+      </div>
+      <div id="err" class="ui-error" hidden></div>
+      <div style="overflow:auto">
+        <table class="ui-table"><thead><tr><th>req_id</th><th>时间</th><th>消费方</th><th>端点</th><th>状态</th><th>耗时</th><th>分级</th><th>ref</th></tr></thead><tbody id="rows"><tr><td colspan="8" class="mini" style="padding:24px;text-align:center">输入条件后点查询</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <footer class="ui-page-footer">
+      <span>零界 · 留痕库 portal/data/jev_access.db（WAL，与业务库解耦）· 留痕失败绝不影响业务响应</span>
+      <a href="/">返回今日工作台</a>
+    </footer>
+  </main>
+  <script src="/static/ui/ui.js" defer></script>
+  <script>
+  (function(){
+    "use strict";
+    function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]})}
+    fetch("/api/jev/capabilities").then(function(r){return r.json()}).then(function(d){
+      var n=document.getElementById("cap-n");
+      if(!d.capabilities){n.textContent="0";return}
+      n.textContent=d.capabilities.length;
+      var order=d.group_order||["evidence","narrative","base"], gm=d.groups||{};
+      var by={};
+      d.capabilities.forEach(function(c){(by[c.group||"base"]=by[c.group||"base"]||[]).push(c)});
+      var html=order.filter(function(g){return (by[g]||[]).length}).map(function(g){
+        var meta=gm[g]||{cn:g,desc:""};
+        return '<div class="gsec" style="grid-column:1/-1"><b>'+esc(meta.cn)+'</b>'
+          +'<span>'+esc(meta.desc||"")+'</span><span class="ln"></span>'
+          +'<span style="font-family:var(--font-mono)">'+(by[g]||[]).length+' 项</span></div>'
+          + (by[g]||[]).map(card).join("");
+      }).join("");
+      var rest=Object.keys(by).filter(function(g){return order.indexOf(g)<0});
+      rest.forEach(function(g){ html += (by[g]||[]).map(card).join("") });
+      document.getElementById("caps").innerHTML=html;
+    }).catch(function(e){
+      document.getElementById("caps").innerHTML='<p class="mini">目录加载失败：'+esc(e.message)+'</p>';
+    });
+    function card(c){
+      return '<div class="ui-card" style="padding:12px">'
+        +'<div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline">'
+        +'<b style="font-size:13px">'+esc(c.title)+'</b>'
+        +'<span class="ui-badge">'+esc(c.id)+'</span></div>'
+        +'<div class="ep" style="margin:6px 0 2px">'+esc(c.endpoint)+'</div>'
+        +'<div class="kv"><b>用途</b><span>'+esc(c.purpose)+'</span>'
+        +'<b>契约</b><span>'+esc(c.contract)+'</span>'
+        +'<b>适合</b><span>'+esc(c.consumer_hint)+'</span></div></div>';
+    }
+    function q(){
+      var rid=document.getElementById("q-rid").value.trim(),
+          actor=document.getElementById("q-actor").value.trim(),
+          st=document.getElementById("q-status").value;
+      var p=new URLSearchParams({hours:"24",status:st,limit:"100"});
+      if(rid)p.set("req_id",rid);
+      if(actor)p.set("actor",actor);
+      fetch("/api/jev/trace?"+p.toString()).then(function(r){
+        if(!r.ok)throw new Error("HTTP "+r.status);
+        return r.json();
+      }).then(function(d){
+        document.getElementById("q-meta").textContent="命中 "+d.total+" 条 · 失败分级 "+JSON.stringify(d.fail_class_counts);
+        var rows=document.getElementById("rows");
+        if(!d.items.length){rows.innerHTML='<tr><td colspan="8" class="mini" style="padding:24px;text-align:center">无匹配记录</td></tr>';return}
+        rows.innerHTML=d.items.map(function(it){
+          var fail=it.status>=400;
+          return '<tr class="'+(fail?"failrow":"")+'"><td class="mini" style="font-family:var(--font-mono)">'+esc(it.req_id)+'</td>'
+            +'<td class="mini">'+esc(it.ts)+'</td><td>'+esc(it.actor)+'</td>'
+            +'<td class="mini">'+esc(it.endpoint)+'</td><td class="num">'+it.status+'</td>'
+            +'<td class="num">'+Math.round(it.ms)+'ms</td>'
+            +'<td>'+(fail?'<span class="cls '+esc(it.error_class||"unknown")+'">'+esc(it.error_class||"?")+'</span>':'—')+'</td>'
+            +'<td class="mini">'+esc(it.ref||"—")+'</td></tr>';
+        }).join("");
+      }).catch(function(e){
+        var el=document.getElementById("err");el.hidden=false;el.textContent="查询失败："+e.message;
+      });
+    }
+    document.getElementById("q-go").addEventListener("click",q);
+    ["q-rid","q-actor"].forEach(function(i){document.getElementById(i).addEventListener("keydown",function(ev){if(ev.key==="Enter")q()})});
+  })();
+  </script>
+</body>
+</html>
