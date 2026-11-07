@@ -122,6 +122,8 @@ TOOLS_KEY = {
     "tools/tests/test_learning_pipeline_curation.py",
     # ---- 盘后分析工程（2026-11-06 POSTMARKET-ENG，+1）----
     "tools/tests/test_market_analysis.py",
+    # ---- 回环豁免副本一致性（2026-11-07 K-ORG-20261107-GATESAFEURL，+1）----
+    "tools/tests/test_safe_urlopen.py",
 }
 
 
@@ -141,9 +143,9 @@ def test_b1_b2_lists_frozen():
     assert set(_suite_files("agent_key")) == AGENT_KEY
     assert set(_suite_files("quant_key")) == QUANT_KEY
     assert set(_suite_files("tools_key")) == TOOLS_KEY
-    assert len(AGENT_KEY) == 52 and len(QUANT_KEY) == 23 and len(TOOLS_KEY) == 17
+    assert len(AGENT_KEY) == 52 and len(QUANT_KEY) == 23 and len(TOOLS_KEY) == 18
     all_files = AGENT_KEY | QUANT_KEY | TOOLS_KEY
-    assert len(all_files) == 92, "B1(57)+B2(31)+黄忠聚合入口(1)+学习治理契约(2)+盘后分析(1) 应为 92 文件"
+    assert len(all_files) == 93, "B1(57)+B2(31)+黄忠聚合入口(1)+学习治理契约(2)+盘后分析(1)+回环豁免(1) 应为 93 文件"
 
 
 def test_b1_b2_files_exist_and_under_expected_dir():

@@ -263,7 +263,12 @@ $paths = @{
         'tools/tests/test_learning_pipeline_curation.py',
         # ---- 盘后分析工程（2026-11-06 POSTMARKET-ENG，+1）----
         # 宽度/涨跌停/分桶/限期降级登记共 16 条；纯合成数据，无生产依赖，5s。
-        'tools/tests/test_market_analysis.py'
+        'tools/tests/test_market_analysis.py',
+        # ---- 回环禁代理豁免副本一致性（2026-11-07 K-ORG-20261107-GATESAFEURL，+1）----
+        # 每份 safe_urlopen.py 必须含 is_loopback/_open_no_proxy；legion_command/safe_http.py
+        # 必须委派。第 7 份退化副本曾静默存在半个月，扫描器按「调的是 safe_urlopen」判
+        # GUARDED，看不见它。8 条纯离线，约 1s。
+        'tools/tests/test_safe_urlopen.py'
     )
 }
 

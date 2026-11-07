@@ -6,7 +6,7 @@
 | 提出 | 2026-11-07 |
 | 类型 | 质量门禁补漏（写面小、但涉及冻结清单） |
 | 优先级 | P2（不阻断当前交付，但已写好的守卫处于"永不执行"状态） |
-| 状态 | **待老田裁定**（涉及共享门禁配置，本批未动） |
+| 状态 | **已执行**（2026-11-07，见 §九；实际改 6 处，比工单多 1 处补漏） |
 | 前置 | 批 5（`93a904901`）、批 6（`478b7f1db`） |
 
 ---
@@ -158,3 +158,72 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\test_gate.ps1 -Suite f
 2. **顺手修注释**：`test_gate.ps1` 头注释"tools 套件供夜间/手动全量"与事实不符（夜间 `all` 不含 tools）。建议改为"tools 套件仅手工触发；关键单文件请登记进 `tools_key`"。是否同批改，请定。
 
 > 本工单不改任何配置；上面所有"现状"数据均为 2026-11-07 实测，可按下节命令复核。
+
+---
+
+## 九、执行记录（2026-11-07 10:2x）
+
+### 9.1 与工单的差异：实际改 6 处，不是 4 处
+
+工单 §三 漏登记了一个**同构冻结点**，全仓检索 `len(TOOLS_KEY) == 17` / `("tools_key", 17)` 时扫出：
+
+```
+tools/tests/test_test_gate_org_gate.py:65
+    for name, count in (("agent_key", 52), ("quant_key", 23), ("tools_key", 17)):
+```
+
+它和 `test_test_gate_a5strict.py:77` 是**完全相同的一句**（org_gate 是 a5strict 的姊妹文件，都校验 `test_gate.ps1` 的清单不回归）。只改工单那四处，`-Suite tools` 仍会因这一条红。
+
+**若只改工单写的四处，风险 1（忘改冻结测试）实际已经发生了一次**——只是工单没把这一处列进来。
+
+### 9.2 落地的 6 个 hunk
+
+| # | 文件 | 改动 | 来源 |
+|---|---|---|---|
+| 1 | `tools/test_gate.ps1` | `tools_key` 数组 `'tools/tests/test_market_analysis.py'` 补逗号，追加 4 行注释 + `'tools/tests/test_safe_urlopen.py'` | 工单 §三.1 |
+| 2 | `tools/tests/test_test_gate_b1.py` | `TOOLS_KEY` 集合追加 `"tools/tests/test_safe_urlopen.py"` + 1 行注释 | 工单 §三.2 |
+| 3 | 同上 144 行 | `len(TOOLS_KEY) == 17` → `18` | 工单 §三.2 |
+| 4 | 同上 146 行 | `len(all_files) == 92` → `93`，文案加 `+回环豁免(1)` | 工单 §三.2 |
+| 5 | `tools/tests/test_test_gate_a5strict.py:77` | `("tools_key", 17)` → `18` | 工单 §三.3 |
+| 6 | `tools/tests/test_test_gate_org_gate.py:65` | 同上 | **工单漏登记，本次补** |
+
+补丁脚本：`tools/research/patch_gatesafeurl.py`（`--dry/--apply/--check`，断言旧串 count==1、幂等、保留 BOM 与 CRLF、改完 `ast.parse` 自证）。
+
+### 9.3 验证结果（全部通过）
+
+| 项 | 命令 | 结果 |
+|---|---|---|
+| 目标文件门禁形态 | `pytest tools/tests/test_safe_urlopen.py -q --timeout=120 -p no:cacheprovider` | **8 passed in 1.03s** |
+| 三个冻结测试 | `pytest test_test_gate_b1.py test_test_gate_a5strict.py test_test_gate_org_gate.py -q` | **17 passed in 2.44s** |
+| BOM + PS5.1 解析 | `pytest ...::test_gate_ps1_bom_and_parser` | **1 passed**；文件 BOM 仍在（`raw[:3]==b"\xef\xbb\xbf"`） |
+| w5 覆盖率冻结 | `pytest agent_platform/tests/test_gate_coverage_w5.py -q` | **11 passed**（工单判断正确，不受影响） |
+| 行尾 | 字节复核 | ps1 CRLF 653→658 全 CRLF、裸 LF=0；三个 py 亦全 CRLF，无混合 |
+| 全量 fast 门 | `test_gate.ps1 -Suite fast` | 12 套件 12m03s；`tools_key` **rc=0 / failed 0 / Known 0 / New 0** |
+
+### 9.4 关键自证：8 条用例真的进了 fast 门
+
+门禁日志只打 `133 passed in 62.18s`，不回显文件名，所以"没报红"不足以证明新文件被跑到。用收集数反证：
+
+```
+18 files（含 safe_urlopen）→ 133 tests collected
+17 files（去 safe_urlopen）→ 125 tests collected
+差 8，与门禁日志的 133 passed 严丝合缝
+```
+
+即 `tools_key` 里那 8 条回环豁免断言**确实执行并通过**，不再是"永不执行"状态。
+
+### 9.5 fast 门 7 条失败与本次无关（逐条核对，集合与前次一致）
+
+| 失败 | 归因 |
+|---|---|
+| `test_acad1_sso_client.py::test_route_baseline_unchanged`<br>`test_d1_envelope_ui.py::test_route_baseline_unchanged`<br>`test_d1_training_page.py::test_route_inventory_unchanged_page_route_not_scanned` | 并行 Agent 新增 `portal/api_jev_wordcloud.py` 一条路由 `('GET','exact','/api/jev/wordcloud')`，未 `--write-baseline`；`[route]` 段同时报的正是这 1 条「新增路由」，两处互证 |
+| `test_round7_closeout.py::test_nginx_is_r8_applied`<br>`...::test_cumulative_diff_is_pure_addition`<br>`...::test_pending_r8_matches_applied` | 未跟踪的 `reports/nginx.conf.pending-r8` 与 `portal/nginx.conf` 字节不一致（前次已归因，本批未碰 nginx） |
+| `[route]` 新增路由 1 | 同第一行 |
+
+`[org_gate]` 段报 `WARN-ONLY 无法解析为 JSON rc=1`，属 `tools/org_model_consistency.py` 自身 warning，warn-only 不计入 GATE FAIL，与 pytest 侧 `test_test_gate_org_gate.py` 无关（后者不被任何套件调用，本次手工跑绿）。
+
+### 9.6 未做的事
+
+- **头注释未改**（工单 §八.2）：`test_gate.ps1:13` 附近"tools 套件供夜间/手动全量"仍与事实不符（夜间 `all` 不含 tools）。属独立裁定项，等指令。
+- `tools/test_baseline.json` 未动：`tools_key` 本次 Known 0 / New 0，无需登记。
+
