@@ -24,7 +24,7 @@
 **五条铁律**（细节见 §8）：
 
 1. 无任务单不写码；一单一事；在独立 worktree 干活，不在 master 直改。
-2. 提交必须**显式 pathspec**，禁止 `git add -A` / `commit -a`。
+2. 提交必须**显式 pathspec**，禁止 `git add -A` / `commit -a`。**而且 `commit` 本身也要带路径**（`git commit -F msg -- <paths>`）——只给 `add` 加路径是不够的，`commit` 默认提交**整个 index**，会把别人已暂存的改动一起带走（本仓真实发生过，见 §8.2）。
 3. **测试解释器必须是 Python 3.11**（见 §2.2，这是本仓最高频的假故障源）。
 4. 删除走回收站并留 manifest，不 `rm`、不 `git clean -fdx`。
 5. 任何改系统级配置/重启服务/碰生产机的动作，先走 **L2 五要素**并取得批准。
@@ -355,10 +355,14 @@ python tools/devtask.py merge <TID>                   # 内联质量闸：跑 fa
 ### 8.2 提交纪律（2026-11-02 并发事故后）
 
 ```powershell
-git add -- <显式路径1> <显式路径2>     # 禁 -a / -A
-git diff --cached --name-only          # 提交前核对，确认没夹带别人的 WIP
-git commit -m "<TID/WO> 做了什么 + 验收证据"
+git add -- <显式路径1> <显式路径2>          # 禁 -a / -A
+git diff --cached --name-only              # ①核对暂存区：确认没夹带别人的 WIP
+git commit -F <msgfile> -- <同样两个路径>   # ②commit 也带路径（见下方陷阱）
 ```
+
+**陷阱（2026-11-07 真实事故）**：只写 `git add -- A B` 然后 `git commit -F msg`，会把**别人已经 `add` 过的文件一并提交**——因为显式 pathspec 只约束 `add` 的边界，`commit` 默认提交整个 index。当次就把他线 10 个交付物卷进了我的文档提交，逼得 `git reset --soft HEAD~1` 重做。
+
+**正确姿势**：共享仓一律用**路径级提交** `git commit -F msg -- <paths>`，不看 index 脸色；提交前必须看 `git diff --cached --name-only` 而不是只看 `git status <我改的文件>`。
 
 - 提交信息必须带工单号；内核 artifact 变更还要带 ADR 号（`tools/kernel_guard.py --commit-msg`）。
 - **共享仓里别人未提交的改动不许覆盖**，也不许代为提交。发现同文件区有他线 WIP，先问再动。
