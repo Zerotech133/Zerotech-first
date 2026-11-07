@@ -34,13 +34,11 @@
 from __future__ import annotations
 
 import datetime as dt
-import json
 import os
 import secrets
 import sqlite3
 import threading
 import time
-from pathlib import Path
 from urllib.parse import parse_qs
 
 STATION = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -81,11 +79,15 @@ CAPABILITIES = [
     {
         "id": "jev_target_drill",
         "title": "影响标的下钻（新闻 → 上市公司）",
-        "endpoint": "GET /api/jev/target/600519?days=30（三面聚合）· GET /api/jev/query?code=600519",
-        "purpose": "一只股票一页出：基本面快照（名称/行业）+ 行情面（近 N 日收盘与区间涨跌）"
-                   "+ 情绪面（相关判定多空分布与净倾向）+ 判定明细（含 prefilter/model 来源标注）"
-                   "+ 后验战绩（该股判定命中率）。query?code= 则反查全部相关判定。",
-        "contract": "只读；code 6 位或带后缀；days 1..180；60s 缓存；schema jev_target.v1",
+        "endpoint": "GET /api/jev/target/600519?days=30&limit=20（四面聚合）· GET /api/jev/query?code=600519",
+        "purpose": "一只股票一页出：基本面快照（名称/行业/地域/上市日）+ 行情面（近 N 日 "
+                   "close/pct_chg/vol/amount/振幅 + 区间涨跌 + form 形态量价：MA/区间位置/连涨跌/"
+                   "量比/波动率与人话 label）+ 情绪面（该股全部相关消息的热度/来源/事件/极性，"
+                   "含未判定行，独立取数）+ 判定明细（含 prefilter/model 来源标注与 "
+                   "evidence_item 溯源路径）+ 后验战绩（该股判定命中率）。query?code= 反查全部相关判定。",
+        "contract": "只读；code 6 位或带后缀；days 1..180；limit 1..100；60s 缓存；"
+                    "schema jev_target.v2（v1 字段全保留）；block_status 逐块报可用性；"
+                    "情绪极性来自 JEV 判定 bias 而非独立情感模型（match_basis 已注明）",
         "consumer_hint": "个股研究/投研工作台/Agent 盘前尽调",
     },
     {
