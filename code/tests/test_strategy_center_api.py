@@ -63,3 +63,15 @@ def test_strategy_center_detail_404(monkeypatch, auth_headers):
             "/api/v1/strategy-center/strategies/UNKNOWN", headers=auth_headers
         )
     assert resp.status_code == 404
+
+
+def test_strategy_center_requires_admin():
+    """前端入口仅 ADMIN 可见，API 必须同口径拒绝 VIEWER。"""
+    from zhice_os_v2.api.main import app
+    from zhice_os_v2.application.services.token_service import create_token
+
+    token = create_token(user_id="u-viewer", username="viewer", role="VIEWER")
+    headers = {"Authorization": f"Bearer {token}"}
+    with TestClient(app) as client:
+        resp = client.get("/api/v1/strategy-center/snapshot", headers=headers)
+    assert resp.status_code == 403

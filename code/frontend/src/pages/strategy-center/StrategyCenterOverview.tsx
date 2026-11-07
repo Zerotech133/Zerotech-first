@@ -82,7 +82,7 @@ function OverviewContent({ data }: { data: StrategyCenterData }) {
       <div className="sc-kpis">
         <Metric label="注册策略" value={d.counts.strategy} note={`${d.lx_count} 个 LX 战法 · 含外部源`} />
         <Metric label="当前在池" value={d.counts.pool_strategy} note="可进入每日候选" />
-        <Metric label="今日候选" value={d.counts.latest_picks} note={`来自 ${latestNav ? d.latest_day.n_strategies : 0} 个策略 · 待执行`} />
+        <Metric label="今日候选" value={d.counts.latest_picks} note={`来自 ${d.latest_day?.n_strategies ?? 0} 个策略 · 待执行`} />
         <Metric label="累计交易" value={fmtNumber(d.counts.trade)} note={`${fmtNumber(d.counts.pick)} 条 pick · ${fmtNumber(d.counts.pool_candidate)} 条候选`} />
         <Metric
           label="组合净值"
@@ -125,7 +125,7 @@ function OverviewContent({ data }: { data: StrategyCenterData }) {
               </div>
             ))}
           </div>
-          <div className="sc-panel-foot">仅展示前 8 条；全量 122 条与逐条明细待只读 API 接入。</div>
+          <div className="sc-panel-foot">仅展示前 8 条；全量 {fmtNumber(d.counts.latest_picks)} 条由只读 API 提供，逐条明细见策略详情。</div>
         </div>
       </div>
 
@@ -146,7 +146,7 @@ function OverviewContent({ data }: { data: StrategyCenterData }) {
               </div>
             ))}
           </div>
-          <div className="sc-panel-foot">最新信号日 11-05 为 pending，尚未建仓；0 建仓不是空数据。</div>
+          <div className="sc-panel-foot">最新信号日 {fmtDate(d.latest_day?.signal_date)} 为 {d.latest_day?.n_buy ? '已建仓' : 'pending，尚未建仓'}；0 建仓不是空数据。</div>
         </div>
 
         <div className="sc-panel">
@@ -174,7 +174,7 @@ function OverviewContent({ data }: { data: StrategyCenterData }) {
       <div className="sc-boundary">
         <b>边界</b>
         <span>测试库只读镜像，不是生产；不自动改池、不自动批准、不构成交易建议。</span>
-        <span>策略详情页待只读 API 接入后补齐。</span>
+        <span>策略详情来自独立只读 API，可从策略货架进入。</span>
       </div>
     </div>
   );

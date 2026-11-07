@@ -7,13 +7,14 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from zhice_os_v2.api.dependencies import get_current_user
+from zhice_os_v2.api.dependencies import require_roles
+from zhice_os_v2.domain.security.user import Role
 from zhice_os_v2.application.services import qengine_sync_service as svc
 
 router = APIRouter(
     prefix="/strategy-center",
     tags=["strategy-center"],
-    dependencies=[Depends(get_current_user)],
+    dependencies=[Depends(require_roles(Role.ADMIN))],
 )
 
 

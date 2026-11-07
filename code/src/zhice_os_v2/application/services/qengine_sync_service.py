@@ -68,11 +68,6 @@ def _one(cur, sql: str, params: tuple = ()) -> dict[str, Any] | None:
     return rows[0] if rows else None
 
 
-def _q(sql: str) -> str:
-    """SQL 已含 qg_* 表名；schema 由连接的 search_path 限定。"""
-    return sql
-
-
 def fetch_snapshot(detail_sid: str = "LX20") -> dict[str, Any]:
     """返回策略中台首版页面所需的完整只读快照。"""
     try:
@@ -80,7 +75,7 @@ def fetch_snapshot(detail_sid: str = "LX20") -> dict[str, Any]:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 run = _one(
                     cur,
-                    _q(
+                    (
                         "select * from qg_sync_run "
                         "order by finished_at desc limit 1"
                     ),
@@ -88,15 +83,15 @@ def fetch_snapshot(detail_sid: str = "LX20") -> dict[str, Any]:
                 if not run:
                     raise QengineSyncUnavailable("qengine_sync 尚无同步批次")
                 asof = str(run["asof"])
-                latest = _one(cur, _q("select * from qg_latest"))
+                latest = _one(cur, ("select * from qg_latest"))
                 pool_day = _one(
                     cur,
-                    _q("select * from qg_pool_day order by asof desc limit 1"),
+                    ("select * from qg_pool_day order by asof desc limit 1"),
                 )
 
                 strategies = _rows(
                     cur,
-                    _q(
+                    (
                         """select sid,name,system,ekind,tiers,can_hold,doc,status,
                                   status_label,level,n_total,n_closed,n_open,n_days,
                                   win,avg,med,pl,worst,best,exc,exc_t,stp,hold,
@@ -113,7 +108,7 @@ def fetch_snapshot(detail_sid: str = "LX20") -> dict[str, Any]:
                     ),
                 )
                 pool = _rows(
-                    cur, _q("select sid,name from qg_pool_strategy order by sid")
+                    cur, ("select sid,name from qg_pool_strategy order by sid")
                 )
                 pool_sids = {r["sid"] for r in pool}
 
@@ -121,7 +116,7 @@ def fetch_snapshot(detail_sid: str = "LX20") -> dict[str, Any]:
                     r["sid"]: r["n"]
                     for r in _rows(
                         cur,
-                        _q(
+                        (
                             "select sid,count(*) n from qg_pending "
                             "where signal_date=%s and vetoed=0 group by sid"
                         ),
@@ -132,7 +127,7 @@ def fetch_snapshot(detail_sid: str = "LX20") -> dict[str, Any]:
                     r["sid"]: r
                     for r in _rows(
                         cur,
-                        _q(
+                        (
                             """select sid,ts_code,name,seq as rank_in,gap_pct,
                                       stop_px,ref_px,score
                                from qg_pending
@@ -144,7 +139,7 @@ def fetch_snapshot(detail_sid: str = "LX20") -> dict[str, Any]:
                 }
                 latest_picks = _rows(
                     cur,
-                    _q(
+                    (
                         """select signal_date,sid,ts_code,name,industry,
                                   seq as rank_in,gap_pct,stop_px,ref_px,score,
                                   vetoed,veto_why
@@ -154,11 +149,11 @@ def fetch_snapshot(detail_sid: str = "LX20") -> dict[str, Any]:
                     ),
                     (asof,),
                 )
-                nav = _rows(cur, _q("select * from qg_nav order by date"))
-                days = _rows(cur, _q("select * from qg_day order by signal_date"))
+                nav = _rows(cur, ("select * from qg_nav order by date"))
+                days = _rows(cur, ("select * from qg_day order by signal_date"))
                 issues = _rows(
                     cur,
-                    _q(
+                    (
                         """select issue_id,scope,code,level,sev,title,ev,act,
                                   first_date,last_date,hits,status
                            from qg_issue
@@ -169,18 +164,18 @@ def fetch_snapshot(detail_sid: str = "LX20") -> dict[str, Any]:
 
                 counts = {
                     "strategy": _one(
-                        cur, _q("select count(*) n from qg_strategy")
+                        cur, ("select count(*) n from qg_strategy")
                     )["n"],
                     "pool_strategy": len(pool),
                     "day": len(days),
-                    "pick": _one(cur, _q("select count(*) n from qg_pick"))["n"],
-                    "trade": _one(cur, _q("select count(*) n from qg_trade"))["n"],
+                    "pick": _one(cur, ("select count(*) n from qg_pick"))["n"],
+                    "trade": _one(cur, ("select count(*) n from qg_trade"))["n"],
                     "pool_candidate": _one(
-                        cur, _q("select count(*) n from qg_pool_candidate")
+                        cur, ("select count(*) n from qg_pool_candidate")
                     )["n"],
                     "issue": len(issues),
                     "pending": _one(
-                        cur, _q("select count(*) n from qg_pending")
+                        cur, ("select count(*) n from qg_pending")
                     )["n"],
                     "latest_picks": len(latest_picks),
                 }
@@ -251,14 +246,14 @@ def fetch_strategy_detail(
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             strategy = _one(
                 cur,
-                _q("select * from qg_strategy where sid=%s"),
+                ("select * from qg_strategy where sid=%s"),
                 (sid,),
             )
             if not strategy:
                 raise KeyError(sid)
             days = _rows(
                 cur,
-                _q(
+                (
                     """select signal_date,sid,n,closed,open,win,avg,exc,exc_t,
                               stp,hold,level,verdict
                        from qg_strategy_day where sid=%s order by signal_date"""
@@ -267,7 +262,7 @@ def fetch_strategy_detail(
             )
             picks = _rows(
                 cur,
-                _q(
+                (
                     """select signal_date,sid,ts_code,name,industry,rank_in,
                               gap_pct,stop_px,entry_px,shares,cost,status,
                               exit_date,exit_px,exit_reason,hold_days,
@@ -279,7 +274,7 @@ def fetch_strategy_detail(
             )
             trades = _rows(
                 cur,
-                _q(
+                (
                     """select track,signal_date,entry_date,sid,ts_code,name,
                               status,exit_date,exit_px,ret_net_pct,exit_reason,
                               hold_days
@@ -290,7 +285,7 @@ def fetch_strategy_detail(
             )
             best = _one(
                 cur,
-                _q(
+                (
                     """select signal_date,ts_code,name,status,ret_net_pct,
                               excess,hold_days
                        from qg_pick where sid=%s and ret_net_pct is not null
@@ -300,7 +295,7 @@ def fetch_strategy_detail(
             )
             worst = _one(
                 cur,
-                _q(
+                (
                     """select signal_date,ts_code,name,status,ret_net_pct,
                               excess,hold_days
                        from qg_pick where sid=%s and ret_net_pct is not null
@@ -310,7 +305,7 @@ def fetch_strategy_detail(
             )
             issues = _rows(
                 cur,
-                _q(
+                (
                     """select issue_id,scope,code,level,sev,title,ev,act,
                               first_date,last_date,hits,status
                        from qg_issue
@@ -322,7 +317,7 @@ def fetch_strategy_detail(
             strategy["in_pool"] = bool(
                 _one(
                     cur,
-                    _q("select sid from qg_pool_strategy where sid=%s"),
+                    ("select sid from qg_pool_strategy where sid=%s"),
                     (sid,),
                 )
             )
@@ -347,14 +342,14 @@ def fetch_health() -> dict[str, Any]:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 run = _one(
                     cur,
-                    _q(
+                    (
                         "select * from qg_sync_run "
                         "order by finished_at desc limit 1"
                     ),
                 )
                 checks = _rows(
                     cur,
-                    _q(
+                    (
                         "select * from qg_sync_check "
                         "order by check_id"
                     ),
@@ -386,7 +381,7 @@ def fetch_pool_candidates(
                 if not asof:
                     latest = _one(
                         cur,
-                        _q("select asof from qg_pool_day order by asof desc limit 1"),
+                        ("select asof from qg_pool_day order by asof desc limit 1"),
                     )
                     asof = str(latest["asof"]) if latest else ""
                 where = ["asof=%s"]
@@ -397,12 +392,12 @@ def fetch_pool_candidates(
                 clause = " and ".join(where)
                 total = _one(
                     cur,
-                    _q(f"select count(*) n from qg_pool_candidate where {clause}"),
+                    (f"select count(*) n from qg_pool_candidate where {clause}"),
                     tuple(params),
                 )["n"]
                 rows = _rows(
                     cur,
-                    _q(
+                    (
                         f"""select row_no,asof,sid,code,name,industry,px,stop,
                                    gap,eff,score,ret,exc,hold,rs,complete
                             from qg_pool_candidate where {clause}

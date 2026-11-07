@@ -114,6 +114,7 @@ export default function StrategyCenterDetail({
     let alive = true;
     setLoading(true);
     setError('');
+    setDetail(null);
     fetchStrategyCenterDetail(sid)
       .then((next) => {
         if (alive) setDetail(next);
@@ -163,6 +164,7 @@ export default function StrategyCenterDetail({
         onRetry={() => {
           setLoading(true);
           setError('');
+          setDetail(null);
           fetchStrategyCenterDetail(sid)
             .then(setDetail)
             .catch((err: unknown) => setError(String(err)))
