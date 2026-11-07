@@ -460,13 +460,14 @@ git commit -F <msgfile> -- <同样两个路径>   # ②commit 也带路径（见
 | 全仓测试收集中断 | 已修（模块级副作用），收集 11,187 / 0 error |
 | nginx 字节锁常红 | 已改语义断言，portal 套件 1,319 / 0 failed，改配置不再需要改测试 |
 | `agent_platform` 全量回归 | 三轮 3,881 passed / 0 failed |
+| **P0-5** nav/route「工作区绿、HEAD 红」 | 已闭合：30 个 JEV 文件原子入库 `a65063496`、`config/cloud_llm.json` 进忽略 `f5c5e375b`；2026-11-08 00:1x 于 `80fc170e3` 复跑 `unify_nav --check` = 108 页零漂移、`portal_route_inventory --check` = 322 条零 diff |
+| **budget 门（F1）** `api_chanlun_buy` 1514 / `api_chanlun_pages` 2411 超限 | 已闭合：23:50 `a8b4108ef` 把 ①e 影子清单块并回 `chanlun_buy_coarse.py`（341 行），buy 1514→**1176**（≤1200）、pages 2411→**2097**（≤冻结 2328）；00:1x 于 `80fc170e3` 跑 `check_portal_split.py --strict` = **rc=0，零告警**。基线未动过（`FROZEN` 自 10-28 起未改） |
 
 ### 11.2 未关闭（详见 `deliverables/2026-11-07_代码审查与遗留清单_v1.md`）
 
 | ID | 事项 | 影响 |
 |---|---|---|
 | P0-2 | 20 项验收 20/20 UNVERIFIED，PASS=0 | 治理门未签，代码通过 ≠ 验收通过 |
-| P0-5 | nav/route 工作区绿，但两文件属他线未提交 WIP | **HEAD 上复跑仍红** |
 | P1-5 | `gold_signal_shadow` 前视（结算用 `dt` 而非 `detect_date`） | 改口径需重签，否则 d20 虚增 0.80pp |
 | P1-6 | portal 根级 16 个测试导入即错、且不在门禁 | 第二个「测试被遮蔽」温床 |
 | P2-5 | 5 文件 6 处函数内 `from tools import` | 与「导入遮蔽」同源，未证实失败前不批改 |
@@ -474,7 +475,7 @@ git commit -F <msgfile> -- <同样两个路径>   # ②commit 也带路径（见
 
 ### 11.3 建议顺序
 
-1. 窗口内提交 P0-5 两文件，把「工作区绿」变「HEAD 绿」；
+1. ~~窗口内提交 P0-5 两文件~~ → **已闭合**（`a65063496` / `f5c5e375b`，HEAD 复跑绿，见 §11.1）；
 2. P1-6 决策：进套件 or 显式 `manual`；
 3. P3-5：P1-6 之后跑首轮全仓执行，落 JSON 基线；
 4. P1-5 口径重签后再改结算定位。
