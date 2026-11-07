@@ -202,12 +202,41 @@ def check(root: Path = ROOT, strict: bool = False) -> dict:
         f"last_drilled={rb.get('last_drilled')} last_result={rb.get('last_result')}")
     ct = status.get("contract_test") or {}
     state_ck = ct.get("state_check") or status.get("state_check") or {}
+    p04 = ct.get("p0_04") or {}
+    gate_path = ROOT / "portal/tests/test_p0_04_contract_gate.py"
+    baseline_path = ROOT / "deliverables/d1_q2/20261107/P0-04_test_count_baseline.json"
+    baseline = _load_json(baseline_path) if baseline_path.is_file() else {}
+    evidence_md = ROOT / "deliverables/d1_q2/20261107/P0-04_契约测试入闸与负控.md"
+    qa_html = ROOT / "deliverables/d1_q2/20261107/P0-04_QA1复核签字页.html"
+    fast_log = ROOT / str(p04.get("fast_gate_log") or "")
+    neg_log = ROOT / str(p04.get("negative_control_log") or "")
+    fast_text = fast_log.read_text(encoding="utf-8", errors="replace") if fast_log.is_file() else ""
+    neg_text = neg_log.read_text(encoding="utf-8", errors="replace") if neg_log.is_file() else ""
     add("manifest.contract_test",
-        "45 passed" in str(ct.get("unit") or "")
+        "collected" in str(ct.get("unit") or "")
+        and "passed" in str(ct.get("unit") or "")
         and "38" in str(ct.get("ifs_registry") or "")
         and "d1_q2_state_check.py" in str(state_ck)
-        and (state_ck.get("status") if isinstance(state_ck, dict) else "") == "pass",
-        f"unit={ct.get('unit')} ifs={ct.get('ifs_registry')} state_check={state_ck}")
+        and (state_ck.get("status") if isinstance(state_ck, dict) else "") == "pass"
+        and p04.get("status") == "pass"
+        and p04.get("fast_gate_rc") == 0
+        and bool(p04.get("fast_gate_at"))
+        and p04.get("negative_control") == "pass"
+        and p04.get("negative_control_rc") == 1
+        and "P0-04" in str(p04.get("evidence") or "")
+        and gate_path.is_file()
+        and evidence_md.is_file()
+        and qa_html.is_file()
+        and fast_log.is_file()
+        and neg_log.is_file()
+        and "FAST_GATE_EXIT_CODE=0" in fast_text
+        and "EXIT_CODE=1" in neg_text
+        and len(baseline.get("test_files") or []) == 15
+        and baseline.get("collected") == p04.get("test_count")
+        and baseline.get("passed") == p04.get("test_passed"),
+        f"unit={ct.get('unit')} ifs={ct.get('ifs_registry')} p0_04={p04} state_check={state_ck} "
+        f"gate_file={gate_path.is_file()} evidence_md={evidence_md.is_file()} qa_html={qa_html.is_file()} "
+        f"baseline={baseline.get('collected')}/{baseline.get('passed')} files={len(baseline.get('test_files') or [])}")
 
     # 3. composition registry snapshot
     entries = [x for x in (registry.get("compositions") or []) if (x or {}).get("id") == mid]
