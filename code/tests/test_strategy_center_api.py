@@ -65,6 +65,15 @@ def test_strategy_center_detail_404(monkeypatch, auth_headers):
     assert resp.status_code == 404
 
 
+def test_strategy_center_requires_auth():
+    """无 token 必须 401，不得泄露只读数据。"""
+    from zhice_os_v2.api.main import app
+
+    with TestClient(app) as client:
+        resp = client.get("/api/v1/strategy-center/snapshot")
+    assert resp.status_code == 401
+
+
 def test_strategy_center_requires_admin():
     """前端入口仅 ADMIN 可见，API 必须同口径拒绝 VIEWER。"""
     from zhice_os_v2.api.main import app
