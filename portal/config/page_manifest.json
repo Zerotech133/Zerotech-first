@@ -101,9 +101,9 @@
  "route_baseline": {
   "present": true,
   "path": "tools/portal_route_baseline.json",
-  "generated_at": "2026-11-05T16:21:16",
-  "total": 301,
-  "sha256": "b4057b4444536b1d38bbe58cef6b81a5f07c107ee1ac6e02668d3fada3a36f14"
+  "generated_at": "2026-11-06T04:35:00",
+  "total": 306,
+  "sha256": "3d7b3da4f4386f82e71e581322f79c3ecbcd996c153977ff7525e2dea5fd308b"
  },
  "entry_map": [
   {
@@ -207,16 +207,16 @@
   }
  ],
  "counts": {
-  "total": 130,
+  "total": 131,
   "by_status": {
    "active": 84,
    "legacy": 16,
-   "review": 30,
+   "review": 31,
    "archived": 0
   },
   "by_family": {
    "cockpit": 1,
-   "os": 108,
+   "os": 109,
    "portal": 3,
    "h5": 17,
    "adapter": 1,
@@ -2529,6 +2529,21 @@
    ],
    "note": "人看首页（浅色驾驶舱）；宪法 §3.1 要求不加载 nav.js，实测文件仍有 page_shell_gen 注入 1 处，W1 移除",
    "source": "portal/zero_proto.html"
+  },
+  {
+   "id": "page/feishu_admin",
+   "path": "/feishu/admin",
+   "family": "os",
+   "title": "军机驿 · 飞书 PC 控制台",
+   "theme": "light-cockpit",
+   "shell": "none",
+   "nav": "none",
+   "auth": "oidc",
+   "status": "review",
+   "owner": "ARCH1",
+   "apis": [],
+   "note": "F17 PC 控制台壳层；nginx exact /feishu/admin → feishu_admin.html；mock 数据/只读，不产生真实发送；直链 feishu_admin.html 同受 auth guard",
+   "source": "portal/feishu_admin.html"
   }
  ]
 }

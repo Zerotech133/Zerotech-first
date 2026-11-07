@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>军机驿 · 飞书 PC 控制台</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="stylesheet" href="/static/feishu_admin/admin.css">
+</head>
+<body>
+<div id="app">
+  <aside class="sidebar" aria-label="主导航">
+    <a class="brand" href="#/overview" aria-label="军机驿飞书 PC 控制台">
+      <span class="brand-mark">驿</span>
+      <span class="brand-copy">
+        <strong>军机驿</strong>
+        <small>飞书 PC 控制台</small>
+      </span>
+      <span class="brand-env">PC</span>
+    </a>
+    <button class="workspace" type="button">
+      <span class="ws-dot"></span>
+      <span>零界 · 生产工作区</span>
+      <span class="ws-chev">⌄</span>
+    </button>
+    <nav id="nav"></nav>
+    <div class="sidebar-foot">
+      <div class="foot-card">
+        <div class="foot-title">通道值守</div>
+        <div class="foot-row"><span>8097 推送闸门</span><b class="ok">UP</b></div>
+        <div class="foot-row"><span>8091 门户 / H5</span><b class="ok">UP</b></div>
+        <div class="foot-row"><span>8081 公网安全门</span><b class="warn">DOWN</b></div>
+        <div class="foot-note">F17 壳层 · mock 数据 · 不产生真实发送</div>
+      </div>
+      <div class="sidebar-user">
+        <span class="avatar">田</span>
+        <span class="user-meta"><strong>田 · OPS 管理员</strong><small>portal OIDC · 只读会话</small></span>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="crumbs">
+        <span class="crumb-root">飞书域</span><span class="crumb-sep">/</span><span id="crumb">总览</span>
+      </div>
+      <div class="top-actions">
+        <label class="global-search">
+          <span aria-hidden="true">⌕</span>
+          <input id="globalSearch" type="search" placeholder="搜索推送、审批、目标…" autocomplete="off">
+        </label>
+        <span class="env-pill"><i></i> F17 壳层 · 只读</span>
+        <button class="icon-btn" type="button" title="消息">⌁<span class="dot"></span></button>
+        <span class="top-avatar">田</span>
+      </div>
+    </header>
+    <div id="view" class="view" role="main"></div>
+    <footer class="page-foot">
+      <span>军机驿 · 飞书域 PC 控制台 · F17 壳层 v0.1</span>
+      <span>写操作必须：预览 → 记录 → 审批 → 执行 · 不绕过 8097 / 决策账</span>
+    </footer>
+  </main>
+</div>
+
+<div id="scrim" class="scrim" hidden></div>
+<aside id="drawer" class="drawer" hidden aria-label="详情"></aside>
+<div id="modal" class="modal-wrap" hidden></div>
+<div id="toast" class="toast" hidden></div>
+<script src="/static/feishu_admin/admin.js"></script>
+</body>
+</html>
