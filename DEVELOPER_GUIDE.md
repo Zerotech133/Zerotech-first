@@ -456,6 +456,7 @@ git commit -F <msgfile> -- <同样两个路径>   # ②commit 也带路径（见
 | 17 | **同角两个浮层可以同为 `z-index:900`**（`#ai-orb` 与 ⌘K 按钮） | 后注入者压在球上，谁也没报错，只有肉眼可见 | 浮层要么约定各自层级，要么显式互斥：`ui_palette.js` 检测 `#ai-orb` 贴近右下角时把按钮抬到球上方（`bottom = 视口高 − 球 top + 10`），球被拖走后自动回落 |
 | 18 | **`os_theme.css` 给 `button` 设了 `min-height:40px`** | 局部写 `height:30px` 静默失效，实测仍是 40（截图像「多出 10px」） | 收紧控件高度时同时写 `min-height:0; min-width:0`，不要只写 `height` |
 | 19 | **`core.autocrlf=true` 下 `git status` 干净 ≠ 工作区字节合规**（`portal/index.html` 工作区是纯 LF，换行守卫读原始字节必红，`git diff` 却一行都不显示） | 追换行问题的人会反复怀疑自己刚改的文件，因为凶手在 `git status` 里根本不存在 | 判「换行被破坏」只读磁盘字节（`b.count(b"\n") == b.count(b"\r\n")`），不要拿 `git status`/`git diff` 当证据；修法是把该文件按 CRLF 重写，提交后 blob 仍是 LF、diff 规模不变 |
+| 20 | **「重采一遍基线」不等于修好**：`db_fingerprint` 收 `backups/db` 全库，而日排班每天 03:30 新建日期目录 + 追加日志 | 重采当天全绿，次日 03:30 后又红，且红在 `added_outside`，看着像「有人越权新增」 | 重采前先问「基线对象会不会自己长大」：会 → 把易变集合从判据里摘出来单列观测（本项目 `FROZEN_DB_DIRS` 冻结 9 个治理日期目录 + `db_runtime_dirs` 只留痕，与 ADR-29 外部作业同构），再重采。另：基线之后**任何并行会话写盘**都会判「未归因新增」，故签发必须 `capture` → `verify` **背靠背**（实测隔 8 分钟就红） |
 
 ---
 
@@ -517,7 +518,7 @@ git commit -F <msgfile> -- <同样两个路径>   # ②commit 也带路径（见
 
 | 类别 | 数 | 现状与归属 |
 |---|---|---|
-| 治理验收基线 `tests/test_governance_acceptance.py` | 4 | `ops/db_dump_daily.py:52` 把 `dump_latest.log` 写进受治理的 `backups/db/`，而该文件**已被 W-08 基线收进 `db_fingerprint`（第 45 条）**，每日 dump 一追加指纹必变 → `AC-N04/AC-N07/AC-E08` 红；`AC-N03` 另硬编码 `dates[0]=="2026-11-05"`，新建 `2026-11-07` 目录即红。**注意：不是「挪个日志落点」能转绿**——挪走 → 基线那条变 `absent` 仍红；改 `db_dump_daily.py` → 它在 `system_files` 里，sha256 变也红。要转绿只能重采 W-08 基线或按 `EXTERNAL_SYSTEM_CHANGES` 四重判据登记，属治理裁定 |
+| 治理验收基线 `tests/test_governance_acceptance.py` | 4 | **已转绿（2026-11-08 按方案 A 重采 W-08 基线）**：① `dump_latest.log` 迁出 `backups/db` → `logs/db_dump_daily.log`（历史整份迁移，sha256 前后一致）；② 基线脚本 `db_fingerprint` 冻结为 9 个治理日期目录，日排班新目录进 `db_runtime_dirs` 只留痕；③ `AC_N03` 硬编码 `dates[0]=="2026-11-05"` 改为「最大且含 `quant_pg_alldb.sql.gz`」。实测 **21 passed**、`verify` **9/9 ALL_PASS**（基线 `db_fingerprint` 45→44）。首轮归因里那句「不是挪个日志落点能转绿」已被实跑验证：单独挪日志只会把红换成 `absent`。**全仓未复跑，53 → 理论上限 49（未实测）**。执行记录 `deliverables/2026-11-08_W08基线重采_治理4项转绿_v1.md`，判例见 §9 #20 |
 | xq 分类契约 | 41 | 待 quant/xq 属主定性（断言「合法枚举直通」；实现侧 10-30 起改走 `safe_urlopen`，测试仍 patch `urllib.request.urlopen`，替身是否失效未证）。**不得加白** |
 | portal 换行守卫 | 2 | **已转绿**：`portal/index.html` 工作区已在 01:45 之后的提交里恢复 CRLF（实测 CRLF=865 / bareLF=0），两条守卫复跑 **2 passed** |
 | 导入顺序依赖 | 6 | 隔离 6/6 绿、仅混跑红；`tools/` 无 `__init__.py`（命名空间包），属 §9 判例 #3 家族。给 `tools` 加包标记会改全仓导入语义，**未做** |
@@ -603,4 +604,4 @@ deliverables/        交付物与遗留清单（唯一权威）
 
 ---
 
-*版本：v1.1（2026-11-08 修订：§0/§1.1/§1.2 定位同步 `A0-DEC-20261107` + `PRODUCT_BASELINE v1.2`；§11.2 入账 P3-5 首轮真执行 53 failed）。基线 HEAD 见提交时点；首轮真执行快照为 `89e35983d` → `557df84ac`。文中所有数字均为实测，改动后请同步更新并注明日期。研究分析工具，不构成投资建议。*
+*版本：v1.2（2026-11-08 修订：§9 新增判例 #20「重采基线不连带收口口径 = 只绿一天」；§11.2 治理验收 4 条按方案 A 重采 W-08 基线转绿，21 passed / verify 9/9。v1.1 曾做 §0/§1.1/§1.2 定位同步 `A0-DEC-20261107` + `PRODUCT_BASELINE v1.2`、§11.2 入账 P3-5 首轮真执行 53 failed）。基线 HEAD 见提交时点；首轮真执行快照为 `89e35983d` → `557df84ac`。文中所有数字均为实测，改动后请同步更新并注明日期。研究分析工具，不构成投资建议。*
