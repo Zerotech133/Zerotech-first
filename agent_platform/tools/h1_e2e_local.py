@@ -17,6 +17,22 @@ import threading
 import time
 import urllib.request
 from http.server import ThreadingHTTPServer
+# 回环禁代理（2026-11-07 批 5）：本机服务的请求不走系统代理，实现见 tools/safe_urlopen.py
+import sys as _sys
+from pathlib import Path as _Path
+
+for _base in _Path(__file__).resolve().parents:
+    for _cand in (_base, _base / "tools"):
+        if (_cand / "safe_urlopen.py").exists():
+            _sys.path.insert(0, str(_cand))
+            break
+    else:
+        continue
+    break
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包/仓库根导入时
+    from tools.safe_urlopen import safe_urlopen
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 if not os.path.isdir(os.path.join(ROOT, "portal")):
@@ -41,7 +57,7 @@ print("portal on", BASE)
 def http(path, token=TOKEN):
     req = urllib.request.Request(BASE + path, headers={"X-Analysis-Token": token} if token else {})
     try:
-        with urllib.request.urlopen(req, timeout=10) as r:
+        with safe_urlopen(req, timeout=10) as r:
             return r.status, json.loads(r.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
         try:

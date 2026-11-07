@@ -53,8 +53,7 @@ def _probe_service(spec):
     t0 = _time.time()
     try:
         if http_path:
-            from urllib.request import urlopen
-            ok = urlopen("http://127.0.0.1:%d%s" % (port, http_path), timeout=2.5).status == 200
+            ok = safe_urlopen("http://127.0.0.1:%d%s" % (port, http_path), timeout=2.5).status == 200
         else:
             s = _sk.create_connection(("127.0.0.1", port), timeout=2)
             s.close()

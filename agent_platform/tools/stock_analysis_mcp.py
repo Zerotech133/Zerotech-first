@@ -19,6 +19,22 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+# 回环禁代理（2026-11-07 批 5）：本机服务的请求不走系统代理，实现见 tools/safe_urlopen.py
+import sys as _sys
+from pathlib import Path as _Path
+
+for _base in _Path(__file__).resolve().parents:
+    for _cand in (_base, _base / "tools"):
+        if (_cand / "safe_urlopen.py").exists():
+            _sys.path.insert(0, str(_cand))
+            break
+    else:
+        continue
+    break
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包/仓库根导入时
+    from tools.safe_urlopen import safe_urlopen
 
 SERVER_NAME = "stock-analysis"
 SERVER_VERSION = "0.1.0"
@@ -106,7 +122,7 @@ def _http(path, method="GET", body=None):
         headers["Content-Type"] = "application/json; charset=utf-8"
     req = urllib.request.Request(url, data=data, headers=headers, method=method)
     try:
-        with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+        with safe_urlopen(req, timeout=TIMEOUT) as r:
             return json.loads(r.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
         try:

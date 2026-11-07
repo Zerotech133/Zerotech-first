@@ -33,6 +33,22 @@ AUDIT_LOG = os.path.join(HERE, "portal", "work", "secrets_rotate.log")
 MARKER = r"C:\Temp\push_admin_restart.marker"
 GUARD_TASK = "AI工作站推送中台守护8097"
 PORT = 8097
+# 回环禁代理（2026-11-07 批 5）：本机服务的请求不走系统代理，实现见 tools/safe_urlopen.py
+import sys as _sys
+from pathlib import Path as _Path
+
+for _base in _Path(__file__).resolve().parents:
+    for _cand in (_base, _base / "tools"):
+        if (_cand / "safe_urlopen.py").exists():
+            _sys.path.insert(0, str(_cand))
+            break
+    else:
+        continue
+    break
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包/仓库根导入时
+    from tools.safe_urlopen import safe_urlopen
 
 KEY_SPECS = {
     "push_admin_key": "pk_admin_",
@@ -48,9 +64,8 @@ def _tail(v):
 
 
 def _alive():
-    import urllib.request
     try:
-        urllib.request.urlopen("http://127.0.0.1:%d/" % PORT, timeout=3)
+        safe_urlopen("http://127.0.0.1:%d/" % PORT, timeout=3)
         return True
     except Exception:  # noqa: BLE001
         return False
