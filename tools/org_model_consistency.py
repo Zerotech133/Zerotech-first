@@ -41,7 +41,6 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -290,7 +289,7 @@ def audit(inputs: dict, strict: bool = False, e3_exceptions=None) -> dict:
         _add(issues, "fail", "org_duplicate_seat", seat, "org 内席位重复出现")
 
     # 心跳/档位前置
-    tier_models = ((tiers or {}).get("models") or {}) if isinstance(tiers, dict) else {}
+    ((tiers or {}).get("models") or {}) if isinstance(tiers, dict) else {}
     grade_policy = ((tiers or {}).get("grade_policy") or {}) if isinstance(tiers, dict) else {}
     if tiers is None:
         _add(issues, "fail", "tier_policy", "", "缺少 model_tiers.json，无法校验绑定白名单")

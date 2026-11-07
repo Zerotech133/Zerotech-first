@@ -30,10 +30,11 @@ from api_common import (
     build_alerts,
     _PILL, _PILL_ON)
 
-from api_misc_home import (  # A5FROZEN：K-STOCK-167 驾驶舱数据面拆出
-    _HOME_ORG_JSON, _HOME_PAPER_DB, _HOME_ROOT, _HOME_SHADOW,
-    _home_cal, _home_money, _home_mt, _home_now_context, _home_org,
-    _home_timeline, build_home_cockpit)
+from api_misc_home import (  # noqa: F401  A5FROZEN：K-STOCK-167 驾驶舱数据面拆出
+    _HOME_ORG_JSON, _HOME_PAPER_DB, _HOME_ROOT, _HOME_SHADOW,  # noqa: F401
+    _home_cal, _home_money, _home_mt, _home_now_context, _home_org,  # noqa: F401
+    _home_timeline, build_home_cockpit)  # noqa: F401
+
 TASKS = ["AI工作站每日备份", "AI工作站告警转发", "JevFOCUS首期报告",
          "ZhiceWatchdog", "金融新闻采集", "金融新闻日报", "金融新闻AI晨报",
          "金融新闻收盘复盘", "自选股行情快照", "公众号选题撰文",

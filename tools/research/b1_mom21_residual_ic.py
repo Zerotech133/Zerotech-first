@@ -290,7 +290,7 @@ def build(panel: fl.Panel, horizons=HORIZONS, n_boot: int = 100) -> dict:
 def _fmt_ic(entry: dict) -> str:
     if not entry:
         return "n/a"
-    ic = entry.get("ic") or {}
+    entry.get("ic") or {}
     d = entry.get("ic_directed") or {}
     mean = d.get("mean")
     t = d.get("t")

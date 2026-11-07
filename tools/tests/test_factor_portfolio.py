@@ -7,7 +7,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools" / "research"))
@@ -35,7 +34,7 @@ def _panel(n_days: int = 80, n_codes: int = 60, seed: int = 7) -> tuple[Panel, d
     amount = pd.DataFrame(2e6, index=dates, columns=codes)  # 千元，20 亿元
     turnover = pd.DataFrame(2.5, index=dates, columns=codes)  # 2.5%
     total_mv = pd.DataFrame(1e6, index=dates, columns=codes)
-    factor = pd.DataFrame(
+    pd.DataFrame(
         np.tile(np.arange(n_codes, dtype=float), (n_days, 1)), index=dates, columns=codes
     )
     fields = {"close": close, "adj_close": adj, "pct_chg": pct, "vol": vol,

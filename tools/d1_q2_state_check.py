@@ -124,7 +124,6 @@ def check(root: Path = ROOT, strict: bool = False) -> dict:
     status = manifest.get("status") or {}
     sla = ((spec.get("data") or {}).get("sla") or {}) or (spec.get("sla") or {})
     slo = spec.get("slo") or {}
-    q2 = status
     mid = "lusu-d1-flow"
 
     # 1. manifest identity / lifecycle / status

@@ -736,9 +736,9 @@ def render_md(rep: dict) -> str:
     items = _review_items(review)
     summary = review.get("summary") or {}
     kpi = review.get("kpi") or {}
-    preflight = rep.get("preflight")
-    gng = rep.get("go_no_go")
-    trend = rep.get("coverage_trend")
+    rep.get("preflight")
+    rep.get("go_no_go")
+    rep.get("coverage_trend")
     cov = rep.get("coverage") or {}
     maturity = rep.get("maturity") or {}
     incidents = rep.get("incidents") or {}

@@ -34,7 +34,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 import sys
 import time
 from datetime import datetime
@@ -995,7 +994,7 @@ def build_conclusion_text(rep: dict) -> list[str]:
     """生成结论段落（数字驱动的模板化文字）。"""
     wb = rep["factors"].get("weekly_baseline") or next(iter(rep["factors"].values()))
     h60 = rep["factors"].get("hold60")
-    ann = wb["yearly"]
+    wb["yearly"]
     ic = wb["ic_by_year"]
     c = rep["conclusion"]
     reg = wb["regime"]["stats"]

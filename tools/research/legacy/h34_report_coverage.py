@@ -104,7 +104,6 @@ def main() -> int:
         dates = s.index.get_level_values(1).tolist()
         vals = s.tolist()
         # 30 交易日窗口近似：用交易日索引查前面 30 个有记录日（记录日稀疏 → 用最后 30 个自然记录）
-        cur = set()
         buf = []
         for i, v in enumerate(vals):
             buf.append((dates[i], v))

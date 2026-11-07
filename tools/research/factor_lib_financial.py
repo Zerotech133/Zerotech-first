@@ -11,7 +11,6 @@
 """
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Iterable
@@ -219,7 +218,7 @@ def _build_derived(df: pd.DataFrame) -> pd.DataFrame:
                              g("n_income_attr_p", "_y"))
     op_ttm, op_q, op_y = (g("operate_profit", "_ttm"), g("operate_profit", "_q"),
                           g("operate_profit", "_y"))
-    tp_ttm, tp_q = g("total_profit", "_ttm"), g("total_profit", "_q")
+    _tp_ttm, tp_q = g("total_profit", "_ttm"), g("total_profit", "_q")
     ebit_ttm, ebitda_ttm = g("ebit", "_ttm"), g("ebitda", "_ttm")
     interest_ttm = g("fin_exp_int_exp", "_ttm")
     if interest_ttm.isna().all():
@@ -232,7 +231,7 @@ def _build_derived(df: pd.DataFrame) -> pd.DataFrame:
     op_in_ttm = g("c_inf_fr_operate_a", "_ttm")
     inv_in_ttm = g("stot_inflows_inv_act", "_ttm")
     staff_ttm = g("c_paid_to_for_empl", "_ttm")
-    sell_ttm, admin_ttm, fin_ttm = g("sell_exp", "_ttm"), g("admin_exp", "_ttm"), g("fin_exp", "_ttm")
+    _sell_ttm, _admin_ttm, _fin_ttm = g("sell_exp", "_ttm"), g("admin_exp", "_ttm"), g("fin_exp", "_ttm")
     sell_q, admin_q, fin_q = g("sell_exp", "_q"), g("admin_exp", "_q"), g("fin_exp", "_q")
     tax_surcharge_ttm = g("biz_tax_surchg", "_ttm")
     eps_ttm, eps_q, eps_y = g("basic_eps", "_ttm"), g("basic_eps", "_q"), g("basic_eps", "_y")
@@ -248,8 +247,8 @@ def _build_derived(df: pd.DataFrame) -> pd.DataFrame:
         equity = equity_inc
     ca, cl = g("total_cur_assets"), g("total_cur_liab")
     inv, cash, trad = g("inventories"), g("money_cap"), g("trad_asset")
-    ar, far, ltr = g("accounts_receiv"), g("fix_assets"), g("lt_rec")
-    rear, prepay = g("adv_receipts"), g("prepayment")
+    ar, far, _ltr = g("accounts_receiv"), g("fix_assets"), g("lt_rec")
+    _rear, _prepay = g("adv_receipts"), g("prepayment")
     dta, tncl, shares = g("defer_tax_assets"), g("total_ncl"), g("total_share")
 
     df["revenue_ttm"], df["revenue_q"], df["revenue_y"] = revenue_ttm, revenue_q, revenue_y
@@ -385,7 +384,7 @@ class FinancialData:
                               suffixes=("", "_fi"))
         merged = merged.drop(columns=[c for c in merged.columns if c.endswith(("_inc", "_bal", "_cf", "_fi"))])
         # 合并各表 ann_date：取最大值
-        ann_cols = [c for c in ("ann_date",) if c in merged.columns]
+        [c for c in ("ann_date",) if c in merged.columns]
         merged["ann_date"] = merged["ann_date"]
         merged = merged[merged["end_date"].notna() & merged["ann_date"].notna()]
         merged = merged[merged["end_date"] >= pd.Timestamp("2009-01-01")]

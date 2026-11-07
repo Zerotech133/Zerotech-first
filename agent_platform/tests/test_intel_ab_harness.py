@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import json
 import sqlite3
-import subprocess
 import sys
 import types
 from pathlib import Path
@@ -243,7 +242,7 @@ def test_missing_ledger_fail_visible(tmp_path, capsys):
 
 
 def test_bad_ledger_lines_fail_visible(tmp_path, capsys):
-    off = _ledger(tmp_path / "off", [_row("600519")])
+    _ledger(tmp_path / "off", [_row("600519")])
     on = Path(tmp_path / "on") / "shadow" / "shadow_ledger.jsonl"
     on.parent.mkdir(parents=True)
     on.write_text(

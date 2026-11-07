@@ -30,7 +30,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 import sys
 import time
 from datetime import datetime
@@ -428,9 +427,9 @@ def build_conclusion_text(rep: dict) -> list[str]:
     comps = {(c["signal"], c["frequency"]): c for c in rep["comparisons"]}
     lines: list[str] = []
     res_rows = [c for c in rep["comparisons"] if c["signal"] == "residual"]
-    orig_rows = [c for c in rep["comparisons"] if c["signal"] == "original"]
+    [c for c in rep["comparisons"] if c["signal"] == "original"]
     any_pass = any(c["verdict"]["independent_alpha"] for c in res_rows)
-    any_gross_pass = any(c["verdict"]["independent_alpha_gross"] for c in res_rows)
+    any(c["verdict"]["independent_alpha_gross"] for c in res_rows)
     lines.append(f"**总判定：{'残差仍有独立 alpha（至少一档频率通过净口径阈值）' if any_pass else '残差未能通过净口径阈值 → low_turnover 主要是风格代理（停止该方向）'}**")
     lines.append("")
     lines.append("**核心对比：**")

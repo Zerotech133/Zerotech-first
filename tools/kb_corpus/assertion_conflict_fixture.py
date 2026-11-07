@@ -102,7 +102,7 @@ def main() -> int:
     print(f"准确 {ok}/{len(CASES)} = {ok/len(CASES)*100:.0f}%　成本 ¥{cost:.4f}")
     print()
     print("分项：")
-    tp = sum(1 for n, w, *_ in CASES if w == "contradicts")
+    sum(1 for n, w, *_ in CASES if w == "contradicts")
     print(f"  真冲突 4 条（预期全报）")
     print(f"  不冲突 4 条（预期全不报）")
     return 0

@@ -42,7 +42,6 @@ import re
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime
 from pathlib import Path
 
 _HERE = Path(__file__).resolve().parent
@@ -522,7 +521,7 @@ def main(argv=None) -> int:
     cost = sum((r.get("cost") or 0) for r in results.values())
     elapsed = time.monotonic() - t0
 
-    keep_rows = [a for a in merged if a["verify"]["verdict"] in ("ok", "fix")]
+    [a for a in merged if a["verify"]["verdict"] in ("ok", "fix")]
     dropped = [a for a in merged if a["verify"]["verdict"] == "drop"]
     fixes = [a for a in merged if a["verify"]["verdict"] == "fix"]
     unknown = [a for a in merged if a["verify"]["verdict"] == "unknown"]

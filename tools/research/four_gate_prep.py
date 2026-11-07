@@ -225,8 +225,8 @@ def grade_candidate(ic20: dict, seg_ics: list[float], mono, cost: dict,
     signs = [1 if x > 0 else -1 for x in seg_ics if x is not None]
     overall_sign = 1 if (ic is not None and ic > 0) else -1
     n_same = sum(1 for s in signs if s == overall_sign)
-    n_pos = sum(1 for s in signs if s > 0)
-    n_neg = sum(1 for s in signs if s < 0)
+    sum(1 for s in signs if s > 0)
+    sum(1 for s in signs if s < 0)
     # 分段同向必须与「全样本 IC 方向」一致（不能把 2 段反向当成稳定）
     seg_ok = n_same >= THRESHOLDS["min_positive_segments"]
     ok_mono = mono is not None and abs(mono) >= THRESHOLDS["monotonicity_min_abs"]
@@ -323,7 +323,7 @@ def load_daily_panel(dates: list[str], codes: list[str]) -> dict:
         c = c[c["ts_code"].isin(codes)].copy()
         c["trade_date"] = dt
         close.append(c[["trade_date", "ts_code", "close"]])
-        a = pq.read_table(DATA / "daily" / f"d_{dt}.parquet",
+        pq.read_table(DATA / "daily" / f"d_{dt}.parquet",
                           columns=["ts_code"]).to_pandas() if False else None
         amount.append(c[["trade_date", "ts_code", "amount"]])
         f = pq.read_table(DATA / "adj_factor" / f"d_{dt}.parquet",
@@ -391,7 +391,7 @@ def load_chan_bars(codes: list[str], window_dates: list[str]) -> dict[str, pd.Da
     months = [m for m in months_all if window_dates[0][:6] <= m <= window_dates[-1][:6]]
     if len(months) < 5:
         months = months_all[-6:]
-    win = set(window_dates)
+    set(window_dates)
     frames: dict[str, pd.DataFrame] = {}
     bars_by: dict[str, pd.DataFrame] = {}
     for code in codes:
@@ -530,7 +530,7 @@ def main() -> int:
             layers[f"h{h}"] = layer_stats(neut, fwd[h], h)
             decay[f"h{h}"] = neut_ic[f"h{h}"]["mean"]
         # 组合：20 日持有重叠，多空 G5/G1（按中性化因子）
-        sel_ic = daily_rank_ic(neut, fwd[PRIMARY_H])
+        daily_rank_ic(neut, fwd[PRIMARY_H])
         long_sets, short_sets = [], []
         for i in range(len(window_dates)):
             m = np.isfinite(neut[i]) & np.isfinite(fwd[PRIMARY_H][i])

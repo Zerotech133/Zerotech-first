@@ -322,7 +322,7 @@ def main():
     q1, q2 = cuts3
     hi_d = [r for r in dl if r["score"] >= q2]
     lo_d = [r for r in dl if r["score"] < q1]
-    mid_d = [r for r in dl if q1 <= r["score"] < q2]
+    [r for r in dl if q1 <= r["score"] < q2]
 
     for key in ("alpha", "ret"):
         d_, t_, p_ = welch([r[key] for r in hi_d], [r[key] for r in lo_d])
@@ -421,7 +421,7 @@ def main():
 
     # ---- 检验 A：高档日集中度 + 逐日 jackknife
     hi_dates = sorted(r["date"] for r in hi_d)
-    lo_dates = sorted(r["date"] for r in lo_d)
+    sorted(r["date"] for r in lo_d)
     hi_n = {r["date"]: r["n"] for r in hi_d}
     jack = []
     for d in hi_dates:
@@ -473,8 +473,8 @@ def main():
         "bands": report_band(lb, "滞后一日环境分（%d 笔）切点 %.0f/%.0f"
                              % (len(lag_rows), lcuts[0], lcuts[1])),
     }
-    lag_hi = [r for r in lag_rows if r["score_lag"] >= lcuts[1]]
-    lag_lo = [r for r in lag_rows if r["score_lag"] < lcuts[0]]
+    [r for r in lag_rows if r["score_lag"] >= lcuts[1]]
+    [r for r in lag_rows if r["score_lag"] < lcuts[0]]
     # 日级聚类（笔级 t 会把 126 天虚增成 1800 笔，显著性失真）
     lag_score = {r["detect_date"]: r["score_lag"] for r in lag_rows}
     lag_dl = day_level(lag_rows)

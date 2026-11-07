@@ -19,7 +19,6 @@ import argparse
 import json
 import re
 import socket
-import sys
 from pathlib import Path
 
 try:

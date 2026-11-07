@@ -25,7 +25,6 @@ import csv
 import datetime as dt
 import hashlib
 import json
-import shutil
 import sqlite3
 import sys
 from pathlib import Path

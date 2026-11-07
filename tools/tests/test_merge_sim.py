@@ -14,7 +14,6 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
-import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]

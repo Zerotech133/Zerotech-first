@@ -16,7 +16,6 @@ import argparse
 import http.client
 import json
 import math
-import sys
 import time
 from pathlib import Path
 

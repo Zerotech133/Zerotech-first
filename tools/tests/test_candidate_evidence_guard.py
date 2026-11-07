@@ -8,7 +8,6 @@ CLI 退出码 0-1-2 / --json/--markdown/--out / 只读不落盘。
 import hashlib
 import importlib.util
 import json
-import sys
 from pathlib import Path
 
 import pytest

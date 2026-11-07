@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """S3-05 lineage DB 构建测试（隔离输出，不覆盖 research/lineage.db）。"""
-import json
 import sqlite3
 import sys
 from pathlib import Path

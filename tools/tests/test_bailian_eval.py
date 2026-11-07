@@ -127,7 +127,6 @@ def test_dry_run_no_api_and_limit(monkeypatch):
 class _BoomClient:
     @property
     def chat(self):
-        client = self
 
         class _Completions:
             def create(self, **kwargs):

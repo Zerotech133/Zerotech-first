@@ -198,7 +198,7 @@ def main() -> int:
         max_one_way_turnover=0.3, cost_bp=30,
     )
     p1 = pv.get_prior("p1")
-    p3 = pv.get_prior("p3", tilt_weight=TILT_WEIGHT)
+    pv.get_prior("p3", tilt_weight=TILT_WEIGHT)
 
     print("[attr] build P1 families", flush=True)
     comp1, diag1, fam1 = build_composite(
@@ -304,7 +304,6 @@ def main() -> int:
     stock_active = pd.Series(dtype=float)
     industry_contrib: dict[str, float] = {}
     size_contrib: dict[str, float] = {"small": 0.0, "mid": 0.0, "large": 0.0}
-    industry_daily: dict[str, dict[str, float]] = {}
     for rec in rows:
         d = rec["date"]
         contrib = rec["contrib"]

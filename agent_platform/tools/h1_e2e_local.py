@@ -14,7 +14,6 @@ import secrets
 import subprocess
 import sys
 import threading
-import time
 import urllib.request
 from http.server import ThreadingHTTPServer
 # 回环禁代理（2026-11-07 批 5）：本机服务的请求不走系统代理，实现见 tools/safe_urlopen.py

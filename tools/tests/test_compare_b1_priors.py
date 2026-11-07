@@ -4,9 +4,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
-import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools" / "research"))
@@ -79,7 +77,7 @@ def test_prereg_judgement_pass_and_fail():
 
 
 def test_rolling_and_yearly_metrics():
-    p0 = _doc(0.30, 0.08, -0.09, 0.015)
+    _doc(0.30, 0.08, -0.09, 0.015)
     p1 = _doc(0.42, 0.102, -0.10, 0.031)
     p2 = _doc(0.50, 0.105, -0.10, 0.033)
     rolling = cmp.compare_rolling(p1, p2, window=60, step=20)

@@ -2,7 +2,6 @@
 """D1 投研会运行时测试（WO-D1-MEETING-20261101）。离线文件。"""
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 
@@ -10,7 +9,6 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from agent_platform import d1_decision as D  # noqa: E402
 from agent_platform import d1_meeting as M  # noqa: E402
 
 

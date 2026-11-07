@@ -22,7 +22,6 @@ from __future__ import annotations
 
 import glob
 import json
-import math
 import sys
 import time
 from datetime import datetime
@@ -37,7 +36,6 @@ sys.path.insert(0, str(REPO / "tools" / "research"))
 
 import factor_lib as fl  # noqa: E402
 import industry_rs_factor as irf  # noqa: E402
-import stat_utils  # noqa: E402
 
 DATA = REPO / "quant_backtest" / "data" / "tushare"
 OUT = REPO / "research" / "reports"
@@ -324,7 +322,7 @@ def main() -> int:
     panel = fl.load_panel(start=START, end=END, horizon=HOLD, universe="tradable",
                           load_roe=False)
     dates = [str(d) for d in panel.dates]
-    codes = [str(c) for c in panel.codes]
+    [str(c) for c in panel.codes]
     elig = panel.eligible_mask().to_numpy(dtype=bool)
     industry = irf.load_industry()
     cap_mv = irf.load_circ_mv(panel)                     # 万元

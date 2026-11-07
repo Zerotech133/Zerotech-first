@@ -569,7 +569,6 @@ def compute(repo_root: Path | str | None = None,
     equal_all = _round(covered_total / merges_total, 4) if merges_total else None
 
     # strict 口径
-    merge_weight_strict = merge_weight  # 分母不变
     covered_weight_strict = _round(
         sum((len(type_covered_strict[t]) * w[t]) for t in TYPES), 4)
     risk_strict = _round(covered_weight_strict / merge_weight, 4) if merge_weight else None

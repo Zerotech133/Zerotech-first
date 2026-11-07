@@ -133,10 +133,8 @@ def main() -> int:
     px2["month"] = px2["trade_date"].str[:6]
     last_day = px2.groupby("month")["trade_date"].max().to_dict()
     all_by_month = {ym: g2["ts_code"].tolist() for ym, g2 in m.groupby("month")}
-    month_car_cache = {}
 
     def cohort_mean(codes_list, ym, hold):
-        key = (ym, hold)
         d = last_day.get(ym)
         if d is None:
             return np.nan

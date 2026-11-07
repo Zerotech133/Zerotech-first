@@ -45,7 +45,7 @@ import re
 import sqlite3
 import sys
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS nodes (

@@ -2,7 +2,6 @@
 """Case 流程：田丰汇总→五角色→会议→方案→人类审批→下发；审批门必须硬拦。"""
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 

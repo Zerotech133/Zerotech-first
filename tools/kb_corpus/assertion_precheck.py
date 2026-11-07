@@ -40,7 +40,7 @@ import os
 import re
 import sys
 from collections import Counter, defaultdict
-from datetime import date, datetime
+from datetime import date
 from pathlib import Path
 
 KB = Path(r"C:/项目/知识库")

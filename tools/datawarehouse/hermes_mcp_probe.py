@@ -89,7 +89,7 @@ def probe():
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Hermes MCP 底座探针")
     ap.add_argument("--json", action="store_true")
-    args = ap.parse_args(argv)
+    ap.parse_args(argv)
     res = probe()
     OUT.write_text(json.dumps(res, ensure_ascii=False, indent=1), encoding="utf-8")
     summary = {"out": str(OUT), "summary": res["summary"], "all_ok": res["all_ok"]}

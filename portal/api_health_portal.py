@@ -220,7 +220,6 @@ class Handler:  # Mixin 壳：经基座多继承并入
         """P1 总览门户健康聚合（JSON）：七口探活（端口判活=判例3 正源）
         + PID 侧写（netstat，S4U 下 Win32_Process 不可信）+ 五守护任务
         schtasks 状态。60s TTL 缓存，探测全部线程池并发。"""
-        import socket as _sk
         import subprocess as _sp
         from concurrent.futures import ThreadPoolExecutor
 

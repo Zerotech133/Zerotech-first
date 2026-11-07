@@ -9,7 +9,6 @@
 
 任何一个被改掉都是安全事故，且不会有报错提示，所以用测试钉死。
 """
-import json
 import re
 import sys
 from pathlib import Path

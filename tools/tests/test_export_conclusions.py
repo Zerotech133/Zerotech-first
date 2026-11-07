@@ -14,7 +14,6 @@ import hashlib
 import importlib.util
 import json
 import sys
-from collections import Counter
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
@@ -106,7 +105,7 @@ def test_query_contract():
 # ---------------------------------------------------------------------------
 def test_idempotent(tmp_path):
     out = tmp_path / "learning_conclusions.json"
-    p1 = ec.build(src_path=SRC, out_path=out, write=True)
+    ec.build(src_path=SRC, out_path=out, write=True)
     b1 = out.read_bytes()
     p2 = ec.build(src_path=SRC, out_path=out, write=True)
     b2 = out.read_bytes()

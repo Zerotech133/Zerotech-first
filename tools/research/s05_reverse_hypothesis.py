@@ -128,7 +128,7 @@ def build_schedule(panel: fl.Panel, masks: dict, window: np.ndarray,
         plan[f"M{m:g}"] = []
     for k in shares:
         plan[f"K{int(round(k * 100))}"] = []
-    n_codes = len(panel.codes)
+    len(panel.codes)
     for i in dec_idx:
         base = masks["picks"].get(i, [])
         if not base:
@@ -592,9 +592,9 @@ def build_conclusions(payload: dict) -> dict:
 # ================================================================ 渲染
 def render_markdown(payload: dict) -> str:
     meta, ev = payload["meta"], payload["meta"]["eval"]
-    base = payload["variants"]["BASELINE"]["overall"]
+    payload["variants"]["BASELINE"]["overall"]
     primary_name = ev["primary_variant"]
-    primary = payload["variants"][primary_name]
+    payload["variants"][primary_name]
     gates = payload["gates"]
     lines: list[str] = []
     a = lines.append

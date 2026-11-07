@@ -20,7 +20,6 @@ import argparse
 import datetime as dt
 import importlib.util
 import json
-import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]

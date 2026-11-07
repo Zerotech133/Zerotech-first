@@ -160,7 +160,6 @@ def main() -> int:
             same3 = bool(len(last3) == 3 and np.sign(last3).nunique() == 1)
             # 容量
             avg_flag = float(dfh["flag_n"].mean())
-            avg_amount = None
             results[f"org>={th}|hold={hold}"] = {"threshold": th, "hold": hold, "clusters": {"IS": int((dfh.split == "IS").sum()), "OOS": int((dfh.split == "OOS").sum())},
                                      "spread": {"full": full, "IS": isd, "OOS": oos},
                                      "yearly_spread_pct": [round(float(x) * 100, 3) for x in ys],

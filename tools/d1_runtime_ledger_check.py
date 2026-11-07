@@ -262,7 +262,7 @@ def _trace_chain(
             plan_decision_ids.add(did)
         if pid:
             plan_to_trigger[pid] = str(plan.get("trigger_id") or "")
-    trigger_ids = {str(r.get("trigger_id")) for r in triggers["rows"] if r.get("trigger_id")}
+    {str(r.get("trigger_id")) for r in triggers["rows"] if r.get("trigger_id")}
     confirmation_ids = {str(r.get("confirmation_id")) for r in triggers["rows"] if r.get("confirmation_id")}
     trade_ids = set()
     for row in paper_ledger["rows"]:

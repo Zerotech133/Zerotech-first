@@ -1948,7 +1948,6 @@ class DatasetRegistry:
 
     def _query_parquet(self, p: Path, disc: dict, where, order, limit, offset,
                        since, columns, count) -> dict:
-        import pyarrow.dataset as ds
         files = disc.get("parquet") or []
         if not files:
             return self._query_no_data("未发现 parquet 文件", disc)

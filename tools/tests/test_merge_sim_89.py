@@ -50,7 +50,7 @@ def test_build_views_and_expected_remap():
         {"book": "rp_C", "chapter": "1.", "p1": 1, "concept": "其他", "claim": "另一条。", "evidence": "e3"},
     ]
     u0 = merge_mod.retrieval_unit_id(units[0])
-    u1 = merge_mod.retrieval_unit_id(units[1])
+    merge_mod.retrieval_unit_id(units[1])
     dedup = {"groups": [{"group_id": "CG-003", "concept_forms": ["东盟MSME"], "action": "merge",
                          "primary_unit_id": "AL", "units": [
                              {"unit_id": "al-1", "is_primary": False, "book": "rp_A", "chapter": "5.", "page_start": 5, "claim": "同一句结论。"},

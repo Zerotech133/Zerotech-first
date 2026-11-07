@@ -71,7 +71,6 @@ if str(_HERE) not in sys.path:
 
 import factor_lib as fl                # noqa: E402
 import reverse_avoid_test as rav       # noqa: E402  复用信号/基准/统计口径（不修改）
-import stat_utils                      # noqa: E402
 
 VERSION = "0.1.0-wave4"
 ANNUAL_DAYS = 252

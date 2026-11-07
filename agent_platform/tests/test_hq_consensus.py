@@ -3,7 +3,6 @@
 飞书定版卡 dry-run/超时 blocked/决策回写（纯逻辑，不发飞书、不写生产）。"""
 from __future__ import annotations
 
-import json
 import sys
 from dataclasses import dataclass
 from pathlib import Path
