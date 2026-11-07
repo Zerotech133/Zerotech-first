@@ -31,7 +31,7 @@ class TestTriPool(unittest.TestCase):
 
     def test_tri_pool_off_keeps_legacy(self):
         """不传 --tri-pool：行为与旧版一致（仅缠论池）。"""
-        with mock.patch.object(gc, "pool_codes", return_value=["600519.SH"]) as mp, \
+        with mock.patch.object(gc, "pool_codes", return_value=["600519.SH"]), \
              mock.patch.object(gc, "_pool_focus_codes") as mf, \
              mock.patch.object(gc, "_pool_dragon_codes") as md:
             args = mock.Mock(pool=True, tri_pool=False, pool_days=30, limit=60,

@@ -17,7 +17,6 @@ if INTEL not in sys.path:
 
 from examples.feedback_dry import run  # noqa: E402
 from store.obs_store import ObservationStore  # noqa: E402
-import examples.feedback_dry as fd  # noqa: E402
 
 
 def _mk_obs(source_id, snapshot_id, collected_at, status="ok"):

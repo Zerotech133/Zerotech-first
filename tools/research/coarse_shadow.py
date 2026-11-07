@@ -167,7 +167,6 @@ def scan_codes(bars, cal_pos, scan_from, scan_to):
         adj = g["adj_factor"].to_numpy(float)
         h = g["high"].to_numpy(float) * adj
         l = g["low"].to_numpy(float) * adj
-        c = g["close"].to_numpy(float) * adj
         c_raw = g["close"].to_numpy(float)      # 清单里给人看的价格必须是原始价
         v = g["vol"].to_numpy(float)
         sw = find_swings(h, l)

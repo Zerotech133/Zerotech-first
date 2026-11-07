@@ -926,7 +926,7 @@ class Handler:  # Mixin 壳：经基座多继承并入 Handler
         add(coarse_bt_block(_esc, _cls, _num, _LOG))
 
         # ①e 影子清单（①d 的结论落地：粗信号逐日记录、纸面结算）
-        add(coarse_shadow_block(_esc, _cls, _num, _LOG))
+        add(coarse_shadow_block(_esc, _cls, _num, _LOG, detect))
 
         # KPI
         add('<div class="grid kpis">')

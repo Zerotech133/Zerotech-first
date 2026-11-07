@@ -131,7 +131,6 @@ def test_alert_env_off(monkeypatch):
     # 直接验证 _push 的 env 门
     monkeypatch.setattr("os.environ", {**dict(__import__("os").environ),
                                        "JEV_SENTINEL_ALERT": "0"})
-    import importlib
     saved = sys.path[:]
     sys.path.insert(0, str(Path(sen.__file__).parent.parent / "news_collector"))
     try:
