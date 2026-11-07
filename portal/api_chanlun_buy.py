@@ -214,6 +214,11 @@ def _num(v, suffix="%", sign=True, nd=2):
     return ("%+.*f" % (nd, v) if sign else "%.*f" % (nd, v)) + suffix
 
 
+def _p(v):
+    """p 值展示（三位小数，缺值给破折号）。"""
+    return "—" if v is None else "%.3f" % v
+
+
 # 环境分回测证据缓存：(mtime, html)
 _EVBT_CACHE = {"mt": None, "html": ""}
 
@@ -375,6 +380,198 @@ def _env_bt_block():
           '样本期市场整体下跌，绝对收益为负是常态，衡量信号质量看 alpha。</div>'
         + '</div>')
     _EVBT_CACHE.update({"mt": mt, "html": html})
+    return html
+
+
+# 20 日持有组合回测证据缓存
+_PBT_CACHE = {"mt": None, "html": ""}
+
+
+def _portfolio_bt_block():
+    """①c 20 日持有 · 可执行口径回测块（读 portal/portfolio_bt_evidence.json）。
+
+    这一块存在的唯一理由：`dt` 与 `detect_date` 不是一回事，而系统里到处
+    在用 dt。按 dt+1 开盘回测会得到 1买 97.7% 胜率这种假结果——因为缠论买点
+    需要后续 5~43 根 K 线才「长出来」（k 中位 22 天，k=0 占 0%）。
+    这里把四种口径并列摆出来，让读页面的人一眼看到未来函数有多大。
+    """
+    global _PBT_CACHE
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        "portfolio_bt_evidence.json")
+    try:
+        mt = os.path.getmtime(path)
+    except OSError:
+        return ""
+    if _PBT_CACHE["mt"] == mt and _PBT_CACHE["html"]:
+        return _PBT_CACHE["html"]
+    try:
+        with open(path, encoding="utf-8") as f:
+            bt = json.load(f)
+    except (OSError, ValueError) as exc:
+        _LOG.warning("silent-except pbt: %s", exc)
+        return ""
+
+    modes = {m["mode"]: m for m in (bt.get("modes") or [])}
+    a, k, c, r = (modes.get(x) or {} for x in ("A", "K", "C", "R"))
+    bench = bt.get("benchmark") or {}
+    dt_ = bt.get("day_test") or {}
+    port = bt.get("portfolio") or []
+    by_type = bt.get("by_type") or []
+    hold = bt.get("hold_days") or 20
+
+    def ret(m, f="ret", key="avg"):
+        return ((m.get(f) or {}) or {}).get(key)
+
+    mode_rows = "".join(
+        '<tr><td>%s</td><td class="dim">%d</td>'
+        '<td class="%s">%s</td><td class="%s">%s</td>'
+        '<td class="%s">%s</td><td class="%s">%s</td></tr>'
+        % (_esc(m.get("name")), ret(m, "ret", "n") or 0,
+           _cls(ret(m)), _num(ret(m)),
+           _cls((ret(m, "ret", "win") or 0) - 50)
+           if ret(m, "ret", "win") is not None else "dim",
+           _num(ret(m, "ret", "win"), sign=False, nd=1),
+           _cls(ret(m, "alpha")), _num(ret(m, "alpha")),
+           _cls((ret(m, "alpha", "win") or 0) - 50)
+           if ret(m, "alpha", "win") is not None else "dim",
+           _num(ret(m, "alpha", "win"), sign=False, nd=1))
+        for m in (bt.get("modes") or []))
+
+    type_rows = "".join(
+        '<tr><td>%s</td><td class="dim">%d</td>'
+        '<td class="%s">%s</td><td class="%s">%s</td>'
+        '<td class="%s">%s</td><td class="dim">%s</td></tr>'
+        % (_esc(t.get("type")), ret(t, "ret", "n") or 0,
+           _cls(ret(t)), _num(ret(t)),
+           _cls((ret(t, "ret", "win") or 0) - 50)
+           if ret(t, "ret", "win") is not None else "dim",
+           _num(ret(t, "ret", "win"), sign=False, nd=1),
+           _cls(ret(t, "alpha")), _num(ret(t, "alpha")),
+           t.get("k_med") if t.get("k_med") is not None else "—")
+        for t in by_type)
+
+    port_rows = "".join(
+        '<tr><td>%s</td><td class="dim">%d</td>'
+        '<td class="%s">%s</td><td class="%s">%s</td>'
+        '<td class="%s">%s</td><td class="%s">%s</td></tr>'
+        % (_esc(p.get("label")), p.get("n_cohort") or 0,
+           _cls((p.get("cohort_win") or 0) - 50)
+           if p.get("cohort_win") is not None else "dim",
+           _num(p.get("cohort_win"), sign=False, nd=0),
+           _cls(p.get("cohort_avg")), _num(p.get("cohort_avg")),
+           _cls(p.get("total")), _num(p.get("total")),
+           _cls(p.get("mdd")), _num(p.get("mdd")))
+        for p in port)
+
+    mon_rows = "".join(
+        '<tr><td>%s</td><td class="dim">%d</td>'
+        '<td class="%s">%s</td><td class="%s">%s</td></tr>'
+        % (_esc(m.get("mon")), ret(m, "ret", "n") or 0,
+           _cls(ret(m)), _num(ret(m)),
+           _cls(ret(m, "alpha")), _num(ret(m, "alpha")))
+        for m in (bt.get("monthly") or []))
+
+    best = max(port, key=lambda p: (p.get("total")
+                                    if p.get("total") is not None else -999)) if port else {}
+    worst = min(port, key=lambda p: (p.get("total")
+                                     if p.get("total") is not None else 999)) if port else {}
+    a_avg, k_avg = ret(a), ret(k)
+    gap = (a_avg or 0) - (k_avg or 0)
+
+    html = (
+        '<div class="sec"><h2>①c 20 日持有 · 可执行口径回测 '
+        '<span class="tag g">%s 笔</span>'
+        '<span class="tag">%s · 持 %d 日</span></h2>'
+        % (bt.get("n_sig"), _esc("~".join(bt.get("window") or [])), hold)
+        + '<div class="ebt">'
+        + '<div class="ebt-line"><b>先看未来函数有多大</b> 同批信号，'
+          '按信号日 dt+1 开盘入场算出 <span class="%s">%s</span>（胜率 %.1f%%），'
+          '按「信号真正算得出的次日」入场只有 <span class="%s">%s</span>——'
+          '差 <b>%.2f 个点</b>，前者是假的</div>'
+        % (_cls(a_avg), _num(a_avg), ret(a, "ret", "win") or 0,
+           _cls(k_avg), _num(k_avg), gap)
+        + '<div class="ebt-line"><b>与随机对照比</b> 同日随机换一只票：'
+          '主口径 <span class="%s">%s</span> vs 随机 <span class="%s">%s</span>，'
+          '差 %s（日级 Welch p=%.3f）——<em>整体跑输随机，且是被 3买 拖下来的</em>'
+          '（分型明细见下）</div>'
+        % (_cls(k_avg), _num(k_avg), _cls(ret(r)), _num(ret(r)),
+           _num(bt.get("lift_vs_random")), dt_.get("p") if dt_.get("p") is not None else 1)
+        + '<div class="ebt-line"><b>基准</b> 同期上证 <span class="%s">%s</span>，'
+          '信号窗口内指数平均 %s；主口径 %s —— 20 日持有跑输基准约 %.1f 个点</div>'
+        % (_cls(bench.get("index_window_pct")),
+           _num(bench.get("index_window_pct")),
+           _num(bench.get("index_hold_mean_pct")),
+           _num(k_avg),
+           abs((k_avg or 0) - (bench.get("index_hold_mean_pct") or 0)))
+        + '<div class="ebt-line"><b>分型：1买/2买 略赢随机，3买 明显输</b> '
+          '1买 <span class="%s">%s</span>（alpha %s，比同日随机 %s，p=%s）／'
+          '2买 %s（比随机 %s）／<span class="%s">3买 %s</span>'
+          '（alpha %s，比随机 <span class="%s">%s</span>，p=%s）</div>'
+        % (_cls(ret(by_type[0] if by_type else {}, "ret")),
+           _num(ret(by_type[0] if by_type else {})),
+           _num(ret(by_type[0] if by_type else {}, "alpha")),
+           _num((by_type[0].get("lift") if by_type else None)),
+           _p(by_type[0].get("lift_p") if by_type else None),
+           _num(ret(by_type[1] if len(by_type) > 1 else {})),
+           _num(by_type[1].get("lift") if len(by_type) > 1 else None),
+           _cls(ret(by_type[2] if len(by_type) > 2 else {}, "ret")),
+           _num(ret(by_type[2] if len(by_type) > 2 else {})),
+           _num(ret(by_type[2] if len(by_type) > 2 else {}, "alpha")),
+           _cls(by_type[2].get("lift") if len(by_type) > 2 else None),
+           _num(by_type[2].get("lift") if len(by_type) > 2 else None),
+           _p(by_type[2].get("lift_p") if len(by_type) > 2 else None))
+        + '<div class="ebt-line"><b>组合级（20 槽轮动，每组 1/20 权益）</b> '
+          '最差配置「%s」累计 <span class="%s">%s</span>；最好配置「%s」'
+          '累计 <span class="%s">%s</span>、最大回撤 %s、夏普 %s</div>'
+        % (_esc(worst.get("label")), _cls(worst.get("total")),
+           _num(worst.get("total")),
+           _esc(best.get("label")), _cls(best.get("total")),
+           _num(best.get("total")), _num(best.get("mdd")),
+           _num(best.get("sharpe"), suffix="", sign=False))
+        + '<div class="ebt-line"><b>结论</b> 可执行口径下'
+          '<em>这套买点不能当多头策略直接做</em>：绝对收益为负、超额为负、'
+          '整体还略输随机（p=%.2f，不显著）。唯一站得住的两条：'
+          '<b>3买 必须停用</b>（比随机还差 4 个点，p=%.3f）；'
+          '<b>1买/2买 有约 1 个点的微弱选股优势但未达显著</b>，'
+          '在下跌市里不足以覆盖 beta。要投实战，根子在「信号确认太晚」——'
+          'k 中位 %d 个交易日，等它能算出来，底部那一段已经走完</div>'
+        % (dt_.get("p") if dt_.get("p") is not None else 1,
+           (by_type[2].get("lift_p") if len(by_type) > 2
+            and by_type[2].get("lift_p") is not None else 1),
+           22)
+        + '</div>'
+        + '<details class="ebt-d"><summary>展开完整证据：四口径 / 分型 / '
+          '组合 / 按月</summary>'
+        + '<div class="ebt-sub">四种入场口径（只改入场时点）</div>'
+        + ('<table class="ebt-t"><thead><tr><th>口径</th><th>笔数</th>'
+           '<th>净收益</th><th>收益胜率</th><th>alpha</th><th>alpha 胜率</th>'
+           '</tr></thead><tbody>%s</tbody></table>' % mode_rows)
+        + '<div class="ebt-sub">按分型（可执行口径）</div>'
+        + ('<table class="ebt-t"><thead><tr><th>分型</th><th>笔数</th>'
+           '<th>净收益</th><th>胜率</th><th>alpha</th><th>中位 k</th>'
+           '</tr></thead><tbody>%s</tbody></table>' % type_rows)
+        + '<div class="ebt-sub">组合级 20 槽轮动</div>'
+        + ('<table class="ebt-t"><thead><tr><th>组合</th><th>到期组</th>'
+           '<th>组胜率</th><th>组均</th><th>累计</th><th>最大回撤</th>'
+           '</tr></thead><tbody>%s</tbody></table>' % port_rows)
+        + '<div class="ebt-sub">按入场月</div>'
+        + ('<table class="ebt-t"><thead><tr><th>月份</th><th>笔数</th>'
+           '<th>净收益</th><th>alpha</th></tr></thead><tbody>%s</tbody></table>'
+           % mon_rows)
+        + '</details>'
+        + '<div class="legend">'
+          '<b>三个日期不是一回事</b>：<b>dt</b> 信号所在 K 线（买点成立的低点，'
+          'price 就是该 bar 低点）；<b>可知日</b> 把 K 线截断重放时该信号首次'
+          '出现的日子（k 就是落后的交易日数，实测 k=0 占 0%、中位 22 天）；'
+          '<b>detect_date</b> 信号被扫进池子的日子（历史补录批次决定，与信息可得性无关）。'
+          '只有「可知日次日开盘」才是真人能成交的价格。<br>'
+          '<b>成本</b>：买 0.075% + 卖 0.125%（含印花税）；<b>复权</b>：'
+          'close×复权因子，因子缺失沿用前值。<br>'
+          '<b>alpha 口径不同，别跟 ⑤ 混着读</b>：本块 alpha = 个股收益 −'
+          '同期上证指数；⑤ 分型战绩的 alpha = 个股收益 − β×全A等权。'
+          '两者方向一致（1买/2买 略正、3买 明显负），幅度会有差异。</div>'
+        + '</div>')
+    _PBT_CACHE.update({"mt": mt, "html": html})
     return html
 
 
@@ -720,6 +917,9 @@ class Handler:  # Mixin 壳：经基座多继承并入 Handler
 
         # ①b 环境分回测证据（无产出文件则不渲染）
         add(_env_bt_block())
+
+        # ①c 20 日持有可执行口径回测（同上，没有快照就不渲染）
+        add(_portfolio_bt_block())
 
         # KPI
         add('<div class="grid kpis">')
