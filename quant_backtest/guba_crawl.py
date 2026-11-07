@@ -289,12 +289,6 @@ def pool_codes(pool_days=30, limit=60):
 def _pool_focus_codes():
     """F2-P2-c 三池之二：当日 kg_brief ①②段焦点标的（读 kg_brief_state.json 上次运行标的，
     本地文件、不触网；kg_brief 与 guba_crawl 同属日链，先后顺序保证读到当日焦点）。"""
-    try:
-        import sqlite3
-        con = sqlite3.connect("file:%s?mode=ro" % os.path.join(HERE, "data", "xueqiu", "xueqiu_info.db").replace("\\", "/"), uri=True)
-        con.close()
-    except Exception:
-        pass
     path = os.path.join(HERE, "data", "kg_brief_state.json")
     out = []
     try:

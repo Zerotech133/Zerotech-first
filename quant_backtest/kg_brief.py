@@ -196,7 +196,7 @@ def _f2_guba_lines(targets, days=7, top_n=40, xq_counts=None):
         import guba_sentiment
     except Exception as e:
         return ["⑦ 舆情内参: guba_sentiment 不可用(%s)" % str(e)[:50]]
-    for tc, nm in targets[:8]:
+    for tc, nm in targets[:14]:
         try:
             sm = guba_sentiment.guba_summary(tc, days=days, top_n=top_n)
         except Exception as e:
@@ -226,7 +226,7 @@ def _f2_guba_lines(targets, days=7, top_n=40, xq_counts=None):
                 hits.append(tc)
                 break  # 每标的只取第一个达标热点词
     head = "⑦ 舆情内参(guba, 近7日): 扫描%d只 · 命中%d只" % (
-        min(len(targets), 8),
+        min(len(targets), 14),
         len(set(hits)),
     )
     if out:
@@ -250,7 +250,7 @@ def _f2_xq_lines(targets, days=7):
         con = sqlite3.connect("file:%s?mode=ro" % F2_XQ_DB.replace("\\", "/"), uri=True)
         cur = con.cursor()
         cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
-        for tc, nm in targets[:8]:
+        for tc, nm in targets[:14]:
             ex = tc[-2:]
             c6 = tc.split(".")[0]
             cur.execute(
@@ -404,10 +404,6 @@ def build(d):
     # ⑤ 席位突变（KG-V7 口径，画布数据自洽锚最新共现日）
     L.extend(_surge_lines())
 
-    # ⑦ 舆情内参（F2-20261107：flag 默认关；关=输出与现状逐字节一致）
-    _f2_targets_list = list(f2_targets)
-    _xq_counts = _f2_xq_lines(_f2_targets_list)
-    L.extend(_f2_guba_lines(_f2_targets_list, xq_counts=_xq_counts))
 
     # ⑥ 数据健康（读 graph_check 产物）
     try:
@@ -477,6 +473,11 @@ def build(d):
     except Exception as e:
         L.append("  影子层: notice_llm.parquet 不可读(%s)" % str(e)[:50])
     L.append("  " + BLIND_NOTE)
+
+    # ⑦ 舆情内参（F2-20261107：flag 默认关；置于⑥后，段序与编号一致）
+    _f2_targets_list = list(f2_targets)
+    _xq_counts = _f2_xq_lines(_f2_targets_list)
+    L.extend(_f2_guba_lines(_f2_targets_list, xq_counts=_xq_counts))
     L.append("· " + DISCLAIMER)
 
     head = "🕸 KG 每日情报简报 %s" % d

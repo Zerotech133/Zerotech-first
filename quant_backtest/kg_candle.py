@@ -459,6 +459,8 @@ def sync(cli, date=None, lookback=5):
         by[e["type"]] = by.get(e["type"], 0) + 1
     print("sync %s~%s：事件 %d %s" % (dates[0], dates[-1], len(evs), by))
     if evs:
+        for _e in evs:
+            _e["data_source"] = "tdx_minute"  # F2-P2-b
         cli.upsert_nodes(S.LBL_MARKET_EVENT, ["evt_id"], evs)
         cli.upsert_edge(
             S.LBL_SECURITY, "ts_code", S.LBL_MARKET_EVENT, "evt_id", "HAS_CANDLE", edges

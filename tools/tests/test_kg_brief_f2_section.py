@@ -198,5 +198,61 @@ class TestXqSection(unittest.TestCase):
         self.assertEqual(r, {})
 
 
+class TestAuditFixes(unittest.TestCase):
+    """00:56 代码审计轮的防回归用例。"""
+
+    def test_scan_limit_is_14(self):
+        """扫描上限=14（①8+②6 全量），源码级断言防回退到 8。"""
+        src = open(os.path.join(KG_DIR, "kg_brief.py"), encoding="utf-8").read()
+        self.assertEqual(src.count("targets[:14]"), 2)
+        self.assertNotIn("targets[:8]", src)
+        self.assertIn("min(len(targets), 14)", src)
+
+    def test_section7_after_section6_in_source(self):
+        """⑦ 段调用位于 ⑥ 数据健康块之后（BLIND_NOTE 之后、DISCLAIMER 之前）。"""
+        src = open(os.path.join(KG_DIR, "kg_brief.py"), encoding="utf-8").read()
+        i_blind = src.find('L.append("  " + BLIND_NOTE)')
+        i_f2 = src.find("L.extend(_f2_guba_lines(")
+        i_disc = src.find('L.append("· " + DISCLAIMER)')
+        self.assertGreater(i_blind, 0)
+        self.assertGreater(i_f2, i_blind, "⑦ 应在 ⑥（BLIND_NOTE）之后")
+        self.assertGreater(i_disc, i_f2, "免责声明应在 ⑦ 之后")
+
+    def test_no_dead_xq_connect_in_guba_crawl(self):
+        """guba_crawl._pool_focus_codes 不再含无用的 xueqiu_info.db 连接死代码。"""
+        src = open(os.path.join(KG_DIR, "guba_crawl.py"), encoding="utf-8").read()
+        i = src.find("def _pool_focus_codes")
+        seg = src[i : src.find("def ", i + 10)]
+        self.assertNotIn("xueqiu_info.db", seg)
+
+
+class TestAuditFixes(unittest.TestCase):
+    """00:56 代码审计轮的防回归用例。"""
+
+    def test_scan_limit_is_14(self):
+        """扫描上限=14（①8+②6 全量），源码级断言防回退到 8。"""
+        src = open(os.path.join(KG_DIR, "kg_brief.py"), encoding="utf-8").read()
+        self.assertEqual(src.count("targets[:14]"), 2)
+        self.assertNotIn("targets[:8]", src)
+        self.assertIn("min(len(targets), 14)", src)
+
+    def test_section7_after_section6_in_source(self):
+        """⑦ 段调用位于 ⑥ 数据健康块之后（BLIND_NOTE 之后、DISCLAIMER 之前）。"""
+        src = open(os.path.join(KG_DIR, "kg_brief.py"), encoding="utf-8").read()
+        i_blind = src.find('L.append("  " + BLIND_NOTE)')
+        i_f2 = src.find("L.extend(_f2_guba_lines(")
+        i_disc = src.find('L.append("· " + DISCLAIMER)')
+        self.assertGreater(i_blind, 0)
+        self.assertGreater(i_f2, i_blind, "⑦ 应在 ⑥（BLIND_NOTE）之后")
+        self.assertGreater(i_disc, i_f2, "免责声明应在 ⑦ 之后")
+
+    def test_no_dead_xq_connect_in_guba_crawl(self):
+        """guba_crawl._pool_focus_codes 不再含无用的 xueqiu_info.db 连接死代码。"""
+        src = open(os.path.join(KG_DIR, "guba_crawl.py"), encoding="utf-8").read()
+        i = src.find("def _pool_focus_codes")
+        seg = src[i : src.find("def ", i + 10)]
+        self.assertNotIn("xueqiu_info.db", seg)
+
+
 if __name__ == "__main__":
     unittest.main()
