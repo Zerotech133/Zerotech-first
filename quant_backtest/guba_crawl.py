@@ -286,6 +286,52 @@ def pool_codes(pool_days=30, limit=60):
     return list(seen.values())[:limit]
 
 
+def _pool_focus_codes():
+    """F2-P2-c 三池之二：当日 kg_brief ①②段焦点标的（读 kg_brief_state.json 上次运行标的，
+    本地文件、不触网；kg_brief 与 guba_crawl 同属日链，先后顺序保证读到当日焦点）。"""
+    try:
+        import sqlite3
+        con = sqlite3.connect("file:%s?mode=ro" % os.path.join(HERE, "data", "xueqiu", "xueqiu_info.db").replace("\\", "/"), uri=True)
+        con.close()
+    except Exception:
+        pass
+    path = os.path.join(HERE, "data", "kg_brief_state.json")
+    out = []
+    try:
+        with open(path, encoding="utf-8") as f:
+            st = json.load(f)
+        d = str(st.get("last_date") or "")
+        secs = st.get("last_secs") or []
+        for sec in secs:
+            c = str(sec.get("tc") or "")
+            m = re.match(r"^(\d{6})\.(SZ|SH|BJ)$", c, re.I)
+            if m:
+                out.append(c)
+    except Exception:
+        return []
+    return out
+
+
+def _pool_dragon_codes(days=10, limit=30):
+    """F2-P2-c 三池之三：近 N 日龙虎榜标的（Neo4j TRADED_ON，本地只读查询）。"""
+    try:
+        sys.path.insert(0, HERE)
+        from kg_client import KgClient
+        cli = KgClient(retry=1)
+        cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y%m%d")
+        with cli._session() as s:
+            rows = s.run(
+                "MATCH (:Seat)-[t:TRADED_ON]->(sec:Security) "
+                "WHERE t.validStart >= $cutoff "
+                "RETURN DISTINCT sec.ts_code AS tc ORDER BY tc LIMIT $lim",
+                cutoff=cutoff, lim=limit,
+            ).data()
+        cli.close()
+        return [r["tc"] for r in rows if re.match(r"^\d{6}\.(SZ|SH|BJ)$", r["tc"], re.I)]
+    except Exception:
+        return []
+
+
 def _chunk(seq, size):
     size = max(0, int(size or 0))
     if size <= 0:
@@ -337,6 +383,12 @@ def _processed_codes(args):
     """按模式取本轮要处理的码：pool → 随机顺序并取第 batch-index 批（默认 ≤15）；显式清单 → 全部分批。"""
     if args.pool:
         codes = pool_codes(args.pool_days, args.limit)
+        if getattr(args, "tri_pool", False):  # F2-P2-c：三池并集
+            extra = _pool_focus_codes() + _pool_dragon_codes()
+            seen = {c.split(".")[0]: c for c in codes}
+            for c in extra:
+                seen.setdefault(c.split(".")[0], c)
+            codes = list(seen.values())
         if not codes:
             return [], "pool_empty"
         if args.batch_index is None:
@@ -368,6 +420,7 @@ def main(argv=None):
     )
     ap.add_argument("--pages", type=int, default=2)
     ap.add_argument("--pool", action="store_true", help="日链模式：近30天缠论池活跃股")
+    ap.add_argument("--tri-pool", action="store_true", help="F2-P2-c：三池并集（缠论池+日报焦点标的+近10日龙虎榜）")
     ap.add_argument("--pool-days", type=int, default=30)
     ap.add_argument("--limit", type=int, default=60)
     # P0 新增参数（均有默认值；旧 CLI 不带也兼容）
