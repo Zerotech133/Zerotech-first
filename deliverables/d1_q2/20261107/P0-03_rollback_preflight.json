@@ -1,0 +1,220 @@
+{
+  "schema": "d1_p0_03_rollback_preflight/v1",
+  "checked_at": "2026-11-07T16:25:10+08:00",
+  "mode": "preflight",
+  "real_drill_performed": false,
+  "reason": "默认只读；真实摘除入口需 Lead 批准窗口，--execute 不执行生产变更",
+  "ok": true,
+  "critical_failures": [],
+  "checks": [
+    {
+      "name": "manifest.rollback.steps",
+      "ok": true,
+      "critical": true,
+      "detail": "steps=4"
+    },
+    {
+      "name": "manifest.rollback.pending",
+      "ok": true,
+      "critical": true,
+      "detail": "last_drilled='pending（2026-11-16 前需演练一次；本单未真回滚生产）'"
+    },
+    {
+      "name": "nginx.d1.exact_route",
+      "ok": true,
+      "critical": true,
+      "detail": "location = /d1"
+    },
+    {
+      "name": "nginx.d1.prefix_route",
+      "ok": true,
+      "critical": true,
+      "detail": "location ^~ /d1/"
+    },
+    {
+      "name": "nginx.d1.auth_guard",
+      "ok": true,
+      "critical": true,
+      "detail": "auth_request /_auth_guard"
+    },
+    {
+      "name": "page.d1.index",
+      "ok": true,
+      "critical": true,
+      "detail": "C:\\项目\\老田的AI助手\\portal\\d1\\index.html size=15598"
+    },
+    {
+      "name": "git.head",
+      "ok": true,
+      "critical": true,
+      "detail": "d165d6ff42d149be4eab6193ff138c13015b15d5"
+    },
+    {
+      "name": "git.rollback_targets",
+      "ok": true,
+      "critical": true,
+      "detail": "declared=['4788b1527', 'e15cc824b', 'b11cda7c2'] missing=[]"
+    },
+    {
+      "name": "container.nginx_test",
+      "ok": true,
+      "critical": false,
+      "detail": "nginx: the configuration file /etc/nginx/nginx.conf syntax is ok\nnginx: configuration file /etc/nginx/nginx.conf test is successful"
+    },
+    {
+      "name": "http/http://127.0.0.1:8091/api/health",
+      "ok": true,
+      "critical": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "http/http://127.0.0.1:8091/health",
+      "ok": true,
+      "critical": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "http/http://127.0.0.1:8091/api/d1/research",
+      "ok": true,
+      "critical": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "http/http://127.0.0.1:8091/api/d1/decisions",
+      "ok": true,
+      "critical": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "http/http://127.0.0.1:8091/api/d1/handoffs",
+      "ok": true,
+      "critical": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "http/http://127.0.0.1:8091/api/d1/meeting",
+      "ok": true,
+      "critical": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "http/http://127.0.0.1:8091/api/d1/watch-plans",
+      "ok": true,
+      "critical": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "http/http://127.0.0.1:8091/api/d1/training/episodes",
+      "ok": true,
+      "critical": true,
+      "detail": "status=200"
+    },
+    {
+      "name": "paper.state.readable",
+      "ok": true,
+      "critical": true,
+      "detail": "{\"path\": \"C:\\\\项目\\\\老田的AI助手\\\\agent_platform\\\\data\\\\paper\\\\state.json\", \"exists\": true, \"sha256\": \"ff5195ea0df580513e1f27d47b986eccaa016cd0bba017941368bc529327f9cb\", \"positions\": 0, \"nav\": 0.99464}"
+    },
+    {
+      "name": "ledger.d1_decisions",
+      "ok": true,
+      "critical": true,
+      "detail": "rows=4 sha256=32b57ebef63524b6baac11b976cb99e0c4c938d3636a76c313a08c80a404762c"
+    },
+    {
+      "name": "ledger.d1_handoffs",
+      "ok": true,
+      "critical": true,
+      "detail": "rows=4 sha256=f036704e7716779caeb8c740ec1fe854ef53838d50128ad29b59d20a819fb2a6"
+    }
+  ],
+  "baseline": {
+    "git_head": "d165d6ff42d149be4eab6193ff138c13015b15d5",
+    "nginx_sha256": "ddb065f24e1d4c7321c3bef9d47fc95904bc42bb00e9d2772b4c0e85ff78297f",
+    "page_sha256": "494e457a502c789539c7e5a7d56894f94da5efc34d5e039e338dfdf4bee28a78",
+    "decisions": {
+      "path": "C:\\项目\\老田的AI助手\\agent_platform\\data\\d1_decisions.jsonl",
+      "rows": 4
+    },
+    "handoffs": {
+      "path": "C:\\项目\\老田的AI助手\\agent_platform\\data\\d1_handoffs.jsonl",
+      "rows": 4
+    },
+    "paper": {
+      "path": "C:\\项目\\老田的AI助手\\agent_platform\\data\\paper\\state.json",
+      "exists": true,
+      "sha256": "ff5195ea0df580513e1f27d47b986eccaa016cd0bba017941368bc529327f9cb",
+      "positions": 0,
+      "nav": 0.99464
+    },
+    "http": [
+      {
+        "endpoint": "http://127.0.0.1:8091/api/health",
+        "url": "http://127.0.0.1:8091/api/health",
+        "status": 200,
+        "ok": true,
+        "error": ""
+      },
+      {
+        "endpoint": "http://127.0.0.1:8091/health",
+        "url": "http://127.0.0.1:8091/health",
+        "status": 200,
+        "ok": true,
+        "error": ""
+      },
+      {
+        "endpoint": "http://127.0.0.1:8091/api/d1/research",
+        "url": "http://127.0.0.1:8091/api/d1/research",
+        "status": 200,
+        "ok": true,
+        "error": ""
+      },
+      {
+        "endpoint": "http://127.0.0.1:8091/api/d1/decisions",
+        "url": "http://127.0.0.1:8091/api/d1/decisions",
+        "status": 200,
+        "ok": true,
+        "error": ""
+      },
+      {
+        "endpoint": "http://127.0.0.1:8091/api/d1/handoffs",
+        "url": "http://127.0.0.1:8091/api/d1/handoffs",
+        "status": 200,
+        "ok": true,
+        "error": ""
+      },
+      {
+        "endpoint": "http://127.0.0.1:8091/api/d1/meeting",
+        "url": "http://127.0.0.1:8091/api/d1/meeting",
+        "status": 200,
+        "ok": true,
+        "error": ""
+      },
+      {
+        "endpoint": "http://127.0.0.1:8091/api/d1/watch-plans",
+        "url": "http://127.0.0.1:8091/api/d1/watch-plans",
+        "status": 200,
+        "ok": true,
+        "error": ""
+      },
+      {
+        "endpoint": "http://127.0.0.1:8091/api/d1/training/episodes",
+        "url": "http://127.0.0.1:8091/api/d1/training/episodes",
+        "status": 200,
+        "ok": true,
+        "error": ""
+      }
+    ]
+  },
+  "runbook": [
+    "0. 仅 Lead 在批准窗口执行；先跑本命令记录 baseline（含 HTTP/文件哈希）。",
+    "1. 备份 portal/nginx.conf；记录 `git rev-parse HEAD` 与 D1 台账/paper state 哈希。",
+    "2. 摘除入口：在 nginx 层临时将 /d1 精确路由及 ^~ /d1/ 前缀置为 503/404；",
+    "   `docker cp` 到 ai-portal，`docker exec ai-portal nginx -t`，`nginx -s reload`；",
+    "   同步暂停 /api/d1/* 对 8734 的暴露；不停止 8091。",
+    "3. 验证：curl /d1 与 /api/d1/* 返回 503/404，/api/health 与其他平台入口仍 200。",
+    "4. 恢复：还原 nginx.conf，`nginx -t`、`nginx -s reload`；确认 /d1 与 9 接口恢复 200。",
+    "5. 复核：D1 台账行数、paper state 哈希、四 ID 链与 baseline 完全一致；总恢复 ≤10 分钟。",
+    "6. 回填 manifest.status.rollback.last_drilled、起止时间、证据路径；不把本 preflight 当演练。"
+  ]
+}

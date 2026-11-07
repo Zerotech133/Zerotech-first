@@ -1,0 +1,8 @@
+﻿{
+  "schema": "d1_p0_03_rollback_preflight/v1",
+  "ok": false,
+  "blocked": true,
+  "reason": "P0-03 真实摘除入口需 Lead 批准窗口与显式授权；本工具不执行生产变更",
+  "checked_at": "2026-11-07T16:22:28+08:00"
+}
+EXIT_CODE=3
