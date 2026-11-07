@@ -224,6 +224,9 @@ tools/tests/test_test_gate_org_gate.py:65
 
 ### 9.6 未做的事
 
-- **头注释未改**（工单 §八.2）：`test_gate.ps1:13` 附近"tools 套件供夜间/手动全量"仍与事实不符（夜间 `all` 不含 tools）。属独立裁定项，等指令。
+- ~~头注释未改（工单 §八.2）~~ → **已于 2026-11-07 10:5x 补齐**：`test_gate.ps1:10` 那句
+  「tools 套件供夜间/手动全量」改为「tools 套件仅手工触发、不进 fast；关键单文件请登记进
+  `tools_key`」。字节级替换保 BOM + CRLF，行数不变；`test_gate_ps1_bom_and_parser` 与三个
+  冻结测试复跑 17 passed。
 - `tools/test_baseline.json` 未动：`tools_key` 本次 Known 0 / New 0，无需登记。
 

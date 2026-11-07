@@ -7,7 +7,7 @@
 # 退出码: 0=无新增失败(允许既存失败) | 1=有新增失败/收集错误 | 2=脚本错误
 # 产物:  C:\Temp\test_gate_<suite>_<ts>.log
 #
-# 判据: 本次 FAILED/ERROR 减去 tools/test_baseline.json 的 known_failures（tools 套件供夜间/手动全量，不进 fast）
+# 判据: 本次 FAILED/ERROR 减去 tools/test_baseline.json 的 known_failures（tools 套件仅手工触发、不进 fast；关键单文件请登记进 tools_key）
 #       得到"新增失败"; 新增=0 才放行。
 #
 # 2026-10-31 W5 P1-6（docs/audit/2026-10-31_W5质量还债_v1.md）：
