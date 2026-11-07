@@ -1101,8 +1101,9 @@ color:#fff;font-size:13.5px;cursor:pointer}
             return
         if path.startswith('/api/jev/review/'):
             # 2026-10-30 K-JEV-20261030-QUEUEUI：低置信复核裁决写回
-            import api_jev_review
-            api_jev_review.handle_post(self, path)
+            import api_jev_access, api_jev_review
+            api_jev_access.wrap_dispatch(
+                self, path, "", "POST", api_jev_review.handle_post, path)
             return
         if path.startswith('/api/customer/'):
             import api_customer
@@ -1732,6 +1733,12 @@ color:#fff;font-size:13.5px;cursor:pointer}
             api_analysis_internal.handle_get(self, path, qs)
             return
         if path.startswith('/api/monitor/'):
+            # K-ORG-20261107-GUARDDECK：看护驾驶舱（独立文件 api_guard_deck.py，
+            # 须在 api_monitor 的 503 兜底前分派——monitor 引擎缺失不连坐看护面）
+            if path.startswith('/api/monitor/guard/'):
+                import api_guard_deck
+                api_guard_deck.handle_get(self, path, qs)
+                return
             import api_monitor
             api_monitor.handle_get(self, path, qs)
             return
@@ -1768,13 +1775,60 @@ color:#fff;font-size:13.5px;cursor:pointer}
             return
         if path.startswith('/api/jev/review/'):
             # 2026-10-30 K-JEV-20261030-QUEUEUI：低置信复核只读列表/汇总
-            import api_jev_review
-            api_jev_review.handle_get(self, path, qs)
+            import api_jev_access, api_jev_review
+            api_jev_access.wrap_dispatch(
+                self, path, qs, "GET", api_jev_review.handle_get, path, qs)
+            return
+        if path == '/api/jev/platform':
+            # 2026-11-07 情报中台复盘建设：中台健康聚合（哨兵四查/队列/吞吐/
+            # 夜批/runs 时间线）；独立文件 api_jev_platform.py；只读 mode=ro；
+            # 须在 /api/jev/ 兜底前。
+            import api_jev_access, api_jev_platform
+            api_jev_access.wrap_dispatch(
+                self, path, qs, "GET", api_jev_platform.handle_get, path, qs)
+            return
+        if path == '/api/jev/wordcloud':
+            # 2026-11-07 WO-INTEL-WORDC1-JEV-20261107-001：JEV 判定加权词云
+            # （独立文件 api_jev_wordcloud.py；只读 mode=ro；须在 /api/jev/ 兜底前）
+            import api_jev_access, api_jev_wordcloud
+            api_jev_access.wrap_dispatch(
+                self, path, qs, "GET", api_jev_wordcloud.handle_get, path, qs)
             return
         if path.startswith('/api/jev/'):
             # 2026-10-26 JEVAPI：JEV 判定只读查询（独立文件 api_jev.py；Hermes MCP 消费）
-            import api_jev
-            api_jev.handle_get(self, path, qs)
+            # 标的三面聚合（2026-11-07 目录卡 jev_target_drill 聚合形态）
+            if path.startswith('/api/jev/target/'):
+                import api_jev_access, api_jev_target
+                api_jev_access.wrap_dispatch(
+                    self, path, qs, "GET", api_jev_target.handle_get, path, qs)
+                return
+            # 个股叙事线（2026-11-07：判定串联+信源战绩+变化验证）
+            if path.startswith('/api/jev/story/'):
+                import api_jev_access, api_jev_story
+                api_jev_access.wrap_dispatch(
+                    self, path, qs, "GET", api_jev_story.handle_get, path, qs)
+                return
+            # 消息举证链（2026-11-07：老田令举证级溯源）
+            if path == '/api/jev/evidence':
+                import api_jev_access, api_jev_evidence
+                api_jev_access.wrap_dispatch(
+                    self, path, qs, "GET", api_jev_evidence.handle_get, path, qs)
+                return
+            # 能力开放层端点（2026-11-07）：目录 + 溯源（先于兜底）
+            if path == '/api/jev/capabilities':
+                import api_jev_access
+                api_jev_access.wrap_dispatch(
+                    self, path, qs, "GET",
+                    api_jev_access.handle_capabilities, path, qs)
+                return
+            if path == '/api/jev/trace':
+                import api_jev_access
+                api_jev_access.wrap_dispatch(
+                    self, path, qs, "GET", api_jev_access.handle_trace, path, qs)
+                return
+            import api_jev_access, api_jev
+            api_jev_access.wrap_dispatch(
+                self, path, qs, "GET", api_jev.handle_get, path, qs)
             return
         if path == '/api/intel/evidence-targets':
             self._intel_evidence_targets(qs)
