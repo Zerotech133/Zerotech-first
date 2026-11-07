@@ -712,7 +712,8 @@ def _coarse_bt_block():
         + '<div class="ebt-line"><b>结论：方向对，样本不够，不上实盘</b> '
           '门槛后日级 t=%.2f，但 20 日持有互相重叠，非重叠只剩 %d 段、'
           't=%.2f —— <em>不足以下实盘指令</em>。'
-          '处置：粗信号进<b>影子清单</b>（每日记录、纸面跟踪），'
+          '处置：粗信号进<b>影子清单</b>（见 ①e：每日记录、纸面结算，'
+          '等真实前推样本把 t 值养上去），'
           '细信号继续只当结构提示；3买 维持停用</div>'
         % ((g50.get("t") or 0), (g50.get("n_indep") or 0),
            (g50.get("indep_t") or 0))
@@ -749,6 +750,156 @@ def _coarse_bt_block():
         % hold
         + '</div>')
     _CBT_CACHE.update({"mt": mt, "html": html})
+    return html
+
+
+# 影子清单缓存：(mtime, html)
+_CSD_CACHE = {"mt": None, "html": ""}
+
+_LV_NAME = {"L0": "L0 裸分型", "L1": "L1 力度收窄",
+            "L1n": "L1n 创新低", "L2": "L2 再缩量"}
+
+
+def _coarse_shadow_block():
+    """⑦ 影子清单块（读 portal/coarse_shadow_stats.json）。
+
+    ①d 的结论是「粗信号方向对、样本不够，不上实盘」。这一块就是那句话的落地：
+    把粗信号按同一口径逐日记录、逐日结算，用真实前推样本把 t 值养上去。
+    在 t 值够之前它只是清单，不是买入建议 —— 这句话必须写在页面上，
+    否则「影子清单」四个字本身就会被读成「可以买」。
+    """
+    global _CSD_CACHE
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        "coarse_shadow_stats.json")
+    try:
+        mt = os.path.getmtime(path)
+    except OSError:
+        return ""
+    if _CSD_CACHE["mt"] == mt and _CSD_CACHE["html"]:
+        return _CSD_CACHE["html"]
+    try:
+        with open(path, encoding="utf-8") as f:
+            sd = json.load(f)
+    except (OSError, ValueError) as exc:
+        _LOG.warning("silent-except csd: %s", exc)
+        return ""
+
+    sh = sd.get("shadow") or {}
+    lt = sd.get("latest") or {}
+    bench = sh.get("bench") or {}
+    nlv = lt.get("n") or {}
+    gate_on = lt.get("gate_on") or {}
+    items = lt.get("items") or []
+    lvmap = {x.get("lvl"): x for x in (sh.get("by_level") or [])}
+    gmap = {(x.get("lvl"), bool(x.get("gate"))): x
+            for x in (sh.get("by_gate") or [])}
+
+    lv_rows = "".join(
+        '<tr><td>%s</td><td class="dim">%d</td>'
+        '<td class="%s">%s</td><td class="%s">%s</td>'
+        '<td class="dim">%s</td><td class="%s">%s</td>'
+        '<td class="dim">%s</td></tr>'
+        % (_esc(_LV_NAME.get(k, k)), (lvmap.get(k) or {}).get("n") or 0,
+           _cls(lvmap.get(k, {}).get("avg")), _num(lvmap.get(k, {}).get("avg")),
+           _cls(lvmap.get(k, {}).get("day_mean")),
+           _num(lvmap.get(k, {}).get("day_mean")),
+           _num(lvmap.get(k, {}).get("win"), suffix="%", sign=False, nd=1),
+           _cls(lvmap.get(k, {}).get("alpha")),
+           _num(lvmap.get(k, {}).get("alpha")),
+           ("%.2f" % lvmap[k]["t"]) if lvmap.get(k, {}).get("t") is not None
+           else "—")
+        for k in ("L0", "L1", "L1n", "L2"))
+
+    gate_rows = "".join(
+        '<tr><td>%s %s</td><td class="dim">%d</td>'
+        '<td class="%s">%s</td><td class="%s">%s</td>'
+        '<td class="dim">%d</td></tr>'
+        % (_LV_NAME.get(k, k), "过门槛" if g else "未过门槛",
+           (gmap.get((k, g)) or {}).get("n") or 0,
+           _cls((gmap.get((k, g)) or {}).get("avg")),
+           _num((gmap.get((k, g)) or {}).get("avg")),
+           _cls((gmap.get((k, g)) or {}).get("alpha")),
+           _num((gmap.get((k, g)) or {}).get("alpha")),
+           (gmap.get((k, g)) or {}).get("n_day") or 0)
+        for k in ("L1", "L1n") for g in (True, False))
+
+    item_rows = "".join(
+        '<tr><td>%s</td><td class="nm">%s</td>'
+        '<td class="%s">%s</td><td class="dim">%.2f</td>'
+        '<td class="dim">%s</td></tr>'
+        % (_esc(x.get("code")), _esc(x.get("name") or "—"),
+           "gd" if x.get("level") in ("L1n", "L2") else "dim",
+           _esc(x.get("level")),
+           x.get("close") or 0, _esc(x.get("board") or ""))
+        for x in items[:40])
+
+    n_shown = min(len(items), 40)
+    gate_txt = ("<span class='up'>过门槛·可建仓</span>"
+                if gate_on.get("L1") else
+                "<span class='dim'>未过门槛·只观察</span>")
+    hold = sh.get("hold") or 20
+    parts = [
+        '<div class="sec"><h2>①e 影子清单 · 粗信号纸面跟踪 '
+        '<span class="tag g">%d 条 / %d 日</span>'
+        '<span class="tag">已结算 %d · 待结算 %d</span></h2>'
+        % (sh.get("n_rec") or 0, sh.get("n_day") or 0,
+           sh.get("settled") or 0, sh.get("pending") or 0),
+        '<div class="ebt">',
+        '<div class="ebt-line"><b>这张表在干什么</b> '
+        '①d 已经证明：细信号当天算不出来（k=0 占 0%%），粗信号收盘可判、'
+        '次日开盘可成交，但 %d 日持有互相重叠，非重叠样本只有 9 段 —— '
+        '<em>方向对、样本不够，所以不进实盘，先进影子清单</em>：'
+        '每天按同一口径记录，等真实前推样本把 t 值养上去。'
+        '在 t 值够之前，<b>它只是清单，不是买入建议</b></div>' % hold,
+        '<div class="ebt-line"><b>今日 %s 收盘确认 → 下一交易日开盘入场</b> '
+        'L0 裸分型 %d 只、L1 力度收窄 %d 只、L1n 创新低 %d 只；'
+        '扎堆门槛（当日 L1 ≥ %d 只）：%s</div>'
+        % (_esc(lt.get("bar_dt") or "—"), nlv.get("L0") or 0,
+           nlv.get("L1") or 0, nlv.get("L1n") or 0,
+           lt.get("gate_th") or 50, gate_txt),
+    ]
+    if items:
+        parts.append(
+            '<div class="ebt-sub">今日清单（共 %d 只，按档位优先显示前 %d 只）</div>'
+            % (lt.get("n_code") or len(items), n_shown))
+        parts.append('<table class="ebt-t"><thead><tr><th>代码</th><th>名称</th>'
+                     '<th>档位</th><th>收盘</th><th>板块</th></tr></thead>'
+                     '<tbody>%s</tbody></table>' % item_rows)
+    else:
+        parts.append('<div class="ebt-line dim">今日无粗信号（全市场没有确认的'
+                     '严格底分型）—— 空仓也是一种结论</div>')
+    parts += [
+        '<div class="ebt-sub">已结算纸面成绩（窗口 %s ~ %s，同期上证 %s、'
+        '全市场等权 %s）</div>'
+        % (_esc(sh["window"][0]) if sh.get("window") else "—",
+           _esc(sh["window"][1]) if sh.get("window") else "—",
+           _num(bench.get("index_pct")), _num(bench.get("xs_pct"))),
+        '<table class="ebt-t"><thead><tr><th>档位</th><th>笔数</th>'
+        '<th>笔均</th><th>日组均</th><th>胜率</th><th>减上证</th>'
+        '<th>日 t</th></tr></thead><tbody>%s</tbody></table>' % lv_rows,
+        '<div class="ebt-sub">门槛分组（当日该档信号数 ≥%d 才视为可建仓日）</div>'
+        % (lt.get("gate_th") or 50),
+        '<table class="ebt-t"><thead><tr><th>分组</th><th>笔数</th>'
+        '<th>笔均</th><th>减上证</th><th>日数</th></tr></thead>'
+        '<tbody>%s</tbody></table>' % gate_rows,
+        '<div class="legend">'
+        '<b>口径与 ①d 完全一致</b>：严格底分型 → 次日收盘确认 → 再次日开盘买 '
+        '→ 持有 %d 日收盘卖，成本买 0.075%% + 卖 0.125%%，剔除北交所。'
+        '因此本表的数字可以直接和 ①d 的 L0/L1/L1n 对照。<br>'
+        '<b>笔均 ≠ 日组均</b>：笔均把「大盘暴跌那天几十个信号」当成几十份独立'
+        '证据；日组均先按入场日取均值再平均，才是账户真实能拿到的。'
+        '看这张表请优先看<b>日组均</b>和<b>减上证</b>。<br>'
+        '<b>窗口只有 %d 日</b>：2026-09-01 起回填（此前无记录），'
+        '已结算样本集中在 9-10 月这个下跌段，绝对收益天然难看，'
+        '要跟同期上证 / 全市场等权并排读。<br>'
+        '<b>刷新方式</b>：每个交易日收盘后跑一次 '
+        '<code>python tools/research/coarse_shadow.py</code>（增量扫描 + 结算，'
+        '幂等）。</div>'
+        % (hold, sh.get("n_day") or 0),
+        '</div></div>',
+    ]
+    html = "".join(parts)
+    _CSD_CACHE.update({"mt": mt, "html": html})
     return html
 
 
@@ -1100,6 +1251,9 @@ class Handler:  # Mixin 壳：经基座多继承并入 Handler
 
         # ①d 粗信号可执行性检验（当天可判的那一层到底能不能赚）
         add(_coarse_bt_block())
+
+        # ①e 影子清单（①d 的结论落地：粗信号逐日记录、纸面结算）
+        add(_coarse_shadow_block())
 
         # KPI
         add('<div class="grid kpis">')
