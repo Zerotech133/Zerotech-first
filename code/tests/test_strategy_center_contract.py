@@ -215,6 +215,25 @@ def test_contract_pool_candidates_pagination(contract_dsn, monkeypatch):
         assert int(cur.fetchone()["n"]) == first["total"]
 
 
+def test_contract_connection_pool_reuses_backend(contract_dsn, monkeypatch):
+    """页面多次请求复用同一条只读连接，避免每次重连的 ~30ms 开销。"""
+    svc = _patch_service_dsn(monkeypatch, contract_dsn)
+    svc.close_pool()
+    try:
+        with svc._connection() as first:
+            with first.cursor() as cur:
+                cur.execute("select pg_backend_pid()")
+                first_pid = cur.fetchone()[0]
+        with svc._connection() as second:
+            with second.cursor() as cur:
+                cur.execute("select pg_backend_pid()")
+                second_pid = cur.fetchone()[0]
+        assert first_pid == second_pid
+        assert svc._pool is not None
+    finally:
+        svc.close_pool()
+
+
 def test_contract_api_reads_real_test_db(contract_dsn, monkeypatch, auth_headers):
     from fastapi.testclient import TestClient
     from zhice_os_v2.api.main import app

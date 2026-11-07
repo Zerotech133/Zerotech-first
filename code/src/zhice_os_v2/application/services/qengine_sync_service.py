@@ -7,10 +7,12 @@
 """
 from __future__ import annotations
 
+import threading
 from contextlib import contextmanager
 from typing import Any
 
 import psycopg2
+from psycopg2 import pool as pg_pool
 from psycopg2.extras import RealDictCursor
 from sqlalchemy.engine import make_url
 
@@ -18,6 +20,13 @@ from zhice_os_v2.config.settings import get_settings
 
 SCHEMA = "qengine_sync"
 TEST_DB = "zhice_qengine_sync_test"
+
+# qengine_sync 是只读旁路；小池即可覆盖页面并发，避免每个请求重新建连。
+POOL_MIN = 1
+POOL_MAX = 4
+_pool: pg_pool.ThreadedConnectionPool | None = None
+_pool_dsn: str | None = None
+_pool_lock = threading.Lock()
 
 
 class QengineSyncUnavailable(RuntimeError):
@@ -38,24 +47,94 @@ def _dsn() -> str:
     )
 
 
+def _prepare_connection(conn) -> None:
+    """池中物理连接创建时设置只读、自动提交和 search_path。"""
+    conn.set_session(readonly=True, autocommit=True)
+    with conn.cursor() as cur:
+        cur.execute(f"SET search_path TO {SCHEMA}, public")
+
+
+class _QengineConnectionPool(pg_pool.ThreadedConnectionPool):
+    """连接在物理创建时完成只读配置，复用时不再多发 SET。"""
+
+    def _connect(self):
+        conn = super()._connect()
+        try:
+            _prepare_connection(conn)
+        except Exception:
+            conn.close()
+            raise
+        return conn
+
+
 def _connect():
+    """新建一条已配置的只读连接（保留给一次性调用/基准脚本）。"""
     try:
         conn = psycopg2.connect(_dsn())
-        conn.set_session(readonly=True, autocommit=True)
-        with conn.cursor() as cur:
-            cur.execute(f"SET search_path TO {SCHEMA}, public")
+        _prepare_connection(conn)
         return conn
     except Exception as exc:  # noqa: BLE001 - 统一转换为可读的 503
         raise QengineSyncUnavailable("qengine_sync 测试库不可连接") from exc
 
 
+def _get_pool() -> pg_pool.ThreadedConnectionPool:
+    """懒加载 1–4 条连接的只读线程安全池；DSN 变化时重建。"""
+    global _pool, _pool_dsn
+    dsn = _dsn()
+    with _pool_lock:
+        if _pool is not None and _pool_dsn == dsn:
+            return _pool
+        if _pool is not None:
+            try:
+                _pool.closeall()
+            except Exception:  # noqa: BLE001 - 旧池已不可用
+                pass
+            _pool = None
+            _pool_dsn = None
+        try:
+            _pool = _QengineConnectionPool(POOL_MIN, POOL_MAX, dsn)
+        except Exception as exc:  # noqa: BLE001
+            _pool = None
+            _pool_dsn = None
+            raise QengineSyncUnavailable("qengine_sync 测试库不可连接") from exc
+        _pool_dsn = dsn
+        return _pool
+
+
+def close_pool() -> None:
+    """关闭池内全部连接；测试和进程退出可调用，重复调用安全。"""
+    global _pool, _pool_dsn
+    with _pool_lock:
+        if _pool is not None:
+            try:
+                _pool.closeall()
+            finally:
+                _pool = None
+                _pool_dsn = None
+
+
 @contextmanager
 def _connection():
-    conn = _connect()
+    pool = _get_pool()
+    conn = None
     try:
+        conn = pool.getconn()
         yield conn
+    except Exception:
+        # 连接可能处于可恢复或坏状态；异常路径一律丢弃，避免污染池。
+        if conn is not None:
+            try:
+                pool.putconn(conn, close=True)
+            except Exception:  # noqa: BLE001
+                pass
+            conn = None
+        raise
     finally:
-        conn.close()
+        if conn is not None:
+            try:
+                pool.putconn(conn)
+            except Exception:  # noqa: BLE001
+                pass
 
 
 def _rows(cur, sql: str, params: tuple = ()) -> list[dict[str, Any]]:
@@ -239,9 +318,9 @@ def fetch_strategy_detail(
     sid: str, *, conn=None
 ) -> dict[str, Any]:
     """返回单个策略的详情；不存在时抛 KeyError。"""
-    owns_conn = conn is None
     if conn is None:
-        conn = _connect()
+        with _connection() as owned_conn:
+            return fetch_strategy_detail(sid, conn=owned_conn)
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             strategy = _one(
@@ -330,9 +409,10 @@ def fetch_strategy_detail(
                 "extremes": {"best": best, "worst": worst},
                 "issues": issues,
             }
-    finally:
-        if owns_conn:
-            conn.close()
+    except KeyError:
+        raise
+    except Exception as exc:  # noqa: BLE001 - 与 snapshot 一致的 503 错误出口
+        raise QengineSyncUnavailable("qengine_sync 查询失败") from exc
 
 
 def fetch_health() -> dict[str, Any]:
