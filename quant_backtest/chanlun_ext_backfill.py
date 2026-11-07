@@ -48,6 +48,7 @@ import sys
 import time
 from bisect import bisect_right
 from concurrent.futures import ProcessPoolExecutor, as_completed
+import atomic_io  # noqa: E402  (P2-c 统一原子写)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
@@ -62,6 +63,17 @@ HOLD = 20
 TYPES = ("1买", "2买", "3买", "1卖", "2卖", "3卖")
 FACTORS = ("mbei", "bei", "bei2", "vv", "tbe", "conf", "div_area", "div_dif",
            "pv_state", "pv_fv", "npv")
+
+
+def _d8(x):
+    """日期统一成 8 位无分隔符，用于比较。
+
+    **必须归一后再比**：`bars[*]["dt"]` 是 `2023-09-22`（带横线），而 `--since`
+    是 `20230701`（8 位）。直接字符串比较时 `'-'`(0x2D) < `'0'`(0x30)，于是
+    「2023-xx-xx」全部被判为 < 「20230701」而静默丢弃——实测让 `--since 20231001`
+    只能回出 2024-01-02 之后的数据，把 2023 全年的样本凭空抹掉。
+    """
+    return str(x or "").replace("-", "")[:8]
 
 
 def _sign(t):
@@ -109,7 +121,7 @@ def _rows_daily(bars, win, since, max_lag, fname):
     for L in range(MIN_BARS, len(bars) + 1):
         st = analyze(_seg(bars, L, win))
         det = bars[L - 1]["dt"]
-        if det < since:
+        if _d8(det) < _d8(since):
             continue
         for s in st["signals"]:
             key = (s["type"], s["dt"])
@@ -173,7 +185,7 @@ def _rows_fast(bars, win, since, max_lag, fname, stats):
         if lag is None:
             stats["drop_invisible"] += 1
             continue
-        if bars[i0 + lag]["dt"] < since:
+        if _d8(bars[i0 + lag]["dt"]) < _d8(since):
             continue
         out.append(_mk(bars, fname, s, i0, lag))
     return out
@@ -358,13 +370,11 @@ def evaluate(rows, tag="ext"):
 
 
 def _write_jsonl(path, rows):
-    tmp = path + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
+    with atomic_io.replacing(path) as f:
         for r in rows:
             # 下划线开头是内部字段（_bars_len 等），不落盘
             f.write(json.dumps({k: v for k, v in r.items() if not k.startswith("_")},
                                ensure_ascii=False) + "\n")
-    os.replace(tmp, path)
 
 
 def refix_hold(path_in, path_out, path_eval, hold=HOLD):
@@ -395,9 +405,8 @@ def refix_hold(path_in, path_out, path_eval, hold=HOLD):
     rows = finalize(rows, hold)
     _write_jsonl(path_out, rows)
     ev = evaluate(rows, tag="refix-hold%d|%s" % (hold, os.path.basename(path_in)))
-    with open(path_eval + ".tmp", "w", encoding="utf-8") as f:
+    with atomic_io.replacing(path_eval) as f:
         json.dump(ev, f, ensure_ascii=False, indent=1)
-    os.replace(path_eval + ".tmp", path_eval)
     print("== %s ==" % ev["tag"])
     print("%-4s %6s %8s %7s %6s %8s %7s" % ("type", "n", "raw%", "t_raw", "win%",
                                             "alpha%", "t_alp"))
@@ -435,9 +444,8 @@ def main():
         for p in a.merge.split(","):
             rows += [json.loads(li) for li in open(p.strip(), encoding="utf-8") if li.strip()]
         ev = evaluate(rows, tag="merge|%d files" % len(a.merge.split(",")))
-        with open(a.eval + ".tmp", "w", encoding="utf-8") as f:
+        with atomic_io.replacing(a.eval) as f:
             json.dump(ev, f, ensure_ascii=False, indent=1)
-        os.replace(a.eval + ".tmp", a.eval)
         print("== %s == rows=%d closed=%d range=%s~%s"
               % (ev["tag"], len(rows), ev["n_closed"], ev["range"][0], ev["range"][1]))
         print("%-4s %6s %8s %7s %6s %8s %7s" % ("type", "n", "raw%", "t_raw",
@@ -466,6 +474,7 @@ def main():
     print("ext backfill: files=%d since=%s win=%s mode=%s workers=%d"
           % (len(files), a.since, a.bars or "full", a.mode, a.workers))
 
+    a.since = _d8(a.since)
     jobs = [(f, a.since, a.bars, a.max_lag, a.mode) for f in files]
     t0 = time.time()
     rows, errs, drop_inv, done = [], [], 0, 0
@@ -494,9 +503,8 @@ def main():
     ev["elapsed_s"] = round(time.time() - t0, 1)
     ev["drop_invisible"] = drop_inv
     ev["errors"] = errs[:20]
-    with open(a.eval + ".tmp", "w", encoding="utf-8") as f:
+    with atomic_io.replacing(a.eval) as f:
         json.dump(ev, f, ensure_ascii=False, indent=1)
-    os.replace(a.eval + ".tmp", a.eval)
 
     print("\n== %s ==" % ev["tag"])
     print("rows=%d closed=%d range=%s~%s drop_invisible=%d errs=%d %.0fs"

@@ -1,0 +1,126 @@
+{
+ "pool": "chanlun_pool_ext_2023h2.jsonl",
+ "n_rows": 16133,
+ "span": [
+  "20230703",
+  "20261009"
+ ],
+ "windows": {
+  "全样本 20230703 起（覆盖不全）": {
+   "n": 16133,
+   "days": 764,
+   "batch_trail": 0.794,
+   "batch_hold": 1.459,
+   "acct_trail": {
+    "total": 31.52,
+    "cagr": 8.81,
+    "mdd": -13.96,
+    "sharpe": 0.86,
+    "util": 50.1
+   },
+   "acct_hold": {
+    "total": 55.92,
+    "cagr": 14.66,
+    "mdd": -24.53,
+    "sharpe": 0.7,
+    "util": 96.0
+   },
+   "sig_n": 11220,
+   "sig_days": 515,
+   "sig_batch_trail": 1.159,
+   "sig_acct_trail": {
+    "total": 32.36,
+    "cagr": 9.02,
+    "mdd": -10.72,
+    "sharpe": 1.12,
+    "util": 34.9
+   },
+   "codes": 4974
+  },
+  "扩展 20231001 起": {
+   "n": 15334,
+   "days": 720,
+   "batch_trail": 0.923,
+   "batch_hold": 1.578,
+   "acct_trail": {
+    "total": 35.47,
+    "cagr": 9.8,
+    "mdd": -13.96,
+    "sharpe": 0.96,
+    "util": 46.8
+   },
+   "acct_hold": {
+    "total": 57.78,
+    "cagr": 15.08,
+    "mdd": -24.53,
+    "sharpe": 0.72,
+    "util": 90.4
+   },
+   "sig_n": 10793,
+   "sig_days": 496,
+   "sig_batch_trail": 1.264,
+   "sig_acct_trail": {
+    "total": 34.38,
+    "cagr": 9.53,
+    "mdd": -10.72,
+    "sharpe": 1.18,
+    "util": 33.3
+   },
+   "codes": 4930
+  },
+  "对照 20240102 起": {
+   "n": 14063,
+   "days": 660,
+   "batch_trail": 0.971,
+   "batch_hold": 1.634,
+   "acct_trail": {
+    "total": 33.99,
+    "cagr": 9.43,
+    "mdd": -11.34,
+    "sharpe": 0.94,
+    "util": 42.2
+   },
+   "acct_hold": {
+    "total": 54.17,
+    "cagr": 14.27,
+    "mdd": -20.42,
+    "sharpe": 0.7,
+    "util": 82.9
+   },
+   "sig_n": 9983,
+   "sig_days": 459,
+   "sig_batch_trail": 1.303,
+   "sig_acct_trail": {
+    "total": 32.52,
+    "cagr": 9.06,
+    "mdd": -8.73,
+    "sharpe": 1.15,
+    "util": 30.4
+   },
+   "codes": 4853
+  }
+ },
+ "crash_window": {
+  "n_all": 15334,
+  "n_crash": 609,
+  "share_picks": 4.0,
+  "acct_with": {
+   "total": 35.47,
+   "cagr": 9.8,
+   "mdd": -13.96,
+   "sharpe": 0.96
+  },
+  "acct_without": {
+   "total": 39.42,
+   "cagr": 10.78,
+   "mdd": -11.45,
+   "sharpe": 1.06
+  }
+ },
+ "stability": {
+  "mdd_delta_pp": 2.62,
+  "total_delta_pp": 1.48,
+  "order_same": true,
+  "verdict": "结论对样本切点稳健"
+ }
+}
