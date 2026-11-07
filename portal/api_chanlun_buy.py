@@ -760,7 +760,7 @@ _LV_NAME = {"L0": "L0 裸分型", "L1": "L1 力度收窄",
             "L1n": "L1n 创新低", "L2": "L2 再缩量"}
 
 
-def _coarse_shadow_block():
+def _coarse_shadow_block(data_dt=""):
     """⑦ 影子清单块（读 portal/coarse_shadow_stats.json）。
 
     ①d 的结论是「粗信号方向对、样本不够，不上实盘」。这一块就是那句话的落地：
@@ -838,13 +838,24 @@ def _coarse_shadow_block():
                 if gate_on.get("L1") else
                 "<span class='dim'>未过门槛·只观察</span>")
     hold = sh.get("hold") or 20
-    parts = [
-        '<div class="sec"><h2>①e 影子清单 · 粗信号纸面跟踪 '
+    cur = str(data_dt or "").replace("-", "").replace("/", "")[:8]
+    bar = str(lt.get("bar_dt") or "")
+    stale = bool(cur and bar and cur > bar)   # 只在「清单落后于页面数据日」时告警
+
+    parts = ['<div class="sec"><h2>①e 影子清单 · 粗信号纸面跟踪 '
         '<span class="tag g">%d 条 / %d 日</span>'
         '<span class="tag">已结算 %d · 待结算 %d</span></h2>'
         % (sh.get("n_rec") or 0, sh.get("n_day") or 0,
            sh.get("settled") or 0, sh.get("pending") or 0),
         '<div class="ebt">',
+    ]
+    if stale:
+        parts.append(
+            '<div class="ebt-line"><b class="up">⚠ 清单没跟上数据</b> '
+            '数据日已经是 %s，清单还停在 %s —— 下面的清单和成绩都是旧的，'
+            '<em>先跑一次 <code>python tools/research/coarse_shadow.py</code> '
+            '再读</em></div>' % (_esc(cur), _esc(bar)))
+    parts += [
         '<div class="ebt-line"><b>这张表在干什么</b> '
         '①d 已经证明：细信号当天算不出来（k=0 占 0%%），粗信号收盘可判、'
         '次日开盘可成交，但 %d 日持有互相重叠，非重叠样本只有 9 段 —— '
@@ -1253,7 +1264,7 @@ class Handler:  # Mixin 壳：经基座多继承并入 Handler
         add(_coarse_bt_block())
 
         # ①e 影子清单（①d 的结论落地：粗信号逐日记录、纸面结算）
-        add(_coarse_shadow_block())
+        add(_coarse_shadow_block(detect))
 
         # KPI
         add('<div class="grid kpis">')
