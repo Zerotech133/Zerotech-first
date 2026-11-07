@@ -219,6 +219,7 @@ _MUTATION_POSTS = frozenset((
 _EARLY_TOKEN_PREFIXES = (
     "/api/analysis/",
     "/api/jev/review/",
+    "/api/factor/",   # P1 因子服务：compute 为计算型 POST，须先过 token 闸门
 )
 
 # C1a（研发计划 v2）：GET 形式但触发后台动作/子进程的端点——比照变更类
@@ -1068,6 +1069,11 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 "（该变更端点需 token；本机页面自动携带，脚本请带"
                 " header X-Portal-Token）"), 403)
             return
+        if path.startswith('/api/factor/'):
+            # P1 因子服务计算型入口（token 闸门之后；worker 子进程 + 缓存）。
+            import api_factor
+            api_factor.handle_post(self, path)
+            return
         if path == '/api/zhuge/review' or path.startswith('/api/zhuge/review/'):
             # P0/运营化：只读复核 + <id>/adoption 子资源（模块内校验 feature flag/
             # 门户 session/正文大小/限额；默认关）
@@ -1656,6 +1662,12 @@ color:#fff;font-size:13.5px;cursor:pointer}
         raw = self.path
         path = raw.split("?", 1)[0]
         qs = raw.split("?", 1)[1] if "?" in raw else ""
+        if path.startswith('/api/factor/'):
+            # P1 因子服务只读目录/健康 + 计算型 POST（独立文件 api_factor.py）。
+            # GET 只读；POST 在 do_POST 的 token 闸门后分派。
+            import api_factor
+            api_factor.handle_get(self, path, qs)
+            return
         if path.startswith('/api/data/catalog/'):
             # 数据打通 2026-11-05：catalog 258 表实时元数据/样本只读通道。
             # data 已在 nginx 公开族 B 白名单 → 无需改 nginx；8091 由 SYSTEM 托管，
