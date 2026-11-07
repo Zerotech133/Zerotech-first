@@ -1833,6 +1833,12 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 api_jev_access.wrap_dispatch(
                     self, path, qs, "GET", api_jev_story.handle_get, path, qs)
                 return
+            # 单条证据四级溯源（2026-11-07：证据链能力——原文→判定→后验→归组）
+            if path == '/api/jev/evidence/item':
+                import api_jev_access, api_jev_evidence_item
+                api_jev_access.wrap_dispatch(
+                    self, path, qs, "GET", api_jev_evidence_item.handle_get, path, qs)
+                return
             # 消息举证链（2026-11-07：老田令举证级溯源）
             if path == '/api/jev/evidence':
                 import api_jev_access, api_jev_evidence
