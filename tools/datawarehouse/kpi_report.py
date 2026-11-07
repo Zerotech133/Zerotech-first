@@ -34,6 +34,22 @@ import subprocess
 import sys
 import urllib.request
 from pathlib import Path
+# 回环禁代理（2026-11-07 批 5）：本机服务的请求不走系统代理，实现见 tools/safe_urlopen.py
+import sys as _sys
+from pathlib import Path as _Path
+
+for _base in _Path(__file__).resolve().parents:
+    for _cand in (_base, _base / "tools"):
+        if (_cand / "safe_urlopen.py").exists():
+            _sys.path.insert(0, str(_cand))
+            break
+    else:
+        continue
+    break
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包/仓库根导入时
+    from tools.safe_urlopen import safe_urlopen
 
 REPO = Path(__file__).resolve().parents[2]
 DATA = REPO / "quant_backtest" / "data"
@@ -148,7 +164,7 @@ def collect_k1(db_path: Path | None = None, today: datetime.date | None = None) 
 def collect_k2(url: str | None = None, timeout: float = 5.0) -> dict:
     url = url or API_DAILY_DATA
     try:
-        with urllib.request.urlopen(url, timeout=timeout) as r:
+        with safe_urlopen(url, timeout=timeout) as r:
             body = r.read().decode("utf-8", "replace")
         doc = json.loads(body)
     except Exception as exc:  # noqa: BLE001 — 网络/服务不可达 → unknown（fail-visible）

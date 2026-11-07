@@ -4,11 +4,12 @@ import datetime as dt
 import json
 import sys
 import threading
-import urllib.request
 from pathlib import Path
 
 WT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(WT / "agent_platform"))
+# 本文件只打本机自启服务：回环请求禁代理（safe_urlopen 内含 127.0.0.1 豁免）
+from safe_urlopen import safe_urlopen  # noqa: E402
 
 from legion_command import hq_acceptance as ha  # noqa: E402
 from legion_command import hq_meeting as hm  # noqa: E402
@@ -134,7 +135,7 @@ def test_http_evidence(tmp_path, monkeypatch):
     th = threading.Thread(target=srvr.serve_forever, daemon=True)
     th.start()
     try:
-        env = json.loads(urllib.request.urlopen(
+        env = json.loads(safe_urlopen(
             "http://127.0.0.1:%d/api/hq/meeting/acceptance/evidence" % srvr.server_address[1],
             timeout=10).read())
         assert env["ok"] and env["acceptance"]["verdict"] == "PASS"

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "date": "20261101",
- "generated_at": "2026-11-06T17:17:27+08:00",
+ "generated_at": "2026-11-07T08:58:14+08:00",
  "generator": "tools/kb_corpus/card_proposal_v3.py",
  "status": "pending_review",
  "baseline": {

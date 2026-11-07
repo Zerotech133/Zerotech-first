@@ -1,21 +1,21 @@
 {
  "schema": "external-deliverables-index/v1",
- "generated_at": "2026-11-06 18:05:04",
+ "generated_at": "2026-11-07 10:03:41",
  "root": "C:\\项目\\deliverables",
- "total": 3376,
+ "total": 3445,
  "by_ext": {
-  ".html": 228,
-  ".md": 2395,
-  ".json": 235,
+  ".html": 230,
+  ".md": 2441,
+  ".json": 244,
   ".svg": 1,
   ".sql": 1,
   ".bak_20261026_234302": 2,
   ".png": 237,
   ".log": 40,
   ".py": 48,
-  ".jsonl": 12,
+  ".jsonl": 14,
   ".npy": 1,
-  ".txt": 27,
+  ".txt": 29,
   ".csv": 92,
   "(none)": 4,
   ".css": 10,
@@ -29,8 +29,11 @@
   ".example": 1,
   ".pyc": 9,
   ".sqlite": 1,
-  ".xml": 2,
+  ".sqlite-shm": 1,
+  ".sqlite-wal": 1,
+  ".xml": 7,
   ".cjs": 2,
+  ".closed": 1,
   ".gz": 5
  },
  "files": [
@@ -5742,8 +5745,8 @@
    "path": "C:\\项目\\deliverables\\2026-10-27_研发部C阶段待办台账_v1.md",
    "rel": "2026-10-27_研发部C阶段待办台账_v1.md",
    "ext": ".md",
-   "bytes": 116045,
-   "mtime": "2026-11-06 17:39",
+   "bytes": 119209,
+   "mtime": "2026-11-07 08:20",
    "title": "研发部 C 阶段 · 待办台账 v1"
   },
   {
@@ -22470,8 +22473,8 @@
    "path": "C:\\项目\\deliverables\\2026-11-05_合并窗口回执.md",
    "rel": "2026-11-05_合并窗口回执.md",
    "ext": ".md",
-   "bytes": 34186,
-   "mtime": "2026-11-06 17:22",
+   "bytes": 37946,
+   "mtime": "2026-11-06 23:53",
    "title": "2026-11-05 合并窗口回执（16:30 主窗口 H1→H2 + L2 激活）"
   },
   {
@@ -22574,8 +22577,8 @@
    "path": "C:\\项目\\deliverables\\2026-11-05_盘中实时盯盘_W4激活上线回执.md",
    "rel": "2026-11-05_盘中实时盯盘_W4激活上线回执.md",
    "ext": ".md",
-   "bytes": 5089,
-   "mtime": "2026-11-05 07:33",
+   "bytes": 10895,
+   "mtime": "2026-11-07 09:00",
    "title": "盘中实时盯盘 · W4 激活上线回执（2026-11-05 06:05）"
   },
   {
@@ -22947,6 +22950,14 @@
    "title": "0050 紧急迁移追认单：补签与整改跟踪 v1"
   },
   {
+   "path": "C:\\项目\\deliverables\\2026-11-06_0051紧急变更事后追认单_v1.md",
+   "rel": "2026-11-06_0051紧急变更事后追认单_v1.md",
+   "ext": ".md",
+   "bytes": 4956,
+   "mtime": "2026-11-07 00:01",
+   "title": "0051 紧急变更事后追认单（v1）"
+  },
+  {
    "path": "C:\\项目\\deliverables\\2026-11-06_0343_T192关闭回执_v1.md",
    "rel": "2026-11-06_0343_T192关闭回执_v1.md",
    "ext": ".md",
@@ -22979,6 +22990,14 @@
    "title": "2026-11-06 16:30 P0 首批合并失败回执 v1"
   },
   {
+   "path": "C:\\项目\\deliverables\\2026-11-06_1705_P0_1630窗口检查回执_v1.md",
+   "rel": "2026-11-06_1705_P0_1630窗口检查回执_v1.md",
+   "ext": ".md",
+   "bytes": 3010,
+   "mtime": "2026-11-07 00:47",
+   "title": "2026-11-06 17:05 P0 16:30 窗口检查回执（补记）"
+  },
+  {
    "path": "C:\\项目\\deliverables\\2026-11-06_1710_D1日常预检回执_v1.md",
    "rel": "2026-11-06_1710_D1日常预检回执_v1.md",
    "ext": ".md",
@@ -22987,11 +23006,19 @@
    "title": "2026-11-06 17:10 D1 日常预检回执 v1"
   },
   {
+   "path": "C:\\项目\\deliverables\\2026-11-06_2140合并窗口延迟与顺延回执_v1.md",
+   "rel": "2026-11-06_2140合并窗口延迟与顺延回执_v1.md",
+   "ext": ".md",
+   "bytes": 3515,
+   "mtime": "2026-11-06 23:58",
+   "title": "2026-11-06 21:40 合并窗口延迟与顺延回执 v1"
+  },
+  {
    "path": "C:\\项目\\deliverables\\2026-11-06_8734_quant-api_502修复回执_v1.md",
    "rel": "2026-11-06_8734_quant-api_502修复回执_v1.md",
    "ext": ".md",
-   "bytes": 5452,
-   "mtime": "2026-11-06 17:28",
+   "bytes": 5517,
+   "mtime": "2026-11-06 23:47",
    "title": "8734 `/quant-api` 502 修复回执 v1"
   },
   {
@@ -23126,24 +23153,24 @@
    "path": "C:\\项目\\deliverables\\2026-11-06_PII清洗固化_W2执行回执_v1.md",
    "rel": "2026-11-06_PII清洗固化_W2执行回执_v1.md",
    "ext": ".md",
-   "bytes": 4479,
-   "mtime": "2026-11-06 05:05",
+   "bytes": 5479,
+   "mtime": "2026-11-07 00:06",
    "title": "PII 清洗固化 · W2 执行回执（v1）"
   },
   {
    "path": "C:\\项目\\deliverables\\2026-11-06_PII清洗固化_W3执行回执_v1.md",
    "rel": "2026-11-06_PII清洗固化_W3执行回执_v1.md",
    "ext": ".md",
-   "bytes": 5854,
-   "mtime": "2026-11-06 05:34",
+   "bytes": 6867,
+   "mtime": "2026-11-07 00:06",
    "title": "PII 清洗固化 W3 执行回执（v1）"
   },
   {
    "path": "C:\\项目\\deliverables\\2026-11-06_PII清洗固化_W4执行回执_v1.md",
    "rel": "2026-11-06_PII清洗固化_W4执行回执_v1.md",
    "ext": ".md",
-   "bytes": 6238,
-   "mtime": "2026-11-06 07:09",
+   "bytes": 7217,
+   "mtime": "2026-11-07 00:37",
    "title": "PII 清洗固化 · W4 执行回执（周审计 L2 + 操作台面板）"
   },
   {
@@ -23182,25 +23209,33 @@
    "path": "C:\\项目\\deliverables\\2026-11-06_qengine_自建git远端回执_v1.md",
    "rel": "2026-11-06_qengine_自建git远端回执_v1.md",
    "ext": ".md",
-   "bytes": 27912,
-   "mtime": "2026-11-06 13:00",
+   "bytes": 34108,
+   "mtime": "2026-11-07 00:22",
    "title": "qengine 自建 git 托管 · 交付回执"
   },
   {
    "path": "C:\\项目\\deliverables\\2026-11-06_R2_0051迁移草案与测试库演练_v1.md",
    "rel": "2026-11-06_R2_0051迁移草案与测试库演练_v1.md",
    "ext": ".md",
-   "bytes": 5061,
-   "mtime": "2026-11-06 17:30",
+   "bytes": 5862,
+   "mtime": "2026-11-07 00:08",
    "title": "R2 / 0051 选股池唯一键迁移草案与测试库演练（v1）"
   },
   {
    "path": "C:\\项目\\deliverables\\2026-11-06_R2_1105测试库全链路重放_v1.md",
    "rel": "2026-11-06_R2_1105测试库全链路重放_v1.md",
    "ext": ".md",
-   "bytes": 5859,
-   "mtime": "2026-11-06 17:30",
+   "bytes": 6581,
+   "mtime": "2026-11-07 00:07",
    "title": "ACAD1 0051 迁移后 11-05 选池→ACAD1 链路重放"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-06_R2_1105重放结论_29of30_v1.md",
+   "rel": "2026-11-06_R2_1105重放结论_29of30_v1.md",
+   "ext": ".md",
+   "bytes": 3359,
+   "mtime": "2026-11-07 00:02",
+   "title": "2026-11-05 ACAD1 池重放结论：29/30，不伪造第 30 条"
   },
   {
    "path": "C:\\项目\\deliverables\\2026-11-06_R3_asof契约补齐_五要素审批件_v1.md",
@@ -23251,6 +23286,14 @@
    "title": "v1.1 / M0 决策门包 v1（草案 · 待 A0/ARCH1 决策）"
   },
   {
+   "path": "C:\\项目\\deliverables\\2026-11-06_watch_24h复盘_v1.md",
+   "rel": "2026-11-06_watch_24h复盘_v1.md",
+   "ext": ".md",
+   "bytes": 1337,
+   "mtime": "2026-11-06 23:56",
+   "title": "Watch 24h 心跳/告警观察复盘"
+  },
+  {
    "path": "C:\\项目\\deliverables\\2026-11-06_yt_clean_kit_20261106.zip",
    "rel": "2026-11-06_yt_clean_kit_20261106.zip",
    "ext": ".zip",
@@ -23273,6 +23316,14 @@
    "bytes": 10869,
    "mtime": "2026-11-06 04:22",
    "title": "yt_learning.db 生产写回申请单 v1"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-06_五日观察_第2日_初检_v1.md",
+   "rel": "2026-11-06_五日观察_第2日_初检_v1.md",
+   "ext": ".md",
+   "bytes": 2483,
+   "mtime": "2026-11-06 23:48",
+   "title": "五日受控观察 · 2026-11-06 · 当日初检"
   },
   {
    "path": "C:\\项目\\deliverables\\2026-11-06_入仓前PII清洗固化方案_v1.md",
@@ -23334,8 +23385,8 @@
    "path": "C:\\项目\\deliverables\\2026-11-06_生产0051意外迁移事件记录_v1.md",
    "rel": "2026-11-06_生产0051意外迁移事件记录_v1.md",
    "ext": ".md",
-   "bytes": 8014,
-   "mtime": "2026-11-06 17:49",
+   "bytes": 10054,
+   "mtime": "2026-11-07 00:09",
    "title": "生产 0051 意外迁移事件记录（待处置）"
   },
   {
@@ -23443,6 +23494,14 @@
    "title": "青萍之末选股能力核查（数据日 2026-11-05）"
   },
   {
+   "path": "C:\\项目\\deliverables\\2026-11-06_青萍之末风险预算层验证_inv_vol与填单修复.md",
+   "rel": "2026-11-06_青萍之末风险预算层验证_inv_vol与填单修复.md",
+   "ext": ".md",
+   "bytes": 6030,
+   "mtime": "2026-11-07 00:56",
+   "title": "青萍之末 · 风险预算层验证与归因（L2b）"
+  },
+  {
    "path": "C:\\项目\\deliverables\\2026-11-06_鲁肃军团研发与建设方案_最终版_v2.md",
    "rel": "2026-11-06_鲁肃军团研发与建设方案_最终版_v2.md",
    "ext": ".md",
@@ -23451,12 +23510,284 @@
    "title": "鲁肃军团（D1）研发与建设方案 · 执行版 v2"
   },
   {
+   "path": "C:\\项目\\deliverables\\2026-11-07_0930_每日任务板对账回执_v1.md",
+   "rel": "2026-11-07_0930_每日任务板对账回执_v1.md",
+   "ext": ".md",
+   "bytes": 5032,
+   "mtime": "2026-11-07 09:30",
+   "title": "2026-11-07 09:30 每日任务板对账回执"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-07_11-05_ACAD1口径裁决请求_老田_DATA1_ACAD1_v1.md",
+   "rel": "2026-11-07_11-05_ACAD1口径裁决请求_老田_DATA1_ACAD1_v1.md",
+   "ext": ".md",
+   "bytes": 6337,
+   "mtime": "2026-11-07 10:01",
+   "title": "11-05 ACAD1 统计口径裁决请求"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-07_11-05_ACAD1诊断与补数前置_v1.md",
+   "rel": "2026-11-07_11-05_ACAD1诊断与补数前置_v1.md",
+   "ext": ".md",
+   "bytes": 8728,
+   "mtime": "2026-11-07 08:17",
+   "title": "11-05 ACAD1 只有 US 6 张：诊断、补数前置条件与优先级"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-07_1705_P0_1630窗口检查回执_v1.md",
+   "rel": "2026-11-07_1705_P0_1630窗口检查回执_v1.md",
+   "ext": ".md",
+   "bytes": 2048,
+   "mtime": "2026-11-07 00:52",
+   "title": "2026-11-07 17:05 P0 16:30 窗口检查回执（模板）"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-07_2135_P0重试前报告_v1.md",
+   "rel": "2026-11-07_2135_P0重试前报告_v1.md",
+   "ext": ".md",
+   "bytes": 1777,
+   "mtime": "2026-11-07 07:57",
+   "title": "2026-11-07 21:35 P0 重试前报告（模板）"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-07_2140_P0_次窗口合并回执_v1.md",
+   "rel": "2026-11-07_2140_P0_次窗口合并回执_v1.md",
+   "ext": ".md",
+   "bytes": 2396,
+   "mtime": "2026-11-07 07:57",
+   "title": "2026-11-07 21:40 P0 次窗口合并回执（模板）"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-07_backfill_selection_market修复与重跑_v1.md",
+   "rel": "2026-11-07_backfill_selection_market修复与重跑_v1.md",
+   "ext": ".md",
+   "bytes": 3890,
+   "mtime": "2026-11-07 08:08",
+   "title": "backfill_selection_market 市场回填修复与 03:15 链路重跑"
+  },
+  {
    "path": "C:\\项目\\deliverables\\2026-11-07_L1正式复验_v1.log",
    "rel": "2026-11-07_L1正式复验_v1.log",
    "ext": ".log",
    "bytes": 2282,
    "mtime": "2026-11-02 15:49",
    "title": ""
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-07_P0门禁依赖清单与下一步待办_v1.md",
+   "rel": "2026-11-07_P0门禁依赖清单与下一步待办_v1.md",
+   "ext": ".md",
+   "bytes": 14706,
+   "mtime": "2026-11-07 08:30",
+   "title": "2026-11-07 P0 门禁依赖清单与下一步待办"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-07_P1-P7遗留问题整改记录_v1.md",
+   "rel": "2026-11-07_P1-P7遗留问题整改记录_v1.md",
+   "ext": ".md",
+   "bytes": 6793,
+   "mtime": "2026-11-07 07:53",
+   "title": "P1–P7 遗留问题整改记录（2026-11-07）"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-07_PII_W2W3合并回执_v1.md",
+   "rel": "2026-11-07_PII_W2W3合并回执_v1.md",
+   "ext": ".md",
+   "bytes": 4353,
+   "mtime": "2026-11-07 00:37",
+   "title": "PII 清洗固化 W2/W3 合并回执 v1"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-07_qengine_N0_出场声明核对_v1.md",
+   "rel": "2026-11-07_qengine_N0_出场声明核对_v1.md",
+   "ext": ".md",
+   "bytes": 6290,
+   "mtime": "2026-11-07 09:33",
+   "title": "N0 · 策略出场声明核对 v1"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-07_qengine_研发计划复盘_v1.md",
+   "rel": "2026-11-07_qengine_研发计划复盘_v1.md",
+   "ext": ".md",
+   "bytes": 17000,
+   "mtime": "2026-11-07 09:34",
+   "title": "qengine 研发计划复盘 v1"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-07_qengine_评分有效性诊断_v1.md",
+   "rel": "2026-11-07_qengine_评分有效性诊断_v1.md",
+   "ext": ".md",
+   "bytes": 7175,
+   "mtime": "2026-11-07 09:33",
+   "title": "评分有效性诊断 —— 「用错考题」到底错在哪"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-07_qengine_项目定位与策略治理定义_v1.md",
+   "rel": "2026-11-07_qengine_项目定位与策略治理定义_v1.md",
+   "ext": ".md",
+   "bytes": 9618,
+   "mtime": "2026-11-07 09:20",
+   "title": "qengine 项目定位与策略治理定义 v1"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-07_R3_asof契约执行收口件_v1.md",
+   "rel": "2026-11-07_R3_asof契约执行收口件_v1.md",
+   "ext": ".md",
+   "bytes": 4118,
+   "mtime": "2026-11-07 00:14",
+   "title": "R3 as-of 契约补齐 · 执行收口件（WP-PIT-v1 范围 A 完成）"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-07_zerobound-kg最优架构方案_图谱因子分层治理_v1.md",
+   "rel": "2026-11-07_zerobound-kg最优架构方案_图谱因子分层治理_v1.md",
+   "ext": ".md",
+   "bytes": 12880,
+   "mtime": "2026-11-07 09:02",
+   "title": "zerobound-kg 最优架构方案 v1 — 图谱×因子分层治理"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-07_个股分析对话式交互_设计方案_v1.md",
+   "rel": "2026-11-07_个股分析对话式交互_设计方案_v1.md",
+   "ext": ".md",
+   "bytes": 12381,
+   "mtime": "2026-11-07 08:44",
+   "title": "个股分析 · 对话式交互 Agent 设计方案 v1"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-07_代码审计与BUG修复复盘研发计划总结_v1.md",
+   "rel": "2026-11-07_代码审计与BUG修复复盘研发计划总结_v1.md",
+   "ext": ".md",
+   "bytes": 9187,
+   "mtime": "2026-11-07 07:13",
+   "title": "代码审计 · BUG 修复复盘 · 研发计划总结 · 问题清单"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-07_因子层原型_放量类想法卡_v1.html",
+   "rel": "2026-11-07_因子层原型_放量类想法卡_v1.html",
+   "ext": ".html",
+   "bytes": 22959,
+   "mtime": "2026-11-07 09:38",
+   "title": ""
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-07_因子层重构_动态多元发现引擎_v1.md",
+   "rel": "2026-11-07_因子层重构_动态多元发现引擎_v1.md",
+   "ext": ".md",
+   "bytes": 5697,
+   "mtime": "2026-11-07 09:20",
+   "title": "因子层重构 v1：动态、多元、数据驱动的发现引擎"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-07_图谱底座实况滚动方案_治理数据清单_对账报告_v1.md",
+   "rel": "2026-11-07_图谱底座实况滚动方案_治理数据清单_对账报告_v1.md",
+   "ext": ".md",
+   "bytes": 7011,
+   "mtime": "2026-11-07 08:41",
+   "title": "图谱底座实况·滚动方案 与「治理数据清单」对账报告 v1"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-07_图谱底座治理数据清单与范围说明书_v1.md",
+   "rel": "2026-11-07_图谱底座治理数据清单与范围说明书_v1.md",
+   "ext": ".md",
+   "bytes": 7135,
+   "mtime": "2026-11-07 08:28",
+   "title": "zerobound-kg 图谱底座治理数据清单与范围说明书（v1）"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-07_待办台账_ACAD1_11-05补数_v1.md",
+   "rel": "2026-11-07_待办台账_ACAD1_11-05补数_v1.md",
+   "ext": ".md",
+   "bytes": 4755,
+   "mtime": "2026-11-07 08:30",
+   "title": "2026-11-07 待办台账：11-05 ACAD1 历史日补数"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-07_搜索P0合并_route_baseline冲突处置卡_v1.md",
+   "rel": "2026-11-07_搜索P0合并_route_baseline冲突处置卡_v1.md",
+   "ext": ".md",
+   "bytes": 9625,
+   "mtime": "2026-11-07 00:46",
+   "title": "搜索 P0 合并：`tools/portal_route_baseline.json` 冲突处置卡 v1"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-07_搜索P0预检脚本试跑回执_v1.md",
+   "rel": "2026-11-07_搜索P0预检脚本试跑回执_v1.md",
+   "ext": ".md",
+   "bytes": 3747,
+   "mtime": "2026-11-07 01:20",
+   "title": "搜索 P0 预检脚本试跑回执（2026-11-07）"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-07_治理成果前端看板.html",
+   "rel": "2026-11-07_治理成果前端看板.html",
+   "ext": ".html",
+   "bytes": 14282,
+   "mtime": "2026-11-07 08:02",
+   "title": ""
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-07_研究因子A组_底座与因子研究定位说明_v1.md",
+   "rel": "2026-11-07_研究因子A组_底座与因子研究定位说明_v1.md",
+   "ext": ".md",
+   "bytes": 7413,
+   "mtime": "2026-11-07 08:52",
+   "title": "研究因子 A 组 · 底座与因子研究定位说明（v1）"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-07_观察计算_T5_T10_T20检查_v1.md",
+   "rel": "2026-11-07_观察计算_T5_T10_T20检查_v1.md",
+   "ext": ".md",
+   "bytes": 5970,
+   "mtime": "2026-11-07 00:54",
+   "title": "观察计算检查（T+5 / T+10 / T+20）— 2026-11-07"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-07_视频号候选Top50抽审清单.md",
+   "rel": "2026-11-07_视频号候选Top50抽审清单.md",
+   "ext": ".md",
+   "bytes": 19319,
+   "mtime": "2026-11-07 06:30",
+   "title": "视频号 497 候选 · 统一预审 + Top 抽审清单"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-07_青萍之末清理与规范化交付.md",
+   "rel": "2026-11-07_青萍之末清理与规范化交付.md",
+   "ext": ".md",
+   "bytes": 5492,
+   "mtime": "2026-11-07 07:17",
+   "title": "青萍之末 · 清理与规范化交付（2026-11-07）"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-07_青萍之末盘后分析_20261106.md",
+   "rel": "2026-11-07_青萍之末盘后分析_20261106.md",
+   "ext": ".md",
+   "bytes": 5205,
+   "mtime": "2026-11-07 01:20",
+   "title": "青萍之末盘后分析（数据日 2026-11-06）"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-07_青萍之末策略Top20观察名单_20261106.md",
+   "rel": "2026-11-07_青萍之末策略Top20观察名单_20261106.md",
+   "ext": ".md",
+   "bytes": 4266,
+   "mtime": "2026-11-07 06:46",
+   "title": "策略 Top20 观察名单（数据日 2026-11-06 收盘）"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-07_项目生命周期阶段研判_因子平台泛化架构_v1.md",
+   "rel": "2026-11-07_项目生命周期阶段研判_因子平台泛化架构_v1.md",
+   "ext": ".md",
+   "bytes": 5516,
+   "mtime": "2026-11-07 09:10",
+   "title": "zerobound-kg / 因子平台：生命周期阶段研判 + 泛化架构 v1"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\2026-11-08_1630_P0_顺延窗口合并回执_v1.md",
+   "rel": "2026-11-08_1630_P0_顺延窗口合并回执_v1.md",
+   "ext": ".md",
+   "bytes": 1979,
+   "mtime": "2026-11-07 07:42",
+   "title": "2026-11-08 16:30 P0 顺延窗口合并回执（手动备用模板）"
   },
   {
    "path": "C:\\项目\\deliverables\\20261103_S3-08终验收报告.md",
@@ -24382,8 +24713,8 @@
    "path": "C:\\项目\\deliverables\\quant\\20261104\\positions.csv",
    "rel": "quant\\20261104\\positions.csv",
    "ext": ".csv",
-   "bytes": 1103364,
-   "mtime": "2026-11-06 05:45",
+   "bytes": 1103377,
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -24391,7 +24722,7 @@
    "rel": "quant\\20261104\\run.json",
    "ext": ".json",
    "bytes": 20418,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -24431,7 +24762,7 @@
    "rel": "quant\\coach\\20261104.json",
    "ext": ".json",
    "bytes": 7147,
-   "mtime": "2026-11-06 06:17",
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
@@ -24446,8 +24777,16 @@
    "path": "C:\\项目\\deliverables\\quant\\data\\pool.json",
    "rel": "quant\\data\\pool.json",
    "ext": ".json",
-   "bytes": 3935806,
-   "mtime": "2026-11-05 15:18",
+   "bytes": 3921741,
+   "mtime": "2026-11-07 08:37",
+   "title": ""
+  },
+  {
+   "path": "C:\\项目\\deliverables\\quant\\data\\pool_before_holdfix.json",
+   "rel": "quant\\data\\pool_before_holdfix.json",
+   "ext": ".json",
+   "bytes": 3921777,
+   "mtime": "2026-11-07 01:21",
    "title": ""
   },
   {
@@ -24535,7 +24874,23 @@
    "rel": "quant\\db\\hub.sqlite",
    "ext": ".sqlite",
    "bytes": 1007616,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
+   "title": ""
+  },
+  {
+   "path": "C:\\项目\\deliverables\\quant\\db\\hub.sqlite-shm",
+   "rel": "quant\\db\\hub.sqlite-shm",
+   "ext": ".sqlite-shm",
+   "bytes": 32768,
+   "mtime": "2026-11-07 09:11",
+   "title": ""
+  },
+  {
+   "path": "C:\\项目\\deliverables\\quant\\db\\hub.sqlite-wal",
+   "rel": "quant\\db\\hub.sqlite-wal",
+   "ext": ".sqlite-wal",
+   "bytes": 0,
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
@@ -24559,23 +24914,23 @@
    "rel": "quant\\history\\batches.csv",
    "ext": ".csv",
    "bytes": 2458,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\history\\criteria.json",
    "rel": "quant\\history\\criteria.json",
    "ext": ".json",
-   "bytes": 1287,
-   "mtime": "2026-11-06 05:45",
+   "bytes": 1286,
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\history\\daily.csv",
    "rel": "quant\\history\\daily.csv",
    "ext": ".csv",
-   "bytes": 730,
-   "mtime": "2026-11-06 05:45",
+   "bytes": 733,
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -24583,7 +24938,7 @@
    "rel": "quant\\history\\journal\\LX01.csv",
    "ext": ".csv",
    "bytes": 22904,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -24591,7 +24946,7 @@
    "rel": "quant\\history\\journal\\LX02.csv",
    "ext": ".csv",
    "bytes": 11687,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -24599,7 +24954,7 @@
    "rel": "quant\\history\\journal\\LX03.csv",
    "ext": ".csv",
    "bytes": 1337,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -24607,7 +24962,7 @@
    "rel": "quant\\history\\journal\\LX04.csv",
    "ext": ".csv",
    "bytes": 9799,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -24615,7 +24970,7 @@
    "rel": "quant\\history\\journal\\LX05.csv",
    "ext": ".csv",
    "bytes": 22920,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -24623,7 +24978,7 @@
    "rel": "quant\\history\\journal\\LX06.csv",
    "ext": ".csv",
    "bytes": 13207,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -24631,7 +24986,7 @@
    "rel": "quant\\history\\journal\\LX07.csv",
    "ext": ".csv",
    "bytes": 22130,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -24639,7 +24994,7 @@
    "rel": "quant\\history\\journal\\LX08.csv",
    "ext": ".csv",
    "bytes": 4983,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -24647,7 +25002,7 @@
    "rel": "quant\\history\\journal\\LX10.csv",
    "ext": ".csv",
    "bytes": 13702,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -24655,7 +25010,7 @@
    "rel": "quant\\history\\journal\\LX11.csv",
    "ext": ".csv",
    "bytes": 22695,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -24663,7 +25018,7 @@
    "rel": "quant\\history\\journal\\LX13.csv",
    "ext": ".csv",
    "bytes": 21617,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -24671,7 +25026,7 @@
    "rel": "quant\\history\\journal\\LX14.csv",
    "ext": ".csv",
    "bytes": 19958,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -24679,7 +25034,7 @@
    "rel": "quant\\history\\journal\\LX15.csv",
    "ext": ".csv",
    "bytes": 22179,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -24687,7 +25042,7 @@
    "rel": "quant\\history\\journal\\LX16.csv",
    "ext": ".csv",
    "bytes": 22766,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -24695,15 +25050,15 @@
    "rel": "quant\\history\\journal\\LX17.csv",
    "ext": ".csv",
    "bytes": 23173,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\history\\journal\\LX18.csv",
    "rel": "quant\\history\\journal\\LX18.csv",
    "ext": ".csv",
-   "bytes": 20467,
-   "mtime": "2026-11-06 05:45",
+   "bytes": 20468,
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -24711,7 +25066,7 @@
    "rel": "quant\\history\\journal\\LX19.csv",
    "ext": ".csv",
    "bytes": 22877,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -24719,7 +25074,7 @@
    "rel": "quant\\history\\journal\\LX20.csv",
    "ext": ".csv",
    "bytes": 22694,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -24727,7 +25082,7 @@
    "rel": "quant\\history\\journal\\LX22.csv",
    "ext": ".csv",
    "bytes": 22695,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -24735,7 +25090,7 @@
    "rel": "quant\\history\\journal\\LX23.csv",
    "ext": ".csv",
    "bytes": 18884,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -24743,31 +25098,31 @@
    "rel": "quant\\history\\journal\\S01.csv",
    "ext": ".csv",
    "bytes": 1109,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\history\\trades.csv",
    "rel": "quant\\history\\trades.csv",
    "ext": ".csv",
-   "bytes": 874392,
-   "mtime": "2026-11-06 05:45",
+   "bytes": 874405,
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\latest.html",
    "rel": "quant\\latest.html",
    "ext": ".html",
-   "bytes": 60594,
-   "mtime": "2026-11-06 05:45",
+   "bytes": 60602,
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\latest.json",
    "rel": "quant\\latest.json",
    "ext": ".json",
-   "bytes": 1617,
-   "mtime": "2026-11-06 05:45",
+   "bytes": 1616,
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -24775,7 +25130,7 @@
    "rel": "quant\\site\\agent.html",
    "ext": ".html",
    "bytes": 48388,
-   "mtime": "2026-11-06 06:17",
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
@@ -24783,63 +25138,63 @@
    "rel": "quant\\site\\criteria.html",
    "ext": ".html",
    "bytes": 18720,
-   "mtime": "2026-11-06 06:17",
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\site\\hub.html",
    "rel": "quant\\site\\hub.html",
    "ext": ".html",
-   "bytes": 60827,
-   "mtime": "2026-11-06 06:17",
+   "bytes": 60788,
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\site\\index.html",
    "rel": "quant\\site\\index.html",
    "ext": ".html",
-   "bytes": 42669,
-   "mtime": "2026-11-06 06:17",
+   "bytes": 42673,
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\site\\issues.html",
    "rel": "quant\\site\\issues.html",
    "ext": ".html",
-   "bytes": 103412,
-   "mtime": "2026-11-06 06:17",
+   "bytes": 103419,
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\site\\ledger.html",
    "rel": "quant\\site\\ledger.html",
    "ext": ".html",
-   "bytes": 36063,
-   "mtime": "2026-11-06 06:17",
+   "bytes": 36064,
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\site\\manage.html",
    "rel": "quant\\site\\manage.html",
    "ext": ".html",
-   "bytes": 50411,
-   "mtime": "2026-11-06 06:17",
+   "bytes": 50372,
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\site\\picks.html",
    "rel": "quant\\site\\picks.html",
    "ext": ".html",
-   "bytes": 382226,
-   "mtime": "2026-11-06 06:17",
+   "bytes": 382229,
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\site\\screen.html",
    "rel": "quant\\site\\screen.html",
    "ext": ".html",
-   "bytes": 3983808,
-   "mtime": "2026-11-06 06:17",
+   "bytes": 3970547,
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
@@ -24847,7 +25202,7 @@
    "rel": "quant\\site\\shelf.html",
    "ext": ".html",
    "bytes": 29887,
-   "mtime": "2026-11-06 06:17",
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
@@ -24855,7 +25210,7 @@
    "rel": "quant\\site\\store.html",
    "ext": ".html",
    "bytes": 38918,
-   "mtime": "2026-11-06 06:17",
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
@@ -24863,7 +25218,7 @@
    "rel": "quant\\site\\strategy\\H18.html",
    "ext": ".html",
    "bytes": 40010,
-   "mtime": "2026-11-06 06:17",
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
@@ -24871,7 +25226,7 @@
    "rel": "quant\\site\\strategy\\LX01.html",
    "ext": ".html",
    "bytes": 136744,
-   "mtime": "2026-11-06 06:17",
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
@@ -24879,7 +25234,7 @@
    "rel": "quant\\site\\strategy\\LX02.html",
    "ext": ".html",
    "bytes": 105353,
-   "mtime": "2026-11-06 06:17",
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
@@ -24887,7 +25242,7 @@
    "rel": "quant\\site\\strategy\\LX03.html",
    "ext": ".html",
    "bytes": 62496,
-   "mtime": "2026-11-06 06:17",
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
@@ -24895,15 +25250,15 @@
    "rel": "quant\\site\\strategy\\LX04.html",
    "ext": ".html",
    "bytes": 98058,
-   "mtime": "2026-11-06 06:17",
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\site\\strategy\\LX05.html",
    "rel": "quant\\site\\strategy\\LX05.html",
    "ext": ".html",
-   "bytes": 136699,
-   "mtime": "2026-11-06 06:17",
+   "bytes": 136697,
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
@@ -24911,7 +25266,7 @@
    "rel": "quant\\site\\strategy\\LX06.html",
    "ext": ".html",
    "bytes": 106325,
-   "mtime": "2026-11-06 06:17",
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
@@ -24919,7 +25274,7 @@
    "rel": "quant\\site\\strategy\\LX07.html",
    "ext": ".html",
    "bytes": 136447,
-   "mtime": "2026-11-06 06:17",
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
@@ -24927,7 +25282,7 @@
    "rel": "quant\\site\\strategy\\LX08.html",
    "ext": ".html",
    "bytes": 81596,
-   "mtime": "2026-11-06 06:17",
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
@@ -24935,23 +25290,23 @@
    "rel": "quant\\site\\strategy\\LX09.html",
    "ext": ".html",
    "bytes": 39990,
-   "mtime": "2026-11-06 06:17",
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\site\\strategy\\LX10.html",
    "rel": "quant\\site\\strategy\\LX10.html",
    "ext": ".html",
-   "bytes": 105557,
-   "mtime": "2026-11-06 06:17",
+   "bytes": 105558,
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\site\\strategy\\LX11.html",
    "rel": "quant\\site\\strategy\\LX11.html",
    "ext": ".html",
-   "bytes": 136713,
-   "mtime": "2026-11-06 06:17",
+   "bytes": 136714,
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
@@ -24959,7 +25314,7 @@
    "rel": "quant\\site\\strategy\\LX12.html",
    "ext": ".html",
    "bytes": 36677,
-   "mtime": "2026-11-06 06:17",
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
@@ -24967,15 +25322,15 @@
    "rel": "quant\\site\\strategy\\LX13.html",
    "ext": ".html",
    "bytes": 132494,
-   "mtime": "2026-11-06 06:17",
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\site\\strategy\\LX14.html",
    "rel": "quant\\site\\strategy\\LX14.html",
    "ext": ".html",
-   "bytes": 128768,
-   "mtime": "2026-11-06 06:17",
+   "bytes": 128909,
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
@@ -24983,15 +25338,15 @@
    "rel": "quant\\site\\strategy\\LX15.html",
    "ext": ".html",
    "bytes": 136128,
-   "mtime": "2026-11-06 06:17",
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\site\\strategy\\LX16.html",
    "rel": "quant\\site\\strategy\\LX16.html",
    "ext": ".html",
-   "bytes": 136695,
-   "mtime": "2026-11-06 06:17",
+   "bytes": 136486,
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
@@ -24999,15 +25354,15 @@
    "rel": "quant\\site\\strategy\\LX17.html",
    "ext": ".html",
    "bytes": 138537,
-   "mtime": "2026-11-06 06:17",
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\site\\strategy\\LX18.html",
    "rel": "quant\\site\\strategy\\LX18.html",
    "ext": ".html",
-   "bytes": 129566,
-   "mtime": "2026-11-06 06:17",
+   "bytes": 129572,
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
@@ -25015,7 +25370,7 @@
    "rel": "quant\\site\\strategy\\LX19.html",
    "ext": ".html",
    "bytes": 137966,
-   "mtime": "2026-11-06 06:17",
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
@@ -25023,7 +25378,7 @@
    "rel": "quant\\site\\strategy\\LX20.html",
    "ext": ".html",
    "bytes": 136430,
-   "mtime": "2026-11-06 06:17",
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
@@ -25031,7 +25386,7 @@
    "rel": "quant\\site\\strategy\\LX21.html",
    "ext": ".html",
    "bytes": 36690,
-   "mtime": "2026-11-06 06:17",
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
@@ -25039,7 +25394,7 @@
    "rel": "quant\\site\\strategy\\LX22.html",
    "ext": ".html",
    "bytes": 136444,
-   "mtime": "2026-11-06 06:17",
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
@@ -25047,7 +25402,7 @@
    "rel": "quant\\site\\strategy\\LX23.html",
    "ext": ".html",
    "bytes": 124870,
-   "mtime": "2026-11-06 06:17",
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
@@ -25055,7 +25410,7 @@
    "rel": "quant\\site\\strategy\\LX24.html",
    "ext": ".html",
    "bytes": 36669,
-   "mtime": "2026-11-06 06:17",
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
@@ -25063,7 +25418,7 @@
    "rel": "quant\\site\\strategy\\S01.html",
    "ext": ".html",
    "bytes": 48420,
-   "mtime": "2026-11-06 06:17",
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
@@ -25071,167 +25426,167 @@
    "rel": "quant\\site\\strategy\\S02.html",
    "ext": ".html",
    "bytes": 39986,
-   "mtime": "2026-11-06 06:17",
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\site\\trace\\20261008.html",
    "rel": "quant\\site\\trace\\20261008.html",
    "ext": ".html",
-   "bytes": 399440,
-   "mtime": "2026-11-06 06:17",
+   "bytes": 399462,
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\site\\trace\\20261009.html",
    "rel": "quant\\site\\trace\\20261009.html",
    "ext": ".html",
-   "bytes": 638598,
-   "mtime": "2026-11-06 06:17",
+   "bytes": 638632,
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\site\\trace\\20261012.html",
    "rel": "quant\\site\\trace\\20261012.html",
    "ext": ".html",
-   "bytes": 383500,
-   "mtime": "2026-11-06 06:17",
+   "bytes": 383522,
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\site\\trace\\20261013.html",
    "rel": "quant\\site\\trace\\20261013.html",
    "ext": ".html",
-   "bytes": 535873,
-   "mtime": "2026-11-06 06:17",
+   "bytes": 535897,
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\site\\trace\\20261014.html",
    "rel": "quant\\site\\trace\\20261014.html",
    "ext": ".html",
-   "bytes": 337064,
-   "mtime": "2026-11-06 06:17",
+   "bytes": 337086,
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\site\\trace\\20261015.html",
    "rel": "quant\\site\\trace\\20261015.html",
    "ext": ".html",
-   "bytes": 221585,
-   "mtime": "2026-11-06 06:17",
+   "bytes": 221602,
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\site\\trace\\20261016.html",
    "rel": "quant\\site\\trace\\20261016.html",
    "ext": ".html",
-   "bytes": 367844,
-   "mtime": "2026-11-06 06:17",
+   "bytes": 367862,
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\site\\trace\\20261019.html",
    "rel": "quant\\site\\trace\\20261019.html",
    "ext": ".html",
-   "bytes": 461094,
-   "mtime": "2026-11-06 06:17",
+   "bytes": 461120,
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\site\\trace\\20261020.html",
    "rel": "quant\\site\\trace\\20261020.html",
    "ext": ".html",
-   "bytes": 571140,
-   "mtime": "2026-11-06 06:17",
+   "bytes": 571176,
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\site\\trace\\20261021.html",
    "rel": "quant\\site\\trace\\20261021.html",
    "ext": ".html",
-   "bytes": 407244,
-   "mtime": "2026-11-06 06:17",
+   "bytes": 407265,
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\site\\trace\\20261022.html",
    "rel": "quant\\site\\trace\\20261022.html",
    "ext": ".html",
-   "bytes": 195168,
-   "mtime": "2026-11-06 06:17",
+   "bytes": 195177,
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\site\\trace\\20261023.html",
    "rel": "quant\\site\\trace\\20261023.html",
    "ext": ".html",
-   "bytes": 580365,
-   "mtime": "2026-11-06 06:17",
+   "bytes": 580398,
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\site\\trace\\20261026.html",
    "rel": "quant\\site\\trace\\20261026.html",
    "ext": ".html",
-   "bytes": 539656,
-   "mtime": "2026-11-06 06:17",
+   "bytes": 539687,
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\site\\trace\\20261027.html",
    "rel": "quant\\site\\trace\\20261027.html",
    "ext": ".html",
-   "bytes": 231519,
-   "mtime": "2026-11-06 06:17",
+   "bytes": 231527,
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\site\\trace\\20261028.html",
    "rel": "quant\\site\\trace\\20261028.html",
    "ext": ".html",
-   "bytes": 658838,
-   "mtime": "2026-11-06 06:17",
+   "bytes": 658871,
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\site\\trace\\20261029.html",
    "rel": "quant\\site\\trace\\20261029.html",
    "ext": ".html",
-   "bytes": 286156,
-   "mtime": "2026-11-06 06:17",
+   "bytes": 286163,
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\site\\trace\\20261030.html",
    "rel": "quant\\site\\trace\\20261030.html",
    "ext": ".html",
-   "bytes": 299213,
-   "mtime": "2026-11-06 06:17",
+   "bytes": 299225,
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\site\\trace\\20261102.html",
    "rel": "quant\\site\\trace\\20261102.html",
    "ext": ".html",
-   "bytes": 709737,
-   "mtime": "2026-11-06 06:17",
+   "bytes": 709790,
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\site\\trace\\20261103.html",
    "rel": "quant\\site\\trace\\20261103.html",
    "ext": ".html",
-   "bytes": 526380,
-   "mtime": "2026-11-06 06:17",
+   "bytes": 526410,
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
    "path": "C:\\项目\\deliverables\\quant\\site\\trace\\20261104.html",
    "rel": "quant\\site\\trace\\20261104.html",
    "ext": ".html",
-   "bytes": 880242,
-   "mtime": "2026-11-06 06:17",
+   "bytes": 880290,
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
@@ -25239,7 +25594,7 @@
    "rel": "quant\\site\\trace\\index.html",
    "ext": ".html",
    "bytes": 40583,
-   "mtime": "2026-11-06 06:17",
+   "mtime": "2026-11-07 08:56",
    "title": ""
   },
   {
@@ -25247,7 +25602,7 @@
    "rel": "quant\\strategy\\H18.html",
    "ext": ".html",
    "bytes": 12265,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -25255,7 +25610,7 @@
    "rel": "quant\\strategy\\LX01.html",
    "ext": ".html",
    "bytes": 19204,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -25263,7 +25618,7 @@
    "rel": "quant\\strategy\\LX02.html",
    "ext": ".html",
    "bytes": 19195,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -25271,7 +25626,7 @@
    "rel": "quant\\strategy\\LX03.html",
    "ext": ".html",
    "bytes": 13791,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -25279,7 +25634,7 @@
    "rel": "quant\\strategy\\LX04.html",
    "ext": ".html",
    "bytes": 17534,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -25287,7 +25642,7 @@
    "rel": "quant\\strategy\\LX05.html",
    "ext": ".html",
    "bytes": 19591,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -25295,7 +25650,7 @@
    "rel": "quant\\strategy\\LX06.html",
    "ext": ".html",
    "bytes": 18784,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -25303,7 +25658,7 @@
    "rel": "quant\\strategy\\LX07.html",
    "ext": ".html",
    "bytes": 19680,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -25311,7 +25666,7 @@
    "rel": "quant\\strategy\\LX08.html",
    "ext": ".html",
    "bytes": 16507,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -25319,7 +25674,7 @@
    "rel": "quant\\strategy\\LX09.html",
    "ext": ".html",
    "bytes": 11848,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -25327,7 +25682,7 @@
    "rel": "quant\\strategy\\LX10.html",
    "ext": ".html",
    "bytes": 18388,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -25335,7 +25690,7 @@
    "rel": "quant\\strategy\\LX11.html",
    "ext": ".html",
    "bytes": 19577,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -25343,7 +25698,7 @@
    "rel": "quant\\strategy\\LX12.html",
    "ext": ".html",
    "bytes": 11885,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -25351,7 +25706,7 @@
    "rel": "quant\\strategy\\LX13.html",
    "ext": ".html",
    "bytes": 18609,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -25359,7 +25714,7 @@
    "rel": "quant\\strategy\\LX14.html",
    "ext": ".html",
    "bytes": 19595,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -25367,7 +25722,7 @@
    "rel": "quant\\strategy\\LX15.html",
    "ext": ".html",
    "bytes": 19617,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -25375,7 +25730,7 @@
    "rel": "quant\\strategy\\LX16.html",
    "ext": ".html",
    "bytes": 19581,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -25383,7 +25738,7 @@
    "rel": "quant\\strategy\\LX17.html",
    "ext": ".html",
    "bytes": 19155,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -25391,7 +25746,7 @@
    "rel": "quant\\strategy\\LX18.html",
    "ext": ".html",
    "bytes": 19205,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -25399,7 +25754,7 @@
    "rel": "quant\\strategy\\LX19.html",
    "ext": ".html",
    "bytes": 19659,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -25407,7 +25762,7 @@
    "rel": "quant\\strategy\\LX20.html",
    "ext": ".html",
    "bytes": 19627,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -25415,7 +25770,7 @@
    "rel": "quant\\strategy\\LX21.html",
    "ext": ".html",
    "bytes": 11898,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -25423,7 +25778,7 @@
    "rel": "quant\\strategy\\LX22.html",
    "ext": ".html",
    "bytes": 19623,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -25431,7 +25786,7 @@
    "rel": "quant\\strategy\\LX23.html",
    "ext": ".html",
    "bytes": 19148,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -25439,7 +25794,7 @@
    "rel": "quant\\strategy\\LX24.html",
    "ext": ".html",
    "bytes": 11877,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -25447,7 +25802,7 @@
    "rel": "quant\\strategy\\S01.html",
    "ext": ".html",
    "bytes": 12610,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -25455,7 +25810,7 @@
    "rel": "quant\\strategy\\S02.html",
    "ext": ".html",
    "bytes": 12253,
-   "mtime": "2026-11-06 05:45",
+   "mtime": "2026-11-07 08:28",
    "title": ""
   },
   {
@@ -26083,6 +26438,198 @@
    "title": ""
   },
   {
+   "path": "C:\\项目\\deliverables\\watch_24h_review_2026-11-06.json",
+   "rel": "watch_24h_review_2026-11-06.json",
+   "ext": ".json",
+   "bytes": 1486,
+   "mtime": "2026-11-06 23:56",
+   "title": ""
+  },
+  {
+   "path": "C:\\项目\\deliverables\\watch_closeout_incident_2026-11-06\\2026-11-06_watch_24h复盘_v1.md",
+   "rel": "watch_closeout_incident_2026-11-06\\2026-11-06_watch_24h复盘_v1.md",
+   "ext": ".md",
+   "bytes": 1337,
+   "mtime": "2026-11-06 23:56",
+   "title": "Watch 24h 心跳/告警观察复盘"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\watch_closeout_incident_2026-11-06\\alert_receipt.md",
+   "rel": "watch_closeout_incident_2026-11-06\\alert_receipt.md",
+   "ext": ".md",
+   "bytes": 400,
+   "mtime": "2026-11-06 23:53",
+   "title": "quant_group 告警发送回执"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\watch_closeout_incident_2026-11-06\\dryrun.json",
+   "rel": "watch_closeout_incident_2026-11-06\\dryrun.json",
+   "ext": ".json",
+   "bytes": 1513,
+   "mtime": "2026-11-06 23:49",
+   "title": ""
+  },
+  {
+   "path": "C:\\项目\\deliverables\\watch_closeout_incident_2026-11-06\\files_presence.json",
+   "rel": "watch_closeout_incident_2026-11-06\\files_presence.json",
+   "ext": ".json",
+   "bytes": 109,
+   "mtime": "2026-11-06 23:49",
+   "title": ""
+  },
+  {
+   "path": "C:\\项目\\deliverables\\watch_closeout_incident_2026-11-06\\force_close_console.txt",
+   "rel": "watch_closeout_incident_2026-11-06\\force_close_console.txt",
+   "ext": ".txt",
+   "bytes": 308,
+   "mtime": "2026-11-06 23:56",
+   "title": ""
+  },
+  {
+   "path": "C:\\项目\\deliverables\\watch_closeout_incident_2026-11-06\\next_round_setup_20261107.md",
+   "rel": "watch_closeout_incident_2026-11-06\\next_round_setup_20261107.md",
+   "ext": ".md",
+   "bytes": 1575,
+   "mtime": "2026-11-07 07:51",
+   "title": "下一轮 Watch 24h 设置（2026-11-07 07:48）"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\watch_closeout_incident_2026-11-06\\observe_24h.closed",
+   "rel": "watch_closeout_incident_2026-11-06\\observe_24h.closed",
+   "ext": ".closed",
+   "bytes": 1486,
+   "mtime": "2026-11-06 23:56",
+   "title": ""
+  },
+  {
+   "path": "C:\\项目\\deliverables\\watch_closeout_incident_2026-11-06\\observe_24h_pre_force_close.jsonl",
+   "rel": "watch_closeout_incident_2026-11-06\\observe_24h_pre_force_close.jsonl",
+   "ext": ".jsonl",
+   "bytes": 29283,
+   "mtime": "2026-11-06 23:52",
+   "title": ""
+  },
+  {
+   "path": "C:\\项目\\deliverables\\watch_closeout_incident_2026-11-06\\observe_24h_snapshot.jsonl",
+   "rel": "watch_closeout_incident_2026-11-06\\observe_24h_snapshot.jsonl",
+   "ext": ".jsonl",
+   "bytes": 28981,
+   "mtime": "2026-11-06 23:42",
+   "title": ""
+  },
+  {
+   "path": "C:\\项目\\deliverables\\watch_closeout_incident_2026-11-06\\observe_alert_last_pre_force_close.json",
+   "rel": "watch_closeout_incident_2026-11-06\\observe_alert_last_pre_force_close.json",
+   "ext": ".json",
+   "bytes": 112,
+   "mtime": "2026-11-06 09:25",
+   "title": ""
+  },
+  {
+   "path": "C:\\项目\\deliverables\\watch_closeout_incident_2026-11-06\\post_close_probe.txt",
+   "rel": "watch_closeout_incident_2026-11-06\\post_close_probe.txt",
+   "ext": ".txt",
+   "bytes": 222,
+   "mtime": "2026-11-06 23:58",
+   "title": ""
+  },
+  {
+   "path": "C:\\项目\\deliverables\\watch_closeout_incident_2026-11-06\\README.md",
+   "rel": "watch_closeout_incident_2026-11-06\\README.md",
+   "ext": ".md",
+   "bytes": 3226,
+   "mtime": "2026-11-06 23:58",
+   "title": "Watch24hCloseout 2026-11-06 未执行异常证据"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\watch_closeout_incident_2026-11-06\\task_config_review_2026-11-07.md",
+   "rel": "watch_closeout_incident_2026-11-06\\task_config_review_2026-11-07.md",
+   "ext": ".md",
+   "bytes": 2670,
+   "mtime": "2026-11-07 00:25",
+   "title": "Watch24hCloseout 配置复核（2026-11-07 00:23）"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\watch_closeout_incident_2026-11-06\\task_definition.xml",
+   "rel": "watch_closeout_incident_2026-11-06\\task_definition.xml",
+   "ext": ".xml",
+   "bytes": 1531,
+   "mtime": "2026-11-06 23:49",
+   "title": ""
+  },
+  {
+   "path": "C:\\项目\\deliverables\\watch_closeout_incident_2026-11-06\\task_definition_post_next_round_20261107.xml",
+   "rel": "watch_closeout_incident_2026-11-06\\task_definition_post_next_round_20261107.xml",
+   "ext": ".xml",
+   "bytes": 1584,
+   "mtime": "2026-11-07 07:48",
+   "title": ""
+  },
+  {
+   "path": "C:\\项目\\deliverables\\watch_closeout_incident_2026-11-06\\task_definition_post_settings_20261107.xml",
+   "rel": "watch_closeout_incident_2026-11-06\\task_definition_post_settings_20261107.xml",
+   "ext": ".xml",
+   "bytes": 1584,
+   "mtime": "2026-11-07 00:33",
+   "title": ""
+  },
+  {
+   "path": "C:\\项目\\deliverables\\watch_closeout_incident_2026-11-06\\task_definition_pre_next_round_20261107.xml",
+   "rel": "watch_closeout_incident_2026-11-06\\task_definition_pre_next_round_20261107.xml",
+   "ext": ".xml",
+   "bytes": 1584,
+   "mtime": "2026-11-07 07:47",
+   "title": ""
+  },
+  {
+   "path": "C:\\项目\\deliverables\\watch_closeout_incident_2026-11-06\\task_definition_pre_settings_20261107.xml",
+   "rel": "watch_closeout_incident_2026-11-06\\task_definition_pre_settings_20261107.xml",
+   "ext": ".xml",
+   "bytes": 1531,
+   "mtime": "2026-11-07 00:33",
+   "title": ""
+  },
+  {
+   "path": "C:\\项目\\deliverables\\watch_closeout_incident_2026-11-06\\task_info.json",
+   "rel": "watch_closeout_incident_2026-11-06\\task_info.json",
+   "ext": ".json",
+   "bytes": 791,
+   "mtime": "2026-11-06 23:49",
+   "title": ""
+  },
+  {
+   "path": "C:\\项目\\deliverables\\watch_closeout_incident_2026-11-06\\task_settings_update_20261107.md",
+   "rel": "watch_closeout_incident_2026-11-06\\task_settings_update_20261107.md",
+   "ext": ".md",
+   "bytes": 1151,
+   "mtime": "2026-11-07 00:34",
+   "title": "Watch24hCloseout 设置更新（2026-11-07 00:33）"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\watch_closeout_incident_2026-11-06\\watch_24h_review_2026-11-06.json",
+   "rel": "watch_closeout_incident_2026-11-06\\watch_24h_review_2026-11-06.json",
+   "ext": ".json",
+   "bytes": 1486,
+   "mtime": "2026-11-06 23:56",
+   "title": ""
+  },
+  {
+   "path": "C:\\项目\\deliverables\\watch_closeout_incident_2026-11-06\\watch_engine_status_pre_force_close.json",
+   "rel": "watch_closeout_incident_2026-11-06\\watch_engine_status_pre_force_close.json",
+   "ext": ".json",
+   "bytes": 1024,
+   "mtime": "2026-11-06 13:26",
+   "title": ""
+  },
+  {
+   "path": "C:\\项目\\deliverables\\watch_closeout_incident_2026-11-06\\watch_engine_status_snapshot.json",
+   "rel": "watch_closeout_incident_2026-11-06\\watch_engine_status_snapshot.json",
+   "ext": ".json",
+   "bytes": 1024,
+   "mtime": "2026-11-06 13:26",
+   "title": ""
+  },
+  {
    "path": "C:\\项目\\deliverables\\watching-standard-capability-v1.0.md",
    "rel": "watching-standard-capability-v1.0.md",
    "ext": ".md",
@@ -26225,6 +26772,14 @@
    "bytes": 2092,
    "mtime": "2026-10-19 19:08",
    "title": "个人 OS · 议事厅 G3 并行开发集成验收"
+  },
+  {
+   "path": "C:\\项目\\deliverables\\交付物索引_zerobound-kg与风险护栏_v1.md",
+   "rel": "交付物索引_zerobound-kg与风险护栏_v1.md",
+   "ext": ".md",
+   "bytes": 2559,
+   "mtime": "2026-11-07 07:53",
+   "title": "交付物统一索引（zerobound-kg / RiskGuard / 实体解析）"
   },
   {
    "path": "C:\\项目\\deliverables\\六度选股_Agent工作台_生产化稿.html",

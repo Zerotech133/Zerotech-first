@@ -15,6 +15,8 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import notification_decision as nd
 import push_admin_server as admin
+# 本文件只打本机自启服务：回环请求禁代理（safe_urlopen 内含 127.0.0.1 豁免）
+from safe_urlopen import safe_urlopen  # noqa: E402
 
 
 @pytest.fixture
@@ -251,32 +253,32 @@ def test_decision_http_reads_and_preview_require_key(isolated, monkeypatch):
                 body = json.dumps(isolated).encode() if path.endswith("preview") else None
                 req = urllib.request.Request(base + path, data=body, headers=headers)
                 with pytest.raises(urllib.error.HTTPError) as error:
-                    urllib.request.urlopen(req, timeout=2)
+                    safe_urlopen(req, timeout=2)
                 assert error.value.code == 403
                 error.value.close()
         assert not calls
         for key in ("test-only-key", "test-client-key", "test-hermes-key"):
             for path in ("/api/decisions", "/api/decision-groups"):
                 req = urllib.request.Request(base + path, headers={"X-Decision-Key": key})
-                with urllib.request.urlopen(req, timeout=2) as response:
+                with safe_urlopen(req, timeout=2) as response:
                     assert json.load(response)["ok"]
         req = urllib.request.Request(base + "/api/decisions/preview",
                                      data=json.dumps(isolated).encode(),
                                      headers={"X-Decision-Key": "test-only-key"})
-        with urllib.request.urlopen(req, timeout=2) as response:
+        with safe_urlopen(req, timeout=2) as response:
             assert json.load(response)["ok"]
         assert len(calls) == 3
         hermes = {**isolated, "id": str(uuid.uuid4()), "agent_source": "hermes", "operator": "Hermes"}
         for key in ("test-only-key", "test-client-key"):
             req = urllib.request.Request(base + "/api/decisions/record", data=json.dumps(hermes).encode(), headers={"X-Decision-Key": key})
-            with urllib.request.urlopen(req, timeout=2) as response:
+            with safe_urlopen(req, timeout=2) as response:
                 assert not json.load(response)["ok"]
         req = urllib.request.Request(base + "/api/decisions/record", data=json.dumps(hermes).encode(), headers={"X-Decision-Key": "test-hermes-key"})
-        with urllib.request.urlopen(req, timeout=2) as response:
+        with safe_urlopen(req, timeout=2) as response:
             assert json.load(response)["decision"]["agent_source"] == "hermes"
         req = urllib.request.Request(base + "/api/decisions/execute", data=json.dumps({"id": hermes["id"]}).encode(), headers={"X-Decision-Key": "test-hermes-key"})
         with pytest.raises(urllib.error.HTTPError) as error:
-            urllib.request.urlopen(req, timeout=2)
+            safe_urlopen(req, timeout=2)
         assert error.value.code == 403
         error.value.close()
     finally:
@@ -304,7 +306,7 @@ def test_announcement_http_approve_requires_admin_key(isolated, monkeypatch):
             req = urllib.request.Request(base + path, data=json.dumps(body).encode(),
                                          headers={"X-Decision-Key": key})
             try:
-                with urllib.request.urlopen(req, timeout=2) as response:
+                with safe_urlopen(req, timeout=2) as response:
                     return response.status, json.load(response)
             except urllib.error.HTTPError as error:
                 with error:
@@ -357,41 +359,41 @@ def test_sensitive_endpoints_and_open_stats_isolation(isolated, monkeypatch):
                             {"X-Push-Hub-Key": "wrong"}):
                 req = urllib.request.Request(base + path, data=json.dumps(body).encode() if body else None, headers=headers)
                 with pytest.raises(urllib.error.HTTPError) as error:
-                    urllib.request.urlopen(req, timeout=2)
+                    safe_urlopen(req, timeout=2)
                 assert error.value.code == 403
                 error.value.close()
         assert not sent
         for path in ("/api/state?key=admin-secret", "/api/act?key=admin-secret", "/api/send?key=hub-secret"):
             req = urllib.request.Request(base + path, data=b'{}' if path.startswith(("/api/act", "/api/send")) else None)
             with pytest.raises(urllib.error.HTTPError) as error:
-                urllib.request.urlopen(req, timeout=2)
+                safe_urlopen(req, timeout=2)
             assert error.value.code == 403
             error.value.close()
         req = urllib.request.Request(base + "/api/state", headers={"X-Push-Admin-Key": "admin-secret"})
-        with urllib.request.urlopen(req, timeout=2) as response:
+        with safe_urlopen(req, timeout=2) as response:
             state = json.load(response)
         assert "commercial-secret" not in json.dumps(state)
         for action in ("set_biz", "regen_apikey"):
             req = urllib.request.Request(base + "/api/act", data=json.dumps({"action": action}).encode(),
                                          headers={"X-Push-Admin-Key": "admin-secret"})
-            with urllib.request.urlopen(req, timeout=2) as response:
+            with safe_urlopen(req, timeout=2) as response:
                 result = json.load(response)
             assert result["ok"] and "apikey" not in result["biz"]
             assert saved_biz["apikey"] not in json.dumps(result)
         req = urllib.request.Request(base + "/api/act", data=b'{"action":"probe"}', headers={"X-Push-Admin-Key": "admin-secret"})
-        with urllib.request.urlopen(req, timeout=2) as response:
+        with safe_urlopen(req, timeout=2) as response:
             assert json.load(response)["action"] == "probe"
         req = urllib.request.Request(base + "/api/send", data=b'{"content":"test","receive_id":"oc_mock"}', headers={"X-Push-Hub-Key": "hub-secret"})
-        with urllib.request.urlopen(req, timeout=2) as response:
+        with safe_urlopen(req, timeout=2) as response:
             assert json.load(response)["ok"]
         assert len(sent) == 1
         req = urllib.request.Request(base + "/api/open/stats", headers={"X-Push-Admin-Key": "admin-secret"})
         with pytest.raises(urllib.error.HTTPError) as error:
-            urllib.request.urlopen(req, timeout=2)
+            safe_urlopen(req, timeout=2)
         assert error.value.code == 403
         error.value.close()
         req = urllib.request.Request(base + "/api/open/stats", headers={"X-API-Key": saved_biz["apikey"]})
-        with urllib.request.urlopen(req, timeout=2) as response:
+        with safe_urlopen(req, timeout=2) as response:
             assert json.load(response)["ok"]
     finally:
         server.shutdown()

@@ -1,0 +1,1537 @@
+{
+  "version": 1,
+  "generated_at": "2026-11-07",
+  "note": "增量门禁基线：已登记项不阻塞，未登记的新增项 exit 1。清理存量后请同步删除对应条目并跑 --refresh-baseline 复核。",
+  "entries": {
+    "xe0a250a1a78f29a": {
+      "path": "portal/agent_auto_commit.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x5e6095e7116866f": {
+      "path": "portal/api_backtest_jobs.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "p = subprocess.Popen(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x791b12291a380d3": {
+      "path": "portal/api_common_sched.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "r = subprocess.run(cmd, capture_output=True, timeout=timeout,",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xf7ae775080b71e8": {
+      "path": "portal/api_common_sched.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "p = subprocess.Popen(cmd, stdout=lf, stderr=lf,",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x39c727e626d5f1d": {
+      "path": "portal/api_flow.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "r = subprocess.run([\"schtasks\", \"/Run\", \"/TN\", task],",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x10c75e826ea5efd": {
+      "path": "portal/api_model_admin.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "subprocess.Popen([\"powershell\", \"-NoProfile\", \"-ExecutionPolicy\", \"Bypass\",",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x4bc47cb45911f61": {
+      "path": "portal/api_model_admin.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "subprocess.Popen([exe] + args, creationflags=flags, close_fds=True,",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x0f3e1cb7684f2ca": {
+      "path": "portal/api_portfolio.py",
+      "rule": "R1_win_only_import",
+      "level": "BLOCK",
+      "code": "import msvcrt as _msvcrt",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x501b33314bf80f8": {
+      "path": "portal/api_portfolio.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "_SIMRUN[\"p\"] = subprocess.Popen(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xe92631442082299": {
+      "path": "portal/km_feishu_hub.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "subprocess.Popen(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x982fb5c069c45dc": {
+      "path": "portal/m_strategy.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "subprocess.Popen(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x16306470cc5c1ae": {
+      "path": "portal/os_goal_store.py",
+      "rule": "R1_win_only_import",
+      "level": "BLOCK",
+      "code": "import msvcrt",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x1863b2cc15c8650": {
+      "path": "portal/os_goal_store.py",
+      "rule": "R1_win_only_import",
+      "level": "BLOCK",
+      "code": "import msvcrt",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xfd2235ce253f13a": {
+      "path": "portal/publish_schedule_server.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "subprocess.Popen(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x268b50d9cd16e6f": {
+      "path": "portal/push_admin_server.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "sp.Popen(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xe6a262a37dd006c": {
+      "path": "portal/push_matrix_send.py",
+      "rule": "R1_win_only_import",
+      "level": "BLOCK",
+      "code": "import msvcrt as _msvcrt",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x1bb15733263f544": {
+      "path": "portal/setup_tunnel_api.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "subprocess.Popen(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x96c71f56ed07b90": {
+      "path": "portal/start_feishu_bot.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "subprocess.Popen(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x30ca26b238a64cd": {
+      "path": "portal/tune_gate.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "subprocess.Popen(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x4d4574a63729890": {
+      "path": "portal/warehouse_update_services.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "process = subprocess.Popen(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xd1c175b8b48b97d": {
+      "path": "agent_platform/evals/incident_to_test.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x7a498e57374d3cc": {
+      "path": "agent_platform/legion_command/governance_kpi.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run([\"git\", \"-C\", str(repo), \"worktree\", \"list\", \"--porcelain\"],",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x493f1c48f77a8bf": {
+      "path": "agent_platform/legion_command/ide_worktree.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "st = _run([\"git\", \"-C\", str(wt), \"status\", \"--porcelain\"])",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x4efd402e0889fb8": {
+      "path": "agent_platform/legion_command/ide_worktree.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "stat = _run([\"git\", \"-C\", str(wt), \"diff\", \"--stat\"])",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xc3df106524c6dd3": {
+      "path": "agent_platform/legion_command/ide_worktree.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "body = _run([\"git\", \"-C\", str(wt), \"diff\", \"--no-ext-diff\", \"--unified=3\"])",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xd88dacba663663b": {
+      "path": "agent_platform/legion_command/ide_worktree.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "st = _run([\"git\", \"-C\", str(wt), \"status\", \"--porcelain\"])",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x7fe75ef6776d986": {
+      "path": "agent_platform/legion_command/ide_worktree.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "add = _run([\"git\", \"-C\", str(wt), \"add\", \"-A\", \"--\", \".\"])",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x4b0c09f38da3613": {
+      "path": "agent_platform/legion_command/ide_worktree.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = _run([\"git\", \"-C\", str(wt), \"commit\", \"-m\", msg], timeout=120)",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x44556fe0966eb9b": {
+      "path": "agent_platform/legion_command/ide_worktree.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "has_branch = _run([\"git\", \"-C\", str(REPO), \"rev-parse\", \"--verify\",",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xe1f4e4db6a9e2e3": {
+      "path": "agent_platform/legion_command/ide_worktree.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = _run([\"git\", \"-C\", str(REPO), \"worktree\", \"add\", str(path), branch], timeout=120)",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xf0230d5e2dcacf9": {
+      "path": "agent_platform/legion_command/ide_worktree.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = _run([\"git\", \"-C\", str(REPO), \"worktree\", \"add\", \"-b\", branch,",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x9b6bd9d0a3a93aa": {
+      "path": "agent_platform/legion_command/ide_worktree.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "sha = _run([\"git\", \"-C\", str(wt), \"rev-parse\", \"--short\", \"HEAD\"])[\"out\"]",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x27a0a2a6f358ad7": {
+      "path": "agent_platform/legion_command/ide_worktree.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "\"branch\": _run([\"git\", \"-C\", str(wt), \"branch\", \"--show-current\"])[\"out\"],",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xee369450fe0b82e": {
+      "path": "agent_platform/legion_command/mission_dispatch.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = _run([\"git\", \"-C\", str(wt), \"rev-list\", \"--count\", \"master..HEAD\"], timeout=30)",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x7e18b7fdabc7259": {
+      "path": "agent_platform/legion_ide/serve.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "proc = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xc8c0b4034bacbb4": {
+      "path": "agent_platform/memory/vector.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x7db0996a46511b2": {
+      "path": "agent_platform/repair/lane.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xdec4941f15bdda9": {
+      "path": "agent_platform/skills/backup-bundles/scripts/verify.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x124bf1299d6d366": {
+      "path": "agent_platform/skills/case-sign-chain/scripts/verify.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x7c5919caa96b873": {
+      "path": "agent_platform/skills/council-hall/scripts/verify.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xbb8574b4d6c3426": {
+      "path": "agent_platform/skills/docs-archive/scripts/verify.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x72ea4c5daf78365": {
+      "path": "agent_platform/skills/experience-write/scripts/verify.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x39aa99387596d33": {
+      "path": "agent_platform/skills/governance-ai/scripts/verify.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xc87ab580934929b": {
+      "path": "agent_platform/skills/harness-runner/scripts/verify.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x1c67c3ac2106c09": {
+      "path": "agent_platform/skills/health-card/scripts/verify.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xcc9380545a821fa": {
+      "path": "agent_platform/skills/huangzhong/scripts/verify.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x497808d5b2c95b8": {
+      "path": "agent_platform/skills/llm-deepseek/scripts/verify.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xeceb5d863f0051a": {
+      "path": "agent_platform/skills/lookahead-guard/scripts/verify.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x289fa584e0394f8": {
+      "path": "agent_platform/skills/mutual-review/scripts/verify.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x64dae8b1ee5c42f": {
+      "path": "agent_platform/skills/task-exit-audit/scripts/verify.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xa4a5e62087d4563": {
+      "path": "agent_platform/skills/task-launch-probe/scripts/verify.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xf32590e781e20c2": {
+      "path": "agent_platform/skills/worktree-hygiene/scripts/verify.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x498cc0e1bdd3b79": {
+      "path": "agent_platform/tests/test_legion_ide_http.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "subprocess.run([\"git\", \"-C\", str(cwd), *args], check=True,",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x2d04518bda5f6e4": {
+      "path": "agent_platform/tools/start_tuned_ollama.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "proc = subprocess.Popen(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x87429e005a1e78d": {
+      "path": "tools/agent_daily.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "proc = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x85e9a0881a3c4f2": {
+      "path": "tools/bundle_phase2_dryrun.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "return _run([\"git\", \"-C\", str(repo), *args])",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x1e3ed5966930845": {
+      "path": "tools/check_dirty.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run([\"git\", \"-C\", str(REPO), \"-c\", \"core.quotepath=false\",",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x82c34f2a03bf130": {
+      "path": "tools/check_dirty.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run([\"git\", \"-C\", str(REPO), \"log\", \"-1\", \"--format=%an <%ae>\",",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xd161dde594e96c4": {
+      "path": "tools/check_syntax.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "out = subprocess.run([\"git\", \"-C\", str(base), \"ls-files\", \"*.py\"], capture_output=True,",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xbeab18d5ff0baa4": {
+      "path": "tools/devtask.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run([\"git\", \"-C\", REPO, \"diff\", \"--name-only\",",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x0c28de7b0a2f0b5": {
+      "path": "tools/devtask.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run([\"git\", \"-C\", REPO, \"diff\", \"--name-only\",",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xce675d1d1a25edd": {
+      "path": "tools/devtask.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "st = subprocess.run([\"git\", \"-C\", REPO, \"status\", \"--porcelain\"],",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xc12d1e52654268f": {
+      "path": "tools/devtask.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run([\"git\", \"-C\", wt, \"log\", \"-1\", \"--format=%B\", ref],",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xed51a28ca940c16": {
+      "path": "tools/devtask.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "subprocess.run([\"git\", \"-C\", REPO, \"worktree\", \"add\", wt, \"task/%s\" % tid],",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x9c9fa3b59c5a7e5": {
+      "path": "tools/devtask.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "head = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x12ef42a6855cf19": {
+      "path": "tools/download_dflash2_hybrid.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "subprocess.Popen([py, os.path.abspath(__file__)], creationflags=flags,",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xa66d10078585317": {
+      "path": "tools/git_worktree_guard.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "return subprocess.run([\"git\", \"-C\", str(repo), *args], capture_output=True,",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x6b6a3d832b1fb8b": {
+      "path": "tools/git_worktree_guard.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "log(\"[ERR] core.bare 修复失败；请手工执行: git -C <repo> config core.bare false\")",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x24929eae1df7fb3": {
+      "path": "tools/huangzhong_blind_audit.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x3ebaf32fd77aafe": {
+      "path": "tools/huangzhong_drill.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run([\"git\", \"-C\", str(repo_root), \"rev-parse\", \"HEAD\"],",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xd3d8ba7cc873f21": {
+      "path": "tools/huangzhong_evidence_lint.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x6dd71169b6dbf36": {
+      "path": "tools/huangzhong_ops.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x83012314bcdf32e": {
+      "path": "tools/intel_entity_extract.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "proc = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xc9b8f447a773ebe": {
+      "path": "tools/m1_evidence_pack.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "proc = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x971cf46c801e3b5": {
+      "path": "tools/m1_evidence_pack.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "proc = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x5b7de641acb45b8": {
+      "path": "tools/merge_gated.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run([\"git\", \"-C\", str(REPO), \"-c\", \"core.quotepath=false\",",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x86847958c28f0d3": {
+      "path": "tools/merge_gated.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run([\"git\", \"-C\", str(REPO), \"-c\", \"core.quotepath=false\",",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xd14c0b177b3a18f": {
+      "path": "tools/merge_gated.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run([\"git\", \"-C\", str(repo), \"show\", \"%s:%s\" % (ref, rel)],",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x12f546173105714": {
+      "path": "tools/merge_preflight.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run([\"git\", \"-C\", str(REPO), *args],",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xeeab415eae6a640": {
+      "path": "tools/merge_preflight.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run([\"git\", \"-C\", str(REPO), \"-c\", \"core.quotepath=false\",",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x4a746d37881d253": {
+      "path": "tools/merge_preflight.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run([\"git\", \"-C\", str(REPO), \"-c\", \"core.quotepath=false\",",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xcea08323bb76e8e": {
+      "path": "tools/phoenix_start.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "subprocess.Popen(cmd, cwd=str(ROOT), stdout=f, stderr=f,",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xbfe2ecfd0d7b7e0": {
+      "path": "tools/power_watch.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "proc = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xefe901501ceb334": {
+      "path": "tools/prune_worktrees.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "p = subprocess.run([\"git\", \"-C\", str(REPO), *args],",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x14ad1fdf366ecdb": {
+      "path": "tools/prune_worktrees.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "p = subprocess.run([\"git\", \"-C\", str(wt), *a], capture_output=True,",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x87e9fc8a038749d": {
+      "path": "tools/prune_worktrees.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "rc, out = subprocess.run([\"git\", \"-C\", str(wt), \"rev-parse\", \"--abbrev-ref\", \"HEAD\"],",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x1bacbd0ae01bac5": {
+      "path": "tools/q2_rollback_dryrun.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x8986c5b8ce00cc8": {
+      "path": "tools/r1_daily_check.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "proc = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xaf4cdb3e389e708": {
+      "path": "tools/release_provenance.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "head = subprocess.run([\"git\", \"-C\", str(repo), \"rev-parse\", \"HEAD\"],",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x776543c05c3fbf6": {
+      "path": "tools/release_provenance.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "status = subprocess.run([\"git\", \"-C\", str(repo), \"status\", \"--porcelain\"],",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xb956dbbd4427daf": {
+      "path": "tools/rotate_logs.py",
+      "rule": "R1_win_only_import",
+      "level": "BLOCK",
+      "code": "import winreg",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xa402fb20ab6ce22": {
+      "path": "tools/sandbox_verify.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "cp = subprocess.run([\"git\", \"-C\", str(repo), \"worktree\", \"add\", \"--detach\",",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x5d5ce46f6f9d3de": {
+      "path": "tools/sandbox_verify.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "subprocess.run([\"git\", \"-C\", str(repo), \"worktree\", \"remove\", \"--force\",",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x8a5d5ef0de76a19": {
+      "path": "tools/sandbox_verify.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "sha = subprocess.run([\"git\", \"-C\", str(repo), \"rev-parse\", \"HEAD\"],",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xdfdc1b076202c71": {
+      "path": "tools/secret_scan_gitleaks.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run([\"git\", \"-C\", str(base), \"diff\", \"--name-only\", diff_spec],",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x690d43b0d96cb91": {
+      "path": "tools/security_gate.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "cp = subprocess.run([\"git\", \"-C\", str(REPO), \"diff\", \"--name-only\", \"HEAD\"], capture_output=True,",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xd770bb2dac64277": {
+      "path": "tools/task_ledger_reconcile.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "return run([\"git\", \"-C\", str(repo), *args])",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x2f569e4f7e1958c": {
+      "path": "tools/triples_outcome_backfill.py",
+      "rule": "R1_win_only_import",
+      "level": "BLOCK",
+      "code": "import winreg",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x022c426a11510a6": {
+      "path": "tools/ui_visual_gate.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run([\"git\", \"-C\", str(REPO), \"diff\", \"--name-only\",",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x33c1dcfe19aa8a7": {
+      "path": "tools/w0_inventory.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "rc, out = _run([\"git\", \"-C\", str(path), \"status\", \"--porcelain\"], timeout=20)",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xf7361c5c13b85cc": {
+      "path": "tools/w0_inventory.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "rc, _ = _run([\"git\", \"-C\", str(path), \"merge-base\", \"--is-ancestor\", \"HEAD\", \"master\"], timeout=20)",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x4d151ee9fc9f8cb": {
+      "path": "tools/w0_prep_merge.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "rc, out = _run([\"git\", \"-C\", str(wt), \"diff\", \"--name-only\", \"master...HEAD\"])",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x33220dc085db8e7": {
+      "path": "tools/worktree_invariant_check.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "proc = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x6e54115f3d6c64a": {
+      "path": "tools/zhaoyun_daily.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "wt = _run([\"git\", \"-C\", str(REPO), \"worktree\", \"list\", \"--porcelain\"])",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xdb4601e32a48bd8": {
+      "path": "tools/branch_audit/conflict_classify.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run([\"git\", \"-C\", REPO, \"cat-file\", \"blob\", \"%s:%s\" % (rev, path)],",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x97b027eab56ef95": {
+      "path": "tools/branch_audit/conflict_classify.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "REPO = subprocess.run([\"git\", \"-C\", _here, \"rev-parse\", \"--show-toplevel\"],",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x52d16b0c8df8045": {
+      "path": "tools/branch_audit/conflict_effort.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "REPO = subprocess.run([\"git\", \"-C\", _here, \"rev-parse\", \"--show-toplevel\"],",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x3a6fb043126f57c": {
+      "path": "tools/branch_audit/conflict_nature.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run([\"git\", \"-C\", REPO, \"cat-file\", \"blob\", \"%s:%s\" % (rev, path)],",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x4b415e8460404b2": {
+      "path": "tools/branch_audit/conflict_nature.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "REPO = subprocess.run([\"git\", \"-C\", _here, \"rev-parse\", \"--show-toplevel\"],",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x823a7f1d3c6cd0a": {
+      "path": "tools/branch_audit/dominance.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "REPO = subprocess.run([\"git\", \"-C\", _here, \"rev-parse\", \"--show-toplevel\"],",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x73c65eec822e13c": {
+      "path": "tools/branch_audit/missing_vs_both.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "REPO = subprocess.run([\"git\", \"-C\", _here, \"rev-parse\", \"--show-toplevel\"],",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x41d10caed8ce94b": {
+      "path": "tools/branch_audit/recency.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "REPO = subprocess.run([\"git\", \"-C\", _here, \"rev-parse\", \"--show-toplevel\"],",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x0063982a8443a00": {
+      "path": "tools/datawarehouse/tdx_sync_probe.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "proc = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x36c2365b6903012": {
+      "path": "tools/secrets/render_mcp.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "res = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x756e5cd7f0f92a3": {
+      "path": "tools/secrets/vault.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "res = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x33c7822d82d17cc": {
+      "path": "tools/tests/test_auto_rebuild_ide_bundle.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "return subprocess.run([\"git\", \"-C\", str(repo), *args], capture_output=True,",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x6f0ca5ea9a033c5": {
+      "path": "tools/tests/test_bundle_phase2b.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "return subprocess.run([\"git\", \"-C\", str(ROOT), *args], capture_output=True,",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x66cd4afaed5f066": {
+      "path": "tools/tests/test_bundle_phase2_dryrun.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "return subprocess.run([\"git\", \"-C\", str(ROOT), *args], capture_output=True,",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x95bacab15e5ca44": {
+      "path": "tools/tests/test_devtask_git_health.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "subprocess.run([\"git\", \"-C\", str(repo), \"config\", \"core.bare\", \"true\"], check=True)",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x9b5eaba0ff0948c": {
+      "path": "tools/tests/test_devtask_git_health.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run([\"git\", \"-C\", str(repo), \"config\", \"core.bare\"],",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xbc876a33c9d2226": {
+      "path": "tools/tests/test_devtask_worktree_mech.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "out = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xc2373c3eb169200": {
+      "path": "tools/tests/test_git_worktree_guard.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "return subprocess.run([\"git\", \"-C\", str(repo), *args], capture_output=True,",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xe4cc98135cba45c": {
+      "path": "tools/tests/test_merge_gate_trust.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "r = subprocess.run([\"git\", \"-C\", str(repo), *args], capture_output=True, text=True,",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x8d7181927a0793f": {
+      "path": "tools/tests/test_ops_tools.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x7f18c9eac51f8b8": {
+      "path": "tools/tests/test_q2_close.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "before = subprocess.run([\"git\", \"-C\", str(ROOT), \"rev-parse\", \"HEAD\"],",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x246e9919c6a6b8c": {
+      "path": "tools/tests/test_q2_close.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "after = subprocess.run([\"git\", \"-C\", str(ROOT), \"rev-parse\", \"HEAD\"],",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x8008efa215d39db": {
+      "path": "tools/tests/test_release_legion_ide.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "return subprocess.run([\"git\", \"-C\", str(repo), *args], capture_output=True,",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xb8cab59513e35a8": {
+      "path": "tools/tests/test_worktree_invariant_check.py",
+      "rule": "R3_git_dash_C",
+      "level": "BLOCK",
+      "code": "return subprocess.run([\"git\", \"-C\", str(repo), *args], capture_output=True,",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xc14a9798201aa04": {
+      "path": "quant_backtest/chanlun_scan.py",
+      "rule": "R1_win_only_import",
+      "level": "BLOCK",
+      "code": "import msvcrt",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xe4bfd54edaf586f": {
+      "path": "quant_backtest/chanlun_scan.py",
+      "rule": "R1_win_only_import",
+      "level": "BLOCK",
+      "code": "import msvcrt",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xe972e8f62b88fc6": {
+      "path": "quant_backtest/council_sim.py",
+      "rule": "R1_win_only_import",
+      "level": "BLOCK",
+      "code": "import msvcrt",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xdd18b22d5a3291b": {
+      "path": "quant_backtest/portfolio.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "subprocess.Popen(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x69e2824acf98821": {
+      "path": "quant_backtest/qpzm_daily_batch.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "p = subprocess.Popen(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xadc24838f4d05e6": {
+      "path": "quant_backtest/register_daily_report.py",
+      "rule": "R1_win_only_import",
+      "level": "BLOCK",
+      "code": "import win32com.client",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x367972e100fd801": {
+      "path": "quant_backtest/register_daily_report.py",
+      "rule": "R1_win_only_import",
+      "level": "BLOCK",
+      "code": "import win32com.client",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xfa65d9ecff9faa8": {
+      "path": "quant_backtest/register_healthcheck_task.py",
+      "rule": "R1_win_only_import",
+      "level": "BLOCK",
+      "code": "import pythoncom",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x3202130b73ff7e1": {
+      "path": "quant_backtest/register_healthcheck_task.py",
+      "rule": "R1_win_only_import",
+      "level": "BLOCK",
+      "code": "import win32com.client",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x760b290d364e19f": {
+      "path": "quant_backtest/register_healthcheck_task.py",
+      "rule": "R1_win_only_import",
+      "level": "BLOCK",
+      "code": "from pythoncom import com_error as COMError",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xdbeb9a04c12faec": {
+      "path": "quant_backtest/register_timeline_watch.py",
+      "rule": "R1_win_only_import",
+      "level": "BLOCK",
+      "code": "import pythoncom",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x3aa27f245c6297d": {
+      "path": "quant_backtest/register_timeline_watch.py",
+      "rule": "R1_win_only_import",
+      "level": "BLOCK",
+      "code": "import win32com.client",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xc25b240ed353b77": {
+      "path": "quant_backtest/register_timeline_watch.py",
+      "rule": "R1_win_only_import",
+      "level": "BLOCK",
+      "code": "from pythoncom import com_error as COMError",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x014a0c6c14ac33b": {
+      "path": "quant_backtest/register_verify_task.py",
+      "rule": "R1_win_only_import",
+      "level": "BLOCK",
+      "code": "import win32com.client",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x70bd099d09e7b14": {
+      "path": "quant_backtest/register_verify_task.py",
+      "rule": "R1_win_only_import",
+      "level": "BLOCK",
+      "code": "import win32com.client",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xfffde2fb5b23ba7": {
+      "path": "quant_backtest/sellpoint_bias_backfill.py",
+      "rule": "R1_win_only_import",
+      "level": "BLOCK",
+      "code": "import winreg",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x18243779f97b8fc": {
+      "path": "quant_backtest/stock_council.py",
+      "rule": "R1_win_only_import",
+      "level": "BLOCK",
+      "code": "import msvcrt",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x11b3ede7811bbe3": {
+      "path": "quant_backtest/warehouse_commit.py",
+      "rule": "R1_win_only_import",
+      "level": "BLOCK",
+      "code": "import msvcrt",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x195cef219c96beb": {
+      "path": "quant_backtest/_331_di_parse.py",
+      "rule": "R1_win_only_import",
+      "level": "BLOCK",
+      "code": "import winreg",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xc45e67bbe2a0b13": {
+      "path": "quant_backtest/_331_task_state.py",
+      "rule": "R1_win_only_import",
+      "level": "BLOCK",
+      "code": "import winreg",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x4f5e240777dd490": {
+      "path": "quant_backtest/ai_operator/offline_review_signer.py",
+      "rule": "R1_win_only_import",
+      "level": "BLOCK",
+      "code": "import msvcrt",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xeb09294bd1f276b": {
+      "path": "quant_backtest/ai_operator/offline_review_signer.py",
+      "rule": "R1_win_only_import",
+      "level": "BLOCK",
+      "code": "import msvcrt",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x2b01cf00321db8a": {
+      "path": "quant_backtest/ai_operator/offline_review_signer.py",
+      "rule": "R1_win_only_import",
+      "level": "BLOCK",
+      "code": "import msvcrt",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x7ac6cc7bc05737b": {
+      "path": "quant_backtest/strategy_layer/r0_receipt_replay_guard.py",
+      "rule": "R1_win_only_import",
+      "level": "BLOCK",
+      "code": "import msvcrt",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x1c22ff0cdad8f12": {
+      "path": "quant_backtest/tools/a3_heal_batch.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "subprocess.Popen(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x647d335efb3dcf0": {
+      "path": "quant_backtest/tools/a3_heal_batch.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "subprocess.Popen(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x2aea146b43af5bf": {
+      "path": "quant_backtest/tools/sprint_loop_register_daily.py",
+      "rule": "R1_win_only_import",
+      "level": "BLOCK",
+      "code": "import pythoncom",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x8e6e43e45fb94a9": {
+      "path": "quant_backtest/tools/sprint_loop_register_daily.py",
+      "rule": "R1_win_only_import",
+      "level": "BLOCK",
+      "code": "import win32com.client",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x73e5937b37c2e06": {
+      "path": "quant_backtest/tools/sprint_loop_task_enum.py",
+      "rule": "R1_win_only_import",
+      "level": "BLOCK",
+      "code": "import pythoncom",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xa78acc3ff9c50c6": {
+      "path": "quant_backtest/tools/sprint_loop_task_enum.py",
+      "rule": "R1_win_only_import",
+      "level": "BLOCK",
+      "code": "import win32com.client",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xf3fd325a6bb3166": {
+      "path": "k_stock/detach_run.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "out = subprocess.run(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xe7ceee518b7bc00": {
+      "path": "k_stock/detach_run.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "proc = subprocess.Popen(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x28eee41388ffbff": {
+      "path": "k_stock/detach_run.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "proc = subprocess.Popen(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xef23d02f37cfaf0": {
+      "path": "news_collector/news_ai.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "subprocess.Popen(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x7c52d5151b1cb7a": {
+      "path": "ops/keepalive_9899.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "subprocess.Popen([SYS_PY] + script_args,",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xa70c0c8a64f11e6": {
+      "path": "ops/keepalive_9899.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "subprocess.Popen([COW_PY, \"app.py\"], cwd=COW_DIR,",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xeb403d3644b4b43": {
+      "path": "ops/keepalive_bg.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "subprocess.Popen(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x8c695538419ffac": {
+      "path": "ops/keepalive_bg.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "subprocess.Popen(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x47821edd2e4e8bc": {
+      "path": "ops/launch_legion_console.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "subprocess.Popen(cmd, cwd=str(_SERVE.parent.parent), close_fds=True,",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xe0f33df30bf046e": {
+      "path": "ops/launch_push_admin.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "subprocess.Popen(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "x133e05b018bbe07": {
+      "path": "ops/launch_push_admin.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "subprocess.Popen(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    },
+    "xdf2c5d306a56867": {
+      "path": "ops/start_cowagent_bg.py",
+      "rule": "R2_creationflags",
+      "level": "BLOCK",
+      "code": "p = subprocess.Popen(",
+      "owner": "K-RELEASE-20261106",
+      "registered_at": "2026-11-07",
+      "reason": "存量冻结，待分批清理；新增一律拦截"
+    }
+  }
+}

@@ -8,6 +8,8 @@ from pathlib import Path
 
 WT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(WT / "agent_platform"))
+# 本文件只打本机自启服务：回环请求禁代理（safe_urlopen 内含 127.0.0.1 豁免）
+from safe_urlopen import safe_urlopen  # noqa: E402
 
 from legion_command import hq_agenda as ag  # noqa: E402
 from legion_command import serve as srv  # noqa: E402
@@ -97,12 +99,12 @@ def test_http_agenda(tmp_path, monkeypatch):
     th.start()
     base = "http://127.0.0.1:%d" % srvr.server_address[1]
     try:
-        rep = json.loads(urllib.request.urlopen(base + "/api/hq/agenda", timeout=10).read())
+        rep = json.loads(safe_urlopen(base + "/api/hq/agenda", timeout=10).read())
         assert rep["ok"] and len(rep["topics"]) == 2
         body = json.dumps({"topic": "议题A", "text": "HTTP 留言"}).encode("utf-8")
         req = urllib.request.Request(base + "/api/hq/agenda/message", data=body,
                                      headers={"Content-Type": "application/json"})
-        env = json.loads(urllib.request.urlopen(req, timeout=10).read())
+        env = json.loads(safe_urlopen(req, timeout=10).read())
         assert env["ok"] and env["message"]["text"] == "HTTP 留言"
     finally:
         srvr.shutdown()

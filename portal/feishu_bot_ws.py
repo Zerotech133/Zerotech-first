@@ -30,6 +30,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "news_collector"))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "quant_backtest"))
+from safe_urlopen import safe_urlopen  # 回环禁代理（2026-11-07 批 5）
 
 # 语音输入兜底默认（2026-10-24）：不依赖看护脚本是否成功注入 env；
 # 显式设 0/false 可关闭。模型为本地 faster-whisper（ModelScope 下载）。
@@ -690,7 +691,7 @@ def _forward_jev_card(val, sender, ctx=None):
         headers={"Content-Type": "application/json; charset=utf-8"},
     )
     try:
-        with urllib.request.urlopen(req, timeout=20) as resp:
+        with safe_urlopen(req, timeout=20) as resp:
             payload = json.loads(resp.read().decode("utf-8", "replace") or "{}")
         return bool(payload.get("ok")), ""
     except Exception as e:  # noqa: BLE001

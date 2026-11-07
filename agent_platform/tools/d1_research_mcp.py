@@ -14,7 +14,22 @@ from __future__ import annotations
 import json
 import os
 import sys
-import urllib.request
+# 回环禁代理（2026-11-07 批 5）：本机服务的请求不走系统代理，实现见 tools/safe_urlopen.py
+import sys as _sys
+from pathlib import Path as _Path
+
+for _base in _Path(__file__).resolve().parents:
+    for _cand in (_base, _base / "tools"):
+        if (_cand / "safe_urlopen.py").exists():
+            _sys.path.insert(0, str(_cand))
+            break
+    else:
+        continue
+    break
+try:
+    from safe_urlopen import safe_urlopen
+except ImportError:  # 作为包/仓库根导入时
+    from tools.safe_urlopen import safe_urlopen
 
 BASE = os.environ.get("D1_RESEARCH_URL", "http://127.0.0.1:8734/api/d1/research")
 TIMEOUT = float(os.environ.get("D1_RESEARCH_TIMEOUT", "15"))
@@ -36,7 +51,7 @@ TOOLS = [{
 
 
 def fetch(code=None, limit=20):
-    with urllib.request.urlopen(BASE, timeout=TIMEOUT) as r:
+    with safe_urlopen(BASE, timeout=TIMEOUT) as r:
         data = json.loads(r.read())
     items = data.get("items") or []
     if code:

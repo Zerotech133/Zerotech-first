@@ -41,7 +41,7 @@ def _resolve_sandbox_base() -> str:
     import urllib.request
     # 1) 优先 loopback（Docker Desktop 下 host 不可达未 publish 的容器 IP）
     try:
-        with urllib.request.urlopen("http://127.0.0.1:8771/health", timeout=1.5) as r:
+        with safe_urlopen("http://127.0.0.1:8771/health", timeout=1.5) as r:
             if r.status == 200:
                 return "http://127.0.0.1:8771"
     except Exception:  # noqa: BLE001

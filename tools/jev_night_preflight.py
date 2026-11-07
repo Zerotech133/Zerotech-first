@@ -144,14 +144,16 @@ def disk_free_gb() -> float:
 
 
 def wrappers_ok() -> tuple[bool, str]:
+    # 2026-11-07 复盘执行项：补 feed 入口（BUG-3 盲区），入口×开关矩阵全量校验
     files = [REPO / "jev-eval" / "start_jev_night.ps1",
-             REPO / "jev-eval" / "jev_backfill_task.ps1"]
+             REPO / "jev-eval" / "jev_backfill_task.ps1",
+             REPO / "news_collector" / "start_jev_feed.ps1"]
     for f in files:
         if not f.exists():
             return False, "缺 wrapper: %s" % f.name
         if "JEV_PREFILTER" not in f.read_text(encoding="utf-8", errors="replace"):
             return False, "%s 缺 JEV_PREFILTER" % f.name
-    return True, "night/hourly wrapper env OK"
+    return True, "night/backfill/feed wrapper env OK"
 
 
 def collect(now: datetime | None = None) -> list[dict]:

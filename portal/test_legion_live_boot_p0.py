@@ -13,6 +13,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "portal"))
+# 本文件只打本机自启服务：回环请求禁代理（safe_urlopen 内含 127.0.0.1 豁免）
+from safe_urlopen import safe_urlopen  # noqa: E402
 
 import api_legion_ops_v2 as ops
 import logging
@@ -47,7 +49,7 @@ def check(name, cond):
 def req(path, headers=None, data=None):
     r = urllib.request.Request(BASE + path, data=data, headers=headers or {})
     try:
-        with urllib.request.urlopen(r, timeout=5) as resp:
+        with safe_urlopen(r, timeout=5) as resp:
             return resp.status, dict(resp.headers), json.loads(resp.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
         body = e.read().decode("utf-8")

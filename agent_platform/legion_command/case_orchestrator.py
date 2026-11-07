@@ -16,6 +16,10 @@ from pathlib import Path
 
 from legion_command import case_api
 from legion_command import hq_meeting
+try:  # 双形态入口：脚本形态 import safe_http，包形态 import legion_command.safe_http
+    from safe_http import safe_urlopen
+except ImportError:  # 作为包导入时
+    from legion_command.safe_http import safe_urlopen
 
 BASE = os.environ.get("ZB_CASE_MODEL_BASE", "http://127.0.0.1:8796")
 MEETINGS = Path(os.environ.get("ZB_HQ_MEETINGS_DIR", r"C:\项目\老田的AI助手\agent_platform\data\meetings\hq"))
@@ -39,7 +43,7 @@ def _chat(agent: str, system: str, user: str, timeout: int = 180) -> dict:
                        "user": user}, ensure_ascii=False).encode("utf-8")
     req = urllib.request.Request(BASE.rstrip("/") + "/api/chat", data=body,
                                  headers={"Content-Type": "application/json"}, method="POST")
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    with safe_urlopen(req, timeout=timeout) as r:
         env = json.loads(r.read().decode("utf-8"))
     if not env.get("ok"):
         raise RuntimeError(str(env.get("error") or "model_failed")[:200])

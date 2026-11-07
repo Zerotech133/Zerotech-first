@@ -136,3 +136,51 @@ def test_file_scheme_rejected(monkeypatch):
 def test_urlsplit_import():
     m = _load()
     assert m.ALLOWED_SCHEMES == ("http", "https")
+
+# ── 副本一致性（2026-11-07 批 5 补） ─────────────────────────
+# 背景：回环豁免只加进 6 份 safe_urlopen.py，legion_command/safe_http.py 是第 7 份
+# 独立实现、没跟上，导致该树 12 处打本机服务（11434/8770/8771/8787/8796）的请求
+# 仍被交给代理；而扫描器按「调的是 safe_urlopen」判 GUARDED，看不见这个洞。
+# 下面两条防的就是「再长出第 8 份」。
+REPO = Path(__file__).resolve().parents[2]
+
+
+def _tracked_copies():
+    import subprocess
+    try:
+        out = subprocess.run(["git", "ls-files", "-z", "*safe_urlopen.py"],
+                             cwd=str(REPO), capture_output=True, check=True).stdout
+    except Exception:  # pragma: no cover - 无 git 环境下跳过
+        import pytest
+        pytest.skip("git 不可用，跳过副本一致性检查")
+    rels = [r for r in out.decode("utf-8").split("\0") if r.strip()]
+    assert rels, "git 未列出任何 safe_urlopen.py 副本"
+    return [REPO / r for r in rels]
+
+
+def test_every_copy_has_loopback_exemption():
+    """所有 safe_urlopen.py 副本都必须带回环禁代理，否则就是第 7 份那种漏网副本。"""
+    bad = []
+    for p in _tracked_copies():
+        src = p.read_text(encoding="utf-8")
+        if "_open_no_proxy" not in src or "is_loopback" not in src:
+            bad.append(str(p.relative_to(REPO)))
+    assert not bad, "以下副本缺回环豁免：%s" % bad
+
+
+def test_legion_command_safe_http_delegates_to_shared_impl():
+    """legion_command/safe_http.py 必须是委派，不得自带一份退化实现。"""
+    import sys as _s
+    p = REPO / "agent_platform" / "legion_command" / "safe_http.py"
+    if not p.exists():  # pragma: no cover
+        import pytest
+        pytest.skip("safe_http.py 不存在")
+    _s.path.insert(0, str(p.parent))
+    try:
+        spec = importlib.util.spec_from_file_location("_safe_http_probe", p)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+    finally:
+        _s.path.pop(0)
+    impl = Path(mod.safe_urlopen.__code__.co_filename).name
+    assert impl == "safe_urlopen.py", "safe_http 未委派，实际实现来自 %s" % impl

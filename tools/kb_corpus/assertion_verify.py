@@ -95,9 +95,28 @@ SYSTEM_PROMPT = """你是交易知识的断言审核员。给你一段口播原�
 → 抽成"避免用亏钱的交易模式做仓位配置"。"亏钱的交易模式"原文一个字都没提，是模型自己编的因果。
 这条容易被判 ok，因为方向看着是负面的、像那么回事。**必须判 not_supported。**
 
-【四步走，不要跳步】
+【逐条核对流程，不要跳步】
 第 1 步：在原文里找到与这条断言动作对应的那句话，逐字摘出来填进 src（10-30 字）。
 　　　　摘不出来 = 原文没有这个意思 → not_supported。
+第 1.2 步【先按 verb 取反，再核对动作】：读输入里的 verb，先把断言还原成完整命题，
+　　　　再去原文找依据。action.text 只是「宾语」，命题的正负由 verb 决定：
+　　　　· verb = avoid / prohibit / no_action → 命题是「不应 / 不要 / 避免 + action.text」。
+　　　　  要找的是原文对**这个行为**的否定、限制或否定评价，不是找「有人在做 X」。
+　　　　  例如"不是所有品种都做""只参与非常有限的品种""这纯粹都是瞎扯淡"
+　　　　  "你不再被情绪和幻想左右""不要随意换股"，都是对该行为的否定表态。
+　　　　· 其它 verb → 命题是「要 + action.text」，找原文对该行为的正向表述。
+　　　　· 严禁把 avoid / prohibit 的 action.text 单独读成肯定命题。
+　　　　  真实案例：原文"只参与其中非常有限的品种" + verb=avoid + action"参与所有品种"
+　　　　  → 命题是「不要参与所有品种」，与原文一致，判 ok；
+　　　　  若读成「要参与所有品种」再判 not_supported，就是误杀。
+　　　　· 取反**不等于放行**：原文必须真的对该行为有否定 / 限制表态，且能在 src 里逐字指出。
+　　　　  原文只是同一话题、没有否定表态时（"医药的标的有近300个…严格按照标准筛选"
+　　　　  → "不要随意换股"），仍是 not_supported / drop。
+　　　　· 若原文说「要做 X」而断言写成 avoid/prohibit「X」（或反过来），这是方向反了
+　　　　  → polarity / drop，不许用「取反」把它解释成一致。
+　　　　· 第 2 步说的「方向」指这里还原后的**命题方向**，不是 action.text 字面方向。
+　　　　· 下面第 1.5 步的字面比对，只用来确认行为词在 src 里有对应说法，
+　　　　  不改变这里已经还原出的正负方向。
 第 1.5 步【动作必须有原文依据，主题相近不算】：把 action.text 去掉否定词
 　　　　（不要/别/不用/避免/切勿/不参与）后的核心实词，与刚摘出的 src 逐字比对。
 　　　　· src 里既没有这个词、也没有能明确指出的同义说法（OCR 错字如"嫁回来"≈"加回来"算同义），
@@ -191,10 +210,13 @@ def build_user(unit_text: str, group: list) -> str:
         cond = _cond_text(a) or "（无，无条件）"
         act = a.get("action") or {}
         tgt = a.get("target") or {}
+        polarity = ("不应/不要/避免" if (act.get("verb") or "").strip()
+                    in ("avoid", "prohibit", "no_action") else "要")
         lines.append(
             f"[{i}] kind={a.get('kind')}\n"
             f"    条件：{cond}\n"
             f"    动作：{act.get('text')}（verb={act.get('verb')}）\n"
+            f"    命题（按 verb 还原）：{polarity}「{act.get('text')}」\n"
             f"    标的：{tgt.get('text')}（scope={tgt.get('scope')}）\n"
             f"    理由：{a.get('rationale') or '（无）'}"
         )
@@ -271,21 +293,51 @@ def parse_verdicts(text: str, n: int) -> tuple:
     return out, None
 
 
-# issue 非 none 却给 verdict=ok，是 14B 最常见的自相矛盾形态
-# （实测 #59：issue 写 not_supported，verdict 却写 ok，理由栏还自己把矛盾说清了）。
-# 不许信 verdict 那一栏，以 issue 为准。
+# issue → verdict 的唯一合法映射（与 SYSTEM_PROMPT「verdict 与 issue 必须一致」表逐字对应）
+_EXPECTED_VERDICT = {
+    "none": "ok",
+    "condition_mismatch": "fix",
+    "polarity": "drop",
+    "not_supported": "drop",
+    "vacuous": "drop",
+    "ephemeral": "drop",
+}
 _DROP_ISSUES = {"polarity", "not_supported", "vacuous", "ephemeral"}
+
+# 严格模式：把「issue 应 drop 却 verdict=fix」也自动改 drop，用于复现 v8 §5 的口径。
+# 默认关闭：实测 42 条里混有模型明确给出合理修正方向的 fix（如
+# 「原文未提到 X，应修正为 Y」），一刀切改 drop 会误杀合法断言。
+_STRICT_COERCE = os.environ.get("ASSERTION_VERIFY_STRICT_COERCE") == "1"
 
 
 def _coerce(v: dict) -> None:
-    """按 issue 纠正 verdict，纠正就打 _coerced 标，报告里单独统计。"""
+    """按 issue 纠正 verdict；不确定的矛盾只标注，不自动改数据。
+
+    历史漏洞（v8 §5）：旧版只在 verdict=="ok" 时纠正，
+    「issue 应 drop 却 verdict=fix」会静默放行入图。
+    现在任何自相矛盾组合都会留下可审计标记：
+      · verdict=="ok" 且 issue 非 none  -> 按 issue 自动纠正（打 _coerced）
+      · 其余矛盾（主要是 DROP_ISSUES/fix 与 condition_mismatch/drop）
+          -> 默认只打 _review_required + _expected_verdict，交人工复核；
+             严格模式下自动改 verdict 并打 _coerced_strict
+      · issue=="none" 但 verdict 非 ok -> 保留 _issue_missing 语义，不改 verdict
+    """
     issue, verdict = v.get("issue"), v.get("verdict")
-    if issue == "none" or verdict != "ok":
-        if issue == "none" and verdict == "drop":
-            v["_issue_missing"] = True
+    if issue == "none" and verdict != "ok":
+        v["_issue_missing"] = True
         return
-    v["_coerced"] = True
-    v["verdict"] = "drop" if issue in _DROP_ISSUES else "fix"
+    expected = _EXPECTED_VERDICT.get(issue)
+    if expected is None or verdict == expected:
+        return
+    if verdict == "ok":
+        v["_coerced"] = True
+        v["verdict"] = expected
+        return
+    v["_review_required"] = "issue_verdict_conflict"
+    v["_expected_verdict"] = expected
+    if _STRICT_COERCE:
+        v["_coerced_strict"] = True
+        v["verdict"] = expected
 
 
 def _norm_cn(s: str) -> str:
@@ -499,7 +551,10 @@ def main(argv=None) -> int:
         print(f"issue 分布     {dict(Counter(a['verify']['issue'] for a in merged))}")
         nm = len([a for a in merged if a["verify"].get("_mech")])
         nc = len([a for a in merged if a["verify"].get("_coerced")])
+        nr = len([a for a in merged if a["verify"].get("_review_required")])
         print(f"机械补判       {nm} 条（同义反复/空壳动作）　issue→verdict 纠正 {nc} 条")
+        print(f"待人工复核矛盾 {nr} 条（issue/verdict 自相矛盾，default 模式不自动改）"
+              f"　strict={_STRICT_COERCE}")
     if errs:
         print(f"\n失败段 {len(errs)} 个，前 3：")
         for e in errs[:3]:

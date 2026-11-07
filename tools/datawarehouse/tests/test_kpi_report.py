@@ -139,18 +139,18 @@ def test_k1_two_days_warn_and_missing_unknown(tmp_path):
 
 # ---------- K2 drift 哨兵 ----------
 def test_k2_exists_ok_and_unreachable_unknown(monkeypatch):
-    monkeypatch.setattr(kr.urllib.request, "urlopen",
+    monkeypatch.setattr(kr, "safe_urlopen",
                         _fake_urlopen_factory({"dist": {"exists": True},
                                                "drift": {"open_count": 5}}))
     k = kr.collect_k2()
     assert k["status"] == "ok" and k["value"]["exists"] is True
     assert k["value"]["open_count"] == 5
-    monkeypatch.setattr(kr.urllib.request, "urlopen",
+    monkeypatch.setattr(kr, "safe_urlopen",
                         _fake_urlopen_factory(raise_exc=ConnectionError("refused")))
     k2 = kr.collect_k2()
     assert k2["status"] == "unknown" and k2["value"] is None
     # exists=false → warn
-    monkeypatch.setattr(kr.urllib.request, "urlopen",
+    monkeypatch.setattr(kr, "safe_urlopen",
                         _fake_urlopen_factory({"dist": {"exists": False}}))
     assert kr.collect_k2()["status"] == "warn"
 
@@ -230,7 +230,7 @@ def test_k6_k9_k10_status(tmp_path):
 # ---------- 综合 schema / fail-visible ----------
 def test_build_report_schema_and_unknown_fail_visible(tmp_path, monkeypatch):
     env = _env(tmp_path)
-    monkeypatch.setattr(kr.urllib.request, "urlopen",
+    monkeypatch.setattr(kr, "safe_urlopen",
                         _fake_urlopen_factory({"dist": {"exists": True}}))
     report = kr.build_report(today=__import__("datetime").date(2026, 11, 2),
                              overrides=env)

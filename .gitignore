@@ -366,6 +366,7 @@ deliverables/已治理数据_*/*.csv
 # 运行态缓存/事件（2026-11-06 全仓收口）
 quant_backtest/.reader_cache.json
 agent_platform/legion_command/portal/data/dev_events.jsonl
+agent_platform/portal/data/dev_events.jsonl
 
 # D1 原始 SLO 采样（每日运行时数据；窗口汇总报告另存，不逐日入库）
 /deliverables/d1_q2/slo_window/*.json

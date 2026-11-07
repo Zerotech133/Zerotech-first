@@ -1010,7 +1010,8 @@ def bitemporal_edge_types():
 
 
 def bitemporal_ddl():
-    """生成双时态索引 DDL（Neo4j 4.3+ 语法，幂等 IF NOT EXISTS）。
+    """生成双时态索引 DDL（Neo4j 4.4+/5.x 语法，属性带变量前缀——5.x 必需；
+    幂等 IF NOT EXISTS）。
 
     - 全部节点标签：tx_created 单列索引（写入追责主查询）。
     - 时变边类型：(valid_from, valid_to) 复合索引（时点回溯主查询）
@@ -1020,17 +1021,17 @@ def bitemporal_ddl():
     stmts = []
     for lbl in NODE_TYPES:
         stmts.append(
-            "CREATE INDEX tx_%s IF NOT EXISTS FOR (n:`%s`) ON (`%s`);"
+            "CREATE INDEX tx_%s IF NOT EXISTS FOR (n:`%s`) ON (n.`%s`);"
             % (lbl.lower(), lbl, TX_FIELD)
         )
     for rel in bitemporal_edge_types():
         stmts.append(
             "CREATE INDEX vf_%s IF NOT EXISTS FOR ()-[r:`%s`]-()"
-            " ON (`%s`, `%s`);"
+            " ON (r.`%s`, r.`%s`);"
             % (rel.lower(), rel, VALID_FROM, VALID_TO)
         )
         stmts.append(
-            "CREATE INDEX txr_%s IF NOT EXISTS FOR ()-[r:`%s`]-() ON (`%s`);"
+            "CREATE INDEX txr_%s IF NOT EXISTS FOR ()-[r:`%s`]-() ON (r.`%s`);"
             % (rel.lower(), rel, TX_FIELD)
         )
     return stmts

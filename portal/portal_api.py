@@ -3093,19 +3093,29 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 # 首次：后台拉起扫描（venv 解释器；长跑纪律输出落文件）
                 # WO-QT-20261020-064/CH-02：原硬编码 C:/Users/Administrator/...
                 # 在本机（C:/Users/t）必然 FileNotFoundError——页面手动刷新也炸。
-                # 修法：当前进程解释器优先（portal_api 本就跑在 venv 内），
-                # 回退按当前用户名探测，杜绝写死他人目录。
-                VENV_PY = (sys.executable if os.path.basename(
-                    os.path.dirname(os.path.dirname(sys.executable))
-                ).lower() == "envs" else
-                    "C:/Users/%s/.workbuddy/binaries/python/"
-                    "envs/default/Scripts/python.exe" % getpass.getuser())
+                # K-RELEASE-20261106（2026-11-07）：原「按 envs 目录判定、否则回落
+                # Windows 解释器」在 Linux 上必然落回 C:/Users/... 路径；且 Popen
+                # 无条件传 creationflags（Windows 专用）→ ValueError，实测线上
+                # /qd 首次访问 500/连接重置、nginx 502。修法：一律用当前进程
+                # 解释器（portal_api 本就跑在该 venv 内），平台参数按 os.name 分派，
+                # 并把后台 spawn 做成 fail-soft：扫描起不来页面仍返回占位页。
+                VENV_PY = sys.executable
                 SCAN_PY = os.path.join(ROOT, "qd_scanner.py")
                 if not os.path.exists(log_p) or time.time() - os.path.getmtime(log_p) > 1800:
-                    with open(log_p, "ab") as lf:
-                        _sp.Popen([VENV_PY, SCAN_PY], stdout=lf, stderr=lf,
-                                  stdin=_sp.DEVNULL,
-                                  creationflags=0x00000008 | 0x00000200)
+                    _kw = {"stdin": _sp.DEVNULL}
+                    if os.name == "nt":
+                        _kw["creationflags"] = 0x00000008 | 0x00000200
+                    else:
+                        _kw["start_new_session"] = True  # POSIX 等价脱离终端
+                    try:
+                        with open(log_p, "ab") as lf:
+                            _kw.update({"stdout": lf, "stderr": lf})
+                            _sp.Popen([VENV_PY, SCAN_PY], **_kw)
+                    except (OSError, ValueError) as _e:
+                        # 后台扫描不可用 ≠ 页面不可用；留痕但不升级成 500。
+                        with open(log_p, "ab") as lf:
+                            lf.write(("spawn skipped: %s: %s\n"
+                                      % (type(_e).__name__, _e)).encode("utf-8"))
                 self._html(_qd_view.render_placeholder(log_p, self._COCKPIT_CSS))
                 return
             # K-STOCK-028：当日基础数据快照（qd_daily_snapshot.py 14:55 产出）

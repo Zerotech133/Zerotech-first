@@ -22,11 +22,12 @@
 
 import json
 import urllib.parse
-import urllib.request
 
 import pytest
 
 PORTAL = "http://127.0.0.1:8091"
+# 本文件只打本机自启服务：回环请求禁代理（safe_urlopen 内含 127.0.0.1 豁免）
+from safe_urlopen import safe_urlopen  # noqa: E402
 
 pw = pytest.importorskip("playwright.sync_api", reason="需要 pip install playwright")
 
@@ -35,7 +36,7 @@ pw = pytest.importorskip("playwright.sync_api", reason="需要 pip install playw
 def sample():
     """从真实端点取一行事件作交互样本（公司名/代码/原文 id）。"""
     try:
-        with urllib.request.urlopen(PORTAL + "/kg/events/list", timeout=5) as r:
+        with safe_urlopen(PORTAL + "/kg/events/list", timeout=5) as r:
             rows = json.loads(r.read().decode("utf-8"))["rows"]
     except Exception as ex:
         pytest.skip("portal(8091) 不可用：%s" % ex)
@@ -174,7 +175,7 @@ def test_e2e_row_company_and_doc_modal(page, sample):
 
 def test_e2e_market_tab_navigation(page, sample):
     try:
-        with urllib.request.urlopen(PORTAL + "/kg/events/situ", timeout=5) as r:
+        with safe_urlopen(PORTAL + "/kg/events/situ", timeout=5) as r:
             mk = json.loads(r.read().decode("utf-8"))["inv_markets"]
     except Exception as ex:
         pytest.skip("portal(8091) 不可用：%s" % ex)

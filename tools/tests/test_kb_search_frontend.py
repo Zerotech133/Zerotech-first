@@ -21,12 +21,14 @@ import shutil
 import subprocess
 import sys
 import urllib.error
-import urllib.request
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "tools"))
+# 本文件只打本机自启服务：回环请求禁代理（safe_urlopen 内含 127.0.0.1 豁免）
+from safe_urlopen import safe_urlopen  # noqa: E402
 PAGE = ROOT / "portal" / "kb_reports.html"
 SYN_JSON = ROOT / "tools" / "kb_corpus" / "synonyms_v2.json"
 
@@ -178,7 +180,7 @@ def test_inline_js_node_check(tmp_path):
 def test_portal_serves_page_http_200():
     url = "http://127.0.0.1:8734/kb_reports.html?ts=unittest"
     try:
-        with urllib.request.urlopen(url, timeout=5) as r:
+        with safe_urlopen(url, timeout=5) as r:
             body = r.read().decode("utf-8", errors="replace")
             assert r.status == 200
     except (urllib.error.URLError, ConnectionError, TimeoutError) as exc:

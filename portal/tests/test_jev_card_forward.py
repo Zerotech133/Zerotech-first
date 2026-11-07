@@ -15,7 +15,6 @@ from __future__ import annotations
 import json
 import sys
 import types
-import urllib.request
 from pathlib import Path
 
 import pytest
@@ -102,7 +101,7 @@ def test_forward_payload_contract(monkeypatch):
         captured["body"] = json.loads(req.data.decode("utf-8"))
         return _Resp()
 
-    monkeypatch.setattr(urllib.request, "urlopen", _fake_urlopen)
+    monkeypatch.setattr(bot, "safe_urlopen", _fake_urlopen)
 
     ok, why = bot._forward_jev_card(
         {"source": "backup", "action": "ack", "alert_id": "BACKUP_A3"},
@@ -126,7 +125,7 @@ def test_forward_returns_false_on_unreachable(monkeypatch):
     def _boom(req, timeout=None):
         raise OSError("connection refused")
 
-    monkeypatch.setattr(urllib.request, "urlopen", _boom)
+    monkeypatch.setattr(bot, "safe_urlopen", _boom)
     ok, why = bot._forward_jev_card({"action": "ack", "alert_id": "A4"}, OP, {})
     assert ok is False and "connection refused" in why
 
