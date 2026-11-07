@@ -10,6 +10,8 @@
 
 可重复执行（幂等）。
 """
+import argparse
+
 import sqlalchemy as sa
 
 from zhice_os_v2.config.settings import get_settings
@@ -145,36 +147,117 @@ def _split_reports(c) -> int:
     return c.execute(sa.text("SELECT count(*) FROM v2_selection_report")).scalar()
 
 
-def _pool_market(c, code: str) -> str:
-    """pool 无 strategy_id 列：优先按同代码 pick 的实际市场取，裸代码才回退推断。"""
-    markets = sorted({row[0] for row in c.execute(sa.text(
-        "SELECT DISTINCT market FROM v2_selection_pick WHERE code=:c"),
-        {"c": code}).all() if row[0] in MARKETS})
-    if len(markets) == 1:
-        return markets[0]
-    return market_of(code)
+def _csv_values(value: str | None) -> list[str]:
+    return [part.strip() for part in (value or "").split(",") if part.strip()]
 
 
-def _backfill_pool(c) -> int:
-    pool = c.execute(sa.text("SELECT id, code FROM v2_selection_pool")).all()
-    for pid, code in pool:
-        target = _pool_market(c, code)
-        c.execute(sa.text("UPDATE v2_selection_pool SET market=:m WHERE id=:i"),
-                  {"m": target, "i": pid})
-    return len(pool)
+def _source_markets(source_strategies: str | None) -> list[str]:
+    """从池行的 source_strategies 推断市场，避免裸 US/HK 代码被当成 CN。"""
+    markets = {strategy_market(sid) for sid in _csv_values(source_strategies)}
+    markets.discard(None)
+    return sorted(market for market in markets if market in MARKETS)
 
 
-def main():
+def _pick_markets(c, pool_date, code: str) -> list[str]:
+    """只查同一池日的 pick，不能拿全历史同代码市场来改历史池行。"""
+    rows = c.execute(sa.text(
+        "SELECT DISTINCT market FROM v2_selection_pick "
+        "WHERE report_date=:d AND code=:c AND market IN ('CN','HK','US','CRYPTO')"),
+        {"d": pool_date, "c": code}).all()
+    return sorted(row[0] for row in rows if row[0] in MARKETS)
+
+
+def _target_market(current: str, source_markets: list[str],
+                   pick_markets: list[str]) -> str | None:
+    """按池行自身的来源/同日 pick 选目标市场；不猜、不跨日聚合。"""
+    if len(source_markets) == 1:
+        return source_markets[0]
+    if len(pick_markets) == 1:
+        return pick_markets[0]
+    return current if current in MARKETS else None
+
+
+def _merge_csv(*values: str | None) -> str:
+    return ",".join(sorted({item for value in values for item in _csv_values(value)}))
+
+
+def _merge_pool_row(c, old: dict, target: dict) -> None:
+    """同一池日/市场/代码已存在时，合并来源并删除旧错市场行，避免撞唯一键。"""
+    c.execute(sa.text("""
+        UPDATE v2_selection_pool
+        SET source_strategies=:src, signal_types=:sigs, name=:name
+        WHERE id=:i
+    """), {
+        "src": _merge_csv(old["source_strategies"], target["source_strategies"]),
+        "sigs": _merge_csv(old["signal_types"], target["signal_types"]),
+        "name": target["name"] or old["name"],
+        "i": target["id"],
+    })
+    c.execute(sa.text("DELETE FROM v2_selection_pool WHERE id=:i"), {"i": old["id"]})
+
+
+def _backfill_pool(c) -> tuple[int, int, int, int, int]:
+    """回填池市场；返回 (总行数, 改市场, 合并, 无法判定, 不变)。"""
+    pool = c.execute(sa.text(
+        "SELECT id, pool_date, market, code, name, source_strategies, "
+        "signal_types FROM v2_selection_pool ORDER BY id")).mappings().all()
+    relabeled = merged = ambiguous = unchanged = 0
+    for row in pool:
+        target = _target_market(
+            row["market"],
+            _source_markets(row["source_strategies"]),
+            _pick_markets(c, row["pool_date"], row["code"]),
+        )
+        if target is None:
+            ambiguous += 1
+            continue
+        if target == row["market"]:
+            unchanged += 1
+            continue
+        existing = c.execute(sa.text(
+            "SELECT id, source_strategies, signal_types, name "
+            "FROM v2_selection_pool "
+            "WHERE pool_date=:d AND market=:m AND code=:c"),
+            {"d": row["pool_date"], "m": target, "c": row["code"]}).mappings().first()
+        if existing:
+            _merge_pool_row(c, dict(row), dict(existing))
+            merged += 1
+        else:
+            c.execute(sa.text(
+                "UPDATE v2_selection_pool SET market=:m WHERE id=:i"),
+                {"m": target, "i": row["id"]})
+            relabeled += 1
+    return len(pool), relabeled, merged, ambiguous, unchanged
+
+
+def main(argv: list[str] | None = None):
+    parser = argparse.ArgumentParser(description="回填 selection 表的 market 列")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="在事务内执行后回滚，只打印将发生的变更")
+    args, _ = parser.parse_known_args(argv)
+
     e = sa.create_engine(
         get_settings().db_main_url.replace("postgresql://", "postgresql+psycopg2://"))
-    with e.begin() as c:
-        n_picks = _backfill_picks(c)
-        n_reports = _split_reports(c)
-        n_pool = _backfill_pool(c)
-        multi = c.execute(sa.text(
-            "SELECT count(*) FROM v2_selection_report WHERE market='MULTI'")).scalar()
-        print("backfilled picks=%d reports=%d pool=%d multi=%d"
-              % (n_picks, n_reports, n_pool, multi))
+    with e.connect() as c:
+        trans = c.begin()
+        try:
+            n_picks = _backfill_picks(c)
+            n_reports = _split_reports(c)
+            n_pool, relabeled, merged, ambiguous, unchanged = _backfill_pool(c)
+            multi = c.execute(sa.text(
+                "SELECT count(*) FROM v2_selection_report WHERE market='MULTI'")).scalar()
+            print("backfilled picks=%d reports=%d pool=%d "
+                  "relabeled=%d merged=%d ambiguous=%d unchanged=%d multi=%d"
+                  % (n_picks, n_reports, n_pool, relabeled, merged,
+                     ambiguous, unchanged, multi))
+            if args.dry_run:
+                trans.rollback()
+                print("dry_run=1 rollback=1")
+            else:
+                trans.commit()
+        except Exception:
+            trans.rollback()
+            raise
 
 
 if __name__ == "__main__":
