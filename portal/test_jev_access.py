@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 """能力开放层单测：留痕 wrap（状态捕获/异常兜底/静默纪律）+ trace 查询 + capabilities。"""
-import os
 import sqlite3
 import sys
-import time
 from pathlib import Path
 
 import pytest

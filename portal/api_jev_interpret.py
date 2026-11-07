@@ -77,8 +77,6 @@ def _facts(kind: str, code: str = "", q: str = "", days: int = 30) -> str:
             cum = round((closes[-1] / closes[0] - 1) * 100, 1)
             # 简单结构判定
             half = len(closes) // 2
-            first_half = closes[:half][-1]
-            second_half = closes[half:][0]
             trend = ("上行" if cum > 3 else "下行" if cum < -3 else "横盘")
             if hi_i > lo_i and hi_i > half and cum > 0:
                 struct = "低点在前高点在后（先抑后扬）"

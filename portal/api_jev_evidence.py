@@ -29,7 +29,6 @@ import source_names  # 渠道中文名（老田令：渠道说中文）
 
 import datetime as dt
 import json
-import math
 import os
 import re
 import sqlite3

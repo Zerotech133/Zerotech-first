@@ -22,7 +22,6 @@ import source_names  # 渠道中文名
 import datetime as dt
 import json
 import os
-import re
 import sqlite3
 import sys
 import time

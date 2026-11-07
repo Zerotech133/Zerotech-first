@@ -120,7 +120,6 @@ def compute(days: int = DEF_DAYS, top_n: int = DEF_TOP,
                for b in BUCKETS}
     unjudged_titles: list[str] = []
     malformed = 0
-    et_words = {et: Counter() for et in {}}
     et_count: Counter = Counter()
     et_store: dict[str, Counter] = {}
     total_judged = 0

@@ -82,7 +82,6 @@ def test_buckets_counts_and_top(small_db):
 
 def test_stopwords_and_dedup(small_db):
     """停用词复用 wordc1_cloud 口径；标题级去重（同一词只计一次）。"""
-    d = M.compute(days=30, top_n=80, event_top=0, event_words=5)
     # 直接绕开 enough 门检验内层计数：临时抬 MIN_BUCKET_N
     old = M.MIN_BUCKET_N
     M.MIN_BUCKET_N = 1

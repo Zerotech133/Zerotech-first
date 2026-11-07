@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """api_jev_platform 单测：聚合结构钉子 + 只读纪律 + 分派路由。"""
-import datetime as dt
 import json
 import sqlite3
 import sys
