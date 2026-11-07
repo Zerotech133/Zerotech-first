@@ -185,8 +185,8 @@ def main() -> int:
     def f(x):
         return "%.2f%%(t=%s,n=%s)" % (x["mean_pct"], x.get("t"), x["n"]) if x.get("mean_pct") is not None else ("n=%d" % x["n"] if x.get("n") else "—")
     L = ["# H36 深挖 · 机构广度拥挤反转（阈值×持有期×行业市值中性化）", "",
-         f"- 数据：report_rc 2019–2026；控制组=同行业+同市值十分位的当月有研报未触发股；收盘入场（月末次一交易日）；cost 30bp；",
-         f"- 方向：拥挤 → 跑输（spread<0）；精炼版通过条件 full t≤-2 且 OOS t≤-1.5 且 WF 命中≥0.6 且最近3年同向", "",
+         "- 数据：report_rc 2019–2026；控制组=同行业+同市值十分位的当月有研报未触发股；收盘入场（月末次一交易日）；cost 30bp；",
+         "- 方向：拥挤 → 跑输（spread<0）；精炼版通过条件 full t≤-2 且 OOS t≤-1.5 且 WF 命中≥0.6 且最近3年同向", "",
          "| 定义 | 持有 | full spread | IS | OOS | WF命中 | 最近3年同向 |", "|---|---|---|---|---|---|---|"]
     for k, v in results.items():
         sp = v["spread"]

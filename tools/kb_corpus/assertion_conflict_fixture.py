@@ -103,8 +103,8 @@ def main() -> int:
     print()
     print("分项：")
     sum(1 for n, w, *_ in CASES if w == "contradicts")
-    print(f"  真冲突 4 条（预期全报）")
-    print(f"  不冲突 4 条（预期全不报）")
+    print("  真冲突 4 条（预期全报）")
+    print("  不冲突 4 条（预期全不报）")
     return 0
 
 

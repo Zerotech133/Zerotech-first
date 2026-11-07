@@ -724,7 +724,7 @@ def build_rule_spec(payload: dict) -> dict:
             {"id": "R2_no_buy_limit_up", "when": "入场日收盘/开盘涨停（含一字涨停）", "action": "不买"},
             {"id": "R3_no_sell_oneword_down", "when": "出场日一字跌停", "action": "不可卖（顺延，回测按对称剔除近似）"},
             {"id": "R4_suspension", "when": "入场/出场日停牌", "action": "跳过/顺延"},
-            {"id": "R5_cap", "when": f"AUM > 容量上限", "action": f"按 {PARTICIPATION:.0%} 参与率降规模或分批"},
+            {"id": "R5_cap", "when": "AUM > 容量上限", "action": f"按 {PARTICIPATION:.0%} 参与率降规模或分批"},
             {"id": "R6_execution", "when": "信号依赖 T 日收盘价",
              "action": "只能用 T 日尾盘/收盘竞价近似执行（T_CLOSE）或 T+1 收盘执行（T1_CLOSE）；"
                        "禁止 T+1 开盘执行（实测净超额转负）"},

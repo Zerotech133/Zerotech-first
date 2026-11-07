@@ -351,13 +351,13 @@ def write_report(report: dict[str, Any], out_dir: str | Path,
                  *, archive: bool = False) -> dict[str, str]:
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
-    report_json = out / f"2026-11-14_slo_report.json"
-    report_md = out / f"2026-11-14_slo_report.md"
+    report_json = out / "2026-11-14_slo_report.json"
+    report_md = out / "2026-11-14_slo_report.md"
     _atomic_write_json(report_json, report)
     report_md.write_text(report_to_markdown(report), encoding="utf-8", newline="\n")
     result = {"json": str(report_json), "md": str(report_md)}
     if archive:
-        zip_path = out / f"2026-11-14_slo_window_archive.zip"
+        zip_path = out / "2026-11-14_slo_window_archive.zip"
         with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
             for path in sorted(out.glob("*.json")):
                 if path.name.startswith(("2026-11-14_slo_report", "verdict")):

@@ -1167,7 +1167,7 @@ def render_markdown(payload: dict) -> str:
         add(f"- **IS→OOS 衰减/翻转**：C 档 {len(c_pos_is)} 项样本内 directed IC 显著为正，但样本外"
             f"衰减或翻转（{desc}）——典型 regime 依赖/过拟合风险（MEETING.md 第五类陷阱），"
             "只能作「待补证据」不能作正向候选。")
-    add(f"- **反向强度排序**（OOS IC t）："
+    add("- **反向强度排序**（OOS IC t）："
         + "、".join(f"{r.get('spec_id')} {_fmt((r.get('oos') or {}).get('ic_t'))}"
                    for r in sorted(d_list, key=lambda x: float(((x.get("oos") or {}).get("ic_t")) or 0))[:5])
         + "；D 档只作反向/规避线索，不得按原书看涨口径复用。")
@@ -1304,7 +1304,7 @@ def _print_summary(payload: dict) -> None:
     print(f"# 信号窗 {ev.get('effective_start')}~{ev.get('effective_end')}"
           f"（{ev.get('signal_days')} 日）| IS≤{ev.get('is_end')} | OOS≥2025-01-01 | "
           f"{ev.get('horizon_days')} 日 CAR | 单边 {ev.get('cost_bp_oneway')}bp | block={ev.get('block_bootstrap', {}).get('block')}")
-    print(f"# grade 分布：" + " ".join(f"{g}={counts.get(g, 0)}" for g in GRADES))
+    print("# grade 分布：" + " ".join(f"{g}={counts.get(g, 0)}" for g in GRADES))
     print(f"# {'ID':<34}{'可计算化':<6}{'因子':<24}{'事件数':>8}{'OOS_IC_t':>9}"
           f"{'OOS超额%':>10}{'p':>7}{'grade':>7}")
     for r in payload.get("results") or []:

@@ -254,7 +254,7 @@ def main(argv=None) -> int:
         for x, y, s in res["conflict_pairs"][:5]:
             print(f"  · {x} ↔ {y}  条件相似 {s:.0%}")
     if b["review"]:
-        print(f"\nreview 样例（前 3）：")
+        print("\nreview 样例（前 3）：")
         for a in b["review"][:3]:
             print(f"  · {a['assertion_id']} {a['precheck']} "
                   f"| {_action_text(a)[:30]}")

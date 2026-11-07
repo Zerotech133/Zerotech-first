@@ -677,10 +677,10 @@ def main() -> int:
                      f"**{x['net_ann_pct']}%** |")
         L += ["", f"- 年化单边换手：多头 {c['cost']['ann_turnover_long']}、空头 "
                   f"{c['cost']['ann_turnover_short']}（合计 {c['cost']['ann_turnover_2leg']}）",
-              f"- 5 层（20d）组均值：" + " / ".join(
+              "- 5 层（20d）组均值：" + " / ".join(
                   f"G{g}={c['layers']['h20']['groups'][f'G{g}']['mean_fwd_pct']}%"
                   for g in range(1, 6)),
-              f"- walk-forward 3 段 IC：" + " / ".join(
+              "- walk-forward 3 段 IC：" + " / ".join(
                   f"{x['segment']}={x['ic_mean']}" for x in c["walk_forward"]),
               f"- 前后半窗 IC：first={c['subsamples']['first_half']['mean']}、"
               f"second={c['subsamples']['second_half']['mean']}；分季度：" + " / ".join(

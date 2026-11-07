@@ -280,7 +280,6 @@ def main():
     # ---------------- Part B：粗信号生成（全市场）
     print("扫描粗信号…", flush=True)
     sigs = []          # (code, bar_i, level, entry_i, anchor)
-    regime_cache = {}
     for code, g in bars.groupby("ts_code", sort=False):
         g = g.reset_index(drop=True)
         bc = {"h": g["high"].to_numpy(float),

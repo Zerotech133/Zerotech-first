@@ -103,7 +103,7 @@ A("# B1/B2 全市场 20 日 CAR 横截面 IC / 多空评测")
 A("")
 A("- 日期：2026-11-05")
 A("- 任务：m07333「先把 B1/B2 的全市场 IC/多空评测补完」")
-A(f"- 样本：**B1 行情/估值 86 个 + B2 Alpha101 101 个 = 187 个因子**；B3 财务 84 个此前已单独评测，本报告不重复。")
+A("- 样本：**B1 行情/估值 86 个 + B2 Alpha101 101 个 = 187 个因子**；B3 财务 84 个此前已单独评测，本报告不重复。")
 if valid and best_top:
     b2_rows = [x for x in valid if x["batch"] == "B2"]
     b2_med = statistics.median([abs(x["ic"]) for x in b2_rows]) if b2_rows else None

@@ -190,7 +190,7 @@ def main() -> int:
         return "%.2f%%(t=%s,n=%s)" % (x["mean_pct"], x.get("t"), x["n"]) if x.get("mean_pct") is not None else ("n=%d" % x["n"] if x.get("n") else "—")
     L = ["# 研报覆盖/关注度因子（H34–H36）", "",
          f"- 数据：research_report 元数据（{rep_out['meta']['reports']:,} 条个股研报，{rep_out['meta']['codes']} 只）；T+1 收盘入场；20/60 日 CAR（相对等权、30bp）；IS≤2023/OOS≥2024",
-         f"- 事件日均值见下；判断方向已事先声明（H34 负、H35/H36 正），只有方向一致且 IS/OOS 双显著才算 backtested", "",
+         "- 事件日均值见下；判断方向已事先声明（H34 负、H35/H36 正），只有方向一致且 IS/OOS 双显著才算 backtested", "",
          "| 假设 | 预期 | 事件数 | 20日 IS | 20日 OOS | 判定 |", "|---|---|---|---|---|---|"]
     for hid, grp in rep_out["hypotheses"].items():
         L.append(f"| {hid} | {grp['expect']} | {grp['events']:,} | {f(grp['h20']['daily']['IS'])} | {f(grp['h20']['daily']['OOS'])} | **{grp['status']}** |")
