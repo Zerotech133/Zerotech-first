@@ -42,3 +42,14 @@ def test_seat_heartbeat_reports_age_and_fields(prototype, tmp_path):
 
 def test_seat_heartbeat_missing_returns_exists_false(prototype):
     assert prototype._seat_heartbeat("missing") == {"exists": False}
+
+
+def test_seat_heartbeat_malformed_json_is_visible(prototype, tmp_path):
+    heartbeat = tmp_path / "agent_platform" / "data" / "seat_heartbeat" / "seat1" / "status.json"
+    heartbeat.parent.mkdir(parents=True)
+    heartbeat.write_text("{not json", encoding="utf-8")
+
+    out = prototype._seat_heartbeat("seat1")
+
+    assert out["exists"] is False
+    assert out["error"] == "heartbeat_unreadable"

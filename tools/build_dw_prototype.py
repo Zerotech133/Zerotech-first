@@ -413,7 +413,7 @@ def _seat_heartbeat(seat: str) -> dict:
                 "elapsed_ms": d.get("elapsed_ms"), "checked_at": d.get("checked_at"),
                 "age_hours": age_h}
     except Exception:  # noqa: BLE001
-        return {"exists": False}
+        return {"exists": False, "error": "heartbeat_unreadable"}
 
 
 ROLE_DUTY = {
