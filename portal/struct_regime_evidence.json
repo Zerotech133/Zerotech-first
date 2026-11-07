@@ -1,0 +1,307 @@
+{
+ "meta": {
+  "pool": "chanlun_pool_ext_v2.jsonl",
+  "n_rows": 15347,
+  "n_days": 729,
+  "window": [
+   "20231009",
+   "20261030"
+  ],
+  "layers": {
+   "下行/缩量": 223,
+   "下行/放量": 44,
+   "上行/放量": 276,
+   "上行/缩量": 125
+  },
+  "min_days": 80,
+  "min_rho": 0.15,
+  "boot": 1000,
+  "note": "结构因子已 shift(1)；amt_pct 改作分层变量，不作因子"
+ },
+ "factors": {
+  "zt_cnt": {
+   "full": {
+    "n": 710,
+    "rho": 0.005
+   },
+   "layers": {
+    "下行/缩量": {
+     "n": 222,
+     "rho": 0.178,
+     "p_null": 0.014,
+     "by_year": {
+      "2024": 0.075,
+      "2025": -0.083,
+      "2026": 0.251
+     },
+     "years_same_sign": 2,
+     "years_total": 3
+    },
+    "下行/放量": {
+     "n": 44,
+     "skip": "样本 <80"
+    },
+    "上行/放量": {
+     "n": 276,
+     "rho": -0.228,
+     "p_null": 0.0,
+     "by_year": {
+      "2024": -0.081,
+      "2025": -0.215,
+      "2026": -0.235
+     },
+     "years_same_sign": 3,
+     "years_total": 3
+    },
+    "上行/缩量": {
+     "n": 125,
+     "rho": 0.146,
+     "p_null": 0.094,
+     "by_year": {
+      "2024": 0.189,
+      "2025": 0.068
+     },
+     "years_same_sign": 2,
+     "years_total": 2
+    }
+   }
+  },
+  "zt_dens": {
+   "full": {
+    "n": 684,
+    "rho": -0.019
+   },
+   "layers": {
+    "下行/缩量": {
+     "n": 216,
+     "rho": 0.013,
+     "p_null": 0.866,
+     "by_year": {
+      "2024": -0.073,
+      "2025": -0.095,
+      "2026": 0.12
+     },
+     "years_same_sign": 1,
+     "years_total": 3
+    },
+    "下行/放量": {
+     "n": 44,
+     "skip": "样本 <80"
+    },
+    "上行/放量": {
+     "n": 276,
+     "rho": -0.165,
+     "p_null": 0.003,
+     "by_year": {
+      "2024": -0.169,
+      "2025": -0.082,
+      "2026": -0.213
+     },
+     "years_same_sign": 3,
+     "years_total": 3
+    },
+    "上行/缩量": {
+     "n": 125,
+     "rho": 0.174,
+     "p_null": 0.05,
+     "by_year": {
+      "2024": 0.251,
+      "2025": 0.022
+     },
+     "years_same_sign": 2,
+     "years_total": 2
+    }
+   }
+  },
+  "dt_cnt": {
+   "full": {
+    "n": 728,
+    "rho": -0.006
+   },
+   "layers": {
+    "下行/缩量": {
+     "n": 223,
+     "rho": 0.038,
+     "p_null": 0.588,
+     "by_year": {
+      "2024": -0.006,
+      "2025": 0.099,
+      "2026": -0.087
+     },
+     "years_same_sign": 1,
+     "years_total": 3
+    },
+    "下行/放量": {
+     "n": 44,
+     "skip": "样本 <80"
+    },
+    "上行/放量": {
+     "n": 276,
+     "rho": 0.007,
+     "p_null": 0.897,
+     "by_year": {
+      "2024": 0.096,
+      "2025": 0.102,
+      "2026": 0.114
+     },
+     "years_same_sign": 3,
+     "years_total": 3
+    },
+    "上行/缩量": {
+     "n": 125,
+     "rho": -0.05,
+     "p_null": 0.577,
+     "by_year": {
+      "2024": -0.062,
+      "2025": 0.094
+     },
+     "years_same_sign": 1,
+     "years_total": 2
+    }
+   }
+  },
+  "board_max": {
+   "full": {
+    "n": 710,
+    "rho": 0.111
+   },
+   "layers": {
+    "下行/缩量": {
+     "n": 222,
+     "rho": 0.202,
+     "p_null": 0.001,
+     "by_year": {
+      "2024": 0.259,
+      "2025": -0.053,
+      "2026": 0.12
+     },
+     "years_same_sign": 2,
+     "years_total": 3
+    },
+    "下行/放量": {
+     "n": 44,
+     "skip": "样本 <80"
+    },
+    "上行/放量": {
+     "n": 276,
+     "rho": 0.047,
+     "p_null": 0.423,
+     "by_year": {
+      "2024": 0.195,
+      "2025": -0.097,
+      "2026": -0.016
+     },
+     "years_same_sign": 1,
+     "years_total": 3
+    },
+    "上行/缩量": {
+     "n": 125,
+     "rho": 0.11,
+     "p_null": 0.219,
+     "by_year": {
+      "2024": -0.016,
+      "2025": -0.323
+     },
+     "years_same_sign": 0,
+     "years_total": 2
+    }
+   }
+  },
+  "zt_dt": {
+   "full": {
+    "n": 710,
+    "rho": 0.002
+   },
+   "layers": {
+    "下行/缩量": {
+     "n": 222,
+     "rho": 0.024,
+     "p_null": 0.703,
+     "by_year": {
+      "2024": 0.031,
+      "2025": -0.099,
+      "2026": 0.127
+     },
+     "years_same_sign": 2,
+     "years_total": 3
+    },
+    "下行/放量": {
+     "n": 44,
+     "skip": "样本 <80"
+    },
+    "上行/放量": {
+     "n": 276,
+     "rho": -0.086,
+     "p_null": 0.133,
+     "by_year": {
+      "2024": -0.117,
+      "2025": -0.142,
+      "2026": -0.167
+     },
+     "years_same_sign": 3,
+     "years_total": 3
+    },
+    "上行/缩量": {
+     "n": 125,
+     "rho": 0.081,
+     "p_null": 0.342,
+     "by_year": {
+      "2024": 0.096,
+      "2025": -0.07
+     },
+     "years_same_sign": 1,
+     "years_total": 2
+    }
+   }
+  }
+ },
+ "verdicts": {
+  "zt_cnt": {
+   "pass_layers": [
+    "上行/放量"
+   ],
+   "marginal_layers": [
+    "下行/缩量"
+   ],
+   "layers_opposite_sign": true,
+   "verdict": "边缘成立：一层强、一层弱但反号，需前推验证"
+  },
+  "zt_dens": {
+   "pass_layers": [
+    "上行/放量",
+    "上行/缩量"
+   ],
+   "marginal_layers": [],
+   "layers_opposite_sign": true,
+   "verdict": "条件因子成立（可落地）"
+  },
+  "dt_cnt": {
+   "pass_layers": [],
+   "marginal_layers": [],
+   "layers_opposite_sign": false,
+   "verdict": "否决：分层后无稳定符号"
+  },
+  "board_max": {
+   "pass_layers": [],
+   "marginal_layers": [
+    "下行/缩量"
+   ],
+   "layers_opposite_sign": false,
+   "verdict": "否决：分层后无稳定符号"
+  },
+  "zt_dt": {
+   "pass_layers": [],
+   "marginal_layers": [],
+   "layers_opposite_sign": false,
+   "verdict": "否决：分层后无稳定符号"
+  }
+ },
+ "summary": {
+  "approved": [
+   "zt_cnt",
+   "zt_dens"
+  ],
+  "conclusion": "H_A 成立：结构因子方向由事前趋势/量能状态决定",
+  "next": "对 ['zt_cnt', 'zt_dens'] 做条件回测（层内才启用该过滤）"
+ }
+}

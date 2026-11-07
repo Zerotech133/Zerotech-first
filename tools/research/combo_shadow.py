@@ -483,20 +483,69 @@ def main():
                           for _ in range(boot)], float)
         p95 = float(np.percentile(draws, 95))
         p50 = float(np.percentile(draws, 50))
+        # ---- 样本量闸门（2026-11-08 老田裁定）----
+        # 到期开仓日 < MIN_SETTLED_DAYS 时，p 值**不得作为结论**：
+        # 单窗口 p 值随窗口选择剧烈漂移，而分年拆解已证明 2024 方向相反。
+        # 这里保留数字（供观察漂移），但把 verdict 降级为描述性、usable=False，
+        # 下游任何仓位决策都必须看 usable 而不是 p_value。
+        enough = n >= MIN_SETTLED_DAYS
+        raw_verdict = ("优于随机 95% 分位" if real > p95 else
+                       ("优于随机中位但未过 5%" if real > p50 else
+                        "不如随机（等同少交易）"))
         return {"days": n, "universe": int(len(all_days)),
                 "real": round(real * 100, 3),
                 "null_p50": round(p50 * 100, 3),
                 "null_p95": round(p95 * 100, 3),
                 "p_value": round(float((draws >= real).mean()), 4),
-                "verdict": ("有效（优于随机 95% 分位）" if real > p95 else
-                            ("弱（优于中位但未过 5%）" if real > p50 else
-                             "无效（不如随机，纯属少交易）"))}
+                "usable_for_decision": enough,
+                "verdict": (raw_verdict if enough else
+                            "【描述性·不可用于决策】" + raw_verdict),
+                "gate": ("样本充足（%d ≥ %d 日）" % (n, MIN_SETTLED_DAYS) if enough else
+                         "样本不足（%d < %d 日）：p 值仅描述本窗口，"
+                         "不得跨窗口/跨年份外推" % (n, MIN_SETTLED_DAYS))}
 
     sent["null"] = {"trail": null_test(settled, "trail"),
                     "hold": null_test(settled, "hold")}
     sent["null"]["note"] = (
         "随机抽同样天数的被动组合，看日批均零分布；sigdens 是日级因子，"
         "这一节才是它唯一有效的检验")
+
+    # ---- 记账进度与 ETA（2026-11-08 校准）----
+    # 「还差 45 天」是错口径：需要的是 45 个**已到期的 pass 开仓日**。
+    # 三层折算：pass 日 / 有信号日 × 有信号日 / 日历交易日。
+    # **分母只能用台账实际运行期**：窗口起点 20260128 早于第一条 1买/2买 记录
+    # （20260422），那段「零信号日」会把密度压低、ETA 虚高。取尾部 60 个交易日
+    # 的密度更能反映当前状态（池子信号密度本身在爬升）。
+    n_days_all = len({r["entry_date"] for r in recs})
+    n_days_pass_all = len({r["entry_date"] for r in recs if r["pass"]})
+    n_days_pass_settled = len({r["entry_date"] for r in settled if r["pass"]})
+    tail_lo = sorted({r["entry_date"] for r in recs})[-60:][0]
+    _cal_tail = [d for d in axis if tail_lo <= d <= d_hi]
+    _bd = defaultdict(list)
+    for r in recs:
+        _bd[r["entry_date"]].append(r)
+    _tail_sig = [d for d in sorted(_bd) if d >= tail_lo]
+    _tail_pass = [d for d in _tail_sig if any(r["pass"] for r in _bd[d])]
+    _sig_rate = len(_tail_sig) / max(1, len(_cal_tail))
+    _pass_rate = len(_tail_pass) / max(1, len(_tail_sig))
+    _per_day = _sig_rate * _pass_rate
+    _gap = max(0, MIN_SETTLED_DAYS - n_days_pass_settled)
+    _trad = (_gap / _per_day) if _per_day > 0 else None
+    sent["progress"] = {
+        "settled_pass_days": n_days_pass_settled,
+        "target": MIN_SETTLED_DAYS,
+        "gap": _gap,
+        "rate": {"tail_from": tail_lo, "tail_cal_days": len(_cal_tail),
+                 "tail_signal_days": len(_tail_sig), "tail_pass_days": len(_tail_pass),
+                 "signal_day_per_cal": round(_sig_rate, 3),
+                 "pass_per_signal_day": round(_pass_rate, 3),
+                 "pass_per_cal": round(_per_day, 3)},
+        "eta_trading_days": None if _trad is None else int(round(_trad + HOLD)),
+        "eta_note": ("尾部密度下还需 %.0f 个交易日补齐缺口，再加 %d 日成熟期 "
+                     "→ 合计约 %d 个交易日（≈%.1f 个月）"
+                     % (_trad, HOLD, _trad + HOLD, (_trad + HOLD) / 21.0)
+                     if _trad is not None else "密度未知，无法估 ETA"),
+    }
 
     # ---- 判定 ----
     # 判定用「日批均」，与仓位、复利、在场率全都无关，是这批信号最干净的效力指标
@@ -518,8 +567,17 @@ def main():
     sent["baseline"] = base
     sent["combo"] = best
     sent["verdict"] = verdict
+    sent["usable_for_position"] = bool(n_days_pass >= MIN_SETTLED_DAYS)
+    sent["decision_gate"] = (
+        "可用：%d 个已到期开仓日 ≥ %d" % (n_days_pass, MIN_SETTLED_DAYS)
+        if sent["usable_for_position"] else
+        "禁止用于仓位决策：仅 %d/%d 个已到期开仓日；"
+        "本清单所有 p 值与日批均均为「窗口内描述性」，"
+        "不得跨窗口外推（分年拆解已证明 2024 方向相反）"
+        % (n_days_pass, MIN_SETTLED_DAYS))
     sent["warn"] = ("sigdens 阈值来自三年样本内分位点，存在样本内偏差；"
-                    "本清单唯一目的就是用前推样本把它证伪或证实")
+                    "本清单唯一目的就是用前推样本把它证伪或证实。"
+                    "**单窗口 p 值不构成结论**，判据只认 progress 里的到期开仓日数")
     json.dump(sent, open(STATS, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 
     say("  出场分布（移动止损口径）：止损 %d 笔 / 持满 %d 笔"
@@ -537,6 +595,10 @@ def main():
                 % (k, v["days"], v["universe"], v["real"], v["null_p50"],
                    v["null_p95"], v["p_value"], v["verdict"]))
     say("  判定：%s" % verdict)
+    pg = sent["progress"]
+    say("  记账进度 %d/%d 个已到期 pass 开仓日（缺口 %d）；%s"
+        % (pg["settled_pass_days"], pg["target"], pg["gap"], pg["eta_note"]))
+    say("  决策闸门：%s" % sent["decision_gate"])
     say("落盘 %s" % STATS)
 
 

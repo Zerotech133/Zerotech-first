@@ -915,7 +915,9 @@
    "null_p50": -0.026,
    "null_p95": 0.564,
    "p_value": 0.035,
-   "verdict": "有效（优于随机 95% 分位）"
+   "usable_for_decision": false,
+   "verdict": "【描述性·不可用于决策】优于随机 95% 分位",
+   "gate": "样本不足（75 < 120 日）：p 值仅描述本窗口，不得跨窗口/跨年份外推"
   },
   "hold": {
    "days": 75,
@@ -924,9 +926,27 @@
    "null_p50": -2.728,
    "null_p95": -1.658,
    "p_value": 0.01,
-   "verdict": "有效（优于随机 95% 分位）"
+   "usable_for_decision": false,
+   "verdict": "【描述性·不可用于决策】优于随机 95% 分位",
+   "gate": "样本不足（75 < 120 日）：p 值仅描述本窗口，不得跨窗口/跨年份外推"
   },
   "note": "随机抽同样天数的被动组合，看日批均零分布；sigdens 是日级因子，这一节才是它唯一有效的检验"
+ },
+ "progress": {
+  "settled_pass_days": 75,
+  "target": 120,
+  "gap": 45,
+  "rate": {
+   "tail_from": "20260803",
+   "tail_cal_days": 62,
+   "tail_signal_days": 60,
+   "tail_pass_days": 45,
+   "signal_day_per_cal": 0.968,
+   "pass_per_signal_day": 0.75,
+   "pass_per_cal": 0.726
+  },
+  "eta_trading_days": 82,
+  "eta_note": "尾部密度下还需 62 个交易日补齐缺口，再加 20 日成熟期 → 合计约 82 个交易日（≈3.9 个月）"
  },
  "baseline": {
   "days": 98,
@@ -943,5 +963,7 @@
   "std": 8.05
  },
  "verdict": "样本不足：组合口径仅 75 个已到期开仓日（需 ≥120），继续记账，不作任何仓位建议",
- "warn": "sigdens 阈值来自三年样本内分位点，存在样本内偏差；本清单唯一目的就是用前推样本把它证伪或证实"
+ "usable_for_position": false,
+ "decision_gate": "禁止用于仓位决策：仅 75/120 个已到期开仓日；本清单所有 p 值与日批均均为「窗口内描述性」，不得跨窗口外推（分年拆解已证明 2024 方向相反）",
+ "warn": "sigdens 阈值来自三年样本内分位点，存在样本内偏差；本清单唯一目的就是用前推样本把它证伪或证实。**单窗口 p 值不构成结论**，判据只认 progress 里的到期开仓日数"
 }
