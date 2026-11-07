@@ -158,12 +158,21 @@ def main():
     # 每票一组数组，避免逐行 DataFrame 索引
     P = {}
     for code, g in bars.groupby("ts_code", sort=False):
+        # 关键：路径价格必须用复权价 close*adj_factor。用原始 close 时，5-6 月
+        # 分红除权日的跳空会被当成真实下跌，A 规则净收益被压到 -0.42%（池毛
+        # +0.17%），配对差在 5 月达 -3.18%、24.6% 的笔差超 1pp；更糟的是移动
+        # 止损会因除权假跌提前触发，"止损有效"被系统性夸大。
+        # adj_factor 是累计因子，只在本序列内做相对比较，不与 entry_px 混标度
+        # （混了会出 700%+ 鬼数，那个坑由 k = entry_px / c0[复权] 规避）。
+        af = (g["adj_factor"].to_numpy(float) if "adj_factor" in g.columns
+              else np.ones(len(g)))
+        af = np.where(np.isfinite(af) & (af > 0), af, 1.0)
         P[code] = {
             "d": g["trade_date"].tolist(),
-            "o": g["open"].to_numpy(float),
-            "h": g["high"].to_numpy(float),
-            "l": g["low"].to_numpy(float),
-            "c": g["close"].to_numpy(float),
+            "o": g["open"].to_numpy(float) * af,
+            "h": g["high"].to_numpy(float) * af,
+            "l": g["low"].to_numpy(float) * af,
+            "c": g["close"].to_numpy(float) * af,
             "pos": {x: i for i, x in enumerate(g["trade_date"].tolist())},
         }
 
@@ -246,6 +255,9 @@ def main():
     diffs = [abs(float(chk.loc[k2]) - pool_ret[k2]) for k2 in chk.index
              if k2 in pool_ret]
     if diffs:
+        assert float(np.median(diffs)) < 0.01, (
+            "A 规则未能复现池 ret（中位偏差 %.4f），复权标度仍有问题"
+            % float(np.median(diffs)))
         print("自检：A 规则 vs 池 ret 中位偏差 %.5f，>1%% 的笔数 %d / %d"
               % (float(np.median(diffs)),
                  int(sum(1 for x in diffs if x > 0.01)), len(diffs)))
