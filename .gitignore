@@ -176,6 +176,10 @@ prototypes/ai_chat_web/*.db
 
 # ===== 本地密钥（K-ORG-039：绝不进版本库）=====
 config/*.local.json
+# 2026-11-07 补：云端 LLM 配置含真实 api_key，此前既未跟踪也未忽略，
+# 任何人 git add -A / git add config 都会把它提交进库。禁止入库。
+# （文件名沿用 cloud_llm.json 不改：8091 运行期按此路径读取，改名需重启服务。）
+config/cloud_llm.json
 
 # picks 发布链运行态文件（2026-10-14 安全审计 F-002）
 portal/work/
