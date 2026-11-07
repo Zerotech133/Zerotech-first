@@ -1680,6 +1680,44 @@ def _build_open_scan_card(p: Dict[str, Any]) -> Dict[str, Any]:
         "elements": elements,
     }
 
+def _build_close_summary_card(p: Dict[str, Any]) -> Dict[str, Any]:
+    """收盘小结卡：当日触发/规则分布/推送质量；每交易日一张。"""
+    rules = []
+    for r in (p.get("rules") or [])[:8]:
+        rules.append("%s × %d" % (_md_clean(r.get("rule") or "", 20),
+                                  int(r.get("count") or 0)))
+    elements: List[Dict[str, Any]] = [
+        {"tag": "div", "text": {"tag": "lark_md",
+                                "content": "**交易日** %s　**触发** %d 条（critical %d）" % (
+                                    _md_clean(p.get("date") or "", 20),
+                                    int(p.get("alerts_total") or 0),
+                                    int(p.get("critical_total") or 0))}},
+        {"tag": "div", "text": {"tag": "lark_md",
+                                "content": "**规则分布**：%s" % (
+                                    "　".join(rules) if rules else "今日无触发")}},
+        {"tag": "div", "text": {"tag": "lark_md",
+                                "content": "**推送**：成功 %d　失败 %d" % (
+                                    int(p.get("push_ok") or 0),
+                                    int(p.get("push_fail") or 0))}},
+        {"tag": "hr"},
+        {"tag": "div", "text": {"tag": "lark_md",
+                                "content": "收盘小结为每日固定摘要；异动卡已于盘中实时推送。"}},
+        {"tag": "div", "text": {"tag": "lark_md",
+                                "content": p.get("footer") or "研究提示，不构成投资建议"}},
+    ]
+    if p.get("url"):
+        elements.append({"tag": "action", "actions": [{
+            "tag": "button", "type": "default",
+            "text": {"tag": "plain_text", "content": "打开分析工作台"},
+            "behaviors": [{"type": "open_url", "default_url": p["url"]}]}]})
+    return {
+        "config": {"wide_screen_mode": True},
+        "header": {"template": "blue",
+                   "title": {"tag": "plain_text",
+                             "content": p.get("title") or "收盘小结"}},
+        "elements": elements,
+    }
+
 def build_feishu_card(p: Dict[str, Any]) -> Dict[str, Any]:
     """payload → 飞书 interactive 卡（A 股红涨绿跌；纯 URL 按钮，无回调动作）。
 
@@ -1689,6 +1727,8 @@ def build_feishu_card(p: Dict[str, Any]) -> Dict[str, Any]:
     """
     if p.get("rule") == "open_scan":
         return _build_open_scan_card(p)
+    if p.get("rule") == "close_summary":
+        return _build_close_summary_card(p)
     try:
         pct = float(p.get("pct") or 0.0)
     except (TypeError, ValueError):
@@ -1882,6 +1922,85 @@ def maybe_open_scan(store: "StateStore",
             len(pool or []), len(quotes), int(trigger_count or 0)))
     else:
         log("开盘首扫：推送失败，下一 tick 重试（%s）" % str(
+            (results or [{}])[0].get("error") or (results or [{}])[0].get("why") or "")[:120])
+    return {"ok": ok, "payload": payload, "results": results}
+
+def build_closing_summary_payload(store: "StateStore",
+                                  cfg: Optional[Dict[str, Any]] = None,
+                                  now: Optional[datetime] = None) -> Dict[str, Any]:
+    """收盘小结 payload：当日触发条数/规则分布/推送成功失败（15:10 收工前发）。"""
+    conf = cfg or load_config()
+    push = conf.get("push") or {}
+    base = str(conf.get("portal_base") or "").rstrip("/")
+    cur = now or now_cst()
+    day = cur.strftime("%Y-%m-%d")
+    total = critical = 0
+    push_ok = push_fail = 0
+    rules: List[Dict[str, Any]] = []
+    try:
+        row = store.con.execute(
+            "SELECT COUNT(*), SUM(critical) FROM alerts WHERE trade_date = ?",
+            (day,)).fetchone()
+        total = int(row[0] or 0) if row else 0
+        critical = int(row[1] or 0) if row else 0
+        for r in store.con.execute(
+                "SELECT rule, COUNT(*) FROM alerts WHERE trade_date = ? "
+                "GROUP BY rule ORDER BY COUNT(*) DESC", (day,)):
+            rules.append({"rule": r[0], "count": int(r[1])})
+        row = store.con.execute(
+            "SELECT SUM(sent = 1), SUM(sent = 0) FROM pushes "
+            "WHERE substr(ts, 1, 10) = ?", (day,)).fetchone()
+        push_ok = int(row[0] or 0) if row else 0
+        push_fail = int(row[1] or 0) if row else 0
+    except sqlite3.Error as exc:
+        log("收盘小结：统计失败（%s）" % str(exc)[:120])
+    return {
+        "kind": push.get("kind", "watch:realtime"),
+        "receiver": push.get("receiver", "个人"),
+        "code": "POOL", "name": "收盘小结", "rule": "close_summary",
+        "severity": "info", "critical": False,
+        "title": "收盘小结 · %s" % cur.strftime("%m-%d"),
+        "date": day,
+        "alerts_total": total,
+        "critical_total": critical,
+        "push_ok": push_ok,
+        "push_fail": push_fail,
+        "rules": rules,
+        "ts": cur.strftime("%Y-%m-%d %H:%M:%S"),
+        "fingerprint": make_fingerprint("POOL", "close_summary", day, day),
+        "url": "%s/sa" % base,
+        "footer": "研究提示，不构成投资建议",
+    }
+
+def maybe_closing_summary(store: "StateStore",
+                          cfg: Optional[Dict[str, Any]] = None,
+                          now: Optional[datetime] = None,
+                          dry_run: bool = False,
+                          push_fn: Optional[Any] = None) -> Optional[Dict[str, Any]]:
+    """收盘小结：每交易日成功推送一次（KV close_summary_done:<date>）；失败不置标记。"""
+    conf = cfg or load_config()
+    cur = now or now_cst()
+    if dry_run:
+        return None
+    if not ((conf.get("push") or {}).get("enabled")):
+        return None
+    day = cur.strftime("%Y-%m-%d")
+    done_key = "close_summary_done:%s" % day
+    if store.get_kv(done_key):
+        return None
+    payload = build_closing_summary_payload(store, conf, cur)
+    sender = push_fn or push_via_hub
+    results = sender([payload], cfg=conf)
+    ok = bool(results and results[0].get("ok"))
+    kind = (conf.get("push") or {}).get("kind", "watch:realtime")
+    store.record_raw_push(payload["ts"], "POOL", "close_summary",
+                          payload["fingerprint"], kind, payload, sent=ok)
+    if ok:
+        store.set_kv(done_key, payload["ts"])
+        log("收盘小结：已推送（触发 %d 条，推送成功 %d / 失败 %d）" % (
+            payload["alerts_total"], payload["push_ok"], payload["push_fail"]))
+    else:
+        log("收盘小结：推送失败，下一轮重试（%s）" % str(
             (results or [{}])[0].get("error") or (results or [{}])[0].get("why") or "")[:120])
     return {"ok": ok, "payload": payload, "results": results}
 
@@ -2099,15 +2218,37 @@ def main(argv: Optional[List[str]] = None) -> int:
         stop_at = _parse_hhmm(args.stop_at, dtime(15, 10)) if args.stop_at else None
         log("引擎：进入常驻循环 tick=%ds（交易时段 09:25–11:30 / 13:00–15:00%s）" %
             (args.tick, ("，%s 收工" % stop_at.strftime("%H:%M")) if stop_at else ""))
+        # 启动即写一次心跳：计划任务守护据此判断「引擎存活」，
+        # 否则 09:10–09:25 非交易时段无心跳会被误判为「任务在跑但心跳陈旧」。
+        if not args.dry_run:
+            _write_heartbeat(status="loop_start", pool=0, quotes=0, news=0,
+                             sectors=0, raw=0, accepted=0, pushed=0,
+                             push_enabled=bool((cfg.get("push") or {}).get("enabled")))
         while True:
             if stop_at and now_cst().time() >= stop_at:
                 log("引擎：已到收工时间 %s，退出循环" % stop_at.strftime("%H:%M"))
+                if not args.dry_run:
+                    # 收盘小结：在收工前由引擎自己发（不依赖外部提醒），
+                    # 当日成功一次后置 close_summary_done:<date>；失败下轮重试。
+                    try:
+                        _store = StateStore()
+                        try:
+                            maybe_closing_summary(_store, cfg=cfg, now=now_cst())
+                        finally:
+                            _store.close()
+                    except Exception as exc:  # noqa: BLE001 - 小结失败不得影响收工
+                        log("收盘小结：异常（%s）" % str(exc)[:160])
                 lock.close()
                 return 0
             try:
                 if market_open(cfg=cfg):
                     run_once(dry_run=args.dry_run, cfg=cfg, fetch=not args.no_fetch)
                 else:
+                    if not args.dry_run:
+                        # 非交易时段也刷心跳（引擎存活信标），避免守护误判。
+                        _write_heartbeat(status="idle", pool=0, quotes=0, news=0,
+                                         sectors=0, raw=0, accepted=0, pushed=0,
+                                         push_enabled=bool((cfg.get("push") or {}).get("enabled")))
                     log("引擎：非交易时段，休眠 %ds" % max(5, args.tick))
             except KeyboardInterrupt:
                 log("引擎：收到中断，退出")

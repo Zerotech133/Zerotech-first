@@ -357,3 +357,30 @@ W3 另覆盖卡片红涨绿跌/纯 URL 按钮、receiver 解析、hub 鉴权与�
 - 不 import/不改 `news_collector/`；推送只经 8097 hub；W4 任务（`IntradayWatch` / `IntradayWatchGuard`）
   已于 2026-11-05 06:00 按 L2 批准激活（临时指向 worktree，合并后按回执切主仓）。
 - 停牌（现价 0、昨收>0）以昨收计价且 `pct=None`，不出任何量价信号；坏数据一律 fail-safe 丢弃。
+
+### 收盘小结（close_summary）与可靠性加固（2026-11-07）
+
+- **收盘小结自动发送**：引擎在 `--loop --stop-at 15:10` 收工分支调用
+  `maybe_closing_summary()`，统计当日 alerts 总数 / critical / 规则分布 /
+  pushes 成功失败，发 `rule=close_summary` 的蓝色摘要卡（code=POOL）。
+  每日一次（KV `close_summary_done:<date>`），推送失败不置标记、下一轮重试；
+  不依赖外部提醒脚本。CLI 手动补发：`python -m analysis.intraday_watch --closing-summary`（预留）。
+- **心跳**：`--loop` 启动即写一次 `status=loop_start` 心跳，非交易时段每轮
+  （约 60s）写 `status=idle` 心跳；交易时段轮次结束写 `status=idle/run`。
+  守护脚本据此判断引擎存活，不再出现 09:10–09:25「任务在跑但心跳陈旧」误报。
+- **launcher 退出码**：引擎返回 3（`engine.lock` 被占用，说明已有实例）在
+  `C:\Temp\run_intraday_watch.py` 中归一为 0，避免计划任务 RestartOnFailure 抖动。
+- **守护判据**（`C:\Temp\intraday_watch_guard.py`）：
+  1) 先查引擎进程（python.exe + CommandLine 含 `analysis.intraday_watch` 与 `--loop`）；
+  2) 心跳 ≤300s 视为正常；300–600s 只观察；>600s 且进程存活判僵死，
+     `taskkill /F` 命中 pid 后拉起任务；
+  3) 仅在无进程且任务 Ready 时拉起（每日上限 3 次）；
+  4) 计划任务状态只作辅助信号（launcher 退出后任务 Ready 但引擎仍可能存活）。
+- **计划任务加固**：IntradayWatch / IntradayWatchGuard 均为
+  `DisallowStartIfOnBatteries=false`、`StopIfGoingOnBatteries=false`、
+  `WakeToRun=true`、`StartWhenAvailable=true`、`ExecutionTimeLimit=PT8H/PT10M`；
+  IntradayWatch NextRun 周一 09:10，任务日 MON–FRI。
+- **2026-11-06 事故**：10:14 电源事件触发 `StopIfGoingOnBatteries=true` 停掉 launcher，
+  引擎子进程成孤儿继续跑到 13:27；旧守护只看任务状态，误判后空转重启 3 次耗尽配额；
+  13:28 笔记本睡眠至 16:39，收盘前 1.5h 无盯盘（当日 17 条告警、19 条推送，无 15:15 小结）。
+  当日 alerts/pushes/state 全部按日期分键，不影响次日。
