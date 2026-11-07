@@ -236,3 +236,52 @@ commit_table(data['files'],data['manifest'],store=RunStore(sys.argv[1]),run_id=s
         assert json.loads(Path(manifest["target"]).read_text("utf-8")) == {"version": 2}
     assert store.get_run(run)["metrics"]["revised_rows"] == 2
     assert commit.recover_commits(store, run)[0]["status"] == "complete"
+
+
+# ---- 锁文件 open 的瞬时 Errno 13（2026-11-07 K-ORG-20261107-LOCKOPEN）----
+# 两个平台分支的加锁都是阻塞等待，但 os.open 原先写在等待之外：瞬态拒绝会把
+# "等一会儿"变成"发布失败"。与 tools/devtask.py::_tasks_file_lock 的形态对齐。
+
+
+def _flaky_os_open(monkeypatch, target, fail_times):
+    real_open = os.open
+    calls = {"n": 0}
+
+    def flaky(path, flags, mode=0o777, **kw):
+        if str(path) == str(target):
+            calls["n"] += 1
+            if calls["n"] <= fail_times:
+                raise PermissionError(13, "Permission denied", str(path))
+        return real_open(path, flags, mode, **kw)
+
+    monkeypatch.setattr(os, "open", flaky)
+    return calls
+
+
+def test_open_lock_descriptor_retries_transient_permission_error(commit, tmp_path,
+                                                                 monkeypatch):
+    lock = tmp_path / ".warehouse-publication.lock"
+    calls = _flaky_os_open(monkeypatch, lock, fail_times=2)
+    fd = commit._open_lock_descriptor(lock, os.O_RDWR | os.O_CREAT, 0o600)
+    try:
+        assert lock.exists()
+    finally:
+        os.close(fd)
+    assert calls["n"] >= 3, calls
+
+
+def test_open_lock_descriptor_gives_up_after_deadline(commit, tmp_path, monkeypatch):
+    lock = tmp_path / ".warehouse-publication.lock"
+    _flaky_os_open(monkeypatch, lock, fail_times=10 ** 9)
+    monkeypatch.setattr(commit, "_LOCK_OPEN_TIMEOUT_S", 0.05)
+    with pytest.raises(PermissionError):
+        commit._open_lock_descriptor(lock, os.O_RDWR | os.O_CREAT, 0o600)
+
+
+def test_publication_guard_survives_transient_open_error(commit, tmp_path, monkeypatch):
+    """端到端：锁文件 open 抖两次后，发布仍然走通（不再上升为发布失败）。"""
+    lock = tmp_path / ".warehouse-publication.lock"
+    calls = _flaky_os_open(monkeypatch, lock, fail_times=2)
+    with commit.publication_guard(tmp_path, mode="write"):
+        pass
+    assert calls["n"] >= 3, calls

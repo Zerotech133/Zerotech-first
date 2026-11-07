@@ -45,17 +45,36 @@ def _now() -> str:
     return datetime.now(BEIJING).isoformat(timespec="seconds")
 
 
+_LOCK_TIMEOUT_S = 10.0
+
+
 @contextmanager
 def _file_lock(path: str) -> Iterator[None]:
     """跨进程单写锁（Windows msvcrt.locking；失败回退进程内锁）。"""
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    fd = os.open(path, os.O_CREAT | os.O_RDWR)
+    # 2026-11-07 K-ORG-20261107-LOCKOPEN：open 与加锁共用同一个 deadline。
+    # 原先 os.open 写在等待逻辑之外，Windows 上并发创建/打开同一文件会瞬时
+    # Errno 13（共享模式竞争 / 安全软件持有扫描句柄，inbox_gateway 实测约
+    # 16%），异常直接抛给调用方 → 看到的是"账本写入失败"，而加锁侧明明会等
+    # 10s。同一函数里两套等待语义，与 tools/devtask.py::_tasks_file_lock 的
+    # 正确形态（open 也在重试循环内）不一致。超时后仍按原异常类型抛出。
+    deadline = time.time() + _LOCK_TIMEOUT_S
+    fd = None
+    while True:
+        try:
+            fd = os.open(path, os.O_CREAT | os.O_RDWR)
+            break
+        except PermissionError:
+            if time.time() > deadline:
+                raise
+            time.sleep(0.05)
     locked = False
     try:
         try:
             import msvcrt
 
-            deadline = time.time() + 10
+            # 复用上面同一个 deadline：open 与加锁共享 10s 总预算，
+            # 否则 open 重试 + 加锁重试会变成 20s，上层超时口径漂移。
             while True:
                 try:
                     msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)

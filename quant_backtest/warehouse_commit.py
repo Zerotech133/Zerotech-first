@@ -44,6 +44,30 @@ def _inside(root, value):
     return path
 
 
+_LOCK_OPEN_TIMEOUT_S = 5.0
+_LOCK_OPEN_BACKOFF_S = 0.05
+
+
+def _open_lock_descriptor(lock_path, flags, mode):
+    """打开发布锁文件；瞬时 Errno 13 有界重试。
+
+    2026-11-07 K-ORG-20261107-LOCKOPEN：两个平台分支（POSIX flock / Windows
+    LockFileEx）的加锁都是**阻塞等待**语义，但打开锁文件的 os.open 写在等待之外，
+    Windows 上并发创建/打开同一文件会瞬时 Errno 13，异常直接把"等一会儿"变成
+    "发布失败"。与 tools/devtask.py::_tasks_file_lock 的正确形态对齐。
+
+    上限 5s 后原样抛出：持续拒绝是真故障（权限/磁盘/路径），不能无限等成 hang。
+    """
+    deadline = time.monotonic() + _LOCK_OPEN_TIMEOUT_S
+    while True:
+        try:
+            return os.open(lock_path, flags, mode)
+        except PermissionError:
+            if time.monotonic() >= deadline:
+                raise
+            time.sleep(_LOCK_OPEN_BACKOFF_S)
+
+
 def _pending(root):
     directory = root / ".warehouse-publication" / "pending"
     if not directory.resolve().is_relative_to(root):
@@ -83,7 +107,7 @@ def publication_guard(resource, *, mode):
         lock_path = root / ".warehouse-publication.lock"
         if lock_path.is_symlink():
             raise ValueError("发布锁不可为符号链接")
-        descriptor = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
+        descriptor = _open_lock_descriptor(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
         locked = False
         try:
             fcntl.flock(descriptor, fcntl.LOCK_EX if mode == "write" else fcntl.LOCK_SH)
@@ -134,7 +158,9 @@ def publication_guard(resource, *, mode):
     lock_path = root / ".warehouse-publication.lock"
     if lock_path.is_symlink():
         raise ValueError("发布锁不可为符号链接")
-    descriptor = os.open(lock_path, os.O_RDWR | os.O_CREAT | os.O_BINARY, 0o600)
+    descriptor = _open_lock_descriptor(
+        lock_path, os.O_RDWR | os.O_CREAT | os.O_BINARY, 0o600
+    )
     handle = msvcrt.get_osfhandle(descriptor)
     overlapped = OVERLAPPED()
     locked = False

@@ -143,3 +143,44 @@ def test_ids_are_unique_and_sequential(tmp_path):
     )
     assert a["payload"]["goal_id"] != b["payload"]["goal_id"]
     assert b["seq"] == 2
+
+
+# ---- 锁文件 open 的瞬时 Errno 13（2026-11-07 K-ORG-20261107-LOCKOPEN）----
+# 背景：Windows 上并发创建/打开同一文件会瞬时 PermissionError（共享模式竞争 /
+# 安全软件持有扫描句柄，同仓 inbox_gateway 实测约 16%）。原先 os.open 写在
+# 加锁等待逻辑之外，异常直接上升为"账本写入失败"，与加锁侧的 10s 等待不一致。
+
+
+def _flaky_os_open(monkeypatch, target, fail_times):
+    """只让 target 这个路径的 os.open 前 fail_times 次报 Errno 13，其余透传。"""
+    real_open = os.open
+    calls = {"n": 0}
+
+    def flaky(path, flags, mode=0o777, **kw):
+        if str(path) == str(target):
+            calls["n"] += 1
+            if calls["n"] <= fail_times:
+                raise PermissionError(13, "Permission denied", str(path))
+        return real_open(path, flags, mode, **kw)
+
+    monkeypatch.setattr(os, "open", flaky)
+    return calls
+
+
+def test_file_lock_retries_transient_open_permission_error(tmp_path, monkeypatch):
+    """瞬时两次拒绝后仍能拿到锁——不把"等一下"变成"账本写失败"。"""
+    lock = tmp_path / "ledger.lock"
+    calls = _flaky_os_open(monkeypatch, lock, fail_times=2)
+    with S._file_lock(str(lock)):
+        assert lock.exists()
+    assert calls["n"] >= 3, calls
+
+
+def test_file_lock_open_gives_up_after_deadline(tmp_path, monkeypatch):
+    """持续拒绝必须抛错而不是无限等——把真故障变成 hang 更糟。"""
+    lock = tmp_path / "ledger2.lock"
+    _flaky_os_open(monkeypatch, lock, fail_times=10 ** 9)
+    monkeypatch.setattr(S, "_LOCK_TIMEOUT_S", 0.05)
+    with pytest.raises(PermissionError):
+        with S._file_lock(str(lock)):
+            pass
