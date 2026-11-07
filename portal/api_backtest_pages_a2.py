@@ -450,14 +450,15 @@ def _bt_jev(self):
                     "<div style='margin:4px 0;font-size:12.5px'>"
                     "<span style='color:%s;font-weight:700'>%s %d%%</span>"
                     "<span style='color:#58606a'> · %s · %s</span> "
-                    "<a href='/kg/stock/%s' style='color:#58a6ff'>%s</a>"
+                    "<a href='/jev_target.html#%s' style='color:#58a6ff' title='JEV 标的下钻：三面依据一页出'>⇱</a> <a href='/kg/stock/%s' style='color:#58a6ff'>%s</a>"
                     "</div>"
                     % ("#3fb950" if _b == "bear" else "#f85149",
                        "利空" if _b == "bear" else "利多",
                        round((x.get("conf") or 0) * 100),
                        x.get("tag") or "研报",
                        (x.get("ts") or "")[:10],
-                       _code, _html.escape((x.get("text") or "")[:44])))
+                       _code, _code,
+                       _html.escape((x.get("text") or "")[:44])))
             if rows6:
                 blk6 = ("<div style='font-size:13px;color:#c9d1d9;"
                         "margin:18px 0 6px'>▍研报 AI 观点（近30天 %d 条 · "
