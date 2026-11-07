@@ -672,14 +672,42 @@ def _tasks():
     return {}
 
 
+def _lock_fd(fd):
+    """跨平台非阻塞独占锁；被占用时抛 OSError，由 _tasks_file_lock 重试。
+
+    2026-11-07 K-RELEASE-20261106：原实现无条件 ``import msvcrt``，Linux 生产机
+    （CentOS 7）上 ``cmd_new`` / ``_save`` 必崩 ModuleNotFoundError，19 个
+    devtask 回归用例在服务器全挂。按 os.name 分派：Windows 保留 msvcrt.locking
+    字节锁，POSIX 用 fcntl.flock；两者均在进程退出/fd 关闭时由 OS 自动释放。
+    """
+    if os.name == "nt":
+        import msvcrt
+        os.lseek(fd, 0, os.SEEK_SET)
+        msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+    else:
+        import fcntl
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+
+def _unlock_fd(fd):
+    """释放 _lock_fd 加的锁（失败不影响主流程；close(fd) 亦会兜底释放）。"""
+    if os.name == "nt":
+        import msvcrt
+        os.lseek(fd, 0, os.SEEK_SET)
+        msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
+    else:
+        import fcntl
+        fcntl.flock(fd, fcntl.LOCK_UN)
+
+
 @contextmanager
 def _tasks_file_lock(timeout_s=20.0):
-    """tasks.json 读-改-写互斥（2026-10-30 P45，Windows 原生字节锁）。
+    """tasks.json 读-改-写互斥（2026-10-30 P45；2026-11-07 跨平台化）。
 
     门禁并行后多会话可同时 merge 并各自 _save；原「读盘→合并→写盘」在并发
-    窗口内可能丢字段。改用 msvcrt.locking（锁定 1 字节）：进程退出/崩溃由 OS
-    自动释放，无 O_EXCL+unlink 的残留锁竞态（实证：Windows 上 unlink 会被
-    并发读句柄阻塞，导致锁永久残留、后来者超时）。
+    窗口内可能丢字段。锁由进程退出/崩溃时 OS 自动释放，无 O_EXCL+unlink 的
+    残留锁竞态（实证：Windows 上 unlink 会被并发读句柄阻塞，导致锁永久残留、
+    后来者超时）。
     """
     os.makedirs(WT_DIR, exist_ok=True)
     path = os.path.join(WT_DIR, "tasks.json.lock")
@@ -692,9 +720,7 @@ def _tasks_file_lock(timeout_s=20.0):
             fd = None
         if fd is not None:
             try:
-                os.lseek(fd, 0, os.SEEK_SET)
-                import msvcrt
-                msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+                _lock_fd(fd)
                 break
             except OSError:
                 try:
@@ -709,9 +735,7 @@ def _tasks_file_lock(timeout_s=20.0):
         yield
     finally:
         try:
-            import msvcrt
-            os.lseek(fd, 0, os.SEEK_SET)
-            msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
+            _unlock_fd(fd)
         except OSError:
             pass
         try:
