@@ -35,6 +35,9 @@ class AppSettings(BaseSettings):
     persistence_backend: str = "sql"  # sql | memory
     # K-NEW3（2026-10-16 换机治理）：新机 5432 被 RAGFlow infinity 占用，zhice-db 映射宿主 5446
     db_main_url: str = "postgresql://zhice:zhice_pass@localhost:5446/zhice_os_v2"
+    # 策略中台（qengine_sync）只读同步库；空时 local-dev/test 回退到主库同实例的
+    # zhice_qengine_sync_test，生产环境绝不回退到主库。
+    qengine_sync_db_url: str = ""
     # K-NEW4：6379 被 RAGFlow redis 占用（带密码），zhice-redis（valkey 无密码）映射宿主 6380
     redis_url: str = "redis://localhost:6380/0"
 

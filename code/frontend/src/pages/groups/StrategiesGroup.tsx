@@ -15,6 +15,7 @@ import FundamentalsPage from '../FundamentalsPage';
 import RegimePage from '../RegimePage';
 import StrategyDetailPage from '../StrategyDetailPage';
 import StrategyWorkspacePage from '../StrategyWorkspacePage';
+import StrategyCenterPage from '../strategy-center/StrategyCenterPage';
 import { useRole } from '../../hooks/useRole';
 
 /**
@@ -28,7 +29,7 @@ import { useRole } from '../../hooks/useRole';
  */
 export default function StrategiesGroup() {
   const { t } = useTranslation('pages');
-  const { isViewer, canManageOwn } = useRole();
+  const { isViewer, canManageOwn, canManagePlatform } = useRole();
   const [sp, setSp] = useSearchParams();
   const tab = sp.get('tab') ?? 'strategies';
   const strategyId = sp.get('id');
@@ -63,6 +64,11 @@ export default function StrategiesGroup() {
     { key: 'models', label: t('strategiesGroup.tabModels'), children: <ModelOpsPage /> },
     { key: 'fund', label: t('strategiesGroup.tabFund'), children: <FundamentalsPage /> },
     { key: 'regime', label: t('strategiesGroup.tabRegime'), children: <RegimePage /> },
+    ...(canManagePlatform
+      ? [
+          { key: 'strategy-center', label: '策略中台（待校正）', children: <StrategyCenterPage /> },
+        ]
+      : []),
   ];
   // VIEWER 只读：只留 策略广场 + 策略列表 + 绩效，隐藏 ai/回测/模型/基本面/regime。
   const items = isViewer ? allItems.filter(i => ['catalog', 'strategies', 'perf'].includes(i.key)) : allItems;

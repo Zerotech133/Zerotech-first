@@ -68,6 +68,7 @@ from zhice_os_v2.api.routers import (
     selection_run,
     sim_factor,
     stock_research,
+    strategy_center,
     strategy_workspace,
     subscription_observation,
     system,
@@ -325,6 +326,7 @@ app.include_router(admin_billing.router, prefix="/api/v1")
 app.include_router(subscription_observation.router, prefix="/api/v1")
 app.include_router(admin_entitlements.router, prefix="/api/v1")
 app.include_router(mirror_accounts.router, prefix="/api/v1")
+app.include_router(strategy_center.router, prefix="/api/v1")
 
 
 @app.get("/")
