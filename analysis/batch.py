@@ -19,6 +19,76 @@ import time
 
 from . import config, queue
 
+# ── T2FIX 2026-11-07：盘后批启动迟到告警 ─────────────────────────
+# 背景：11-06 计划任务因休眠/阻塞 16:48 才补跑（正常 15:40），当日无任何告警；
+# T2 盘后核对发现 11-03/11-06 两次非常规启动。这里在 batch 入口做轻量自检：
+# 由 launcher 显式传 --late-alert 启用；超过阈值（默认 8 分钟）经 8097 闸门
+# 以 kind=daily:alert 发一条文本告警（个人），失败不阻断批处理。
+EXPECTED_START_HHMM = os.environ.get("ANALYSIS_BATCH_EXPECTED_START", "15:40")
+LATE_ALERT_THRESHOLD_MIN = int(os.environ.get("ANALYSIS_BATCH_LATE_ALERT_MIN", "8"))
+
+
+def late_alert_check(now=None, threshold_min=None):
+    """返回迟到告警 payload；不需要告警返回 None。"""
+    now = now or time.localtime()
+    if now.tm_wday >= 5:  # 周末非交易日不告警
+        return None
+    try:
+        eh, em = [int(x) for x in str(EXPECTED_START_HHMM).split(":")[:2]]
+    except Exception:
+        return None
+    expected = time.mktime((now.tm_year, now.tm_mon, now.tm_mday, eh, em, 0, 0, 0, -1))
+    lag_min = (time.mktime(now) - expected) / 60.0
+    limit = LATE_ALERT_THRESHOLD_MIN if threshold_min is None else int(threshold_min)
+    if lag_min <= limit:
+        return None
+    return {
+        "date": time.strftime("%Y-%m-%d", now),
+        "expected": EXPECTED_START_HHMM,
+        "actual": time.strftime("%H:%M:%S", now),
+        "lag_min": round(lag_min, 1),
+        "threshold_min": limit,
+    }
+
+
+def _receivers_path():
+    return os.path.join(config.MAIN_ROOT, "quant_backtest", "receivers.json")
+
+
+def _personal_open_id():
+    try:
+        with open(_receivers_path(), encoding="utf-8") as f:
+            data = json.load(f)
+        for item in (data if isinstance(data, list) else data.get("receivers") or []):
+            name = str(item.get("name") or item.get("alias") or "")
+            if name in ("个人", "老田", "personal"):
+                return item.get("open_id") or item.get("id")
+    except Exception:
+        pass
+    return os.environ.get("ANALYSIS_ALERT_OPEN_ID")
+
+
+def send_late_alert(payload, dry_run=False):
+    """经 8097 闸门发迟到告警（kind=daily:alert）；fail-safe，不抛异常。"""
+    text = ("⚠️ 盘后批启动迟到\n"
+            "日期：%s\n计划：%s\n实际：%s\n延迟：%s 分钟（阈值 %s 分钟）\n"
+            "说明：计划任务可能被休眠/并发任务阻塞；批处理已继续执行，请关注回执。"
+            % (payload["date"], payload["expected"], payload["actual"],
+               payload["lag_min"], payload["threshold_min"]))
+    if dry_run:
+        return {"ok": True, "dry_run": True, "text": text}
+    try:
+        rid = _personal_open_id()
+        if not rid:
+            return {"ok": False, "why": "no receiver open_id"}
+        from news_collector import feishu_client
+        ok, why = feishu_client.send_msg(text, "text", receive_id=rid,
+                                         receive_id_type="open_id", kind="daily:alert")
+        return {"ok": bool(ok), "why": str(why)[:200]}
+    except Exception as e:
+        return {"ok": False, "why": str(e)[:200]}
+
+
 
 def load_watchlist(path=None):
     p = path or os.path.join(config.PKG, "watchlist.txt")
@@ -74,7 +144,20 @@ def main():
     ap.add_argument("--as-of", default=None)
     ap.add_argument("--max", type=int, default=0)
     ap.add_argument("--queue", action="store_true", help="消费门户队列（一次）")
+    ap.add_argument("--late-alert", action="store_true",
+                    help="启用盘后批启动迟到告警（计划任务 launcher 传；超阈值经 8097 发个人）")
+    ap.add_argument("--late-alert-dry-run", action="store_true", help="只计算并打印迟到告警，不实际发送")
+    ap.add_argument("--late-threshold-min", type=int, default=None, help="迟到阈值（分钟，默认 8）")
     a = ap.parse_args()
+
+    started = time.strftime("%F %T")
+    late_alert = None
+    if a.late_alert:
+        payload = late_alert_check(threshold_min=a.late_threshold_min)
+        if payload:
+            late_alert = send_late_alert(payload, dry_run=a.late_alert_dry_run)
+            late_alert["payload"] = payload
+            print(json.dumps({"late_alert": late_alert}, ensure_ascii=False), flush=True)
 
     codes = [c.strip() for c in a.codes.split(",") if c.strip()] if a.codes else load_watchlist(a.watchlist)
     if a.max:
@@ -112,8 +195,9 @@ def main():
             code, res.get("ok"), res.get("rating"), res.get("pending_review"), res.get("elapsed_s", 0)))
 
     pending_total = sum((r["result"].get("pending_review") or 0) for r in results)
-    receipt = {"date": day, "started": time.strftime("%F %T"), "llm": a.llm, "push": a.push,
+    receipt = {"date": day, "started": started, "llm": a.llm, "push": a.push,
                "codes": codes, "results": results, "pending_review_total": pending_total,
+               "late_alert": late_alert,
                "ok_count": sum(1 for r in results if r["result"].get("ok")),
                "fail_count": sum(1 for r in results if not r["result"].get("ok"))}
     rp = os.path.join(outdir, "receipt.json")

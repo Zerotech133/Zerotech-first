@@ -4,6 +4,7 @@ import json
 import os
 import sqlite3
 import time
+import uuid
 
 from . import config
 
@@ -30,10 +31,31 @@ def conn():
 
 
 def new_run(code, name, as_of):
-    run_id = "%s-%s-%s" % (code.replace(".", ""), as_of.replace("-", ""), time.strftime("%H%M%S"))
+    """登记一条 running run，返回唯一 run_id。
+
+    2026-11-07 T2FIX：run_id 原为 `CODE-YYYYMMDD-HHMMSS`（秒级），同一秒内重试/
+    并发（如 11-02 605258 失败后立即补跑）会撞 runs.run_id 主键，抛
+    sqlite3.IntegrityError: UNIQUE constraint failed: runs.run_id，导致整只股票
+    分析失败。改为：先按秒级格式最多重试 5 次（跨秒自然不同），仍冲突则追加
+    uuid4 短后缀兜底，保证唯一且保持原前缀可读性。
+    """
+    base = "%s-%s" % (code.replace(".", ""), as_of.replace("-", ""))
+    started = time.strftime("%F %T")
+    for _ in range(5):
+        run_id = "%s-%s" % (base, time.strftime("%H%M%S"))
+        try:
+            with conn() as c:
+                c.execute("INSERT INTO runs(run_id,code,name,as_of,started,status) "
+                          "VALUES(?,?,?,?,?,'running')",
+                          (run_id, code, name, as_of, started))
+            return run_id
+        except sqlite3.IntegrityError:
+            time.sleep(0.05)
+    run_id = "%s-%s-%s" % (base, time.strftime("%H%M%S"), uuid.uuid4().hex[:6])
     with conn() as c:
-        c.execute("INSERT INTO runs(run_id,code,name,as_of,started,status) VALUES(?,?,?,?,?,'running')",
-                  (run_id, code, name, as_of, time.strftime("%F %T")))
+        c.execute("INSERT INTO runs(run_id,code,name,as_of,started,status) "
+                  "VALUES(?,?,?,?,?,'running')",
+                  (run_id, code, name, as_of, started))
     return run_id
 
 
