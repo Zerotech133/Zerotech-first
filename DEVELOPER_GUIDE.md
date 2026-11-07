@@ -511,7 +511,7 @@ git commit -F <msgfile> -- <同样两个路径>   # ②commit 也带路径（见
 | P1-5 | `gold_signal_shadow` 前视（结算用 `dt` 而非 `detect_date`） | 改口径需重签，否则 d20 虚增 0.80pp |
 | P1-6 | portal 根级 **163** 个 `test_*.py` 全不在 `testpaths`（147 个可收集、**1,663 条**用例从未进过门禁） | **已按分层落地（2026-11-08）**：`conftest.py` 补 `sys.path.append` 修掉 4 个 sys.path 型收集错误；2 个全绿文件（watch_tower linkage/snapshot，2+6 条）纳入 fast；2 个实测红的（alerts_level 4/4、alert_source_health 13/14 方法）整模块 skip 挂起；10 个脚本式登记 manual（清单见 §7.6）。**剩余**：2 个红文件的「测试过时 or 实现退化」定性归 owner |
 | P2-5 | 5 文件 6 处函数内 `from tools import` | 与「导入遮蔽」同源，未证实失败前不批改 |
-| P3-5 | 首轮全仓真执行已跑（2026-11-08 01:10–01:32）：**11,155 passed / 53 failed** / 11 skipped / 13 xfailed，21′34″，RC=1 | 「全仓绿」仍不成立；53 条已归四类（见下），**JSON 基线未落** |
+| P3-5 | 首轮全仓真执行已跑（2026-11-08 01:10–01:32）：**11,155 passed / 53 failed** / 11 skipped / 13 xfailed，21′34″，RC=1 | 「全仓绿」仍不成立；53 条已归四类（见下）。**JSON 基线仍未落，且按现工具落不了全仓**：`tools/test_baseline.py` 的 `SUITES` 只有 `agent_platform/tests`（现存 `latest.json` = 2026-11-07 21:34，3,881 passed / 0 failed），照计划 `--run` 得到的是单套件绿基线，覆盖不到这 53 条 |
 
 **P3-5 首轮归因（活树快照，非冻结 HEAD；期间 HEAD 从 `89e35983d` 漂到 `557df84ac`）**
 
@@ -526,7 +526,7 @@ git commit -F <msgfile> -- <同样两个路径>   # ②commit 也带路径（见
 
 1. ~~窗口内提交 P0-5 两文件~~ → **已闭合**（`a65063496` / `f5c5e375b`，HEAD 复跑绿，见 §11.1）；
 2. ~~P1-6 决策：进套件 or 显式 `manual`~~ → **已按分层落地（2026-11-08）**，剩 2 个红文件等 owner 定性（见 §7.6）；
-3. P3-5：~~首轮全仓执行~~ **已跑（53 failed 见 §11.2）**；落 JSON 基线仍未做——须先冻结 HEAD 复跑，且写 `agent_platform/data/test_baseline/latest.json` 属数据写入，需授权；
+3. P3-5：~~首轮全仓执行~~ **已跑（53 failed 见 §11.2）**；落基线仍未做，且要先定口径——`test_baseline.py` 只覆盖 `agent_platform/tests`，要么扩 `SUITES`（属门禁口径变更，需裁定），要么另立「全仓基线」件；无论哪条都要先冻结 HEAD 复跑，写 `agent_platform/data/test_baseline/latest.json` 属数据写入需授权；
 4. P1-5 口径重签后再改结算定位。
 
 ---
