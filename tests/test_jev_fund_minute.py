@@ -42,8 +42,21 @@ def test_minute_read_splits_three_sources():
 
 def test_minute_read_empty_is_zero_not_crash():
     r = G._minute_read({}, 0)
-    assert r == {"asked": 0, "ok": 0, "local": 0, "remote": 0, "fail": 0,
+    assert r == {"asked": 0, "ok": 0, "local": 0, "remote": 0, "partial": 0,
+                 "fail": 0,
                  "fallback": os.environ.get("JEV_MINS_FALLBACK", "on")}
+
+
+def test_minute_read_marks_rt_min_as_partial():
+    """rt_min 只有 237 根（缺 15:00 收盘那根）：算进 remote，但必须单列
+    partial，不能混在 remote 里冒充「完整命中」。"""
+    profiles = {
+        "a": {"ok": True, "source": "local"},
+        "b": {"ok": True, "source": "remote", "tbl": "ts_stk_mins"},
+        "c": {"ok": True, "source": "remote", "tbl": "ts_rt_min"},
+    }
+    r = G._minute_read(profiles, 3)
+    assert r["remote"] == 2 and r["partial"] == 1
 
 
 # ── ② 资金面背离 ────────────────────────────────────────────
@@ -243,3 +256,183 @@ def test_load_flow_computes_main_net(monkeypatch):
     assert flow["600001"]["net_mf"] == 50.0
     assert F.flow_of(flow, "600001.SH")["has"] is True
     assert F.flow_of(flow, "999999")["has"] is False
+
+
+
+# ── ⑦ 2026-11-08 代码审查修掉的缺陷（每条都对应一个真实后果） ────────
+def test_writeback_refuses_partial_rt_min(monkeypatch):
+    """rt_min 缺 15:00 那根，落盘会把「237/241 根」固化成「已补齐」。
+
+    merge_write 的幂等挡板是「目标日已有 >=200 根就跳过」，237 根过线，
+    于是之后再也不会去补收盘那根——尾盘才封板的票会被判成没封板。
+    """
+    import jev_mins_fetch as JF
+    calls = []
+    monkeypatch.setattr(JF, "merge_write",
+                        lambda *a, **k: calls.append(a) or ("merged", 1))
+    monkeypatch.delenv("JEV_MINS_WRITE", raising=False)
+    rows = [["600001.SH", "2026-11-06 09:30:00", 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]
+    assert G._writeback("600001.SH", "20261106", rows, tbl="ts_rt_min") is False
+    assert calls == []
+    assert G._writeback("600001.SH", "20261106", rows,
+                        tbl="ts_stk_mins") is True
+    assert len(calls) == 1
+
+
+def test_minute_negative_cache_expires(monkeypatch):
+    """远端抖一次就永久记「没分钟」= 页面一直骗人到进程重启。"""
+    import time
+
+    import pandas as pd
+    key = ("600001.SH", "20261106")
+    G._MINS_MEM.clear()
+    G._MINS_FAIL.clear()
+    d = pd.DataFrame({"trade_time": ["2026-11-06 09:30:00"], "close": [1.0],
+                      "open": [1.0], "high": [1.0], "low": [1.0],
+                      "vol": [1.0], "amount": [1.0]})
+
+    def _boom(*a, **k):
+        raise AssertionError("负缓存没过期就重试了")
+
+    G._MINS_MEM[key] = None
+    G._MINS_FAIL[key] = time.time()
+    monkeypatch.setattr(G, "_mins_local", _boom)
+    monkeypatch.setattr(G, "_mins_fetch", _boom)
+    assert G._mins(*key) is None
+
+    G._MINS_FAIL[key] = time.time() - G.NEG_TTL_S - 1
+    monkeypatch.setattr(G, "_mins_local", lambda c, day: d)
+    got = G._mins(*key)
+    assert got is d and got.attrs["source"] == "local"
+
+
+def test_mins_accepts_hyphen_day():
+    """旧实现直接切 day[:4]/[4:6]/[6:]，传 2026-11-06 会拼出
+    "2026--1-06" 然后静默返回空列表。"""
+    cols = ["ts_code", "trade_time", "freq", "open", "high", "low", "close",
+            "vol", "amount"]
+    rows = [["600001.SH", "2026-11-06 09:30:00", "1min", 1.0, 1.1, 0.9, 1.05,
+             10.0, 10.5]]
+    c = _client(cols, rows)
+    assert len(c.mins("600001", "2026-11-06")) == 1
+    assert len(c.mins("600001", "2026/11/06")) == 1
+
+
+def test_mins_bad_day_raises_instead_of_silent_empty():
+    import xtcloud_client as X
+    c = _client(["ts_code", "trade_time", "open", "high", "low", "close"], [])
+    with pytest.raises(X.XtCloudError):
+        c.mins("600001", "2026-11")
+
+
+def test_mins_requires_ohlc_but_tolerates_missing_vol():
+    import xtcloud_client as X
+    # 缺 high -> 抛（拿 0 当高价会静默毁掉「最大单分钟涨幅」）
+    c = _client(["ts_code", "trade_time", "open", "low", "close"], [])
+    with pytest.raises(X.XtCloudError):
+        c.mins("600001", "20261106")
+    # 缺量额 -> 降级 0，不抛
+    cols = ["ts_code", "trade_time", "open", "high", "low", "close"]
+    rows = [["600001.SH", "2026-11-06 09:30:00", 1.0, 1.1, 0.9, 1.05]]
+    out = _client(cols, rows).mins("600001", "20261106")
+    assert out[0][2] == 1.05 and out[0][6] == 0.0 and out[0][7] == 0.0
+
+
+def test_moneyflow_actually_filters_by_day():
+    """旧实现收了 day 却没用：传哪天都返回最前面一屏，日期错了不报错。"""
+    import xtcloud_client as X
+    seen = {}
+    c = X.XtCloud()
+
+    def _rows(tbl, **kw):
+        seen.update(dict(kw, tbl=tbl))
+        return []
+
+    c.rows = _rows          # type: ignore[assignment]
+    c.moneyflow("2026-11-06")
+    assert seen["tbl"] == "ts_moneyflow"
+    assert seen["start_date"] == "20261106" == seen["end_date"]
+
+
+def test_focus_disc_newest_first():
+    """同 kind 内按日期升序 = 一屏全是几个月前的旧报告。"""
+    def _rep(title, date):
+        return {"title": title, "rating": "买入", "org": "o", "eps": "",
+                "pe": "", "industry": "", "date": date, "url": ""}
+
+    disc = {"600001": {"reports": [_rep("老", "2026-08-01"),
+                                   _rep("新", "2026-11-06")],
+                       "notices": []}}
+    members = [{"code": "600001.SH", "c6": "600001", "name": "甲"}]
+    r = G._focus_disc(members, disc, top=4)
+    assert [x["title"] for x in r["items"]] == ["新", "老"]
+
+
+def test_timeline_fills_quota_when_prices_are_few():
+    """价格动作只有 2 条时，剩下 5 个位置不该空着（配额还给消息）。"""
+    members = [{"code": "600001.SH", "c6": "600001", "name": "甲", "pct": 10.0}]
+    profiles = {"600001.SH": {"ok": True, "source": "local",
+                              "first_move": "2026-11-06 09:30:00",
+                              "first_move_pct": 10.0, "at_open": True,
+                              "seal_time": "2026-11-06 09:30:00"}}
+    ev = {"600001": [{"ts": "2026-11-06 10:%02d:00" % i, "hm": "10:%02d" % i,
+                      "ts_kind": "intraday", "source": "财联社",
+                      "title": "t%d" % i, "bias": "pos",
+                      "origin_kind": "news"} for i in range(20)]}
+    tl = G._timeline(members, ev, profiles, limit=14)
+    assert len(tl) == 14
+    assert sum(1 for x in tl if x["kind"] == "news") == 12
+
+
+def test_fetch_auto_falls_back_when_xtcloud_returns_empty(monkeypatch):
+    """--source auto 的语义是「拿不到就退 tushare」，空列表也算拿不到。"""
+    import jev_mins_fetch as JF
+    called = {"ts": 0, "merge": 0}
+    monkeypatch.setattr(JF, "log", lambda *a, **k: None)
+    monkeypatch.setattr(G, "resolve_day", lambda d=None: "20261106")
+    monkeypatch.setattr(JF, "pick_codes",
+                        lambda day, limit: ([("600001.SH", "甲", 10.0, "涨停")],
+                                            "电力"))
+    monkeypatch.setattr(JF, "token", lambda: "tok")
+    monkeypatch.setattr(JF, "xt_call", lambda c, day: [])
+    monkeypatch.setattr(JF, "SLEEP", 0)
+
+    def _ts(tok, code, day):
+        called["ts"] += 1
+        return [["600001.SH", "2026-11-06 09:30:00",
+                 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]
+
+    def _mw(code, day, items, force=False):
+        called["merge"] += 1
+        return "merged", len(items)
+
+    monkeypatch.setattr(JF, "ts_call", _ts)
+    monkeypatch.setattr(JF, "merge_write", _mw)
+    monkeypatch.setattr(sys, "argv", ["jev_mins_fetch.py", "--day", "20261106"])
+    assert JF.main() == 0
+    assert called["ts"] == 1, "xtcloud 返回空时没回落 tushare"
+    assert called["merge"] == 1
+
+
+def test_minute_mem_is_capped(monkeypatch):
+    """8091 是常驻进程：不设上限，一天 800 只 × 20 个交易日 = 1.6 万个
+    DataFrame（每个 ~20KB）会一路涨到几百 MB，只能靠重启回收。"""
+    monkeypatch.setenv("JEV_MINS_MEM_MAX", "3")
+    G._MINS_MEM.clear()
+    G._MINS_FAIL.clear()
+    for i in range(5):
+        G._mem_put(("60000%d.SH" % i, "20261106"), {"i": i})
+    assert len(G._MINS_MEM) == 3
+    # 淘汰的是最早插入的三个，留下最后三个
+    assert [k[0] for k in G._MINS_MEM] == ["600002.SH", "600003.SH", "600004.SH"]
+
+
+def test_minute_mem_evict_clears_fail_stamp(monkeypatch):
+    """淘汰时失败戳要一起清，否则 _MINS_FAIL 自己会单独涨成一张大表。"""
+    monkeypatch.setenv("JEV_MINS_MEM_MAX", "1")
+    G._MINS_MEM.clear()
+    G._MINS_FAIL.clear()
+    G._mark_none("600001.SH", "20261106")
+    assert ("600001.SH", "20261106") in G._MINS_FAIL
+    G._mem_put(("600002.SH", "20261106"), {"i": 2})
+    assert ("600001.SH", "20261106") not in G._MINS_FAIL

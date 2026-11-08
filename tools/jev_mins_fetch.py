@@ -152,8 +152,12 @@ def pick_codes(day, limit):
     return picks[:limit], focus
 
 
-def merge_write(code, day, items):
-    """读现有 → 剔除目标日 → 追加 → 原子替换。返回 (动作, 行数)。"""
+def merge_write(code, day, items, force=False):
+    """读现有 → 剔除目标日 → 追加 → 原子替换。返回 (动作, 行数)。
+
+    force=True 时忽略「目标日已有 ≥MIN_ROWS 根」的幂等挡板（--force 用），
+    但仍然是「剔除当日 → 追加 → 去重 → 原子替换」一条路，不额外预删。
+    """
     import pandas as pd
     ym = day[:6]
     path = os.path.join(MINS_DIR, "%s_%s.parquet" % (code.replace(".", "_"), ym))
@@ -173,7 +177,7 @@ def merge_write(code, day, items):
     d8 = "%s-%s-%s" % (day[:4], day[4:6], day[6:])
     if old is not None:
         same_day = old[old["trade_time"].str.startswith(d8)]
-        if len(same_day) >= MIN_ROWS:
+        if len(same_day) >= MIN_ROWS and not force:
             return "already", len(same_day)
         old = old[~old["trade_time"].str.startswith(d8)]
 
@@ -242,7 +246,10 @@ def main():
             items = xt_call(c, day)
             if items:
                 stat["via_xtcloud"] += 1
-        if items is None and need_tushare:
+        # auto 的语义是「xtcloud 拿不到就退 tushare」——空列表也算拿不到。
+        # 原来只判 `is None`，xtcloud 返回 []（存量停在上一交易日、或老日期
+        # 没有采集）时直接记 empty 收工，tushare 一次都没试过。
+        if not items and need_tushare:
             items = ts_call(tok, c, day)
             if items:
                 stat["via_tushare"] += 1
@@ -252,20 +259,10 @@ def main():
             stat["empty"] += 1
             log("  %-10s 无数据（停牌/退市？）" % c)
         else:
-            if a.force:
-                ym = day[:6]
-                path = os.path.join(MINS_DIR, "%s_%s.parquet"
-                                    % (c.replace(".", "_"), ym))
-                if os.path.exists(path):
-                    import pandas as pd
-                    old = pd.read_parquet(path)
-                    old["trade_time"] = old["trade_time"].astype(str)
-                    d8 = "%s-%s-%s" % (day[:4], day[4:6], day[6:])
-                    old = old[~old["trade_time"].str.startswith(d8)]
-                    tmp = path + ".tmp"
-                    old.to_parquet(tmp, index=False)
-                    os.replace(tmp, path)
-            act, nrow = merge_write(c, day, items)
+            # --force 直接交给 merge_write：原来先手工把当日行删掉再调用，
+            # 等于对同一个文件写两遍；而且万一后面那步失败，当日数据已经
+            # 被删没了（备份虽然有，但没人会去翻）。
+            act, nrow = merge_write(c, day, items, force=a.force)
             stat[act] = stat.get(act, 0) + 1
             log("  [%d/%d] %-10s %s %d 根" % (i, len(picks), c, act, nrow))
         time.sleep(SLEEP)

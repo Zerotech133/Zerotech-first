@@ -38,7 +38,8 @@ import time
 STATION = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 CACHE_TTL_S = 300
-_CACHE: dict = {}
+EMPTY_TTL_S = 30          # 取空只记 30s：一次网络抖动不能把这一档锁死 5 分钟
+_CACHE: dict = {}         # key -> (时刻, ttl, 值)
 _XT = None
 
 
@@ -63,13 +64,13 @@ def _f(v):
 
 def _cache_get(key):
     hit = _CACHE.get(key)
-    if hit and time.time() - hit[0] < CACHE_TTL_S:
-        return hit[1]
+    if hit and time.time() - hit[0] < hit[1]:
+        return hit[2]
     return None
 
 
-def _cache_put(key, val):
-    _CACHE[key] = (time.time(), val)
+def _cache_put(key, val, ttl=CACHE_TTL_S):
+    _CACHE[key] = (time.time(), ttl, val)
     return val
 
 
@@ -87,6 +88,9 @@ def load_flow(day: str) -> dict:
     out, off, page = {}, 0, 5000
     try:
         c = _xt()
+        # 翻页只认「本页返回的行数」：total 在这个服务上是「该 code 的全量
+        # 行数」（判例 #26 坑 3），拿它当「过滤后总数」会让循环提前结束或
+        # 空转。3 页 = 15000 行，够装下全市场 5000+ 只当日明细。
         for _ in range(3):
             j = c.table("ts_moneyflow", start_date=day, end_date=day,
                         limit=page, offset=off)
@@ -111,11 +115,14 @@ def load_flow(day: str) -> dict:
                     "main_sell": round(ls + es, 1),
                 }
             off += len(rows)
-            if off >= (j.get("total") or 0):
+            if len(rows) < page:
                 break
+            if _ == 2:
+                sys.stderr.write("load_flow %s 已达 3 页上限(15000 行)，"
+                                 "可能截断\n" % day)
     except Exception as exc:  # noqa: BLE001
         sys.stderr.write("load_flow failed %s: %s\n" % (day, exc))
-        return _cache_put(key, {})
+        return _cache_put(key, {}, EMPTY_TTL_S)
     return _cache_put(key, out)
 
 
@@ -169,7 +176,14 @@ def load_disclosures(day: str, limit_report=300, limit_notice=3000) -> dict:
                     limit=limit_report)
         cols = j.get("columns") or []
         idx = {k: i for i, k in enumerate(cols)}
-        for r in (j.get("rows") or []):
+        # 年度列写成 eps_2026/pe_2026，明年就取不到值而且不报错。
+        # 按「前缀+4位数字」取最新一年，跨年不用改代码。
+        eps_c, pe_c = _year_col(idx, "eps_"), _year_col(idx, "pe_")
+        rrows = j.get("rows") or []
+        if len(rrows) >= limit_report:
+            sys.stderr.write("load_disclosures %s 研报触到 limit=%d，可能截断\n"
+                             % (day, limit_report))
+        for r in rrows:
             code = str(r[idx["ts_code"]])[:6] if "ts_code" in idx else None
             if not code:
                 continue
@@ -177,8 +191,8 @@ def load_disclosures(day: str, limit_report=300, limit_notice=3000) -> dict:
                 "title": _s(r, idx, "report_name"),
                 "rating": _s(r, idx, "rating"),
                 "org": _s(r, idx, "org"),
-                "eps": _s(r, idx, "eps_2026"),
-                "pe": _s(r, idx, "pe_2026"),
+                "eps": _s(r, idx, eps_c),
+                "pe": _s(r, idx, pe_c),
                 "industry": _s(r, idx, "industry"),
                 "date": _s(r, idx, "pub_date"),
                 "url": _s(r, idx, "pdf_url"),
@@ -187,7 +201,11 @@ def load_disclosures(day: str, limit_report=300, limit_notice=3000) -> dict:
                     limit=limit_notice)
         cols = j.get("columns") or []
         idx = {k: i for i, k in enumerate(cols)}
-        for r in (j.get("rows") or []):
+        nrows = j.get("rows") or []
+        if len(nrows) >= limit_notice:
+            sys.stderr.write("load_disclosures %s 公告触到 limit=%d，可能截断\n"
+                             % (day, limit_notice))
+        for r in nrows:
             code = str(r[idx["ts_code"]])[:6] if "ts_code" in idx else None
             if not code:
                 continue
@@ -199,8 +217,15 @@ def load_disclosures(day: str, limit_report=300, limit_notice=3000) -> dict:
             })
     except Exception as exc:  # noqa: BLE001
         sys.stderr.write("load_disclosures failed %s: %s\n" % (day, exc))
-        return _cache_put(key, out)
+        return _cache_put(key, out, EMPTY_TTL_S)
     return _cache_put(key, out)
+
+
+def _year_col(idx, prefix):
+    """eps_ / pe_ 这类带年份的列 → 最新一年那列的名字（没有则 None）。"""
+    cands = [k for k in idx
+             if k.startswith(prefix) and k[len(prefix):].isdigit()]
+    return sorted(cands)[-1] if cands else None
 
 
 def _s(r, idx, name):

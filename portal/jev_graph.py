@@ -57,6 +57,7 @@ import os
 import re
 import sqlite3
 import sys
+import threading
 import time
 
 STATION = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -82,6 +83,12 @@ _BOARD_CACHE: dict = {"at": 0.0, "data": None}
 _XT = None             # xtcloud 客户端单例（惰性）
 _FLOW = None           # jev_flow 模块（惰性）
 _MINS_MEM: dict = {}   # (code, day) -> DataFrame | None，进程内分钟缓存
+_MINS_FAIL: dict = {}  # (code, day) -> 失败时刻；负缓存要能过期，不能记一辈子
+_WRITE_LOCK = threading.Lock()   # 同月 parquet 是 read-modify-write，必须串行
+NEG_TTL_S = 600        # 负缓存存活 600s：远端抖动一次不该锁死一整天
+MINS_MEM_MAX = 4000    # 进程内分钟缓存上限。8091 是常驻进程：一天按 800 只算、
+                       # 二十个交易日就是 16000 个 DataFrame（每个 ~20KB），
+                       # 不设上限会一路涨到几百 MB，最后只能靠重启解决。
 
 
 def _ro(path):
@@ -306,23 +313,37 @@ def _mins_local(ts_code: str, day: str):
 def _mins_fetch(ts_code: str, day: str):
     """远端取数：ts_stk_mins 优先（快），空则 ts_rt_min（全但慢）。
 
-    → [[ts_code, trade_time, close, open, high, low, vol, amount], ...] 或 None
+    → (rows, tbl)：rows 形如 [[ts_code, trade_time, close, open, high, low,
+      vol, amount], ...]；取不到 → (None, None)。
+
+    必须把**来源表**一起返回：两张表的完整度不同（rt_min 只有 237 根），
+    落盘策略要按表区分，见 `_writeback`。
     """
     if os.environ.get("JEV_MINS_FALLBACK", "").lower() in ("off", "0", "false"):
-        return None
+        return None, None
     try:
         c = _xt()
         rows = c.mins(ts_code[:6], day, limit=400, tbl="ts_stk_mins")
-        if not rows:
-            rows = c.mins(ts_code[:6], day, limit=400, tbl="ts_rt_min")
-        return rows or None
+        if rows:
+            return rows, "ts_stk_mins"
+        rows = c.mins(ts_code[:6], day, limit=400, tbl="ts_rt_min")
+        return (rows, "ts_rt_min") if rows else (None, None)
     except Exception as exc:  # noqa: BLE001
         sys.stderr.write("mins fetch failed %s: %s\n" % (ts_code, exc))
-        return None
+        return None, None
 
 
-def _writeback(ts_code: str, day: str, rows):
-    """按仓库约定写回本地 parquet（剔除目标日→追加→去重→原子替换→备份）。"""
+def _writeback(ts_code: str, day: str, rows, tbl="ts_stk_mins"):
+    """按仓库约定写回本地 parquet（剔除目标日→追加→去重→原子替换→备份）。
+
+    **只写完整的表**。ts_rt_min 实测一个交易日只有 237 根（缺 15:00 收盘
+    集合竞价那根），一旦落盘，`merge_write` 的「目标日已有 ≥200 根就算补齐」
+    就把这个残缺日固化成「已完成」，之后再也不会补第 241 根——而缺的恰好是
+    收盘那根，尾盘才封板的票会因此被判成「没封板」。所以 rt_min 只进进程
+    内存（本次请求照常出图），不落盘。副作用：新进程要重新拉一次远端。
+    """
+    if tbl == "ts_rt_min":
+        return False
     if os.environ.get("JEV_MINS_WRITE", "1") in ("0", "off", "false"):
         return False
     try:
@@ -330,11 +351,50 @@ def _writeback(ts_code: str, day: str, rows):
         if p not in sys.path:
             sys.path.insert(0, p)
         import jev_mins_fetch as F
-        F.merge_write(ts_code, day, rows)
+        # 同月文件的 read-modify-write 必须串行：两个并发 build（不同交易日
+        # 落到同一个 202611 月文件）会各读各的旧版、各写各的新版，先写的
+        # 那份就丢了。跨进程（CLI 补数）另说，这里只保证进程内不打架。
+        with _WRITE_LOCK:
+            F.merge_write(ts_code, day, rows)
         return True
     except Exception as exc:  # noqa: BLE001
         sys.stderr.write("mins writeback failed %s: %s\n" % (ts_code, exc))
         return False
+
+
+def _neg_ttl():
+    try:
+        return float(os.environ.get("JEV_MINS_NEG_TTL", NEG_TTL_S))
+    except ValueError:
+        return float(NEG_TTL_S)
+
+
+def _mem_max():
+    try:
+        return max(1, int(os.environ.get("JEV_MINS_MEM_MAX", MINS_MEM_MAX)))
+    except ValueError:
+        return MINS_MEM_MAX
+
+
+def _mem_put(key, val):
+    """写进程内分钟缓存；超上限按**插入顺序**淘汰最老的。
+
+    淘汰顺序用 dict 的插入序（3.7+ 保证）而不是 LRU：这里没有「刚用过
+    就要留」的强需求，而维护一个带时间戳的 LRU 会在每次读的时候都改字典，
+    多线程读时反而更麻烦。跨日重算本来就会重新取数。
+    """
+    _MINS_MEM[key] = val
+    over = len(_MINS_MEM) - _mem_max()
+    if over > 0:
+        for k in list(_MINS_MEM)[:over]:
+            _MINS_MEM.pop(k, None)
+            _MINS_FAIL.pop(k, None)
+
+
+def _mark_none(ts_code, day):
+    """记「这只票这天没有分钟」，带时间戳以便过期重试。"""
+    _MINS_FAIL[(ts_code, day)] = time.time()
+    _mem_put((ts_code, day), None)
 
 
 def _to_frame(rows, source="remote"):
@@ -362,10 +422,11 @@ def _warm_many(codes, day: str, limit=None, budget_s=None):
         except ValueError:
             budget_s = 12.0
     t0 = time.time()
-    got = {}
+    got, src = {}, {}
     try:
         got = _xt().mins_many([c[:6] for c in codes], day, workers=8, limit=400,
                               deadline_s=budget_s * 0.7)
+        src.update({k: "ts_stk_mins" for k in got})
     except Exception as exc:  # noqa: BLE001
         sys.stderr.write("mins_many failed: %s\n" % exc)
     # ts_rt_min 兜底：mins_many 只查了 ts_stk_mins，缺的再补一轮（同样受预算约束）
@@ -375,18 +436,26 @@ def _warm_many(codes, day: str, limit=None, budget_s=None):
             got2 = _xt().mins_many([c[:6] for c in miss], day, workers=6,
                                    limit=400, tbl="ts_rt_min",
                                    deadline_s=max(3.0, budget_s - (time.time() - t0)))
-            got.update(got2)
+            for k, v in got2.items():
+                got[k] = v
+                src[k] = "ts_rt_min"
         except Exception as exc:  # noqa: BLE001
             sys.stderr.write("mins_many rt_min failed: %s\n" % exc)
     for c in codes:
         rows = got.get(c[:6])
         if not rows:
-            _MINS_MEM[(c, day)] = None
+            _mark_none(c, day)
             continue
-        _writeback(c, day, rows)
-        _MINS_MEM[(c, day)] = _to_frame(rows, "remote")
-    sys.stderr.write("mins warm %d 只 命中 %d 用时 %.1fs\n"
-                     % (len(codes), len(got), time.time() - t0))
+        tbl = src.get(c[:6], "ts_stk_mins")
+        _writeback(c, day, rows, tbl)
+        d = _to_frame(rows, "remote")
+        d.attrs["tbl"] = tbl
+        _mem_put((c, day), d)
+    sys.stderr.write("mins warm %d 只 命中 %d（stk_mins %d / rt_min %d）用时 %.1fs\n"
+                     % (len(codes), len(got),
+                        sum(1 for v in src.values() if v == "ts_stk_mins"),
+                        sum(1 for v in src.values() if v == "ts_rt_min"),
+                        time.time() - t0))
     return got
 
 
@@ -397,19 +466,28 @@ def _mins(ts_code: str, day: str):
     """
     key = (ts_code, day)
     if key in _MINS_MEM:
-        return _MINS_MEM[key]
+        if _MINS_MEM[key] is not None:
+            return _MINS_MEM[key]
+        # 负缓存命中，但要能过期：远端抖动一次就永久记「没分钟」，页面会
+        # 一直骗人，直到进程重启（8091 是长驻的，可能几天不重启）。
+        if time.time() - _MINS_FAIL.get(key, 0.0) < _neg_ttl():
+            return None
+        _MINS_MEM.pop(key, None)
     d = _mins_local(ts_code, day)
     if d is not None:
         d.attrs["source"] = "local"
-        _MINS_MEM[key] = d
+        _mem_put(key, d)
+        _MINS_FAIL.pop(key, None)     # 之前失败过、这次成功了，失败戳要清掉
         return d
-    rows = _mins_fetch(ts_code, day)
+    rows, tbl = _mins_fetch(ts_code, day)
     if rows:
-        _writeback(ts_code, day, rows)
+        _writeback(ts_code, day, rows, tbl)
         d = _to_frame(rows, "remote")
-        _MINS_MEM[key] = d
+        d.attrs["tbl"] = tbl
+        _mem_put(key, d)
+        _MINS_FAIL.pop(key, None)
         return d
-    _MINS_MEM[key] = None
+    _mark_none(ts_code, day)
     return None
 
 
@@ -464,6 +542,7 @@ def minute_profile(ts_code: str, day: str, limit_price=None, pre_close=None) -> 
 
     return {
         "ok": True, "source": d.attrs.get("source"),
+        "tbl": d.attrs.get("tbl"),          # ts_stk_mins / ts_rt_min / None(本地)
         "open": round(base, 2), "bars": len(times),
         "first_move": fm, "first_move_pct": fm_pct,
         "at_open": at_open, "gap_pct": gap_pct,
@@ -494,8 +573,10 @@ def minute_coverage(day: str, rows=None) -> dict:
         "month": ym,
         "fallback": os.environ.get("JEV_MINS_FALLBACK", "on"),
         "note": ("本地 stk_mins 范围=中证800×近1年（本月目录 %d 个 code 文件）；"
-                 "覆盖外的票由 xtcloud 远端兜底（ts_stk_mins → ts_rt_min）"
-                 "并写回本地。真实当日命中率见 minute_read。" % n_files),
+                 "覆盖外的票由 xtcloud 远端兜底（ts_stk_mins → ts_rt_min）。"
+                 "ts_stk_mins 命中会写回本地；ts_rt_min 只有 237 根（缺 15:00 "
+                 "收盘那根），只在内存里用、不落盘——否则残缺日会被固化成"
+                 "「已补齐」。真实当日命中率见 minute_read。" % n_files),
         "probe": d8,
     }
 
@@ -507,8 +588,12 @@ def _minute_read(profiles, asked):
     remote = sum(1 for p in profiles.values()
                  if p.get("ok") and p.get("source") == "remote")
     fail = sum(1 for p in profiles.values() if not p.get("ok"))
+    # partial：靠 rt_min 兜来的那部分只有 237 根（缺 15:00 收盘那根），
+    # 能算「几点动」但算不准收盘封板，必须单独报，不能混进 remote 里充完整。
+    partial = sum(1 for p in profiles.values()
+                  if p.get("ok") and p.get("tbl") == "ts_rt_min")
     return {"asked": asked, "ok": local + remote, "local": local,
-            "remote": remote, "fail": fail,
+            "remote": remote, "partial": partial, "fail": fail,
             "fallback": os.environ.get("JEV_MINS_FALLBACK", "on")}
 
 
@@ -768,7 +853,11 @@ def _focus_disc(members, disc, top=8):
             items.append({"kind": "notice", "code": z["code"], "name": z["name"],
                           "date": n["date"], "type": n["type"],
                           "title": n["title"], "url": n["url"]})
-    items.sort(key=lambda x: (x["kind"] != "research", x.get("date") or ""))
+    # 先按日期倒序（最新在前），再按 kind 稳定排序把研报顶到前面。
+    # 原来只有一行 (kind, date) 升序：研报在前没错，但日期是**最旧**在前，
+    # 一屏 12 条全是三个月前的旧报告，等于没看。
+    items.sort(key=lambda x: (x.get("date") or ""), reverse=True)
+    items.sort(key=lambda x: x["kind"] != "research")
     return {"has": True, "n_reports": nr, "n_notices": nn, "items": items[:12]}
 
 
@@ -877,6 +966,10 @@ def build(day_raw=None, board=None, code=None, top: int = 8,
     # ── 焦点板块结构 ──
     _BOARD_CACHE["data"] = boards
     focus = rank_board(focus_name, rows, ev, profiles, top)
+    # rank_board 是重新拼的 dict，不带板块资金流；`_nodes` 的板块节点要读
+    # board_main_net。原来没这一步，节点上的主力净额恒为 null（前端不报错，
+    # 只是永远显示「—」，最容易被当成「没数据」）。
+    focus["board_main_net"] = (bflow.get(focus_name) or {}).get("main_net")
 
     # 事件挂到板块：把成员票的事件并起来，按事件簇（source+title）去重
     focus_events = _board_events(focus_members, ev)
@@ -1007,6 +1100,10 @@ def _timeline(members, ev, profiles, limit=14):
     keep_n = min(len(news), max(4, limit // 2))
     keep_p = max(0, limit - keep_n)
     items = news[:keep_n] + prices[:keep_p]
+    # 价格动作不够（全板块一字板的日子只有「异动+封板」两条）时，空着的
+    # 配额还给消息，不然 limit=14 只出 3 条，白瞎半张表。
+    if len(items) < limit:
+        items += news[keep_n:][:limit - len(items)]
     items.sort(key=lambda x: x["t"])
     return items[:limit]
 
