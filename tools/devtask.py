@@ -1123,10 +1123,15 @@ def _dev_gate_check(dept, owner_ok, acceptance, gate=None, owner=None,
 # 背景：创建速率 ~4 棵/小时 > 清理速率（10-31 已 60+ 棵）。三条闸：
 #   1) merge 成功即回收 worktree+分支（--keep-worktree 可跳过，脏树保留）
 #   2) prune 输出 age>TTL(72h) 标 [TTL-RED]（只标注，不自动删）
-#   3) devtask new 并发上限（默认 60，env DEVTOOL_MAX_WORKTREES；>=80% WARN，>=上限硬拒）
+#   3) devtask new 并发上限（env DEVTOOL_MAX_WORKTREES；>=80% WARN，>=上限硬拒）
 WT_TTL_HOURS_DEFAULT = 72.0
 WT_TTL_ENV = "DEVTOOL_WT_TTL_HOURS"
-MAX_WORKTREES_DEFAULT = 65
+# 2026-11-08 校准：65 → 80（K-ORG-20261108-OVWSPLIT）。
+# 依据：当日收口到 58 棵后，其余 49 棵都有未合入提交、是真正在跑的活，
+# 常态水位就是 55~60。原 cap 65（warn 线 52）比常态还低，等于每次 new 都告警；
+# 而 warn 一响就没人再看，闸门等于失效。抬到 80 后 warn=64 / block=80，
+# 既能容纳当前并发，也还能拦住 worktree 失控增长。
+MAX_WORKTREES_DEFAULT = 80
 MAX_WORKTREES_ENV = "DEVTOOL_MAX_WORKTREES"
 KEEP_WORKTREE_ENV = "DEVTOOL_KEEP_WORKTREE"
 
