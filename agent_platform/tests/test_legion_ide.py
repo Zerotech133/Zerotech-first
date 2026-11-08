@@ -7,9 +7,11 @@
 
 from __future__ import annotations
 
+import http.client
 import json
 import sys
 import threading
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -48,11 +50,19 @@ def _serve(
 
 
 def _get(url: str):
-    try:
-        with urllib.request.urlopen(url, timeout=5) as r:
-            return r.status, r.headers.get("Content-Type", ""), r.read()
-    except urllib.error.HTTPError as exc:
-        return exc.code, exc.headers.get("Content-Type", ""), exc.read()
+    # RemoteDisconnected 属连接级竞态：_serve() 起线程后立即返回，2 核 CI 上线程
+    # 尚未进入 accept 循环时，连接被接受但服务端未就绪即关闭（run #35 实测）。
+    # 只对连接级错误重试一次；响应内容错误仍立即失败，不掩盖真问题。
+    for _attempt in (0, 1):
+        try:
+            with urllib.request.urlopen(url, timeout=5) as r:
+                return r.status, r.headers.get("Content-Type", ""), r.read()
+        except urllib.error.HTTPError as exc:
+            return exc.code, exc.headers.get("Content-Type", ""), exc.read()
+        except http.client.RemoteDisconnected:
+            if _attempt:
+                raise
+            time.sleep(0.2)
 
 
 def _post(url: str, data: bytes):
