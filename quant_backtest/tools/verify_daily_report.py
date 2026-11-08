@@ -261,8 +261,15 @@ def run(
     expect: tuple = None,
     status_log: str = None,
     alert_log: str = None,
+    manifest_path: str = None,
 ) -> int:
-    """验收主入口。返回退出码 0/1/2。status_log/alert_log 为 None 则不落盘（测试用）。"""
+    """验收主入口。返回退出码 0/1/2。status_log/alert_log 为 None 则不落盘（测试用）。
+
+    manifest_path：采集侧 manifest 路径，None 用默认 MANIFEST_JSON。
+    2026-11-08 新增注入点：此前 run() 直接吃默认值，测试无法隔离线上的
+    xq_hot_post 状态——线上一旦 failed，健康路径用例（test_run_full_ok_rc0）
+    就会假红，属于测试耦合环境而非产品回归。默认行为不变。
+    """
     if now is None:
         now = datetime.datetime.now()
     if expect is None:
@@ -308,7 +315,7 @@ def run(
     fails = check_payload(data, expect)
     mt = _wait_for_report(latest_path, now)
     fails += check_freshness(mt, now)
-    fails += check_source_health()
+    fails += check_source_health(manifest_path or MANIFEST_JSON)
 
     if fails:
         _write_alert(alert_log, ts, mode, fails)

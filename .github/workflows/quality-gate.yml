@@ -1,0 +1,118 @@
+name: quality-gate
+
+# 质量闸 CI 上移草稿（P0-1）
+# 原则：100% 复用 tools/test_gate.ps1 现有参数面（-Suite fast 含 budget --strict/nav/route/artifact），
+#       不复制逻辑、不碰任何在改文件；Windows runner 因 ps1 依赖必选。
+# 触发：push 到主干（活树高频提交，每笔必拦）+ PR。
+# 2026-11-08 修正：远端默认分支是 main（origin/main），本机工作分支是 master，
+# 原文本只写了 [master]，而主干在 GitHub 上是 main —— 那样推上去根本不会触发，
+# 且 workflow_dispatch 要求 workflow 存在于默认分支。故两个名字都收。
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  # 2026-11-08：下面状态块写着"合入后手动触发一次"，但原文本没配 workflow_dispatch，
+  # 想手动验证只能空 commit（会污染历史）。补上触发器。
+  workflow_dispatch:
+  # 2026-11-08：nightly-full 名为"夜间"，原条件却是 push —— 每推一次就跑一次
+  # 90 分钟整仓 pytest（本仓两天 235 个提交的节奏）。而本 workflow 的 concurrency
+  # 是 cancel-in-progress，下一次 push 会把它直接掐掉，等于每次都跑不完还占机时。
+  # 改为真正的定时 + 手动，push 只跑 fast 闸。
+  schedule:
+    - cron: '30 18 * * *'    # UTC 18:30 = 北京时间 02:30
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fast-gate:
+    runs-on: windows-latest
+    # 本地实测 11:28（688s）。runner 磁盘慢、首次还要装依赖，按 2.5x 留余量；
+    # timeout 触发会以红报出，掩盖真正的失败原因，故给到 45 分钟。
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # nav/route 基线对比需要历史
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'  # 与本地质量闸同版本（P3-5 实测口径）
+
+      # 2026-11-08：原工作流没有任何依赖安装步骤 —— 干净 runner 上 quant 套件
+      # 会因 import pandas 直接崩，闸红的原因会是"没装包"而不是"代码坏了"。
+      # 清单来源：_audit_20261108/scan_gate_imports.py（扫 309 个受控文件的
+      # 一级 import，扣掉标准库与本仓自有模块后剩 8 个第三方发行版）。
+      # 运行时依赖按各线 venv 管理、未集中声明，故此处为**首轮基线**：
+      # 首次 dispatch 若仍报缺包，按日志补这里，不要改测试去绕过。
+      - name: Install gate dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+          python -m pip install numpy pandas pyyaml jsonschema pyjwt cryptography lark-oapi
+
+      - name: Preflight（不假绿）
+        shell: pwsh
+        run: |
+          # fail-fast：闸脚本缺失直接红，不静默跳过（对齐 test_gate.ps1 的 fail-closed 判例）
+          if (-not (Test-Path tools/test_gate.ps1)) { Write-Host "::error::tools/test_gate.ps1 missing"; exit 1 }
+          if (-not (Test-Path tools/check_portal_split.py)) { Write-Host "::error::budget tool missing"; exit 1 }
+          python -X utf8 -c "import sys; print(sys.version)"
+
+      - name: Quality gate（-Suite fast）
+        shell: pwsh
+        run: |
+          # 与 devtask merge 内联闸完全同参：portal+kstock+ide+agent_key+quant_key+tools_key+datawarehouse
+          # + budget --strict + nav --check + route inventory --check + artifact guard
+          powershell -NoProfile -ExecutionPolicy Bypass -File tools/test_gate.ps1 -Suite fast
+
+      - name: Summary（每次留下机读台账）
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "=== gate done（rc=$LASTEXITCODE）==="
+
+  # 可选第二档：夜间全仓（P3-5 口径），不阻塞合并；只在定时/手动时跑
+  nightly-full:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Full repo pytest（活树快照，红仅通报不阻断）
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          python -X utf8 -m pytest -q 2>&1 | Tee-Object -FilePath C:\Temp\nightly_full.log
+          Write-Host "::warning::夜间全仓为通报档（P3-5 基线对账用），红不阻断"
+
+# ─── 状态（2026-11-08 更新）──────────────────────────
+# 1. 远端已确认 GitHub（origin=Zerotech133/Zerotech-first）——workflow 形态成立。
+#    本机 push 走本地代理 127.0.0.1:7890（git config 已配），Actions 在云端跑不受影响。
+# 2. 【激活前置已清空】xq 41 项已修复（2026-11-08，K-ORG-20261108-XQSEAM）。
+#    38+2+1 的真因是 LLM 替身接缝断开：xq_classify 经 safe_urlopen 出网，loopback
+#    走 _NO_PROXY_OPENER，绕开 urllib.request.urlopen，旧 monkeypatch 失效后测试
+#    真调本机 qwen3.5:9b。修完 4 个文件全部转绿（47+2+2+22），并已**纳入**
+#    quant_key 套件（21→25 文件），不是 deselect 也不是加白。
+#    证据：_audit_20261108/（各文件 7~78s → 秒级；quant 全量 2474 passed）。
+# 3. runner 时长：fast 约 4-5 分钟/笔（本地口径）；concurrency 已设 cancel-in-progress。
+#    2026-11-08 本地实测三轮：8:41 / 11:57 / 11:28（第三轮 GATE PASS，13 套件 New 全 0）。
+#    注意 runner 比本机慢，且云端首次还要装依赖，30 分钟 timeout 留足。
+# 4. 首次生效验证：workflow_dispatch 手动触发一次，核对 fast 各套件在 windows
+#    runner 上全部起跑（重点是 portal 套件的 sys.path/conftest 兼容性）。
+# 5. 【依赖基线未在云端验证】本 workflow 的 Install 步骤清单是扫仓得出的首轮
+#    基线（309 个受控文件的第三方一级 import，8 个包）。运行时依赖按各线 venv
+#    管理、未集中声明，首次跑若报缺包，**按日志补这一步**，不得改测试绕过。
+# 6. nightly-full 的 `pytest -q` 全仓跑曾稳定挂死（栈停在 os_goal_store._file_lock，
+#    成因是 deadline 用 time.time()，被同目录测试冻结墙钟后永不超时）。
+#    2026-11-08 已改 time.monotonic() 并加守卫用例，重跑实测无 Timeout。

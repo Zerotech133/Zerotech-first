@@ -4,6 +4,7 @@
 import json
 import os
 import sys
+import time
 
 import pytest
 
@@ -184,3 +185,24 @@ def test_file_lock_open_gives_up_after_deadline(tmp_path, monkeypatch):
     with pytest.raises(PermissionError):
         with S._file_lock(str(lock)):
             pass
+
+
+def test_file_lock_deadline_immune_to_wall_clock_freeze(tmp_path, monkeypatch):
+    """墙钟被冻结时必须照样超时退出（2026-11-08 K-ORG-20261108-MONO）。
+
+    判例：全量跑 portal 时本文件卡死 120s+，栈停在 _file_lock 的
+    time.sleep(0.05)。机制不是死锁，而是 deadline 用 time.time() 计算：
+    一旦 time.time 被冻结（同目录 test_ifs_idempotency /
+    test_os_auth_hardening 都直接 patch 全局 time.time），
+    deadline = 冻结值 + timeout 恒大于 time.time()，重试循环永不退出。
+    改用 time.monotonic() 后与墙钟解耦；本用例就是该不变量的守卫。
+    """
+    lock = tmp_path / "ledger3.lock"
+    _flaky_os_open(monkeypatch, lock, fail_times=10 ** 9)
+    monkeypatch.setattr(S, "_LOCK_TIMEOUT_S", 0.05)
+    monkeypatch.setattr(S.time, "time", lambda: 1000.0)  # 冻结墙钟
+    t0 = time.monotonic()
+    with pytest.raises(PermissionError):
+        with S._file_lock(str(lock)):
+            pass
+    assert time.monotonic() - t0 < 5.0, "墙钟冻结后仍应在 deadline 内放弃"

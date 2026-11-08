@@ -243,6 +243,17 @@ $paths = @{
         'quant_backtest/tests/test_osleg_http_contract.py',
         'quant_backtest/tests/test_proxy_dialogue.py',
         'quant_backtest/tests/test_xq_offline_chain_e2e.py',
+        # ---- 2026-11-08 P3-5 xq 41 项修完纳管（K-ORG-20261108-XQSEAM）----
+        # 这 4 个文件修复前红 41 项（38+2+1），是 quality-gate 激活的唯一前置。
+        # 根因是 LLM 替身接缝断开：xq_classify 经 safe_urlopen 出网，loopback
+        # 目标走 _NO_PROXY_OPENER（OpenerDirector.open），不经
+        # urllib.request.urlopen，旧 monkeypatch 完全失效 → 测试真调本机
+        # Ollama（qwen3.5:9b），答案随机。修法=patch 模块内 safe_urlopen，
+        # 并加 socket.connect 守卫防接缝再断。详见各文件 docstring。
+        'quant_backtest/tests/test_xq_classify_retry_degraded.py',
+        'quant_backtest/tests/test_xq_recontent_exit.py',
+        'quant_backtest/tests/test_xq_retry_cap.py',
+        'quant_backtest/tests/test_verify_daily_report.py',
         'quant_backtest/tests/test_chanlun_learn.py'
     )
     'tools_key' = @(

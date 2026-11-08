@@ -49,7 +49,7 @@ from api_portfolio import (
 from api_screen import build_screen, _kline_data, _kline_qy, _chips_data
 import api_screen  # 模块名绑定（多继承基类引用）
 import api_misc  # 模块名绑定（多继承基类引用）
-from api_misc import (build_overview,
+from api_misc import (build_overview, overview_cached,  # noqa: F401  build_overview 保留再导出（历史引用面）
     build_brief, build_home_cockpit, build_os_cockpit)
 import api_chanlun_pages  # 模块名绑定（多继承基类引用）
 import api_chanlun_buy  # 🛒 买点实战台（/bt-buy，K-ORG-20261107-BUYDESK）
@@ -270,6 +270,11 @@ def _rate_hit(key, max_per_min, window_sec=60.0):
         return False
 
 _cache = {"t": 0.0, "data": None}
+# 2026-11-08 K-ORG-20261108-OVWSPLIT：overview 专用锁。
+# 原先复用 api_health_portal._lock（该锁同时罩着 /api/health、jev 缓存与
+# _rate_hit 限流计数），一次 12s+ 的 overview 重建会连带堵住健康检查，
+# 监控侧会误判服务不可用。缓存各管各的锁，互不放大等待。
+_overview_lock = threading.Lock()
 
 # P1 总览门户（2026-10-17 前端重规划）：/api/health 七口探活 + 五守护任务
 
@@ -2047,13 +2052,24 @@ color:#fff;font-size:13.5px;cursor:pointer}
             self.send_header("Content-Length", "0")
             self.end_headers()
         elif path == "/api/overview":
-            with _lock:
-                now = time.time()
-                if _cache["data"] is None or now - _cache["t"] > CACHE_TTL:
-                    _cache["data"] = build_overview()
-                    _cache["t"] = now
-                data = _cache["data"]
-            self._json(data)
+            # 2026-11-08 K-ORG-20261108-OVWSPLIT：不再用跨模块共享的 _lock
+            # 包住构建。原写法持锁跑 build_overview()（含 docker ps + schtasks，
+            # 实测 12.6s、按内部 timeout 最坏 70s），期间 /api/health 与限流
+            # 计数全被堵住。现在换成 overview 专用锁 + 分层取数：轻项同步、
+            # 重项只读后台刷新的缓存，请求线程不再调用任何外部进程。
+            now = time.time()
+            with _overview_lock:
+                cached, cached_t = _cache["data"], _cache["t"]
+            if cached is not None and now - cached_t <= CACHE_TTL:
+                self._json(cached)
+            else:
+                data, meta = overview_cached()
+                # 附加字段（非破坏性）：冷启时 containers/tasks 是空壳，
+                # 前端/巡检据此区分"正在后台刷新"与"确实没有容器"。
+                data["overview_meta"] = meta
+                with _overview_lock:
+                    _cache["data"], _cache["t"] = data, time.time()
+                self._json(data)
         elif path == "/health":
             self._json({"ok": True, "ts": time.strftime("%Y-%m-%d %H:%M:%S")})
         elif path == "/api/watch-tower/strategy-pool/membership":
