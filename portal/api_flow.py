@@ -687,6 +687,13 @@ class Handler:
                         "%Y-%m-%d %H:%M:%S")})
 
     def _flow_artifact(self, qs):
+        # P1-01（K-SEC-20261108-FLOW-ARTIFACT-AUTH）：产物预览是文件读取面，
+        # 必须与本机/局域网鉴权口径一致，不能因 nginx 公开白名单而匿名可读。
+        # 本机直连/本机浏览器放行；反代+局域网须 X-Portal-Token（与 _ACTION_GETS 同规则）。
+        if not self._check_portal_token():
+            self._json({"ok": False, "error": "unauthorized",
+                        "message": "forbidden: 缺失或不匹配的 X-Portal-Token"}, 403)
+            return
         from urllib.parse import unquote
         params = dict(p.split("=", 1) for p in qs.split("&") if "=" in p)
         rel = unquote(params.get("p", "")).replace("\\", "/").strip("/")
