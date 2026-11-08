@@ -9,9 +9,74 @@
   "rights": {
    "internal_retention": true,
    "cleaning": true,
-   "controlled_query": true
+   "controlled_query": true,
+   "indexing": true,
+   "candidate_labeling": true,
+   "redistribution": false,
+   "commercial": false,
+   "training": false
   },
-  "rights_meta": {},
+  "rights_meta": {
+   "retention": {
+    "receipt": "C9A-YI-001",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "cleaning": {
+    "receipt": "C9A-YI-002",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "indexing": {
+    "receipt": "C9A-YI-003",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记"
+   },
+   "candidate_labeling": {
+    "receipt": "C9A-YI-004",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记"
+   },
+   "query": {
+    "receipt": "C9A-YI-005",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "redistribution": {
+    "receipt": "C9A-YI-006",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "commercial": {
+    "receipt": "C9A-YI-007",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "training": {
+    "receipt": "C9A-YI-008",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   }
+  },
   "content_types": [
    "media",
    "meta"
@@ -34,9 +99,74 @@
   "rights": {
    "internal_retention": true,
    "cleaning": true,
-   "controlled_query": true
+   "controlled_query": true,
+   "indexing": true,
+   "candidate_labeling": true,
+   "redistribution": false,
+   "commercial": false,
+   "training": false
   },
-  "rights_meta": {},
+  "rights_meta": {
+   "retention": {
+    "receipt": "C9A-YI-009",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "cleaning": {
+    "receipt": "C9A-YI-010",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "indexing": {
+    "receipt": "C9A-YI-011",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记"
+   },
+   "candidate_labeling": {
+    "receipt": "C9A-YI-012",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记"
+   },
+   "query": {
+    "receipt": "C9A-YI-013",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "redistribution": {
+    "receipt": "C9A-YI-014",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "commercial": {
+    "receipt": "C9A-YI-015",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "training": {
+    "receipt": "C9A-YI-016",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   }
+  },
   "content_types": [
    "post",
    "comment"
@@ -59,9 +189,74 @@
   "rights": {
    "internal_retention": true,
    "cleaning": true,
-   "controlled_query": true
+   "controlled_query": true,
+   "indexing": true,
+   "candidate_labeling": true,
+   "redistribution": false,
+   "commercial": false,
+   "training": false
   },
-  "rights_meta": {},
+  "rights_meta": {
+   "retention": {
+    "receipt": "C9A-YI-017",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "cleaning": {
+    "receipt": "C9A-YI-018",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "indexing": {
+    "receipt": "C9A-YI-019",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记"
+   },
+   "candidate_labeling": {
+    "receipt": "C9A-YI-020",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记"
+   },
+   "query": {
+    "receipt": "C9A-YI-021",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "redistribution": {
+    "receipt": "C9A-YI-022",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "commercial": {
+    "receipt": "C9A-YI-023",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "training": {
+    "receipt": "C9A-YI-024",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   }
+  },
   "content_types": [
    "post",
    "comment"
@@ -84,9 +279,74 @@
   "rights": {
    "internal_retention": true,
    "cleaning": true,
-   "controlled_query": true
+   "controlled_query": true,
+   "indexing": true,
+   "candidate_labeling": true,
+   "redistribution": false,
+   "commercial": false,
+   "training": false
   },
-  "rights_meta": {},
+  "rights_meta": {
+   "retention": {
+    "receipt": "C9A-YI-025",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "cleaning": {
+    "receipt": "C9A-YI-026",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "indexing": {
+    "receipt": "C9A-YI-027",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记"
+   },
+   "candidate_labeling": {
+    "receipt": "C9A-YI-028",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记"
+   },
+   "query": {
+    "receipt": "C9A-YI-029",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "redistribution": {
+    "receipt": "C9A-YI-030",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "commercial": {
+    "receipt": "C9A-YI-031",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "training": {
+    "receipt": "C9A-YI-032",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   }
+  },
   "content_types": [
    "post"
   ],
@@ -111,9 +371,74 @@
   "rights": {
    "internal_retention": true,
    "cleaning": true,
-   "controlled_query": true
+   "controlled_query": true,
+   "indexing": true,
+   "candidate_labeling": true,
+   "redistribution": false,
+   "commercial": false,
+   "training": false
   },
-  "rights_meta": {},
+  "rights_meta": {
+   "retention": {
+    "receipt": "C9A-YI-033",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "cleaning": {
+    "receipt": "C9A-YI-034",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "indexing": {
+    "receipt": "C9A-YI-035",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记"
+   },
+   "candidate_labeling": {
+    "receipt": "C9A-YI-036",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记"
+   },
+   "query": {
+    "receipt": "C9A-YI-037",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "redistribution": {
+    "receipt": "C9A-YI-038",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "commercial": {
+    "receipt": "C9A-YI-039",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "training": {
+    "receipt": "C9A-YI-040",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   }
+  },
   "content_types": [
    "meta"
   ],
@@ -135,9 +460,74 @@
   "rights": {
    "internal_retention": true,
    "cleaning": true,
-   "controlled_query": true
+   "controlled_query": true,
+   "indexing": true,
+   "candidate_labeling": true,
+   "redistribution": false,
+   "commercial": false,
+   "training": false
   },
-  "rights_meta": {},
+  "rights_meta": {
+   "retention": {
+    "receipt": "C9A-YI-041",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "cleaning": {
+    "receipt": "C9A-YI-042",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "indexing": {
+    "receipt": "C9A-YI-043",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记"
+   },
+   "candidate_labeling": {
+    "receipt": "C9A-YI-044",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记"
+   },
+   "query": {
+    "receipt": "C9A-YI-045",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "redistribution": {
+    "receipt": "C9A-YI-046",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "commercial": {
+    "receipt": "C9A-YI-047",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "training": {
+    "receipt": "C9A-YI-048",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   }
+  },
   "content_types": [
    "video_meta",
    "comment"
@@ -160,9 +550,74 @@
   "rights": {
    "internal_retention": true,
    "cleaning": true,
-   "controlled_query": true
+   "controlled_query": true,
+   "indexing": true,
+   "candidate_labeling": true,
+   "redistribution": false,
+   "commercial": false,
+   "training": false
   },
-  "rights_meta": {},
+  "rights_meta": {
+   "retention": {
+    "receipt": "C9A-YI-049",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "cleaning": {
+    "receipt": "C9A-YI-050",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "indexing": {
+    "receipt": "C9A-YI-051",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记"
+   },
+   "candidate_labeling": {
+    "receipt": "C9A-YI-052",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记"
+   },
+   "query": {
+    "receipt": "C9A-YI-053",
+    "ruling": "true",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "true(11-01 override)"
+   },
+   "redistribution": {
+    "receipt": "C9A-YI-054",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "commercial": {
+    "receipt": "C9A-YI-055",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   },
+   "training": {
+    "receipt": "C9A-YI-056",
+    "ruling": "false",
+    "ruling_by": "乙(老田)",
+    "ruling_at": "2026-11-08T11:41:22+08:00",
+    "old_value": "未登记",
+    "explicit_approval": false
+   }
+  },
   "content_types": [
    "knowledge_unit"
   ],
