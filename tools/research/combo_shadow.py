@@ -280,6 +280,50 @@ def load_jsonl(path):
     return out
 
 
+def null_test(rows, rule, boot=200):
+    f = "trail_ret" if rule == "trail" else "hold_ret"
+    by = defaultdict(list)
+    for r in rows:
+        by[r["entry_date"]].append(r[f])
+    # 坑（2026-11-08 修）：`rng.choice(len, n)` 是按**索引**抽的，所以 all_days
+    # 的元素顺序决定抽到哪些日期。若顺序跟随 rows 遍历顺序（defaultdict 插入序），
+    # 同一批数据只要行序变一下 p 值就漂：实测 1,265 笔 8 次打乱 p∈[0.015,0.065]，
+    # 其中一次 0.065 直接不过 5% 闸门。按 entry_date 排序后抽样与行序无关，
+    # 4 次打乱恒为 0.035。同一批数据必须给出同一个 p，否则"p<0.05"不是结论。
+    keys = sorted(by)
+    all_days = np.array([np.mean(by[k]) for k in keys], float)
+    pass_days = sorted({r["entry_date"] for r in rows if r["pass"]})
+    n = len(pass_days)
+    if n == 0 or n >= len(all_days):
+        return None
+    real = float(np.mean([np.mean(by[d]) for d in pass_days]))
+    rng = np.random.default_rng(SEED)
+    draws = np.array([all_days[rng.choice(len(all_days), n, replace=False)].mean()
+                      for _ in range(boot)], float)
+    p95 = float(np.percentile(draws, 95))
+    p50 = float(np.percentile(draws, 50))
+    # ---- 样本量闸门（2026-11-08 老田裁定）----
+    # 到期开仓日 < MIN_SETTLED_DAYS 时，p 值**不得作为结论**：
+    # 单窗口 p 值随窗口选择剧烈漂移，而分年拆解已证明 2024 方向相反。
+    # 这里保留数字（供观察漂移），但把 verdict 降级为描述性、usable=False，
+    # 下游任何仓位决策都必须看 usable 而不是 p_value。
+    enough = n >= MIN_SETTLED_DAYS
+    raw_verdict = ("优于随机 95% 分位" if real > p95 else
+                   ("优于随机中位但未过 5%" if real > p50 else
+                    "不如随机（等同少交易）"))
+    return {"days": n, "universe": int(len(all_days)),
+            "real": round(real * 100, 3),
+            "null_p50": round(p50 * 100, 3),
+            "null_p95": round(p95 * 100, 3),
+            "p_value": round(float((draws >= real).mean()), 4),
+            "usable_for_decision": enough,
+            "verdict": (raw_verdict if enough else
+                        "【描述性·不可用于决策】" + raw_verdict),
+            "gate": ("样本充足（%d ≥ %d 日）" % (n, MIN_SETTLED_DAYS) if enough else
+                     "样本不足（%d < %d 日）：p 值仅描述本窗口，"
+                     "不得跨窗口/跨年份外推" % (n, MIN_SETTLED_DAYS))}
+
+
 def main():
     global EXT_POOL, SHADOW
     ap = argparse.ArgumentParser()
@@ -557,43 +601,6 @@ def main():
     # 就会改变日批均的分布**，必须证明真实选出的日子优于「随机抽同样天数」，
     # 否则「组合最优」只是把仓位压到少数几天。判据同 entry_timing_3y：
     # 真实值要优于随机分布的 95% 分位。
-    def null_test(rows, rule, boot=200):
-        f = "trail_ret" if rule == "trail" else "hold_ret"
-        by = defaultdict(list)
-        for r in rows:
-            by[r["entry_date"]].append(r[f])
-        all_days = np.array([np.mean(v) for v in by.values()], float)
-        pass_days = [d for d in {r["entry_date"] for r in rows if r["pass"]}]
-        n = len(pass_days)
-        if n == 0 or n >= len(all_days):
-            return None
-        real = float(np.mean([np.mean(by[d]) for d in pass_days]))
-        rng = np.random.default_rng(SEED)
-        draws = np.array([all_days[rng.choice(len(all_days), n, replace=False)].mean()
-                          for _ in range(boot)], float)
-        p95 = float(np.percentile(draws, 95))
-        p50 = float(np.percentile(draws, 50))
-        # ---- 样本量闸门（2026-11-08 老田裁定）----
-        # 到期开仓日 < MIN_SETTLED_DAYS 时，p 值**不得作为结论**：
-        # 单窗口 p 值随窗口选择剧烈漂移，而分年拆解已证明 2024 方向相反。
-        # 这里保留数字（供观察漂移），但把 verdict 降级为描述性、usable=False，
-        # 下游任何仓位决策都必须看 usable 而不是 p_value。
-        enough = n >= MIN_SETTLED_DAYS
-        raw_verdict = ("优于随机 95% 分位" if real > p95 else
-                       ("优于随机中位但未过 5%" if real > p50 else
-                        "不如随机（等同少交易）"))
-        return {"days": n, "universe": int(len(all_days)),
-                "real": round(real * 100, 3),
-                "null_p50": round(p50 * 100, 3),
-                "null_p95": round(p95 * 100, 3),
-                "p_value": round(float((draws >= real).mean()), 4),
-                "usable_for_decision": enough,
-                "verdict": (raw_verdict if enough else
-                            "【描述性·不可用于决策】" + raw_verdict),
-                "gate": ("样本充足（%d ≥ %d 日）" % (n, MIN_SETTLED_DAYS) if enough else
-                         "样本不足（%d < %d 日）：p 值仅描述本窗口，"
-                         "不得跨窗口/跨年份外推" % (n, MIN_SETTLED_DAYS))}
-
     sent["null"] = {"trail": null_test(settled, "trail"),
                     "hold": null_test(settled, "hold")}
     sent["null"]["note"] = (
