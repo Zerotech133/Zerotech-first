@@ -1,6 +1,7 @@
 # 告警链转正：shadow→live 收口清单（P0-2）
 
-> 远端已确认 GitHub（2026-11-08 06:3x，origin=Zerotech133/Zerotech-first）——CI workflow 已转正为 `.github/workflows/quality-gate.yml`（未跟踪待合入）。本清单的 S1-S4 不受影响。
+> 远端已确认 GitHub（2026-11-08 06:3x，origin=Zerotech133/Zerotech-first）——本清单的 S1-S4 不受影响。
+> **CI 裁定修正（2026-11-08 09:2x）**：origin/governance-upgrade 尖端（11-06）已裁定**弃 CI workflow**——PAT 仅 repo scope 推不了 `.github/workflows/*`（GitHub 会对整次 push 报 403），且把 workflow 文件提交进 master 会让**此后所有 push 被整体拒绝**；本地 sync-back 回归门（test_gate.ps1）已够用。故 `quality-gate.yml` 维持本地不跟踪、不入库；本清单头注原「CI workflow 已转正待合入」表述作废。
 
 ## 0. 现场实况（2026-11-08 06:1x 实测，修正上一轮判断）
 
