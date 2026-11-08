@@ -92,6 +92,19 @@ jobs:
         run: |
           Write-Host "=== gate done（rc=$LASTEXITCODE）==="
 
+      # 2026-11-08：闸脚本把各套件明细写在 runner 的 %TEMP%\test_gate_*.log，
+      # 只回显最后一行摘要，且 job 结束后随即销毁——云端红一次就只能靠摘要里
+      # 前 20 条猜原因（datawarehouse 那次 43 项只看到 20 项）。上传后可直接下载
+      # 全量明细，不用再靠"改代码—重推—等九分钟"试错。
+      - name: Upload gate logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate-logs-${{ github.run_id }}
+          path: ${{ runner.temp }}/test_gate_*.log
+          if-no-files-found: ignore
+          retention-days: 14
+
   # 可选第二档：夜间全仓（P3-5 口径），不阻塞合并；只在定时/手动时跑
   nightly-full:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
