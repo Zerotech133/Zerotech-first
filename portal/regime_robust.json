@@ -1,0 +1,98 @@
+{
+ "by_year": {
+  "2024": {
+   "pv_diff": null,
+   "ma_diff": 5.51,
+   "n": 204
+  },
+  "2025": {
+   "pv_diff": null,
+   "ma_diff": 3.86,
+   "n": 243
+  },
+  "2026": {
+   "pv_diff": null,
+   "ma_diff": 3.3,
+   "n": 203
+  }
+ },
+ "year_sign_consistent": true,
+ "weak_months": [
+  {
+   "month": "202407",
+   "n": 23,
+   "mean_pct": -2.72
+  },
+  {
+   "month": "202408",
+   "n": 22,
+   "mean_pct": 1.18
+  },
+  {
+   "month": "202406",
+   "n": 19,
+   "mean_pct": -3.91
+  },
+  {
+   "month": "202409",
+   "n": 19,
+   "mean_pct": 21.7
+  },
+  {
+   "month": "202405",
+   "n": 18,
+   "mean_pct": -5.37
+  },
+  {
+   "month": "202410",
+   "n": 18,
+   "mean_pct": 4.68
+  },
+  {
+   "month": "202411",
+   "n": 13,
+   "mean_pct": -0.15
+  }
+ ],
+ "weak_top3_share_pct": 48.5,
+ "by_horizon": {
+  "5": {
+   "pv": 0.45,
+   "ma": 0.23,
+   "zone": -0.12
+  },
+  "10": {
+   "pv": 0.98,
+   "ma": 1.07,
+   "zone": 0.16
+  },
+  "20": {
+   "pv": 2.63,
+   "ma": 3.32,
+   "zone": 1.05
+  },
+  "60": {
+   "pv": 8.38,
+   "ma": 9.89,
+   "zone": 5.69
+  }
+ },
+ "weak_full": {
+  "n": 132,
+  "mean_pct": 2.176,
+  "t": 2.5
+ },
+ "weak_drop_top5": {
+  "n": 86,
+  "mean_pct": -3.438,
+  "t": -16.14,
+  "survive": false
+ },
+ "weak_path_maxdd": {
+  "n": 132,
+  "mean_pct": -3.4,
+  "median_pct": -3.59,
+  "p10_pct": -6.22,
+  "worst_pct": -11.04
+ }
+}
