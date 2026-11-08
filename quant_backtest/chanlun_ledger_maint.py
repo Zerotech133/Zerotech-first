@@ -297,9 +297,9 @@ def split(dry_run=False):
     files = sorted(glob.glob(os.path.join(LEDGER_ARCHIVE, "closed_*.jsonl")))
     ts = time.strftime("%Y%m%d-%H%M%S")
     bak = os.path.join(DATA, "_bak_archive_split_%s" % ts)
-    if not dry_run:
-        os.makedirs(bak, exist_ok=True)
-        os.makedirs(BACKFILL_DIR, exist_ok=True)
+    # 坑（2026-11-08 修）：不要在这里 makedirs。幂等重跑时一行都不搬，
+    # 却已经把备份目录建出来了，留下 0 字节的空目录（实测留过一个
+    # `_bak_archive_split_20261108-091946`）。改到"确有回填行要搬"时再建。
 
     tot_led = tot_bf = tot_bad = tot_moved = tot_dup = 0
     for p in files:
@@ -329,6 +329,9 @@ def split(dry_run=False):
                 print("  [dry] %-22s -> backfill_CN_%s.jsonl  %d 行"
                       % (os.path.basename(p), mo, len(lst)))
             continue
+        # 到这里才确定要搬东西，此时才建目录（见上方"不要 makedirs"的说明）
+        os.makedirs(bak, exist_ok=True)
+        os.makedirs(BACKFILL_DIR, exist_ok=True)
         shutil.copy2(p, os.path.join(bak, os.path.basename(p)))
         for mo, lst in sorted(by.items()):
             tgt = os.path.join(BACKFILL_DIR, "backfill_CN_%s.jsonl" % mo)

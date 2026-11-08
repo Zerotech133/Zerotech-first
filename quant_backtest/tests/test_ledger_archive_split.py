@@ -106,6 +106,22 @@ def test_split_is_idempotent(monkeypatch, tmp_path):
     assert before == after == 1
 
 
+def test_split_no_empty_backup_dir_when_nothing_to_move(monkeypatch, tmp_path):
+    """无事可搬时不该留下空备份目录。
+
+    2026-11-08 实测踩到：`split()` 原先在开头就 makedirs，幂等重跑时一行都不搬，
+    却留下 0 字节的 `_bak_archive_split_20261108-091946`。目录若先建后弃，
+    下次清理时就得靠人工判断"这个空目录是什么"，成本远高于按需建。
+    """
+    m = _load(monkeypatch, tmp_path)
+    src = Path(m.LEDGER_ARCHIVE) / "closed_CN_202607.jsonl"
+    _write(src, [ledger_row(exit_d="2026-07-02")])      # 干净：只有台账行
+    m.split()
+    assert list(Path(m.DATA).glob("_bak_archive_split_*")) == []
+    assert not Path(m.BACKFILL_DIR).exists()            # 回填目录同样不该建
+    assert len(_read(src)) == 1                          # 台账行原样保留
+
+
 def test_archive_writes_backfill_dir_and_dedups(monkeypatch, tmp_path):
     m = _load(monkeypatch, tmp_path)
     rows = [dict(backfill_row("000004.SZ"), status="closed", ret=0.01),
