@@ -744,6 +744,14 @@ def _pg_connect_default(dsn):
     - kwargs dict：jev_common fallback（连接密码只在内存中，不打印/不落盘）；
     - 异常向上抛（fail-visible）；连接建立后强制只读会话。
     """
+    # 2026-11-08（K-CI-20261108-PGVALID）：空 DSN 属**参数校验**，必须在加载驱动之前判。
+    # 原顺序先 import psycopg2 → 干净 runner 未装驱动时抛 driver_missing，把"参数为空"这个
+    # 更根本的错误盖住了（test_empty_target_rejected 于是只在装了驱动的机器上过，云端必红）。
+    target = None
+    if not isinstance(dsn, dict):
+        target = _normalize_dsn(str(dsn or ""))
+        if not target:
+            raise ConnectorUnavailable("missing_dsn: DSN 为空", status="missing_dsn")
     try:
         import psycopg2 as pg
     except ImportError:
@@ -757,9 +765,6 @@ def _pg_connect_default(dsn):
         connect_kwargs.setdefault("connect_timeout", PG_TIMEOUT_S)
         con = pg.connect(**connect_kwargs)
     else:
-        target = _normalize_dsn(str(dsn or ""))
-        if not target:
-            raise ConnectorUnavailable("missing_dsn: DSN 为空", status="missing_dsn")
         con = pg.connect(target, connect_timeout=PG_TIMEOUT_S)
     try:
         con.set_session(readonly=True, autocommit=True)
