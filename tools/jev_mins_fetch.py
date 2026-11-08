@@ -95,6 +95,28 @@ def ts_call(tok, code, day, retry=3):
     return None
 
 
+def xt_call(code, day):
+    """走 TDX-Trading 平台取分钟（0.4~1.6s/只，比 tushare 快且无需限流）。
+
+    2026-11-08 接入：tushare 单票 0.21s 但要 0.12s 间隔 + 限流；xtcloud 单票
+    0.4~1.6s 但可并发。--source auto（默认）：先 xtcloud，空/失败退 tushare。
+    远端两张表都试：ts_stk_mins（快，存量可能停在上一交易日）→ ts_rt_min
+    （全市场当日采集，11-06 有 5570 只）。
+    """
+    try:
+        if HERE not in sys.path:
+            sys.path.insert(0, HERE)
+        import xtcloud_client
+        c = xtcloud_client.client()
+        rows = c.mins(str(code)[:6], day, limit=400, tbl="ts_stk_mins")
+        if not rows:
+            rows = c.mins(str(code)[:6], day, limit=400, tbl="ts_rt_min")
+        return rows if rows else []
+    except Exception as exc:  # noqa: BLE001
+        log("  !! xtcloud %s 失败: %s" % (code, exc))
+        return None
+
+
 def pick_codes(day, limit):
     """当日最该看的那批票：涨停 > 涨幅≥5% > 焦点板块前排 > 有盘中事件。"""
     sys.path.insert(0, os.path.join(STATION, "portal"))
@@ -180,6 +202,9 @@ def main():
     ap.add_argument("--limit", type=int, default=60)
     ap.add_argument("--dry", action="store_true", help="只列清单，不拉不写")
     ap.add_argument("--force", action="store_true", help="目标日已有也覆盖")
+    ap.add_argument("--source", default="auto",
+                    choices=["auto", "tushare", "xtcloud"],
+                    help="分钟来源：auto=先 xtcloud 失败退 tushare")
     a = ap.parse_args()
 
     sys.path.insert(0, os.path.join(STATION, "portal"))
@@ -206,11 +231,21 @@ def main():
         log("dry-run 结束，未拉取未写入")
         return 0
 
-    tok = token()
-    stat = {"merged": 0, "already": 0, "empty": 0, "fail": 0, "skip_bad_old": 0}
+    need_tushare = a.source in ("auto", "tushare")
+    tok = token() if need_tushare else None
+    stat = {"merged": 0, "already": 0, "empty": 0, "fail": 0, "skip_bad_old": 0,
+            "via_xtcloud": 0, "via_tushare": 0}
     t0 = time.time()
     for i, (c, n, p, why) in enumerate(picks, 1):
-        items = ts_call(tok, c, day)
+        items = None
+        if a.source in ("auto", "xtcloud"):
+            items = xt_call(c, day)
+            if items:
+                stat["via_xtcloud"] += 1
+        if items is None and need_tushare:
+            items = ts_call(tok, c, day)
+            if items:
+                stat["via_tushare"] += 1
         if items is None:
             stat["fail"] += 1
         elif not items:

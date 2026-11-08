@@ -138,6 +138,17 @@
 
   <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:12px">
     <div class="card">
+      <h3>资金面 <span class="n">主力净额＝大单＋特大单（收盘终值）</span></h3>
+      <div id="flow"></div>
+    </div>
+    <div class="card">
+      <h3>研报 / 公告 <span class="n">无盘中时刻，不参与 Δmin</span></h3>
+      <div id="disc"></div>
+    </div>
+  </div>
+
+  <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:12px">
+    <div class="card">
       <h3>跨板块影响半径 <span class="n">一条消息同时命中几个板块</span></h3>
       <div id="cross"></div>
     </div>
@@ -226,7 +237,7 @@
       el.onclick=function(){ S.board=el.getAttribute("data-b"); S.code=""; load(); };
     });
 
-    drawNet(); drawTiers(); drawTL(); drawCross(); drawBasis();
+    drawNet(); drawTiers(); drawTL(); drawCross(); drawFlow(); drawDisc(); drawBasis();
   }
 
   // ── 网络图 ──
@@ -354,20 +365,25 @@
     function list(arr,extra){
       if(!arr||!arr.length) return '<div class="empty">无</div>';
       return arr.map(function(s){
+        var mt=(s.main_net!=null
+          ? '<span class="mini" style="margin-left:6px" title="主力净额（大单+特大单）">'+money(s.main_net)+'</span>'
+          : '');
         return '<div class="row">'+
           '<div>'+esc(s.name)+'<span class="cd">'+esc(s.code)+'</span>'+
             (s.limit_up?'<span class="tag seal">涨停</span>':(s.touch_only?'<span class="tag lu">触板</span>':''))+'</div>'+
           '<div class="pc '+cls(s.pct)+'">'+pct(s.pct)+'</div>'+
-          '<div class="tm">'+(extra?extra(s):"")+'</div>'+
+          '<div class="tm">'+(extra?extra(s):"")+mt+'</div>'+
         '</div>';
       }).join("");
     }
     var html="";
+    var lmt=(f.lead&&f.lead.main_net!=null
+      ? '<span class="mini" style="margin-left:6px">'+money(f.lead.main_net)+'</span>' : '');
     html+='<div class="tier"><div class="th"><b>领涨</b><span>最早封板 / 最早异动</span></div>'+
       (f.lead?'<div class="row"><div>'+esc(f.lead.name)+'<span class="cd">'+esc(f.lead.code)+'</span>'+
         (f.lead.limit_up?'<span class="tag seal">涨停</span>':'')+'</div>'+
         '<div class="pc '+cls(f.lead.pct)+'">'+pct(f.lead.pct)+'</div>'+
-        '<div class="tm">'+(f.lead.seal_time?("封 "+esc(f.lead.seal_time)):(f.lead.first_move?("动 "+esc(f.lead.first_move)):"无分钟"))+'</div></div>'
+        '<div class="tm">'+(f.lead.seal_time?("封 "+esc(f.lead.seal_time)):(f.lead.first_move?("动 "+esc(f.lead.first_move)):"无分钟"))+lmt+'</div></div>'
         :'<div class="empty">无</div>')+'</div>';
 
     html+='<div class="tier"><div class="th"><b>同波启动</b><span>与领涨相差 &lt;10 分钟</span></div>'+
@@ -417,6 +433,73 @@
       "灰色=消息先到、价格 N 分钟后动；「不可对齐」= 公告批量入库 / 午休时刻，不参与 Δmin。";
   }
 
+  // ── 资金面 ──
+  function money(v){
+    if(v==null) return "—";
+    var a=Math.abs(v);
+    if(a>=10000) return (v/10000).toFixed(2)+"亿";
+    return Math.round(v)+"万";
+  }
+  function drawFlow(){
+    var f=S.data.focus, fl=f.flow||{}, fd=S.data.fund||{};
+    if(!fl.has){
+      $("#flow").innerHTML='<div class="empty">当日无资金流数据（'+(fd.note?esc(fd.note):"xtcloud 未返回")+'）</div>';
+      return;
+    }
+    var cls=(fl.board_main_net>0)?"up":"down";
+    var html='<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px">'+
+      '<div style="font-size:22px;font-weight:700;font-family:var(--font-mono)" class="'+cls+'">'+
+      money(fl.board_main_net)+'</div>'+
+      '<div class="mini">板块主力净额 · 净流入 <b>'+fl.n_inflow+'/'+fl.n_with_flow+'</b> 只'+
+      (fl.inflow_ratio!=null?('（'+(fl.inflow_ratio*100).toFixed(0)+'%）'):'')+'</div></div>';
+    if(fl.divergence>0){
+      html+='<div class="note warn"><b>⚠ 背离 '+fl.divergence+' 只</b>：主力大单净买、但全档资金净流出'+
+        '（大单接、小单跑，涨得不实）——'+esc((fl.divergence_names||[]).join(" / "))+'</div>';
+    }
+    function rows(title,arr,cls2){
+      if(!arr||!arr.length) return "";
+      return '<div class="mini" style="margin-top:6px"><b>'+title+'</b></div>'+
+        arr.map(function(x){
+          return '<div class="crossline"><span style="flex:1">'+esc(x.name)+
+            ' <span class="mini">'+(x.pct>=0?"+":"")+x.pct.toFixed(2)+'%</span></span>'+
+            '<b class="'+cls2+'" style="font-family:var(--font-mono)">'+money(x.main_net)+'</b></div>';
+        }).join("");
+    }
+    html+=rows("主力净流入 Top3",fl.top_in,"up");
+    html+=rows("主力净流出 Top3",fl.top_out,"down");
+    html+='<div class="note">主力=大单+特大单。收盘终值，<b>盘中不可用</b>——盘中这一栏会是上一交易日的值，'+
+      '别拿它当实时资金。</div>';
+    $("#flow").innerHTML=html;
+  }
+
+  // ── 研报 / 公告 ──
+  function drawDisc(){
+    var d=S.data.focus.disclosures||{};
+    if(!d.has||!(d.items||[]).length){
+      $("#disc").innerHTML='<div class="empty">当日该板块无研报/公告</div>';
+      return;
+    }
+    var html='<div class="mini" style="margin-bottom:8px">研报 <b>'+d.n_reports+
+      '</b> 篇 · 公告 <b>'+d.n_notices+'</b> 条 <span class="mini">（当日全市场研报 '+
+      ((S.data.fund||{}).n_disclosures||0)+' 只票有披露）</span></div>';
+    html+=d.items.map(function(it){
+      var tag=it.kind==="research"
+        ? '<span class="q news">研报</span>'
+        : '<span class="q recaps">'+(esc(it.type||"公告").slice(0,8))+'</span>';
+      var meta=it.kind==="research"
+        ? (esc(it.org||"")+" "+(it.rating?('<b>'+esc(it.rating)+'</b>'):"")+
+           (it.eps?(" EPS "+esc(it.eps)):"")+(it.pe?(" PE "+esc(it.pe)):""))
+        : esc(it.date||"");
+      return '<div class="crossline">'+tag+
+        '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+
+        '<b>'+esc(it.name)+'</b> '+esc(it.title||"")+'</span>'+
+        '<span class="mini">'+meta+'</span></div>';
+    }).join("");
+    html+='<div class="note">研报/公告只有日期、没有盘中时刻，<b>不参与 Δmin</b>。'+
+      '它回答的是「有没有机构在写、有没有公告在发」，不能当驱动价格的那条消息。</div>';
+    $("#disc").innerHTML=html;
+  }
+
   // ── 跨板块 ──
   function drawCross(){
     var cs=(S.data.network&&S.data.network.cross_summary)||[];
@@ -436,10 +519,15 @@
     html+='<div class="note"><b>领涨口径</b>：最早封板者 > 最早首次异动者 > （无分钟时）涨幅第一，'+
       '本次 basis=<b>'+esc(f.basis||"—")+'</b>。'+
       '「跟随」= 首次异动晚于领涨 ≥10 分钟；同波 = 相差 &lt;10 分钟；无分钟数据单列，不冒充跟随。</div>';
-    html+='<div class="note"><b>分钟覆盖</b>：本月 stk_mins 目录 '+mc.with_minute+' 个 code 文件（全市场 '+mc.total+' 只，覆盖 '+
-      (mc.ratio?(mc.ratio*100).toFixed(1):"—")+'%）。本次按需读 '+(mc.read_asked||0)+' 只，命中 <b class="'+
-      (ratio>=70?"up":"warn")+'">'+ratio+'%</b>。'+
-      '缺口根因：同步器只拉中证800，热点票常不在内——已用 <code>tools/jev_mins_fetch.py</code> 按日补拉。</div>';
+    var mr=S.data.minute_read||{};
+    html+='<div class="note"><b>分钟覆盖</b>：本次按需读 '+(mr.asked||0)+' 只 → 本地命中 <b>'+ (mr.local||0)+
+      '</b> · 远端兜底 <b>'+ (mr.remote||0)+'</b> · 取不到 <b class="'+((mr.fail||0)>0?"warn":"")+'">'+ (mr.fail||0)+'</b>。'+
+      '根因：本地同步器只拉中证800，热点票常不在内（本月目录 '+mc.with_minute+' 个 code 文件 / 全市场 '+mc.total+' 只）；'+
+      '缺的已按「ts_stk_mins → ts_rt_min」远端兜底并写回本地 parquet。'+
+      '远端对<b>最近交易日</b>最全（11-06 采了 5570 只），对更早日期覆盖骤降（11-04 只命中 6 只）——这是数据源的保留策略，不是代码问题。</div>';
+    html+='<div class="note"><b>资金/披露口径</b>：主力净额 =（大单+特大单）买 − 卖，单位万元，'+
+      '<b>收盘终值、盘中不可用</b>。背离 = 主力净买但全档净流出（大单接、小单跑）。'+
+      '研报/公告的 ts_kind 固定 research/notice，只有日期没有盘中时刻，<b>不参与 Δmin</b>。</div>';
     html+='<div class="note"><b>消息时刻</b>：news.ts 是入库时刻，不是发布时刻。公告类批量落在 00:00'+
       '（11-06 单日 1313 条），这类不参与 Δmin；只有 09:15–11:30 / 13:00–15:05 的 <b>intraday</b> 消息才与分钟线对齐，'+
       '午休区间（11:31–12:59）一律降级。本板块当日：可对齐 '+(f.events.intraday||0)+' 条，批量 '+(f.events.batch||0)+' 条。</div>';

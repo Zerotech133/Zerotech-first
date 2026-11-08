@@ -26,12 +26,15 @@
 
 ## 数据诚实性（必须先读这段）
 
-1) **分钟线只覆盖中证800**。`quant_backtest/tushare_sync.py::batch_mins`
-   拉的是「中证800成分 × 近1年」，实测 2026-11 目录只有 800 个 code 文件
-   （000001…按代码序前 800 只），2026-10 有 5036 个（历史全市场补拉）。
-   直接后果：11-06 涨幅 ≥9.5% 的 43 只票里，分钟覆盖 **0 只**——本月
-   「价格几点动的」对热点票是空的。本模块如实输出 `minute_coverage`，
-   并对缺分钟的票标 `no_minute`，绝不用日线数据假装成分钟结论。
+1) **分钟线本地只覆盖中证800，但已接远端兜底**。`tushare_sync.py::batch_mins`
+   范围是「中证800成分 × 近1年」，2026-11 目录只有 800 个 code 文件，
+   11-06 涨幅≥9.5% 的 43 只票本地覆盖 **0 只**。2026-11-08 起 `_mins` 改为
+   **本地优先 → TDX-Trading 远端兜底并写回本地 parquet**（`tools/xtcloud_client.py`）：
+   先 `ts_stk_mins`（快，但存量不同步，002310 停在 11-05），空则退
+   `ts_rt_min`（11-06 采了 5570 只全市场，237 根，缺 15:00 收盘那根）。
+   每只票的画像都带 `source`（local/remote）与 `minute_read` 台账，
+   拉不到就标 `no_minute`，**绝不**用日线假装分钟结论。开关：环境变量
+   `JEV_MINS_FALLBACK=off` 可关闭兜底、`JEV_MINS_WRITE=0` 可只读不写盘。
 2) **涨停自算，不信 limit_list_d**。该表 latest=20261103，落后 3 个交易日。
    口径：涨停价 = round(pre_close × (1+档位), 2)，|close − 涨停价| ≤ 0.011
    即收盘涨停（一分钱容差）；high 触及但 close 未封 → `touch_only`。
@@ -69,10 +72,16 @@ SEAL_TOL = 0.011       # 涨停价容差（一分钱）
 FOLLOW_GAP_MIN = 10    # 领涨 → 跟随 的最小时间差（分钟）
 CAND_PCT = 3.0         # 领涨/跟随候选的最低当日涨幅
 MAX_MINUTE_CODES = 60  # 单次最多读多少只票的分钟线（性能闸门）
+FALLBACK_CODES = 60    # 单次最多对多少只票走远端兜底（与分钟闸门同量级）
+                       # 必须 ≥ 待补总数：否则超出的票会退回「单只串行兜底」，
+                       # 实测 11-05 那样 48 只缺 → 24 并发 + 24 串行 = 16.9s。
 CACHE_TTL_S = 60
 
 _CACHE: dict = {}
 _BOARD_CACHE: dict = {"at": 0.0, "data": None}
+_XT = None             # xtcloud 客户端单例（惰性）
+_FLOW = None           # jev_flow 模块（惰性）
+_MINS_MEM: dict = {}   # (code, day) -> DataFrame | None，进程内分钟缓存
 
 
 def _ro(path):
@@ -208,6 +217,8 @@ def load_board(day: str) -> dict:
                        if r.amount == r.amount else None),   # 千元→万元? 见下
             "limit_up": lu, "touch_only": touch, "limit_ratio": ratio,
             "limit_price": lp, "newbie": newbie,
+            "pre_close": (round(float(r.pre_close), 2)
+                          if r.pre_close == r.pre_close else None),
         })
 
     # 板块内涨幅排名（1 = 板块内涨幅最高）
@@ -259,33 +270,163 @@ def load_board(day: str) -> dict:
 
 
 # ── 分钟层 ──────────────────────────────────────────────────
-def _mins(ts_code: str, day: str):
-    """单票当日 1 分钟线（升序）。无文件/无当日数据 → None。"""
+def _xt():
+    """惰性加载 TDX-Trading 客户端（tools/ 不在 portal 的 sys.path 上）。"""
+    global _XT
+    if _XT is None:
+        p = os.path.join(STATION, "tools")
+        if p not in sys.path:
+            sys.path.insert(0, p)
+        import xtcloud_client
+        _XT = xtcloud_client.client()
+    return _XT
+
+
+def _flow_mod():
+    """惰性导入资金流/披露层（同目录）。"""
+    global _FLOW
+    if _FLOW is None:
+        import jev_flow
+        _FLOW = jev_flow
+    return _FLOW
+
+
+def _mins_local(ts_code: str, day: str):
     dm = _dm()
+    d8 = "%s-%s-%s" % (day[:4], day[4:6], day[6:])
     try:
-        d = dm.read("stk_mins", codes=[ts_code],
-                    start="%s-%s-%s" % (day[:4], day[4:6], day[6:]),
-                    end="%s-%s-%s" % (day[:4], day[4:6], day[6:]),
-                    limit=100000)
+        d = dm.read("stk_mins", codes=[ts_code], start=d8, end=d8, limit=100000)
     except Exception:  # noqa: BLE001
         return None
     if d is None or not len(d):
         return None
-    d = d.sort_values("trade_time")
+    return d.sort_values("trade_time").reset_index(drop=True)
+
+
+def _mins_fetch(ts_code: str, day: str):
+    """远端取数：ts_stk_mins 优先（快），空则 ts_rt_min（全但慢）。
+
+    → [[ts_code, trade_time, close, open, high, low, vol, amount], ...] 或 None
+    """
+    if os.environ.get("JEV_MINS_FALLBACK", "").lower() in ("off", "0", "false"):
+        return None
+    try:
+        c = _xt()
+        rows = c.mins(ts_code[:6], day, limit=400, tbl="ts_stk_mins")
+        if not rows:
+            rows = c.mins(ts_code[:6], day, limit=400, tbl="ts_rt_min")
+        return rows or None
+    except Exception as exc:  # noqa: BLE001
+        sys.stderr.write("mins fetch failed %s: %s\n" % (ts_code, exc))
+        return None
+
+
+def _writeback(ts_code: str, day: str, rows):
+    """按仓库约定写回本地 parquet（剔除目标日→追加→去重→原子替换→备份）。"""
+    if os.environ.get("JEV_MINS_WRITE", "1") in ("0", "off", "false"):
+        return False
+    try:
+        p = os.path.join(STATION, "tools")
+        if p not in sys.path:
+            sys.path.insert(0, p)
+        import jev_mins_fetch as F
+        F.merge_write(ts_code, day, rows)
+        return True
+    except Exception as exc:  # noqa: BLE001
+        sys.stderr.write("mins writeback failed %s: %s\n" % (ts_code, exc))
+        return False
+
+
+def _to_frame(rows, source="remote"):
+    import pandas as pd
+    d = pd.DataFrame(rows, columns=["ts_code", "trade_time", "close", "open",
+                                    "high", "low", "vol", "amount"])
+    d["trade_time"] = d["trade_time"].astype(str)
+    d = d.sort_values("trade_time").reset_index(drop=True)
+    d.attrs["source"] = source
     return d
 
 
-def minute_profile(ts_code: str, day: str, limit_price=None) -> dict:
+def _warm_many(codes, day: str, limit=None, budget_s=None):
+    """批量兜底：并发取数（网络并行）→ 串行写盘（避免同文件竞争）。
+
+    带整体时间预算：接口路径上宁可少补几只，也不能让一次请求等两分钟。
+    budget_s 缺省取环境变量 JEV_MINS_BUDGET（默认 20 秒）。
+    """
+    codes = list(codes)[:limit or FALLBACK_CODES]
+    if not codes:
+        return {}
+    if budget_s is None:
+        try:
+            budget_s = float(os.environ.get("JEV_MINS_BUDGET", "12"))
+        except ValueError:
+            budget_s = 12.0
+    t0 = time.time()
+    got = {}
+    try:
+        got = _xt().mins_many([c[:6] for c in codes], day, workers=8, limit=400,
+                              deadline_s=budget_s * 0.7)
+    except Exception as exc:  # noqa: BLE001
+        sys.stderr.write("mins_many failed: %s\n" % exc)
+    # ts_rt_min 兜底：mins_many 只查了 ts_stk_mins，缺的再补一轮（同样受预算约束）
+    miss = [c for c in codes if c[:6] not in got]
+    if miss and (time.time() - t0) < budget_s * 0.6:
+        try:
+            got2 = _xt().mins_many([c[:6] for c in miss], day, workers=6,
+                                   limit=400, tbl="ts_rt_min",
+                                   deadline_s=max(3.0, budget_s - (time.time() - t0)))
+            got.update(got2)
+        except Exception as exc:  # noqa: BLE001
+            sys.stderr.write("mins_many rt_min failed: %s\n" % exc)
+    for c in codes:
+        rows = got.get(c[:6])
+        if not rows:
+            _MINS_MEM[(c, day)] = None
+            continue
+        _writeback(c, day, rows)
+        _MINS_MEM[(c, day)] = _to_frame(rows, "remote")
+    sys.stderr.write("mins warm %d 只 命中 %d 用时 %.1fs\n"
+                     % (len(codes), len(got), time.time() - t0))
+    return got
+
+
+def _mins(ts_code: str, day: str):
+    """单票当日 1 分钟线（升序）。本地优先 → 远端兜底。无数据 → None。
+
+    返回的 DataFrame 带 `.attrs["source"]`（local/remote），供上层如实记账。
+    """
+    key = (ts_code, day)
+    if key in _MINS_MEM:
+        return _MINS_MEM[key]
+    d = _mins_local(ts_code, day)
+    if d is not None:
+        d.attrs["source"] = "local"
+        _MINS_MEM[key] = d
+        return d
+    rows = _mins_fetch(ts_code, day)
+    if rows:
+        _writeback(ts_code, day, rows)
+        d = _to_frame(rows, "remote")
+        _MINS_MEM[key] = d
+        return d
+    _MINS_MEM[key] = None
+    return None
+
+
+def minute_profile(ts_code: str, day: str, limit_price=None, pre_close=None) -> dict:
     """一只票当日的分钟画像：开盘/首次异动/封板/最大单分钟涨幅。
 
-    返回 {ok, open, first_move, first_move_pct, seal_time, bars, spike}
+    返回 {ok, source, open, bars, first_move, first_move_pct, at_open, gap_pct,
+          seal_time, spike}
       first_move  相对开盘首次 ≥MOVE_TH 的那一分钟（「价格几点动的」）
+      at_open     开盘价相对昨收已 ≥MOVE_TH（一字板/大幅跳空）→ 首次异动
+                  直接记开盘时刻，不再拿开盘价当基准（否则恒为 None）
       seal_time   close 首次 ≥ 涨停价 的那一分钟（封板时刻）
       spike       单分钟涨幅 ≥1% 且量 ≥2× 当日分钟均量 的第一次
     """
     d = _mins(ts_code, day)
     if d is None:
-        return {"ok": False, "reason": "no_minute"}
+        return {"ok": False, "reason": "no_minute", "source": None}
 
     times = [str(t) for t in d["trade_time"]]
     closes = [float(x) for x in d["close"]]
@@ -293,9 +434,18 @@ def minute_profile(ts_code: str, day: str, limit_price=None) -> dict:
     vols = [float(v) if v == v else 0.0 for v in d["vol"]]
     base = opens[0] if opens else closes[0]
     if not base:
-        return {"ok": False, "reason": "no_open"}
+        return {"ok": False, "reason": "no_open", "source": d.attrs.get("source")}
+
+    # 跳空口径：开盘相对昨收的幅度。一字板 open 已是涨停价，拿 open 当基准
+    # 会让「首次异动」恒为 None（实测南侨食品/永臻股份/浙文影业三只）。
+    gap_pct = None
+    if pre_close:
+        gap_pct = round((base / float(pre_close) - 1) * 100, 2)
 
     fm = fm_pct = None
+    at_open = False
+    if gap_pct is not None and gap_pct >= MOVE_TH * 100:
+        fm, fm_pct, at_open = times[0], gap_pct, True
     seal = None
     spike = None
     avg_vol = (sum(vols) / len(vols)) if vols else 0.0
@@ -313,8 +463,10 @@ def minute_profile(ts_code: str, day: str, limit_price=None) -> dict:
             break
 
     return {
-        "ok": True, "open": round(base, 2), "bars": len(times),
+        "ok": True, "source": d.attrs.get("source"),
+        "open": round(base, 2), "bars": len(times),
         "first_move": fm, "first_move_pct": fm_pct,
+        "at_open": at_open, "gap_pct": gap_pct,
         "seal_time": seal, "spike": spike,
         "high_pct": round((max(closes) / base - 1) * 100, 2) if closes else None,
         "close_pct": round((closes[-1] / base - 1) * 100, 2) if closes else None,
@@ -322,7 +474,12 @@ def minute_profile(ts_code: str, day: str, limit_price=None) -> dict:
 
 
 def minute_coverage(day: str, rows=None) -> dict:
-    """当日分钟数据的实际覆盖（如实报，不糊）。"""
+    """当日分钟数据的实际覆盖（如实报，不糊）。
+
+    注意：本地目录的文件数**不等于当日覆盖**——本月目录有 800 个文件，
+    但 11-06 当日真正有数据的只有一部分（其余票停留在 11-05）。所以这里
+    只报「目录规模」，当日真实命中率由 build() 的 minute_read 台账给。
+    """
     d8 = "%s-%s-%s" % (day[:4], day[4:6], day[6:])
     folder = os.path.join(QUANT, "data", "tushare", "stk_mins")
     ym = day[:6]
@@ -335,11 +492,24 @@ def minute_coverage(day: str, rows=None) -> dict:
         "with_minute": n_files, "total": total,
         "ratio": round(n_files / total, 3) if total else None,
         "month": ym,
-        "note": ("stk_mins 由 tushare_sync.batch_mins 拉取，范围=中证800成分×近1年；"
-                 "本月目录 %d 个 code 文件。覆盖外的票只能给日线结论，"
-                 "不参与『几点动』的分钟推断。" % n_files),
+        "fallback": os.environ.get("JEV_MINS_FALLBACK", "on"),
+        "note": ("本地 stk_mins 范围=中证800×近1年（本月目录 %d 个 code 文件）；"
+                 "覆盖外的票由 xtcloud 远端兜底（ts_stk_mins → ts_rt_min）"
+                 "并写回本地。真实当日命中率见 minute_read。" % n_files),
         "probe": d8,
     }
+
+
+def _minute_read(profiles, asked):
+    """分钟读取台账：本地命中 / 远端兜底 / 彻底没有，三档分开报。"""
+    local = sum(1 for p in profiles.values()
+                if p.get("ok") and p.get("source") == "local")
+    remote = sum(1 for p in profiles.values()
+                 if p.get("ok") and p.get("source") == "remote")
+    fail = sum(1 for p in profiles.values() if not p.get("ok"))
+    return {"asked": asked, "ok": local + remote, "local": local,
+            "remote": remote, "fail": fail,
+            "fallback": os.environ.get("JEV_MINS_FALLBACK", "on")}
 
 
 # ── 消息层 ──────────────────────────────────────────────────
@@ -546,6 +716,62 @@ def rank_board(board_name: str, rows, events: dict, profiles: dict,
     return out
 
 
+def _focus_flow(board, members, flow, bflow):
+    """焦点板块的资金面摘要。
+
+    `divergence` 是关键指标：**主力净流入为正、但全档净流出**的票数。
+    这种票是「大单在买、小单在跑」，涨得不实——单看涨幅看不出来，
+    必须把资金流和涨幅放在一起。
+    """
+    if not flow:
+        return {"has": False, "note": "当日无资金流数据"}
+    b = bflow.get(board) or {}
+    with_f = [z for z in members if z.get("main_net") is not None]
+    inflow = [z for z in with_f if (z.get("main_net") or 0) > 0]
+    div = [z for z in with_f
+           if (z.get("main_net") or 0) > 0 and (z.get("net_mf") or 0) < 0]
+    srt = sorted(with_f, key=lambda z: -(z.get("main_net") or 0))
+    return {
+        "has": True,
+        "board_main_net": b.get("main_net"),
+        "n_with_flow": len(with_f), "n_members": len(members),
+        "n_inflow": len(inflow),
+        "inflow_ratio": round(len(inflow) / len(with_f), 3) if with_f else None,
+        "divergence": len(div),
+        "divergence_names": [z["name"] for z in div[:5]],
+        "top_in": [{"name": z["name"], "main_net": z["main_net"], "pct": z["pct"]}
+                   for z in srt[:3]],
+        "top_out": [{"name": z["name"], "main_net": z["main_net"], "pct": z["pct"]}
+                    for z in srt[-3:] if (z.get("main_net") or 0) < 0],
+    }
+
+
+def _focus_disc(members, disc, top=8):
+    """焦点板块的研报/公告清单。
+
+    ts_kind 固定 research / notice——**没有盘中时刻，不进 Δmin**。
+    这里只回答「这几天有没有机构在写、有没有公告在发」。
+    """
+    if not disc:
+        return {"has": False, "items": [], "n_reports": 0, "n_notices": 0}
+    items, nr, nn = [], 0, 0
+    for z in members[:top + 4]:
+        d = _flow_mod().disc_of(disc, z["c6"])
+        nr += d["n_reports"]
+        nn += d["n_notices"]
+        for r in d["reports"]:
+            items.append({"kind": "research", "code": z["code"], "name": z["name"],
+                          "date": r["date"], "rating": r["rating"],
+                          "org": r["org"], "eps": r["eps"], "pe": r["pe"],
+                          "title": r["title"], "url": r["url"]})
+        for n in d["notices"]:
+            items.append({"kind": "notice", "code": z["code"], "name": z["name"],
+                          "date": n["date"], "type": n["type"],
+                          "title": n["title"], "url": n["url"]})
+    items.sort(key=lambda x: (x["kind"] != "research", x.get("date") or ""))
+    return {"has": True, "n_reports": nr, "n_notices": nn, "items": items[:12]}
+
+
 def _brief(zs):
     return [{
         "code": z["code"], "name": z["name"], "pct": z["pct"],
@@ -553,16 +779,20 @@ def _brief(zs):
         "close": z["close"], "limit_up": z["limit_up"],
         "touch_only": z["touch_only"],
         "amount": z["amount"],
+        # 资金流：主力净额（大单+特大单，万元）。None = 当日无资金流数据，
+        # 不能当 0 处理（0 也是有效值：平进平出不代表没数据）
+        "main_net": z.get("main_net"), "net_mf": z.get("net_mf"),
     } for z in zs]
 
 
 # ── 建图 ────────────────────────────────────────────────────
 def build(day_raw=None, board=None, code=None, top: int = 8,
-          with_minute: bool = True) -> dict:
-    """一次成图：板块 → 个股 → 消息，五类边。
+          with_minute: bool = True, with_fund: bool = True) -> dict:
+    """一次成图：板块 → 个股 → 消息 → 资金/披露，五类边 + 两个补充维度。
 
-    board  指定焦点板块（缺省=当日中位涨幅第一的板块）
-    code   指定个股（给出时焦点板块跟着它走，并在 timeline 里定位该股）
+    board      指定焦点板块（缺省=当日中位涨幅第一的板块）
+    code       指定个股（给出时焦点板块跟着它走，并在 timeline 里定位该股）
+    with_fund  是否拉资金流与研报/公告（关掉可省 ~4s 与两次外部调用）
     """
     day = resolve_day(day_raw)
     B = load_board(day)
@@ -572,6 +802,25 @@ def build(day_raw=None, board=None, code=None, top: int = 8,
         by_c6.setdefault(z["c6"], z)
 
     ev = load_events(day)
+
+    # ── 资金流 + 披露（Step 5 补的第 2/3 刀）──
+    flow, disc, bflow = {}, {}, {}
+    if with_fund:
+        try:
+            fm = _flow_mod()
+            flow = fm.load_flow(day)
+            disc = fm.load_disclosures(day)
+            bflow = fm.board_flow(rows, flow)
+            for b in boards:
+                f = bflow.get(b["name"]) or {}
+                b["main_net"] = f.get("main_net")
+                b["main_top"] = f.get("top") or []
+            for z in rows:
+                v = flow.get(z["c6"])
+                z["main_net"] = v["main_net"] if v else None
+                z["net_mf"] = v["net_mf"] if v else None
+        except Exception as exc:  # noqa: BLE001
+            sys.stderr.write("fund layer failed: %s\n" % exc)
 
     # 焦点板块：显式指定 > 指定个股所属 > 当日最强（涨停最多，其次中位涨幅）
     if board:
@@ -607,9 +856,23 @@ def build(day_raw=None, board=None, code=None, top: int = 8,
 
     profiles = {}
     if with_minute:
+        # 先把本地命中的收下，缺口一次性并发兜底（省得逐只串行等 1s）
+        need = []
+        for c in codes:
+            d = _mins_local(c, day)
+            if d is not None:
+                d.attrs["source"] = "local"
+                _MINS_MEM[(c, day)] = d
+            else:
+                need.append(c)
+        if need:
+            # 全量并发，不再留「超限退回串行」的口子；预算到点就截断，
+            # 未拿到的票在 _MINS_MEM 里标 None，后续 minute_profile 直接当没有。
+            _warm_many(need, day, limit=len(need))
         for c in codes:
             z = B["by_code"].get(c) or {}
-            profiles[c] = minute_profile(c, day, z.get("limit_price"))
+            profiles[c] = minute_profile(c, day, z.get("limit_price"),
+                                         z.get("pre_close"))
 
     # ── 焦点板块结构 ──
     _BOARD_CACHE["data"] = boards
@@ -652,12 +915,23 @@ def build(day_raw=None, board=None, code=None, top: int = 8,
             minute_coverage(day, rows),
             read_asked=len(codes),
             read_ok=sum(1 for p in profiles.values() if p.get("ok"))),
-        "minute_read": {"asked": len(codes), "ok": sum(
-            1 for p in profiles.values() if p.get("ok"))},
+        "minute_read": _minute_read(profiles, len(codes)),
         "boards": overview,
-        "focus": dict(focus, events=focus_events, timeline=timeline),
+        "focus": dict(focus, events=focus_events, timeline=timeline,
+                      flow=_focus_flow(focus_name, focus_members, flow, bflow),
+                      disclosures=_focus_disc(focus_members, disc, top)),
+        "fund": {
+            "has": bool(flow),
+            "n_codes": len(flow),
+            "n_disclosures": len(disc),
+            "note": ("资金流=大单+特大单净额（万元，收盘终值，盘中不可用）；"
+                     "divergence=主力净买但全档净流出（涨得虚）；"
+                     "研报/公告 ts_kind 固定 research/notice，"
+                     "无盘中时刻，不参与 Δmin。"),
+        },
         "network": {
-            "nodes": _nodes(focus, focus_members, focus_events, profiles),
+            "nodes": _nodes(focus, focus_members, focus_events, profiles,
+                            disc if with_fund else None),
             "edges": edges,
             "cross_summary": cross_summary,
             "edge_types": _edge_counts(edges),
@@ -693,19 +967,27 @@ def _board_events(members, ev):
 
 
 def _timeline(members, ev, profiles, limit=14):
-    """消息-价格合并时间轴：一行一条，标明是消息还是价格动作。"""
-    items = []
+    """消息-价格合并时间轴：一行一条，标明是消息还是价格动作。
+
+    配额制：早盘 9:31–9:49 的价格动作能把 limit 全占掉（11-06 新型电力
+    一次 build 里 14 条全是「异动/封板」），「消息几点」反而看不见——
+    这张表的核心问题就是「谁先发生」，消息一条不剩就本末倒置。
+    所以消息保底占一半（≥4 条），价格动作用剩余配额、按时刻先后取。
+    """
+    news, prices = [], []
     for z in members:
         p = profiles.get(z["code"]) or {}
         if p.get("first_move"):
-            items.append({
+            prices.append({
                 "t": _hm(p["first_move"]), "kind": "price",
                 "code": z["code"], "name": z["name"],
-                "text": "首次异动 %+.2f%%（相对开盘）" % (p.get("first_move_pct") or 0),
+                "text": ("一字板/跳空开盘 %+.2f%%（相对昨收）"
+                         if p.get("at_open") else "首次异动 %+.2f%%（相对开盘）")
+                        % (p.get("first_move_pct") or 0),
                 "pct": z["pct"],
             })
         if p.get("seal_time"):
-            items.append({
+            prices.append({
                 "t": _hm(p["seal_time"]), "kind": "seal",
                 "code": z["code"], "name": z["name"],
                 "text": "封板", "pct": z["pct"],
@@ -713,13 +995,18 @@ def _timeline(members, ev, profiles, limit=14):
         for e in ev.get(z["c6"], []):
             if e["ts_kind"] != "intraday":
                 continue
-            items.append({
+            news.append({
                 "t": e["hm"], "kind": "news", "code": z["code"],
                 "name": z["name"], "source": e["source"],
                 "text": e["title"], "bias": e["bias"],
                 "origin_kind": e["origin_kind"],
                 "lag_min": (first_move_after(p, e["hm"]) or {}).get("lag_min"),
             })
+    news.sort(key=lambda x: x["t"])
+    prices.sort(key=lambda x: x["t"])
+    keep_n = min(len(news), max(4, limit // 2))
+    keep_p = max(0, limit - keep_n)
+    items = news[:keep_n] + prices[:keep_p]
     items.sort(key=lambda x: x["t"])
     return items[:limit]
 
@@ -810,12 +1097,14 @@ def _edges(focus, members, focus_events, ev, profiles):
     return edges
 
 
-def _nodes(focus, members, focus_events, profiles):
+def _nodes(focus, members, focus_events, profiles, disc=None):
     nodes = [{"id": "board:" + focus["name"], "type": "board",
               "label": focus["name"], "n": focus["n"],
-              "med": focus["med"], "rank": focus["rank"]}]
+              "med": focus["med"], "rank": focus["rank"],
+              "main_net": focus.get("board_main_net")}]
     for z in members:
         p = profiles.get(z["code"]) or {}
+        d = _flow_mod().disc_of(disc, z["c6"]) if disc else {}
         nodes.append({
             "id": z["code"], "type": "stock", "label": z["name"],
             "pct": z["pct"], "pct_rank": z["pct_rank"],
@@ -823,6 +1112,9 @@ def _nodes(focus, members, focus_events, profiles):
             "first_move": _hm(p.get("first_move")) if p.get("first_move") else None,
             "seal_time": _hm(p.get("seal_time")) if p.get("seal_time") else None,
             "has_minute": bool(p.get("ok")),
+            "minute_source": p.get("source"),
+            "main_net": z.get("main_net"), "net_mf": z.get("net_mf"),
+            "n_reports": d.get("n_reports"), "n_notices": d.get("n_notices"),
         })
     for e in focus_events["items"][:8]:
         # 节点 id 用事件 id（与 hit/echo/spread 边的 from/to 同一命名空间，

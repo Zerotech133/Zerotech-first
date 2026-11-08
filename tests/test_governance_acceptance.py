@@ -920,6 +920,9 @@ def test_AC_E07_no_files_outside_whitelist():
         # 午休扣除、ts_kind 三档、领涨-跟随-同波-无数据四档分流、
         # first_move_after 带符号、跨板块边、消息质量分档）。
         "tests/test_jev_graph.py",
+        # 2026-11-08 追加：xtcloud 接入回归（分钟三档台账、资金面背离、
+        # 披露不含盘中时刻、列序对齐、时间列别名、一字板首次异动）。
+        "tests/test_jev_fund_minute.py",
     }
     untracked = set()
     try:

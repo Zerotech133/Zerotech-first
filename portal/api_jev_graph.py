@@ -8,12 +8,17 @@
 
 返回（计算全在 jev_graph.py，本文件只做参数校验与缓存）：
     universe         当日全市场：涨跌家数 / 涨停 / 触板 / 中位涨幅
-    minute_coverage  分钟数据覆盖（**如实报缺口**，见 jev_graph 文档）
-    boards           板块榜（前 top 强 + 后 3 弱，含跨板块排名）
+    minute_coverage  分钟数据覆盖（本地命中/远端兜底分开报）
+    minute_read      本次实际读取台账：local / remote / fail
+    boards           板块榜（前 top 强 + 后 3 弱，含跨板块排名 + 主力净额）
     focus            焦点板块：lead / same_wave / followers / unpriced /
-                     laggards / events / timeline（消息与价格合并时间轴）
+                     laggards / events / timeline / **flow** / **disclosures**
+    fund             资金流与披露总账（是否有数据、覆盖多少票）
     network          nodes + edges（lead/hit/echo/spread/silent/cross 六类）
                      + cross_summary（影响半径最大的消息）
+
+参数：
+    fund=0           跳过资金流与研报/公告（省 ~4s，用于快速调试）
 
 只读，60s 缓存。参数错误 400，内部错误 500，均返回 JSON。
 """
@@ -35,12 +40,12 @@ _CACHE: dict = {}
 MIN_TOP, MAX_TOP, DEF_TOP = 3, 20, 8
 
 
-def compute(day=None, board=None, code=None, top=DEF_TOP) -> dict:
-    key = (day or "", board or "", code or "", top)
+def compute(day=None, board=None, code=None, top=DEF_TOP, fund=True) -> dict:
+    key = (day or "", board or "", code or "", top, bool(fund))
     hit = _CACHE.get(key)
     if hit and time.time() - hit[0] < CACHE_TTL_S:
         return hit[1]
-    data = G.build(day, board=board, code=code, top=top)
+    data = G.build(day, board=board, code=code, top=top, with_fund=fund)
     _CACHE[key] = (time.time(), data)
     return data
 
@@ -60,7 +65,8 @@ def handle_get(handler, path: str, qs_raw: str) -> None:
             raise ValueError("top %d..%d" % (MIN_TOP, MAX_TOP))
         if code and not code[:6].isdigit():
             raise ValueError("code 须为 6 位数字")
-        result = compute(day, board, code, top)
+        fund = (qs.get("fund") or ["1"])[-1].strip() not in ("0", "false", "off")
+        result = compute(day, board, code, top, fund)
     except ValueError as exc:
         handler._json({"ok": False, "error": "invalid_params",
                        "message": str(exc)}, 400)
