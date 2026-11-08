@@ -176,9 +176,12 @@ def work(args):
         oracle_k = max(range(1, cap + 1), key=lambda x: path[x])
         br_o = bench_iv(ed, dates[ie + oracle_k], beta)
         oa = (path[oracle_k] - br_o) if br_o is not None else None
+        # β=1 的基准收益：入场端研究要拿它验"分组差异到底是个股 β 造出来的，
+        # 还是真的超额"。A 的定义里带 β，用 β 分组去解释 A 是循环论证。
+        br1 = bench_iv(ed, dates[ie + cap], 1.0)
         out.append({
             "code": code, "d0": d0, "ed": ed, "beta": beta,
-            "final": path[cap], "at": at, "al": al,
+            "final": path[cap], "at": at, "al": al, "br1": br1,
             "mfe": mfe, "mfe_k": mfe_k, "mae": mae, "mae_k": mae_k,
             "peak_c": peak_c, "peak_k": peak_k,
             "oracle": path[oracle_k], "oracle_k": oracle_k, "oracle_a": oa,
@@ -351,7 +354,7 @@ def cond_table(rows, cap=CAP):
     return out
 
 
-def run(slip_bp=51.0, comm_bp=20.0, workers=8, write=True, cap=None):
+def run(slip_bp=51.0, comm_bp=20.0, workers=8, write=True, cap=None, dump=None):
     cap = int(cap or CAP)
     keys = keys_for(cap)
     cost_bp = comm_bp + 2 * slip_bp
@@ -447,6 +450,29 @@ def run(slip_bp=51.0, comm_bp=20.0, workers=8, write=True, cap=None):
         os.replace(tmp, OUT)
         print("→ %s" % OUT)
 
+    # 逐笔落盘：入场端研究要拿它跟信号特征 join，不能靠重算（重算就有两套口径）
+    if dump:
+        path = os.path.join(ROOT, "portal", dump)
+        with open(path + ".tmp", "w", encoding="utf-8") as f:
+            for r in rows:
+                f.write(json.dumps({
+                    "c": r["code"], "d0": r["d0"], "ed": r["ed"],
+                    "beta": r["beta"],
+                    "ret": round(100 * r["final"], 3),
+                    "a": (round(100 * r["al"][cap], 3)
+                          if r["al"][cap] is not None else None),
+                    # β=1 口径的超额：ret − 满窗基准。用它做稳健性对照。
+                    "a1": (round(100 * (r["final"] - r["br1"]), 3)
+                           if r.get("br1") is not None else None),
+                    "peak_c": round(100 * r["peak_c"], 2),
+                    "peak_k": r["peak_k"],
+                    "mfe": round(100 * r["mfe"], 2),
+                    "mae": round(100 * r["mae"], 2),
+                    "orc_k": r["oracle_k"],
+                }, ensure_ascii=False) + "\n")
+        os.replace(path + ".tmp", path)
+        print("→ %s（%d 笔逐笔）" % (path, len(rows)))
+
     print("样本 %d 笔 / %d 票，观察窗 %d 日，成本线 %.0fbp"
           % (len(rows), len(jobs), cap, cost_bp))
     print()
@@ -496,13 +522,15 @@ def main():
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--cap", type=int, default=250, help="观察窗（交易日），可拉到 500")
     ap.add_argument("--out", default=None)
+    ap.add_argument("--dump", default=None,
+                    help="逐笔落盘文件名（写到 portal/ 下），给 hf_feat 做 join 用")
     ap.add_argument("--no-write", action="store_true")
     a = ap.parse_args()
     global OUT
     if a.out:
         OUT = os.path.join(ROOT, "portal", a.out)
     run(slip_bp=a.slip, comm_bp=a.comm, workers=a.workers, write=not a.no_write,
-        cap=a.cap)
+        cap=a.cap, dump=a.dump)
     return 0
 
 
