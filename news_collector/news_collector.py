@@ -24,6 +24,7 @@ from datetime import datetime, timedelta, timezone
 import requests
 
 from news_time import parse_full_time, parse_news_time
+import news_origin   # 原创/首发/转发判定（入库即判，见 news_origin.py）
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DB = os.path.join(HERE, "news.db")
@@ -574,6 +575,12 @@ def insert_items(db, items, source):
         )
         if c.rowcount > 0:
             fresh.append(dict(normalized, source=source))
+            # 入库即判原创/首发/转发：等离线回填会留一段空窗，期间聚合层
+            # 读到 origin_kind=NULL，"转发算不算独立信号"就判不了。
+            # 判定失败（老库无字段等）静默跳过，绝不能因此丢一条新闻。
+            news_origin.judge_and_write(
+                db, normalized["id"], source, normalized["ts"],
+                normalized["title"], normalized.get("content") or "")
     db.commit()
     return fresh
 

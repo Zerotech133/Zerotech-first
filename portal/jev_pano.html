@@ -272,19 +272,28 @@
       // 判定明细 top5
       var items=(j.items||[]).slice(0,5);
       if(items.length){
-        h+='<table class="ui-table" style="margin-top:8px"><thead><tr><th>时间</th><th>方向</th><th>conf</th><th>标题</th><th>命中依据</th><th>来源</th></tr></thead><tbody>';
+        h+='<table class="ui-table" style="margin-top:8px"><thead><tr><th>时间</th><th>方向</th><th>conf</th><th>标题</th><th>命中依据</th><th>角色</th><th>来源</th></tr></thead><tbody>';
         var VN={text_confirmed:["文本确证","var(--color-up)"],industry_only:["板块级","var(--os-amber)"],code_only:["无支撑","var(--color-err)"],none:["—","var(--gray-5)"]};
         items.forEach(function(it){
           var b=it.basis||{},tm=b.terms||{};
+          // 传播角色（老田令）：同一篇稿被 4 家转只有 1 个信号，转发旁边的
+          // 分钟数是"落后首发多久"，不是第二个独立事件。
+          var OKM={original:["原创","var(--color-up)"],first:["首发","var(--blu-500)"],
+                   repost:["转发","var(--os-amber)"],dup:["重复","var(--gray-5)"],
+                   recur:["复读","var(--gray-5)"],retell:["异稿","var(--gray-5)"],
+                   column:["栏目","var(--blu-500)"],unknown:["—","var(--gray-5)"]};
+          var okv=OKM[it.origin_kind]||OKM.unknown;
+          var okcell='<span style="color:'+okv[1]+';white-space:nowrap">'+okv[0]
+            +(it.origin_kind==="repost"&&it.lag_min!=null?(' Δ'+it.lag_min+'m'):'')+'</span>';
           var trm=(tm.name&&tm.name[0])||(tm.code&&tm.code[0])||(tm.industry&&tm.industry[0])||"";
           var vv=VN[b.verdict]||["—","var(--gray-5)"];
           var cell='<span style="color:'+vv[1]+';font-weight:600">'+vv[0]+'</span>'
             +(trm?('<span class="mini">「'+esc(trm)+'」</span>'):'');
           var tip=b.hit_text?('原文：'+b.hit_text):(b.why||"");
-          h+="<tr><td class='mini' style='white-space:nowrap'>"+esc((it.ts||"").slice(5,16))+"</td><td><span class='bias-chip "+esc(it.bias||"neutral")+"'>"+(BIAS_CN[it.bias]||it.bias||"—")+"</span></td><td class='num'>"+(it.conf!=null?it.conf:"—")+"</td><td class='mini'>"+esc(it.title||"")+"</td><td title='"+esc(tip)+"' style='white-space:nowrap'>"+cell+"</td><td><span class='mini'>"+esc(it.src||"")+"</span></td></tr>";
+          h+="<tr><td class='mini' style='white-space:nowrap'>"+esc((it.ts||"").slice(5,16))+"</td><td><span class='bias-chip "+esc(it.bias||"neutral")+"'>"+(BIAS_CN[it.bias]||it.bias||"—")+"</span></td><td class='num'>"+(it.conf!=null?it.conf:"—")+"</td><td class='mini'>"+esc(it.title||"")+"</td><td title='"+esc(tip)+"' style='white-space:nowrap'>"+cell+"</td><td>"+okcell+"</td><td><span class='mini'>"+esc(it.src||"")+"</span></td></tr>";
         });
         h+='</tbody></table>';
-        h+='<p class="mini" style="margin-top:4px">命中依据：<b>文本确证</b>=标题/正文出现公司名或代码；<b>板块级</b>=未点名个股但出现其所属行业词（属板块关联，非个股事件）；<b>无支撑</b>=仅判定里填了代码。悬停可看原文片段。</p>';
+        h+='<p class="mini" style="margin-top:4px">命中依据：<b>文本确证</b>=标题/正文出现公司名或代码；<b>板块级</b>=未点名个股但出现其所属行业词（属板块关联，非个股事件）；<b>无支撑</b>=仅判定里填了代码。悬停可看原文片段。 角色：<b>原创</b>=本媒体电头自采；<b>首发</b>=本库最早；<b>转发</b>=跨源转载并标落后分钟数；重复/复读/异稿不计入方向统计。</p>';
       }
       $("b1-body").innerHTML=h;
     }

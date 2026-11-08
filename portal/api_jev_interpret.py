@@ -145,6 +145,17 @@ def _facts(kind: str, code: str = "", q: str = "", days: int = 30) -> str:
             parts = ["消息：窗口内事件 %d 个（利多 %d/利空 %d），类型分布 %s。" % (
                 len(ev), bull_n, bear_n,
                 "、".join("%s×%d" % k for k in top_et))]
+            # 传播去重：同一篇稿被 N 家转是 N 条事件、1 个信号。不告诉模型这层，
+            # 它会把「转发 5 家」读成「5 家媒体都在说，热度很高」——正是老田
+            # 指出的「没有把新闻热度的过程和量价关系结合」。
+            dd = (d.get("dedup") or {}) if isinstance(d, dict) else {}
+            if dd and (dd.get("repost") or dd.get("dup")
+                       or dd.get("recur") or dd.get("retell")):
+                parts.append("去重：独立事件 %d 个（转发 %d/采集重复 %d/同源复读 %d/"
+                             "同题异稿 %d 已剔，方向与区间只按独立事件算）。" % (
+                                 dd.get("independent", 0), dd.get("repost", 0),
+                                 dd.get("dup", 0), dd.get("recur", 0),
+                                 dd.get("retell", 0)))
             parts.append("要素：组织 %s；地域 %s；品种 %s。" % (
                 _top(agg["org"]), _top(agg["place"]), _top(agg["thing"])))
 

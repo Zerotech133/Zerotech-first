@@ -353,14 +353,21 @@ def _judgments(code6: str, days: int, limit: int) -> dict:
         db = _ro(NEWS_DB)
         since = (dt.datetime.now() - dt.timedelta(days=days)
                  ).strftime("%Y-%m-%d %H:%M")
-        rows = db.execute(
-            "SELECT id, ts, title, jev, content FROM news "
-            "WHERE jev IS NOT NULL AND jev!='' AND ts>=? "
-            "AND (stocks LIKE ? OR jev LIKE ?) "
-            "ORDER BY ts DESC LIMIT ?",
-            (since, "%" + code6 + "%", "%" + code6 + "%",
-             max(limit * 50, 5000)),
-        ).fetchall()
+        args = (since, "%" + code6 + "%", "%" + code6 + "%",
+                max(limit * 50, 5000))
+        try:
+            rows = db.execute(
+                "SELECT id, ts, title, jev, content, origin_kind FROM news "
+                "WHERE jev IS NOT NULL AND jev!='' AND ts>=? "
+                "AND (stocks LIKE ? OR jev LIKE ?) "
+                "ORDER BY ts DESC LIMIT ?", args).fetchall()
+        except sqlite3.Error:
+            # 未回填传播关系的库 → 退回五列，角色记 unknown（接口不能打不开）
+            rows = [tuple(r) + (None,) for r in db.execute(
+                "SELECT id, ts, title, jev, content FROM news "
+                "WHERE jev IS NOT NULL AND jev!='' AND ts>=? "
+                "AND (stocks LIKE ? OR jev LIKE ?) "
+                "ORDER BY ts DESC LIMIT ?", args).fetchall()]
         db.close()
     except sqlite3.Error as e:
         return {"available": False, "reason": str(e)[:120]}
@@ -368,7 +375,7 @@ def _judgments(code6: str, days: int, limit: int) -> dict:
     items, dist = [], {"bull": 0, "bear": 0, "neutral": 0}
     dropped, vstat = [], {"text_confirmed": 0, "industry_only": 0,
                           "code_only": 0, "none": 0}
-    for nid, ts, title, jev_text, content in rows:
+    for nid, ts, title, jev_text, content, okind in rows:
         try:
             j = json.loads(jev_text)
         except Exception:
@@ -408,6 +415,10 @@ def _judgments(code6: str, days: int, limit: int) -> dict:
                     "hit_text": basis["hit_text"],
                     "why": basis["why"],
                 },
+                # 传播角色（老田令 2026-11-08：要分原创、首发、转发）。
+                # 判定面按条列，但同一条稿被 4 家转只有 1 个信号——页面上
+                # 标出来，用户才知道"这么多条"里有多少是同一件事。
+                "origin_kind": okind or "unknown",
                 "evidence_item": "/api/jev/evidence/item?id=%s&code=%s" % (nid, code6),
             })
 

@@ -80,14 +80,25 @@ def compute(code_raw: str, days: int, limit: int) -> dict:
     # 匹配）。裸 LIKE 等于无条件采信模型幻觉，故此处同时取 content，逐条走
     # jev_hit_basis.verify 反查文本支撑。
     db = _ro(NEWS_DB)
-    try:
-        rows = db.execute(
-            "SELECT n.id, n.ts, n.source, n.title, n.jev, n.content FROM news n "
+    args = (since, '%"companies": ["%' + code6 + '%', '%' + code6 + '%',
+            limit * 4)
+    sql9 = ("SELECT n.id, n.ts, n.source, n.title, n.jev, n.content,"
+            " n.origin_kind, n.repost_of, n.lag_min FROM news n "
             "WHERE n.jev IS NOT NULL AND n.jev!='' AND n.ts>=? "
             "AND (n.jev LIKE ? OR n.stocks LIKE ?) "
-            "ORDER BY n.ts DESC LIMIT ?",
-            (since, '%"companies": ["%' + code6 + '%', '%' + code6 + '%',
-             limit * 4)).fetchall()
+            "ORDER BY n.ts DESC LIMIT ?")
+    sql6 = ("SELECT n.id, n.ts, n.source, n.title, n.jev, n.content FROM news n "
+            "WHERE n.jev IS NOT NULL AND n.jev!='' AND n.ts>=? "
+            "AND (n.jev LIKE ? OR n.stocks LIKE ?) "
+            "ORDER BY n.ts DESC LIMIT ?")
+    try:
+        try:
+            rows = db.execute(sql9, args).fetchall()
+        except sqlite3.Error:
+            # 未回填传播关系的库（origin_kind 等列不存在）→ 退回六列，
+            # 传播角色记 unknown。本接口不能因为缺字段就打不开。
+            rows = [tuple(r) + (None, None, None)
+                    for r in db.execute(sql6, args).fetchall()]
     finally:
         db.close()
 
@@ -127,7 +138,7 @@ def compute(code_raw: str, days: int, limit: int) -> dict:
     events, src_stat = [], {}
     hit_stat = {"text_confirmed": 0, "industry_only": 0,
                 "code_only": 0, "none": 0}
-    for nid, ts, source, title, jev, content in rows:
+    for nid, ts, source, title, jev, content, okind, repost_of, lag_min in rows:
         try:
             j = json.loads(jev)
         except Exception:  # noqa: BLE001
@@ -167,6 +178,15 @@ def compute(code_raw: str, days: int, limit: int) -> dict:
                 "why": basis["why"],
                 "industry": basis["industry"],
             },
+            # 传播角色（老田令 2026-11-08：要分原创、首发、转发）。
+            # 同一篇稿被 4 家转 = 4 条事件，但只有 1 个信号。independent
+            # 决定它是否参与方向统计与影响区间，避免同一句话重复投票把
+            # "利多 570 条"这种虚高数字造出来。
+            "origin_kind": okind or "unknown",
+            "repost_of": repost_of,
+            "lag_min": lag_min,
+            "independent": (okind or "unknown") in ("original", "first",
+                                                    "column", "unknown"),
         }
         p = post_map.get(nid)
         if p:
@@ -185,6 +205,21 @@ def compute(code_raw: str, days: int, limit: int) -> dict:
         if len(events) >= limit:
             break
     events.sort(key=lambda e: e["ts"])  # 时间正序 = 叙事线
+
+    # ── 传播去重：同一篇稿被转 N 次只算 1 个信号 ──
+    # 媒体互相转载是本项目最大的「热度虚增」来源（实测 1769 条转发、366 条
+    # 同源复读、243 条同题异稿）。方向统计与影响区间只认 independent
+    # （原创/首发/未判定），转发不投票；事件列表照旧全量给——用户要能看见
+    # 「谁跟了、差多久」，但那个"差多久"不该变成第二个独立事件。
+    dedup = {"raw": len(events), "independent": 0, "original": 0, "first": 0,
+             "column": 0, "repost": 0, "dup": 0, "recur": 0, "retell": 0,
+             "unknown": 0}
+    for e in events:
+        k = e["origin_kind"] if e["origin_kind"] in dedup else "unknown"
+        dedup[k] += 1
+    dedup["independent"] = (dedup["original"] + dedup["first"]
+                            + dedup["column"] + dedup["unknown"])
+    ind = [e for e in events if e["independent"]]
 
     # ── 价格轨 ──
     quotes = []
@@ -281,7 +316,7 @@ def compute(code_raw: str, days: int, limit: int) -> dict:
         dl = sorted(closes)
         # D0 → 交易日索引（非交易日顺延）
         day_slot = {}
-        for e in events:
+        for e in ind:      # 转发不投票：只按独立事件建当日多空计数
             if e["bias"] not in ("bull", "bear"):
                 continue
             d0 = (e["ts"] or "")[:10].replace("-", "")
@@ -387,7 +422,8 @@ def compute(code_raw: str, days: int, limit: int) -> dict:
                 })
                 prev_ts = e["ts"]
             net = sum(1 if x["bias"] == "bull" else -1
-                      for x in lst if x["bias"] in ("bull", "bear"))
+                      for x in lst if x["bias"] in ("bull", "bear")
+                      and x["independent"])
             pending = key.startswith("pending:")
             td8 = None if pending else key
             sequence.append({
@@ -405,16 +441,21 @@ def compute(code_raw: str, days: int, limit: int) -> dict:
 
     # ── verdict ──
     n_ev = len(events)
-    judged_dir = sum(1 for e in events if e["bias"] in ("bull", "bear"))
-    net = sum(1 if e["bias"] == "bull" else -1 for e in events
+    judged_dir = sum(1 for e in ind if e["bias"] in ("bull", "bear"))
+    net = sum(1 if e["bias"] == "bull" else -1 for e in ind
               if e["bias"] in ("bull", "bear"))
     price_net = (sum(1 for q in quotes if (q["pct_chg"] or 0) > 0) -
                  sum(1 for q in quotes if (q["pct_chg"] or 0) < 0)) if quotes else 0
     v = []
     v.append("窗口 %d 天串起 %d 个事件（方向性 %d 个：多 %d / 空 %d）" % (
         days, n_ev, judged_dir,
-        sum(1 for e in events if e["bias"] == "bull"),
-        sum(1 for e in events if e["bias"] == "bear")))
+        sum(1 for e in ind if e["bias"] == "bull"),
+        sum(1 for e in ind if e["bias"] == "bear")))
+    if dedup["repost"] or dedup["dup"] or dedup["recur"] or dedup["retell"]:
+        v.append("**去重后独立事件 %d 个**（转发 %d / 采集重复 %d / 同源复读 %d / "
+                 "同题异稿 %d 已剔除，不计入方向）" % (
+                     dedup["independent"], dedup["repost"], dedup["dup"],
+                     dedup["recur"], dedup["retell"]))
     if confirmed + refuted:
         v.append("事态后验证：**%d 个被价格变化证实 / %d 个证伪**（待验 %d）"
                  % (confirmed, refuted, pending))
@@ -450,6 +491,9 @@ def compute(code_raw: str, days: int, limit: int) -> dict:
                     "pending": pending},
         "impact_stats": impact_stats,
         "sequence": sequence,
+        # 传播去重账：raw 是原始事件数，independent 是去掉转发/重复/复读后
+        # 真正参与统计的独立事件数——「热度有多虚」在这一栏对账。
+        "dedup": dedup,
         # 命中质量账：裸 LIKE 筛出多少、其中多少有文本支撑、多少是模型
         # 自己填的代码幻觉被剔除——「凭什么算这只票的事件」在这里对账。
         "hit_audit": {

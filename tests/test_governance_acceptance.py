@@ -914,6 +914,8 @@ def test_AC_E07_no_files_outside_whitelist():
         # 2026-11-08 追加：研判卡时效口径回归（老田令「周一别再等 100 秒」）。
         # 同样属新建用例，非改动既有门禁。
         "tests/test_sediment_freshness.py",
+        # 2026-11-08 追加：新闻传播关系（原创/首发/转发）回归用例。
+        "tests/test_news_origin.py",
     }
     untracked = set()
     try:
