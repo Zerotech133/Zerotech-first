@@ -104,6 +104,7 @@ import api_brief        # 复盘简报只读投影 /api/brief/*（联动层二�
 import api_notify       # K-ORG-201 通知指挥四态队列 mixin（只读，2026-10-19）
 import api_news_intel   # K-ORG-207 新闻情报台三栏聚合出口（速报/政策/舆情，只读 2026-10-19）
 import api_intel_bus    # 情报总线唯一出口 mixin（六域→总线→量化/飞书双路径 2026-10-19）
+import api_intel_health  # 采集链健康只读出口 mixin（L0/L1 观测面→工作台面板 2026-11-08）
 import api_zhuge_route  # WO-OS-09 诸葛亮建议引擎只读路由 /api/zhuge/brief（2026-10-21）
 import api_zhuge_adoption  # WO-LEGION-ZHUGE-ADOPTROUTE C3 建议采纳率只追加 /api/zhuge/adoption（2026-10-27）
 import api_zhuge_review  # WO-LEGION-ZHUGE-REVIEW-P0 诸葛亮 IDE 只读复核 API（2026-10-30）
@@ -575,7 +576,7 @@ def _read_dw_body(handler, max_bytes=None):
     return True, body, ""
 
 
-class Handler(api_data.Handler, api_chanlun_pages.Handler, api_chanlun_buy.Handler, api_pages_portal.Handler, api_health_portal.Handler, api_manager_portal.Handler, api_backtest.Handler, api_kg.Handler, api_bridge.Handler, api_portfolio.Handler, api_screen.Handler, api_misc.Handler, api_flow.Handler, api_lineage.Handler, api_intel_evidence.Handler, api_intel_bus.Handler, api_unified.Handler, api_replay.Handler, api_approvals.Handler, api_capability.Handler, api_perf.Handler, api_xq_intel.Handler, api_dataops.Handler, api_daily_data.Handler, api_guojia.Handler, api_execution.Handler, api_huangzhong.Handler, api_tickets.Handler, api_notify.Handler, api_news_intel.Handler, api_zhuge_route.Handler, api_os_goal.Handler, http.server.BaseHTTPRequestHandler):
+class Handler(api_data.Handler, api_chanlun_pages.Handler, api_chanlun_buy.Handler, api_pages_portal.Handler, api_health_portal.Handler, api_manager_portal.Handler, api_backtest.Handler, api_kg.Handler, api_bridge.Handler, api_portfolio.Handler, api_screen.Handler, api_misc.Handler, api_flow.Handler, api_lineage.Handler, api_intel_evidence.Handler, api_intel_bus.Handler, api_intel_health.Handler, api_unified.Handler, api_replay.Handler, api_approvals.Handler, api_capability.Handler, api_perf.Handler, api_xq_intel.Handler, api_dataops.Handler, api_daily_data.Handler, api_guojia.Handler, api_execution.Handler, api_huangzhong.Handler, api_tickets.Handler, api_notify.Handler, api_news_intel.Handler, api_zhuge_route.Handler, api_os_goal.Handler, http.server.BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         # K82 访问日志：一行式留痕（判断「用户是否看过页面」的唯一取证
         # 通道）；独立文件，不与 stderr 错误日志混写；失败不阻断请求。
@@ -1871,6 +1872,11 @@ color:#fff;font-size:13.5px;cursor:pointer}
         if path == '/api/intel/bus':
             # 情报总线唯一出口（六域→总线→量化/飞书双路径，只读 2026-10-19）
             self._intel_bus(qs)
+            return
+        if path == '/api/intel/health':
+            # 采集链健康只读面板出口（L0/L1 SLA 观测面→工作台，零写入 2026-11-08；
+            # 复用 feedback_dry 干跑内核，面板数字=每日 08:35 干跑台账数字）
+            self._api_intel_health()
             return
         if path == '/api/notify/queue':
             # K-ORG-201 通知指挥四态队列（三本账只读聚合，零写入 2026-10-19）
