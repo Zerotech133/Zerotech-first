@@ -168,7 +168,7 @@ def bucket_stats(rows, name, buckets, key="a"):
             "A_rest_bp": round(100 * _mean(rv), 0),
             # 砍掉这个桶之后样本整体的 A 变成多少 —— 这是"值不值得砍"的直接答案
             "dA_bp": round(100 * (_mean(rv) - base), 0),
-            "dA_t": round(td, 2) if td is not None else None,
+            "dA_t": round(-td, 2) if td is not None else None,
             "dA_ndays": nd,
         })
     return out

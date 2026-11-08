@@ -303,6 +303,36 @@
     .p10-lx { display: flex; gap: 18px; flex-wrap: wrap; font-size: 11.5px;
       color: var(--ui-muted); }
 
+    /* 入场特征：六列（特征 / 桶占比 / 桶内A / ΔA / Δt / 判定） */
+    .p11-row { grid-template-columns: minmax(0,1.42fr) 58px 66px 72px 58px 52px;
+      align-items: center; }
+    .p11-row--head { font-size: 11.5px; }
+    .p11-row .num small { display: block; font-size: 10px; line-height: 1.3;
+      color: var(--ui-muted); font-weight: 400; }
+    .p11-row .row__nm small { white-space: nowrap; overflow: hidden;
+      text-overflow: ellipsis; min-width: 0; }
+    /* 覆盖率的胶囊列：特征名 / 非空率 / 级别 */
+    .p11-cv { display: grid; gap: 5px; margin-top: 10px;
+      grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); }
+    .p11-cv > div { display: grid; grid-template-columns: minmax(0,1fr) 44px 22px;
+      gap: 6px; align-items: baseline; font-size: 12px; }
+    .p11-cv .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .p11-cv .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .p11-cv .lv { text-align: center; font-size: 10px; color: var(--ui-muted); }
+    /* 迁移散点：x=训练 ΔA，y=验收 ΔA */
+    .p11sc { width: 100%; height: auto; display: block; margin-top: 8px; }
+    .p11sc .grid { stroke: var(--ui-line); stroke-width: 1; }
+    .p11sc .zero { stroke: var(--ui-muted); stroke-width: 1; stroke-dasharray: 4 3; }
+    .p11sc .dot { fill: var(--ui-blue); opacity: .55; }
+    .p11sc .dot--hit { fill: var(--ui-amber); opacity: .95; }
+    .p11sc text { fill: var(--ui-muted); font-size: 10px;
+      font-family: var(--font-mono); }
+    .p11-hold { grid-template-columns: minmax(0,1.25fr) 74px 54px 74px 54px 62px;
+      align-items: center; }
+    .p11-hold--head { font-size: 11.5px; }
+    .p11-hold .row__nm small { display: block; font-size: 10px; line-height: 1.3;
+      color: var(--ui-muted); }
+
     /* 三方向验证：敞口档 / 窗口 / 停3买 三张表，列数比 p3 多一列 */
     .p4-row { grid-template-columns: minmax(0,1.6fr) 70px 74px 64px 56px 76px 52px; }
     .p4-x { display: grid; gap: 6px; margin-top: 10px; font-variant-numeric: tabular-nums; }
@@ -355,6 +385,14 @@
       .p10-row .row__nm small { display: block; margin-top: 1px; line-height: 1.32; }
       .p10-ph > div { grid-template-columns: 64px minmax(0,1fr) 46px; }
       .p10-lx { gap: 10px; }
+      /* 入场特征：窄屏留 名字 / ΔA / Δt（占比、桶内A、判定可从判决文字反推） */
+      .p11-row { grid-template-columns: minmax(0,1fr) 70px 54px; }
+      .p11-row > span:nth-child(2), .p11-row > span:nth-child(3),
+      .p11-row > span:nth-child(6) { display: none; }
+      .p11-hold { grid-template-columns: minmax(0,1fr) 70px 54px; }
+      .p11-hold > span:nth-child(2), .p11-hold > span:nth-child(3),
+      .p11-hold > span:nth-child(6) { display: none; }
+      .p11-cv { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
       .p8-row .row__nm small { display: block; margin-top: 1px; line-height: 1.32; }
       .p7-row .row__nm { display: block; }
       .p7-row .row__nm small { display: block; margin-top: 1px; line-height: 1.32; }
@@ -409,6 +447,7 @@
       <button class="viewtab" role="tab" data-view="p8" aria-selected="false">口径修正 <small id="nv-p8">—</small></button>
       <button class="viewtab" role="tab" data-view="p9" aria-selected="false">成本口径 <small id="nv-p9">—</small></button>
       <button class="viewtab" role="tab" data-view="p10" aria-selected="false">出场规则 <small id="nv-p10">—</small></button>
+      <button class="viewtab" role="tab" data-view="p11" aria-selected="false">入场特征 <small id="nv-p11">—</small></button>
       <button class="viewtab" role="tab" data-view="about" aria-selected="false">口径</button>
     </nav>
 
@@ -446,6 +485,9 @@
   var CG9 = null;    // hf_cost_gauge.json（成本阶梯：两套并行账 × 四档成本）
   var PA10 = null;   // hf_path.json（持仓路径解剖：A(T) 曲线 / 三群 / 条件期望）
   var XL10 = null;   // hf_exit_lab.json（出场规则对照：21 条规则 × 成本阶梯）
+  var FJ11 = null;   // hf_feat2.json（入场特征扩表 + 单变量筛：95 个桶）
+  var HD11 = null;   // hf_holdout.json（2024 训练 / 2025 验收，一次性）
+  var DG11 = null;   // hf_feat2_diag.json（迁移相关 / 置换零分布）
 
   function $(id) { return document.getElementById(id); }
   function esc(s) {
@@ -2720,6 +2762,277 @@
     return h;
   }
 
+  // ================================================================ 入场特征
+  var F11_NAME = {
+    ret20: '20 日动量', ret60: '60 日动量',
+    ind_rs20: '板块内相对强度·20 日', ind_rs60: '板块内相对强度·60 日',
+    ind_ret20: '板块自身 20 日强度', vol20: '20 日波动', vol60: '60 日波动',
+    dist_high120: '距 120 日高点', amt_pct60: '成交额分位', turn_pct60: '换手率分位',
+    amt_ratio20: '放量倍数', crowd: '同日全池信号数', crowd_ind: '同日同行业信号数',
+    listed_days: '上市天数', atr_pct: 'ATR14 / 收盘', regime: '市场 regime',
+    lag: '结构滞后（旧）', beta: 'β（旧·循环）', depth_bars: '深度笔数（旧）',
+    type: '信号类型（旧）', mbei: '背驰（旧）', vv: '量能验证（旧）',
+    tbe: '顶背驰（旧）'
+  };
+
+  function renderP11() {
+    if (!FJ11) {
+      return '<section class="ui-panel"><h2>入场特征</h2><p class="note">数据未生成：'
+        + '先跑 <span class="mono">tools/research/hf_feat2.py</span>。</p></section>';
+    }
+    return p11Cover() + p11Screen() + p11Hold() + p11Diag() + p11Verdict();
+  }
+
+  // ① 覆盖面：23 个特征里，新建 15 个、旧字段 7 个（还有 1 个是 regime）
+  function p11Cover() {
+    var cov = FJ11.coverage || {};
+    var lv = {};
+    (FJ11.features || []).forEach(function (x) { lv[x.feature] = x.level; });
+    var NEW = ['ret20', 'ret60', 'ind_rs20', 'ind_rs60', 'ind_ret20', 'vol20',
+      'vol60', 'dist_high120', 'amt_pct60', 'turn_pct60', 'amt_ratio20',
+      'crowd', 'crowd_ind', 'listed_days', 'atr_pct', 'regime'];
+    var OLD = ['lag', 'beta', 'depth_bars', 'type', 'mbei', 'vv', 'tbe'];
+    function col(list, title) {
+      var h = '<div class="p11-hd">' + title + '</div><div class="p11-cv">';
+      for (var i = 0; i < list.length; i++) {
+        var f = list[i], v = cov[f];
+        h += '<div><span class="nm">' + esc(F11_NAME[f] || f) + '</span>'
+          + '<span class="num ' + (v >= 95 ? '' : 'muted') + '">'
+          + (v == null ? '—' : n(v, 0) + '%') + '</span>'
+          + '<span class="lv">' + (lv[f] === 'date' ? '日级' : '笔级') + '</span></div>';
+      }
+      return h + '</div>';
+    }
+    var h = '<section class="ui-panel"><h2>① 15 个新特征：全部只用 detect_date 及之前</h2>'
+      + '<div class="note"><p>上一版只用了信号文件自带的 7 个字段，其中 8 个字段 100% 为空——'
+      + '那只能证明"这 7 个字段不行"。这一版按<span class="mono">入场价 = d0 次日开盘</span>'
+      + '的时点重建 15 个特征，外加 1 个日级变量（regime），并把旧字段并进来做对照。</p>'
+      + '<p>唯一的覆盖率缺口来自行业映射：申万一级 PIT 只覆盖 <b>'
+      + n(cov['ind_rs20'], 0) + '%</b> 的笔（北交所与部分新股没有申万分类），'
+      + '这类笔的板块特征留空，<b>不做插补</b>——插补出来的相对强度是编的。</p></div>';
+    h += col(NEW, '新建（行情 + 行业 + 势 + 拥挤度）');
+    h += col(OLD, '旧字段（信号文件自带，第一版已验过）');
+    h += '<div class="note mt12"><p><b>"日级"</b>指同一天所有票取同一个值（regime、全池信号数）：'
+      + '这类特征当天没有组间差，日聚类 t <b>无定义</b>，必须换成"先算每日均值、再对日序列'
+      + '做 HAC 两样本 t"。第一版直接算不出数，就是踩了这个坑。</p></div></section>';
+    return h;
+  }
+
+  // ② 单变量筛：每个特征只显示最强那一桶（95 行全表在 JSON 里）
+  function p11Screen() {
+    var by = {};
+    (FJ11.features || []).forEach(function (x) {
+      if (x.dA_t == null) return;
+      by[x.feature] = by[x.feature] || [];
+      by[x.feature].push(x);
+    });
+    var rows = [];
+    for (var f in by) {
+      var best = null;
+      for (var i = 0; i < by[f].length; i++) {
+        var x = by[f][i];
+        if (x.pass) {
+          // 过线的桶优先；同特征有多条时取 |Δt| 大的
+          if (!best || !best.pass || Math.abs(x.dA_t) > Math.abs(best.dA_t)) best = x;
+        } else if (!best) {
+          best = x;
+        } else if (!best.pass && Math.abs(x.dA_t) > Math.abs(best.dA_t)) {
+          best = x;
+        }
+      }
+      if (best) rows.push(best);
+    }
+    rows.sort(function (a, b) { return Math.abs(b.dA_t) - Math.abs(a.dA_t); });
+    var h = '<section class="ui-panel"><h2>② 单变量筛：95 桶里 8 桶过线，噪声期望 4.4 桶</h2>'
+      + '<div class="note"><p>判据（立项时定死）：<b>|Δt| ≥ 2 且两个 β 口径同号且 ΔA &gt; 0</b>。'
+      + '「Δt」按入场日聚类——6,900 笔只有 ' + (FJ11.n_days || 0) + ' 个入场日，'
+      + '不聚类 t 会被放大约 3 倍。「ΔA」= 砍掉这一桶（或只留这一桶）之后，'
+      + '全样本笔均超额的变化。</p>'
+      + '<p>下表每个特征只列<b>最强那一桶</b>（95 行全表在 <span class="mono">hf_feat2.json</span>）。'
+      + 'β 分组是循环论证（β 就写在 A 的定义里），已标◆并排除出候选。</p></div>'
+      + '<div class="rows"><div class="row p11-row row--head"><span>特征 / 最强桶</span>'
+      + '<span class="num">占比</span><span class="num">桶内 A</span>'
+      + '<span class="num">ΔA</span><span class="num">Δt</span>'
+      + '<span class="num">判定</span></div>';
+    for (var j = 0; j < rows.length; j++) {
+      var r = rows[j];
+      // 过线的行显示「它被判定的那个方向」的 ΔA 与 Δt，否则 ΔA 与判定标记会打架
+      // （顶背驰那行：剔的 ΔA 是 −157，判定的却是"只留"，读者会以为数字写反了）
+      var dA = r.pass ? r.use_dA : r.dA_bp;
+      var t = r.pass ? r.use_t : r.dA_t;
+      var t1 = r.pass ? r.use_t1 : r.dA1_t;
+      var badge = r.pass ? '<b class="up">★' + (r.mode === 'keep' ? '留' : '剔') + '</b>'
+        : (r.circular ? '<span class="muted">◆</span>' : '<span class="muted">—</span>');
+      if (r.pass && r.sign_mismatch) {
+        badge += '<span class="muted" title="ΔA 按笔加权、Δt 按日等权，两者反号：'
+          + '这条的正 ΔA 集中在少数几天"> ⚠</span>';
+      }
+      h += '<div class="row p11-row"><span class="row__nm"><b>'
+        + esc(F11_NAME[r.feature] || r.feature) + '</b><small class="muted">'
+        + esc(r.bucket) + (r.level === 'date' ? ' · 日级' : '') + '</small></span>'
+        + '<span class="num muted">' + n(r.share, 1) + '%</span>'
+        + '<span class="num">' + n(r.A_bp, 0) + '<small>bp</small></span>'
+        + '<span class="num ' + (dA > 0 ? 'up' : 'dn') + '">'
+        + (dA > 0 ? '+' : '') + n(dA, 0) + '<small>bp</small></span>'
+        + '<span class="num">' + (t == null ? '—' : (t > 0 ? '+' : '')
+          + n(t, 2)) + '<small>Δt1 ' + (t1 == null ? '—' : n(t1, 2))
+        + '</small></span>'
+        + '<span class="num">' + badge + '</span></div>';
+    }
+    var noise = FJ11.noise || {};
+    h += '</div><div class="p3-verdict"><b>8 条过线 / 95 次检验，纯噪声期望 '
+      + n(noise.expect_pass, 1) + ' 条。</b>'
+      + '过线数确实高于期望，但这 95 次检验高度相关（一个单调梯度会让同一特征的'
+      + '三四个桶一起过线），所以不能按独立检验算。<b>能不能用，只看一件事：'
+      + '这些规则在 2025 年还成不成立。</b></div></section>';
+    return h;
+  }
+
+  // ③ 一次性 holdout
+  function p11Hold() {
+    if (!HD11 || !HD11.candidates) return '';
+    var C = HD11.candidates, pr = HD11.primary || {};
+    var h = '<section class="ui-panel"><h2>③ 一次性验收：2024 训练 / 2025 验收，只开一次</h2>'
+      + '<div class="note"><p>规则在 <b>2024</b> 上按同一判据机械选出（每特征最多 1 条，最多 5 条），'
+      + '阈值用训练集分位定死，然后<b>原样</b>套到 <b>2025</b> 上。'
+      + '门槛是立项时写进代码的：OOS ΔA_net ≥ ' + n((HD11.protocol || {}).dA_net_gate_bp, 0)
+      + 'bp、聚类 t ≥ ' + n((HD11.protocol || {}).t_gate, 0)
+      + '、右尾份额跌幅 &lt; ' + n((HD11.protocol || {}).right_drop_gate_pp, 0) + 'pp。</p>'
+      + '<p>训练 ' + (HD11.n_train || 0) + ' 笔 / ' + (HD11.n_days_train || 0)
+      + ' 日，验收 ' + (HD11.n_test || 0) + ' 笔 / ' + (HD11.n_days_test || 0) + ' 日。</p></div>'
+      + '<div class="rows"><div class="row p11-hold p11-hold--head"><span>规则（训练集选出）</span>'
+      + '<span class="num">训练 ΔA</span><span class="num">训练 t</span>'
+      + '<span class="num">验收 ΔA</span><span class="num">验收 t</span>'
+      + '<span class="num">验收 t(NW)</span></div>';
+    for (var i = 0; i < C.length; i++) {
+      var c = C[i], t = c.test || {};
+      h += '<div class="row p11-hold"><span class="row__nm"><b>'
+        + esc(F11_NAME[c.feature] || c.feature) + '</b><small>'
+        + esc(c.bucket) + ' · ' + (c.mode === 'keep' ? '只留' : '剔除') + '</small></span>'
+        + '<span class="num ' + (c.use_dA_bp > 0 ? 'up' : 'dn') + '">'
+        + (c.use_dA_bp > 0 ? '+' : '') + n(c.use_dA_bp, 0) + '</span>'
+        + '<span class="num">' + n(c.use_t, 2) + '</span>'
+        + '<span class="num ' + ((t.dA_bp || 0) > 0 ? 'up' : 'dn') + '">'
+        + ((t.dA_bp || 0) > 0 ? '+' : '') + n(t.dA_bp, 0) + '</span>'
+        + '<span class="num">' + n(t.t, 2) + '</span>'
+        + '<span class="num">' + n(t.t_nw, 2) + '</span></div>';
+    }
+    var flip = 0;
+    for (var k = 0; k < C.length; k++) {
+      var tt = C[k].test || {};
+      if ((C[k].use_dA_bp > 0) !== ((tt.dA_bp || 0) > 0)) flip++;
+    }
+    h += '</div><div class="p3-verdict"><b>判决：' + esc(HD11.verdict === 'PASS' ? '过线' : '未过线')
+      + '。</b>主规则（' + esc(F11_NAME[pr.feature] || pr.feature) + ' · '
+      + esc(pr.bucket) + ' · ' + (pr.mode === 'keep' ? '只留' : '剔除') + '）'
+      + '训练集 +' + n(pr.train_dA_bp, 0) + 'bp，验收只剩 <b>' + n(pr.oos_dA_bp, 0)
+      + 'bp</b>（门槛 ' + n((HD11.protocol || {}).dA_net_gate_bp, 0) + '），'
+      + '聚类 t = <b>' + n(pr.oos_t, 2) + '</b>（门槛 '
+      + n((HD11.protocol || {}).t_gate, 0) + '）。'
+      + '5 条候选里 <b>' + flip + ' 条在验收集上符号翻转</b>。'
+      + '右尾没有被打掉（' + n(pr.oos_right_drop_pp, 1) + 'pp），但那不是功劳——'
+      + '是这些规则本身太弱，动不了分布形状。</div></section>';
+    return h;
+  }
+
+  // ④ 迁移诊断：全部 92 个桶的 train ΔA vs test ΔA
+  function p11Diag() {
+    if (!DG11 || !DG11.transfer) return '';
+    var TR = DG11.transfer, NU = DG11.null || {}, P = DG11.pairs || [];
+    var W = 680, H = 300, L = 52, R = 16, T = 16, B = 32;
+    // 两轴各取数据范围：验收方向有一个 +1032bp 的离群点，硬套对称轴会把其余 91 点
+    // 全挤成一团。rho 是秩相关，与轴尺度无关，所以分别取范围不影响结论。
+    var x0 = 0, x1 = 0, y0 = 0, y1 = 0, i;
+    for (i = 0; i < P.length; i++) {
+      var xv = P[i].train_dA_bp, yv = P[i].test_dA_bp;
+      if (i === 0) { x0 = x1 = xv; y0 = y1 = yv; continue; }
+      if (xv < x0) x0 = xv;
+      if (xv > x1) x1 = xv;
+      if (yv < y0) y0 = yv;
+      if (yv > y1) y1 = yv;
+    }
+    x0 = Math.min(x0, 0) - 40; x1 = Math.max(x1, 0) + 40;
+    y0 = Math.min(y0, 0) - 40; y1 = Math.max(y1, 0) + 40;
+    function X(v) { return L + (W - L - R) * (v - x0) / (x1 - x0); }
+    function Y(v) { return T + (H - T - B) * (1 - (v - y0) / (y1 - y0)); }
+    var s = '<svg class="p11sc" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="'
+      + '训练集 ΔA 与验收集 ΔA 的散点，共 ' + P.length + ' 个桶">';
+    for (var g = Math.ceil(x0 / 200) * 200; g <= x1; g += 200) {
+      s += '<line class="grid" x1="' + X(g).toFixed(1) + '" x2="' + X(g).toFixed(1)
+        + '" y1="' + T + '" y2="' + (H - B) + '"/>'
+        + '<text x="' + X(g).toFixed(1) + '" y="' + (H - B + 13)
+        + '" text-anchor="middle">' + g + '</text>';
+    }
+    for (var g2 = Math.ceil(y0 / 200) * 200; g2 <= y1; g2 += 200) {
+      s += '<line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="'
+        + Y(g2).toFixed(1) + '" y2="' + Y(g2).toFixed(1) + '"/>'
+        + '<text x="' + (L - 6) + '" y="' + (Y(g2) + 3.5)
+        + '" text-anchor="end">' + g2 + '</text>';
+    }
+    if (y0 < 0 && y1 > 0) {
+      s += '<line class="zero" x1="' + L + '" x2="' + (W - R) + '" y1="'
+        + Y(0).toFixed(1) + '" y2="' + Y(0).toFixed(1) + '"/>';
+    }
+    if (x0 < 0 && x1 > 0) {
+      s += '<line class="zero" x1="' + X(0).toFixed(1) + '" x2="' + X(0).toFixed(1)
+        + '" y1="' + T + '" y2="' + (H - B) + '"/>';
+    }
+    for (i = 0; i < P.length; i++) {
+      var p = P[i], strong = Math.abs(p.train_t || 0) >= 2;
+      s += '<circle class="dot' + (strong ? ' dot--hit' : '') + '" cx="'
+        + X(p.train_dA_bp).toFixed(1) + '" cy="' + Y(p.test_dA_bp).toFixed(1)
+        + '" r="' + (strong ? 4 : 3) + '"><title>' + esc(p.feature + ' ' + p.bucket)
+        + '：训练 ' + p.train_dA_bp + 'bp → 验收 ' + p.test_dA_bp + 'bp</title></circle>';
+    }
+    s += '<text x="' + (W - R) + '" y="' + (H - 6) + '" text-anchor="end">训练集 ΔA（bp）</text>';
+    s += '<text x="' + L + '" y="' + (T - 5) + '">验收 ΔA（bp）</text>';
+    s += '</svg>';
+
+    var h = '<section class="ui-panel"><h2>④ 为什么失败：不是没结构，是结构不迁移</h2>'
+      + '<div class="note"><p>只看通过的 5 条会被选择偏差骗。这里把<b>全部 '
+      + TR.n_all + ' 个桶</b>都算一遍：训练集 ΔA 与验收集 ΔA 的秩相关 '
+      + '<b class="mono">ρ = ' + n(TR.spearman_all, 3) + '</b>'
+      + '（只用训练集 |t| ≥ 2 的 ' + TR.n_strong + ' 个"强信号"桶：'
+      + 'ρ = ' + n(TR.spearman_strong, 3) + '）。'
+      + '<b>≈0 甚至微负 = 训练集里 ΔA 越高的桶，在 2025 年并不更好。</b></p>'
+      + '<p>训练集 ΔA &gt; 0 的 ' + TR.n_positive_train + ' 个桶里，'
+      + '验收集仍 &gt; 0 的只占 <b>' + n(TR.sign_rate, 0) + '%</b>——比抛硬币还差。</p></div>'
+      + s
+      + '<div class="p10-lx mt12"><span>蓝/灰点：全部桶（' + (P.length - TR.n_strong)
+      + '）</span><span>橙点：训练集 |t| ≥ 2（' + TR.n_strong + '）</span>'
+      + '<span>两轴各取数据范围，虚线是零轴</span></div>'
+      + '<div class="note mt12"><p>置换零分布（随机留同样比例的票）：OOS ΔA 的 90% 区间 '
+      + '[' + n(NU.q05, 0) + ', ' + n(NU.q95, 0) + '] bp，sd = ' + n(NU.sd_bp, 0)
+      + 'bp。主规则的 +' + n(NU.obs_bp, 0) + 'bp 落在 <b>p = ' + n(NU.p_one_sided, 2)
+      + '</b>——在这个样本上，它和随机抽一批票没有区别。</p></div></section>';
+    return h;
+  }
+
+  // ⑤ 判决
+  function p11Verdict() {
+    var pr = (HD11 && HD11.primary) || {}, PW = (HD11 && HD11.power) || {};
+    var TR = (DG11 && DG11.transfer) || {}, NU = (DG11 && DG11.null) || {};
+    var h = '<section class="ui-panel"><h2>⑤ 收口：入场端这批特征不能用</h2>'
+      + '<div class="note"><p><b>三条同向的证据：</b></p>'
+      + '<p>1. 一次性验收没过——主规则 OOS ' + n(pr.oos_dA_bp, 0) + 'bp（门槛 '
+      + n((HD11.protocol || {}).dA_net_gate_bp, 0) + '），聚类 t = ' + n(pr.oos_t, 2)
+      + '（门槛 2）。</p>'
+      + '<p>2. 全部 ' + (TR.n_all || 0) + ' 个桶的 train→test 秩相关 ρ = '
+      + n(TR.spearman_all, 3) + '，符号一致率 ' + n(TR.sign_rate, 0) + '%。</p>'
+      + '<p>3. 训练集 26 条过线（噪声期望 4.4）说明<b>结构是真的</b>；'
+      + '但它一年就不成立——<b>问题不是找不找得到结构，是结构不持续</b>。</p></div>'
+      + '<div class="p3-verdict"><b>所以"把左尾从 20.7% 压到 10%"这条路，'
+      + '不是没做，是做了不成。</b>15 个新特征里最强的 5 条，'
+      + '在 2025 年全部退回 '+ n(NU.obs_bp, 0) + 'bp 以内。'
+      + '卡住的仍是第十九轮那个数：<b>单笔 α 196bp vs 一次进出 122bp</b>，'
+      + '而这个差距不是靠挑票能补的——挑得准的那几年，本来就不需要挑。</div>'
+      + '<div class="note mt12"><p>剩下还可以做的只有两件，都不在这条线上：'
+      + '① 用小资金实测滑点（把 51bp 从估计变成事实）；'
+      + '② 换标的池——现在的池子是全 A 的 1买，α 的底子由池子决定，不由筛子决定。</p></div>'
+      + '</section>';
+    return h;
+  }
+
   function renderP8() {
     if (!RG8) {
       return '<section class="ui-panel"><h2>口径修正</h2><p class="note">数据未生成：'
@@ -3196,6 +3509,7 @@
     else if (S.view === 'p8') h = renderP8();
     else if (S.view === 'p9') h = renderP9();
     else if (S.view === 'p10') h = renderP10();
+    else if (S.view === 'p11') h = renderP11();
     else h = renderAbout();
     app.innerHTML = h;
     applyDataWidth(app);
@@ -3303,7 +3617,10 @@
       fetch('/hf_regauge.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
       fetch('/hf_cost_gauge.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
       fetch('/hf_path.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
-      fetch('/hf_exit_lab.json', { cache: 'no-store' }).then(function (r) { return r.json(); })
+      fetch('/hf_exit_lab.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
+      fetch('/hf_feat2.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
+      fetch('/hf_holdout.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
+      fetch('/hf_feat2_diag.json', { cache: 'no-store' }).then(function (r) { return r.json(); })
     ]).then(function (res) {
       D = res[0]; B = res[1]; H = res[2]; AB = res[3]; UV = res[4]; P3 = res[5];
       P4D = res[6];
@@ -3315,6 +3632,12 @@
       CG9 = res[15];
       PA10 = res[16];
       XL10 = res[17];
+      FJ11 = res[18];
+      HD11 = res[19];
+      DG11 = res[20];
+      if (HD11 && HD11.primary) {
+        $('nv-p11').textContent = HD11.verdict === 'PASS' ? '过线' : '未过线';
+      }
       if (XL10 && XL10.table && XL10.table.hold250) {
         $('nv-p10').textContent = '死持 +' + n(XL10.table.hold250.ann_net, 2) + '%';
       }

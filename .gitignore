@@ -77,6 +77,9 @@ portal/_hf_*.json
 # 逐笔路径落盘（hf_path.py --dump，1.3MB，18 秒可再生）。
 # 上游信号一改就整份重写，进历史等于永久背 1.3MB × 轮次。
 portal/hf_trades_path.jsonl
+# 入场特征面板（hf_feat2.py 建，5.5MB / 6900 行，72 秒可再生）。
+# 它只是 hf_feat2.json 的中间产物，产物本身（筛表/holdout/诊断）已入库。
+portal/hf_feat2_panel.jsonl
 # 社交面快照（tools/jev_social_fetch.py 按日生成，一天一个、内容全是当日
 # 榜单与帖子，没有长期保存价值；真正要吃的是当日的排名与背离，不是文件）
 portal/social_*.json

@@ -179,8 +179,15 @@ def work(args):
         # β=1 的基准收益：入场端研究要拿它验"分组差异到底是个股 β 造出来的，
         # 还是真的超额"。A 的定义里带 β，用 β 分组去解释 A 是循环论证。
         br1 = bench_iv(ed, dates[ie + cap], 1.0)
+        # 60 日口径的收尾价与 β=1 基准：入场端研究要用「短窗」复核。
+        # 250 日前瞻窗口在 398 个入场日上几乎重叠（相邻两天共享 249/250 的样本），
+        # 独立窗口数只有 ~1.6 个；60 日窗口能把独立窗口数抬到 ~6.6 个，
+        # 这是判断「t=2 到底有没有意义」的唯一办法，所以必须一起落盘。
+        f60 = path[60] if cap >= 60 else None
+        br1_60 = bench_iv(ed, dates[ie + 60], 1.0) if cap >= 60 else None
         out.append({
             "code": code, "d0": d0, "ed": ed, "beta": beta,
+            "final60": f60, "br1_60": br1_60,
             "final": path[cap], "at": at, "al": al, "br1": br1,
             "mfe": mfe, "mfe_k": mfe_k, "mae": mae, "mae_k": mae_k,
             "peak_c": peak_c, "peak_k": peak_k,
@@ -464,6 +471,12 @@ def run(slip_bp=51.0, comm_bp=20.0, workers=8, write=True, cap=None, dump=None):
                     # β=1 口径的超额：ret − 满窗基准。用它做稳健性对照。
                     "a1": (round(100 * (r["final"] - r["br1"]), 3)
                            if r.get("br1") is not None else None),
+                    # 60 日口径：250 日窗口在入场日上高度重叠，短窗用来查
+                    # 「那个 t=2 是不是靠 1.6 个独立窗口撑出来的」
+                    "a60": (round(100 * r["al"][60], 3)
+                            if r["al"].get(60) is not None else None),
+                    "a160": (round(100 * (r["final60"] - r["br1_60"]), 3)
+                             if r.get("br1_60") is not None else None),
                     "peak_c": round(100 * r["peak_c"], 2),
                     "peak_k": r["peak_k"],
                     "mfe": round(100 * r["mfe"], 2),
