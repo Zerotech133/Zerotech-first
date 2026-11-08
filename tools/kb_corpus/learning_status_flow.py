@@ -182,7 +182,7 @@ def cmd_triage(rows_by_file, write: bool, undo: bool, allow=None) -> int:
             hits = by_uid.get(r.get("unit_id"))
             if not hits:
                 continue
-            for p, new in hits:
+            for p, new in sorted(set(hits)):   # 去重：同 id 孪生行每行只 apply 一次，防 status_prev 二次覆盖
                 if p == path:
                     _apply_transition(r, new, "triage" if new != "empty_claim" else "triage(empty)")
                     applied += 1
@@ -228,7 +228,7 @@ def cmd_expire(rows_by_file, write: bool, now: Optional[dt.datetime]) -> int:
             hits = by_uid.get(r.get("unit_id"))
             if not hits:
                 continue
-            for p, new in hits:
+            for p, new in sorted(set(hits)):   # 去重：同上，防重复 apply
                 if p == path:
                     _apply_transition(r, new, "expire(T 类 pit+3d)")
                     changed = True
