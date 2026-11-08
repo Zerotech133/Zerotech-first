@@ -1,0 +1,901 @@
+# -*- coding: utf-8 -*-
+"""板块联动网络 —— `jev_graph`（2026-11-08，Step 5）。
+
+老田口径（2026-11-08 原文）：
+  「拿 stock_basic.industry 划板块，用同板块当日涨幅排名 + 刚建好的传播链，
+   做出『谁涨停领涨、谁跟随、消息几点的、价格几点动的』。这一步做完，
+   所谓的『隐形关系』才第一次真正连成网。」
+
+## 三层 + 五类边
+
+个股层（board_frame）：当日行情 × stock_basic.industry → 板块内涨幅排名、
+  涨停/触板判定、板块聚合（中位涨幅 / 上涨占比 / 涨停数 / 跨板块排名）。
+分钟层（reactions）：stk_mins 1 分钟线 → **首次异动时刻**（相对开盘涨
+  ≥0.8% 的第一分钟）与**封板时刻**（收盘价首次触及涨停价）——这就是
+  「价格几点动的」。
+消息层（events）：news 当日事件 → 时刻、信源、传播角色（origin_kind /
+  repost_of / lag_min）——这就是「消息几点的、谁先谁后」。
+
+五类边：
+  member  板块 → 个股          （隶属，静态）
+  lead    个股 → 个股          （板块内领涨 → 跟随，权重 Δmin + 涨幅差）
+  spread  信源 → 信源          （传播链首发 → 转发，权重 lag_min）
+  hit     事件 → 个股          （消息时刻 → 价格异动，权重 Δmin）
+  silent  个股 ↔ 个股          （同板块同日同向异动、当日无独立事件 →
+                                  「隐形关系」：价格先动、消息没到）
+
+## 数据诚实性（必须先读这段）
+
+1) **分钟线只覆盖中证800**。`quant_backtest/tushare_sync.py::batch_mins`
+   拉的是「中证800成分 × 近1年」，实测 2026-11 目录只有 800 个 code 文件
+   （000001…按代码序前 800 只），2026-10 有 5036 个（历史全市场补拉）。
+   直接后果：11-06 涨幅 ≥9.5% 的 43 只票里，分钟覆盖 **0 只**——本月
+   「价格几点动的」对热点票是空的。本模块如实输出 `minute_coverage`，
+   并对缺分钟的票标 `no_minute`，绝不用日线数据假装成分钟结论。
+2) **涨停自算，不信 limit_list_d**。该表 latest=20261103，落后 3 个交易日。
+   口径：涨停价 = round(pre_close × (1+档位), 2)，|close − 涨停价| ≤ 0.011
+   即收盘涨停（一分钱容差）；high 触及但 close 未封 → `touch_only`。
+   档位按板块规则取候选集，逐个试（主板 ST 5%、主板 10%、创业板/科创
+   20%、北交所 30%）——单一档位会把「撤销 ST 但名称未改」的票漏掉
+   （实测 600537 *ST亿晶 当日 +10.22%，5% 档判定失败）。
+3) **news.ts 是入库时刻，不是发布时刻**。公告类（xd_notice）批量落在
+   00:00（11-06 单日 1313 条），对它做「消息 00:00 → 价格 09:33 动」
+   是造假。故每条事件带 `ts_kind`：intraday（09:15–15:05，可比对分钟）/
+   batch（00:00 或整点且同批 ≥50 条）/ offhour（盘前盘后）。只有
+   intraday 参与 `hit` 边与 Δmin 统计。
+
+只读纪律：news.db / jev_audit.db mode=ro；datamart 只读；不写库、不调模型。
+"""
+from __future__ import annotations
+
+import datetime as dt
+import json
+import os
+import re
+import sqlite3
+import sys
+import time
+
+STATION = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+NEWS_DB = os.path.join(STATION, "news_collector", "news.db")
+AUDIT_DB = os.path.join(STATION, "agent_platform", "data", "jev_audit",
+                        "jev_audit.db")
+QUANT = os.path.join(STATION, "quant_backtest")
+
+# ── 口径常量 ────────────────────────────────────────────────
+MIN_BOARD_N = 8        # 板块最少成员数（少于 8 只不参与跨板块排名）
+MOVE_TH = 0.008        # 首次异动阈值：相对开盘涨 0.8%
+SEAL_TOL = 0.011       # 涨停价容差（一分钱）
+FOLLOW_GAP_MIN = 10    # 领涨 → 跟随 的最小时间差（分钟）
+CAND_PCT = 3.0         # 领涨/跟随候选的最低当日涨幅
+MAX_MINUTE_CODES = 60  # 单次最多读多少只票的分钟线（性能闸门）
+CACHE_TTL_S = 60
+
+_CACHE: dict = {}
+_BOARD_CACHE: dict = {"at": 0.0, "data": None}
+
+
+def _ro(path):
+    return sqlite3.connect("file:%s?mode=ro" % path.replace("\\", "/"),
+                            uri=True, timeout=10)
+
+
+def _dm():
+    """延迟导入 datamart（首次 ~1s，之后走模块缓存）。"""
+    if QUANT not in sys.path:
+        sys.path.insert(0, QUANT)
+    import datamart
+    return datamart
+
+
+# ── 交易日解析 ──────────────────────────────────────────────
+def resolve_day(day_raw=None) -> str:
+    """归一为 YYYYMMDD。缺省取 datamart daily 的最新可用交易日。
+
+    不用「今天」：今天多半是周末/盘前，日线还没有，会造出空图。
+    """
+    if day_raw:
+        s = str(day_raw).strip().replace("-", "")
+        if len(s) != 8 or not s.isdigit():
+            raise ValueError("day 须为 YYYYMMDD 或 YYYY-MM-DD")
+        return s
+    # 走文件系统而不是 dm.latest("daily")：后者实测 26.7s（要扫分片+校验
+    # manifest），而按日分片就是 d_YYYYMMDD.parquet，列目录取最大值 ~30ms。
+    folder = os.path.join(QUANT, "data", "tushare", "daily")
+    if os.path.isdir(folder):
+        days = [f[2:10] for f in os.listdir(folder)
+                if f.startswith("d_") and f.endswith(".parquet")
+                and len(f) >= 18 and f[2:10].isdigit()]
+        if days:
+            return max(days)
+    dm = _dm()          # 兜底：非 by_date 布局的仓库
+    latest = dm.latest("daily")
+    if not latest:
+        raise RuntimeError("daily 无可用数据")
+    return str(int(latest))
+
+
+def _day_cn(d8: str) -> str:
+    d = dt.date(int(d8[:4]), int(d8[4:6]), int(d8[6:]))
+    wd = "一二三四五六日"[d.weekday()]
+    return "%s 周%s" % (d.isoformat(), wd)
+
+
+# ── 涨停判定 ────────────────────────────────────────────────
+def limit_ratios(code6: str, name: str, pct=None):
+    """按板块规则给出涨停档位（单值，有序候选表）。
+
+    2026-11-08 修：旧实现返回候选集并「任一档 close >= 涨停价即判涨停」，
+    把涨 6.47% 的海天股份判成了涨停——因为对 10% 档的票，close 必然
+    高于 5% 档的涨停价。档位必须先定死，判定再用「价格接近」而非「大于」。
+    """
+    if code6.startswith(("688", "689")):
+        return [0.20]
+    if code6.startswith(("300", "301")):
+        return [0.20]
+    if code6.startswith(("8", "4", "920")):
+        return [0.30]
+    if "ST" in (name or "").upper():
+        # 主板 ST 5%；撤销 ST 未改名的票实际走 10%（实测 600537 *ST亿晶
+        # 当日 +10.22%，按 5% 档判定永远匹配不上）——用当日涨幅反推。
+        if pct is not None and abs(float(pct)) > 6.0:
+            return [0.10]
+        return [0.05]
+    return [0.10]
+
+
+def limit_state(close, high, pre_close, code6, name, pct=None):
+    """→ (limit_up, touch_only, ratio, limit_price)。
+
+    涨停价 = round(pre_close × (1+档位), 2)，|close − 涨停价| ≤ 一分钱
+    即收盘涨停；盘中最高触及、收盘未封 → touch_only（炸板/触板）。
+    """
+    if not pre_close or pre_close != pre_close or pre_close <= 0:
+        return False, False, None, None
+    r = limit_ratios(code6, name, pct)[0]
+    lp = round(float(pre_close) * (1 + r), 2)
+    if abs(float(close) - lp) <= SEAL_TOL:
+        return True, False, r, lp
+    if float(high) >= lp - SEAL_TOL and float(close) < lp - SEAL_TOL:
+        return False, True, r, lp
+    return False, False, r, lp
+
+
+def _is_new_listing(name, list_date, d8):
+    """上市首日无涨跌幅限制（N 开头 / 当日上市），不参与涨停判定。"""
+    if (name or "").startswith("N"):
+        return True
+    return bool(list_date) and str(list_date) == d8
+
+
+# ── 个股层 ──────────────────────────────────────────────────
+def load_board(day: str) -> dict:
+    """全市场当日行情 × 行业 → 个股行 + 板块聚合。"""
+    key = ("board", day)
+    hit = _CACHE.get(key)
+    if hit and time.time() - hit[0] < CACHE_TTL_S:
+        return hit[1]
+
+    dm = _dm()
+    d = dm.read("daily", start=int(day), end=int(day), limit=10000)
+    if d is None or not len(d):
+        raise RuntimeError("%s 无日线数据" % day)
+    sb = dm.read("stock_basic", fields=["ts_code", "name", "industry",
+                                        "list_date", "list_status"])
+    m = d.merge(sb, on="ts_code", how="left")
+
+    rows = []
+    for r in m.itertuples():
+        code = str(r.ts_code)
+        c6 = code[:6]
+        nm = r.name if isinstance(r.name, str) else ""
+        pct = float(r.pct_chg) if r.pct_chg == r.pct_chg else None
+        if pct is None:
+            continue
+        if _is_new_listing(nm, getattr(r, "list_date", None), day):
+            lu, touch, ratio, lp = False, False, None, None
+            newbie = True
+        else:
+            lu, touch, ratio, lp = limit_state(float(r.close), float(r.high),
+                                               float(r.pre_close), c6, nm, pct)
+            newbie = False
+        rows.append({
+            "code": code, "c6": c6, "name": nm,
+            "board": (r.industry if isinstance(r.industry, str) else None)
+                     or "未分类",
+            "pct": round(pct, 2), "close": round(float(r.close), 2),
+            "amount": (round(float(r.amount) / 1e5, 0)
+                       if r.amount == r.amount else None),   # 千元→万元? 见下
+            "limit_up": lu, "touch_only": touch, "limit_ratio": ratio,
+            "limit_price": lp, "newbie": newbie,
+        })
+
+    # 板块内涨幅排名（1 = 板块内涨幅最高）
+    by_board: dict = {}
+    for x in rows:
+        by_board.setdefault(x["board"], []).append(x)
+    boards = []
+    for name, lst in by_board.items():
+        lst.sort(key=lambda z: -(z["pct"] if z["pct"] is not None else -99))
+        for i, z in enumerate(lst, 1):
+            z["pct_rank"] = i
+            z["board_n"] = len(lst)
+        up = sum(1 for z in lst if z["pct"] > 0)
+        pcts = sorted(z["pct"] for z in lst if z["pct"] is not None)
+        med = pcts[len(pcts) // 2] if pcts else None
+        boards.append({
+            "name": name, "n": len(lst), "med": round(med, 2) if med is not None else None,
+            "up": up, "up_ratio": round(up / len(lst), 3) if lst else None,
+            "limit_up": sum(1 for z in lst if z["limit_up"]),
+            "touch_only": sum(1 for z in lst if z["touch_only"]),
+            "max_pct": round(max(pcts), 2) if pcts else None,
+            "min_pct": round(min(pcts), 2) if pcts else None,
+        })
+    boards.sort(key=lambda b: -(b["med"] if b["med"] is not None else -99))
+    rank = 0
+    for b in boards:
+        if b["n"] >= MIN_BOARD_N:
+            rank += 1
+            b["rank"] = rank
+            b["ranked"] = True
+        else:
+            b["rank"] = None
+            b["ranked"] = False
+
+    universe = {
+        "stocks": len(rows),
+        "boards": sum(1 for b in boards if b["ranked"]),
+        "up": sum(1 for z in rows if z["pct"] > 0),
+        "down": sum(1 for z in rows if z["pct"] < 0),
+        "limit_up": sum(1 for z in rows if z["limit_up"]),
+        "touch_only": sum(1 for z in rows if z["touch_only"]),
+        "median_pct": (round(sorted(z["pct"] for z in rows)[len(rows) // 2], 2)
+                       if rows else None),
+    }
+    out = {"day": day, "rows": rows, "boards": boards,
+           "by_code": {z["code"]: z for z in rows}, "universe": universe}
+    _CACHE[key] = (time.time(), out)
+    return out
+
+
+# ── 分钟层 ──────────────────────────────────────────────────
+def _mins(ts_code: str, day: str):
+    """单票当日 1 分钟线（升序）。无文件/无当日数据 → None。"""
+    dm = _dm()
+    try:
+        d = dm.read("stk_mins", codes=[ts_code],
+                    start="%s-%s-%s" % (day[:4], day[4:6], day[6:]),
+                    end="%s-%s-%s" % (day[:4], day[4:6], day[6:]),
+                    limit=100000)
+    except Exception:  # noqa: BLE001
+        return None
+    if d is None or not len(d):
+        return None
+    d = d.sort_values("trade_time")
+    return d
+
+
+def minute_profile(ts_code: str, day: str, limit_price=None) -> dict:
+    """一只票当日的分钟画像：开盘/首次异动/封板/最大单分钟涨幅。
+
+    返回 {ok, open, first_move, first_move_pct, seal_time, bars, spike}
+      first_move  相对开盘首次 ≥MOVE_TH 的那一分钟（「价格几点动的」）
+      seal_time   close 首次 ≥ 涨停价 的那一分钟（封板时刻）
+      spike       单分钟涨幅 ≥1% 且量 ≥2× 当日分钟均量 的第一次
+    """
+    d = _mins(ts_code, day)
+    if d is None:
+        return {"ok": False, "reason": "no_minute"}
+
+    times = [str(t) for t in d["trade_time"]]
+    closes = [float(x) for x in d["close"]]
+    opens = [float(x) for x in d["open"]]
+    vols = [float(v) if v == v else 0.0 for v in d["vol"]]
+    base = opens[0] if opens else closes[0]
+    if not base:
+        return {"ok": False, "reason": "no_open"}
+
+    fm = fm_pct = None
+    seal = None
+    spike = None
+    avg_vol = (sum(vols) / len(vols)) if vols else 0.0
+    for i, (t, c) in enumerate(zip(times, closes)):
+        if fm is None and base and (c / base - 1) >= MOVE_TH:
+            fm, fm_pct = t, round((c / base - 1) * 100, 2)
+        if seal is None and limit_price and c >= limit_price - SEAL_TOL:
+            seal = t
+        if spike is None and i > 0 and closes[i - 1]:
+            step = c / closes[i - 1] - 1
+            if step >= 0.01 and avg_vol > 0 and vols[i] >= 2 * avg_vol:
+                spike = {"t": t, "step": round(step * 100, 2),
+                         "vol_x": round(vols[i] / avg_vol, 1)}
+        if fm and seal and spike:
+            break
+
+    return {
+        "ok": True, "open": round(base, 2), "bars": len(times),
+        "first_move": fm, "first_move_pct": fm_pct,
+        "seal_time": seal, "spike": spike,
+        "high_pct": round((max(closes) / base - 1) * 100, 2) if closes else None,
+        "close_pct": round((closes[-1] / base - 1) * 100, 2) if closes else None,
+    }
+
+
+def minute_coverage(day: str, rows=None) -> dict:
+    """当日分钟数据的实际覆盖（如实报，不糊）。"""
+    d8 = "%s-%s-%s" % (day[:4], day[4:6], day[6:])
+    folder = os.path.join(QUANT, "data", "tushare", "stk_mins")
+    ym = day[:6]
+    n_files = 0
+    if os.path.isdir(folder):
+        suffix = "_%s.parquet" % ym
+        n_files = sum(1 for f in os.listdir(folder) if f.endswith(suffix))
+    total = len(rows) if rows is not None else None
+    return {
+        "with_minute": n_files, "total": total,
+        "ratio": round(n_files / total, 3) if total else None,
+        "month": ym,
+        "note": ("stk_mins 由 tushare_sync.batch_mins 拉取，范围=中证800成分×近1年；"
+                 "本月目录 %d 个 code 文件。覆盖外的票只能给日线结论，"
+                 "不参与『几点动』的分钟推断。" % n_files),
+        "probe": d8,
+    }
+
+
+# ── 消息层 ──────────────────────────────────────────────────
+def _ts_kind(ts: str, batch_sizes: dict) -> str:
+    """判断 ts 是「盘中可比对时刻」还是「批量入库的假时刻」。
+
+    2026-11-08 实测教训：种植业一条「临近午盘，600540强势涨停」的稿子
+    入库时刻是 12:40——午休，不可能有交易。旧口径把 11:31–12:59 也算
+    intraday，于是算出「价格领先消息 189 分钟」这种半真半假的数。午休
+    区间一律降级为 offhour，不参与 Δmin。
+    """
+    hm = (ts or "")[11:16]
+    if not hm:
+        return "unknown"
+    if hm == "00:00" or batch_sizes.get(hm, 0) >= 50:
+        return "batch"
+    if "09:15" <= hm <= "11:30" or "13:00" <= hm <= "15:05":
+        return "intraday"
+    return "offhour"
+
+
+def load_events(day: str, codes=None) -> dict:
+    """当日已判定的、命中指定股票的事件。
+
+    → {code6: [event, ...]}；event 含时刻/信源/方向/传播角色/ts_kind。
+    传播角色直接复用 news.origin_kind（2026-11-08 Step 4 已回填 13.7 万条）。
+    """
+    since = "%s-%s-%s 00:00" % (day[:4], day[4:6], day[6:])
+    until = "%s-%s-%s 23:59" % (day[:4], day[4:6], day[6:])
+    db = _ro(NEWS_DB)
+    try:
+        # 全市场当日已判定样本（用于统计整点批量规模，判定 ts_kind）
+        hours = {}
+        for ts, n in db.execute(
+                "SELECT substr(ts,12,5) hm, COUNT(1) FROM news "
+                "WHERE ts>=? AND ts<=? GROUP BY hm", (since, until)):
+            hours[ts] = n
+        sql = ("SELECT id, ts, source, title, jev, origin_kind, repost_of,"
+               " lag_min FROM news WHERE ts>=? AND ts<=? AND jev IS NOT NULL"
+               " AND jev!='' ORDER BY ts")
+        rows = db.execute(sql, (since, until)).fetchall()
+    finally:
+        db.close()
+
+    want = set(codes) if codes else None
+    out: dict = {}
+    for nid, ts, src, title, jev, okind, repost_of, lag in rows:
+        try:
+            j = json.loads(jev)
+        except Exception:  # noqa: BLE001
+            continue
+        hit_codes = set()
+        for c in (j.get("companies") or []):
+            s = str(c).strip()
+            if len(s) >= 6 and s[:6].isdigit():
+                hit_codes.add(s[:6])
+        for s in (j.get("stocks") or []):
+            s = str(s).strip()
+            if len(s) >= 6 and s[:6].isdigit():
+                hit_codes.add(s[:6])
+        if want is not None:
+            hit_codes &= want
+        if not hit_codes:
+            continue
+        bias = j.get("bias") if j.get("bias") in ("bull", "bear", "neutral") \
+            else "neutral"
+        ev = {
+            "id": nid, "ts": ts, "hm": (ts or "")[11:16], "source": src,
+            "title": (title or "")[:60], "bias": bias,
+            "conf": j.get("conf"), "origin_kind": okind or "unknown",
+            "repost_of": repost_of,
+            "lag_min": lag if lag is not None else None,
+            "ts_kind": _ts_kind(ts, hours),
+        }
+        for c6 in hit_codes:
+            out.setdefault(c6, []).append(ev)
+    return out
+
+
+def first_move_after(prof: dict, hm: str, window_min: int = 60):
+    """事件时刻与首次异动的先后关系（带符号的 Δmin）。
+
+    lag_min > 0  消息先到，价格后动 → 「消息驱动」（hit 边）
+    lag_min < 0  价格先动，消息后到 → 「价格先行/消息追认」（echo 边）
+    lag_min = 0  同一分钟
+
+    2026-11-08 实测（新型电力 11-06）：板块 09:31 开盘一分钟内四只票同时
+    异动、09:33 首板封住，而消息 10:27/10:30/11:04 才落地——全板块 Δmin
+    全是负的。旧实现把这种情况返回 lag_min=None、连边都不建，等于把本步
+    最有情报价值的发现（这波不是消息驱动）丢掉了。老田要的是「以谁先发生
+    为锚点」，那就必须让负数进图。
+    """
+    if not prof.get("ok") or not prof.get("first_move"):
+        return None
+    fm = prof["first_move"][11:16]
+    if hm <= fm:
+        return {"move_at": fm, "lag_min": _min_gap(hm, fm), "after_lead": False}
+    return {"move_at": fm, "lag_min": -_min_gap(fm, hm), "after_lead": True,
+            "note": "价格先动（%s），消息后到（%s），价格领先 %d 分钟"
+                    % (fm, hm, _min_gap(fm, hm))}
+
+
+def _min_gap(a: str, b: str) -> int:
+    """两个 HH:MM 的分钟差（b − a），扣掉午休 11:30–13:00 的 90 分钟。
+
+    午休中间的时点（11:31–12:59）按 11:30 计——那段时间没有交易，
+    拿它当基准会把 Δmin 算大 90 分钟（实测 12:40 得出 189min，真实 99min）。
+    """
+    def m(x):
+        v = int(x[:2]) * 60 + int(x[3:5])
+        if 690 < v < 780:          # 11:30 < t < 13:00 → 归到 11:30
+            return 690
+        return v
+    d = m(b) - m(a)
+    if m(a) <= 690 and m(b) >= 780:
+        d -= 90
+    return d
+
+
+# ── 领涨 / 跟随 ─────────────────────────────────────────────
+def _hm(ts):
+    return (ts or "")[11:16]
+
+
+def rank_board(board_name: str, rows, events: dict, profiles: dict,
+               top: int = 8) -> dict:
+    """单板块的领涨-跟随结构。
+
+    口径（写死在代码里，避免"领涨"变成"涨幅最大"的同义词）：
+      lead      优先取「封板最早」的涨停票；无涨停取「首次异动最早」；
+                都没有分钟数据时退回「涨幅第一」，并标 basis=pct_only。
+      follow    与 lead 首次异动相差 ≥FOLLOW_GAP_MIN 分钟的候选（涨幅 ≥3%
+                或涨停）——「谁跟随」在时间上有先后，不是涨幅排队。
+      same_time 与 lead 相差 <10 分钟的，算「同波启动」，不算跟随。
+    """
+    members = [z for z in rows if z["board"] == board_name]
+    if not members:
+        return {"name": board_name, "n": 0, "lead": None, "followers": [],
+                "same_wave": [], "laggards": [], "note": "板块无成员"}
+    members.sort(key=lambda z: -z["pct"])
+    board_meta = next((b for b in _BOARD_CACHE.get("data", [])
+                       if b["name"] == board_name), None)
+
+    cands = [z for z in members
+             if z["pct"] >= CAND_PCT or z["limit_up"]][:max(top * 2, 10)]
+
+    def _first_move(z):
+        p = profiles.get(z["code"]) or {}
+        return _hm(p.get("first_move")) if p.get("first_move") else None
+
+    def _seal(z):
+        p = profiles.get(z["code"]) or {}
+        return _hm(p.get("seal_time")) if p.get("seal_time") else None
+
+    with_min = [z for z in cands if _first_move(z)]
+    lead = None
+    basis = None
+    if with_min:
+        sealed = [z for z in with_min if _seal(z)]
+        if sealed:
+            lead = min(sealed, key=_seal)
+            basis = "seal_time"
+        else:
+            lead = min(with_min, key=_first_move)
+            basis = "first_move"
+    elif cands:
+        lead = cands[0]
+        basis = "pct_only"
+
+    out = {"name": board_name, "n": len(members),
+           "med": board_meta["med"] if board_meta else None,
+           "rank": board_meta["rank"] if board_meta else None,
+           "up": sum(1 for z in members if z["pct"] > 0),
+           "limit_up": sum(1 for z in members if z["limit_up"]),
+           "lead": None, "basis": basis,
+           "followers": [], "same_wave": [], "unpriced": [], "laggards": [],
+           # 领涨 ≠ 涨幅第一：lead 的口径是「时间最早」，涨幅第一单独给。
+           # 11-06 种植业就是典型——秋乐种业涨 11.54% 最高，但万向德农
+           # 09:42 先封板，两者都在 09:31 同波启动。
+           "top_gain": _brief(members[:1])[0] if members else None}
+    if not lead:
+        out["laggards"] = _brief(members[-3:])
+        return out
+
+    lf = _first_move(lead)
+    out["lead"] = dict(_brief([lead])[0], first_move=lf, seal_time=_seal(lead))
+    for z in cands:
+        if z["code"] == lead["code"]:
+            continue
+        f = _first_move(z)
+        gap = _min_gap(lf, f) if (lf and f) else None
+        item = dict(_brief([z])[0], first_move=f, seal_time=_seal(z), gap_min=gap)
+        if gap is None:
+            # 无分钟数据 → 无法判先后。绝不塞进 followers 冒充「跟随」，
+            # 单列 unpriced 并注明只知涨幅、不知时序。
+            item["basis"] = "pct_only"
+            out["unpriced"].append(item)
+        elif gap >= FOLLOW_GAP_MIN:
+            out["followers"].append(item)
+        else:
+            out["same_wave"].append(item)
+    out["followers"].sort(key=lambda x: -(x["pct"] or 0))
+    out["laggards"] = _brief([z for z in members if z["pct"] < 0][-3:])
+    return out
+
+
+def _brief(zs):
+    return [{
+        "code": z["code"], "name": z["name"], "pct": z["pct"],
+        "pct_rank": z["pct_rank"], "board_n": z["board_n"],
+        "close": z["close"], "limit_up": z["limit_up"],
+        "touch_only": z["touch_only"],
+        "amount": z["amount"],
+    } for z in zs]
+
+
+# ── 建图 ────────────────────────────────────────────────────
+def build(day_raw=None, board=None, code=None, top: int = 8,
+          with_minute: bool = True) -> dict:
+    """一次成图：板块 → 个股 → 消息，五类边。
+
+    board  指定焦点板块（缺省=当日中位涨幅第一的板块）
+    code   指定个股（给出时焦点板块跟着它走，并在 timeline 里定位该股）
+    """
+    day = resolve_day(day_raw)
+    B = load_board(day)
+    rows, boards = B["rows"], B["boards"]
+    by_c6 = {}
+    for z in rows:
+        by_c6.setdefault(z["c6"], z)
+
+    ev = load_events(day)
+
+    # 焦点板块：显式指定 > 指定个股所属 > 当日最强（涨停最多，其次中位涨幅）
+    if board:
+        names = [b["name"] for b in boards]
+        if board not in names:
+            raise ValueError("未知板块 %s（当日 %d 个板块）" % (board, len(names)))
+        focus_name = board
+    elif code:
+        z = by_c6.get(str(code)[:6])
+        if not z:
+            raise ValueError("当日无 %s 行情" % code)
+        focus_name = z["board"]
+    else:
+        ranked = [b for b in boards if b.get("ranked")]
+        best = max(ranked, key=lambda b: (b["limit_up"], b["med"] or -99))
+        focus_name = best["name"]
+
+    # ── 需要分钟线的票：焦点板块候选 + 全市场涨停 + 有盘中事件的票 ──
+    focus_members = [z for z in rows if z["board"] == focus_name]
+    focus_members.sort(key=lambda z: -z["pct"])
+    want = []
+    want += [z["code"] for z in focus_members[:top + 4]]
+    want += [z["code"] for z in rows if z["limit_up"]][:top * 4]
+    intraday_codes = [c for c, lst in ev.items()
+                      if any(e["ts_kind"] == "intraday" for e in lst)]
+    want += [by_c6[c]["code"] for c in intraday_codes if c in by_c6][:20]
+    seen, codes = set(), []
+    for c in want:
+        if c not in seen:
+            seen.add(c)
+            codes.append(c)
+    codes = codes[:MAX_MINUTE_CODES]
+
+    profiles = {}
+    if with_minute:
+        for c in codes:
+            z = B["by_code"].get(c) or {}
+            profiles[c] = minute_profile(c, day, z.get("limit_price"))
+
+    # ── 焦点板块结构 ──
+    _BOARD_CACHE["data"] = boards
+    focus = rank_board(focus_name, rows, ev, profiles, top)
+
+    # 事件挂到板块：把成员票的事件并起来，按事件簇（source+title）去重
+    focus_events = _board_events(focus_members, ev)
+
+    # ── 时间轴：消息与价格合并（焦点板块，只取 intraday 消息） ──
+    timeline = _timeline(focus_members, ev, profiles, limit=14)
+
+    # ── 边 ──
+    edges = _edges(focus, focus_members, focus_events, ev, profiles)
+    cross = cross_board_edges(rows, ev)
+    edges += cross
+
+    # 跨板块汇总：哪几条消息的影响半径最大（板块数最多的前 5）
+    by_ev = {}
+    for e in cross:
+        by_ev.setdefault(e["event_id"], []).append(e)
+    cross_summary = []
+    for eid, lst in sorted(by_ev.items(), key=lambda kv: -len(kv[1]))[:5]:
+        bds = sorted({b for e in lst for b in e["boards"]})
+        cross_summary.append({
+            "event_id": eid, "hm": lst[0]["hm"], "label": lst[0]["label"],
+            "quality": lst[0]["quality"], "boards": bds,
+            "n_boards": len(bds), "n_edges": len(lst),
+        })
+
+    # ── 各板块概览（前 top 强 + 后 3 弱） ──
+    ranked = [b for b in boards if b.get("ranked")]
+    overview = ranked[:top] + ranked[-3:]
+
+    return {
+        "ok": True,
+        "day": day,
+        "day_cn": _day_cn(day),
+        "universe": B["universe"],
+        "minute_coverage": dict(
+            minute_coverage(day, rows),
+            read_asked=len(codes),
+            read_ok=sum(1 for p in profiles.values() if p.get("ok"))),
+        "minute_read": {"asked": len(codes), "ok": sum(
+            1 for p in profiles.values() if p.get("ok"))},
+        "boards": overview,
+        "focus": dict(focus, events=focus_events, timeline=timeline),
+        "network": {
+            "nodes": _nodes(focus, focus_members, focus_events, profiles),
+            "edges": edges,
+            "cross_summary": cross_summary,
+            "edge_types": _edge_counts(edges),
+        },
+        "basis_note": (
+            "领涨=最早封板（无涨停则最早异动）；跟随=首次异动晚 ≥%d 分钟；"
+            "消息只认 ts_kind=intraday（09:15–15:05）才与分钟线对齐，"
+            "公告批量入库的 00:00 不参与 Δmin。" % FOLLOW_GAP_MIN),
+    }
+
+
+def _board_events(members, ev):
+    """板块内事件簇：同 source+标题前缀视为一条，保留最早时刻与传播角色。"""
+    groups = {}
+    for z in members:
+        for e in ev.get(z["c6"], []):
+            key = (e["source"], (e["title"] or "")[:18])
+            g = groups.get(key)
+            if not g or e["ts"] < g["ts"]:
+                groups[key] = e
+    lst = sorted(groups.values(), key=lambda e: e["ts"])
+    return {
+        "raw": sum(len(ev.get(z["c6"], [])) for z in members),
+        "clusters": len(lst),
+        "intraday": sum(1 for e in lst if e["ts_kind"] == "intraday"),
+        "batch": sum(1 for e in lst if e["ts_kind"] == "batch"),
+        "items": [{"ts": e["ts"], "hm": e["hm"], "source": e["source"],
+                   "title": e["title"], "bias": e["bias"],
+                   "origin_kind": e["origin_kind"], "ts_kind": e["ts_kind"]}
+                  for e in lst[:12]],
+    }
+
+
+def _timeline(members, ev, profiles, limit=14):
+    """消息-价格合并时间轴：一行一条，标明是消息还是价格动作。"""
+    items = []
+    for z in members:
+        p = profiles.get(z["code"]) or {}
+        if p.get("first_move"):
+            items.append({
+                "t": _hm(p["first_move"]), "kind": "price",
+                "code": z["code"], "name": z["name"],
+                "text": "首次异动 %+.2f%%（相对开盘）" % (p.get("first_move_pct") or 0),
+                "pct": z["pct"],
+            })
+        if p.get("seal_time"):
+            items.append({
+                "t": _hm(p["seal_time"]), "kind": "seal",
+                "code": z["code"], "name": z["name"],
+                "text": "封板", "pct": z["pct"],
+            })
+        for e in ev.get(z["c6"], []):
+            if e["ts_kind"] != "intraday":
+                continue
+            items.append({
+                "t": e["hm"], "kind": "news", "code": z["code"],
+                "name": z["name"], "source": e["source"],
+                "text": e["title"], "bias": e["bias"],
+                "origin_kind": e["origin_kind"],
+                "lag_min": (first_move_after(p, e["hm"]) or {}).get("lag_min"),
+            })
+    items.sort(key=lambda x: x["t"])
+    return items[:limit]
+
+
+def _edges(focus, members, focus_events, ev, profiles):
+    """五类边。权重统一用「分钟差」与「涨幅差」，便于前端按权重画粗细。"""
+    edges = []
+    lead = focus.get("lead")
+    if lead:
+        for f in focus["followers"]:
+            edges.append({
+                "type": "lead", "from": lead["code"], "to": f["code"],
+                "gap_min": f.get("gap_min"),
+                "pct_gap": round((lead["pct"] or 0) - (f["pct"] or 0), 2),
+                "label": ("领涨→跟随 %s" % ("%dmin" % f["gap_min"]
+                                           if f.get("gap_min") else "涨幅序")),
+            })
+        for s in focus["same_wave"]:
+            edges.append({
+                "type": "lead", "from": lead["code"], "to": s["code"],
+                "gap_min": s.get("gap_min"), "same_wave": True,
+                "pct_gap": round((lead["pct"] or 0) - (s["pct"] or 0), 2),
+                "label": "同波启动 %dmin" % (s.get("gap_min") or 0),
+            })
+
+    # 传播链：首发 → 转发
+    for z in members:
+        for e in ev.get(z["c6"], []):
+            if e["origin_kind"] in ("repost", "retell") and e["repost_of"]:
+                edges.append({
+                    "type": "spread", "from": e["repost_of"], "to": e["id"],
+                    "lag_min": e.get("lag_min"),
+                    "label": "转发 Δ%s" % (("%dmin" % e["lag_min"])
+                                          if e.get("lag_min") is not None else "?"),
+                })
+
+    # 消息 ↔ 价格：正 Δmin = 消息驱动；负 Δmin = 价格先行、消息追认
+    hit_n = echo_n = 0
+    for z in members:
+        p = profiles.get(z["code"]) or {}
+        if not p.get("ok") or not p.get("first_move"):
+            continue
+        for e in ev.get(z["c6"], []):
+            if e["ts_kind"] != "intraday":
+                continue
+            r = first_move_after(p, e["hm"])
+            if not r or r.get("lag_min") is None:
+                continue
+            lag = r["lag_min"]
+            if lag >= 0 and hit_n < 12:
+                hit_n += 1
+                edges.append({
+                    "type": "hit", "from": e["id"], "to": z["code"],
+                    "lag_min": lag, "hm": e["hm"],
+                    "label": "%s 消息 → %s 动（Δ%+dmin）"
+                             % (e["hm"], r["move_at"], lag),
+                })
+            elif lag < 0 and echo_n < 12:
+                echo_n += 1
+                edges.append({
+                    "type": "echo", "from": z["code"], "to": e["id"],
+                    "lag_min": lag, "hm": e["hm"],
+                    "label": "%s 价格先动 → %s 消息追认（领先 %dmin）"
+                             % (r["move_at"], e["hm"], -lag),
+                })
+
+    # 隐形关系：同板块同日大涨、无盘中消息、且与领涨没有既定边的票
+    linked = {lead["code"]} if lead else set()
+    linked |= {f["code"] for f in focus["followers"]}
+    linked |= {s["code"] for s in focus["same_wave"]}
+    silent_pool = [z for z in members if z["pct"] >= CAND_PCT
+                   and z["code"] not in linked
+                   and not any(e["ts_kind"] == "intraday"
+                               for e in ev.get(z["c6"], []))]
+    for i, a in enumerate(silent_pool[:6]):
+        for b in silent_pool[i + 1:6]:
+            pa, pb = profiles.get(a["code"]) or {}, profiles.get(b["code"]) or {}
+            gap = None
+            if pa.get("first_move") and pb.get("first_move"):
+                gap = abs(_min_gap(_hm(pa["first_move"]),
+                                   _hm(pb["first_move"])))
+            edges.append({
+                "type": "silent", "from": a["code"], "to": b["code"],
+                "gap_min": gap,
+                "label": "无盘中消息但同涨" + ("（相隔%dmin）" % gap
+                                              if gap is not None else ""),
+            })
+    return edges
+
+
+def _nodes(focus, members, focus_events, profiles):
+    nodes = [{"id": "board:" + focus["name"], "type": "board",
+              "label": focus["name"], "n": focus["n"],
+              "med": focus["med"], "rank": focus["rank"]}]
+    for z in members:
+        p = profiles.get(z["code"]) or {}
+        nodes.append({
+            "id": z["code"], "type": "stock", "label": z["name"],
+            "pct": z["pct"], "pct_rank": z["pct_rank"],
+            "limit_up": z["limit_up"], "touch_only": z["touch_only"],
+            "first_move": _hm(p.get("first_move")) if p.get("first_move") else None,
+            "seal_time": _hm(p.get("seal_time")) if p.get("seal_time") else None,
+            "has_minute": bool(p.get("ok")),
+        })
+    for e in focus_events["items"][:8]:
+        nodes.append({"id": e["ts"] + "|" + e["source"], "type": "news",
+                      "label": e["title"][:18], "hm": e["hm"],
+                      "source": e["source"], "origin_kind": e["origin_kind"],
+                      "ts_kind": e["ts_kind"]})
+    return nodes
+
+
+def cross_board_edges(rows, ev, max_edges=24):
+    """跨板块传导：同一条消息同时命中 ≥2 个板块的票。
+
+    同板块多票被一条消息带动 = 板块效应（不稀奇）；**跨板块**才是老田
+    要的「隐形关系」——例如一条「种业大会」的稿子同时挂上种植业与农业
+    综合两只票，图上就出现一条跨板块的边，肉眼能看出「这条消息的影响
+    半径到底多大」。
+    """
+    by_c6 = {}
+    for z in rows:
+        by_c6.setdefault(z["c6"], z)
+    ev2codes, ev2obj = {}, {}
+    for c6, lst in ev.items():
+        for e in lst:
+            ev2codes.setdefault(e["id"], set()).add(c6)
+            ev2obj[e["id"]] = e
+
+    out = []
+    for eid, codes in ev2codes.items():
+        groups = {}
+        for c6 in codes:
+            z = by_c6.get(c6)
+            if z:
+                groups.setdefault(z["board"], []).append(z)
+        if len(groups) < 2:
+            continue
+        reps = sorted((max(v, key=lambda z: z["pct"]) for v in groups.values()),
+                      key=lambda z: -z["pct"])
+        e = ev2obj[eid]
+        for i in range(len(reps)):
+            for j in range(i + 1, len(reps)):
+                a, b = reps[i], reps[j]
+                out.append({
+                    "type": "cross", "from": a["code"], "to": b["code"],
+                    "event_id": eid, "hm": e["hm"], "ts_kind": e["ts_kind"],
+                    "boards": [a["board"], b["board"]],
+                    "quality": _event_quality(e["title"]),
+                    "label": "%s %s｜%s↔%s" % (
+                        e["hm"], e["title"][:14], a["board"], b["board"]),
+                })
+    _q = {"news": 0, "concept": 1, "recap": 2}
+    out.sort(key=lambda x: (_q.get(x["quality"], 3),
+                            -abs(next((z["pct"] for z in rows
+                                       if z["code"] == x["from"]), 0))))
+    return out[:max_edges]
+
+
+def _event_quality(title):
+    """消息质量分档（决定跨板块边的可信度，前端可按此过滤）。
+
+    news     实体事件（公告/订单/中标/投产…）——传导最硬
+    concept  概念联动（「XX概念活跃/拉升」）——是板块轮动叙事，不是事件
+    recap    行情播报（「指数跌幅达…」「异动拉升」「直线涨停」）——只是
+             描述已经发生的事，不能当驱动因素
+    """
+    t = title or ""
+    if re.search(r"(指数|跌幅达|涨幅达|异动拉升|直线涨停|盘中|收盘|早盘|午盘|临近午盘)", t):
+        return "recap"
+    if re.search(r"(概念|板块|题材)", t):
+        return "concept"
+    return "news"
+
+
+def _edge_counts(edges):
+    c = {}
+    for e in edges:
+        c[e["type"]] = c.get(e["type"], 0) + 1
+    return c
