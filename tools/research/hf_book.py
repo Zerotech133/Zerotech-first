@@ -117,6 +117,15 @@ P = {
     "slip_bp": 0.0,         # 单边固定滑点（bp）。买入 +，卖出 −
     "impact_k": 0.0,        # 冲击系数 k。0=关；经验值 0.5~1.0
     "adv_n": 20,            # ADV 回看天数
+    # ---- 2026-11-08 第十五轮：择势层（方法论里唯一完全没接的一层）----
+    # 缠论方法论自始就把「势」单列：chanlun_regime 的 GREEN/AMBER/RED、
+    # 产线势档（中证全指 20 日动量 ±2%）、three_layer_v3 的强/中/弱，三处同源。
+    # 候风盘从没接过这一层——于是 84% 满仓撞进跌 22% 的指数，必然亏；
+    # 问题不在选股规则，在这层根本没接。默认 off：不接时逐位等于基线。
+    "regime_gate": "off",    # off / weak_off（弱市不做）/ strong_only（只做强势）
+    "regime_th": 0.02,       # 分档阈值（±2%，与产线势档一致）
+    "regime_n": 20,          # 动量回看天数
+    "hold_by_regime": None,  # 如 {"strong": 8, "mid": 5, "weak": 5}，覆盖全局 hold
 }
 BUY_TYPES = ("1买", "2买", "3买")
 SELL_TYPES = ("1卖", "2卖", "3卖")
@@ -192,6 +201,35 @@ def load_index_close():
             if c and c > 0:
                 clos[_d(dt)] = c
     return dict(sorted(clos.items()))
+
+
+def build_regime(axis, n=None, th=None):
+    """中证全指 20 日动量 → 强 / 中 / 弱三档（与产线势档同源）。
+
+    为什么先用动量、不用 chanlun_regime 的中枢三档：
+    结构档要逐日重算中枢序列，871 天全市场重算代价太高；而产线
+    `trade_book.py` / `shadow_book.py` 用的就是 20 日动量 ±2%，
+    `three_layer_v3.py` 的强/中/弱也是这个口径。三处同源，先对齐它，
+    以后换结构档只改这一个函数，调用方不动。
+
+    预热期（不足 n 个交易日）判为 mid：不制造额外信息，也不假装有势。
+    """
+    n = P["regime_n"] if n is None else n
+    th = P["regime_th"] if th is None else th
+    idx = load_index_close()          # {YYYYMMDD: close}
+    ds = [d for d in axis if _d(d) in idx]
+    out = {}
+    for i, d in enumerate(ds):
+        if i < n:
+            out[d] = "mid"
+            continue
+        c0, c1 = idx[_d(ds[i - n])], idx[_d(d)]
+        if c0 > 0 and c1 > 0:
+            m = c1 / c0 - 1.0
+            out[d] = "strong" if m > th else ("weak" if m < -th else "mid")
+        else:
+            out[d] = "mid"
+    return out
 
 
 class Bars:
@@ -492,6 +530,7 @@ def simulate(axis, plans, bars, entry_at_close=False, collect_skip=False):
     "收盘才知道信号、又按收盘价买入"，制造前视，自检必须能把它抓出来。
     """
     hold = P["hold"]
+    REG = P.get("_regime") or {}
     lot = P["lot"]
     mx = P["max_w"]
     cap0 = P["capital"]
@@ -592,7 +631,7 @@ def simulate(axis, plans, bars, entry_at_close=False, collect_skip=False):
                     locked.append({"amt": proceeds, "rel": i + P["exit_lock_days"]})
                 p["exit_date"] = b.dates[xi]
                 p["exit_px"] = px
-                p["exit_reason"] = "hold5"
+                p["exit_reason"] = "hold%d" % p.get("hold_n", hold)
                 p["ret"] = px / p["entry_px"] - 1 - (P["buy_cost"] + P["sell_cost"])
                 p["hold_days"] = xi - p["entry_i"]
                 trades.append(p)
@@ -621,6 +660,26 @@ def simulate(axis, plans, bars, entry_at_close=False, collect_skip=False):
             # 总持仓上限：候风 60 日 avg 41.5 只、util 40%。不加这条，缠论池的信号密度
             # （日均 20+ 新信号）会把 util 顶到 90%，仓位密度就与候风不可比了。
             room = max(0, P["max_pos"] - len(live))
+            # 择势层：只回答「今天允不允许开仓」，不预测方向、不挑票。
+            # 语义来自方法论——买点只负责入池，出不出手由势决定。
+            if P["regime_gate"] != "off" and cands:
+                g = REG.get(d, "mid")
+                blocked = ((P["regime_gate"] == "weak_off" and g == "weak") or
+                           (P["regime_gate"] == "strong_only" and g != "strong"))
+                if blocked:
+                    if collect_skip:
+                        bt = defaultdict(int)
+                        for sx in cands:
+                            bt[sx["type"]] += 1
+                        skip_days.append({
+                            "d": d, "n_cand": len(cands), "n_take": 0,
+                            "n_block": len(cands), "room": room,
+                            "n_live": len(live), "by_type": dict(bt),
+                            "why": "regime", "regime": g,
+                        })
+                    P["_n_regime_block"] = (P.get("_n_regime_block", 0)
+                                            + len(cands))
+                    cands = []
             n_blocked = max(0, len(cands) - room)
             if n_blocked:
                 skipped_room += n_blocked
@@ -648,6 +707,11 @@ def simulate(axis, plans, bars, entry_at_close=False, collect_skip=False):
                     })
                 cands = []
             picks = []
+            # 持有期可以随势档变（three_layer_v3：强市 h=8 最优、弱市 h=5 少亏）。
+            # 这是「势 × 期限」交互，不是「越长越好」——两者结论相反，必须分开测。
+            hold_n = hold
+            if P["hold_by_regime"]:
+                hold_n = P["hold_by_regime"].get(REG.get(d, "mid"), hold)
             for s in cands:
                 b = bars.get(s["code"])
                 if b is None:
@@ -670,14 +734,14 @@ def simulate(axis, plans, bars, entry_at_close=False, collect_skip=False):
                 a0 = b.atr[ei]
                 if not a0 or a0 <= 0:
                     continue
-                picks.append((s, b, ei, o, a0 / o))
+                picks.append((s, b, ei, o, a0 / o, hold_n))
             if picks:
                 if P["sizing"] == "risk":
                     # 风险预算：单笔亏到止损位时最多亏 净值×risk_pct。
                     # 止损距离取 max(2ATR/px, risk_floor)——结构位的语义更准，
                     # 但这里要保持"事先可算"，所以用 ATR 的 2 倍作距离代理。
                     iw = []
-                    for _, _, _, _, v in picks:
+                    for _, _, _, _, v, _h in picks:
                         dist = max(2.0 * v, P["risk_floor"])
                         iw.append(min(P["max_w"], P["risk_pct"] / dist))
                     # 现金不够时等比压缩（否则最后几只会吃掉全部现金）
@@ -686,12 +750,12 @@ def simulate(axis, plans, bars, entry_at_close=False, collect_skip=False):
                     iw = [w * scale for w in iw]
                     amts = [eq0 * w for w in iw]
                 else:
-                    iw = [1.0 / max(v, 1e-4) for _, _, _, _, v in picks]
+                    iw = [1.0 / max(v, 1e-4) for _, _, _, _, v, _h in picks]
                     sw = sum(iw)
                     alloc = min(budget, avail)
                     amts = [alloc * (w / sw) for w in iw]
                 n_skip_lot = 0
-                for (s, b, ei, o, volr), amt in zip(picks, amts):
+                for (s, b, ei, o, volr, h_i), amt in zip(picks, amts):
                     amt0 = amt
                     amt = min(amt, mx * eq0, avail)
                     if amt < amt0 * 0.5:
@@ -738,8 +802,9 @@ def simulate(axis, plans, bars, entry_at_close=False, collect_skip=False):
                         "qty": q, "amt": cost,
                         "slip_bp": round((slip + imp) * 1e4, 2),
                         "q_est": round(q_est, 1), "adv": round(b.adv[ei], 0),
-                        "exit_i": ei + hold,
-                        "exit_d": b.dates[ei + hold] if ei + hold < len(b.dates) else None, "peak": o, "max_fav": 0.0, "max_adv": 0.0,
+                        "hold_n": h_i,
+                        "exit_i": ei + h_i,
+                        "exit_d": b.dates[ei + h_i] if ei + h_i < len(b.dates) else None, "peak": o, "max_fav": 0.0, "max_adv": 0.0,
                         "path": [], "alerts": 0,
                     })
 
@@ -892,9 +957,12 @@ def build_context(days, sig_path=None):
     plans = {d: v for d, v in plans.items() if v}
     splans = {d: [s for s in v if s["code"] in bars] for d, v in splans.items()}
     splans = {d: v for d, v in splans.items() if v}
+    # 势档按**全 axis** 算，不按 win：窗口前 20 天的动量是窗口首日判势的输入，
+    # 用 win 算会让窗口头 20 天全变 mid（凭空少一段弱市样本）。
     return {"axis": axis, "asof": asof, "win": win, "keep_from": keep_from,
             "plans": plans, "splans": splans, "bars": bars, "names": names,
-            "ind": ind, "miss": miss, "sstat": sstat, "sstat_s": sstat_s}
+            "ind": ind, "miss": miss, "sstat": sstat, "sstat_s": sstat_s,
+            "regime": build_regime(axis)}
 
 
 def filter_plans(plans, only=None):
@@ -912,6 +980,7 @@ def filter_plans(plans, only=None):
 
 def run_once(ctx, only=None, entry_at_close=False, collect_skip=False):
     """跑一个组合，返回 (nav_rows, trades, live, skipped_room, plans, skip_days)。"""
+    P["_regime"] = ctx.get("regime") or {}
     plans = filter_plans(ctx["plans"], only)
     nav_rows, trades, live, skipped_room, skip_days = simulate(
         ctx["axis"], plans, ctx["bars"], entry_at_close=entry_at_close,
@@ -943,6 +1012,11 @@ def main():
                     help="涨停不可买（长历史全市场扫描必须开，否则一字板算成收益）")
     ap.add_argument("--slip", type=float, default=P["slip_bp"],
                     help="单边固定滑点（bp）。买 +，卖 −；20 = 0.20%%")
+    ap.add_argument("--regime-gate", default=P["regime_gate"],
+                    choices=("off", "weak_off", "strong_only"),
+                    help="择势层：off=不接（基线）/ weak_off=弱市不做 / strong_only=只做强势")
+    ap.add_argument("--regime-th", type=float, default=P["regime_th"],
+                    help="势档阈值（中证全指 20 日动量），0.02=±2%%")
     ap.add_argument("--impact", type=float, default=P["impact_k"],
                     help="平方根冲击系数 k：impact = k×(ATR/px)×√(Q/ADV20)。0=关")
     a = ap.parse_args()
@@ -953,6 +1027,8 @@ def main():
     P["exit_mode"] = a.exit_mode
     P["gross_cap"] = a.gross
     P["limit_gate"] = a.limit_gate
+    P["regime_gate"] = a.regime_gate
+    P["regime_th"] = a.regime_th
     P["slip_bp"] = a.slip
     P["impact_k"] = a.impact
     P.pop("_n_limit_block", None)

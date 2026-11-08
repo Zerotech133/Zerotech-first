@@ -206,6 +206,12 @@
 
     /* 成本验证：6 列（口径 / 净值 / 超额 / 每单位α / t / 成本） */
     .p5-row { grid-template-columns: minmax(0,1.75fr) 68px 72px 76px 50px 56px; }
+    /* 方法论复盘：资产盘点表 5 列；势×期限矩阵宽一点（每格要放 超额+t） */
+    .p6-row { grid-template-columns: minmax(0,1.5fr) repeat(4, 74px); }
+    .p6m-row { grid-template-columns: 96px repeat(3, minmax(0,1fr)); }
+    .p6m-row--head { color: var(--ui-muted); }
+    .p6m-row .num { font-variant-numeric: tabular-nums; }
+    .p6m-allpos { color: var(--up, #d0453c); font-weight: 600; }
 
     /* 三方向验证：敞口档 / 窗口 / 停3买 三张表，列数比 p3 多一列 */
     .p4-row { grid-template-columns: minmax(0,1.6fr) 70px 74px 64px 56px 76px 52px; }
@@ -224,9 +230,15 @@
       .p4-row > span:nth-child(n+4) { display: none; }
       .p5-row { grid-template-columns: minmax(0,1fr) 62px 68px; }
       .p5-row > span:nth-child(n+4) { display: none; }
+      .p6-row { grid-template-columns: minmax(0,1fr) 62px 68px; }
+      .p6-row > span:nth-child(n+4) { display: none; }
+      /* 390px：三档必须都看得到（这是结论本身），只压字号不折列 */
+      .p6m-row { grid-template-columns: 52px repeat(3, minmax(0,1fr)); }
+      .p6m-row > span { font-size: 11px; }
       /* 390px 实测：.row__nm 是 flex，<small> 的说明文字会被压成逐字竖排，
          整行高度炸开且看不出是哪个变体。窄屏一律改成块级堆叠。 */
-      .p3-row .row__nm, .p4-row .row__nm, .p5-row .row__nm { display: block; }
+      .p3-row .row__nm, .p4-row .row__nm, .p5-row .row__nm,
+      .p6-row .row__nm { display: block; }
       .p3-row .row__nm small, .p4-row .row__nm small,
       .p5-row .row__nm small { display: block; margin-top: 1px; line-height: 1.32; }
       .p5-row .row__nm small.p5-desc { display: none; }
@@ -266,6 +278,7 @@
       <button class="viewtab" role="tab" data-view="p3" aria-selected="false">三件事验证 <small id="nv-p3">—</small></button>
       <button class="viewtab" role="tab" data-view="p4" aria-selected="false">三方向验证 <small id="nv-p4">—</small></button>
       <button class="viewtab" role="tab" data-view="p5" aria-selected="false">成本验证 <small id="nv-p5">—</small></button>
+      <button class="viewtab" role="tab" data-view="p6" aria-selected="false">方法论复盘 <small id="nv-p6">—</small></button>
       <button class="viewtab" role="tab" data-view="about" aria-selected="false">口径</button>
     </nav>
 
@@ -293,6 +306,8 @@
   var P3 = null;     // hf_phase3.json（冷却 / 排序 / 空头腿）
   var P4D = null;    // hf_phase4.json（降敞口 / 换窗口 / 停3买）
   var P5D = null;    // hf_phase5.json（成交成本 / 盈亏平衡 / walk-forward）
+  var P6D = null;    // hf_phase6.json（择势层：势档 / 闸门 / 势×期限）
+  var MX6 = null;    // hf_matrix.json（57 个老脚本的纳入状态盘点）
 
   function $(id) { return document.getElementById(id); }
   function esc(s) {
@@ -1584,6 +1599,166 @@
   }
 
   // ---------------------------------------------------------------- 成本验证
+  // ---------------------------------------------------------------- 方法论复盘
+  function p6MatrixPanel() {
+    if (!MX6 || !MX6.totals) return '';
+    var t = MX6.totals || {}, cr = MX6.code_reuse || {};
+    var lay = MX6.layers || {};
+    var h = '<section class="ui-panel"><h2>① 资产盘点：57 个老脚本，代码级复用只有 4 个</h2>' +
+      '<div class="note"><p>方法论本体有七层。新平台把<b>结构层</b>和<b>买卖点层</b>接得很干净，' +
+      '但另外五层只接了一部分。<b>复用率是扫 import 自动算的</b>，不是人工统计——' +
+      '新版引擎里真实 import 的老模块只有 <span class="mono">' +
+      Object.keys(cr.modules || {}).join(' / ') + '</span>。</p></div>' +
+      '<div class="ab-kpis">' +
+      '<div class="ab-kpi"><span>老脚本</span><b>' + (MX6.n_scripts || 0) +
+      '</b><small>' + (MX6.n_lines || 0).toLocaleString() + ' 行</small></div>' +
+      '<div class="ab-kpi"><span>代码级复用</span><b>' + (cr.n_reused || 0) + ' / ' +
+      (cr.n_total || 0) + '</b><small>' + n((cr.ratio || 0) * 100, 1) + '%</small></div>' +
+      '<div class="ab-kpi"><span>缺失（方法论有）</span><b class="dn">' + (t.missing || 0) +
+      '</b><small>中枢演化 / 多级别 / 复合 / 卖出状态机</small></div>' +
+      '<div class="ab-kpi"><span>不在本体</span><b>' + (t.na || 0) +
+      '</b><small>研究 11 / 其他市场 4 / 治理 2</small></div></div>' +
+      '<div class="rows mt12"><div class="row p6-row row--head"><span>方法论层</span>' +
+      '<span class="num">项数</span><span class="num">纳入</span>' +
+      '<span class="num">降级</span><span class="num">缺失</span></div>';
+    var ORDER = ['L1结构', 'L2买卖点', 'L3影子', 'L4富化', 'L5多级别',
+                 'L6复合', 'L7三层', '交易规则', '验证样本', '研究', '其他市场', '展示层'];
+    for (var i = 0; i < ORDER.length; i++) {
+      var k = ORDER[i], v = lay[k];
+      if (!v) continue;
+      var st = v.states || {};
+      h += '<div class="row p6-row"><span class="row__nm"><b>' + esc(k) +
+        '</b> <small class="muted">' + (v.n || 0) + ' 项</small></span>' +
+        '<span class="num">' + (v.n || 0) + '</span>' +
+        '<span class="num">' + (st.adopted || 0) + '</span>' +
+        '<span class="num">' + (st.degraded || 0) + '</span>' +
+        '<span class="num">' + (st.missing || 0) + '</span></div>';
+    }
+    h += '</div><div class="p3-verdict"><b>结论不是「全都要搬」。</b>' +
+      '30% 是一次性研究（<span class="mono">chanlun_struct_ml</span> 自己的注释就写着' +
+      '「训练 IC 0.24 → 测试 IC 0.00」），搬进来只增加维护面。' +
+      '该补的是方法论本体里那 9 项，其中 <b>reg 大势标签</b>最便宜——' +
+      '字段就在 <span class="mono">chanlun_flow.regime_at</span> 里，一行调用就能补。</div></section>';
+    return h;
+  }
+
+  function p6RegimePanel() {
+    var A = (P6D || {}).a || {};
+    var rows = A.rows || [];
+    if (!rows.length) return '';
+    var bt = A.by_type || {};
+    var h = '<section class="ui-panel"><h2>② 势档分层：全集随势单调，但拆开后 1买 反过来</h2>' +
+      '<div class="note"><p>势档口径与产线同源：中证全指 <span class="mono">000985.CSI</span> ' +
+      '20 日动量，±2% 分强/中/弱。748 个交易日、5,777 笔已平仓，' +
+      '<b>不加任何闸门</b>，只按建仓日的势档分组。</p></div>' +
+      '<div class="rows"><div class="row p6-row row--head"><span>势档 / 天数占比</span>' +
+      '<span class="num">笔数</span><span class="num">笔均超额</span>' +
+      '<span class="num">t</span><span class="num">胜率</span></div>';
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i], ex = (r.excess || 0) * 100;
+      h += '<div class="row p6-row"><span class="row__nm"><b>' + esc(r.cn) + '市</b>' +
+        ' <small class="muted">' + n((r.days_pct || 0) * 100, 0) + '% 的交易日</small></span>' +
+        '<span class="num">' + (r.n || 0) + '</span>' +
+        '<span class="num ' + (ex >= 0 ? 'up' : 'dn') + '">' + n(ex) + '%</span>' +
+        '<span class="num">' + n(r.t) + '</span>' +
+        '<span class="num">' + n((r.pos || 0) * 100, 1) + '%</span></div>';
+    }
+    h += '</div>';
+    var types = ['1买', '2买', '3买'];
+    h += '<div class="rows mt12"><div class="row p6m-row p6m-row--head row--head">' +
+      '<span>分类型</span><span class="num">强</span><span class="num">中</span>' +
+      '<span class="num">弱</span></div>';
+    for (var j = 0; j < types.length; j++) {
+      var ty = types[j], d = bt[ty] || {};
+      h += '<div class="row p6m-row"><span class="row__nm"><b>' + esc(ty) + '</b></span>';
+      var ks = ['强', '中', '弱'];
+      for (var q = 0; q < ks.length; q++) {
+        var c = d[ks[q]] || {}, ce = (c.excess || 0) * 100;
+        h += '<span class="num ' + (ce >= 0 ? 'up' : 'dn') + '">' + n(ce) + '%' +
+          '<br><small class="muted">t' + n(c.t) + '</small></span>';
+      }
+      h += '</div>';
+    }
+    h += '</div><div class="p3-verdict"><b>两个方向相反的结论同时成立：</b>' +
+      '3买 是势的函数——弱市 <b>−0.99%（t=−4.8）</b>、强市 +0.48%（t=2.3），' +
+      '弱市是灾难、强市也不够覆盖成本；而 <b>1买 三档全正，弱市反而最强</b>' +
+      '（+1.31%，t=3.5）——它是下跌段终结信号，弱市才有底可接。' +
+      '所以「弱市不做」这条通用规则对 1买 是错的。</div></section>';
+    return h;
+  }
+
+  function p6GatePanel() {
+    var B = (P6D || {}).b || {};
+    var rows = B.rows || [];
+    if (!rows.length) return '';
+    var GATE = { off: '不接势', weak_off: '弱市不做', strong_only: '只做强势' };
+    var h = '<section class="ui-panel"><h2>③ 闸门 × 选股：净值会骗人，只看每单位敞口</h2>' +
+      '<div class="note"><p>收紧闸门必然降仓位，净值「变好」是数学必然，不是选股能力。' +
+      '唯一判据是 <span class="mono">ret_per_util</span>（每单位敞口收益）。' +
+      '<b>净值列是无成本口径</b>，加冲击后只1买 是 −24.59%（见「成本验证」页）。</p></div>' +
+      '<div class="rows"><div class="row p6-row row--head"><span>闸门 / 选股</span>' +
+      '<span class="num">每单位</span><span class="num">仓位</span>' +
+      '<span class="num">t</span><span class="num">挡笔</span></div>';
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i], pu = r.ret_per_util || 0;
+      var hi = (r.variant === '只1买' && r.gate_key === 'off');
+      h += '<div class="row p6-row"><span class="row__nm"><b>' +
+        esc(GATE[r.gate_key] || r.gate_key) + ' · ' + esc(r.variant) + '</b>' +
+        ' <small class="muted">净值 ' + n((r.total_return || 0) * 100) +
+        '% · β ' + n(r.beta_eff, 2) + '</small></span>' +
+        '<span class="num ' + (hi ? 'p6m-allpos' : '') + '">' + n(pu, 3) + '</span>' +
+        '<span class="num">' + n((r.avg_util || 0) * 100, 1) + '%</span>' +
+        '<span class="num">' + n(r.alpha_t) + '</span>' +
+        '<span class="num">' + (r.regime_block || 0) + '</span></div>';
+    }
+    h += '</div><div class="p3-verdict"><b>择势闸门对 1买 是负贡献。</b>' +
+      '每单位敞口收益：<b>3.05（不接）→ 2.18（只做强势）→ 2.08（弱市不做）</b>，' +
+      '加闸门反而降 32%。它真实的作用是把 β 从 0.774 压到 0.32~0.45——' +
+      '<b>是风险调节，不是 alpha</b>。想降风险就调敞口，别用势档去砍样本。</div></section>';
+    return h;
+  }
+
+  function p6HoldPanel() {
+    var D6 = (P6D || {}).d || {};
+    var rows = D6.rows || [];
+    if (!rows.length) return '';
+    var best = D6.best || {};
+    var h = '<section class="ui-panel"><h2>④ 只1买 × 势 × 期限：18 个格子全部为正</h2>' +
+      '<div class="note"><p>用「全部信号」定持有期等于给错误组合调参（3买 是毒药），' +
+      '所以这一张只跑 1买。每格是<b>笔均超额（t 值）</b>，与 three_layer_v3 同口径，' +
+      '可直接比。数字为无成本口径。</p></div>' +
+      '<div class="rows"><div class="row p6m-row p6m-row--head row--head">' +
+      '<span>持有期</span><span class="num">强</span><span class="num">中</span>' +
+      '<span class="num">弱</span></div>';
+    var ks = ['强', '中', '弱'];
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i], cells = r.cells || {};
+      h += '<div class="row p6m-row"><span class="row__nm"><b>' + r.hold + ' 日</b>' +
+        ' <small class="muted">净值 ' + n(r.nav, 0) + '%</small></span>';
+      for (var q = 0; q < ks.length; q++) {
+        var c = cells[ks[q]] || {}, ce = (c.excess || 0) * 100;
+        h += '<span class="num ' + (ce >= 0 ? 'up' : 'dn') + '">' + n(ce) + '%' +
+          '<br><small class="muted">t' + n(c.t) + ' n' + (c.n || 0) + '</small></span>';
+      }
+      h += '</div>';
+    }
+    h += '</div><div class="p3-verdict"><b>这一张推翻了「弱市短持」。</b>' +
+      'three_layer_v3 给的是弱市 h=5 −0.90%、h=20 −5.57%，但那是「1买+2买」混合样本；' +
+      '拆开看 <b>1买 在弱市恰好需要长持</b>（+0.46% → +1.85%）。' +
+      '强市最优 h=20（+1.90%，t=3.19），中市 h=5（+1.36%），弱市 h=20（+1.85%）。' +
+      '<b>1买 不需要择时，只需要拿够 20 天。</b></div></section>';
+    return h;
+  }
+
+  function renderP6() {
+    if ((!P6D || !P6D.a) && !MX6) {
+      return '<section class="ui-panel"><h2>方法论复盘</h2><p class="note">数据未生成。' +
+        '跑 <span class="mono">python tools/research/hf_matrix.py</span> 与 ' +
+        '<span class="mono">python tools/research/hf_phase6.py</span> 后刷新。</p></section>';
+    }
+    return p6MatrixPanel() + p6RegimePanel() + p6GatePanel() + p6HoldPanel();
+  }
+
   function renderP5() {
     if (!P5D || !P5D.a) {
       return '<section class="ui-panel"><h2>成本验证</h2><p class="note">数据未生成。' +
@@ -2029,6 +2204,7 @@
     else if (S.view === 'p3') h = renderP3();
     else if (S.view === 'p4') h = renderP4();
     else if (S.view === 'p5') h = renderP5();
+    else if (S.view === 'p6') h = renderP6();
     else h = renderAbout();
     app.innerHTML = h;
     applyDataWidth(app);
@@ -2126,11 +2302,18 @@
       fetch('/hf_variants.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
       fetch('/hf_phase3.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
       fetch('/hf_phase4.json', { cache: 'no-store' }).then(function (r) { return r.json(); })
-      ,fetch('/hf_phase5.json', { cache: 'no-store' }).then(function (r) { return r.json(); })
+      ,fetch('/hf_phase5.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
+      fetch('/hf_phase6.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
+      fetch('/hf_matrix.json', { cache: 'no-store' }).then(function (r) { return r.json(); })
     ]).then(function (res) {
       D = res[0]; B = res[1]; H = res[2]; AB = res[3]; UV = res[4]; P3 = res[5];
       P4D = res[6];
       P5D = res[7];
+      P6D = res[8];
+      MX6 = res[9];
+      if (MX6 && MX6.code_reuse) {
+        $('nv-p6').textContent = MX6.code_reuse.n_reused + '/' + MX6.code_reuse.n_total;
+      }
       $('nv-pool').textContent = (D.n || 0) + ' 只';
       $('nv-book').textContent = ((B.positions || []).length) + ' 笔';
       if (H) $('nv-hf').textContent = (H.positions || []).length + ' 笔';
