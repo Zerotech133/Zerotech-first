@@ -53,6 +53,24 @@ jev-eval/data/
 portal/data/
 portal/static/uploads/
 
+# 结构池看板 /board 数据源（2026-11-08）
+# 由 tools/research/{trade_book,observe_board,hf_variants,hf_ab}.py 等生成，
+# 站点靠 start_portal_nginx.ps1 的 -v 整目录挂载直接生效，不依赖 git。
+# 体量：trade_trades.json 4.5MB + hf_trades.json 480KB（成交明细），
+# 一旦被 git add -A 收进历史就永久无法瘦身 → 显式排除。
+# 例外说明：portal/hf_phase4.json 已于 5091adeb4 入库，暂保留跟踪，
+# 但它是 20KB 无换行单行 JSON，且 tools/research/hf_phase4.py:342 用
+# time.strftime 写 generated_at —— 每次运行必产生 diff（整行全量重写）。
+# 属待处置技术债：建议 git rm --cached 后与上述 8 份同列排除。
+portal/observe_board.json
+portal/trade_book.json
+portal/trade_trades.json
+portal/hf_book.json
+portal/hf_trades.json
+portal/hf_ab.json
+portal/hf_phase3.json
+portal/hf_variants.json
+
 # 第三方二进制
 tools/ffmpeg-9.0.2-essentials_build/
 tools/out/
