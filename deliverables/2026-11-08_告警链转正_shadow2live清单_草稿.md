@@ -1,7 +1,7 @@
 # 告警链转正：shadow→live 收口清单（P0-2）
 
 > 远端已确认 GitHub（2026-11-08 06:3x，origin=Zerotech133/Zerotech-first）——本清单的 S1-S4 不受影响。
-> **CI 裁定修正（2026-11-08 09:2x）**：origin/governance-upgrade 尖端（11-06）已裁定**弃 CI workflow**——PAT 仅 repo scope 推不了 `.github/workflows/*`（GitHub 会对整次 push 报 403），且把 workflow 文件提交进 master 会让**此后所有 push 被整体拒绝**；本地 sync-back 回归门（test_gate.ps1）已够用。故 `quality-gate.yml` 维持本地不跟踪、不入库；本清单头注原「CI workflow 已转正待合入」表述作废。
+> **CI 裁定终态（2026-11-08 11:2x，覆盖前一条修正）**：K-ORG 线今晨（f4718c532, 09:05）已将 `quality-gate.yml` **激活入库**（main/master 双分支触发、夜间定时、Windows runner），11-06「弃 CI」旧裁定随之作废。推入远端需凭据带 workflow scope——fine-grained PAT（Workflows read/write 已配）实测仍被 GitHub 整体拒收（2026-11-08 10:4x，安全边界：workflow 文件可执行任意代码读 secrets），**推送改走 classic token（repo+workflow scope）**，待本人签发后完成 246 笔快进推送；推完前远端 main 停在 11-06 17:15。
 
 ## 0. 现场实况（2026-11-08 06:1x 实测，修正上一轮判断）
 
