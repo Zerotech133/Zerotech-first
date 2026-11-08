@@ -1,7 +1,7 @@
 {
- "generated_at": "2026-11-08T13:28:43",
+ "generated_at": "2026-11-08T14:24:20",
  "source": "C:\\项目\\老田的AI助手\\portal\\portal_api.py",
- "total": 323,
+ "total": 324,
  "signatures": [
   [
    "GET",
@@ -352,6 +352,11 @@
    "GET",
    "exact",
    "/api/jev/evidence/item"
+  ],
+  [
+   "GET",
+   "exact",
+   "/api/jev/graph"
   ],
   [
    "GET",
