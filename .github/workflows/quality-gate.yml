@@ -43,10 +43,6 @@ jobs:
     # 判定与今天完全一致。
     env:
       TEST_GATE_PROFILE: ci
-      # 2026-11-08：日志落点必须与 upload-artifact 的 runner.temp 对齐。
-      # 闸脚本默认写 $env:TEMP（C:\Users\RUNNER~1\...\Temp），而 runner.temp 是
-      # D:\a\_temp —— 不同目录 + if-no-files-found: ignore，artifact 恒为空且不报错。
-      TEST_GATE_LOG_DIR: ${{ runner.temp }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -85,6 +81,13 @@ jobs:
 
       - name: Quality gate（-Suite fast）
         shell: pwsh
+        env:
+          # 2026-11-08：日志落点必须与 upload-artifact 的 runner.temp 对齐（闸脚本默认写
+          # $env:TEMP=C:\Users\RUNNER~1\...\Temp，upload-artifact 用的是 D:\a\_temp，
+          # 不同目录 + if-no-files-found: ignore = artifact 恒空且不报错）。
+          # 注意：runner 上下文**只在 step 级 env 可用**；放到 job 级 env 会让整份 workflow
+          # 校验失败 → 0 job 直接 failure（实测 run #15 就是这样），千万别上移。
+          TEST_GATE_LOG_DIR: ${{ runner.temp }}
         run: |
           # 与 devtask merge 内联闸完全同参：portal+kstock+ide+agent_key+quant_key+tools_key+datawarehouse
           # + budget --strict + nav --check + route inventory --check + artifact guard
