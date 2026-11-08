@@ -62,7 +62,8 @@ def test_fast_suites_and_b1_b2_not_regressed():
     assert m, "test_gate.ps1 缺 fast 定义"
     assert re.findall(r"'([a-z_]+)'", m.group(1)) == [
         "portal", "kstock", "ide", "agent_key", "quant_key", "tools_key", "datawarehouse"]
-    for name, count in (("agent_key", 52), ("quant_key", 23), ("tools_key", 20)):
+    # 2026-11-08 同步：quant_key 23→27（xq 接缝修复 +4）、tools_key 20→21（worktree mech +1）
+    for name, count in (("agent_key", 52), ("quant_key", 27), ("tools_key", 21)):
         m = re.search(r"'%s'\s*=\s*@\((.*?)\n    \)" % name, GATE, re.S)
         assert m, "缺 %s 清单" % name
         files = re.findall(r"'([^']+\.py)'", m.group(1))

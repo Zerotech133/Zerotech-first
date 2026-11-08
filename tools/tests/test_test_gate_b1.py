@@ -99,6 +99,14 @@ QUANT_KEY = {
     "quant_backtest/tests/test_proxy_dialogue.py",
     "quant_backtest/tests/test_xq_offline_chain_e2e.py",
     "quant_backtest/tests/test_chanlun_learn.py",
+    # ---- xq LLM 替身接缝修复纳管（2026-11-08 K-ORG-20261108-XQSEAM，+4）----
+    # 真因：safe_urlopen 对 loopback 走 _NO_PROXY_OPENER，绕开 urllib.request.urlopen，
+    # 旧 monkeypatch 完全失效，测试真调本机 qwen3.5:9b（38+2+1 项假红 + 1 项读线上 manifest）。
+    # 修完转绿并纳入套件，不是 deselect 也不是加白。
+    "quant_backtest/tests/test_xq_classify_retry_degraded.py",
+    "quant_backtest/tests/test_xq_recontent_exit.py",
+    "quant_backtest/tests/test_xq_retry_cap.py",
+    "quant_backtest/tests/test_verify_daily_report.py",
 }
 TOOLS_KEY = {
     "tools/tests/test_release_legion_ide.py",
@@ -128,6 +136,11 @@ TOOLS_KEY = {
     "tools/tests/test_scan_secrets_fp.py",
     # ---- 看护预算契约（2026-11-07 K-ORG-20261107-WATCHDOG，+1） ----
     "tools/tests/test_keepalive_budget.py",
+    # ---- worktree 判活 + 删不动兜底（2026-11-08 K-ORG-20261108-OVWSPLIT，+1）----
+    # 该文件 2026-10-31 就存在却从未进套件：devtask 的并发闸/回收逻辑此前零自动
+    # 覆盖，两个真坑（空壳登记让 git status 读到主树状态、Windows 删大目录超时
+    # 留下"指针没了树还在"）都是人工现场发现的。纳管后由 21 条合成夹具守住。
+    "tools/tests/test_devtask_worktree_mech.py",
 }
 
 
@@ -147,9 +160,14 @@ def test_b1_b2_lists_frozen():
     assert set(_suite_files("agent_key")) == AGENT_KEY
     assert set(_suite_files("quant_key")) == QUANT_KEY
     assert set(_suite_files("tools_key")) == TOOLS_KEY
-    assert len(AGENT_KEY) == 52 and len(QUANT_KEY) == 23 and len(TOOLS_KEY) == 20
+    # 2026-11-08 同步：quant_key 23 → 27（xq 接缝修复 +4）、tools_key 20 → 21（worktree mech +1）
+    assert len(AGENT_KEY) == 52 and len(QUANT_KEY) == 27 and len(TOOLS_KEY) == 21
     all_files = AGENT_KEY | QUANT_KEY | TOOLS_KEY
-    assert len(all_files) == 95, "B1(57)+B2(31)+黄忠聚合入口(1)+学习治理契约(2)+盘后分析(1)+回环豁免(1)+凭据扫描回归(1)+看护预算契约(1) 应为 95 文件"
+    # 2026-11-08：95 → 100（xq 接缝修复 +4、worktree mech +1）。三个集合互不重叠，
+    # 故总数 = 52 + 27 + 21；若哪天三者出现交集，这条会先拦住。
+    assert len(all_files) == 100, (
+        "B1(57)+B2(31)+黄忠聚合入口(1)+学习治理契约(2)+盘后分析(1)+回环豁免(1)"
+        "+凭据扫描回归(1)+看护预算契约(1)+xq接缝修复(4)+worktree判活(1) 应为 100 文件")
 
 
 def test_b1_b2_files_exist_and_under_expected_dir():
