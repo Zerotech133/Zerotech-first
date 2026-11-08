@@ -33,9 +33,10 @@
     ]
   },
   "agent_platform/tests": {
-    "_why": "release 发布物 C:\\项目\\_vault\\legion_ide\\release\\legion-ide 不在仓库内，manifest 哈希无从比对；CI 只做 bundle bootstrap，不产出正式发布物。",
+    "_why": "release 发布物 C:\\项目\\_vault\\legion_ide\\release\\legion-ide 不在仓库内，manifest 哈希无从比对；CI 只做 bundle bootstrap，不产出正式发布物。② test_check_trigger_chain 的 CLI 用例断言依赖「运行机自身状态」而非仓库内容——CHECKS 里 check_a_tasks / check_c_daemon 写作 lambda root: ... 形式，完全不读 --repo-root 夹具，直接读本机 Windows 计划任务注册面与 watch-daemon 端口；干净 runner 上没有本机那三条外部触发链任务，退出码因此不可判定（run #33 同一代码 734 passed、run #34 变 1 failed / 733 passed；本地脏主树与 git archive 干净检出均 1 passed）。",
     "env_failures": [
-      "agent_platform/tests/test_ide_extension_e2e.py::test_release_artifact_manifest_hashes"
+      "agent_platform/tests/test_ide_extension_e2e.py::test_release_artifact_manifest_hashes",
+      "agent_platform/tests/test_check_trigger_chain.py::TestCli::test_main_report_and_exit_code"
     ]
   },
   "quant_backtest/tests": {
