@@ -251,7 +251,13 @@ def cmd_review(rows_by_file, from_map: str, write: bool) -> int:
     index = {}
     for path, rows in rows_by_file.items():
         for r in rows:
-            index.setdefault(r.get("unit_id"), (path, r))
+            uid = r.get("unit_id")
+            cur = (r.get("status") or "draft")
+            if uid not in index:
+                index[uid] = (path, r)
+            elif cur == "pending_review" and (index[uid][1].get("status") or "draft") != "pending_review":
+                # 孪生同 id（一行终态+一行在队列）：审队列行，否则 verdicts 撞非法迁移
+                index[uid] = (path, r)
     for d in decisions:
         uid = d.get("unit_id")
         action = (d.get("action") or "").strip()
