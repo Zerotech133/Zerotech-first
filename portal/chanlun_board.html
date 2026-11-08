@@ -213,6 +213,17 @@
     .p6m-row .num { font-variant-numeric: tabular-nums; }
     .p6m-allpos { color: var(--up, #d0453c); font-weight: 600; }
 
+    /* 纯正缠论：6 列（口径 / 笔均超额 / 年化超额 / 年化成本 / 年化净 / 持期） */
+    .p7-row { grid-template-columns: minmax(0,1.55fr) 78px 78px 78px 78px 60px; }
+    .p7-big { font-size: 1.35em; color: var(--ui-blue); font-variant-numeric: tabular-nums; }
+    .p7-bars { display: grid; gap: 7px; margin-top: 14px; }
+    .p7-bar { display: flex; align-items: center; gap: 9px; font-size: 12px; }
+    .p7-bar__k { flex: 0 0 44px; color: var(--ui-muted); font-variant-numeric: tabular-nums; }
+    .p7-bar__track { flex: 1; height: 9px; border-radius: 5px; background: var(--ui-paper-2);
+      border: 1px solid var(--ui-line); overflow: hidden; }
+    .p7-bar__track i { display: block; height: 100%; background: var(--ui-blue); border-radius: 4px; }
+    .p7-bar__v { flex: 0 0 56px; text-align: right; font-weight: 600; }
+
     /* 三方向验证：敞口档 / 窗口 / 停3买 三张表，列数比 p3 多一列 */
     .p4-row { grid-template-columns: minmax(0,1.6fr) 70px 74px 64px 56px 76px 52px; }
     .p4-x { display: grid; gap: 6px; margin-top: 10px; font-variant-numeric: tabular-nums; }
@@ -232,6 +243,19 @@
       .p5-row > span:nth-child(n+4) { display: none; }
       .p6-row { grid-template-columns: minmax(0,1fr) 62px 68px; }
       .p6-row > span:nth-child(n+4) { display: none; }
+      /* 纯正缠论：窄屏只留 口径 / 笔均超额 / 年化净（成本与持期可反推） */
+      .p7-row { grid-template-columns: minmax(0,1fr) 66px 70px; }
+      .p7-row:not(.p7-row--bench) > span:nth-child(3),
+      .p7-row:not(.p7-row--bench) > span:nth-child(4),
+      .p7-row:not(.p7-row--bench) > span:nth-child(6) { display: none; }
+      /* 基准面板反过来：窄屏要保住「高估几倍」这一列，它是整个面板的结论 */
+      .p7-row--bench { grid-template-columns: minmax(0,1fr) 62px 58px; }
+      .p7-row--bench > span:nth-child(3),
+      .p7-row--bench > span:nth-child(5),
+      .p7-row--bench > span:nth-child(6) { display: none; }
+      .p7-row--bench > span:nth-child(4) { display: inline; }
+      .p7-row .row__nm { display: block; }
+      .p7-row .row__nm small { display: block; margin-top: 1px; line-height: 1.32; }
       /* 390px：三档必须都看得到（这是结论本身），只压字号不折列 */
       .p6m-row { grid-template-columns: 52px repeat(3, minmax(0,1fr)); }
       .p6m-row > span { font-size: 11px; }
@@ -279,6 +303,7 @@
       <button class="viewtab" role="tab" data-view="p4" aria-selected="false">三方向验证 <small id="nv-p4">—</small></button>
       <button class="viewtab" role="tab" data-view="p5" aria-selected="false">成本验证 <small id="nv-p5">—</small></button>
       <button class="viewtab" role="tab" data-view="p6" aria-selected="false">方法论复盘 <small id="nv-p6">—</small></button>
+      <button class="viewtab" role="tab" data-view="p7" aria-selected="false">纯正缠论 <small id="nv-p7">—</small></button>
       <button class="viewtab" role="tab" data-view="about" aria-selected="false">口径</button>
     </nav>
 
@@ -308,6 +333,10 @@
   var P5D = null;    // hf_phase5.json（成交成本 / 盈亏平衡 / walk-forward）
   var P6D = null;    // hf_phase6.json（择势层：势档 / 闸门 / 势×期限）
   var MX6 = null;    // hf_matrix.json（57 个老脚本的纳入状态盘点）
+  var SD7 = null;    // hf_sell_density.json（1买→首个卖点的交易日间隔分布）
+  var SE7 = null;    // hf_sell_exit.json（持到卖点 vs 固定持期，等权全A+β）
+  var SCSI = null;   // hf_sell_exit_csi.json（同一批笔，市值加权基准对照）
+  var S51 = null;    // hf_sell_exit_s51.json（同一批笔，51bp 全成本）
 
   function $(id) { return document.getElementById(id); }
   function esc(s) {
@@ -1750,6 +1779,177 @@
     return h;
   }
 
+
+  // ---------------------------------------------------------------- 纯正缠论
+  function p7Density() {
+    var SD = SD7 || {}, d = SD.dist_any_sell || {}, d1 = SD.dist_1sell || {};
+    if (!d.n_total) return '';
+    var STEPS = [[5, '≤5 日'], [10, '≤10 日'], [20, '≤20 日'], [30, '≤30 日'], [60, '≤60 日']];
+    var mx = d.within_60 || 1;
+    var h = '<section class="ui-panel"><h2>① 卖点有多远：中位 <span class="p7-big">'
+      + n(d.median, 0) + '</span> 个交易日</h2>'
+      + '<div class="note"><p>1买 确认日 → 同一只票之后第一个卖点确认日，共 '
+      + (d.n_total || 0).toLocaleString() + ' 笔。其中 <b>' + n(d.pct_with, 1)
+      + '%</b> 等到了卖点，<b>' + (d.n_censored || 0).toLocaleString()
+      + '</b> 笔到窗口末都没等到（右删失，单列，不填 0）。</p></div>'
+      + '<div class="ab-kpis">'
+      + '<div class="ab-kpi"><span>中位间隔</span><b>' + n(d.median, 0)
+      + '</b><small>交易日 ≈ 5 个月</small></div>'
+      + '<div class="ab-kpi"><span>p25 / p75 / p90</span><b>' + n(d.p25, 0) + ' / '
+      + n(d.p75, 0) + ' / ' + n(d.p90, 0) + '</b><small>交易日</small></div>'
+      + '<div class="ab-kpi"><span>仅 1卖</span><b>' + n(d1.median, 0)
+      + '</b><small>更晚：' + n(d1.within_20, 1) + '% 在 20 日内</small></div>'
+      + '<div class="ab-kpi"><span>20 日内等到</span><b class="dn">' + n(d.within_20, 1)
+      + '%</b><small>hold20 只走到结构的开头</small></div></div>'
+      + '<div class="p7-bars">';
+    for (var i = 0; i < STEPS.length; i++) {
+      var pv = d['within_' + STEPS[i][0]] || 0;
+      h += '<div class="p7-bar"><span class="p7-bar__k">' + STEPS[i][1] + '</span>'
+        + '<span class="p7-bar__track"><i style="width:' + (pv / mx * 100).toFixed(1)
+        + '%"></i></span><span class="p7-bar__v mono">' + n(pv, 2) + '%</span></div>';
+    }
+    h += '</div><div class="p3-verdict"><b>拿 20 天的尺子量 104 天的事，量出来的是空气。</b>'
+      + '之前「卖点离场 vs hold20 只差 0.1pp」的真实原因：95.4% 的样本在 20 日窗口里'
+      + '根本没等到卖点。不是卖点没用，是尺子和对象差了 5 倍。</div></section>';
+    return h;
+  }
+
+  function p7ExitTable() {
+    var E = (SE7 || {}).table || {};
+    if (!E.hold20) return '';
+    var ROWS = [
+      ['hold5', '固定持 5 日', '换手 48.8 倍/年'],
+      ['hold10', '固定持 10 日', ''],
+      ['hold20', '固定持 20 日', '前十四轮口径'],
+      ['hold30', '固定持 30 日', ''],
+      ['hold60', '固定持 60 日', '年化净最高'],
+      ['hold120', '固定持 120 日', ''],
+      ['hold250', '固定持 250 日', ''],
+      ['sell_any', '持到第一个卖点', '中位 138 日'],
+      ['sell_1s', '持到第一个 1卖', '中位 250 日'],
+      ['sell_any_done', '↳ 只算真等到卖点', '4,950 笔'],
+      ['sell_1s_done', '↳ 只算真等到 1卖', '3,210 笔']
+    ];
+    var best = 0;
+    for (var b = 0; b < ROWS.length; b++) {
+      if (E[ROWS[b][0]] && E[ROWS[b][0]].ann_net > (E[ROWS[best][0]] ? E[ROWS[best][0]].ann_net : -99)) best = b;
+    }
+    var h = '<section class="ui-panel"><h2>② 持到卖点 vs 固定持期：年化之后没有差别</h2>'
+      + '<div class="note"><p>同一批 <b>6,903</b> 笔，统一 250 日观察窗（<span class="mono">'
+      + '零右删失</span>），零滑点，等权全A + 逐笔 β。持期不同，<b>笔均收益不可比</b>——'
+      + '必须看年化（笔均 × 244/持有天数）。</p></div>'
+      + '<div class="rows"><div class="row p7-row row--head"><span>口径</span>'
+      + '<span class="num">笔均超额</span><span class="num">年化超额</span>'
+      + '<span class="num">年化成本</span><span class="num">年化净</span>'
+      + '<span class="num">持期</span></div>';
+    for (var i = 0; i < ROWS.length; i++) {
+      var k = ROWS[i][0], v = E[k];
+      if (!v) continue;
+      var net = v.ann_net || 0;
+      var hot = (i === best || k === 'sell_any');
+      h += '<div class="row p7-row"><span class="row__nm"><b>' + esc(ROWS[i][1]) + '</b>'
+        + (ROWS[i][2] ? ' <small class="muted">' + esc(ROWS[i][2]) + '</small>' : '') + '</span>'
+        + '<span class="num ' + ((v.avg_alpha || 0) >= 0 ? 'up' : 'dn') + '">'
+        + n(v.avg_alpha, 2) + '%</span>'
+        + '<span class="num">' + n(v.ann_alpha, 2) + '%</span>'
+        + '<span class="num muted">' + n(v.ann_cost, 2) + '%</span>'
+        + '<span class="num ' + (net >= 0 ? 'up' : 'dn') + '"' + (hot ? ' style="font-weight:700"' : '')
+        + '>' + n(net, 2) + '%</span>'
+        + '<span class="num">' + (v.hold_med || 0) + '</span></div>';
+    }
+    var pd = (SE7 || {}).pair_diff_sell_any_minus_hold20 || {};
+    h += '</div><div class="p3-verdict"><b>配对差（卖点 − hold20）：绝对 +'
+      + n(pd.ret_diff, 2) + 'pp（t=' + n(pd.ret_diff_t, 2) + '），超额 '
+      + n(pd.alpha_diff, 3) + 'pp（t=' + n(pd.alpha_diff_t, 2) + '）。</b>'
+      + '绝对收益多 20pp 全是「持得久 = β 吃得多」，超额一分不剩。'
+      + '更狠的一条：<b>真走完整段（买点→卖点）的交易超额是 '
+      + n((E.sell_any_done || {}).avg_alpha, 2) + '%</b>——卖点出现的时候，这笔已经废了。'
+      + '卖点不是止盈，是「你已经在亏」的迟到确认。</div></section>';
+    return h;
+  }
+
+  function p7Bench() {
+    var EW = (SE7 || {}).table || {}, CS = (SCSI || {}).table || {};
+    if (!EW.hold20 || !CS.hold20) return '';
+    var ROWS = [['hold20', '固定持 20 日'], ['hold60', '固定持 60 日'],
+                ['hold250', '固定持 250 日'], ['sell_any', '持到第一个卖点']];
+    var h = '<section class="ui-panel"><h2>③ 基准换一下，缠论的能力少掉 3.5～25 倍</h2>'
+      + '<div class="note"><p>同一批 6,903 笔、同一条持有规则，只换「超额」怎么算。'
+      + '旧口径 = <span class="mono">000985.CSI</span>（市值加权）且隐含 β=1；'
+      + '新口径 = <b>等权全A × 逐笔 β</b>。池内绝大多数是中小盘，'
+      + '用市值加权当基准等于把「小盘涨得比大盘多」记成缠论的本事。</p></div>'
+      + '<div class="rows"><div class="row p7-row p7-row--bench row--head"><span>口径</span>'
+      + '<span class="num">市值加权</span><span class="num">等权全A+β</span>'
+      + '<span class="num">高估</span><span class="num">差</span>'
+      + '<span class="num">t</span></div>';
+    for (var i = 0; i < ROWS.length; i++) {
+      var k = ROWS[i][0], a = CS[k] || {}, b = EW[k] || {};
+      var ax = a.avg_alpha, bx = b.avg_alpha;
+      var ratio = (ax && bx) ? ax / bx : null;
+      h += '<div class="row p7-row p7-row--bench"><span class="row__nm"><b>' + esc(ROWS[i][1]) + '</b></span>'
+        + '<span class="num">' + n(ax, 2) + '%</span>'
+        + '<span class="num up">' + n(bx, 2) + '%</span>'
+        + '<span class="num bad">' + (ratio ? n(ratio, 1) + '×' : '—') + '</span>'
+        + '<span class="num muted">' + n(ax - bx, 2) + 'pp</span>'
+        + '<span class="num muted">' + n(b.alpha_t, 2) + '</span></div>';
+    }
+    var pdc = (SCSI || {}).pair_diff_sell_any_minus_hold20 || {};
+    var pde = (SE7 || {}).pair_diff_sell_any_minus_hold20 || {};
+    h += '</div><div class="p3-verdict"><b>卖点的「优势」是这一轮最典型的假象：</b>'
+      + '市值加权口径下，卖点比 hold20 多 <b>+' + n(pdc.alpha_diff, 2)
+      + 'pp（t=' + n(pdc.alpha_diff_t, 2) + '）</b>，看起来赢麻了；'
+      + '换成等权全A + β，变成 <b>' + n(pde.alpha_diff, 3) + 'pp（t='
+      + n(pde.alpha_diff_t, 2) + '）</b>，一分不剩。'
+      + '那 8 个百分点全是小盘因子。<b>hf_book 用的是旧口径，前十四轮所有 α 都带这个偏差。</b>'
+      + '</div></section>';
+    return h;
+  }
+
+  function p7Final() {
+    var T = (S51 || {}).table || {};
+    if (!T.hold20) return '';
+    var ROWS = [['hold5', '固定持 5 日'], ['hold20', '固定持 20 日'],
+                ['hold60', '固定持 60 日'], ['hold250', '固定持 250 日'],
+                ['sell_any', '持到第一个卖点'], ['sell_1s', '持到第一个 1卖']];
+    var h = '<section class="ui-panel"><h2>④ 全成本终局：没有一档是正的</h2>'
+      + '<div class="note"><p>单边 51bp（<span class="mono">hf_phase5</span> 的实测冲击档）、'
+      + '等权全A + 逐笔 β、统一 250 日窗、同一批 6,903 笔。'
+      + '这里比较的已经不是「哪个更好」，是「有没有一个能活」。</p></div>'
+      + '<div class="rows"><div class="row p7-row row--head"><span>口径</span>'
+      + '<span class="num">笔均超额</span><span class="num">年化超额</span>'
+      + '<span class="num">年化成本</span><span class="num">年化净</span>'
+      + '<span class="num">持期</span></div>';
+    var worst = -1e9, bestnet = -1e9;
+    for (var i = 0; i < ROWS.length; i++) {
+      var v = T[ROWS[i][0]];
+      if (!v) continue;
+      var net = v.ann_net || 0;
+      if (net > bestnet) bestnet = net;
+      h += '<div class="row p7-row"><span class="row__nm"><b>' + esc(ROWS[i][1]) + '</b></span>'
+        + '<span class="num ' + ((v.avg_alpha || 0) >= 0 ? 'up' : 'dn') + '">'
+        + n(v.avg_alpha, 2) + '%</span>'
+        + '<span class="num">' + n(v.ann_alpha, 2) + '%</span>'
+        + '<span class="num muted">' + n(v.ann_cost, 2) + '%</span>'
+        + '<span class="num ' + (net >= 0 ? 'up' : 'dn') + '">' + n(net, 2) + '%</span>'
+        + '<span class="num">' + (v.hold_med || 0) + '</span></div>';
+    }
+    h += '</div><div class="p3-verdict"><b>最好的一档是 '
+      + n(bestnet, 2) + '%，实质是零。</b>短持期（5/20 日）被换手成本碾死——'
+      + '年换手 48.8 / 12.2 倍，光成本就是 59.5% / 14.9%；'
+      + '长持期把成本降到 1.2%，但超额也衰减到 0.7%。'
+      + '<b>两条腿同时断，这才是纯正缠论在 A 股日线的真实处境。</b></div></section>';
+    return h;
+  }
+
+  function renderP7() {
+    if (!SD7 && !SE7) {
+      return '<section class="ui-panel"><h2>纯正缠论</h2><p class="note">数据未生成：'
+        + '先跑 <span class="mono">tools/research/hf_sell_density.py</span> 与 '
+        + '<span class="mono">hf_sell_exit.py</span>。</p></section>';
+    }
+    return p7Density() + p7ExitTable() + p7Bench() + p7Final();
+  }
+
   function renderP6() {
     if ((!P6D || !P6D.a) && !MX6) {
       return '<section class="ui-panel"><h2>方法论复盘</h2><p class="note">数据未生成。' +
@@ -2205,6 +2405,7 @@
     else if (S.view === 'p4') h = renderP4();
     else if (S.view === 'p5') h = renderP5();
     else if (S.view === 'p6') h = renderP6();
+    else if (S.view === 'p7') h = renderP7();
     else h = renderAbout();
     app.innerHTML = h;
     applyDataWidth(app);
@@ -2301,16 +2502,24 @@
       fetch('/hf_ab.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
       fetch('/hf_variants.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
       fetch('/hf_phase3.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
-      fetch('/hf_phase4.json', { cache: 'no-store' }).then(function (r) { return r.json(); })
-      ,fetch('/hf_phase5.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
+      fetch('/hf_phase4.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
+      fetch('/hf_sell_density.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
+      fetch('/hf_sell_exit.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
+      fetch('/hf_sell_exit_csi.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
+      fetch('/hf_sell_exit_s51.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
+      fetch('/hf_phase5.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
       fetch('/hf_phase6.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
       fetch('/hf_matrix.json', { cache: 'no-store' }).then(function (r) { return r.json(); })
     ]).then(function (res) {
       D = res[0]; B = res[1]; H = res[2]; AB = res[3]; UV = res[4]; P3 = res[5];
       P4D = res[6];
-      P5D = res[7];
-      P6D = res[8];
-      MX6 = res[9];
+      SD7 = res[7]; SE7 = res[8]; SCSI = res[9]; S51 = res[10];
+      P5D = res[11];
+      P6D = res[12];
+      MX6 = res[13];
+      if (SD7 && SD7.dist_any_sell) {
+        $('nv-p7').textContent = '卖点 ' + n(SD7.dist_any_sell.median, 0) + ' 日';
+      }
       if (MX6 && MX6.code_reuse) {
         $('nv-p6').textContent = MX6.code_reuse.n_reused + '/' + MX6.code_reuse.n_total;
       }
