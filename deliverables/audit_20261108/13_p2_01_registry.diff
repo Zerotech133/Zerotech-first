@@ -1,0 +1,14 @@
+﻿diff --git a/tools/check_ports.py b/tools/check_ports.py
+index dc6bc7696..37b11c29f 100644
+--- a/tools/check_ports.py
++++ b/tools/check_ports.py
+@@ -51,6 +51,9 @@ REGISTRY = {
+     8030: "llamacpp 35b(手动)",
+     8787: "Hermes WebUI",
+     8888: "QuantDinger前端(Docker)",
++    # 2026-11-08 P2-01：因子挖掘控制台，绑 127.0.0.1:8870；正式启停脚本见
++    # zerobound-kg/factor_proto/factor_console/start_factor_console.ps1 / stop_factor_console.ps1。
++    8870: "因子挖掘控制台(factor_console/server.py,K-SEC-20261108-PORT-8870)",
+     8899: "本地 Ollama Web 聊天(AI/111111/web_chat.py)",
+     15000: "QuantDinger API(Docker)",
+     15432: "QuantDinger DB(Docker)",
