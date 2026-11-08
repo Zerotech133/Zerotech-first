@@ -43,6 +43,10 @@ jobs:
     # 判定与今天完全一致。
     env:
       TEST_GATE_PROFILE: ci
+      # 2026-11-08：日志落点必须与 upload-artifact 的 runner.temp 对齐。
+      # 闸脚本默认写 $env:TEMP（C:\Users\RUNNER~1\...\Temp），而 runner.temp 是
+      # D:\a\_temp —— 不同目录 + if-no-files-found: ignore，artifact 恒为空且不报错。
+      TEST_GATE_LOG_DIR: ${{ runner.temp }}
     steps:
       - uses: actions/checkout@v4
         with:

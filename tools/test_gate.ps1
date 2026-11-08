@@ -34,6 +34,12 @@ $baselineBroken = $false
 if ($PSScriptRoot) { $repo = Split-Path -Parent $PSScriptRoot } else { $repo = 'C:\项目\老田的AI助手' }
 $baselinePath = Join-Path $repo 'tools\test_baseline.json'
 $ts = Get-Date -Format 'yyyyMMdd_HHmmss'
+# 2026-11-08（K-CI-20261108-LOGDIR）：日志目录可注入。云端 runner 的 $env:TEMP 是
+# C:\Users\RUNNER~1\AppData\Local\Temp，而 upload-artifact 的 ${{ runner.temp }} 是
+# D:\a\_temp —— 两者不同，artifact 恒空（if-no-files-found: ignore 还把它吞了），
+# 几十项失败明细随 runner 一起销毁，只能靠猜补登记。CI 侧传 TEST_GATE_LOG_DIR 对齐。
+$logDir = $env:TEMP
+if ($env:TEST_GATE_LOG_DIR) { $logDir = $env:TEST_GATE_LOG_DIR }
 
 # ===== 2026-10-31 K-ORG-20261031-BUNDLEB5：clean worktree 缺 ignored bundle 时先自愈 =====
 # Phase2-B 后 bundle 不再 tracked；干净 worktree/CI 没有该文件，会让读取 bundle 的测试假红。
@@ -361,7 +367,7 @@ if (-not (Test-Path -LiteralPath $bundlePath)) {
     } else {
         $builder = Join-Path $repo 'tools\build_agent_ide_bundle.py'
         if (Test-Path -LiteralPath $builder) {
-            $blog = Join-Path $env:TEMP "test_gate_bundle_$ts.log"
+            $blog = Join-Path $logDir "test_gate_bundle_$ts.log"
             $bsw = [System.Diagnostics.Stopwatch]::StartNew()
             Push-Location -LiteralPath $repo
             try {
@@ -397,7 +403,7 @@ try {
     if ($Suite -in @('fast', 'all')) {
         $guardTool = Join-Path $repo 'tools\release_artifact_guard.py'
         $releaseRoot = 'C:\项目\_vault\legion_ide\release\legion-ide'
-        $glog = Join-Path $env:TEMP "test_gate_artifact_$ts.log"
+        $glog = Join-Path $logDir "test_gate_artifact_$ts.log"
         if (-not (Test-Path -LiteralPath $guardTool)) {
             Write-Host "[artifact] ⚠ 缺 tools/release_artifact_guard.py（只告警，不阻断；开发机/旧 worktree）" -ForegroundColor Yellow
             $summary += [pscustomobject]@{
@@ -460,7 +466,7 @@ try {
     foreach ($s in $suites) {
         $name = $s
         $targets = @($paths[$name])
-        $log = Join-Path $env:TEMP "test_gate_${name}_$ts.log"
+        $log = Join-Path $logDir "test_gate_${name}_$ts.log"
         Write-Host "===== [$name] $($targets -join ' ') ====="
         $sw = [System.Diagnostics.Stopwatch]::StartNew()
         python -m pytest @targets -q --timeout=$PytestTimeout -p no:cacheprovider *> $log
@@ -533,7 +539,7 @@ try {
     # 硬规则 + 建议项（冻结增长/新文件 >1200）全部阻断；缺脚本/执行异常 fail-closed 可见（不假绿）。
     if ($Suite -in @('fast', 'all')) {
         $budget = Join-Path $repo 'tools\check_portal_split.py'
-        $blog = Join-Path $env:TEMP "test_gate_budget_$ts.log"
+        $blog = Join-Path $logDir "test_gate_budget_$ts.log"
         if (Test-Path -LiteralPath $budget) {
             $bsw = [System.Diagnostics.Stopwatch]::StartNew()
             python -X utf8 $budget --strict *> $blog
@@ -567,7 +573,7 @@ try {
     if ($Suite -in @('fast', 'all')) {
         $navTool = Join-Path $repo 'tools\unify_nav.py'
         if (Test-Path -LiteralPath $navTool) {
-            $nlog = Join-Path $env:TEMP "test_gate_nav_$ts.log"
+            $nlog = Join-Path $logDir "test_gate_nav_$ts.log"
             $nsw = [System.Diagnostics.Stopwatch]::StartNew()
             python -X utf8 $navTool --check *> $nlog
             $nrc = $LASTEXITCODE
@@ -598,7 +604,7 @@ try {
     if ($Suite -in @('fast', 'all')) {
         $routeTool = Join-Path $repo 'tools\portal_route_inventory.py'
         if (Test-Path -LiteralPath $routeTool) {
-            $rlog = Join-Path $env:TEMP "test_gate_route_$ts.log"
+            $rlog = Join-Path $logDir "test_gate_route_$ts.log"
             $rsw = [System.Diagnostics.Stopwatch]::StartNew()
             python -X utf8 $routeTool --check *> $rlog
             $rrc = $LASTEXITCODE
@@ -631,7 +637,7 @@ try {
     # fail-closed（不假绿）。实测耗时 <0.5s。
     if ($Suite -in @('fast', 'all')) {
         $wtTool = Join-Path $repo 'tools\devtask.py'
-        $wlog = Join-Path $env:TEMP "test_gate_wtcheck_$ts.log"
+        $wlog = Join-Path $logDir "test_gate_wtcheck_$ts.log"
         if (Test-Path -LiteralPath $wtTool) {
             $wsw = [System.Diagnostics.Stopwatch]::StartNew()
             python -X utf8 $wtTool audit-worktrees *> $wlog
@@ -674,7 +680,7 @@ try {
     if ($Suite -in @('fast', 'all')) {
         $orgTool = Join-Path $repo 'tools\org_model_consistency.py'
         if (Test-Path -LiteralPath $orgTool) {
-            $olog = Join-Path $env:TEMP "test_gate_org_$ts.log"
+            $olog = Join-Path $logDir "test_gate_org_$ts.log"
             $osw = [System.Diagnostics.Stopwatch]::StartNew()
             python -X utf8 $orgTool --json *> $olog
             $orc = $LASTEXITCODE
