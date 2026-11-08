@@ -293,7 +293,15 @@ $paths = @{
         # 退化方向是「少报」，假阴性不报错、只会让硬门变纸门。42 条全合成夹具，0.6s。
         'tools/tests/test_scan_secrets_fp.py',
         # ---- 看护预算契约（2026-11-07 K-ORG-20261107-WATCHDOG，+1） ----
-        'tools/tests/test_keepalive_budget.py'
+        'tools/tests/test_keepalive_budget.py',
+        # ---- worktree 判活 + 删不动兜底（2026-11-08 K-ORG-20261108-OVWSPLIT，+1）----
+        # 该文件 2026-10-31 就存在，却一直没进套件：devtask 的并发闸与回收逻辑
+        # 此前没有自动覆盖。2026-11-08 两个真坑都是人工发现的：
+        #   ① 空壳登记（.git 指针已失）让 `git -C <path> status` 向上读到主仓状态，
+        #      把主树的未提交改动误判成"这个 worktree 脏了"；
+        #   ② Windows 删大目录 186~251s，180s 超时必然误判，留下"指针没了树还在"。
+        # 两者都会让闸门判断失真，故纳入常态门。21 条纯合成夹具，约 8s。
+        'tools/tests/test_devtask_worktree_mech.py'
     )
 }
 
