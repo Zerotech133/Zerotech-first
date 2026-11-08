@@ -69,6 +69,47 @@ if (Test-Path -LiteralPath $baselinePath) {
     }
 }
 
+# 2026-11-08 CI 上移（K-CI-20261108-PROFILE）：环境覆盖层。
+# 干净 runner 上必然缺的本机运行时资产——reports/ 整目录未入库、.worktrees/、
+# C://项目//_vault、PG catalog、行情湖 parquet、docker / schtasks——会让一批
+# 用例在云端必然红。把这些人肉登记进 test_baseline.json 会连带放宽本机判定，
+# 真回归被一起糊掉（这是本仓明令禁止的"假绿"）。故改为按 profile 加载独立
+# 基线：TEST_GATE_PROFILE=ci 时叠加 tools/test_baseline.ci.json。
+# 本机不设该变量 → profile=local → 判定与今天完全一致，严格性零放宽。
+$profileName = 'local'
+if ($env:TEST_GATE_PROFILE) { $profileName = $env:TEST_GATE_PROFILE.Trim().ToLower() }
+if ($profileName -ne 'local') {
+    $profilePath = Join-Path $repo ('tools\test_baseline.' + $profileName + '.json')
+    if (-not (Test-Path -LiteralPath $profilePath)) {
+        # profile 名写错必须可见：静默回落到 local 会满屏假红，静默放宽则是假绿。
+        Write-Host "[ERR] 环境基线不存在: $profilePath (profile=$profileName)" -ForegroundColor Red
+        $baselineBroken = $true
+    } else {
+        try {
+            $pb = Get-Content -LiteralPath $profilePath -Raw -Encoding UTF8 | ConvertFrom-Json
+            foreach ($prop in $pb.PSObject.Properties) {
+                if ($prop.Name -like '_*') { continue }
+                if ($prop.Value.env_failures) {
+                    if (-not $envKnown.ContainsKey($prop.Name)) { $envKnown[$prop.Name] = @() }
+                    $envKnown[$prop.Name] += @($prop.Value.env_failures)
+                }
+                if ($prop.Value.known_failures) {
+                    if (-not $known.ContainsKey($prop.Name)) { $known[$prop.Name] = @() }
+                    $known[$prop.Name] += @($prop.Value.known_failures)
+                }
+                if ($prop.Value.flaky) {
+                    if (-not $flaky.ContainsKey($prop.Name)) { $flaky[$prop.Name] = @() }
+                    $flaky[$prop.Name] += @($prop.Value.flaky)
+                }
+            }
+            Write-Host "[baseline] 环境覆盖层: $profileName"
+        } catch {
+            Write-Host "[ERR] 环境基线解析失败: $($_.Exception.Message)" -ForegroundColor Red
+            $baselineBroken = $true
+        }
+    }
+}
+
 $suites = @()
 switch ($Suite) {
     # 2026-10-30 P1：LDE HTTP 契约进 fast 门（单独文件，不拖入整个 agent 套件）

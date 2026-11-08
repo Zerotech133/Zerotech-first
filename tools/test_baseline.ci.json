@@ -1,0 +1,58 @@
+{
+  "_note": "CI 环境基线（K-CI-20261108-PROFILE）。只在 TEST_GATE_PROFILE=ci 时加载，本机判定完全不含此文件。判据：该用例依赖干净 runner 上不存在的本机运行时资产，属「云端不可判定」而非代码缺陷。来源：GitHub Actions run 42442700503（2026-11-08 11:26 +08，新增失败 35 项）逐条分类；同一提交本机 -Suite fast 为 GATE PASS。收口规则：新增条目必须写明缺的是哪份资产；资产一旦入库或改为自造夹具，必须从本文件删除——否则就是把免死金牌挂成永久。",
+  "portal/tests": {
+    "_why": "reports/ 整目录被 .gitignore:12 忽略（140 个运行时资产，nginx.conf.bak-r7 等）；另需 _vault、PG catalog、行情湖 parquet 与 docker/schtasks 实机命令。干净检出三样全无：round7/round9 缺 bak 基线、dw_catalog_alignment 缺 reports 台账、intel_graph 缺 parquet、overview_split 的重项靠 docker ps/schtasks 产数据。",
+    "env_failures": [
+      "portal/tests/test_api_intel_graph.py::test_dossier_returns_candidate_only_with_traceable_keys",
+      "portal/tests/test_api_intel_graph.py::test_seat_edges_queryable_by_stock_with_isolated_fixture",
+      "portal/tests/test_api_intel_graph.py::test_missing_holder_ratio_does_not_fabricate_value",
+      "portal/tests/test_api_intel_graph.py::test_dossier_empty_is_honest_for_unknown_code",
+      "portal/tests/test_api_intel_graph.py::test_all_edges_carry_question_not_fact_words",
+      "portal/tests/test_catalog_data_api.py::test_real_catalog_258_tables",
+      "portal/tests/test_drift_error_structured.py::test_flow_pg_kwargs_fallback_when_jev_common_missing",
+      "portal/tests/test_dw_catalog_alignment.py::test_catalog_alignment_uses_current_catalog_and_registry",
+      "portal/tests/test_dw_catalog_alignment.py::test_mismatch_in_chain_skips_instead_of_failing",
+      "portal/tests/test_dw_catalog_alignment.py::test_mismatch_after_chain_done_raises",
+      "portal/tests/test_dw_query_post.py::test_handle_post_sqlite_query_ok",
+      "portal/tests/test_overview_split.py::test_cold_start_does_not_block",
+      "portal/tests/test_overview_split.py::test_background_refresh_lands",
+      "portal/tests/test_round7_closeout.py::test_no_location_or_directive_is_removed",
+      "portal/tests/test_round7_closeout.py::test_auth_guard_is_not_weakened",
+      "portal/tests/test_round7_closeout.py::test_no_token_header_injection",
+      "portal/tests/test_round7_closeout.py::test_backup_chain_is_consistent",
+      "portal/tests/test_round7_closeout.py::test_selftest_real_file_passes_all_guards",
+      "portal/tests/test_round7_closeout.py::test_selftest_real_file_regression_is_caught",
+      "portal/tests/test_round9_six_items_closeout.py::test_pending_20261106_is_archived_superseded"
+    ]
+  },
+  "k_stock/tests": {
+    "_why": "paper_cli 两例断言本机 k_stock 运行库 .db（sqlite 实账），该库不入库。",
+    "env_failures": [
+      "k_stock/tests/test_paper_cli.py::test_mark_default_us_failure_is_nonzero_and_no_false_us_row",
+      "k_stock/tests/test_paper_cli.py::test_mark_all_real_engine_cash_only_accounts"
+    ]
+  },
+  "agent_platform/tests": {
+    "_why": "release 发布物 C:\\项目\\_vault\\legion_ide\\release\\legion-ide 不在仓库内，manifest 哈希无从比对；CI 只做 bundle bootstrap，不产出正式发布物。",
+    "env_failures": [
+      "agent_platform/tests/test_ide_extension_e2e.py::test_release_artifact_manifest_hashes"
+    ]
+  },
+  "quant_backtest/tests": {
+    "_why": "test_plan_tushare_real_parquet 依赖 tushare 真实 parquet 行情湖（数据资产，未入库）。",
+    "env_failures": [
+      "quant_backtest/tests/test_xq_t7_cache_tdx_backfill.py::test_plan_tushare_real_parquet"
+    ]
+  },
+  "tools/tests": {
+    "_why": "huangzhong_tools_suite_gate 是嵌套子 pytest，子套件内含上述环境依赖项，父套件随之必红（属传导，非独立缺陷）；market_analysis 五例依赖行情湖 parquet 数据根。",
+    "env_failures": [
+      "tools/tests/test_huangzhong_tools_suite_gate.py::test_huangzhong_tool_suite_green",
+      "tools/tests/test_market_analysis.py::test_quality_flags_empty_shell_as_empty",
+      "tools/tests/test_market_analysis.py::test_build_does_not_fallback_index",
+      "tools/tests/test_market_analysis.py::test_main_strict_returns_1_on_degraded",
+      "tools/tests/test_market_analysis.py::test_main_nonstrict_writes_both_outputs",
+      "tools/tests/test_market_analysis.py::test_main_strict_passes_when_all_degraded_registered"
+    ]
+  }
+}

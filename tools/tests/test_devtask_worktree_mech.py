@@ -183,20 +183,78 @@ def test_format_prune_wt_ttl_red_annotation():
     assert devtask._format_prune_wt(it3, False).startswith("  [SKIP][TTL-RED] ")
 
 
-def test_prune_plan_carries_ttl_fields(monkeypatch):
+class _Proc:
+    """伪 CompletedProcess：只给 _prune_git 调用方用到的三个字段。"""
+
+    def __init__(self, stdout="", rc=0, stderr=""):
+        self.stdout, self.returncode, self.stderr = stdout, rc, stderr
+
+
+def _fake_prune_git(porcelain):
+    def _call(repo, *args, **kwargs):
+        if args[:2] == ("rev-parse", "--abbrev-ref"):
+            return _Proc("master\n")
+        if args[:2] == ("branch", "--merged"):
+            return _Proc("")
+        if args[:2] == ("worktree", "list"):
+            return _Proc(porcelain)
+        if args[:1] == ("status",):
+            return _Proc("")
+        return _Proc("")
+    return _call
+
+
+def test_prune_plan_carries_ttl_fields(monkeypatch, tmp_path):
+    """_prune_plan 必须给每条 worktree 带上 age_hours / ttl_red，且规则与 _ttl_hours 一致。
+
+    2026-11-08 CI 修正：原实现读**真实主仓**的 .worktrees/，干净检出（GitHub runner
+    clone 出来的树）根本没有该目录（.gitignore 忽略），断言 `plan["worktrees"]` 非空
+    在云端必然失败——这是测试自身的环境耦合，不是被测代码问题。改为自造夹具：
+    目录结构 + `git worktree list --porcelain` 输出都由本用例提供，任何环境下结果确定。
+    """
+    import time
+
+    repo = tmp_path / "repo"
+    wt = repo / ".worktrees" / "T-TTL"
+    wt.mkdir(parents=True)
+    (wt / ".git").write_text("gitdir: /tmp/unused\n", encoding="utf-8")
+    old = time.time() - 100 * 3600
+    os.utime(str(wt), (old, old))
+
+    porcelain = ("worktree %s\nbranch refs/heads/master\n\n"
+                 "worktree %s\nbranch refs/heads/task/T-TTL\n" % (repo, wt))
+    monkeypatch.setattr(devtask, "_prune_git", _fake_prune_git(porcelain))
+
     monkeypatch.setenv(devtask.WT_TTL_ENV, "0.001")
-    plan = devtask._prune_plan(MAIN)
-    assert plan["worktrees"], "主仓应有 worktree 记录"
+    plan = devtask._prune_plan(str(repo))
+    assert plan["worktrees"], "合成夹具下应有 worktree 记录"
     ttl = devtask._ttl_hours()
     for it in plan["worktrees"]:
         assert "age_hours" in it and "ttl_red" in it
-        # 规则断言（不做"全红"绝对判断）：并行会话可能在测试瞬间新建 worktree，
-        # 其 age 可小于极小 TTL，故逐条按规则核对，避免时钟竞态 flaky。
         expect = it["age_hours"] is not None and it["age_hours"] > ttl
         assert it["ttl_red"] is expect, "ttl_red 与规则不符：%s" % it.get("tid")
+    assert plan["worktrees"][0]["ttl_red"] is True, "100h 树在 0.001h TTL 下应亮红灯"
+
     monkeypatch.setenv(devtask.WT_TTL_ENV, "1000000")
-    plan2 = devtask._prune_plan(MAIN)
+    plan2 = devtask._prune_plan(str(repo))
     assert not any(it["ttl_red"] for it in plan2["worktrees"]), "极大 TTL 下应无红灯"
+
+
+def test_prune_plan_real_repo_ttl_rule(monkeypatch):
+    """真实主仓的只读附加观测：有 worktree 才校验，无则跳过（CI 干净检出即此路）。
+
+    合成用例已覆盖字段与规则；本例只防"真实仓路径解析失效却无人发现"，
+    故有记录时按规则逐条核对，无记录时如实 skip 而不是假装通过。
+    """
+    plan = devtask._prune_plan(MAIN)
+    if not plan["worktrees"]:
+        pytest.skip("检出内无 .worktrees/（干净检出/CI），字段规则见合成用例")
+    monkeypatch.setenv(devtask.WT_TTL_ENV, "1000000")
+    ttl = devtask._ttl_hours()
+    for it in devtask._prune_plan(MAIN)["worktrees"]:
+        assert "age_hours" in it and "ttl_red" in it
+        expect = it["age_hours"] is not None and it["age_hours"] > ttl
+        assert it["ttl_red"] is expect, "ttl_red 与规则不符：%s" % it.get("tid")
 
 
 # ---------- ③ 并发上限 ----------

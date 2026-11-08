@@ -36,6 +36,13 @@ jobs:
     # 本地实测 11:28（688s）。runner 磁盘慢、首次还要装依赖，按 2.5x 留余量；
     # timeout 触发会以红报出，掩盖真正的失败原因，故给到 45 分钟。
     timeout-minutes: 45
+    # 2026-11-08：CI 环境 profile。干净 runner 没有本机运行时资产（reports/ 未入库、
+    # .worktrees/、_vault、PG catalog、行情湖 parquet、docker/schtasks），一批用例
+    # 在云端必然红。这些**不许**写进 test_baseline.json（会连带放宽本机判定=假绿），
+    # 改由 tools/test_baseline.ci.json 在 profile=ci 时叠加；本机不设该变量，
+    # 判定与今天完全一致。
+    env:
+      TEST_GATE_PROFILE: ci
     steps:
       - uses: actions/checkout@v4
         with:
@@ -57,6 +64,12 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements-dev.txt
           python -m pip install numpy pandas pyyaml jsonschema pyjwt cryptography lark-oapi
+          # 2026-11-08 首轮实跑补齐（run 42442700503）：datawarehouse 套件
+          # test_dataset_query.py 顶部 `import pyarrow`，缺包导致整个 datawarehouse
+          # 目录 rc=2 收集失败（日志：pytest 异常退出 rc=2）；requests 为
+          # xq_crawl_trust_env 等用例所需；python-docx 供 learning_intake 类用例
+          # （仅 tools 全量触发，fast 不跑，但缺包同样会收集失败）。
+          python -m pip install pyarrow requests python-docx
 
       - name: Preflight（不假绿）
         shell: pwsh
