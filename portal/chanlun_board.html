@@ -204,6 +204,9 @@
       .hf-row--pos > .tpc { grid-area: tp; }
     }
 
+    /* 成本验证：6 列（口径 / 净值 / 超额 / 每单位α / t / 成本） */
+    .p5-row { grid-template-columns: minmax(0,1.75fr) 68px 72px 76px 50px 56px; }
+
     /* 三方向验证：敞口档 / 窗口 / 停3买 三张表，列数比 p3 多一列 */
     .p4-row { grid-template-columns: minmax(0,1.6fr) 70px 74px 64px 56px 76px 52px; }
     .p4-x { display: grid; gap: 6px; margin-top: 10px; font-variant-numeric: tabular-nums; }
@@ -219,6 +222,17 @@
       /* 三方向：390px 下同样只留口径 / 净值 / 超额，其余折叠 */
       .p4-row { grid-template-columns: minmax(0,1fr) 72px 72px; }
       .p4-row > span:nth-child(n+4) { display: none; }
+      .p5-row { grid-template-columns: minmax(0,1fr) 62px 68px; }
+      .p5-row > span:nth-child(n+4) { display: none; }
+      /* 390px 实测：.row__nm 是 flex，<small> 的说明文字会被压成逐字竖排，
+         整行高度炸开且看不出是哪个变体。窄屏一律改成块级堆叠。 */
+      .p3-row .row__nm, .p4-row .row__nm, .p5-row .row__nm { display: block; }
+      .p3-row .row__nm small, .p4-row .row__nm small,
+      .p5-row .row__nm small { display: block; margin-top: 1px; line-height: 1.32; }
+      .p5-row .row__nm small.p5-desc { display: none; }
+      /* 校准表 6 列在 390px 放不下：只留 情景 / 双边 / 判定，条件折进标题 */
+      .p4-x--cal > div { grid-template-columns: minmax(0,1fr) 52px 44px; }
+      .p4-x--cal > div > span:nth-child(n+4) { display: none; }
       .p4-x { font-size: 11.5px; }
       .p4-x > div { grid-template-columns: 54px repeat(5, minmax(0,1fr)); gap: 3px; }
       /* 390px 实测：minmax(0,1fr) 首列会被 62px 固定列挤成 0px，类型名整列消失 */
@@ -251,6 +265,7 @@
       <button class="viewtab" role="tab" data-view="up" aria-selected="false">升级验证 <small id="nv-up">—</small></button>
       <button class="viewtab" role="tab" data-view="p3" aria-selected="false">三件事验证 <small id="nv-p3">—</small></button>
       <button class="viewtab" role="tab" data-view="p4" aria-selected="false">三方向验证 <small id="nv-p4">—</small></button>
+      <button class="viewtab" role="tab" data-view="p5" aria-selected="false">成本验证 <small id="nv-p5">—</small></button>
       <button class="viewtab" role="tab" data-view="about" aria-selected="false">口径</button>
     </nav>
 
@@ -277,6 +292,7 @@
   var UV = null;     // hf_variants.json（升级验证）
   var P3 = null;     // hf_phase3.json（冷却 / 排序 / 空头腿）
   var P4D = null;    // hf_phase4.json（降敞口 / 换窗口 / 停3买）
+  var P5D = null;    // hf_phase5.json（成交成本 / 盈亏平衡 / walk-forward）
 
   function $(id) { return document.getElementById(id); }
   function esc(s) {
@@ -1567,6 +1583,255 @@
     return h;
   }
 
+  // ---------------------------------------------------------------- 成本验证
+  function renderP5() {
+    if (!P5D || !P5D.a) {
+      return '<section class="ui-panel"><h2>成本验证</h2><p class="note">数据未生成。' +
+        '跑 <span class="mono">python tools/research/hf_phase5.py</span> 后刷新。</p></section>';
+    }
+    return p5CostPanel() + p5BePanel() + p5WalkPanel() + p5HoldPanel();
+  }
+
+  function p5Row(cost, variant) {
+    var rows = (P5D.a || {}).rows || [];
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].cost === cost && rows[i].variant === variant) return rows[i];
+    }
+    return null;
+  }
+
+  function p5CostPanel() {
+    var rows = (P5D.a || {}).rows || [];
+    if (!rows.length) return '';
+    var r0 = p5Row('none', '只1买') || {}, rk = p5Row('k10', '只1买') || {};
+    var a0 = p5Row('none', '全部') || {}, ak = p5Row('k10', '全部') || {};
+    var h = '<section class="ui-panel"><h2>① 成交成本：三年 +257% 的超额，是"免费成交"给的</h2>' +
+      '<div class="note"><p>前十三轮只扣了佣金 0.075% 与印花税+佣金 0.125%，' +
+      '<b>滑点、冲击、排队成本全为零</b>。而只做 1买 的年换手是 74 倍——' +
+      '单边 40bp 就是年化 30% 的成本，笔均 1~2% 的 α 根本撑不住。' +
+      '这里把成交成本做成参数：固定滑点按成交额比例扣；平方根冲击按 ' +
+      '<span class="mono">k×(ATR/px)×√(下单股数/ADV20)</span>，小票大单自动更贵。' +
+      '同一批信号、同一个 748 日窗口，只动成本。</p></div>' +
+      '<div class="ab-kpis">' +
+      '<div class="ab-kpi"><span>无成本（只1买）</span><b class="up">' + n((r0.nav || 0) * 100) +
+      '%</b><small>超额 ' + n((r0.excess || 0) * 100) + '%，每单位α ' + n((r0.alpha_per_util || 0) * 1e4, 1) + 'bp</small></div>' +
+      '<div class="ab-kpi"><span>真实冲击 k=1.0</span><b class="dn">' + n((rk.nav || 0) * 100) +
+      '%</b><small>超额 ' + n((rk.excess || 0) * 100) + '%，每单位α ' + n((rk.alpha_per_util || 0) * 1e4, 1) + 'bp</small></div>' +
+      '<div class="ab-kpi"><span>平均单边冲击</span><b>' + n(rk.imp_bp, 0) +
+      'bp</b><small>中位 28bp、p90 89bp，双边即 ' + n((rk.imp_bp || 0) * 2, 0) + 'bp</small></div>' +
+      '<div class="ab-kpi"><span>t 值怎么变</span><b class="' + ((rk.alpha_t || 0) > 2 ? 'up' : 'dn') + '">' +
+      n(r0.alpha_t) + ' → ' + n(rk.alpha_t) + '</b><small>日度回归 α 的 t（|t|&gt;2 才算数）</small></div></div>' +
+      '<div class="rows mt12"><div class="row p5-row row--head"><span>变体 / 成本档</span>' +
+      '<span class="num">净值</span><span class="num">超额</span><span class="num">每单位α</span>' +
+      '<span class="num">t</span><span class="num">单边冲击</span></div>';
+    var prev = '';
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i], gap = (prev && prev !== r.cost) ? ' row--sep' : '';
+      prev = r.cost;
+      var apu = (r.alpha_per_util || 0) * 1e4;
+      h += '<div class="row p5-row' + gap + '"><span class="row__nm"><b>' + esc(r.variant) +
+        '</b> <small class="muted">' + esc(r.cost) + '</small>' +
+        '<small class="muted p5-desc">' + esc(r.desc || '') + '</small></span>' +
+        '<span class="num ' + ((r.nav || 0) >= 0 ? 'up' : 'dn') + '">' + n((r.nav || 0) * 100) + '%</span>' +
+        '<span class="num ' + ((r.excess || 0) >= 0 ? 'up' : 'dn') + '">' + n((r.excess || 0) * 100) + '%</span>' +
+        '<span class="num ' + (apu >= 0 ? 'up' : 'dn') + '">' + n(apu, 1) + 'bp</span>' +
+        '<span class="num">' + n(r.alpha_t) + '</span>' +
+        '<span class="num muted">' + n(r.imp_bp, 0) + 'bp</span></div>';
+    }
+    h += '</div>' +
+      '<div class="note mt12"><p>换手是成本的放大器：只做 1买 三年 ' + (r0.n_trades || 0) +
+      ' 笔、年化约 1348 笔、每笔约 2% 权益 → <b>双边年换手约 74 倍</b>。' +
+      '年化成本 = 换手 × 单边成本，51bp 就是 38%/年。这也是"全部"变体（换手更高、笔均本就接近 0）' +
+      '在 k=1.0 下直接被打到 ' + n((ak.nav || 0) * 100) + '% 的原因：' +
+      '无成本时它也只有 ' + n((a0.nav || 0) * 100) + '%。</p></div>' +
+      '<div class="p3-verdict"><b>判决：这个策略的 α 完全建在"成交免费"上。</b>' +
+      '同一批信号、同一段时间，把成本从 0 加到 51bp，只做 1买 从 <b>' + n((r0.nav || 0) * 100) +
+      '% 变成 ' + n((rk.nav || 0) * 100) + '%</b>，每单位 α 从 ' + n((r0.alpha_per_util || 0) * 1e4, 1) +
+      'bp 变成 ' + n((rk.alpha_per_util || 0) * 1e4, 1) + 'bp，t 从 ' + n(r0.alpha_t) +
+      ' 掉到 ' + n(rk.alpha_t) + '。' +
+      '<b>前十三轮反复比较的那些净值差异，全都没有扣这一项。</b></div></section>';
+    return h;
+  }
+
+  function p5BePanel() {
+    var B5 = P5D.b || {}, rows = B5.rows || [];
+    if (!rows.length) return '';
+    var fa = B5.fit_avg_ret || {}, fp = B5.fit_alpha_per_util || {};
+    var k10 = null;
+    for (var i = 0; i < rows.length; i++) if (rows[i].cost === 'k10') k10 = rows[i];
+    var h = '<section class="ui-panel"><h2>② 盈亏平衡：双边 89bp 归零，与已有成本分档互证</h2>' +
+      '<div class="note"><p>冲击只改成交价，每笔的成本增量与 k 成正比，所以笔均收益对 k 一阶线性。' +
+      '对 <span class="mono">k=0 / 0.5 / 1.0 / 1.5 / 2.0 / 2.5</span> 六档做线性拟合求根，' +
+      '就是"这个策略能扛多大成本"。<b>R² 是拟合残差</b>：接近 1 说明线性近似成立，' +
+      '二阶效应（仓位因成本变小）可以忽略。</p></div>' +
+      '<div class="ab-kpis">' +
+      '<div class="ab-kpi"><span>笔均归零的 k</span><b>' + n(fa.be, 2) + '</b><small>R²=' +
+      n(fa.r2, 3) + '；只看"每笔平均赚不赚钱"</small></div>' +
+      '<div class="ab-kpi"><span>每单位α归零的 k</span><b class="' + ((fp.be || 0) > 1.3 ? 'up' : 'dn') + '">' +
+      n(fp.be, 2) + '</b><small>R²=' + n(fp.r2, 3) + '；组合层面，才是能不能上线</small></div>' +
+      '<div class="ab-kpi"><span>真实口径 k=1.0</span><b class="dn">' + n((k10 ? k10.nav : 0) * 100) +
+      '%</b><small>单边 ' + n(k10 ? k10.imp_bp : 0, 0) + 'bp</small></div>' +
+      '<div class="ab-kpi"><span>两个独立口径互证</span><b class="up">' +
+      n(B5.own_be_roundtrip_bp, 0) + ' vs ' + n(B5.calib_external_be_roundtrip_bp, 1) +
+      'bp</b><small>本账 α 归零 vs combo 影子盘归零（均双边）</small></div></div>' +
+      '<div class="rows mt12"><div class="row p5-row row--head"><span>冲击系数 k</span>' +
+      '<span class="num">净值</span><span class="num">超额</span><span class="num">每单位α</span>' +
+      '<span class="num">t</span><span class="num">单边冲击</span></div>';
+    for (var j = 0; j < rows.length; j++) {
+      var r = rows[j], apu = (r.alpha_per_util || 0) * 1e4;
+      h += '<div class="row p5-row"><span class="row__nm"><b>' + esc(r.cost) +
+        '</b> <small class="muted p5-desc">' + esc(r.desc || '') + '</small></span>' +
+        '<span class="num ' + ((r.nav || 0) >= 0 ? 'up' : 'dn') + '">' + n((r.nav || 0) * 100) + '%</span>' +
+        '<span class="num ' + ((r.excess || 0) >= 0 ? 'up' : 'dn') + '">' + n((r.excess || 0) * 100) + '%</span>' +
+        '<span class="num ' + (apu >= 0 ? 'up' : 'dn') + '">' + n(apu, 1) + 'bp</span>' +
+        '<span class="num">' + n(r.alpha_t) + '</span>' +
+        '<span class="num muted">' + n(r.imp_bp, 0) + 'bp</span></div>';
+    }
+    h += '</div>' +
+      '<div class="note mt12"><p>两个归零点差得多，是因为它们问的不是同一件事：' +
+      '<b>笔均</b>只看每笔赚多少，等权；<b>每单位 α</b> 按仓位加权、还要扣 beta。' +
+      '成本对高仓位、高成交额的笔更重，而这些笔正好贡献了大部分超额，' +
+      '所以组合层面的 α 比笔均更早归零（' + n(fp.be, 2) + ' vs ' + n(fa.be, 2) + '）。' +
+      '<b>能不能上线看的是后者。</b></p></div>' +
+      p5CalibBlock() +
+      '<div class="p3-verdict"><b>判决：能不能赚钱，取决于成交落在哪一档，而这套信号池落在悲观档。</b>' +
+      '本账 α 归零点折成双边 <b>' + n(B5.own_be_roundtrip_bp, 0) + 'bp</b>，' +
+      '与 combo 影子盘独立算出的 <b>' + n(B5.calib_external_be_roundtrip_bp, 1) +
+      'bp</b> 只差 ' + n(Math.abs((B5.own_be_roundtrip_bp || 0) -
+        (B5.calib_external_be_roundtrip_bp || 0)) /
+        Math.max(1e-9, B5.calib_external_be_roundtrip_bp || 1) * 100, 1) +
+      '%——两条互不相干的路线给出同一个量级，说明这个数字是结构性的，不是口径产物。' +
+      '前四档里前三档都在安全区内，只有 S4 悲观档越界；' +
+      '而按 <span class="mono">√(Q/ADV)</span> 逐笔估出来的平均是 ' +
+      n((k10 ? k10.imp_bp : 0) * 2, 0) + 'bp 双边，已经贴着 S4。' +
+      '<b>所以问题不是"策略行不行"，是"我们能不能不按 S4 成交"。</b></div></section>';
+    return h;
+  }
+
+  function p5CalibBlock() {
+    var B5 = P5D.b || {}, cal = B5.calib || [];
+    if (!cal.length) return '';
+    var be = B5.own_be_roundtrip_bp || 0;
+    var h = '<div class="note mt12"><p><b>与平台已有的成本分档对齐</b>' +
+      '（<span class="mono">portal/combo_cost_breakeven.json</span>，combo 影子盘四档情景，双边口径）：</p></div>' +
+      '<div class="p4-x p4-x--cal"><div><span>情景</span><span>双边</span><span>单边</span>' +
+      '<span>判定</span><span>本账对应档</span><span>适用条件</span></div>';
+    for (var i = 0; i < cal.length; i++) {
+      var c = cal[i], rt = c.roundtrip_bp || 0;
+      var safe = rt <= be;
+      // 本账哪一档最接近：s20=双边40bp、s40=双边80bp、k10=双边102bp
+      var near = rt <= 20 ? '无成本' : (rt <= 45 ? 's20(40bp)' :
+        (rt <= 90 ? 's40(80bp)' : 'k10(102bp)'));
+      h += '<div><span>' + esc(c.name) + '</span>' +
+        '<span>' + n(rt, 1) + 'bp</span>' +
+        '<span>' + n(c.single_bp, 1) + 'bp</span>' +
+        '<span class="' + (safe ? 'up' : 'dn') + '">' + (safe ? '安全' : '越界') + '</span>' +
+        '<span class="muted">' + near + '</span>' +
+        '<span class="muted">' + esc(c.who || '') + '</span></div>';
+    }
+    h += '</div>';
+    return h;
+  }
+
+  function p5WalkPanel() {
+    var C5 = P5D.c || {}, folds = C5.folds || [], ag = C5.agg || {};
+    if (!folds.length) return '';
+    var sel = ag['选择器'] || {}, s1 = ag['只1买'] || {};
+    var h = '<section class="ui-panel"><h2>③ walk-forward：样本内选变体，样本外见真章</h2>' +
+      '<div class="note"><p>前一轮"只做 1买 每单位 α t=4.75"是在全期数据上算的——' +
+      '如果这个变体是看了结果才挑出来的，t 值就是假的。做法：871 天切 6 个半年段，' +
+      '<b>用前 k 段选变体、紧接的下一段做样本外</b>，四折滚动。' +
+      '选择准则事先写死：<b>样本内每单位敞口 α 最高</b>（前十三轮唯一跨窗口站得住的指标）。' +
+      '准则一旦看了样本外结果再改，整个验证就作废。</p></div>' +
+      '<div class="ab-kpis">' +
+      '<div class="ab-kpi"><span>选择器 OOS 均超额</span><b class="' + ((sel.avg_excess || 0) > 0 ? 'up' : 'dn') + '">' +
+      n((sel.avg_excess || 0) * 100) + '%</b><small>' + (sel.n_win_pos || 0) + '/' + (sel.n_win || 0) + ' 段为正</small></div>' +
+      '<div class="ab-kpi"><span>固定只做 1买</span><b class="' + ((s1.avg_excess || 0) > 0 ? 'up' : 'dn') + '">' +
+      n((s1.avg_excess || 0) * 100) + '%</b><small>' + (s1.n_win_pos || 0) + '/' + (s1.n_win || 0) +
+      ' 段为正，不选，一直做</small></div>' +
+      '<div class="ab-kpi"><span>选择有没有加分</span><b class="dn">' +
+      (ag.is_selector_better ? '有' : '没有') + '</b><small>选择器比固定策略' +
+      (ag.is_selector_better ? '更差' : '更好') + '，说明选择本身在亏钱</small></div>' +
+      '<div class="ab-kpi"><span>四折选中</span><b>' + (ag.n_pick_only1 || 0) + ' 次只1买</b><small>' +
+      esc((ag.picked_seq || []).join(' / ')) + '</small></div></div>' +
+      '<div class="rows mt12"><div class="row p5-row row--head"><span>折 / 样本外区间</span>' +
+      '<span class="num">选中</span><span class="num">OOS超额</span><span class="num">每单位α</span>' +
+      '<span class="num">事后最优</span><span class="num">后悔</span></div>';
+    for (var i = 0; i < folds.length; i++) {
+      var f = folds[i], op = f.oos_pick || {};
+      h += '<div class="row p5-row"><span class="row__nm"><b>第 ' + (i + 1) + ' 折</b>' +
+        ' <small class="muted">' + esc((f.oos_range || []).join('~')) + '</small></span>' +
+        '<span class="num">' + esc(f.pick) + '</span>' +
+        '<span class="num ' + ((op.excess || 0) >= 0 ? 'up' : 'dn') + '">' + n((op.excess || 0) * 100) + '%</span>' +
+        '<span class="num">' + n((op.alpha_per_util || 0) * 1e4, 1) + 'bp</span>' +
+        '<span class="num muted">' + esc((f.oos_best || {}).lab || '') + '</span>' +
+        '<span class="num ' + ((f.regret_pp || 0) > 0 ? 'dn' : 'muted') + '">+' + n(f.regret_pp) + 'pp</span></div>';
+    }
+    h += '</div>' +
+      '<div class="p3-verdict"><b>判决：样本内选出来的变体，样本外不成立。</b>' +
+      '四折的 OOS 超额是 ' + folds.map(function (f) {
+        return n(((f.oos_pick || {}).excess || 0) * 100) + '%';
+      }).join(' / ') + '，均值 ' + n((sel.avg_excess || 0) * 100) + '%，' +
+      '而且选择器还不如"什么都不选、一直只做 1买"（' + n((s1.avg_excess || 0) * 100) + '%）。' +
+      '第三折更直接：样本内选"停3买"，样本外最好的却是"只1买"，后悔 17.3pp。' +
+      '<b>这说明 t=4.75 是分段挑出来的，不是可复用的能力。</b></div></section>';
+    return h;
+  }
+
+  function p5HoldPanel() {
+    var rows = (P5D.d || {}).rows || [];
+    if (!rows.length) return '';
+    var best = null;
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].cost !== 'k10') continue;
+      if (!best || (rows[i].nav || -9) > (best.nav || -9)) best = rows[i];
+    }
+    var a5 = null, b5 = null;
+    for (var j = 0; j < rows.length; j++) {
+      if (rows[j].hold === 5 && rows[j].cost === 'k10') a5 = rows[j];
+      if (rows[j].hold === 30 && rows[j].cost === 'none') b5 = rows[j];
+    }
+    var h = '<section class="ui-panel"><h2>④ 降换手：唯一让净值在真实成本下转正的动作</h2>' +
+      '<div class="note"><p>成本 = <b>换手 × 单边 bp</b>，而换手由持有期决定。' +
+      '5 日持有把年换手顶到 74 倍；拉到 20 日，换手降到 18 倍，成本按比例降。' +
+      '这是唯一"不动信号、只动周转"的降本手段——前十三轮从没碰过持有期，' +
+      '因为候风把 5 日冻结成了参数，而冻结的理由里从来没算过成本。</p></div>' +
+      '<div class="ab-kpis">' +
+      '<div class="ab-kpi"><span>5 日 / 真实成本</span><b class="dn">' + n((a5 ? a5.nav : 0) * 100) +
+      '%</b><small>年换手 ' + n(a5 ? a5.turnover : 0, 1) + ' 倍，成本吃掉 ' +
+      n(a5 ? a5.annual_cost_pp : 0, 1) + '%/年</small></div>' +
+      '<div class="ab-kpi"><span>最好的持有期</span><b class="up">' + (best ? best.hold : '—') +
+      ' 日</b><small>净值 ' + n((best ? best.nav : 0) * 100) + '%，每单位α ' +
+      n((best ? best.alpha_per_util : 0) * 1e4, 1) + 'bp</small></div>' +
+      '<div class="ab-kpi"><span>它的年换手</span><b>' + n(best ? best.turnover : 0, 1) +
+      ' 倍</b><small>成本降到 ' + n(best ? best.annual_cost_pp : 0, 1) + '%/年</small></div>' +
+      '<div class="ab-kpi"><span>但 t 值</span><b class="' + ((best && (best.alpha_t || 0) > 2) ? 'up' : 'dn') + '">' +
+      n(best ? best.alpha_t : 0) + '</b><small>仍 &lt; 2，只能说"不亏"，不能说"有 α"</small></div></div>' +
+      '<div class="rows mt12"><div class="row p5-row row--head"><span>持有期 / 成本</span>' +
+      '<span class="num">净值</span><span class="num">回撤</span><span class="num">每单位α</span>' +
+      '<span class="num">t</span><span class="num">年换手</span></div>';
+    for (var k = 0; k < rows.length; k++) {
+      var r = rows[k], apu = (r.alpha_per_util || 0) * 1e4;
+      h += '<div class="row p5-row"><span class="row__nm"><b>' + r.hold + ' 日 · ' +
+        (r.cost === 'none' ? '无成本' : '冲击') + '</b>' +
+        ' <small class="muted p5-desc">年成本 ' + n(r.annual_cost_pp, 1) + '%</small></span>' +
+        '<span class="num ' + ((r.nav || 0) >= 0 ? 'up' : 'dn') + '">' + n((r.nav || 0) * 100) + '%</span>' +
+        '<span class="num dn">' + n((r.mdd || 0) * 100) + '%</span>' +
+        '<span class="num ' + (apu >= 0 ? 'up' : 'dn') + '">' + n(apu, 1) + 'bp</span>' +
+        '<span class="num">' + n(r.alpha_t) + '</span>' +
+        '<span class="num muted">' + n(r.turnover, 1) + '×</span></div>';
+    }
+    h += '</div>' +
+      '<div class="note mt12"><p>无成本那一列随持有期<b>单调下降</b>（' + n((b5 ? b5.nav : 0) * 100) +
+      '% 是 30 日的成绩），因为 1买 的超额集中在买点后的几天，拿太久就还回去了。' +
+      '但加上成本后排序整个反过来：5 日被成本吃光，20 日反而最稳。' +
+      '<b>两个力量方向相反，交点就在 10~20 日之间。</b></p></div>' +
+      '<div class="p3-verdict"><b>判决：把持有期从 5 日拉到 20 日，是唯一能让净值为正的动作。</b>' +
+      '但它只是把"明显为负"变成"不亏"（t=' + n(best ? best.alpha_t : 0) +
+      '），不是把策略变成有 α。真要上线，还得先把真实滑点量出来。</div></section>';
+    return h;
+  }
+
   // ---------------------------------------------------------------- 口径
   function renderAbout() {
     var src = (B && B.source) || {};
@@ -1763,6 +2028,7 @@
     else if (S.view === 'up') h = renderUP();
     else if (S.view === 'p3') h = renderP3();
     else if (S.view === 'p4') h = renderP4();
+    else if (S.view === 'p5') h = renderP5();
     else h = renderAbout();
     app.innerHTML = h;
     applyDataWidth(app);
@@ -1860,14 +2126,25 @@
       fetch('/hf_variants.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
       fetch('/hf_phase3.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
       fetch('/hf_phase4.json', { cache: 'no-store' }).then(function (r) { return r.json(); })
+      ,fetch('/hf_phase5.json', { cache: 'no-store' }).then(function (r) { return r.json(); })
     ]).then(function (res) {
       D = res[0]; B = res[1]; H = res[2]; AB = res[3]; UV = res[4]; P3 = res[5];
       P4D = res[6];
+      P5D = res[7];
       $('nv-pool').textContent = (D.n || 0) + ' 只';
       $('nv-book').textContent = ((B.positions || []).length) + ' 笔';
       if (H) $('nv-hf').textContent = (H.positions || []).length + ' 笔';
       if (P4D && P4D.c && P4D.c.agg && P4D.c.agg['停3买']) {
         $('nv-p4').textContent = n(P4D.c.agg['停3买'].avg_excess * 100) + '%';
+      }
+      if (P5D && P5D.d && P5D.d.rows && P5D.d.rows.length) {
+        var best5 = null;
+        for (var i5 = 0; i5 < P5D.d.rows.length; i5++) {
+          var x5 = P5D.d.rows[i5];
+          if (x5.cost !== 'k10') continue;
+          if (!best5 || (x5.nav || -9) > (best5.nav || -9)) best5 = x5;
+        }
+        if (best5) $('nv-p5').textContent = 'hold' + best5.hold + ' ' + n((best5.nav || 0) * 100) + '%';
       }
       if (P3 && P3.short && P3.short.s1) {
         $('nv-p3').textContent = '+' + n(P3.short.s1.total) + '%';

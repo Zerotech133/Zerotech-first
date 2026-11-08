@@ -107,6 +107,16 @@ P = {
     # 所以开不开差别不大；长历史全市场扫描里这类票是主要收益来源，
     # 不开就是拿不可成交的收益当成绩。
     "limit_gate": False,
+    # ---- 2026-11-08 第十四轮：交易成本（默认 0=基线逐位不变）----
+    # 之前所有结论都只扣了佣金+印花税（买 0.075%/卖 0.125%），滑点与冲击成本
+    # 一分没算。笔均超额只有 1~2%，单边 20bp 就能吃掉一半——这不是"更保守"，
+    # 是账本从没算过真实的成交难度。两种口径：
+    #   slip_bp   固定滑点，按成交额比例扣（大盘小盘一个价，最悲观也最简单）
+    #   impact_k  平方根冲击：impact = k × (ATR/px) × √(下单股数/ADV20)
+    #             20 日均成交额做 ADV，σ 用 ATR/px 代理。小票+大单自动更贵。
+    "slip_bp": 0.0,         # 单边固定滑点（bp）。买入 +，卖出 −
+    "impact_k": 0.0,        # 冲击系数 k。0=关；经验值 0.5~1.0
+    "adv_n": 20,            # ADV 回看天数
 }
 BUY_TYPES = ("1买", "2买", "3买")
 SELL_TYPES = ("1卖", "2卖", "3卖")
@@ -199,7 +209,7 @@ class Bars:
     会让 SL/TP 的绝对值失去"多少钱"的含义。
     """
 
-    __slots__ = ("dates", "o", "h", "l", "c", "v", "atr", "pos", "f")
+    __slots__ = ("dates", "o", "h", "l", "c", "v", "atr", "pos", "f", "adv")
 
     def __init__(self, dates, o, h, l, c, v, pc):
         self.dates = dates
@@ -210,6 +220,14 @@ class Bars:
         for i in range(1, n):
             base = pc[i] if pc[i] and pc[i] > 0 else c[i - 1]
             self.f[i] = self.f[i - 1] * (c[i] / base) if base else self.f[i - 1]
+        # ADV：20 日均成交额（v 是股数、c 是原始价，两者同为未复权口径，乘积是真成交额）。
+        # 用滚动和而不是全样本均值——冲击成本取决于"当天市场上有多大的量"，不是历史平均。
+        self.adv = [0.0] * n
+        nn = P["adv_n"]
+        for i in range(n):
+            j = max(0, i - nn + 1)
+            seg = [v[k] * c[k] for k in range(j, i + 1)]
+            self.adv[i] = sum(seg) / len(seg) if seg else 0.0
         tr = [0.0] * n
         for i in range(n):
             if i == 0 or pc[i] <= 0:
@@ -447,6 +465,26 @@ def rank_key(mode):
     return lambda x: (x["lag"] if x["lag"] is not None else 99, x["code"])
 
 
+def _sell_px(b, xi, px, qty):
+    """卖出成交价：滑点与冲击都再压一道。
+
+    与买入对称、方向相反——买入往上追价，卖出往下砸价。冲击同样用 √(Q/ADV)：
+    卖出股数占当日成交额比例越大，成交价越差。单笔冲击封顶 15%，防极端小票
+    （ADV 几十万那种）把账炸掉；封顶只影响病态样本，不影响结论方向。
+    """
+    slip = P["slip_bp"] / 1e4
+    if slip:
+        px *= 1 - slip
+    if P["impact_k"] > 0 and b.adv and xi < len(b.adv) and b.adv[xi] > 0 and qty > 0:
+        volr = (b.atr[xi] or 0) / b.c[xi] if b.c[xi] > 0 else 0.0
+        if volr > 0:
+            imp = P["impact_k"] * volr * math.sqrt(qty / b.adv[xi])
+            P["_sum_imp_bp"] = P.get("_sum_imp_bp", 0.0) + imp * 1e4
+            P["_n_imp"] = P.get("_n_imp", 0) + 1
+            px *= 1 - min(imp, 0.15)
+    return px
+
+
 def simulate(axis, plans, bars, entry_at_close=False, collect_skip=False):
     """逐日推进：先结算到期 → 再开盘建仓 → 收盘盯市（顺序同 portfolio_mtm）。
 
@@ -492,6 +530,7 @@ def simulate(axis, plans, bars, entry_at_close=False, collect_skip=False):
                     keep.append(p)
                     continue
                 px = b.px_at_k(xi, p["entry_i"], "o")
+                px = _sell_px(b, xi, px, p["qty"])
                 q_sell = p["qty"]
                 # 只有"橙色触发的半仓"才卖一半；红色永远全清（否则 qty 会被反复减半）
                 if p.get("tag_half") and p.get("tag_kind") == "orange" and p["qty"] > lot:
@@ -546,7 +585,7 @@ def simulate(axis, plans, bars, entry_at_close=False, collect_skip=False):
                 if xi is None:
                     keep.append(p)
                     continue
-                px = b.px_at(xi, p["entry_i"])
+                px = _sell_px(b, xi, b.px_at(xi, p["entry_i"]), p["qty"])
                 proceeds = p["qty"] * px * (1 - P["sell_cost"])
                 cash += proceeds
                 if P["exit_lock_days"] > 0:
@@ -652,18 +691,32 @@ def simulate(axis, plans, bars, entry_at_close=False, collect_skip=False):
                     alloc = min(budget, avail)
                     amts = [alloc * (w / sw) for w in iw]
                 n_skip_lot = 0
-                for (s, b, ei, o, _), amt in zip(picks, amts):
+                for (s, b, ei, o, volr), amt in zip(picks, amts):
                     amt0 = amt
                     amt = min(amt, mx * eq0, avail)
                     if amt < amt0 * 0.5:
                         n_locked_block += 1
-                    q = int(amt / (o * (1 + P["buy_cost"])) // lot) * lot
+                    # 成交价 = 开盘价 × (1 + 固定滑点 + 平方根冲击)。
+                    # 必须在算股数之前定下来，否则 q×成交价 ≠ cost，
+                    # 现金与持仓市值会对不上（成本只进了其中一边）。
+                    slip = P["slip_bp"] / 1e4
+                    imp = 0.0
+                    # q_est 是"按分配金额能买到的股数"估算，不是最终取整股数：
+                    # 冲击成本作用在真实下单量上，取整误差在高冲击时会被 √ 放大，
+                    # 所以这里必须留痕，否则事后无法核对成本是怎么算出来的。
+                    q_est = amt / max(o, 1e-9) if amt > 0 else 0.0
+                    if P["impact_k"] > 0 and b.adv[ei] > 0 and amt > 0:
+                        imp = P["impact_k"] * volr * math.sqrt(q_est / b.adv[ei])
+                        P["_sum_imp_bp"] = P.get("_sum_imp_bp", 0.0) + imp * 1e4
+                        P["_n_imp"] = P.get("_n_imp", 0) + 1
+                    oe = o * (1 + slip + imp)
+                    q = int(amt / (oe * (1 + P["buy_cost"])) // lot) * lot
                     if s["code"].startswith(("688", "689")):
-                        q = int(amt / (o * (1 + P["buy_cost"])) // 200) * 200
+                        q = int(amt / (oe * (1 + P["buy_cost"])) // 200) * 200
                     if q <= 0:
                         n_skip_lot += 1
                         continue
-                    cost = q * o * (1 + P["buy_cost"])
+                    cost = q * oe * (1 + P["buy_cost"])
                     if cost < P["min_ticket"] * eq0:
                         n_skip_lot += 1
                         continue
@@ -681,8 +734,10 @@ def simulate(axis, plans, bars, entry_at_close=False, collect_skip=False):
                         "st": st,
                         "code": s["code"], "name": s["name"], "type": s["type"],
                         "sig_dt": s["sig_dt"], "detect": s["detect"], "lag": s["lag"],
-                        "entry_date": d, "entry_i": ei, "entry_px": o,
+                        "entry_date": d, "entry_i": ei, "entry_px": oe,
                         "qty": q, "amt": cost,
+                        "slip_bp": round((slip + imp) * 1e4, 2),
+                        "q_est": round(q_est, 1), "adv": round(b.adv[ei], 0),
                         "exit_i": ei + hold,
                         "exit_d": b.dates[ei + hold] if ei + hold < len(b.dates) else None, "peak": o, "max_fav": 0.0, "max_adv": 0.0,
                         "path": [], "alerts": 0,
@@ -886,6 +941,10 @@ def main():
                     help="净敞口上限 mv/equity（1.0=关，基线；0.5=最多半仓）")
     ap.add_argument("--limit-gate", action="store_true",
                     help="涨停不可买（长历史全市场扫描必须开，否则一字板算成收益）")
+    ap.add_argument("--slip", type=float, default=P["slip_bp"],
+                    help="单边固定滑点（bp）。买 +，卖 −；20 = 0.20%%")
+    ap.add_argument("--impact", type=float, default=P["impact_k"],
+                    help="平方根冲击系数 k：impact = k×(ATR/px)×√(Q/ADV20)。0=关")
     a = ap.parse_args()
 
     P["sl_mode"] = a.sl_mode
@@ -894,7 +953,11 @@ def main():
     P["exit_mode"] = a.exit_mode
     P["gross_cap"] = a.gross
     P["limit_gate"] = a.limit_gate
+    P["slip_bp"] = a.slip
+    P["impact_k"] = a.impact
     P.pop("_n_limit_block", None)
+    P.pop("_sum_imp_bp", None)
+    P.pop("_n_imp", None)
 
     ctx = build_context(a.days)
     axis, asof, win, bars = ctx["axis"], ctx["asof"], ctx["win"], ctx["bars"]

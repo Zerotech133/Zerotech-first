@@ -171,10 +171,19 @@ def slice_ctx(ctx, start, end, only=None):
     return c
 
 
-def run(ctx, idxc, only=None, label="", gate=False):
-    """跑一个组合，返回一行可比结果。"""
+def run(ctx, idxc, only=None, label="", gate=False, cost=None):
+    """跑一个组合，返回一行可比结果。
+
+    cost={"slip_bp":..,"impact_k":..} 覆盖成交成本；默认 None 即零滑点、
+    零冲击——与第十三轮之前的口径完全一致，旧结论可复现。
+    """
     H.P.pop("_n_limit_block", None)
-    with params(limit_gate=gate):
+    H.P.pop("_sum_imp_bp", None)
+    H.P.pop("_n_imp", None)
+    c = cost or {}
+    with params(limit_gate=gate,
+                slip_bp=c.get("slip_bp", 0.0),
+                impact_k=c.get("impact_k", 0.0)):
         nav, trades, live, skipped, plans, skip_days = H.run_once(ctx, only=only)
     st = H.stats_of(nav, trades)
     ba = beta_alpha(nav, idxc)
@@ -208,6 +217,8 @@ def run(ctx, idxc, only=None, label="", gate=False):
         "skipped_room": skipped,
         "gross_block_days": sum(1 for x in skip_days if x.get("why") == "gross"),
         "limit_block": H.P.get("_n_limit_block", 0),
+        "imp_bp": (round((H.P.get("_sum_imp_bp") or 0.0) / H.P["_n_imp"], 1)
+                   if H.P.get("_n_imp") else 0.0),
         "by_type_tr": per_trade_alpha(trades, idxc),
     }
 
