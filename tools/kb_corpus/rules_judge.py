@@ -156,7 +156,8 @@ def backtest():
     total = sum(sum(c.values()) for c in matrix.values())
     agree = sum(matrix[m][m] for m in matrix)
     print(f"回测样本: {total}  动作一致率: {agree/total*100:.1f}%")
-    print(f"{'人工\\规则':<10}{'pass':>8}{'revise':>8}{'reject':>8}")
+    rule_col = "人工\\规则"
+    print(f"{rule_col:<10}{'pass':>8}{'revise':>8}{'reject':>8}")
     for m in ("pass", "revise", "reject"):
         c = matrix[m]
         print(f"{m:<10}{c['pass']:>8}{c['revise']:>8}{c['reject']:>8}   (人工小计 {sum(c.values())})")
