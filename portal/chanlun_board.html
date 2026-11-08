@@ -244,10 +244,41 @@
     /* 同一套色也要接到 p7 的条形轨道上：面板④ 复用 .p7-bar，
        不接的话三条柱子会全蓝，看上去像"没有差别"。 */
     .p7-bar__track i.s-dead { background: var(--ui-amber); }
+    /* 盈亏量按 A 股约定着色：红涨绿跌。借 s-new/s-dead 的提示色会让人
+       把「亏损」看成「警告」，而这两件事的处置完全不同。 */
+    .p7-bar__track i.s-up { background: var(--color-up); }
+    .p7-bar__track i.s-dn { background: var(--color-dn); }
+    /* 盈亏量必须用「零轴条」：长度只编码大小、正负只靠颜色，等于把一半信息
+       交给颜色。零轴条让位置本身编码带符号的数——往右是赚，往左是亏。 */
+    .p9-dbar { position: relative; flex: 1; height: 10px; border-radius: 5px;
+      background: var(--ui-paper-2); border: 1px solid var(--ui-line); }
+    .p9-dbar .zx { position: absolute; left: 50%; top: -3px; bottom: -3px;
+      width: 1px; background: var(--ui-muted); opacity: .55; }
+    .p9-dbar i { position: absolute; top: 0; height: 100%; display: block; }
+    .p9-dbar i.pos { left: 50%; border-radius: 0 4px 4px 0; background: var(--color-up); }
+    .p9-dbar i.neg { right: 50%; border-radius: 4px 0 0 4px; background: var(--color-dn); }
+    /* 数值格要能放下两行：借 .p7-bar__v（56px、无块级 small）会被挤成一团 */
+    .p9-dv { flex: 0 0 66px; text-align: right; font-weight: 600;
+      font-variant-numeric: tabular-nums; }
+    .p9-dv small { display: block; font-size: 10px; line-height: 1.3;
+      color: var(--ui-muted); font-weight: 400; }
     .p7-bar__track i.s-new { background: var(--ui-blue); }
     .p7-bar__track i.s-keep { background: var(--ui-muted); }
     .p8-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 11.5px; color: var(--ui-muted); }
     .p8-legend b { font-variant-numeric: tabular-nums; }
+
+    /* 成本口径：3 本书 × 4 档成本的矩阵（名字 + 四列） */
+    .p9-mx { grid-template-columns: minmax(0,1.25fr) repeat(4, 86px); align-items: center; }
+    .p9-mx--head { font-size: 11.5px; }
+    .p9-c { font-variant-numeric: tabular-nums; font-size: 13px; }
+    .p9-c small { display: block; font-size: 10.5px; color: var(--ui-muted); font-weight: 400; }
+    .p9-formula { margin-top: 13px; padding: 11px 13px; border-radius: 8px;
+      background: var(--ui-paper-2); border: 1px solid var(--ui-line);
+      font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11.5px;
+      line-height: 1.8; }
+    .p9-formula em { font-style: normal; color: var(--ui-blue); font-weight: 700; }
+    /* 逐笔 α 表：口径 / 双边bp / 笔均α / 中位α / t */
+    .p9-lv { grid-template-columns: minmax(0,1.3fr) 74px 86px 86px 54px; align-items: center; }
 
     /* 三方向验证：敞口档 / 窗口 / 停3买 三张表，列数比 p3 多一列 */
     .p4-row { grid-template-columns: minmax(0,1.6fr) 70px 74px 64px 56px 76px 52px; }
@@ -284,6 +315,14 @@
       .p8-row { grid-template-columns: minmax(0,1fr) 96px 56px; }
       .p8-row > span:nth-child(2) { display: none; }
       .p8-row .row__nm { display: block; }
+      /* 成本口径：窄屏只留「名字 / 零成本 / 实测」，中间两档是过程量 */
+      .p9-mx { grid-template-columns: minmax(0,1fr) 70px 78px; }
+      .p9-mx > span:nth-child(3), .p9-mx > span:nth-child(4) { display: none; }
+      .p9-mx .row__nm { display: block; }
+      .p9-mx .row__nm small { display: block; margin-top: 1px; line-height: 1.32; }
+      /* 逐笔表：窄屏留 名字 / 笔均α / t（双边bp 与中位α 可从上文推） */
+      .p9-lv { grid-template-columns: minmax(0,1fr) 78px 52px; }
+      .p9-lv > span:nth-child(2), .p9-lv > span:nth-child(4) { display: none; }
       .p8-row .row__nm small { display: block; margin-top: 1px; line-height: 1.32; }
       .p7-row .row__nm { display: block; }
       .p7-row .row__nm small { display: block; margin-top: 1px; line-height: 1.32; }
@@ -336,6 +375,7 @@
       <button class="viewtab" role="tab" data-view="p6" aria-selected="false">方法论复盘 <small id="nv-p6">—</small></button>
       <button class="viewtab" role="tab" data-view="p7" aria-selected="false">纯正缠论 <small id="nv-p7">—</small></button>
       <button class="viewtab" role="tab" data-view="p8" aria-selected="false">口径修正 <small id="nv-p8">—</small></button>
+      <button class="viewtab" role="tab" data-view="p9" aria-selected="false">成本口径 <small id="nv-p9">—</small></button>
       <button class="viewtab" role="tab" data-view="about" aria-selected="false">口径</button>
     </nav>
 
@@ -370,6 +410,7 @@
   var SCSI = null;   // hf_sell_exit_csi.json（同一批笔，市值加权基准对照）
   var S51 = null;    // hf_sell_exit_s51.json（同一批笔，51bp 全成本）
   var RG8 = null;    // hf_regauge.json（G3：新旧口径逐条对照 + 翻转判定）
+  var CG9 = null;    // hf_cost_gauge.json（成本阶梯：两套并行账 × 四档成本）
 
   function $(id) { return document.getElementById(id); }
   function esc(s) {
@@ -2118,6 +2159,200 @@
     return h;
   }
 
+
+  // ------------------------------------------------------------ 成本口径
+  function p9Caliber() {
+    var M = (CG9 || {}).meta || {}, LV = (CG9 || {}).levels || [];
+    if (!LV.length) return '';
+    var real = LV.filter(function (x) { return x.k === 'real'; })[0] || {};
+    var comm = LV.filter(function (x) { return x.k === 'comm'; })[0] || {};
+    var h = '<section class="ui-panel"><h2>① 三套账三个成本，同一策略三个净值</h2>'
+      + '<div class="note"><p>第十八轮之前，仓库里每套账自己算成本：'
+      + '<span class="mono">hf_book</span> 扣佣金 + 滑点，'
+      + '<span class="mono">trade_book</span> <b>一分不扣</b>（ret 与 exit_px/entry_px−1 逐位相同），'
+      + '<span class="mono">shadow_book</span> 只扣 20bp 佣金。'
+      + '三个数并排放着，看的人以为是策略不同，其实是记账不同。</p></div>'
+      + '<div class="ab-kpis">'
+      + '<div class="ab-kpi"><span>佣金（双边）</span><b>' + n(comm.total_bp, 1)
+      + '</b><small>买 7.5 / 卖 12.5（含印花税）</small></div>'
+      + '<div class="ab-kpi"><span>单边滑点</span><b>' + n(real.slip_bp, 1)
+      + '</b><small>bp，实测档</small></div>'
+      + '<div class="ab-kpi"><span>合计双边</span><b class="bad">' + n(real.total_bp, 1)
+      + '</b><small>bp，这是决策该用的数</small></div>'
+      + '<div class="ab-kpi"><span>相对 S3 保守</span><b>'
+      + n(real.total_bp / (LV.filter(function (x) { return x.k === 's3'; })[0].total_bp), 1)
+      + '×</b><small>S3 = 50.2bp</small></div></div>'
+      + '<div class="p9-formula">总双边 bp = 佣金双边 bp + <em>2 ×</em> 单边滑点 bp'
+      + '<br>笔级净收益 = (1 + 毛) × (1 − 卖费率) / (1 + 买费率) − 1'
+      + '<br>组合年化成本 = 总双边换手 × 总双边 bp</div>'
+      + '<div class="p3-verdict"><b>为什么佣金和滑点必须分开记：</b>'
+      + '佣金是可以谈的（万 2.5 → 万 1，省 12bp），滑点由单笔金额占日成交额决定'
+      + '（降不下来，只能靠减小单笔或选流动性好的票）。混成一个数之后，'
+      + '看到「成本 122bp」根本不知道该去谈哪一头——而这两件事的解法完全不同。</div></section>';
+    return h;
+  }
+
+  function p9Shadow() {
+    var SH = (CG9 || {}).shadow || {}, BK = SH.books || [];
+    if (!BK.length) return '';
+    var LV = BK[0].rows;
+    var _v3 = BK.filter(function (x) { return x.k === 'v3'; })[0] || {};
+    var _vr = _v3.rows || [];
+    var _g = _vr.length ? _vr[0].total : 0, _n = _vr.length ? _vr[_vr.length - 1].total : 0;
+    var h = '<section class="ui-panel"><h2>② 影子盘：v3 从 '
+      + (_g >= 0 ? '+' : '') + n(_g, 2) + '% 掉到 '
+      + (_n >= 0 ? '+' : '') + n(_n, 2) + '%，但只有 '
+      + (SH.days || 0) + ' 个交易日</h2>'
+      + '<div class="note"><p>同一批 <b>' + (SH.n_signal || 0) + '</b> 笔信号、'
+      + (SH.n_entry_days || 0) + ' 个开仓日、同一条日历，只换买卖费率，四档各真跑一次引擎。'
+      + '成本是按费率<b>进到路径里</b>的，不能事后减一个常数——一次买入的资金占用'
+      + '会改变后面每一笔的预算，减常数会漏掉复利。</p></div>'
+      + '<div class="rows"><div class="row p9-mx row--head"><span>口径</span>';
+    for (var i = 0; i < LV.length; i++) {
+      h += '<span class="num">' + esc(LV[i].label) + '</span>';
+    }
+    h += '</div>';
+    for (var b = 0; b < BK.length; b++) {
+      var bk = BK[b];
+      h += '<div class="row p9-mx"><span class="row__nm"><b>' + esc(bk.label) + '</b>'
+        + ' <small class="muted">持 ' + bk.hold + ' 日'
+        + (bk.cap ? ' · 单票 ' + (bk.cap * 100).toFixed(0) + '%' : '') + '</small></span>';
+      for (var j = 0; j < bk.rows.length; j++) {
+        var r = bk.rows[j];
+        h += '<span class="p9-c ' + (r.total >= 0 ? 'up' : 'dn') + '">'
+          + (r.total >= 0 ? '+' : '') + n(r.total, 2) + '%'
+          + '<small>' + n(r.turnover_yr, 1) + '× 换手</small></span>';
+      }
+      h += '</div>';
+    }
+    var v3 = BK.filter(function (x) { return x.k === 'v3'; })[0] || {};
+    var v3r = v3.rows || [];
+    var drag = v3r.length ? (v3r[v3r.length - 1].total - v3r[0].total) : 0;
+    var util = v3r.length ? v3r[v3r.length - 1].util : 0;
+    var ac = v3r.length ? v3r[v3r.length - 1].ann_cost_pp : 0;
+    h += '</div><div class="p3-verdict"><b>v3 掉了 '
+      + n(Math.abs(drag), 2) + 'pp，不是因为它 α 厚，是因为它的仓位利用率只有 '
+      + n(util, 1) + '%。</b>成本按<b>成交额</b>收，空仓的钱不交成本——'
+      + '所以这个数不能跟「满仓策略」的净值放一起比大小。'
+      + '按利用率还原：年化成本 ' + n(ac, 2) + 'pp 打在 ' + n(util, 1)
+      + '% 的仓位上，只相当于权益的 ' + n(ac * util / 100, 2) + 'pp。<br>'
+      + '<b>而且它只覆盖 ' + (SH.days || 0) + ' 个交易日（' + n(SH.years, 2)
+      + ' 年）</b>，样本里最后一段是弱市、v3 直接停手——这个 +3.90% '
+      + '只能当口径演示，不能当业绩。</div></section>';
+    return h;
+  }
+
+  function p9Trade() {
+    var TR = (CG9 || {}).trade || {}, RW = TR.rows || [];
+    if (!RW.length) return '';
+    var last = RW[RW.length - 1], first = RW[0];
+    var _b1 = (last.by_type || {})['1买'] || {};
+    var _b1g = ((first.by_type || {})['1买'] || {}).alpha_mean;
+    var h = '<section class="ui-panel"><h2>③ 逐笔 α：1买 的 '
+      + (_b1g >= 0 ? '+' : '') + n(_b1g, 2) + '% 扣完成本只剩 '
+      + (_b1.alpha_mean >= 0 ? '+' : '') + n(_b1.alpha_mean, 2) + '%</h2>'
+      + '<div class="note"><p>台账里可执行的多头已平仓 <b>' + (TR.n_closed_buy || 0)
+      + '</b> 笔，逐笔套四档成本。台账 <span class="mono">ret</span> 实测等于 '
+      + '<span class="mono">exit_px/entry_px−1</span>（差 0.0bp），'
+      + '所以这里的「零成本」档就是 <span class="mono">trade_book.json</span> 现在那两个数。</p></div>'
+      + '<div class="rows"><div class="row p9-lv row--head"><span>口径</span>'
+      + '<span class="num">双边 bp</span><span class="num">笔均 α</span>'
+      + '<span class="num">中位 α</span><span class="num">t</span></div>';
+    for (var i = 0; i < RW.length; i++) {
+      var r = RW[i];
+      var strong = (i === RW.length - 1);
+      h += '<div class="row p9-lv"><span class="row__nm"><b>' + esc(r.label) + '</b>'
+        + (strong ? ' <small class="muted">决策口径</small>' : '') + '</span>'
+        + '<span class="num muted">' + n(r.total_bp, 1) + '</span>'
+        + '<span class="num ' + (r.alpha_mean >= 0 ? 'up' : 'dn') + '"'
+        + (strong ? ' style="font-weight:700"' : '') + '>'
+        + (r.alpha_mean >= 0 ? '+' : '') + n(r.alpha_mean, 2) + '%</span>'
+        + '<span class="num ' + (r.alpha_median >= 0 ? 'up' : 'dn') + '">'
+        + n(r.alpha_median, 2) + '%</span>'
+        + '<span class="num muted">' + n(r.alpha_t, 2) + '</span></div>';
+    }
+    h += '</div><div class="p7-bars" style="margin-top:16px">';
+    var BT = last.by_type || {}, ks = Object.keys(BT).sort();
+    var mx = 0.01;
+    for (var q = 0; q < ks.length; q++) {
+      mx = Math.max(mx, Math.abs(BT[ks[q]].alpha_mean));
+    }
+    for (var q2 = 0; q2 < ks.length; q2++) {
+      var k = ks[q2], v = BT[k];
+      // 半幅：最大者占满一侧，其余按比例（零轴条每侧 50% 宽）
+      var w = Math.abs(v.alpha_mean) / mx * 50;
+      h += '<div class="p7-bar"><span class="p7-bar__k">' + esc(k) + '</span>'
+        + '<span class="p9-dbar"><span class="zx"></span><i class="'
+        + (v.alpha_mean >= 0 ? 'pos' : 'neg')
+        + '" style="width:' + w.toFixed(1) + '%"></i></span>'
+        + '<span class="p9-dv mono ' + (v.alpha_mean >= 0 ? 'up' : 'dn') + '">'
+        + (v.alpha_mean >= 0 ? '+' : '') + n(v.alpha_mean, 2) + '%'
+        + '<small>胜 ' + n(v.alpha_win, 0) + '%</small></span></div>';
+    }
+    h += '</div><div class="p3-verdict"><b>成本对三个买点一视同仁（每笔 122bp），'
+      + '所以排序不会被它翻转——它只是把三个都往下压。</b>'
+      + '1买 ' + n((BT['1买'] || {}).alpha_mean, 2) + '%（t=' + n((BT['1买'] || {}).alpha_t, 2)
+      + '）、2买 ' + n((BT['2买'] || {}).alpha_mean, 2) + '%（t=' + n((BT['2买'] || {}).alpha_t, 2)
+      + '）、3买 ' + n((BT['3买'] || {}).alpha_mean, 2) + '%（t=' + n((BT['3买'] || {}).alpha_t, 2)
+      + '）。<br><b>1买 是唯一还在零以上的买点，但 t 只有 '
+      + n((BT['1买'] || {}).alpha_t, 2) + '，统计上和 0 分不开。</b>'
+      + '从这个意义上说，「纯正缠论只做 1买」这个结论在<b>扣完成本之后仍然成立</b>，'
+      + '但成立的方式变了——它不是「1买 能赚钱」，是「1买 亏得最少」。<br>'
+      + '<b>更要紧的是分布：1买 笔均 '
+      + n((BT['1买'] || {}).alpha_mean, 2) + '%，中位却 '
+      + n((BT['1买'] || {}).alpha_median, 2) + '%，胜率只有 '
+      + n((BT['1买'] || {}).alpha_win, 0) + '%。</b>'
+      + '均值是正的，是因为<b>右尾</b>——少数几笔大涨把平均拉过零，'
+      + '而<b>六成的交易在扣完成本后是亏的</b>。'
+      + '所以「只做 1买」不是一条能等权买入的规则，'
+      + '它要求出场端能拿住右尾；而上一轮已经证明，固定持期越长年化越低、'
+      + '持到卖点又没有增量——这两条放在一起就是：'
+      + '<b>入场信号挑出了右尾，但现有出场规则接不住它。</b></div></section>';
+    return h;
+  }
+
+  function p9Correct() {
+    var SH = (CG9 || {}).shadow || {}, TR = (CG9 || {}).trade || {};
+    var v3 = (SH.books || []).filter(function (x) { return x.k === 'v3'; })[0] || {};
+    var vr = v3.rows || [];
+    if (!vr.length) return '';
+    var gross = vr[0].total, net = vr[vr.length - 1].total;
+    var h = '<section class="ui-panel"><h2>④ 撤回上一轮的判断：不是「偏高 30pp」</h2>'
+      + '<div class="note"><p>第十七轮我写过「trade_book / shadow_book 净值偏高 30pp 以上，'
+      + '不可用于决策」。这一轮把两套账换算到同一刻度后发现，<b>这个判断是错的</b>，'
+      + '而且是两种错叠在一起。</p></div>'
+      + '<div class="ab-kpis">'
+      + '<div class="ab-kpi"><span>我说的差</span><b class="bad">30pp</b>'
+      + '<small>实际上比的不是同一件事</small></div>'
+      + '<div class="ab-kpi"><span>口径差（v3）</span><b>' + n(net - gross, 2)
+      + 'pp</b><small>' + n(gross, 2) + '% → ' + n(net, 2) + '%</small></div>'
+      + '<div class="ab-kpi"><span>剩下那部分</span><b>规则差</b>'
+      + '<small>持 5 日 vs 持 8 日 · 全买点 vs 只 1买</small></div>'
+      + '<div class="ab-kpi"><span>成本口径</span><b class="up">已统一</b>'
+      + '<small>三套账同一个 hf_cost</small></div></div>'
+      + '<div class="p3-verdict"><b>错法一：拿不同规则的两条净值比大小。</b>'
+      + 'hf_book 是「持 5 日 + 全部买点」，影子盘 v3 是「持 8 日 + 只 1买 + 弱市不做 + 单票 5%」。'
+      + '这两条曲线差多少，反映的首先是规则，不是记账。'
+      + '<br><b>错法二：把「成本不同」当成「口径错」。</b>'
+      + '成本不同是事实（0bp / 20bp / 122bp），但它是<b>可调参数</b>，不是错误；'
+      + '真正错的是<b>没扣成本却当成业绩</b>。这两件事的修法不一样：'
+      + '前者把参数补齐（本轮做了），后者要把结论撤掉（本轮也做了）。</div>'
+      + '<div class="note" style="margin-top:14px"><p><b>还剩一层没修，必须写明：</b>'
+      + '影子盘与台账的入场都在<b>检出日收盘</b>，hf_book 用 T+1 开盘。'
+      + '检出当天收盘买入，意味着「收盘前就知道信号」——这层乐观与成本无关，'
+      + '是第二处独立偏差。本轮不动它，因为改它会重述并行 session 正在看的每一笔；'
+      + '但引用这几个数时必须知道它们<b>偏乐观</b>。</p></div></section>';
+    return h;
+  }
+
+  function renderP9() {
+    if (!CG9) {
+      return '<section class="ui-panel"><h2>成本口径</h2><p class="note">数据未生成：'
+        + '先跑 <span class="mono">tools/research/hf_cost_gauge.py</span>。</p></section>';
+    }
+    return p9Caliber() + p9Shadow() + p9Trade() + p9Correct();
+  }
+
   function renderP8() {
     if (!RG8) {
       return '<section class="ui-panel"><h2>口径修正</h2><p class="note">数据未生成：'
@@ -2592,6 +2827,7 @@
     else if (S.view === 'p6') h = renderP6();
     else if (S.view === 'p7') h = renderP7();
     else if (S.view === 'p8') h = renderP8();
+    else if (S.view === 'p9') h = renderP9();
     else h = renderAbout();
     app.innerHTML = h;
     applyDataWidth(app);
@@ -2696,7 +2932,8 @@
       fetch('/hf_phase5.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
       fetch('/hf_phase6.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
       fetch('/hf_matrix.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
-      fetch('/hf_regauge.json', { cache: 'no-store' }).then(function (r) { return r.json(); })
+      fetch('/hf_regauge.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
+      fetch('/hf_cost_gauge.json', { cache: 'no-store' }).then(function (r) { return r.json(); })
     ]).then(function (res) {
       D = res[0]; B = res[1]; H = res[2]; AB = res[3]; UV = res[4]; P3 = res[5];
       P4D = res[6];
@@ -2705,8 +2942,13 @@
       P6D = res[12];
       MX6 = res[13];
       RG8 = res[14];
+      CG9 = res[15];
       if (RG8 && RG8.summary) {
         $('nv-p8').textContent = RG8.summary['失效'] + ' 条失效';
+      }
+      if (CG9 && CG9.trade && CG9.trade.rows && CG9.trade.rows.length) {
+        var _r9 = CG9.trade.rows[CG9.trade.rows.length - 1];
+        $('nv-p9').textContent = '全成本 α ' + n(_r9.alpha_mean, 2) + '%';
       }
       if (SD7 && SD7.dist_any_sell) {
         $('nv-p7').textContent = '卖点 ' + n(SD7.dist_any_sell.median, 0) + ' 日';
