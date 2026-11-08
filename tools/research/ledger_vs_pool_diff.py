@@ -38,6 +38,7 @@ def add(x, src):
 for tag in ("closed", "open"):
     for x in d.get(tag) or []:
         add(x, tag)
+n_bad_arch = n_skip_arch = 0
 for p in sorted(glob.glob(os.path.join(ARCH, "closed_CN_*.jsonl"))):
     with open(p, encoding="utf-8") as f:
         for line in f:
@@ -45,9 +46,18 @@ for p in sorted(glob.glob(os.path.join(ARCH, "closed_CN_*.jsonl"))):
             if not line:
                 continue
             try:
-                add(json.loads(line), "archive")
+                x = json.loads(line)
             except ValueError:
-                pass
+                n_bad_arch += 1
+                continue
+            # 归档目录被两个写入者共用：chanlun_scan._archive_closed 落台账溢出
+            # （paper 风格，带 sig_dt），chanlun_ledger_maint.archive 落回填重算集
+            # （带 dt/entry_i/source=backfill，"假如池里每条信号都入场 20 日"）。
+            # 后者不是台账，混进来会把台账从 1,718 虚增到 2,560。
+            if "dt" in x or x.get("source") == "backfill" or "sig_dt" not in x:
+                n_skip_arch += 1
+                continue
+            add(x, "archive")
 
 pool = [json.loads(l) for l in open(POOL, encoding="utf-8") if l.strip()]
 pb = [r for r in pool if r.get("type") in BUY]

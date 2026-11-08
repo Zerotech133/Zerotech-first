@@ -89,29 +89,104 @@ def _n(s):
     return str(s or "").replace("-", "")[:8]
 
 
+ARCHIVE_DIR = os.path.join(QBT, "data", "chanlun_paper_archive")
+# 与 chanlun_scan.py:218 CLOSED_CAP 同步（paper.json 的 closed 硬上限）。
+# 只用于「归档该有货却没有」的自检告警，不参与任何计算。
+CLOSED_CAP = 5000
+LEDGER_STAT = {}
+
+
+def _load_archived():
+    """→ (rows, 坏行数, 文件数, 跳过的回填行数)。读 `chanlun_paper_archive/closed_*.jsonl`。
+
+    **这个目录被两个写入者共用，必须先分清再读：**
+      · `chanlun_scan._archive_closed(spilled)`：台账 CLOSED_CAP 溢出，**paper 风格**
+        （有 `sig_dt`/`entry_px`/`last_px`/`adj_flag`），这才是台账历史；
+      · `chanlun_ledger_maint.archive(full)`：从产线池 + parquet 重算的**回填结算集**，
+        带 `dt`/`entry_i`/`_bars_len`/`source=backfill`。它是"假如池里每条信号都
+        入场 20 日"的模拟，**不是产线实际入场**。
+
+    实测（2026-11-08）：9,938 行里 9,745 行是后者，只有 193 行是台账溢出——后者
+    行数与 `chanlun_paper.json` 的 `archived_total=192` 吻合。把重算集混进来会让
+    台账样本从 1,718 虚增到 2,560（+49%），且混进来的全是 `backfill` 语义。
+
+    所以这里只收 paper 风格的（必须带 `sig_dt`），回填行计数后丢弃。
+    """
+    rows, nbad, nfiles, n_skip = [], 0, 0, 0
+    if not os.path.isdir(ARCHIVE_DIR):
+        return rows, nbad, nfiles, n_skip
+    for p in sorted(glob.glob(os.path.join(ARCHIVE_DIR, "closed_*.jsonl"))):
+        nfiles += 1
+        with open(p, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    x = json.loads(line)
+                except ValueError:
+                    nbad += 1
+                    continue
+                # 回填重算集：带池字段 dt/entry_i 或显式 source=backfill
+                if "dt" in x or x.get("source") == "backfill" or "sig_dt" not in x:
+                    n_skip += 1
+                    continue
+                rows.append(x)
+    return rows, nbad, nfiles, n_skip
+
+
 def load_ledger():
-    """→ 产能台账里的 1买/2买（open + closed），已按 entry_date 归一。"""
+    """→ 产线台账的 1买/2买（paper.closed + paper.open + CLOSED_CAP 归档）。
+
+    三个来源按优先级合并：先 paper 后归档。同一条既在 paper 又在归档时用 paper 的
+    （repair 过，字段更全）。去重键是 `(entry_date, code, type)`，与清单主键一致。
+
+    输出按 (entry_date, code, type) 排序：归档文件按 exit 月拼接，追加顺序不等于
+    entry_date 顺序，排序让结果与文件切分方式无关、可逐位复现。
+    """
     d = json.load(open(PAPER, encoding="utf-8"))
     out, seen = [], set()
+
+    def take(x, tag):
+        if x.get("type") not in BUY:
+            return
+        ed = _n(x.get("entry_date") or x.get("detect_date"))
+        if not ed or not x.get("entry_px"):
+            return
+        key = (ed, x.get("code"), x.get("type"))
+        if key in seen:
+            return
+        seen.add(key)
+        out.append({
+            "entry_date": ed, "code": x.get("code"), "type": x.get("type"),
+            "name": x.get("name"), "entry_px": float(x["entry_px"]),
+            "sig_dt": _n(x.get("sig_dt")), "ledger": tag,
+            "ledger_ret": (float(x["ret"]) if x.get("ret") is not None else None),
+            "ledger_exit": _n(x.get("exit_date")),
+            "idx_ret": (float(x["idx_ret"]) if x.get("idx_ret") is not None else None),
+        })
+
     for tag, arr in (("closed", d.get("closed") or []), ("open", d.get("open") or [])):
         for x in arr:
-            if x.get("type") not in BUY:
-                continue
-            ed = _n(x.get("entry_date") or x.get("detect_date"))
-            if not ed or not x.get("entry_px"):
-                continue
-            key = (ed, x.get("code"), x.get("type"))
-            if key in seen:
-                continue
-            seen.add(key)
-            out.append({
-                "entry_date": ed, "code": x.get("code"), "type": x.get("type"),
-                "name": x.get("name"), "entry_px": float(x["entry_px"]),
-                "sig_dt": _n(x.get("sig_dt")), "ledger": tag,
-                "ledger_ret": (float(x["ret"]) if x.get("ret") is not None else None),
-                "ledger_exit": _n(x.get("exit_date")),
-                "idx_ret": (float(x["idx_ret"]) if x.get("idx_ret") is not None else None),
-            })
+            take(x, tag)
+    n_paper = len(out)
+
+    arch, nbad, nfiles, n_skip = _load_archived()
+    for x in arch:
+        take(x, "archive")
+
+    out.sort(key=lambda r: (r["entry_date"], r["code"], r["type"]))
+
+    n_closed_paper = len(d.get("closed") or [])
+    LEDGER_STAT.clear()
+    LEDGER_STAT.update({
+        "n_paper": n_paper, "n_total": len(out), "n_archive_only": len(out) - n_paper,
+        "archive_files": nfiles, "archive_rows": len(arch), "archive_bad_lines": nbad,
+        # 归档里属于回填重算集的量（不是台账，已跳过）
+        "archive_skipped_backfill": n_skip,
+        # 顶到截断上限却一笔都没补回来 → 归档缺失或路径不对，静默偏样本
+        "warn": n_closed_paper >= CLOSED_CAP and len(out) == n_paper,
+    })
     return out
 
 
@@ -245,6 +320,16 @@ def main():
         return
 
     picks0 = load_ledger()
+    if LEDGER_STAT.get("n_archive_only"):
+        say("  台账来源：paper %d 笔 + 归档补 %d 笔 = %d 笔（归档 %d 文件，收台账风格 %d 行、"
+            "跳过回填重算集 %d 行，坏行 %d）"
+            % (LEDGER_STAT["n_paper"], LEDGER_STAT["n_archive_only"],
+               LEDGER_STAT["n_total"], LEDGER_STAT["archive_files"],
+               LEDGER_STAT["archive_rows"], LEDGER_STAT["archive_skipped_backfill"],
+               LEDGER_STAT["archive_bad_lines"]))
+    if LEDGER_STAT.get("warn"):
+        say("  [WARN] paper.json 的 closed 已顶到 CLOSED_CAP=%d，但归档一笔都没补回来 —— "
+            "台账样本会静默偏向最近一段，检查 %s" % (CLOSED_CAP, ARCHIVE_DIR))
     axis_all = load_axis()
     last_bar0 = axis_all[-1] if axis_all else ""
     if not picks0:
