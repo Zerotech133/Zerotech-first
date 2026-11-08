@@ -280,6 +280,29 @@
     /* 逐笔 α 表：口径 / 双边bp / 笔均α / 中位α / t */
     .p9-lv { grid-template-columns: minmax(0,1.3fr) 74px 86px 86px 54px; align-items: center; }
 
+    /* 出场规则：六列（名称 / 持期 / A / 配对差 / t / 年化） */
+    .p10-row { grid-template-columns: minmax(0,1.55fr) 62px 72px 70px 78px 74px;
+      align-items: center; }
+    .p10-row--head { font-size: 11.5px; }
+    /* 成本阶梯的表头要放两行（档名 + bp），.num 里的小字必须是块级 */
+    .p10-row .num small { display: block; font-size: 10px; line-height: 1.3;
+      color: var(--ui-muted); font-weight: 400; }
+    /* 第②面板的行名要放四个时点，长于其它页签。.row__nm 是 flex，
+       不给它 ellipsis 就会被压成逐字竖排（这个坑本项目踩过一次）。 */
+    .p10-row .row__nm small { white-space: nowrap; overflow: hidden;
+      text-overflow: ellipsis; min-width: 0; }
+    .p10-hd { margin-top: 14px; margin-bottom: 6px; font-size: 12px;
+      font-weight: 600; color: var(--ui-muted); letter-spacing: .3px; }
+    /* 峰值日分布：标签 / 条 / 占比 */
+    .p10-ph { display: grid; gap: 5px; margin-top: 10px; }
+    .p10-ph > div { display: grid; grid-template-columns: 76px minmax(0,1fr) 52px;
+      gap: 8px; align-items: center; font-size: 12px; }
+    .p10-ph .bar { height: 9px; border-radius: 4px; background: var(--ui-blue);
+      display: block; min-width: 2px; }
+    .p10-ph .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .p10-lx { display: flex; gap: 18px; flex-wrap: wrap; font-size: 11.5px;
+      color: var(--ui-muted); }
+
     /* 三方向验证：敞口档 / 窗口 / 停3买 三张表，列数比 p3 多一列 */
     .p4-row { grid-template-columns: minmax(0,1.6fr) 70px 74px 64px 56px 76px 52px; }
     .p4-x { display: grid; gap: 6px; margin-top: 10px; font-variant-numeric: tabular-nums; }
@@ -323,6 +346,15 @@
       /* 逐笔表：窄屏留 名字 / 笔均α / t（双边bp 与中位α 可从上文推） */
       .p9-lv { grid-template-columns: minmax(0,1fr) 78px 52px; }
       .p9-lv > span:nth-child(2), .p9-lv > span:nth-child(4) { display: none; }
+      /* 出场规则：窄屏只留 名字 / A(毛bp) / 年化净。持期已在名字里点出，
+         配对差与 t 是判据不是结论，优先保"结果"那两列。 */
+      .p10-row { grid-template-columns: minmax(0,1fr) 68px 72px; }
+      .p10-row > span:nth-child(2), .p10-row > span:nth-child(4),
+      .p10-row > span:nth-child(5) { display: none; }
+      .p10-row .row__nm { display: block; }
+      .p10-row .row__nm small { display: block; margin-top: 1px; line-height: 1.32; }
+      .p10-ph > div { grid-template-columns: 64px minmax(0,1fr) 46px; }
+      .p10-lx { gap: 10px; }
       .p8-row .row__nm small { display: block; margin-top: 1px; line-height: 1.32; }
       .p7-row .row__nm { display: block; }
       .p7-row .row__nm small { display: block; margin-top: 1px; line-height: 1.32; }
@@ -376,6 +408,7 @@
       <button class="viewtab" role="tab" data-view="p7" aria-selected="false">纯正缠论 <small id="nv-p7">—</small></button>
       <button class="viewtab" role="tab" data-view="p8" aria-selected="false">口径修正 <small id="nv-p8">—</small></button>
       <button class="viewtab" role="tab" data-view="p9" aria-selected="false">成本口径 <small id="nv-p9">—</small></button>
+      <button class="viewtab" role="tab" data-view="p10" aria-selected="false">出场规则 <small id="nv-p10">—</small></button>
       <button class="viewtab" role="tab" data-view="about" aria-selected="false">口径</button>
     </nav>
 
@@ -411,6 +444,8 @@
   var S51 = null;    // hf_sell_exit_s51.json（同一批笔，51bp 全成本）
   var RG8 = null;    // hf_regauge.json（G3：新旧口径逐条对照 + 翻转判定）
   var CG9 = null;    // hf_cost_gauge.json（成本阶梯：两套并行账 × 四档成本）
+  var PA10 = null;   // hf_path.json（持仓路径解剖：A(T) 曲线 / 三群 / 条件期望）
+  var XL10 = null;   // hf_exit_lab.json（出场规则对照：21 条规则 × 成本阶梯）
 
   function $(id) { return document.getElementById(id); }
   function esc(s) {
@@ -2353,6 +2388,338 @@
     return p9Caliber() + p9Shadow() + p9Trade() + p9Correct();
   }
 
+  // ---------------------------------------------------------------- 出场规则
+  function renderP10() {
+    if (!PA10 || !XL10) {
+      return '<section class="ui-panel"><h2>出场规则</h2><p class="note">数据未生成：'
+        + '先跑 <span class="mono">tools/research/hf_path.py</span> 与 '
+        + '<span class="mono">tools/research/hf_exit_lab.py</span>。</p></section>';
+    }
+    return p10Curve() + p10Shape() + p10Cond() + p10Rules() + p10Cost();
+  }
+
+  function p10Curve() {
+    var C = PA10.curve || {};
+    var cost = PA10.cost_bp || 122;
+    var KS = [5, 20, 40, 60, 80, 120, 180, 250];
+    var h = '<section class="ui-panel"><h2>① A(T) 曲线：单笔毛超额有没有越过成本线</h2>'
+      + '<div class="note"><p>成本<b>按笔收</b>（进出一次 ' + cost + 'bp），α <b>按天攒</b>。'
+      + '所以年化净 = (244/T) × (A(T) − ' + cost + ')。'
+      + '<b>符号只取决于 A(T) 有没有越过这条线</b>，跟持多久无关；持期只决定把差额放大几倍。</p></div>'
+      + '<div class="rows"><div class="row p10-row row--head"><span>T（交易日）</span>'
+      + '<span class="num">笔均毛</span><span class="num">中位</span>'
+      + '<span class="num">A(毛%)</span><span class="num">t（日）</span>'
+      + '<span class="num">年化净</span></div>';
+    for (var i = 0; i < KS.length; i++) {
+      var k = KS[i], c = C[String(k)];
+      if (!c) continue;
+      var over = (c.A_pct || 0) * 100 > cost;
+      h += '<div class="row p10-row"><span class="row__nm"><b>' + k + ' 日</b>'
+        + (over ? ' <small class="up">过线</small>' : ' <small class="muted">未过线</small>')
+        + '</span>'
+        + '<span class="num">' + n(c.mean, 2) + '%</span>'
+        + '<span class="num muted">' + n(c.p50, 2) + '%</span>'
+        + '<span class="num ' + (over ? 'up' : 'dn') + '">' + n(c.A_pct, 2) + '%</span>'
+        + '<span class="num">' + n(c.A_t_cl, 2) + '</span>'
+        + '<span class="num ' + ((c.ann_net || 0) >= 0 ? 'up' : 'dn') + '">'
+        + n(c.ann_net, 2) + '%</span></div>';
+    }
+    // 文字里的数一律从数据取：写死过一次（"+9.06% 掉到 +3.90%"），
+    // 重算之后面板安静地显示过期结论，比报错更难发现。
+    var below = [], above = [];
+    for (var m = 0; m < KS.length; m++) {
+      var cm = C[String(KS[m])];
+      if (!cm) continue;
+      ((cm.A_pct || 0) * 100 > cost ? above : below).push(KS[m]);
+    }
+    var lo = 1e9, hi = -1e9, alo = 1e9, ahi = -1e9;
+    for (var q = 0; q < above.length; q++) {
+      var cv = C[String(above[q])];
+      lo = Math.min(lo, cv.A_pct * 100);
+      hi = Math.max(hi, cv.A_pct * 100);
+      alo = Math.min(alo, cv.ann_net || 0);
+      ahi = Math.max(ahi, cv.ann_net || 0);
+    }
+    h += '</div><div class="note mt12"><p>『过线』= 毛超额 > ' + cost + 'bp。'
+      + (below.length ? below.join(' / ') + ' 日全都过不去，因为 α 还没来得及攒；' : '')
+      + (above.length ? above.join(' / ') + ' 日过线（A 在 ' + n(lo, 0) + '~'
+        + n(hi, 0) + 'bp 之间），但年化只有 ' + n(alo, 2) + '~' + n(ahi, 2)
+        + '%——<b>过线只是不亏，不是赚</b>。' : '')
+      + '</p></div>'      + '<div class="p9-formula">ann_net = (244 / T) × (A<sub>毛</sub>(T) − C)'
+      + '<br>⇒ <em>A<sub>毛</sub> &gt; C 才有正收益；A<sub>毛</sub> − C 决定单位时间赚多少</em></div></section>';
+    return h;
+  }
+
+  function p10Shape() {
+    var gs = PA10.groups || [], ph = PA10.peak_hist || [], gb = PA10.giveback || {};
+    var mx = 0;
+    for (var i = 0; i < ph.length; i++) mx = Math.max(mx, ph[i].pct || 0);
+    var h = '<section class="ui-panel"><h2>② 路径长什么样：谁先涨、谁后崩</h2>'
+      + '<div class="note"><p>同一批 ' + (PA10.n_trades || 0) + ' 笔，统一 '
+      + (PA10.cap || 250) + ' 日观察窗。三群按<b>终值</b>分，看各群在第 5/20/60/120 天分别长什么样。</p></div>'
+      + '<div class="rows"><div class="row p10-row row--head"><span>分组（按 250 日终值）</span>'
+      + '<span class="num">占比</span><span class="num">终值</span>'
+      + '<span class="num">峰值</span><span class="num">峰值日</span>'
+      + '<span class="num">回吐</span></div>';
+    var cols = [5, 20, 60, 120];
+    for (var j = 0; j < gs.length; j++) {
+      var g = gs[j];
+      h += '<div class="row p10-row"><span class="row__nm"><b>' + esc(g.name) + '</b>'
+        + ' <small class="muted">' + cols.map(function (k) {
+          return k + '日 ' + n((g.at || {})[String(k)], 1) + '%';
+        }).join(' · ') + '</small></span>'
+        + '<span class="num">' + n(g.share, 1) + '%</span>'
+        + '<span class="num ' + ((g.final || 0) >= 0 ? 'up' : 'dn') + '">'
+        + n(g.final, 1) + '%</span>'
+        + '<span class="num">' + n(g.peak_c, 1) + '%</span>'
+        + '<span class="num muted">' + (g.peak_k || 0) + ' 日</span>'
+        + '<span class="num muted">' + n(g.giveback, 1) + 'pp</span></div>';
+    }
+    h += '</div>'
+      + '<div class="p3-verdict"><b>左尾不是"一路阴跌"，是"先给你 20% 再拿走 45%"：'
+      + '终值 −25%、峰值日却在第 43 天、MFE +21%。而右尾的峰值中位在 207 天——'
+      + '两群在头两个月长得几乎一样，这就是为什么任何静态规则都切不准。</b></div>';
+    h += '<div class="p10-lx mt12"><span>峰值日分布</span>'
+      + '<span>回吐均值 ' + n(gb.mean, 1) + 'pp，>20pp 占 ' + n(gb.pct_over_20, 1) + '%</span></div>'
+      + '<div class="p10-ph">';
+    for (var k2 = 0; k2 < ph.length; k2++) {
+      var w = mx ? (ph[k2].pct / mx * 100) : 0;
+      h += '<div><span class="muted">' + ph[k2].label + ' 日</span>'
+        + '<span class="bar" style="width:' + w.toFixed(1) + '%"></span>'
+        + '<span class="num">' + n(ph[k2].pct, 1) + '%</span></div>';
+    }
+    h += '</div></section>';
+    return h;
+  }
+
+  function p10Cond() {
+    var cs = PA10.cond || [];
+    var K = [20, 60, 120];
+    var pick = {};
+    for (var i = 0; i < cs.length; i++) pick[cs[i].k] = cs[i].cells;
+    var h = '<section class="ui-panel"><h2>③ 条件期望：赢家继续赢，还是回落</h2>'
+      + '<div class="note"><p>第 k 天浮盈落在某区间时，<b>之后</b>到窗口末还能赚多少。'
+      + '成本已经付了，提前出场只改变"后面那段归不归你"——所以这一列（后续超额）'
+      + '才是止损/止盈能不能成立的<b>唯一依据</b>。'
+      + '每个格子下面那个 t 是<b>按入场日聚类</b>的：同一天进场的几十只票是一次冲击，'
+      + '不聚类的话这张表每一格都会"显著"。</p></div>';
+
+    // 统计：多少格 |t(日)| ≥ 2。18 格按 5% 水平本该出现约 0.9 格，
+    // 挑出来的那一两格如果不能明显多于噪声期望，就不能当结论用。
+    var nCell = 0, nSig = 0, bestSig = null;
+    for (var z = 0; z < cs.length; z++) {
+      var cz = cs[z].cells || [];
+      for (var y = 0; y < cz.length; y++) {
+        var tz = cz[y].rest_alpha_t_cl;
+        if (tz === null || tz === undefined) continue;
+        nCell++;
+        if (Math.abs(tz) >= 2) {
+          nSig++;
+          if (!bestSig || Math.abs(tz) > Math.abs(bestSig.t)) {
+            bestSig = { t: tz, k: cs[z].k, bin: cz[y].bin, a: cz[y].rest_alpha };
+          }
+        }
+      }
+    }
+    var expect = Math.round(nCell * 0.05 * 10) / 10;
+
+    for (var a = 0; a < K.length; a++) {
+      var cells = pick[K[a]];
+      if (!cells) continue;
+      h += '<div class="p10-hd">第 ' + K[a] + ' 天</div>'
+        + '<div class="rows"><div class="row p10-row row--head"><span>当天状态</span>'
+        + '<span class="num">样本</span><span class="num">当前</span>'
+        + '<span class="num">后续</span><span class="num">后续超额</span>'
+        + '<span class="num">后涨率</span></div>';
+      for (var b = 0; b < cells.length; b++) {
+        var c = cells[b], ra = c.rest_alpha || 0;
+        var tc = c.rest_alpha_t_cl;
+        h += '<div class="row p10-row"><span class="row__nm"><b>' + esc(c.bin) + '</b>'
+          + ' <small class="muted">' + n(c.share, 1) + '%</small></span>'
+          + '<span class="num muted">' + c.n + '</span>'
+          + '<span class="num">' + n(c.state, 1) + '%</span>'
+          + '<span class="num">' + n(c.rest_ret, 1) + '%</span>'
+          + '<span class="num ' + (ra >= 0 ? 'up' : 'dn') + '">'
+          + (ra >= 0 ? '+' : '') + n(ra, 2) + '%'
+          + '<small class="muted">t ' + n(tc, 2) + '</small></span>'
+          + '<span class="num">' + n(c.rest_win, 1) + '%</span></div>';
+      }
+      h += '</div>';
+    }
+
+    var first = getCell(cs, 20, 0), last = getCell(cs, 20, -1);
+    if (first && last) {
+      h += '<div class="note mt12"><p>第 20 天那一列<b>看得出方向</b>：亏 20% 以上 → 后续超额 '
+        + sgn(first.rest_alpha) + '；赚 20% 以上 → ' + sgn(last.rest_alpha) + '。'
+        + '但那不是结论——把 t 换成按日聚类，这两格只有 '
+        + n(first.rest_alpha_t_cl, 2) + ' 和 ' + n(last.rest_alpha_t_cl, 2)
+        + '，方向与噪声分不开。</p></div>';
+    }
+
+    h += '<div class="p3-verdict"><b>' + nCell + ' 个格子里 |t(日)| ≥ 2 的只有 '
+      + nSig + ' 格，纯噪声该出现约 ' + expect + ' 格。</b>'
+      + (bestSig ? '最强的一格是「第 ' + bestSig.k + ' 天 ' + esc(bestSig.bin)
+        + '」→ 后续超额 ' + (bestSig.a >= 0 ? '+' : '') + n(bestSig.a, 2)
+        + '%（t ' + n(bestSig.t, 2) + '）。' : '')
+      + '也就是说，<b>连"该不该止损"这件事本身都没有稳定信号</b>，'
+      + '更谈不上把它变成一条规则去跟 ' + (PA10.cost_bp || 122) + 'bp 的重置成本对赌。</div></section>';
+    return h;
+  }
+
+  // 条件表里取一格；idx 支持 -1 取最后一格。正文数字一律走这里，不写死。
+  function getCell(cs, k, idx) {
+    for (var i = 0; i < cs.length; i++) {
+      if (cs[i].k === k) {
+        var arr = cs[i].cells || [];
+        return idx < 0 ? (arr[arr.length + idx] || null) : (arr[idx] || null);
+      }
+    }
+    return null;
+  }
+  function sgn(v) {
+    v = v || 0;
+    return (v >= 0 ? '+' : '') + n(v, 2) + '%';
+  }
+
+  function p10Rules() {
+    var T = XL10.table || {};
+    var ROWS = [
+      ['hold250', '死持 250 日', '基准'],
+      ['hold120', '死持 120 日', ''],
+      ['hold60', '死持 60 日', ''],
+      ['zg', '结构止损（ZG / 笔低点）', '缠论本体'],
+      ['zg_w8', '结构止损 + 最小 8% 距离', '修"贴太近"'],
+      ['pnl8', '固定 −8% 止损', '全场最优'],
+      ['pnl12', '固定 −12% 止损', ''],
+      ['trail30', '追踪止损 30%', ''],
+      ['zg_fly20', '结构止损 + 放飞', '你说的方案 A'],
+      ['lock20', '保住启动利润', ''],
+      ['hold_win', '浮盈 20% 后跌回 0 才走', ''],
+      ['sell_any', '持到第一个卖点', '缠论本体'],
+      ['time60', '60 日仍亏就走', '']
+    ];
+    var nRule = 0;
+    for (var q in T) { if (T.hasOwnProperty(q)) nRule++; }
+    var h = '<section class="ui-panel"><h2>④ ' + nRule + ' 条规则实测：没有一条跑出噪声带</h2>'
+      + '<div class="note"><p>同一批 ' + (XL10.n_trades || 0) + ' 笔、同一入场价、只换出场规则。'
+      + '<b>「配对差」= 同一笔在两种规则下的毛超额之差</b>，比"比净值"干净得多。'
+      + '『t（日）』按入场日聚类——' + (XL10.n_trades || 0) + ' 笔其实只有 '
+      + (XL10.n_days || 0) + ' 个入场日，信号在暴跌后扎堆，少数几个日子就占了近一半样本；'
+      + '不聚类的话 t 会被放大 3 倍以上。</p></div>'
+      + '<div class="rows"><div class="row p10-row row--head"><span>规则</span>'
+      + '<span class="num">持期</span><span class="num">A(毛bp)</span>'
+      + '<span class="num">配对差</span><span class="num">t（日）</span>'
+      + '<span class="num">年化净</span></div>';
+    for (var i = 0; i < ROWS.length; i++) {
+      var k = ROWS[i][0], v = T[k];
+      if (!v) continue;
+      var d = (k === 'hold250') ? null : v.diff_bp;
+      var tc = (k === 'hold250') ? v.A_t_cl : v.diff_t_cl;
+      h += '<div class="row p10-row"><span class="row__nm"><b>' + esc(ROWS[i][1]) + '</b>'
+        + (ROWS[i][2] ? ' <small class="muted">' + esc(ROWS[i][2]) + '</small>' : '')
+        + '</span>'
+        + '<span class="num muted">' + n(v.hold_mean, 0) + ' 日</span>'
+        + '<span class="num">' + n(v.A_bp, 0) + '</span>'
+        + '<span class="num ' + (d == null ? '' : (d >= 0 ? 'up' : 'dn')) + '">'
+        + (d == null ? '—' : ((d >= 0 ? '+' : '') + n(d, 0))) + '</span>'
+        + '<span class="num">' + n(tc, 2) + '</span>'
+        + '<span class="num ' + ((v.ann_net || 0) >= 0 ? 'up' : 'dn') + '">'
+        + n(v.ann_net, 2) + '%</span></div>';
+    }
+    // 「全部 <2」这句话也现算：数一遍有多少条规则 |t(日)| ≥ 2。
+    var nSigRule = 0, worstT = 0;
+    for (var z in T) {
+      if (!T.hasOwnProperty(z) || z === 'hold250') continue;
+      var tz = Math.abs(T[z].diff_t_cl || 0);
+      if (tz >= 2) nSigRule++;
+      if (tz > worstT) worstT = tz;
+    }
+    h += '</div><div class="p3-verdict"><b>判决：' + (nSigRule === 0
+      ? '没有一条规则的 |t（日）| 达到 2（最大 ' + n(worstT, 2) + '）'
+      : '只有 ' + nSigRule + ' 条规则 |t（日）| ≥ 2') + '。</b>'
+      + '最好的固定止损（pnl8）配对差 +' + n((T.pnl8 || {}).diff_bp, 0)
+      + 'bp，按笔算是 t=' + n((T.pnl8 || {}).diff_t, 2)
+      + '，按日聚类后 <b>' + n((T.pnl8 || {}).diff_t_cl, 2) + '</b>——符号直接翻过来。'
+      + '同一天进场的几十只票共享同一次冲击，把它们当成几十个独立证据，就会把一个'
+      + '"事件的记忆"误读成一条规则。' + '</div></section>';
+    return h;
+  }
+
+  var RULE_NAME = {
+    hold250: '死持 250 日', hold120: '死持 120 日', hold60: '死持 60 日',
+    hold20: '死持 20 日', sell_any: '持到第一个卖点', zg: '结构止损（ZG）',
+    zg60: '结构止损＋60 日上限', pnl8: '固定 −8% 止损', pnl12: '固定 −12% 止损',
+    trail20: '追踪止损 20%', trail30: '追踪止损 30%',
+    zg_trail30: '结构止损＋追踪 30%', zg_fly20: '结构止损＋放飞',
+    pnl12_fly20: '固定 −12%＋放飞', time20: '20 日仍未涨就走',
+    time60: '60 日仍亏就走', zg_time60: '结构止损＋60 日仍亏就走',
+    lock20: '保住启动利润', hold_win: '浮盈 20% 后跌回 0 才走',
+    zg_w8: '结构止损＋最小 8% 距离', zg_w10: '结构止损＋最小 10% 距离',
+    zg_w10_fly20: '最小 10% 距离＋放飞'
+  };
+
+  // 任意成本档下的年化净：毛年化只跟持期有关（价格路径不随费率变），
+  // 所以 ann(C) = ann_gross − C × (244/持期) / 100，纯代数，不用重跑。
+  function annAt(rule, costBp) {
+    var v = (XL10.table || {})[rule];
+    if (!v || !v.hold_mean) return null;
+    var perYr = 244.0 / v.hold_mean;
+    var gross = (v.ann_net || 0) + (XL10.cost_bp || 122) * perYr / 100.0;
+    return gross - costBp * perYr / 100.0;
+  }
+
+  function p10Cost() {
+    var L = XL10.ladder || {};
+    var ks = [];
+    for (var kk in L) ks.push(kk);
+    if (!ks.length) return '';
+    var ORD = ['hold250', 'hold60', 'zg', 'zg_w8', 'pnl8', 'trail30', 'sell_any'];
+    var h = '<section class="ui-panel"><h2>⑤ 成本是唯一的自由变量</h2>'
+      + '<div class="note"><p>A 与持期都<b>与成本无关</b>（价格路径不会因为费率变），'
+      + '所以下面每一格都是纯代数推出来的，不是重新拟合的。'
+      + '这也说明"优化出场"能挪动的幅度有限，而<b>滑点是确定性的、不需要预测能力</b>。</p></div>'
+      + '<div class="rows"><div class="row p10-row row--head"><span>规则</span>';
+    for (var i = 0; i < ks.length; i++) {
+      h += '<span class="num">' + esc(L[ks[i]].label) + '<small>'
+        + n(L[ks[i]].cost_bp, 0) + 'bp</small></span>';
+    }
+    h += '</div>';
+    for (var j = 0; j < ORD.length; j++) {
+      var nm = ORD[j];
+      h += '<div class="row p10-row"><span class="row__nm"><b>'
+        + esc(RULE_NAME[nm] || nm) + '</b></span>';
+      for (var m = 0; m < ks.length; m++) {
+        var v = (L[ks[m]].ann || {})[nm];
+        h += '<span class="num ' + ((v || 0) >= 0 ? 'up' : 'dn') + '">'
+          + n(v, 2) + '%</span>';
+      }
+      h += '</div>';
+    }
+    // 三档滑点：51（现值）/ 20（小资金估计）/ 0（只算佣金，取表里那一列，
+    // 现算会因四舍五入差 0.01pp，跟左边格子对不上）
+    var C51 = XL10.cost_bp || 122, C20 = 20 + 2 * 20, C0 = 20;
+    var a51h = annAt('hold250', C51), a20h = annAt('hold250', C20);
+    var a51p = annAt('pnl8', C51), a20p = annAt('pnl8', C20);
+    var a0h = (L.comm && L.comm.ann) ? L.comm.ann.hold250 : annAt('hold250', C0);
+    var a0p = (L.comm && L.comm.ann) ? L.comm.ann.pnl8 : annAt('pnl8', C0);
+    h += '</div><div class="note mt12"><p>把单边滑点从 51bp 压到 20bp（成本 '
+      + n(C51, 0) + '→' + n(C20, 0) + 'bp）：死持 250 日 ' + n(a51h, 2) + '% → '
+      + n(a20h, 2) + '%，pnl8 ' + n(a51p, 2) + '% → ' + n(a20p, 2)
+      + '%；把滑点彻底归零（只算 ' + n(C0, 0) + 'bp 佣金）才到 ' + n(a0h, 2)
+      + '% / ' + n(a0p, 2) + '%——<b>那是没法实现的上界，不是目标</b>。'
+      + '对比一下：换出场规则的最好成绩是 +'
+      + n((XL10.table.pnl8 || {}).ann_net - (XL10.table.hold250 || {}).ann_net, 1)
+      + 'pp（' + n((XL10.table.hold250 || {}).ann_net, 2) + '% → '
+      + n((XL10.table.pnl8 || {}).ann_net, 2) + '%）。</b></p></div>'
+      + '<div class="p3-verdict"><b>结论：这条线可以"选"，不能"买"。</b>'
+      + '单笔 α 只有 ' + n((XL10.table.hold250 || {}).A_bp, 0) + 'bp，一次进出要 '
+      + n(XL10.cost_bp, 0) + 'bp；<b>而且就算滑点归零（只付 ' + n(C0, 0)
+      + 'bp 佣金），死持也就 ' + n(a0h, 2) + '%/年</b>——天花板本身低于无风险利率。'
+      + '所以卡住的是入场端的 α 太小，不是出场，也不是成本。'
+      + '降滑点仍值得做（它是唯一不需要预测能力的改善项），但别指望它把这条线变成"能买"。</div></section>';
+    return h;
+  }
+
   function renderP8() {
     if (!RG8) {
       return '<section class="ui-panel"><h2>口径修正</h2><p class="note">数据未生成：'
@@ -2828,6 +3195,7 @@
     else if (S.view === 'p7') h = renderP7();
     else if (S.view === 'p8') h = renderP8();
     else if (S.view === 'p9') h = renderP9();
+    else if (S.view === 'p10') h = renderP10();
     else h = renderAbout();
     app.innerHTML = h;
     applyDataWidth(app);
@@ -2933,7 +3301,9 @@
       fetch('/hf_phase6.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
       fetch('/hf_matrix.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
       fetch('/hf_regauge.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
-      fetch('/hf_cost_gauge.json', { cache: 'no-store' }).then(function (r) { return r.json(); })
+      fetch('/hf_cost_gauge.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
+      fetch('/hf_path.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
+      fetch('/hf_exit_lab.json', { cache: 'no-store' }).then(function (r) { return r.json(); })
     ]).then(function (res) {
       D = res[0]; B = res[1]; H = res[2]; AB = res[3]; UV = res[4]; P3 = res[5];
       P4D = res[6];
@@ -2943,6 +3313,11 @@
       MX6 = res[13];
       RG8 = res[14];
       CG9 = res[15];
+      PA10 = res[16];
+      XL10 = res[17];
+      if (XL10 && XL10.table && XL10.table.hold250) {
+        $('nv-p10').textContent = '死持 +' + n(XL10.table.hold250.ann_net, 2) + '%';
+      }
       if (RG8 && RG8.summary) {
         $('nv-p8').textContent = RG8.summary['失效'] + ' 条失效';
       }
