@@ -517,7 +517,7 @@ try {
         }
         if ($new.Count -gt 0) {
             Write-Host "[$name] 新增失败 $($new.Count) 项:" -ForegroundColor Red
-            $new | Select-Object -First 20 | ForEach-Object { Write-Host "  - $_" }
+            $new | Select-Object -First 500 | ForEach-Object { Write-Host "  - $_" }
         } else {
             Write-Host "[$name] 无新增失败(既存 $($failed.Count) 项已登记) [${secs}s]" -ForegroundColor Green
         }
