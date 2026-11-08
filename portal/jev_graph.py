@@ -82,6 +82,7 @@ _CACHE: dict = {}
 _BOARD_CACHE: dict = {"at": 0.0, "data": None}
 _XT = None             # xtcloud 客户端单例（惰性）
 _FLOW = None           # jev_flow 模块（惰性）
+_SOCIAL = None         # jev_social 模块（惰性）
 _MINS_MEM: dict = {}   # (code, day) -> DataFrame | None，进程内分钟缓存
 _MINS_FAIL: dict = {}  # (code, day) -> 失败时刻；负缓存要能过期，不能记一辈子
 _WRITE_LOCK = threading.Lock()   # 同月 parquet 是 read-modify-write，必须串行
@@ -296,6 +297,15 @@ def _flow_mod():
         import jev_flow
         _FLOW = jev_flow
     return _FLOW
+
+
+def _social_mod():
+    """惰性导入散户热度层（同目录）。"""
+    global _SOCIAL
+    if _SOCIAL is None:
+        import jev_social
+        _SOCIAL = jev_social
+    return _SOCIAL
 
 
 def _mins_local(ts_code: str, day: str):
@@ -876,12 +886,14 @@ def _brief(zs):
 
 # ── 建图 ────────────────────────────────────────────────────
 def build(day_raw=None, board=None, code=None, top: int = 8,
-          with_minute: bool = True, with_fund: bool = True) -> dict:
+          with_minute: bool = True, with_fund: bool = True,
+          with_social: bool = True) -> dict:
     """一次成图：板块 → 个股 → 消息 → 资金/披露，五类边 + 两个补充维度。
 
     board      指定焦点板块（缺省=当日中位涨幅第一的板块）
     code       指定个股（给出时焦点板块跟着它走，并在 timeline 里定位该股）
     with_fund  是否拉资金流与研报/公告（关掉可省 ~4s 与两次外部调用）
+    with_social 是否读散户热度快照（只读本地 json，不联网；缺文件 has=False）
     """
     day = resolve_day(day_raw)
     B = load_board(day)
@@ -910,6 +922,16 @@ def build(day_raw=None, board=None, code=None, top: int = 8,
                 z["net_mf"] = v["net_mf"] if v else None
         except Exception as exc:  # noqa: BLE001
             sys.stderr.write("fund layer failed: %s\n" % exc)
+
+    # ── 散户热度（雪球四榜 + 股吧人气榜 + 股吧帖子，只读本地快照）──
+    # 与资金流的关键区别：**不联网**。采集是独立脚本、独立时点的事，
+    # 页面渲染不该因为东财/雪球慢而一起慢。
+    social = {"has": False, "by_code": {}, "posts": [], "note": None}
+    if with_social:
+        try:
+            social = _social_mod().load_social(day)
+        except Exception as exc:  # noqa: BLE001
+            sys.stderr.write("social layer failed: %s\n" % exc)
 
     # 焦点板块：显式指定 > 指定个股所属 > 当日最强（涨停最多，其次中位涨幅）
     if board:
@@ -1022,9 +1044,10 @@ def build(day_raw=None, board=None, code=None, top: int = 8,
                      "研报/公告 ts_kind 固定 research/notice，"
                      "无盘中时刻，不参与 Δmin。"),
         },
+        "social": _social_block(social, focus_members, by_c6, top),
         "network": {
             "nodes": _nodes(focus, focus_members, focus_events, profiles,
-                            disc if with_fund else None),
+                            disc if with_fund else None, social),
             "edges": edges,
             "cross_summary": cross_summary,
             "edge_types": _edge_counts(edges),
@@ -1194,14 +1217,148 @@ def _edges(focus, members, focus_events, ev, profiles):
     return edges
 
 
-def _nodes(focus, members, focus_events, profiles, disc=None):
+def _social_block(social, members, by_c6, top=8):
+    """散户热度：焦点板块在榜情况 + 板块内最热 + 高热帖 + 热/价背离。
+
+    三条口径先说清（缺一条就会看错）：
+    1. 雪球四个榜量纲不同（人气/讨论数/交易热度/关注人数），只能**同榜内比
+       排序**。不给「综合热度」这种自造指标——四个量纲加权没有任何依据，
+       出来的数看着精确，其实只是把四个排名平均了一遍。
+    2. 帖子 reads/comments 是**累计值**不是当日增量，只能读成「谁在被反复
+       翻出来看」，不能读成「今天新增多少关注」。
+    3. 社交面**不参与 Δmin**：榜单与帖子都没有盘中时刻，硬算滞后会复现
+       判例 #25③（拿不存在的时间戳算领先分钟）。
+
+    members 用焦点板块**全部成员**（不是 top 截断后的），否则「板块有几只
+    在榜」会随 top 参数乱跳，同一个页面刷两次结论不一样。
+    """
+    if not social or not social.get("has"):
+        return {"has": False,
+                "note": (social or {}).get("note") or "当日无社交快照",
+                "n_codes_all": 0, "board": None, "hot": [], "posts": [],
+                "market_top": []}
+
+    by = social.get("by_code") or {}
+    n_on_xq = n_on_guba = n_posts = 0
+    tot_posts = tot_reads = 0
+    best_xq = best_guba = None
+    rows = []
+    for z in members:
+        h = by.get(str(z["c6"])[:6]) or {}
+        xq = h.get("xq_hot_rank")
+        gr = h.get("guba_rank")
+        npst = int(h.get("posts") or 0)
+        rd = int(h.get("reads") or 0)
+        if xq:
+            n_on_xq += 1
+            best_xq = xq if best_xq is None else min(best_xq, xq)
+        if gr:
+            n_on_guba += 1
+            best_guba = gr if best_guba is None else min(best_guba, gr)
+        if npst:
+            n_posts += 1
+        tot_posts += npst
+        tot_reads += rd
+        if xq or gr or npst:
+            rows.append({
+                "code": z["code"], "name": z["name"],
+                "pct": z.get("pct"), "limit_up": bool(z.get("limit_up")),
+                "touch_only": bool(z.get("touch_only")),
+                "main_net": z.get("main_net"),
+                "xq_hot_rank": xq, "xq_hot": h.get("xq_hot"),
+                "xq_discuss_rank": h.get("xq_discuss_rank"),
+                "guba_rank": gr, "guba_rank_chg": h.get("guba_rank_chg"),
+                "posts": npst, "reads": rd,
+            })
+
+    # 热 ↔ 价 的两种背离。这两个才是能用的东西，光列名次只是搬运数据：
+    #   hot_no_move  —— 上了榜（雪球人气或股吧人气前 30）却没涨（<2%）：
+    #                   「有人讲、没人买」，散户注意力在了但资金没跟
+    #   move_no_talk —— 涨停/大涨（>=7%）但既不在榜、也没有帖子：
+    #                   「闷声」，消息没扩散到散户层，反过来是资金先行的证据
+    HOT_RANK, MOVE_PCT = 30, 7.0
+    hot_no_move, move_no_talk = [], []
+    # **必须遍历 members 全集，不能遍历 rows**：rows 只装「有热度数据」的票，
+    # 而 move_no_talk 的定义恰恰是「涨了但一点热度都没有」——遍历 rows 等于
+    # 只在「有讨论的票」里找「没讨论的票」，永远为空。这个 bug 一开始就写
+    # 进去了，是 2026-11-08 的用例把它顶出来的。
+    for z in members:
+        h = by.get(str(z["c6"])[:6]) or {}
+        xq, gr = h.get("xq_hot_rank"), h.get("guba_rank")
+        npst = int(h.get("posts") or 0)
+        on_hot = (xq or 10 ** 6) <= HOT_RANK or (gr or 10 ** 6) <= HOT_RANK
+        pct = z.get("pct") or 0.0
+        if on_hot and pct < 2.0:
+            hot_no_move.append(z["code"])
+        if (z.get("limit_up") or pct >= MOVE_PCT) and not on_hot and not npst:
+            move_no_talk.append(z["code"])
+
+    # 板块内排序：先看雪球人气（同榜内可比），再看股吧名次，最后按阅读量
+    # 兜底——三个键都不是「综合分」，只是依次降级，避免同分时顺序随机。
+    rows.sort(key=lambda r: (r["xq_hot_rank"] or 10 ** 6,
+                             r["guba_rank"] or 10 ** 6,
+                             -(r["reads"] or 0)))
+
+    mod = _social_mod()
+    names = {str(z["c6"])[:6]: z["name"] for z in members}
+    # 帖子分两档，**不能混**：采集器只抓了 60 只票的吧（当前持仓/焦点池），
+    # 板块成员未必在里面。取全市场热帖放进板块卡里，会被读成「板块内的帖」，
+    # 于是「板块没人讨论」这个真结论会被别处的热帖盖掉。
+    mine = set(names)
+    in_board = [p for p in (social.get("posts") or [])
+                if str(p.get("code"))[:6] in mine]
+    posts = mod.top_posts({"posts": in_board}, top, names)
+    posts_scope = "board"
+    if not posts:
+        posts = mod.top_posts(social, min(3, top), names)
+        posts_scope = "market"      # 板块内零帖，给全市场 3 条做对照
+    mtop = []
+    for r in mod.top_heat(social, 5):
+        c6 = str(r.get("code"))[:6]
+        hit = by_c6.get(c6) or {}
+        mtop.append(dict(r, code=hit.get("code") or c6,
+                         name=hit.get("name") or names.get(c6),
+                         pct=hit.get("pct")))
+
+    return {
+        "has": True,
+        "fetched_at": social.get("fetched_at"),
+        "n_codes_all": social.get("n_codes") or 0,
+        "hot_rank_th": HOT_RANK,
+        "move_pct_th": MOVE_PCT,
+        "board": {
+            "n_members": len(members),
+            "n_on_xq": n_on_xq, "n_on_guba": n_on_guba, "n_with_posts": n_posts,
+            "best_xq_rank": best_xq, "best_guba_rank": best_guba,
+            "posts": tot_posts, "reads": tot_reads,
+            "n_hot_no_move": len(hot_no_move),
+            "n_move_no_talk": len(move_no_talk),
+            "hot_no_move": hot_no_move[:6],
+            "move_no_talk": move_no_talk[:6],
+        },
+        "hot": rows[:max(top, 6)],
+        "posts": posts,
+        "posts_scope": posts_scope,
+        "market_top": mtop,
+        "note": ("雪球四榜量纲不同，只可同榜内比名次；帖子 reads/comments 为"
+                 "累计值非当日增量；社交面无盘中时刻，不参与 Δmin。"
+                 "hot_no_move=进榜前%d却没涨(<2%%)，move_no_talk=涨≥%.0f%%却没"
+                 "上榜也没帖。" % (HOT_RANK, MOVE_PCT)),
+    }
+
+
+def _nodes(focus, members, focus_events, profiles, disc=None, social=None):
     nodes = [{"id": "board:" + focus["name"], "type": "board",
               "label": focus["name"], "n": focus["n"],
               "med": focus["med"], "rank": focus["rank"],
               "main_net": focus.get("board_main_net")}]
+    sby = (social or {}).get("by_code") or {}
     for z in members:
         p = profiles.get(z["code"]) or {}
         d = _flow_mod().disc_of(disc, z["c6"]) if disc else {}
+        # 热度只挂进榜/有帖的票，其余给 None（前端显示「—」）：
+        # 0 和「没进榜」在图上长得一样，但意思完全不同，别混。
+        h = sby.get(str(z["c6"])[:6]) or {}
         nodes.append({
             "id": z["code"], "type": "stock", "label": z["name"],
             "pct": z["pct"], "pct_rank": z["pct_rank"],
@@ -1212,6 +1369,11 @@ def _nodes(focus, members, focus_events, profiles, disc=None):
             "minute_source": p.get("source"),
             "main_net": z.get("main_net"), "net_mf": z.get("net_mf"),
             "n_reports": d.get("n_reports"), "n_notices": d.get("n_notices"),
+            "xq_hot_rank": h.get("xq_hot_rank") or None,
+            "guba_rank": h.get("guba_rank") or None,
+            "guba_rank_chg": h.get("guba_rank_chg"),
+            "posts": int(h.get("posts") or 0) or None,
+            "reads": int(h.get("reads") or 0) or None,
         })
     for e in focus_events["items"][:8]:
         # 节点 id 用事件 id（与 hit/echo/spread 边的 from/to 同一命名空间，

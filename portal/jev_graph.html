@@ -149,6 +149,17 @@
 
   <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:12px">
     <div class="card">
+      <h3>散户热度 <span class="n">雪球四榜 + 股吧人气榜 · 读本地快照不联网</span></h3>
+      <div id="social"></div>
+    </div>
+    <div class="card">
+      <h3>高热帖 <span class="n">按累计阅读排 · 非当日增量</span></h3>
+      <div id="posts"></div>
+    </div>
+  </div>
+
+  <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:12px">
+    <div class="card">
       <h3>跨板块影响半径 <span class="n">一条消息同时命中几个板块</span></h3>
       <div id="cross"></div>
     </div>
@@ -237,7 +248,7 @@
       el.onclick=function(){ S.board=el.getAttribute("data-b"); S.code=""; load(); };
     });
 
-    drawNet(); drawTiers(); drawTL(); drawCross(); drawFlow(); drawDisc(); drawBasis();
+    drawNet(); drawTiers(); drawTL(); drawCross(); drawFlow(); drawDisc(); drawSocial(); drawBasis();
   }
 
   // ── 网络图 ──
@@ -498,6 +509,78 @@
     html+='<div class="note">研报/公告只有日期、没有盘中时刻，<b>不参与 Δmin</b>。'+
       '它回答的是「有没有机构在写、有没有公告在发」，不能当驱动价格的那条消息。</div>';
     $("#disc").innerHTML=html;
+  }
+
+  // ── 散户热度 ──
+  function drawSocial(){
+    var s=S.data.social||{}, b=s.board, P=$("#posts");
+    if(!s.has){
+      $("#social").innerHTML='<div class="empty">当日无社交快照（'+
+        esc(s.note||"未采集")+'）</div>';
+      P.innerHTML='<div class="empty">—</div>';
+      return;
+    }
+    // 雪球与股吧**分开报**：前者偏机构/成长股讨论，后者偏散户情绪。
+    // 合成一个「总热度」会把这个差异抹掉，而差异恰恰是最有信息量的部分。
+    var html='<div style="display:flex;gap:14px;align-items:baseline;margin-bottom:8px">'+
+      '<div><div class="mini">雪球人气榜</div><b style="font-size:19px;font-family:var(--font-mono)">'+
+      (b.n_on_xq||0)+'<span class="mini"> 只</span></b>'+
+      (b.best_xq_rank?('<span class="mini">最好第 '+b.best_xq_rank+'</span>'):'')+'</div>'+
+      '<div><div class="mini">股吧人气榜</div><b style="font-size:19px;font-family:var(--font-mono)">'+
+      (b.n_on_guba||0)+'<span class="mini"> 只</span></b>'+
+      (b.best_guba_rank?('<span class="mini">最好第 '+b.best_guba_rank+'</span>'):'')+'</div>'+
+      '<div><div class="mini">板块帖 / 阅读</div><b style="font-size:19px;font-family:var(--font-mono)">'+
+      (b.posts||0)+' / '+(b.reads>=10000?(b.reads/10000).toFixed(1)+"万":(b.reads||0))+'</b></div>'+
+      '</div>';
+
+    if(b.hot_no_move||b.move_no_talk){
+      var t=[];
+      if(b.n_hot_no_move>0) t.push('<b>热而无量 '+b.n_hot_no_move+' 只</b>（进榜前'+s.hot_rank_th+'却没涨）：'+
+        esc((b.hot_no_move||[]).join(" / ")));
+      if(b.n_move_no_talk>0) t.push('<b>涨而无声 '+b.n_move_no_talk+' 只</b>（涨≥'+s.move_pct_th+'%却没上榜没帖）：'+
+        esc((b.move_no_talk||[]).join(" / ")));
+      if(t.length) html+='<div class="note warn">'+t.join("<br>")+'</div>';
+    }
+
+    if((s.hot||[]).length){
+      html+='<div class="mini" style="margin-top:6px"><b>板块内最热</b>　'+
+        '<span class="mini">名次小=热；两个榜量纲不同不可比大小</span></div>';
+      html+=s.hot.map(function(x){
+        var rk=[];
+        if(x.xq_hot_rank) rk.push('雪球'+x.xq_hot_rank);
+        if(x.guba_rank) rk.push('股吧'+x.guba_rank+(x.guba_rank_chg?("("+(x.guba_rank_chg>0?"↑":"↓")+Math.abs(x.guba_rank_chg)+")"):""));
+        return '<div class="crossline"><span style="flex:1">'+esc(x.name)+
+          ' <span class="mini '+cls(x.pct)+'">'+(x.pct>=0?"+":"")+(x.pct||0).toFixed(2)+'%</span>'+
+          (x.limit_up?'<span class="tag lu">涨停</span>':'')+'</span>'+
+          '<span class="mini">'+(rk.length?esc(rk.join(" · ")):"—")+'</span>'+
+          '<b style="font-family:var(--font-mono);min-width:52px;text-align:right">'+
+          (x.posts?x.posts+'帖':'—')+'</b></div>';
+      }).join("");
+    }
+    if((s.market_top||[]).length){
+      html+='<div class="mini" style="margin-top:6px"><b>全市场最热（对照）</b></div>'+
+        s.market_top.slice(0,3).map(function(x){
+          return '<div class="crossline"><span style="flex:1">'+esc(x.name||x.code)+
+            (x.pct!=null?' <span class="mini '+cls(x.pct)+'">'+(x.pct>=0?"+":"")+x.pct.toFixed(2)+'%</span>':'')+
+            '</span><span class="mini">雪球人气第 '+(x.xq_hot_rank||"—")+'</span></div>';
+        }).join("");
+    }
+    html+='<div class="note">'+esc(s.note||"")+'</div>';
+    $("#social").innerHTML=html;
+
+    var ps=s.posts||[];
+    if(!ps.length){ P.innerHTML='<div class="empty">板块内当日无帖子</div>'; return; }
+    var mt=(s.posts_scope==="market")
+      ? '<div class="note warn">板块内零帖，以下为全市场最热，<b>不是板块内的</b>。</div>' : "";
+    P.innerHTML=mt+ps.map(function(p){
+      var hm=p.ts?String(p.ts).slice(5,16):"";
+      return '<div class="crossline"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+
+        (p.name?'<b>'+esc(p.name)+'</b> ':'')+esc(p.title||"")+'</span>'+
+        '<span class="mini">'+esc(hm)+'</span>'+
+        '<b style="font-family:var(--font-mono);min-width:46px;text-align:right">'+
+        (p.read>=10000?(p.read/10000).toFixed(1)+"万":(p.read||0))+'</b></div>';
+    }).join("")+'<div class="note">阅读/评论是<b>累计值</b>，不是当日增量；接口不提供增量。'+
+      '它只回答「谁在被反复翻出来看」，不能读成「今天新增多少关注」。</div>';
   }
 
   // ── 跨板块 ──

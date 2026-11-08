@@ -923,6 +923,12 @@ def test_AC_E07_no_files_outside_whitelist():
         # 2026-11-08 追加：xtcloud 接入回归（分钟三档台账、资金面背离、
         # 披露不含盘中时刻、列序对齐、时间列别名、一字板首次异动）。
         "tests/test_jev_fund_minute.py",
+        # 2026-11-08 追加：散户热度回归（两平台分报、热而无量/涨而无声
+        # 两个背离判据、帖子 board/market 两种 scope、社交面不进 Δmin）。
+        "tests/test_jev_social.py",
+        # 2026-11-08 追加：散户热度回归（两平台分报、热而无量/涨而无声
+        # 两个背离判据、帖子 board/market 两种 scope、社交面不进 Δmin）。
+        "tests/test_jev_social.py",
     }
     untracked = set()
     try:
