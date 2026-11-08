@@ -131,10 +131,13 @@ def _apply_transition(rec: dict, new_status: str, note: str) -> None:
         rec["status_note"] = note
 
 
-def cmd_triage(rows_by_file, write: bool, undo: bool) -> int:
+def cmd_triage(rows_by_file, write: bool, undo: bool, allow=None) -> int:
     plan: List[Tuple[str, str, str, str]] = []   # (file, unit_id, old, new)
     for path, rows in rows_by_file.items():
         for r in rows:
+            uid = r.get("unit_id", "?")
+            if allow is not None and uid not in allow:
+                continue
             cur = (r.get("status") or "draft")
             uid = r.get("unit_id", "?")
             if undo:
@@ -294,14 +297,19 @@ def cmd_review(rows_by_file, from_map: str, write: bool) -> int:
     return 0
 
 
-def cmd_show(rows_by_file) -> int:
+def cmd_show(rows_by_file, allow=None) -> int:
     for path, rows in rows_by_file.items():
         dist: Dict[str, int] = {}
+        total = 0
         for r in rows:
+            if allow is not None and r.get("unit_id") not in allow:
+                continue
             s = (r.get("status") or "draft")
             dist[s] = dist.get(s, 0) + 1
+            total += 1
         pend = sum(v for k, v in dist.items() if k in PENDING_KEYS)
-        print(f"{os.path.basename(path)}: {len(rows)} 行，状态 {dist}，队列中 {pend}")
+        note = f"（过滤范围 {total}/{len(rows)} 行）" if allow is not None else ""
+        print(f"{os.path.basename(path)}: {len(rows)} 行，状态 {dist}，队列中 {pend} {note}")
 
 
 def main(argv=None) -> int:
@@ -311,6 +319,10 @@ def main(argv=None) -> int:
     ap.add_argument("--write", action="store_true", help="真正落盘（缺省 dry-run）")
     ap.add_argument("--from-map", default=None, help="review 命令的结论映射 jsonl")
     ap.add_argument("--undo", action="store_true", help="triage 配套：expired 回退 status_prev")
+    ap.add_argument("--filter-ids", default=None,
+                    help="unit_id 名单文件（一行一个，# 注释）：只对名单内单元做计划（分层分诊用）")
+    ap.add_argument("--filter-class", default=None,
+                    help="unit_class 白名单，逗号分隔（如 T,U）：只对该类单元做计划")
     args = ap.parse_args(argv)
 
     paths = _paths(args.project)
@@ -319,10 +331,38 @@ def main(argv=None) -> int:
         return 2
     rows_by_file = {p: _read_jsonl(p) for p in paths}
 
+    # 过滤器：只收窄计划范围（allow 集合），绝不收窄 rows_by_file——
+    # 落盘是整文件重写，收窄行集会丢掉名单外单元（2026-11-08 判例）。
+    id_set = None
+    if args.filter_ids:
+        if not os.path.exists(args.filter_ids):
+            print(f"[错误] --filter-ids 文件不存在: {args.filter_ids}", file=sys.stderr)
+            return 2
+        id_set = set()
+        with open(args.filter_ids, encoding="utf-8") as f:
+            for ln in f:
+                ln = ln.strip()
+                if ln and not ln.startswith("#"):
+                    id_set.add(ln)
+        print(f"filter-ids: 名单 {len(id_set)} 个 unit_id")
+    cls_set = None
+    if args.filter_class:
+        cls_set = {c.strip().upper() for c in args.filter_class.split(",") if c.strip()}
+        print(f"filter-class: {sorted(cls_set)}")
+    allow = None
+    if id_set is not None or cls_set is not None:
+        allow = set()
+        for rows in rows_by_file.values():
+            for r in rows:
+                if (id_set is None or r.get("unit_id") in id_set) \
+                        and (cls_set is None or (r.get("unit_class") or "").upper() in cls_set):
+                    allow.add(r.get("unit_id"))
+        print(f"过滤器生效: 计划范围收窄至 {len(allow)} 行（全文件行数不变）")
+
     if args.cmd == "show":
-        return cmd_show(rows_by_file) or 0
+        return cmd_show(rows_by_file, allow) or 0
     if args.cmd == "triage":
-        return cmd_triage(rows_by_file, args.write, args.undo)
+        return cmd_triage(rows_by_file, args.write, args.undo, allow)
     if args.cmd == "expire":
         return cmd_expire(rows_by_file, args.write, dt.datetime.now())
     if args.cmd == "review":
