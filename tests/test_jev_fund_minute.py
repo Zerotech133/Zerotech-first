@@ -250,6 +250,9 @@ def test_load_flow_computes_main_net(monkeypatch):
     rows = [["600001.SH", "20261106", 100.0, 40.0, 60.0, 20.0, 50.0]]
     c = _client(cols, rows)
     monkeypatch.setattr(F, "_xt", lambda: c)
+    # 必须关磁盘快照：load_flow 现在读盘优先，盘上有当日真实快照时
+    # 会绕开 _xt 替身，直接拿到 5579 只真实数据（用例就查不到 600001）。
+    monkeypatch.setenv("JEV_FLOW_SNAP", "0")
     F._CACHE.clear()
     flow = F.load_flow("20261106")
     assert flow["600001"]["main_net"] == 100.0     # (100+60)-(40+20)
@@ -436,3 +439,57 @@ def test_minute_mem_evict_clears_fail_stamp(monkeypatch):
     assert ("600001.SH", "20261106") in G._MINS_FAIL
     G._mem_put(("600002.SH", "20261106"), {"i": 2})
     assert ("600001.SH", "20261106") not in G._MINS_FAIL
+
+
+# ── ⑧ 资金流磁盘快照（2026-11-08 加）────────────────────────
+def test_flow_snapshot_roundtrip(tmp_path, monkeypatch):
+    """日终数据落盘一次，之后读盘 ~0.02s（冷启动是 60s+）。"""
+    monkeypatch.setattr(F, "SNAP_DIR", str(tmp_path))
+    monkeypatch.delenv("JEV_FLOW_SNAP", raising=False)
+    assert F._snap_read("flow", "20261106") is None
+    F._snap_write("flow", "20261106", {"600001": {"main_net": 1.0}})
+    assert F._snap_read("flow", "20261106") == {"600001": {"main_net": 1.0}}
+
+
+def test_flow_snapshot_broken_file_degrades(tmp_path, monkeypatch):
+    """快照坏了必须当「没有」，不能抛 —— 否则一个半截 json 能把整页锁死。"""
+    monkeypatch.setattr(F, "SNAP_DIR", str(tmp_path))
+    monkeypatch.delenv("JEV_FLOW_SNAP", raising=False)
+    (tmp_path / "flow_20261106.json").write_text("{not json", encoding="utf-8")
+    assert F._snap_read("flow", "20261106") is None
+
+
+def test_flow_snapshot_can_be_disabled(tmp_path, monkeypatch):
+    """JEV_FLOW_SNAP=0 时不读也不写（测试与排障用）。"""
+    monkeypatch.setattr(F, "SNAP_DIR", str(tmp_path))
+    monkeypatch.setenv("JEV_FLOW_SNAP", "0")
+    F._snap_write("flow", "20261106", {"600001": {"main_net": 1.0}})
+    assert not (tmp_path / "flow_20261106.json").exists()
+    assert F._snap_read("flow", "20261106") is None
+
+
+# ── ⑧ 资金流磁盘快照（2026-11-08 加）────────────────────────
+def test_flow_snapshot_roundtrip(tmp_path, monkeypatch):
+    """日终数据落盘一次，之后读盘 ~0.02s（冷启动是 60s+）。"""
+    monkeypatch.setattr(F, "SNAP_DIR", str(tmp_path))
+    monkeypatch.delenv("JEV_FLOW_SNAP", raising=False)
+    assert F._snap_read("flow", "20261106") is None
+    F._snap_write("flow", "20261106", {"600001": {"main_net": 1.0}})
+    assert F._snap_read("flow", "20261106") == {"600001": {"main_net": 1.0}}
+
+
+def test_flow_snapshot_broken_file_degrades(tmp_path, monkeypatch):
+    """快照坏了必须当「没有」，不能抛 —— 否则一个半截 json 能把整页锁死。"""
+    monkeypatch.setattr(F, "SNAP_DIR", str(tmp_path))
+    monkeypatch.delenv("JEV_FLOW_SNAP", raising=False)
+    (tmp_path / "flow_20261106.json").write_text("{not json", encoding="utf-8")
+    assert F._snap_read("flow", "20261106") is None
+
+
+def test_flow_snapshot_can_be_disabled(tmp_path, monkeypatch):
+    """JEV_FLOW_SNAP=0 时不读也不写（测试与排障用）。"""
+    monkeypatch.setattr(F, "SNAP_DIR", str(tmp_path))
+    monkeypatch.setenv("JEV_FLOW_SNAP", "0")
+    F._snap_write("flow", "20261106", {"600001": {"main_net": 1.0}})
+    assert not (tmp_path / "flow_20261106.json").exists()
+    assert F._snap_read("flow", "20261106") is None

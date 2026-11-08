@@ -31,6 +31,7 @@
 """
 from __future__ import annotations
 
+import json
 import os
 import sys
 import time
@@ -41,6 +42,54 @@ CACHE_TTL_S = 300
 EMPTY_TTL_S = 30          # 取空只记 30s：一次网络抖动不能把这一档锁死 5 分钟
 _CACHE: dict = {}         # key -> (时刻, ttl, 值)
 _XT = None
+
+# ── 磁盘快照（2026-11-08 加）──
+# 资金流是**日终数据**（收盘终值），一天之内不会变。进程内缓存只救同一次
+# 请求里的重复调用；8091 每次重启、每个新进程都要重新拉一遍全市场 5000+ 只
+# 的 moneyflow（翻 3 页 × 5000 行），实测冷启动 **79~105s**，接口直接不可用。
+# 按日落一份快照，之后读盘 ~50ms。
+SNAP_DIR = os.path.join(STATION, "quant_backtest", "data", "tushare", "_jev_snap")
+SNAP_TTL_S = 12 * 3600    # 12 小时：同一天内的重复请求都命中，跨日自动重拉
+# （文件名带 day，所以「跨日」本来就换了路径，这个 TTL 只是防盘上留陈旧值。
+#  盘中的问题另说：盘中这本账本来就是上一交易日的值，页面 note 已写明。）
+
+
+def _snap_on():
+    return os.environ.get("JEV_FLOW_SNAP", "1") not in ("0", "off", "false")
+
+
+def _snap_path(kind, day):
+    return os.path.join(SNAP_DIR, "%s_%s.json" % (kind, day))
+
+
+def _snap_read(kind, day):
+    if not _snap_on():
+        return None
+    p = _snap_path(kind, day)
+    try:
+        if not os.path.exists(p):
+            return None
+        if time.time() - os.path.getmtime(p) > SNAP_TTL_S:
+            return None
+        with open(p, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:  # noqa: BLE001
+        return None       # 快照坏了就当没有，别让缓存把功能锁死
+
+
+def _snap_write(kind, day, obj):
+    """原子写。失败只告警不抛——快照是加速手段，不是功能依赖。"""
+    if not _snap_on() or not obj:
+        return
+    try:
+        os.makedirs(SNAP_DIR, exist_ok=True)
+        p = _snap_path(kind, day)
+        tmp = p + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(obj, f, ensure_ascii=False)
+        os.replace(tmp, p)
+    except Exception as exc:  # noqa: BLE001
+        sys.stderr.write("flow snapshot write failed %s: %s\n" % (kind, exc))
 
 
 def _xt():
@@ -85,6 +134,9 @@ def load_flow(day: str) -> dict:
     hit = _cache_get(key)
     if hit is not None:
         return hit
+    snap = _snap_read("flow", day)
+    if snap:
+        return _cache_put(key, snap)
     out, off, page = {}, 0, 5000
     try:
         c = _xt()
@@ -123,6 +175,8 @@ def load_flow(day: str) -> dict:
     except Exception as exc:  # noqa: BLE001
         sys.stderr.write("load_flow failed %s: %s\n" % (day, exc))
         return _cache_put(key, {}, EMPTY_TTL_S)
+    # 全市场 5000+ 只，落盘一次顶掉后面所有冷启动（79~105s → 读盘 ~50ms）
+    _snap_write("flow", day, out)
     return _cache_put(key, out)
 
 
@@ -168,6 +222,9 @@ def load_disclosures(day: str, limit_report=300, limit_notice=3000) -> dict:
     hit = _cache_get(key)
     if hit is not None:
         return hit
+    snap = _snap_read("disc", day)
+    if snap:
+        return _cache_put(key, snap)
     d8 = "%s-%s-%s" % (day[:4], day[4:6], day[6:])
     out: dict = {}
     try:
@@ -218,6 +275,7 @@ def load_disclosures(day: str, limit_report=300, limit_notice=3000) -> dict:
     except Exception as exc:  # noqa: BLE001
         sys.stderr.write("load_disclosures failed %s: %s\n" % (day, exc))
         return _cache_put(key, out, EMPTY_TTL_S)
+    _snap_write("disc", day, out)
     return _cache_put(key, out)
 
 
