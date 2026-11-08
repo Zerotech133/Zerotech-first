@@ -140,11 +140,6 @@ def _facts(kind: str, code: str = "", q: str = "", days: int = 30) -> str:
                 return "、".join(
                     "%s(%d)" % (k, v) for k, v in
                     sorted(dd.items(), key=lambda kv: -kv[1])[:n]) or "无"
-            # 代表性标题：最高置信利多/利空各一
-            rep = {}
-            for e in sorted(ev, key=lambda x: -(x.get("conf") or 0)):
-                if e["bias"] not in rep and e["bias"] in ("bull", "bear"):
-                    rep[e["bias"]] = e
             conf_rate = (cf.get("confirmed", 0) /
                          max(1, cf.get("confirmed", 0) + cf.get("refuted", 0)) * 100)
             parts = ["消息：窗口内事件 %d 个（利多 %d/利空 %d），类型分布 %s。" % (
@@ -152,24 +147,82 @@ def _facts(kind: str, code: str = "", q: str = "", days: int = 30) -> str:
                 "、".join("%s×%d" % k for k in top_et))]
             parts.append("要素：组织 %s；地域 %s；品种 %s。" % (
                 _top(agg["org"]), _top(agg["place"]), _top(agg["thing"])))
-            for b, e in rep.items():
-                parts.append("最高置信%s：%s（%s，%s，conf=%s）。" % (
-                    "利多" if b == "bull" else "利空",
-                    (e.get("title") or "")[:34],
-                    (e.get("ts") or "")[:10],
-                    source_names.cn(e.get("source")), e.get("conf")))
-            parts.append("消息可信度：证实率 %.0f%%（证实 %d/证伪 %d）；"
-                         "事件后3日同向概率 %s。" % (
-                             conf_rate, cf.get("confirmed", 0), cf.get("refuted", 0),
-                             t3 and "%.0f%%" % (t3.get("same_dir_rate", 0) * 100)))
+
+            # ── 事件明细（2026-11-08 老田令：解读要能点名事件，不能只有聚合）──
+            # 旧版只给「类型分布 other×1、业绩×1」，模型在结论里直接抱怨
+            # 「摘要未展开事件类型及人/地/事/物/组织明细，无法点名具体事件」。
+            # 现给逐条清单：时间/方向/置信/类型/标题/命中依据，文本确证优先。
+            _AV = {"text_confirmed": "确证", "industry_only": "板块级"}
+            det = sorted(ev, key=lambda x: (0 if (x.get("basis") or {}).get(
+                "verdict") == "text_confirmed" else 1,
+                -(x.get("conf") or 0), x.get("ts") or ""))[:14]
+            if det:
+                lines = []
+                for e in sorted(det, key=lambda x: x.get("ts") or ""):
+                    b = e.get("basis") or {}
+                    tag = _AV.get(b.get("verdict"), "")
+                    trm = ((b.get("terms") or {}).get("name") or
+                           (b.get("terms") or {}).get("code") or
+                           (b.get("terms") or {}).get("industry") or [""])[0]
+                    lines.append("  %s %s conf=%s %s | %s | %s%s" % (
+                        (e.get("ts") or "")[5:16],
+                        "利多" if e["bias"] == "bull" else "利空" if e["bias"] == "bear" else "中性",
+                        e.get("conf"), e.get("event_type") or "other",
+                        (e.get("title") or "")[:40],
+                        tag, ("·命中「%s」" % trm) if trm else ""))
+                ha = d.get("hit_audit") or {}
+                parts.append(
+                    "事件明细（%d 条中展示 %d 条；选题窗口内粗筛 %s 条，其中 %s 条"
+                    "文本无任何支撑、已判为模型幻觉剔除）：\n%s\n" % (
+                        len(ev), len(det), ha.get("raw"), ha.get("dropped_code_only"),
+                        "\n".join(lines)))
+
+            # ── 传导流（谁先发生）──
+            seq = d.get("sequence") or []
+            if seq:
+                sl = []
+                for s in seq[-6:]:
+                    if s.get("pending"):
+                        sl.append("  %s（非交易日，待下一交易日验证）：%d 条，净倾向 %+d" % (
+                            "/".join(s.get("origin_dates") or []), s["n"], s["net"]))
+                    else:
+                        sl.append("  %s：%d 条，首条 %s、末条 %s，净倾向 %+d，当日 %s%%" % (
+                            s["trade_date"], s["n"], (s["first_ts"] or "")[11:16],
+                            (s["last_ts"] or "")[11:16], s["net"],
+                            "?" if s.get("price_pct") is None else "%.2f" % s["price_pct"]))
+                parts.append("传导流（按交易日归并，非交易日消息顺延）：\n%s\n"
+                             % "\n".join(sl))
+
+            parts.append("消息可信度：证实率 %.0f%%（证实 %d/证伪 %d）。" % (
+                conf_rate, cf.get("confirmed", 0), cf.get("refuted", 0)))
+            if t3 and t3.get("sufficient"):
+                parts.append("事件后3日：同向 %.1f%%~%.1f%%（中位 %.1f%%，同向概率 %.0f%%，"
+                             "独立交易日 %d 天）。" % (
+                                 t3["p25"], t3["p75"], t3["median"],
+                                 t3.get("same_dir_rate", 0) * 100, t3["n"]))
+            else:
+                parts.append("事件后3日：独立交易日样本 %s 个，不足以下区间结论（不可"
+                             "拿单日行情当规律）。" % (t3["n"] if t3 else 0))
             parts.append("最可信信源 %s（准确率 %s）。" % (
                 s0.get("source_cn") or source_names.cn(s0.get("source")),
                 s0.get("accuracy") and "%.0f%%" % (s0["accuracy"] * 100)))
             news = "".join(parts)
 
-        facts = ("标的 %s（%s）：%s%s%s" % (
-            d.get("ts_code"), d.get("verdict", "")[:0] or "", shape, vp, news)
-        ).replace("：：", "：")
+        # 标的名 / 行业 / 地域：模型在旧结论里写「地域、板块、产业链环节未提供」
+        # 不是它偷懒，是 facts 首句括号里一直是空的（`d.get("verdict","")[:0]`
+        # 恒为空）。补齐后「空间面」才有东西可写。
+        _c6 = re.sub(r"\D", "", str(d.get("code") or code))[:6]
+        _prof = ""
+        try:
+            import jev_hit_basis as _HB
+            _nm = _HB.name_of(_c6)
+            _ind = _HB.industry_of(_c6)
+            _reg = (_HB._load_registry().get(_c6) or {}).get("area") or ""
+            _prof = "%s／%s／%s" % (_nm or "?", _ind or "?", _reg or "?")
+        except Exception:  # noqa: BLE001
+            _prof = "?"
+        facts = "标的 %s（%s）：%s%s%s" % (
+            d.get("ts_code"), _prof, shape, vp, news)
         return facts
 
     if kind == "intraday":
@@ -394,6 +447,71 @@ _RESULT_CACHE: dict = {}
 _RESULT_TTL = 300  # 5 分钟：同一数据组合的结论不重复推理
 
 
+# ── 交易日锚定（2026-11-08 老田令）────────────────────────────
+# 旧口径 age =「今天 - 卡交易日」≤1 天。后果：每个周一、每个节后第一天，
+# 上一交易日盘后刚生成的卡全部被判过期丢弃，用户又被拖进 100 秒现算。
+# 新口径：卡的交易日 ≥「最近一个已收盘交易日」即为新鲜——卡的寿命跟着
+# 交易日走，不跟自然日走。日历取 quant_backtest 的 trade_cal（与 facts
+# 的行情源同源，指向同一批数据）；日历读不到时退回工作日近似，跨 1 个
+# 工作日以内仍算新鲜（宁可用昨晚的卡，也不让用户空等）。
+_TRADE_DAY_CACHE = {"ts": 0.0, "day": None, "ttl": 300.0}
+
+
+def _expect_trade_day():
+    """最近一个「已收盘」A 股交易日，YYYY-MM-DD；取不到返回 None。
+
+    进程内缓存：成功 30 分钟、失败 5 分钟（日历修好后能自愈）。
+    实测冷启 0.23s / 热 0.03s，datamart 侧另有 1 小时缓存。
+    """
+    now = time.time()
+    if _TRADE_DAY_CACHE["day"] and now - _TRADE_DAY_CACHE["ts"] < _TRADE_DAY_CACHE["ttl"]:
+        return _TRADE_DAY_CACHE["day"]
+    day, ttl = None, 300.0
+    try:
+        p = os.path.join(STATION, "quant_backtest")
+        if p not in sys.path:
+            sys.path.insert(0, p)
+        import datamart as dm
+        e = str(dm._expected_trade_day(dm._recent_trade_days()) or "")[:8]
+        if re.fullmatch(r"\d{8}", e):
+            day = "%s-%s-%s" % (e[:4], e[4:6], e[6:])
+            ttl = 1800.0
+    except Exception:  # noqa: BLE001 —— 日历故障不该挡住解读，退回近似
+        day = None
+    _TRADE_DAY_CACHE.update(ts=now, day=day, ttl=ttl)
+    return day
+
+
+def _weekday_gap(td_iso: str) -> int:
+    """td 之后到今天（不含今天）的工作日个数；解析失败返回 99（当过期）。"""
+    try:
+        d0 = dt.date.fromisoformat(str(td_iso)[:10])
+    except Exception:  # noqa: BLE001
+        return 99
+    n, cur, today = 0, d0 + dt.timedelta(days=1), dt.date.today()
+    while cur < today:
+        if cur.weekday() < 5:
+            n += 1
+        cur += dt.timedelta(days=1)
+    return n
+
+
+def _card_fresh(td_s: str, expect=None):
+    """研判卡是否新鲜（按交易日锚定，不按自然日）。返回 (fresh, anchor)。
+
+    fresh=True 表示卡的交易日 ≥ 最近已收盘交易日，可直接展示；
+    anchor 是一句人话依据，写进返回体供页面与排查用。
+    """
+    td_s = str(td_s)[:10]
+    if expect:
+        ok = td_s >= expect
+        return (ok, "卡交易日 %s %s 最近已收盘交易日 %s" % (
+            td_s, "≥" if ok else "＜", expect))
+    gap = _weekday_gap(td_s)
+    return (gap <= 1,
+            "交易日历不可用，按工作日近似（落后 %d 个工作日）" % gap)
+
+
 def _sediment(code: str, days: int):
     """读「盘后预生成」的研判卡（tools/intel_brief_pregen.py 产出）。
 
@@ -402,8 +520,9 @@ def _sediment(code: str, days: int):
 
     口径：
       · 只认 30 日窗（研判卡按 30 日生成），其它窗口照旧走在线；
-      · 取最近一张，且交易日距今 ≤1 天——超过即视为过期，宁可在线重算，
-        也不给用户看隔夜失效的结论；
+      · 取最近一张，其交易日须 ≥「最近一个已收盘交易日」——卡的寿命跟
+        交易日走而非自然日，周一/节后第一天不会误丢上一交易日的卡；
+        确实落后一个交易日以上，才回落在线重算；
       · 库/表不存在、字段坏 → 返回 None，静默回落在线，绝不抛。
     """
     if days != BRIEF_KIND_DAYS:
@@ -424,12 +543,17 @@ def _sediment(code: str, days: int):
     if not row:
         return None
     td, facts, concl, eng, elabel, model, note, name, built = row
+    td_s = str(td)[:10]
     try:
-        age = (dt.date.today() - dt.date.fromisoformat(str(td))).days
-    except Exception:  # noqa: BLE001
+        dt.date.fromisoformat(td_s)
+    except Exception:  # noqa: BLE001 —— 库里日期坏 = 当无卡
         return None
-    if age > 1:
+    expect = _expect_trade_day()
+    fresh, anchor = _card_fresh(td_s, expect)
+    if not fresh:
         return None
+    today_iso = dt.date.today().isoformat()
+    stale = not (td_s == today_iso and str(built or "")[:10] == today_iso)
     return {
         "ok": True, "schema": "jev_interpret.v1",
         "kind": "story", "code": code, "name": name,
@@ -440,7 +564,8 @@ def _sediment(code: str, days: int):
         "facts": facts,
         "conclusion": concl,
         "generated_at": built,
-        "sediment": {"trade_date": td, "built_at": built, "stale": age > 0,
+        "sediment": {"trade_date": td, "built_at": built, "stale": stale,
+                     "expect_trade_date": expect, "anchor": anchor,
                      "source": "intel_briefs"},
     }
 

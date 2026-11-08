@@ -206,10 +206,31 @@ def pregen(tiers: set, trade_date: str, limit: int = 0, force: bool = False,
     return res
 
 
+def _default_trade_date() -> str:
+    """默认交易日 = 最近一个「已收盘」A 股交易日。
+
+    不能用 today：周末/节假日/盘中跑会把卡标成自然日（实测出现过
+    trade_date=周日、数据实为周五的卡），页面读起来像"周日也有行情"，
+    按交易日做的时效判断也会跟着错。日历取不到才退回 today。
+    """
+    try:
+        p = os.path.join(ROOT, "quant_backtest")
+        if p not in sys.path:
+            sys.path.insert(0, p)
+        import datamart as dm
+        e = str(dm._expected_trade_day(dm._recent_trade_days()) or "")[:8]
+        if len(e) == 8 and e.isdigit():
+            return "%s-%s-%s" % (e[:4], e[4:6], e[6:])
+    except Exception:  # noqa: BLE001 —— 日历故障退回自然日，不阻断预生成
+        pass
+    return dt.date.today().strftime("%Y-%m-%d")
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description="AIDE 研判卡预生成")
     p.add_argument("--tier", default="L1", help="L1 / L2 / L1,L2 / all")
-    p.add_argument("--date", default="", help="交易日，默认今天")
+    p.add_argument("--date", default="",
+                   help="交易日，默认最近一个已收盘交易日")
     p.add_argument("--limit", type=int, default=0)
     p.add_argument("--codes", default="", help="指定代码，逗号分隔")
     p.add_argument("--force", action="store_true", help="忽略指纹强制重算")
@@ -219,7 +240,7 @@ def main(argv=None) -> int:
     tiers = set() if raw.lower() in ("all", "*", "") else {
         t.strip().upper() for t in raw.split(",") if t.strip()}
     codes = [c.strip() for c in (a.codes or "").split(",") if c.strip()]
-    date = a.date or dt.date.today().strftime("%Y-%m-%d")
+    date = a.date or _default_trade_date()
     res = pregen(tiers, date, limit=a.limit, force=a.force,
                  codes=codes, dry=a.dry_run)
     print(json.dumps(res, ensure_ascii=False, indent=2))

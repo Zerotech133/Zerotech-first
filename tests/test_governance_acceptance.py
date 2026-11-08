@@ -907,6 +907,13 @@ def test_AC_E07_no_files_outside_whitelist():
         "tests/test_task_inventory.py",
         "tests/test_backup_format_gate.py",
         "tests/test_governance_acceptance.py",
+        # 2026-11-08 追加：AIDE 判定命中溯源回归用例（老田实测「种业大会→
+        # 宁德时代」幻觉判例）。属新建而非改动既有门禁用例，按同一口径登记，
+        # 未放宽其它约束（10-29 目录与 fixtures 断言原样）。
+        "tests/test_jev_hit_provenance.py",
+        # 2026-11-08 追加：研判卡时效口径回归（老田令「周一别再等 100 秒」）。
+        # 同样属新建用例，非改动既有门禁。
+        "tests/test_sediment_freshness.py",
     }
     untracked = set()
     try:

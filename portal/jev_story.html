@@ -260,7 +260,7 @@
       function paint(d){
         var eng=d.engine_label?(d.engine_label+(d.model?" · "+d.model:"")):(d.engine==="model"?(d.model||"AI 模型"):"规则引擎");
         var sd=d.sediment;
-        var tail=sd?(" · "+(sd.trade_date||"").slice(5)+(sd.stale?"（隔日沉淀）":" · 盘后预生成")):"";
+        var tail=sd?(" · "+(sd.trade_date||"").slice(5)+" 盘后"+(sd.stale?"（隔日沉淀）":"（今日预生成）")):"";
         meta.textContent=eng+" · "+(d.generated_at||"").slice(11)+tail;
         body.innerHTML='<div class="verdict" style="margin:0">'+fmtVerdict(d.conclusion).replace(/\n/g,"<br>")+'</div>'
           +'<div style="margin-top:8px"><button class="ui-btn ui-btn--sm" id="ai-re">重算</button>'

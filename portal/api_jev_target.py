@@ -238,7 +238,7 @@ def _sentiment(code6: str, name: str, days: int, limit: int) -> dict:
     """
     since = (dt.datetime.now() - dt.timedelta(days=days)).strftime("%Y-%m-%d %H:%M")
     pat_code = "%" + code6 + "%"
-    sql = ("SELECT id, source, ts, title, jev FROM news WHERE ts>=? "
+    sql = ("SELECT id, source, ts, title, jev, content FROM news WHERE ts>=? "
            "AND (stocks LIKE ? OR jev LIKE ?")
     args = [since, pat_code, pat_code]
     if name:
@@ -253,7 +253,9 @@ def _sentiment(code6: str, name: str, days: int, limit: int) -> dict:
         return {"available": False, "reason": str(e)[:120]}
 
     hit, by_name = [], 0
-    for nid, source, ts, title, jev_text in rows:
+    vstat = {"text_confirmed": 0, "industry_only": 0, "code_only": 0,
+             "none": 0}
+    for nid, source, ts, title, jev_text, content in rows:
         j = {}
         if jev_text:
             try:
@@ -266,6 +268,17 @@ def _sentiment(code6: str, name: str, days: int, limit: int) -> dict:
         in_name = bool(name) and name in (title or "")
         if not (in_code or in_name):
             continue  # LIKE 只做粗筛，这里精确判定，避免「600519」撞「6005190」
+        # 文本支撑校验：只有 jev.companies 有代码、原文通篇不提这只票的，
+        # 是模型幻觉（种业大会→宁德时代那种），不进热度统计。
+        try:
+            import jev_hit_basis as HB
+            basis = HB.verify(title or "", content or "", code6, j, name=name)
+        except Exception:  # noqa: BLE001
+            basis = None
+        if basis is not None:
+            vstat[basis["verdict"]] = vstat.get(basis["verdict"], 0) + 1
+            if not basis["keep"]:
+                continue
         if in_name and not in_code:
             by_name += 1
         hit.append({
@@ -318,17 +331,30 @@ def _sentiment(code6: str, name: str, days: int, limit: int) -> dict:
             "polarity_from": "JEV 判定 bias（非独立文本情感模型），故称「判定口径情绪」",
             "candidate_cap": 2000,
         },
+        # 热度只统计有原文支撑的消息；模型自由填的代码不算热度（2026-11-08）
+        "hit_audit": {
+            "raw": sum(vstat.values()),
+            "kept": len(hit),
+            "dropped": sum(vstat.values()) - len(hit),
+            "by_verdict": vstat,
+        },
     }
 
 
 def _judgments(code6: str, days: int, limit: int) -> dict:
-    """判定面：该股相关 JEV 判定 + T+1 后验。"""
+    """判定面：该股相关 JEV 判定 + T+1 后验。
+
+    2026-11-08 老田实测（种业大会/医保AI大赛被判成宁德时代）：`jev.companies`
+    是模型自由生成的，裸采信等于把幻觉当证据。此处每条走 jev_hit_basis
+    反查文本支撑，无支撑的剔除并单独计数，让「判定面一共多少条、其中有
+    多少有原文支撑」在接口里可对账。
+    """
     try:
         db = _ro(NEWS_DB)
         since = (dt.datetime.now() - dt.timedelta(days=days)
                  ).strftime("%Y-%m-%d %H:%M")
         rows = db.execute(
-            "SELECT id, ts, title, jev FROM news "
+            "SELECT id, ts, title, jev, content FROM news "
             "WHERE jev IS NOT NULL AND jev!='' AND ts>=? "
             "AND (stocks LIKE ? OR jev LIKE ?) "
             "ORDER BY ts DESC LIMIT ?",
@@ -340,7 +366,9 @@ def _judgments(code6: str, days: int, limit: int) -> dict:
         return {"available": False, "reason": str(e)[:120]}
 
     items, dist = [], {"bull": 0, "bear": 0, "neutral": 0}
-    for nid, ts, title, jev_text in rows:
+    dropped, vstat = [], {"text_confirmed": 0, "industry_only": 0,
+                          "code_only": 0, "none": 0}
+    for nid, ts, title, jev_text, content in rows:
         try:
             j = json.loads(jev_text)
         except Exception:
@@ -349,6 +377,21 @@ def _judgments(code6: str, days: int, limit: int) -> dict:
         comps = j.get("companies") or []
         if code6 not in stocks and code6 not in comps:
             continue  # LIKE 命中的误配精确过滤
+        try:
+            import jev_hit_basis as HB
+            basis = HB.verify(title or "", content or "", code6, j)
+        except Exception:  # noqa: BLE001 —— 溯源层挂了退化为不拦
+            basis = None
+        if basis is not None:
+            vstat[basis["verdict"]] = vstat.get(basis["verdict"], 0) + 1
+            if not basis["keep"]:
+                if len(dropped) < 20:
+                    dropped.append({
+                        "id": nid, "ts": ts, "title": (title or "")[:70],
+                        "reason": str(j.get("reason") or "")[:60],
+                        "why": basis["why"],
+                    })
+                continue
         bias = j.get("bias") if j.get("bias") in dist else "neutral"
         dist[bias] += 1
         if len(items) < limit:      # 只截「展示」不截「统计」：total/dist/net_bias 覆盖全窗口
@@ -358,6 +401,13 @@ def _judgments(code6: str, days: int, limit: int) -> dict:
                 "event_type": j.get("event_type"),
                 "companies": comps,
                 "src": j.get("src") or ("prefilter" if j.get("pref") else "model"),
+                # 命中依据（老田要的「命中点在哪」）：命中词 + 裁决 + 原文片段
+                "basis": None if basis is None else {
+                    "verdict": basis["verdict"],
+                    "terms": basis["terms"],
+                    "hit_text": basis["hit_text"],
+                    "why": basis["why"],
+                },
                 "evidence_item": "/api/jev/evidence/item?id=%s&code=%s" % (nid, code6),
             })
 
@@ -385,6 +435,7 @@ def _judgments(code6: str, days: int, limit: int) -> dict:
         pass
 
     total = sum(dist.values())   # 窗口内全部精确命中的判定数；不是 len(items)
+    raw = sum(vstat.values())
     return {
         "available": True,
         "window_days": days,
@@ -392,6 +443,16 @@ def _judgments(code6: str, days: int, limit: int) -> dict:
         "net_bias": round((dist["bull"] - dist["bear"]) / total, 3) if total else None,
         "posterior": posterior,
         "items": items,
+        # 命中质量账（2026-11-08）：粗筛 N 条里，多少有原文支撑、多少是模型
+        # 自己填的代码（已剔除）。total/dist 现在只统计通过校验的部分。
+        "hit_audit": {
+            "raw": raw, "kept": total, "dropped": raw - total,
+            "by_verdict": vstat,
+            "keep_rate": round(total / raw, 3) if raw else None,
+            "rule": "文本须出现公司名/代码/所属行业词之一；仅 jev.companies "
+                    "有代码而文本零支撑 → 判为幻觉并剔除",
+            "dropped_samples": dropped,
+        },
     }
 
 

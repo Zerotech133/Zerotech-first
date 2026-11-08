@@ -74,15 +74,20 @@ def compute(code_raw: str, days: int, limit: int) -> dict:
              ).strftime("%Y-%m-%d %H:%M")
 
     # ── 事件线：news 判定 + dec_audit 后验逐条对齐 ──
+    # 2026-11-08 老田实测：这个 LIKE 把「中原农谷种业大会」「医保影像AI大赛」
+    # 这类正文 64 字、通篇不提宁德时代的稿子也算成了宁德时代的事件——因为
+    # 判定期 LLM 自由填了 companies:["300750"]（stocks 列是 None，预筛根本没
+    # 匹配）。裸 LIKE 等于无条件采信模型幻觉，故此处同时取 content，逐条走
+    # jev_hit_basis.verify 反查文本支撑。
     db = _ro(NEWS_DB)
     try:
         rows = db.execute(
-            "SELECT n.id, n.ts, n.source, n.title, n.jev FROM news n "
+            "SELECT n.id, n.ts, n.source, n.title, n.jev, n.content FROM news n "
             "WHERE n.jev IS NOT NULL AND n.jev!='' AND n.ts>=? "
             "AND (n.jev LIKE ? OR n.stocks LIKE ?) "
             "ORDER BY n.ts DESC LIMIT ?",
             (since, '%"companies": ["%' + code6 + '%', '%' + code6 + '%',
-             limit * 3)).fetchall()
+             limit * 4)).fetchall()
     finally:
         db.close()
 
@@ -120,7 +125,9 @@ def compute(code_raw: str, days: int, limit: int) -> dict:
             facts_map = {}
 
     events, src_stat = [], {}
-    for nid, ts, source, title, jev in rows:
+    hit_stat = {"text_confirmed": 0, "industry_only": 0,
+                "code_only": 0, "none": 0}
+    for nid, ts, source, title, jev, content in rows:
         try:
             j = json.loads(jev)
         except Exception:  # noqa: BLE001
@@ -130,6 +137,17 @@ def compute(code_raw: str, days: int, limit: int) -> dict:
         if code6 not in comps and code6 not in stocks and \
                 code6 not in [s[:6] for s in stocks if len(s) > 6]:
             continue
+        # 命中溯源：这条新闻的文本里到底有没有这只票？没有就剔掉，别拿
+        # 模型的自由发挥当证据。
+        try:
+            import jev_hit_basis as HB
+            basis = HB.verify(title or "", content or "", code6, j)
+        except Exception:  # noqa: BLE001 —— 溯源层挂了退化为不拦，不炸页
+            basis = None
+        if basis is not None:
+            hit_stat[basis["verdict"]] = hit_stat.get(basis["verdict"], 0) + 1
+            if not basis["keep"]:
+                continue
         bias = j.get("bias") if j.get("bias") in ("bull", "bear", "neutral") else "neutral"
         fx = facts_map.get(nid) or {}
         ev = {
@@ -141,6 +159,14 @@ def compute(code_raw: str, days: int, limit: int) -> dict:
             "org": fx.get("org") or [], "place": fx.get("place") or [],
             "thing": fx.get("thing") or [],
             "ret": None, "hit": None, "trade_day": None,
+            # 证据链：命中依据 + 裁决 + 命中片段 + 一句人话
+            "basis": None if basis is None else {
+                "verdict": basis["verdict"],
+                "terms": basis["terms"],
+                "hit_text": basis["hit_text"],
+                "why": basis["why"],
+                "industry": basis["industry"],
+            },
         }
         p = post_map.get(nid)
         if p:
@@ -224,41 +250,158 @@ def compute(code_raw: str, days: int, limit: int) -> dict:
     # ── 时空联动：事件后影响统计（老田令 2026-11-07）──
     # 事件日为 D0，统计 D1/D3/D5 的累计涨跌（自 D0 收盘起算），
     # 历史聚合 → 均值/中位/P25-P75 区间 = 「大致影响区间值」。
-    impact_stats = {"windows": ["t1", "t3", "t5"], "by_window": {}}
+    #
+    # 2026-11-08 修真（老田截图指出「1日 P25~P75 = +1.43%~+3.12% 而中位也是
+    # +1.43%」「5日 样本15 却 +9.14%~+9.14% 同向87%」）：
+    #   ① 旧代码按「事件」累加样本，同一交易日 15 条事件 = 同一个收益被计 15
+    #      次 → 样本量虚高、分布被单日行情完全支配（重复计数，不是统计）；
+    #   ② D0 落在周末/节假日时 `dl.index(d0)` 直接失败被丢弃 → 非交易时段的
+    #      消息（恰恰是公告、研报的高发时段）系统性缺失；
+    #   ③ 百分位取 `chgs[int(n*0.25)]`，n 小的时候 p25/p50 会撞在一起。
+    # 现口径：先按「事件所属交易日」聚成一个观测（同一天多空相抵视为方向不
+    # 明、不计），D0 非交易日顺延到下一交易日，百分位用线性插值。
+    impact_stats = {"windows": ["t1", "t3", "t5"], "by_window": {},
+                    "basis": "按事件交易日去重后每交易日一个观测；D0 非交易日"
+                             "顺延至下一交易日；方向已按事件多空归一"}
+
+    def _pct(sorted_list, p):
+        """线性插值百分位（n=1 直接返回；不用 int(n*p) 以免 p25=p50 撞车）。"""
+        n = len(sorted_list)
+        if not n:
+            return None
+        if n == 1:
+            return sorted_list[0]
+        k = (n - 1) * p
+        lo = int(k)
+        hi = min(lo + 1, n - 1)
+        return sorted_list[lo] + (sorted_list[hi] - sorted_list[lo]) * (k - lo)
+
     if quotes and events:
         closes = {q["date"]: q["close"] for q in quotes if q["close"]}
-        dl = [q["date"] for q in quotes]
+        dl = sorted(closes)
+        # D0 → 交易日索引（非交易日顺延）
+        day_slot = {}
+        for e in events:
+            if e["bias"] not in ("bull", "bear"):
+                continue
+            d0 = (e["ts"] or "")[:10].replace("-", "")
+            if not d0:
+                continue
+            i = dl.index(d0) if d0 in dl else next(
+                (k for k, d in enumerate(dl) if d > d0), -1)
+            if i < 0:
+                continue
+            s = day_slot.setdefault(i, {"bull": 0, "bear": 0})
+            s[e["bias"]] += 1
         for wname, wn in (("t1", 1), ("t3", 3), ("t5", 5)):
-            chgs = []
-            for e in events:
-                if e["bias"] not in ("bull", "bear"):
-                    continue
-                d0 = (e["ts"] or "")[:10].replace("-", "")
-                i = dl.index(d0) if d0 in dl else -1
-                if i < 0 or i + wn >= len(dl):
-                    continue
-                c0 = closes[dl[i]]
+            chgs, used_days = [], 0
+            for i, cnt in day_slot.items():
+                net = cnt["bull"] - cnt["bear"]
+                if net == 0 or i + wn >= len(dl):
+                    continue          # 多空相抵=方向不明；右侧无 bar=待验证
+                c0 = closes.get(dl[i])
                 if not c0:
                     continue
-                # 方向归一：与事件同向为正（利多看涨跌幅、利空取反）
                 cum = (closes[dl[i + wn]] / c0 - 1) * 100
-                if e["bias"] == "bear":
-                    cum = -cum
+                if net < 0:
+                    cum = -cum        # 净空方向归一为正收益
                 chgs.append(round(cum, 2))
+                used_days += 1
             if chgs:
                 chgs.sort()
                 n_c = len(chgs)
-                med = chgs[n_c // 2] if n_c % 2 else (chgs[n_c//2 - 1] + chgs[n_c//2]) / 2
+                # 样本门槛：独立交易日 <5 不给区间结论。之前 1~3 个样本也报
+                # 「P25~P75 +9.14%~+9.14%、同向 87%」，等于把一天的行情包装
+                # 成规律——老田一眼就看穿了，不能再这么写。
+                ok = n_c >= 5
                 impact_stats["by_window"][wname] = {
                     "n": n_c,
+                    "n_days": used_days,
+                    "sufficient": ok,
+                    "note": (None if ok else
+                             "独立交易日仅 %d 个，样本不足，不给区间结论" % n_c),
                     "mean": round(sum(chgs) / n_c, 2),
-                    "median": round(med, 2),
-                    "p25": round(chgs[int(n_c * 0.25)], 2),
-                    "p75": round(chgs[int(n_c * 0.75)], 2),
+                    "median": round(_pct(chgs, 0.5), 2),
+                    "p25": round(_pct(chgs, 0.25), 2),
+                    "p75": round(_pct(chgs, 0.75), 2),
                     "min": chgs[0], "max": chgs[-1],
                     "same_dir_rate": round(
                         sum(1 for c in chgs if c > 0) / n_c, 3),
                 }
+
+    # ── 事件传导流：谁先发生（老田令 2026-11-08）──
+    # 「每条新闻有发生的时间点，时间点就是锚点」——按**交易日**分组、日内按
+    # 分钟排序，标出当日首条（lead）与后续（follow），给出与前一条的间隔。
+    # 非交易日（周末/节假日）的消息顺延归到下一个交易日：周五晚间的研报、
+    # 周末的公告，影响本来就发生在周一开盘，不该单列成「一个交易日」。
+    # 后面还没有行情可锚的（未来交易日）标 pending，不假装已经验证。
+    sequence = []
+    if events:
+        dl_all = sorted({q["date"] for q in quotes})
+        pct_by_day = {q["date"]: q["pct_chg"] for q in quotes}
+
+        def _anchor(d0):
+            """事件日 → (交易日, 是否顺延)。无未来交易日可归则返回 (None, True)。"""
+            if d0 in pct_by_day or d0 in dl_all:
+                return d0, False
+            nxt = next((d for d in dl_all if d > d0), None)
+            return (nxt, True) if nxt else (None, True)
+
+        by_td = {}
+        for e in events:
+            d0 = (e["ts"] or "")[:10]
+            if not d0:
+                continue
+            td, shifted = _anchor(d0.replace("-", ""))
+            key = td or ("pending:" + d0)
+            by_td.setdefault(key, {"shifted": shifted, "origin": set(),
+                                   "items": []})
+            by_td[key]["origin"].add(d0)
+            by_td[key]["items"].append(e)
+
+        for key in sorted(by_td):
+            grp = by_td[key]
+            lst = sorted(grp["items"], key=lambda x: (x["ts"] or ""))
+            items, prev_ts = [], None
+            for k, e in enumerate(lst, 1):
+                gap = None
+                if prev_ts:
+                    try:
+                        gap = int((
+                            dt.datetime.strptime(e["ts"][:16], "%Y-%m-%d %H:%M")
+                            - dt.datetime.strptime(prev_ts[:16],
+                                                   "%Y-%m-%d %H:%M")
+                        ).total_seconds() // 60)
+                    except Exception:  # noqa: BLE001
+                        gap = None
+                items.append({
+                    "order": k,
+                    "role": "lead" if k == 1 else "follow",
+                    "id": e["id"], "ts": e["ts"],
+                    "minute": (e["ts"] or "")[11:16],
+                    "gap_min": gap,
+                    "source_cn": e["source_cn"], "title": e["title"],
+                    "bias": e["bias"], "conf": e["conf"],
+                    "event_type": e["event_type"],
+                    "basis_verdict": (e.get("basis") or {}).get("verdict"),
+                })
+                prev_ts = e["ts"]
+            net = sum(1 if x["bias"] == "bull" else -1
+                      for x in lst if x["bias"] in ("bull", "bear"))
+            pending = key.startswith("pending:")
+            td8 = None if pending else key
+            sequence.append({
+                "trade_date": (None if pending else
+                               "%s-%s-%s" % (td8[:4], td8[4:6], td8[6:])),
+                "pending": pending,
+                "shifted": grp["shifted"],
+                "origin_dates": sorted(grp["origin"]),
+                "n": len(lst),
+                "first_ts": lst[0]["ts"], "last_ts": lst[-1]["ts"],
+                "net": net,
+                "price_pct": None if pending else pct_by_day.get(td8),
+                "items": items,
+            })
 
     # ── verdict ──
     n_ev = len(events)
@@ -282,10 +425,13 @@ def compute(code_raw: str, days: int, limit: int) -> dict:
             sources[0]["source_cn"], sources[0]["accuracy"] * 100,
             sources[0]["verified"]))
     t3s = impact_stats.get("by_window", {}).get("t3")
-    if t3s:
-        v.append("历史区间参考：该股同类事件后 3 日**同向累计 %.1f%%~%.1f%%（中位 %.1f%%，同向概率 %.0f%%，样本 %d）**" % (
+    if t3s and t3s.get("sufficient"):
+        v.append("历史区间参考：该股同类事件后 3 日**同向累计 %.1f%%~%.1f%%（中位 %.1f%%，同向概率 %.0f%%，独立交易日 %d 天）**" % (
             t3s["p25"], t3s["p75"], t3s["median"],
             t3s["same_dir_rate"] * 100, t3s["n"]))
+    elif t3s:
+        v.append("事件后 3 日仅 %d 个独立交易日样本，不足以给区间（不拿单日行情冒充规律）"
+                 % t3s["n"])
     if judged_dir and quotes:
         agree = (net > 0 and price_net > 0) or (net < 0 and price_net < 0)
         v.append("消息基调与价格趋势%s（消息 %s / 价格 %s）" % (
@@ -303,6 +449,20 @@ def compute(code_raw: str, days: int, limit: int) -> dict:
         "confirm": {"confirmed": confirmed, "refuted": refuted,
                     "pending": pending},
         "impact_stats": impact_stats,
+        "sequence": sequence,
+        # 命中质量账：裸 LIKE 筛出多少、其中多少有文本支撑、多少是模型
+        # 自己填的代码幻觉被剔除——「凭什么算这只票的事件」在这里对账。
+        "hit_audit": {
+            "raw": sum(hit_stat.values()),
+            "kept": hit_stat["text_confirmed"] + hit_stat["industry_only"],
+            "dropped_code_only": hit_stat["code_only"],
+            "by_verdict": hit_stat,
+            "keep_rate": round(
+                (hit_stat["text_confirmed"] + hit_stat["industry_only"])
+                / sum(hit_stat.values()), 3) if sum(hit_stat.values()) else None,
+            "rule": "文本未出现公司名/代码/所属行业词，仅 jev.companies 有代码"
+                    " → 判为无支撑，剔除（jev_hit_basis.verify 口径）",
+        },
         "verdict": "；".join(v) + "。",
     }
     _CACHE.update(key=key, at=time.time(), data=data)
