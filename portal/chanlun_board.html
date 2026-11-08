@@ -224,6 +224,31 @@
     .p7-bar__track i { display: block; height: 100%; background: var(--ui-blue); border-radius: 4px; }
     .p7-bar__v { flex: 0 0 56px; text-align: right; font-weight: 600; }
 
+    /* G3 口径修正：4 列（名字 / 旧口径 / 新口径 / 判定） */
+    .p8-row { grid-template-columns: minmax(0,1.35fr) 118px 118px 60px; align-items: center; }
+    .p8-row--head { font-size: 11.5px; }
+    .p8-cell { font-variant-numeric: tabular-nums; font-size: 13px; }
+    .p8-cell small { display: block; font-size: 10.5px; color: var(--ui-muted); font-weight: 400; }
+    .p8-tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px;
+      font-weight: 700; border: 1px solid transparent; white-space: nowrap; }
+    .p8-tag--dead { color: var(--ui-amber); border-color: var(--ui-amber); background: transparent; }
+    .p8-tag--new { color: var(--ui-blue); border-color: var(--ui-blue); background: transparent; }
+    .p8-tag--keep { color: var(--ui-muted); border-color: var(--ui-line); background: transparent; }
+    .p8-big { font-size: 1.9em; font-variant-numeric: tabular-nums; font-weight: 700; line-height: 1.1; }
+    .p8-stack { display: flex; height: 12px; border-radius: 6px; overflow: hidden;
+      border: 1px solid var(--ui-line); margin: 14px 0 8px; }
+    .p8-stack i { display: block; height: 100%; }
+    .p8-stack .s-dead { background: var(--ui-amber); }
+    .p8-stack .s-new { background: var(--ui-blue); }
+    .p8-stack .s-keep { background: var(--ui-line); }
+    /* 同一套色也要接到 p7 的条形轨道上：面板④ 复用 .p7-bar，
+       不接的话三条柱子会全蓝，看上去像"没有差别"。 */
+    .p7-bar__track i.s-dead { background: var(--ui-amber); }
+    .p7-bar__track i.s-new { background: var(--ui-blue); }
+    .p7-bar__track i.s-keep { background: var(--ui-muted); }
+    .p8-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 11.5px; color: var(--ui-muted); }
+    .p8-legend b { font-variant-numeric: tabular-nums; }
+
     /* 三方向验证：敞口档 / 窗口 / 停3买 三张表，列数比 p3 多一列 */
     .p4-row { grid-template-columns: minmax(0,1.6fr) 70px 74px 64px 56px 76px 52px; }
     .p4-x { display: grid; gap: 6px; margin-top: 10px; font-variant-numeric: tabular-nums; }
@@ -254,6 +279,12 @@
       .p7-row--bench > span:nth-child(5),
       .p7-row--bench > span:nth-child(6) { display: none; }
       .p7-row--bench > span:nth-child(4) { display: inline; }
+      /* G3：窄屏只留 名字 / 新口径 / 判定。旧口径是"错的参照物"，
+         缩屏时优先牺牲它——留着反而占掉判定徽章的位置。 */
+      .p8-row { grid-template-columns: minmax(0,1fr) 96px 56px; }
+      .p8-row > span:nth-child(2) { display: none; }
+      .p8-row .row__nm { display: block; }
+      .p8-row .row__nm small { display: block; margin-top: 1px; line-height: 1.32; }
       .p7-row .row__nm { display: block; }
       .p7-row .row__nm small { display: block; margin-top: 1px; line-height: 1.32; }
       /* 390px：三档必须都看得到（这是结论本身），只压字号不折列 */
@@ -304,6 +335,7 @@
       <button class="viewtab" role="tab" data-view="p5" aria-selected="false">成本验证 <small id="nv-p5">—</small></button>
       <button class="viewtab" role="tab" data-view="p6" aria-selected="false">方法论复盘 <small id="nv-p6">—</small></button>
       <button class="viewtab" role="tab" data-view="p7" aria-selected="false">纯正缠论 <small id="nv-p7">—</small></button>
+      <button class="viewtab" role="tab" data-view="p8" aria-selected="false">口径修正 <small id="nv-p8">—</small></button>
       <button class="viewtab" role="tab" data-view="about" aria-selected="false">口径</button>
     </nav>
 
@@ -337,6 +369,7 @@
   var SE7 = null;    // hf_sell_exit.json（持到卖点 vs 固定持期，等权全A+β）
   var SCSI = null;   // hf_sell_exit_csi.json（同一批笔，市值加权基准对照）
   var S51 = null;    // hf_sell_exit_s51.json（同一批笔，51bp 全成本）
+  var RG8 = null;    // hf_regauge.json（G3：新旧口径逐条对照 + 翻转判定）
 
   function $(id) { return document.getElementById(id); }
   function esc(s) {
@@ -1941,6 +1974,158 @@
     return h;
   }
 
+
+  // ------------------------------------------------------------ 口径修正 G3
+  function p8Tag(v) {
+    if (v === '失效') return '<span class="p8-tag p8-tag--dead">失效</span>';
+    if (v === '新增') return '<span class="p8-tag p8-tag--new">新增</span>';
+    if (v === '缺数据') return '<span class="p8-tag p8-tag--keep">缺</span>';
+    return '<span class="p8-tag p8-tag--keep">保持</span>';
+  }
+
+  function p8Cell(exc, t, nd) {
+    if (exc === null || exc === undefined) return '<span class="p8-cell muted">—</span>';
+    var cls = exc >= 0 ? 'up' : 'dn';
+    return '<span class="p8-cell ' + cls + '">' + n(exc * 100, nd === undefined ? 2 : nd) + '%'
+      + '<small>t ' + n(t, 2) + '</small></span>';
+  }
+
+  function p8Summary() {
+    var S = (RG8 || {}).summary || {};
+    var dead = S['失效'] || 0, add = S['新增'] || 0, keep = S['保持'] || 0;
+    var tot = dead + add + keep || 1;
+    var h = '<section class="ui-panel"><h2>① 八十三条判定里，有 <span class="p8-big bad">'
+      + dead + '</span> 条在新口径下站不住</h2>'
+      + '<div class="note"><p>前十六轮所有超额都建在 <span class="mono">000985.CSI 市值加权 + 隐含 β=1</span> 上。'
+      + '第十六轮用另一条独立样本证明它高估 3.5～25 倍，但那只覆盖「持到卖点」一个场景。'
+      + '这一轮把 phase5 / phase6 的全部判定按 <b>等权全A × 逐笔 β</b> 重算了一遍，逐条并排。</p></div>'
+      + '<div class="ab-kpis">'
+      + '<div class="ab-kpi"><span>失效</span><b class="bad">' + dead + '</b>'
+      + '<small>旧显著 → 新不显著</small></div>'
+      + '<div class="ab-kpi"><span>新增</span><b>' + add + '</b><small>新口径下才显现</small></div>'
+      + '<div class="ab-kpi"><span>保持</span><b class="muted">' + keep + '</b>'
+      + '<small>结论不变</small></div>'
+      + '<div class="ab-kpi"><span>净值变动</span><b>0</b><small>18 组逐位相同</small></div>'
+      + '</div>'
+      + '<div class="p8-stack">'
+      + '<i class="s-dead" style="width:' + (dead / tot * 100).toFixed(1) + '%"></i>'
+      + '<i class="s-new" style="width:' + (add / tot * 100).toFixed(1) + '%"></i>'
+      + '<i class="s-keep" style="width:' + (keep / tot * 100).toFixed(1) + '%"></i></div>'
+      + '<div class="p8-legend"><span>判定规则：<span class="mono">|t|≥2 → &lt;2 判失效；&lt;2 → ≥2 判新增</span>，'
+      + '规则写死在 <span class="mono">hf_regauge.py</span> 里，跑数据之前就定了。</span>'
+      + '<span>只比 t 不比数值：数值被基准涨幅直接放大缩小，只有 t 衡量能否与噪声区分。</span></div>'
+      + '<div class="p3-verdict"><b>换基准没有动账本，动的是记账。</b>'
+      + '18 组成本档的净值逐位不变——说明这次只改了「超额怎么算」，引擎一行没动。'
+      + '所以那 ' + dead + ' 条不是策略变差了，是<b>原来就不该记成策略的收益</b>。</div></section>';
+    return h;
+  }
+
+  function p8Regime() {
+    var A = ((RG8 || {}).p6 || {}).a || {}, rows = A.rows || [];
+    if (!rows.length) return '';
+    var h = '<section class="ui-panel"><h2>② 塌方的是「强势市场」：t 从 2.87 掉到 1.59</h2>'
+      + '<div class="note"><p>全集 5,772 笔，按势档分组算笔均超额。'
+      + '旧口径下「强市 +0.56%（t=2.87）」是第十五轮唯一支持「势档有正向价值」的证据；'
+      + '乘上逐笔 β 之后，t 掉到 '.concat(A.rows[0] ? A.rows[0].t_new : '—', '。</p></div>')
+      + '<div class="rows"><div class="row p8-row row--head"><span>势档</span>'
+      + '<span class="num">旧口径</span><span class="num">等权全A×β</span>'
+      + '<span class="num">判定</span></div>';
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      h += '<div class="row p8-row"><span class="row__nm"><b>' + esc(r.cn) + '市</b>'
+        + ' <small class="muted">' + (r.n || 0).toLocaleString() + ' 笔</small></span>'
+        + p8Cell(r.exc_old, r.t_old) + p8Cell(r.exc_new, r.t_new) + p8Tag(r.verdict) + '</div>';
+    }
+    var S = rows.filter(function (x) { return x.regime === 'strong'; })[0] || {};
+    h += '</div><div class="p3-verdict"><b>为什么强市掉得最狠：强市里 β 本来就高。</b>'
+      + '强势市场基准在涨，高 β 的票自然涨更多，那部分差额在旧口径下被整笔记成了 α。'
+      + '乘上 β 之后，<b>强市 ' + n((S.exc_old || 0) * 100, 2) + '%（t=' + n(S.t_old, 2)
+      + '）变成 ' + n((S.exc_new || 0) * 100, 2) + '%（t=' + n(S.t_new, 2) + '）</b>。'
+      + '第十五轮「势档是风险调节、不是 alpha」的结论不但成立，而且更强了——'
+      + '现在连「强市有效」这唯一的正向证据也没了。</div></section>';
+    return h;
+  }
+
+  function p8TypeRegime() {
+    var A = ((RG8 || {}).p6 || {}).a || {}, by = A.by_type || [];
+    if (!by.length) return '';
+    var TP = ['1买', '2买', '3买'], RG = ['强', '中', '弱'];
+    function cell(tp, g) {
+      for (var i = 0; i < by.length; i++) {
+        if (by[i].type === tp && by[i].regime === g) return by[i];
+      }
+      return null;
+    }
+    var h = '<section class="ui-panel"><h2>③ 拆开看：只有 1买 在弱市还站着</h2>'
+      + '<div class="note"><p>同一批笔按「买点类型 × 势档」拆成 9 格。'
+      + '判定标记挂在<b>新口径</b>的显著性上——只有 |t|≥2 才值得当成结论。</p></div>'
+      + '<div class="rows"><div class="row p8-row row--head"><span>势档</span>'
+      + '<span class="num">旧口径</span><span class="num">等权全A×β</span>'
+      + '<span class="num">判定</span></div>';
+    for (var t = 0; t < TP.length; t++) {
+      for (var g = 0; g < RG.length; g++) {
+        var r = cell(TP[t], RG[g]);
+        if (!r) continue;
+        h += '<div class="row p8-row"><span class="row__nm"><b>' + TP[t] + ' × ' + RG[g] + '市</b>'
+          + ' <small class="muted">' + (r.n || 0) + ' 笔</small></span>'
+          + p8Cell(r.exc_old, r.t_old) + p8Cell(r.exc_new, r.t_new) + p8Tag(r.verdict) + '</div>';
+      }
+    }
+    var w1 = cell('1买', '弱') || {}, w3 = cell('3买', '弱') || {};
+    h += '</div><div class="p3-verdict"><b>1买 弱市 ' + n((w1.exc_new || 0) * 100, 2)
+      + '%（t=' + n(w1.t_new, 2) + '）</b>：这是全表里<b>唯一一个「拆开后仍然显著」的正向格</b>，'
+      + '而且它在旧口径下反而不起眼。原因是弱市基准在跌，β 调整反而把它抬了起来——'
+      + '真正的抗跌能力，只有在跌市里才看得出来。<br>'
+      + '对面是 <b>3买 弱市 ' + n((w3.exc_new || 0) * 100, 2) + '%（t=' + n(w3.t_new, 2)
+      + '）</b>，比旧口径更负。三兄弟在弱市的表现<b>符号相反</b>，这比「平均起来没差别」有用得多。</div></section>';
+    return h;
+  }
+
+  function p8Breakeven() {
+    var B = ((RG8 || {}).p5 || {}).b || {};
+    if (B.be_rt_new_bp === undefined) return '';
+    var oldb = B.be_rt_old_bp || 0, newb = B.be_rt_new_bp || 0, ext = B.ext_bp || 0;
+    var gapOld = ext ? Math.abs(oldb - ext) / ext * 100 : 0;
+    var gapNew = ext ? Math.abs(newb - ext) / ext * 100 : 0;
+    var mx = Math.max(oldb, newb, ext) * 1.15;
+    function bar(lab, v, cls) {
+      return '<div class="p7-bar"><span class="p7-bar__k">' + lab + '</span>'
+        + '<span class="p7-bar__track"><i class="' + cls + '" style="width:'
+        + (v / mx * 100).toFixed(1) + '%"></i></span>'
+        + '<span class="p7-bar__v mono">' + n(v, 1) + 'bp</span></div>';
+    }
+    var h = '<section class="ui-panel"><h2>④ 盈亏平衡收敛到 <span class="p8-big">'
+      + n(newb, 1) + 'bp</span>：换个基准，反而对上了外部口径</h2>'
+      + '<div class="note"><p>「多贵的成交成本会让 α 归零」是这条线最硬的一个数。'
+      + '它只对基准敏感、对策略不敏感，所以适合用来检验口径改对没有。</p></div>'
+      + '<div class="p7-bars">'
+      + bar('旧口径', oldb, 's-dead') + bar('新口径', newb, 's-new') + bar('外部独立', ext, 's-keep')
+      + '</div>'
+      + '<div class="ab-kpis" style="margin-top:16px">'
+      + '<div class="ab-kpi"><span>与外部口径差</span><b class="up">' + n(gapNew, 1) + '%</b>'
+      + '<small>原来 ' + n(gapOld, 1) + '%</small></div>'
+      + '<div class="ab-kpi"><span>每单位α 归零 k</span><b>' + n(B.be_k_apu_new, 2) + '</b>'
+      + '<small>旧 ' + n(B.be_k_apu_old, 2) + '</small></div>'
+      + '<div class="ab-kpi"><span>笔均归零 k</span><b>' + n(B.be_k_avg_new, 2) + '</b>'
+      + '<small>不受基准影响（只扣成本）</small></div></div>'
+      + '<div class="p3-verdict"><b>这是一个反向验证：改口径本来会让数字全部变小，'
+      + '但盈亏平衡点反而离外部独立算的 ' + n(ext, 1) + 'bp 更近了'
+      + '（差 ' + n(gapOld, 1) + '% → ' + n(gapNew, 1) + '%）。</b>'
+      + '两条完全独立的数据线在同一个数上汇合，说明 '
+      + n(newb, 1) + 'bp 是结构性数字，不是哪条线的偶然。<br>'
+      + '<b>结论不变：真实成本已经越过这条线。</b>所以「纯正缠论能不能买」这个问题，'
+      + '答案仍然是不能——只是现在知道它到底差多少。</div></section>';
+    return h;
+  }
+
+  function renderP8() {
+    if (!RG8) {
+      return '<section class="ui-panel"><h2>口径修正</h2><p class="note">数据未生成：'
+        + '先跑 <span class="mono">tools/research/hf_regauge.py</span>。</p></section>';
+    }
+    return p8Summary() + p8Regime() + p8TypeRegime() + p8Breakeven();
+  }
+
   function renderP7() {
     if (!SD7 && !SE7) {
       return '<section class="ui-panel"><h2>纯正缠论</h2><p class="note">数据未生成：'
@@ -2406,6 +2591,7 @@
     else if (S.view === 'p5') h = renderP5();
     else if (S.view === 'p6') h = renderP6();
     else if (S.view === 'p7') h = renderP7();
+    else if (S.view === 'p8') h = renderP8();
     else h = renderAbout();
     app.innerHTML = h;
     applyDataWidth(app);
@@ -2509,7 +2695,8 @@
       fetch('/hf_sell_exit_s51.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
       fetch('/hf_phase5.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
       fetch('/hf_phase6.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
-      fetch('/hf_matrix.json', { cache: 'no-store' }).then(function (r) { return r.json(); })
+      fetch('/hf_matrix.json', { cache: 'no-store' }).then(function (r) { return r.json(); }),
+      fetch('/hf_regauge.json', { cache: 'no-store' }).then(function (r) { return r.json(); })
     ]).then(function (res) {
       D = res[0]; B = res[1]; H = res[2]; AB = res[3]; UV = res[4]; P3 = res[5];
       P4D = res[6];
@@ -2517,6 +2704,10 @@
       P5D = res[11];
       P6D = res[12];
       MX6 = res[13];
+      RG8 = res[14];
+      if (RG8 && RG8.summary) {
+        $('nv-p8').textContent = RG8.summary['失效'] + ' 条失效';
+      }
       if (SD7 && SD7.dist_any_sell) {
         $('nv-p7').textContent = '卖点 ' + n(SD7.dist_any_sell.median, 0) + ' 日';
       }

@@ -334,6 +334,8 @@ def main():
     ap.add_argument("--part", default="abc")
     ap.add_argument("--out", default=OUT)
     ap.add_argument("--sig", default=P4.SIG_HIST)
+    ap.add_argument("--bench", default="ew", choices=("ew", "csi"),
+                    help="ew=等权全A（G3 正确口径，默认）; csi=000985 市值加权（旧口径对照）")
     a = ap.parse_args()
 
     if not os.path.exists(a.sig):
@@ -342,7 +344,14 @@ def main():
     t0 = time.time()
     print("加载 871 日上下文（信号 %s）…" % os.path.basename(a.sig))
     ctx = H.build_context(900, sig_path=a.sig)
-    idxc = H.load_index_close()
+    # 基准口径（G3）：csi 是旧的市值加权指数，ew 是等权全A。
+    # 注意 ew 走的是「日收益累乘成指数点位」，形状与 idxc 完全一致，
+    # 所以下游 beta_alpha / excess_nav 一行不用改。
+    if a.bench == "csi":
+        idxc = H.load_index_close()
+    else:
+        import hf_bench as HB
+        idxc = HB.ew_index_close()
     ctx = P4.slice_ctx(ctx, FULL[0], FULL[1])
     print("  回放窗口 %s~%s（%d 日），买入计划 %d 天" % (
         ctx["win"][0], ctx["win"][-1], len(ctx["axis"]), len(ctx["plans"])))
@@ -362,7 +371,12 @@ def main():
             "cost": "买入 0.075% 佣金 + 卖出 0.125%（含印花税），滑点/冲击另计",
             "slip": "固定滑点按成交额比例，买 +slip、卖 −slip",
             "impact": "k×(ATR/px)×√(Q/ADV20)，ADV20=20 日均成交额，单边封顶 15%",
-            "excess": "每笔收益 − 同期指数（000985.CSI）收益；净值超额亦以指数为基准",
+            "excess": ("每笔收益 − β × 同期等权全A 收益；净值超额亦以等权全A为基准。"
+                       "G3（2026-11-08）起由 000985.CSI 市值加权改为等权全A，"
+                       "旧口径结果存于 hf_phase5_csi.json，高估 3.5~25 倍，勿用于决策。"
+                       if a.bench == "ew" else
+                       "每笔收益 − 同期 000985.CSI 收益（旧口径，市值加权、隐含 β=1，已作废）"),
+            "bench": a.bench,
             "select": "walk-forward 选择准则 = 样本内 alpha_per_util 最高（事先写死）",
         },
     }

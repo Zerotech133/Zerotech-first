@@ -64,6 +64,11 @@ try:
     import chan_struct as CS
 except Exception:      # 结构位是增强项，缺了也必须能跑 ATR 口径
     CS = None
+try:
+    import hf_bench as HB
+except Exception as e:   # noqa: BLE001
+    HB = None
+    print("  ! 基准模块不可用（alpha_ew 将缺失）：%s" % e)
 
 # ---------------------------------------------------------------- 冻结参数
 P = {
@@ -1098,14 +1103,60 @@ def main():
     idx0 = next((v for k, v in idxc.items() if k >= win[0]), None)
     idx1 = idxc.get(today)
 
+    # ---- 逐笔 β / 基准 / 超额：必须先补进 trades，再汇总 ----
+    # 顺序很关键：beta_used(trades) 读的是 trades 上的 beta 字段，
+    # 若放在后面算，它会对每笔都 fallback 到 1.0，得到一个假的"加权 β=1.000"。
+    if HB is not None:
+        for t in trades:
+            t["beta"] = t["br"] = t["alpha"] = None
+            if not t.get("entry_date"):
+                continue
+            try:
+                t["beta"] = HB.beta_of(t["code"], t["entry_date"])[0]
+                al, br = HB.alpha_of(t["ret"], t["entry_date"],
+                                     t.get("exit_date") or today, t["beta"])
+                t["alpha"] = al
+                t["br"] = br
+            except Exception:                             # noqa: BLE001
+                pass
+
     st = stats_of(nav_rows, trades)
+    # ---- 旧口径（000985 市值加权 + 隐含 β=1）----
+    # 保留不删：并行 session 正在看这个数，静默改数比改错更麻烦。
+    # 但它已被证明高估 3.5~25 倍（第十六轮），meta.alpha_caliber 里标了作废。
     st["idx_ret"] = round(idx1 / idx0 - 1, 6) if idx0 and idx1 else None
     st["capital"] = P["capital"]
     if st.get("total_return") is not None and st.get("idx_ret") is not None:
         st["alpha"] = round(st["total_return"] - st["idx_ret"], 6)
 
+    # ---- 新口径（G3）：等权全A × 成交加权 β ----
+    # beta_w 用「金额 × 持有天数」加权，反映组合真实的敞口暴露；
+    # beta_reg 是净值对基准回归出来的有效净敞口，纯事后归因，只作对照。
+    bt = None
+    if HB is not None:
+        st["idx_ret_ew"] = None
+        try:
+            ew = HB.bench_ret(win[0], today)
+            st["idx_ret_ew"] = round(ew, 6) if ew is not None else None
+        except Exception as e:                            # noqa: BLE001
+            print("  ! 等权基准取数失败：%s" % e)
+        bw = HB.beta_used(trades)
+        st["beta_w"] = round(bw, 3) if bw is not None else None
+        st["alpha_ew"] = None
+        if (st.get("total_return") is not None and st.get("idx_ret_ew") is not None
+                and st.get("beta_w") is not None):
+            st["alpha_ew"] = round(st["total_return"] - st["beta_w"] * st["idx_ret_ew"], 6)
+        bt = HB.regress_beta(nav_rows)
+        if bt:
+            st["beta_reg"] = bt["beta"]
+            st["alpha_d_reg"] = bt["alpha_d"]
+            st["alpha_t_reg"] = bt["alpha_t"]
+
     trade_rows = []
     for t in trades:
+        # β / br / alpha 已在上面统一算好，这里只做格式化——同一笔算两遍
+        # 会出现「汇总用一套、明细用另一套」的静默不一致。
+        bt_i, br_i, al_i = t.get("beta"), t.get("br"), t.get("alpha")
         trade_rows.append({
             "code": t["code"], "name": t["name"] or names.get(t["code"], ""),
             "ind": ind.get(t["code"], "未分类"), "type": t["type"],
@@ -1120,7 +1171,26 @@ def main():
             "max_fav": round(t["max_fav"] * 100, 2),
             "max_adv": round(t["max_adv"] * 100, 2),
             "path": t["path"],
+            "beta": round(bt_i, 3) if bt_i is not None else None,
+            "br": round(br_i, 6) if br_i is not None else None,
+            "alpha": round(al_i * 100, 2) if al_i is not None else None,
         })
+
+    # 逐笔超额汇总：笔均 / t 值 / 按买点类型分组。组合级只有一条净值，
+    # 分不清「1买行、2买不行」这类差异，逐笔才能拆。
+    _al = [r["alpha"] for r in trade_rows if r.get("alpha") is not None]
+    if _al:
+        _m = sum(_al) / len(_al)
+        _sd = statistics.pstdev(_al) if len(_al) > 1 else 0.0
+        st["alpha_avg"] = round(_m / 100, 6)
+        st["alpha_avg_t"] = round(_m / _sd * len(_al) ** 0.5, 2) if _sd > 0 else None
+        st["alpha_n"] = len(_al)
+        st["alpha_win"] = round(sum(1 for x in _al if x > 0) / len(_al), 4)
+        st["beta_avg"] = round(statistics.mean([r["beta"] for r in trade_rows
+                                               if r.get("beta") is not None]), 3)
+    else:
+        st["alpha_avg"] = st["alpha_avg_t"] = st["alpha_n"] = None
+        st["alpha_win"] = st["beta_avg"] = None
 
     out = {
         "asof": asof,
@@ -1139,6 +1209,18 @@ def main():
                 "no_auto_exit": "sell_methodology_v1.md §五（机器执行一律为负）",
             },
             "caveat": "SL/TP 只提示不执行；净值由固定 5 日时钟产生",
+            # ---- G3（2026-11-08 第十七轮）----
+            # 两个口径并存不是"两个都对"，是让旧数字可追溯、新数字可决策。
+            "alpha_caliber": {
+                "deprecated": "stats.alpha / stats.idx_ret",
+                "deprecated_why": "000985.CSI 市值加权 + 隐含 β=1，实测高估 3.5~25 倍"
+                                  "（第十六轮 hf_sell_exit）。保留仅为对齐历史结论，勿用于决策。",
+                "primary": "stats.alpha_ew / stats.alpha_avg",
+                "primary_why": "等权全A × 逐笔 β（chanlun_alpha.beta_of，入场前 60 日回归，无未来函数）",
+                "bench": HB.BENCH_SRC if HB else None,
+                "beta_w": "成交加权 β = Σ(金额×持有天数×β)/Σ(金额×持有天数)",
+                "beta_reg": "净值对基准回归的有效净敞口，事后归因，仅作对照",
+            },
             "signal_stat": sstat,
             "n_codes": len(bars),
             "skipped_room": skipped_room,

@@ -41,7 +41,8 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
 
-import hf_book as H          # noqa: E402
+import hf_book as H
+import hf_bench as HB          # noqa: E402
 import hf_phase4 as P4       # noqa: E402
 
 # 与第十四轮同一全期起点：指数收盘只从 2023-07-31 起，用 axis 首日会让
@@ -84,8 +85,30 @@ def tstat(xs):
     return (m, m / (sd / len(xs) ** 0.5) if sd > 0 else None)
 
 
-def grp_trades(trades, idxc, reg, key=None):
-    """按势档（或势档×类型）分组算笔均超额。只统计已平仓。"""
+_BETA = {}
+
+
+def _beta(code, d0):
+    """逐笔 β（入场日前 60 日回归，无未来函数）。带缓存，A/C/D 段反复取同一笔。"""
+    k = (code, d0)
+    if k not in _BETA:
+        try:
+            _BETA[k] = HB.beta_of(code, d0)[0]
+        except Exception:                                 # noqa: BLE001
+            _BETA[k] = 1.0
+    return _BETA[k]
+
+
+def grp_trades(trades, idxc, reg, key=None, use_beta=True):
+    """按势档（或势档×类型）分组算笔均超额。只统计已平仓。
+
+    **必须乘 β**：G3（2026-11-08）之前这里是 `ret − 基准涨幅`，等于假设
+    每笔 β=1。可实际上 1买 的 β≈0.63、3买 的 β≈1.1——不调整 β 的话，
+    「强势市场里 3买 表现好」会被 β 差异直接伪造出来：强势市场基准涨，
+    高 β 的票自然涨更多，那部分根本不是缠论的能力。
+
+    use_beta=False 只用于复现旧口径做对照，任何结论都不许用它。
+    """
     b = defaultdict(list)
     for t in trades:
         if t["exit_reason"] == "open":
@@ -95,7 +118,9 @@ def grp_trades(trades, idxc, reg, key=None):
             continue
         g = reg.get(d0, "mid")
         k = g if key is None else (g, t["type"])
-        b[k].append(t["ret"] - (idxc[d1] / idxc[d0] - 1))
+        br = idxc[d1] / idxc[d0] - 1
+        bt = _beta(t["code"], d0) if use_beta else 1.0
+        b[k].append(t["ret"] - bt * br)
     out = {}
     for k, v in b.items():
         m, tt = tstat(v)
@@ -293,13 +318,19 @@ def part_d(ctx, idxc):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--part", default="abc")
+    ap.add_argument("--bench", default="ew", choices=("ew", "csi"),
+                    help="ew=等权全A（G3 正确口径，默认）; csi=000985 市值加权（旧口径对照）")
     ap.add_argument("--out", default=OUT)
     a = ap.parse_args()
 
     t0 = time.time()
     print("加载全历史（871 天信号 + 势档）…")
     ctx = H.build_context(900, sig_path=SIG)
-    idxc = H.load_index_close()
+    if a.bench == "csi":
+        idxc = H.load_index_close()
+    else:
+        import hf_bench as HB
+        idxc = HB.ew_index_close()
     ctx = slice_ctx(ctx, FULL[0], FULL[1])
     if not ctx["win"]:
         print("! 窗口切空，检查 FULL 与 axis 的日期格式")
@@ -316,6 +347,14 @@ def main():
                       "（与 trade_book / shadow_book / three_layer_v3 同源）",
             "gate": "涨停不可买全开；无滑点无冲击（成本单列在 hf_phase5）",
             "judge": "净值会被仓位骗，主判据是 ret_per_util 与 α 的 t",
+            "alpha_bench": ("每笔收益 − β × 同期等权全A 收益（G3 起；旧口径为 000985.CSI"
+                            "市值加权 + 隐含 β=1，存于 hf_phase6_csi.json）"
+                            if a.bench == "ew" else
+                            "每笔收益 − 同期 000985.CSI 收益（旧口径，已作废）"),
+            "bench": a.bench,
+            # 势档仍用 000985 的 20 日动量：势档要的是"大盘方向"这一个粗信号，
+            # 换成等权会把小票的情绪当成全市场方向。两者用途不同，别混。
+            "regime_src": "000985.CSI（势档专用，与 alpha 基准无关）",
         },
     }
 
