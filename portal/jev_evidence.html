@@ -90,7 +90,7 @@
     <div id="body" hidden>
       <div class="ui-card" style="margin-bottom:12px" id="ai-card">
         <h3 style="margin:0 0 6px;font-size:13.5px">🤖 AI 解读结论 <span class="mini" id="ai-meta" style="margin-left:8px"></span></h3>
-        <div id="ai-body"><button class="ui-btn ui-btn--primary ui-btn--sm" id="ai-go">生成 AI 解读</button> <span class="mini">本地模型推理约 30~60 秒；本地算力不足自动切云端，都不可用则降规则结论（engine 标来源）</span></div>
+        <div id="ai-body"><button class="ui-btn ui-btn--primary ui-btn--sm" id="ai-go">生成 AI 解读</button> <span class="mini">按主题研判：云端模型约 15 秒；云端不可用时降本地（100 秒以上）或规则结论（engine 标来源）</span></div>
       </div>
       <div class="ui-card verdict" id="verdict"></div>
 
@@ -341,7 +341,7 @@
       var btn=document.getElementById("ai-go");
       if(!btn)return;
       btn.addEventListener("click",function(){
-        document.getElementById("ai-body").innerHTML='<span class="mini">🤖 本地模型解读中…（约 30~60 秒，请稍候）</span>';
+        document.getElementById("ai-body").innerHTML='<span class="mini">🤖 正在研判…（云端约 15 秒；云端不可用时会慢很多）</span>';
         fetch(query).then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json()}).then(function(d){
           var eng=d.engine_label?(d.engine_label+(d.model?" · "+d.model:"")):(d.engine==="model"?(d.model||"AI 模型"):"规则引擎");
           document.getElementById("ai-meta").textContent=eng+" · "+(d.generated_at||"").slice(11)+(d.engine==="rule"&&d.degrade_note?" · "+d.degrade_note:"");

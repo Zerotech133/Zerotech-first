@@ -152,7 +152,7 @@
       <!-- ⓪ AI 解读（置顶） -->
       <div class="ui-card" style="margin-bottom:12px" id="ai-card">
         <h3 style="margin:0 0 6px;font-size:13.5px">🤖 AI 解读结论 <span class="mini" id="ai-meta" style="margin-left:8px"></span></h3>
-        <div id="ai-body"><button class="ui-btn ui-btn--primary ui-btn--sm" id="ai-go">生成 AI 解读</button> <span class="mini">本地模型推理约 30~60 秒；本地算力不足自动切云端，都不可用则降规则结论（engine 标来源）</span></div>
+        <div id="ai-body"><button class="ui-btn ui-btn--primary ui-btn--sm" id="ai-go">生成 AI 解读</button> <span class="mini">个股研判卡盘后已预生成（AIDE），打开本页自动加载；无卡时点此现算（本地推理 100 秒以上，云端约 15 秒）</span></div>
       </div>
 
       <!-- ⑥ 叙事结论 -->
@@ -361,16 +361,32 @@
     function setupAI(query){
       var btn=document.getElementById("ai-go");
       if(!btn)return;
-      btn.addEventListener("click",function(){
-        document.getElementById("ai-body").innerHTML='<span class="mini">🤖 本地模型解读中…（约 30~60 秒，请稍候）</span>';
-        fetch(query).then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json()}).then(function(d){
-          var eng=d.engine_label?(d.engine_label+(d.model?" · "+d.model:"")):(d.engine==="model"?(d.model||"AI 模型"):"规则引擎");
-          document.getElementById("ai-meta").textContent=eng+" · "+(d.generated_at||"").slice(11)+(d.engine==="rule"&&d.degrade_note?" · "+d.degrade_note:"");
-          document.getElementById("ai-body").innerHTML='<div class="verdict" style="margin:0">'+fmtVerdict(d.conclusion).replace(/\n/g,"<br>")+'</div>';
+      var body=document.getElementById("ai-body"), meta=document.getElementById("ai-meta");
+      function paint(d){
+        var eng=d.engine_label?(d.engine_label+(d.model?" · "+d.model:"")):(d.engine==="model"?(d.model||"AI 模型"):"规则引擎");
+        var sd=d.sediment;
+        var tail=sd?(" · "+(sd.trade_date||"").slice(5)+(sd.stale?"（隔日沉淀）":" · 盘后预生成")):"";
+        meta.textContent=eng+" · "+(d.generated_at||"").slice(11)+tail;
+        body.innerHTML='<div class="verdict" style="margin:0">'+fmtVerdict(d.conclusion).replace(/\n/g,"<br>")+'</div>'
+          +'<div style="margin-top:8px"><button class="ui-btn ui-btn--sm" id="ai-re">重算</button>'
+          +(d.engine==="rule"&&d.degrade_note?'<span class="mini" style="margin-left:8px">'+esc(d.degrade_note)+'</span>':'')
+          +'</div>';
+        var re=document.getElementById("ai-re");
+        if(re) re.addEventListener("click",function(){ run(true); });
+      }
+      function run(force){
+        body.innerHTML='<span class="mini">🤖 正在研判…（本地模型约 100 秒以上；云端配好后数秒）</span>';
+        fetch(query+(force?"&refresh=1":"")).then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json()}).then(function(d){
+          if(!d.conclusion) throw new Error(d.message||"无结论");
+          paint(d);
         }).catch(function(e){
-          document.getElementById("ai-body").innerHTML='<span class="mini">解读失败：'+esc(e.message)+'</span>';
+          body.innerHTML='<span class="mini">解读失败：'+esc(e.message)+'</span>';
         });
-      });
+      }
+      btn.addEventListener("click",function(){ run(false); });
+      fetch(query+"&peek=1").then(function(r){return r.json()}).then(function(d){
+        if(d&&d.ok&&d.conclusion){ paint(d); }
+      }).catch(function(){});
     }
         $("go").addEventListener("click",function(){var v=$("q").value.trim();if(v)load(v,$("days").value)});
     $("q").addEventListener("keydown",function(e){if(e.key==="Enter")$("go").click()});
