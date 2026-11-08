@@ -1814,6 +1814,12 @@ color:#fff;font-size:13.5px;cursor:pointer}
             return
         if path.startswith('/api/jev/'):
             # 2026-10-26 JEVAPI：JEV 判定只读查询（独立文件 api_jev.py；Hermes MCP 消费）
+            # 板块联动图（2026-11-08 Step 5：板块排名 × 传播链 × 分钟异动）
+            if path == '/api/jev/graph':
+                import api_jev_access, api_jev_graph
+                api_jev_access.wrap_dispatch(
+                    self, path, qs, "GET", api_jev_graph.handle_get, path, qs)
+                return
             # 标的三面聚合（2026-11-07 目录卡 jev_target_drill 聚合形态）
             if path.startswith('/api/jev/target/'):
                 import api_jev_access, api_jev_target

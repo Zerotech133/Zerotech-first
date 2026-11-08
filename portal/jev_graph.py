@@ -348,8 +348,8 @@ def _ts_kind(ts: str, batch_sizes: dict) -> str:
 
     2026-11-08 实测教训：种植业一条「临近午盘，600540强势涨停」的稿子
     入库时刻是 12:40——午休，不可能有交易。旧口径把 11:31–12:59 也算
-    intraday，于是算出「价格领先消息 189 分钟」这种半真半假的数。午休
-    区间一律降级为 offhour，不参与 Δmin。
+    intraday，于是算出「价格领先消息 189 分钟」这种半真半假的数（按
+    11:30 收市计应为 119 分钟）。午休区间一律降级为 offhour，不参与 Δmin。
     """
     hm = (ts or "")[11:16]
     if not hm:
@@ -446,7 +446,7 @@ def _min_gap(a: str, b: str) -> int:
     """两个 HH:MM 的分钟差（b − a），扣掉午休 11:30–13:00 的 90 分钟。
 
     午休中间的时点（11:31–12:59）按 11:30 计——那段时间没有交易，
-    拿它当基准会把 Δmin 算大 90 分钟（实测 12:40 得出 189min，真实 99min）。
+    拿它当基准会把 Δmin 算大 90 分钟（实测 12:40 得出 189min，应为 119min）。
     """
     def m(x):
         v = int(x[:2]) * 60 + int(x[3:5])
@@ -684,9 +684,10 @@ def _board_events(members, ev):
         "clusters": len(lst),
         "intraday": sum(1 for e in lst if e["ts_kind"] == "intraday"),
         "batch": sum(1 for e in lst if e["ts_kind"] == "batch"),
-        "items": [{"ts": e["ts"], "hm": e["hm"], "source": e["source"],
-                   "title": e["title"], "bias": e["bias"],
-                   "origin_kind": e["origin_kind"], "ts_kind": e["ts_kind"]}
+        "items": [{"id": e["id"], "ts": e["ts"], "hm": e["hm"],
+                   "source": e["source"], "title": e["title"],
+                   "bias": e["bias"], "origin_kind": e["origin_kind"],
+                   "ts_kind": e["ts_kind"]}
                   for e in lst[:12]],
     }
 
@@ -824,7 +825,9 @@ def _nodes(focus, members, focus_events, profiles):
             "has_minute": bool(p.get("ok")),
         })
     for e in focus_events["items"][:8]:
-        nodes.append({"id": e["ts"] + "|" + e["source"], "type": "news",
+        # 节点 id 用事件 id（与 hit/echo/spread 边的 from/to 同一命名空间，
+        # 前端才能把边连到消息节点上）
+        nodes.append({"id": e["id"], "type": "news",
                       "label": e["title"][:18], "hm": e["hm"],
                       "source": e["source"], "origin_kind": e["origin_kind"],
                       "ts_kind": e["ts_kind"]})

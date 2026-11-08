@@ -916,6 +916,10 @@ def test_AC_E07_no_files_outside_whitelist():
         "tests/test_sediment_freshness.py",
         # 2026-11-08 追加：新闻传播关系（原创/首发/转发）回归用例。
         "tests/test_news_origin.py",
+        # 2026-11-08 追加：Step 5 板块联动图纯函数回归（涨停档位先定死、
+        # 午休扣除、ts_kind 三档、领涨-跟随-同波-无数据四档分流、
+        # first_move_after 带符号、跨板块边、消息质量分档）。
+        "tests/test_jev_graph.py",
     }
     untracked = set()
     try:
