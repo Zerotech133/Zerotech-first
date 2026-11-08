@@ -1,0 +1,78 @@
+rc=1
+== 注册端口在线状态 ==
+  1234  ✗离线   llama-server(8030 同族,手动)（可离线）
+  1238  ✗离线   llama-server(8030 同族,手动)（可离线）
+  1411  ✓在线   Pocket ID(OIDC,Docker,2026-10-30 B0)
+  3000  ✗离线   Open WebUI(Docker)（可离线）
+  3001  ✓在线   图谱studio(学习仓)（可离线）
+  3307  ✓在线   菜鸟MySQL(Docker)
+  4317  ✓在线   OTLP gRPC(Docker/Phoenix,2026-10-27)
+  4318  ✓在线   OTLP HTTP(Docker/Phoenix,2026-10-27)
+  5050  ✓在线   灵拢NovaStudio(桌面第三方,非平台栈)
+  5175  ✗离线   智策OS前端(retired 2026-11-02 L1)
+  5432  ✓在线   RAGFlow infinity(Docker,非数据仓)（可离线）
+  5442  ✓在线   quant-pg PostgreSQL(Docker,quant_system+quant_meta)（可离线）
+  5446  ✓在线   zhice-db PostgreSQL(Docker,v2_bar_daily)（可离线）
+  6006  ✓在线   Phoenix UI(Docker,AI trace 观测,2026-10-27)
+  7474  ✓在线   neo4j-kg HTTP(Docker,时序知识图谱)（可离线）
+  7687  ✓在线   neo4j-kg Bolt(Docker,时序知识图谱)（可离线）
+  8030  ✗离线   llamacpp 35b(手动)（可离线）
+  8080  ✓在线   nginx ai-portal(Docker)
+  8081  ✗离线   移动端公网受限门(m_public_gate.py,2026-10-25)
+  8091  ✓在线   零界门户API(portal_api.py)
+  8093  ✓在线   组织架构图注册(org_registry_server.py)（可离线）
+  8095  ✓在线   picks定时发布调度(publish_schedule_server.py)（可离线）
+  8096  ✓在线   军团作战大屏API(api_legion_ops.py/v2)（可离线）
+  8097  ✓在线   推送中台总览(push_admin_server.py)
+  8098  ✓在线   模型管理台(api_model_admin.py)
+  8099  ✓在线   KM知识库飞书联动(portal/km_feishu_hub.py)（可离线）
+  8100  ✓在线   datamart-api 数仓读层HTTP门面(zerobound-kg 数据市集API/datamart_api.py,K-STOCK-415)（可离线）
+  8101  ✗离线   情报交付评审实例(portal_api导入式)（可离线）
+  8102  ✗离线   智策OS API(zhice)
+  8103  ✓在线   军团独立IDE(legion_ide/serve.py)（可离线）
+  8104  ✗离线   Bytebase 数据治理UI(Docker,2026-10-27 上架)
+  8105  ✓在线   智策OS v2 API(zhice_os_v2.api.main:app,uvicorn,2026-10-31 他线起)
+  8110  ✓在线   intel-kg 情报知识图谱API(intel-kg/services/api.py:app,uvicorn,2026-11-04 L2 批准)
+  8123  ✓在线   claudemind server(桌面第三方,非平台栈)（可离线）
+  8734  ✓在线   零界首页(portproxy→8080,K-STOCK-107收编)（可离线）
+  8770  ✗离线   OpenHands Agent Server(方案A执行引擎)（可离线）
+  8771  ✓在线   OpenHands Docker Sandbox(容器执行引擎)（可离线）
+  8787  ✓在线   Hermes WebUI（可离线）
+  8788  ✗离线   Hermes WebUI v2(hermes-webui-next)（可离线）
+  8789  ✓在线   watch_admin 盯盘只读管理台(M2/M3)
+  8790  ✗离线   KG API(workbuddy kg_api.py·他线临时服务,2026-11-05 实测)
+  8791  ✓在线   图谱数据看板(kg_data_dashboard.py)（可离线）
+  8795  ✗离线   军团网关(gateway/serve.py)（可离线）
+  8796  ✓在线   军团指挥台(legion_command/serve.py)（可离线）
+  8797  ✗离线   M4 签署页(m4_owner_sign_page.py·2026-11-01 复用退役口，手动/按需)（可离线）
+  8798  ✗离线   议会厅交互桥(council_ops.py·2026-10-28 收编入 8796 /api/hq/agenda，只读归档不再启动)（可离线）
+  8870  ✓在线   因子挖掘控制台(factor_console/server.py,K-SEC-20261108-PORT-8870)
+  8888  ✗离线   QuantDinger前端(Docker)（可离线）
+  8898  ✗离线   res-downloader 自用工具(uvicorn)（可离线）
+  8899  ✓在线   本地 Ollama Web 聊天(AI/111111/web_chat.py)（可离线）
+  9101  ✓在线   jev_gate
+  9102  ✓在线   signal_review
+  9103  ✓在线   QD桥(jev_qd_bridge)
+  9104  ✓在线   飞书卡片回调(lark_card)（可离线）
+  9105  ✓在线   agent_platform ack-serve
+  9106  ✓在线   JEV卡片本地HTTP ack(card-handler,lark_card_handler.py；FB-A 2026-11-05 并轨，9104 为同进程 /metrics)
+  9899  ✓在线   CowAgent console（可离线）
+  11434 ✓在线   Ollama
+  11440 ✗离线   Ollama 模型看板(model_dashboard)（可离线）
+  15000 ✗离线   QuantDinger API(Docker)（可离线）
+  15048 ✓在线   灵拢NovaStudio(桌面第三方,非平台栈)
+  15432 ✗离线   QuantDinger DB(Docker)（可离线）
+  16379 ✗离线   QuantDinger Redis(Docker)（可离线）
+  17474 ✗离线   zerobound Neo4j HTTP(Docker,独立图谱)（可离线）
+  17687 ✓在线   zerobound Neo4j Bolt(Docker,独立图谱)（可离线）
+  18899 ✗离线   res-downloader 自用工具(uvicorn)（可离线）
+== 未登记监听（服务段 1024-49151，系统/第三方豁免）==
+  ⚠ 3080 由 node.exe 监听——DSH/billion-context 会话工具，strict 豁免
+  ⚠ 18787 由 node.exe 监听——DSH/billion-context 会话工具，strict 豁免
+  ⚠ 8001 由 python.exe 监听——我方服务未上注册表！
+  ⚠ 8897 由 python.exe 监听——我方服务未上注册表！
+== 端口冲突（注册表重复登记 / 分配表重复分配）==
+  无 ✓
+== 汇总：注册 66 个，离线 23（1234,1238,3000,5175,8030,8081,8101,8102,8104,8770,8788,8790,8795,8797,8798,8888,8898,11440,15000,15432,16379,17474,18899），未登记 2，瞬态监听 0，冲突 0 ==
+  （在册服务离线 5 个，仅提示不判负——strict 只拦未登记/冲突：5175,8081,8102,8104,8790）
+STRICT FAIL（未登记 2，端口冲突 0）

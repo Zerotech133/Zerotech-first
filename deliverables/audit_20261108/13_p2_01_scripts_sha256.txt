@@ -1,0 +1,2 @@
+﻿1615F4DEF71DB16B7E94AA00A4AB35C86AD649A10C7D6583A481FA5C8A13E997  C:\项目\zerobound-kg\factor_proto\factor_console\start_factor_console.ps1
+10C7A7DB6710C9BC1F21DFC226CE6605B0491F4D9726D1A74D944CA4EF279E87  C:\项目\zerobound-kg\factor_proto\factor_console\stop_factor_console.ps1

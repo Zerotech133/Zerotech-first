@@ -1,0 +1,22 @@
+# 8870 HTTP 连通性证据（只读）
+captured_at: 2026-11-08 10:23:19 +08:00
+
+[GET /]
+HTTP/1.1 200 OK
+date: Sun, 08 Nov 2026 02:23:19 GMT
+server: uvicorn
+content-type: text/html; charset=utf-8
+accept-ranges: bytes
+content-length: 74356
+last-modified: Sun, 08 Nov 2026 02:18:58 GMT
+etag: "de2c72e1c6c6cbecae2f5d9a03caf492"
+
+[GET /api/overview]
+HTTP 200
+size=1531 bytes
+未携带 X-Console-Token
+返回内容可识别为“因子挖掘控制台”运行态（pipeline/pools/calibration）。
+
+[边界]
+- 仅在本机 127.0.0.1 发起 GET，未执行写操作、未提交表单、未带凭据。
+- 未打印/保存任何 token 或环境变量值。
