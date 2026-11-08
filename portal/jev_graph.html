@@ -160,6 +160,17 @@
 
   <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:12px">
     <div class="card">
+      <h3>连板梯队 <span class="n">几连板 · 高度与断层</span></h3>
+      <div id="ladder"></div>
+    </div>
+    <div class="card">
+      <h3>接力席位 <span class="n">谁在买、谁在跑 · 按买入额定性</span></h3>
+      <div id="relay"></div>
+    </div>
+  </div>
+
+  <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:12px">
+    <div class="card">
       <h3>跨板块影响半径 <span class="n">一条消息同时命中几个板块</span></h3>
       <div id="cross"></div>
     </div>
@@ -248,7 +259,7 @@
       el.onclick=function(){ S.board=el.getAttribute("data-b"); S.code=""; load(); };
     });
 
-    drawNet(); drawTiers(); drawTL(); drawCross(); drawFlow(); drawDisc(); drawSocial(); drawBasis();
+    drawNet(); drawTiers(); drawTL(); drawCross(); drawFlow(); drawDisc(); drawSocial(); drawChain(); drawBasis();
   }
 
   // ── 网络图 ──
@@ -581,6 +592,97 @@
         (p.read>=10000?(p.read/10000).toFixed(1)+"万":(p.read||0))+'</b></div>';
     }).join("")+'<div class="note">阅读/评论是<b>累计值</b>，不是当日增量；接口不提供增量。'+
       '它只回答「谁在被反复翻出来看」，不能读成「今天新增多少关注」。</div>';
+  }
+
+  // ── 连板梯队 + 接力席位 ──
+  var STYLE_C = {config:"var(--color-up)", hot_money:"var(--text-2)",
+                 quant:"var(--color-warn)", no_buy:"var(--color-dn)"};
+  function drawChain(){
+    var ch=S.data.chain||{}, L=$("#ladder"), R=$("#relay");
+    if(!ch.has){
+      L.innerHTML='<div class="empty">当日无接力数据（连板/席位/龙虎榜）</div>';
+      R.innerHTML='<div class="empty">—</div>';
+      return;
+    }
+    var ls=ch.ladder_stat||{}, lad=ch.ladder||[], b=ch.board||{};
+
+    // ── 左：梯队阶梯 ──
+    var h='<div style="display:flex;gap:16px;align-items:baseline;margin-bottom:8px">'+
+      '<div><div class="mini">市场最高</div><b style="font-size:21px;font-family:var(--font-mono)">'+
+      (ls.max_board||0)+'<span class="mini"> 板</span></b>'+
+      '<span class="mini"> 共 '+(ls.n_at_max||0)+' 只</span></div>'+
+      '<div><div class="mini">连板总数</div><b style="font-size:21px;font-family:var(--font-mono)">'+
+      (ls.n_total||0)+'</b></div>'+
+      '<div><div class="mini">断层</div><b style="font-size:21px;font-family:var(--font-mono)">'+
+      (ls.gap_at?ls.gap_at+'板':'无')+'</b></div></div>';
+    if(ls.gap_at){
+      h+='<div class="note warn">梯队在第 '+ls.gap_at+' 板断层：下面没有同层接力，'+
+        '高位那几只的空间是「孤高」，不是「厚积」。</div>';
+    }
+    // 按高度分组，从高到低
+    var byH={};
+    lad.forEach(function(z){ (byH[z.nums]=byH[z.nums]||[]).push(z); });
+    Object.keys(byH).map(Number).sort(function(a,b){return b-a;}).forEach(function(n){
+      h+='<div class="crossline"><b style="font-family:var(--font-mono);min-width:38px">'+
+        n+'板</b><span style="flex:1">'+
+        byH[n].map(function(z){
+          var c=STYLE_C[z.style]||"var(--text-3)";
+          return '<span style="display:inline-block;margin-right:8px;white-space:nowrap">'+
+            '<b>'+esc(z.name)+'</b>'+
+            (z.style?'<span style="color:'+c+';font-size:10px;margin-left:2px">'+
+              esc((z.style_label||"").replace(/（.*?）/,""))+'</span>':'')+'</span>';
+        }).join("")+'</span><span class="mini">'+byH[n].length+' 只</span></div>';
+    });
+    h+='<div class="note">连板数来自 ts_limit_step（只收 ≥2 板，首板不算梯队）。'+
+      '梯队断层=某高度一层空着，说明中间没人接。</div>';
+    L.innerHTML=h;
+
+    // ── 右：接力席位（板块视角）──
+    var r='';
+    r+='<div class="note '+(b.n_in_ladder?"":"warn")+'"><b>'+esc(b.board||"")+'</b>：'+esc(b.verdict||"")+'</div>';
+
+    // 派发警示：涨得好看但龙虎榜在净卖。盘口看不出来（封住了），龙虎榜能。
+    var dist=ch.distribution||[];
+    if(dist.length){
+      r+='<div class="note warn"><b>⚠ 涨但净卖 '+dist.length+' 只</b>'+
+        '（当日涨 ≥'+(ch.dist_pct_th||7)+'%、龙虎榜净卖）：'+
+        dist.slice(0,4).map(function(x){
+          return esc(x.name)+' <b class="up">'+(x.pct>=0?"+":"")+x.pct.toFixed(2)+'%</b> 净'+
+            money(x.net);
+        }).join("；")+
+        '<br>涨停板上的出货在盘口看不出来（封住了），只有龙虎榜看得见。'+
+        '高位板出现在这份名单里，是断板前兆。</div>';
+    }
+    if(b.n_in_ladder>0){
+      r+='<div class="mini" style="margin-top:6px"><b>板块内连板票</b>　'+
+        '<span class="mini">买方按买入额排，不是净额</span></div>';
+      r+=(b.items||[]).map(function(x){
+        var c=STYLE_C[x.style]||"var(--text-2)";
+        var seat=x.top_buyer?('买 '+esc(x.top_buyer)+' '+(x.top_buyer_amt?money(x.top_buyer_amt):'')):'—';
+        var out=x.top_seller?('卖 '+esc(x.top_seller)+' '+(x.top_seller_amt?money(x.top_seller_amt):'')):'—';
+        return '<div class="crossline"><b style="font-family:var(--font-mono);min-width:38px">'+
+          x.nums+'板</b><span style="flex:1">'+esc(x.name)+
+          ' <span class="mini">'+(x.list_net!=null?("榜净"+money(x.list_net)):"未上榜")+'</span></span>'+
+          '<span class="mini" style="text-align:right">'+seat+'<br>'+out+'</span>'+
+          '<b style="color:'+c+';font-size:11px;min-width:74px;text-align:right">'+
+          esc(x.style_label||"—")+'</b></div>';
+      }).join("");
+    } else {
+      // 板块没连板 → 拿全市场最高的几只做对照，说明「接力不在这儿」
+      var top3=lad.slice(0,3);
+      r+='<div class="mini" style="margin-top:6px"><b>市场最高板（对照）</b>　'+
+        '<span class="mini">接力链在别的板块，不在当前焦点板块</span></div>'+
+        top3.map(function(z){
+          return '<div class="crossline"><b style="font-family:var(--font-mono);min-width:38px">'+
+            z.nums+'板</b><span style="flex:1">'+esc(z.name)+'</span></div>';
+        }).join("");
+    }
+    r+='<div class="note">席位四类按称号归（机构专用/股通专用/量化*/其余为游资大户），'+
+      '<b>按买入额定性</b>——净额会把方向相反的同类别席位互相抵消'+
+      '（5 板票里一个游资卖 7778 万、两个游资买 1.1 亿，看净额得出的结论会反）。'+
+      '已披露席位合计 ≠ 龙虎榜净额（只披露部分营业部，11-06 一致率 70%），'+
+      '总量只认龙虎榜。</div>';
+    R.innerHTML=r;
   }
 
   // ── 跨板块 ──

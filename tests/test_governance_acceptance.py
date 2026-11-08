@@ -926,9 +926,9 @@ def test_AC_E07_no_files_outside_whitelist():
         # 2026-11-08 追加：散户热度回归（两平台分报、热而无量/涨而无声
         # 两个背离判据、帖子 board/market 两种 scope、社交面不进 Δmin）。
         "tests/test_jev_social.py",
-        # 2026-11-08 追加：散户热度回归（两平台分报、热而无量/涨而无声
-        # 两个背离判据、帖子 board/market 两种 scope、社交面不进 Δmin）。
-        "tests/test_jev_social.py",
+        # 2026-11-08 追加：接力层回归（席位四类、「涨跌幅限制」不判跌、
+        # 按买入额定性、梯队断层、席位净额≠龙虎榜净额、涨停净卖=派发）。
+        "tests/test_jev_chain.py",
     }
     untracked = set()
     try:

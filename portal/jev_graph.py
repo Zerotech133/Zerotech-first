@@ -83,6 +83,7 @@ _BOARD_CACHE: dict = {"at": 0.0, "data": None}
 _XT = None             # xtcloud 客户端单例（惰性）
 _FLOW = None           # jev_flow 模块（惰性）
 _SOCIAL = None         # jev_social 模块（惰性）
+_CHAIN = None          # jev_chain 模块（惰性）
 _MINS_MEM: dict = {}   # (code, day) -> DataFrame | None，进程内分钟缓存
 _MINS_FAIL: dict = {}  # (code, day) -> 失败时刻；负缓存要能过期，不能记一辈子
 _WRITE_LOCK = threading.Lock()   # 同月 parquet 是 read-modify-write，必须串行
@@ -306,6 +307,15 @@ def _social_mod():
         import jev_social
         _SOCIAL = jev_social
     return _SOCIAL
+
+
+def _chain_mod():
+    """惰性导入接力层（连板梯队/席位/龙虎榜，同目录）。"""
+    global _CHAIN
+    if _CHAIN is None:
+        import jev_chain
+        _CHAIN = jev_chain
+    return _CHAIN
 
 
 def _mins_local(ts_code: str, day: str):
@@ -887,13 +897,14 @@ def _brief(zs):
 # ── 建图 ────────────────────────────────────────────────────
 def build(day_raw=None, board=None, code=None, top: int = 8,
           with_minute: bool = True, with_fund: bool = True,
-          with_social: bool = True) -> dict:
+          with_social: bool = True, with_chain: bool = True) -> dict:
     """一次成图：板块 → 个股 → 消息 → 资金/披露，五类边 + 两个补充维度。
 
     board      指定焦点板块（缺省=当日中位涨幅第一的板块）
     code       指定个股（给出时焦点板块跟着它走，并在 timeline 里定位该股）
     with_fund  是否拉资金流与研报/公告（关掉可省 ~4s 与两次外部调用）
     with_social 是否读散户热度快照（只读本地 json，不联网；缺文件 has=False）
+    with_chain  是否读连板梯队/席位/龙虎榜（查 xtcloud 已接入表，3 次请求 ~1.5s）
     """
     day = resolve_day(day_raw)
     B = load_board(day)
@@ -932,6 +943,16 @@ def build(day_raw=None, board=None, code=None, top: int = 8,
             social = _social_mod().load_social(day)
         except Exception as exc:  # noqa: BLE001
             sys.stderr.write("social layer failed: %s\n" % exc)
+
+    # ── 接力梯队（连板 / 席位 / 龙虎榜）──
+    # 与社交层的区别：这一层**要联网**（查 xtcloud 三张表），但都是已接入的
+    # 付费源，不是爬虫。数据量小（12/175/63 行），3 次请求约 1.5s。
+    chain = {"has": False}
+    if with_chain:
+        try:
+            chain = _chain_mod().load_chain(day)
+        except Exception as exc:  # noqa: BLE001
+            sys.stderr.write("chain layer failed: %s\n" % exc)
 
     # 焦点板块：显式指定 > 指定个股所属 > 当日最强（涨停最多，其次中位涨幅）
     if board:
@@ -1045,9 +1066,10 @@ def build(day_raw=None, board=None, code=None, top: int = 8,
                      "无盘中时刻，不参与 Δmin。"),
         },
         "social": _social_block(social, focus_members, by_c6, top),
+        "chain": _chain_block(chain, focus, focus_members),
         "network": {
             "nodes": _nodes(focus, focus_members, focus_events, profiles,
-                            disc if with_fund else None, social),
+                            disc if with_fund else None, social, chain),
             "edges": edges,
             "cross_summary": cross_summary,
             "edge_types": _edge_counts(edges),
@@ -1347,12 +1369,61 @@ def _social_block(social, members, by_c6, top=8):
     }
 
 
-def _nodes(focus, members, focus_events, profiles, disc=None, social=None):
+def _chain_block(chain, focus, members):
+    """接力块的对外形状：全市场梯队 + 焦点板块视角 + 口径。
+
+    全市场梯队只给 12 只（11-06），直接全量给前端画阶梯；板块视角走
+    `board_chain`，回答的是「这个板块有没有接力链」，不是「今天谁最强」。
+    """
+    if not chain or not chain.get("has"):
+        return {"has": False, "note": (chain or {}).get("note")
+                or "当日无接力数据（ts_limit_step / ts_hm_detail / ts_top_list）"}
+    try:
+        bc = _chain_mod().board_chain(chain, focus["name"], members)
+    except Exception as exc:  # noqa: BLE001
+        sys.stderr.write("board_chain failed: %s\n" % exc)
+        bc = {"has": False, "note": "板块视角计算失败: %s" % exc}
+    # 梯队每只票挂上「谁在接」：光看「5 板」不知道是三板斧游资还是机构，
+    # 而这两者次日行为完全不同。前端左卡要能直接读出来。
+    seats = chain.get("seats") or {}
+    tops = chain.get("top") or {}
+    lad = []
+    for z in (chain.get("ladder") or []):
+        S = seats.get(z["code"]) or {}
+        T = tops.get(z["code"]) or {}
+        lad.append(dict(z, style=S.get("style"),
+                        style_label=_chain_mod().STYLE_LABEL.get(S.get("style")),
+                        top_buyer=S.get("top_buyer"),
+                        top_buyer_amt=S.get("top_buyer_amt"),
+                        top_seller=S.get("top_seller"),
+                        top_seller_amt=S.get("top_seller_amt"),
+                        list_net=T.get("net")))
+    return {
+        "has": True,
+        "day": chain.get("day"),
+        "ladder_stat": chain.get("ladder_stat") or {},
+        "ladder": lad,
+        "n_top": chain.get("n_top"),
+        "n_seat_codes": chain.get("n_seat_codes"),
+        "distribution": chain.get("distribution") or [],
+        "dist_pct_th": chain.get("dist_pct_th"),
+        "board": bc,
+        "errors": chain.get("errors") or [],
+        "note": chain.get("note"),
+    }
+
+
+def _nodes(focus, members, focus_events, profiles, disc=None, social=None,
+           chain=None):
     nodes = [{"id": "board:" + focus["name"], "type": "board",
               "label": focus["name"], "n": focus["n"],
               "med": focus["med"], "rank": focus["rank"],
               "main_net": focus.get("board_main_net")}]
     sby = (social or {}).get("by_code") or {}
+    cl = (chain or {}).get("ladder") or []
+    lad = {x["code"]: x["nums"] for x in cl}
+    cseats = (chain or {}).get("seats") or {}
+    ctop = (chain or {}).get("top") or {}
     for z in members:
         p = profiles.get(z["code"]) or {}
         d = _flow_mod().disc_of(disc, z["c6"]) if disc else {}
@@ -1374,6 +1445,11 @@ def _nodes(focus, members, focus_events, profiles, disc=None, social=None):
             "guba_rank_chg": h.get("guba_rank_chg"),
             "posts": int(h.get("posts") or 0) or None,
             "reads": int(h.get("reads") or 0) or None,
+            # 接力：连板数只有 >1 才有意义（1 板=首板，ts_limit_step 也不收）
+            "nums": lad.get(z["code"]),
+            "relay_style": (cseats.get(z["code"]) or {}).get("style"),
+            "top_buyer": (cseats.get(z["code"]) or {}).get("top_buyer"),
+            "list_net": (ctop.get(z["code"]) or {}).get("net"),
         })
     for e in focus_events["items"][:8]:
         # 节点 id 用事件 id（与 hit/echo/spread 边的 from/to 同一命名空间，
