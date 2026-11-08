@@ -385,17 +385,21 @@ def check(
         "api": api,
         "gaps": (
             ([
-                "d1_decisions 已有真实记录，但 meeting/training 账本为空或不存在；P0-05 需真实 D1 会议与 episode，禁止造数",
+                "未齐备账本：%s；P0-05 需真实 D1 会议与 episode，禁止造数" % "、".join(incomplete),
             ] if incomplete else [])
             + ([
                 "trigger 已能追到 confirmation，但 paper 当前空仓、无 trade_id；decision→handoff→watch plan→trigger 已通，trade 段未有真实成交可追",
             ] if chain.get("paper_trade_ids", 0) == 0 else [])
         ),
-        "next_actions": [
-            "由 D1 在真实投研会中创建会议并完成 quorum/最终化 → meetings/d1/*.json",
-            "由真实 paper 成交/outcome 链生成 training_episode → training/episodes.jsonl",
-            "P0-05 验收前重跑本检查；不把空态或样例当真实事件",
-        ],
+        "next_actions": (
+            ([
+                "由 D1 在真实投研会中创建会议并完成 quorum/最终化 → meetings/d1/*.json",
+            ] if "meetings" in incomplete else [])
+            + ([
+                "由真实 paper 成交/outcome 链生成 training_episode → training/episodes.jsonl",
+            ] if "training" in incomplete else [])
+            + ["P0-05 验收前重跑本检查；不把空态或样例当真实事件"]
+        ),
     }
 
 
