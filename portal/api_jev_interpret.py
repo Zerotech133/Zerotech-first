@@ -28,6 +28,9 @@ import io
 import json
 import os
 import re
+import sqlite3
+import sys
+import time
 import urllib.request
 from urllib.parse import parse_qs
 
@@ -39,20 +42,22 @@ STATION = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OLLAMA = "http://127.0.0.1:11434"
 MODEL = "qwen3.5:4b"          # 轻模型先行（快）；4b 不够再换 9b
 TIMEOUT_S = 150
+BRIEF_DB = os.path.join(STATION, "agent_platform", "data", "intel",
+                        "intel_facts.db")
+BRIEF_KIND_DAYS = 30          # 沉淀卡固定按 30 日窗生成，其它窗口走在线
 
 SYSTEM_PROMPT = (
-    "你是资深 A 股量价分析师。用户给你一只股票一段历史窗口的完整事实："
-    "走势形态、量价关系、期间的消息与财报事件、以及消息与价格互相验证的"
-    "统计。你要把这段行情『讲明白』——它走出了什么形态、量价如何配合、"
-    "是什么消息驱动的、消息可信吗。输出固定四段：\n"
-    "【形态】这段走势的技术形态定性（趋势方向/结构，如震荡上行、冲高回落、"
-    "单边下挫），带关键数字；\n"
-    "【量价】量价关系定性（放量上攻/缩量阴跌/量价背离等），指出最大量能日"
-    "发生了什么；\n"
-    "【消息与验证】期间什么消息/财报在驱动（利好利空类型+代表事件），消息面"
-    "与价格互相验证还是背离（引用证实率/同向概率）；\n"
-    "【结论】综合判断：这段行情的定性 + 对看数据的人的一条可执行建议。"
-    "全文不超过 220 字，直接输出，不要客套。"
+    "你是情报分析员，不是行情解说员。给你一只标的在窗口内的全部事实："
+    "时间线上的事件（含事件类型与人/地/事/物/组织五要素）、消息与价格的"
+    "互相验证统计、量价形态。你要从情报学角度研判：这些事件在时间上如何"
+    "排布、在空间上涉及哪些地域与产业链环节、彼此如何关联，最后给出态势"
+    "判断与下一个观察点。输出固定五段，全文不超过 300 字：\n"
+    "【事件面】窗口内发生了什么，按事件类型归类，点出最关键的一两个事件；\n"
+    "【时间线】事件的先后与节奏——谁先动、谁跟随、间隔多久、有无密集爆发；\n"
+    "【空间面】涉及哪些地域 / 板块 / 产业链环节，影响扩散在哪一层；\n"
+    "【关联面】事件彼此之间、以及与价格之间的印证或背离关系；\n"
+    "【研判】当前态势定性 + 下一步该盯什么（给出一个具体观察点）。\n"
+    "只依据给定事实推断，不臆造未出现的公司、地点或数字。直接输出，不要客套。"
 )
 
 
@@ -122,6 +127,19 @@ def _facts(kind: str, code: str = "", q: str = "", days: int = 30) -> str:
                 et = e.get("event_type") or "other"
                 et_cnt[et] = et_cnt.get(et, 0) + 1
             top_et = sorted(et_cnt.items(), key=lambda kv: -kv[1])[:3]
+            # 五要素聚合（情报学口径：人 / 地 / 事 / 物 / 组织）——研判的地基。
+            # 来源于 intel_facts.db（tools/intel_facts_backfill.py 抽取）；
+            # 该库未回填时各要素为空，句子退化为"无"，不影响其余事实。
+            agg = {"org": {}, "place": {}, "thing": {}}
+            for e in ev:
+                for k in agg:
+                    for w in (e.get(k) or []):
+                        agg[k][w] = agg[k].get(w, 0) + 1
+
+            def _top(dd, n=5):
+                return "、".join(
+                    "%s(%d)" % (k, v) for k, v in
+                    sorted(dd.items(), key=lambda kv: -kv[1])[:n]) or "无"
             # 代表性标题：最高置信利多/利空各一
             rep = {}
             for e in sorted(ev, key=lambda x: -(x.get("conf") or 0)):
@@ -132,6 +150,8 @@ def _facts(kind: str, code: str = "", q: str = "", days: int = 30) -> str:
             parts = ["消息：窗口内事件 %d 个（利多 %d/利空 %d），类型分布 %s。" % (
                 len(ev), bull_n, bear_n,
                 "、".join("%s×%d" % k for k in top_et))]
+            parts.append("要素：组织 %s；地域 %s；品种 %s。" % (
+                _top(agg["org"]), _top(agg["place"]), _top(agg["thing"])))
             for b, e in rep.items():
                 parts.append("最高置信%s：%s（%s，%s，conf=%s）。" % (
                     "利多" if b == "bull" else "利空",
@@ -209,8 +229,8 @@ def _rule_conclusion(kind: str, facts: str) -> str:
             % base.split("。")[0] + "。")
 
 
-def _ollama_conclude(facts: str) -> str:
-    """本地 Ollama 生成四段结论；失败抛异常由上层降级。"""
+def _ollama_conclude(facts: str, timeout: float = None) -> str:
+    """本地 Ollama 生成结论；失败抛异常由上层降级。"""
     body = json.dumps({
         "model": MODEL,
         "messages": [
@@ -224,9 +244,56 @@ def _ollama_conclude(facts: str) -> str:
         OLLAMA + "/api/chat", data=body,
         headers={"Content-Type": "application/json"})
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-    with opener.open(req, timeout=TIMEOUT_S) as r:
+    with opener.open(req, timeout=timeout or TIMEOUT_S) as r:
         d = json.loads(r.read().decode("utf-8"))
     return (d.get("message", {}).get("content") or "").strip()
+
+
+# ── 本机 LLM 门面通道（2026-11-08：实测本地 Ollama 已不可用，改走门面）──
+# 背景：本机无独显（AMD 8060S 核显），qwen3.5:4b 单条 30 日研判实测 151 秒
+# 仍超时降级；而 agent_platform/gateway/llm_gateway 的 deepseek-flash 同一
+# prompt 5.4 秒返回。故把门面通道提到首选，本地 Ollama 退为断网兜底。
+#
+# binding 可配（env JEV_GATEWAY_BINDING）：
+#   deepseek/deepseek-flash  默认（实测 ~5s，席位级降级链主力）
+#   glm/glm-5.3              云端（2026-11-08 实测 429 限流，备用）
+#   openai/gpt-6.0           OpenClaw 载体（实测 ~33s，慢）
+#   ollama/qwen3.5:9b        本地 9b（更慢，仅离线用）
+GATEWAY_BINDING = (os.environ.get("JEV_GATEWAY_BINDING")
+                   or "deepseek/deepseek-flash").strip()
+GATEWAY_ENABLED = (os.environ.get("JEV_GATEWAY") or "1").strip().lower() not in (
+    "0", "false", "no", "off")
+
+
+def _gateway_conclude(facts: str, retry: int = 1):
+    """走本机 LLM 门面（不直连外网，key/路由由门面自己管）。返回 (文本, 信封)。
+
+    门面自身有重试，但实测偶发 429 / 超时仍会漏出（2026-11-08 一次批量试跑
+    里 1/3 落到规则结论），故外层再兜一次；批量预生成时这点重试能显著提高
+    研判卡出「真 AI 结论」的比例。
+    """
+    p = os.path.join(STATION, "agent_platform")
+    if p in sys.path:
+        sys.path.remove(p)
+    sys.path.insert(0, p)          # 必须前置：portal/quant_backtest 也在 path 里
+    from gateway.llm_gateway import chat
+    last = ""
+    for i in range(retry + 1):
+        try:
+            r = chat(GATEWAY_BINDING, SYSTEM_PROMPT,
+                     "数据事实摘要如下：\n" + facts)
+            if r.get("ok"):
+                txt = ((r.get("data") or {}).get("text") or "").strip()
+                if len(txt) >= 20:
+                    return txt, r
+                last = "网关输出过短"
+            else:
+                last = (r.get("error") or {}).get("message") or "网关返回失败"
+        except Exception as e:  # noqa: BLE001
+            last = "%s: %s" % (type(e).__name__, str(e)[:70])
+        if i < retry:
+            time.sleep(1.5)
+    raise RuntimeError(last or "网关失败")
 
 
 # ── 云端降级通道（2026-11-07：老田令——本地算力不够可调云端） ──
@@ -327,23 +394,91 @@ _RESULT_CACHE: dict = {}
 _RESULT_TTL = 300  # 5 分钟：同一数据组合的结论不重复推理
 
 
-def interpret(kind: str, code: str = "", q: str = "", days: int = 30) -> dict:
+def _sediment(code: str, days: int):
+    """读「盘后预生成」的研判卡（tools/intel_brief_pregen.py 产出）。
+
+    为什么要先读它：在线链路 = facts 聚合 + 本地模型推理（实测 >100s/只），
+    770 只关注池不可能现算。研判卡在盘后就绪，打开页面直接命中 → 0 秒。
+
+    口径：
+      · 只认 30 日窗（研判卡按 30 日生成），其它窗口照旧走在线；
+      · 取最近一张，且交易日距今 ≤1 天——超过即视为过期，宁可在线重算，
+        也不给用户看隔夜失效的结论；
+      · 库/表不存在、字段坏 → 返回 None，静默回落在线，绝不抛。
+    """
+    if days != BRIEF_KIND_DAYS:
+        return None
+    try:
+        con = sqlite3.connect("file:%s?mode=ro" % BRIEF_DB.replace("\\", "/"),
+                              uri=True, timeout=10)
+        try:
+            row = con.execute(
+                "SELECT trade_date, facts, conclusion, engine, engine_label,"
+                " model, degrade_note, name, built_at FROM intel_briefs"
+                " WHERE code=? AND kind='story'"
+                " ORDER BY trade_date DESC LIMIT 1", (code,)).fetchone()
+        finally:
+            con.close()
+    except Exception:  # noqa: BLE001 —— 研判卡库可重建，缺失即回落在线
+        return None
+    if not row:
+        return None
+    td, facts, concl, eng, elabel, model, note, name, built = row
+    try:
+        age = (dt.date.today() - dt.date.fromisoformat(str(td))).days
+    except Exception:  # noqa: BLE001
+        return None
+    if age > 1:
+        return None
+    return {
+        "ok": True, "schema": "jev_interpret.v1",
+        "kind": "story", "code": code, "name": name,
+        "engine": eng or "sediment",
+        "engine_label": "预生成研判卡",
+        "model": model,
+        "degrade_note": note,
+        "facts": facts,
+        "conclusion": concl,
+        "generated_at": built,
+        "sediment": {"trade_date": td, "built_at": built, "stale": age > 0,
+                     "source": "intel_briefs"},
+    }
+
+
+def interpret(kind: str, code: str = "", q: str = "", days: int = 30,
+              use_sediment: bool = True, force: bool = False) -> dict:
+    # ① 沉淀卡（浏览前已梳理好）——命中即 0 延迟
+    if use_sediment and not force and kind == "story":
+        s = _sediment(code, days)
+        if s:
+            return s
     ck = (kind, code, q, days)
     hit = _RESULT_CACHE.get(ck)
     if hit and (dt.datetime.now() - hit[0]).total_seconds() < _RESULT_TTL:
         return hit[1]
     facts = _facts(kind, code, q, days)
-    # ① 本地模型（算力够时首选：不出网、零成本）
+    # ① 本机 LLM 门面（首选：实测同任务 ~5s，本地 Ollama >150s 仍超时）
     engine, text, model_used, note = "local", None, MODEL, None
-    try:
-        text = _ollama_conclude(facts)
-        if not text or len(text) < 20:
-            raise RuntimeError("模型输出过短")
-    except Exception as e:  # noqa: BLE001 —— 本地不可用 → 转云端
-        note = "本地模型失败：%s" % str(e)[:60]
-        text = None
+    if GATEWAY_ENABLED:
+        try:
+            text, _env = _gateway_conclude(facts)
+            engine, model_used = "cloud", "gateway:" + GATEWAY_BINDING
+        except Exception as e:  # noqa: BLE001 —— 门面失败 → 本地兜底
+            note = "门面失败：%s" % str(e)[:60]
 
-    # ② 云端模型（本地算力不够时的通道）
+    # ② 本地模型（断网兜底：不出网、零成本；超时按 env 收紧，别让用户干等）
+    if not text:
+        engine, model_used = "local", MODEL
+        try:
+            text = _ollama_conclude(
+                facts, timeout=float(os.environ.get("JEV_OLLAMA_TIMEOUT") or 45))
+            if not text or len(text) < 20:
+                raise RuntimeError("模型输出过短")
+        except Exception as e:  # noqa: BLE001 —— 本地不可用 → 转云端
+            note = (note + "；" if note else "") + "本地模型失败：%s" % str(e)[:50]
+            text = None
+
+    # ③ 云端直连（config/cloud_llm.json 或 env，独立于门面的直连通道）
     if not text:
         for p in _cloud_providers():
             try:
@@ -397,7 +532,18 @@ def handle_get(handler, path: str, qs_raw: str) -> None:
                 raise ValueError("q 必填（关键词或代码）")
         else:
             raise ValueError("kind 须为 story / intraday / evidence")
-        result = interpret(kind, code, q, days)
+        # peek=1：只探沉淀卡，绝不触发推理。前端页面加载时用它判断
+        # 「打开即有结论」还是「需要用户点一下现算」，避免把用户拖进
+        # 100 秒以上的等待。
+        if (qs.get("peek") or ["0"])[-1].strip().lower() in (
+                "1", "true", "yes") and kind == "story":
+            s = _sediment(code, days)
+            handler._json(s if s else {"ok": False, "peek": True,
+                                       "reason": "no_sediment"}, 200)
+            return
+        refresh = (qs.get("refresh") or ["0"])[-1].strip().lower() in (
+            "1", "true", "yes", "y")
+        result = interpret(kind, code, q, days, force=refresh)
     except ValueError as exc:
         handler._json({"ok": False, "error": "invalid_params",
                        "message": str(exc)}, 400)

@@ -41,6 +41,8 @@ STATION = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NEWS_DB = os.path.join(STATION, "news_collector", "news.db")
 AUDIT_DB = os.path.join(STATION, "agent_platform", "data", "jev_audit",
                         "jev_audit.db")
+FACTS_DB = os.path.join(STATION, "agent_platform", "data", "intel",
+                        "intel_facts.db")
 
 MIN_DAYS, MAX_DAYS, DEF_DAYS = 1, 120, 30
 MIN_LIMIT, MAX_LIMIT, DEF_LIMIT = 1, 200, 60
@@ -96,6 +98,27 @@ def compute(code_raw: str, days: int, limit: int) -> dict:
     except Exception:  # noqa: BLE001
         pass
 
+    # ── 情报五要素（intel_facts.db）：event_type / org / place / thing ──
+    # 2026-11-08：旧代码读 j.get("event_type")，但 jev JSON 里从来没有这个
+    # 字段（13.7 万条实测 0 命中），该处恒为 None、"类型分布"永远是 other。
+    # 改读情报要素库；库缺失/未回填时整块跳过，不阻断本接口。
+    facts_map = {}
+    ids = [r[0] for r in rows]
+    if ids:
+        try:
+            fdb = _ro(FACTS_DB)
+            q = ("SELECT news_id, event_type, org, place, thing FROM "
+                 "news_facts WHERE news_id IN (%s)" % ",".join("?" * len(ids)))
+            for nid, et, org, pl, th in fdb.execute(q, ids):
+                facts_map[nid] = {
+                    "event_type": et,
+                    "org": json.loads(org or "[]"),
+                    "place": json.loads(pl or "[]"),
+                    "thing": json.loads(th or "[]")}
+            fdb.close()
+        except Exception:  # noqa: BLE001 —— 要素库可重建，缺失不阻断叙事线
+            facts_map = {}
+
     events, src_stat = [], {}
     for nid, ts, source, title, jev in rows:
         try:
@@ -108,11 +131,15 @@ def compute(code_raw: str, days: int, limit: int) -> dict:
                 code6 not in [s[:6] for s in stocks if len(s) > 6]:
             continue
         bias = j.get("bias") if j.get("bias") in ("bull", "bear", "neutral") else "neutral"
+        fx = facts_map.get(nid) or {}
         ev = {
             "id": nid, "ts": ts, "source": source,
             "source_cn": source_names.cn(source),
             "title": (title or "")[:70], "bias": bias,
-            "conf": j.get("conf"), "event_type": j.get("event_type"),
+            "conf": j.get("conf"),
+            "event_type": fx.get("event_type"),
+            "org": fx.get("org") or [], "place": fx.get("place") or [],
+            "thing": fx.get("thing") or [],
             "ret": None, "hit": None, "trade_day": None,
         }
         p = post_map.get(nid)

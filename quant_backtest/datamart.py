@@ -328,9 +328,37 @@ def _concat_pq(paths, cols=None, dcol=None, ccol=None, start=None, end=None, cod
     return pd.concat(dfl, ignore_index=True) if dfl else pd.DataFrame()
 
 
+_STATS_CACHE: dict = {}
+_STATS_CACHE_MAX = 20000
+
+
 def _part_stats_days(p, dcol):
     """pyarrow row-group 统计 → 分片 (min_day, max_day)，零数据读。
-    任何 row-group 无统计或列缺失返回 None（调用方放弃剪枝）。"""
+    任何 row-group 无统计或列缺失返回 None（调用方放弃剪枝）。
+
+    2026-11-08 AIDE 性能：进程内按 (路径, mtime, size, 列) 缓存。
+    单次个股查询要扫几千个分片，逐个重开文件读元数据是主耗时项
+    （实测 8749 分片 / 8789 次调用 / 8.6 秒）。分片一经发布不再改写，
+    mtime 或 size 变化即失效重读，判据与结果均不变。
+    """
+    try:
+        _st = os.stat(p)
+        _ck = (p, _st.st_mtime_ns, _st.st_size, dcol)
+    except OSError:
+        _ck = None
+    if _ck is not None:
+        _hit = _STATS_CACHE.get(_ck)
+        if _hit is not None:
+            return _hit[0]
+    val = _part_stats_days_uncached(p, dcol)
+    if _ck is not None:
+        if len(_STATS_CACHE) >= _STATS_CACHE_MAX:
+            _STATS_CACHE.clear()
+        _STATS_CACHE[_ck] = (val,)
+    return val
+
+
+def _part_stats_days_uncached(p, dcol):
     try:
         import pyarrow.parquet as pq
         f = pq.ParquetFile(p)
@@ -358,11 +386,33 @@ def _part_stats_days(p, dcol):
         return None
 
 
+_DNAME_RE = re.compile(r"(\d{8})")
+
+
+def _fname_day(p):
+    """日分片文件名里的 YYYYMMDD；命名不合规返回 None（调用方保留该分片）。"""
+    m = _DNAME_RE.search(os.path.basename(p))
+    return m.group(1) if m else None
+
+
 def _read_part(store, dcol, ccol, start, end, codes, fields, cols=None,
-               pattern="part_*.parquet"):
+               pattern="part_*.parquet", name_prune=False):
     parts = sorted(glob.glob(os.path.join(store, pattern)))
     if not parts:
         return pd.DataFrame()
+    # 2026-11-08 AIDE 性能：by_date 日分片文件名自带日期，可先按名剪枝，
+    # 只保留「文件名日期 >= start」的分片（8749 → 数十个）。语义安全前提：
+    # 补采只会把旧数据写进新文件，不会把新数据写进旧文件，故「早于 start 的
+    # 分片」必不含目标区间数据；end 一侧不按名剪（新分片仍可能含区间内补采
+    # 行），照旧由下方读后过滤兜底。解析不出日期的分片一律保留。
+    if name_prune and start is not None:
+        s_name = _norm_day(start)[:8]
+        kept_by_name = []
+        for p in parts:
+            d = _fname_day(p)
+            if d is None or d >= s_name:
+                kept_by_name.append(p)
+        parts = kept_by_name or parts
     # 分片剪枝：row-group 统计零数据读；任一分片统计缺失则放弃剪枝全读
     if dcol and (start is not None or end is not None):
         s0 = _norm_day(start)[:8] if start is not None else None
@@ -510,9 +560,10 @@ def _read_by_code_month(store, dcol, ccol, start, end, codes, fields, cols=None)
 
 
 def _read_by_date(store, dcol, ccol, start, end, codes, fields, cols=None):
-    # 日文件也可能含补采日期；按实际日期统计剪枝，并保留读后过滤。
+    # 日文件也可能含补采日期；先按文件名剪掉早于 start 的分片（文件日期
+    # 早于 start 者不可能含区间内数据），再按实际日期统计剪枝，并保留读后过滤。
     return _read_part(store, dcol, ccol, start, end, codes, fields, cols,
-                      pattern="d_*.parquet")
+                      pattern="d_*.parquet", name_prune=True)
 
 
 def _read_sqlite(tbl, start, end, codes, limit):
