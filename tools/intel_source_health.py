@@ -450,6 +450,9 @@ def build_parser() -> argparse.ArgumentParser:
                      help="输出 IL-08 三源盘点 Markdown（stdout，只读事实）")
     ap.add_argument("--strict", action="store_true",
                     help="启用源不健康 → exit 1（输入错误始终 fail-visible）")
+    ap.add_argument("--notify", action="store_true",
+                    help="S3 红即到人：硬故障（输入坏/启用源 missing/empty/error）经 notify_hub 直发飞书；"
+                         "绿不发送；同指纹 4h 去重（2026-11-08 老田批准自动外发）")
     il08 = ap.add_argument_group("IL-08 三源盘点（增量，可注入路径/阈值）")
     il08.add_argument("--stale-days", type=_days_arg, default=DEFAULT_STALE_DAYS,
                       help="三源水位过期阈值（天，默认 2）")
@@ -489,10 +492,21 @@ def main(argv=None) -> int:
     else:
         print(format_text(report))
     # 输入不可读 / 启用源缺样本、空样本、扫描错误 → 始终 fail-visible（非 strict 也拦）
-    hard_bad = any(
-        s["enabled"] and s["status"] in ("missing", "empty", "error")
-        for s in report["sources"])
-    if not report["registry"]["ok"] or not report["status"]["ok"] or hard_bad:
+    hard_bad = [s["name"] for s in report["sources"]
+                if s["enabled"] and s["status"] in ("missing", "empty", "error")]
+    input_bad = not (report["registry"]["ok"] and report["status"]["ok"])
+    if input_bad or hard_bad:
+        if args.notify and hard_bad:
+            # S3：红即到人（硬故障直发；registry/status 输入坏属调用环境问题，发不出去也无从去重，走 stderr）
+            try:
+                sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+                from notify_hub import notify_red
+                reason = "启用源硬故障：" + "、".join(
+                    "%s=%s" % (n, next(s["status"] for s in report["sources"] if s["name"] == n))
+                    for n in hard_bad[:5])
+                notify_red("intel_source_health", reason, key="hard:" + ",".join(sorted(hard_bad)[:5]))
+            except Exception as e:  # noqa: BLE001 —— 通知失败不改变判定，只留痕
+                print("notify err: %s" % str(e)[:100], file=sys.stderr)
         return EXIT_UNHEALTHY
     # stale 等软故障只在 --strict 下拦截（默认只报不拦，供看板/巡检）
     if args.strict and not report["ok"]:
