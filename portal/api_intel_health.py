@@ -35,6 +35,18 @@ SOURCES_PATH = os.path.join(COLLECTOR_ROOT, "registry", "sources.json")
 
 SCHEMA_VER = "1.0"
 
+# 周期采集器覆盖的源（与 intel_collector/adapters/ 目录对齐：guba/news/xueqiu/
+# xueqiu_live/youtube_envelope；news 族 8 子源均由 news_adapter 覆盖）。
+# 不在此清单内的源为静态/工具型（youtube_corpus、pdf_methodology、
+# res_downloader_py 等，入库即完成、无周期采集）→ 无观测心跳属预期，
+# 面板标 "static" 与真断供(no_data)区分。新增 adapter 时须同步此清单。
+PERIODIC_ADAPTERS = {
+    "guba", "news", "xueqiu", "xueqiu_live", "youtube_envelope",
+    "news_sina", "news_announcement", "news_chinanews", "news_eastmoney",
+    "news_govpolicy", "news_report", "news_survey", "news_wallstreetcn",
+    "news_world",
+}
+
 # 内部 5 用途（本轮 C9A 批 true）与外发 3 用途（批 false）——展示摘要用
 USE_DISPLAY = [
     ("internal_retention", True), ("cleaning", True), ("indexing", True),
@@ -65,12 +77,16 @@ def collect_health() -> tuple[dict, int]:
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     sources = []
-    summary = {"ok": 0, "breach": 0, "no_data": 0, "disabled": 0, "other": 0}
+    summary = {"ok": 0, "breach": 0, "no_data": 0, "static": 0,
+               "disabled": 0, "other": 0}
     for sid, spec in raw.items():
         if sid.startswith("_"):
             continue  # _governance 等治理占位不入面板
         s = sla.get(sid) or {}
         state = s.get("state") or ("disabled" if not spec.get("enabled") else "unknown")
+        # 静态/工具型源无周期采集心跳，no_data 属预期 → 与真断供区分
+        if state == "no_data" and sid not in PERIODIC_ADAPTERS:
+            state = "static"
         if not spec.get("enabled"):
             summary["disabled"] += 1
         elif state in summary:
