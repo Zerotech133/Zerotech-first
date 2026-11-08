@@ -1,7 +1,7 @@
 {
- "generated_at": "2026-11-07T18:42:20",
+ "generated_at": "2026-11-08T13:28:43",
  "source": "C:\\项目\\老田的AI助手\\portal\\portal_api.py",
- "total": 322,
+ "total": 323,
  "signatures": [
   [
    "GET",
@@ -327,6 +327,11 @@
    "GET",
    "exact",
    "/api/intel/evidence-targets"
+  ],
+  [
+   "GET",
+   "exact",
+   "/api/intel/health"
   ],
   [
    "GET",
