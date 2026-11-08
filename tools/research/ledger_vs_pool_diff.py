@@ -50,10 +50,9 @@ for p in sorted(glob.glob(os.path.join(ARCH, "closed_CN_*.jsonl"))):
             except ValueError:
                 n_bad_arch += 1
                 continue
-            # 归档目录被两个写入者共用：chanlun_scan._archive_closed 落台账溢出
-            # （paper 风格，带 sig_dt），chanlun_ledger_maint.archive 落回填重算集
-            # （带 dt/entry_i/source=backfill，"假如池里每条信号都入场 20 日"）。
-            # 后者不是台账，混进来会把台账从 1,718 虚增到 2,560。
+            # 归档目录 2026-11-08 起由 chanlun_scan._archive_closed 独占（台账实际入场，
+            # paper 风格带 sig_dt）。回填结算集已搬到 data/chanlun_paper_backfill/。
+            # 过滤保留作防御：历史文件曾被混写，若这里命中说明又混了。
             if "dt" in x or x.get("source") == "backfill" or "sig_dt" not in x:
                 n_skip_arch += 1
                 continue

@@ -99,18 +99,17 @@ LEDGER_STAT = {}
 def _load_archived():
     """→ (rows, 坏行数, 文件数, 跳过的回填行数)。读 `chanlun_paper_archive/closed_*.jsonl`。
 
-    **这个目录被两个写入者共用，必须先分清再读：**
-      · `chanlun_scan._archive_closed(spilled)`：台账 CLOSED_CAP 溢出，**paper 风格**
-        （有 `sig_dt`/`entry_px`/`last_px`/`adj_flag`），这才是台账历史；
-      · `chanlun_ledger_maint.archive(full)`：从产线池 + parquet 重算的**回填结算集**，
-        带 `dt`/`entry_i`/`_bars_len`/`source=backfill`。它是"假如池里每条信号都
-        入场 20 日"的模拟，**不是产线实际入场**。
+    **该目录 2026-11-08 起由 `chanlun_scan._archive_closed()` 独占**，内容只有台账
+    `CLOSED_CAP=5000` 溢出的**产线实际入场**（paper 风格：`sig_dt`/`entry_px`/`last_px`）。
+    回填结算集（`chanlun_ledger_maint.rebuild` 的重算）已搬到
+    `data/chanlun_paper_backfill/`，本函数**不读那里**。
 
-    实测（2026-11-08）：9,938 行里 9,745 行是后者，只有 193 行是台账溢出——后者
-    行数与 `chanlun_paper.json` 的 `archived_total=192` 吻合。把重算集混进来会让
-    台账样本从 1,718 虚增到 2,560（+49%），且混进来的全是 `backfill` 语义。
+    拆分前两者共用同一文件名，混成 9,938 行（9,745 回填 + 193 台账）。回填集是
+    "假如池里每条信号都入场 20 日"的模拟，混进来会让台账从 1,718 虚增到 2,560
+    （+49%），还会凭空多出 20250917 一笔把窗口从 20260128 拉到 20250917。
 
-    所以这里只收 paper 风格的（必须带 `sig_dt`），回填行计数后丢弃。
+    风格过滤保留作**防御**：`archive_skipped_backfill > 0` 说明目录又被混写
+    （老代码/老进程），`LEDGER_STAT["warn_mixed"]` 会置位并在主流程告警。
     """
     rows, nbad, nfiles, n_skip = [], 0, 0, 0
     if not os.path.isdir(ARCHIVE_DIR):
@@ -182,10 +181,12 @@ def load_ledger():
     LEDGER_STAT.update({
         "n_paper": n_paper, "n_total": len(out), "n_archive_only": len(out) - n_paper,
         "archive_files": nfiles, "archive_rows": len(arch), "archive_bad_lines": nbad,
-        # 归档里属于回填重算集的量（不是台账，已跳过）
+        # 归档里属于回填重算集的量（不是台账，已跳过）。拆分后应为 0。
         "archive_skipped_backfill": n_skip,
         # 顶到截断上限却一笔都没补回来 → 归档缺失或路径不对，静默偏样本
         "warn": n_closed_paper >= CLOSED_CAP and len(out) == n_paper,
+        # 目录又被混写（老代码/老进程往这里落回填）→ 需要跑 ledger_maint --only split
+        "warn_mixed": n_skip > 0,
     })
     return out
 
@@ -330,6 +331,10 @@ def main():
     if LEDGER_STAT.get("warn"):
         say("  [WARN] paper.json 的 closed 已顶到 CLOSED_CAP=%d，但归档一笔都没补回来 —— "
             "台账样本会静默偏向最近一段，检查 %s" % (CLOSED_CAP, ARCHIVE_DIR))
+    if LEDGER_STAT.get("warn_mixed"):
+        say("  [WARN] %s 里又出现了回填重算集 %d 行（已跳过）—— 目录被混写，"
+            "跑 `python quant_backtest/chanlun_ledger_maint.py --only split`"
+            % (ARCHIVE_DIR, LEDGER_STAT["archive_skipped_backfill"]))
     axis_all = load_axis()
     last_bar0 = axis_all[-1] if axis_all else ""
     if not picks0:
