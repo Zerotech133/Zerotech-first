@@ -54,5 +54,20 @@
       "tools/tests/test_market_analysis.py::test_main_nonstrict_writes_both_outputs",
       "tools/tests/test_market_analysis.py::test_main_strict_passes_when_all_degraded_registered"
     ]
+  },
+  "tools/datawarehouse/tests": {
+    "_why": "对账类用例，断言的是 quant_backtest/data/ 下的运行时产物真值：catalog.json(296K)/warehouse_registry.json(808K) 被 .gitignore:27 `quant_backtest/data/*` 整体忽略（生成物 + 逐日翻新，不宜入库），另有 sqlite 运行库与 manifests。干净 runner 无这些资产 → 无法判定，非代码缺陷。已核对：本轮 43 红中 33 项系 dataset_registry.REPO 硬编码所致（已在 7ac9656c4 真修），余下这 10 项才是纯粹的资产缺失。",
+    "env_failures": [
+      "tools/datawarehouse/tests/test_dataset_query.py::test_sqlite_since_iso_text_matches_direct_sql",
+      "tools/datawarehouse/tests/test_dw_catalog_mcp.py::test_registry_stats_matches_file",
+      "tools/datawarehouse/tests/test_dw_catalog_mcp.py::test_qualification_distribution",
+      "tools/datawarehouse/tests/test_dw_catalog_mcp.py::test_catalog_snapshot_real_values",
+      "tools/datawarehouse/tests/test_dw_catalog_mcp.py::test_lifecycle_coverage",
+      "tools/datawarehouse/tests/test_dw_catalog_mcp.py::test_table_info_known_and_alias",
+      "tools/datawarehouse/tests/test_dw_catalog_mcp.py::test_table_info_unknown_is_error",
+      "tools/datawarehouse/tests/test_dw_catalog_mcp.py::test_calls_are_readonly",
+      "tools/datawarehouse/tests/test_dw_catalog_mcp.py::test_selftest",
+      "tools/datawarehouse/tests/test_dw_quality_mcp.py::test_mcp_call_manifest_and_backup"
+    ]
   }
 }
