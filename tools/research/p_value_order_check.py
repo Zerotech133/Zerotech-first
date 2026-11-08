@@ -24,6 +24,21 @@ A1 生产函数在打乱行序下 p 完全一致（极差 < 1e-9）—— 排序
 A2 生产函数的 p 与 portal/combo_shadow_stats.json 记录一致（统计文件未过期）。
 A3 universe / pass 日数与统计文件一致。
 A4 hold 口径同样通过 A1。
+A5 抽样次数 ≥ MIN_BOOT 且蒙特卡洛标准误 ≤ MAX_P_SE。
+
+A5 管的是第二条更隐蔽的坑
+--------------------------
+修掉行序依赖后，p 看起来稳定在 0.035，很容易以为已经"确定"了。其实那只是
+**抽 200 次的噪声**。固定排序、只换随机种子实测：
+
+    boot=200    p 均值 0.0442  标准差 0.0127  范围[0.025,0.075]  >0.05 的比例 24%
+    boot=1000   p 均值 0.0438  标准差 0.0067                 >0.05 的比例  8%
+    boot=5000   p 均值 0.0419  标准差 0.0027                 >0.05 的比例  0%
+    boot=20000  p 均值 0.0423  标准差 0.0010                 >0.05 的比例  0%
+    20 万次      p≈0.0425（近真值）
+
+即真实 p≈0.042 而非 0.035，且 200 次抽样下每 4 次重跑就有 1 次不过闸。
+一个会随抽样次数跨过判据阈值的 p，不是数据的性质，是抽样预算的性质。
 
 任一条不满足即 exit 1。只读，不写任何数据。
 
@@ -43,6 +58,12 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 SHADOW = os.path.join(ROOT, "quant_backtest", "data", "combo_shadow.jsonl")
 STATS = os.path.join(ROOT, "portal", "combo_shadow_stats.json")
 CS_PATH = os.path.join(ROOT, "tools", "research", "combo_shadow.py")
+
+# 抽样次数下限与蒙特卡洛标准误上限。boot=200 时 p 的 1σ 约 0.0127，
+# 实测 50 个种子里 24% 会跨过 0.05 —— 那种 p 只能说"抽了多少次"，
+# 不能说"数据支持什么"。5000 次把 1σ 压到 ~0.0028。
+MIN_BOOT = 5000
+MAX_P_SE = 0.005
 
 
 def load_combo_shadow(path=None):
@@ -144,6 +165,26 @@ def main():
         elif ref.get("days") is not None and int(ref["days"]) != base["days"]:
             fails.append("%s: pass 日数不一致 生产 %d vs 统计 %d"
                          % (rule, base["days"], int(ref["days"])))
+
+        # A5 —— 抽样次数与蒙特卡洛误差。这是第二条坑的防线：
+        # boot=200 时 p 的标准差 0.0127，24% 的重跑会跨过 0.05 门槛，
+        # 报告里的 p 就变成"抽了多少次的函数"而不是数据的性质。
+        boot_used = base.get("boot")
+        if not boot_used:
+            fails.append("%s: 返回里没有 boot 字段，无法核对抽样次数" % rule)
+        elif int(boot_used) < MIN_BOOT:
+            fails.append("%s: 抽样仅 %d 次（要求 ≥%d）；p 的蒙特卡洛标准差约 %.4f，"
+                         "足以跨越 0.05 门槛" % (rule, int(boot_used), MIN_BOOT,
+                                                 (base["p_value"] * (1 - base["p_value"])
+                                                  / int(boot_used)) ** 0.5))
+        elif base.get("p_se") is None or float(base["p_se"]) > MAX_P_SE:
+            fails.append("%s: 蒙特卡洛标准误 %s 超过 %.4f，p 值精度不足以判 0.05"
+                         % (rule, base.get("p_se"), MAX_P_SE))
+        else:
+            print("[OK]   %s: 抽样 %d 次，p_se=%.4f（≤%.4f），p=%.4f±%.4f"
+                  % (rule, int(boot_used), float(base["p_se"]), MAX_P_SE,
+                     base["p_value"], float(base["p_se"])))
+
         if not any(x.startswith(rule) for x in fails):
             print("[OK]   %s: p / universe / pass 日数与统计文件一致" % rule)
         print("-" * 92)

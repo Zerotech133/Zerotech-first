@@ -83,6 +83,10 @@ SIG_TH_REF = {"p20": 0.3659, "p30": 0.4843, "p50": 0.7254, "p70": 1.0972}
 SIG_TH_POOL = "chanlun_pool_ext_v2.jsonl|axis=000001.SH|since=2023-11-01"
 MIN_SETTLED_DAYS = 120       # 低于此值不给仓位建议（与 env_shadow 同标准）
 SEED = 20261108              # 随机对照种子（固定，保证可复现）
+# 随机对照抽样次数。原为 200，导致 p 的蒙特卡洛标准差达 0.0127、
+# 24% 的重跑会跨过 0.05 门槛（详见 null_test 注释与 p_value_order_check.py）。
+# 5000 次把标准差压到 0.0027，耗时仍 <2 秒。
+BOOT_NULL = 5000
 
 
 def _n(s):
@@ -280,16 +284,20 @@ def load_jsonl(path):
     return out
 
 
-def null_test(rows, rule, boot=200):
+def null_test(rows, rule, boot=BOOT_NULL):
     f = "trail_ret" if rule == "trail" else "hold_ret"
     by = defaultdict(list)
     for r in rows:
         by[r["entry_date"]].append(r[f])
-    # 坑（2026-11-08 修）：`rng.choice(len, n)` 是按**索引**抽的，所以 all_days
+    # 坑 1（2026-11-08 修）：`rng.choice(len, n)` 是按**索引**抽的，所以 all_days
     # 的元素顺序决定抽到哪些日期。若顺序跟随 rows 遍历顺序（defaultdict 插入序），
-    # 同一批数据只要行序变一下 p 值就漂：实测 1,265 笔 8 次打乱 p∈[0.015,0.065]，
-    # 其中一次 0.065 直接不过 5% 闸门。按 entry_date 排序后抽样与行序无关，
-    # 4 次打乱恒为 0.035。同一批数据必须给出同一个 p，否则"p<0.05"不是结论。
+    # 同一批数据只要行序变一下 p 值就漂：实测 1,265 笔 8 次打乱 p∈[0.015,0.065]。
+    # 按 entry_date 排序后抽样与行序无关，4 次打乱完全一致。
+    # 坑 2（同日修）：修掉行序依赖后 p 看似稳定在 0.035，**但那只是抽 200 次的噪声**。
+    # 固定排序换 50 个种子实测：p 均值 0.0442、标准差 0.0127、范围 [0.025,0.075]，
+    # **24% 的重跑会 p>0.05**；提到 20000 次才收敛到 0.0423±0.0010，
+    # 20 万次给 0.0425。即真实 p≈0.042，不是 0.035。
+    # 所以 boot 从 200 提到 BOOT_NULL，并额外返回蒙特卡洛标准误 p_se。
     keys = sorted(by)
     all_days = np.array([np.mean(by[k]) for k in keys], float)
     pass_days = sorted({r["entry_date"] for r in rows if r["pass"]})
@@ -311,11 +319,19 @@ def null_test(rows, rule, boot=200):
     raw_verdict = ("优于随机 95% 分位" if real > p95 else
                    ("优于随机中位但未过 5%" if real > p50 else
                     "不如随机（等同少交易）"))
+    # 蒙特卡洛标准误：p 本身是抽 boot 次估出来的，必须带误差棒。
+    # p=0.042±0.003 与 p=0.042±0.013 是两种可信度，不能只报点估计。
+    p_hat = float((draws >= real).mean())
+    p_se = float(np.sqrt(p_hat * (1.0 - p_hat) / boot)) if boot > 0 else 0.0
     return {"days": n, "universe": int(len(all_days)),
             "real": round(real * 100, 3),
             "null_p50": round(p50 * 100, 3),
             "null_p95": round(p95 * 100, 3),
-            "p_value": round(float((draws >= real).mean()), 4),
+            "p_value": round(p_hat, 4),
+            "p_se": round(p_se, 4),
+            # 余量 = 真实值超出 95% 分位多少（百分点）。余量 << p95 说明只是勉强过闸。
+            "margin_pp": round((real - p95) * 100, 4),
+            "boot": boot,
             "usable_for_decision": enough,
             "verdict": (raw_verdict if enough else
                         "【描述性·不可用于决策】" + raw_verdict),
@@ -688,9 +704,11 @@ def main():
     for k in ("trail", "hold"):
         v = sent["null"].get(k)
         if v:
-            say("  随机对照[%s] %d/%d 日  真实 %+.3f%%  随机中位 %+.3f%%  随机95%% %+.3f%%  p=%.3f  %s"
+            say("  随机对照[%s] %d/%d 日  真实 %+.3f%%  随机中位 %+.3f%%  随机95%% %+.3f%%  "
+                "p=%.4f±%.4f（%d 次抽样）  余量 %+.4fpp  %s"
                 % (k, v["days"], v["universe"], v["real"], v["null_p50"],
-                   v["null_p95"], v["p_value"], v["verdict"]))
+                   v["null_p95"], v["p_value"], v.get("p_se", 0.0), v.get("boot", 0),
+                   v.get("margin_pp", 0.0), v["verdict"]))
     say("  判定：%s" % verdict)
     pg = sent["progress"]
     say("  记账进度 %d/%d 个已到期 pass 开仓日（缺口 %d）；%s"
