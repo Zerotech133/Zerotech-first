@@ -348,7 +348,11 @@ $paths = @{
         #      把主树的未提交改动误判成"这个 worktree 脏了"；
         #   ② Windows 删大目录 186~251s，180s 超时必然误判，留下"指针没了树还在"。
         # 两者都会让闸门判断失真，故纳入常态门。21 条纯合成夹具，约 8s。
-        'tools/tests/test_devtask_worktree_mech.py'
+        'tools/tests/test_devtask_worktree_mech.py',
+        # 行尾守卫回归（2026-11-08 K-EOL-20261108，+1）：.gitattributes 的 eol 只在
+        # 检出时生效，工作区存量文件不会自动重写 —— 该缺陷静默（status 恒脏、本机红云端绿），
+        # 守卫自身若被改坏也不会显式报错，故纳入套件常驻。
+        'tools/tests/test_git_hooks_eol_guard.py'
     )
 }
 

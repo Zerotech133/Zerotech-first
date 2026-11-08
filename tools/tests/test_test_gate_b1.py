@@ -141,6 +141,10 @@ TOOLS_KEY = {
     # 覆盖，两个真坑（空壳登记让 git status 读到主树状态、Windows 删大目录超时
     # 留下"指针没了树还在"）都是人工现场发现的。纳管后由 21 条合成夹具守住。
     "tools/tests/test_devtask_worktree_mech.py",
+    # ---- 行尾守卫回归（2026-11-08 K-EOL-20261108，+1）----
+    # .gitattributes 的 eol 只在检出时生效，存量工作区文件不会自动重写；缺陷静默
+    # （status 恒脏、本机红云端绿），守卫自身被改坏也不会显式报错，故纳入套件常驻。
+    "tools/tests/test_git_hooks_eol_guard.py",
 }
 
 
@@ -160,14 +164,15 @@ def test_b1_b2_lists_frozen():
     assert set(_suite_files("agent_key")) == AGENT_KEY
     assert set(_suite_files("quant_key")) == QUANT_KEY
     assert set(_suite_files("tools_key")) == TOOLS_KEY
-    # 2026-11-08 同步：quant_key 23 → 27（xq 接缝修复 +4）、tools_key 20 → 21（worktree mech +1）
-    assert len(AGENT_KEY) == 52 and len(QUANT_KEY) == 27 and len(TOOLS_KEY) == 21
+    # 2026-11-08 同步：quant_key 23 → 27（xq 接缝修复 +4）、tools_key 20 → 22
+    # （worktree mech +1、行尾守卫 +1）
+    assert len(AGENT_KEY) == 52 and len(QUANT_KEY) == 27 and len(TOOLS_KEY) == 22
     all_files = AGENT_KEY | QUANT_KEY | TOOLS_KEY
-    # 2026-11-08：95 → 100（xq 接缝修复 +4、worktree mech +1）。三个集合互不重叠，
-    # 故总数 = 52 + 27 + 21；若哪天三者出现交集，这条会先拦住。
-    assert len(all_files) == 100, (
+    # 2026-11-08：95 → 101（xq 接缝修复 +4、worktree mech +1、行尾守卫 +1）。三个集合互不重叠，
+    # 故总数 = 52 + 27 + 22；若哪天三者出现交集，这条会先拦住。
+    assert len(all_files) == 101, (
         "B1(57)+B2(31)+黄忠聚合入口(1)+学习治理契约(2)+盘后分析(1)+回环豁免(1)"
-        "+凭据扫描回归(1)+看护预算契约(1)+xq接缝修复(4)+worktree判活(1) 应为 100 文件")
+        "+凭据扫描回归(1)+看护预算契约(1)+xq接缝修复(4)+worktree判活(1)+行尾守卫(1) 应为 101 文件")
 
 
 def test_b1_b2_files_exist_and_under_expected_dir():
