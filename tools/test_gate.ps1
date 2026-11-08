@@ -517,7 +517,10 @@ try {
         }
         if ($new.Count -gt 0) {
             Write-Host "[$name] 新增失败 $($new.Count) 项:" -ForegroundColor Red
-            $new | Select-Object -First 20 | ForEach-Object { Write-Host "  - $_" }
+            # 2026-11-08：原为 -First 20。datawarehouse 一轮 43 项时只看得见前 20，
+            # 云端红一次就要靠猜补登记（实测浪费两轮 CI ~20 分钟）。长清单必须
+            # 完整可读；300 条足以覆盖任何单套件规模，又不至于刷爆日志。
+            $new | Select-Object -First 300 | ForEach-Object { Write-Host "  - $_" }
         } else {
             Write-Host "[$name] 无新增失败(既存 $($failed.Count) 项已登记) [${secs}s]" -ForegroundColor Green
         }

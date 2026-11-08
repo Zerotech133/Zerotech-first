@@ -38,7 +38,42 @@ import time
 from pathlib import Path
 from typing import Any
 
-REPO = Path(r"C:\项目\老田的AI助手")
+def _repo_root() -> Path:
+    """仓根：worktree 内运行也解析回主仓（与 tools/datawarehouse/common.py 同口径）。
+
+    2026-11-08（K-CI-20261108-PATH）：原为硬编码 ``Path(r"C:\\项目\\老田的AI助手")``。
+    干净检出（GitHub runner / 新克隆 / 换盘符 / 换机器）上该路径不存在 →
+    ALLOWED_ROOTS 全灭、inventory 与 registry 全部读空 → datawarehouse 整片判红。
+    这是路径可移植性缺陷，不是"数据缺失"，不能靠 CI 环境豁免糊过去。
+    """
+    here = Path(__file__).resolve().parent
+    for cand in (here, *here.parents):
+        g = cand / ".git"
+        try:
+            if g.is_dir():
+                return cand
+            if g.is_file():
+                txt = g.read_text(encoding="utf-8", errors="replace").strip()
+                if txt.lower().startswith("gitdir:"):
+                    raw = txt.split(":", 1)[1].strip()
+                    gitdir = Path(raw)
+                    if not gitdir.is_absolute():
+                        gitdir = (cand / gitdir).resolve()
+                    try:
+                        return gitdir.parents[2]  # <main>/.git/worktrees/<n> → <main>
+                    except IndexError:
+                        return cand
+                return cand
+        except OSError:
+            continue
+    # 兜底：按目录层级找 agent_platform（主仓必有）；绝不回落硬编码绝对路径
+    for cand in (here, *here.parents):
+        if (cand / "agent_platform").is_dir():
+            return cand
+    return here.parents[1]
+
+
+REPO = _repo_root()
 ALLOWED_ROOTS = [
     REPO / "quant_backtest",
     REPO / "research",
