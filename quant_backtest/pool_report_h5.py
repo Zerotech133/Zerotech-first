@@ -23,7 +23,7 @@ import html
 import json
 import os
 import sys
-from datetime import date
+from datetime import date, datetime
 
 import numpy as np
 import pandas as pd
@@ -632,7 +632,7 @@ function toggleMore(){{
 
 /* 深链参数只解析一次：飞书卡片、板块页都往这里带参数。 */
 var Q = (function(){{
-  var s = (location.search||'').replace(/^\?/,'')
+  var s = (location.search||'').replace(/^\\?/,'')
         || (location.hash||'').replace(/^#/,'');
   var o = {{}};
   if(!s) return o;
@@ -882,6 +882,7 @@ def main():
 
     # 页面展示的每一只都要有当下价。pool_live 只覆盖异动档，剩下的在这里补——
     # 否则「实时 10:20」这个标题对大部分行是假的，位置标签也跟着错。
+    px_clock = ""      # 补取成功时的钟点；空表示个股价全部来自 pool_live 快照
     if args.live != "off":
         need = [r["code"] for st in order + ["中枢"]
                 for r in j["buckets"].get(st, [])[:args.per_stage]]
@@ -889,6 +890,10 @@ def main():
         if miss:
             got = _fetch_px(miss)
             lmap.update(got)
+            # 补取价是**此刻**拉的，与 pool_live 快照未必同一分钟。两者混在
+            # 一个「实时 HH:MM」里，读者会以为个股价就是那个时刻的。
+            if got:
+                px_clock = datetime.now().strftime("%H:%M")
             print(f"[h5] 补取实时价 {len(got)}/{len(miss)} 只")
 
     def _live_px(r):
@@ -1013,10 +1018,21 @@ def main():
     lv_clock = ""
     if lv:
         lv_clock = str(lv.get("live_at") or "")[11:16]
-        sub_line = (f"结构 {s_lbl} · 可判 {judged} 只 · "
-                    f'<b style="color:#d92b2b">实时 {lv_clock}</b> '
-                    f'涨 {lv.get("up", 0)} / 跌 {lv.get("down", 0)}'
-                    f' · 涨停 {lv.get("limit_up", 0)}')
+        _tail = (f'涨{lv.get("up", 0)} / 跌{lv.get("down", 0)}'
+                 f' · 涨停{lv.get("limit_up", 0)}')
+        # 个股价与市场统计可能不同分钟：价是本页当场补取的，市场统计来自
+        # pool_live 快照（15 分钟一档）。同分钟才合成一个「实时」，否则拆开写，
+        # 免得「实时 14:46」被读成列表里那些价格也是 14:46 的。
+        # 拆开写之后这行必然两行，所以自己换行——让浏览器自动断，会把「涨停」
+        # 拆成「涨 / 停 62」（390px 实测），读着像错字。
+        if px_clock and px_clock != lv_clock:
+            sub_line = (f"结构 {s_lbl} · 可判 {judged} 只 · "
+                        f'<b style="color:#d92b2b">价 {px_clock}</b>'
+                        f'<br><span style="color:#8a93a3">市场 {lv_clock} · </span>'
+                        + _tail)
+        else:
+            sub_line = (f"结构 {s_lbl} · 可判 {judged} 只 · "
+                        f'<b style="color:#d92b2b">实时 {lv_clock}</b> ' + _tail)
         if broke_n:
             sub_line += f' · <b style="color:#b23b3b">盘中失守 {broke_n}</b>'
     else:
