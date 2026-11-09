@@ -165,6 +165,12 @@ def main():
     steps.append(("板块页", ["sector_platform_h5.py"], False))
     # PC 工作台要在打包之前生成：h5_pack 的清单里已经有 pc.html，缺了会直接非 0 退出
     steps.append(("PC 工作台", ["pool_pc.py"], False))
+    # 缠论分析工具与 PC 工作台同源（都读 pool_state），也是 h5_pack 的核心页，
+    # 必须在打包前生成，否则平台少掉「分析工具」这个入口。
+    steps.append(("缠论分析工具", ["chanlun_tool.py"], False))
+    # 模拟盘对账读 portfolio.json：账本由 portfolio.py 单独维护，这里只渲染不交易。
+    # 标 soft —— 账本不存在（例如被清空重建）时不该挡住整条结构流水线。
+    steps.append(("模拟盘对账页", ["sim_accounts.py"], True))
     # 两个页面是双向相对跳转的，发布目录必须「成套」——少一个就是 404。
     # 这一步只做本地拷贝和引用闭环自检，不碰线上；线上仍要手动发布一次。
     steps.append(("发布目录打包（h5_pack）", ["h5_pack.py"], False))

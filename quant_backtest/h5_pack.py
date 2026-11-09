@@ -45,10 +45,13 @@ DEST = os.path.join(HERE, "h5_daily")
 import platform_pages as PP  # noqa: E402
 
 # 平台的四根柱子：缺任何一个，平台就不是完整的（其余页缺了只是少一个入口）
+# 模拟盘那页不进 CORE —— 它读 portfolio.json，账本可能不存在（当前就停更了），
+# 缺账本不该把 18:30 的流水线整条打断。
 CORE = [
     ("pool_report_h5.html", "结构日报"),
     ("sector_platform.html", "板块平台"),
     ("pool_pc.html", "结构工作台"),
+    ("chanlun_tool.html", "缠论分析工具"),
 ]
 
 REF_RE = re.compile(r"""['"]([A-Za-z0-9_\-]+\.html)(?:\?[^'"]*)?['"]""")
