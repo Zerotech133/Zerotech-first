@@ -38,8 +38,28 @@ import pool_trace as T                                       # noqa: E402
 
 REPORTS = T.REPORTS
 LOG_PATH = os.path.join(REPORTS, "close_review.log")
+STATE_PATH = os.path.join(REPORTS, "close_review_state.json")
 H5_PATH = os.path.join(REPORTS, "pool_report_h5.html")
 SEND_PY = os.path.join(HERE, "..", "news_collector", "send_feishu.py")
+
+
+def pushed_today(date):
+    """当天是否已推过。手动跑一次 + 定时任务再跑一次 = 群里两条一样的卡。"""
+    try:
+        with open(STATE_PATH, encoding="utf-8") as f:
+            return json.load(f).get("date") == date
+    except Exception:                                       # noqa: BLE001
+        return False
+
+
+def mark_pushed(date):
+    try:
+        with open(STATE_PATH, "w", encoding="utf-8") as f:
+            json.dump({"date": date,
+                       "at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
+                      f, ensure_ascii=False)
+    except Exception as e:                                  # noqa: BLE001
+        log("[warn] state 写入失败: %s" % e)
 
 
 def log(msg):
@@ -201,7 +221,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry", action="store_true", help="只打印，不发送")
     ap.add_argument("--no-judge", action="store_true", help="沿用已有快照，不重跑")
-    ap.add_argument("--force", action="store_true", help="跳过时段门控")
+    ap.add_argument("--force", action="store_true", help="跳过时段门控与去重")
     a = ap.parse_args()
 
     now = datetime.now()
@@ -214,6 +234,9 @@ def main():
         if not (15 * 60 <= t <= 17 * 60):
             log("[skip] 当前 %s 不在收盘窗口 15:00~17:00（--force 可越过）"
                 % now.strftime("%H:%M"))
+            return 0
+        if pushed_today(today):
+            log("[skip] %s 已推过收盘复盘（--force 可重推）" % today)
             return 0
 
     if not a.no_judge:
@@ -278,6 +301,7 @@ def main():
     )
     ok, why = push_card(card)
     if ok:
+        mark_pushed(today)
         log("[push] OK 收盘复盘 %s A%d/B%d/E%d C%d D%d"
             % (today, len(last.get("A") or []), len(last.get("B") or []),
                len(last.get("E") or []),
