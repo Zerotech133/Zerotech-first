@@ -509,7 +509,7 @@ details.rule[open] summary:after{{content:" ⌃"}}
 
   <div class="brief">{brief}</div>
 
-  <div class="sec"><span>今日判断</span><span>点档位看名单 · 再点个股看判据</span></div>
+  <div class="sec"><span>今日判断</span><span>{layer_note}</span></div>
   <div id="rows-home"></div>
 
   <div class="more" id="more-tog" onclick="toggleMore()">
@@ -960,6 +960,7 @@ def main():
     # 五层是操作依据，两个视角并存：首页先给五层，往下才是九态全貌。
     jd = _newest_judge()
     layer_order, layer_map, layer_counts = [], {}, {}
+    _jt = ""        # 五层判据的盘中时点（judge 的 live_at）；没有五层就留空
     if jd:
         for key, label, desc, clr in LAYER_META:
             full = jd.get(key) or []
@@ -976,6 +977,10 @@ def main():
             layer_order.append(label)
             layer_map[key] = label
             LAYER_DESC[label] = desc
+            # 五层和九态不是同一批判据：九态来自结构日收盘，五层来自最近一次
+            # 盘中 judge（可能晚一天）。时点不写在每行（会把说明挤成两行），
+            # 统一挂在「今日判断」那行的小字上。
+            _jt = str(jd.get("live_at") or "")[11:16]
             LAYER_COLOR[label] = clr
             # 五层优先于九态：同一只票若两边都被截断，给人看「B 可介入第 7 只」
             # 比「三买第 41 只」有用
@@ -1017,6 +1022,10 @@ def main():
     else:
         sub_line = (f"结构 {s_lbl} 收盘 · 窗口 {lookback} 根 · 可判 {judged} 只")
 
+    # 「今日判断」那行的小字：一句话交代两个时点，比在每行重复一遍省地方
+    layer_note = (f"五层 {_jt} 判 · 九态 {s_lbl} 收盘" if _jt
+                  else f"九态 {s_lbl} 收盘 · 点档位看名单")
+
     order_all = layer_order + order
     secL, sec_of = _load_sector_map(asof)
     if secL:
@@ -1035,6 +1044,7 @@ def main():
 
     html_txt = _BUILD.format(
         asof=asof, lookback=lookback, judged=judged, sub_line=sub_line,
+        layer_note=layer_note,
         mood=mood, n_up=tre.get("上涨", 0), n_dn=tre.get("下跌", 0), n_below=below,
         cards=cards, brief=_trend_text(j, counts, tre, posd),
         minp=2.0, minamt=meta.get("min_amt", 0.5),
