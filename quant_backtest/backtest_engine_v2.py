@@ -166,7 +166,30 @@ def px_raw(s, day, kind="close"):
     return float(row.iloc[0][kind])
 
 
+def ma_at(s, day, n=20, kind="close"):
+    """个股自身 N 日均线（复权序列，与 px() 同量纲）。
+
+    2026-11-10 老田：退出规则换成「趋势还在就不砍」——跌破 20 日均线才走。
+    必须用 px() 的同一量纲（adj_*）自比：MA 是比值型指标，与中枢的绝对价（zg/zd）无关，
+    所以这里不涉及上一轮那个「复权 vs 原始价」的坑。
+    """
+    b = _book(s)
+    if b is None or n <= 0:
+        return None
+    key = (s, kind, n)
+    imap = _MA_IDX.get(key)
+    if imap is None:
+        imap = {d: i for i, d in enumerate(b["trade_date"].tolist())}
+        _MA_IDX[key] = imap
+    i = imap.get(day)
+    if i is None or i + 1 < n:
+        return None
+    seg = b["adj_" + kind]
+    return float(seg.iloc[i - n + 1 : i + 1].mean())
+
+
 _BOOK_CACHE = {}
+_MA_IDX = {}
 
 
 def _book(s):
@@ -691,6 +714,36 @@ class BacktestConfig:
     ladder_amounts: tuple = (0.10, 0.06, 0.04)
     ladder_step: float = 0.05
     ladder_window: int = 10
+    # 趋势退出（2026-11-10 老田）：>0 时「收盘跌破个股自身 MA(N)」才离场。
+    # 用来替代「20 日强平 + 移动止损」——后者在牛市主升段反复砍在半路。
+    exit_ma: int = 0
+    # raw   = 裸退出：收盘 < MA 即走（实测不可用：75% 的三买买入本来就在 MA20 下方）
+    # armed = 武装退出：先收盘站上 MA 才算趋势单，之后跌破才走；未武装只认 stop_pct/到期
+    exit_ma_mode: str = "raw"
+    # 入场趋势过滤（2026-11-10 老田「趋势还在」）：>0 时要求「买入日开盘价 > 前一交易日 MA(N)」，
+    # 价格在均线下方说明趋势没起来，3买只是下跌中的一次反抽。用前一日均线=开盘时已知，无未来函数。
+    entry_ma: int = 0
+    # 固定目标位止盈 + 时间衰减（2026-11-10 老田「按反抽重设退出」）：
+    # 反抽的特征是「弹到位就走」，不是「跟着趋势跑」。目标 = tp_pct − tp_decay × 已持有日数，
+    # 下限 tp_min（越久没到目标 → 这波力度不足 → 目标该降，而不是无限等）。
+    # 成交口径：限价单挂目标价，当日 high 触价即成交；跳空高于目标按开盘价（不占便宜）。
+    tp_pct: float = 0.0
+    tp_decay: float = 0.0
+    tp_min: float = 0.0
+    # 追高门槛按 regime 分档（2026-11-10 老田）：<0 表示该档沿用全局 max_ext_pct。
+    # 牛市里强势股本来就会远离中枢，全局 3% 会系统性把仓位从最该买的票上挪开。
+    max_ext_high: float = -1.0
+    max_ext_mid: float = -1.0
+    max_ext_low: float = -1.0
+
+    def ext_cap_of(self, regime_lv):
+        """该 regime 下的追高上限；三档都没配就退回全局 max_ext_pct。"""
+        v = {
+            "high": self.max_ext_high,
+            "mid": self.max_ext_mid,
+            "low": self.max_ext_low,
+        }.get(regime_lv, -1.0)
+        return self.max_ext_pct if v is None or v < 0 else v
 
     def cap_of(self, regime_lv):
         """总仓位帽：fixed=固定值；regime=按三档映射（档位可配，不再写死 80/50/30）。"""
@@ -751,6 +804,7 @@ def run_backtest(
     n_time_stop = [0]  # 到期强平笔数
     n_3b_same_day = [0]  # 买入当日即触发三买失效的次数（量纲错配会飙到 ≈100%）
     n_add = [0, 0, 0]  # 分层加仓：第 2 档 / 第 3 档 触发次数（降换手实验后的仓位管理）
+    n_tp = [0]  # 目标位止盈成交笔数（反抽退出）
     n_trim = 0
     n_mid_slot_days = 0  # 317：mid 档联动槽数生效天数（生效证据）
     prev_eq = 1.0
@@ -835,6 +889,26 @@ def run_backtest(
                     }
                 )
                 rec(day, "SELL", s, "time_stop", pnl)
+            elif why == "ma_break":
+                actions.append(
+                    {
+                        "type": "sell",
+                        "stock": s,
+                        "note": "趋势退出·跌破均线（T+1 开盘）",
+                        "pnl_pct": round(pnl * 100, 2),
+                    }
+                )
+                rec(day, "SELL", s, "ma_break", pnl)
+            elif why == "stop_loss":
+                actions.append(
+                    {
+                        "type": "sell",
+                        "stock": s,
+                        "note": "硬止损离场（T+1 开盘）",
+                        "pnl_pct": round(pnl * 100, 2),
+                    }
+                )
+                rec(day, "SELL", s, "stop_loss", pnl)
             else:
                 actions.append(
                     {
@@ -911,6 +985,23 @@ def run_backtest(
             if o is None:
                 still[s] = added  # 停牌顺延（不丢单）
                 continue
+            # 入场趋势过滤（2026-11-10）：用前一交易日的均线（开盘时已知，无未来函数）。
+            # 价格在均线下方 → 趋势没起来，3买只是下跌中反抽，不买。
+            if cfg.entry_ma > 0 and prev_day:
+                _m_e = ma_at(s, prev_day, cfg.entry_ma)
+                if _m_e is not None and o < _m_e:
+                    score_pending.pop(s, None)
+                    zg_pending.pop(s, None)
+                    actions.append(
+                        {
+                            "type": "skip",
+                            "stock": s,
+                            "note": "趋势过滤：开盘价低于MA%d（%.2f vs %.2f·%+.1f%%），放弃（评分%s）"
+                            % (cfg.entry_ma, _m_e, o, (o / _m_e - 1) * 100,
+                               sc if sc is not None else "-"),
+                        }
+                    )
+                    continue
             if cfg.runup_cap > 0 and prev_day:
                 c_prev = px(s, prev_day, "close")
                 if c_prev and o / c_prev - 1 > cfg.runup_cap:
@@ -938,21 +1029,23 @@ def run_backtest(
                     continue
             # 追高门槛（降换手实验·2026-11-09）：3买信号触发时价格常已离中枢上沿
             # 十余个点，此时买进=先付一笔溢价；若离场线又锚在上沿，这笔溢价必亏。
-            # max_ext_pct>0 时，开盘价高于中枢上沿超过该比例 → 放弃该机会。
-            if cfg.max_ext_pct > 0:
+            # 2026-11-10 改按 regime 分档（ext_cap_of）：牛市强势股天然远离中枢，
+            # 全局 3% 在样本外年把仓位从最该买的票上挪开（笔均超额 t=−2.12）。
+            _ext_cap = cfg.ext_cap_of(regime_lv)
+            if _ext_cap > 0:
                 _fz0 = zg_pending.get(s)
                 if _fz0 and _fz0[0]:
                     _ro = px_raw(s, day, "open")  # 必须与 zg 同量纲
-                    if _ro and _ro / _fz0[0] - 1 > cfg.max_ext_pct:
+                    if _ro and _ro / _fz0[0] - 1 > _ext_cap:
                         zg_pending.pop(s, None)
                         score_pending.pop(s, None)
                         actions.append(
                             {
                                 "type": "skip",
                                 "stock": s,
-                                "note": "追高门槛：开盘价高于中枢上沿 %+.1f%% >%.0f%%，放弃（评分%s）"
-                                % ((_ro / _fz0[0] - 1) * 100,
-                                   cfg.max_ext_pct * 100,
+                                "note": "追高门槛(regime=%s)：开盘价高于中枢上沿 %+.1f%% >%.0f%%，放弃（评分%s）"
+                                % (regime_lv, (_ro / _fz0[0] - 1) * 100,
+                                   _ext_cap * 100,
                                    sc if sc is not None else "-"),
                             }
                         )
@@ -1107,6 +1200,51 @@ def run_backtest(
             )
             eqv = cash + sum(p["val"] for p in pos.values())
 
+        # A4. 盘中止盈：固定目标位 + 时间衰减（2026-11-10 老田「按反抽重设退出」）
+        # 为什么不是均线跟随：这套三买买入时六成价格在个股 MA20 下方（超跌反抽），
+        # 均线跟随等于买入次日就砍（实测均持 3.8 日、换手 16 倍、122bp 下两年 −18%）。
+        # 反抽的正确管理是「弹到目标就走」：目标以入场价为基准，随持有日数线性下调；
+        # 到期（holding_max_days）仍未达标则按 T+1 开盘强平兜底。
+        if cfg.tp_pct > 0 and pos:
+            _tp_floor = cfg.tp_min if cfg.tp_min > 0 else 0.0
+            for s in sorted(pos):
+                p = pos[s]
+                if s in pending_sell or p.get("exit_why"):
+                    continue
+                _held = di - holding_since.get(s, di)
+                if _held < max(1, cfg.min_holding_days):
+                    continue  # A 股 T+1：当日买入当日不可卖
+                _tgt = cfg.tp_pct - cfg.tp_decay * _held
+                if _tgt < _tp_floor:
+                    _tgt = _tp_floor
+                if _tgt <= 0:
+                    continue
+                base = p.get("entry_px") or p["ref_px"]
+                if not base:
+                    continue
+                want = base * (1 + _tgt)
+                hi = px(s, day, "high")
+                if hi is None or hi < want:
+                    continue
+                op = px(s, day, "open")
+                fill = max(want, op) if op is not None else want
+                val = p["val"] * fill / p["ref_px"]
+                pnl = val / p["cost"] - 1
+                cash += val * (1 - cfg.cost)
+                del pos[s]
+                holding_since.pop(s, None)
+                n_tp[0] += 1
+                actions.append(
+                    {
+                        "type": "sell",
+                        "stock": s,
+                        "note": "目标位止盈 +%.1f%%（持有%d日·盘中触价）"
+                        % (_tgt * 100, _held),
+                        "pnl_pct": round(pnl * 100, 2),
+                    }
+                )
+                rec(day, "SELL", s, "take_profit", pnl)
+
         # D. 收盘事件
         if cfg.strategy == "chanlun":
             # 持有期门槛（降换手实验·2026-11-09）：买入当日 _held=0，次日=1。
@@ -1180,6 +1318,55 @@ def run_backtest(
                                 "type": "note",
                                 "stock": s,
                                 "note": f"持有满{_mx}日→到期平仓（明日开盘）",
+                            }
+                        )
+            # 趋势退出（2026-11-10 老田）：趋势还在就不砍——收盘跌破个股自身 MA(N) 才走。
+            # 这是对「20 日强平 + 移动止损 5%/3.5%」的替代：那两条在牛市主升段
+            # 把仓位反复砍在半路，是样本外年跑输基准 10.4pp 的直接来源。
+            # 实测约束：75% 的三买买入价本来就在 MA20 下方（中位 −2.1%），裸退出会在
+            # 次日就砍（均持 3.8 日、换手 16 倍）。故 armed 模式下先要求「收盘站上均线」。
+            if cfg.exit_ma > 0:
+                _armed_mode = str(cfg.exit_ma_mode or "raw").lower() == "armed"
+                for s in list(pos):
+                    if s in pending_sell or pos[s].get("exit_why"):
+                        continue
+                    c = px(s, day, "close")
+                    m = ma_at(s, day, cfg.exit_ma)
+                    if c is None or m is None:
+                        continue  # 上市不足 N 日 / 停牌 → 本日不判（不虚构均线）
+                    if c >= m:
+                        pos[s]["ma_armed"] = True  # 趋势确认：站上均线
+                        continue
+                    if _armed_mode and not pos[s].get("ma_armed"):
+                        continue  # 从未站上均线 → 不是趋势单，交给硬止损/到期兜底
+                    if _gated(s, "跌破MA%d" % cfg.exit_ma):
+                        continue
+                    pending_sell.add(s)
+                    pos[s]["exit_why"] = "ma_break"
+                    actions.append(
+                        {
+                            "type": "note",
+                            "stock": s,
+                            "note": f"趋势退出：收盘{c:.2f}跌破MA{cfg.exit_ma}（{m:.2f}）→明日开盘卖",
+                        }
+                    )
+            # 硬止损（2026-11-10 接入缠论分支）：此前 stop_pct 只在双刀分支被读取，
+            # 缠论侧传了等于空转（同族「参数看着传了没生效」第 4 例）。默认 0=关，行为不变。
+            if cfg.stop_pct < 0:
+                for s in list(pos):
+                    p = pos[s]
+                    if s in pending_sell or p.get("exit_why"):
+                        continue
+                    if p["val"] / p["cost"] - 1 <= cfg.stop_pct:
+                        if _gated(s, "硬止损"):
+                            continue
+                        pending_sell.add(s)
+                        p["exit_why"] = "stop_loss"
+                        actions.append(
+                            {
+                                "type": "note",
+                                "stock": s,
+                                "note": f"硬止损：浮亏{(p['val'] / p['cost'] - 1) * 100:.1f}%≤{cfg.stop_pct:.0%}→明日开盘卖",
                             }
                         )
             # 移动止损（智策对照移植·CHAN 族 5%启动/3.5%跟随）：浮盈达标布防→自峰值回撤即离场。
@@ -1376,6 +1563,7 @@ def run_backtest(
         "n_time_stop": n_time_stop[0],
         "n_3b_same_day": n_3b_same_day[0],
         "n_add2": n_add[1],
+        "n_take_profit": n_tp[0],
         "n_add3": n_add[2],
     }
     return {
@@ -1428,6 +1616,16 @@ DEFAULTS = {
     "limit_check": True,
     "trail_activate": 0.0,
     "trail_drawdown": 0.0,
+    "max_ext_pct": 0.0,
+    "max_ext_high": -1.0,
+    "max_ext_mid": -1.0,
+    "max_ext_low": -1.0,
+    "exit_ma": 0,
+    "exit_ma_mode": "raw",
+    "entry_ma": 0,
+    "tp_pct": 0.0,
+    "tp_decay": 0.0,
+    "tp_min": 0.0,
 }
 
 
@@ -1639,6 +1837,17 @@ def run_job(params: dict, job_id: str, progress=None):
             if _cost_raw not in (None, "")
             else COST
         )
+
+        def _num(k, dflt):
+            """数值参数直读：0.0 是合法值（追高门槛=0 表示只能贴着上沿买），
+            绝不能用 `p.get(k) or dflt`——那会把 0.0 吞成默认值（同族已踩三次）。"""
+            v = p.get(k)
+            if v in (None, ""):
+                return dflt
+            try:
+                return float(v)
+            except (TypeError, ValueError):
+                return dflt
         cfg = BacktestConfig(
             name={"chanlun": "缠论等机会轮动", "double_knife": "量子双刀日内纪律"}[
                 strategy
@@ -1672,7 +1881,17 @@ def run_job(params: dict, job_id: str, progress=None):
             limit_check=_limit_check,
             trail_activate=_trail_act,
             trail_drawdown=_trail_dd,
-            max_ext_pct=max(0.0, min(1.0, _r("max_ext_pct", 0.0))),
+            max_ext_pct=max(0.0, min(1.0, _num("max_ext_pct", 0.0))),
+            # 追高分档：-1 = 该档沿用全局（0 是合法值，必须走 _num 不能走 _r）
+            max_ext_high=min(1.0, _num("max_ext_high", -1.0)),
+            max_ext_mid=min(1.0, _num("max_ext_mid", -1.0)),
+            max_ext_low=min(1.0, _num("max_ext_low", -1.0)),
+            exit_ma=max(0, min(200, int(_num("exit_ma", 0)))),
+            exit_ma_mode=str(p.get("exit_ma_mode") or "raw").strip().lower(),
+            entry_ma=max(0, min(200, int(_num("entry_ma", 0)))),
+            tp_pct=max(0.0, min(1.0, _num("tp_pct", 0.0))),
+            tp_decay=max(0.0, min(0.05, _num("tp_decay", 0.0))),
+            tp_min=max(0.0, min(1.0, _num("tp_min", 0.0))),
             # 注意：_r() = float(p.get(k) or dflt)，只适合数值。ladder_mode 是字符串，
             # 走 _r 会 ValueError→静默回落 "off"（本轮实测 8 组全同值才暴露）。必须直读。
             ladder_mode=str(p.get("ladder_mode") or "off").strip().lower(),

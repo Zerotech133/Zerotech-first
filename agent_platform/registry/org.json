@@ -3467,10 +3467,11 @@
         "MANCHONG1",
         "KGMAP1",
         "WORDC1",
-        "LINEAGE1"
+        "LINEAGE1",
+        "OSINT1"
       ],
       "teams": [],
-      "source": "K-ORG-165 一批收编（2026-10-18）：雪球采集链/TDX三表线/平台巡检链三化身；kind=runtime，代码进程零改动；老田会话拍板「取名注册登记，归属情报」，appointment 终审 human=laotian | K-ORG-191 军情司受理席：INTEL0 新设（解除 A0A 三职兼任之一）+ 满宠入册（人格层，kind=runtime，HERMES_UI 门面条目不动），上行路由 INTEL_UPSTREAM_REPORT 单一入口",
+      "source": "K-ORG-165 一批收编（2026-10-18）：雪球采集链/TDX三表线/平台巡检链三化身；kind=runtime，代码进程零改动；老田会话拍板「取名注册登记，归属情报」，appointment 终审 human=laotian | K-ORG-191 军情司受理席：INTEL0 新设（解除 A0A 三职兼任之一）+ 满宠入册（人格层，kind=runtime，HERMES_UI 门面条目不动），上行路由 INTEL_UPSTREAM_REPORT 单一入口 | 2026-11-10 OSINT 线马良 OSINT1 入编（老田会话定版「定版了你叫马良」：开源情报收集者+治理者，五源采集+情绪管线+数据册治理，supervisor=INTEL0，不产生研判）",
       "cn_title": "军情司",
       "lead_duty": "部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）；INTEL0 负责签收满宠的 INTEL_UPSTREAM_REPORT 并出具受理回执——只受理不裁决",
       "agent_profiles": [
@@ -3613,6 +3614,23 @@
           "grade_note": "补档初始档，待 KPI 观察后调整",
           "attributes": {},
           "cn_name": "周泰"
+        },
+        {
+          "agent_id": "OSINT1",
+          "role_profile": "开源情报采集与治理席",
+          "analysis_type": "",
+          "charter_detail": "军情司·OSINT 多源采集与治理席：互动易/e互动/淘股吧/千股千评/雪球定向五源采集器 + 情绪管线（FinBERT 按源路由融合/去噪/六源分布卡/市场情绪指数）+ 数据册登记与契约治理 + SentimentSnapshot(08:00)/XqTimelineDaily(07:00) 日更运营；supervisor=INTEL0；只采集只报实况，输出止于数据+数字+判据，不产生研判，红线=不动 zerobound-kg 风控代码、不代刷 DATA1 inventory",
+          "llm_binding": "glm/glm-5.3",
+          "binding_note": "老田 2026-11-10 05:19 会话定版「定版了你叫马良」，直接入编（会话裁定留痕，无工单）；情绪引擎侧本地 FinBERT（bardsai 基座 + finbert-xq-v1 微调）为规则采集配套推理，非本席 LLM binding",
+          "tools": [
+            "data_pipeline_probe"
+          ],
+          "tools_note": "入编初始为空，按工单另行授予",
+          "memory_grants": [],
+          "grade": "E1",
+          "grade_note": "初立待调档（两天实测 KPI 已在 experience，观察期后议）",
+          "attributes": {},
+          "cn_name": "马良"
         }
       ],
       "lead_appointed": {
