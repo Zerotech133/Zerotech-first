@@ -245,12 +245,16 @@ body{background:#eef1f5;color:#1c2330;
 .note{background:#fffbeb;border:1px solid #f5e6bb;border-radius:9px;
       padding:8px 11px;font-size:11px;line-height:1.65;color:#7a5a12}
 .bad{background:#fef2f2;border-color:#f6d5d5;color:#8c2f2f}
-.mem{font-size:12px;padding:5px 0;border-bottom:1px solid #f2f4f7;
-     display:flex;gap:8px;align-items:baseline}
+.mem{font-size:12px;padding:6px 0;border-bottom:1px solid #f2f4f7;
+     display:flex;gap:8px;align-items:baseline;cursor:pointer;
+     -webkit-tap-highlight-color:transparent}
 .mem:last-child{border:0}
+.mem:active{background:#f7f9fc}
 .mem .cd{font-size:11px;color:#8a93a3;font-variant-numeric:tabular-nums}
 .mem .nm2{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mem .sg{font-size:10px;color:#8a93a3;flex:none}
+.mem .ar{color:#c3cad6;font-size:13px;flex:none;line-height:1}
+.mlink{font-size:10px;color:#9aa3b2;text-align:right;margin-top:5px}
 .foot{font-size:10px;color:#9aa3b2;line-height:1.7;margin-top:12px}
 details.rule{background:#fff;border-radius:10px;padding:9px 11px;font-size:11px;
              line-height:1.8;color:#6b7686;margin-top:9px}
@@ -364,13 +368,37 @@ function go(id){
 
 function findRow(c){ for(var i=0;i<D.rows.length;i++) if(D.rows[i].c==c) return D.rows[i]; return null; }
 
+/* 板块 → 个股：跳到个股结构页，并把「从哪个板块来」一并带过去。
+   个股页是同目录的 pool_report_h5.html，file:// 打开和同目录部署都走得通；
+   两个文件必须放在一起，否则这个跳转会 404。 */
+var STOCK_H5 = 'pool_report_h5.html';
+var CUR_SEC = null;
+var FROM_STOCK = null;      // 从个股页跳进来的，返回箭头要指回那只票
+
+function goStock(code){
+  var u = STOCK_H5 + '?code=' + encodeURIComponent(code);
+  if(CUR_SEC) u += '&ref=' + encodeURIComponent(CUR_SEC.c || '')
+                  + '&sname=' + encodeURIComponent(CUR_SEC.n || '');
+  location.href = u;
+}
+
+function backTo(){
+  if(FROM_STOCK){
+    location.href = STOCK_H5 + '?code=' + encodeURIComponent(FROM_STOCK.c);
+    return;
+  }
+  go('s-home');
+}
+
 function goDetail(code){
   var r = findRow(code); if(!r) return;
+  CUR_SEC = r;
   var b = D.brief;
   var col = sColor(r.st);
   var mem = D.members[code] || [];
   var zg = r.zg, zd = r.zd;
-  var h = '<div class="back" onclick="go(\'s-home\')"><span>&#8249;</span>返回板块表</div>';
+  var h = '<div class="back" onclick="backTo()"><span>&#8249;</span>'
+        + (FROM_STOCK ? '返回 '+esc(FROM_STOCK.n) : '返回板块表') + '</div>';
 
   h += '<div class="dhd">'
      + '<div class="t"><span class="n">'+esc(r.n)+'</span>'
@@ -447,13 +475,15 @@ function goDetail(code){
        + '<div class="card">';
     for(var i=0;i<mem.length;i++){
       var m = mem[i];
-      h += '<div class="mem"><span class="nm2">'+esc(m.n)+'</span>'
+      h += '<div class="mem" onclick="goStock(\''+m.c+'\')">'
+         + '<span class="nm2">'+esc(m.n)+'</span>'
          + '<span class="cd">'+esc(m.c)+'</span>'
          + '<span class="sg" style="color:'+sColor(m.st)+'">'+esc(m.st)
          + (m.a!=null? ' · '+m.a+'日' : '')+'</span>'
-         + '<span class="'+(m.p==null?'flat':cls(m.p))+'">'+pct(m.p)+'</span></div>';
+         + '<span class="'+(m.p==null?'flat':cls(m.p))+'">'+pct(m.p)+'</span>'
+         + '<span class="ar">›</span></div>';
     }
-    h += '</div>';
+    h += '</div><div class="mlink">点任意一行 → 看它在个股页的完整结构</div>';
   }
 
   // 口径
@@ -519,7 +549,11 @@ function goDetail(code){
     if(!kv) return; var i=kv.indexOf('='); if(i<0) return;
     p[decodeURIComponent(kv.slice(0,i))]=decodeURIComponent(kv.slice(i+1));
   });
-  if(p.sector && findRow(p.sector)) goDetail(p.sector);
+  if(p.sector && findRow(p.sector)){
+    // 从个股页跳过来的：返回箭头指回那只票，不再让人自己找
+    if(p.from) FROM_STOCK = {c: p.from, n: p.fromn || p.from};
+    goDetail(p.sector);
+  }
   else if(p.filter && document.querySelector('.tab[data-f="'+p.filter+'"]'))
     setFilter(p.filter, document.querySelector('.tab[data-f="'+p.filter+'"]'));
 })();
@@ -559,15 +593,21 @@ MODULES = [
     ("L2 板块结构", "板块指数跑缠论，465 个", "in", "sector_state.py"),
     ("L2 成分共振", "板块 × 池子交叉，买点占比", "in", "sector_state.py"),
     ("L3 池子九态", "3,961 只结构分类", "in", "pool_state.py"),
-    ("L3 池子五层", "A 突破/B 可介入/C 持有/D 衰竭/E 贴沿", "part",
+    ("L3 池子五层", "A 突破/B 可介入/C 持有/D 衰竭/E 贴沿", "in",
      "pool_state.py"),
-    ("实时价叠加", "盘中每 15 分钟重算并推飞书", "out", "pool_intraday_push.py"),
-    ("溯源回看", "一天十几份快照串成「当时→后来」", "out", "pool_trace.py"),
-    ("收盘复盘", "15:00 重算 + 推一张卡", "out", "pool_close_review.py"),
-    ("板块资金流", "龙虎榜行业异动工单", "out", "kg_sector_flow.py"),
-    ("飞书订阅", "按 kind/when 订阅推送", "out", "subscribe.py"),
+    ("板块 ⇄ 个股", "成分点进个股结构，个股列出所属板块", "in",
+     "sector_platform_h5.py"),
     ("板块层回放", "2.2 年 4.7 万观测：买点类无稳定超额", "in",
      "sector_replay.py"),
+    ("收盘复盘", "15:00 重算 + 推一张卡", "in", "pool_close_review.py"),
+    ("溯源回看", "一天十几份快照串成「当时→后来」", "in", "pool_trace.py"),
+    ("每日流水线", "日线到齐后一次跑完出页", "in", "pool_daily.py"),
+    ("成分快照", "留存历史成分，为共振回放积累", "part",
+     "sector_member_snapshot.py"),
+    ("盘中推飞书", "每 15 分钟一次，计划任务已挂", "in",
+     "pool_intraday_push.py"),
+    ("板块资金流", "龙虎榜行业异动工单", "out", "kg_sector_flow.py"),
+    ("飞书订阅", "按 kind/when 订阅推送", "out", "subscribe.py"),
 ]
 
 

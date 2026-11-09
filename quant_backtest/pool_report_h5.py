@@ -309,6 +309,84 @@ def _trend_text(data, counts, tre, posd):
     return s
 
 
+_B36 = "0123456789abcdefghijklmnopqrstuvwxyz"
+
+
+def _pack_idx(lst):
+    """板块下标压成定长 base36（每个 2 字符）。
+
+    「个股→板块」这张表 5,595 只票 × 最多 8 个板块，直接塞数字数组要多占
+    60KB。465 个板块 < 36²=1296，两位够用——所以这里断言着，将来板块数
+    越过 1295 会直接报错，而不是静默截断出错的板块名。
+    """
+    for i in lst:
+        if not 0 <= i < 1296:
+            raise ValueError("板块下标越界：%d（base36 两位上限 1295）" % i)
+    return "".join(_B36[i // 36] + _B36[i % 36] for i in lst)
+
+
+def _load_sector_map(asof):
+    """(板块清单, 个股→板块下标) —— 个股页反查「它在哪个板块、那个板块什么结构」。
+
+    只认**同一个交易日**的板块落盘。板块结构和个股结构不是同一天时，并排
+    显示就是在制造「板块三买 + 个股三卖」这种根本没同时发生过的共振。所以
+    asof 对不上就整块不要，宁可空着，也不给一个看起来有理、其实是错配的结论。
+
+    反向索引的取舍：行业（I）全留，一只票通常 1~2 个；概念每票中位 9 个、
+    最多 48 个，全留会把「所属板块」变成一堵墙。只取成分数最少的 4 个——
+    小概念更精准，CPO 比「融资融券」有信息量。
+    """
+    p = os.path.join(REPORTS, "sector_state_%s.json" % asof)
+    if not os.path.exists(p):
+        return [], {}
+    try:
+        with open(p, encoding="utf-8") as f:
+            sj = json.load(f)
+    except Exception as e:
+        print(f"[h5] 板块落盘读不了：{e}")
+        return [], {}
+    if str(sj.get("asof") or "") != str(asof):
+        print(f"[h5] 板块落盘 asof={sj.get('asof')} 与个股 asof={asof} 不同天，"
+              f"不挂所属板块（跨天配对会造出假共振）")
+        return [], {}
+
+    rows = [r for r in (sj.get("sectors") or []) if r.get("code")]
+    at = {r["code"]: i for i, r in enumerate(rows)}
+    secL = [{"c": r["code"], "n": r.get("name") or "",
+             "t": "I" if (r.get("type") or "") == "I" else "N",
+             "st": r.get("stage") or "", "po": r.get("pos") or "",
+             "r20": r.get("r20"), "m": r.get("n_mem") or 999}
+            for r in rows]
+
+    fs = sorted(glob.glob(os.path.join(HERE, "data", "tdx", "ts_ths_member",
+                                       "part_*.parquet")))
+    if not fs:
+        return secL, {}
+    try:
+        mem = pd.concat([pd.read_parquet(f, columns=["ts_code", "con_code"])
+                         for f in fs], ignore_index=True)
+    except Exception as e:
+        print(f"[h5] 成分表读不了：{e}")
+        return secL, {}
+    mem = mem[mem["ts_code"].astype(str).isin(at)]
+    out = {}
+    for con, sub in mem.groupby("con_code"):
+        ind, con_ = [], []
+        for sc in sub["ts_code"].astype(str):
+            i = at.get(sc)
+            if i is None:
+                continue
+            if secL[i]["t"] == "I":
+                ind.append(i)
+            else:
+                con_.append((secL[i]["m"], i))
+        con_.sort()
+        lst = ind[:4] + [i for _, i in con_[:4]]
+        if lst:
+            out[str(con)] = _pack_idx(lst)
+    return secL, out
+
+
 _BUILD = """<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>缠论结构日报 {asof}</title><style>
@@ -348,6 +426,20 @@ body{{background:#f2f4f7;color:#1c2330;
 .row .dg{{font-size:10.5px;color:#8a93a3}}
 .up{{color:#d92b2b}}.down{{color:#0a9e5c}}
 .arw{{color:#c3cad6;font-size:16px;flex:none}}
+.sech{{font-size:11px;color:#8a93a3;margin:13px 2px 6px;font-weight:600}}
+.secw{{background:#fff;border-radius:11px;overflow:hidden;
+      box-shadow:0 1px 2px rgba(20,30,50,.05)}}
+.srow{{display:flex;align-items:center;gap:7px;padding:9px 12px;
+      border-bottom:1px solid #f2f4f7;text-decoration:none;color:inherit}}
+.srow:last-child{{border:0}}
+.srow .sn{{flex:1;min-width:0;font-size:12.5px;white-space:nowrap;
+          overflow:hidden;text-overflow:ellipsis}}
+.srow .tt{{font-size:9px;padding:1px 4px;border-radius:3px;background:#f2f4f7;
+          color:#8a93a3;flex:none}}
+.srow .st2{{font-size:11px;flex:none}}
+.srow .sr{{font-size:11px;color:#8a93a3;flex:none;font-variant-numeric:tabular-nums}}
+.srow .ar{{color:#c3cad6;font-size:15px;flex:none}}
+.srow:active{{background:#f7f9fc}}
 .foot{{font-size:10px;color:#8a93a3;line-height:1.6;margin-top:5px}}
 details.rule{{background:#fff;border-radius:9px;padding:9px 11px;font-size:11px;
              line-height:1.8;color:#6b7686;margin-top:10px}}
@@ -424,6 +516,9 @@ details.rule[open] summary:after{{content:" ⌃"}}
     三买 −146bp（t=−3.03）、三买待 −284bp（t=−3.67，逐日等权）；
     一买 +103bp（t=1.47，2024 年 +493bp、2025 年 −164bp，单年现象）；
     中枢档 75% 是「级别升级·判定作废」，真震荡那部分 +3bp，等于零。<br>
+    <b>所属板块</b>只挂同一交易日的：板块结构和个股结构不是同一天时，这一栏
+    整块不显示——跨天配对会造出「板块三买 + 个股三卖」这种没同时发生过的共振。
+    一只票最多列 4 个行业 + 4 个概念（按成分数从小到大），不是全部标签。<br>
     涨红跌绿。生成于 {run_at}。
   </details>
   <div class="foot">{engine_note}</div>
@@ -437,15 +532,19 @@ details.rule[open] summary:after{{content:" ⌃"}}
 </div>
 
 <div class="screen" id="s-detail">
-  <div class="back" onclick="go('s-list')"><span>‹</span>返回名单</div>
   <div id="d-body"></div>
 </div>
 
 <script>
 var D = {data_js};
 var ORDER = {order_js};
+var FROM = {{kind:'home', st:null}};   // 详情页的返回目标，见 go()
 
 function go(id){{
+  // 返回目标记在 FROM 里：从首页点进详情、从名单点进详情、从板块页跳进来，
+  // 三条来路的"返回"去的不是一个地方。原来详情页的返回条是写死的「返回名单」，
+  // 从首页点一只票再点它，会落到一个从没打开过、标题为空的名单页。
+  if(id==='s-home') FROM = {{kind:'home', st:null}};
   document.querySelectorAll('.screen').forEach(function(s){{s.classList.remove('on')}});
   document.getElementById(id).classList.add('on');
   window.scrollTo(0,0);
@@ -510,7 +609,87 @@ function toggleMore(){{
   t.classList.toggle('on', open);
 }}
 
+/* 深链参数只解析一次：飞书卡片、板块页都往这里带参数。 */
+var Q = (function(){{
+  var s = (location.search||'').replace(/^\?/,'')
+        || (location.hash||'').replace(/^#/,'');
+  var o = {{}};
+  if(!s) return o;
+  s.split('&').forEach(function(kv){{
+    if(!kv) return;
+    var i = kv.indexOf('='); if(i<0) return;
+    o[decodeURIComponent(kv.slice(0,i))] = decodeURIComponent(kv.slice(i+1));
+  }});
+  return o;
+}})();
+
+function eh(s){{
+  return String(s==null?'':s).replace(/[&<>"]/g, function(m){{
+    return {{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}}[m];
+  }});
+}}
+
+function unpackIdx(s){{
+  var A = "0123456789abcdefghijklmnopqrstuvwxyz", o = [];
+  for(var i=0;i+1<s.length;i+=2)
+    o.push(A.indexOf(s.charAt(i))*36 + A.indexOf(s.charAt(i+1)));
+  return o;
+}}
+
+/* 所属板块：个股页 → 板块页。
+   给的是「这只票在哪些板块里、那些板块现在什么结构」——同一只票在行业板块
+   是三买、在某个概念里是三卖，这种情况很常见，只看个股结构看不到。 */
+function sectorBlock(code, name){{
+  var of = (D.sectorOf||{{}})[code], SL = D.sectorL||[];
+  if(!of || !of.length) return '';
+  if(typeof of === 'string') of = unpackIdx(of);
+  if(!of || !of.length) return '';
+  var h = '<div class="sech">所属板块 · 点进去看板块结构</div><div class="secw">';
+  for(var i=0;i<of.length;i++){{
+    var s = SL[of[i]]; if(!s) continue;
+    var col = D.color[s.st] || '#5a6b82';
+    h += '<a class="srow" href="sector_platform.html?sector='
+       + encodeURIComponent(s.c)
+       + '&from=' + encodeURIComponent(code)
+       + '&fromn=' + encodeURIComponent(name||'') + '">'
+       + '<span class="tt">' + (s.t==='I'?'行业':'概念') + '</span>'
+       + '<span class="sn">' + eh(s.n) + '</span>'
+       + '<span class="st2" style="color:' + col + '">' + eh(s.st||'—') + '</span>'
+       + '<span class="sr">' + (s.r20==null?'—'
+           :((s.r20>0?'+':'')+(s.r20*100).toFixed(1)+'%')) + '</span>'
+       + '<span class="ar">›</span></a>';
+  }}
+  return h + '</div>';
+}}
+
+/* 从板块页点过来、但这只票没内嵌进本页——必须说清楚是「没画进来」，
+   不是「没判过」。这两件事在结论上差得很远。 */
+function showMiss(code){{
+  var a = (D.all||{{}})[code];
+  CUR_CODE = code;
+  var h = backBar()
+        + '<div class="dt-hd"><div class="nm">' + eh(a && a.nm ? a.nm : code) + '</div>'
+        + '<div class="cd">' + eh(code) + ' · 本页没有内嵌它的走势与证据</div></div>';
+  if(a){{
+    var sn = (D.shown||{{}})[a.st] || 0;
+    h += '<div class="kbox"><div class="nodata">它在 <b>' + eh(a.st) + '</b> 档，'
+       + '是这一档的第 <b>' + a.k + '</b> 只（该档共 ' + a.n + ' 只）。<br>'
+       + '本页每档只内嵌前 ' + sn + ' 只，所以没把它画进来——'
+       + '<b>不是没判过，是没画进这一页</b>。<br>'
+       + '完整明细在 reports/pool_state_*.json。</div></div>'
+       + '<div class="secw"><a class="srow" href="#" onclick="goList(\\'' + a.st
+       + '\\');return false"><span class="sn">去看「' + eh(a.st) + '」这一档的列表</span>'
+       + '<span class="ar">›</span></a></div>';
+  }} else {{
+    h += '<div class="kbox"><div class="nodata">当日池子没有判过这只票。'
+       + '可能是停牌、成交额低于门槛，或上市不满所需的 K 线根数。</div></div>';
+  }}
+  document.getElementById('d-body').innerHTML = h;
+  go('s-detail');
+}}
+
 function goList(st){{
+  FROM = {{kind:'list', st: st}};
   document.getElementById('l-title').textContent = st;
   document.getElementById('l-desc').textContent = D.desc[st]||'';
   var arr = D[st]||[];
@@ -523,11 +702,38 @@ function goList(st){{
   go('s-list');
 }}
 
+var CUR_CODE = null;
+
+/* 详情页顶部那条返回：来路不同，去向不同。 */
+function backBar(){{
+  if(Q.ref)
+    return '<div class="back" onclick="goSectorBack()"><span>&#8249;</span>返回 '
+      + eh(Q.sname || '板块') + '</div>';
+  if(FROM.kind==='list' && FROM.st)
+    return '<div class="back" onclick="goList(\\'' + FROM.st
+      + '\\')"><span>&#8249;</span>返回名单</div>';
+  return '<div class="back" onclick="go(\\'s-home\\')"><span>&#8249;</span>返回</div>';
+}}
+
+/* 从板块页点进来的，返回箭头要指回那个板块——不然用户退出去只剩首页，
+   早上看到的「PCB 概念四只逆势买点」这条线索就断了。 */
+function goSectorBack(){{
+  if(!Q.ref){{ go('s-home'); return; }}
+  var nm = '';
+  var r = CUR_CODE && findRow(CUR_CODE);
+  if(r) nm = r.name || '';
+  location.href = 'sector_platform.html?sector=' + encodeURIComponent(Q.ref)
+    + '&from=' + encodeURIComponent(CUR_CODE||'')
+    + '&fromn=' + encodeURIComponent(nm);
+}}
+
 function goDetail(code){{
   var r = findRow(code);
-  if(!r) return;
+  if(!r){{ return showMiss(code); }}
+  CUR_CODE = code;
   var c = r.pct>0?'up':(r.pct<0?'down':'');
-  var h = '<div class="dt-hd"><div class="nm">'+r.name+'</div>'
+  var h = backBar();
+  h += '<div class="dt-hd"><div class="nm">'+r.name+'</div>'
     + '<div class="cd">'+r.code+' · '+(r.mv_yi||0).toFixed(0)+'亿 · '+(r.trend||'')+'</div>'
     + '<div class="px '+c+'">'+r.close.toFixed(2)
     + '<span class="ch">'+(r.pct>0?'+':'')+(r.pct*100).toFixed(2)+'%</span></div>'
@@ -546,6 +752,7 @@ function goDetail(code){{
       + '<div class="ac">'+e.a+'</div><div class="ru">规矩：'+e.r+'</div></div>';
   }});
   h += '</div>';
+  h += sectorBlock(code, r.name);
   h += '<div class="foot">图上灰带为中枢 [ZD, ZG]，虚线为上下沿；蓝线为收盘价，红点为现价'
     + (r.lpx?'（末点为实时价，结构只到 '+ (r.struct_asof||'上一交易日') +' 收盘）':'') + '。'
     + '价格在带内＝枢内震荡，站上上沿＝离开上沿，跌破下沿＝向下离开。</div>';
@@ -554,21 +761,13 @@ function goDetail(code){{
 }}
 
 renderHome();
-/* 深链：飞书卡片按钮带 ?layer=B 或 ?code=600419.SH，点开直接落到那一档。
-   卡片说「B 可介入 3 只」，点进去就该是那三只，不再让人在首页自己翻。 */
+/* 深链：飞书卡片带 ?layer=B 或 ?code=600419.SH 或 ?code=X&ref=885959.TI。
+   卡片说「B 可介入 3 只」，点进去就该是那三只，不再让人在首页自己翻。
+   带 code 时不再先验 findRow——不在内嵌范围内也要给出交代（showMiss），
+   静默停在首页等于告诉用户「没这只票」。 */
 (function(){{
-  var q = (location.search||'').replace(/^\?/,'')
-        || (location.hash||'').replace(/^#/,'');
-  if(!q) return;
-  var p = {{}};
-  q.split('&').forEach(function(kv){{
-    if(!kv) return;
-    var i = kv.indexOf('=');
-    if(i<0) return;
-    p[decodeURIComponent(kv.slice(0,i))] = decodeURIComponent(kv.slice(i+1));
-  }});
-  if(p.code && findRow(p.code)) {{ goDetail(p.code); return; }}
-  var st = (p.layer && D.layerMap && D.layerMap[p.layer]) || p.stage;
+  if(Q.code) {{ goDetail(Q.code); return; }}
+  var st = (Q.layer && D.layerMap && D.layerMap[Q.layer]) || Q.stage;
   if(st && D[st]) goList(st);
 }})();
 </script></body></html>"""
@@ -632,6 +831,7 @@ def main():
     # 分档数据 + 详情（含 SVG 与证据）
     data = {}
     shown = {}
+    allidx = {}
     order = [st for st in CARD_STAGES if (counts.get(st) or len(j["buckets"].get(st, [])))]
 
     # 页面展示的每一只都要有当下价。pool_live 只覆盖异动档，剩下的在这里补——
@@ -671,10 +871,15 @@ def main():
         return rr
 
     for st in order + ["中枢"]:
-        rows = [_mkrow(r, st)
-                for r in j["buckets"].get(st, [])[:args.per_stage]]
+        full = j["buckets"].get(st, [])
+        rows = [_mkrow(r, st) for r in full[:args.per_stage]]
         data[st] = rows
         shown[st] = len(rows)
+        # 没内嵌进本页的留一条索引：从板块页点过来时，要说得清「它在哪一档、
+        # 排第几、这页为什么没它」，而不是让它看起来像没判过。
+        for k in range(args.per_stage, len(full)):
+            allidx[full[k]["code"]] = {"st": st, "n": len(full), "k": k + 1,
+                                       "nm": full[k].get("name") or ""}
 
     # ── 可操作五层（A/B/E）：与飞书卡片同一套语言 ────────────────
     # 卡片说「B 可介入 3 只」，点开就必须是这 3 只。九态是结构描述、
@@ -683,7 +888,8 @@ def main():
     layer_order, layer_map, layer_counts = [], {}, {}
     if jd:
         for key, label, desc, clr in LAYER_META:
-            items = (jd.get(key) or [])[:args.per_stage]
+            full = jd.get(key) or []
+            items = full[:args.per_stage]
             if not items:
                 continue
             data[label] = [
@@ -697,6 +903,11 @@ def main():
             layer_map[key] = label
             LAYER_DESC[label] = desc
             LAYER_COLOR[label] = clr
+            # 五层优先于九态：同一只票若两边都被截断，给人看「B 可介入第 7 只」
+            # 比「三买第 41 只」有用
+            for k in range(args.per_stage, len(full)):
+                allidx[full[k]["code"]] = {"st": label, "n": len(full), "k": k + 1,
+                                           "nm": full[k].get("name") or ""}
 
     # 卡片
     cards = "".join(
@@ -721,6 +932,9 @@ def main():
         sub_line = f"操作级别 日线 · 窗口 {lookback} 根 · 可判 {judged} 只"
 
     order_all = layer_order + order
+    secL, sec_of = _load_sector_map(asof)
+    if secL:
+        print(f"[h5] 所属板块：{len(secL)} 个板块 / {len(sec_of)} 只票有归属")
     data_js = json.dumps({
         **{st: data.get(st, []) for st in order_all + ["中枢"]},
         "counts": {**counts, **layer_counts},
@@ -728,6 +942,9 @@ def main():
         "desc": {**STAGE_DESC, **LAYER_DESC},
         "color": {**STAGE_COLOR, **LAYER_COLOR},
         "layerMap": layer_map,
+        "sectorL": secL,
+        "sectorOf": sec_of,
+        "all": allidx,
     }, ensure_ascii=False, separators=(",", ":"))
 
     html_txt = _BUILD.format(
