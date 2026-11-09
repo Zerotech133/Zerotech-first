@@ -1083,6 +1083,14 @@ class StateStore:
                 key TEXT PRIMARY KEY, value TEXT, updated_at TEXT);
             """)
         self.con.commit()
+        # 增量列：pushes.receiver（推送分级审计；老库自动 ALTER，不重建表）
+        cols = [r[1] for r in self.con.execute("PRAGMA table_info(pushes)")]
+        if "receiver" not in cols:
+            try:
+                self.con.execute("ALTER TABLE pushes ADD COLUMN receiver TEXT")
+                self.con.commit()
+            except sqlite3.Error as exc:
+                log("状态：pushes.receiver 迁移失败（%s）" % str(exc)[:100])
     def seen(self, fingerprint: str) -> bool:
         return self.con.execute("SELECT 1 FROM alerts WHERE fingerprint = ? LIMIT 1",
                                 (fingerprint,)).fetchone() is not None
@@ -1156,21 +1164,25 @@ class StateStore:
             "DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at",
             [(key, json.dumps(value, ensure_ascii=False), stamp) for key, value in pairs])
         self.con.commit()
-    def record_push(self, sig: Signal, kind: str, sent: bool = False) -> None:
+    def record_push(self, sig: Signal, kind: str, sent: bool = False,
+                    receiver: Optional[str] = None) -> None:
         self.con.execute(
-            "INSERT INTO pushes(ts, code, rule, fingerprint, kind, payload, sent) "
-            "VALUES (?,?,?,?,?,?,?)",
+            "INSERT INTO pushes(ts, code, rule, fingerprint, kind, payload, sent, receiver) "
+            "VALUES (?,?,?,?,?,?,?,?)",
             (sig.ts, sig.code, sig.rule, sig.fingerprint, kind,
-             json.dumps(to_push_payload([sig]), ensure_ascii=False), int(bool(sent))))
+             json.dumps(to_push_payload([sig]), ensure_ascii=False), int(bool(sent)),
+             receiver or ""))
         self.con.commit()
     def record_raw_push(self, ts: str, code: str, rule: str, fingerprint: str,
-                        kind: str, payload: Dict[str, Any], sent: bool = False) -> None:
-        """摘要类推送（开盘首扫等）落 pushes 流水；不走 Signal 构造。"""
+                        kind: str, payload: Dict[str, Any], sent: bool = False,
+                        receiver: Optional[str] = None) -> None:
+        """摘要类推送（开盘首扫/午间/收盘）落 pushes 流水；不走 Signal 构造。"""
         self.con.execute(
-            "INSERT INTO pushes(ts, code, rule, fingerprint, kind, payload, sent) "
-            "VALUES (?,?,?,?,?,?,?)",
+            "INSERT INTO pushes(ts, code, rule, fingerprint, kind, payload, sent, receiver) "
+            "VALUES (?,?,?,?,?,?,?,?)",
             (ts, code, rule, fingerprint, kind,
-             json.dumps(payload, ensure_ascii=False), int(bool(sent))))
+             json.dumps(payload, ensure_ascii=False), int(bool(sent)),
+             receiver or ""))
         self.con.commit()
     def close(self) -> None:
         try:
@@ -1596,7 +1608,8 @@ def to_push_payload(signals: List[Signal],
     for sig in signals or []:
         out.append({
             "kind": push.get("kind", "watch:realtime"),
-            "receiver": push.get("receiver", "个人"),
+            "receiver": _route_name("customer", conf),
+            "scope": "customer",
             "code": sig.code, "name": sig.name or sig.code, "rule": sig.rule,
             "severity": sig.severity, "critical": sig.critical, "title": sig.title,
             "price": sig.price, "pct": sig.pct, "amount": sig.amount,
@@ -1633,6 +1646,29 @@ def resolve_receiver(name: str = "个人",
         if str(r.get("name") or "") == name:
             return r
     return rows[0] if rows else None
+
+def _push_routes(conf: Optional[Dict[str, Any]] = None) -> Dict[str, str]:
+    """推送分级路由：customer=客户单聊（open_id），ops=运营群（chat_id，可选）。
+
+    兼容旧键：alert→customer、brief→ops；未配置 routes 时全部回落到
+    push.receiver（与旧行为一致，可直接回滚）。
+    """
+    push = (conf or load_config()).get("push") or {}
+    routes = push.get("routes") or {}
+    if not isinstance(routes, dict):
+        routes = {}
+    fallback = str(push.get("receiver") or "个人")
+    customer = str(routes.get("customer") or routes.get("alert") or fallback)
+    ops_raw = routes.get("ops")
+    if ops_raw is None:
+        ops_raw = routes.get("brief")
+    ops = str(ops_raw) if ops_raw else customer
+    return {"customer": customer, "ops": ops}
+
+def _route_name(category: str = "customer",
+                conf: Optional[Dict[str, Any]] = None) -> str:
+    """取某一面的接收人名称；未知分类按 customer（单聊）处理。"""
+    return _push_routes(conf).get(category) or _push_routes(conf)["customer"]
 
 def _build_open_scan_card(p: Dict[str, Any]) -> Dict[str, Any]:
     """开盘首扫固定摘要卡：池内行情快照 + 领涨板块 + 本轮触发数。"""
@@ -1718,6 +1754,59 @@ def _build_close_summary_card(p: Dict[str, Any]) -> Dict[str, Any]:
         "elements": elements,
     }
 
+def _build_midday_card(p: Dict[str, Any]) -> Dict[str, Any]:
+    """午间简报卡（11:30）：池内涨跌前列 + 触发/规则统计 + 领涨板块。
+
+    运营摘要，只发 `routes.ops`；客户个性化内容（个股结论/持仓）不进群。
+    """
+    def _rows(items: Any, empty: str) -> str:
+        out: List[str] = []
+        for q in (items or [])[:3]:
+            pct = _to_float(q.get("pct"))
+            out.append("%s（%s） %s" % (_md_clean(q.get("name") or q.get("code"), 20),
+                                      q.get("code") or "",
+                                      ("%+.2f%%" % pct) if pct is not None else "-"))
+        return "　".join(out) if out else empty
+
+    rules = "　".join("%s × %d" % (_md_clean(r.get("rule") or "", 20),
+                                   int(r.get("count") or 0))
+                      for r in (p.get("rules") or [])[:3]) or "今日无触发"
+    tops = p.get("sector_top") or []
+    sector_line = "　".join("%s %+.2f%%" % (_md_clean(s.get("name"), 20),
+                                            float(s.get("pct") or 0.0))
+                            for s in tops[:3]) or "-"
+    elements: List[Dict[str, Any]] = [
+        {"tag": "div", "text": {"tag": "lark_md",
+                                "content": "**交易日** %s　**池** %s 只　**行情** %s 条" % (
+                                    _md_clean(p.get("date") or "", 20),
+                                    p.get("pool_size") or 0, p.get("quotes_n") or 0)}},
+        {"tag": "div", "text": {"tag": "lark_md",
+                                "content": "**触发**：%d 条（critical %d）　**规则**：%s" % (
+                                    int(p.get("alerts_total") or 0),
+                                    int(p.get("critical_total") or 0), rules)}},
+        {"tag": "div", "text": {"tag": "lark_md",
+                                "content": "**领涨**：%s" % _rows(p.get("top"), "暂无")}},
+        {"tag": "div", "text": {"tag": "lark_md",
+                                "content": "**领跌**：%s" % _rows(p.get("bottom"), "暂无")}},
+        {"tag": "div", "text": {"tag": "lark_md",
+                                "content": "**板块前 3**：%s" % sector_line}},
+        {"tag": "hr"},
+        {"tag": "div", "text": {"tag": "lark_md",
+                                "content": p.get("footer") or "研究提示，不构成投资建议"}},
+    ]
+    if p.get("url"):
+        elements.append({"tag": "action", "actions": [{
+            "tag": "button", "type": "primary",
+            "text": {"tag": "plain_text", "content": "打开分析工作台"},
+            "behaviors": [{"type": "open_url", "default_url": p["url"]}]}]})
+    return {
+        "config": {"wide_screen_mode": True},
+        "header": {"template": "orange",
+                   "title": {"tag": "plain_text",
+                             "content": p.get("title") or "午间简报"}},
+        "elements": elements,
+    }
+
 def build_feishu_card(p: Dict[str, Any]) -> Dict[str, Any]:
     """payload → 飞书 interactive 卡（A 股红涨绿跌；纯 URL 按钮，无回调动作）。
 
@@ -1729,6 +1818,8 @@ def build_feishu_card(p: Dict[str, Any]) -> Dict[str, Any]:
         return _build_open_scan_card(p)
     if p.get("rule") == "close_summary":
         return _build_close_summary_card(p)
+    if p.get("rule") == "midday_summary":
+        return _build_midday_card(p)
     try:
         pct = float(p.get("pct") or 0.0)
     except (TypeError, ValueError):
@@ -1795,29 +1886,50 @@ def push_via_hub(payloads: List[Dict[str, Any]],
     if not secret:
         return [{"ok": False, "error": "missing PUSH_HUB_KEY", "code": p.get("code")}
                 for p in payloads]
-    rcpt = resolve_receiver(receiver or push.get("receiver") or "个人")
-    if not rcpt:
-        return [{"ok": False, "error": "missing receiver", "code": p.get("code")}
-                for p in payloads]
-    results: List[Dict[str, Any]] = []
-    for p in payloads:
-        body = {
-            "content": json.dumps(build_feishu_card(p), ensure_ascii=False),
-            "msg_type": "interactive",
-            "receive_id": rcpt.get("id"),
-            "receive_id_type": rcpt.get("type") or "open_id",
-            "kind": p.get("kind") or "watch:realtime",
-            "critical": bool(p.get("critical")),
-        }
-        try:
-            resp = _http_post_json(HUB_URL + "/api/send", body,
-                                   headers={"X-Push-Hub-Key": secret}, timeout=timeout)
-            ok = bool(resp.get("ok"))
-            results.append({"ok": ok, "code": p.get("code"), "rule": p.get("rule"),
-                            "why": resp.get("why") or resp.get("error") or ""})
-        except Exception as exc:  # noqa: BLE001 - 推送失败必须 fail-safe，不中断整轮
-            results.append({"ok": False, "code": p.get("code"), "rule": p.get("rule"),
-                            "error": str(exc)[:200]})
+    # 按接收人分组：客户分析→单聊、运营摘要→群；同一批 payload 可混投。
+    # 逐条 POST（8097 /api/send 是单消息入口），但每组只解析一次接收人。
+    groups: Dict[str, List[int]] = {}
+    for idx, p in enumerate(payloads):
+        name = receiver or p.get("receiver") or _route_name("customer", conf)
+        groups.setdefault(str(name), []).append(idx)
+    results: List[Optional[Dict[str, Any]]] = [None] * len(payloads)
+    for name, idxs in groups.items():
+        rcpt = resolve_receiver(name)
+        if not rcpt or str(rcpt.get("name") or "") != name:
+            for i in idxs:
+                results[i] = {"ok": False, "code": payloads[i].get("code"),
+                              "rule": payloads[i].get("rule"),
+                              "error": "receiver not found: %s（不回落其他接收人）" % name}
+            continue
+        scope = str(payloads[idxs[0]].get("scope") or "")
+        want_type = {"customer": "open_id", "ops": "chat_id"}.get(scope)
+        if want_type and str(rcpt.get("type") or "") != want_type:
+            for i in idxs:
+                results[i] = {"ok": False, "code": payloads[i].get("code"),
+                              "rule": payloads[i].get("rule"),
+                              "error": "receiver type mismatch: %s 需要 %s，实为 %s" % (
+                                  name, want_type, rcpt.get("type") or "")}
+            continue
+        for i in idxs:
+            p = payloads[i]
+            body = {
+                "content": json.dumps(build_feishu_card(p), ensure_ascii=False),
+                "msg_type": "interactive",
+                "receive_id": rcpt.get("id"),
+                "receive_id_type": rcpt.get("type") or "open_id",
+                "kind": p.get("kind") or "watch:realtime",
+                "critical": bool(p.get("critical")),
+            }
+            try:
+                resp = _http_post_json(HUB_URL + "/api/send", body,
+                                       headers={"X-Push-Hub-Key": secret}, timeout=timeout)
+                ok = bool(resp.get("ok"))
+                results[i] = {"ok": ok, "code": p.get("code"), "rule": p.get("rule"),
+                              "receiver": name,
+                              "why": resp.get("why") or resp.get("error") or ""}
+            except Exception as exc:  # noqa: BLE001 - 推送失败必须 fail-safe，不中断整轮
+                results[i] = {"ok": False, "code": p.get("code"), "rule": p.get("rule"),
+                              "receiver": name, "error": str(exc)[:200]}
     return results
 
 def push_test(cfg: Optional[Dict[str, Any]] = None,
@@ -1862,7 +1974,8 @@ def build_open_scan_payload(quotes: List[Dict[str, Any]],
     cnt = int(trigger_count or 0)
     return {
         "kind": push.get("kind", "watch:realtime"),
-        "receiver": push.get("receiver", "个人"),
+        "receiver": _route_name("ops", conf),
+        "scope": "ops",
         "code": "POOL", "name": "开盘首扫", "rule": "open_scan",
         "severity": "info", "critical": False,
         "title": "开盘首扫 · %s" % cur.strftime("%m-%d %H:%M"),
@@ -1915,7 +2028,7 @@ def maybe_open_scan(store: "StateStore",
     ok = bool(results and results[0].get("ok"))
     kind = (conf.get("push") or {}).get("kind", "watch:realtime")
     store.record_raw_push(payload["ts"], "POOL", "open_scan", payload["fingerprint"],
-                          kind, payload, sent=ok)
+                          kind, payload, sent=ok, receiver=payload.get("receiver"))
     if ok:
         store.set_kv(done_key, payload["ts"])
         log("开盘首扫：已推送（池 %d 只，行情 %d 条，触发 %d 条）" % (
@@ -1956,7 +2069,8 @@ def build_closing_summary_payload(store: "StateStore",
         log("收盘小结：统计失败（%s）" % str(exc)[:120])
     return {
         "kind": push.get("kind", "watch:realtime"),
-        "receiver": push.get("receiver", "个人"),
+        "receiver": _route_name("ops", conf),
+        "scope": "ops",
         "code": "POOL", "name": "收盘小结", "rule": "close_summary",
         "severity": "info", "critical": False,
         "title": "收盘小结 · %s" % cur.strftime("%m-%d"),
@@ -1994,13 +2108,118 @@ def maybe_closing_summary(store: "StateStore",
     ok = bool(results and results[0].get("ok"))
     kind = (conf.get("push") or {}).get("kind", "watch:realtime")
     store.record_raw_push(payload["ts"], "POOL", "close_summary",
-                          payload["fingerprint"], kind, payload, sent=ok)
+                          payload["fingerprint"], kind, payload, sent=ok,
+                          receiver=payload.get("receiver"))
     if ok:
         store.set_kv(done_key, payload["ts"])
         log("收盘小结：已推送（触发 %d 条，推送成功 %d / 失败 %d）" % (
             payload["alerts_total"], payload["push_ok"], payload["push_fail"]))
     else:
         log("收盘小结：推送失败，下一轮重试（%s）" % str(
+            (results or [{}])[0].get("error") or (results or [{}])[0].get("why") or "")[:120])
+    return {"ok": ok, "payload": payload, "results": results}
+
+def build_midday_payload(quotes: List[Dict[str, Any]],
+                         pool: List[str],
+                         sectors: Optional[List[Dict[str, Any]]] = None,
+                         cfg: Optional[Dict[str, Any]] = None,
+                         now: Optional[datetime] = None,
+                         store: Optional["StateStore"] = None) -> Dict[str, Any]:
+    """11:30 午间简报 payload：池内涨跌前列 + 当日触发/规则 + 领涨板块。
+
+    运营面摘要（`scope=ops`，发 `routes.ops`）；不含任何客户持仓/个性化结论。
+    """
+    conf = cfg or load_config()
+    push = conf.get("push") or {}
+    base = str(conf.get("portal_base") or "").rstrip("/")
+    cur = now or now_cst()
+    day = cur.strftime("%Y-%m-%d")
+    rows = [q for q in (quotes or []) if _to_float(q.get("pct")) is not None]
+    rows.sort(key=lambda q: _to_float(q.get("pct")) or 0.0, reverse=True)
+    top = rows[:3]
+    bottom = list(reversed(rows[-3:])) if len(rows) > 3 else []
+    alerts_total = critical = 0
+    rules: List[Dict[str, Any]] = []
+    if store is not None:
+        try:
+            row = store.con.execute(
+                "SELECT COUNT(*), SUM(critical) FROM alerts WHERE trade_date = ?",
+                (day,)).fetchone()
+            alerts_total = int(row[0] or 0) if row else 0
+            critical = int(row[1] or 0) if row else 0
+            for r in store.con.execute(
+                    "SELECT rule, COUNT(*) FROM alerts WHERE trade_date = ? "
+                    "GROUP BY rule ORDER BY COUNT(*) DESC", (day,)):
+                rules.append({"rule": r[0], "count": int(r[1])})
+        except sqlite3.Error as exc:
+            log("午间简报：统计失败（%s）" % str(exc)[:120])
+    return {
+        "kind": push.get("kind", "watch:realtime"),
+        "receiver": _route_name("ops", conf),
+        "scope": "ops",
+        "code": "POOL", "name": "午间简报", "rule": "midday_summary",
+        "severity": "info", "critical": False,
+        "title": "午间简报 · %s" % cur.strftime("%m-%d %H:%M"),
+        "date": day, "pool_size": len(pool or []), "quotes_n": len(quotes or []),
+        "top": [{"code": q.get("code"), "name": q.get("name"), "pct": q.get("pct")}
+                for q in top],
+        "bottom": [{"code": q.get("code"), "name": q.get("name"), "pct": q.get("pct")}
+                   for q in bottom],
+        "alerts_total": alerts_total,
+        "critical_total": critical,
+        "rules": rules[:5],
+        "sector_top": [{"name": s.get("name"), "pct": _to_float(s.get("pct"))}
+                       for s in (sectors or [])[:3]],
+        "ts": cur.strftime("%Y-%m-%d %H:%M:%S"),
+        "fingerprint": make_fingerprint("POOL", "midday_summary", day, day),
+        "url": "%s/sa" % base,
+        "footer": "研究提示，不构成投资建议",
+    }
+
+def maybe_midday_summary(store: "StateStore",
+                         quotes: List[Dict[str, Any]],
+                         pool: List[str],
+                         sectors: Optional[List[Dict[str, Any]]] = None,
+                         cfg: Optional[Dict[str, Any]] = None,
+                         now: Optional[datetime] = None,
+                         dry_run: bool = False,
+                         push_fn: Optional[Any] = None) -> Optional[Dict[str, Any]]:
+    """午间简报：每交易日 11:30 后成功推送一次（KV `midday_done:<date>`）。
+
+    时间窗 11:30–14:00（午休/午后起床补发一次，避免 PC 休眠漏发）；
+    失败不置标记、下一 tick 重试；只发运营群/团队视图。
+    """
+    conf = cfg or load_config()
+    cur = now or now_cst()
+    if dry_run or not conf.get("midday_brief_enabled", True):
+        return None
+    if not quotes:
+        return None
+    if not market_open(now=cur, cfg=conf):
+        return None
+    at = _parse_hhmm(str(conf.get("midday_time") or "11:30"), dtime(11, 30))
+    if cur.time() < at or cur.time() >= dtime(14, 0):
+        return None
+    if not ((conf.get("push") or {}).get("enabled")):
+        return None
+    day = cur.strftime("%Y-%m-%d")
+    done_key = "midday_done:%s" % day
+    if store.get_kv(done_key):
+        return None
+    payload = build_midday_payload(quotes, pool, sectors, conf, cur, store=store)
+    sender = push_fn or push_via_hub
+    results = sender([payload], cfg=conf)
+    ok = bool(results and results[0].get("ok"))
+    kind = (conf.get("push") or {}).get("kind", "watch:realtime")
+    store.record_raw_push(payload["ts"], "POOL", "midday_summary",
+                          payload["fingerprint"], kind, payload, sent=ok,
+                          receiver=payload.get("receiver"))
+    if ok:
+        store.set_kv(done_key, payload["ts"])
+        log("午间简报：已推送（触发 %d 条，池 %d 只）" % (
+            payload["alerts_total"], payload["pool_size"]))
+    else:
+        log("午间简报：推送失败，下一轮重试（%s）" % str(
             (results or [{}])[0].get("error") or (results or [{}])[0].get("why") or "")[:120])
     return {"ok": ok, "payload": payload, "results": results}
 
@@ -2108,30 +2327,38 @@ def run_once(dry_run: bool = False, cfg: Optional[Dict[str, Any]] = None,
                 len([r for r in push_results if not r.get("ok")])))
         for idx, sig in enumerate(accepted):
             ok = bool(push_results[idx].get("ok")) if (send and idx < len(push_results)) else False
-            store.record_push(sig, kind, sent=ok)
+            rcpt = payload[idx].get("receiver") if idx < len(payload) else None
+            store.record_push(sig, kind, sent=ok, receiver=rcpt)
             if send and not ok:
                 # 推送失败撤销触发，下一 tick 重试（避免 hub 短暂故障造成漏报）
                 store.forget_alert(sig.fingerprint)
         # 开盘首扫固定摘要（当日首轮；失败则下一 tick 重试；成功当日只发一次）
         open_scan_res = maybe_open_scan(store, quotes, pool, sectors, len(accepted),
                                         cfg=conf, now=cur)
+        # 11:30 午间简报（运营面摘要；失败下一轮重试）
+        midday_res = maybe_midday_summary(store, quotes, pool, sectors, cfg=conf, now=cur)
     else:
         open_scan_res = None
+        midday_res = None
     store.close()
     if not dry_run:
         pushed_ok = len([r for r in push_results if r.get("ok")])
         if open_scan_res and open_scan_res.get("ok"):
             pushed_ok += 1
+        if midday_res and midday_res.get("ok"):
+            pushed_ok += 1
         _write_heartbeat(pool=len(pool), quotes=len(quotes), news=len(news),
                          sectors=len(sectors), raw=len(raw), accepted=len(accepted),
                          pushed=pushed_ok, open_scan=bool(
                              open_scan_res and open_scan_res.get("ok")),
+                         midday=bool(midday_res and midday_res.get("ok")),
                          push_enabled=bool((conf.get("push") or {}).get("enabled")))
     if payload:
         print(json.dumps(payload, ensure_ascii=False, indent=1, default=str), flush=True)
     return {"pool": pool, "quotes": quotes, "news": news, "sectors": sectors,
             "signals": raw, "accepted": accepted, "payload": payload,
-            "push": push_results, "open_scan": open_scan_res}
+            "push": push_results, "open_scan": open_scan_res,
+            "midday": midday_res}
 
 _INSTANCE_LOCK_PATH = os.path.join(STATE_DIR, "engine.lock")
 

@@ -43,9 +43,15 @@
   "em_enrich_limit": 12,
   "news_lookback_min": 30,
   "portal_base": "http://127.0.0.1:8734",
+  "midday_brief_enabled": true,
+  "midday_time": "11:30",
   "push": {
     "kind": "watch:realtime",
     "receiver": "个人",
-    "enabled": false
+    "enabled": false,
+    "routes": {
+      "customer": "个人",
+      "ops": "量化群"
+    }
   }
 }
