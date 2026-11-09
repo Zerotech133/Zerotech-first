@@ -103,11 +103,12 @@ def test_rag_lite_ask_integration(tmp_path, monkeypatch):
     hits = [{"doc_id": "d1", "video_id": "v1", "channel_id": "c1", "kind": "video",
              "title": "标题", "upload_date": "2026-01-01", "score": 0.9, "text": "资料"}]
     monkeypatch.setattr(rag_lite, "retrieve", lambda q, k=5: hits)
+    monkeypatch.setattr(rag_lite, "PROMPT_PROFILE", "strict_nocite")  # 2026-11-09 部署默认
 
     class FakeRouter:
         @staticmethod
         def generate(prompt, **kw):
-            assert "只依据下面编号资料回答" in prompt     # strict prompt 默认
+            assert "资料不足，现有资料无法回答该问题。" in prompt  # strict_nocite 默认
             return {"ok": True, "text": "路由答案 [S1]", "tier": 1, "provider": "bailian_v4d",
                     "model": "m", "cost_cny": 0.01, "daily_cost_cny": 0.01, "budget_cny": 20,
                     "budget_warning": False, "attempts": []}
@@ -123,6 +124,18 @@ def test_rag_lite_ask_integration(tmp_path, monkeypatch):
     out2 = rag_lite.ask("问题")
     assert out2["answer"] == "旧本地答案"
     assert out2["router"]["provider"] == "ollama_legacy"
+
+
+def test_rag_lite_strict_nocite_prompt():
+    """2026-11-09 线上 40 题回归：拒答固定句不带引用，资料足够时仍要求 [S] 引用。"""
+    import rag_lite
+    hits = [{"doc_id": "d1", "video_id": "v1", "channel_id": "c1", "kind": "video",
+             "title": "标题", "upload_date": "2026-01-01", "score": 0.9, "text": "资料"}]
+    prompt = rag_lite.build_prompt("资料库外的问题？", hits, profile="strict_nocite")
+    assert "资料不足，现有资料无法回答该问题。" in prompt
+    assert "不要添加任何其他文字" in prompt
+    assert "每个事实句句末必须标注来源编号" in prompt
+    assert "[S1]" in prompt
 
 
 def test_env_model_override(tmp_path, monkeypatch):

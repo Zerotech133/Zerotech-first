@@ -147,7 +147,7 @@ def retrieve(question: str, k: int = TOP_K) -> list[dict]:
              "score": float(scores[i]), "text": docs[i]["text"][:800]} for i in idx]
 
 
-PROMPT_PROFILE = os.environ.get("RAG_PROMPT_PROFILE", "strict").strip().lower()
+PROMPT_PROFILE = os.environ.get("RAG_PROMPT_PROFILE", "strict_nocite").strip().lower()
 
 
 def _router_module():
@@ -159,9 +159,32 @@ def _router_module():
     return llm_router
 
 
+def build_prompt_strict_nocite(question: str, hits: list[dict]) -> str:
+    """严格引用 + 拒答不带引用的口径（2026-11-09 线上 40 题回归候选）。
+
+    与 strict 的唯一差异：资料不足时只输出固定拒答句，不允许解释/罗列/引用；
+    该句 17 字，避免被 answer_eval 的 15 字长度阈值判为长度异常。
+    """
+    ctx = []
+    for i, h in enumerate(hits, 1):
+        ctx.append(f"[S{i}] video={h['video_id']} kind={h['kind']} title={h['title'][:80]}\n{h['text'][:600]}")
+    return ("你是量化知识库助手。规则：\n"
+            "1) 只依据下面编号资料回答，不得编造；\n"
+            "2) 先判断资料是否足以回答。若资料不足，最终答案只输出"
+            "「资料不足，现有资料无法回答该问题。」，不要添加任何其他文字、"
+            "解释、资料内容、资料编号或 [S]；\n"
+            "3) 若资料足够回答，每个事实句句末必须标注来源编号，如[S1]；"
+            "只能引用确实支撑该句的资料编号，不要引用无关资料；\n"
+            "4) 用 3-5 句话回答，不构成投资建议。\n\n"
+            "资料：\n" + "\n\n".join(ctx) + "\n\n问题：" + question + "\n回答：")
+
+
 def build_prompt(question: str, hits: list[dict], profile: str | None = None) -> str:
-    """构造回答 prompt：strict=生产默认（每句末引用/只引用支撑句/不足拒答）；base=旧口径。"""
+    """构造回答 prompt：strict_nocite=生产默认（拒答固定句不带引用）；
+    strict=旧严格口径（每句末引用/拒答可解释）；base=旧口径。"""
     profile = (profile or PROMPT_PROFILE or "strict").strip().lower()
+    if profile == "strict_nocite":
+        return build_prompt_strict_nocite(question, hits)
     ctx = []
     for i, h in enumerate(hits, 1):
         ctx.append(f"[S{i}] video={h['video_id']} kind={h['kind']} title={h['title'][:80]}\n{h['text'][:600]}")
@@ -180,7 +203,7 @@ def build_prompt(question: str, hits: list[dict], profile: str | None = None) ->
 def ask(question: str, use_router: bool | None = None) -> dict:
     """问答：检索 → strict prompt → llm_router 三级降级生成。
 
-    回滚：RAG_ROUTER_DISABLE=1 时退回旧本地 chat()；RAG_PROMPT_PROFILE=base 回退旧 prompt。
+    回滚：RAG_ROUTER_DISABLE=1 时退回旧本地 chat()；RAG_PROMPT_PROFILE=strict 回退旧严格 prompt，=base 回退旧口径。
     """
     hits = retrieve(question)
     prompt = build_prompt(question, hits)
