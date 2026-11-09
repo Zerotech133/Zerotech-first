@@ -138,8 +138,12 @@ def main():
         return 1
 
     if asof != today:
+        if wd >= 5 and not a.allow_stale:
+            log("[skip] 今天是周末（日线最新 %s）。计划任务每天触发，周末直接退出。"
+                % asof)
+            return 0
         if wd >= 5:
-            log("[note] 今天是周末，按最近交易日 %s 跑" % asof)
+            log("[note] 周末 + --allow-stale，按最近交易日 %s 强制跑" % asof)
         elif a.allow_stale:
             log("[warn] 日线停在 %s（今天 %s 还没同步），--allow-stale 强制继续。"
                 "下面所有产物都会标成 %s。" % (asof, today, asof))
