@@ -684,6 +684,13 @@ class BacktestConfig:
     trail_activate: float = 0.0  # 移动止损启动浮盈（0=关；智策 CHAN 族 0.05）
     trail_drawdown: float = 0.0  # 启动后自峰值回落此幅度离场（智策 CHAN 族 0.035）
     max_ext_pct: float = 0.0  # 追高门槛：开盘价高于中枢上沿超过该比例即放弃（0=关）
+    # 分层加仓（2026-11-09 老田方案）：首笔 100/加仓 60/再加 40（对应 1000 万 → 0.10/0.06/0.04），
+    # 每档「相对上一档成交价」波动 ladder_step 触发；ladder_window 个交易日内未触发则该票后续档位作废。
+    # up=浮盈加仓（正金字塔·趋势跟随）；down=浮亏加仓（逆势摊平·等同马丁，仅作对照）；off=一次性建仓。
+    ladder_mode: str = "off"
+    ladder_amounts: tuple = (0.10, 0.06, 0.04)
+    ladder_step: float = 0.05
+    ladder_window: int = 10
 
     def cap_of(self, regime_lv):
         """总仓位帽：fixed=固定值；regime=按三档映射（档位可配，不再写死 80/50/30）。"""
@@ -743,6 +750,7 @@ def run_backtest(
     n_min_hold_blocked = [0]  # 被最短持有期拦下的卖出触发次数（降换手证据）
     n_time_stop = [0]  # 到期强平笔数
     n_3b_same_day = [0]  # 买入当日即触发三买失效的次数（量纲错配会飙到 ≈100%）
+    n_add = [0, 0, 0]  # 分层加仓：第 2 档 / 第 3 档 触发次数（降换手实验后的仓位管理）
     n_trim = 0
     n_mid_slot_days = 0  # 317：mid 档联动槽数生效天数（生效证据）
     prev_eq = 1.0
@@ -983,6 +991,8 @@ def run_backtest(
                 "fz": fz,
                 "score": sc,
                 "entry_px": o,
+                "stage": 0,
+                "add_px": o,
             }
             holding_since[s] = di
             deployed += amt
@@ -996,6 +1006,74 @@ def run_backtest(
             )
             rec(day, "BUY", s, cfg.strategy)
         pending_buy = still
+
+        # A3. 分层加仓（2026-11-09 老田方案：100→60→40，每档相对上一档成交价波动 5% 触发）
+        # 盘中触发用当日 high/low 判触价；成交价取「触价」，跳空越过则按开盘价（不占便宜）。
+        # 窗口 ladder_window 个交易日内未触发 → 该票后续档位作废（老田：10 日内没波动就不补）。
+        if cfg.ladder_mode in ("up", "down") and pos:
+            _lads = list(cfg.ladder_amounts or ())
+            for s in sorted(pos):
+                p = pos[s]
+                st = int(p.get("stage", 0))
+                if st >= len(_lads) - 1:
+                    continue
+                _hs = holding_since.get(s, di)
+                if di == _hs:
+                    continue  # 首笔当日不加（同一开盘不重复建仓）
+                if cfg.ladder_window > 0 and di - _hs > cfg.ladder_window:
+                    continue  # 出窗口 → 后续档位作废
+                base = p.get("add_px") or p.get("entry_px")
+                if not base:
+                    continue
+                op = px(s, day, "open")
+                hi = px(s, day, "high")
+                lo = px(s, day, "low")
+                if op is None or hi is None or lo is None:
+                    continue
+                if cfg.ladder_mode == "up":
+                    thr = base * (1 + cfg.ladder_step)
+                    if hi < thr:
+                        continue
+                    fill = max(thr, op)
+                else:
+                    thr = base * (1 - cfg.ladder_step)
+                    if lo > thr:
+                        continue
+                    fill = min(thr, op)
+                want = _lads[st + 1]
+                amt = min(cash, want, max(0.0, eqv_open * capv - (eqv_open - cash)))
+                if amt < 0.002:
+                    actions.append(
+                        {
+                            "type": "skip",
+                            "stock": s,
+                            "note": "加仓资金不足·第%d档放弃" % (st + 2),
+                        }
+                    )
+                    continue
+                cash -= amt
+                p["val"] += amt * (1 - cfg.cost)
+                p["cost"] += amt * (1 - cfg.cost)
+                p["ref_px"] = fill
+                p["add_px"] = fill
+                p["stage"] = st + 1
+                n_add[min(st + 1, 2)] += 1
+                actions.append(
+                    {
+                        "type": "add",
+                        "stock": s,
+                        "note": "第%d档加仓 %.0f万·%s%.0f%%触发@%.3f（累计投入 %.0f万）"
+                        % (
+                            st + 2,
+                            amt * 1000,
+                            "+" if cfg.ladder_mode == "up" else "-",
+                            cfg.ladder_step * 100,
+                            fill,
+                            p["cost"] * 1000,
+                        ),
+                    }
+                )
+                rec(day, "BUY", s, "ladder%d" % (st + 2))
 
         # B. 盯市 open→close
         for s, p in pos.items():
@@ -1297,6 +1375,8 @@ def run_backtest(
         "n_min_hold_blocked": n_min_hold_blocked[0],
         "n_time_stop": n_time_stop[0],
         "n_3b_same_day": n_3b_same_day[0],
+        "n_add2": n_add[1],
+        "n_add3": n_add[2],
     }
     return {
         "meta": {
@@ -1593,6 +1673,18 @@ def run_job(params: dict, job_id: str, progress=None):
             trail_activate=_trail_act,
             trail_drawdown=_trail_dd,
             max_ext_pct=max(0.0, min(1.0, _r("max_ext_pct", 0.0))),
+            # 注意：_r() = float(p.get(k) or dflt)，只适合数值。ladder_mode 是字符串，
+            # 走 _r 会 ValueError→静默回落 "off"（本轮实测 8 组全同值才暴露）。必须直读。
+            ladder_mode=str(p.get("ladder_mode") or "off").strip().lower(),
+            ladder_amounts=tuple(
+                float(x) for x in (p.get("ladder_amounts") or (0.10, 0.06, 0.04))
+            ),
+            ladder_step=float(
+                p.get("ladder_step") if p.get("ladder_step") not in (None, "") else 0.05
+            ),
+            ladder_window=int(
+                p.get("ladder_window") if p.get("ladder_window") not in (None, "") else 10
+            ),
             cost=_cost,
         )
         if progress:
