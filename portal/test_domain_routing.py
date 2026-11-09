@@ -446,3 +446,15 @@ def test_api_send_no_domain_legacy_compat(monkeypatch):
     assert [a for a, _kw in records if a[1] == "domain-observe"] == []
     assert len(sent) == 1
     assert sent[0]["kw"].get("domain") is None
+
+
+def test_api_send_flow_records_message_id(monkeypatch):
+    """2026-11-09：api_send 统一流水行必须带飞书回执 message_id（evidence 保留）。"""
+    sent, records = [], []
+    _api_send_env(monkeypatch, sent, records)
+    r = admin.api_send(_req())
+    assert r["ok"] is True
+    assert r.get("message_id") == "om_t"
+    flows = [kw for a, kw in records if a and a[1] == "openapi"]
+    assert flows and flows[-1].get("message_id") == "om_t"
+    assert flows[-1].get("evidence") == "receiver_verified"
