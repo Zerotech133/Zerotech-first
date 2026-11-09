@@ -82,6 +82,30 @@ ASSUMPTIONS = {
 # ============================================================
 # 数据装载（惰性单例；hfq 后复权，263a 铁律）
 # ============================================================
+def _load_px(path, columns=None):
+    """读 A 股 parquet，缺 pct_chg 时用 close/pre_close 补（210 只新抓文件缺该列）。
+
+    实测等价：54 只抽样最大偏差 0.005 个百分点，0 只 >0.02。
+    """
+    if columns is None:
+        b = pd.read_parquet(path)
+    else:
+        # 按 schema 过滤：文件没有的列不能出现在 columns 里（pyarrow 会硬报错），
+        # 但推导 pct_chg 需要的 close/pre_close 必须一并读出来。
+        import pyarrow.parquet as _pq
+
+        have = set(_pq.read_schema(path).names)
+        take = [c for c in columns if c in have]
+        take += [c for c in ("close", "pre_close") if c in have and c not in take]
+        b = pd.read_parquet(path, columns=take)
+    if "pct_chg" in b.columns:
+        return b
+    if "close" not in b.columns or "pre_close" not in b.columns:
+        return None
+    b["pct_chg"] = (b["close"] / b["pre_close"] - 1.0) * 100.0
+    return b
+
+
 def _ensure_loaded(progress=None):
     global _LOADED, books, rets, cal, cal_idx_all, idx_nav, ma20, ma60
     if _LOADED:
@@ -92,7 +116,10 @@ def _ensure_loaded(progress=None):
         f = os.path.join(DATA, s.replace(".", "_") + ".parquet")
         if not os.path.exists(f):
             continue
-        b = pd.read_parquet(f).sort_values("trade_date").reset_index(drop=True)
+        b = _load_px(f)
+        if b is None:
+            continue
+        b = b.sort_values("trade_date").reset_index(drop=True)
         r = b["pct_chg"] / 100.0
         r.iloc[0] = 0.0
         kfac = (1.0 + r).cumprod() / b["close"]
@@ -137,7 +164,11 @@ def _book(s):
     if not os.path.exists(f):
         _BOOK_CACHE[s] = None
         return None
-    b = pd.read_parquet(f).sort_values("trade_date").reset_index(drop=True)
+    b = _load_px(f)
+    if b is None:
+        _BOOK_CACHE[s] = None
+        return None
+    b = b.sort_values("trade_date").reset_index(drop=True)
     r = b["pct_chg"] / 100.0
     r.iloc[0] = 0.0
     kfac = (1.0 + r).cumprod() / b["close"]
@@ -165,7 +196,9 @@ def _ensure_market_loaded(progress=None):
         f = os.path.join(DATA, s.replace(".", "_") + ".parquet")
         if not os.path.exists(f):
             continue
-        b = pd.read_parquet(f, columns=["trade_date", "pct_chg"])
+        b = _load_px(f, columns=["trade_date", "pct_chg"])
+        if b is None:
+            continue
         rets[s] = b.set_index("trade_date")["pct_chg"] / 100.0
         if progress and i % 500 == 0:
             progress(
