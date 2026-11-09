@@ -20,8 +20,8 @@ import os
 import time
 from typing import Any, Callable, Dict, List, Optional
 
-ROOT = r"C:\项目\老田的AI助手"
-WORK = os.environ.get("ANALYSIS_WORK", r"C:\项目\analysis_work")
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+WORK = os.environ.get("ANALYSIS_WORK") or os.path.join(os.path.dirname(ROOT), "analysis_work")
 CURATED = os.path.join(ROOT, "quant_backtest", "data", "tushare_curated")
 SW_CACHE = os.path.join(WORK, "cache", "sw")
 SCREEN_CACHE = os.path.join(WORK, "cache", "screener")

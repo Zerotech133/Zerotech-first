@@ -18,7 +18,7 @@ PIT 口径：as_of（YYYY-MM-DD，默认今天）及之前（含当日）的行�
   events 窗口同样截止到 as_of；runs 台账不是行情、不过 PIT 截断。
 
 路径约定（均可环境变量覆盖，便于隔离测试；不覆盖时用下面模块常量）：
-  WORK    = $ANALYSIS_WORK    默认 C:/项目/analysis_work
+  WORK    = $ANALYSIS_WORK    默认与仓库同级的 analysis_work
   MON_DIR = $WORK/monitor
   DB      = $MON_DIR/monitor.db
   POOLS   = $MON_DIR/pools.json
@@ -46,9 +46,9 @@ import pandas as pd
 log = logging.getLogger(__name__)
 
 # ============================ 路径与常量 ============================
-MAIN_ROOT = os.environ.get("ANALYSIS_MAIN_ROOT", r"C:\项目\老田的AI助手")
-# 数据工作根：行情缓存/分析库/监控库都在其下（生产 = C:\项目\analysis_work）
-WORK = os.environ.get("ANALYSIS_WORK", r"C:\项目\analysis_work")
+MAIN_ROOT = os.environ.get("ANALYSIS_MAIN_ROOT") or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# 数据工作根：行情缓存/分析库/监控库都在其下（默认与仓库同级的 analysis_work）
+WORK = os.environ.get("ANALYSIS_WORK") or os.path.join(os.path.dirname(MAIN_ROOT), "analysis_work")
 MON_DIR = os.path.join(WORK, "monitor")
 DB = os.path.join(MON_DIR, "monitor.db")
 POOLS = os.path.join(MON_DIR, "pools.json")

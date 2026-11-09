@@ -1575,7 +1575,7 @@ def _worktree_violations(tasks, wt_dir, registered, branches):
         br = str(t.get("branch") or "").strip() or ("task/" + tid)
         checks = {
             "dir": os.path.isdir(wt),
-            "registered": os.path.normcase(os.path.abspath(wt)) in registered,
+            "registered": (os.path.normcase(os.path.abspath(wt)) in registered) or (os.path.normcase(os.path.realpath(wt)) in registered),
             "branch": br in branches,
         }
         if all(checks.values()):
@@ -1633,6 +1633,7 @@ def _audit_worktrees(repo=None):
     try:
         for w in _prune_worktrees(repo):
             registered.add(os.path.normcase(os.path.abspath(w["path"])))
+            registered.add(os.path.normcase(os.path.realpath(w["path"])))
     except SystemExit:
         pass
     try:

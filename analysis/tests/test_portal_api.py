@@ -6,10 +6,11 @@ import os
 import sys
 import unittest
 
-ROOT = r"C:\项目\老田的AI助手"
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 WT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(WT, "portal"))
+os.environ.setdefault("COMMERCIAL_ADMIN_TOKEN", "test-token")
 
 import api_analysis  # noqa: E402
 
@@ -20,9 +21,13 @@ class Stub:
         self.body = body or b""
         self.status = None
         self.obj = None
-        self.headers = {"Content-Length": str(len(self.body))}
+        self.headers = {"Content-Length": str(len(self.body)),
+                        "X-Commercial-Token": "test-token"}
         self.rfile = io.BytesIO(self.body)
         self.wfile = io.BytesIO()
+
+    def _check_portal_token(self):
+        return True
 
     def _json(self, obj, status=200):
         self.obj = obj
