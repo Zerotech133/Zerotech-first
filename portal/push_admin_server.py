@@ -1399,7 +1399,8 @@ def api_send(req):
         sys.path.insert(0, STATION)
         import push_flow
 
-        push_flow.record(kind or "hub", "openapi", rid, 1, bool(ok), evidence=evidence)
+        push_flow.record(kind or "hub", "openapi", rid, 1, bool(ok),
+                         evidence=evidence, message_id=mid)
     except Exception as exc:
         logging.getLogger(__name__).warning(
             "silent-except %s: %s", "push_admin_server.py", exc
