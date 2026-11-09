@@ -576,15 +576,20 @@ function findRow(code){{
 
 function rowHtml(r){{
   var c = r.pct>0?'up':(r.pct<0?'down':'');
-  var dg = r.dist_zg===null?'—':(r.dist_zg*100).toFixed(1)+'%';
-  var dgc = r.dist_zg>0?'up':(r.dist_zg<0?'down':'');
+  /* 盘中跌破守位：这一行原来是「距ZG +5.4%」，看着一切正常，
+     但档位是结构日收盘判的。破位改成红字「破守位 −2.1%」，两种信息不能并排装没事。 */
+  var dg, dgLb, dgc;
+  if(r.broke!=null){{ dgLb='破守位'; dg=(r.broke*100).toFixed(1)+'%'; dgc='down'; }}
+  else {{ dgLb='距ZG'; dg = r.dist_zg===null?'—':(r.dist_zg*100).toFixed(1)+'%';
+          dgc = r.dist_zg>0?'up':(r.dist_zg<0?'down':''); }}
   return '<div class="row" onclick="goDetail(\\''+r.code+'\\')">'
-    + '<div class="l"><div class="nm">'+r.name+'</div>'
+    + '<div class="l"><div class="nm">'+r.name
+    + (r.broke!=null?' <span style="font-size:10px;color:#b23b3b">盘中失守</span>':'')+'</div>'
     + '<div class="mt">'+r.code+' · '+(r.mv_yi||0).toFixed(0)+'亿 · '
     + (r.trend||'')+' · 枢'+ (r.piv_n_bi||0) +'笔</div></div>'
     + '<div class="r"><div class="px '+c+'">'+r.close.toFixed(2)
     + '<span style="font-size:11px"> '+(r.pct>0?'+':'')+(r.pct*100).toFixed(2)+'%</span></div>'
-    + '<div class="dg">距ZG <span class="'+dgc+'">'+dg+'</span></div></div>'
+    + '<div class="dg">'+dgLb+' <span class="'+dgc+'">'+dg+'</span></div></div>'
     + '<div class="arw">›</div></div>';
 }}
 
@@ -781,6 +786,8 @@ function goDetail(code){{
     + '<span class="tag" style="background:#f2f4f7;color:#6b7686">'
     + (r.lpos||r.pos||'')+(r.lpos&&r.pos&&r.lpos!==r.pos?'·结构日'+r.pos:'')+'</span>'
     + (r.lpx?'<span class="tag" style="background:#fdeaea;color:#b23b3b">实时价</span>':'')
+    + (r.broke!=null?'<span class="tag" style="background:#b23b3b;color:#fff">盘中失守 '
+       +(r.broke*100).toFixed(1)+'%</span>':'')
     + (r.piv_over?'<span class="tag" style="background:#fdeaea;color:#b23b3b">枢已升级</span>':'')
     + '</div></div>';
   h += '<div class="kbox">'+ (r.svg||'<div class="nodata">无走势数据</div>') +'</div>';
@@ -884,6 +891,30 @@ def main():
             lmap.update(got)
             print(f"[h5] 补取实时价 {len(got)}/{len(miss)} 只")
 
+    def _live_px(r):
+        px, pct = r.get("lpx"), r.get("lpct")
+        if px is None and r["code"] in lmap:
+            px, pct = lmap[r["code"]]
+        return px, pct
+
+    def _guard_px(r, st):
+        """守位。三买看信号中枢上沿、三买待看末中枢上沿，五层（B/E）自带 guard。
+        一买/二买/背驰的止损位不是同一个概念，这里不替它生造。"""
+        if st in ("三买", "三买待"):
+            return (r.get("sig_zg") if st == "三买" else r.get("zg")) or r.get("zg")
+        return r.get("guard")
+
+    def _broke(r, st):
+        """盘中跌破守位的幅度（负数）。结构日收盘判的档位 + 当下价格，两者要当场对齐。"""
+        px, _ = _live_px(r)
+        g = _guard_px(r, st)
+        try:
+            if px and g and float(px) < float(g):
+                return round(float(px) / float(g) - 1, 4)
+        except (TypeError, ValueError):
+            pass
+        return None
+
     def _mkrow(r, st, extra=None):
         """一行明细：叠实时价 → 画走势 → 出证据卡。九态与五层共用。"""
         rr = dict(r)
@@ -892,9 +923,7 @@ def main():
         if extra:
             rr.update(extra)
         # 实时价：judge 行自带 lpx/lpct，九态行要查 lmap（pool_live + 补取）
-        px, pct = r.get("lpx"), r.get("lpct")
-        if px is None and r["code"] in lmap:
-            px, pct = lmap[r["code"]]
+        px, pct = _live_px(r)
         if px:
             rr["lpx"], rr["lpct"] = px, pct or 0.0
             # close 一并替换，否则「现价」与「距ZG」「判据实测值」各说各话
@@ -905,6 +934,12 @@ def main():
             # 位置按实时价重算：只换 close 不换 pos，详情页会出现
             # 「现价 19.05 / 距 ZG +4.3% / 位置：枢内」这种自相矛盾的标签
             rr["lpos"] = _lpos(px, rr.get("zd"), rr.get("zg"))
+            # 档位是结构日收盘判的，价格是当下的。盘中破位不标出来，
+            # 「三买 · 守位在手」和现价破位就会并排放着，读者只能二选一相信。
+            b = _broke(r, st)
+            if b is not None:
+                rr["broke"] = b
+                rr["guard_px"] = float(_guard_px(r, st))
         rr["svg"] = _svg(rr, load_kline(r["code"]) if st != "中枢" else None)
         rr["ev"] = build_evidence(rr)
         return rr
@@ -959,16 +994,28 @@ def main():
     share = below / judged * 100 if judged else 0
     mood = "弱势" if share > 50 else "中性" if share > 35 else "偏强"
 
-    # 副标题：一屏高度寸土寸金，实时信息塞进原来那行，不另起一块
+    # 副标题：一屏高度寸土寸金，实时信息塞进原来那行，不另起一块。
+    # 结构日一定要写出来：盘中这页是「结构 11-06 收盘 + 价格 11-09 14:03」两截拼的，
+    # 只写「实时 14:03」会让人以为整页数字都是 14:03 的。
+    s_lbl = (f"{asof[4:6]}-{asof[6:8]}" if len(str(asof)) == 8 else str(asof))
+    # 按**全量**档内数，不是按本页内嵌的前 80 只——副标题说「盘中失守 3」，
+    # 实际有 4 只，就是同一类半真话。
+    broke_n = sum(1 for st in order + ["中枢"]
+                  for r in j["buckets"].get(st, []) if _broke(r, st) is not None)
+    if jd:
+        for _k, _lb, _d, _c in LAYER_META:
+            broke_n += sum(1 for r in (jd.get(_k) or []) if _broke(r, _lb) is not None)
     lv_clock = ""
     if lv:
         lv_clock = str(lv.get("live_at") or "")[11:16]
-        sub_line = (f"日线 · 可判 {judged} 只 · "
+        sub_line = (f"结构 {s_lbl} · 可判 {judged} 只 · "
                     f'<b style="color:#d92b2b">实时 {lv_clock}</b> '
                     f'涨 {lv.get("up", 0)} / 跌 {lv.get("down", 0)}'
                     f' · 涨停 {lv.get("limit_up", 0)}')
+        if broke_n:
+            sub_line += f' · <b style="color:#b23b3b">盘中失守 {broke_n}</b>'
     else:
-        sub_line = f"操作级别 日线 · 窗口 {lookback} 根 · 可判 {judged} 只"
+        sub_line = (f"结构 {s_lbl} 收盘 · 窗口 {lookback} 根 · 可判 {judged} 只")
 
     order_all = layer_order + order
     secL, sec_of = _load_sector_map(asof)

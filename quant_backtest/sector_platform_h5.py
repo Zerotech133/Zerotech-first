@@ -727,7 +727,9 @@ def build_html(sec, pool, asof, rows):
     没进池子的（成交额不足、ST、次新、结构不足）不计入分母，也不算弱。
   </details>
   <div class="foot">生成 {run_at} · 结构基准 {asof} 收盘<br>
-    涨红跌绿；数据缺口如实留空，不用估算值填充。</div>
+    涨红跌绿；数据缺口如实留空，不用估算值填充。<br>
+    <b>本页所有数字都是 {asof} 收盘</b>（结构、成分标签、涨幅），<b>不叠盘中价</b>；
+    点成分股会进个股页，那一页额外叠了今日实时价，两组数字不同源，别按同一时点比。</div>
 </div>
 
 <div class="screen" id="s-detail"><div id="d-body"></div></div>
