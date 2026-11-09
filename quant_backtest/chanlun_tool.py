@@ -194,7 +194,7 @@ CSS = """<style>
 body{margin:0;background:var(--bg);color:var(--tx);
  font:14px/1.6 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif}
 .wrap{max-width:1180px;margin:0 auto;padding:22px 18px 60px}
-h1{font-size:21px;margin:0 0 6px;font-weight:650}
+h1{font-size:20px;margin:0 0 6px;font-weight:650}
 .lead{color:var(--mu);font-size:12.5px;line-height:1.8;margin-bottom:16px}
 .lead b{color:#c3cddb}
 h2{font-size:15px;margin:28px 0 10px;font-weight:620;display:flex;

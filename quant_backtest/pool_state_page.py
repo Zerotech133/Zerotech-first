@@ -30,15 +30,15 @@ REPORTS = os.path.join(HERE, "reports")
 
 # 九态：名称、一句话定义、主色、底色
 STAGE_META = {
-    "三买待": ("三买待", "离开上沿，等回踩不破 ZG", "#b7791f", "#fff7e8"),
-    "三买":   ("三买",   "回踩不破 ZG，向上趋势确认", "#d92b2b", "#fdeaea"),
-    "二买":   ("二买",   "一买后首回调不破极值", "#e07b39", "#fdf0e8"),
-    "一买":   ("一买",   "向下线段终结·底背驰", "#c04a8a", "#fbeaf3"),
-    "背驰":   ("背驰",   "顶背驰，上涨结构走完", "#0a9e5c", "#e8f6f0"),
-    "中枢":   ("中枢",   "枢内震荡，等它选方向", "#5a6b82", "#eef1f5"),
-    "三卖":   ("三卖",   "跌破下沿反抽不过", "#0a9e5c", "#e8f6f0"),
-    "离开段": ("离开段", "已远离上沿，追高区", "#8a7a5c", "#f5f1ea"),
-    "中枢下": ("中枢下", "向下离开中枢", "#0a9e5c", "#e8f6f0"),
+    "三买待": ("三买待", "离开上沿，等回踩不破 ZG", "#e0b95c", "#2a2312"),
+    "三买":   ("三买",   "回踩不破 ZG，向上趋势确认", "#e3554f", "#2b1618"),
+    "二买":   ("二买",   "一买后首回调不破极值", "#e07b39", "#2a2016"),
+    "一买":   ("一买",   "向下线段终结·底背驰", "#c04a8a", "#2a1a24"),
+    "背驰":   ("背驰",   "顶背驰，上涨结构走完", "#3fa96a", "#14261b"),
+    "中枢":   ("中枢",   "枢内震荡，等它选方向", "#7b8698", "#1f2937"),
+    "三卖":   ("三卖",   "跌破下沿反抽不过", "#3fa96a", "#14261b"),
+    "离开段": ("离开段", "已远离上沿，追高区", "#c9b184", "#2a2312"),
+    "中枢下": ("中枢下", "向下离开中枢", "#3fa96a", "#14261b"),
 }
 # 页面主表只放这六档（下跌侧三档只报数量，避免淹没信号）
 SHOW_STAGES = ["三买待", "三买", "二买", "一买", "背驰", "中枢"]
@@ -54,12 +54,12 @@ CARD_DESC = {
 BUCKET_ORDER = ["微盘<20", "小盘20-50", "中盘50-200", "大盘200-1k", "超大盘>1k", "未知"]
 
 _CSS = """
-  :root{--bg:#f5f6f8;--card:#fff;--line:#e3e6ea;--txt:#1c2330;--sub:#6b7686;
-        --up:#d92b2b;--down:#0a9e5c;--accent:#2456c4;--warn:#b7791f;--cool:#8a5fc4}
+  :root{--bg:#0d1117;--card:#131a24;--line:#1f2937;--txt:#e6edf3;--sub:#7b8698;
+        --up:#e3554f;--down:#3fa96a;--accent:#5b9bd5;--warn:#e0b95c;--cool:#a98fd6}
   *{margin:0;padding:0;box-sizing:border-box}
   body{background:var(--bg);color:var(--txt);
        font:14px/1.6 "Microsoft YaHei","PingFang SC",sans-serif;padding:20px}
-  .wrap{max-width:1400px;margin:0 auto}
+  .wrap{max-width:1440px;margin:0 auto}
   h1{font-size:20px;display:flex;align-items:center;gap:10px}
   .sub{color:var(--sub);font-size:12px;margin:4px 0 16px}
   .cards{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:14px}
@@ -74,10 +74,10 @@ _CSS = """
   .panel h2 .hint{font-weight:normal;font-size:11px;color:var(--sub);margin-left:auto}
   .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
   table{width:100%;border-collapse:collapse;font-size:13px}
-  th{background:#fafbfc;color:var(--sub);font-weight:normal;text-align:left;
+  th{background:#0f1620;color:var(--sub);font-weight:normal;text-align:left;
      padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
-  td{padding:8px 10px;border-bottom:1px solid #f0f2f5;white-space:nowrap}
-  tr:hover td{background:#f8faff}
+  td{padding:8px 10px;border-bottom:1px solid #1f2937;white-space:nowrap}
+  tr:hover td{background:#182231}
   .up{color:var(--up);font-weight:bold}
   .down{color:var(--down);font-weight:bold}
   .code{font-family:Consolas,monospace;color:var(--sub)}
@@ -85,37 +85,37 @@ _CSS = """
   .tag{display:inline-block;padding:1px 7px;border-radius:9px;font-size:11px}
   .bar-row{display:flex;align-items:center;gap:10px;padding:6px 16px}
   .bar-row .lb{width:64px;font-size:12px;color:var(--sub);flex:none}
-  .bar-row .bar{height:18px;border-radius:4px;background:#eef1f5;flex:1;position:relative}
+  .bar-row .bar{height:18px;border-radius:4px;background:#1f2937;flex:1;position:relative}
   .bar-row .fill{display:block;height:100%;border-radius:4px;background:var(--accent);opacity:.75}
   .bar-row .num{width:52px;text-align:right;font-size:12px;font-weight:600;flex:none}
   .chips{display:flex;gap:8px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);
          flex-wrap:wrap}
   .chip{padding:4px 12px;border:1px solid var(--line);border-radius:14px;font-size:12px;
-        cursor:pointer;background:#fff;color:var(--sub);user-select:none}
-  .chip.on{background:#2456c4;color:#fff;border-color:#2456c4}
+        cursor:pointer;background:var(--card);color:var(--sub);user-select:none}
+  .chip.on{background:#5b9bd5;color:#fff;border-color:#5b9bd5}
   .foot{color:var(--sub);font-size:11px;line-height:1.9;padding:10px 2px}
-  .warn{background:#fff8e6;border:1px solid #f0d9a8;color:#8a6212;border-radius:8px;
+  .warn{background:#2a2312;border:1px solid #4a3d1c;color:#e0b95c;border-radius:8px;
         padding:10px 14px;font-size:12px;margin-bottom:14px}
   /* 盘中实时条：只在有当天 pool_live 时出现，颜色刻意区别于 .warn（黄） */
-  .live{background:#eef4ff;border:1px solid #c9d8f5;color:#1f3a68;border-radius:8px;
+  .live{background:#101d2e;border:1px solid #24374d;color:#9fc3ea;border-radius:8px;
         padding:9px 14px;font-size:12px;margin-bottom:14px;line-height:1.7}
   .live .dot-live{display:inline-block;width:7px;height:7px;border-radius:50%;
-        background:#d92b2b;margin-right:6px;vertical-align:1px;
+        background:#e3554f;margin-right:6px;vertical-align:1px;
         animation:blink 1.6s ease-in-out infinite}
   @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
   .empty{padding:28px;text-align:center;color:var(--sub)}
   /* 中枢位置条：左右各 20% 留白，中段 60% 是 [ZD,ZG]，方块是现价 */
-  .pbar{position:relative;width:88px;height:10px;background:#f7f9fc;
-        border:1px solid #dfe5ee;border-radius:5px;
+  .pbar{position:relative;width:88px;height:10px;background:#0f1620;
+        border:1px solid #1f2937;border-radius:5px;
         display:inline-block;vertical-align:middle}
   .pbar .zg{position:absolute;left:20%;right:20%;top:-1px;bottom:-1px;
-            background:#c3cfe0;border-radius:2px}
+            background:#3a4757;border-radius:2px}
   .pbar .px{position:absolute;top:-3px;width:8px;height:14px;border-radius:2px;
-            background:#2456c4;transform:translateX(-4px);
-            box-shadow:0 0 0 1px #fff}
-  .pbar .px.hi{background:#d92b2b}
-  .pbar .px.lo{background:#0a9e5c}
-  .dash{color:#a6afbd}
+            background:#5b9bd5;transform:translateX(-4px);
+            box-shadow:0 0 0 1px var(--bg)}
+  .pbar .px.hi{background:#e3554f}
+  .pbar .px.lo{background:#3fa96a}
+  .dash{color:#7b8698}
 """
 
 _JS = """
@@ -171,7 +171,7 @@ def _sig(r):
         return '<span class="dash">—</span>'
     age = r.get("sig_age")
     fresh = r.get("sig_fresh")
-    color = "#1c2330" if fresh else "#a6afbd"
+    color = "#e6edf3" if fresh else "#7b8698"
     s = f'<span style="color:{color}">{_esc(t)}</span>'
     if age is not None:
         s += f'<span class="dash"> {age}日</span>'
@@ -182,17 +182,17 @@ def _note(r, lv=None):
     """备注：背驰标志 / 已兑现 / 枢已升级 / 末笔未走完 / 实时位置变化。"""
     out = []
     if lv and lv.get("lpos") and r.get("pos") and lv["lpos"] != r["pos"]:
-        out.append(f'<span class="tag" style="background:#e8f0fe;color:#2456c4">'
+        out.append(f'<span class="tag" style="background:#101d2e;color:#5b9bd5">'
                    f'实时{_esc(lv["lpos"])}（结构日{_esc(r["pos"])}）</span>')
     if r.get("piv_over"):
-        out.append('<span class="tag" style="background:#fdeaea;color:#b23b3b">枢已升级</span>')
+        out.append('<span class="tag" style="background:#2b1618;color:#e8807f">枢已升级</span>')
     if r.get("sig_far"):
-        out.append('<span class="tag" style="background:#f5f1ea;color:#8a7a5c">已兑现</span>')
+        out.append('<span class="tag" style="background:#2a2312;color:#c9b184">已兑现</span>')
     if r.get("bi_live"):
-        out.append('<span class="tag" style="background:#eef1f5;color:#5a6b82">末笔未走完</span>')
+        out.append('<span class="tag" style="background:#1f2937;color:#7b8698">末笔未走完</span>')
     bei = r.get("bei") or ""
     if bei:
-        out.append(f'<span style="color:#6b7686;font-size:12px">{_esc(bei)}</span>')
+        out.append(f'<span style="color:#7b8698;font-size:12px">{_esc(bei)}</span>')
     return " ".join(out) or '<span class="dash">—</span>'
 
 
@@ -215,7 +215,7 @@ def _row(r, stage, lv=None):
         px_html = f'{close or 0:.2f}'
         dzg = r.get("dist_zg")
     trend = r.get("trend") or "—"
-    tcolor = "#d92b2b" if trend == "上涨" else "#0a9e5c" if trend == "下跌" else "#5a6b82"
+    tcolor = "#e3554f" if trend == "上涨" else "#3fa96a" if trend == "下跌" else "#7b8698"
     bi = r.get("bi_dir")
     barrow = "↑" if bi == 1 else "↓" if bi == -1 else "—"
     return (
@@ -254,12 +254,12 @@ def _panel(stage, rows, total, live=None, limit=120):
         body = f"<table><thead>{head}</thead><tbody>" + \
                "".join(_row(r, stage, live.get(r.get("code"))) for r in shown) + "</tbody></table>"
     return (f'<div class="panel"><h2><span class="dot" style="background:{color}"></span>'
-            f'{name} <span style="font-weight:normal;color:#6b7686;font-size:12px">'
+            f'{name} <span style="font-weight:normal;color:#7b8698;font-size:12px">'
             f'{desc}</span><span class="hint">共 {total} 只，列前 {len(shown)}</span></h2>'
             f'{body}</div>')
 
 
-def _bar(label, n, tot, color="#2456c4"):
+def _bar(label, n, tot, color="#5b9bd5"):
     w = (n / tot * 100) if tot else 0
     return (f'<div class="bar-row"><span class="lb">{label}</span>'
             f'<span class="bar"><i class="fill" style="width:{w:.1f}%;'
@@ -409,7 +409,7 @@ def build(src, live=None):
 
     return f"""<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
 <title>缠论结构池 · {asof}</title><style>{_CSS}</style></head><body><div class="wrap">
-<h1>缠论结构池<span style="font-size:13px;font-weight:normal;color:#6b7686">
+<h1>缠论结构池<span style="font-size:13px;font-weight:normal;color:#7b8698">
 走势类型 · 中枢 · 三类买卖点 · 背驰</span></h1>
 <div class="sub">结构基准 <b>{asof}</b> · 操作级别 日线 · 窗口 {meta.get('lookback', 500)} 根 ·
 扫描 {meta.get('files', 0)} 文件 / 可判 {judged} 只 · 生成于 {_esc(run_at)}
@@ -425,14 +425,14 @@ def build(src, live=None):
 
 <div class="cards">{''.join(cards)}</div>
 
-<div class="panel"><h2><span class="dot" style="background:#2456c4"></span>全市场结构分布
+<div class="panel"><h2><span class="dot" style="background:#5b9bd5"></span>全市场结构分布
 <span class="hint">分母 {dist_tot} 只（可判样本）· 下跌侧不进上方卡片：三卖 {n_sell} · 离开段 {n_off} · 中枢下 {n_dn}</span></h2>
-{_bar("上涨", tre.get("上涨", 0), dist_tot, "#d92b2b")}
-{_bar("下跌", tre.get("下跌", 0), dist_tot, "#0a9e5c")}
-{_bar("盘整", tre.get("盘整", 0), dist_tot, "#5a6b82")}
-{_bar("上沿外", pos.get("上沿外", 0), dist_tot, "#d92b2b")}
-{_bar("枢内", pos.get("枢内", 0), dist_tot, "#5a6b82")}
-{_bar("下沿外", pos.get("下沿外", 0), dist_tot, "#0a9e5c")}
+{_bar("上涨", tre.get("上涨", 0), dist_tot, "#e3554f")}
+{_bar("下跌", tre.get("下跌", 0), dist_tot, "#3fa96a")}
+{_bar("盘整", tre.get("盘整", 0), dist_tot, "#7b8698")}
+{_bar("上沿外", pos.get("上沿外", 0), dist_tot, "#e3554f")}
+{_bar("枢内", pos.get("枢内", 0), dist_tot, "#7b8698")}
+{_bar("下沿外", pos.get("下沿外", 0), dist_tot, "#3fa96a")}
 </div>
 
 <div class="panel"><div class="chips">{''.join(chips)}</div></div>

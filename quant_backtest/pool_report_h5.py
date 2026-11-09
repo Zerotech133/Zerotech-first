@@ -50,9 +50,9 @@ STAGE_DESC = {
     "中枢下": "向下离开中枢",
 }
 STAGE_COLOR = {
-    "三买待": "#b7791f", "三买": "#d92b2b", "二买": "#e07b39", "一买": "#c04a8a",
-    "背驰": "#0a9e5c", "中枢": "#5a6b82", "三卖": "#0a9e5c",
-    "离开段": "#8a7a5c", "中枢下": "#0a9e5c",
+    "三买待": "#e0b95c", "三买": "#e3554f", "二买": "#e07b39", "一买": "#c04a8a",
+    "背驰": "#3fa96a", "中枢": "#7b8698", "三卖": "#3fa96a",
+    "离开段": "#c9b184", "中枢下": "#3fa96a",
 }
 # 首屏五张卡
 CARD_STAGES = ["三买待", "三买", "二买", "一买", "背驰"]
@@ -61,9 +61,9 @@ CARD_STAGES = ["三买待", "三买", "二买", "一买", "背驰"]
 # 九态回答「结构是什么」，五层回答「现在能不能动手」——卡片走五层，
 # 页面必须能给同一批票，否则点开找不到卡片上那句话说的是谁。
 LAYER_META = (
-    ("B", "B 可介入", "三买守位在手边（≤8%），跌破守位即认输", "#d92b2b"),
+    ("B", "B 可介入", "三买守位在手边（≤8%），跌破守位即认输", "#e3554f"),
     ("A", "A 今日突破", "刚越中枢上沿，等回踩，不追", "#e8590c"),
-    ("E", "E 贴沿未过", "紧贴上沿未过，埋伏不是买", "#b7791f"),
+    ("E", "E 贴沿未过", "紧贴上沿未过，埋伏不是买", "#e0b95c"),
 )
 LAYER_DESC, LAYER_COLOR = {}, {}
 BAR_N = 60
@@ -260,12 +260,12 @@ def _svg(r, k):
     if zd and zg:
         y_zg, y_zd = Y(zg), Y(zd)
         out.append(f'<rect x="{PL}" y="{y_zg:.1f}" width="{iw}" height="{max(y_zd-y_zg,1):.1f}" '
-                   f'fill="#5a6b82" opacity="0.10"/>')
-        for y, lab, col in ((y_zg, f"ZG {zg:.2f}", "#8a7a5c"), (y_zd, f"ZD {zd:.2f}", "#8a7a5c")):
+                   f'fill="#7b8698" opacity="0.10"/>')
+        for y, lab, col in ((y_zg, f"ZG {zg:.2f}", "#c9b184"), (y_zd, f"ZD {zd:.2f}", "#c9b184")):
             out.append(f'<line x1="{PL}" y1="{y:.1f}" x2="{PL+iw}" y2="{y:.1f}" '
                        f'stroke="{col}" stroke-width="1" stroke-dasharray="4 3"/>')
             out.append(f'<text x="{PL+iw+4}" y="{y+3:.1f}" font-size="9" fill="{col}">{lab}</text>')
-    out.append(f'<polyline points="{pts}" fill="none" stroke="#2456c4" stroke-width="1.6"/>')
+    out.append(f'<polyline points="{pts}" fill="none" stroke="#5b9bd5" stroke-width="1.6"/>')
     # 现价
     py = Y(c[-1])
     # 标签避让：实时价常常就贴在 ZG/ZD 上，同一位置画两行字会叠成一团
@@ -274,11 +274,11 @@ def _svg(r, k):
         if ref is not None and abs(ty - ref) < 11:
             ty = ref + 13 if ty >= ref else ref - 5
     ty = min(max(ty, PT + 8), H - PB - 2)
-    out.append(f'<circle cx="{X(len(c)-1):.1f}" cy="{py:.1f}" r="3.2" fill="#d92b2b"/>')
-    out.append(f'<text x="{PL+iw+4}" y="{ty:.1f}" font-size="9" fill="#d92b2b" '
+    out.append(f'<circle cx="{X(len(c)-1):.1f}" cy="{py:.1f}" r="3.2" fill="#e3554f"/>')
+    out.append(f'<text x="{PL+iw+4}" y="{ty:.1f}" font-size="9" fill="#e3554f" '
                f'font-weight="bold">{c[-1]:.2f}</text>')
-    out.append(f'<text x="{PL}" y="{H-4}" font-size="8" fill="#9aa3b0">{k["d0"]}</text>')
-    out.append(f'<text x="{PL+iw-34}" y="{H-4}" font-size="8" fill="#9aa3b0">'
+    out.append(f'<text x="{PL}" y="{H-4}" font-size="8" fill="#7b8698">{k["d0"]}</text>')
+    out.append(f'<text x="{PL+iw-34}" y="{H-4}" font-size="8" fill="#7b8698">'
                f'{"实时" if lpx else k["d1"]}</text>')
     out.append("</svg>")
     return "".join(out)
@@ -391,98 +391,98 @@ _BUILD = """<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>缠论结构日报 {asof}</title><style>
 *{{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}}
-body{{background:#f2f4f7;color:#1c2330;
+body{{background:#0d1117;color:#e6edf3;
      font:14px/1.5 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
      max-width:430px;margin:0 auto;min-height:100vh}}
 .screen{{display:none;min-height:100vh;padding:10px 14px 4px}}
 .screen.on{{display:block}}
 .hd{{display:flex;align-items:baseline;gap:8px;margin-bottom:2px}}
-.hd h1{{font-size:17px;font-weight:700}}
-.hd .d{{font-size:11px;color:#8a93a3}}
-.sub{{font-size:11px;color:#8a93a3;margin-bottom:10px}}
-.hero{{background:linear-gradient(135deg,#1f2b45,#2f4570);border-radius:12px;
+.hd h1{{font-size:18px;font-weight:700}}
+.hd .d{{font-size:11px;color:#7b8698}}
+.sub{{font-size:11px;color:#7b8698;margin-bottom:10px}}
+.hero{{background:linear-gradient(135deg,#18243a,#1d2c47);border-radius:12px;
       padding:12px 14px;color:#fff;margin-bottom:10px}}
 .hero .t{{font-size:11px;opacity:.75}}
 .hero .m{{font-size:15px;font-weight:700;margin:3px 0 8px}}
 .hb{{display:flex;gap:6px;margin-top:6px}}
-.hb div{{flex:1;text-align:center;background:rgba(255,255,255,.10);border-radius:7px;padding:5px 2px}}
+.hb div{{flex:1;text-align:center;background:rgba(255,255,255,0.045);border-radius:7px;padding:5px 2px}}
 .hb .n{{font-size:15px;font-weight:700}}
 .hb .l{{font-size:10px;opacity:.7}}
 .cards{{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:10px}}
-.card{{background:#fff;border-radius:9px;padding:8px 3px;text-align:center;
+.card{{background:#131a24;border-radius:9px;padding:8px 3px;text-align:center;
       box-shadow:0 1px 2px rgba(20,30,50,.05)}}
-.card .k{{font-size:10px;color:#8a93a3;white-space:nowrap}}
+.card .k{{font-size:10px;color:#7b8698;white-space:nowrap}}
 .card .v{{font-size:19px;font-weight:700;line-height:1.25}}
-.brief{{background:#fff8e6;border:1px solid #f2dfb4;border-radius:9px;
+.brief{{background:#2a2312;border:1px solid #4a3d1c;border-radius:9px;
        padding:8px 11px;font-size:11px;line-height:1.56;color:#7a5a12;margin-bottom:9px}}
-.sec{{font-size:11px;color:#8a93a3;margin:2px 2px 6px;display:flex;justify-content:space-between}}
+.sec{{font-size:11px;color:#7b8698;margin:2px 2px 6px;display:flex;justify-content:space-between}}
 /* 板块平台入口：整个站只有这一条路通向板块页（个股页 → 所属板块 那条要先进详情，
    首页进来的人看不到）。线上是两个文件同目录部署，跳转带 sharecode。 */
-.sgo{{background:#fff;border-radius:11px;padding:11px 13px;margin-bottom:9px;
+.sgo{{background:#131a24;border-radius:11px;padding:11px 13px;margin-bottom:9px;
      display:flex;align-items:center;justify-content:space-between;
      font-size:12.5px;color:#1e2a3a;box-shadow:0 1px 2px rgba(20,30,50,.05);cursor:pointer}}
-.sgo .m{{font-size:10.5px;color:#8a93a3;margin-top:2px}}
+.sgo .m{{font-size:10.5px;color:#7b8698;margin-top:2px}}
 .sgo .ar{{color:#b8c0cc;font-size:15px}}
-.row{{background:#fff;border-radius:9px;padding:7px 11px;margin-bottom:6px;
+.row{{background:#131a24;border-radius:9px;padding:7px 11px;margin-bottom:6px;
      display:flex;align-items:center;gap:9px;box-shadow:0 1px 2px rgba(20,30,50,.05)}}
 .row .l{{flex:1;min-width:0}}
 .row .nm{{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
-.row .mt{{font-size:10.5px;color:#8a93a3;margin-top:2px}}
+.row .mt{{font-size:10.5px;color:#7b8698;margin-top:2px}}
 .row .r{{text-align:right;flex:none}}
 .row .px{{font-size:14px;font-weight:700}}
-.row .dg{{font-size:10.5px;color:#8a93a3}}
-.up{{color:#d92b2b}}.down{{color:#0a9e5c}}
-.arw{{color:#c3cad6;font-size:16px;flex:none}}
-.sech{{font-size:11px;color:#8a93a3;margin:13px 2px 6px;font-weight:600}}
+.row .dg{{font-size:10.5px;color:#7b8698}}
+.up{{color:#e3554f}}.down{{color:#3fa96a}}
+.arw{{color:#2b3949;font-size:16px;flex:none}}
+.sech{{font-size:11px;color:#7b8698;margin:13px 2px 6px;font-weight:600}}
 .sech .warn{{font-weight:400;color:#b5761a;margin-left:6px}}
-.secw{{background:#fff;border-radius:11px;overflow:hidden;
+.secw{{background:#131a24;border-radius:11px;overflow:hidden;
       box-shadow:0 1px 2px rgba(20,30,50,.05)}}
 .srow{{display:flex;align-items:center;gap:7px;padding:9px 12px;
-      border-bottom:1px solid #f2f4f7;text-decoration:none;color:inherit}}
+      border-bottom:1px solid #0d1117;text-decoration:none;color:inherit}}
 .srow:last-child{{border:0}}
 .srow .sn{{flex:1;min-width:0;font-size:12.5px;white-space:nowrap;
           overflow:hidden;text-overflow:ellipsis}}
-.srow .tt{{font-size:9px;padding:1px 4px;border-radius:3px;background:#f2f4f7;
-          color:#8a93a3;flex:none}}
+.srow .tt{{font-size:9px;padding:1px 4px;border-radius:3px;background:#0d1117;
+          color:#7b8698;flex:none}}
 .srow .st2{{font-size:11px;flex:none}}
-.srow .sr{{font-size:11px;color:#8a93a3;flex:none;font-variant-numeric:tabular-nums}}
-.srow .ar{{color:#c3cad6;font-size:15px;flex:none}}
-.srow:active{{background:#f7f9fc}}
-.foot{{font-size:10px;color:#8a93a3;line-height:1.6;margin-top:5px}}
-details.rule{{background:#fff;border-radius:9px;padding:9px 11px;font-size:11px;
-             line-height:1.8;color:#6b7686;margin-top:10px}}
+.srow .sr{{font-size:11px;color:#7b8698;flex:none;font-variant-numeric:tabular-nums}}
+.srow .ar{{color:#2b3949;font-size:15px;flex:none}}
+.srow:active{{background:#0f1620}}
+.foot{{font-size:10px;color:#7b8698;line-height:1.6;margin-top:5px}}
+details.rule{{background:#131a24;border-radius:9px;padding:9px 11px;font-size:11px;
+             line-height:1.8;color:#7b8698;margin-top:10px}}
 details.rule summary{{cursor:pointer;color:#4a5568;font-weight:600;list-style:none}}
 details.rule summary::-webkit-details-marker{{display:none}}
-details.rule summary:after{{content:" ⌄";color:#a6afbd}}
+details.rule summary:after{{content:" ⌄";color:#7b8698}}
 details.rule[open] summary:after{{content:" ⌃"}}
-.back{{display:flex;align-items:center;gap:6px;margin-bottom:10px;font-size:13px;color:#2456c4}}
+.back{{display:flex;align-items:center;gap:6px;margin-bottom:10px;font-size:13px;color:#5b9bd5}}
 .back span{{font-size:17px}}
-.dt-hd{{background:#fff;border-radius:11px;padding:13px 14px;margin-bottom:9px}}
+.dt-hd{{background:#131a24;border-radius:11px;padding:13px 14px;margin-bottom:9px}}
 .dt-hd .nm{{font-size:19px;font-weight:700}}
-.dt-hd .cd{{font-size:11px;color:#8a93a3;margin-top:2px}}
+.dt-hd .cd{{font-size:11px;color:#7b8698;margin-top:2px}}
 .dt-hd .px{{font-size:27px;font-weight:700;margin-top:5px;line-height:1.15}}
 .dt-hd .ch{{font-size:12px;font-weight:600;margin-left:7px}}
 .tag{{display:inline-block;padding:1px 8px;border-radius:9px;font-size:10.5px;
      margin-top:6px;margin-right:5px}}
 .kline{{width:100%;height:auto;display:block}}
-.kbox{{background:#fff;border-radius:11px;padding:9px 6px 4px;margin-bottom:9px}}
-.nodata{{padding:24px;text-align:center;color:#a6afbd;font-size:12px}}
-.more{{background:#fff;border-radius:11px;padding:11px 13px;font-size:12.5px;
-      color:#8a93a3;margin-bottom:8px;display:flex;justify-content:space-between;
+.kbox{{background:#131a24;border-radius:11px;padding:9px 6px 4px;margin-bottom:9px}}
+.nodata{{padding:24px;text-align:center;color:#7b8698;font-size:12px}}
+.more{{background:#131a24;border-radius:11px;padding:11px 13px;font-size:12.5px;
+      color:#7b8698;margin-bottom:8px;display:flex;justify-content:space-between;
       align-items:center;cursor:pointer}}
-.more b{{color:#1c2330;font-weight:600;font-size:13px}}
+.more b{{color:#e6edf3;font-weight:600;font-size:13px}}
 .more .ar{{transition:transform .18s;display:inline-block}}
 .more.on .ar{{transform:rotate(180deg)}}
-.evs{{background:#fff;border-radius:11px;overflow:hidden;margin-bottom:9px}}
-.ev{{padding:9px 12px;border-bottom:1px solid #f2f4f7}}
+.evs{{background:#131a24;border-radius:11px;overflow:hidden;margin-bottom:9px}}
+.ev{{padding:9px 12px;border-bottom:1px solid #0d1117}}
 .ev:last-child{{border-bottom:none}}
 .ev .top{{display:flex;align-items:center;gap:7px}}
 .ev .lb{{font-size:12px;font-weight:600;flex:1}}
 .badge{{font-size:10px;padding:1px 7px;border-radius:8px;flex:none}}
-.badge.y{{background:#e8f2ff;color:#2456c4}}
-.badge.n{{background:#f2f4f7;color:#a6afbd}}
+.badge.y{{background:#101d2e;color:#5b9bd5}}
+.badge.n{{background:#0d1117;color:#7b8698}}
 .ev .ac{{font-size:11px;color:#4a5568;margin-top:3px;word-break:break-all}}
-.ev .ru{{font-size:10px;color:#a6afbd;margin-top:1px}}
+.ev .ru{{font-size:10px;color:#7b8698;margin-top:1px}}
 </style></head><body>
 
 <div class="screen on" id="s-home">
@@ -584,7 +584,7 @@ function rowHtml(r){{
           dgc = r.dist_zg>0?'up':(r.dist_zg<0?'down':''); }}
   return '<div class="row" onclick="goDetail(\\''+r.code+'\\')">'
     + '<div class="l"><div class="nm">'+r.name
-    + (r.broke!=null?' <span style="font-size:10px;color:#b23b3b">盘中失守</span>':'')+'</div>'
+    + (r.broke!=null?' <span style="font-size:10px;color:#e8807f">盘中失守</span>':'')+'</div>'
     + '<div class="mt">'+r.code+' · '+(r.mv_yi||0).toFixed(0)+'亿 · '
     + (r.trend||'')+' · 枢'+ (r.piv_n_bi||0) +'笔</div></div>'
     + '<div class="r"><div class="px '+c+'">'+r.close.toFixed(2)
@@ -603,7 +603,7 @@ function rowHome(st){{
   return '<div class="row" onclick="goList(\\''+st+'\\')" style="padding:11px 13px">'
     + '<div class="l"><div class="nm" style="font-size:13px">'+st+'</div>'
     + '<div class="mt">'+ (D.desc[st]||'') +'</div></div>'
-    + '<div class="r"><div class="px" style="color:'+(D.color[st]||'#1c2330')+'">'
+    + '<div class="r"><div class="px" style="color:'+(D.color[st]||'#e6edf3')+'">'
     + (D.counts[st]||arr.length) +' 只</div></div>'
     + '<div class="arw">›</div></div>';
 }}
@@ -687,7 +687,7 @@ function sectorBlock(code, name){{
         + '<span class="warn">位置描述，不是看涨依据</span></div><div class="secw">';
   for(var i=0;i<of.length;i++){{
     var s = SL[of[i]]; if(!s) continue;
-    var col = D.color[s.st] || '#5a6b82';
+    var col = D.color[s.st] || '#7b8698';
     h += '<a class="srow" href="' + withSC('sector_platform.html?sector='
        + encodeURIComponent(s.c)
        + '&from=' + encodeURIComponent(code)
@@ -781,14 +781,14 @@ function goDetail(code){{
     + '<div class="cd">'+r.code+' · '+(r.mv_yi||0).toFixed(0)+'亿 · '+(r.trend||'')+'</div>'
     + '<div class="px '+c+'">'+r.close.toFixed(2)
     + '<span class="ch">'+(r.pct>0?'+':'')+(r.pct*100).toFixed(2)+'%</span></div>'
-    + '<div><span class="tag" style="background:'+(D.color[r.stage]||'#eef1f5')+'18;color:'
-    + (D.color[r.stage]||'#5a6b82')+'">'+r.stage+'</span>'
-    + '<span class="tag" style="background:#f2f4f7;color:#6b7686">'
+    + '<div><span class="tag" style="background:'+(D.color[r.stage]||'#1f2937')+'18;color:'
+    + (D.color[r.stage]||'#7b8698')+'">'+r.stage+'</span>'
+    + '<span class="tag" style="background:#0d1117;color:#7b8698">'
     + (r.lpos||r.pos||'')+(r.lpos&&r.pos&&r.lpos!==r.pos?'·结构日'+r.pos:'')+'</span>'
-    + (r.lpx?'<span class="tag" style="background:#fdeaea;color:#b23b3b">实时价</span>':'')
-    + (r.broke!=null?'<span class="tag" style="background:#b23b3b;color:#fff">盘中失守 '
+    + (r.lpx?'<span class="tag" style="background:#2b1618;color:#e8807f">实时价</span>':'')
+    + (r.broke!=null?'<span class="tag" style="background:#e8807f;color:#fff">盘中失守 '
        +(r.broke*100).toFixed(1)+'%</span>':'')
-    + (r.piv_over?'<span class="tag" style="background:#fdeaea;color:#b23b3b">枢已升级</span>':'')
+    + (r.piv_over?'<span class="tag" style="background:#2b1618;color:#e8807f">枢已升级</span>':'')
     + '</div></div>';
   h += '<div class="kbox">'+ (r.svg||'<div class="nodata">无走势数据</div>') +'</div>';
   h += '<div class="evs">';
@@ -1027,14 +1027,14 @@ def main():
         # 拆成「涨 / 停 62」（390px 实测），读着像错字。
         if px_clock and px_clock != lv_clock:
             sub_line = (f"结构 {s_lbl} · 可判 {judged} 只 · "
-                        f'<b style="color:#d92b2b">价 {px_clock}</b>'
-                        f'<br><span style="color:#8a93a3">市场 {lv_clock} · </span>'
+                        f'<b style="color:#e3554f">价 {px_clock}</b>'
+                        f'<br><span style="color:#7b8698">市场 {lv_clock} · </span>'
                         + _tail)
         else:
             sub_line = (f"结构 {s_lbl} · 可判 {judged} 只 · "
-                        f'<b style="color:#d92b2b">实时 {lv_clock}</b> ' + _tail)
+                        f'<b style="color:#e3554f">实时 {lv_clock}</b> ' + _tail)
         if broke_n:
-            sub_line += f' · <b style="color:#b23b3b">盘中失守 {broke_n}</b>'
+            sub_line += f' · <b style="color:#e8807f">盘中失守 {broke_n}</b>'
     else:
         sub_line = (f"结构 {s_lbl} 收盘 · 窗口 {lookback} 根 · 可判 {judged} 只")
 

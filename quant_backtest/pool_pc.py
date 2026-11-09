@@ -128,7 +128,7 @@ def build(args):
     rows, groups = {}, []
     for group in list(CARD_STAGES) + [m[1] for m in LAYER_META]:
         groups.append({"k": group, "n": 0, "d": STAGE_DESC.get(group, ""),
-                       "c": dict((m[1], m[3]) for m in LAYER_META).get(group, "#5a6b82")})
+                       "c": dict((m[1], m[3]) for m in LAYER_META).get(group, "#7b8698")})
 
     skip = 0
     for r, group, stage in picked:
@@ -222,84 +222,84 @@ TPL = r"""<!DOCTYPE html>
 <html lang="zh-CN"><head><meta charset="utf-8">
 <title>缠论结构工作台 __ASOF__</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0d1117;--pn:#131a24;--pn2:#0f1620;--bd:#1f2937;--tx:#e6edf3;--mu:#7b8698;--up:#e3554f;--dn:#3fa96a;--ac:#5b9bd5;--warn:#e0b95c;--bad:#e8807f;--w-read:1180px;--w-data:1440px;--fh1:20px;--fh2:15px;--fbody:13px;--fsm:11.5px}*{box-sizing:border-box}html,body{margin:0;padding:0}body{background:var(--bg);color:var(--tx);font-family:-apple-system, "Segoe UI", system-ui, "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;font-size:var(--fbody);line-height:1.6;-webkit-font-smoothing:antialiased}a{color:var(--ac);text-decoration:none}a:hover{text-decoration:underline}h1{font-size:var(--fh1);font-weight:650;margin:0 0 6px;letter-spacing:.2px;line-height:1.35}h2{font-size:var(--fh2);font-weight:620;margin:28px 0 10px;display:flex;align-items:baseline;gap:8px}h3{font-size:var(--fh3);font-weight:600;color:#b9c4d2;margin:16px 0 8px}table{width:100%;border-collapse:collapse;font-size:var(--fbody)}th{text-align:left;color:var(--mu);font-weight:500;padding:7px 8px;border-bottom:1px solid var(--bd);font-size:var(--fsm);white-space:nowrap}td{padding:7px 8px;border-bottom:1px solid var(--bd);vertical-align:middle}code,kbd{font-family:"SF Mono", "Cascadia Mono", Consolas, "Liberation Mono", monospace;font-size:var(--fsm);background:var(--pn2);padding:1px 5px;border-radius:4px}::selection{background:#1f3a56}*{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%}
-body{display:flex;flex-direction:column;overflow:hidden;background:#eef1f5;color:#1c2330;
-     font:13px/1.55 -apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+body{display:flex;flex-direction:column;overflow:hidden;background:var(--bg);color:var(--tx);
+     font:13px/1.55 -apple-system, "Segoe UI", system-ui, "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif}
 .num{font-variant-numeric:tabular-nums}
-.up{color:#d92b2b}.dn{color:#0a9e5c}.mut{color:#6b7480}
+.up{color:var(--up)}.dn{color:var(--dn)}.mut{color:var(--mu)}
 
 /* 顶栏 */
 .top{flex:0 0 52px;display:flex;align-items:center;gap:14px;padding:0 16px;
-     background:#fff;border-bottom:1px solid #e3e7ee}
-.top h1{font-size:15px;font-weight:700;letter-spacing:.2px}
-.tag{font-size:11px;padding:1px 7px;border-radius:9px;background:#eef1f5;color:#5a6b82}
+     background:var(--pn);border-bottom:1px solid var(--bd)}
+.top h1{font-size:var(--fh1);font-weight:700;letter-spacing:.2px}
+.tag{font-size:11px;padding:1px 7px;border-radius:9px;background:var(--pn2);color:var(--mu);border:1px solid var(--bd)}
 .srch{margin-left:auto;position:relative}
-.srch input{width:230px;height:30px;padding:0 10px 0 28px;border:1px solid #dde2ea;
-            border-radius:6px;font-size:12.5px;outline:none;background:#fafbfc}
-.srch input:focus{border-color:#9db4d8;background:#fff}
-.srch i{position:absolute;left:9px;top:7px;color:#9aa3b0;font-style:normal;font-size:12px}
-.lnk{font-size:12px;color:#2456c4;text-decoration:none}
+.srch input{width:230px;height:30px;padding:0 10px 0 28px;border:1px solid var(--bd);
+            border-radius:6px;font-size:12.5px;outline:none;background:var(--pn2);color:var(--tx)}
+.srch input:focus{border-color:var(--ac);background:var(--pn)}
+.srch i{position:absolute;left:9px;top:7px;color:var(--mu);font-style:normal;font-size:12px}
+.lnk{font-size:12px;color:var(--ac);text-decoration:none}
 .lnk:hover{text-decoration:underline}
 
 /* 三栏 */
 .main{flex:1;display:grid;grid-template-columns:296px minmax(0,1fr) 356px;overflow:hidden}
 .col{overflow-y:auto;overflow-x:hidden}
 .col::-webkit-scrollbar{width:8px}
-.col::-webkit-scrollbar-thumb{background:#cfd6e0;border-radius:4px}
-.left{background:#fff;border-right:1px solid #e3e7ee}
-.mid{background:#f7f9fc;display:flex;flex-direction:column;overflow:hidden}
-.right{background:#fff;border-left:1px solid #e3e7ee}
+.col::-webkit-scrollbar-thumb{background:#2b3949;border-radius:4px}
+.left{background:var(--pn);border-right:1px solid var(--bd)}
+.mid{background:var(--pn2);display:flex;flex-direction:column;overflow:hidden}
+.right{background:var(--pn);border-left:1px solid var(--bd)}
 
 /* 左栏 */
 .gp{padding:9px 12px 5px;display:flex;align-items:center;gap:6px}
 .gp .dot{width:7px;height:7px;border-radius:50%}
 .gp .nm{font-size:12px;font-weight:700}
-.gp .ct{font-size:11px;color:#8a93a3;margin-left:auto}
+.gp .ct{font-size:11px;color:var(--mu);margin-left:auto}
 .gp .ds{display:none}
 .row{padding:7px 12px 7px 14px;border-left:3px solid transparent;cursor:pointer;
      display:flex;align-items:baseline;gap:8px}
-.row:hover{background:#f5f7fb}
-.row.on{border-left-color:#d92b2b;background:#fdf2f2}
+.row:hover{background:#182231}
+.row.on{border-left-color:var(--up);background:#221a1c}
 .row .nm{font-size:13px;font-weight:600;max-width:96px;overflow:hidden;
          white-space:nowrap;text-overflow:ellipsis}
-.row .cd{font-size:11px;color:#9aa3b0}
+.row .cd{font-size:11px;color:var(--mu)}
 .row .px{margin-left:auto;font-size:12.5px}
-.row .bd{font-size:10.5px;color:#d92b2b;background:#fdeaea;border-radius:3px;padding:0 3px}
+.row .bd{font-size:10.5px;color:var(--up);background:#2b1618;border-radius:3px;padding:0 3px}
 
 /* 中栏 */
 .chead{padding:12px 18px 0;display:flex;align-items:baseline;gap:10px}
 .chead .nm{font-size:18px;font-weight:700}
-.chead .cd{font-size:12px;color:#8a93a3}
+.chead .cd{font-size:12px;color:var(--mu)}
 .chead .st{font-size:11.5px;padding:1px 8px;border-radius:9px;color:#fff}
 .chart{flex:1;min-height:0;position:relative;margin:6px 10px 0}
 .chart svg{display:block}
-.strip{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:#e3e7ee;
-       margin:8px 10px 0;border:1px solid #e3e7ee;border-radius:6px;overflow:hidden}
-.strip div{background:#fff;padding:6px 9px}
-.strip .k{font-size:10.5px;color:#8a93a3}
+.strip{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--bd);
+       margin:8px 10px 0;border:1px solid var(--bd);border-radius:6px;overflow:hidden}
+.strip div{background:var(--pn);padding:6px 9px}
+.strip .k{font-size:10.5px;color:var(--mu)}
 .strip .v{font-size:13px;font-weight:600;margin-top:1px}
-.note{padding:8px 14px 12px;font-size:11.5px;color:#8a93a3;line-height:1.6}
+.note{padding:8px 14px 12px;font-size:11.5px;color:var(--mu);line-height:1.6}
 
 /* 右栏 */
-.blk{padding:12px 14px;border-bottom:1px solid #eef1f5}
-.blk h3{font-size:12px;font-weight:700;color:#5a6b82;margin-bottom:8px;
+.blk{padding:12px 14px;border-bottom:1px solid var(--bd)}
+.blk h3{font-size:12px;font-weight:700;color:var(--mu);margin-bottom:8px;
         display:flex;align-items:center;gap:6px}
-.blk h3 span{font-weight:400;color:#9aa3b0;font-size:11px}
+.blk h3 span{font-weight:400;color:var(--mu);font-size:11px}
 .ev{display:grid;grid-template-columns:64px 1fr;gap:2px 8px;padding:5px 0;
-    border-top:1px dashed #eef1f5;font-size:12px}
+    border-top:1px dashed var(--bd);font-size:12px}
 .ev:first-of-type{border-top:0}
-.ev .l{color:#8a93a3}
-.ev .a{color:#1c2330}
-.ev .r{grid-column:2;color:#b0b7c3;font-size:10.5px}
-.ev.bad .a{color:#b23b3b}
+.ev .l{color:var(--mu)}
+.ev .a{color:var(--tx)}
+.ev .r{grid-column:2;color:#5e6b7a;font-size:10.5px}
+.ev.bad .a{color:var(--bad)}
 .ev .mk{font-size:10px;margin-left:5px;padding:0 4px;border-radius:3px}
-.ev .mk.y{background:#e8f5ee;color:#0a9e5c}
-.ev .mk.n{background:#fdeaea;color:#b23b3b}
-.cal{font-size:11.5px;color:#6b7480;line-height:1.9}
-.cal b{color:#1c2330;font-weight:600}
-.warn{background:#fff8e8;border:1px solid #f0e0bd;border-radius:6px;padding:8px 10px;
-      font-size:11.5px;color:#8a6d2f;line-height:1.65}
+.ev .mk.y{background:#14261b;color:var(--dn)}
+.ev .mk.n{background:#2b1618;color:var(--bad)}
+.cal{font-size:11.5px;color:var(--mu);line-height:1.9}
+.cal b{color:var(--tx);font-weight:600}
+.warn{background:#2a2312;border:1px solid #4a3d1c;border-radius:6px;padding:8px 10px;
+      font-size:11.5px;color:var(--warn);line-height:1.65}
 @media (max-width:1180px){
   .main{grid-template-columns:264px minmax(0,1fr)}
   .right{display:none}
@@ -403,13 +403,13 @@ function drawChart(r){
   function Y(v){ return padT + (hi-v)/(hi-lo)*ih; }
 
   var s = ['<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'">'];
-  s.push('<rect x="0" y="0" width="'+W+'" height="'+H+'" fill="#fff"/>');
+  s.push('<rect x="0" y="0" width="'+W+'" height="'+H+'" fill="#0f1620"/>');
 
   /* 横向网格 + 右侧价格刻度 */
   for(var g=0; g<=4; g++){
     var v = lo + (hi-lo)*g/4, y = Y(v);
-    s.push('<line x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(padL+iw)+'" y2="'+y.toFixed(1)+'" stroke="#eef1f5"/>');
-    s.push('<text x="'+(padL+iw+6)+'" y="'+(y+3.5).toFixed(1)+'" font-size="10" fill="#9aa3b0">'+v.toFixed(2)+'</text>');
+    s.push('<line x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(padL+iw)+'" y2="'+y.toFixed(1)+'" stroke="#1f2937"/>');
+    s.push('<text x="'+(padL+iw+6)+'" y="'+(y+3.5).toFixed(1)+'" font-size="10" fill="#7b8698">'+v.toFixed(2)+'</text>');
   }
 
   /* 中枢矩形：piv_sdt → piv_edt，ZG/ZD 上下沿。日期早于窗口就贴左边并标 ← */
@@ -420,7 +420,7 @@ function drawChart(r){
     if(i1<0) i1=0;
     var x1=X(i1), x2=X(i2), y1=Y(r.zg), y2=Y(r.zd);
     s.push('<rect x="'+x1.toFixed(1)+'" y="'+y1.toFixed(1)+'" width="'+Math.max(x2-x1,2).toFixed(1)
-         + '" height="'+Math.max(y2-y1,1).toFixed(1)+'" fill="#5a6b82" opacity="0.09"/>');
+         + '" height="'+Math.max(y2-y1,1).toFixed(1)+'" fill="#7b8698" opacity="0.15"/>');
     [[r.zg,'ZG'],[r.zd,'ZD']].forEach(function(t){
       var yy=Y(t[0]);
       s.push('<line x1="'+x1.toFixed(1)+'" y1="'+yy.toFixed(1)+'" x2="'+(padL+iw)+'" y2="'+yy.toFixed(1)
@@ -428,22 +428,22 @@ function drawChart(r){
       s.push('<text x="'+(x1+3).toFixed(1)+'" y="'+(yy-4).toFixed(1)+'" font-size="10" fill="#8a7a5c">'
            + t[1]+' '+fmt(t[0])+(t[1]==='ZG'&&sameGuard?' = 守位':'')+'</text>');
     });
-    if(cut) s.push('<text x="'+padL+'" y="'+(y1-16).toFixed(1)+'" font-size="10" fill="#b0b7c3">← 中枢起点早于本窗口</text>');
+    if(cut) s.push('<text x="'+padL+'" y="'+(y1-16).toFixed(1)+'" font-size="10" fill="#5e6b7a">← 中枢起点早于本窗口</text>');
   }
 
   /* 收盘面积 + 折线 */
   var pts = c.map(function(v,i){ return X(i).toFixed(1)+','+Y(v).toFixed(1); }).join(' ');
-  s.push('<polygon points="'+X(0).toFixed(1)+','+Y(lo)+' '+pts+' '+X(n-1).toFixed(1)+','+Y(lo)+'" fill="#2456c4" opacity="0.05"/>');
-  s.push('<polyline points="'+pts+'" fill="none" stroke="#2456c4" stroke-width="1.6"/>');
+  s.push('<polygon points="'+X(0).toFixed(1)+','+Y(lo)+' '+pts+' '+X(n-1).toFixed(1)+','+Y(lo)+'" fill="#5b9bd5" opacity="0.10"/>');
+  s.push('<polyline points="'+pts+'" fill="none" stroke="#5b9bd5" stroke-width="1.6"/>');
 
   /* 守位线：跌破时画红，否则灰蓝虚线。守位与 ZG 同一个价位时（三买待）
      不再重复画一条，否则两条虚线叠在一起、两个标签也叠在一起。 */
   if(r.gd && !sameGuard){
     var yg=Y(r.gd), bad = r.bk!=null;
     s.push('<line x1="'+padL+'" y1="'+yg.toFixed(1)+'" x2="'+(padL+iw)+'" y2="'+yg.toFixed(1)
-         + '" stroke="'+(bad?'#d92b2b':'#4a7fd4')+'" stroke-width="1.2" stroke-dasharray="2 4"/>');
+         + '" stroke="'+(bad?'#e3554f':'#5b9bd5')+'" stroke-width="1.2" stroke-dasharray="2 4"/>');
     s.push('<text x="'+(padL+2)+'" y="'+(yg-5).toFixed(1)+'" font-size="10" fill="'
-         + (bad?'#d92b2b':'#4a7fd4')+'">守位 '+fmt(r.gd)+(bad?' · 已破 '+pctTxt(r.bk):'')+'</text>');
+         + (bad?'#e3554f':'#5b9bd5')+'">守位 '+fmt(r.gd)+(bad?' · 已破 '+pctTxt(r.bk):'')+'</text>');
   }
 
   /* 买卖点：sig_dt 那天的 sig_price 打个点。价格缺失就用当天收盘。
@@ -457,7 +457,7 @@ function drawChart(r){
       if(Math.abs(ly-ref) < 12) ly = ref + 15;
     });
     ly = Math.min(Math.max(ly, padT+9), H-padB-3);
-    s.push('<circle cx="'+xs.toFixed(1)+'" cy="'+ys.toFixed(1)+'" r="3.6" fill="#fff" stroke="#e07b39" stroke-width="1.8"/>');
+    s.push('<circle cx="'+xs.toFixed(1)+'" cy="'+ys.toFixed(1)+'" r="3.6" fill="#0f1620" stroke="#e07b39" stroke-width="1.8"/>');
     s.push('<text x="'+(xs+6).toFixed(1)+'" y="'+ly.toFixed(1)+'" font-size="10.5" fill="#c2691f" font-weight="600">'
          + r.sg+' '+fmt(sp)+'</text>');
   }
@@ -465,9 +465,9 @@ function drawChart(r){
   /* 实时价：接在最后一根之后，与收盘线断开——结构只到 asof，价是当下 */
   if(r.px){
     var xp=X(n-1)+6, yp=Y(Number(r.px));
-    s.push('<line x1="'+X(n-1).toFixed(1)+'" y1="'+Y(c[n-1]).toFixed(1)+'" x2="'+xp.toFixed(1)+'" y2="'+yp.toFixed(1)+'" stroke="#d92b2b" stroke-width="1" stroke-dasharray="2 2"/>');
-    s.push('<circle cx="'+xp.toFixed(1)+'" cy="'+yp.toFixed(1)+'" r="3.8" fill="#d92b2b"/>');
-    s.push('<text x="'+(xp+6).toFixed(1)+'" y="'+(yp+3.5).toFixed(1)+'" font-size="10.5" fill="#d92b2b" font-weight="700">'+fmt(r.px)+'</text>');
+    s.push('<line x1="'+X(n-1).toFixed(1)+'" y1="'+Y(c[n-1]).toFixed(1)+'" x2="'+xp.toFixed(1)+'" y2="'+yp.toFixed(1)+'" stroke="#e3554f" stroke-width="1" stroke-dasharray="2 2"/>');
+    s.push('<circle cx="'+xp.toFixed(1)+'" cy="'+yp.toFixed(1)+'" r="3.8" fill="#e3554f"/>');
+    s.push('<text x="'+(xp+6).toFixed(1)+'" y="'+(yp+3.5).toFixed(1)+'" font-size="10.5" fill="#e3554f" font-weight="700">'+fmt(r.px)+'</text>');
   }
 
   /* 日期轴：首 / 中 / 末，末根标注是收盘日还是今天 */
@@ -476,7 +476,7 @@ function drawChart(r){
     var lb = String(cal[i]||'');
     lb = lb.slice(4,6)+'-'+lb.slice(6,8);
     var x = X(i);
-    s.push('<text x="'+x.toFixed(1)+'" y="'+(H-6)+'" font-size="10" fill="#9aa3b0" text-anchor="'
+    s.push('<text x="'+x.toFixed(1)+'" y="'+(H-6)+'" font-size="10" fill="#7b8698" text-anchor="'
          + (ix===0?'start':ix===2?'end':'middle')+'">'+lb+(ix===2&&r.px?' → 今':'')+'</text>');
   });
   s.push('</svg>');
@@ -543,7 +543,7 @@ function select(code){
   document.getElementById('c-code').textContent = r.k + ' · ' + (CN[r.st] || r.st);
   var st = document.getElementById('c-stage');
   st.textContent = r.st;
-  st.style.background = (PC.groups.filter(function(g){return g.k===r.g;})[0]||{}).c || '#5a6b82';
+  st.style.background = (PC.groups.filter(function(g){return g.k===r.g;})[0]||{}).c || '#7b8698';
   document.getElementById('c-trend').textContent =
     (r.tr? r.tr+'走势' : '') + '  ·  ' + (PC.cnt[r.st]!=null? '本档 '+PC.cnt[r.st]+' 只' : '');
   document.getElementById('note').textContent =
