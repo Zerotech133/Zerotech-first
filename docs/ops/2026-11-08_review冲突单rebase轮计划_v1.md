@@ -66,3 +66,13 @@
 - 三支均未合入、未 force；worktree 干净；R2 期间无并发 pytest/gate 争抢（仅 agent_platform 测试进程，未共用产物）。
 - 处置：WO-IFS 由 owner 走“已合入/清理”流程；HERMES/UI-BATCH 进入 11-10 窗口候选（UI-BATCH 体量大，建议单独一窗或排在 P1 之后）。
 - 下一步：R3（11-10 08:30）处理 GATEHEALTH、F2（基线与 nav/route 再生成）；UI-BATCH 若 R2 未合则顺延 R3。
+
+
+## 4.3 R3 执行结果（2026-11-10 04:55–05:05，提前执行）
+
+| 分支 | 新 tip | 定向测试 | PIN/dry-run | merge-tree | 结果 |
+|---|---|---|---|---|---|
+| K-STOCK-ANALYSIS-F2-20261104 | `330432afb` | 85 passed（screen page/proxy、route contract、dw alignment）；mixin 191/750 零 diff | rc=0 OK | rc=0 | 完成，未合 |
+| K-STOCK-ANALYSIS-GATEHEALTH-20261107 | `f64af59fa`（未 rebase） | — | — | — | 阻断：分支改 `tools/test_gate.ps1`（+14/−3）与 `tools/tests/test_test_gate_org_gate.py`，属 H5 钉扎文件，PIN_GATE 必拒；需 Lead 手工合入 + ADR，不走 R3 |
+
+F2 冲突处置：`portal/static/nav.js` 用本分支 `tools/export_nav.py` 从 `portal/api_common.py` 重生成（121 入口，含 `/sa/screen`）；`tools/portal_route_baseline.json` 用 `portal_route_inventory.py --write-baseline` 重生成（325 路由）；`portal/api_analysis.py` 合并 master 的 H3 strategy 代理与本分支的 screen 代理（docstring、GET/POST 路由两侧保留），screen/route 73 项通过后 continue。三支均未合入、未 force。
