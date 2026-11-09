@@ -163,6 +163,9 @@ def main():
                   ["sector_member_snapshot.py"], True))
     steps.append(("个股页", ["pool_report_h5.py"], False))
     steps.append(("板块页", ["sector_platform_h5.py"], False))
+    # 两个页面是双向相对跳转的，发布目录必须「成套」——少一个就是 404。
+    # 这一步只做本地拷贝和引用闭环自检，不碰线上；线上仍要手动发布一次。
+    steps.append(("发布目录打包（h5_pack）", ["h5_pack.py"], False))
     if not a.no_push:
         steps.append(("收盘复盘推送", ["pool_close_review.py"], True))
 

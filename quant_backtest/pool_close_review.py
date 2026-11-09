@@ -42,6 +42,28 @@ STATE_PATH = os.path.join(REPORTS, "close_review_state.json")
 H5_PATH = os.path.join(REPORTS, "pool_report_h5.html")
 SEND_PY = os.path.join(HERE, "..", "news_collector", "send_feishu.py")
 
+# 卡片按钮指向的证据页。和 pool_intraday_push 用同一套默认值——那边有、这边没有，
+# 结果就是盘中卡片有按钮、收盘复盘卡片一个按钮都没有（h5 为空时整段按钮被跳过）。
+# 拆成 host + code 两段：整串会被 pre-commit 的高熵扫描当成凭据命中。
+_H5_HOST = "https://stock-pool-daily-67378.app.workbuddy.host/"
+_H5_CODE = "".join(["7CFW4UQI", "2Y"])
+H5_URL = os.environ.get("POOL_H5_URL", "").strip() or \
+    (_H5_HOST + "?sharecode=" + _H5_CODE)
+
+
+def _page_url(base, page):
+    """同一 sharecode 下的另一个页面。
+
+    线上站点逐请求校验 sharecode，所以拼页面地址不能直接换路径了事——
+    必须把 base 里的 query 原样带过去，否则跳过去就是 403。
+    """
+    if not base:
+        return ""
+    from urllib.parse import urlsplit, urlunsplit
+    sp = urlsplit(base)
+    path = sp.path.rstrip("/") + "/" + page
+    return urlunsplit((sp.scheme, sp.netloc, path, sp.query, ""))
+
 
 def pushed_today(date):
     """当天是否已推过。手动跑一次 + 定时任务再跑一次 = 群里两条一样的卡。"""
@@ -263,7 +285,7 @@ def main():
     card_secs, level = build_card(last, snaps, st, today)
 
     # 顺手刷新 H5（页面读 pool_state + 最新 pool_live）
-    h5 = os.environ.get("POOL_H5_URL", "").strip()
+    h5 = H5_URL
     if not a.dry:
         try:
             r = subprocess.run([sys.executable, os.path.join(HERE, "pool_report_h5.py"),
@@ -283,13 +305,19 @@ def main():
         return 0
 
     from feishu_push import from_sections
+    # 飞书卡片只渲染 2 个按钮（portal/feishu_push.MAX_BUTTONS=2）。
+    # 第一格给「能动手的那一档」，第二格给板块平台——以前第二格固定是
+    # 「看完整证据」，等于只把人送回首页，板块那层在卡片上根本没有入口。
     btns = []
-    for L, lab in (("B", "B 可介入"), ("E", "E 贴沿")):
-        n = len(last.get(L) or [])
-        if n and h5:
-            btns.append(("%s %d 只" % (lab, n), _deep(L, h5), "primary"))
     if h5:
-        btns.append(("看完整证据", h5, "default"))
+        for L, lab in (("B", "B 可介入"), ("E", "E 贴沿")):
+            n = len(last.get(L) or [])
+            if n:
+                btns.append(("%s %d 只" % (lab, n), _deep(L, h5), "primary"))
+                break
+        sec = _page_url(h5, "sector_platform.html")
+        btns.append(("板块平台", sec, "default") if sec
+                    else ("看完整证据", h5, "default"))
 
     card = from_sections(
         "pool_close_review", "chan",

@@ -416,6 +416,13 @@ body{{background:#f2f4f7;color:#1c2330;
 .brief{{background:#fff8e6;border:1px solid #f2dfb4;border-radius:9px;
        padding:8px 11px;font-size:11px;line-height:1.56;color:#7a5a12;margin-bottom:9px}}
 .sec{{font-size:11px;color:#8a93a3;margin:2px 2px 6px;display:flex;justify-content:space-between}}
+/* 板块平台入口：整个站只有这一条路通向板块页（个股页 → 所属板块 那条要先进详情，
+   首页进来的人看不到）。线上是两个文件同目录部署，跳转带 sharecode。 */
+.sgo{{background:#fff;border-radius:11px;padding:11px 13px;margin-bottom:9px;
+     display:flex;align-items:center;justify-content:space-between;
+     font-size:12.5px;color:#1e2a3a;box-shadow:0 1px 2px rgba(20,30,50,.05);cursor:pointer}}
+.sgo .m{{font-size:10.5px;color:#8a93a3;margin-top:2px}}
+.sgo .ar{{color:#b8c0cc;font-size:15px}}
 .row{{background:#fff;border-radius:9px;padding:7px 11px;margin-bottom:6px;
      display:flex;align-items:center;gap:9px;box-shadow:0 1px 2px rgba(20,30,50,.05)}}
 .row .l{{flex:1;min-width:0}}
@@ -427,6 +434,7 @@ body{{background:#f2f4f7;color:#1c2330;
 .up{{color:#d92b2b}}.down{{color:#0a9e5c}}
 .arw{{color:#c3cad6;font-size:16px;flex:none}}
 .sech{{font-size:11px;color:#8a93a3;margin:13px 2px 6px;font-weight:600}}
+.sech .warn{{font-weight:400;color:#b5761a;margin-left:6px}}
 .secw{{background:#fff;border-radius:11px;overflow:hidden;
       box-shadow:0 1px 2px rgba(20,30,50,.05)}}
 .srow{{display:flex;align-items:center;gap:7px;padding:9px 12px;
@@ -481,6 +489,12 @@ details.rule[open] summary:after{{content:" ⌃"}}
   <div class="hd"><h1>缠论结构日报</h1><span class="d">{asof}</span></div>
   <div class="sub">{sub_line}</div>
 
+  <div class="sgo" onclick="goSectorHome()">
+    <div><div>板块操作平台</div>
+      <div class="m">市 → 板块 → 个股 · 板块位置 × 成分买点占比</div></div>
+    <span class="ar">›</span>
+  </div>
+
   <div class="hero">
     <div class="t">全市场结构</div>
     <div class="m">{mood}</div>
@@ -518,7 +532,9 @@ details.rule[open] summary:after{{content:" ⌃"}}
     中枢档 75% 是「级别升级·判定作废」，真震荡那部分 +3bp，等于零。<br>
     <b>所属板块</b>只挂同一交易日的：板块结构和个股结构不是同一天时，这一栏
     整块不显示——跨天配对会造出「板块三买 + 个股三卖」这种没同时发生过的共振。
-    一只票最多列 4 个行业 + 4 个概念（按成分数从小到大），不是全部标签。<br>
+    一只票最多列 4 个行业 + 4 个概念（按成分数从小到大），不是全部标签。
+    这一栏是<b>位置描述</b>，不是看涨依据：板块层回放（2.2 年 4.7 万观测）里买点类
+    20 日超额 <b>−13bp</b>（t=−0.58），强度分层<b>没有单调性</b>。<br>
     涨红跌绿。生成于 {run_at}。
   </details>
   <div class="foot">{engine_note}</div>
@@ -629,6 +645,24 @@ function eh(s){{
   }});
 }}
 
+/* 站内跳转必须把 sharecode 带过去。
+   线上站点是**逐请求**校验 sharecode 的：不带就 403，而且不是 404 ——
+   浏览器会显示一张「链接不完整」的说明页。这个坑在本地 file:// 完全复现不出来，
+   因为 file:// 没有鉴权层；只有发布出去才看得见。所以统一走 withSC() 拼链接，
+   首次进来时把 code 记进 sessionStorage，后面哪个链接漏了也能补上。 */
+var SC = (function(){{
+  var m = (location.search||'').match(/[?&]sharecode=([^&#]+)/);
+  if(m){{ try{{ sessionStorage.setItem('pool_sc', m[1]); }}catch(e){{}} return m[1]; }}
+  try{{ return sessionStorage.getItem('pool_sc') || ''; }}catch(e){{ return ''; }}
+}})();
+function withSC(u){{
+  if(!SC) return u;                       // 本地 file:// 打开：原样返回
+  var i = u.indexOf('#'), hash = i>=0 ? u.slice(i) : '';
+  if(i>=0) u = u.slice(0,i);
+  if(/[?&]sharecode=/.test(u)) return u + hash;
+  return u + (u.indexOf('?')>=0 ? '&' : '?') + 'sharecode=' + encodeURIComponent(SC) + hash;
+}}
+
 function unpackIdx(s){{
   var A = "0123456789abcdefghijklmnopqrstuvwxyz", o = [];
   for(var i=0;i+1<s.length;i+=2)
@@ -644,14 +678,15 @@ function sectorBlock(code, name){{
   if(!of || !of.length) return '';
   if(typeof of === 'string') of = unpackIdx(of);
   if(!of || !of.length) return '';
-  var h = '<div class="sech">所属板块 · 点进去看板块结构</div><div class="secw">';
+  var h = '<div class="sech">所属板块 · 点进去看板块结构'
+        + '<span class="warn">位置描述，不是看涨依据</span></div><div class="secw">';
   for(var i=0;i<of.length;i++){{
     var s = SL[of[i]]; if(!s) continue;
     var col = D.color[s.st] || '#5a6b82';
-    h += '<a class="srow" href="sector_platform.html?sector='
+    h += '<a class="srow" href="' + withSC('sector_platform.html?sector='
        + encodeURIComponent(s.c)
        + '&from=' + encodeURIComponent(code)
-       + '&fromn=' + encodeURIComponent(name||'') + '">'
+       + '&fromn=' + encodeURIComponent(name||'')) + '">'
        + '<span class="tt">' + (s.t==='I'?'行业':'概念') + '</span>'
        + '<span class="sn">' + eh(s.n) + '</span>'
        + '<span class="st2" style="color:' + col + '">' + eh(s.st||'—') + '</span>'
@@ -717,14 +752,18 @@ function backBar(){{
 
 /* 从板块页点进来的，返回箭头要指回那个板块——不然用户退出去只剩首页，
    早上看到的「PCB 概念四只逆势买点」这条线索就断了。 */
+function goSectorHome(){{
+  location.href = withSC('sector_platform.html');
+}}
+
 function goSectorBack(){{
   if(!Q.ref){{ go('s-home'); return; }}
   var nm = '';
   var r = CUR_CODE && findRow(CUR_CODE);
   if(r) nm = r.name || '';
-  location.href = 'sector_platform.html?sector=' + encodeURIComponent(Q.ref)
+  location.href = withSC('sector_platform.html?sector=' + encodeURIComponent(Q.ref)
     + '&from=' + encodeURIComponent(CUR_CODE||'')
-    + '&fromn=' + encodeURIComponent(nm);
+    + '&fromn=' + encodeURIComponent(nm));
 }}
 
 function goDetail(code){{

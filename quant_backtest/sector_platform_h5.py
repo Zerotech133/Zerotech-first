@@ -370,8 +370,22 @@ function findRow(c){ for(var i=0;i<D.rows.length;i++) if(D.rows[i].c==c) return 
 
 /* 板块 → 个股：跳到个股结构页，并把「从哪个板块来」一并带过去。
    个股页是同目录的 pool_report_h5.html，file:// 打开和同目录部署都走得通；
-   两个文件必须放在一起，否则这个跳转会 404。 */
+   两个文件必须放在一起，否则这个跳转会 404。
+   线上站点逐请求校验 sharecode，不带就是 403（「链接不完整」页），
+   所以跳转一律走 withSC()。本地 file:// 没有 sharecode，原样返回。 */
 var STOCK_H5 = 'pool_report_h5.html';
+var SC = (function(){
+  var m = (location.search||'').match(/[?&]sharecode=([^&#]+)/);
+  if(m){ try{ sessionStorage.setItem('pool_sc', m[1]); }catch(e){} return m[1]; }
+  try{ return sessionStorage.getItem('pool_sc') || ''; }catch(e){ return ''; }
+})();
+function withSC(u){
+  if(!SC) return u;
+  var i = u.indexOf('#'), hash = i>=0 ? u.slice(i) : '';
+  if(i>=0) u = u.slice(0,i);
+  if(/[?&]sharecode=/.test(u)) return u + hash;
+  return u + (u.indexOf('?')>=0 ? '&' : '?') + 'sharecode=' + encodeURIComponent(SC) + hash;
+}
 var CUR_SEC = null;
 var FROM_STOCK = null;      // 从个股页跳进来的，返回箭头要指回那只票
 
@@ -379,12 +393,12 @@ function goStock(code){
   var u = STOCK_H5 + '?code=' + encodeURIComponent(code);
   if(CUR_SEC) u += '&ref=' + encodeURIComponent(CUR_SEC.c || '')
                   + '&sname=' + encodeURIComponent(CUR_SEC.n || '');
-  location.href = u;
+  location.href = withSC(u);
 }
 
 function backTo(){
   if(FROM_STOCK){
-    location.href = STOCK_H5 + '?code=' + encodeURIComponent(FROM_STOCK.c);
+    location.href = withSC(STOCK_H5 + '?code=' + encodeURIComponent(FROM_STOCK.c));
     return;
   }
   go('s-home');
