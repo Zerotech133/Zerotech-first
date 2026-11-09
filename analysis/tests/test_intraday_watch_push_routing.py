@@ -17,8 +17,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from analysis import intraday_watch as iw
 
 
-def _conf(routes: dict | None = None, **push_over) -> dict:
-    push = {"kind": "watch:realtime", "receiver": "个人", "enabled": True}
+def _conf(routes: dict | None = None, routes_active: bool = True, **push_over) -> dict:
+    push = {"kind": "watch:realtime", "receiver": "个人", "enabled": True,
+            "routes_active": routes_active}
     if routes is not None:
         push["routes"] = routes
     push.update(push_over)
@@ -196,5 +197,31 @@ def test_midday_time_gate_once_and_retry(monkeypatch, tmp_path):
             assert store2.get_kv("midday_done:2026-11-09") is None
         finally:
             store2.close()
+    finally:
+        store.close()
+
+
+def test_routes_inactive_keeps_old_behavior():
+    """配置可提前写好 routes，但 routes_active=false 时必须维持旧行为（全部个人）。"""
+    conf = _conf({"customer": "个人", "ops": "量化群"}, routes_active=False)
+    assert iw._push_routes(conf) == {"customer": "个人", "ops": "个人"}
+    op = iw.build_open_scan_payload([_quote()], ["600337.SH"], [], 1, conf, _now(9, 26))
+    assert op["receiver"] == "个人"
+    md = iw.build_midday_payload([_quote()], ["600337.SH"], [], conf, _now(11, 31))
+    assert md["receiver"] == "个人"
+
+
+def test_midday_disabled_when_routes_inactive(monkeypatch, tmp_path):
+    """routes_active=false 时即使 midday_brief_enabled=true 也不发午间简报。"""
+    conf = _conf({"customer": "个人", "ops": "量化群"}, routes_active=False)
+    monkeypatch.setattr(iw, "market_open", lambda now=None, cfg=None: True)
+    store = iw.StateStore(path=str(tmp_path / "wt.db"))
+    calls = []
+    try:
+        r = iw.maybe_midday_summary(
+            store, [_quote()], ["600337.SH"], [], conf, _now(11, 31),
+            push_fn=lambda *a, **k: calls.append(1) or [{"ok": True}])
+        assert r is None and calls == []
+        assert store.get_kv("midday_done:2026-11-09") is None
     finally:
         store.close()

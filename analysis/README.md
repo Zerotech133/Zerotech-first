@@ -388,10 +388,12 @@ W3 另覆盖卡片红涨绿跌/纯 URL 按钮、receiver 解析、hub 鉴权与�
 ### 推送分级与午间简报（2026-11-09）
 
 - `push.routes={customer,ops}`：客户面（个股异动/个性化简报）→ 客户单聊 open_id（默认 `个人`）；运营面（首扫/收盘/午间公共摘要）→ 群 chat_id（默认 `量化群`）。旧键 `push.receiver`、`alert`、`brief` 保持兼容。
+- 总开关 `push.routes_active`（默认 **false**）：配置可提前写好 `routes` 与 `midday_brief_enabled=true`，但未置 true 前维持旧行为（全部发 `push.receiver`、不发午间简报）；上线只需把该键改 true。
 - 接收人严格匹配且校验类型（customer→open_id / ops→chat_id），不回落其他接收人；缺失 fail-closed。
 - 新增 11:30 午间简报（`midday_summary`，11:30–14:00 一次，KV `midday_done:<date>`），发运营群。
 - `pushes` 表新增 `receiver` 列（启动自动迁移）。
-- 配置：`midday_brief_enabled`、`midday_time`、`push.routes`；live 配置合并后再开启。
+- 配置：`midday_brief_enabled`、`midday_time`、`push.routes`、`push.routes_active`。
+
 ### H2 选股引擎（2026-11-03）
 
 - `analysis/screener.py`：ScreeningDSL v1（字段/算子白名单、PIT、可解释）；`validate()` → `run()`；

@@ -49,6 +49,7 @@
     "kind": "watch:realtime",
     "receiver": "个人",
     "enabled": false,
+    "routes_active": false,
     "routes": {
       "customer": "个人",
       "ops": "量化群"

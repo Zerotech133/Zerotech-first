@@ -1654,10 +1654,14 @@ def _push_routes(conf: Optional[Dict[str, Any]] = None) -> Dict[str, str]:
     push.receiver（与旧行为一致，可直接回滚）。
     """
     push = (conf or load_config()).get("push") or {}
+    fallback = str(push.get("receiver") or "个人")
+    # 总开关：配置可提前写好 routes / midday，但只有 routes_active=true 才生效；
+    # 未启用时全部回落 push.receiver（与旧行为一致，避免合并前误发）。
+    if push.get("routes_active") is not True:
+        return {"customer": fallback, "ops": fallback}
     routes = push.get("routes") or {}
     if not isinstance(routes, dict):
         routes = {}
-    fallback = str(push.get("receiver") or "个人")
     customer = str(routes.get("customer") or routes.get("alert") or fallback)
     ops_raw = routes.get("ops")
     if ops_raw is None:
@@ -2191,7 +2195,11 @@ def maybe_midday_summary(store: "StateStore",
     """
     conf = cfg or load_config()
     cur = now or now_cst()
-    if dry_run or not conf.get("midday_brief_enabled", True):
+    push = conf.get("push") or {}
+    # 午间简报是分级上线后的新行为：除 midday 开关外，还要求 routes_active=true，
+    # 避免配置提前写入后、未到部署窗口就向旧接收人误发。
+    if (dry_run or not conf.get("midday_brief_enabled", True)
+            or push.get("routes_active") is not True):
         return None
     if not quotes:
         return None
