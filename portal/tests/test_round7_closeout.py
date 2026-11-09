@@ -154,8 +154,33 @@ def _regex_skeleton(key):
     骨架相同才允许按扩面处理：`^/(?:briefing|case)\\.html$` 追加 feishu_admin
     仍同骨架；而 `^/(?:a)\\.html$` 换成 `^/(?:b)\\.html$` 骨架里没有区别，
     因此还需配合词元超集判断（见 `_find_successors`）。
+
+    迭代折叠最内层括号，处理 `(?:...|combo_backtest(?:_jobs)?)` 这类嵌套组；
+    只替换一次会把外层组留在骨架里，导致正则扩面被误判为 location 消失。
     """
-    return re.sub(r"\((?:[^()]*)\)", "(...)", key.strip())
+    s = key.strip()
+    out = []
+    i = 0
+    while i < len(s):
+        if s[i] != "(":
+            out.append(s[i])
+            i += 1
+            continue
+        depth = 1
+        j = i + 1
+        while j < len(s) and depth:
+            if s[j] == "(":
+                depth += 1
+            elif s[j] == ")":
+                depth -= 1
+            j += 1
+        if depth == 0:
+            out.append("(...)")
+            i = j
+        else:
+            out.append(s[i])
+            i += 1
+    return "".join(out)
 
 
 def _find_successors(key, cur):
@@ -273,9 +298,13 @@ def _order_of_block(text, key):
 
 
 def _assert_pending_not_ahead(pend_text, cur_text):
-    """副本不得含原件没有的 location —— 那意味着原件被回滚了。"""
+    """副本不得含原件没有的 location —— 那意味着原件被回滚了。
+
+    副本可能是旧应用态；若现网对同一 regex location 做了扩面（如加 board），
+    旧 key 应视为存在后代，不能误判为“副本超前/原件回滚”。
+    """
     p, c = _parse_locations(pend_text), _parse_locations(cur_text)
-    ahead = [k for k in p if k not in c]
+    ahead = [k for k in p if not _find_successors(k, c)]
     assert not ahead, "应用副本含原件没有的 location（原件疑似被回滚）：%s" % ahead
 
 

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""学习卡质量复核测试（当前全量卡：400 张；2026-11-04 更新）。
+"""学习卡质量复核测试（当前全量卡：607 张；2026-11-09 更新）。
 
 覆盖：
   1) 报告 schema/统计自洽：卡数=当前卡片数、单元 516、问题 0、可追溯 100%；
@@ -69,7 +69,7 @@ def test_report_schema_and_stats():
     assert s["concept_duplicate_groups"] == 0 and s["concept_duplicate_cards"] == 0
     assert s["traceable_cards"] == s["cards_total"] and s["traceable_rate"] == 1.0
     assert s["themes_total"] == 21 and s["themes_with_cards"] == 21
-    assert s["source_kinds"] == {"研报": 147, "书籍": 12, "笔记": 28, "视频号": 213}
+    assert s["source_kinds"] == {"研报": 147, "书籍": 12, "笔记": 28, "视频号": 420}
 
 
 def test_traceability_and_distributions():

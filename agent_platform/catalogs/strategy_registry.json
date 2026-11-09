@@ -291,6 +291,79 @@
       },
       "approved": false,
       "effective_from": "2026-11-01（研究候选）"
+    },
+    {
+      "id": "S12_ZKG_AUTO_C20",
+      "name": "S12 ZKG_AUTO_C20 自动共识篮子（因子管线首例影子）",
+      "type": "consensus",
+      "status": "shadow",
+      "executable": false,
+      "origin": "zerobound-kg/factor_proto 自动因子挖掘管线（S3 系列）",
+      "owner_chain": {
+        "主管": "DATA1 张松",
+        "执行": "FACTOR1 蒋琬",
+        "复核": "司马微（五关）",
+        "批准": "老田 2026-11-08"
+      },
+      "approval": {
+        "ticket": "APPROVAL_REQUEST_20261108.md（factor_proto/）",
+        "approved_by": "老田",
+        "approved_at": "2026-11-08T07:20:00+08:00",
+        "scope": "影子盘观察（零实盘资金）"
+      },
+      "validation": {
+        "stats": "共识 OOS 开盘净额 +2.88%、68 笔、命中率 44.1%；S03 组合 +2.12%、S04 组合 +1.37%",
+        "variants": "S03 WF 4/4 正折；S04 WF 3/4（弱标注）",
+        "final": "shadow：影子盘零实盘资金观察，2027-02 三席联评后呈老田复裁",
+        "caveat": "证据来自因子管线 OOS 口径；影子盘 60 交易日跟踪，未实盘"
+      },
+      "evidence": {
+        "consensus_oos_open_net": 0.0288,
+        "n_trades_oos": 68,
+        "hit_rate": 0.441,
+        "factors": {
+          "SENT_S03": {
+            "wf_robust": true,
+            "wf_folds_pos": "4/4",
+            "port_oos_open": 0.0212
+          },
+          "SENT_S04": {
+            "wf_robust": true,
+            "wf_folds_pos": "3/4（弱标注）",
+            "port_oos_open": 0.0137
+          }
+        },
+        "evidence_pack": "factor_proto/research_evidence_pack_20261108.json",
+        "data_caliber": "factor_proto/data_caliber_confirmation_20261108.json",
+        "review": "factor_proto/simawei_review_20261108.md（G1/G3有件过、G2过、G4影子裁决）"
+      },
+      "config": {
+        "universe": "ZKG_AUTO_C20 共识篮子（≥2 晋升因子共振，asof 滚动更新）",
+        "hold": 40,
+        "cooldown": 40,
+        "day_confirm": true,
+        "stop_active": false,
+        "entry_mode": "open（次日开盘+滑点 0.45% 双边）",
+        "sizing": "5% 名义参与率、等权、月频再平衡"
+      },
+      "shadow_plan": {
+        "start": "2026-11-10（下一交易日，篮子以 20261106 asof 起步）",
+        "duration_trading_days": 60,
+        "review_due": "2027-02（三席联评：张松/蒋琬/司马微 → 呈老田复裁）",
+        "circuit_breakers": [
+          "回撤>15% 即停",
+          "连续 20 交易日净额为负即停"
+        ],
+        "watch_items": [
+          "净额 vs +2.88% 基线偏离",
+          "实际冲击 vs 0.45% 假设",
+          "S03 命中组×退市组交集",
+          "ST 快照影响"
+        ]
+      },
+      "notes": "司马微复核纠正：影子配置以 S3m 验证口径为准（H40/CD40/无止损/day_confirm）；中台真实回填时须修正 calib 聚合规则（stop 不应 OR）。",
+      "created_at": "2026-11-08T07:20:00+08:00",
+      "renumber_note": "2026-11-08 编号纠正：原登记 S11 与既有 S11_MOM120_REGIME_LONG 撞号（我方登记时只查了纯 'S11' 精确匹配，漏了带后缀形态）。改为 S12 并全链同步。"
     }
   ],
   "book_backlog": {

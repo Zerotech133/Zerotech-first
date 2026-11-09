@@ -391,7 +391,10 @@ quant_backtest/_ts_tail_probe.json
 # 以下目录/文件保留在磁盘作为审计证据，但不入库；历史已跟踪文件不受影响。
 # 审计/研发实验目录（一次性回测与中间 json/html，含大批量输出）
 quant_backtest/_qpzm_audit_20261105/
-quant_backtest/_qpzm_rd_20261106/
+# 研发工作区整体不入库；例外：冻结标准与每日作业入口（签 b 重冻 2026-11-09，老田批准）
+quant_backtest/_qpzm_rd_20261106/*
+!quant_backtest/_qpzm_rd_20261106/M2_FROZEN.json
+!quant_backtest/_qpzm_rd_20261106/daily_run.py
 # 训练运行记录/快照（可再生成，体积大）
 research/training_snapshots/
 research/training_runs/
