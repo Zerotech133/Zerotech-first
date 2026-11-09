@@ -1,0 +1,90 @@
+#!/bin/sh
+# [dep-closure-gate] push 前依赖闭包检查 · 2026-11-08
+# -----------------------------------------------------------------------------
+# 根因：2026-11-06 两次事故——已入库模块 import 未入库模块（api_trace_drilldown
+#       → kg_cq），新 clone 直接 ModuleNotFoundError 起不来。
+# 卡点选择：pre-commit 被 [WB-GUARD] 凭据扫描占用（install_guard.py 生成，手改
+#       会被覆盖），且 commit 高频不宜挂 36 秒检查；push 是「出门最后一道」，
+#       频率低，放这里。本文件独立于 install_guard.py，不受其重装影响。
+#
+# 行为：
+#   exit 0  依赖闭包完整（或工具自身异常时的 fail-open + 大声警告）
+#   exit 1  存在「已入库 → 未入库」引用，阻断 push
+#
+# 逃生舱：ZB_DEP_GATE=warn 只警告不阻断（临时迁移期用，禁常态化）。
+# 禁止 git push --no-verify 绕过——修法只有两个：补入库 target，或 import 侧
+# try/except 并明示降级（见 tools/tests/test_dep_closure.py 文档字符串）。
+# -----------------------------------------------------------------------------
+set -u
+
+# [branch-sync-hint] 2026-11-09 · 提醒「推了 master，忘了同步 main」
+# -----------------------------------------------------------------------------
+# 根因：origin/HEAD -> origin/main，但本地工作分支叫 master，两条分支都在用。
+#       只 `git push origin master` 会让默认分支停在旧点——别的工位/CI 拉 main
+#       看不到新提交（2026-11-09 实测落后 5 条，含当日全部 H5 修复）。
+# 行为：只提醒、不阻断。本仓库多 agent 共用同一工作区，阻断会打断别人的节奏。
+#       要真的拦住：ZB_BRANCH_SYNC=block git push ...
+# 注意：本段是整个 hook 里唯一读 stdin 的地方。stdin 只能读一次，所以它必须
+#       放在最前面；下面有多处 `exit 0` 早退（闭包检查器缺失/环境异常），
+#       挂到末尾就会被静默跳过。
+# -----------------------------------------------------------------------------
+SYNC_BLOCK=0
+[ "${ZB_BRANCH_SYNC:-}" = "block" ] && SYNC_BLOCK=1
+
+if [ ! -t 0 ]; then
+    REFS="$(cat 2>/dev/null || true)"
+    HAS_MASTER=0
+    HAS_MAIN=0
+    LOCAL_MASTER=""
+    while read -r lref lsha rref rsha; do
+        [ -z "${rref:-}" ] && continue
+        case "$rref" in
+            refs/heads/master) HAS_MASTER=1; LOCAL_MASTER="${lsha:-}" ;;
+            refs/heads/main)   HAS_MAIN=1 ;;
+        esac
+    done <<SYNC_EOF
+$REFS
+SYNC_EOF
+
+    if [ "$HAS_MASTER" = "1" ] && [ "$HAS_MAIN" = "0" ]; then
+        echo "[pre-push] ⚠ 只推了 master，没带 main（origin/HEAD -> origin/main）"
+        echo "[pre-push]   默认分支会落后，别的工位/CI 拉 main 看不到这次提交。"
+        echo "[pre-push]   补推：git push origin ${LOCAL_MASTER}:main"
+        echo "[pre-push]   或一次推两条：git push origin master:master master:main"
+        if [ "$SYNC_BLOCK" = "1" ]; then
+            echo "[pre-push] ZB_BRANCH_SYNC=block → 已阻断本次 push。"
+            exit 1
+        fi
+    fi
+    unset REFS
+fi
+
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
+CHECKER="$ROOT/tools/check_dep_closure.py"
+[ -f "$CHECKER" ] || exit 0
+
+OUT="$(python -X utf8 "$CHECKER" 2>/dev/null)"
+RC=$?
+
+if [ "$RC" -eq 0 ]; then
+    echo "[pre-push] 依赖闭包完整 ✓"
+    exit 0
+fi
+
+if [ "$RC" -ne 1 ]; then
+    echo "[pre-push] WARN: 闭包检查器异常退出 rc=$RC（环境问题），不阻断本次 push"
+    exit 0
+fi
+
+echo "[pre-push] ⚠ 存在「已入库 → 未入库」引用，新 clone 会 ModuleNotFoundError："
+printf '%s\n' "$OUT" | sed -n '/发现/,$p' | head -20
+
+if [ "${ZB_DEP_GATE:-}" = "warn" ]; then
+    echo "[pre-push] ZB_DEP_GATE=warn → 仅警告放行（请尽快修复，勿常态化）"
+    exit 0
+fi
+
+echo "[pre-push] 已阻断本次 push。修法：① 把报出的 target 一并入库；"
+echo "[pre-push]        ② import 侧加 try/except 并明示降级。"
+echo "[pre-push] 临时放行：ZB_DEP_GATE=warn git push ...（禁常态化）"
+exit 1
