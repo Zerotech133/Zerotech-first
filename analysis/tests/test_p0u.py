@@ -37,7 +37,8 @@ class TestReclass(unittest.TestCase):
         m = {d["event_id"]: d for d in diffs}
         self.assertIn("e1", m)              # 退市/ST → 重整
         self.assertEqual(m["e1"]["new"], "重整")
-        self.assertNotIn("e2", m)           # 其他 → 其他 不变
+        self.assertIn("e2", m)              # 其他 → 业绩（当前规则）
+        self.assertEqual(m["e2"]["new"], "业绩")
 
     def test_apply_updates_category_keeps_reviewed(self):
         diffs = reclass.plan(path=self.db)

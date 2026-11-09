@@ -127,6 +127,12 @@ CATALOG = [
     dict(src="chanlun_tbe_report.html", out="chanlun_tbe_report.html",
          domain="backtest", title="背驰分层影子报表", sub="趋势背驰 vs 盘整背驰",
          asof=("meta",)),
+    dict(src="bt10m_sweep.html", out="bt10m_sweep.html", domain="backtest",
+         title="降换手实验 · 卖出规则", sub="25 组变体：失效线 / 持有期 / 追高门槛 → 换手 6.9 倍、成本 2.1%",
+         asof=("meta",), primary=True),
+    dict(src="bt10m.html", out="bt10m.html", domain="backtest",
+         title="1000 万 · 一年回测（旧口径）", sub="结论已被降换手实验推翻，留作失败样本",
+         asof=("meta",)),
 
     # —— 模拟 ——
     dict(src="sim_accounts.html", out="sim_accounts.html", domain="paper",
@@ -284,11 +290,37 @@ NAV_CSS = """
 #pf-nav .pf-ok{background:#14261b;color:#7fd18b;border-color:#22452e}
 #pf-nav .pf-warn{background:#2a2312;color:#e0b95c;border-color:#4a3d1c}
 #pf-nav .pf-old{background:#2b1618;color:#e8807f;border-color:#4d2528}
+/* 同域兄弟页：此前只有面包屑，从一页去同域另一页必须先回门面 */
+#pf-nav .pf-sibs{display:flex;gap:5px;flex-wrap:wrap;order:3;flex:1 0 100%;
+ padding-top:7px;margin-top:5px;border-top:1px solid #1c232d}
+#pf-nav .pf-sib{font-size:12px;padding:2px 9px;border-radius:11px;
+ background:#161d27;border:1px solid #232d3a;color:#93a3b6}
+#pf-nav .pf-sib:hover{color:#cfe0f5;border-color:#31414f;text-decoration:none}
+#pf-nav .pf-sib.on{background:#1b2c40;border-color:#33506e;color:#a8cdf0}
 .pf-dead{color:#6b7787;border-bottom:1px dotted #4a5568;cursor:help}
 @media (max-width:640px){#pf-nav{font-size:12px;padding:7px 10px}
- #pf-nav .pf-sub{display:none}}
+ #pf-nav .pf-sub{display:none}
+ #pf-nav .pf-sibs{gap:4px;padding-top:6px}
+ #pf-nav .pf-sib{font-size:11.5px;padding:2px 7px}}
 </style>
 """
+
+
+def _siblings(item):
+    """同域的其他可见页（不含自己），供导航条做同级切换。
+
+    标签取标题第一段；同域里第一段撞名的（如「选股中心」×5）退到第二段，
+    于是得到 选股中心 / A 股 / 美股 / 港股 / 加密。
+    """
+    peers = [x for x in CATALOG
+             if not x.get("hidden") and x["domain"] == item["domain"]
+             and x["out"] != item["out"]]
+    heads = [p["title"].partition(" · ")[0] for p in peers]
+    out = []
+    for p, h in zip(peers, heads):
+        _, _, tail = p["title"].partition(" · ")
+        out.append((p["out"], (tail or h) if heads.count(h) > 1 else h))
+    return out
 
 
 def nav_bar(item, asof, level, note, back="index.html"):
@@ -304,8 +336,14 @@ def nav_bar(item, asof, level, note, back="index.html"):
         '<span class="pf-title">%s</span>' % item["title"],
         '<span class="pf-badge %s" title="数据基准日">%s · %s</span>'
         % (cls, asof or "?", note),
-        '</div>',
     ]
+    sibs = _siblings(item)
+    if sibs:
+        parts.append('<span class="pf-sibs">')
+        for href, label in sibs[:8]:
+            parts.append('<a class="pf-sib" href="%s">%s</a>' % (href, label))
+        parts.append("</span>")
+    parts.append("</div>")
     return "".join(parts)
 
 
@@ -402,8 +440,8 @@ HOME_CSS = """
 *{box-sizing:border-box}
 body{margin:0;background:#0b0f14;color:#e6edf3;
  font:14px/1.65 "Segoe UI",system-ui,-apple-system,"Microsoft YaHei",sans-serif}
-.wrap{max-width:1080px;margin:0 auto;padding:26px 16px 70px}
-h1{font-size:21px;margin:0 0 4px;letter-spacing:.2px}
+.wrap{max-width:1180px;margin:0 auto;padding:26px 16px 70px}
+h1{font-size:20px;margin:0 0 4px;letter-spacing:.2px}
 .lead{color:#8a93a3;font-size:12.5px;margin:0 0 18px;line-height:1.7}
 .lead b{color:#c8d2df;font-weight:600}
 .tstamp{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 22px}

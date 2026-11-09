@@ -17,7 +17,7 @@ HTML = """<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
 body{background:#0d1117;color:#e6edf3;font:14px/1.75 -apple-system,
 "Segoe UI","Microsoft YaHei",sans-serif;margin:0;padding:24px}
 .wrap{max-width:1000px;margin:0 auto}
-h1{font-size:21px;margin:0 0 4px}
+h1{font-size:20px;margin:0 0 4px}
 h2{font-size:16px;margin:30px 0 8px;color:#58a6ff}
 .meta{color:#8b949e;font-size:12px;margin-bottom:18px}
 table{border-collapse:collapse;width:100%;font-size:13px;margin-bottom:8px}

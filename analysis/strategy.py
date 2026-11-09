@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """策略工作室后端（H3）：StrategySpec v1 校验 / 编译 / 策略库。
 
-契约依据：`C:\\项目\\deliverables\\2026-11-04_H3策略与回测口径规范_v1.md`
+契约依据：`deliverables/2026-11-04_H3策略与回测口径规范_v1.md`
 （Lead 2026-11-04 拍板 D1–D5；实现与该规范 diff=0 为冻结条件）。
 
 StrategySpec v1（JSON dict）：
@@ -74,7 +74,7 @@ LOCK_TIMEOUT = 5.0
 LOCK_STALE = 30.0
 UNIT_ENUM = ("native", "pct", "ratio")
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,48}$")
-WORK_DEFAULT = r"C:\项目\analysis_work"
+WORK_DEFAULT = os.environ.get("ANALYSIS_WORK") or os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "analysis_work")
 ENGINE_MISSING = "选股引擎未就绪"
 
 UNIVERSES = ("A_SHARE", "HS300", "WATCHLIST")

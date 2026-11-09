@@ -51,7 +51,7 @@ WEAK_STAGES = ("三卖", "中枢下")
 STAGE_COLOR = {
     "一买": "#c2410c", "二买": "#c2410c", "三买": "#b91c1c", "三买待": "#b91c1c",
     "中枢": "#475569", "背驰": "#7c3aed", "离开段": "#0f766e",
-    "三卖": "#0a9e5c", "中枢下": "#0a9e5c", "中枢下移": "#0a9e5c",
+    "三卖": "#3fa96a", "中枢下": "#3fa96a", "中枢下移": "#3fa96a",
 }
 
 
@@ -152,127 +152,127 @@ def pool_brief(sec, pool):
 # ────────────────────────────────────────────────────────────
 _CSS = """
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{background:#eef1f5;color:#1c2330;
+body{background:#0d1117;color:#e6edf3;
      font:14px/1.5 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
-     max-width:760px;margin:0 auto;min-height:100vh;
+     max-width:1180px;margin:0 auto;min-height:100vh;
      -webkit-font-smoothing:antialiased}
 .wrap{padding:10px 13px 30px}
 .screen{display:none}.screen.on{display:block}
 .hd{display:flex;align-items:baseline;gap:8px;margin:2px 0 1px}
-.hd h1{font-size:17px;font-weight:700;letter-spacing:-.2px}
-.hd .v{font-size:10px;color:#fff;background:#2456c4;border-radius:4px;padding:1px 5px}
-.hd .d{font-size:11px;color:#8a93a3;margin-left:auto}
-.sub{font-size:11px;color:#8a93a3;margin-bottom:9px}
+.hd h1{font-size:20px;font-weight:700;letter-spacing:-.2px}
+.hd .v{font-size:10px;color:#fff;background:#5b9bd5;border-radius:4px;padding:1px 5px}
+.hd .d{font-size:11px;color:#7b8698;margin-left:auto}
+.sub{font-size:11px;color:#7b8698;margin-bottom:9px}
 
 /* L1 市场条 */
-.mkt{background:linear-gradient(135deg,#1f2b45,#31486f);border-radius:12px;
+.mkt{background:linear-gradient(135deg,#18243a,#1d2c47);border-radius:12px;
      padding:11px 13px;color:#fff;margin-bottom:9px}
 .mkt .t{font-size:10.5px;opacity:.72}
 .mkt .m{font-size:14px;font-weight:700;margin:2px 0 8px;line-height:1.35}
 .mkt .g{display:flex;gap:6px}
-.mkt .g>div{flex:1;text-align:center;background:rgba(255,255,255,.10);
+.mkt .g>div{flex:1;text-align:center;background:rgba(255,255,255,0.045);
             border-radius:7px;padding:5px 2px}
 .mkt .n{font-size:15px;font-weight:700;line-height:1.25}
 .mkt .l{font-size:9.5px;opacity:.68}
 
 /* 分布条 */
-.dist{background:#fff;border-radius:11px;padding:10px 12px;margin-bottom:9px;
+.dist{background:#131a24;border-radius:11px;padding:10px 12px;margin-bottom:9px;
       box-shadow:0 1px 2px rgba(20,30,50,.05)}
 .dist .row1{display:flex;justify-content:space-between;font-size:10.5px;
-            color:#8a93a3;margin-bottom:5px}
-.bar{display:flex;height:9px;border-radius:5px;overflow:hidden;background:#e8ecf2}
+            color:#7b8698;margin-bottom:5px}
+.bar{display:flex;height:9px;border-radius:5px;overflow:hidden;background:#161d27}
 .bar i{display:block;height:100%;min-width:3px}
-.lead{background:#fff;border-left:3px solid #2456c4;border-radius:9px;
+.lead{background:#131a24;border-left:3px solid #5b9bd5;border-radius:9px;
       padding:9px 12px;font-size:12.5px;line-height:1.72;color:#37424f;
       margin-bottom:9px;box-shadow:0 1px 2px rgba(20,30,50,.05)}
-.legend{display:flex;flex-wrap:wrap;gap:9px;font-size:10.5px;color:#6b7686;margin-top:6px}
+.legend{display:flex;flex-wrap:wrap;gap:9px;font-size:10.5px;color:#7b8698;margin-top:6px}
 .legend b{display:inline-block;width:7px;height:7px;border-radius:2px;margin-right:3px}
 
 /* 筛选 */
 .tabs{display:flex;gap:5px;margin-bottom:8px;overflow-x:auto;padding-bottom:1px}
 .tabs::-webkit-scrollbar{display:none}
-.tab{flex:none;font-size:11.5px;padding:5px 10px;border-radius:15px;background:#fff;
-     color:#5b6577;border:1px solid #e3e8ef;white-space:nowrap}
+.tab{flex:none;font-size:11.5px;padding:5px 10px;border-radius:15px;background:#131a24;
+     color:#5b6577;border:1px solid #1f2937;white-space:nowrap}
 .tab.on{background:#1f2b45;color:#fff;border-color:#1f2b45}
 .tab .c{opacity:.62;margin-left:3px;font-size:10.5px}
 
 /* 板块行 */
-.row{background:#fff;border-radius:11px;padding:9px 12px;margin-bottom:6px;
+.row{background:#131a24;border-radius:11px;padding:9px 12px;margin-bottom:6px;
      box-shadow:0 1px 2px rgba(20,30,50,.05);display:block}
-.row:active{background:#f7f9fc}
+.row:active{background:#0f1620}
 .r1{display:flex;align-items:center;gap:7px}
 .nm{font-size:14.5px;font-weight:650;flex:1;min-width:0;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tag{font-size:9.5px;color:#7c8798;background:#f0f3f7;border-radius:3px;
+.tag{font-size:9.5px;color:#7c8798;background:#161d27;border-radius:3px;
      padding:1px 4px;flex:none}
 .badge{font-size:10.5px;font-weight:600;border-radius:4px;padding:1.5px 6px;
        flex:none;white-space:nowrap}
 .pct{font-size:15px;font-weight:700;flex:none;font-variant-numeric:tabular-nums}
 .r2{display:flex;align-items:center;gap:8px;margin-top:5px;
-    font-size:10.5px;color:#8a93a3}
+    font-size:10.5px;color:#7b8698}
 .r2 .k{flex:none}
-.rps{width:42px;flex:none;height:4px;background:#eef1f5;border-radius:2px;
+.rps{width:42px;flex:none;height:4px;background:#1f2937;border-radius:2px;
      overflow:hidden}
-.rps i{display:block;height:100%;background:#2456c4;border-radius:2px}
+.rps i{display:block;height:100%;background:#5b9bd5;border-radius:2px}
 .res{flex:none;font-variant-numeric:tabular-nums}
 .res.hi{color:#b91c1c;font-weight:650}
-.up{color:#d92b2b}.dn{color:#0a9e5c}.flat{color:#8a93a3}
+.up{color:#e3554f}.dn{color:#3fa96a}.flat{color:#7b8698}
 
 /* 详情 */
 .back{display:flex;align-items:center;gap:5px;margin:2px 0 9px;
-      font-size:13px;color:#2456c4}
+      font-size:13px;color:#5b9bd5}
 .back span{font-size:17px;line-height:1}
-.dhd{background:#fff;border-radius:12px;padding:13px 14px;margin-bottom:8px}
+.dhd{background:#131a24;border-radius:12px;padding:13px 14px;margin-bottom:8px}
 .dhd .t{display:flex;align-items:baseline;gap:8px}
 .dhd .n{font-size:19px;font-weight:700}
 .dhd .c{font-size:10.5px;color:#9aa3b2}
 .dhd .q{font-size:24px;font-weight:700;margin-top:7px;
         font-variant-numeric:tabular-nums}
-.dhd .s{font-size:11px;color:#8a93a3;margin-top:1px}
+.dhd .s{font-size:11px;color:#7b8698;margin-top:1px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:9px}
-.grid>div{background:#f6f8fb;border-radius:8px;padding:6px 8px}
-.grid .k{font-size:10px;color:#8a93a3}
+.grid>div{background:#161d27;border-radius:8px;padding:6px 8px}
+.grid .k{font-size:10px;color:#7b8698}
 .grid .v{font-size:13.5px;font-weight:650;font-variant-numeric:tabular-nums}
-.sec{font-size:11px;color:#8a93a3;margin:11px 2px 6px;
+.sec{font-size:11px;color:#7b8698;margin:11px 2px 6px;
      display:flex;justify-content:space-between}
-.card{background:#fff;border-radius:11px;padding:11px 13px;margin-bottom:8px;
+.card{background:#131a24;border-radius:11px;padding:11px 13px;margin-bottom:8px;
       box-shadow:0 1px 2px rgba(20,30,50,.05)}
 .kv{display:flex;justify-content:space-between;font-size:12.5px;padding:4px 0;
-    border-bottom:1px solid #f2f4f7}
+    border-bottom:1px solid #0d1117}
 .kv:last-child{border:0}
-.kv .k{color:#6b7686}
+.kv .k{color:#7b8698}
 .kv .v{font-weight:600;font-variant-numeric:tabular-nums}
-.note{background:#fffbeb;border:1px solid #f5e6bb;border-radius:9px;
+.note{background:#2a2312;border:1px solid #4a3d1c;border-radius:9px;
       padding:8px 11px;font-size:11px;line-height:1.65;color:#7a5a12}
-.bad{background:#fef2f2;border-color:#f6d5d5;color:#8c2f2f}
-.mem{font-size:12px;padding:6px 0;border-bottom:1px solid #f2f4f7;
+.bad{background:#2b1618;border-color:#4d2528;color:#8c2f2f}
+.mem{font-size:12px;padding:6px 0;border-bottom:1px solid #0d1117;
      display:flex;gap:8px;align-items:baseline;cursor:pointer;
      -webkit-tap-highlight-color:transparent}
 .mem:last-child{border:0}
-.mem:active{background:#f7f9fc}
-.mem .cd{font-size:11px;color:#8a93a3;font-variant-numeric:tabular-nums}
+.mem:active{background:#0f1620}
+.mem .cd{font-size:11px;color:#7b8698;font-variant-numeric:tabular-nums}
 .mem .nm2{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mem .sg{font-size:10px;color:#8a93a3;flex:none}
-.mem .ar{color:#c3cad6;font-size:13px;flex:none;line-height:1}
+.mem .sg{font-size:10px;color:#7b8698;flex:none}
+.mem .ar{color:#2b3949;font-size:13px;flex:none;line-height:1}
 .mlink{font-size:10px;color:#9aa3b2;text-align:right;margin-top:5px}
 .foot{font-size:10px;color:#9aa3b2;line-height:1.7;margin-top:12px}
-details.rule{background:#fff;border-radius:10px;padding:9px 11px;font-size:11px;
-             line-height:1.8;color:#6b7686;margin-top:9px}
+details.rule{background:#131a24;border-radius:10px;padding:9px 11px;font-size:11px;
+             line-height:1.8;color:#7b8698;margin-top:9px}
 details.rule summary{cursor:pointer;color:#4a5568;font-weight:600;list-style:none}
 details.rule summary::-webkit-details-marker{display:none}
-details.rule summary:after{content:" \\2304";color:#a6afbd}
+details.rule summary:after{content:" \\2304";color:#7b8698}
 details.rule[open] summary:after{content:" \\2303"}
-.empty{background:#fff;border-radius:11px;padding:22px 14px;text-align:center;
+.empty{background:#131a24;border-radius:11px;padding:22px 14px;text-align:center;
        color:#9aa3b2;font-size:12px}
 /* 能力地图 */
 .mods{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:2px}
-.mod{background:#fff;border-radius:9px;padding:8px 10px;
+.mod{background:#131a24;border-radius:9px;padding:8px 10px;
      box-shadow:0 1px 2px rgba(20,30,50,.05)}
 .mh{display:flex;align-items:center;gap:6px;justify-content:space-between}
 .mn{font-size:12px;font-weight:650;color:#37424f;white-space:nowrap;
     overflow:hidden;text-overflow:ellipsis}
 .ms{font-size:9.5px;border-radius:3px;padding:1px 5px;flex:none;white-space:nowrap}
-.md{font-size:10.5px;color:#8a93a3;line-height:1.5;margin-top:3px}
+.md{font-size:10.5px;color:#7b8698;line-height:1.5;margin-top:3px}
 """
 
 _JS = r"""
@@ -292,7 +292,7 @@ function rowHtml(r){
   var col = sColor(r.st);
   var pcls = cls(r.p);
   var res = '';
-  if(r.nj){ res = '<span style="color:#c3cad6">买点</span><span class="res'+(r.res>=0.15?' hi':'')+'">'+r.nb+'/'+r.nj+'</span>'; }
+  if(r.nj){ res = '<span style="color:#2b3949">买点</span><span class="res'+(r.res>=0.15?' hi':'')+'">'+r.nb+'/'+r.nj+'</span>'; }
   else { res = '<span class="res">未判</span>'; }
   var rpsw = (r.rps==null?0:r.rps);
   return '<div class="row" onclick="goDetail(\''+r.c+'\')">'
@@ -418,7 +418,7 @@ function goDetail(code){
      + '<div class="t"><span class="n">'+esc(r.n)+'</span>'
      + '<span class="c">'+esc(r.c)+' · '+(r.t=='I'?'行业板块':'概念板块')+' · '+r.m+' 只成分</span></div>'
      + '<div class="q '+cls(r.r20)+'">'+pct(r.r20,2)
-     + ' <span style="font-size:12px;color:#8a93a3;font-weight:400">近 20 日</span></div>'
+     + ' <span style="font-size:12px;color:#7b8698;font-weight:400">近 20 日</span></div>'
      + '<div class="s">当日 '+pct(r.p,2)+' · 5 日 '+pct(r.r5)+' · 60 日 '+pct(r.r60)+'</div>'
      + '<div class="grid">'
        + '<div><div class="k">结构</div><div class="v" style="color:'+col+'">'
@@ -461,7 +461,7 @@ function goDetail(code){
   // 成分共振
   h += '<div class="card"><div class="kv"><span class="k">成分股结构（池子当日判过）</span>'
      + '<span class="v">'+ (r.nj? r.nb+' / '+r.nj : '未判') +'</span></div>'
-     + '<div style="font-size:11.5px;color:#6b7686;line-height:1.7;margin-top:4px">';
+     + '<div style="font-size:11.5px;color:#7b8698;line-height:1.7;margin-top:4px">';
   if(r.nj){
     h += '这个板块有 <b>'+r.nj+'</b> 只成分进了池子，其中 <b>'+r.nb+'</b> 只处在买点类'
        + '（'+(r.res==null?'—':(r.res*100).toFixed(0)+'%')+'），'
@@ -544,8 +544,8 @@ function goDetail(code){
   var w1=cnt.buy/tot*100, w2=cnt.mid/tot*100, w3=cnt.weak/tot*100;
   document.getElementById('bar').innerHTML =
       '<i style="width:'+w1+'%;background:#b91c1c"></i>'
-    + '<i style="width:'+w2+'%;background:#cbd5e1"></i>'
-    + '<i style="width:'+w3+'%;background:#0a9e5c"></i>';
+    + '<i style="width:'+w2+'%;background:#5e6b7a"></i>'
+    + '<i style="width:'+w3+'%;background:#3fa96a"></i>';
   document.getElementById('lg1').textContent = cnt.buy;
   document.getElementById('lg2').textContent = cnt.mid;
   document.getElementById('lg3').textContent = cnt.weak;
@@ -631,17 +631,17 @@ def _modules_html():
     v1 的价值一半在页面，一半在**边界清楚**——哪些是已经连起来的，
     哪些还只是并行跑着、没进这条链。用文件存在性校验，不写规划稿。
     """
-    tag = {"in": ("已接入", "#0a7d4e", "#e8f5ef"),
-           "part": ("部分", "#b45309", "#fdf3e3"),
-           "out": ("独立入口", "#6b7686", "#f0f3f7"),
-           "todo": ("未做", "#b91c1c", "#fdecec")}
+    tag = {"in": ("已接入", "#0a7d4e", "#14261b"),
+           "part": ("部分", "#b45309", "#2a2312"),
+           "out": ("独立入口", "#7b8698", "#161d27"),
+           "todo": ("未做", "#b91c1c", "#2b1618")}
     rows = []
     for name, desc, state, f in MODULES:
         fn = f.split()[0]
         exists = os.path.exists(os.path.join(HERE, fn))
         st, col, bg = tag[state]
         if state != "todo" and not exists:
-            st, col, bg = "缺失", "#b91c1c", "#fdecec"
+            st, col, bg = "缺失", "#b91c1c", "#2b1618"
         rows.append(
             '<div class="mod"><div class="mh"><span class="mn">%s</span>'
             '<span class="ms" style="color:%s;background:%s">%s</span></div>'
@@ -692,8 +692,8 @@ def build_html(sec, pool, asof, rows):
     <div class="bar" id="bar"></div>
     <div class="legend">
       <span><b style="background:#b91c1c"></b>买点类 <span id="lg1">0</span></span>
-      <span><b style="background:#cbd5e1"></b>中枢/背驰 <span id="lg2">0</span></span>
-      <span><b style="background:#0a9e5c"></b>三卖/中枢下 <span id="lg3">0</span></span>
+      <span><b style="background:#5e6b7a"></b>中枢/背驰 <span id="lg2">0</span></span>
+      <span><b style="background:#3fa96a"></b>三卖/中枢下 <span id="lg3">0</span></span>
     </div>
   </div>
 
