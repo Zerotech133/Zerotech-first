@@ -1,4 +1,4 @@
-﻿# RAG 40 题周度复评（strict 生产口径）
+﻿# RAG 40 题周度复评（strict_nocite 引用口径）
 #
 # 用法（手动/计划任务均可）：
 #   powershell -NoProfile -ExecutionPolicy Bypass -File tools/scheduled/rag_weekly_eval.ps1
@@ -22,7 +22,7 @@ $outMd = Join-Path $Repo "research\reports\bailian_eval_weekly_$date.md"
 $env:PYTHONIOENCODING = "utf-8"
 
 & $Py -X utf8 (Join-Path $Repo "tools\finetune\bailian_eval.py") `
-    --model $Model --base-url $base --prompt-profile strict --write `
+    --model $Model --base-url $base --prompt-profile strict_nocite --write `
     --out-json $outJson --out-md $outMd *>> $Log
 if ($LASTEXITCODE -ne 0) { throw "bailian_eval failed rc=$LASTEXITCODE (see $Log)" }
 Write-Output "weekly eval done: $outJson"

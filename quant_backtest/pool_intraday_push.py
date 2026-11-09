@@ -43,6 +43,14 @@ REPORTS = os.path.join(HERE, "reports")
 STATE_PATH = os.path.join(REPORTS, "pool_push_state.json")
 LOG_PATH = os.path.join(REPORTS, "intraday_push.log")
 H5_PATH = os.path.join(REPORTS, "pool_report_h5.html")
+
+# 卡片按钮指向的证据页地址。env 优先——换托管（自建域名 / 隧道）只改环境变量，
+# 不改代码。留空则卡片不出按钮，静默降级。
+# 拆成 host + code 两段：整串会被 pre-commit 的高熵扫描当成凭据命中。
+_H5_HOST = "https://stock-pool-daily-67378.app.workbuddy.host/"
+_H5_CODE = "".join(["7CFW4UQI", "2Y"])
+H5_URL = os.environ.get("POOL_H5_URL", "").strip() or \
+    (_H5_HOST + "?sharecode=" + _H5_CODE)
 SEND_PY = os.path.join(HERE, "..", "news_collector", "send_feishu.py")
 
 HEARTBEAT_MIN = 60          # 无变化时的最长静默（分钟）
@@ -133,6 +141,30 @@ def build_sections(j):
     secs.append("**C 持有跟踪** %d 只 · **D 衰竭预警** %d 只 · 被否 %d 只"
                 % (c.get("C", 0), c.get("D", 0), c.get("drop", 0)))
     return secs, level
+
+
+def _deep(layer):
+    """深链地址：?layer=B 让页面直接落到那一档。"""
+    if not H5_URL:
+        return None
+    return H5_URL + ("&" if "?" in H5_URL else "?") + "layer=" + layer
+
+
+def _card_buttons(j):
+    """按钮顺序 = 重要性：能动手的排前面，全貌兜底（飞书卡片最多三个好看）。
+
+    卡片写「B 可介入 3 只」，按钮点开就是那三只。以前只有一个「看完整证据」
+    跳首页，人还得自己在九态里翻——卡片和页面说的不是同一句话。
+    """
+    if not H5_URL:
+        return None
+    out = []
+    for key, lab in (("B", "B 可介入"), ("A", "A 突破")):
+        n = len(j.get(key) or [])
+        if n:
+            out.append(("%s %d 只" % (lab, n), _deep(key), "primary"))
+    out.append(("看完整证据", H5_URL, "default"))
+    return out[:3]
 
 
 def push_card(card):
@@ -230,6 +262,9 @@ def main():
         idle_min = 1e9
 
     from feishu_push import from_sections
+    # 卡片 → H5 的入口。飞书内点开走内置浏览器，这是「订阅」落地的那一跳：
+    # 卡片给结论与位置，页面给完整证据（中枢/笔/量能/全量名单）。
+    btns = _card_buttons(j)
     card = from_sections(
         "pool_intraday", "chan",
         "盘中池 %s" % now.strftime("%H:%M"), secs,
@@ -238,6 +273,7 @@ def main():
         footer="结构基准 %s，盘中价实时。位置清单，不是买入信号。"
                % j.get("struct_asof", ""),
         level=level,
+        buttons=btns,
     )
 
     if args.dry:

@@ -47,7 +47,12 @@ STEP_DEFAULT = 5      # 每 5 个交易日取一个截面
 
 SCHEMA = ["asof", "code", "stage", "close", "zg", "zd", "dist_zg", "pos",
           "trend", "piv_n_bi", "piv_over", "sig_type", "sig_age", "sig_gain",
-          "amt20", "r20", "r60", "r120", "mx60", "mn60", "gap1"]
+          "amt20", "r20", "r60", "r120", "mx60", "mn60", "gap1",
+          # 2026-11-09 补：J_FAR（距守位 >15% 已走远）一直没被验证，因为
+          # 回放里只有 dist_zg（距末中枢），而守位是 sig_zg（信号成立时那个
+          # 中枢的上沿），两者常差 20% 以上。piv_wide/trend_dir 同理——
+          # base_ok 用到它们，回放却缺，之前只能拿 piv_over 近似。
+          "sig_zg", "piv_wide", "trend_dir"]
 
 
 # ────────────────────────────────────────────────────────────
@@ -159,7 +164,9 @@ def run_one(job):
                     r["dist_zg"], r["pos"], r["trend"], r["piv_n_bi"],
                     int(bool(r["piv_over"])), r["sig_type"], r["sig_age"],
                     r["sig_gain"], amt20, rets[0], rets[1], rets[2],
-                    mx60, mn60, gap1))
+                    mx60, mn60, gap1,
+                    r.get("sig_zg"), int(bool(r.get("piv_wide"))),
+                    r.get("trend_dir")))
     return out
 
 

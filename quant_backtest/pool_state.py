@@ -94,6 +94,7 @@ look-ahead 口径（截断重放 44% 信号消失，与权威口径一致率 5.4
 import argparse
 import contextlib
 import glob
+import hashlib
 import io
 import json
 import os
@@ -868,12 +869,14 @@ def _snapshot(min_amt=0.5, top=40, verbose=False, quiet=False):
     live_at = max(ts_seen) if ts_seen else ""
 
     hit = up = dn = flat = n_lim = 0
+    pcts = []
     for r in rows:
         px, pct = _px_of(idx, r["code"])
         if px is None:
             continue
         hit += 1
         pct = pct or 0.0
+        pcts.append(pct)
         if pct > 0:
             up += 1
         elif pct < 0:
@@ -883,11 +886,25 @@ def _snapshot(min_amt=0.5, top=40, verbose=False, quiet=False):
         if pct >= 9.8:
             n_lim += 1
 
+    # 同期基准：结构池全体的涨跌幅分布。
+    # 没有它，A 档 -0.92% 到底是判据失效还是大盘在跌，无从分辨。
+    # 用池内中位数而不是全市场中位数——A/B/C/D/E 全部出自这 3,961 只，
+    # 拿全市场比会混进「结构池本来就偏强/偏弱」这个常量。
+    pcts.sort()
+
+    def _q(a, q):
+        return a[min(int(len(a) * q), len(a) - 1)] if a else None
+
+    market = {"n": len(pcts),
+              "mean": (sum(pcts) / len(pcts)) if pcts else None,
+              "med": _q(pcts, 0.5), "p10": _q(pcts, 0.1), "p90": _q(pcts, 0.9)}
+
     return {
         "rows": rows, "buckets": buckets, "meta": meta, "idx": idx,
         "live_at": live_at, "struct_asof": meta.get("data_asof") or "",
         "mins": _mins_of(live_at), "elapsed": time.time() - t0,
         "hit": hit, "up": up, "down": dn, "flat": flat, "limit_up": n_lim,
+        "market": market,
     }
 
 
@@ -953,6 +970,7 @@ def _save_live(evo, snap, top):
         "judged": len(snap["rows"]), "quoted": snap["hit"],
         "up": snap["up"], "down": snap["down"], "flat": snap["flat"],
         "limit_up": snap["limit_up"],
+        "market": snap.get("market"),
         "counts": {k: len(v) for k, v in evo.items()},
         # 存全量，不按 top 裁。原来的 `v[:top]` 让「三买守稳」69 只只落
         # 30 条，页面「下钻看完整证据」时后 39 只查不到——计数与明细对不上。
@@ -1045,8 +1063,9 @@ def live(min_amt=0.5, top=40, save=False):
 # 相反。这一层不新增任何指标，只把结构位置 + 量能 + 可操作性分开说：
 #
 #   A 今日突破   越过末中枢 ZG，但已走远——等回踩，不是现在买
-#   B 新鲜三买   信号 ≤25 日 + 仍守在守位之上 + 距守位 ≤8%——可介入区
-#   C 持有区     守住守位但已回末中枢上沿之下——只跟踪不加仓
+#   B 新鲜三买   信号 ≤40 日 + 仍守在守位之上 + 距守位 ≤8%——可介入区
+#   C 持有区     守住守位、但要么已回末中枢上沿之下、要么距守位 8%~40%
+#                （止损偏远，标注已启动幅度）——只跟踪不加仓
 #   D 衰竭       新鲜背驰（12 日内）——减仓预警，不是买点
 #   E 贴沿未过   距上沿 1.5% 以内、还没过——「临近爆发」的本义，埋伏不是买
 #
@@ -1058,18 +1077,59 @@ J_BI_MIN, J_BI_MAX = 3, 7          # 8~9 笔属延伸晚期，突破多为最后
 J_BRK_MIN, J_BRK_MAX = 0.003, 0.025  # 突破幅度：贴沿不算，走太远不追
 J_VOL_MORNING = 1.8                # 早盘量能折算系数（前 30 分钟约占全天 1/1.8）
 J_VOL_MIN = 1.0                    # 校准后量比 ≥1.0 才算有量
-J_AGE_MAX = 25                     # 三买信号有效期
+# 三买信号有效期。2026-11-09 用 124 截面 48 万观测按龄重切：
+#   0~5 −3bp(t=−0.02) / 6~10 −155bp / 11~15 −102bp / 16~25 −88bp /
+#   26~40 −66bp(t=−2.06) / >40 −55bp(t=−1.64)
+# 没有单调性——25 日是拍的，且 26~40 段实际优于 16~25 段，原来的线把
+# 略好的一段截在门外。放宽到 40，>40 仍截（几个月前的一次三买不构成今天的
+# 位置）。注意这不改变「结构不提供正超额」这一结论，只是不再误伤。
+J_AGE_MAX = 40
 J_AGE_WAIT = 45                    # 三买待可放宽到 45 日，再老就是长磨不是新结构
-J_NEAR = 0.08                      # 距守位 ≤8% 算「守位还在手边」
-J_FAR = 0.15                       # >15% 已走远，连跟踪都不必
+J_NEAR = 0.08                      # 距守位 ≤8% 算「守位还在手边」→ B 可介入
+# 距守位上限。2026-11-09 用新回放（含 sig_zg）重验，结论与旧假设相反：
+#   dguard ≤0 +68bp(123笔，不显著) / 0~8 −81bp / 8~15 −50bp / 15~30 −71bp /
+#   >30 −49bp   —— 无单调性，>30% 那组反而最好
+# 也就是说「距守位越远越差」在统计上不成立（涨了 30% 的三买后面并不更差）。
+# 但止损距离是独立于胜率的风险预算：距守位 40% 的票，止损 40% 远，一次亏损
+# 抵掉十次盈利。所以 J_FAR 从「统计判据」降级为「风险预算判据」，并从一刀切
+# 拆成两档：8%~40% 进 C（可跟踪，标注已启动幅度），>40% 才拒。
+J_FAR = 0.40                       # >40% 止损过远，不作跟踪对象
+J_FAR_NOTE = 0.15                  # 8%~40% 中再分一层：≥15% 标注「已启动」
 J_TOUCH = 0.015                    # 距上沿 1.5% 以内视为「门口」
 J_MV_MIN, J_MV_MAX = 20.0, 2000.0  # 微盘流动性差，超大盘无弹性
 J_SELL_SIGS = ("1卖", "2卖", "3卖")
+# 一买/二买的口径（2026-11-09 回放，124 截面 48 万观测，② 逐日等权）：
+#   二买  +14bp (t=+0.27)  不显著
+#   一买  −35bp (t=−1.52)；且趋势=上涨时 −125bp (t=−3.81)，与直觉相反
+# 这两类原来在 _judge_layers 里没有分支，直接掉出循环、不留任何记录（每天
+# 约 84 只）。此处先只留痕不选股；等 sig_zg 入回放、把 J_FAR 验完之后再定
+# 是否放行。
+_BUY_NOTE = {
+    "一买": "未纳入分层（回放 −35bp t=−1.52；趋势上涨时 −125bp）",
+    "二买": "未纳入分层（回放 +14bp t=+0.27，不显著）",
+}
 # 游资过滤：近 20 日出现 ≥2 次单日 |涨跌|≥9.5%，说明这是资金博弈盘，不是
 # 中枢震荡。实测依据：三峡新材/高争民爆 的一字板拼出「中枢」，ZG/ZD 毫无
 # 结构含义；大连圣亚 10-19 跌停后在枢内反弹也被算成「贴沿爆发」。
 J_LIMIT_N = 9.5
 J_LIMIT_MAX = 1
+
+
+def _params():
+    """判据指纹（口径版本号）。
+
+    为什么需要：同一 live_at 的两份快照如果层计数差异很大，可能是盘面变了，
+    也可能是判据改了。11-09 午休重跑时 C 档从 16 跳到 40，全部来自 J_FAR
+    拆档，跟行情一点关系没有——时间轴若不区分，必然被读成「盘中结构变化」。
+    """
+    keys = ("J_W_MIN", "J_W_MAX", "J_BI_MIN", "J_BI_MAX", "J_BRK_MIN",
+            "J_BRK_MAX", "J_VOL_MIN", "J_AGE_MAX", "J_AGE_WAIT", "J_NEAR",
+            "J_FAR", "J_FAR_NOTE", "J_TOUCH", "J_MV_MIN", "J_MV_MAX",
+            "J_LIMIT_MAX")
+    d = {k: globals()[k] for k in keys}
+    raw = json.dumps(d, sort_keys=True)
+    d["fingerprint"] = hashlib.sha1(raw.encode("utf-8")).hexdigest()[:8]
+    return d
 
 
 def _ampl(code):
@@ -1152,11 +1212,15 @@ def _judge_layers(rows, idx, mins):
             elif (r.get("sig_age") or 999) > J_AGE_MAX:
                 drop.append((it, f"B 信号 {r.get('sig_age')} 日（过期）"))
             elif it["dguard"] > J_FAR:
-                drop.append((it, f"B 距守位 {it['dguard']:.0%}（已走远）"))
+                drop.append((it, f"B 距守位 {it['dguard']:+.0%}（止损过远）"))
             elif px < zg:
                 C.append(it)          # 守位在，但已回末中枢上沿之下
             elif it["dguard"] > J_NEAR:
-                C.append(it)          # 守住了、还没走远，但离守位 8%+
+                # 8%~40%：止损偏远但结构没坏，进 C 跟踪并标出已启动幅度。
+                # 原先 >15% 一律当「已走远」丢掉，回放证明这个断言不成立。
+                if it["dguard"] >= J_FAR_NOTE:
+                    it["cnote"] = "已启动 %+.0f%%（止损偏远）" % (it["dguard"] * 100)
+                C.append(it)
             else:
                 B.append(it)
 
@@ -1182,6 +1246,12 @@ def _judge_layers(rows, idx, mins):
                     and (r.get("mv_yi") or 0) >= J_MV_MIN:
                 it["dguard"] = None
                 D.append(it)
+
+        # ── 一买/二买：暂不选股，但必须留痕 ──────────────
+        # 只写去向，不改 A/B/E 的行为。原先这两类没有任何分支，
+        # 每天约 84 只连「为什么不选」都查不到，事后无法复盘。
+        elif st in _BUY_NOTE:
+            drop.append((it, "%s %s" % (st, _BUY_NOTE[st])))
 
     def _scrub(lst):
         keep = []
@@ -1230,7 +1300,11 @@ def judge(min_amt=0.5, top=30, save=False):
               f"{'越沿/距守位':>12}{'量比':>6}{'市值':>8}{'笔':>3}{'信号':>5}{'龄':>4}   备注")
 
     def _row(it, dguard=True):
-        g = it.get("guard") or it["zg"]
+        # 守位必须与分档依据同源：三买待的守位是末中枢上沿（分支里已写入
+        # guard），三买的守位是信号成立时那个中枢的上沿 sig_zg。原来统一
+        # 取 it["zg"]，于是「距守位 +43%」和「守位 17.12」并排出现，
+        # 两个数根本不是一个价位。
+        g = it.get("guard") or it.get("sig_zg") or it["zg"]
         dg = (it["lpx"] / g - 1) if dguard else 0
         note = it.get("bei") or ""
         if it.get("bi_live"):
@@ -1258,7 +1332,8 @@ def judge(min_amt=0.5, top=30, save=False):
     for it in sorted(E, key=lambda x: -(x["volr"] or 0)):
         _row(it)
 
-    _head("C · 守位未破但已回末中枢上沿之下（持有跟踪，不加仓）", len(C), "再破守位即出")
+    _head("C · 守位未破（持有跟踪，不加仓）", len(C),
+          "含已回末中枢上沿之下 / 距守位 8%~40% 两类，再破守位即出")
     for it in sorted(C, key=lambda x: x["dguard"])[:15]:
         _row(it)
 
@@ -1288,8 +1363,19 @@ def judge(min_amt=0.5, top=30, save=False):
                        "counts": {"A": len(A), "B": len(B), "C": len(C),
                                   "D": len(D), "E": len(E), "drop": len(drop)},
                        "print_top": top,
+                       "params": _params(),
+                       "market": snap["market"],
                        "A": A, "B": B, "C": C, "D": D, "E": E,
-                       "drop": [{"code": i["code"], "name": i["name"], "why": w}
+                       # drop 原先只存 code/name/why。于是「当时为什么没选」
+                       # 只能看到理由、看不到后果——被否的票后来涨了还是跌了，
+                       # 一份快照都追不到。补上判定时的价格与位置，否则
+                       # 判据永远无法被证伪。
+                       "drop": [{"code": i["code"], "name": i["name"], "why": w,
+                                 "stage": i.get("stage"),
+                                 "lpx": i.get("lpx"), "lpct": i.get("lpct"),
+                                 "zg": i.get("zg"), "zd": i.get("zd"),
+                                 "lpos": i.get("lpos"),
+                                 "dguard": i.get("dguard")}
                                 for i, w in drop]}, f, ensure_ascii=False, indent=1)
         print(f"\n[saved] {p}")
         # 同一次扫描顺手把结构演化也落盘，省掉再跑一遍 --live

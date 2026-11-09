@@ -148,10 +148,30 @@ def build_prompt_strict(question: str, ctx: list[dict]) -> str:
             f"资料：\n{lines}\n\n问题：{question}\n回答：")
 
 
+def build_prompt_strict_nocite(question: str, ctx: list[dict]) -> str:
+    """严格引用 + 拒答不带引用的口径（2026-11-09 A/B winner）。
+
+    与 strict 的唯一差异：资料不足时只输出固定拒答句，不允许解释/罗列/引用；
+    该句长度 >=15，避免被 answer_eval 当作长度异常。
+    """
+    lines = "\n".join(f"[{i+1}] {str(c.get('text') or '')[:220]}" for i, c in enumerate(ctx))
+    return ("你是量化知识库助手。规则：\n"
+            "1) 只依据下面编号资料回答，不得编造；\n"
+            "2) 先判断资料是否足以回答。若资料不足，最终答案只输出"
+            "「资料不足，现有资料无法回答该问题。」，不要添加任何其他文字、"
+            "解释、资料内容、资料编号或 [n]；\n"
+            "3) 若资料足够回答，每个事实句句末必须标注来源编号，如[1]；"
+            "只能引用确实支撑该句的资料编号，不要引用无关资料；\n"
+            "4) 用 3-5 句话回答，不要投资建议。\n\n"
+            f"资料：\n{lines}\n\n问题：{question}\n回答：")
+
+
 def build_prompt(question: str, ctx: list[dict]) -> str:
     """与 W13 answer_prompt 同格式：资料 [1..5] + 引用/拒答要求 + 问题。"""
     if PROMPT_PROFILE == "strict":
         return build_prompt_strict(question, ctx)
+    if PROMPT_PROFILE == "strict_nocite":
+        return build_prompt_strict_nocite(question, ctx)
     return ("你是投研知识助手。仅依据下列资料回答，不要编造；用 2-4 句话回答，"
             "并在末尾用 [1][2] 标注所依据资料编号；若资料不足以回答，请明确说「资料不足/资料未提及」。\n\n"
             + "\n".join(f"[{i+1}] ({c.get('doc_id', '')}) {str(c.get('text') or '')[:200]}"
@@ -589,8 +609,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--write", action="store_true", help="写 research/reports/bailian_eval_20261104.{json,md}")
     ap.add_argument("--out-json", default="", help="覆盖 --write 的 JSON 输出路径（周度复评按日期归档用）")
     ap.add_argument("--out-md", default="", help="覆盖 --write 的 Markdown 输出路径")
-    ap.add_argument("--prompt-profile", choices=["base", "strict"], default="base",
-                    help="prompt 口径：base=W17 默认；strict=v4d 生产推荐（每句末引用/只引用支撑句）")
+    ap.add_argument("--prompt-profile", choices=["base", "strict", "strict_nocite"], default="base",
+                    help="prompt 口径：base=W17 默认；strict=v4d 严格引用；"
+                         "strict_nocite=strict+拒答不引用（2026-11-09 A/B winner）")
     ap.add_argument("--verify-citations", action="store_true",
                     help="附加离线引用支撑校验（citation_verifier），结果写 aggregate.citation_verified_rate 等")
     args = ap.parse_args(argv)
