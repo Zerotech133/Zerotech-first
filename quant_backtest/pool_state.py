@@ -437,6 +437,10 @@ def analyse(df, code=""):
         "sig_type": sig_type,
         "sig_dt": sig_dt,
         "sig_price": _safe(sig_price),
+        # 信号成立时那个中枢的上沿：3买 的守位是它，不是末中枢的 ZG。
+        # 两者常常不是同一个（3买 后可能已长出新中枢），混用会把「守得住」
+        # 判成「失守」，也会把「早已破位」判成「还守着」。
+        "sig_zg": _safe(sig_zg),
         "sig_note": sig.get("note") if sig else None,
         "sig_age": sig_age,
         "sig_fresh": bool(sig_fresh),
@@ -647,14 +651,35 @@ def scan(min_amt=0.5, stage_filter=None, top=30, verbose=True, keep_bj=False):
 
 
 def _fetch_quotes(codes):
-    """新浪实时价（与 pool_watch / watch_positions 同一接口）。"""
+    """新浪实时价（与 pool_watch / watch_positions 同一接口）。
+
+    分批取：`hq.sinajs.cn/list=` 是 GET，4,000 只塞一个 URL 会超长被截断，
+    返回里少掉的 key 不会报错，只会静默丢票——盘中巡检最怕这个。
+    """
     root = os.path.dirname(HERE)
     p = os.path.join(root, "news_collector")
     if p not in sys.path:
         sys.path.insert(0, p)
     from quote_snapshot import fetch_quotes
 
-    return fetch_quotes(codes)
+    uniq = list(dict.fromkeys(codes))
+    out, seen = [], set()
+    CH = 200
+    for i in range(0, len(uniq), CH):
+        part = uniq[i:i + CH]
+        try:
+            got = fetch_quotes(part)
+        except Exception as e:  # 单批失败不拖垮全轮
+            print(f"[live] 批次 {i // CH + 1} 取价失败: {str(e)[:80]}", file=sys.stderr)
+            got = []
+        for q in got:
+            k = q.get("code")
+            if k and k not in seen:
+                seen.add(k)
+                out.append(q)
+        if i + CH < len(uniq):
+            time.sleep(0.2)
+    return out
 
 
 def _from_sina(c):
@@ -746,6 +771,160 @@ def intraday(top=None):
     return 0
 
 
+def live(min_amt=0.5, top=40, save=False):
+    """全市场实时叠加：结构取最近数据日的日线，价格取当下。
+
+    与 --intraday 的分工：
+      --intraday  读池文件，只看已落盘的 top-N（中枢档 1,005 只只留 50 只，
+                  等于对 95% 的市场失明），适合盯已持仓那几十只；
+      --live      复用 scan 的 buckets（全量行，未裁剪），给每只叠实时价，
+                  覆盖全部可判标的，回答「今天全市场谁在离开中枢」。
+
+    不做的事：不重算笔。盘中价格未收盘，用它造 K 线会造出假笔、假中枢，
+    进而造出假买卖点。这里只把「现价 vs 11-06 结构的中枢沿」摆出来。
+    """
+    t0 = time.time()
+    out, buckets, meta = scan(min_amt, None, top, verbose=False)
+    rows = [r for st in STAGES for r in buckets.get(st, [])]
+    if not rows:
+        print("[live] 无可判标的")
+        return 1
+
+    codes = [r["code"] for r in rows]
+    try:
+        qs = _fetch_quotes(codes)
+    except Exception as e:
+        print(f"[live] 取价失败: {e}")
+        return 2
+    idx = {_from_sina(q.get("code", "")): q for q in qs}
+    ts_seen = [q.get("ts") for q in qs if q.get("ts")]
+    live_at = max(ts_seen) if ts_seen else ""
+    struct_asof = meta.get("data_asof") or ""
+
+    def _px(r):
+        q = idx.get(r["code"])
+        if not q:
+            return None, None
+        p = q.get("price")
+        if not p:
+            return None, None
+        return float(p), q.get("pct")
+
+    hit = 0
+    up = dn = flat = 0
+    n_lim = 0
+    for r in rows:
+        px, pct = _px(r)
+        if px is None:
+            continue
+        hit += 1
+        pct = pct or 0.0
+        if pct > 0:
+            up += 1
+        elif pct < 0:
+            dn += 1
+        else:
+            flat += 1
+        if pct >= 9.8:
+            n_lim += 1
+
+    print(f"[live] 结构基准 {struct_asof} · 实时 {live_at}")
+    print(f"[live] 可判 {len(rows)} / 取到报价 {hit} "
+          f"({hit / max(len(rows), 1) * 100:.0f}%) · 扫描 {time.time() - t0:.0f}s")
+    print(f"[live] 实时涨跌：上涨 {up} / 下跌 {dn} / 平 {flat} · 涨停(≥9.8%) {n_lim}")
+
+    # ── 结构演化：现价对 11-06 的中枢沿 ─────────────────────
+    evo = {"上离枢": [], "下离枢": [], "三买待确认": [], "三买待破位": [],
+           "三买守稳": [], "三买失守": [], "买点失守": []}
+    for r in rows:
+        if r.get("piv_over"):
+            continue          # 级别已升级，ZG/ZD 不是操作边界
+        px, pct = _px(r)
+        if px is None:
+            continue
+        st = r["stage"]
+        zg = r.get("zg") or 0
+        zd = r.get("zd") or 0
+        item = dict(r)
+        item["lpx"] = px
+        item["lpct"] = pct if pct is not None else 0.0
+        item["ldzg"] = (px / zg - 1) if zg else None
+
+        if st == "中枢" and zg and px > zg * 1.003:
+            evo["上离枢"].append(item)
+        elif st == "中枢" and zd and px < zd * 0.997:
+            evo["下离枢"].append(item)
+        elif st == "三买待" and zg:
+            (evo["三买待确认"] if px > zg else evo["三买待破位"]).append(item)
+        elif st == "三买":
+            # 守位是信号成立时那个中枢的上沿，不是末中枢的 ZG
+            g3 = r.get("sig_zg") or zg
+            if g3:
+                item["guard"] = g3
+                item["ldzg"] = px / g3 - 1
+                (evo["三买守稳"] if px > g3 else evo["三买失守"]).append(item)
+        elif st in ("二买", "一买"):
+            sp = r.get("sig_price") or 0
+            if sp and px < sp:
+                evo["买点失守"].append(item)
+
+    def _show(title, lst, hint, key=None, guard=False):
+        if not lst:
+            print(f"\n===== {title}  0 只 =====")
+            return
+        print(f"\n===== {title}  共 {len(lst)} 只"
+              + (f"，列前 {min(top, len(lst))} =====" if len(lst) > top else " ====="))
+        if guard:
+            print(f"{_pad('代码', 11)}{_pad('名称', 11)}{'现价':>8}{'涨幅':>8}"
+                  f"{'守位':>7}{'距守位':>9}{'市值亿':>8}{'枢笔':>5}  {hint}")
+        else:
+            print(f"{_pad('代码', 11)}{_pad('名称', 11)}{'现价':>8}{'涨幅':>8}"
+                  f"{'ZD':>7}{'ZG':>7}{'距ZG':>8}{'市值亿':>8}{'枢笔':>5}  {hint}")
+        srt = sorted(lst, key=key or (lambda r: -(r.get("ldzg") or -9)))
+        for r in srt[:top]:
+            mid = (f"{(r['guard'] or 0):>7.2f}{(r['ldzg'] or 0) * 100:>8.1f}%"
+                   if guard else
+                   f"{(r['zd'] or 0):>7.2f}{(r['zg'] or 0):>7.2f}"
+                   f"{(r['ldzg'] or 0) * 100:>7.1f}%")
+            print(f"{_pad(r['code'], 11)}{_pad(r.get('name', ''), 11)}"
+                  f"{r['lpx']:>8.2f}{r['lpct']:>7.2f}%{mid}"
+                  f"{(r['mv_yi'] or 0):>8.1f}{r['piv_n_bi']:>5}")
+
+    _show("中枢 → 上离枢（今日真突破，收盘才算确认）", evo["上离枢"],
+          "突破幅度", key=lambda r: -(r["ldzg"] or -9))
+    _show("三买待 → 仍在上沿上方（等回踩不破 ZG）", evo["三买待确认"],
+          "距ZG", key=lambda r: (r["ldzg"] or 9))
+    _show("三买待 → 破 ZG（回踩失守，转枢内）", evo["三买待破位"],
+          "距ZG", key=lambda r: (r["ldzg"] or 9))
+    _show("三买 → 仍守 ZG（守位=信号中枢上沿）", evo["三买守稳"], "距守位",
+          key=lambda r: (r["ldzg"] or 9), guard=True)
+    _show("三买 → 守位失守（买点失效）", evo["三买失守"], "距守位",
+          key=lambda r: (r["ldzg"] or 9), guard=True)
+    _show("中枢 → 下离枢（向下离开，转中枢下）", evo["下离枢"],
+          "跌破幅度", key=lambda r: (r["ldzg"] or 9))
+    if evo["买点失守"]:
+        print(f"\n[live] 另有一买/二买极值失守 {len(evo['买点失守'])} 只")
+
+    if save:
+        os.makedirs(REPORTS, exist_ok=True)
+        stamp = datetime.now().strftime("%Y%m%d_%H%M")
+        p = os.path.join(REPORTS, f"pool_live_{stamp}.json")
+        payload = {
+            "struct_asof": struct_asof,
+            "live_at": live_at,
+            "run_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "judged": len(rows), "quoted": hit,
+            "up": up, "down": dn, "flat": flat, "limit_up": n_lim,
+            "counts": {k: len(v) for k, v in evo.items()},
+            "groups": {k: v[:top] for k, v in evo.items()},
+        }
+        with open(p, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=1)
+        print(f"\n[saved] {p}")
+
+    return 0
+
+
 def main():
     try:
         sys.stdout.reconfigure(encoding="utf-8")
@@ -753,6 +932,8 @@ def main():
         pass
     ap = argparse.ArgumentParser()
     ap.add_argument("--scan", action="store_true", help="全市场扫描")
+    ap.add_argument("--live", action="store_true",
+                    help="全市场实时叠加：日线结构 + 当下价，看谁在离开中枢")
     ap.add_argument("--intraday", action="store_true", help="盘中巡检：读池 + 实时价，比中枢沿")
     ap.add_argument("--min-amt", type=float, default=0.5, help="20 日均成交额下限（亿元）")
     ap.add_argument("--stage", default=None, help="只看某态：" + "/".join(STAGES))
@@ -763,6 +944,9 @@ def main():
 
     if args.intraday:
         return intraday()
+
+    if args.live:
+        return live(args.min_amt, args.top, args.save)
 
     if not args.scan:
         ap.print_help()

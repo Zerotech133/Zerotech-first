@@ -23,6 +23,7 @@ import html
 import json
 import os
 import sys
+from datetime import date
 
 import numpy as np
 import pandas as pd
@@ -154,6 +155,11 @@ def _svg(r, k):
     c = [x for x in k["c"] if x is not None]
     if not c:
         return '<div class="nodata">无走势数据</div>'
+    # 实时价接在最后一根收盘之后：结构只到 11-06，价格是当下，
+    # 两者时点不同，图上必须分开——所以最后一个点单独标注，不混进收盘线。
+    lpx = r.get("lpx")
+    if lpx:
+        c = list(c) + [float(lpx)]
     zd, zg = r.get("zd"), r.get("zg")
     vals = list(c) + [v for v in (zd, zg) if v]
     lo, hi = min(vals), max(vals)
@@ -181,11 +187,19 @@ def _svg(r, k):
             out.append(f'<text x="{PL+iw+4}" y="{y+3:.1f}" font-size="9" fill="{col}">{lab}</text>')
     out.append(f'<polyline points="{pts}" fill="none" stroke="#2456c4" stroke-width="1.6"/>')
     # 现价
-    out.append(f'<circle cx="{X(len(c)-1):.1f}" cy="{Y(c[-1]):.1f}" r="3.2" fill="#d92b2b"/>')
-    out.append(f'<text x="{PL+iw+4}" y="{Y(c[-1])+3:.1f}" font-size="9" fill="#d92b2b" '
+    py = Y(c[-1])
+    # 标签避让：实时价常常就贴在 ZG/ZD 上，同一位置画两行字会叠成一团
+    ty = py + 3
+    for ref in (Y(zg) if zg else None, Y(zd) if zd else None):
+        if ref is not None and abs(ty - ref) < 11:
+            ty = ref + 13 if ty >= ref else ref - 5
+    ty = min(max(ty, PT + 8), H - PB - 2)
+    out.append(f'<circle cx="{X(len(c)-1):.1f}" cy="{py:.1f}" r="3.2" fill="#d92b2b"/>')
+    out.append(f'<text x="{PL+iw+4}" y="{ty:.1f}" font-size="9" fill="#d92b2b" '
                f'font-weight="bold">{c[-1]:.2f}</text>')
     out.append(f'<text x="{PL}" y="{H-4}" font-size="8" fill="#9aa3b0">{k["d0"]}</text>')
-    out.append(f'<text x="{PL+iw-34}" y="{H-4}" font-size="8" fill="#9aa3b0">{k["d1"]}</text>')
+    out.append(f'<text x="{PL+iw-34}" y="{H-4}" font-size="8" fill="#9aa3b0">'
+               f'{"实时" if lpx else k["d1"]}</text>')
     out.append("</svg>")
     return "".join(out)
 
@@ -287,7 +301,7 @@ details.rule[open] summary:after{{content:" ⌃"}}
 
 <div class="screen on" id="s-home">
   <div class="hd"><h1>缠论结构日报</h1><span class="d">{asof}</span></div>
-  <div class="sub">操作级别 日线 · 窗口 {lookback} 根 · 可判 {judged} 只</div>
+  <div class="sub">{sub_line}</div>
 
   <div class="hero">
     <div class="t">全市场结构</div>
@@ -405,6 +419,7 @@ function goDetail(code){{
     + (D.color[r.stage]||'#5a6b82')+'">'+r.stage+'</span>'
     + '<span class="tag" style="background:#f2f4f7;color:#6b7686">'
     + (r.pos||'')+'</span>'
+    + (r.lpx?'<span class="tag" style="background:#fdeaea;color:#b23b3b">实时价</span>':'')
     + (r.piv_over?'<span class="tag" style="background:#fdeaea;color:#b23b3b">枢已升级</span>':'')
     + '</div></div>';
   h += '<div class="kbox">'+ (r.svg||'<div class="nodata">无走势数据</div>') +'</div>';
@@ -415,7 +430,8 @@ function goDetail(code){{
       + '<div class="ac">'+e.a+'</div><div class="ru">规矩：'+e.r+'</div></div>';
   }});
   h += '</div>';
-  h += '<div class="foot">图上灰带为中枢 [ZD, ZG]，虚线为上下沿；蓝线为收盘价，红点为现价。'
+  h += '<div class="foot">图上灰带为中枢 [ZD, ZG]，虚线为上下沿；蓝线为收盘价，红点为现价'
+    + (r.lpx?'（末点为实时价，结构只到 '+ (r.struct_asof||'上一交易日') +' 收盘）':'') + '。'
     + '价格在带内＝枢内震荡，站上上沿＝离开上沿，跌破下沿＝向下离开。</div>';
   document.getElementById('d-body').innerHTML = h;
   go('s-detail');
@@ -432,6 +448,8 @@ def main():
         pass
     ap = argparse.ArgumentParser()
     ap.add_argument("--in", dest="src", default=None)
+    ap.add_argument("--live", dest="live", default="auto",
+                    help="叠加实时价：auto=用今天的 pool_live_*.json（有则用）；off=不叠")
     ap.add_argument("--out", dest="out", default=os.path.join(REPORTS, "pool_report_h5.html"))
     args = ap.parse_args()
 
@@ -451,6 +469,29 @@ def main():
     tre = meta.get("trend_dist") or {}
     posd = meta.get("pos_dist") or {}
     judged = meta.get("judged") or 0
+    lookback = meta.get("lookback", 500)
+
+    # ── 实时叠加 ─────────────────────────────────────────
+    # 只叠价格，不动结构：笔与中枢要收盘价确认，盘中重算会造出假笔假中枢。
+    # 页面因此有两个时点：结构基准（最近交易日收盘）+ 价格时点（被点到的时刻）。
+    lv, lmap = None, {}
+    if args.live != "off":
+        lf = sorted(glob.glob(os.path.join(REPORTS, "pool_live_*.json")))
+        if lf:
+            with open(lf[-1], encoding="utf-8") as f:
+                cand = json.load(f)
+            # 只认当天的：否则明早直接跑，会把昨天 14:55 的价当"实时"发出去
+            if str(cand.get("live_at") or "")[:10] == date.today().isoformat():
+                lv = cand
+                for grp in (lv.get("groups") or {}).values():
+                    for r in grp:
+                        if r.get("lpx"):
+                            lmap[r["code"]] = (float(r["lpx"]), r.get("lpct"))
+            else:
+                print(f"[h5] 最新实时文件 {os.path.basename(lf[-1])} 的报价时点 "
+                      f"{cand.get('live_at')} 不是今天，跳过不叠（避免把隔夜价标成实时）")
+        elif args.live not in ("auto", "off"):
+            print(f"[h5] --live {args.live} 指定了文件但读不到")
 
     # 分档数据 + 详情（含 SVG 与证据）
     data = {}
@@ -460,10 +501,19 @@ def main():
         for r in j["buckets"].get(st, []):
             rr = dict(r)
             rr["stage"] = r.get("stage") or st
-            # 买点档与背驰档都画图（要看中枢位置与顶背驰）；中枢档省掉以控体积
+            rr["struct_asof"] = asof
+            # 叠实时价：close 一并替换，否则「现价」与「距ZG」「判据实测值」
+            # 会各说各话（一个用 11-06 收盘、一个用当下）
+            if r["code"] in lmap:
+                px, pct = lmap[r["code"]]
+                rr["lpx"], rr["lpct"] = px, pct
+                rr["close"] = px
+                rr["pct"] = (pct or 0) / 100.0
+                if rr.get("zg"):
+                    rr["dist_zg"] = px / rr["zg"] - 1
             k = load_kline(r["code"]) if st != "中枢" else None
-            rr["svg"] = _svg(r, k)
-            rr["ev"] = build_evidence(r)
+            rr["svg"] = _svg(rr, k)
+            rr["ev"] = build_evidence(rr)
             rows.append(rr)
         data[st] = rows
 
@@ -478,6 +528,17 @@ def main():
     share = below / judged * 100 if judged else 0
     mood = "弱势" if share > 50 else "中性" if share > 35 else "偏强"
 
+    # 副标题：一屏高度寸土寸金，实时信息塞进原来那行，不另起一块
+    lv_clock = ""
+    if lv:
+        lv_clock = str(lv.get("live_at") or "")[11:16]
+        sub_line = (f"日线 · 可判 {judged} 只 · "
+                    f'<b style="color:#d92b2b">实时 {lv_clock}</b> '
+                    f'涨 {lv.get("up", 0)} / 跌 {lv.get("down", 0)}'
+                    f' · 涨停 {lv.get("limit_up", 0)}')
+    else:
+        sub_line = f"操作级别 日线 · 窗口 {lookback} 根 · 可判 {judged} 只"
+
     data_js = json.dumps({
         **{st: data.get(st, []) for st in order + ["中枢"]},
         "counts": counts,
@@ -486,7 +547,7 @@ def main():
     }, ensure_ascii=False, separators=(",", ":"))
 
     html_txt = _BUILD.format(
-        asof=asof, lookback=meta.get("lookback", 500), judged=judged,
+        asof=asof, lookback=lookback, judged=judged, sub_line=sub_line,
         mood=mood, n_up=tre.get("上涨", 0), n_dn=tre.get("下跌", 0), n_below=below,
         cards=cards, brief=_trend_text(j, counts, tre, posd),
         minp=2.0, minamt=meta.get("min_amt", 0.5),
