@@ -267,11 +267,13 @@ BUY_TYPES = {"1买", "2买", "3买"}
 BUY_FILTERS = {
     "all": {"1买", "2买", "3买"},
     "23": {"2买", "3买"},
+    "1": {"1买"},
     "2": {"2买"},
     "3": {"3买"},
 }
 BUY_FILTER_LABEL = {
     "23": "仅二买+三买（一买不入选·10-13拍板）",
+    "1": "仅一买",
     "2": "仅二买",
     "3": "仅三买",
     "all": "一/二/三类全要",
@@ -1606,7 +1608,15 @@ def run_job(params: dict, job_id: str, progress=None):
             p["three_fail_exit"] is not False and str(p["three_fail_exit"]) != "false"
         )
         if strategy == "chanlun":
-            buy_filter = p["buy_filter"] if p["buy_filter"] in BUY_FILTERS else "3"
+            # 严禁静默回退：未知 buy_filter 会把「只做1买」悄悄变成「只做3买」，
+            # 跑出来的数字看着正常、结论完全错（2026-11-09 踩中，1买/3买 同值）。
+            _bf_raw = str(p["buy_filter"])
+            if _bf_raw not in BUY_FILTERS:
+                raise ValueError(
+                    "buy_filter=%r 不在 %s 内，请显式给合法值（禁止静默回落 3买）"
+                    % (_bf_raw, sorted(BUY_FILTERS))
+                )
+            buy_filter = _bf_raw
             if universe == "market":
                 _hst = p.get("hist_st")
                 _hist_st = _hst is True or (
