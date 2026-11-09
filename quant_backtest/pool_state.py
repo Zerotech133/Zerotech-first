@@ -94,6 +94,7 @@ look-ahead 口径（截断重放 44% 信号消失，与权威口径一致率 5.4
 import argparse
 import contextlib
 import glob
+import hashlib
 import io
 import json
 import os
@@ -868,12 +869,14 @@ def _snapshot(min_amt=0.5, top=40, verbose=False, quiet=False):
     live_at = max(ts_seen) if ts_seen else ""
 
     hit = up = dn = flat = n_lim = 0
+    pcts = []
     for r in rows:
         px, pct = _px_of(idx, r["code"])
         if px is None:
             continue
         hit += 1
         pct = pct or 0.0
+        pcts.append(pct)
         if pct > 0:
             up += 1
         elif pct < 0:
@@ -883,11 +886,25 @@ def _snapshot(min_amt=0.5, top=40, verbose=False, quiet=False):
         if pct >= 9.8:
             n_lim += 1
 
+    # 同期基准：结构池全体的涨跌幅分布。
+    # 没有它，A 档 -0.92% 到底是判据失效还是大盘在跌，无从分辨。
+    # 用池内中位数而不是全市场中位数——A/B/C/D/E 全部出自这 3,961 只，
+    # 拿全市场比会混进「结构池本来就偏强/偏弱」这个常量。
+    pcts.sort()
+
+    def _q(a, q):
+        return a[min(int(len(a) * q), len(a) - 1)] if a else None
+
+    market = {"n": len(pcts),
+              "mean": (sum(pcts) / len(pcts)) if pcts else None,
+              "med": _q(pcts, 0.5), "p10": _q(pcts, 0.1), "p90": _q(pcts, 0.9)}
+
     return {
         "rows": rows, "buckets": buckets, "meta": meta, "idx": idx,
         "live_at": live_at, "struct_asof": meta.get("data_asof") or "",
         "mins": _mins_of(live_at), "elapsed": time.time() - t0,
         "hit": hit, "up": up, "down": dn, "flat": flat, "limit_up": n_lim,
+        "market": market,
     }
 
 
@@ -953,6 +970,7 @@ def _save_live(evo, snap, top):
         "judged": len(snap["rows"]), "quoted": snap["hit"],
         "up": snap["up"], "down": snap["down"], "flat": snap["flat"],
         "limit_up": snap["limit_up"],
+        "market": snap.get("market"),
         "counts": {k: len(v) for k, v in evo.items()},
         # 存全量，不按 top 裁。原来的 `v[:top]` 让「三买守稳」69 只只落
         # 30 条，页面「下钻看完整证据」时后 39 只查不到——计数与明细对不上。
@@ -1095,6 +1113,23 @@ _BUY_NOTE = {
 # 结构含义；大连圣亚 10-19 跌停后在枢内反弹也被算成「贴沿爆发」。
 J_LIMIT_N = 9.5
 J_LIMIT_MAX = 1
+
+
+def _params():
+    """判据指纹（口径版本号）。
+
+    为什么需要：同一 live_at 的两份快照如果层计数差异很大，可能是盘面变了，
+    也可能是判据改了。11-09 午休重跑时 C 档从 16 跳到 40，全部来自 J_FAR
+    拆档，跟行情一点关系没有——时间轴若不区分，必然被读成「盘中结构变化」。
+    """
+    keys = ("J_W_MIN", "J_W_MAX", "J_BI_MIN", "J_BI_MAX", "J_BRK_MIN",
+            "J_BRK_MAX", "J_VOL_MIN", "J_AGE_MAX", "J_AGE_WAIT", "J_NEAR",
+            "J_FAR", "J_FAR_NOTE", "J_TOUCH", "J_MV_MIN", "J_MV_MAX",
+            "J_LIMIT_MAX")
+    d = {k: globals()[k] for k in keys}
+    raw = json.dumps(d, sort_keys=True)
+    d["fingerprint"] = hashlib.sha1(raw.encode("utf-8")).hexdigest()[:8]
+    return d
 
 
 def _ampl(code):
@@ -1265,7 +1300,11 @@ def judge(min_amt=0.5, top=30, save=False):
               f"{'越沿/距守位':>12}{'量比':>6}{'市值':>8}{'笔':>3}{'信号':>5}{'龄':>4}   备注")
 
     def _row(it, dguard=True):
-        g = it.get("guard") or it["zg"]
+        # 守位必须与分档依据同源：三买待的守位是末中枢上沿（分支里已写入
+        # guard），三买的守位是信号成立时那个中枢的上沿 sig_zg。原来统一
+        # 取 it["zg"]，于是「距守位 +43%」和「守位 17.12」并排出现，
+        # 两个数根本不是一个价位。
+        g = it.get("guard") or it.get("sig_zg") or it["zg"]
         dg = (it["lpx"] / g - 1) if dguard else 0
         note = it.get("bei") or ""
         if it.get("bi_live"):
@@ -1324,8 +1363,19 @@ def judge(min_amt=0.5, top=30, save=False):
                        "counts": {"A": len(A), "B": len(B), "C": len(C),
                                   "D": len(D), "E": len(E), "drop": len(drop)},
                        "print_top": top,
+                       "params": _params(),
+                       "market": snap["market"],
                        "A": A, "B": B, "C": C, "D": D, "E": E,
-                       "drop": [{"code": i["code"], "name": i["name"], "why": w}
+                       # drop 原先只存 code/name/why。于是「当时为什么没选」
+                       # 只能看到理由、看不到后果——被否的票后来涨了还是跌了，
+                       # 一份快照都追不到。补上判定时的价格与位置，否则
+                       # 判据永远无法被证伪。
+                       "drop": [{"code": i["code"], "name": i["name"], "why": w,
+                                 "stage": i.get("stage"),
+                                 "lpx": i.get("lpx"), "lpct": i.get("lpct"),
+                                 "zg": i.get("zg"), "zd": i.get("zd"),
+                                 "lpos": i.get("lpos"),
+                                 "dguard": i.get("dguard")}
                                 for i, w in drop]}, f, ensure_ascii=False, indent=1)
         print(f"\n[saved] {p}")
         # 同一次扫描顺手把结构演化也落盘，省掉再跑一遍 --live
