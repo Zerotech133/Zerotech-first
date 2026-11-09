@@ -54,6 +54,7 @@ REGISTRY = {
     # 2026-11-08 P2-01：因子挖掘控制台，绑 127.0.0.1:8870；正式启停脚本见
     # zerobound-kg/factor_proto/factor_console/start_factor_console.ps1 / stop_factor_console.ps1。
     8870: "因子挖掘控制台(factor_console/server.py,K-SEC-20261108-PORT-8870)",
+    8871: "zerobound-kg 治理套件控制台(suite_console_wrap.py,2026-11-09 他线起)",  # GATE-MIXIN-20261109 补注册：16:39 合并门 strict 判「我方服务未上注册表」，阻断全部合并；owner=KG 治理线（待认领）
     8899: "本地 Ollama Web 聊天(AI/111111/web_chat.py)",
     15000: "QuantDinger API(Docker)",
     15432: "QuantDinger DB(Docker)",
@@ -70,6 +71,7 @@ REGISTRY = {
     8098: "模型管理台(api_model_admin.py)",  # K-ORG-191 收编：2026-10-18 实证活监听（并行线 model_admin）
     9899: "CowAgent console",
     11434: "Ollama",
+    11435: "Ollama 备用实例(ingest_20261108 线,OLLAMA_HOST=127.0.0.1:11435)",  # GATE-MIXIN-20261109 补注册：16:39 合并门 strict 拦截；实际进程 ollama serve(父=ingest 线 PowerShell)，owner=ingest_20261108 线
     3307: "菜鸟MySQL(Docker)",
     8093: "组织架构图注册(org_registry_server.py)",  # 2026-11-03 诊断修正：原登记数据仓预览已不实
     8096: "军团作战大屏API(api_legion_ops.py/v2)",  # 2026-10-22 TF-AUDIT 归因纠正：K-STOCK-394 原登记 km_feishu_hub 已迁 8099，现持有者=军团大屏（/api/legion/ops 实测返回 roster），legion_scheduler/academy_worker_plan 均调用此口
