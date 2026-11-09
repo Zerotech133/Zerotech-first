@@ -723,6 +723,13 @@ class BacktestConfig:
     # 入场趋势过滤（2026-11-10 老田「趋势还在」）：>0 时要求「买入日开盘价 > 前一交易日 MA(N)」，
     # 价格在均线下方说明趋势没起来，3买只是下跌中的一次反抽。用前一日均线=开盘时已知，无未来函数。
     entry_ma: int = 0
+    # 固定目标位止盈 + 时间衰减（2026-11-10 老田「按反抽重设退出」）：
+    # 反抽的特征是「弹到位就走」，不是「跟着趋势跑」。目标 = tp_pct − tp_decay × 已持有日数，
+    # 下限 tp_min（越久没到目标 → 这波力度不足 → 目标该降，而不是无限等）。
+    # 成交口径：限价单挂目标价，当日 high 触价即成交；跳空高于目标按开盘价（不占便宜）。
+    tp_pct: float = 0.0
+    tp_decay: float = 0.0
+    tp_min: float = 0.0
     # 追高门槛按 regime 分档（2026-11-10 老田）：<0 表示该档沿用全局 max_ext_pct。
     # 牛市里强势股本来就会远离中枢，全局 3% 会系统性把仓位从最该买的票上挪开。
     max_ext_high: float = -1.0
@@ -797,6 +804,7 @@ def run_backtest(
     n_time_stop = [0]  # 到期强平笔数
     n_3b_same_day = [0]  # 买入当日即触发三买失效的次数（量纲错配会飙到 ≈100%）
     n_add = [0, 0, 0]  # 分层加仓：第 2 档 / 第 3 档 触发次数（降换手实验后的仓位管理）
+    n_tp = [0]  # 目标位止盈成交笔数（反抽退出）
     n_trim = 0
     n_mid_slot_days = 0  # 317：mid 档联动槽数生效天数（生效证据）
     prev_eq = 1.0
@@ -1192,6 +1200,51 @@ def run_backtest(
             )
             eqv = cash + sum(p["val"] for p in pos.values())
 
+        # A4. 盘中止盈：固定目标位 + 时间衰减（2026-11-10 老田「按反抽重设退出」）
+        # 为什么不是均线跟随：这套三买买入时六成价格在个股 MA20 下方（超跌反抽），
+        # 均线跟随等于买入次日就砍（实测均持 3.8 日、换手 16 倍、122bp 下两年 −18%）。
+        # 反抽的正确管理是「弹到目标就走」：目标以入场价为基准，随持有日数线性下调；
+        # 到期（holding_max_days）仍未达标则按 T+1 开盘强平兜底。
+        if cfg.tp_pct > 0 and pos:
+            _tp_floor = cfg.tp_min if cfg.tp_min > 0 else 0.0
+            for s in sorted(pos):
+                p = pos[s]
+                if s in pending_sell or p.get("exit_why"):
+                    continue
+                _held = di - holding_since.get(s, di)
+                if _held < max(1, cfg.min_holding_days):
+                    continue  # A 股 T+1：当日买入当日不可卖
+                _tgt = cfg.tp_pct - cfg.tp_decay * _held
+                if _tgt < _tp_floor:
+                    _tgt = _tp_floor
+                if _tgt <= 0:
+                    continue
+                base = p.get("entry_px") or p["ref_px"]
+                if not base:
+                    continue
+                want = base * (1 + _tgt)
+                hi = px(s, day, "high")
+                if hi is None or hi < want:
+                    continue
+                op = px(s, day, "open")
+                fill = max(want, op) if op is not None else want
+                val = p["val"] * fill / p["ref_px"]
+                pnl = val / p["cost"] - 1
+                cash += val * (1 - cfg.cost)
+                del pos[s]
+                holding_since.pop(s, None)
+                n_tp[0] += 1
+                actions.append(
+                    {
+                        "type": "sell",
+                        "stock": s,
+                        "note": "目标位止盈 +%.1f%%（持有%d日·盘中触价）"
+                        % (_tgt * 100, _held),
+                        "pnl_pct": round(pnl * 100, 2),
+                    }
+                )
+                rec(day, "SELL", s, "take_profit", pnl)
+
         # D. 收盘事件
         if cfg.strategy == "chanlun":
             # 持有期门槛（降换手实验·2026-11-09）：买入当日 _held=0，次日=1。
@@ -1510,6 +1563,7 @@ def run_backtest(
         "n_time_stop": n_time_stop[0],
         "n_3b_same_day": n_3b_same_day[0],
         "n_add2": n_add[1],
+        "n_take_profit": n_tp[0],
         "n_add3": n_add[2],
     }
     return {
@@ -1569,6 +1623,9 @@ DEFAULTS = {
     "exit_ma": 0,
     "exit_ma_mode": "raw",
     "entry_ma": 0,
+    "tp_pct": 0.0,
+    "tp_decay": 0.0,
+    "tp_min": 0.0,
 }
 
 
@@ -1832,6 +1889,9 @@ def run_job(params: dict, job_id: str, progress=None):
             exit_ma=max(0, min(200, int(_num("exit_ma", 0)))),
             exit_ma_mode=str(p.get("exit_ma_mode") or "raw").strip().lower(),
             entry_ma=max(0, min(200, int(_num("entry_ma", 0)))),
+            tp_pct=max(0.0, min(1.0, _num("tp_pct", 0.0))),
+            tp_decay=max(0.0, min(0.05, _num("tp_decay", 0.0))),
+            tp_min=max(0.0, min(1.0, _num("tp_min", 0.0))),
             # 注意：_r() = float(p.get(k) or dflt)，只适合数值。ladder_mode 是字符串，
             # 走 _r 会 ValueError→静默回落 "off"（本轮实测 8 组全同值才暴露）。必须直读。
             ladder_mode=str(p.get("ladder_mode") or "off").strip().lower(),

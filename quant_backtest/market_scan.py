@@ -187,21 +187,20 @@ def scan_stock(args):
     b = pd.read_parquet(fp).sort_values("trade_date").reset_index(drop=True)
     if len(b) < WARMUP // 2:
         return []
-    # 2026-11-10 数据刷新后 210/5816 只只剩 OHLC+pre_close（无 pct_chg），
-    # 扫描器原样取列直接 KeyError 崩。与 backtest_engine_v2._load_px 同一推导式兜底，
-    # 保证扫描侧与引擎侧复权因子同源（否则同一只票两边 kfac 不同）。
-    if "pct_chg" not in b.columns:
-        if "close" not in b.columns or "pre_close" not in b.columns:
-            return []
-        b["pct_chg"] = (b["close"] / b["pre_close"] - 1.0) * 100.0
-    r = b["pct_chg"] / 100.0
-    r.iloc[0] = 0.0
-    kfac = (1.0 + r).cumprod() / b["close"]
+    # 2026-11-10：本函数不再需要 pct_chg / 复权因子——四价一律用原始价（见下），
+    # 故 11-09 那批「210/5816 只缺 pct_chg 就 KeyError」的崩溃面自动消失。
+    # 2026-11-10 修：四价量纲必须统一。
+    # 旧版 o/h/l 用原始价、唯独 c 乘 kfac（复权归一化，上市首日≈1），于是
+    # score_3buy(close, zg) 里 close/zg-1 ≈ 1.9/158-1 = −98.8%，恒 ≤0.02
+    # → 位置分恒 40 分，40% 的权重变成常数，"最看好 5 只"实际只按量能+背驰排序。
+    # 结构层（包含处理/分型/笔/中枢）只用 h/l，zg/zd 一直是原始价量纲；
+    # 故这里把 c 也改回原始价——信号（日期/类型/zg）逐条不变，只有评分变，
+    # 且与引擎侧 px_raw() 的比较口径继续一致。
     amt = b["amount"].astype(float).tolist() if "amount" in b.columns else None
     bars_all = [
         {"dt": int(t), "o": float(o), "h": float(h), "l": float(l), "c": float(c)}
         for t, o, h, l, c in zip(
-            b["trade_date"], b["open"], b["high"], b["low"], b["close"] * kfac
+            b["trade_date"], b["open"], b["high"], b["low"], b["close"]
         )
     ]
     date2i = {int(t): i for i, t in enumerate(b["trade_date"])}
