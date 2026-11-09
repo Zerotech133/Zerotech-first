@@ -94,6 +94,10 @@ class FakeHandler:
     def _check_portal_token(self):  # noqa: D401（与 portal_api.Handler 同名）
         return self._token_ok
 
+    def _route_main(self, path, qs):
+        """复用真实 GET 主分派；FakeHandler 只提供 _json/属性替身。"""
+        return portal_api.Handler._route_main(self, path, qs)
+
     def _json(self, obj, code=200):
         self.status = code
         self.payload = obj

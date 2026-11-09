@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -145,7 +146,12 @@ def test_b1_b2_lists_not_regressed():
                   "agent_platform/tests/test_gate_coverage_w5.py",
                   "tools/tests/test_test_gate_b1.py"):
         assert probe in text, probe                  # 清单标记在
-    assert "$suites = @('portal', 'kstock', 'ide', 'agent_key', 'quant_key', 'tools_key', 'datawarehouse')" in text
+    m = re.search(r"\$suites\s*=\s*@\(([^)]*'portal'[^)]*)\)", text)
+    assert m, "未找到 fast 套件清单"
+    assert re.findall(r"'([^']+)'", m.group(1)) == [
+        'portal', 'kstock', 'ide', 'agent_key', 'quant_key', 'tools_key',
+        'datawarehouse', 'analysis', 'commercial',
+    ]
 
 
 def test_a5_strict_gate_not_regressed():
