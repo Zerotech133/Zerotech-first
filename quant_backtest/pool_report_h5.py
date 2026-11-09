@@ -203,14 +203,15 @@ def _trend_text(data, counts, tre, posd):
         return "今日无有效样本。"
     below_share = below / judged * 100
     mood = "弱势" if below_share > 50 else "中性" if below_share > 35 else "偏强"
-    s = (f"全市场 {judged} 只，上涨趋势 {up} / 下跌趋势 {dn}，"
-         f"{below} 只（{below_share:.0f}%）在中枢下沿之下，结构{mood}。")
+    s = ("<b>回放已做完</b>（2024-05→2026-11，48.3 万观测）：九态无一跑出稳定正超额。"
+         "三买 −146bp（t=−3.03）、三买待 −284bp（t=−3.67）——"
+         "<b>等回踩确认再买是负分</b>；一买 +103bp 但 t=1.47，只靠 2024 一年。")
+    s += (f" 今日 {judged} 只，下跌趋势 {dn}、枢下 {below}（{below_share:.0f}%），"
+          f"结构{mood}。")
     if n3p:
-        s += f" 三买待 {n3p} 只——已离开上沿、等回踩确认，是今天唯一值得盯的位置。"
+        s += f" 三买待 {n3p} 只，位置在「等回踩」，但上面那行说这位置不赚钱。"
     else:
-        s += " 今日无三买待：没有票处在「离开上沿、等回踩」的位置。"
-    if nbei:
-        s += f" 另 {nbei} 只出现顶背驰，上涨结构走完。"
+        s += " 今日无三买待：没票处在「离开上沿、等回踩」。"
     return s
 
 
@@ -221,7 +222,7 @@ _BUILD = """<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
 body{{background:#f2f4f7;color:#1c2330;
      font:14px/1.5 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
      max-width:430px;margin:0 auto;min-height:100vh}}
-.screen{{display:none;min-height:100vh;padding:12px 14px 10px}}
+.screen{{display:none;min-height:100vh;padding:10px 14px 4px}}
 .screen.on{{display:block}}
 .hd{{display:flex;align-items:baseline;gap:8px;margin-bottom:2px}}
 .hd h1{{font-size:17px;font-weight:700}}
@@ -241,9 +242,9 @@ body{{background:#f2f4f7;color:#1c2330;
 .card .k{{font-size:10px;color:#8a93a3;white-space:nowrap}}
 .card .v{{font-size:19px;font-weight:700;line-height:1.25}}
 .brief{{background:#fff8e6;border:1px solid #f2dfb4;border-radius:9px;
-       padding:9px 11px;font-size:11.5px;line-height:1.65;color:#7a5a12;margin-bottom:10px}}
+       padding:8px 11px;font-size:11px;line-height:1.56;color:#7a5a12;margin-bottom:9px}}
 .sec{{font-size:11px;color:#8a93a3;margin:2px 2px 6px;display:flex;justify-content:space-between}}
-.row{{background:#fff;border-radius:9px;padding:9px 11px;margin-bottom:7px;
+.row{{background:#fff;border-radius:9px;padding:7px 11px;margin-bottom:6px;
      display:flex;align-items:center;gap:9px;box-shadow:0 1px 2px rgba(20,30,50,.05)}}
 .row .l{{flex:1;min-width:0}}
 .row .nm{{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
@@ -253,7 +254,7 @@ body{{background:#f2f4f7;color:#1c2330;
 .row .dg{{font-size:10.5px;color:#8a93a3}}
 .up{{color:#d92b2b}}.down{{color:#0a9e5c}}
 .arw{{color:#c3cad6;font-size:16px;flex:none}}
-.foot{{font-size:10px;color:#8a93a3;line-height:1.7;margin-top:8px}}
+.foot{{font-size:10px;color:#8a93a3;line-height:1.6;margin-top:5px}}
 details.rule{{background:#fff;border-radius:9px;padding:9px 11px;font-size:11px;
              line-height:1.8;color:#6b7686;margin-top:10px}}
 details.rule summary{{cursor:pointer;color:#4a5568;font-weight:600;list-style:none}}
@@ -312,6 +313,11 @@ details.rule[open] summary:after{{content:" ⌃"}}
     <b>背驰</b>＝新鲜的一卖/二卖。三卖不算衰竭，那是下跌延续。<br>
     中枢延伸超 9 笔或区间宽超 30% 即「已升级」，ZG/ZD 不再作操作边界。<br>
     已剔除 ST/退市、股价&lt;{minp}元、20 日均额&lt;{minamt}亿、次新、数据不新鲜、指数、北交所。<br>
+    <b>回放结论（2026-11-09）</b>：124 个截面、48.3 万观测，T+1 开盘入场、同日全样本为基准。
+    按市值层内比较，九态 60 日超额全部落在 ±40bp 内、无一个 t 值显著为正 → 结构本身不提供选股超额。<br>
+    三买 −146bp（t=−3.03）、三买待 −284bp（t=−3.67，逐日等权）；
+    一买 +103bp（t=1.47，2024 年 +493bp、2025 年 −164bp，单年现象）；
+    中枢档 75% 是「级别升级·判定作废」，真震荡那部分 +3bp，等于零。<br>
     涨红跌绿。生成于 {run_at}。
   </details>
   <div class="foot">{engine_note}</div>
@@ -485,7 +491,7 @@ def main():
         cards=cards, brief=_trend_text(j, counts, tre, posd),
         minp=2.0, minamt=meta.get("min_amt", 0.5),
         run_at=html.escape(j.get("run_at") or ""),
-        engine_note="引擎 chanlun_signal（笔/线段/中枢/三类买卖点），非形态打分。"
+        engine_note="引擎 chanlun_signal，非形态打分。"
                     "本页零重算，判定口径以 pool_state.py 为准。",
         data_js=data_js, order_js=json.dumps(order, ensure_ascii=False),
     )
