@@ -84,7 +84,8 @@ def test_b1_b2_not_regressed():
     m = re.search(r"'fast'\s*\{\s*\$suites\s*=\s*@\(([^)]*)\)", GATE)
     assert m
     assert re.findall(r"'([a-z_]+)'", m.group(1)) == [
-        "portal", "kstock", "ide", "agent_key", "quant_key", "tools_key", "datawarehouse"]
+        "portal", "kstock", "ide", "agent_key", "quant_key", "tools_key", "datawarehouse",
+                              "analysis", "commercial"]
 
 
 def test_gate_ps1_bom_and_parser(tmp_path):

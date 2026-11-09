@@ -3,6 +3,7 @@
 
 静态锁死（不执行门禁本体）：
   · fast = portal + kstock + ide + agent_key + quant_key + tools_key + datawarehouse
+  + analysis + commercial（2026-11-07 GATEHEALTH 起）
     （2026-11-02 S2-08 起；datawarehouse = tools/datawarehouse/tests 目录套件）；
   · agent_key/quant_key/tools_key = W5 报告 B1(57)+B2(31) 清单 + 黄忠聚合入口（共 89 文件），
     文件必须真实存在（B2 扩容工单 K-ORG-20261031-GATEB2；黄忠纳管 WO-HZ-GATE-20261031；W5 口径 30.9%→约 41.0%）；
@@ -188,7 +189,7 @@ def test_b1_b2_files_exist_and_under_expected_dir():
 
 def test_fast_includes_key_suites_only():
     assert _suite_list("fast") == ["portal", "kstock", "ide", "agent_key", "quant_key",
-                                   "tools_key", "datawarehouse"]
+                                   "tools_key", "datawarehouse", "analysis", "commercial"]
     # 关键集只进 fast；all 保持原样（不扩 all，避免夜间/全量时长失控）
     assert _suite_list("all") == ["portal", "kstock", "agent", "quant", "ide"]
     param_block = GATE[: GATE.find("$suites = @()")]
