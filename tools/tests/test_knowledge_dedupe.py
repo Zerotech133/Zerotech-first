@@ -124,8 +124,9 @@ def test_real_project_report():
     assert REPORT_JSON.is_file() and REPORT_MD.is_file()
     d = json.loads(REPORT_JSON.read_text(encoding="utf-8"))
     s = d["stats"]
-    # 通用报告由最近一次真实治理运行覆盖，项目名会变化；这里只固定已出现过的真实项目。
-    assert d["project"] in ("视频号学习_8博主", "视频号学习_第二期", "laomu_notes", "公开投教_布林线")
+    # 通用报告由最近一次真实治理运行覆盖，项目名会变化；视频号学习窗口可持续新增。
+    project = d["project"]
+    assert project.startswith("视频号学习_") or project in ("laomu_notes", "公开投教_布林线")
     assert s["input"] > 0
     assert s["output"] == s["input"] - s["duplicate_rows"]
     assert s["dup_groups"] == len(d["duplicates"])

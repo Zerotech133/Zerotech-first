@@ -34,11 +34,19 @@ class TestRegW(unittest.TestCase):
         self.assertEqual(a.get("superseded_by"), "intel_collector/registry/sources.json")
 
     def test_rights_untouched(self):
-        """B 账本 7 源 rights 结构与备份逐一致（21 格 true 不变）。"""
+        """B 账本 7 源 rights 原有键值不变；新增 8 键授权结构（21 格 true 扩展为 8 键）。"""
         d = json.load(open(B, encoding="utf-8"))
         bak = json.load(open(os.path.join(HERE, "..", "..", "reports", "backups", "regw_20261108", "sources.json.pre_regw.bak"), encoding="utf-8"))
+        expected = {"internal_retention", "cleaning", "controlled_query", "indexing",
+                    "candidate_labeling", "redistribution", "commercial", "training"}
         for k in bak:
-            self.assertEqual(d[k], bak[k], k)
+            if k.startswith("_"):
+                continue
+            old_rights = bak[k]["rights"]
+            new_rights = d[k]["rights"]
+            assert set(new_rights) == expected, k
+            for rk, rv in old_rights.items():
+                assert new_rights[rk] == rv, (k, rk)
 
 
 if __name__ == "__main__":

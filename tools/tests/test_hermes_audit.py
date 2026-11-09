@@ -22,10 +22,14 @@ def test_profiles_mapped():
     assert pm["profiles_count"] >= 5
     assert "A0" in pm["matched"]["tianfeng"]
     assert "HUANGZHONG" in pm["matched"]["huangzhong"]
-    # zhangsong 已映射到 DATA1；当前唯一未映射席位是 stock-analyst。
+    # zhangsong 已映射到 DATA1；4 个 factor profile 是工具 profile、无独立席位，
+    # 与 stock-analyst 一起属于已知未映射集合。
     assert "zhangsong" not in pm["unmapped_profiles"]
     assert "DATA1" in pm["matched"]["zhangsong"]
-    assert pm["unmapped_profiles"] == ["stock-analyst"]
+    assert set(pm["unmapped_profiles"]) == {
+        "factor-crosscheck", "factor-executor", "factor-screener",
+        "factor-validator", "stock-analyst",
+    }
 
 
 def test_composition_hermes_declaration_counted():
