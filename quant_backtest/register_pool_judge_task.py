@@ -54,8 +54,8 @@ def describe():
     print("[plan] workdir %s" % REPO)
     for t, dur in _triggers_def():
         print("[plan] trigger daily %s  repetition %s x %s" % (t, INTERVAL, dur))
-    print("[plan] logon  InteractiveToken / LUA / StartWhenAvailable=False "
-          "/ IgnoreNew / PT10M")
+    print("[plan] logon  InteractiveToken (不存密码，登录态不在时不跑)")
+    print("[plan] policy 不补跑 · IgnoreNew · 单轮上限 10 分钟")
 
 
 def register():
