@@ -419,3 +419,11 @@ agent_platform/portal/data/dev_events.jsonl
 
 # D1 原始 SLO 采样（每日运行时数据；窗口汇总报告另存，不逐日入库）
 /deliverables/d1_q2/slo_window/*.json
+
+# 2026-11-09 portal/daily_report 入库分拣：代码/模板入库，运行态产物不入库（可由 build.py 再生）
+portal/daily_report/cohorts/
+portal/daily_report/shots/
+portal/daily_report/*.log
+portal/daily_report/hold_*.json
+portal/daily_report/index.html
+portal/daily_report/houfeng.html
